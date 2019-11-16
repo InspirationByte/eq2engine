@@ -98,6 +98,10 @@ void CObject_Physics::OnRemove()
 	// this might be required to
 	if(m_userData)
 	{
+		//g_pGameWorld->m_level
+
+		CScopedMutex m(g_pGameWorld->m_level.m_mutex);
+		
 		regionObject_t* ref = (regionObject_t*)m_userData;
 		ref->game_object = NULL;
 		m_userData = NULL;

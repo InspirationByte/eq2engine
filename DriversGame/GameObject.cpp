@@ -84,7 +84,7 @@ inline void PackNetworkVariables(void* object, const netvariablemap_t* map, IVir
 		}
 
 		// write offset
-		stream->Write(&prop.offset, 1, sizeof(int));
+		stream->Write(&prop.nameHash, 1, sizeof(int));
 
 		char* varData = ((char*)object) + prop.offset;
 
@@ -121,12 +121,11 @@ inline void UnpackNetworkVariables(void* object, const netvariablemap_t* map, Ne
 	{
 		netprop_t* found = nullptr;
 
-		int propOfs = buffer->ReadInt();
+		int nameHash = buffer->ReadInt();
 
-		// PARANOID
 		for (int j = 0; j < map->m_numProps; j++)
 		{
-			if (map->m_props[j].offset == propOfs)
+			if (map->m_props[j].nameHash == nameHash)
 			{
 				found = &map->m_props[j];
 				break;
@@ -135,12 +134,11 @@ inline void UnpackNetworkVariables(void* object, const netvariablemap_t* map, Ne
 
 		if (!found)
 		{
-			MsgError("invalid offset!\n");
+			MsgError("invalid prop!\n");
 			continue;
 		}
 
-
-		char* varData = ((char*)object) + propOfs;
+		char* varData = ((char*)object) + found->offset;
 
 		if (found->type == NETPROP_NETPROP)
 		{

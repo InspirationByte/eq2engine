@@ -171,6 +171,8 @@ struct regionObject_t
 
 	~regionObject_t();
 
+	void RemoveGameObject();
+
 	void CalcBoundingBox();
 
 	CLevObjectDef*			def;

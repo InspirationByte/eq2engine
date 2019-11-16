@@ -161,7 +161,7 @@ bool CEqCollisionObject::Initialize( CEqBulletIndexedMesh* mesh )
 {
 	m_mesh = mesh;
 
-	m_shape = new btBvhTriangleMeshShape(m_mesh, false);
+	m_shape = new btBvhTriangleMeshShape(m_mesh, true, true);
 	m_shape->setMargin(ph_margin.GetFloat());
 
 	m_trimap = new btTriangleInfoMap();

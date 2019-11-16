@@ -1123,8 +1123,16 @@ void CHeightTileField::GetDecalPolygons( decalPrimitives_t& polys, occludingFrus
 
 		IMaterial* mat = batch->materialBundle->material;
 
-		if(mat && (mat->GetFlags() & polys.settings.avoidMaterialFlags))
-			continue;
+		if (mat)
+		{
+			int matFlags = mat->GetFlags();
+
+			if (matFlags & polys.settings.avoidMaterialFlags)
+				continue;
+
+			if (matFlags & MATERIAL_FLAG_INVISIBLE)
+				continue;
+		}
 
 		BoundingBox bbox = batch->bbox;
 		bbox.minPoint += m_position;

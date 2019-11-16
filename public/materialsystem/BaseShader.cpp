@@ -111,7 +111,8 @@ void CBaseShader::InitParams()
 	if( addressMode ) m_nAddressMode = ResolveAddressType(addressMode->GetString());
 	if( texFilter ) m_nTextureFilter = ResolveFilterType(texFilter->GetString());
 
-	// setup shadowing parameters
+	// setup render & shadowing parameters
+	SHADER_PARAM_FLAG(NoDraw, m_nFlags, MATERIAL_FLAG_INVISIBLE, false)
 	SHADER_PARAM_FLAG(ReceiveShadows, m_nFlags, MATERIAL_FLAG_RECEIVESHADOWS, true)
 	SHADER_PARAM_FLAG(CastShadows, m_nFlags, MATERIAL_FLAG_CASTSHADOWS, true)
 

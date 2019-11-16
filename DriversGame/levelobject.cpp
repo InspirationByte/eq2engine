@@ -550,8 +550,10 @@ void CLevelModel::Render(int nDrawFlags)
 	for(int i = 0; i < m_numBatches; i++)
 	{
 		lmodel_batch_t& batch = m_batches[i];
-
 		int matFlags = batch.pMaterial->GetFlags();
+
+		if (matFlags & MATERIAL_FLAG_INVISIBLE)
+			continue;
 
 		bool isTransparent = (matFlags & MATERIAL_FLAG_TRANSPARENT) > 0;
 
@@ -601,8 +603,16 @@ void CLevelModel::GetDecalPolygons( decalPrimitives_t& polys, const Matrix4x4& t
 		lmodel_batch_t& batch = m_batches[i];
 #endif // EDITOR
 
-		if(batch.pMaterial && (batch.pMaterial->GetFlags() & polys.settings.avoidMaterialFlags))
-			continue;
+		if (batch.pMaterial)
+		{
+			int matFlags = batch.pMaterial->GetFlags();
+
+			if (matFlags & polys.settings.avoidMaterialFlags)
+				continue;
+
+			if (matFlags & MATERIAL_FLAG_INVISIBLE)
+				continue;
+		}
 
 		for(uint32 p = 0; p < batch.numIndices; p += 3)
 		{

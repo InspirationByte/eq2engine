@@ -26,13 +26,18 @@ regionObject_t::~regionObject_t()
 	if(!def)
 		return;
 
-	if(def->m_info.type == LOBJ_TYPE_INTERNAL_STATIC)
+	RemoveGameObject();
+}
+
+void regionObject_t::RemoveGameObject()
+{
+	if (def->m_info.type == LOBJ_TYPE_INTERNAL_STATIC)
 	{
 		CLevelModel* mod = def->m_model;
 		mod->Ref_Drop();
 
 		// the model cannot be removed if it's not loaded with region
-		if(mod->Ref_Count() <= 0)
+		if (mod->Ref_Count() <= 0)
 			delete mod;
 
 #ifndef EDITOR
@@ -43,10 +48,10 @@ regionObject_t::~regionObject_t()
 	else
 	{
 		// delete associated object from game world
-		if( g_pGameWorld->IsValidObject( game_object ) )
+		if (g_pGameWorld->IsValidObject(game_object))
 		{
 			game_object->SetUserData(NULL);
-			g_pGameWorld->RemoveObject( game_object );
+			g_pGameWorld->RemoveObject(game_object);
 		}
 
 		game_object = NULL;
@@ -983,22 +988,7 @@ void CLevelRegion::RespawnObjects()
 		if(ref->def->m_info.type != LOBJ_TYPE_OBJECT_CFG)
 			continue;
 
-		// delete associated object from game world
-		if(ref->game_object)
-		{
-			//g_pGameWorld->RemoveObject(ref->object);
-
-			if(g_pGameWorld->m_gameObjects.remove(ref->game_object))
-			{
-				ref->game_object->SetUserData(NULL);
-				ref->game_object->OnRemove();
-				delete ref->game_object;
-			}
-
-		}
-
-		ref->game_object = NULL;
-
+		ref->RemoveGameObject();
 		ref->transform = GetModelRefRenderMatrix( this, ref );
 
 		// create object, spawn in game cycle

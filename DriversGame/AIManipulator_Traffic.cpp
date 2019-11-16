@@ -65,6 +65,9 @@ const float AI_LANE_SWITCH_SHORTDELAY = 1.0f;
 
 const float AI_EMERGENCY_ESCAPE_TIME = 0.5f;
 
+const float AI_SLOPE_BRAKE_MODIFIER = 4.0f;
+const float AI_SLOPE_ACCELERATOR_MODIFIER = 4.0f;
+
 
 #define STRAIGHT_CURRENT	0
 #define STRAIGHT_PREV		1
@@ -673,6 +676,21 @@ void CAITrafficManipulator::UpdateAffector(ai_handling_t& handling, CCar* car, f
 
 	Vector3D	roadDir = fastNormalize(startPos - endPos);
 
+	Vector3D hillDir = carForward;	// hill direction (to find difference between carFowrad)
+
+	IVector2D hfieldCell;
+	CLevelRegion* reg = NULL;
+	if (g_pGameWorld->m_level.GetRegionAndTileAt(carPosOnCell, &reg, hfieldCell))
+	{
+		Vector3D t, b, n;
+		if(reg->GetHField())
+			reg->GetHField()->GetTileTBN(hfieldCell.x, hfieldCell.y, t, b, n);
+
+		hillDir = cross(car->GetRightVector(), n);
+	}
+
+	float		hillChangeSpeedFactor = fabs(dot(hillDir, carForward));
+
 	// road end
 	Plane		roadEndPlane(roadDir, -dot(roadDir, endPos));
 	float		distToStop = roadEndPlane.Distance(carPos);
@@ -713,7 +731,7 @@ void CAITrafficManipulator::UpdateAffector(ai_handling_t& handling, CCar* car, f
 	float brakeDistAtCurSpeed = brakeDistancePerSec * brakeToStopTime;
 
 	handling.acceleration = ((maxSpeed - carSpeed) / maxSpeed); // go forward
-	handling.acceleration = 1.0f - pow(1.0f - handling.acceleration, 4.0f);
+	handling.acceleration = powf(handling.acceleration, 0.15f);
 
 	Vector3D steerAbsDir = fastNormalize(steeringTargetPos - carPos);
 
@@ -723,7 +741,7 @@ void CAITrafficManipulator::UpdateAffector(ai_handling_t& handling, CCar* car, f
 	fSteeringAngle = sign(fSteeringAngle) * powf(fabs(fSteeringAngle), 1.25f);
 
 	// modifier by steering
-	handling.acceleration *= trafficSpeedModifier[g_pGameWorld->m_envConfig.weatherType];
+	//handling.acceleration *= trafficSpeedModifier[g_pGameWorld->m_envConfig.weatherType];
 
 	if (ai_traffic_debug_straigth.GetBool())
 	{
@@ -1033,8 +1051,28 @@ void CAITrafficManipulator::UpdateAffector(ai_handling_t& handling, CCar* car, f
 	if (handling.acceleration > 0.05f)
 		car->GetPhysicsBody()->Wake();
 
-	float speedClampFac = 20.0f - carSpeed;
-	handling.acceleration *= RemapValClamp(speedClampFac, 0.0f, 20.0f, 0.6f, 1.0f);
+	// starting from 20KPH i reduce the accelerator
+	float speedAccelleratorFactor = 20.0f - carSpeed;
+	float speedAcceleratorMin = 0.5f;
+
+	{
+		float slopeAccelModifier = hillDir.y;
+		float slopeBrakeModifier = fabs(hillDir.y);
+
+		slopeAccelModifier = powf(max(0.0f, slopeAccelModifier), 0.5f);
+		slopeBrakeModifier = powf(max(0.0f, slopeBrakeModifier), 1.0f);
+
+		// if we're near a slope that goes down, apply some brakes
+		if (hillDir.y < 0.0f)
+			handling.braking += (1.0f - hillChangeSpeedFactor) * AI_SLOPE_BRAKE_MODIFIER;
+
+		speedAcceleratorMin = 0.5f + slopeAccelModifier * AI_SLOPE_ACCELERATOR_MODIFIER;
+		handling.braking *= 1.0f + slopeBrakeModifier * AI_SLOPE_BRAKE_MODIFIER;
+	}
+
+	speedAccelleratorFactor = RemapValClamp(speedAccelleratorFactor, 0.0f, 20.0f, speedAcceleratorMin, 1.0f);
+	handling.acceleration *= speedAccelleratorFactor;
+
 	handling.steering = clamp(fSteeringAngle, -0.95f, 0.95f);
 
 	//SetControlVars(accelerator, brake, clamp(fSteeringAngle, -0.95f, 0.95f));
