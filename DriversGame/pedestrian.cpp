@@ -165,8 +165,6 @@ void CPedestrian::Spawn()
 	
 	m_physBody->SetUserData(this);
 
-	m_bbox = m_physBody->m_aabb_transformed;
-
 	g_pPhysics->m_physics.AddToWorld(m_physBody);
 
 	if(m_hasAI)
@@ -192,6 +190,9 @@ void CPedestrian::ConfigureCamera(cameraConfig_t& conf, eqPhysCollisionFilter& f
 
 void CPedestrian::Draw(int nRenderFlags)
 {
+	m_physBody->UpdateBoundingBoxTransform();
+	m_bbox = m_physBody->m_aabb_transformed;
+
 	RecalcBoneTransforms();
 
 	if (m_jack)
