@@ -4305,7 +4305,7 @@ void CCar::Draw( int nRenderFlags )
 			// draw fake shadow
 			DrawShadow(camDist);
 
-			if (m_hasDriver)
+			if (m_hasDriver && nLOD == 0)
 			{
 				m_driverModel.m_worldMatrix = m_worldMatrix * translate(m_conf->visual.driverPosition);
 				m_driverModel.Draw(nRenderFlags);

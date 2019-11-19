@@ -65,7 +65,8 @@ const float AI_LANE_SWITCH_SHORTDELAY = 1.0f;
 
 const float AI_EMERGENCY_ESCAPE_TIME = 0.5f;
 
-const float AI_SLOPE_BRAKE_MODIFIER = 4.0f;
+const float AI_SLOPE_BRAKE_MODIFIER = 3.0f;
+const float AI_SLOPE_BRAKE_MODIFIER_DIFF = 4.0f;
 const float AI_SLOPE_ACCELERATOR_MODIFIER = 4.0f;
 
 
@@ -730,8 +731,23 @@ void CAITrafficManipulator::UpdateAffector(ai_handling_t& handling, CCar* car, f
 	float brakeToStopTime = carForwardSpeed / brakeDistancePerSec * 2.0f;
 	float brakeDistAtCurSpeed = brakeDistancePerSec * brakeToStopTime;
 
-	handling.acceleration = ((maxSpeed - carSpeed) / maxSpeed); // go forward
-	handling.acceleration = powf(handling.acceleration, 0.15f);
+	float acceleratorRatio = ((maxSpeed - carSpeed) / maxSpeed);
+	acceleratorRatio = sign(acceleratorRatio) * powf(fabs(acceleratorRatio), 0.15f);
+
+	float speedAccelleratorFactor = 20.0f - carSpeed;
+
+	{
+		// starting from 20KPH i reduce the accelerator
+		float speedAcceleratorMin = 0.0f;
+
+		float slopeAccelModifier = hillDir.y;
+		slopeAccelModifier = powf(max(0.0f, slopeAccelModifier), 0.5f);
+
+		speedAcceleratorMin = 0.5f + slopeAccelModifier * AI_SLOPE_ACCELERATOR_MODIFIER;
+		speedAccelleratorFactor = RemapValClamp(speedAccelleratorFactor, 0.0f, 20.0f, speedAcceleratorMin, 1.0f);
+	}
+
+	handling.acceleration = max(0.0f, acceleratorRatio) * min(speedAccelleratorFactor, 0.8f); // go forward
 
 	Vector3D steerAbsDir = fastNormalize(steeringTargetPos - carPos);
 
@@ -775,6 +791,9 @@ void CAITrafficManipulator::UpdateAffector(ai_handling_t& handling, CCar* car, f
 
 	float surfaceFactor = 1.0f - fabs(dot(car->GetUpVector(), vec3_up));
 
+	float slopeBrakeModifier = fabs(hillDir.y);
+	slopeBrakeModifier = powf(max(0.0f, slopeBrakeModifier), 3.0f);
+
 	//
 	// Breakage on red light
 	//
@@ -797,7 +816,8 @@ void CAITrafficManipulator::UpdateAffector(ai_handling_t& handling, CCar* car, f
 			float brakeSpeedDiff = brakeDistAtCurSpeed + AI_STOPLINE_DIST - distToStop;
 			brakeSpeedDiff = max(brakeSpeedDiff, 0.0f);
 
-			float brake = brakeSpeedDiff / AI_ROAD_STOP_DIST + surfaceFactor;
+			float brake = fabs(brakeSpeedDiff / AI_ROAD_STOP_DIST + surfaceFactor);
+			brake += slopeBrakeModifier * AI_SLOPE_BRAKE_MODIFIER;
 			brake = min(brake, 0.9f);
 
 			if (distToStop > AI_STOPLINE_DIST)
@@ -821,8 +841,8 @@ void CAITrafficManipulator::UpdateAffector(ai_handling_t& handling, CCar* car, f
 
 			if (m_straights[STRAIGHT_CURRENT].direction != selRoad.direction)
 			{
-				float fDecelRate = RemapValClamp(distToStop, 0.0f, AI_ROAD_STOP_DIST, 0.25f, 1.0f);
-				handling.acceleration -= fDecelRate;
+				float fDecelRate = RemapValClamp(distToStop, 0.0f, AI_ROAD_STOP_DIST, 0.5f, 1.0f);
+				handling.acceleration -= fDecelRate * (1.0f-speedAccelleratorFactor);
 			}
 		}
 	}
@@ -962,6 +982,8 @@ void CAITrafficManipulator::UpdateAffector(ai_handling_t& handling, CCar* car, f
 				brakeSpeedDiff = max(brakeSpeedDiff, 0.0f);
 
 				float brake = brakeSpeedDiff / 20.0f + surfaceFactor;
+				brake += slopeBrakeModifier * AI_SLOPE_BRAKE_MODIFIER;
+				brake = min(brake, 0.9f);
 
 				if (lineDist > AI_OBSTACLE_DIST)
 				{
@@ -1051,27 +1073,9 @@ void CAITrafficManipulator::UpdateAffector(ai_handling_t& handling, CCar* car, f
 	if (handling.acceleration > 0.05f)
 		car->GetPhysicsBody()->Wake();
 
-	// starting from 20KPH i reduce the accelerator
-	float speedAccelleratorFactor = 20.0f - carSpeed;
-	float speedAcceleratorMin = 0.5f;
-
-	{
-		float slopeAccelModifier = hillDir.y;
-		float slopeBrakeModifier = fabs(hillDir.y);
-
-		slopeAccelModifier = powf(max(0.0f, slopeAccelModifier), 0.5f);
-		slopeBrakeModifier = powf(max(0.0f, slopeBrakeModifier), 1.0f);
-
-		// if we're near a slope that goes down, apply some brakes
-		if (hillDir.y < 0.0f)
-			handling.braking += (1.0f - hillChangeSpeedFactor) * AI_SLOPE_BRAKE_MODIFIER;
-
-		speedAcceleratorMin = 0.5f + slopeAccelModifier * AI_SLOPE_ACCELERATOR_MODIFIER;
-		handling.braking *= 1.0f + slopeBrakeModifier * AI_SLOPE_BRAKE_MODIFIER;
-	}
-
-	speedAccelleratorFactor = RemapValClamp(speedAccelleratorFactor, 0.0f, 20.0f, speedAcceleratorMin, 1.0f);
-	handling.acceleration *= speedAccelleratorFactor;
+	// if we're near a slope that goes down, apply some brakes
+	if (hillDir.y < 0.0f)
+		handling.braking += (1.0f - hillChangeSpeedFactor) * AI_SLOPE_BRAKE_MODIFIER_DIFF;
 
 	handling.steering = clamp(fSteeringAngle, -0.95f, 0.95f);
 
