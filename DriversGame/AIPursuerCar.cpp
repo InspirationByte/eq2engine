@@ -487,6 +487,9 @@ EInfractionType CAIPursuerCar::CheckTrafficInfraction(CCar* car, bool checkFelon
 	if(!car->IsEnabled())
 		return INFRACTION_NONE;
 
+	if(!car->m_conf->flags.isCar)
+		return INFRACTION_NONE;
+
 	float carSpeed = car->GetSpeed();
 
 	// ho!
@@ -521,9 +524,6 @@ EInfractionType CAIPursuerCar::CheckTrafficInfraction(CCar* car, bool checkFelon
 		if(bodyB->m_flags & COLLOBJ_ISGHOST)
 			continue;
 
-		if(bodyB == car->GetHingedBody())
-			continue;
-
 		int contents = bodyB->GetContents();
 
 		if(contents == OBJECTCONTENTS_SOLID_GROUND)
@@ -533,6 +533,9 @@ EInfractionType CAIPursuerCar::CheckTrafficInfraction(CCar* car, bool checkFelon
 			CGameObject* obj = (CGameObject*)bodyB->GetUserData();
 
 			if(InPursuit() && obj == this)
+				return INFRACTION_NONE;
+
+			if(obj == car->GetHingedVehicle())
 				return INFRACTION_NONE;
 
 			// There is no infraction if bodyB has inflicted this damage to us

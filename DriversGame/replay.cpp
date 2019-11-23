@@ -352,7 +352,8 @@ void CReplayData::PlayVehicleFrame(replayCarStream_t* rep)
 		if (rep->curr_frame > 0 && 
 			g_pGameSession->GetViewObject() != car && 
 			g_pGameSession->GetLeadCar() != car && 
-			g_pGameSession->GetPlayerCar() != car)
+			g_pGameSession->GetPlayerCar() != car &&
+			car->m_conf->flags.isCar)
 		{
 			replayCarFrame_t& prevFrame = rep->replayArray[rep->curr_frame - 1];
 
