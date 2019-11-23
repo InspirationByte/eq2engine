@@ -99,20 +99,23 @@ public:
 	void				SetAngles(const Vector3D& angles);
 	void				SetVelocity(const Vector3D& vel);
 
-	const Vector3D&		GetOrigin();
-	const Vector3D&		GetAngles();
 	const Vector3D&		GetVelocity() const;
+	const Vector3D&		GetAngles() const;
 
 	void				UpdateTransform();
 
 protected:
 
+	virtual void		OnPhysicsFrame(float fDt);
+
 	void				HandleAnimatingEvent(AnimationEvent nEvent, char* options);
 
 	void				OnCarCollisionEvent(const CollisionPairData_t& pair, CGameObject* hitBy);
 
-	CEqRigidBody*		m_physBody;
+	CPhysicsHFObject*	m_physObj;
 	bool				m_onGround;
+
+	Vector3D			m_pedSteerAngle;
 
 	int					m_pedState;
 	bool				m_hasAI;

@@ -83,14 +83,16 @@ void DrawJackParticle(const Vector3D& from, const Vector3D& to, float width, Tex
 
 //-----------------------------------------------------------------------
 
-CPedestrian::CPedestrian() : CAnimatingEGF(), CControllableGameObject(), m_thinker(this)
+CPedestrian::CPedestrian() : CAnimatingEGF(), CControllableGameObject(), m_thinker(this), m_physObj(nullptr)
 {
-	m_physBody = nullptr;
 	m_onGround = false;
 	m_pedState = 0;
 
 	m_thinkTime = 0;
 	m_hasAI = false;
+	m_jack = true;
+
+	m_pedSteerAngle = 0.0f;
 
 	m_drawFlags |= GO_DRAW_FLAG_SHADOW;
 }
@@ -128,11 +130,8 @@ void CPedestrian::OnRemove()
 {
 	DestroyAnimating();
 
-	if (m_physBody)
-	{
-		g_pPhysics->m_physics.DestroyBody(m_physBody);
-		m_physBody = NULL;
-	}
+	g_pPhysics->RemoveObject(m_physObj);
+	m_physObj = nullptr;
 
 	BaseClass::OnRemove();
 }
@@ -146,26 +145,27 @@ const float PEDESTRIAN_PHYSICS_RADIUS = 0.85f;
 
 void CPedestrian::Spawn()
 {
-	m_physBody = new CEqRigidBody();
-	m_physBody->Initialize(PEDESTRIAN_PHYSICS_RADIUS);
+	CEqRigidBody* body = new CEqRigidBody();
+	body->Initialize(PEDESTRIAN_PHYSICS_RADIUS);
 
-	m_physBody->SetCollideMask(COLLIDEMASK_PEDESTRIAN);
-	m_physBody->SetContents(OBJECTCONTENTS_PEDESTRIAN);
+	body->SetCollideMask(COLLIDEMASK_PEDESTRIAN);
+	body->SetContents(OBJECTCONTENTS_PEDESTRIAN);
 
-	m_physBody->SetPosition(m_vecOrigin);
+	body->SetPosition(m_vecOrigin);
 
-	m_physBody->m_flags |= BODY_DISABLE_DAMPING | COLLOBJ_DISABLE_RESPONSE | BODY_FROZEN;
+	body->m_flags |= BODY_DISABLE_DAMPING | COLLOBJ_DISABLE_RESPONSE | BODY_FROZEN;
 
-	m_physBody->SetMass(85.0f);
-	m_physBody->SetFriction(0.0f);
-	m_physBody->SetRestitution(0.0f);
-	m_physBody->SetAngularFactor(vec3_zero);
-	m_physBody->m_erp = 0.15f;
-	m_physBody->SetGravity(18.0f);
+	body->SetMass(85.0f);
+	body->SetFriction(0.0f);
+	body->SetRestitution(0.0f);
+	body->SetAngularFactor(vec3_zero);
+	body->m_erp = 0.15f;
+	body->SetGravity(18.0f);
 	
-	m_physBody->SetUserData(this);
+	body->SetUserData(this);
 
-	g_pPhysics->m_physics.AddToWorld(m_physBody);
+	m_physObj = new CPhysicsHFObject(body, this);
+	g_pPhysics->AddObject(m_physObj);
 
 	if(m_hasAI)
 		m_thinker.FSMSetState(AI_State(&CPedestrianAI::SearchDaWay));
@@ -185,13 +185,15 @@ void CPedestrian::ConfigureCamera(cameraConfig_t& conf, eqPhysCollisionFilter& f
 	conf.heightInCar = 0.72f;
 	conf.fov = 60.0f;
 
-	filter.AddObject(m_physBody);
+	filter.AddObject(m_physObj->GetBody());
 }
 
 void CPedestrian::Draw(int nRenderFlags)
 {
-	m_physBody->UpdateBoundingBoxTransform();
-	m_bbox = m_physBody->m_aabb_transformed;
+	CEqRigidBody* physBody = m_physObj->GetBody();
+
+	physBody->UpdateBoundingBoxTransform();
+	m_bbox = physBody->m_aabb_transformed;
 
 	RecalcBoneTransforms();
 
@@ -200,7 +202,7 @@ void CPedestrian::Draw(int nRenderFlags)
 		if (!g_jackPed)
 		{
 			g_jackPed = new CPFXAtlasGroup();
-			g_jackPed->Init("materials/models/characters/jack.atlas", false, 4096);
+			g_jackPed->Init("models/characters/jack", false, 4096);
 			g_pPFXRenderer->AddRenderGroup(g_jackPed, g_vehicleEffects);
 		}
 
@@ -219,7 +221,6 @@ void CPedestrian::Draw(int nRenderFlags)
 		}
 	}
 
-	UpdateTransform();
 	DrawEGF(nRenderFlags, m_boneTransforms);
 
 	m_shadowDecal.dirty = true;
@@ -233,16 +234,18 @@ const float MAX_RUN_VELOCITY = 9.0f;
 
 const float PEDESTRIAN_THINK_TIME = 0.0f;
 
-void CPedestrian::Simulate(float fDt)
+void CPedestrian::OnPhysicsFrame(float fDt)
 {
-	m_vecOrigin = m_physBody->GetPosition();
+	CEqRigidBody* physBody = m_physObj->GetBody();
 
-	if(!m_physBody->IsFrozen())
+	m_vecOrigin = physBody->GetPosition();
+
+	if (!physBody->IsFrozen())
 		m_onGround = false;
 
-	for (int i = 0; i < m_physBody->m_collisionList.numElem(); i++)
+	for (int i = 0; i < physBody->m_collisionList.numElem(); i++)
 	{
-		CollisionPairData_t& pair = m_physBody->m_collisionList[i];
+		CollisionPairData_t& pair = physBody->m_collisionList[i];
 
 		m_onGround = (pair.bodyB && pair.bodyB->GetContents() == OBJECTCONTENTS_SOLID_GROUND);
 
@@ -250,25 +253,19 @@ void CPedestrian::Simulate(float fDt)
 			break;
 	}
 
-	const Vector3D& velocity = m_physBody->GetLinearVelocity();
+	const Vector3D& velocity = physBody->GetLinearVelocity();
 
 	Vector3D preferredMove(0.0f);
 
 	Vector3D forwardVec;
-	AngleVectors(m_vecAngles, &forwardVec);
-	
-	// do pedestrian thinker
-	if(m_hasAI)
-	{
-		m_thinkTime -= fDt;
+	AngleVectors(GetAngles(), &forwardVec);
 
-		if (m_thinkTime <= 0.0f)
-		{
-			int res = m_thinker.DoStatesAndEvents(PEDESTRIAN_THINK_TIME + fDt);
-			m_thinkTime = PEDESTRIAN_THINK_TIME;
-		}
+	// do pedestrian thinker
+	if (m_hasAI)
+	{
+		int res = m_thinker.DoStatesAndEvents(fDt);
 	}
-	
+
 	int controlButtons = GetControlButtons();
 
 	Activity bestMoveActivity = (controlButtons & IN_BURNOUT) ? ACT_RUN : ACT_WALK;
@@ -289,24 +286,11 @@ void CPedestrian::Simulate(float fDt)
 			preferredMove.z -= (velocity.z - preferredMove.z) * DECEL_RATIO;
 		}
 
-		m_physBody->ApplyLinearForce(preferredMove * m_physBody->GetMass());
+		physBody->ApplyLinearForce(preferredMove * physBody->GetMass());
 	}
 
 	if (controlButtons)
-		m_physBody->TryWake(false);
-	
-	if (controlButtons & IN_TURNLEFT)
-		m_vecAngles.y += 120.0f * fDt;
-
-	if (controlButtons & IN_TURNRIGHT)
-		m_vecAngles.y -= 120.0f * fDt;
-
-	if (controlButtons & IN_BURNOUT)
-		m_pedState = 1;
-	else if (controlButtons & IN_EXTENDTURN)
-		m_pedState = 2;
-	else if (controlButtons & IN_HANDBRAKE)
-		m_pedState = 0;
+		physBody->TryWake(false);
 
 	Activity idleAct = ACT_IDLE;
 
@@ -333,8 +317,28 @@ void CPedestrian::Simulate(float fDt)
 		if (currentAct != bestMoveActivity)
 			SetActivity(bestMoveActivity);
 	}
-	else if(currentAct != idleAct)
+	else if (currentAct != idleAct)
 		SetActivity(idleAct);
+
+}
+
+void CPedestrian::Simulate(float fDt)
+{
+	int controlButtons = GetControlButtons();
+
+	if (controlButtons & IN_TURNLEFT)
+		m_pedSteerAngle.y += 120.0f * fDt;
+	if (controlButtons & IN_TURNRIGHT)
+		m_pedSteerAngle.y -= 120.0f * fDt;
+
+	if (controlButtons & IN_BURNOUT)
+		m_pedState = 1;
+	else if (controlButtons & IN_EXTENDTURN)
+		m_pedState = 2;
+	else if (controlButtons & IN_HANDBRAKE)
+		m_pedState = 0;
+
+	m_vecOrigin = m_physObj->GetBody()->GetPosition();
 
 	AdvanceFrame(fDt);
 	DebugRender(m_worldMatrix);
@@ -347,50 +351,39 @@ void CPedestrian::UpdateTransform()
 	Vector3D offset(vec3_up*PEDESTRIAN_PHYSICS_RADIUS);
 
 	// refresh it's matrix
-	m_worldMatrix = translate(m_vecOrigin - offset)*rotateXYZ4(DEG2RAD(m_vecAngles.x), DEG2RAD(m_vecAngles.y), DEG2RAD(m_vecAngles.z));
+	m_worldMatrix = translate(m_vecOrigin - offset)*rotateY4(DEG2RAD(m_pedSteerAngle.y));
 }
 
 void CPedestrian::SetOrigin(const Vector3D& origin)
 {
-	if (m_physBody)
-		m_physBody->SetPosition(origin);
+	if (m_physObj)
+		m_physObj->GetBody()->SetPosition(origin);
 
 	m_vecOrigin = origin;
 }
 
 void CPedestrian::SetAngles(const Vector3D& angles)
 {
-	if (m_physBody)
-		m_physBody->SetOrientation(Quaternion(DEG2RAD(angles.x), DEG2RAD(angles.y), DEG2RAD(angles.z)));
-
-	m_vecAngles = angles;
+	m_pedSteerAngle = angles;
 }
 
 void CPedestrian::SetVelocity(const Vector3D& vel)
 {
-	if (m_physBody)
-		m_physBody->SetLinearVelocity(vel);
-}
-
-const Vector3D& CPedestrian::GetOrigin()
-{
-	if(m_physBody)
-		m_vecOrigin = m_physBody->GetPosition();
-
-	return m_vecOrigin;
-}
-
-const Vector3D& CPedestrian::GetAngles()
-{
-	//m_vecAngles = eulers(m_physBody->GetOrientation());
-	//m_vecAngles = VRAD2DEG(m_vecAngles);
-
-	return m_vecAngles;
+	if (m_physObj)
+		m_physObj->GetBody()->SetLinearVelocity(vel);
 }
 
 const Vector3D& CPedestrian::GetVelocity() const
 {
-	return m_physBody->GetLinearVelocity();
+	if (m_physObj)
+		return m_physObj->GetBody()->GetLinearVelocity();
+
+	return vec3_zero;
+}
+
+const Vector3D& CPedestrian::GetAngles() const
+{
+	return m_pedSteerAngle;
 }
 
 void CPedestrian::HandleAnimatingEvent(AnimationEvent nEvent, char* options)
