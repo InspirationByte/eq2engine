@@ -586,12 +586,12 @@ bool CImage::LoadJPEGfromHandle(IFile *fileHandle)
 	cinfo.err = jpeg_std_error(&jerr);
 	jpeg_create_decompress(&cinfo);
 
-	IFile *file = fileHandle;
+	long fileSize = fileHandle->GetSize();
+	ubyte* jpegFileBuff = (ubyte*)malloc(fileSize);
+	fileHandle->Read(jpegFileBuff, 1, fileSize);
+	g_fileSystem->Close(fileHandle);
 
-	// HACK: the IFile has FILE pointer at beginning. JPEGs can't be open from packages.
-	FILE* pFile = *(FILE**)(void*)fileHandle;
-
-	jpeg_stdio_src(&cinfo, pFile);
+	jpeg_mem_src(&cinfo, (ubyte*)jpegFileBuff, fileSize);
 	jpeg_read_header(&cinfo, TRUE);
 	jpeg_start_decompress(&cinfo);
 
@@ -631,7 +631,7 @@ bool CImage::LoadJPEGfromHandle(IFile *fileHandle)
 	jpeg_finish_decompress(&cinfo);
 	jpeg_destroy_decompress(&cinfo);
 
-	g_fileSystem->Close(file);
+	free(jpegFileBuff);
 
 	return true;
 }
