@@ -61,8 +61,9 @@ public:
 
 	void							PreloadRegion(int x, int y);
 
-	void							QueryNearestRegions(const Vector3D& pos, bool waitLoad = false);
-	void							QueryNearestRegions(const IVector2D& point, bool waitLoad = false);
+	// queries regions for loading. Returns the center region at exact point
+	CLevelRegion*					QueryNearestRegions(const Vector3D& pos, bool waitLoad = false);
+	CLevelRegion*					QueryNearestRegions(const IVector2D& point, bool waitLoad = false);
 
 	//-------------------------------------------------------------------------
 	// rendering
@@ -72,6 +73,8 @@ public:
 
 	int								UpdateRegions( RegionLoadUnloadCallbackFunc func = NULL);
 	void							RespawnAllObjects();
+	void							DropRegionObjectRef(regionObject_t* ref);
+
 	void							UpdateDebugMaps();
 
 	//-------------------------------------------------------------------------

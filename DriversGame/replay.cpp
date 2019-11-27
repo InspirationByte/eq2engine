@@ -1231,10 +1231,7 @@ void CReplayData::RaiseReplayEvent(const replayEvent_t& evt)
 
 			// temp
 			if(g_pGameSession->GetPlayerCar() == NULL)
-			{
 				g_pGameSession->SetPlayerCar(rep.obj_car);
-				g_pGameWorld->m_level.QueryNearestRegions(rep.car_initial_pos, true);
-			}
 
 			if( rep.scriptObjectId != SCRIPT_ID_NOTSCRIPTED )
 			{

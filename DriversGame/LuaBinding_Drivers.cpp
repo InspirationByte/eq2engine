@@ -296,6 +296,9 @@ bool LuaBinding_InitDriverSyndicateBindings(lua_State* state)
 	OOLUA::register_class<CDrvSynHUDManager>(state);
 	OOLUA::register_class<CCameraAnimator>(state);
 
+	// init game hud and session in Lua
+	OOLUA::set_global(GetLuaState(), "gameHUD", g_pGameHUD);
+
 	OOLUA::set_global(state, "SetMissionScript", L_SetMissionScript);
 	OOLUA::set_global(state, "StartReplay", L_StartReplay);
 	

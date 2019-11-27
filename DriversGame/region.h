@@ -164,6 +164,7 @@ struct regionObject_t
 		game_object = NULL;
 		def = NULL;
 		physObject = NULL;
+		regionIdx = -1;
 #ifdef EDITOR
 		hide = false;
 #endif // EDITOR
@@ -172,7 +173,6 @@ struct regionObject_t
 	~regionObject_t();
 
 	void RemoveGameObject();
-
 	void CalcBoundingBox();
 
 	CLevObjectDef*			def;
@@ -190,6 +190,8 @@ struct regionObject_t
 	Vector3D		rotation;
 
 	EqString		name;
+
+	int				regionIdx;
 
 #ifdef EDITOR
 	bool			hide;

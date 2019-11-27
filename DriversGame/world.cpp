@@ -140,6 +140,8 @@ CGameWorld::CGameWorld()
 	m_skyColor = NULL;
 	m_skyModel = NULL;
 
+	m_lastQueriedRegion = NULL;
+
 	m_sceneinfo.m_fZNear = 0.25f;
 #ifdef EDITOR
 	m_sceneinfo.m_fZFar = 8000.0f;
@@ -888,6 +890,30 @@ bool CGameWorld::IsValidObject(CGameObject* pObject) const
 	return false;
 }
 
+void CGameWorld::RemoveAllObjects()
+{
+	m_renderingObjects.clear();
+
+	for (int i = 0; i < m_gameObjects.numElem(); i++)
+	{
+		CGameObject* obj = m_gameObjects[i];
+
+		if (m_gameObjects.fastRemove(obj))
+		{
+			// don't do OnObjectRemovedEvent
+			obj->OnRemove();
+
+			if (obj->m_state != GO_STATE_REMOVED)
+				ASSERTMSG(false, "PROGRAMMER ERROR - your object doesn't fully called OnRemove (not GO_STATE_REMOVED)");
+
+			obj->Ref_Drop();
+			i--;
+		}
+	}
+
+	m_gameObjects.clear();
+}
+
 void CGameWorld::Cleanup( bool unloadLevel )
 {
 #ifndef NO_LUA
@@ -903,25 +929,7 @@ void CGameWorld::Cleanup( bool unloadLevel )
 	// wait until it load all before unload
 	m_level.WaitForThread();
 
-	m_renderingObjects.clear();
-
-	for(int i = 0; i < m_gameObjects.numElem(); i++)
-	{
-		CGameObject* obj = m_gameObjects[i];
-
-		if(m_gameObjects.fastRemove(obj))
-		{
-			// don't do OnObjectRemovedEvent
-			obj->OnRemove();
-
-			if (obj->m_state != GO_STATE_REMOVED)
-				ASSERTMSG(false, "PROGRAMMER ERROR - your object doesn't fully called OnRemove (not GO_STATE_REMOVED)");
-
-			obj->Ref_Drop();
-			i--;
-		}
-	}
-	m_gameObjects.clear();
+	RemoveAllObjects();
 
 	// cvar stuff
 	g_envList.clear();
@@ -1122,6 +1130,73 @@ void CGameWorld::SimulateObjects( float fDt )
 	}
 }
 
+void CGameWorld::UpdateEnvironmentTransition(float fDt)
+{
+	if (!m_envTransitions.numElem())
+		return;
+
+	// total percentage between first and last transition environments
+	float timePercentage = m_envTransitionTime / m_envTransitionTotalTime;
+
+	if (m_envTransitionTime >= m_envTransitionTotalTime)
+	{
+		m_envTransitionTime = m_envTransitionTotalTime;
+		timePercentage = 1.0f;
+	}
+	else
+	{
+		m_envTransitionTime += fDt;
+
+		// every 15 seconds we should regenerate cubemaps
+		m_envMapRegenTime -= fDt;
+		if (m_envMapRegenTime <= 0.0f)
+		{
+			m_envMapsDirty = true;
+			m_envMapRegenTime = 15.0f;
+		}
+	}
+
+	float percentageScaled = timePercentage * (m_envTransitions.numElem() - 1);
+
+	int weatherIdx = ceil(percentageScaled);
+
+	float transitionPercent = percentageScaled - (weatherIdx - 1);
+
+	if (m_envTransitionTime <= 0.1f)
+	{
+		transitionPercent = 0.0f;
+		weatherIdx = 1;
+	}
+
+	if (weatherIdx == 0)
+		weatherIdx = 1;
+
+	if (weatherIdx >= m_envTransitions.numElem())
+		weatherIdx = m_envTransitions.numElem() - 1;
+
+	// interpolate
+	InterpolateEnv(m_envConfig, m_envTransitions[weatherIdx - 1], m_envTransitions[weatherIdx], transitionPercent);
+
+	float fromWetness = m_envTransitions[weatherIdx - 1].rainDensity;
+	float toWetness = m_envTransitions[weatherIdx].rainDensity;
+
+	// prepare
+	m_skyTexture1->AssignTexture(m_envTransitions[weatherIdx - 1].skyTexture);
+	m_skyTexture2->AssignTexture(m_envTransitions[weatherIdx].skyTexture);
+	m_skyInterp->SetFloat(transitionPercent);
+
+	m_envWetness = lerp(fromWetness, toWetness, transitionPercent) * 0.01f;
+	m_envWetness = min(m_envWetness, 1.0f);
+
+	// adjust sun dir
+	AngleVectors(m_envConfig.sunAngles, &m_info.sunDir);
+
+	debugoverlay->Text(ColorRGBA(1, 1, 0, 1), "------ weather transition -------");
+	debugoverlay->Text(ColorRGBA(1, 1, 0, 1), "     time: %g / %g sec", m_envTransitionTime, m_envTransitionTotalTime);
+	debugoverlay->Text(ColorRGBA(1, 1, 0, 1), "     env: %d / %d", weatherIdx, m_envTransitions.numElem() - 1);
+	debugoverlay->Text(ColorRGBA(1, 1, 0, 1), "     trans: %g", transitionPercent);
+}
+
 void CGameWorld::UpdateWorld(float fDt)
 {
 	PROFILE_FUNC();
@@ -1134,69 +1209,7 @@ void CGameWorld::UpdateWorld(float fDt)
 
 	if( fDt > 0 )
 	{
-		if(m_envTransitions.numElem() > 0)
-		{
-			// total percentage between first and last transition environments
-			float timePercentage = m_envTransitionTime / m_envTransitionTotalTime;
-			
-			if(m_envTransitionTime >= m_envTransitionTotalTime)
-			{
-				m_envTransitionTime = m_envTransitionTotalTime;
-				timePercentage = 1.0f;
-			}
-			else
-			{
-				m_envTransitionTime += fDt;
-
-				// every 15 seconds we should regenerate cubemaps
-				m_envMapRegenTime -= fDt;
-				if(m_envMapRegenTime <= 0.0f)
-				{
-					m_envMapsDirty = true;
-					m_envMapRegenTime = 15.0f;
-				}
-			}
-
-			float percentageScaled = timePercentage*(m_envTransitions.numElem()-1);
-
-			int weatherIdx = ceil(percentageScaled);
-
-			float transitionPercent = percentageScaled - (weatherIdx-1);
-
-			if(m_envTransitionTime <= 0.1f)
-			{
-				transitionPercent = 0.0f;
-				weatherIdx = 1;
-			}
-
-			if(weatherIdx == 0)
-				weatherIdx = 1;
-
-			if(weatherIdx >= m_envTransitions.numElem())
-				weatherIdx = m_envTransitions.numElem()-1;
-
-			// interpolate
-			InterpolateEnv(m_envConfig, m_envTransitions[weatherIdx-1], m_envTransitions[weatherIdx], transitionPercent);
-
-			float fromWetness = m_envTransitions[weatherIdx-1].rainDensity;
-			float toWetness = m_envTransitions[weatherIdx].rainDensity;
-
-			// prepare
-			m_skyTexture1->AssignTexture(m_envTransitions[weatherIdx-1].skyTexture);
-			m_skyTexture2->AssignTexture(m_envTransitions[weatherIdx].skyTexture);
-			m_skyInterp->SetFloat(transitionPercent);
-
-			m_envWetness = lerp(fromWetness, toWetness, transitionPercent) * 0.01f;
-			m_envWetness = min(m_envWetness, 1.0f);
-
-			// adjust sun dir
-			AngleVectors(m_envConfig.sunAngles, &m_info.sunDir);
-
-			debugoverlay->Text(ColorRGBA(1,1,0,1), "------ weather transition -------");
-			debugoverlay->Text(ColorRGBA(1,1,0,1), "     time: %g / %g sec", m_envTransitionTime, m_envTransitionTotalTime);
-			debugoverlay->Text(ColorRGBA(1,1,0,1), "     env: %d / %d", weatherIdx, m_envTransitions.numElem()-1);
-			debugoverlay->Text(ColorRGBA(1,1,0,1), "     trans: %g", transitionPercent);
-		}
+		UpdateEnvironmentTransition(fDt);
 
 		if(	m_envConfig.thunder )
 		{
@@ -2296,7 +2309,12 @@ CBillboardList* CGameWorld::FindBillboardList(const char* name) const
 
 void CGameWorld::QueryNearestRegions(const Vector3D& pos, bool waitLoad )
 {
-	m_level.QueryNearestRegions(pos, waitLoad);
+	m_lastQueriedRegion = m_level.QueryNearestRegions(pos, waitLoad);
+}
+
+bool CGameWorld::IsQueriedRegionLoaded() const
+{
+	return (m_lastQueriedRegion && m_lastQueriedRegion->m_queryTimes.GetValue() > 0) ? m_lastQueriedRegion->m_isLoaded : true;
 }
 
 bool CGameWorld::LoadLevel()
@@ -2366,6 +2384,8 @@ bool CGameWorld::LoadLevel()
 		EqLua::LuaCallUserdataCallback(g_pGameWorld, "OnLevelLoad", tab);
 	}
 #endif // NO_LUA
+
+	m_lastQueriedRegion = nullptr;
 
 	return result;
 }

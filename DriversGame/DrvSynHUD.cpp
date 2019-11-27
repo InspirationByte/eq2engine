@@ -168,14 +168,8 @@ void CDrvSynHUDManager::SetHudScheme(const char* name)
 	m_hudTimer = equi::DynamicCast<equi::DrvSynTimerElement>(timerControl);
 }
 
-void CDrvSynHUDManager::Cleanup()
+void CDrvSynHUDManager::InvalidateObjects()
 {
-	g_pShaderAPI->FreeTexture( m_mapTexture );
-	m_mapTexture = nullptr;
-
-	g_pShaderAPI->FreeTexture(m_mapRenderTarget);
-	m_mapRenderTarget = nullptr;
-
 	/*
 	for(hudDisplayObjIterator_t iterator = m_displayObjects.begin(); iterator != m_displayObjects.end(); iterator++)
 	{
@@ -186,6 +180,17 @@ void CDrvSynHUDManager::Cleanup()
 
 	m_displayObjects.clear();
 	SetDisplayMainVehicle(nullptr);
+}
+
+void CDrvSynHUDManager::Cleanup()
+{
+	g_pShaderAPI->FreeTexture( m_mapTexture );
+	m_mapTexture = nullptr;
+
+	g_pShaderAPI->FreeTexture(m_mapRenderTarget);
+	m_mapRenderTarget = nullptr;
+
+	InvalidateObjects();
 
 	delete m_hudLayout;
 	m_hudLayout = nullptr;

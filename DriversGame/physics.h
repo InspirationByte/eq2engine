@@ -35,6 +35,8 @@ public:
 	void			PostSimulate( float fDt );
 	void			OnCollide(CollisionPairData_t& pair);
 
+	void			UpdateOrigin();
+
 	CEqRigidBody*	GetBody() const { return (CEqRigidBody*)m_object; }
 
 	CGameObject*	m_owner;
@@ -55,6 +57,8 @@ public:
 #endif // EDITOR
 
 	void						Simulate( float fDt, int numIterations, FNSIMULATECALLBACK preIntegrateFn = NULL );
+	void						ForceUpdateObjects();
+
 
 	// object add/remove functions
 	void						AddObject( CPhysicsHFObject* pPhysObject );

@@ -1569,29 +1569,31 @@ bool CGameLevel::Road_FindBestCellForTrafficLight( IVector2D& out, const Vector3
 
 //------------------------------------------------------------------------------------------------------------------------------------
 
-void CGameLevel::QueryNearestRegions( const Vector3D& pos, bool waitLoad )
+CLevelRegion* CGameLevel::QueryNearestRegions( const Vector3D& pos, bool waitLoad )
 {
 	IVector2D posXY;
 	if(PositionToRegionOffset(pos,posXY))
 	{
-		QueryNearestRegions(posXY, waitLoad);
+		return QueryNearestRegions(posXY, waitLoad);
 	}
+
+	return nullptr;
 }
 
-void CGameLevel::QueryNearestRegions( const IVector2D& point, bool waitLoad )
+CLevelRegion* CGameLevel::QueryNearestRegions( const IVector2D& point, bool waitLoad )
 {
 #ifdef EDITOR
 	CEditorLevelRegion* region = (CEditorLevelRegion*)GetRegionAt(point);
 
 	if (!region)
-		return;
+		return nullptr;
 
 	int numNeedToLoad = !region->m_physicsPreview && (m_regionOffsets[point.y*m_wide + point.x] != -1);
 #else
 	CLevelRegion* region = GetRegionAt(point);
 
 	if (!region)
-		return;
+		return nullptr;
 
 	{
 		CScopedMutex m(m_mutex);
@@ -1646,6 +1648,8 @@ void CGameLevel::QueryNearestRegions( const IVector2D& point, bool waitLoad )
 		if( waitLoad )
 			WaitForThread();
 	}
+
+	return region;
 }
 
 void CGameLevel::CollectVisibleOccluders(occludingFrustum_t& frustumOccluders, const Vector3D& cameraPosition)
@@ -1960,7 +1964,15 @@ void CGameLevel::RespawnAllObjects()
 			m_regions[idx].RespawnObjects();
 		}
 	}
+}
 
+void CGameLevel::DropRegionObjectRef(regionObject_t* ref)
+{
+	CScopedMutex m(g_pGameWorld->m_level.m_mutex);
+
+	// TODO: validate
+	if (ref && ref->regionIdx)
+		ref->game_object = NULL;
 }
 
 extern ConVar nav_debug_map;

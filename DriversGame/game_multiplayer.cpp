@@ -309,7 +309,7 @@ void CNetGameSession::SetLocalPlayer(CNetPlayer* player)
 		ASSERT(m_localNetPlayer->m_ownCar);
 
 		SetPlayerCar( m_localNetPlayer->m_ownCar );
-		g_pGameWorld->m_level.QueryNearestRegions( m_localNetPlayer->m_ownCar->GetOrigin(), true);
+		g_pGameWorld->QueryNearestRegions( m_localNetPlayer->m_ownCar->GetOrigin(), true);
 	}
 }
 
@@ -652,7 +652,7 @@ void CNetGameSession::Update(float fDt)
 
 		if(playerCar)
 		{
-			g_pGameWorld->m_level.QueryNearestRegions( playerCar->GetOrigin(), false);
+			g_pGameWorld->QueryNearestRegions( playerCar->GetOrigin(), false);
 
 			playerCar->SetControlButtons( m_localControls.buttons );
 
@@ -660,7 +660,7 @@ void CNetGameSession::Update(float fDt)
 		}
 		else
 		{
-			g_pGameWorld->m_level.QueryNearestRegions( g_pGameWorld->m_view.GetOrigin(), false);
+			g_pGameWorld->QueryNearestRegions( g_pGameWorld->m_view.GetOrigin(), false);
 		}
 	}
 
@@ -763,7 +763,7 @@ void CNetGameSession::Update(float fDt)
 			if(	IsServer() &&
 				m_netPlayers[i]->GetCar())
 			{
-				g_pGameWorld->m_level.QueryNearestRegions( m_netPlayers[i]->GetCar()->GetOrigin() );
+				g_pGameWorld->QueryNearestRegions( m_netPlayers[i]->GetCar()->GetOrigin() );
 			}
 		}
 	}

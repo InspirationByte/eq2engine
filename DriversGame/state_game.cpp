@@ -85,34 +85,7 @@ DECLARE_CMD(fastseek, "Seeks to the replay frame. (Visual mistakes are possible)
 	if(CMD_ARGC > 0)
 		replayTo = atoi(CMD_ARGV(0).c_str());
 
-	// restart if if we want earlier ticks
-	if (replayTo < g_replayData->m_tick)
-	{
-		Game_QuickRestart(true);
-
-		// load manually, not using loading screen
-		g_State_Game->LoadGame();
-	}
- 
-	int remainingFrames = replayTo - g_replayData->m_tick;
-
-	const float frameRate = 1.0f / 60.0f; // TODO: use g_replayData->m_demoFrameRate
-
-	while(remainingFrames > 0)
-	{
-		g_replayData->ForceUpdateReplayObjects();
-
-		Game_OnPhysicsUpdate(frameRate, 0);
-
-		remainingFrames--;
-	}
-
-	if(replayTo > 0)
-		g_pCameraAnimator->Reset();
-
-	// wait for any pending regions
-	g_pGameWorld->m_level.WaitForThread();
-
+	g_State_Game->ReplayFastSeek(replayTo);
 }
 
 void Game_InstantReplay(int replayTo)
@@ -401,9 +374,6 @@ void CState_Game::InitializeSession()
 	if (g_replayData->m_state != REPL_INIT_PLAYBACK)
 		g_replayData->Clear();
 
-	// init game hud and session in Lua
-	OOLUA::set_global(GetLuaState(), "gameHUD", g_pGameHUD);
-
 	g_pGameHUD->Init();
 	g_pCameraAnimator->Reset();
 	g_pGameSession->Init();
@@ -489,6 +459,68 @@ void CState_Game::QuickRestart(bool intoReplay)
 
 	// loader to the phase 5 (world loading)
 	m_isLoading = 5;
+}
+
+void CState_Game::ReplayFastSeek(int tick)
+{
+	if (g_replayData->m_state != REPL_PLAYING)
+		return;
+
+	if (tick > g_replayData->m_numFrames)
+		return;
+
+	effectrenderer->RemoveAllEffects();
+
+	if (tick < g_replayData->m_tick)
+	{
+		StopAllSounds();
+
+		g_pGameHUD->InvalidateObjects();
+		g_pGameWorld->RemoveAllObjects();
+		g_pGameWorld->InitEnvironment();
+
+		// now quickly reinit session
+		g_pGameSession->Shutdown();
+
+		// stop replay and reinit
+		g_replayData->Stop();
+		g_replayData->m_state = REPL_INIT_PLAYBACK;
+
+		g_pGameSession->Init();
+	}
+
+	// reset buttons
+	ZeroInputControls();
+
+	const int framesToDo = tick - g_replayData->m_tick;
+	int remainingFrames = framesToDo;
+
+	const float frameRate = 1.0f / 60.0f; // TODO: use g_replayData->m_demoFrameRate
+
+	while (remainingFrames > 0)
+	{
+		g_replayData->ForceUpdateReplayObjects();
+
+		int phIterations = g_pGameSession->GetPhysicsIterations();
+
+		for(int i = 0; i < phIterations; i++)
+			Game_OnPhysicsUpdate(frameRate, i);
+
+		remainingFrames -= phIterations;
+
+		//g_pGameSession->UpdateMission(frameRate);
+
+		g_pGameWorld->UpdateEnvironmentTransition(frameRate);
+		g_pGameWorld->m_frameTime = frameRate;
+		g_pGameWorld->m_curTime += frameRate;
+	}
+
+	g_pCameraAnimator->CenterView();
+
+	g_pPhysics->ForceUpdateObjects();
+	g_pGameWorld->m_level.RespawnAllObjects();
+
+	OnLoadingDone();
 }
 
 void CState_Game::OnEnterSelection( bool isFinal )
@@ -818,11 +850,10 @@ void CState_Game::OnLoadingDone()
 		m_gameMenuName = "Replay";
 
 	m_isGameRunning = true;
+	g_pGameSession->OnLoadingDone();
 
 	g_sounds->SetPaused(false);
 	g_sounds->Set2DChannelsVolume(CHAN_STREAM, 1.0f);
-
-	g_pGameSession->OnLoadingDone();
 
 	// pause at start if director is active
 	if (Director_IsActive())
@@ -886,6 +917,14 @@ bool CState_Game::Update( float fDt )
 	if( !UpdatePauseState() )
 		fGameFrameDt = 0.0f;
 
+	bool queryRegionLoaded = g_pGameWorld->IsQueriedRegionLoaded();
+
+	// pause game if region at view is still loading
+	if (!queryRegionLoaded)
+	{
+		fGameFrameDt = 0.0f;
+	}
+
 	// reset buttons
 	if(m_showMenu)
 		ZeroInputControls();
@@ -907,7 +946,25 @@ bool CState_Game::Update( float fDt )
 		fontParam.textColor = ColorRGBA(fabs(sinf(g_pHost->GetCurTime()*2.0f)),0.0f,0.0f,1.0f);
 		fontParam.scale = 30.0f;
 
-		font->RenderText("Demo", Vector2D(screenSize.x/2,screenSize.y - 100), fontParam);
+		const wchar_t* demoStr = LocalizedString("#DEMO");
+
+		font->RenderText(demoStr, Vector2D(screenSize.x/2,screenSize.y - 100), fontParam);
+	}
+
+	if (!queryRegionLoaded)
+	{
+		materials->Setup2D(screenSize.x, screenSize.y);
+
+		IEqFont* font = g_fontCache->GetFont("Roboto Condensed", 30, TEXT_STYLE_BOLD | TEXT_STYLE_ITALIC);
+
+		eqFontStyleParam_t fontParam;
+		fontParam.styleFlag |= TEXT_STYLE_SHADOW;
+		fontParam.align = TEXT_ALIGN_HCENTER;
+		fontParam.scale = 30.0f;
+
+		const wchar_t* loadingStr = LocalizedString("#PLEASE_WAIT");
+
+		font->RenderText(loadingStr, Vector2D(screenSize.x / 2, screenSize.y / 2), fontParam);
 	}
 
 	DrawMenu(fDt);

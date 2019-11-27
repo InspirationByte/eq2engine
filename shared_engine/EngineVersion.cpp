@@ -56,7 +56,8 @@ protected:
 		if (((y % 4) == 0) && m > 1)
 			m_nBuildNumber += 1;
 
-		m_nBuildNumber -= 39505;	// 39505 is "Feb 28 2009"
+		m_nBuildNumber -= 41734;	// "Apr 07 2014"	- Drivers start
+		//m_nBuildNumber -= 39505;	// "Feb 28 2009"	- Engine start
 	}
 
 	int		m_nBuildNumber;

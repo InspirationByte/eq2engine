@@ -66,10 +66,10 @@ void CSingleGameSession::Init()
 		bool headLightsEnabled = GetPlayerCar()->IsEnabled() && (g_pGameWorld->m_envConfig.lightsType & WLIGHTS_CARS);
 		GetPlayerCar()->SetLight(headLightsEnabled, headLightsEnabled);
 
-		g_pGameWorld->m_level.QueryNearestRegions(GetPlayerCar()->GetOrigin(), false);
+		g_pGameWorld->QueryNearestRegions(GetPlayerCar()->GetOrigin(), false);
 	}
 	else if (GetPlayerPedestrian())
-		g_pGameWorld->m_level.QueryNearestRegions(GetPlayerPedestrian()->GetOrigin(), false);
+		g_pGameWorld->QueryNearestRegions(GetPlayerPedestrian()->GetOrigin(), false);
 }
 
 void CSingleGameSession::Shutdown()
@@ -130,7 +130,7 @@ void CSingleGameSession::UpdateAsPlayerPedestrian(const playerControl_t& control
 	if (!g_pGameWorld->IsValidObject(ped))
 		return;
 
-	g_pGameWorld->m_level.QueryNearestRegions(ped->GetOrigin(), false);
+	g_pGameWorld->QueryNearestRegions(ped->GetOrigin(), false);
 
 	ped->SetControlButtons(control.buttons);
 

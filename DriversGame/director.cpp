@@ -68,6 +68,8 @@ static const ColorRGB s_cameraColors[] = {
 };
 
 bool g_director_ShiftKey = false;
+bool g_director_CtrlKey = false;
+
 const float DIRECTOR_FASTFORWARD_TIMESCALE = 4.0f;
 
 extern ConVar sys_timescale;
@@ -244,6 +246,10 @@ void Director_KeyPress(int key, bool down)
 	{
 		g_director_ShiftKey = down;
 	}
+	else if (key == KEY_CTRL)
+	{
+		g_director_CtrlKey = down;
+	}
 	else if(key == KEY_BACKSPACE)
 	{
 		sys_timescale.SetFloat( down ? DIRECTOR_FASTFORWARD_TIMESCALE : 1.0f );
@@ -264,7 +270,7 @@ void Director_KeyPress(int key, bool down)
 		{
 			g_nDirectorCameraType = key - KEY_1;
 		}
-		else if (currentCamera)
+		else
 		{
 			replayCamera_t* prevCamera = g_replayData->m_cameras.inRange(replayCamera - 1) ? &g_replayData->m_cameras[replayCamera - 1] : NULL;
 			replayCamera_t* nextCamera = g_replayData->m_cameras.inRange(replayCamera + 1) ? &g_replayData->m_cameras[replayCamera + 1] : NULL;
@@ -275,7 +281,12 @@ void Director_KeyPress(int key, bool down)
 
 			if (key == KEY_LEFT)
 			{
-				if (currentCamera)
+				if (g_director_CtrlKey)
+				{
+					g_State_Game->ReplayFastSeek( g_replayData->m_tick - 100);
+					return;
+				}
+				else if (currentCamera)
 				{
 					currentCamera->startTick -= g_director_ShiftKey ? 10 : 1;
 
@@ -286,7 +297,12 @@ void Director_KeyPress(int key, bool down)
 			}
 			else if (key == KEY_RIGHT)
 			{
-				if (currentCamera)
+				if (g_director_CtrlKey)
+				{
+					g_State_Game->ReplayFastSeek(g_replayData->m_tick + 100);
+					return;
+				}
+				else if (currentCamera)
 				{
 					currentCamera->startTick += g_director_ShiftKey ? 10 : 1;
 

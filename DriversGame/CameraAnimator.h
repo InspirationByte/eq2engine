@@ -57,6 +57,7 @@ public:
 	const Vector3D&			GetAngles() const;
 	float					GetFOV() const;
 
+	void					CenterView();
 	void					Reset();
 
 	void					ViewShake(float fMagnutude, float fTime);

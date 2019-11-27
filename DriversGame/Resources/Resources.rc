@@ -62,11 +62,11 @@ BEGIN
     BEGIN
         BLOCK "040904b0"
         BEGIN
-            VALUE "FileDescription", "Driver Syndicate"
+            VALUE "FileDescription", "The Driver Syndicate"
             VALUE "FileVersion", "1.0.0.0"
-            VALUE "InternalName", "Driver Syndicate"
-            VALUE "LegalCopyright", "Copyright © 2014 Inspiration Byte Software"
-            VALUE "OriginalFilename", "driversyndicate.exe"
+            VALUE "InternalName", "The Driver Syndicate"
+            VALUE "LegalCopyright", "Copyright © 2019 Inspiration Byte Software"
+            VALUE "OriginalFilename", "drvsyn.exe"
             VALUE "ProductVersion", "1.0.0.0"
         END
     END

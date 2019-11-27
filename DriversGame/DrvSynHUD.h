@@ -54,6 +54,8 @@ public:
 	void						Init();
 	void						Cleanup();
 
+	void						InvalidateObjects();
+
 	void						SetHudScheme(const char* name);
 
 	// render the screen with maps and shit

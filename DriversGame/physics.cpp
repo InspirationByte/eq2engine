@@ -50,9 +50,7 @@ void CPhysicsHFObject::PreSimulate( float fDt )
 
 	if (m_owner->m_state == GO_STATE_IDLE)
 	{
-		Vector3D angles = eulers(rigidBody->GetOrientation());
-		m_owner->m_vecAngles = VRAD2DEG(angles);
-		m_owner->m_vecOrigin = rigidBody->GetPosition();
+		UpdateOrigin();
 
 		float lastdt = rigidBody->GetLastFrameTime();
 		m_owner->OnPrePhysicsFrame(lastdt);
@@ -70,13 +68,20 @@ void CPhysicsHFObject::PostSimulate( float fDt )
 
 	if (m_owner->m_state == GO_STATE_IDLE)
 	{
-		Vector3D angles = eulers(rigidBody->GetOrientation());
-		m_owner->m_vecAngles = VRAD2DEG(angles);
-		m_owner->m_vecOrigin = rigidBody->GetPosition();
+		UpdateOrigin();
 
 		//float lastdt = m_object->GetLastFrameTime();
 		m_owner->OnPhysicsFrame(fDt);
 	}
+}
+
+void CPhysicsHFObject::UpdateOrigin()
+{
+	CEqRigidBody* rigidBody = (CEqRigidBody*)m_object;
+
+	Vector3D angles = eulers(rigidBody->GetOrientation());
+	m_owner->m_vecAngles = VRAD2DEG(angles);
+	m_owner->m_vecOrigin = rigidBody->GetPosition();
 }
 
 void CPhysicsHFObject::OnCollide(CollisionPairData_t& pair)
@@ -173,6 +178,15 @@ void CPhysicsEngine::Simulate( float fDt, int numIterations, FNSIMULATECALLBACK 
 	// debug rendering
 	if(ph_debugrender.GetBool())
 		debugoverlay->Draw3DFunc( PhysDebugRender, this );
+}
+
+void CPhysicsEngine::ForceUpdateObjects()
+{
+	for (int i = 0; i < m_hfBodies.numElem(); i++)
+	{
+		CPhysicsHFObject* object = m_hfBodies[i];
+		object->UpdateOrigin();
+	}
 }
 
 bool CPhysicsEngine::TestLine(const FVector3D& start, const FVector3D& end, CollisionData_t& coll, int rayMask, eqPhysCollisionFilter* filter)

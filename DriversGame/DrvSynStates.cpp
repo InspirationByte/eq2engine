@@ -20,8 +20,13 @@
 #include "physics.h"
 #include "world.h"
 
+#ifdef _RELEASE
+#define GAME_WINDOW_TITLE	"The Driver Syndicate"
+#else
+#include "EngineVersion.h"
+#define GAME_WINDOW_TITLE	varargs("The Driver Syndicate - %s Engine %s build %d (%s)", ENGINE_NAME, ENGINE_VERSION, GetEngineBuildNumber(), __DATE__)
+#endif
 
-#define GAME_WINDOW_TITLE	"The Driver Syndicate" //varargs("Driver Syndicate Alpha [%s] build %d", __DATE__, GetEngineBuildNumber())
 
 CBaseStateHandler* g_states[GAME_STATE_COUNT] = { nullptr };
 

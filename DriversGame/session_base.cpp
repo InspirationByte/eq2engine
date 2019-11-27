@@ -321,7 +321,7 @@ void CGameSessionBase::UpdateAsPlayerCar(const playerControl_t& control, CCar* c
 	if(!g_pGameWorld->IsValidObject(car))
 		return;
 
-	g_pGameWorld->m_level.QueryNearestRegions(car->GetOrigin(), false);
+	g_pGameWorld->QueryNearestRegions(car->GetOrigin(), false);
 
 	if (!g_replayData->IsCarPlaying(car))
 	{
@@ -372,7 +372,7 @@ void CGameSessionBase::Update(float fDt)
 	UpdatePlayerControls();
 
 	if (GetLeadCar())
-		g_pGameWorld->m_level.QueryNearestRegions(GetLeadCar()->GetOrigin(), false);
+		g_pGameWorld->QueryNearestRegions(GetLeadCar()->GetOrigin(), false);
 
 	float phys_begin = MEASURE_TIME_BEGIN();
 	g_pPhysics->Simulate(fDt, GetPhysicsIterations(), Game_OnPhysicsUpdate);
@@ -384,19 +384,22 @@ void CGameSessionBase::Update(float fDt)
 	// updates world
 	g_pGameWorld->UpdateWorld(fDt);
 
+	UpdateMission(fDt);
+}
+
+void CGameSessionBase::UpdateMission(float fDt)
+{
+	OOLUA::Script& state = GetLuaState();
+	EqLua::LuaStackGuard g(state);
+
+	// bind function and call, table pushed automatically
+	m_lua_misman_Update.Push();
+
+	OOLUA::push(state, fDt);
+
+	if (!m_lua_misman_Update.Call(1, 0))
 	{
-		OOLUA::Script& state = GetLuaState();
-		EqLua::LuaStackGuard g(state);
-
-		// bind function and call, table pushed automatically
-		m_lua_misman_Update.Push();
-
-		OOLUA::push(state, fDt);
-
-		if (!m_lua_misman_Update.Call(1, 0))
-		{
-			Msg("CGameSessionBase::Init, :CMissionManager_InitMission() error:\n %s\n", OOLUA::get_last_error(state).c_str());
-		}
+		Msg("CGameSessionBase::Update, :CMissionManager_Update() error:\n %s\n", OOLUA::get_last_error(state).c_str());
 	}
 }
 

@@ -69,7 +69,7 @@ DECLARE_CMD(screenshot, "Save screenshot", 0)
 
 ConVar r_fullscreen("r_fullscreen", "0", "Fullscreen" ,CV_ARCHIVE);
 
-#define DEFAULT_WINDOW_TITLE "Game window"
+#define DEFAULT_WINDOW_TITLE "Initializing..."
 
 EQWNDHANDLE Sys_CreateWindow()
 {

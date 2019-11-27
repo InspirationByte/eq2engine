@@ -70,6 +70,7 @@ public:
 	bool		SetMissionScript( const char* name );
 	const char*	GetMissionScriptName() const;
 
+	void		ReplayFastSeek(int tick);
 	void		QuickRestart(bool replay);
 
 	bool		IsGameRunning() {return m_isGameRunning;}

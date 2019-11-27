@@ -22,6 +22,8 @@ ConVar nav_debug_map("nav_debug_map", "0", nullptr, CV_CHEAT);
 
 regionObject_t::~regionObject_t()
 {
+	regionIdx = -1;
+
 	// no def = fake object
 	if(!def)
 		return;
@@ -880,6 +882,8 @@ void CLevelRegion::ReadLoadRegion(IVirtualStream* stream, DkList<CLevObjectDef*>
 
 		ref->position = cellObj.position;
 		ref->rotation = cellObj.rotation;
+
+		ref->regionIdx = m_regionIndex;
 
 		//
 		// pick from region or global list

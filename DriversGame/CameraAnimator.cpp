@@ -114,6 +114,16 @@ float CCameraAnimator::GetFOV() const
 	return m_cameraFOV;
 }
 
+void CCameraAnimator::CenterView()
+{
+	m_vecCameraVel = vec3_zero;
+	m_vecCameraVelDiff = vec3_zero;
+	m_vecCameraSpringVel = vec3_zero;
+
+	m_shakeDecayCurTime = 0.0f;
+	m_shakeMagnitude = 0.0f;
+}
+
 void CCameraAnimator::Reset()
 {
 	m_vecCameraVel = vec3_zero;

@@ -104,6 +104,8 @@ public:
 	void							Init();
 	void							Cleanup( bool unloadLevel = true );
 
+	void							RemoveAllObjects();
+
 	//-------------------------------------------------------------------------
 
 	void							SetLevelName(const char* name);
@@ -138,12 +140,15 @@ public:
 	//-------------------------------------------------------------------------
 	// world simulation
 
+	void							UpdateEnvironmentTransition( float fDt );
 	void							UpdateWorld( float fDt );
 	void							UpdateTrafficLightState( float fDt );
 
 	// queries nearest regions and loads them in separate thread
 	// you can wait for load if needed
 	void							QueryNearestRegions(const Vector3D& pos, bool waitLoad = false);
+
+	bool							IsQueriedRegionLoaded() const;
 
 	//-------------------------------------------------------------------------
 	// world rendering
@@ -275,6 +280,8 @@ protected:
 	float							m_curTime;
 
 	sceneinfo_t						m_sceneinfo;
+
+	CLevelRegion*					m_lastQueriedRegion;
 
 public:
 

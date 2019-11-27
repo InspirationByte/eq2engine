@@ -66,6 +66,8 @@ public:
 	//---------------------------------------------------
 
 	virtual void				Update(float fDt);
+	virtual void				UpdateMission(float fDt);
+
 	virtual void				UpdateLocalControls(int nControls, float steering, float accel_brake) = 0;
 
 
