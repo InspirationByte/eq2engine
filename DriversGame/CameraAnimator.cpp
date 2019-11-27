@@ -436,17 +436,11 @@ void CCameraAnimator::Animate(ECameraMode mode,
 		}
 		case CAM_MODE_OUTCAR_FIXED:
 		{
-			//Vector3D euler_angles = EulerMatrixZXY(targetRotation); //eulers(targetRotation);
-			//euler_angles = VRAD2DEG(euler_angles);
-			//euler_angles *= Vector3D(-1, 1, -1);
+			Vector3D camAngle = Vector3D(0, Yangle, 0) - m_rotation;
+			Vector3D camOffset = rotateVector(m_dropPos, targetRotation);
 
-			//Vector3D euler_angles += m_rotation;
-
-			Vector3D forward;
-			AngleVectors(m_rotation, &forward);
-
-			m_computedView.SetOrigin(finalTargetPos - forward * m_camConfig.dist);
-			m_computedView.SetAngles(m_rotation + shakeVec);
+			m_computedView.SetOrigin(finalTargetPos + camOffset);
+			m_computedView.SetAngles(camAngle + shakeVec);
 			m_computedView.SetFOV(m_cameraFOV);
 			break;
 		}

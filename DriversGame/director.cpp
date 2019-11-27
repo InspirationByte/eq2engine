@@ -57,6 +57,7 @@ static const char* s_cameraTypeString[] = {
 	"Tripod",
 	"Tripod (fixed zoom)",
 	"Static",
+	"Outside car (fixed)",
 };
 
 static const ColorRGB s_cameraColors[] = {
@@ -65,6 +66,7 @@ static const ColorRGB s_cameraColors[] = {
 	ColorRGB(0.2f,0.7f,0.2f),
 	ColorRGB(0.5f,0.2f,0.7f),
 	ColorRGB(0.8f,0.8f,0.2f),
+	ColorRGB(1.0f,0.25f,0.25f),
 };
 
 bool g_director_ShiftKey = false;
@@ -116,6 +118,24 @@ void Director_GetNewCameraProps(replayCamera_t* cam)
 		cam->rotation = g_freeCamProps.angles;
 	else
 		cam->rotation = g_pCameraAnimator->GetAngles();	// only update given angles
+
+	if (cam->type == CAM_MODE_OUTCAR_FIXED)
+	{
+		CGameObject* viewedObject = g_pGameSession->GetViewObject();
+
+		Vector3D camDir;
+		AngleVectors(cam->rotation, &camDir);
+
+		Vector3D localPos = (!viewedObject->m_worldMatrix * Vector4D(cam->origin, 1.0f)).xyz();
+		Vector3D localCamDir = (!viewedObject->m_worldMatrix.getRotationComponent() * camDir);
+
+		// preserve Z rotation
+		float zRotation = cam->rotation.z;
+
+		cam->origin = localPos;
+		cam->rotation = -VectorAngles(localCamDir);
+		cam->rotation.z = -zRotation;
+	}
 }
 
 enum EDirectorActionType
@@ -266,7 +286,7 @@ void Director_KeyPress(int key, bool down)
 		int replayCamera = g_replayData->m_currentCamera;
 		replayCamera_t* currentCamera = g_replayData->GetCurrentCamera();
 
-		if(key >= KEY_1 && key <= KEY_5)
+		if(key >= KEY_1 && key <= KEY_6)
 		{
 			g_nDirectorCameraType = key - KEY_1;
 		}
@@ -473,6 +493,7 @@ void Director_Draw( float fDt )
 		"Play: &#FFFF00;%s&;\n"
 		"Toggle free camera: &#FFFF00;%s&;\n\n"
 
+
 		"Next camera: &#FFFF00;%s&;\n"
 		"Prev camera: &#FFFF00;%s&;\n\n"
 
@@ -488,7 +509,7 @@ void Director_Draw( float fDt )
 		"Zoom: &#FFFF00;MOUSE WHEEL&; (%.2f deg.)\n"
 		"Target vehicle: &#FFFF00;%s&;\n"
 
-		"Seek frame &#FFFF00;fastseek <frame>&; (in console)\n", 
+		"Seek frame: &#FFFF00;CTRL+ARROWS&; or &#FFFF00;fastseek <frame>&; (in console)\n", 
 
 		play_pause_bind.c_str(),
 		freecam_bind.c_str(),
