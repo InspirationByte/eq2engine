@@ -47,6 +47,13 @@ ConVar cam_velocity_forwardmod("cam_velocity_forwardmod", "1.0");
 ConVar cam_velocity_sidemod("cam_velocity_sidemod", "-0.5");
 ConVar cam_velocity_upmod("cam_velocity_upmod", "1.0");
 
+bool IsStaticCameraMode(ECameraMode mode)
+{
+	return	mode == CAM_MODE_TRIPOD_ZOOM ||
+			mode == CAM_MODE_TRIPOD_FIXEDZOOM ||
+			mode == CAM_MODE_TRIPOD_STATIC;
+}
+
 DECLARE_CMD(v_shake, "shakes view", 0)
 {
 	if(CMD_ARGC < 1)
@@ -496,14 +503,6 @@ void CCameraAnimator::Animate(ECameraMode mode,
 			m_computedView.SetAngles(m_rotation + shakeVec);
 			m_computedView.SetOrigin(m_dropPos);
 			m_computedView.SetFOV(m_cameraFOV);
-			break;
-		}
-		case CAM_MODE_OUTCAR_WHEEL_0:
-		case CAM_MODE_OUTCAR_WHEEL_1:
-		case CAM_MODE_OUTCAR_WHEEL_2:
-		case CAM_MODE_OUTCAR_WHEEL_3:
-		{
-			MsgError("CAM_MODE_OUTCAR_WHEEL_N unimplemented!\n");
 			break;
 		}
 	}

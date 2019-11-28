@@ -943,8 +943,6 @@ void CGameWorld::Cleanup( bool unloadLevel )
 
 	m_rainSound = nullptr;
 
-	g_sounds->StopAllSounds();
-
 	// clear transition environments
 	for(int i = 0; i < m_envTransitions.numElem(); i++)
 		g_pShaderAPI->FreeTexture(m_envTransitions[i].skyTexture);
@@ -1130,6 +1128,39 @@ void CGameWorld::SimulateObjects( float fDt )
 	}
 }
 
+void CGameWorld::ForceUpdateObjects()
+{
+	for (int i = 0; i < m_gameObjects.numElem(); i++)
+	{
+		CGameObject* obj = m_gameObjects[i];
+
+		if (obj->m_state == GO_STATE_IDLE)
+			obj->UpdateTransform();
+	}
+}
+
+void CGameWorld::SpawnPendingObjects()
+{
+	// non-spawned objects are in locked manner
+	// because regions can push objects into m_nonSpawnedObjects
+	m_level.m_mutex.Lock();
+
+	// spawn objects
+	for (int i = 0; i < m_nonSpawnedObjects.numElem(); i++)
+	{
+		CGameObject* obj = m_nonSpawnedObjects[i];
+
+		obj->Spawn();
+
+		OnObjectSpawnedEvent(obj);
+	}
+
+	m_gameObjects.append(m_nonSpawnedObjects);
+	m_nonSpawnedObjects.clear();
+
+	m_level.m_mutex.Unlock();
+}
+
 void CGameWorld::UpdateEnvironmentTransition(float fDt)
 {
 	if (!m_envTransitions.numElem())
@@ -1262,29 +1293,8 @@ void CGameWorld::UpdateWorld(float fDt)
 
 	PROFILE_BEGIN(UpdateWorldObjectStates);
 
-	if( fDt > 0 )
-	{
-		m_level.UpdateRegions( RegionCallbackFunc );
-
-		// non-spawned objects are in locked manner
-		// because regions can push objects into m_nonSpawnedObjects
-		m_level.m_mutex.Lock();
-
-		// spawn objects
-		for(int i = 0; i < m_nonSpawnedObjects.numElem(); i++)
-		{
-			CGameObject* obj = m_nonSpawnedObjects[i];
-
-			obj->Spawn();
-
-			OnObjectSpawnedEvent(obj);
-		}
-
-		m_gameObjects.append(m_nonSpawnedObjects);
-		m_nonSpawnedObjects.clear();
-
-		m_level.m_mutex.Unlock();
-	}
+	m_level.UpdateRegions(RegionCallbackFunc);
+	SpawnPendingObjects();
 
 	PROFILE_END();
 
@@ -1292,7 +1302,6 @@ void CGameWorld::UpdateWorld(float fDt)
 	PROFILE_CODE( SimulateObjects(fDt) );
 
 	// remove marked objects after simulation
-    if( fDt > 0 )
 	{
 		// remove objects
 		for(int i = 0; i < m_gameObjects.numElem(); i++)

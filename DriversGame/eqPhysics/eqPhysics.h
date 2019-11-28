@@ -72,7 +72,7 @@ struct CollisionData_t
 {
 	CollisionData_t()
 	{
-		fract = 32767.0f;
+		fract = 1.0f;
 		hitobject = NULL;
 		materialIndex = -1;
 	}

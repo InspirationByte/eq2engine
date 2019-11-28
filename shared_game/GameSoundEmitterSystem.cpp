@@ -338,25 +338,8 @@ void CSoundEmitterSystem::Shutdown()
 	StopAllSounds();
 
 	for(int i = 0; i < m_controllers.numElem(); i++)
-	{
-		m_controllers[i]->Stop(true);
-
 		delete m_controllers[i];
-	}
-
 	m_controllers.clear();
-
-	for(int i = 0; i < m_emitters.numElem(); i++)
-	{
-		m_emitters[i]->soundSource->Pause();
-		m_emitters[i]->soundSource->Stop();
-		soundsystem->FreeEmitter(m_emitters[i]->soundSource);
-		m_emitters[i]->soundSource = NULL;
-
-		delete m_emitters[i];
-	}
-
-	m_emitters.clear();
 
 	for(int i = 0; i < m_allSounds.numElem(); i++)
 	{
@@ -366,7 +349,6 @@ void CSoundEmitterSystem::Shutdown()
 		delete [] m_allSounds[i]->pszName;
 		delete m_allSounds[i];
 	}
-
 	m_allSounds.clear();
 
 	m_isInit = false;
@@ -741,31 +723,26 @@ void CSoundEmitterSystem::StopAllEmitters()
 		EmitSound_t& snd = m_pendingStartSounds[i];
 		delete[] snd.name;
 	}
-
 	m_pendingStartSounds.clear();
 
-	// stop emitters
+	for (int i = 0; i < m_controllers.numElem(); i++)
+		m_controllers[i]->Stop(true);
+
 	for (int i = 0; i < m_emitters.numElem(); i++)
 	{
 		EmitterData_t* em = m_emitters[i];
 
-		if (em->controller)
-			em->controller->Stop(true);
-
 		if (em->soundSource)
 		{
+			em->soundSource->Pause();
 			em->soundSource->Stop();
-
 			soundsystem->FreeEmitter(em->soundSource);
-			em->soundSource = nullptr;
 		}
+		em->soundSource = nullptr;
 
 		delete em;
-		m_emitters.fastRemoveIndex(i);
-		i--;
 	}
-
-	soundsystem->Update();
+	m_emitters.clear();
 }
 
 void CSoundEmitterSystem::StopAll2DSounds()
@@ -866,11 +843,12 @@ void CSoundEmitterSystem::Update(bool force)
 			if(emitter->controller)
 				emitter->controller->Stop(true);
 
+			emitter->controller = nullptr;
+
 			soundsystem->FreeEmitter(em);
 
 			// delete this emitter
 			delete emitter;
-
 			m_emitters.fastRemoveIndex(i);
 			i--;
 		}

@@ -141,6 +141,10 @@ public:
 	// world simulation
 
 	void							UpdateEnvironmentTransition( float fDt );
+
+	void							ForceUpdateObjects();
+	void							SpawnPendingObjects();
+
 	void							UpdateWorld( float fDt );
 	void							UpdateTrafficLightState( float fDt );
 

@@ -15,16 +15,12 @@ enum ECameraMode
 {
 	CAM_MODE_OUTCAR = 0,
 	CAM_MODE_INCAR,
+
 	CAM_MODE_TRIPOD_ZOOM,
 	CAM_MODE_TRIPOD_FIXEDZOOM,
 	CAM_MODE_TRIPOD_STATIC,
 
 	CAM_MODE_OUTCAR_FIXED,
-
-	CAM_MODE_OUTCAR_WHEEL_0,	// front left
-	CAM_MODE_OUTCAR_WHEEL_1,	// front right
-	CAM_MODE_OUTCAR_WHEEL_2,	// rear left
-	CAM_MODE_OUTCAR_WHEEL_3,	// rear right
 
 	CAM_MODES,
 };
@@ -42,6 +38,8 @@ struct cameraConfig_t
 class CCar;
 class CEqRigidBody;
 class CGameObject;
+
+bool IsStaticCameraMode(ECameraMode mode);
 
 class CCameraAnimator
 {

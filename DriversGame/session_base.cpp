@@ -363,6 +363,9 @@ void CGameSessionBase::Update(float fDt)
 
 	if (fDt <= 0.0f)
 	{
+		if (GetLeadCar())
+			g_pGameWorld->QueryNearestRegions(GetLeadCar()->GetOrigin(), false);
+
 		g_pGameWorld->UpdateWorld(0.0f);
 		return;
 	}
@@ -370,9 +373,6 @@ void CGameSessionBase::Update(float fDt)
 	m_gameTime += fDt;
 
 	UpdatePlayerControls();
-
-	if (GetLeadCar())
-		g_pGameWorld->QueryNearestRegions(GetLeadCar()->GetOrigin(), false);
 
 	float phys_begin = MEASURE_TIME_BEGIN();
 	g_pPhysics->Simulate(fDt, GetPhysicsIterations(), Game_OnPhysicsUpdate);

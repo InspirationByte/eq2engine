@@ -399,14 +399,16 @@ void CState_Game::ShutdownSession(bool restart)
 
 	g_pGameSession->Shutdown();
 
+	StopAllSounds();
+
 	delete g_pGameSession;
 	g_pGameSession = nullptr;
 }
 
 void CState_Game::StopAllSounds()
 {
-	g_sounds->StopAllSounds();
 	g_sounds->SetPaused(true);
+	g_sounds->StopAllSounds();
 }
 
 void CState_Game::QuickRestart(bool intoReplay)
@@ -414,8 +416,6 @@ void CState_Game::QuickRestart(bool intoReplay)
 	// renderer must be reset
 	g_pShaderAPI->Reset(STATE_RESET_ALL);
 	g_pShaderAPI->Apply();
-
-	StopAllSounds();
 
 	// clear replay data if we want to restart the game
 	// stored replays will be replayed normally
@@ -473,8 +473,6 @@ void CState_Game::ReplayFastSeek(int tick)
 
 	if (tick < g_replayData->m_tick)
 	{
-		StopAllSounds();
-
 		g_pGameHUD->InvalidateObjects();
 		g_pGameWorld->RemoveAllObjects();
 		g_pGameWorld->InitEnvironment();
@@ -486,7 +484,12 @@ void CState_Game::ReplayFastSeek(int tick)
 		g_replayData->Stop();
 		g_replayData->m_state = REPL_INIT_PLAYBACK;
 
+		StopAllSounds();
+
 		g_pGameSession->Init();
+
+		g_pGameWorld->m_frameTime = 0.0f;
+		g_pGameWorld->m_curTime = 0.0f;
 	}
 
 	// reset buttons
@@ -517,7 +520,6 @@ void CState_Game::ReplayFastSeek(int tick)
 
 	g_pCameraAnimator->CenterView();
 
-	g_pPhysics->ForceUpdateObjects();
 	g_pGameWorld->m_level.RespawnAllObjects();
 
 	OnLoadingDone();
@@ -853,13 +855,17 @@ void CState_Game::OnLoadingDone()
 	g_pGameSession->OnLoadingDone();
 
 	g_sounds->SetPaused(false);
-	g_sounds->Set2DChannelsVolume(CHAN_STREAM, 1.0f);
 
 	// pause at start if director is active
 	if (Director_IsActive())
 	{
-		g_pGameSession->Update(1.0f / 60.0f);
 		g_pause.SetBool(true);
+
+		//g_pPhysics->m_physics.SimulateStep(0.0f, 0, nullptr);
+		g_pPhysics->ForceUpdateObjects();
+		g_pGameWorld->ForceUpdateObjects();
+
+		g_pGameWorld->UpdateEnvironmentTransition(0.0f);
 	}
 }
 
@@ -1139,12 +1145,17 @@ CCar* CState_Game::GetViewCar() const
 Vector3D CState_Game::GetViewVelocity() const
 {
 	CCar* viewedCar = GetViewCar();
+	ECameraMode cameraMode = (ECameraMode)g_pCameraAnimator->GetMode();
 
 	Vector3D cam_velocity = vec3_zero;
 
 	// animate the camera if car is present
-	if( viewedCar && g_pCameraAnimator->GetMode() <= CAM_MODE_INCAR && !Director_FreeCameraActive() )
+	if (viewedCar &&
+		!IsStaticCameraMode(cameraMode) &&
+		!Director_FreeCameraActive())
+	{
 		cam_velocity = viewedCar->GetVelocity();
+	}
 
 	return cam_velocity;
 }

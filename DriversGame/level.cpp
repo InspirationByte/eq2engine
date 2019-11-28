@@ -1074,7 +1074,7 @@ straight_t CGameLevel::Road_GetStraightAtPos( const Vector3D& pos, int numIterat
 
 roadJunction_t CGameLevel::Road_GetJunctionAtPoint( const IVector2D& point, int numIterations ) const
 {
-	CScopedMutex m(m_mutex);
+//	CScopedMutex m(m_mutex);
 
 	CLevelRegion* pRegion = NULL;
 
@@ -1176,7 +1176,7 @@ roadJunction_t CGameLevel::Road_GetJunctionAtPos( const Vector3D& pos, int numIt
 
 int	CGameLevel::Road_GetLaneIndexAtPoint( const IVector2D& point, int numIterations)
 {
-	CScopedMutex m(m_mutex);
+//	CScopedMutex m(m_mutex);
 
 	CLevelRegion* pRegion = NULL;
 
@@ -1252,7 +1252,7 @@ int	CGameLevel::Road_GetLaneIndexAtPos( const Vector3D& pos, int numIterations)
 
 int	CGameLevel::Road_GetWidthInLanesAtPoint( const IVector2D& point, int numIterations, int iterationsOnEmpty )
 {
-	CScopedMutex m(m_mutex);
+	//CScopedMutex m(m_mutex);
 
 	CLevelRegion* pRegion = NULL;
 
@@ -1349,7 +1349,7 @@ int	CGameLevel::Road_GetWidthInLanesAtPos( const Vector3D& pos, int numIteration
 
 int	CGameLevel::Road_GetNumLanesAtPoint( const IVector2D& point, int numIterations )
 {
-	CScopedMutex m(m_mutex);
+	//CScopedMutex m(m_mutex);
 
 	CLevelRegion* pRegion = NULL;
 
@@ -1438,7 +1438,7 @@ levroadcell_t* CGameLevel::Road_GetGlobalTile(const Vector3D& pos, CLevelRegion*
 
 levroadcell_t* CGameLevel::Road_GetGlobalTileAt(const IVector2D& point, CLevelRegion** pRegion) const
 {
-	CScopedMutex m(m_mutex);
+//	CScopedMutex m(m_mutex);
 
 	IVector2D outXYPos;
 

@@ -839,6 +839,8 @@ void CCar::CreateCarPhysics()
 
 	m_physObj = new CPhysicsHFObject( body, this );
 	g_pPhysics->AddObject( m_physObj );
+
+	UpdateVehiclePhysics(0.0f);
 }
 
 ISoundController* CCar::CreateCarSound(const char* name, float radiusMult)
