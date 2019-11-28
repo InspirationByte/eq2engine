@@ -518,9 +518,10 @@ void CState_Game::ReplayFastSeek(int tick)
 		g_pGameWorld->m_curTime += frameRate;
 	}
 
-	g_pCameraAnimator->CenterView();
+	if(framesToDo > 0)
+		g_pGameWorld->m_level.RespawnAllObjects();
 
-	g_pGameWorld->m_level.RespawnAllObjects();
+	g_pCameraAnimator->CenterView();
 
 	OnLoadingDone();
 }
@@ -861,7 +862,6 @@ void CState_Game::OnLoadingDone()
 	{
 		g_pause.SetBool(true);
 
-		//g_pPhysics->m_physics.SimulateStep(0.0f, 0, nullptr);
 		g_pPhysics->ForceUpdateObjects();
 		g_pGameWorld->ForceUpdateObjects();
 
