@@ -249,14 +249,95 @@ DECLARE_CONCOMMAND_FN(seti)
 	pConVar->SetValue(joinArgs.GetData());
 }
 
+void fncfgfiles_variants(const ConCommandBase* cmd, DkList<EqString>& list, const char* query)
+{
+	DKFINDDATA* findData = nullptr;
+	char* fileName = (char*)g_fileSystem->FindFirst("cfg/*.cfg", &findData, SP_MOD);
+
+	if (fileName)
+	{
+		list.append(_Es(fileName).Path_Strip_Ext());
+
+		while (fileName = (char*)g_fileSystem->FindNext(findData))
+		{
+			if (!g_fileSystem->FindIsDirectory(findData))
+				list.append(_Es(fileName).Path_Strip_Ext());
+		}
+
+		g_fileSystem->FindClose(findData);
+	}
+}
+
 ConCommand cvarlist("cvarlist", CONCOMMAND_FN(cvarlist), "Prints out all aviable cvars", CV_UNREGISTERED);
 ConCommand cmdlist("cmdlist", CONCOMMAND_FN(cmdlist), "Prints out all aviable commands", CV_UNREGISTERED);
-ConCommand exec("exec", CONCOMMAND_FN(exec), "Execute configuration file", CV_UNREGISTERED);
+
+ConCommand exec("exec", CONCOMMAND_FN(exec), fncfgfiles_variants, "Execute configuration file", CV_UNREGISTERED);
 
 ConCommand toggle("togglevar", CONCOMMAND_FN(togglecvar), cvar_list_collect, "Toggles ConVar value", CV_UNREGISTERED);
 ConCommand set("set", CONCOMMAND_FN(set), cvar_list_collect, "Sets cvar value", CV_UNREGISTERED);
 ConCommand seta("seti", CONCOMMAND_FN(seti), cvar_list_collect, "Sets cvar value including restricted ones", CV_UNREGISTERED | CV_INVISIBLE);
 ConCommand revert("revert", CONCOMMAND_FN(revertcvar), cvar_list_collect, "Reverts cvar to it's default value", CV_UNREGISTERED);
+
+
+void SplitCommandForValidArguments(const char* command, DkList<EqString>& commands)
+{
+	const char *pChar = command;
+	while (*pChar && isspace(static_cast<unsigned char>(*pChar)))
+	{
+		++pChar;
+	}
+
+	bool bInQuotes = false;
+	const char *pFirstLetter = NULL;
+	for (; *pChar; ++pChar)
+	{
+		if (bInQuotes)
+		{
+			if (*pChar != '\"')
+				continue;
+
+			int nLen = (int)(pChar - pFirstLetter);
+
+			commands.append(_Es(pFirstLetter, nLen));
+
+			pFirstLetter = NULL;
+			bInQuotes = false;
+			continue;
+		}
+
+		// Haven't started a word yet...
+		if (!pFirstLetter)
+		{
+			if (*pChar == '\"')
+			{
+				bInQuotes = true;
+				pFirstLetter = pChar + 1;
+				continue;
+			}
+
+			if (isspace(static_cast<unsigned char>(*pChar)))
+				continue;
+
+			pFirstLetter = pChar;
+			continue;
+		}
+
+		// Here, we're in the middle of a word. Look for the end of it.
+		if (isspace(*pChar))
+		{
+			int nLen = (int)(pChar - pFirstLetter);
+			commands.append(_Es(pFirstLetter, nLen));
+			pFirstLetter = NULL;
+		}
+	}
+
+	if (pFirstLetter)
+	{
+		int nLen = (int)(pChar - pFirstLetter);
+		commands.append(_Es(pFirstLetter, nLen));
+	}
+}
+
 
 CConsoleCommands::CConsoleCommands()
 {
@@ -404,8 +485,24 @@ void CConsoleCommands::ParseAndAppend(char* str, int len, void* extra)
 
 	tmpStr = tmpStr.TrimSpaces();
 
-	if(tmpStr.Length() > 0)
-		AppendToCommandBuffer( tmpStr.TrimSpaces().c_str() );
+	if (tmpStr.Length() > 0) 
+	{
+		EqString cmdStr(tmpStr.TrimSpaces());
+
+		DkList<EqString> cmdArgs;
+		SplitCommandForValidArguments(cmdStr.c_str(), cmdArgs);
+
+		// executing file must be put to the command buffer in proper order
+		if (cmdArgs.numElem() && !cmdArgs[0].CompareCaseIns("exec"))
+		{
+			cmdArgs.removeIndex(0);
+			CC_exec_f(nullptr, cmdArgs);
+			return;
+		}
+
+		strcat(m_currentCommands, varargs("%s;", cmdStr.c_str()));
+	}
+		
 }
 
 // Executes file
@@ -446,8 +543,9 @@ void CConsoleCommands::ParseFileToCommandBuffer(const char* pszFilename)
 void CConsoleCommands::SetCommandBuffer(const char* pszBuffer)
 {
 	ASSERT(strlen(pszBuffer) < COMMANDBUFFER_SIZE);
+	ClearCommandBuffer();
 
-	strcpy(m_currentCommands, pszBuffer);
+	ForEachSeparated((char*)pszBuffer, CON_SEPARATOR, &CConsoleCommands::ParseAndAppend, NULL);
 }
 
 // Appends to command buffer
@@ -456,8 +554,9 @@ void CConsoleCommands::AppendToCommandBuffer(const char* pszBuffer)
 	int new_len = strlen(pszBuffer) + strlen(m_currentCommands);
 
 	ASSERT(new_len < COMMANDBUFFER_SIZE);
+	ForEachSeparated((char*)pszBuffer, CON_SEPARATOR, &CConsoleCommands::ParseAndAppend, NULL);
 
-	strcat(m_currentCommands, varargs("%s;",pszBuffer));
+	//strcat(m_currentCommands, varargs("%s;",pszBuffer));
 }
 
 // Clears to command buffer
@@ -470,65 +569,6 @@ void CConsoleCommands::ClearCommandBuffer()
 void CConsoleCommands::ResetCounter()
 {
 	m_sameCommandsExecuted = 0; 
-}
-
-void SplitCommandForValidArguments(const char* command, DkList<EqString>& commands)
-{
-	const char *pChar = command;
-	while ( *pChar && isspace(static_cast<unsigned char>(*pChar)) )
-	{
-		++pChar;
-	}
-
-	bool bInQuotes = false;
-	const char *pFirstLetter = NULL;
-	for ( ; *pChar; ++pChar )
-	{
-		if ( bInQuotes )
-		{
-			if ( *pChar != '\"' )
-				continue;
-
-			int nLen = (int)(pChar - pFirstLetter);
-
-			commands.append(_Es(pFirstLetter,nLen));
-
-			pFirstLetter = NULL;
-			bInQuotes = false;
-			continue;
-		}
-
-		// Haven't started a word yet...
-		if ( !pFirstLetter )
-		{
-			if ( *pChar == '\"' )
-			{
-				bInQuotes = true;
-				pFirstLetter = pChar + 1;
-				continue;
-			}
-
-			if ( isspace( static_cast<unsigned char>(*pChar) ) )
-				continue;
-
-			pFirstLetter = pChar;
-			continue;
-		}
-
-		// Here, we're in the middle of a word. Look for the end of it.
-		if ( isspace( *pChar ) )
-		{
-			int nLen = (int)(pChar - pFirstLetter);
-			commands.append(_Es(pFirstLetter,nLen));
-			pFirstLetter = NULL;
-		}
-	}
-
-	if ( pFirstLetter )
-	{
-		int nLen = (int)(pChar - pFirstLetter);
-		commands.append(_Es(pFirstLetter,nLen));
-	}
 }
 
 struct execOptions_t
