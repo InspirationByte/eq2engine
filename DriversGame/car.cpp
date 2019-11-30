@@ -123,7 +123,7 @@ const float STEERING_REDUCE_SPEED_MAX	= 160.0f;
 const float EXTEND_STEER_SPEED_MULTIPLIER = 1.75f;
 
 const float STEERING_HELP_START			= 0.25f;
-const float STEERING_HELP_CONST			= 0.45f;
+const float STEERING_HELP_CONST			= 0.75f;
 
 const float ANTIROLL_FACTOR_DEADZONE	= 0.01f;
 const float ANTIROLL_FACTOR_MAX			= 1.0f;
@@ -1391,13 +1391,14 @@ void CCar::UpdateVehiclePhysics(float delta)
 
 	//--------------------------------------------------------
 
+	float steerSpeedMultiplier = 1.0f;
+
 	{
 		FReal steer_diff = fSteerAngle-m_steering;
 
 		float speed = GetSpeed();
 
-		float steerSpeedMultiplier = RemapValClamp(STEERING_REDUCE_SPEED_MAX-speed, STEERING_REDUCE_SPEED_MIN, STEERING_REDUCE_SPEED_MAX, STEERING_SPEED_REDUCE_FACTOR, 1.0f);
-
+		steerSpeedMultiplier = RemapValClamp(STEERING_REDUCE_SPEED_MAX-speed, STEERING_REDUCE_SPEED_MIN, STEERING_REDUCE_SPEED_MAX, STEERING_SPEED_REDUCE_FACTOR, 1.0f);
 		steerSpeedMultiplier = powf(steerSpeedMultiplier, STEERING_SPEED_REDUCE_CURVE);
 
 		if (bExtendTurn)
@@ -1413,7 +1414,7 @@ void CCar::UpdateVehiclePhysics(float delta)
 	{
 		FReal steerHelp_diff = fSteerAngle -m_steeringHelper;
 		if(FPmath::abs(steerHelp_diff) > 0.1f)
-			m_steeringHelper += FPmath::sign(steerHelp_diff) * STEERING_HELP_CONST * delta;
+			m_steeringHelper += FPmath::sign(steerHelp_diff) * STEERING_HELP_CONST * steerSpeedMultiplier * delta;
 		else
 			m_steeringHelper = fSteerAngle;
 	}
