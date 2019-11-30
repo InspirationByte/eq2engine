@@ -21,11 +21,13 @@ public:
 	void					PopMenu();
 	bool					IsCanPopMenu();
 
-	void					EnterSelection();
+	void					EnterSelection(const char* actionFunc = "onEnter");
 	bool					PreEnterSelection();
 	bool					ChangeSelection(int dir);
 
 	void					GetMenuTitleToken(EqWString& text);
+
+	bool					GetCurrentMenuElement(OOLUA::Table& elem);
 
 	virtual void			OnEnterSelection( bool isFinal ) = 0;
 	virtual void			OnMenuCommand( const char* command ) {}

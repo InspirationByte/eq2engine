@@ -518,7 +518,7 @@ void CState_Game::ReplayFastSeek(int tick)
 		g_pGameWorld->m_curTime += frameRate;
 	}
 
-	if(framesToDo > 0)
+	if(framesToDo > 0 || tick == 0)
 		g_pGameWorld->m_level.RespawnAllObjects();
 
 	g_pCameraAnimator->CenterView();
@@ -940,6 +940,8 @@ bool CState_Game::Update( float fDt )
 	//
 	DoGameFrame( fGameFrameDt );
 
+	DrawMenu(fDt);
+
 	if(m_replayMode == REPLAYMODE_DEMO)
 	{
 		materials->Setup2D(screenSize.x,screenSize.y);
@@ -973,7 +975,7 @@ bool CState_Game::Update( float fDt )
 		font->RenderText(loadingStr, Vector2D(screenSize.x / 2, screenSize.y / 2), fontParam);
 	}
 
-	DrawMenu(fDt);
+	
 
 	if(m_exitGame || m_scheduledRestart || m_scheduledQuickReplay)
 	{
@@ -1456,8 +1458,10 @@ redecrement:
 				m_selection = m_numElems-1;
 			}
 
-			//if(pItem->type == MIT_SPACER)
-			//	goto redecrement;
+			bool _spacer;
+			OOLUA::Table elem;
+			if (GetCurrentMenuElement(elem) && elem.safe_at("_spacer", _spacer))
+				goto redecrement;
 
 			EmitSound_t ep("menu.roll");
 			g_sounds->Emit2DSound(&ep);
@@ -1470,8 +1474,10 @@ reincrement:
 			if(m_selection > m_numElems-1)
 				m_selection = 0;
 
-			//if(pItem->type == MIT_SPACER)
-			//	goto reincrement;
+			bool _spacer;
+			OOLUA::Table elem;
+			if (GetCurrentMenuElement(elem) && elem.safe_at("_spacer", _spacer))
+				goto reincrement;
 
 			EmitSound_t ep("menu.roll");
 			g_sounds->Emit2DSound(&ep);

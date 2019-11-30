@@ -27,7 +27,7 @@ public:
 
 	void		HandleKeyPress( int key, bool down );
 
-	void		Event_SelectionEnter();
+	void		Event_SelectionEnter(const char* actionName = "onEnter");
 	void		Event_BackToPrevious();
 	void		Event_SelectionUp();
 	void		Event_SelectionDown();
@@ -35,7 +35,7 @@ public:
 
 	void		HandleMouseMove( int x, int y, float deltaX, float deltaY );
 	void		HandleMouseClick( int x, int y, int buttons, bool down );
-	void		HandleMouseWheel(int x,int y,int scroll) {}
+	void		HandleMouseWheel(int x, int y, int scroll);
 
 	void		HandleJoyAxis( short axis, short value ) {}
 
@@ -44,19 +44,36 @@ public:
 	//------------------------------------------------------
 
 	void		OnEnterSelection( bool isFinal );
+	void		OnMenuCommand(const char* command);
 
 protected:
+
+	void		ResetScroll();
+
+	void		ResetKeys();
+	bool		MapKeysToCurrentAction();
+
+	void		GetEnteredKeysString(EqString& keysStr);
 
 	float					m_fade;
 	float					m_textFade;
 	bool					m_goesFromMenu;
-	int						m_changesMenu;
+	int						m_menuMode;
+
+	int						m_keysPos;
+	int						m_keysEntered[16];
+	bool					m_keysError;
 
 	float					m_textEffect;
+
+	float					m_menuScrollInterp;
+	float					m_menuScrollTarget;
 
 	equi::IUIControl*		m_uiLayout;
 	equi::IUIControl*		m_menuDummy;
 	equi::IUIControl*		m_menuHeaderDummy;
+
+	int						m_maxMenuItems;
 };
 
 extern CState_MainMenu* g_State_MainMenu;

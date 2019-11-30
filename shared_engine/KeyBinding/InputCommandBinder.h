@@ -99,6 +99,8 @@ public:
 
 	// removes single binding on specified keychar
 	void					UnbindKey( const char* pszKeyStr);
+	void					UnbindCommandByName( const char* name, const char* argStr = nullptr);
+	void					DeleteBinding( in_binding_t* binding );
 
 	// clears and removes all key bindings
 	void					UnbindAll();
@@ -106,7 +108,8 @@ public:
 
 	// searches for binding
 	in_binding_t*			FindBinding(const char* pszKeyStr);
-	in_binding_t*			FindBindingByCommand(ConCommandBase* cmdBase, const char* argStr = nullptr);
+	in_binding_t*			FindBindingByCommand(ConCommandBase* cmdBase, const char* argStr = nullptr, in_binding_t* startFrom = nullptr);
+	in_binding_t*			FindBindingByCommandName(const char* name, const char* argStr = nullptr, in_binding_t* startFrom = nullptr);
 
 	// registers axis action
 	// they will be prefixed as "j_" + name
@@ -142,7 +145,6 @@ public:
 protected:
 	// adds binding
 	in_binding_t*			AddBinding( const char* pszKeyStr, const char* pszCommand, const char *pszArgs );
-	void					DeleteBinding( in_binding_t* binding );
 
 	bool					ResolveCommandBinding(in_binding_t* binding);
 

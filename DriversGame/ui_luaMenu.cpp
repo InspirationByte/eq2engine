@@ -6,6 +6,7 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "ui_luaMenu.h"
+#include "KeyBinding/InputCommandBinder.h"
 
 CLuaMenu::CLuaMenu()
 {
@@ -103,7 +104,7 @@ bool CLuaMenu::IsCanPopMenu()
 bool CLuaMenu::PreEnterSelection()
 {
 	OOLUA::Table elem;
-	if( m_menuElems.safe_at(m_selection+1, elem) )
+	if (GetCurrentMenuElement(elem))
 	{
 		EqLua::LuaTableFuncRef onChange;
 		if (onChange.Get(elem, "onChange", true))
@@ -125,7 +126,7 @@ bool CLuaMenu::ChangeSelection(int dir)
 	EqLua::LuaStackGuard g(state);
 
 	OOLUA::Table elem;
-	if( m_menuElems.safe_at(m_selection+1, elem) )
+	if (GetCurrentMenuElement(elem))
 	{
 		EqLua::LuaTableFuncRef onChange;
 
@@ -163,58 +164,55 @@ void CLuaMenu::GetMenuTitleToken(EqWString& outText)
 	}
 }
 
-void CLuaMenu::EnterSelection()
+bool CLuaMenu::GetCurrentMenuElement(OOLUA::Table& elem)
+{
+	return m_menuElems.safe_at(m_selection + 1, elem);
+}
+
+void CLuaMenu::EnterSelection(const char* actionFunc /*= "onEnter"*/)
 {
 	lua_State* state = GetLuaState();
 	EqLua::LuaStackGuard g(state);
 
 	OOLUA::Table elem;
-	if( m_menuElems.safe_at(m_selection+1, elem) )
+	if (!GetCurrentMenuElement(elem))
+		return;
+
+	EqLua::LuaTableFuncRef actionFuncRef;
+	if (!actionFuncRef.Get(elem, actionFunc, false))
+		return;
+
+	if(actionFuncRef.Push() && actionFuncRef.Call(0, 1) )
 	{
-		EqLua::LuaTableFuncRef onEnter;
-		if(onEnter.Get(elem, "onEnter", false) && onEnter.Push() && onEnter.Call(1, 1))
+		int retType = lua_type(state, -1);
+
+		if( retType == LUA_TTABLE )
 		{
-			if( onEnter.Push() && onEnter.Call(0, 1) )
+			OOLUA::Table params;
+			OOLUA::pull( state, params );
+
+			std::string commandStr = "";
+			if(params.safe_at("command", commandStr))
+				OnMenuCommand( commandStr.c_str() );
+
+			if(params.safe_at("menuCommand", commandStr))
 			{
-				if( lua_type(state, -1) == LUA_TTABLE )
-				{
-					OOLUA::Table params;
-					OOLUA::pull( state, params );
-
-					std::string commandStr = "";
-					if(params.safe_at("command", commandStr))
-						OnMenuCommand( commandStr.c_str() );
-
-					if(params.safe_at("menuCommand", commandStr))
-					{
-						if(!stricmp(commandStr.c_str(), "Pop"))
-							PopMenu();
-					}
-
-					std::string newTitleToken = "";
-					params.safe_at("titleToken", newTitleToken);
-
-					OOLUA::Table nextMenu;
-					if (params.safe_at("nextMenu", nextMenu))
-					{
-
-
-						PushMenu(nextMenu, newTitleToken, m_selection);
-					}
-
-					GetMenuTitleToken(m_menuTitleStr);
-					/*
-					std::string newTitleToken = "";
-					if(params.safe_at("titleToken", newTitleToken))
-					{
-						m_menuTitleStr = LocalizedString(newTitleToken.c_str());
-					}*/
-				}
+				if(!stricmp(commandStr.c_str(), "Pop"))
+					PopMenu();
 			}
-			else
-				MsgError("CLuaMenu::EnterSelection error:\n %s\n", OOLUA::get_last_error(state).c_str());
+
+			std::string newTitleToken = "";
+			params.safe_at("titleToken", newTitleToken);
+
+			OOLUA::Table nextMenu;
+			if (params.safe_at("nextMenu", nextMenu))
+				PushMenu(nextMenu, newTitleToken, m_selection);
+
+			GetMenuTitleToken(m_menuTitleStr);
 		}
 	}
+	else
+		MsgError("CLuaMenu::EnterSelection error:\n %s\n", OOLUA::get_last_error(state).c_str());
 }
 
 void CLuaMenu::SetMenuTable( OOLUA::Table& tabl )
@@ -272,9 +270,6 @@ const wchar_t* CLuaMenu::GetMenuItemString(OOLUA::Table& menuElem)
 	EqLua::LuaTableFuncRef labelValue;
 	if (labelValue.Get(menuElem, "labelValue", true) && labelValue.Push() && labelValue.Call(0, 1))
 	{
-		//int val = 0;
-		//OOLUA::pull(state, val);
-
 		int type = lua_type(state, -1);
 		if (type == LUA_TSTRING)
 		{

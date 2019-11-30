@@ -532,8 +532,6 @@ namespace EqStringConv
 
 			m_str.Append(wch);
 		}
-
-		m_str.Append( L'\0' );
 	}
 
 	int utf8_to_wchar::GetLength()

@@ -223,6 +223,23 @@ bool CInputCommandBinder::BindKey( const char* pszKeyStr, const char* pszCommand
 // binds a command with arguments to known key
 in_binding_t* CInputCommandBinder::AddBinding( const char* pszKeyStr, const char* pszCommand, const char *pszArgs )
 {
+	in_binding_t* binding = nullptr;
+	while (binding = FindBindingByCommandName(pszCommand, pszArgs, binding))
+	{
+		EqString keyNameString;
+		UTIL_GetBindingKeyString(keyNameString, binding);
+
+		if (!keyNameString.CompareCaseIns(pszKeyStr))
+		{
+			if(strlen(pszArgs))
+				MsgWarning("Command '%s %s' already bound to '%s'\n", pszCommand, pszArgs, pszKeyStr);
+			else
+				MsgWarning("Command '%s' already bound to '%s'\n", pszCommand, pszKeyStr);
+
+			return nullptr;
+		}
+	}
+
 	int bindingKeyIndices[3];
 
 	if (!UTIL_GetBindingKeyIndices(bindingKeyIndices, pszKeyStr))
@@ -316,13 +333,31 @@ in_binding_t* CInputCommandBinder::FindBinding(const char* pszKeyStr)
 	return nullptr;
 }
 
-in_binding_t* CInputCommandBinder::FindBindingByCommand(ConCommandBase* cmdBase, const char* argStr /*= nullptr*/)
+in_binding_t* CInputCommandBinder::FindBindingByCommand(ConCommandBase* cmdBase, const char* argStr /*= nullptr*/, in_binding_t* startFrom /*= nullptr*/)
 {
-	for (int i = 0; i < m_bindings.numElem(); i++)
+	int startIdx = m_bindings.findIndex(startFrom) + 1;
+
+	for (int i = startIdx; i < m_bindings.numElem(); i++)
 	{
 		in_binding_t* binding = m_bindings[i];
 
 		if ((binding->cmd_act == cmdBase || binding->cmd_deact == cmdBase) && 
+			(!argStr || argStr && !binding->argumentString.CompareCaseIns(argStr)))
+			return binding;
+	}
+
+	return nullptr;
+}
+
+in_binding_t* CInputCommandBinder::FindBindingByCommandName(const char* name, const char* argStr /*= nullptr*/, in_binding_t* startFrom /*= nullptr*/)
+{
+	int startIdx = m_bindings.findIndex(startFrom) + 1;
+
+	for (int i = startIdx; i < m_bindings.numElem(); i++)
+	{
+		in_binding_t* binding = m_bindings[i];
+
+		if(!binding->commandString.CompareCaseIns(name) &&
 			(!argStr || argStr && !binding->argumentString.CompareCaseIns(argStr)))
 			return binding;
 	}
@@ -368,6 +403,15 @@ void CInputCommandBinder::UnbindKey(const char* pszKeyStr)
 
 	if(results)
 		MsgInfo("'%s' unbound (%d matches)\n", pszKeyStr, results);
+}
+
+void CInputCommandBinder::UnbindCommandByName(const char* name, const char* argStr /*= nullptr*/)
+{
+	in_binding_t* binding = nullptr;
+	while (binding = FindBindingByCommandName(name, argStr, binding))
+	{
+		DeleteBinding(binding);
+	}
 }
 
 // clears and removes all key bindings
