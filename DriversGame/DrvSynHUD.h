@@ -80,6 +80,8 @@ public:
 	void						Enable(bool enable)		{m_enable = enable;}
 	bool						IsEnabled() const		{return m_enable;}
 
+	void						EnableInReplay(bool enable) { m_enableInReplay = enable; }
+
 	void						ShowMap(bool enable)	{m_showMap = enable;}
 	bool						IsMapShown() const		{return m_showMap;}
 
@@ -96,6 +98,8 @@ protected:
 	void						DoDebugDisplay();
 
 	bool								m_enable;
+	bool								m_enableInReplay;
+
 	bool								m_showMap;
 
 	float								m_radarBlank;
@@ -154,6 +158,7 @@ OOLUA_PROXY( CDrvSynHUDManager )
 	OOLUA_MFUNC( SetTimeDisplay )
 
 	OOLUA_MFUNC( Enable )
+	OOLUA_MFUNC( EnableInReplay )
 	OOLUA_MFUNC_CONST( IsEnabled )
 
 	OOLUA_MFUNC( ShowMap )

@@ -12,6 +12,8 @@
 
 #include "input.h"
 
+#include "director.h"
+
 #include "world.h"
 
 #define DEFAULT_HUD_SCHEME "resources/hud/defaulthud.res"
@@ -50,6 +52,7 @@ CDrvSynHUDManager::CDrvSynHUDManager()
 void CDrvSynHUDManager::Init()
 {
 	m_enable = true;
+	m_enableInReplay = false;
 
 	EqString mapTexName("levelmap/");
 	mapTexName.Append( g_pGameWorld->GetLevelName() );
@@ -548,7 +551,10 @@ void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize)
 {
 	bool replayHud = (g_replayData->m_state == REPL_PLAYING);
 
-	bool hudEnabled = (m_screenAlertType != HUD_ALERT_DANGER) && m_enable && r_drawHUD.GetBool() && !replayHud;
+	bool hudEnabled =	(m_screenAlertType != HUD_ALERT_DANGER) && 
+						m_enable && 
+						r_drawHUD.GetBool() && 
+						(!replayHud || m_enableInReplay && !Director_IsActive());
 
 	m_hudLayout->SetVisible(hudEnabled);
 
@@ -1158,6 +1164,7 @@ OOLUA_EXPORT_FUNCTIONS(
 	ShowAlert,
 	SetTimeDisplay,
 	Enable,
+	EnableInReplay,
 	ShowMap,
 	FadeIn,
 	FadeOut
