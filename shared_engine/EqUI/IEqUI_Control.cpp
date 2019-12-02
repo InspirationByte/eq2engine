@@ -27,7 +27,7 @@ IUIControl::IUIControl()
 	: m_visible(true), m_selfVisible(true), m_enabled(true), m_parent(NULL), 
 	m_font(nullptr), m_fontScale(1.0f), m_textColor(1.0f), m_sizeDiff(0), m_sizeDiffPerc(1.0f),
 	m_position(0),m_size(25),
-	m_scaling(UI_SCALING_NONE), m_anchors(0), m_alignment(UI_BORDER_LEFT | UI_BORDER_TOP),m_textAlignment(TEXT_ALIGN_LEFT | TEXT_ALIGN_TOP)
+	m_scaling(UI_SCALING_NONE), m_anchors(0), m_alignment(UI_ALIGN_LEFT | UI_ALIGN_TOP),m_textAlignment(TEXT_ALIGN_LEFT | TEXT_ALIGN_TOP)
 {
 	m_label = "Control";
 }
@@ -372,15 +372,15 @@ IRectangle IUIControl::GetClientRectangle() const
 		if (m_alignment & UI_ALIGN_HCENTER)
 		{
 			IVector2D center = parentRect.GetCenter();
-			thisRect.vleftTop.x += center.x;
-			thisRect.vrightBottom.x += center.x;
+			thisRect.vleftTop.x += center.x - scaledSize.x / 2;
+			thisRect.vrightBottom.x += center.x - scaledSize.x / 2;
 		}
 
 		if (m_alignment & UI_ALIGN_VCENTER)
 		{
 			IVector2D center = parentRect.GetCenter();
-			thisRect.vleftTop.y += center.y;
-			thisRect.vrightBottom.y += center.y;
+			thisRect.vleftTop.y += center.y - scaledSize.y / 2;
+			thisRect.vrightBottom.y += center.y - scaledSize.y / 2;
 		}
 
 		// move by anchor border
