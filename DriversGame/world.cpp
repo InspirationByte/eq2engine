@@ -1713,7 +1713,7 @@ void CGameWorld::DrawMoon()
 		Vector3D sunLensDirection;
 		AngleVectors(m_envConfig.sunLensAngles, &sunLensDirection);
 
-		Vector3D virtualMoonPos = m_view.GetOrigin() + sunLensDirection*100.0f;
+		Vector3D virtualMoonPos = m_view.GetOrigin() + sunLensDirection*m_sceneinfo.m_fZFar*0.65f;
 
 		effect.group = g_translParticles;
 		effect.tex = g_translParticles->FindEntry("moon");
@@ -1723,8 +1723,8 @@ void CGameWorld::DrawMoon()
 		effect.nFlags = EFFECT_FLAG_NO_FRUSTUM_CHECK | EFFECT_FLAG_RADIAL_ALIGNING;
 		effect.fZAngle = 0.0f;
 
-		effect.fWide = 2.0f;
-		effect.fTall = 2.0f;
+		effect.fWide = m_sceneinfo.m_fZFar * 0.01f;
+		effect.fTall = m_sceneinfo.m_fZFar * 0.01f;
 
 		Effects_DrawBillboard(&effect, &m_view, NULL);
 	}
