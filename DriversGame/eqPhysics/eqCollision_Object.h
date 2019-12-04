@@ -41,6 +41,11 @@ enum ECollisionObjectFlags
 
 	// is ghost object
 	COLLOBJ_ISGHOST					= (1 << 4),
+
+	//---------------
+
+	// special flags
+	COLLOBJ_TRANSFORM_DIRTY			= (1 << 31),
 };
 
 class CEqCollisionObject;
@@ -158,10 +163,9 @@ protected:
 	// also dynamics
 	FVector3D					m_position;				// fixed point positions are ideal
 
-	bool						m_hasStudioShape;		// studio model shape cache?
-
 	btCollisionObject*			m_collObject;
 	btCollisionShape*			m_shape;
+	bool						m_studioShape;
 
 	CEqBulletIndexedMesh*		m_mesh;
 	btTriangleInfoMap*			m_trimap;
@@ -176,7 +180,6 @@ protected:
 	int							m_collMask;
 
 	Matrix4x4					m_cachedTransform;
-	bool						m_cachedTransformDirty;
 
 	float						m_restitution;
 	float						m_friction;

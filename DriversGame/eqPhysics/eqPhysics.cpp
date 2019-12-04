@@ -72,24 +72,30 @@ static int btInternalGetHash(int partId, int triangleIndex)
 /// If this info map is missing, or the triangle is not store in this map, nothing will be done
 void AdjustSingleSidedContact(btManifoldPoint& cp, const btCollisionObjectWrapper* colObj0Wrap)
 {
+	const btCollisionShape* shape = colObj0Wrap->getCollisionShape();
+
 	//btAssert(colObj0->getCollisionShape()->getShapeType() == TRIANGLE_SHAPE_PROXYTYPE);
-	if (colObj0Wrap->getCollisionShape()->getShapeType() != TRIANGLE_SHAPE_PROXYTYPE)
+	if (shape->getShapeType() != TRIANGLE_SHAPE_PROXYTYPE)
 		return;
+
+	const btCollisionShape* collObjShape = colObj0Wrap->getCollisionObject()->getCollisionShape();
 
 	btBvhTriangleMeshShape* trimesh = 0;
 
-	if( colObj0Wrap->getCollisionObject()->getCollisionShape()->getShapeType() == SCALED_TRIANGLE_MESH_SHAPE_PROXYTYPE )
-	   trimesh = ((btScaledBvhTriangleMeshShape*)colObj0Wrap->getCollisionObject()->getCollisionShape())->getChildShape();
+	if(collObjShape->getShapeType() == SCALED_TRIANGLE_MESH_SHAPE_PROXYTYPE )
+	   trimesh = ((btScaledBvhTriangleMeshShape*)collObjShape)->getChildShape();
 	else
-	   trimesh = (btBvhTriangleMeshShape*)colObj0Wrap->getCollisionObject()->getCollisionShape();
+	   trimesh = (btBvhTriangleMeshShape*)collObjShape;
 
-	const btTriangleShape* tri_shape = static_cast<const btTriangleShape*>(colObj0Wrap->getCollisionShape());
+	const btTriangleShape* tri_shape = static_cast<const btTriangleShape*>(shape);
 
 	btVector3 tri_normal;
 	tri_shape->calcNormal(tri_normal);
 
-	btVector3 newNormal = colObj0Wrap->getCollisionObject()->getWorldTransform().getBasis()*tri_normal;
-	cp.m_normalWorldOnB = colObj0Wrap->getCollisionObject()->getWorldTransform().getBasis()*tri_normal;
+	btMatrix3x3 basis = colObj0Wrap->getCollisionObject()->getWorldTransform().getBasis();
+
+	btVector3 newNormal = basis * tri_normal;
+	cp.m_normalWorldOnB = basis * tri_normal;
 }
 
 //----------------------------------------------------------------------------------------------
@@ -279,7 +285,8 @@ void CEqPhysics::DestroyGrid()
 
 eqPhysSurfParam_t* CEqPhysics::FindSurfaceParam(const char* name)
 {
-	for (int i = 0; i < m_physSurfaceParams.numElem(); i++)
+	int count = m_physSurfaceParams.numElem();
+	for (int i = 0; i < count; i++)
 	{
 		if (!m_physSurfaceParams[i]->name.CompareCaseIns(name))
 			return m_physSurfaceParams[i];

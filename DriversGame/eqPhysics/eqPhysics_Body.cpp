@@ -37,7 +37,7 @@ const float BODY_FREEZE_TIME		= 1.0f;
 const float BODY_MIN_VELOCITY		= 0.05f;
 const float BODY_MIN_VELOCITY_WAKE	= 0.001f;
 
-CEqRigidBody::CEqRigidBody()
+CEqRigidBody::CEqRigidBody() : CEqCollisionObject()
 {
 	//m_linearMomentum = FVector3D(0.0f);
 	m_linearVelocity = Vector3D(0.0f);
@@ -143,8 +143,10 @@ void CEqRigidBody::TryWake( bool velocityCheck )
 	if(m_flags & BODY_FORCE_FREEZE)
 		return;
 
-	if( velocityCheck && lengthSqr(m_linearVelocity) < BODY_MIN_VELOCITY_WAKE &&
-		lengthSqr(m_angularVelocity) < BODY_MIN_VELOCITY_WAKE)
+	const Vector3D linearVel = m_linearVelocity;
+
+	if( velocityCheck && lengthSqr(linearVel) < BODY_MIN_VELOCITY_WAKE &&
+		lengthSqr(linearVel) < BODY_MIN_VELOCITY_WAKE)
 		return;
 
 	m_flags &= ~BODY_FROZEN;
@@ -165,7 +167,8 @@ void CEqRigidBody::Freeze()
 
 bool CEqRigidBody::IsFrozen()
 {
-	return ((m_flags & BODY_FROZEN) || (m_flags & BODY_FORCE_FREEZE));
+	int flags = m_flags;
+	return ((flags & BODY_FROZEN) || (flags & BODY_FORCE_FREEZE));
 }
 
 bool CEqRigidBody::IsCanIntegrate(bool checkIgnore)
@@ -212,27 +215,33 @@ void CEqRigidBody::Integrate(float delta)
 	if(m_mass <= 0.0f)
 		return;
 
-	if( m_frameTimeAccumulator < m_minFrameTime )
-	{
-		m_frameTimeAccumulator += delta;
+	float frameTimeAccumulator = m_frameTimeAccumulator;
+	bool ignoreMotion = m_minFrameTimeIgnoreMotion;
 
-		if(!m_minFrameTimeIgnoreMotion)
+	if( frameTimeAccumulator < m_minFrameTime )
+	{
+		frameTimeAccumulator += delta;
+
+		if(!ignoreMotion)
 			return;
 	}
-	else if(m_minFrameTimeIgnoreMotion)
+	else if(ignoreMotion)
 	{
-		m_frameTimeAccumulator = 0.0f;
+		frameTimeAccumulator = 0.0f;
 	}
 
-	if(m_minFrameTimeIgnoreMotion)
+	if(ignoreMotion)
 	{
 		m_lastFrameTime = delta;
 	}
 	else
 	{
-		m_lastFrameTime = m_frameTimeAccumulator + delta;
-		m_frameTimeAccumulator = 0.0f;
+		m_lastFrameTime = frameTimeAccumulator + delta;
+		frameTimeAccumulator = 0.0f;
 	}
+
+	// store
+	m_frameTimeAccumulator = frameTimeAccumulator;
 
 	// accumulate with custom delta time
 	AccumulateForces( m_lastFrameTime );
@@ -271,20 +280,24 @@ void CEqRigidBody::Integrate(float delta)
 
 void CEqRigidBody::AccumulateForces(float time)
 {
+	Vector3D linearVelocity = m_linearVelocity;
+	Vector3D angularVelocity = m_angularVelocity;
+	Quaternion orientation = m_orientation;
+
 	// gravity to momentum
-	m_linearVelocity += Vector3D(0,-m_gravity,0) * time;
+	linearVelocity += Vector3D(0,-m_gravity,0) * time;
 
 	// apply force to momentum
-	m_linearVelocity += m_totalForce * m_invMass * time;
+	linearVelocity += m_totalForce * m_invMass * time;
 
 	// move by computed linear velocity
-	m_position += m_linearVelocity*m_linearFactor*time;
+	m_position += linearVelocity * m_linearFactor * time;
 
 	// apply torque
-	m_angularVelocity += (m_invInertiaTensor * m_totalTorque) * time;
+	angularVelocity += (m_invInertiaTensor * m_totalTorque) * time;
 
-	if( lengthSqr(m_angularVelocity) < minimumAngularVelocity )
-		m_angularVelocity = vec3_zero;
+	if( lengthSqr(angularVelocity) < minimumAngularVelocity )
+		angularVelocity = vec3_zero;
 
 	if(!(m_flags & BODY_DISABLE_DAMPING))
 	{
@@ -292,35 +305,42 @@ void CEqRigidBody::AccumulateForces(float time)
 		float scale = 1.0f - (angVelDamp * time * dampingTimeScale);
 
 		if(scale > 0)
-			m_angularVelocity *= scale;
+			angularVelocity *= scale;
 		else
-			m_angularVelocity = FVector3D(0);
+			angularVelocity = FVector3D(0);
 	}
 
 	// convert angular velocity to spinning
 	// and accumulate
-	Quaternion angVelSpinning = AngularVelocityToSpin(m_orientation, m_angularVelocity*m_angularFactor);
+	Quaternion angVelSpinning = AngularVelocityToSpin(orientation, angularVelocity*m_angularFactor);
 
 	// encountered
 	ASSERT(angVelSpinning.isNan() == false);
 
-	m_orientation += (angVelSpinning * time);
-	m_orientation.fastNormalize();
+	orientation += (angVelSpinning * time);
+	orientation.fastNormalize();
+
+	// store velocities and orientation
+	m_linearVelocity = linearVelocity;
+	m_angularVelocity = angularVelocity;
+	m_orientation = orientation;
 
 	// clear them
 	m_totalTorque = Vector3D(0);
 	m_totalForce = Vector3D(0);
 
-	m_cachedTransformDirty = true;
+	m_flags |= COLLOBJ_TRANSFORM_DIRTY;
 
 	UpdateInertiaTensor();
 }
 
 void CEqRigidBody::UpdateInertiaTensor()
 {
+	const Vector3D inertia = m_invInertia;
+
 	Matrix3x3 orientMat(m_orientation);
 	m_centerOfMassTrans = orientMat*Vector3D(m_centerOfMass);
-	m_invInertiaTensor = orientMat*scale3(m_invInertia.x, m_invInertia.y, m_invInertia.z)*transpose(orientMat);
+	m_invInertiaTensor = orientMat*scale3(inertia.x, inertia.y, inertia.z)*transpose(orientMat);
 }
 
 void CEqRigidBody::SetCenterOfMass(const FVector3D& center)
@@ -404,8 +424,7 @@ void CEqRigidBody::ApplyWorldForce(const FVector3D& position, const Vector3D& fo
 
 void CEqRigidBody::SetOrientation(const Quaternion& orient)
 {
-	m_orientation = orient;
-	m_cachedTransformDirty = true;
+	CEqCollisionObject::SetOrientation(orient);
 
 	// be sure to refresh it
 	UpdateInertiaTensor();
