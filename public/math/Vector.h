@@ -670,6 +670,12 @@ uint		toRGBA(const ColorRGBA &u);
 // converts Ting-point colors to single UINT color (as in D3D)
 uint		toBGRA(const ColorRGBA &u);
 
+template <typename CHAR_T>
+ColorRGB	hexToColor3(unsigned char* rgb);
+
+template <typename CHAR_T>
+ColorRGBA	hexToColor4(unsigned char* rgba);
+
 ColorRGB	rgbeToRGB(unsigned char *rgbe);
 uint		rgbToRGBE8(const ColorRGB &rgb);
 uint		rgbToRGB9E5(const ColorRGB &rgb);

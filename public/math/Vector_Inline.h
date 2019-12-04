@@ -1073,4 +1073,52 @@ inline bool fixNormal(TVec3D<T> &vec)
 	return false;
 }
 
+const float _oneBy255 = 1.0f / 255.0f;
+
+template <typename CHAR_T>
+inline ColorRGB hexToColor3(CHAR_T* rgb)
+{
+	// parse color string
+	char hexcolor[6];
+
+	for (int i = 0; i < 6 && *rgb; i++)
+		hexcolor[i] = *rgb++;
+
+	// This looks weird
+	char* pend;
+
+	char r[3] = { hexcolor[0], hexcolor[1], 0 };
+	char g[3] = { hexcolor[2], hexcolor[3], 0 };
+	char b[3] = { hexcolor[4], hexcolor[5], 0 };
+
+	return ColorRGB(
+		strtol(r, &pend, 16) * _oneBy255,
+		strtol(g, &pend, 16) * _oneBy255,
+		strtol(b, &pend, 16) * _oneBy255);
+}
+
+template <typename CHAR_T>
+inline ColorRGBA hexToColor4(CHAR_T* rgba)
+{
+	// parse color string
+	char hexcolor[8];
+
+	for (int i = 0; i < 8 && *rgba; i++)
+		hexcolor[i] = *rgba++;
+
+	// This looks weird
+	char* pend;
+
+	char r[3] = { hexcolor[0], hexcolor[1], 0 };
+	char g[3] = { hexcolor[2], hexcolor[3], 0 };
+	char b[3] = { hexcolor[4], hexcolor[5], 0 };
+	char a[3] = { hexcolor[6], hexcolor[7], 0 };
+
+	return ColorRGBA(
+		strtol(r, &pend, 16) * _oneBy255,
+		strtol(g, &pend, 16) * _oneBy255,
+		strtol(b, &pend, 16) * _oneBy255,
+		strtol(a, &pend, 16) * _oneBy255);
+}
+
 #endif // VECTOR_INLINE_H

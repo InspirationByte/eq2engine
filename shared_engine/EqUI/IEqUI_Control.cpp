@@ -349,34 +349,30 @@ IRectangle IUIControl::GetClientRectangle() const
 		{
 			thisRect.vleftTop.x += parentRect.vleftTop.x;
 			thisRect.vrightBottom.x += parentRect.vleftTop.x;
-		}
-
-		if(m_alignment & UI_ALIGN_TOP)
-		{
-			thisRect.vleftTop.y += parentRect.vleftTop.y;
-			thisRect.vrightBottom.y += parentRect.vleftTop.y;
-		}
-
-		if(m_alignment & UI_ALIGN_RIGHT)
+		} 
+		else if(m_alignment & UI_ALIGN_RIGHT)
 		{
 			thisRect.vleftTop.x += parentRect.vrightBottom.x - scaledSize.x - scaledPos.x*2;
 			thisRect.vrightBottom.x += parentRect.vrightBottom.x - scaledSize.x - scaledPos.x*2;
 		}
-
-		if(m_alignment & UI_ALIGN_BOTTOM)
-		{
-			thisRect.vleftTop.y += parentRect.vrightBottom.y - scaledSize.y - scaledPos.y*2;
-			thisRect.vrightBottom.y += parentRect.vrightBottom.y - scaledSize.y - scaledPos.y*2;
-		}
-
-		if (m_alignment & UI_ALIGN_HCENTER)
+		else if (m_alignment & UI_ALIGN_HCENTER)
 		{
 			IVector2D center = parentRect.GetCenter();
 			thisRect.vleftTop.x += center.x - scaledSize.x / 2;
 			thisRect.vrightBottom.x += center.x - scaledSize.x / 2;
 		}
 
-		if (m_alignment & UI_ALIGN_VCENTER)
+		if (m_alignment & UI_ALIGN_TOP)
+		{
+			thisRect.vleftTop.y += parentRect.vleftTop.y;
+			thisRect.vrightBottom.y += parentRect.vleftTop.y;
+		}
+		else if(m_alignment & UI_ALIGN_BOTTOM)
+		{
+			thisRect.vleftTop.y += parentRect.vrightBottom.y - scaledSize.y - scaledPos.y*2;
+			thisRect.vrightBottom.y += parentRect.vrightBottom.y - scaledSize.y - scaledPos.y*2;
+		}
+		else if (m_alignment & UI_ALIGN_VCENTER)
 		{
 			IVector2D center = parentRect.GetCenter();
 			thisRect.vleftTop.y += center.y - scaledSize.y / 2;

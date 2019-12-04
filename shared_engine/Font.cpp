@@ -20,7 +20,6 @@ TODO:
 #include "utils/strtools.h"
 #include "utils/DkLinkedList.h"
 #include "FontCache.h"
-#include <stdlib.h>
 
 #include "ConVar.h"
 
@@ -278,25 +277,8 @@ void CFont::BuildCharVertexBuffer(CMeshBuilder& builder, const CHAR_T* str, cons
 				tagType = TEXT_TAG_COLOR;
 
 				str++;
-
-				// parse color string
-				char hexcolor[6];
-				for(int i = 0; i < 6 && *str; i++)
-					hexcolor[i] = *str++;
-
-				// This looks weird
-				char* pend;
-				ubyte color[3];
-
-				char r[3] = {hexcolor[0], hexcolor[1], 0};
-				char g[3] = {hexcolor[2], hexcolor[3], 0};
-				char b[3] = {hexcolor[4], hexcolor[5], 0};
-
-				color[0] = strtol(r, &pend, 16);
-				color[1] = strtol(g, &pend, 16);
-				color[2] = strtol(b, &pend, 16);
-
-				parsedParams.textColor = ColorRGBA((float)color[0]/255.0f,(float)color[1]/255.0f,(float)color[2]/255.0f,stateParams.textColor.w);
+				parsedParams.textColor = ColorRGBA(hexToColor3(str),stateParams.textColor.w);
+				str += 6;
 
 				continue;
 			}
@@ -309,7 +291,9 @@ void CFont::BuildCharVertexBuffer(CMeshBuilder& builder, const CHAR_T* str, cons
 					states.goToLast();
 				}
 				else
-					states.addLast( parsedParams );
+				{
+					states.addLast(parsedParams);
+				}
 
 				tagType = TEXT_TAG_NONE;
 				charMode = CHARMODE_NORMAL;
