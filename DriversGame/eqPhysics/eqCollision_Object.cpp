@@ -45,7 +45,6 @@ CEqCollisionObject::CEqCollisionObject() : m_collisionList(PHYSICS_COLLISION_LIS
 	m_userData = NULL;
 	m_center = vec3_zero;
 	m_surfParam = 0;
-	m_hasStudioShape = false;
 	m_trimap = NULL;
 	m_cell = NULL;
 	m_erp = 0.0f;
@@ -62,9 +61,9 @@ CEqCollisionObject::CEqCollisionObject() : m_collisionList(PHYSICS_COLLISION_LIS
 	m_contents = COLLISION_MASK_ALL;
 	m_collMask = COLLISION_MASK_ALL;
 
-	m_flags = 0;
+	m_flags = COLLOBJ_TRANSFORM_DIRTY;
+	m_studioShape = false;
 
-	m_cachedTransformDirty = false;
 	m_cachedTransform = identity4();
 }
 
@@ -77,7 +76,7 @@ void CEqCollisionObject::Destroy()
 {
 	delete m_collObject;
 
-	if(!m_hasStudioShape)
+	if(!m_studioShape)
 		delete m_shape;
 
 	delete m_trimap;
@@ -115,6 +114,8 @@ void CEqCollisionObject::InitAABB()
 // objects that will be created
 bool CEqCollisionObject::Initialize( studioPhysData_t* data, int nObject )
 {
+	ASSERT(!m_shape);
+
 	// TODO: make it
 	ASSERTMSG((nObject < data->numObjects), "DkPhysics::CreateObject - nObject is out of numObjects");
 
@@ -134,13 +135,13 @@ bool CEqCollisionObject::Initialize( studioPhysData_t* data, int nObject )
 			pCompoundShape->addChildShape(ident, shape);
 		}
 		
-		m_hasStudioShape = false;
+		m_studioShape = false;
 	}
 	else
 	{
 		// not a compound object, skipping
 		m_shape = (btCollisionShape*)data->objects[nObject].shapeCache[0];
-		m_hasStudioShape = true; // using a studio shape flag
+		m_studioShape = true; // using a studio shape flag
 	}
 
 	ASSERTMSG(m_shape, "No valid shape!");
@@ -159,6 +160,8 @@ bool CEqCollisionObject::Initialize( studioPhysData_t* data, int nObject )
 
 bool CEqCollisionObject::Initialize( CEqBulletIndexedMesh* mesh )
 {
+	ASSERT(!m_shape);
+
 	m_mesh = mesh;
 
 	m_shape = new btBvhTriangleMeshShape(m_mesh, true, true);
@@ -174,13 +177,13 @@ bool CEqCollisionObject::Initialize( CEqBulletIndexedMesh* mesh )
 
 	m_collObject->setUserPointer(this);
 
-	m_hasStudioShape = false;
-
 	return true;
 }
 
 bool CEqCollisionObject::Initialize(const FVector3D& boxMins, const FVector3D& boxMaxs)
 {
+	ASSERT(!m_shape);
+
 	btVector3 vecHalfExtents(EqBulletUtils::ConvertDKToBulletVectors(boxMaxs-boxMins)*0.5f);
 
 	m_center = (boxMins+boxMaxs)*0.5f;
@@ -198,13 +201,13 @@ bool CEqCollisionObject::Initialize(const FVector3D& boxMins, const FVector3D& b
 
 	m_collObject->setUserPointer(this);
 
-	m_hasStudioShape = false;
-
 	return true;
 }
 
 bool CEqCollisionObject::Initialize(float radius)
 {
+	ASSERT(!m_shape);
+
 	m_shape = new btSphereShape(radius);
 	m_collObject = new btCollisionObject();
 	m_collObject->setCollisionShape(m_shape);
@@ -215,13 +218,13 @@ bool CEqCollisionObject::Initialize(float radius)
 
 	m_collObject->setUserPointer(this);
 
-	m_hasStudioShape = false;
-
 	return true;
 }
 
 bool CEqCollisionObject::Initialize(float radius, float height)
 {
+	ASSERT(!m_shape);
+
 	m_shape = new btCylinderShape(btVector3(radius, height, radius));
 	m_collObject = new btCollisionObject();
 	m_collObject->setCollisionShape(m_shape);
@@ -231,8 +234,6 @@ bool CEqCollisionObject::Initialize(float radius, float height)
 	InitAABB();
 
 	m_collObject->setUserPointer(this);
-
-	m_hasStudioShape = false;
 
 	return true;
 }
@@ -284,7 +285,7 @@ const Quaternion& CEqCollisionObject::GetOrientation() const
 void CEqCollisionObject::SetPosition(const FVector3D& position)
 {
 	m_position = position;
-	m_cachedTransformDirty = true;
+	m_flags |= COLLOBJ_TRANSFORM_DIRTY;
 
 	UpdateBoundingBoxTransform();
 }
@@ -292,7 +293,7 @@ void CEqCollisionObject::SetPosition(const FVector3D& position)
 void CEqCollisionObject::SetOrientation(const Quaternion& orient)
 {
 	m_orientation = orient;
-	m_cachedTransformDirty = true;
+	m_flags |= COLLOBJ_TRANSFORM_DIRTY;
 
 	UpdateBoundingBoxTransform();
 }
@@ -302,13 +303,16 @@ void CEqCollisionObject::UpdateBoundingBoxTransform()
 	Matrix4x4 mat;
 	ConstructRenderMatrix(mat);
 
-	m_aabb_transformed.Reset();
+	BoundingBox src_aabb = m_aabb;
+	BoundingBox aabb;
 
 	for(int i = 0; i < 8; i++)
-		m_aabb_transformed.AddVertex((mat*Vector4D(m_aabb.GetVertex(i), 1.0f)).xyz());
+		aabb.AddVertex((mat*Vector4D(src_aabb.GetVertex(i), 1.0f)).xyz());
 
-	m_aabb_transformed.maxPoint += AABB_GROWVALUE;
-	m_aabb_transformed.minPoint -= AABB_GROWVALUE;
+	aabb.maxPoint += AABB_GROWVALUE;
+	aabb.minPoint -= AABB_GROWVALUE;
+
+	m_aabb_transformed = aabb;
 }
 
 //------------------------------
@@ -370,11 +374,11 @@ bool CEqCollisionObject::CheckCanCollideWith( CEqCollisionObject* object ) const
 
 void CEqCollisionObject::ConstructRenderMatrix( Matrix4x4& outMatrix )
 {
-	if(m_cachedTransformDirty)
+	if(m_flags & COLLOBJ_TRANSFORM_DIRTY)
 	{
 		Matrix4x4 rotation = Matrix4x4(m_orientation);
 		m_cachedTransform = translate(Vector3D(m_position)) * rotation;
-		m_cachedTransformDirty = false;
+		m_flags &= ~COLLOBJ_TRANSFORM_DIRTY;
 	}
 
 	outMatrix = m_cachedTransform;
@@ -383,16 +387,18 @@ void CEqCollisionObject::ConstructRenderMatrix( Matrix4x4& outMatrix )
 #ifndef FLOAT_AS_FREAL
 void CEqCollisionObject::ConstructRenderMatrix( FMatrix4x4& outMatrix )
 {
-	if( m_orientation.isNan() )
+	Quaternion orient = m_orientation;
+
+	if(orient.isNan() )
 		m_orientation = identity();
 
-	outMatrix = FMatrix4x4(m_orientation);
+	outMatrix = FMatrix4x4(orient);
 	outMatrix = translate(m_position) * outMatrix;
 }
 
 void CEqCollisionObject::DebugDraw()
 {
-	if(m_hasStudioShape)
+	if(m_studioShape)
 	{
 		Matrix4x4 m;
 		ConstructRenderMatrix(m);

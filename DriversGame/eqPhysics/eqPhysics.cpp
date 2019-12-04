@@ -72,24 +72,30 @@ static int btInternalGetHash(int partId, int triangleIndex)
 /// If this info map is missing, or the triangle is not store in this map, nothing will be done
 void AdjustSingleSidedContact(btManifoldPoint& cp, const btCollisionObjectWrapper* colObj0Wrap)
 {
+	const btCollisionShape* shape = colObj0Wrap->getCollisionShape();
+
 	//btAssert(colObj0->getCollisionShape()->getShapeType() == TRIANGLE_SHAPE_PROXYTYPE);
-	if (colObj0Wrap->getCollisionShape()->getShapeType() != TRIANGLE_SHAPE_PROXYTYPE)
+	if (shape->getShapeType() != TRIANGLE_SHAPE_PROXYTYPE)
 		return;
+
+	const btCollisionShape* collObjShape = colObj0Wrap->getCollisionObject()->getCollisionShape();
 
 	btBvhTriangleMeshShape* trimesh = 0;
 
-	if( colObj0Wrap->getCollisionObject()->getCollisionShape()->getShapeType() == SCALED_TRIANGLE_MESH_SHAPE_PROXYTYPE )
-	   trimesh = ((btScaledBvhTriangleMeshShape*)colObj0Wrap->getCollisionObject()->getCollisionShape())->getChildShape();
+	if(collObjShape->getShapeType() == SCALED_TRIANGLE_MESH_SHAPE_PROXYTYPE )
+	   trimesh = ((btScaledBvhTriangleMeshShape*)collObjShape)->getChildShape();
 	else
-	   trimesh = (btBvhTriangleMeshShape*)colObj0Wrap->getCollisionObject()->getCollisionShape();
+	   trimesh = (btBvhTriangleMeshShape*)collObjShape;
 
-	const btTriangleShape* tri_shape = static_cast<const btTriangleShape*>(colObj0Wrap->getCollisionShape());
+	const btTriangleShape* tri_shape = static_cast<const btTriangleShape*>(shape);
 
 	btVector3 tri_normal;
 	tri_shape->calcNormal(tri_normal);
 
-	btVector3 newNormal = colObj0Wrap->getCollisionObject()->getWorldTransform().getBasis()*tri_normal;
-	cp.m_normalWorldOnB = colObj0Wrap->getCollisionObject()->getWorldTransform().getBasis()*tri_normal;
+	btMatrix3x3 basis = colObj0Wrap->getCollisionObject()->getWorldTransform().getBasis();
+
+	btVector3 newNormal = basis * tri_normal;
+	cp.m_normalWorldOnB = basis * tri_normal;
 }
 
 //----------------------------------------------------------------------------------------------
@@ -279,7 +285,8 @@ void CEqPhysics::DestroyGrid()
 
 eqPhysSurfParam_t* CEqPhysics::FindSurfaceParam(const char* name)
 {
-	for (int i = 0; i < m_physSurfaceParams.numElem(); i++)
+	int count = m_physSurfaceParams.numElem();
+	for (int i = 0; i < count; i++)
 	{
 		if (!m_physSurfaceParams[i]->name.CompareCaseIns(name))
 			return m_physSurfaceParams[i];
@@ -868,12 +875,15 @@ void CEqPhysics::DetectCollisionsSingle(CEqRigidBody* body)
 			if(!ncell)
 				continue;
 
+			int numGridObjs = ncell->m_gridObjects.numElem();
+			int numGridDynObjs = ncell->m_dynamicObjs.numElem();
+
 			// iterate over static objects in cell
-			for (int j = 0; j < ncell->m_gridObjects.numElem(); j++)
+			for (int j = 0; j < numGridObjs; j++)
 				SolveStaticVsBodyCollision(ncell->m_gridObjects[j], body, body->GetLastFrameTime(), body->m_contactPairs);
 
 			// iterate over dynamic objects in cell
-			for (int j = 0; j < ncell->m_dynamicObjs.numElem(); j++)
+			for (int j = 0; j < numGridDynObjs; j++)
 			{
 				CEqCollisionObject* collObj = ncell->m_dynamicObjs[j];
 
@@ -896,6 +906,8 @@ void CEqPhysics::ProcessContactPair(const ContactPair_t& pair)
 	PROFILE_FUNC();
 
 	CEqRigidBody* bodyB = (CEqRigidBody*)pair.bodyB;
+	int bodyAFlags = pair.bodyA->m_flags;
+	int bodyBFlags = bodyB->m_flags;
 
 	float appliedImpulse = 0.0f;
 	float impactVelocity = 0.0f;
@@ -910,7 +922,7 @@ void CEqPhysics::ProcessContactPair(const ContactPair_t& pair)
 		CEqCollisionObject* bodyA = pair.bodyA;
 
 		// correct position
-		if (!(bodyA->m_flags & COLLOBJ_DISABLE_RESPONSE) && pair.depth > 0)
+		if (!(bodyAFlags & COLLOBJ_DISABLE_RESPONSE) && pair.depth > 0)
 		{
 			float positionalError = combinedErp * pair.depth * pair.dt;
 
@@ -925,23 +937,23 @@ void CEqPhysics::ProcessContactPair(const ContactPair_t& pair)
 			appliedImpulse = CEqRigidBody::ApplyImpulseResponseTo(bodyB, pair.position, pair.normal, positionalError, pair.restitutionA, pair.frictionA);
 		}
 
-		bodyADisableResponse = (bodyA->m_flags & COLLOBJ_DISABLE_RESPONSE) > 0;
+		bodyADisableResponse = (bodyAFlags & COLLOBJ_DISABLE_RESPONSE) > 0;
 	}
 	else
 	{
 		CEqRigidBody* bodyA = (CEqRigidBody*)pair.bodyA;
 
-		bool isCarCollidingWithCar = (bodyA->m_flags & BODY_ISCAR) && (bodyB->m_flags & BODY_ISCAR);
+		bool isCarCollidingWithCar = (bodyAFlags & BODY_ISCAR) && (bodyBFlags & BODY_ISCAR);
 
 		float varyErp = (isCarCollidingWithCar ? ph_carVsCarErp.GetFloat() : combinedErp);
 
 		float positionalError = varyErp * pair.depth * pair.dt;
 
 		// correct position
-		if (!(bodyA->m_flags & BODY_FORCE_FREEZE) && !(bodyA->m_flags & BODY_INFINITEMASS) && !(bodyB->m_flags & COLLOBJ_DISABLE_RESPONSE) && pair.depth > 0)
+		if (!(bodyAFlags & BODY_FORCE_FREEZE) && !(bodyAFlags & BODY_INFINITEMASS) && !(bodyBFlags & COLLOBJ_DISABLE_RESPONSE) && pair.depth > 0)
 			bodyA->SetPosition(bodyA->GetPosition() + pair.normal*positionalError);
 
-		if (!(bodyB->m_flags & BODY_FORCE_FREEZE) && !(bodyB->m_flags & BODY_INFINITEMASS) && !(bodyA->m_flags & COLLOBJ_DISABLE_RESPONSE) && pair.depth > 0)
+		if (!(bodyBFlags & BODY_FORCE_FREEZE) && !(bodyBFlags & BODY_INFINITEMASS) && !(bodyAFlags & COLLOBJ_DISABLE_RESPONSE) && pair.depth > 0)
 			bodyB->SetPosition(bodyB->GetPosition() - pair.normal*positionalError);
 
 		impactVelocity = fabs( dot(pair.normal, bodyA->GetVelocityAtWorldPoint(pair.position) - bodyB->GetVelocityAtWorldPoint(pair.position)) );
@@ -949,7 +961,7 @@ void CEqPhysics::ProcessContactPair(const ContactPair_t& pair)
 		// apply response
 		appliedImpulse = 2.0f * CEqRigidBody::ApplyImpulseResponseTo2(bodyA, bodyB, pair.position, pair.normal, positionalError);
 
-		bodyADisableResponse = (bodyA->m_flags & COLLOBJ_DISABLE_RESPONSE) > 0;
+		bodyADisableResponse = (bodyAFlags & COLLOBJ_DISABLE_RESPONSE) > 0;
 	}
 
 	CollisionPairData_t tempPairData;
@@ -960,7 +972,7 @@ void CEqPhysics::ProcessContactPair(const ContactPair_t& pair)
 		DkList<CollisionPairData_t>& pairs = pair.bodyA->m_collisionList;
 		IEqPhysCallback* callbacks = pair.bodyA->m_callbacks;
 
-		bool canAddPair = (pair.bodyA->m_flags & COLLOBJ_COLLISIONLIST) && pairs.numElem() < PHYSICS_COLLISION_LIST_MAX;
+		bool canAddPair = (bodyAFlags & COLLOBJ_COLLISIONLIST) && pairs.numElem() < PHYSICS_COLLISION_LIST_MAX;
 
 		int oldNum = pairs.numElem();
 
@@ -979,10 +991,10 @@ void CEqPhysics::ProcessContactPair(const ContactPair_t& pair)
 		collData.impactVelocity = impactVelocity;
 		collData.flags = 0;
 
-		if (pair.bodyA->m_flags & COLLOBJ_DISABLE_RESPONSE)
+		if (bodyAFlags & COLLOBJ_DISABLE_RESPONSE)
 			collData.flags |= COLLPAIRFLAG_OBJECTA_NO_RESPONSE;
 
-		if (bodyB->m_flags & COLLOBJ_DISABLE_RESPONSE)
+		if (bodyBFlags & COLLOBJ_DISABLE_RESPONSE)
 			collData.flags |= COLLPAIRFLAG_OBJECTB_NO_RESPONSE;
 
 		if (callbacks)
@@ -995,7 +1007,7 @@ void CEqPhysics::ProcessContactPair(const ContactPair_t& pair)
 		DkList<CollisionPairData_t>& pairs = pair.bodyB->m_collisionList;
 		IEqPhysCallback* callbacks = pair.bodyB->m_callbacks;
 
-		bool canAddPair = (bodyB->m_flags & COLLOBJ_COLLISIONLIST) && pairs.numElem() < PHYSICS_COLLISION_LIST_MAX;
+		bool canAddPair = (bodyBFlags & COLLOBJ_COLLISIONLIST) && pairs.numElem() < PHYSICS_COLLISION_LIST_MAX;
 
 		int oldNum = pairs.numElem();
 
@@ -1013,13 +1025,13 @@ void CEqPhysics::ProcessContactPair(const ContactPair_t& pair)
 		collData.impactVelocity = impactVelocity;
 		collData.flags = 0;
 
-		if ((bodyB->m_flags & BODY_ISCAR) && !(pair.flags & COLLPAIRFLAG_OBJECTA_STATIC))
+		if ((bodyBFlags & BODY_ISCAR) && !(pair.flags & COLLPAIRFLAG_OBJECTA_STATIC))
 			collData.flags = COLLPAIRFLAG_NO_SOUND;
 
 		if (bodyADisableResponse)
 			collData.flags |= COLLPAIRFLAG_OBJECTB_NO_RESPONSE;
 
-		if (bodyB->m_flags & COLLOBJ_DISABLE_RESPONSE)
+		if (bodyBFlags & COLLOBJ_DISABLE_RESPONSE)
 			collData.flags |= COLLPAIRFLAG_OBJECTA_NO_RESPONSE;
 
 		if (callbacks)
@@ -1107,7 +1119,8 @@ void CEqPhysics::SimulateStep(float deltaTime, int iteration, FNSIMULATECALLBACK
 	{
 		CEqRigidBody* body = m_moveable[i];
 
-		for (int j = 0; j < body->m_contactPairs.numElem(); j++)
+		int numContactPairs = body->m_contactPairs.numElem();
+		for (int j = 0; j < numContactPairs; j++)
 			ProcessContactPair(body->m_contactPairs[j]);
 
 		// set after collisions processed
@@ -1223,7 +1236,8 @@ bool CEqPhysics::TestLineCollisionOnCell(int y, int x,
 	// static objects are not checked if line is not in Y bound
 	if(staticInBoundTest && (objectTypeTesting & 0x1))
 	{
-		for (int i = 0; i < cell->m_gridObjects.numElem(); i++)
+		int numGridObjs = cell->m_gridObjects.numElem();
+		for (int i = 0; i < numGridObjs; i++)
 		{
 			CollisionData_t tempColl;
 
@@ -1240,7 +1254,8 @@ bool CEqPhysics::TestLineCollisionOnCell(int y, int x,
 	if(objectTypeTesting & 0x2)
 	{
 		// test dynamic objects within cell
-		for (int i = 0; i < cell->m_dynamicObjs.numElem(); i++)
+		int numGridDynamicObjs = cell->m_dynamicObjs.numElem();
+		for (int i = 0; i < numGridDynamicObjs; i++)
 		{
 			CollisionData_t tempColl;
 
