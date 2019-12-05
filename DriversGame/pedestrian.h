@@ -113,7 +113,6 @@ protected:
 	void				OnCarCollisionEvent(const CollisionPairData_t& pair, CGameObject* hitBy);
 
 	CPhysicsHFObject*	m_physObj;
-	bool				m_onGround;
 
 	Vector3D			m_pedSteerAngle;
 

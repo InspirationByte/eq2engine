@@ -312,12 +312,16 @@ eqPhysSurfParam_t* CEqPhysics::GetSurfaceParamByID(int id)
 void CEqPhysics::AddToMoveableList( CEqRigidBody* body )
 {
 	if(!body)
+		return;	
+	
+	if (body->m_flags & BODY_MOVEABLE)
 		return;
 
 	Threading::CScopedMutex m(m_mutex);
 
-	CHECK_ALREADY_IN_LIST(m_moveable, body);
+	body->m_flags |= BODY_MOVEABLE;
 
+	CHECK_ALREADY_IN_LIST(m_moveable, body);
 	m_moveable.append( body );
 }
 
@@ -330,6 +334,8 @@ void CEqPhysics::AddToWorld( CEqRigidBody* body, bool moveable )
 
 	CHECK_ALREADY_IN_LIST(m_dynObjects, body);
 
+	body->m_flags |= COLLOBJ_TRANSFORM_DIRTY;
+
 	m_dynObjects.append(body);
 
 	if(moveable)
@@ -338,15 +344,28 @@ void CEqPhysics::AddToWorld( CEqRigidBody* body, bool moveable )
 		SetupBodyOnCell( body );
 }
 
-void CEqPhysics::RemoveFromWorld( CEqRigidBody* body )
+bool CEqPhysics::RemoveFromWorld( CEqRigidBody* body )
 {
 	if(!body)
-		return;
+		return false;
 
 	Threading::CScopedMutex m(m_mutex);
 
-	m_dynObjects.fastRemove(body);
-	m_moveable.fastRemove(body);
+	collgridcell_t* cell = body->GetCell();
+
+	if (cell)
+		cell->m_dynamicObjs.fastRemove(body);
+
+	bool result = m_dynObjects.fastRemove(body);
+
+	if (result)
+	{
+		body->m_flags &= ~BODY_MOVEABLE;
+		m_moveable.fastRemove(body);
+	}
+		
+
+	return result;
 }
 
 void CEqPhysics::DestroyBody( CEqRigidBody* body )
@@ -354,16 +373,8 @@ void CEqPhysics::DestroyBody( CEqRigidBody* body )
 	if(!body)
 		return;
 
-	Threading::CScopedMutex m(m_mutex);
-
-	collgridcell_t* cell = body->GetCell();
-
-	if(cell)
-		cell->m_dynamicObjs.fastRemove(body);
-
-	m_dynObjects.fastRemove(body);
-	m_moveable.fastRemove(body);
-	delete body;
+	if(RemoveFromWorld(body))
+		delete body;
 }
 
 void CEqPhysics::AddGhostObject( CEqCollisionObject* object )

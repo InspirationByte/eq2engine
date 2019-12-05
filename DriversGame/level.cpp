@@ -1711,13 +1711,10 @@ void CGameLevel::Render(const Vector3D& cameraPosition, const occludingFrustum_t
 		// query this region
 		if(region)
 		{
-			region->m_render = !(renderTranslucency && !region->m_hasTransparentSubsets); 
+			bool render = !(renderTranslucency && !region->m_hasTransparentSubsets); 
 
-			if(region->m_render)
-			{
+			if(render)
 				region->Render( cameraPosition, occlFrustum, nRenderFlags );
-				region->m_render = false;
-			}
 		}
 		
 		int dx[8] = NEIGHBOR_OFFS_XDX(camPosReg.x, 1);
@@ -1730,13 +1727,10 @@ void CGameLevel::Render(const Vector3D& cameraPosition, const occludingFrustum_t
 
 			if(nregion && !(renderTranslucency && !nregion->m_hasTransparentSubsets))
 			{
-				nregion->m_render = occlFrustum.IsBoxVisible( nregion->m_bbox );
+				bool render = occlFrustum.IsBoxVisible( nregion->m_bbox );
 
-				if(nregion->m_render)
-				{
+				if(render)
 					nregion->Render( cameraPosition, occlFrustum, nRenderFlags );
-					nregion->m_render = false;
-				}
 			}
 		}
 	}
@@ -1756,7 +1750,8 @@ void CGameLevel::Render(const Vector3D& cameraPosition, const occludingFrustum_t
 		g_pShaderAPI->SetVertexBuffer( NULL, 2 );
 
 		// walk thru all defs
-		for(int i = 0; i < m_objectDefs.numElem(); i++)
+		int numObjectDefs = m_objectDefs.numElem();
+		for(int i = 0; i < numObjectDefs; i++)
 		{
 			CLevObjectDef* def = m_objectDefs[i];
 

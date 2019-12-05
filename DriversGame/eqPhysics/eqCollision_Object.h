@@ -43,8 +43,8 @@ enum ECollisionObjectFlags
 	COLLOBJ_ISGHOST					= (1 << 4),
 
 	//---------------
-
 	// special flags
+
 	COLLOBJ_TRANSFORM_DIRTY			= (1 << 31),
 };
 

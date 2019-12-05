@@ -76,8 +76,10 @@ void CEqCollisionObject::Destroy()
 {
 	delete m_collObject;
 
-	if(!m_studioShape)
+	if (!m_studioShape)
 		delete m_shape;
+
+	m_studioShape = false;
 
 	delete m_trimap;
 
@@ -177,6 +179,8 @@ bool CEqCollisionObject::Initialize( CEqBulletIndexedMesh* mesh )
 
 	m_collObject->setUserPointer(this);
 
+	m_studioShape = false;
+
 	return true;
 }
 
@@ -201,6 +205,8 @@ bool CEqCollisionObject::Initialize(const FVector3D& boxMins, const FVector3D& b
 
 	m_collObject->setUserPointer(this);
 
+	m_studioShape = false;
+
 	return true;
 }
 
@@ -218,6 +224,8 @@ bool CEqCollisionObject::Initialize(float radius)
 
 	m_collObject->setUserPointer(this);
 
+	m_studioShape = false;
+
 	return true;
 }
 
@@ -234,6 +242,8 @@ bool CEqCollisionObject::Initialize(float radius, float height)
 	InitAABB();
 
 	m_collObject->setUserPointer(this);
+
+	m_studioShape = false;
 
 	return true;
 }

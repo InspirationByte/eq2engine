@@ -276,7 +276,6 @@ public:
 	DkList<regZone_t>				m_zones;
 
 	// TODO: road array, visibility data and other....
-	bool							m_render;
 	bool							m_isLoaded;
 	int								m_regionIndex;
 

@@ -260,7 +260,7 @@ public:
 	void							AddToMoveableList( CEqRigidBody* body );			///< adds object to moveable list
 
 	void							AddToWorld( CEqRigidBody* body, bool moveable = true );	///< adds to processing
-	void							RemoveFromWorld( CEqRigidBody* body );				///< removes body from world, not deleting
+	bool							RemoveFromWorld( CEqRigidBody* body );				///< removes body from world, not deleting
 	void							DestroyBody( CEqRigidBody* body );					///< destroys body
 
 	void							SetupBodyOnCell( CEqCollisionObject* body );		///< only rigid body and ghost objects

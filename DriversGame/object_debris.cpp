@@ -26,7 +26,6 @@ CObject_Debris::CObject_Debris( kvkeybase_t* kvdata )
 	m_keyValues = kvdata;
 
 	m_physBody = nullptr;
-	m_collOccured = false;
 	m_fTimeToRemove = 0.0f;
 	m_surfParams = nullptr;
 
@@ -185,7 +184,6 @@ void CObject_Debris::SpawnAsHubcap(IEqModel* model, int8 bodyGroup)
 {
 	m_pModel = model;
 	m_bodyGroupFlags = (1 << bodyGroup);
-	m_collOccured = true;
 
 	m_drawFlags |= GO_DRAW_FLAG_SHADOW;
 
@@ -250,7 +248,6 @@ void CObject_Debris::SpawnAsBreakablePart(IEqModel* model, int8 bodyGroup, int p
 {
 	m_pModel = model;
 	m_bodyGroupFlags = (1 << bodyGroup);
-	m_collOccured = true;
 
 	if(g_pShaderAPI->GetCaps().isInstancingSupported &&
 		m_pModel && m_pModel->GetInstancer() == NULL)
@@ -369,7 +366,7 @@ void CObject_Debris::Draw( int nRenderFlags )
 	//if(!g_pGameWorld->m_frustum.IsSphereInside(GetOrigin(), length(objBody->m_aabb.maxPoint)))
 	//	return;
 
-	if(m_collOccured)
+	if(IsSmashed())
 	{
 		m_physBody->UpdateBoundingBoxTransform();
 		m_bbox = m_physBody->m_aabb_transformed;
@@ -438,17 +435,15 @@ void CObject_Debris::Simulate(float fDt)
 	if(fDt <= 0.0f)
 		return;
 
-	if(m_collOccured)
+	bool moved = (m_physBody->m_flags & BODY_MOVEABLE) > 0;
+
+	if(moved)
+	{
 		m_fTimeToRemove -= fDt;
 
-	if (!m_physBody)
-		return;
-
-	if(m_collOccured)
-	{
 		m_vecOrigin = m_physBody->GetPosition();
-		m_vecAngles = eulers(m_physBody->GetOrientation());
-		m_vecAngles = VRAD2DEG(m_vecAngles);
+		Vector3D eulersAng = eulers(m_physBody->GetOrientation());
+		m_vecAngles = VRAD2DEG(eulersAng);
 
 		if(m_fTimeToRemove < 0.0f)
 		{
@@ -467,12 +462,11 @@ void CObject_Debris::Simulate(float fDt)
 
 	auto& collList = m_physBody->m_collisionList;
 
+	eqPhysSurfParam_t* surf = m_surfParams;
+
 	// process collisions
 	for(int i = 0; i < collList.numElem(); i++)
 	{
-		if (m_state == GO_STATE_REMOVE)
-			break;
-
 		const CollisionPairData_t& pair = collList[i];
 
 		float impulse = pair.appliedImpulse * m_physBody->GetInvMass();
@@ -484,7 +478,7 @@ void CObject_Debris::Simulate(float fDt)
 				// make debris
 				BreakAndSpawnDebris();
 			}
-			else if (!m_collOccured) // need this because break debris would change model
+			else if (!moved) // need this because break debris would change model
 			{
 				if (m_smashSpawn.Length() > 0)
 				{
@@ -505,7 +499,7 @@ void CObject_Debris::Simulate(float fDt)
 			}
 		}
 
-		if(m_surfParams && pair.impactVelocity > 3.0f && m_surfParams->word == 'M')
+		if(surf && surf->word == 'M' && pair.impactVelocity > 3.0f )
 		{
 			Vector3D wVelocity = m_physBody->GetVelocityAtWorldPoint( pair.position );
 			Vector3D reflDir = reflect(wVelocity, pair.normal);
@@ -516,13 +510,13 @@ void CObject_Debris::Simulate(float fDt)
 		CEqCollisionObject* obj = pair.GetOppositeTo(m_physBody);
 		EmitHitSoundEffect(this, m_smashSound.c_str(), pair.position, pair.impactVelocity, 50.0f);
 
-		if(!m_collOccured && obj->IsDynamic())
+		if(!moved && obj->IsDynamic())
 		{
-			m_collOccured = true;
-			m_fTimeToRemove = 0;
+			moved = true;
+			m_fTimeToRemove = 0.0f;
 
 			g_pPhysics->m_physics.AddToMoveableList(m_physBody);
-			m_physBody->Wake();
+			//m_physBody->Wake();
 
 			CEqRigidBody* body = (CEqRigidBody*)obj;
 			bool isCar = (body->m_flags & BODY_ISCAR) > 0;

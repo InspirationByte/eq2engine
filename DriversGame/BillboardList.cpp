@@ -300,6 +300,8 @@ void CBillboardList::DrawBillboards()
 
 	int numDrawnSprites = 0;
 
+	worldinfo_t worldInfo = g_pGameWorld->m_info;
+
 	for(int i = 0; i < m_sprites.numElem(); i++)
 	{
 		const blbsprite_t& sprite = m_sprites[i];
@@ -310,7 +312,7 @@ void CBillboardList::DrawBillboards()
 
 #ifdef GAME_DRIVERS
 
-		effect.vColor = g_pGameWorld->m_info.ambientColor;
+		effect.vColor = worldInfo.ambientColor;
 
 		Vector3D posAsNormal = fastNormalize(effect.vOrigin-blbCenter);
 
@@ -320,12 +322,12 @@ void CBillboardList::DrawBillboards()
 				continue;
 		}
 
-		float fSunDiffuse = saturate(dot(posAsNormal, g_pGameWorld->m_info.sunDir)*0.5f+0.5f);
+		float fSunDiffuse = saturate(dot(posAsNormal, worldInfo.sunDir)*0.5f+0.5f);
 
 		// central billboards are darker
 		//float fLightFactor = length(effect.vOrigin.xz()-blbCenter.xz())*fTreeSizeFactor;
 
-		effect.vColor += g_pGameWorld->m_info.sunColor * fSunDiffuse;// *fLightFactor;
+		effect.vColor += worldInfo.sunColor * fSunDiffuse;// *fLightFactor;
 
 		for(int j = 0; j < numLights; j++)
 		{

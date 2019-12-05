@@ -54,7 +54,7 @@ public:
 
 	int					ObjType() const		{ return GO_DEBRIS; }
 
-	bool				IsSmashed() const { return m_collOccured; }
+	bool				IsSmashed() const { return m_physBody && (m_physBody->m_flags & BODY_MOVEABLE) > 0; }
 
 	void				L_SetContents(int contents);
 	void				L_SetCollideMask(int contents);
@@ -67,7 +67,6 @@ protected:
 	void				BreakAndSpawnDebris();
 
 	CEqRigidBody*		m_physBody;
-	bool				m_collOccured;
 	float				m_fTimeToRemove;
 	EqString			m_smashSound;
 	eqPhysSurfParam_t*	m_surfParams;

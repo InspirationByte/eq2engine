@@ -10,6 +10,8 @@
 #include "input.h"
 #include "world.h"
 
+#include "Shiny.h"
+
 //-----------------------------------------------------------------------
 // Jack tribute
 //-----------------------------------------------------------------------
@@ -85,7 +87,6 @@ void DrawJackParticle(const Vector3D& from, const Vector3D& to, float width, Tex
 
 CPedestrian::CPedestrian() : CAnimatingEGF(), CControllableGameObject(), m_thinker(this), m_physObj(nullptr)
 {
-	m_onGround = false;
 	m_pedState = 0;
 
 	m_thinkTime = 0;
@@ -236,24 +237,11 @@ const float PEDESTRIAN_THINK_TIME = 0.0f;
 
 void CPedestrian::OnPhysicsFrame(float fDt)
 {
+	PROFILE_FUNC();
+
 	CEqRigidBody* physBody = m_physObj->GetBody();
 
-	m_vecOrigin = physBody->GetPosition();
-
-	if (!physBody->IsFrozen())
-		m_onGround = false;
-
-	for (int i = 0; i < physBody->m_collisionList.numElem(); i++)
-	{
-		CollisionPairData_t& pair = physBody->m_collisionList[i];
-
-		m_onGround = (pair.bodyB && pair.bodyB->GetContents() == OBJECTCONTENTS_SOLID_GROUND);
-
-		if (m_onGround)
-			break;
-	}
-
-	const Vector3D& velocity = physBody->GetLinearVelocity();
+	Vector3D velocity = physBody->GetLinearVelocity();
 
 	Vector3D preferredMove(0.0f);
 
@@ -263,7 +251,9 @@ void CPedestrian::OnPhysicsFrame(float fDt)
 	// do pedestrian thinker
 	if (m_hasAI)
 	{
+		PROFILE_BEGIN(DoStatesAndEvents);
 		int res = m_thinker.DoStatesAndEvents(fDt);
+		PROFILE_END();
 	}
 
 	int controlButtons = GetControlButtons();
@@ -271,9 +261,12 @@ void CPedestrian::OnPhysicsFrame(float fDt)
 	Activity bestMoveActivity = (controlButtons & IN_BURNOUT) ? ACT_RUN : ACT_WALK;
 	float bestMaxSpeed = (bestMoveActivity == ACT_RUN) ? MAX_RUN_VELOCITY : MAX_WALK_VELOCITY;
 
+
 	if (fDt > 0.0f)
 	{
-		if (length(velocity) < bestMaxSpeed)
+		const float bestMaxSpeedSqr = bestMaxSpeed * bestMaxSpeed;
+
+		if (lengthSqr(velocity) < bestMaxSpeedSqr)
 		{
 			if (controlButtons & IN_ACCELERATE)
 				preferredMove += forwardVec * ACCEL_RATIO;
@@ -293,17 +286,16 @@ void CPedestrian::OnPhysicsFrame(float fDt)
 		physBody->TryWake(false);
 
 	Activity idleAct = ACT_IDLE;
+	int pedState = m_pedState;
 
-	if (m_pedState == 1)
+	if (pedState == 1)
 	{
 		idleAct = ACT_IDLE_WPN;
 	}
-	else if (m_pedState == 2)
+	else if (pedState == 2)
 	{
 		idleAct = ACT_IDLE_CROUCH;
 	}
-	else
-		m_pedState = 0;
 
 	Activity currentAct = GetCurrentActivity();
 
@@ -319,7 +311,6 @@ void CPedestrian::OnPhysicsFrame(float fDt)
 	}
 	else if (currentAct != idleAct)
 		SetActivity(idleAct);
-
 }
 
 void CPedestrian::Simulate(float fDt)
@@ -337,8 +328,6 @@ void CPedestrian::Simulate(float fDt)
 		m_pedState = 2;
 	else if (controlButtons & IN_HANDBRAKE)
 		m_pedState = 0;
-
-	m_vecOrigin = m_physObj->GetBody()->GetPosition();
 
 	AdvanceFrame(fDt);
 	DebugRender(m_worldMatrix);
@@ -468,19 +457,22 @@ void CPedestrianAI::DetectEscape()
 
 	DkList<CGameObject*> nearestCars;
 	g_pGameWorld->QueryObjects(nearestCars, AI_PEDESTRIAN_CAR_AFRAID_MAX_RADIUS, pedPos, [](CGameObject* x) {
-		return (x->ObjType() == GO_CAR || x->ObjType() == GO_CAR_AI);
+		int objType = x->ObjType();
+		return (objType == GO_CAR || objType == GO_CAR_AI);
 	});
 
-	for (int i = 0; i < nearestCars.numElem(); i++)
+	int numCars = nearestCars.numElem();
+	for (int i = 0; i < numCars; i++)
 	{
 		CControllableGameObject* nearCar = (CControllableGameObject*)nearestCars[i];
 
 		Vector3D carPos = nearCar->GetOrigin();
-		Vector3D carHeadingPos = carPos + nearCar->GetVelocity();
+		Vector3D carVel = nearCar->GetVelocity();
+		Vector3D carHeadingPos = carPos + carVel;
 
 		float projResult = lineProjection(carPos, carHeadingPos, pedPos);
 
-		float velocity = length(nearCar->GetVelocity());
+		float velocity = length(carVel);
 		float dist = length(carPos - pedPos);
 
 		bool hasSirenOrHorn = nearCar->GetControlButtons() & IN_HORN;
@@ -493,7 +485,7 @@ void CPedestrianAI::DetectEscape()
 			if (tooNearToCar)
 			{
 				m_escapeFromPos = pedPos;
-				m_escapeDir = normalize(pedPos - carPos);
+				m_escapeDir = fastNormalize(pedPos - carPos);
 
 				AI_SetState(&CPedestrianAI::DoEscape);
 			}
@@ -504,7 +496,7 @@ void CPedestrianAI::DetectEscape()
 				if (hasSirenOrHorn || length(projPos - pedPos) < AI_PEDESTRIAN_CAR_AFRAID_STRAIGHT_RADIUS)
 				{
 					m_escapeFromPos = pedPos;
-					m_escapeDir = normalize(pedPos - projPos + nearCar->GetVelocity()*0.01f);
+					m_escapeDir = fastNormalize(pedPos - projPos);
 
 					AI_SetState(&CPedestrianAI::DoEscape);
 

@@ -243,23 +243,25 @@ void CObject_TrafficLight::Simulate(float fDt)
 		float greenBlinker = 1.0f;
 		bool drawOrange = false;
 
+		float globalTrafficLightTime = g_pGameWorld->m_globalTrafficLightTime;
+
 		// green light - blinks if remaining time less than 6 seconds, then yellow light shown when less than 2 seconds
 		if(g_pGameWorld->m_globalTrafficLightDirection == trafDir)
 		{
-			drawOrange = (g_pGameWorld->m_globalTrafficLightTime < 2.0f);
+			drawOrange = (globalTrafficLightTime < 2.0f);
 
-			bool blinkGreen = (g_pGameWorld->m_globalTrafficLightTime < 6.0f) && !drawOrange;
+			bool blinkGreen = (globalTrafficLightTime < 6.0f) && !drawOrange;
 
 			drawnLightType = 2;
 
 			if(blinkGreen)
-				greenBlinker = clamp(sinf(g_pGameWorld->m_globalTrafficLightTime*7.0f)*100.0f, 0.0f, 1.0f);
+				greenBlinker = clamp(sinf(globalTrafficLightTime*7.0f)*100.0f, 0.0f, 1.0f);
 			else if(drawOrange)
 				drawnLightType = -1;
 		}
 		else // red light - shown always and yellow shows when time is less than 3 seconds
 		{
-			drawOrange = (g_pGameWorld->m_globalTrafficLightTime < 3.0f);
+			drawOrange = (globalTrafficLightTime < 3.0f);
 			drawnLightType = 0;
 		}
 
@@ -268,20 +270,22 @@ void CObject_TrafficLight::Simulate(float fDt)
 		{
 			for(int i = 0; i < m_lights.numElem(); i++)
 			{
-				if(m_lights[i].type == 0 && drawnLightType == 0)
+				trafficlights_t tl = m_lights[i];
+
+				if(tl.type == 0 && drawnLightType == 0)
 				{
-					DrawLightEffect(m_lights[i].position, ColorRGBA(lightColorTypes[m_lights[i].type]*flickerVal, 1.0f) * fAngFade, TRAFFICLIGHT_GLOW_SIZE, 1);
-					DrawLightEffect(m_lights[i].position, ColorRGBA(lightColorTypes[m_lights[i].type]*flickerVal*0.5f, 1.0f) * fAngFade, TRAFFICLIGHT_GLOW_SIZE*2.0f, 2);
+					DrawLightEffect(tl.position, ColorRGBA(lightColorTypes[tl.type]*flickerVal, 1.0f) * fAngFade, TRAFFICLIGHT_GLOW_SIZE, 1);
+					DrawLightEffect(tl.position, ColorRGBA(lightColorTypes[tl.type]*flickerVal*0.5f, 1.0f) * fAngFade, TRAFFICLIGHT_GLOW_SIZE*2.0f, 2);
 				}
-				else if(m_lights[i].type == 2 && drawnLightType == 2)
+				else if(tl.type == 2 && drawnLightType == 2)
 				{
-					DrawLightEffect(m_lights[i].position, ColorRGBA(lightColorTypes[m_lights[i].type]*flickerVal, 1.0f) * fAngFade * greenBlinker, TRAFFICLIGHT_GLOW_SIZE, 1);
-					DrawLightEffect(m_lights[i].position, ColorRGBA(lightColorTypes[m_lights[i].type]*flickerVal*0.5f, 1.0f) * fAngFade * greenBlinker, TRAFFICLIGHT_GLOW_SIZE*2.0f, 2);
+					DrawLightEffect(tl.position, ColorRGBA(lightColorTypes[tl.type]*flickerVal, 1.0f) * fAngFade * greenBlinker, TRAFFICLIGHT_GLOW_SIZE, 1);
+					DrawLightEffect(tl.position, ColorRGBA(lightColorTypes[tl.type]*flickerVal*0.5f, 1.0f) * fAngFade * greenBlinker, TRAFFICLIGHT_GLOW_SIZE*2.0f, 2);
 				}
-				else if(m_lights[i].type == 1 && drawOrange)
+				else if(tl.type == 1 && drawOrange)
 				{
-					DrawLightEffect(m_lights[i].position, ColorRGBA(lightColorTypes[m_lights[i].type]*flickerVal, 1.0f) * fAngFade, TRAFFICLIGHT_GLOW_SIZE, 1);
-					DrawLightEffect(m_lights[i].position, ColorRGBA(lightColorTypes[m_lights[i].type]*flickerVal*0.5f, 1.0f) * fAngFade, TRAFFICLIGHT_GLOW_SIZE*2.0f, 2);
+					DrawLightEffect(tl.position, ColorRGBA(lightColorTypes[tl.type]*flickerVal, 1.0f) * fAngFade, TRAFFICLIGHT_GLOW_SIZE, 1);
+					DrawLightEffect(tl.position, ColorRGBA(lightColorTypes[tl.type]*flickerVal*0.5f, 1.0f) * fAngFade, TRAFFICLIGHT_GLOW_SIZE*2.0f, 2);
 				}
 			} // for
 		} // check

@@ -129,11 +129,9 @@ void ClipVerts(DkList<PFXVertex_t>& verts, const Plane &plane)
 
 		if (d[0] >= 0 && d[1] >= 0 && d[2] >= 0)
 		{
-
 			new_vertices.append(verts[i]);
 			new_vertices.append(verts[i+1]);
 			new_vertices.append(verts[i+2]);
-
 		}
 		else if (d[0] < 0 && d[1] < 0 && d[2] < 0)
 		{

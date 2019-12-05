@@ -138,7 +138,6 @@ void CObject_Tree::Draw( int nRenderFlags )
 		BaseClass::Draw( nRenderFlags );
 
 	// draw
-	// TODO: lights
 	if(m_blbList)
 	{
 		materials->SetMatrix( MATRIXMODE_WORLD, m_worldMatrix);

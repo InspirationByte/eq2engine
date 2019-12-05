@@ -127,7 +127,6 @@ CLevelRegion::CLevelRegion()
 
 	m_hasTransparentSubsets = false;
 
-	m_render = true;
 	m_isLoaded = false;
 	m_scriptEventCallbackCalled = true;
 	m_queryTimes.SetValue(0);
@@ -382,7 +381,9 @@ void CLevelRegion::Render(const Vector3D& cameraPosition, const occludingFrustum
 
 	const ShaderAPICaps_t& caps = g_pShaderAPI->GetCaps();
 
-	for(int i = 0; i < m_objects.numElem(); i++)
+	int numObjects = m_objects.numElem();
+
+	for(int i = 0; i < numObjects; i++)
 	{
 		regionObject_t* ref = m_objects[i];
 		CLevObjectDef* cont = ref->def;

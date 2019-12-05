@@ -49,6 +49,11 @@ enum EBodyFlags
 
 	// forces to use Box instead of this object's shape
 	BODY_BOXVSDYNAMIC			= (1 << 23),
+
+	//---------------
+	// special flags
+
+	BODY_MOVEABLE				= (1 << 30),
 };
 
 ///

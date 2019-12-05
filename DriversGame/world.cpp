@@ -1331,10 +1331,10 @@ void CGameWorld::UpdateRenderables( const occludingFrustum_t& frustum )
 		return;
 
 	// simulate objects of world
-	
-	for(int i = 0; i < g_pGameWorld->m_gameObjects.numElem(); i++)
+	int numObjects = m_gameObjects.numElem();
+	for(int i = 0; i < numObjects; i++)
 	{
-		CGameObject* obj = g_pGameWorld->m_gameObjects[i];
+		CGameObject* obj = m_gameObjects[i];
 
 		if(obj->m_state != GO_STATE_IDLE)
 			continue;
@@ -2118,9 +2118,9 @@ void CGameWorld::Draw( int nRenderFlags )
 	PROFILE_END();
 
 	PROFILE_BEGIN(PostDraw);
-	for (int i = 0; i < g_pGameWorld->m_gameObjects.numElem(); i++)
+	for (int i = 0; i < m_gameObjects.numElem(); i++)
 	{
-		CGameObject* obj = g_pGameWorld->m_gameObjects[i];
+		CGameObject* obj = m_gameObjects[i];
 
 		if (obj->m_state != GO_STATE_IDLE)
 			continue;
@@ -2538,16 +2538,20 @@ CGameObject* CGameWorld::FindObjectByName( const char* objectName ) const
 
 void CGameWorld::QueryObjects(DkList<CGameObject*>& list, float radius, const Vector3D& position, bool(*comparator)(CGameObject* obj)) const
 {
-	for (int i = 0; i < m_gameObjects.numElem(); i++)
+	int numObjs = m_gameObjects.numElem();
+
+	float radiusSqr = radius * radius;
+
+	for (int i = 0; i < numObjs; i++)
 	{
 		CGameObject* obj = m_gameObjects[i];
 
 		if(obj->m_state >= GO_STATE_REMOVE)
 			continue;
 
-		float dist = length(obj->GetOrigin() - position);
+		float dist = lengthSqr(obj->m_vecOrigin - position);
 
-		if (dist > radius)
+		if (dist > radiusSqr)
 			continue;
 
 		if(comparator(obj))
@@ -2611,16 +2615,20 @@ OOLUA::Table CGameWorld::L_QueryObjects(float radius, const Vector3D& position, 
 
 	int numObjs = 0;
 
-	for (int i = 0; i < m_gameObjects.numElem(); i++)
+	int objectCount = m_gameObjects.numElem();
+	const float radiusSqr = radius * radius;
+
+
+	for (int i = 0; i < objectCount; i++)
 	{
 		CGameObject* obj = m_gameObjects[i];
 
 		if (obj->m_state >= GO_STATE_REMOVE)
 			continue;
 
-		float dist = length(obj->GetOrigin() - position);
+		float dist = lengthSqr(obj->GetOrigin() - position);
 
-		if (dist > radius)
+		if (dist > radiusSqr)
 			continue;
 
 		{
