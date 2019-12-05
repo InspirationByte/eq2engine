@@ -2254,7 +2254,9 @@ void CCar::OnPhysicsFrame( float fDt )
 	bool		doImpulseSound = false;
 	bool		hasHitWater = false;
 
-	Matrix4x4 worldMatrix = m_worldMatrix;
+	Matrix4x4 worldMatrix;
+	carBody->ConstructRenderMatrix(worldMatrix);
+	m_worldMatrix = worldMatrix;
 
 	// TODO: move all processing to OnPhysicsCollide
 	for(int i = 0; i < m_collisionList.numElem(); i++)
