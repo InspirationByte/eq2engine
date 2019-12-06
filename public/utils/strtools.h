@@ -130,11 +130,7 @@ namespace EqStringConv
 	class utf8_to_wchar
 	{
 	public:
-		utf8_to_wchar(const char* val);
-		operator const EqWString&() const
-		{
-			return m_str;
-		}
+		utf8_to_wchar(EqWString& outStr, const char* val, int length = -1);
 	private:
 		uint32 NextByte()
 		{
@@ -148,19 +144,12 @@ namespace EqStringConv
 		uint32	GetChar();
 
 		ubyte* m_utf8;
-		EqWString m_str;
 	};
 
 	class wchar_to_utf8
 	{
 	public:
-		wchar_to_utf8(const wchar_t* val);
-		operator const EqString&() const
-		{
-			return m_str;
-		}
-	private:
-		EqString m_str;
+		wchar_to_utf8(EqString& outStr, const wchar_t* val, int length = -1);
 	};
 };
 

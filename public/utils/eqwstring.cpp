@@ -174,14 +174,12 @@ bool EqWString::Resize(uint nSize, bool bCopy)
 // string assignment with conversion (or setvalue)
 void EqWString::Assign(const char* pszStr, int len)
 {
-	EqStringConv::utf8_to_wchar conv( pszStr );
-	Assign( conv, 0, len );
+	EqStringConv::utf8_to_wchar conv( (*this), pszStr, len);
 }
 
 void EqWString::Assign(const EqString &str, int nStart, int len)
 {
-	EqStringConv::utf8_to_wchar conv( str.c_str() );
-	Assign(conv, nStart, len);
+	EqStringConv::utf8_to_wchar conv((*this), str.c_str() + nStart);
 }
 
 // string assignment (or setvalue)

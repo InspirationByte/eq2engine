@@ -515,23 +515,27 @@ wchar_t const* xwcsistr( wchar_t const* pStr, wchar_t const* pSearch )
 //------------------------------------------------------
 namespace EqStringConv
 {
-	utf8_to_wchar::utf8_to_wchar(const char* val)
+	utf8_to_wchar::utf8_to_wchar(EqWString& outStr, const char* val, int len /*= -1*/)
 	{
 		m_utf8 = (ubyte*) val;
 
 		int length = GetLength();
 
-		m_str.ExtendAlloc( length );
+		if(len == -1)
+			len = length;
 
-		while (true)
+		outStr.ExtendAlloc( length );
+
+		do
 		{
 			uint32 wch = GetChar();
 
 			if (!wch)
 				break;
 
-			m_str.Append(wch);
+			outStr.Append(wch);
 		}
+		while (length--);
 	}
 
 	int utf8_to_wchar::GetLength()
@@ -602,42 +606,52 @@ namespace EqStringConv
 
 	//--------------------------------------------------------------
 
-	wchar_to_utf8::wchar_to_utf8(const wchar_t* val)
+	wchar_to_utf8::wchar_to_utf8(EqString& outStr, const wchar_t* val, int len = -1)
 	{
+		if (len == -1)
+			len = wcslen(val) * 4;
+		else
+			len *= 4;
+
 		// to not call too many allocations
-		m_str.ExtendAlloc( wcslen(val)*4 );
+		outStr.ExtendAlloc(len);
 
 		uint32 code;
-		for (int i = 0; val[i]; i++)
+		do
 		{
-			code = val[i];
+			code = *val++;
+
+			if(code == 0)
+				break;
+
 			if (code <= 0x7F)
 			{
-				m_str.Append((char)code);
+				outStr.Append((char)code);
 			}
 			else if (code <= 0x7FF)
 			{
-				m_str.Append((code >> 6) + 192);
-				m_str.Append((code & 63) + 128);
+				outStr.Append((code >> 6) + 192);
+				outStr.Append((code & 63) + 128);
 			}
 			else if (code <= 0xFFFF)
 			{
-				m_str.Append((code >> 12) + 224);
-				m_str.Append(((code >> 6) & 63) + 128);
-				m_str.Append((code & 63) + 128);
+				outStr.Append((code >> 12) + 224);
+				outStr.Append(((code >> 6) & 63) + 128);
+				outStr.Append((code & 63) + 128);
 			}
 			else if (code <= 0x10FFFF)
 			{
-				m_str.Append((code >> 18) + 240);
-				m_str.Append(((code >> 12) & 63) + 128);
-				m_str.Append(((code >> 6) & 63) + 128);
-				m_str.Append((code & 63) + 128);
+				outStr.Append((code >> 18) + 240);
+				outStr.Append(((code >> 12) & 63) + 128);
+				outStr.Append(((code >> 6) & 63) + 128);
+				outStr.Append((code & 63) + 128);
 			}
 			else if (0xd800 <= code && code <= 0xdfff)
 			{
 				//invalid block of utf8
 			}
 		}
+		while(len--);
 	}
 
 }
