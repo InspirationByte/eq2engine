@@ -33,9 +33,13 @@ const float angVelDamp = 0.01f;//0.0125f;
 
 const float inertiaMassScale = 1.5f;
 
-const float BODY_FREEZE_TIME		= 1.0f;
-const float BODY_MIN_VELOCITY		= 0.05f;
-const float BODY_MIN_VELOCITY_WAKE	= 0.001f;
+const float BODY_FREEZE_TIME		= 0.5f;
+
+const float BODY_MIN_VELOCITY		= 0.08f;
+const float BODY_MIN_VELOCITY_ANG	= 0.08f;
+
+const float BODY_MIN_VELOCITY_WAKE		= 0.002f;
+const float BODY_MIN_VELOCITY_WAKE_ANG	= 0.005f;
 
 CEqRigidBody::CEqRigidBody() : CEqCollisionObject()
 {
@@ -143,10 +147,9 @@ void CEqRigidBody::TryWake( bool velocityCheck )
 	if(m_flags & BODY_FORCE_FREEZE)
 		return;
 
-	const Vector3D linearVel = m_linearVelocity;
-
-	if( velocityCheck && lengthSqr(linearVel) < BODY_MIN_VELOCITY_WAKE &&
-		lengthSqr(linearVel) < BODY_MIN_VELOCITY_WAKE)
+	if( velocityCheck && 
+		lengthSqr(m_linearVelocity) < BODY_MIN_VELOCITY_WAKE &&
+		lengthSqr(m_angularVelocity) < BODY_MIN_VELOCITY_WAKE_ANG)
 		return;
 
 	m_flags &= ~BODY_FROZEN;
@@ -246,22 +249,6 @@ void CEqRigidBody::Integrate(float delta)
 	// accumulate with custom delta time
 	AccumulateForces( m_lastFrameTime );
 
-	if(!(m_flags & BODY_NO_AUTO_FREEZE))
-	{
-		if( lengthSqr(m_linearVelocity) < BODY_MIN_VELOCITY &&
-			lengthSqr(m_angularVelocity) < BODY_MIN_VELOCITY)
-		{
-			m_freezeTime -= m_lastFrameTime;
-
-			if(m_freezeTime < 0.0f)
-			{
-				m_flags |= BODY_FROZEN;
-			}
-		}
-		else
-			m_freezeTime = BODY_FREEZE_TIME;
-	}
-
 	if(ph_debug_body.GetBool())
 	{
 		debugoverlay->Text3D(m_position, 50.0f, ColorRGBA(1,1,1,1), 0.0f,
@@ -284,6 +271,22 @@ void CEqRigidBody::AccumulateForces(float time)
 	Vector3D angularVelocity = m_angularVelocity;
 	Quaternion orientation = m_orientation;
 
+	int flags = m_flags;
+
+	if (!(flags & BODY_NO_AUTO_FREEZE))
+	{
+		if (lengthSqr(linearVelocity) < BODY_MIN_VELOCITY &&
+			lengthSqr(angularVelocity) < BODY_MIN_VELOCITY_ANG)
+		{
+			m_freezeTime -= time;
+
+			if (m_freezeTime < 0.0f)
+				m_flags |= BODY_FROZEN;
+		}
+		else
+			m_freezeTime = BODY_FREEZE_TIME;
+	}
+
 	// gravity to momentum
 	linearVelocity += Vector3D(0,-m_gravity,0) * time;
 
@@ -299,7 +302,7 @@ void CEqRigidBody::AccumulateForces(float time)
 	if( lengthSqr(angularVelocity) < minimumAngularVelocity )
 		angularVelocity = vec3_zero;
 
-	if(!(m_flags & BODY_DISABLE_DAMPING))
+	if(!(flags & BODY_DISABLE_DAMPING))
 	{
 		// apply damping to angular velocity
 		float scale = 1.0f - (angVelDamp * time * dampingTimeScale);

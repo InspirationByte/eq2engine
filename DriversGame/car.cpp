@@ -1548,9 +1548,11 @@ void CCar::UpdateVehiclePhysics(float delta)
 		//
 		// Calculate fake engine load effect with clutch
 		//
-		float accelEffect = m_fAcceleration+fBrake * -sign(wheelsSpeed);
-		m_fAccelEffect += (accelEffect-m_fAccelEffect) * delta * ACCELERATION_SOUND_CONST;
-		m_fAccelEffect = clamp(m_fAccelEffect, -1.0f, 1.0f);
+		float accelEffectFactor = m_fAcceleration+fBrake * -sign(wheelsSpeed);
+		float accelEffect = m_fAccelEffect;
+
+		accelEffect += (accelEffectFactor -m_fAccelEffect) * delta * ACCELERATION_SOUND_CONST;
+		accelEffect = clamp(accelEffect, -1.0f, 1.0f);
 
 		float fRPM = GetRPM();
 
@@ -1566,15 +1568,17 @@ void CCar::UpdateVehiclePhysics(float delta)
 		else
 		{
 			float absWheelsSpeed = fabs(wheelsSpeed);
-			if(absWheelsSpeed < CLUTCH_GRIP_MIN_SPEED && m_fAccelEffect > 0.0f)
+			if(absWheelsSpeed < CLUTCH_GRIP_MIN_SPEED && accelEffect > 0.0f)
 			{
-				float optimalRpmLoad = RemapValClamp(m_fAccelEffect*absWheelsSpeed, 0.0f, 1.25f, 0.0f, 1.0f);
-				fRPM = lerp(fRPM, CLUTCH_GRIP_RPM, optimalRpmLoad) - CLUTCH_GRIP_RPM_LOAD * m_fAccelEffect * RemapValClamp(absWheelsSpeed,0.0f, CLUTCH_GRIP_MIN_SPEED, 0.0f, 1.0f);
+				float optimalRpmLoad = RemapValClamp(accelEffect*absWheelsSpeed, 0.0f, 1.25f, 0.0f, 1.0f);
+				fRPM = lerp(fRPM, CLUTCH_GRIP_RPM, optimalRpmLoad) - CLUTCH_GRIP_RPM_LOAD * accelEffect * RemapValClamp(absWheelsSpeed,0.0f, CLUTCH_GRIP_MIN_SPEED, 0.0f, 1.0f);
 			}
 		}
 
 		if (numDriveWheelsOnGround == 0)
-			fRPM = 8500.0f * m_fAccelEffect;
+			fRPM = 8500.0f * accelEffect;
+
+		m_fAccelEffect = accelEffect;
 
 		//
 		// make RPM changes smooth
