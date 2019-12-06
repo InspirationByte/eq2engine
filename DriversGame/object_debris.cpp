@@ -516,7 +516,7 @@ void CObject_Debris::Simulate(float fDt)
 			m_fTimeToRemove = 0.0f;
 
 			g_pPhysics->m_physics.AddToMoveableList(m_physBody);
-			//m_physBody->Wake();
+			m_physBody->Wake();
 
 			CEqRigidBody* body = (CEqRigidBody*)obj;
 			bool isCar = (body->m_flags & BODY_ISCAR) > 0;

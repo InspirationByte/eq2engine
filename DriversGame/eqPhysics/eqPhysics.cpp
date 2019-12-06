@@ -550,11 +550,6 @@ void CEqPhysics::SolveBodyCollisions(CEqRigidBody* bodyA, CEqRigidBody* bodyB, f
 	if(!bodyA->CheckCanCollideWith(bodyB))
 		return;
 
-	// don't waste my time
-	if(	(bodyA->m_flags & COLLOBJ_DISABLE_COLLISION_CHECK) &&
-		!(bodyB->m_flags & COLLOBJ_DISABLE_COLLISION_CHECK))
-		return;
-
 	// test radius between bodies
 	float lenA = lengthSqr(bodyA->m_aabb.GetSize());
 	float lenB = lengthSqr(bodyB->m_aabb.GetSize());
@@ -837,7 +832,10 @@ void CEqPhysics::IntegrateSingle(CEqRigidBody* body)
 	// move object
 	body->Integrate( m_fDt );
 
-	if( body->IsCanIntegrate(true) )
+	bool bodyFrozen = body->IsFrozen();
+	bool forceSetCell = !oldCell && bodyFrozen;
+
+	if(!bodyFrozen && body->IsCanIntegrate(true) || forceSetCell)
 	{
 		// get new cell
 		collgridcell_t* newCell = m_grid.GetCellAtPos( body->GetPosition() );
@@ -869,6 +867,8 @@ void CEqPhysics::DetectCollisionsSingle(CEqRigidBody* body)
 	if (!body->IsCanIntegrate())
 		return;
 
+	bool disabledResponse = (body->m_flags & COLLOBJ_DISABLE_RESPONSE);
+
 	const BoundingBox& aabb = body->m_aabb_transformed;
 
 	// get the grid box range for searching collision objects
@@ -887,11 +887,16 @@ void CEqPhysics::DetectCollisionsSingle(CEqRigidBody* body)
 				continue;
 
 			int numGridObjs = ncell->m_gridObjects.numElem();
-			int numGridDynObjs = ncell->m_dynamicObjs.numElem();
 
 			// iterate over static objects in cell
 			for (int j = 0; j < numGridObjs; j++)
 				SolveStaticVsBodyCollision(ncell->m_gridObjects[j], body, body->GetLastFrameTime(), body->m_contactPairs);
+
+			// if object is only affected by other dynamic objects, don't waste my cycles!
+			if (disabledResponse)
+				continue;
+
+			int numGridDynObjs = ncell->m_dynamicObjs.numElem();
 
 			// iterate over dynamic objects in cell
 			for (int j = 0; j < numGridDynObjs; j++)
@@ -901,7 +906,7 @@ void CEqPhysics::DetectCollisionsSingle(CEqRigidBody* body)
 				if (collObj == body)
 					continue;
 
-				if(collObj->IsDynamic())
+				if (collObj->IsDynamic())
 					SolveBodyCollisions(body, (CEqRigidBody*)collObj, body->GetLastFrameTime());
 				else // purpose for triggers
 					SolveStaticVsBodyCollision(collObj, body, body->GetLastFrameTime(), body->m_contactPairs);
