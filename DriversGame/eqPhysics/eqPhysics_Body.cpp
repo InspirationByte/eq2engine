@@ -158,8 +158,7 @@ void CEqRigidBody::TryWake( bool velocityCheck )
 
 void CEqRigidBody::Wake()
 {
-	m_flags &= ~BODY_FROZEN;
-	m_flags &= ~BODY_FORCE_FREEZE;
+	m_flags &= ~(BODY_FROZEN | BODY_FORCE_FREEZE);
 	m_freezeTime = BODY_FREEZE_TIME;
 }
 
