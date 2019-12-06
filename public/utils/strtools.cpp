@@ -517,14 +517,14 @@ namespace EqStringConv
 {
 	utf8_to_wchar::utf8_to_wchar(EqWString& outStr, const char* val, int len /*= -1*/)
 	{
-		m_utf8 = (ubyte*) val;
+		m_utf8 = (ubyte*)val;
 
 		int length = GetLength();
 
-		if(len == -1)
+		if (len == -1)
 			len = length;
 
-		outStr.ExtendAlloc( length );
+		outStr.ExtendAlloc(length);
 
 		do
 		{
@@ -534,8 +534,32 @@ namespace EqStringConv
 				break;
 
 			outStr.Append(wch);
-		}
-		while (length--);
+		} while (length--);
+	}
+
+	utf8_to_wchar::utf8_to_wchar(wchar_t* outStr, int maxLength, const char* val, int len /*= -1*/)
+	{
+		m_utf8 = (ubyte*)val;
+
+		int length = GetLength();
+
+		if (len == -1)
+			len = length;
+
+		if (len > maxLength)
+			len = maxLength;
+
+		do
+		{
+			uint32 wch = GetChar();
+
+			if (!wch)
+				break;
+
+			*outStr++ = wch;
+		} while (length--);
+
+		*outStr = '\0';
 	}
 
 	int utf8_to_wchar::GetLength()
@@ -606,7 +630,7 @@ namespace EqStringConv
 
 	//--------------------------------------------------------------
 
-	wchar_to_utf8::wchar_to_utf8(EqString& outStr, const wchar_t* val, int len = -1)
+	wchar_to_utf8::wchar_to_utf8(EqString& outStr, const wchar_t* val, int len/* = -1*/)
 	{
 		if (len == -1)
 			len = wcslen(val) * 4;

@@ -65,10 +65,8 @@ inline const wchar_t* LocalizedString( const char* pszString )
 	static wchar_t defaultUnicodeString[4096];
 	defaultUnicodeString[0] = '\0';
 
-	EqStringConv::utf8_to_wchar conv(pszString);
-	const EqWString& convStr = conv;
-
-	wcsncpy( defaultUnicodeString, convStr.c_str(), 4096 );
+	EqWString convStr;
+	EqStringConv::utf8_to_wchar conv(defaultUnicodeString, 4096, pszString);
 
 	if(!pszString || (pszString && pszString[0] == '\0'))
 		return defaultUnicodeString;

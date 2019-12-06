@@ -131,6 +131,7 @@ namespace EqStringConv
 	{
 	public:
 		utf8_to_wchar(EqWString& outStr, const char* val, int length = -1);
+		utf8_to_wchar(wchar_t* outStr, int maxLength, const char* val, int length = -1);
 	private:
 		uint32 NextByte()
 		{
