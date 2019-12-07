@@ -480,7 +480,7 @@ void CObject_Debris::Simulate(float fDt)
 				// make debris
 				BreakAndSpawnDebris();
 			}
-			else if (m_pModel->GetHWData()->studio->numBodyGroups > 1)
+			else if (m_pModel->GetHWData()->studio->numBodyGroups > 1 && m_bodyGroupFlags == (1 << 0))
 				m_bodyGroupFlags = (1 << 1);	// change look of model
 		}
 

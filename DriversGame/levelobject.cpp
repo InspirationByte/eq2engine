@@ -76,7 +76,10 @@ void CLevObjectDef::RefreshPreview()
 	}
 	else
 	{
-		bbox = m_defModel->GetAABB();
+		if (m_defModel)
+			bbox = m_defModel->GetAABB();
+		else
+			bbox.AddVertex(vec3_zero);
 
 		camDistance = length(bbox.GetSize())+0.5f;
 		camera_target = bbox.GetCenter();
