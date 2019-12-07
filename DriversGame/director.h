@@ -26,7 +26,7 @@ struct freeCameraProps_t
 	bool		zAxisMove;
 };
 
-extern freeCameraProps_t g_freeCamProps;;
+extern freeCameraProps_t g_freeCamProps;
 
 CCar*	Director_GetCarOnCrosshair(bool queryImportantOnly = true);
 
@@ -40,5 +40,12 @@ void	Director_Reset();
 
 void	Director_Enable( bool enable );
 bool	Director_IsActive();
+
+/*
+class CReplayDirector
+{
+public:
+	CReplayDirector();
+};*/
 
 #endif // DIRECTOR_H

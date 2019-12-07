@@ -20,6 +20,8 @@
 #include "world.h"
 #include "input.h"
 
+#include "DrvSynHUD.h"
+
 extern ConVar	g_pause;
 
 void g_freecam_changed(ConVar* pVar,char const* pszOldValue);
@@ -244,6 +246,11 @@ DECLARE_CMD(director_nextcamera, nullptr, CV_ARCHIVE)
 	Director_Action(DIRECTOR_NEXTCAMERA);
 }
 
+DECLARE_CMD(director_rewind, nullptr, CV_ARCHIVE)
+{
+	g_State_Game->ReplayFastSeek(0);
+}
+
 DECLARE_CMD(director_pick_ray, "Director mode - picks object with ray", 0)
 {
 	if (!Director_IsActive())
@@ -457,94 +464,7 @@ void Director_Draw( float fDt )
 		return;
 
 	const IVector2D& screenSize = g_pHost->GetWindowSize();
-
 	materials->Setup2D(screenSize.x,screenSize.y);
-
-	static IEqFont* roboto30 = g_fontCache->GetFont("Roboto", 30);
-
-	static ConCommandBase* cmd_togglevar = (ConCommandBase*)g_sysConsole->FindBase("togglevar");
-
-	EqString play_pause_bind("UNBOUND");
-	UTIL_GetBindingKeyString(play_pause_bind, g_inputCommandBinder->FindBindingByCommand(cmd_togglevar, g_pause.GetName()));
-
-	EqString freecam_bind("UNBOUND");
-	UTIL_GetBindingKeyString(freecam_bind, g_inputCommandBinder->FindBindingByCommand(cmd_togglevar, g_freecam.GetName()));
-
-	EqString director_camera_add_bind("UNBOUND");
-	UTIL_GetBindingKeyString(director_camera_add_bind, g_inputCommandBinder->FindBindingByCommand(&cmd_director_camera_add));
-
-	EqString director_camera_reset_bind("UNBOUND");
-	UTIL_GetBindingKeyString(director_camera_reset_bind, g_inputCommandBinder->FindBindingByCommand(&cmd_director_camera_reset));
-
-	EqString director_camera_remove_bind("UNBOUND");
-	UTIL_GetBindingKeyString(director_camera_remove_bind, g_inputCommandBinder->FindBindingByCommand(&cmd_director_camera_remove));
-
-	EqString director_prevcamera_bind("UNBOUND");
-	UTIL_GetBindingKeyString(director_prevcamera_bind, g_inputCommandBinder->FindBindingByCommand(&cmd_director_prevcamera));
-
-	EqString director_nextcamera_bind("UNBOUND");
-	UTIL_GetBindingKeyString(director_nextcamera_bind, g_inputCommandBinder->FindBindingByCommand(&cmd_director_nextcamera));
-
-	EqString director_pick_ray_bind("UNBOUND");
-	UTIL_GetBindingKeyString(director_pick_ray_bind, g_inputCommandBinder->FindBindingByCommand(&cmd_director_pick_ray));
-	
-
-	const char* controlsText = varargs(
-		"Play: &#FFFF00;%s&;\n"
-		"Toggle free camera: &#FFFF00;%s&;\n\n"
-
-
-		"Next camera: &#FFFF00;%s&;\n"
-		"Prev camera: &#FFFF00;%s&;\n\n"
-
-		"Insert camera: &#FFFF00;%s&;\n"
-		"Reset camera: &#FFFF00;%s&;\n"
-		"Delete camera: &#FFFF00;%s&;\n"
-
-		"Move camera start frame: &#FFFF00;LEFT ARROW&; and &#FFFF00;RIGHT ARROW&;\n\n"
-
-		//"Set camera key flyby frame = &#FFFF00;SPACE&;\n\n"
-
-		"Camera type: &#FFFF00;1-5&; (Current is &#FFFF00;'%s'&;)\n"
-		"Zoom: &#FFFF00;MOUSE WHEEL&; (%.2f deg.)\n"
-		"Target vehicle: &#FFFF00;%s&;\n"
-
-		"Seek frame: &#FFFF00;CTRL+ARROWS&; or &#FFFF00;fastseek <frame>&; (in console)\n", 
-
-		play_pause_bind.c_str(),
-		freecam_bind.c_str(),
-
-		director_nextcamera_bind.c_str(),
-		director_prevcamera_bind.c_str(),
-
-		director_camera_add_bind.c_str(),
-		director_camera_reset_bind.c_str(),
-		director_camera_remove_bind.c_str(),
-
-		s_cameraTypeString[g_nDirectorCameraType],
-		g_freeCamProps.fov,
-
-		director_pick_ray_bind.c_str()
-	);
-
-	const char* shortText = varargs(
-		"Pause: &#FFFF00;%s&;\n"
-		"Toggle free camera: &#FFFF00;%s&;\n"
-		"Fast Forward: &#FFFF00;BACKSPACE&;\n",
-		play_pause_bind.c_str(),
-		freecam_bind.c_str());
-
-	eqFontStyleParam_t params;
-	params.styleFlag = TEXT_STYLE_SHADOW | TEXT_STYLE_USE_TAGS;
-	params.textColor = color4_white;
-	params.scale = 20.0f;
-
-	Vector2D directorTextPos(15, screenSize.y/3);
-
-	if(g_pause.GetBool())
-		roboto30->RenderText(controlsText, directorTextPos, params);
-	else
-		roboto30->RenderText(shortText, directorTextPos, params);
 
 	replayCamera_t* currentCamera = g_replayData->GetCurrentCamera();
 	int replayCamera = g_replayData->m_currentCamera;
@@ -552,8 +472,6 @@ void Director_Draw( float fDt )
 	int totalTicks = g_replayData->m_numFrames;
 
 	int totalCameras = g_replayData->m_cameras.numElem();
-
-	wchar_t* framesStr = varargs_w(L"FRAME: &#FFFF00;%d / %d&;\nCAMERA: &#FFFF00;%d&; (frame %d) / &#FFFF00;%d&;", currentTick, totalTicks, replayCamera+1, currentCamera ? currentCamera->startTick : 0, totalCameras);
 
 	Rectangle_t timelineRect(0,screenSize.y-100, screenSize.x, screenSize.y-70);
 	CMeshBuilder meshBuilder(materials->GetDynamicMesh());
@@ -563,7 +481,7 @@ void Director_Draw( float fDt )
 	blending.dstFactor = BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
 
 	g_pShaderAPI->SetTexture(0,0,0);
-	materials->SetRasterizerStates(CULL_BACK);
+	materials->SetRasterizerStates(CULL_NONE);
 	materials->SetDepthStates(false,false);
 	materials->SetBlendingStates(blending);
 	materials->BindMaterial(materials->GetDefaultMaterial());
@@ -594,6 +512,7 @@ void Director_Draw( float fDt )
 	meshBuilder.Begin(PRIM_TRIANGLE_STRIP);
 		float ticksOffset = lastTickOffset-currentTickOffset;
 
+		// draw timeline transparent part
 		Rectangle_t drawnTimeline(timelineRect.GetCenter().x - currentTickOffset, screenSize.y-100.0f, timelineRect.GetCenter().x + ticksOffset , screenSize.y-70.0f);
 		drawnTimeline.vleftTop.x = clamp(drawnTimeline.vleftTop.x,0.0f,timelineRect.vrightBottom.x);
 		drawnTimeline.vrightBottom.x = clamp(drawnTimeline.vrightBottom.x,0.0f,timelineRect.vrightBottom.x);
@@ -601,28 +520,39 @@ void Director_Draw( float fDt )
 		meshBuilder.Color4f(1,1,1, 0.25f);
 		meshBuilder.Quad2(drawnTimeline.GetLeftTop(), drawnTimeline.GetRightTop(), drawnTimeline.GetLeftBottom(), drawnTimeline.GetRightBottom());
 
-		for(int i = 0; i < totalCameras; i++)
+		// draw cameras on the timeline
+		for (int i = 0; i < totalCameras; i++)
 		{
 			replayCamera_t* camera = &g_replayData->m_cameras[i];
 
-			float cameraTickPos = (camera->startTick-currentTick) * pixelsPerTick;
+			float cameraTickPos = (camera->startTick - currentTick) * pixelsPerTick;
 
-			replayCamera_t* nextCamera = i+1 <g_replayData->m_cameras.numElem() ? &g_replayData->m_cameras[i+1] : NULL;
-			float nextTickPos = ((nextCamera ? nextCamera->startTick : totalTicks)-currentTick) * pixelsPerTick;
+			replayCamera_t* nextCamera = i + 1 < g_replayData->m_cameras.numElem() ? &g_replayData->m_cameras[i + 1] : NULL;
+			float nextTickPos = ((nextCamera ? nextCamera->startTick : totalTicks) - currentTick) * pixelsPerTick;
 
 			// draw colored rectangle
-			Rectangle_t cameraColorRect(timelineRect.GetCenter().x + cameraTickPos, screenSize.y-95.0f, timelineRect.GetCenter().x + nextTickPos, screenSize.y-75.0f);
+			Rectangle_t cameraColorRect(timelineRect.GetCenter().x + cameraTickPos, screenSize.y - 95.0f, timelineRect.GetCenter().x + nextTickPos, screenSize.y - 75.0f);
 
 			ColorRGB camRectColor(s_cameraColors[camera->type]);
 
-			if(currentCamera == camera && g_pause.GetBool())
+			if (currentCamera == camera)
 			{
-				camRectColor *= fabs(sinf((float)g_pHost->GetCurTime()*2.0f));
-
 				// draw start tick position
-				Rectangle_t currentTickRect(timelineRect.GetCenter() - Vector2D(2, 25) + Vector2D(cameraTickPos,0), timelineRect.GetCenter() + Vector2D(2, 0) + Vector2D(cameraTickPos,0));
-				meshBuilder.Color4f(1.0f,0.0f,0.0f,0.8f);
+				Rectangle_t currentTickRect(timelineRect.GetCenter() - Vector2D(2, 25) + Vector2D(cameraTickPos, 0), timelineRect.GetCenter() + Vector2D(2, 0) + Vector2D(cameraTickPos, 0));
+				meshBuilder.Color4f(1.0f, 0.0f, 0.0f, 0.8f);
 				meshBuilder.Quad2(currentTickRect.GetLeftTop(), currentTickRect.GetRightTop(), currentTickRect.GetLeftBottom(), currentTickRect.GetRightBottom());
+
+				if (!g_freecam.GetBool())
+				{
+					Rectangle_t cameraFixedRect = cameraColorRect;
+					cameraFixedRect.vleftTop -= 5;
+					cameraFixedRect.vrightBottom += 5;
+					meshBuilder.Color4f(0.25f, 0.0f, 1.0f, 0.8f);
+					meshBuilder.Quad2(cameraFixedRect.GetLeftTop(), cameraFixedRect.GetRightTop(), cameraFixedRect.GetLeftBottom(), cameraFixedRect.GetRightBottom());
+				}
+
+				if (g_pause.GetBool())
+					camRectColor *= fabs(sinf((float)g_pHost->GetCurTime()*2.0f));
 			}
 
 			meshBuilder.Color4fv(ColorRGBA(camRectColor, 0.7f));
@@ -644,21 +574,9 @@ void Director_Draw( float fDt )
 		meshBuilder.Color4f(1,0.05f,0,1.0f);
 		meshBuilder.Quad2(lastTickRect.GetLeftTop(), lastTickRect.GetRightTop(), lastTickRect.GetLeftBottom(), lastTickRect.GetRightBottom());
 
-		// draw 3D stuff
 		if (g_freecam.GetBool())
 		{
-			Vector2D halfScreen = Vector2D(screenSize)*0.5f;
-
-			Vector2D crosshair[] =
-			{
-				Vector2D(halfScreen + Vector2D(0,-3)),
-				Vector2D(halfScreen + Vector2D(3,3)),
-				Vector2D(halfScreen + Vector2D(-3,3))
-			};
-
-			meshBuilder.Color4f(1, 1, 1, 0.45);
-			meshBuilder.Triangle2(crosshair[0], crosshair[1], crosshair[2]);
-
+			// draw current viewed car marker
 			if (viewedObject)
 			{
 				Vector3D screenPos;
@@ -671,6 +589,7 @@ void Director_Draw( float fDt )
 				}
 			}
 
+			// draw lead car marker
 			if (leadCar)
 			{
 				Vector3D screenPos;
@@ -683,6 +602,7 @@ void Director_Draw( float fDt )
 				}
 			}
 
+			// draw player car marker
 			if (playerCar)
 			{
 				Vector3D screenPos;
@@ -694,9 +614,168 @@ void Director_Draw( float fDt )
 					meshBuilder.Triangle2(screenPos.xy() + Vector2D(-20, -20), screenPos.xy(), screenPos.xy() + Vector2D(20, -20));
 				}
 			}
+
+			// draw crosshair
+			Vector2D halfScreen = Vector2D(screenSize)*0.5f;
+
+			Vector2D crosshair[] =
+			{
+				Vector2D(halfScreen + Vector2D(0,-3)),
+				Vector2D(halfScreen + Vector2D(3,3)),
+				Vector2D(halfScreen + Vector2D(-3,3))
+			};
+
+			meshBuilder.Color4f(1, 1, 1, 0.45);
+			meshBuilder.Triangle2(crosshair[0], crosshair[1], crosshair[2]);
+		}
+	meshBuilder.End();
+
+	eqFontStyleParam_t params;
+	params.styleFlag = TEXT_STYLE_SHADOW | TEXT_STYLE_USE_TAGS;
+	params.textColor = color4_white;
+	params.scale = 20.0f;
+
+	static IEqFont* font = g_fontCache->GetFont("Roboto", 30);
+
+	Vector2D frameInfoTextPos(screenSize.x / 2, screenSize.y - (screenSize.y / 6));
+
+	// Print the hotkey information
+	{
+		static ConCommandBase* cmd_togglevar = (ConCommandBase*)g_sysConsole->FindBase("togglevar");
+
+		EqString play_pause_bind("UNBOUND");
+		UTIL_GetBindingKeyString(play_pause_bind, g_inputCommandBinder->FindBindingByCommand(cmd_togglevar, g_pause.GetName()));
+
+		EqString freecam_bind("UNBOUND");
+		UTIL_GetBindingKeyString(freecam_bind, g_inputCommandBinder->FindBindingByCommand(cmd_togglevar, g_freecam.GetName()));
+
+		EqString rewind_bind("UNBOUND");
+		UTIL_GetBindingKeyString(rewind_bind, g_inputCommandBinder->FindBindingByCommand(&cmd_director_rewind));
+
+		EqString director_camera_add_bind("UNBOUND");
+		UTIL_GetBindingKeyString(director_camera_add_bind, g_inputCommandBinder->FindBindingByCommand(&cmd_director_camera_add));
+
+		EqString director_camera_reset_bind("UNBOUND");
+		UTIL_GetBindingKeyString(director_camera_reset_bind, g_inputCommandBinder->FindBindingByCommand(&cmd_director_camera_reset));
+
+		EqString director_camera_remove_bind("UNBOUND");
+		UTIL_GetBindingKeyString(director_camera_remove_bind, g_inputCommandBinder->FindBindingByCommand(&cmd_director_camera_remove));
+
+		EqString director_prevcamera_bind("UNBOUND");
+		UTIL_GetBindingKeyString(director_prevcamera_bind, g_inputCommandBinder->FindBindingByCommand(&cmd_director_prevcamera));
+
+		EqString director_nextcamera_bind("UNBOUND");
+		UTIL_GetBindingKeyString(director_nextcamera_bind, g_inputCommandBinder->FindBindingByCommand(&cmd_director_nextcamera));
+
+		EqString director_pick_ray_bind("UNBOUND");
+		UTIL_GetBindingKeyString(director_pick_ray_bind, g_inputCommandBinder->FindBindingByCommand(&cmd_director_pick_ray));
+
+		const char* cameraPropsStr = nullptr;
+
+		if (g_freecam.GetBool())
+		{
+			cameraPropsStr = varargs(
+				"Replay camera: &#FFFF00;%s&;\n\n"
+
+				"Type: &#FFFF00;1-5&; (&#FFFF00;'%s'&;)\n"
+				"Zoom: &#FFFF00;MOUSE WHEEL&; (%.2f deg.)\n"
+				"Tilt: &#FFFF00;RMB and MOUSE MOVE&; (%.2f deg.)\n\n"
+
+				"Add camera: &#FFFF00;%s&;\n"
+				"Replace camera: &#FFFF00;%s&;\n"
+				"Delete camera: &#FFFF00;%s&;\n\n"
+
+				"Set vehicle: &#FFFF00;%s&;\n",
+
+				freecam_bind.c_str(),
+
+				s_cameraTypeString[g_nDirectorCameraType],
+				g_freeCamProps.fov,
+				g_freeCamProps.angles.z,
+				
+				director_camera_add_bind.c_str(),
+				director_camera_reset_bind.c_str(),
+				director_camera_remove_bind.c_str(),
+
+				director_pick_ray_bind.c_str()
+				);
+		}
+		else
+		{
+			cameraPropsStr = varargs(
+				"Free camera: &#FFFF00;%s&;\n\n"
+
+				"Type: &#FFFF00;1-5&; (&#FFFF00;'%s'&;)\n"
+				"Zoom: &#FFFF00;MOUSE WHEEL&; (%.2f deg.)\n"
+				"Tilt: &#FFFF00;RMB and MOUSE MOVE&; (%.2f deg.)\n\n"
+
+				"Add camera: &#FFFF00;%s&;\n"
+				"Replace camera: &#FFFF00;%s&;\n"
+				"Delete camera: &#FFFF00;%s&;\n",
+
+				freecam_bind.c_str(),
+
+				s_cameraTypeString[g_nDirectorCameraType],
+				g_freeCamProps.fov,
+				g_freeCamProps.angles.z,
+
+				director_camera_add_bind.c_str(),
+				director_camera_reset_bind.c_str(),
+				director_camera_remove_bind.c_str());
 		}
 
-	meshBuilder.End();
+		const char* controlsText = varargs(
+			"Play: &#FFFF00;%s&;\n"
+			"Rewind: &#FFFF00;%s&;\n"
+			"Goto FRAME: &#FFFF00;CTRL+ARROWS&; or &#FFFF00;fastseek <frame>&; (in console)\n",
+
+			play_pause_bind.c_str(),
+			rewind_bind.c_str()
+		);
+
+		const char* shortText = varargs(
+			"Pause: &#FFFF00;%s&;\n"
+			"Fast Forward: &#FFFF00;BACKSPACE&;\n",
+			play_pause_bind.c_str());
+
+		Vector2D playbackControlsTextPos(screenSize.x - 25, 45);
+		Vector2D cameraPropsTextPos(25, 45);
+
+		if (g_pause.GetBool())
+		{
+			params.align = TEXT_ALIGN_RIGHT;
+			font->RenderText(controlsText, playbackControlsTextPos, params);
+
+			params.align = TEXT_ALIGN_LEFT;
+			font->RenderText(cameraPropsStr, cameraPropsTextPos, params);
+
+			Vector2D cameraTextPos(25, frameInfoTextPos.y);
+
+			if (currentCamera)
+			{
+				params.align = TEXT_ALIGN_LEFT;
+
+				char* cameraStr = varargs(
+					"CAMERA START: &#FFFF00;ARROWS&; (FRAME %d)\n"
+					"NEXT CAMERA: &#FFFF00;%s&;\n"
+					"PREV CAMERA: &#FFFF00;%s&;\n\n",
+					currentCamera ? currentCamera->startTick : 0,
+					director_nextcamera_bind.c_str(),
+					director_prevcamera_bind.c_str());
+
+				font->RenderText(cameraStr, cameraTextPos, params);
+			}
+			
+		}
+		else
+		{
+			params.align = TEXT_ALIGN_RIGHT;
+			font->RenderText(shortText, playbackControlsTextPos, params);
+
+			params.align = TEXT_ALIGN_LEFT;
+			font->RenderText(cameraPropsStr, cameraPropsTextPos, params);
+		}
+	}
 
 	params.align = TEXT_ALIGN_HCENTER;
 
@@ -709,10 +788,16 @@ void Director_Draw( float fDt )
 			Vector3D screenPos;
 			PointToScreen_Z(carOnCrosshair->GetOrigin() + Vector3D(0,1.0f,0), screenPos, g_pGameWorld->m_viewprojection, Vector2D((float)screenSize.x,(float)screenSize.y));
 
-			roboto30->RenderText(L"Click to set as current", screenPos.xy(), params);
+			font->RenderText(L"Click to set as current", screenPos.xy(), params);
 		}
 	}
 
-	Vector2D frameInfoTextPos(screenSize.x/2, screenSize.y - (screenSize.y/6));
-	roboto30->RenderText(framesStr, frameInfoTextPos, params);
+	char* framesStr = varargs(
+		"CAMERA: &#FFFF00;%d&; / &#FFFF00;%d&;\n"
+		"FRAME: &#FFFF00;%d / %d&;\n",
+		replayCamera + 1, totalCameras,
+		currentTick, totalTicks);
+
+	
+	font->RenderText(framesStr, frameInfoTextPos, params);
 }

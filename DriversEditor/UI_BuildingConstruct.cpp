@@ -1402,6 +1402,9 @@ void CUI_BuildingConstruct::OnSwitchedFrom()
 
 void CUI_BuildingConstruct::ProcessMouseEvents( wxMouseEvent& event )
 {
+	Vector3D ray_start, ray_dir;
+	g_pMainFrame->GetMouseScreenVectors(event.GetX(), event.GetY(), ray_start, ray_dir);
+
 	if(event.ButtonIsDown(wxMOUSE_BTN_RIGHT) && event.Dragging())
 	{
 		float delta = m_mouseLastY - event.GetY();
@@ -1411,7 +1414,46 @@ void CUI_BuildingConstruct::ProcessMouseEvents( wxMouseEvent& event )
 		m_curSegmentScale = clamp(m_curSegmentScale,0.5f, 2.0f);
 	}
 	else
-		CBaseTilebasedEditor::ProcessMouseEvents(event);
+	{
+		if (m_mode == ED_BUILD_READY)
+		{
+			if (event.ControlDown())
+			{
+				m_isSelecting = true;
+
+				if (event.ButtonIsDown(wxMOUSE_BTN_LEFT) && !event.Dragging() && !m_editingBuilding)
+				{
+					float dist = DrvSynUnits::MaxCoordInUnits;
+
+					buildingSelInfo_t info;
+
+					int refIdx = g_pGameWorld->m_level.Ed_SelectBuildingAndReg(ray_start, ray_dir, &info.selRegion, dist);
+
+					if (refIdx != -1 && info.selRegion)
+					{
+						info.selBuild = info.selRegion->m_buildings[refIdx];
+
+						ToggleSelection(info);
+					}
+				}
+			}
+			else
+				m_isSelecting = false;
+
+			CBaseTilebasedEditor::ProcessMouseEvents(event);
+		}
+		else if (m_mode == ED_BUILD_MOVEMENT)
+		{
+			if (m_selBuildings.numElem() > 0)
+			{
+				// try move selection
+				if (m_mode == ED_BUILD_MOVEMENT)
+					MouseTranslateEvents(event, ray_start, ray_dir);
+			}
+		}
+		else
+			CBaseTilebasedEditor::ProcessMouseEvents(event);
+	}
 
 	m_mouseLastY = event.GetY();
 }
@@ -1453,27 +1495,7 @@ void CUI_BuildingConstruct::MouseEventOnTile( wxMouseEvent& event, hfieldtile_t*
 	else
 		m_mousePoint = ppos;
 
-	if(event.ControlDown())
-	{
-		m_isSelecting = true;
-		
-		if(event.ButtonIsDown(wxMOUSE_BTN_LEFT) && !event.Dragging() && !m_editingBuilding)
-		{
-			float dist = DrvSynUnits::MaxCoordInUnits;
-
-			buildingSelInfo_t info;
-
-			int refIdx = g_pGameWorld->m_level.Ed_SelectBuildingAndReg(ray_start, ray_dir, &info.selRegion, dist);
-
-			if(refIdx != -1 && info.selRegion)
-			{
-				info.selBuild = info.selRegion->m_buildings[refIdx];
-
-				ToggleSelection( info );
-			}
-		}
-	}
-	else
+	if(!event.ControlDown())
 	{
 		m_isSelecting = false;
 
@@ -1549,14 +1571,6 @@ void CUI_BuildingConstruct::MouseEventOnTile( wxMouseEvent& event, hfieldtile_t*
 				// ED_BUILD_DONE if connected to begin point
 				//if(distance(ppos, m_editingBuilding->points[0]) < 2.0f)
 				//	m_mode = ED_BUILD_DONE;
-			}
-		}
-		else if(m_selBuildings.numElem() > 0)
-		{
-			// try move selection
-			if(m_mode == ED_BUILD_MOVEMENT)
-			{
-				MouseTranslateEvents(event,ray_start,ray_dir);
 			}
 		}
 	}
@@ -1828,11 +1842,11 @@ void CUI_BuildingConstruct::OnRender()
 {
 	materials->SetMatrix(MATRIXMODE_WORLD, identity4());
 
-	if(!m_selectedRegion)
-		return;
-
-	CHeightTileFieldRenderable* field = m_selectedRegion->m_heightfield[0];
-	field->DebugRender(false,m_mouseOverTileHeight);
+	if (m_selectedRegion)
+	{
+		CHeightTileFieldRenderable* field = m_selectedRegion->m_heightfield[0];
+		field->DebugRender(false, m_mouseOverTileHeight);
+	}
 
 	if( m_selBuildings.numElem() > 0 )
 	{

@@ -850,7 +850,7 @@ void CState_Game::OnLoadingDone()
 		m_gameMenuName = "Ingame";
 	}
 	else
-		m_gameMenuName = "Replay";
+		m_gameMenuName = Director_IsActive() ? "Director" : "Replay";
 
 	m_isGameRunning = true;
 	g_pGameSession->OnLoadingDone();

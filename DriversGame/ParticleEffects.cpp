@@ -106,7 +106,6 @@ CSmokeEffect::CSmokeEffect(	const Vector3D &position, const Vector3D &velocity,
 {
 	InternalInit( position, lifetime, group, entry );
 
-	fCurSize = StartSize;
 	fStartSize = StartSize;
 	fEndSize = EndSize;
 
@@ -157,6 +156,58 @@ bool CSmokeEffect::DrawEffect(float dTime)
 
 	// no frustum for now
 	Effects_DrawBillboard(&effect, &g_pGameWorld->m_view, NULL);
+
+	return true;
+}
+
+//-----------------------------------------------------------------------------------------------
+// Ripple particle
+//-----------------------------------------------------------------------------------------------
+
+CRippleEffect::CRippleEffect(	const Vector3D &position, float StartSize, float EndSize, float lifetime,
+								CPFXAtlasGroup* group, TexAtlasEntry_t* entry,
+								const Vector3D &color, const Vector3D& groundNormal, float rotation)
+{
+	InternalInit(position, lifetime, group, entry);
+
+	normal = groundNormal;
+
+	fStartSize = StartSize;
+	fEndSize = EndSize;
+
+	fRotation = rotation;
+
+	m_color = color;
+}
+
+bool CRippleEffect::DrawEffect(float dTime)
+{
+	m_fLifeTime -= dTime;
+
+	if (m_fLifeTime <= 0)
+		return false;
+
+	ColorRGB lightColor(g_pGameWorld->m_info.ambientColor.xyz() + g_pGameWorld->m_info.sunColor.xyz());
+
+	float lifeTimePerc = GetLifetimePercent();
+	float fStartAlpha = clamp((1.0f - lifeTimePerc) * 50.0f, 0.0f, 1.0f);
+
+	SetSortOrigin(m_vOrigin);
+
+	PFXBillboard_t effect;
+
+	effect.vOrigin = m_vOrigin;
+	effect.vColor = Vector4D(lightColor * m_color, lifeTimePerc*fStartAlpha);
+	effect.group = m_atlGroup;
+	effect.tex = m_atlEntry;
+	effect.nFlags = EFFECT_FLAG_NO_FRUSTUM_CHECK;
+	effect.fZAngle = fRotation;
+
+	effect.fWide = lerp(fStartSize, fEndSize, 1.0f - lifeTimePerc);
+	effect.fTall = lerp(fStartSize, fEndSize, 1.0f - lifeTimePerc);
+
+	// no frustum for now
+	Effects_DrawBillboard(&effect, Matrix3x3(-cross(vec3_right, normal), -cross(vec3_forward, normal), normal), nullptr);
 
 	return true;
 }
@@ -371,7 +422,7 @@ void MakeSparks(const Vector3D& origin, const Vector3D& velocity, const Vector3D
 void MakeWaterSplash(const Vector3D& origin, const Vector3D& velocity, const Vector3D& randomAngCone, float lifetime, int count)
 {
 	CPFXAtlasGroup* effgroup = g_translParticles;
-	TexAtlasEntry_t* entry = effgroup->FindEntry("rain_ripple");
+	TexAtlasEntry_t* entry = g_worldGlobals.trans_raindrops;
 
 	float wlen = length(velocity);
 
@@ -383,7 +434,7 @@ void MakeWaterSplash(const Vector3D& origin, const Vector3D& velocity, const Vec
 
 		float rwlen = wlen + RandomFloat(wlen*0.15f, wlen*0.8f);
 
-		Vector3D rndPos(RandomFloat(0.5f), RandomFloat(0.5f), RandomFloat(0.5f));
+		Vector3D rndPos(RandomFloat(-0.5f, 0.5f), RandomFloat(-0.5f, 0.5f), RandomFloat(-0.5f, 0.5f));
 		rndPos += origin;
 		
 		CSmokeEffect* pSmoke = new CSmokeEffect(rndPos, n*rwlen,

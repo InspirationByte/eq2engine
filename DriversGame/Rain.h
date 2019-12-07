@@ -16,10 +16,10 @@
 
 class RainEmitter;
 
-class CRippleEffect : public IEffect
+class CRainRippleEffect : public IEffect
 {
 public:
-	CRippleEffect(const Vector3D &position, const Vector3D &normal, float StartSize, float EndSize, float lifetime);
+	CRainRippleEffect(const Vector3D &position, const Vector3D &normal, float StartSize, float EndSize, float lifetime);
 
 	bool DrawEffect(float dTime);
 

@@ -267,9 +267,6 @@
     <ClCompile Include="DrvSynHUD.cpp">
       <Filter>Файлы исходного кода\Game\UI</Filter>
     </ClCompile>
-    <ClCompile Include="Rain.cpp">
-      <Filter>Файлы исходного кода\Game\World</Filter>
-    </ClCompile>
     <ClCompile Include="input.cpp">
       <Filter>Файлы исходного кода\Game</Filter>
     </ClCompile>
@@ -467,6 +464,12 @@
     </ClCompile>
     <ClCompile Include="GameDefs.cpp">
       <Filter>Файлы исходного кода\Game\Sessions</Filter>
+    </ClCompile>
+    <ClCompile Include="object_waterflow.cpp">
+      <Filter>Файлы исходного кода\Game\Objects</Filter>
+    </ClCompile>
+    <ClCompile Include="Rain.cpp">
+      <Filter>Файлы исходного кода\Particles</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -700,9 +703,6 @@
     <ClInclude Include="occluderSet.h">
       <Filter>Файлы исходного кода\Game\World</Filter>
     </ClInclude>
-    <ClInclude Include="Rain.h">
-      <Filter>Файлы исходного кода\Game\World</Filter>
-    </ClInclude>
     <ClInclude Include="input.h">
       <Filter>Файлы исходного кода\Game</Filter>
     </ClInclude>
@@ -912,6 +912,12 @@
     </ClInclude>
     <ClInclude Include="..\public\materialsystem\VertexFormatBuilder.h">
       <Filter>Файлы исходного кода\MatSystem</Filter>
+    </ClInclude>
+    <ClInclude Include="object_waterflow.h">
+      <Filter>Файлы исходного кода\Game\Objects</Filter>
+    </ClInclude>
+    <ClInclude Include="Rain.h">
+      <Filter>Файлы исходного кода\Particles</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

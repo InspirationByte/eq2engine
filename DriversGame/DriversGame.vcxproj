@@ -191,6 +191,7 @@ call copy_drvsyn_engine.bat $(ConfigurationName)</Command>
     <ClCompile Include="EventFSM.cpp" />
     <ClCompile Include="GameDefs.cpp" />
     <ClCompile Include="levelobject.cpp" />
+    <ClCompile Include="object_waterflow.cpp" />
     <ClCompile Include="ParticleEffects.cpp" />
     <ClCompile Include="pedestrian.cpp" />
     <ClCompile Include="Player.cpp" />
@@ -348,6 +349,7 @@ call copy_drvsyn_engine.bat $(ConfigurationName)</Command>
     <ClInclude Include="DrvSynDecals.h" />
     <ClInclude Include="DrvSynStates.h" />
     <ClInclude Include="EqUI_DrvSynTimer.h" />
+    <ClInclude Include="object_waterflow.h" />
     <ClInclude Include="pedestrian.h" />
     <ClInclude Include="worldenv.h" />
     <ClInclude Include="eqPhysics\eqPhysics_Controller.h" />

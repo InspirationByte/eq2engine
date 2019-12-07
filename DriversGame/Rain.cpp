@@ -15,7 +15,7 @@ RainEmitter* g_pRainEmitter = &s_RainEmitter;
 
 //---------------------------------------------------------------------------------------------------------
 
-CRippleEffect::CRippleEffect(const Vector3D &position, const Vector3D &_normal, float StartSize, float EndSize, float lifetime)
+CRainRippleEffect::CRainRippleEffect(const Vector3D &position, const Vector3D &_normal, float StartSize, float EndSize, float lifetime)
 {
 	InternalInit(position, lifetime, g_translParticles, g_pRainEmitter->m_rippleEntry);
 
@@ -26,7 +26,7 @@ CRippleEffect::CRippleEffect(const Vector3D &position, const Vector3D &_normal, 
 	fEndSize = EndSize;
 }
 
-bool CRippleEffect::DrawEffect(float dTime)
+bool CRainRippleEffect::DrawEffect(float dTime)
 {
 	m_fLifeTime -= dTime;
 
@@ -132,7 +132,7 @@ void RainEmitter::Init()
 	m_curTime = 0.0f;
 
 	m_rainEntry = g_translParticles->FindEntry("rain");
-	m_rippleEntry = g_translParticles->FindEntry("rain_ripple");
+	m_rippleEntry = g_translParticles->FindEntry("rain_drops");
 	m_viewVelocity = vec3_zero;
 }
 
@@ -187,9 +187,9 @@ void RainEmitter::Update_Draw(float dt, float emit_rate, float rain_speed)
 			{
 				float fSpeed = length(rParticles[i]->velocity)*0.001f;
 
-				CRippleEffect* pEffect = new CRippleEffect(	Vector3D(rain_trace.position),
-															rain_trace.normal,
-															0.04f+RandomFloat(-0.07f, 0.07f)*fSpeed, 0.04f+RandomFloat(-0.07f, 0.07f)*fSpeed, 0.08f);
+				CRainRippleEffect* pEffect = new CRainRippleEffect(	Vector3D(rain_trace.position),
+																	rain_trace.normal,
+																	0.04f+RandomFloat(-0.07f, 0.07f)*fSpeed, 0.04f+RandomFloat(-0.07f, 0.07f)*fSpeed, 0.08f);
 
 				effectrenderer->RegisterEffectForRender(pEffect);
 			}

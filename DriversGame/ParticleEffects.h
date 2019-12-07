@@ -10,6 +10,7 @@
 
 #include "EffectRender.h"
 
+// FLECK
 class CFleckEffect : public IEffect
 {
 public:
@@ -41,6 +42,7 @@ protected:
 	TexAtlasEntry_t*	m_entry;
 };
 
+// SMOKE
 class CSmokeEffect : public IEffect
 {
 public:
@@ -66,8 +68,6 @@ protected:
 
 	Vector3D	m_vVelocity;
 
-	float		fCurSize;
-
 	float		fStartSize;
 	float		fEndSize;
 	float		rotate;
@@ -75,6 +75,27 @@ protected:
 	float		m_alpha;
 };
 
+// RIPPLE
+class CRippleEffect : public IEffect
+{
+public:
+	CRippleEffect(const Vector3D &position, float StartSize, float EndSize, float lifetime,
+		CPFXAtlasGroup* group, TexAtlasEntry_t* entry,
+		const Vector3D &color, const Vector3D& groundNormal, float rotation);
+
+	bool DrawEffect(float dTime);
+
+protected:
+	Vector3D	normal;
+	Vector3D	m_color;
+
+	float		fStartSize;
+	float		fEndSize;
+
+	float		fRotation;
+};
+
+// SPARK
 class CSparkLine : public IEffect
 {
 public:

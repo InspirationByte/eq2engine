@@ -76,6 +76,7 @@ protected:
 	int					m_numBreakParts;
 
 	EqString			m_smashSpawn;
+	Vector3D			m_smashSpawnOffset;
 	CGameObject*		m_smashSpawnedObject;
 
 	breakSpawn_t*		m_breakSpawn;

@@ -55,7 +55,8 @@ void CObject_Debris::OnRemove()
 
 	if (m_smashSpawnedObject)
 	{
-		m_smashSpawnedObject->m_state = GO_STATE_REMOVE;
+		if(g_pGameWorld->IsValidObject(m_smashSpawnedObject))
+			m_smashSpawnedObject->m_state = GO_STATE_REMOVE;
 		m_smashSpawnedObject = nullptr;
 	}
 }
@@ -77,9 +78,10 @@ void CObject_Debris::Spawn()
 
 	ASSERT(m_pModel);
 
-	m_smashSound = KV_GetValueString(m_keyValues->FindKeyBase("smashsound"), 0, "");
+	m_smashSound = KV_GetValueString(m_keyValues->FindKeyBase("smashSound"), 0, "");
 
-	m_smashSpawn = KV_GetValueString(m_keyValues->FindKeyBase("smashspawn"), 0, "");
+	m_smashSpawn = KV_GetValueString(m_keyValues->FindKeyBase("smashSpawn"), 0, "");
+	m_smashSpawnOffset = KV_GetVector3D(m_keyValues->FindKeyBase("smashSpawnOffset"), 0, vec3_zero);
 
 	if(KV_GetValueBool(m_keyValues->FindKeyBase("castshadow"), 0, true))
 		m_drawFlags |= GO_DRAW_FLAG_SHADOW;
@@ -478,25 +480,8 @@ void CObject_Debris::Simulate(float fDt)
 				// make debris
 				BreakAndSpawnDebris();
 			}
-			else if (!moved) // need this because break debris would change model
-			{
-				if (m_smashSpawn.Length() > 0)
-				{
-					CGameObject* otherObject = g_pGameWorld->CreateObject(m_smashSpawn.c_str());
-					if (otherObject)
-					{
-						otherObject->SetOrigin(GetOrigin());
-						otherObject->Spawn();
-						g_pGameWorld->AddObject(otherObject);
-
-						m_smashSpawnedObject = otherObject;
-					}
-				}
-
-				// change look of models
-				if(m_pModel->GetHWData()->studio->numBodyGroups > 1)
-					m_bodyGroupFlags = (1 << 1);
-			}
+			else if (m_pModel->GetHWData()->studio->numBodyGroups > 1)
+				m_bodyGroupFlags = (1 << 1);	// change look of model
 		}
 
 		if(surf && surf->word == 'M' && pair.impactVelocity > 3.0f )
@@ -512,6 +497,19 @@ void CObject_Debris::Simulate(float fDt)
 
 		if(!moved && obj->IsDynamic())
 		{
+			if (m_smashSpawn.Length() > 0)
+			{
+				CGameObject* otherObject = g_pGameWorld->CreateObject(m_smashSpawn.c_str());
+				if (otherObject)
+				{
+					otherObject->SetOrigin(GetOrigin() + m_smashSpawnOffset);
+					otherObject->Spawn();
+					g_pGameWorld->AddObject(otherObject);
+
+					m_smashSpawnedObject = otherObject;
+				}
+			}
+
 			moved = true;
 			m_fTimeToRemove = 0.0f;
 

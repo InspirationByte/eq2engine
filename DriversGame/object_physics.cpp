@@ -65,11 +65,11 @@ END_NETWORK_TABLE()
 CObject_Physics::CObject_Physics( kvkeybase_t* kvdata )
 {
 	m_keyValues = kvdata;
-	m_physBody = NULL;
-	m_surfParams = NULL;
-	m_userData = NULL;
-	m_hinge = NULL;
-	m_hingeDummy = NULL;
+	m_physBody = nullptr;
+	m_surfParams = nullptr;
+	m_userData = nullptr;
+	m_breakSpawnedObject = nullptr;
+	m_breakForce = 0.0f;
 }
 
 CObject_Physics::~CObject_Physics()
@@ -81,19 +81,19 @@ void CObject_Physics::OnRemove()
 {
 	BaseClass::OnRemove();
 
-	if(m_hingeDummy)
-	{
-		g_pPhysics->m_physics.DestroyController(m_hinge);
-
-		g_pPhysics->m_physics.DestroyBody(m_hingeDummy);
-		m_hingeDummy = NULL;
-	}
-
 	if(m_physBody)
 	{
 		g_pPhysics->m_physics.DestroyBody(m_physBody);
 		m_physBody = NULL;
 	}
+
+	if (m_breakSpawnedObject)
+	{
+		if (g_pGameWorld->IsValidObject(m_breakSpawnedObject))
+			m_breakSpawnedObject->m_state = GO_STATE_REMOVE;
+
+		m_breakSpawnedObject = nullptr;
+	}	
 }
 
 void CObject_Physics::Spawn()
@@ -115,6 +115,9 @@ void CObject_Physics::Spawn()
 		m_drawFlags |= GO_DRAW_FLAG_SHADOW;
 
 	m_smashSound = KV_GetValueString(m_keyValues->FindKeyBase("smashsound"), 0, "");
+	m_breakSpawn = KV_GetValueString(m_keyValues->FindKeyBase("breakspawn"), 0, "");
+	m_breakSpawnOffset = KV_GetVector3D(m_keyValues->FindKeyBase("breakSpawnOffset"), 0, vec3_zero);
+	m_breakForce = KV_GetValueFloat(m_keyValues->FindKeyBase("breakForce"), 0, 0.0f);
 
 	g_sounds->PrecacheSound(m_smashSound.c_str());
 
@@ -155,31 +158,12 @@ void CObject_Physics::Spawn()
 
 		body->m_flags = COLLOBJ_COLLISIONLIST | BODY_FROZEN;
 
+		if (m_breakForce > 0.0f)
+			body->m_flags |= BODY_FORCE_FREEZE;
+
 		m_physBody = body;
 
 		g_pPhysics->m_physics.AddToWorld( m_physBody );
-
-		kvkeybase_t* hingeKvs = m_keyValues->FindKeyBase("hinge");
-		if(hingeKvs)
-		{
-			Vector3D hingePoint = KV_GetVector3D(hingeKvs);
-
-			m_hingeDummy = new CEqRigidBody();
-			m_hingeDummy->Initialize(1.0f);
-			m_hingeDummy->SetMass( 32000.0f );
-			m_hingeDummy->Freeze();
-			m_hingeDummy->SetPosition(GetOrigin() + hingePoint + vec3_up*0.15f);
-			m_hingeDummy->SetContents(0);
-			m_hingeDummy->SetCollideMask(0);
-
-			g_pPhysics->m_physics.AddToWorld(m_hingeDummy);
-
-			m_hinge = new CEqPhysicsHingeJoint();
-
-			m_hinge->Init(body, m_hingeDummy, vec3_up, hingePoint, 0.2f, 10.0f, 10.0f, 0.1f, 0.005f);
-
-			g_pPhysics->m_physics.AddController( m_hinge );
-		}
 	}
 	else
 	{
@@ -288,7 +272,9 @@ void CObject_Physics::Simulate(float fDt)
 	for(int i = 0; i < m_physBody->m_collisionList.numElem(); i++)
 	{
 		CollisionPairData_t& pair = m_physBody->m_collisionList[i];
-		m_physBody->SetMinFrameTime(0.0f);
+
+		if(!m_physBody->IsFrozen())
+			m_physBody->SetMinFrameTime(0.0f);
 
 		if(m_surfParams && m_surfParams->word == 'M' && pair.impactVelocity > 4.0f)
 		{
@@ -299,27 +285,27 @@ void CObject_Physics::Simulate(float fDt)
 
 		CEqCollisionObject* collidingObject = pair.GetOppositeTo(m_physBody);
 
-		// hinge is only broken if car collision force was greateer
-		if(m_hinge && (collidingObject->m_flags & BODY_ISCAR))
-		{
-			maxImpactVelocity = max(maxImpactVelocity, pair.impactVelocity);
-		}
+		// it's only broken if car collision force was greateer
+		maxImpactVelocity = max(maxImpactVelocity, pair.impactVelocity);
 	}
 
-	if(	!m_physBody->IsFrozen() &&
-		g_pGameSession->IsServer())
+	if (maxImpactVelocity > m_breakForce)
 	{
-		if(m_hinge && maxImpactVelocity > 0.0f && maxImpactVelocity < 1.0f)
+		if (m_breakForce > 0.0f)
+			m_physBody->Wake();
+
+		if (!m_breakSpawnedObject && m_breakSpawn.Length() > 0)
 		{
-			m_hinge->SetEnabled(true);
+			CGameObject* otherObject = g_pGameWorld->CreateObject(m_breakSpawn.c_str());
+			if (otherObject)
+			{
+				otherObject->SetOrigin(GetOrigin() + m_breakSpawnOffset);
+				otherObject->Spawn();
+				g_pGameWorld->AddObject(otherObject);
+
+				m_breakSpawnedObject = otherObject;
+			}
 		}
-
-		m_netPos.Set(m_physBody->GetPosition());
-		m_netAngles.Set(GetAngles());
-
-		m_vecOrigin = m_physBody->GetPosition();
-
-		//OnNetworkStateChanged(NULL);
 	}
 }
 

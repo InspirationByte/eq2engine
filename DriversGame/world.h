@@ -78,6 +78,7 @@ struct WorldGlobals_t
 	TexAtlasEntry_t*		trans_grasspart;
 	TexAtlasEntry_t*		trans_smoke2;
 	TexAtlasEntry_t*		trans_raindrops;
+	TexAtlasEntry_t*		trans_rainripple;
 	TexAtlasEntry_t*		trans_fleck;
 
 	TexAtlasEntry_t*		veh_skidmark_asphalt;

@@ -637,7 +637,9 @@ void CGameWorld::Init()
 
 		g_worldGlobals.trans_grasspart = g_translParticles->FindEntry("grasspart");
 		g_worldGlobals.trans_smoke2 = g_translParticles->FindEntry("smoke2");
-		g_worldGlobals.trans_raindrops = g_translParticles->FindEntry("rain_ripple");
+		g_worldGlobals.trans_raindrops = g_translParticles->FindEntry("rain_drops");
+		g_worldGlobals.trans_rainripple = g_translParticles->FindEntry("rain_ripple");
+		
 		g_worldGlobals.trans_fleck = g_translParticles->FindEntry("fleck");
 	}
 
@@ -2460,6 +2462,7 @@ const char*	CGameWorld::GetLevelName() const
 #ifndef EDITOR
 
 #include "object_debris.h"
+#include "object_waterflow.h"
 #include "object_physics.h"
 #include "object_static.h"
 #include "object_tree.h"
@@ -2487,6 +2490,10 @@ CGameObject* CGameWorld::CreateGameObject( const char* typeName, kvkeybase_t* kv
 	else if(!stricmp(typeName, "debris"))
 	{
 		return new CObject_Debris(kvdata);
+	}
+	else if (!stricmp(typeName, "waterflow"))
+	{
+		return new CObject_WaterFlow(kvdata);
 	}
 	else if(!stricmp(typeName, "physics"))
 	{

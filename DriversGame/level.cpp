@@ -685,6 +685,7 @@ void CGameLevel::ReadObjectDefsLump(IVirtualStream* stream, kvkeybase_t* kvDefs)
 
 		CLevObjectDef* def = new CLevObjectDef();
 		def->m_name = KV_GetValueString(defSection, 0, "unnamed_def");
+		def->m_defType = defSection->name;
 
 		MsgInfo("Adding object definition '%s'\n", def->m_name.c_str());
 

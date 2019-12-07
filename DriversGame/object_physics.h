@@ -56,8 +56,10 @@ protected:
 	CEqRigidBody*			m_physBody;
 	eqPhysSurfParam_t*		m_surfParams;
 
-	CEqRigidBody*			m_hingeDummy;
-	CEqPhysicsHingeJoint*	m_hinge;
+	EqString				m_breakSpawn;
+	Vector3D				m_breakSpawnOffset;
+	CGameObject*			m_breakSpawnedObject;
+	float					m_breakForce;
 	
 };
 
