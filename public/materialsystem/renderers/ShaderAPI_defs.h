@@ -198,6 +198,8 @@ typedef struct VertexFormatDesc_s
 	ER_VertexAttribType	attribType;
 	ER_AttributeFormat	attribFormat;
 
+	const char*			name;
+
 }VertexFormatDesc_t;
 
 typedef struct SamplerStateParam_s

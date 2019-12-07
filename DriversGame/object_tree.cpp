@@ -47,7 +47,7 @@ void CObject_Tree::Spawn()
 		CGameObjectInstancer* instancer = new CGameObjectInstancer();
 
 		// init with this preallocated buffer and format
-		instancer->Init( g_worldGlobals.objectInstFormat, g_worldGlobals.objectInstBuffer );
+		instancer->Init( g_worldGlobals.gameObjectVF, g_worldGlobals.objectInstBuffer );
 
 		m_pModel->SetInstancer( instancer );
 	}

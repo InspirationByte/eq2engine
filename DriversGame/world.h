@@ -69,8 +69,10 @@ struct lensFlareTable_t
 
 struct WorldGlobals_t
 {
-	IVertexFormat*			vehicleVertexFormat;	// FIXME: remove this
-	IVertexFormat*			objectInstFormat;
+	IVertexFormat*			vehicleVF;
+	IVertexFormat*			gameObjectVF;
+	IVertexFormat*			levelObjectVF;
+
 	IVertexBuffer*			objectInstBuffer;
 
 	TexAtlasEntry_t*		trans_grasspart;

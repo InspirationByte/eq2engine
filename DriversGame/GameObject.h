@@ -181,24 +181,12 @@ struct gameObjectInstance_t
 
 typedef CEGFInstancer<gameObjectInstance_t> CGameObjectInstancer;
 
-static VertexFormatDesc_t s_gameObjectInstanceFmtDesc[] = {
-	// model at stream 1
-	{ 0, 3, VERTEXATTRIB_POSITION, ATTRIBUTEFORMAT_FLOAT },	  // position 0
-	{ 0, 2, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_HALF }, // texcoord 0
-
-	{ 0, 4, VERTEXATTRIB_UNUSED, ATTRIBUTEFORMAT_HALF }, // Tangent UNUSED
-	{ 0, 4, VERTEXATTRIB_UNUSED, ATTRIBUTEFORMAT_HALF }, // Binormal UNUSED
-	{ 0, 4, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_HALF }, // Normal (TC1)
-
-	{ 0, 4, VERTEXATTRIB_UNUSED, ATTRIBUTEFORMAT_HALF }, // Bone indices UNUSED
-	{ 0, 4, VERTEXATTRIB_UNUSED, ATTRIBUTEFORMAT_HALF },  // Bone weights UNUSED
-
+static VertexFormatDesc_t s_gameObjectInstanceFormat[] = {
 	// model at stream 2
 	{ 2, 4, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_FLOAT }, // Matrix4x4  (TC2-TC5)
 	{ 2, 4, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_FLOAT },
 	{ 2, 4, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_FLOAT },
 	{ 2, 4, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_FLOAT },
-
 };
 
 //-------------------------------------------------------------------------------------------

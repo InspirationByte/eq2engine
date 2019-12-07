@@ -43,6 +43,14 @@ struct PFXVertex_t
 	//half			unused;
 };
 
+static VertexFormatDesc_s g_PFXVertexFormatDesc[] = {
+	{ 0, 3, VERTEXATTRIB_POSITION, ATTRIBUTEFORMAT_FLOAT, "position" },		// position
+	{ 0, 2, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_HALF, "texcoord" },		// texture coord
+	{ 0, 4, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_HALF, "color" },			// color
+	//{ 0, 4, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_HALF, "normal" },		// normal; unused
+};
+
+
 #define PARTICLE_RENDER_BUFFERS 2
 
 //

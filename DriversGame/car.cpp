@@ -587,7 +587,7 @@ void CCarWheel::SetModelPtr(IEqModel* modelPtr)
 		CGameObjectInstancer* instancer = new CGameObjectInstancer();
 
 		// init with this preallocated buffer and format
-		instancer->Init(g_worldGlobals.objectInstFormat, g_worldGlobals.objectInstBuffer );
+		instancer->Init(g_worldGlobals.gameObjectVF, g_worldGlobals.objectInstBuffer );
 
 		m_pModel->SetInstancer( instancer );
 	}
@@ -956,7 +956,7 @@ void CCar::Spawn()
 		CGameObjectInstancer* instancer = new CGameObjectInstancer();
 
 		// init with this preallocated buffer and format
-		instancer->Init(g_worldGlobals.objectInstFormat, g_worldGlobals.objectInstBuffer );
+		instancer->Init(g_worldGlobals.gameObjectVF, g_worldGlobals.objectInstBuffer );
 
 		m_driverModel.GetModel()->SetInstancer( instancer );
 	}
@@ -4222,7 +4222,7 @@ void CCar::DrawBody( int nRenderFlags, int nLOD)
 
 			// setup our brand new vertex format
 			// and bind required VBO streams by hand
-			g_pShaderAPI->SetVertexFormat(g_worldGlobals.vehicleVertexFormat);
+			g_pShaderAPI->SetVertexFormat(g_worldGlobals.vehicleVF);
 			m_pModel->SetupVBOStream(0);
 			damagedModel->SetupVBOStream(1);
 

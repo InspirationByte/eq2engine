@@ -1177,10 +1177,7 @@ void CEditorLevel::Ed_Render(const Vector3D& cameraPosition, const Matrix4x4& vi
 			int idx = y*m_wide+x;
 
 			if(m_regions[idx].m_isLoaded)
-			{
 				m_regions[idx].Render(cameraPosition, bypassFrustum, 0);
-				m_regions[idx].m_render = true;
-			}
 		}
 	}
 
@@ -1582,13 +1579,10 @@ void CEditorLevel::Ed_Prerender(const Vector3D& cameraPosition)
 		// query this region
 		if(region)
 		{
-			region->m_render = frustum.IsBoxInside(region->m_bbox.minPoint, region->m_bbox.maxPoint);
+			bool render = frustum.IsBoxInside(region->m_bbox.minPoint, region->m_bbox.maxPoint);
 
-			if(region->m_render)
-			{
+			if(render)
 				region->Ed_Prerender();
-				region->m_render = false;
-			}
 		}
 
 		int dx[8] = NEIGHBOR_OFFS_XDX(camPosReg.x, 1);
@@ -1601,11 +1595,10 @@ void CEditorLevel::Ed_Prerender(const Vector3D& cameraPosition)
 
 			if(nregion)
 			{
-				if(frustum.IsBoxInside(nregion->m_bbox.minPoint, nregion->m_bbox.maxPoint))
-				{
+				bool render = frustum.IsBoxInside(nregion->m_bbox.minPoint, nregion->m_bbox.maxPoint);
+				
+				if(render)
 					nregion->Ed_Prerender();
-					nregion->m_render = false;
-				}
 			}
 		}
 

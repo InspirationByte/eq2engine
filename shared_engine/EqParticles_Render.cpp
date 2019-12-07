@@ -282,14 +282,8 @@ bool CParticleLowLevelRenderer::InitBuffers()
 
 	if(!m_vertexFormat)
 	{
-		VertexFormatDesc_s format[] = {
-			{ 0, 3, VERTEXATTRIB_POSITION,		ATTRIBUTEFORMAT_FLOAT },	// vertex position
-			{ 0, 2, VERTEXATTRIB_TEXCOORD,	ATTRIBUTEFORMAT_HALF },	// vertex texture coord
-			{ 0, 4, VERTEXATTRIB_TEXCOORD,	ATTRIBUTEFORMAT_HALF },	// vertex color
-			//{ 0, 4, VERTEXATTRIB_TEXCOORD,	ATTRIBUTEFORMAT_HALF },	// vertex normal
-		};
 
-		m_vertexFormat = g_pShaderAPI->CreateVertexFormat(format, elementsOf(format));
+		m_vertexFormat = g_pShaderAPI->CreateVertexFormat(g_PFXVertexFormatDesc, elementsOf(g_PFXVertexFormatDesc));
 	}
 
 	if(m_vertexBuffer && m_indexBuffer && m_vertexFormat)

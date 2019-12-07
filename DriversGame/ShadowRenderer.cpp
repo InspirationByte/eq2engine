@@ -591,7 +591,7 @@ void CShadowRenderer::RenderShadow(CGameObject* object, ubyte bodyGroups, int mo
 
 				// setup our brand new vertex format
 				// and bind required VBO streams by hand
-				g_pShaderAPI->SetVertexFormat(g_worldGlobals.vehicleVertexFormat);
+				g_pShaderAPI->SetVertexFormat(g_worldGlobals.vehicleVF);
 				cleanModel->SetupVBOStream(0);
 				damagedModel->SetupVBOStream(1);
 

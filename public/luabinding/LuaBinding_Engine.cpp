@@ -584,9 +584,7 @@ void luaCommandVariantsFunc(const ConCommandBase* base, DkList<EqString>& varian
 		MsgError("luaCommandVariantsFunc can't pull table from stack\n");
 
 	{
-		EqLua::LuaStackGuard g(GetLuaState());
 		oolua_ipairs(results)
-			int idx = _i_index_ - 1;
 
 		std::string elem;
 		results.safe_at(_i_index_, elem);

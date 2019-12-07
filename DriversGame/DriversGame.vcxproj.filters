@@ -841,9 +841,6 @@
     <ClInclude Include="AIManipulator_TargetAvoidance.h">
       <Filter>Файлы исходного кода\Game\AI\Driver</Filter>
     </ClInclude>
-    <ClInclude Include="..\public\materialsystem\VertexFormatUtil.h">
-      <Filter>Файлы исходного кода\MatSystem</Filter>
-    </ClInclude>
     <ClInclude Include="DrvSynStates.h">
       <Filter>Файлы исходного кода\Game\States</Filter>
     </ClInclude>
@@ -912,6 +909,9 @@
     </ClInclude>
     <ClInclude Include="GameDefs.h">
       <Filter>Файлы исходного кода\Game\Sessions</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\materialsystem\VertexFormatBuilder.h">
+      <Filter>Файлы исходного кода\MatSystem</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

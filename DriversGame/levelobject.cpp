@@ -8,6 +8,7 @@
 #include "world.h"
 #include "utils/GeomTools.h"
 #include "eqPhysics/eqBulletIndexedMesh.h"
+#include "VertexFormatBuilder.h"
 
 extern ConVar r_enableLevelInstancing;
 
@@ -247,7 +248,6 @@ CLevelModel::CLevelModel() :
 	m_numIndices (0),
 	m_vertexBuffer(NULL),
 	m_indexBuffer(NULL),
-	m_format(NULL),
 	m_hasTransparentSubsets(false),
 	m_physicsMesh(NULL)
 {
@@ -290,12 +290,8 @@ void CLevelModel::Cleanup()
 	if(m_vertexBuffer)
 		g_pShaderAPI->DestroyVertexBuffer(m_vertexBuffer);
 
-	if(m_format)
-		g_pShaderAPI->DestroyVertexFormat(m_format);
-
 	m_indexBuffer = NULL;
 	m_vertexBuffer = NULL;
-	m_format = NULL;
 
 	m_bbox.Reset();
 
@@ -474,38 +470,8 @@ bool CLevelModel::GenereateRenderData()
 	if(!m_indices || !m_verts)
 		return false;
 
-	if((!m_vertexBuffer || !m_indexBuffer || !m_format))
+	if(!m_vertexBuffer || !m_indexBuffer)
 	{
-		const ShaderAPICaps_t& caps = g_pShaderAPI->GetCaps();
-
-		if(caps.isInstancingSupported && r_enableLevelInstancing.GetBool())
-		{
-			VertexFormatDesc_t pFormat[] = {
-				{ 0, 3, VERTEXATTRIB_POSITION, ATTRIBUTEFORMAT_FLOAT },	  // position
-				{ 0, 2, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_FLOAT }, // texcoord 0
-
-				{ 0, 3, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_FLOAT }, // Normal (TC3)
-
-				{ 2, 4, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_FLOAT }, // quaternion
-				{ 2, 4, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_FLOAT }, // position
-			};
-
-			if (!m_format)
-				m_format = g_pShaderAPI->CreateVertexFormat(pFormat, elementsOf(pFormat));
-		}
-		else
-		{
-			VertexFormatDesc_t pFormat[] = {
-				{ 0, 3, VERTEXATTRIB_POSITION, ATTRIBUTEFORMAT_FLOAT },	  // position
-				{ 0, 2, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_FLOAT }, // texcoord 0
-
-				{ 0, 3, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_FLOAT }, // Normal (TC3)
-			};
-
-			if (!m_format)
-				m_format = g_pShaderAPI->CreateVertexFormat(pFormat, elementsOf(pFormat));
-		}
-
 		ER_BufferAccess bufferType = BUFFER_STATIC;
 		int vb_lock_size = m_numVerts;
 		int ib_lock_size = m_numIndices;
@@ -532,7 +498,7 @@ void CLevelModel::Render(int nDrawFlags)
 	if(!r_drawStaticRegionModels.GetBool())
 		return;
 
-	if(!m_vertexBuffer || !m_indexBuffer || !m_format)
+	if(!m_vertexBuffer || !m_indexBuffer)
 		return;
 
 	bool renderTranslucency = (nDrawFlags & RFLAG_TRANSLUCENCY) > 0;
@@ -542,7 +508,7 @@ void CLevelModel::Render(int nDrawFlags)
 	if(!caps.isInstancingSupported && r_enableLevelInstancing.GetBool())
 		g_pShaderAPI->Reset(STATE_RESET_VBO);
 
-	g_pShaderAPI->SetVertexFormat(m_format);
+	g_pShaderAPI->SetVertexFormat(g_worldGlobals.levelObjectVF);
 	g_pShaderAPI->SetVertexBuffer(m_vertexBuffer, 0);
 	g_pShaderAPI->SetVertexBuffer(NULL, 1);
 	g_pShaderAPI->SetIndexBuffer(m_indexBuffer);

@@ -62,6 +62,14 @@ inline bool operator == (const lmodeldrawvertex_s &u, const lmodeldrawvertex_s &
 
 ALIGNED_TYPE(lmodeldrawvertex_s,4) lmodeldrawvertex_t;
 
+// lmodeldrawvertex_t format
+static VertexFormatDesc_t g_LevelModelDrawVertexFormat[] = {
+	{ 0, 3, VERTEXATTRIB_POSITION, ATTRIBUTEFORMAT_FLOAT, "position" },		// position
+	{ 0, 2, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_FLOAT, "texcoord" },		// texcoord 0
+
+	{ 0, 3, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_FLOAT, "normal" },		// Normal (TC3)
+};
+
 struct lmodel_batch_t
 {
 	PPMEM_MANAGED_OBJECT()
@@ -151,7 +159,6 @@ protected:
 
 	IVertexBuffer*			m_vertexBuffer;
 	IIndexBuffer*			m_indexBuffer;
-	IVertexFormat*			m_format;
 };
 
 //-----------------------------------------------------------------------------------------
@@ -168,6 +175,11 @@ struct regObjectInstance_t
 	//int			lightIndex[16];		// light indexes to fetch from texture
 };
 
+static VertexFormatDesc_t g_RegObjectInstanceFormat[] = {
+	{ 0, 4, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_FLOAT, "position" },		// position
+	{ 0, 4, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_FLOAT, "texcoord" },		// rotation
+};
+
 struct levObjInstanceData_t
 {
 	levObjInstanceData_t()
@@ -178,6 +190,7 @@ struct levObjInstanceData_t
 	regObjectInstance_t		instances[MAX_MODEL_INSTANCES];
 	int						numInstances;
 };
+
 
 // only omni lights
 struct wlight_t

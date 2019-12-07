@@ -29,6 +29,8 @@
 #include "sys_host.h"
 #endif // NO_GAME
 
+#include "VertexFormatBuilder.h"
+
 CPredictableRandomGenerator	g_replayRandom;
 
 WorldGlobals_t g_worldGlobals;
@@ -545,38 +547,6 @@ void CGameWorld::Init()
 
 	//----------------------------------------------------
 
-	//
-	// Create vertex format for vehicle EGF models (EGF + EGF)
-	//
-	VertexFormatDesc_t pFormat[] = {
-		// model at stream 0
-		{ 0, 3, VERTEXATTRIB_POSITION, ATTRIBUTEFORMAT_FLOAT },	  // position 0
-		{ 0, 2, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_HALF }, // texcoord 0
-
-		{ 0, 4, VERTEXATTRIB_UNUSED, ATTRIBUTEFORMAT_HALF }, // Tangent UNUSED
-		{ 0, 4, VERTEXATTRIB_UNUSED, ATTRIBUTEFORMAT_HALF }, // Binormal UNUSED
-		{ 0, 4, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_HALF }, // Normal (TC1)
-
-		{ 0, 4, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_HALF }, // Bone indices (hw skinning), (TC2)
-		{ 0, 4, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_HALF },  // Bone weights (hw skinning), (TC3)
-
-		// model at stream 1
-		{ 1, 3, VERTEXATTRIB_POSITION, ATTRIBUTEFORMAT_FLOAT },	  // position 0
-		{ 1, 2, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_HALF }, // texcoord 4
-
-		{ 1, 4, VERTEXATTRIB_UNUSED, ATTRIBUTEFORMAT_HALF }, // Tangent UNUSED
-		{ 1, 4, VERTEXATTRIB_UNUSED, ATTRIBUTEFORMAT_HALF }, // Binormal UNUSED
-		{ 1, 4, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_HALF }, // Normal (TC5)
-
-		{ 1, 4, VERTEXATTRIB_UNUSED, ATTRIBUTEFORMAT_HALF }, // Bone indices (hw skinning), (TC4)
-		{ 1, 4, VERTEXATTRIB_UNUSED, ATTRIBUTEFORMAT_HALF },  // Bone weights (hw skinning), (TC5)
-	};
-
-	if(!g_worldGlobals.vehicleVertexFormat)
-		g_worldGlobals.vehicleVertexFormat = g_pShaderAPI->CreateVertexFormat(pFormat, elementsOf(pFormat));
-
-	//-------------------------
-
 	g_pPFXRenderer->Init();
 
 #ifndef EDITOR
@@ -707,16 +677,70 @@ void CGameWorld::Init()
 
 	const ShaderAPICaps_t& caps = g_pShaderAPI->GetCaps();
 
-	// instancing
-	if(caps.isInstancingSupported)
-	{
-		if(!g_worldGlobals.objectInstFormat)
-			g_worldGlobals.objectInstFormat = g_pShaderAPI->CreateVertexFormat(s_gameObjectInstanceFmtDesc, elementsOf(s_gameObjectInstanceFmtDesc));
+	// Create necessare vertex formats
+	//-------------------------------------------------------------------------------
 
-		if(!g_worldGlobals.objectInstBuffer)
+	if (!g_worldGlobals.vehicleVF)
+	{
+		//
+		// Create vertex format for vehicle EGF models (EGF + EGF)
+		//
+		CVertexFormatBuilder vfmtBuilder;
+		vfmtBuilder.SetStream(0, g_EGFHwVertexFormat, elementsOf(g_EGFHwVertexFormat), "clean");
+		vfmtBuilder.DisableComponent(0, "tangent");
+		vfmtBuilder.DisableComponent(0, "binormal");
+
+		vfmtBuilder.SetStream(1, g_EGFHwVertexFormat, elementsOf(g_EGFHwVertexFormat), "damaged");
+		vfmtBuilder.DisableComponent(1, "tangent");
+		vfmtBuilder.DisableComponent(1, "binormal");
+		vfmtBuilder.DisableComponent(1, "boneid");
+		vfmtBuilder.DisableComponent(1, "bonew");
+
+		// TODO: instance format too
+		VertexFormatDesc_t* genFmt = nullptr;
+		int genFmtElems = vfmtBuilder.Build(&genFmt);
+
+		g_worldGlobals.vehicleVF = g_pShaderAPI->CreateVertexFormat(genFmt, genFmtElems);
+	}
+
+	if (!g_worldGlobals.gameObjectVF)
+	{
+		CVertexFormatBuilder vfmtBuilder;
+		vfmtBuilder.SetStream(0, g_EGFHwVertexFormat, elementsOf(g_EGFHwVertexFormat), "go");
+		vfmtBuilder.DisableComponent(0, "tangent");
+		vfmtBuilder.DisableComponent(0, "binormal");
+		vfmtBuilder.DisableComponent(0, "boneid");
+		vfmtBuilder.DisableComponent(0, "bonew");
+
+		if (caps.isInstancingSupported)
+			vfmtBuilder.SetStream(2, s_gameObjectInstanceFormat, elementsOf(s_gameObjectInstanceFormat), "go_inst");
+
+		VertexFormatDesc_t* genFmt = nullptr;
+		int genFmtElems = vfmtBuilder.Build(&genFmt);
+
+		g_worldGlobals.gameObjectVF = g_pShaderAPI->CreateVertexFormat(genFmt, genFmtElems);
+	}
+
+	if (!g_worldGlobals.levelObjectVF)
+	{
+		CVertexFormatBuilder vfmtBuilder;
+		vfmtBuilder.SetStream(0, g_LevelModelDrawVertexFormat, elementsOf(g_LevelModelDrawVertexFormat), "levmodel");
+
+		if (caps.isInstancingSupported)
+			vfmtBuilder.SetStream(2, g_RegObjectInstanceFormat, elementsOf(g_RegObjectInstanceFormat), "levmodel_inst");
+
+		VertexFormatDesc_t* genFmt = nullptr;
+		int genFmtElems = vfmtBuilder.Build(&genFmt);
+
+		g_worldGlobals.levelObjectVF = g_pShaderAPI->CreateVertexFormat(genFmt, genFmtElems);
+	}
+
+	if (caps.isInstancingSupported)
+	{
+		if (!g_worldGlobals.objectInstBuffer)
 		{
 			g_worldGlobals.objectInstBuffer = g_pShaderAPI->CreateVertexBuffer(BUFFER_DYNAMIC, MAX_EGF_INSTANCES, sizeof(gameObjectInstance_t));
-			g_worldGlobals.objectInstBuffer->SetFlags( VERTBUFFER_FLAG_INSTANCEDATA );
+			g_worldGlobals.objectInstBuffer->SetFlags(VERTBUFFER_FLAG_INSTANCEDATA);
 		}
 	}
 
@@ -1032,11 +1056,14 @@ void CGameWorld::Cleanup( bool unloadLevel )
 
 		g_pPFXRenderer->Shutdown();
 
-		g_pShaderAPI->DestroyVertexFormat(g_worldGlobals.vehicleVertexFormat);
-		g_worldGlobals.vehicleVertexFormat = nullptr;
+		g_pShaderAPI->DestroyVertexFormat(g_worldGlobals.vehicleVF);
+		g_worldGlobals.vehicleVF = nullptr;
 
-		g_pShaderAPI->DestroyVertexFormat(g_worldGlobals.objectInstFormat);
-		g_worldGlobals.objectInstFormat = nullptr;
+		g_pShaderAPI->DestroyVertexFormat(g_worldGlobals.gameObjectVF);
+		g_worldGlobals.gameObjectVF = nullptr;
+
+		g_pShaderAPI->DestroyVertexFormat(g_worldGlobals.levelObjectVF);
+		g_worldGlobals.levelObjectVF = nullptr;
 
 		g_pShaderAPI->DestroyVertexBuffer(g_worldGlobals.objectInstBuffer);
 		g_worldGlobals.objectInstBuffer = nullptr;
