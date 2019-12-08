@@ -28,6 +28,7 @@ void g_freecam_changed(ConVar* pVar,char const* pszOldValue);
 
 ConVar			g_freecam("g_freecam", "0", g_freecam_changed, nullptr, 0 );
 ConVar			g_freecam_speed("g_freecam_speed", "10", NULL, CV_ARCHIVE);
+
 ConVar			g_director("director", "0");
 ConVar			g_mouse_sens("g_mouse_sens", "1.0", "mouse sensitivity", CV_ARCHIVE);
 
@@ -221,36 +222,6 @@ void Director_Action(EDirectorActionType type)
 	}
 }
 
-DECLARE_CMD(director_camera_add, nullptr, CV_ARCHIVE)
-{
-	Director_Action(DIRECTOR_CAMERA_ADD);
-}
-
-DECLARE_CMD(director_camera_reset, nullptr, CV_ARCHIVE)
-{
-	Director_Action(DIRECTOR_CAMERA_RESET);
-}
-
-DECLARE_CMD(director_camera_remove, nullptr, CV_ARCHIVE)
-{
-	Director_Action(DIRECTOR_CAMERA_REMOVE);
-}
-
-DECLARE_CMD(director_prevcamera, nullptr, CV_ARCHIVE)
-{
-	Director_Action(DIRECTOR_PREVCAMERA);
-}
-
-DECLARE_CMD(director_nextcamera, nullptr, CV_ARCHIVE)
-{
-	Director_Action(DIRECTOR_NEXTCAMERA);
-}
-
-DECLARE_CMD(director_rewind, nullptr, CV_ARCHIVE)
-{
-	g_State_Game->ReplayFastSeek(0);
-}
-
 DECLARE_CMD(director_pick_ray, "Director mode - picks object with ray", 0)
 {
 	if (!Director_IsActive())
@@ -281,21 +252,73 @@ void Director_KeyPress(int key, bool down)
 	{
 		sys_timescale.SetFloat( down ? DIRECTOR_FASTFORWARD_TIMESCALE : 1.0f );
 	}
+	else if (key == KEY_W)
+	{
+		if(down)
+			g_freeCamProps.buttons |= IN_FORWARD;
+		else
+			g_freeCamProps.buttons &= ~IN_FORWARD;
+	}
+	else if (key == KEY_S)
+	{
+		if (down)
+			g_freeCamProps.buttons |= IN_BACKWARD;
+		else
+			g_freeCamProps.buttons &= ~IN_BACKWARD;
+	}
+	else if (key == KEY_A)
+	{
+		if (down)
+			g_freeCamProps.buttons |= IN_LEFT;
+		else
+			g_freeCamProps.buttons &= ~IN_LEFT;
+	}
+	else if (key == KEY_D)
+	{
+		if (down)
+			g_freeCamProps.buttons |= IN_RIGHT;
+		else
+			g_freeCamProps.buttons &= ~IN_RIGHT;
+	}
 
 	// only execute director actions on pause
 	if (!g_pause.GetBool())
 		return;
 
-	if(down)
+	if (down)
 	{
 		//Msg("Director mode keypress: %d\n", key);
 
 		int replayCamera = g_replayData->m_currentCamera;
 		replayCamera_t* currentCamera = g_replayData->GetCurrentCamera();
 
-		if(key >= KEY_1 && key <= KEY_6)
+		if (key >= KEY_1 && key <= KEY_6)
 		{
 			g_nDirectorCameraType = key - KEY_1;
+		}
+		else if (key == KEY_R)
+		{
+			g_State_Game->ReplayFastSeek(0);
+		}
+		else if (key == KEY_PGUP)
+		{
+			Director_Action(DIRECTOR_NEXTCAMERA);
+		}
+		else if (key == KEY_PGDN)
+		{
+			Director_Action(DIRECTOR_PREVCAMERA);
+		}
+		else if (key == KEY_ADD)
+		{
+			Director_Action(DIRECTOR_CAMERA_ADD);
+		}
+		else if (key == KEY_KP_ENTER)
+		{
+			Director_Action(DIRECTOR_CAMERA_RESET);
+		}
+		else if (key == KEY_DELETE)
+		{
+			Director_Action(DIRECTOR_CAMERA_REMOVE);
 		}
 		else
 		{
@@ -387,14 +410,17 @@ void Director_UpdateFreeCamera(float fDt)
 
 	Vector3D camMoveVec(0.0f);
 
-	if(g_nClientButtons & IN_FORWARD)
+	if(g_replayData->m_state != EReplayState::REPL_PLAYING)
+		g_freeCamProps.buttons = g_nClientButtons;
+
+	if(g_freeCamProps.buttons & IN_FORWARD)
 		camMoveVec += f;
-	else if(g_nClientButtons & IN_BACKWARD)
+	else if(g_freeCamProps.buttons & IN_BACKWARD)
 		camMoveVec -= f;
 
-	if(g_nClientButtons & IN_LEFT)
+	if(g_freeCamProps.buttons & IN_LEFT)
 		camMoveVec -= r;
-	else if(g_nClientButtons & IN_RIGHT)
+	else if(g_freeCamProps.buttons & IN_RIGHT)
 		camMoveVec += r;
 
 	g_freeCamProps.velocity += camMoveVec * 200.0f * fDt;
@@ -649,24 +675,6 @@ void Director_Draw( float fDt )
 		EqString freecam_bind("UNBOUND");
 		UTIL_GetBindingKeyString(freecam_bind, g_inputCommandBinder->FindBindingByCommand(cmd_togglevar, g_freecam.GetName()));
 
-		EqString rewind_bind("UNBOUND");
-		UTIL_GetBindingKeyString(rewind_bind, g_inputCommandBinder->FindBindingByCommand(&cmd_director_rewind));
-
-		EqString director_camera_add_bind("UNBOUND");
-		UTIL_GetBindingKeyString(director_camera_add_bind, g_inputCommandBinder->FindBindingByCommand(&cmd_director_camera_add));
-
-		EqString director_camera_reset_bind("UNBOUND");
-		UTIL_GetBindingKeyString(director_camera_reset_bind, g_inputCommandBinder->FindBindingByCommand(&cmd_director_camera_reset));
-
-		EqString director_camera_remove_bind("UNBOUND");
-		UTIL_GetBindingKeyString(director_camera_remove_bind, g_inputCommandBinder->FindBindingByCommand(&cmd_director_camera_remove));
-
-		EqString director_prevcamera_bind("UNBOUND");
-		UTIL_GetBindingKeyString(director_prevcamera_bind, g_inputCommandBinder->FindBindingByCommand(&cmd_director_prevcamera));
-
-		EqString director_nextcamera_bind("UNBOUND");
-		UTIL_GetBindingKeyString(director_nextcamera_bind, g_inputCommandBinder->FindBindingByCommand(&cmd_director_nextcamera));
-
 		EqString director_pick_ray_bind("UNBOUND");
 		UTIL_GetBindingKeyString(director_pick_ray_bind, g_inputCommandBinder->FindBindingByCommand(&cmd_director_pick_ray));
 
@@ -677,60 +685,92 @@ void Director_Draw( float fDt )
 			cameraPropsStr = varargs(
 				"Replay camera: &#FFFF00;%s&;\n\n"
 
-				"Type: &#FFFF00;1-5&; (&#FFFF00;'%s'&;)\n"
+				"Type: &#FFFF00;1 - 6&;\n"
+				"&#FFFF00;1&; %s Outside car&;\n"
+				"&#FFFF00;2&; %s In car&;\n"
+				"&#FFFF00;3&; %s Tripod&;\n"
+				"&#FFFF00;4&; %s Tripod (fixed zoom)&;\n"
+				"&#FFFF00;5&; %s Static&;\n"
+				"&#FFFF00;6&; %s Outside car (fixed)&;\n\n"
+
 				"Zoom: &#FFFF00;MOUSE WHEEL&; (%.2f deg.)\n"
 				"Tilt: &#FFFF00;RMB and MOUSE MOVE&; (%.2f deg.)\n\n"
 
-				"Add camera: &#FFFF00;%s&;\n"
-				"Replace camera: &#FFFF00;%s&;\n"
-				"Delete camera: &#FFFF00;%s&;\n\n"
+				"Insert camera: &#FFFF00;NUMPAD ADD&;\n"
+				"Replace camera: &#FFFF00;NUMPAD ENTER&;\n"
+				"Delete camera: &#FFFF00;DELETE&;\n\n"
 
 				"Set vehicle: &#FFFF00;%s&;\n",
 
 				freecam_bind.c_str(),
 
-				s_cameraTypeString[g_nDirectorCameraType],
+				g_nDirectorCameraType == 0 ? "&#FF0000;" : "",
+				g_nDirectorCameraType == 1 ? "&#FF0000;" : "",
+				g_nDirectorCameraType == 2 ? "&#FF0000;" : "",
+				g_nDirectorCameraType == 3 ? "&#FF0000;" : "",
+				g_nDirectorCameraType == 4 ? "&#FF0000;" : "",
+				g_nDirectorCameraType == 5 ? "&#FF0000;" : "",
+
 				g_freeCamProps.fov,
 				g_freeCamProps.angles.z,
-				
-				director_camera_add_bind.c_str(),
-				director_camera_reset_bind.c_str(),
-				director_camera_remove_bind.c_str(),
 
 				director_pick_ray_bind.c_str()
 				);
 		}
 		else
 		{
+			int cameraType = currentCamera ? currentCamera->type : g_nDirectorCameraType;
+			float fov = currentCamera ? currentCamera->fov : g_freeCamProps.fov;
+			float tilt = currentCamera ? currentCamera->rotation.z : g_freeCamProps.angles.z;
+
 			cameraPropsStr = varargs(
 				"Free camera: &#FFFF00;%s&;\n\n"
 
-				"Type: &#FFFF00;1-5&; (&#FFFF00;'%s'&;)\n"
+				"Type: &#FFFF00;1 - 6&;\n"
+				"&#FFFF00;1&; %s%s Outside car&;&;\n"
+				"&#FFFF00;2&; %s%s In car&;&;\n"
+				"&#FFFF00;3&; %s%s Tripod&;&;\n"
+				"&#FFFF00;4&; %s%s Tripod (fixed zoom)&;&;\n"
+				"&#FFFF00;5&; %s%s Static&;&;\n"
+				"&#FFFF00;6&; %s%s Outside car (fixed)&;&;\n\n"
+
 				"Zoom: &#FFFF00;MOUSE WHEEL&; (%.2f deg.)\n"
 				"Tilt: &#FFFF00;RMB and MOUSE MOVE&; (%.2f deg.)\n\n"
 
-				"Add camera: &#FFFF00;%s&;\n"
-				"Replace camera: &#FFFF00;%s&;\n"
-				"Delete camera: &#FFFF00;%s&;\n",
+				"Insert camera: &#FFFF00;NUMPAD ADD&;\n"
+				"Replace camera: &#FFFF00;NUMPAD ENTER&;\n"
+				"Delete camera: &#FFFF00;DELETE&;\n\n",
 
 				freecam_bind.c_str(),
 
-				s_cameraTypeString[g_nDirectorCameraType],
-				g_freeCamProps.fov,
-				g_freeCamProps.angles.z,
+				cameraType == 0 ? "&#FFFF00;>" : "",
+				g_nDirectorCameraType == 0 ? "&#FF0000;" : "",
 
-				director_camera_add_bind.c_str(),
-				director_camera_reset_bind.c_str(),
-				director_camera_remove_bind.c_str());
+				cameraType == 1 ? "&#FFFF00;>" : "",
+				g_nDirectorCameraType == 1 ? "&#FF0000;" : "",
+
+				cameraType == 2 ? "&#FFFF00;>" : "",
+				g_nDirectorCameraType == 2 ? "&#FF0000;" : "",
+
+				cameraType == 3 ? "&#FFFF00;>" : "",
+				g_nDirectorCameraType == 3 ? "&#FF0000;" : "",
+
+				cameraType == 4 ? "&#FFFF00;>" : "",
+				g_nDirectorCameraType == 4 ? "&#FF0000;" : "",
+
+				cameraType == 5 ? "&#FFFF00;>" : "",
+				g_nDirectorCameraType == 5 ? "&#FF0000;" : "",
+
+				fov,
+				tilt);
 		}
 
 		const char* controlsText = varargs(
 			"Play: &#FFFF00;%s&;\n"
-			"Rewind: &#FFFF00;%s&;\n"
+			"Rewind: &#FFFF00;R&;\n"
 			"Goto FRAME: &#FFFF00;CTRL+ARROWS&; or &#FFFF00;fastseek <frame>&; (in console)\n",
 
-			play_pause_bind.c_str(),
-			rewind_bind.c_str()
+			play_pause_bind.c_str()
 		);
 
 		const char* shortText = varargs(
@@ -757,11 +797,9 @@ void Director_Draw( float fDt )
 
 				char* cameraStr = varargs(
 					"CAMERA START: &#FFFF00;ARROWS&; (FRAME %d)\n"
-					"NEXT CAMERA: &#FFFF00;%s&;\n"
-					"PREV CAMERA: &#FFFF00;%s&;\n\n",
-					currentCamera ? currentCamera->startTick : 0,
-					director_nextcamera_bind.c_str(),
-					director_prevcamera_bind.c_str());
+					"NEXT CAMERA: &#FFFF00;PAGE UP&;\n"
+					"PREV CAMERA: &#FFFF00;PAGE DN&;\n\n",
+					currentCamera ? currentCamera->startTick : 0);
 
 				font->RenderText(cameraStr, cameraTextPos, params);
 			}

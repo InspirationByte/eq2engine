@@ -23,6 +23,8 @@ struct freeCameraProps_t
 	Vector3D	velocity;
 	float		fov;
 
+	int			buttons;
+
 	bool		zAxisMove;
 };
 
