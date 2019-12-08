@@ -1280,26 +1280,7 @@ bool CEqConsoleInput::KeyPress(int key, bool pressed)
 						int selStart = min(m_startCursorPos, m_cursorPos);
 						int selEnd = max(m_startCursorPos, m_cursorPos);
 
-						EqString tmpString(m_inputText.Mid(selStart, selEnd-selStart));
-
-#ifdef PLAT_SDL
-						// simple, yea
-						SDL_SetClipboardText(tmpString.c_str());
-#elif PLAT_WIN
-						if(OpenClipboard( m_hwnd ))
-						{
-							HGLOBAL hgBuffer;
-
-							char* chBuffer;
-							EmptyClipboard();
-							hgBuffer= GlobalAlloc(GMEM_DDESHARE, tmpString.Length()+1);
-							chBuffer= (char*)GlobalLock(hgBuffer);
-							strcpy(chBuffer, tmpString.GetData());
-							GlobalUnlock(hgBuffer);
-							SetClipboardData(CF_TEXT,hgBuffer);
-							CloseClipboard();
-						}
-#endif // PLAT_SDL
+						SDL_SetClipboardText( m_inputText.Mid(selStart, selEnd - selStart).c_str() );
 					}
 				}
 				break;
@@ -1311,24 +1292,7 @@ bool CEqConsoleInput::KeyPress(int key, bool pressed)
 						int selStart = min(m_startCursorPos, m_cursorPos);
 						int selEnd = max(m_startCursorPos, m_cursorPos);
 
-						EqString tmpString(m_inputText.Mid(selStart, selEnd-selStart));
-#ifdef PLAT_SDL
-						SDL_SetClipboardText(tmpString.c_str());
-#elif PLAT_WIN
-						if(OpenClipboard( m_hwnd ))
-						{
-							HGLOBAL hgBuffer;
-
-							char* chBuffer;
-							EmptyClipboard();
-							hgBuffer= GlobalAlloc(GMEM_DDESHARE, tmpString.Length()+1);
-							chBuffer= (char*)GlobalLock(hgBuffer);
-							strcpy(chBuffer, tmpString.GetData());
-							GlobalUnlock(hgBuffer);
-							SetClipboardData(CF_TEXT,hgBuffer);
-							CloseClipboard();
-						}
-#endif // PLAT_SDL
+						SDL_SetClipboardText( m_inputText.Mid(selStart, selEnd - selStart).c_str() );
 
 						consoleRemTextInRange(selStart, selEnd - selStart);
 
@@ -1340,43 +1304,24 @@ bool CEqConsoleInput::KeyPress(int key, bool pressed)
 			case KEY_V:
 				if(m_ctrlModifier)
 				{
-#ifdef PLAT_SDL
+					char* clipBoardText = SDL_GetClipboardText();
+
+					if (!clipBoardText)
+						break;
+
+					int selStart = min(m_startCursorPos, m_cursorPos);
+
+					if(m_startCursorPos != m_cursorPos)
 					{
-						EqString tmpString = SDL_GetClipboardText();
-#elif PLAT_WIN
-					if(OpenClipboard(m_hwnd))
-
-					{
-						HANDLE hData = GetClipboardData(CF_TEXT);
-						EqString tmpString;
-						char* chBuffer = (char*)GlobalLock(hData);
-						if(chBuffer == NULL)
-						{
-							GlobalUnlock(hData);
-							CloseClipboard();
-							break;
-						}
-
-						tmpString = chBuffer;
-						GlobalUnlock(hData);
-						CloseClipboard();
-#endif // PLAT_SDL
-
-						int selStart = min(m_startCursorPos, m_cursorPos);
-
-						if(m_startCursorPos != m_cursorPos)
-						{
-							int selEnd = max(m_startCursorPos, m_cursorPos);
-
-							consoleRemTextInRange(selStart, selEnd - selStart);
-						}
-
-						consoleInsText((char*)tmpString.GetData(), selStart);
-						m_cursorPos = selStart;
-
-						m_cursorPos += tmpString.Length();
-						m_startCursorPos = m_cursorPos;
+						int selEnd = max(m_startCursorPos, m_cursorPos);
+						consoleRemTextInRange(selStart, selEnd - selStart);
 					}
+
+					consoleInsText(clipBoardText, selStart);
+					m_cursorPos = selStart + strlen(clipBoardText);
+					m_startCursorPos = m_cursorPos;
+
+					SDL_free(clipBoardText);
 				}
 				break;
 			case KEY_ENTER:
