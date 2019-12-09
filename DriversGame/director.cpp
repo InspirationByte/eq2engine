@@ -410,7 +410,7 @@ void Director_UpdateFreeCamera(float fDt)
 
 	Vector3D camMoveVec(0.0f);
 
-	if(g_replayData->m_state != EReplayState::REPL_PLAYING)
+	if(!Director_IsActive())
 		g_freeCamProps.buttons = g_nClientButtons;
 
 	if(g_freeCamProps.buttons & IN_FORWARD)

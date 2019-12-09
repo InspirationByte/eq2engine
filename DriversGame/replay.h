@@ -26,21 +26,19 @@ TODO:
 
 #define VEHICLEREPLAY_IDENT MCHAR4('D','S','R','P')
 
-#define VEHICLEREPLAY_VERSION	4
-#define CAMERAREPLAY_VERSION	1
+#define VEHICLEREPLAY_VERSION	5
+#define CAMERAREPLAY_VERSION	2
 
 #define USERREPLAYS_PATH "UserReplays/"
 
 struct replayCamera_s
 {
-	int				startTick;	// camera start tick
-	int8			type;		// ECameraMode
-
-	int				targetIdx;	// target replay index. Used to target at object
-
 	FVector3D		origin;
 	TVec3D<half>	rotation;
+	int				startTick;	// camera start tick
+	int				targetIdx;	// target replay index. Used to target at object
 	half			fov;
+	int8			type;		// ECameraMode
 };
 
 ALIGNED_TYPE(replayCamera_s,4) replayCamera_t;
@@ -77,10 +75,16 @@ enum EReplayEventType
 
 struct replayCarFrame_s
 {
+	FVector3D		car_origin;
+	TVec4D<half>	car_rot;
+
+	TVec3D<half>	car_vel;
+	TVec3D<half>	car_angvel;
+
 	int				tick;			// time since last update
 
 	// 3 packed 10 bit values
-	struct 
+	struct
 	{
 		uint		acceleration : 10;
 		uint		brake : 10;
@@ -89,27 +93,13 @@ struct replayCarFrame_s
 		uint		autoHandbrake : 1;
 	} control_vars;
 
-	FVector3D		car_origin;
-	TVec4D<half>	car_rot;
-
-	TVec3D<half>	car_vel;
-	TVec3D<half>	car_angvel;
-
 	short			button_flags;
-
-	ubyte			lights_enabled;
-	ubyte			reserved;
 };
 
 ALIGNED_TYPE(replayCarFrame_s,4) replayCarFrame_t;
 
 struct replayCarStream_t
 {
-	FVector3D	car_initial_pos;
-	Quaternion	car_initial_rot;
-	Vector3D	car_initial_vel;
-	Vector3D	car_initial_angvel;
-
 	int			scriptObjectId;
 	int			first_tick;
 
@@ -146,33 +136,14 @@ struct replayFileCarStream_s
 
 	replayFileCarStream_s(const replayCarStream_t& rep)
 	{
-		car_initial_pos = rep.car_initial_pos;
-		car_initial_rot = TVec4D<half>(	rep.car_initial_rot.x, 
-										rep.car_initial_rot.y,
-										rep.car_initial_rot.z,
-										rep.car_initial_rot.w);
-		car_initial_vel = rep.car_initial_vel;
-		car_initial_angvel = rep.car_initial_angvel;
-
 		scriptObjectId = rep.scriptObjectId;
-
-		strcpy(name, rep.name.GetData());
-
+		strcpy_s(name, rep.name.GetData());
 		numFrames = rep.replayArray.numElem();
 	}
 
-	FVector3D		car_initial_pos;
-	TVec4D<half>	car_initial_rot;
-	TVec3D<half>	car_initial_vel;
-	TVec3D<half>	car_initial_angvel;
-
+	char		name[48];
 	int			scriptObjectId;
-
-	char		name[128];
-
 	int			numFrames;
-
-	// float	startTime;	// start time when actually car spawned
 };
 
 ALIGNED_TYPE(replayFileCarStream_s,4) replayFileCarStream_t;
@@ -195,10 +166,10 @@ struct replayFileEvent_s
 
 	int64 		frameIndex;		// physics frame index
 	int			replayIndex;
-	uint8		eventType;
-	short		eventFlags;
 
 	int			eventDataSize;
+	short		eventFlags;
+	uint8		eventType;
 };
 
 ALIGNED_TYPE(replayFileEvent_s,4) replayFileEvent_t;

@@ -64,11 +64,6 @@ int CReplayData::Record(CCar* pCar, bool onlyCollisions)
 
 	CEqRigidBody* body = pCar->GetPhysicsBody();
 
-	veh.car_initial_pos = body->GetPosition();
-	veh.car_initial_rot = body->GetOrientation();
-	veh.car_initial_vel = body->GetLinearVelocity();
-	veh.car_initial_angvel = body->GetAngularVelocity();
-
 	veh.scriptObjectId = pCar->GetScriptID();
 
 	veh.name = pCar->m_conf->carName.c_str();
@@ -387,8 +382,6 @@ void CReplayData::PlayVehicleFrame(replayCarStream_t* rep)
 			return;
 	}
 
-	
-
 	// correct whole frame
 	body->SetPosition(frame.car_origin);
 	body->SetOrientation(Quaternion(frame.car_rot.w, frame.car_rot.x, frame.car_rot.y, frame.car_rot.z));
@@ -399,7 +392,6 @@ void CReplayData::PlayVehicleFrame(replayCarStream_t* rep)
 	uint16 accelControl = frame.control_vars.acceleration;
 	uint16 brakeControl = frame.control_vars.brake;
 	short steerControl = frame.control_vars.steering * (frame.control_vars.steerSign > 0 ? -1 : 1);
-	ubyte lightsEnabled = frame.lights_enabled;
 	bool autoHandbrake = (frame.control_vars.autoHandbrake > 0);
 
 	int control_flags = frame.button_flags;
@@ -409,8 +401,6 @@ void CReplayData::PlayVehicleFrame(replayCarStream_t* rep)
 	car->m_brakeRatio = brakeControl;
 	car->m_autohandbrake = autoHandbrake;
 
-	car->m_lightsEnabled = lightsEnabled;
-	
 	car->SetControlButtons(control_flags);
 }
 
@@ -424,17 +414,6 @@ bool CReplayData::RecordVehicleFrame(replayCarStream_t* rep)
 		return false; // done or has future frames
 
 	CEqRigidBody* body = rep->obj_car->GetPhysicsBody();
-
-	// position must be set
-	if(numFrames == 0)
-	{
-		Quaternion orient = body->GetOrientation();
-
-		rep->car_initial_pos = body->GetPosition();
-		rep->car_initial_rot = orient;
-		rep->car_initial_vel = body->GetLinearVelocity();
-		rep->car_initial_angvel = body->GetAngularVelocity();
-	}
 
 	bool addControls = false;
 	float prevTime = 0.0f;
@@ -451,7 +430,7 @@ bool CReplayData::RecordVehicleFrame(replayCarStream_t* rep)
 	rep->skeptFrames++;
 
 	// correct only non-frozen bodies
-	bool forceCorrection = (m_tick % CORRECTION_TICK == 0) && !body->IsFrozen();
+	bool forceCorrection = (m_tick % CORRECTION_TICK == 0) && !body->IsFrozen() || (numFrames == 0);
 
 	DkList<CollisionPairData_t>& collisionList = body->m_collisionList;
 	bool satisfiesCollisions = collisionList.numElem([=](CollisionPairData_t& pair){ return pair.appliedImpulse > COLLISION_MIN_IMPULSE; });
@@ -472,14 +451,12 @@ bool CReplayData::RecordVehicleFrame(replayCarStream_t* rep)
 		uint16 prevAccelControl = prevControl.control_vars.acceleration;
 		uint16 prevbrakeControl = prevControl.control_vars.brake;
 		short prevsteerControl = prevControl.control_vars.steering * (prevControl.control_vars.steerSign > 0 ? -1 : 1);
-		ubyte prevlightsEnabled = prevControl.lights_enabled;
 		bool prevAutoHandbrake = (prevControl.control_vars.autoHandbrake > 0);
 
 		addControls =	(prevControl.button_flags != control_flags) ||
 						(accelControl != prevAccelControl) ||
 						(brakeControl != prevbrakeControl) ||
 						(steerControl != prevsteerControl) ||
-						(lightsEnabled != prevlightsEnabled) ||
 						(autoHandbrake != prevAutoHandbrake) ||
 						forceCorrection;
 	}
@@ -501,8 +478,6 @@ bool CReplayData::RecordVehicleFrame(replayCarStream_t* rep)
 		con.car_rot = TVec4D<half>(orient.x, orient.y, orient.z, orient.w);
 		con.car_vel = body->GetLinearVelocity();
 		con.car_angvel = body->GetAngularVelocity();
-		con.lights_enabled = lightsEnabled;
-
 
 		con.control_vars.acceleration = accelControl;
 		con.control_vars.brake = brakeControl;
@@ -843,11 +818,6 @@ bool CReplayData::LoadVehicleReplay( CCar* target, const char* filename, int& ti
 			veh.obj_car = target;
 			veh.name = data.name;
 
-			veh.car_initial_pos = data.car_initial_pos;
-			veh.car_initial_rot = Quaternion(data.car_initial_rot.w, data.car_initial_rot.x, data.car_initial_rot.y, data.car_initial_rot.z);
-			veh.car_initial_vel = data.car_initial_vel;
-			veh.car_initial_angvel = data.car_initial_angvel;
-
 			// set replay id
 			veh.obj_car->m_replayID = repIdx;
 			veh.curr_frame = 0;
@@ -970,10 +940,6 @@ bool CReplayData::LoadFromFile(const char* filename)
 		// event will spawn this car
 		veh.obj_car = NULL;
 
-		veh.car_initial_pos = data.car_initial_pos;
-		veh.car_initial_rot = Quaternion(data.car_initial_rot.w, data.car_initial_rot.x, data.car_initial_rot.y, data.car_initial_rot.z);
-		veh.car_initial_vel = data.car_initial_vel;
-		veh.car_initial_angvel = data.car_initial_angvel;
 		veh.scriptObjectId = data.scriptObjectId;
 
 		veh.name = data.name;
@@ -1335,22 +1301,10 @@ void CReplayData::SetupReplayCar( replayCarStream_t* rep )
 
 	CEqRigidBody* body = pCar->GetPhysicsBody();
 
-	if(rep->replayArray.numElem() == 0)
-	{
-		MsgWarning("Warning: no replay frames for '%s' (rid=%d)\n", rep->name.c_str(), rep->obj_car->m_replayID);
+	const replayCarFrame_t& ctrl = rep->replayArray[0];
 
-		body->SetPosition(rep->car_initial_pos);
-		body->SetOrientation(rep->car_initial_rot);
-		body->SetLinearVelocity(rep->car_initial_vel);
-		body->SetAngularVelocity(rep->car_initial_angvel);
-	}
-	else
-	{
-		const replayCarFrame_t& ctrl = rep->replayArray[0];
-
-		body->SetPosition(ctrl.car_origin);
-		body->SetOrientation(Quaternion(ctrl.car_rot));
-		body->SetLinearVelocity(ctrl.car_vel);
-		body->SetAngularVelocity(ctrl.car_angvel);
-	}
+	body->SetPosition(ctrl.car_origin);
+	body->SetOrientation(Quaternion(ctrl.car_rot));
+	body->SetLinearVelocity(ctrl.car_vel);
+	body->SetAngularVelocity(ctrl.car_angvel);
 }
