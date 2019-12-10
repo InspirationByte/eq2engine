@@ -585,6 +585,8 @@ bool CGameHost::Frame()
 	if( !FilterTime( m_fFrameTime ) )
 		return false;
 
+	CEqGameControllerSDL::RepeatEvents(m_fGameFrameTime);
+
 	UpdateCursorState();
 
 	//--------------------------------------------

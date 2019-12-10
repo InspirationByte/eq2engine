@@ -530,6 +530,7 @@ void CShadowRenderer::SetShadowAngles( const Vector3D& angles )
 void CShadowRenderer::RenderShadow(CGameObject* object, ubyte bodyGroups, int mode)
 {
 	IEqModel* model = object->GetModel();
+	object->UpdateTransform();
 	
 	materials->SetInstancingEnabled(false);
 	// force disable vertex buffer

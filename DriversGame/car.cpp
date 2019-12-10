@@ -121,6 +121,7 @@ const float STEERING_REDUCE_SPEED_MIN	= 80.0f;
 const float STEERING_REDUCE_SPEED_MAX	= 160.0f;
 
 const float EXTEND_STEER_SPEED_MULTIPLIER = 1.75f;
+const float STEER_CENTER_SPEED_MULTIPLIER = 1.75f;
 
 const float STEERING_HELP_START			= 0.25f;
 const float STEERING_HELP_CONST			= 0.75f;
@@ -1405,8 +1406,16 @@ void CCar::UpdateVehiclePhysics(float delta)
 
 		if (bExtendTurn)
 			steerSpeedMultiplier *= EXTEND_STEER_SPEED_MULTIPLIER;
+		
+		// increase speed of for centering steering wheel
+		// and also disable autohandbrake
+		if (steer_diff*m_steering < 0)
+		{
+			m_steeringHelper = 0.0f;
+			steerSpeedMultiplier *= STEER_CENTER_SPEED_MULTIPLIER;
+		}
 
-		if(FPmath::abs(steer_diff) > 0.01f)
+		if(FPmath::abs(steer_diff) > 0.005f)
 			m_steering += FPmath::sign(steer_diff) * m_conf->physics.steeringSpeed * steerSpeedMultiplier * delta;
 		else
 			m_steering = fSteerAngle;
@@ -1471,8 +1480,6 @@ void CCar::UpdateVehiclePhysics(float delta)
 	eqPhysCollisionFilter collFilter;
 	collFilter.flags = EQPHYS_FILTER_FLAG_DISALLOW_DYNAMIC;
 	collFilter.AddObject(carBody);
-
-	
 
 	// Raycast the wheels and do some simple calculations
 	for(int i = 0; i < wheelCount; i++)
@@ -2588,6 +2595,8 @@ ConVar r_carLights_dist("r_carLights_dist", "50.0", NULL, CV_ARCHIVE);
 void CCar::Simulate( float fDt )
 {
 	PROFILE_FUNC();
+
+	BaseClass::Simulate(fDt);
 
 	if(!m_physObj)
 		return;
@@ -4353,13 +4362,6 @@ void CCar::Draw( int nRenderFlags )
 			for (int i = 0; i < numWheels; i++)
 			{
 				CCarWheel& wheel = m_wheels[i];
-				carWheelConfig_t& wheelConf = m_conf->physics.wheels[i];
-
-				wheel.CalculateTransform(wheel.m_worldMatrix, wheelConf);
-				wheel.m_worldMatrix = m_worldMatrix * wheel.m_worldMatrix;
-
-				wheel.SetOrigin(transpose(wheel.m_worldMatrix).getTranslationComponent());
-				wheel.m_bbox = m_bbox;
 
 				if (isBodyDrawn)
 					wheel.Draw(nRenderFlags);
@@ -4367,6 +4369,26 @@ void CCar::Draw( int nRenderFlags )
 				DrawWheelEffects(i);
 			}
 		}
+	}
+}
+
+void CCar::UpdateTransform()
+{
+	//BaseClass::UpdateTransform();
+	CEqRigidBody* pCarBody = m_physObj->GetBody();
+	pCarBody->ConstructRenderMatrix(m_worldMatrix);
+
+	int numWheels = GetWheelCount();
+
+	// refresh wheel matricess
+	for (int i = 0; i < numWheels; i++)
+	{
+		CCarWheel& wheel = m_wheels[i];
+		carWheelConfig_t& wheelConf = m_conf->physics.wheels[i];
+
+		wheel.CalculateTransform(wheel.m_worldMatrix, wheelConf);
+		wheel.m_worldMatrix = m_worldMatrix * wheel.m_worldMatrix;
+		wheel.m_bbox = m_bbox;
 	}
 }
 

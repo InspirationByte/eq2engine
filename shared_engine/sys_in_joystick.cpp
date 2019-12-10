@@ -18,6 +18,10 @@
 
 ConVar in_joy_debug("in_joy_debug", "0", "Joystick debug messages", 0);
 
+ConVar in_joy_repeatDelayInit("in_joy_repeatDelayInit", "1", "Joystick input repeat delay initial", CV_ARCHIVE);
+ConVar in_joy_repeatDelay("in_joy_repeatDelay", "0.2", "Joystick input repeat delay", CV_ARCHIVE);
+ConVar in_joy_rumble("in_joy_rumble", "1", "Rumble", CV_ARCHIVE);
+
 static CEqGameControllerSDL s_controllers[MAX_CONTROLLERS];
 
 void CEqGameControllerSDL::Init()
@@ -35,19 +39,6 @@ void CEqGameControllerSDL::Init()
 
 	int numJoysticks = SDL_NumJoysticks();
 	MsgWarning("* %d gamepads connected\n", numJoysticks);
-	/*
-	int controllerIdx = 0;
-
-	for (int i = 0; i < numJoysticks; i++)
-	{
-		if (!SDL_IsGameController(i))
-			continue;
-
-		CEqGameControllerSDL& jc = s_controllers[controllerIdx++];
-		jc.Open(i);
-
-		Msg(" * Controller connected: '%s'\n", jc.GetName());
-	}*/
 }
 
 void CEqGameControllerSDL::Shutdown()
@@ -135,6 +126,35 @@ int CEqGameControllerSDL::GetControllerIndex(SDL_JoystickID instance)
 	return -1;
 }
 
+void CEqGameControllerSDL::RepeatEvents(float fDt)
+{
+	for (int i = 0; i < MAX_CONTROLLERS; ++i)
+	{
+		CEqGameControllerSDL& jc = s_controllers[i];
+
+		if (!jc.m_connected)
+			continue;
+
+		for (const auto& button : jc.m_pressed) {
+
+			float val = button.second - fDt;
+			val -= fDt;
+
+			if (val > 0.0f)
+			{
+				jc.m_pressed[button.first] = val;
+				continue;
+			}
+
+			jc.m_pressed[button.first] = in_joy_repeatDelay.GetFloat();
+
+			g_pHost->TrapJoyButton_Event(button.first, true);
+
+			//SDL_HapticRumblePlay(jc.m_haptic, 1.0, 50);
+		}
+	}
+}
+
 int CEqGameControllerSDL::ProcessEvent(SDL_Event* event)
 {
 	switch (event->type) 
@@ -166,6 +186,13 @@ int CEqGameControllerSDL::ProcessEvent(SDL_Event* event)
 				Msg("Gamepad %d button %s %s\n",
 					event->cbutton.which, KeyIndexToString(JOYSTICK_START_KEYS + event->cbutton.button), down ? "down" : "up");
 			}
+
+			CEqGameControllerSDL& jc = s_controllers[event->cdevice.which];
+
+			if (down)
+				jc.m_pressed[button] = in_joy_repeatDelayInit.GetFloat();
+			else
+				jc.m_pressed.erase(button);
 
 			// handle button up/down
 			g_pHost->TrapJoyButton_Event((short)button, down);

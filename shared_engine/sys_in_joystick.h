@@ -9,6 +9,7 @@
 #define SYS_IN_JOYSTICK_H
 
 #include "platform/Platform.h"
+#include <unordered_map>
 
 #define MAX_CONTROLLERS 4
 
@@ -24,13 +25,16 @@ public:
 	static void Shutdown();
 
 	static int ProcessEvent(SDL_Event* event);
+	static void RepeatEvents(float fDt);
+
 	const char* GetName() const;
 
 private:
-	SDL_GameController*	m_gameCont;
-	SDL_Haptic*			m_haptic;
-	SDL_JoystickID		m_instanceId;
-	bool				m_connected;
+	SDL_GameController*			m_gameCont;
+	SDL_Haptic*					m_haptic;
+	SDL_JoystickID				m_instanceId;
+	bool						m_connected;
+	std::unordered_map<short, float>	m_pressed;
 
 	static int GetControllerIndex(SDL_JoystickID instance);
 

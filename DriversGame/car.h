@@ -272,7 +272,7 @@ struct vehicleConfig_t
 	int8						numColors;
 	bool						useBodyColor;
 
-	cameraConfig_t			cameraConf;
+	cameraConfig_t				cameraConf;
 
 	// calculations
 
@@ -594,6 +594,8 @@ protected:
 	void					UpdateSounds( float fDt );
 	void					UpdateWheelEffect(int nWheel, float fDt);
 	void					UpdateVehiclePhysics(float fDt);
+
+	void					UpdateTransform();
 
 	virtual void			OnDeath( CGameObject* deathBy );
 
