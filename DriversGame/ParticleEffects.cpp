@@ -432,7 +432,7 @@ void MakeWaterSplash(const Vector3D& origin, const Vector3D& velocity, const Vec
 		Vector3D n;
 		AngleVectors(rnd_ang, &n);
 
-		float rwlen = wlen + RandomFloat(wlen*0.15f, wlen*0.8f);
+		float rwlen = wlen + RandomFloat(wlen*0.35f, wlen*0.8f);
 
 		Vector3D rndPos(RandomFloat(-0.5f, 0.5f), RandomFloat(-0.5f, 0.5f), RandomFloat(-0.5f, 0.5f));
 		rndPos += origin;
@@ -448,14 +448,14 @@ void MakeWaterSplash(const Vector3D& origin, const Vector3D& velocity, const Vec
 			startSize, endSize,
 			RandomFloat(lifetime*0.5f, lifetime),
 			effgroup, entry,
-			RandomFloat(5, 35), Vector3D(0,RandomFloat(-3.9, -8.2) , 0),
+			RandomFloat(5, 35), Vector3D(0,RandomFloat(-6.0, -10.0) , 0),
 			ColorRGB(1), ColorRGB(1));
 
 		effectrenderer->RegisterEffectForRender(pSmoke);
 		
 		CParticleLine* pSpark = new CParticleLine(rndPos,
 											n*rwlen*0.8f,	// velocity
-											Vector3D(0.0f,RandomFloat(-0.5f, -5.0f), 0.0f),		// gravity
+											Vector3D(0.0f,RandomFloat(-2.5f, -8.0f), 0.0f),		// gravity
 											startSize, lineEndSize, // sizes
 											lifeTime,// lifetime
 											0.5f,
