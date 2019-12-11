@@ -20,6 +20,8 @@
 #include "materialsystem/MeshBuilder.h"
 #include "IDebugOverlay.h"
 
+#include "scene_def.h"	// fog info
+
 namespace equi
 {
 
@@ -463,6 +465,9 @@ void IUIControl::Render()
 	rasterState.scissor = true;
 
 	IRectangle clientRectRender = GetClientRectangle();
+
+	materials->SetAmbientColor(color4_white);	// max color mode
+	materials->SetFogInfo(FogInfo_t());			// disable fog
 
 	if( m_parent && m_selfVisible )
 	{
