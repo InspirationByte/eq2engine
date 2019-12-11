@@ -419,7 +419,7 @@ void MakeSparks(const Vector3D& origin, const Vector3D& velocity, const Vector3D
 	}
 }
 
-void MakeWaterSplash(const Vector3D& origin, const Vector3D& velocity, const Vector3D& randomAngCone, float lifetime, int count)
+void MakeWaterSplash(const Vector3D& origin, const Vector3D& velocity, const Vector3D& randomAngCone, float lifetime, int count, float particleScale)
 {
 	CPFXAtlasGroup* effgroup = g_translParticles;
 	TexAtlasEntry_t* entry = g_worldGlobals.trans_raindrops;
@@ -436,21 +436,28 @@ void MakeWaterSplash(const Vector3D& origin, const Vector3D& velocity, const Vec
 
 		Vector3D rndPos(RandomFloat(-0.5f, 0.5f), RandomFloat(-0.5f, 0.5f), RandomFloat(-0.5f, 0.5f));
 		rndPos += origin;
+
+		float startSize = RandomFloat(1.0, 1.8) * particleScale;
+		float endSize = RandomFloat(2.5, 3.0) * particleScale;
+		float lineEndSize = RandomFloat(1.0, 1.5) * particleScale;
+
+		float lifeTime = RandomFloat(lifetime*0.5f, lifetime);
+		float lineLifeTime = RandomFloat(lifetime*0.5f, lifetime) * 2.0f;
 		
 		CSmokeEffect* pSmoke = new CSmokeEffect(rndPos, n*rwlen,
-												RandomFloat(0.5, 0.8), RandomFloat(2.5, 3.0),
-												RandomFloat(lifetime*0.5f, lifetime),
-												effgroup, entry,
-												RandomFloat(5, 35), Vector3D(0,RandomFloat(-3.9, -8.2) , 0),
-												ColorRGB(1), ColorRGB(1));
+			startSize, endSize,
+			RandomFloat(lifetime*0.5f, lifetime),
+			effgroup, entry,
+			RandomFloat(5, 35), Vector3D(0,RandomFloat(-3.9, -8.2) , 0),
+			ColorRGB(1), ColorRGB(1));
 
 		effectrenderer->RegisterEffectForRender(pSmoke);
 		
 		CParticleLine* pSpark = new CParticleLine(rndPos,
 											n*rwlen*0.8f,	// velocity
 											Vector3D(0.0f,RandomFloat(-0.5f, -5.0f), 0.0f),		// gravity
-											RandomFloat(0.25f, 0.5f), RandomFloat(1.2f, 1.8f), // sizes
-											RandomFloat(1.0f, 1.5f),// lifetime
+											startSize, lineEndSize, // sizes
+											lifeTime,// lifetime
 											0.5f,
 											effgroup, entry, ColorRGB(1.0f), 1.0f);  // group - texture
 		effectrenderer->RegisterEffectForRender(pSpark);

@@ -104,7 +104,7 @@ int CAITrafficCar::DeadState( float fDt, EStateTransition transition )
 	m_hornSequencer.ShutUp();
 
 	int buttons = GetControlButtons();
-	buttons &= ~(IN_HORN | IN_ACCELERATE | IN_BRAKE | IN_ANALOGSTEER | IN_TURNLEFT | IN_TURNRIGHT);
+	buttons &= ~(IN_HORN | IN_ACCELERATE | IN_BRAKE | IN_ANALOGSTEER | IN_STEERLEFT | IN_STEERRIGHT);
 
 	SetControlButtons(buttons);
 	return 0;
@@ -254,12 +254,12 @@ int CAITrafficCar::TrafficDrive(float fDt, EStateTransition transition)
 
 	ai_handling_t handling = m_traffic.m_handling;
 
-	int controls = IN_ACCELERATE | IN_EXTENDTURN | IN_BRAKE;
+	int controls = IN_ACCELERATE | IN_FASTSTEER | IN_BRAKE;
 
 	//if (m_traffic.m_manipulator.m_emergencyEscape)
-	//	controls |= IN_TURNRIGHT;
+	//	controls |= IN_STEERRIGHT;
 	//else
-		controls |= IN_TURNRIGHT; 
+		controls |= IN_STEERRIGHT; 
 
 	SetControlButtons(controls);
 	SetControlVars(handling.acceleration,

@@ -903,16 +903,16 @@ void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize)
 		else if (controls & IN_BRAKE)
 			controlsString.Append("BRAKE/REVERSE\n");
 
-		if (controls & IN_TURNLEFT)
+		if (controls & IN_STEERLEFT)
 		{
-			if (controls & IN_EXTENDTURN)
+			if (controls & IN_FASTSTEER)
 				controlsString.Append("LEFT + FAST STEER\n");
 			else
 				controlsString.Append("LEFT\n");
 		}
-		else if (controls & IN_TURNRIGHT)
+		else if (controls & IN_STEERRIGHT)
 		{
-			if (controls & IN_EXTENDTURN)
+			if (controls & IN_FASTSTEER)
 				controlsString.Append("RIGHT + FAST STEER\n");
 			else
 				controlsString.Append("RIGHT\n");

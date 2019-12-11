@@ -1051,7 +1051,7 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 	}
 
 	if(fabs(handling.steering) > 0.7f)
-		controls |= IN_EXTENDTURN;
+		controls |= IN_FASTSTEER;
 
 	m_autohandbrake = handling.autoHandbrake;
 

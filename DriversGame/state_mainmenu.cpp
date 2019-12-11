@@ -465,6 +465,8 @@ void CState_MainMenu::GetEnteredKeysString(EqString& keysStr)
 	}
 }
 
+// mapping groups
+
 bool CState_MainMenu::MapKeysToCurrentAction()
 {
 	OOLUA::Table elem;
@@ -483,7 +485,6 @@ bool CState_MainMenu::MapKeysToCurrentAction()
 			g_inputCommandBinder->DeleteBinding(existingBinding);
 		}
 
-
 		g_inputCommandBinder->BindKey(keysStr.c_str(), actionNameStr.c_str(), "");
 	}
 
@@ -500,7 +501,7 @@ void CState_MainMenu::HandleKeyPress( int key, bool down )
 		if (down)
 		{
 			// cancel input waiter
-			if (key == KEY_ESCAPE || key == KEY_JOY_START || key == KEY_JOY_Y)
+			if (key == KEY_ESCAPE || key == KEY_JOY_START)
 			{
 				ResetKeys();
 
@@ -525,6 +526,8 @@ void CState_MainMenu::HandleKeyPress( int key, bool down )
 
 				if (m_keysPos >= 16)
 					ResetKeys();
+
+				return;
 			}
 		}
 		else

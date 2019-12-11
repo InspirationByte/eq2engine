@@ -317,14 +317,14 @@ void CPedestrian::Simulate(float fDt)
 {
 	int controlButtons = GetControlButtons();
 
-	if (controlButtons & IN_TURNLEFT)
+	if (controlButtons & IN_STEERLEFT)
 		m_pedSteerAngle.y += 120.0f * fDt;
-	if (controlButtons & IN_TURNRIGHT)
+	if (controlButtons & IN_STEERRIGHT)
 		m_pedSteerAngle.y -= 120.0f * fDt;
 
 	if (controlButtons & IN_BURNOUT)
 		m_pedState = 1;
-	else if (controlButtons & IN_EXTENDTURN)
+	else if (controlButtons & IN_FASTSTEER)
 		m_pedState = 2;
 	else if (controlButtons & IN_HANDBRAKE)
 		m_pedState = 0;
@@ -539,9 +539,9 @@ int	CPedestrianAI::DoEscape(float fDt, EStateTransition transition)
 	if (fabs(angleDiff) > 1.0f)
 	{
 		if (angleDiff > 0)
-			controlButtons |= IN_TURNLEFT;
+			controlButtons |= IN_STEERLEFT;
 		else
-			controlButtons |= IN_TURNRIGHT;
+			controlButtons |= IN_STEERRIGHT;
 	}
 	*/
 	controlButtons |= IN_ACCELERATE | IN_BURNOUT;
@@ -592,9 +592,9 @@ int	CPedestrianAI::DoWalk(float fDt, EStateTransition transition)
 	if (fabs(angleDiff) > 1.0f)
 	{
 		if (angleDiff > 0)
-			controlButtons |= IN_TURNLEFT;
+			controlButtons |= IN_STEERLEFT;
 		else
-			controlButtons |= IN_TURNRIGHT;
+			controlButtons |= IN_STEERRIGHT;
 	}
 	else
 		controlButtons |= IN_ACCELERATE;// | IN_BURNOUT;

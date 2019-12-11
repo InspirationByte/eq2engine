@@ -88,21 +88,15 @@ DECLARE_CMD(fastseek, "Seeks to the replay frame. (Visual mistakes are possible)
 	g_State_Game->ReplayFastSeek(replayTo);
 }
 
-void Game_InstantReplay(int replayTo)
+void Game_InstantReplay()
 {
 	if(g_pGameSession == NULL)
 		return;
 
-	if(	replayTo == 0 && 
-		g_replayData->m_state == REPL_PLAYING ||
-		replayTo < g_replayData->m_tick)
-	{
-		// revert
-		g_replayData->Stop();
-		g_replayData->m_state = REPL_INIT_PLAYBACK;
+	g_replayData->Stop();
+	g_replayData->m_state = REPL_INIT_PLAYBACK;
 
-		Game_QuickRestart(true);
-	}
+	Game_QuickRestart(true);
 
 	if (!g_State_Game->IsGameRunning())
 	{
@@ -110,28 +104,12 @@ void Game_InstantReplay(int replayTo)
 		g_State_Game->LoadGame();
 	}
 
-	int remainingFrames = replayTo - g_replayData->m_tick;
-
-	const float frameRate = 1.0f / 60.0f;
-
-	while(remainingFrames > 0)
-	{
-		// it's broken, but should be fine after fixing bugs
-		g_pGameSession->Update(frameRate);
-		remainingFrames -= g_pGameSession->GetPhysicsIterations();
-	}
-
-	if (replayTo > 0)
-		g_pCameraAnimator->Reset();
+	g_pCameraAnimator->Reset();
 }
 
-DECLARE_CMD(instantreplay, "Does instant replay (slowly). You can fetch to frame if specified", 0)
+DECLARE_CMD(instantreplay, "Does instant replay", 0)
 {
-	int replayTo = 0;
-	if(CMD_ARGC > 0)
-		replayTo = atoi(CMD_ARGV(0).c_str());
-
-	Game_InstantReplay( replayTo );
+	Game_InstantReplay();
 }
 
 void fnstart_variants(const ConCommandBase* cmd, DkList<EqString>& list, const char* query)
@@ -360,10 +338,7 @@ void CState_Game::InitializeSession()
 			net_server.SetBool(true);
 
 		if (g_svclientInfo.maxPlayers > 1)
-		{
-			CNetGameSession* netSession = new CNetGameSession();
-			g_pGameSession = netSession;
-		}
+			g_pGameSession = new CNetGameSession();
 		else
 			g_pGameSession = new CSingleGameSession();
 

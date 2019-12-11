@@ -1200,7 +1200,7 @@ void CCar::AnalogSetControls(float accel_brake, float steering, bool extendSteer
 {
 #define CONTROL_TOLERANCE	(0.05f)
 
-	int buttons = IN_ANALOGSTEER | (extendSteer ? IN_EXTENDTURN : 0) | (burnout ? IN_BURNOUT : 0) | (handbrake ? IN_HANDBRAKE : 0);
+	int buttons = IN_ANALOGSTEER | (extendSteer ? IN_FASTSTEER : 0) | (burnout ? IN_BURNOUT : 0) | (handbrake ? IN_HANDBRAKE : 0);
 
 	float accelRatio = accel_brake;
 	float brakeRatio = -accel_brake;
@@ -1358,12 +1358,12 @@ void CCar::UpdateVehiclePhysics(float delta)
 	if (controlButtons != m_oldControlButtons && !((controlsChanged & IN_HORN) || (controlsChanged & IN_SIREN)))
 		needsWake = true;
 
-	if(controlButtons & IN_EXTENDTURN )
+	if(controlButtons & IN_FASTSTEER )
 		bExtendTurn = true;
 
-	if(controlButtons & IN_TURNLEFT )
+	if(controlButtons & IN_STEERLEFT )
 		fSteerAngle -= (float)((float)m_steerRatio*_oneBy1024);
-	else if(controlButtons & IN_TURNRIGHT )
+	else if(controlButtons & IN_STEERRIGHT )
 		fSteerAngle += (float)((float)m_steerRatio*_oneBy1024);
 	else if(controlButtons & IN_ANALOGSTEER)
 	{
