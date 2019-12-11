@@ -424,27 +424,27 @@ void MakeWaterSplash(const Vector3D& origin, const Vector3D& velocity, const Vec
 	CPFXAtlasGroup* effgroup = g_translParticles;
 	TexAtlasEntry_t* entry = g_worldGlobals.trans_raindrops;
 
-	float wlen = length(velocity);
-
 	for(int i = 0; i < count; i++)
 	{
-		Vector3D rnd_ang = VectorAngles(normalize(velocity)) + Vector3D(RandomFloat(-randomAngCone.x,randomAngCone.x),RandomFloat(-randomAngCone.y,randomAngCone.y),RandomFloat(-randomAngCone.z,randomAngCone.z));
-		Vector3D n;
-		AngleVectors(rnd_ang, &n);
+		Vector3D rnd_ang(RandomFloat(-randomAngCone.x, randomAngCone.x),
+						RandomFloat(-randomAngCone.y, randomAngCone.y),
+						RandomFloat(-randomAngCone.z, randomAngCone.z));
 
-		float rwlen = wlen + RandomFloat(wlen*0.35f, wlen*0.8f);
+		rnd_ang = VDEG2RAD(rnd_ang);
+
+		Vector3D rndVelocity = (rotateVector(velocity, Quaternion(rnd_ang.x, rnd_ang.y, rnd_ang.z))) * RandomFloat(0.35f, 1.0f);
 
 		Vector3D rndPos(RandomFloat(-0.5f, 0.5f), RandomFloat(-0.5f, 0.5f), RandomFloat(-0.5f, 0.5f));
 		rndPos += origin;
 
-		float startSize = RandomFloat(1.0, 1.8) * particleScale;
-		float endSize = RandomFloat(2.5, 3.0) * particleScale;
-		float lineEndSize = RandomFloat(1.0, 1.5) * particleScale;
+		float startSize = RandomFloat(0.5f, 1.8f) * particleScale;
+		float endSize = RandomFloat(2.5f, 3.0f) * particleScale;
+		float lineEndSize = RandomFloat(1.0f, 1.5f) * particleScale;
 
 		float lifeTime = RandomFloat(lifetime*0.5f, lifetime);
-		float lineLifeTime = RandomFloat(lifetime*0.5f, lifetime) * 2.0f;
+		float lineLifeTime = RandomFloat(lifetime*0.5f, lifetime) * 0.35f;
 		
-		CSmokeEffect* pSmoke = new CSmokeEffect(rndPos, n*rwlen,
+		CSmokeEffect* pSmoke = new CSmokeEffect(rndPos, rndVelocity,
 			startSize, endSize,
 			RandomFloat(lifetime*0.5f, lifetime),
 			effgroup, entry,
@@ -454,10 +454,10 @@ void MakeWaterSplash(const Vector3D& origin, const Vector3D& velocity, const Vec
 		effectrenderer->RegisterEffectForRender(pSmoke);
 		
 		CParticleLine* pSpark = new CParticleLine(rndPos,
-											n*rwlen*0.8f,	// velocity
+											rndVelocity*0.8f,	// velocity
 											Vector3D(0.0f,RandomFloat(-2.5f, -8.0f), 0.0f),		// gravity
 											startSize, lineEndSize, // sizes
-											lifeTime,// lifetime
+											lineLifeTime,// lifetime
 											0.5f,
 											effgroup, entry, ColorRGB(1.0f), 1.0f);  // group - texture
 		effectrenderer->RegisterEffectForRender(pSpark);

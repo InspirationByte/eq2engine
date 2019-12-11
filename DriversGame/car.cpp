@@ -2392,9 +2392,9 @@ void CCar::OnPhysicsFrame( float fDt )
 	if(hasHitWater && collSpeed > 5.0f)// && m_effectTime <= 0.0f)
 	{
 		Vector3D waterPos = carPos + GetVelocity()*0.1f - vec3_up*1.0f;
-		Vector3D particleVelocity = reflect(GetVelocity(), vec3_up)*0.25f;
+		Vector3D particleVelocity = reflect(GetVelocity(), vec3_up);// *0.25f;
 
-		MakeWaterSplash(waterPos, particleVelocity, Vector3D(30.0f), 4.0f, 8 );
+		MakeWaterSplash(waterPos, particleVelocity, Vector3D(22.0f), 4.0f, 8 );
 	}
 
 	if(hasHitWater && !m_inWater && collSpeed > 5.0f)
