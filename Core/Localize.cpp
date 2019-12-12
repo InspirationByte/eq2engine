@@ -98,6 +98,9 @@ void CLocalize::Init()
 			MsgError("Error: -language must have argument\n");
 	}
 
+	// add the copyright
+	AddToken("INSCOPYRIGHT", L"© Inspiration Byte 2019");
+
 	AddTokensFile("core");
 }
 

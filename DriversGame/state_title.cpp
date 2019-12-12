@@ -153,7 +153,7 @@ bool CState_Title::Update( float fDt )
 		textYOffs = pow(textYOffs, 5.0f);
 
 		if (m_titleText)
-			m_titleText->SetPosition(m_titlePos - IVector2D(0, textYOffs));
+			m_titleText->SetPosition(m_titlePos + IVector2D(0, textYOffs));
 
 	}
 	else if (m_actionTimeout <= 0.0f)
