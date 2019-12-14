@@ -203,6 +203,7 @@ protected:
 
 	void					ReadObjectDefsLump(IVirtualStream* stream, kvkeybase_t* kvDefs);
 	void					ReadHeightfieldsLump(IVirtualStream* stream);
+	void					ReadRoadsLump(IVirtualStream* stream);
 
 	void					ReadRegionInfo(IVirtualStream* stream);
 
@@ -219,12 +220,10 @@ protected:
 #endif // EDITOR
 
 	int*					m_regionOffsets;			// spooling data offsets in LEVLUMP_REGIONS
-	int*					m_roadOffsets;				// spooling data offsets in LEVLUMP_ROADS
 	int*					m_occluderOffsets;			// spooling data offsets in LEVLUMP_OCCLUDERS
 
 	int						m_numRegions;				// real region count in this level
 	int						m_regionDataLumpOffset;		// region lump offset
-	int						m_roadDataLumpOffset;		// road lump offset
 	int						m_occluderDataLumpOffset;	// occluders offset
 
 	EqString				m_levelName;

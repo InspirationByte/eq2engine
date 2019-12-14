@@ -229,7 +229,7 @@ public:
 	virtual ~CLevelRegion();
 
 	void							Init();
-	void							InitRoads();
+	void							InitNavigationGrid();
 	virtual void					Cleanup();
 
 	bool							IsRegionEmpty();	///< returns true if no models or placed tiles of heightfield found here

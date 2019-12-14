@@ -138,11 +138,15 @@ CLevelRegion::~CLevelRegion()
 {
 	Cleanup();
 
+	// cleanup of permanent data
 	for(int i = 0; i < GetNumHFields(); i++)
 	{
 		if(m_heightfield[i])
 			delete m_heightfield[i];
 	}
+
+	delete[] m_roads;
+	m_roads = nullptr;
 }
 
 Vector3D CLevelRegion::CellToPosition(int x, int y) const
@@ -501,20 +505,13 @@ void CLevelRegion::Init()
 #endif // EDITOR
 }
 
-void CLevelRegion::InitRoads()
+void CLevelRegion::InitNavigationGrid()
 {
 	CHeightTileField& defField = *m_heightfield[0];
 
 	// also init navigation grid
 	for (int grid = 0; grid < 2; grid++)
 		m_navGrid[grid].Init(defField.m_sizew*s_navGridScales[grid], defField.m_sizeh*s_navGridScales[grid]);
-
-	if(!m_roads)
-	{
-		int numRoadCells = defField.m_sizew * defField.m_sizeh;
-
-		m_roads = new levroadcell_t[ numRoadCells ];
-	}
 
 	// we're initializing roads and then going to initialize
 	// navgrid data since our heightfield tiles can be detached as well
@@ -524,8 +521,30 @@ void CLevelRegion::InitRoads()
 		{
 			int idx = y * defField.m_sizew + x;
 
-			m_roads[idx].posX = x;
-			m_roads[idx].posY = y;
+			levroadcell_t& road = m_roads[idx];
+
+			road.posX = x;
+			road.posY = y;
+
+			// adjust priority by road
+			if (road.type != ROADTYPE_PARKINGLOT)
+			{
+				// fast navgrid uses same resolution
+				m_navGrid[1].staticObst[idx] = 4 - AI_NAVIGATION_ROAD_PRIORITY;
+
+				// higher the priority of road nodes
+				for (int j = 0; j < AI_NAV_DETAILED_SCALE; j++)
+				{
+					for (int k = 0; k < AI_NAV_DETAILED_SCALE; k++)
+					{
+						int ofsX = road.posX*AI_NAV_DETAILED_SCALE + j;
+						int ofsY = road.posY*AI_NAV_DETAILED_SCALE + k;
+
+						int navCellIdx = ofsY * m_navGrid[0].tall + ofsX;
+						m_navGrid[0].staticObst[navCellIdx] = 4 - AI_NAVIGATION_ROAD_PRIORITY;
+					}
+				}
+			}
 
 			hfieldtile_t* tile = defField.GetTile(x, y);
 
@@ -598,8 +617,6 @@ void CLevelRegion::InitRoads()
 
 						int navCellIdx = ofsY * m_navGrid[0].tall + ofsX;
 						m_navGrid[0].staticObst[navCellIdx] = 0;
-
-
 					}
 				}
 			}
@@ -711,9 +728,6 @@ void CLevelRegion::Cleanup()
 	m_regionDefs.clear();
 
 	m_occluders.clear();
-
-	delete [] m_roads;
-	m_roads = nullptr;
 
 	g_pShaderAPI->FreeTexture(m_navGrid[0].debugObstacleMap);
 	m_navGrid[0].debugObstacleMap = NULL;
@@ -969,7 +983,10 @@ void CLevelRegion::ReadLoadRegion(IVirtualStream* stream, DkList<CLevObjectDef*>
 	}
 #endif //EDITOR
 
-	Platform_Sleep(1);
+	// init navigation grid
+	InitNavigationGrid();
+
+	Threading::Yield();
 
 	{
 		CScopedMutex m(m_level->m_mutex);
@@ -1024,44 +1041,23 @@ void CLevelRegion::RespawnObjects()
 
 void CLevelRegion::ReadLoadRoads(IVirtualStream* stream)
 {
-	if(m_heightfield[0]->IsEmpty()) // don't init roads, navigation if there is no main heightfield
+	CHeightTileField* field = GetHField(0);
+
+	if(field->IsEmpty()) // don't init roads if there is no main heightfield
 		return;
 
-	InitRoads();
+	m_roads = new levroadcell_t[field->m_sizew * field->m_sizeh];
 
 	int numRoadCells = 0;
-
 	stream->Read(&numRoadCells, 1, sizeof(int));
 
-	if( numRoadCells )
+	for (int i = 0; i < numRoadCells; i++)
 	{
-		for(int i = 0; i < numRoadCells; i++)
-		{
-			levroadcell_t tmpCell;
-			stream->Read(&tmpCell, 1, sizeof(levroadcell_t));
+		levroadcell_t tmpCell;
+		stream->Read(&tmpCell, 1, sizeof(levroadcell_t));
 
-			int idx = tmpCell.posY*m_heightfield[0]->m_sizew + tmpCell.posX;
-			m_roads[idx] = tmpCell;
-
-			if(tmpCell.type == ROADTYPE_PARKINGLOT)
-				continue;
-
-			// fast navgrid uses same resolution
-			m_navGrid[1].staticObst[idx] = 4 - AI_NAVIGATION_ROAD_PRIORITY;
-
-			// higher the priority of road nodes
-			for(int j = 0; j < AI_NAV_DETAILED_SCALE; j++)
-			{
-				for(int k = 0; k < AI_NAV_DETAILED_SCALE; k++)
-				{
-					int ofsX = tmpCell.posX*AI_NAV_DETAILED_SCALE +j;
-					int ofsY = tmpCell.posY*AI_NAV_DETAILED_SCALE +k;
-
-					int navCellIdx = ofsY*m_navGrid[0].tall + ofsX;
-					m_navGrid[0].staticObst[navCellIdx] = 4 - AI_NAVIGATION_ROAD_PRIORITY;
-				}
-			}
-		}
+		int idx = tmpCell.posY * field->m_sizew + tmpCell.posX;
+		m_roads[idx] = tmpCell;
 	}
 }
 

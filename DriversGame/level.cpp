@@ -39,12 +39,10 @@ CGameLevel::CGameLevel() :
 	m_tall(0),
 	m_cellsSize(64),
 	m_regionOffsets(NULL),
-	m_roadOffsets(NULL),
 	m_occluderOffsets(NULL),
 	m_numRegions(0),
 	m_navGridSelector(0),
 	m_regionDataLumpOffset(0),
-	m_roadDataLumpOffset(0),
 	m_occluderDataLumpOffset(0),
 	m_levelName("Unnamed"),
 	m_instanceBuffer(NULL),
@@ -78,10 +76,6 @@ void CGameLevel::Cleanup()
 		delete [] m_regionOffsets;
 	m_regionOffsets = NULL;
 
-	if(m_roadOffsets)
-		delete [] m_roadOffsets;
-	m_roadOffsets = NULL;
-
 	if(m_occluderOffsets)
 		delete [] m_occluderOffsets;
 	m_occluderOffsets = NULL;
@@ -101,7 +95,6 @@ void CGameLevel::Cleanup()
 	m_occluderDataLumpOffset = 0;
 	m_numRegions = 0;
 	m_regionDataLumpOffset = 0;
-	m_roadDataLumpOffset = 0;
 	m_navGridSelector = 0;
 }
 
@@ -206,10 +199,7 @@ bool CGameLevel::_Load(IFile* pFile, kvkeybase_t* kvDefs)
 			int lump_pos = pFile->Tell();
 
 			// read road offsets
-			m_roadOffsets = new int[m_wide*m_tall];
-			pFile->Read(m_roadOffsets, m_wide*m_tall, sizeof(int));
-
-			m_roadDataLumpOffset = pFile->Tell();
+			ReadRoadsLump(pFile);
 
 			pFile->Seek(lump_pos+lump.size, VS_SEEK_SET);
 		}
@@ -296,10 +286,8 @@ void CGameLevel::Init(int wide, int tall, int cells, bool clean)
 	if(clean)
 	{
 		m_regionOffsets = new int[m_wide*m_tall];
-		m_roadOffsets = new int[m_wide*m_tall];
 		m_occluderOffsets = new int[m_wide*m_tall];
 		m_regionDataLumpOffset = 0;
-		m_roadDataLumpOffset = 0;
 		m_occluderDataLumpOffset = 0;
 		m_numRegions = m_wide*m_tall;
 	}
@@ -319,7 +307,6 @@ void CGameLevel::Init(int wide, int tall, int cells, bool clean)
 			if(clean)
 			{
 				m_regionOffsets[idx] = -1;
-				m_roadOffsets[idx] = -1;
 				m_regions[idx].m_isLoaded = clean;
 			}
 
@@ -328,23 +315,19 @@ void CGameLevel::Init(int wide, int tall, int cells, bool clean)
 			m_regions[idx].Init();
 
 
-			for(int i = 0; i < m_regions[idx].GetNumHFields(); i++)
+			for (int i = 0; i < m_regions[idx].GetNumHFields(); i++)
 			{
-				if(!m_regions[idx].m_heightfield[i])
+				if (!m_regions[idx].m_heightfield[i])
 					continue;
 
-				m_regions[idx].m_heightfield[i]->m_regionPos = IVector2D(x,y);
+				m_regions[idx].m_heightfield[i]->m_regionPos = IVector2D(x, y);
 				m_regions[idx].m_heightfield[i]->m_position = Vector3D(x*nStepSize, 0, y*nStepSize) - center;
 
 #ifdef EDITOR
 				// init other things like road data
 				m_regions[idx].m_heightfield[i]->Init(m_cellsSize, IVector2D(x, y));
-			}
-
-			m_regions[idx].InitRoads();
-#else
-			}
 #endif // EDITOR
+			}
 
 		}
 	}
@@ -407,15 +390,6 @@ void CGameLevel::LoadRegionAt(int regionIndex, IVirtualStream* stream)
 	stream->Seek(regOffset, VS_SEEK_SET);
 
 	reg.ReadLoadRegion(stream, m_objectDefs);
-
-	// read roads
-	if(m_roadDataLumpOffset > 0 && m_roadOffsets[regionIndex] != -1)
-	{
-		int roadsOffset = m_roadDataLumpOffset + m_roadOffsets[regionIndex];
-		stream->Seek(roadsOffset, VS_SEEK_SET);
-
-		reg.ReadLoadRoads(stream);
-	}
 
 	// read occluders
 	if(m_occluderDataLumpOffset > 0 && m_occluderOffsets[regionIndex] != -1)
@@ -750,6 +724,30 @@ void CGameLevel::ReadHeightfieldsLump( IVirtualStream* stream )
 	}
 }
 
+void CGameLevel::ReadRoadsLump(IVirtualStream* stream)
+{
+	int* roadOffsets = new int[m_wide*m_tall];
+	stream->Read(roadOffsets, m_wide*m_tall, sizeof(int));
+
+	int roadDataOffset = stream->Tell();
+
+	// load roads for all regions
+	for (int x = 0; x < m_wide; x++)
+	{
+		for (int y = 0; y < m_tall; y++)
+		{
+			int idx = y * m_wide + x;
+
+			int roadsOffset = roadDataOffset + roadOffsets[idx];
+			stream->Seek(roadsOffset, VS_SEEK_SET);
+
+			m_regions[idx].ReadLoadRoads(stream);
+		}
+	}
+
+	delete[] roadOffsets;
+}
+
 CLevelRegion* CGameLevel::GetRegionAtPosition(const Vector3D& pos) const
 {
 	IVector2D regXY;
@@ -972,12 +970,8 @@ straight_t CGameLevel::Road_GetStraightAtPoint( const IVector2D& point, int numI
 
 	if( GetRegionAndTileAt(point, &pRegion, localPos ))
 	{
-		{
-			CScopedMutex m(m_mutex);
-
-			if (!pRegion->m_roads)
-				return straight;
-		}
+		if (!pRegion->m_roads)
+			return straight;
 
 		int tileIdx = localPos.y * m_cellsSize + localPos.x;
 
@@ -1017,12 +1011,8 @@ straight_t CGameLevel::Road_GetStraightAtPoint( const IVector2D& point, int numI
 			if(!pNextRegion)
 				break;
 
-			{
-				CScopedMutex m(m_mutex);
-
-				if (!pNextRegion->m_roads)
-					break;
-			}
+			if (!pNextRegion->m_roads)
+				break;
 
 			levroadcell_t& roadCell = pNextRegion->m_roads[nextTileIdx];
 
@@ -1087,12 +1077,8 @@ roadJunction_t CGameLevel::Road_GetJunctionAtPoint( const IVector2D& point, int 
 
 	if( GetRegionAndTileAt(point, &pRegion, localPos ) )
 	{
-		{
-			CScopedMutex m(m_mutex);
-
-			if (!pRegion->m_roads)
-				return junction;
-		}
+		if (!pRegion->m_roads)
+			return junction;
 
 		int tileIdx = localPos.y * m_cellsSize + localPos.x;
 
@@ -1139,12 +1125,8 @@ roadJunction_t CGameLevel::Road_GetJunctionAtPoint( const IVector2D& point, int 
 			if (!pNextRegion)
 				break;
 
-			{
-				CScopedMutex m(m_mutex);
-
-				if (!pNextRegion->m_roads)
-					break;
-			}
+			if (!pNextRegion->m_roads)
+				break;
 
 			levroadcell_t& roadCell = pNextRegion->m_roads[nextTileIdx];
 
@@ -1187,12 +1169,8 @@ int	CGameLevel::Road_GetLaneIndexAtPoint( const IVector2D& point, int numIterati
 
 	if( GetRegionAndTileAt(point, &pRegion, localPos ) )
 	{
-		{
-			CScopedMutex m(m_mutex);
-
-			if (!pRegion->m_roads)
-				return -1;
-		}
+		if (!pRegion->m_roads)
+			return -1;
 
 		int tileIdx = localPos.y * m_cellsSize + localPos.x;
 
@@ -1221,12 +1199,8 @@ int	CGameLevel::Road_GetLaneIndexAtPoint( const IVector2D& point, int numIterati
 
 			int nextTileIdx = xyPos.y * m_cellsSize + xyPos.x;
 
-			{
-				CScopedMutex m(m_mutex);
-
-				if (!pNextRegion->m_roads)
-					break;
-			}
+			if (!pNextRegion->m_roads)
+				break;
 
 			levroadcell_t& roadCell = pNextRegion->m_roads[nextTileIdx];
 
@@ -1268,12 +1242,8 @@ int	CGameLevel::Road_GetWidthInLanesAtPoint( const IVector2D& point, int numIter
 	// and left
 	if( GetRegionAndTileAt(point, &pRegion, localPos ) )
 	{
-		{
-			CScopedMutex m(m_mutex);
-
-			if (!pRegion->m_roads)
-				return -1;
-		}
+		if (!pRegion->m_roads)
+			return -1;
 
 		int tileIdx = localPos.y * m_cellsSize + localPos.x;
 
@@ -1304,12 +1274,8 @@ int	CGameLevel::Road_GetWidthInLanesAtPoint( const IVector2D& point, int numIter
 
 			int nextTileIdx = nextPos.y * m_cellsSize + nextPos.x;
 
-			{
-				CScopedMutex m(m_mutex);
-
-				if (!pNextRegion->m_roads)
-					break;
-			}
+			if (!pNextRegion->m_roads)
+				break;
 
 			levroadcell_t& roadCell = pNextRegion->m_roads[nextTileIdx];
 
@@ -1363,12 +1329,8 @@ int	CGameLevel::Road_GetNumLanesAtPoint( const IVector2D& point, int numIteratio
 
 	if( GetRegionAndTileAt(point, &pRegion, localPos ))
 	{
-		{
-			CScopedMutex m(m_mutex);
-
-			if (!pRegion->m_roads)
-				return 0;
-		}
+		if (!pRegion->m_roads)
+			return 0;
 
 		int tileIdx = localPos.y * m_cellsSize + localPos.x;
 
@@ -1400,12 +1362,8 @@ int	CGameLevel::Road_GetNumLanesAtPoint( const IVector2D& point, int numIteratio
 			xyPos = pRegion->GetTileAndNeighbourRegion(xyPos.x, xyPos.y, &pNextRegion);
 			int nextTileIdx = xyPos.y * m_cellsSize + xyPos.x;
 
-			{
-				CScopedMutex m(m_mutex);
-
-				if (!pNextRegion->m_roads)
-					break;
-			}
+			if (!pNextRegion->m_roads)
+				break;
 
 			levroadcell_t& roadCell = pNextRegion->m_roads[nextTileIdx];
 
@@ -1450,12 +1408,8 @@ levroadcell_t* CGameLevel::Road_GetGlobalTileAt(const IVector2D& point, CLevelRe
 		if(pRegion)
 			*pRegion = reg;
 
-		{
-			CScopedMutex m(m_mutex);
-
-			if (!reg->m_roads)
-				return NULL;
-		}
+		if (!reg->m_roads)
+			return NULL;
 
 		int ridx = outXYPos.y*m_cellsSize + outXYPos.x;
 
