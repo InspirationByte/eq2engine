@@ -24,7 +24,9 @@ public:
 	static void Init();
 	static void Shutdown();
 
-	static int ProcessEvent(SDL_Event* event);
+	static void ProcessConnectionEvent(SDL_Event* event);
+	static void ProcessInputEvent(SDL_Event* event);
+
 	static void RepeatEvents(float fDt);
 
 	const char* GetName() const;

@@ -407,7 +407,7 @@ void InputCommands_SDL(SDL_Event* event)
 		}
 		default:
 		{
-			CEqGameControllerSDL::ProcessEvent(event);
+			CEqGameControllerSDL::ProcessInputEvent(event);
 		}
 	}
 }

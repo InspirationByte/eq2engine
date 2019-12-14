@@ -197,6 +197,8 @@ void EQHandleSDLEvents(SDL_Event* event)
 		}
 		default:
 		{
+			CEqGameControllerSDL::ProcessConnectionEvent(event);
+
 			if(s_bActive && s_bProcessInput)
 				InputCommands_SDL(event);
 		}

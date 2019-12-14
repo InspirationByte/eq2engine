@@ -155,7 +155,39 @@ void CEqGameControllerSDL::RepeatEvents(float fDt)
 	}
 }
 
-int CEqGameControllerSDL::ProcessEvent(SDL_Event* event)
+void CEqGameControllerSDL::ProcessConnectionEvent(SDL_Event* event)
+{
+	switch (event->type)
+	{
+		case SDL_CONTROLLERDEVICEADDED:
+		{
+			if (event->cdevice.which < MAX_CONTROLLERS)
+			{
+				CEqGameControllerSDL& jc = s_controllers[event->cdevice.which];
+				jc.Open(event->cdevice.which);
+
+				Msg("* Controller connected: '%s'\n", jc.GetName());
+			}
+			break;
+		}
+		case SDL_CONTROLLERDEVICEREMOVED:
+		{
+			int cIndex = GetControllerIndex(event->cdevice.which);
+
+			if (cIndex < 0)
+				return; // unknown controller?
+
+			CEqGameControllerSDL& jc = s_controllers[cIndex];
+
+			Msg("* Controller disconnected: '%s'\n", jc.GetName());
+			jc.Close();
+
+			break;
+		}
+	}
+}
+
+void CEqGameControllerSDL::ProcessInputEvent(SDL_Event* event)
 {
 	switch (event->type) 
 	{
@@ -198,32 +230,5 @@ int CEqGameControllerSDL::ProcessEvent(SDL_Event* event)
 			g_pHost->TrapJoyButton_Event((short)button, down);
 			break;
 		}
-		case SDL_CONTROLLERDEVICEADDED: 
-		{
-			if (event->cdevice.which < MAX_CONTROLLERS) 
-			{
-				CEqGameControllerSDL& jc = s_controllers[event->cdevice.which];
-				jc.Open(event->cdevice.which);
-
-				Msg("* Controller connected: '%s'\n", jc.GetName());
-			}
-			break;
-		}
-		case SDL_CONTROLLERDEVICEREMOVED: 
-		{
-			int cIndex = GetControllerIndex(event->cdevice.which);
-
-			if (cIndex < 0)
-				return 0; // unknown controller?
-
-			CEqGameControllerSDL& jc = s_controllers[cIndex];
-
-			Msg("* Controller disconnected: '%s'\n", jc.GetName());
-			jc.Close();
-
-			break;
-		}
 	}
-
-	return 0;
 }
