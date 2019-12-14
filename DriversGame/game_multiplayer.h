@@ -64,10 +64,11 @@ public:
 	void					InitLocalPlayer(netPlayerSpawnInfo_t* spawnInfo, int clientID = -1, int playerID = 0);
 
 	// sends netplayer spawns
-	void					SendPlayerInfoList(int clientID);
+	void					SV_SendPlayersToClient(int clientID);
+	void					SV_ScriptedPlayerProvision(CNetPlayer* player);
 
 	// sends object spawns for single client
-	void					SendObjectSpawns( int clientID );
+	void					SV_SpawnGameObjects( int clientID );
 
 	void					SetLocalPlayer(CNetPlayer* player);
 	CNetPlayer*				GetLocalPlayer() const;
@@ -93,7 +94,6 @@ private:
 	void					Net_SendObjectData( CGameObject* obj, int nClientID );
 
 	void					SV_ProcessDuplicatePlayerName(CNetPlayer* player);
-	void					SV_ScriptedPlayerProvision(CNetPlayer* player);
 
 	int						FindUniqueNetworkObjectId();
 

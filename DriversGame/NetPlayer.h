@@ -70,7 +70,8 @@ public:
 
 	void				CL_Spawn();
 
-	void				NetUpdate(float fDt);
+	bool				Net_Update(float fDt);
+
 	void				Update(float fDt);
 
 	bool				IsReady();
@@ -85,9 +86,6 @@ public:
 	int						m_id;
 
 	bool					m_ready;
-	bool					m_disconnectSignal;
-
-	float					m_fNotreadyTime;
 
 	//----------------------------------------------------------------------
 	// controls and snapshot stuff 
@@ -214,7 +212,7 @@ protected:
 enum EPlayerPacketType
 {
 	PL_PACKET_CONTROLS = 0,	// player controls
-	PL_PACKET_PROPS,		// properties like position
+	PL_PACKET_SNAPSHOT,		// car physical properties snapshot
 };
 
 class CNetPlayerPacket : public CNetEvent

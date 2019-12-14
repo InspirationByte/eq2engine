@@ -47,6 +47,13 @@ DECLARE_CMD(connect, "connects to server/game/lobby", 0)
 		return;
 	}
 
+	// disconnect first
+	if (g_pGameSession)
+	{
+		MsgError("You must DISCONNECT first\n");
+		return;
+	}
+
 	net_address.SetValue(CMD_ARGV(0).c_str());
 
 	g_pClientInterface->SetClientID(-1);
@@ -124,7 +131,7 @@ DECLARE_CMD(connect, "connects to server/game/lobby", 0)
 					g_pGameWorld->SetEnvironmentName(envName);
 
 					// load game
-					EqStateMgr::SetCurrentState(g_states[GAME_STATE_GAME]);
+					EqStateMgr::SetCurrentState(g_states[GAME_STATE_GAME], true);
 				}
 			}
 		}
@@ -284,6 +291,8 @@ void CNetGameSession::InitLocalPlayer(netPlayerSpawnInfo_t* spawnInfo, int clien
 	// server player is always ready
 	if (IsServer())
 	{
+		// spawn the player car...
+		SV_ScriptedPlayerProvision( player );
 		player->m_ready = true;
 	}
 	else
@@ -512,7 +521,7 @@ void CNetGameSession::Net_SendObjectData( CGameObject* obj, int nClientID )
 	obj->m_changeList_NetGame.clear();
 }
 
-void CNetGameSession::SendObjectSpawns( int clientID )
+void CNetGameSession::SV_SpawnGameObjects( int clientID )
 {
 	for(int j = 0; j < g_pGameWorld->m_gameObjects.numElem(); j++)
 	{
@@ -528,7 +537,7 @@ void CNetGameSession::SendObjectSpawns( int clientID )
 
 //--------------------------------------------------------------------------------------------------
 
-void CNetGameSession::SendPlayerInfoList( int clientID )
+void CNetGameSession::SV_SendPlayersToClient( int clientID )
 {
 	for(int i = 0; i < m_netPlayers.numElem(); i++)
 	{
@@ -708,24 +717,16 @@ void CNetGameSession::Update(float fDt)
 			if(player == NULL)
 				continue;
 
-			if(player->m_ready)
+			// set our controls
+			if(player->m_ready && player == m_localNetPlayer)
 			{
-				// set our controls
-				if(player == m_localNetPlayer)
-				{
-					player->SetControls(m_localControls);
-					m_localPlayerLatency = player->m_packetLatency;
-				}
-					
-
-				player->NetUpdate(fRateMs);
+				player->SetControls(m_localControls);
+				m_localPlayerLatency = player->m_packetLatency;
 			}
-
-			// disconnect me if needed
-			if(player->m_disconnectSignal)
-			{
+	
+			// false signals DISCONNECT
+			if(!player->Net_Update(fRateMs))
 				DisconnectPlayer(player->m_id, "unknown" );
-			}
 		}
 
 		m_prevTimeNetwork = m_curTimeNetwork;
@@ -752,19 +753,20 @@ void CNetGameSession::Update(float fDt)
 	// update network players in standard way
 	for(int i = 0; i < m_netPlayers.numElem(); i++)
 	{
-		if(m_netPlayers[i] == NULL)
+		CNetPlayer* player = m_netPlayers[i];
+
+		if(player == NULL)
 			continue;
 
-		if(m_netPlayers[i]->m_ready)
-		{
-			m_netPlayers[i]->Update( fDt );
+		player->Update(fDt);
 
-			// query nearest regions for servers to load
-			if(	IsServer() &&
-				m_netPlayers[i]->GetCar())
-			{
-				g_pGameWorld->QueryNearestRegions( m_netPlayers[i]->GetCar()->GetOrigin() );
-			}
+		// query nearest regions for servers to load
+		if (IsServer())
+		{
+			if (player->m_ready)
+				g_pGameWorld->QueryNearestRegions(player->GetCar()->GetOrigin());
+			else if(player->m_spawnInfo)
+				g_pGameWorld->QueryNearestRegions(player->m_spawnInfo->spawnPos);
 		}
 	}
 }
@@ -815,22 +817,19 @@ CNetPlayer* CNetGameSession::CreatePlayer(netPlayerSpawnInfo_t* spawnInfo, int c
 	player->m_spawnInfo = spawnInfo;
 	player->m_id = playerID;
 
-	// if player name is duplicated
-	SV_ProcessDuplicatePlayerName(player);
-
 	m_netPlayers[playerID] = player;
 
-	// mission script player init
-	SV_ScriptedPlayerProvision(player);
+	if (IsServer())
+	{
+		// if player name is duplicated
+		SV_ProcessDuplicatePlayerName(player);
+	}
 
 	return m_netPlayers[playerID];
 }
 
 void CNetGameSession::SV_ProcessDuplicatePlayerName(CNetPlayer* player)
 {
-	if (!IsServer())
-		return;
-
 	for (int i = 0; i < m_netPlayers.numElem(); i++)
 	{
 		CNetPlayer* pl = m_netPlayers[i];
@@ -856,9 +855,6 @@ void CNetGameSession::SV_ProcessDuplicatePlayerName(CNetPlayer* player)
 
 void CNetGameSession::SV_ScriptedPlayerProvision(CNetPlayer* player)
 {
-	if(!IsServer())
-		return;
-
 	// let script do it...
 
 	// spawn is modified here
@@ -1126,7 +1122,7 @@ CNetSyncronizePlayerEvent::CNetSyncronizePlayerEvent()
 void CNetSyncronizePlayerEvent::Process( CNetworkThread* pNetThread )
 {
 	CNetGameSession* ses = (CNetGameSession*)g_pGameSession;
-	ses->SendObjectSpawns( m_clientID );
+	ses->SV_SpawnGameObjects( m_clientID );
 }
 
 void CNetSyncronizePlayerEvent::Unpack( CNetworkThread* pNetThread, CNetMessageBuffer* pStream )

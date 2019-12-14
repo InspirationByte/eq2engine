@@ -13,12 +13,14 @@
 #include "world.h"
 #include "input.h"
 
+#include "DrvSynHUD.h"
+
 #pragma todo("joystick parameters")
 
 ConVar cl_predict("cl_predict", "1", "Prediction");
-ConVar cl_predict_ratio("cl_predict_ratio", "0.3", "Client prediction ratio");
+ConVar cl_predict_ratio("cl_predict_ratio", "1.0", "Client prediction ratio");
 ConVar cl_predict_tolerance("cl_predict_tolerance", "5.0", "Interpolation tolerance");
-ConVar cl_predict_angtolerance("cl_predict_angtolerance", "0.7", "Angular Interpolation tolerance");
+ConVar cl_predict_angtolerance("cl_predict_angtolerance", "3.0", "Angular Interpolation tolerance");
 ConVar cl_predict_correct_power("cl_predict_correct_power", "2.0", "Tolerance correction power");
 
 ConVar cl_predict_debug("cl_debug_predict", "0", "Client prediction debug");
@@ -73,10 +75,7 @@ CNetPlayer::CNetPlayer( int clientID, const char* name )
 	m_clientID = clientID;
 
 	m_ready = false;
-	m_disconnectSignal = false;
 
-	m_fNotreadyTime = 0.0f;
-	
 	m_spawnInfo = nullptr;
 	m_ownCar = nullptr;
 
@@ -203,33 +202,22 @@ void UTIL_DebugDrawOBB(const FVector3D& pos, const Vector3D& mins, const Vector3
 
 void CNetPlayer::Update(float fDt)
 {
-	if(!m_ownCar)
-		return;
-
 	CNetGameSession* netSes = (CNetGameSession*)g_pGameSession;
 
 	if( netSes == NULL )
 		return;
 
-	if( netSes->IsServer() )
+	if( netSes->IsServer() && netSes->GetLocalPlayer() == this)
 	{
-		if(netSes->GetLocalPlayer() == this)
-		{
-			m_lastPrevCmdTick = m_lastCmdTick;
-			m_lastCmdTick = m_curTick;
-			m_fLastCmdTime = m_fCurTime;
-		}
+		m_lastPrevCmdTick = m_lastCmdTick;
+		m_lastCmdTick = m_curTick;
+		m_fLastCmdTime = m_fCurTime;
 	}
 
-	if(m_ready && m_fCurTime-m_fLastCmdTime > 5.0f)
-	{
-#pragma todo("proper warning for connection problems")
-		if(netSes->IsClient())
-			MsgWarning("WARNING: connection lost...\n");
+	m_fCurTime += fDt;
 
-		m_ready = false;
-		m_disconnectSignal = true;
-	}
+	if (!m_ownCar)
+		return;
 
 	float fOverallLatency = CL_GetSnapshotLatency() * 0.5f;
 
@@ -356,13 +344,11 @@ void CNetPlayer::Update(float fDt)
 
 			SetControls(control);
 		}
-			
 	}
 
-	m_ownCar->UpdateLightsState();
-
 	m_interpTime += fDt;
-	m_fCurTime += fDt;
+
+	m_ownCar->UpdateLightsState();
 }
 
 void CNetPlayer::CL_GetPredictedSnapshot( const netObjSnapshot_t& in, float fDt_diff, netObjSnapshot_t& out ) const
@@ -398,21 +384,35 @@ float CNetPlayer::GetLatency() const
 	return m_packetLatency;
 }
 
-void CNetPlayer::NetUpdate(float fDt)
+bool CNetPlayer::Net_Update(float fDt)
 {
-	//if(!m_ownCar)
-	//	NETSpawn();
+	CNetGameSession* netSes = (CNetGameSession*)g_pGameSession;
+
+	if (netSes == NULL)
+		return false;
+
+	float commandTimeDiff = m_fCurTime - m_fLastCmdTime;
+
+	if (commandTimeDiff > 5.0f)
+	{
+		if (netSes->IsClient())
+		{
+			// TODO: proper warning on HUD
+			g_pGameHUD->ShowMessage("WARNING: connection problems...\n", 1.0f);
+		}
+
+		if (commandTimeDiff > 10.0f)
+		{
+			m_ready = false;
+			return false;
+		}
+	}
 
 	if(!m_ownCar)
-		return;
+		return true;
 
 	// send snapshots to the players
 	m_ownCar->SetControlButtons( m_curControls );
-
-	CNetGameSession* netSes = (CNetGameSession*)g_pGameSession;
-
-	if(netSes == NULL)
-		return;
 
 	if( netSes->IsClient() && netSes->GetLocalPlayer() == this)
 	{
@@ -448,11 +448,13 @@ void CNetPlayer::NetUpdate(float fDt)
 	m_curSvTick += TIME_TO_TICKS(fDt);
 	m_curTick += TIME_TO_TICKS(fDt);
 	m_packetTick += TIME_TO_TICKS(fDt);
+
+	return true;
 }
 
 bool CNetPlayer::IsReady()
 {
-	return m_ready;
+	return m_ownCar && m_ready;
 }
 
 //------------------------------------------------------
@@ -637,12 +639,12 @@ void CNetClientPlayerInfo::Process( CNetworkThread* pNetThread )
 		return;
 	}
 
+	// spawn the player car
+	netSes->SV_ScriptedPlayerProvision(player );
+
 	// add player to list and send back message
-	if(netSes->IsServer())
-	{
-        MsgInfo("[SYNC] Sending player info...\n");
-        netSes->SendPlayerInfoList( m_clientID );
-	}
+	MsgInfo("[SERVER] got client info...\n");
+	netSes->SV_SendPlayersToClient( m_clientID );
 
 	kvkeybase_t kvs;
 	kvs.SetKey("status", "ok");
@@ -701,7 +703,7 @@ void CNetServerPlayerInfo::Process( CNetworkThread* pNetThread )
 	const char* playerName = KV_GetValueString(m_kvs.FindKeyBase("player_name"), 0, "unnamed");
 	int playerSlotId = KV_GetValueInt(m_kvs.FindKeyBase("player_slot"));
 
-	Msg("[SYNC] got player info %s (time: %.2fs)\n", playerName, m_sync_time);
+	Msg("[CLIENT] got player info %s (sync time: %.2fs)\n", playerName, m_sync_time);
 
 	extern ConVar g_car;
 
@@ -763,7 +765,7 @@ CNetPlayerPacket::CNetPlayerPacket( const netInputCmd_t& cmd, int nPlayerID, int
 
 CNetPlayerPacket::CNetPlayerPacket( const netSnapshot_t& snapshot, int nPlayerID, int curTick )
 {
-	m_type = PL_PACKET_PROPS;
+	m_type = PL_PACKET_SNAPSHOT;
 	m_snapshot = snapshot;
 	m_playerID = nPlayerID;
 	m_packetTick = curTick;
@@ -791,9 +793,6 @@ void CNetPlayerPacket::Process( CNetworkThread* pNetThread )
 	if(!player)
 		return;
 
-	// make player ready
-	//player->m_ready = true;
-
 	if( netSes->IsServer() && m_type == PL_PACKET_CONTROLS )
 	{
 		player->m_ready = true;
@@ -814,11 +813,10 @@ void CNetPlayerPacket::Process( CNetworkThread* pNetThread )
 			player->m_packetTick = m_packetTick;
 		}
 	}
-	else if( netSes->IsClient() && m_type == PL_PACKET_PROPS )
+	else if( netSes->IsClient() && m_type == PL_PACKET_SNAPSHOT )
 	{
 		// make player ready
 		player->m_ready = true;
-
 
 		if( m_packetTick > player->m_lastPacketTick &&
 			player->CL_AddSnapshot( m_snapshot ) )
@@ -844,8 +842,8 @@ void CNetPlayerPacket::Unpack( CNetworkThread* pNetThread, CNetMessageBuffer* pS
 {
 	pStream->GetClientInfo(m_clientAddr, m_clientID);
 
-	m_type = (EPlayerPacketType)pStream->ReadInt();
-	m_playerID = pStream->ReadInt();
+	m_type = (EPlayerPacketType)pStream->ReadUByte();
+	m_playerID = pStream->ReadUByte();
 	m_packetTick = pStream->ReadInt();
 	float tick_interval = pStream->ReadFloat();
 
@@ -864,8 +862,8 @@ void CNetPlayerPacket::Unpack( CNetworkThread* pNetThread, CNetMessageBuffer* pS
 
 void CNetPlayerPacket::Pack( CNetworkThread* pNetThread, CNetMessageBuffer* pStream )
 {
-	pStream->WriteInt(m_type);
-	pStream->WriteInt(m_playerID);
+	pStream->WriteUByte(m_type);
+	pStream->WriteUByte(m_playerID);
 	pStream->WriteInt(m_packetTick);
 	pStream->WriteFloat(TICK_INTERVAL);
 
