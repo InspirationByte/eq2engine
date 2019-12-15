@@ -1648,7 +1648,7 @@ void CEditorLevelRegion::Ed_InitPhysics()
 			model->CreateCollisionObject( ref );
 
 			// add physics objects
-			g_pPhysics->m_physics.AddStaticObject( ref->physObject );
+			g_pPhysics->m_physics.AddStaticObject( ref->static_phys_object );
 		}
 	}
 
@@ -1675,8 +1675,8 @@ void CEditorLevelRegion::Ed_DestroyPhysics()
 			// create collision objects and translate them
 			CLevelModel* model = ref->def->m_model;
 
-			g_pPhysics->m_physics.DestroyStaticObject( ref->physObject );
-			ref->physObject = NULL;
+			g_pPhysics->m_physics.DestroyStaticObject( ref->static_phys_object );
+			ref->static_phys_object = NULL;
 		}
 	}
 

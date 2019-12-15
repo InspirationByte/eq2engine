@@ -24,6 +24,8 @@ public:
 	static void Init();
 	static void Shutdown();
 
+	static CEqGameControllerSDL* GetFreeController();
+
 	static void ProcessConnectionEvent(SDL_Event* event);
 	static void ProcessInputEvent(SDL_Event* event);
 
@@ -36,6 +38,7 @@ private:
 	SDL_Haptic*					m_haptic;
 	SDL_JoystickID				m_instanceId;
 	bool						m_connected;
+
 	std::unordered_map<short, float>	m_pressed;
 
 	static int GetControllerIndex(SDL_JoystickID instance);

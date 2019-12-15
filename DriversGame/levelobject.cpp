@@ -327,6 +327,7 @@ void CLevelModel::GeneratePhysicsData(bool isGround)
 	DkList<Vector3D>	physVerts;
 	DkList<uint16>		indices;
 
+	// mesh is getting reduced in vertex count by merging them
 	for(int i = 0; i < m_numBatches; i++)
 	{
 		lmodel_batch_t& rendBatch = m_batches[i];
@@ -465,7 +466,7 @@ void CLevelModel::CreateCollisionObject( regionObject_t* ref )
 	collObj->SetCollideMask(0);
 
 	// don't add them to world
-	ref->physObject = collObj;
+	ref->static_phys_object = collObj;
 }
 
 bool CLevelModel::GenereateRenderData()

@@ -279,15 +279,15 @@ public:
 	virtual void				OnPackMessage( CNetMessageBuffer* buffer, DkList<int>& changeList );
 	virtual void				OnUnpackMessage( CNetMessageBuffer* buffer );
 
+	Matrix4x4					m_worldMatrix;
 	BoundingBox					m_bbox;
-	int							m_networkID;
-	int							m_replayID;
-
-	int							m_scriptID;	// object script ID for replay purposes
 
 	EGameObjectState			m_state;
 
-	Matrix4x4					m_worldMatrix;
+	int							m_objId;
+	int							m_networkID;
+	int							m_replayID;
+	int							m_scriptID;			// object script ID for replay purposes	
 
 protected:
 

@@ -123,8 +123,11 @@ public:
 	//-------------------------------------------------------------------------
 	// objects
 
-	void							AddObject(CGameObject* pObject);
+	// adds object to world, returns ID
+	int								AddObject(CGameObject* pObject);
+
 	void							RemoveObject(CGameObject* pObject);
+	void							RemoveObjectById(int objectId);
 	bool							IsValidObject(CGameObject* pObject) const;
 
 	CGameObject*					CreateGameObject( const char* typeName, kvkeybase_t* kvdata ) const;
@@ -302,6 +305,8 @@ public:
 #ifndef EDITOR
 	CShadowRenderer					m_shadowRenderer;
 #endif // EDITOR
+
+	int								m_objectIndexCounter;
 };
 
 extern WorldGlobals_t				g_worldGlobals;

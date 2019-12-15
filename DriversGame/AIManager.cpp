@@ -628,10 +628,10 @@ void CAIManager::UpdateNavigationVelocityMap(float fDt)
 	{
 		PaintVelocityMapFrom(m_trafficCars[i]);
 	}
-
+	*/
 	// update debugging of navigation maps here
 	g_pGameWorld->m_level.UpdateDebugMaps();
-	*/
+	
 }
 
 void CAIManager::PaintVelocityMapFrom(CCar* car)

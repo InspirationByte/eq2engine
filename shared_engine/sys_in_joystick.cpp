@@ -54,6 +54,19 @@ void CEqGameControllerSDL::Shutdown()
 	}
 }
 
+CEqGameControllerSDL* CEqGameControllerSDL::GetFreeController()
+{
+	for (int i = 0; i < MAX_CONTROLLERS; i++)
+	{
+		CEqGameControllerSDL& jc = s_controllers[i];
+
+		if (!jc.m_connected)
+			return &jc;
+	}
+
+	return nullptr;
+}
+
 const char* CEqGameControllerSDL::GetName() const
 {
 	if (!m_connected)
@@ -161,12 +174,12 @@ void CEqGameControllerSDL::ProcessConnectionEvent(SDL_Event* event)
 	{
 		case SDL_CONTROLLERDEVICEADDED:
 		{
-			if (event->cdevice.which < MAX_CONTROLLERS)
-			{
-				CEqGameControllerSDL& jc = s_controllers[event->cdevice.which];
-				jc.Open(event->cdevice.which);
+			CEqGameControllerSDL* jc = GetFreeController();
 
-				Msg("* Controller connected: '%s'\n", jc.GetName());
+			if (jc)
+			{
+				jc->Open(event->cdevice.which);
+				Msg("* Controller connected: '%s'\n", jc->GetName());
 			}
 			break;
 		}
@@ -174,13 +187,13 @@ void CEqGameControllerSDL::ProcessConnectionEvent(SDL_Event* event)
 		{
 			int cIndex = GetControllerIndex(event->cdevice.which);
 
-			if (cIndex < 0)
-				return; // unknown controller?
+			if (cIndex >= 0)
+			{
+				CEqGameControllerSDL& jc = s_controllers[cIndex];
 
-			CEqGameControllerSDL& jc = s_controllers[cIndex];
-
-			Msg("* Controller disconnected: '%s'\n", jc.GetName());
-			jc.Close();
+				Msg("* Controller disconnected: '%s'\n", jc.GetName());
+				jc.Close();
+			}
 
 			break;
 		}
@@ -194,7 +207,7 @@ void CEqGameControllerSDL::ProcessInputEvent(SDL_Event* event)
 		case SDL_CONTROLLERAXISMOTION: 
 		{
 			SDL_GameControllerAxis axis = (SDL_GameControllerAxis)event->caxis.axis;
-			
+
 			if (in_joy_debug.GetBool())
 			{
 				Msg("Gamepad %d axis %s value: %d\n",
@@ -202,8 +215,16 @@ void CEqGameControllerSDL::ProcessInputEvent(SDL_Event* event)
 					KeyIndexToString(JOYSTICK_START_AXES + event->caxis.axis), event->caxis.value);
 			}
 
-			// handle axis motion
-			g_pHost->TrapJoyAxis_Event((short)axis, event->caxis.value);
+			int cIndex = GetControllerIndex(event->cdevice.which);
+
+			if (cIndex >= 0)
+			{
+				CEqGameControllerSDL& jc = s_controllers[cIndex];
+
+				// handle axis motion
+				g_pHost->TrapJoyAxis_Event((short)axis, event->caxis.value);
+			}
+
 			break;
 		}
 		case SDL_CONTROLLERBUTTONDOWN:
@@ -219,15 +240,23 @@ void CEqGameControllerSDL::ProcessInputEvent(SDL_Event* event)
 					event->cbutton.which, KeyIndexToString(JOYSTICK_START_KEYS + event->cbutton.button), down ? "down" : "up");
 			}
 
-			CEqGameControllerSDL& jc = s_controllers[event->cdevice.which];
+			int cIndex = GetControllerIndex(event->cdevice.which);
 
-			if (down)
-				jc.m_pressed[button] = in_joy_repeatDelayInit.GetFloat();
-			else
-				jc.m_pressed.erase(button);
+			if (cIndex >= 0)
+			{
+				CEqGameControllerSDL& jc = s_controllers[cIndex];
 
-			// handle button up/down
-			g_pHost->TrapJoyButton_Event((short)button, down);
+				if (down)
+					jc.m_pressed.insert_or_assign(button, in_joy_repeatDelayInit.GetFloat());
+				else
+					jc.m_pressed.erase(button);
+
+				// handle button up/down
+				g_pHost->TrapJoyButton_Event((short)button, down);
+			}
+
+			
+			
 			break;
 		}
 	}

@@ -213,7 +213,13 @@ void CAIPursuerCar::OnCarCollisionEvent(const CollisionPairData_t& pair, CGameOb
 	BaseClass::OnCarCollisionEvent(pair, hitBy);
 
 	if (InPursuit())
+	{
 		m_hornSequencer.ShutUp();
+
+		if(m_angry && hitBy == m_target)	// reset angry timer
+			m_angryTimer = AI_ANGRY_ACTIVE_TIME;
+	}
+		
 }
 
 bool CAIPursuerCar::Speak(const char* soundName, CCar* target, bool force, float priority)

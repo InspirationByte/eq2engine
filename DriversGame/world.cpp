@@ -171,6 +171,8 @@ CGameWorld::CGameWorld()
 	m_levelLoaded = false;
 
 	m_envMapsDirty = true;
+
+	m_objectIndexCounter = 0;
 }
 
 void CGameWorld::SetEnvironmentName(const char* name)
@@ -526,6 +528,7 @@ void CGameWorld::InitEnvironment()
 void CGameWorld::Init()
 {
 	g_replayRandom.SetSeed(0);
+	m_objectIndexCounter = 0;
 
 	m_frameTime = 0.0f;
 	m_curTime = 0.0f;
@@ -875,7 +878,7 @@ void CGameWorld::OnObjectRemovedEvent(CGameObject* obj)
 	obj->Ref_Drop();
 }
 
-void CGameWorld::AddObject(CGameObject* pObject)
+int CGameWorld::AddObject(CGameObject* pObject)
 {
 	bool postPronedSpawn = (pObject->m_state == GO_STATE_NOTSPAWN);
 
@@ -884,15 +887,21 @@ void CGameWorld::AddObject(CGameObject* pObject)
 	if(postPronedSpawn)
 		m_level.m_mutex.Lock();
 
+	int objectId = -1;
+
 	if (_objList.findIndex(pObject) == -1)
 	{
+		pObject->m_objId = objectId = m_objectIndexCounter++;
 		_objList.append(pObject);
+
+		if (!postPronedSpawn)
+			OnObjectSpawnedEvent(pObject);
 	}
 
 	if (postPronedSpawn)
 		m_level.m_mutex.Unlock();
-	else
-		OnObjectSpawnedEvent(pObject);
+
+	return objectId;
 }
 
 void CGameWorld::RemoveObject(CGameObject* pObject)
@@ -900,12 +909,28 @@ void CGameWorld::RemoveObject(CGameObject* pObject)
 	pObject->m_state = GO_STATE_REMOVE;
 }
 
+void CGameWorld::RemoveObjectById(int objectId)
+{
+	int numObjects = m_gameObjects.numElem();
+	for (int i = 0; i < numObjects; i++)
+	{
+		CGameObject* obj = m_gameObjects[i];
+
+		if (obj->m_objId == objectId)
+		{
+			obj->m_state = GO_STATE_REMOVE;
+			return;
+		}
+	}
+}
+
 bool CGameWorld::IsValidObject(CGameObject* pObject) const
 {
 	if(!pObject)
 		return false;
 
-	for (int i = 0; i < m_gameObjects.numElem(); i++)
+	int numObjects = m_gameObjects.numElem();
+	for (int i = 0; i < numObjects; i++)
 	{
 		CGameObject* obj = m_gameObjects[i];
 

@@ -73,7 +73,6 @@ public:
 
 	int								UpdateRegions( RegionLoadUnloadCallbackFunc func = NULL);
 	void							RespawnAllObjects();
-	void							DropRegionObjectRef(regionObject_t* ref);
 
 	void							UpdateDebugMaps();
 

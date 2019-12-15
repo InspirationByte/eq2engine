@@ -43,20 +43,15 @@ void regionObject_t::RemoveGameObject()
 			delete mod;
 
 #ifndef EDITOR
-		g_pPhysics->m_physics.DestroyStaticObject(physObject);
-		physObject = NULL;
+		g_pPhysics->m_physics.DestroyStaticObject(static_phys_object);
+		static_phys_object = NULL;
 #endif // EDITOR
 	}
 	else
 	{
 		// delete associated object from game world
-		if (g_pGameWorld->IsValidObject(game_object))
-		{
-			game_object->SetUserData(NULL);
-			g_pGameWorld->RemoveObject(game_object);
-		}
-
-		game_object = NULL;
+		g_pGameWorld->RemoveObjectById(game_objectId);
+		game_objectId = -1;
 	}
 }
 
@@ -507,6 +502,9 @@ void CLevelRegion::Init()
 
 void CLevelRegion::InitNavigationGrid()
 {
+	if (!m_roads)
+		return;
+
 	CHeightTileField& defField = *m_heightfield[0];
 
 	// also init navigation grid
@@ -622,6 +620,17 @@ void CLevelRegion::InitNavigationGrid()
 			}
 		}
 	}
+	/*
+	// THIS DOES NOT WORK WELL, BUT SHOULD...
+	if (m_navGrid[0].dirty || m_navGrid[1].dirty)
+	{
+		for (int i = 0; i < m_objects.numElem(); i++)
+			m_level->Nav_AddObstacle(this, m_objects[i]);
+
+		m_navGrid[0].dirty = false;
+		m_navGrid[1].dirty = false;
+	}
+	*/
 
 	// init debug maps
 	if (nav_debug_map.GetInt() > 0)
@@ -925,7 +934,7 @@ void CLevelRegion::ReadLoadRegion(IVirtualStream* stream, DkList<CLevObjectDef*>
 				model->CreateCollisionObject( ref );
 
 				// add physics objects
-				g_pPhysics->m_physics.AddStaticObject( ref->physObject );
+				g_pPhysics->m_physics.AddStaticObject( ref->static_phys_object );
 			}
 #endif // EDITOR
 
@@ -952,13 +961,8 @@ void CLevelRegion::ReadLoadRegion(IVirtualStream* stream, DkList<CLevObjectDef*>
 				else if(newObj->ObjType() != GO_SCRIPTED)
 					newObj->SetName( varargs("_reg%d_ref%d", m_regionIndex, i) );
 
-				ref->game_object = newObj;
-
 				// let the game objects to be spawned on game frame
-				{
-					CScopedMutex m(m_level->m_mutex);
-					g_pGameWorld->AddObject(newObj);
-				}
+				ref->game_objectId = g_pGameWorld->AddObject(newObj);
 			}
 		}
 #endif
@@ -1030,10 +1034,8 @@ void CLevelRegion::RespawnObjects()
 			else if(newObj->ObjType() != GO_SCRIPTED)
 				newObj->SetName( varargs("_reg%d_ref%d", m_regionIndex, i) );
 
-			ref->game_object = newObj;
-
 			// let the game objects to be spawned on game frame
-			g_pGameWorld->AddObject( newObj );
+			ref->game_objectId = g_pGameWorld->AddObject(newObj);
 		}
 	}
 #endif // EDITOR

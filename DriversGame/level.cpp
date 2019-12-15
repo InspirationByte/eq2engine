@@ -738,6 +738,9 @@ void CGameLevel::ReadRoadsLump(IVirtualStream* stream)
 		{
 			int idx = y * m_wide + x;
 
+			if (roadOffsets[idx] == -1)
+				continue;
+
 			int roadsOffset = roadDataOffset + roadOffsets[idx];
 			stream->Seek(roadsOffset, VS_SEEK_SET);
 
@@ -1826,22 +1829,24 @@ void CGameLevel::UnloadRegions()
 		{
 			int idx = y*m_wide+x;
 
+			CLevelRegion& region = m_regions[idx];
+
 			{
 				CScopedMutex m(m_mutex);
-				if (!m_regions[idx].m_isLoaded)
+				if (!region.m_isLoaded)
 					continue;
 			}
 
 			if(m_regionOffsets[idx] != -1 )
 			{
 				// unload region
-				m_regions[idx].Cleanup();
-				m_regions[idx].m_scriptEventCallbackCalled = false;
+				region.Cleanup();
+				region.m_scriptEventCallbackCalled = false;
 
 				numFreedRegions++;
 			}
 
-			m_regions[idx].m_queryTimes.SetValue(0);
+			region.m_queryTimes.SetValue(0);
 		}
 	}
 }
@@ -1860,20 +1865,22 @@ int CGameLevel::UpdateRegions( RegionLoadUnloadCallbackFunc func )
 		{
 			int idx = y*m_wide+x;
 
+			CLevelRegion& region = m_regions[idx];
+
 #ifndef EDITOR
 
 			m_mutex.Lock();
 
 			if(!w_freeze.GetBool() &&
-				m_regions[idx].m_isLoaded &&
-				(m_regions[idx].m_queryTimes.GetValue() <= 0) &&
+				region.m_isLoaded &&
+				(region.m_queryTimes.GetValue() <= 0) &&
 				m_regionOffsets[idx] != -1 )
 			{
 				m_mutex.Unlock();
 
 				// unload region
-				m_regions[idx].Cleanup();
-				m_regions[idx].m_scriptEventCallbackCalled = false;
+				region.Cleanup();
+				region.m_scriptEventCallbackCalled = false;
 
 				numFreedRegions++;
 			}
@@ -1884,17 +1891,14 @@ int CGameLevel::UpdateRegions( RegionLoadUnloadCallbackFunc func )
 			}
 #endif // EDITOR
 
-			//m_regions[idx].m_queryTimes.Decrement();
+			region.m_queryTimes.SetValue(0);
 
-			//if(m_regions[idx].m_queryTimes.GetValue() < 0)
-			m_regions[idx].m_queryTimes.SetValue(0);
-
-			if( !m_regions[idx].m_scriptEventCallbackCalled )
+			if( !region.m_scriptEventCallbackCalled )
 			{
 				if(func)
-					(func)(&m_regions[idx], idx);
+					(func)(&region, idx);
 
-				m_regions[idx].m_scriptEventCallbackCalled = true;
+				region.m_scriptEventCallbackCalled = true;
 			}
 		}
 	}
@@ -1914,15 +1918,6 @@ void CGameLevel::RespawnAllObjects()
 			m_regions[idx].RespawnObjects();
 		}
 	}
-}
-
-void CGameLevel::DropRegionObjectRef(regionObject_t* ref)
-{
-	CScopedMutex m(g_pGameWorld->m_level.m_mutex);
-
-	// TODO: validate
-	if (ref && ref->regionIdx)
-		ref->game_object = NULL;
 }
 
 extern ConVar nav_debug_map;
@@ -2441,7 +2436,7 @@ void CGameLevel::Nav_ClearCellStates(ECellClearStateMode mode)
 						break;
 					}
 				}
-
+				
 				if (reg.m_navGrid[0].dirty || reg.m_navGrid[1].dirty)
 				{
 					for (int i = 0; i < reg.m_objects.numElem(); i++)
@@ -2450,6 +2445,7 @@ void CGameLevel::Nav_ClearCellStates(ECellClearStateMode mode)
 					reg.m_navGrid[0].dirty = false;
 					reg.m_navGrid[1].dirty = false;
 				}
+				
 			}
 		}
 	}

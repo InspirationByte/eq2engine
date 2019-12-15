@@ -161,9 +161,9 @@ struct regionObject_t
 #endif // 
 	regionObject_t()
 	{
-		game_object = NULL;
+		game_objectId = -1;
 		def = NULL;
-		physObject = NULL;
+		static_phys_object = NULL;
 		regionIdx = -1;
 #ifdef EDITOR
 		hide = false;
@@ -175,23 +175,23 @@ struct regionObject_t
 	void RemoveGameObject();
 	void CalcBoundingBox();
 
-	CLevObjectDef*			def;
-	CGameObject*			game_object;
-	CEqCollisionObject*		physObject;
-
 	Matrix4x4		transform;
-
-	ushort			tile_x;
-	ushort			tile_y;
-
 	BoundingBox		bbox;
+
+	CLevObjectDef*			def;
+	CEqCollisionObject*		static_phys_object;
 
 	Vector3D		position;
 	Vector3D		rotation;
 
 	EqString		name;
 
+	int				game_objectId;
+
 	int				regionIdx;
+
+	ushort			tile_x;
+	ushort			tile_y;
 
 #ifdef EDITOR
 	bool			hide;

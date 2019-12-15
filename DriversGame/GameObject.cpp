@@ -177,7 +177,8 @@ CGameObject::CGameObject() : CBaseNetworkedObject(),
 	m_state( GO_STATE_NOTSPAWN ),
 	m_scriptID( SCRIPT_ID_NOTSCRIPTED ),
 	m_networkID( NETWORK_ID_OFFLINE ),
-	m_replayID( REPLAY_NOT_TRACKED )
+	m_replayID( REPLAY_NOT_TRACKED ),
+	m_objId( -1 )
 {
 	m_vecOrigin = vec3_zero;
 	m_vecAngles = vec3_zero;
