@@ -166,9 +166,9 @@ const char* CommandLineParse::GetArgumentsOf(int paramIndex) const
 		if(i > paramIndex+1)
 			_tmpArguments.Append(' ');
 
-		_tmpArguments.Append('\"');
+		//_tmpArguments.Append('\"');
 		_tmpArguments.Append(m_args[i]);
-		_tmpArguments.Append('\"');
+		//_tmpArguments.Append('\"');
 	}
 
 	return _tmpArguments.c_str();

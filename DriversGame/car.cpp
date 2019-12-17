@@ -1330,7 +1330,7 @@ void CCar::UpdateVehiclePhysics(float delta)
 	bool bBurnout = false;
 	bool bExtendTurn = false;
 
-	bool needsWake = false;
+	bool needsWake = IsFlippedOver();
 
 	if( m_enabled )
 	{

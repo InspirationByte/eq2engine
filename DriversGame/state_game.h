@@ -97,7 +97,7 @@ protected:
 	void		RenderMainView2D( float fDt );
 
 	void		DrawMenu( float fDt );
-	void		DrawLoadingScreen();
+	void		DrawLoadingScreen( float fDt );
 
 	void		OnEnterSelection( bool isFinal );
 	void		OnMenuCommand( const char* command );

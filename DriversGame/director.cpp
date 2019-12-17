@@ -582,22 +582,25 @@ void Director_Draw( float fDt )
 
 			ColorRGB camRectColor(s_cameraColors[camera->type]);
 
+			float tickScale = 0.8f;
+
 			if (currentCamera == camera)
 			{
+				tickScale = 2.0f;
+
 				// draw start tick position
 				Rectangle_t currentTickRect(
-					timelineRect.GetCenter() - Vector2D(2, timelineHalfThickness * 0.8f) + Vector2D(cameraTickPos, 0),
-					timelineRect.GetCenter() + Vector2D(2, 0) + Vector2D(cameraTickPos, 0));
+					timelineRect.GetCenter() - Vector2D(2, timelineHalfThickness * 2.0f) + Vector2D(cameraTickPos, 0),
+					timelineRect.GetCenter() + Vector2D(2, -timelineHalfThickness) + Vector2D(cameraTickPos, 0));
 
 				meshBuilder.Color4f(1.0f, 0.0f, 0.0f, 0.8f);
-				meshBuilder.Quad2(currentTickRect.GetLeftTop(), currentTickRect.GetRightTop(), currentTickRect.GetLeftBottom(), currentTickRect.GetRightBottom());
+				meshBuilder.Triangle2(currentTickRect.GetLeftTop(), currentTickRect.GetCenter() + Vector2D(16.0f,0), currentTickRect.GetLeftBottom());
 
 				if (!g_freecam.GetBool())
 				{
 					Rectangle_t cameraFixedRect = cameraColorRect;
-					cameraFixedRect.vleftTop -= 5;
-					cameraFixedRect.vrightBottom += 5;
-					meshBuilder.Color4f(0.25f, 0.0f, 1.0f, 0.8f);
+					cameraFixedRect.vrightBottom.y += 5;
+					meshBuilder.Color4f(0.25f, 0.0f, 1.0f, 0.5f);
 					meshBuilder.Quad2(cameraFixedRect.GetLeftTop(), cameraFixedRect.GetRightTop(), cameraFixedRect.GetLeftBottom(), cameraFixedRect.GetRightBottom());
 				}
 
@@ -610,7 +613,7 @@ void Director_Draw( float fDt )
 
 			// draw start tick position
 			Rectangle_t currentTickRect(
-				timelineRect.GetCenter() - Vector2D(2, timelineHalfThickness * 0.8f) + Vector2D(cameraTickPos,0),
+				timelineRect.GetCenter() - Vector2D(2, timelineHalfThickness * tickScale) + Vector2D(cameraTickPos,0),
 				timelineRect.GetCenter() + Vector2D(2, timelineHalfThickness * 0.8f) + Vector2D(cameraTickPos,0));
 
 			meshBuilder.Color4f(0.9f,0.9f,0.9f,0.8f);
@@ -732,6 +735,8 @@ void Director_Draw( float fDt )
 				"Insert camera: &#FFFF00;NUMPAD ADD&;\n"
 				"Replace camera: &#FFFF00;NUMPAD ENTER&;\n"
 				"Delete camera: &#FFFF00;DELETE&;\n\n"
+
+				"Move: &#FFFF00;WSAD&;\n\n"
 
 				"Set vehicle: &#FFFF00;%s&;\n",
 

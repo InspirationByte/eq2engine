@@ -607,12 +607,28 @@ void CState_Game::OnEnter( CBaseStateHandler* from )
 		m_uiLayout->AddChild(m_menuDummy);
 	}
 
-	m_loadingScreen = equi::Manager->CreateElement("Panel");
+	{
+		m_loadingScreen = equi::Manager->CreateElement("Panel");
 
-	kvkeybase_t loadingKvs;
+		OOLUA::Table missionTable;
+		if (!OOLUA::get_global(GetLuaState(), "MISSION", missionTable))
+		{
+			MsgError("Failed to get MISSION table!\n");
+			return;
+		}
 
-	if (KV_LoadFromFile("resources/loadingscreen.res", SP_MOD, &loadingKvs))
-		m_loadingScreen->InitFromKeyValues(&loadingKvs);
+		std::string loadingScreenName;
+		if (!missionTable.safe_at("LoadingScreen", loadingScreenName))
+		{
+			MsgWarning("LoadingScreen not found in MISSION table!\n");
+			return;
+		}
+
+		kvkeybase_t loadingKvs;
+
+		if (KV_LoadFromFile(loadingScreenName.c_str(), SP_MOD, &loadingKvs))
+			m_loadingScreen->InitFromKeyValues(&loadingKvs);
+	}
 }
 
 bool CState_Game::DoLoadingFrame()
@@ -760,16 +776,15 @@ bool CState_Game::StartReplay( const char* path, EReplayMode mode)
 	return false;
 }
 
-void CState_Game::DrawLoadingScreen()
+void CState_Game::DrawLoadingScreen( float fDt )
 {
 	const IVector2D& screenSize = g_pHost->GetWindowSize();
 
 	materials->Setup2D(screenSize.x, screenSize.y);
-	/*
+	
 	m_loadingScreen->SetSize(screenSize);
 	m_loadingScreen->Render();
-	*/
-
+	
 	CMeshBuilder meshBuilder(materials->GetDynamicMesh());
 
 	g_pShaderAPI->SetTexture(NULL, NULL, 0);
@@ -778,41 +793,28 @@ void CState_Game::DrawLoadingScreen()
 	materials->SetDepthStates(false, false);
 	materials->BindMaterial(materials->GetDefaultMaterial());
 
-	// fade screen
-	ColorRGBA blockCol(0.8, 0.7, 0.0, 1.0f);
+	ColorRGBA blockCol(0.55, 0.4, 0.0, 1.0f);
 
+	// draw progress bar
 	{
+		if(m_isLoading == 0)
+			m_fade = 0.0f;
+
 		int loadingProgress = m_isLoading == -1 ? 8 : m_isLoading;
 
 		float loadingPercentage = float(loadingProgress) / 8.0f;
 
-		Vector2D rect[] = { MAKEQUAD(0, screenSize.y - 45, screenSize.x * loadingPercentage, screenSize.y - 25, 0) };
+		m_fade = lerp(m_fade, loadingPercentage, fDt*4.0f);
+
+		Vector2D rect[] = { MAKEQUAD(screenSize.x * pow(m_fade, 8.0f), screenSize.y - 100, screenSize.x * m_fade * 1.25f, screenSize.y - 85, 0) };
+		Vector2D rect2[] = { MAKEQUAD(screenSize.x * (1.0f - pow(m_fade, 2.0f)), screenSize.y - 120, screenSize.x * (1.0f - pow(m_fade, 6.0f)) * 2.5f, screenSize.y - 105, 0) };
 
 		meshBuilder.Begin(PRIM_TRIANGLE_STRIP);
 			meshBuilder.Color4fv(blockCol);
 			meshBuilder.Quad2(rect[0], rect[1], rect[2], rect[3]);
+			meshBuilder.Quad2(rect2[0], rect2[1], rect2[2], rect2[3]);
 		meshBuilder.End();
 	}
-
-	IEqFont* font = g_fontCache->GetFont("Roboto Condensed", 30, TEXT_STYLE_BOLD+TEXT_STYLE_ITALIC);
-
-	const wchar_t* loadingStr = LocalizedString("#GAME_IS_LOADING");
-
-	eqFontStyleParam_t param;
-	param.styleFlag |= TEXT_STYLE_SHADOW;
-	param.scale = 40.0f;
-
-	float offs = sinf(g_pHost->GetCurTime()*0.5f) * 50.0f;
-
-	font->RenderText(loadingStr, Vector2D(100 + offs,screenSize.y - 100), param);
-
-	param.scale = 90.0f;
-	param.styleFlag &= ~TEXT_STYLE_SHADOW;
-	param.textColor.w = 0.35f;
-
-	offs *= 1.5f;
-
-	font->RenderText(loadingStr, Vector2D(100 + offs,screenSize.y - 100), param);	
 }
 
 void CState_Game::OnLoadingDone()
@@ -856,7 +858,7 @@ bool CState_Game::Update( float fDt )
 
 	if(!m_isGameRunning)
 	{
-		DrawLoadingScreen();
+		DrawLoadingScreen( fDt );
 		
 		if (m_isLoading != -1)
 		{
