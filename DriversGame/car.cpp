@@ -2361,21 +2361,21 @@ void CCar::OnPhysicsFrame( float fDt )
 				OnNetworkStateChanged(NULL);
 			}
 
-			int wheelCount = GetWheelCount();
-
-			// make damage to wheels
-			// hubcap effects
-			for(int w = 0; w < wheelCount; w++)
-			{
-				Vector3D pos = m_wheels[w].GetOrigin()-Vector3D(coll.position);
-
-				float dmgDist = length(pos);
-
-				if(dmgDist < 1.0f)
-					m_wheels[w].m_damage += (1.0f-dmgDist)*fDamageImpact * DAMAGE_WHEEL_SCALE;
-			}
-
 			RefreshWindowDamageEffects();
+		}
+
+		int wheelCount = GetWheelCount();
+
+		// make damage to wheels
+		// hubcap effects
+		for (int w = 0; w < wheelCount; w++)
+		{
+			Vector3D pos = m_wheels[w].GetOrigin() - Vector3D(coll.position);
+
+			float dmgDist = length(pos);
+
+			if (dmgDist < 1.0f)
+				m_wheels[w].m_damage += (1.0f - dmgDist)*fDamageImpact * DAMAGE_WHEEL_SCALE;
 		}
 
 		fHitImpulse += fDamageImpact * DAMAGE_SOUND_SCALE;
@@ -4376,7 +4376,8 @@ void CCar::UpdateTransform()
 {
 	//BaseClass::UpdateTransform();
 	CEqRigidBody* pCarBody = m_physObj->GetBody();
-	pCarBody->ConstructRenderMatrix(m_worldMatrix);
+	Matrix4x4 worldMat;
+	pCarBody->ConstructRenderMatrix(worldMat);
 
 	int numWheels = GetWheelCount();
 
@@ -4386,10 +4387,16 @@ void CCar::UpdateTransform()
 		CCarWheel& wheel = m_wheels[i];
 		carWheelConfig_t& wheelConf = m_conf->physics.wheels[i];
 
-		wheel.CalculateTransform(wheel.m_worldMatrix, wheelConf);
-		wheel.m_worldMatrix = m_worldMatrix * wheel.m_worldMatrix;
+		Matrix4x4 wheelMat;
+
+		wheel.CalculateTransform(wheelMat, wheelConf);
+		wheel.m_worldMatrix = wheelMat = worldMat * wheelMat;
 		wheel.m_bbox = m_bbox;
+
+		wheel.SetOrigin(transpose(wheelMat).getTranslationComponent());
 	}
+
+	m_worldMatrix = worldMat;
 }
 
 CGameObject* CCar::GetChildShadowCaster(int idx) const
