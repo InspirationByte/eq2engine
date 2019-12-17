@@ -257,6 +257,11 @@ equi::IUIControl* CDrvSynHUDManager::FindChildElement(const char* name) const
 	return m_hudLayout->FindChild(name);
 }
 
+equi::IUIControl* CDrvSynHUDManager::GetRootElement() const
+{
+	return m_hudLayout;
+}
+
 void CDrvSynHUDManager::DrawDamageBar(CMeshBuilder& meshBuilder, Rectangle_t& rect, float percentage, float alpha)
 {
 	meshBuilder.Color4f(0.435, 0.435, 0.435, 0.35f*alpha);

@@ -113,6 +113,9 @@ public:
 	// returns the scaling of element
 	Vector2D					CalcScaling() const;
 
+	const Vector2D&				GetSizeDiff() const;
+	const Vector2D&				GetSizeDiffPerc() const;
+
 	// child controls
 	void						AddChild(IUIControl* pControl);
 	void						RemoveChild(IUIControl* pControl, bool destroy = true);

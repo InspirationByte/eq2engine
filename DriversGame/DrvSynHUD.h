@@ -89,6 +89,7 @@ public:
 	void						FadeOut();
 
 	equi::IUIControl*			FindChildElement(const char* name) const;
+	equi::IUIControl*			GetRootElement() const;
 
 protected:
 

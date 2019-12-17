@@ -34,7 +34,7 @@ ConVar			g_mouse_sens("g_mouse_sens", "1.0", "mouse sensitivity", CV_ARCHIVE);
 
 ConVar			director_timeline_zoom("director_timeline_zoom", "1.0", 0.1, 10.0, "Timeline scale", CV_ARCHIVE);
 
-int				g_nDirectorCameraType	= CAM_MODE_TRIPOD_ZOOM;
+int				g_nDirectorCameraType = CAM_MODE_OUTCAR;
 
 freeCameraProps_t::freeCameraProps_t()
 {
@@ -54,22 +54,23 @@ void g_freecam_changed(ConVar* pVar, char const* pszOldValue)
 		g_freeCamProps.angles.z = 0.0f;
 }
 
+// refers to ECameraMode
 static const char* s_cameraTypeString[] = {
-	"Outside car",
-	"In car",
+	"Standard outside view",
+	"Attached on car",
+	"Inside car",
 	"Tripod",
-	"Tripod (fixed zoom)",
-	"Static",
-	"Outside car (fixed)",
+	"Tripod - follow",
+	"Tripod - follow with zoom",
 };
 
 static const ColorRGB s_cameraColors[] = {
-	ColorRGB(1.0f,0.25f,0.25f),
-	ColorRGB(0.0f,0.25f,0.65f),
-	ColorRGB(0.2f,0.7f,0.2f),
-	ColorRGB(0.5f,0.2f,0.7f),
-	ColorRGB(0.8f,0.8f,0.2f),
-	ColorRGB(1.0f,0.25f,0.25f),
+	ColorRGB(1.0f,0.25f,0.25f),		// standard view
+	ColorRGB(0.0f,0.25f,0.65f),		// inside car
+	ColorRGB(1.0f,0.25f,0.05f),		// on car
+	ColorRGB(0.8f,0.8f,0.2f),		// tripod
+	ColorRGB(0.5f,0.2f,0.7f),		// tripod follow
+	ColorRGB(0.2f,0.7f,0.2f),		// tripod follow with zoom
 };
 
 bool g_director_ShiftKey = false;
@@ -122,7 +123,7 @@ void Director_GetNewCameraProps(replayCamera_t* cam)
 	else
 		cam->rotation = g_pCameraAnimator->GetAngles();	// only update given angles
 
-	if (cam->type == CAM_MODE_OUTCAR_FIXED)
+	if (cam->type == CAM_MODE_ONCAR)
 	{
 		CGameObject* viewedObject = g_pGameSession->GetViewObject();
 
@@ -492,6 +493,14 @@ void Director_Draw( float fDt )
 	const IVector2D& screenSize = g_pHost->GetWindowSize();
 	materials->Setup2D(screenSize.x,screenSize.y);
 
+	g_pGameHUD->GetRootElement()->SetSize(screenSize);
+
+	Vector2D scaling = g_pGameHUD->GetRootElement()->GetSizeDiffPerc();
+	const float aspectCorrection = scaling.y / scaling.x;	// Width based aspect
+	scaling *= Vector2D(aspectCorrection, 1.0f);
+	
+	const Vector2D textSize = scaling * 10.0f;
+
 	replayCamera_t* currentCamera = g_replayData->GetCurrentCamera();
 	int replayCamera = g_replayData->m_currentCamera;
 	int currentTick = g_replayData->m_tick;
@@ -499,7 +508,10 @@ void Director_Draw( float fDt )
 
 	int totalCameras = g_replayData->m_cameras.numElem();
 
-	Rectangle_t timelineRect(0,screenSize.y-100, screenSize.x, screenSize.y-70);
+	Rectangle_t timelineRect(0.0f,screenSize.y-40.0f*scaling.y, (float)screenSize.x, screenSize.y-20.0f*scaling.y);
+	float timelineCenterPos = timelineRect.GetCenter().x;
+	float timelineHalfThickness = timelineRect.GetSize().y*0.5f;
+
 	CMeshBuilder meshBuilder(materials->GetDynamicMesh());
 
 	BlendStateParam_t blending;
@@ -515,8 +527,6 @@ void Director_Draw( float fDt )
 	const float pixelsPerTick = 1.0f / 4.0f * director_timeline_zoom.GetFloat();
 	const float currentTickOffset = currentTick*pixelsPerTick;
 	const float lastTickOffset = totalTicks*pixelsPerTick;
-
-	float timelineCenterPos = timelineRect.GetCenter().x;
 
 	CGameObject* viewedObject = g_pGameSession->GetViewObject();
 	CCar* playerCar = g_pGameSession->GetPlayerCar();
@@ -539,7 +549,13 @@ void Director_Draw( float fDt )
 		float ticksOffset = lastTickOffset-currentTickOffset;
 
 		// draw timeline transparent part
-		Rectangle_t drawnTimeline(timelineRect.GetCenter().x - currentTickOffset, screenSize.y-100.0f, timelineRect.GetCenter().x + ticksOffset , screenSize.y-70.0f);
+		Rectangle_t drawnTimeline(
+			timelineRect.GetCenter().x - currentTickOffset, 
+			timelineRect.GetCenter().y - timelineHalfThickness * 0.8f,
+			timelineRect.GetCenter().x + ticksOffset, 
+			timelineRect.GetCenter().y + timelineHalfThickness * 0.8f
+		);
+
 		drawnTimeline.vleftTop.x = clamp(drawnTimeline.vleftTop.x,0.0f,timelineRect.vrightBottom.x);
 		drawnTimeline.vrightBottom.x = clamp(drawnTimeline.vrightBottom.x,0.0f,timelineRect.vrightBottom.x);
 
@@ -557,14 +573,22 @@ void Director_Draw( float fDt )
 			float nextTickPos = ((nextCamera ? nextCamera->startTick : totalTicks) - currentTick) * pixelsPerTick;
 
 			// draw colored rectangle
-			Rectangle_t cameraColorRect(timelineRect.GetCenter().x + cameraTickPos, screenSize.y - 95.0f, timelineRect.GetCenter().x + nextTickPos, screenSize.y - 75.0f);
+			Rectangle_t cameraColorRect(
+				timelineRect.GetCenter().x + cameraTickPos, 
+				timelineRect.GetCenter().y - timelineHalfThickness * 0.5f,
+				timelineRect.GetCenter().x + nextTickPos, 
+				timelineRect.GetCenter().y + timelineHalfThickness * 0.5f
+			);
 
 			ColorRGB camRectColor(s_cameraColors[camera->type]);
 
 			if (currentCamera == camera)
 			{
 				// draw start tick position
-				Rectangle_t currentTickRect(timelineRect.GetCenter() - Vector2D(2, 25) + Vector2D(cameraTickPos, 0), timelineRect.GetCenter() + Vector2D(2, 0) + Vector2D(cameraTickPos, 0));
+				Rectangle_t currentTickRect(
+					timelineRect.GetCenter() - Vector2D(2, timelineHalfThickness * 0.8f) + Vector2D(cameraTickPos, 0),
+					timelineRect.GetCenter() + Vector2D(2, 0) + Vector2D(cameraTickPos, 0));
+
 				meshBuilder.Color4f(1.0f, 0.0f, 0.0f, 0.8f);
 				meshBuilder.Quad2(currentTickRect.GetLeftTop(), currentTickRect.GetRightTop(), currentTickRect.GetLeftBottom(), currentTickRect.GetRightBottom());
 
@@ -585,18 +609,27 @@ void Director_Draw( float fDt )
 			meshBuilder.Quad2(cameraColorRect.GetLeftTop(), cameraColorRect.GetRightTop(), cameraColorRect.GetLeftBottom(), cameraColorRect.GetRightBottom());
 
 			// draw start tick position
-			Rectangle_t currentTickRect(timelineRect.GetCenter() - Vector2D(2, 15) + Vector2D(cameraTickPos,0), timelineRect.GetCenter() + Vector2D(2, 15) + Vector2D(cameraTickPos,0));
+			Rectangle_t currentTickRect(
+				timelineRect.GetCenter() - Vector2D(2, timelineHalfThickness * 0.8f) + Vector2D(cameraTickPos,0),
+				timelineRect.GetCenter() + Vector2D(2, timelineHalfThickness * 0.8f) + Vector2D(cameraTickPos,0));
+
 			meshBuilder.Color4f(0.9f,0.9f,0.9f,0.8f);
 			meshBuilder.Quad2(currentTickRect.GetLeftTop(), currentTickRect.GetRightTop(), currentTickRect.GetLeftBottom(), currentTickRect.GetRightBottom());
 		}
 
 		// current tick
-		Rectangle_t currentTickRect(timelineRect.GetCenter() - Vector2D(2, 20), timelineRect.GetCenter() + Vector2D(2, 20));
+		Rectangle_t currentTickRect(
+			timelineRect.GetCenter() - Vector2D(2, timelineHalfThickness), 
+			timelineRect.GetCenter() + Vector2D(2, timelineHalfThickness));
+
 		meshBuilder.Color4f(0,0,0,1.0f);
 		meshBuilder.Quad2(currentTickRect.GetLeftTop(), currentTickRect.GetRightTop(), currentTickRect.GetLeftBottom(), currentTickRect.GetRightBottom());
 
 		// end tick
-		Rectangle_t lastTickRect(timelineRect.GetCenter() - Vector2D(2, 20) + Vector2D(ticksOffset,0), timelineRect.GetCenter() + Vector2D(2, 20) + Vector2D(ticksOffset,0));
+		Rectangle_t lastTickRect(
+			timelineRect.GetCenter() - Vector2D(2, timelineHalfThickness * 0.8f) + Vector2D(ticksOffset,0), 
+			timelineRect.GetCenter() + Vector2D(2, timelineHalfThickness * 0.8f) + Vector2D(ticksOffset,0));
+
 		meshBuilder.Color4f(1,0.05f,0,1.0f);
 		meshBuilder.Quad2(lastTickRect.GetLeftTop(), lastTickRect.GetRightTop(), lastTickRect.GetLeftBottom(), lastTickRect.GetRightBottom());
 
@@ -659,7 +692,7 @@ void Director_Draw( float fDt )
 	eqFontStyleParam_t params;
 	params.styleFlag = TEXT_STYLE_SHADOW | TEXT_STYLE_USE_TAGS;
 	params.textColor = color4_white;
-	params.scale = 20.0f;
+	params.scale = textSize;
 
 	static IEqFont* font = g_fontCache->GetFont("Roboto", 30);
 
@@ -686,12 +719,12 @@ void Director_Draw( float fDt )
 				"Replay camera: &#FFFF00;%s&;\n\n"
 
 				"Type: &#FFFF00;1 - 6&;\n"
-				"&#FFFF00;1&; %s Outside car&;\n"
-				"&#FFFF00;2&; %s In car&;\n"
-				"&#FFFF00;3&; %s Tripod&;\n"
-				"&#FFFF00;4&; %s Tripod (fixed zoom)&;\n"
-				"&#FFFF00;5&; %s Static&;\n"
-				"&#FFFF00;6&; %s Outside car (fixed)&;\n\n"
+				"&#FFFF00;1&; %s Standard outside view&;\n"
+				"&#FFFF00;2&; %s Attached on car&;\n"
+				"&#FFFF00;3&; %s Inside car&;\n"
+				"&#FFFF00;4&; %s Tripod&;\n"
+				"&#FFFF00;5&; %s Tripod - follow&;\n"
+				"&#FFFF00;6&; %s Tripod - follow with zoom&;\n\n"
 
 				"Zoom: &#FFFF00;MOUSE WHEEL&; (%.2f deg.)\n"
 				"Tilt: &#FFFF00;RMB and MOUSE MOVE&; (%.2f deg.)\n\n"
@@ -727,12 +760,12 @@ void Director_Draw( float fDt )
 				"Free camera: &#FFFF00;%s&;\n\n"
 
 				"Type: &#FFFF00;1 - 6&;\n"
-				"&#FFFF00;1&; %s%s Outside car&;&;\n"
-				"&#FFFF00;2&; %s%s In car&;&;\n"
-				"&#FFFF00;3&; %s%s Tripod&;&;\n"
-				"&#FFFF00;4&; %s%s Tripod (fixed zoom)&;&;\n"
-				"&#FFFF00;5&; %s%s Static&;&;\n"
-				"&#FFFF00;6&; %s%s Outside car (fixed)&;&;\n\n"
+				"&#FFFF00;1&; %s%s Standard outside view&;&;\n"
+				"&#FFFF00;2&; %s%s Attached on car&;&;\n"
+				"&#FFFF00;3&; %s%s Inside car&;&;\n"
+				"&#FFFF00;4&; %s%s Tripod&;&;\n"
+				"&#FFFF00;5&; %s%s Tripod - follow&;&;\n"
+				"&#FFFF00;6&; %s%s Tripod - follow with zoom&;&;\n\n"
 
 				"Zoom: &#FFFF00;MOUSE WHEEL&; (%.2f deg.)\n"
 				"Tilt: &#FFFF00;RMB and MOUSE MOVE&; (%.2f deg.)\n\n"

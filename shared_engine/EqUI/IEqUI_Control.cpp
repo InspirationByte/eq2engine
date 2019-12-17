@@ -298,6 +298,16 @@ void IUIControl::ResetSizeDiffs()
 	m_sizeDiffPerc = 1.0f;
 }
 
+const Vector2D& IUIControl::GetSizeDiff() const 
+{
+	return m_sizeDiff;
+}
+
+const Vector2D& IUIControl::GetSizeDiffPerc() const
+{
+	return m_sizeDiffPerc;
+}
+
 Vector2D IUIControl::CalcScaling() const
 {
 	if(!m_parent || m_scaling == UI_SCALING_NONE)
@@ -324,10 +334,6 @@ Vector2D IUIControl::CalcScaling() const
 		}
 		else
 			return Vector2D(1.0f, 1.0f);
-	}
-	else
-	{
-		
 	}
 
 	return Vector2D(1.0f, 1.0f);

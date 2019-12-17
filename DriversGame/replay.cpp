@@ -62,8 +62,6 @@ int CReplayData::Record(CCar* pCar, bool onlyCollisions)
 	veh.obj_car = pCar;
 	veh.recordOnlyCollisions = onlyCollisions;
 
-	CEqRigidBody* body = pCar->GetPhysicsBody();
-
 	veh.scriptObjectId = pCar->GetScriptID();
 
 	veh.name = pCar->m_conf->carName.c_str();
@@ -416,12 +414,10 @@ bool CReplayData::RecordVehicleFrame(replayCarStream_t* rep)
 	CEqRigidBody* body = rep->obj_car->GetPhysicsBody();
 
 	bool addControls = false;
-	float prevTime = 0.0f;
 
 	uint16 accelControl = rep->obj_car->m_accelRatio;
 	uint16 brakeControl = rep->obj_car->m_brakeRatio;
 	short steerControl = rep->obj_car->m_steerRatio;
-	ubyte lightsEnabled = rep->obj_car->m_lightsEnabled;
 	bool autoHandbrake = rep->obj_car->m_autohandbrake;
 
 	short control_flags = rep->obj_car->GetControlButtons();
@@ -999,7 +995,6 @@ bool CReplayData::LoadFromFile(const char* filename)
 			for(int i = 0; i < camhdr.numCameras; i++)
 			{
 				pFile->Read( &cam,1,sizeof(replayCamera_t) );
-
 				m_cameras.append(cam);
 			}
 		}

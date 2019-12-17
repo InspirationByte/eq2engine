@@ -49,9 +49,17 @@ ConVar cam_velocity_upmod("cam_velocity_upmod", "1.0");
 
 bool IsStaticCameraMode(ECameraMode mode)
 {
-	return	mode == CAM_MODE_TRIPOD_ZOOM ||
-			mode == CAM_MODE_TRIPOD_FIXEDZOOM ||
-			mode == CAM_MODE_TRIPOD_STATIC;
+	return	mode == CAM_MODE_TRIPOD ||
+			mode == CAM_MODE_TRIPOD_FOLLOW ||
+			mode == CAM_MODE_TRIPOD_FOLLOW_ZOOM;
+}
+
+// cameras used during gameplay
+bool IsGameCamera(ECameraMode mode)
+{
+	return	mode == CAM_MODE_INCAR ||
+			mode == CAM_MODE_OUTCAR ||
+			mode == CAM_MODE_TRIPOD_FOLLOW_ZOOM;
 }
 
 DECLARE_CMD(v_shake, "shakes view", 0)
@@ -181,9 +189,21 @@ void CCameraAnimator::Update( float fDt, int nButtons, CGameObject* target)
 		// Check camera switch buttons
 		if ((nButtons & IN_CHANGECAM) && !(m_oldBtns & IN_CHANGECAM))
 		{
-			int newMode = (int)m_mode + 1;
+			int newMode = (int)m_mode+1;
 
-			if (newMode == CAM_MODE_TRIPOD_ZOOM)
+			// rollin
+			while (!IsGameCamera((ECameraMode)newMode))
+			{
+				newMode++;
+				if (newMode >= CAM_MODES)
+				{
+					newMode = CAM_MODE_OUTCAR;
+					break;
+				}
+			}
+
+			// find a drop position
+			if (IsStaticCameraMode((ECameraMode)newMode))
 			{
 				cameraConfig_t cam;
 				eqPhysCollisionFilter tmp;
@@ -201,15 +221,11 @@ void CCameraAnimator::Update( float fDt, int nButtons, CGameObject* target)
 				m_dropPos = target->GetOrigin() + vec3_up*cam.heightInCar - forward*cam.distInCar*2.0f;
 			}
 
-			// rollin
-			if (newMode > CAM_MODE_TRIPOD_ZOOM)
-				newMode = CAM_MODE_OUTCAR;
-
 			m_mode = (ECameraMode)newMode;
 		}
 
 		// automatic mode switching based on distance
-		if (m_mode >= CAM_MODE_TRIPOD_ZOOM && m_mode <= CAM_MODE_TRIPOD_STATIC)
+		if (IsStaticCameraMode(m_mode))
 		{
 			float dist = length(target->GetOrigin() - GetOrigin());
 
@@ -219,7 +235,6 @@ void CCameraAnimator::Update( float fDt, int nButtons, CGameObject* target)
 				m_mode = CAM_MODE_OUTCAR;
 		}
 
-	
 		if (fDt <= 0.0f)
 			return;
 
@@ -297,7 +312,7 @@ void CCameraAnimator::L_Update( float fDt, CGameObject* target )
 	if(target)
 		AnimateForObject(m_mode, fDt, target, collFilter);
 	else
-		Animate(CAM_MODE_TRIPOD_STATIC, vec3_zero, Quaternion(), vec3_zero, fDt, collFilter);
+		Animate(CAM_MODE_TRIPOD, vec3_zero, Quaternion(), vec3_zero, fDt, collFilter);
 }
 
 void CCameraAnimator::Animate(ECameraMode mode,
@@ -315,7 +330,7 @@ void CCameraAnimator::Animate(ECameraMode mode,
 	Vector3D targetSide = rotateVector(vec3_right, targetRotation);
 	Vector3D targetUp = rotateVector(vec3_up, targetRotation);
 
-	if (mode == CAM_MODE_OUTCAR || mode == CAM_MODE_OUTCAR_FIXED)
+	if (mode == CAM_MODE_OUTCAR || mode == CAM_MODE_ONCAR)
 	{
 		if (cam_velocityeffects.GetBool())
 		{
@@ -441,7 +456,7 @@ void CCameraAnimator::Animate(ECameraMode mode,
 
 			break;
 		}
-		case CAM_MODE_OUTCAR_FIXED:
+		case CAM_MODE_ONCAR:
 		{
 			Vector3D camAngle = Vector3D(0, Yangle, 0) - m_rotation;
 			Vector3D camOffset = rotateVector(m_dropPos, targetRotation);
@@ -470,8 +485,8 @@ void CCameraAnimator::Animate(ECameraMode mode,
 			m_computedView.SetFOV(m_camConfig.fov);
 			break;
 		}
-		case CAM_MODE_TRIPOD_ZOOM:
-		case CAM_MODE_TRIPOD_FIXEDZOOM:
+		case CAM_MODE_TRIPOD_FOLLOW:
+		case CAM_MODE_TRIPOD_FOLLOW_ZOOM:
 		{
 			Vector3D cam_target = finalTargetPos + targetUp * m_camConfig.heightInCar;
 			Vector3D cam_angles = VectorAngles(normalize(cam_target - m_dropPos));
@@ -479,7 +494,7 @@ void CCameraAnimator::Animate(ECameraMode mode,
 			m_computedView.SetAngles(cam_angles + shakeVec);
 			m_computedView.SetOrigin(m_dropPos);
 
-			if (mode == CAM_MODE_TRIPOD_ZOOM)
+			if (mode == CAM_MODE_TRIPOD_FOLLOW_ZOOM)
 			{
 				float distToTarget = length(m_dropPos - cam_target);
 
@@ -498,7 +513,7 @@ void CCameraAnimator::Animate(ECameraMode mode,
 			}
 			break;
 		}
-		case CAM_MODE_TRIPOD_STATIC:
+		case CAM_MODE_TRIPOD:
 		{
 			m_computedView.SetAngles(m_rotation + shakeVec);
 			m_computedView.SetOrigin(m_dropPos);

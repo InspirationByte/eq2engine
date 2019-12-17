@@ -290,7 +290,7 @@ void CNetPlayer::Update(float fDt)
 
 		if(cl_predict.GetBool())
 		{
-			float fCarVel = length(m_ownCar->GetVelocity());
+			//float fCarVel = length(m_ownCar->GetVelocity());
 
 			if(pos_diff < cl_predict_tolerance.GetFloat())
 			{

@@ -40,6 +40,8 @@ const float AI_COP_DEFAULT_MAXSPEED = 160.0f;
 
 const int MIN_ROADBLOCK_CARS = 2;
 
+const int MIN_COPS_TO_INIT_SURVIVAL = 4;
+
 const float AI_TRAFFIC_RESPAWN_TIME	= 0.1f;
 const float AI_TRAFFIC_SPAWN_DISTANCE_THRESH = 5.0f;
 
@@ -317,34 +319,16 @@ CCar* CAIManager::SpawnTrafficCar(const IVector2D& globalCell)
 	civCarEntry_t* carEntry = &m_civCarEntries[carEntryIdx];
 	vehicleConfig_t* carConf = carEntry->config;
 
-	// try add cops
-	if (m_enableCops && numCopsSpawned < GetMaxCops())
-	{
-		carEntry = &m_civCarEntries[m_copsEntryIdx];
-		carConf = carEntry->config;
-
-		if (--carEntry->nextSpawn > 0)	// no luck? switch to civcars
-		{
-			carEntry = &m_civCarEntries[carEntryIdx];
-			carConf = carEntry->config;
-
-			if (--carEntry->nextSpawn > 0)
-				return nullptr;
-		}
-	}
-	else
-	{
-		if (--carEntry->nextSpawn > 0)
-			return nullptr;
-	}
-
-	bool isRegisteredCop = !m_copCarName[PURSUER_TYPE_COP].CompareCaseIns(carConf->carName);
-	bool isRegisteredGang = !m_copCarName[PURSUER_TYPE_GANG].CompareCaseIns(carConf->carName);
-
-	carEntry->nextSpawn = (isRegisteredCop ? m_copRespawnInterval : carEntry->GetZoneSpawnInterval("default")) + m_trafficSpawnInterval;
-
 	if (isParkingLot)
 	{
+		bool isRegisteredCop = !m_copCarName[PURSUER_TYPE_COP].CompareCaseIns(carConf->carName);
+		bool isRegisteredGang = !m_copCarName[PURSUER_TYPE_GANG].CompareCaseIns(carConf->carName);
+
+		if (--carEntry->nextSpawn > 0)
+			return nullptr;
+
+		carEntry->nextSpawn = (isRegisteredCop ? m_copRespawnInterval : carEntry->GetZoneSpawnInterval("default")) + m_trafficSpawnInterval;
+
 		if (carConf->flags.allowParked)
 		{
 			spawnedCar = new CCar(carConf);
@@ -353,10 +337,32 @@ CCar* CAIManager::SpawnTrafficCar(const IVector2D& globalCell)
 	}
 	else
 	{
+		if (m_enableCops && numCopsSpawned < GetMaxCops())
+		{
+			carEntry = &m_civCarEntries[m_copsEntryIdx];
+			carConf = carEntry->config;
+
+			if (--carEntry->nextSpawn > 0)	// no luck? switch to civcars
+			{
+				carEntry = &m_civCarEntries[carEntryIdx];
+				carConf = carEntry->config;
+
+				if (--carEntry->nextSpawn > 0)
+					return nullptr;
+			}
+		}
+		else if (--carEntry->nextSpawn > 0)
+			return nullptr;
+
+		bool isRegisteredCop = !m_copCarName[PURSUER_TYPE_COP].CompareCaseIns(carConf->carName);
+		bool isRegisteredGang = !m_copCarName[PURSUER_TYPE_GANG].CompareCaseIns(carConf->carName);
+
+		carEntry->nextSpawn = (isRegisteredCop ? m_copRespawnInterval : carEntry->GetZoneSpawnInterval("default")) + m_trafficSpawnInterval;
+
 		if (isRegisteredCop || isRegisteredGang)
 		{
 			// don't add cops on initial spawn
-			if (m_enableCops && numCopsSpawned < GetMaxCops() && g_replayData->m_tick > 0)
+			if (m_enableCops && numCopsSpawned < GetMaxCops() && (g_replayData->m_tick > 0 || m_numMaxCops >= MIN_COPS_TO_INIT_SURVIVAL))
 			{
 				CAIPursuerCar* pursuer = new CAIPursuerCar(carConf, isRegisteredGang ? PURSUER_TYPE_GANG : PURSUER_TYPE_COP);
 				pursuer->SetTorqueScale(m_copAccelerationModifier);
