@@ -2606,6 +2606,10 @@ void CCar::Simulate( float fDt )
 	if(!carBody)
 		return;
 
+	// draw wheels
+	if (!carBody->IsFrozen())
+		m_shadowDecal.dirty = true;
+
 	// cleanup our collision list here
 	m_collisionList.clear();
 
@@ -4347,10 +4351,6 @@ void CCar::Draw( int nRenderFlags )
 			// draw car body with damage effects
 			DrawBody(nRenderFlags, nLOD);
 		}
-
-		// draw wheels
-		if (!pCarBody->IsFrozen())
-			m_shadowDecal.dirty = true;
 
 		pCarBody->UpdateBoundingBoxTransform();
 		m_bbox = pCarBody->m_aabb_transformed;
