@@ -320,7 +320,7 @@ void CAITrafficManipulator::SearchJunctionAndStraight()
 
 		if (!gotSameDirection)
 		{
-			straight_t straightroad = g_pGameWorld->m_level.Road_GetStraightAtPoint(checkPos, 8);
+			straight_t straightroad = g_pGameWorld->m_level.Road_GetStraightAtPoint(checkPos, 16);
 
 			if (straightroad.direction != -1 &&
 				straightroad.breakIter > 1 &&
@@ -343,8 +343,8 @@ void CAITrafficManipulator::SearchJunctionAndStraight()
 		{
 			int checkDir = j;
 
-			if (j >= 7)
-				checkDir = -(checkDir - 8);
+			if (j >= 15)
+				checkDir = -(checkDir - 16);
 
 			IVector2D checkStraightPos = checkPos + dirCheckVec * checkDir;
 
@@ -352,10 +352,10 @@ void CAITrafficManipulator::SearchJunctionAndStraight()
 
 			if (rcell && rcell->type == ROADTYPE_NOROAD)
 			{
-				if (j >= 7)
+				if (j >= 15)
 					break;
 				else
-					j = 7;
+					j = 15;
 
 				continue;
 			}
