@@ -483,20 +483,35 @@ void CLevelRegion::Render(const Vector3D& cameraPosition, const occludingFrustum
 	}
 }
 
-void CLevelRegion::Init()
+void CLevelRegion::Init(int cellsSize, const IVector2D& regPos, const Vector3D& hfieldPos)
 {
 	if(!m_heightfield[0])
 		m_heightfield[0] = new CHeightTileFieldRenderable();
 
-#ifdef EDITOR
 	// init all hfields
 	for(int i = 0; i < ENGINE_REGION_MAX_HFIELDS; i++)
 	{
+#ifdef EDITOR
 		if(!m_heightfield[i])
 			m_heightfield[i] = new CHeightTileFieldRenderable();
+#else
+		if (!m_heightfield[i])
+			continue;
+#endif // EDITOR
 
 		m_heightfield[i]->m_fieldIdx = i;
+		m_heightfield[i]->m_regionPos = regPos;
+		m_heightfield[i]->m_position = hfieldPos;
+
+#ifdef EDITOR
+		// init other things like road data
+		m_heightfield[i]->Init(cellsSize, regPos);
+#endif // EDITOR
 	}
+
+#ifdef EDITOR
+	if (!m_roads)
+		m_roads = new levroadcell_t[cellsSize * cellsSize];
 #endif // EDITOR
 }
 
@@ -1048,7 +1063,8 @@ void CLevelRegion::ReadLoadRoads(IVirtualStream* stream)
 	if(field->IsEmpty()) // don't init roads if there is no main heightfield
 		return;
 
-	m_roads = new levroadcell_t[field->m_sizew * field->m_sizeh];
+	if(!m_roads)
+		m_roads = new levroadcell_t[field->m_sizew * field->m_sizeh];
 
 	int numRoadCells = 0;
 	stream->Read(&numRoadCells, 1, sizeof(int));

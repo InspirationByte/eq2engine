@@ -1302,8 +1302,14 @@ void CEditorLevel::PrefabHeightfields(CEditorLevel* destLevel, const IVector2D& 
 		}
 	}
 
-	if(cloneRoads)
+	if(cloneRoads && srcRegion.m_roads)
 	{
+		CHeightTileField* srcField = srcRegion.GetHField(0);
+
+		// init roads
+		if(!destRegion.m_roads)
+			destRegion.m_roads = new levroadcell_t[srcField->m_sizew * srcField->m_sizeh];
+
 		// copy road cells
 		for(int x = regionMinCell.x; x < regionMaxCell.x; x++)
 		{
@@ -1698,6 +1704,9 @@ int FindObjectContainer(DkList<CLevObjectDef*>& listObjects, CLevObjectDef* cont
 
 void CEditorLevelRegion::ClearRoadTrafficLightStates()
 {
+	if (!m_roads)
+		return;
+
 	// before we do PostprocessCellObject, make sure we remove all traffic light flags from straights
 	for (int x = 0; x < m_heightfield[0]->m_sizew; x++)
 	{
@@ -1915,20 +1924,23 @@ void CEditorLevelRegion::WriteRegionRoads( IVirtualStream* stream )
 
 	int numRoadCells = 0;
 
-	for(int x = 0; x < m_heightfield[0]->m_sizew; x++)
+	if (m_roads)
 	{
-		for(int y = 0; y < m_heightfield[0]->m_sizeh; y++)
+		for (int x = 0; x < m_heightfield[0]->m_sizew; x++)
 		{
-			int idx = y*m_heightfield[0]->m_sizew + x;
+			for (int y = 0; y < m_heightfield[0]->m_sizeh; y++)
+			{
+				int idx = y * m_heightfield[0]->m_sizew + x;
 
-			if(m_roads[idx].type == ROADTYPE_NOROAD && m_roads[idx].flags == 0)
-				continue;
+				if (m_roads[idx].type == ROADTYPE_NOROAD && m_roads[idx].flags == 0)
+					continue;
 
-			m_roads[idx].posX = x;
-			m_roads[idx].posY = y;
+				m_roads[idx].posX = x;
+				m_roads[idx].posY = y;
 
-			cells.Write(&m_roads[idx], 1, sizeof(levroadcell_t));
-			numRoadCells++;
+				cells.Write(&m_roads[idx], 1, sizeof(levroadcell_t));
+				numRoadCells++;
+			}
 		}
 	}
 

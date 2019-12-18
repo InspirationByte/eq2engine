@@ -312,23 +312,7 @@ void CGameLevel::Init(int wide, int tall, int cells, bool clean)
 
 			m_regions[idx].m_regionIndex = idx;
 			m_regions[idx].m_level = this;
-			m_regions[idx].Init();
-
-
-			for (int i = 0; i < m_regions[idx].GetNumHFields(); i++)
-			{
-				if (!m_regions[idx].m_heightfield[i])
-					continue;
-
-				m_regions[idx].m_heightfield[i]->m_regionPos = IVector2D(x, y);
-				m_regions[idx].m_heightfield[i]->m_position = Vector3D(x*nStepSize, 0, y*nStepSize) - center;
-
-#ifdef EDITOR
-				// init other things like road data
-				m_regions[idx].m_heightfield[i]->Init(m_cellsSize, IVector2D(x, y));
-#endif // EDITOR
-			}
-
+			m_regions[idx].Init(m_cellsSize, IVector2D(x, y), Vector3D(x*nStepSize, 0, y*nStepSize) - center);
 		}
 	}
 

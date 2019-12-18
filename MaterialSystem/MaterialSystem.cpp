@@ -841,7 +841,7 @@ void CMaterialSystem::PutMaterialToLoadingQueue(IMaterial* pMaterial)
 	if(pMaterial->GetState() != MATERIAL_LOAD_NEED_LOAD)
 		return;
 
-	if( m_config.threadedloader )
+	if( m_config.threadedloader && g_pShaderAPI->GetShaderAPIClass() != SHADERAPI_OPENGL )
 	{
 		g_threadedMaterialLoader.AddMaterial( pMaterial );
 

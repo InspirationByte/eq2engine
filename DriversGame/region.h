@@ -228,7 +228,8 @@ public:
 	CLevelRegion();
 	virtual ~CLevelRegion();
 
-	void							Init();
+	void							Init(int cellsSize, const IVector2D& regPos, const Vector3D& hfieldPos);
+
 	void							InitNavigationGrid();
 	virtual void					Cleanup();
 
