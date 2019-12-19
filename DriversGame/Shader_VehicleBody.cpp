@@ -58,6 +58,9 @@ BEGIN_SHADER_CLASS(DrvSynVehicle)
 		bool bBaseTextureSpecularAlpha;
 		SHADER_PARAM_BOOL(BaseTextureSpecularAlpha, bBaseTextureSpecularAlpha, false);
 
+		bool bLicensePlate;
+		SHADER_PARAM_BOOL(LicensePlate, bLicensePlate, false);
+
 		// parallax scale
 		SHADER_PARAM_FLOAT(SpecularScale, m_fSpecularScale, 0.0f);
 
@@ -77,6 +80,8 @@ BEGIN_SHADER_CLASS(DrvSynVehicle)
 		SHADER_DECLARE_SIMPLE_DEFINITION(useCubemap, "USE_CUBEMAP");
 		SHADER_DECLARE_SIMPLE_DEFINITION((m_pColorMap != NULL), "USE_COLORMAP");
 		SHADER_DECLARE_SIMPLE_DEFINITION((m_pDamageTexture != NULL), "USE_DAMAGE_TEXTURE");
+		SHADER_DECLARE_SIMPLE_DEFINITION(bLicensePlate, "USE_LPLATE");
+		
 
 		SHADER_BEGIN_DEFINITION(bBaseTextureSpecularAlpha, "USE_BASETEXTUREALPHA_SPECULAR")
 			SHADER_DECLARE_SIMPLE_DEFINITION(true, "USE_SPECULAR");

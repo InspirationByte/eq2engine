@@ -665,6 +665,8 @@ protected:
 	float					m_sirenDeathTime;
 
 	// gameplay
+	CNetworkVar(int,		m_licPlateId);
+
 	CNetworkVar(float,		m_gameDamage);
 	CNetworkVar(float,		m_gameMaxDamage);
 

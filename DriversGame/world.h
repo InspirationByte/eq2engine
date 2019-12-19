@@ -73,6 +73,8 @@ struct WorldGlobals_t
 	IVertexFormat*			gameObjectVF;
 	IVertexFormat*			levelObjectVF;
 
+	IMaterial*				licPlatesMat;
+
 	IVertexBuffer*			objectInstBuffer;
 
 	TexAtlasEntry_t*		trans_grasspart;

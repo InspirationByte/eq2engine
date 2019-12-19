@@ -43,6 +43,7 @@ enum EBlendMode
 	BLEND_SUB,
 	BLEND_MUL,
 	BLEND_DIV,
+	BLEND_LERP_ALPHA,
 
 	// TODO: negate
 	BLEND_MODES,
@@ -54,7 +55,8 @@ static const char* s_blendModeStr[] =
 	"add",
 	"sub",
 	"mul",
-	"div"
+	"div",
+	"lerp_alpha",
 };
 
 Vector4D fnBlendLerp(const Vector4D& dest, const Vector4D& src, float transparency)
@@ -84,6 +86,11 @@ Vector4D fnBlendDiv(const Vector4D& dest, const Vector4D& src, float transparenc
 	return fnBlendLerp(dest, dest / src, transparency);
 }
 
+Vector4D fnBlendLerpAlpha(const Vector4D& dest, const Vector4D& src, float transparency)
+{
+	return Vector4D(lerp(dest.xyz(), src.xyz(), transparency*src.w), dest.w);
+}
+
 typedef Vector4D (*BLENDPIXFUNC)(const Vector4D& dest, const Vector4D& src, float transparency);
 
 static BLENDPIXFUNC s_BlendFuncs[] = 
@@ -92,7 +99,8 @@ static BLENDPIXFUNC s_BlendFuncs[] =
 	fnBlendAdd,
 	fnBlendSub,
 	fnBlendMul,
-	fnBlendDiv
+	fnBlendDiv,
+	fnBlendLerpAlpha
 };
 
 EBlendMode GetBlendmodeByStr(const char* mode)

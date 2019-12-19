@@ -137,6 +137,8 @@ END_NETWORK_TABLE()
 
 CGameWorld::CGameWorld()
 {
+	memset(&g_worldGlobals, 0, sizeof(g_worldGlobals));
+
 	m_rainSound = NULL;
 
 	m_skyColor = NULL;
@@ -676,6 +678,13 @@ void CGameWorld::Init()
 		m_lensTable[11] = {120.0f, lens4Id, ColorRGB(0.2f,0.3f,0.8f)};
 	}
 
+	if (!g_worldGlobals.licPlatesMat)
+	{
+		// TODO: dynamically generated license plates
+		g_worldGlobals.licPlatesMat = materials->GetMaterial("models/vehicles/lplates");
+		g_worldGlobals.licPlatesMat->Ref_Grab();
+	}
+
 	g_pPFXRenderer->PreloadMaterials();
 
 	g_pRainEmitter->Init();
@@ -1048,6 +1057,10 @@ void CGameWorld::Cleanup( bool unloadLevel )
 		if (m_noiseTex)
 			g_pShaderAPI->FreeTexture(m_noiseTex);
 		m_noiseTex = nullptr;
+
+		if (g_worldGlobals.licPlatesMat)
+			materials->FreeMaterial(g_worldGlobals.licPlatesMat);
+		g_worldGlobals.licPlatesMat = nullptr;
 
 		if(g_vehicleEffects)
 			delete g_vehicleEffects;

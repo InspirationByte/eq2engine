@@ -653,6 +653,7 @@ BEGIN_NETWORK_TABLE_NO_BASE(PursuerData_t)
 END_NETWORK_TABLE()
 
 BEGIN_NETWORK_TABLE( CCar )
+	DEFINE_SENDPROP_INT(m_licPlateId),
 	DEFINE_SENDPROP_BYTE(m_sirenEnabled),
 	DEFINE_SENDPROP_FLOAT(m_maxSpeed),
 	DEFINE_SENDPROP_FLOAT(m_torqueScale),
@@ -701,6 +702,7 @@ CCar::CCar( vehicleConfig_t* config ) :
 	m_gameMaxDamage(CAR_DEFAULT_MAX_DAMAGE),
 	m_locked(false),
 	m_enabled(true),
+	m_licPlateId(0),
 	m_inWater(false),
 	m_hasDriver(false),
 	m_autohandbrake(true),
@@ -905,6 +907,13 @@ void CCar::Spawn()
 	// init default vehicle
 	// load visuals
 	SetModel( m_conf->visual.cleanModelName.c_str() );
+
+	if (g_worldGlobals.licPlatesMat && g_worldGlobals.licPlatesMat->GetAtlas())
+	{
+		CTextureAtlas* licPlateAtlas = g_worldGlobals.licPlatesMat->GetAtlas();
+		m_licPlateId = RandomInt(0, licPlateAtlas->GetEntryCount()-1);
+	}
+
 	/*
 	// create instancer for lod models only
 	if(!(nRenderFlags & RFLAG_NOINSTANCE) && g_pShaderAPI->GetCaps().isInstancingSupported &&
@@ -4191,6 +4200,17 @@ void CCar::DrawBody( int nRenderFlags, int nLOD)
 		return;
 	}
 
+	CTextureAtlas* licPlateAtlas = g_worldGlobals.licPlatesMat && g_worldGlobals.licPlatesMat->GetAtlas() ? g_worldGlobals.licPlatesMat->GetAtlas() : nullptr;
+	TexAtlasEntry_t* licPlateRect = licPlateAtlas ? licPlateAtlas->GetEntry(m_licPlateId) : nullptr;
+
+	Vector4D licPlateCoord(0, 0, 1, 1);
+
+	if (licPlateRect)
+	{
+		licPlateCoord = Vector4D(licPlateRect->rect.vleftTop, licPlateRect->rect.vrightBottom);
+		licPlateCoord -= Vector4D(vec2_zero, licPlateCoord.xy());
+	}
+
 	//--------------------------------------------------------
 
 	ColorRGBA defaultColors[2] = { color4_white , color4_white };
@@ -4242,6 +4262,8 @@ void CCar::DrawBody( int nRenderFlags, int nLOD)
 			// instead of prepare skinning, we send BodyDamage and car colours
 			g_pShaderAPI->SetShaderConstantArrayFloat("BodyDamage", bodyDamages, 16);
 			g_pShaderAPI->SetShaderConstantArrayVector4D("CarColor", bodyColors, 2);
+
+			g_pShaderAPI->SetShaderConstantArrayVector4D("LicenseRect", &licPlateCoord, 1);
 
 			// then draw all of this shit
 			m_pModel->DrawGroup( nModDescId, j, false );
