@@ -45,9 +45,12 @@ enum EInputActionFlags
 	IN_MISC					= (IN_LOOKLEFT | IN_LOOKRIGHT | IN_CHANGECAM | IN_FORWARD | IN_BACKWARD | IN_LEFT | IN_RIGHT | IN_FREELOOK)
 };
 
-extern int		g_nClientButtons;
-extern float	g_joySteeringValue;
-extern float	g_joyAccelBrakeValue;
+extern int			g_nClientButtons;
+extern float		g_joySteeringValue;
+extern float		g_joyAccelBrakeValue;
+
+extern Vector2D		g_joyFreecamMove;
+extern Vector2D		g_joyFreecamLook;
 
 void ZeroInputControls();
 void RegisterInputJoysticEssentials();

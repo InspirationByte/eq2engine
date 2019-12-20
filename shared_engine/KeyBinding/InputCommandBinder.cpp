@@ -286,11 +286,7 @@ bool CInputCommandBinder::ResolveCommandBinding(in_binding_t* binding)
 	if(	binding->cmd_act || binding->cmd_deact ||
 		binding->boundAction)
 	{
-		if(isJoyAxis)
-		{
-			int axis = s_keyMapList[binding->key_index].keynum-JOYSTICK_START_AXES;
-			m_axisBindings[axis] = binding;
-		}
+
 	}
 	else
 	{
@@ -393,7 +389,6 @@ void CInputCommandBinder::UnbindKey(const char* pszKeyStr)
 			binding->key_index == bindingKeyIndices[2])
 		{
 			delete binding;
-
 			m_bindings.removeIndex(i);
 			i--;
 
@@ -571,14 +566,23 @@ void CInputCommandBinder::OnTouchEvent( const Vector2D& pos, int finger, bool do
 
 void CInputCommandBinder::OnJoyAxisEvent( short axis, short value )
 {
-	if(m_axisBindings.count(axis))
-	{
-		in_binding_t* binding = m_axisBindings.at(axis);
+	int joyAxisCode = axis + JOYSTICK_START_AXES;
+	in_binding_t* axisBinding = nullptr;
 
-		if(binding->boundAction)
-			binding->boundAction->func(value);
-		else
-			ExecuteBinding( binding, (value > 16384));
+	for (int i = 0; i < m_bindings.numElem(); i++)
+	{
+		in_binding_t* binding = m_bindings[i];
+
+		// run through all axes
+		if (binding->mod_index[0] == -1 &&
+			binding->mod_index[1] == -1 &&
+			s_keyMapList[binding->key_index].keynum == joyAxisCode)
+		{
+			if (binding->boundAction)
+				binding->boundAction->func(value);
+			else
+				ExecuteBinding(binding, (abs(value) > 16384));
+		}
 	}
 }
 

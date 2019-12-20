@@ -424,6 +424,14 @@ void Director_UpdateFreeCamera(float fDt)
 	else if(g_freeCamProps.buttons & IN_RIGHT)
 		camMoveVec += r;
 
+	float joyFreecamMultiplier = (g_nClientButtons & IN_FASTSTEER) ? 2.0f : 1.0f;
+
+	camMoveVec += r * g_joyFreecamMove.x;
+	camMoveVec += f * g_joyFreecamMove.y;
+
+	g_freeCamProps.angles.x += g_joyFreecamLook.x * joyFreecamMultiplier;
+	g_freeCamProps.angles.y += g_joyFreecamLook.y * joyFreecamMultiplier;
+
 	g_freeCamProps.velocity += camMoveVec * 200.0f * fDt;
 
 	float camSpeed = length(g_freeCamProps.velocity);

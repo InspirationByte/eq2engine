@@ -491,6 +491,42 @@ bool CState_MainMenu::MapKeysToCurrentAction()
 	return true;
 }
 
+void CState_MainMenu::HandleJoyAxis(short axis, short value)
+{
+	if (m_goesFromMenu)
+		return;
+
+	if (m_menuMode == MENUMODE_INPUT_WAITER)
+	{
+		int joyAxisCode = axis + JOYSTICK_START_AXES;
+
+		bool down = abs(value) > 1000;
+
+		if (down)
+		{
+			// don't add already pressed key
+			int *currKey = m_keysEntered;
+			for (; *currKey; currKey++)
+			{
+				if (*currKey == joyAxisCode)
+					return;
+			}
+
+			m_keysEntered[m_keysPos++] = joyAxisCode;
+			m_keysError = false;
+
+			if (m_keysPos >= 16)
+				ResetKeys();
+		}
+		else if(m_keysPos > 0)
+		{
+			// bind command
+			if (MapKeysToCurrentAction())
+				m_menuMode = MENUMODE_NONE;
+		}
+	}
+}
+
 void CState_MainMenu::HandleKeyPress( int key, bool down )
 {
 	if (m_goesFromMenu)

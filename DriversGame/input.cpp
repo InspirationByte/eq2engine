@@ -17,8 +17,12 @@ ConVar in_joy_accel_linear("in_joy_accel_linear", "1.0", "Joystick acceleration 
 ConVar in_joy_brake_linear("in_joy_brake_linear", "1.0", "Joystick acceleration linearity", CV_ARCHIVE);
 
 int		g_nClientButtons = 0;
+
 float	g_joySteeringValue = 1.0f;
 float	g_joyAccelBrakeValue = 1.0f;
+Vector2D	g_joyFreecamMove(0.0f);
+Vector2D	g_joyFreecamLook(0.0f);
+
 
 void ZeroInputControls()
 {
@@ -27,21 +31,31 @@ void ZeroInputControls()
 	g_joyAccelBrakeValue = 1.0f;
 }
 
-void JoyAction_Steering( short value )
+float RemapInput(float inputValue, float linearity)
 {
-	g_joySteeringValue = float(value) / float(SHRT_MAX);
+	const float value = fabs(inputValue);
+	const float valueSign = sign(inputValue);
 
-	if(fabs(g_joySteeringValue) < in_joy_deadzone.GetFloat())
+	const float minValue = in_joy_deadzone.GetFloat();
+	const float maxValue = minValue + (1.0f - in_joy_deadzone.GetFloat());
+
+	return valueSign * powf(RemapValClamp(value, minValue, maxValue, 0.0f, 1.0f), linearity);
+}
+
+void JoyAction_Steering( short input )
+{
+	const float value = float(input) / float(SHRT_MAX);
+
+	// cutoff
+	if (fabs(value) < in_joy_deadzone.GetFloat())
 	{
 		g_nClientButtons &= ~IN_STEERLEFT;
 		g_nClientButtons &= ~IN_STEERRIGHT;
 		g_nClientButtons &= ~IN_ANALOGSTEER;
-		g_joySteeringValue = 0.0f;
 		return;
 	}
-		
-	g_joySteeringValue = sign(g_joySteeringValue) * pow(fabs(g_joySteeringValue), in_joy_steer_linear.GetFloat());
 
+	g_joySteeringValue = RemapInput(value, in_joy_steer_linear.GetFloat());
 	g_nClientButtons &= ~IN_STEERLEFT;
 
 	if (in_joy_steer_smooth.GetBool())
@@ -56,37 +70,80 @@ void JoyAction_Steering( short value )
 	}
 }
 
-void JoyAction_Accel_Brake( short value )
+void JoyAction_Accel_Brake( short input )
 {
-	g_joyAccelBrakeValue = float(value) / float(SHRT_MAX);
+	const float value = float(input) / float(SHRT_MAX);
 
-	if(fabs(g_joyAccelBrakeValue) < in_joy_deadzone.GetFloat())
+	// cutoff
+	if (fabs(value) < in_joy_deadzone.GetFloat())
 	{
 		g_nClientButtons &= ~IN_BRAKE;
 		g_nClientButtons &= ~IN_ACCELERATE;
-		g_joyAccelBrakeValue = 0.0f;
 		return;
 	}
 
-	if(g_joyAccelBrakeValue > 0)
+	if(value > 0)
 	{
 		g_nClientButtons |= IN_BRAKE;
 		g_nClientButtons &= ~IN_ACCELERATE;
+
+		g_joyAccelBrakeValue = RemapInput(value, in_joy_brake_linear.GetFloat());
 	}
 	else
 	{
 		g_nClientButtons &= ~IN_BRAKE;
 		g_nClientButtons |= IN_ACCELERATE;
-	}
 
-	// post-apply of linearity
-	g_joyAccelBrakeValue = pow(fabs(g_joyAccelBrakeValue), in_joy_accel_linear.GetFloat());
+		g_joyAccelBrakeValue = -RemapInput(value, in_joy_accel_linear.GetFloat());
+	}
+}
+
+void JoyAction_Accel(short input)
+{
+	JoyAction_Accel_Brake(-abs(input));
+}
+
+void JoyAction_Brake(short input)
+{
+	JoyAction_Accel_Brake(abs(input));
+}
+
+void JoyAction_FreeCamMoveForward(short input)
+{
+	const float value = float(input) / float(SHRT_MAX);
+
+	g_joyFreecamMove.y = -RemapInput(value, in_joy_accel_linear.GetFloat());
+}
+
+void JoyAction_FreeCamMoveSideways(short input)
+{
+	const float value = float(input) / float(SHRT_MAX);
+	g_joyFreecamMove.x = RemapInput(value, in_joy_accel_linear.GetFloat());
+}
+
+void JoyAction_FreeCamLookPitch(short input)
+{
+	const float value = float(input) / float(SHRT_MAX);
+	g_joyFreecamLook.x = RemapInput(value, in_joy_steer_linear.GetFloat());
+}
+
+void JoyAction_FreeCamLookYaw(short input)
+{
+	const float value = float(input) / float(SHRT_MAX);
+	g_joyFreecamLook.y = -RemapInput(value, in_joy_steer_linear.GetFloat());
 }
 
 void RegisterInputJoysticEssentials()
 {
 	g_inputCommandBinder->RegisterJoyAxisAction("steering", JoyAction_Steering);
 	g_inputCommandBinder->RegisterJoyAxisAction("accel_brake", JoyAction_Accel_Brake);
+	g_inputCommandBinder->RegisterJoyAxisAction("accel", JoyAction_Accel);
+	g_inputCommandBinder->RegisterJoyAxisAction("brake", JoyAction_Brake);
+
+	g_inputCommandBinder->RegisterJoyAxisAction("freecam_fwd", JoyAction_FreeCamMoveForward);
+	g_inputCommandBinder->RegisterJoyAxisAction("freecam_side", JoyAction_FreeCamMoveSideways);
+	g_inputCommandBinder->RegisterJoyAxisAction("freecam_pitch", JoyAction_FreeCamLookPitch);
+	g_inputCommandBinder->RegisterJoyAxisAction("freecam_yaw", JoyAction_FreeCamLookYaw);
 }
 
 // acceleration

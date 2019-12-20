@@ -37,7 +37,7 @@ public:
 	void		HandleMouseClick( int x, int y, int buttons, bool down );
 	void		HandleMouseWheel(int x, int y, int scroll);
 
-	void		HandleJoyAxis( short axis, short value ) {}
+	void		HandleJoyAxis(short axis, short value);
 
 	void		GetMouseCursorProperties(bool &visible, bool& centered) {visible = true, centered = false;}
 

@@ -18,8 +18,6 @@
 
 #include "math/Vector.h"
 
-#include <map>
-
 // binding
 
 struct axisAction_t;
@@ -153,7 +151,6 @@ protected:
 	DkList<int>						m_currentButtons;	// current keyboard buttons
 
 	DkList<in_binding_t*>			m_bindings;
-	std::map<int, in_binding_t*>	m_axisBindings;
 
 	DkList<in_touchzone_t>			m_touchZones;
 	DkList<axisAction_t>			m_axisActs;
