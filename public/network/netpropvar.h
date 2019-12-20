@@ -224,8 +224,8 @@ struct netprop_t
 	int							flags;		// ENetPropFlags
 	int							type;		// ENetPropTypes
 
-	int							offset;
-	int							size;
+	uint						offset;
+	uint						size;
 
 	struct netvariablemap_t*	nestedMap;
 };

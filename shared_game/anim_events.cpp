@@ -5,6 +5,7 @@
 // Description: Events for animations and AI
 //////////////////////////////////////////////////////////////////////////////////
 
+#include "platform/Platform.h"
 #include "utils/strtools.h"
 #include "anim_events.h"
 

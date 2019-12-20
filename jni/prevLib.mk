@@ -8,6 +8,7 @@ LOCAL_PATH				:= $(SRC_PATH)
 LOCAL_MODULE    		:= prevLib
 LOCAL_MODULE_FILENAME	:= prevLib
 LOCAL_CFLAGS    		:= -DCROSSLINK_LIB -DANDROID -std=c++11 -pthread -fexceptions
+LOCAL_EXPORT_LDLIBS := -lz
 
 LOCAL_C_INCLUDES:= \
 	$(LOCAL_PATH)/public		\
@@ -33,17 +34,18 @@ LOCAL_SRC_FILES := \
 	public/utils/eqstring.cpp\
 	public/utils/Tokenizer.cpp\
 	public/utils/KeyValues.cpp\
+	public/utils/VirtualStream.cpp\
+	public/utils/perlin.cpp\
 	public/math/FVector.cpp\
 	public/math/FixedMath.cpp\
 	public/math/Volume.cpp\
 	public/math/Vector.cpp\
 	public/math/Random.cpp\
-	public/VirtualStream.cpp\
 	public/math/Quaternion.cpp\
 	public/math/QuadTree.cpp\
 	public/math/Matrix.cpp\
 	public/imaging/ImageLoader.cpp
 
-LOCAL_STATIC_LIBRARIES := jpeg png
+LOCAL_STATIC_LIBRARIES := jpeg
 
 include $(BUILD_STATIC_LIBRARY)

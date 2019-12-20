@@ -862,6 +862,9 @@ inline void DkList<T>::shellSort(int (* comparator )(const T &a, const T &b), in
 	}
 }
 
+template< class T >
+inline int partition(T* list, int(*comparator)(const T &elem0, const T &elem1), int p, int r);
+
 // -----------------------------------------------------------------
 // Partition exchange sort
 // -----------------------------------------------------------------

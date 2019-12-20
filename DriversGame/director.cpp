@@ -766,8 +766,8 @@ void Director_Draw( float fDt )
 		else
 		{
 			int cameraType = currentCamera ? currentCamera->type : g_nDirectorCameraType;
-			float fov = currentCamera ? currentCamera->fov : g_freeCamProps.fov;
-			float tilt = currentCamera ? currentCamera->rotation.z : g_freeCamProps.angles.z;
+			float fov = currentCamera ? (float)currentCamera->fov : g_freeCamProps.fov;
+			float tilt = currentCamera ? (float)currentCamera->rotation.z : g_freeCamProps.angles.z;
 
 			cameraPropsStr = varargs(
 				"Free camera: &#FFFF00;%s&;\n\n"

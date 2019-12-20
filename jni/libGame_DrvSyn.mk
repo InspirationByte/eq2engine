@@ -26,16 +26,13 @@ LOCAL_C_INCLUDES:= \
 
 LOCAL_SRC_FILES := \
 	DriversGame/input.cpp\
+	DriversGame/session_base.cpp\
 	DriversGame/game_multiplayer.cpp\
 	DriversGame/game_singleplayer.cpp\
 	DriversGame/heightfield.cpp\
 	DriversGame/level.cpp\
 	DriversGame/levelobject.cpp\
-	DriversGame/object_debris.cpp\
-	DriversGame/object_physics.cpp\
 	DriversGame/eqPhysics/eqBulletIndexedMesh.cpp\
-	DriversGame/StateManager.cpp\
-	DriversGame/car.cpp\
 	DriversGame/eqPhysics/eqCollision_Object.cpp\
 	DriversGame/eqPhysics/eqCollision_ObjectGrid.cpp\
 	DriversGame/eqPhysics/eqPhysics.cpp\
@@ -54,40 +51,54 @@ LOCAL_SRC_FILES := \
 	DriversGame/ui_luaMenu.cpp\
 	DriversGame/world.cpp\
 	DriversGame/region.cpp\
+	DriversGame/GameDefs.cpp\
+	DriversGame/ControllableObject.cpp\
+	DriversGame/car.cpp\
+	DriversGame/pedestrian.cpp\
+	DriversGame/object_debris.cpp\
+	DriversGame/object_physics.cpp\
 	DriversGame/object_scripted.cpp\
 	DriversGame/object_sheets.cpp\
 	DriversGame/object_static.cpp\
 	DriversGame/object_trafficlight.cpp\
 	DriversGame/object_tree.cpp\
+	DriversGame/object_waterflow.cpp\
 	DriversGame/occluderSet.cpp\
 	DriversGame/physics.cpp\
 	DriversGame/predictable_object.cpp\
-	DriversGame/AICarManager.cpp\
+	DriversGame/AIManager.cpp\
 	DriversGame/AITrafficCar.cpp\
 	DriversGame/AIPursuerCar.cpp\
+	DriversGame/AIHandling.cpp\
+	DriversGame/AIHornSequencer.cpp\
 	DriversGame/AIManipulator_CollisionAvoidance.cpp\
 	DriversGame/AIManipulator_Navigation.cpp\
 	DriversGame/AIManipulator_StabilityControl.cpp\
 	DriversGame/AIManipulator_TargetAvoidance.cpp\
+	DriversGame/AIManipulator_TargetChaser.cpp\
+	DriversGame/AIManipulator_Traffic.cpp\
 	DriversGame/BillboardList.cpp\
 	DriversGame/CameraAnimator.cpp\
 	DriversGame/DrvSynHUD.cpp\
+	DriversGame/EqUI_DrvSynTimer.cpp\
+	DriversGame/DrvSynEqUIControls.cpp\
 	DriversGame/EventFSM.cpp\
 	DriversGame/GameObject.cpp\
 	DriversGame/LuaBinding_Drivers.cpp\
 	DriversGame/NetPlayer.cpp\
+	DriversGame/Player.cpp\
 	DriversGame/Rain.cpp\
 	DriversGame/ParticleEffects.cpp\
 	DriversGame/DrvSynDecals.cpp\
 	DriversGame/ShadowRenderer.cpp\
 	DriversGame/ShaderOverrides.cpp\
-	DriversGame/Shader_ShadowBuild.cpp\
 	DriversGame/Shader_Shadow.cpp\
+	DriversGame/Shader_ShadowBuild.cpp\
+	DriversGame/Shader_Skinned.cpp\
+	DriversGame/Shader_Sky.cpp\
 	DriversGame/Shader_StaticObjs.cpp\
 	DriversGame/Shader_VehicleBody.cpp\
-	DriversGame/Shader_Sky.cpp\
 	DriversGame/Shader_Water.cpp\
-	shared_game/GameSoundEmitterSystem.cpp\
 	shared_engine/DebugOverlay.cpp\
 	shared_engine/EGFInstancer.cpp\
 	shared_engine/EffectRender.cpp\
@@ -117,24 +128,30 @@ LOCAL_SRC_FILES := \
 	shared_engine/EqUI/EqUI_Button.cpp\
 	shared_engine/EqUI/EqUI_Image.cpp\
 	shared_engine/EqUI/IEqUI_Control.cpp\
+	shared_engine/sys_host.cpp\
+	shared_engine/sys_window.cpp\
+	shared_engine/sys_main.cpp\
+	shared_engine/sys_in_joystick.cpp\
+	shared_engine/sys_state.cpp\
+	shared_engine/sys_in_console.cpp\
+	shared_game/GameSoundEmitterSystem.cpp\
+	shared_game/anim_activity.cpp\
+	shared_game/anim_events.cpp\
+	shared_game/Animating.cpp\
+	shared_game/BoneSetup.cpp\
 	public/utils/RectanglePacker.cpp\
 	public/luabinding/LuaBinding.cpp\
 	public/luabinding/LuaBinding_Engine.cpp\
 	public/materialsystem/BaseShader.cpp\
 	public/TextureAtlas.cpp\
-	shared_engine/sys_host.cpp\
-	shared_engine/sys_window.cpp\
-	shared_engine/sys_main.cpp\
-	shared_engine/sys_in_console.cpp\
 	src_dependency/SDL2/src/main/android/SDL_android_main.c
 
 LOCAL_SHARED_LIBRARIES := eqCore
 
+# android_native_app_glue\		- EXCLUDED
 LOCAL_STATIC_LIBRARIES := \
-	android_native_app_glue\
 	coreLib prevLib\
 	jpeg\
-	png\
 	oolua\
 	luajit\
 	ogg\

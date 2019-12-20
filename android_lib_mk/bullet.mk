@@ -23,7 +23,6 @@ LOCAL_SRC_FILES := \
 	BulletCollision/BroadphaseCollision/btDbvt.cpp \
 	BulletCollision/BroadphaseCollision/btDbvtBroadphase.cpp \
 	BulletCollision/BroadphaseCollision/btDispatcher.cpp \
-	BulletCollision/BroadphaseCollision/btMultiSapBroadphase.cpp \
 	BulletCollision/BroadphaseCollision/btOverlappingPairCache.cpp \
 	BulletCollision/BroadphaseCollision/btQuantizedBvh.cpp \
 	BulletCollision/BroadphaseCollision/btSimpleBroadphase.cpp \
@@ -77,6 +76,8 @@ LOCAL_SRC_FILES := \
 	BulletCollision/CollisionShapes/btPolyhedralConvexShape.cpp \
 	BulletCollision/CollisionShapes/btScaledBvhTriangleMeshShape.cpp \
 	BulletCollision/CollisionShapes/btShapeHull.cpp \
+	BulletCollision/CollisionShapes/btMiniSDF.cpp \
+	BulletCollision/CollisionShapes/btSdfCollisionShape.cpp \
 	BulletCollision/CollisionShapes/btSphereShape.cpp \
 	BulletCollision/CollisionShapes/btStaticPlaneShape.cpp \
 	BulletCollision/CollisionShapes/btStridingMeshInterface.cpp \

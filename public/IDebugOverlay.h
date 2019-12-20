@@ -48,7 +48,7 @@ struct debugGraphBucket_t
 
 	void Init(const char* name, const ColorRGB &_color, float _maxValue, float _updateTime = 0.0f, bool dynamicScaling = false)
 	{
-		strcpy_s(pszName, name);
+		strcpy(pszName, name);
 		color = _color;
 		maxValue = _maxValue;
 		updateTime = _updateTime;

@@ -115,6 +115,7 @@ extern CUIManager* Manager;
 		}
 #endif // _MSC_VER
 
+
 #define EQUI_FACTORY(name) \
 	s_equi_##name##_f
 

@@ -5,10 +5,16 @@
 // Description: States of Driver Syndicate
 //////////////////////////////////////////////////////////////////////////////////
 
-#include "EqUI_DrvSynTimer.h"
 #include "EqUI/EqUI_Manager.h"
+
+namespace equi {
+	void RegisterDrvSynControls()
+	{
+		EQUI_REGISTER_CONTROL(timer);
+	}
+}
 
 void DrvSyn_RegisterEqUIControls()
 {
-	EQUI_REGISTER_CONTROL(timer);
+	equi::RegisterDrvSynControls();
 }

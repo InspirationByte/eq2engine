@@ -7,11 +7,12 @@
 //				Some things was lovely hardcoded (like m_nLength)//////////////////////////////////////////////////////////////////////////////////
 
 #include "eqwstring.h"
+#include "math/math_common.h"		// min/max
 
 #include <stdio.h>
 #include <malloc.h>
 #include "platform/Platform.h"
-#include "utils/strtools.h"
+#include "strtools.h"
 
 #ifdef PLAT_POSIX
 #include <wchar.h>
@@ -417,7 +418,7 @@ int	EqWString::Find(const wchar_t* pszSub, bool bCaseSensetive, int nStart)
 
 	int nFound = -1;
 
-	wchar_t* strStart = m_pszString+min(nStart,m_nLength);
+	wchar_t* strStart = m_pszString+min((uint16)nStart,m_nLength);
 
 	wchar_t* st = NULL;
 

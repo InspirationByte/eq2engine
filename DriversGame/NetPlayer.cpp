@@ -681,7 +681,7 @@ CNetServerPlayerInfo::CNetServerPlayerInfo( CNetPlayer* player )
 
 	if( player->m_ownCar )
 	{
-		carColorScheme_t& color = player->m_ownCar->GetCarColour();
+		carColorScheme_t color = player->m_ownCar->GetCarColour();
 
 		m_kvs.SetKey("car_name", player->m_ownCar->m_conf->carName.c_str())
 			.SetKey("car_color1", color.col1)

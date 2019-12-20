@@ -137,7 +137,7 @@ struct replayFileCarStream_s
 	replayFileCarStream_s(const replayCarStream_t& rep)
 	{
 		scriptObjectId = rep.scriptObjectId;
-		strcpy_s(name, rep.name.GetData());
+		strcpy(name, rep.name.GetData());
 		numFrames = rep.replayArray.numElem();
 	}
 

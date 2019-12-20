@@ -1,4 +1,4 @@
-LOCAL_PATH := $(SRC_PATH)/src_dependency/Shiny/Shiny
+LOCAL_PATH := $(SRC_PATH)/src_dependency/Shiny
 
 include $(CLEAR_VARS)
 LOCAL_MODULE 		:= Shiny

@@ -9,6 +9,7 @@
 #define VECTOR_INLINE_H
 
 #include "Vector.h"
+#include "stdlib.h"		// for strtol
 
 /* --------------------------------------------------------------------------------- */
 
@@ -703,7 +704,7 @@ inline TVec4D<T> sign(const TVec4D<T> &v)
 template <typename T, typename T2>
 inline T clamp(const T v, const T2 c0, const T2 c1)
 {
-	return min(max(v, c0), c1);
+	return min((T)max((T)v, (T)c0), (T)c1);
 }
 
 template <typename T, typename T2>
@@ -743,9 +744,9 @@ inline TVec4D<T> clamp(const TVec4D<T> &v, const TVec4D<T> &c0, const TVec4D<T> 
 }
 
 template <typename T>
-inline T normalize(const T f)
+inline T normalize(const T v)
 {
-	T invLen = T(1.0) / sqrt(f * f);
+	T invLen = T(1.0) / sqrt(v * v);
 	return v * invLen;
 }
 

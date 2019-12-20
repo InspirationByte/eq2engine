@@ -52,7 +52,7 @@ struct eqUIEventCmd_t
 class IUIControl
 {
 	friend class CUIManager;
-	friend class IEqUIEventHandler;
+	//friend class IEqUIEventHandler;
 
 public:
 	PPMEM_MANAGED_OBJECT();
@@ -144,8 +144,8 @@ public:
 	// rendering
 	virtual void				Render();
 
-	void						Connect(IEqUIEventHandler* handler);
-	void						Disconnect(IEqUIEventHandler* handler);
+	//void						Connect(IEqUIEventHandler* handler);
+	//void						Disconnect(IEqUIEventHandler* handler);
 
 protected:
 	

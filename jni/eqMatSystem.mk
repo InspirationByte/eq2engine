@@ -25,6 +25,7 @@ LOCAL_SRC_FILES := \
 	MaterialSystem/MaterialProxy.cpp	\
 	MaterialSystem/DefaultShader.cpp	\
 	public/materialsystem/BaseShader.cpp	\
+	public/TextureAtlas.cpp\
 
 LOCAL_STATIC_LIBRARIES := coreLib prevLib jpeg eqCore
 

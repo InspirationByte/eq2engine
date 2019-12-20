@@ -1,6 +1,6 @@
 include $(CLEAR_VARS)
 
-LOCAL_PATH := $(SRC_PATH)/src_dependency/libjpeg
+LOCAL_PATH := $(SRC_PATH)/src_dependency/jpeg
 
 LOCAL_MODULE := jpeg
 

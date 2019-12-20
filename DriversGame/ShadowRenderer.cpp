@@ -603,6 +603,7 @@ void CShadowRenderer::RenderShadow(CGameObject* object, ubyte bodyGroups, int mo
 			}
 			else if (mode == RSHADOW_SKIN)
 			{
+#ifndef PLAT_ANDROID
 				CAnimatingEGF* animating = dynamic_cast<CAnimatingEGF*>(object);
 
 				Matrix4x4* bones = animating->GetBoneMatrices();
@@ -615,6 +616,9 @@ void CShadowRenderer::RenderShadow(CGameObject* object, ubyte bodyGroups, int mo
 				model->DrawGroup(nModDescId, j);
 
 				materials->SetSkinningEnabled(false);
+#else
+				MsgWarning("RenderShadow: NOT SUPPORTED for SKINNED\n");
+#endif // PLAT_ANDROID
 			}
 			else
 			{

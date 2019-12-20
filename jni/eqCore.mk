@@ -24,7 +24,6 @@ LOCAL_SRC_FILES := \
 	Core/ConCommandFactory.cpp	\
 	Core/CoreVersion.cpp		\
 	Core/DPKFileReader.cpp		\
-	Core/DPKFileWriter.cpp		\
 	Core/DkCore.cpp				\
 	Core/ExceptionHandler.cpp	\
 	Core/FileSystem.cpp			\

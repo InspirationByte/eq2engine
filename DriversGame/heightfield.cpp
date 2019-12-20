@@ -502,8 +502,8 @@ void CHeightTileField::GetTileTBN(int x, int y, Vector3D& tang, Vector3D& binorm
 	// Working formula with NON-DIAGONAL DIRECTIONS
 	tang = binorm = norm = vec3_zero;
 
-	int dx[] = NEIGHBOR_OFFS_X(x, 1);
-	int dy[] = NEIGHBOR_OFFS_Y(y, 1);
+	int dx[] = NEIGHBOR_OFFS_X(x);
+	int dy[] = NEIGHBOR_OFFS_Y(y);
 
 	hfieldtile_t* tile = GetTile(x,y);
 

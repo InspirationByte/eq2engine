@@ -17,7 +17,6 @@ LOCAL_C_INCLUDES:= \
 
 LOCAL_SRC_FILES := \
 	MaterialSystem/EngineShaders/Shaders/BaseParticle.cpp	\
-	MaterialSystem/EngineShaders/Shaders/BaseSkinned.cpp	\
 	MaterialSystem/EngineShaders/Shaders/BaseUnlit.cpp	\
 	MaterialSystem/EngineShaders/Shaders/BlurFilter.cpp	\
 	MaterialSystem/EngineShaders/Shaders/Error.cpp	\

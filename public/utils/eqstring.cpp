@@ -12,7 +12,7 @@
 #include <stdio.h>
 #include <malloc.h>
 #include "platform/Platform.h"
-#include "utils/strtools.h"
+#include "strtools.h"
 #include "math/math_common.h"
 
 #ifdef PLAT_POSIX
@@ -180,7 +180,7 @@ bool EqString::Resize(uint nSize, bool bCopy)
 		// copy contents to the new buffer
 		if(bCopy && m_nLength && !isSameBaseBuffer)
 		{
-			int minLength = min((uint16)newSize-1, m_nLength);
+			int minLength = min((uint16)(newSize-1), m_nLength);
 
 			strncpy( pszNewBuffer, m_pszString, minLength);
 			pszNewBuffer[minLength] = 0;
@@ -451,7 +451,7 @@ int	EqString::Find(const char* pszSub, bool bCaseSensetive, int nStart) const
 
 	int nFound = -1;
 
-	char* strStart = m_pszString+min(nStart,m_nLength);
+	char* strStart = m_pszString+min((uint16)nStart,m_nLength);
 
 	char *st = NULL;
 

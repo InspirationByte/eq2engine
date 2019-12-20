@@ -659,7 +659,7 @@ inline void CMeshBuilder::CopyVertData(vertdata_t& vert, bool isNormal)
 
 	ubyte* dest = (ubyte*)m_curVertex + vert.offset;
 
-	int size = min(vert.count, 4) * s_attributeSize[vert.format];
+	int size = min((int)vert.count, 4) * s_attributeSize[vert.format];
 
 	switch(vert.format)
 	{

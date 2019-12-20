@@ -8,6 +8,8 @@
 #include "DPKFileReader.h"
 #include "platform/Platform.h"
 
+#include "math/math_common.h"
+
 #ifdef _WIN32
 #define ZLIB_WINAPI
 #endif // _WIN32
@@ -506,8 +508,8 @@ long CDPKFileReader::Seek( DPKFILE *fp, long pos, int seekType )
 		}
 
 		// make it clamped
-		finalOffset = max(finalOffset, fp->info->offset);
-		finalOffset = min(finalOffset, fp->info->offset+fp->info->size);
+		finalOffset = max((uint64)finalOffset, fp->info->offset);
+		finalOffset = min((uint64)finalOffset, fp->info->offset+fp->info->size);
 
 		return fseek(fp->file, finalOffset, seekType);
 	}

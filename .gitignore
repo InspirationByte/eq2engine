@@ -40,15 +40,7 @@ Debug*/
 ipch/
 nbproject/
 gamebin/
-src_dependency/wxWidgets/
-src_dependency/SDL2/
-src_dependency/openal-soft/
-src_dependency/oolua/
-src_dependency/minidx9/
-src_dependency/lua/
-src_dependency/lua_nojit/
-src_dependency/luautf8/
-src_dependency/bullet/
+src_dependency/
 packages/
 utils/driver_level*/
 obj/

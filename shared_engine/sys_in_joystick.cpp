@@ -247,7 +247,7 @@ void CEqGameControllerSDL::ProcessInputEvent(SDL_Event* event)
 				CEqGameControllerSDL& jc = s_controllers[cIndex];
 
 				if (down)
-					jc.m_pressed.insert_or_assign(button, in_joy_repeatDelayInit.GetFloat());
+					jc.m_pressed[button] = in_joy_repeatDelayInit.GetFloat();
 				else
 					jc.m_pressed.erase(button);
 

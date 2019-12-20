@@ -12,6 +12,8 @@
 #include "Animating.h"
 #include "EventFSM.h"
 
+class CPedestrian;
+
 class CPedestrianAI : public CFSM_Base
 {
 	friend class CPedestrian;

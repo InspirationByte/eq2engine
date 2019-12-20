@@ -8,12 +8,12 @@ task ndkBuildRelease(type: Exec) {
     properties.load(project.rootProject.file('local.properties').newDataInputStream())
     def ndkDir = properties.getProperty('ndk.dir', null)
     if (ndkDir == null)
-        throw new GradleException("NDK location not found. Define location with ndk.dir in the local.properties file or with an ANDROID_NDK_ROOT environment variable.")
+        throw new FileNotFoundException("NDK location not found. Define location with ndk.dir in the local.properties file or with an ANDROID_NDK_ROOT environment variable.")
 
     def eqEnginePath = file('../..').absolutePath
     def makefilePath = eqEnginePath + '/jni/Application.mk'
 
-    commandLine "$ndkDir/ndk-build",
+    commandLine "$ndkDir/ndk-build.cmd",
             "NDK_PROJECT_PATH="+eqEnginePath,
             "NDK_APPLICATION_MK="+makefilePath
 }
@@ -28,14 +28,14 @@ tasks.whenTaskAdded { task ->
 
 model {
     android {
-        compileSdkVersion = 23
-        buildToolsVersion = "23.0.2"
+        compileSdkVersion = 26
+        buildToolsVersion = "26.0.3"
 
         defaultConfig.with {
             applicationId = "com.insbyte.driversyndicate"
 
             minSdkVersion.apiLevel = 18
-            targetSdkVersion.apiLevel = 23
+            targetSdkVersion.apiLevel = 26
 
         }
     }

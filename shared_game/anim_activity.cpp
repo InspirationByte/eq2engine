@@ -6,6 +6,7 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "anim_activity.h"
+#include "platform/Platform.h"
 #include "utils/strtools.h"
 
 struct actnamegroup_t
