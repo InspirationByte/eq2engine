@@ -254,7 +254,7 @@ bool CDkCore::Init(const char* pszApplicationName, const char* pszCommandLine)
 	CoreMessage();
 
 	// Инициализировать CPU
-	CEqCPUCaps* cpuCaps = (CEqCPUCaps*)g_cpuCaps.GetInstancePtr();
+	CEqCPUCaps* cpuCaps = (CEqCPUCaps*)g_cpuCaps;//(CEqCPUCaps*)g_cpuCaps.GetInstancePtr();
 	cpuCaps->Init();
 
 	// Initialize time and query perfomance
@@ -267,7 +267,7 @@ bool CDkCore::Init(const char* pszApplicationName, const char* pszCommandLine)
 	g_sysConsole->RegisterCommand(&c_echo);
 
 	// Регистрация некоторых комманд.
-	((CConsoleCommands*)g_sysConsole.GetInstancePtr())->RegisterCommands();
+	((CConsoleCommands*)g_sysConsole)->RegisterCommands();
 
 	c_log_enable = new ConCommand("log_enable",CONCOMMAND_FN(log_enable));
 	c_log_disable = new ConCommand("log_disable",CONCOMMAND_FN(log_disable));
@@ -345,7 +345,7 @@ void CDkCore::Shutdown()
     // Никакого spew'а
     SetSpewFunction(nullspew);
 
-    ((CConsoleCommands*)g_sysConsole.GetInstancePtr())->DeInit();
+    ((CConsoleCommands*)g_sysConsole)->DeInit();
 
     g_cmdLine->DeInit();
 

@@ -105,22 +105,36 @@ private:
 extern CUIManager* Manager;
 };
 
-#ifdef _MSC_VER
-#define DECLARE_EQUI_CONTROL(name, classname) \
-		equi::IUIControl* s_equi_##name##_f() {return new equi::classname();}
-#else
-#define DECLARE_EQUI_CONTROL(name, classname) \
-	namespace equi{\
-		equi::IUIControl* s_equi_##name##_f() {return new equi::classname();} \
-		}
-#endif // _MSC_VER
-
-
 #define EQUI_FACTORY(name) \
 	s_equi_##name##_f
 
 #define EQUI_REGISTER_CONTROL(name)				\
 	extern equi::IUIControl* EQUI_FACTORY(name)();	\
 	equi::Manager->RegisterFactory(#name, EQUI_FACTORY(name))
+
+#ifdef _MSC_VER
+
+#	define EQUI_CONTROL_DECLARATION(name)
+
+#	define DECLARE_EQUI_CONTROL(name, classname) \
+		equi::IUIControl* s_equi_##name##_f() {return new equi::classname();}
+
+#	define EQUI_REGISTER_CONTROL2(name) EQUI_REGISTER_CONTROL(name)
+
+#else	// let's not get doomed by GCC thingy
+#	define EQUI_CONTROL_DECLARATION(name) \
+		namespace equi {\
+			equi::IUIControl* s_equi_##name##_f(); \
+		}
+
+#	define DECLARE_EQUI_CONTROL(name, classname) \
+		namespace equi{\
+			equi::IUIControl* s_equi_##name##_f() {return new equi::classname();} \
+		}
+
+#	define EQUI_REGISTER_CONTROL2(name) \
+		equi::Manager->RegisterFactory(#name, equi::EQUI_FACTORY(name))
+
+#endif // _MSC_VER
 
 #endif // EQUI_MANAGER_H

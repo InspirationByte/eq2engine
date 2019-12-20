@@ -293,6 +293,11 @@ void CFileSystem::Shutdown()
 	g_localizer->Shutdown();
 }
 
+void CFileSystem::SetBasePath(const char* path) 
+{ 
+	m_basePath = path; 
+}
+
 IFile* CFileSystem::Open(const char* filename,const char* options, int searchFlags/* = -1*/ )
 {
     return GetFileHandle(filename,options,searchFlags);
@@ -503,7 +508,8 @@ bool CFileSystem::FileExist(const char* filename, int searchFlags) const
     // not adding basepath to this
     if (flags & SP_ROOT)
     {
-		if (access(pFilePath, F_OK ) != -1)
+		sprintf(tmp_path, "%s%s", basePath.c_str(), pFilePath);
+		if (access(tmp_path, F_OK ) != -1)
 			return true;
     }
 
@@ -686,14 +692,16 @@ IFile* CFileSystem::GetFileHandle(const char* filename,const char* options, int 
     // not adding basepath to this
     if (flags & SP_ROOT)
     {
-        FILE *tmpFile = fopen(pFilePath,options);
-        if (tmpFile)
-        {
+		sprintf(tmp_path, "%s%s", basePath.c_str(), pFilePath);
+
+        FILE *tmpFile = fopen(tmp_path,options);
+		if (tmpFile)
+		{
 			CFile* pFileHandle = new CFile(tmpFile);
 			m_openFiles.append(pFileHandle);
 
 			return pFileHandle;
-        }
+		}
     }
 
     // If failed to load directly, load it from package, in backward order

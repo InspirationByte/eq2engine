@@ -82,7 +82,7 @@ int WINAPI WinMain(HINSTANCE hThisInst, HINSTANCE hLastInst, LPSTR lpszCmdLine, 
 int main(int argc, char** argv)
 {
 #ifdef ANDROID
-	const char* androidStoragePath = "/storage/external_SD/eqengine"; //SDL_AndroidGetInternalStoragePath();
+	const char* androidStoragePath = "/storage/6135-3937/eqengine"; //SDL_AndroidGetInternalStoragePath();
 
 	// preconfigure game base path
 	g_fileSystem->SetBasePath( androidStoragePath );

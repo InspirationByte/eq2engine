@@ -101,7 +101,7 @@ public:
 	//------------------------------------------------------------
 
 	// something like working directory
-	void						SetBasePath(const char* path)	{m_basePath = path;}
+	void						SetBasePath(const char* path);
 	const char*					GetBasePath() const				{return m_basePath.c_str();}
 
     // Returns current game path

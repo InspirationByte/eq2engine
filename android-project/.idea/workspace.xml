@@ -6,55 +6,20 @@
     </shared>
   </component>
   <component name="AndroidLogFilters">
-    <option name="TOOL_WINDOW_CUSTOM_FILTER" value="defa" />
     <option name="TOOL_WINDOW_CONFIGURED_FILTER" value="Show only selected application" />
   </component>
   <component name="ChangeListManager">
     <list default="true" id="c9096593-b4df-4b83-813a-05c2d4299dea" name="Default" comment="">
-      <change afterPath="$PROJECT_DIR$/.idea/codeStyles/Project.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/../.gitignore" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../Core/DPKFileReader.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../Core/DPKFileReader.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../Core/Localize.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../Core/Localize.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Core/DkCore.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../Core/DkCore.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Core/FileSystem.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../Core/FileSystem.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Core/FileSystem.h" beforeDir="false" afterPath="$PROJECT_DIR$/../Core/FileSystem.h" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../DriversGame/DrvSynEqUIControls.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../DriversGame/DrvSynEqUIControls.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../DriversGame/NetPlayer.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../DriversGame/NetPlayer.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../DriversGame/ShadowRenderer.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../DriversGame/ShadowRenderer.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../DriversGame/director.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../DriversGame/director.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../DriversGame/heightfield.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../DriversGame/heightfield.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../DriversGame/pedestrian.h" beforeDir="false" afterPath="$PROJECT_DIR$/../DriversGame/pedestrian.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../DriversGame/replay.h" beforeDir="false" afterPath="$PROJECT_DIR$/../DriversGame/replay.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/gradle.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/gradle.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/android-project.iml" beforeDir="false" afterPath="$PROJECT_DIR$/android-project.iml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/app.iml" beforeDir="false" afterPath="$PROJECT_DIR$/app/app.iml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/build.gradle" beforeDir="false" afterPath="$PROJECT_DIR$/app/build.gradle" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/src/main/java/org/libsdl/app/SDLActivity.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/org/libsdl/app/SDLActivity.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/src/main/res/values/strings.xml" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/res/values/strings.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/build.gradle" beforeDir="false" afterPath="$PROJECT_DIR$/build.gradle" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/local.properties" beforeDir="false" afterPath="$PROJECT_DIR$/local.properties" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../android_lib_mk/Shiny.mk" beforeDir="false" afterPath="$PROJECT_DIR$/../android_lib_mk/Shiny.mk" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../android_lib_mk/bullet.mk" beforeDir="false" afterPath="$PROJECT_DIR$/../android_lib_mk/bullet.mk" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../android_lib_mk/jpeg.mk" beforeDir="false" afterPath="$PROJECT_DIR$/../android_lib_mk/jpeg.mk" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../android_lib_mk/luajit.mk" beforeDir="false" afterPath="$PROJECT_DIR$/../android_lib_mk/luajit.mk" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../jni/Application.mk" beforeDir="false" afterPath="$PROJECT_DIR$/../jni/Application.mk" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../jni/eqBaseShaders.mk" beforeDir="false" afterPath="$PROJECT_DIR$/../jni/eqBaseShaders.mk" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../jni/eqCore.mk" beforeDir="false" afterPath="$PROJECT_DIR$/../jni/eqCore.mk" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../jni/eqMatSystem.mk" beforeDir="false" afterPath="$PROJECT_DIR$/../jni/eqMatSystem.mk" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../jni/libGame_DrvSyn.mk" beforeDir="false" afterPath="$PROJECT_DIR$/../jni/libGame_DrvSyn.mk" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../jni/prevLib.mk" beforeDir="false" afterPath="$PROJECT_DIR$/../jni/prevLib.mk" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../public/IDebugOverlay.h" beforeDir="false" afterPath="$PROJECT_DIR$/../public/IDebugOverlay.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../public/materialsystem/MeshBuilder.h" beforeDir="false" afterPath="$PROJECT_DIR$/../public/materialsystem/MeshBuilder.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../public/math/Vector_Inline.h" beforeDir="false" afterPath="$PROJECT_DIR$/../public/math/Vector_Inline.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../public/network/netpropvar.h" beforeDir="false" afterPath="$PROJECT_DIR$/../public/network/netpropvar.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../public/utils/DkList.h" beforeDir="false" afterPath="$PROJECT_DIR$/../public/utils/DkList.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../public/utils/eqstring.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../public/utils/eqstring.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../public/utils/eqwstring.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../public/utils/eqwstring.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/insbyte/driversyndicate/EqEngineActivity.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/insbyte/driversyndicate/EqEngineActivity.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../public/InterfaceManager.h" beforeDir="false" afterPath="$PROJECT_DIR$/../public/InterfaceManager.h" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../shared_engine/EqUI/EqUI_Manager.h" beforeDir="false" afterPath="$PROJECT_DIR$/../shared_engine/EqUI/EqUI_Manager.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../shared_engine/EqUI/IEqUI_Control.h" beforeDir="false" afterPath="$PROJECT_DIR$/../shared_engine/EqUI/IEqUI_Control.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../shared_engine/FontLayoutBuilders.h" beforeDir="false" afterPath="$PROJECT_DIR$/../shared_engine/FontLayoutBuilders.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../shared_engine/sys_in_joystick.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../shared_engine/sys_in_joystick.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../shared_game/anim_activity.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../shared_game/anim_activity.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../shared_game/anim_events.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../shared_game/anim_events.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../shared_engine/sys_host.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../shared_engine/sys_host.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../shared_engine/sys_main.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../shared_engine/sys_main.cpp" afterDir="false" />
     </list>
     <ignored path="android-project.iws" />
     <ignored path=".idea/workspace.xml" />
@@ -74,6 +39,7 @@
   <component name="DefaultGradleProjectSettings">
     <option name="isMigrated" value="true" />
   </component>
+  <component name="ExecutionTargetManager" SELECTED_TARGET="71a4d18" />
   <component name="ExternalProjectsData">
     <projectState path="$PROJECT_DIR$">
       <ProjectState />
@@ -94,18 +60,18 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/app/src/main/AndroidManifest.xml">
           <provider selected="true" editor-type-id="text-editor">
-            <state>
-              <caret line="27" column="53" selection-start-line="27" selection-start-column="53" selection-end-line="27" selection-end-column="53" />
+            <state relative-caret-position="164">
+              <caret line="29" column="50" lean-forward="true" selection-start-line="29" selection-start-column="50" selection-end-line="29" selection-end-column="50" />
             </state>
           </provider>
           <provider editor-type-id="android-manifest" />
         </entry>
       </file>
-      <file pinned="false" current-in-tab="true">
+      <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/app/build.gradle">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="612">
-              <caret line="36" column="39" lean-forward="true" selection-start-line="36" selection-start-column="39" selection-end-line="36" selection-end-column="39" />
+            <state relative-caret-position="306">
+              <caret line="18" column="1" selection-start-line="18" selection-start-column="1" selection-end-line="18" selection-end-column="1" />
             </state>
           </provider>
         </entry>
@@ -122,8 +88,8 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/app/src/main/java/org/libsdl/app/SDLActivity.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="189">
-              <caret line="1560" selection-start-line="1560" selection-end-line="1560" />
+            <state relative-caret-position="923">
+              <caret line="266" column="34" selection-start-line="266" selection-start-column="34" selection-end-line="266" selection-end-column="34" />
               <folding>
                 <element signature="e#4701#4702#0" expanded="true" />
                 <element signature="e#4734#4735#0" expanded="true" />
@@ -173,20 +139,23 @@
           </provider>
         </entry>
       </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/app/src/main/java/org/libsdl/app/SDLControllerManager.java">
+      <file pinned="false" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/app/src/main/java/com/insbyte/driversyndicate/EqEngineActivity.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="119">
-              <caret line="15" lean-forward="true" selection-start-line="15" selection-end-line="15" />
+            <state relative-caret-position="163">
+              <caret line="15" column="29" lean-forward="true" selection-start-line="15" selection-start-column="29" selection-end-line="15" selection-end-column="29" />
+              <folding>
+                <element signature="imports" expanded="true" />
+              </folding>
             </state>
           </provider>
         </entry>
       </file>
       <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/gradle/wrapper/gradle-wrapper.properties">
+        <entry file="file://$PROJECT_DIR$/app/src/main/java/org/libsdl/app/SDLControllerManager.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="102">
-              <caret line="6" selection-start-line="6" selection-end-line="6" />
+            <state relative-caret-position="-442">
+              <caret line="15" selection-start-line="15" selection-end-line="15" />
             </state>
           </provider>
         </entry>
@@ -209,15 +178,6 @@
           </provider>
         </entry>
       </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/app/src/main/java/com/insbyte/driversyndicate/EqEngineActivity.java">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="221">
-              <caret line="13" selection-start-line="13" selection-end-line="13" />
-            </state>
-          </provider>
-        </entry>
-      </file>
     </leaf>
   </component>
   <component name="FindInProjectRecents">
@@ -227,9 +187,12 @@
       <find>mips64el-linux-android</find>
       <find>ndk</find>
       <find>ndkBuildRelease</find>
-      <find>armeabi</find>
       <find>ambi</find>
+      <find>armeabi</find>
       <find>error:</find>
+      <find>getArguments</find>
+      <find>openg</find>
+      <find>config</find>
     </findStrings>
   </component>
   <component name="Git.Settings">
@@ -238,7 +201,6 @@
   <component name="IdeDocumentHistory">
     <option name="CHANGED_PATHS">
       <list>
-        <option value="$PROJECT_DIR$/app/src/main/java/com/insbyte/driversyndicate/EqEngineActivity.java" />
         <option value="$PROJECT_DIR$/../public/imaging/ImageLoader.cpp" />
         <option value="$PROJECT_DIR$/../MaterialSystem/Renderers/GL/VertexBufferGL.cpp" />
         <option value="$PROJECT_DIR$/../MaterialSystem/Renderers/GL/IndexBufferGL.cpp" />
@@ -252,6 +214,8 @@
         <option value="$PROJECT_DIR$/../jni/libGame_DrvSyn.mk" />
         <option value="$PROJECT_DIR$/app/src/main/java/org/libsdl/app/SDLControllerManager.java" />
         <option value="$PROJECT_DIR$/app/build.gradle" />
+        <option value="D:/USERS_DOCUMENTS/AndroidStudio/DeviceExplorer/xiaomi-redmi_7-71a4d18/storage/6135-3937/eqengine/EQ.CONFIG" />
+        <option value="$PROJECT_DIR$/app/src/main/java/com/insbyte/driversyndicate/EqEngineActivity.java" />
       </list>
     </option>
   </component>
@@ -279,6 +243,11 @@
             <path>
               <item name="android-project" type="1abcf292:AndroidViewProjectNode" />
               <item name="app" type="feadf853:AndroidModuleNode" />
+              <item name="manifests" type="f94875db:AndroidManifestsGroupNode" />
+            </path>
+            <path>
+              <item name="android-project" type="1abcf292:AndroidViewProjectNode" />
+              <item name="app" type="feadf853:AndroidModuleNode" />
               <item name="java" type="edd41e36:AndroidSourceTypeNode" />
             </path>
             <path>
@@ -286,17 +255,6 @@
               <item name="app" type="feadf853:AndroidModuleNode" />
               <item name="java" type="edd41e36:AndroidSourceTypeNode" />
               <item name="driversyndicate" type="cbb59c9e:AndroidPsiDirectoryNode" />
-            </path>
-            <path>
-              <item name="android-project" type="1abcf292:AndroidViewProjectNode" />
-              <item name="app" type="feadf853:AndroidModuleNode" />
-              <item name="java" type="edd41e36:AndroidSourceTypeNode" />
-              <item name="app" type="cbb59c9e:AndroidPsiDirectoryNode" />
-            </path>
-            <path>
-              <item name="android-project" type="1abcf292:AndroidViewProjectNode" />
-              <item name="app" type="feadf853:AndroidModuleNode" />
-              <item name="assets" type="edd41e36:AndroidSourceTypeNode" />
             </path>
             <path>
               <item name="android-project" type="1abcf292:AndroidViewProjectNode" />
@@ -673,7 +631,7 @@
     <frame x="-8" y="-8" width="1936" height="1056" extended-state="6" />
     <editor active="true" />
     <layout>
-      <window_info active="true" content_ui="combo" id="Project" order="0" sideWeight="0.49919224" visible="true" weight="0.17910448" />
+      <window_info content_ui="combo" id="Project" order="0" sideWeight="0.49919224" visible="true" weight="0.17910448" />
       <window_info id="Structure" order="1" weight="0.25" />
       <window_info id="Captures" order="2" side_tool="true" weight="0.25" />
       <window_info id="Build Variants" order="3" sideWeight="0.50080776" side_tool="true" visible="true" weight="0.17910448" />
@@ -684,8 +642,8 @@
       <window_info id="Resources Explorer" order="8" weight="0.32995737" />
       <window_info anchor="bottom" id="Message" order="0" />
       <window_info anchor="bottom" id="Find" order="1" sideWeight="0.48932764" weight="0.32936078" />
-      <window_info anchor="bottom" id="Run" order="2" sideWeight="0.48932764" weight="0.32954547" />
-      <window_info anchor="bottom" id="Debug" order="3" sideWeight="0.47225186" weight="0.39977974" />
+      <window_info anchor="bottom" id="Run" order="2" sideWeight="0.48932764" weight="0.32936078" />
+      <window_info anchor="bottom" id="Debug" order="3" sideWeight="0.47225186" weight="0.39869988" />
       <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
       <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
       <window_info anchor="bottom" id="TODO" order="6" sideWeight="0.4914621" weight="0.32827735" />
@@ -695,9 +653,9 @@
       <window_info anchor="bottom" id="Version Control" order="10" weight="0.32936078" />
       <window_info anchor="bottom" id="Terminal" order="11" sideWeight="0.49359658" weight="0.32936078" />
       <window_info anchor="bottom" id="Messages" order="12" sideWeight="0.36179295" weight="0.32929516" />
-      <window_info anchor="bottom" id="Android Profiler" order="13" show_stripe_button="false" />
-      <window_info anchor="bottom" id="Logcat" order="14" weight="0.32936078" />
-      <window_info anchor="bottom" id="Build" order="15" visible="true" weight="0.32936078" />
+      <window_info anchor="bottom" id="Android Profiler" order="13" />
+      <window_info anchor="bottom" id="Logcat" order="14" visible="true" weight="0.32936078" />
+      <window_info anchor="bottom" id="Build" order="15" weight="0.32936078" />
       <window_info anchor="right" id="Commander" order="0" weight="0.4" />
       <window_info anchor="right" id="Ant Build" order="1" weight="0.25" />
       <window_info anchor="right" content_ui="combo" id="Hierarchy" order="2" weight="0.25" />
@@ -706,7 +664,7 @@
       <window_info anchor="right" id="Android Model" order="5" side_tool="true" />
       <window_info anchor="right" id="Gradle" order="6" />
       <window_info anchor="right" id="Theme Preview" order="7" />
-      <window_info anchor="right" id="Device File Explorer" order="8" side_tool="true" visible="true" weight="0.32995737" />
+      <window_info active="true" anchor="right" id="Device File Explorer" order="8" side_tool="true" visible="true" weight="0.32995737" />
     </layout>
   </component>
   <component name="Vcs.Log.UiProperties">
@@ -813,32 +771,10 @@
     <entry file="file://$PROJECT_DIR$/app/src/main/res/drawable-hdpi/ic_launcher.png">
       <provider selected="true" editor-type-id="images" />
     </entry>
-    <entry file="file://$PROJECT_DIR$/app/src/main/AndroidManifest.xml">
-      <provider editor-type-id="android-manifest" />
-      <provider selected="true" editor-type-id="text-editor">
-        <state>
-          <caret line="27" column="53" selection-start-line="27" selection-start-column="53" selection-end-line="27" selection-end-column="53" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/app/src/main/java/com/insbyte/driversyndicate/EqEngineActivity.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="221">
-          <caret line="13" selection-start-line="13" selection-end-line="13" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/settings.gradle">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="17">
           <caret line="1" selection-start-line="1" selection-end-line="1" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/local.properties">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="119">
-          <caret line="7" column="45" selection-start-line="7" selection-start-column="45" selection-end-line="7" selection-end-column="45" />
         </state>
       </provider>
     </entry>
@@ -856,10 +792,52 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/app/build.gradle">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="306">
+          <caret line="18" column="1" selection-start-line="18" selection-start-column="1" selection-end-line="18" selection-end-column="1" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/local.properties">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="119">
+          <caret line="7" column="45" selection-start-line="7" selection-start-column="45" selection-end-line="7" selection-end-column="45" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/gradle/wrapper/gradle-wrapper.properties">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="102">
+          <caret line="6" selection-start-line="6" selection-end-line="6" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/app/src/main/java/org/libsdl/app/SDLControllerManager.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-442">
+          <caret line="15" selection-start-line="15" selection-end-line="15" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/build.gradle">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="306">
+          <caret line="18" selection-start-line="18" selection-end-line="18" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://D:/USERS_DOCUMENTS/AndroidStudio/DeviceExplorer/xiaomi-redmi_7-71a4d18/storage/6135-3937/eqengine/EQ.CONFIG">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="510">
+          <caret line="30" column="28" lean-forward="true" selection-start-line="30" selection-start-column="28" selection-end-line="30" selection-end-column="28" />
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/app/src/main/java/org/libsdl/app/SDLActivity.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="189">
-          <caret line="1560" selection-start-line="1560" selection-end-line="1560" />
+        <state relative-caret-position="923">
+          <caret line="266" column="34" selection-start-line="266" selection-start-column="34" selection-end-line="266" selection-end-column="34" />
           <folding>
             <element signature="e#4701#4702#0" expanded="true" />
             <element signature="e#4734#4735#0" expanded="true" />
@@ -908,31 +886,21 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/app/src/main/java/org/libsdl/app/SDLControllerManager.java">
+    <entry file="file://$PROJECT_DIR$/app/src/main/AndroidManifest.xml">
+      <provider editor-type-id="android-manifest" />
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="119">
-          <caret line="15" lean-forward="true" selection-start-line="15" selection-end-line="15" />
+        <state relative-caret-position="164">
+          <caret line="29" column="50" lean-forward="true" selection-start-line="29" selection-start-column="50" selection-end-line="29" selection-end-column="50" />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/gradle/wrapper/gradle-wrapper.properties">
+    <entry file="file://$PROJECT_DIR$/app/src/main/java/com/insbyte/driversyndicate/EqEngineActivity.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="102">
-          <caret line="6" selection-start-line="6" selection-end-line="6" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/build.gradle">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="306">
-          <caret line="18" selection-start-line="18" selection-end-line="18" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/app/build.gradle">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="612">
-          <caret line="36" column="39" lean-forward="true" selection-start-line="36" selection-start-column="39" selection-end-line="36" selection-end-column="39" />
+        <state relative-caret-position="163">
+          <caret line="15" column="29" lean-forward="true" selection-start-line="15" selection-start-column="29" selection-end-line="15" selection-end-column="29" />
+          <folding>
+            <element signature="imports" expanded="true" />
+          </folding>
         </state>
       </provider>
     </entry>

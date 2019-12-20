@@ -7,14 +7,9 @@
 
 #include "EqUI/EqUI_Manager.h"
 
-namespace equi {
-	void RegisterDrvSynControls()
-	{
-		EQUI_REGISTER_CONTROL(timer);
-	}
-}
+EQUI_CONTROL_DECLARATION(timer)
 
 void DrvSyn_RegisterEqUIControls()
 {
-	equi::RegisterDrvSynControls();
+	EQUI_REGISTER_CONTROL2(timer);
 }
