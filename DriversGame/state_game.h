@@ -72,6 +72,7 @@ public:
 
 	void		ReplayFastSeek(int tick);
 	void		QuickRestart(bool replay);
+	bool		DoLoadMission();
 
 	bool		IsGameRunning() {return m_isGameRunning;}
 	
@@ -106,8 +107,6 @@ protected:
 
 	Vector3D	GetViewVelocity() const;
 	CCar*		GetViewCar() const;
-
-	bool		DoLoadMission();
 
 	bool		IsMenuActive() const { return m_showMenu && !m_scheduledRestart && !m_exitGame && !m_scheduledQuickReplay; }
 

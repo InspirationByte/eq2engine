@@ -88,6 +88,11 @@ DECLARE_CMD(fastseek, "Seeks to the replay frame. (Visual mistakes are possible)
 	g_State_Game->ReplayFastSeek(replayTo);
 }
 
+DECLARE_CMD(mission_reloadScript, "Reloads mission script", CV_CHEAT)
+{
+	g_State_Game->DoLoadMission();
+}
+
 void Game_InstantReplay()
 {
 	if(g_pGameSession == NULL)
