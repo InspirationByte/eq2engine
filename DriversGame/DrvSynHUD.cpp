@@ -31,7 +31,7 @@ ConVar hud_debug_roadmap("hud_debug_roadmap", "0", NULL, CV_CHEAT);
 
 ConVar hud_show_controls("hud_show_controls", "0", NULL, CV_ARCHIVE);
 
-//ConVar hud_map_pos("hud_map_pos", "0", "Map position (0 - bottom, 1 - top)", CV_ARCHIVE);
+ConVar hud_map_pos("hud_map_pos", "0", "Map position (0 - bottom, 1 - top)", CV_ARCHIVE);
 
 ConVar g_showCameraPosition("g_showCameraPosition", "0", NULL, CV_CHEAT);
 ConVar g_showCarPosition("g_showCarPosition", "0", NULL, CV_CHEAT);
@@ -570,6 +570,16 @@ void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize)
 	materials->SetAmbientColor(ColorRGBA(1,1,1,1));
 	m_hudLayout->SetSize(screenSize);
 
+	if (m_hudMap)
+	{
+		int alignment = m_hudMap->GetAlignment();
+
+		alignment &= ~(equi::UI_ALIGN_TOP | equi::UI_ALIGN_BOTTOM);
+		alignment |= hud_map_pos.GetInt() ? equi::UI_ALIGN_TOP : equi::UI_ALIGN_BOTTOM;
+
+		m_hudMap->SetAlignment(alignment);
+	}
+
 	static IEqFont* roboto10 = g_fontCache->GetFont("Roboto", 10);
 	static IEqFont* roboto30 = g_fontCache->GetFont("Roboto", 30);
 	static IEqFont* roboto30b = g_fontCache->GetFont("Roboto", 30, TEXT_STYLE_BOLD);
@@ -590,7 +600,7 @@ void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize)
 
 	RasterizerStateParams_t raster;
 	raster.scissor = true;
-	raster.cullMode = CULL_FRONT;
+	raster.cullMode = CULL_NONE;
 
 	CMeshBuilder meshBuilder(materials->GetDynamicMesh());
 
@@ -846,11 +856,15 @@ void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize)
 
 			Vertex2D_t mapVerts[] = { MAKETEXQUAD(mapRectangle.vleftTop.x, mapRectangle.vleftTop.y, mapRectangle.vrightBottom.x, mapRectangle.vrightBottom.y, 0) };
 
+			Rectangle_t mapTexCoords(0, 0, 1, 1);
+			if (g_pShaderAPI->GetShaderAPIClass() == SHADERAPI_OPENGL)
+				mapTexCoords.FlipY();
+
 			// draw the map rectangle
 			meshBuilder.Begin(PRIM_TRIANGLES);
 				meshBuilder.Color4f(1, 1, 1, 1);
-				meshBuilder.TexturedQuad2(mapVerts[0].position, mapVerts[1].position, mapVerts[2].position, mapVerts[3].position,
-				mapVerts[0].texCoord, mapVerts[1].texCoord, mapVerts[2].texCoord, mapVerts[3].texCoord);
+					meshBuilder.TexturedQuad2(mapVerts[0].position, mapVerts[2].position, mapVerts[1].position, mapVerts[3].position,
+						mapTexCoords.GetLeftTop(), mapTexCoords.GetRightTop(), mapTexCoords.GetLeftBottom(), mapTexCoords.GetRightBottom());
 			meshBuilder.End();
 
 			materials->SetBlendingStates(additiveBlend);
