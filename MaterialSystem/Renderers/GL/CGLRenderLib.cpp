@@ -791,6 +791,38 @@ bool CGLRenderLib::InitAPI(shaderAPIParams_t& params)
 	if (caps.maxRenderTargets > MAX_MRTS)
 		caps.maxRenderTargets = MAX_MRTS;
 
+	// get texture capabilities
+	{
+		for (int i = FORMAT_R8; i <= FORMAT_RGBA16; i++)
+		{
+			caps.textureFormatsSupported[i] = true;
+			caps.renderTargetFormatsSupported[i] = true;
+		}
+		
+		for (int i = FORMAT_D16; i <= FORMAT_D24S8; i++)
+		{
+			caps.textureFormatsSupported[i] = true;
+			caps.renderTargetFormatsSupported[i] = true;
+		}
+
+		caps.textureFormatsSupported[FORMAT_D32F] = 
+			caps.renderTargetFormatsSupported[FORMAT_D32F] = GLAD_GL_ARB_depth_buffer_float;
+
+		if (GLAD_GL_EXT_texture_compression_s3tc)
+		{
+			for (int i = FORMAT_DXT1; i <= FORMAT_ATI2N; i++)
+				caps.textureFormatsSupported[i] = true;
+
+			caps.textureFormatsSupported[FORMAT_ATI1N] = false;
+		}
+
+#ifdef USE_GLES2
+		for (int i = FORMAT_ETC1; i <= FORMAT_PVRTC_A_4BPP; i++)
+			caps.textureFormatsSupported[i] = true;
+		
+#endif // USE_GLES3
+	}
+
 	GLCheckError("caps check");
 
 	return true;

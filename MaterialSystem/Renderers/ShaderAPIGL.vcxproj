@@ -115,6 +115,10 @@
       <TargetMachine>MachineX86</TargetMachine>
       <FixedBaseAddress>false</FixedBaseAddress>
     </Link>
+    <PostBuildEvent>
+      <Command>cd $(SolutionDir)
+call copy_drvsyn_engine.bat $(ConfigurationName)</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release EGL|Win32'">
     <ClCompile>

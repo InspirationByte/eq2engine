@@ -9,9 +9,7 @@
     <option name="TOOL_WINDOW_CONFIGURED_FILTER" value="Show only selected application" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="c9096593-b4df-4b83-813a-05c2d4299dea" name="Default" comment="">
-      <change beforePath="$PROJECT_DIR$/../MaterialSystem/Renderers/GL/CGLRenderLib.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../MaterialSystem/Renderers/GL/CGLRenderLib.cpp" afterDir="false" />
-    </list>
+    <list default="true" id="c9096593-b4df-4b83-813a-05c2d4299dea" name="Default" comment="" />
     <ignored path="android-project.iws" />
     <ignored path=".idea/workspace.xml" />
     <ignored path="$PROJECT_DIR$/.gradle/" />
@@ -549,7 +547,6 @@
   </component>
   <component name="ToolWindowManager">
     <frame x="-8" y="-8" width="1936" height="1056" extended-state="6" />
-    <editor active="true" />
     <layout>
       <window_info content_ui="combo" id="Project" order="0" sideWeight="0.49596122" visible="true" weight="0.17910448" />
       <window_info id="Structure" order="1" weight="0.25" />
@@ -574,8 +571,8 @@
       <window_info anchor="bottom" id="Terminal" order="11" sideWeight="0.49359658" weight="0.32936078" />
       <window_info anchor="bottom" id="Messages" order="12" sideWeight="0.36179295" weight="0.32929516" />
       <window_info anchor="bottom" id="Android Profiler" order="13" />
-      <window_info anchor="bottom" id="Logcat" order="14" weight="0.32936078" />
-      <window_info active="true" anchor="bottom" id="Build" order="15" visible="true" weight="0.32936078" />
+      <window_info active="true" anchor="bottom" id="Logcat" order="14" visible="true" weight="0.32936078" />
+      <window_info anchor="bottom" id="Build" order="15" weight="0.32936078" />
       <window_info anchor="right" id="Commander" order="0" weight="0.4" />
       <window_info anchor="right" id="Ant Build" order="1" weight="0.25" />
       <window_info anchor="right" content_ui="combo" id="Hierarchy" order="2" weight="0.25" />

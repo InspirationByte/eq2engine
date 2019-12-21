@@ -401,15 +401,15 @@ void CShadowRenderer::RenderShadowCasters()
 
 		shadowDecal.settings = decalSettings;
 
-		if (flipY)
-			shadowRect.FlipY();
-
 		Rectangle_t texCoordRect = shadowRect;
 		texCoordRect.vleftTop *= m_shadowTexelSize;
 		texCoordRect.vrightBottom *= m_shadowTexelSize;
 
 		if (m_invalidateAllDecals || shadowDecal.dirty)
 			shadowDecal.Clear();
+
+		if (flipY)
+			texCoordRect.FlipY();
 
 		// copy over
 		decalPrimitivesRef_t ref = ProjectDecalToSpriteBuilder(shadowDecal, this, texCoordRect, viewProj);

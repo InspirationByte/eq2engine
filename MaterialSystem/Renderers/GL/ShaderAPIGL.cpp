@@ -2636,9 +2636,7 @@ void ShaderAPIGL::SetViewport(int x, int y, int w, int h)
 	// this is actually represents our viewport state
 	m_viewPort = IRectangle(x,y,x+w,y+h);
 
-	IVector2D size = m_viewPort.GetSize();
-
-	glViewport(m_viewPort.vleftTop.x, m_viewPort.vleftTop.y, size.x, size.y);
+	glViewport(x, y, w, h);
 	GLCheckError("set viewport");
 }
 
