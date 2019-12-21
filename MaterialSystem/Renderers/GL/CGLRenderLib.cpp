@@ -287,18 +287,18 @@ GL_CONTEXT CGLRenderLib::GetFreeSharedContext(uintptr_t threadId)
 void CGLRenderLib::ReobtainEGLSurface()
 {
 #ifdef ANDROID
-	eglSurface = (EGLSurface)getEGLSurfaceFunc();
+	//eglSurface = (EGLSurface)getEGLSurfaceFunc();
 #endif // ANDROID
 }
 #endif // USE_GLES2
 
-bool CGLRenderLib::InitAPI( shaderAPIParams_t& params )
+bool CGLRenderLib::InitAPI(shaderAPIParams_t& params)
 {
 #ifdef USE_GLES2
 #ifdef ANDROID
-    externalWindowDisplayParams_t* winParams = (externalWindowDisplayParams_t*)params.windowHandle;
+	externalWindowDisplayParams_t* winParams = (externalWindowDisplayParams_t*)params.windowHandle;
 
-    ASSERT(winParams != NULL);
+	ASSERT(winParams != NULL);
 
 	getEGLSurfaceFunc = (PFNGetEGLSurfaceFromSDL)winParams->paramArray[0];
 	ReobtainEGLSurface();
@@ -315,44 +315,49 @@ bool CGLRenderLib::InitAPI( shaderAPIParams_t& params )
 
 	Msg("Initializing EGL context...\n");
 
-    EGLBoolean bsuccess;
+	EGLBoolean bsuccess;
 
-    // create native window
+	// create native window
 #ifdef ANDROID
-    EGLNativeDisplayType nativeDisplay = EGL_DEFAULT_DISPLAY;
+	EGLNativeDisplayType nativeDisplay = EGL_DEFAULT_DISPLAY;
 #else
 	EGLNativeDisplayType nativeDisplay = (EGLNativeDisplayType)GetDC((HWND)hwnd);
 #endif // #ifdef ANDROID
 
-    // get egl display handle
-    eglDisplay = eglGetDisplay(nativeDisplay);
+	// get egl display handle
+	eglDisplay = eglGetDisplay(nativeDisplay);
 
-    if(eglDisplay == EGL_NO_DISPLAY)
-    {
-        ErrorMsg("OpenGL ES init error: Could not get EGL display (%d)", eglDisplay);
-        return false;
-    }
+	if (eglDisplay == EGL_NO_DISPLAY)
+	{
+		ErrorMsg("OpenGL ES init error: Could not get EGL display (%d)", eglDisplay);
+		return false;
+	}
 
+#ifndef ANDROID
+	// Initialize the display
+	EGLint major = 0;
+	EGLint minor = 0;
+	bsuccess = eglInitialize(eglDisplay, &major, &minor);
+	if (!bsuccess)
+	{
+		ErrorMsg("OpenGL ES init error: Could not initialize EGL display!");
+		return false;
+	}
 
-    // Initialize the display
-    EGLint major = 0;
-    EGLint minor = 0;
-    bsuccess = eglInitialize(eglDisplay, &major, &minor);
-    if (!bsuccess)
-    {
-        ErrorMsg("OpenGL ES init error: Could not initialize EGL display!");
-        return false;
-    }
-    if (major < 1)
-    {
-        // Does not support EGL 1.4
-        ErrorMsg("OpenGL ES init error: System does not support at least EGL 3.0");
-        return false;
-    }
+	MsgInfo("eglInitialize: %d.%d\n", major, minor);
 
-    // Obtain the first configuration with a depth buffer
-    // Obtain the first configuration with a depth buffer
-    EGLint attrs[] = {
+	if (major < 1)
+	{
+		// Does not support EGL 1.0
+		ErrorMsg("OpenGL ES init error: System does not support at least EGL 1.0");
+		return false;
+	}
+#endif // ANDROID
+
+	eglBindAPI(EGL_OPENGL_ES_API);
+
+	// Obtain the first configuration with a depth buffer
+	EGLint attrs[] = {
 		EGL_RENDERABLE_TYPE, EGL_OPENGL_ES3_BIT,
 		EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
 
@@ -365,56 +370,62 @@ bool CGLRenderLib::InitAPI( shaderAPIParams_t& params )
 		EGL_NONE
 	};
 
-    EGLint numConfig =0;
-    bsuccess = eglChooseConfig(eglDisplay, attrs, &eglConfig, 1, &numConfig);
-    if (!bsuccess)
-    {
-        ErrorMsg("OpenGL ES init error: Could not find valid EGL config");
-        return false;
-    }
+	EGLint numConfig = 0;
+	bsuccess = eglChooseConfig(eglDisplay, attrs, &eglConfig, 1, &numConfig);
+	if (!bsuccess)
+	{
+		ErrorMsg("OpenGL ES init error: Could not find valid EGL config");
+		return false;
+	}
 
-    // Get the native visual id
-    int nativeVid;
-    if (!eglGetConfigAttrib(eglDisplay, eglConfig, EGL_NATIVE_VISUAL_ID, &nativeVid))
-    {
-        ErrorMsg("OpenGL ES init error: Could not get native visual id");
-        return false;
-    }
+	// Get the native visual id
+	int nativeVid;
+	if (!eglGetConfigAttrib(eglDisplay, eglConfig, EGL_NATIVE_VISUAL_ID, &nativeVid))
+	{
+		ErrorMsg("OpenGL ES init error: Could not get native visual id");
+		return false;
+	}
 
-    // Create a surface for the main window
-    if(eglSurface == EGL_NO_SURFACE)
-        eglSurface = eglCreateWindowSurface(eglDisplay, eglConfig, hwnd, NULL);
+	// Create a surface for the main window
+	if (eglSurface == EGL_NO_SURFACE)
+		eglSurface = eglCreateWindowSurface(eglDisplay, eglConfig, hwnd, NULL);
 
-    if (eglSurface == EGL_NO_SURFACE)
-    {
-        ErrorMsg("OpenGL ES init error: Could not create EGL surface\n");
-        return false;
-    }
-
-	eglBindAPI(EGL_OPENGL_ES_API);
+	if (eglSurface == EGL_NO_SURFACE)
+	{
+		ErrorMsg("OpenGL ES init error: Could not create EGL surface\n");
+		return false;
+	}
 
 	// context attribute list
-    EGLint contextAttr[] = {
-		EGL_CONTEXT_CLIENT_VERSION, 2,
+	EGLint contextAttr[] = {
+		EGL_CONTEXT_CLIENT_VERSION, 3,
 		EGL_NONE
 	};
 
 	MsgInfo("eglCreateContext...\n");
 
-    // Create two OpenGL ES contexts
-    glContext = eglCreateContext(eglDisplay, eglConfig, EGL_NO_CONTEXT, contextAttr);
-    if (glContext == EGL_NO_CONTEXT)
-    {
-        ErrorMsg("OpenGL ES init error: Could not create EGL context\n");
-        return false;
-    }
+	// Create two OpenGL ES contexts
+	glContext = eglCreateContext(eglDisplay, eglConfig, EGL_NO_CONTEXT, contextAttr);
+	if (glContext == EGL_NO_CONTEXT)
+	{
+		CrashMsg("Could not create EGL context\n");
+		return false;
+	}
+
+	//bool result = eglQueryContext();
 
 	InitSharedContexts();
 
 	ReobtainEGLSurface();
 
+	MsgInfo("DEBUG - eglMakeCurrent: disp=%d surf=%p ctx=%p\n", eglDisplay, eglSurface, glContext);
+
 	// assign to this thread
-	eglMakeCurrent(eglDisplay, eglSurface, eglSurface, glContext);
+	if (!eglMakeCurrent(eglDisplay, eglSurface, eglSurface, glContext))
+	{
+		CrashMsg("eglMakeCurrent - error\n");
+		return false;
+	}
 
 #elif defined(PLAT_WIN)
 
@@ -665,7 +676,7 @@ bool CGLRenderLib::InitAPI( shaderAPIParams_t& params )
 	// load GLES2 GL 3.0 extensions using glad
 	if(!gladLoadGLES2Loader( gladHelperLoaderFunction ))
 	{
-		MsgError("Cannot load OpenGL ES 2.0!\n");
+		ErrorMsg("Cannot load OpenGL ES 2 functionality!\n");
 		return false;
 	}
 #else
@@ -688,6 +699,7 @@ bool CGLRenderLib::InitAPI( shaderAPIParams_t& params )
 		const char* versionStr = (const char *) glGetString(GL_VERSION);
 		Msg("*OpenGL version is: %s\n", versionStr);
 
+#ifndef USE_GLES2
 		const char majorStr[2] = {versionStr[0], '\0'};
 		const char minorStr[2] = {versionStr[2], '\0'};
 
@@ -705,6 +717,9 @@ bool CGLRenderLib::InitAPI( shaderAPIParams_t& params )
 			ErrorMsg("OpenGL 2.x version must be at least 2.1!\n\nPlease update your drivers or hardware.");
 			return false;
 		}
+#else
+		// TODO: VERSION CHECK
+#endif // USE_GLES2
 	}
 
 	m_Renderer = new ShaderAPIGL();

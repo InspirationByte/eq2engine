@@ -151,10 +151,10 @@ IEXPORTS_LAUNCHER void ErrorMsg(const char* fmt, ...)
 	vsnprintf(string, 4096, fmt,argptr);
 	va_end (argptr);
 
-	g_msgBoxCallback(string, MSGBOX_CRASH);
+	g_msgBoxCallback(string, MSGBOX_ERROR);
 
 #ifndef _DKLAUNCHER_
-	MsgError("FATAL ERROR: %s\n", string);
+	MsgError("ERROR: %s\n", string);
 #endif // _DKLAUNCHER_
 }
 
@@ -172,10 +172,10 @@ IEXPORTS_LAUNCHER void CrashMsg(const char* fmt, ...)
 	vsnprintf(string, 4096, fmt,argptr);
 	va_end (argptr);
 
-	g_msgBoxCallback(string, MSGBOX_ERROR);
+	g_msgBoxCallback(string, MSGBOX_CRASH);
 
 #ifndef _DKLAUNCHER_
-	MsgError("ERROR: %s\n", string);
+	MsgError("FATAL ERROR: %s\n", string);
 #endif // _DKLAUNCHER_
 }
 

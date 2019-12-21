@@ -222,6 +222,7 @@ bool CGameHost::InitSystems( EQWNDHANDLE pWindow, bool bWindowed )
 	materials_config.shaderapi_params.windowHandle = &winParams;
 	materials_config.shaderapi_params.windowedMode = false;
 	format = FORMAT_RGB565;
+
 #endif
 
 	materials_config.shaderapi_params.screenFormat = format;
@@ -244,7 +245,7 @@ bool CGameHost::InitSystems( EQWNDHANDLE pWindow, bool bWindowed )
 	g_pShaderAPI = materials->GetShaderAPI();
 
 	materials_config.threadedloader = (g_pShaderAPI->GetShaderAPIClass() != SHADERAPI_OPENGL);
-
+	
 	if (matSystemSettings)
 	{
 		for (int i = 0; i < matSystemSettings->keys.numElem(); i++)

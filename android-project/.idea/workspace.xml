@@ -10,16 +10,14 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="c9096593-b4df-4b83-813a-05c2d4299dea" name="Default" comment="">
-      <change beforePath="$PROJECT_DIR$/../Core/DkCore.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../Core/DkCore.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../Core/FileSystem.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../Core/FileSystem.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../Core/FileSystem.h" beforeDir="false" afterPath="$PROJECT_DIR$/../Core/FileSystem.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../DriversGame/DrvSynEqUIControls.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../DriversGame/DrvSynEqUIControls.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Core/platform/MessageBox.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../Core/platform/MessageBox.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../MaterialSystem/Renderers/GL/CGLRenderLib.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../MaterialSystem/Renderers/GL/CGLRenderLib.cpp" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/src/main/java/com/insbyte/driversyndicate/EqEngineActivity.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/com/insbyte/driversyndicate/EqEngineActivity.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../public/InterfaceManager.h" beforeDir="false" afterPath="$PROJECT_DIR$/../public/InterfaceManager.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../shared_engine/EqUI/EqUI_Manager.h" beforeDir="false" afterPath="$PROJECT_DIR$/../shared_engine/EqUI/EqUI_Manager.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/AndroidManifest.xml" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/AndroidManifest.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/assets/EQ.CONFIG" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/java/org/libsdl/app/SDLActivity.java" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/java/org/libsdl/app/SDLActivity.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../shared_engine/sys_host.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../shared_engine/sys_host.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../shared_engine/sys_main.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../shared_engine/sys_main.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../shared_engine/sys_window.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../shared_engine/sys_window.cpp" afterDir="false" />
     </list>
     <ignored path="android-project.iws" />
     <ignored path=".idea/workspace.xml" />
@@ -57,50 +55,18 @@
   </component>
   <component name="FileEditorManager">
     <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/app/src/main/AndroidManifest.xml">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="164">
-              <caret line="29" column="50" lean-forward="true" selection-start-line="29" selection-start-column="50" selection-end-line="29" selection-end-column="50" />
-            </state>
-          </provider>
-          <provider editor-type-id="android-manifest" />
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/app/build.gradle">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="306">
-              <caret line="18" column="1" selection-start-line="18" selection-start-column="1" selection-end-line="18" selection-end-column="1" />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/build.gradle">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="306">
-              <caret line="18" selection-start-line="18" selection-end-line="18" />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
+      <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/app/src/main/java/org/libsdl/app/SDLActivity.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="923">
-              <caret line="266" column="34" selection-start-line="266" selection-start-column="34" selection-end-line="266" selection-end-column="34" />
+            <state relative-caret-position="111">
+              <caret line="1973" column="13" selection-start-line="1973" selection-start-column="13" selection-end-line="1973" selection-end-column="13" />
               <folding>
                 <element signature="e#4701#4702#0" expanded="true" />
                 <element signature="e#4734#4735#0" expanded="true" />
                 <element signature="e#5982#5983#0" expanded="true" />
                 <element signature="e#6018#6019#0" expanded="true" />
-                <element signature="e#8174#8490#0" expanded="true" />
-                <element signature="e#8489#8490#0" expanded="true" />
                 <element signature="e#14639#14640#0" expanded="true" />
                 <element signature="e#14683#14684#0" expanded="true" />
-                <element signature="e#14798#14947#0" expanded="true" />
-                <element signature="e#14946#14947#0" expanded="true" />
                 <element signature="e#15042#15043#0" expanded="true" />
                 <element signature="e#15079#15080#0" expanded="true" />
                 <element signature="e#18343#18344#0" expanded="true" />
@@ -109,17 +75,6 @@
                 <element signature="e#34299#34300#0" expanded="true" />
                 <element signature="e#37717#37718#0" expanded="true" />
                 <element signature="e#37758#37759#0" expanded="true" />
-                <element signature="e#45682#45821#0" expanded="true" />
-                <element signature="e#45820#45821#0" expanded="true" />
-                <element signature="e#47355#47623#0" expanded="true" />
-                <element signature="e#47622#47623#0" expanded="true" />
-                <element signature="e#48168#48176#0" expanded="true" />
-                <element signature="e#48517#48736#0" expanded="true" />
-                <element signature="e#48735#48736#0" expanded="true" />
-                <element signature="e#50594#51088#0" expanded="true" />
-                <element signature="e#51087#51088#0" expanded="true" />
-                <element signature="e#51166#51722#0" expanded="true" />
-                <element signature="e#51721#51722#0" expanded="true" />
                 <element signature="e#52337#52338#0" expanded="true" />
                 <element signature="e#52396#52397#0" expanded="true" />
                 <element signature="e#52506#52507#0" expanded="true" />
@@ -139,11 +94,11 @@
           </provider>
         </entry>
       </file>
-      <file pinned="false" current-in-tab="true">
+      <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/app/src/main/java/com/insbyte/driversyndicate/EqEngineActivity.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="163">
-              <caret line="15" column="29" lean-forward="true" selection-start-line="15" selection-start-column="29" selection-end-line="15" selection-end-column="29" />
+            <state relative-caret-position="170">
+              <caret line="10" column="53" selection-start-line="10" selection-start-column="29" selection-end-line="10" selection-end-column="53" />
               <folding>
                 <element signature="imports" expanded="true" />
               </folding>
@@ -154,8 +109,8 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/app/src/main/java/org/libsdl/app/SDLControllerManager.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="-442">
-              <caret line="15" selection-start-line="15" selection-end-line="15" />
+            <state relative-caret-position="459">
+              <caret line="62" column="7" selection-start-line="62" selection-start-column="7" selection-end-line="62" selection-end-column="7" />
             </state>
           </provider>
         </entry>
@@ -189,10 +144,11 @@
       <find>ndkBuildRelease</find>
       <find>ambi</find>
       <find>armeabi</find>
-      <find>error:</find>
       <find>getArguments</find>
       <find>openg</find>
       <find>config</find>
+      <find>error:</find>
+      <find>OnconfigurationChanged</find>
     </findStrings>
   </component>
   <component name="Git.Settings">
@@ -214,8 +170,11 @@
         <option value="$PROJECT_DIR$/../jni/libGame_DrvSyn.mk" />
         <option value="$PROJECT_DIR$/app/src/main/java/org/libsdl/app/SDLControllerManager.java" />
         <option value="$PROJECT_DIR$/app/build.gradle" />
-        <option value="D:/USERS_DOCUMENTS/AndroidStudio/DeviceExplorer/xiaomi-redmi_7-71a4d18/storage/6135-3937/eqengine/EQ.CONFIG" />
         <option value="$PROJECT_DIR$/app/src/main/java/com/insbyte/driversyndicate/EqEngineActivity.java" />
+        <option value="$PROJECT_DIR$/app/src/main/AndroidManifest.xml" />
+        <option value="D:/USERS_DOCUMENTS/AndroidStudio/DeviceExplorer/xiaomi-redmi_7-71a4d18/storage/6135-3937/eqengine/EQ.CONFIG" />
+        <option value="D:/USERS_DOCUMENTS/AndroidStudio/DeviceExplorer/xiaomi-redmi_7-71a4d18/storage/6135-3937/eqengine/GameData/cfg/user.cfg" />
+        <option value="$PROJECT_DIR$/app/src/main/java/org/libsdl/app/SDLActivity.java" />
       </list>
     </option>
   </component>
@@ -231,8 +190,6 @@
     </navigator>
     <panes>
       <pane id="PackagesPane" />
-      <pane id="ProjectPane" />
-      <pane id="Scope" />
       <pane id="AndroidView">
         <subPane>
           <expand>
@@ -240,30 +197,12 @@
               <item name="android-project" type="1abcf292:AndroidViewProjectNode" />
               <item name="app" type="feadf853:AndroidModuleNode" />
             </path>
-            <path>
-              <item name="android-project" type="1abcf292:AndroidViewProjectNode" />
-              <item name="app" type="feadf853:AndroidModuleNode" />
-              <item name="manifests" type="f94875db:AndroidManifestsGroupNode" />
-            </path>
-            <path>
-              <item name="android-project" type="1abcf292:AndroidViewProjectNode" />
-              <item name="app" type="feadf853:AndroidModuleNode" />
-              <item name="java" type="edd41e36:AndroidSourceTypeNode" />
-            </path>
-            <path>
-              <item name="android-project" type="1abcf292:AndroidViewProjectNode" />
-              <item name="app" type="feadf853:AndroidModuleNode" />
-              <item name="java" type="edd41e36:AndroidSourceTypeNode" />
-              <item name="driversyndicate" type="cbb59c9e:AndroidPsiDirectoryNode" />
-            </path>
-            <path>
-              <item name="android-project" type="1abcf292:AndroidViewProjectNode" />
-              <item name="Gradle Scripts" type="ae0cef3a:AndroidBuildScriptsGroupNode" />
-            </path>
           </expand>
           <select />
         </subPane>
       </pane>
+      <pane id="Scope" />
+      <pane id="ProjectPane" />
     </panes>
   </component>
   <component name="PropertiesComponent">
@@ -631,10 +570,10 @@
     <frame x="-8" y="-8" width="1936" height="1056" extended-state="6" />
     <editor active="true" />
     <layout>
-      <window_info content_ui="combo" id="Project" order="0" sideWeight="0.49919224" visible="true" weight="0.17910448" />
+      <window_info content_ui="combo" id="Project" order="0" sideWeight="0.49757674" visible="true" weight="0.17910448" />
       <window_info id="Structure" order="1" weight="0.25" />
       <window_info id="Captures" order="2" side_tool="true" weight="0.25" />
-      <window_info id="Build Variants" order="3" sideWeight="0.50080776" side_tool="true" visible="true" weight="0.17910448" />
+      <window_info id="Build Variants" order="3" sideWeight="0.5024233" side_tool="true" visible="true" weight="0.17910448" />
       <window_info id="Favorites" order="4" side_tool="true" />
       <window_info id="Capture Tool" order="5" />
       <window_info id="Palette&#9;" order="6" />
@@ -750,13 +689,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/app/src/main/assets/EQ.CONFIG">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="340">
-          <caret line="20" lean-forward="true" selection-start-line="20" selection-end-line="20" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/app/src/main/res/values/strings.xml">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="51">
@@ -765,18 +697,11 @@
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/app/src/main/res/layout/main.xml">
-      <provider selected="true" editor-type-id="android-designer2" />
       <provider editor-type-id="text-editor" />
+      <provider selected="true" editor-type-id="android-designer2" />
     </entry>
     <entry file="file://$PROJECT_DIR$/app/src/main/res/drawable-hdpi/ic_launcher.png">
       <provider selected="true" editor-type-id="images" />
-    </entry>
-    <entry file="file://$PROJECT_DIR$/settings.gradle">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="17">
-          <caret line="1" selection-start-line="1" selection-end-line="1" />
-        </state>
-      </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/../jni/libGame_DrvSyn.mk">
       <provider selected="true" editor-type-id="text-editor">
@@ -792,31 +717,10 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/app/build.gradle">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="306">
-          <caret line="18" column="1" selection-start-line="18" selection-start-column="1" selection-end-line="18" selection-end-column="1" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/local.properties">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="119">
-          <caret line="7" column="45" selection-start-line="7" selection-start-column="45" selection-end-line="7" selection-end-column="45" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/gradle/wrapper/gradle-wrapper.properties">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="102">
           <caret line="6" selection-start-line="6" selection-end-line="6" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/app/src/main/java/org/libsdl/app/SDLControllerManager.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-442">
-          <caret line="15" selection-start-line="15" selection-end-line="15" />
         </state>
       </provider>
     </entry>
@@ -827,28 +731,83 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://D:/USERS_DOCUMENTS/AndroidStudio/DeviceExplorer/xiaomi-redmi_7-71a4d18/storage/6135-3937/eqengine/EQ.CONFIG">
+    <entry file="file://$PROJECT_DIR$/settings.gradle">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="510">
-          <caret line="30" column="28" lean-forward="true" selection-start-line="30" selection-start-column="28" selection-end-line="30" selection-end-column="28" />
+        <state relative-caret-position="17">
+          <caret line="1" selection-start-line="1" selection-end-line="1" />
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/local.properties">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="119">
+          <caret line="7" column="45" selection-start-line="7" selection-start-column="45" selection-end-line="7" selection-end-column="45" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/app/src/main/java/com/insbyte/driversyndicate/EqEngineActivity.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="170">
+          <caret line="10" column="53" selection-start-line="10" selection-start-column="29" selection-end-line="10" selection-end-column="53" />
+          <folding>
+            <element signature="imports" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/app/build.gradle">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="170">
+          <caret line="10" column="42" selection-start-line="10" selection-start-column="42" selection-end-line="10" selection-end-column="42" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/app/src/main/AndroidManifest.xml">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="337">
+          <caret line="24" column="62" selection-start-line="24" selection-start-column="54" selection-end-line="24" selection-end-column="62" />
+          <folding>
+            <element signature="e#1296#1314#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+      <provider editor-type-id="android-manifest" />
+    </entry>
+    <entry file="file://$PROJECT_DIR$/app/src/main/assets/EQ.CONFIG">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="340">
+          <caret line="20" lean-forward="true" selection-start-line="20" selection-end-line="20" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://D:/USERS_DOCUMENTS/AndroidStudio/DeviceExplorer/xiaomi-redmi_7-71a4d18/storage/6135-3937/eqengine/EQ.CONFIG">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="132">
+          <caret line="39" column="19" lean-forward="true" selection-start-line="39" selection-start-column="19" selection-end-line="39" selection-end-column="19" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/app/src/main/java/org/libsdl/app/SDLControllerManager.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="459">
+          <caret line="62" column="7" selection-start-line="62" selection-start-column="7" selection-end-line="62" selection-end-column="7" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://D:/USERS_DOCUMENTS/AndroidStudio/DeviceExplorer/xiaomi-redmi_7-71a4d18/storage/6135-3937/eqengine/GameData/cfg/user.cfg">
+      <provider selected="true" editor-type-id="text-editor" />
+    </entry>
     <entry file="file://$PROJECT_DIR$/app/src/main/java/org/libsdl/app/SDLActivity.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="923">
-          <caret line="266" column="34" selection-start-line="266" selection-start-column="34" selection-end-line="266" selection-end-column="34" />
+        <state relative-caret-position="111">
+          <caret line="1973" column="13" selection-start-line="1973" selection-start-column="13" selection-end-line="1973" selection-end-column="13" />
           <folding>
             <element signature="e#4701#4702#0" expanded="true" />
             <element signature="e#4734#4735#0" expanded="true" />
             <element signature="e#5982#5983#0" expanded="true" />
             <element signature="e#6018#6019#0" expanded="true" />
-            <element signature="e#8174#8490#0" expanded="true" />
-            <element signature="e#8489#8490#0" expanded="true" />
             <element signature="e#14639#14640#0" expanded="true" />
             <element signature="e#14683#14684#0" expanded="true" />
-            <element signature="e#14798#14947#0" expanded="true" />
-            <element signature="e#14946#14947#0" expanded="true" />
             <element signature="e#15042#15043#0" expanded="true" />
             <element signature="e#15079#15080#0" expanded="true" />
             <element signature="e#18343#18344#0" expanded="true" />
@@ -857,17 +816,6 @@
             <element signature="e#34299#34300#0" expanded="true" />
             <element signature="e#37717#37718#0" expanded="true" />
             <element signature="e#37758#37759#0" expanded="true" />
-            <element signature="e#45682#45821#0" expanded="true" />
-            <element signature="e#45820#45821#0" expanded="true" />
-            <element signature="e#47355#47623#0" expanded="true" />
-            <element signature="e#47622#47623#0" expanded="true" />
-            <element signature="e#48168#48176#0" expanded="true" />
-            <element signature="e#48517#48736#0" expanded="true" />
-            <element signature="e#48735#48736#0" expanded="true" />
-            <element signature="e#50594#51088#0" expanded="true" />
-            <element signature="e#51087#51088#0" expanded="true" />
-            <element signature="e#51166#51722#0" expanded="true" />
-            <element signature="e#51721#51722#0" expanded="true" />
             <element signature="e#52337#52338#0" expanded="true" />
             <element signature="e#52396#52397#0" expanded="true" />
             <element signature="e#52506#52507#0" expanded="true" />
@@ -882,24 +830,6 @@
             <element signature="e#80452#80453#0" expanded="true" />
             <element signature="e#80937#80938#0" expanded="true" />
             <element signature="e#80991#80992#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/app/src/main/AndroidManifest.xml">
-      <provider editor-type-id="android-manifest" />
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="164">
-          <caret line="29" column="50" lean-forward="true" selection-start-line="29" selection-start-column="50" selection-end-line="29" selection-end-column="50" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/app/src/main/java/com/insbyte/driversyndicate/EqEngineActivity.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="163">
-          <caret line="15" column="29" lean-forward="true" selection-start-line="15" selection-start-column="29" selection-end-line="15" selection-end-column="29" />
-          <folding>
-            <element signature="imports" expanded="true" />
           </folding>
         </state>
       </provider>

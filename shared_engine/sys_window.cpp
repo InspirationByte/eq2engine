@@ -115,7 +115,22 @@ EQWNDHANDLE Sys_CreateWindow()
 
 	int sdlFlags = SDL_WINDOW_SHOWN;
 
-	if(isWindowed)
+#ifdef ANDROID
+	nAdjustedPosX = nAdjustedPosY = SDL_WINDOWPOS_UNDEFINED;
+
+	//Get device display mode
+	SDL_DisplayMode displayMode;
+	if (SDL_GetCurrentDisplayMode(0, &displayMode) == 0)
+	{
+		nAdjustedWide = displayMode.w;
+		nAdjustedTall = displayMode.h;
+	}
+
+	// HACK: use SDL_WINDOW_VULKAN to ensure that SDL will not create EGL surface
+	sdlFlags |= SDL_WINDOW_VULKAN | SDL_WINDOW_FULLSCREEN;
+#else
+
+	if (isWindowed)
 	{
 		sdlFlags |= SDL_WINDOW_RESIZABLE;
 	}
@@ -123,7 +138,8 @@ EQWNDHANDLE Sys_CreateWindow()
 	{
 		sdlFlags |= SDL_WINDOW_FULLSCREEN | SDL_WINDOW_BORDERLESS;
 	}
-
+#endif // ANDROID
+	
 	handle = SDL_CreateWindow(DEFAULT_WINDOW_TITLE, nAdjustedPosX, nAdjustedPosY, nAdjustedWide, nAdjustedTall, sdlFlags);
 
 	if(handle == NULL)
@@ -131,22 +147,7 @@ EQWNDHANDLE Sys_CreateWindow()
 		ErrorMsg("Can't create window!\n%s\n",SDL_GetError());
 		return NULL;
 	}
-	/*
-#ifdef _WIN32
-	SDL_SysWMinfo wminfo;
-	SDL_VERSION(&wminfo.version)
-	if (SDL_GetWindowWMInfo(handle, &wminfo) == 0)
-	{
-		HINSTANCE modHandle = ::GetModuleHandle(NULL);
-		HICON icon = ::LoadIcon(modHandle, MAKEINTRESOURCE(IDI_MAINICON));
 
-		::SetClassLong(wminfo.info.win.window, GCL_HICON, (LONG) icon);
-	}
-#else
-
-	//SDL_Surface* icon = IMG_Load("drvsyn_icon.png");
-#endif // _WIN32
-*/
 #endif // PLAT_SDL
 
 	Msg("Created render window, %dx%d\n", nAdjustedWide, nAdjustedTall);
