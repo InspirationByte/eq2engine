@@ -705,6 +705,7 @@ void CGameWorld::Init()
 		vfmtBuilder.DisableComponent(0, "binormal");
 
 		vfmtBuilder.SetStream(1, g_EGFHwVertexFormat, elementsOf(g_EGFHwVertexFormat), "damaged");
+		vfmtBuilder.DisableComponent(1, "texcoord");
 		vfmtBuilder.DisableComponent(1, "tangent");
 		vfmtBuilder.DisableComponent(1, "binormal");
 		vfmtBuilder.DisableComponent(1, "boneid");

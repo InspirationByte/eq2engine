@@ -1637,7 +1637,8 @@ void ShaderAPIGL::ChangeVertexBuffer(IVertexBuffer* pVertexBuffer, int nStream, 
 
 	bool instanceBuffer = (nStream > 0) && pVB != NULL && (pVB->GetFlags() & VERTBUFFER_FLAG_INSTANCEDATA);
 
-	if (pVB != m_pCurrentVertexBuffers[nStream] || offset != m_nCurrentOffsets[nStream] || m_pCurrentVertexFormat != m_pActiveVertexFormat[nStream])
+	// should be always rebound
+	if (pVB != m_pCurrentVertexBuffers[nStream] || offset != m_nCurrentOffsets[nStream])
 	{
 		bool boundHere = false;
 	
@@ -1668,7 +1669,7 @@ void ShaderAPIGL::ChangeVertexBuffer(IVertexBuffer* pVertexBuffer, int nStream, 
 					glEnableVertexAttribArray(i);
 					GLCheckError("enable vtx attrib");
 
-					glVertexAttribPointer(i, attrib.sizeInBytes, glTypes[attrib.attribFormat], GL_TRUE, vertexSize, base + attrib.offsetInBytes);
+					glVertexAttribPointer(i, attrib.sizeInBytes, glTypes[attrib.attribFormat], GL_FALSE, vertexSize, base + attrib.offsetInBytes);
 					GLCheckError("attribpointer"); 
 
 					// instance vertex attrib divisor
@@ -1884,7 +1885,6 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 
 		if(!GLCheckError("create vertex shader"))
 		{
-
 			return false;
 		}
 
