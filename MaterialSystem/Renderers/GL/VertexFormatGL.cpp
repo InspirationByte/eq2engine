@@ -34,12 +34,13 @@ CVertexFormatGL::CVertexFormatGL(VertexFormatDesc_t* desc, int numAttribs)
 				case VERTEXATTRIB_NORMAL:
 				case VERTEXATTRIB_TEXCOORD:
 				case VERTEXATTRIB_COLOR:
-				case VERTEXATTRIB_UNUSED:
-					m_genericAttribs[nGeneric].streamId = stream;
-					m_genericAttribs[nGeneric].sizeInBytes   = m_vertexDesc[i].elemCount;
-					m_genericAttribs[nGeneric].offsetInBytes = m_streamStride[stream];
-					m_genericAttribs[nGeneric].attribFormat = m_vertexDesc[i].attribFormat;
+					m_genericAttribs[nGeneric].streamId			= stream;
+					m_genericAttribs[nGeneric].sizeInBytes		= m_vertexDesc[i].elemCount;
+					m_genericAttribs[nGeneric].offsetInBytes	= m_streamStride[stream];
+					m_genericAttribs[nGeneric].attribFormat		= m_vertexDesc[i].attribFormat;
 					nGeneric++;
+					break;
+				case VERTEXATTRIB_UNUSED:
 					break;
 			}
 

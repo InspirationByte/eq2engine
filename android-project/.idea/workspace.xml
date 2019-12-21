@@ -9,7 +9,9 @@
     <option name="TOOL_WINDOW_CONFIGURED_FILTER" value="Show only selected application" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="c9096593-b4df-4b83-813a-05c2d4299dea" name="Default" comment="" />
+    <list default="true" id="c9096593-b4df-4b83-813a-05c2d4299dea" name="Default" comment="">
+      <change beforePath="$PROJECT_DIR$/../MaterialSystem/Renderers/GL/ShaderAPIGL.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../MaterialSystem/Renderers/GL/ShaderAPIGL.cpp" afterDir="false" />
+    </list>
     <ignored path="android-project.iws" />
     <ignored path=".idea/workspace.xml" />
     <ignored path="$PROJECT_DIR$/.gradle/" />
@@ -132,12 +134,12 @@
       <find>getArguments</find>
       <find>openg</find>
       <find>config</find>
-      <find>error:</find>
       <find>OnconfigurationChanged</find>
       <find>surfaceChanged</find>
       <find>Detaching surface</find>
       <find>surfaceDestroyed</find>
       <find>onNativeSurfaceDestroyed</find>
+      <find>error:</find>
     </findStrings>
   </component>
   <component name="Git.Settings">
@@ -178,9 +180,9 @@
       <foldersAlwaysOnTop value="true" />
     </navigator>
     <panes>
-      <pane id="AndroidView" />
-      <pane id="ProjectPane" />
       <pane id="PackagesPane" />
+      <pane id="ProjectPane" />
+      <pane id="AndroidView" />
       <pane id="Scope" />
     </panes>
   </component>
@@ -547,11 +549,12 @@
   </component>
   <component name="ToolWindowManager">
     <frame x="-8" y="-8" width="1936" height="1056" extended-state="6" />
+    <editor active="true" />
     <layout>
-      <window_info content_ui="combo" id="Project" order="0" sideWeight="0.49596122" visible="true" weight="0.17910448" />
+      <window_info content_ui="combo" id="Project" order="0" sideWeight="0.49434572" visible="true" weight="0.17910448" />
       <window_info id="Structure" order="1" weight="0.25" />
       <window_info id="Captures" order="2" side_tool="true" weight="0.25" />
-      <window_info id="Build Variants" order="3" sideWeight="0.50403875" side_tool="true" visible="true" weight="0.17910448" />
+      <window_info id="Build Variants" order="3" sideWeight="0.5056543" side_tool="true" visible="true" weight="0.17910448" />
       <window_info id="Favorites" order="4" side_tool="true" />
       <window_info id="Capture Tool" order="5" />
       <window_info id="Palette&#9;" order="6" />
@@ -571,8 +574,8 @@
       <window_info anchor="bottom" id="Terminal" order="11" sideWeight="0.49359658" weight="0.32936078" />
       <window_info anchor="bottom" id="Messages" order="12" sideWeight="0.36179295" weight="0.32929516" />
       <window_info anchor="bottom" id="Android Profiler" order="13" />
-      <window_info active="true" anchor="bottom" id="Logcat" order="14" visible="true" weight="0.32936078" />
-      <window_info anchor="bottom" id="Build" order="15" weight="0.32936078" />
+      <window_info anchor="bottom" id="Logcat" order="14" weight="0.32936078" />
+      <window_info active="true" anchor="bottom" id="Build" order="15" visible="true" weight="0.32936078" />
       <window_info anchor="right" id="Commander" order="0" weight="0.4" />
       <window_info anchor="right" id="Ant Build" order="1" weight="0.25" />
       <window_info anchor="right" content_ui="combo" id="Hierarchy" order="2" weight="0.25" />
@@ -675,8 +678,8 @@
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/app/src/main/res/layout/main.xml">
-      <provider selected="true" editor-type-id="android-designer2" />
       <provider editor-type-id="text-editor" />
+      <provider selected="true" editor-type-id="android-designer2" />
     </entry>
     <entry file="file://$PROJECT_DIR$/app/src/main/res/drawable-hdpi/ic_launcher.png">
       <provider selected="true" editor-type-id="images" />
@@ -717,7 +720,6 @@
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/app/src/main/AndroidManifest.xml">
-      <provider editor-type-id="android-manifest" />
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="337">
           <caret line="24" column="62" selection-start-line="24" selection-start-column="54" selection-end-line="24" selection-end-column="62" />
@@ -726,6 +728,7 @@
           </folding>
         </state>
       </provider>
+      <provider editor-type-id="android-manifest" />
     </entry>
     <entry file="file://$PROJECT_DIR$/app/src/main/assets/EQ.CONFIG" />
     <entry file="file://D:/USERS_DOCUMENTS/AndroidStudio/DeviceExplorer/xiaomi-redmi_7-71a4d18/storage/6135-3937/eqengine/EQ.CONFIG" />

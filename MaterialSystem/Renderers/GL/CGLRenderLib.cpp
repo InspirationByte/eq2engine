@@ -804,7 +804,7 @@ bool CGLRenderLib::InitAPI(shaderAPIParams_t& params)
 			caps.textureFormatsSupported[i] = true;
 			caps.renderTargetFormatsSupported[i] = true;
 		}
-
+#ifndef USE_GLES2
 		caps.textureFormatsSupported[FORMAT_D32F] = 
 			caps.renderTargetFormatsSupported[FORMAT_D32F] = GLAD_GL_ARB_depth_buffer_float;
 
@@ -815,6 +815,7 @@ bool CGLRenderLib::InitAPI(shaderAPIParams_t& params)
 
 			caps.textureFormatsSupported[FORMAT_ATI1N] = false;
 		}
+#endif // USE_GLES2
 
 #ifdef USE_GLES2
 		for (int i = FORMAT_ETC1; i <= FORMAT_PVRTC_A_4BPP; i++)

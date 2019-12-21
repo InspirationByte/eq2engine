@@ -1589,28 +1589,22 @@ void ShaderAPIGL::ChangeVertexFormat(IVertexFormat* pVertexFormat)
 			eqGLVertAttrDesc_t& selDesc = pSelectedFormat->m_genericAttribs[i];
 			eqGLVertAttrDesc_t& curDesc = pCurrentFormat->m_genericAttribs[i];
 
-			// CVertexBufferGL* glVB = (CVertexBufferGL*)m_pCurrentVertexBuffers[selDesc.streamId];
-
 			bool shouldDisable = !selDesc.sizeInBytes && curDesc.sizeInBytes;
 			bool shouldEnable = selDesc.sizeInBytes && !curDesc.sizeInBytes;
-
-			//if(glVB && (shouldEnable || shouldDisable))
-			//	glBindBuffer(GL_ARRAY_BUFFER, glVB->m_nGL_VB_Index);
 
 			if (shouldDisable)
 			{
 				glDisableVertexAttribArray(i);
 				GLCheckError("disable vtx attrib");
-			}
 
-			if(shouldEnable)
+				glVertexAttribDivisorARB(i, 0);
+				GLCheckError("divisor");
+			}
+			/*else if(shouldEnable)
 			{
 				glEnableVertexAttribArray(i);
 				GLCheckError("enable vtx attrib");
-			}
-
-			//if(glVB && (shouldEnable || shouldDisable))
-			//	glBindBuffer(GL_ARRAY_BUFFER, 0);
+			}*/
 		}
 
 		m_pCurrentVertexFormat = pVertexFormat;
@@ -1670,6 +1664,10 @@ void ShaderAPIGL::ChangeVertexBuffer(IVertexBuffer* pVertexBuffer, int nStream, 
 
 				if(attrib.sizeInBytes)
 				{
+					// enable this attribute first
+					glEnableVertexAttribArray(i);
+					GLCheckError("enable vtx attrib");
+
 					glVertexAttribPointer(i, attrib.sizeInBytes, glTypes[attrib.attribFormat], GL_TRUE, vertexSize, base + attrib.offsetInBytes);
 					GLCheckError("attribpointer"); 
 
