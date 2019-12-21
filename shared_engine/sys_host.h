@@ -42,6 +42,7 @@ public:
 	void				SignalPause();
 
 	void				OnWindowResize(int width, int height);
+	void				OnFocusChanged(bool inFocus);
 
 	void				ProcessKeyChar( int chr );
 	void				TrapKey_Event( int key, bool down );

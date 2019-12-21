@@ -396,6 +396,12 @@ void CD3DRenderLib::SetBackbufferSize(const int w, const int h)
 	}
 }
 
+// reports focus state
+void CD3DRenderLib::SetFocused(bool inFocus)
+{
+
+}
+
 bool CD3DRenderLib::CaptureScreenshot(CImage& img)
 {
 	/*

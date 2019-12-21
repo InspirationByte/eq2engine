@@ -58,6 +58,7 @@ public:
 	bool					InitAPI( shaderAPIParams_t &params );
 	void					ExitAPI();
 	void					ReleaseSwapChains();
+	void					ReleaseSurface();
 
 	// frame begin/end
 	void					BeginFrame();
@@ -68,6 +69,9 @@ public:
 
 	// sets backbuffer size for default swap chain
 	void					SetBackbufferSize(int w, int h);
+
+	// reports focus state
+	void					SetFocused(bool inFocus);
 
 	// captures screenshot, outputs image to 'img'
 	bool					CaptureScreenshot(CImage &img);
@@ -103,10 +107,7 @@ protected:
 
 	EGLConfig				eglConfig;
 
-	void					ReobtainEGLSurface();
-
 #ifdef ANDROID
-	PFNGetEGLSurfaceFromSDL	getEGLSurfaceFunc;
 	bool					lostSurface;
 #endif // ANDROID
 

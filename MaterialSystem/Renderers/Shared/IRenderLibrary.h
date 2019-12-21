@@ -14,7 +14,7 @@
 
 #include "InterfaceManager.h"
 
-#define RENDERER_INTERFACE_VERSION	"DkRenderer_009"
+#define RENDERER_INTERFACE_VERSION	"DkRenderer_010"
 
 class IRenderLibrary : public ICoreModuleInterface
 {
@@ -34,6 +34,9 @@ public:
 
 	// sets backbuffer size for default swap chain
 	virtual void			SetBackbufferSize(int w, int h) = 0;
+
+	// reports focus state
+	virtual void			SetFocused(bool inFocus) = 0;
 
 	// captures screenshot, outputs image to 'img'
 	virtual	bool			CaptureScreenshot(CImage &img) = 0;

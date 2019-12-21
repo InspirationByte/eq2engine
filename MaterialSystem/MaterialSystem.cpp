@@ -1082,6 +1082,13 @@ void CMaterialSystem::SetDeviceBackbufferSize(int wide, int tall)
 		m_renderLibrary->SetBackbufferSize(wide, tall);
 }
 
+// reports device focus mode
+void CMaterialSystem::SetDeviceFocused(bool inFocus)
+{
+	if (m_renderLibrary)
+		m_renderLibrary->SetFocused(inFocus);
+}
+
 IEqSwapChain* CMaterialSystem::CreateSwapChain(void* windowHandle)
 {
 	if(m_renderLibrary)

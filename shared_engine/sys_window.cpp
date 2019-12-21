@@ -119,11 +119,11 @@ EQWNDHANDLE Sys_CreateWindow()
 	nAdjustedPosX = nAdjustedPosY = SDL_WINDOWPOS_UNDEFINED;
 
 	//Get device display mode
-	SDL_DisplayMode displayMode;
-	if (SDL_GetCurrentDisplayMode(0, &displayMode) == 0)
+	SDL_Rect displayRect;
+	if (SDL_GetDisplayBounds(0, &displayRect) == 0)
 	{
-		nAdjustedWide = displayMode.w;
-		nAdjustedTall = displayMode.h;
+		nAdjustedWide = displayRect.w;
+		nAdjustedTall = displayRect.h;
 	}
 
 	// HACK: use SDL_WINDOW_VULKAN to ensure that SDL will not create EGL surface
@@ -187,10 +187,12 @@ void EQHandleSDLEvents(SDL_Event* event)
 			}
 			else if(event->window.event == SDL_WINDOWEVENT_FOCUS_GAINED)
 			{
+				g_pHost->OnFocusChanged(true);
 				s_bActive = true;
 			}
 			else if(event->window.event == SDL_WINDOWEVENT_FOCUS_LOST)
 			{
+				g_pHost->OnFocusChanged(false);
 				s_bActive = false;
 			}
 

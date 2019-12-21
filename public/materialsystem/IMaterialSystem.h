@@ -418,6 +418,9 @@ public:
 	// resizes device back buffer. Must be called if window resized, etc
 	virtual void							SetDeviceBackbufferSize(int wide, int tall) = 0;
 
+	// reports device focus mode
+	virtual void							SetDeviceFocused(bool inFocus) = 0;
+
 	// creates additional swap chain
 	virtual IEqSwapChain*					CreateSwapChain(void* windowHandle) = 0;
 	virtual void							DestroySwapChain(IEqSwapChain* chain) = 0;

@@ -9,7 +9,9 @@
     <option name="TOOL_WINDOW_CONFIGURED_FILTER" value="Show only selected application" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="c9096593-b4df-4b83-813a-05c2d4299dea" name="Default" comment="" />
+    <list default="true" id="c9096593-b4df-4b83-813a-05c2d4299dea" name="Default" comment="">
+      <change beforePath="$PROJECT_DIR$/../MaterialSystem/Renderers/GL/CGLRenderLib.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../MaterialSystem/Renderers/GL/CGLRenderLib.cpp" afterDir="false" />
+    </list>
     <ignored path="android-project.iws" />
     <ignored path=".idea/workspace.xml" />
     <ignored path="$PROJECT_DIR$/.gradle/" />
@@ -49,8 +51,8 @@
       <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/app/src/main/java/org/libsdl/app/SDLActivity.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="1981">
-              <caret line="1693" column="25" lean-forward="true" selection-start-line="1693" selection-start-column="25" selection-end-line="1693" selection-end-column="25" />
+            <state relative-caret-position="179">
+              <caret line="774" column="40" selection-start-line="774" selection-start-column="40" selection-end-line="774" selection-end-column="40" />
               <folding>
                 <element signature="e#4701#4702#0" expanded="true" />
                 <element signature="e#4734#4735#0" expanded="true" />
@@ -74,12 +76,6 @@
                 <element signature="e#58194#58195#0" expanded="true" />
                 <element signature="e#58487#58488#0" expanded="true" />
                 <element signature="e#58534#58535#0" expanded="true" />
-                <element signature="e#74688#74689#0" expanded="true" />
-                <element signature="e#74715#74716#0" expanded="true" />
-                <element signature="e#80412#80413#0" expanded="true" />
-                <element signature="e#80452#80453#0" expanded="true" />
-                <element signature="e#80937#80938#0" expanded="true" />
-                <element signature="e#80991#80992#0" expanded="true" />
               </folding>
             </state>
           </provider>
@@ -88,7 +84,7 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/app/src/main/java/com/insbyte/driversyndicate/EqEngineActivity.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="170">
+            <state relative-caret-position="153">
               <caret line="10" column="53" selection-start-line="10" selection-start-column="29" selection-end-line="10" selection-end-column="53" />
               <folding>
                 <element signature="imports" expanded="true" />
@@ -100,7 +96,7 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/app/src/main/java/org/libsdl/app/SDLControllerManager.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="459">
+            <state relative-caret-position="918">
               <caret line="62" column="7" selection-start-line="62" selection-start-column="7" selection-end-line="62" selection-end-column="7" />
             </state>
           </provider>
@@ -141,6 +137,9 @@
       <find>error:</find>
       <find>OnconfigurationChanged</find>
       <find>surfaceChanged</find>
+      <find>Detaching surface</find>
+      <find>surfaceDestroyed</find>
+      <find>onNativeSurfaceDestroyed</find>
     </findStrings>
   </component>
   <component name="Git.Settings">
@@ -181,20 +180,10 @@
       <foldersAlwaysOnTop value="true" />
     </navigator>
     <panes>
-      <pane id="PackagesPane" />
-      <pane id="AndroidView">
-        <subPane>
-          <expand>
-            <path>
-              <item name="android-project" type="1abcf292:AndroidViewProjectNode" />
-              <item name="app" type="feadf853:AndroidModuleNode" />
-            </path>
-          </expand>
-          <select />
-        </subPane>
-      </pane>
-      <pane id="Scope" />
+      <pane id="AndroidView" />
       <pane id="ProjectPane" />
+      <pane id="PackagesPane" />
+      <pane id="Scope" />
     </panes>
   </component>
   <component name="PropertiesComponent">
@@ -560,11 +549,12 @@
   </component>
   <component name="ToolWindowManager">
     <frame x="-8" y="-8" width="1936" height="1056" extended-state="6" />
+    <editor active="true" />
     <layout>
-      <window_info content_ui="combo" id="Project" order="0" sideWeight="0.49757674" visible="true" weight="0.17910448" />
+      <window_info content_ui="combo" id="Project" order="0" sideWeight="0.49596122" visible="true" weight="0.17910448" />
       <window_info id="Structure" order="1" weight="0.25" />
       <window_info id="Captures" order="2" side_tool="true" weight="0.25" />
-      <window_info id="Build Variants" order="3" sideWeight="0.5024233" side_tool="true" visible="true" weight="0.17910448" />
+      <window_info id="Build Variants" order="3" sideWeight="0.50403875" side_tool="true" visible="true" weight="0.17910448" />
       <window_info id="Favorites" order="4" side_tool="true" />
       <window_info id="Capture Tool" order="5" />
       <window_info id="Palette&#9;" order="6" />
@@ -584,8 +574,8 @@
       <window_info anchor="bottom" id="Terminal" order="11" sideWeight="0.49359658" weight="0.32936078" />
       <window_info anchor="bottom" id="Messages" order="12" sideWeight="0.36179295" weight="0.32929516" />
       <window_info anchor="bottom" id="Android Profiler" order="13" />
-      <window_info active="true" anchor="bottom" id="Logcat" order="14" visible="true" weight="0.32936078" />
-      <window_info anchor="bottom" id="Build" order="15" weight="0.32936078" />
+      <window_info anchor="bottom" id="Logcat" order="14" weight="0.32936078" />
+      <window_info active="true" anchor="bottom" id="Build" order="15" visible="true" weight="0.32936078" />
       <window_info anchor="right" id="Commander" order="0" weight="0.4" />
       <window_info anchor="right" id="Ant Build" order="1" weight="0.25" />
       <window_info anchor="right" content_ui="combo" id="Hierarchy" order="2" weight="0.25" />
@@ -688,8 +678,8 @@
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/app/src/main/res/layout/main.xml">
-      <provider editor-type-id="text-editor" />
       <provider selected="true" editor-type-id="android-designer2" />
+      <provider editor-type-id="text-editor" />
     </entry>
     <entry file="file://$PROJECT_DIR$/app/src/main/res/drawable-hdpi/ic_launcher.png">
       <provider selected="true" editor-type-id="images" />
@@ -722,30 +712,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/settings.gradle">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="17">
-          <caret line="1" selection-start-line="1" selection-end-line="1" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/local.properties">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="119">
-          <caret line="7" column="45" selection-start-line="7" selection-start-column="45" selection-end-line="7" selection-end-column="45" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/app/src/main/java/com/insbyte/driversyndicate/EqEngineActivity.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="170">
-          <caret line="10" column="53" selection-start-line="10" selection-start-column="29" selection-end-line="10" selection-end-column="53" />
-          <folding>
-            <element signature="imports" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/app/build.gradle">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="170">
@@ -754,6 +720,7 @@
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/app/src/main/AndroidManifest.xml">
+      <provider editor-type-id="android-manifest" />
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="337">
           <caret line="24" column="62" selection-start-line="24" selection-start-column="54" selection-end-line="24" selection-end-column="62" />
@@ -762,36 +729,14 @@
           </folding>
         </state>
       </provider>
-      <provider editor-type-id="android-manifest" />
     </entry>
-    <entry file="file://$PROJECT_DIR$/app/src/main/assets/EQ.CONFIG">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="340">
-          <caret line="20" lean-forward="true" selection-start-line="20" selection-end-line="20" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://D:/USERS_DOCUMENTS/AndroidStudio/DeviceExplorer/xiaomi-redmi_7-71a4d18/storage/6135-3937/eqengine/EQ.CONFIG">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="132">
-          <caret line="39" column="19" lean-forward="true" selection-start-line="39" selection-start-column="19" selection-end-line="39" selection-end-column="19" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/app/src/main/java/org/libsdl/app/SDLControllerManager.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="459">
-          <caret line="62" column="7" selection-start-line="62" selection-start-column="7" selection-end-line="62" selection-end-column="7" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://D:/USERS_DOCUMENTS/AndroidStudio/DeviceExplorer/xiaomi-redmi_7-71a4d18/storage/6135-3937/eqengine/GameData/cfg/user.cfg">
-      <provider selected="true" editor-type-id="text-editor" />
-    </entry>
+    <entry file="file://$PROJECT_DIR$/app/src/main/assets/EQ.CONFIG" />
+    <entry file="file://D:/USERS_DOCUMENTS/AndroidStudio/DeviceExplorer/xiaomi-redmi_7-71a4d18/storage/6135-3937/eqengine/EQ.CONFIG" />
+    <entry file="file://D:/USERS_DOCUMENTS/AndroidStudio/DeviceExplorer/xiaomi-redmi_7-71a4d18/storage/6135-3937/eqengine/GameData/cfg/user.cfg" />
     <entry file="file://$PROJECT_DIR$/app/src/main/java/org/libsdl/app/SDLActivity.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="1981">
-          <caret line="1693" column="25" lean-forward="true" selection-start-line="1693" selection-start-column="25" selection-end-line="1693" selection-end-column="25" />
+        <state relative-caret-position="179">
+          <caret line="774" column="40" selection-start-line="774" selection-start-column="40" selection-end-line="774" selection-end-column="40" />
           <folding>
             <element signature="e#4701#4702#0" expanded="true" />
             <element signature="e#4734#4735#0" expanded="true" />
@@ -815,13 +760,38 @@
             <element signature="e#58194#58195#0" expanded="true" />
             <element signature="e#58487#58488#0" expanded="true" />
             <element signature="e#58534#58535#0" expanded="true" />
-            <element signature="e#74688#74689#0" expanded="true" />
-            <element signature="e#74715#74716#0" expanded="true" />
-            <element signature="e#80412#80413#0" expanded="true" />
-            <element signature="e#80452#80453#0" expanded="true" />
-            <element signature="e#80937#80938#0" expanded="true" />
-            <element signature="e#80991#80992#0" expanded="true" />
           </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/app/src/main/java/com/insbyte/driversyndicate/EqEngineActivity.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="153">
+          <caret line="10" column="53" selection-start-line="10" selection-start-column="29" selection-end-line="10" selection-end-column="53" />
+          <folding>
+            <element signature="imports" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/app/src/main/java/org/libsdl/app/SDLControllerManager.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="918">
+          <caret line="62" column="7" selection-start-line="62" selection-start-column="7" selection-end-line="62" selection-end-column="7" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/settings.gradle">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="17">
+          <caret line="1" selection-start-line="1" selection-end-line="1" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/local.properties">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="119">
+          <caret line="7" column="45" selection-start-line="7" selection-start-column="45" selection-end-line="7" selection-end-column="45" />
         </state>
       </provider>
     </entry>

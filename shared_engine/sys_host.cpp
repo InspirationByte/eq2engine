@@ -712,6 +712,11 @@ void CGameHost::OnWindowResize(int width, int height)
 		materials->SetDeviceBackbufferSize( width, height );
 }
 
+void CGameHost::OnFocusChanged(bool inFocus)
+{
+	materials->SetDeviceFocused(inFocus);
+}
+
 void CGameHost::BeginScene()
 {
 	// reset viewport

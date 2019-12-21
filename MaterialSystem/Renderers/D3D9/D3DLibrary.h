@@ -38,6 +38,9 @@ public:
 	// sets backbuffer size for default swap chain
 	void					SetBackbufferSize(int w, int h);
 
+	// reports focus state
+	void					SetFocused(bool inFocus);
+
 	// captures screenshot, outputs image to 'img'
 	bool					CaptureScreenshot(CImage &img);
 

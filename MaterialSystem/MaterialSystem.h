@@ -271,6 +271,9 @@ public:
 	// resizes device back buffer. Must be called if window resized, etc
 	void							SetDeviceBackbufferSize(int wide, int tall);
 
+	// reports device focus state to render lib
+	void							SetDeviceFocused(bool inFocus);
+
 	// creates additional swap chain
 	IEqSwapChain*					CreateSwapChain(void* windowHandle);
 
