@@ -107,6 +107,7 @@ protected:
 
 #ifdef ANDROID
 	PFNGetEGLSurfaceFromSDL	getEGLSurfaceFunc;
+	bool					lostSurface;
 #endif // ANDROID
 
 #elif defined(_WIN32)

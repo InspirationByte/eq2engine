@@ -295,7 +295,11 @@ void CGLRenderLib::ReobtainEGLSurface()
 bool CGLRenderLib::InitAPI(shaderAPIParams_t& params)
 {
 #ifdef USE_GLES2
+	eglSurface = EGL_NO_SURFACE;
+
+
 #ifdef ANDROID
+	lostSurface = false;
 	externalWindowDisplayParams_t* winParams = (externalWindowDisplayParams_t*)params.windowHandle;
 
 	ASSERT(winParams != NULL);
@@ -305,12 +309,8 @@ bool CGLRenderLib::InitAPI(shaderAPIParams_t& params)
 
 	hwnd = (EGLNativeWindowType)winParams->window;
 #else
-
 	// other EGL
 	hwnd = (EGLNativeWindowType)params.windowHandle;
-
-	eglSurface = EGL_NO_SURFACE;
-
 #endif // ANDROID
 
 	Msg("Initializing EGL context...\n");
@@ -417,8 +417,6 @@ bool CGLRenderLib::InitAPI(shaderAPIParams_t& params)
 	InitSharedContexts();
 
 	ReobtainEGLSurface();
-
-	MsgInfo("DEBUG - eglMakeCurrent: disp=%d surf=%p ctx=%p\n", eglDisplay, eglSurface, glContext);
 
 	// assign to this thread
 	if (!eglMakeCurrent(eglDisplay, eglSurface, eglSurface, glContext))
@@ -819,10 +817,7 @@ void CGLRenderLib::ExitAPI()
 #ifdef USE_GLES2
 	eglMakeCurrent(EGL_NO_DISPLAY, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
 	eglDestroyContext(eglDisplay, glContext);
-
-#ifndef ANDROID
 	eglDestroySurface(eglDisplay, eglSurface);
-#endif // ANDROID
 	eglTerminate(eglDisplay);
 #else
 	wglMakeCurrent(NULL, NULL);
@@ -875,6 +870,33 @@ void CGLRenderLib::BeginFrame()
 	m_Renderer->m_nViewportHeight = m_height;
 
 	m_Renderer->SetViewport(0, 0, m_width, m_height);
+
+#ifdef ANDROID
+	if (lostSurface && glContext != NULL)
+	{
+		MsgInfo("Creating surface...\n");
+		eglSurface = EGL_NO_SURFACE;
+		eglSurface = eglCreateWindowSurface(eglDisplay, eglConfig, hwnd, NULL);
+
+		if (eglSurface == EGL_NO_SURFACE)
+		{
+			ErrorMsg("Could not create EGL surface\n");
+			return;
+		}
+
+		// first disable context
+		eglMakeCurrent(EGL_NO_DISPLAY, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+
+		MsgInfo("Attaching surface...\n");
+		if (!eglMakeCurrent(eglDisplay, eglSurface, eglSurface, glContext))
+		{
+			CrashMsg("eglMakeCurrent - error\n");
+			return;
+		}
+
+		lostSurface = false;
+	}
+#endif // ANDROID
 }
 
 void CGLRenderLib::EndFrame(IEqSwapChain* schain)
@@ -913,9 +935,9 @@ void CGLRenderLib::SetBackbufferSize(const int w, const int h)
 	m_width = w;
 	m_height = h;
 
+#if defined(PLAT_WIN) && !defined(USE_GLES2)
 	if(!m_Renderer->m_params->windowedMode)
 	{
-#if defined(PLAT_WIN) && !defined(USE_GLES2)
 		dm.dmPelsWidth = m_width;
 		dm.dmPelsHeight = m_height;
 
@@ -924,11 +946,28 @@ void CGLRenderLib::SetBackbufferSize(const int w, const int h)
 			MsgError("Couldn't set fullscreen mode\n");
 			WarningMsg("Couldn't set fullscreen mode");
 		}
-#endif // PLAT_WIN && !USE_GLES2
 	}
+#endif // PLAT_WIN && !USE_GLES2
 
 	if (glContext != NULL)
 	{
+#ifdef ANDROID
+		MsgInfo("Detaching surface...\n");
+		if (!eglMakeCurrent(eglDisplay, EGL_NO_SURFACE, EGL_NO_SURFACE, glContext))
+		{
+			ErrorMsg("Cannot detach EGL surface\n");
+			return;
+		}
+
+		if (eglSurface != EGL_NO_SURFACE)
+		{
+			MsgInfo("Destroying surface...\n");
+			eglDestroySurface(eglDisplay, eglSurface);
+		}
+
+		lostSurface = true;
+#endif 
+
 		glViewport(0, 0, m_width, m_height);
 		GLCheckError("set viewport");
 	}
