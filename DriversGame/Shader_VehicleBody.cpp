@@ -148,7 +148,8 @@ BEGIN_SHADER_CLASS(DrvSynVehicle)
 		g_pShaderAPI->SetTexture(pSetupTexture, "BaseTextureSampler", 0);
 		g_pShaderAPI->SetTexture(pSetupDamTexture, "DamageTextureSampler", 1);
 
-		g_pShaderAPI->SetTexture(m_pColorMap, "ColormapSampler", 2);
+		if(m_pColorMap)
+			g_pShaderAPI->SetTexture(m_pColorMap, "ColormapSampler", 2);
 	}
 
 	ITexture*	GetBaseTexture(int stage)
