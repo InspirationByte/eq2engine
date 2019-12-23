@@ -39,24 +39,8 @@ CD3D9ShaderProgram::~CD3D9ShaderProgram()
 	if(m_pVSConstants)
 		m_pVSConstants->Release();
 
-	/*
-	// delete all data carefully
-	for(int i = 0; i < m_numConstants; i++)
-	{
-		delete [] m_pConstants[i].name;
-	}
-	*/
-
 	if(m_pConstants)
 		free(m_pConstants);
-
-	/*
-	// delete all data carefully
-	for(int i = 0; i < m_numSamplers; i++)
-	{
-		delete [] m_pSamplers[i].name;
-	}
-	*/
 
 	if(m_pSamplers)
 		free(m_pSamplers);

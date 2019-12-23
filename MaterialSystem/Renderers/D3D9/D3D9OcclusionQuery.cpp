@@ -8,6 +8,8 @@
 #include "D3D9OcclusionQuery.h"
 #include "ShaderAPID3DX9.h"
 
+extern ShaderAPID3DX9 s_shaderApi;
+
 CD3D9OcclusionQuery::CD3D9OcclusionQuery( LPDIRECT3DDEVICE9 dev )
 {
 	m_ready = false;
@@ -71,7 +73,7 @@ bool CD3D9OcclusionQuery::IsReady()
 	m_pixelsVisible = 0;
 	m_ready = (m_query->GetData((void*)&m_pixelsVisible, sizeof(DWORD), D3DGETDATA_FLUSH) != S_FALSE);
 
-	int msaa = ((ShaderAPID3DX9*)g_pShaderAPI)->m_params->multiSamplingMode;
+	int msaa = s_shaderApi.m_params->multiSamplingMode;
 	if(msaa > 0)
 		m_pixelsVisible /= msaa;
 

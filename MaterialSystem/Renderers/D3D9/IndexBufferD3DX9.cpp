@@ -11,6 +11,8 @@
 #include "IndexBufferD3DX9.h"
 #include "ShaderAPID3DX9.h"
 
+extern ShaderAPID3DX9 s_shaderApi;
+
 CIndexBufferD3DX9::CIndexBufferD3DX9()
 {
 	m_nIndices = 0;
@@ -66,7 +68,7 @@ void CIndexBufferD3DX9::Restore()
 
 	bool dynamic = (m_nUsage & D3DUSAGE_DYNAMIC) != 0;
 
-	if (((ShaderAPID3DX9*)g_pShaderAPI)->m_pD3DDevice->CreateIndexBuffer(
+	if (s_shaderApi.m_pD3DDevice->CreateIndexBuffer(
 		m_nInitialSize, m_nUsage, 
 		m_nIndexSize == 2? D3DFMT_INDEX16 : D3DFMT_INDEX32, 
 		dynamic? D3DPOOL_DEFAULT : D3DPOOL_MANAGED, &m_pIndexBuffer, NULL) != D3D_OK)
@@ -100,7 +102,7 @@ int CIndexBufferD3DX9::GetIndicesCount()
 // updates buffer without map/unmap operations which are slower
 void CIndexBufferD3DX9::Update(void* data, int size, int offset, bool discard /*= true*/)
 {
-	HRESULT hr = ((ShaderAPID3DX9*)g_pShaderAPI)->m_pD3DDevice->TestCooperativeLevel();
+	HRESULT hr = s_shaderApi.m_pD3DDevice->TestCooperativeLevel();
 
 	if (hr == D3DERR_DEVICELOST || hr == D3DERR_DEVICENOTRESET)
 		return;
@@ -136,7 +138,7 @@ void CIndexBufferD3DX9::Update(void* data, int size, int offset, bool discard /*
 // locks vertex buffer and gives to programmer buffer data
 bool CIndexBufferD3DX9::Lock(int lockOfs, int sizeToLock, void** outdata, bool readOnly)
 {
-	HRESULT hr = ((ShaderAPID3DX9*)g_pShaderAPI)->m_pD3DDevice->TestCooperativeLevel();
+	HRESULT hr = s_shaderApi.m_pD3DDevice->TestCooperativeLevel();
 
 	if (hr == D3DERR_DEVICELOST || hr == D3DERR_DEVICENOTRESET)
 	{

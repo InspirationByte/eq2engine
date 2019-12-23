@@ -16,8 +16,6 @@
 #include "D3D9ShaderProgram.h"
 #include "D3D9OcclusionQuery.h"
 
-#include "D3DX9DefaultShaders.h"
-
 #include "utils/VirtualStream.h"
 
 #include "Imaging/ImageLoader.h"
@@ -148,8 +146,8 @@ bool ShaderAPID3DX9::ResetDevice( D3DPRESENT_PARAMETERS &d3dpp )
 
 	m_pEventQuery = NULL;
 
-	g_pShaderAPI->Reset();
-	g_pShaderAPI->Apply();
+	Reset();
+	Apply();
 
 	// release back buffer and depth first
 	ReleaseD3DFrameBufferSurfaces();
@@ -2195,12 +2193,12 @@ bool ShaderAPID3DX9::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 
 	if(pStream) // write empty header
 		pStream->Write(&scHdr, 1, sizeof(shaderCacheHdr_t));
-	
-	LPD3DXBUFFER	shaderBuf = NULL;
-	LPD3DXBUFFER	errorsBuf = NULL;
 
 	if (info.vs.text != NULL)
 	{
+		LPD3DXBUFFER shaderBuf = NULL;
+		LPD3DXBUFFER errorsBuf = NULL;
+
 		EqString shaderString;
 
 		if (extra  != NULL)
@@ -2214,8 +2212,8 @@ bool ShaderAPID3DX9::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 
 		if(info.apiPrefs)
 		{
-			profile = KV_GetValueString(info.apiPrefs->FindKeyBase("vs_profile"), 0, profile.GetData());
-			entry = KV_GetValueString(info.apiPrefs->FindKeyBase("EntryPoint"), 0, entry.GetData());
+			profile = KV_GetValueString(info.apiPrefs->FindKeyBase("vs_profile"), 0, profile.c_str());
+			entry = KV_GetValueString(info.apiPrefs->FindKeyBase("EntryPoint"), 0, entry.c_str());
 
 			char minor = '0';
 
@@ -2223,7 +2221,7 @@ bool ShaderAPID3DX9::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 
 			if(vsVersion > maxVSVersion)
 			{
-				MsgWarning("%s: vs version %s not supported\n", pShaderOutput->GetName(), profile.GetData());
+				MsgWarning("%s: vs version %s not supported\n", pShaderOutput->GetName(), profile.c_str());
 				vsVersion = maxVSVersion;
 			}
 		}
@@ -2234,7 +2232,13 @@ bool ShaderAPID3DX9::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 		//shaderString.Append(varargs("#line %d\n", params.vsLine + 1));
 		shaderString.Append(info.vs.text);
 
-		if (D3DXCompileShader(shaderString.GetData(), shaderString.Length(), NULL, NULL, entry.GetData(), profile.GetData(), D3DXSHADER_DEBUG | D3DXSHADER_PACKMATRIX_ROWMAJOR, &shaderBuf, &errorsBuf, &pShader->m_pVSConstants) == D3D_OK)
+		HRESULT compileResult = D3DXCompileShader(shaderString.GetData(), shaderString.Length(),
+			NULL, NULL, 
+			entry.c_str(), profile.c_str(),
+			D3DXSHADER_DEBUG | D3DXSHADER_PACKMATRIX_ROWMAJOR,
+			&shaderBuf, &errorsBuf, &pShader->m_pVSConstants);
+
+		if (compileResult == D3D_OK)
 		{
 			m_pD3DDevice->CreateVertexShader((DWORD *) shaderBuf->GetBufferPointer(), &pShader->m_pVertexShader);
 
@@ -2242,23 +2246,43 @@ bool ShaderAPID3DX9::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 
 			if(pStream)
 				pStream->Write(shaderBuf->GetBufferPointer(), 1, scHdr.vsSize);
+
+			shaderBuf->Release();
 		}
 		else 
 		{
-			MsgError("ERROR: Cannot compile vertex shader for %s\n",pShader->GetName());
-			if(errorsBuf)
+			char* d3dxShaderCompileErr = "Unknown\n";
+
+			switch (compileResult)
 			{
-				MsgError("%s\n",(const char *) errorsBuf->GetBufferPointer());
+				case D3DERR_INVALIDCALL:
+					d3dxShaderCompileErr = "D3DERR_INVALIDCALL";
+					break;
+				case D3DXERR_INVALIDDATA:
+					d3dxShaderCompileErr = "D3DXERR_INVALIDDATA";
+					break;
+				case E_OUTOFMEMORY:
+					d3dxShaderCompileErr = "E_OUTOFMEMORY";
+					break;
 			}
-			else
+
+			MsgError("ERROR: Vertex shader '%s' CODE '%s'\n", pShader->GetName(), d3dxShaderCompileErr);
+			if (errorsBuf)
 			{
-				MsgError("Unknown error\n");
+				MsgError("%s\n", (const char *)errorsBuf->GetBufferPointer());
+				errorsBuf->Release();
 			}
+				
+
+			MsgError("\n Profile: %s\n", profile.c_str());
 		}
 	}
 
 	if (info.ps.text != NULL)
 	{
+		LPD3DXBUFFER shaderBuf = NULL;
+		LPD3DXBUFFER errorsBuf = NULL;
+
 		EqString shaderString;
 
 		if (extra  != NULL)
@@ -2272,8 +2296,8 @@ bool ShaderAPID3DX9::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 
 		if(info.apiPrefs)
 		{
-			profile = KV_GetValueString(info.apiPrefs->FindKeyBase("ps_profile"), 0, profile.GetData());
-			entry = KV_GetValueString(info.apiPrefs->FindKeyBase("EntryPoint"), 0, entry.GetData());
+			profile = KV_GetValueString(info.apiPrefs->FindKeyBase("ps_profile"), 0, profile.c_str());
+			entry = KV_GetValueString(info.apiPrefs->FindKeyBase("EntryPoint"), 0, entry.c_str());
 
 			char minor = '0';
 
@@ -2292,7 +2316,14 @@ bool ShaderAPID3DX9::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 		//shaderString.Append(varargs("#line %d\n", params.psLine + 1));
 		shaderString.Append(info.ps.text);
 
-		if (D3DXCompileShader(shaderString.GetData(), shaderString.Length(), NULL, NULL, entry.GetData(), profile.GetData(), D3DXSHADER_DEBUG | D3DXSHADER_PACKMATRIX_ROWMAJOR, &shaderBuf, &errorsBuf, &pShader->m_pPSConstants) == D3D_OK)
+		HRESULT compileResult = D3DXCompileShader(
+			shaderString.GetData(), shaderString.Length(),
+			NULL, NULL, entry.c_str(), profile.c_str(),
+			D3DXSHADER_DEBUG | D3DXSHADER_PACKMATRIX_ROWMAJOR,
+			&shaderBuf, &errorsBuf,
+			&pShader->m_pPSConstants);
+
+		if (compileResult == D3D_OK)
 		{
 			m_pD3DDevice->CreatePixelShader((DWORD *) shaderBuf->GetBufferPointer(), &pShader->m_pPixelShader);
 
@@ -2300,49 +2331,39 @@ bool ShaderAPID3DX9::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 
 			if(pStream)
 				pStream->Write(shaderBuf->GetBufferPointer(), 1, scHdr.psSize);
+
+			shaderBuf->Release();
 		}
 		else 
 		{
-			MsgError("ERROR: Cannot compile pixel shader for %s\n",pShader->GetName());
+			char* d3dxShaderCompileErr = "Unknown\n";
 
-			if(errorsBuf)
+			switch (compileResult)
 			{
-				MsgError("%s\n",(const char *) errorsBuf->GetBufferPointer());
+			case D3DERR_INVALIDCALL:
+				d3dxShaderCompileErr = "D3DERR_INVALIDCALL";
+				break;
+			case D3DXERR_INVALIDDATA:
+				d3dxShaderCompileErr = "D3DXERR_INVALIDDATA";
+				break;
+			case E_OUTOFMEMORY:
+				d3dxShaderCompileErr = "E_OUTOFMEMORY";
+				break;
 			}
-			else
+
+			MsgError("ERROR: Pixel shader '%s' CODE '%s'\n", pShader->GetName(), d3dxShaderCompileErr);
+			if (errorsBuf)
 			{
-				MsgError("Unknown error\n");
+				MsgError("%s\n", (const char *)errorsBuf->GetBufferPointer());
+				errorsBuf->Release();
 			}
 
 			MsgError("\n Profile: %s\n",profile.c_str());
 		}
 	}
 
-	if (shaderBuf != NULL)
-		shaderBuf->Release();
-
-	if (errorsBuf != NULL)
-		errorsBuf->Release();
-
 	if (pShader->m_pPixelShader == NULL || pShader->m_pVertexShader == NULL)
 	{
-		if(pShader->m_pPixelShader)
-			pShader->m_pPixelShader->Release();
-
-		if(pShader->m_pVertexShader)
-			pShader->m_pVertexShader->Release();
-
-		if(pShader->m_pPSConstants)
-			pShader->m_pPSConstants->Release();
-
-		if(pShader->m_pVSConstants)
-			pShader->m_pVSConstants->Release();
-
-		pShader->m_pVertexShader = NULL;
-		pShader->m_pPixelShader = NULL;
-		pShader->m_pVSConstants = NULL;
-		pShader->m_pPSConstants = NULL;
-
 		if(pStream)
 		{
 			scHdr.psChecksum = -1;
@@ -2360,23 +2381,6 @@ bool ShaderAPID3DX9::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 
 	if(pShader->m_pVSConstants == NULL || pShader->m_pPSConstants == NULL)
 	{
-		if(pShader->m_pPixelShader)
-			pShader->m_pPixelShader->Release();
-
-		if(pShader->m_pVertexShader)
-			pShader->m_pVertexShader->Release();
-
-		if(pShader->m_pPSConstants)
-			pShader->m_pPSConstants->Release();
-
-		if(pShader->m_pVSConstants)
-			pShader->m_pVSConstants->Release();
-
-		pShader->m_pVertexShader = NULL;
-		pShader->m_pPixelShader = NULL;
-		pShader->m_pVSConstants = NULL;
-		pShader->m_pPSConstants = NULL;
-
 		if(pStream)
 		{
 			scHdr.psChecksum = -1;

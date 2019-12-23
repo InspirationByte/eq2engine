@@ -33,7 +33,7 @@ HOOK_TO_CVAR(r_loadmiplevel);
 
 ConVar gl_report_errors("gl_report_errors", "0");
 ConVar gl_break_on_error("gl_break_on_error", "0");
-ConVar gl_bypass_errors("gl_bypass_errors", "1");
+ConVar gl_bypass_errors("gl_bypass_errors", "0");
 
 bool GLCheckError(const char* op)
 {
@@ -1633,7 +1633,7 @@ void ShaderAPIGL::ChangeVertexBuffer(IVertexBuffer* pVertexBuffer, int nStream, 
 	GLuint vbo = 0;
 
 	if (pVB != NULL)
-		vbo = pVB->m_nGL_VB_Index;
+		vbo = pVB->GetCurrentBuffer();
 
 	bool instanceBuffer = (nStream > 0) && pVB != NULL && (pVB->GetFlags() & VERTBUFFER_FLAG_INSTANCEDATA);
 
@@ -1698,15 +1698,6 @@ void ShaderAPIGL::ChangeVertexBuffer(IVertexBuffer* pVertexBuffer, int nStream, 
 		{
 			ASSERTMSG(false, "Already bound instancing stream at %d!!!");
 		}
-
-		// set bound stream
-		((CVertexBufferGL*)pVertexBuffer)->m_boundStream = nStream;
-
-		// unbind old
-		if(m_pCurrentVertexBuffers[nStream])
-		{
-			((CVertexBufferGL*)m_pCurrentVertexBuffers[nStream])->m_boundStream = -1;
-		}
 	}
 
 	m_pCurrentVertexBuffers[nStream] = pVertexBuffer;
@@ -1727,7 +1718,7 @@ void ShaderAPIGL::ChangeIndexBuffer(IIndexBuffer *pIndexBuffer)
 		else
 		{
 			CIndexBufferGL* pSelectedIndexBffer = (CIndexBufferGL*)pIndexBuffer;
-			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, pSelectedIndexBffer->m_nGL_IB_Index);
+			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, pSelectedIndexBffer->GetCurrentBuffer());
 			GLCheckError("bind elem array");
 		}
 
@@ -2234,29 +2225,31 @@ IVertexFormat* ShaderAPIGL::CreateVertexFormat(VertexFormatDesc_s *formatDesc, i
 
 IVertexBuffer* ShaderAPIGL::CreateVertexBuffer(ER_BufferAccess nBufAccess, int nNumVerts, int strideSize, void *pData )
 {
-	CVertexBufferGL* pGLVertexBuffer = new CVertexBufferGL();
+	CVertexBufferGL* pVB = new CVertexBufferGL();
 
-	pGLVertexBuffer->m_numVerts = nNumVerts;
-	pGLVertexBuffer->m_strideSize = strideSize;
-	pGLVertexBuffer->m_usage = glBufferUsages[nBufAccess];
+	pVB->m_numVerts = nNumVerts;
+	pVB->m_strideSize = strideSize;
+	pVB->m_access = nBufAccess;
 
-	DevMsg(DEVMSG_SHADERAPI,"Creating VBO with size %i KB\n", pGLVertexBuffer->GetSizeInBytes() / 1024);
+	DevMsg(DEVMSG_SHADERAPI,"Creating VBO with size %i KB\n", pVB->GetSizeInBytes() / 1024);
 
 	GL_CRITICAL();
 
-	glGenBuffers(1, &pGLVertexBuffer->m_nGL_VB_Index);
+	const int numBuffers = (nBufAccess == BUFFER_DYNAMIC) ? MAX_VB_SWITCHING : 1;
+
+	glGenBuffers(numBuffers, pVB->m_nGL_VB_Index);
 
     if(!GLCheckError("gen vert buffer"))
 	{
-		delete pGLVertexBuffer;
-
-
+		delete pVB;
 		return NULL;
 	}
 
-
-	glBindBuffer(GL_ARRAY_BUFFER, pGLVertexBuffer->m_nGL_VB_Index);
-	glBufferData(GL_ARRAY_BUFFER, pGLVertexBuffer->GetSizeInBytes(), pData, glBufferUsages[nBufAccess]);
+	for (int i = 0; i < numBuffers; i++)
+	{
+		glBindBuffer(GL_ARRAY_BUFFER, pVB->m_nGL_VB_Index[i]);
+		glBufferData(GL_ARRAY_BUFFER, pVB->GetSizeInBytes(), pData, glBufferUsages[nBufAccess]);
+	}
 
 	GLCheckError("upload vtx data");
 
@@ -2265,19 +2258,19 @@ IVertexBuffer* ShaderAPIGL::CreateVertexBuffer(ER_BufferAccess nBufAccess, int n
 	Finish();
 
 	m_Mutex.Lock();
-	m_VBList.append( pGLVertexBuffer );
+	m_VBList.append( pVB );
 	m_Mutex.Unlock();
 
-	return pGLVertexBuffer;
+	return pVB;
 }
 
 IIndexBuffer* ShaderAPIGL::CreateIndexBuffer(int nIndices, int nIndexSize, ER_BufferAccess nBufAccess, void *pData )
 {
-	CIndexBufferGL* pGLIndexBuffer = new CIndexBufferGL();
+	CIndexBufferGL* pIB = new CIndexBufferGL();
 
-	pGLIndexBuffer->m_nIndices = nIndices;
-	pGLIndexBuffer->m_nIndexSize = nIndexSize;
-	pGLIndexBuffer->m_usage = glBufferUsages[nBufAccess];
+	pIB->m_nIndices = nIndices;
+	pIB->m_nIndexSize = nIndexSize;
+	pIB->m_access = nBufAccess;
 
 	DevMsg(DEVMSG_SHADERAPI,"Creating IBO with size %i KB\n", (nIndices*nIndexSize) / 1024);
 
@@ -2285,18 +2278,21 @@ IIndexBuffer* ShaderAPIGL::CreateIndexBuffer(int nIndices, int nIndexSize, ER_Bu
 
 	GL_CRITICAL();
 
-	glGenBuffers(1, &pGLIndexBuffer->m_nGL_IB_Index);
+	const int numBuffers = (nBufAccess == BUFFER_DYNAMIC) ? MAX_IB_SWITCHING : 1;
+
+	glGenBuffers(numBuffers, pIB->m_nGL_IB_Index);
 
     if(!GLCheckError("gen idx buffer"))
 	{
-		delete pGLIndexBuffer;
-
-
+		delete pIB;
 		return NULL;
 	}
 
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, pGLIndexBuffer->m_nGL_IB_Index);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, size, pData, glBufferUsages[nBufAccess]);
+	for (int i = 0; i < numBuffers; i++)
+	{
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, pIB->m_nGL_IB_Index[i]);
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, size, pData, glBufferUsages[nBufAccess]);
+	}
 
 	GLCheckError("upload idx data");
 
@@ -2305,10 +2301,10 @@ IIndexBuffer* ShaderAPIGL::CreateIndexBuffer(int nIndices, int nIndexSize, ER_Bu
 	Finish();
 
 	m_Mutex.Lock();
-	m_IBList.append( pGLIndexBuffer );
+	m_IBList.append( pIB );
 	m_Mutex.Unlock();
 
-	return pGLIndexBuffer;
+	return pIB;
 }
 
 // Destroy vertex format
@@ -2349,7 +2345,9 @@ void ShaderAPIGL::DestroyVertexBuffer(IVertexBuffer* pVertexBuffer)
 		Reset(STATE_RESET_VF | STATE_RESET_VB);
 		ApplyBuffers();
 
-		glDeleteBuffers(1, &pVB->m_nGL_VB_Index);
+		const int numBuffers = (pVB->m_access == BUFFER_DYNAMIC) ? MAX_VB_SWITCHING : 1;
+
+		glDeleteBuffers(numBuffers, pVB->m_nGL_VB_Index);
 		GLCheckError("delete vertex buffer");
 
 		delete pVB;
@@ -2373,7 +2371,9 @@ void ShaderAPIGL::DestroyIndexBuffer(IIndexBuffer* pIndexBuffer)
 
 		GL_CRITICAL();
 
-		glDeleteBuffers(1, &pIB->m_nGL_IB_Index);
+		const int numBuffers = (pIB->m_access == BUFFER_DYNAMIC) ? MAX_IB_SWITCHING : 1;
+
+		glDeleteBuffers(numBuffers, pIB->m_nGL_IB_Index);
 		GLCheckError("delete index buffer");
 
 		delete pIndexBuffer;

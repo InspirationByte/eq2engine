@@ -230,6 +230,7 @@ public:
 
 #ifdef EDITOR
 	void					RefreshPreview();
+	bool					m_placeable;
 #endif // EDITOR
 	void					Render( float lodDistance, const BoundingBox& bbox, bool preloadMaterials = false, int nRenderFlags = 0);
 

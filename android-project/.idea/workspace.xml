@@ -10,7 +10,29 @@
     <option name="TOOL_WINDOW_CONFIGURED_FILTER" value="No Filters" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="c9096593-b4df-4b83-813a-05c2d4299dea" name="Default" comment="" />
+    <list default="true" id="c9096593-b4df-4b83-813a-05c2d4299dea" name="Default" comment="">
+      <change beforePath="$PROJECT_DIR$/../DriversGame/ShadowRenderer.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../DriversGame/ShadowRenderer.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../DriversGame/region.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../DriversGame/region.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../MaterialSystem/Renderers/D3D9/CD3D9Texture.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../MaterialSystem/Renderers/D3D9/CD3D9Texture.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../MaterialSystem/Renderers/D3D9/D3D9OcclusionQuery.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../MaterialSystem/Renderers/D3D9/D3D9OcclusionQuery.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../MaterialSystem/Renderers/D3D9/D3D9ShaderProgram.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../MaterialSystem/Renderers/D3D9/D3D9ShaderProgram.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../MaterialSystem/Renderers/D3D9/D3DLibrary.h" beforeDir="false" afterPath="$PROJECT_DIR$/../MaterialSystem/Renderers/D3D9/D3DLibrary.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../MaterialSystem/Renderers/D3D9/IndexBufferD3DX9.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../MaterialSystem/Renderers/D3D9/IndexBufferD3DX9.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../MaterialSystem/Renderers/D3D9/ShaderAPID3DX9.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../MaterialSystem/Renderers/D3D9/ShaderAPID3DX9.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../MaterialSystem/Renderers/D3D9/VertexBufferD3DX9.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../MaterialSystem/Renderers/D3D9/VertexBufferD3DX9.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../MaterialSystem/Renderers/D3D9/d3dlibrary.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../MaterialSystem/Renderers/D3D9/d3dlibrary.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../MaterialSystem/Renderers/GL/CGLRenderLib.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../MaterialSystem/Renderers/GL/CGLRenderLib.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../MaterialSystem/Renderers/GL/CGLRenderLib.h" beforeDir="false" afterPath="$PROJECT_DIR$/../MaterialSystem/Renderers/GL/CGLRenderLib.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../MaterialSystem/Renderers/GL/CGLTexture.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../MaterialSystem/Renderers/GL/CGLTexture.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../MaterialSystem/Renderers/GL/IndexBufferGL.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../MaterialSystem/Renderers/GL/IndexBufferGL.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../MaterialSystem/Renderers/GL/IndexBufferGL.h" beforeDir="false" afterPath="$PROJECT_DIR$/../MaterialSystem/Renderers/GL/IndexBufferGL.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../MaterialSystem/Renderers/GL/ShaderAPIGL.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../MaterialSystem/Renderers/GL/ShaderAPIGL.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../MaterialSystem/Renderers/GL/VertexBufferGL.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../MaterialSystem/Renderers/GL/VertexBufferGL.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../MaterialSystem/Renderers/GL/VertexBufferGL.h" beforeDir="false" afterPath="$PROJECT_DIR$/../MaterialSystem/Renderers/GL/VertexBufferGL.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../MaterialSystem/Renderers/Shared/ShaderAPI_Base.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../MaterialSystem/Renderers/Shared/ShaderAPI_Base.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../shared_engine/EqParticles.h" beforeDir="false" afterPath="$PROJECT_DIR$/../shared_engine/EqParticles.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../shared_engine/EqParticles_Render.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../shared_engine/EqParticles_Render.cpp" afterDir="false" />
+    </list>
     <ignored path="android-project.iws" />
     <ignored path=".idea/workspace.xml" />
     <ignored path="$PROJECT_DIR$/.gradle/" />
@@ -50,7 +72,7 @@
       <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/app/src/main/java/org/libsdl/app/SDLActivity.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="168">
+            <state relative-caret-position="321">
               <caret line="752" column="29" selection-start-line="752" selection-start-column="29" selection-end-line="752" selection-end-column="29" />
               <folding>
                 <element signature="e#4701#4702#0" expanded="true" />
@@ -211,10 +233,10 @@
       <foldersAlwaysOnTop value="true" />
     </navigator>
     <panes>
-      <pane id="ProjectPane" />
       <pane id="AndroidView" />
-      <pane id="PackagesPane" />
       <pane id="Scope" />
+      <pane id="PackagesPane" />
+      <pane id="ProjectPane" />
     </panes>
   </component>
   <component name="PropertiesComponent">
@@ -580,11 +602,12 @@
   </component>
   <component name="ToolWindowManager">
     <frame x="-8" y="-8" width="1936" height="1056" extended-state="6" />
+    <editor active="true" />
     <layout>
-      <window_info content_ui="combo" id="Project" order="0" sideWeight="0.4927302" visible="true" weight="0.17910448" />
+      <window_info content_ui="combo" id="Project" order="0" sideWeight="0.4911147" visible="true" weight="0.17910448" />
       <window_info id="Structure" order="1" weight="0.25" />
       <window_info id="Captures" order="2" side_tool="true" weight="0.25" />
-      <window_info id="Build Variants" order="3" sideWeight="0.5072698" side_tool="true" visible="true" weight="0.17910448" />
+      <window_info id="Build Variants" order="3" sideWeight="0.5088853" side_tool="true" visible="true" weight="0.17910448" />
       <window_info id="Favorites" order="4" side_tool="true" />
       <window_info id="Capture Tool" order="5" />
       <window_info id="Palette&#9;" order="6" />
@@ -603,9 +626,9 @@
       <window_info anchor="bottom" id="Version Control" order="10" weight="0.32936078" />
       <window_info anchor="bottom" id="Terminal" order="11" sideWeight="0.49359658" weight="0.32936078" />
       <window_info anchor="bottom" id="Messages" order="12" sideWeight="0.36179295" weight="0.32929516" />
-      <window_info anchor="bottom" id="Android Profiler" order="13" show_stripe_button="false" />
-      <window_info active="true" anchor="bottom" id="Logcat" order="14" visible="true" weight="0.32936078" />
-      <window_info anchor="bottom" id="Build" order="15" weight="0.32936078" />
+      <window_info anchor="bottom" id="Android Profiler" order="13" />
+      <window_info anchor="bottom" id="Logcat" order="14" weight="0.32936078" />
+      <window_info active="true" anchor="bottom" id="Build" order="15" visible="true" weight="0.32936078" />
       <window_info anchor="right" id="Commander" order="0" weight="0.4" />
       <window_info anchor="right" id="Ant Build" order="1" weight="0.25" />
       <window_info anchor="right" content_ui="combo" id="Hierarchy" order="2" weight="0.25" />
@@ -708,8 +731,8 @@
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/app/src/main/res/layout/main.xml">
-      <provider editor-type-id="text-editor" />
       <provider selected="true" editor-type-id="android-designer2" />
+      <provider editor-type-id="text-editor" />
     </entry>
     <entry file="file://$PROJECT_DIR$/app/src/main/res/drawable-hdpi/ic_launcher.png">
       <provider selected="true" editor-type-id="images" />
@@ -765,7 +788,7 @@
     <entry file="file://D:/USERS_DOCUMENTS/AndroidStudio/DeviceExplorer/xiaomi-redmi_7-71a4d18/storage/6135-3937/eqengine/GameData/cfg/user.cfg" />
     <entry file="file://$PROJECT_DIR$/app/src/main/java/org/libsdl/app/SDLActivity.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="168">
+        <state relative-caret-position="321">
           <caret line="752" column="29" selection-start-line="752" selection-start-column="29" selection-end-line="752" selection-end-column="29" />
           <folding>
             <element signature="e#4701#4702#0" expanded="true" />

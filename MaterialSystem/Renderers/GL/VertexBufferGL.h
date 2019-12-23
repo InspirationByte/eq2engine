@@ -10,6 +10,8 @@
 
 #include "IVertexBuffer.h"
 
+#define MAX_VB_SWITCHING 3
+
 class CVertexBufferGL : public IVertexBuffer
 {
 public:
@@ -39,23 +41,26 @@ public:
 	void			SetFlags( int flags ) {m_flags = flags;}
 	int				GetFlags() {return m_flags;}
 
+	uint			GetCurrentBuffer() const { return m_nGL_VB_Index[m_bufferIdx]; }
+
 protected:
+	void			IncrementBuffer();
+
+	uint			m_nGL_VB_Index[MAX_VB_SWITCHING];
+	int				m_bufferIdx;
+
 	int				m_flags;
-
-	uint			m_nGL_VB_Index;
-	bool			m_bIsLocked;
-
 	int				m_numVerts;
 	int				m_strideSize;
-	int				m_usage;
-
-	int				m_boundStream;
+	ER_BufferAccess	m_access;
 
 	ubyte*			m_lockPtr;
 	int				m_lockOffs;
 	int				m_lockSize;
+
 	bool			m_lockDiscard;
 	bool			m_lockReadOnly;
+	bool			m_bIsLocked;
 };
 
 #endif // VERTEXBUFFERGL_H

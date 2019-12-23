@@ -16,27 +16,12 @@
 
 #include "Imaging/ImageLoader.h"
 
-
 HOOK_TO_CVAR(r_screen);
 
-//IRenderer* renderer = NULL;
-/*
-BOOL CALLBACK MonitorEnumProc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMonitor, LPARAM dwData){
-	if (*(int *) dwData == 0){
-		monInfo.cbSize = sizeof(monInfo);
-		GetMonitorInfo(hMonitor, &monInfo);
-		return FALSE;
-	}
-	(*(int *) dwData)--;
-
-	return TRUE;
-}
-*/
-
 // make library
+ShaderAPID3DX9 s_shaderApi;
+IShaderAPI* g_pShaderAPI = &s_shaderApi;
 CD3DRenderLib g_library;
-
-IShaderAPI* g_pShaderAPI = NULL;
 
 CD3DRenderLib::CD3DRenderLib()
 {
@@ -48,9 +33,13 @@ CD3DRenderLib::~CD3DRenderLib()
 	GetCore()->UnregisterInterface(RENDERER_INTERFACE_VERSION);
 }
 
+IShaderAPI* CD3DRenderLib::GetRenderer() const 
+{ 
+	return &s_shaderApi;
+}
+
 bool CD3DRenderLib::InitCaps()
 {
-	m_Renderer = NULL;
 #ifdef USE_D3DEX
 	if (FAILED(Direct3DCreate9Ex(D3D_SDK_VERSION,&d3d)))
 #else
@@ -69,7 +58,7 @@ bool CD3DRenderLib::InitCaps()
 
 DECLARE_CMD(r_info, "Prints renderer info", 0)
 {
-	g_pShaderAPI->PrintAPIInfo();
+	s_shaderApi.PrintAPIInfo();
 }
 
 DWORD ComputeDeviceFlags( const D3DCAPS9& caps, bool bSoftwareVertexProcessing )
@@ -232,15 +221,12 @@ bool CD3DRenderLib::InitAPI( shaderAPIParams_t &params )
 
 	params.multiSamplingMode = multiSample;
 
-	m_Renderer = new ShaderAPID3DX9();
-	m_Renderer->SetD3DDevice(m_rhi, m_d3dCaps);
-
-	g_pShaderAPI = m_Renderer;
+	s_shaderApi.SetD3DDevice(m_rhi, m_d3dCaps);
 
 	//-------------------------------------------
 	// init caps
 	//-------------------------------------------
-	ShaderAPICaps_t& caps = m_Renderer->m_caps;
+	ShaderAPICaps_t& caps = s_shaderApi.m_caps;
 
 	memset(&caps, 0, sizeof(caps));
 
@@ -287,13 +273,11 @@ bool CD3DRenderLib::InitAPI( shaderAPIParams_t &params )
 
 void CD3DRenderLib::ExitAPI()
 {
-	if (!m_Renderer->m_params->windowedMode)
+	if (!s_shaderApi.m_params->windowedMode)
 	{
 		// Reset display mode to default
 		ChangeDisplaySettingsEx(m_dispDev.DeviceName, NULL, NULL, 0, NULL);
 	}
-
-	delete m_Renderer;
 
     if (m_rhi != NULL)
 	{
@@ -316,7 +300,7 @@ void CD3DRenderLib::ExitAPI()
 
 void CD3DRenderLib::BeginFrame()
 {
-	if (!m_Renderer->IsDeviceActive())
+	if (!s_shaderApi.IsDeviceActive())
 	{
 		if(!m_bResized)
 		{
@@ -328,14 +312,14 @@ void CD3DRenderLib::BeginFrame()
 					return;
 
 				if (hr == D3DERR_DEVICENOTRESET)
-					m_Renderer->ResetDevice(m_d3dpp);
+					s_shaderApi.ResetDevice(m_d3dpp);
 
 				return;
 			}
 		}
 		else
 		{
-			m_Renderer->ResetDevice(m_d3dpp);
+			s_shaderApi.ResetDevice(m_d3dpp);
 			m_bResized = false;
 		}
 	}
@@ -354,11 +338,11 @@ void CD3DRenderLib::EndFrame(IEqSwapChain* swapChain)
 	if(swapChain != NULL)
 		pHWND = (HWND)swapChain->GetWindow();
 
-	if(!m_Renderer->m_params->windowedMode)
+	if(!s_shaderApi.m_params->windowedMode)
 	{
 		// fullscreen present
 		hr = m_rhi->Present(NULL, NULL, pHWND, NULL);
-		m_Renderer->CheckDeviceResetOrLost(hr);
+		s_shaderApi.CheckDeviceResetOrLost(hr);
 		return;
 	}
 
@@ -367,7 +351,7 @@ void CD3DRenderLib::EndFrame(IEqSwapChain* swapChain)
 
 	int x,y,w,h;
 
-	m_Renderer->GetViewport(x,y,w,h);
+	s_shaderApi.GetViewport(x,y,w,h);
 
 	RECT srcRect;
 	srcRect.left = x;
@@ -377,7 +361,7 @@ void CD3DRenderLib::EndFrame(IEqSwapChain* swapChain)
 
 	hr = m_rhi->Present(&srcRect, &destRect, pHWND, NULL);
 
-	m_Renderer->CheckDeviceResetOrLost(hr);
+	s_shaderApi.CheckDeviceResetOrLost(hr);
 }
 
 void CD3DRenderLib::SetBackbufferSize(const int w, const int h)
@@ -389,7 +373,7 @@ void CD3DRenderLib::SetBackbufferSize(const int w, const int h)
 
 		m_bResized = true;
 
-		((ShaderAPID3DX9 *) m_Renderer)->m_bDeviceIsLost = true;
+		s_shaderApi.m_bDeviceIsLost = true;
 
 		m_width = w;
 		m_height = h;
@@ -457,7 +441,7 @@ IEqSwapChain* CD3DRenderLib::CreateSwapChain(void* window, bool windowed)
 {
 	CD3D9SwapChain* pNewChain = new CD3D9SwapChain();
 	
-	if(!pNewChain->Initialize((HWND)window, m_Renderer->m_params->verticalSyncEnabled, windowed))
+	if(!pNewChain->Initialize((HWND)window, s_shaderApi.m_params->verticalSyncEnabled, windowed))
 	{
 		MsgError("ERROR: Can't create D3D9 swapchain!\n");
 		delete pNewChain;

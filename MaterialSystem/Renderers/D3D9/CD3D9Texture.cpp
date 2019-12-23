@@ -10,6 +10,7 @@
 #include "d3dx9_def.h"
 #include "DebugInterface.h"
 
+extern ShaderAPID3DX9 s_shaderApi;
 
 CD3D9Texture::CD3D9Texture() : CTexture()
 {
@@ -109,11 +110,11 @@ void CD3D9Texture::Lock(texlockdata_t* pLockData, Rectangle_t* pRect, bool bDisc
 		}
 		else if(bReadOnly)
 		{
-			LPDIRECT3DDEVICE9 pDev = ((ShaderAPID3DX9*)g_pShaderAPI)->m_pD3DDevice;
+			LPDIRECT3DDEVICE9 pDev = s_shaderApi.m_pD3DDevice;
 
 			if (pDev->CreateOffscreenPlainSurface(m_iWidth, m_iHeight, formats[m_iFormat], D3DPOOL_SYSTEMMEM, &m_pLockSurface, NULL) == D3D_OK)
 			{
-				HRESULT r = ((ShaderAPID3DX9*)g_pShaderAPI)->m_pD3DDevice->GetRenderTargetData(((LPDIRECT3DSURFACE9) surfaces[nCubeFaceId]), m_pLockSurface);
+				HRESULT r = s_shaderApi.m_pD3DDevice->GetRenderTargetData(((LPDIRECT3DSURFACE9) surfaces[nCubeFaceId]), m_pLockSurface);
 
 				if(r != D3D_OK)
 					ASSERT(!"Couldn't lock surface: failed to copy surface to m_pLockSurface!");

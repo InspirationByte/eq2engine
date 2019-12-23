@@ -761,7 +761,12 @@ void CModelListRenderPanel::ChangeFilter(const wxString& filter, const wxString&
 		DkList<CLevObjectDef*>& modellist = g_pGameWorld->m_level.m_objectDefs;
 
 		shownArray.resize(modellist.numElem());
-		shownArray.append(g_pGameWorld->m_level.m_objectDefs);
+
+		for (int i = 0; i < modellist.numElem(); i++)
+		{
+			if(modellist[i]->m_placeable)
+				shownArray.append(modellist[i]);
+		}
 	}
 
 	if(filter.Length() == 0)
@@ -791,21 +796,26 @@ void CModelListRenderPanel::ChangeFilter(const wxString& filter, const wxString&
 
 void CModelListRenderPanel::RefreshLevelModels()
 {
+	m_filteredList.clear(false);
+
 	for(int i = 0; i < g_pGameWorld->m_level.m_objectDefs.numElem(); i++)
 	{
-		if(g_pGameWorld->m_level.m_objectDefs[i]->m_info.type == LOBJ_TYPE_OBJECT_CFG &&
-			g_pGameWorld->m_level.m_objectDefs[i]->m_defType == "INVALID")
-		{
-			Msg("Removing invalid object def '%s'\n", g_pGameWorld->m_level.m_objectDefs[i]->m_name.c_str());
+		CLevObjectDef* def = g_pGameWorld->m_level.m_objectDefs[i];
 
-			delete g_pGameWorld->m_level.m_objectDefs[i];
+		if(def->m_info.type == LOBJ_TYPE_OBJECT_CFG &&
+			def->m_defType == "INVALID")
+		{
+			Msg("Removing invalid object def '%s'\n", def->m_name.c_str());
+
+			delete def;
 			g_pGameWorld->m_level.m_objectDefs.removeIndex(i);
 			i--;
+			continue;
 		}
-	}
 
-	m_filteredList.clear(false);
-	m_filteredList.append( g_pGameWorld->m_level.m_objectDefs );
+		if(def->m_placeable)
+			m_filteredList.append(def);
+	}
 
 	// refresh definition list?
 	RebuildPreviewShots();

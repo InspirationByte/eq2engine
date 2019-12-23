@@ -10,6 +10,8 @@
 
 #include "IIndexBuffer.h"
 
+#define MAX_IB_SWITCHING 3
+
 class CIndexBufferGL : public IIndexBuffer
 {
 public:
@@ -33,19 +35,24 @@ public:
 	// unlocks buffer
 	void			Unlock();
 
+	uint			GetCurrentBuffer() const { return m_nGL_IB_Index[m_bufferIdx]; }
+
 protected:
-	uint			m_nGL_IB_Index;
-	bool			m_bIsLocked;
-	int				m_usage;
+	void			IncrementBuffer();
+
+	uint			m_nGL_IB_Index[MAX_IB_SWITCHING];
+	int				m_bufferIdx;
 
 	uint			m_nIndices;
-	int8			m_nIndexSize;
+	ER_BufferAccess	m_access;
 
 	ubyte*			m_lockPtr;
 	int				m_lockOffs;
 	int				m_lockSize;
+	int8			m_nIndexSize;
 	bool			m_lockDiscard;
 	bool			m_lockReadOnly;
+	bool			m_bIsLocked;
 };
 
 #endif // INDEXBUFFERGL_H

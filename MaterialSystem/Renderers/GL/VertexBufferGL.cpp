@@ -17,11 +17,12 @@
 #include "glad.h"
 #endif
 
+extern ShaderAPIGL g_shaderApi;
+
 extern bool GLCheckError(const char* op);
 
 CVertexBufferGL::CVertexBufferGL()
 {
-	m_nGL_VB_Index = 0;
 	m_numVerts = 0;
 	m_strideSize = 0;
 
@@ -30,7 +31,8 @@ CVertexBufferGL::CVertexBufferGL()
 	m_lockPtr = NULL;
 	m_flags = 0;
 
-	m_boundStream = -1;
+	memset(m_nGL_VB_Index, 0, sizeof(m_nGL_VB_Index));
+	m_bufferIdx = 0;
 }
 
 // returns size in bytes
@@ -51,10 +53,26 @@ int CVertexBufferGL::GetStrideSize()
 	return m_strideSize;
 }
 
+void CVertexBufferGL::IncrementBuffer()
+{
+	if (m_access != BUFFER_DYNAMIC)
+		return;
+
+	const int numBuffers = MAX_VB_SWITCHING;
+
+	int bufferIdx = m_bufferIdx;
+
+	bufferIdx++;
+	if (bufferIdx >= numBuffers)
+		bufferIdx = 0;
+
+	m_bufferIdx = bufferIdx;
+}
+
 // updates buffer without map/unmap operations which are slower
 void CVertexBufferGL::Update(void* data, int size, int offset, bool discard /*= true*/)
 {
-	bool dynamic = (m_usage == GL_DYNAMIC_DRAW);
+	bool dynamic = (m_access == BUFFER_DYNAMIC);
 
 	if(m_bIsLocked)
 	{
@@ -72,7 +90,9 @@ void CVertexBufferGL::Update(void* data, int size, int offset, bool discard /*= 
 
 	pGLRHI->GL_CRITICAL();
 
-	glBindBuffer(GL_ARRAY_BUFFER, m_nGL_VB_Index);
+	IncrementBuffer();
+
+	glBindBuffer(GL_ARRAY_BUFFER, GetCurrentBuffer());
 	GLCheckError("vertexbuffer update bind");
 
 	glBufferSubData(GL_ARRAY_BUFFER, offset*m_strideSize, size*m_strideSize, data);
@@ -87,7 +107,7 @@ void CVertexBufferGL::Update(void* data, int size, int offset, bool discard /*= 
 // locks vertex buffer and gives to programmer buffer data
 bool CVertexBufferGL::Lock(int lockOfs, int sizeToLock, void** outdata, bool readOnly)
 {
-	bool dynamic = (m_usage == GL_DYNAMIC_DRAW);
+	bool dynamic = (m_access == BUFFER_DYNAMIC);
 
 	if(m_bIsLocked)
 	{
@@ -112,6 +132,8 @@ bool CVertexBufferGL::Lock(int lockOfs, int sizeToLock, void** outdata, bool rea
 	if(readOnly)
 		discard = false;
 
+	IncrementBuffer();
+
 	m_lockDiscard = discard;
 
 	// allocate memory for lock data
@@ -119,15 +141,13 @@ bool CVertexBufferGL::Lock(int lockOfs, int sizeToLock, void** outdata, bool rea
 	m_lockOffs = lockOfs;
 	m_lockReadOnly = readOnly;
 
-	ShaderAPIGL* pGLRHI = (ShaderAPIGL*)g_pShaderAPI;
-
 #ifdef USE_GLES2
 	// map buffer
-	pGLRHI->GL_CRITICAL();
+	g_shaderApi.GL_CRITICAL();
 
-	glBindBuffer(GL_ARRAY_BUFFER, m_nGL_VB_Index);
+	glBindBuffer(GL_ARRAY_BUFFER, GetCurrentBuffer());
 
-	GLbitfield mapFlags = GL_MAP_WRITE_BIT | GL_MAP_UNSYNCHRONIZED_BIT | (discard ? GL_MAP_INVALIDATE_RANGE_BIT : 0);
+	GLbitfield mapFlags = GL_MAP_WRITE_BIT | GL_MAP_UNSYNCHRONIZED_BIT | (discard ? GL_MAP_INVALIDATE_BUFFER_BIT : 0);
 	GLCheckError("vertexbuffer map");
 	m_lockPtr = (ubyte*)glMapBufferRange(GL_ARRAY_BUFFER, m_lockOffs*m_strideSize, m_lockSize*m_strideSize, mapFlags );
 	(*outdata) = m_lockPtr;// + m_lockOffs*m_strideSize;
@@ -146,8 +166,8 @@ bool CVertexBufferGL::Lock(int lockOfs, int sizeToLock, void** outdata, bool rea
 	// read data into the buffer if we're not discarding
 	if( !discard )
 	{
-		pGLRHI->GL_CRITICAL();
-		glBindBuffer(GL_ARRAY_BUFFER, m_nGL_VB_Index);
+		g_shaderApi.GL_CRITICAL();
+		glBindBuffer(GL_ARRAY_BUFFER, GetCurrentBuffer());
 		GLCheckError("vertexbuffer get data bind");
 
 		// lock whole buffer
@@ -176,11 +196,9 @@ void CVertexBufferGL::Unlock()
 	{
 		if( !m_lockReadOnly )
 		{
-			ShaderAPIGL* pGLRHI = (ShaderAPIGL*)g_pShaderAPI;
+			g_shaderApi.GL_CRITICAL();
 
-			pGLRHI->GL_CRITICAL();
-
-			glBindBuffer(GL_ARRAY_BUFFER, m_nGL_VB_Index);
+			glBindBuffer(GL_ARRAY_BUFFER, GetCurrentBuffer());
 			GLCheckError("vertexbuffer unmap bind");
 
 #ifdef USE_GLES2

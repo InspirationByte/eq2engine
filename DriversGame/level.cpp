@@ -501,6 +501,8 @@ void CGameLevel::InitObjectDefFromKeyValues(CLevObjectDef* def, kvkeybase_t* def
 	def->m_defKeyvalues->MergeFrom(defDesc, true);
 
 #ifdef EDITOR
+	def->m_placeable = KV_GetValueBool(defDesc->FindKeyBase("placeable"), 0, true);
+
 	LoadDefLightData(def->m_lightData, defDesc);
 
 	kvkeybase_t* editorModelKey = defDesc->FindKeyBase("editormodel");
@@ -654,6 +656,10 @@ void CGameLevel::ReadObjectDefsLump(IVirtualStream* stream, kvkeybase_t* kvDefs)
 
 		def->m_model = NULL;
 		def->m_defModel = g_studioModelCache->GetModel(modelIdx);
+
+#ifdef EDITOR
+		def->m_placeable = KV_GetValueBool(defSection->FindKeyBase("placeable"), 0, true);
+#endif // EDITOR
 
 		m_objectDefs.append(def);
 	}

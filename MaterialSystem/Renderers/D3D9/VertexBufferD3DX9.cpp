@@ -12,6 +12,8 @@
 
 #include "ShaderAPID3DX9.h"
 
+extern ShaderAPID3DX9 s_shaderApi;
+
 CVertexBufferD3DX9::CVertexBufferD3DX9()
 {
 	m_nSize = 0;
@@ -63,8 +65,6 @@ void CVertexBufferD3DX9::ReleaseForRestoration()
 	}
 }
 
-extern LPDIRECT3DDEVICE9 pXDevice;
-
 void CVertexBufferD3DX9::Restore()
 {
 	if(!m_pRestore)
@@ -72,7 +72,7 @@ void CVertexBufferD3DX9::Restore()
 
 	bool dynamic = (m_nUsage & D3DUSAGE_DYNAMIC) != 0;
 
-	if (((ShaderAPID3DX9*)g_pShaderAPI)->m_pD3DDevice->CreateVertexBuffer(
+	if (s_shaderApi.m_pD3DDevice->CreateVertexBuffer(
 		m_nInitialSize, m_nUsage, 0, dynamic? D3DPOOL_DEFAULT : D3DPOOL_MANAGED, &m_pVertexBuffer, NULL) != D3D_OK)
 	{
 		ErrorMsg("Vertex buffer restoration failed on creation\n");
@@ -110,7 +110,7 @@ int CVertexBufferD3DX9::GetStrideSize()
 // updates buffer without map/unmap operations which are slower
 void CVertexBufferD3DX9::Update(void* data, int size, int offset, bool discard /*= true*/)
 {
-	HRESULT hr = ((ShaderAPID3DX9*)g_pShaderAPI)->m_pD3DDevice->TestCooperativeLevel();
+	HRESULT hr = s_shaderApi.m_pD3DDevice->TestCooperativeLevel();
 
 	if (hr == D3DERR_DEVICELOST || hr == D3DERR_DEVICENOTRESET)
 		return;
@@ -146,7 +146,7 @@ void CVertexBufferD3DX9::Update(void* data, int size, int offset, bool discard /
 // locks vertex buffer and gives to programmer buffer data
 bool CVertexBufferD3DX9::Lock(int lockOfs, int vertexCount, void** outdata, bool readOnly)
 {
-	HRESULT hr = ((ShaderAPID3DX9*)g_pShaderAPI)->m_pD3DDevice->TestCooperativeLevel();
+	HRESULT hr = s_shaderApi.m_pD3DDevice->TestCooperativeLevel();
 
 	if (hr == D3DERR_DEVICELOST || hr == D3DERR_DEVICENOTRESET)
 	{

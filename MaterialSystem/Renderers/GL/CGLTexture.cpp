@@ -16,6 +16,8 @@
 
 #include "shaderapigl_def.h"
 
+extern ShaderAPIGL g_shaderApi;
+
 extern bool GLCheckError(const char* op);
 
 CGLTexture::CGLTexture()
@@ -128,9 +130,7 @@ void CGLTexture::Lock(texlockdata_t* pLockData, Rectangle_t* pRect, bool bDiscar
 #else
     if(!bDiscard)
     {
-    	ShaderAPIGL* pGLRHI = (ShaderAPIGL*)g_pShaderAPI;
-
-        pGLRHI->GL_CRITICAL();
+        g_shaderApi.GL_CRITICAL();
 
 		int targetOrCubeTarget = (glTarget == GL_TEXTURE_CUBE_MAP) ? GL_TEXTURE_CUBE_MAP_POSITIVE_X+m_lockCubeFace : glTarget;
 
@@ -155,12 +155,10 @@ void CGLTexture::Unlock()
 	{
 		if( !m_lockReadOnly )
 		{
-			ShaderAPIGL* pGLRHI = (ShaderAPIGL*)g_pShaderAPI;
-
 			GLenum srcFormat = chanCountTypes[GetChannelCount(m_iFormat)];
 			GLenum srcType = chanTypePerFormat[m_iFormat];
 
-            pGLRHI->GL_CRITICAL();
+            g_shaderApi.GL_CRITICAL();
 
 			int targetOrCubeTarget = (glTarget == GL_TEXTURE_CUBE_MAP) ? GL_TEXTURE_CUBE_MAP_POSITIVE_X+m_lockCubeFace : glTarget;
 

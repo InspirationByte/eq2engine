@@ -62,10 +62,10 @@ ARB_occlusion_query
 
 HOOK_TO_CVAR(r_screen);
 
-// make library
-CGLRenderLib g_library;
+ShaderAPIGL g_shaderApi;
+IShaderAPI* g_pShaderAPI = &g_shaderApi;
 
-IShaderAPI* g_pShaderAPI = NULL;
+CGLRenderLib g_library;
 
 CGLRenderLib::CGLRenderLib()
 {
@@ -75,6 +75,11 @@ CGLRenderLib::CGLRenderLib()
 CGLRenderLib::~CGLRenderLib()
 {
 	GetCore()->UnregisterInterface(RENDERER_INTERFACE_VERSION);
+}
+
+IShaderAPI* CGLRenderLib::GetRenderer() const
+{
+	return &g_shaderApi;
 }
 
 #ifdef PLAT_WIN
@@ -706,20 +711,17 @@ bool CGLRenderLib::InitAPI(shaderAPIParams_t& params)
 #endif // USE_GLES2
 	}
 
-	m_Renderer = new ShaderAPIGL();
-	g_pShaderAPI = m_Renderer;
-
 #ifdef USE_GLES2
-	m_Renderer->m_display = this->eglDisplay;
-	//m_Renderer->m_eglSurface = this->eglSurface;
-	m_Renderer->m_hdc = this->hdc;
+	g_shaderApi.m_display = this->eglDisplay;
+	//g_shaderApi.m_eglSurface = this->eglSurface;
+	g_shaderApi.m_hdc = this->hdc;
 #elif PLAT_WIN
-	m_Renderer->m_hdc = this->hdc;
+	g_shaderApi.m_hdc = this->hdc;
 #elif PLAT_LINUX
-    m_Renderer->m_display = this->display;
+	g_shaderApi.m_display = this->display;
 #endif //PLAT_WIN
 
-	m_Renderer->m_glContext = this->glContext;
+	g_shaderApi.m_glContext = this->glContext;
 
 #ifndef USE_GLES2 // TEMPORARILY DISABLED
 	if (GLAD_GL_ARB_multisample && params.multiSamplingMode > 0)
@@ -729,7 +731,7 @@ bool CGLRenderLib::InitAPI(shaderAPIParams_t& params)
 	//-------------------------------------------
 	// init caps
 	//-------------------------------------------
-	ShaderAPICaps_t& caps = m_Renderer->m_caps;
+	ShaderAPICaps_t& caps = g_shaderApi.m_caps;
 
 	memset(&caps, 0, sizeof(caps));
 
@@ -847,7 +849,7 @@ void CGLRenderLib::ExitAPI()
 
 	ReleaseDC(hwnd, hdc);
 
-	if (!m_Renderer->m_params->windowedMode)
+	if (!g_shaderApi.m_params->windowedMode)
 	{
 		// Reset display mode to default
 		ChangeDisplaySettingsEx((const char *) device.DeviceName, NULL, NULL, 0, NULL);
@@ -861,7 +863,7 @@ void CGLRenderLib::ExitAPI()
     glXMakeCurrent(display, None, NULL);
     glXDestroyContext(display, glContext);
 
-	if(!m_Renderer->m_params->windowedMode)
+	if(!g_shaderApi.m_params->windowedMode)
 	{
 		if (XF86VidModeSwitchToMode(display, m_screen, dmodes[0]))
 			XF86VidModeSetViewPort(display, m_screen, 0, 0);
@@ -876,8 +878,6 @@ void CGLRenderLib::ExitAPI()
 #endif // PLAT_LIUX
 
 #endif // PLAT_WIN
-
-	delete m_Renderer;
 
 }
 
@@ -909,10 +909,10 @@ void CGLRenderLib::BeginFrame()
 #endif // ANDROID
 
 	// ShaderAPIGL uses m_nViewportWidth/Height as backbuffer size
-	m_Renderer->m_nViewportWidth = m_width;
-	m_Renderer->m_nViewportHeight = m_height;
+	g_shaderApi.m_nViewportWidth = m_width;
+	g_shaderApi.m_nViewportHeight = m_height;
 
-	m_Renderer->SetViewport(0, 0, m_width, m_height);
+	g_shaderApi.SetViewport(0, 0, m_width, m_height);
 }
 
 void CGLRenderLib::EndFrame(IEqSwapChain* schain)
@@ -925,7 +925,7 @@ void CGLRenderLib::EndFrame(IEqSwapChain* schain)
 #elif PLAT_WIN
 	if (wgl::exts::var_EXT_swap_control)
 	{
-		wgl::SwapIntervalEXT(m_Renderer->m_params->verticalSyncEnabled ? 1 : 0);
+		wgl::SwapIntervalEXT(g_shaderApi.m_params->verticalSyncEnabled ? 1 : 0);
 	}
 
 	SwapBuffers(hdc);
@@ -934,10 +934,10 @@ void CGLRenderLib::EndFrame(IEqSwapChain* schain)
 
 	if (glX::exts::var_EXT_swap_control)
 	{
-		glX::SwapIntervalEXT(display, (Window)m_Renderer->m_params->windowHandle, m_Renderer->m_params->verticalSyncEnabled ? 1 : 0);
+		glX::SwapIntervalEXT(display, (Window)g_shaderApi.m_params->windowHandle, g_shaderApi.m_params->verticalSyncEnabled ? 1 : 0);
 	}
 
-	glXSwapBuffers(display, (Window)m_Renderer->m_params->windowHandle);
+	glXSwapBuffers(display, (Window)g_shaderApi.m_params->windowHandle);
 
 #endif // PLAT_WIN
 }
@@ -951,7 +951,7 @@ void CGLRenderLib::SetBackbufferSize(const int w, const int h)
 	m_height = h;
 
 #if defined(PLAT_WIN) && !defined(USE_GLES2)
-	if(!m_Renderer->m_params->windowedMode)
+	if(!g_shaderApi.m_params->windowedMode)
 	{
 		dm.dmPelsWidth = m_width;
 		dm.dmPelsHeight = m_height;

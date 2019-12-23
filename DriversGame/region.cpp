@@ -426,7 +426,9 @@ void CLevelRegion::Render(const Vector3D& cameraPosition, const occludingFrustum
 		{
 			materials->SetMatrix(MATRIXMODE_WORLD, mat);
 
-			const BoundingBox& bbox = cont->m_defModel->GetAABB();
+			BoundingBox bbox;
+			if (cont->m_defModel)
+				bbox = cont->m_defModel->GetAABB();
 
 			if( occlFrustum.IsSphereVisible( ref->position, length(bbox.GetSize())) )
 				cont->Render(fDist, ref->bbox, false, nRenderFlags);

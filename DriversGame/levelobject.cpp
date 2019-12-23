@@ -23,6 +23,9 @@ CLevObjectDef::CLevObjectDef() :
 	m_defKeyvalues(NULL)
 {
 	memset(&m_info, 0, sizeof(levObjectDefInfo_t));
+#ifdef EDITOR
+	m_placeable = true;
+#endif //  EDITOR
 }
 
 CLevObjectDef::~CLevObjectDef()
@@ -52,6 +55,9 @@ CLevObjectDef::~CLevObjectDef()
 void CLevObjectDef::RefreshPreview()
 {
 	if(!m_dirtyPreview)
+		return;
+
+	if (!m_placeable)
 		return;
 
 	m_dirtyPreview = false;
