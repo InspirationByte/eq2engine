@@ -183,6 +183,7 @@ private:
 	{
 		EqString id;
 		EqString path;
+		bool mainWritePath;
 	};
 
 	DkList<SearchPath_t>		m_directories;		// mod data, for fall back

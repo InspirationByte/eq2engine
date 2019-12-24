@@ -640,6 +640,8 @@ IFile* CFileSystem::GetFileHandle(const char* filename,const char* options, int 
     if (flags == -1)
         flags |= SP_MOD | SP_DATA | SP_ROOT;
 
+	bool isWrite = (strchr(options, 'w') || strchr(options, 'a') || strchr(options, '+'));
+
     char pFilePath[ MAX_PATH ];
     strcpy( pFilePath, filename );
     FixSlashes(pFilePath);
@@ -655,6 +657,10 @@ IFile* CFileSystem::GetFileHandle(const char* filename,const char* options, int 
     {
 		for(int i = 0; i < m_directories.numElem(); i++)
 		{
+			// don't create files in other write paths
+			if (isWrite && m_directories[i].mainWritePath)
+				continue;
+
 			sprintf(tmp_path, "%s%s/%s", basePath.c_str(), m_directories[i].path.c_str(), pFilePath);
 
 			FILE *tmpFile = fopen(tmp_path,options);
@@ -815,11 +821,17 @@ void CFileSystem::AddSearchPath(const char* pathId, const char* pszDir)
 
 	DevMsg(DEVMSG_FS, "Adding search patch '%s' at '%s'\n", pathId, pszDir);
 
+	bool isMod = strstr(pathId, "$MOD$") != nullptr;
+
 	SearchPath_t pathInfo;
 	pathInfo.id = pathId;
 	pathInfo.path = pszDir;
+	pathInfo.mainWritePath = !isMod;
 
-	m_directories.append(pathInfo);
+	if(isMod)
+		m_directories.insert(pathInfo, 0);
+	else
+		m_directories.append(pathInfo);
 }
 
 void CFileSystem::RemoveSearchPath(const char* pathId)
@@ -838,8 +850,12 @@ void CFileSystem::RemoveSearchPath(const char* pathId)
 // Returns current game path
 const char* CFileSystem::GetCurrentGameDirectory() const
 {
-	if(m_directories.numElem())
-		return m_directories[0].path.c_str(); // return first directory.
+	// return first directory with 'mainWritePath' attribute set
+	for (int i = 0; i < m_directories.numElem(); i++)
+	{
+		if (m_directories[i].mainWritePath)
+			return m_directories[i].path.c_str();
+	}
 
     return m_dataDir.GetData();
 }

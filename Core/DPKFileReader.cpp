@@ -388,8 +388,8 @@ DPKFILE* CDPKFileReader::Open(const char* filename,const char* mode)
 		return NULL;
 	}
 
-    // NOTENOTE: For now we cannot write directly to DPK!
-	if( !stricmp(mode,"wb") || !stricmp(mode,"a") || !stricmp(mode,"w+") || !stricmp(mode,"wt") || !stricmp(mode,"r+") )
+	// check for write access
+	if(strchr(mode, 'w') || strchr(mode, 'a') || strchr(mode, '+'))
 	{
 		MsgError("DPK only can open for reading!\n");
 		return NULL;
@@ -403,7 +403,6 @@ DPKFILE* CDPKFileReader::Open(const char* filename,const char* mode)
 
 	dpkfileinfo_t& fileInfo = m_dpkFiles[dpkFileIndex];
 
-	
 	dpkhandle_t handle = DPK_HANDLE_INVALID;
 
 	// decompress/decrypt the file if it has beed

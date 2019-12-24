@@ -816,6 +816,7 @@ void CMainWindow::ProcessAllMenuCommands(wxCommandEvent& event)
 	}
 	else if(event.GetId() == Event_View_ShowRegionEditor)
 	{
+		m_regionEditorFrame->RefreshRegionMapImages();
 		m_regionEditorFrame->Show();
 	}
 	else if(event.GetId() >= Event_View_Environments_Start && event.GetId() <= Event_View_Environments_End)
@@ -1429,31 +1430,35 @@ bool CEGFViewApp::OnInit()
 	if(!g_matsysmodule)
 	{
 		ErrorMsg("FATAL ERROR! Can't load EqMatSystem!");
-		return -1;
+		return false;
 	}
 
-	g_localizer->AddTokensFile("EGFMan");
+	if (!g_parallelJobs->Init(1))
+		return false;
 
-	g_pMainFrame = new CMainWindow( NULL, -1, DKLOC("TOKEN_TITLE", L"Driver Syndicate Level Editor"));
-	g_pMainFrame->Centre();
-	g_pMainFrame->Show(true);
-
-	SetTopWindow(g_pMainFrame);
-
-	g_parallelJobs->Init(1);
-
-	int pfbCmdIdx = g_cmdLine->FindArgument("-editprefab");
-
-	if(pfbCmdIdx != -1)
-	{
-		EqString prefabName(g_cmdLine->GetArgumentsOf(pfbCmdIdx));
-		g_pMainFrame->LoadEditPrefab( prefabName.c_str() );
-	}
+	if (!g_fontCache->Init())
+		return false;
 
 #ifdef _WIN32
 	if(Splash_HWND)
 		DestroyWindow(Splash_HWND);
 #endif // _WIN32
+
+	// init window
+	g_pMainFrame = new CMainWindow(NULL, -1, DKLOC("TOKEN_TITLE", L"Driver Syndicate Level Editor"));
+	g_pMainFrame->Centre();
+	g_pMainFrame->Show(true);
+
+	SetTopWindow(g_pMainFrame);
+
+	// prefab editing
+	int pfbCmdIdx = g_cmdLine->FindArgument("-editprefab");
+
+	if (pfbCmdIdx != -1)
+	{
+		EqString prefabName(g_cmdLine->GetArgumentsOf(pfbCmdIdx));
+		g_pMainFrame->LoadEditPrefab(prefabName.c_str());
+	}
 
     return true;
 }

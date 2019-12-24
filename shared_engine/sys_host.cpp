@@ -198,6 +198,7 @@ bool CGameHost::InitSystems( EQWNDHANDLE pWindow, bool bWindowed )
 	}
 
 	kvkeybase_t* matSystemSettings = GetCore()->GetConfig()->FindKeyBase("MaterialSystem");
+	kvkeybase_t* fileSystemSettings = GetCore()->GetConfig()->FindKeyBase("FileSystem");
 
 	const char* rendererName = matSystemSettings ? KV_GetValueString(matSystemSettings->FindKeyBase("Renderer"), 0, NULL) : "eqD3D9RHI";
 	const char* materialsPath = matSystemSettings ? KV_GetValueString(matSystemSettings->FindKeyBase("MaterialsPath"), 0, NULL) : "materials/";
@@ -244,25 +245,38 @@ bool CGameHost::InitSystems( EQWNDHANDLE pWindow, bool bWindowed )
 
 	g_pShaderAPI = materials->GetShaderAPI();
 
-	materials_config.threadedloader = (g_pShaderAPI->GetShaderAPIClass() != SHADERAPI_OPENGL);
-	
-	if (matSystemSettings)
-	{
-		for (int i = 0; i < matSystemSettings->keys.numElem(); i++)
-		{
-			kvkeybase_t* keybase = matSystemSettings->keys[i];
+#ifdef _WIN32
+	materials->LoadShaderLibrary("eqBaseShaders");
+#else
+	materials->LoadShaderLibrary("libeqBaseShaders");
+#endif // _WIN32
 
-			if (!stricmp(keybase->GetName(), "AddShaders"))
+	materials_config.threadedloader = (g_pShaderAPI->GetShaderAPIClass() != SHADERAPI_OPENGL);
+
+	// Search for mods folder
+	if(fileSystemSettings && KV_GetValueBool(fileSystemSettings->FindKeyBase("EnableMods"), 0, false) )
+	{
+		DKFINDDATA* findData = nullptr;
+		char* modPath = (char*)g_fileSystem->FindFirst("Mods/*.*", &findData, SP_ROOT);
+
+		if (modPath)
+		{
+			int count = 0;
+
+			while (modPath = (char*)g_fileSystem->FindNext(findData))
 			{
-				if (!materials->LoadShaderLibrary(KV_GetValueString(keybase)))
-					return false;
+				if (g_fileSystem->FindIsDirectory(findData) && stricmp(modPath, "..") && stricmp(modPath, "."))
+				{
+					MsgInfo("*** Registered Mod '%s' ***\n", modPath);
+					g_fileSystem->AddSearchPath(varargs("$MOD$_%d", count), varargs("Mods/%s", modPath));
+					count++;
+				}
 			}
+
+			g_fileSystem->FindClose(findData);
 		}
 	}
 
-	int wide,tall;
-	SDL_GetWindowSize(m_pWindow, &wide, &tall);
-	OnWindowResize(wide,tall);
 
 	// register all shaders
 	REGISTER_INTERNAL_SHADERS();
@@ -315,6 +329,10 @@ bool CGameHost::InitSystems( EQWNDHANDLE pWindow, bool bWindowed )
 	g_inputCommandBinder->Init();
 
 	MsgInfo("EqEngine systems init successfully\n");
+
+	int wide, tall;
+	SDL_GetWindowSize(m_pWindow, &wide, &tall);
+	OnWindowResize(wide, tall);
 
 	return true;
 }
