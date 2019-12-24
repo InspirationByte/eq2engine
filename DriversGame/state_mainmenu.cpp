@@ -452,13 +452,17 @@ void CState_MainMenu::ResetKeys()
 	m_keysPos = 0;
 }
 
-void CState_MainMenu::GetEnteredKeysString(EqString& keysStr)
+void CState_MainMenu::GetEnteredKeysString(EqString& keysStr, bool unbind /*= false*/)
 {
 	int* currKey = m_keysEntered;
 
 	for (; *currKey; currKey++)
 	{
-		if (currKey > m_keysEntered)
+		// don't unbind axis actions
+		if (unbind && (*currKey >= JOYSTICK_START_AXES && *currKey <= JOYSTICK_START_AXES+JOYSTICK_MAX_AXES))
+			continue;
+
+		if (keysStr.Length() > 0)
 			keysStr.Append('+');
 
 		keysStr.Append(KeyIndexToString(*currKey));
@@ -479,8 +483,11 @@ bool CState_MainMenu::MapKeysToCurrentAction()
 	std::string actionNameStr;
 	if (elem.safe_at("inputActionName", actionNameStr))
 	{
+		EqString unboundKeys;
+		GetEnteredKeysString(keysStr, true);
+
 		in_binding_t* existingBinding;
-		while (existingBinding = g_inputCommandBinder->FindBinding(keysStr.c_str()))
+		while (existingBinding = g_inputCommandBinder->FindBinding(unboundKeys.c_str()))
 		{
 			g_inputCommandBinder->DeleteBinding(existingBinding);
 		}

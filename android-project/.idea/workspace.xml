@@ -11,27 +11,8 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="c9096593-b4df-4b83-813a-05c2d4299dea" name="Default" comment="">
-      <change beforePath="$PROJECT_DIR$/../DriversGame/ShadowRenderer.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../DriversGame/ShadowRenderer.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../DriversGame/region.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../DriversGame/region.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../MaterialSystem/Renderers/D3D9/CD3D9Texture.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../MaterialSystem/Renderers/D3D9/CD3D9Texture.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../MaterialSystem/Renderers/D3D9/D3D9OcclusionQuery.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../MaterialSystem/Renderers/D3D9/D3D9OcclusionQuery.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../MaterialSystem/Renderers/D3D9/D3D9ShaderProgram.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../MaterialSystem/Renderers/D3D9/D3D9ShaderProgram.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../MaterialSystem/Renderers/D3D9/D3DLibrary.h" beforeDir="false" afterPath="$PROJECT_DIR$/../MaterialSystem/Renderers/D3D9/D3DLibrary.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../MaterialSystem/Renderers/D3D9/IndexBufferD3DX9.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../MaterialSystem/Renderers/D3D9/IndexBufferD3DX9.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../MaterialSystem/Renderers/D3D9/ShaderAPID3DX9.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../MaterialSystem/Renderers/D3D9/ShaderAPID3DX9.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../MaterialSystem/Renderers/D3D9/VertexBufferD3DX9.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../MaterialSystem/Renderers/D3D9/VertexBufferD3DX9.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../MaterialSystem/Renderers/D3D9/d3dlibrary.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../MaterialSystem/Renderers/D3D9/d3dlibrary.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../MaterialSystem/Renderers/GL/CGLRenderLib.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../MaterialSystem/Renderers/GL/CGLRenderLib.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../MaterialSystem/Renderers/GL/CGLRenderLib.h" beforeDir="false" afterPath="$PROJECT_DIR$/../MaterialSystem/Renderers/GL/CGLRenderLib.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../MaterialSystem/Renderers/GL/CGLTexture.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../MaterialSystem/Renderers/GL/CGLTexture.cpp" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../MaterialSystem/Renderers/GL/IndexBufferGL.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../MaterialSystem/Renderers/GL/IndexBufferGL.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../MaterialSystem/Renderers/GL/IndexBufferGL.h" beforeDir="false" afterPath="$PROJECT_DIR$/../MaterialSystem/Renderers/GL/IndexBufferGL.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../MaterialSystem/Renderers/GL/ShaderAPIGL.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../MaterialSystem/Renderers/GL/ShaderAPIGL.cpp" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../MaterialSystem/Renderers/GL/VertexBufferGL.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../MaterialSystem/Renderers/GL/VertexBufferGL.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../MaterialSystem/Renderers/GL/VertexBufferGL.h" beforeDir="false" afterPath="$PROJECT_DIR$/../MaterialSystem/Renderers/GL/VertexBufferGL.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../MaterialSystem/Renderers/Shared/ShaderAPI_Base.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../MaterialSystem/Renderers/Shared/ShaderAPI_Base.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../shared_engine/EqParticles.h" beforeDir="false" afterPath="$PROJECT_DIR$/../shared_engine/EqParticles.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../shared_engine/EqParticles_Render.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../shared_engine/EqParticles_Render.cpp" afterDir="false" />
     </list>
     <ignored path="android-project.iws" />
     <ignored path=".idea/workspace.xml" />

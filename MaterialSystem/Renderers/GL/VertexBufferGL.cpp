@@ -147,7 +147,7 @@ bool CVertexBufferGL::Lock(int lockOfs, int sizeToLock, void** outdata, bool rea
 
 	glBindBuffer(GL_ARRAY_BUFFER, GetCurrentBuffer());
 
-	GLbitfield mapFlags = GL_MAP_WRITE_BIT | GL_MAP_UNSYNCHRONIZED_BIT | (discard ? GL_MAP_INVALIDATE_BUFFER_BIT : 0);
+	GLbitfield mapFlags = GL_MAP_WRITE_BIT | GL_MAP_UNSYNCHRONIZED_BIT;// | (discard ? GL_MAP_INVALIDATE_BUFFER_BIT : 0);
 	GLCheckError("vertexbuffer map");
 	m_lockPtr = (ubyte*)glMapBufferRange(GL_ARRAY_BUFFER, m_lockOffs*m_strideSize, m_lockSize*m_strideSize, mapFlags );
 	(*outdata) = m_lockPtr;// + m_lockOffs*m_strideSize;
