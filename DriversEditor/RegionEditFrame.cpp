@@ -201,7 +201,7 @@ void CRegionEditFrame::MoveRegions(const IVector2D& delta)
 		for (int x = 0; x < m_regWide; x++)
 		{
 			int dx = delta.x < 0 ? x : ((m_regWide - 1) - x);
-			int dy = delta.y < 0 ? y : ((m_regWide - 1) - y);
+			int dy = delta.y < 0 ? y : ((m_regTall - 1) - y);
 
 			int srcRegIdx = dy * m_regWide + dx;
 
@@ -796,11 +796,11 @@ void CRegionEditFrame::ReDraw()
 		font->RenderText(varargs("Regions: %d / %d", displayed, total), baseTextPos + lineOffset*0, fontParam);
 		font->RenderText(varargs("Selected: %d", selected), baseTextPos + lineOffset*1, fontParam);
 
-		font->RenderText("RMB Drag - navigate", baseTextPos + lineOffset * 3, fontParam);
+		font->RenderText("Right Mouse + Drag - navigate", baseTextPos + lineOffset * 3, fontParam);
 		font->RenderText(varargs("Mouse Wheel - Zoom (%g)", m_zoomLevel), baseTextPos + lineOffset * 4, fontParam);
 		font->RenderText("N - change display", baseTextPos + lineOffset * 5, fontParam);
 		
-		font->RenderText("CTRL + Left click - Toggle selection", baseTextPos + lineOffset * 7, fontParam);
+		font->RenderText("CTRL + Left mouse - Toggle selection", baseTextPos + lineOffset * 7, fontParam);
 		font->RenderText("CTRL + A - Select All", baseTextPos + lineOffset * 8, fontParam);
 		font->RenderText("ARROWS - move regions", baseTextPos + lineOffset * 9, fontParam);
 		font->RenderText("DELETE - remove regions", baseTextPos + lineOffset * 10, fontParam);
