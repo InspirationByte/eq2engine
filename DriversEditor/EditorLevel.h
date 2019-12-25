@@ -80,6 +80,8 @@ struct buildingSource_t
 	void ToKeyValues(kvkeybase_t* kvs);
 	void FromKeyValues(kvkeybase_t* kvs);
 
+	void MoveBy(const Vector3D& offset);
+
 	EqString							loadBuildingName;
 
 	DkLinkedList<buildSegmentPoint_t>	points;
@@ -156,8 +158,11 @@ public:
 
 	bool			Ed_GenerateMap(LevelGenParams_t& genParams, const CImage* img);
 
+	void			Ed_SwapRegions(CEditorLevelRegion& sourceRegion, CEditorLevelRegion& targetRegion);
+
 	// moves object to new region if possible
 	CEditorLevelRegion*	Ed_MakeObjectRegionValid(regionObject_t* obj, CLevelRegion* itsRegion);
+
 
 	void			WriteLevelRegions(IVirtualStream* stream, bool isFinal);
 	void			WriteObjectDefsLump(IVirtualStream* stream);
@@ -199,9 +204,6 @@ public:
 	void						WriteRegionData(IVirtualStream* stream, DkList<CLevObjectDef*>& models, bool isFinal);
 	void						WriteRegionOccluders(IVirtualStream* stream);
 	void						WriteRegionRoads(IVirtualStream* stream);
-		
-	void						ReadRegionBuildings( IVirtualStream* stream );
-	void						WriteRegionBuildings( IVirtualStream* stream );
 
 	void						ClearRoadTrafficLightStates();
 	void						PostprocessCellObject(regionObject_t* obj);

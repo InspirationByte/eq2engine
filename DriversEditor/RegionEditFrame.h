@@ -9,21 +9,26 @@
 #define REGIONEDITFRAME_H
 
 #include "EditorHeader.h"
+#include "EditorLevel.h"
 
-class CLevelRegion;
+enum ERegionMoveState {
+	REGION_MOVE_NONE = 0,
+	REGION_MOVE_CUT,
+	REGION_MOVE_MOVED,
+};
 
 struct regionMap_t
 {
-	regionMap_t()
-	{
-		region = NULL;
-		image = NULL;
-		aiMapImage = NULL;
-	}
+	regionMap_t();
 
-	CLevelRegion*	region;
-	ITexture*		image;	// image of region
-	ITexture*		aiMapImage;
+	CEditorLevelRegion*	region;
+	CEditorLevelRegion swapTemp;
+
+	ITexture*			image;	// image of region
+	ITexture*			aiMapImage;
+
+	bool				selected;
+	ERegionMoveState	state;
 };
 
 class CRegionEditFrame : public wxFrame 
@@ -63,6 +68,12 @@ public:
 	DECLARE_EVENT_TABLE();
 
 protected:
+	void SelectAll();
+	void CancelSelection();
+
+	void MoveRegions(const IVector2D& delta);
+	void ClearSelectedRegions();
+
 	wxMenuBar*		m_pMenu;
 
 	IEqSwapChain*	m_swapChain;

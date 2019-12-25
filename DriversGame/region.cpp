@@ -119,6 +119,7 @@ CLevelRegion::CLevelRegion()
 {
 	m_level = nullptr;
 	m_roads = nullptr;
+	m_regionIndex = -1;
 
 	m_hasTransparentSubsets = false;
 
@@ -138,6 +139,7 @@ CLevelRegion::~CLevelRegion()
 	{
 		if(m_heightfield[i])
 			delete m_heightfield[i];
+		m_heightfield[i] = nullptr;
 	}
 
 	delete[] m_roads;
@@ -487,23 +489,29 @@ void CLevelRegion::Render(const Vector3D& cameraPosition, const occludingFrustum
 
 void CLevelRegion::Init(int cellsSize, const IVector2D& regPos, const Vector3D& hfieldPos)
 {
+#ifndef EDITOR
 	if(!m_heightfield[0])
 		m_heightfield[0] = new CHeightTileFieldRenderable();
-
+#endif // EDITOR
 	// init all hfields
 	for(int i = 0; i < ENGINE_REGION_MAX_HFIELDS; i++)
 	{
 #ifdef EDITOR
-		if(!m_heightfield[i])
+		if (!m_heightfield[i])
+		{
 			m_heightfield[i] = new CHeightTileFieldRenderable();
+			m_heightfield[i]->m_regionPos = regPos;
+			m_heightfield[i]->m_position = hfieldPos;
+		}
 #else
 		if (!m_heightfield[i])
 			continue;
+
+		m_heightfield[i]->m_regionPos = regPos;
+		m_heightfield[i]->m_position = hfieldPos;
 #endif // EDITOR
 
 		m_heightfield[i]->m_fieldIdx = i;
-		m_heightfield[i]->m_regionPos = regPos;
-		m_heightfield[i]->m_position = hfieldPos;
 
 #ifdef EDITOR
 		// init other things like road data
@@ -763,7 +771,16 @@ void CLevelRegion::Cleanup()
 		m_navGrid[i].Cleanup();
 	}
 
-#ifndef EDITOR
+#ifdef EDITOR
+	for (int i = 0; i < GetNumHFields(); i++)
+	{
+		if (m_heightfield[i])
+		{
+			m_heightfield[i]->CleanRenderData();
+			m_heightfield[i]->Destroy();
+		}
+	}
+#else
 	for (int i = 0; i < GetNumHFields(); i++)
 	{
 		if (m_heightfield[i])

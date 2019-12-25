@@ -658,7 +658,7 @@ IFile* CFileSystem::GetFileHandle(const char* filename,const char* options, int 
 		for(int i = 0; i < m_directories.numElem(); i++)
 		{
 			// don't create files in other write paths
-			if (isWrite && m_directories[i].mainWritePath)
+			if (isWrite && !m_directories[i].mainWritePath)
 				continue;
 
 			sprintf(tmp_path, "%s%s/%s", basePath.c_str(), m_directories[i].path.c_str(), pFilePath);

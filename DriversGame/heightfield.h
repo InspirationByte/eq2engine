@@ -227,7 +227,7 @@ public:
 	int							m_rotation;		// rotation in degrees
 
 	IVector2D					m_regionPos;	// position in 2D array
-	int							m_fieldIdx;		// the hfield index in region's array
+	int							m_fieldIdx;		// the hfield layer index in region's array
 
 	int							m_levOffset;
 
@@ -280,6 +280,7 @@ class CHeightTileFieldRenderable : public CHeightTileField
 #endif // EDITOR
 {
 	friend class CUI_RoadEditor;
+	friend class CEditorLevel;
 
 public:
 	CHeightTileFieldRenderable();

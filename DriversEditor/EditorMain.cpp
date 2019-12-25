@@ -139,7 +139,7 @@ DECLARE_INTERNAL_SHADERS();
 
 extern void DrvSyn_RegisterShaderOverrides();
 
-void InitMatSystem(HWND window)
+bool InitSystemModules(HWND window)
 {
 	materials = (IMaterialSystem*)GetCore()->GetInterface( MATSYSTEM_INTERFACE_VERSION );
 
@@ -206,19 +206,23 @@ void InitMatSystem(HWND window)
 	wxDisplaySize(&sw,&sh);
 	materials->SetDeviceBackbufferSize(sw,sh);
 
-	materials->LoadShaderLibrary("eqBaseShaders.dll");
+	materials->LoadShaderLibrary("eqBaseShaders");
 
 	// initialize shader overrides after libraries are loaded
 	DrvSyn_RegisterShaderOverrides();
 
-	g_parallelJobs->Init( g_cpuCaps->GetCPUCount() );
+	if (!g_parallelJobs->Init( g_cpuCaps->GetCPUCount() ))
+		return false;
 
-	g_fontCache->Init();
+	if (!g_fontCache->Init())
+		return false;
 
 	g_studioModelCache->PrecacheModel("models/error.egf");
 
 	// register all shaders
 	REGISTER_INTERNAL_SHADERS();
+
+	return true;
 }
 
 CMainWindow::CMainWindow( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& pos, const wxSize& size, long style ) 
@@ -242,7 +246,7 @@ CMainWindow::CMainWindow( wxWindow* parent, wxWindowID id, const wxString& title
 	
 	bSizer1->Add( m_pRenderPanel, 1, wxEXPAND, 5 );
 
-	InitMatSystem(m_pRenderPanel->GetHWND());
+	InitSystemModules(m_pRenderPanel->GetHWND());
 
 	g_sysConsole->ClearCommandBuffer();
 	g_sysConsole->ParseFileToCommandBuffer("editor.cfg");
@@ -1433,17 +1437,6 @@ bool CEGFViewApp::OnInit()
 		return false;
 	}
 
-	if (!g_parallelJobs->Init(1))
-		return false;
-
-	if (!g_fontCache->Init())
-		return false;
-
-#ifdef _WIN32
-	if(Splash_HWND)
-		DestroyWindow(Splash_HWND);
-#endif // _WIN32
-
 	// init window
 	g_pMainFrame = new CMainWindow(NULL, -1, DKLOC("TOKEN_TITLE", L"Driver Syndicate Level Editor"));
 	g_pMainFrame->Centre();
@@ -1459,6 +1452,11 @@ bool CEGFViewApp::OnInit()
 		EqString prefabName(g_cmdLine->GetArgumentsOf(pfbCmdIdx));
 		g_pMainFrame->LoadEditPrefab(prefabName.c_str());
 	}
+
+#ifdef _WIN32
+	if (Splash_HWND)
+		DestroyWindow(Splash_HWND);
+#endif // _WIN32
 
     return true;
 }

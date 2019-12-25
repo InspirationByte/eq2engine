@@ -669,8 +669,8 @@ void CGameLevel::ReadObjectDefsLump(IVirtualStream* stream, kvkeybase_t* kvDefs)
 
 void CGameLevel::ReadHeightfieldsLump( IVirtualStream* stream )
 {
-	int nStepSize = HFIELD_POINT_SIZE*m_cellsSize;
-	Vector3D center = Vector3D(m_wide*nStepSize, 0, m_tall*nStepSize)*0.5f - Vector3D(HFIELD_POINT_SIZE, 0, HFIELD_POINT_SIZE)*0.5f;
+	const int nStepSize = HFIELD_POINT_SIZE*m_cellsSize;
+	const Vector3D center = Vector3D(m_wide*nStepSize, 0, m_tall*nStepSize)*0.5f - Vector3D(HFIELD_POINT_SIZE, 0, HFIELD_POINT_SIZE)*0.5f;
 
 	for(int i = 0; i < m_numRegions; i++)
 	{

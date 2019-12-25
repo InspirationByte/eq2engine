@@ -199,6 +199,9 @@ void CHeightTileField::ReadFromStream( IVirtualStream* stream )
 
 bool CHeightTileField::IsEmpty()
 {
+	if (!m_points)
+		return true;
+
 	for(int x = 0; x < m_sizew; x++)
 	{
 		for(int y = 0; y < m_sizeh; y++)

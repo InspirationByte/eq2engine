@@ -208,6 +208,15 @@ void buildingSource_t::FromKeyValues(kvkeybase_t* kvs)
 	}
 }
 
+void buildingSource_t::MoveBy(const Vector3D& offset)
+{
+	modelPosition += offset;
+
+	for (DkLLNode<buildSegmentPoint_t>* lln = points.goToFirst(); lln != NULL; lln = points.goToNext())
+		lln->object.position += offset;
+}
+
+
 //-------------------------------------------------------
 
 void CalculateBuildingSegmentTransform(Matrix4x4& partTransform, 
@@ -1612,6 +1621,115 @@ void CEditorLevel::Ed_Prerender(const Vector3D& cameraPosition)
 	}
 }
 
+void CEditorLevel::Ed_SwapRegions(CEditorLevelRegion& sourceRegion, CEditorLevelRegion& targetRegion)
+{
+	const int nStepSize = HFIELD_POINT_SIZE * m_cellsSize;
+	const Vector3D center = Vector3D(m_wide*nStepSize, 0, m_tall*nStepSize)*0.5f - Vector3D(HFIELD_POINT_SIZE, 0, HFIELD_POINT_SIZE)*0.5f;
+
+	int sourceRegionIdx = sourceRegion.m_regionIndex;
+	int targetRegionIdx = targetRegion.m_regionIndex;
+
+	IVector2D srcRegionPos;
+	srcRegionPos.x = sourceRegionIdx % m_wide;
+	srcRegionPos.y = (sourceRegionIdx - srcRegionPos.x) / m_wide;
+
+	IVector2D targetRegionPos;
+	targetRegionPos.x = targetRegionIdx % m_wide;
+	targetRegionPos.y = (targetRegionIdx - targetRegionPos.x) / m_wide;
+
+	const Vector3D srcRegPos3D = Vector3D(srcRegionPos.x*nStepSize, 0, srcRegionPos.y*nStepSize) - center;
+	const Vector3D targetRegPos3D = Vector3D(targetRegionPos.x*nStepSize, 0, targetRegionPos.y*nStepSize) - center;
+
+	//QuickSwap(targetRegion.m_bbox, sourceRegion.m_bbox);
+	QuickSwap(targetRegion.m_hasTransparentSubsets, sourceRegion.m_hasTransparentSubsets);
+
+	for (int i = 0; i < ENGINE_REGION_MAX_HFIELDS; i++)
+	{
+		QuickSwap(targetRegion.m_heightfield[i], sourceRegion.m_heightfield[i]);
+
+		if (sourceRegion.m_heightfield[i])
+		{
+			sourceRegion.m_heightfield[i]->m_isChanged = !sourceRegion.m_heightfield[i]->IsEmpty();
+			sourceRegion.m_heightfield[i]->m_regionPos = srcRegionPos;
+			sourceRegion.m_heightfield[i]->m_position = srcRegPos3D;
+		}
+
+		if (targetRegion.m_heightfield[i])
+		{
+			targetRegion.m_heightfield[i]->m_isChanged = !targetRegion.m_heightfield[i]->IsEmpty();
+			targetRegion.m_heightfield[i]->m_regionPos = targetRegionPos;
+			targetRegion.m_heightfield[i]->m_position = targetRegPos3D;
+		}
+	}
+
+	QuickSwap(targetRegion.m_isLoaded, sourceRegion.m_isLoaded);
+	QuickSwap(targetRegion.m_level, sourceRegion.m_level);
+	targetRegion.m_modified = sourceRegion.m_modified = true;
+
+	for (int i = 0; i < 2; i++)
+	{
+		QuickSwap(targetRegion.m_navGrid[i].cellStates, sourceRegion.m_navGrid[i].cellStates);
+		QuickSwap(targetRegion.m_navGrid[i].debugObstacleMap, sourceRegion.m_navGrid[i].debugObstacleMap);
+		QuickSwap(targetRegion.m_navGrid[i].dirty, sourceRegion.m_navGrid[i].dirty);
+		QuickSwap(targetRegion.m_navGrid[i].dynamicObst, sourceRegion.m_navGrid[i].dynamicObst);
+		QuickSwap(targetRegion.m_navGrid[i].staticObst, sourceRegion.m_navGrid[i].staticObst);
+	}
+
+	Vector3D delta3D = targetRegPos3D - srcRegPos3D;
+
+	// process objects
+	{
+		for (int i = 0; i < sourceRegion.m_objects.numElem(); i++)
+			sourceRegion.m_objects[i]->position += delta3D;
+
+		for (int i = 0; i < targetRegion.m_objects.numElem(); i++)
+			targetRegion.m_objects[i]->position -= delta3D;
+
+		targetRegion.m_objects.swap(sourceRegion.m_objects);
+	}
+
+	// process buildings
+	{
+		for (int i = 0; i < sourceRegion.m_buildings.numElem(); i++)
+			sourceRegion.m_buildings[i]->MoveBy(delta3D);
+
+		for (int i = 0; i < targetRegion.m_buildings.numElem(); i++)
+			targetRegion.m_buildings[i]->MoveBy(-delta3D);
+
+		targetRegion.m_buildings.swap(sourceRegion.m_buildings);
+	}
+
+	// process occluders
+	{
+		for (int i = 0; i < sourceRegion.m_occluders.numElem(); i++)
+		{
+			sourceRegion.m_occluders[i].start += delta3D;
+			sourceRegion.m_occluders[i].end += delta3D;
+		}
+
+		for (int i = 0; i < targetRegion.m_occluders.numElem(); i++)
+		{
+			targetRegion.m_occluders[i].start -= delta3D;
+			targetRegion.m_occluders[i].end -= delta3D;
+		}
+
+		targetRegion.m_occluders.swap(sourceRegion.m_occluders);
+	}
+
+	targetRegion.m_regionDefs.swap(sourceRegion.m_regionDefs);
+	//targetRegion.m_regionIndex = sourceRegionIdx;
+	//sourceRegion.m_regionIndex = targetRegionIdx;
+
+	Msg("Swap regions %d <=> %d\n", sourceRegionIdx, targetRegionIdx);
+
+	QuickSwap(targetRegion.m_roads, sourceRegion.m_roads);
+	targetRegion.m_zones.swap(sourceRegion.m_zones);
+}
+
+//-------------------------------------------------------------------------------------
+// REGION
+//-------------------------------------------------------------------------------------
+
 void CEditorLevelRegion::Cleanup()
 {
 	Ed_DestroyPhysics();
@@ -1954,16 +2072,6 @@ void CEditorLevelRegion::WriteRegionOccluders(IVirtualStream* stream)
 
 	stream->Write(&numOccluders, 1, sizeof(int));
 	stream->Write(m_occluders.ptr(), 1, sizeof(levOccluderLine_t)*numOccluders);
-}
-
-void CEditorLevelRegion::ReadRegionBuildings( IVirtualStream* stream )
-{
-
-}
-
-void CEditorLevelRegion::WriteRegionBuildings( IVirtualStream* stream )
-{
-
 }
 
 float CheckStudioRayIntersection(IEqModel* pModel, Vector3D& ray_start, Vector3D& ray_dir)
