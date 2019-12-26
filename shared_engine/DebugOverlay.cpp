@@ -32,9 +32,9 @@
 #define POLYS_DRAW_SUBDIV (64)
 
 static ConVar r_drawFrameStats("r_frameStats", DEBUG_DEFAULT_VALUE,NULL, CV_ARCHIVE);
-static ConVar r_debugdrawgraphs("r_debugDrawGraphs", DEBUG_DEFAULT_VALUE,NULL, CV_ARCHIVE);
-static ConVar r_debugdrawboxes("r_debugDrawBoxes", DEBUG_DEFAULT_VALUE,NULL, CV_ARCHIVE);
-static ConVar r_debugdrawlines("r_debugDrawLines", DEBUG_DEFAULT_VALUE,NULL, CV_ARCHIVE);
+static ConVar r_debugdrawGraphs("r_debugDrawGraphs", DEBUG_DEFAULT_VALUE,NULL, CV_ARCHIVE);
+static ConVar r_debugdrawShapes("r_debugDrawShapes", DEBUG_DEFAULT_VALUE,NULL, CV_ARCHIVE);
+static ConVar r_debugdrawLines("r_debugDrawLines", DEBUG_DEFAULT_VALUE,NULL, CV_ARCHIVE);
 
 ITexture* g_pDebugTexture = NULL;
 
@@ -197,7 +197,7 @@ void CDebugOverlay::Box3D(const Vector3D &mins, const Vector3D &maxs, const Colo
 {
 	Threading::CScopedMutex m(m_mutex);
 
-	if(!r_debugdrawboxes.GetBool())
+	if(!r_debugdrawShapes.GetBool())
 		return;
 
 	if(!m_frustum.IsBoxInside(mins,maxs))
@@ -219,7 +219,7 @@ void CDebugOverlay::Line3D(const Vector3D &start, const Vector3D &end, const Col
 {
 	Threading::CScopedMutex m(m_mutex);
 
-	if(!r_debugdrawlines.GetBool())
+	if(!r_debugdrawLines.GetBool())
 		return;
 
 	if(!m_frustum.IsBoxInside(start,end))
@@ -242,7 +242,7 @@ void CDebugOverlay::OrientedBox3D(const Vector3D &mins, const Vector3D &maxs, Ma
 {
 	Threading::CScopedMutex m(m_mutex);
 
-	if(!r_debugdrawboxes.GetBool())
+	if(!r_debugdrawShapes.GetBool())
 		return;
 
 	//if(!m_frustum.IsBoxInside(mins,maxs))
@@ -265,7 +265,7 @@ void CDebugOverlay::Sphere3D(const Vector3D& position, float radius, const Color
 {
 	Threading::CScopedMutex m(m_mutex);
 
-	if(!r_debugdrawboxes.GetBool())
+	if(!r_debugdrawShapes.GetBool())
 		return;
 
 	if(!m_frustum.IsSphereInside(position, radius))
@@ -947,7 +947,7 @@ void CDebugOverlay::Draw(int winWide, int winTall)
 		}
 	}
 
-	if(r_debugdrawgraphs.GetBool())
+	if(r_debugdrawGraphs.GetBool())
 	{
 		Threading::CScopedMutex m(m_mutex);
 
@@ -1045,7 +1045,7 @@ void CDebugOverlay::CleanOverlays()
 
 void CDebugOverlay::Graph_DrawBucket(debugGraphBucket_t* pBucket)
 {
-	if (!r_debugdrawgraphs.GetBool())
+	if (!r_debugdrawGraphs.GetBool())
 		return;
 
 	m_graphbuckets.addUnique(pBucket);
@@ -1053,7 +1053,7 @@ void CDebugOverlay::Graph_DrawBucket(debugGraphBucket_t* pBucket)
 
 void CDebugOverlay::Graph_AddValue(debugGraphBucket_t* bucket, float value)
 {
-	if(!r_debugdrawgraphs.GetBool())
+	if(!r_debugdrawGraphs.GetBool())
 		return;
 
 	if(bucket->remainingTime <= 0)
