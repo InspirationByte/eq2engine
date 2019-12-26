@@ -618,8 +618,10 @@ void DrawSphereWireframe(CMeshBuilder& meshBuilder, DebugSphereNode_t& sphere, i
 
 	meshBuilder.Color4fv(sphere.color);
 
+	sides = sides + (sides % 2);
+
 	{
-		for (int i = 0; i <= sides; i++)
+		for (int i = 0; i < sides; i++)
 		{
 			double ds = sin((i * 2 * PI) / sides);
 			double dc = cos((i * 2 * PI) / sides);
@@ -635,7 +637,7 @@ void DrawSphereWireframe(CMeshBuilder& meshBuilder, DebugSphereNode_t& sphere, i
 	}
 
 	{
-		for (int i = 0; i <= sides; i++)
+		for (int i = 0; i < sides; i++)
 		{
 			double ds = sin((i * 2 * PI) / sides);
 			double dc = cos((i * 2 * PI) / sides);
@@ -651,7 +653,7 @@ void DrawSphereWireframe(CMeshBuilder& meshBuilder, DebugSphereNode_t& sphere, i
 	}
 
 	{
-		for (int i = 0; i <= sides; i++)
+		for (int i = 0; i < sides; i++)
 		{
 			double ds = sin((i * 2 * PI) / sides);
 			double dc = cos((i * 2 * PI) / sides);

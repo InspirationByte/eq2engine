@@ -83,6 +83,8 @@ public:
 	// advances index with custom index
 	int			AdvanceVertexIndex(uint16 index);
 
+	IDynamicMesh* GetMesh() const { return m_mesh; }
+
 protected:
 
 	IDynamicMesh*		m_mesh;

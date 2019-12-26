@@ -515,6 +515,10 @@ EInfractionType CAIPursuerCar::CheckTrafficInfraction(CCar* car, bool checkFelon
 	if(carSpeed < 5.0f)
 		return INFRACTION_NONE;
 
+	Vector3D car_vel = car->GetVelocity();
+	Vector3D car_forward = car->GetForwardVector();
+	float car_wheelSpeed = car->GetSpeedWheels();
+
 	// check collision
 	for(int i = 0; i < collisionList.numElem(); i++)
 	{
@@ -544,8 +548,10 @@ EInfractionType CAIPursuerCar::CheckTrafficInfraction(CCar* car, bool checkFelon
 			if(obj == car->GetHingedVehicle())
 				return INFRACTION_NONE;
 
+			Vector3D obj_vel = obj->GetVelocity();
+
 			// There is no infraction if bodyB has inflicted this damage to us
-			if(dot(obj->GetVelocity()-car->GetVelocity(), car->GetForwardVector()*sign(car->GetSpeedWheels())) > 0.0f)
+			if(length(obj_vel.xz()) - carSpeed > -1.0f)
 				return INFRACTION_NONE;
 
 			if (obj->ObjType() == GO_CAR_AI)
@@ -800,18 +806,22 @@ bool CAIPursuerCar::UpdateTarget(float fDt)
 				DoPoliceLoudhailer();
 			}
 
-			bool isAboutToLoose = (pursuerData.lastSeenTimer > AI_COP_TIME_TO_LOST_TARGET_FAR*0.25f);
 
-			if (targetSpeed > 50.0f)
+			if (!IsFlippedOver())
 			{
-				const char* speech = isAboutToLoose ? "cop.takehimup" : "cop.heading";
-				SpeakTargetDirection(speech, m_target);
+				bool isAboutToLoose = (pursuerData.lastSeenTimer > AI_COP_TIME_TO_LOST_TARGET_FAR*0.25f);
+
+				if (targetSpeed > 50.0f)
+				{
+					const char* speech = isAboutToLoose ? "cop.takehimup" : "cop.heading";
+					SpeakTargetDirection(speech, m_target);
+				}
+
+				if (isAboutToLoose)
+					Speak("cop.pursuit_continue", m_target, false, 0.5f);
+				else if (m_pursuitTime > AI_COP_BECOME_ANGRY_PURSUIT_TIME * 0.5f)
+					Speak("cop.still_in_pursuit", m_target, false, 0.0f);
 			}
-	
-			if (isAboutToLoose)
-				Speak("cop.pursuit_continue", m_target, false, 0.5f);
-			else if(m_pursuitTime > AI_COP_BECOME_ANGRY_PURSUIT_TIME * 0.5f)
-				Speak("cop.still_in_pursuit", m_target, false, 0.0f);
 
 			if (newFelony > AI_COP_BECOME_ANGRY_FELONY)
 				m_angry = true;
