@@ -7,8 +7,8 @@
 
 #include "session_stuff.h"
 
-static CReplayData		s_replayData;
-CReplayData*			g_replayData = &s_replayData;
+static CReplayTracker		s_replayData;
+CReplayTracker*			g_replayTracker = &s_replayData;
 
 bool ParseVehicleConfig( vehicleConfig_t* conf, const kvkeybase_t* kvs );
 
@@ -67,7 +67,7 @@ DECLARE_CMD(car_savereplay, "Saves current car replay", 0)
 
 	if(g_pGameSession && g_pGameSession->GetPlayerCar())
 	{
-		g_replayData->SaveVehicleReplay(g_pGameSession->GetPlayerCar(), CMD_ARGV(0).c_str());
+		g_replayTracker->SaveVehicleReplay(g_pGameSession->GetPlayerCar(), CMD_ARGV(0).c_str());
 	}
 }
 
@@ -82,7 +82,7 @@ DECLARE_CMD(replay_save, "Saves current replay", 0)
 	if(g_pGameSession)
 	{
 		g_fileSystem->MakeDir(USERREPLAYS_PATH, SP_MOD);
-		g_replayData->SaveToFile( (USERREPLAYS_PATH + CMD_ARGV(0)).c_str() );
+		g_replayTracker->SaveToFile( (USERREPLAYS_PATH + CMD_ARGV(0)).c_str() );
 	}
 }
 

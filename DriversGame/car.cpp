@@ -952,7 +952,7 @@ void CCar::Spawn()
 
 #ifndef EDITOR
 	if(m_replayID == REPLAY_NOT_TRACKED)
-		g_replayData->PushSpawnOrRemoveEvent( REPLAY_EVENT_SPAWN, this, (m_state == GO_STATE_REMOVE_BY_SCRIPT) ? REPLAY_FLAG_SCRIPT_CALL : 0  );
+		g_replayTracker->PushSpawnOrRemoveEvent( REPLAY_EVENT_SPAWN, this, (m_state == GO_STATE_REMOVE_BY_SCRIPT) ? REPLAY_FLAG_SCRIPT_CALL : 0  );
 #endif // EDITOR
 
 	UpdateLightsState();
@@ -1008,7 +1008,7 @@ void CCar::OnRemove()
 
 #ifndef EDITOR
 	if(m_replayID != REPLAY_NOT_TRACKED)
-		g_replayData->PushSpawnOrRemoveEvent( REPLAY_EVENT_REMOVE, this, (m_state == GO_STATE_REMOVE_BY_SCRIPT) ? REPLAY_FLAG_SCRIPT_CALL : 0 );
+		g_replayTracker->PushSpawnOrRemoveEvent( REPLAY_EVENT_REMOVE, this, (m_state == GO_STATE_REMOVE_BY_SCRIPT) ? REPLAY_FLAG_SCRIPT_CALL : 0 );
 #endif // EDITOR
 
 	for(int i = 0; i < CAR_SOUND_COUNT; i++)
@@ -2191,7 +2191,7 @@ void CCar::OnPrePhysicsFrame(float fDt)
 
 #ifndef EDITOR
 	// record it
-	g_replayData->UpdateReplayObject( m_replayID );
+	g_replayTracker->UpdateReplayObject( m_replayID );
 #endif // EDITOR
 
 	if( m_enablePhysics )
@@ -2340,7 +2340,7 @@ void CCar::OnPhysicsFrame( float fDt )
 
 #ifndef EDITOR
 		// process damage and death only when not playing replays
-		if (g_replayData->m_state != REPL_PLAYING)
+		if (g_replayTracker->m_state != REPL_PLAYING)
 #endif // EDITOR
 		{
 			// apply visual damage
@@ -4477,7 +4477,7 @@ void CCar::OnDeath( CGameObject* deathBy )
 
 #ifndef EDITOR
 	int deathByReplayId = deathBy ? deathBy->m_replayID : REPLAY_NOT_TRACKED;
-	g_replayData->PushEvent( REPLAY_EVENT_CAR_DEATH, m_replayID, (void*)(intptr_t)deathByReplayId );
+	g_replayTracker->PushEvent( REPLAY_EVENT_CAR_DEATH, m_replayID, (void*)(intptr_t)deathByReplayId );
 #endif // EDITOR
 
 #ifndef NO_LUA

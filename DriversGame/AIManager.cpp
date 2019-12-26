@@ -362,7 +362,7 @@ CCar* CAIManager::SpawnTrafficCar(const IVector2D& globalCell)
 		if (isRegisteredCop || isRegisteredGang)
 		{
 			// don't add cops on initial spawn
-			if (m_enableCops && numCopsSpawned < GetMaxCops() && (g_replayData->m_tick > 0 || m_numMaxCops >= MIN_COPS_TO_INIT_SURVIVAL))
+			if (m_enableCops && numCopsSpawned < GetMaxCops() && (g_replayTracker->m_tick > 0 || m_numMaxCops >= MIN_COPS_TO_INIT_SURVIVAL))
 			{
 				CAIPursuerCar* pursuer = new CAIPursuerCar(carConf, isRegisteredGang ? PURSUER_TYPE_GANG : PURSUER_TYPE_COP);
 				pursuer->SetTorqueScale(m_copAccelerationModifier);
@@ -383,7 +383,7 @@ CCar* CAIManager::SpawnTrafficCar(const IVector2D& globalCell)
 
 	// regenerate if car has to be spawned
 	g_replayRandom.Regenerate();
-	g_replayData->PushEvent(REPLAY_EVENT_FORCE_RANDOM);
+	g_replayTracker->PushEvent(REPLAY_EVENT_FORCE_RANDOM);
 
 	// Spawn required for PlaceOnRoadCell
 	spawnedCar->Spawn();
@@ -523,7 +523,7 @@ void CAIManager::RemoveTrafficCar(CCar* car)
 
 void CAIManager::UpdateCarRespawn(float fDt, const Vector3D& spawnOrigin, const Vector3D& removeOrigin, const Vector3D& leadVelocity)
 {
-	if (g_replayData->m_state == REPL_PLAYING)
+	if (g_replayTracker->m_state == REPL_PLAYING)
 		return;
 
 	m_trafficUpdateTime -= fDt;
@@ -602,7 +602,7 @@ void CAIManager::InitialSpawns(const Vector3D& spawnOrigin)
 
 	int count = 0;
 
-	if (g_replayData->m_state != REPL_PLAYING)
+	if (g_replayTracker->m_state != REPL_PLAYING)
 	{
 		for (int r = g_traffic_initial_mindist.GetInt(); r < g_traffic_mindist.GetInt(); r+=2)
 		{
@@ -943,7 +943,7 @@ DECLARE_CMD(road_info, "Road info on player car position", CV_CHEAT)
 
 bool CAIManager::SpawnRoadBlockFor( CCar* car, float directionAngle )
 {
-	if (g_replayData->m_state == REPL_PLAYING)
+	if (g_replayTracker->m_state == REPL_PLAYING)
 		return true;
 
 	IVector2D playerCarCell;

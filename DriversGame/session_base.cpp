@@ -59,8 +59,8 @@ CGameSessionBase::~CGameSessionBase()
 
 int CGameSessionBase::GetPhysicsIterations() const
 {
-//	if(g_replayData->m_state == REPL_PLAYING)
-//		return g_replayData->m_playbackPhysIterations;
+//	if(g_replayTracker->m_state == REPL_PLAYING)
+//		return g_replayTracker->m_playbackPhysIterations;
 
 	return 2;
 }
@@ -111,11 +111,11 @@ void CGameSessionBase::Init()
 	g_pAIManager->Init(m_carEntries, m_pedEntries);
 
 	// start recorder
-	if (g_replayData->m_state != REPL_INIT_PLAYBACK)
-		g_replayData->StartRecording();
+	if (g_replayTracker->m_state != REPL_INIT_PLAYBACK)
+		g_replayTracker->StartRecording();
 
-	if (g_replayData->m_state == REPL_INIT_PLAYBACK) // make scripted cars work first
-		g_replayData->StartPlay();
+	if (g_replayTracker->m_state == REPL_INIT_PLAYBACK) // make scripted cars work first
+		g_replayTracker->StartPlay();
 
 	// just before the scripted call occurs, we fade in by default
 	g_pGameHUD->FadeIn(true);
@@ -143,7 +143,7 @@ void CGameSessionBase::Init()
 		OOLUA::pull(GetLuaState(), seedValue);
 
 		g_replayRandom.SetSeed(seedValue);
-		g_replayData->PushEvent(REPLAY_EVENT_RANDOM_SEED, -1, (void*)seedValue);
+		g_replayTracker->PushEvent(REPLAY_EVENT_RANDOM_SEED, -1, (void*)seedValue);
 	}
 
 	m_missionStatus = MIS_STATUS_INGAME;
@@ -166,7 +166,7 @@ extern ConVar sys_maxfps;
 float CGameSessionBase::LoadCarReplay(CCar* pCar, const char* filename)
 {
 	int numTicks = 0;
-	g_replayData->LoadVehicleReplay(pCar, filename, numTicks);
+	g_replayTracker->LoadVehicleReplay(pCar, filename, numTicks);
 
 	float fixedTicksDelta = 1.0f / (sys_maxfps.GetFloat()*GetPhysicsIterations());
 
@@ -175,7 +175,7 @@ float CGameSessionBase::LoadCarReplay(CCar* pCar, const char* filename)
 
 void CGameSessionBase::StopCarReplay(CCar* pCar)
 {
-	g_replayData->StopVehicleReplay(pCar);
+	g_replayTracker->StopVehicleReplay(pCar);
 }
 
 void CGameSessionBase::FinalizeMissionManager()
@@ -233,8 +233,8 @@ int	CGameSessionBase::GetMissionStatus() const
 
 bool CGameSessionBase::IsReplay() const
 {
-	return (g_replayData->m_state == REPL_PLAYING ||
-		g_replayData->m_state == REPL_INIT_PLAYBACK);
+	return (g_replayTracker->m_state == REPL_PLAYING ||
+		g_replayTracker->m_state == REPL_INIT_PLAYBACK);
 }
 
 int	CGameSessionBase::GenScriptID()
@@ -262,10 +262,10 @@ void Game_OnPhysicsUpdate(float fDt, int iterNum)
 	if (fDt <= 0.0f)
 		return;
 
-	if (g_replayData)
+	if (g_replayTracker)
 	{
 		// always regenerate predictable random
-		g_replayRandom.SetSeed(g_replayData->m_tick);
+		g_replayRandom.SetSeed(g_replayTracker->m_tick);
 		g_replayRandom.Regenerate();
 	}
 
@@ -303,8 +303,8 @@ void Game_OnPhysicsUpdate(float fDt, int iterNum)
 	}
 
 	// do replays and prerecorded stuff
-	if (g_replayData)
-		g_replayData->UpdatePlayback(fDt);
+	if (g_replayTracker)
+		g_replayTracker->UpdatePlayback(fDt);
 }
 
 void GameJob_UpdatePhysics(void* data)
@@ -323,7 +323,7 @@ void CGameSessionBase::UpdateAsPlayerCar(const playerControl_t& control, CCar* c
 
 	g_pGameWorld->QueryNearestRegions(car->GetOrigin(), false);
 
-	if (!g_replayData->IsCarPlaying(car))
+	if (!g_replayTracker->IsCarPlaying(car))
 	{
 		// apply cheats
 		{
@@ -473,9 +473,9 @@ CAIPursuerCar* CGameSessionBase::CreatePursuerCar(const char* name, int type)
 
 CCar* CGameSessionBase::Lua_CreateCar(const char* name, int type)
 {
-	if (g_replayData && g_replayData->m_state == REPL_PLAYING)
+	if (g_replayTracker && g_replayTracker->m_state == REPL_PLAYING)
 	{
-		CCar* scriptCar = g_replayData->GetCarByScriptId(m_scriptIDCounter);
+		CCar* scriptCar = g_replayTracker->GetCarByScriptId(m_scriptIDCounter);
 		
 		if (scriptCar)
 		{
@@ -483,7 +483,7 @@ CCar* CGameSessionBase::Lua_CreateCar(const char* name, int type)
 			return scriptCar;
 		}
 
-		ASSERTMSG(false, varargs("Lua_CreateCar - no valid script car by replay (id=%d, tick=%d)", m_scriptIDCounter, g_replayData->m_tick));
+		ASSERTMSG(false, varargs("Lua_CreateCar - no valid script car by replay (id=%d, tick=%d)", m_scriptIDCounter, g_replayTracker->m_tick));
 	}
 	else
 		return CreateCar(name, type);
@@ -493,9 +493,9 @@ CCar* CGameSessionBase::Lua_CreateCar(const char* name, int type)
 
 CAIPursuerCar* CGameSessionBase::Lua_CreatePursuerCar(const char* name, int type)
 {
-	if (g_replayData && g_replayData->m_state == REPL_PLAYING)
+	if (g_replayTracker && g_replayTracker->m_state == REPL_PLAYING)
 	{
-		CCar* scriptCar = g_replayData->GetCarByScriptId(m_scriptIDCounter);
+		CCar* scriptCar = g_replayTracker->GetCarByScriptId(m_scriptIDCounter);
 
 		if (scriptCar)
 		{
@@ -503,7 +503,7 @@ CAIPursuerCar* CGameSessionBase::Lua_CreatePursuerCar(const char* name, int type
 			return (CAIPursuerCar*)scriptCar;
 		}
 			
-		ASSERTMSG(false, varargs("Lua_CreatePursuerCar - no valid script car by replay (id=%d, tick=%d)", m_scriptIDCounter, g_replayData->m_tick));
+		ASSERTMSG(false, varargs("Lua_CreatePursuerCar - no valid script car by replay (id=%d, tick=%d)", m_scriptIDCounter, g_replayTracker->m_tick));
 	}
 	else
 		return CreatePursuerCar(name, type);
@@ -655,12 +655,12 @@ extern ConVar g_pause;
 
 CGameObject* CGameSessionBase::GetViewObject() const
 {
-	if (g_replayData->m_state == REPL_PLAYING && !g_pause.GetBool())
+	if (g_replayTracker->m_state == REPL_PLAYING && !g_pause.GetBool())
 	{
-		replayCamera_t* cam = g_replayData->GetCurrentCamera();
+		replayCamera_t* cam = g_replayTracker->GetCurrentCamera();
 
 		if (cam)
-			return g_replayData->GetCarByReplayIndex(cam->targetIdx);
+			return g_replayTracker->GetCarByReplayIndex(cam->targetIdx);
 	}
 
 	if (m_viewObject)

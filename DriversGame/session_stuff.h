@@ -24,6 +24,6 @@ struct server_client_info_t
 };
 
 extern server_client_info_t		g_svclientInfo;
-extern CReplayData*				g_replayData;
+extern CReplayTracker*				g_replayTracker;
 
 #endif // SESSION_STUFF_H

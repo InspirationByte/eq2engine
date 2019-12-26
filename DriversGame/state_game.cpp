@@ -98,8 +98,8 @@ void Game_InstantReplay()
 	if(g_pGameSession == NULL)
 		return;
 
-	g_replayData->Stop();
-	g_replayData->m_state = REPL_INIT_PLAYBACK;
+	g_replayTracker->Stop();
+	g_replayTracker->m_state = REPL_INIT_PLAYBACK;
 
 	Game_QuickRestart(true);
 
@@ -202,7 +202,7 @@ DECLARE_CMD(spawn_car, "Spawns a car at crosshair", CV_CHEAT)
 
 DECLARE_CMD(shift_to_car, "Shift to car picked with ray", CV_CHEAT)
 {
-	if(g_replayData->m_state == REPL_PLAYING)
+	if(g_replayTracker->m_state == REPL_PLAYING)
 		return;
 
 	CCar* pickedCar = Director_GetCarOnCrosshair(false);
@@ -268,12 +268,12 @@ void CState_Game::UnloadGame()
 	if (m_isGameRunning)
 	{
 		// store unsaved replay from last session
-		if (g_replayData->m_unsaved)
+		if (g_replayTracker->m_unsaved)
 		{
-			g_replayData->Stop();
+			g_replayTracker->Stop();
 
 			g_fileSystem->MakeDir(USERREPLAYS_PATH, SP_MOD);
-			g_replayData->SaveToFile(USERREPLAYS_PATH "_lastSession.rdat");
+			g_replayTracker->SaveToFile(USERREPLAYS_PATH "_lastSession.rdat");
 		}
 	}
 	else
@@ -351,8 +351,8 @@ void CState_Game::InitializeSession()
 	}
 
 	// not going to replay mode - reset all
-	if (g_replayData->m_state != REPL_INIT_PLAYBACK)
-		g_replayData->Clear();
+	if (g_replayTracker->m_state != REPL_INIT_PLAYBACK)
+		g_replayTracker->Clear();
 
 	g_pGameHUD->Init();
 	g_pCameraAnimator->Reset();
@@ -403,8 +403,8 @@ void CState_Game::QuickRestart(bool intoReplay)
 	{
 		if (!intoReplay)
 		{
-			g_replayData->Stop();
-			g_replayData->Clear();
+			g_replayTracker->Stop();
+			g_replayTracker->Clear();
 
 			m_replayMode = REPLAYMODE_NONE;
 			m_storedMissionStatus = MIS_STATUS_INGAME;
@@ -425,8 +425,8 @@ void CState_Game::QuickRestart(bool intoReplay)
 	// reinit replay playback
 	if (m_replayMode > REPLAYMODE_NONE)
 	{
-		g_replayData->Stop();
-		g_replayData->m_state = REPL_INIT_PLAYBACK;
+		g_replayTracker->Stop();
+		g_replayTracker->m_state = REPL_INIT_PLAYBACK;
 	}
 
 	m_isGameRunning = false;
@@ -443,15 +443,15 @@ void CState_Game::QuickRestart(bool intoReplay)
 
 void CState_Game::ReplayFastSeek(int tick)
 {
-	if (g_replayData->m_state != REPL_PLAYING)
+	if (g_replayTracker->m_state != REPL_PLAYING)
 		return;
 
-	if (tick > g_replayData->m_numFrames)
+	if (tick > g_replayTracker->m_numFrames)
 		return;
 
 	effectrenderer->RemoveAllEffects();
 
-	if (tick < g_replayData->m_tick)
+	if (tick < g_replayTracker->m_tick)
 	{
 		g_pGameHUD->InvalidateObjects();
 		g_pGameWorld->RemoveAllObjects();
@@ -461,8 +461,8 @@ void CState_Game::ReplayFastSeek(int tick)
 		g_pGameSession->Shutdown();
 
 		// stop replay and reinit
-		g_replayData->Stop();
-		g_replayData->m_state = REPL_INIT_PLAYBACK;
+		g_replayTracker->Stop();
+		g_replayTracker->m_state = REPL_INIT_PLAYBACK;
 
 		StopAllSounds();
 
@@ -475,14 +475,14 @@ void CState_Game::ReplayFastSeek(int tick)
 	// reset buttons
 	ZeroInputControls();
 
-	const int framesToDo = tick - g_replayData->m_tick;
+	const int framesToDo = tick - g_replayTracker->m_tick;
 	int remainingFrames = framesToDo;
 
-	const float frameRate = 1.0f / 60.0f; // TODO: use g_replayData->m_demoFrameRate
+	const float frameRate = 1.0f / 60.0f; // TODO: use g_replayTracker->m_demoFrameRate
 
 	while (remainingFrames > 0)
 	{
-		g_replayData->ForceUpdateReplayObjects();
+		g_replayTracker->ForceUpdateReplayObjects();
 
 		int phIterations = g_pGameSession->GetPhysicsIterations();
 
@@ -763,7 +763,7 @@ void CState_Game::SetPauseState( bool state )
 
 bool CState_Game::StartReplay( const char* path, EReplayMode mode)
 {
-	if(g_replayData->LoadFromFile( path ))
+	if(g_replayTracker->LoadFromFile( path ))
 	{
 		EqStateMgr::ChangeState( this );
 		m_scheduledQuickReplay = REPLAY_SCHEDULE_REPLAY_NORESTART;
@@ -1108,14 +1108,14 @@ CCar* CState_Game::GetViewCar() const
 
 	CCar* viewedCar = IsCar(viewObj) ? (CCar*)viewObj : nullptr;
 	/*
-	if(g_replayData->m_state == REPL_PLAYING && g_replayData->m_cameras.numElem() > 0)
+	if(g_replayTracker->m_state == REPL_PLAYING && g_replayTracker->m_cameras.numElem() > 0)
 	{
 		// replay controls camera
-		replayCamera_t* replCamera = g_replayData->GetCurrentCamera();
+		replayCamera_t* replCamera = g_replayTracker->GetCurrentCamera();
 
 		if(replCamera)
 		{
-			CCar* cameraCar = g_replayData->GetCarByReplayIndex( replCamera->targetIdx );
+			CCar* cameraCar = g_replayTracker->GetCarByReplayIndex( replCamera->targetIdx );
 
 			// only if it's valid
 			if(g_pGameWorld->IsValidObject(cameraCar))
@@ -1241,7 +1241,7 @@ void CState_Game::DoCameraUpdates( float fDt )
 {
 	int camControls = g_nClientButtons;
 
-	if (g_replayData->m_state == REPL_PLAYING)
+	if (g_replayTracker->m_state == REPL_PLAYING)
 		camControls &= ~IN_CHANGECAM;
 
 	CViewParams* curView = g_pGameWorld->GetView();
@@ -1278,14 +1278,14 @@ void CState_Game::DoCameraUpdates( float fDt )
 			Vector3D lookAngles = g_freeLookAngles;
 
 			// apply cameras from replays
-			if(g_replayData->m_state == REPL_PLAYING)
+			if(g_replayTracker->m_state == REPL_PLAYING)
 			{
 				// replay controls camera
-				replayCamera_t* replCamera = g_replayData->GetCurrentCamera();
+				replayCamera_t* replCamera = g_replayTracker->GetCurrentCamera();
 
 				if(replCamera)
 				{
-					CCar* cameraCar = g_replayData->GetCarByReplayIndex( replCamera->targetIdx );
+					CCar* cameraCar = g_replayTracker->GetCarByReplayIndex( replCamera->targetIdx );
 
 					// only if it's valid
 					if(g_pGameWorld->IsValidObject(cameraCar))

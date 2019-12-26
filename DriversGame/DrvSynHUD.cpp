@@ -514,7 +514,7 @@ void CDrvSynHUDManager::DrawWorldIntoMap(const CViewParams& params, float fDt)
 
 void CDrvSynHUDManager::Render3D( float fDt )
 {
-	bool replayHud = (g_replayData->m_state == REPL_PLAYING);
+	bool replayHud = (g_replayTracker->m_state == REPL_PLAYING);
 
 	if (m_enable && !replayHud)
 	{
@@ -554,7 +554,7 @@ void CDrvSynHUDManager::Render3D( float fDt )
 // render the screen with maps and shit
 void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize)
 {
-	bool replayHud = (g_replayData->m_state == REPL_PLAYING);
+	bool replayHud = (g_replayTracker->m_state == REPL_PLAYING);
 
 	bool hudEnabled =	(m_screenAlertType != HUD_ALERT_DANGER) && 
 						m_enable && 

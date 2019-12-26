@@ -7,13 +7,13 @@
 
 /*
 TODO:
-		- [ok] Record all cars
-		- [ok] Record car spawns
+		- [ok] RecordVehicle all cars
+		- [ok] RecordVehicle car spawns
 		- [ok] Cameras
 		- Camera keyFrames ()
-		- [ok] Record spawn params
+		- [ok] RecordVehicle spawn params
 		- [ok] Stream recording of the controls and events
-		- Record networked cars
+		- RecordVehicle networked cars
 */
 
 #ifndef REPLAY_H
@@ -26,7 +26,7 @@ TODO:
 
 #define VEHICLEREPLAY_IDENT MCHAR4('D','S','R','P')
 
-#define VEHICLEREPLAY_VERSION	5
+#define VEHICLEREPLAY_VERSION	6
 #define CAMERAREPLAY_VERSION	2
 
 #define USERREPLAYS_PATH "UserReplays/"
@@ -45,10 +45,6 @@ ALIGNED_TYPE(replayCamera_s,4) replayCamera_t;
 
 enum EReplayFlags
 {
-	REPLAY_FLAG_CAR_AI		= (1 << 0),
-	REPLAY_FLAG_CAR_COP_AI	= (1 << 1),
-	REPLAY_FLAG_CAR_GANG_AI = (1 << 2),
-
 	REPLAY_FLAG_SCRIPT_CALL	= (1 << 3),
 
 	// this is a marker
@@ -101,6 +97,7 @@ ALIGNED_TYPE(replayCarFrame_s,4) replayCarFrame_t;
 struct replayCarStream_t
 {
 	int			scriptObjectId;
+	int			type;
 	int			first_tick;
 
 	int			curr_frame; // play only
@@ -206,15 +203,15 @@ enum EReplayState
 	REPL_PLAYING,
 };
 
-class CReplayData
+class CReplayTracker
 {
 public:
-							CReplayData();
+							CReplayTracker();
 
-							~CReplayData();
+							~CReplayTracker();
 
 	// adds vehicle to record, returns replay index
-	int						Record(CCar* pCar, bool onlyCollisions = false);
+	int						RecordVehicle(CCar* pCar, bool onlyCollisions = false);
 
 	// clear all data
 	void					Clear();
@@ -286,12 +283,11 @@ protected:
 	void					RaiseTickEvents();
 	void					RaiseReplayEvent(const replayEvent_t& evt);
 
-	void					SetupReplayCar( replayCarStream_t* rep );
-
+	bool					SetupReplayCar( int index );
+	void					ClearEvents();
 
 private:
-
-	void					ClearEvents();
+	
 
 	DkList<int>					m_activeVehicles;
 
@@ -305,6 +301,6 @@ private:
 	EqString					m_filename;
 };
 
-extern CReplayData* g_replayData;
+extern CReplayTracker* g_replayTracker;
 
 #endif // REPLAY_H

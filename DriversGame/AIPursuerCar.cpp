@@ -929,7 +929,7 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 	if(!ai_debug_pursuer.GetBool())
 	{
 		// don't update AI in replays, unless we have debugging enabled
-		if(g_replayData->m_state == REPL_PLAYING)
+		if(g_replayTracker->m_state == REPL_PLAYING)
 			return 0;
 	}
 

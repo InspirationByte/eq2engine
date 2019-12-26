@@ -41,7 +41,7 @@ void CSingleGameSession::Init()
 	CGameSessionBase::Init();
 
 	// start recorder
-	if (g_replayData->m_state <= REPL_RECORDING)
+	if (g_replayTracker->m_state <= REPL_RECORDING)
 	{
 		//
 		// Spawn default car if script not did

@@ -87,7 +87,7 @@ void Director_Enable( bool enable )
 
 bool Director_IsActive()
 {
-	return g_director.GetBool() && g_replayData->m_state == REPL_PLAYING;
+	return g_director.GetBool() && g_replayTracker->m_state == REPL_PLAYING;
 }
 
 void Director_Reset()
@@ -165,22 +165,22 @@ void Director_Action(EDirectorActionType type)
 
 	CGameObject* viewedObject = g_pGameSession->GetViewObject();
 
-	int replayCamera = g_replayData->m_currentCamera;
-	replayCamera_t* currentCamera = g_replayData->GetCurrentCamera();
+	int replayCamera = g_replayTracker->m_currentCamera;
+	replayCamera_t* currentCamera = g_replayTracker->GetCurrentCamera();
 
 	if (type == DIRECTOR_CAMERA_ADD)
 	{
 		replayCamera_t cam;
 		cam.targetIdx = viewedObject->m_replayID;
-		cam.startTick = g_replayData->m_tick;
+		cam.startTick = g_replayTracker->m_tick;
 		Director_GetNewCameraProps(&cam);
 
 		// zero camera rotation pls
 		if(cam.type == CAM_MODE_OUTCAR)
 			cam.rotation = vec3_zero;
 
-		int camIndex = g_replayData->AddCamera(cam);
-		g_replayData->m_currentCamera = camIndex;
+		int camIndex = g_replayTracker->AddCamera(cam);
+		g_replayTracker->m_currentCamera = camIndex;
 
 		// set camera after keypress
 		g_freecam.SetBool(false);
@@ -201,10 +201,10 @@ void Director_Action(EDirectorActionType type)
 	}
 	else if (type == DIRECTOR_CAMERA_REMOVE)
 	{
-		if (replayCamera >= 0 && g_replayData->m_cameras.numElem())
+		if (replayCamera >= 0 && g_replayTracker->m_cameras.numElem())
 		{
-			g_replayData->m_cameras.removeIndex(replayCamera);
-			g_replayData->m_currentCamera--;
+			g_replayTracker->m_cameras.removeIndex(replayCamera);
+			g_replayTracker->m_currentCamera--;
 		}
 	}
 	else if (type == DIRECTOR_CAMERA_WAYPOINT_SET_START || type == DIRECTOR_CAMERA_WAYPOINT_SET_END)
@@ -213,13 +213,13 @@ void Director_Action(EDirectorActionType type)
 	}
 	else if (type == DIRECTOR_PREVCAMERA)
 	{
-		if (g_replayData->m_cameras.inRange(replayCamera - 1))
-			g_replayData->m_currentCamera--;
+		if (g_replayTracker->m_cameras.inRange(replayCamera - 1))
+			g_replayTracker->m_currentCamera--;
 	}
 	else if (type == DIRECTOR_NEXTCAMERA)
 	{
-		if (g_replayData->m_cameras.inRange(replayCamera + 1))
-			g_replayData->m_currentCamera++;
+		if (g_replayTracker->m_cameras.inRange(replayCamera + 1))
+			g_replayTracker->m_currentCamera++;
 	}
 }
 
@@ -290,8 +290,8 @@ void Director_KeyPress(int key, bool down)
 	{
 		//Msg("Director mode keypress: %d\n", key);
 
-		int replayCamera = g_replayData->m_currentCamera;
-		replayCamera_t* currentCamera = g_replayData->GetCurrentCamera();
+		int replayCamera = g_replayTracker->m_currentCamera;
+		replayCamera_t* currentCamera = g_replayTracker->GetCurrentCamera();
 
 		if (key >= KEY_1 && key <= KEY_6)
 		{
@@ -323,9 +323,9 @@ void Director_KeyPress(int key, bool down)
 		}
 		else
 		{
-			replayCamera_t* prevCamera = g_replayData->m_cameras.inRange(replayCamera - 1) ? &g_replayData->m_cameras[replayCamera - 1] : NULL;
-			replayCamera_t* nextCamera = g_replayData->m_cameras.inRange(replayCamera + 1) ? &g_replayData->m_cameras[replayCamera + 1] : NULL;
-			int totalTicks = g_replayData->m_numFrames;
+			replayCamera_t* prevCamera = g_replayTracker->m_cameras.inRange(replayCamera - 1) ? &g_replayTracker->m_cameras[replayCamera - 1] : NULL;
+			replayCamera_t* nextCamera = g_replayTracker->m_cameras.inRange(replayCamera + 1) ? &g_replayTracker->m_cameras[replayCamera + 1] : NULL;
+			int totalTicks = g_replayTracker->m_numFrames;
 
 			int highTick = nextCamera ? nextCamera->startTick : totalTicks;
 			int lowTick = prevCamera ? prevCamera->startTick : 0;
@@ -334,7 +334,7 @@ void Director_KeyPress(int key, bool down)
 			{
 				if (g_director_CtrlKey)
 				{
-					g_State_Game->ReplayFastSeek( g_replayData->m_tick - 100);
+					g_State_Game->ReplayFastSeek( g_replayTracker->m_tick - 100);
 					return;
 				}
 				else if (currentCamera)
@@ -350,7 +350,7 @@ void Director_KeyPress(int key, bool down)
 			{
 				if (g_director_CtrlKey)
 				{
-					g_State_Game->ReplayFastSeek(g_replayData->m_tick + 100);
+					g_State_Game->ReplayFastSeek(g_replayTracker->m_tick + 100);
 					return;
 				}
 				else if (currentCamera)
@@ -509,12 +509,12 @@ void Director_Draw( float fDt )
 	
 	const Vector2D textSize = scaling * 10.0f;
 
-	replayCamera_t* currentCamera = g_replayData->GetCurrentCamera();
-	int replayCamera = g_replayData->m_currentCamera;
-	int currentTick = g_replayData->m_tick;
-	int totalTicks = g_replayData->m_numFrames;
+	replayCamera_t* currentCamera = g_replayTracker->GetCurrentCamera();
+	int replayCamera = g_replayTracker->m_currentCamera;
+	int currentTick = g_replayTracker->m_tick;
+	int totalTicks = g_replayTracker->m_numFrames;
 
-	int totalCameras = g_replayData->m_cameras.numElem();
+	int totalCameras = g_replayTracker->m_cameras.numElem();
 
 	Rectangle_t timelineRect(0.0f,screenSize.y-40.0f*scaling.y, (float)screenSize.x, screenSize.y-20.0f*scaling.y);
 	float timelineCenterPos = timelineRect.GetCenter().x;
@@ -573,11 +573,11 @@ void Director_Draw( float fDt )
 		// draw cameras on the timeline
 		for (int i = 0; i < totalCameras; i++)
 		{
-			replayCamera_t* camera = &g_replayData->m_cameras[i];
+			replayCamera_t* camera = &g_replayTracker->m_cameras[i];
 
 			float cameraTickPos = (camera->startTick - currentTick) * pixelsPerTick;
 
-			replayCamera_t* nextCamera = i + 1 < g_replayData->m_cameras.numElem() ? &g_replayData->m_cameras[i + 1] : NULL;
+			replayCamera_t* nextCamera = i + 1 < g_replayTracker->m_cameras.numElem() ? &g_replayTracker->m_cameras[i + 1] : NULL;
 			float nextTickPos = ((nextCamera ? nextCamera->startTick : totalTicks) - currentTick) * pixelsPerTick;
 
 			// draw colored rectangle

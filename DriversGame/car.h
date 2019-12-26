@@ -380,7 +380,7 @@ class CCar : public CControllableGameObject
 {
 	friend class CAITrafficCar;
 	friend class CAIPursuerCar;
-	friend class CReplayData;
+	friend class CReplayTracker;
 	friend class CDrvSynHUDManager;
 public:
 	DECLARE_NETWORK_TABLE();
