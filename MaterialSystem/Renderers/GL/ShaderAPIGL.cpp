@@ -152,6 +152,8 @@ ShaderAPIGL::ShaderAPIGL() : ShaderAPI_Base()
 	m_nCurrentMatrixMode = MATRIXMODE_VIEW;
 
 	m_boundInstanceStream = -1;
+	memset(m_currentGLVB, 0, sizeof(m_currentGLVB));
+	m_currentGLIB = 0;
 }
 
 void ShaderAPIGL::PrintAPIInfo()
@@ -1630,24 +1632,16 @@ void ShaderAPIGL::ChangeVertexBuffer(IVertexBuffer* pVertexBuffer, int nStream, 
 	};
 #endif // USE_GLES2
 
-	GLuint vbo = 0;
-
-	if (pVB != NULL)
-		vbo = pVB->GetCurrentBuffer();
+	GLuint vbo = pVB ? pVB->GetCurrentBuffer() : 0;
 
 	bool instanceBuffer = (nStream > 0) && pVB != NULL && (pVB->GetFlags() & VERTBUFFER_FLAG_INSTANCEDATA);
+	bool vbDiff = pVB != m_pCurrentVertexBuffers[nStream];
 
 	// should be always rebound
-	if (pVB != m_pCurrentVertexBuffers[nStream] || offset != m_nCurrentOffsets[nStream])
+	if (vbDiff || offset != m_nCurrentOffsets[nStream] || m_currentGLVB[nStream] != vbo)
 	{
-		bool boundHere = false;
-	
-		if( m_pCurrentVertexBuffers[nStream] != pVertexBuffer )
-		{
-			glBindBuffer(GL_ARRAY_BUFFER, vbo);
-			GLCheckError("bind array");
-			boundHere = true;
-		}
+		glBindBuffer(GL_ARRAY_BUFFER, m_currentGLVB[nStream] = vbo);
+		GLCheckError("bind array");
 
 		if (m_pCurrentVertexFormat != NULL)
 		{
@@ -1681,11 +1675,8 @@ void ShaderAPIGL::ChangeVertexBuffer(IVertexBuffer* pVertexBuffer, int nStream, 
 			}
 		}
 
-		if(boundHere)
-		{
-			glBindBuffer(GL_ARRAY_BUFFER, 0);
-			GLCheckError("unbind array after vattrib");
-		}
+		glBindBuffer(GL_ARRAY_BUFFER, 0);
+		GLCheckError("unbind array after vattrib");
 	}
 
 	if(pVertexBuffer)
@@ -1708,7 +1699,10 @@ void ShaderAPIGL::ChangeVertexBuffer(IVertexBuffer* pVertexBuffer, int nStream, 
 // Changes the index buffer
 void ShaderAPIGL::ChangeIndexBuffer(IIndexBuffer *pIndexBuffer)
 {
-	if (pIndexBuffer != m_pCurrentIndexBuffer)
+	CIndexBufferGL* pSelectedIndexBuffer = (CIndexBufferGL*)pIndexBuffer;
+	uint ibo = pSelectedIndexBuffer ? pSelectedIndexBuffer->GetCurrentBuffer() : 0;
+
+	if (pIndexBuffer != m_pCurrentIndexBuffer || (ibo != m_currentGLIB))
 	{
 		if (pIndexBuffer == NULL)
 		{
@@ -1717,8 +1711,7 @@ void ShaderAPIGL::ChangeIndexBuffer(IIndexBuffer *pIndexBuffer)
 		}
 		else
 		{
-			CIndexBufferGL* pSelectedIndexBffer = (CIndexBufferGL*)pIndexBuffer;
-			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, pSelectedIndexBffer->GetCurrentBuffer());
+			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_currentGLIB = ibo);
 			GLCheckError("bind elem array");
 		}
 

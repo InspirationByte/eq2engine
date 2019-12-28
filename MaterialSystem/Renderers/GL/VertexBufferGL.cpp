@@ -10,6 +10,7 @@
 #include "ShaderAPIGL.h"
 #include "VertexBufferGL.h"
 #include "DebugInterface.h"
+#include "shaderapigl_def.h"
 
 #ifdef USE_GLES2
 #include "glad_es3.h"
@@ -86,16 +87,19 @@ void CVertexBufferGL::Update(void* data, int size, int offset, bool discard /*= 
 		return;
 	}
 
-	ShaderAPIGL* pGLRHI = (ShaderAPIGL*)g_pShaderAPI;
+	g_shaderApi.GL_CRITICAL();
 
-	pGLRHI->GL_CRITICAL();
-
-	IncrementBuffer();
+	if (offset > 0)
+		IncrementBuffer();
 
 	glBindBuffer(GL_ARRAY_BUFFER, GetCurrentBuffer());
 	GLCheckError("vertexbuffer update bind");
 
-	glBufferSubData(GL_ARRAY_BUFFER, offset*m_strideSize, size*m_strideSize, data);
+	if (offset > 0) // streaming
+		glBufferSubData(GL_ARRAY_BUFFER, offset*m_strideSize, size*m_strideSize, data);
+	else // orphaning
+		glBufferData(GL_ARRAY_BUFFER, size*m_strideSize, data, glBufferUsages[m_access]);
+
 	GLCheckError("vertexbuffer update");
 
 	glBindBuffer(GL_ARRAY_BUFFER, 0);

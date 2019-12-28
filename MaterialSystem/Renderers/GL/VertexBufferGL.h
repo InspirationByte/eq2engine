@@ -10,7 +10,7 @@
 
 #include "IVertexBuffer.h"
 
-#define MAX_VB_SWITCHING 3
+#define MAX_VB_SWITCHING 8
 
 class CVertexBufferGL : public IVertexBuffer
 {

@@ -353,6 +353,8 @@ private:
 	GLenum					m_drawBuffers[MAX_MRTS];
 
 	int						m_boundInstanceStream;
+	uint					m_currentGLVB[MAX_VERTEXSTREAM];
+	uint					m_currentGLIB;
 
 	int						m_nCurrentRenderTargets;
 

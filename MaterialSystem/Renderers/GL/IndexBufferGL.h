@@ -10,7 +10,7 @@
 
 #include "IIndexBuffer.h"
 
-#define MAX_IB_SWITCHING 3
+#define MAX_IB_SWITCHING 8
 
 class CIndexBufferGL : public IIndexBuffer
 {

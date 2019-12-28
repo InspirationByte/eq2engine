@@ -10,6 +10,7 @@
 #include "IndexBufferGL.h"
 #include "ShaderAPIGL.h"
 #include "DebugInterface.h"
+#include "shaderapigl_def.h"
 
 #ifdef USE_GLES2
 #include "glad_es3.h"
@@ -78,14 +79,20 @@ void CIndexBufferGL::Update(void* data, int size, int offset, bool discard /*= t
 
 	g_shaderApi.GL_CRITICAL();
 
-	IncrementBuffer();
+	if(offset > 0)
+		IncrementBuffer();
 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, GetCurrentBuffer());
 	GLCheckError("indexbuffer update bind");
 
-	glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, offset*m_nIndexSize, size*m_nIndexSize, data);
+	if (offset > 0) // streaming
+		glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, offset*m_nIndexSize, size*m_nIndexSize, data);
+	else // orphaning
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, size*m_nIndexSize, data, glBufferUsages[m_access]);
+
 	GLCheckError("indexbuffer update");
 
+	// index buffer should be restored
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, currIB ? currIB->GetCurrentBuffer() : 0);
 
 	if(dynamic && discard && offset == 0)
@@ -144,6 +151,7 @@ bool CIndexBufferGL::Lock(int lockOfs, int sizeToLock, void** outdata, bool read
 	m_lockPtr = (ubyte*)glMapBufferRange(GL_ELEMENT_ARRAY_BUFFER, m_lockOffs*m_nIndexSize, m_lockSize*m_nIndexSize, mapFlags );
 	(*outdata) = m_lockPtr;// + m_lockOffs*m_nIndexSize;
 
+	// index buffer should be restored
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, currIB ? currIB->GetCurrentBuffer() : 0);
 
 	if(m_lockPtr == NULL)
@@ -208,6 +216,7 @@ void CIndexBufferGL::Unlock()
 #endif // USE_GLES2
 			GLCheckError("indexbuffer unmap");
 
+			// index buffer should be restored
 			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, currIB ? currIB->GetCurrentBuffer() : 0);
 		}
 
