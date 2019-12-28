@@ -1304,6 +1304,20 @@ void CUI_LevelModels::MouseEventOnTile( wxMouseEvent& event, hfieldtile_t* tile,
 	m_lastpos = ppos;
 }
 
+void MoveRefToNewRegion(refselectioninfo_t& selection)
+{
+	regionObject_t* ref = selection.selRef;
+	/*
+	if (ref->tile_x != 0xFFFF)
+	{
+		// stick to tile
+		Matrix4x4 transform = transpose(GetModelRefRenderMatrix(selection.selRegion, ref));
+		ref->position = transform.getTranslationComponent();
+	}*/
+
+	selection.selRegion = g_pGameWorld->m_level.Ed_MakeObjectRegionValid(selection.selRef, selection.selRegion);
+}
+
 void CUI_LevelModels::MouseTranslateEvents( wxMouseEvent& event, const Vector3D& ray_start, const Vector3D& ray_dir )
 {
 	if(m_selRefs.numElem() == 0)
@@ -1324,21 +1338,36 @@ void CUI_LevelModels::MouseTranslateEvents( wxMouseEvent& event, const Vector3D&
 
 		for (int i = 0; i < m_selRefs.numElem(); i++)
 		{
-			regionObject_t* ref = m_selRefs[i].selRef;
+			refselectioninfo_t& selection = m_selRefs[i];
+
+			regionObject_t* ref = selection.selRef;
 
 			// make undoable
 			g_pEditorActionObserver->BeginModify(ref);
 
+			// move
+			ref->position += movement;
+
+			// after movevemnt, modify on-tile position
 			if (ref->tile_x != 0xFFFF)
 			{
-				IVector2D tilePos = m_selRefs[i].selRegion->PositionToCell(ref->position);
+				IVector2D tilePos = selection.selRegion->PositionToCell(ref->position);
+
+				int regW = selection.selRegion->GetHField()->m_sizew;
+				int regH = selection.selRegion->GetHField()->m_sizeh;
+
+				// move selection to new region and recalculate it's position
+				if (tilePos.x < 0 || tilePos.y < 0 || tilePos.x >= regW || tilePos.y >= regH)
+				{
+					Msg("Outside region: %d %d\n", tilePos.x, tilePos.y);
+
+					MoveRefToNewRegion(selection);
+					tilePos = selection.selRegion->PositionToCell(ref->position);
+				}
 
 				ref->tile_x = tilePos.x;
 				ref->tile_y = tilePos.y;
 			}
-
-			// move
-			ref->position += movement;
 		}
 
 		m_editAxis.m_position += movement;
@@ -1635,18 +1664,7 @@ void CUI_LevelModels::OnKey(wxKeyEvent& event, bool bDown)
 void CUI_LevelModels::MoveSelectionToNewRegions()
 {
 	for (int i = 0; i < m_selRefs.numElem(); i++)
-	{
-		regionObject_t* ref = m_selRefs[i].selRef;
-
-		if (ref->tile_x != 0xFFFF)
-		{
-			// stick to tile
-			Matrix4x4 transform = transpose(GetModelRefRenderMatrix(m_selRefs[i].selRegion, ref));
-			ref->position = transform.getTranslationComponent();
-		}
-
-		m_selRefs[i].selRegion = g_pGameWorld->m_level.Ed_MakeObjectRegionValid(m_selRefs[i].selRef, m_selRefs[i].selRegion);
-	}
+		MoveRefToNewRegion(m_selRefs[i]);
 }
 
 void CUI_LevelModels::ToggleSelectionTilesStick()

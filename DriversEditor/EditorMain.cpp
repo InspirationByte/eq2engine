@@ -225,6 +225,19 @@ bool InitSystemModules(HWND window)
 	return true;
 }
 
+class CEditorRenderPanel : public wxWindow
+{
+public:
+	CEditorRenderPanel(wxWindow *parent, long style = wxTAB_TRAVERSAL) :
+		wxWindow(parent, wxID_ANY, wxDefaultPosition, wxDefaultSize, style) {}
+	bool AcceptsFocus() const { return true; }
+	bool AcceptsFocusFromKeyboard() const { return true; }
+	bool AcceptsFocusRecursively() const { return true; }
+	bool IsFocusable() const { return true; }
+	bool CanAcceptFocus() const { return true; }
+	bool CanAcceptFocusFromKeyboard() const { return true; }
+};
+
 CMainWindow::CMainWindow( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& pos, const wxSize& size, long style ) 
 	: wxFrame( parent, id, title, pos, size, style )
 {
@@ -241,7 +254,8 @@ CMainWindow::CMainWindow( wxWindow* parent, wxWindowID id, const wxString& title
 	wxBoxSizer* bSizer1;
 	bSizer1 = new wxBoxSizer( wxVERTICAL );
 	
-	m_pRenderPanel = new wxPanel( this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
+	m_pRenderPanel = new CEditorRenderPanel( this );
+	SetDefaultItem(m_pRenderPanel);
 	m_pRenderPanel->SetBackgroundColour( wxSystemSettings::GetColour( wxSYS_COLOUR_BTNTEXT ) );
 	
 	bSizer1->Add( m_pRenderPanel, 1, wxEXPAND, 5 );
@@ -882,16 +896,8 @@ Vector2D		g_vLastMousePosition(0);
 
 void CMainWindow::ProcessMouseEvents(wxMouseEvent& event)
 {
-	/*
-	if(GetForegroundWindow() != m_hmapedit->GetHWND())
-	{
-		SetFocus();
-
-		// windows-only
-		//SetForegroundWindow( GetHWND() );
-	}*/
-
-	m_pRenderPanel->SetFocus();
+	if(event.IsButton() || event.IsPageScroll())
+		m_pRenderPanel->SetFocus();
 
 	if(g_editorTestGame->IsGameRunning())
 	{

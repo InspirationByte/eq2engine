@@ -87,7 +87,7 @@ protected:
 	bool			m_bNeedsSave;
 	bool			m_bSavedOnDisk;
 
-	wxPanel*		m_pRenderPanel;
+	wxWindow*		m_pRenderPanel;
 	wxPanel*		m_nbPanel;
 	wxNotebook*		m_notebook1;
 
