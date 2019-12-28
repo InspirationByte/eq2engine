@@ -1081,19 +1081,16 @@ void CEqPhysics::SimulateStep(float deltaTime, int iteration, FNSIMULATECALLBACK
 			constr->PreApply( m_fDt );
 	}
 
-	// execute pre-simulation callbacks
-	for (int i = 0; i < m_moveable.numElem(); i++)
-	{
-		IEqPhysCallback* callbacks = m_moveable[i]->m_callbacks;
-
-		if (callbacks)
-			callbacks->PreSimulate(m_fDt);
-	}
-
 	// move all bodies
 	for (int i = 0; i < m_moveable.numElem(); i++)
 	{
 		CEqRigidBody* body = m_moveable[i];
+
+		// execute pre-simulation callbacks
+		IEqPhysCallback* callbacks = body->m_callbacks;
+
+		if (callbacks) 	// execute pre-simulation callbacks
+			callbacks->PreSimulate(m_fDt);
 
 		// clear contact pairs and results
 		body->ClearContacts();
@@ -1141,14 +1138,10 @@ void CEqPhysics::SimulateStep(float deltaTime, int iteration, FNSIMULATECALLBACK
 
 		// set after collisions processed
 		body->UpdateBoundingBoxTransform();
-	}
 
-	// execute post simulation callbacks
-	for (int i = 0; i < m_moveable.numElem(); i++)
-	{
 		IEqPhysCallback* callbacks = m_moveable[i]->m_callbacks;
 
-		if(callbacks)
+		if (callbacks) // execute post simulation callbacks
 			callbacks->PostSimulate(m_fDt);
 	}
 
