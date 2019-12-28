@@ -930,11 +930,35 @@ tempdecal_t* CEngineStudioEGF::MakeTempDecal( const decalmakeinfo_t& info, Matri
 			g_verts.resize(pGroup->numIndices);
 			g_indices.resize(pGroup->numIndices);
 
-			for(uint32 k = 0; k < pGroup->numIndices; k+=3)
+			int numIndices = (pGroup->primitiveType == EGFPRIM_TRI_STRIP) ? pGroup->numIndices - 2 : pGroup->numIndices;
+			int indexStep = (pGroup->primitiveType == EGFPRIM_TRI_STRIP) ? 1 : 3;
+
+			for (uint32 k = 0; k < numIndices; k += indexStep)
 			{
-				EGFHwVertex_t v0(*pGroup->pVertex(pIndices[k]));
-				EGFHwVertex_t v1(*pGroup->pVertex(pIndices[k+1]));
-				EGFHwVertex_t v2(*pGroup->pVertex(pIndices[k+2]));
+				// skip strip degenerates
+				if (pIndices[k] == pIndices[k + 1] || pIndices[k] == pIndices[k + 2] || pIndices[k + 1] == pIndices[k + 2])
+					continue;
+
+				int i0, i1, i2;
+
+				int even = k % 2;
+				// handle flipped triangles on EGFPRIM_TRI_STRIP
+				if (even && pGroup->primitiveType == EGFPRIM_TRI_STRIP)
+				{
+					i0 = pIndices[k + 2];
+					i1 = pIndices[k + 1];
+					i2 = pIndices[k];
+				}
+				else
+				{
+					i0 = pIndices[k];
+					i1 = pIndices[k + 1];
+					i2 = pIndices[k + 2];
+				}
+
+				EGFHwVertex_t v0(*pGroup->pVertex(i0));
+				EGFHwVertex_t v1(*pGroup->pVertex(i1));
+				EGFHwVertex_t v2(*pGroup->pVertex(i2));
 
 				if(jointMatrices)
 				{

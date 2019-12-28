@@ -956,13 +956,31 @@ float CEditableEntity::CheckLineIntersection(const Vector3D &start, const Vector
 
 				uint32 *pIndices = pGroup->pVertexIdx(0);
 
-				for(int k = 0; k < pGroup->numIndices; k+=3)
-				{
-					Vector3D v0,v1,v2;
+				int numIndices = (pGroup->primitiveType == EGFPRIM_TRI_STRIP) ? pGroup->numIndices - 2 : pGroup->numIndices;
+				int indexStep = (pGroup->primitiveType == EGFPRIM_TRI_STRIP) ? 1 : 3;
 
-					v0 = pGroup->pVertex(pIndices[k])->point;
-					v1 = pGroup->pVertex(pIndices[k+1])->point;
-					v2 = pGroup->pVertex(pIndices[k+2])->point;
+				for (uint32 k = 0; k < numIndices; k += indexStep)
+				{
+					// skip strip degenerates
+					if (pIndices[k] == pIndices[k + 1] || pIndices[k] == pIndices[k + 2] || pIndices[k + 1] == pIndices[k + 2])
+						continue;
+
+					Vector3D v0, v1, v2;
+
+					int even = k % 2;
+					// handle flipped triangles on EGFPRIM_TRI_STRIP
+					if (even && pGroup->primitiveType == EGFPRIM_TRI_STRIP)
+					{
+						v0 = pGroup->pVertex(pIndices[k + 2])->point;
+						v1 = pGroup->pVertex(pIndices[k + 1])->point;
+						v2 = pGroup->pVertex(pIndices[k])->point;
+					}
+					else
+					{
+						v0 = pGroup->pVertex(pIndices[k])->point;
+						v1 = pGroup->pVertex(pIndices[k + 1])->point;
+						v2 = pGroup->pVertex(pIndices[k + 2])->point;
+					}
 
 					v0 = (transform*Vector4D(v0,1)).xyz();
 					v1 = (transform*Vector4D(v1,1)).xyz();

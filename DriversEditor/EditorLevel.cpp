@@ -1535,6 +1535,9 @@ int CEditorLevel::Ed_SelectRefAndReg(const Vector3D& start, const Vector3D& dir,
 			float refdist = DrvSynUnits::MaxCoordInUnits;
 			int foundIdx = sreg.Ed_SelectRef(start, dir, refdist);
 
+			if (refdist > 200.0f)
+				continue;
+
 			if(foundIdx != -1 && (refdist < max_dist))
 			{
 				max_dist = refdist;
@@ -2083,7 +2086,6 @@ float CheckStudioRayIntersection(IEqModel* pModel, Vector3D& ray_start, Vector3D
 		return DrvSynUnits::MaxCoordInUnits;
 
 	float best_dist = DrvSynUnits::MaxCoordInUnits;
-	float fraction = 1.0f;
 
 	studiohdr_t* pHdr = pModel->GetHWData()->studio;
 	int nLod = 0;
@@ -2108,34 +2110,44 @@ float CheckStudioRayIntersection(IEqModel* pModel, Vector3D& ray_start, Vector3D
 
 			uint32 *pIndices = pGroup->pVertexIdx(0);
 
-			int numTriangles = floor((float)pGroup->numIndices / 3.0f);
-			int validIndexes = numTriangles * 3;
+			int numIndices = (pGroup->primitiveType == EGFPRIM_TRI_STRIP) ? pGroup->numIndices - 2 : pGroup->numIndices;
+			int indexStep = (pGroup->primitiveType == EGFPRIM_TRI_STRIP) ? 1 : 3;
 
-			for(int k = 0; k < validIndexes; k+=3)
+			for (uint32 k = 0; k < numIndices; k += indexStep)
 			{
+				// skip strip degenerates
+				if (pIndices[k] == pIndices[k+1] || pIndices[k] == pIndices[k+2] || pIndices[k+1] == pIndices[k+2])
+					continue;
+
 				Vector3D v0,v1,v2;
 
-				v0 = pGroup->pVertex(pIndices[k])->point;
-				v1 = pGroup->pVertex(pIndices[k+1])->point;
-				v2 = pGroup->pVertex(pIndices[k+2])->point;
+				int even = k % 2;
+				// handle flipped triangles on EGFPRIM_TRI_STRIP
+				if (even && pGroup->primitiveType == EGFPRIM_TRI_STRIP)
+				{
+					v0 = pGroup->pVertex(pIndices[k + 2])->point;
+					v1 = pGroup->pVertex(pIndices[k + 1])->point;
+					v2 = pGroup->pVertex(pIndices[k])->point;
+				}
+				else
+				{
+					v0 = pGroup->pVertex(pIndices[k])->point;
+					v1 = pGroup->pVertex(pIndices[k + 1])->point;
+					v2 = pGroup->pVertex(pIndices[k + 2])->point;
+				}
 
-				float dist = DrvSynUnits::MaxCoordInUnits+1;
+				float dist = DrvSynUnits::MaxCoordInUnits;
 
-				if(IsRayIntersectsTriangle(v0,v1,v2, ray_start, ray_dir, dist))
+				if(IsRayIntersectsTriangle(v0,v1,v2, ray_start, ray_dir, dist, true))
 				{
 					if(dist < best_dist && dist > 0)
-					{
 						best_dist = dist;
-						fraction = dist;
-
-						//outPos = lerp(start, end, dist);
-					}
 				}
 			}
 		}
 	}
 
-	return fraction;
+	return best_dist;
 }
 
 int CEditorLevelRegion::Ed_SelectRef(const Vector3D& start, const Vector3D& dir, float& dist)

@@ -1762,10 +1762,12 @@ void CUI_LevelModels::OnRender()
 
 			if(m_editMode == MEDIT_PLACEMENT && selectionRef->tile_x != 0xFFFF)
 				debugoverlay->Text3D(selectionRef->position, 250.0f, ColorRGBA(1), 0.0f, "Bound to tile");
+
+			debugoverlay->Box3D(selectionRef->bbox.minPoint, selectionRef->bbox.maxPoint, ColorRGBA(1, 1, 1, 0.75f));
 		}
 
 		// draw selection bbox
-		debugoverlay->Box3D(bbox.minPoint, bbox.maxPoint, ColorRGBA(1,1,1, 0.75f));
+		debugoverlay->Box3D(bbox.minPoint, bbox.maxPoint, ColorRGBA(1,1,0, 0.75f));
 
 		if( m_selRefs.numElem() > 0 && m_editMode > MEDIT_PLACEMENT)
 		{
