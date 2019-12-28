@@ -277,7 +277,7 @@ void CDebugOverlay::Sphere3D(const Vector3D& position, float radius, const Color
 	sphere.color = color;
 	sphere.lifetime = fTime;
 
-	if(fTime == 0.0f)
+	if(fTime <= 0.0f)
 		m_FastSphereList.append(sphere);
 	else
 		m_SphereList.append(sphere);
@@ -1039,6 +1039,7 @@ void CDebugOverlay::CleanOverlays()
 		}
 	}
 
+	m_FastSphereList.clear();
 	m_FastBoxList.clear();
 	m_FastLineList.clear();
 }

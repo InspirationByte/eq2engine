@@ -302,6 +302,12 @@ void CUI_OccluderEditor::OnRender()
 	depth.depthWrite = false;
 	depth.depthFunc = COMP_LEQUAL;
 
+	DepthStencilStateParams_t depthTest;
+
+	depthTest.depthTest = true;
+	depthTest.depthWrite = false;
+	depthTest.depthFunc = COMP_LEQUAL;
+
 	BlendStateParam_t blend;
 
 	blend.blendEnable = true;
@@ -336,12 +342,18 @@ void CUI_OccluderEditor::OnRender()
 			Vector3D p4 = occl.end + Vector3D(0,occl.height,0);
 
 			ListQuadTex(p1, p2, p3, p4, 0, color4_white, occluderQuadVerts);
+
+			debugoverlay->Line3D(p1, p2, ColorRGBA(1, 1, 1, 1), ColorRGBA(1, 1, 1, 1), 0.0f);
+			debugoverlay->Line3D(p3, p4, ColorRGBA(1, 1, 1, 1), ColorRGBA(1, 1, 1, 1), 0.0f);
+			debugoverlay->Line3D(p1, p4, ColorRGBA(1, 1, 1, 1), ColorRGBA(1, 1, 1, 1), 0.0f);
 		}
 
 		// current
 		if(m_mode > ED_OCCL_READY)
 		{
 			debugoverlay->Line3D(m_newOccl.start, m_newOccl.end, ColorRGBA(1,1,1,1), ColorRGBA(1,1,1,1), 0.0f);
+			debugoverlay->Sphere3D(m_newOccl.start, 0.5f, ColorRGBA(1, 1, 0, 1), 0.0f);
+			debugoverlay->Sphere3D(m_newOccl.end, 0.5f, ColorRGBA(1, 1, 0, 1), 0.0f);
 
 			if(m_mode == ED_OCCL_HEIGHT)
 			{
@@ -368,8 +380,12 @@ void CUI_OccluderEditor::OnRender()
 		ListQuadTex(p1, p2, p3, p4, 0, ColorRGBA(1,0,0,1), occluderQuadVerts);
 	}
 
-	if(occluderQuadVerts.numElem())
-		materials->DrawPrimitivesFFP(PRIM_TRIANGLES, occluderQuadVerts.ptr(), occluderQuadVerts.numElem(), NULL, ColorRGBA(0.6f,0.6f,0.6f,0.5f), &blend, &depth, &raster);
+	if (occluderQuadVerts.numElem())
+	{
+		materials->DrawPrimitivesFFP(PRIM_TRIANGLES, occluderQuadVerts.ptr(), occluderQuadVerts.numElem(), NULL, ColorRGBA(0.2f, 0.6f, 0.2f, 0.5f), &blend, &depth, &raster);
+		materials->DrawPrimitivesFFP(PRIM_TRIANGLES, occluderQuadVerts.ptr(), occluderQuadVerts.numElem(), NULL, ColorRGBA(0.6f, 0.0f, 0.0f, 0.5f), &blend, &depthTest, &raster);
+	}
+		
 
 	CBaseTilebasedEditor::OnRender();
 
