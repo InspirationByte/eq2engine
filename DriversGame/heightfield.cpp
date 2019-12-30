@@ -679,12 +679,14 @@ void CHeightTileField::Generate(EHFieldGeometryGenerateMode mode, DkList<hfieldb
 			if( point.texture == -1 )
 				continue;
 
+			hfieldmaterial_t* hmat = m_materials[point.texture];
+
 			int sx = floor((float)x / subdivision);
 			int sy = floor((float)y / subdivision);
 
 			//Msg("tile=%d %d sxsy=%d %d\n", x,y, sx, sy);
 
-			hfieldbatch_t* batch = FindBatchInList( m_materials[point.texture]->material, batches, /*generate_render*/true, sx, sy);
+			hfieldbatch_t* batch = FindBatchInList(hmat->material, batches, /*generate_render*/true, sx, sy);
 
 			float fTexelX = 0.0f;
 			float fTexelY = 0.0f;
@@ -693,7 +695,7 @@ void CHeightTileField::Generate(EHFieldGeometryGenerateMode mode, DkList<hfieldb
 			{
 				int nBatchFlags = 0;
 
-				IMaterial* material = m_materials[point.texture]->material;
+				IMaterial* material = hmat->material;
 
 				IMatVar* nocollide = material->FindMaterialVar("nocollide");
 				IMatVar* detach = material->FindMaterialVar("detached");
@@ -716,7 +718,7 @@ void CHeightTileField::Generate(EHFieldGeometryGenerateMode mode, DkList<hfieldb
 					continue;
 
 				batch = new hfieldbatch_t;
-				batch->materialBundle = m_materials[point.texture];
+				batch->materialBundle = hmat;
 				batch->verts.resize(m_sizew*m_sizeh*6);
 				batch->indices.resize(m_sizew*m_sizeh*6);
 				batch->flags = nBatchFlags;
@@ -724,13 +726,13 @@ void CHeightTileField::Generate(EHFieldGeometryGenerateMode mode, DkList<hfieldb
 				batch->sx = sx;
 				batch->sy = sy;
 
-				if(batch->materialBundle->material->GetFlags() & MATERIAL_FLAG_TRANSPARENT)
+				if(hmat->material->GetFlags() & MATERIAL_FLAG_TRANSPARENT)
 					m_hasTransparentSubsets = true;
 
 				batches.append(batch);
 			}
 
-			CTextureAtlas* batchAtlas = batch->materialBundle->material->GetAtlas();
+			CTextureAtlas* batchAtlas = hmat->material->GetAtlas();
 
 			int vertex_heights[4] = {point.height, point.height, point.height, point.height};
 
@@ -909,10 +911,13 @@ void CHeightTileField::Generate(EHFieldGeometryGenerateMode mode, DkList<hfieldb
 						int v1, v2;
 						EdgeIndexToVertex(i, v1, v2);
 
+						hfielddrawvertex_t dv1 = batch->verts[vindxs[v1]];
+						hfielddrawvertex_t dv2 = batch->verts[vindxs[v2]];
+
 						if(mode != HFIELD_GEOM_PHYSICS)
 						{
-							eindxs[0] = batch->verts.append( batch->verts[vindxs[v1]] );
-							eindxs[1] = batch->verts.append( batch->verts[vindxs[v2]] );
+							eindxs[0] = batch->verts.append( dv1 );
+							eindxs[1] = batch->verts.append( dv2 );
 						}
 						else
 						{
@@ -923,8 +928,8 @@ void CHeightTileField::Generate(EHFieldGeometryGenerateMode mode, DkList<hfieldb
 						Vector3D point_position1(dxv[v1] * HFIELD_POINT_SIZE, float(edge_stripped_height[i])*HFIELD_HEIGHT_STEP, dyv[v1] * HFIELD_POINT_SIZE);
 						Vector3D point_position2(dxv[v2] * HFIELD_POINT_SIZE, float(edge_stripped_height[i])*HFIELD_HEIGHT_STEP, dyv[v2] * HFIELD_POINT_SIZE);
 
-						float fTexY1 = (batch->verts[vindxs[v1]].position.y-point_position1.y) / HFIELD_POINT_SIZE;
-						float fTexY2 = (batch->verts[vindxs[v2]].position.y-point_position2.y) / HFIELD_POINT_SIZE;
+						float fTexY1 = (dv1.position.y-point_position1.y) / HFIELD_POINT_SIZE;
+						float fTexY2 = (dv2.position.y-point_position2.y) / HFIELD_POINT_SIZE;
 
 						int rIndex = rotatable ? (i + point.rotatetex) : i;
 
@@ -983,7 +988,7 @@ void CHeightTileField::Generate(EHFieldGeometryGenerateMode mode, DkList<hfieldb
 
 	delete[] tileNormals;
 
-	// check the batches and remove if empty
+	// check the generated and remove if empty
 	for (int i = 0; i < batches.numElem(); i++)
 	{
 		hfieldbatch_t* batch = batches[i];
@@ -1213,7 +1218,6 @@ void CHeightTileFieldRenderable::Undoable_ReadObjectData( IVirtualStream* stream
 void CHeightTileFieldRenderable::CleanRenderData(bool deleteVBO)
 {
 	delete [] m_batches;
-
 	m_batches = NULL;
 
 	m_numBatches = 0;
@@ -1248,65 +1252,75 @@ void CHeightTileFieldRenderable::GenereateRenderData(bool debug)
 
 	m_isChanged = false;
 
-	// delete batches only
+	// delete generated only
 	CleanRenderData(false);
-
-	DkList<hfieldbatch_t*> batches;
 
 	// precache it first
 	for(int i = 0; i < m_materials.numElem(); i++)
 		materials->PutMaterialToLoadingQueue( m_materials[i]->material );
 
 	// сгенерить, полученные батчи соединить и распределить по материалам
-	Generate(debug ? HFIELD_GEOM_DEBUG : HFIELD_GEOM_RENDER, batches);
+	DkList<hfieldbatch_t*> generated;
+	Generate(debug ? HFIELD_GEOM_DEBUG : HFIELD_GEOM_RENDER, generated);
 
-	if(batches.numElem() == 0)
+	if(generated.numElem() == 0)
 	{
 		m_numBatches = 0;
 		return;
 	}
 
-	m_batches = new hfielddrawbatch_t[batches.numElem()];
+	m_batches = new hfielddrawbatch_t[generated.numElem()];
 	DkList<hfielddrawvertex_t>	verts;
 	DkList<int>					indices;
 
-	for(int i = 0; i < batches.numElem(); i++)
+	int numVerts = 0;
+	int numIndices = 0;
+
+	for (int i = 0; i < generated.numElem(); i++)
 	{
-		m_batches[i].startVertex = verts.numElem();
-		m_batches[i].numVerts = batches[i]->verts.numElem();
+		const hfieldbatch_t* batch = generated[i];
 
-		m_batches[i].startIndex = indices.numElem();
-		m_batches[i].numIndices = batches[i]->indices.numElem();
-		m_batches[i].pMaterial = batches[i]->materialBundle->material;
-		//m_batches[i].pMaterial->Ref_Grab();
+		numVerts += batch->verts.numElem();
+		numIndices += batch->indices.numElem();
+	}
 
-		for(int j = 0; j < batches[i]->verts.numElem(); j++)
-		{
-			m_batches[i].bbox.AddVertex( batches[i]->verts[j].position );
-			//verts.append(batches[i]->verts[j]);
-		}
+	verts.resize(numVerts);
+	indices.resize(numIndices);
 
-		verts.append(batches[i]->verts);
+	for(int i = 0; i < generated.numElem(); i++)
+	{
+		hfielddrawbatch_t& drawbatch = m_batches[i];
+		const hfieldbatch_t* batch = generated[i];
 
-		indices.resize(indices.numElem() + batches[i]->indices.numElem());
+		drawbatch.startVertex = verts.numElem();
+		drawbatch.numVerts = batch->verts.numElem();
 
-		for(int j = 0; j < batches[i]->indices.numElem(); j++)
-			indices.append(batches[i]->indices[j] + m_batches[i].startVertex);
+		drawbatch.startIndex = indices.numElem();
+		drawbatch.numIndices = batch->indices.numElem();
+		drawbatch.pMaterial = batch->materialBundle->material;
+
+		drawbatch.bbox = batch->bbox;
+		verts.append(generated[i]->verts);
+
+		int nIndices = batch->indices.numElem();
+
+		for(int j = 0; j < nIndices; j++)
+			indices.append(batch->indices[j] + drawbatch.startVertex);
 
 		// that' all, folks
-		delete batches[i];
+		delete generated[i];
 	}
 
 	m_numVerts = verts.numElem();
 
-	m_numBatches = batches.numElem();
+	m_numBatches = generated.numElem();
 
 	if(!m_vertexbuffer || !m_indexbuffer || !m_format)
 	{
 		VertexFormatDesc_t pFormat[] = {
-			{ 0, 3, VERTEXATTRIB_POSITION, ATTRIBUTEFORMAT_FLOAT },	  // position
-			{ 0, 2, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_HALF }, // texcoord 0
-			{ 0, 4, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_HALF }, // Normal (TC1) + border
+			{ 0, 3, VERTEXATTRIB_POSITION, ATTRIBUTEFORMAT_FLOAT },		// position
+			{ 0, 2, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_HALF },		// texcoord 0
+			{ 0, 4, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_HALF },		// Normal (TC1) + border
 		};
 
 		DevMsg(2,"Creating hfield buffers, %d verts %d indices in %d batches\n", verts.numElem(), indices.numElem(), m_numBatches);
