@@ -191,22 +191,20 @@ inline void CEGFInstancer<IT>::Draw( int renderFlags, IEqModel* model )
 	// proceed to render
 	materials->SetInstancingEnabled(true);
 
+	IVertexBuffer* instBuffer = m_instanceBuf;
+	g_pShaderAPI->SetVertexFormat(m_vertFormat);
+
 	for(int lod = 0; lod < MAX_INSTANCE_LODS; lod++)
 	{
 		for(int i = 0; i < pHdr->numBodyGroups; i++)
 		{
+			int numInst = m_numInstances[i][lod];
+
 			// don't do empty instances
-			if(m_numInstances[i][lod] == 0)
+			if(numInst == 0)
 				continue;
 
-			int numInst = m_numInstances[i][lod];
 			m_numInstances[i][lod] = 0;
-
-			// before lock we have to unbind our buffer
-			g_pShaderAPI->ChangeVertexBuffer( NULL, 2 );
-
-			// upload instance buffer
-			m_instanceBuf->Update(m_instances[i][lod], numInst, 0, true);
 
 			int bodyGroupLOD = lod;
 			int nLodModelIdx = pHdr->pBodyGroups(i)->lodModelIndex;
@@ -226,6 +224,13 @@ inline void CEGFInstancer<IT>::Draw( int renderFlags, IEqModel* model )
 	
 			studiomodeldesc_t* modDesc = pHdr->pModelDesc(nModDescId);
 
+			// before lock we have to unbind our buffer
+			//
+			g_pShaderAPI->ChangeVertexBuffer(NULL, 2);
+
+			// upload instance buffer
+			instBuffer->Update(m_instances[i][lod], numInst, 0, true);
+
 			// render model groups that in this body group
 			for(int j = 0; j < modDesc->numGroups; j++)
 			{
@@ -235,11 +240,8 @@ inline void CEGFInstancer<IT>::Draw( int renderFlags, IEqModel* model )
 				materials->BindMaterial( model->GetMaterial(materialIndex), 0);
 
 				//m_pModel->PrepareForSkinning( m_boneTransforms );
-
-				g_pShaderAPI->SetVertexFormat(m_vertFormat);
-
-				model->SetupVBOStream( 0 );
-				g_pShaderAPI->SetVertexBuffer(m_instanceBuf, 2);
+				model->SetupVBOStream(0);
+				g_pShaderAPI->SetVertexBuffer(instBuffer, 2);
 
 				model->DrawGroup( nModDescId, j, false );
 

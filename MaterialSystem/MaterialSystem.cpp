@@ -890,8 +890,8 @@ bool CMaterialSystem::BindMaterial(IMaterial* pMaterial, int flags)
 	PutMaterialToLoadingQueue( pMaterial );
 
 	// set the current material
-	m_setMaterial = pMaterial;
-
+	IMaterial* setMaterial = pMaterial;
+	
 	EMaterialRenderSubroutine subRoutineId = MATERIAL_SUBROUTINE_NORMAL;
 
 	if(m_config.ffp_mode)
@@ -904,7 +904,7 @@ bool CMaterialSystem::BindMaterial(IMaterial* pMaterial, int flags)
 	if( pMaterial->GetState() == MATERIAL_LOAD_INQUEUE )
 	{
 		InitDefaultMaterial();
-		m_setMaterial = m_pDefaultMaterial;
+		setMaterial = m_pDefaultMaterial;
 		subRoutineId = MATERIAL_SUBROUTINE_NORMAL;
 	}
 
@@ -916,7 +916,7 @@ bool CMaterialSystem::BindMaterial(IMaterial* pMaterial, int flags)
 		success = (*materialstate_callbacks[subRoutineId])(m_overdrawMaterial, 0xFFFFFFFF);
 	}
 	else
-		success = (*materialstate_callbacks[subRoutineId])(m_setMaterial, m_paramOverrideMask);
+		success = (*materialstate_callbacks[subRoutineId])(setMaterial, m_paramOverrideMask);
 
 	if(flags & MATERIAL_BIND_PREAPPLY)
 		Apply();
@@ -924,22 +924,24 @@ bool CMaterialSystem::BindMaterial(IMaterial* pMaterial, int flags)
 	if(!(flags & MATERIAL_BIND_KEEPOVERRIDE))
 		m_paramOverrideMask = 0xFFFFFFFF; // reset override mask shortly after we bind material
 
+	m_setMaterial = setMaterial;
+
 	return success;
 }
 
 // Applies current material
 void CMaterialSystem::Apply()
 {
-	if(!m_setMaterial)
+	IMaterial* setMaterial = m_setMaterial;
+
+	if(!setMaterial)
 	{
 		g_pShaderAPI->Apply();
 		return;
 	}
 
-	//m_setMaterial->UpdateProxy( m_fCurrFrameTime );
-
 	if(m_preApplyCallback)
-		m_preApplyCallback->OnPreApplyMaterial( m_setMaterial );
+		m_preApplyCallback->OnPreApplyMaterial(setMaterial);
 
 	g_pShaderAPI->Apply();
 }
@@ -1029,10 +1031,10 @@ bool CMaterialSystem::BeginFrame()
 	if(m_config.stubMode || !m_shaderAPI)
 		return false;
 
-	bool oldState = m_deviceActiveState;
-	m_deviceActiveState = g_pShaderAPI->IsDeviceActive();
+	bool state, oldState = m_deviceActiveState;
+	m_deviceActiveState = state = g_pShaderAPI->IsDeviceActive();
 
-	if(!m_deviceActiveState && m_deviceActiveState != oldState)
+	if(!state && state != oldState)
 	{
 		for(int i = 0; i < m_lostDeviceCb.numElem(); i++)
 		{
@@ -1043,7 +1045,7 @@ bool CMaterialSystem::BeginFrame()
 
 	m_renderLibrary->BeginFrame();
 
-	if(m_deviceActiveState && m_deviceActiveState != oldState)
+	if(state && state != oldState)
 	{
 		for(int i = 0; i < m_lostDeviceCb.numElem(); i++)
 		{

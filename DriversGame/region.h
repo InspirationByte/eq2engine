@@ -269,6 +269,10 @@ public:
 	// two navigation grids here
 	navGrid_t						m_navGrid[2];		///< navigation grid. 1 is detailed, 2 is for fast pathfind
 
+#ifndef EDITOR
+	DkList<regionObject_t*>			m_staticObjects;
+#endif // EDITOR
+
 	DkList<regionObject_t*>			m_objects;			///< complex and non-complex models
 	DkList<levOccluderLine_t>		m_occluders;		///< occluders
 

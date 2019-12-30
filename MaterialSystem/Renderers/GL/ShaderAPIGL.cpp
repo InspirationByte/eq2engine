@@ -277,9 +277,9 @@ void ShaderAPIGL::ApplyTextures()
 {
 	for (int i = 0; i < m_caps.maxTextureUnits; i++)
 	{
-		CGLTexture* pCurrentTexture = (CGLTexture*)m_pCurrentTextures[i];
 		CGLTexture* pSelectedTexture = (CGLTexture*)m_pSelectedTextures[i];
-
+		CGLTexture* pCurrentTexture = (CGLTexture*)m_pCurrentTextures[i];
+		
 		if(pSelectedTexture != pCurrentTexture)
 		{
 			// Set the active texture unit and bind the selected texture to target
@@ -314,7 +314,7 @@ void ShaderAPIGL::ApplyTextures()
 				}
 			}
 
-			m_pCurrentTextures[i] = m_pSelectedTextures[i];
+			m_pCurrentTextures[i] = pSelectedTexture;
 		}
 	}
 
@@ -356,18 +356,12 @@ void ShaderAPIGL::ApplyBlendState()
 
 				if (state.srcFactor != m_nCurrentSrcFactor || state.dstFactor != m_nCurrentDstFactor)
 				{
-					m_nCurrentSrcFactor = state.srcFactor;
-					m_nCurrentDstFactor = state.dstFactor;
-
-					glBlendFunc(blendingConsts[m_nCurrentSrcFactor],blendingConsts[m_nCurrentDstFactor]);
+					glBlendFunc(blendingConsts[m_nCurrentSrcFactor = state.srcFactor],
+								blendingConsts[m_nCurrentDstFactor = state.dstFactor]);
 				}
 
 				if (state.blendFunc != m_nCurrentBlendFunc)
-				{
-					m_nCurrentBlendFunc = state.blendFunc;
-
-					glBlendEquation(blendingModes[m_nCurrentBlendFunc]);
-				}
+					glBlendEquation(blendingModes[m_nCurrentBlendFunc = state.blendFunc]);
 			}
 			else
 			{
@@ -399,7 +393,7 @@ void ShaderAPIGL::ApplyBlendState()
 			m_nCurrentMask = mask;
 		}
 
-		m_pCurrentBlendstate = m_pSelectedBlendstate;
+		m_pCurrentBlendstate = pSelectedState;
 	}
 }
 
@@ -408,9 +402,9 @@ void ShaderAPIGL::ApplyDepthState()
 	// stencilRef currently not used
 	CGLDepthStencilState* pSelectedState = (CGLDepthStencilState*)m_pSelectedDepthState;
 
-	if (m_pSelectedDepthState != m_pCurrentDepthState)
+	if (pSelectedState != m_pCurrentDepthState)
 	{
-		if (m_pSelectedDepthState == NULL)
+		if (pSelectedState == NULL)
 		{
 			if (!m_bCurrentDepthTestEnable)
 			{
@@ -425,10 +419,7 @@ void ShaderAPIGL::ApplyDepthState()
 			}
 
 			if (m_nCurrentDepthFunc != COMP_LEQUAL)
-			{
-				m_nCurrentDepthFunc = COMP_LEQUAL;
-				glDepthFunc(depthConst[m_nCurrentDepthFunc]);
-			}
+				glDepthFunc(depthConst[m_nCurrentDepthFunc = COMP_LEQUAL]);
 		}
 		else
 		{
@@ -444,15 +435,12 @@ void ShaderAPIGL::ApplyDepthState()
 
 				if (state.depthWrite != m_bCurrentDepthWriteEnable)
 				{
+					glDepthMask((state.depthWrite)? GL_TRUE : GL_FALSE);
 					m_bCurrentDepthWriteEnable = state.depthWrite;
-					glDepthMask((m_bCurrentDepthWriteEnable)? GL_TRUE : GL_FALSE);
 				}
 
 				if (state.depthFunc != m_nCurrentDepthFunc)
-				{
-					m_nCurrentDepthFunc = state.depthFunc;
-					glDepthFunc(depthConst[m_nCurrentDepthFunc]);
-				}
+					glDepthFunc(depthConst[m_nCurrentDepthFunc = state.depthFunc]);
 			}
 			else
 			{
@@ -466,7 +454,7 @@ void ShaderAPIGL::ApplyDepthState()
 			#pragma todo("GL: stencil func")
 		}
 
-		m_pCurrentDepthState = m_pSelectedDepthState;
+		m_pCurrentDepthState = pSelectedState;
 	}
 }
 
@@ -474,7 +462,7 @@ void ShaderAPIGL::ApplyRasterizerState()
 {
 	CGLRasterizerState* pSelectedState = (CGLRasterizerState*)m_pSelectedRasterizerState;
 
-	if (m_pCurrentRasterizerState != m_pSelectedRasterizerState)
+	if (m_pCurrentRasterizerState != pSelectedState)
 	{
 		if (pSelectedState == NULL)
 		{
@@ -482,18 +470,13 @@ void ShaderAPIGL::ApplyRasterizerState()
 			{
 				if (m_nCurrentCullMode == CULL_NONE)
 					glEnable(GL_CULL_FACE);
-			
-				m_nCurrentCullMode = CULL_BACK;
 
-				glCullFace(cullConst[m_nCurrentCullMode]);
+				glCullFace(cullConst[m_nCurrentCullMode = CULL_BACK]);
 			}
 
 #ifndef USE_GLES2
 			if (FILL_SOLID != m_nCurrentFillMode)
-			{
-				m_nCurrentFillMode = FILL_SOLID;
-				glPolygonMode(GL_FRONT_AND_BACK, fillConst[m_nCurrentFillMode]);
-			}
+				glPolygonMode(GL_FRONT_AND_BACK, fillConst[m_nCurrentFillMode = FILL_SOLID]);
 
 			if (false != m_bCurrentMultiSampleEnable)
 			{
@@ -537,10 +520,7 @@ void ShaderAPIGL::ApplyRasterizerState()
 
 #ifndef USE_GLES2
 			if (state.fillMode != m_nCurrentFillMode)
-			{
-				m_nCurrentFillMode = state.fillMode;
-				glPolygonMode(GL_FRONT_AND_BACK, fillConst[m_nCurrentFillMode]);
-			}
+				glPolygonMode(GL_FRONT_AND_BACK, fillConst[m_nCurrentFillMode = state.fillMode]);
 
 			if (state.multiSample != m_bCurrentMultiSampleEnable)
 			{
@@ -559,11 +539,8 @@ void ShaderAPIGL::ApplyRasterizerState()
 			{
 				if(m_fCurrentDepthBias != state.depthBias || m_fCurrentSlopeDepthBias != state.slopeDepthBias)
 				{
-					m_fCurrentDepthBias = state.depthBias;
-					m_fCurrentSlopeDepthBias = state.slopeDepthBias;
-
-					glPolygonOffset(m_fCurrentDepthBias, m_fCurrentSlopeDepthBias);
 					glEnable(GL_POLYGON_OFFSET_FILL);
+					glPolygonOffset(m_fCurrentDepthBias = state.depthBias, m_fCurrentSlopeDepthBias = state.slopeDepthBias);
 				}
 			}
 			else
@@ -580,50 +557,40 @@ void ShaderAPIGL::ApplyRasterizerState()
 		}
 	}
 
-	m_pCurrentRasterizerState = m_pSelectedRasterizerState;
+	m_pCurrentRasterizerState = pSelectedState;
 }
 
 void ShaderAPIGL::ApplyShaderProgram()
 {
-	if (m_pSelectedShader != m_pCurrentShader)
+	CGLShaderProgram* selectedShader = (CGLShaderProgram*)m_pSelectedShader;
+
+	if (selectedShader != m_pCurrentShader)
 	{
-		if (m_pSelectedShader == NULL)
-		{
-			glUseProgram(0);
-		}
-		else
-		{
-			CGLShaderProgram* prog = (CGLShaderProgram*)m_pSelectedShader;
-
-			glUseProgram( prog->m_program );
-		}
-
-		m_pCurrentShader = m_pSelectedShader;
+		glUseProgram(selectedShader ? selectedShader->m_program : 0);
+		m_pCurrentShader = selectedShader;
 	}
 }
 
 void ShaderAPIGL::ApplyConstants()
 {
-	if (m_pCurrentShader != NULL)
+	CGLShaderProgram* currentShader = (CGLShaderProgram*)m_pCurrentShader;
+
+	if (!currentShader != NULL)
+		return;
+
+	for (int i = 0; i < currentShader->m_numConstants; i++)
 	{
-		CGLShaderProgram* prog = (CGLShaderProgram*)m_pCurrentShader;
+		GLShaderConstant_t& uni = currentShader->m_constants[i];
 
-		for (int i = 0; i < prog->m_numConstants; i++)
-		{
-			GLShaderConstant_t* uni = prog->m_constants + i;
+		if (!uni.dirty)
+			continue;
 
-			if (uni->dirty)
-			{
-				if (uni->type >= CONSTANT_MATRIX2x2)
-					((UNIFORM_MAT_FUNC) s_uniformFuncs[uni->type])(uni->index, uni->nElements, GL_TRUE, (float *) uni->data);
-				else
-					((UNIFORM_FUNC) s_uniformFuncs[uni->type])(uni->index, uni->nElements, (float *) uni->data);
+		uni.dirty = false;
 
-				uni->dirty = false;
-			}
-		}
-
-
+		if (uni.type >= CONSTANT_MATRIX2x2)
+			((UNIFORM_MAT_FUNC) s_uniformFuncs[uni.type])(uni.index, uni.nElements, GL_TRUE, (float *) uni.data);
+		else
+			((UNIFORM_FUNC) s_uniformFuncs[uni.type])(uni.index, uni.nElements, (float *) uni.data);
 	}
 }
 
@@ -1228,10 +1195,12 @@ void ShaderAPIGL::CopyFramebufferToTexture(ITexture* pTargetTexture)
 	int currentNumRTs = 0;
 	for(; currentNumRTs < MAX_MRTS;)
 	{
-		if(!m_pCurrentColorRenderTargets[currentNumRTs])
+		ITexture* rt = m_pCurrentColorRenderTargets[currentNumRTs];
+
+		if(!rt)
 			break;
 
-		currentRenderTarget[currentNumRTs] = m_pCurrentColorRenderTargets[currentNumRTs];
+		currentRenderTarget[currentNumRTs] = rt;
 		currentCRTSlice[currentNumRTs] = m_nCurrentCRTSlice[currentNumRTs];
 
 		m_pCurrentColorRenderTargets[currentNumRTs] = NULL;
@@ -1272,10 +1241,12 @@ void ShaderAPIGL::CopyRendertargetToTexture(ITexture* srcTarget, ITexture* destT
 	int currentNumRTs = 0;
 	for(; currentNumRTs < MAX_MRTS;)
 	{
-		if(!m_pCurrentColorRenderTargets[currentNumRTs])
+		ITexture* rt = m_pCurrentColorRenderTargets[currentNumRTs];
+
+		if (!rt)
 			break;
 
-		currentRenderTarget[currentNumRTs] = m_pCurrentColorRenderTargets[currentNumRTs];
+		currentRenderTarget[currentNumRTs] = rt;
 		currentCRTSlice[currentNumRTs] = m_nCurrentCRTSlice[currentNumRTs];
 
 		m_pCurrentColorRenderTargets[currentNumRTs] = NULL;
@@ -1335,10 +1306,15 @@ void ShaderAPIGL::CopyRendertargetToTexture(ITexture* srcTarget, ITexture* destT
 // Changes render target (MRT)
 void ShaderAPIGL::ChangeRenderTargets(ITexture** pRenderTargets, int nNumRTs, int* nCubemapFaces, ITexture* pDepthTarget, int nDepthSlice)
 {
-	if (m_frameBuffer == 0)
-		glGenFramebuffers(1, &m_frameBuffer);
+	uint glFrameBuffer = m_frameBuffer;
 
-	glBindFramebuffer(GL_FRAMEBUFFER, m_frameBuffer);
+	if (glFrameBuffer == 0)
+	{
+		glGenFramebuffers(1, &glFrameBuffer);
+		m_frameBuffer = glFrameBuffer;
+	}
+
+	glBindFramebuffer(GL_FRAMEBUFFER, glFrameBuffer);
 
 	for (int i = 0; i < nNumRTs; i++)
 	{
@@ -1441,7 +1417,7 @@ void ShaderAPIGL::GetCurrentRenderTargets(ITexture* pRenderTargets[MAX_MRTS], in
 
 	if(pRenderTargets)
 	{
-		for (register int i = 0; i < m_caps.maxRenderTargets; i++)
+		for (int i = 0; i < m_caps.maxRenderTargets; i++)
 		{
 			nRts++;
 
@@ -1450,7 +1426,7 @@ void ShaderAPIGL::GetCurrentRenderTargets(ITexture* pRenderTargets[MAX_MRTS], in
 			if(cubeNumbers)
 				cubeNumbers[i] = m_nCurrentCRTSlice[i];
 
-			if(m_pCurrentColorRenderTargets[i] == NULL)
+			if(!pRenderTargets[i])
 				break;
 		}
 	}
@@ -1464,9 +1440,7 @@ void ShaderAPIGL::GetCurrentRenderTargets(ITexture* pRenderTargets[MAX_MRTS], in
 void ShaderAPIGL::InternalChangeFrontFace(int nCullFaceMode)
 {
 	if (nCullFaceMode != m_nCurrentFrontFace)
-	{
 		glFrontFace(m_nCurrentFrontFace = nCullFaceMode);
-	}
 }
 
 // Changes back to backbuffer
@@ -1478,23 +1452,16 @@ void ShaderAPIGL::ChangeRenderTargetToBackBuffer()
 	glBindFramebuffer(GL_FRAMEBUFFER,0);
 	SetViewport(0, 0, m_nViewportWidth, m_nViewportHeight);
 
-	if (m_pCurrentColorRenderTargets[0] != NULL)
-	{
-		m_pCurrentColorRenderTargets[0] = NULL;
-	}
+	int numRTs = m_nCurrentRenderTargets;
 
-	for (uint8 i = 1; i < m_nCurrentRenderTargets; i++)
+	for (int i = 0; i < numRTs; i++)
 	{
 		if (m_pCurrentColorRenderTargets[i] != NULL)
-		{
 			m_pCurrentColorRenderTargets[i] = NULL;
-		}
 	}
 
 	if (m_pCurrentDepthRenderTarget != NULL)
-	{
 		m_pCurrentDepthRenderTarget = NULL;
-	}
 }
 
 //-------------------------------------------------------------
@@ -1570,22 +1537,13 @@ void ShaderAPIGL::SetDepthRange(float fZNear,float fZFar)
 // Changes the vertex format
 void ShaderAPIGL::ChangeVertexFormat(IVertexFormat* pVertexFormat)
 {
-	CVertexFormatGL* pCurrentFormat = NULL;
-	CVertexFormatGL* pSelectedFormat = NULL;
+	static CVertexFormatGL zero(nullptr, 0);
 
-	if( pVertexFormat != m_pCurrentVertexFormat )
+	CVertexFormatGL* pSelectedFormat = pVertexFormat ? (CVertexFormatGL*)pVertexFormat : &zero;
+	CVertexFormatGL* pCurrentFormat = m_pCurrentVertexFormat ? (CVertexFormatGL*)m_pCurrentVertexFormat : &zero;
+
+	if( pVertexFormat != pCurrentFormat)
 	{
-		static CVertexFormatGL* zero = new CVertexFormatGL(NULL, 0);
-
-		pCurrentFormat = zero;
-		pSelectedFormat = zero;
-
-		if (m_pCurrentVertexFormat != NULL)
-			pCurrentFormat = (CVertexFormatGL*)m_pCurrentVertexFormat;
-
-		if (pVertexFormat != NULL)
-			pSelectedFormat = (CVertexFormatGL*)pVertexFormat;
-
 		for (int i = 0; i < m_caps.maxVertexGenericAttributes; i++)
 		{
 			eqGLVertAttrDesc_t& selDesc = pSelectedFormat->m_genericAttribs[i];
@@ -1617,6 +1575,7 @@ void ShaderAPIGL::ChangeVertexFormat(IVertexFormat* pVertexFormat)
 void ShaderAPIGL::ChangeVertexBuffer(IVertexBuffer* pVertexBuffer, int nStream, const intptr offset)
 {
 	CVertexBufferGL* pVB = (CVertexBufferGL*)pVertexBuffer;
+	GLuint vbo = pVB ? pVB->GetCurrentBuffer() : 0;
 
 #ifdef USE_GLES2
 	const GLsizei glTypes[] = {
@@ -1632,27 +1591,25 @@ void ShaderAPIGL::ChangeVertexBuffer(IVertexBuffer* pVertexBuffer, int nStream, 
 	};
 #endif // USE_GLES2
 
-	GLuint vbo = pVB ? pVB->GetCurrentBuffer() : 0;
-
 	bool instanceBuffer = (nStream > 0) && pVB != NULL && (pVB->GetFlags() & VERTBUFFER_FLAG_INSTANCEDATA);
-	bool vbDiff = pVB != m_pCurrentVertexBuffers[nStream];
 
 	// should be always rebound
-	if (vbDiff || offset != m_nCurrentOffsets[nStream] || m_currentGLVB[nStream] != vbo)
+	if (pVB != m_pCurrentVertexBuffers[nStream] || offset != m_nCurrentOffsets[nStream] || m_currentGLVB[nStream] != vbo)
 	{
 		glBindBuffer(GL_ARRAY_BUFFER, m_currentGLVB[nStream] = vbo);
 		GLCheckError("bind array");
 
-		if (m_pCurrentVertexFormat != NULL)
+		CVertexFormatGL* currentFormat = (CVertexFormatGL*)m_pCurrentVertexFormat;
+
+		if (currentFormat != NULL)
 		{
-			CVertexFormatGL* cvf = (CVertexFormatGL*)m_pCurrentVertexFormat;
-			int vertexSize = cvf->m_streamStride[nStream];
+			int vertexSize = currentFormat->m_streamStride[nStream];
 
 			char* base = (char *)(offset * vertexSize);			
 
 			for (int i = 0; i < m_caps.maxVertexGenericAttributes; i++)
 			{
-				eqGLVertAttrDesc_t& attrib = cvf->m_genericAttribs[i];
+				eqGLVertAttrDesc_t& attrib = currentFormat->m_genericAttribs[i];
 
 				if (attrib.streamId != nStream)
 					continue;
@@ -2378,7 +2335,6 @@ void ShaderAPIGL::DestroyIndexBuffer(IIndexBuffer* pIndexBuffer)
 //-------------------------------------------------------------
 
 IVertexFormat* pPlainFormat = NULL;
-
 
 PRIMCOUNTER g_pGLPrimCounterCallbacks[] =
 {

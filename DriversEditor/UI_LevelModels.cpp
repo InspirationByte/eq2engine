@@ -1012,7 +1012,7 @@ void CUI_LevelModels::OnButtons(wxCommandEvent& event)
 	{
 		// import DSM/ESM/OBJ
 		
-		wxFileDialog* file = new wxFileDialog(NULL, "Import OBJ/ESM", "./", "*.*", "Model files (*.obj, *.esm)|*.obj;*.esm", wxFD_FILE_MUST_EXIST | wxFD_OPEN | wxFD_MULTIPLE);
+		wxFileDialog* file = new wxFileDialog(NULL, "Import OBJ/ESM", wxEmptyString, wxEmptyString, "Model files (*.obj, *.esm)|*.obj;*.esm;", wxFD_FILE_MUST_EXIST | wxFD_OPEN | wxFD_MULTIPLE);
 
 		if(file->ShowModal() == wxID_OK)
 		{
@@ -1023,25 +1023,50 @@ void CUI_LevelModels::OnButtons(wxCommandEvent& event)
 			{
 				dsmmodel_t model;
 
-				if( LoadSharedModel(&model, paths[i].c_str()) )
+				if (!LoadSharedModel(&model, paths[i].c_str()))
 				{
-					CLevelModel* pLevModel = new CLevelModel();
-					pLevModel->CreateFrom( &model );
-
-					// TODO: create preivew
-
-					FreeDSM(&model);
-
-					EqString path(paths[i].wchar_str());
-
-					CLevObjectDef* container = new CLevObjectDef();
-					container->m_model = pLevModel;
-					container->m_name = path.Path_Extract_Name().Path_Strip_Ext().c_str();
-
-					//g_pGameWorld->AddModel();
-
-					m_modelPicker->AddModel(container);
+					wxMessageBox("'" + paths[i].c_str() + "' not a valid model!", "Warning", wxOK | wxICON_WARNING, this);
+					continue;
 				}
+
+				wxString missingMaterialNames;
+
+				for (int j = 0; j < model.groups.numElem(); j++)
+				{
+					EqString materialName(model.groups[j]->texture);
+					UTIL_ConvertDSMMaterialPath(materialName);
+
+					if (!materials->IsMaterialExist(materialName.c_str()))
+						missingMaterialNames.append((materialName + "\n").c_str());
+				}
+
+				if (missingMaterialNames.length() > 0)
+				{
+					int result = wxMessageBox("Missing materials\n\nFor model '" + paths[i].c_str() + "':\n\n" + missingMaterialNames + "\n\nDo you wish to continue?", "Question", wxYES_NO | wxCENTRE | wxICON_WARNING, this);
+
+					if (result == wxCANCEL)
+						return;
+
+					if (result == wxNO)
+						return;
+				}
+
+				CLevelModel* pLevModel = new CLevelModel();
+				pLevModel->CreateFrom( &model );
+
+				// TODO: create preivew
+
+				FreeDSM(&model);
+
+				EqString path(paths[i].wchar_str());
+
+				CLevObjectDef* container = new CLevObjectDef();
+				container->m_model = pLevModel;
+				container->m_name = path.Path_Extract_Name().Path_Strip_Ext().c_str();
+
+				//g_pGameWorld->AddModel();
+
+				m_modelPicker->AddModel(container);
 			}
 		}
 

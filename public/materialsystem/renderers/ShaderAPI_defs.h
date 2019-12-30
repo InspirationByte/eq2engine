@@ -213,11 +213,11 @@ typedef struct SamplerStateParam_s
 	ER_TextureFilterMode		minFilter;
 	ER_TextureFilterMode		magFilter;
 
-	ER_CompareFunc	compareFunc;
+	ER_CompareFunc				compareFunc;
 
-	ER_TextureAddressMode	wrapS;
-	ER_TextureAddressMode	wrapT;
-	ER_TextureAddressMode	wrapR;
+	ER_TextureAddressMode		wrapS;
+	ER_TextureAddressMode		wrapT;
+	ER_TextureAddressMode		wrapR;
 	int				aniso;
 
 	float			lod;

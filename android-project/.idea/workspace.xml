@@ -13,11 +13,6 @@
     <list default="true" id="c9096593-b4df-4b83-813a-05c2d4299dea" name="Default" comment="">
       <change beforePath="$PROJECT_DIR$/../MaterialSystem/DynamicMesh.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../MaterialSystem/DynamicMesh.cpp" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../MaterialSystem/DynamicMesh.h" beforeDir="false" afterPath="$PROJECT_DIR$/../MaterialSystem/DynamicMesh.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../MaterialSystem/Renderers/GL/IndexBufferGL.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../MaterialSystem/Renderers/GL/IndexBufferGL.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../MaterialSystem/Renderers/GL/ShaderAPIGL.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../MaterialSystem/Renderers/GL/ShaderAPIGL.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../MaterialSystem/Renderers/GL/ShaderAPIGL.h" beforeDir="false" afterPath="$PROJECT_DIR$/../MaterialSystem/Renderers/GL/ShaderAPIGL.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../MaterialSystem/Renderers/GL/VertexBufferGL.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../MaterialSystem/Renderers/GL/VertexBufferGL.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
     </list>
     <ignored path="android-project.iws" />
     <ignored path=".idea/workspace.xml" />
@@ -556,7 +551,6 @@
   </component>
   <component name="ToolWindowManager">
     <frame x="-8" y="-8" width="1936" height="1056" extended-state="6" />
-    <editor active="true" />
     <layout>
       <window_info content_ui="combo" id="Project" order="0" sideWeight="0.48626816" visible="true" weight="0.17910448" />
       <window_info id="Structure" order="1" weight="0.25" />

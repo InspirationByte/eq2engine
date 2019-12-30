@@ -94,6 +94,11 @@ struct lmodel_batch_t
 
 //-----------------------------------------------------------------------------------------
 
+#ifdef EDITOR
+// special function to convert DSM material path
+void UTIL_ConvertDSMMaterialPath(EqString& path);
+#endif // EDITOR
+
 class CLevelModel : public RefCountedObject
 {
 	friend class CGameLevel;

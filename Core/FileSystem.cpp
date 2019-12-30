@@ -821,14 +821,14 @@ void CFileSystem::AddSearchPath(const char* pathId, const char* pszDir)
 
 	DevMsg(DEVMSG_FS, "Adding search patch '%s' at '%s'\n", pathId, pszDir);
 
-	bool isMod = strstr(pathId, "$MOD$") != nullptr;
+	bool isReadOnlyPath = strstr(pathId, "$MOD$") || strstr(pathId, "$LOCALIZE$");
 
 	SearchPath_t pathInfo;
 	pathInfo.id = pathId;
 	pathInfo.path = pszDir;
-	pathInfo.mainWritePath = !isMod;
+	pathInfo.mainWritePath = !isReadOnlyPath;
 
-	if(isMod)
+	if(isReadOnlyPath)
 		m_directories.insert(pathInfo, 0);
 	else
 		m_directories.append(pathInfo);

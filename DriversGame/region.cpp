@@ -210,7 +210,7 @@ IVector2D CLevelRegion::GetTileAndNeighbourRegion(int x, int y, CLevelRegion** r
 Vector3D GetModelRefPosition(CLevelRegion* reg, regionObject_t* ref)
 {
 	// models are usually placed at heightfield 0
-	CHeightTileField& defField = *reg->m_heightfield[0];
+	CHeightTileField& defField = *reg->GetHField();
 
 	Vector3D addHeight(0.0f);
 
@@ -382,14 +382,18 @@ void CLevelRegion::Render(const Vector3D& cameraPosition, const occludingFrustum
 
 	const ShaderAPICaps_t& caps = g_pShaderAPI->GetCaps();
 
+#ifndef EDITOR
+	int numObjects = m_staticObjects.numElem();
+#else
 	int numObjects = m_objects.numElem();
+#endif // EDITOR
 
 	for(int i = 0; i < numObjects; i++)
 	{
+#ifdef EDITOR
 		regionObject_t* ref = m_objects[i];
 		CLevObjectDef* cont = ref->def;
 
-#ifdef EDITOR
 		if(ref->hide)
 			continue;
 
@@ -440,18 +444,21 @@ void CLevelRegion::Render(const Vector3D& cameraPosition, const occludingFrustum
 // IN-GAME RENDERER
 //----------------------------------------------------------------
 
-		if(cont->m_info.type != LOBJ_TYPE_INTERNAL_STATIC)
-			continue;
+		regionObject_t* ref = m_staticObjects[i];
+		CLevObjectDef* cont = ref->def;
 
 		if(renderTranslucency && !cont->m_model->m_hasTransparentSubsets)
 			continue;
 
 		if( occlFrustum.IsSphereVisible( ref->position, length(ref->bbox.GetSize())) )
 		{
+			levObjInstanceData_t* instData = cont->m_instData;
+
 			if(	caps.isInstancingSupported &&
-				r_enableLevelInstancing.GetBool() && cont->m_instData)
+				r_enableLevelInstancing.GetBool() && 
+				instData)
 			{
-				regObjectInstance_t& inst = cont->m_instData->instances[cont->m_instData->numInstances++];
+				regObjectInstance_t& inst = instData->instances[instData->numInstances++];
 
 				inst.position = Vector4D(GetModelRefPosition(this, ref), 1.0f);
 				inst.rotation = GetModelRefRotation(this, ref);
@@ -469,9 +476,11 @@ void CLevelRegion::Render(const Vector3D& cameraPosition, const occludingFrustum
 
 	materials->SetMatrix(MATRIXMODE_WORLD, identity4());
 
+	int numHFields = GetNumHFields();
+
 	if(nav_debug_map.GetBool())
 	{
-		for(int i = 0; i < GetNumHFields(); i++)
+		for(int i = 0; i < numHFields; i++)
 		{
 			if(m_heightfield[i])
 				m_heightfield[i]->RenderDebug(m_navGrid[0].debugObstacleMap, nRenderFlags, occlFrustum );
@@ -479,7 +488,7 @@ void CLevelRegion::Render(const Vector3D& cameraPosition, const occludingFrustum
 	}
 	else
 	{
-		for(int i = 0; i < GetNumHFields(); i++)
+		for(int i = 0; i < numHFields; i++)
 		{
 			if(m_heightfield[i])
 				m_heightfield[i]->Render( nRenderFlags, occlFrustum );
@@ -753,6 +762,10 @@ void CLevelRegion::Cleanup()
 		delete m_objects[i];
 	m_objects.clear();
 
+#ifndef EDITOR
+	m_staticObjects.clear();
+#endif // EDITOR
+
 	for(int i = 0; i < m_zones.numElem(); i++)
 		delete [] m_zones[i].zoneName;
 	m_zones.clear();
@@ -911,7 +924,8 @@ void CLevelRegion::ReadLoadRegion(IVirtualStream* stream, DkList<CLevObjectDef*>
 		newDef->m_info = defInfo;
 		newDef->m_model = modelRef;
 
-		modelRef->GeneratePhysicsData(false);
+		bool isGroundModel = (newDef->m_info.modelflags & LMODEL_FLAG_ISGROUND);
+		modelRef->GeneratePhysicsData(isGroundModel);
 
 		m_regionDefs.append(newDef);
 	}
@@ -1010,6 +1024,11 @@ void CLevelRegion::ReadLoadRegion(IVirtualStream* stream, DkList<CLevObjectDef*>
 
 			ASSERT(ref);
 			m_objects.append(ref);
+
+#ifndef EDITOR
+			if(ref->def->m_info.type == LOBJ_TYPE_INTERNAL_STATIC)
+				m_staticObjects.append(ref);
+#endif // EDITOR
 		}
 	}
 

@@ -156,13 +156,14 @@ bool LoadOBJ(dsmmodel_t* model, const char* filename)
 	// reset reader
 	tok.reset();
 
-	EqString mtl_file_name(filename);
-	mtl_file_name = mtl_file_name.Path_Strip_Ext() + ".mtl";
-
 	bool bUseMTL = false;
 
-	if(LoadMTL((char*)mtl_file_name.GetData(), material_list))
-		bUseMTL = true;
+	// For now, don't use MTL
+
+	//EqString mtl_file_name(filename);
+	//mtl_file_name = mtl_file_name.Path_Strip_Ext() + ".mtl";
+	//if(LoadMTL((char*)mtl_file_name.GetData(), material_list))
+	///	bUseMTL = true;
 
 	strcpy(model->name, "temp");
 
@@ -187,22 +188,29 @@ bool LoadOBJ(dsmmodel_t* model, const char* filename)
 
 	bool reverseNormals = false;
 
-	while ((str = tok.next()) != NULL)
+	int numComments = 0;
+
+	while (str = tok.next())
 	{
 		if(str[0] == '#')
 		{
-			char* check_tok = tok.next();
-			if(check_tok && !stricmp(check_tok, "blender"))
-			{
-				gl_to_eq = true;
-				blend_to_eq = true;
-				//reverseNormals = true;
-			}
+			numComments++;
 
-			tok.goToNextLine();
-			continue;
+			if (numComments <= 3) // check for blender comment to activate hack
+			{
+				char* check_tok = tok.next();
+				if (check_tok && !stricmp(check_tok, "blender"))
+				{
+					gl_to_eq = true;
+					blend_to_eq = true;
+					//reverseNormals = true;
+				}
+				else
+					str = check_tok;	// check, maybe there is a actual props
+			}
 		}
-		else if(str[0] == 'v')
+
+		if(str[0] == 'v')
 		{
 			//char stored_str[3] = {str[0], str[1], 0};
 
@@ -250,6 +258,8 @@ bool LoadOBJ(dsmmodel_t* model, const char* filename)
 		}
 		else if(!stricmp(str, "f"))
 		{
+			Msg("face!\n");
+
 			if(!curgroup)
 			{
 				curgroup = new dsmgroup_t;
@@ -351,6 +361,12 @@ bool LoadOBJ(dsmmodel_t* model, const char* filename)
 				{
 					dsmvertex_t vert;
 
+					if (!vertices.inRange(vindices[v]))
+					{
+						ErrorMsg("FIX YOUR OBJ! %d, max is %d\n", vindices[v], vertices.numElem());
+						continue;
+					}
+
 					verts[v].position = vertices[vindices[v]];
 
 					if(has_vt)
@@ -422,6 +438,9 @@ bool LoadOBJ(dsmmodel_t* model, const char* filename)
 					}
 				}
 			}
+
+			// skip 'goToNextLine' as we already called 'nextLine'
+			continue;
 		}
 		else if(str[0] == 'g')
 		{
@@ -441,8 +460,8 @@ bool LoadOBJ(dsmmodel_t* model, const char* filename)
 			curgroup = NULL;
 			strcpy(material_name, tok.next(isNotNewLine));
 		}
-		else
-			tok.goToNextLine();
+
+		tok.goToNextLine();
 	}
 
 	//delete [] group_remap;

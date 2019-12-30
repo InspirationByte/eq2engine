@@ -316,7 +316,8 @@ private:
 	UINT						m_nSelectedStreamParam[MAX_VERTEXSTREAM];
 
 	// Custom blend state
-	SamplerStateParam_t*		m_pCustomSamplerState;
+	
+	SamplerStateParam_t			m_defaultSamplerState;
 
 	int							m_nCurrentFrontFace;
 

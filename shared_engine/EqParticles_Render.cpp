@@ -345,10 +345,10 @@ void CParticleLowLevelRenderer::Render(int nRenderFlags)
 
 void CParticleLowLevelRenderer::ClearBuffers()
 {
-	for(int i = 0; i < m_renderGroups.numElem(); i++)
-	{
+	int groups = m_renderGroups.numElem();
+
+	for(int i = 0; i < groups; i++)
 		m_renderGroups[i]->ClearBuffers();
-	}
 }
 
 bool CParticleLowLevelRenderer::MakeVBOFrom(CSpriteBuilder<PFXVertex_t>* pGroup)

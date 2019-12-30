@@ -11,6 +11,7 @@
 #include "DebugInterface.h"
 #include "IDkCore.h"
 #include "utils/KeyValues.h"
+#include "IFileSystem.h"
 
 EXPORTED_INTERFACE(ILocalize, CLocalize);
 
@@ -83,8 +84,11 @@ void CLocalize::Init()
 	}
 
     m_language = KV_GetValueString(pRegional->FindKeyBase("DefaultLanguage"), 0, "English" );
-
     Msg("Language '%s' set\n", m_language.c_str());
+
+	// add localized path
+	EqString localizedPath(g_fileSystem->GetCurrentGameDirectory() + _Es("_") + m_language);
+	g_fileSystem->AddSearchPath("$LOCALIZE$", localizedPath.c_str());
 
 	int langArg = g_cmdLine->FindArgument("-language");
 

@@ -536,10 +536,7 @@ void CLevelModel::Render(int nDrawFlags)
 		if(isTransparent != renderTranslucency)
 			continue;
 
-		materials->SetCullMode((nDrawFlags & RFLAG_FLIP_VIEWPORT_X) ? CULL_FRONT : CULL_BACK);
-
 		materials->BindMaterial(batch.pMaterial, 0);
-
 		materials->Apply();
 
 		g_pShaderAPI->DrawIndexedPrimitives(PRIM_TRIANGLES, batch.startIndex, batch.numIndices, 0, m_numVerts);
@@ -625,6 +622,25 @@ void CLevelModel::GetDecalPolygons( decalPrimitives_t& polys, const Matrix4x4& t
 	}
 }
 
+#ifdef EDITOR
+// special function to convert DSM material path
+void UTIL_ConvertDSMMaterialPath(EqString& path)
+{
+	path = path.Path_Strip_Ext();
+
+	FixSlashes((char*)path.GetData());
+	char* sub = strstr((char*)path.GetData(), materials->GetMaterialPath());
+
+	char* pszPath = (char*)path.c_str();
+	if (sub)
+	{
+		int diff = (sub - pszPath);
+		pszPath += diff + strlen(materials->GetMaterialPath());
+	}
+
+	path = pszPath;
+}
+#endif // EDITOR
 
 bool CLevelModel::CreateFrom(dsmmodel_t* pModel)
 {
@@ -716,22 +732,10 @@ bool CLevelModel::CreateFrom(dsmmodel_t* pModel)
 		m_batches[i].numIndices = indexdata.numElem() - m_batches[i].startIndex;
 		m_batches[i].numVerts = vertexdata.numElem() - m_batches[i].startVertex;
 
-		EqString path(pModel->groups[i]->texture);
+		EqString materialName(pModel->groups[i]->texture);
+		UTIL_ConvertDSMMaterialPath(materialName);
 
-		path = path.Path_Strip_Ext();
-
-		FixSlashes((char*)path.GetData());
-		char* sub = strstr((char*)path.GetData(), materials->GetMaterialPath());
-
-		char* pszPath = (char*)path.GetData();
-		if(sub)
-		{
-			int diff = (sub - pszPath);
-
-			pszPath += diff + strlen(materials->GetMaterialPath());
-		}
-
-		m_batches[i].pMaterial = materials->GetMaterial(pszPath);
+		m_batches[i].pMaterial = materials->GetMaterial(materialName.c_str());
 		m_batches[i].pMaterial->Ref_Grab();
 
 		if(m_batches[i].pMaterial->GetFlags() & MATERIAL_FLAG_TRANSPARENT)
@@ -746,6 +750,8 @@ bool CLevelModel::CreateFrom(dsmmodel_t* pModel)
 
 	memcpy(m_verts, vertexdata.ptr(), sizeof(lmodeldrawvertex_t)*m_numVerts);
 	memcpy(m_indices, indexdata.ptr(), sizeof(uint16)*m_numIndices);
+
+	GeneratePhysicsData();
 
 	return GenereateRenderData();
 #else

@@ -23,8 +23,8 @@ bool LoadSharedModel(dsmmodel_t* model, const char* filename)
 		return LoadOBJ(model, filename);
 	else if(!stricmp(ext.GetData(), "esm"))
 		return LoadESM(model, filename);
-	else
-		return LoadDSM(model, filename);
+	
+	return false;
 }
 
 bool SaveSharedModel(dsmmodel_t* model, const char* filename)

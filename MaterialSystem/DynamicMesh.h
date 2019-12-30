@@ -12,8 +12,6 @@
 #include "renderers/IShaderAPI.h"
 #include "utils/DkList.h"
 
-#define DYNAMICMESH_VBO_COUNT 4
-
 class CDynamicMesh : public IDynamicMesh
 {
 public:
@@ -59,15 +57,13 @@ protected:
 	uint16*			m_lockIndices;
 
 	IVertexFormat*	m_vertexFormat;
-	IVertexBuffer*	m_vertexBuffer[DYNAMICMESH_VBO_COUNT];
-	IIndexBuffer*	m_indexBuffer[DYNAMICMESH_VBO_COUNT];
+	IVertexBuffer*	m_vertexBuffer;
+	IIndexBuffer*	m_indexBuffer;
 
 	int				m_vertexStride;
 
 	int				m_vboAqquired;
 	int				m_vboDirty;
-
-	int				m_vboIdx;
 };
 
 #endif // DYNAMICMESH_H

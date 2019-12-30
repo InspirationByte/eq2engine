@@ -104,6 +104,10 @@
       <DataExecutionPrevention>true</DataExecutionPrevention>
       <Profile>true</Profile>
     </Link>
+    <PostBuildEvent>
+      <Command>cd $(SolutionDir)
+call copy_drvsyn_engine.bat $(ConfigurationName)</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>

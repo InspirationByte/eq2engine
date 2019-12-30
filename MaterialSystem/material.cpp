@@ -181,25 +181,27 @@ void CMaterial::InitShader()
 		return;
 	}
 
-	m_shader = materials->CreateShaderInstance( m_szShaderName.GetData() );
+	IMaterialSystemShader* shader = materials->CreateShaderInstance(m_szShaderName.GetData());
 
 	// if not found - try make Error shader
-	if(!m_shader)// || (m_shader && !stricmp(m_shader->GetName(), "Error")))
+	if(!shader)// || (m_shader && !stricmp(m_shader->GetName(), "Error")))
 	{
 		MsgError("Invalid shader '%s' specified for material %s!\n",m_szShaderName.GetData(),m_szMaterialName.GetData());
 
-		if(!m_shader)
-			m_shader = materials->CreateShaderInstance("Error");
+		if(!shader)
+			shader = materials->CreateShaderInstance("Error");
 	}
 
-	if(m_shader)
+	if(shader)
 	{
 		// just init the parameters
-		m_shader->Init( this );
+		shader->Init( this );
 		m_state = MATERIAL_LOAD_NEED_LOAD;
 	}
 	else
 		m_state = MATERIAL_LOAD_ERROR;
+
+	m_shader = shader;
 }
 
 //
@@ -259,24 +261,26 @@ bool CMaterial::LoadShaderAndTextures()
 {
 	InitShader();
 
+	IMaterialSystemShader* shader = m_shader;
+
 	if(m_state != MATERIAL_LOAD_NEED_LOAD)
 		return false;
 
-	if(!m_shader)
+	if(!shader)
 		return true;
 
 	m_state = MATERIAL_LOAD_INQUEUE;
 
 	// try init
-	if(!m_shader->IsInitialized() && !m_shader->IsError())
+	if(!shader->IsInitialized() && !shader->IsError())
 	{
-		m_shader->InitTextures();
-		m_shader->InitShader();
+		shader->InitTextures();
+		shader->InitShader();
 	}
 
-	if( m_shader->IsInitialized() )
+	if(shader->IsInitialized() )
 		m_state = MATERIAL_LOAD_OK;
-	else if( m_shader->IsError() )
+	else if(shader->IsError() )
 		m_state = MATERIAL_LOAD_ERROR;
 	else
 		ASSERTMSG(false, varargs("please check shader '%s' (%s) for initialization (not error, not initialized)", m_szShaderName.c_str(), m_shader->GetName()));
@@ -436,6 +440,8 @@ void CMaterial::Setup(uint paramMask)
 	else
 		g_pShaderAPI->Reset( STATE_RESET_SHADER | STATE_RESET_TEX );
 
-	m_shader->SetupShader();
-	m_shader->SetupConstants( paramMask );
+	IMaterialSystemShader* shader = m_shader;
+
+	shader->SetupShader();
+	shader->SetupConstants( paramMask );
 }

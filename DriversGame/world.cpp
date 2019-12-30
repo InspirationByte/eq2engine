@@ -1404,9 +1404,6 @@ void CGameWorld::UpdateRenderables( const occludingFrustum_t& frustum )
 	{
 		CGameObject* obj = m_gameObjects[i];
 
-		if(obj->m_state != GO_STATE_IDLE)
-			continue;
-
 		PROFILE_BEGIN(Visibility);
 
 		// sorted insert into render list
@@ -1447,10 +1444,11 @@ bool CGameWorld::AddLight(const wlight_t& light)
 
 	float fLightBrightness = 1.0f - pow(clamp(fDistance*fadeDistVal, 0.0f, 1.0f), 4.0f);
 
-	m_lights[m_numLights] = light;
+	wlight_t fl = light;
 
-	m_lights[m_numLights].color *= m_lights[m_numLights].color.w*fLightBrightness;
-	m_numLights++;
+	fl.color *= fl.color.w*fLightBrightness;
+
+	m_lights[m_numLights++] = fl;
 
 	return true;
 }
@@ -1695,7 +1693,9 @@ int CGameWorld::GetLightIndexList(const BoundingBox& bbox, int* lights, int maxL
 		if(numLights >= maxLights-1)
 			break;
 
-		if(!bbox.IntersectsSphere(m_lights[i].position.xyz(), m_lights[i].position.w))
+		const Vector4D light = m_lights[i].position;
+
+		if(!bbox.IntersectsSphere(light.xyz(), light.w))
 			continue;
 
 		lights[numLights++] = i;
@@ -1706,12 +1706,7 @@ int CGameWorld::GetLightIndexList(const BoundingBox& bbox, int* lights, int maxL
 
 void CGameWorld::GetLightList(const BoundingBox& bbox, wlight_t lights[MAX_LIGHTS], int& numLights) const
 {
-	for(int i = 0; i < MAX_LIGHTS; i++)
-	{
-		lights[i].position = vec4_zero;
-		lights[i].color.w = 0;
-	}
-
+	memset(lights, 0, sizeof(lights));
 	int appliedLights = 0;
 
 	for(int i = 0; i < m_numLights; i++)
@@ -1719,13 +1714,14 @@ void CGameWorld::GetLightList(const BoundingBox& bbox, wlight_t lights[MAX_LIGHT
 		if(appliedLights >= MAX_LIGHTS-1)
 			break;
 
-		if(!bbox.IntersectsSphere(m_lights[i].position.xyz(), m_lights[i].position.w))
+		wlight_t light = m_lights[i];
+
+		if(!bbox.IntersectsSphere(light.position.xyz(), light.position.w))
 			continue;
 
-		lights[appliedLights] = m_lights[i];
-		lights[appliedLights].position = Vector4D(m_lights[i].position.xyz(), 1.0f / m_lights[i].position.w);
+		light.position.w = 1.0f / light.position.w;
 
-		appliedLights++;
+		lights[appliedLights++] = light;
 	}
 
 	numLights = appliedLights;
@@ -1750,10 +1746,15 @@ void CGameWorld::UpdateLightTexture()
 
 		TVec4D<half>* lightData = (TVec4D<half>*)lockdata.pData;
 
+		Vector3D camPos = m_view.GetOrigin();
+
 		for(int i = 0; i < m_numLights && i < MAX_LIGHTS_TEXTURE; i++)
 		{
-			lightData[i] = Vector4D(m_view.GetOrigin()-m_lights[i].position.xyz(), 1.0f / m_lights[i].position.w);
-			lightData[MAX_LIGHTS_TEXTURE+i] = m_lights[i].color;
+			wlight_t light = m_lights[i];
+			light.position = Vector4D(camPos - light.position.xyz(), 1.0f / light.position.w);
+
+			lightData[i] = light.position;
+			lightData[MAX_LIGHTS_TEXTURE+i] = light.color;
 		}
 		m_lightsTex->Unlock();
 	}
@@ -1791,8 +1792,7 @@ void CGameWorld::DrawMoon()
 		effect.nFlags = EFFECT_FLAG_NO_FRUSTUM_CHECK | EFFECT_FLAG_RADIAL_ALIGNING;
 		effect.fZAngle = 0.0f;
 
-		effect.fWide = m_sceneinfo.m_fZFar * 0.01f;
-		effect.fTall = m_sceneinfo.m_fZFar * 0.01f;
+		effect.fWide = effect.fTall = m_sceneinfo.m_fZFar * 0.01f;
 
 		Effects_DrawBillboard(&effect, &m_view, NULL);
 	}
@@ -1863,9 +1863,11 @@ void CGameWorld::DrawLensFlare( const Vector2D& screenSize, const Vector2D& scre
 		if(g_additPartcles->AllocateGeom(4, 4, &verts, NULL, true) < 0)
 			break;
 
+		lensFlareTable_t ta = m_lensTable[i];
+
 		Rectangle_t texCoords(0,0,1,1);
 
-		TexAtlasEntry_t* entry = g_additPartcles->GetEntry( m_lensTable[i].atlasIdx );
+		TexAtlasEntry_t* entry = g_additPartcles->GetEntry(ta.atlasIdx );
 
 		if(entry)
 			texCoords = entry->rect;
@@ -1876,7 +1878,7 @@ void CGameWorld::DrawLensFlare( const Vector2D& screenSize, const Vector2D& scre
 		Vector2D lensPos;
 
 		//float sizeScale = (2000.0f-lensDist)*0.0007f;
-		float fScale = m_lensTable[i].scale;//*sizeScale;
+		float fScale = ta.scale;//*sizeScale;
 
 		if(i < 2)
 		{
@@ -1886,7 +1888,7 @@ void CGameWorld::DrawLensFlare( const Vector2D& screenSize, const Vector2D& scre
 		else
 			lensPos = halfScreen + lensDir*((0.5f+float(cnt-halfTable))*invTableSize)*lensScale;
 
-		ColorRGB lensColor = m_lensTable[i].color * m_envConfig.sunColor * intensity;
+		ColorRGB lensColor = ta.color * m_envConfig.sunColor * intensity;
 
 		if(i > 1)
 			lensColor *= 0.35f;
@@ -2056,16 +2058,21 @@ void CGameWorld::Draw( int nRenderFlags )
 
 	float fSkyBrightness = 1.0f;
 
-	// calculate ambient, sun and sky colors
-	if( m_envConfig.thunder && m_fNextThunderTime > 0 && m_fNextThunderTime < m_fThunderTime)
 	{
-		float fThunderLight = saturate(sinf((m_fThunderTime - m_fNextThunderTime)*30.0f))*0.5f;
-		fThunderLight += saturate(sinf((m_fThunderTime - m_fNextThunderTime)*70.0f));
+		float nextThunderTime = m_fNextThunderTime;
+		float thunderTime = m_fThunderTime;
 
-		fSkyBrightness = 1.0f + (1.0 - fThunderLight)*0.85f;
-		m_info.rainBrightness += fThunderLight*0.5f;
+		// calculate ambient, sun and sky colors
+		if (m_envConfig.thunder && nextThunderTime > 0 && nextThunderTime < thunderTime)
+		{
+			float fThunderLight = saturate(sinf((thunderTime - nextThunderTime)*30.0f))*0.5f;
+			fThunderLight += saturate(sinf((thunderTime - nextThunderTime)*70.0f));
 
-		m_info.sunColor = ColorRGBA(m_envConfig.sunColor + 0.9f * fThunderLight, 1.0f);
+			fSkyBrightness = 1.0f + (1.0 - fThunderLight)*0.85f;
+			m_info.rainBrightness += fThunderLight * 0.5f;
+
+			m_info.sunColor = ColorRGBA(m_envConfig.sunColor + 0.9f * fThunderLight, 1.0f);
+		}
 	}
 
 	if(r_drawsky.GetBool())
@@ -2174,11 +2181,10 @@ void CGameWorld::Draw( int nRenderFlags )
 		for(int i = 0; i < numCachedModels; i++)
 		{
 			IEqModel* model = g_studioModelCache->GetModel(i);
+			IEqModelInstancer* instancer = model->GetInstancer();
 
-			if(model && model->GetInstancer())
-			{
-				model->GetInstancer()->Draw( nRenderFlags, model );
-			}
+			if(instancer)
+				instancer->Draw( nRenderFlags, model );
 		}
 		PROFILE_END();
 	}
@@ -2187,14 +2193,7 @@ void CGameWorld::Draw( int nRenderFlags )
 
 	PROFILE_BEGIN(PostDraw);
 	for (int i = 0; i < m_gameObjects.numElem(); i++)
-	{
-		CGameObject* obj = m_gameObjects[i];
-
-		if (obj->m_state != GO_STATE_IDLE)
-			continue;
-
-		obj->PostDraw();
-	}
+		m_gameObjects[i]->PostDraw();
 	PROFILE_END();
 
 	/*
@@ -2256,6 +2255,8 @@ void CGameWorld::Draw( int nRenderFlags )
 	Vector2D lensScreenPos;
 	PointToScreen(virtualSunPos, lensScreenPos, m_viewprojection, screenSize);
 
+	float lensIntensityTiming = m_lensIntensityTiming;
+
 	// lens flare rendering on screen by using particle engine
 	if((m_envConfig.lensIntensity > 0.0f || m_envConfig.moonBrightness > 0.0f) && r_drawLensFlare.GetBool())
 	{
@@ -2281,7 +2282,7 @@ void CGameWorld::Draw( int nRenderFlags )
 				if (m_sunGlowOccQuery->IsReady())
 				{
 					pixels = m_sunGlowOccQuery->GetVisiblePixels();
-					m_lensIntensityTiming = (float)pixels * LENS_PIXEL_TO_INTENSITY * fIntensity;
+					lensIntensityTiming = (float)pixels * LENS_PIXEL_TO_INTENSITY * fIntensity;
 
 					break;
 				}
@@ -2316,31 +2317,33 @@ void CGameWorld::Draw( int nRenderFlags )
 			int collMask = OBJECTCONTENTS_SOLID_OBJECTS | OBJECTCONTENTS_SOLID_GROUND;
 			if( g_pPhysics->TestLine(m_view.GetOrigin(), virtualSunPos, coll, collMask))
 			{
-				m_lensIntensityTiming -= g_pHost->GetFrameTime()*10.0f;
-				m_lensIntensityTiming = max(0.0f, m_lensIntensityTiming*fIntensity);
+				lensIntensityTiming -= g_pHost->GetFrameTime()*10.0f;
+				lensIntensityTiming = max(0.0f, lensIntensityTiming*fIntensity);
 			}
 			else
 			{
-				m_lensIntensityTiming += g_pHost->GetFrameTime()*10.0f;
-				m_lensIntensityTiming = min(1.0f, m_lensIntensityTiming*fIntensity);
+				lensIntensityTiming += g_pHost->GetFrameTime()*10.0f;
+				lensIntensityTiming = min(1.0f, lensIntensityTiming*fIntensity);
 			}
 		}
+
+		m_lensIntensityTiming = lensIntensityTiming;
 	}
 #endif // EDITOR
 
 #ifndef EDITOR
 
 	// Draw lensflare
-	if(m_lensIntensityTiming > 0 && r_drawLensFlare.GetBool())
+	if(lensIntensityTiming > 0 && r_drawLensFlare.GetBool())
 	{
 		if(m_envConfig.lensIntensity > 0.0f)
 		{
-			DrawLensFlare(screenSize, lensScreenPos, m_envConfig.lensIntensity*m_lensIntensityTiming );
+			DrawLensFlare(screenSize, lensScreenPos, m_envConfig.lensIntensity*lensIntensityTiming);
 		}
 
 		if(m_envConfig.moonBrightness > 0.0f)
 		{
-			DrawMoonGlow( screenSize, lensScreenPos, m_lensIntensityTiming );
+			DrawMoonGlow( screenSize, lensScreenPos, lensIntensityTiming);
 		}
 
 		FogInfo_t fogDisabled;
