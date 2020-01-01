@@ -164,7 +164,7 @@ void CAITargetChaserManipulator::UpdateAffector(ai_handling_t& handling, CCar* c
 
 		if (shouldDoSteeringCorrection)
 		{
-			float AI_OBSTACLE_FRONTAL_CORRECTION_AMOUNT = 0.55f;
+			float AI_OBSTACLE_FRONTAL_CORRECTION_AMOUNT = 0.5f;
 
 			Vector3D collPoint(steeringTargetColl.position);
 
@@ -189,5 +189,5 @@ void CAITargetChaserManipulator::UpdateAffector(ai_handling_t& handling, CCar* c
 	handling.acceleration = 1.0f - handling.braking;
 
 	// if target is behind or steering is too hard, do stunts
-	handling.autoHandbrake = fabs(handling.steering) > 0.25f || (frontBackCheckPlane.ClassifyPoint(m_driveTarget) == CP_BACK);
+	handling.autoHandbrake = fabs(handling.steering) > 0.55f || (frontBackCheckPlane.ClassifyPoint(m_driveTarget) == CP_BACK);
 }

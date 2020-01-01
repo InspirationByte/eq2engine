@@ -11,6 +11,7 @@
 ConVar ai_debug_collision_avoidance("ai_debug_collision_avoidance", "0");
 
 const float AI_COP_BLOCK_DELAY						= 1.0f;
+const float AI_COP_BLOCK_COOLDOWN					= 1.0f;
 const float AI_COP_BLOCK_REALIZE_FRONTAL_TIME		= 0.8f;
 const float AI_COP_BLOCK_REALIZE_COLLISION_TIME		= 0.3f;
 const float AI_COP_BLOCK_MAX_SPEED					= 1.0f;	// meters per second
@@ -22,6 +23,7 @@ CAICollisionAvoidanceManipulator::CAICollisionAvoidanceManipulator()
 	m_collidingPositionSet = false;
 	m_timeToUnblock = 0.0f;
 	m_blockingTime = 0.0f;
+	m_cooldownTimer = AI_COP_BLOCK_COOLDOWN;
 	m_enabled = false;
 }
 
@@ -33,9 +35,9 @@ void CAICollisionAvoidanceManipulator::UpdateAffector(ai_handling_t& handling, C
 
 	float speedMPS = car->GetSpeedWheels()*KPH_TO_MPS;
 
-	const float frontCollDist = 1.0f;
+	const float frontCollDist = 0.1f;
 
-	btBoxShape carBoxShape(btVector3(carBodySize.x, carBodySize.y, 0.25f));
+	btBoxShape carBoxShape(btVector3(carBodySize.x, carBodySize.y, 0.15f));
 
 	CollisionData_t frontColl;
 
@@ -65,11 +67,12 @@ void CAICollisionAvoidanceManipulator::UpdateAffector(ai_handling_t& handling, C
 
 		if (m_timeToUnblock <= 0.0f || m_collidingPositionSet && distFromCollPoint > AI_COP_BLOCK_DISTANCE_FROM_COLLISION)
 		{
+			m_cooldownTimer = AI_COP_BLOCK_COOLDOWN;
 			m_collidingPositionSet = false;
 			m_enabled = false;
 		}
 	}
-	else
+	else if((m_cooldownTimer -= fDt) < 0.0f)
 	{
 		bool frontBlock = (frontColl.fract < 1.0f);
 		if ((m_isColliding || frontBlock) && speedMPS < AI_COP_BLOCK_MAX_SPEED)
