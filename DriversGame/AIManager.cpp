@@ -27,7 +27,6 @@ ConVar g_pedestrians_initial_mindist("g_pedestrians_initial_mindist", "10", null
 ConVar g_pedestrians_mindist("g_pedestrians_mindist", "30", nullptr, CV_CHEAT);
 ConVar g_pedestrians_maxdist("g_pedestrians_maxdist", "32", nullptr, CV_CHEAT);
 
-
 const int	INITIAL_SPAWN_INTERVAL = 10;
 
 const int	AI_COP_SPEECH_QUEUE = 6;

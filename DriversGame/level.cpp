@@ -1060,6 +1060,8 @@ roadJunction_t CGameLevel::Road_GetJunctionAtPoint( const IVector2D& point, int 
 {
 //	CScopedMutex m(m_mutex);
 
+	const int MAX_ITERATIONS_TO_JUNCTION_START = 0;
+
 	CLevelRegion* pRegion = NULL;
 
 	roadJunction_t junction;
@@ -1087,7 +1089,6 @@ roadJunction_t CGameLevel::Road_GetJunctionAtPoint( const IVector2D& point, int 
 
 		junction.start = localPos;
 		junction.end = localPos;
-
 
 		// if we already on junction
 		if(IsJunctionType((ERoadType)startCell.type))
@@ -1131,6 +1132,9 @@ roadJunction_t CGameLevel::Road_GetJunctionAtPoint( const IVector2D& point, int 
 
 			if( IsJunctionType((ERoadType)roadCell.type) && junction.startIter == -1 )
 			{
+				if (i > MAX_ITERATIONS_TO_JUNCTION_START)
+					break;
+
 				junction.startIter = i;
 			}
 
@@ -1148,6 +1152,81 @@ roadJunction_t CGameLevel::Road_GetJunctionAtPos( const Vector3D& pos, int numIt
 	IVector2D globPos = PositionToGlobalTilePoint(pos);
 
 	return Road_GetJunctionAtPoint(globPos, numIterations);
+}
+
+void Road_GetJunctionExits(DkList<straight_t>& exits, const straight_t& road, const roadJunction_t& junc)
+{
+	bool gotSameDirection = false;
+	bool sideJuncFound = false;
+
+	if (junc.startIter >= 0)
+	{
+		for (int i = junc.startIter; i < junc.breakIter + 2; i++)
+		{
+			IVector2D dir = GetDirectionVecBy(junc.start, junc.end);
+
+			IVector2D checkPos = junc.start + dir * i;
+
+			if (!gotSameDirection)
+			{
+				straight_t straightroad = g_pGameWorld->m_level.Road_GetStraightAtPoint(checkPos, 16);
+
+				if (straightroad.direction != -1 &&
+					straightroad.breakIter > 1 &&
+					!IsOppositeDirectionTo(road.direction, straightroad.direction) &&
+					(straightroad.end != road.end) &&
+					(straightroad.start != road.start))
+				{
+					straightroad.lane = g_pGameWorld->m_level.Road_GetLaneIndexAtPoint(straightroad.start);
+
+					exits.append(straightroad);
+					gotSameDirection = true;
+				}
+			}
+
+			IVector2D dirCheckVec = GetPerpendicularDirVec(dir);
+
+			// left and right
+			for (int j = 0; j < 32; j++)
+			{
+				int checkDir = j;
+
+				if (j >= 15)
+					checkDir = -(checkDir - 16);
+
+				IVector2D checkStraightPos = checkPos + dirCheckVec * checkDir;
+
+				levroadcell_t* rcell = g_pGameWorld->m_level.Road_GetGlobalTileAt(checkStraightPos);
+
+				if (rcell && rcell->type == ROADTYPE_NOROAD)
+				{
+					if (j >= 15)
+						break;
+					else
+						j = 15;
+
+					continue;
+				}
+
+				int dirIdx = GetDirectionIndex(dirCheckVec*sign(checkDir));
+
+				// calc steering dir
+				straight_t sideroad = g_pGameWorld->m_level.Road_GetStraightAtPoint(checkStraightPos, 8);
+
+				if (sideroad.direction != -1 &&
+					sideroad.direction == dirIdx &&
+					(sideroad.end != road.end) &&
+					(sideroad.start != road.start))
+				{
+					sideroad.lane = g_pGameWorld->m_level.Road_GetLaneIndexAtPoint(sideroad.end);
+
+					sideJuncFound = true;
+					exits.append(sideroad);
+					break;
+				}
+			}
+		}
+	}
 }
 
 int	CGameLevel::Road_GetLaneIndexAtPoint( const IVector2D& point, int numIterations)

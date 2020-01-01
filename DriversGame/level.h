@@ -233,4 +233,6 @@ protected:
 	ubyte					m_defaultNavTile;
 };
 
+void Road_GetJunctionExits(DkList<straight_t>& exits, const straight_t& road, const roadJunction_t& junc);
+
 #endif // LEVEL_H

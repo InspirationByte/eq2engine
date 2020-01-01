@@ -200,6 +200,47 @@ DECLARE_CMD(spawn_car, "Spawns a car at crosshair", CV_CHEAT)
 	}
 }
 
+
+DECLARE_CMD(ai_spawn_traffic, "Spawns a car at crosshair", CV_CHEAT)
+{
+	if (CMD_ARGC == 0)
+		return;
+
+	Vector3D start = g_freeCamProps.position;
+	Vector3D dir;
+	AngleVectors(g_freeCamProps.angles, &dir);
+
+	Vector3D end = start + dir * 1000.0f;
+
+	CollisionData_t coll;
+	g_pPhysics->TestLine(start, end, coll, OBJECTCONTENTS_SOLID_GROUND);
+
+	if (coll.fract < 1.0f)
+	{
+		CLevelRegion* reg = NULL;
+		levroadcell_t* cell = g_pGameWorld->m_level.Road_GetGlobalTile(coll.position, &reg);
+
+		if (!cell)
+			return;
+
+		CCar* newCar = g_pGameSession->CreateCar(CMD_ARGV(0).c_str(), CAR_TYPE_TRAFFIC_AI);
+
+		if (!newCar)
+		{
+			MsgError("Unknown car '%s'\n", CMD_ARGV(0).c_str());
+			return;
+		}
+
+		newCar->Spawn();
+		newCar->SetColorScheme(RandomInt(0, newCar->m_conf->numColors - 1));
+		newCar->PlaceOnRoadCell(reg, cell);
+
+		((CAITrafficCar*)newCar)->InitAI(false);
+
+		g_pGameWorld->AddObject(newCar);
+	}
+}
+
 DECLARE_CMD(shift_to_car, "Shift to car picked with ray", CV_CHEAT)
 {
 	if(g_replayTracker->m_state == REPL_PLAYING)

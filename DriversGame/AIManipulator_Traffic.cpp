@@ -308,86 +308,12 @@ void CAITrafficManipulator::SearchJunctionAndStraight()
 
 	m_junction.size = junc.breakIter;
 
-	bool gotSameDirection = false;
-	bool sideJuncFound = false;
-
-	// search for roads connected to junctions
-	for (int i = junc.startIter; i < junc.breakIter + 2; i++)
-	{
-		IVector2D dir = GetDirectionVecBy(junc.start, junc.end);
-
-		IVector2D checkPos = junc.start + dir * i;
-
-		if (!gotSameDirection)
-		{
-			straight_t straightroad = g_pGameWorld->m_level.Road_GetStraightAtPoint(checkPos, 16);
-
-			if (straightroad.direction != -1 &&
-				straightroad.breakIter > 1 &&
-				!IsOppositeDirectionTo(m_straights[STRAIGHT_CURRENT].direction, straightroad.direction) &&
-				(straightroad.end != m_straights[STRAIGHT_CURRENT].end) &&
-				(straightroad.start != m_straights[STRAIGHT_CURRENT].start))
-			{
-				straightroad.lane = g_pGameWorld->m_level.Road_GetLaneIndexAtPoint(straightroad.start);
-
-				m_junction.exits.append(straightroad);
-				gotSameDirection = true;
-			}
-		}
-
-
-		IVector2D dirCheckVec = GetPerpendicularDirVec(dir);
-
-		// left and right
-		for (int j = 0; j < 32; j++)
-		{
-			int checkDir = j;
-
-			if (j >= 15)
-				checkDir = -(checkDir - 16);
-
-			IVector2D checkStraightPos = checkPos + dirCheckVec * checkDir;
-
-			levroadcell_t* rcell = g_pGameWorld->m_level.Road_GetGlobalTileAt(checkStraightPos);
-
-			if (rcell && rcell->type == ROADTYPE_NOROAD)
-			{
-				if (j >= 15)
-					break;
-				else
-					j = 15;
-
-				continue;
-			}
-
-			int dirIdx = GetDirectionIndex(dirCheckVec*sign(checkDir));
-
-			// calc steering dir
-			straight_t sideroad = g_pGameWorld->m_level.Road_GetStraightAtPoint(checkStraightPos, 8);
-
-			if (sideroad.direction != -1 &&
-				sideroad.direction == dirIdx &&
-				(sideroad.end != m_straights[STRAIGHT_CURRENT].end) &&
-				(sideroad.start != m_straights[STRAIGHT_CURRENT].start))
-			{
-				sideroad.lane = g_pGameWorld->m_level.Road_GetLaneIndexAtPoint(sideroad.end);
-
-				sideJuncFound = true;
-				m_junction.exits.append(sideroad);
-				break;
-			}
-		}
-
-		// correction: move the end of road further
-		if (!sideJuncFound)
-			m_currEnd = checkPos;
-	}
+	Road_GetJunctionExits(m_junction.exits, m_straights[STRAIGHT_CURRENT], junc);
 
 	// get the available directions
 	for (int i = 0; i < m_junction.exits.numElem(); i++)
 	{
 		straight_t& road = m_junction.exits[i];
-
 		m_junction.availDirs[road.direction] = true;
 	}
 }
@@ -407,21 +333,15 @@ void CAITrafficManipulator::ChangeLanes(CCar* car)
 	}
 
 	IVector2D carPosOnCell = g_pGameWorld->m_level.PositionToGlobalTilePoint(car->GetOrigin());
+	int cellsBeforeEnd = GetCellsBeforeStraightEnd(carPosOnCell, m_straights[STRAIGHT_CURRENT]);
+
+	// do not change lates if it's too late
+	if (cellsBeforeEnd < 5)
+		return;
 
 	// if we have to turn, don't switch lanes when it's too late
 	if (m_junction.selectedExit != -1)
-	{
-		int cellsBeforeEnd = GetCellsBeforeStraightEnd(carPosOnCell, m_straights[STRAIGHT_CURRENT]);
-
-		if (cellsBeforeEnd < 6)
-			return;
-
-		straight_t& nextRoad = m_junction.exits[m_junction.selectedExit];
-
-		// don't change lanes if we're going in the same direction
-		if (nextRoad.direction == m_straights[STRAIGHT_CURRENT].direction)
-			return;
-	}
+		return;
 
 	// calculate road width again
 	int numLanes = g_pGameWorld->m_level.Road_GetNumLanesAtPoint(carPosOnCell);
@@ -457,7 +377,6 @@ void CAITrafficManipulator::ChangeLanes(CCar* car)
 		newStraight.direction == m_straights[STRAIGHT_CURRENT].direction)
 	{
 		IVector2D dir = GetDirectionVec(newStraight.direction);
-
 		Vector3D laneDir(dir.x, 0, dir.y);
 
 		Vector3D traceStart = lanePos - laneDir * AI_SIDECHECK_DIST_RR;
@@ -481,8 +400,9 @@ void CAITrafficManipulator::ChangeLanes(CCar* car)
 		{
 			car->SetLight(laneOfs < 0 ? CAR_LIGHT_DIM_LEFT : CAR_LIGHT_DIM_RIGHT, true);
 
+			newStraight.lane = g_pGameWorld->m_level.Road_GetLaneIndexAtPoint(newStraight.start);
 			ChangeRoad(newStraight);
-			SearchJunctionAndStraight();
+			//SearchJunctionAndStraight();
 
 			m_changingLane = true;
 			m_nextSwitchLaneTime = AI_LANE_SWITCH_DELAY;
@@ -516,8 +436,9 @@ void CAITrafficManipulator::RoadProvision()
 	straight_t straightInfo = g_pGameWorld->m_level.Road_GetStraightAtPoint(currentRoadEnd, 8);
 
 	// if it's still the same end, there is no need to continue
-	if (straightInfo.breakIter <= 1 || straightInfo.direction != m_straights[STRAIGHT_CURRENT].direction)
+	if (straightInfo.breakIter <= 0 || straightInfo.direction != m_straights[STRAIGHT_CURRENT].direction)
 	{
+		SearchJunctionAndStraight();
 		m_provisionCompleted = true;
 		return;
 	}
@@ -571,64 +492,108 @@ void CAITrafficManipulator::HandleJunctionExit(CCar* car)
 	{
 		SearchJunctionAndStraight();
 		car->SetLight(CAR_LIGHT_EMERGENCY, false);
-	}
 
-	if (m_junction.selectedExit == -1 && m_junction.exits.numElem() > 0)
-	{
-		if (ai_traffic_debug_junctions.GetBool())
-			debugoverlay->TextFadeOut(0, ColorRGBA(1), 5.0f, "--- Has no selected straight ---");
-
-		bool isLongCar = (car->m_conf->physics.body_size.z > AI_LONG_CAR_CONST);
-
-		DkList<int> allowedStraightIds;
-
-		for (int i = 0; i < m_junction.exits.numElem(); i++)
+		if (m_junction.exits.numElem() > 0)
 		{
-			straight_t& road = m_junction.exits[i];
-
-			int destRoadWidth = g_pGameWorld->m_level.Road_GetNumLanesAtPoint(road.start);
-
-			int destLane = -1;
-			bool result = SolveIntersection(m_straights[STRAIGHT_CURRENT].direction, road.direction,
-				curRoadWidth, m_straights[STRAIGHT_CURRENT].lane,
-				destRoadWidth, destLane,
-				isLongCar,
-				m_junction.availDirs);
-
-			// check simple laws
-			if (result && (destLane == -1 || destLane == road.lane))
-				allowedStraightIds.append(i);
-		}
-
-		if (allowedStraightIds.numElem())
-		{
-			int rndIdx = g_replayRandom.Get(0, allowedStraightIds.numElem() - 1);
-			m_junction.selectedExit = allowedStraightIds[rndIdx];
-
 			if (ai_traffic_debug_junctions.GetBool())
-				debugoverlay->TextFadeOut(0, ColorRGBA(1), 5.0f, "--- Selected allowed straight earlier ---");
-		}
-		else
-		{
-			// try select forward
-			for (int i = 0; i < m_junction.exits.numElem(); i++)
-			{
-				straight_t& road = m_junction.exits[i];
+				debugoverlay->TextFadeOut(0, ColorRGBA(1), 5.0f, "--- Has no selected straight ---");
 
-				// check simple laws
-				if (CompareDirection(m_straights[STRAIGHT_CURRENT].direction, road.direction))
-					allowedStraightIds.append(i);
-			}
+			bool isLongCar = (car->m_conf->physics.body_size.z > AI_LONG_CAR_CONST);
 
-			if (allowedStraightIds.numElem())
+			int continuationStraight = -1;
+			int numAvailDirs = 0;
+
+			for (int i = 0; i < 4; i++)
+				numAvailDirs = numAvailDirs + (m_junction.availDirs[i] ? 1 : 0);
+
+			if (numAvailDirs == 1)
 			{
-				int rndIdx = g_replayRandom.Get(0, allowedStraightIds.numElem() - 1);
-				m_junction.selectedExit = allowedStraightIds[rndIdx];
+				int bestLane = m_straights[STRAIGHT_CURRENT].lane;
+				int closestRoad = 255;
+
+				for (int i = 0; i < m_junction.exits.numElem(); i++)
+				{
+					straight_t& exitRoad = m_junction.exits[i];
+
+					if (abs(exitRoad.lane - bestLane) < closestRoad)
+						closestRoad = i;
+
+					if (exitRoad.lane == bestLane)
+					{
+						m_junction.selectedExit = i;
+						break;
+					}
+				}
+
+				// if it hasn't picked exit, pick closest road (lane)
+				if (m_junction.selectedExit == -1)
+					m_junction.selectedExit = closestRoad;
+
 			}
 			else
 			{
-				m_junction.selectedExit = g_replayRandom.Get(0, m_junction.exits.numElem() - 1);
+				DkList<int> allowedStraightIds;
+
+				// check traffic laws and pick new road
+				for (int i = 0; i < m_junction.exits.numElem(); i++)
+				{
+					straight_t& road = m_junction.exits[i];
+
+					int destRoadWidth = g_pGameWorld->m_level.Road_GetNumLanesAtPoint(road.start);
+
+					int destLane = -1;
+					bool result = SolveIntersection(m_straights[STRAIGHT_CURRENT].direction, road.direction,
+						curRoadWidth, m_straights[STRAIGHT_CURRENT].lane,
+						destRoadWidth, destLane,
+						isLongCar,
+						m_junction.availDirs);
+
+					// check simple laws
+					if (result && (destLane == -1 || destLane == road.lane))
+					{
+						allowedStraightIds.append(i);
+
+						// continuation
+						if (CompareDirection(m_straights[STRAIGHT_CURRENT].direction, road.direction))
+							continuationStraight = i;
+					}
+				}
+
+				if (allowedStraightIds.numElem())
+				{
+					// select allowed straight
+					int rndIdx = g_replayRandom.Get(0, allowedStraightIds.numElem() - 1);
+					m_junction.selectedExit = allowedStraightIds[rndIdx];
+
+					if (ai_traffic_debug_junctions.GetBool())
+						debugoverlay->TextFadeOut(0, ColorRGBA(1), 5.0f, "--- Selected allowed straight earlier ---");
+				}
+				else
+				{
+					int bestLane = m_straights[STRAIGHT_CURRENT].lane;
+
+					// try select forward
+					for (int i = 0; i < m_junction.exits.numElem(); i++)
+					{
+						straight_t& road = m_junction.exits[i];
+
+						// check simple laws
+						if (CompareDirection(m_straights[STRAIGHT_CURRENT].direction, road.direction))
+							allowedStraightIds.append(i);
+					}
+
+					if (allowedStraightIds.numElem())
+					{
+						int rndIdx = g_replayRandom.Get(0, allowedStraightIds.numElem() - 1);
+						m_junction.selectedExit = allowedStraightIds[rndIdx];
+					}
+					else
+					{
+						m_junction.selectedExit = g_replayRandom.Get(0, m_junction.exits.numElem() - 1);
+					}
+				}
 			}
+
 		}
 	}
 }
@@ -775,7 +740,7 @@ void CAITrafficManipulator::UpdateAffector(ai_handling_t& handling, CCar* car, f
 	// disable lights turning
 	if (m_changingDirection && isOnCurrRoad)
 	{
-		SearchJunctionAndStraight();
+		//SearchJunctionAndStraight();
 
 		car->SetLight(CAR_LIGHT_EMERGENCY, false);
 		m_changingDirection = false;
@@ -783,7 +748,7 @@ void CAITrafficManipulator::UpdateAffector(ai_handling_t& handling, CCar* car, f
 
 	if (m_changingLane && !isOnPrevRoad && isOnCurrRoad)
 	{
-		SearchJunctionAndStraight();
+		//SearchJunctionAndStraight();
 
 		car->SetLight(CAR_LIGHT_EMERGENCY, false);
 		m_changingLane = false;

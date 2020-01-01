@@ -484,7 +484,7 @@ bool CState_MainMenu::MapKeysToCurrentAction()
 	if (elem.safe_at("inputActionName", actionNameStr))
 	{
 		EqString unboundKeys;
-		GetEnteredKeysString(keysStr, true);
+		GetEnteredKeysString(unboundKeys, true);
 
 		in_binding_t* existingBinding;
 		while (existingBinding = g_inputCommandBinder->FindBinding(unboundKeys.c_str()))
