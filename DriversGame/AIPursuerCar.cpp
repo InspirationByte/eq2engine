@@ -108,7 +108,7 @@ const InfractionDesc g_infractions[INFRACTION_COUNT] =
 	{"cop.hitvehicle", AI_COP_COLLISION_FELONY_VEHICLE, AI_COP_COLLISION_FELONY_VEHICLE, 1.0f},
 
 	//INFRACTION_HIT_SQUAD_VEHICLE
-	{"cop.squad_car_hit", AI_COP_COLLISION_FELONY_VEHICLE, 0.02f, 1.0f},
+	{nullptr, AI_COP_COLLISION_FELONY_VEHICLE, 0.02f, 1.0f},
 };
 
 //------------------------------------------------------------------------------------------------
@@ -364,14 +364,14 @@ int CAIPursuerCar::PassiveCopState( float fDt, EStateTransition transition )
 		float newFelony = checkCar->GetFelony();
 
 		// go through all infraction types
-		for (int i = 0; i < INFRACTION_COUNT; i++)
+		for (int j = 0; j < INFRACTION_COUNT; j++)
 		{
-			if (!pursuerData.hasInfraction[i])
+			if (!pursuerData.hasInfraction[j])
 				continue;
 
-			pursuerData.hasInfraction[i] = false;
+			pursuerData.hasInfraction[j] = false;
 
-			const InfractionDesc& infractionDesc = g_infractions[i];
+			const InfractionDesc& infractionDesc = g_infractions[j];
 
 			newFelony += infractionDesc.passiveFelony;
 		}
@@ -540,23 +540,23 @@ EInfractionType CAIPursuerCar::CheckTrafficInfraction(CCar* car, bool checkFelon
 			return INFRACTION_NONE;
 		else if(contents == OBJECTCONTENTS_VEHICLE)
 		{
-			CGameObject* obj = (CGameObject*)bodyB->GetUserData();
+			CCar* hitCar = (CCar*)pair.GetOppositeTo(car->GetPhysicsBody())->GetUserData();
 
-			if(InPursuit() && obj == this)
+			if(InPursuit() && hitCar == this)
 				return INFRACTION_NONE;
 
-			if(obj == car->GetHingedVehicle())
+			if(hitCar == car->GetHingedVehicle())
 				return INFRACTION_NONE;
 
-			Vector3D obj_vel = obj->GetVelocity();
+			float speedDiff = hitCar->GetSpeed() - carSpeed;
 
 			// There is no infraction if bodyB has inflicted this damage to us
-			if(length(obj_vel.xz()) - carSpeed > -1.0f)
+			if(carSpeed < hitCar->GetSpeed())
 				return INFRACTION_NONE;
 
-			if (obj->ObjType() == GO_CAR_AI)
+			if (hitCar->ObjType() == GO_CAR_AI)
 			{
-				CAITrafficCar* tfc = (CAITrafficCar*)obj;
+				CAITrafficCar* tfc = (CAITrafficCar*)hitCar;
 				if (tfc->IsPursuer() && tfc->m_conf->flags.isCop && !tfc->m_assignedRoadblock)	// don't check collision with me pls
 				{
 					return INFRACTION_HIT_SQUAD_VEHICLE;
