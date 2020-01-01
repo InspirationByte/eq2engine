@@ -89,9 +89,6 @@ enum
 	Event_Edit_Undo,
 	Event_Edit_Redo,
 
-	Event_Edit_ReloadEnvironments,
-	Event_Edit_ReloadObjects,
-
 	Event_View_ResetView,
 	Event_View_DrawHfieldHelpers,
 	Event_View_ShowRegionEditor,
@@ -100,6 +97,8 @@ enum
 	Event_View_Environments_End = Event_View_Environments_Start + EDITOR_MAX_ENVIRONMENT_LIST,	// max weather types. If you have issues with this - increase
 
 	Event_Level_RebuildRoadTextures,
+	Event_Level_ReloadEnvironments,
+	Event_Level_ReloadMaterials,
 	Event_Level_Play,
 
 	Event_Max_Menu_Range,
@@ -362,8 +361,11 @@ CMainWindow::CMainWindow( wxWindow* parent, wxWindowID id, const wxString& title
 	m_menu_build = new wxMenu();
 	m_pMenu->Append( m_menu_build, wxT("Level") );
 	m_menu_build->Append(Event_Level_RebuildRoadTextures, DKLOC("TOKEN_REBUILDROADTEXTURES", L"Rebuild road textures"));
+	m_menu_build->Append(Event_Level_ReloadEnvironments, DKLOC("TOKEN_RELOADENVS", L"Reload environments"));
+	m_menu_build->Append(Event_Level_ReloadMaterials, DKLOC("TOKEN_RELOADMATERIALS", L"Reload all materials"));
 	m_menu_build->Append(Event_Level_Play, DKLOC("TOKEN_TESTGAME", L"Do test game"));
-	
+
+
 	this->SetMenuBar( m_pMenu );
 	
 	
@@ -885,6 +887,16 @@ void CMainWindow::ProcessAllMenuCommands(wxCommandEvent& event)
 				wxMessageBox("Not valid vehicle name.", "Error", wxOK | wxCENTRE, this);
 			}
 		}
+	}
+	else if (event.GetId() == Event_Level_ReloadMaterials)
+	{
+		((CUI_HeightEdit*)m_hmapedit)->ReloadMaterialList();
+		((CUI_LevelModels*)m_modelsedit)->RebuildPreviewShots();
+	}
+	else if (event.GetId() == Event_Level_ReloadEnvironments)
+	{
+		MakeEnvironmentListMenu();
+		g_pGameWorld->InitEnvironment();
 	}
 	else if(event.GetId() == Event_File_Exit)
 	{

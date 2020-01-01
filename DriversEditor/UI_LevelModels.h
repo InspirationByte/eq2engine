@@ -105,6 +105,7 @@ public:
 	void						OnRotationTextChanged(wxCommandEvent& event);
 
 	void						RefreshModelReplacement();
+	void						RebuildPreviewShots();
 
 	// IEditorTool stuff
 
@@ -142,7 +143,7 @@ public:
 
 protected:
 
-	
+	BoundingBox					GetSelectionBox() const;
 
 	CModelListRenderPanel*		m_modelPicker;
 	CReplaceModelDialog*		m_modelReplacement;

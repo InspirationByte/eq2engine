@@ -365,8 +365,6 @@ void CMaterialAtlasList::ReloadMaterialList()
 			i--;
 			continue;
 		}
-
-		delete m_materialslist[i].atlas;
 		m_materialslist[i].atlas = NULL;
 	}
 

@@ -113,7 +113,7 @@ public:
 						(m_draggedAxes & AXIS_Y) ? 1 :
 						(m_draggedAxes & AXIS_Z) ? 2 : -1;
 
-			Vector3D dirVec = normalize(m_position - point);
+			Vector3D dirVec = normalize(point-m_position);
 			Vector3D rDirVec = cross(planeEdAxis, dirVec);
 
 			Matrix3x3 rotation(rDirVec, planeEdAxis, dirVec);

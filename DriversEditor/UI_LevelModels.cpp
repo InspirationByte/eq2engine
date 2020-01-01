@@ -1444,6 +1444,9 @@ void CUI_LevelModels::MouseRotateEvents( wxMouseEvent& event, const Vector3D& ra
 	{
 		Matrix3x3 dragRot = !m_dragInitRot*m_dragRot;
 
+		BoundingBox selectionBox = GetSelectionBox();
+		Vector3D selectionCenter = selectionBox.GetCenter();
+
 		// perform rotation of objects
 		for(int i = 0; i < m_selRefs.numElem(); i++)
 		{
@@ -1454,10 +1457,20 @@ void CUI_LevelModels::MouseRotateEvents( wxMouseEvent& event, const Vector3D& ra
 
 			// rotate
 			Matrix3x3 m = rotateXYZ3(DEG2RAD(ref->rotation.x), DEG2RAD(ref->rotation.y), DEG2RAD(ref->rotation.z));
-			m = dragRot*m;
+			m = !dragRot*m;
 
 			ref->rotation = EulerMatrixXYZ(m);
 			ref->rotation = VRAD2DEG(ref->rotation);
+
+			// reposition selection
+			{
+				ref->position -= selectionCenter;
+
+				Matrix4x4 groupedDragRot = Matrix4x4(!dragRot) * translate(ref->position);
+				ref->position = transpose(groupedDragRot).getTranslationComponent();
+
+				ref->position += selectionCenter;
+			}
 		}
 
 		m_editAxis.EndDrag();
@@ -1475,6 +1488,11 @@ void CUI_LevelModels::MouseRotateEvents( wxMouseEvent& event, const Vector3D& ra
 void CUI_LevelModels::RefreshModelReplacement()
 {
 	m_modelReplacement->RefreshObjectDefLists();
+}
+
+void CUI_LevelModels::RebuildPreviewShots()
+{
+	m_modelPicker->RebuildPreviewShots();
 }
 
 void CUI_LevelModels::MousePlacementEvents( wxMouseEvent& event, hfieldtile_t* tile, int tx, int ty, const Vector3D& ppos )
@@ -1714,6 +1732,17 @@ void CUI_LevelModels::ToggleSelectionTilesStick()
 	RecalcSelectionCenter();
 }
 
+BoundingBox	CUI_LevelModels::GetSelectionBox() const
+{
+	BoundingBox selectionBox;
+	for (int i = 0; i < m_selRefs.numElem(); i++)
+	{
+		regionObject_t* selectionRef = m_selRefs[i].selRef;
+		selectionBox.Merge(selectionRef->bbox);
+	}
+	return selectionBox;
+}
+
 void CUI_LevelModels::OnRender()
 {
 	materials->SetMatrix(MATRIXMODE_WORLD, identity4());
@@ -1757,17 +1786,43 @@ void CUI_LevelModels::OnRender()
 		}
 
 		// display selection
-		BoundingBox bbox;
+		BoundingBox selectionBox = GetSelectionBox();
+		Vector3D selectionCenter = (m_editMode == MEDIT_ROTATE && m_selRefs.numElem() > 1) ? selectionBox.GetCenter() : m_editAxis.m_position;
 
 		Matrix3x3 dragRot = !m_dragInitRot*m_dragRot;
+
+		static regionObject_t drawnRef;
 
 		for(int i = 0; i < m_selRefs.numElem(); i++)
 		{
 			regionObject_t* selectionRef = m_selRefs[i].selRef;
 
-			bbox.Merge(selectionRef->bbox);
+			// used to calculate matrix
+			drawnRef.def = selectionRef->def;
+			drawnRef.position = selectionRef->position;
+			drawnRef.rotation = selectionRef->rotation;
+			drawnRef.tile_x = selectionRef->tile_x;
+			drawnRef.tile_y = selectionRef->tile_y;
 
-			Matrix4x4 wmatrix = GetModelRefRenderMatrix(m_selRefs[i].selRegion, selectionRef) * Matrix4x4(dragRot);
+			// apply rotation
+			Matrix3x3 m = rotateXYZ3(DEG2RAD(drawnRef.rotation.x), DEG2RAD(drawnRef.rotation.y), DEG2RAD(drawnRef.rotation.z));
+			m = !dragRot * m;
+
+			drawnRef.rotation = EulerMatrixXYZ(m);
+			drawnRef.rotation = VRAD2DEG(drawnRef.rotation);
+
+			// reposition selection
+			{
+				drawnRef.position -= selectionCenter;
+
+				Matrix4x4 groupedDragRot = Matrix4x4(!dragRot) * translate(drawnRef.position);
+				drawnRef.position = transpose(groupedDragRot).getTranslationComponent();
+
+				drawnRef.position += selectionCenter;
+			}
+
+			Matrix4x4 wmatrix = GetModelRefRenderMatrix(m_selRefs[i].selRegion, &drawnRef);
+			drawnRef.def = nullptr;
 
 			// render
 			materials->SetCullMode(CULL_BACK);
@@ -1792,12 +1847,11 @@ void CUI_LevelModels::OnRender()
 		}
 
 		// draw selection bbox
-		debugoverlay->Box3D(bbox.minPoint, bbox.maxPoint, ColorRGBA(1,1,0, 0.75f));
+		debugoverlay->Box3D(selectionBox.minPoint, selectionBox.maxPoint, ColorRGBA(1,1,0, 0.75f));
 
 		if( m_selRefs.numElem() > 0 && m_editMode > MEDIT_PLACEMENT)
 		{
-			//if(m_selRefs.numElem() > 1)
-			m_editAxis.SetProps(identity3(), m_editAxis.m_position);
+			m_editAxis.SetProps(identity3(), selectionCenter);
 
 			float clength = length(m_editAxis.m_position-g_camera_target);
 			m_editAxis.Draw(clength);
