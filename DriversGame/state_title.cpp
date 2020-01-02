@@ -232,6 +232,17 @@ bool CompareCheatCode(int* c1, int* codeSeq)
 	return false;
 }
 
+void CState_Title::GoToMainMenu()
+{
+	m_goesFromTitle = true;
+	m_textEffect = 1.0f;
+
+	EmitSound_t es("menu.click");
+	g_sounds->EmitSound(&es);
+
+	SetNextState(g_State_MainMenu);
+}
+
 void CState_Title::HandleKeyPress( int key, bool down )
 {
 	if((key == KEY_ENTER || key == KEY_JOY_START) && down == true && !m_goesFromTitle && m_fade == 1.0f && m_actionTimeout > 0.0f)
@@ -249,13 +260,7 @@ void CState_Title::HandleKeyPress( int key, bool down )
 			return;
 		}
 
-		m_goesFromTitle = true;
-		m_textEffect = 1.0f;
-
-		EmitSound_t es("menu.click");
-		g_sounds->EmitSound( &es );
-
-		SetNextState(g_State_MainMenu);
+		GoToMainMenu();
 	}
 
 	if(down)
@@ -270,6 +275,12 @@ void CState_Title::HandleKeyPress( int key, bool down )
 	}
 
 	g_inputCommandBinder->OnKeyEvent( key, down );
+}
+
+void CState_Title::HandleMouseClick(int x, int y, int buttons, bool down)
+{
+	if(down)
+		GoToMainMenu();
 }
 
 CState_Title* g_State_Title = new CState_Title();

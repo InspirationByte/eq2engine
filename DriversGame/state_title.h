@@ -23,7 +23,10 @@ public:
 
 	bool		Update( float fDt );
 
+	void		GoToMainMenu();
+
 	void		HandleKeyPress( int key, bool down );
+	void		HandleMouseClick(int x, int y, int buttons, bool down);
 
 	void		HandleMouseMove( int x, int y, float deltaX, float deltaY ) {}
 	void		HandleMouseWheel(int x,int y,int scroll) {}

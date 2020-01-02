@@ -44,6 +44,14 @@ public:
 	void				OnWindowResize(int width, int height);
 	void				OnFocusChanged(bool inFocus);
 
+	//---------------------------------
+	// INPUT
+	//---------------------------------
+
+	void				RequestTextInput();
+	void				ReleaseTextInput();
+	bool				IsTextInputShown() const;
+
 	void				ProcessKeyChar( int chr );
 	void				TrapKey_Event( int key, bool down );
 	void				TrapMouse_Event( float x, float y, int buttons, bool down );
@@ -61,6 +69,8 @@ public:
 	bool				CheckDoneTrapping( int& buttons, int& key );
 
 	void				SetCursorPosition(int x, int y);
+
+	//---------------------------------
 
 	void				SetWindowTitle(const char* windowTitle);
 

@@ -10,7 +10,14 @@
     <option name="TOOL_WINDOW_CONFIGURED_FILTER" value="No Filters" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="c9096593-b4df-4b83-813a-05c2d4299dea" name="Default" comment="" />
+    <list default="true" id="c9096593-b4df-4b83-813a-05c2d4299dea" name="Default" comment="">
+      <change beforePath="$PROJECT_DIR$/../DriversGame/state_title.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../DriversGame/state_title.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../DriversGame/state_title.h" beforeDir="false" afterPath="$PROJECT_DIR$/../DriversGame/state_title.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../shared_engine/sys_host.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../shared_engine/sys_host.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../shared_engine/sys_host.h" beforeDir="false" afterPath="$PROJECT_DIR$/../shared_engine/sys_host.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../shared_engine/sys_window.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../shared_engine/sys_window.cpp" afterDir="false" />
+    </list>
     <ignored path="android-project.iws" />
     <ignored path=".idea/workspace.xml" />
     <ignored path="$PROJECT_DIR$/.gradle/" />
@@ -50,7 +57,7 @@
       <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/app/src/main/java/org/libsdl/app/SDLActivity.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="219">
+            <state relative-caret-position="-138">
               <caret line="746" selection-start-line="746" selection-end-line="746" />
               <folding>
                 <element signature="e#4701#4702#0" expanded="true" />
@@ -180,8 +187,8 @@
     </navigator>
     <panes>
       <pane id="ProjectPane" />
-      <pane id="AndroidView" />
       <pane id="Scope" />
+      <pane id="AndroidView" />
       <pane id="PackagesPane" />
     </panes>
   </component>
@@ -548,11 +555,12 @@
   </component>
   <component name="ToolWindowManager">
     <frame x="-8" y="-8" width="1936" height="1056" extended-state="6" />
+    <editor active="true" />
     <layout>
-      <window_info content_ui="combo" id="Project" order="0" sideWeight="0.48465267" visible="true" weight="0.17910448" />
+      <window_info content_ui="combo" id="Project" order="0" sideWeight="0.48303714" visible="true" weight="0.17910448" />
       <window_info id="Structure" order="1" weight="0.25" />
       <window_info id="Captures" order="2" side_tool="true" weight="0.25" />
-      <window_info id="Build Variants" order="3" sideWeight="0.51534736" side_tool="true" visible="true" weight="0.17910448" />
+      <window_info id="Build Variants" order="3" sideWeight="0.5169628" side_tool="true" visible="true" weight="0.17910448" />
       <window_info id="Favorites" order="4" side_tool="true" />
       <window_info id="Capture Tool" order="5" />
       <window_info id="Palette&#9;" order="6" />
@@ -757,7 +765,7 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/app/src/main/java/org/libsdl/app/SDLActivity.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="219">
+        <state relative-caret-position="-138">
           <caret line="746" selection-start-line="746" selection-end-line="746" />
           <folding>
             <element signature="e#4701#4702#0" expanded="true" />

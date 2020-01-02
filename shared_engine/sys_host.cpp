@@ -760,6 +760,21 @@ void CGameHost::EndScene()
 	PROFILE_CODE(materials->EndFrame(NULL););
 }
 
+void CGameHost::RequestTextInput()
+{
+	SDL_StartTextInput();
+}
+
+void CGameHost::ReleaseTextInput()
+{
+	SDL_StopTextInput();
+}
+
+bool CGameHost::IsTextInputShown() const
+{
+	return SDL_IsTextInputActive();
+}
+
 void CGameHost::TrapKey_Event( int key, bool down )
 {
 	// Only key down events are trapped
