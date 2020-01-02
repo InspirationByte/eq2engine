@@ -114,6 +114,8 @@ public:
 	void						AddSearchPath(const char* pathId, const char* pszDir);
 	void						RemoveSearchPath(const char* pathId);
 
+	void						Rename(const char* oldNameOrPath, const char* newNameOrPath, SearchPath_e search) const;
+
     //Directory operations
     void						MakeDir(const char* dirname, SearchPath_e search ) const;
     void						RemoveDir(const char* dirname, SearchPath_e search ) const;

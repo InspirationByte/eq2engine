@@ -67,6 +67,9 @@ public:
 	virtual void			AddSearchPath(const char* pathId, const char* pszDir) = 0;
 	virtual void			RemoveSearchPath(const char* pathId) = 0;
 
+	// renames file or directory
+	virtual void			Rename(const char* oldNameOrPath, const char* newNameOrPath, SearchPath_e search) const = 0;
+
     // Directory operations
     virtual void			MakeDir(const char* dirname, SearchPath_e search ) const = 0;
     virtual void			RemoveDir(const char* dirname, SearchPath_e search ) const = 0;

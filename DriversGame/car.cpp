@@ -1331,13 +1331,13 @@ void CCar::UpdateVehiclePhysics(float delta)
 	// Update controls first
 	//
 
-	FReal fSteerAngle = 0;
-	FReal fAccel = 0;
-	FReal fBrake = 0;
-	FReal fHandbrake = 0;
+	FReal inputSteering = 0;
+	FReal inputAcceleration = 0;
+	FReal inputBrake = 0;
+	FReal inputHandbrake = 0;
 
-	bool bBurnout = false;
-	bool bExtendTurn = false;
+	bool inputBurnout = false;
+	bool inputFastSteer = false;
 
 	bool needsWake = IsFlippedOver();
 
@@ -1346,21 +1346,21 @@ void CCar::UpdateVehiclePhysics(float delta)
 		if( isCar )
 		{
 			if(controlButtons & IN_ACCELERATE)
-				fAccel = (float)((float)m_accelRatio*_oneBy1024);
+				inputAcceleration = (float)((float)m_accelRatio*_oneBy1024);
 
 			if(controlButtons & IN_BURNOUT )
-				bBurnout = true;
+				inputBurnout = true;
 
 			if(controlButtons & IN_HANDBRAKE )
-				fHandbrake = 1;
+				inputHandbrake = 1;
 		}
 
 		// non-car vehicles still can brake
 		if(controlButtons & IN_BRAKE )
-			fBrake = (float)((float)m_brakeRatio*_oneBy1024);
+			inputBrake = (float)((float)m_brakeRatio*_oneBy1024);
 	}
 	else
-		fHandbrake = 1;
+		inputHandbrake = 1;
 
 	int controlsChanged = controlButtons & m_oldControlButtons;
 
@@ -1368,88 +1368,98 @@ void CCar::UpdateVehiclePhysics(float delta)
 		needsWake = true;
 
 	if(controlButtons & IN_FASTSTEER )
-		bExtendTurn = true;
+		inputFastSteer = true;
 
 	if(controlButtons & IN_STEERLEFT )
-		fSteerAngle -= (float)((float)m_steerRatio*_oneBy1024);
+		inputSteering -= (float)((float)m_steerRatio*_oneBy1024);
 	else if(controlButtons & IN_STEERRIGHT )
-		fSteerAngle += (float)((float)m_steerRatio*_oneBy1024);
+		inputSteering += (float)((float)m_steerRatio*_oneBy1024);
 	else if(controlButtons & IN_ANALOGSTEER)
 	{
-		fSteerAngle = (float)((float)m_steerRatio*_oneBy1024);
-		m_steering = fSteerAngle;
+		inputSteering = (float)((float)m_steerRatio*_oneBy1024);
+		m_steering = inputSteering;
 	}
 
 	//------------------------------------------------------------------------------------------
 
 	// do acceleration and burnout
-	if(bBurnout)
-		fAccel = 1.0f;
-
-	bool bDoBurnout = bBurnout && (GetSpeed() < m_conf->physics.burnoutMaxSpeed);
-
-	if(fAccel > m_fAcceleration)
+	if (inputBurnout)
 	{
-		if(m_nGear > 1)
-			m_fAcceleration += delta * ACCELERATION_CONST;
-		else
-			m_fAcceleration = fAccel;
+		inputAcceleration = 1.0f;
+		m_fAcceleration = 1.0f;
 	}
 	else
-		m_fAcceleration -= delta * ACCELERATION_CONST;
+	{
+		FReal acceleration = m_fAcceleration;
 
-	if(m_fAcceleration < 0)
-		m_fAcceleration = 0;
+		if (inputAcceleration > acceleration)
+		{
+			if (m_nGear > 1)
+				acceleration += delta * ACCELERATION_CONST;
+			else
+				acceleration = inputAcceleration;
+		}
+		else
+			acceleration -= delta * ACCELERATION_CONST;
+
+		if (acceleration < 0)
+			acceleration = 0;
+
+		m_fAcceleration = acceleration;
+	}
+
+	bool bDoBurnout = inputBurnout && (GetSpeed() < m_conf->physics.burnoutMaxSpeed);
 
 	//--------------------------------------------------------
 
-	float steerSpeedMultiplier = 1.0f;
+	FReal steering = m_steering;
+	FReal steeringHelper = m_steeringHelper;
 
 	{
-		FReal steer_diff = fSteerAngle-m_steering;
+		float steerSpeedMultiplier = 1.0f;
+		FReal steer_diff = inputSteering-steering;
 
 		float speed = GetSpeed();
 
 		steerSpeedMultiplier = RemapValClamp(STEERING_REDUCE_SPEED_MAX-speed, STEERING_REDUCE_SPEED_MIN, STEERING_REDUCE_SPEED_MAX, STEERING_SPEED_REDUCE_FACTOR, 1.0f);
 		steerSpeedMultiplier = powf(steerSpeedMultiplier, STEERING_SPEED_REDUCE_CURVE);
 
-		if (bExtendTurn)
+		if (inputFastSteer)
 			steerSpeedMultiplier *= EXTEND_STEER_SPEED_MULTIPLIER;
 		
 		// increase speed of for centering steering wheel
 		// and also disable autohandbrake
-		if (steer_diff*m_steering < 0)
+		if (steer_diff*steering < 0)
 		{
-			m_steeringHelper = 0.0f;
+			steeringHelper = 0.0f;
 			steerSpeedMultiplier *= STEER_CENTER_SPEED_MULTIPLIER;
 		}
 
 		if(FPmath::abs(steer_diff) > 0.005f)
-			m_steering += FPmath::sign(steer_diff) * m_conf->physics.steeringSpeed * steerSpeedMultiplier * delta;
+			steering += FPmath::sign(steer_diff) * m_conf->physics.steeringSpeed * steerSpeedMultiplier * delta;
 		else
-			m_steering = fSteerAngle;
+			steering = inputSteering;
+
+		if (FPmath::abs(inputSteering) > STEERING_HELP_START)
+		{
+			FReal steerHelp_diff = inputSteering - steeringHelper;
+			if (FPmath::abs(steerHelp_diff) > 0.1f)
+				steeringHelper += FPmath::sign(steerHelp_diff) * STEERING_HELP_CONST * steerSpeedMultiplier * delta;
+			else
+				steeringHelper = inputSteering;
+		}
+
+		if (fsimilar(inputSteering, 0.0f, 0.1f))
+			steeringHelper = 0;
+
+		const FReal MAX_EXTENDED_STEERING_INPUT = 1.0f;
+		const FReal MAX_STEERING_RELAXED_INPUT = 0.6f;
+
+		FReal steer_clamp = inputFastSteer ? MAX_EXTENDED_STEERING_INPUT : MAX_STEERING_RELAXED_INPUT;
+
+		m_steering = clamp(steering, -steer_clamp, steer_clamp);
+		m_steeringHelper = steeringHelper;
 	}
-
-	if (FPmath::abs(fSteerAngle) > STEERING_HELP_START)
-	{
-		FReal steerHelp_diff = fSteerAngle -m_steeringHelper;
-		if(FPmath::abs(steerHelp_diff) > 0.1f)
-			m_steeringHelper += FPmath::sign(steerHelp_diff) * STEERING_HELP_CONST * steerSpeedMultiplier * delta;
-		else
-			m_steeringHelper = fSteerAngle;
-	}
-
-	if (fsimilar(fSteerAngle, 0.0f, 0.1f))
-		m_steeringHelper = 0;
-
-	const FReal MAX_STEERING_ANGLE = 1.0f;
-
-	FReal steer_clamp(0.6f);
-
-	if(bExtendTurn)
-		steer_clamp = MAX_STEERING_ANGLE;
-
-	m_steering = clamp(m_steering, -steer_clamp, steer_clamp);
 
 	// kick in wake
 	if (needsWake)
@@ -1473,7 +1483,7 @@ void CCar::UpdateVehiclePhysics(float delta)
 		}
 	}
 
-	if (carBody->IsFrozen() && !bBurnout)
+	if (carBody->IsFrozen() && !inputBurnout)
 		return;
 
 	int numDriveWheels = 0;
@@ -1554,7 +1564,7 @@ void CCar::UpdateVehiclePhysics(float delta)
 	wheelsSpeed *= wheelMod;
 	
 	// disable damping when the handbrake is on
-	if(numHandbrakeWheelsOnGround > 0 && fHandbrake > 0.0f)
+	if(numHandbrakeWheelsOnGround > 0 && inputHandbrake > 0.0f)
 		carBody->m_flags |= BODY_DISABLE_DAMPING;
 	else
 		carBody->m_flags &= ~BODY_DISABLE_DAMPING;
@@ -1564,10 +1574,10 @@ void CCar::UpdateVehiclePhysics(float delta)
 		//
 		// Calculate fake engine load effect with clutch
 		//
-		float accelEffectFactor = m_fAcceleration+fBrake * -sign(wheelsSpeed);
+		float accelEffectFactor = m_fAcceleration+inputBrake * -sign(wheelsSpeed);
 		float accelEffect = m_fAccelEffect;
 
-		accelEffect += (accelEffectFactor -m_fAccelEffect) * delta * ACCELERATION_SOUND_CONST;
+		accelEffect += (accelEffectFactor - m_fAccelEffect) * delta * ACCELERATION_SOUND_CONST;
 		accelEffect = clamp(accelEffect, -1.0f, 1.0f);
 
 		float fRPM = GetRPM();
@@ -1637,18 +1647,18 @@ void CCar::UpdateVehiclePhysics(float delta)
 		float fLateral = GetLateralSlidingAtBody();
 		float fLateralSign = sign(GetLateralSlidingAtBody())*-0.01f;
 
-		if( fLateralSign > 0 && (m_steeringHelper > fLateralSign)
-			|| fLateralSign < 0 && (m_steeringHelper < fLateralSign) || fabs(fLateral) < 5.0f)
+		if( fLateralSign > 0 && (steeringHelper > fLateralSign)
+			|| fLateralSign < 0 && (steeringHelper < fLateralSign) || fabs(fLateral) < 5.0f)
 		{
-			if(fabs(m_steeringHelper) > AUTOHANDBRAKE_START_MIN)
-				autoHandbrakeHelper = (FPmath::abs(m_steeringHelper)-AUTOHANDBRAKE_START_MIN)*AUTOHANDBRAKE_SCALE * handbrakeFactor;
+			if(fabs(steeringHelper) > AUTOHANDBRAKE_START_MIN)
+				autoHandbrakeHelper = (FPmath::abs(steeringHelper)-AUTOHANDBRAKE_START_MIN)*AUTOHANDBRAKE_SCALE * handbrakeFactor;
 		}
 
 		autoHandbrakeHelper = clamp(autoHandbrakeHelper,0.0f,AUTOHANDBRAKE_MAX_FACTOR);
 	}
 
 	float fAcceleration = m_fAcceleration;
-	float fBreakage = fBrake;
+	float fBreakage = inputBrake;
 
 	float torque = 0.0f;
 
@@ -1674,9 +1684,9 @@ void CCar::UpdateVehiclePhysics(float delta)
 			// check for backwards gear
 			if(fsimilar(wheelsSpeed, 0.0f, 0.1f))
 			{
-				if(fBrake > 0)
+				if(inputBrake > 0)
 					m_nGear = 0;
-				else if(fAccel > 0)
+				else if(inputAcceleration > 0)
 					m_nGear = 1;
 			}
 			else // switch gears quickly if we move in wrong direction
@@ -1696,7 +1706,7 @@ void CCar::UpdateVehiclePhysics(float delta)
 
 		m_radsPerSec = wheelsSpeed * torqueConvert;
 
-		float gbxDecelRate = max(float(fAccel), GEARBOX_DECEL_SHIFTDOWN_FACTOR);
+		float gbxDecelRate = max(float(inputAcceleration), GEARBOX_DECEL_SHIFTDOWN_FACTOR);
 
 		if(m_nGear == 0)
 		{
@@ -1787,7 +1797,7 @@ void CCar::UpdateVehiclePhysics(float delta)
 	if(m_fBreakage < 0)
 		m_fBreakage = 0;
 
-	if(fHandbrake > 0)
+	if(inputHandbrake > 0)
 		fAcceleration = 0.0f;
 
 	float fAccelerator = fAcceleration * torque * m_torqueScale;
@@ -1916,7 +1926,7 @@ void CCar::UpdateVehiclePhysics(float delta)
 					fLongitudinalForce += wheelTractionFrictionScale * (1.0f-fPitchFac);
 				}
 
-				float handbrakes = autoHandbrakeHelper+fHandbrake;
+				float handbrakes = autoHandbrakeHelper+inputHandbrake;
 
 				if(isHandbrakeWheel && handbrakes > 0.0f)
 				{
@@ -1994,7 +2004,7 @@ void CCar::UpdateVehiclePhysics(float delta)
 			//
 			if(m_conf->flags.isCar)
 			{
-				float engineBrakeModifier = 1.0f - clamp((float)fAccel + (float)fabs(fBrake) + fabs(m_steering), 0.0f, 1.0f);
+				float engineBrakeModifier = 1.0f - clamp((float)inputAcceleration + (float)fabs(inputBrake) + fabs(m_steering), 0.0f, 1.0f);
 
 				if (!isDriveWheel)
 					engineBrakeModifier = 0.0f;
@@ -2017,13 +2027,13 @@ void CCar::UpdateVehiclePhysics(float delta)
 			//
 			// apply handbrake
 			//
-			if(isHandbrakeWheel && fHandbrake > 0.0f)
+			if(isHandbrakeWheel && inputHandbrake > 0.0f)
 			{
 				const float HANDBRAKE_TORQUE = 8500.0f;
 
 				wheelTractionForce -= sign(wheelPitchSpeed) * HANDBRAKE_TORQUE * wheelTractionFrictionScale * 3.0f;
 
-				if(fHandbrake == 1.0f)
+				if(inputHandbrake == 1.0f)
 					wheelPitchSpeed = 0.0f;
 			}
 			
@@ -3692,11 +3702,13 @@ void CCar::UpdateSounds( float fDt )
 
 	for(int i = 0; i < CAR_SOUND_COUNT; i++)
 	{
-		if(!m_sounds[i])
+		ISoundController* sound = m_sounds[i];
+
+		if(!sound)
 			continue;
 
-		m_sounds[i]->SetOrigin(pos);
-		m_sounds[i]->SetVelocity(velocity);
+		sound->SetOrigin(pos);
+		sound->SetVelocity(velocity);
 	}
 
 	bool isCar = m_conf->flags.isCar;
@@ -3720,6 +3732,8 @@ void CCar::UpdateSounds( float fDt )
 	
 	// wet ground
 	{
+		ISoundController* surfaceSound = m_sounds[CAR_SOUND_SURFACE];
+
 		bool anyWheelOnGround = false;
 
 		for (int i = 0; i < wheelCount; i++)
@@ -3734,21 +3748,23 @@ void CCar::UpdateSounds( float fDt )
 		float fSpeedMod = clamp(GetSpeed() / 90.0f + fTractionLevel * 0.25f, 0.0f, 1.0f);
 		float fSpeedModVol = clamp(GetSpeed() / 20.0f + fTractionLevel * 0.25f, 0.0f, 1.0f);
 
-		m_sounds[CAR_SOUND_SURFACE]->SetPitch(fSpeedMod);
+		surfaceSound->SetPitch(fSpeedMod);
 		m_sounds[CAR_SOUND_SURFACE]->SetVolume(fSpeedModVol*g_pGameWorld->m_envWetness);
 
-		if (anyWheelOnGround && m_sounds[CAR_SOUND_SURFACE]->IsStopped() && m_isLocalCar && g_pGameWorld->m_envWetness > SKID_WATERTRAIL_MIN_WETNESS)
+		if (anyWheelOnGround && surfaceSound->IsStopped() && m_isLocalCar && g_pGameWorld->m_envWetness > SKID_WATERTRAIL_MIN_WETNESS)
 		{
-			m_sounds[CAR_SOUND_SURFACE]->Play();
+			surfaceSound->Play();
 		}
-		else if (!anyWheelOnGround && !m_sounds[CAR_SOUND_SURFACE]->IsStopped())
+		else if (!anyWheelOnGround && !surfaceSound->IsStopped())
 		{
-			m_sounds[CAR_SOUND_SURFACE]->Stop();
+			surfaceSound->Stop();
 		}
 	}
 
 	// skid sound
 	{
+		ISoundController* skidSound = m_sounds[CAR_SOUND_SKID];
+
 		float fSlideLevel = fabs(GetLateralSlidingAtWheels(true)*0.5f) - 0.25;
 
 		float fSkid = (fSlideLevel + fTractionLevel)*0.5f;
@@ -3770,20 +3786,20 @@ void CCar::UpdateSounds( float fDt )
 		float wheelSkidPitchModifier = IDEAL_WHEEL_RADIUS - fWheelRad;
 		float fSkidPitch = clamp(0.7f*fSkid + 0.25f, 0.35f, 1.0f) - 0.15f*saturate(sinf(m_curTime*1.25f)*8.0f - fTractionLevel);
 
-		m_sounds[CAR_SOUND_SKID]->SetVolume(fSkidVol);
-		m_sounds[CAR_SOUND_SKID]->SetPitch(fSkidPitch + wheelSkidPitchModifier * SKID_RADIAL_SOUNDPITCH_SCALE);
+		skidSound->SetVolume(fSkidVol);
+		skidSound->SetPitch(fSkidPitch + wheelSkidPitchModifier * SKID_RADIAL_SOUNDPITCH_SCALE);
 
 		if (fSkidVol > 0.08)
 		{
-			if (m_sounds[CAR_SOUND_SKID]->IsStopped())
-				m_sounds[CAR_SOUND_SKID]->Play();
+			if (skidSound->IsStopped())
+				skidSound->Play();
 
 			//if(!m_sounds[CAR_SOUND_SURFACE]->IsStopped())
 			//	m_sounds[CAR_SOUND_SURFACE]->Stop();
 		}
 		else
 		{
-			m_sounds[CAR_SOUND_SKID]->Stop();
+			skidSound->Stop();
 		}
 	}
 
@@ -3795,15 +3811,18 @@ void CCar::UpdateSounds( float fDt )
 
 	int controlButtons = GetControlButtons();
 
+	ISoundController* hornSound = m_sounds[CAR_SOUND_HORN];
+	ISoundController* sirenSound = m_sounds[CAR_SOUND_SIREN];
+	
 	if(!m_sirenEnabled)
 	{
-		if((controlButtons & IN_HORN) && !(m_oldControlButtons & IN_HORN) && m_sounds[CAR_SOUND_HORN]->IsStopped())
+		if((controlButtons & IN_HORN) && !(m_oldControlButtons & IN_HORN) && hornSound->IsStopped())
 		{
-			m_sounds[CAR_SOUND_HORN]->Play();
+			hornSound->Play();
 		}
 		else if(!(controlButtons & IN_HORN) && (m_oldControlButtons & IN_HORN))
 		{
-			m_sounds[CAR_SOUND_HORN]->Stop();
+			hornSound->Stop();
 		}
 	}
 
@@ -3813,46 +3832,50 @@ void CCar::UpdateSounds( float fDt )
 		m_sounds[CAR_SOUND_ENGINE]->Stop();
 		m_sounds[CAR_SOUND_ENGINE_LOW]->Stop();
 
-		if(m_sounds[CAR_SOUND_SIREN])
-			m_sounds[CAR_SOUND_SIREN]->Stop();
+		if(sirenSound)
+			sirenSound->Stop();
 
 		return;
 	}
 
+	ISoundController* idleSound = m_sounds[CAR_SOUND_ENGINE_IDLE];
+	ISoundController* engineSound = m_sounds[CAR_SOUND_ENGINE];
+	ISoundController* engineLowSound = m_sounds[CAR_SOUND_ENGINE_LOW];
+	ISoundController* whineSound = m_sounds[CAR_SOUND_WHINE];
+
 	// update engine sound pitch by RPM value
 	float fRpmC = RemapValClamp(m_fEngineRPM, 600.0f, 10000.0f, 0.35f, 3.5f);
 
-	m_sounds[CAR_SOUND_ENGINE]->SetPitch(fRpmC);
-	m_sounds[CAR_SOUND_ENGINE_LOW]->SetPitch(fRpmC);
+	engineSound->SetPitch(fRpmC);
+	engineLowSound->SetPitch(fRpmC);
+	idleSound->SetPitch(fRpmC + 0.65f);
 
-	m_sounds[CAR_SOUND_ENGINE_IDLE]->SetPitch(fRpmC + 0.65f);
-
-	if(m_isLocalCar && m_sounds[CAR_SOUND_WHINE] != nullptr && IsDriveWheelsOnGround())
+	if(m_isLocalCar && whineSound != nullptr && IsDriveWheelsOnGround())
 	{
 		if(m_nGear == 0 )
 		{
-			if(m_sounds[CAR_SOUND_WHINE]->IsStopped())
-				m_sounds[CAR_SOUND_WHINE]->Play();
+			if(whineSound->IsStopped())
+				whineSound->Play();
 
 			float wheelSpeedFac = fabs(GetSpeedWheels()) * KPH_TO_MPS * 0.225f;
 
-			m_sounds[CAR_SOUND_WHINE]->SetPitch(wheelSpeedFac);
+			whineSound->SetPitch(wheelSpeedFac);
 
 			if(wheelSpeedFac > 4.0f)
 				wheelSpeedFac -= (wheelSpeedFac - 4.0f)*10.0f;
 
-			m_sounds[CAR_SOUND_WHINE]->SetVolume(clamp(wheelSpeedFac*m_fAccelEffect, 0.0f, 1.0f));		
+			whineSound->SetVolume(clamp(wheelSpeedFac*m_fAccelEffect, 0.0f, 1.0f));
 		}
 		else
 		{
-			if(!m_sounds[CAR_SOUND_WHINE]->IsStopped())
-				m_sounds[CAR_SOUND_WHINE]->Stop();
+			if(!whineSound->IsStopped())
+				whineSound->Stop();
 		}
 	}
 	else
 	{
-		if(m_sounds[CAR_SOUND_WHINE] != nullptr && !m_sounds[CAR_SOUND_WHINE]->IsStopped())
-			m_sounds[CAR_SOUND_WHINE]->Stop();
+		if(whineSound != nullptr && !whineSound->IsStopped())
+			whineSound->Stop();
 	}
 
 	m_engineIdleFactor = 1.0f - RemapValClamp(m_fEngineRPM, 0.0f, 2600.0f, 0.0f, 1.0f);
@@ -3878,54 +3901,54 @@ void CCar::UpdateSounds( float fDt )
 		SetSoundVolumeScale(1.0f);
 #endif // EDITOR
 
-	m_sounds[CAR_SOUND_ENGINE]->SetVolume(fEngineSoundVol * fRPMDiff);
-	m_sounds[CAR_SOUND_ENGINE_LOW]->SetVolume(fEngineSoundVol * (1.0f-fRPMDiff));
-	m_sounds[CAR_SOUND_ENGINE_IDLE]->SetVolume(m_engineIdleFactor);
+	engineSound->SetVolume(fEngineSoundVol * fRPMDiff);
+	engineLowSound->SetVolume(fEngineSoundVol * (1.0f-fRPMDiff));
+	idleSound->SetVolume(m_engineIdleFactor);
 
-	if(m_engineIdleFactor <= 0.05f && !m_sounds[CAR_SOUND_ENGINE_IDLE]->IsStopped())
+	if(m_engineIdleFactor <= 0.05f && !idleSound->IsStopped())
 	{
-		m_sounds[CAR_SOUND_ENGINE_IDLE]->Stop();
+		idleSound->Stop();
 	}
-	else if(m_engineIdleFactor > 0.05f && m_sounds[CAR_SOUND_ENGINE_IDLE]->IsStopped())
+	else if(m_engineIdleFactor > 0.05f && idleSound->IsStopped())
 	{
-		m_sounds[CAR_SOUND_ENGINE_IDLE]->Play();
+		idleSound->Play();
 	}
 
-	if (m_sounds[CAR_SOUND_ENGINE]->IsStopped())
-		m_sounds[CAR_SOUND_ENGINE]->Play();
+	if (engineSound->IsStopped())
+		engineSound->Play();
 
-	if (m_isLocalCar && m_sounds[CAR_SOUND_ENGINE_LOW]->IsStopped())
-		m_sounds[CAR_SOUND_ENGINE_LOW]->Play();
+	if (m_isLocalCar && engineLowSound->IsStopped())
+		engineLowSound->Play();
 
-	if( m_sounds[CAR_SOUND_SIREN] )
+	if(sirenSound)
 	{
 		if(m_sirenEnabled != m_oldSirenState)
 		{
 			if(m_sirenEnabled)
 			{
-				m_sounds[CAR_SOUND_HORN]->Stop();
-				m_sounds[CAR_SOUND_SIREN]->Play();
+				hornSound->Stop();
+				sirenSound->Play();
 			}
 			else
-				m_sounds[CAR_SOUND_SIREN]->Stop();
+				sirenSound->Stop();
 
 			m_oldSirenState = m_sirenEnabled;
 		}
 
 		if( m_sirenEnabled && IsAlive() )
 		{
-			int sampleId = m_sounds[CAR_SOUND_SIREN]->GetEmitParams().sampleId;
+			int sampleId = sirenSound->GetEmitParams().sampleId;
 
 			if((controlButtons & IN_HORN) && sampleId == 0)
 				sampleId = 1;
 			else if(!(controlButtons & IN_HORN) && sampleId == 1)
 				sampleId = 0;
 
-			if( m_sounds[CAR_SOUND_SIREN]->GetEmitParams().sampleId != sampleId )
+			if(sirenSound->GetEmitParams().sampleId != sampleId )
 			{
-				m_sounds[CAR_SOUND_SIREN]->Stop();
-				m_sounds[CAR_SOUND_SIREN]->GetEmitParams().sampleId = sampleId;
-				m_sounds[CAR_SOUND_SIREN]->Play();
+				sirenSound->Stop();
+				sirenSound->GetEmitParams().sampleId = sampleId;
+				sirenSound->Play();
 			}
 		}
 	}

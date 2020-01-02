@@ -273,8 +273,13 @@ void CDrvSynHUDManager::DrawDamageBar(CMeshBuilder& meshBuilder, Rectangle_t& re
 
 		ColorRGBA damageColor = lerp(ColorRGBA(0,0.6f,0,alpha), ColorRGBA(0.6f,0,0,alpha), percentage) * 1.5f;
 
-		if(percentage > 0.85f)
-			damageColor = lerp(ColorRGBA(0.1f,0,0,alpha), ColorRGBA(0.8f,0,0,alpha), fabs(sin(m_curTime*3.0f))) * 1.5f;
+		if (percentage > 0.85f)
+		{
+			float flashValue = sin(m_curTime*16.0f) * 5.0f;
+			flashValue = clamp(flashValue, 0.0f, 1.0f);
+
+			damageColor = lerp(ColorRGBA(0.5f, 0.0f, 0.0f, alpha), ColorRGBA(0.8f, 0.2f, 0.2f, alpha), flashValue) * 1.5f;
+		}
 
 		// draw damage bar foreground
 		meshBuilder.Color4fv(damageColor);

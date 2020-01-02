@@ -608,6 +608,16 @@ void CFileSystem::MakeDir(const char* dirname, SearchPath_e search ) const
 #endif
 }
 
+int unlink_cb(const char *fpath, const struct stat *sb, int typeflag, struct FTW *ftwbuf)
+{
+	int rv = remove(fpath);
+
+	if (rv)
+		perror(fpath);
+
+	return rv;
+}
+
 void CFileSystem::RemoveDir(const char* dirname, SearchPath_e search ) const
 {
     EqString searchPath;
@@ -631,6 +641,32 @@ void CFileSystem::RemoveDir(const char* dirname, SearchPath_e search ) const
     searchPath.Append(_Es("/") + dirname);
 
     rmdir( searchPath.GetData() );
+}
+
+void CFileSystem::Rename(const char* oldNameOrPath, const char* newNameOrPath, SearchPath_e search) const
+{
+	EqString oldName;
+
+	switch (search)
+	{
+		case SP_DATA:
+			oldName = m_dataDir;
+			break;
+		case SP_MOD:
+			oldName = GetCurrentGameDirectory(); // Temporary set to data
+			break;
+		case SP_ROOT:
+			oldName = ".";
+			break;
+		default:
+			oldName = ".";
+			break;
+	}
+
+	EqString newName(oldName + _Es("/") + newNameOrPath);
+	oldName.Append(_Es("/") + oldNameOrPath);
+
+	rename(oldName.c_str(), newName.c_str());
 }
 
 //Filesystem's check and open file

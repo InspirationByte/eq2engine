@@ -1043,7 +1043,7 @@ void CUI_BuildingConstruct::SaveTemplates()
 {
 	const char* levelName = g_pGameWorld->GetLevelName();
 
-	EqString folderPath = varargs(LEVELS_PATH "%s_editor", levelName);
+	EqString folderPath(varargs(LEVELS_PATH "%s_editor", levelName));
 
 	// make folder <levelName>_editor and put this stuff there
 	g_fileSystem->MakeDir(folderPath.c_str(), SP_MOD);

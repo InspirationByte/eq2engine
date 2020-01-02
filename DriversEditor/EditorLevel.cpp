@@ -556,7 +556,16 @@ bool CEditorLevel::Load(const char* levelname, kvkeybase_t* kvDefs)
 
 bool CEditorLevel::Save(const char* levelname, bool isFinal)
 {
-	IFile* pFile = g_fileSystem->Open(varargs("levels/%s.lev", levelname), "wb", SP_MOD);
+	EqString levelFileName(varargs(LEVELS_PATH "%s.lev", levelname));
+	EqString backupFileName(varargs(LEVELS_PATH "%s.lev.BAK", levelname));
+
+	// create backups first
+	{
+		g_fileSystem->FileRemove(backupFileName.c_str(), SP_MOD);
+		g_fileSystem->Rename(levelFileName.c_str(), backupFileName.c_str(), SP_MOD);
+	}
+
+	IFile* pFile = g_fileSystem->Open(levelFileName.c_str(), "wb", SP_MOD);
 
 	if(!pFile)
 	{
@@ -1068,7 +1077,27 @@ void CEditorLevel::Ed_DestroyPhysics()
 
 void CEditorLevel::SaveEditorBuildings( const char* levelName )
 {
-	EqString path = varargs("levels/%s_editor/buildings.ekv", levelName);
+	EqString folderPath(varargs(LEVELS_PATH "%s_editor", levelName));
+	EqString folderPathBkp(varargs(LEVELS_PATH "%s_editor.BAK", levelName));
+
+	EqString buildingsPath(folderPath + "/buildings.ekv");
+
+	// create backups first
+	{
+		EqString buildingsPathBkp(folderPathBkp + "/buildings.ekv");
+		EqString buildingTemplateModelsPathBkp(folderPathBkp + "/buildingTemplateModels.dat");
+		EqString buildingTemplatesPathBkp(folderPathBkp + "/buildingTemplates.def");
+
+		g_fileSystem->FileRemove(buildingsPathBkp.c_str(), SP_MOD);
+		g_fileSystem->FileRemove(buildingTemplateModelsPathBkp.c_str(), SP_MOD);
+		g_fileSystem->FileRemove(buildingTemplatesPathBkp.c_str(), SP_MOD);
+
+		g_fileSystem->RemoveDir(folderPathBkp.c_str(), SP_MOD);
+		g_fileSystem->Rename(folderPath.c_str(), folderPathBkp.c_str(), SP_MOD);
+	}
+
+	// make folder <levelName>_editor and put this stuff there
+	g_fileSystem->MakeDir(folderPath.c_str(), SP_MOD);
 
 	KeyValues kvs;
 	kvkeybase_t* root = kvs.GetRootSection();
@@ -1093,14 +1122,14 @@ void CEditorLevel::SaveEditorBuildings( const char* levelName )
 		}
 	}
 
-	kvs.SaveToFile( path.c_str(), SP_MOD );
+	kvs.SaveToFile(buildingsPath.c_str(), SP_MOD );
 }
 
 typedef std::pair<CEditorLevelRegion*, regionObject_t*> regionObjectPair_t;
 
 void CEditorLevel::LoadEditorBuildings( const char* levelName )
 {
-	EqString path = varargs("levels/%s_editor/buildings.ekv", levelName);
+	EqString path = varargs(LEVELS_PATH "%s_editor/buildings.ekv", levelName);
 
 	KeyValues kvs;
 	if(!kvs.LoadFromFile(path.c_str(), SP_MOD))
