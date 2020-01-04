@@ -22,23 +22,93 @@ ConVar in_joy_repeatDelayInit("in_joy_repeatDelayInit", "1", "Joystick input rep
 ConVar in_joy_repeatDelay("in_joy_repeatDelay", "0.2", "Joystick input repeat delay", CV_ARCHIVE);
 ConVar in_joy_rumble("in_joy_rumble", "1", "Rumble", CV_ARCHIVE);
 
+#define CONTROLLER_DB_FILENAME "cfg/controllers.db"
+
+DECLARE_CMD(in_joy_addMapping, "Adds joystick mapping in SDL2 format", 0)
+{
+	if (CMD_ARGC == 0)
+	{
+		MsgError("mapping required as argument!");
+		return;
+	}
+
+	int result = SDL_GameControllerAddMapping(CMD_ARGV(0).c_str());
+
+	if (result <= 0)
+	{
+		if (result == -1)
+			MsgError("Failed to add mapping\n");
+		else if (result == 0)
+			MsgWarning("Mapping already added!\n");
+
+		return;
+	}
+	
+	IFile* dbFile = g_fileSystem->Open(CONTROLLER_DB_FILENAME, "wt+", SP_DATA);
+	ASSERT(dbFile);
+
+	if(!dbFile)
+		return;
+
+	dbFile->Print(CMD_ARGV(0).c_str());
+	dbFile->Print("\n");
+
+	g_fileSystem->Close(dbFile);
+}
+
 static CEqGameControllerSDL s_controllers[MAX_CONTROLLERS];
 
 void CEqGameControllerSDL::Init()
 {
-	const char* mappingBuf = g_fileSystem->GetFileBuffer("resources/gamecontrollerdb.txt");
-	if (mappingBuf)
+	long mappingsSize = 0;
+	const char* mappingsBuf = g_fileSystem->GetFileBuffer(CONTROLLER_DB_FILENAME, &mappingsSize);
+	if (mappingsBuf)
 	{
-		if(SDL_GameControllerAddMapping(mappingBuf) == -1)
-			MsgError("Failed add mappings from 'resources/gamecontrollerdb.txt'!\n");
+		SDL_RWops* mappingsIO = SDL_RWFromMem((void*)mappingsBuf, mappingsSize);
+		int result = SDL_GameControllerAddMappingsFromRW(mappingsIO, 1);
 
-		PPFree((void*)mappingBuf);
+		if (result == -1)
+			MsgError("Failed add mappings from '" CONTROLLER_DB_FILENAME "'!\n");
+		else
+			MsgInfo("Added %d mappings from '" CONTROLLER_DB_FILENAME "'\n", result);
+		
+		PPFree((void*)mappingsBuf);
 	}
 	else
-		MsgError("Failed to load 'resources/gamecontrollerdb.txt'!\n");
+		MsgError("Failed to load '" CONTROLLER_DB_FILENAME "'!\n");
 
 	int numJoysticks = SDL_NumJoysticks();
-	MsgWarning("* %d gamepads connected\n", numJoysticks);
+	MsgWarning("* %d joysticks connected\n", numJoysticks);
+
+	char guidStr[64];
+
+	for (int i = 0; i < numJoysticks; i++)
+	{
+		char* mapping = SDL_GameControllerMappingForDeviceIndex(i);
+
+		if (mapping)
+		{
+			int cIndex = GetControllerIndex(i);
+
+			// perform adding event
+			if (cIndex == -1)
+			{
+				SDL_Event deviceevent;
+				deviceevent.type = SDL_CONTROLLERDEVICEADDED;
+				deviceevent.cdevice.which = i;
+				SDL_PushEvent(&deviceevent);
+			}
+		}
+		else
+		{
+			SDL_JoystickGUID guid = SDL_JoystickGetDeviceGUID(i);
+
+			SDL_JoystickGetGUIDString(guid, guidStr, 64);
+			MsgWarning("   '%s':%s - no controller mapping available!\n", SDL_JoystickNameForIndex(i), guidStr);
+		}
+
+		SDL_free(mapping);
+	}
 }
 
 void CEqGameControllerSDL::Shutdown()
