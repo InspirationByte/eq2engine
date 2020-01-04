@@ -2282,6 +2282,7 @@ void CGameWorld::Draw( int nRenderFlags )
 				if (m_sunGlowOccQuery->IsReady())
 				{
 					pixels = m_sunGlowOccQuery->GetVisiblePixels();
+					pixels = min(pixels, LENS_TOTAL_PIXELS);			// clamp to not get overbright
 					lensIntensityTiming = (float)pixels * LENS_PIXEL_TO_INTENSITY * fIntensity;
 
 					break;
