@@ -1383,9 +1383,15 @@ void CCar::UpdateVehiclePhysics(float delta)
 	//------------------------------------------------------------------------------------------
 
 	// do acceleration and burnout
+	bool bDoBurnout = inputBurnout && (GetSpeed() < m_conf->physics.burnoutMaxSpeed);
+
 	if (inputBurnout)
 	{
 		inputAcceleration = 1.0f;
+	}
+
+	if (bDoBurnout)
+	{
 		m_fAcceleration = 1.0f;
 	}
 	else
@@ -1407,8 +1413,6 @@ void CCar::UpdateVehiclePhysics(float delta)
 
 		m_fAcceleration = acceleration;
 	}
-
-	bool bDoBurnout = inputBurnout && (GetSpeed() < m_conf->physics.burnoutMaxSpeed);
 
 	//--------------------------------------------------------
 
