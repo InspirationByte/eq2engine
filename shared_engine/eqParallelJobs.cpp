@@ -33,7 +33,7 @@ namespace Threading
 			m_curJob->flags |= JOB_FLAG_EXECUTED;
 			m_curJob->flags &= ~JOB_FLAG_CURRENT;
 
-			if( m_curJob->flags & JOB_FLAG_ALLOCATED )
+			if( m_curJob->flags & JOB_FLAG_DELETE )
 				delete m_curJob;
 
 			m_curJob = nullptr;
@@ -102,7 +102,7 @@ namespace Threading
 	void CEqParallelJobThreads::AddJob(jobFunction_t func, void* args)
 	{
 		eqParallelJob_t* job = new eqParallelJob_t;
-		job->flags = JOB_FLAG_ALLOCATED;
+		job->flags = JOB_FLAG_DELETE;
 		job->func = func;
 		job->arguments = args;
 

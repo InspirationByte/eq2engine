@@ -74,7 +74,7 @@ DECLARE_CMD(towfun, "", CV_CHEAT)
 	}
 
 	DkList<CGameObject*> nearestCars;
-	g_pGameWorld->QueryObjects(nearestCars, length(pcar->m_conf->physics.body_size)*2.0f, pcar->GetOrigin(), [](CGameObject* x) {
+	g_pGameWorld->QueryObjects(nearestCars, length(pcar->m_conf->physics.body_size)*2.0f, pcar->GetOrigin(), nullptr, [](CGameObject* x, void*) {
 		return (x->ObjType() == GO_CAR || x->ObjType() == GO_CAR_AI);
 	});
 

@@ -34,9 +34,9 @@ namespace Threading
 
 	enum EJobFlags
 	{
-		JOB_FLAG_ALLOCATED	= (1 << 0),
-		JOB_FLAG_CURRENT	= (1 << 1),
-		JOB_FLAG_EXECUTED	= (1 << 2),
+		JOB_FLAG_DELETE		= (1 << 0),		// job has to be deleted after executing
+		JOB_FLAG_CURRENT	= (1 << 1),		// it's current job
+		JOB_FLAG_EXECUTED	= (1 << 2),		// execution is completed
 	};
 
 	const uintptr_t JOB_THREAD_ANY = 0;
@@ -95,7 +95,7 @@ namespace Threading
 		void							GetThreadIds( DkList<uintptr_t>& list ) const;
 
 		// adds the job
-		void							AddJob( jobFunction_t func, void* args );	// and puts JOB_FLAG_ALLOCATED flag for this job
+		void							AddJob( jobFunction_t func, void* args );	// and puts JOB_FLAG_DELETE flag for this job
 		void							AddJob( eqParallelJob_t* job );
 
 		// this submits jobs to the CEqJobThreads

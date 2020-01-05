@@ -37,6 +37,8 @@ public:
 	bool				GetNextPath(int dir);
 	void				DetectEscape();
 
+	static void			DetectEscapeJob(void* data, int i);
+
 	int					m_curDir;
 	int					m_prevDir;
 

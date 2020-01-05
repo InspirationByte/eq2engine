@@ -136,7 +136,7 @@ public:
 	CGameObject*					CreateObject( const char* objectDefName ) const;
 	CGameObject*					FindObjectByName( const char* objectName ) const;
 
-	void							QueryObjects(DkList<CGameObject*>& list, float radius, const Vector3D& position, bool(*comparator)(CGameObject* obj)) const;
+	void							QueryObjects(DkList<CGameObject*>& list, float radius, const Vector3D& position, void* caller, bool(*comparator)(CGameObject* obj, void* caller)) const;
 
 	int								AddObjectDef(const char* type, const char* name, kvkeybase_t* kvs);
 

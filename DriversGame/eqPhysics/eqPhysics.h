@@ -343,6 +343,11 @@ public:
 
 	void							SetDebugRaycast(bool enable) {m_debugRaycast = enable;}
 
+	static void						CellCollisionDetectionJob(void* data, int iter);
+
+	void							SolveBodyCollisions(CEqRigidBody* bodyA, CEqRigidBody* bodyB, float fDt);
+	void							SolveStaticVsBodyCollision(CEqCollisionObject* staticObj, CEqRigidBody* bodyB, float fDt, DkList<ContactPair_t>& contactPairs);
+
 protected:
 
 	///< tests line versus some objects
@@ -369,12 +374,12 @@ protected:
 																	F func,
 																	void* args = NULL);
 
-	void							SolveBodyCollisions(CEqRigidBody* bodyA, CEqRigidBody* bodyB, float fDt);
-	void							SolveStaticVsBodyCollision(CEqCollisionObject* staticObj, CEqRigidBody* bodyB, float fDt, DkList<ContactPair_t>& contactPairs);
-
 	CEqCollisionBroadphaseGrid		m_grid;
 
 protected:
+
+	
+
 	Threading::CEqMutex&			m_mutex;
 
 	DkList<eqPhysSurfParam_t*>		m_physSurfaceParams;

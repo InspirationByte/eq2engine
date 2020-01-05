@@ -9,6 +9,7 @@
 #include "CameraAnimator.h"
 #include "input.h"
 #include "world.h"
+#include "eqParallelJobs.h"
 
 #include "Shiny.h"
 
@@ -451,15 +452,20 @@ const float AI_PEDESTRIAN_CAR_AFRAID_MIN_RADIUS = 2.0f;
 const float AI_PEDESTRIAN_CAR_AFRAID_STRAIGHT_RADIUS = 2.5f;
 const float AI_PEDESTRIAN_CAR_AFRAID_VELOCITY = 1.0f;
 
-void CPedestrianAI::DetectEscape()
+void CPedestrianAI::DetectEscapeJob(void* data, int jobiter)
 {
-	Vector3D pedPos = m_host->GetOrigin();
+	CPedestrianAI* pedAI = (CPedestrianAI*)data;
+
+	Vector3D pedPos = pedAI->m_host->GetOrigin();
 
 	DkList<CGameObject*> nearestCars;
-	g_pGameWorld->QueryObjects(nearestCars, AI_PEDESTRIAN_CAR_AFRAID_MAX_RADIUS, pedPos, [](CGameObject* x) {
-		int objType = x->ObjType();
-		return (objType == GO_CAR || objType == GO_CAR_AI);
-	});
+	{
+		g_pGameWorld->QueryObjects(nearestCars, AI_PEDESTRIAN_CAR_AFRAID_MAX_RADIUS, pedPos, nullptr, [](CGameObject* x, void*) {
+			int objType = x->ObjType();
+			return objType == GO_CAR || objType == GO_CAR_AI;
+		});
+	}
+
 
 	int numCars = nearestCars.numElem();
 	for (int i = 0; i < numCars; i++)
@@ -472,22 +478,22 @@ void CPedestrianAI::DetectEscape()
 
 		float projResult = lineProjection(carPos, carHeadingPos, pedPos);
 
-		float velocity = length(carVel);
-		float dist = length(carPos - pedPos);
+		float velocity = lengthSqr(carVel);
+		float dist = lengthSqr(carPos - pedPos);
 
 		bool hasSirenOrHorn = nearCar->GetControlButtons() & IN_HORN;
-		bool tooNearToCar = (dist < AI_PEDESTRIAN_CAR_AFRAID_MIN_RADIUS);
+		bool tooNearToCar = (dist < AI_PEDESTRIAN_CAR_AFRAID_MIN_RADIUS*AI_PEDESTRIAN_CAR_AFRAID_MIN_RADIUS);
 
-		if (projResult > 0.0f && projResult < 1.0f && (velocity > AI_PEDESTRIAN_CAR_AFRAID_VELOCITY) || 
-			hasSirenOrHorn || 
+		if (projResult > 0.0f && projResult < 1.0f && (velocity > AI_PEDESTRIAN_CAR_AFRAID_VELOCITY*AI_PEDESTRIAN_CAR_AFRAID_VELOCITY) ||
+			hasSirenOrHorn ||
 			tooNearToCar)
 		{
 			if (tooNearToCar)
 			{
-				m_escapeFromPos = pedPos;
-				m_escapeDir = fastNormalize(pedPos - carPos);
+				pedAI->m_escapeFromPos = pedPos;
+				pedAI->m_escapeDir = fastNormalize(pedPos - carPos);
 
-				AI_SetState(&CPedestrianAI::DoEscape);
+				pedAI->AI_SetState(&CPedestrianAI::DoEscape);
 			}
 			else
 			{
@@ -495,16 +501,22 @@ void CPedestrianAI::DetectEscape()
 
 				if (hasSirenOrHorn || length(projPos - pedPos) < AI_PEDESTRIAN_CAR_AFRAID_STRAIGHT_RADIUS)
 				{
-					m_escapeFromPos = pedPos;
-					m_escapeDir = fastNormalize(pedPos - projPos);
+					pedAI->m_escapeFromPos = pedPos;
+					pedAI->m_escapeDir = fastNormalize(pedPos - projPos);
 
-					AI_SetState(&CPedestrianAI::DoEscape);
+					pedAI->AI_SetState(&CPedestrianAI::DoEscape);
 
 					return;
 				}
 			}
 		}
 	}
+}
+
+void CPedestrianAI::DetectEscape()
+{
+	g_parallelJobs->AddJob(DetectEscapeJob, this);
+	g_parallelJobs->Submit();
 }
 
 int	CPedestrianAI::DoEscape(float fDt, EStateTransition transition)
@@ -523,7 +535,7 @@ int	CPedestrianAI::DoEscape(float fDt, EStateTransition transition)
 	Vector3D pedPos = m_host->GetOrigin();
 	Vector3D pedAngles = m_host->GetAngles();
 
-	if (length(pedPos - m_escapeFromPos) > AI_PEDESTRIAN_CAR_AFRAID_MIN_RADIUS)
+	if (lengthSqr(pedPos - m_escapeFromPos) > AI_PEDESTRIAN_CAR_AFRAID_MIN_RADIUS*AI_PEDESTRIAN_CAR_AFRAID_MIN_RADIUS)
 	{
 		AI_SetState(&CPedestrianAI::DoWalk);
 		return 0;
@@ -584,7 +596,7 @@ int	CPedestrianAI::DoWalk(float fDt, EStateTransition transition)
 
 	Vector3D nextCellPos = g_pGameWorld->m_level.GlobalTilePointToPosition(m_nextRoadTile);
 
-	Vector3D dirToCell = normalize(nextCellPos - pedPos);
+	Vector3D dirToCell = fastNormalize(nextCellPos - pedPos);
 	Vector3D dirAngles = VectorAngles(dirToCell);
 
 	float angleDiff = AngleDiff(pedAngles.y, dirAngles.y);

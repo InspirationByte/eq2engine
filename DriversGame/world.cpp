@@ -890,6 +890,8 @@ void CGameWorld::OnObjectRemovedEvent(CGameObject* obj)
 
 int CGameWorld::AddObject(CGameObject* pObject)
 {
+	CScopedMutex m(GetGlobalMutex(MUTEXPURPOSE_GAME));
+
 	bool postPronedSpawn = (pObject->m_state == GO_STATE_NOTSPAWN);
 
 	DkList<CGameObject*>& _objList = postPronedSpawn ? m_nonSpawnedObjects : m_gameObjects;
@@ -921,6 +923,8 @@ void CGameWorld::RemoveObject(CGameObject* pObject)
 
 void CGameWorld::RemoveObjectById(int objectId)
 {
+	CScopedMutex m(GetGlobalMutex(MUTEXPURPOSE_GAME));
+
 	int numObjects = m_gameObjects.numElem();
 	for (int i = 0; i < numObjects; i++)
 	{
@@ -938,6 +942,8 @@ bool CGameWorld::IsValidObject(CGameObject* pObject) const
 {
 	if(!pObject)
 		return false;
+
+	CScopedMutex m(GetGlobalMutex(MUTEXPURPOSE_GAME));
 
 	int numObjects = m_gameObjects.numElem();
 	for (int i = 0; i < numObjects; i++)
@@ -1209,6 +1215,8 @@ void CGameWorld::ForceUpdateObjects()
 
 void CGameWorld::SpawnPendingObjects()
 {
+	CScopedMutex m(GetGlobalMutex(MUTEXPURPOSE_GAME));
+
 	// non-spawned objects are in locked manner
 	// because regions can push objects into m_nonSpawnedObjects
 	m_level.m_mutex.Lock();
@@ -1371,6 +1379,8 @@ void CGameWorld::UpdateWorld(float fDt)
 
 	// remove marked objects after simulation
 	{
+		CScopedMutex m(GetGlobalMutex(MUTEXPURPOSE_GAME));
+
 		// remove objects
 		for(int i = 0; i < m_gameObjects.numElem(); i++)
 		{
@@ -2596,6 +2606,8 @@ CGameObject* CGameWorld::CreateObject( const char* objectDefName ) const
 
 CGameObject* CGameWorld::FindObjectByName( const char* objectName ) const
 {
+	CScopedMutex m(GetGlobalMutex(MUTEXPURPOSE_GAME));
+
 	for(int i = 0; i < m_gameObjects.numElem(); i++)
 	{
 		CGameObject* obj = m_gameObjects[i];
@@ -2613,8 +2625,10 @@ CGameObject* CGameWorld::FindObjectByName( const char* objectName ) const
 	return nullptr;
 }
 
-void CGameWorld::QueryObjects(DkList<CGameObject*>& list, float radius, const Vector3D& position, bool(*comparator)(CGameObject* obj)) const
+void CGameWorld::QueryObjects(DkList<CGameObject*>& list, float radius, const Vector3D& position, void* caller, bool(*comparator)(CGameObject* obj, void* caller)) const
 {
+	CScopedMutex m(GetGlobalMutex(MUTEXPURPOSE_GAME));
+
 	int numObjs = m_gameObjects.numElem();
 
 	float radiusSqr = radius * radius;
@@ -2631,7 +2645,7 @@ void CGameWorld::QueryObjects(DkList<CGameObject*>& list, float radius, const Ve
 		if (dist > radiusSqr)
 			continue;
 
-		if(comparator(obj))
+		if(comparator(obj, caller))
 			list.append(obj);
 	}
 }
