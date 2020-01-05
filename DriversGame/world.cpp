@@ -2181,6 +2181,9 @@ void CGameWorld::Draw( int nRenderFlags )
 			PROFILE_CODE( obj->Draw( nRenderFlags ) );
 		}while(m_renderingObjects.goToNext());
 
+		// submit jobs (usually car shadows and other particles)
+		g_parallelJobs->Submit();
+
 		PROFILE_END();
 
 		// draw instanced models
@@ -2245,7 +2248,7 @@ void CGameWorld::Draw( int nRenderFlags )
 	// restore projection and draw the particles
 	materials->SetMatrix(MATRIXMODE_PROJECTION, m_matrices[MATRIXMODE_PROJECTION]);
 
-	// wait scheduled PFX render
+	// wait scheduled PFX render, decals, etc
 	g_parallelJobs->Wait();
 
 	DrawMoon();

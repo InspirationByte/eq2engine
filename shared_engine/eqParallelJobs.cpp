@@ -21,20 +21,29 @@ namespace Threading
 		// thread will find job by himself
 		while( m_owner->AssignFreeJob( this ) )
 		{
-			m_curJob->flags |= JOB_FLAG_CURRENT;
+			eqParallelJob_t* job = const_cast<eqParallelJob_t*>(m_curJob);
+			
+			job->flags |= JOB_FLAG_CURRENT;
 
 			// execute
 			int iter = 0;
-			while(m_curJob->numIter-- > 0)
+			while(job->numIter-- > 0)
 			{
-				(m_curJob->func)( m_curJob->arguments, iter++ );
+				(job->func)(job->arguments, iter++ );
 			}
 
-			m_curJob->flags |= JOB_FLAG_EXECUTED;
-			m_curJob->flags &= ~JOB_FLAG_CURRENT;
+			job->flags |= JOB_FLAG_EXECUTED;
+			job->flags &= ~JOB_FLAG_CURRENT;
 
-			if( m_curJob->flags & JOB_FLAG_DELETE )
-				delete m_curJob;
+			if (job->flags & JOB_FLAG_DELETE)
+			{
+				if (job->onComplete)
+					(job->onComplete)(job);
+
+				delete job;
+			}
+			else if (job->onComplete)
+				(job->onComplete)(job);
 
 			m_curJob = nullptr;
 		}

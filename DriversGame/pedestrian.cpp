@@ -454,6 +454,9 @@ void CPedestrianAI::DetectEscapeJob(void* data, int jobiter)
 {
 	CPedestrianAI* pedAI = (CPedestrianAI*)data;
 
+	if (!g_pGameWorld->IsValidObject(pedAI->m_host))
+		return;
+
 	Vector3D pedPos = pedAI->m_host->GetOrigin();
 
 	DkList<CGameObject*> nearestCars;
@@ -469,6 +472,9 @@ void CPedestrianAI::DetectEscapeJob(void* data, int jobiter)
 	for (int i = 0; i < numCars; i++)
 	{
 		CControllableGameObject* nearCar = (CControllableGameObject*)nearestCars[i];
+
+		if (!g_pGameWorld->IsValidObject(nearCar))
+			continue;
 
 		Vector3D carPos = nearCar->GetOrigin();
 		Vector3D carVel = nearCar->GetVelocity();

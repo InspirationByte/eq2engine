@@ -2760,14 +2760,14 @@ void CCar::Simulate( float fDt )
 				TexAtlasEntry_t* entry = lightSide == 0 ? g_vehicleLights->FindEntry("light1_d") : g_vehicleLights->FindEntry("light1_s");
 				Rectangle_t flipRect = entry ? entry->rect : Rectangle_t(0,0,1,1);
 
-				decalPrimitives_t lightDecal;
-				lightDecal.settings.avoidMaterialFlags = MATERIAL_FLAG_WATER; // only avoid water
-				lightDecal.settings.facingDir = normalize(vec3_up - forwardVec);
+				decalSettings_t lightDecalSettings;
+				lightDecalSettings.avoidMaterialFlags = MATERIAL_FLAG_WATER; // only avoid water
+				lightDecalSettings.facingDir = normalize(vec3_up - forwardVec);
 
 				// might be slow on mobile device
-				lightDecal.settings.processFunc = LightDecalTriangleProcessFunc;
+				lightDecalSettings.processFunc = LightDecalTriangleProcessFunc;
 
-				ProjectDecalToSpriteBuilder(lightDecal, g_vehicleLights, flipRect, viewProj, lightDecalColor);
+				ProjectDecalToSpriteBuilderAddJob(lightDecalSettings, g_vehicleLights, flipRect, viewProj, lightDecalColor);
 			}
 
 			if(m_isLocalCar && r_carLights.GetInt() == 2)
@@ -4318,14 +4318,14 @@ void CCar::DrawShadow(float distance)
 
 		viewProj = proj*view;
 
-		decalPrimitives_t shadowDecal;
-		shadowDecal.settings.avoidMaterialFlags = MATERIAL_FLAG_WATER; // only avoid water
-		shadowDecal.settings.facingDir = vec3_up;
+		decalSettings_t shadowDecalSettings;
+		shadowDecalSettings.avoidMaterialFlags = MATERIAL_FLAG_WATER; // only avoid water
+		shadowDecalSettings.facingDir = vec3_up;
 
 		// might be slow on mobile device
-		shadowDecal.settings.processFunc = LightDecalTriangleProcessFunc;
+		shadowDecalSettings.processFunc = LightDecalTriangleProcessFunc;
 
-		ProjectDecalToSpriteBuilder(shadowDecal, g_vehicleShadows, flipRect, viewProj, ColorRGBA(1.0f,1.0f,1.0f,1.0f));
+		ProjectDecalToSpriteBuilderAddJob(shadowDecalSettings, g_vehicleShadows, flipRect, viewProj, ColorRGBA(1.0f,1.0f,1.0f,1.0f));
 	}
 	else
 	{

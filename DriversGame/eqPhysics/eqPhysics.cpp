@@ -902,7 +902,15 @@ void CEqPhysics::CellCollisionDetectionJob(void* data, int iter)
 		else // purpose for triggers
 			physics->SolveStaticVsBodyCollision(collObj, body, body->GetLastFrameTime(), body->m_contactPairs);
 	}
-}*/
+}
+
+void CollisionDetectionJobCompleted()
+{
+	eqCollisionDetectionJob_t* job = (eqCollisionDetectionJob_t*)data;
+	delete job;
+}
+
+*/
 
 void CEqPhysics::DetectCollisionsSingle(CEqRigidBody* body)
 {
@@ -939,8 +947,8 @@ void CEqPhysics::DetectCollisionsSingle(CEqRigidBody* body)
 			// also needs a barrier after whole DetectCollisionsSingle cycle
 
 			eqCollisionDetectionJob_t* job = new eqCollisionDetectionJob_t;
-			job->base.flags = JOB_FLAG_DELETE;
 			job->base.func = CEqPhysics::CellCollisionDetectionJob;
+			job->base.onComplete = CollisionDetectionJobCompleted;
 			job->base.arguments = job;
 			job->body = body;
 			job->cell = ncell;

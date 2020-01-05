@@ -48,7 +48,7 @@ const float AI_COP_COLLISION_CHECKTIME		= 0.01f;
 
 const float AI_COP_TIME_TO_LOST_TARGET		= 30.0f;
 const float AI_COP_TIME_TO_LOST_TARGET_FAR	= 10.0f;
-const float AI_COP_TIME_TO_TELL_DIRECTION	= 8.0f;
+const float AI_COP_TIME_TO_TELL_DIRECTION	= 10.0f;
 
 const float AI_COP_LOST_TARGET_FARDIST		= 160.0f;
 
