@@ -28,8 +28,6 @@ public:
 	void					SetAngles(const Vector3D& angles);
 	void					SetVelocity(const Vector3D& vel);
 
-	const Vector3D&			GetOrigin();
-	const Vector3D&			GetAngles();
 	const Vector3D&			GetVelocity() const;
 
 	void					Draw( int nRenderFlags );
@@ -39,6 +37,8 @@ public:
 	int						ObjType() const		{return GO_PHYSICS;}
 
 	void					OnUnpackMessage( CNetMessageBuffer* buffer );
+
+	void					OnPhysicsCollide(CollisionPairData_t& pair);
 
 	void					L_SetContents(int contents);
 	void					L_SetCollideMask(int contents);
@@ -53,7 +53,7 @@ protected:
 
 	EqString				m_smashSound;
 
-	CEqRigidBody*			m_physBody;
+	CPhysicsHFObject*		m_hfObj;
 	eqPhysSurfParam_t*		m_surfParams;
 
 	EqString				m_breakSpawn;

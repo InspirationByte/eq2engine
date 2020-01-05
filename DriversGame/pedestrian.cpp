@@ -312,11 +312,6 @@ void CPedestrian::OnPhysicsFrame(float fDt)
 	}
 	else if (currentAct != idleAct)
 		SetActivity(idleAct);
-}
-
-void CPedestrian::Simulate(float fDt)
-{
-	int controlButtons = GetControlButtons();
 
 	if (controlButtons & IN_STEERLEFT)
 		m_pedSteerAngle.y += 120.0f * fDt;
@@ -329,7 +324,10 @@ void CPedestrian::Simulate(float fDt)
 		m_pedState = 2;
 	else if (controlButtons & IN_HANDBRAKE)
 		m_pedState = 0;
+}
 
+void CPedestrian::Simulate(float fDt)
+{
 	AdvanceFrame(fDt);
 	DebugRender(m_worldMatrix);
 

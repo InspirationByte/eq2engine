@@ -386,7 +386,10 @@ void CEqPhysics::AddGhostObject( CEqCollisionObject* object )
 	Threading::CScopedMutex m(m_mutex);
 
 	// add extra flags to objects
-	object->m_flags = COLLOBJ_ISGHOST | COLLOBJ_COLLISIONLIST | COLLOBJ_DISABLE_RESPONSE | COLLOBJ_NO_RAYCAST;
+	object->m_flags = COLLOBJ_ISGHOST | COLLOBJ_DISABLE_RESPONSE | COLLOBJ_NO_RAYCAST;
+
+	if (!object->m_callbacks)
+		object->m_flags |= COLLOBJ_COLLISIONLIST;
 
 	m_ghostObjects.append(object);
 

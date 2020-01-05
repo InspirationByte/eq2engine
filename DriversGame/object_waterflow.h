@@ -19,6 +19,7 @@ public:
 	CObject_WaterFlow( kvkeybase_t* kvdata );
 	~CObject_WaterFlow();
 
+	void					Precache();
 	void					OnRemove();
 	void					Spawn();
 
@@ -26,8 +27,10 @@ public:
 
 	int						ObjType() const		{return GO_DEBRIS;}
 
+	void					OnPhysicsCollide(CollisionPairData_t& pair);
+
 protected:
-	CEqCollisionObject*		m_ghostObject;
+	CPhysicsHFObject*		m_hfObject;
 	float					m_lifeTime;
 	float					m_force;
 
