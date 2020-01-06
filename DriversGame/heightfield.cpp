@@ -510,6 +510,14 @@ void CHeightTileField::GetTileTBN(int x, int y, Vector3D& tang, Vector3D& binorm
 
 	hfieldtile_t* tile = GetTile(x,y);
 
+	if (!tile)
+	{
+		tang = Vector3D(0, 0, 1);
+		binorm = Vector3D(1, 0, 0);
+		norm = vec3_up;
+		return;
+	}
+
 	Vector3D tilePosition(x*HFIELD_POINT_SIZE, (float)tile->height*HFIELD_HEIGHT_STEP, y*HFIELD_POINT_SIZE);
 
 	const Vector3D tfac(0,1,1);

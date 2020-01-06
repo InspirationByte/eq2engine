@@ -137,15 +137,18 @@ void CAIManager::InitZoneEntries(const DkList<vehicleConfig_t*>& carConfigs, con
 
 	EqString defaultCopCar;
 
+	bool vehZoneError = false;
+
 	KeyValues kvs;
 	if (!kvs.LoadFromFile(vehicleZoneFilename.c_str()))
 	{
-		MsgWarning("Cannot load vehicle zone file '%s', using default!", vehicleZoneFilename.c_str());
+		MsgWarning("Cannot load vehicle zone file '%s', using default!\n", vehicleZoneFilename.c_str());
 		vehicleZoneFilename = "scripts/levels/default_vehiclezones.def";
 
 		if (!kvs.LoadFromFile(vehicleZoneFilename.c_str()))
 		{
-			MsgError("Failed to load vehicle zone file '%s'!", vehicleZoneFilename.c_str());
+			MsgError("Failed to load vehicle zone file '%s'!\n", vehicleZoneFilename.c_str());
+			vehZoneError = true;
 
 			// assign to default zones
 			for (int i = 0; i < carConfigs.numElem(); i++)
@@ -167,7 +170,8 @@ void CAIManager::InitZoneEntries(const DkList<vehicleConfig_t*>& carConfigs, con
 			}
 		}
 	}
-	else
+	
+	if(!vehZoneError)
 	{
 		kvkeybase_t* zone_presets = kvs.GetRootSection();
 
