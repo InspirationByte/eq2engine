@@ -1558,7 +1558,7 @@ void CGameWorld::GenerateEnvmapAndFogTextures()
 	// TODO: more efficient way
 
 	ITexture* tempRenderTarget = g_pShaderAPI->CreateNamedRenderTarget("_tempSkyboxRender", 256, 256, FORMAT_RGBA8,
-										TEXFILTER_NEAREST, TEXADDRESS_CLAMP, COMP_NEVER, TEXFLAG_CUBEMAP);
+										TEXFILTER_LINEAR, TEXADDRESS_CLAMP, COMP_NEVER, TEXFLAG_CUBEMAP);
 
 	tempRenderTarget->Ref_Grab();
 
@@ -1569,7 +1569,7 @@ void CGameWorld::GenerateEnvmapAndFogTextures()
 	for(int i = 0; i < 6; i++)
 	{
 		g_pShaderAPI->ChangeRenderTarget(tempRenderTarget, i);
-		g_pShaderAPI->Clear(true,true,false);
+		g_pShaderAPI->Clear(true, false, false);
 
 		// Draw sky
 		materials->SetMatrix(MATRIXMODE_PROJECTION, cubeProjectionMatrixD3D(0.1f, 1000.0f));
@@ -1646,6 +1646,58 @@ void CGameWorld::GenerateEnvmapAndFogTextures()
 	m_fogEnvMap->Ref_Grab();
 
 	g_pShaderAPI->FreeTexture( tempRenderTarget );
+
+	/*
+	NEW CODE:
+
+	if(!m_envMapsDirty)
+		return;
+
+	if(!r_skyToCubemap.GetBool())
+		return;
+
+	materials->Wait();
+
+	m_envMapsDirty = false;
+
+	if (!m_envMap)
+	{
+		m_envMap = g_pShaderAPI->CreateNamedRenderTarget("_skyEnvMap", 128, 128, FORMAT_RGBA8,
+			TEXFILTER_LINEAR, TEXADDRESS_CLAMP, COMP_NEVER, TEXFLAG_CUBEMAP);
+		m_envMap->Ref_Grab();
+	}
+
+	if (!m_fogEnvMap)
+	{
+		m_fogEnvMap = g_pShaderAPI->CreateNamedRenderTarget("_fogEnvMap", 128, 128, FORMAT_RGBA8,
+			TEXFILTER_LINEAR, TEXADDRESS_CLAMP, COMP_NEVER, TEXFLAG_CUBEMAP);
+		m_fogEnvMap->Ref_Grab();
+	}
+
+	materials->SetMaterialRenderParamCallback(this);
+	materials->SetEnvironmentMapTexture(nullptr);
+
+	ITexture* envMaps[] = { m_envMap, m_fogEnvMap };
+
+	// render the skybox into cubemap
+	for(int i = 0; i < 6; i++)
+	{
+		int cubeFaceIds[] = { i,i };
+
+		g_pShaderAPI->ChangeRenderTargets(envMaps, 2, cubeFaceIds);
+		g_pShaderAPI->Clear(true, false, false);
+
+		// Draw sky
+		materials->SetMatrix(MATRIXMODE_PROJECTION, cubeProjectionMatrixD3D(0.1f, 1000.0f));
+		materials->SetMatrix(MATRIXMODE_VIEW, cubeViewMatrix(i));
+		materials->SetMatrix(MATRIXMODE_WORLD, translate(Vector3D(0, m_envSkyProps.x, 0)) * rotateY4(m_envSkyProps.y));
+
+		m_skyColor->SetVector4( 1.0f );
+		DrawSkyBox(0xf);
+	}
+
+	g_pShaderAPI->ChangeRenderTargetToBackBuffer();
+	*/
 }
 
 void CGameWorld::OnPreApplyMaterial( IMaterial* pMaterial )
@@ -2702,6 +2754,8 @@ OOLUA::Table CGameWorld::L_FindObjectOnLevel( const char* name ) const
 
 OOLUA::Table CGameWorld::L_QueryObjects(float radius, const Vector3D& position, OOLUA::Lua_func_ref compFunc) const
 {
+	CScopedMutex m(GetGlobalMutex(MUTEXPURPOSE_GAME));
+
 	OOLUA::Script& state = GetLuaState();
 	EqLua::LuaStackGuard g(state);
 

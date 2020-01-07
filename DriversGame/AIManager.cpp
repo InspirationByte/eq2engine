@@ -409,7 +409,33 @@ CCar* CAIManager::SpawnTrafficCar(const IVector2D& globalCell)
 	return spawnedCar;
 }
 
-void CAIManager::QueryTrafficCars(DkList<CCar*>& list, float radius, const Vector3D& position, const Vector3D& direction, float queryCosAngle)
+OOLUA::Table CAIManager::L_QueryTrafficCars(float radius, const Vector3D& position) const
+{
+	OOLUA::Script& state = GetLuaState();
+	EqLua::LuaStackGuard g(state);
+	int numObjs = 0;
+
+	OOLUA::Table resultObjects = OOLUA::new_table(state);
+
+	for (int i = 0; i < m_trafficCars.numElem(); i++)
+	{
+		CCar* car = m_trafficCars[i];
+
+		Vector3D dirVec = car->GetOrigin() - position;
+
+		float dotDist = dot(dirVec, dirVec);
+
+		if (dotDist > radius*radius)
+			continue;
+
+		numObjs++;
+		resultObjects.set(numObjs, car);
+	}
+
+	return resultObjects;
+}
+
+void CAIManager::QueryTrafficCars(DkList<CCar*>& list, float radius, const Vector3D& position, const Vector3D& direction, float queryCosAngle /* = 0.0f*/)
 {
 	for (int i = 0; i < m_trafficCars.numElem(); i++)
 	{
@@ -422,10 +448,16 @@ void CAIManager::QueryTrafficCars(DkList<CCar*>& list, float radius, const Vecto
 		if (dotDist > radius*radius)
 			continue;
 
-		float cosAngle = dot(fastNormalize(dirVec), direction);
 
 		// is visible to cone?
-		if (cosAngle > queryCosAngle)
+		if (queryCosAngle > 0.0f)
+		{
+			float cosAngle = dot(fastNormalize(dirVec), direction);
+
+			if (cosAngle > queryCosAngle)
+				list.append(car);
+		}
+		else
 			list.append(car);
 	}
 }
@@ -1283,5 +1315,6 @@ OOLUA_EXPORT_FUNCTIONS_CONST(
 	GetCopMaxSpeed,
 	GetMaxCops,
 	GetCopRespawnInterval,
-	IsRoadBlockSpawn
+	IsRoadBlockSpawn,
+	QueryTrafficCars
 )

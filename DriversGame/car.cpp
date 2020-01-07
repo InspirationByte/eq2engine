@@ -2807,10 +2807,14 @@ void CCar::Simulate( float fDt )
 
 	float frontDamageSum = m_bodyParts[CB_FRONT_LEFT].damage+m_bodyParts[CB_FRONT_RIGHT].damage;
 
+	float camDist = g_pGameWorld->m_view.GetLODScaledDistFrom(GetOrigin());
+	int nLOD = m_pModel->SelectLod(camDist); // lod distance check
+
 	if(	isCar && visible &&
 		(!m_inWater || IsAlive()) &&
 		m_engineSmokeTime > 0.1f &&
-		GetSpeed() < 80.0f)
+		GetSpeed() < 80.0f &&
+		nLOD <= 0)
 	{
 		if(frontDamageSum > 0.55f)
 		{
@@ -4288,7 +4292,7 @@ void CCar::DrawBody( int nRenderFlags, int nLOD)
 
 			// instead of prepare skinning, we send BodyDamage and car colours
 			g_pShaderAPI->SetShaderConstantArrayFloat("BodyDamage", bodyDamages, 16);
-			g_pShaderAPI->SetShaderConstantArrayVector4D("CarColor", bodyColors, 2);
+			g_pShaderAPI->SetShaderConstantArrayVector4D("CarColor", colors, 2);
 
 			g_pShaderAPI->SetShaderConstantArrayVector4D("LicenseRect", &licPlateCoord, 1);
 
