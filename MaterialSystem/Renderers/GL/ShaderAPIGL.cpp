@@ -539,8 +539,10 @@ void ShaderAPIGL::ApplyRasterizerState()
 			{
 				if(m_fCurrentDepthBias != state.depthBias || m_fCurrentSlopeDepthBias != state.slopeDepthBias)
 				{
+					const float POLYGON_OFFSET_SCALE = 32.0f;	// FIXME: is a depth buffer bit depth?
+
 					glEnable(GL_POLYGON_OFFSET_FILL);
-					glPolygonOffset(m_fCurrentDepthBias = state.depthBias, m_fCurrentSlopeDepthBias = state.slopeDepthBias);
+					glPolygonOffset((m_fCurrentDepthBias = state.depthBias) * POLYGON_OFFSET_SCALE, (m_fCurrentSlopeDepthBias = state.slopeDepthBias) * POLYGON_OFFSET_SCALE);
 				}
 			}
 			else
