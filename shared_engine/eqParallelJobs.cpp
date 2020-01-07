@@ -88,7 +88,7 @@ namespace Threading
 		if(numThreads == 0)
 			numThreads = 1;
 
-		MsgInfo("Parallel jobs thread count: %d\n", numThreads);
+		MsgInfo("*Parallel jobs threads: %d\n", numThreads);
 
 		for (int i = 0; i < numThreads; i++)
 		{

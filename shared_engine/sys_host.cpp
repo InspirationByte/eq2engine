@@ -49,6 +49,7 @@ ConCommand cc_quti("quti",CGameHost::HostExitCmd,"This made for keyboard writing
 DECLARE_CVAR(r_clear,0,"Clear the backbuffer",CV_ARCHIVE);
 DECLARE_CVAR(r_vSync,0,"Vertical syncronization",CV_ARCHIVE);
 DECLARE_CVAR(r_antialiasing,0,"Multisample antialiasing",CV_ARCHIVE);
+DECLARE_CVAR(r_fastShaders, 0, "Low shader quality mode", CV_ARCHIVE);
 
 DECLARE_INTERNAL_SHADERS();
 
@@ -170,17 +171,12 @@ bool CGameHost::InitSystems( EQWNDHANDLE pWindow, bool bWindowed )
 		format = FORMAT_RGB565;
 	}
 
-#ifndef _WIN32
-	bool useOpenGLRender = g_cmdLine->FindArgument("-ogl") != -1;
-#else
-    bool useOpenGLRender = true; // I don't see that other APIs could appear widely soon
-#endif // _WIN32
-
 	matsystem_render_config_t materials_config;
 
 	materials_config.enableBumpmapping = true;
 	materials_config.enableSpecular = true;
 	materials_config.enableShadows = true;
+	materials_config.lowShaderQuality = r_fastShaders.GetBool();
 
 	materials_config.shaderapi_params.windowedMode = bWindowed;
 	materials_config.shaderapi_params.windowHandle = pWindow;
@@ -197,8 +193,24 @@ bool CGameHost::InitSystems( EQWNDHANDLE pWindow, bool bWindowed )
 		return false;
 	}
 
+	s_defaultCursor[dc_none] = NULL;
+	s_defaultCursor[dc_arrow] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_ARROW);
+	s_defaultCursor[dc_ibeam] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_IBEAM);
+	s_defaultCursor[dc_hourglass] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_WAIT);
+	s_defaultCursor[dc_crosshair] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_CROSSHAIR);
+	s_defaultCursor[dc_up] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_WAITARROW);
+	s_defaultCursor[dc_sizenwse] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZENWSE);
+	s_defaultCursor[dc_sizenesw] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZENESW);
+	s_defaultCursor[dc_sizewe] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZEWE);
+	s_defaultCursor[dc_sizens] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZENS);
+	s_defaultCursor[dc_sizeall] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZEALL);
+	s_defaultCursor[dc_no] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_NO);
+	s_defaultCursor[dc_hand] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_HAND);
+
+	// Set default cursor
+	SDL_SetCursor(s_defaultCursor[dc_arrow]);
+
 	kvkeybase_t* matSystemSettings = GetCore()->GetConfig()->FindKeyBase("MaterialSystem");
-	kvkeybase_t* fileSystemSettings = GetCore()->GetConfig()->FindKeyBase("FileSystem");
 
 	const char* rendererName = matSystemSettings ? KV_GetValueString(matSystemSettings->FindKeyBase("Renderer"), 0, NULL) : "eqD3D9RHI";
 	const char* materialsPath = matSystemSettings ? KV_GetValueString(matSystemSettings->FindKeyBase("MaterialsPath"), 0, NULL) : "materials/";
@@ -251,73 +263,22 @@ bool CGameHost::InitSystems( EQWNDHANDLE pWindow, bool bWindowed )
 	materials->LoadShaderLibrary("libeqBaseShaders");
 #endif // _WIN32
 
-	materials_config.threadedloader = (g_pShaderAPI->GetShaderAPIClass() != SHADERAPI_OPENGL);
-
-	// Search for mods folder
-	if(fileSystemSettings && KV_GetValueBool(fileSystemSettings->FindKeyBase("EnableMods"), 0, false) )
-	{
-		DKFINDDATA* findData = nullptr;
-		char* modPath = (char*)g_fileSystem->FindFirst("Mods/*.*", &findData, SP_ROOT);
-
-		if (modPath)
-		{
-			int count = 0;
-
-			while (modPath = (char*)g_fileSystem->FindNext(findData))
-			{
-				if (g_fileSystem->FindIsDirectory(findData) && stricmp(modPath, "..") && stricmp(modPath, "."))
-				{
-					MsgInfo("*** Registered Mod '%s' ***\n", modPath);
-					g_fileSystem->AddSearchPath(varargs("$MOD$_%d", count), varargs("Mods/%s", modPath));
-					count++;
-				}
-			}
-
-			g_fileSystem->FindClose(findData);
-		}
-	}
-
-
 	// register all shaders
 	REGISTER_INTERNAL_SHADERS();
 
-	// Initialize sound system
-	soundsystem->Init();
-
-	Networking::InitNetworking();
-
-	s_defaultCursor[dc_none]     = NULL;
-	s_defaultCursor[dc_arrow]    =SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_ARROW);
-	s_defaultCursor[dc_ibeam]    =SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_IBEAM);
-	s_defaultCursor[dc_hourglass]=SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_WAIT);
-	s_defaultCursor[dc_crosshair]=SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_CROSSHAIR);
-	s_defaultCursor[dc_up]       =SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_WAITARROW);
-	s_defaultCursor[dc_sizenwse] =SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZENWSE);
-	s_defaultCursor[dc_sizenesw] =SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZENESW);
-	s_defaultCursor[dc_sizewe]   =SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZEWE);
-	s_defaultCursor[dc_sizens]   =SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZENS);
-	s_defaultCursor[dc_sizeall]  =SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZEALL);
-	s_defaultCursor[dc_no]       =SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_NO);
-	s_defaultCursor[dc_hand]     =SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_HAND);
-
-	// Set default cursor
-	SDL_SetCursor(s_defaultCursor[dc_arrow] );
-
-	// make job threads
-	g_parallelJobs->Init( (int)ceil((float)g_cpuCaps->GetCPUCount() / 2.0f) );
+	materials_config.threadedloader = (g_pShaderAPI->GetShaderAPIClass() != SHADERAPI_OPENGL);
 
 	if( !g_fontCache->Init() )
 		return false;
 
 	m_pDefaultFont = g_fontCache->GetFont("default",0);
 
-	// init console
-	g_consoleInput->Initialize();
-
-	g_consoleInput->SetAlternateHandler( LuaBinding_ConsoleHandler );
-
+	soundsystem->Init();
 	debugoverlay->Init();
 	equi::Manager->Init();
+	g_parallelJobs->Init((int)ceil((float)g_cpuCaps->GetCPUCount() / 2.0f) + 1);
+
+	Networking::InitNetworking();
 
 	// init game states and proceed
 	if(!EqStateMgr::InitRegisterStates())
@@ -328,7 +289,11 @@ bool CGameHost::InitSystems( EQWNDHANDLE pWindow, bool bWindowed )
 	// finally init input and adjust bindings
 	g_inputCommandBinder->Init();
 
-	MsgInfo("EqEngine systems init successfully\n");
+	// init console
+	g_consoleInput->Initialize();
+	g_consoleInput->SetAlternateHandler(LuaBinding_ConsoleHandler);
+
+	MsgInfo("--- EqEngine systems init successfully ---\n");
 
 	int wide, tall;
 	SDL_GetWindowSize(m_pWindow, &wide, &tall);
