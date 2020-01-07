@@ -257,9 +257,6 @@ call copy_drvsyn_engine.bat $(ConfigurationName)</Command>
     <ResourceCompile Include="Resources.rc" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="packages.config" />
-  </ItemGroup>
-  <ItemGroup>
     <ProjectReference Include="..\..\coreLib.vcxproj">
       <Project>{591567d2-96d1-4cbc-988b-07b7794ad489}</Project>
     </ProjectReference>
@@ -271,13 +268,4 @@ call copy_drvsyn_engine.bat $(ConfigurationName)</Command>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
-  <ImportGroup Label="ExtensionTargets">
-    <Import Project="..\..\packages\ANGLE.WindowsStore.2.1.6\build\native\ANGLE.WindowsStore.targets" Condition="Exists('..\..\packages\ANGLE.WindowsStore.2.1.6\build\native\ANGLE.WindowsStore.targets')" />
-  </ImportGroup>
-  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
-    <PropertyGroup>
-      <ErrorText>Данный проект ссылается на пакеты NuGet, отсутствующие на этом компьютере. Используйте восстановление пакетов NuGet, чтобы скачать их.  Дополнительную информацию см. по адресу: http://go.microsoft.com/fwlink/?LinkID=322105. Отсутствует следующий файл: {0}.</ErrorText>
-    </PropertyGroup>
-    <Error Condition="!Exists('..\..\packages\ANGLE.WindowsStore.2.1.6\build\native\ANGLE.WindowsStore.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\ANGLE.WindowsStore.2.1.6\build\native\ANGLE.WindowsStore.targets'))" />
-  </Target>
 </Project>

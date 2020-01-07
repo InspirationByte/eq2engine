@@ -63,9 +63,9 @@ void CGLTexture::ReleaseTextures()
 	}
 }
 
-eqGlTex& CGLTexture::GetCurrentTexture()
+GLTextureRef_t& CGLTexture::GetCurrentTexture()
 {
-	static eqGlTex nulltex = {0};
+	static GLTextureRef_t nulltex = {0, GLTEX_TYPE_ERROR};
 
 	if(m_nAnimatedTextureFrame > textures.numElem()-1)
 		return nulltex;

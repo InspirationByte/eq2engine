@@ -9,6 +9,7 @@
 #include "ShaderAPID3DX9.h"
 #include "d3dx9_def.h"
 #include "DebugInterface.h"
+#include "imaging/ImageLoader.h"
 
 extern ShaderAPID3DX9 s_shaderApi;
 
@@ -87,6 +88,8 @@ void CD3D9Texture::Lock(texlockdata_t* pLockData, Rectangle_t* pRect, bool bDisc
 		bDiscard = false;
 
 	DWORD lock_flags = (bDiscard ? D3DLOCK_DISCARD : 0) | (bReadOnly ? D3DLOCK_READONLY : 0);
+
+	// FIXME: LOck just like in the CreateD3DTextureFromImage
 
 	// try lock surface if exist
 	if( surfaces.numElem() )
@@ -200,4 +203,72 @@ void CD3D9Texture::Unlock()
 		
 
 	m_bIsLocked = false;
+}
+
+void UpdateD3DTextureFromImage(IDirect3DBaseTexture9* texture, CImage* image, int startMipLevel, bool convert)
+{
+	bool isAcceptableImageType =
+		(texture->GetType() == D3DRTYPE_VOLUMETEXTURE && image->Is3D()) ||
+		(texture->GetType() == D3DRTYPE_CUBETEXTURE && image->IsCube()) ||
+		(texture->GetType() == D3DRTYPE_TEXTURE && (image->Is2D() || image->Is1D()));
+
+	ASSERT(isAcceptableImageType);
+
+	const ETextureFormat	nFormat = image->GetFormat();
+
+	if (convert)
+	{
+		if (nFormat == FORMAT_RGB8 || nFormat == FORMAT_RGBA8)
+			image->SwapChannels(0, 2);
+
+		// Convert if needed and upload datas
+		if (nFormat == FORMAT_RGB8)			// as the D3DFMT_X8R8G8B8 used
+			image->Convert(FORMAT_RGBA8);
+	}
+	
+	int mipMapLevel = startMipLevel;
+
+	ubyte *src;
+	while ((src = image->GetPixels(mipMapLevel)) != NULL)
+	{
+		int size = image->GetMipMappedSize(mipMapLevel, 1);
+		int lockBoxLevel = mipMapLevel - startMipLevel;
+
+		if (texture->GetType() == D3DRTYPE_VOLUMETEXTURE)
+		{
+			D3DLOCKED_BOX box;
+			if (((LPDIRECT3DVOLUMETEXTURE9)texture)->LockBox(lockBoxLevel, &box, NULL, 0) == D3D_OK)
+			{
+				memcpy(box.pBits, src, size);
+				((LPDIRECT3DVOLUMETEXTURE9)texture)->UnlockBox(lockBoxLevel);
+			}
+		}
+		else if (texture->GetType() == D3DRTYPE_CUBETEXTURE)
+		{
+			size /= 6;
+
+			D3DLOCKED_RECT rect;
+			for (int i = 0; i < 6; i++)
+			{
+				if (((LPDIRECT3DCUBETEXTURE9)texture)->LockRect((D3DCUBEMAP_FACES)i, lockBoxLevel, &rect, NULL, 0) == D3D_OK)
+				{
+					memcpy(rect.pBits, src, size);
+					((LPDIRECT3DCUBETEXTURE9)texture)->UnlockRect((D3DCUBEMAP_FACES)i, lockBoxLevel);
+				}
+				src += size;
+			}
+		}
+		else
+		{
+			D3DLOCKED_RECT rect;
+
+			if (((LPDIRECT3DTEXTURE9)texture)->LockRect(lockBoxLevel, &rect, NULL, 0) == D3D_OK)
+			{
+				memcpy(rect.pBits, src, size);
+				((LPDIRECT3DTEXTURE9)texture)->UnlockRect(lockBoxLevel);
+			}
+		}
+
+		mipMapLevel++;
+	}
 }

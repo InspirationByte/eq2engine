@@ -1780,7 +1780,7 @@ void ShaderAPID3DX9::ChangeVertexBuffer(IVertexBuffer* pVertexBuffer,int nStream
 				uint numInstances = pVB->GetVertexCount();
 
 				nStreamParam1 = (D3DSTREAMSOURCE_INDEXEDDATA | numInstances);
-				nStreamParam2 = (D3DSTREAMSOURCE_INSTANCEDATA | 1);
+				nStreamParam2 = (D3DSTREAMSOURCE_INSTANCEDATA | 1U);
 			}
 
 			if(	(nStream > 0) &&
@@ -2744,31 +2744,18 @@ IDirect3DBaseTexture9* ShaderAPID3DX9::CreateD3DTextureFromImage(CImage* pSrc, i
 		nQuality = 0;
 
 	bool bMipMaps = (pSrc->GetMipMapCount() > 1);
-	/*
-	// generate mipmaps if possible
-	if( nQuality > 0 && !bMipMaps )
-	{
-		if( !pSrc->CreateMipMaps(nQuality) )
-			nQuality = 0;
-	}
-	*/
+
 	// force zero quality if no mipmaps
 	if(!bMipMaps)
 		nQuality = 0;
 
-	D3DPOOL nPool = D3DPOOL_MANAGED;
-	ETextureFormat	nFormat = pSrc->GetFormat();
-
-	IDirect3DBaseTexture9* pTexture = NULL;
-
-	// do spin wait (if in other thread)
-	//DEVICE_SPIN_WAIT
-
 	int numMipmapsReal = (pSrc->GetMipMapCount() - nQuality);
 	numMipmapsReal = max(0, numMipmapsReal);
 
-	// wait before all textures will be processed by other threads
-	Finish();
+	const D3DPOOL			nPool = D3DPOOL_MANAGED;
+	const ETextureFormat	nFormat = pSrc->GetFormat();
+
+	IDirect3DBaseTexture9* pTexture = NULL;
 
 	if (pSrc->IsCube())
 	{
@@ -2820,66 +2807,13 @@ IDirect3DBaseTexture9* ShaderAPID3DX9::CreateD3DTextureFromImage(CImage* pSrc, i
 			return NULL;
 		}
 	}
-
-	// Convert if needed and upload datas
-
-	if (nFormat == FORMAT_RGB8)
-		pSrc->Convert(FORMAT_RGBA8);
-
-	if (nFormat == FORMAT_RGB8 || nFormat == FORMAT_RGBA8)
-		pSrc->SwapChannels(0, 2);
-
+	
 	// set our referenced params
 	wide = pSrc->GetWidth(nQuality);
 	tall = pSrc->GetHeight(nQuality);
 
-	unsigned char *src;
-
-	int mipMapLevel = nQuality;
-	
-	while ((src = pSrc->GetPixels(mipMapLevel)) != NULL)
-	{
-		int size = pSrc->GetMipMappedSize(mipMapLevel, 1);
-
-		int lockBoxLevel = mipMapLevel - nQuality;
-
-		if (pSrc->Is3D())
-		{
-			D3DLOCKED_BOX box;
-			if (((LPDIRECT3DVOLUMETEXTURE9) pTexture)->LockBox(lockBoxLevel, &box, NULL, 0) == D3D_OK)
-			{
-				memcpy(box.pBits, src, size);
-				((LPDIRECT3DVOLUMETEXTURE9) pTexture)->UnlockBox(lockBoxLevel);
-			}
-		}
-		else if (pSrc->IsCube())
-		{
-			size /= 6;
-
-			D3DLOCKED_RECT rect;
-			for (int i = 0; i < 6; i++)
-			{
-				if (((LPDIRECT3DCUBETEXTURE9) pTexture)->LockRect((D3DCUBEMAP_FACES) i, lockBoxLevel, &rect, NULL, 0) == D3D_OK)
-				{
-					memcpy(rect.pBits, src, size);
-					((LPDIRECT3DCUBETEXTURE9) pTexture)->UnlockRect((D3DCUBEMAP_FACES) i, lockBoxLevel);
-				}
-				src += size;				
-			}
-		}
-		else 
-		{
-			D3DLOCKED_RECT rect;
-
-			if (((LPDIRECT3DTEXTURE9) pTexture)->LockRect(lockBoxLevel, &rect, NULL, 0) == D3D_OK)
-			{
-				memcpy(rect.pBits, src, size);
-				((LPDIRECT3DTEXTURE9) pTexture)->UnlockRect(lockBoxLevel);
-			}
-		}
-
-		mipMapLevel++;
-	}
+	// update texture
+	UpdateD3DTextureFromImage(pTexture, pSrc, nQuality, true);
 
 	return pTexture;
 }

@@ -323,7 +323,7 @@ void ShaderAPIGL::ApplyTextures()
 
 void ShaderAPIGL::ApplySamplerState()
 {
-	//ASSERT(!"ShaderAPIGL::ApplySamplerState() not implemented!");
+
 }
 
 void ShaderAPIGL::ApplyBlendState()
@@ -849,10 +849,12 @@ void ShaderAPIGL::ResizeRenderTarget(ITexture* pRT, int newWide, int newTall)
 	}
 }
 
-GLuint ShaderAPIGL::CreateGLTextureFromImage(CImage* pSrc, GLuint gltarget, const SamplerStateParam_t& sampler, int& wide, int& tall, int nFlags)
+GLTextureRef_t ShaderAPIGL::CreateGLTextureFromImage(CImage* pSrc, GLuint gltarget, const SamplerStateParam_t& sampler, int& wide, int& tall, int nFlags)
 {
+	GLTextureRef_t noTexture = { 0, GLTEX_TYPE_ERROR };
+
 	if(!pSrc)
-		return 0;
+		return noTexture;
 
 	int nQuality = r_loadmiplevel->GetInt();
 
@@ -865,51 +867,52 @@ GLuint ShaderAPIGL::CreateGLTextureFromImage(CImage* pSrc, GLuint gltarget, cons
 	if(!bMipMaps)
 		nQuality = 0;
 
-	wide = pSrc->GetWidth();
-	tall = pSrc->GetHeight();
-
-	GLuint textureID = 0;
-
 	if(nFlags & TEXFLAG_CUBEMAP)
-	{
 		pSrc->SetDepth(0);
-	}
 
 	// If the target hardware doesn't support the compressed texture format, just decompress it to a compatible format
-	ETextureFormat format = pSrc->GetFormat();
+	const ETextureFormat format = pSrc->GetFormat();
 
-	GLenum srcFormat = chanCountTypes[GetChannelCount(format)];
-    GLenum srcType = chanTypePerFormat[format];
+	const GLenum srcFormat = chanCountTypes[GetChannelCount(format)];
+	const GLenum srcType = chanTypePerFormat[format];
+
 	GLint internalFormat = internalFormats[format];
 
 	if(format >= FORMAT_I32F && format <= FORMAT_RGBA32F)
-	{
         internalFormat = internalFormats[format - (FORMAT_I32F - FORMAT_I16F)];
-	}
 
 	if(internalFormat == 0)
 	{
 		MsgError("'%s' has unsupported image format (%d)\n", pSrc->GetName(), format);
-		return 0;
+		return noTexture;
 	}
+
+	// create texture
+	GLTextureRef_t texture;
+	if (pSrc->Is3D())
+		texture.type = GLTEX_TYPE_VOLUMETEXTURE;
+	else if (pSrc->IsCube())
+		texture.type = GLTEX_TYPE_CUBETEXTURE;
+	else
+		texture.type = GLTEX_TYPE_TEXTURE;
 
 	GL_CRITICAL();
 
 	// Generate a texture
-	glGenTextures(1, &textureID);
-	GLCheckError("gen tex");
+	glGenTextures(1, &texture.glTexID);
 
-	glActiveTexture(GL_TEXTURE0);
+	if(!GLCheckError("gen tex"))
+		return noTexture;
 
-#ifndef USE_GLES2
-	glEnable(gltarget);
-#endif // USE_GLES2
-
-	glBindTexture( gltarget, textureID );
+	glBindTexture( gltarget, texture.glTexID);
 	GLCheckError("bind tex");
 
 	// Setup the sampler state
 	InternalSetupSampler(gltarget, sampler, pSrc->GetMipMapCount()-nQuality);
+
+	// set our referenced params
+	wide = pSrc->GetWidth();
+	tall = pSrc->GetHeight();
 
 	// Upload it all
 	ubyte *src;
@@ -1023,20 +1026,10 @@ GLuint ShaderAPIGL::CreateGLTextureFromImage(CImage* pSrc, GLuint gltarget, cons
 		mipMapLevel++;
 	}
 
-
-#ifndef USE_GLES2
-	if(pSrc->IsCube())
-	{
-		glDisable( GL_TEXTURE_CUBE_MAP );
-		GLCheckError("tex disa cube");
-	}
-#endif //USE_GLES2
-
 	glBindTexture(gltarget, 0);
 	GLCheckError("tex unbind");
 
-
-	return textureID;
+	return texture;
 }
 
 void ShaderAPIGL::CreateTextureInternal(ITexture** pTex, const DkList<CImage*>& pImages, const SamplerStateParam_t& sampler,int nFlags)
@@ -1076,9 +1069,9 @@ void ShaderAPIGL::CreateTextureInternal(ITexture** pTex, const DkList<CImage*>& 
 				ss.magFilter = TEXFILTER_LINEAR;
 		}
 
-		GLuint nGlTex = CreateGLTextureFromImage(pImages[i], pTexture->glTarget, ss, wide, tall, nFlags);
+		GLTextureRef_t textureRef = CreateGLTextureFromImage(pImages[i], pTexture->glTarget, ss, wide, tall, nFlags);
 
-		if(nGlTex)
+		if(textureRef.type > GLTEX_TYPE_ERROR)
 		{
 			int nQuality = r_loadmiplevel->GetInt();
 
@@ -1089,11 +1082,7 @@ void ShaderAPIGL::CreateTextureInternal(ITexture** pTex, const DkList<CImage*>& 
 			mipCount += pImages[i]->GetMipMapCount()-nQuality;
 
 			pTexture->m_texSize += pImages[i]->GetMipMappedSize(nQuality);
-
-			eqGlTex tex;
-			tex.glTexID = nGlTex;
-
-			pTexture->textures.append( tex );
+			pTexture->textures.append(textureRef);
 		}
 	}
 

@@ -15,6 +15,8 @@
 
 #include <d3d9.h>
 
+class CImage;
+
 class CD3D9Texture : public CTexture
 {
 public:
@@ -48,5 +50,6 @@ public:
 	LPDIRECT3DSURFACE9		m_pLockSurface;
 };
 
+void UpdateD3DTextureFromImage(IDirect3DBaseTexture9* texture, CImage* image, int startMipLevel, bool convert);
 
 #endif //D3D9TEXTURE_H

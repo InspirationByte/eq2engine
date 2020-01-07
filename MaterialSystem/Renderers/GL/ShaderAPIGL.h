@@ -65,6 +65,21 @@ enum EGraphicsVendor
 	VENDOR_OTHER,
 };
 
+enum EGLTextureType
+{
+	GLTEX_TYPE_ERROR = -1,
+
+	GLTEX_TYPE_TEXTURE = 0,
+	GLTEX_TYPE_CUBETEXTURE,
+	GLTEX_TYPE_VOLUMETEXTURE,
+};
+
+struct GLTextureRef_t
+{
+	GLuint glTexID;
+	EGLTextureType type;
+};
+
 class 		CVertexFormatGL;
 class 		CVertexBufferGL;
 class 		CIndexBufferGL;
@@ -337,7 +352,7 @@ protected:
 	void				GL_CRITICAL();
 
 	void				CreateTextureInternal(ITexture** pTex, const DkList<CImage*>& pImages, const SamplerStateParam_t& sampler,int nFlags = 0);
-	GLuint				CreateGLTextureFromImage(CImage* pSrc, GLuint gltarget, const SamplerStateParam_t& sampler, int& wide, int& tall, int nFlags);
+	GLTextureRef_t		CreateGLTextureFromImage(CImage* pSrc, GLuint gltarget, const SamplerStateParam_t& sampler, int& wide, int& tall, int nFlags);
 
 	//void				AddTextureInternal(ITexture** pTex, CImage *texImage,SamplerStateParam_t& sSamplingParams,int nFlags = 0);
 	//void				AddAnimatedTextureInternal(ITexture** pTex, CImage **texImage, int numTextures, SamplerStateParam_t& sSamplingParams,int nFlags = 0);
