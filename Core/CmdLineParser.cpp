@@ -110,14 +110,17 @@ void CommandLineParse::ExecuteCommandLine(unsigned int CmdFilterFlags/* = -1*/) 
 
 	for (int i = 0; i < GetArgumentCount(); i++ )
 	{
-		const char* argStr = m_args[i].c_str();
+		const char* cmdOrCvarStr = m_args[i].c_str();
 
-		if (*argStr != '+')
+		if (*cmdOrCvarStr != '+')
 			continue;
 
-		EqString cmdStr(argStr + 1);
+		const char* argumentValueStr = GetArgumentsOf(i);
+
+		// fill command buffer
+		EqString cmdStr(cmdOrCvarStr + 1);
 		cmdStr.Append(' ');
-		cmdStr.Append( GetArgumentsOf(i) );
+		cmdStr.Append(argumentValueStr);
 
 		g_sysConsole->AppendToCommandBuffer( cmdStr.c_str() );
 	}
@@ -166,9 +169,11 @@ const char* CommandLineParse::GetArgumentsOf(int paramIndex) const
 		if(i > paramIndex+1)
 			_tmpArguments.Append(' ');
 
-		//_tmpArguments.Append('\"');
-		_tmpArguments.Append(m_args[i]);
-		//_tmpArguments.Append('\"');
+		bool hasSpaces = strchr(argStr, ' ') || strchr(argStr, '\t');
+		if (hasSpaces)
+			_tmpArguments.Append("\"" + _Es(argStr) + "\"");
+		else
+			_tmpArguments.Append(argStr);
 	}
 
 	return _tmpArguments.c_str();
