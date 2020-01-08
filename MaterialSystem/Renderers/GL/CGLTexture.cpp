@@ -7,6 +7,7 @@
 
 #include "CGLTexture.h"
 #include "DebugInterface.h"
+#include "imaging/ImageLoader.h"
 
 #ifdef USE_GLES2
 #include "glad_es3.h"
@@ -178,4 +179,122 @@ void CGLTexture::Unlock()
 		ASSERT(!"Texture is not locked!");
 
 	m_bIsLocked = false;
+}
+
+void UpdateGLTextureFromImage(GLTextureRef_t texture, CImage* image, int startMipLevel)
+{
+	const GLenum glTarget = glTexTargetType[texture.type];
+	const ETextureFormat format = image->GetFormat();
+
+	const GLenum srcFormat = chanCountTypes[GetChannelCount(format)];
+	const GLenum srcType = chanTypePerFormat[format];
+
+	GLint internalFormat = internalFormats[format];
+
+	if (format >= FORMAT_I32F && format <= FORMAT_RGBA32F)
+		internalFormat = internalFormats[format - (FORMAT_I32F - FORMAT_I16F)];
+
+	if (internalFormat == 0)
+		ASSERTMSG(false, "'%s' has unsupported image format (%d)\n", pSrc->GetName(), format);
+
+	glBindTexture(glTarget, texture.glTexID);
+	GLCheckError("bind tex");
+
+	// Upload it all
+	ubyte *src;
+	int mipMapLevel = startMipLevel;
+	while ((src = image->GetPixels(mipMapLevel)) != NULL)
+	{
+		int size = image->GetMipMappedSize(mipMapLevel, 1);
+
+		int lockBoxLevel = mipMapLevel - startMipLevel;
+
+		if (texture.type == GLTEX_TYPE_VOLUMETEXTURE)
+		{
+			if (IsCompressedFormat(format))
+			{
+				glCompressedTexImage3D(glTarget,
+					lockBoxLevel,
+					internalFormat,
+					image->GetWidth(mipMapLevel), image->GetHeight(mipMapLevel), image->GetDepth(mipMapLevel),
+					0,
+					image->GetMipMappedSize(mipMapLevel, 1),
+					src);
+			}
+			else
+			{
+				glTexImage3D(glTarget,
+					lockBoxLevel,
+					internalFormat,
+					image->GetWidth(mipMapLevel), image->GetHeight(mipMapLevel), image->GetDepth(mipMapLevel),
+					0,
+					srcFormat,
+					srcType,
+					src);
+			}
+
+			GLCheckError("tex upload 3d");
+		}
+		else if (texture.type == GLTEX_TYPE_CUBETEXTURE)
+		{
+			size /= 6;
+
+			for (uint i = 0; i < 6; i++)
+			{
+				if (IsCompressedFormat(format))
+				{
+					glCompressedTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
+						lockBoxLevel,
+						internalFormat,
+						image->GetWidth(mipMapLevel), image->GetHeight(mipMapLevel),
+						0,
+						size,
+						src + i * size);
+				}
+				else
+				{
+					glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
+						lockBoxLevel,
+						internalFormat,
+						image->GetWidth(mipMapLevel), image->GetHeight(mipMapLevel),
+						0,
+						srcFormat,
+						srcType,
+						src + i * size);
+				}
+				GLCheckError("tex upload cube");
+			}
+		}
+		else if (texture.type == GLTEX_TYPE_TEXTURE)
+		{
+			if (IsCompressedFormat(format))
+			{
+				glCompressedTexImage2D(glTarget,
+					lockBoxLevel,
+					internalFormat,
+					image->GetWidth(mipMapLevel), image->GetHeight(mipMapLevel),
+					0,
+					size,
+					src);
+			}
+			else
+			{
+				glTexImage2D(glTarget,
+					lockBoxLevel,
+					internalFormat,
+					image->GetWidth(mipMapLevel), image->GetHeight(mipMapLevel),
+					0,
+					srcFormat,
+					srcType,
+					src);
+			}
+
+			GLCheckError("tex upload 2d");
+		}
+
+		mipMapLevel++;
+	}
+
+	glBindTexture(glTarget, 0);
+	GLCheckError("tex unbind");
 }

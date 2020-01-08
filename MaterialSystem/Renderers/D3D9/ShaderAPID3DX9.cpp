@@ -2749,8 +2749,8 @@ IDirect3DBaseTexture9* ShaderAPID3DX9::CreateD3DTextureFromImage(CImage* pSrc, i
 	if(!bMipMaps)
 		nQuality = 0;
 
-	int numMipmapsReal = (pSrc->GetMipMapCount() - nQuality);
-	numMipmapsReal = max(0, numMipmapsReal);
+	int numMipmaps = (pSrc->GetMipMapCount() - nQuality);
+	numMipmaps = max(0, numMipmaps);
 
 	const D3DPOOL			nPool = D3DPOOL_MANAGED;
 	const ETextureFormat	nFormat = pSrc->GetFormat();
@@ -2760,7 +2760,7 @@ IDirect3DBaseTexture9* ShaderAPID3DX9::CreateD3DTextureFromImage(CImage* pSrc, i
 	if (pSrc->IsCube())
 	{
 		if (m_pD3DDevice->CreateCubeTexture(pSrc->GetWidth(nQuality),
-											numMipmapsReal,
+											numMipmaps,
 											0,
 											formats[nFormat],
 											nPool,
@@ -2779,7 +2779,7 @@ IDirect3DBaseTexture9* ShaderAPID3DX9::CreateD3DTextureFromImage(CImage* pSrc, i
 		if (m_pD3DDevice->CreateVolumeTexture(	pSrc->GetWidth(nQuality), 
 												pSrc->GetHeight(nQuality), 
 												pSrc->GetDepth(nQuality), 
-												numMipmapsReal, 
+												numMipmaps, 
 												0,
 												formats[nFormat],
 												nPool,
@@ -2795,7 +2795,7 @@ IDirect3DBaseTexture9* ShaderAPID3DX9::CreateD3DTextureFromImage(CImage* pSrc, i
 	{
 		if (m_pD3DDevice->CreateTexture(pSrc->GetWidth(nQuality),
 										pSrc->GetHeight(nQuality), 
-										numMipmapsReal, 
+										numMipmaps, 
 										0, 
 										formats[nFormat], 
 										nPool, 

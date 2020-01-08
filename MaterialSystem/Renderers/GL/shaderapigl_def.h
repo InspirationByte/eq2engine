@@ -8,7 +8,7 @@
 #ifndef GLRENDERER_CONSTANTS_H
 #define GLRENDERER_CONSTANTS_H
 
-static const int internalFormats[FORMAT_COUNT] = {
+static const GLuint internalFormats[FORMAT_COUNT] = {
 	0,
 	// Unsigned formats
 #ifdef USE_GLES2
@@ -142,9 +142,9 @@ static const int internalFormats[FORMAT_COUNT] = {
 #endif // USE_GLES2
 };
 
-static const int chanCountTypes[] = { 0, GL_LUMINANCE, GL_LUMINANCE_ALPHA, GL_RGB, GL_RGBA };
+static const GLuint chanCountTypes[] = { 0, GL_LUMINANCE, GL_LUMINANCE_ALPHA, GL_RGB, GL_RGBA };
 
-static const int chanTypePerFormat[] = {
+static const GLuint chanTypePerFormat[] = {
 	0,
 
 	// Unsigned formats
@@ -261,13 +261,13 @@ static const int chanTypePerFormat[] = {
 
 };
 
-const uint addressModes[] = {
+const GLenum addressModes[] = {
 	GL_REPEAT,
 	GL_CLAMP_TO_EDGE,
 	GL_MIRRORED_REPEAT
 };
 
-static const int blendingConsts[] = {
+static const GLenum blendingConsts[] = {
 	GL_ZERO,
 	GL_ONE,
 	GL_SRC_COLOR,
@@ -281,7 +281,7 @@ static const int blendingConsts[] = {
 	GL_SRC_ALPHA_SATURATE,
 };
 
-static const int blendingModes[] = {
+static const GLenum blendingModes[] = {
 	GL_FUNC_ADD,
 	GL_FUNC_SUBTRACT,
 	GL_FUNC_REVERSE_SUBTRACT,
@@ -289,7 +289,7 @@ static const int blendingModes[] = {
 	GL_MAX,
 };
 
-static const int depthConst[] = {
+static const GLenum depthConst[] = {
 	GL_NEVER,
 	GL_LESS,
 	GL_EQUAL,
@@ -300,7 +300,7 @@ static const int depthConst[] = {
 	GL_ALWAYS,
 };
 
-static const int stencilConst[] = {
+static const GLenum stencilConst[] = {
 	GL_KEEP,
 	GL_ZERO,
 	GL_REPLACE,
@@ -313,21 +313,21 @@ static const int stencilConst[] = {
 	GL_ALWAYS,
 };
 
-static const int cullConst[] = {
+static const GLenum cullConst[] = {
 	GL_NONE,
 	GL_BACK,
 	GL_FRONT,
 };
 
 #ifndef USE_GLES2
-static const int fillConst[] = {
+static const GLenum fillConst[] = {
 	GL_FILL,
 	GL_LINE,
 	GL_POINT,
 };
 #endif // USE_GLES2
 
-static const int minFilters[] = {
+static const GLenum minFilters[] = {
 	GL_NEAREST,
 	GL_LINEAR,
 	GL_LINEAR_MIPMAP_NEAREST,
@@ -337,7 +337,7 @@ static const int minFilters[] = {
 };
 
 #ifndef USE_GLES2
-static const int matrixModeConst[] = {
+static const GLenum matrixModeConst[] = {
 	GL_MODELVIEW,
 	GL_PROJECTION,
 	GL_MODELVIEW,
@@ -347,7 +347,7 @@ static const int matrixModeConst[] = {
 #endif // USE_GLES2
 
 // for some speedup
-static const int mbTypeConst[] = {
+static const GLenum mbTypeConst[] = {
 	GL_POINTS,
 	GL_LINES,
 	GL_TRIANGLES,
@@ -363,7 +363,7 @@ static const int mbTypeConst[] = {
 #endif // USE_GLES2
 };
 
-static const int glPrimitiveType[] = {
+static const GLenum glPrimitiveType[] = {
 	GL_TRIANGLES,
 	GL_TRIANGLE_FAN,
 	GL_TRIANGLE_STRIP,
@@ -378,10 +378,17 @@ static const int glPrimitiveType[] = {
 	GL_POINTS,
 };
 
-static const int glBufferUsages[] = {
+static const GLenum glBufferUsages[] = {
 	GL_STREAM_DRAW,
 	GL_STATIC_DRAW,
 	GL_DYNAMIC_DRAW,
+};
+
+// map to EGLTextureType
+static const GLenum glTexTargetType[] = {
+	GL_TEXTURE_2D,
+	GL_TEXTURE_CUBE_MAP,
+	GL_TEXTURE_3D,
 };
 
 #ifdef USE_GLES2

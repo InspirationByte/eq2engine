@@ -352,14 +352,14 @@ protected:
 	void				GL_CRITICAL();
 
 	void				CreateTextureInternal(ITexture** pTex, const DkList<CImage*>& pImages, const SamplerStateParam_t& sampler,int nFlags = 0);
-	GLTextureRef_t		CreateGLTextureFromImage(CImage* pSrc, GLuint gltarget, const SamplerStateParam_t& sampler, int& wide, int& tall, int nFlags);
+	GLTextureRef_t		CreateGLTextureFromImage(CImage* pSrc, const SamplerStateParam_t& sampler, int& wide, int& tall, int nFlags);
 
 	//void				AddTextureInternal(ITexture** pTex, CImage *texImage,SamplerStateParam_t& sSamplingParams,int nFlags = 0);
 	//void				AddAnimatedTextureInternal(ITexture** pTex, CImage **texImage, int numTextures, SamplerStateParam_t& sSamplingParams,int nFlags = 0);
 
 private:
 	//OpenGL - Specific
-	void					InternalSetupSampler(uint texTarget, const SamplerStateParam_t& sSamplingParams, int mipMapCount = 1);
+	void					SetupGLSamplerState(uint texTarget, const SamplerStateParam_t& sSamplingParams, int mipMapCount = 1);
 	void					InternalChangeFrontFace(int nCullFaceMode);
 
 	GLuint					m_frameBuffer;
