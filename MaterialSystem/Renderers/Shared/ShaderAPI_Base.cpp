@@ -1064,9 +1064,9 @@ bool ShaderAPI_Base::LoadShadersFromFile(IShaderProgram* pShaderOutput, const ch
 
 	CScopedMutex m(m_Mutex);
 
-	EqString fileNameVS(EqString(SHADERS_DEFAULT_PATH) + GetRendererName() + "/" + EqString(pszFilePrefix) + ".vs");
-	EqString fileNamePS(EqString(SHADERS_DEFAULT_PATH) + GetRendererName() + "/" + EqString(pszFilePrefix) + ".ps");
-	EqString fileNameGS(EqString(SHADERS_DEFAULT_PATH) + GetRendererName() + "/" + EqString(pszFilePrefix) + ".gs");
+	EqString fileNameVS(varargs(SHADERS_DEFAULT_PATH "%s/%s.vs", GetRendererName(), pszFilePrefix));
+	EqString fileNamePS(varargs(SHADERS_DEFAULT_PATH "%s/%s.ps", GetRendererName(), pszFilePrefix));
+	EqString fileNameGS(varargs(SHADERS_DEFAULT_PATH "%s/%s.gs", GetRendererName(), pszFilePrefix));
 
 	bool vsRequiried = true;	// vertex shader is always required
 	bool psRequiried = false;
@@ -1093,24 +1093,29 @@ bool ShaderAPI_Base::LoadShadersFromFile(IShaderProgram* pShaderOutput, const ch
 		if(geometryProgramName)
 			gsRequiried = true;
 
-		fileNameVS = EqString(EqString(SHADERS_DEFAULT_PATH) + GetRendererName() + "/" + EqString(KV_GetValueString(vertexProgramName)) + ".vs");
-		fileNamePS = EqString(EqString(SHADERS_DEFAULT_PATH) + GetRendererName() + "/" + EqString(KV_GetValueString(pixelProgramName)) + ".ps");
-		fileNameGS = EqString(EqString(SHADERS_DEFAULT_PATH) + GetRendererName() + "/" + EqString(KV_GetValueString(geometryProgramName)) + ".gs");
+		const char* vertexProgNameStr = KV_GetValueString(vertexProgramName, 0, pszFilePrefix);
+		const char* pixelProgNameStr = KV_GetValueString(pixelProgramName, 0, pszFilePrefix);
+		const char* geomProgNameStr = KV_GetValueString(geometryProgramName, 0, pszFilePrefix);
+
+		fileNameVS = varargs(SHADERS_DEFAULT_PATH "%s/%s.vs", GetRendererName(), vertexProgNameStr);
+		fileNamePS = varargs(SHADERS_DEFAULT_PATH "%s/%s.ps", GetRendererName(), pixelProgNameStr);
+		fileNameGS = varargs(SHADERS_DEFAULT_PATH "%s/%s.gs", GetRendererName(), geomProgNameStr);
 
 		// API section
 		// find corresponding API
 		for(int i = 0; i < sec->keys.numElem(); i++)
 		{
-			if(!stricmp(sec->keys[i]->name, "api"))
+			kvkeybase_t* apiKey = sec->keys[i];
+
+			if(!stricmp(apiKey->GetName(), "api"))
 			{
-				for(int j = 0; j < sec->keys[i]->values.numElem(); j++)
+				for(int j = 0; j < apiKey->values.numElem(); j++)
 				{
-					if(!stricmp(KV_GetValueString(sec->keys[i], j), GetRendererName()))
+					if(!stricmp(KV_GetValueString(apiKey, j), GetRendererName()))
 					{
-						info.apiPrefs = sec->keys[i];
+						info.apiPrefs = apiKey;
 						break;
 					}
-
 				}
 
 				if(info.apiPrefs)
@@ -1129,14 +1134,32 @@ bool ShaderAPI_Base::LoadShadersFromFile(IShaderProgram* pShaderOutput, const ch
 	info.ps.text = g_fileSystem->GetFileBuffer(fileNamePS.GetData());
 	info.gs.text = g_fileSystem->GetFileBuffer(fileNameGS.GetData());
 
-	if(!info.ps.text && psRequiried)
-		MsgError("Can't open pixel shader file '%s'!\n",fileNamePS.GetData());
+	if (!info.ps.text && psRequiried)
+	{
+		MsgError("Can't open pixel shader file '%s'!\n", fileNamePS.GetData());
+		PPFree(info.vs.text);
+		PPFree(info.ps.text);
+		PPFree(info.gs.text);
+		return false;
+	}
 
 	if(!info.vs.text && vsRequiried)
+	{
 		MsgError("Can't open vertex shader file '%s'!\n",fileNameVS.GetData());
+		PPFree(info.vs.text);
+		PPFree(info.ps.text);
+		PPFree(info.gs.text);
+		return false;
+	}
 
-	if(!info.gs.text && gsRequiried)
-		MsgError("Can't open geometry shader file '%s'!\n",fileNameVS.GetData());
+	if (!info.gs.text && gsRequiried)
+	{
+		MsgError("Can't open geometry shader file '%s'!\n", fileNameVS.GetData());
+		PPFree(info.vs.text);
+		PPFree(info.ps.text);
+		PPFree(info.gs.text);
+		return false;
+	}
 
 	ProcessShaderFileIncludes(&info.vs.text, fileNameVS.GetData(), info.vs, true);
 	ProcessShaderFileIncludes(&info.ps.text, fileNamePS.GetData(), info.ps, true);

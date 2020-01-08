@@ -99,6 +99,8 @@ public:
 	friend class		CGLShaderProgram;
 	friend class		CGLOcclusionQuery;
 
+	friend class		GLWorkerThread;
+
 						~ShaderAPIGL();
 						ShaderAPIGL();
 

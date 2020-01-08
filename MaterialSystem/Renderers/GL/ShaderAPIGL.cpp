@@ -25,6 +25,162 @@
 #include "utils/strtools.h"
 #include "utils/KeyValues.h"
 
+#include "utils/eqthread.h"
+
+#include <functional>
+
+extern ShaderAPIGL g_shaderApi;
+
+#define WORK_PENDING_MARKER 0x1d1d0001
+
+class GLWorkerThread : CEqThread
+{
+public:
+	GLWorkerThread()
+	{
+	}
+
+	int Do(std::function<int()> f);
+
+protected:
+	int Run();
+
+	struct work_t
+	{
+		work_t(std::function<int()> f, uint id)
+		{
+			func = f;
+			result = WORK_PENDING_MARKER;
+			workId = id;
+		}
+
+		std::function<int()> func;
+		volatile int result;
+		uint workId;
+	};
+
+	int WaitForResult(uint workId);
+
+	uint m_workCounter;
+	DkList<work_t*> m_pendingWork;
+	work_t* m_currentWork;
+	CEqMutex m_workMutex;
+};
+
+int GLWorkerThread::WaitForResult(uint workId)
+{
+	// find by work id
+	m_workMutex.Lock();
+	work_t* work = nullptr;
+	for (int i = 0; i < m_pendingWork.numElem(); i++)
+	{
+		if (m_pendingWork[i]->workId == workId)
+		{
+			work = m_pendingWork[i];
+			break;
+		}
+	}
+	m_workMutex.Unlock();
+
+	ASSERT(work);
+
+	Msg("awaiting %d\n", work->workId);
+
+	// wait
+	while (work->result == WORK_PENDING_MARKER)
+	{
+		Platform_Sleep(1);
+	}
+
+	// remove from list
+	m_workMutex.Lock();
+	m_pendingWork.fastRemove(work);
+	m_workMutex.Unlock();
+
+	// retrieve result and delete
+	int result = work->result;
+
+	Msg("got result from %d\n", work->workId);
+
+	delete work;
+
+	//return the result
+	return result;
+}
+
+int GLWorkerThread::Do(std::function<int()> f)
+{
+	//uintptr_t thisThreadId = Threading::GetCurrentThreadID();
+
+	//if (thisThreadId == g_shaderApi.m_mainThreadId) // not required for main thread
+	//	return (f)();
+
+	if (!IsRunning())
+		StartWorkerThread("ShaderAPIGLWorker");
+
+	uint workId = 0xFFFFFFFF;
+
+	// set the new worker and signal to start...
+	{
+		CScopedMutex m(m_workMutex);
+
+		workId = m_workCounter++;
+
+		work_t* work = new work_t(f, workId);
+		m_pendingWork.append(work);
+	}
+
+	// set the worker function
+	SignalWork();
+
+	return WaitForResult(workId);
+}
+
+int GLWorkerThread::Run()
+{
+	{
+		CScopedMutex m(m_workMutex);
+
+		// find some work
+		while (!m_currentWork && m_pendingWork.numElem())
+		{
+			for (int i = 0; i < m_pendingWork.numElem(); i++)
+			{
+				work_t* work = m_pendingWork[i];
+
+				if (work->result == WORK_PENDING_MARKER)
+				{
+					m_currentWork = work;
+					break;
+				}
+			}
+		}
+	}
+
+	if (m_currentWork)
+	{
+		// get and quickly dispose
+		work_t* cur = m_currentWork;
+		m_currentWork = nullptr;
+
+		g_shaderApi.BeginAsyncOperation(GetThreadID());
+		g_shaderApi.GL_CRITICAL();
+
+		// run work
+		int result = cur->func();
+
+		g_shaderApi.EndAsyncOperation();
+
+		m_workMutex.Lock();
+		cur->result = result;
+		m_workMutex.Unlock();
+	}
+
+	return 0;
+}
+
+GLWorkerThread glWorker;
+
 HOOK_TO_CVAR(r_loadmiplevel);
 
 #ifdef PLAT_LINUX
@@ -882,25 +1038,31 @@ GLTextureRef_t ShaderAPIGL::CreateGLTextureFromImage(CImage* pSrc, const Sampler
 
 	const GLenum glTarget = glTexTargetType[texture.type];
 
-	GL_CRITICAL();
-
-	// Generate a texture
-	glGenTextures(1, &texture.glTexID);
-
-	if(!GLCheckError("gen tex"))
-		return noTexture;
-
-	glBindTexture(glTarget, texture.glTexID);
-	GLCheckError("bind tex");
-
-	// Setup the sampler state
-	SetupGLSamplerState(glTarget, sampler, numMipmaps);
-
 	// set our referenced params
 	wide = pSrc->GetWidth();
 	tall = pSrc->GetHeight();
 
-	UpdateGLTextureFromImage(texture, pSrc, nQuality);
+	GLTextureRef_t* texturePtr = &texture;
+
+	int result = glWorker.Do([=]() {
+		// Generate a texture
+		glGenTextures(1, &texturePtr->glTexID);
+
+		if (!GLCheckError("gen tex"))
+			return -1;
+
+		glBindTexture(glTarget, texturePtr->glTexID);
+		GLCheckError("bind tex");
+
+		// Setup the sampler state
+		SetupGLSamplerState(glTarget, sampler, numMipmaps);
+		UpdateGLTextureFromImage(*texturePtr, pSrc, nQuality);
+
+		return 0;
+	});
+
+	if (result == -1)
+		return noTexture;
 
 	return texture;
 }
@@ -1652,18 +1814,12 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 	CGLShaderProgram* prog = (CGLShaderProgram*)pShaderOutput;
 	GLint vsResult, fsResult, linkResult;
 
-	GL_CRITICAL();
+	int result;
 
 	// compile vertex
 	if(info.vs.text)
 	{
-		// create GL program
-		prog->m_program = glCreateProgram();
-
-		if(!GLCheckError("create program"))
-		{
-			return false;
-		}
+		GLint* pvsResult = &vsResult;
 
 		EqString shaderString;
 
@@ -1671,48 +1827,63 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 		shaderString.Append("#version 120\r\n");
 #endif // USE_GLES2
 
-		if (extra  != NULL)
+		if (extra != NULL)
 			shaderString.Append(extra);
 
 		// append useful HLSL replacements
 		shaderString.Append(SHADER_HELPERS_STRING);
 		shaderString.Append(info.vs.text);
 
-		const char* sStr = shaderString.c_str();
+		const GLchar* sStr[] = { shaderString.c_str() };
 
-		prog->m_vertexShader = glCreateShader(GL_VERTEX_SHADER);
+		result = glWorker.Do([prog, pvsResult, sStr]() {
 
-		if(!GLCheckError("create vertex shader"))
+			// create GL program
+			prog->m_program = glCreateProgram();
+
+			if (!GLCheckError("create program"))
+				return -1;
+
+			prog->m_vertexShader = glCreateShader(GL_VERTEX_SHADER);
+
+			if (!GLCheckError("create vertex shader"))
+				return -1;
+
+			glShaderSource(prog->m_vertexShader, 1, (const GLchar**)sStr, NULL);
+			glCompileShader(prog->m_vertexShader);
+
+			GLCheckError("compile vert shader");
+
+			glGetShaderiv(prog->m_vertexShader, GL_OBJECT_COMPILE_STATUS_ARB, pvsResult);
+
+			if (*pvsResult)
+			{
+				glAttachShader(prog->m_program, prog->m_vertexShader);
+				GLCheckError("attach vert shader");
+			}
+			else
+			{
+				char infoLog[2048];
+				GLint len;
+
+				glGetShaderInfoLog(prog->m_vertexShader, sizeof(infoLog), &len, infoLog);
+				MsgError("Vertex shader %s error:\n%s\n", prog->GetName(), infoLog);
+
+				return -1;
+			}
+
+			return 0;
+		});
+
+		if (result == -1)
 		{
+			MsgInfo("Shader files dump:");
+			for (int i = 0; i < info.vs.includes.numElem(); i++)
+				MsgInfo("\t%d : %s\n", i + 1, info.vs.includes[i].c_str());
+
 			return false;
 		}
-
-		glShaderSource(prog->m_vertexShader, 1, &sStr, NULL);
-		glCompileShader(prog->m_vertexShader);
-
-		GLCheckError("compile vert shader");
-
-		glGetShaderiv(prog->m_vertexShader, GL_OBJECT_COMPILE_STATUS_ARB, &vsResult);
-
-		if (vsResult)
-		{
-			glAttachShader(prog->m_program, prog->m_vertexShader);
-			GLCheckError("attach vert shader");
-		}
-		else
-		{
-			char infoLog[2048];
-			GLint len;
-
-			glGetShaderInfoLog(prog->m_vertexShader, sizeof(infoLog), &len, infoLog);
-			MsgError("Vertex shader %s error:\n%s\n", prog->GetName(), infoLog);
-
-			MsgInfo("Shader files dump:");
-			for(int i = 0; i < info.vs.includes.numElem(); i++)
-				MsgInfo("\t%d : %s\n", i+1, info.vs.includes[i].c_str());
-		}
-
-
+			
 	}
 	else
 		return false; // vertex shader is required
@@ -1726,47 +1897,54 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 		shaderString.Append("#version 120\r\n");
 #endif // USE_GLES2
 
-		if (extra  != NULL)
+		if (extra != NULL)
 			shaderString.Append(extra);
 
 		// append useful HLSL replacements
 		shaderString.Append(SHADER_HELPERS_STRING);
 		shaderString.Append(info.ps.text);
 
-		const char* sStr = shaderString.c_str();
+		const GLchar* sStr[] = { shaderString.c_str() };
 
-		prog->m_fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+		GLint* pfsResult = &fsResult;
+		result = glWorker.Do([prog, pfsResult, sStr]() {
+			prog->m_fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
 
-		if(!GLCheckError("create fragment shader"))
+			if (!GLCheckError("create fragment shader"))
+				return -1;
+
+			glShaderSource(prog->m_fragmentShader, 1, (const GLchar**)sStr, NULL);
+			glCompileShader(prog->m_fragmentShader);
+			glGetShaderiv(prog->m_fragmentShader, GL_OBJECT_COMPILE_STATUS_ARB, pfsResult);
+
+			GLCheckError("compile frag shader");
+
+			if (*pfsResult)
+			{
+				glAttachShader(prog->m_program, prog->m_fragmentShader);
+				GLCheckError("attach frag shader");
+			}
+			else
+			{
+				char infoLog[2048];
+				GLint len;
+
+				glGetShaderInfoLog(prog->m_fragmentShader, sizeof(infoLog), &len, infoLog);
+				MsgError("Pixel shader %s error:\n%s\n", prog->GetName(), infoLog);
+				return -1;
+			}
+
+			return 0;
+		});
+
+		if (result == -1)
 		{
+			MsgInfo("Shader files dump:");
+			for (int i = 0; i < info.ps.includes.numElem(); i++)
+				MsgInfo("\t%d : %s\n", i + 1, info.ps.includes[i].c_str());
 
 			return false;
 		}
-
-		glShaderSource(prog->m_fragmentShader, 1, &sStr, NULL);
-		glCompileShader(prog->m_fragmentShader);
-		glGetShaderiv(prog->m_fragmentShader, GL_OBJECT_COMPILE_STATUS_ARB, &fsResult);
-
-		GLCheckError("compile frag shader");
-
-		if (fsResult)
-		{
-			glAttachShader(prog->m_program, prog->m_fragmentShader);
-			GLCheckError("attach frag shader");
-		}
-		else
-		{
-			char infoLog[2048];
-			GLint len;
-
-			glGetShaderInfoLog(prog->m_fragmentShader, sizeof(infoLog), &len, infoLog);
-			MsgError("Pixel shader %s error:\n%s\n", prog->GetName(), infoLog);
-
-			MsgInfo("Shader files dump:");
-			for(int i = 0; i < info.ps.includes.numElem(); i++)
-				MsgInfo("\t%d : %s\n", i+1, info.ps.includes[i].c_str());
-		}
-
 
 	}
 	else
@@ -1774,194 +1952,202 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 
 	if(fsResult && vsResult)
 	{
-		for(int i = 0; i < info.apiPrefs->keys.numElem(); i++)
-		{
-			kvkeybase_t* kp = info.apiPrefs->keys[i];
+		GLint* plinkResult = &linkResult;
+		const shaderProgramCompileInfo_t* pInfo = &info;
 
-			if( !stricmp(kp->name, "attribute") )
+		// get current set program
+		GLuint currProgram = (m_pCurrentShader == NULL) ? 0 : ((CGLShaderProgram*)m_pCurrentShader)->m_program;
+
+		EGraphicsVendor vendor = m_vendor;
+
+		result = glWorker.Do([prog, pInfo, plinkResult, vendor, currProgram]() {
+			for(int i = 0; i < pInfo->apiPrefs->keys.numElem(); i++)
 			{
-				const char* nameStr = KV_GetValueString(kp, 0, "INVALID");
-				const char* locationStr = KV_GetValueString(kp, 1, "TYPE_TEXCOORD");
+				kvkeybase_t* kp = pInfo->apiPrefs->keys[i];
 
-				int attribIndex = 0;	// all generic starts here
-
-				// if starts with digit - this is an index
-				if( isdigit(*locationStr) )
+				if( !stricmp(kp->name, "attribute") )
 				{
-					attribIndex = atoi(locationStr)+GLSL_VERTEX_ATTRIB_START;
+					const char* nameStr = KV_GetValueString(kp, 0, "INVALID");
+					const char* locationStr = KV_GetValueString(kp, 1, "TYPE_TEXCOORD");
+
+					int attribIndex = 0;	// all generic starts here
+
+					// if starts with digit - this is an index
+					if( isdigit(*locationStr) )
+					{
+						attribIndex = atoi(locationStr)+GLSL_VERTEX_ATTRIB_START;
+					}
+					else
+					{
+						// TODO: find corresponding attribute index for string types:
+						// VERTEX0-VERTEX3	(4 parallel vertex buffers)
+						// TEXCOORD0 - 7
+					}
+
+					// bind attribute
+					glBindAttribLocation(prog->m_program, attribIndex, nameStr);
+					GLCheckError("bind attrib");
+				}
+			}
+
+			// link program and go
+			glLinkProgram(prog->m_program);
+			glGetProgramiv(prog->m_program, GL_OBJECT_LINK_STATUS_ARB, plinkResult);
+
+			GLCheckError("link program");
+
+			if( !(*plinkResult))
+			{
+				char infoLog[2048];
+				GLint len;
+
+				glGetProgramInfoLog(prog->m_program, sizeof(infoLog), &len, infoLog);
+				MsgError("Shader '%s' link error: %s\n", prog->GetName(), infoLog);
+				return -1;
+			}
+
+			// use freshly generated program to retirieve constants (uniforms) and samplers
+			glUseProgram(prog->m_program);
+
+			GLCheckError("test use program");
+
+			// intel buggygl fix
+			if(vendor == VENDOR_INTEL )
+			{
+				glUseProgram(0);
+				glUseProgram(prog->m_program);
+			}
+
+			GLint uniformCount, maxLength;
+			glGetProgramiv(prog->m_program, GL_OBJECT_ACTIVE_UNIFORMS_ARB, &uniformCount);
+			glGetProgramiv(prog->m_program, GL_OBJECT_ACTIVE_UNIFORM_MAX_LENGTH_ARB, &maxLength);
+
+			if(maxLength == 0 && uniformCount > 0 || uniformCount > 256)
+			{
+				if(vendor == VENDOR_INTEL)
+					DevMsg(DEVMSG_SHADERAPI, "Guess who? It's Intel! uniformCount to be zeroed\n");
+				else
+					DevMsg(DEVMSG_SHADERAPI, "I... didn't... expect... that! uniformCount to be zeroed\n");
+
+				uniformCount = 0;
+			}
+
+			GLShaderSampler_t*	samplers = (GLShaderSampler_t  *)malloc(uniformCount * sizeof(GLShaderSampler_t));
+			GLShaderConstant_t*	uniforms = (GLShaderConstant_t *)malloc(uniformCount * sizeof(GLShaderConstant_t));
+
+			int nSamplers = 0;
+			int nUniforms = 0;
+
+			char* tmpName = new char[maxLength+1];
+
+			for (int i = 0; i < uniformCount; i++)
+			{
+				GLenum type;
+				GLint length, size;
+
+				glGetActiveUniform(prog->m_program, i, maxLength, &length, &size, &type, tmpName);
+
+	#ifdef USE_GLES2
+				if (type >= GL_SAMPLER_2D && type <= GL_SAMPLER_CUBE_SHADOW)
+	#else
+				if (type >= GL_SAMPLER_1D && type <= GL_SAMPLER_2D_RECT_SHADOW_ARB)
+	#endif // USE_GLES3
+				{
+					GLShaderSampler_t* sp = &samplers[nSamplers];
+					ASSERTMSG(sp, "WHAT?");
+
+					// Assign samplers to image units
+					GLint location = glGetUniformLocation(prog->m_program, tmpName);
+					glUniform1i(location, nSamplers);
+
+					DevMsg(DEVMSG_SHADERAPI, "[DEBUG] retrieving sampler '%s' at %d (location = %d)\n", tmpName, nSamplers, location);
+
+					sp->index = nSamplers;
+					strcpy(sp->name, tmpName);
+					nSamplers++;
 				}
 				else
 				{
-					// TODO: find corresponding attribute index for string types:
-					// VERTEX0-VERTEX3	(4 parallel vertex buffers)
-					// TEXCOORD0 - 7
-				}
-
-				// bind attribute
-				glBindAttribLocation(prog->m_program, attribIndex, nameStr);
-				GLCheckError("bind attrib");
-			}
-		}
-
-		// link program and go
-		glLinkProgram(prog->m_program);
-		glGetProgramiv(prog->m_program, GL_OBJECT_LINK_STATUS_ARB, &linkResult);
-
-		GLCheckError("link program");
-
-		if( !linkResult )
-		{
-			char infoLog[2048];
-			GLint len;
-
-			glGetProgramInfoLog(prog->m_program, sizeof(infoLog), &len, infoLog);
-			MsgError("Shader '%s' link error: %s\n", prog->GetName(), infoLog);
-			return false;
-		}
-
-		// get current set program
-		GLuint currProgram = (m_pCurrentShader == NULL)? 0 : ((CGLShaderProgram*)m_pCurrentShader)->m_program;
-
-		// use freshly generated program to retirieve constants (uniforms) and samplers
-		glUseProgram(prog->m_program);
-
-		GLCheckError("test use program");
-
-		// intel buggygl fix
-		if( m_vendor == VENDOR_INTEL )
-		{
-			glUseProgram(0);
-			glUseProgram(prog->m_program);
-		}
-
-		GLint uniformCount, maxLength;
-		glGetProgramiv(prog->m_program, GL_OBJECT_ACTIVE_UNIFORMS_ARB, &uniformCount);
-		glGetProgramiv(prog->m_program, GL_OBJECT_ACTIVE_UNIFORM_MAX_LENGTH_ARB, &maxLength);
-
-		DevMsg(DEVMSG_SHADERAPI, "[DEBUG] shader '%s' has %d samplers and uniforms (namelen=%d)\n", pShaderOutput->GetName(), uniformCount, maxLength);
-
-		if(maxLength == 0 && uniformCount > 0 || uniformCount > 256)
-		{
-			if(m_vendor == VENDOR_INTEL)
-				DevMsg(DEVMSG_SHADERAPI, "Guess who? It's Intel! uniformCount to be zeroed\n");
-			else
-				DevMsg(DEVMSG_SHADERAPI, "I... didn't... expect... that! uniformCount to be zeroed\n");
-
-			uniformCount = 0;
-		}
-
-		GLShaderSampler_t*	samplers = (GLShaderSampler_t  *)malloc(uniformCount * sizeof(GLShaderSampler_t));
-		GLShaderConstant_t*	uniforms = (GLShaderConstant_t *)malloc(uniformCount * sizeof(GLShaderConstant_t));
-
-		int nSamplers = 0;
-		int nUniforms = 0;
-
-		char* tmpName = new char[maxLength+1];
-
-		for (int i = 0; i < uniformCount; i++)
-		{
-			GLenum type;
-			GLint length, size;
-
-			glGetActiveUniform(prog->m_program, i, maxLength, &length, &size, &type, tmpName);
-
-#ifdef USE_GLES2
-			if (type >= GL_SAMPLER_2D && type <= GL_SAMPLER_CUBE_SHADOW)
-#else
-			if (type >= GL_SAMPLER_1D && type <= GL_SAMPLER_2D_RECT_SHADOW_ARB)
-#endif // USE_GLES3
-			{
-				GLShaderSampler_t* sp = &samplers[nSamplers];
-				ASSERTMSG(sp, "WHAT?");
-
-				// Assign samplers to image units
-				GLint location = glGetUniformLocation(prog->m_program, tmpName);
-				glUniform1i(location, nSamplers);
-
-				DevMsg(DEVMSG_SHADERAPI, "[DEBUG] retrieving sampler '%s' at %d (location = %d)\n", tmpName, nSamplers, location);
-
-				sp->index = nSamplers;
-				strcpy(sp->name, tmpName);
-				nSamplers++;
-			}
-			else
-			{
-				// Store all non-gl uniforms
-				if (strncmp(tmpName, "gl_", 3) != 0)
-				{
-					DevMsg(DEVMSG_SHADERAPI, "[DEBUG] retrieving uniform '%s' at %d\n", tmpName, nUniforms);
-
-					char *bracket = strchr(tmpName, '[');
-					if (bracket == NULL || (bracket[1] == '0' && bracket[2] == ']'))
+					// Store all non-gl uniforms
+					if (strncmp(tmpName, "gl_", 3) != 0)
 					{
-						if (bracket)
+						DevMsg(DEVMSG_SHADERAPI, "[DEBUG] retrieving uniform '%s' at %d\n", tmpName, nUniforms);
+
+						char *bracket = strchr(tmpName, '[');
+						if (bracket == NULL || (bracket[1] == '0' && bracket[2] == ']'))
+						{
+							if (bracket)
+							{
+								*bracket = '\0';
+								length = (GLint) (bracket - tmpName);
+							}
+
+							uniforms[nUniforms].index = glGetUniformLocation(prog->m_program, tmpName);
+							uniforms[nUniforms].type = GetConstantType(type);
+							uniforms[nUniforms].nElements = size;
+							strcpy(uniforms[nUniforms].name, tmpName);
+							nUniforms++;
+						}
+						else if (bracket != NULL && bracket[1] > '0')
 						{
 							*bracket = '\0';
-							length = (GLint) (bracket - tmpName);
-						}
-
-						uniforms[nUniforms].index = glGetUniformLocation(prog->m_program, tmpName);
-						uniforms[nUniforms].type = GetConstantType(type);
-						uniforms[nUniforms].nElements = size;
-						strcpy(uniforms[nUniforms].name, tmpName);
-						nUniforms++;
-					}
-					else if (bracket != NULL && bracket[1] > '0')
-					{
-						*bracket = '\0';
-						for (int j = nUniforms - 1; j >= 0; j--)
-						{
-							if (strcmp(uniforms[i].name, tmpName) == 0)
+							for (int j = nUniforms - 1; j >= 0; j--)
 							{
-								int index = atoi(bracket + 1) + 1;
-								if (index > uniforms[j].nElements)
+								if (strcmp(uniforms[i].name, tmpName) == 0)
 								{
-									uniforms[j].nElements = index;
+									int index = atoi(bracket + 1) + 1;
+									if (index > uniforms[j].nElements)
+									{
+										uniforms[j].nElements = index;
+									}
 								}
 							}
-						}
-					} // bracket
-				} // cmp != "gl_"
-			}// Sampler types?
-		}
+						} // bracket
+					} // cmp != "gl_"
+				}// Sampler types?
+			}
 
-		delete [] tmpName;
+			delete [] tmpName;
 
-		// restore current program we previously stored
-		glUseProgram(currProgram);
+			// restore current program we previously stored
+			glUseProgram(currProgram);
 
-		GLCheckError("restore use program");
+			GLCheckError("restore use program");
 
-		glDeleteShader(prog->m_fragmentShader);
-		glDeleteShader(prog->m_vertexShader);
+			glDeleteShader(prog->m_fragmentShader);
+			glDeleteShader(prog->m_vertexShader);
 
-		GLCheckError("delete shaders");
+			GLCheckError("delete shaders");
 
+			prog->m_fragmentShader = 0;
+			prog->m_vertexShader = 0;
 
+			// Shorten arrays to actual count
+			samplers = (GLShaderSampler_t  *) realloc(samplers, nSamplers * sizeof(GLShaderSampler_t));
+			uniforms = (GLShaderConstant_t *) realloc(uniforms, nUniforms * sizeof(GLShaderConstant_t));
+			qsort(samplers, nSamplers, sizeof(GLShaderSampler_t),  samplerComparator);
+			qsort(uniforms, nUniforms, sizeof(GLShaderConstant_t), constantComparator);
 
-		prog->m_fragmentShader = 0;
-		prog->m_vertexShader = 0;
+			for (int i = 0; i < nUniforms; i++)
+			{
+				int constantSize = s_constantTypeSizes[uniforms[i].type] * uniforms[i].nElements;
+				uniforms[i].data = new ubyte[constantSize];
+				memset(uniforms[i].data, 0, constantSize);
+				uniforms[i].dirty = false;
+			}
 
-		// Shorten arrays to actual count
-		samplers = (GLShaderSampler_t  *) realloc(samplers, nSamplers * sizeof(GLShaderSampler_t));
-		uniforms = (GLShaderConstant_t *) realloc(uniforms, nUniforms * sizeof(GLShaderConstant_t));
-		qsort(samplers, nSamplers, sizeof(GLShaderSampler_t),  samplerComparator);
-		qsort(uniforms, nUniforms, sizeof(GLShaderConstant_t), constantComparator);
+			// finally assign
+			prog->m_samplers = samplers;
+			prog->m_constants = uniforms;
 
-		for (int i = 0; i < nUniforms; i++)
-		{
-			int constantSize = s_constantTypeSizes[uniforms[i].type] * uniforms[i].nElements;
-			uniforms[i].data = new ubyte[constantSize];
-			memset(uniforms[i].data, 0, constantSize);
-			uniforms[i].dirty = false;
-		}
+			prog->m_numSamplers = nSamplers;
+			prog->m_numConstants = nUniforms;
 
-		// finally assign
-		prog->m_samplers = samplers;
-		prog->m_constants = uniforms;
+			return 0;
+		});
 
-		prog->m_numSamplers = nSamplers;
-		prog->m_numConstants = nUniforms;
+		if (result == -1)
+			return false;
 	}
 	else
 		return false;
@@ -2041,29 +2227,34 @@ IVertexBuffer* ShaderAPIGL::CreateVertexBuffer(ER_BufferAccess nBufAccess, int n
 
 	DevMsg(DEVMSG_SHADERAPI,"Creating VBO with size %i KB\n", pVB->GetSizeInBytes() / 1024);
 
-	GL_CRITICAL();
-
 	const int numBuffers = (nBufAccess == BUFFER_DYNAMIC) ? MAX_VB_SWITCHING : 1;
 
-	glGenBuffers(numBuffers, pVB->m_nGL_VB_Index);
+	int result = glWorker.Do([pVB, numBuffers, nBufAccess, pData]() {
 
-    if(!GLCheckError("gen vert buffer"))
+		glGenBuffers(numBuffers, pVB->m_nGL_VB_Index);
+
+		if (!GLCheckError("gen vert buffer"))
+			return -1;
+
+		for (int i = 0; i < numBuffers; i++)
+		{
+			glBindBuffer(GL_ARRAY_BUFFER, pVB->m_nGL_VB_Index[i]);
+			GLCheckError("bind buffer");
+
+			glBufferData(GL_ARRAY_BUFFER, pVB->GetSizeInBytes(), pData, glBufferUsages[nBufAccess]);
+			GLCheckError("upload vtx data");
+		}
+
+		glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+		return 0;
+	});
+
+	if (result == -1)
 	{
 		delete pVB;
-		return NULL;
+		return nullptr;
 	}
-
-	for (int i = 0; i < numBuffers; i++)
-	{
-		glBindBuffer(GL_ARRAY_BUFFER, pVB->m_nGL_VB_Index[i]);
-		glBufferData(GL_ARRAY_BUFFER, pVB->GetSizeInBytes(), pData, glBufferUsages[nBufAccess]);
-	}
-
-	GLCheckError("upload vtx data");
-
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-	Finish();
 
 	m_Mutex.Lock();
 	m_VBList.append( pVB );
@@ -2084,29 +2275,33 @@ IIndexBuffer* ShaderAPIGL::CreateIndexBuffer(int nIndices, int nIndexSize, ER_Bu
 
 	int size = nIndices * nIndexSize;
 
-	GL_CRITICAL();
-
 	const int numBuffers = (nBufAccess == BUFFER_DYNAMIC) ? MAX_IB_SWITCHING : 1;
 
-	glGenBuffers(numBuffers, pIB->m_nGL_IB_Index);
+	int result = glWorker.Do([pIB, numBuffers, nBufAccess, pData, size]() {
+		glGenBuffers(numBuffers, pIB->m_nGL_IB_Index);
 
-    if(!GLCheckError("gen idx buffer"))
+		if (!GLCheckError("gen idx buffer"))
+			return -1;
+
+		for (int i = 0; i < numBuffers; i++)
+		{
+			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, pIB->m_nGL_IB_Index[i]);
+			GLCheckError("bind buff");
+
+			glBufferData(GL_ELEMENT_ARRAY_BUFFER, size, pData, glBufferUsages[nBufAccess]);
+			GLCheckError("upload idx data");
+		}
+
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
+		return 0;
+	});
+
+	if (result == -1)
 	{
 		delete pIB;
-		return NULL;
+		return nullptr;
 	}
-
-	for (int i = 0; i < numBuffers; i++)
-	{
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, pIB->m_nGL_IB_Index[i]);
-		glBufferData(GL_ELEMENT_ARRAY_BUFFER, size, pData, glBufferUsages[nBufAccess]);
-	}
-
-	GLCheckError("upload idx data");
-
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-
-	Finish();
 
 	m_Mutex.Lock();
 	m_IBList.append( pIB );

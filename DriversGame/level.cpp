@@ -1667,8 +1667,6 @@ CLevelRegion* CGameLevel::QueryNearestRegions( const IVector2D& point, bool wait
 
 	if( numNeedToLoad > 0 )
 	{
-		g_pShaderAPI->BeginAsyncOperation( GetThreadID() );
-
 		// signal loader
 		SignalWork();
 
@@ -1828,8 +1826,6 @@ void CGameLevel::Render(const Vector3D& cameraPosition, const occludingFrustum_t
 int	CGameLevel::Run()
 {
 	UpdateRegionLoading();
-
-	g_pShaderAPI->EndAsyncOperation();
 
 	return 0;
 }

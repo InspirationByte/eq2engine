@@ -108,9 +108,6 @@ public:
 				continue;
 		}
 
-		// done here
-		g_pShaderAPI->EndAsyncOperation();
-
 		// run thread code here
 		return 0;
 	}
@@ -841,15 +838,12 @@ void CMaterialSystem::PutMaterialToLoadingQueue(IMaterial* pMaterial)
 	if(pMaterial->GetState() != MATERIAL_LOAD_NEED_LOAD)
 		return;
 
-	if( m_config.threadedloader && g_pShaderAPI->GetShaderAPIClass() != SHADERAPI_OPENGL )
+	if( m_config.threadedloader )
 	{
 		g_threadedMaterialLoader.AddMaterial( pMaterial );
 
 		if(!g_threadedMaterialLoader.IsRunning())
 			g_threadedMaterialLoader.StartWorkerThread("matSystemLoader");
-
-		// make async ops happen
-		g_pShaderAPI->BeginAsyncOperation( g_threadedMaterialLoader.GetThreadID() );
 
 		g_threadedMaterialLoader.SignalWork();
 	}

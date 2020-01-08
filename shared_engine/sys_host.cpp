@@ -266,7 +266,7 @@ bool CGameHost::InitSystems( EQWNDHANDLE pWindow, bool bWindowed )
 	// register all shaders
 	REGISTER_INTERNAL_SHADERS();
 
-	materials_config.threadedloader = (g_pShaderAPI->GetShaderAPIClass() != SHADERAPI_OPENGL);
+	materials_config.threadedloader = true;
 
 	if( !g_fontCache->Init() )
 		return false;
