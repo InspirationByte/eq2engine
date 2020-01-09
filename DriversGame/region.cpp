@@ -207,58 +207,46 @@ IVector2D CLevelRegion::GetTileAndNeighbourRegion(int x, int y, CLevelRegion** r
 	return IVector2D(x,y);
 }
 
-Vector3D GetModelRefPosition(CLevelRegion* reg, regionObject_t* ref)
+void GetModelRefRenderQuaternionPosition(Quaternion& rotation, Vector3D& position, CLevelRegion* reg, regionObject_t* ref)
 {
 	// models are usually placed at heightfield 0
-	CHeightTileField& defField = *reg->GetHField();
+	CHeightTileField& defField = *reg->m_heightfield[0];
+
+	Matrix3x3 m = rotateXYZ3(DEG2RAD(ref->rotation.x), DEG2RAD(ref->rotation.y), DEG2RAD(ref->rotation.z));
 
 	Vector3D addHeight(0.0f);
 
 	CLevObjectDef* objectDef = ref->def;
 
-	if(objectDef != NULL && objectDef->m_info.type == LOBJ_TYPE_OBJECT_CFG)
+	if (objectDef->m_info.type == LOBJ_TYPE_OBJECT_CFG && objectDef->m_defModel != NULL)
 		addHeight.y = -objectDef->m_defModel->GetAABB().minPoint.y;
 
-	if(ref->tile_x != 0xFFFF)
+	if (ref->tile_x != 0xFFFF)
 	{
-		hfieldtile_t* tile = defField.GetTile( ref->tile_x, ref->tile_y );
+		hfieldtile_t* tile = defField.GetTile(ref->tile_x, ref->tile_y);
 
-		Vector3D tilePosition(ref->tile_x*HFIELD_POINT_SIZE, tile->height*HFIELD_HEIGHT_STEP, ref->tile_y*HFIELD_POINT_SIZE);
+		Vector3D tilePosition(ref->tile_x*HFIELD_POINT_SIZE, tile ? tile->height*HFIELD_HEIGHT_STEP : 0, ref->tile_y*HFIELD_POINT_SIZE);
 
-		return defField.m_position + tilePosition + addHeight;
-	}
+		position = defField.m_position + tilePosition + addHeight;
 
-	return ref->position;
-}
-
-Quaternion GetModelRefRotation(CLevelRegion* reg, regionObject_t* ref)
-{
-	// models are usually placed at heightfield 0
-	CHeightTileField& defField = *reg->m_heightfield[0];
-	CLevObjectDef* objectDef = ref->def;
-
-	Matrix3x3 m = rotateXYZ3(DEG2RAD(ref->rotation.x), DEG2RAD(ref->rotation.y), DEG2RAD(ref->rotation.z));
-
-	if(ref->tile_x!= 0xFFFF)
-	{
-		if( objectDef != NULL && (objectDef->m_info.modelflags & LMODEL_FLAG_ALIGNTOCELL) &&
-			objectDef->m_info.type != LOBJ_TYPE_OBJECT_CFG )
+		if (objectDef != NULL && (objectDef->m_info.modelflags & LMODEL_FLAG_ALIGNTOCELL) &&
+			objectDef->m_info.type != LOBJ_TYPE_OBJECT_CFG)
 		{
-			Vector3D t,b,n;
-			defField.GetTileTBN( ref->tile_x, ref->tile_y, t,b,n );
+			Vector3D t, b, n;
+			defField.GetTileTBN(ref->tile_x, ref->tile_y, t, b, n);
 
-			Matrix3x3 tileAngle(b,n,t);
+			Matrix3x3 tileAngle(b, n, t);
 
-			tileAngle = (!tileAngle)*m;
-			//Matrix4x4 tileShear(Vector4D(b, 0), Vector4D(0,1,0,0), Vector4D(t, 0), Vector4D(0,0,0,1));
-
-			//Matrix4x4 tilemat = shearY(cosf(atan2f(b.x, b.y)))*tileTBN;
-
-			return Quaternion(tileAngle);
+			rotation = Quaternion((!tileAngle)*m);
 		}
+		else
+			rotation = Quaternion(m);
+
+		return;
 	}
 
-	return Quaternion(m);
+	rotation = Quaternion(m);
+	position = ref->position;
 }
 
 Matrix4x4 GetModelRefRenderMatrix(CLevelRegion* reg, regionObject_t* ref)
@@ -279,7 +267,7 @@ Matrix4x4 GetModelRefRenderMatrix(CLevelRegion* reg, regionObject_t* ref)
 	{
 		hfieldtile_t* tile = defField.GetTile( ref->tile_x, ref->tile_y );
 
-		Vector3D tilePosition(ref->tile_x*HFIELD_POINT_SIZE, tile->height*HFIELD_HEIGHT_STEP, ref->tile_y*HFIELD_POINT_SIZE);
+		Vector3D tilePosition(ref->tile_x*HFIELD_POINT_SIZE, tile ? tile->height*HFIELD_HEIGHT_STEP : 0, ref->tile_y*HFIELD_POINT_SIZE);
 		Vector3D modelPosition = defField.m_position + tilePosition + addHeight;
 
 		if( objectDef != NULL && (objectDef->m_info.modelflags & LMODEL_FLAG_ALIGNTOCELL) &&
@@ -403,8 +391,6 @@ void CLevelRegion::Render(const Vector3D& cameraPosition, const occludingFrustum
 
 		float fDist = length(cameraPosition - ref->position);
 
-		Matrix4x4 mat = GetModelRefRenderMatrix(this, ref);
-
 		if(cont->m_info.type == LOBJ_TYPE_INTERNAL_STATIC)
 		{
 			//if( frustum.IsBoxInside(cont->m_model->m_bbox.minPoint, cont->m_model->m_bbox.maxPoint) )
@@ -417,11 +403,15 @@ void CLevelRegion::Render(const Vector3D& cameraPosition, const occludingFrustum
 
 					regObjectInstance_t& inst = cont->m_instData->instances[cont->m_instData->numInstances++];
 
-					inst.position = Vector4D(GetModelRefPosition(this, ref), 1.0f);
-					inst.rotation = GetModelRefRotation(this, ref);
+					Vector3D refPos(0.0f);
+					GetModelRefRenderQuaternionPosition(inst.rotation, refPos, this, ref);
+
+					inst.position = Vector4D(refPos, 1.0f);
 				}
 				else
 				{
+					Matrix4x4 mat = GetModelRefRenderMatrix(this, ref);
+
 					materials->SetMatrix(MATRIXMODE_WORLD, mat);
 					cont->Render(fDist, ref->bbox, false, nRenderFlags);
 				}
@@ -430,6 +420,8 @@ void CLevelRegion::Render(const Vector3D& cameraPosition, const occludingFrustum
 
 		else
 		{
+			Matrix4x4 mat = GetModelRefRenderMatrix(this, ref);
+
 			materials->SetMatrix(MATRIXMODE_WORLD, mat);
 
 			BoundingBox bbox;
@@ -459,9 +451,11 @@ void CLevelRegion::Render(const Vector3D& cameraPosition, const occludingFrustum
 				instData)
 			{
 				regObjectInstance_t& inst = instData->instances[instData->numInstances++];
+			
+				Vector3D refPos(0.0f);
+				GetModelRefRenderQuaternionPosition(inst.rotation, refPos, this, ref);
 
-				inst.position = Vector4D(GetModelRefPosition(this, ref), 1.0f);
-				inst.rotation = GetModelRefRotation(this, ref);
+				inst.position = Vector4D(refPos, 1.0f);
 			}
 			else
 			{

@@ -112,7 +112,8 @@ public:
 	
 	CCar*						SpawnTrafficCar( const IVector2D& globalCell );
 
-	void						QueryTrafficCars( DkList<CCar*>& list, float radius, const Vector3D& position, const Vector3D& direction, float queryCosAngle );
+	void						QueryTrafficCars( DkList<CCar*>& list, float radius, const Vector3D& position, const Vector3D& direction, float queryCosAngle = 0.0f );
+	OOLUA::Table				L_QueryTrafficCars(float radius, const Vector3D& position) const;
 
 	// ----- COPS ------
 	void						SetCopsEnabled(bool enable);									// switch to spawn
@@ -253,6 +254,8 @@ OOLUA_PROXY(CAIManager)
 
 	OOLUA_MFUNC(SpawnRoadBlockFor)
 	OOLUA_MFUNC_CONST(IsRoadBlockSpawn)
+
+	OOLUA_MEM_FUNC_CONST_RENAME(QueryTrafficCars, OOLUA::Table, L_QueryTrafficCars, float, const Vector3D&)
 OOLUA_PROXY_END
 #endif // __INTELLISENSE__
 #endif // NO_LUA

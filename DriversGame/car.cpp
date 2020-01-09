@@ -74,7 +74,7 @@ DECLARE_CMD(towfun, "", CV_CHEAT)
 	}
 
 	DkList<CGameObject*> nearestCars;
-	g_pGameWorld->QueryObjects(nearestCars, length(pcar->m_conf->physics.body_size)*2.0f, pcar->GetOrigin(), [](CGameObject* x) {
+	g_pGameWorld->QueryObjects(nearestCars, length(pcar->m_conf->physics.body_size)*2.0f, pcar->GetOrigin(), nullptr, [](CGameObject* x, void*) {
 		return (x->ObjType() == GO_CAR || x->ObjType() == GO_CAR_AI);
 	});
 
@@ -1383,9 +1383,15 @@ void CCar::UpdateVehiclePhysics(float delta)
 	//------------------------------------------------------------------------------------------
 
 	// do acceleration and burnout
+	bool bDoBurnout = inputBurnout && (GetSpeed() < m_conf->physics.burnoutMaxSpeed);
+
 	if (inputBurnout)
 	{
 		inputAcceleration = 1.0f;
+	}
+
+	if (bDoBurnout)
+	{
 		m_fAcceleration = 1.0f;
 	}
 	else
@@ -1407,8 +1413,6 @@ void CCar::UpdateVehiclePhysics(float delta)
 
 		m_fAcceleration = acceleration;
 	}
-
-	bool bDoBurnout = inputBurnout && (GetSpeed() < m_conf->physics.burnoutMaxSpeed);
 
 	//--------------------------------------------------------
 
@@ -2756,14 +2760,14 @@ void CCar::Simulate( float fDt )
 				TexAtlasEntry_t* entry = lightSide == 0 ? g_vehicleLights->FindEntry("light1_d") : g_vehicleLights->FindEntry("light1_s");
 				Rectangle_t flipRect = entry ? entry->rect : Rectangle_t(0,0,1,1);
 
-				decalPrimitives_t lightDecal;
-				lightDecal.settings.avoidMaterialFlags = MATERIAL_FLAG_WATER; // only avoid water
-				lightDecal.settings.facingDir = normalize(vec3_up - forwardVec);
+				decalSettings_t lightDecalSettings;
+				lightDecalSettings.avoidMaterialFlags = MATERIAL_FLAG_WATER; // only avoid water
+				lightDecalSettings.facingDir = normalize(vec3_up - forwardVec);
 
 				// might be slow on mobile device
-				lightDecal.settings.processFunc = LightDecalTriangleProcessFunc;
+				lightDecalSettings.processFunc = LightDecalTriangleProcessFunc;
 
-				ProjectDecalToSpriteBuilder(lightDecal, g_vehicleLights, flipRect, viewProj, lightDecalColor);
+				ProjectDecalToSpriteBuilderAddJob(lightDecalSettings, g_vehicleLights, flipRect, viewProj, lightDecalColor);
 			}
 
 			if(m_isLocalCar && r_carLights.GetInt() == 2)
@@ -2803,10 +2807,14 @@ void CCar::Simulate( float fDt )
 
 	float frontDamageSum = m_bodyParts[CB_FRONT_LEFT].damage+m_bodyParts[CB_FRONT_RIGHT].damage;
 
+	float camDist = g_pGameWorld->m_view.GetLODScaledDistFrom(GetOrigin());
+	int nLOD = m_pModel->SelectLod(camDist); // lod distance check
+
 	if(	isCar && visible &&
 		(!m_inWater || IsAlive()) &&
 		m_engineSmokeTime > 0.1f &&
-		GetSpeed() < 80.0f)
+		GetSpeed() < 80.0f &&
+		nLOD <= 0)
 	{
 		if(frontDamageSum > 0.55f)
 		{
@@ -4284,7 +4292,7 @@ void CCar::DrawBody( int nRenderFlags, int nLOD)
 
 			// instead of prepare skinning, we send BodyDamage and car colours
 			g_pShaderAPI->SetShaderConstantArrayFloat("BodyDamage", bodyDamages, 16);
-			g_pShaderAPI->SetShaderConstantArrayVector4D("CarColor", bodyColors, 2);
+			g_pShaderAPI->SetShaderConstantArrayVector4D("CarColor", colors, 2);
 
 			g_pShaderAPI->SetShaderConstantArrayVector4D("LicenseRect", &licPlateCoord, 1);
 
@@ -4314,14 +4322,14 @@ void CCar::DrawShadow(float distance)
 
 		viewProj = proj*view;
 
-		decalPrimitives_t shadowDecal;
-		shadowDecal.settings.avoidMaterialFlags = MATERIAL_FLAG_WATER; // only avoid water
-		shadowDecal.settings.facingDir = vec3_up;
+		decalSettings_t shadowDecalSettings;
+		shadowDecalSettings.avoidMaterialFlags = MATERIAL_FLAG_WATER; // only avoid water
+		shadowDecalSettings.facingDir = vec3_up;
 
 		// might be slow on mobile device
-		shadowDecal.settings.processFunc = LightDecalTriangleProcessFunc;
+		shadowDecalSettings.processFunc = LightDecalTriangleProcessFunc;
 
-		ProjectDecalToSpriteBuilder(shadowDecal, g_vehicleShadows, flipRect, viewProj, ColorRGBA(1.0f,1.0f,1.0f,1.0f));
+		ProjectDecalToSpriteBuilderAddJob(shadowDecalSettings, g_vehicleShadows, flipRect, viewProj, ColorRGBA(1.0f,1.0f,1.0f,1.0f));
 	}
 	else
 	{

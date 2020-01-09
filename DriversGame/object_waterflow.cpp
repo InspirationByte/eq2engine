@@ -25,6 +25,7 @@ CObject_WaterFlow::CObject_WaterFlow( kvkeybase_t* kvdata )
 	m_keyValues = kvdata;
 	m_nextRippleTime = 0.0f;
 	m_waterFlowSound = nullptr;
+	m_hfObject = nullptr;
 }
 
 CObject_WaterFlow::~CObject_WaterFlow()
@@ -36,10 +37,16 @@ void CObject_WaterFlow::OnRemove()
 {
 	BaseClass::OnRemove();
 
-	g_pPhysics->m_physics.DestroyGhostObject(m_ghostObject);
-	m_ghostObject = NULL;
+	g_pPhysics->m_physics.DestroyGhostObject(m_hfObject->m_object);
+	delete m_hfObject;
+	m_hfObject = NULL;
 
 	g_sounds->RemoveSoundController(m_waterFlowSound);
+}
+
+void CObject_WaterFlow::Precache()
+{
+	BaseClass::Precache();
 }
 
 void CObject_WaterFlow::Spawn()
@@ -79,21 +86,40 @@ void CObject_WaterFlow::Spawn()
 		m_waterFlowSound->Play();
 	}
 
-	m_ghostObject = new CEqCollisionObject();
+	// create object itself and HF object for quick callbacks
+	CEqCollisionObject* triggerObject = new CEqCollisionObject();
+	m_hfObject = new CPhysicsHFObject(triggerObject, this);
 
-	m_ghostObject->Initialize( WATERFLOW_RADIUS );
+	triggerObject->Initialize( WATERFLOW_RADIUS );
 
-	m_ghostObject->SetCollideMask(0);
-	m_ghostObject->SetContents(OBJECTCONTENTS_DEBRIS);
+	triggerObject->SetCollideMask(0);
+	triggerObject->SetContents(OBJECTCONTENTS_DEBRIS);
 
-	m_ghostObject->SetPosition(m_groundPos);
+	triggerObject->SetPosition(m_groundPos);
 
-	m_ghostObject->SetUserData(this);
+	triggerObject->SetUserData(this);
 
-	m_bbox = m_ghostObject->m_aabb_transformed;
+	m_bbox = triggerObject->m_aabb_transformed;
 
-	// Next call will add NO_RAYCAST, COLLISION_LIST and DISABLE_RESPONSE flags automatically
-	g_pPhysics->m_physics.AddGhostObject( m_ghostObject );
+	// Next call will add NO_RAYCAST | DISABLE_RESPONSE flags automatically
+	g_pPhysics->m_physics.AddGhostObject( triggerObject );
+}
+
+void CObject_WaterFlow::OnPhysicsCollide(CollisionPairData_t& pair)
+{
+	CEqCollisionObject* obj = pair.GetOppositeTo(m_hfObject->m_object);
+
+	if (!obj)
+		return;
+
+	// apply force to the object
+	if (obj->IsDynamic())
+	{
+		float intensity = RemapValClamp(m_lifeTime, 0.0f, FORCE_REDUCE_TIME, 0.0f, 1.0f);
+
+		CEqRigidBody* body = (CEqRigidBody*)obj;
+		body->ApplyWorldImpulse(m_groundPos, Vector3D(vec3_up) * m_force * intensity);
+	}
 }
 
 void CObject_WaterFlow::Simulate( float fDt )
@@ -130,19 +156,4 @@ void CObject_WaterFlow::Simulate( float fDt )
 
 	if (m_waterFlowSound)
 		m_waterFlowSound->SetVolume(intensity);
-
-	if(m_ghostObject->m_collisionList.numElem() > 0 && m_ghostObject->m_collisionList[0].bodyB)
-	{
-		CEqCollisionObject* obj = m_ghostObject->m_collisionList[0].bodyB;
-
-		// apply force to the object
-		if (obj->IsDynamic())
-		{
-			CEqRigidBody* body = (CEqRigidBody*)obj;
-			body->ApplyWorldImpulse(m_groundPos, Vector3D(vec3_up) * m_force * intensity);
-		}
-	}
-
-	// we have to deal with cleaning up collision list
-	m_ghostObject->m_collisionList.clear( false );
 }

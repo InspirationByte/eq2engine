@@ -22,6 +22,7 @@ enum EMutexPurpose
 	MUTEXPURPOSE_LEVEL_LOADER,		// level loading
 	MUTEXPURPOSE_PHYSICS,			// physics engine
 	MUTEXPURPOSE_RENDERER,			// rendering
+	MUTEXPURPOSE_GAME,				// game thread locking
 
 	MUTEXPURPOSE_USED,
 };

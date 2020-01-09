@@ -25,6 +25,7 @@
 
 #include "BulletCollision/CollisionShapes/btTriangleShape.h"
 #include "BulletCollision/CollisionDispatch/btInternalEdgeUtility.h"
+#include "BulletCollision/CollisionDispatch/btCollisionDispatcherMt.h"
 
 #include "eqBulletIndexedMesh.h"
 
@@ -197,7 +198,7 @@ void CEqPhysics::InitWorld()
 	m_collConfig = new btDefaultCollisionConfiguration();
 
 	// use the default collision dispatcher. For parallel processing you can use a diffent dispatcher (see Extras/BulletMultiThreaded)
-	m_collDispatcher = new btCollisionDispatcher( m_collConfig );
+	m_collDispatcher = new btCollisionDispatcherMt( m_collConfig );
 	m_collDispatcher->setDispatcherFlags( btCollisionDispatcher::CD_DISABLE_CONTACTPOOL_DYNAMIC_ALLOCATION );
 
 	// broadphase not required
@@ -385,7 +386,10 @@ void CEqPhysics::AddGhostObject( CEqCollisionObject* object )
 	Threading::CScopedMutex m(m_mutex);
 
 	// add extra flags to objects
-	object->m_flags = COLLOBJ_ISGHOST | COLLOBJ_COLLISIONLIST | COLLOBJ_DISABLE_RESPONSE | COLLOBJ_NO_RAYCAST;
+	object->m_flags = COLLOBJ_ISGHOST | COLLOBJ_DISABLE_RESPONSE | COLLOBJ_NO_RAYCAST;
+
+	if (!object->m_callbacks)
+		object->m_flags |= COLLOBJ_COLLISIONLIST;
 
 	m_ghostObjects.append(object);
 
@@ -544,7 +548,7 @@ void CEqPhysics::DestroyController( IEqPhysicsController* controller )
 
 void CEqPhysics::SolveBodyCollisions(CEqRigidBody* bodyA, CEqRigidBody* bodyB, float fDt)
 {
-	PROFILE_FUNC();
+	//PROFILE_FUNC();
 
 	// apply filters
 	if(!bodyA->CheckCanCollideWith(bodyB))
@@ -606,7 +610,7 @@ void CEqPhysics::SolveBodyCollisions(CEqRigidBody* bodyA, CEqRigidBody* bodyB, f
 
 	//PROFILE_END();
 
-	PROFILE_BEGIN(matrixOperations);
+	//PROFILE_BEGIN(matrixOperations);
 
 	// body a
 	Matrix4x4 eqTransA = Matrix4x4( bodyA->GetOrientation() );
@@ -623,13 +627,13 @@ void CEqPhysics::SolveBodyCollisions(CEqRigidBody* bodyA, CEqRigidBody* bodyB, f
 	objA->setWorldTransform(ConvertMatrix4ToBullet(eqTransA));
 	objB->setWorldTransform(ConvertMatrix4ToBullet(eqTransB));
 
-	PROFILE_END();
+	//PROFILE_END();
 
 	EqPhysContactResultCallback cbResult(true,center);
 
-	PROFILE_BEGIN(contactPairTest);
+	//PROFILE_BEGIN(contactPairTest);
 	m_collisionWorld->contactPairTest(objA, objB, cbResult);
-	PROFILE_END();
+	//PROFILE_END();
 
 	// so collision test were performed, get our results to contact pairs
 	DkList<ContactPair_t>& pairs = bodyA->m_contactPairs;
@@ -671,7 +675,7 @@ void CEqPhysics::SolveBodyCollisions(CEqRigidBody* bodyA, CEqRigidBody* bodyB, f
 
 void CEqPhysics::SolveStaticVsBodyCollision(CEqCollisionObject* staticObj, CEqRigidBody* bodyB, float fDt, DkList<ContactPair_t>& contactPairs)
 {
-	PROFILE_FUNC();
+	//PROFILE_FUNC();
 
 	if(staticObj == NULL || bodyB == NULL)
 		return;
@@ -688,7 +692,7 @@ void CEqPhysics::SolveStaticVsBodyCollision(CEqCollisionObject* staticObj, CEqRi
 	btCollisionObject* objA = staticObj->m_collObject;
 	btCollisionObject* objB = bodyB->m_collObject;
 
-	PROFILE_BEGIN(matrixOperations);
+	//PROFILE_BEGIN(matrixOperations);
 
 	// body a
 	Matrix4x4 eqTransA;
@@ -731,13 +735,13 @@ void CEqPhysics::SolveStaticVsBodyCollision(CEqCollisionObject* staticObj, CEqRi
 	objA->setWorldTransform(transA);
 	objB->setWorldTransform(transB);
 
-	PROFILE_END();
+	//PROFILE_END();
 
 	EqPhysContactResultCallback	cbResult(/*(bodyB->m_flags & BODY_ISCAR)*/true, center);
 
-	PROFILE_BEGIN(contactPairTest);
+	//PROFILE_BEGIN(contactPairTest);
 	m_collisionWorld->contactPairTest(objA, objB, cbResult);
-	PROFILE_END();
+	//PROFILE_END();
 
 	int numCollResults = cbResult.m_collisions.numElem();
 
@@ -855,6 +859,59 @@ void CEqPhysics::IntegrateSingle(CEqRigidBody* body)
 
 }
 
+struct eqCollisionDetectionJob_t
+{
+	eqParallelJob_t base;
+	CEqRigidBody*	body;
+	collgridcell_t* cell;
+	CEqPhysics*		physics;
+};
+/*
+void CEqPhysics::CellCollisionDetectionJob(void* data, int iter)
+{
+	eqCollisionDetectionJob_t* job = (eqCollisionDetectionJob_t*)data;
+
+	CEqRigidBody*	body = job->body;
+	collgridcell_t* cell = job->cell;
+	CEqPhysics*		physics = job->physics;
+
+	bool disabledResponse = (body->m_flags & COLLOBJ_DISABLE_RESPONSE);
+
+	int numGridObjs = job->cell->m_gridObjects.numElem();
+
+	// iterate over static objects in cell
+	for (int j = 0; j < numGridObjs; j++)
+		physics->SolveStaticVsBodyCollision(cell->m_gridObjects[j], body, body->GetLastFrameTime(), body->m_contactPairs);
+
+	// if object is only affected by other dynamic objects, don't waste my cycles!
+	if (disabledResponse)
+		return;
+
+	int numGridDynObjs = cell->m_dynamicObjs.numElem();
+
+	// iterate over dynamic objects in cell
+	for (int j = 0; j < numGridDynObjs; j++)
+	{
+		CEqCollisionObject* collObj = cell->m_dynamicObjs[j];
+
+		if (collObj == body)
+			continue;
+
+		if (collObj->IsDynamic())
+			physics->SolveBodyCollisions(body, (CEqRigidBody*)collObj, body->GetLastFrameTime());
+		else // purpose for triggers
+			physics->SolveStaticVsBodyCollision(collObj, body, body->GetLastFrameTime(), body->m_contactPairs);
+	}
+}
+
+void CollisionDetectionJobCompleted()
+{
+	eqCollisionDetectionJob_t* job = (eqCollisionDetectionJob_t*)data;
+	delete job;
+}
+
+*/
+
 void CEqPhysics::DetectCollisionsSingle(CEqRigidBody* body)
 {
 	PROFILE_FUNC();
@@ -885,7 +942,21 @@ void CEqPhysics::DetectCollisionsSingle(CEqRigidBody* body)
 
 			if(!ncell)
 				continue;
+			/*
+			// SHOULD BE DEBUGGED, crashes in current state
+			// also needs a barrier after whole DetectCollisionsSingle cycle
 
+			eqCollisionDetectionJob_t* job = new eqCollisionDetectionJob_t;
+			job->base.func = CEqPhysics::CellCollisionDetectionJob;
+			job->base.onComplete = CollisionDetectionJobCompleted;
+			job->base.arguments = job;
+			job->body = body;
+			job->cell = ncell;
+			job->physics = this;
+
+			g_parallelJobs->AddJob((eqParallelJob_t*)job);
+			*/
+			
 			int numGridObjs = ncell->m_gridObjects.numElem();
 
 			// iterate over static objects in cell
@@ -913,6 +984,8 @@ void CEqPhysics::DetectCollisionsSingle(CEqRigidBody* body)
 			}
 		}
 	}
+
+	g_parallelJobs->Submit();
 }
 
 ConVar ph_carVsCarErp("ph_carVsCarErp", "0.15", "Car versus car erp", CV_CHEAT);
@@ -1126,6 +1199,8 @@ void CEqPhysics::SimulateStep(float deltaTime, int iteration, FNSIMULATECALLBACK
 	// calculate collisions
 	for (int i = 0; i < m_moveable.numElem(); i++)
 		DetectCollisionsSingle( m_moveable[i] );
+
+	// TODO: job barrier
 
 	// process generated contact pairs
 	for (int i = 0; i < m_moveable.numElem(); i++)

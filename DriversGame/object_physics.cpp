@@ -65,7 +65,7 @@ END_NETWORK_TABLE()
 CObject_Physics::CObject_Physics( kvkeybase_t* kvdata )
 {
 	m_keyValues = kvdata;
-	m_physBody = nullptr;
+	m_hfObj = nullptr;
 	m_surfParams = nullptr;
 	m_userData = nullptr;
 	m_breakSpawnedObject = nullptr;
@@ -81,10 +81,10 @@ void CObject_Physics::OnRemove()
 {
 	BaseClass::OnRemove();
 
-	if(m_physBody)
+	if(m_hfObj)
 	{
-		g_pPhysics->m_physics.DestroyBody(m_physBody);
-		m_physBody = NULL;
+		g_pPhysics->RemoveObject(m_hfObj);
+		m_hfObj = NULL;
 	}
 
 	if (m_breakSpawnedObject)
@@ -125,6 +125,8 @@ void CObject_Physics::Spawn()
 
 	if( body->Initialize(&m_pModel->GetHWData()->physModel, 0) )
 	{
+		m_hfObj = new CPhysicsHFObject(body, this);
+
 		m_netPos = m_vecOrigin;
 		m_netAngles = m_vecAngles;
 
@@ -161,9 +163,7 @@ void CObject_Physics::Spawn()
 		if (m_breakForce > 0.0f)
 			body->m_flags |= BODY_FORCE_FREEZE;
 
-		m_physBody = body;
-
-		g_pPhysics->m_physics.AddToWorld( m_physBody );
+		g_pPhysics->AddObject( m_hfObj );
 	}
 	else
 	{
@@ -179,65 +179,53 @@ void CObject_Physics::Spawn()
 
 void CObject_Physics::SetOrigin(const Vector3D& origin)
 {
-	if(m_physBody)
-		m_physBody->SetPosition( origin );
+	if(m_hfObj)
+		m_hfObj->GetBody()->SetPosition( origin );
 
 	m_vecOrigin = origin;
 }
 
 void CObject_Physics::SetAngles(const Vector3D& angles)
 {
-	if(m_physBody)
-		m_physBody->SetOrientation(Quaternion(DEG2RAD(angles.x),DEG2RAD(angles.y),DEG2RAD(angles.z)));
+	if(m_hfObj)
+		m_hfObj->GetBody()->SetOrientation(Quaternion(DEG2RAD(angles.x),DEG2RAD(angles.y),DEG2RAD(angles.z)));
 
 	m_vecAngles = angles;
 }
 
 void CObject_Physics::SetVelocity(const Vector3D& vel)
 {
-	if(!m_physBody)
+	if(!m_hfObj)
 		return;
 
-	m_physBody->SetLinearVelocity( vel  );
-}
-
-const Vector3D& CObject_Physics::GetOrigin()
-{
-	m_vecOrigin = m_physBody->GetPosition();
-	return m_vecOrigin;
-}
-
-const Vector3D& CObject_Physics::GetAngles()
-{
-	m_vecAngles = eulers(m_physBody->GetOrientation());
-	m_vecAngles = VRAD2DEG(m_vecAngles);
-
-	return m_vecAngles;
+	m_hfObj->GetBody()->SetLinearVelocity( vel  );
 }
 
 const Vector3D& CObject_Physics::GetVelocity() const
 {
-	return m_physBody->GetLinearVelocity();
+	return m_hfObj->GetBody()->GetLinearVelocity();
 }
 
 extern ConVar r_enableObjectsInstancing;
 
 void CObject_Physics::Draw( int nRenderFlags )
 {
-	if(!m_physBody)
+	if(!m_hfObj)
 		return;
 
+	CEqRigidBody* body = m_hfObj->GetBody();
+
 	// draw wheels
-	if (!m_physBody->IsFrozen())
+	if (!body->IsFrozen())
 		m_shadowDecal.dirty = true;
 
 	//if(!g_pGameWorld->m_frustum.IsSphereInside(GetOrigin(), length(objBody->m_aabb.maxPoint)))
 	//	return;
 
-	m_physBody->UpdateBoundingBoxTransform();
-	m_bbox = m_physBody->m_aabb_transformed;
+	body->UpdateBoundingBoxTransform();
+	m_bbox = body->m_aabb_transformed;
 
-	m_physBody->ConstructRenderMatrix(m_worldMatrix);
+	body->ConstructRenderMatrix(m_worldMatrix);
 
 	if(r_enableObjectsInstancing.GetBool() && m_pModel->GetInstancer())
 	{
@@ -260,39 +248,25 @@ void CObject_Physics::Draw( int nRenderFlags )
 		BaseClass::Draw( nRenderFlags );
 }
 
-void CObject_Physics::Simulate(float fDt)
+void CObject_Physics::OnPhysicsCollide(CollisionPairData_t& pair)
 {
-	PROFILE_FUNC();
+	CEqRigidBody* body = m_hfObj->GetBody();
 
-	if(fDt <= 0.0f)
-		return;
+	if (!body->IsFrozen())
+		body->SetMinFrameTime(0.0f);
 
-	float maxImpactVelocity = 0.0f;
-
-	for(int i = 0; i < m_physBody->m_collisionList.numElem(); i++)
+	if (m_surfParams && m_surfParams->word == 'M' && pair.impactVelocity > 4.0f)
 	{
-		CollisionPairData_t& pair = m_physBody->m_collisionList[i];
-
-		if(!m_physBody->IsFrozen())
-			m_physBody->SetMinFrameTime(0.0f);
-
-		if(m_surfParams && m_surfParams->word == 'M' && pair.impactVelocity > 4.0f)
-		{
-			Vector3D wVelocity = m_physBody->GetVelocityAtWorldPoint( pair.position );
-			Vector3D reflDir = reflect(wVelocity, pair.normal);
-			MakeSparks(pair.position+pair.normal*0.05f, reflDir, Vector3D(5.0f), 1.0f, 8);
-		}
-
-		CEqCollisionObject* collidingObject = pair.GetOppositeTo(m_physBody);
-
-		// it's only broken if car collision force was greateer
-		maxImpactVelocity = max(maxImpactVelocity, pair.impactVelocity);
+		Vector3D wVelocity = body->GetVelocityAtWorldPoint(pair.position);
+		Vector3D reflDir = reflect(wVelocity, pair.normal);
+		MakeSparks(pair.position + pair.normal*0.05f, reflDir, Vector3D(5.0f), 1.0f, 8);
 	}
 
-	if (maxImpactVelocity > m_breakForce)
+	// it's only broken if car collision force was greateer
+	if (pair.impactVelocity > m_breakForce)
 	{
 		if (m_breakForce > 0.0f)
-			m_physBody->Wake();
+			m_hfObj->GetBody()->Wake();
 
 		if (!m_breakSpawnedObject && m_breakSpawn.Length() > 0)
 		{
@@ -309,15 +283,25 @@ void CObject_Physics::Simulate(float fDt)
 	}
 }
 
+void CObject_Physics::Simulate(float fDt)
+{
+	PROFILE_FUNC();
+
+	if(fDt <= 0.0f)
+		return;
+
+
+}
+
 void CObject_Physics::OnUnpackMessage( CNetMessageBuffer* buffer )
 {
 	BaseClass::OnUnpackMessage(buffer);
 
 	debugoverlay->Box3D(m_netPos.Get()-1.0f, m_netPos.Get()+1.0f, ColorRGBA(1,1,0,0.5f), 0.0f );
 
-	if(m_physBody)
+	if(m_hfObj)
 	{
-		m_physBody->SetPosition( m_netPos.Get() );
+		m_hfObj->GetBody()->SetPosition( m_netPos.Get() );
 		m_vecOrigin = m_netPos.Get();
 	}
 	else
@@ -330,32 +314,32 @@ void CObject_Physics::OnUnpackMessage( CNetMessageBuffer* buffer )
 
 void CObject_Physics::L_SetContents(int contents)
 {
-	if (!m_physBody)
+	if (!m_hfObj)
 		return;
 
-	m_physBody->SetContents(contents);
+	m_hfObj->GetBody()->SetContents(contents);
 }
 
 void CObject_Physics::L_SetCollideMask(int contents)
 {
-	if (!m_physBody)
+	if (!m_hfObj)
 		return;
 
-	m_physBody->SetCollideMask(contents);
+	m_hfObj->GetBody()->SetCollideMask(contents);
 }
 
 int	CObject_Physics::L_GetContents() const
 {
-	if (!m_physBody)
+	if (!m_hfObj)
 		return 0;
 
-	return m_physBody->GetCollideMask();
+	return m_hfObj->GetBody()->GetCollideMask();
 }
 
 int	CObject_Physics::L_GetCollideMask() const
 {
-	if (!m_physBody)
+	if (!m_hfObj)
 		return 0;
 
-	return m_physBody->GetCollideMask();
+	return m_hfObj->GetBody()->GetCollideMask();
 }

@@ -30,7 +30,7 @@ using namespace EqBulletUtils;
 
 // high frequency object wrapper
 // used for vehicles
-CPhysicsHFObject::CPhysicsHFObject( CEqRigidBody* pObj, CGameObject* owner ) : IEqPhysCallback(pObj)
+CPhysicsHFObject::CPhysicsHFObject( CEqCollisionObject* pObj, CGameObject* owner ) : IEqPhysCallback(pObj)
 {
 	m_owner = owner;
 }
@@ -43,33 +43,50 @@ void CPhysicsHFObject::PreSimulate( float fDt )
 {
 	PROFILE_FUNC();
 
-	CEqRigidBody* rigidBody = (CEqRigidBody*)m_object;
-
-	if (!rigidBody->IsCanIntegrate(true))
-		return;
-
-	if (m_owner->m_state == GO_STATE_IDLE)
+	if (m_object->IsDynamic())
 	{
-		UpdateOrigin();
+		CEqRigidBody* rigidBody = (CEqRigidBody*)m_object;
 
-		float lastdt = rigidBody->GetLastFrameTime();
-		m_owner->OnPrePhysicsFrame(lastdt);
+		if (!rigidBody->IsCanIntegrate(true))
+			return;
+
+		if (m_owner->m_state == GO_STATE_IDLE)
+		{
+			UpdateOrigin();
+
+			float lastdt = rigidBody->GetLastFrameTime();
+			m_owner->OnPrePhysicsFrame(lastdt);
+		}
 	}
+	else
+	{
+		if (m_owner->m_state == GO_STATE_IDLE)
+			m_owner->OnPrePhysicsFrame(fDt);
+	}
+
 }
 
 void CPhysicsHFObject::PostSimulate( float fDt )
 {
 	PROFILE_FUNC();
 
-	CEqRigidBody* rigidBody = (CEqRigidBody*)m_object;
-
-	if (!rigidBody->IsCanIntegrate(true))
-		return;
-
-	if (m_owner->m_state == GO_STATE_IDLE)
+	if (m_object->IsDynamic())
 	{
-		UpdateOrigin();
+		CEqRigidBody* rigidBody = (CEqRigidBody*)m_object;
 
+		if (!rigidBody->IsCanIntegrate(true))
+			return;
+
+		if (m_owner->m_state == GO_STATE_IDLE)
+		{
+			UpdateOrigin();
+
+			//float lastdt = m_object->GetLastFrameTime();
+			m_owner->OnPhysicsFrame(fDt);
+		}
+	}
+	else
+	{
 		//float lastdt = m_object->GetLastFrameTime();
 		m_owner->OnPhysicsFrame(fDt);
 	}
@@ -77,11 +94,9 @@ void CPhysicsHFObject::PostSimulate( float fDt )
 
 void CPhysicsHFObject::UpdateOrigin()
 {
-	CEqRigidBody* rigidBody = (CEqRigidBody*)m_object;
-
-	Vector3D angles = eulers(rigidBody->GetOrientation());
+	Vector3D angles = eulers(m_object->GetOrientation());
 	m_owner->m_vecAngles = VRAD2DEG(angles);
-	m_owner->m_vecOrigin = rigidBody->GetPosition();
+	m_owner->m_vecOrigin = m_object->GetPosition();
 }
 
 void CPhysicsHFObject::OnCollide(CollisionPairData_t& pair)
@@ -203,7 +218,6 @@ bool CPhysicsEngine::TestConvexSweep(btCollisionShape* shape, const Quaternion& 
 void CPhysicsEngine::AddObject( CPhysicsHFObject* pPhysObject )
 {
 	m_hfBodies.append( pPhysObject );
-
 	m_physics.AddToWorld(pPhysObject->GetBody());
 }
 

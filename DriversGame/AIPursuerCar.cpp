@@ -48,7 +48,7 @@ const float AI_COP_COLLISION_CHECKTIME		= 0.01f;
 
 const float AI_COP_TIME_TO_LOST_TARGET		= 30.0f;
 const float AI_COP_TIME_TO_LOST_TARGET_FAR	= 10.0f;
-const float AI_COP_TIME_TO_TELL_DIRECTION	= 5.0f;
+const float AI_COP_TIME_TO_TELL_DIRECTION	= 10.0f;
 
 const float AI_COP_LOST_TARGET_FARDIST		= 160.0f;
 
@@ -260,7 +260,7 @@ void CAIPursuerCar::OnPrePhysicsFrame( float fDt )
 	if(	IsAlive() && !m_enabled)
 	{
 		DkList<CGameObject*> nearestCars;
-		g_pGameWorld->QueryObjects(nearestCars, AI_COPVIEW_RADIUS_PURSUIT, GetOrigin(), [](CGameObject* x) {
+		g_pGameWorld->QueryObjects(nearestCars, AI_COPVIEW_RADIUS_PURSUIT, GetOrigin(), nullptr, [](CGameObject* x, void*) {
 			return ((x->ObjType() == GO_CAR));
 		});
 
@@ -328,7 +328,7 @@ int	CAIPursuerCar::TrafficDrive( float fDt, EStateTransition transition )
 int CAIPursuerCar::PassiveCopState( float fDt, EStateTransition transition )
 {
 	DkList<CGameObject*> nearestCars;
-	g_pGameWorld->QueryObjects(nearestCars, AI_COPVIEW_RADIUS_PURSUIT, GetOrigin(), [](CGameObject* x) {
+	g_pGameWorld->QueryObjects(nearestCars, AI_COPVIEW_RADIUS_PURSUIT, GetOrigin(), nullptr, [](CGameObject* x, void*) {
 		return ((x->ObjType() == GO_CAR));
 	});
 

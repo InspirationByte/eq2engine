@@ -81,5 +81,6 @@ void DecalTexture(decalPrimitivesRef_t& decal, const Matrix4x4& texCoordProj, co
 
 // makes a decal
 decalPrimitivesRef_t ProjectDecalToSpriteBuilder( decalPrimitives_t& targetDecal, CSpriteBuilder<PFXVertex_t>* targetBuilder, const Rectangle_t& rect, const Matrix4x4& viewProj, const ColorRGBA& color = color4_white);
+void ProjectDecalToSpriteBuilderAddJob(const decalSettings_t& settings, CSpriteBuilder<PFXVertex_t>* group, const Rectangle_t& rect, const Matrix4x4& viewProj, const ColorRGBA& color);
 
 #endif // DRVSYNDECALS_H

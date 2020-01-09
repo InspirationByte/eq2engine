@@ -105,6 +105,32 @@ int main(int argc, char** argv)
 	if(!g_fileSystem->Init(false))
 		return -2;
 
+	kvkeybase_t* fileSystemSettings = GetCore()->GetConfig()->FindKeyBase("FileSystem");
+
+	// Search for mods folder
+	if (fileSystemSettings && KV_GetValueBool(fileSystemSettings->FindKeyBase("EnableMods"), 0, false))
+	{
+		DKFINDDATA* findData = nullptr;
+		char* modPath = (char*)g_fileSystem->FindFirst("Mods/*.*", &findData, SP_ROOT);
+
+		if (modPath)
+		{
+			int count = 0;
+
+			while (modPath = (char*)g_fileSystem->FindNext(findData))
+			{
+				if (g_fileSystem->FindIsDirectory(findData) && stricmp(modPath, "..") && stricmp(modPath, "."))
+				{
+					MsgInfo("*** Registered Mod '%s' ***\n", modPath);
+					g_fileSystem->AddSearchPath(varargs("$MOD$_%d", count), varargs("Mods/%s", modPath));
+					count++;
+				}
+			}
+
+			g_fileSystem->FindClose(findData);
+		}
+	}
+
 	g_localizer->AddTokensFile("game");
 
 	// initialize timers

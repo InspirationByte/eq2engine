@@ -188,9 +188,7 @@ inline void _SwapChannels(DATA_TYPE *pixels, int nPixels, const int channels, co
 {
 	do
 	{
-		DATA_TYPE tmp = pixels[ch1];
-		pixels[ch1] = pixels[ch0];
-		pixels[ch0] = tmp;
+		QuickSwap<DATA_TYPE>(pixels[ch0], pixels[ch1]);
 		pixels += channels;
 	}
 	while (--nPixels);

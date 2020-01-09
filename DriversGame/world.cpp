@@ -890,6 +890,8 @@ void CGameWorld::OnObjectRemovedEvent(CGameObject* obj)
 
 int CGameWorld::AddObject(CGameObject* pObject)
 {
+	CScopedMutex m(GetGlobalMutex(MUTEXPURPOSE_GAME));
+
 	bool postPronedSpawn = (pObject->m_state == GO_STATE_NOTSPAWN);
 
 	DkList<CGameObject*>& _objList = postPronedSpawn ? m_nonSpawnedObjects : m_gameObjects;
@@ -921,6 +923,8 @@ void CGameWorld::RemoveObject(CGameObject* pObject)
 
 void CGameWorld::RemoveObjectById(int objectId)
 {
+	CScopedMutex m(GetGlobalMutex(MUTEXPURPOSE_GAME));
+
 	int numObjects = m_gameObjects.numElem();
 	for (int i = 0; i < numObjects; i++)
 	{
@@ -938,6 +942,8 @@ bool CGameWorld::IsValidObject(CGameObject* pObject) const
 {
 	if(!pObject)
 		return false;
+
+	CScopedMutex m(GetGlobalMutex(MUTEXPURPOSE_GAME));
 
 	int numObjects = m_gameObjects.numElem();
 	for (int i = 0; i < numObjects; i++)
@@ -1209,6 +1215,8 @@ void CGameWorld::ForceUpdateObjects()
 
 void CGameWorld::SpawnPendingObjects()
 {
+	CScopedMutex m(GetGlobalMutex(MUTEXPURPOSE_GAME));
+
 	// non-spawned objects are in locked manner
 	// because regions can push objects into m_nonSpawnedObjects
 	m_level.m_mutex.Lock();
@@ -1371,6 +1379,8 @@ void CGameWorld::UpdateWorld(float fDt)
 
 	// remove marked objects after simulation
 	{
+		CScopedMutex m(GetGlobalMutex(MUTEXPURPOSE_GAME));
+
 		// remove objects
 		for(int i = 0; i < m_gameObjects.numElem(); i++)
 		{
@@ -1548,7 +1558,7 @@ void CGameWorld::GenerateEnvmapAndFogTextures()
 	// TODO: more efficient way
 
 	ITexture* tempRenderTarget = g_pShaderAPI->CreateNamedRenderTarget("_tempSkyboxRender", 256, 256, FORMAT_RGBA8,
-										TEXFILTER_NEAREST, TEXADDRESS_CLAMP, COMP_NEVER, TEXFLAG_CUBEMAP);
+										TEXFILTER_LINEAR, TEXADDRESS_CLAMP, COMP_NEVER, TEXFLAG_CUBEMAP);
 
 	tempRenderTarget->Ref_Grab();
 
@@ -1559,7 +1569,7 @@ void CGameWorld::GenerateEnvmapAndFogTextures()
 	for(int i = 0; i < 6; i++)
 	{
 		g_pShaderAPI->ChangeRenderTarget(tempRenderTarget, i);
-		g_pShaderAPI->Clear(true,true,false);
+		g_pShaderAPI->Clear(true, false, false);
 
 		// Draw sky
 		materials->SetMatrix(MATRIXMODE_PROJECTION, cubeProjectionMatrixD3D(0.1f, 1000.0f));
@@ -1636,6 +1646,58 @@ void CGameWorld::GenerateEnvmapAndFogTextures()
 	m_fogEnvMap->Ref_Grab();
 
 	g_pShaderAPI->FreeTexture( tempRenderTarget );
+
+	/*
+	NEW CODE:
+
+	if(!m_envMapsDirty)
+		return;
+
+	if(!r_skyToCubemap.GetBool())
+		return;
+
+	materials->Wait();
+
+	m_envMapsDirty = false;
+
+	if (!m_envMap)
+	{
+		m_envMap = g_pShaderAPI->CreateNamedRenderTarget("_skyEnvMap", 128, 128, FORMAT_RGBA8,
+			TEXFILTER_LINEAR, TEXADDRESS_CLAMP, COMP_NEVER, TEXFLAG_CUBEMAP);
+		m_envMap->Ref_Grab();
+	}
+
+	if (!m_fogEnvMap)
+	{
+		m_fogEnvMap = g_pShaderAPI->CreateNamedRenderTarget("_fogEnvMap", 128, 128, FORMAT_RGBA8,
+			TEXFILTER_LINEAR, TEXADDRESS_CLAMP, COMP_NEVER, TEXFLAG_CUBEMAP);
+		m_fogEnvMap->Ref_Grab();
+	}
+
+	materials->SetMaterialRenderParamCallback(this);
+	materials->SetEnvironmentMapTexture(nullptr);
+
+	ITexture* envMaps[] = { m_envMap, m_fogEnvMap };
+
+	// render the skybox into cubemap
+	for(int i = 0; i < 6; i++)
+	{
+		int cubeFaceIds[] = { i,i };
+
+		g_pShaderAPI->ChangeRenderTargets(envMaps, 2, cubeFaceIds);
+		g_pShaderAPI->Clear(true, false, false);
+
+		// Draw sky
+		materials->SetMatrix(MATRIXMODE_PROJECTION, cubeProjectionMatrixD3D(0.1f, 1000.0f));
+		materials->SetMatrix(MATRIXMODE_VIEW, cubeViewMatrix(i));
+		materials->SetMatrix(MATRIXMODE_WORLD, translate(Vector3D(0, m_envSkyProps.x, 0)) * rotateY4(m_envSkyProps.y));
+
+		m_skyColor->SetVector4( 1.0f );
+		DrawSkyBox(0xf);
+	}
+
+	g_pShaderAPI->ChangeRenderTargetToBackBuffer();
+	*/
 }
 
 void CGameWorld::OnPreApplyMaterial( IMaterial* pMaterial )
@@ -2171,6 +2233,9 @@ void CGameWorld::Draw( int nRenderFlags )
 			PROFILE_CODE( obj->Draw( nRenderFlags ) );
 		}while(m_renderingObjects.goToNext());
 
+		// submit jobs (usually car shadows and other particles)
+		g_parallelJobs->Submit();
+
 		PROFILE_END();
 
 		// draw instanced models
@@ -2235,7 +2300,7 @@ void CGameWorld::Draw( int nRenderFlags )
 	// restore projection and draw the particles
 	materials->SetMatrix(MATRIXMODE_PROJECTION, m_matrices[MATRIXMODE_PROJECTION]);
 
-	// wait scheduled PFX render
+	// wait scheduled PFX render, decals, etc
 	g_parallelJobs->Wait();
 
 	DrawMoon();
@@ -2282,6 +2347,7 @@ void CGameWorld::Draw( int nRenderFlags )
 				if (m_sunGlowOccQuery->IsReady())
 				{
 					pixels = m_sunGlowOccQuery->GetVisiblePixels();
+					pixels = min(pixels, LENS_TOTAL_PIXELS);			// clamp to not get overbright
 					lensIntensityTiming = (float)pixels * LENS_PIXEL_TO_INTENSITY * fIntensity;
 
 					break;
@@ -2595,6 +2661,8 @@ CGameObject* CGameWorld::CreateObject( const char* objectDefName ) const
 
 CGameObject* CGameWorld::FindObjectByName( const char* objectName ) const
 {
+	CScopedMutex m(GetGlobalMutex(MUTEXPURPOSE_GAME));
+
 	for(int i = 0; i < m_gameObjects.numElem(); i++)
 	{
 		CGameObject* obj = m_gameObjects[i];
@@ -2612,8 +2680,10 @@ CGameObject* CGameWorld::FindObjectByName( const char* objectName ) const
 	return nullptr;
 }
 
-void CGameWorld::QueryObjects(DkList<CGameObject*>& list, float radius, const Vector3D& position, bool(*comparator)(CGameObject* obj)) const
+void CGameWorld::QueryObjects(DkList<CGameObject*>& list, float radius, const Vector3D& position, void* caller, bool(*comparator)(CGameObject* obj, void* caller)) const
 {
+	CScopedMutex m(GetGlobalMutex(MUTEXPURPOSE_GAME));
+
 	int numObjs = m_gameObjects.numElem();
 
 	float radiusSqr = radius * radius;
@@ -2630,7 +2700,7 @@ void CGameWorld::QueryObjects(DkList<CGameObject*>& list, float radius, const Ve
 		if (dist > radiusSqr)
 			continue;
 
-		if(comparator(obj))
+		if(comparator(obj, caller))
 			list.append(obj);
 	}
 }
@@ -2684,6 +2754,8 @@ OOLUA::Table CGameWorld::L_FindObjectOnLevel( const char* name ) const
 
 OOLUA::Table CGameWorld::L_QueryObjects(float radius, const Vector3D& position, OOLUA::Lua_func_ref compFunc) const
 {
+	CScopedMutex m(GetGlobalMutex(MUTEXPURPOSE_GAME));
+
 	OOLUA::Script& state = GetLuaState();
 	EqLua::LuaStackGuard g(state);
 

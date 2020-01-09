@@ -7,6 +7,8 @@
 
 #include "world.h"
 #include "DrvSynDecals.h"
+#include "eqParallelJobs.h"
+#include "eqGlobalMutex.h"
 
 ConVar r_clipdecals("r_clipdecals", "1");
 ConVar r_clipdecalplane("r_clipdecalplane", "-1");
@@ -261,16 +263,65 @@ decalPrimitivesRef_t ProjectDecalToSpriteBuilder(decalPrimitives_t& decal, CSpri
 	if (!numVerts)
 		return ref;
 
-	// push geometry
 	PFXVertex_t* verts;
-	int startIdx = group->AllocateGeom(numVerts, 0, &verts, NULL, false);
+	int startIdx = -1;
 
-	if(startIdx != -1)
 	{
-		memcpy(verts, decal.verts.ptr(), numVerts *sizeof(PFXVertex_t));
+		CScopedMutex m(GetGlobalMutex(MUTEXPURPOSE_RENDERER));
+		startIdx = group->AllocateGeom(numVerts, 0, &verts, NULL, false);
+	}
+
+	// push geometry
+	if (startIdx != -1)
+	{
+		memcpy(verts, decal.verts.ptr(), numVerts * sizeof(PFXVertex_t));
 		ref.verts = verts;
 		ref.numVerts = numVerts;
 	}
 
 	return ref;
+}
+
+// JOB version for eqParallelJobs
+
+struct eqDecalPolygonJob_t
+{
+	eqParallelJob_t					base;
+	decalSettings_t					settings;
+	CSpriteBuilder<PFXVertex_t>*	group;
+	Rectangle_t						rect;
+	Matrix4x4						viewProj;
+	ColorRGBA						color;
+};
+
+void DecalJobCompleted(eqParallelJob_t* job)
+{
+	eqDecalPolygonJob_t* decalData = (eqDecalPolygonJob_t*)job;
+
+	// required to delete job manually here
+	// becuase eqDecalPolygonJob_t would have destructors
+	delete decalData;
+}
+
+void DecalPolygonsJob(void* data, int i)
+{
+	eqDecalPolygonJob_t* decalData = (eqDecalPolygonJob_t*)data;
+	decalPrimitives_t decal;
+	decal.settings = decalData->settings;
+	ProjectDecalToSpriteBuilder(decal, decalData->group, decalData->rect, decalData->viewProj, decalData->color);
+}
+
+void ProjectDecalToSpriteBuilderAddJob(const decalSettings_t& settings, CSpriteBuilder<PFXVertex_t>* group, const Rectangle_t& rect, const Matrix4x4& viewProj, const ColorRGBA& color)
+{
+	eqDecalPolygonJob_t* job = new eqDecalPolygonJob_t;
+	job->base.func = DecalPolygonsJob;
+	job->base.onComplete = DecalJobCompleted;
+	job->base.arguments = job;
+	job->settings = settings;
+	job->group = group;
+	job->rect = rect;
+	job->viewProj = viewProj;
+	job->color = color;
+
+	g_parallelJobs->AddJob((eqParallelJob_t*)job);
 }

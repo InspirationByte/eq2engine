@@ -24,11 +24,10 @@ class CHeightTileField;
 class CGameObject;
 
 // the physics high frequency object
-// only for rigid body
 class CPhysicsHFObject : public IEqPhysCallback
 {
 public:
-	CPhysicsHFObject( CEqRigidBody* pObj, CGameObject* owner = NULL );
+	CPhysicsHFObject( CEqCollisionObject* pObj, CGameObject* owner = NULL );
 	~CPhysicsHFObject();
 
 	void			PreSimulate( float fDt );

@@ -182,9 +182,6 @@
     </CustomBuildStep>
   </ItemGroup>
   <ItemGroup>
-    <None Include="packages.config" />
-  </ItemGroup>
-  <ItemGroup>
     <Library Include="..\..\src_dependency\jpeg\lib\jpeg.lib">
       <Filter>Libs</Filter>
     </Library>

@@ -13,11 +13,6 @@
 
 #include "ShaderAPIGL.h"
 
-struct eqGlTex
-{
-	GLuint glTexID;
-};
-
 class CGLTexture : public CTexture
 {
 public:
@@ -29,7 +24,7 @@ public:
 	void					Release();
 	void					ReleaseTextures();
 
-	eqGlTex&				GetCurrentTexture();
+	GLTextureRef_t&			GetCurrentTexture();
 
 	// locks texture for modifications, etc
 	void					Lock(texlockdata_t* pLockData, Rectangle_t* pRect = NULL, bool bDiscard = false, bool bReadOnly = false, int nLevel = 0, int nCubeFaceId = 0);
@@ -37,7 +32,7 @@ public:
 	// unlocks texture for modifications, etc
 	void					Unlock();
 
-	DkList<eqGlTex>			textures;
+	DkList<GLTextureRef_t>	textures;
 
 	float					m_flLod;
 	GLuint					glTarget;
@@ -56,5 +51,7 @@ protected:
 	bool					m_lockDiscard;
 	bool					m_lockReadOnly;
 };
+
+void UpdateGLTextureFromImage(GLTextureRef_t texture, CImage* image, int startMipLevel);
 
 #endif //CGLTEXTURE_H
