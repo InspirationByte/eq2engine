@@ -804,7 +804,7 @@ void CGameWorld::Init()
 
 		if (!m_tempReflTex)
 		{
-			m_tempReflTex = g_pShaderAPI->CreateNamedRenderTarget("_tempTexture", 512, 256, reflTextureTargetFormat, TEXFILTER_NEAREST, TEXADDRESS_CLAMP);
+			m_tempReflTex = g_pShaderAPI->CreateNamedRenderTarget("_tempReflection", 512, 256, reflTextureTargetFormat, TEXFILTER_NEAREST, TEXADDRESS_CLAMP);
 			m_tempReflTex->Ref_Grab();
 		}
 
@@ -2334,12 +2334,12 @@ void CGameWorld::Draw( int nRenderFlags )
 			g_pShaderAPI->Reset( STATE_RESET_VBO );
 			materials->Setup2D(screenSize.x, screenSize.y);
 
-			const uint32 LENS_PIXELS_HALFSIZE = 10;
-			const uint32 LENS_TOTAL_PIXELS = LENS_PIXELS_HALFSIZE*LENS_PIXELS_HALFSIZE * 4;
+			const int LENS_PIXELS_HALFSIZE = 10;
+			const int LENS_TOTAL_PIXELS = LENS_PIXELS_HALFSIZE*LENS_PIXELS_HALFSIZE * 4;
 
-			const float LENS_PIXEL_TO_INTENSITY = 1.0f / (float)LENS_TOTAL_PIXELS;
+			const float LENS_PIXEL_TO_INTENSITY = 1.0f / float(LENS_TOTAL_PIXELS);
 
-			uint32 pixels = LENS_TOTAL_PIXELS;
+			int pixels = 0;
 
 			do
 			{
@@ -2347,7 +2347,7 @@ void CGameWorld::Draw( int nRenderFlags )
 				{
 					pixels = m_sunGlowOccQuery->GetVisiblePixels();
 					pixels = min(pixels, LENS_TOTAL_PIXELS);			// clamp to not get overbright
-					lensIntensityTiming = (float)pixels * LENS_PIXEL_TO_INTENSITY * fIntensity;
+					lensIntensityTiming = float(pixels) * LENS_PIXEL_TO_INTENSITY * fIntensity;
 
 					break;
 				}
