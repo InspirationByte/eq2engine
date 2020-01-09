@@ -30,18 +30,6 @@ typedef void* (*PFNGetEGLSurfaceFromSDL)();
 #define GL_CONTEXT GLXContext
 #endif // _WIN32
 
-struct glsCtx_t
-{
-	glsCtx_t() {}
-	glsCtx_t(GL_CONTEXT ctx) : context(ctx), isAqquired(false), threadId(0)
-	{
-	}
-
-	GL_CONTEXT	context;
-	bool		isAqquired;
-	uintptr_t	threadId;
-};
-
 #define MAX_SHARED_CONTEXTS 1 // thank you, OpenGL, REALLY FUCKED ME with having multiple context, works perfect btw it crashes
 
 class CGLRenderLib : public IRenderLibrary
@@ -85,24 +73,22 @@ public:
 	// returns default swap chain
 	IEqSwapChain*			GetDefaultSwapchain();
 
-	GL_CONTEXT				GetFreeSharedContext(uintptr_t threadId);
-
-	GL_CONTEXT				CreateSharedContext(GL_CONTEXT shareWith);
+	GL_CONTEXT				GetSharedContext();
+protected:
 
 	void					InitSharedContexts();
 	void					DestroySharedContexts();
 
-protected:
-
 	DkList<IEqSwapChain*>	m_swapChains;
+
+	GL_CONTEXT				glContext;
+	GL_CONTEXT				glSharedContext;
 
 #ifdef USE_GLES2
     EGLNativeDisplayType	hdc;
     EGLNativeWindowType		hwnd;
     EGLDisplay				eglDisplay;
     EGLSurface				eglSurface;
-    EGLContext				glContext;
-
 	EGLConfig				eglConfig;
 
 #ifdef ANDROID
@@ -114,17 +100,15 @@ protected:
 	DEVMODE					dm;
 
 	HDC						hdc;
-	HGLRC					glContext;
+	
 	HWND					hwnd;
 
 #elif defined(LINUX)
-	GLXContext				glContext;
     XF86VidModeModeInfo**	dmodes;
     Display*				display;
     XVisualInfo*            vi;
     int						m_screen;
 #elif defined(__APPLE__)
-	AGLContext				glContext;
 	CFArrayRef				dmodes;
 	CFDictionaryRef			initialMode;
 #endif // _WIN32
@@ -133,7 +117,5 @@ protected:
 	int						m_height;
 
 	bool					m_bResized;
-
-	glsCtx_t				m_contexts[MAX_SHARED_CONTEXTS];
 };
 #endif //CGLRENDERLIB_H

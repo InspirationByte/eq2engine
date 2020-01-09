@@ -593,8 +593,6 @@ ITexture* ShaderAPI_Base::LoadTexture( const char* pszFileName, ER_TextureFilter
 	for(int i = 0;i < pImages.numElem();i++)
 		delete pImages[i];
 
-	CScopedMutex m(m_Mutex);
-
 	// Generate the error
 	if(!pFoundTexture)
 		pFoundTexture = m_pErrorTexture;

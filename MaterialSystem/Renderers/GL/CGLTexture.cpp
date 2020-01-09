@@ -131,8 +131,6 @@ void CGLTexture::Lock(texlockdata_t* pLockData, Rectangle_t* pRect, bool bDiscar
 #else
     if(!bDiscard)
     {
-        g_shaderApi.GL_CRITICAL();
-
 		int targetOrCubeTarget = (glTarget == GL_TEXTURE_CUBE_MAP) ? GL_TEXTURE_CUBE_MAP_POSITIVE_X+m_lockCubeFace : glTarget;
 
         GLenum srcFormat = chanCountTypes[GetChannelCount(m_iFormat)];
@@ -158,8 +156,6 @@ void CGLTexture::Unlock()
 		{
 			GLenum srcFormat = chanCountTypes[GetChannelCount(m_iFormat)];
 			GLenum srcType = chanTypePerFormat[m_iFormat];
-
-            g_shaderApi.GL_CRITICAL();
 
 			int targetOrCubeTarget = (glTarget == GL_TEXTURE_CUBE_MAP) ? GL_TEXTURE_CUBE_MAP_POSITIVE_X+m_lockCubeFace : glTarget;
 

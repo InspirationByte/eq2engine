@@ -351,8 +351,6 @@ public:
 
 protected:
 
-	void				GL_CRITICAL();
-
 	void				CreateTextureInternal(ITexture** pTex, const DkList<CImage*>& pImages, const SamplerStateParam_t& sampler,int nFlags = 0);
 	GLTextureRef_t		CreateGLTextureFromImage(CImage* pSrc, const SamplerStateParam_t& sampler, int& wide, int& tall, int nFlags);
 
@@ -417,13 +415,9 @@ private:
 	AGLContext				m_glContext;
 #endif // _WIN32
 
-	DkList<activeWorker_t>	m_activeWorkers;
+	bool					m_asyncOperationActive;
 
 	uintptr_t				m_mainThreadId;
-	uintptr_t				m_currThreadId;
-	bool					m_contextBound;
-
-	CEqSignal				m_busySignal;
 
 	EGraphicsVendor			m_vendor;
 };

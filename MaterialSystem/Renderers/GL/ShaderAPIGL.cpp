@@ -35,6 +35,8 @@ extern ShaderAPIGL g_shaderApi;
 
 class GLWorkerThread : CEqThread
 {
+	friend class ShaderAPIGL;
+
 public:
 	GLWorkerThread()
 	{
@@ -63,7 +65,6 @@ protected:
 
 	uint m_workCounter;
 	DkList<work_t*> m_pendingWork;
-	work_t* m_currentWork;
 	CEqMutex m_workMutex;
 };
 
@@ -110,10 +111,10 @@ int GLWorkerThread::WaitForResult(uint workId)
 
 int GLWorkerThread::Do(std::function<int()> f)
 {
-	//uintptr_t thisThreadId = Threading::GetCurrentThreadID();
+	uintptr_t thisThreadId = Threading::GetCurrentThreadID();
 
-	//if (thisThreadId == g_shaderApi.m_mainThreadId) // not required for main thread
-	//	return (f)();
+	if (thisThreadId == g_shaderApi.m_mainThreadId) // not required for main thread
+		return (f)();
 
 	if (!IsRunning())
 		StartWorkerThread("ShaderAPIGLWorker");
@@ -128,52 +129,57 @@ int GLWorkerThread::Do(std::function<int()> f)
 
 		work_t* work = new work_t(f, workId);
 		m_pendingWork.append(work);
-	}
 
-	// set the worker function
-	SignalWork();
+		SignalWork();
+	}
 
 	return WaitForResult(workId);
 }
 
 int GLWorkerThread::Run()
 {
-	{
-		CScopedMutex m(m_workMutex);
+	work_t* currentWork = nullptr;
 
-		// find some work
-		while (!m_currentWork && m_pendingWork.numElem())
+	// find some work
+	while (!currentWork)
+	{
+		// search for work
 		{
+			CScopedMutex m(m_workMutex);
+
 			for (int i = 0; i < m_pendingWork.numElem(); i++)
 			{
 				work_t* work = m_pendingWork[i];
 
 				if (work->result == WORK_PENDING_MARKER)
 				{
-					m_currentWork = work;
+					currentWork = work;
 					break;
 				}
 			}
+
+			// no work and haven't picked one?
+			if (m_pendingWork.numElem() == 0 && !currentWork)
+				break;
 		}
-	}
 
-	if (m_currentWork)
-	{
-		// get and quickly dispose
-		work_t* cur = m_currentWork;
-		m_currentWork = nullptr;
+		if (currentWork)
+		{
+			// get and quickly dispose
+			work_t* cur = currentWork;
+			currentWork = nullptr;
 
-		g_shaderApi.BeginAsyncOperation(GetThreadID());
-		g_shaderApi.GL_CRITICAL();
+			g_shaderApi.BeginAsyncOperation(GetThreadID());
 
-		// run work
-		int result = cur->func();
+			// run work
+			int result = cur->func();
 
-		g_shaderApi.EndAsyncOperation();
+			g_shaderApi.EndAsyncOperation();
 
-		m_workMutex.Lock();
-		cur->result = result;
-		m_workMutex.Unlock();
+			cur->result = result;
+		}
+
+		Platform_Sleep(1);
 	}
 
 	return 0;
@@ -310,6 +316,8 @@ ShaderAPIGL::ShaderAPIGL() : ShaderAPI_Base()
 	m_boundInstanceStream = -1;
 	memset(m_currentGLVB, 0, sizeof(m_currentGLVB));
 	m_currentGLIB = 0;
+
+	m_asyncOperationActive = false;
 }
 
 void ShaderAPIGL::PrintAPIInfo()
@@ -317,12 +325,6 @@ void ShaderAPIGL::PrintAPIInfo()
 	Msg("ShaderAPI: ShaderAPIGL\n");
 
 	MsgInfo("------ Loaded textures ------\n");
-
-	Msg("Active workers: %d\n", m_activeWorkers.numElem());
-	for(int i = 0; i < m_activeWorkers.numElem(); i++)
-	{
-		MsgInfo("  worker TID=%d numWorks=%d active=%d\n", m_activeWorkers[i].threadId, m_activeWorkers[i].numWorks, m_activeWorkers[i].active == true);
-	}
 
 	CScopedMutex scoped(m_Mutex);
 	for(int i = 0; i < m_TextureList.numElem(); i++)
@@ -350,11 +352,6 @@ void ShaderAPIGL::Init( shaderAPIParams_t &params)
 	DevMsg(DEVMSG_SHADERAPI, "[DEBUG] ShaderAPIGL vendor: %d\n", m_vendor);
 
 	m_mainThreadId = Threading::GetCurrentThreadID();
-
-	m_contextBound = true;
-
-	// don't wait on first commands
-	m_busySignal.Raise();
 
 	// Set some of my preferred defaults
 	glEnable(GL_DEPTH_TEST);
@@ -415,6 +412,7 @@ void ShaderAPIGL::Init( shaderAPIParams_t &params)
 
 void ShaderAPIGL::Shutdown()
 {
+	glWorker.StopThread();
 	ShaderAPI_Base::Shutdown();
 }
 
@@ -848,8 +846,6 @@ IOcclusionQuery* ShaderAPIGL::CreateOcclusionQuery()
 	if(!m_caps.isHardwareOcclusionQuerySupported)
 		return NULL;
 
-	GL_CRITICAL();
-
 	CGLOcclusionQuery* occQuery = new CGLOcclusionQuery();
 
 	m_Mutex.Lock();
@@ -862,8 +858,6 @@ IOcclusionQuery* ShaderAPIGL::CreateOcclusionQuery()
 // removal of occlusion query object
 void ShaderAPIGL::DestroyOcclusionQuery(IOcclusionQuery* pQuery)
 {
-	GL_CRITICAL();
-
 	if(pQuery)
 		delete pQuery;
 
@@ -881,8 +875,6 @@ void ShaderAPIGL::FreeTexture(ITexture* pTexture)
 
 	if(pTex == NULL)
 		return;
-
-	GL_CRITICAL();
 
 	if(pTex->Ref_Count() == 0)
 		MsgWarning("texture %s refcount==0\n",pTex->GetName());
@@ -1778,7 +1770,6 @@ void ShaderAPIGL::DestroyShaderProgram(IShaderProgram* pShaderProgram)
 
 		m_ShaderList.remove(pShader);
 
-		GL_CRITICAL();
 		delete pShader;
 
 		GLCheckError("delete shader program");
@@ -2361,8 +2352,6 @@ void ShaderAPIGL::DestroyVertexBuffer(IVertexBuffer* pVertexBuffer)
 
 	if(m_VBList.remove(pVertexBuffer))
 	{
-		GL_CRITICAL();
-
 		Reset(STATE_RESET_VF | STATE_RESET_VB);
 		ApplyBuffers();
 
@@ -2389,8 +2378,6 @@ void ShaderAPIGL::DestroyIndexBuffer(IIndexBuffer* pIndexBuffer)
 	{
 		Reset(STATE_RESET_IB);
 		ApplyBuffers();
-
-		GL_CRITICAL();
 
 		const int numBuffers = (pIB->m_access == BUFFER_DYNAMIC) ? MAX_IB_SWITCHING : 1;
 
@@ -2744,55 +2731,6 @@ void ShaderAPIGL::SetTexture( ITexture* pTexture, const char* pszName, int index
 // OpenGL multithreaded context switching
 //----------------------------------------------------------------------------------------
 
-// Owns context for current execution thread
-void ShaderAPIGL::GL_CRITICAL()
-{
-	uintptr_t thisThreadId = Threading::GetCurrentThreadID();
-
-	if(thisThreadId == m_mainThreadId) // not required for main thread
-		return;
-
-	int workerIdx = -1;
-
-	m_Mutex.Lock();
-	for(int i = 0; i < m_activeWorkers.numElem(); i++)
-	{
-		if( m_activeWorkers[i].threadId == thisThreadId )
-		{
-			workerIdx = i;
-			break;
-		}
-	}
-
-	ASSERTMSG(workerIdx != -1, "No BeginAsyncOperation() called for specified thread!");
-
-	if(workerIdx != -1)
-	{
-		activeWorker_t& worker = m_activeWorkers[workerIdx];
-
-		if( worker.active ) // don't make context again
-		{
-			m_Mutex.Unlock();
-			return;
-		}
-
-		worker.active = true;
-
-		//Msg("Apply context to thread\n");
-
-#ifdef USE_GLES2
-		eglMakeCurrent(m_display, EGL_NO_SURFACE, EGL_NO_SURFACE, worker.context);
-#elif _WIN32
-		wglMakeCurrent(m_hdc, worker.context);
-#elif LINUX
-		glXMakeCurrent(m_display, (Window)m_params->windowHandle, worker.context);
-#elif __APPLE__
-
-#endif
-	}
-
-	m_Mutex.Unlock();
-}
 
 extern CGLRenderLib g_library;
 #include "CGLRenderLib.h"
@@ -2800,31 +2738,26 @@ extern CGLRenderLib g_library;
 // prepares for async operation (required to be called in main thread)
 void ShaderAPIGL::BeginAsyncOperation( uintptr_t threadId )
 {
-	m_Mutex.Lock();
+	uintptr_t thisThreadId = Threading::GetCurrentThreadID();
 
-	for(int i = 0; i < m_activeWorkers.numElem(); i++)
-	{
-		if( m_activeWorkers[i].threadId == threadId )
-		{
-			m_activeWorkers[i].numWorks++;
+	if (thisThreadId == m_mainThreadId) // not required for main thread
+		return;
 
-			//Msg("ShaderAPIGL::BeginAsyncOperation() duplicated\n");
-			m_Mutex.Unlock();
-			return; // already have one
-		}
-	}
+	ASSERT(m_asyncOperationActive == false);
+	
+	GL_CONTEXT sharedContext = g_library.GetSharedContext();
 
-	activeWorker_t aw;
-	aw.threadId = threadId;
-	aw.context = g_library.GetFreeSharedContext(threadId);
-	aw.numWorks = 1;
+#ifdef USE_GLES2
+	eglMakeCurrent(m_display, EGL_NO_SURFACE, EGL_NO_SURFACE, sharedContext);
+#elif _WIN32
+	wglMakeCurrent(m_hdc, sharedContext);
+#elif LINUX
+	glXMakeCurrent(m_display, (Window)m_params->windowHandle, sharedContext);
+#elif __APPLE__
 
-	ASSERTMSG(aw.context ,"GetFreeSharedContext - no free contexts!");
+#endif
 
-	//Msg("ShaderAPIGL::BeginAsyncOperation() ok\n");
-
-	m_activeWorkers.append(aw);
-	m_Mutex.Unlock();
+	m_asyncOperationActive = true;
 }
 
 // completes for async operation (must be called in worker thread)
@@ -2838,45 +2771,19 @@ void  ShaderAPIGL::EndAsyncOperation()
 		return;
 	}
 
-	int workerIdx = -1;
+	ASSERT(m_asyncOperationActive == true);
 
-	m_Mutex.Lock();
-
-	for(int i = 0; i < m_activeWorkers.numElem(); i++)
-	{
-		if( m_activeWorkers[i].threadId == thisThreadId )
-		{
-			workerIdx = i;
-			break;
-		}
-	}
-
-	ASSERTMSG(workerIdx != -1, "EndAsyncOperation() call requires BeginAsyncOperation() before this thread starts!");
-
-	if(workerIdx != -1)
-	{
-		activeWorker_t& worker = m_activeWorkers[workerIdx];
-
-		worker.numWorks--;
-
-		//Msg("ShaderAPIGL::EndAsyncOperation() ok%s\n", worker.numWorks ? "" : " (no more work)");
-
-		if(worker.numWorks <= 0)
-		{
-			glFinish();
+	glFinish();
 
 #ifdef USE_GLES2
-			eglMakeCurrent(EGL_NO_DISPLAY, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+	eglMakeCurrent(EGL_NO_DISPLAY, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
 #elif _WIN32
-			wglMakeCurrent(NULL, NULL);
+	wglMakeCurrent(NULL, NULL);
 #elif LINUX
-			glXMakeCurrent(m_display, None, NULL);
+	glXMakeCurrent(m_display, None, NULL);
 #elif __APPLE__
 
 #endif
-			m_activeWorkers.fastRemoveIndex(workerIdx);
-		}
-	}
 
-	m_Mutex.Unlock();
+	m_asyncOperationActive = false;
 }

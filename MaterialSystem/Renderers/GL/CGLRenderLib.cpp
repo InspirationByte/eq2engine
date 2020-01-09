@@ -70,6 +70,7 @@ CGLRenderLib g_library;
 CGLRenderLib::CGLRenderLib()
 {
 	GetCore()->RegisterInterface(RENDERER_INTERFACE_VERSION, this);
+	glSharedContext = 0;
 }
 
 CGLRenderLib::~CGLRenderLib()
@@ -209,44 +210,41 @@ int dComp(const DispRes &d0, const DispRes &d1){
 
 void CGLRenderLib::DestroySharedContexts()
 {
-	for(int i = 0; i < MAX_SHARED_CONTEXTS; i++)
-	{
 #ifdef USE_GLES2
-		eglDestroyContext(eglDisplay, (EGLContext)m_contexts[i].context);
+	eglDestroyContext(eglDisplay, glSharedContext);
 #else
 
 #ifdef PLAT_WIN
-		wglDeleteContext((HGLRC)m_contexts[i].context);
+	wglDeleteContext(glSharedContext);
 #elif PLAT_LINUX
-		glXDestroyContext(display, m_contexts[i].context);
+	glXDestroyContext(display, glSharedContext);
 #endif // PLAT_WIN || PLAT_LINUX
 
 #endif // USE_GLES2
-	}
 }
 
-GL_CONTEXT CGLRenderLib::CreateSharedContext(GL_CONTEXT shareWith)
-{
 
+void CGLRenderLib::InitSharedContexts()
+{
 #ifdef USE_GLES2
 	// context attribute list
-    EGLint contextAttr[] = {
+	EGLint contextAttr[] = {
 		EGL_CONTEXT_CLIENT_VERSION, 2,
 		EGL_NONE
 	};
 
-    EGLContext context = eglCreateContext(eglDisplay, eglConfig, shareWith, contextAttr);
-    if (context == EGL_NO_CONTEXT)
-        ASSERTMSG(false, "Failed to create context for share!");
+	EGLContext context = eglCreateContext(eglDisplay, eglConfig, glContext, contextAttr);
+	if (context == EGL_NO_CONTEXT)
+		ASSERTMSG(false, "Failed to create context for share!");
 #else
 
 #ifdef PLAT_WIN
 	HGLRC context = wglCreateContext(hdc);
 
-	if(context == NULL)
+	if (context == NULL)
 		ASSERTMSG(false, "Failed to create context for share!");
 
-	if( wglShareLists(context, shareWith) == FALSE)
+	if (wglShareLists(context, glContext) == FALSE)
 		ASSERTMSG(false, varargs("wglShareLists - Failed to share (err=%d, ctx=%d)!", GetLastError(), context));
 
 #elif PLAT_LINUX
@@ -255,37 +253,12 @@ GL_CONTEXT CGLRenderLib::CreateSharedContext(GL_CONTEXT shareWith)
 
 #endif // USE_GLES2
 
-	return context;
+	glSharedContext = context;
 }
 
-void CGLRenderLib::InitSharedContexts()
+GL_CONTEXT CGLRenderLib::GetSharedContext()
 {
-	for(int i = 0; i < MAX_SHARED_CONTEXTS; i++)
-	{
-		//GL_CONTEXT shareWith = (i > 0) ? m_contexts[i-1].context : glContext;
-
-		GL_CONTEXT context = CreateSharedContext(glContext);
-		m_contexts[i] = glsCtx_t(context);
-	}
-}
-
-GL_CONTEXT CGLRenderLib::GetFreeSharedContext(uintptr_t threadId)
-{
-	for(int i = 0; i < MAX_SHARED_CONTEXTS; i++)
-	{
-		if(!m_contexts[i].isAqquired || m_contexts[i].threadId == threadId)
-		{
-			if(!m_contexts[i].isAqquired)
-			{
-				m_contexts[i].isAqquired = true;
-				m_contexts[i].threadId = threadId;
-			}
-
-			return (GL_CONTEXT)m_contexts[i].context;
-		}
-	}
-
-	return NULL;
+	return glSharedContext;
 }
 
 bool CGLRenderLib::InitAPI(shaderAPIParams_t& params)

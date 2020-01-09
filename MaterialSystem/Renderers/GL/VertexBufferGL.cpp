@@ -87,8 +87,6 @@ void CVertexBufferGL::Update(void* data, int size, int offset, bool discard /*= 
 		return;
 	}
 
-	g_shaderApi.GL_CRITICAL();
-
 	if (offset > 0)
 		IncrementBuffer();
 
@@ -147,8 +145,6 @@ bool CVertexBufferGL::Lock(int lockOfs, int sizeToLock, void** outdata, bool rea
 
 #ifdef USE_GLES2
 	// map buffer
-	g_shaderApi.GL_CRITICAL();
-
 	glBindBuffer(GL_ARRAY_BUFFER, GetCurrentBuffer());
 
 	GLbitfield mapFlags = GL_MAP_WRITE_BIT | GL_MAP_UNSYNCHRONIZED_BIT;// | (discard ? GL_MAP_INVALIDATE_BUFFER_BIT : 0);
@@ -170,7 +166,6 @@ bool CVertexBufferGL::Lock(int lockOfs, int sizeToLock, void** outdata, bool rea
 	// read data into the buffer if we're not discarding
 	if( !discard )
 	{
-		g_shaderApi.GL_CRITICAL();
 		glBindBuffer(GL_ARRAY_BUFFER, GetCurrentBuffer());
 		GLCheckError("vertexbuffer get data bind");
 
@@ -200,8 +195,6 @@ void CVertexBufferGL::Unlock()
 	{
 		if( !m_lockReadOnly )
 		{
-			g_shaderApi.GL_CRITICAL();
-
 			glBindBuffer(GL_ARRAY_BUFFER, GetCurrentBuffer());
 			GLCheckError("vertexbuffer unmap bind");
 
