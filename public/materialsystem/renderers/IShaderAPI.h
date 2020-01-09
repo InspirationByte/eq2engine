@@ -193,12 +193,6 @@ public:
 	// finishes
 	virtual void					Finish() = 0;
 
-	// prepares for async operation (required to be called in main thread)
-	virtual void					BeginAsyncOperation( uintptr_t threadId ) = 0;
-
-	// completes for async operation (must be called in worker thread)
-	virtual void					EndAsyncOperation() = 0;
-
 //-------------------------------------------------------------
 // Occlusion query
 //-------------------------------------------------------------

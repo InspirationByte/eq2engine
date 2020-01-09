@@ -153,12 +153,6 @@ public:
 	void				Flush();
 	void				Finish();
 
-	// prepares for async operation (required to be called in main thread)
-	void				BeginAsyncOperation( uintptr_t threadId );
-
-	// completes for async operation (must be called in worker thread)
-	void				EndAsyncOperation();
-
 //-------------------------------------------------------------
 // State manipulation
 //-------------------------------------------------------------
@@ -354,8 +348,11 @@ protected:
 	void				CreateTextureInternal(ITexture** pTex, const DkList<CImage*>& pImages, const SamplerStateParam_t& sampler,int nFlags = 0);
 	GLTextureRef_t		CreateGLTextureFromImage(CImage* pSrc, const SamplerStateParam_t& sampler, int& wide, int& tall, int nFlags);
 
-	//void				AddTextureInternal(ITexture** pTex, CImage *texImage,SamplerStateParam_t& sSamplingParams,int nFlags = 0);
-	//void				AddAnimatedTextureInternal(ITexture** pTex, CImage **texImage, int numTextures, SamplerStateParam_t& sSamplingParams,int nFlags = 0);
+	// prepares for async operation (required to be called in main thread)
+	void				BeginAsyncOperation(uintptr_t threadId);
+
+	// completes for async operation (must be called in worker thread)
+	void				EndAsyncOperation();
 
 private:
 	//OpenGL - Specific

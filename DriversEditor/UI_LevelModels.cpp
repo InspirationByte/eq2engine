@@ -1500,7 +1500,7 @@ void CUI_LevelModels::MouseRotateEvents( wxMouseEvent& event, const Vector3D& ra
 		Matrix3x3 dragRot = !m_dragInitRot*m_dragRot;
 
 		BoundingBox selectionBox = GetSelectionBox();
-		Vector3D selectionCenter = selectionBox.GetCenter();
+		Vector3D selectionCenter = (m_editMode == MEDIT_ROTATE && m_selRefs.numElem() > 1) ? selectionBox.GetCenter() : m_editAxis.m_position;
 
 		// perform rotation of objects
 		for(int i = 0; i < m_selRefs.numElem(); i++)
