@@ -43,15 +43,30 @@ static const char INCORRECT_PATH_SEPARATOR_STR[2] = {INCORRECT_PATH_SEPARATOR, '
 #ifdef ANDROID
 
 typedef __builtin_va_list	va_list;
-#define va_start(v,l)		__builtin_va_start(v,l)
-#define va_end(v)			__builtin_va_end(v)
-#define va_arg(v,l)			__builtin_va_arg(v,l)
-
-#if !defined(__STRICT_ANSI__) || __STDC_VERSION__ + 0 >= 199900L || defined(__GXX_EXPERIMENTAL_CXX0X__)
-#define va_copy(d,s)		__builtin_va_copy(d,s)
+#ifndef va_start
+#	define va_start(v,l)		__builtin_va_start(v,l)
 #endif
 
-#define __va_copy(d,s)		__builtin_va_copy(d,s)
+#ifndef va_end
+#	define va_end(v)			__builtin_va_end(v)
+#endif
+
+#ifndef va_arg
+#	define va_arg(v,l)			__builtin_va_arg(v,l)
+#endif
+
+#if !defined(__STRICT_ANSI__) || __STDC_VERSION__ + 0 >= 199900L || defined(__GXX_EXPERIMENTAL_CXX0X__)
+
+#	ifndef va_copy
+#		define va_copy(d,s)		__builtin_va_copy(d,s)
+#	endif
+
+#endif
+
+#ifndef __va_copy
+#	define __va_copy(d,s)		__builtin_va_copy(d,s)
+#endif
+
 typedef __builtin_va_list	__gnuc_va_list;
 typedef __gnuc_va_list		va_list;
 typedef va_list				__va_list;

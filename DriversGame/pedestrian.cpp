@@ -158,6 +158,7 @@ void CPedestrian::Spawn()
 	body->m_flags |= BODY_DISABLE_DAMPING | COLLOBJ_DISABLE_RESPONSE | BODY_FROZEN;
 
 	body->SetMass(85.0f);
+	body->SetMinFrameTime(1.0f / 30.0f);
 	body->SetFriction(0.0f);
 	body->SetRestitution(0.0f);
 	body->SetAngularFactor(vec3_zero);
@@ -449,6 +450,7 @@ const float AI_PEDESTRIAN_CAR_AFRAID_MAX_RADIUS = 9.0f;
 const float AI_PEDESTRIAN_CAR_AFRAID_MIN_RADIUS = 2.0f;
 const float AI_PEDESTRIAN_CAR_AFRAID_STRAIGHT_RADIUS = 2.5f;
 const float AI_PEDESTRIAN_CAR_AFRAID_VELOCITY = 1.0f;
+const float AI_PEDESTRIAN_ESCAPE_CHECK_TIME = 0.25f;
 
 void CPedestrianAI::DetectEscapeJob(void* data, int jobiter)
 {
@@ -581,7 +583,13 @@ int	CPedestrianAI::DoWalk(float fDt, EStateTransition transition)
 	Vector3D pedPos = m_host->GetOrigin();
 	Vector3D pedAngles = m_host->GetAngles();
 
-	DetectEscape();
+	m_nextEscapeCheckTime -= fDt;
+
+	if (m_nextEscapeCheckTime <= 0.0f)
+	{
+		DetectEscape();
+		m_nextEscapeCheckTime = AI_PEDESTRIAN_ESCAPE_CHECK_TIME;
+	}
 
 	CLevelRegion* reg;
 	levroadcell_t* cell = g_pGameWorld->m_level.Road_GetGlobalTile(pedPos, &reg);

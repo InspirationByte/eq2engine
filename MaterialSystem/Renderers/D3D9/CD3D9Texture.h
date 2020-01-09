@@ -50,6 +50,6 @@ public:
 	LPDIRECT3DSURFACE9		m_pLockSurface;
 };
 
-void UpdateD3DTextureFromImage(IDirect3DBaseTexture9* texture, CImage* image, int startMipLevel, bool convert);
+bool UpdateD3DTextureFromImage(IDirect3DBaseTexture9* texture, CImage* image, int startMipLevel, bool convert);
 
 #endif //D3D9TEXTURE_H

@@ -25,10 +25,10 @@ PROJECT:
 
 	1. [ядекюмн] Add coreLib, move several components from prevLib Console, pacifier
 	2. [ядекюмн] Rename prevLib to eqFWLib (eq framework lib)
-	3. sort parts of public\ directory to shared_engine\, shared_game\, and:
+	3. [ядекюмн] sort parts of public\ directory to shared_engine\, shared_game\, and:
 		^ [ядекюмн] public\core,
-		^ public\soundsystem,
-		^ public\physics (public\eqphysics)
+		^ [ядекюмн] public\soundsystem,
+		^ [ядекюмн] public\physics (public\eqphysics)
 		^ [ядекюмн] move renderer\ to matsystem\shaderapi\
 
 	4. Linux port (+ android):
@@ -43,7 +43,7 @@ PROJECT:
 
 		^ [ядекюмн] EqMatSystem
 		^ [ядекюмн] EqShaderAPINull
-		^ EqShaderAPIGL
+		^ [ядекюмн] EqShaderAPIGL
 			^ [ядекюмн] ЯНГДЮРЭ ОНКМНЯРЭЧ ЯНБЛЕЯРХЛСЧ АХАКХНРЕЙС Я GL ES RHI
 		^ [ядекюмн] EqBaseShaders
 

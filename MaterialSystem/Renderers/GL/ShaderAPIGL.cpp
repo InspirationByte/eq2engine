@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright ï¿½ Inspiration Byte
 // 2009-2015
 //////////////////////////////////////////////////////////////////////////////////
 // Description: DarkTech OpenGL ShaderAPI
@@ -733,7 +733,7 @@ void ShaderAPIGL::ApplyConstants()
 {
 	CGLShaderProgram* currentShader = (CGLShaderProgram*)m_pCurrentShader;
 
-	if (!currentShader != NULL)
+	if (!currentShader)
 		return;
 
 	for (int i = 0; i < currentShader->m_numConstants; i++)
@@ -1013,6 +1013,14 @@ GLTextureRef_t ShaderAPIGL::CreateGLTextureFromImage(CImage* pSrc, const Sampler
 	if(!pSrc)
 		return noTexture;
 
+	GLint internalFormat = PickGLInternalFormat(pSrc->GetFormat());
+
+	if (internalFormat == 0)
+	{
+		MsgError("'%s' has unsupported image format (%d)\n", pSrc->GetName(), pSrc->GetFormat());
+		return noTexture;
+	}
+
 	int nQuality = r_loadmiplevel->GetInt();
 
 	// force quality to best
@@ -1056,7 +1064,17 @@ GLTextureRef_t ShaderAPIGL::CreateGLTextureFromImage(CImage* pSrc, const Sampler
 
 		// Setup the sampler state
 		SetupGLSamplerState(glTarget, sampler, numMipmaps);
-		UpdateGLTextureFromImage(*texturePtr, pSrc, nQuality);
+
+		if (!UpdateGLTextureFromImage(*texturePtr, pSrc, nQuality))
+		{
+			glBindTexture(glTarget, 0);
+			GLCheckError("tex unbind");
+
+			glDeleteTextures(1, &texture.glTexID);
+			GLCheckError("del tex");
+
+			return -1;
+		}
 
 		return 0;
 	});
@@ -1718,7 +1736,7 @@ IShaderProgram* ShaderAPIGL::FindShaderProgram(const char* pszName, const char* 
 {
 	CScopedMutex m(m_Mutex);
 
-	for(register int i = 0; i < m_ShaderList.numElem(); i++)
+	for(int i = 0; i < m_ShaderList.numElem(); i++)
 	{
 		char findtext[1024];
 		findtext[0] = '\0';
@@ -2626,6 +2644,8 @@ void ShaderAPIGL::DestroyRenderState( IRenderState* pState, bool removeAllRefs )
 		case RENDERSTATE_DEPTHSTENCIL:
 			delete ((CGLDepthStencilState*)pState);
 			m_DepthStates.remove(pState);
+			break;
+		default:
 			break;
 	}
 }

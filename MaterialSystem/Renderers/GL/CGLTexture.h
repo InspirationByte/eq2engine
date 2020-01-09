@@ -52,6 +52,6 @@ protected:
 	bool					m_lockReadOnly;
 };
 
-void UpdateGLTextureFromImage(GLTextureRef_t texture, CImage* image, int startMipLevel);
+bool UpdateGLTextureFromImage(GLTextureRef_t texture, CImage* image, int startMipLevel);
 
 #endif //CGLTEXTURE_H

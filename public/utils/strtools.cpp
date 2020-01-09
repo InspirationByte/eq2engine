@@ -60,7 +60,7 @@ wchar_t* xwcsupr(wchar_t* str)
 }
 
 
-#ifdef PLAT_DROID/*
+#if 0 //ifdef PLAT_DROID
 wchar_t* wcsncpy(wchar_t * __restrict dst, const wchar_t * __restrict src, size_t n)
 {
 	if (n != 0) {
@@ -69,7 +69,7 @@ wchar_t* wcsncpy(wchar_t * __restrict dst, const wchar_t * __restrict src, size_
 
 		do {
 			if ((*d++ = *s++) == L'\0') {
-				/* NUL pad the remaining n-1 bytes */
+				// NUL pad the remaining n-1 bytes 
 				while (--n != 0)
 					*d++ = L'\0';
 				break;
@@ -77,7 +77,7 @@ wchar_t* wcsncpy(wchar_t * __restrict dst, const wchar_t * __restrict src, size_
 		} while (--n != 0);
 	}
 	return (dst);
-}*/
+}
 #endif // PLAT_DROID
 
 EqString CombinePath(int num, ...)

@@ -1006,6 +1006,61 @@ CUI_LevelModels::~CUI_LevelModels()
 
 }
 
+bool ProcessMaterialErrors(dsmmodel_t& model)
+{
+	EqString materailsFolder(g_fileSystem->GetCurrentGameDirectory() + _Es("/") + materials->GetMaterialPath());
+	wxFileDialog* matFileSearch = new wxFileDialog(NULL, "Search for Material file", materailsFolder.c_str(), wxEmptyString, "Equilibrium Material File (*.mat)|*.mat;", wxFD_FILE_MUST_EXIST | wxFD_OPEN);
+
+	wxString missingMaterialNames;
+	for (int j = 0; j < model.groups.numElem(); j++)
+	{
+		EqString materialName(model.groups[j]->texture);
+		UTIL_ConvertDSMMaterialPath(materialName);
+
+		if (!materials->IsMaterialExist(materialName.c_str()))
+			missingMaterialNames.append(("'" + materialName + "'\n").c_str());
+	}
+
+	if (missingMaterialNames.length() > 0)
+	{
+		int result = wxMessageBox(("Missing materials\n\nFor model '" + wxString(model.name) + "':\n\n" + missingMaterialNames + "\n\nSearch for material files?"), "Question", wxYES_NO | wxCENTRE | wxICON_WARNING, NULL);
+
+		if (result == wxCANCEL)
+		{
+			delete matFileSearch;
+			return false;
+		}
+
+		if (result == wxNO)
+		{
+			delete matFileSearch;
+			return false;
+		}
+
+		for (int j = 0; j < model.groups.numElem(); j++)
+		{
+			EqString materialName(model.groups[j]->texture);
+			UTIL_ConvertDSMMaterialPath(materialName);
+
+			matFileSearch->SetFilename((materialName + ".mat").c_str());
+			matFileSearch->SetMessage(varargs("Search for '%s' Material file", materialName.c_str()));
+
+			if (!materials->IsMaterialExist(materialName.c_str()) && matFileSearch->ShowModal() == wxID_OK)
+			{
+				EqString foundMaterialName(matFileSearch->GetPath().c_str().AsChar());
+				UTIL_ConvertDSMMaterialPath(foundMaterialName);
+
+				// set path
+				strcpy_s(model.groups[j]->texture, foundMaterialName.c_str());
+			}
+		}
+	}
+
+	delete matFileSearch;
+
+	return true;
+}
+
 void CUI_LevelModels::OnButtons(wxCommandEvent& event)
 {
 	if(event.GetId() == ELM_IMPORT)
@@ -1019,6 +1074,9 @@ void CUI_LevelModels::OnButtons(wxCommandEvent& event)
 			wxArrayString paths;
 			file->GetPaths(paths);
 
+			wxArrayString names;
+			file->GetFilenames(names);
+
 			for(size_t i = 0; i < paths.Count(); i++)
 			{
 				dsmmodel_t model;
@@ -1026,29 +1084,16 @@ void CUI_LevelModels::OnButtons(wxCommandEvent& event)
 				if (!LoadSharedModel(&model, paths[i].c_str()))
 				{
 					wxMessageBox("'" + paths[i].c_str() + "' not a valid model!", "Warning", wxOK | wxICON_WARNING, this);
+					FreeDSM(&model);
 					continue;
 				}
 
-				wxString missingMaterialNames;
+				strcpy_s(model.name, names[i].c_str());
 
-				for (int j = 0; j < model.groups.numElem(); j++)
+				if (!ProcessMaterialErrors(model))
 				{
-					EqString materialName(model.groups[j]->texture);
-					UTIL_ConvertDSMMaterialPath(materialName);
-
-					if (!materials->IsMaterialExist(materialName.c_str()))
-						missingMaterialNames.append((materialName + "\n").c_str());
-				}
-
-				if (missingMaterialNames.length() > 0)
-				{
-					int result = wxMessageBox("Missing materials\n\nFor model '" + paths[i].c_str() + "':\n\n" + missingMaterialNames + "\n\nDo you wish to continue?", "Question", wxYES_NO | wxCENTRE | wxICON_WARNING, this);
-
-					if (result == wxCANCEL)
-						return;
-
-					if (result == wxNO)
-						return;
+					FreeDSM(&model);
+					break;
 				}
 
 				CLevelModel* pLevModel = new CLevelModel();
@@ -1085,32 +1130,42 @@ void CUI_LevelModels::OnButtons(wxCommandEvent& event)
 			return;
 		}
 
-		wxFileDialog* file = new wxFileDialog(NULL, "Import OBJ/ESM over existing model", "./", "*.*", "Model files (*.obj, *.esm)|*.obj;*.esm", wxFD_FILE_MUST_EXIST | wxFD_OPEN);
+		wxFileDialog* file = new wxFileDialog(NULL, "Import OBJ/ESM over existing model", wxEmptyString, wxEmptyString, "Model files (*.obj, *.esm)|*.obj;*.esm;", wxFD_FILE_MUST_EXIST | wxFD_OPEN);
 
 		if(file->ShowModal() == wxID_OK)
 		{
-			wxArrayString paths;
-			
 			dsmmodel_t model;
-			if( LoadSharedModel(&model, file->GetPath()) )
+			if (!LoadSharedModel(&model, file->GetPath().c_str().AsChar()))
 			{
-				cont->m_model->CreateFrom( &model );
-				cont->SetDirtyPreview();
-
-				// TODO: create preivew
-
-				FreeDSM(&model);
-
-				EqString path(file->GetPath().wchar_str());
-				cont->m_name = path.Path_Extract_Name().Path_Strip_Ext().c_str();
-
-				m_modelPicker->RebuildPreviewShots();
+				wxMessageBox("'" + file->GetPath() + "' not a valid model!", "Warning", wxOK | wxICON_WARNING, this);
+				return;
 			}
+
+			strcpy_s(model.name, file->GetFilename().c_str());
+
+			if (!ProcessMaterialErrors(model))
+			{
+				delete file;
+				FreeDSM(&model);
+				return;
+			}
+
+			cont->m_model->CreateFrom( &model );
+			cont->SetDirtyPreview();
+
+			// TODO: create preivew
+
+			FreeDSM(&model);
+
+			EqString path(file->GetPath().wchar_str());
+			cont->m_name = path.Path_Extract_Name().Path_Strip_Ext().c_str();
+
+			m_modelPicker->RebuildPreviewShots();
 		}
 
 		delete file;
 
-		m_modelReplacement->RefreshObjectDefLists();
+		//m_modelReplacement->RefreshObjectDefLists();
 	}
 	else if(event.GetId() == ELM_EXPORT)
 	{

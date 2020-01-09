@@ -592,7 +592,9 @@ void CEngineStudioEGF::LoadMotionPackages()
 	{
 		int nPackages = m_hwdata->numMotionPackages;
 
-		m_hwdata->motiondata[nPackages] = Studio_LoadMotionData(pHdr->pPackage(i)->packageName, pHdr->numBones);
+		EqString mopPath(m_szPath.Path_Strip_Name() + pHdr->pPackage(i)->packageName + ".mop");
+
+		m_hwdata->motiondata[nPackages] = Studio_LoadMotionData(mopPath.c_str(), pHdr->numBones);
 
 		if(m_hwdata->motiondata[nPackages])
 			m_hwdata->numMotionPackages++;
