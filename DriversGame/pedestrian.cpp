@@ -13,6 +13,10 @@
 
 #include "Shiny.h"
 
+const float PEDESTRIAN_PHYSICS_RADIUS = 0.85f;
+const float PEDESTRIAN_FRAMERATE_RADIUS = 50.0f;
+const float PEDESTRIAN_FAR_THINKTIME = 1.0f / 15.0f;
+
 //-----------------------------------------------------------------------
 // Jack tribute
 //-----------------------------------------------------------------------
@@ -90,7 +94,7 @@ CPedestrian::CPedestrian() : CAnimatingEGF(), CControllableGameObject(), m_think
 {
 	m_pedState = 0;
 
-	m_thinkTime = 0;
+	m_thinkTime = 0.0f;
 	m_hasAI = false;
 	m_jack = true;
 
@@ -143,8 +147,6 @@ void CPedestrian::OnCarCollisionEvent(const CollisionPairData_t& pair, CGameObje
 	BaseClass::OnCarCollisionEvent(pair, hitBy);
 }
 
-const float PEDESTRIAN_PHYSICS_RADIUS = 0.85f;
-
 void CPedestrian::Spawn()
 {
 	CEqRigidBody* body = new CEqRigidBody();
@@ -158,7 +160,6 @@ void CPedestrian::Spawn()
 	body->m_flags |= BODY_DISABLE_DAMPING | COLLOBJ_DISABLE_RESPONSE | BODY_FROZEN;
 
 	body->SetMass(85.0f);
-	body->SetMinFrameTime(1.0f / 30.0f);
 	body->SetFriction(0.0f);
 	body->SetRestitution(0.0f);
 	body->SetAngularFactor(vec3_zero);
@@ -329,7 +330,23 @@ void CPedestrian::OnPhysicsFrame(float fDt)
 
 void CPedestrian::Simulate(float fDt)
 {
-	AdvanceFrame(fDt);
+	if (length(g_pGameWorld->m_view.GetOrigin() - GetOrigin()) > PEDESTRIAN_FRAMERATE_RADIUS)
+	{
+		m_physObj->GetBody()->SetMinFrameTime(PEDESTRIAN_FAR_THINKTIME);
+
+		if ((m_thinkTime -= fDt) < 0.0f)
+		{
+			AdvanceFrame(PEDESTRIAN_FAR_THINKTIME);
+			m_thinkTime = PEDESTRIAN_FAR_THINKTIME;
+		}
+	}
+	else
+	{
+		m_physObj->GetBody()->SetMinFrameTime(0.0f);
+		AdvanceFrame(fDt);
+	}
+
+	
 	DebugRender(m_worldMatrix);
 
 	BaseClass::Simulate(fDt);

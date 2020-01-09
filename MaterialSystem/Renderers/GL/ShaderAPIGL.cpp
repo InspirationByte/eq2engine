@@ -85,8 +85,6 @@ int GLWorkerThread::WaitForResult(uint workId)
 
 	ASSERT(work);
 
-	Msg("awaiting %d\n", work->workId);
-
 	// wait
 	while (work->result == WORK_PENDING_MARKER)
 	{
@@ -100,8 +98,6 @@ int GLWorkerThread::WaitForResult(uint workId)
 
 	// retrieve result and delete
 	int result = work->result;
-
-	Msg("got result from %d\n", work->workId);
 
 	delete work;
 
@@ -1771,8 +1767,7 @@ void ShaderAPIGL::DestroyShaderProgram(IShaderProgram* pShaderProgram)
 		m_ShaderList.remove(pShader);
 
 		delete pShader;
-
-		GLCheckError("delete shader program");
+		
 	}
 }
 

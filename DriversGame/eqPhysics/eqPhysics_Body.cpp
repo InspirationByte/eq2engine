@@ -183,8 +183,10 @@ bool CEqRigidBody::IsCanIntegrate(bool checkIgnore)
 
 void CEqRigidBody::SetMinFrameTime( float time, bool ignoreMotion )
 {
+	if (m_minFrameTime != time || m_minFrameTimeIgnoreMotion != ignoreMotion)
+		m_frameTimeAccumulator = 0.0f;
+
 	m_minFrameTime = time;
-	m_frameTimeAccumulator = 0.0f;
 	m_minFrameTimeIgnoreMotion = ignoreMotion;
 }
 

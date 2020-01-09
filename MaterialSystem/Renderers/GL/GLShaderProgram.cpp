@@ -7,6 +7,8 @@
 
 #include "GLShaderProgram.h"
 
+extern bool GLCheckError(const char* op);
+
 CGLShaderProgram::CGLShaderProgram()
 {
 	m_samplers = NULL;
@@ -27,5 +29,10 @@ CGLShaderProgram::~CGLShaderProgram()
 	free(m_samplers);
 	free(m_constants);
 
-	glDeleteProgram(m_program);
+	if (m_program)
+	{
+		glDeleteProgram(m_program);
+		GLCheckError("delete shader program");
+	}
+		
 }

@@ -11,12 +11,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="c9096593-b4df-4b83-813a-05c2d4299dea" name="Default" comment="">
-      <change beforePath="$PROJECT_DIR$/../DriversGame/state_title.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../DriversGame/state_title.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../DriversGame/state_title.h" beforeDir="false" afterPath="$PROJECT_DIR$/../DriversGame/state_title.h" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../shared_engine/sys_host.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../shared_engine/sys_host.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../shared_engine/sys_host.h" beforeDir="false" afterPath="$PROJECT_DIR$/../shared_engine/sys_host.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../shared_engine/sys_window.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../shared_engine/sys_window.cpp" afterDir="false" />
     </list>
     <ignored path="android-project.iws" />
     <ignored path=".idea/workspace.xml" />
@@ -57,7 +52,7 @@
       <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/app/src/main/java/org/libsdl/app/SDLActivity.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="-138">
+            <state relative-caret-position="17">
               <caret line="746" selection-start-line="746" selection-end-line="746" />
               <folding>
                 <element signature="e#4701#4702#0" expanded="true" />
@@ -186,10 +181,10 @@
       <foldersAlwaysOnTop value="true" />
     </navigator>
     <panes>
-      <pane id="ProjectPane" />
-      <pane id="Scope" />
       <pane id="AndroidView" />
+      <pane id="Scope" />
       <pane id="PackagesPane" />
+      <pane id="ProjectPane" />
     </panes>
   </component>
   <component name="PropertiesComponent">
@@ -557,10 +552,10 @@
     <frame x="-8" y="-8" width="1936" height="1056" extended-state="6" />
     <editor active="true" />
     <layout>
-      <window_info content_ui="combo" id="Project" order="0" sideWeight="0.48303714" visible="true" weight="0.17910448" />
+      <window_info content_ui="combo" id="Project" order="0" sideWeight="0.48142165" visible="true" weight="0.17910448" />
       <window_info id="Structure" order="1" weight="0.25" />
       <window_info id="Captures" order="2" side_tool="true" weight="0.25" />
-      <window_info id="Build Variants" order="3" sideWeight="0.5169628" side_tool="true" visible="true" weight="0.17910448" />
+      <window_info id="Build Variants" order="3" sideWeight="0.51857835" side_tool="true" visible="true" weight="0.17910448" />
       <window_info id="Favorites" order="4" side_tool="true" />
       <window_info id="Capture Tool" order="5" />
       <window_info id="Palette&#9;" order="6" />
@@ -581,7 +576,7 @@
       <window_info anchor="bottom" id="Messages" order="12" sideWeight="0.36179295" weight="0.32929516" />
       <window_info anchor="bottom" id="Android Profiler" order="13" />
       <window_info anchor="bottom" id="Logcat" order="14" weight="0.32936078" />
-      <window_info active="true" anchor="bottom" id="Build" order="15" visible="true" weight="0.32936078" />
+      <window_info anchor="bottom" id="Build" order="15" visible="true" weight="0.32936078" />
       <window_info anchor="right" id="Commander" order="0" weight="0.4" />
       <window_info anchor="right" id="Ant Build" order="1" weight="0.25" />
       <window_info anchor="right" content_ui="combo" id="Hierarchy" order="2" weight="0.25" />
@@ -726,7 +721,6 @@
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/app/src/main/AndroidManifest.xml">
-      <provider editor-type-id="android-manifest" />
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="337">
           <caret line="24" column="62" selection-start-line="24" selection-start-column="54" selection-end-line="24" selection-end-column="62" />
@@ -735,6 +729,7 @@
           </folding>
         </state>
       </provider>
+      <provider editor-type-id="android-manifest" />
     </entry>
     <entry file="file://$PROJECT_DIR$/app/src/main/assets/EQ.CONFIG" />
     <entry file="file://D:/USERS_DOCUMENTS/AndroidStudio/DeviceExplorer/xiaomi-redmi_7-71a4d18/storage/6135-3937/eqengine/EQ.CONFIG" />
@@ -765,7 +760,7 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/app/src/main/java/org/libsdl/app/SDLActivity.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-138">
+        <state relative-caret-position="17">
           <caret line="746" selection-start-line="746" selection-end-line="746" />
           <folding>
             <element signature="e#4701#4702#0" expanded="true" />
