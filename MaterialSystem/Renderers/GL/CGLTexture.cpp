@@ -8,7 +8,6 @@
 #include "CGLTexture.h"
 #include "DebugInterface.h"
 #include "imaging/ImageLoader.h"
-#include "utils/strtools.h"
 
 #ifdef USE_GLES2
 #include "glad_es3.h"
@@ -182,7 +181,7 @@ void CGLTexture::Unlock()
 	m_bIsLocked = false;
 }
 
-void UpdateGLTextureFromImage(GLTextureRef_t texture, CImage* image, int startMipLevel)
+bool UpdateGLTextureFromImage(GLTextureRef_t texture, CImage* image, int startMipLevel)
 {
 	const GLenum glTarget = glTexTargetType[texture.type];
 	const ETextureFormat format = image->GetFormat();
@@ -190,13 +189,7 @@ void UpdateGLTextureFromImage(GLTextureRef_t texture, CImage* image, int startMi
 	const GLenum srcFormat = chanCountTypes[GetChannelCount(format)];
 	const GLenum srcType = chanTypePerFormat[format];
 
-	GLint internalFormat = internalFormats[format];
-
-	if (format >= FORMAT_I32F && format <= FORMAT_RGBA32F)
-		internalFormat = internalFormats[format - (FORMAT_I32F - FORMAT_I16F)];
-
-	if (internalFormat == 0)
-		ASSERTMSG(false, varargs("'%s' has unsupported image format (%d)\n", image->GetName(), format));
+	GLint internalFormat = PickGLInternalFormat(format);
 
 	glBindTexture(glTarget, texture.glTexID);
 	GLCheckError("bind tex");
@@ -298,4 +291,6 @@ void UpdateGLTextureFromImage(GLTextureRef_t texture, CImage* image, int startMi
 
 	glBindTexture(glTarget, 0);
 	GLCheckError("tex unbind");
+
+	return true;
 }

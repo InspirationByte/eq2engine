@@ -83,7 +83,7 @@ char* KV_ReadProcessString( const char* pszStr )
 		else
 			*ptrTemp++ = *ptr;
 
-	}while(*ptr++ != NULL);
+	}while(*ptr++);
 
 	// add NULL
 	*ptrTemp++ = 0;

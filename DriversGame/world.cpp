@@ -1831,7 +1831,6 @@ void CGameWorld::UpdateOccludingFrustum()
 
 	m_frustum.LoadAsFrustum(m_viewprojection);
 
-	m_occludingFrustum.Clear();
 	m_level.CollectVisibleOccluders( m_occludingFrustum, m_view.GetOrigin() );
 }
 
@@ -2335,8 +2334,8 @@ void CGameWorld::Draw( int nRenderFlags )
 			g_pShaderAPI->Reset( STATE_RESET_VBO );
 			materials->Setup2D(screenSize.x, screenSize.y);
 
-			const int LENS_PIXELS_HALFSIZE = 10;
-			const int LENS_TOTAL_PIXELS = LENS_PIXELS_HALFSIZE*LENS_PIXELS_HALFSIZE * 4;
+			const uint32 LENS_PIXELS_HALFSIZE = 10;
+			const uint32 LENS_TOTAL_PIXELS = LENS_PIXELS_HALFSIZE*LENS_PIXELS_HALFSIZE * 4;
 
 			const float LENS_PIXEL_TO_INTENSITY = 1.0f / (float)LENS_TOTAL_PIXELS;
 

@@ -2767,9 +2767,9 @@ IDirect3DBaseTexture9* ShaderAPID3DX9::CreateD3DTextureFromImage(CImage* pSrc, i
 											(LPDIRECT3DCUBETEXTURE9 *)&pTexture, 
 											NULL) != D3D_OK)
 		{
-			MsgError("D3D9 ERROR: Couldn't create cubemap texture from '%s'\n", pSrc->GetName());
+			MsgError("D3D9 ERROR: Couldn't create cubemap texture '%s'\n", pSrc->GetName());
 
-			return NULL;
+			return nullptr;
 		}
 
 		nFlags |= TEXFLAG_CUBEMAP;
@@ -2786,9 +2786,9 @@ IDirect3DBaseTexture9* ShaderAPID3DX9::CreateD3DTextureFromImage(CImage* pSrc, i
 												(LPDIRECT3DVOLUMETEXTURE9 *)&pTexture, 
 												NULL) != D3D_OK)
 		{
-			MsgError("D3D9 ERROR: Couldn't create volumetric texture from '%s'\n", pSrc->GetName());
+			MsgError("D3D9 ERROR: Couldn't create volumetric texture '%s'\n", pSrc->GetName());
 
-			return NULL;
+			return nullptr;
 		}
 	} 
 	else 
@@ -2802,9 +2802,9 @@ IDirect3DBaseTexture9* ShaderAPID3DX9::CreateD3DTextureFromImage(CImage* pSrc, i
 										(LPDIRECT3DTEXTURE9 *)&pTexture, 
 										NULL)!= D3D_OK)
 		{
-			MsgError("D3D9 ERROR: Couldn't create texture from %s\n", pSrc->GetName());
+			MsgError("D3D9 ERROR: Couldn't create texture %s\n", pSrc->GetName());
 
-			return NULL;
+			return nullptr;
 		}
 	}
 	
@@ -2813,7 +2813,11 @@ IDirect3DBaseTexture9* ShaderAPID3DX9::CreateD3DTextureFromImage(CImage* pSrc, i
 	tall = pSrc->GetHeight(nQuality);
 
 	// update texture
-	UpdateD3DTextureFromImage(pTexture, pSrc, nQuality, true);
+	if (!UpdateD3DTextureFromImage(pTexture, pSrc, nQuality, true))
+	{
+		pTexture->Release();
+		return nullptr;
+	}
 
 	return pTexture;
 }

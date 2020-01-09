@@ -27,6 +27,7 @@ public:
 		m_nextRoadCell = nullptr;
 
 		m_prevDir = m_curDir = -1;
+		m_nextEscapeCheckTime = 0.0f;
 	}
 
 	int					DoWalk(float fDt, EStateTransition transition);
@@ -39,13 +40,15 @@ public:
 
 	static void			DetectEscapeJob(void* data, int i);
 
-	int					m_curDir;
-	int					m_prevDir;
-
 	Vector3D			m_escapeDir;
 	Vector3D			m_escapeFromPos;
 
 	IVector2D			m_nextRoadTile;
+
+	float				m_nextEscapeCheckTime;
+
+	int					m_curDir;
+	int					m_prevDir;
 
 	levroadcell_t*		m_nextRoadCell;
 	levroadcell_t*		m_prevRoadCell;

@@ -205,7 +205,7 @@ void CD3D9Texture::Unlock()
 	m_bIsLocked = false;
 }
 
-void UpdateD3DTextureFromImage(IDirect3DBaseTexture9* texture, CImage* image, int startMipLevel, bool convert)
+bool UpdateD3DTextureFromImage(IDirect3DBaseTexture9* texture, CImage* image, int startMipLevel, bool convert)
 {
 	bool isAcceptableImageType =
 		(texture->GetType() == D3DRTYPE_VOLUMETEXTURE && image->Is3D()) ||
@@ -213,6 +213,9 @@ void UpdateD3DTextureFromImage(IDirect3DBaseTexture9* texture, CImage* image, in
 		(texture->GetType() == D3DRTYPE_TEXTURE && (image->Is2D() || image->Is1D()));
 
 	ASSERT(isAcceptableImageType);
+
+	if (!isAcceptableImageType)
+		return false;
 
 	const ETextureFormat	nFormat = image->GetFormat();
 
@@ -271,4 +274,6 @@ void UpdateD3DTextureFromImage(IDirect3DBaseTexture9* texture, CImage* image, in
 
 		mipMapLevel++;
 	}
+	
+	return true;
 }

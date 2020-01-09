@@ -142,6 +142,16 @@ static const GLuint internalFormats[FORMAT_COUNT] = {
 #endif // USE_GLES2
 };
 
+static inline GLuint PickGLInternalFormat(ETextureFormat format)
+{
+	GLint internalFormat = internalFormats[format];
+
+	if (format >= FORMAT_I32F && format <= FORMAT_RGBA32F)
+		internalFormat = internalFormats[format - (FORMAT_I32F - FORMAT_I16F)];
+
+	return internalFormat;
+}
+
 static const GLuint chanCountTypes[] = { 0, GL_LUMINANCE, GL_LUMINANCE_ALPHA, GL_RGB, GL_RGBA };
 
 static const GLuint chanTypePerFormat[] = {

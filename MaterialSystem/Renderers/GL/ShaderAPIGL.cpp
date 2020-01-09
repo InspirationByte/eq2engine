@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright ï¿½ Inspiration Byte
 // 2009-2015
 //////////////////////////////////////////////////////////////////////////////////
 // Description: DarkTech OpenGL ShaderAPI
@@ -577,7 +577,7 @@ void ShaderAPIGL::ApplyConstants()
 {
 	CGLShaderProgram* currentShader = (CGLShaderProgram*)m_pCurrentShader;
 
-	if (!currentShader != NULL)
+	if (!currentShader)
 		return;
 
 	for (int i = 0; i < currentShader->m_numConstants; i++)
@@ -857,6 +857,14 @@ GLTextureRef_t ShaderAPIGL::CreateGLTextureFromImage(CImage* pSrc, const Sampler
 	if(!pSrc)
 		return noTexture;
 
+	GLint internalFormat = PickGLInternalFormat(pSrc->GetFormat());
+
+	if (internalFormat == 0)
+	{
+		MsgError("'%s' has unsupported image format (%d)\n", pSrc->GetName(), pSrc->GetFormat());
+		return noTexture;
+	}
+
 	int nQuality = r_loadmiplevel->GetInt();
 
 	// force quality to best
@@ -900,7 +908,16 @@ GLTextureRef_t ShaderAPIGL::CreateGLTextureFromImage(CImage* pSrc, const Sampler
 	wide = pSrc->GetWidth();
 	tall = pSrc->GetHeight();
 
-	UpdateGLTextureFromImage(texture, pSrc, nQuality);
+	if (!UpdateGLTextureFromImage(texture, pSrc, nQuality))
+	{
+		glBindTexture(glTarget, 0);
+		GLCheckError("tex unbind");
+
+		glDeleteTextures(1, &texture.glTexID);
+		GLCheckError("del tex");
+
+		return noTexture;
+	}
 
 	return texture;
 }
@@ -1556,7 +1573,7 @@ IShaderProgram* ShaderAPIGL::FindShaderProgram(const char* pszName, const char* 
 {
 	CScopedMutex m(m_Mutex);
 
-	for(register int i = 0; i < m_ShaderList.numElem(); i++)
+	for(int i = 0; i < m_ShaderList.numElem(); i++)
 	{
 		char findtext[1024];
 		findtext[0] = '\0';
@@ -1840,7 +1857,7 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 
 		DevMsg(DEVMSG_SHADERAPI, "[DEBUG] shader '%s' has %d samplers and uniforms (namelen=%d)\n", pShaderOutput->GetName(), uniformCount, maxLength);
 
-		if(maxLength == 0 && uniformCount > 0 || uniformCount > 256)
+		if(maxLength == 0 && (uniformCount > 0) || (uniformCount > 256))
 		{
 			if(m_vendor == VENDOR_INTEL)
 				DevMsg(DEVMSG_SHADERAPI, "Guess who? It's Intel! uniformCount to be zeroed\n");
@@ -2431,6 +2448,8 @@ void ShaderAPIGL::DestroyRenderState( IRenderState* pState, bool removeAllRefs )
 		case RENDERSTATE_DEPTHSTENCIL:
 			delete ((CGLDepthStencilState*)pState);
 			m_DepthStates.remove(pState);
+			break;
+		default:
 			break;
 	}
 }

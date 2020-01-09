@@ -1683,6 +1683,8 @@ void CGameLevel::CollectVisibleOccluders(occludingFrustum_t& frustumOccluders, c
 {
 	CScopedMutex m(m_mutex);
 
+	frustumOccluders.Clear();
+
 	frustumOccluders.frustum = g_pGameWorld->m_frustum;
 
 	// don't render too far?
@@ -2754,11 +2756,17 @@ void CGameLevel::GetDecalPolygons(decalPrimitives_t& polys, occludingFrustum_t* 
 					continue;
 			}
 
+			
 			if(!polys.settings.clipVolume.IsBoxInside(reg.m_bbox.minPoint, reg.m_bbox.maxPoint))
 				continue;
 
-			if(frustum && !frustum->IsBoxVisible(reg.m_bbox))
-				continue;
+			if (frustum)
+			{
+				CScopedMutex m(m_mutex); // because CollectVisibleOccluders could be happening
+
+				if(!frustum->IsBoxVisible(reg.m_bbox))
+					continue;
+			}
 
 			reg.GetDecalPolygons(polys, frustum);
 		}
