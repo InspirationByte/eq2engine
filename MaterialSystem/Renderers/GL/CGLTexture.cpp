@@ -8,6 +8,7 @@
 #include "CGLTexture.h"
 #include "DebugInterface.h"
 #include "imaging/ImageLoader.h"
+#include "utils/strtools.h"
 
 #ifdef USE_GLES2
 #include "glad_es3.h"
@@ -195,7 +196,7 @@ void UpdateGLTextureFromImage(GLTextureRef_t texture, CImage* image, int startMi
 		internalFormat = internalFormats[format - (FORMAT_I32F - FORMAT_I16F)];
 
 	if (internalFormat == 0)
-		ASSERTMSG(false, "'%s' has unsupported image format (%d)\n", pSrc->GetName(), format);
+		ASSERTMSG(false, varargs("'%s' has unsupported image format (%d)\n", image->GetName(), format));
 
 	glBindTexture(glTarget, texture.glTexID);
 	GLCheckError("bind tex");
