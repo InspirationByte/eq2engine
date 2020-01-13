@@ -19,6 +19,8 @@
 
 #include "wx_inc.h"
 
+#include "ConVar.h"
+
 DECLARE_CVAR_NONSTATIC(__cheats,1,"Wireframe",0);
 
 //-----------------------------------------------------------------------------

@@ -15,6 +15,7 @@
 #include "Utils/SmartPtr.h"
 
 #include "dsm_obj_loader.h"
+#include "IDebugOverlay.h"
 
 void tesselationdata_t::Destroy()
 {
@@ -122,8 +123,8 @@ CEditableSurface::CEditableSurface()
 
 	m_nModifyTimes = 0;
 
-	m_bbox[0] = Vector3D(-16);
-	m_bbox[1] = Vector3D(16);
+	m_bbox.minPoint = Vector3D(-16);
+	m_bbox.maxPoint = Vector3D(16);
 
 	m_pVB = NULL;
 	m_pIB = NULL;
@@ -175,9 +176,6 @@ void CEditableSurface::Destroy()
 
 	m_numAllVerts = 0;
 	m_numAllIndices = 0;
-
-	m_bbox[0] = MAX_COORD_UNITS;
-	m_bbox[1] = -MAX_COORD_UNITS;
 
 	m_surftype = SURFACE_INVALID;
 
@@ -305,7 +303,7 @@ void AddOBJToWorld(const char* pszFileName)
 				pszPath += diff + strlen(materials->GetMaterialPath());
 			}
 
-			pNewSurface->SetMaterial(materials->GetMaterial(pszPath, true));
+			pNewSurface->SetMaterial(materials->GetMaterial(pszPath));
 
 			pNewSurface->GetSurfaceTexture(0)->nFlags |= STFL_CUSTOMTEXCOORD;
 
@@ -723,8 +721,6 @@ void CEditableSurface::EndModify()
 	RebuildBoundingBox();
 }
 
-#include "IDebugOverlay.h"
-
 int	CEditableSurface::GetInstersectingTriangle(const Vector3D &start, const Vector3D &end)
 {
 	Vector3D best_point = end;
@@ -881,32 +877,31 @@ IIndexBuffer* CEditableSurface::GetIndexBuffer()
 
 Vector3D CEditableSurface::GetBoundingBoxMins()
 {
-	return m_bbox[0];
+	return m_bbox.minPoint;
 }
 
 Vector3D CEditableSurface::GetBoundingBoxMaxs()
 {
-	return m_bbox[1];
+	return m_bbox.maxPoint;
 }
 
 void CEditableSurface::RebuildBoundingBox()
 {
-	m_bbox[0] = MAX_COORD_UNITS;
-	m_bbox[1] = -MAX_COORD_UNITS;
+	m_bbox.Reset();
 
 	for(int i = 0; i < m_numAllVerts; i++)
 	{
-		POINT_TO_BBOX(m_pVertexData[i].position, m_bbox[0], m_bbox[1]);
+		m_bbox.AddVertex(m_pVertexData[i].position);
 	}
 
-	if(m_bbox[0].x >= m_bbox[1].x)
-		m_bbox[1].x = m_bbox[0].x + 1;
+	if(m_bbox.minPoint.x >= m_bbox.maxPoint.x)
+		m_bbox.maxPoint.x = m_bbox.minPoint.x + 1;
 
-	if(m_bbox[0].y >= m_bbox[1].y)
-		m_bbox[1].y = m_bbox[0].y + 1;
+	if(m_bbox.minPoint.y >= m_bbox.maxPoint.y)
+		m_bbox.maxPoint.y = m_bbox.minPoint.y + 1;
 
-	if(m_bbox[0].z >= m_bbox[1].z)
-		m_bbox[1].z = m_bbox[0].z + 1;
+	if(m_bbox.minPoint.z >= m_bbox.maxPoint.z)
+		m_bbox.maxPoint.z = m_bbox.minPoint.z + 1;
 }
 
 void CEditableSurface::Render(int nViewRenderFlags)
@@ -1135,12 +1130,12 @@ void CEditableSurface::FlipFaces()
 // rendering bbox
 Vector3D CEditableSurface::GetBBoxMins()
 {
-	return m_bbox[0];
+	return m_bbox.minPoint;
 }
 
 Vector3D CEditableSurface::GetBBoxMaxs()
 {
-	return m_bbox[1];
+	return m_bbox.maxPoint;
 }
 
 void CEditableSurface::UpdateTextureCoords(Vector3D &vMovement)
@@ -1347,7 +1342,7 @@ bool CEditableSurface::ReadObject(IVirtualStream* pStream)
 	m_surftex.nFlags = surfData.nFlags;
 	m_tesselation.nTesselation = surfData.nTesseleation;
 
-	m_surftex.pMaterial = materials->GetMaterial(surfData.material,true);
+	m_surftex.pMaterial = materials->GetMaterial(surfData.material);
 
 	// read terrain patch sizes
 	pStream->Read(&m_nWide, 1, sizeof(int));
@@ -1387,7 +1382,7 @@ bool CEditableSurface::LoadFromKeyValues(kvkeybase_t* pSection)
 
 	if(pPair)
 	{
-		EqString object_full_filename(leveldir + pPair->values[0]);
+		EqString object_full_filename(leveldir + KV_GetValueString(pPair));
 
 		IFile* pStream = g_fileSystem->Open(object_full_filename.GetData(), "rb");
 		if(!pStream)

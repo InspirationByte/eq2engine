@@ -14,7 +14,7 @@
 class CTerrainPatchToolPanel : public wxPanel
 {
 public:
-	CTerrainPatchToolPanel(wxWindow* pMultiToolPanel) : wxPanel(pMultiToolPanel,0,0,200,400)
+	CTerrainPatchToolPanel(wxWindow* pMultiToolPanel) : wxPanel(pMultiToolPanel,-1, wxPoint(0,0),wxSize(200,400))
 	{
 		wxString size_choices[] = 
 		{

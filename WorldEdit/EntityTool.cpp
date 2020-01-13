@@ -15,7 +15,7 @@
 class CEntityToolPanel : public wxPanel
 {
 public:
-	CEntityToolPanel(wxWindow* pMultiToolPanel) : wxPanel(pMultiToolPanel,0,0,200,400)
+	CEntityToolPanel(wxWindow* pMultiToolPanel) : wxPanel(pMultiToolPanel,-1,wxPoint(0,0),wxSize(200,400))
 	{
 		m_entList = new wxComboBox(this, -1, "<select entity>",wxPoint(5,5), wxSize(150,25));
 	}

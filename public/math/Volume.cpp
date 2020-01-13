@@ -19,7 +19,7 @@ void Volume::LoadAsFrustum(const Matrix4x4 &mvp)
 	m_planes[VOLUME_PLANE_NEAR  ] = Plane(mvp[12] + mvp[8], mvp[13] + mvp[9], mvp[14] + mvp[10], mvp[15] + mvp[11]);
 }
 
-void Volume::LoadBoundingBox(Vector3D &mins, Vector3D &maxs)
+void Volume::LoadBoundingBox(const Vector3D &mins, const Vector3D &maxs)
 {
 	m_planes[VOLUME_PLANE_LEFT  ] = Plane(1, 0, 0,  -mins.x);
 	m_planes[VOLUME_PLANE_RIGHT ] = Plane(-1, 0, 0,  maxs.x);

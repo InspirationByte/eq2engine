@@ -12,6 +12,9 @@
 #include "SelectionEditor.h"
 #include "GameSoundEmitterSystem.h"
 
+#include "materialsystem/IMaterialSystem.h"
+#include "materialsystem/MeshBuilder.h"
+
 typedef IEntityVariable* (*IENTREGVARIABLE_FACTORY)(CEditableEntity* pEnt, char* pszValue);
 
 struct paramfactory_t
@@ -186,16 +189,14 @@ public:
 			materials->SetAmbientColor(ColorRGBA(m_pEntity->GetGroupColor(), 1.0f));
 			materials->BindMaterial(g_pLevel->GetFlatMaterial());
 		
-			IMeshBuilder* meshbuild = g_pShaderAPI->CreateMeshBuilder();
+			CMeshBuilder builder(materials->GetDynamicMesh());
 
-			meshbuild->Begin(PRIM_LINE_STRIP);
-				meshbuild->Position3fv(m_pTargetEntity->GetPosition());
-				meshbuild->AdvanceVertex();
-				meshbuild->Position3fv(m_pEntity->GetPosition());
-				meshbuild->AdvanceVertex();
-			meshbuild->End();
-
-			g_pShaderAPI->DestroyMeshBuilder(meshbuild);
+			builder.Begin(PRIM_LINE_STRIP);
+				builder.Position3fv(m_pTargetEntity->GetPosition());
+				builder.AdvanceVertex();
+				builder.Position3fv(m_pEntity->GetPosition());
+				builder.AdvanceVertex();
+			builder.End();
 		}
 	}
 

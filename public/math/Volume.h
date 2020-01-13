@@ -27,7 +27,7 @@ class Volume
 {
 public:
     void			LoadAsFrustum(const Matrix4x4 &mvp);
-	void			LoadBoundingBox(Vector3D &mins, Vector3D &maxs);
+	void			LoadBoundingBox(const Vector3D &mins, const Vector3D &maxs);
 
 	// returns back bounding box if not frustum.
 	void			GetBBOXBack(Vector3D &mins, Vector3D &maxs) const;

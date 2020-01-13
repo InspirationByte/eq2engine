@@ -20,7 +20,8 @@
 // for string2vector
 #include "EntityDef.h"
 
-#include "Utils/GeomTools.h"
+#include "utils/GeomTools.h"
+#include "utils/strtools.h"
 
 CEditableDecal::CEditableDecal()
 {
@@ -764,7 +765,8 @@ bool CEditableDecal::ReadObject(IVirtualStream*	pStream)
 	m_surftex.vScale = surfData.scale;
 	m_surftex.nFlags = surfData.nFlags;
 
-	m_surftex.pMaterial = materials->GetMaterial(surfData.material,true);
+	m_surftex.pMaterial = materials->GetMaterial(surfData.material);
+	//m_surftex.pMaterial->Ref_Grab();
 
 	pStream->Read(m_position, 1, sizeof(Vector3D));
 	pStream->Read(m_scale, 1, sizeof(Vector3D));
@@ -811,11 +813,11 @@ bool CEditableDecal::LoadFromKeyValues(kvkeybase_t* pSection)
 {
 	kvkeybase_t* pair = pSection->FindKeyBase("origin");
 	if(pair)
-		m_position = UTIL_StringToColor3(pair->values[0]);
+		m_position = UTIL_StringToColor3(KV_GetValueString(pair));
 
 	pair = pSection->FindKeyBase("size");
 	if(pair)
-		m_scale = UTIL_StringToColor3(pair->values[0]);
+		m_scale = UTIL_StringToColor3(KV_GetValueString(pair));
 
 	pair = pSection->FindKeyBase("material");
 	if(pair)
@@ -827,7 +829,7 @@ bool CEditableDecal::LoadFromKeyValues(kvkeybase_t* pSection)
 
 	if(pair)
 	{
-		plane = UTIL_StringToColor4(pair->values[0]);
+		plane = UTIL_StringToColor4(KV_GetValueString(pair));
 
 		m_surftex.Plane.normal = plane.xyz();
 		m_surftex.Plane.offset = plane.w;
@@ -836,7 +838,7 @@ bool CEditableDecal::LoadFromKeyValues(kvkeybase_t* pSection)
 	pair = pSection->FindKeyBase("uplane");
 	if(pair)
 	{
-		plane = UTIL_StringToColor4(pair->values[0]);
+		plane = UTIL_StringToColor4(KV_GetValueString(pair));
 
 		m_surftex.UAxis.normal = plane.xyz();
 		m_surftex.UAxis.offset = plane.w;
@@ -845,7 +847,7 @@ bool CEditableDecal::LoadFromKeyValues(kvkeybase_t* pSection)
 	pair = pSection->FindKeyBase("vplane");
 	if(pair)
 	{
-		plane = UTIL_StringToColor4(pair->values[0]);
+		plane = UTIL_StringToColor4(KV_GetValueString(pair));
 
 		m_surftex.VAxis.normal = plane.xyz();
 		m_surftex.VAxis.offset = plane.w;
@@ -853,7 +855,7 @@ bool CEditableDecal::LoadFromKeyValues(kvkeybase_t* pSection)
 
 	pair = pSection->FindKeyBase("texscale");
 	if(pair)
-		m_surftex.vScale = UTIL_StringToVector2(pair->values[0]);
+		m_surftex.vScale = UTIL_StringToVector2(KV_GetValueString(pair));
 
 	pair = pSection->FindKeyBase("rotation");
 	if(pair)

@@ -16,14 +16,14 @@ BEGIN_EVENT_TABLE(CLoadLevelDialog, wxDialog)
 	EVT_LISTBOX_DCLICK(-1, CLoadLevelDialog::OnDoubleClick)
 END_EVENT_TABLE()
 
-CLoadLevelDialog::CLoadLevelDialog() : wxDialog(g_editormainframe, -1, DKLOC("TOKEN_CHOOSELEVEL", L"Choose a world to edit"),wxPoint(-1,-1),wxSize(400,680),wxCAPTION | wxSYSTEM_MENU | wxCLOSE_BOX | wxCENTER_ON_SCREEN)
+CLoadLevelDialog::CLoadLevelDialog() : wxDialog(g_editormainframe, -1, DKLOC("TOKEN_CHOOSELEVEL", "Choose a world to edit"),wxPoint(-1,-1),wxSize(400,680),wxCAPTION | wxSYSTEM_MENU | wxCLOSE_BOX | wxCENTER_ON_SCREEN)
 {
 	Iconize( false );
 
 	m_levels = new wxListBox(this,-1,wxPoint(5,5), wxSize(380,600));
 
-	new wxButton(this, BUTTON_OPEN, DKLOC("TOKEN_LOAD", L"Load"), wxPoint(5, 610),wxSize(50,25));
-	new wxButton(this, BUTTON_CANCEL, DKLOC("TOKEN_CANCEL", L"Cancel"), wxPoint(60, 610),wxSize(50,25));
+	new wxButton(this, BUTTON_OPEN, DKLOC("TOKEN_LOAD", "Load"), wxPoint(5, 610),wxSize(50,25));
+	new wxButton(this, BUTTON_CANCEL, DKLOC("TOKEN_CANCEL", "Cancel"), wxPoint(60, 610),wxSize(50,25));
 	//new wxButton(this, BUTTON_NEW, DKLOC("TOKEN_CREATENEW", "Create new"), wxPoint(115, 610),wxSize(70,25));
 
 	RebuildLevelList();

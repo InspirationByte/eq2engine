@@ -4,12 +4,6 @@
     <Filter Include="Файлы исходного кода">
       <UniqueIdentifier>{053e1c37-205f-4d72-bfd5-ca8e6b2e9635}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Файлы исходного кода\Core">
-      <UniqueIdentifier>{3ad6f75c-0110-4ede-bf2b-b305e9f7bbc7}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Файлы исходного кода\Core\Console">
-      <UniqueIdentifier>{047645de-4edf-44a9-a1c0-b0e8f6b0119e}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Заголовочные файлы">
       <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
       <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
@@ -307,9 +301,6 @@
     <ClInclude Include="EntityProperties.h">
       <Filter>Файлы исходного кода\Editor\Dialogs</Filter>
     </ClInclude>
-    <ClInclude Include="..\public\IVirtualStream.h">
-      <Filter>Файлы исходного кода\Core</Filter>
-    </ClInclude>
     <ClInclude Include="BuildOptionsDialog.h">
       <Filter>Файлы исходного кода\Editor\Dialogs</Filter>
     </ClInclude>
@@ -343,24 +334,6 @@
     <ClInclude Include="BaseEditableObject.h">
       <Filter>Файлы исходного кода\Editor\Editor\Editables</Filter>
     </ClInclude>
-    <ClInclude Include="..\Engine\Audio\alsnd_ambient.h">
-      <Filter>Файлы исходного кода\Editor\Sound\AudioSystem</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Engine\Audio\alsnd_emitter.h">
-      <Filter>Файлы исходного кода\Editor\Sound\AudioSystem</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Engine\Audio\alsnd_sample.h">
-      <Filter>Файлы исходного кода\Editor\Sound\AudioSystem</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Engine\Audio\alsound_local.h">
-      <Filter>Файлы исходного кода\Editor\Sound\AudioSystem</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Engine\Audio\soundzero.h">
-      <Filter>Файлы исходного кода\Editor\Sound\AudioSystem</Filter>
-    </ClInclude>
-    <ClInclude Include="..\public\GameSoundEmitterSystem.h">
-      <Filter>Файлы исходного кода\Editor\Sound</Filter>
-    </ClInclude>
     <ClInclude Include="editor_config.h">
       <Filter>Файлы исходного кода\Editor</Filter>
     </ClInclude>
@@ -382,23 +355,8 @@
     <ClInclude Include="..\public\mtriangle_framework.h">
       <Filter>Файлы исходного кода\Editor\Editor\Tools</Filter>
     </ClInclude>
-    <ClInclude Include="..\public\animationfile.h">
-      <Filter>Файлы исходного кода\Editor\Editor\Editables</Filter>
-    </ClInclude>
-    <ClInclude Include="..\public\BoneSetup.h">
-      <Filter>Файлы исходного кода\Editor\Editor\Editables</Filter>
-    </ClInclude>
     <ClInclude Include="wxFourWaySplitter.h">
       <Filter>Файлы исходного кода\Editor\Editor</Filter>
-    </ClInclude>
-    <ClInclude Include="..\public\anim_activity.h">
-      <Filter>Файлы исходного кода\Editor\Editor\Editables</Filter>
-    </ClInclude>
-    <ClInclude Include="..\public\anim_defs.h">
-      <Filter>Файлы исходного кода\Editor\Editor\Editables</Filter>
-    </ClInclude>
-    <ClInclude Include="..\public\anim_events.h">
-      <Filter>Файлы исходного кода\Editor\Editor\Editables</Filter>
     </ClInclude>
     <ClInclude Include="..\public\dsm_obj_loader.h">
       <Filter>Файлы исходного кода\Editor\Editor\Utils</Filter>
@@ -406,8 +364,56 @@
     <ClInclude Include="..\public\dsm_esm_loader.h">
       <Filter>Файлы исходного кода\Editor\Editor\Utils</Filter>
     </ClInclude>
-    <ClInclude Include="..\Engine\studio_egf.h">
+    <ClInclude Include="..\shared_engine\studio_egf.h">
       <Filter>Файлы исходного кода\EngineLib\Models</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_game\GameSoundEmitterSystem.h">
+      <Filter>Файлы исходного кода\Editor\Sound</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_engine\Audio\alsnd_emitter.h">
+      <Filter>Файлы исходного кода\Editor\Sound\AudioSystem</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_engine\Audio\alsnd_sample.h">
+      <Filter>Файлы исходного кода\Editor\Sound\AudioSystem</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_engine\Audio\alsound_local.h">
+      <Filter>Файлы исходного кода\Editor\Sound\AudioSystem</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_engine\Audio\soundzero.h">
+      <Filter>Файлы исходного кода\Editor\Sound\AudioSystem</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_game\anim_activity.h">
+      <Filter>Файлы исходного кода\Editor\Editor\Editables</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_game\anim_events.h">
+      <Filter>Файлы исходного кода\Editor\Editor\Editables</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_game\animationfile.h">
+      <Filter>Файлы исходного кода\Editor\Editor\Editables</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_game\BoneSetup.h">
+      <Filter>Файлы исходного кода\Editor\Editor\Editables</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_engine\Audio\alsnd_stream.h">
+      <Filter>Файлы исходного кода\Editor\Sound\AudioSystem</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_engine\ViewParams.h">
+      <Filter>Файлы исходного кода\EngineLib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_engine\eqParallelJobs.h">
+      <Filter>Файлы исходного кода\EngineLib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_engine\eqGlobalMutex.h">
+      <Filter>Файлы исходного кода\EngineLib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_engine\FontLayoutBuilders.h">
+      <Filter>Файлы исходного кода\EngineLib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_engine\FontCache.h">
+      <Filter>Файлы исходного кода\EngineLib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_engine\Font.h">
+      <Filter>Файлы исходного кода\EngineLib</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -426,40 +432,13 @@
     <ResourceCompile Include="windows\Resources.rc">
       <Filter>Файлы ресурсов</Filter>
     </ResourceCompile>
-    <ResourceCompile Include="..\utils\wx\include\wx\msw\wx.rc">
+    <ResourceCompile Include="..\src_dependency\wxWidgets\include\wx\msw\wx.rc">
       <Filter>Файлы ресурсов</Filter>
     </ResourceCompile>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
       <Filter>Файлы исходного кода</Filter>
-    </ClCompile>
-    <ClCompile Include="..\public\ConCommand.cpp">
-      <Filter>Файлы исходного кода\Core\Console</Filter>
-    </ClCompile>
-    <ClCompile Include="..\public\ConVar.cpp">
-      <Filter>Файлы исходного кода\Core\Console</Filter>
-    </ClCompile>
-    <ClCompile Include="..\public\ConCommandBase.cpp">
-      <Filter>Файлы исходного кода\Core\Console</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Engine\DebugOverlay.cpp">
-      <Filter>Файлы исходного кода\Editor\Renderer\Debug</Filter>
-    </ClCompile>
-    <ClCompile Include="..\public\BaseRenderableObject.cpp">
-      <Filter>Файлы исходного кода\Editor\Renderer\Scene</Filter>
-    </ClCompile>
-    <ClCompile Include="..\public\RenderList.cpp">
-      <Filter>Файлы исходного кода\Editor\Renderer\Scene</Filter>
-    </ClCompile>
-    <ClCompile Include="..\public\Font.cpp">
-      <Filter>Файлы исходного кода\Editor\Renderer</Filter>
-    </ClCompile>
-    <ClCompile Include="..\public\ViewParams.cpp">
-      <Filter>Файлы исходного кода\Editor\Renderer</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Engine\modelloader_shared.cpp">
-      <Filter>Файлы исходного кода\EngineLib\Models</Filter>
     </ClCompile>
     <ClCompile Include="..\public\Math\math_util.cpp">
       <Filter>Файлы исходного кода\EngineLib\Math</Filter>
@@ -492,9 +471,6 @@
       <Filter>Файлы исходного кода\Editor\Dialogs</Filter>
     </ClCompile>
     <ClCompile Include="EditorFlatColor.cpp">
-      <Filter>Файлы исходного кода\Editor\Renderer\Shaders</Filter>
-    </ClCompile>
-    <ClCompile Include="..\public\BaseShader.cpp">
       <Filter>Файлы исходного кода\Editor\Renderer\Shaders</Filter>
     </ClCompile>
     <ClCompile Include="LoadLevelDialog.cpp">
@@ -530,9 +506,6 @@
     <ClCompile Include="BuildOptionsDialog.cpp">
       <Filter>Файлы исходного кода\Editor\Dialogs</Filter>
     </ClCompile>
-    <ClCompile Include="..\public\cmd_pacifier.cpp">
-      <Filter>Файлы исходного кода\Editor\Renderer</Filter>
-    </ClCompile>
     <ClCompile Include="TransformSelectionDialog.cpp">
       <Filter>Файлы исходного кода\Editor\Dialogs</Filter>
     </ClCompile>
@@ -563,24 +536,6 @@
     <ClCompile Include="BaseEditableObject.cpp">
       <Filter>Файлы исходного кода\Editor\Editor\Editables</Filter>
     </ClCompile>
-    <ClCompile Include="..\Engine\Audio\alsnd_ambient.cpp">
-      <Filter>Файлы исходного кода\Editor\Sound\AudioSystem</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Engine\Audio\alsnd_emitter.cpp">
-      <Filter>Файлы исходного кода\Editor\Sound\AudioSystem</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Engine\Audio\alsnd_sample.cpp">
-      <Filter>Файлы исходного кода\Editor\Sound\AudioSystem</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Engine\Audio\alsound_local.cpp">
-      <Filter>Файлы исходного кода\Editor\Sound\AudioSystem</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Engine\Audio\soundzero.cpp">
-      <Filter>Файлы исходного кода\Editor\Sound\AudioSystem</Filter>
-    </ClCompile>
-    <ClCompile Include="..\public\GameSoundEmitterSystem.cpp">
-      <Filter>Файлы исходного кода\Editor\Sound</Filter>
-    </ClCompile>
     <ClCompile Include="EditableEntityParameters.cpp">
       <Filter>Файлы исходного кода\Editor\Editor\Editables</Filter>
     </ClCompile>
@@ -596,17 +551,8 @@
     <ClCompile Include="..\public\mtriangle_framework.cpp">
       <Filter>Файлы исходного кода\Editor\Editor\Tools</Filter>
     </ClCompile>
-    <ClCompile Include="..\public\BoneSetup.cpp">
-      <Filter>Файлы исходного кода\Editor\Editor\Editables</Filter>
-    </ClCompile>
     <ClCompile Include="wxFourWaySplitter.cpp">
       <Filter>Файлы исходного кода\Editor\Editor</Filter>
-    </ClCompile>
-    <ClCompile Include="..\public\anim_activity.cpp">
-      <Filter>Файлы исходного кода\Editor\Editor\Editables</Filter>
-    </ClCompile>
-    <ClCompile Include="..\public\anim_events.cpp">
-      <Filter>Файлы исходного кода\Editor\Editor\Editables</Filter>
     </ClCompile>
     <ClCompile Include="..\public\dsm_esm_loader.cpp">
       <Filter>Файлы исходного кода\Editor\Editor\Utils</Filter>
@@ -617,24 +563,87 @@
     <ClCompile Include="..\public\dsm_obj_loader.cpp">
       <Filter>Файлы исходного кода\Editor\Editor\Utils</Filter>
     </ClCompile>
-    <ClCompile Include="..\Engine\studio_egf.cpp">
-      <Filter>Файлы исходного кода\EngineLib\Models</Filter>
-    </ClCompile>
     <ClCompile Include="BrushWinding.cpp">
       <Filter>Файлы исходного кода\Editor\Editor\Editables</Filter>
     </ClCompile>
+    <ClCompile Include="..\shared_engine\modelloader_shared.cpp">
+      <Filter>Файлы исходного кода\EngineLib\Models</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_engine\studio_egf.cpp">
+      <Filter>Файлы исходного кода\EngineLib\Models</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_engine\BaseRenderableObject.cpp">
+      <Filter>Файлы исходного кода\Editor\Renderer\Scene</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_engine\RenderList.cpp">
+      <Filter>Файлы исходного кода\Editor\Renderer\Scene</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_engine\DebugOverlay.cpp">
+      <Filter>Файлы исходного кода\Editor\Renderer\Debug</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_game\GameSoundEmitterSystem.cpp">
+      <Filter>Файлы исходного кода\Editor\Sound</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_engine\Audio\alsnd_emitter.cpp">
+      <Filter>Файлы исходного кода\Editor\Sound\AudioSystem</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_engine\Audio\alsnd_sample.cpp">
+      <Filter>Файлы исходного кода\Editor\Sound\AudioSystem</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_engine\Audio\alsound_local.cpp">
+      <Filter>Файлы исходного кода\Editor\Sound\AudioSystem</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_engine\Audio\soundzero.cpp">
+      <Filter>Файлы исходного кода\Editor\Sound\AudioSystem</Filter>
+    </ClCompile>
+    <ClCompile Include="..\public\materialsystem\BaseShader.cpp">
+      <Filter>Файлы исходного кода\Editor\Renderer\Shaders</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_game\anim_activity.cpp">
+      <Filter>Файлы исходного кода\Editor\Editor\Editables</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_game\anim_events.cpp">
+      <Filter>Файлы исходного кода\Editor\Editor\Editables</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_game\BoneSetup.cpp">
+      <Filter>Файлы исходного кода\Editor\Editor\Editables</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_engine\Audio\alsnd_stream.cpp">
+      <Filter>Файлы исходного кода\Editor\Sound\AudioSystem</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_engine\ViewParams.cpp">
+      <Filter>Файлы исходного кода\EngineLib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_engine\eqParallelJobs.cpp">
+      <Filter>Файлы исходного кода\EngineLib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_engine\eqGlobalMutex.cpp">
+      <Filter>Файлы исходного кода\EngineLib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_engine\FontLayoutBuilders.cpp">
+      <Filter>Файлы исходного кода\EngineLib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_engine\FontCache.cpp">
+      <Filter>Файлы исходного кода\EngineLib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_engine\Font.cpp">
+      <Filter>Файлы исходного кода\EngineLib</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <Library Include="..\libs\ogg_static.lib">
+    <Library Include="..\src_dependency\openal-soft\build\Release\OpenAL32.lib">
       <Filter>Библиотеки</Filter>
     </Library>
-    <Library Include="..\libs\vorbis_static.lib">
+    <Library Include="..\src_dependency\libogg\win32\VS2015\Win32\Release\libogg_static.lib">
       <Filter>Библиотеки</Filter>
     </Library>
-    <Library Include="..\libs\vorbisfile_static.lib">
+    <Library Include="..\src_dependency\libvorbis\win32\VS2010\Win32\Release\libvorbis_static.lib">
       <Filter>Библиотеки</Filter>
     </Library>
-    <Library Include="..\libs\oal32.lib">
+    <Library Include="..\src_dependency\libvorbis\win32\VS2010\Win32\Release\libvorbisfile_static.lib">
+      <Filter>Библиотеки</Filter>
+    </Library>
+    <Library Include="..\src_dependency\zlib\contrib\vstudio\vc14\x86\ZlibStatReleaseWithoutAsm\zlibstat.lib">
       <Filter>Библиотеки</Filter>
     </Library>
   </ItemGroup>

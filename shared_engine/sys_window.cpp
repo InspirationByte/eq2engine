@@ -238,12 +238,13 @@ bool Host_Init()
 	g_sysConsole->ParseFileToCommandBuffer( DEFAULT_CONFIG_PATH );
 	g_sysConsole->ExecuteCommandBuffer();
 
+	// override configuration file by executing command line
+	g_cmdLine->ExecuteCommandLine();
+
 	EQWNDHANDLE mainWindow = Sys_CreateWindow();
 
 	if(!g_pHost->InitSystems( mainWindow, !r_fullscreen.GetBool() ))
 		return false;
-
-	g_cmdLine->ExecuteCommandLine();
 
 	CEqGameControllerSDL::Init();
 

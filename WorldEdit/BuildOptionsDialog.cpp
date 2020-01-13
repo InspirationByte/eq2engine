@@ -25,12 +25,12 @@ CBuildOptionsDialog::CBuildOptionsDialog() : wxDialog(g_editormainframe, -1, "Bu
 	wxStaticBox *pLightmapBox = new wxStaticBox(this, -1, "Lightmaps", wxPoint(5,135), wxSize(256,128));
 	wxStaticBox *pDetailsBox = new wxStaticBox(this, -1, "Details", wxPoint(265,135), wxSize(256,128));
 
-	new wxButton(this, ACTION_ID_CANCEL, DKLOC("TOKEN_CANCEL", L"Cancel"), wxPoint(5, 280), wxSize(75, 25));
-	new wxButton(this, ACTION_ID_SAVE, DKLOC("TOKEN_SAVEBUILDOPT", L"Save"), wxPoint(365, 280), wxSize(75, 25));
-	new wxButton(this, ACTION_ID_BUILD, DKLOC("TOKEN_BUILD", L"Build"), wxPoint(445, 280), wxSize(75, 25));
+	new wxButton(this, ACTION_ID_CANCEL, DKLOC("TOKEN_CANCEL", "Cancel"), wxPoint(5, 280), wxSize(75, 25));
+	new wxButton(this, ACTION_ID_SAVE, DKLOC("TOKEN_SAVEBUILDOPT", "Save"), wxPoint(365, 280), wxSize(75, 25));
+	new wxButton(this, ACTION_ID_BUILD, DKLOC("TOKEN_BUILD", "Build"), wxPoint(445, 280), wxSize(75, 25));
 
-	m_pDisableTreeCheck	= new wxCheckBox(pMainBox, -1, DKLOC("TOKEN_DISABLETREE", L"Disable tree"), wxPoint(10,25));
-	m_pOnlyEntsCheck	= new wxCheckBox(pMainBox, -1, DKLOC("TOKEN_ONLYENTS", L"Only entities"), wxPoint(10,55));
+	m_pDisableTreeCheck	= new wxCheckBox(pMainBox, -1, DKLOC("TOKEN_DISABLETREE", "Disable tree"), wxPoint(10,25));
+	m_pOnlyEntsCheck	= new wxCheckBox(pMainBox, -1, DKLOC("TOKEN_ONLYENTS", "Only entities"), wxPoint(10,55));
 
 	wxString sectorDefaultSizes[] = 
 	{
@@ -41,21 +41,21 @@ CBuildOptionsDialog::CBuildOptionsDialog() : wxDialog(g_editormainframe, -1, "Bu
 		"512",
 	};
 
-	new wxStaticText(pSubdivBox,-1, DKLOC("TOKEN_SECTORSIZE", L"Sector size (Units)"), wxPoint(10,25));
+	new wxStaticText(pSubdivBox,-1, DKLOC("TOKEN_SECTORSIZE", "Sector size (Units)"), wxPoint(10,25));
 	m_pSectorSizeSpin	= new wxComboBox(pSubdivBox, -1, sectorDefaultSizes[3], wxPoint(165,25), wxSize(85,20),5,sectorDefaultSizes);
 
-	new wxStaticText(pSubdivBox,-1, DKLOC("TOKEN_MAXTREEDEPTH", L"Max. tree depth"), wxPoint(10,55));
+	new wxStaticText(pSubdivBox,-1, DKLOC("TOKEN_MAXTREEDEPTH", "Max. tree depth"), wxPoint(10,55));
 	m_pTreeMaxDepthSpin = new wxSpinCtrl(pSubdivBox, -1, "8", wxPoint(165,55), wxSize(85,20));
 
-	m_pPhysicsOnlyCompile = new wxCheckBox(pSubdivBox, -1, DKLOC("TOKEN_ONLYPHYSICS", L"Physics only"), wxPoint(10,80));
+	m_pPhysicsOnlyCompile = new wxCheckBox(pSubdivBox, -1, DKLOC("TOKEN_ONLYPHYSICS", "Physics only"), wxPoint(10,80));
 
-	m_pBrushCSGCheck	= new wxCheckBox(pSubdivBox, -1, DKLOC("TOKEN_BRUSHCSG", L"Brush CSG"), wxPoint(10,105));
+	m_pBrushCSGCheck	= new wxCheckBox(pSubdivBox, -1, DKLOC("TOKEN_BRUSHCSG", "Brush CSG"), wxPoint(10,105));
 	m_pBrushCSGCheck->SetValue(true);
 
-	m_pCompileLightmaps = new wxCheckBox(pLightmapBox, -1, DKLOC("TOKEN_COMPILELIGHTMAPS", L"Compile lightmaps"), wxPoint(10,25));
-	new wxStaticText(pLightmapBox,-1, DKLOC("TOKEN_LIGHTMAPSIZE", L"Lightmap size"), wxPoint(10,55));
+	m_pCompileLightmaps = new wxCheckBox(pLightmapBox, -1, DKLOC("TOKEN_COMPILELIGHTMAPS", "Compile lightmaps"), wxPoint(10,25));
+	new wxStaticText(pLightmapBox,-1, DKLOC("TOKEN_LIGHTMAPSIZE", "Lightmap size"), wxPoint(10,55));
 	m_pLightmapSize = new wxComboBox(pLightmapBox, -1, sectorDefaultSizes[3], wxPoint(165,55), wxSize(85,20),5,sectorDefaultSizes);
-	new wxStaticText(pLightmapBox,-1, DKLOC("TOKEN_LUXELSPERMETER", L"Luxels per meter"), wxPoint(10,80));
+	new wxStaticText(pLightmapBox,-1, DKLOC("TOKEN_LUXELSPERMETER", "Luxels per meter"), wxPoint(10,80));
 	m_pLuxelsPerMeter = new wxTextCtrl(pLightmapBox, -1, "10.0",wxPoint(165,80),wxSize(85,20));
 }
 

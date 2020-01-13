@@ -11,10 +11,10 @@
 #include "Math/Vector.h"
 #include "coord.h"
 
-void DrawGrid(int size, ColorRGBA &color, bool for2D = false);
+void DrawGrid(int size, const ColorRGBA &color, bool for2D = false);
 void DrawWorldCenter();
 
 float SnapFloat(int grid_spacing, float val);
-Vector3D SnapVector(int grid_spacing, Vector3D &vec);
+Vector3D SnapVector(int grid_spacing, const Vector3D &vec);
 
 #endif // GRID_H

@@ -144,7 +144,7 @@ BEGIN_EVENT_TABLE(CSurfaceDialog, wxDialog)
 	EVT_BUTTON(SDE_TEXTURAXISFROM3DVIEW, CSurfaceDialog::OnButton)
 END_EVENT_TABLE()
 
-CSurfaceDialog::CSurfaceDialog() : wxDialog(g_editormainframe, -1, DKLOC("TOKEN_SURFDIALOG_TITLE", L"Surface dialog"), wxPoint(-1,-1),wxSize(615, 354), wxCAPTION | wxCLOSE_BOX)
+CSurfaceDialog::CSurfaceDialog() : wxDialog(g_editormainframe, -1, DKLOC("TOKEN_SURFDIALOG_TITLE", "Surface dialog"), wxPoint(-1,-1),wxSize(615, 354), wxCAPTION | wxCLOSE_BOX)
 {
 
 	/*
@@ -165,11 +165,11 @@ CSurfaceDialog::CSurfaceDialog() : wxDialog(g_editormainframe, -1, DKLOC("TOKEN_
 	
 	wxAuiNotebook* notebook = new wxAuiNotebook( this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxAUI_NB_TOP |wxAUI_NB_TAB_SPLIT | wxAUI_NB_TAB_MOVE | wxAUI_NB_SCROLL_BUTTONS |wxNO_BORDER );
 	m_surface_panel = new wxPanel( notebook, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
-	notebook->AddPage( m_surface_panel, DKLOC("TOKEN_SURFACE", L"Surface"), true, wxNullBitmap );
+	notebook->AddPage( m_surface_panel, DKLOC("TOKEN_SURFACE", "Surface"), true, wxNullBitmap );
 	m_terrain_panel = new wxPanel( notebook, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
-	notebook->AddPage( m_terrain_panel, DKLOC("TOKEN_TERRAIN", L"Terrain"), false, wxNullBitmap );
+	notebook->AddPage( m_terrain_panel, DKLOC("TOKEN_TERRAIN", "Terrain"), false, wxNullBitmap );
 	m_texturereplacement_panel = new wxPanel( notebook, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
-	notebook->AddPage( m_texturereplacement_panel, DKLOC("TOKEN_REPLACETEX", L"Replace"), false, wxNullBitmap );
+	notebook->AddPage( m_texturereplacement_panel, DKLOC("TOKEN_REPLACETEX", "Replace"), false, wxNullBitmap );
 	
 	bSizer16->Add( notebook, 1, wxEXPAND|wxBOTTOM, 5 );
 	
@@ -251,11 +251,11 @@ void CSurfaceDialog::InitSurfaceEditTab()
 	
 	fgSizer6->Add( 0, 0, 1, wxEXPAND, 5 );
 
-	fgSizer6->Add( new wxStaticText( m_surface_panel, wxID_ANY, DKLOC("TOKEN_SCALE", L"Scale:"), wxDefaultPosition, wxDefaultSize, 0 ), 0, wxALL, 5 );
+	fgSizer6->Add( new wxStaticText( m_surface_panel, wxID_ANY, DKLOC("TOKEN_SCALE", "Scale:"), wxDefaultPosition, wxDefaultSize, 0 ), 0, wxALL, 5 );
 	
-	fgSizer6->Add( new wxStaticText( m_surface_panel, wxID_ANY, DKLOC("TOKEN_SHIFT", L"Shift:"), wxDefaultPosition, wxDefaultSize, 0 ), 0, wxALL, 5 );
+	fgSizer6->Add( new wxStaticText( m_surface_panel, wxID_ANY, DKLOC("TOKEN_SHIFT", "Shift:"), wxDefaultPosition, wxDefaultSize, 0 ), 0, wxALL, 5 );
 	
-	fgSizer6->Add( new wxStaticText( m_surface_panel, wxID_ANY, DKLOC("TOKEN_ROTATION", L"Rotation:"), wxDefaultPosition, wxDefaultSize, 0 ), 0, wxALL, 5 );
+	fgSizer6->Add( new wxStaticText( m_surface_panel, wxID_ANY, DKLOC("TOKEN_ROTATION", "Rotation:"), wxDefaultPosition, wxDefaultSize, 0 ), 0, wxALL, 5 );
 	
 	fgSizer6->Add( new wxStaticText( m_surface_panel, wxID_ANY, wxT("X"), wxDefaultPosition, wxDefaultSize, 0 ), 0, wxALL, 5 );
 	
@@ -321,12 +321,12 @@ void CSurfaceDialog::InitSurfaceEditTab()
 	bSizer25->Add( fgSizer6, 0, wxEXPAND, 5 );
 	
 	wxStaticBoxSizer* sbSizer5;
-	sbSizer5 = new wxStaticBoxSizer( new wxStaticBox( m_surface_panel, wxID_ANY,  DKLOC("TOKEN_SETTINGS", L"Settings") ), wxVERTICAL );
+	sbSizer5 = new wxStaticBoxSizer( new wxStaticBox( m_surface_panel, wxID_ANY,  DKLOC("TOKEN_SETTINGS", "Settings") ), wxVERTICAL );
 	
-	m_pNoCollide = new wxCheckBox( m_surface_panel, SDE_FLAGS, DKLOC("TOKEN_NOCOLLIDE", L"No collsion"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_pNoCollide = new wxCheckBox( m_surface_panel, SDE_FLAGS, DKLOC("TOKEN_NOCOLLIDE", "No collsion"), wxDefaultPosition, wxDefaultSize, 0 );
 	sbSizer5->Add( m_pNoCollide, 0, wxALL, 5 );
 	
-	m_pNoSubdivision = new wxCheckBox( m_surface_panel, SDE_FLAGS, DKLOC("TOKEN_NOSUBDIV", L"No subdivision"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_pNoSubdivision = new wxCheckBox( m_surface_panel, SDE_FLAGS, DKLOC("TOKEN_NOSUBDIV", "No subdivision"), wxDefaultPosition, wxDefaultSize, 0 );
 	sbSizer5->Add( m_pNoSubdivision, 0, wxALL, 5 );
 	
 	wxBoxSizer* bSizer95;
@@ -346,10 +346,10 @@ void CSurfaceDialog::InitSurfaceEditTab()
 	wxBoxSizer* bSizer29;
 	bSizer29 = new wxBoxSizer( wxHORIZONTAL );
 	
-	m_pCustTexCoords = new wxCheckBox( m_surface_panel, SDE_FLAGS, DKLOC("TOKEN_CUSTTEXCOORD", L"Manual tex. coords"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_pCustTexCoords = new wxCheckBox( m_surface_panel, SDE_FLAGS, DKLOC("TOKEN_CUSTTEXCOORD", "Manual tex. coords"), wxDefaultPosition, wxDefaultSize, 0 );
 	bSizer29->Add( m_pCustTexCoords, 0, wxALL, 5 );
 	
-	bSizer29->Add( new wxButton( m_surface_panel, SDE_TEXTURAXISFROM3DVIEW, DKLOC("TOKEN_PROJECT", L"Project"), wxDefaultPosition, wxDefaultSize, 0 ), 0, wxRIGHT, 5 );
+	bSizer29->Add( new wxButton( m_surface_panel, SDE_TEXTURAXISFROM3DVIEW, DKLOC("TOKEN_PROJECT", "Project"), wxDefaultPosition, wxDefaultSize, 0 ), 0, wxRIGHT, 5 );
 	
 	
 	sbSizer5->Add( bSizer29, 1, wxEXPAND, 5 );
@@ -357,7 +357,7 @@ void CSurfaceDialog::InitSurfaceEditTab()
 	
 	bSizer25->Add( sbSizer5, 1, wxEXPAND, 5 );
 	
-	m_pDrawSelectionMask = new wxCheckBox( m_surface_panel, SDE_RENDER_UPDATE, DKLOC("TOKEN_SELMASK", L"Show Selection mask"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_pDrawSelectionMask = new wxCheckBox( m_surface_panel, SDE_RENDER_UPDATE, DKLOC("TOKEN_SELMASK", "Show Selection mask"), wxDefaultPosition, wxDefaultSize, 0 );
 	bSizer25->Add( m_pDrawSelectionMask, 0, wxALL, 5 );
 	m_pDrawSelectionMask->SetValue(true); 
 	
@@ -604,14 +604,14 @@ void CSurfaceDialog::InitTerrainEditTab()
 	bSizer33 = new wxBoxSizer( wxHORIZONTAL );
 	
 	wxString m_pPainterSelChoices[] = { 
-		DKLOC("TOKEN_VERTEXADV", L"Vertex advance"), 
-		DKLOC("TOKEN_VERTEXSMTH", L"Vertex smooth"), 
-		DKLOC("TOKEN_VERTEXSETLEVEL", L"Set level"), 
-		DKLOC("TOKEN_TEXTRANSITION", L"Texture transiton")
+		DKLOC("TOKEN_VERTEXADV", "Vertex advance"), 
+		DKLOC("TOKEN_VERTEXSMTH", "Vertex smooth"), 
+		DKLOC("TOKEN_VERTEXSETLEVEL", "Set level"), 
+		DKLOC("TOKEN_TEXTRANSITION", "Texture transiton")
 	};
 
 	int m_pPainterSelNChoices = sizeof( m_pPainterSelChoices ) / sizeof( wxString );
-	m_pPainterSel = new wxRadioBox( m_terrain_panel, SDE_PAINTERSELECT, DKLOC("TOKEN_PAINTTYPE", L"Paint type"), wxDefaultPosition, wxSize( 150,-1 ), m_pPainterSelNChoices, m_pPainterSelChoices, 1, wxRA_SPECIFY_COLS );
+	m_pPainterSel = new wxRadioBox( m_terrain_panel, SDE_PAINTERSELECT, DKLOC("TOKEN_PAINTTYPE", "Paint type"), wxDefaultPosition, wxSize( 150,-1 ), m_pPainterSelNChoices, m_pPainterSelChoices, 1, wxRA_SPECIFY_COLS );
 	m_pPainterSel->SetSelection( 0 );
 	bSizer33->Add( m_pPainterSel, 0, wxALL, 5 );
 	
@@ -631,10 +631,10 @@ void CSurfaceDialog::InitTerrainEditTab()
 	fgSizer8->Add( new wxStaticText( m_terrain_panel, wxID_ANY, wxT("Layer"), wxDefaultPosition, wxDefaultSize, 0 ), 0, wxALL, 5 );
 	
 	wxString m_pPaintLayerChoices[] = { 
-		DKLOC("TOKEN_LAYER1", L"Layer 1"),
-		DKLOC("TOKEN_LAYER2", L"Layer 2"),
-		DKLOC("TOKEN_LAYER3", L"Layer 3"),
-		DKLOC("TOKEN_LAYER4", L"Layer 4"),
+		DKLOC("TOKEN_LAYER1", "Layer 1"),
+		DKLOC("TOKEN_LAYER2", "Layer 2"),
+		DKLOC("TOKEN_LAYER3", "Layer 3"),
+		DKLOC("TOKEN_LAYER4", "Layer 4"),
 	};
 	int m_pPaintLayerNChoices = sizeof( m_pPaintLayerChoices ) / sizeof( wxString );
 	m_pPaintLayer = new wxChoice( m_terrain_panel, wxID_ANY, wxDefaultPosition, wxDefaultSize, m_pPaintLayerNChoices, m_pPaintLayerChoices, 0 );
@@ -647,7 +647,7 @@ void CSurfaceDialog::InitTerrainEditTab()
 	
 	sbSizer7->Add( bSizer33, 1, wxEXPAND, 5 );
 	
-	m_pDrawWiredTerrain = new wxCheckBox( m_terrain_panel, wxID_ANY, DKLOC("TOKEN_WIREMASK", L"Show Wire mask"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_pDrawWiredTerrain = new wxCheckBox( m_terrain_panel, wxID_ANY, DKLOC("TOKEN_WIREMASK", "Show Wire mask"), wxDefaultPosition, wxDefaultSize, 0 );
 	m_pDrawWiredTerrain->SetValue(true); 
 	sbSizer7->Add( m_pDrawWiredTerrain, 0, wxALL, 5 );
 	

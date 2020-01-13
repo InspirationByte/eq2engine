@@ -371,7 +371,7 @@ public:
 		physics->Simulate(m_fDT, m_nSubSteps);
 		
 		m_SetFrameTimeMutex.Lock();
-		m_fLastUpdate = abs(MEASURE_TIME_STATS(measure_physics));
+		m_fLastUpdate = fabs(MEASURE_TIME_STATS(measure_physics));
 		m_SetFrameTimeMutex.Unlock();
 
 		return 0;
@@ -612,8 +612,8 @@ bool CEngineGame::EngineRunFrame( float dTime )
 		// Render frame. It must handle loading screen render
 		gamedll->OnRenderScene();
 
-		debugoverlay->Text(Vector4D(1), " game postrender: %.2f ms",abs(MEASURE_TIME_STATS(measure_postrender)));
-		debugoverlay->Graph_AddValue(&g_postRenderGraph, abs(MEASURE_TIME_STATS(measure_postrender)));
+		debugoverlay->Text(Vector4D(1), " game postrender: %.2f ms",fabs(MEASURE_TIME_STATS(measure_postrender)));
+		debugoverlay->Graph_AddValue(&g_postRenderGraph, fabs(MEASURE_TIME_STATS(measure_postrender)));
 
 		return true;
 	}
@@ -675,7 +675,7 @@ bool CEngineGame::EngineRunFrame( float dTime )
 	// restore frame time
 	gpGlobals->frametime = frametime;
 
-	debugoverlay->Graph_AddValue(&g_gameUpdateGraph, abs(MEASURE_TIME_STATS(measure_gamedll)));
+	debugoverlay->Graph_AddValue(&g_gameUpdateGraph, fabs(MEASURE_TIME_STATS(measure_gamedll)));
 
 	// Signal physics thread to work after the game update
 	if(GetGameState() == IEngineGame::GAME_IDLE)
@@ -686,28 +686,28 @@ bool CEngineGame::EngineRunFrame( float dTime )
 		//g_PhysicsThread.SignalWork();
 	}
 
-	debugoverlay->Text(Vector4D(1), " game update: %.2f ms",abs(MEASURE_TIME_STATS(measure_gamedll)));
+ 	debugoverlay->Text(Vector4D(1), " game update: %.2f ms",fabs(MEASURE_TIME_STATS(measure_gamedll)));
 
 	float measure_prerender = MEASURE_TIME_BEGIN();
 	// Render frame in game
 	gamedll->PreRender();
-	debugoverlay->Text(Vector4D(1), " game prerender: %.2f ms",abs(MEASURE_TIME_STATS(measure_prerender)));
+	debugoverlay->Text(Vector4D(1), " game prerender: %.2f ms",fabs(MEASURE_TIME_STATS(measure_prerender)));
 
-	debugoverlay->Graph_AddValue(&g_preRenderGraph, abs(MEASURE_TIME_STATS(measure_prerender)));
+	debugoverlay->Graph_AddValue(&g_preRenderGraph, fabs(MEASURE_TIME_STATS(measure_prerender)));
 
 	float measure_scene = MEASURE_TIME_BEGIN();
 	// Draw all (including materials)
 	gamedll->OnRenderScene();
-	debugoverlay->Text(Vector4D(1), " scene view: %.2f ms",abs(MEASURE_TIME_STATS(measure_scene)));
-	debugoverlay->Graph_AddValue(&g_sceneRenderGraph, abs(MEASURE_TIME_STATS(measure_scene)));
+	debugoverlay->Text(Vector4D(1), " scene view: %.2f ms",fabs(MEASURE_TIME_STATS(measure_scene)));
+	debugoverlay->Graph_AddValue(&g_sceneRenderGraph, fabs(MEASURE_TIME_STATS(measure_scene)));
 
 	float measure_postrender = MEASURE_TIME_BEGIN();
 
 	// Render frame in game
 	gamedll->PostRender();
 
-	debugoverlay->Text(Vector4D(1), " game postrender: %.2f ms",abs(MEASURE_TIME_STATS(measure_postrender)));
-	debugoverlay->Graph_AddValue(&g_postRenderGraph, abs(MEASURE_TIME_STATS(measure_postrender)));
+	debugoverlay->Text(Vector4D(1), " game postrender: %.2f ms",fabs(MEASURE_TIME_STATS(measure_postrender)));
+	debugoverlay->Graph_AddValue(&g_postRenderGraph, fabs(MEASURE_TIME_STATS(measure_postrender)));
 
 	return true;
 }

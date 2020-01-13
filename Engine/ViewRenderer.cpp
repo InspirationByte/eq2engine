@@ -10,6 +10,7 @@
 #include "ViewRenderer.h"
 #include "BaseRenderableObject.h"
 #include "materialsystem/MeshBuilder.h"
+#include "ConVar.h"
 
 #ifndef EDITOR
 #include "EqGameLevel.h"
@@ -18,8 +19,8 @@
 #	include "IEngineHost.h"
 #	endif // EQLC
 #else
-#include "../Editor/EditorMainFrame.h"
-#include "../Editor/RenderWindows.h"
+#include "../WorldEdit/EditorMainFrame.h"
+#include "../WorldEdit/RenderWindows.h"
 #endif // EDITOR
 
 #ifdef EQLC

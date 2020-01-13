@@ -171,7 +171,7 @@ protected:
 
 	int						m_nModifyTimes;
 
-	Vector3D				m_bbox[2];
+	BoundingBox				m_bbox;
 
 	EditableSurfaceType_e	m_surftype;
 	EditableType_e			m_objtype;

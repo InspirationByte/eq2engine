@@ -11,6 +11,8 @@
 #include "EditableSurface.h"
 #include "IDebugOverlay.h"
 
+#include "materialsystem/MeshBuilder.h"
+
 #include "mtriangle_framework.h"
 
 using namespace MTriangle;
@@ -19,7 +21,7 @@ using namespace MTriangle;
 class CVertexToolPanel : public wxPanel
 {
 public:
-	CVertexToolPanel(wxWindow* pMultiToolPanel) : wxPanel(pMultiToolPanel,0,0,200,400)
+	CVertexToolPanel(wxWindow* pMultiToolPanel) : wxPanel(pMultiToolPanel, -1, wxPoint(0, 0), wxSize(200, 400))
 	{
 		m_nEditMode = VERTEXEDIT_VERTEX;
 
@@ -154,7 +156,7 @@ void RenderSurfaceSelection(CEditorViewRender* pViewRender, surfaceSelectionData
 
 	pViewRender->SetupRenderMatrices();
 
-	IMeshBuilder* pMesh = g_pShaderAPI->CreateMeshBuilder();
+	CMeshBuilder mesh(materials->GetDynamicMesh());
 
 	g_pShaderAPI->Reset(STATE_RESET_VBO);
 	materials->SetAmbientColor(ColorRGBA(1,1,1,0.15f));
@@ -165,7 +167,7 @@ void RenderSurfaceSelection(CEditorViewRender* pViewRender, surfaceSelectionData
 	materials->SetDepthStates(true, false);
 	g_pShaderAPI->Apply();
 
-	pMesh->Begin(PRIM_TRIANGLES);
+	mesh.Begin(PRIM_TRIANGLES);
 	for(int i = 0; i < pData->pSurface->GetIndexCount(); i++)
 	{
 		int idx = pData->pSurface->GetIndices()[i];
@@ -174,17 +176,17 @@ void RenderSurfaceSelection(CEditorViewRender* pViewRender, surfaceSelectionData
 		if(pData->vertex_ids.findIndex(idx) != -1)
 			bMove = true;
 
-		pMesh->Position3fv(pData->pSurface->GetVertices()[idx].position + (bMove ? selectionmove : vec3_zero));
-		pMesh->AdvanceVertex();
+		mesh.Position3fv(pData->pSurface->GetVertices()[idx].position + (bMove ? selectionmove : vec3_zero));
+		mesh.AdvanceVertex();
 	}
-	pMesh->End();
+	mesh.End();
 	
 	materials->SetAmbientColor(ColorRGBA(1,1,1,1));
 	materials->BindMaterial(g_pLevel->GetFlatMaterial());
 	materials->SetRasterizerStates(CULL_NONE,FILL_WIREFRAME);
 	g_pShaderAPI->Apply();
 
-	pMesh->Begin(PRIM_TRIANGLES);
+	mesh.Begin(PRIM_TRIANGLES);
 	for(int i = 0; i < pData->pSurface->GetIndexCount(); i++)
 	{
 		int idx0 = pData->pSurface->GetIndices()[i];
@@ -199,20 +201,18 @@ void RenderSurfaceSelection(CEditorViewRender* pViewRender, surfaceSelectionData
 			point3D = rotMatrix*point3D;
 			point3D += rotationcenter;
 
-			pMesh->Position3fv(point3D);
+			mesh.Position3fv(point3D);
 
 		}
 		else
 		{
-			pMesh->Position3fv(pData->pSurface->GetVertices()[idx0].position);
+			mesh.Position3fv(pData->pSurface->GetVertices()[idx0].position);
 
 		}
 
-		pMesh->AdvanceVertex();
+		mesh.AdvanceVertex();
 	}
-	pMesh->End();
-
-	g_pShaderAPI->DestroyMeshBuilder(pMesh);
+	mesh.End();
 }
 
 void RenderTriangleSelection(CEditorViewRender* pViewRender, surfaceTriangleSelectionData_t* pData)
@@ -223,7 +223,7 @@ void RenderTriangleSelection(CEditorViewRender* pViewRender, surfaceTriangleSele
 
 	pViewRender->SetupRenderMatrices();
 
-	IMeshBuilder* pMesh = g_pShaderAPI->CreateMeshBuilder();
+	CMeshBuilder mesh(materials->GetDynamicMesh());
 
 	g_pShaderAPI->Reset(STATE_RESET_VBO);
 	materials->SetAmbientColor(ColorRGBA(1,1,1,0.75f));
@@ -234,7 +234,7 @@ void RenderTriangleSelection(CEditorViewRender* pViewRender, surfaceTriangleSele
 	materials->SetDepthStates(true, false);
 	g_pShaderAPI->Apply();
 
-	pMesh->Begin(PRIM_TRIANGLES);
+	mesh.Begin(PRIM_TRIANGLES);
 
 	int nTriangles = pData->triangle_ids.numElem();
 
@@ -244,23 +244,23 @@ void RenderTriangleSelection(CEditorViewRender* pViewRender, surfaceTriangleSele
 		int idx1 = pData->pSurface->GetIndices()[pData->triangle_ids[i] * 3 + 1];
 		int idx2 = pData->pSurface->GetIndices()[pData->triangle_ids[i] * 3 + 2];
 
-		pMesh->Position3fv( pData->pSurface->GetVertices()[idx0].position );
-		pMesh->AdvanceVertex();
+		mesh.Position3fv( pData->pSurface->GetVertices()[idx0].position );
+		mesh.AdvanceVertex();
 
-		pMesh->Position3fv( pData->pSurface->GetVertices()[idx1].position );
-		pMesh->AdvanceVertex();
+		mesh.Position3fv( pData->pSurface->GetVertices()[idx1].position );
+		mesh.AdvanceVertex();
 
-		pMesh->Position3fv( pData->pSurface->GetVertices()[idx2].position );
-		pMesh->AdvanceVertex();
+		mesh.Position3fv( pData->pSurface->GetVertices()[idx2].position );
+		mesh.AdvanceVertex();
 	}
-	pMesh->End();
+	mesh.End();
 	/*
 	materials->SetAmbientColor(ColorRGBA(1,1,1,1));
 	materials->BindMaterial(g_pLevel->GetFlatMaterial(), 0);
 	materials->SetRasterizerStates(CULL_NONE,FILL_WIREFRAME);
 	g_pShaderAPI->Apply();
 
-	pMesh->Begin(PRIM_TRIANGLES);
+	mesh.Begin(PRIM_TRIANGLES);
 	for(int i = 0; i < pData->pSurface->GetIndexCount(); i++)
 	{
 		int idx0 = pData->pSurface->GetIndices()[i];
@@ -275,18 +275,17 @@ void RenderTriangleSelection(CEditorViewRender* pViewRender, surfaceTriangleSele
 			point3D = rotMatrix*point3D;
 			point3D += rotationcenter;
 
-			pMesh->Position3fv(point3D);
+			mesh.Position3fv(point3D);
 		}
 		else
 		{
-			pMesh->Position3fv(pData->pSurface->GetVertices()[idx0].position);
+			mesh.Position3fv(pData->pSurface->GetVertices()[idx0].position);
 		}
 
-		pMesh->AdvanceVertex();
+		mesh.AdvanceVertex();
 	}
-	pMesh->End();
+	mesh.End();
 	*/
-	g_pShaderAPI->DestroyMeshBuilder(pMesh);
 	
 }
 
@@ -326,7 +325,7 @@ void RenderBrushVertexSelection(CEditorViewRender* pViewRender, brushVertexSelec
 
 	pViewRender->SetupRenderMatrices();
 
-	IMeshBuilder* pMesh = g_pShaderAPI->CreateMeshBuilder();
+	CMeshBuilder mesh(materials->GetDynamicMesh());
 
 	g_pShaderAPI->Reset(STATE_RESET_VBO);
 
@@ -349,7 +348,7 @@ void RenderBrushVertexSelection(CEditorViewRender* pViewRender, brushVertexSelec
 		materials->SetDepthStates(true, false);
 		g_pShaderAPI->Apply();
 
-		pMesh->Begin(PRIM_TRIANGLE_FAN);
+		mesh.Begin(PRIM_TRIANGLE_FAN);
 		for(int j = 0; j < pData->pBrush->GetFacePolygon(i)->vertices.numElem(); j++)
 		{
 			if(face_id != -1)
@@ -363,17 +362,17 @@ void RenderBrushVertexSelection(CEditorViewRender* pViewRender, brushVertexSelec
 					point3D = rotMatrix*point3D;
 					point3D += rotationcenter;
 
-					pMesh->Position3fv(point3D);
+					mesh.Position3fv(point3D);
 				}
 				else
-					pMesh->Position3fv(pData->pBrush->GetFacePolygon(i)->vertices[j].position);
+					mesh.Position3fv(pData->pBrush->GetFacePolygon(i)->vertices[j].position);
 			}
 			else
-				pMesh->Position3fv(pData->pBrush->GetFacePolygon(i)->vertices[j].position);
+				mesh.Position3fv(pData->pBrush->GetFacePolygon(i)->vertices[j].position);
 
-			pMesh->AdvanceVertex();
+			mesh.AdvanceVertex();
 		}
-		pMesh->End();
+		mesh.End();
 
 		materials->SetAmbientColor(ColorRGBA(1));
 		materials->BindMaterial(g_pLevel->GetFlatMaterial(), 0);
@@ -382,7 +381,7 @@ void RenderBrushVertexSelection(CEditorViewRender* pViewRender, brushVertexSelec
 		materials->SetDepthStates(true, false);
 		g_pShaderAPI->Apply();
 
-		pMesh->Begin(PRIM_LINE_STRIP);
+		mesh.Begin(PRIM_LINE_STRIP);
 		for(int j = 0; j < pData->pBrush->GetFacePolygon(i)->vertices.numElem(); j++)
 		{
 			if(face_id != -1)
@@ -390,19 +389,17 @@ void RenderBrushVertexSelection(CEditorViewRender* pViewRender, brushVertexSelec
 				int vertex_id = pData->selected_polys[face_id].vertex_ids.findIndex(j);
 
 				if(vertex_id != -1)
-					pMesh->Position3fv(pData->pBrush->GetFacePolygon(i)->vertices[j].position + selectionmove);
+					mesh.Position3fv(pData->pBrush->GetFacePolygon(i)->vertices[j].position + selectionmove);
 				else
-					pMesh->Position3fv(pData->pBrush->GetFacePolygon(i)->vertices[j].position);
+					mesh.Position3fv(pData->pBrush->GetFacePolygon(i)->vertices[j].position);
 			}
 			else
-				pMesh->Position3fv(pData->pBrush->GetFacePolygon(i)->vertices[j].position);
+				mesh.Position3fv(pData->pBrush->GetFacePolygon(i)->vertices[j].position);
 
-			pMesh->AdvanceVertex();
+			mesh.AdvanceVertex();
 		}
-		pMesh->End();
+		mesh.End();
 	}
-
-	g_pShaderAPI->DestroyMeshBuilder(pMesh);
 }
 
 CVertexTool::CVertexTool()

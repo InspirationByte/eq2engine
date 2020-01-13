@@ -11,7 +11,7 @@
 #include "Math/DkMath.h"
 #include "grid.h"
 
-inline void ListLine(Vector3D &from, Vector3D &to, DkList<Vertex3D_t> &verts)
+inline void ListLine(const Vector3D &from, const Vector3D &to, DkList<Vertex3D_t> &verts)
 {
 	verts.append(Vertex3D_t(from, vec2_zero));
 	verts.append(Vertex3D_t(to, vec2_zero));
@@ -41,7 +41,7 @@ void DrawWorldCenter()
 	materials->DrawPrimitivesFFP(PRIM_LINES, grid_vertices.ptr(), grid_vertices.numElem(), NULL, ColorRGBA(0,0.45f,0.45f,1), NULL, &depth, &raster);
 }
 
-void DrawGrid(int size, ColorRGBA &color, bool for2D)
+void DrawGrid(int size, const ColorRGBA &color, bool for2D)
 {
 	int grid_lines = 64*size;
 
@@ -88,7 +88,7 @@ float SnapFloat(int grid_spacing, float val)
 	return round(val / grid_spacing) * grid_spacing;
 }
 
-Vector3D SnapVector(int grid_spacing, Vector3D &vector)
+Vector3D SnapVector(int grid_spacing, const Vector3D &vector)
 {
 	return Vector3D(
 		SnapFloat(grid_spacing, vector.x),

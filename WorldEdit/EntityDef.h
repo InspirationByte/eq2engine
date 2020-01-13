@@ -11,6 +11,7 @@
 #include "DebugInterface.h"
 #include "IEqModel.h"
 #include "utils/EqString.h"
+#include "utils/EqWString.h"
 #include "math/Vector.h"
 #include "math/Matrix.h"
 
@@ -177,7 +178,7 @@ public:
 	inline Vector3D		GetVector3D() const		{ return( varType == PARAM_TYPE_VEC3 || varType == PARAM_TYPE_TARGETPOINT ) ? Vector3D(vecVal3[0],vecVal3[1],vecVal3[2]) : Vector3D(0);}
 	inline Vector4D		GetVector4D() const		{ return( varType == PARAM_TYPE_VEC4 ) ? Vector4D(vecVal4[0],vecVal4[1],vecVal4[2],vecVal4[3]) : Vector4D(0);}
 
-	inline void			SetValue(char* pszString)
+	inline void			SetValue(const char* pszString)
 	{
 		if(varType == PARAM_TYPE_STRING)
 			strcpy(pszVal, pszString);

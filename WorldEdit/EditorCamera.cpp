@@ -13,7 +13,7 @@
 #include "SelectionEditor.h"
 #include "DCRender2D.h"
 #include "EditorMainFrame.h"
-
+#include "IFont.h"
 
 ViewRenderMode_e CEditorViewRender::GetRenderMode()
 {
@@ -273,9 +273,13 @@ void CEditorViewRender::DrawSelectionBBox(Vector3D &mins, Vector3D &maxs, ColorR
 		// draw 2D bbox
 		materials->DrawPrimitives2DFFP(PRIM_LINE_STRIP, verts, elementsOf(verts), NULL, ColorRGBA(color,1), &params);
 
+		eqFontStyleParam_t fontParams;
+		fontParams.styleFlag |= TEXT_STYLE_SHADOW;
+		fontParams.textColor = ColorRGBA(color*2.0f, 1);
+
 		if(drawHandles)
 		{
-			Rectangle_t window_rect(0,0,m_screendims.x,m_screendims.y);
+			Rectangle_t window_rect(0.0f,0.0f,m_screendims.x,m_screendims.y);
 
 			Vector2D handles[SH_COUNT];
 			SelectionGetHandlePositions(rect, handles, window_rect, 8);
@@ -304,13 +308,12 @@ void CEditorViewRender::DrawSelectionBBox(Vector3D &mins, Vector3D &maxs, ColorR
 				materials->DrawPrimitives2DFFP(PRIM_LINE_STRIP, pointR, elementsOf(pointR), NULL, ColorRGBA(0,0,0,1));
 			}
 
-			debugoverlay->GetFont()->DrawSetColor(ColorRGBA(color*2.0f,1));
-			debugoverlay->GetFont()->DrawText(varargs("X: %g",wideTall.x), handles[SH_BOTTOM].x+5, handles[SH_BOTTOM].y,8,8,false);
-			debugoverlay->GetFont()->DrawText(varargs("Y: %g",wideTall.y), handles[SH_RIGHT].x, handles[SH_RIGHT].y+5,8,8,false);
+			debugoverlay->GetFont()->RenderText(varargs("X: %g",wideTall.x), Vector2D(handles[SH_BOTTOM].x+5, handles[SH_BOTTOM].y), fontParams);
+			debugoverlay->GetFont()->RenderText(varargs("Y: %g",wideTall.y), Vector2D(handles[SH_RIGHT].x, handles[SH_RIGHT].y+5), fontParams);
 		}
 		else
 		{
-			Rectangle_t window_rect(0,0,m_screendims.x,m_screendims.y);
+			Rectangle_t window_rect(0.0f,0.0f,m_screendims.x,m_screendims.y);
 
 			Vector2D handles[SH_COUNT];
 			SelectionGetHandlePositions(rect, handles, window_rect);
@@ -329,9 +332,8 @@ void CEditorViewRender::DrawSelectionBBox(Vector3D &mins, Vector3D &maxs, ColorR
 			// draw center handle as cross
 			materials->DrawPrimitives2DFFP(PRIM_LINES, center_verts, elementsOf(center_verts), NULL, ColorRGBA(color,1), &params);
 
-			debugoverlay->GetFont()->DrawSetColor(ColorRGBA(color*2.0f,1));
-			debugoverlay->GetFont()->DrawText(varargs("X: %g",wideTall.x), handles[SH_BOTTOM].x+5, handles[SH_BOTTOM].y,8,8,false);
-			debugoverlay->GetFont()->DrawText(varargs("Y: %g",wideTall.y), handles[SH_RIGHT].x, handles[SH_RIGHT].y+5,8,8,false);
+			debugoverlay->GetFont()->RenderText(varargs("X: %g",wideTall.x), Vector2D(handles[SH_BOTTOM].x+5, handles[SH_BOTTOM].y), fontParams);
+			debugoverlay->GetFont()->RenderText(varargs("Y: %g",wideTall.y), Vector2D(handles[SH_RIGHT].x, handles[SH_RIGHT].y+5), fontParams);
 		}
 	}
 	else

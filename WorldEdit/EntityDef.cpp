@@ -22,8 +22,8 @@ EqWString LocalizedEDEF(char *pszkey, kvkeybase_t *sec)
 	{
 		const char* value = KV_GetValueString(pair);
 
-		if(value[0] == '#')
-			return DKLOC(value +1, EqWString(value).c_str());
+		if (value[0] == '#')
+			return g_localizer->GetTokenString(value + 1, EqWString(value).c_str());
 		else
 			return value;
 	}
@@ -228,12 +228,12 @@ bool ParseEDEFEntity(kvkeybase_t* pSection)
 	pPair = pSection->FindKeyBase("mins");
 
 	if(pPair)
-		pDef->bboxmins = UTIL_StringToColor3(pPair->values[0]);
+		pDef->bboxmins = UTIL_StringToColor3(KV_GetValueString(pPair));
 
 	pPair = pSection->FindKeyBase("maxs");
 
 	if(pPair)
-		pDef->bboxmaxs = UTIL_StringToColor3(pPair->values[0]);
+		pDef->bboxmaxs = UTIL_StringToColor3(KV_GetValueString(pPair));
 
 	// parse entity parameters if it have.
 	kvkeybase_t* pParamsSec = pSection->FindKeyBase("parameters", KV_FLAG_SECTION);

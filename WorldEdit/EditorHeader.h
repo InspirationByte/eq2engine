@@ -19,6 +19,7 @@
 #include "EntityDef.h"
 #include "editor_config.h"
 #include "utils/VirtualStream.h"
+#include "eqParallelJobs.h"
 
 extern float	g_realtime;
 extern float	g_oldrealtime;

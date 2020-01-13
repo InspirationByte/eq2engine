@@ -556,9 +556,7 @@ void CTextureListPanel::ChangeFilter(const wxString& filter, const wxString& tag
 	{
 		for(int i = 0; i < show_materials.numElem(); i++)
 		{
-			int foundIndex = xstrfind((char*)show_materials[i]->GetName(), (char*)filter.c_str().AsChar());
-
-			if(foundIndex > 0)
+			if(xstristr((char*)show_materials[i]->GetName(), (char*)filter.c_str().AsChar()))
 				m_filteredlist.append(show_materials[i]);
 		}
 	}

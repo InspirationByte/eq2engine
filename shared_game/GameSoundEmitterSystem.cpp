@@ -13,8 +13,6 @@
 #include "IDebugOverlay.h"
 #include "math/Random.h"
 
-#include "Shiny.h"
-
 #ifndef NO_ENGINE
 #include "IEngineHost.h"
 #include "GlobalVarsBase.h"
@@ -773,9 +771,7 @@ void CSoundEmitterSystem::StopAll2DSounds()
 
 void CSoundEmitterSystem::Update(bool force)
 {
-	PROFILE_CODE(soundsystem->Update());
-
-	PROFILE_FUNC();
+	soundsystem->Update();
 
 	// update music volume always
 	ISoundPlayable* musicChannel = soundsystem->GetStaticStreamChannel(CHAN_STREAM);

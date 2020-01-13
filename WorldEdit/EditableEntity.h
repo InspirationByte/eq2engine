@@ -99,31 +99,6 @@ public:
 
 	void						AddOutput(char* pszString);
 
-	void						InitAnimationThings();
-	void						DestroyAnimationThings();
-
-	void						PreloadMotionData(studiomotiondata_t* pMotionData);
-
-	//-------------------------------------------------------------
-	// ANIMATION THINGS
-	//-------------------------------------------------------------
-
-	void						SetSequence(int animIndex);	// sets animation
-
-	int							FindSequence(const char* name);				// finds animation
-
-	// makes standard pose
-	void						StandardPose();
-
-	void						GetInterpolatedBoneFrame(modelanimation_t* pAnim, int nBone, int firstframe, int lastframe, float interp, animframe_t &out);
-
-	void						GetInterpolatedBoneFrameBetweenTwoAnimations(modelanimation_t* pAnim1, modelanimation_t* pAnim2, int nBone, int firstframe, int lastframe, float interp, float animTransition, animframe_t &out);
-
-	void						GetSequenceLayerBoneFrame(gsequence_t* pSequence, int nBone, animframe_t &out);
-
-	void						UpdateBones();
-
-	void						AdvanceFrame(float fDt);
 
 protected:
 
@@ -136,31 +111,8 @@ protected:
 
 	DkList<OutputData_t>			m_Outputs;
 
-	IEqModel*					m_pModel;
+	IEqModel*						m_pModel;
 	IMaterial*						m_pSprite;
-
-	//--------------------------------------------------------
-	// ANIMATION THINGS
-	//--------------------------------------------------------
-
-	// last computed bone frames
-	animframe_t*				m_pLastBoneFrames;
-
-	// computed ready-to-use matrices
-	Matrix4x4*					m_BoneMatrixList;
-
-	// local bones/base pose
-	Matrix4x4*					m_LocalBonematrixList;
-
-	// animation-only bone matrix list, for blending with IK
-	Matrix4x4*					m_AnimationBoneMatrixList;
-
-	int*						m_nParentIndexList;
-	int							m_numBones;
-
-	DkList<gsequence_t>			m_pSequences; // loaded sequences
-	DkList<gposecontroller_t>	m_poseControllers; // pose controllers
-	sequencetimer_t				m_sequenceTimer;
 };
 
 #endif // EDITABLEENTITY_H

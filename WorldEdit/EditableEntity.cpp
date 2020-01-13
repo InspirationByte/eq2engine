@@ -9,9 +9,13 @@
 #include "IDebugOverlay.h"
 #include "EditorLevel.h"
 #include "materialsystem/IMaterialSystem.h"
+#include "materialsystem/MeshBuilder.h"
 #include "SelectionEditor.h"
 #include "EditorMainFrame.h"
 #include "EditableEntityParameters.h"
+
+#include "utils/strtools.h"
+
 
 CEditableEntity::CEditableEntity()
 {
@@ -19,18 +23,6 @@ CEditableEntity::CEditableEntity()
 	m_pModel = NULL;
 	m_pSprite = NULL;
 	m_szClassName = "default";
-
-	memset(&m_sequenceTimer, 0, sizeof(m_sequenceTimer));
-
-	m_sequenceTimer.seq_idx = -1;
-	m_sequenceTimer.seq = NULL;
-
-	m_BoneMatrixList = NULL;
-	m_LocalBonematrixList = NULL;
-	m_nParentIndexList = NULL;
-	m_AnimationBoneMatrixList = NULL;
-
-	m_pLastBoneFrames = NULL;
 }
 
 CEditableEntity::~CEditableEntity()
@@ -51,32 +43,43 @@ void RenderPhysModel(IEqModel* pModel)
 	materials->SetRasterizerStates(CULL_BACK,FILL_WIREFRAME);
 	g_pShaderAPI->Apply();
 
-	IMeshBuilder* mesh = g_pShaderAPI->CreateMeshBuilder();
+	CMeshBuilder meshBuilder(materials->GetDynamicMesh());
 
-	studioPhysData_t* phys_data = &pModel->GetHWData()->physModel;
+	studioPhysData_t& phys_data = pModel->GetHWData()->physModel;
 
-	for(int i = 0; i < phys_data->numObjects; i++)
+	for (int i = 0; i < phys_data.numObjects; i++)
 	{
-		for(int j = 0; j < phys_data->objects[i].numShapes; j++)
+		for (int j = 0; j < phys_data.objects[i].object.numShapes; j++)
 		{
-			int nShape = phys_data->objects[i].shape_indexes[j];
-
-			int startIndex = phys_data->shapes[nShape].shape_info.startIndices;
-			int moveToIndex = startIndex + phys_data->shapes[nShape].shape_info.numIndices;
-
-			mesh->Begin(PRIM_TRIANGLES);
-			for(int k = startIndex; k < moveToIndex; k++)
+			int nShape = phys_data.objects[i].object.shape_indexes[j];
+			if (nShape < 0 || nShape > phys_data.numShapes)
 			{
-				mesh->Color4f(0,1,1,1);
-				mesh->Position3fv(phys_data->vertices[phys_data->indices[k]] + phys_data->objects[i].offset);
-
-				mesh->AdvanceVertex();
+				continue;
 			}
-			mesh->End();
+
+			int startIndex = phys_data.shapes[nShape].shape_info.startIndices;
+			int moveToIndex = startIndex + phys_data.shapes[nShape].shape_info.numIndices;
+			/*
+			if (m_boneTransforms != NULL && m_pRagdoll)
+			{
+				int visualMatrixIdx = m_pRagdoll->m_pBoneToVisualIndices[i];
+				Matrix4x4 boneFrame = m_pRagdoll->m_pJoints[i]->GetFrameTransformA();
+
+				materials->SetMatrix(MATRIXMODE_WORLD, worldPosMatrix*transpose(!boneFrame*m_boneTransforms[visualMatrixIdx]));
+				materials->BindMaterial(materials->GetDefaultMaterial());
+			}*/
+
+			meshBuilder.Begin(PRIM_TRIANGLES);
+			for (int k = startIndex; k < moveToIndex; k++)
+			{
+				meshBuilder.Color4f(1, 0, 1, 1);
+				meshBuilder.Position3fv(phys_data.vertices[phys_data.indices[k]]);// + phys_data.objects[i].object.offset);
+
+				meshBuilder.AdvanceVertex();
+			}
+			meshBuilder.End();
 		}
 	}
-
-	g_pShaderAPI->DestroyMeshBuilder(mesh);
 }
 
 extern float g_frametime;
@@ -107,37 +110,50 @@ void CEditableEntity::Render(int nViewRenderFlags)
 		materials->SetMatrix(MATRIXMODE_WORLD, GetRenderWorldTransform());
 
 		studiohdr_t* pHdr = m_pModel->GetHWData()->studio;
-		int nLod = 0;
 
 		//materials->SetSkinningEnabled(true);
 
-		for(int i = 0; i < pHdr->numBodyGroups; i++)
+		int bodyGroupFlags = 0x1;
+		int nStartLOD = 0;
+
+		for (int i = 0; i < pHdr->numBodyGroups; i++)
 		{
-			int nLodableModelIndex = pHdr->pBodyGroups(i)->lodModelIndex;
-			int nModDescId = pHdr->pLodModel(nLodableModelIndex)->modelsIndexes[nLod];
-
-			while(nLod > 0 && nModDescId != -1)
-			{
-				nLod--;
-				nModDescId = pHdr->pLodModel(nLodableModelIndex)->modelsIndexes[nLod];
-			}
-
-			if(nModDescId == -1)
+			// check bodygroups for rendering
+			if (!(bodyGroupFlags & (1 << i)))
 				continue;
 
-			for(int j = 0; j < pHdr->pModelDesc(nModDescId)->numGroups; j++)
+			int bodyGroupLOD = nStartLOD;
+			int nLodModelIdx = pHdr->pBodyGroups(i)->lodModelIndex;
+			studiolodmodel_t* lodModel = pHdr->pLodModel(nLodModelIdx);
+
+			int nModDescId = lodModel->modelsIndexes[bodyGroupLOD];
+
+			// get the right LOD model number
+			while (nModDescId == -1 && bodyGroupLOD > 0)
 			{
-				
-				IMaterial* pMaterial = m_pModel->GetMaterial(nModDescId, j);
-				materials->BindMaterial(pMaterial, 0);
+				bodyGroupLOD--;
+				nModDescId = lodModel->modelsIndexes[bodyGroupLOD];
+			}
 
-				m_pModel->PrepareForSkinning(m_BoneMatrixList);
+			if (nModDescId == -1)
+				continue;
+
+			studiomodeldesc_t* modDesc = pHdr->pModelDesc(nModDescId);
+
+			// render model groups that in this body group
+			for (int j = 0; j < modDesc->numGroups; j++)
+			{
+				materials->SetSkinningEnabled(true);
+
+				materials->BindMaterial(m_pModel->GetMaterial(modDesc->pGroup(j)->materialIndex), 0);
+
+				//m_pModel->PrepareForSkinning(m_boneTransforms);
 				m_pModel->DrawGroup(nModDescId, j);
-				
 
-				//viewrenderer->DrawModelPart(m_pModel, nModDescId, j, nViewRenderFlags);
+				materials->SetSkinningEnabled(false);
 			}
 		}
+
 
 		materials->SetSkinningEnabled(false);
 
@@ -145,7 +161,7 @@ void CEditableEntity::Render(int nViewRenderFlags)
 	}
 	else
 	{
-		IMeshBuilder* pBuilder = g_pShaderAPI->CreateMeshBuilder();
+		CMeshBuilder builder(materials->GetDynamicMesh());
 
 		g_pShaderAPI->Reset(STATE_RESET_VBO);
 
@@ -201,69 +217,69 @@ void CEditableEntity::Render(int nViewRenderFlags)
 			Vector3D up = view.rows[1].xyz();
 			Vector3D rt = view.rows[0].xyz();
 
-			pBuilder->Begin(PRIM_TRIANGLE_STRIP);
-				pBuilder->Position3fv(GetPosition() - up*texW - rt*texH);
-				pBuilder->TexCoord2f(0,1);
-				pBuilder->AdvanceVertex();
+			builder.Begin(PRIM_TRIANGLE_STRIP);
+				builder.Position3fv(GetPosition() - up*texW - rt*texH);
+				builder.TexCoord2f(0,1);
+				builder.AdvanceVertex();
 
-				pBuilder->Position3fv(GetPosition() + up*texW - rt*texH);
-				pBuilder->TexCoord2f(0,0);
-				pBuilder->AdvanceVertex();
+				builder.Position3fv(GetPosition() + up*texW - rt*texH);
+				builder.TexCoord2f(0,0);
+				builder.AdvanceVertex();
 
-				pBuilder->Position3fv(GetPosition() - up*texW + rt*texH);
-				pBuilder->TexCoord2f(1,1);
-				pBuilder->AdvanceVertex();
+				builder.Position3fv(GetPosition() - up*texW + rt*texH);
+				builder.TexCoord2f(1,1);
+				builder.AdvanceVertex();
 
-				pBuilder->Position3fv(GetPosition() + up*texW + rt*texH);
-				pBuilder->TexCoord2f(1,0);
-				pBuilder->AdvanceVertex();
-			pBuilder->End();
+				builder.Position3fv(GetPosition() + up*texW + rt*texH);
+				builder.TexCoord2f(1,0);
+				builder.AdvanceVertex();
+			builder.End();
 		}
 		else
 		{
 			materials->BindMaterial(g_pLevel->GetFlatMaterial());
 
-			pBuilder->Begin(PRIM_TRIANGLE_STRIP);
-				pBuilder->Position3f(min.x, max.y, max.z);
-				pBuilder->AdvanceVertex();
-				pBuilder->Position3f(max.x, max.y, max.z);
-				pBuilder->AdvanceVertex();
-				pBuilder->Position3f(min.x, max.y, min.z);
-				pBuilder->AdvanceVertex();
-				pBuilder->Position3f(max.x, max.y, min.z);
-				pBuilder->AdvanceVertex();
-				pBuilder->Position3f(min.x, min.y, min.z);
-				pBuilder->AdvanceVertex();
-				pBuilder->Position3f(max.x, min.y, min.z);
-				pBuilder->AdvanceVertex();
-				pBuilder->Position3f(min.x, min.y, max.z);
-				pBuilder->AdvanceVertex();
-				pBuilder->Position3f(max.x, min.y, max.z);
-				pBuilder->AdvanceVertex();
+			builder.Begin(PRIM_TRIANGLE_STRIP);
+				builder.Position3f(min.x, max.y, max.z);
+				builder.AdvanceVertex();
+				builder.Position3f(max.x, max.y, max.z);
+				builder.AdvanceVertex();
+				builder.Position3f(min.x, max.y, min.z);
+				builder.AdvanceVertex();
+				builder.Position3f(max.x, max.y, min.z);
+				builder.AdvanceVertex();
+				builder.Position3f(min.x, min.y, min.z);
+				builder.AdvanceVertex();
+				builder.Position3f(max.x, min.y, min.z);
+				builder.AdvanceVertex();
+				builder.Position3f(min.x, min.y, max.z);
+				builder.AdvanceVertex();
+				builder.Position3f(max.x, min.y, max.z);
+				builder.AdvanceVertex();
 
-				pBuilder->Position3f(max.x, min.y, max.z);
-				pBuilder->AdvanceVertex();
+				builder.Position3f(max.x, min.y, max.z);
+				builder.AdvanceVertex();
 
-				pBuilder->Position3f(max.x, min.y, min.z);
-				pBuilder->AdvanceVertex();
+				builder.Position3f(max.x, min.y, min.z);
+				builder.AdvanceVertex();
 
-				pBuilder->Position3f(max.x, min.y, min.z);
-				pBuilder->AdvanceVertex();
-				pBuilder->Position3f(max.x, max.y, min.z);
-				pBuilder->AdvanceVertex();
-				pBuilder->Position3f(max.x, min.y, max.z);
-				pBuilder->AdvanceVertex();
-				pBuilder->Position3f(max.x, max.y, max.z);
-				pBuilder->AdvanceVertex();
-				pBuilder->Position3f(min.x, min.y, max.z);
-				pBuilder->AdvanceVertex();
-				pBuilder->Position3f(min.x, max.y, max.z);
-				pBuilder->AdvanceVertex();
-				pBuilder->Position3f(min.x, min.y, min.z);
-				pBuilder->AdvanceVertex();
-				pBuilder->Position3f(min.x, max.y, min.z);
-				pBuilder->AdvanceVertex();
-			pBuilder->End();
+				builder.Position3f(max.x, min.y, min.z);
+				builder.AdvanceVertex();
+				builder.Position3f(max.x, max.y, min.z);
+				builder.AdvanceVertex();
+				builder.Position3f(max.x, min.y, max.z);
+				builder.AdvanceVertex();
+				builder.Position3f(max.x, max.y, max.z);
+				builder.AdvanceVertex();
+				builder.Position3f(min.x, min.y, max.z);
+				builder.AdvanceVertex();
+				builder.Position3f(min.x, max.y, max.z);
+				builder.AdvanceVertex();
+				builder.Position3f(min.x, min.y, min.z);
+				builder.AdvanceVertex();
+				builder.Position3f(min.x, max.y, min.z);
+				builder.AdvanceVertex();
+			builder.End();
 		}
 
 		for(int i = 0; i < m_EntTypedVars.numElem(); i++)
@@ -287,51 +303,46 @@ void CEditableEntity::Render(int nViewRenderFlags)
 
 			Vector3D start = GetPosition();
 
-
-			pBuilder->Begin(PRIM_LINES);
-
-			
-
-			Matrix4x4 result_rot = !rotateXYZ4(DEG2RAD(m_angles.x),DEG2RAD(m_angles.y),DEG2RAD(m_angles.z));
+			Matrix4x4 result_rot = !rotateXYZ4(DEG2RAD(m_angles.x), DEG2RAD(m_angles.y), DEG2RAD(m_angles.z));
 
 			Vector3D end = start + result_rot.rows[2].xyz()*50.0f;
 			Vector3D end2 = start + result_rot.rows[2].xyz()*40.0f;
 
-			pBuilder->Position3fv(start);
-			pBuilder->AdvanceVertex();
+			builder.Begin(PRIM_LINES);
 
-			pBuilder->Position3fv(end);
-			pBuilder->AdvanceVertex();
+				builder.Position3fv(start);
+				builder.AdvanceVertex();
 
-			pBuilder->Position3fv(end);
-			pBuilder->AdvanceVertex();
+				builder.Position3fv(end);
+				builder.AdvanceVertex();
 
-			pBuilder->Position3fv(end2 + result_rot.rows[0].xyz()*10.0f);
-			pBuilder->AdvanceVertex();
+				builder.Position3fv(end);
+				builder.AdvanceVertex();
 
-			pBuilder->Position3fv(end);
-			pBuilder->AdvanceVertex();
+				builder.Position3fv(end2 + result_rot.rows[0].xyz()*10.0f);
+				builder.AdvanceVertex();
 
-			pBuilder->Position3fv(end2 + result_rot.rows[1].xyz()*10.0f);
-			pBuilder->AdvanceVertex();
+				builder.Position3fv(end);
+				builder.AdvanceVertex();
 
-			pBuilder->Position3fv(end);
-			pBuilder->AdvanceVertex();
+				builder.Position3fv(end2 + result_rot.rows[1].xyz()*10.0f);
+				builder.AdvanceVertex();
 
-			pBuilder->Position3fv(end2 - result_rot.rows[0].xyz()*10.0f);
-			pBuilder->AdvanceVertex();
+				builder.Position3fv(end);
+				builder.AdvanceVertex();
 
-			pBuilder->Position3fv(end);
-			pBuilder->AdvanceVertex();
+				builder.Position3fv(end2 - result_rot.rows[0].xyz()*10.0f);
+				builder.AdvanceVertex();
 
-			pBuilder->Position3fv(end2 - result_rot.rows[1].xyz()*10.0f);
-			pBuilder->AdvanceVertex();
+				builder.Position3fv(end);
+				builder.AdvanceVertex();
 
-			pBuilder->End();
+				builder.Position3fv(end2 - result_rot.rows[1].xyz()*10.0f);
+				builder.AdvanceVertex();
+
+			builder.End();
 		}
-		
 
-		g_pShaderAPI->DestroyMeshBuilder(pBuilder);
 	}
 	
 }
@@ -403,7 +414,7 @@ void CEditableEntity::RenderGhost(Vector3D &addpos, Vector3D &addscale, Vector3D
 
 		materials->SetMatrix(MATRIXMODE_WORLD, result_rot);
 
-		m_pModel->PrepareForSkinning(m_BoneMatrixList);
+		//m_pModel->PrepareForSkinning(m_BoneMatrixList);
 
 		studiohdr_t* pHdr = m_pModel->GetHWData()->studio;
 		int nLod = 0;
@@ -433,7 +444,7 @@ void CEditableEntity::RenderGhost(Vector3D &addpos, Vector3D &addscale, Vector3D
 	}
 	else
 	{
-		IMeshBuilder* pBuilder = g_pShaderAPI->CreateMeshBuilder();
+		CMeshBuilder builder(materials->GetDynamicMesh());
 
 		g_pShaderAPI->Reset(STATE_RESET_VBO);
 
@@ -453,66 +464,66 @@ void CEditableEntity::RenderGhost(Vector3D &addpos, Vector3D &addscale, Vector3D
 		Vector3D min = GetBBoxMins()+addpos;
 		Vector3D max = GetBBoxMaxs()+addpos;
 
-		pBuilder->Begin(PRIM_LINES);
-			pBuilder->Position3f(min.x, max.y, min.z);
-			pBuilder->AdvanceVertex();
-			pBuilder->Position3f(min.x, max.y, max.z);
-			pBuilder->AdvanceVertex();
+		builder.Begin(PRIM_LINES);
+			builder.Position3f(min.x, max.y, min.z);
+			builder.AdvanceVertex();
+			builder.Position3f(min.x, max.y, max.z);
+			builder.AdvanceVertex();
 
-			pBuilder->Position3f(max.x, max.y, max.z);
-			pBuilder->AdvanceVertex();
-			pBuilder->Position3f(max.x, max.y, min.z);
-			pBuilder->AdvanceVertex();
+			builder.Position3f(max.x, max.y, max.z);
+			builder.AdvanceVertex();
+			builder.Position3f(max.x, max.y, min.z);
+			builder.AdvanceVertex();
 
-			pBuilder->Position3f(max.x, min.y, min.z);
-			pBuilder->AdvanceVertex();
-			pBuilder->Position3f(max.x, min.y, max.z);
-			pBuilder->AdvanceVertex();
+			builder.Position3f(max.x, min.y, min.z);
+			builder.AdvanceVertex();
+			builder.Position3f(max.x, min.y, max.z);
+			builder.AdvanceVertex();
 
-			pBuilder->Position3f(min.x, min.y, max.z);
-			pBuilder->AdvanceVertex();
-			pBuilder->Position3f(min.x, min.y, min.z);
-			pBuilder->AdvanceVertex();
+			builder.Position3f(min.x, min.y, max.z);
+			builder.AdvanceVertex();
+			builder.Position3f(min.x, min.y, min.z);
+			builder.AdvanceVertex();
 
-			pBuilder->Position3f(min.x, min.y, max.z);
-			pBuilder->AdvanceVertex();
-			pBuilder->Position3f(min.x, max.y, max.z);
-			pBuilder->AdvanceVertex();
+			builder.Position3f(min.x, min.y, max.z);
+			builder.AdvanceVertex();
+			builder.Position3f(min.x, max.y, max.z);
+			builder.AdvanceVertex();
 
-			pBuilder->Position3f(max.x, min.y, max.z);
-			pBuilder->AdvanceVertex();
-			pBuilder->Position3f(max.x, max.y, max.z);
-			pBuilder->AdvanceVertex();
+			builder.Position3f(max.x, min.y, max.z);
+			builder.AdvanceVertex();
+			builder.Position3f(max.x, max.y, max.z);
+			builder.AdvanceVertex();
 
-			pBuilder->Position3f(min.x, min.y, min.z);
-			pBuilder->AdvanceVertex();
-			pBuilder->Position3f(min.x, max.y, min.z);
-			pBuilder->AdvanceVertex();
+			builder.Position3f(min.x, min.y, min.z);
+			builder.AdvanceVertex();
+			builder.Position3f(min.x, max.y, min.z);
+			builder.AdvanceVertex();
 
-			pBuilder->Position3f(max.x, min.y, min.z);
-			pBuilder->AdvanceVertex();
-			pBuilder->Position3f(max.x, max.y, min.z);
-			pBuilder->AdvanceVertex();
+			builder.Position3f(max.x, min.y, min.z);
+			builder.AdvanceVertex();
+			builder.Position3f(max.x, max.y, min.z);
+			builder.AdvanceVertex();
 
-			pBuilder->Position3f(min.x, max.y, min.z);
-			pBuilder->AdvanceVertex();
-			pBuilder->Position3f(max.x, max.y, min.z);
-			pBuilder->AdvanceVertex();
+			builder.Position3f(min.x, max.y, min.z);
+			builder.AdvanceVertex();
+			builder.Position3f(max.x, max.y, min.z);
+			builder.AdvanceVertex();
 
-			pBuilder->Position3f(min.x, max.y, max.z);
-			pBuilder->AdvanceVertex();
-			pBuilder->Position3f(max.x, max.y, max.z);
-			pBuilder->AdvanceVertex();
+			builder.Position3f(min.x, max.y, max.z);
+			builder.AdvanceVertex();
+			builder.Position3f(max.x, max.y, max.z);
+			builder.AdvanceVertex();
 
-			pBuilder->Position3f(min.x, min.y, min.z);
-			pBuilder->AdvanceVertex();
-			pBuilder->Position3f(max.x, min.y, min.z);
-			pBuilder->AdvanceVertex();
+			builder.Position3f(min.x, min.y, min.z);
+			builder.AdvanceVertex();
+			builder.Position3f(max.x, min.y, min.z);
+			builder.AdvanceVertex();
 
-			pBuilder->Position3f(min.x, min.y, max.z);
-			pBuilder->AdvanceVertex();
-			pBuilder->Position3f(max.x, min.y, max.z);
-			pBuilder->AdvanceVertex();
+			builder.Position3f(min.x, min.y, max.z);
+			builder.AdvanceVertex();
+			builder.Position3f(max.x, min.y, max.z);
+			builder.AdvanceVertex();
 
 			if(m_pDefinition && m_pDefinition->showanglearrow)
 			{
@@ -526,39 +537,37 @@ void CEditableEntity::RenderGhost(Vector3D &addpos, Vector3D &addscale, Vector3D
 				Vector3D end = start + result_rot.rows[2].xyz()*50.0f;
 				Vector3D end2 = start + result_rot.rows[2].xyz()*40.0f;
 
-				pBuilder->Position3fv(start);
-				pBuilder->AdvanceVertex();
+				builder.Position3fv(start);
+				builder.AdvanceVertex();
 
-				pBuilder->Position3fv(end);
-				pBuilder->AdvanceVertex();
+				builder.Position3fv(end);
+				builder.AdvanceVertex();
 
-				pBuilder->Position3fv(end);
-				pBuilder->AdvanceVertex();
+				builder.Position3fv(end);
+				builder.AdvanceVertex();
 
-				pBuilder->Position3fv(end2 + result_rot.rows[0].xyz()*10.0f);
-				pBuilder->AdvanceVertex();
+				builder.Position3fv(end2 + result_rot.rows[0].xyz()*10.0f);
+				builder.AdvanceVertex();
 
-				pBuilder->Position3fv(end);
-				pBuilder->AdvanceVertex();
+				builder.Position3fv(end);
+				builder.AdvanceVertex();
 
-				pBuilder->Position3fv(end2 + result_rot.rows[1].xyz()*10.0f);
-				pBuilder->AdvanceVertex();
+				builder.Position3fv(end2 + result_rot.rows[1].xyz()*10.0f);
+				builder.AdvanceVertex();
 
-				pBuilder->Position3fv(end);
-				pBuilder->AdvanceVertex();
+				builder.Position3fv(end);
+				builder.AdvanceVertex();
 
-				pBuilder->Position3fv(end2 - result_rot.rows[0].xyz()*10.0f);
-				pBuilder->AdvanceVertex();
+				builder.Position3fv(end2 - result_rot.rows[0].xyz()*10.0f);
+				builder.AdvanceVertex();
 
-				pBuilder->Position3fv(end);
-				pBuilder->AdvanceVertex();
+				builder.Position3fv(end);
+				builder.AdvanceVertex();
 
-				pBuilder->Position3fv(end2 - result_rot.rows[1].xyz()*10.0f);
-				pBuilder->AdvanceVertex();
+				builder.Position3fv(end2 - result_rot.rows[1].xyz()*10.0f);
+				builder.AdvanceVertex();
 			}
-		pBuilder->End();
-
-		g_pShaderAPI->DestroyMeshBuilder(pBuilder);
+		builder.End();
 	}
 
 	for(int i = 0; i < m_EntTypedVars.numElem(); i++)
@@ -593,8 +602,7 @@ Vector3D CEditableEntity::GetBBoxMins()
 {
 	if(m_pModel)
 	{
-		Vector3D mins = m_pModel->GetBBoxMins();
-		Vector3D maxs = m_pModel->GetBBoxMaxs();
+		const BoundingBox& modelbox = m_pModel->GetAABB();
 		Matrix4x4 trans = GetRenderWorldTransform();
 
 		/*
@@ -603,12 +611,10 @@ Vector3D CEditableEntity::GetBBoxMins()
 		bbox.AddVertex((trans*Vector4D(maxs, 1)).xyz());
 		*/
 
-		BoundingBox nrbox(mins,maxs);
-
 		BoundingBox bbox;
 
 		for(int i = 0; i < 8; i++)
-			bbox.AddVertex((trans*Vector4D(nrbox.GetVertex(i), 1)).xyz());
+			bbox.AddVertex((trans*Vector4D(modelbox.GetVertex(i), 1)).xyz());
 
 		return bbox.minPoint;
 	}
@@ -625,16 +631,13 @@ Vector3D CEditableEntity::GetBBoxMaxs()
 {
 	if(m_pModel)
 	{
-		Vector3D mins = m_pModel->GetBBoxMins();
-		Vector3D maxs = m_pModel->GetBBoxMaxs();
+		const BoundingBox& modelbox = m_pModel->GetAABB();
 		Matrix4x4 trans = GetRenderWorldTransform();
-
-		BoundingBox nrbox(mins,maxs);
 
 		BoundingBox bbox;
 
 		for(int i = 0; i < 8; i++)
-			bbox.AddVertex((trans*Vector4D(nrbox.GetVertex(i), 1)).xyz());
+			bbox.AddVertex((trans*Vector4D(modelbox.GetVertex(i), 1)).xyz());
 
 		/*
 		bbox.AddVertex((trans*Vector4D(mins, 1)).xyz());
@@ -669,7 +672,7 @@ void CEditableEntity::OnRemove(bool bOnLevelCleanup)
 
 	m_EntTypedVars.clear();
 
-	DestroyAnimationThings();
+	//DestroyAnimationThings();
 }
 
 // saves this object
@@ -869,23 +872,23 @@ bool CEditableEntity::LoadFromKeyValues(kvkeybase_t* pSection)
 		//Msg("%s = %s\n", pParamsSec->pKeys[i]->keyname, pParamsSec->pKeys[i]->value);
 		if(!stricmp(pParamsSec->keys[i]->name, "classname"))
 		{
-			SetClassName(pParamsSec->keys[i]->values[0]);
+			SetClassName(KV_GetValueString(pParamsSec->keys[i]));
 		}
 		else if(!stricmp(pParamsSec->keys[i]->name, "targetname") || !stricmp(pParamsSec->keys[i]->name, "name"))
 		{
-			SetName(pParamsSec->keys[i]->values[0]);
+			SetName(KV_GetValueString(pParamsSec->keys[i]));
 		}
 		else if(!stricmp(pParamsSec->keys[i]->name, "EntityOutput"))
 		{
 			DkList<EqString> strings;
 
-			splitstring_singlecharseparator(pParamsSec->keys[i]->values[0], ';', strings);
+			splitstring_singlecharseparator((char*)KV_GetValueString(pParamsSec->keys[i]), ';', strings);
 
 			for(int outp = 0; outp < strings.numElem(); outp++)
 				AddOutput((char*)strings[outp].GetData());
 		}
 		else
-			SetKey(pParamsSec->keys[i]->name, pParamsSec->keys[i]->values[0], false);
+			SetKey(pParamsSec->keys[i]->name, KV_GetValueString(pParamsSec->keys[i]), false);
 	}
 
 	UpdateParameters();
@@ -1207,7 +1210,7 @@ void CEditableEntity::UpdateParameters()
 			if(m_pDefinition)
 				m_pModel = m_pDefinition->model;
 
-			DestroyAnimationThings();
+			//DestroyAnimationThings();
 
 			// * means that engine/eqwc will use the object
 			//if(m_kvPairs[i].value[0] != '*')
@@ -1216,10 +1219,10 @@ void CEditableEntity::UpdateParameters()
 				int cache_id = g_studioModelCache->PrecacheModel(m_kvPairs[i].value);
 				m_pModel = g_studioModelCache->GetModel(cache_id);
 
-				InitAnimationThings();
+				//InitAnimationThings();
 
-				SetSequence(0);
-				m_sequenceTimer.active = true;
+				//SetSequence(0);
+				//m_sequenceTimer.active = true;
 			}
 
 			/*
@@ -1287,356 +1290,4 @@ IEntityVariable* CEditableEntity::GetTypedVariableByKeyName(char* pszKey)
 DkList<OutputData_t>* CEditableEntity::GetOutputs()
 {
 	return &m_Outputs;
-}
-
-void CEditableEntity::InitAnimationThings()
-{
-	/*
-	if(m_pModel)
-	{
-		m_numBones = m_pModel->GetHWData()->studio->numBones;
-
-		m_boneTransforms = new Matrix4x4[m_numBones];
-		m_ikBones = DNewArray(Matrix4x4, m_numBones);
-
-		for(int i = 0; i < m_numBones; i++)
-		{
-			m_boneTransforms[i] = identity4();
-			m_ikBones[i] = identity4();
-		}
-
-		m_LocalBonematrixList = DNewArray(Matrix4x4, m_numBones);
-		for(int i = 0; i < m_numBones; i++)
-		{
-			m_LocalBonematrixList[i] = m_pModel->GetHWData()->joints[i].localTrans;
-		}
-
-		m_nParentIndexList = DNewArray(int, m_numBones);
-		for(int i = 0; i < m_numBones; i++)
-		{
-			m_nParentIndexList[i] = m_pModel->GetHWData()->joints[i].parentbone;
-		}
-
-		m_prevFrames = DNewArray(animframe_t, m_numBones);
-		memset(m_prevFrames, 0, sizeof(animframe_t)*m_numBones);
-
-		// make standard pose
-		DefaultPose();
-	}
-
-	// build activity table for loaded model
-	if(m_pModel && m_pModel->GetHWData()->numMotionPackages)
-	{
-		for(int i = 0; i < m_pModel->GetHWData()->numMotionPackages; i++)
-		{
-			PreloadMotionData( m_pModel->GetHWData()->motiondata[i] );
-		}
-	}
-	*/
-}
-
-void CEditableEntity::PreloadMotionData(studiomotiondata_t* pMotionData)
-{
-	// create pose controllers
-	for(int i = 0; i < pMotionData->numPoseControllers; i++)
-	{
-		gposecontroller_t controller;
-		controller.p = &pMotionData->poseControllers[i];
-
-		// get center in blending range
-		controller.value = lerp(controller.p->blendRange[0], controller.p->blendRange[1], 0.5f);
-		controller.interpolatedValue = controller.value;
-
-		m_poseControllers.append(controller);
-	}
-
-	// copy sequences
-	for(int i = 0 ; i < pMotionData->numsequences; i++)
-	{
-		sequencedesc_t* seqdatadesc = &pMotionData->sequences[i];
-
-		//DevMsg(1,"%s, %s\n", seqdatadesc->name, seqdatadesc->activity);
-
-		gsequence_t mod_sequence;
-		memset(&mod_sequence, 0, sizeof(mod_sequence));
-
-		mod_sequence.activity = GetActivityByName(seqdatadesc->activity);
-
-		strcpy(mod_sequence.name, seqdatadesc->name);
-
-		if(mod_sequence.activity == ACT_INVALID && stricmp(seqdatadesc->activity, "ACT_INVALID"))
-			MsgError("MOP Error: Activity '%s' not registered\n", seqdatadesc->activity);
-
-		mod_sequence.framerate = seqdatadesc->framerate;
-		mod_sequence.flags = seqdatadesc->flags;
-		mod_sequence.transitiontime = seqdatadesc->transitiontime;
-
-		mod_sequence.numEvents = seqdatadesc->numEvents;
-		mod_sequence.numAnimations = seqdatadesc->numAnimations;
-		mod_sequence.numSequenceBlends = seqdatadesc->numSequenceBlends;
-
-		if(seqdatadesc->posecontroller == -1)
-			mod_sequence.posecontroller = NULL;
-		else
-			mod_sequence.posecontroller = &m_poseControllers[seqdatadesc->posecontroller];
-
-		for(int j = 0; j < mod_sequence.numAnimations; j++)
-			mod_sequence.animations[j] = &pMotionData->animations[seqdatadesc->animations[j]];
-
-		for(int j = 0; j < mod_sequence.numEvents; j++)
-			mod_sequence.events[j] = &pMotionData->events[seqdatadesc->events[j]];
-
-		for(int j = 0; j < mod_sequence.numSequenceBlends; j++)
-			mod_sequence.blends[j] = &m_pSequences[seqdatadesc->sequenceblends[j]];
-
-		m_pSequences.append( mod_sequence );
-	}
-}
-
-void CEditableEntity::DestroyAnimationThings()
-{
-	/*
-	m_seqList.clear();
-
-	if(m_boneTransforms)
-		DDeleteArray(m_boneTransforms);
-
-	m_boneTransforms = NULL;
-
-	if(m_ikBones)
-		DDeleteArray(m_ikBones);
-
-	m_ikBones = NULL;
-
-	if(m_LocalBonematrixList)
-		DDeleteArray(m_LocalBonematrixList);
-
-	m_LocalBonematrixList = NULL;
-
-	if(m_nParentIndexList)
-		DDeleteArray(m_nParentIndexList);
-
-	m_nParentIndexList = NULL;
-
-	if(m_prevFrames)
-		DDeleteArray(m_prevFrames);
-
-	m_prevFrames = NULL;
-
-	m_sequenceTimer.sequence_index = -1;
-	m_sequenceTimer.seq = NULL;
-
-	m_sequenceTimer.ResetPlayback(true);
-
-	m_sequenceTimer.called_events.clear();
-	m_sequenceTimer.ignore_events.clear();
-	*/
-	m_numBones = 0;
-}
-
-
-// ANIMATION THINGS
-
-void CEditableEntity::SetSequence(int animIndex)
-{
-	if(animIndex == -1)
-		return;
-
-	if(animIndex > m_pSequences.numElem()-1)
-		return;
-
-	m_sequenceTimer.seq_idx = animIndex;
-
-	if(m_sequenceTimer.seq_idx != -1)
-	{
-		m_sequenceTimer.seq = &m_pSequences[ m_sequenceTimer.seq_idx ];
-		m_sequenceTimer.playbackSpeedScale = 1.0f;
-	}
-}
-
-int CEditableEntity::FindSequence(const char* name)
-{
-	for(int i = 0; i < m_pSequences.numElem(); i++)
-	{
-		if(!stricmp(m_pSequences[i].name, name))
-		{
-			return i;
-		}
-	}
-	return -1;
-}
-
-// makes standard pose
-void CEditableEntity::StandardPose()
-{
-	if(m_pModel && m_pModel->GetHWData() && m_pModel->GetHWData()->joints)
-	{
-		for(int i = 0; i < m_pModel->GetHWData()->studio->numBones; i++)
-		{
-			m_BoneMatrixList[i] = m_pModel->GetHWData()->joints[i].absTrans;
-		}
-	}
-}
-
-void CEditableEntity::GetInterpolatedBoneFrame(modelanimation_t* pAnim, int nBone, int firstframe, int lastframe, float interp, animframe_t &out)
-{
-	InterpolateFrameTransform(pAnim->bones[nBone].keyFrames[firstframe], pAnim->bones[nBone].keyFrames[lastframe], clamp(interp,0,1), out);
-}
-
-void CEditableEntity::GetInterpolatedBoneFrameBetweenTwoAnimations(modelanimation_t* pAnim1, modelanimation_t* pAnim2, int nBone, int firstframe, int lastframe, float interp, float animTransition, animframe_t &out)
-{
-	// compute frame 1
-	animframe_t anim1transform;
-	GetInterpolatedBoneFrame(pAnim1, nBone, firstframe, lastframe, interp, anim1transform);
-
-	// compute frame 2
-	animframe_t anim2transform;
-	GetInterpolatedBoneFrame(pAnim2, nBone, firstframe, lastframe, interp, anim2transform);
-
-	// resultative interpolation
-	InterpolateFrameTransform(anim1transform, anim2transform, animTransition, out);
-}
-
-void CEditableEntity::GetSequenceLayerBoneFrame(gsequence_t* pSequence, int nBone, animframe_t &out)
-{
-	float blendWeight = 0;
-	int blendAnimation1 = 0;
-	int blendAnimation2 = 0;
-			
-	ComputeAnimationBlend(	pSequence->numAnimations, 
-							pSequence->posecontroller->p->blendRange, 
-							pSequence->posecontroller->value, 
-							blendWeight, 
-							blendAnimation1, 
-							blendAnimation2
-							);
-
-	modelanimation_t* pAnim1 = pSequence->animations[blendAnimation1];
-	modelanimation_t* pAnim2 = pSequence->animations[blendAnimation2];
-
-	GetInterpolatedBoneFrameBetweenTwoAnimations(	pAnim1,
-													pAnim2,
-													nBone,
-													0,
-													0,
-													0,
-													blendWeight,
-													out
-													);
-}
-
-void CEditableEntity::UpdateBones()
-{
-	if(m_sequenceTimer.seq_idx != -1)
-		m_sequenceTimer.seq = &m_pSequences[ m_sequenceTimer.seq_idx ];
-
-	if(!m_sequenceTimer.seq || m_pSequences.numElem() == 0)
-	{
-		StandardPose();
-		return;
-	}
-
-	// setup each bone's transformation
-	for(int boneId = 0; boneId < m_numBones; boneId++)
-	{
-		animframe_t cComputedFrame;
-		ZeroFrameTransform(cComputedFrame);
-
-		// if no animation plays on this timer, continue
-		if(!m_sequenceTimer.seq)
-			continue;
-
-		modelanimation_t *curanim = m_sequenceTimer.seq->animations[0];
-
-		if(!curanim)
-			continue;
-
-		animframe_t cTimedFrame;
-		ZeroFrameTransform(cTimedFrame);
-
-		float frame_interp = m_sequenceTimer.seq_time - m_sequenceTimer.currFrame;
-
-		if(m_sequenceTimer.seq->numAnimations > 1 && m_sequenceTimer.seq->posecontroller)
-		{
-				
-			float playingBlendWeight = 0;
-			int playingBlendAnimation1 = 0;
-			int playingBlendAnimation2 = 0;
-
-			ComputeAnimationBlend(	m_sequenceTimer.seq->numAnimations, 
-									m_sequenceTimer.seq->posecontroller->p->blendRange, 
-									m_sequenceTimer.seq->posecontroller->value, 
-									playingBlendWeight, 
-									playingBlendAnimation1, 
-									playingBlendAnimation2);
-
-			modelanimation_t* pPlayingAnim1 = m_sequenceTimer.seq->animations[playingBlendAnimation1];
-			modelanimation_t* pPlayingAnim2 = m_sequenceTimer.seq->animations[playingBlendAnimation2];
-
-			GetInterpolatedBoneFrameBetweenTwoAnimations(	pPlayingAnim1,
-															pPlayingAnim2,
-															boneId,
-															m_sequenceTimer.currFrame,
-															m_sequenceTimer.nextFrame,
-															frame_interp,
-															playingBlendWeight,
-															cTimedFrame);
-		}
-		else
-		{
-			modelanimation_t *curanim = m_sequenceTimer.seq->animations[0];
-
-			GetInterpolatedBoneFrame(curanim, boneId, m_sequenceTimer.currFrame, m_sequenceTimer.nextFrame, frame_interp, cTimedFrame);
-		}
-
-		animframe_t cAddFrame;
-		ZeroFrameTransform(cAddFrame);
-
-		if(m_sequenceTimer.seq->numSequenceBlends > 0)
-		{
-			for(int blend_seq = 0; blend_seq < m_sequenceTimer.seq->numSequenceBlends; blend_seq++)
-			{
-				gsequence_t* pSequence = m_sequenceTimer.seq->blends[blend_seq];
-
-				animframe_t frame;
-
-				// get bone frame of layer
-				GetSequenceLayerBoneFrame(pSequence, boneId, frame);
-
-				AddFrameTransform(cAddFrame, frame, cAddFrame);
-			}
-		}
-
-		AddFrameTransform(cTimedFrame, cAddFrame, cTimedFrame);
-
-		InterpolateFrameTransform(cComputedFrame, cTimedFrame, 1.0f, cComputedFrame);
-		
-		// compute transformation
-		Matrix4x4 bone_transform = CalculateLocalBonematrix(cComputedFrame);
-
-		// set last bones
-		m_pLastBoneFrames[boneId] = cComputedFrame;
-
-		m_BoneMatrixList[boneId] = (bone_transform*m_LocalBonematrixList[boneId]);
-	}
-
-	// setup each bone's transformation
-	for(int i = 0; i < m_numBones; i++)
-	{
-		if(m_nParentIndexList[i] != -1)
-		{
-			// multiply by parent transform
-			m_BoneMatrixList[i] = m_BoneMatrixList[i] * m_BoneMatrixList[m_nParentIndexList[i]];
-
-		}
-	}
-}
-
-// advances frame (and computes interpolation between all blended animations)
-void CEditableEntity::AdvanceFrame(float frameTime)
-{
-	if(m_sequenceTimer.seq_idx != -1)
-		m_sequenceTimer.seq = &m_pSequences[ m_sequenceTimer.seq_idx ];
-
-	m_sequenceTimer.AdvanceFrame(frameTime);
 }

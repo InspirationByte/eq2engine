@@ -666,9 +666,9 @@ bool CEditorLevel::Load()
 				for(int i = 0; i < 4; i++)
 				{
 					kvkeybase_t* pCamera = pCameraParams->keys[i];
-					g_views[i].GetView()->SetOrigin(UTIL_StringToColor3(pCamera->FindKeyBase("position")->values[0]));
-					g_views[i].GetView()->SetAngles(UTIL_StringToColor3(pCamera->FindKeyBase("angles")->values[0]));
-					g_views[i].GetView()->SetFOV(KV_GetValueFloat(pCamera->FindKeyBase("fov"))));
+					g_views[i].GetView()->SetOrigin(UTIL_StringToColor3(KV_GetValueString(pCamera->FindKeyBase("position"))));
+					g_views[i].GetView()->SetAngles(UTIL_StringToColor3(KV_GetValueString(pCamera->FindKeyBase("angles"))));
+					g_views[i].GetView()->SetFOV(KV_GetValueFloat(pCamera->FindKeyBase("fov")));
 				}
 			}
 			else if(!stricmp("layer", pSection->keys[i]->name))
@@ -705,7 +705,7 @@ bool CEditorLevel::Load()
 
 				if(pPair)
 				{
-					ColorRGB grp_color = UTIL_StringToColor3(pPair->values[0]);
+					ColorRGB grp_color = UTIL_StringToColor3(KV_GetValueString(pPair));
 					pObject->SetGroupColor(grp_color);
 				}
 
@@ -817,7 +817,7 @@ bool CEditorLevel::Load()
 	}
 
 	if(nHasHiddenObjects)
-		wxMessageBox(wxString(varargs_w(DKLOC("TOKEN_HIDDENOBJECTS", L"World has %d hidden objects!"), nHasHiddenObjects)), wxString("Warning"), wxOK | wxCENTRE | wxICON_WARNING, g_editormainframe);
+		wxMessageBox(varargs_w(DKLOC("TOKEN_HIDDENOBJECTS", "World has %d hidden objects!"), nHasHiddenObjects), wxString("Warning"), wxOK | wxCENTRE | wxICON_WARNING, g_editormainframe);
 
 	g_editormainframe->GetEntityListDialog()->RefreshObjectList();
 	g_editormainframe->GetGroupListDialog()->RefreshObjectList();

@@ -167,7 +167,7 @@ int WINAPI WinMain(HINSTANCE hThisInst, HINSTANCE hLastInst, LPSTR lpszCmdLine, 
 		return -1;
 	}
 
-	s_pEngineModule = g_pFileSystem->LoadModule("EqEditor.dll");
+	s_pEngineModule = g_pFileSystem->LoadModule("WorldEdit.dll");
 	if(!s_pEngineModule)
 	{
 		ErrorMsg("FATAL ERROR! Failed to load EqEditor library!");
@@ -181,7 +181,7 @@ int WINAPI WinMain(HINSTANCE hThisInst, HINSTANCE hLastInst, LPSTR lpszCmdLine, 
 
 	if(!s_pEngineInitFunc)
 	{
-		ErrorMsg("FATAL ERROR! Couldn't get EqEditor factory!");
+		ErrorMsg("FATAL ERROR! Couldn't get WorldEdit factory!");
 
 		g_pFileSystem->FreeModule(s_pEngineModule);
 		(s_hGetCoreFunc)()->Shutdown();

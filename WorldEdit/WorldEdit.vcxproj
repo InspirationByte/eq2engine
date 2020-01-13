@@ -59,12 +59,15 @@
     <CodeAnalysisRuleAssemblies Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" />
     <CodeAnalysisRuleAssemblies Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" />
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <LibraryPath>..\src_dependency\wxWidgets\lib\vc_lib;$(LibraryPath)</LibraryPath>
+  </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
       <Optimization>MaxSpeed</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <AdditionalIncludeDirectories>..\FileSystem;..\Engine;..\public;..\public\core;..\shared_game;..\shared_engine;..\public\platform;..\src_dependency\bullet\src;..\src_dependency\bullet\Extras\Serialization\BulletWorldImporter;..\src_dependency\bullet\src\BulletSoftBody;..\src_dependency\zlib;..\src_dependency\openal-soft\include;..\src_dependency\libogg\include;..\src_dependency\libvorbis\include;..\src_dependency\wxWidgets\include;..\src_dependency\wxWidgets\include\msw;..\src_dependency\wxWidgets\include\msvc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;ENGINE_EXPORT;PHYSICS_EXPORT;EDITOR;NO_ENGINE;NO_GAME;_CRT_SECURE_NO_WARNINGS;_CRT_SECURE_NO_DEPRECATE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;ENGINE_EXPORT;PHYSICS_EXPORT;NOPHYSICS;EDITOR;NO_ENGINE;NO_GAME;_CRT_SECURE_NO_WARNINGS;_CRT_SECURE_NO_DEPRECATE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <PrecompiledHeader>
@@ -87,7 +90,7 @@
       </EntryPointSymbol>
       <ImportLibrary>..\libs\EqEdit.lib</ImportLibrary>
       <TargetMachine>MachineX86</TargetMachine>
-      <AdditionalLibraryDirectories>..\src_dependency\wx\lib\vc_lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>..\src_dependency\wx\lib\vc_lib\</AdditionalLibraryDirectories>
       <Profile>true</Profile>
       <FixedBaseAddress>false</FixedBaseAddress>
       <AdditionalOptions> /ignore:4099 %(AdditionalOptions)</AdditionalOptions>
@@ -97,7 +100,7 @@
     </PostBuildEvent>
     <ResourceCompile>
       <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\utils\wx\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\src_dependency\wxWidgets\include</AdditionalIncludeDirectories>
       <Culture>0x0409</Culture>
     </ResourceCompile>
   </ItemDefinitionGroup>
@@ -144,25 +147,29 @@
     </ResourceCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="..\Engine\Audio\alsnd_ambient.h" />
-    <ClInclude Include="..\Engine\Audio\alsnd_emitter.h" />
-    <ClInclude Include="..\Engine\Audio\alsnd_sample.h" />
-    <ClInclude Include="..\Engine\Audio\alsound_local.h" />
-    <ClInclude Include="..\Engine\Audio\soundzero.h" />
-    <ClInclude Include="..\Engine\studio_egf.h" />
+    <ClInclude Include="..\shared_engine\Audio\alsnd_stream.h" />
+    <ClInclude Include="..\shared_engine\Audio\alsnd_emitter.h" />
+    <ClInclude Include="..\shared_engine\Audio\alsnd_sample.h" />
+    <ClInclude Include="..\shared_engine\Audio\alsound_local.h" />
+    <ClInclude Include="..\shared_engine\Audio\soundzero.h" />
+    <ClInclude Include="..\shared_engine\eqGlobalMutex.h" />
+    <ClInclude Include="..\shared_engine\eqParallelJobs.h" />
+    <ClInclude Include="..\shared_engine\Font.h" />
+    <ClInclude Include="..\shared_engine\FontCache.h" />
+    <ClInclude Include="..\shared_engine\FontLayoutBuilders.h" />
+    <ClInclude Include="..\shared_engine\studio_egf.h" />
     <ClInclude Include="..\Engine\ViewRenderer.h" />
-    <ClInclude Include="..\public\animationfile.h" />
-    <ClInclude Include="..\public\anim_activity.h" />
-    <ClInclude Include="..\public\anim_defs.h" />
-    <ClInclude Include="..\public\anim_events.h" />
+    <ClInclude Include="..\shared_engine\ViewParams.h" />
+    <ClInclude Include="..\shared_game\animationfile.h" />
+    <ClInclude Include="..\shared_game\anim_activity.h" />
+    <ClInclude Include="..\shared_game\anim_events.h" />
     <ClInclude Include="..\public\BaseShader.h" />
-    <ClInclude Include="..\public\BoneSetup.h" />
+    <ClInclude Include="..\shared_game\BoneSetup.h" />
     <ClInclude Include="..\public\dsm_esm_loader.h" />
     <ClInclude Include="..\public\dsm_loader.h" />
     <ClInclude Include="..\public\dsm_obj_loader.h" />
     <ClInclude Include="..\public\Font.h" />
-    <ClInclude Include="..\public\GameSoundEmitterSystem.h" />
-    <ClInclude Include="..\public\IVirtualStream.h" />
+    <ClInclude Include="..\shared_game\GameSoundEmitterSystem.h" />
     <ClInclude Include="..\public\mtriangle_framework.h" />
     <ClInclude Include="..\public\RenderList.h" />
     <ClInclude Include="..\public\Utils\Align.h" />
@@ -268,29 +275,33 @@
     <None Include="windows\toolbar1.bmp" />
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="..\utils\wx\include\wx\msw\wx.rc" />
+    <ResourceCompile Include="..\src_dependency\wxWidgets\include\wx\msw\wx.rc" />
     <ResourceCompile Include="windows\Resources.rc" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\Engine\Audio\alsnd_ambient.cpp" />
-    <ClCompile Include="..\Engine\Audio\alsnd_emitter.cpp" />
-    <ClCompile Include="..\Engine\Audio\alsnd_sample.cpp" />
-    <ClCompile Include="..\Engine\Audio\alsound_local.cpp" />
-    <ClCompile Include="..\Engine\Audio\soundzero.cpp" />
-    <ClCompile Include="..\Engine\studio_egf.cpp" />
+    <ClCompile Include="..\shared_engine\Audio\alsnd_stream.cpp" />
+    <ClCompile Include="..\shared_engine\Audio\alsnd_emitter.cpp" />
+    <ClCompile Include="..\shared_engine\Audio\alsnd_sample.cpp" />
+    <ClCompile Include="..\shared_engine\Audio\alsound_local.cpp" />
+    <ClCompile Include="..\shared_engine\Audio\soundzero.cpp" />
+    <ClCompile Include="..\shared_engine\eqGlobalMutex.cpp" />
+    <ClCompile Include="..\shared_engine\eqParallelJobs.cpp" />
+    <ClCompile Include="..\shared_engine\Font.cpp" />
+    <ClCompile Include="..\shared_engine\FontCache.cpp" />
+    <ClCompile Include="..\shared_engine\FontLayoutBuilders.cpp" />
+    <ClCompile Include="..\shared_engine\studio_egf.cpp" />
     <ClCompile Include="..\Engine\ViewRenderer.cpp" />
-    <ClCompile Include="..\public\anim_activity.cpp" />
-    <ClCompile Include="..\public\anim_events.cpp" />
-    <ClCompile Include="..\public\BaseShader.cpp" />
-    <ClCompile Include="..\public\BoneSetup.cpp" />
-    <ClCompile Include="..\public\cmd_pacifier.cpp" />
+    <ClCompile Include="..\shared_engine\ViewParams.cpp" />
+    <ClCompile Include="..\shared_game\anim_activity.cpp" />
+    <ClCompile Include="..\shared_game\anim_events.cpp" />
+    <ClCompile Include="..\public\materialsystem\BaseShader.cpp" />
+    <ClCompile Include="..\shared_game\BoneSetup.cpp" />
     <ClCompile Include="..\public\dsm_esm_loader.cpp" />
     <ClCompile Include="..\public\dsm_loader.cpp" />
     <ClCompile Include="..\public\dsm_obj_loader.cpp" />
-    <ClCompile Include="..\public\Font.cpp" />
-    <ClCompile Include="..\public\GameSoundEmitterSystem.cpp" />
+    <ClCompile Include="..\shared_game\GameSoundEmitterSystem.cpp" />
     <ClCompile Include="..\public\mtriangle_framework.cpp" />
-    <ClCompile Include="..\public\RenderList.cpp" />
+    <ClCompile Include="..\shared_engine\RenderList.cpp" />
     <ClCompile Include="..\public\Utils\GeomTools.cpp" />
     <ClCompile Include="BlockTool.cpp" />
     <ClCompile Include="DecalTool.cpp" />
@@ -305,7 +316,9 @@
     <ClCompile Include="EditableEntity.cpp" />
     <ClCompile Include="EditableSurface.cpp" />
     <ClCompile Include="BaseEditableObject.cpp" />
-    <ClCompile Include="EditorFlatColor.cpp" />
+    <ClCompile Include="EditorFlatColor.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="EditorCamera.cpp" />
     <ClCompile Include="EditorLevel.cpp" />
     <ClCompile Include="EntityProperties.cpp" />
@@ -320,14 +333,10 @@
     <ClCompile Include="grid.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="EditorMainFrame.cpp" />
-    <ClCompile Include="..\public\ViewParams.cpp" />
-    <ClCompile Include="..\public\BaseRenderableObject.cpp" />
-    <ClCompile Include="..\Engine\DebugOverlay.cpp" />
-    <ClCompile Include="..\public\ConCommand.cpp" />
-    <ClCompile Include="..\public\ConCommandBase.cpp" />
-    <ClCompile Include="..\public\ConVar.cpp" />
+    <ClCompile Include="..\shared_engine\BaseRenderableObject.cpp" />
+    <ClCompile Include="..\shared_engine\DebugOverlay.cpp" />
     <ClCompile Include="..\public\Math\math_util.cpp" />
-    <ClCompile Include="..\Engine\modelloader_shared.cpp" />
+    <ClCompile Include="..\shared_engine\modelloader_shared.cpp" />
     <ClCompile Include="SelectionEditor.cpp" />
     <ClCompile Include="SoundList.cpp" />
     <ClCompile Include="SurfaceDialog.cpp" />
@@ -338,10 +347,11 @@
     <ClCompile Include="wxFourWaySplitter.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <Library Include="..\libs\oal32.lib" />
-    <Library Include="..\libs\ogg_static.lib" />
-    <Library Include="..\libs\vorbisfile_static.lib" />
-    <Library Include="..\libs\vorbis_static.lib" />
+    <Library Include="..\src_dependency\libogg\win32\VS2015\Win32\Release\libogg_static.lib" />
+    <Library Include="..\src_dependency\libvorbis\win32\VS2010\Win32\Release\libvorbisfile_static.lib" />
+    <Library Include="..\src_dependency\libvorbis\win32\VS2010\Win32\Release\libvorbis_static.lib" />
+    <Library Include="..\src_dependency\openal-soft\build\Release\OpenAL32.lib" />
+    <Library Include="..\src_dependency\zlib\contrib\vstudio\vc14\x86\ZlibStatReleaseWithoutAsm\zlibstat.lib" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\coreLib.vcxproj">

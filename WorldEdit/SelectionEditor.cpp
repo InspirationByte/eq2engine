@@ -30,6 +30,8 @@
 
 #include "grid.h"
 
+#include "materialsystem/MeshBuilder.h"
+
 bool PointToScreenOrtho(const Vector3D& point, Vector2D& screen, Matrix4x4 &mvp)
 {
 	Matrix4x4 worldToScreen = mvp;
@@ -258,7 +260,7 @@ void OnActivateCurrentTool()
 class CSelectionToolPanel : public wxPanel
 {
 public:
-	CSelectionToolPanel(wxWindow* pMultiToolPanel) : wxPanel(pMultiToolPanel,0,0,200,400)
+	CSelectionToolPanel(wxWindow* pMultiToolPanel) : wxPanel(pMultiToolPanel,-1, wxPoint(0,0),wxSize(200,400))
 	{
 		m_pRotate_scale_over_center = new wxCheckBox(this, -1, DKLOC("TOKEN_ROTATESCALEOVERSCENTER", "Rotate/Scale over selection center"), wxPoint(5,5), wxSize(190, 25));
 		m_pIgnoreGroups = new wxCheckBox(this, -1, DKLOC("TOKEN_IGNOREGROUPS", "Ignore groups when selecting"), wxPoint(5,30), wxSize(190, 25));
@@ -704,7 +706,7 @@ void CSelectionBaseTool::SelectObjects(bool selectOnlySpecified, CBaseEditableOb
 	{
 		SetSelectionState(SELECTION_SELECTED);
 
-		BoundingBox bbox;
+		BoundingBox newBox;
 
 		// set selection bbox from all selected objects
 		for(int i = 0; i < m_selectedobjects.numElem(); i++)
@@ -712,11 +714,11 @@ void CSelectionBaseTool::SelectObjects(bool selectOnlySpecified, CBaseEditableOb
 			DevMsg(2, "Selected id=%d\n", m_selectedobjects[i]->GetObjectID());
 
 			// TODO: rotate them
-			bbox.AddVertex(m_selectedobjects[i]->GetBBoxMins());
-			bbox.AddVertex(m_selectedobjects[i]->GetBBoxMaxs());
+			newBox.AddVertex(m_selectedobjects[i]->GetBBoxMins());
+			newBox.AddVertex(m_selectedobjects[i]->GetBBoxMaxs());
 		}
 
-		SetSelectionBBOX(bbox.minPoint, bbox.maxPoint);
+		SetSelectionBBOX(newBox.minPoint, newBox.maxPoint);
 	}
 
 	// notify that we updated the selection
@@ -1166,8 +1168,8 @@ void CSelectionBaseTool::UpdateManipulation2D(CEditorViewRender* pViewRender, wx
 	// process dragging events
 	if(mouseEvents.Dragging() && mouseEvents.ButtonIsDown(wxMOUSE_BTN_LEFT) && !mouseEvents.ShiftDown())
 	{
-		Rectangle_t rect;
-		SelectionRectangleFromBBox(pViewRender, bbox.minPoint,bbox.maxPoint, rect);
+		Rectangle_t newRect;
+		SelectionRectangleFromBBox(pViewRender, bbox.minPoint,bbox.maxPoint, newRect);
 
 		if(m_selectedhandle != SH_NONE)
 		{
@@ -1322,81 +1324,73 @@ void CSelectionBaseTool::InvertSelection()
 
 void DkDrawSphere(const Vector3D& origin, float radius, int sides)
 {
-	IMeshBuilder* meshbuild = g_pShaderAPI->CreateMeshBuilder();
+	CMeshBuilder meshbuild(materials->GetDynamicMesh());
 
 
 	{
-		meshbuild->Begin(PRIM_LINES);
+		meshbuild.Begin(PRIM_LINES);
 
 		for (int i = 0; i <= sides; i++)
 		{
 			double ds = sin((i * 2 * PI) / sides);
 			double dc = cos((i * 2 * PI) / sides);
 
-			meshbuild->Position3f(
+			meshbuild.Position3f(
 						static_cast<float>(origin[0] + radius * dc),
 						static_cast<float>(origin[1] + radius * ds),
 						origin[2]
 						);
 
-			meshbuild->Color4f(1,1,1,1);
+			meshbuild.Color4f(1,1,1,1);
 
-			meshbuild->AdvanceVertex();
+			meshbuild.AdvanceVertex();
 		}
 
-		meshbuild->End();
+		meshbuild.End();
 	}
 
 	{
-		meshbuild->Begin(PRIM_LINES);
+		meshbuild.Begin(PRIM_LINES);
 
 		for (int i = 0; i <= sides; i++)
 		{
 			double ds = sin((i * 2 * PI) / sides);
 			double dc = cos((i * 2 * PI) / sides);
 
-			meshbuild->Position3f(
+			meshbuild.Position3f(
 						static_cast<float>(origin[0] + radius * dc),
 						origin[1],
 						static_cast<float>(origin[2] + radius * ds)
 						);
 
-			meshbuild->AdvanceVertex();
+			meshbuild.AdvanceVertex();
 		}
 
-		meshbuild->End();
+		meshbuild.End();
 	}
 
 	{
-		meshbuild->Begin(PRIM_LINES);
+		meshbuild.Begin(PRIM_LINES);
 
 		for (int i = 0; i <= sides; i++)
 		{
 			double ds = sin((i * 2 * PI) / sides);
 			double dc = cos((i * 2 * PI) / sides);
 
-			meshbuild->Position3f(
+			meshbuild.Position3f(
 						origin[0],
 						static_cast<float>(origin[1] + radius * dc),
 						static_cast<float>(origin[2] + radius * ds)
 						);
 
-			meshbuild->AdvanceVertex();
+			meshbuild.AdvanceVertex();
 		}
 
-		meshbuild->End();
+		meshbuild.End();
 	}
-
-	g_pShaderAPI->DestroyMeshBuilder(meshbuild);
 }
 
-Vector3D v3sphere(float theta, float phi)
-{
-	return Vector3D(
-		cos(theta) * cos(phi),
-		sin(theta) * cos(phi),
-		sin(phi));
-}
+extern Vector3D v3sphere(float theta, float phi);
 
 void DkDrawFilledSphere(const Vector3D &origin, float radius, int sides)
 {
@@ -1406,9 +1400,9 @@ void DkDrawFilledSphere(const Vector3D &origin, float radius, int sides)
 	float dt = PI*2.0f / float(sides);
 	float dp = PI / float(sides);
 
-	IMeshBuilder* meshbuild = g_pShaderAPI->CreateMeshBuilder();
+	CMeshBuilder meshbuild(materials->GetDynamicMesh());
 
-	meshbuild->Begin(PRIM_TRIANGLES);
+	meshbuild.Begin(PRIM_TRIANGLES);
 	for (int i = 0; i <= sides - 1; i++)
 	{
 		for (int j = 0; j <= sides - 2; j++)
@@ -1418,38 +1412,38 @@ void DkDrawFilledSphere(const Vector3D &origin, float radius, int sides)
 
 			{
 				Vector3D v(origin + (v3sphere(t, p) * radius));
-				meshbuild->Position3fv(v);
-				meshbuild->AdvanceVertex();
+				meshbuild.Position3fv(v);
+				meshbuild.AdvanceVertex();
 			}
 
 			{
 				Vector3D v(origin + (v3sphere(t, p + dp) * radius));
-				meshbuild->Position3fv(v);
-				meshbuild->AdvanceVertex();
+				meshbuild.Position3fv(v);
+				meshbuild.AdvanceVertex();
 			}
 
 			{
 				Vector3D v(origin + (v3sphere(t + dt, p + dp) * radius));
-				meshbuild->Position3fv(v);
-				meshbuild->AdvanceVertex();
+				meshbuild.Position3fv(v);
+				meshbuild.AdvanceVertex();
 			}
 
 			{
 				Vector3D v(origin + (v3sphere(t, p) * radius));
-				meshbuild->Position3fv(v);
-				meshbuild->AdvanceVertex();
+				meshbuild.Position3fv(v);
+				meshbuild.AdvanceVertex();
 			}
 
 			{
 				Vector3D v(origin + (v3sphere(t + dt, p + dp) * radius));
-				meshbuild->Position3fv(v);
-				meshbuild->AdvanceVertex();
+				meshbuild.Position3fv(v);
+				meshbuild.AdvanceVertex();
 			}
 
 			{
 				Vector3D v(origin + (v3sphere(t + dt, p) * radius));
-				meshbuild->Position3fv(v);
-				meshbuild->AdvanceVertex();
+				meshbuild.Position3fv(v);
+				meshbuild.AdvanceVertex();
 			}
 		}
 	}
@@ -1462,83 +1456,79 @@ void DkDrawFilledSphere(const Vector3D &origin, float radius, int sides)
 
 			{
 				Vector3D v(origin + (v3sphere(t, p) * radius));
-				meshbuild->Position3fv(v);
-				meshbuild->AdvanceVertex();
+				meshbuild.Position3fv(v);
+				meshbuild.AdvanceVertex();
 			}
 
 			{
 				Vector3D v(origin + (v3sphere(t + dt, p + dp) * radius));
-				meshbuild->Position3fv(v);
-				meshbuild->AdvanceVertex();
+				meshbuild.Position3fv(v);
+				meshbuild.AdvanceVertex();
 			}
 
 			{
 				Vector3D v(origin + (v3sphere(t + dt, p) * radius));
-				meshbuild->Position3fv(v);
-				meshbuild->AdvanceVertex();
+				meshbuild.Position3fv(v);
+				meshbuild.AdvanceVertex();
 			}
 		}
 	}
-	meshbuild->End();
-
-	g_pShaderAPI->DestroyMeshBuilder(meshbuild);
+	meshbuild.End();
 }
 
 void DkDrawCone(const Vector3D& origin, const Vector3D& angles, float distance, float fFov, int sides)
 {
-	IMeshBuilder* meshbuild = g_pShaderAPI->CreateMeshBuilder();
+	CMeshBuilder meshbuild(materials->GetDynamicMesh());
 
 	Vector3D radAngles = VDEG2RAD(angles);
 
 	float fConeR = distance*sin(DEG2RAD(fFov));
 	float fConeL = sqrt(distance*distance + fConeR*fConeR);
 	
-	meshbuild->Begin(PRIM_LINES);
+	meshbuild.Begin(PRIM_LINES);
 
-	meshbuild->Position3fv( origin );
-	meshbuild->AdvanceVertex();
+	meshbuild.Position3fv( origin );
+	meshbuild.AdvanceVertex();
 
 	Matrix3x3 dir = !rotateXYZ3(radAngles.x,radAngles.y,radAngles.z);
 
-	meshbuild->Position3fv( origin+dir.rows[2]*distance );
-	meshbuild->AdvanceVertex();
+	meshbuild.Position3fv( origin+dir.rows[2]*distance );
+	meshbuild.AdvanceVertex();
 
 	{
-		meshbuild->Position3fv( origin );
-		meshbuild->AdvanceVertex();
+		meshbuild.Position3fv( origin );
+		meshbuild.AdvanceVertex();
 
 		Vector3D vec = origin + dir.rows[2]*distance;
 
-		meshbuild->Position3fv( vec );
-		meshbuild->AdvanceVertex();
+		meshbuild.Position3fv( vec );
+		meshbuild.AdvanceVertex();
 	}
 
 	int nTestSides = sides / 4;
 
 	for (int i = 0; i < nTestSides; i++)
 	{
-		meshbuild->Position3fv( origin );
-		meshbuild->AdvanceVertex();
+		meshbuild.Position3fv( origin );
+		meshbuild.AdvanceVertex();
 
-		Matrix3x3 r = rotateXYZ3(0.0f,DEG2RAD(fFov*0.5f),((i * 2.0f * PI) / nTestSides))*dir;
+		Matrix3x3 r = rotateXYZ3(0.0f,DEG2RAD(fFov*0.5f), (float)((i * 2.0f * PI) / nTestSides))*dir;
 		Vector3D vec = origin+r.rows[0] + r.rows[2]*distance;
 
-		meshbuild->Position3fv( vec );
-		meshbuild->AdvanceVertex();
+		meshbuild.Position3fv( vec );
+		meshbuild.AdvanceVertex();
 	}
 
 	for (int i = 0; i < sides; i++)
 	{
-		Matrix3x3 r = rotateXYZ3(0.0f,DEG2RAD(fFov*0.5f),((i * 2.0f * PI) / sides))*dir;
+		Matrix3x3 r = rotateXYZ3(0.0f,DEG2RAD(fFov*0.5f),(float)((i * 2.0f * PI) / sides))*dir;
 		Vector3D vec = origin+r.rows[0] + r.rows[2]*distance;
 
-		meshbuild->Position3fv( vec );
-		meshbuild->AdvanceVertex();
+		meshbuild.Position3fv( vec );
+		meshbuild.AdvanceVertex();
 	}
 
-	meshbuild->End();
-
-	g_pShaderAPI->DestroyMeshBuilder(meshbuild);
+	meshbuild.End();
 }
 
 struct searchvertexdata_t

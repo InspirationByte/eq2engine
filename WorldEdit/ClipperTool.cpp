@@ -58,7 +58,7 @@ void CClipperTool::RenderPoints(CEditorViewRender* pViewRender)
 		Vector2D pointScrA;
 		PointToScreen(m_clipperTriangle[0], pointScrA, proj*view, pViewRender->Get2DDimensions());
 
-		debugoverlay->Text3D(m_clipperTriangle[0], color4_white, "1");
+		debugoverlay->Text3D(m_clipperTriangle[0], MAX_COORD_UNITS, color4_white, 0.0f, "1");
 
 		// draw only single point
 		Vertex2D_t pointA[] = {MAKETEXQUAD(pointScrA.x-3,pointScrA.y-3,pointScrA.x+3,pointScrA.y+3, 0)};
@@ -75,8 +75,8 @@ void CClipperTool::RenderPoints(CEditorViewRender* pViewRender)
 		PointToScreen(m_clipperTriangle[0], pointScrA, proj*view, pViewRender->Get2DDimensions());
 		PointToScreen(m_clipperTriangle[1], pointScrB, proj*view, pViewRender->Get2DDimensions());
 
-		debugoverlay->Text3D(m_clipperTriangle[0], color4_white, "1");
-		debugoverlay->Text3D(m_clipperTriangle[1], color4_white, "2");
+		debugoverlay->Text3D(m_clipperTriangle[0], MAX_COORD_UNITS, color4_white, 0.0f, "1");
+		debugoverlay->Text3D(m_clipperTriangle[1], MAX_COORD_UNITS, color4_white, 0.0f, "2");
 
 		// draw only single point
 		Vertex2D_t pointA[] = {MAKETEXQUAD(pointScrA.x-3,pointScrA.y-3,pointScrA.x+3,pointScrA.y+3, 0)};
@@ -101,9 +101,9 @@ void CClipperTool::RenderPoints(CEditorViewRender* pViewRender)
 		PointToScreen(m_clipperTriangle[1], pointScr2, proj*view, pViewRender->Get2DDimensions());
 		PointToScreen(m_clipperTriangle[2], pointScr3, proj*view, pViewRender->Get2DDimensions());
 
-		debugoverlay->Text3D(m_clipperTriangle[0], color4_white, "1");
-		debugoverlay->Text3D(m_clipperTriangle[1], color4_white, "2");
-		debugoverlay->Text3D(m_clipperTriangle[2], color4_white, "3");
+		debugoverlay->Text3D(m_clipperTriangle[0], MAX_COORD_UNITS, color4_white, 0.0f, "1");
+		debugoverlay->Text3D(m_clipperTriangle[1], MAX_COORD_UNITS, color4_white, 0.0f, "2");
+		debugoverlay->Text3D(m_clipperTriangle[2], MAX_COORD_UNITS, color4_white, 0.0f, "3");
 
 		// draw only single point
 		Vertex2D_t point1[] = {MAKETEXQUAD(pointScr1.x-3,pointScr1.y-3,pointScr1.x+3,pointScr1.y+3, 0)};

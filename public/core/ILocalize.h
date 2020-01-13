@@ -58,7 +58,8 @@ public:
 
 INTERFACE_SINGLETON( ILocalize, CLocalize, LOCALIZER_INTERFACE_VERSION, g_localizer )
 
-#define DKLOC(tok, def) g_localizer->GetTokenString( tok, def )
+#define DKLOC_CONCAT(x) L ## x
+#define DKLOC(tok, def) g_localizer->GetTokenString( tok, DKLOC_CONCAT(def) )
 
 inline const wchar_t* LocalizedString( const char* pszString )
 {

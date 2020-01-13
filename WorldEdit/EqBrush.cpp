@@ -978,7 +978,7 @@ bool CEditableBrush::ReadObject(IVirtualStream* pStream)
 		addFace.vScale = face.vTexScale;
 		addFace.fRotation = face.fTexRotation;
 
-		addFace.pMaterial = materials->GetMaterial(face.materialname, true);
+		addFace.pMaterial = materials->GetMaterial(face.materialname);
 
 		faces.append(addFace);
 	}
@@ -1280,31 +1280,31 @@ bool CEditableBrush::LoadFromKeyValues(kvkeybase_t* pSection)
 
 		kvkeybase_t* pPair = pThisFace->FindKeyBase("nplane");
 
-		Vector4D plane = UTIL_StringToColor4(pPair->values[0]);
+		Vector4D plane = UTIL_StringToColor4(KV_GetValueString(pPair));
 
 		face.Plane.normal = plane.xyz();
 		face.Plane.offset = plane.w;
 
 		pPair = pThisFace->FindKeyBase("uplane");
-		plane = UTIL_StringToColor4(pPair->values[0]);
+		plane = UTIL_StringToColor4(KV_GetValueString(pPair));
 
 		face.UAxis.normal = plane.xyz();
 		face.UAxis.offset = plane.w;
 
 		pPair = pThisFace->FindKeyBase("vplane");
-		plane = UTIL_StringToColor4(pPair->values[0]);
+		plane = UTIL_StringToColor4(KV_GetValueString(pPair));
 
 		face.VAxis.normal = plane.xyz();
 		face.VAxis.offset = plane.w;
 
 		pPair = pThisFace->FindKeyBase("texscale");
-		face.vScale = UTIL_StringToVector2(pPair->values[0]);
+		face.vScale = UTIL_StringToVector2(KV_GetValueString(pPair));
 
 		pPair = pThisFace->FindKeyBase("rotation");
 		face.fRotation = KV_GetValueFloat(pPair);
 
 		pPair = pThisFace->FindKeyBase("material");
-		face.pMaterial = materials->GetMaterial(KV_GetValueString(pPair), true);
+		face.pMaterial = materials->GetMaterial(KV_GetValueString(pPair));
 
 		pPair = pThisFace->FindKeyBase("smoothinggroup");
 		face.nSmoothingGroup = KV_GetValueInt(pPair);
