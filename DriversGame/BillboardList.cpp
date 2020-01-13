@@ -296,11 +296,11 @@ void CBillboardList::DrawBillboards()
 	float distCurved = powf(fDistToCenter / BILLBOARD_DISAPPEAR_DISTANCE, 0.5f)*BILLBOARD_DISAPPEAR_DISTANCE;
 	//float fTreeSizeFactor = pow(1.0f / m_aabb.GetSize().x, 2.0f)*5.0f;
 
+	worldinfo_t worldInfo = g_pGameWorld->m_info;
+
 #endif // GAME_DRIVERS
 
 	int numDrawnSprites = 0;
-
-	worldinfo_t worldInfo = g_pGameWorld->m_info;
 
 	for(int i = 0; i < m_sprites.numElem(); i++)
 	{
@@ -339,6 +339,7 @@ void CBillboardList::DrawBillboards()
 		}
 #else
 		effect.vColor = color4_white;
+		float distCurved = 1.0f;
 #endif // GAME_DRIVERS
 
 		numDrawnSprites++;

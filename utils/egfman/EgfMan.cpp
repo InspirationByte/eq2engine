@@ -537,25 +537,25 @@ CEGFViewFrame::CEGFViewFrame( wxWindow* parent, wxWindowID id, const wxString& t
 
 	wxMenu *menuFile = new wxMenu;
 	
-	menuFile->Append( Event_File_OpenModel, DKLOC("TOKEN_OPEN", L"Open\tCtrl+O") );
+	menuFile->Append( Event_File_OpenModel, DKLOC("TOKEN_OPEN", "Open\tCtrl+O") );
 	menuFile->AppendSeparator();
-	menuFile->Append( Event_File_ReloadModel, DKLOC("TOKEN_RELOADMODEL", L"Reload model") );
-	menuFile->Append( Event_File_Save, DKLOC("TOKEN_SAVE", L"Save") );
+	menuFile->Append( Event_File_ReloadModel, DKLOC("TOKEN_RELOADMODEL", "Reload model") );
+	menuFile->Append( Event_File_Save, DKLOC("TOKEN_SAVE", "Save") );
 	menuFile->AppendSeparator();
-	menuFile->Append( Event_File_CompileModel, DKLOC("TOKEN_COMPILEMODEL", L"Compile scripts...") );
+	menuFile->Append( Event_File_CompileModel, DKLOC("TOKEN_COMPILEMODEL", "Compile scripts...") );
 	
 	
 
 	wxMenu *menuView = new wxMenu;
 	
-	menuView->Append( Event_View_ResetView, DKLOC("TOKEN_RESETVIEW", L"Reset View\tR") );
+	menuView->Append( Event_View_ResetView, DKLOC("TOKEN_RESETVIEW", "Reset View\tR") );
 
-	m_drawPhysModel = menuView->Append( Event_View_ShowPhysModel, DKLOC("TOKEN_SHOWPHYSICSMODEL", L"Show physics objects\tP"), wxEmptyString, wxITEM_CHECK );
-	m_drawBones = menuView->Append( Event_View_ShowBones, DKLOC("TOKEN_SHOWBONES", L"Show bones\tB"), wxEmptyString, wxITEM_CHECK );
-	m_wireframe = menuView->Append( Event_View_Wireframe, DKLOC("TOKEN_WIREFRAME", L"Wireframe\tW"), wxEmptyString, wxITEM_CHECK );
+	m_drawPhysModel = menuView->Append( Event_View_ShowPhysModel, DKLOC("TOKEN_SHOWPHYSICSMODEL", "Show physics objects\tP"), wxEmptyString, wxITEM_CHECK );
+	m_drawBones = menuView->Append( Event_View_ShowBones, DKLOC("TOKEN_SHOWBONES", "Show bones\tB"), wxEmptyString, wxITEM_CHECK );
+	m_wireframe = menuView->Append( Event_View_Wireframe, DKLOC("TOKEN_WIREFRAME", "Wireframe\tW"), wxEmptyString, wxITEM_CHECK );
 
-	m_pMenu->Append( menuFile, DKLOC("TOKEN_FILE", L"File") );
-	m_pMenu->Append( menuView, DKLOC("TOKEN_VIEW", L"View") );
+	m_pMenu->Append( menuFile, DKLOC("TOKEN_FILE", "File") );
+	m_pMenu->Append( menuView, DKLOC("TOKEN_VIEW", "View") );
 
 	this->SetMenuBar( m_pMenu );
 	
@@ -1454,7 +1454,7 @@ bool CEGFViewApp::OnInit()
 
 	g_localizer->AddTokensFile("EGFMan");
 
-	g_pMainFrame = new CEGFViewFrame( NULL, -1, DKLOC("TOKEN_TITLE", L"EGFMan"));
+	g_pMainFrame = new CEGFViewFrame( NULL, -1, DKLOC("TOKEN_TITLE", "EGFMan"));
 	g_pMainFrame->Centre();
 	g_pMainFrame->Show(true);
 

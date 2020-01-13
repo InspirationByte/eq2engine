@@ -61,9 +61,9 @@ CRegionEditFrame::CRegionEditFrame( wxWindow* parent ) :
 
 	wxMenu* menuFile = new wxMenu;
 	
-	menuFile->Append( REdit_GenerateMap, DKLOC("TOKEN_GENERATEMAP", L"Generate map image") );
+	menuFile->Append( REdit_GenerateMap, DKLOC("TOKEN_GENERATEMAP", "Generate map image") );
 	
-	m_pMenu->Append( menuFile, DKLOC("TOKEN_FILE", L"File") );
+	m_pMenu->Append( menuFile, DKLOC("TOKEN_FILE", "File") );
 
 	this->SetMenuBar( m_pMenu );
 

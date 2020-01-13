@@ -331,17 +331,17 @@ CMainWindow::CMainWindow( wxWindow* parent, wxWindowID id, const wxString& title
 	m_menu_file = new wxMenu();
 	m_pMenu->Append( m_menu_file, wxT("File") ); 
 
-	m_menu_file->Append( Event_File_New, DKLOC("TOKEN_NEW", L"New\tCtrl+N") );
+	m_menu_file->Append( Event_File_New, DKLOC("TOKEN_NEW", "New\tCtrl+N") );
 	m_menu_file->AppendSeparator();
-	m_menu_file->Append( Event_File_Load, DKLOC("TOKEN_LOAD", L"Load level\tCtrl+O") );
+	m_menu_file->Append( Event_File_Load, DKLOC("TOKEN_LOAD", "Load level\tCtrl+O") );
 
-	m_menu_file->Append( Event_File_Save, DKLOC("TOKEN_SAVE", L"Save level\tCtrl+S") );
-	m_menu_file->Append( Event_File_SaveAs, DKLOC("TOKEN_SAVEAS", L"Save as...\tCtrl+S") );
+	m_menu_file->Append( Event_File_Save, DKLOC("TOKEN_SAVE", "Save level\tCtrl+S") );
+	m_menu_file->Append( Event_File_SaveAs, DKLOC("TOKEN_SAVEAS", "Save as...\tCtrl+S") );
 
 	//m_menu_file->AppendSeparator();
 #pragma todo("previous loaded list")
 	m_menu_file->AppendSeparator();
-	m_menu_file->Append( Event_File_Exit, DKLOC("TOKEN_EXIT", L"Exit\tAlt+F4") );
+	m_menu_file->Append( Event_File_Exit, DKLOC("TOKEN_EXIT", "Exit\tAlt+F4") );
 	
 	
 	m_menu_edit = new wxMenu();
@@ -353,17 +353,17 @@ CMainWindow::CMainWindow( wxWindow* parent, wxWindowID id, const wxString& title
 	m_menu_view = new wxMenu();
 	m_pMenu->Append( m_menu_view, wxT("View") );
 	
-	m_menu_view->Append(Event_View_ResetView, DKLOC("TOKEN_RESETVIEW", L"Reset view"));
-	m_menu_view_hfieldhelpers = m_menu_view->Append(Event_View_DrawHfieldHelpers, DKLOC("TOKEN_DRAWHFIELDHELPERS", L"Draw heightfield tile helpers\tCtrl+H"), wxEmptyString, wxITEM_CHECK);
-	m_menu_view->Append(Event_View_ShowRegionEditor, DKLOC("TOKEN_SHOWREGIONEDITOR", L"Show region editor"));
+	m_menu_view->Append(Event_View_ResetView, DKLOC("TOKEN_RESETVIEW", "Reset view"));
+	m_menu_view_hfieldhelpers = m_menu_view->Append(Event_View_DrawHfieldHelpers, DKLOC("TOKEN_DRAWHFIELDHELPERS", "Draw heightfield tile helpers\tCtrl+H"), wxEmptyString, wxITEM_CHECK);
+	m_menu_view->Append(Event_View_ShowRegionEditor, DKLOC("TOKEN_SHOWREGIONEDITOR", "Show region editor"));
 	m_menu_view->AppendSeparator();
 
 	m_menu_build = new wxMenu();
 	m_pMenu->Append( m_menu_build, wxT("Level") );
-	m_menu_build->Append(Event_Level_RebuildRoadTextures, DKLOC("TOKEN_REBUILDROADTEXTURES", L"Rebuild road textures"));
-	m_menu_build->Append(Event_Level_ReloadEnvironments, DKLOC("TOKEN_RELOADENVS", L"Reload environments"));
-	m_menu_build->Append(Event_Level_ReloadMaterials, DKLOC("TOKEN_RELOADMATERIALS", L"Reload all materials"));
-	m_menu_build->Append(Event_Level_Play, DKLOC("TOKEN_TESTGAME", L"Do test game"));
+	m_menu_build->Append(Event_Level_RebuildRoadTextures, DKLOC("TOKEN_REBUILDROADTEXTURES", "Rebuild road textures"));
+	m_menu_build->Append(Event_Level_ReloadEnvironments, DKLOC("TOKEN_RELOADENVS", "Reload environments"));
+	m_menu_build->Append(Event_Level_ReloadMaterials, DKLOC("TOKEN_RELOADMATERIALS", "Reload all materials"));
+	m_menu_build->Append(Event_Level_Play, DKLOC("TOKEN_TESTGAME", "Do test game"));
 
 
 	this->SetMenuBar( m_pMenu );
@@ -438,7 +438,7 @@ CMainWindow::CMainWindow( wxWindow* parent, wxWindowID id, const wxString& title
 	m_loadingDialog = new CLoadingDialog(this);
 	m_loadingDialog->CenterOnScreen();
 
-	m_levelsavedialog = new wxTextEntryDialog(this, DKLOC("TOKEN_WORLDNAME", L"World name"), DKLOC("TOKEN_SPECIFYWORLDNAME", L"Specify world name"));
+	m_levelsavedialog = new wxTextEntryDialog(this, DKLOC("TOKEN_WORLDNAME", "World name"), DKLOC("TOKEN_SPECIFYWORLDNAME", "Specify world name"));
 	m_carNameDialog = new wxTextEntryDialog(this, L"Vehicle entry name", "Enter the vehicle name you want to drive on");
 
 	m_carNameDialog->SetValue("mustang");
@@ -1456,7 +1456,7 @@ bool CEGFViewApp::OnInit()
 	}
 
 	// init window
-	g_pMainFrame = new CMainWindow(NULL, -1, DKLOC("TOKEN_TITLE", L"Driver Syndicate Level Editor"));
+	g_pMainFrame = new CMainWindow(NULL, -1, DKLOC("TOKEN_TITLE", "Driver Syndicate Level Editor"));
 	g_pMainFrame->Centre();
 	g_pMainFrame->Show(true);
 

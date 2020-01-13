@@ -18,14 +18,14 @@ BEGIN_EVENT_TABLE(CLoadLevelDialog, wxDialog)
 	EVT_LISTBOX_DCLICK(-1, CLoadLevelDialog::OnDoubleClick)
 END_EVENT_TABLE()
 
-CLoadLevelDialog::CLoadLevelDialog(wxWindow* parent) : wxDialog(parent, -1, DKLOC("TOKEN_CHOOSELEVEL", L"Choose a level to edit"),wxPoint(-1,-1),wxSize(400,680),wxCAPTION | wxSYSTEM_MENU | wxCLOSE_BOX | wxCENTER_ON_SCREEN)
+CLoadLevelDialog::CLoadLevelDialog(wxWindow* parent) : wxDialog(parent, -1, DKLOC("TOKEN_CHOOSELEVEL", "Choose a level to edit"),wxPoint(-1,-1),wxSize(400,680),wxCAPTION | wxSYSTEM_MENU | wxCLOSE_BOX | wxCENTER_ON_SCREEN)
 {
 	Iconize( false );
 
 	m_levels = new wxListBox(this,-1,wxPoint(5,5), wxSize(380,600));
 
-	wxButton* btnLoad = new wxButton(this, BUTTON_OPEN, DKLOC("TOKEN_LOAD", L"Load"), wxPoint(5, 610),wxSize(50,25));
-	new wxButton(this, BUTTON_CANCEL, DKLOC("TOKEN_CANCEL", L"Cancel"), wxPoint(60, 610),wxSize(50,25));
+	wxButton* btnLoad = new wxButton(this, BUTTON_OPEN, DKLOC("TOKEN_LOAD", "Load"), wxPoint(5, 610),wxSize(50,25));
+	new wxButton(this, BUTTON_CANCEL, DKLOC("TOKEN_CANCEL", "Cancel"), wxPoint(60, 610),wxSize(50,25));
 	//new wxButton(this, BUTTON_NEW, DKLOC("TOKEN_CREATENEW", "Create new"), wxPoint(115, 610),wxSize(70,25));
 
 	btnLoad->SetDefault();
@@ -94,7 +94,7 @@ void CLoadLevelDialog::RebuildLevelList()
 
 //----------------------------------------------------------------------------------------------
 
-CLoadingDialog::CLoadingDialog(wxWindow* parent) : wxDialog(parent, -1, DKLOC("TOKEN_PLSWAIT", L"Please wait"),wxPoint(-1,-1),wxSize( 300,100 ),wxCAPTION | wxSTAY_ON_TOP | wxCENTER_ON_SCREEN)
+CLoadingDialog::CLoadingDialog(wxWindow* parent) : wxDialog(parent, -1, DKLOC("TOKEN_PLSWAIT", "Please wait"),wxPoint(-1,-1),wxSize( 300,100 ),wxCAPTION | wxSTAY_ON_TOP | wxCENTER_ON_SCREEN)
 {
 	this->SetSizeHints( wxDefaultSize, wxDefaultSize );
 	

@@ -93,7 +93,7 @@ CUI_PrefabManager::CUI_PrefabManager( wxWindow* parent ) : wxPanel( parent, -1, 
 	this->SetSizer(bSizer10);
 	this->Layout();
 
-	m_prefabNameDialog = new wxTextEntryDialog(this, DKLOC("TOKEN_PREFABNAME", L"Prefab name"), DKLOC("TOKEN_SPECIFYPREFAB NAME", L"Specify prefab name"));
+	m_prefabNameDialog = new wxTextEntryDialog(this, DKLOC("TOKEN_PREFABNAME", "Prefab name"), DKLOC("TOKEN_SPECIFYPREFABNAME", "Specify prefab name"));
 	
 	// Connect Events
 	m_prefabList->Connect( wxEVT_COMMAND_LISTBOX_DOUBLECLICKED, wxCommandEventHandler( CUI_PrefabManager::OnBeginPrefabPlacement ), NULL, this );

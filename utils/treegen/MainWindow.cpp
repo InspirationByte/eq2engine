@@ -224,26 +224,26 @@ CMainWindow::CMainWindow( wxWindow* parent, wxWindowID id, const wxString& title
 	m_menu_file = new wxMenu();
 	m_pMenu->Append( m_menu_file, wxT("File") );
 
-	m_menu_file->Append( Event_File_OpenEGF, DKLOC("TOKEN_OPENEGF", L"Open EGF") );
-	m_menu_file->Append( Event_File_OpenAtlas, DKLOC("TOKEN_OPENATLAS", L"Open atlas") );
+	m_menu_file->Append( Event_File_OpenEGF, DKLOC("TOKEN_OPENEGF", "Open EGF") );
+	m_menu_file->Append( Event_File_OpenAtlas, DKLOC("TOKEN_OPENATLAS", "Open atlas") );
 
 	m_menu_file->AppendSeparator();
 
-	m_menu_file->Append( Event_File_SaveBillboard, DKLOC("TOKEN_SAVEBLB", L"Save BLB") );
+	m_menu_file->Append( Event_File_SaveBillboard, DKLOC("TOKEN_SAVEBLB", "Save BLB") );
 
 	m_menu_file->AppendSeparator();
 
-	m_menu_file->Append( Event_File_Exit, DKLOC("TOKEN_EXIT", L"Exit") );
+	m_menu_file->Append( Event_File_Exit, DKLOC("TOKEN_EXIT", "Exit") );
 
 	m_menu_edit = new wxMenu();
 	m_pMenu->Append( m_menu_edit, wxT("Edit") );
 
-	m_menu_edit->Append( Event_Edit_GenerateFromObjPoints, DKLOC("TOKEN_GENERATE_FROM_OBJ", L"Generate from OBJ points") );
+	m_menu_edit->Append( Event_Edit_GenerateFromObjPoints, DKLOC("TOKEN_GENERATE_FROM_OBJ", "Generate from OBJ points") );
 
 	m_menu_view = new wxMenu();
 	m_pMenu->Append( m_menu_view, wxT("View") );
 
-	m_menu_view->Append( Event_View_ResetView, DKLOC("TOKEN_RESETVIEW", L"Reset view") );
+	m_menu_view->Append( Event_View_ResetView, DKLOC("TOKEN_RESETVIEW", "Reset view") );
 
 	this->SetMenuBar( m_pMenu );
 	this->Centre( wxBOTH );
