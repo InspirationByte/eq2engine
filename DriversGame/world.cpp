@@ -823,7 +823,7 @@ void CGameWorld::Init()
 	{
 		kvkeybase_t blurParams;
 		blurParams.SetName("BlurFilter");
-		blurParams.SetKey("BaseTexture", "_tempTexture");
+		blurParams.SetKey("BaseTexture", "_tempReflection");
 		blurParams.SetKey("BlurY", true); // blur by Y
 		blurParams.SetKey("YLow", true); // upper kernel
 		blurParams.SetKey("YHigh", true); // lower kernel
