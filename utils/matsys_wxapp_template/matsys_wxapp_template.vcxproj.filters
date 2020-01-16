@@ -17,12 +17,6 @@
     <Filter Include="Source Files\EngineLib">
       <UniqueIdentifier>{cd7b04c9-cb67-4f39-83ca-9341ceab3a6f}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\EngineLib\Renderer">
-      <UniqueIdentifier>{05ac3ee4-9a2b-4c39-8f58-97ce76bbc3b8}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\EngineLib\Renderer\Debug">
-      <UniqueIdentifier>{d6ae589e-d53b-451e-b664-b5a10bbb28ce}</UniqueIdentifier>
-    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="windows\resource.h">
@@ -34,6 +28,9 @@
     <ClInclude Include="MainWindow.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\shared_engine\ViewParams.h">
+      <Filter>Source Files\EngineLib</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="windows\mainicon.ico">
@@ -41,39 +38,28 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\public\ViewParams.cpp">
-      <Filter>Source Files\EngineLib\Renderer</Filter>
-    </ClCompile>
     <ClCompile Include="MainWindow.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\shared_engine\DebugOverlay.cpp">
-      <Filter>Source Files\EngineLib\Renderer\Debug</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\shared_engine\Font.cpp">
-      <Filter>Source Files\EngineLib\Renderer</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\shared_engine\FontCache.cpp">
-      <Filter>Source Files\EngineLib\Renderer</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\public\math\math_util.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\shared_engine\ViewParams.cpp">
+      <Filter>Source Files\EngineLib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\shared_engine\FontCache.cpp">
+      <Filter>Source Files\EngineLib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\shared_engine\DebugOverlay.cpp">
+      <Filter>Source Files\EngineLib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\shared_engine\Font.cpp">
+      <Filter>Source Files\EngineLib</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="windows\Resources.rc">
       <Filter>Resource Files</Filter>
     </ResourceCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <Library Include="..\..\libs\CoreLib.lib">
-      <Filter>Libs</Filter>
-    </Library>
-    <Library Include="..\..\libs\DkCore.lib">
-      <Filter>Libs</Filter>
-    </Library>
-    <Library Include="..\..\libs\FrameworkLib.lib">
-      <Filter>Libs</Filter>
-    </Library>
   </ItemGroup>
 </Project>

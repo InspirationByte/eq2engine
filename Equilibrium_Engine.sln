@@ -107,7 +107,9 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Equilibrium", "Equilibrium"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "eqSoundSystemTest", "utils\eqSoundSystemTest\eqSoundSystemTest.vcxproj", "{CADC216A-CA8C-4042-8461-AAF5D6498B72}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "DriversLauncher", "DriversLauncher\DriversLauncher.vcxproj", "{3DA54B4A-8F2F-44DA-B679-5586165C1F96}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Configurator", "DriversLauncher\DriversLauncher.vcxproj", "{3DA54B4A-8F2F-44DA-B679-5586165C1F96}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "matsys_wxapp_template", "utils\matsys_wxapp_template\matsys_wxapp_template.vcxproj", "{C5A1F973-2091-402A-8CAE-2AAEFE907AFD}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -910,6 +912,38 @@ Global
 		{3DA54B4A-8F2F-44DA-B679-5586165C1F96}.STDGame Release|Win32.Build.0 = Release|Win32
 		{3DA54B4A-8F2F-44DA-B679-5586165C1F96}.STDGame Release|x64.ActiveCfg = Release|x64
 		{3DA54B4A-8F2F-44DA-B679-5586165C1F96}.STDGame Release|x64.Build.0 = Release|x64
+		{C5A1F973-2091-402A-8CAE-2AAEFE907AFD}.Debug|Android.ActiveCfg = Debug|Win32
+		{C5A1F973-2091-402A-8CAE-2AAEFE907AFD}.Debug|Win32.ActiveCfg = Debug|Win32
+		{C5A1F973-2091-402A-8CAE-2AAEFE907AFD}.Debug|Win32.Build.0 = Debug|Win32
+		{C5A1F973-2091-402A-8CAE-2AAEFE907AFD}.Debug|x64.ActiveCfg = Debug|Win32
+		{C5A1F973-2091-402A-8CAE-2AAEFE907AFD}.Long|Android.ActiveCfg = Debug|Win32
+		{C5A1F973-2091-402A-8CAE-2AAEFE907AFD}.Long|Android.Build.0 = Debug|Win32
+		{C5A1F973-2091-402A-8CAE-2AAEFE907AFD}.Long|Win32.ActiveCfg = Debug|Win32
+		{C5A1F973-2091-402A-8CAE-2AAEFE907AFD}.Long|Win32.Build.0 = Debug|Win32
+		{C5A1F973-2091-402A-8CAE-2AAEFE907AFD}.Long|x64.ActiveCfg = Debug|Win32
+		{C5A1F973-2091-402A-8CAE-2AAEFE907AFD}.Long|x64.Build.0 = Debug|Win32
+		{C5A1F973-2091-402A-8CAE-2AAEFE907AFD}.PigeonGame Release|Android.ActiveCfg = Debug|Win32
+		{C5A1F973-2091-402A-8CAE-2AAEFE907AFD}.PigeonGame Release|Android.Build.0 = Debug|Win32
+		{C5A1F973-2091-402A-8CAE-2AAEFE907AFD}.PigeonGame Release|Win32.ActiveCfg = Release|Win32
+		{C5A1F973-2091-402A-8CAE-2AAEFE907AFD}.PigeonGame Release|Win32.Build.0 = Release|Win32
+		{C5A1F973-2091-402A-8CAE-2AAEFE907AFD}.PigeonGame Release|x64.ActiveCfg = Debug|Win32
+		{C5A1F973-2091-402A-8CAE-2AAEFE907AFD}.PigeonGame Release|x64.Build.0 = Debug|Win32
+		{C5A1F973-2091-402A-8CAE-2AAEFE907AFD}.Release EGL|Android.ActiveCfg = Debug|Win32
+		{C5A1F973-2091-402A-8CAE-2AAEFE907AFD}.Release EGL|Android.Build.0 = Debug|Win32
+		{C5A1F973-2091-402A-8CAE-2AAEFE907AFD}.Release EGL|Win32.ActiveCfg = Release|Win32
+		{C5A1F973-2091-402A-8CAE-2AAEFE907AFD}.Release EGL|Win32.Build.0 = Release|Win32
+		{C5A1F973-2091-402A-8CAE-2AAEFE907AFD}.Release EGL|x64.ActiveCfg = Debug|Win32
+		{C5A1F973-2091-402A-8CAE-2AAEFE907AFD}.Release EGL|x64.Build.0 = Debug|Win32
+		{C5A1F973-2091-402A-8CAE-2AAEFE907AFD}.Release|Android.ActiveCfg = Release|Win32
+		{C5A1F973-2091-402A-8CAE-2AAEFE907AFD}.Release|Win32.ActiveCfg = Release|Win32
+		{C5A1F973-2091-402A-8CAE-2AAEFE907AFD}.Release|Win32.Build.0 = Release|Win32
+		{C5A1F973-2091-402A-8CAE-2AAEFE907AFD}.Release|x64.ActiveCfg = Release|Win32
+		{C5A1F973-2091-402A-8CAE-2AAEFE907AFD}.STDGame Release|Android.ActiveCfg = Debug|Win32
+		{C5A1F973-2091-402A-8CAE-2AAEFE907AFD}.STDGame Release|Android.Build.0 = Debug|Win32
+		{C5A1F973-2091-402A-8CAE-2AAEFE907AFD}.STDGame Release|Win32.ActiveCfg = Release|Win32
+		{C5A1F973-2091-402A-8CAE-2AAEFE907AFD}.STDGame Release|Win32.Build.0 = Release|Win32
+		{C5A1F973-2091-402A-8CAE-2AAEFE907AFD}.STDGame Release|x64.ActiveCfg = Debug|Win32
+		{C5A1F973-2091-402A-8CAE-2AAEFE907AFD}.STDGame Release|x64.Build.0 = Debug|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -951,6 +985,7 @@ Global
 		{8E0EB35F-BCA0-4DFF-A62A-EA49F63CE6BF} = {1827A37C-01C3-49BC-B427-0AB2C346198E}
 		{CADC216A-CA8C-4042-8461-AAF5D6498B72} = {A0162FED-446D-4B4B-A78F-207C4EA7F5EE}
 		{3DA54B4A-8F2F-44DA-B679-5586165C1F96} = {BCB9F8C7-6169-4143-A1B8-C498270711DF}
+		{C5A1F973-2091-402A-8CAE-2AAEFE907AFD} = {A0162FED-446D-4B4B-A78F-207C4EA7F5EE}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {D0A4A5AC-A940-4CEC-BAD9-E68B46CA6562}

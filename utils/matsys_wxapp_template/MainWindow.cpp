@@ -10,7 +10,10 @@
 #include "ILocalize.h"
 #include "FontCache.h"
 #include "IConCommandFactory.h"
-#include "../../shared_engine/DebugOverlay.h"
+#include "DebugOverlay.h"
+#include "ViewParams.h"
+
+#include "scene_def.h"
 
 #include <wx/settings.h>
 
@@ -29,8 +32,6 @@ IMaterialSystem*	materials = NULL;
 CViewParams			g_pCameraParams(Vector3D(0,0,-100), vec3_zero, 70.0f);
 Matrix4x4			g_mProjMat, g_mViewMat;
 Volume				g_viewFrustum;
-
-sceneinfo_t			scinfo;
 
 float				g_fRealtime = 0.0f;
 float				g_fOldrealtime = 0.0f;
@@ -144,15 +145,14 @@ void InitMatSystem(EQWNDHANDLE window)
 		materials_config.stubMode = false;
 		materials_config.threadedloader = true;
 
-		DefaultShaderAPIParameters(&materials_config.shaderapi_params);
-		materials_config.shaderapi_params.bIsWindowed = true;
-		materials_config.shaderapi_params.hWindow = window;
-		materials_config.shaderapi_params.nScreenFormat = format;
+		materials_config.shaderapi_params.windowedMode = true;
+		materials_config.shaderapi_params.windowHandle = window;
+		materials_config.shaderapi_params.screenFormat = format;
 
 #ifdef _WIN32
 		bool materialSystemStatus = materials->Init("materials/", "eqD3D9RHI", materials_config);
 #elif LINUX
-        bool materialSystemStatus = materials->Init("materials/", "libeqNullRHI.so", materials_config);
+        bool materialSystemStatus = materials->Init("materials/", "eqGLRHI", materials_config);
 #endif // _WIN32
 
 		FogInfo_t fog;
@@ -170,9 +170,10 @@ void InitMatSystem(EQWNDHANDLE window)
 			exit(0);
 	}
 
-	//materials->LoadShaderLibrary("Shaders_Engine.dll");
+	// load engine shader library
+	materials->LoadShaderLibrary("eqBaseShaders");
 
-	// register all shaders
+	// register shaders within this project
 	for(int i = 0; i < pShaderRegistrators.numElem(); i++)
 		materials->RegisterShader( pShaderRegistrators[i].shader_name, pShaderRegistrators[i].dispatcher );
 }
@@ -206,7 +207,7 @@ CMainWindow::CMainWindow( wxWindow* parent, wxWindowID id, const wxString& title
 	m_menu_file = new wxMenu();
 	m_pMenu->Append( m_menu_file, wxT("File") );
 
-	m_menu_file->Append( Event_File_Exit, DKLOC("TOKEN_EXIT", L"Exit") );
+	m_menu_file->Append( Event_File_Exit, DKLOC("TOKEN_EXIT", "Exit") );
 
 	m_menu_edit = new wxMenu();
 	m_pMenu->Append( m_menu_edit, wxT("Edit") );
@@ -281,7 +282,7 @@ void CMainWindow::ProcessAllMenuCommands(wxCommandEvent& event)
 	}
 }
 
-Vector2D		g_vLastMousePosition(0);
+Vector2D g_vLastMousePosition(0);
 
 void CMainWindow::ProcessMouseEvents(wxMouseEvent& event)
 {
@@ -401,8 +402,6 @@ void CMainWindow::ProcessMouseEvents(wxMouseEvent& event)
 	fov = clamp(fov,10,1024);
 
 	g_fCamSpeed = fov;
-
-	cam_pos = clamp(cam_pos, Vector3D(-MAX_COORD_UNITS), Vector3D(MAX_COORD_UNITS));
 
 	g_camera_rotation = cam_angles;
 	g_camera_target = cam_pos;
@@ -679,6 +678,8 @@ bool CWXTemplateApplication::OnInit()
 #elif LINUX
     g_matsysmodule = g_fileSystem->LoadModule("libeqMatSystem.so");
 #endif
+
+	
 
 	if(!g_matsysmodule)
 	{
