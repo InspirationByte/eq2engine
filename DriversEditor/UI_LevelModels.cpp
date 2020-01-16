@@ -49,15 +49,15 @@ public:
 	
 		m_isGround = new wxCheckBox( this, wxID_ANY, wxT("is ground"), wxDefaultPosition, wxDefaultSize, 0 );
 		gSizer2->Add( m_isGround, 0, wxALL, 5 );
+
+		m_driveable = new wxCheckBox(this, wxID_ANY, wxT("driveable"), wxDefaultPosition, wxDefaultSize, 0);
+		gSizer2->Add(m_driveable, 0, wxALL, 5);
 	
 		m_noCollide = new wxCheckBox( this, wxID_ANY, wxT("no collision"), wxDefaultPosition, wxDefaultSize, 0 );
 		gSizer2->Add( m_noCollide, 0, wxALL, 5 );
 
-		m_alignToGround = new wxCheckBox( this, wxID_ANY, wxT("align to ground"), wxDefaultPosition, wxDefaultSize, 0 );
+		m_alignToGround = new wxCheckBox( this, wxID_ANY, wxT("aligned to tile"), wxDefaultPosition, wxDefaultSize, 0 );
 		gSizer2->Add( m_alignToGround, 0, wxALL, 5 );
-	
-		m_unique = new wxCheckBox( this, wxID_ANY, wxT("unique"), wxDefaultPosition, wxDefaultSize, 0 );
-		gSizer2->Add( m_unique, 0, wxALL, 5 );
 	
 	
 		bSizer13->Add( gSizer2, 0, wxEXPAND, 5 );
@@ -89,8 +89,8 @@ public:
 		if(modelFlags & LMODEL_FLAG_ALIGNTOCELL)
 			m_alignToGround->SetValue(true);
 
-		if(modelFlags & LMODEL_FLAG_UNIQUE)
-			m_unique->SetValue(true);
+		if(modelFlags & LMODEL_FLAG_DRIVEABLE)
+			m_driveable->SetValue(true);
 
 		m_plcLevel->SetValue(modPlace);
 	}
@@ -107,7 +107,7 @@ public:
 		nFlags |= m_isGround->GetValue() ? LMODEL_FLAG_ISGROUND : 0;
 		nFlags |= m_noCollide->GetValue() ? LMODEL_FLAG_NOCOLLIDE : 0;
 		nFlags |= m_alignToGround->GetValue() ? LMODEL_FLAG_ALIGNTOCELL : 0;
-		nFlags |= m_unique->GetValue() ? LMODEL_FLAG_UNIQUE : 0;
+		nFlags |= m_driveable->GetValue() ? LMODEL_FLAG_DRIVEABLE : 0;
 
 		return nFlags;
 	}
@@ -121,7 +121,7 @@ protected:
 	wxCheckBox* m_isGround;
 	wxCheckBox* m_noCollide;
 	wxCheckBox* m_alignToGround;
-	wxCheckBox* m_unique;
+	wxCheckBox* m_driveable;
 
 	wxSpinCtrl* m_plcLevel;
 };
@@ -1559,6 +1559,8 @@ void CUI_LevelModels::MousePlacementEvents( wxMouseEvent& event, hfieldtile_t* t
 			if(event.Dragging() && !m_tiledPlacement->GetValue())
 				return;
 
+			CLevObjectDef* selectedDef = m_modelPicker->GetSelectedModelContainer();
+
 			regionObject_t* ref = NULL;
 
 			// prevent placement on this tile again
@@ -1569,7 +1571,8 @@ void CUI_LevelModels::MousePlacementEvents( wxMouseEvent& event, hfieldtile_t* t
 				if(	obj->tile_x != 0xFFFF && 
 					((obj->tile_x != 0xFFFF) == m_tiledPlacement->GetValue()) && 
 					(obj->tile_x == tx) && 
-					(obj->tile_y == ty))
+					(obj->tile_y == ty) &&
+					obj->def->m_info.level == selectedDef->m_info.level)
 				{
 					ref = obj;
 				}
@@ -1586,7 +1589,7 @@ void CUI_LevelModels::MousePlacementEvents( wxMouseEvent& event, hfieldtile_t* t
 				ref->def->Ref_Drop();
 			}
 
-			ref->def = m_modelPicker->GetSelectedModelContainer();
+			ref->def = selectedDef;
 
 			// grab new reference
 			if(ref->def->m_info.type == LOBJ_TYPE_INTERNAL_STATIC)
@@ -1628,6 +1631,8 @@ void CUI_LevelModels::MousePlacementEvents( wxMouseEvent& event, hfieldtile_t* t
 	{
 		if(m_selectedRegion && m_modelPicker->GetSelectedModel())
 		{
+			CLevObjectDef* selectedDef = m_modelPicker->GetSelectedModelContainer();
+
 			// remove model from tile
 			for(int i = 0; i < m_selectedRegion->m_objects.numElem(); i++)
 			{
@@ -1635,7 +1640,8 @@ void CUI_LevelModels::MousePlacementEvents( wxMouseEvent& event, hfieldtile_t* t
 
 				if(	(obj->tile_x != 0xFFFF) && 
 					obj->tile_x == tx && 
-					obj->tile_y == ty)
+					obj->tile_y == ty &&
+					obj->def->m_info.level == selectedDef->m_info.level)
 				{
 					delete obj;
 

@@ -488,7 +488,7 @@ void CLevelModel::CreateCollisionObjectFor( regionObject_t* ref )
 {
 	Matrix4x4 transform = transpose( ref->transform );
 
-	bool isGround = (ref->def->m_info.modelflags & LMODEL_FLAG_ISGROUND);
+	bool isGround = (ref->def->m_info.modelflags & LMODEL_FLAG_ISGROUND) || (ref->def->m_info.modelflags & LMODEL_FLAG_DRIVEABLE);
 
 	CEqCollisionObject* collObj = new CEqCollisionObject();
 	collObj->Initialize(m_physicsMesh);
