@@ -314,7 +314,7 @@ public:
 
 			if(g_pGameWorld->m_level.m_objectDefs[i]->m_info.type == LOBJ_TYPE_INTERNAL_STATIC)
 			{
-				int numRefs = g_pGameWorld->m_level.m_objectDefs[i]->m_model->Ref_Count();
+				int numRefs = g_pGameWorld->m_level.m_objectDefs[i]->Ref_Count();
 
 				model_name = model_name + varargs(" (%d)", numRefs);
 			}
@@ -826,7 +826,8 @@ void CModelListRenderPanel::RefreshLevelModels()
 
 void CModelListRenderPanel::AddModel(CLevObjectDef* container)
 {
-	container->m_model->Ref_Grab();
+	// it hast to be always loaded
+	container->Ref_Grab();
 
 	g_pGameWorld->m_level.m_objectDefs.append(container);
 	RefreshLevelModels();
@@ -857,7 +858,6 @@ void CModelListRenderPanel::RemoveModel(CLevObjectDef* container)
 	g_pGameWorld->m_level.m_objectDefs.remove(container);
 
 	delete container;
-
 	RefreshLevelModels();
 }
 
@@ -1109,8 +1109,7 @@ void CUI_LevelModels::OnButtons(wxCommandEvent& event)
 				container->m_model = pLevModel;
 				container->m_name = path.Path_Extract_Name().Path_Strip_Ext().c_str();
 
-				//g_pGameWorld->AddModel();
-
+				// add new model to level
 				m_modelPicker->AddModel(container);
 			}
 		}
@@ -1267,7 +1266,7 @@ void CUI_LevelModels::DeleteSelection()
 {
 	for(int i = 0; i < m_selRefs.numElem(); i++)
 	{
-		//CLevObjectDef* cont = m_selRefs[i].selRef->def;
+		CLevObjectDef* cont = m_selRefs[i].selRef->def;
 
 		// remove and invalidate
 		delete m_selRefs[i].selRef;
@@ -1301,10 +1300,10 @@ void CUI_LevelModels::DuplicateSelection()
 
 		// remove and invalidate
 		if(cont->m_info.type == LOBJ_TYPE_INTERNAL_STATIC)
-			cont->m_model->Ref_Grab();
+			cont->Ref_Grab();
 
-		//modelref->tile_x += 1;
-		//modelref->tile_y += 1;
+		//ref->tile_x += 1;
+		//ref->tile_y += 1;
 		modelref->position += Vector3D(1,0,1);
 
 		m_selectedRegion->m_objects.append( modelref );
@@ -1560,7 +1559,7 @@ void CUI_LevelModels::MousePlacementEvents( wxMouseEvent& event, hfieldtile_t* t
 			if(event.Dragging() && !m_tiledPlacement->GetValue())
 				return;
 
-			regionObject_t* modelref = NULL;
+			regionObject_t* ref = NULL;
 
 			// prevent placement on this tile again
 			for(int i = 0; i < m_selectedRegion->m_objects.numElem(); i++)
@@ -1572,45 +1571,39 @@ void CUI_LevelModels::MousePlacementEvents( wxMouseEvent& event, hfieldtile_t* t
 					(obj->tile_x == tx) && 
 					(obj->tile_y == ty))
 				{
-					modelref = obj;
+					ref = obj;
 				}
 			}
 
-			if(!modelref)
+			if(!ref)
 			{
-				modelref = new regionObject_t;
-				m_selectedRegion->m_objects.append( modelref );
+				ref = new regionObject_t;
+				m_selectedRegion->m_objects.append( ref );
 			}
-			else if(modelref->def->m_info.type == LOBJ_TYPE_INTERNAL_STATIC)
+			else if(ref->def->m_info.type == LOBJ_TYPE_INTERNAL_STATIC)
 			{
-				CLevelModel* model = modelref->def->m_model;
-
-				if(model)
-					model->Ref_Drop();
+				// drop old reference... in case of replacement
+				ref->def->Ref_Drop();
 			}
 
-			modelref->def = m_modelPicker->GetSelectedModelContainer();
+			ref->def = m_modelPicker->GetSelectedModelContainer();
 
-			if(modelref->def->m_info.type == LOBJ_TYPE_INTERNAL_STATIC)
-			{
-				CLevelModel* model = modelref->def->m_model;
-
-				if(model)
-					model->Ref_Grab();
-			}
+			// grab new reference
+			if(ref->def->m_info.type == LOBJ_TYPE_INTERNAL_STATIC)
+				ref->def->Ref_Grab();
 			
-			modelref->rotation = Vector3D(0, -m_rotation*90.0f, 0);
+			ref->rotation = Vector3D(0, -m_rotation*90.0f, 0);
 
-			modelref->tile_x = m_tiledPlacement->GetValue() ? tx : 0xFFFF;
-			modelref->tile_y = ty;
+			ref->tile_x = m_tiledPlacement->GetValue() ? tx : 0xFFFF;
+			ref->tile_y = ty;
 
 			if (m_tiledPlacement->GetValue())
 			{
-				Matrix4x4 transform = transpose(GetModelRefRenderMatrix(m_selectedRegion, modelref));
-				modelref->position = transform.getTranslationComponent();
+				Matrix4x4 transform = transpose(GetModelRefRenderMatrix(m_selectedRegion, ref));
+				ref->position = transform.getTranslationComponent();
 			}
 			else
-				modelref->position = ppos;
+				ref->position = ppos;
 
 			ClearSelection();
 
@@ -1619,7 +1612,7 @@ void CUI_LevelModels::MousePlacementEvents( wxMouseEvent& event, hfieldtile_t* t
 			{
 				refselectioninfo_t sel;
 				sel.selRegion = m_selectedRegion;
-				sel.selRef = modelref;
+				sel.selRef = ref;
 
 				ToggleSelection(sel);
 			}

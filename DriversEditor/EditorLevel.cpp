@@ -524,18 +524,12 @@ bool GenerateBuildingModel( buildingSource_t* building )
 
 	if(building->model != NULL)
 	{
-		if(building->model->Ref_Drop())
-		{
-			delete building->model;
-			building->model = NULL;
-		}
+		delete building->model;
+		building->model = NULL;
 	}
 	
 	building->modelPosition = generator.GetAABB().GetCenter();
 	building->model = generator.GenerateModel();
-
-	if(building->model)
-		building->model->Ref_Grab();
 
 	return (building->model != NULL);
 }
@@ -1801,7 +1795,7 @@ void CEditorLevelRegion::Ed_InitPhysics()
 			// create collision objects and translate them
 			CLevelModel* model = ref->def->m_model;
 
-			model->CreateCollisionObject( ref );
+			model->CreateCollisionObjectFor( ref );
 
 			// add physics objects
 			g_pPhysics->m_physics.AddStaticObject( ref->static_phys_object );
@@ -1839,7 +1833,7 @@ void CEditorLevelRegion::Ed_DestroyPhysics()
 	m_physicsPreview = false;
 }
 
-int FindObjectContainer(DkList<CLevObjectDef*>& listObjects, CLevObjectDef* container)
+int FindObjectDef(DkList<CLevObjectDef*>& listObjects, CLevObjectDef* container)
 {
 	for(int i = 0; i < listObjects.numElem(); i++)
 	{
@@ -1893,8 +1887,6 @@ void CEditorLevelRegion::WriteRegionData( IVirtualStream* stream, DkList<CLevObj
 		def->m_info.level = 0;
 
 		def->m_model = model;
-		def->m_model->Ref_Grab();
-		def->m_model->Ref_Grab();
 
 		regionDefs.append(def);
 
@@ -1938,11 +1930,11 @@ void CEditorLevelRegion::WriteRegionData( IVirtualStream* stream, DkList<CLevObj
 		{
 			int isGenerated = (def->m_info.modelflags & LMODEL_FLAG_GENERATED) ? CELLOBJ_GENERATED : 0;
 
-			object.objectDefId = FindObjectContainer(regionDefs, def);
+			object.objectDefId = FindObjectDef(regionDefs, def);
 			object.flags = CELLOBJ_REGION_DEF | isGenerated;
 		}
 		else
-			object.objectDefId = FindObjectContainer(listObjects, def); // uses shared object list
+			object.objectDefId = FindObjectDef(listObjects, def); // uses shared object list
 
 		// add
 		cellObjectsList.append(object);
@@ -1972,6 +1964,10 @@ void CEditorLevelRegion::WriteRegionData( IVirtualStream* stream, DkList<CLevObj
 		// now write in to region
 		regionData.Write(&defInfo, 1, sizeof(levObjectDefInfo_t));
 		regionData.Write(modelData.GetBasePointer(), 1, modelData.Tell());
+
+		// delete def as not needed anymore
+		def->m_model = nullptr;
+		delete def;
 	}
 
 	//
@@ -1995,7 +1991,6 @@ void CEditorLevelRegion::WriteRegionData( IVirtualStream* stream, DkList<CLevObj
 	//
 	for(int i = 0; i < tempObjects.numElem(); i++)
 	{
-		delete tempObjects[i]->def;
 		delete tempObjects[i];
 	}
 }

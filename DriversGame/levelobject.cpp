@@ -17,10 +17,10 @@ ConVar r_drawStaticRegionModels("r_drawStaticRegionModels", "1", NULL, CV_CHEAT)
 //------------------------------------------------------------------------------------
 
 CLevObjectDef::CLevObjectDef() :
-	m_model(NULL),
-	m_instData(NULL),
-	m_defModel(NULL),
-	m_defKeyvalues(NULL)
+	m_model(nullptr),
+	m_instData(nullptr),
+	m_defModel(nullptr),
+	m_defKeyvalues(nullptr)
 {
 	memset(&m_info, 0, sizeof(levObjectDefInfo_t));
 #ifdef EDITOR
@@ -28,19 +28,24 @@ CLevObjectDef::CLevObjectDef() :
 #endif //  EDITOR
 }
 
+void CLevObjectDef::Ref_DeleteObject()
+{
+	// drop model
+	if (!m_model)
+		return;
+
+	delete m_model;
+	m_model = nullptr;
+
+	delete m_instData;
+	m_instData = nullptr;
+}
+
 CLevObjectDef::~CLevObjectDef()
 {
 	if(m_info.type == LOBJ_TYPE_INTERNAL_STATIC)
 	{
-		delete m_instData;
-
-		if(m_model)
-		{
-			m_model->Ref_Drop();
-
-			if(m_model->Ref_Count() <= 0)
-				delete m_model;
-		}
+		Ref_DeleteObject();
 	}
 	else
 	{
@@ -190,6 +195,42 @@ void CLevObjectDef::Render( float lodDistance, const BoundingBox& bbox, bool pre
 			}
 		}
 	}
+}
+
+void CLevObjectDef::PreloadModel(IVirtualStream* stream)
+{
+	if (m_model || m_info.type != LOBJ_TYPE_INTERNAL_STATIC)
+		return;
+
+	const ShaderAPICaps_t& caps = g_pShaderAPI->GetCaps();
+
+	// remember stream position
+	long storedPos = stream->Tell();
+
+	if (storedPos != m_modelOffset)
+		stream->Seek(m_modelOffset, VS_SEEK_SET);
+
+	// load model
+	CLevelModel* model = new CLevelModel();
+	model->Load(stream);
+	model->PreloadTextures();
+
+	// generate physics geometry
+	bool isGroundModel = (m_info.modelflags & LMODEL_FLAG_ISGROUND);
+	model->GeneratePhysicsData(isGroundModel);
+
+	m_model = model;
+
+	// init instancer
+	if (!(m_info.modelflags & LMODEL_FLAG_GENERATED))
+	{
+		if (!m_instData && caps.isInstancingSupported && r_enableLevelInstancing.GetBool())
+			m_instData = new levObjInstanceData_t;
+	}
+
+	// restore previous stream position
+	if (storedPos != m_modelOffset)
+		stream->Seek(storedPos, VS_SEEK_SET);
 }
 
 //------------------------------------------------------------------------------------
@@ -443,11 +484,11 @@ void CLevelModel::GeneratePhysicsData(bool isGround)
 #endif // EDITOR
 }
 
-void CLevelModel::CreateCollisionObject( regionObject_t* ref )
+void CLevelModel::CreateCollisionObjectFor( regionObject_t* ref )
 {
 	Matrix4x4 transform = transpose( ref->transform );
 
-	bool isGround = ref->def->m_info.modelflags & LMODEL_FLAG_ISGROUND;
+	bool isGround = (ref->def->m_info.modelflags & LMODEL_FLAG_ISGROUND);
 
 	CEqCollisionObject* collObj = new CEqCollisionObject();
 	collObj->Initialize(m_physicsMesh);

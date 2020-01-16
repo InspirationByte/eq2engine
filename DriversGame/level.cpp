@@ -544,34 +544,27 @@ void CGameLevel::ReadObjectDefsLump(IVirtualStream* stream, kvkeybase_t* kvDefs)
 
 	char* modelNamePtr = modelNamesData;
 
-	const ShaderAPICaps_t& caps = g_pShaderAPI->GetCaps();
-
 	// load level models and associate objects from <levelname>_objects.txt
 	for(int i = 0; i < numModels; i++)
 	{
 		CLevObjectDef* def = new CLevObjectDef();
+		def->m_name = modelNamePtr;
 
 		stream->Read(&def->m_info, 1, sizeof(levObjectDefInfo_t));
 
-		def->m_name = modelNamePtr;
+#ifdef EDITOR
+		def->Ref_Grab();
+#endif // EDITOR
 
 		if(def->m_info.type == LOBJ_TYPE_INTERNAL_STATIC)
 		{
-			CLevelModel* model = new CLevelModel();
-			model->Load( stream );
-			model->PreloadTextures();
+			def->m_modelOffset = stream->Tell();
 
-			model->Ref_Grab();
-
-			bool isGroundModel = (def->m_info.modelflags & LMODEL_FLAG_ISGROUND);
-			model->GeneratePhysicsData( isGroundModel );
-
-			def->m_model = model;
-			def->m_defModel = NULL;
-
-			// init instancer
-			if(caps.isInstancingSupported && r_enableLevelInstancing.GetBool())
-				def->m_instData = new levObjInstanceData_t;
+#ifndef EDITOR
+			stream->Seek(def->m_info.size, VS_SEEK_CUR);
+#else
+			def->PreloadModel(stream);
+#endif // EDITOR
 		}
 		else if(def->m_info.type == LOBJ_TYPE_OBJECT_CFG)
 		{

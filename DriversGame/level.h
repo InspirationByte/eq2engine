@@ -191,6 +191,7 @@ protected:
 
 	bool					_Load(IFile* levFile, kvkeybase_t* kvDefs);
 
+
 	void					Nav_GlobalToLocalPoint(const IVector2D& point, IVector2D& outLocalPoint, CLevelRegion** pRegion) const;
 	void					Nav_LocalToGlobalPoint(const IVector2D& point, const CLevelRegion* pRegion, IVector2D& outGlobalPoint) const;
 

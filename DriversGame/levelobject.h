@@ -99,7 +99,7 @@ struct lmodel_batch_t
 void UTIL_ConvertDSMMaterialPath(EqString& path);
 #endif // EDITOR
 
-class CLevelModel : public RefCountedObject
+class CLevelModel
 {
 	friend class CGameLevel;
 	friend class CLevelRegion;
@@ -113,8 +113,6 @@ public:
 
 							CLevelModel();
 	virtual					~CLevelModel();
-
-	void					Ref_DeleteObject() {}
 
 	void					Cleanup();		// cleans up all including render data
 	void					ReleaseData();	// releases data but keeps batchs and VBO
@@ -133,7 +131,7 @@ public:
 	const BoundingBox&		GetAABB() const {return m_bbox;}
 protected:
 
-	void					CreateCollisionObject( regionObject_t* ref );
+	void					CreateCollisionObjectFor( regionObject_t* ref );
 
 	void					GeneratePhysicsData(bool isGround = false);
 
@@ -221,10 +219,10 @@ void LoadDefLightData( wlightdata_t& out, kvkeybase_t* sec );
 bool DrawDefLightData( Matrix4x4& objDefMatrix, const wlightdata_t& data, float brightness );
 
 // model container, for editor
+class CLevObjectDef :
+	public RefCountedObject
 #ifdef EDITOR
-class CLevObjectDef : public CEditorPreviewable
-#else
-class CLevObjectDef
+	,public CEditorPreviewable
 #endif // EDITOR
 {
 public:
@@ -233,11 +231,18 @@ public:
 	CLevObjectDef();
 	~CLevObjectDef();
 
+	void					Ref_DeleteObject();	// unload model
+
 #ifdef EDITOR
 	void					RefreshPreview();
+
 	bool					m_placeable;
+	wlightdata_t			m_lightData;
 #endif // EDITOR
+
 	void					Render( float lodDistance, const BoundingBox& bbox, bool preloadMaterials = false, int nRenderFlags = 0);
+
+	void					PreloadModel(IVirtualStream* stream);
 
 	EqString				m_name;
 	levObjectDefInfo_t		m_info;
@@ -245,6 +250,7 @@ public:
 	//-----------------------------
 
 	CLevelModel*			m_model;		// static model
+	long					m_modelOffset;	// model offset
 
 	//-----------------------------
 
@@ -253,7 +259,6 @@ public:
 	levObjInstanceData_t*	m_instData;
 
 	EqString				m_defType;
-	wlightdata_t			m_lightData;
 };
 
 

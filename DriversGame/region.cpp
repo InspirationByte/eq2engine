@@ -29,19 +29,14 @@ regionObject_t::~regionObject_t()
 		return;
 
 	RemoveGameObject();
+
+	def->Ref_Drop();
 }
 
 void regionObject_t::RemoveGameObject()
 {
 	if (def->m_info.type == LOBJ_TYPE_INTERNAL_STATIC)
 	{
-		CLevelModel* mod = def->m_model;
-		mod->Ref_Drop();
-
-		// the model cannot be removed if it's not loaded with region
-		if (mod->Ref_Count() <= 0)
-			delete mod;
-
 #ifndef EDITOR
 		g_pPhysics->m_physics.DestroyStaticObject(static_phys_object);
 		static_phys_object = NULL;
@@ -907,21 +902,15 @@ void CLevelRegion::ReadLoadRegion(IVirtualStream* stream, DkList<CLevObjectDef*>
 			stream->Seek(defInfo.size, VS_SEEK_CUR);
 			continue;
 		}
+#else
+		CLevObjectDef* def = new CLevObjectDef();
+		def->m_info = defInfo;
+		def->m_modelOffset = stream->Tell();
+
+		def->PreloadModel(stream);
+
+		m_regionDefs.append(def);
 #endif // EDITOR
-
-		CLevelModel* modelRef = new CLevelModel();
-		modelRef->Load( stream );
-		modelRef->PreloadTextures();
-		modelRef->Ref_Grab();
-
-		CLevObjectDef* newDef = new CLevObjectDef();
-		newDef->m_info = defInfo;
-		newDef->m_model = modelRef;
-
-		bool isGroundModel = (newDef->m_info.modelflags & LMODEL_FLAG_ISGROUND);
-		modelRef->GeneratePhysicsData(isGroundModel);
-
-		m_regionDefs.append(newDef);
 	}
 
 	levCellObject_t cellObj;
@@ -959,21 +948,27 @@ void CLevelRegion::ReadLoadRegion(IVirtualStream* stream, DkList<CLevObjectDef*>
 		else
 			ref->def = levelmodels[cellObj.objectDefId];
 
+		// reference object
+		ref->def->Ref_Grab();
+
 		// calculate the transformation
 		ref->transform = GetModelRefRenderMatrix( this, ref );
 
 		if(ref->def->m_info.type == LOBJ_TYPE_INTERNAL_STATIC)
 		{
-			// create collision objects and translate them
+			// def model has to be loaded
+			// also it will be loaded for m_regionDefs
+			ref->def->PreloadModel(stream);
+
 			CLevelModel* model = ref->def->m_model;
-			model->Ref_Grab();
 
 #ifndef EDITOR
 			bool noCollide = !(ref->def->m_info.modelflags & LMODEL_FLAG_ISGROUND) && w_noCollide.GetBool();
 
 			if(!noCollide)
 			{
-				model->CreateCollisionObject( ref );
+				// create collision objects
+				model->CreateCollisionObjectFor( ref );
 
 				// add physics objects
 				g_pPhysics->m_physics.AddStaticObject( ref->static_phys_object );
