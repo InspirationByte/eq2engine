@@ -37,13 +37,13 @@ void CDecalTool::DrawSelectionBox(CEditorViewRender* pViewRender)
 
 }
 
-void CDecalTool::UpdateManipulation2D(CEditorViewRender* pViewRender, wxMouseEvent& mouseEvents, Vector3D &delta3D, Vector2D &delta2D)
+void CDecalTool::UpdateManipulation2D(CEditorViewRender* pViewRender, wxMouseEvent& mouseEvents, Vector3D &delta3D, IVector2D &delta2D)
 {
 
 }
 
 // 3D manipulation for clipper is unsupported
-void CDecalTool::UpdateManipulation3D(CEditorViewRender* pViewRender, wxMouseEvent& mouseEvents, Vector3D &delta3D, Vector2D &delta2D)
+void CDecalTool::UpdateManipulation3D(CEditorViewRender* pViewRender, wxMouseEvent& mouseEvents, Vector3D &delta3D, IVector2D &delta2D)
 {
 	// only 3D view has actions
 

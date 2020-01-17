@@ -241,9 +241,6 @@
     <ClInclude Include="wx_inc.h">
       <Filter>Файлы исходного кода\Editor</Filter>
     </ClInclude>
-    <ClInclude Include="grid.h">
-      <Filter>Файлы исходного кода\Editor\Renderer</Filter>
-    </ClInclude>
     <ClInclude Include="EditorMainFrame.h">
       <Filter>Файлы исходного кода\Editor</Filter>
     </ClInclude>
@@ -415,6 +412,9 @@
     <ClInclude Include="..\shared_engine\Font.h">
       <Filter>Файлы исходного кода\EngineLib</Filter>
     </ClInclude>
+    <ClInclude Include="grid.h">
+      <Filter>Файлы исходного кода\Editor\Editor</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="windows\mainicon.ico">
@@ -445,9 +445,6 @@
     </ClCompile>
     <ClCompile Include="..\public\Utils\GeomTools.cpp">
       <Filter>Файлы исходного кода\EngineLib\Math</Filter>
-    </ClCompile>
-    <ClCompile Include="grid.cpp">
-      <Filter>Файлы исходного кода\Editor\Renderer</Filter>
     </ClCompile>
     <ClCompile Include="EditorMainFrame.cpp">
       <Filter>Файлы исходного кода\Editor</Filter>
@@ -628,6 +625,9 @@
     </ClCompile>
     <ClCompile Include="..\shared_engine\Font.cpp">
       <Filter>Файлы исходного кода\EngineLib</Filter>
+    </ClCompile>
+    <ClCompile Include="grid.cpp">
+      <Filter>Файлы исходного кода\Editor\Editor</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

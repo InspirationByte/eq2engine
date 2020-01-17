@@ -94,7 +94,7 @@ void CEntityTool::DrawSelectionBox(CEditorViewRender* pViewRender)
 
 }
 
-void CEntityTool::UpdateManipulation2D(CEditorViewRender* pViewRender, wxMouseEvent& mouseEvents, Vector3D &delta3D, Vector2D &delta2D)
+void CEntityTool::UpdateManipulation2D(CEditorViewRender* pViewRender, wxMouseEvent& mouseEvents, Vector3D &delta3D, IVector2D &delta2D)
 {
 	Matrix4x4 view, proj;
 	pViewRender->GetViewProjection(view,proj);
@@ -137,7 +137,7 @@ void CEntityTool::UpdateManipulation2D(CEditorViewRender* pViewRender, wxMouseEv
 }
 
 // 3D manipulation for clipper is unsupported
-void CEntityTool::UpdateManipulation3D(CEditorViewRender* pViewRender, wxMouseEvent& mouseEvents, Vector3D &delta3D, Vector2D &delta2D)
+void CEntityTool::UpdateManipulation3D(CEditorViewRender* pViewRender, wxMouseEvent& mouseEvents, Vector3D &delta3D, IVector2D &delta2D)
 {
 	Matrix4x4 view, proj;
 	pViewRender->GetViewProjection(view,proj);

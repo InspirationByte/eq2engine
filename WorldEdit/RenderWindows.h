@@ -33,7 +33,7 @@ public:
 	void		OnContextMenu(wxContextMenuEvent& event);
 	void		OnFocus(wxFocusEvent& event);
 
-	void		ProcessObjectMovement(Vector3D &delta3D, Vector2D &delta2D, wxMouseEvent& event);
+	void		ProcessObjectMovement(Vector3D &delta3D, IVector2D &delta2D, wxMouseEvent& event);
 
 	void		Redraw();
 

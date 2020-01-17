@@ -49,7 +49,7 @@ public:
 	virtual void		RenderGhost(int nViewRenderFlags) = 0;
 	virtual void		Render2D(CEditorViewRender* pViewRender) {}
 
-	virtual bool		UpdateManipulation2D(CEditorViewRender* pViewRender, wxMouseEvent& mouseEvents, Vector3D &delta3D, Vector2D &delta2D) {return false;}
+	virtual bool		UpdateManipulation2D(CEditorViewRender* pViewRender, wxMouseEvent& mouseEvents, Vector3D &delta3D, IVector2D &delta2D) {return false;}
 
 protected:
 	// typed variable is here

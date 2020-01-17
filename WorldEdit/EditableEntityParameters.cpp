@@ -67,7 +67,7 @@ public:
 		//DkDrawFilledSphere(m_pEntity->GetPosition(), m_variable.GetFloat(), 32);
 	}
 
-	bool UpdateManipulation2D(CEditorViewRender* pViewRender, wxMouseEvent& mouseEvents, Vector3D &delta3D, Vector2D &delta2D)
+	bool UpdateManipulation2D(CEditorViewRender* pViewRender, wxMouseEvent& mouseEvents, Vector3D &delta3D, IVector2D &delta2D)
 	{
 		Matrix4x4 view, proj;
 		pViewRender->GetViewProjection(view,proj);
@@ -290,7 +290,7 @@ public:
 		DkDrawFilledSphere(m_pEntity->GetPosition() + m_variable.GetVector3D(), 8, 8);
 	}
 
-	bool UpdateManipulation2D(CEditorViewRender* pViewRender, wxMouseEvent& mouseEvents, Vector3D &delta3D, Vector2D &delta2D)
+	bool UpdateManipulation2D(CEditorViewRender* pViewRender, wxMouseEvent& mouseEvents, Vector3D &delta3D, IVector2D &delta2D)
 	{
 		Matrix4x4 view, proj;
 		pViewRender->GetViewProjection(view,proj);
@@ -485,7 +485,7 @@ public:
 			m_fov.flVal = 90;
 	}
 
-	bool UpdateManipulation2D(CEditorViewRender* pViewRender, wxMouseEvent& mouseEvents, Vector3D &delta3D, Vector2D &delta2D)
+	bool UpdateManipulation2D(CEditorViewRender* pViewRender, wxMouseEvent& mouseEvents, Vector3D &delta3D, IVector2D &delta2D)
 	{
 		Matrix4x4 view, proj;
 		pViewRender->GetViewProjection(view,proj);

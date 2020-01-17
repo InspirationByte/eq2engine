@@ -19,16 +19,40 @@ void Volume::LoadAsFrustum(const Matrix4x4 &mvp)
 	m_planes[VOLUME_PLANE_NEAR  ] = Plane(mvp[12] + mvp[8], mvp[13] + mvp[9], mvp[14] + mvp[10], mvp[15] + mvp[11]);
 }
 
+void Volume::LoadAsFrustum(const Matrix4x4 &mvp, bool _PRECISION)
+{
+	m_planes[VOLUME_PLANE_LEFT] = Plane(mvp[12] - mvp[0], mvp[13] - mvp[1], mvp[14] - mvp[2], mvp[15] - mvp[3], _PRECISION);
+	m_planes[VOLUME_PLANE_RIGHT] = Plane(mvp[12] + mvp[0], mvp[13] + mvp[1], mvp[14] + mvp[2], mvp[15] + mvp[3], _PRECISION);
+
+	m_planes[VOLUME_PLANE_TOP] = Plane(mvp[12] - mvp[4], mvp[13] - mvp[5], mvp[14] - mvp[6], mvp[15] - mvp[7], _PRECISION);
+	m_planes[VOLUME_PLANE_BOTTOM] = Plane(mvp[12] + mvp[4], mvp[13] + mvp[5], mvp[14] + mvp[6], mvp[15] + mvp[7], _PRECISION);
+
+	m_planes[VOLUME_PLANE_FAR] = Plane(mvp[12] - mvp[8], mvp[13] - mvp[9], mvp[14] - mvp[10], mvp[15] - mvp[11], _PRECISION);
+	m_planes[VOLUME_PLANE_NEAR] = Plane(mvp[12] + mvp[8], mvp[13] + mvp[9], mvp[14] + mvp[10], mvp[15] + mvp[11], _PRECISION);
+}
+
 void Volume::LoadBoundingBox(const Vector3D &mins, const Vector3D &maxs)
 {
-	m_planes[VOLUME_PLANE_LEFT  ] = Plane(1, 0, 0,  -mins.x);
-	m_planes[VOLUME_PLANE_RIGHT ] = Plane(-1, 0, 0,  maxs.x);
+	m_planes[VOLUME_PLANE_LEFT  ] = Plane(1.0f, 0.0f, 0.0f,  -mins.x);
+	m_planes[VOLUME_PLANE_RIGHT ] = Plane(-1.0f, 0.0f, 0.0f,  maxs.x);
 
-	m_planes[VOLUME_PLANE_TOP   ] = Plane(0, -1, 0, maxs.y);
-	m_planes[VOLUME_PLANE_BOTTOM] = Plane(0, 1, 0, -mins.y);
+	m_planes[VOLUME_PLANE_TOP   ] = Plane(0.0f, -1.0f, 0.0f, maxs.y);
+	m_planes[VOLUME_PLANE_BOTTOM] = Plane(0.0f, 1.0f, 0.0f, -mins.y);
 
-	m_planes[VOLUME_PLANE_FAR   ] = Plane(0, 0, -1, maxs.z);
-	m_planes[VOLUME_PLANE_NEAR  ] = Plane(0, 0, 1, -mins.z);
+	m_planes[VOLUME_PLANE_FAR   ] = Plane(0.0f, 0.0f, -1.0f, maxs.z);
+	m_planes[VOLUME_PLANE_NEAR  ] = Plane(0.0f, 0.0f, 1.0f, -mins.z);
+}
+
+void Volume::LoadBoundingBox(const Vector3D &mins, const Vector3D &maxs, bool _PRECISION)
+{
+	m_planes[VOLUME_PLANE_LEFT] = Plane(1.0f, 0.0f, 0.0f, -mins.x, _PRECISION);
+	m_planes[VOLUME_PLANE_RIGHT] = Plane(-1.0f, 0.0f, 0.0f, maxs.x, _PRECISION);
+
+	m_planes[VOLUME_PLANE_TOP] = Plane(0.0f, -1.0f, 0.0f, maxs.y, _PRECISION);
+	m_planes[VOLUME_PLANE_BOTTOM] = Plane(0.0f, 1.0f, 0.0f, -mins.y, _PRECISION);
+
+	m_planes[VOLUME_PLANE_FAR] = Plane(0.0f, 0.0f, -1.0f, maxs.z, _PRECISION);
+	m_planes[VOLUME_PLANE_NEAR] = Plane(0.0f, 0.0f, 1.0f, -mins.z, _PRECISION);
 }
 
 // returns back bounding box if not frustum.

@@ -30,6 +30,15 @@ struct Plane_t
 		offset = o * invLen;
 	}
 
+	// precision constructor
+	Plane_t(const T x, const T y, const T z, const T o, bool _PRECISION)
+	{
+		normal = TVec3D<T>(x, y, z);
+		T invLen = (T)1.0 / length(normal);
+		normal *= invLen;
+		offset = o * invLen;
+	}
+
 	Plane_t(const TVec3D<T>& n, const T o)
 	{
 		normal = n;
@@ -40,10 +49,28 @@ struct Plane_t
 		offset = o * invLen;
 	}
 
+	// precision constructor
+	Plane_t(const TVec3D<T>& n, const T o, bool _PRECISION)
+	{
+		normal = n;
+
+		T invLen = (T)1.0 / length(normal);
+
+		normal *= invLen;
+		offset = o * invLen;
+	}
+
 	Plane_t(const TVec3D<T>& v0, const TVec3D<T>& v1, const TVec3D<T>& v2)
 	{
 		normal = fastNormalize(cross(v2 - v1, v0 - v1));
 
+		offset = -dot(normal, v0);
+	}
+
+	// precision constructor
+	Plane_t(const TVec3D<T>& v0, const TVec3D<T>& v1, const TVec3D<T>& v2, bool _PRECISION)
+	{
+		normal = normalize(cross(v2 - v1, v0 - v1));
 		offset = -dot(normal, v0);
 	}
 

@@ -831,7 +831,7 @@ bool SelectVerticesRay(CBaseEditableObject* selection, void* userdata)
 }
 
 
-void CVertexTool::UpdateManipulation2D(CEditorViewRender* pViewRender, wxMouseEvent& mouseEvents, Vector3D &delta3D, Vector2D &delta2D)
+void CVertexTool::UpdateManipulation2D(CEditorViewRender* pViewRender, wxMouseEvent& mouseEvents, Vector3D &delta3D, IVector2D &delta2D)
 {
 	if(m_pPanel->GetEditMode() != VERTEXEDIT_VERTEX)
 	{
@@ -964,7 +964,7 @@ void CVertexTool::UpdateManipulation2D(CEditorViewRender* pViewRender, wxMouseEv
 }
 
 // 3D manipulation for clipper is unsupported
-void CVertexTool::UpdateManipulation3D(CEditorViewRender* pViewRender, wxMouseEvent& mouseEvents, Vector3D &delta3D, Vector2D &delta2D)
+void CVertexTool::UpdateManipulation3D(CEditorViewRender* pViewRender, wxMouseEvent& mouseEvents, Vector3D &delta3D, IVector2D &delta2D)
 {
 	Matrix4x4 view, proj;
 	pViewRender->GetViewProjection(view,proj);
@@ -1001,7 +1001,7 @@ void CVertexTool::UpdateManipulation3D(CEditorViewRender* pViewRender, wxMouseEv
 
 	if(mouseEvents.Dragging() && mouseEvents.ButtonIsDown(wxMOUSE_BTN_MIDDLE) && !mouseEvents.ShiftDown() && !mouseEvents.ControlDown())
 	{
-		MoveSelectionTexCoord(delta2D*0.5f);
+		MoveSelectionTexCoord(Vector2D(delta2D / 2));
 	}
 	if(!mouseEvents.ShiftDown())
 	{

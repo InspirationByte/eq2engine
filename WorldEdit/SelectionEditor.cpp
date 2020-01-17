@@ -342,20 +342,6 @@ void CSelectionBaseTool::InitializeToolPanel(wxWindow* pMultiToolPanel)
 	m_selection_panel = new CSelectionToolPanel(pMultiToolPanel);
 }
 
-// updates manipulation using mouse events.
-void CSelectionBaseTool::UpdateManipulation(CEditorViewRender* pViewRender, wxMouseEvent& mouseEvents, Vector3D &delta3D, Vector2D &delta2D)
-{
-	// manipulate in two modes
-	if(pViewRender->GetCameraMode() == CPM_PERSPECTIVE)
-	{
-		UpdateManipulation3D(pViewRender, mouseEvents, delta3D, delta2D);
-	}
-	else
-	{
-		UpdateManipulation2D(pViewRender, mouseEvents, delta3D, delta2D);
-	}
-}
-
 void CSelectionBaseTool::BackupSelectionForUndo()
 {
 	if(m_selectedobjects.numElem() == 0)
@@ -606,7 +592,7 @@ void CSelectionBaseTool::SelectObjects(bool selectOnlySpecified, CBaseEditableOb
 		bbox.maxPoint.z = MAX_COORD_UNITS;
 	}
 
-	m_bbox_volume.LoadBoundingBox(bbox.minPoint, bbox.maxPoint);
+	m_bbox_volume.LoadBoundingBox(bbox.minPoint, bbox.maxPoint, true);
 
 	int nGroupsSelected = 0;
 
@@ -771,18 +757,18 @@ void CSelectionBaseTool::TransformByPreview()
 {
 	if(GetSelectionState() == SELECTION_NONE)
 		return;
-
+	
 	BoundingBox prev_bbox;
 	m_bbox_volume.GetBBOXBack(prev_bbox.minPoint, prev_bbox.maxPoint);
 	prev_bbox.Fix();
-
+	
 	BoundingBox bbox;
 
 	GetSelectionBBOX( bbox.minPoint, bbox.maxPoint);
 	bbox.Fix();
 
-	m_bbox_volume.LoadBoundingBox(bbox.GetMinPoint(), bbox.GetMaxPoint());
-
+	m_bbox_volume.LoadBoundingBox(bbox.GetMinPoint(), bbox.GetMaxPoint(), true);
+	
 	Vector3D snapped_scale = m_scaling;
 	Vector3D snapped_move = m_translation;
 	Vector3D snapped_rotation = m_rotation;//SnapVector(15, m_rotation);
@@ -795,7 +781,7 @@ void CSelectionBaseTool::TransformByPreview()
 		BackupSelectionForUndo();
 	
 	Vector3D sel_center = GetSelectionCenter();
-
+	
 	if(GetSelectionState() == SELECTION_SELECTED)
 	{
 		Vector3D prev_box_size = prev_bbox.GetSize();
@@ -819,27 +805,25 @@ void CSelectionBaseTool::TransformByPreview()
 		Vector3D scale_factor = curr_box_size / prev_box_size;
 		Vector3D vMove = (bbox.GetCenter() - prev_bbox.GetCenter());
 		
-		// transform and scale the objects
-		for(int i = 0; i < m_selectedobjects.numElem(); i++)
-		{
-			m_selectedobjects[i]->BeginModify();
-
-			m_selectedobjects[i]->Scale(scale_factor, (m_selectedobjects.numElem() > 1) && m_selection_panel->IsManipulationOverSelectionBox(), -bbox.GetCenter()*0.5f);
-			m_selectedobjects[i]->Translate(vMove);
-			m_selectedobjects[i]->Rotate(snapped_rotation, (m_selectedobjects.numElem() > 1) && m_selection_panel->IsManipulationOverSelectionBox(), bbox.GetCenter());
-
-			m_selectedobjects[i]->EndModify();
-		}
-
 		// update selection box
 		BoundingBox newbbox;
 
-		// set selection bbox from all selected objects
+		// transform and scale the objects
 		for(int i = 0; i < m_selectedobjects.numElem(); i++)
 		{
-			// TODO: rotate them
-			newbbox.AddVertex(m_selectedobjects[i]->GetBoundingBoxMins());
-			newbbox.AddVertex(m_selectedobjects[i]->GetBoundingBoxMaxs());
+			CBaseEditableObject* editable = m_selectedobjects[i];
+
+			editable->BeginModify();
+
+			editable->Scale(scale_factor, (m_selectedobjects.numElem() > 1) && m_selection_panel->IsManipulationOverSelectionBox(), -bbox.GetCenter()*0.5f);
+			editable->Translate(vMove);
+			editable->Rotate(snapped_rotation, (m_selectedobjects.numElem() > 1) && m_selection_panel->IsManipulationOverSelectionBox(), bbox.GetCenter());
+
+			editable->EndModify();
+
+			// set selection bbox from all selected objects
+			newbbox.AddVertex(editable->GetBoundingBoxMins());
+			newbbox.AddVertex(editable->GetBoundingBoxMaxs());
 		}
 
 		SetSelectionBBOX(newbbox.minPoint, newbbox.maxPoint);
@@ -848,7 +832,6 @@ void CSelectionBaseTool::TransformByPreview()
 	m_scaling = vec3_zero;
 	m_translation = vec3_zero;
 	m_rotation = vec3_zero;
-
 
 	// notify that we updated the selection
 	g_editormainframe->GetSurfaceDialog()->UpdateSelection();
@@ -1048,7 +1031,7 @@ SelectionHandle_e CSelectionBaseTool::GetMouseOverSelectionHandle()
 }
 
 // 2D manipultaion
-void CSelectionBaseTool::UpdateManipulation2D(CEditorViewRender* pViewRender, wxMouseEvent& mouseEvents, Vector3D &delta3D, Vector2D &delta2D)
+void CSelectionBaseTool::UpdateManipulation2D(CEditorViewRender* pViewRender, wxMouseEvent& mouseEvents, Vector3D &delta3D, IVector2D &delta2D)
 {
 	Matrix4x4 view, proj;
 	pViewRender->GetViewProjection(view,proj);
@@ -1155,8 +1138,6 @@ void CSelectionBaseTool::UpdateManipulation2D(CEditorViewRender* pViewRender, wx
 		}
 		else
 		{
-			m_bIsDragging = false;
-
 			// Apply movement to selected objects
 			TransformByPreview();
 		}
@@ -1261,7 +1242,7 @@ void CSelectionBaseTool::UpdateManipulation2D(CEditorViewRender* pViewRender, wx
 		g_editormainframe->SnapVector3D(snapped_position);
 
 		// set a new bbox
-		m_bbox_volume.LoadBoundingBox(snapped_position,snapped_position+x_decompose+y_decompose);
+		m_bbox_volume.LoadBoundingBox(snapped_position,snapped_position+x_decompose+y_decompose, true);
 
 		// set state to preparation
 		m_state = SELECTION_PREPARATION;
@@ -1276,7 +1257,7 @@ void CSelectionBaseTool::UpdateManipulation2D(CEditorViewRender* pViewRender, wx
 void CSelectionBaseTool::BeginSelectionBox(CEditorViewRender* pViewRender, Vector3D &start)
 {
 	// set a new bbox
-	m_bbox_volume.LoadBoundingBox(start, start);
+	m_bbox_volume.LoadBoundingBox(start, start, true);
 
 	// set state to preparation
 	m_state = SELECTION_PREPARATION;
@@ -1655,7 +1636,7 @@ bool PaintVerts(CBaseEditableObject* selection, void* userdata)
 }
 
 // manipulation for 3D. Much simplified
-void CSelectionBaseTool::UpdateManipulation3D(CEditorViewRender* pViewRender, wxMouseEvent& mouseEvents, Vector3D &delta3D, Vector2D &delta2D)
+void CSelectionBaseTool::UpdateManipulation3D(CEditorViewRender* pViewRender, wxMouseEvent& mouseEvents, Vector3D &delta3D, IVector2D &delta2D)
 {
 	Matrix4x4 view, proj;
 	pViewRender->GetViewProjection(view,proj);
@@ -1873,11 +1854,9 @@ Vector3D CSelectionBaseTool::GetSelectionCenter()
 // selection bbox
 void CSelectionBaseTool::GetSelectionBBOX(Vector3D &mins, Vector3D &maxs)
 {
-	BoundingBox bbox;
-
 	// and now draw transformed ghost bbox
 	Volume drawnboxvolume = m_bbox_volume;
-
+	
 	Vector3D snapped_scale = m_scaling;
 	Vector3D snapped_move = m_translation;
 
@@ -1888,7 +1867,7 @@ void CSelectionBaseTool::GetSelectionBBOX(Vector3D &mins, Vector3D &maxs)
 	{
 		if(m_plane_ids[i] != -1)
 		{
-			Plane move_plane = drawnboxvolume.GetPlane(m_plane_ids[i]);
+			Plane move_plane = m_bbox_volume.GetPlane(m_plane_ids[i]);
 
 			move_plane.offset -= dot(move_plane.normal, snapped_scale);
 
@@ -1897,11 +1876,15 @@ void CSelectionBaseTool::GetSelectionBBOX(Vector3D &mins, Vector3D &maxs)
 	}
 
 	// get bbox back and fix
+	BoundingBox bbox;
+
 	drawnboxvolume.GetBBOXBack(bbox.minPoint,bbox.maxPoint);
 	bbox.Fix();
 
 	bbox.minPoint += snapped_move;
 	bbox.maxPoint += snapped_move;
+
+	
 
 	mins = bbox.minPoint;
 	maxs = bbox.maxPoint;
@@ -1919,7 +1902,7 @@ void CSelectionBaseTool::SetSelectionBBOX(Vector3D &mins, Vector3D &maxs)
 	if(mins.z >= maxs.z)
 		maxs.z = mins.z+1;
 
-	m_bbox_volume.LoadBoundingBox(mins, maxs);
+	m_bbox_volume.LoadBoundingBox(mins, maxs, true);
 	g_editormainframe->UpdateAllWindows();
 }
 

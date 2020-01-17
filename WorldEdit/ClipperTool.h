@@ -25,10 +25,10 @@ public:
 
 	void		RenderPoints(CEditorViewRender* pViewRender);
 
-	void		UpdateManipulation2D(CEditorViewRender* pViewRender, wxMouseEvent& mouseEvents, Vector3D &delta3D, Vector2D &delta2D);
+	void		UpdateManipulation2D(CEditorViewRender* pViewRender, wxMouseEvent& mouseEvents, Vector3D &delta3D, IVector2D &delta2D);
 
 	// 3D manipulation for clipper is unsupported
-	void		UpdateManipulation3D(CEditorViewRender* pViewRender, wxMouseEvent& mouseEvents, Vector3D &delta3D, Vector2D &delta2D) {}
+	void		UpdateManipulation3D(CEditorViewRender* pViewRender, wxMouseEvent& mouseEvents, Vector3D &delta3D, IVector2D &delta2D) {}
 
 	// down/up key events
 	void		OnKey(wxKeyEvent& event, bool bDown, CEditorViewRender* pViewRender);

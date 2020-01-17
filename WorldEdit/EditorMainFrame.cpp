@@ -1372,7 +1372,6 @@ void CEditorFrame::OnClose(wxCloseEvent& event)
 	m_levelsavedialog->Destroy();
 	m_groupnamedialog->Destroy();
 
-
 	Msg("EXIT CLEANUP...\n");
 	g_pLevel->CleanLevel(true);
 
@@ -1387,6 +1386,8 @@ void CEditorFrame::OnClose(wxCloseEvent& event)
 	soundsystem->Shutdown();
 
 	g_studioModelCache->ReleaseCache();
+
+	g_parallelJobs->Shutdown();
 
 	// shutdown material system
 	materials->Shutdown();

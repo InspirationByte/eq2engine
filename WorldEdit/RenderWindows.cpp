@@ -160,7 +160,7 @@ void CViewWindow::OnEraseBackground(wxEraseEvent& event)
 	
 }
 
-Vector2D last_mouse_pos(0);
+IVector2D last_mouse_pos(0);
 wxStockCursor g_old_cursor = wxCURSOR_ARROW;
 
 wxStockCursor GetSelectionCursor(SelectionHandle_e type)
@@ -194,7 +194,7 @@ wxStockCursor GetSelectionCursor(SelectionHandle_e type)
 	}
 }
 
-void CViewWindow::ProcessObjectMovement(Vector3D &delta3D, Vector2D &delta2D, wxMouseEvent& event)
+void CViewWindow::ProcessObjectMovement(Vector3D &delta3D, IVector2D &delta2D, wxMouseEvent& event)
 {
 	if(g_pSelectionTools[g_editormainframe->GetToolType()])
 	{
@@ -250,8 +250,8 @@ void CViewWindow::ProcessMouseEvents(wxMouseEvent& event)
 	Vector3D cam_pos = GetActiveView()->GetView()->GetOrigin();
 	float fov = GetActiveView()->GetView()->GetFOV();
 
-	float move_delta_x = (event.GetX() - last_mouse_pos.x);
-	float move_delta_y = (event.GetY() - last_mouse_pos.y);
+	int move_delta_x = (event.GetX() - last_mouse_pos.x);
+	int move_delta_y = (event.GetY() - last_mouse_pos.y);
 
 	wxPoint point(last_mouse_pos.x, last_mouse_pos.y);
 
@@ -392,22 +392,24 @@ void CViewWindow::ProcessMouseEvents(wxMouseEvent& event)
 
 	cam_pos = clamp(cam_pos, Vector3D(-MAX_COORD_UNITS), Vector3D(MAX_COORD_UNITS));
 
-	GetActiveView()->GetView()->SetAngles(cam_angles);
-	GetActiveView()->GetView()->SetOrigin(cam_pos);
-	GetActiveView()->GetView()->SetFOV(fov);
+	CViewParams* viewParams = GetActiveView()->GetView();
+
+	viewParams->SetAngles(cam_angles);
+	viewParams->SetOrigin(cam_pos);
+	viewParams->SetFOV(fov);
 
 	Vector3D right, up;
 	AngleVectors(cam_angles, NULL, &right, &up);
 
 	Vector3D move_3d_delta(0);
 
-	move_3d_delta += right*move_delta_x * camera_move_factor;
-	move_3d_delta -= up*move_delta_y * camera_move_factor;
+	move_3d_delta += right * move_delta_x * camera_move_factor;
+	move_3d_delta -= up * move_delta_y * camera_move_factor;
 
 	if(!event.ShiftDown() && !m_bIsMoving)
 	{
 		// object movement processing
-		ProcessObjectMovement(move_3d_delta, Vector2D(move_delta_x,move_delta_y), event);
+		ProcessObjectMovement(move_3d_delta, IVector2D(move_delta_x,move_delta_y), event);
 	}
 	else
 	{

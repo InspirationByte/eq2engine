@@ -1010,7 +1010,7 @@ float CEditableEntity::CheckLineIntersection(const Vector3D &start, const Vector
 	else
 	{
 		Volume bboxVolume;
-		bboxVolume.LoadBoundingBox(GetBBoxMins(), GetBBoxMaxs());
+		bboxVolume.LoadBoundingBox(GetBBoxMins(), GetBBoxMaxs(), true);
 
 		if(bboxVolume.IsIntersectsRay(start, normalize(ray_dir), outPos))
 		{

@@ -380,7 +380,7 @@ void CEditableDecal::UpdateDecalGeom()
 	RebuildBoundingBox();
 
 	Volume clipVolume;
-	clipVolume.LoadBoundingBox(m_bbox[0], m_bbox[1]);
+	clipVolume.LoadBoundingBox(m_bbox[0], m_bbox[1], true);
 
 	DkList<eqlevelvertex_t> srcverts;
 	DkList<int>				srcindices;
@@ -709,7 +709,7 @@ float CEditableDecal::CheckLineIntersection(const Vector3D &start, const Vector3
 	Vector3D max = m_position + Vector3D(8);
 
 	Volume bboxVolume;
-	bboxVolume.LoadBoundingBox(min, max);
+	bboxVolume.LoadBoundingBox(min, max, true);
 
 	if(bboxVolume.IsIntersectsRay(start, normalize(ray_dir), outPos))
 	{

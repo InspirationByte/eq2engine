@@ -69,10 +69,10 @@ public:
 	void					Render2D(CEditorViewRender* pViewRender);
 	void					DrawSelectionBox(CEditorViewRender* pViewRender);
 
-	void					UpdateManipulation2D(CEditorViewRender* pViewRender, wxMouseEvent& mouseEvents, Vector3D &delta3D, Vector2D &delta2D);
+	void					UpdateManipulation2D(CEditorViewRender* pViewRender, wxMouseEvent& mouseEvents, Vector3D &delta3D, IVector2D &delta2D);
 
 	// 3D manipulation for clipper is unsupported
-	void					UpdateManipulation3D(CEditorViewRender* pViewRender, wxMouseEvent& mouseEvents, Vector3D &delta3D, Vector2D &delta2D);
+	void					UpdateManipulation3D(CEditorViewRender* pViewRender, wxMouseEvent& mouseEvents, Vector3D &delta3D, IVector2D &delta2D);
 
 	void					MoveSelectedVerts(Vector3D &delta, bool bApplyBrushes);
 	void					SnapSelectedVertsToGrid();

@@ -96,7 +96,9 @@
       <AdditionalOptions> /ignore:4099 %(AdditionalOptions)</AdditionalOptions>
     </Link>
     <PostBuildEvent>
-      <Command>..\incrementbuild.exe EditorVersion.h BUILD_NUMBER_EDITOR</Command>
+      <Command>..\incrementbuild.exe EditorVersion.h BUILD_NUMBER_EDITOR
+cd $(SolutionDir)
+call copy_whitecage_binary.bat $(ConfigurationName) $(TargetFileName)</Command>
     </PostBuildEvent>
     <ResourceCompile>
       <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>

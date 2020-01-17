@@ -110,7 +110,7 @@ void CTerrainPatchTool::DrawSelectionBox(CEditorViewRender* pViewRender)
 	pViewRender->DrawSelectionBBox( bbox.minPoint, bbox.maxPoint, IsDragging() ? ColorRGB(0.8,0.8,0) : selectionbox_color, !IsDragging());
 }
 
-void CTerrainPatchTool::UpdateManipulation2D(CEditorViewRender* pViewRender, wxMouseEvent& mouseEvents, Vector3D &delta3D, Vector2D &delta2D)
+void CTerrainPatchTool::UpdateManipulation2D(CEditorViewRender* pViewRender, wxMouseEvent& mouseEvents, Vector3D &delta3D, IVector2D &delta2D)
 {
 	// process pressing/depressing mouse events
 	if(mouseEvents.GetButton() == wxMOUSE_BTN_LEFT)
@@ -186,7 +186,7 @@ void CTerrainPatchTool::BeginSelectionBox(CEditorViewRender* pViewRender, Vector
 		oldselection.maxPoint.z = oldselection.minPoint.z + g_gridsize;
 
 	// set a new bbox
-	m_bbox_volume.LoadBoundingBox(-oldselection.minPoint * view.rows[2].xyz() + start,-oldselection.maxPoint * view.rows[2].xyz() + start);
+	m_bbox_volume.LoadBoundingBox(-oldselection.minPoint * view.rows[2].xyz() + start,-oldselection.maxPoint * view.rows[2].xyz() + start, true);
 
 	// set state to preparation
 	m_state = SELECTION_PREPARATION;

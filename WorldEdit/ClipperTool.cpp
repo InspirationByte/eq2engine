@@ -147,7 +147,7 @@ void CClipperTool::SetClipperPoint(Vector3D &point, Vector3D &cam_forward)
 		m_clipperTriangle[2] = point + cam_forward*(float)g_gridsize;
 }
 
-void CClipperTool::UpdateManipulation2D(CEditorViewRender* pViewRender, wxMouseEvent& mouseEvents, Vector3D &delta3D, Vector2D &delta2D)
+void CClipperTool::UpdateManipulation2D(CEditorViewRender* pViewRender, wxMouseEvent& mouseEvents, Vector3D &delta3D, IVector2D &delta2D)
 {
 	Matrix4x4 view, proj;
 	pViewRender->GetViewProjection(view,proj);

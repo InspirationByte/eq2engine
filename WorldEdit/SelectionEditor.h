@@ -134,7 +134,7 @@ public:
 	virtual void		DrawSelectionBox(CEditorViewRender* pViewRender) = 0; // may be differrent in drawing
 
 	// updates manipulation using mouse events.
-	void UpdateManipulation(CEditorViewRender* pViewRender, wxMouseEvent& mouseEvents, Vector3D &delta3D, Vector2D &delta2D)
+	void UpdateManipulation(CEditorViewRender* pViewRender, wxMouseEvent& mouseEvents, Vector3D &delta3D, IVector2D &delta2D)
 	{
 		// manipulate in two modes
 		if(pViewRender->GetCameraMode() == CPM_PERSPECTIVE)
@@ -148,10 +148,10 @@ public:
 	}
 
 	// updates manipulation, from 2D window. return false will cause doing UpdateManipulation2D from CSelectionBaseTool
-	virtual void	UpdateManipulation2D(CEditorViewRender* pViewRender, wxMouseEvent& mouseEvents, Vector3D &delta3D, Vector2D &delta2D) = 0;
+	virtual void	UpdateManipulation2D(CEditorViewRender* pViewRender, wxMouseEvent& mouseEvents, Vector3D &delta3D, IVector2D &delta2D) = 0;
 
 	// updates manipulation, from 3D window. return false will cause doing UpdateManipulation3D from CSelectionBaseTool
-	virtual void	UpdateManipulation3D(CEditorViewRender* pViewRender, wxMouseEvent& mouseEvents, Vector3D &delta3D, Vector2D &delta2D) = 0;
+	virtual void	UpdateManipulation3D(CEditorViewRender* pViewRender, wxMouseEvent& mouseEvents, Vector3D &delta3D, IVector2D &delta2D) = 0;
 
 	// down/up key events
 	virtual void	OnKey(wxKeyEvent& event, bool bDown, CEditorViewRender* pViewRender) = 0;
@@ -169,15 +169,11 @@ public:
 
 	// does anything with each selected objects using callbacks and user data
 	void							DoForEachSelectedObjects(DOFOREACHSELECTED pFunction, void *userdata, bool bUpdateSelection = false); 
-
-	// updates manipulation using mouse events.
-	virtual void					UpdateManipulation(CEditorViewRender* pViewRender, wxMouseEvent& mouseEvents, Vector3D &delta3D, Vector2D &delta2D);
-
 	// updates manipulation in 2D mode
-	virtual void					UpdateManipulation2D(CEditorViewRender* pViewRender, wxMouseEvent& mouseEvents, Vector3D &delta3D, Vector2D &delta2D);
+	virtual void					UpdateManipulation2D(CEditorViewRender* pViewRender, wxMouseEvent& mouseEvents, Vector3D &delta3D, IVector2D &delta2D);
 	
 	// updates manipulation in 3D mode
-	virtual void					UpdateManipulation3D(CEditorViewRender* pViewRender, wxMouseEvent& mouseEvents, Vector3D &delta3D, Vector2D &delta2D);
+	virtual void					UpdateManipulation3D(CEditorViewRender* pViewRender, wxMouseEvent& mouseEvents, Vector3D &delta3D, IVector2D &delta2D);
 
 	// down/up key events
 	virtual void					OnKey(wxKeyEvent& event, bool bDown,CEditorViewRender* pViewRender);
