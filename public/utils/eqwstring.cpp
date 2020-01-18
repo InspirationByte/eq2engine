@@ -426,11 +426,22 @@ int	EqWString::Find(const wchar_t* pszSub, bool bCaseSensetive, int nStart)
 		st = wcsstr(strStart, pszSub);
 	else
 		st = xwcsistr(strStart, pszSub);
-
+	 
 	if(st)
 		nFound = st-m_pszString;
 
 	return nFound;
+}
+
+// searches for substring and replaces it
+int EqWString::ReplaceSubstr(const wchar_t* find, const wchar_t* replaceTo, bool bCaseSensetive /*= false*/, int nStart /*= 0*/)
+{
+	// replace substring
+	int foundStrIdx = Find(find, bCaseSensetive, nStart);
+	if (foundStrIdx != -1)
+		Assign(Left(foundStrIdx) + replaceTo + Mid(foundStrIdx + wcslen(find), Length()));
+
+	return foundStrIdx;
 }
 
 /*

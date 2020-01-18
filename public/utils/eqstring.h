@@ -33,7 +33,7 @@ public:
 
 	EqString(const char* pszString, int len = -1);
 	EqString(const EqString &str, int nStart = 0, int len = -1);
-
+	
 	// conversion from wide char string
 	EqString(const wchar_t* pszString, int len = -1);
 	EqString(const EqWString &str, int nStart = 0, int len = -1);
@@ -124,6 +124,9 @@ public:
 
 	// search, returns char index
 	int			Find(const char* pszSub, bool bCaseSensetive = false, int nStart = 0) const;
+
+	// searches for substring and replaces it
+	int			ReplaceSubstr(const char* find, const char* replaceTo, bool bCaseSensetive = false, int nStart = 0);
 
 	//------------------------------------------------------------------------------------------------
 

@@ -106,6 +106,9 @@ public:
 	// search, returns char index
 	int				Find(const wchar_t* pszSub, bool bCaseSensetive = false, int nStart = 0);
 
+	// searches for substring and replaces it
+	int				ReplaceSubstr(const wchar_t* find, const wchar_t* replaceTo, bool bCaseSensetive = false, int nStart = 0);
+
 	EqWString& operator = (const EqWString& other)
 	{
 		this->Assign( other );

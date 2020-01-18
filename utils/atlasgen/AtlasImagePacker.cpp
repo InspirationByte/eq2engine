@@ -15,6 +15,8 @@
 #include "utils/KeyValues.h"
 #include "utils/RectanglePacker.h"
 
+static const EqString s_outputTag("%OUTPUT%");
+
 unsigned long upper_power_of_two(unsigned long v)
 {
 	v--;
@@ -408,8 +410,7 @@ bool CreateAtlasImage(const DkList<imageDesc_t*>& images_list,
 	float	wide = 512,
 			tall = 512;
 
-	EqString shader = "BaseParticle";
-	EqString shader_mode = "translucent";
+	EqString shaderName = "Base";
 
 	kvkeybase_t* pSizeKey = pParams->FindKeyBase("size");
 
@@ -420,7 +421,7 @@ bool CreateAtlasImage(const DkList<imageDesc_t*>& images_list,
 	}
 
 	kvkeybase_t* shaderBase = pParams->FindKeyBase("shader");
-	shader = KV_GetValueString(shaderBase, 0, "BaseParticle");
+	shaderName = KV_GetValueString(shaderBase, 0, "Base");
 
 	// pack
 	if(!packer.AssignCoords(wide, tall))//, AtlasPackComparison))
@@ -448,10 +449,21 @@ bool CreateAtlasImage(const DkList<imageDesc_t*>& images_list,
 	kvkeybase_t* pAtlasGroup = kvs.GetRootSection()->AddKeyBase("atlasgroup", file_name.GetData());
 
 	KeyValues kv_material;
-	kvkeybase_t* pShaderEntry = kv_material.GetRootSection()->AddKeyBase(shader.GetData());
-
-	pShaderEntry->AddKeyBase("BaseTexture", file_name.GetData());
+	kvkeybase_t* pShaderEntry = kv_material.GetRootSection()->AddKeyBase(shaderName.GetData());
 	pShaderEntry->MergeFrom(shaderBase, true);
+
+	// process setting up
+	for (int i = 0; i < pShaderEntry->keys.numElem(); i++)
+	{
+		kvkeybase_t* key = pShaderEntry->keys[i];
+
+		EqString value = KV_GetValueString(key, 0, "");
+		if (!value.Length())
+			continue;
+
+		if (value.ReplaceSubstr(s_outputTag.c_str(), file_name.c_str()) != -1)
+			key->SetValueAt(value.c_str(), 0);
+	}
 
 	Vector2D sizeTexels(1.0f / wide, 1.0f / tall);
 

@@ -466,6 +466,17 @@ int	EqString::Find(const char* pszSub, bool bCaseSensetive, int nStart) const
 	return nFound;
 }
 
+// searches for substring and replaces it
+int EqString::ReplaceSubstr(const char* find, const char* replaceTo, bool bCaseSensetive /*= false*/, int nStart /*= 0*/)
+{
+	// replace substring
+	int foundStrIdx = Find(find, bCaseSensetive, nStart);
+	if (foundStrIdx != -1)
+		Assign(Left(foundStrIdx) + replaceTo + Mid(foundStrIdx + strlen(find), Length()));
+
+	return foundStrIdx;
+}
+
 // other
 EqString EqString::Path_Strip_Ext() const
 {
