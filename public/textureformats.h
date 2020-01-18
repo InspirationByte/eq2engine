@@ -91,11 +91,12 @@ enum ETextureFormat
 	FORMAT_ATI2N    	= 55,
 	FORMAT_ETC1			= 56, // RGB
 	FORMAT_ETC2			= 57, // RGB
-	FORMAT_ETC2_EAC		= 58, // RGBA
-	FORMAT_PVRTC_2BPP	= 59, // RGB
-	FORMAT_PVRTC_4BPP	= 60, // RGB
-	FORMAT_PVRTC_A_2BPP	= 61, // RGBA
-	FORMAT_PVRTC_A_4BPP	= 62, // RGBA
+	FORMAT_ETC2A1		= 58, // RGBA - with 1 bit alpha
+	FORMAT_ETC2A8		= 59, // RGBA - with 8 bit alpha
+	FORMAT_PVRTC_2BPP	= 60, // RGB
+	FORMAT_PVRTC_4BPP	= 61, // RGB
+	FORMAT_PVRTC_A_2BPP	= 62, // RGBA
+	FORMAT_PVRTC_A_4BPP	= 63, // RGBA
 
 	FORMAT_COUNT,
 };
@@ -218,8 +219,10 @@ inline int GetBytesPerBlock(const ETextureFormat format)
 {
 	return (format == FORMAT_DXT1 ||
 			format == FORMAT_ATI1N ||
-			(format >= FORMAT_ETC1 &&
-			format <= FORMAT_PVRTC_A_4BPP)) ? 8 : 16;
+			format == FORMAT_ETC1 ||
+			format == FORMAT_ETC2A1 ||
+			(format >= FORMAT_PVRTC_2BPP && format <= FORMAT_PVRTC_A_4BPP))
+		? 8 : 16;
 }
 
 

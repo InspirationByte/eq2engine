@@ -142,6 +142,8 @@ static D3DFORMAT formats[] = {
 	D3DFMT_DXT5,
 	(D3DFORMAT) '1ITA', // 3Dc 1 channel
 	(D3DFORMAT) '2ITA', // 3Dc 2 channels
+
+	// other compressed formats are unsupported
 };
 
 static const D3DDECLTYPE d3ddecltypes[][4] = {

@@ -521,7 +521,8 @@ bool CImage::LoadDDSfromHandle(IFile *fileHandle, uint flags)
 			case MCHAR4('A','T','I','2'): m_nFormat = FORMAT_ATI2N; break;
 			case MCHAR4('E','T','C','1'): m_nFormat = FORMAT_ETC1; break;
 			case MCHAR4('E','T','C','2'): m_nFormat = FORMAT_ETC2; break;
-			case MCHAR4('E','T','A','2'): m_nFormat = FORMAT_ETC2_EAC; break;
+			case MCHAR4('E','T','C','P'): m_nFormat = FORMAT_ETC2A1; break;
+			case MCHAR4('E','T','C','A'): m_nFormat = FORMAT_ETC2A8; break;
 			default:
 				switch (header.ddpfPixelFormat.dwRGBBitCount)
 				{
