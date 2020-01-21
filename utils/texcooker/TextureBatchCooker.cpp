@@ -14,6 +14,8 @@
 #include "utils/strtools.h"
 #include "utils/KeyValues.h"
 
+#include "utils/CRC32.h"
+
 /*
 
 // Configuration structure
@@ -396,14 +398,24 @@ bool hasMatchingCRC(uint32 crc)
 void ProcessTexture(TexInfo_t* textureInfo)
 {
 	// before this, create folders...
-	EqString sourceFilename( CombinePath(2, g_batchConfig.sourceMaterialPath.c_str(), varargs("%s.%s", textureInfo->sourcePath.c_str(), g_batchConfig.sourceImageExt.c_str())) );
+	EqString sourceFilename(CombinePath(2, g_batchConfig.sourceMaterialPath.c_str(), varargs("%s.%s", textureInfo->sourcePath.c_str(), g_batchConfig.sourceImageExt.c_str())) );
 	EqString targetFilename(CombinePath(2, g_targetProps.targetFolder.c_str(), textureInfo->sourcePath.Path_Strip_Ext() + ".dds" ));
 	EqString targetFilePath(CombinePath(2, g_targetProps.targetFolder.c_str(), textureInfo->sourcePath.Path_Strip_Name().c_str() ));
 
-	uint32 srcCRC = g_fileSystem->GetFileCRC32(sourceFilename.c_str(), SP_ROOT);
+	targetFilePath = targetFilePath.TrimChar(CORRECT_PATH_SEPARATOR);
 
+	EqString arguments(g_batchConfig.applicationArgumentsTemplate);
+	arguments.ReplaceSubstr(s_argumentsTag.c_str(), textureInfo->usage->applicationArguments.c_str());
+	arguments.ReplaceSubstr(s_inputFileNameTag.c_str(), sourceFilename.c_str());
+	arguments.ReplaceSubstr(s_outputFilePathTag.c_str(), targetFilePath.c_str());
+
+	// generate CRC from image file content and arguments it's going to be built
+	uint32 srcCRC = g_fileSystem->GetFileCRC32(sourceFilename.c_str(), SP_ROOT) + CRC32_BlockChecksum(arguments.c_str(), arguments.Length());
+
+	// store new CRC
 	g_batchConfig.newCRCSec.SetKey(varargs("%u", srcCRC), sourceFilename.c_str());
 
+	// now check CRC from loaded file
 	if (hasMatchingCRC(srcCRC) && g_fileSystem->FileExist(targetFilename.c_str(), SP_ROOT))
 	{
 		MsgInfo("Skipping %s: %s...\n", textureInfo->usage->usageName.c_str(), textureInfo->sourcePath.c_str());
@@ -414,13 +426,6 @@ void ProcessTexture(TexInfo_t* textureInfo)
 	textureInfo->status = CONVERTED;
 
 	MsgInfo("Processing %s: %s...\n", textureInfo->usage->usageName.c_str(), textureInfo->sourcePath.c_str());
-
-	targetFilePath = targetFilePath.TrimChar(CORRECT_PATH_SEPARATOR);
-
-	EqString arguments(g_batchConfig.applicationArgumentsTemplate);
-	arguments.ReplaceSubstr(s_argumentsTag.c_str(), textureInfo->usage->applicationArguments.c_str());
-	arguments.ReplaceSubstr(s_inputFileNameTag.c_str(), sourceFilename.c_str());
-	arguments.ReplaceSubstr(s_outputFilePathTag.c_str(), targetFilePath.c_str());
 
 	/*static const EqString s_argumentsTag("%ARGS%");
 	static const EqString s_inputFileNameTag("%INPUT_FILENAME%");
@@ -504,8 +509,10 @@ void CookMaterialsToTarget(const char* pszTargetName)
 
 		Msg("Got %d textures\n", g_textureList.numElem());
 
+		EqString crcFileName(varargs("cook_%s_crc.txt", g_targetProps.targetCompression.c_str()));
+
 		// load CRC list, check for existing DDS files, and skip if necessary
-		KV_LoadFromFile("texture_crc.txt", SP_ROOT, &g_batchConfig.crcSec);
+		KV_LoadFromFile(crcFileName.c_str(), SP_ROOT, &g_batchConfig.crcSec);
 
 		// do conversion
 		for (int i = 0; i < g_textureList.numElem(); i++)
@@ -517,7 +524,7 @@ void CookMaterialsToTarget(const char* pszTargetName)
 		}
 
 		// save CRC list file
-		IFile* pStream = g_fileSystem->Open("texture_crc.txt", "wt", SP_ROOT);
+		IFile* pStream = g_fileSystem->Open(crcFileName.c_str(), "wt", SP_ROOT);
 
 		if (pStream)
 		{
