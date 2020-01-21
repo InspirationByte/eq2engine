@@ -463,8 +463,8 @@ int	CPedestrianAI::SearchDaWay(float fDt, EStateTransition transition)
 	return 0;
 }
 
-const float AI_PEDESTRIAN_CAR_AFRAID_MAX_RADIUS = 9.0f;
-const float AI_PEDESTRIAN_CAR_AFRAID_MIN_RADIUS = 2.0f;
+const float AI_PEDESTRIAN_CAR_AFRAID_MAX_RADIUS = 15.0f;
+const float AI_PEDESTRIAN_CAR_AFRAID_MIN_RADIUS = 2.5f;
 const float AI_PEDESTRIAN_CAR_AFRAID_STRAIGHT_RADIUS = 2.5f;
 const float AI_PEDESTRIAN_CAR_AFRAID_VELOCITY = 1.0f;
 const float AI_PEDESTRIAN_ESCAPE_CHECK_TIME = 0.25f;

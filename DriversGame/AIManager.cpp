@@ -605,8 +605,8 @@ void CAIManager::UpdateCarRespawn(float fDt, const Vector3D& spawnOrigin, const 
 		CAIPursuerCar* pursuerCheck = UTIL_CastToPursuer(car);
 
 		// pursuers are not removed if in pursuit.
-		// not in survival
-		if (m_numMaxCops < MIN_COPS_TO_INIT_SURVIVAL && pursuerCheck && pursuerCheck->InPursuit())
+		// not in survival, not flipped over
+		if (m_numMaxCops < MIN_COPS_TO_INIT_SURVIVAL && pursuerCheck && pursuerCheck->InPursuit() && !pursuerCheck->IsFlippedOver())
 			continue;
 
 		IVector2D trafficCell;
