@@ -984,7 +984,7 @@ const char* CFileSystem::FindFirst(const char* wildcard, DKFINDDATA** findData, 
 #ifdef _WIN32
 	newFind->fileHandle = ::FindFirstFileA(searchWildcard.c_str(), &newFind->wfd);
 
-	if(newFind->fileHandle != NULL)
+	if(newFind->fileHandle != INVALID_HANDLE_VALUE)
 		return newFind->wfd.cFileName;
 #else
 
@@ -1004,7 +1004,7 @@ const char* CFileSystem::FindFirst(const char* wildcard, DKFINDDATA** findData, 
 #ifdef _WIN32
 			newFind->fileHandle = ::FindFirstFileA(searchWildcard.c_str(), &newFind->wfd);
 
-			if(newFind->fileHandle != NULL)
+			if(newFind->fileHandle != INVALID_HANDLE_VALUE)
 				return newFind->wfd.cFileName;
 #else
 
@@ -1052,7 +1052,7 @@ const char* CFileSystem::FindNext(DKFINDDATA* findData) const
 			// tre init new
 			findData->fileHandle = ::FindFirstFileA(searchWildcard.c_str(), &findData->wfd);
 
-			if(findData->fileHandle != NULL)
+			if(findData->fileHandle != INVALID_HANDLE_VALUE)
 				return findData->wfd.cFileName;
 #else
 
