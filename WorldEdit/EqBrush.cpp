@@ -802,7 +802,7 @@ void CEditableBrush::Scale(Vector3D &scale, bool use_center, Vector3D &scale_cen
 		}
 
 		// redefine planes
-		faces[i].Plane = Plane(polygons[i].vertices[0].position, polygons[i].vertices[1].position, polygons[i].vertices[2].position);
+		faces[i].Plane = Plane(polygons[i].vertices[0].position, polygons[i].vertices[1].position, polygons[i].vertices[2].position, true);
 
 		if(invert)
 		{

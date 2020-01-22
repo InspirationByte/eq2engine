@@ -305,8 +305,8 @@ bool ClipObjects(CBaseEditableObject* selection, void* userdata)
 		CEditableSurface* pNewSurface1 = NULL;
 		CEditableSurface* pNewSurface2 = NULL;
 
-		Plane triPlane1(clipperTriangle[0], clipperTriangle[1], clipperTriangle[2]);
-		Plane triPlane2(clipperTriangle[2], clipperTriangle[1], clipperTriangle[0]);
+		Plane triPlane1(clipperTriangle[0], clipperTriangle[1], clipperTriangle[2], true);
+		Plane triPlane2(clipperTriangle[2], clipperTriangle[1], clipperTriangle[0], true);
 
 		if(clip_data.clip_mode == 0)
 		{

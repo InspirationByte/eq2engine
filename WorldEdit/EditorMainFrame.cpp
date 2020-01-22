@@ -243,7 +243,7 @@ bool ViewShutdownResources()
 	return true;
 }
 
-DkList<shaderfactory_t> pShaderRegistrators;
+DECLARE_INTERNAL_SHADERS()
 
 void LoadMaterialSystem()
 {
@@ -317,8 +317,7 @@ void InitMatSystem(HWND window)
 	materials->LoadShaderLibrary("eqBaseShaders.dll");
 
 	// register all shaders
-	for(int i = 0; i < pShaderRegistrators.numElem(); i++)
-		materials->RegisterShader( pShaderRegistrators[i].shader_name, pShaderRegistrators[i].dispatcher );
+	REGISTER_INTERNAL_SHADERS();
 
 #ifdef VR_TEST
 	// renderer init

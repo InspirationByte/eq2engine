@@ -1164,8 +1164,14 @@ IVertexFormat* CEditorLevel::GetLevelVertexFormat()
 
 IMaterial* CEditorLevel::GetFlatMaterial()
 {
-	if(!m_pFlatMaterial)
-		m_pFlatMaterial = materials->GetMaterial("flatcolor");
+	if (!m_pFlatMaterial)
+	{
+		kvkeybase_t flatColorMaterial;
+		flatColorMaterial.SetName("EditorFlatColor");
+
+		m_pFlatMaterial = materials->CreateMaterial("flatcolor", &flatColorMaterial);
+		m_pFlatMaterial->Ref_Grab();
+	}
 
 	return m_pFlatMaterial;
 }

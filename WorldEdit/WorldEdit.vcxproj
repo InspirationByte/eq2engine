@@ -313,9 +313,7 @@ call copy_whitecage_binary.bat $(ConfigurationName) $(TargetFileName)</Command>
     <ClCompile Include="EditableEntity.cpp" />
     <ClCompile Include="EditableSurface.cpp" />
     <ClCompile Include="BaseEditableObject.cpp" />
-    <ClCompile Include="EditorFlatColor.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-    </ClCompile>
+    <ClCompile Include="EditorFlatColor.cpp" />
     <ClCompile Include="EditorCamera.cpp" />
     <ClCompile Include="EditorLevel.cpp" />
     <ClCompile Include="EntityProperties.cpp" />

@@ -1424,7 +1424,7 @@ void CVertexTool::ApplyVertexManipulation(bool clear, bool bApplyBrushes)
 				v1 = SnapVector(1, m_vertexselection.selectedBrushes[i].pBrush->GetFacePolygon(j)->vertices[1].position);
 				v2 = SnapVector(1, m_vertexselection.selectedBrushes[i].pBrush->GetFacePolygon(j)->vertices[2].position);
 
-				m_vertexselection.selectedBrushes[i].pBrush->GetFace(j)->Plane = Plane(v0,v1,v2);
+				m_vertexselection.selectedBrushes[i].pBrush->GetFace(j)->Plane = Plane(v0,v1,v2, true);
 			}
 		}
 

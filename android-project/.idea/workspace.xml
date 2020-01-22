@@ -11,11 +11,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="c9096593-b4df-4b83-813a-05c2d4299dea" name="Default" comment="">
-      <change beforePath="$PROJECT_DIR$/app/src/main/AndroidManifest.xml" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/AndroidManifest.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/src/main/res/drawable-hdpi/ic_launcher.png" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/res/drawable-hdpi/ic_launcher.png" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/src/main/res/drawable-mdpi/ic_launcher.png" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/res/drawable-mdpi/ic_launcher.png" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/src/main/res/drawable-xhdpi/ic_launcher.png" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/res/drawable-xhdpi/ic_launcher.png" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/src/main/res/drawable-xxhdpi/ic_launcher.png" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/res/drawable-xxhdpi/ic_launcher.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
     </list>
     <ignored path="android-project.iws" />
     <ignored path=".idea/workspace.xml" />
@@ -56,7 +52,7 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/app/src/main/java/org/libsdl/app/SDLActivity.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="221">
+            <state relative-caret-position="11985">
               <caret line="746" selection-start-line="746" selection-end-line="746" />
               <folding>
                 <element signature="e#4701#4702#0" expanded="true" />
@@ -89,8 +85,8 @@
       <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/app/src/main/AndroidManifest.xml">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="306">
-              <caret line="18" column="7" lean-forward="true" selection-start-line="18" selection-start-column="7" selection-end-line="18" selection-end-column="7" />
+            <state relative-caret-position="269">
+              <caret line="18" column="7" selection-start-line="18" selection-start-column="7" selection-end-line="18" selection-end-column="7" />
             </state>
           </provider>
           <provider editor-type-id="android-manifest" />
@@ -195,6 +191,7 @@
       <foldersAlwaysOnTop value="true" />
     </navigator>
     <panes>
+      <pane id="Scope" />
       <pane id="ProjectPane" />
       <pane id="AndroidView">
         <subPane>
@@ -242,7 +239,6 @@
         </subPane>
       </pane>
       <pane id="PackagesPane" />
-      <pane id="Scope" />
     </panes>
   </component>
   <component name="PropertiesComponent">
@@ -610,10 +606,10 @@
     <frame x="-8" y="-8" width="1936" height="1056" extended-state="6" />
     <editor active="true" />
     <layout>
-      <window_info active="true" content_ui="combo" id="Project" order="0" sideWeight="0.47819063" visible="true" weight="0.17910448" />
+      <window_info active="true" content_ui="combo" id="Project" order="0" sideWeight="0.4767064" visible="true" weight="0.17910448" />
       <window_info id="Structure" order="1" weight="0.25" />
       <window_info id="Captures" order="2" side_tool="true" weight="0.25" />
-      <window_info id="Build Variants" order="3" sideWeight="0.5218094" side_tool="true" visible="true" weight="0.17910448" />
+      <window_info id="Build Variants" order="3" sideWeight="0.5232936" side_tool="true" visible="true" weight="0.17910448" />
       <window_info id="Favorites" order="4" side_tool="true" />
       <window_info id="Capture Tool" order="5" />
       <window_info id="Palette&#9;" order="6" />
@@ -621,7 +617,7 @@
       <window_info id="Resources Explorer" order="8" weight="0.32995737" />
       <window_info anchor="bottom" id="Message" order="0" />
       <window_info anchor="bottom" id="Find" order="1" sideWeight="0.48932764" weight="0.32936078" />
-      <window_info anchor="bottom" id="Run" order="2" sideWeight="0.48932764" visible="true" weight="0.32936078" />
+      <window_info anchor="bottom" id="Run" order="2" sideWeight="0.48932764" weight="0.32936078" />
       <window_info anchor="bottom" id="Debug" order="3" sideWeight="0.47225186" weight="0.39869988" />
       <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
       <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
@@ -737,8 +733,8 @@
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/app/src/main/res/layout/main.xml">
-      <provider selected="true" editor-type-id="android-designer2" />
       <provider editor-type-id="text-editor" />
+      <provider selected="true" editor-type-id="android-designer2" />
     </entry>
     <entry file="file://$PROJECT_DIR$/../jni/libGame_DrvSyn.mk">
       <provider selected="true" editor-type-id="text-editor">
@@ -802,6 +798,49 @@
     <entry file="jar://$USER_HOME$/AppData/Local/Android/Sdk/platforms/android-26/android.jar!/android/os/MessageQueue.class">
       <provider selected="true" editor-type-id="text-editor" />
     </entry>
+    <entry file="file://$PROJECT_DIR$/app/src/main/res/drawable-mdpi/ic_launcher.png">
+      <provider selected="true" editor-type-id="images" />
+    </entry>
+    <entry file="file://$PROJECT_DIR$/app/src/main/res/drawable-xhdpi/ic_launcher.png">
+      <provider selected="true" editor-type-id="images" />
+    </entry>
+    <entry file="file://$PROJECT_DIR$/app/src/main/res/drawable-hdpi/ic_launcher.png">
+      <provider selected="true" editor-type-id="images" />
+    </entry>
+    <entry file="file://$PROJECT_DIR$/app/src/main/res/drawable-xxhdpi/ic_launcher.png">
+      <provider selected="true" editor-type-id="images" />
+    </entry>
+    <entry file="file://$PROJECT_DIR$/app/src/main/java/org/libsdl/app/SDLActivity.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="11985">
+          <caret line="746" selection-start-line="746" selection-end-line="746" />
+          <folding>
+            <element signature="e#4701#4702#0" expanded="true" />
+            <element signature="e#4734#4735#0" expanded="true" />
+            <element signature="e#5982#5983#0" expanded="true" />
+            <element signature="e#6018#6019#0" expanded="true" />
+            <element signature="e#14639#14640#0" expanded="true" />
+            <element signature="e#14683#14684#0" expanded="true" />
+            <element signature="e#15042#15043#0" expanded="true" />
+            <element signature="e#15079#15080#0" expanded="true" />
+            <element signature="e#18343#18344#0" expanded="true" />
+            <element signature="e#18371#18372#0" expanded="true" />
+            <element signature="e#34260#34261#0" expanded="true" />
+            <element signature="e#34299#34300#0" expanded="true" />
+            <element signature="e#37717#37718#0" expanded="true" />
+            <element signature="e#37758#37759#0" expanded="true" />
+            <element signature="e#52337#52338#0" expanded="true" />
+            <element signature="e#52396#52397#0" expanded="true" />
+            <element signature="e#52506#52507#0" expanded="true" />
+            <element signature="e#52565#52566#0" expanded="true" />
+            <element signature="e#58132#58133#0" expanded="true" />
+            <element signature="e#58194#58195#0" expanded="true" />
+            <element signature="e#58487#58488#0" expanded="true" />
+            <element signature="e#58534#58535#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/app/src/main/java/com/insbyte/driversyndicate/EqEngineActivity.java">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="153">
@@ -833,53 +872,10 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/app/src/main/res/drawable-mdpi/ic_launcher.png">
-      <provider selected="true" editor-type-id="images" />
-    </entry>
-    <entry file="file://$PROJECT_DIR$/app/src/main/res/drawable-xhdpi/ic_launcher.png">
-      <provider selected="true" editor-type-id="images" />
-    </entry>
-    <entry file="file://$PROJECT_DIR$/app/src/main/res/drawable-hdpi/ic_launcher.png">
-      <provider selected="true" editor-type-id="images" />
-    </entry>
-    <entry file="file://$PROJECT_DIR$/app/src/main/res/drawable-xxhdpi/ic_launcher.png">
-      <provider selected="true" editor-type-id="images" />
-    </entry>
-    <entry file="file://$PROJECT_DIR$/app/src/main/java/org/libsdl/app/SDLActivity.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="221">
-          <caret line="746" selection-start-line="746" selection-end-line="746" />
-          <folding>
-            <element signature="e#4701#4702#0" expanded="true" />
-            <element signature="e#4734#4735#0" expanded="true" />
-            <element signature="e#5982#5983#0" expanded="true" />
-            <element signature="e#6018#6019#0" expanded="true" />
-            <element signature="e#14639#14640#0" expanded="true" />
-            <element signature="e#14683#14684#0" expanded="true" />
-            <element signature="e#15042#15043#0" expanded="true" />
-            <element signature="e#15079#15080#0" expanded="true" />
-            <element signature="e#18343#18344#0" expanded="true" />
-            <element signature="e#18371#18372#0" expanded="true" />
-            <element signature="e#34260#34261#0" expanded="true" />
-            <element signature="e#34299#34300#0" expanded="true" />
-            <element signature="e#37717#37718#0" expanded="true" />
-            <element signature="e#37758#37759#0" expanded="true" />
-            <element signature="e#52337#52338#0" expanded="true" />
-            <element signature="e#52396#52397#0" expanded="true" />
-            <element signature="e#52506#52507#0" expanded="true" />
-            <element signature="e#52565#52566#0" expanded="true" />
-            <element signature="e#58132#58133#0" expanded="true" />
-            <element signature="e#58194#58195#0" expanded="true" />
-            <element signature="e#58487#58488#0" expanded="true" />
-            <element signature="e#58534#58535#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/app/src/main/AndroidManifest.xml">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="306">
-          <caret line="18" column="7" lean-forward="true" selection-start-line="18" selection-start-column="7" selection-end-line="18" selection-end-column="7" />
+        <state relative-caret-position="269">
+          <caret line="18" column="7" selection-start-line="18" selection-start-column="7" selection-end-line="18" selection-end-column="7" />
         </state>
       </provider>
       <provider editor-type-id="android-manifest" />

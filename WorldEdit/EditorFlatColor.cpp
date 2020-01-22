@@ -5,50 +5,40 @@
 // Description: Error Shader
 //////////////////////////////////////////////////////////////////////////////////
 
-#include "BaseShader.h"
+#include "materialsystem/BaseShader.h"
 
-class CEditorFlatColor : public CBaseShader
-{
-public:
-	CEditorFlatColor()
+BEGIN_SHADER_CLASS(EditorFlatColor)
+
+	SHADER_INIT_PARAMS()
 	{
-		m_pProgram = NULL;
+		SHADER_PASS(Ambient) = NULL;
 	}
 
-	void InitTextures()
+	SHADER_INIT_TEXTURES()
 	{
 		// set texture setup
-		SetParameterFunctor(SHADERPARAM_COLOR, &CEditorFlatColor::SetColorModulation);
+		SetParameterFunctor(SHADERPARAM_COLOR, &ThisShaderClass::SetColorModulation);
 	}
 
-	bool InitShaders()
+	SHADER_INIT_RHI()
 	{
-		if(m_pProgram)
+		if (SHADER_PASS(Ambient))
 			return true;
 
-		EqString defines;
+		SHADERDEFINES_BEGIN;
 
-		// Download shader from disk (shaders\*.shader)
-		m_pProgram = g_pShaderAPI->CreateNewShaderProgram("EditorFlatColor");
+		SHADER_FIND_OR_COMPILE(Ambient, "EditorFlatColor");
 
-		AddShaderToAutoremover(&m_pProgram);
-
-		return g_pShaderAPI->LoadShadersFromFile(m_pProgram,"EditorFlatColor", defines.GetData(), NULL);
+		return true;
 	}
 
 	SHADER_SETUP_STAGE()
 	{
-		if(IsError())
-			return;
-
-		g_pShaderAPI->SetShader(m_pProgram);
+		SHADER_BIND_PASS_SIMPLE(Ambient);
 	}
 
 	SHADER_SETUP_CONSTANTS()
 	{
-		if(IsError())
-			return;
-
 		SetupDefaultParameter(SHADERPARAM_COLOR);
 		SetupDefaultParameter(SHADERPARAM_TRANSFORM);
 		SetupDefaultParameter(SHADERPARAM_ALPHASETUP);
@@ -66,18 +56,13 @@ public:
 
 		if(materials->GetAmbientColor().w < 1.0f)
 		{
-			SetParameterFunctor(SHADERPARAM_ALPHASETUP, &CEditorFlatColor::ParamSetup_AlphaModel_Translucent);
+			SetParameterFunctor(SHADERPARAM_ALPHASETUP, &ThisShaderClass::ParamSetup_AlphaModel_Translucent);
 		}
 		else
 		{
 			m_depthwrite = true;
-			SetParameterFunctor(SHADERPARAM_ALPHASETUP, &CEditorFlatColor::ParamSetup_AlphaModel_Solid);
+			SetParameterFunctor(SHADERPARAM_ALPHASETUP, &ThisShaderClass::ParamSetup_AlphaModel_Solid);
 		}
-	}
-
-	const char* GetName()
-	{
-		return "EditableSurfaceFlat";
 	}
 
 	ITexture*	GetBaseTexture(int stage)
@@ -89,9 +74,7 @@ public:
 	{
 		return NULL;
 	}
-private:
 
-	IShaderProgram*		m_pProgram;
-};
+	SHADER_DECLARE_PASS(Ambient);
 
-DEFINE_SHADER(EditorFlatColor,CEditorFlatColor)
+END_SHADER_CLASS
