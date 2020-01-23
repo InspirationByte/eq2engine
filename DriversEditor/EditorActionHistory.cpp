@@ -12,42 +12,52 @@ CEditorActionObserver* g_pEditorActionObserver = &s_editActionObserver;
 
 #define NO_HISTORY -1
 
-CUndoableObject::CUndoableObject()
+undoableData_t::undoableData_t()
 {
 	m_curHist = NO_HISTORY;
 	m_changesStream.Open(NULL,VS_OPEN_WRITE | VS_OPEN_READ, 128);
-	m_modifyMark = 0;
 }
 
-uint CUndoableObject::Undoable_PushCurrent()
+void undoableData_t::Clear()
+{
+	m_changesStream.Close();
+	m_changesStream.Open(NULL, VS_OPEN_WRITE | VS_OPEN_READ, 128);
+	m_histOffsets.clear();
+	m_curHist = NO_HISTORY;
+
+	if (object)
+		object->m_modifyMark = 0;
+}
+
+uint undoableData_t::Push()
 {
 	uint oldOfs = m_changesStream.Tell();
 
 	int newOfs = 0;
 
 	// if we has something on stack
-	if(m_histOffsets.numElem() > 0 )
+	if (m_histOffsets.numElem() > 0)
 	{
-		if(m_curHist == NO_HISTORY)
+		if (m_curHist == NO_HISTORY)
 			m_curHist = 0;
 
 		// if we somewhere in a middle of history
-		if(m_curHist < m_histOffsets.numElem()-1)
+		if (m_curHist < m_histOffsets.numElem() - 1)
 		{
 			// choose the start of the object to be overwritten
 			newOfs = m_histOffsets[m_curHist].start;
 
 			// remove 'parallel' future lines of history
-			m_histOffsets.setNum(m_curHist+1);
+			m_histOffsets.setNum(m_curHist + 1);
 		}
 		else // just begin from the end
 			newOfs = m_histOffsets[m_curHist].end;
 
-		m_changesStream.Seek( newOfs, VS_SEEK_SET );
+		m_changesStream.Seek(newOfs, VS_SEEK_SET);
 	}
 
 	// now write our object state to stream
-	if(!Undoable_WriteObjectData( &m_changesStream ))
+	if (!object->Undoable_WriteObjectData(&m_changesStream))
 		return -1;
 
 	// add the history block
@@ -61,7 +71,7 @@ uint CUndoableObject::Undoable_PushCurrent()
 	return oldOfs;
 }
 
-bool CUndoableObject::Undoable_PopBack(bool undoCase)
+bool undoableData_t::Pop()
 {
 	if (m_curHist == NO_HISTORY && !m_histOffsets.numElem())
 	{
@@ -70,53 +80,44 @@ bool CUndoableObject::Undoable_PopBack(bool undoCase)
 	}
 
 	// seek to the beginning of data
-	m_changesStream.Seek( m_histOffsets[m_curHist].start, VS_SEEK_SET );
-	
-	Undoable_ReadObjectData(&m_changesStream);
+	m_changesStream.Seek(m_histOffsets[m_curHist].start, VS_SEEK_SET);
 
-	if(!undoCase)
-		m_histOffsets.setNum(m_curHist+1);
+	object->Undoable_ReadObjectData(&m_changesStream);
+
+	//if (!undoCase)
+	//	m_histOffsets.setNum(m_curHist + 1);
 
 	m_curHist--;
 
 	return true;
 }
 
-bool CUndoableObject::Undoable_Redo()
+bool undoableData_t::Redo()
 {
-	if(m_histOffsets.numElem() == 0)
+	if (m_histOffsets.numElem() == 0)
 		return false;	// nothing to do
 
-	if(m_curHist == NO_HISTORY)
+	if (m_curHist == NO_HISTORY)
 		m_curHist = 0;
 
-	WarningMsg("Cur hist: %d, total: %d\n", m_curHist, m_histOffsets.numElem());
+	//WarningMsg("Cur hist: %d, total: %d\n", m_curHist, m_histOffsets.numElem());
 
 	// no redo
-	if(m_curHist > m_histOffsets.numElem()-1)
+	if (m_curHist > m_histOffsets.numElem() - 1)
 		return false;
 
-	m_curHist++;
+	object->m_modifyMark = 0;
 
-	m_modifyMark = 0;
+	m_changesStream.Seek(m_histOffsets[m_curHist++].start, VS_SEEK_SET);
+	object->Undoable_ReadObjectData(&m_changesStream);
 
-	m_changesStream.Seek( m_histOffsets[m_curHist].start, VS_SEEK_SET );
-	Undoable_ReadObjectData(&m_changesStream);
-	
 	return true;
 }
 
-int	CUndoableObject::Undoable_GetChangeCount() const
-{
-	return m_histOffsets.numElem();
-}
+//--------------------------------------------------
 
-void CUndoableObject::Undoable_ClearHistory()
+CUndoableObject::CUndoableObject()
 {
-	m_changesStream.Close();
-	m_changesStream.Open(NULL,VS_OPEN_WRITE | VS_OPEN_READ, 128);
-	m_histOffsets.clear();
-	m_curHist = NO_HISTORY;
 	m_modifyMark = 0;
 }
 
@@ -124,7 +125,7 @@ void CUndoableObject::Undoable_ClearHistory()
 
 CEditorActionObserver::CEditorActionObserver()
 {
-	m_curHist = NO_HISTORY;
+	m_curEvent = NO_HISTORY;
 	m_actionContextId = 0;
 }
 
@@ -150,12 +151,18 @@ void CEditorActionObserver::SaveHistory()
 
 void CEditorActionObserver::ClearHistory()
 {
-	for(int i = 0; i < m_events.numElem(); i++)
-		m_events[i].object->Undoable_ClearHistory();
+	for (int i = 0; i < m_events.numElem(); i++)
+		m_events[i].subject->Clear();
 
 	m_events.clear();
 
-	m_curHist = NO_HISTORY;
+	for (int i = 0; i < m_tracking.numElem(); i++)
+	{
+		delete m_tracking[i];
+	}
+	m_tracking.clear();
+
+	m_curEvent = NO_HISTORY;
 }
 
 void CEditorActionObserver::Undo()
@@ -165,9 +172,9 @@ void CEditorActionObserver::Undo()
 
 	int contextId = -1;
 
-	while(m_curHist != NO_HISTORY)
+	while(m_curEvent != NO_HISTORY)
 	{
-		histEvent_t& evt = m_events[m_curHist];
+		histEvent_t& evt = m_events[m_curEvent];
 
 		if(contextId == -1)
 		{
@@ -181,8 +188,8 @@ void CEditorActionObserver::Undo()
 				return;
 		}
 
-		evt.object->Undoable_PopBack(true);
-		m_curHist--;
+		evt.subject->Pop();
+		m_curEvent--;
 	}
 }
 
@@ -191,16 +198,15 @@ void CEditorActionObserver::Redo()
 	if(m_events.numElem() == 0)
 		return;	// nothing to do
 
-	if(m_curHist == NO_HISTORY)
-		m_curHist = 0;
+	if(m_curEvent == NO_HISTORY)
+		m_curEvent = 0;
 
 	// no redo
-	if(m_curHist+1 > m_events.numElem()-1)
+	if(m_curEvent+1 > m_events.numElem()-1)
 		return;
 
-	m_curHist++;
-	CUndoableObject* undoable = m_events[m_curHist].object;
-	undoable->Undoable_Redo();
+	undoableData_t* undoable = m_events[++m_curEvent].subject;
+	undoable->Redo();
 }
 
 //---------------------------------------------------
@@ -214,7 +220,17 @@ void CEditorActionObserver::OnCreate( CUndoableObject* object )
 
 void CEditorActionObserver::OnDelete( CUndoableObject* object )
 {
-	ASSERTMSG(false, "CEditorActionObserver::OnDelete not implemented");
+	for (int i = 0; i < m_events.numElem(); i++)
+	{
+		// really it has to be duplicated
+		if (m_events[i].subject->object == object)
+		{
+			m_events.fastRemoveIndex(i);
+			i--;
+		}
+	}
+
+	//ASSERTMSG(false, "CEditorActionObserver::OnDelete not implemented");
 }
 
 void CEditorActionObserver::BeginModify( CUndoableObject* object )
@@ -230,28 +246,31 @@ void CEditorActionObserver::BeginModify( CUndoableObject* object )
 	// if we has something on stack
 	if(m_events.numElem() > 0)
 	{
-		if(m_curHist == NO_HISTORY)
-			m_curHist = 0;
+		if(m_curEvent == NO_HISTORY)
+			m_curEvent = 0;
 
 		// if we somewhere in a middle of history
-		if(m_curHist < m_events.numElem()-1)
+		if(m_curEvent < m_events.numElem()-1)
 		{
 			// remove 'parallel' future lines of history
-			m_events.setNum(m_curHist+1);
+			m_events.setNum(m_curEvent +1);
 		}
 	}
 
+	undoableData_t* data = new undoableData_t();
+	data->object = object;
+
 	// add the history block
 	histEvent_t ev;
-	ev.object = object;
+	ev.subject = data;
 	ev.type = HIST_ACT_MODIFY;
 	ev.context = m_actionContextId;
-	ev.streamStart = object->Undoable_PushCurrent();
+	ev.streamStart = data->Push();
 
 	m_events.append(ev);
-	m_curHist++;
+	m_curEvent++;
 
-	m_tracking.append(object);
+	m_tracking.append(data);
 }
 
 void CEditorActionObserver::EndModify()
@@ -261,7 +280,7 @@ void CEditorActionObserver::EndModify()
 
 	// OK
 	for(int i = 0; i < m_tracking.numElem(); i++)
-		m_tracking[i]->m_modifyMark = false;
+		m_tracking[i]->object->m_modifyMark = 0;
 
 	m_actionContextId++;
 
@@ -272,8 +291,8 @@ void CEditorActionObserver::CancelModify()
 {
 	for (int i = 0; i < m_tracking.numElem(); i++)
 	{
-		CUndoableObject* obj = m_tracking[i];
-		obj->m_modifyMark = false;
+		undoableData_t* subject = m_tracking[i];
+		subject->object->m_modifyMark = false;
 	}
 
 	m_tracking.clear();
@@ -283,10 +302,10 @@ void CEditorActionObserver::CancelModify()
 
 int CEditorActionObserver::GetUndoSteps() const
 {
-	return m_curHist;
+	return m_curEvent;
 }
 
 int CEditorActionObserver::GetRedoSteps() const
 {
-	return m_events.numElem() - m_curHist;
+	return m_events.numElem() - m_curEvent;
 }

@@ -24,34 +24,64 @@ struct histBlock_t
 	int end;
 };
 
+class CUndoableObject;
+
+struct undoableData_t
+{
+	undoableData_t();
+	
+	void					Clear();
+
+	uint					Push();
+	bool					Pop();
+
+	bool					Redo();
+
+	CMemoryStream			m_changesStream;
+	DkList<histBlock_t>		m_histOffsets;
+	int						m_curHist;
+
+	CUndoableObject*		object;
+};
+
+// Undoable object itself. Contains history
 class CUndoableObject
 {
 	friend class CEditorActionObserver;
+	friend struct undoableData_t;
 
 public:
-						CUndoableObject();
-	virtual				~CUndoableObject() {}
+							CUndoableObject();
+	virtual					~CUndoableObject() {}
 
-	uint				Undoable_PushCurrent();				// pushes the current object
-
-	bool				Undoable_PopBack(bool undoCase);	// pops back. undoCase = true if data must be kept
-	bool				Undoable_Redo();					// redo the changes
-
-	int					Undoable_GetChangeCount() const;	// get change count before creation
-
-	void				Undoable_ClearHistory();
-
-	int					m_modifyMark;
+	int						m_modifyMark;
 
 protected:
-	virtual bool		Undoable_WriteObjectData( IVirtualStream* stream ) = 0;	// writing object
-	virtual void		Undoable_ReadObjectData( IVirtualStream* stream ) = 0;	// reading object
-
-private:
-	CMemoryStream		m_changesStream;
-	DkList<histBlock_t>	m_histOffsets;
-	int					m_curHist;
+	virtual bool			Undoable_WriteObjectData( IVirtualStream* stream ) = 0;	// writing object
+	virtual void			Undoable_ReadObjectData( IVirtualStream* stream ) = 0;	// reading object
 };
+
+// Undoable factory. Recreates object
+template <class T>
+class CUndoableFactory
+{
+	typedef T* (FactoryFunc)();
+public:
+
+	virtual T* CreateFrom(IVirtualStream* stream) = 0;
+};
+
+#define UNDOABLE_FACTORY_BEGIN(classname)\
+namespace N##classname##Factory {\
+	class C##classname##Factory : public CUndoableFactory<classname> { \
+		public:\
+			classname* CreateFrom(IVirtualStream* stream);\
+	};\
+	typedef C##classname##Factory FactoryClass;\
+	classname* C##classname##Factory::CreateFrom(IVirtualStream* stream)
+
+#define UNDOABLE_FACTORY_END \
+	 static FactoryClass s_factory; }
 
 //-----------------------------------------------------------
 // The observer itself
@@ -61,7 +91,7 @@ struct histEvent_t
 {
 	EHistoryAction		type;
 	int					context;
-	CUndoableObject*	object;
+	undoableData_t*		subject;
 	uint				streamStart;
 };
 
@@ -92,10 +122,11 @@ public:
 	int		GetRedoSteps() const;
 
 protected:
-	DkList<histEvent_t>			m_events;
-	DkList<CUndoableObject*>	m_tracking;
 
-	int							m_curHist;
+	DkList<histEvent_t>			m_events;
+	DkList<undoableData_t*>		m_tracking;
+
+	int							m_curEvent;
 	int							m_actionContextId;
 };
 

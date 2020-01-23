@@ -19,6 +19,7 @@ enum ERegionEditMenuCommands
 	REdit_GenerateMap,
 
 	REdit_MenuEnd,
+
 };
 
 regionMap_t::regionMap_t()
@@ -98,6 +99,12 @@ CRegionEditFrame::CRegionEditFrame( wxWindow* parent ) :
 	m_mouseoverRegion = -1;
 
 	m_showsNavGrid = false;
+
+	//m_contextMenu = new wxMenu();
+
+	//m_contextMenu->Append(MODCONTEXT_PROPERTIES, wxT("Properties"), wxT("Show properties of this model"));
+	//m_contextMenu->Append(MODCONTEXT_RENAME, wxT("Rename..."), wxT("Rename model"));
+	//m_contextMenu->Append(MODCONTEXT_REMOVE, wxT("Remove"), wxT("Removes this model"));
 }
 
 CRegionEditFrame::~CRegionEditFrame()
@@ -401,6 +408,11 @@ void CRegionEditFrame::ProcessMouseEvents(wxMouseEvent& event)
 	{
 
 	}
+
+	//if (event.RightUp() && m_mouseoverRegion != -1)
+	//{
+	//	PopupMenu(m_contextMenu);
+	//}
 
 	m_mouseOldPos = event.GetPosition();
 

@@ -524,10 +524,10 @@ void CMainWindow::OnLevelUnload()
 {
 	g_editorTestGame->EndGame();
 
+	g_pEditorActionObserver->OnLevelUnload();
+
 	for(int i = 0; i < m_tools.numElem(); i++)
 		m_tools[i]->OnLevelUnload();
-
-	g_pEditorActionObserver->OnLevelUnload();
 
 	m_regionEditorFrame->OnLevelUnload();
 }

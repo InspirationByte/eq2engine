@@ -1307,7 +1307,6 @@ void CUI_LevelModels::DuplicateSelection()
 		modelref->position += Vector3D(1,0,1);
 
 		m_selectedRegion->m_objects.append( modelref );
-
 		newObjects.append(modelref);
 	}
 	

@@ -75,6 +75,7 @@ protected:
 	void ClearSelectedRegions();
 
 	wxMenuBar*		m_pMenu;
+	wxMenu*			m_contextMenu;
 
 	IEqSwapChain*	m_swapChain;
 
