@@ -1236,6 +1236,9 @@ void CUI_HeightEdit::ProcessMouseEvents( wxMouseEvent& event )
 		int mouse_wheel = event.GetWheelRotation();
 		SetRadius(GetRadius()+sign(mouse_wheel));
 	}
+
+	if (event.ButtonUp())
+		g_pEditorActionObserver->EndAction();
 }
 
 void CUI_HeightEdit::PaintHeightfieldLine(int x0, int y0, int x1, int y1, TILEPAINTFUNC func, ELineMode mode)
@@ -1369,11 +1372,6 @@ void CUI_HeightEdit::MouseEventOnTile( wxMouseEvent& event, hfieldtile_t* tile, 
 			m_globalTile_pointSet = false;
 			PaintHeightfieldLocal(tx, ty, NullTexPaintFunc);
 		}
-	}
-
-	if(event.ButtonUp())
-	{
-		g_pEditorActionObserver->EndAction();
 	}
 }
 
