@@ -10,123 +10,31 @@
 static CEditorActionObserver s_editActionObserver;
 CEditorActionObserver* g_pEditorActionObserver = &s_editActionObserver;
 
-#define NO_HISTORY -1
-
 undoableData_t::undoableData_t()
 {
-	m_curHist = NO_HISTORY;
-	m_changesStream.Open(NULL,VS_OPEN_WRITE | VS_OPEN_READ, 128);
+	changesStream.Open(NULL,VS_OPEN_WRITE | VS_OPEN_READ, 128);
 }
 
 void undoableData_t::Clear()
 {
-	m_changesStream.Close();
-	m_changesStream.Open(NULL, VS_OPEN_WRITE | VS_OPEN_READ, 128);
-	m_histOffsets.clear();
-	m_curHist = NO_HISTORY;
+	changesStream.Close();
+	changesStream.Open(NULL, VS_OPEN_WRITE | VS_OPEN_READ, 128);
 
 	if (object)
 		object->m_modifyMark = 0;
 }
 
-uint undoableData_t::Push()
-{
-	uint oldOfs = m_changesStream.Tell();
-
-	int newOfs = 0;
-
-	// if we has something on stack
-	if (m_histOffsets.numElem() > 0)
-	{
-		if (m_curHist == NO_HISTORY)
-			m_curHist = 0;
-
-		// if we somewhere in a middle of history
-		if (m_curHist < m_histOffsets.numElem() - 1)
-		{
-			// choose the start of the object to be overwritten
-			newOfs = m_histOffsets[m_curHist].start;
-
-			// remove 'parallel' future lines of history
-			m_histOffsets.setNum(m_curHist + 1);
-		}
-		else // just begin from the end
-			newOfs = m_histOffsets[m_curHist].end;
-
-		m_changesStream.Seek(newOfs, VS_SEEK_SET);
-	}
-
-	// now write our object state to stream
-	if (!object->Undoable_WriteObjectData(&m_changesStream))
-		return -1;
-
-	// add the history block
-	histBlock_t hist;
-	hist.start = newOfs;
-	hist.end = m_changesStream.Tell();
-
-	m_histOffsets.append(hist);
-	m_curHist++;
-
-	return oldOfs;
-}
-
-bool undoableData_t::Pop()
-{
-	if (m_curHist == NO_HISTORY && !m_histOffsets.numElem())
-	{
-		m_curHist = NO_HISTORY;
-		return false;	// nothing to do
-	}
-
-	// seek to the beginning of data
-	m_changesStream.Seek(m_histOffsets[m_curHist].start, VS_SEEK_SET);
-
-	object->Undoable_ReadObjectData(&m_changesStream);
-
-	//if (!undoCase)
-	//	m_histOffsets.setNum(m_curHist + 1);
-
-	m_curHist--;
-
-	return true;
-}
-
-bool undoableData_t::Redo()
-{
-	if (m_histOffsets.numElem() == 0)
-		return false;	// nothing to do
-
-	if (m_curHist == NO_HISTORY)
-		m_curHist = 0;
-
-	//WarningMsg("Cur hist: %d, total: %d\n", m_curHist, m_histOffsets.numElem());
-
-	// no redo
-	if (m_curHist > m_histOffsets.numElem() - 1)
-		return false;
-
-	object->m_modifyMark = 0;
-
-	m_changesStream.Seek(m_histOffsets[m_curHist++].start, VS_SEEK_SET);
-	object->Undoable_ReadObjectData(&m_changesStream);
-
-	return true;
-}
-
 //--------------------------------------------------
 
-CUndoableObject::CUndoableObject()
+CUndoableObject::CUndoableObject() : m_modifyMark(0)
 {
-	m_modifyMark = 0;
 }
 
 //----------------------------------------------------------------------------------
 
 CEditorActionObserver::CEditorActionObserver()
 {
-	m_curEvent = NO_HISTORY;
-	m_actionContextId = 0;
+	m_curEvent = 0;
 }
 
 CEditorActionObserver::~CEditorActionObserver()
@@ -144,69 +52,161 @@ void CEditorActionObserver::OnLevelUnload()
 	ClearHistory();
 }
 
-void CEditorActionObserver::SaveHistory()
-{
-
-}
-
 void CEditorActionObserver::ClearHistory()
 {
 	for (int i = 0; i < m_events.numElem(); i++)
-		m_events[i].subject->Clear();
-
+		delete m_events[i];
 	m_events.clear();
 
 	for (int i = 0; i < m_tracking.numElem(); i++)
-	{
 		delete m_tracking[i];
-	}
 	m_tracking.clear();
 
-	m_curEvent = NO_HISTORY;
+	m_editing.clear();
+
+	m_curEvent = 0;
+	m_actionContextId = 0;
+	m_activeEvent = nullptr;
 }
 
 void CEditorActionObserver::Undo()
 {
-	if(m_events.numElem() == 0)
-		return;	// nothing to do
-
-	int contextId = -1;
-
-	while(m_curEvent != NO_HISTORY)
+	// first execute HIST_ACT_CREATION
+	if (m_events.inRange(m_curEvent))
 	{
-		histEvent_t& evt = m_events[m_curEvent];
+		actionEvent_t* evt = m_events[m_curEvent];
 
-		if(contextId == -1)
+		for (int i = 0; i < evt->states.numElem(); i++)
 		{
-			// give the context
-			contextId = evt.context;
-		}
-		else
-		{
-			// stop if there is different context
-			if(evt.context != contextId)
-				return;
-		}
+			histState_t& state = evt->states[i];
 
-		evt.subject->Pop();
-		m_curEvent--;
+			undoableData_t* undoable = state.subject;
+
+			// execute deletion on creation event
+			if (state.type == HIST_ACT_CREATION)
+			{
+				if (undoable->object)
+					undoable->object->Undoable_Remove();
+				undoable->object = nullptr;
+			}
+			else if (state.type == HIST_ACT_DELETION)
+			{
+				undoable->changesStream.Seek(state.streamStart, VS_SEEK_SET);
+
+				if (!undoable->object)
+					undoable->object = (undoable->undeleteFunc)(&undoable->changesStream);
+			}
+		}
+	}
+
+	// step down
+	m_curEvent--;
+
+	// execute everything else than creation
+	if (m_events.inRange(m_curEvent))
+	{
+		actionEvent_t* evt = m_events[m_curEvent];
+		for (int i = 0; i < evt->states.numElem(); i++)
+		{
+			histState_t& state = evt->states[i];
+
+			undoableData_t* undoable = state.subject;
+
+			if (state.type == HIST_ACT_MODIFY || state.type == HIST_ACT_STOREINIT || state.type == HIST_ACT_CREATION)
+			{
+				undoable->changesStream.Seek(state.streamStart, VS_SEEK_SET);
+
+				// create object if necessary
+				if (!undoable->object)
+					undoable->object = (undoable->undeleteFunc)(&undoable->changesStream);
+				else
+					undoable->object->Undoable_ReadObjectData(&undoable->changesStream);
+			}
+		}
 	}
 }
 
 void CEditorActionObserver::Redo()
 {
-	if(m_events.numElem() == 0)
-		return;	// nothing to do
+	// first execute HIST_ACT_DELETION
+	if (m_events.inRange(m_curEvent))
+	{
+		actionEvent_t* evt = m_events[m_curEvent];
+		for (int i = 0; i < evt->states.numElem(); i++)
+		{
+			histState_t& state = evt->states[i];
 
-	if(m_curEvent == NO_HISTORY)
-		m_curEvent = 0;
+			undoableData_t* undoable = state.subject;
 
-	// no redo
-	if(m_curEvent+1 > m_events.numElem()-1)
-		return;
+			// execute deletion on deletion event
+			if (state.type == HIST_ACT_DELETION)
+			{
+				if (undoable->object)
+					undoable->object->Undoable_Remove();
+				undoable->object = nullptr;
+			}
+		}
+	}
 
-	undoableData_t* undoable = m_events[++m_curEvent].subject;
-	undoable->Redo();
+	// step up
+	m_curEvent++;
+
+	// execute everything else than deletion
+	if (m_events.inRange(m_curEvent))
+	{
+		actionEvent_t* evt = m_events[m_curEvent];
+		for (int i = 0; i < evt->states.numElem(); i++)
+		{
+			histState_t& state = evt->states[i];
+
+			undoableData_t* undoable = state.subject;
+
+			if (state.type == HIST_ACT_DELETION)
+			{
+				if (undoable->object)
+					undoable->object->Undoable_Remove();
+				undoable->object = nullptr;
+			}
+			else if (state.type == HIST_ACT_CREATION)
+			{
+				undoable->changesStream.Seek(state.streamStart, VS_SEEK_SET);
+
+				if (!undoable->object)
+					undoable->object = (undoable->undeleteFunc)(&undoable->changesStream);
+			}
+			else if (state.type == HIST_ACT_MODIFY || state.type == HIST_ACT_STOREINIT)
+			{
+				undoable->changesStream.Seek(state.streamStart, VS_SEEK_SET);
+
+				// create object if necessary
+				if (!undoable->object)
+					undoable->object = (undoable->undeleteFunc)(&undoable->changesStream);
+				else
+					undoable->object->Undoable_ReadObjectData(&undoable->changesStream);
+			}
+		}
+	}
+}
+
+static const char* eventTypeStr[] = {
+	"CREATION",
+	"DELETION",
+	"MODIFY",
+	"STOREINIT",
+};
+
+void CEditorActionObserver::DebugDisplay()
+{
+	/*
+	debugoverlay->Text(color4_white, "actions: %d\n", m_events.numElem() );
+	debugoverlay->Text(color4_white, "currentAct: %d\n", m_curEvent);
+	for (int i = 0; i < m_events.numElem(); i++)
+	{
+		actionEvent_t* ev = m_events[i];
+
+		debugoverlay->Text(color4_white, "event %2d %s %s\n", ev->id, eventTypeStr[ev->states[0].type], m_curEvent==i? "X" : "-");
+	}
+	*/
 }
 
 //---------------------------------------------------
@@ -215,22 +215,126 @@ void CEditorActionObserver::Redo()
 
 void CEditorActionObserver::OnCreate( CUndoableObject* object )
 {
-	ASSERTMSG(false, "CEditorActionObserver::OnCreate not implemented");
+	RewindEvents();
+
+	EnsureActiveEvent();
+	RecordState(m_activeEvent, object, HIST_ACT_CREATION);
 }
 
 void CEditorActionObserver::OnDelete( CUndoableObject* object )
 {
-	for (int i = 0; i < m_events.numElem(); i++)
+	RewindEvents();
+
+	EnsureActiveEvent();
+    undoableData_t* data = RecordState(m_activeEvent, object, HIST_ACT_DELETION);
+	data->object = nullptr;
+}
+
+void CEditorActionObserver::RewindEvents()
+{
+	// if we has something on stack
+	if (m_events.numElem() > 0)
 	{
-		// really it has to be duplicated
-		if (m_events[i].subject->object == object)
+		// if we somewhere in a middle of history
+		if (m_curEvent < m_events.numElem() - 1)
 		{
-			m_events.fastRemoveIndex(i);
-			i--;
+			// remove 'parallel' future lines of history
+			m_events.setNum(m_curEvent + 1);
+			m_curEvent = m_events.numElem()-1;
+		}
+	}
+}
+
+undoableData_t*	CEditorActionObserver::TrackUndoable(CUndoableObject* object)
+{
+	undoableData_t* data = nullptr;
+	for (int i = 0; i < m_tracking.numElem(); i++)
+	{
+		if (m_tracking[i]->object == object)
+		{
+			data = m_tracking[i];
+			break;
 		}
 	}
 
-	//ASSERTMSG(false, "CEditorActionObserver::OnDelete not implemented");
+	// add undoable tracking data
+	if (!data)
+	{
+		data = new undoableData_t();
+		data->object = object;
+		data->undeleteFunc = object->Undoable_GetFactoryFunc();
+
+		m_tracking.append(data);
+	}
+
+	return data;
+}
+
+bool CEditorActionObserver::IsTrackedUndoable(CUndoableObject* object)
+{
+	for (int i = 0; i < m_tracking.numElem(); i++)
+	{
+		if (m_tracking[i]->object == object)
+			return true;
+	}
+	return false;
+}
+
+histState_t* CEditorActionObserver::GetLastHistoryOn(CUndoableObject* object, int& stepsAway, int skipEvents /*= 0*/)
+{
+	stepsAway = 0;
+
+	if (!m_events.numElem())
+		return nullptr;
+
+	for (int i = m_curEvent; i >= 0; i--)
+	{
+		actionEvent_t* evt = m_events[i];
+		for (int j = 0; j < evt->states.numElem(); j++)
+		{
+			histState_t& state = evt->states[j];
+
+			if (state.subject->object == object)
+			{
+				if (skipEvents-- <= 0)
+					return &state;
+				else
+					break;
+			}
+			else
+				stepsAway++;
+		}
+	}
+
+	return nullptr;
+}
+
+void CEditorActionObserver::EnsureActiveEvent()
+{
+	if (m_activeEvent)
+		return;
+
+	// make a new event
+	m_activeEvent = new actionEvent_t;
+	m_activeEvent->id = m_actionContextId;
+}
+
+undoableData_t* CEditorActionObserver::RecordState(actionEvent_t* storeTo, CUndoableObject* object, EHistoryAction type)
+{
+	undoableData_t* data = TrackUndoable(object);
+
+	// add the state to the active event
+	histState_t ev;
+	ev.subject = data;
+	ev.type = type;
+	ev.streamStart = data->changesStream.Tell();
+
+	storeTo->states.append(ev);
+
+	// store object
+	object->Undoable_WriteObjectData(&data->changesStream);
+
+	return data;
 }
 
 void CEditorActionObserver::BeginModify( CUndoableObject* object )
@@ -243,61 +347,64 @@ void CEditorActionObserver::BeginModify( CUndoableObject* object )
 
 	object->m_modifyMark++;
 
-	// if we has something on stack
-	if(m_events.numElem() > 0)
-	{
-		if(m_curEvent == NO_HISTORY)
-			m_curEvent = 0;
+	// rewind if user did Undo
+	RewindEvents();
 
-		// if we somewhere in a middle of history
-		if(m_curEvent < m_events.numElem()-1)
+	// Before first action object must be recorded.
+	// It's required for backwards action
+	int stateStepsAway = 0;
+	histState_t* lastState = GetLastHistoryOn(object, stateStepsAway, 0);
+	if (!lastState)
+	{
+		EnsureActiveEvent();
+
+		if (!m_events.numElem())
 		{
-			// remove 'parallel' future lines of history
-			m_events.setNum(m_curEvent +1);
+			m_curEvent = m_events.addUnique(m_activeEvent);
+			m_activeEvent = nullptr;
 		}
+
+		// push into last action (or new one above)
+		RecordState(m_events[m_curEvent], object, HIST_ACT_STOREINIT);
+	}
+	else if (lastState->type != HIST_ACT_DELETION && stateStepsAway > 0)
+	{
+		// copy last history state
+		histState_t clonedState;
+		clonedState.type = HIST_ACT_MODIFY;
+		clonedState.subject = lastState->subject;
+		clonedState.streamStart = lastState->streamStart;
+
+		// add to previous event only
+		m_events[m_curEvent]->states.append(clonedState);
 	}
 
-	undoableData_t* data = new undoableData_t();
-	data->object = object;
+	EnsureActiveEvent();
 
-	// add the history block
-	histEvent_t ev;
-	ev.subject = data;
-	ev.type = HIST_ACT_MODIFY;
-	ev.context = m_actionContextId;
-	ev.streamStart = data->Push();
-
-	m_events.append(ev);
-	m_curEvent++;
-
-	m_tracking.append(data);
+	undoableData_t* data = TrackUndoable(object);
+	m_editing.append(data);
 }
 
-void CEditorActionObserver::EndModify()
+void CEditorActionObserver::EndAction()
 {
-	if (!m_tracking.numElem())
+	if (!m_activeEvent)
 		return;
+		
+	// unlock objects
+	for (int i = 0; i < m_editing.numElem(); i++)
+	{
+		undoableData_t* data = RecordState(m_activeEvent, m_editing[i]->object, HIST_ACT_MODIFY);
+		m_editing[i]->object->m_modifyMark = 0;
+	}
+	m_editing.clear();
 
-	// OK
-	for(int i = 0; i < m_tracking.numElem(); i++)
-		m_tracking[i]->object->m_modifyMark = 0;
+	if (m_activeEvent->states.numElem())
+		m_curEvent = m_events.append(m_activeEvent);
+	else
+		delete m_activeEvent;
 
 	m_actionContextId++;
-
-	m_tracking.clear();
-}
-
-void CEditorActionObserver::CancelModify()
-{
-	for (int i = 0; i < m_tracking.numElem(); i++)
-	{
-		undoableData_t* subject = m_tracking[i];
-		subject->object->m_modifyMark = false;
-	}
-
-	m_tracking.clear();
-
-	Redo();
+	m_activeEvent = nullptr;
 }
 
 int CEditorActionObserver::GetUndoSteps() const

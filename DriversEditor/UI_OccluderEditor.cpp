@@ -120,7 +120,7 @@ void CUI_OccluderEditor::MouseTranslateEvents(wxMouseEvent& event, const Vector3
 
 		g_pMainFrame->NotifyUpdate();
 
-		g_pEditorActionObserver->EndModify();
+		g_pEditorActionObserver->EndAction();
 	}
 }
 

@@ -19,6 +19,8 @@
 #include "physics.h"
 #include "level.h"
 
+#define LEVEL_EDITOR_TITLE "Mr.Citybuilder"
+
 class IEditorTool;
 class CLoadLevelDialog;
 class CNewLevelDialog;
@@ -83,6 +85,8 @@ public:
 	bool			IsHfieldHelpersDrawn() const;
 
 protected:
+
+	void			UpdateTitleName();
 
 	bool			m_bNeedsSave;
 	bool			m_bSavedOnDisk;

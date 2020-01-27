@@ -236,6 +236,7 @@ public:
 #ifdef EDITOR
 	void					RefreshPreview();
 
+	int						m_id;
 	bool					m_placeable;
 	wlightdata_t			m_lightData;
 #endif // EDITOR

@@ -214,6 +214,7 @@ protected:
 public:
 	CEditorLevelRegion*		m_regions;
 
+	int						m_objectDefIdCounter;
 protected:
 #else
 	CLevelRegion*			m_regions;

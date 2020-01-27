@@ -208,6 +208,9 @@ public:
 	void						ClearRoadTrafficLightStates();
 	void						PostprocessCellObject(regionObject_t* obj);
 
+	void						Ed_AddObject(regionObject_t* obj);
+	void						Ed_RemoveObject(regionObject_t* obj);
+
 	int							Ed_SelectRef(const Vector3D& start, const Vector3D& dir, float& dist);
 	int							Ed_SelectBuilding(const Vector3D& start, const Vector3D& dir, float& dist);
 

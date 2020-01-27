@@ -465,6 +465,8 @@ CMainWindow::CMainWindow( wxWindow* parent, wxWindowID id, const wxString& title
 	m_bNeedsSave = false;
 	m_bSavedOnDisk = false;
 
+	UpdateTitleName();
+
 	m_menu_environment = NULL;
 	m_menu_environment_itm = NULL;
 }
@@ -540,6 +542,16 @@ void CMainWindow::OnLevelLoad()
 	g_pEditorActionObserver->OnLevelLoad();
 
 	m_regionEditorFrame->OnLevelLoad();
+}
+
+void CMainWindow::UpdateTitleName()
+{
+	wxString titleStr(wxString(LEVEL_EDITOR_TITLE " - \"") + g_pGameWorld->GetLevelName() + wxString("\""));
+
+	if (m_bNeedsSave)
+		titleStr += "*";
+
+	SetTitle(titleStr);
 }
 
 void CMainWindow::LoadEditPrefab(const char* name)
@@ -621,6 +633,8 @@ void CMainWindow::OpenLevelPrompt()
 		OnLevelLoad();
 		m_loadingDialog->Hide();
 
+		UpdateTitleName();
+
 		//ResetViews();
 		//UpdateAllWindows();
 
@@ -659,6 +673,8 @@ void CMainWindow::NewLevelPrompt()
 
 		m_bNeedsSave = false;
 		m_bSavedOnDisk = false;
+
+		UpdateTitleName();
 
 		g_pGameWorld->SetEnvironmentName("day_clear");
 
@@ -699,6 +715,7 @@ void CMainWindow::NewLevelPrompt()
 void CMainWindow::NotifyUpdate()
 {
 	m_bNeedsSave = true;
+	UpdateTitleName();
 }
 
 bool CMainWindow::IsNeedsSave()
@@ -770,6 +787,8 @@ bool CMainWindow::SavePrompt(bool showQuestion, bool changeLevelName, bool bForc
 
 			m_bSavedOnDisk = true;
 			m_bNeedsSave = false;
+
+			UpdateTitleName();
 
 			for(int i = 0; i < m_tools.numElem(); i++)
 				m_tools[i]->OnLevelSave();
@@ -1271,6 +1290,8 @@ void CMainWindow::ReDraw()
 		ShowFPS();
 		debugoverlay->Text(color4_white, "Camera position: %g %g %g\n", g_camera_target.x,g_camera_target.y,g_camera_target.z);
 
+		g_pEditorActionObserver->DebugDisplay();
+
 		FogInfo_t fog;
 		materials->GetFogInfo(fog);
 
@@ -1456,7 +1477,7 @@ bool CEGFViewApp::OnInit()
 	}
 
 	// init window
-	g_pMainFrame = new CMainWindow(NULL, -1, DKLOC("TOKEN_TITLE", "Driver Syndicate Level Editor"));
+	g_pMainFrame = new CMainWindow(NULL, -1, LEVEL_EDITOR_TITLE);
 	g_pMainFrame->Centre();
 	g_pMainFrame->Show(true);
 

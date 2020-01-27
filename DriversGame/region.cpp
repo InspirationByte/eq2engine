@@ -22,10 +22,6 @@ ConVar nav_debug_map("nav_debug_map", "0", nullptr, CV_CHEAT);
 
 regionObject_t::~regionObject_t()
 {
-#ifdef EDITOR
-	g_pEditorActionObserver->OnDelete(this);
-#endif // EDITOR
-
 	regionIdx = -1;
 
 	// no def = fake object
@@ -55,9 +51,36 @@ void regionObject_t::RemoveGameObject()
 }
 
 #ifdef EDITOR
+CUndoableObject* _regionObjectFactory(IVirtualStream* stream)
+{
+	regionObject_t* obj = new regionObject_t();
+	obj->Undoable_ReadObjectData(stream);
+
+	ASSERT(obj->def != nullptr);
+
+	CEditorLevelRegion& region = g_pGameWorld->m_level.m_regions[obj->regionIdx];
+	region.m_objects.append(obj);
+
+	return obj;
+}
+
+UndoableFactoryFunc	regionObject_t::Undoable_GetFactoryFunc()
+{
+	return _regionObjectFactory;
+}
+
+void regionObject_t::Undoable_Remove()
+{
+	CEditorLevelRegion& region = g_pGameWorld->m_level.m_regions[regionIdx];
+	region.m_objects.fastRemove(this);
+	delete this;
+}
+
 // writing object
 bool regionObject_t::Undoable_WriteObjectData(IVirtualStream* stream)
 {
+	stream->Write(&def->m_id, 1, sizeof(int));
+
 	stream->Write(&tile_x, 1, sizeof(tile_x));
 	stream->Write(&tile_y, 1, sizeof(tile_y));
 	stream->Write(&position, 1, sizeof(position));
@@ -77,6 +100,16 @@ bool regionObject_t::Undoable_WriteObjectData(IVirtualStream* stream)
 // reading object
 void regionObject_t::Undoable_ReadObjectData(IVirtualStream* stream)
 {
+	int readId = 0;
+	stream->Read(&readId, 1, sizeof(int));
+
+	CLevObjectDef** defPtr = g_pGameWorld->m_level.m_objectDefs.findFirst([readId](CLevObjectDef* sdef) {
+		return (sdef->m_id == readId);
+	});
+
+	if (defPtr && !def)
+		def = *defPtr;
+
 	stream->Read(&tile_x, 1, sizeof(tile_x));
 	stream->Read(&tile_y, 1, sizeof(tile_y));
 	stream->Read(&position, 1, sizeof(position));
@@ -115,18 +148,6 @@ void regionObject_t::CalcBoundingBox()
 	// set reference bbox for light testing
 	bbox = tbbox;
 }
-
-UNDOABLE_FACTORY_BEGIN(regionObject_t)
-{
-	regionObject_t* obj = new regionObject_t();
-	obj->Undoable_ReadObjectData(stream);
-
-	CEditorLevelRegion& region = g_pGameWorld->m_level.m_regions[obj->regionIdx];
-	region.m_objects.append(obj);
-
-	return obj;
-}
-UNDOABLE_FACTORY_END
 
 //-----------------------------------------------------------------------------------------
 

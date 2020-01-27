@@ -772,8 +772,14 @@ CEditorLevelRegion* CEditorLevel::Ed_MakeObjectRegionValid(regionObject_t* obj, 
 	// if region at it's position does not matching, it should be moved
 	if (correctReg != itsRegion)
 	{
-		correctReg->m_objects.append(obj);
+		//g_pEditorActionObserver->OnDelete(obj);
+
 		itsRegion->m_objects.fastRemove(obj);
+
+		obj->regionIdx = correctReg->m_regionIndex;
+		correctReg->m_objects.append(obj);
+
+		//g_pEditorActionObserver->OnCreate(obj);
 	}
 
 	return correctReg;
@@ -1402,7 +1408,7 @@ void CEditorLevel::PlacePrefab(const IVector2D& globalTile, int height, int rota
 	Msg("	prefab regions [%d %d] to [%d %d]\n", regionsMin.x, regionsMin.y, regionsMax.x, regionsMax.y);
 
 	// cancel any actions
-	g_pEditorActionObserver->EndModify();
+	g_pEditorActionObserver->EndAction();
 
 	//
 	// placing prefab to regions
@@ -1425,7 +1431,7 @@ void CEditorLevel::PlacePrefab(const IVector2D& globalTile, int height, int rota
 		}
 	}
 
-	g_pEditorActionObserver->EndModify();
+	g_pEditorActionObserver->EndAction();
 }
 
 IVector2D RotatePoint(const IVector2D& point, int rotation)
@@ -2172,6 +2178,31 @@ float CheckStudioRayIntersection(IEqModel* pModel, Vector3D& ray_start, Vector3D
 	}
 
 	return best_dist;
+}
+
+void CEditorLevelRegion::Ed_AddObject(regionObject_t* obj)
+{
+	if (obj->def->m_info.type == LOBJ_TYPE_INTERNAL_STATIC)
+		obj->def->Ref_Grab();
+
+	obj->regionIdx = m_regionIndex;
+	m_objects.addUnique(obj);
+
+	g_pEditorActionObserver->OnCreate(obj);
+}
+
+void CEditorLevelRegion::Ed_RemoveObject(regionObject_t* obj)
+{
+	// before it can be dropped it must be registered in action observer
+	g_pEditorActionObserver->OnDelete(obj);
+
+	if (obj->def->m_info.type == LOBJ_TYPE_INTERNAL_STATIC)
+		obj->def->Ref_Drop();
+
+	obj->regionIdx = -1;
+	m_objects.fastRemove(obj);
+
+	delete obj;
 }
 
 int CEditorLevelRegion::Ed_SelectRef(const Vector3D& start, const Vector3D& dir, float& dist)

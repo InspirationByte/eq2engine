@@ -1373,7 +1373,7 @@ void CUI_HeightEdit::MouseEventOnTile( wxMouseEvent& event, hfieldtile_t* tile, 
 
 	if(event.ButtonUp())
 	{
-		g_pEditorActionObserver->EndModify();
+		g_pEditorActionObserver->EndAction();
 	}
 }
 

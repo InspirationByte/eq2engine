@@ -824,12 +824,14 @@ void CModelListRenderPanel::RefreshLevelModels()
 	RefreshScrollbar();
 }
 
-void CModelListRenderPanel::AddModel(CLevObjectDef* container)
+void CModelListRenderPanel::AddModel(CLevObjectDef* def)
 {
 	// it hast to be always loaded
-	container->Ref_Grab();
+	def->Ref_Grab();
 
-	g_pGameWorld->m_level.m_objectDefs.append(container);
+	def->m_id = g_pGameWorld->m_level.m_objectDefIdCounter++;
+
+	g_pGameWorld->m_level.m_objectDefs.append(def);
 	RefreshLevelModels();
 }
 
@@ -1266,18 +1268,11 @@ void CUI_LevelModels::DeleteSelection()
 {
 	for(int i = 0; i < m_selRefs.numElem(); i++)
 	{
-		CLevObjectDef* cont = m_selRefs[i].selRef->def;
-
-		// remove and invalidate
-		delete m_selRefs[i].selRef;
+		m_selRefs[i].selRegion->Ed_RemoveObject( m_selRefs[i].selRef );
 	}
-
-	for(int i = 0; i < m_selRefs.numElem(); i++)
-	{
-		m_selRefs[i].selRegion->m_objects.remove( m_selRefs[i].selRef );
-	}
-
 	m_selRefs.clear();
+
+	g_pEditorActionObserver->EndAction();
 
 	g_pMainFrame->NotifyUpdate();
 }
@@ -1288,27 +1283,27 @@ void CUI_LevelModels::DuplicateSelection()
 
 	for(int i = 0; i < m_selRefs.numElem(); i++)
 	{
+		regionObject_t* srcRef = m_selRefs[i].selRef;
+
 		regionObject_t* modelref = new regionObject_t;
 		
-		modelref->def = m_selRefs[i].selRef->def;
-		modelref->position = m_selRefs[i].selRef->position;
-		modelref->rotation = m_selRefs[i].selRef->rotation;
-		modelref->tile_x = 0xFFFF;//m_selRefs[i].selRef->tile_x;
-		modelref->tile_y = 0xFFFF;//m_selRefs[i].selRef->tile_y;
-
-		CLevObjectDef* cont = modelref->def;
-
-		// remove and invalidate
-		if(cont->m_info.type == LOBJ_TYPE_INTERNAL_STATIC)
-			cont->Ref_Grab();
+		modelref->def = srcRef->def;
+		modelref->position = srcRef->position;
+		modelref->rotation = srcRef->rotation;
+		modelref->tile_x = 0xFFFF;//srcRef->tile_x;
+		modelref->tile_y = 0xFFFF;//srcRef->tile_y;
 
 		//ref->tile_x += 1;
 		//ref->tile_y += 1;
-		modelref->position += Vector3D(1,0,1);
 
-		m_selectedRegion->m_objects.append( modelref );
+		modelref->position += Vector3D(1, 0, 1);
+
+		m_selectedRegion->Ed_AddObject(modelref);
 		newObjects.append(modelref);
 	}
+
+	g_pEditorActionObserver->EndAction();
+	g_pMainFrame->NotifyUpdate();
 	
 	ClearSelection();
 
@@ -1320,8 +1315,6 @@ void CUI_LevelModels::DuplicateSelection()
 
 		ToggleSelection(sel);
 	}
-
-	g_pMainFrame->NotifyUpdate();
 }
 
 void CUI_LevelModels::ProcessMouseEvents(wxMouseEvent& event)
@@ -1437,8 +1430,6 @@ void CUI_LevelModels::MouseTranslateEvents( wxMouseEvent& event, const Vector3D&
 				// move selection to new region and recalculate it's position
 				if (tilePos.x < 0 || tilePos.y < 0 || tilePos.x >= regW || tilePos.y >= regH)
 				{
-					Msg("Outside region: %d %d\n", tilePos.x, tilePos.y);
-
 					MoveRefToNewRegion(selection);
 					tilePos = selection.selRegion->PositionToCell(ref->position);
 				}
@@ -1463,7 +1454,7 @@ void CUI_LevelModels::MouseTranslateEvents( wxMouseEvent& event, const Vector3D&
 
 		g_pMainFrame->NotifyUpdate();
 
-		g_pEditorActionObserver->EndModify();
+		g_pEditorActionObserver->EndAction();
 	}
 }
 
@@ -1534,7 +1525,7 @@ void CUI_LevelModels::MouseRotateEvents( wxMouseEvent& event, const Vector3D& ra
 		RecalcSelectionCenter();
 		g_pMainFrame->NotifyUpdate();
 
-		g_pEditorActionObserver->EndModify();
+		g_pEditorActionObserver->EndAction();
 	}
 }
 
@@ -1577,23 +1568,30 @@ void CUI_LevelModels::MousePlacementEvents( wxMouseEvent& event, hfieldtile_t* t
 				}
 			}
 
-			if(!ref)
+			bool isNew = false;
+
+			if (ref)
+			{
+				g_pEditorActionObserver->BeginModify(ref);
+
+				if (ref->def->m_info.type == LOBJ_TYPE_INTERNAL_STATIC)
+				{
+					// drop old reference... in case of replacement
+					ref->def->Ref_Drop();
+					ref->def = selectedDef;
+				}
+			}
+			else
 			{
 				ref = new regionObject_t;
-				m_selectedRegion->m_objects.append( ref );
+				ref->def = selectedDef;
+				isNew = true;
 			}
-			else if(ref->def->m_info.type == LOBJ_TYPE_INTERNAL_STATIC)
-			{
-				// drop old reference... in case of replacement
-				ref->def->Ref_Drop();
-			}
-
-			ref->def = selectedDef;
 
 			// grab new reference
 			if(ref->def->m_info.type == LOBJ_TYPE_INTERNAL_STATIC)
 				ref->def->Ref_Grab();
-			
+
 			ref->rotation = Vector3D(0, -m_rotation*90.0f, 0);
 
 			ref->tile_x = m_tiledPlacement->GetValue() ? tx : 0xFFFF;
@@ -1607,6 +1605,9 @@ void CUI_LevelModels::MousePlacementEvents( wxMouseEvent& event, hfieldtile_t* t
 			else
 				ref->position = ppos;
 
+			if(isNew)
+				m_selectedRegion->Ed_AddObject(ref);
+
 			ClearSelection();
 
 			// autoselect placed model
@@ -1619,6 +1620,7 @@ void CUI_LevelModels::MousePlacementEvents( wxMouseEvent& event, hfieldtile_t* t
 				ToggleSelection(sel);
 			}
 
+			g_pEditorActionObserver->EndAction();
 			g_pMainFrame->NotifyUpdate();
 		}
 	}

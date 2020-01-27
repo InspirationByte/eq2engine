@@ -152,8 +152,10 @@ class CLevelModel;
 class regionObject_t : public CUndoableObject
 {
 public:
-	bool		Undoable_WriteObjectData(IVirtualStream* stream);	// writing object
-	void		Undoable_ReadObjectData(IVirtualStream* stream);	// reading object
+	UndoableFactoryFunc	Undoable_GetFactoryFunc();
+	void				Undoable_Remove();
+	bool				Undoable_WriteObjectData(IVirtualStream* stream);	// writing object
+	void				Undoable_ReadObjectData(IVirtualStream* stream);	// reading object
 
 #else
 struct regionObject_t

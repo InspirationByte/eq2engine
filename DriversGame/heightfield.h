@@ -298,6 +298,8 @@ public:
 
 #ifdef EDITOR
 protected:
+	UndoableFactoryFunc		Undoable_GetFactoryFunc() { return nullptr; }
+	void					Undoable_Remove() {}
 	bool					Undoable_WriteObjectData( IVirtualStream* stream );	// writing object
 	void					Undoable_ReadObjectData( IVirtualStream* stream );	// reading object
 #endif // EDITOR

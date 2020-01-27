@@ -531,6 +531,10 @@ void CGameLevel::InitObjectDefFromKeyValues(CLevObjectDef* def, kvkeybase_t* def
 
 void CGameLevel::ReadObjectDefsLump(IVirtualStream* stream, kvkeybase_t* kvDefs)
 {
+#ifdef EDITOR
+	m_objectDefIdCounter = 0;
+#endif // EDITOR
+
 	//long fpos = stream->Tell();
 
 	int numModels = 0;
@@ -554,6 +558,7 @@ void CGameLevel::ReadObjectDefsLump(IVirtualStream* stream, kvkeybase_t* kvDefs)
 
 #ifdef EDITOR
 		def->Ref_Grab();
+		def->m_id = m_objectDefIdCounter++;
 #endif // EDITOR
 
 		if(def->m_info.type == LOBJ_TYPE_INTERNAL_STATIC)
