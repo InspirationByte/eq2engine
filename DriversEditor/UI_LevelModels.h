@@ -113,6 +113,8 @@ public:
 	void						ProcessMouseEvents(wxMouseEvent& event);
 	void						MouseEventOnTile( wxMouseEvent& event, hfieldtile_t* tile, int tx, int ty, const Vector3D& ppos );
 
+	void						OnHistoryEvent(CUndoableObject* undoable, int eventType);
+
 	void						MousePlacementEvents( wxMouseEvent& event, hfieldtile_t* tile, int tx, int ty, const Vector3D& ppos );
 
 	void						MouseTranslateEvents( wxMouseEvent& event, const Vector3D& ray_start, const Vector3D& ray_dir );

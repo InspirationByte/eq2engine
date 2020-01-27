@@ -8,6 +8,8 @@
 #ifndef EDITINTERFACE_H
 #define EDITINTERFACE_H
 
+class CUndoableObject;
+
 class IEditorTool
 {
 public:
@@ -25,6 +27,8 @@ public:
 	virtual void		OnLevelUnload() {};
 	virtual void		OnLevelLoad() {};
 	virtual void		OnLevelSave() {};
+
+	virtual void		OnHistoryEvent(CUndoableObject* undoable, int eventType) {}
 
 	virtual void		OnSwitchedTo() { Update_Refresh(); };
 	virtual void		OnSwitchedFrom() {};

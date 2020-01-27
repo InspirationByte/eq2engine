@@ -77,6 +77,8 @@ public:
 	void			OnLevelLoad();
 
 	void			NotifyUpdate();
+	void			OnHistoryEvent(CUndoableObject* undoable, int eventType);
+
 	bool			IsNeedsSave();
 	bool			IsSavedOnDisk();
 

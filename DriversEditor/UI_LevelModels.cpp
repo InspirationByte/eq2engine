@@ -1366,6 +1366,30 @@ void CUI_LevelModels::ProcessMouseEvents(wxMouseEvent& event)
 	}
 }
 
+void CUI_LevelModels::OnHistoryEvent(CUndoableObject* undoable, int eventType)
+{
+	if (eventType == HIST_ACT_DELETION)
+	{
+		regionObject_t* regObj = dynamic_cast<regionObject_t*>(undoable);
+
+		if (regObj)
+		{
+			for (int i = 0; i < m_selRefs.numElem(); i++)
+			{
+				if (m_selRefs[i].selRef == regObj)
+				{
+					m_selRefs[i].selRef->hide = false;
+					m_selRefs.fastRemoveIndex(i);
+					i--;
+				}
+			}
+		}
+	}
+
+	if (eventType == HIST_ACT_COMPLETED)
+		RecalcSelectionCenter();
+}
+
 void CUI_LevelModels::MouseEventOnTile( wxMouseEvent& event, hfieldtile_t* tile, int tx, int ty, const Vector3D& ppos )
 {
 	MousePlacementEvents(event, tile, tx, ty, ppos);

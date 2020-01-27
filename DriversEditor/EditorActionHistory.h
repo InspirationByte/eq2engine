@@ -17,7 +17,9 @@ enum EHistoryAction
 	HIST_ACT_DELETION,		// object deleted by user
 
 	HIST_ACT_MODIFY,		// object modified
-	HIST_ACT_STOREINIT		// object intially stored before modifying
+	HIST_ACT_STOREINIT,		// object intially stored before modifying
+
+	HIST_ACT_COMPLETED,		// only used in OnHistoryEvent
 };
 
 class CUndoableObject;

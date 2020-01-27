@@ -6,7 +6,7 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "EditorActionHistory.h"
-#include "IDebugOverlay.h"
+#include "EditorMain.h"
 
 static CEditorActionObserver s_editActionObserver;
 CEditorActionObserver* g_pEditorActionObserver = &s_editActionObserver;
@@ -88,6 +88,9 @@ void CEditorActionObserver::Undo()
 			// execute deletion on creation event
 			if (state.type == HIST_ACT_CREATION)
 			{
+				// do tool events
+				g_pMainFrame->OnHistoryEvent(undoable->object, HIST_ACT_DELETION);
+
 				if (undoable->object)
 					undoable->object->Undoable_Remove();
 				undoable->object = nullptr;
@@ -98,6 +101,9 @@ void CEditorActionObserver::Undo()
 
 				if (!undoable->object)
 					undoable->object = (undoable->undeleteFunc)(&undoable->changesStream);
+
+				// do tool events
+				g_pMainFrame->OnHistoryEvent(undoable->object, HIST_ACT_CREATION);
 			}
 		}
 	}
@@ -124,9 +130,14 @@ void CEditorActionObserver::Undo()
 					undoable->object = (undoable->undeleteFunc)(&undoable->changesStream);
 				else
 					undoable->object->Undoable_ReadObjectData(&undoable->changesStream);
+
+				// do tool events
+				g_pMainFrame->OnHistoryEvent(undoable->object, state.type == HIST_ACT_STOREINIT ? HIST_ACT_MODIFY : state.type);
 			}
 		}
 	}
+
+	g_pMainFrame->OnHistoryEvent(nullptr, HIST_ACT_COMPLETED);
 }
 
 void CEditorActionObserver::Redo()
@@ -146,6 +157,9 @@ void CEditorActionObserver::Redo()
 			// execute deletion on deletion event
 			if (state.type == HIST_ACT_DELETION)
 			{
+				// do tool events
+				g_pMainFrame->OnHistoryEvent(undoable->object, HIST_ACT_DELETION);
+
 				if (undoable->object)
 					undoable->object->Undoable_Remove();
 				undoable->object = nullptr;
@@ -168,6 +182,9 @@ void CEditorActionObserver::Redo()
 
 			if (state.type == HIST_ACT_DELETION)
 			{
+				// do tool events
+				g_pMainFrame->OnHistoryEvent(undoable->object, HIST_ACT_DELETION);
+
 				if (undoable->object)
 					undoable->object->Undoable_Remove();
 				undoable->object = nullptr;
@@ -178,6 +195,9 @@ void CEditorActionObserver::Redo()
 
 				if (!undoable->object)
 					undoable->object = (undoable->undeleteFunc)(&undoable->changesStream);
+
+				// do tool events
+				g_pMainFrame->OnHistoryEvent(undoable->object, HIST_ACT_CREATION);
 			}
 			else if (state.type == HIST_ACT_MODIFY || state.type == HIST_ACT_STOREINIT)
 			{
@@ -188,9 +208,14 @@ void CEditorActionObserver::Redo()
 					undoable->object = (undoable->undeleteFunc)(&undoable->changesStream);
 				else
 					undoable->object->Undoable_ReadObjectData(&undoable->changesStream);
+
+				// do tool events
+				g_pMainFrame->OnHistoryEvent(undoable->object, HIST_ACT_MODIFY);
 			}
 		}
 	}
+
+	g_pMainFrame->OnHistoryEvent(nullptr, HIST_ACT_COMPLETED);
 }
 
 static const char* eventTypeStr[] = {
@@ -218,6 +243,7 @@ void CEditorActionObserver::DebugDisplay()
 
 void CEditorActionObserver::OnCreate( CUndoableObject* object )
 {
+	// rewind if user did Undo
 	RewindEvents();
 
 	EnsureActiveEvent();
@@ -226,6 +252,7 @@ void CEditorActionObserver::OnCreate( CUndoableObject* object )
 
 void CEditorActionObserver::OnDelete( CUndoableObject* object )
 {
+	// rewind if user did Undo
 	RewindEvents();
 
 	EnsureActiveEvent();
@@ -235,40 +262,29 @@ void CEditorActionObserver::OnDelete( CUndoableObject* object )
 
 void CEditorActionObserver::RewindEvents()
 {
-	// if we has something on stack
-	if (m_events.numElem() > 0)
+	// don't perform rewind while has active event
+	if (m_activeEvent)
+		return;
+
+	// before we drop future events -
+	// tracked objects must be removed
+	for (int i = 0; i < m_tracking.numElem(); i++)
 	{
-		m_curEvent = max(m_curEvent, 0);
-
-		// if we somewhere in a middle of history
-		if (m_curEvent < m_events.numElem()-1)
+		if (!HasHistoryToCurrentEvent(m_tracking[i]->object))
 		{
-			// before we drop future events -
-			// tracked objects must be removed
-			for (int i = 0; i < m_tracking.numElem(); i++)
-			{
-				if (!HasHistoryToCurrentEvent(m_tracking[i]->object))
-				{
-					delete m_tracking[i];
-					m_tracking.fastRemoveIndex(i);
-					i--;
-				}
-			}
-
-			for (int i = m_curEvent; i < m_events.numElem(); i++)
-				delete m_events[i];
-
-			// remove 'parallel' future lines of history
-			if (m_curEvent > 0)
-			{
-				m_events.setNum(m_curEvent);
-				m_curEvent = m_events.numElem() - 1;
-				
-			}
-			else
-				m_events.clear();
+			delete m_tracking[i];
+			m_tracking.fastRemoveIndex(i);
+			i--;
 		}
 	}
+
+	for (int i = m_curEvent+1; i < m_events.numElem(); i++)
+		delete m_events[i];
+
+	if (m_curEvent == 0)
+		m_events.clear();
+	else
+		m_events.setNum(m_curEvent+1);
 }
 
 undoableData_t*	CEditorActionObserver::TrackUndoable(CUndoableObject* object)

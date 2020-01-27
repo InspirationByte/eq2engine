@@ -91,6 +91,7 @@ public:
 	DECLARE_EVENT_TABLE()
 protected:
 
+
 	void					OnSizeEvent(wxSizeEvent &event);
 	void					OnIdle(wxIdleEvent &event);
 	void					OnEraseBackground(wxEraseEvent& event);

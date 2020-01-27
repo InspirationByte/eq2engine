@@ -714,8 +714,17 @@ void CMainWindow::NewLevelPrompt()
 
 void CMainWindow::NotifyUpdate()
 {
-	m_bNeedsSave = true;
-	UpdateTitleName();
+	if (!m_bNeedsSave)
+	{
+		m_bNeedsSave = true;
+		UpdateTitleName();
+	}
+}
+
+void CMainWindow::OnHistoryEvent(CUndoableObject* undoable, int eventType)
+{
+	m_selectedTool->OnHistoryEvent(undoable, eventType);
+	NotifyUpdate();
 }
 
 bool CMainWindow::IsNeedsSave()
