@@ -6,6 +6,7 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "EditorActionHistory.h"
+#include "IDebugOverlay.h"
 
 static CEditorActionObserver s_editActionObserver;
 CEditorActionObserver* g_pEditorActionObserver = &s_editActionObserver;
@@ -71,6 +72,8 @@ void CEditorActionObserver::ClearHistory()
 
 void CEditorActionObserver::Undo()
 {
+	m_curEvent = max(m_curEvent, 0);
+
 	// first execute HIST_ACT_CREATION
 	if (m_events.inRange(m_curEvent))
 	{
@@ -128,6 +131,8 @@ void CEditorActionObserver::Undo()
 
 void CEditorActionObserver::Redo()
 {
+	m_curEvent = min(m_curEvent, m_events.numElem()-1);
+
 	// first execute HIST_ACT_DELETION
 	if (m_events.inRange(m_curEvent))
 	{
@@ -197,7 +202,6 @@ static const char* eventTypeStr[] = {
 
 void CEditorActionObserver::DebugDisplay()
 {
-	/*
 	debugoverlay->Text(color4_white, "actions: %d\n", m_events.numElem() );
 	debugoverlay->Text(color4_white, "currentAct: %d\n", m_curEvent);
 	for (int i = 0; i < m_events.numElem(); i++)
@@ -206,7 +210,6 @@ void CEditorActionObserver::DebugDisplay()
 
 		debugoverlay->Text(color4_white, "event %2d %s %s\n", ev->id, eventTypeStr[ev->states[0].type], m_curEvent==i? "X" : "-");
 	}
-	*/
 }
 
 //---------------------------------------------------
@@ -235,12 +238,35 @@ void CEditorActionObserver::RewindEvents()
 	// if we has something on stack
 	if (m_events.numElem() > 0)
 	{
+		m_curEvent = max(m_curEvent, 0);
+
 		// if we somewhere in a middle of history
-		if (m_curEvent < m_events.numElem() - 1)
+		if (m_curEvent < m_events.numElem()-1)
 		{
+			// before we drop future events -
+			// tracked objects must be removed
+			for (int i = 0; i < m_tracking.numElem(); i++)
+			{
+				if (!HasHistoryToCurrentEvent(m_tracking[i]->object))
+				{
+					delete m_tracking[i];
+					m_tracking.fastRemoveIndex(i);
+					i--;
+				}
+			}
+
+			for (int i = m_curEvent; i < m_events.numElem(); i++)
+				delete m_events[i];
+
 			// remove 'parallel' future lines of history
-			m_events.setNum(m_curEvent + 1);
-			m_curEvent = m_events.numElem()-1;
+			if (m_curEvent > 0)
+			{
+				m_events.setNum(m_curEvent);
+				m_curEvent = m_events.numElem() - 1;
+				
+			}
+			else
+				m_events.clear();
 		}
 	}
 }
@@ -307,6 +333,23 @@ histState_t* CEditorActionObserver::GetLastHistoryOn(CUndoableObject* object, in
 	}
 
 	return nullptr;
+}
+
+bool CEditorActionObserver::HasHistoryToCurrentEvent(CUndoableObject* object)
+{
+	for (int i = 0; i < m_curEvent+1; i++)
+	{
+		actionEvent_t* evt = m_events[i];
+		for (int j = 0; j < evt->states.numElem(); j++)
+		{
+			histState_t& state = evt->states[j];
+
+			if (state.subject->object == object)
+				return true;
+		}
+	}
+
+	return false;
 }
 
 void CEditorActionObserver::EnsureActiveEvent()

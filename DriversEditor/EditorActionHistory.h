@@ -112,6 +112,7 @@ protected:
 	undoableData_t*		RecordState(actionEvent_t* storeTo, CUndoableObject* object, EHistoryAction type);
 
 	histState_t*		GetLastHistoryOn(CUndoableObject* object, int& stepsAway, int skipEvents = 0);
+	bool				HasHistoryToCurrentEvent(CUndoableObject* object);
 
 	bool				IsTrackedUndoable(CUndoableObject* object);
 
