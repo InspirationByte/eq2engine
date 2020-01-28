@@ -1293,6 +1293,9 @@ void CUI_LevelModels::DuplicateSelection()
 		modelref->tile_x = 0xFFFF;//srcRef->tile_x;
 		modelref->tile_y = 0xFFFF;//srcRef->tile_y;
 
+		if (srcRef->name.Length() > 0)
+			modelref->name = srcRef->name + "_copy";
+
 		//ref->tile_x += 1;
 		//ref->tile_y += 1;
 
@@ -1752,7 +1755,13 @@ void CUI_LevelModels::OnKey(wxKeyEvent& event, bool bDown)
 
 				if( dlg->ShowModal() == wxID_OK)
 				{
+					g_pEditorActionObserver->BeginModify(ref);
+
+					// set the new name
 					ref->name = dlg->GetValue();
+
+					g_pEditorActionObserver->EndAction();
+
 					g_pMainFrame->NotifyUpdate();
 				}
 
@@ -1794,6 +1803,7 @@ void CUI_LevelModels::ToggleSelectionTilesStick()
 	for (int i = 0; i < m_selRefs.numElem(); i++)
 	{
 		regionObject_t* ref = m_selRefs[i].selRef;
+		g_pEditorActionObserver->BeginModify(ref);
 
 		if (ref->tile_x != 0xFFFF)
 		{
@@ -1807,6 +1817,9 @@ void CUI_LevelModels::ToggleSelectionTilesStick()
 			ref->tile_y = tilePos.y;
 		}
 	}
+
+	g_pEditorActionObserver->EndAction();
+	g_pMainFrame->NotifyUpdate();
 
 	RecalcSelectionCenter();
 }

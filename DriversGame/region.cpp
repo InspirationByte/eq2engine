@@ -58,8 +58,7 @@ CUndoableObject* _regionObjectFactory(IVirtualStream* stream)
 
 	ASSERT(obj->def != nullptr);
 
-	CEditorLevelRegion& region = g_pGameWorld->m_level.m_regions[obj->regionIdx];
-	region.m_objects.append(obj);
+	obj->def->Ref_Grab();
 
 	return obj;
 }
@@ -71,6 +70,8 @@ UndoableFactoryFunc	regionObject_t::Undoable_GetFactoryFunc()
 
 void regionObject_t::Undoable_Remove()
 {
+	def->Ref_Drop();
+
 	CEditorLevelRegion& region = g_pGameWorld->m_level.m_regions[regionIdx];
 	region.m_objects.fastRemove(this);
 	delete this;
@@ -100,15 +101,17 @@ bool regionObject_t::Undoable_WriteObjectData(IVirtualStream* stream)
 // reading object
 void regionObject_t::Undoable_ReadObjectData(IVirtualStream* stream)
 {
-	int readId = 0;
-	stream->Read(&readId, 1, sizeof(int));
+	int defId = 0;
+	stream->Read(&defId, 1, sizeof(int));
 
-	CLevObjectDef** defPtr = g_pGameWorld->m_level.m_objectDefs.findFirst([readId](CLevObjectDef* sdef) {
-		return (sdef->m_id == readId);
+	CLevObjectDef** defPtr = g_pGameWorld->m_level.m_objectDefs.findFirst([defId](CLevObjectDef* sdef) {
+		return (sdef->m_id == defId);
 	});
 
 	if (defPtr && !def)
 		def = *defPtr;
+
+	int prevRegionIdx = regionIdx;
 
 	stream->Read(&tile_x, 1, sizeof(tile_x));
 	stream->Read(&tile_y, 1, sizeof(tile_y));
@@ -127,6 +130,16 @@ void regionObject_t::Undoable_ReadObjectData(IVirtualStream* stream)
 
 	// assign name
 	name = nameStr;
+
+	// move to new region if needed
+	if (prevRegionIdx != regionIdx)
+	{
+		if (prevRegionIdx >= 0)
+			g_pGameWorld->m_level.m_regions[prevRegionIdx].m_objects.fastRemove(this);
+
+		if (regionIdx >= 0)
+			g_pGameWorld->m_level.m_regions[regionIdx].m_objects.append(this);
+	}
 }
 #endif // EDITOR
 

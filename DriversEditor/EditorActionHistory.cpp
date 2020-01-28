@@ -35,7 +35,7 @@ CUndoableObject::CUndoableObject() : m_modifyMark(0)
 
 CEditorActionObserver::CEditorActionObserver()
 {
-	m_curEvent = 0;
+	m_curEvent = -1;
 }
 
 CEditorActionObserver::~CEditorActionObserver()
@@ -65,13 +65,16 @@ void CEditorActionObserver::ClearHistory()
 
 	m_editing.clear();
 
-	m_curEvent = 0;
+	m_curEvent = -1;
 	m_actionContextId = 0;
 	m_activeEvent = nullptr;
 }
 
 void CEditorActionObserver::Undo()
 {
+	if (!m_events.numElem())
+		return;
+
 	m_curEvent = max(m_curEvent, 0);
 
 	// first execute HIST_ACT_CREATION
@@ -142,6 +145,9 @@ void CEditorActionObserver::Undo()
 
 void CEditorActionObserver::Redo()
 {
+	if (!m_events.numElem())
+		return;
+
 	m_curEvent = min(m_curEvent, m_events.numElem()-1);
 
 	// first execute HIST_ACT_DELETION
@@ -281,7 +287,7 @@ void CEditorActionObserver::RewindEvents()
 	for (int i = m_curEvent+1; i < m_events.numElem(); i++)
 		delete m_events[i];
 
-	if (m_curEvent == 0)
+	if (m_curEvent < 0)
 		m_events.clear();
 	else
 		m_events.setNum(m_curEvent+1);
