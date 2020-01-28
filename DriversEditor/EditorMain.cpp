@@ -275,27 +275,27 @@ CMainWindow::CMainWindow( wxWindow* parent, wxWindowID id, const wxString& title
 	m_notebook1 = new wxNotebook( m_nbPanel, wxID_ANY, wxDefaultPosition, wxSize( -1,300 ), wxNB_FIXEDWIDTH );
 
 	m_hmapedit = new CUI_HeightEdit( m_notebook1 );
-	m_notebook1->AddPage( (CUI_HeightEdit*)m_hmapedit, wxT("Height field"), true );
+	m_notebook1->AddPage( (CUI_HeightEdit*)m_hmapedit, wxT("Heightfields"), true );
 
 	m_tools.append(m_hmapedit);
 
 	m_modelsedit = new CUI_LevelModels( m_notebook1 );
-	m_notebook1->AddPage( (CUI_LevelModels*)m_modelsedit, wxT("Level objects"), false );
+	m_notebook1->AddPage( (CUI_LevelModels*)m_modelsedit, wxT("Objects"), false );
 
 	m_tools.append(m_modelsedit);
 
-	m_roadedit = new CUI_BuildingConstruct( m_notebook1 );
-	m_notebook1->AddPage( (CUI_BuildingConstruct*)m_roadedit, wxT("Building constructor"), false );
+	m_splinesEdit = new CUI_BuildingConstruct( m_notebook1 );
+	m_notebook1->AddPage( (CUI_BuildingConstruct*)m_splinesEdit, wxT("Splines"), false );
 
-	m_tools.append(m_roadedit);
+	m_tools.append(m_splinesEdit);
 
 	m_occluderEditor = new CUI_OccluderEditor( m_notebook1 );
-	m_notebook1->AddPage( (CUI_OccluderEditor*)m_occluderEditor, wxT("Occluder editor"), false );
+	m_notebook1->AddPage( (CUI_OccluderEditor*)m_occluderEditor, wxT("Occluders"), false );
 
 	m_tools.append(m_occluderEditor);
 
 	m_roadedit = new CUI_RoadEditor( m_notebook1 );
-	m_notebook1->AddPage( (CUI_RoadEditor*)m_roadedit, wxT("Road editor"), false );
+	m_notebook1->AddPage( (CUI_RoadEditor*)m_roadedit, wxT("Roads"), false );
 
 	m_tools.append(m_roadedit);
 

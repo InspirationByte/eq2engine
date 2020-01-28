@@ -1312,7 +1312,10 @@ void CUI_BuildingConstruct::OnKey(wxKeyEvent& event, bool bDown)
 		{
 			if(m_editingBuilding)
 			{
-				m_editingBuilding->order = m_editingBuilding->order > 0 ? -1 : 1;
+				m_editingBuilding->order++;
+				if (m_editingBuilding->order > 3)
+					m_editingBuilding->order = 0;
+
 				return;
 			}
 
@@ -1524,7 +1527,7 @@ void CUI_BuildingConstruct::MouseEventOnTile( wxMouseEvent& event, hfieldtile_t*
 				// make a first point
 				m_editingBuilding->points.addLast( segment );
 				m_editingBuilding->layerColl = GetSelectedTemplate();
-				m_editingBuilding->order = 1;
+				m_editingBuilding->order = 0;
 
 				m_curSegmentScale = 1.0f;
 
@@ -1920,7 +1923,7 @@ Vector3D CUI_BuildingConstruct::ComputePlacementPointBasedOnMouse()
 
 	// get scaled segment length of last node
 	buildLayer_t& layer = m_editingBuilding->layerColl->layers[selLayerId];
-	float segLen = GetSegmentLength(layer, m_curModelId) * m_curSegmentScale;
+	float segLen = GetSegmentLength(layer, m_editingBuilding->order, m_curModelId) * m_curSegmentScale;
 
 	buildSegmentPoint_t testSegPoint;
 	testSegPoint.position = m_mousePoint;

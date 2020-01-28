@@ -227,21 +227,31 @@ void CalculateBuildingSegmentTransform(Matrix4x4& partTransform,
 	Vector3D& size, float scale,
 	int iteration )
 {
+	float angle = order * 90.0f;
+	Matrix3x3 partRotation(rotateY3(DEG2RAD(angle)));
+
+	float szDir = dot(partRotation.rows[0], size);
+	float sizeInDir = fabs(szDir);
+
+	Vector3D scaleVec((order == 1 || order == 2) ?	(Vector3D(1.0f) + partRotation.rows[0]) - (partRotation.rows[0] * scale) :
+													(Vector3D(1.0f) - partRotation.rows[0]) + (partRotation.rows[0] * scale));
+
 	// first we find angle
-	Vector3D partDir = normalize(order > 0 ? (endPoint - startPoint) : (startPoint - endPoint));
+	Vector3D partDir = normalize(endPoint - startPoint);
 
 	// make right vector by order
 	Vector3D forwardVec = cross(vec3_up, partDir);
 
 	Vector3D yoffset(0,size.y * 0.5f,0);
 
-	partTransform = translate(startPoint + yoffset + partDir*size.x*scale*0.5f*float(order * (iteration*2 + 1))) * Matrix4x4(Matrix3x3(partDir, vec3_up, forwardVec)*scale3(-scale,1.0f,1.0f));
+	partTransform = translate(startPoint + yoffset + partDir*sizeInDir*scale*0.5f*float(iteration*2 + 1)) *
+		Matrix4x4(Matrix3x3(partDir, vec3_up, forwardVec) * partRotation * scale3(-scaleVec.x, scaleVec.y, scaleVec.z));
 }
 
-int GetLayerSegmentIterations(const buildSegmentPoint_t& start, const buildSegmentPoint_t& end, float layerXSize)
+int GetLayerSegmentIterations(const buildSegmentPoint_t& start, const buildSegmentPoint_t& end, float layerSize)
 {
 	float remainingLength = length(end.position - start.position);
-	return (int)((remainingLength / layerXSize) + 0.5f);
+	return (int)((remainingLength / layerSize) + 0.5f);
 }
 /*
 int GetLayerSegmentIterations(const buildSegmentPoint_t& start, const buildSegmentPoint_t& end, buildLayer_t& layer)
@@ -251,7 +261,7 @@ int GetLayerSegmentIterations(const buildSegmentPoint_t& start, const buildSegme
 	return GetLayerSegmentIterations(start, end, len);
 }
 */
-float GetSegmentLength( buildLayer_t& layer, int modelId )
+float GetSegmentLength( buildLayer_t& layer, int order, int modelId )
 {
 	// model set must have equal dimensions
 	// take the first floor
@@ -261,7 +271,12 @@ float GetSegmentLength( buildLayer_t& layer, int modelId )
 	const BoundingBox& modelBox = model->GetAABB();
 
 	Vector3D size = modelBox.GetSize();
-	return size.x;
+
+	float angle = (order % 2) * 90.0f;
+	Matrix3x3 partRotation(rotateY3(DEG2RAD(angle)));
+	float sizeInDir = fabs(dot(partRotation.rows[0], size));
+
+	return sizeInDir;
 }
 
 //
@@ -323,9 +338,16 @@ void RenderBuilding( buildingSource_t* building, buildSegmentPoint_t* extraSegme
 		const BoundingBox& modelBox = model->GetAABB();
 
 		Vector3D size = modelBox.GetSize();
-		float modelLen = size.x*start.scale;
 
-		int numIterations = GetLayerSegmentIterations(start, end, modelLen);
+		float angle = (building->order % 2) * 90.0f;
+		Matrix3x3 partRotation(rotateY3(DEG2RAD(angle)));
+		float sizeInDir = fabs(dot(partRotation.rows[0], size));
+
+		sizeInDir *= start.scale;
+
+		int numIterations = GetLayerSegmentIterations(start, end, sizeInDir);
+
+		numIterations = min(numIterations, 100);
 
 		// calculate transformation for each iteration
 		for(int iter = 0; iter < numIterations; iter++)
@@ -509,16 +531,26 @@ bool GenerateBuildingModel( buildingSource_t* building )
 		const BoundingBox& modelBox = model->GetAABB();
 
 		Vector3D size = modelBox.GetSize();
-		float modelLen = size.x*start.scale;
 
-		int numIterations = GetLayerSegmentIterations(start, end, modelLen);
+		float angle = (building->order % 2) * 90.0f;
+		Matrix3x3 partRotation(rotateY3(DEG2RAD(angle)));
+		float sizeInDir = fabs(dot(partRotation.rows[0], size));
 
-		// calculate transformation for each iteration
-		for(int iter = 0; iter < numIterations; iter++)
+		sizeInDir *= start.scale;
+
+		int numIterations = GetLayerSegmentIterations(start, end, sizeInDir);
+
+		if(numIterations > 100)
+			Msg("Bad building, over 100 iterations, please Fix\n");
+		else
 		{
-			CalculateBuildingSegmentTransform( partTransform, layer, start.position, end.position, building->order, size, start.scale, iter );
+			// calculate transformation for each iteration
+			for (int iter = 0; iter < numIterations; iter++)
+			{
+				CalculateBuildingSegmentTransform(partTransform, layer, start.position, end.position, building->order, size, start.scale, iter);
 
-			generator.AppendModel(model, partTransform);
+				generator.AppendModel(model, partTransform);
+			}
 		}
 	}
 

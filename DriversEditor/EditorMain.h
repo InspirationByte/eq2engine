@@ -100,7 +100,7 @@ protected:
 	IEditorTool*	m_hmapedit;
 	IEditorTool*	m_modelsedit;
 	IEditorTool*	m_roadedit;
-	IEditorTool*	m_missionedit;
+	IEditorTool*	m_splinesEdit;
 	IEditorTool*	m_occluderEditor;
 	IEditorTool*	m_prefabmgr;
 

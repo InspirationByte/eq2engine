@@ -104,7 +104,7 @@ struct outlineDef_t
 };
 
 int GetLayerSegmentIterations(const buildSegmentPoint_t& start, const buildSegmentPoint_t& end, float layerXSize);
-float GetSegmentLength(buildLayer_t& layer, int modelId = 0);
+float GetSegmentLength(buildLayer_t& layer, int order, int modelId = 0);
 
 void CalculateBuildingSegmentTransform(	Matrix4x4& partTransform, 
 										buildLayer_t& layer, 
