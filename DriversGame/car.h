@@ -239,6 +239,7 @@ struct vehicleConfig_t
 	struct {
 		EqString					cleanModelName;
 		EqString					damModelName;
+		EqString					wheelModelName;
 
 		Vector4D					sirenPositionWidth;
 		Vector4D					headlightPosition;
@@ -253,6 +254,7 @@ struct vehicleConfig_t
 		int8						sirenType;
 		int8						headlightType;
 		int8						brakelightType;
+		int8						exhaustType;	// 0 - single, 1 - double
 		int8						exhaustDir;		// 0 - back, 1 - left, 2 - up
 	} visual;
 
@@ -335,17 +337,25 @@ public:
 	const eqPhysSurfParam_t*	GetSurfaceParams() const;
 
 protected:
-	DkList<PFXVertexPair_t>		m_skidMarks;
-
-	eqPhysSurfParam_t*			m_surfparam;
-
 	CollisionData_t				m_collisionInfo;
 	Matrix3x3					m_wheelOrient;
 
+	DkList<PFXVertexPair_t>		m_skidMarks;
+	eqPhysSurfParam_t*			m_surfparam;
+
 	Vector3D					m_velocityVec;
+
+	float						m_pitch;
+	float						m_pitchVel;
+
+	float						m_smokeTime;
+	float						m_skidTime;
+	float						m_damage;				// this parameter affects hubcaps
+	float						m_hubcapLoose;
 
 	int8						m_defaultBodyGroup;
 	int8						m_hubcapBodygroup;	// loose hubcaps
+	int8						m_hubcapPhysmodel;
 	int8						m_damagedBodygroup;
 
 	// 1 byte
@@ -358,14 +368,6 @@ protected:
 		bool					lastDoSkidmarks : 1;
 		bool					lostHubcap : 1;
 	} m_flags;
-
-	float					m_pitch;
-	float					m_pitchVel;
-
-	float					m_smokeTime;
-	float					m_skidTime;
-	float					m_damage;				// this parameter affects hubcaps
-	float					m_hubcapLoose;
 };
 
 typedef float (*TORQUECURVEFUNC)( float rpm );

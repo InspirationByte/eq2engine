@@ -36,7 +36,7 @@ public:
 	void				OnRemove();
 
 	void				Spawn();
-	void				SpawnAsHubcap(IEqModel* model, int8 bodyGroup);
+	void				SpawnAsHubcap(IEqModel* model, int8 bodyGroup, int physObjectIdx);
 
 	void				SpawnAsBreakablePart(IEqModel* model, int8 bodyGroup, int physObj);
 

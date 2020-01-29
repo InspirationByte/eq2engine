@@ -182,7 +182,7 @@ void CObject_Debris::Spawn()
 	BaseClass::Spawn();
 }
 
-void CObject_Debris::SpawnAsHubcap(IEqModel* model, int8 bodyGroup)
+void CObject_Debris::SpawnAsHubcap(IEqModel* model, int8 bodyGroup, int physObjectIdx)
 {
 	m_pModel = model;
 	m_bodyGroupFlags = (1 << bodyGroup);
@@ -204,7 +204,7 @@ void CObject_Debris::SpawnAsHubcap(IEqModel* model, int8 bodyGroup)
 
 	CEqRigidBody* body = new CEqRigidBody();
 
-	if( body->Initialize(&m_pModel->GetHWData()->physModel, 0) )//
+	if( body->Initialize(&m_pModel->GetHWData()->physModel, physObjectIdx) )//
 	{
 		physobject_t* obj = &m_pModel->GetHWData()->physModel.objects[0].object;
 

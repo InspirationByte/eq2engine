@@ -188,6 +188,8 @@ bool ParseVehicleConfig( vehicleConfig_t* conf, const kvkeybase_t* kvs )
 {
 	conf->visual.cleanModelName = KV_GetValueString(kvs->FindKeyBase("cleanModel"), 0, "");
 	conf->visual.damModelName = KV_GetValueString(kvs->FindKeyBase("damagedModel"), 0, conf->visual.cleanModelName.c_str());
+	conf->visual.wheelModelName = KV_GetValueString(kvs->FindKeyBase("wheelModel"), 0, "models/vehicles/wheel.egf");
+	
 
 	conf->flags.isCar = KV_GetValueBool(kvs->FindKeyBase("isCar"), 0, true);
 	conf->flags.allowParked = KV_GetValueBool(kvs->FindKeyBase("allowParked"), 0, true);
@@ -292,7 +294,7 @@ bool ParseVehicleConfig( vehicleConfig_t* conf, const kvkeybase_t* kvs )
 			wconf.width = wheel_width;
 			wconf.woffset = widthAdd;
 
-			kvkeybase_t* wheelModels = kvs->FindKeyBase("bodyGroup");
+			kvkeybase_t* wheelModels = pWheelKv->FindKeyBase("wheelBodyGroup");
 
 			const char* wheelName = KV_GetValueString(wheelModels, 0, NULL);
 			const char* wheelHubcapName = KV_GetValueString(wheelModels, 1, NULL);
@@ -348,6 +350,7 @@ bool ParseVehicleConfig( vehicleConfig_t* conf, const kvkeybase_t* kvs )
 
 		conf->visual.exhaustPosition = KV_GetVector3D(visuals->FindKeyBase("exhaust"), 0, vec3_zero);
 		conf->visual.exhaustDir = KV_GetValueInt(visuals->FindKeyBase("exhaust"), 3, -1);
+		conf->visual.exhaustType = KV_GetValueInt(visuals->FindKeyBase("exhaust"), 4, 0);
 
 		conf->visual.driverPosition = KV_GetVector3D(visuals->FindKeyBase("driver"), 0, vec3_zero);
 	}
@@ -574,6 +577,7 @@ CCarWheel::CCarWheel()
 	m_hubcapLoose = 0.0f;
 	m_defaultBodyGroup = 0;
 	m_hubcapBodygroup = -1;
+	m_hubcapPhysmodel = 0;
 	m_damagedBodygroup = -1;
 	m_velocityVec = vec3_zero;
 }
@@ -772,7 +776,7 @@ void CCar::CreateCarPhysics()
 {
 	CEqRigidBody* body = new CEqRigidBody();
 
-	int wheelCacheId = g_studioModelCache->PrecacheModel( "models/vehicles/wheel.egf" );
+	int wheelCacheId = g_studioModelCache->PrecacheModel( m_conf->visual.wheelModelName.c_str() );
 	IEqModel* wheelModel = g_studioModelCache->GetModel( wheelCacheId );
 
 	m_wheels = new CCarWheel[m_conf->physics.numWheels]();
@@ -788,6 +792,7 @@ void CCar::CreateCarPhysics()
 		winfo.m_defaultBodyGroup = Studio_FindBodyGroupId(wheelModel->GetHWData()->studio, wconf.hubcapWheelName);
 		winfo.m_damagedBodygroup = Studio_FindBodyGroupId(wheelModel->GetHWData()->studio, wconf.wheelName);
 		winfo.m_hubcapBodygroup = Studio_FindBodyGroupId(wheelModel->GetHWData()->studio, wconf.hubcapName);
+		winfo.m_hubcapPhysmodel = PhysModel_FindObjectId(&wheelModel->GetHWData()->physModel, wconf.hubcapName);
 
 		if(winfo.m_defaultBodyGroup == -1)
 		{
@@ -798,9 +803,14 @@ void CCar::CreateCarPhysics()
 		}
 
 		if(winfo.m_defaultBodyGroup == -1)
-		{
 			MsgWarning("Wheel submodel (%s) not found!!!\n", wconf.wheelName);
+
+		if (winfo.m_hubcapPhysmodel == -1)
+		{
+			MsgWarning("Wheel physics model (%s) not found!!!\n", wconf.hubcapName);
+			winfo.m_hubcapPhysmodel = 0;
 		}
+
 
 		winfo.m_bodyGroupFlags = (1 << winfo.m_defaultBodyGroup);
 	}
@@ -2586,7 +2596,7 @@ void CCar::ReleaseHubcap(int wheel)
 		angularVel += (15.0f/wheelConf.radius) * PI_F * 0.5f;
 
 	CObject_Debris* hubcapObj = new CObject_Debris(NULL);
-	hubcapObj->SpawnAsHubcap(wdata.GetModel(), wdata.m_hubcapBodygroup);
+	hubcapObj->SpawnAsHubcap(wdata.GetModel(), wdata.m_hubcapBodygroup, wdata.m_hubcapPhysmodel);
 	hubcapObj->SetOrigin( wheelPos );
 	hubcapObj->m_physBody->SetOrientation( Quaternion(wheelTranslation.getRotationComponent()) );
 	hubcapObj->m_physBody->SetLinearVelocity( wdata.m_velocityVec );
@@ -2843,17 +2853,13 @@ void CCar::Simulate( float fDt )
 			m_conf->visual.exhaustDir != -1 &&
 			GetSpeed() < 15.0f)
 		{
-			Vector3D smokePos = (worldMatrix * Vector4D(m_conf->visual.exhaustPosition, 1.0f)).xyz();
+			ColorRGB smokeCol(0.9,0.9,0.9);
 			Vector3D smokeDir(0);
 
 			smokeDir[m_conf->visual.exhaustDir] = 1.0f;
 
-			if(m_conf->visual.exhaustDir == 1)
+			if (m_conf->visual.exhaustDir == 1)
 				smokeDir[m_conf->visual.exhaustDir] *= -1.0f;
-
-			smokeDir = worldMatrix.getRotationComponent() * smokeDir;
-
-			ColorRGB smokeCol(0.9,0.9,0.9);
 
 			float alphaModifier = 1.0f - RemapValClamp(GetSpeed(), 0.0f, 15.0f, 0.0f, 1.0f);
 
@@ -2865,13 +2871,35 @@ void CCar::Simulate( float fDt )
 				smokeCol = ColorRGB(0.0);
 			}
 
-			CSmokeEffect* pSmoke = new CSmokeEffect(smokePos, -smokeDir,
-													RandomFloat(0.08, 0.12), RandomFloat(0.3, 0.4),
-													RandomFloat(alphaModifier*alphaScale),
-													g_translParticles, g_worldGlobals.trans_smoke2,
-													RandomFloat(25,45), Vector3D(0.1,RandomFloat(0.0, 0.2), 0.05),
-													smokeCol, smokeCol, alphaModifier*alphaScale);
-			effectrenderer->RegisterEffectForRender(pSmoke);
+			// always first played
+			{
+				Vector3D smokePos1 = (worldMatrix * Vector4D(m_conf->visual.exhaustPosition, 1.0f)).xyz();
+				Vector3D smokeDir1 = worldMatrix.getRotationComponent() * smokeDir;
+
+				CSmokeEffect* pSmoke = new CSmokeEffect(smokePos1, -smokeDir1,
+					RandomFloat(0.08, 0.12), RandomFloat(0.3, 0.4),
+					RandomFloat(alphaModifier*alphaScale),
+					g_translParticles, g_worldGlobals.trans_smoke2,
+					RandomFloat(25, 45), Vector3D(0.1, RandomFloat(0.0, 0.2), 0.05),
+					smokeCol, smokeCol, alphaModifier*alphaScale);
+
+				effectrenderer->RegisterEffectForRender(pSmoke);
+			}
+
+			if (m_conf->visual.exhaustType > 0)
+			{
+				Vector3D smokePos2 = (worldMatrix * Vector4D(m_conf->visual.exhaustPosition * Vector3D(-1,1,1), 1.0f)).xyz();
+				Vector3D smokeDir2 = worldMatrix.getRotationComponent() * (smokeDir*Vector3D(-1,1,1));
+
+				CSmokeEffect* pSmoke = new CSmokeEffect(smokePos2, -smokeDir2,
+					RandomFloat(0.08, 0.12), RandomFloat(0.3, 0.4),
+					RandomFloat(alphaModifier*alphaScale),
+					g_translParticles, g_worldGlobals.trans_smoke2,
+					RandomFloat(25, 45), Vector3D(0.1, RandomFloat(0.0, 0.2), 0.05),
+					smokeCol, smokeCol, alphaModifier*alphaScale);
+
+				effectrenderer->RegisterEffectForRender(pSmoke);
+			}
 		}
 
 
@@ -4647,8 +4675,10 @@ carColorScheme_t CCar::GetCarColour() const
 
 void CCar::SetColorScheme( int colorIdx )
 {
-	if(colorIdx >= 0 && colorIdx < m_conf->numColors)
+	if (colorIdx >= 0 && colorIdx < m_conf->numColors)
 		m_carColor.CopyFrom(m_conf->colors[colorIdx]);
+	else if (m_conf->numColors)
+		m_carColor.CopyFrom(m_conf->colors[0]);
 	else
 		m_carColor.CopyFrom(ColorRGBA(1,1,1,1));
 }
