@@ -8,6 +8,10 @@
 #include "UI_RoadEditor.h"
 #include "world.h"
 
+#include "materialsystem/MeshBuilder.h"
+
+IMaterial* g_helpersMaterial = nullptr;
+
 CUI_RoadEditor::CUI_RoadEditor( wxWindow* parent) : wxPanel( parent, -1, wxDefaultPosition, wxDefaultSize )
 {
 	wxFlexGridSizer* fgSizer5;
@@ -260,17 +264,21 @@ void CUI_RoadEditor::OnRender()
 
 		field->DebugRender(false, m_mouseOverTileHeight);
 
-		DkList<Vertex3D_t> straight_verts(64);
-		straight_verts.resize(field->m_sizew*field->m_sizeh*6);
+		//materials->BindMaterial(g_helpersMaterial);
+		
+		g_pShaderAPI->SetTexture(g_helpersMaterial->GetBaseTexture(), NULL, 0);
+		materials->SetDepthStates(false, false);
+		materials->SetRasterizerStates(CULL_BACK, FILL_SOLID);
+		materials->SetBlendingStates(BLENDFACTOR_SRC_ALPHA, BLENDFACTOR_ONE_MINUS_SRC_ALPHA);
 
-		DkList<Vertex3D_t> variant_verts(64);
-		variant_verts.resize(field->m_sizew*field->m_sizeh*6);
+		materials->BindMaterial(materials->GetDefaultMaterial());
+		
+		CMeshBuilder meshBuilder(materials->GetDynamicMesh());
+		meshBuilder.Begin(PRIM_TRIANGLE_STRIP);
 
-		DkList<Vertex3D_t> parking_verts(64);
-		parking_verts.resize(field->m_sizew*field->m_sizeh*6);
-
-		DkList<Vertex3D_t> pavement_verts(64);
-		pavement_verts.resize(field->m_sizew*field->m_sizeh * 6);
+		// don't forget about texture size
+		Vector2D texSize(g_helpersMaterial->GetBaseTexture()->GetWidth(), g_helpersMaterial->GetBaseTexture()->GetHeight());
+		Vector2D oneByTexSize(1.0f / texSize.x, 1.0f / texSize.y);
 
 		for(int x = 0; x < field->m_sizew; x++)
 		{
@@ -298,71 +306,57 @@ void CUI_RoadEditor::OnRender()
 				p3 += field->m_position;
 				p4 += field->m_position;
 
-				ColorRGBA tileColor(0.75,0.75,0.75,0.5f);
+				ColorRGBA tileColor(0.75, 0.75, 0.75, 0.5f);
+
+				TexAtlasEntry_t* entry = m_trafficDir;
 
 				if(cell->type == ROADTYPE_STRAIGHT)
 				{
 					if(cell->flags & ROAD_FLAG_PARKING)
-					{
 						tileColor[cell->direction] += 0.25f;
-						ListQuadTex(p1, p2, p3, p4, cell->direction, tileColor, parking_verts);
-					}
 					else
-					{
 						tileColor[cell->direction] += 0.25f;
-
-						ListQuadTex(p1, p2, p3, p4, cell->direction, tileColor, straight_verts);
-					}
 				}
 				else if(cell->type == ROADTYPE_JUNCTION)
 				{
-					ListQuadTex(p1, p2, p3, p4, cell->direction, tileColor, variant_verts);
+					entry = m_trafficDirVar;
 				}
 				else if(cell->type == ROADTYPE_PARKINGLOT)
 				{
 					tileColor.x = 1.0f;
-					ListQuadTex(p1, p2, p3, p4, cell->direction, tileColor, parking_verts);
+					entry = m_trafficParking;
 				}
 				else if (cell->type == ROADTYPE_PAVEMENT)
 				{
 					tileColor.x = 1.0f;
 					tileColor.y = 1.0f;
 					tileColor.z = 1.0f;
-					ListQuadTex(p1, p2, p3, p4, cell->direction, tileColor, pavement_verts);
+
+					entry = m_pavement;
 				}
+
+				float angle = cell->direction*90.0f;
+
+				Matrix2x2 rotation = rotate2(DEG2RAD(angle));
+
+				Rectangle_t rect(entry->rect);
+				rect.vleftTop *= texSize;
+				rect.vrightBottom *= texSize;
+
+				Vector2D center = rect.GetCenter();
+
+				// rotate the vertices
+				Vector2D tc1 = (rotation * (rect.GetLeftBottom() - center) + center)*oneByTexSize;
+				Vector2D tc2 = (rotation * (rect.GetRightBottom() - center) + center)*oneByTexSize;
+				Vector2D tc3 = (rotation * (rect.GetLeftTop() - center) + center)*oneByTexSize;
+				Vector2D tc4 = (rotation * (rect.GetRightTop() - center) + center)*oneByTexSize;
+
+				meshBuilder.Color4fv(tileColor);
+				meshBuilder.TexturedQuad3(p4, p3, p1, p2, tc1,tc2,tc3,tc4);
 			}
 		}
 
-		DepthStencilStateParams_t depth;
-
-		depth.depthTest = false;
-		depth.depthWrite = false;
-		depth.depthFunc = COMP_LEQUAL;
-
-		BlendStateParam_t blend;
-
-		blend.blendEnable = true;
-		blend.srcFactor = BLENDFACTOR_SRC_ALPHA;
-		blend.dstFactor = BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
-
-		RasterizerStateParams_t raster;
-
-		raster.cullMode = CULL_BACK;
-		raster.fillMode = FILL_SOLID;
-		raster.multiSample = true;
-		raster.scissor = false;
-
-		if(straight_verts.numElem())
-			materials->DrawPrimitivesFFP(PRIM_TRIANGLES, straight_verts.ptr(), straight_verts.numElem(), m_trafficDir->GetBaseTexture(), color4_white, &blend, &depth, &raster);
-
-		if(variant_verts.numElem())
-			materials->DrawPrimitivesFFP(PRIM_TRIANGLES, variant_verts.ptr(), variant_verts.numElem(), m_trafficDirVar->GetBaseTexture(), color4_white, &blend, &depth, &raster);
-		
-		if(parking_verts.numElem())
-			materials->DrawPrimitivesFFP(PRIM_TRIANGLES, parking_verts.ptr(), parking_verts.numElem(), m_trafficParking->GetBaseTexture(), color4_white, &blend, &depth, &raster);
-
-		if (pavement_verts.numElem())
-			materials->DrawPrimitivesFFP(PRIM_TRIANGLES, pavement_verts.ptr(), pavement_verts.numElem(), m_pavement->GetBaseTexture(), color4_white, &blend, &depth, &raster);
+		meshBuilder.End();
 	}
 
 	CBaseTilebasedEditor::OnRender();
@@ -370,20 +364,17 @@ void CUI_RoadEditor::OnRender()
 
 void CUI_RoadEditor::InitTool()
 {
-	m_trafficDir = materials->GetMaterial("traffic_dir");
-	m_trafficDirVar = materials->GetMaterial("traffic_dir_variant");
-	m_trafficParking = materials->GetMaterial("traffic_dir_parking");
-	m_pavement = materials->GetMaterial("pavement");
+	g_helpersMaterial = materials->GetMaterial("editor/helpers");
+	materials->PutMaterialToLoadingQueue(g_helpersMaterial);
+	g_helpersMaterial->Ref_Grab();
 
-	materials->PutMaterialToLoadingQueue(m_trafficDir);
-	materials->PutMaterialToLoadingQueue(m_trafficDirVar);
-	materials->PutMaterialToLoadingQueue(m_trafficParking);
-	materials->PutMaterialToLoadingQueue(m_pavement);
-
-	m_trafficDir->Ref_Grab();
-	m_trafficDirVar->Ref_Grab();
-	m_trafficParking->Ref_Grab();
-	m_pavement->Ref_Grab();
+	if (g_helpersMaterial->GetAtlas())
+	{
+		m_trafficDir = g_helpersMaterial->GetAtlas()->FindEntry("traffic_dir");
+		m_trafficDirVar = g_helpersMaterial->GetAtlas()->FindEntry("traffic_dir_variant");
+		m_trafficParking = g_helpersMaterial->GetAtlas()->FindEntry("traffic_dir_parking");
+		m_pavement = g_helpersMaterial->GetAtlas()->FindEntry("pavement");
+	}
 }
 
 void CUI_RoadEditor::ReloadTool()
@@ -393,10 +384,8 @@ void CUI_RoadEditor::ReloadTool()
 
 void CUI_RoadEditor::ShutdownTool()
 {
-	materials->FreeMaterial(m_trafficDir);
-	materials->FreeMaterial(m_trafficDirVar);
-	materials->FreeMaterial(m_trafficParking);
-	materials->FreeMaterial(m_pavement);
+	materials->FreeMaterial(g_helpersMaterial);
+	g_helpersMaterial = nullptr;
 }
 
 void CUI_RoadEditor::Update_Refresh()

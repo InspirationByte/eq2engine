@@ -1836,9 +1836,6 @@ void CUI_BuildingConstruct::ToggleSelection( buildingSelInfo_t& bld )
 	RecalcSelectionCenter();
 }
 
-
-extern void ListQuadTex(const Vector3D &v1, const Vector3D &v2, const Vector3D& v3, const Vector3D& v4, int rotate, const ColorRGBA &color, DkList<Vertex3D_t> &verts);
-
 extern Vector3D g_camera_target;
 
 void CUI_BuildingConstruct::OnRender()

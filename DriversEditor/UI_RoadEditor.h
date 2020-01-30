@@ -52,10 +52,10 @@ protected:
 	int							m_rotation;
 	int							m_type;
 
-	IMaterial*					m_trafficDir;
-	IMaterial*					m_trafficDirVar;
-	IMaterial*					m_trafficParking;
-	IMaterial*					m_pavement;
+	TexAtlasEntry_t*			m_trafficDir;
+	TexAtlasEntry_t*			m_trafficDirVar;
+	TexAtlasEntry_t*			m_trafficParking;
+	TexAtlasEntry_t*			m_pavement;
 };
 
 #endif // UI_ROADEDITOR

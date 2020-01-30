@@ -233,14 +233,15 @@ static const char* eventTypeStr[] = {
 
 void CEditorActionObserver::DebugDisplay()
 {
+	/*
 	debugoverlay->Text(color4_white, "actions: %d\n", m_events.numElem() );
 	debugoverlay->Text(color4_white, "currentAct: %d\n", m_curEvent);
 	for (int i = 0; i < m_events.numElem(); i++)
 	{
 		actionEvent_t* ev = m_events[i];
-
 		debugoverlay->Text(color4_white, "event %2d %s %s\n", ev->id, eventTypeStr[ev->states[0].type], m_curEvent==i? "X" : "-");
 	}
+	*/
 }
 
 //---------------------------------------------------
