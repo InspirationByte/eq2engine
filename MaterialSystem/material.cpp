@@ -61,7 +61,9 @@ void CMaterial::Init(const char* materialPath)
 
 		if (atlasSec)
 		{
-			m_atlas = new CTextureAtlas(atlasSec);
+			if(!m_atlas)
+				m_atlas = new CTextureAtlas(atlasSec);
+
 			root.Cleanup();
 
 			// atlas can override material name
@@ -407,6 +409,9 @@ void CMaterial::Cleanup(bool dropVars, bool dropShader)
 			delete m_variables[i];
 
 		m_variables.clear();
+
+		delete m_atlas;
+		m_atlas = nullptr;
 	}
 
 	// always drop proxies
@@ -414,9 +419,6 @@ void CMaterial::Cleanup(bool dropVars, bool dropShader)
 		delete m_proxies[i];
 
 	m_proxies.clear();
-
-	delete m_atlas;
-	m_atlas = nullptr;
 
 	m_state = MATERIAL_LOAD_NEED_LOAD;
 }

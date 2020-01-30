@@ -1028,7 +1028,7 @@ void DrawGridH(int size, int count, const Vector3D& pos, const ColorRGBA &color,
 
 	g_pShaderAPI->SetTexture(NULL,NULL, 0);
 	materials->SetDepthStates(!for2D,!for2D);
-	materials->SetRasterizerStates(CULL_BACK,FILL_SOLID);
+	materials->SetRasterizerStates(CULL_BACK,FILL_SOLID, false, false, true);
 	materials->SetBlendingStates(BLENDFACTOR_SRC_ALPHA, BLENDFACTOR_ONE_MINUS_SRC_ALPHA);
 
 	materials->BindMaterial(materials->GetDefaultMaterial());
@@ -1067,10 +1067,16 @@ void CHeightTileField::DebugRender(bool bDrawTiles, float gridHeight)
 
 	materials->SetAmbientColor(1.0f);
 
+	Vector3D position = m_position + Vector3D(0.0f, 0.01f, 0.0f);
+
 	Vector3D halfsize = Vector3D(HFIELD_POINT_SIZE, 0, HFIELD_POINT_SIZE)*0.5f;
 	DrawGridH(HFIELD_POINT_SIZE, m_sizew*2, 
-				m_position + Vector3D(m_sizew*HFIELD_POINT_SIZE*0.5f, gridHeight, m_sizew*HFIELD_POINT_SIZE*0.5f) - halfsize, 
-				ColorRGBA(1,1,1,0.1), false);
+		position + Vector3D(m_sizew*HFIELD_POINT_SIZE*0.5f, gridHeight, m_sizew*HFIELD_POINT_SIZE*0.5f) - halfsize,
+				ColorRGBA(1.0f, 1.0f, 1.0f, 0.5f), false);
+
+	DrawGridH(1, m_sizew * 2,
+		position + Vector3D(m_sizew*HFIELD_POINT_SIZE*0.5f, gridHeight, m_sizew*HFIELD_POINT_SIZE*0.5f) - halfsize,
+		ColorRGBA(1.0f, 1.0f, 1.0f, 0.25f), false);
 
 	if(!bDrawTiles)
 		return;
@@ -1083,7 +1089,7 @@ void CHeightTileField::DebugRender(bool bDrawTiles, float gridHeight)
 	materials->BindMaterial(materials->GetDefaultMaterial());
 
 	CMeshBuilder meshBuilder(materials->GetDynamicMesh());
-	meshBuilder.Begin(PRIM_TRIANGLES);
+	meshBuilder.Begin(PRIM_TRIANGLE_STRIP);
 
 	for(int x = 0; x < m_sizew; x++)
 	{
