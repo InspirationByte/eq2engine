@@ -10,17 +10,15 @@
 
 #include "dktypes.h"
 
-#define DPK_VERSION					4
+#define DPK_VERSION					5
 #define DPK_SIGNATURE				MCHAR4('E','Q','P','K')
-#define DPK_MAX_FILENAME_LENGTH		260
 
-#define DPK_DEFAULT_EXTENSION		".eqpak"
+#define DPK_BLOCK_MAXSIZE			(8*1024)
 
 enum EFileFlags
 {
 	DPKFILE_FLAG_COMPRESSED			= (1 << 0),
 	DPKFILE_FLAG_ENCRYPTED			= (1 << 1),
-	DPKFILE_FLAG_NAME_ENCRYPTED		= (1 << 2),
 };
 
 //---------------------------
@@ -37,24 +35,30 @@ public:
 	int		numFiles;
 	uint64	fileInfoOffset;
 };
-
 ALIGNED_TYPE(dpkheader_s, 2) dpkheader_t;
 
 //---------------------------
 
+struct dpkblock_s
+{
+	uint32	size;
+	uint32	compressedSize;
+	short	flags;
+};
+ALIGNED_TYPE(dpkblock_s, 2) dpkblock_t;
+
 // data package file info
 struct dpkfileinfo_s
 {
-	//char	filename[DPK_MAX_FILENAME_LENGTH];
 	int		filenameHash;
 
 	uint64	offset;
 	uint32	size;				// The real file size
-	uint32	compressedSize;		// The compressed file size
+
+	short	numBlocks;			// number of blocks
 
 	short	flags;
 };
-
 ALIGNED_TYPE(dpkfileinfo_s, 2) dpkfileinfo_t;
 
 #endif //DPK_DEFS_H

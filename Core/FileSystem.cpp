@@ -100,83 +100,6 @@ uint32 CFile::GetCRC32()
 	return nCRC;
 }
 
-
-//------------------------------------------------------------------------------
-// Virtual filesystem file of DarkTech Package file
-//------------------------------------------------------------------------------
-
-int	CVirtualDPKFile::Seek( long pos, VirtStreamSeek_e seekType )
-{
-	return m_pDKPReader->Seek( m_pFilePtr, pos, seekType );
-}
-
-long CVirtualDPKFile::Tell()
-{
-	return m_pDKPReader->Tell( m_pFilePtr );
-}
-
-size_t CVirtualDPKFile::Read( void *dest, size_t count, size_t size)
-{
-	return m_pDKPReader->Read( dest, count, size, m_pFilePtr );
-}
-
-size_t CVirtualDPKFile::Write( const void *src, size_t count, size_t size)
-{
-	ASSERTMSG(false, "CVirtualDPKFile::Write: DPK files is not allowed to write! Use fcompress.");
-
-	return 0;
-}
-
-int	CVirtualDPKFile::Error()
-{
-	// NOT IMPLEMENTED
-
-	return 0;
-}
-
-int	CVirtualDPKFile::Flush()
-{
-	// NOT IMPLEMENTED
-
-	return 0;
-}
-
-char* CVirtualDPKFile::Gets( char *dest, int destSize )
-{
-	return m_pDKPReader->Gets(dest, destSize, m_pFilePtr );
-}
-
-uint32 CVirtualDPKFile::GetCRC32()
-{
-	long pos = Tell();
-	long fSize = GetSize();
-
-	ubyte* pFileData = (ubyte*)malloc(fSize+16);
-
-	Read(pFileData, 1, fSize);
-
-	Seek(pos, VS_SEEK_SET);
-
-	uint32 nCRC = CRC32_BlockChecksum( pFileData, fSize );
-
-	free(pFileData);
-
-	return nCRC;
-}
-
-long CVirtualDPKFile::GetSize()
-{
-	long pos = Tell();
-
-	Seek(0, VS_SEEK_END);
-
-	long length = Tell();
-
-	Seek(pos, VS_SEEK_SET);
-
-	return length;
-}
-
 //------------------------------------------------------------------------------
 // Main filesystem code
 //------------------------------------------------------------------------------
@@ -314,16 +237,13 @@ void CFileSystem::Close( IFile* fp )
 	{
 		CFile* pFile = (CFile*)fp;
 		fclose(pFile->m_pFilePtr);
+		delete fp;
 	}
 	else if(vsType == VS_TYPE_FILE_PACKAGE)
 	{
-		CVirtualDPKFile* pFile = (CVirtualDPKFile*)fp;
-		ASSERT(pFile->m_pDKPReader);
-
-		pFile->m_pDKPReader->Close(pFile->m_pFilePtr);
+		CDPKFileStream* pFile = (CDPKFileStream*)fp;
+		pFile->m_host->Close(pFile);
 	}
-
-	delete fp;
 
 	m_FSMutex.Lock();
 	m_openFiles.fastRemove( fp );
@@ -758,18 +678,15 @@ IFile* CFileSystem::GetFileHandle(const char* filename,const char* options, int 
 			{
 				sprintf(tmp_path, "%s/%s", m_directories[j].path.c_str(),pFilePath);
 
-				DPKFILE* pPackedFile = pPackageReader->Open(tmp_path, options);
+				CDPKFileStream* pPackedFile = pPackageReader->Open(tmp_path, options);
 
 				if (pPackedFile)
 				{
-					pPackedFile->packageId = i;
-
-					CVirtualDPKFile* pFileHandle = new CVirtualDPKFile(pPackedFile, pPackageReader);
 					m_FSMutex.Lock();
-					m_openFiles.append(pFileHandle);
+					m_openFiles.append(pPackedFile);
 					m_FSMutex.Unlock();
 
-					return pFileHandle;
+					return pPackedFile;
 				}
 			}
         }
@@ -777,34 +694,28 @@ IFile* CFileSystem::GetFileHandle(const char* filename,const char* options, int 
         {
 			sprintf(tmp_path, "%s/%s",m_dataDir.GetData(),pFilePath);
 
-            DPKFILE* pPackedFile = pPackageReader->Open(tmp_path,options);
+			CDPKFileStream* pPackedFile = pPackageReader->Open(tmp_path, options);
 
             if (pPackedFile)
             {
-                pPackedFile->packageId = i;
-
-				CVirtualDPKFile* pFileHandle = new CVirtualDPKFile(pPackedFile, pPackageReader);
 				m_FSMutex.Lock();
-				m_openFiles.append(pFileHandle);
+				m_openFiles.append(pPackedFile);
 				m_FSMutex.Unlock();
 
-				return pFileHandle;
+				return pPackedFile;
             }
         }
         if (flags & SP_ROOT)
         {
-            DPKFILE* pPackedFile = pPackageReader->Open(pFilePath,options);
+			CDPKFileStream* pPackedFile = pPackageReader->Open(tmp_path, options);
 
             if (pPackedFile)
             {
-                pPackedFile->packageId = i;
-
-				CVirtualDPKFile* pFileHandle = new CVirtualDPKFile(pPackedFile, pPackageReader);
 				m_FSMutex.Lock();
-				m_openFiles.append(pFileHandle);
+				m_openFiles.append(pPackedFile);
 				m_FSMutex.Unlock();
 
-				return pFileHandle;
+				return pPackedFile;
             }
         }
     }
@@ -915,6 +826,9 @@ void CFileSystem::ExtractFile(const char* filename, bool onlyNonExist)
 		}
 	}
 
+	// FIXME: DELETE THIS METHOD
+
+	/*
 	// do it from last package
     for (int i = m_packages.numElem()-1; i >= 0;i--)
 	{
@@ -948,6 +862,7 @@ void CFileSystem::ExtractFile(const char* filename, bool onlyNonExist)
 			return;
 		}
 	}
+	*/
 }
 
 // opens directory for search props

@@ -1,8 +1,8 @@
 ///////////////////////////////////////////////////////////////////////////////
 // Copyright © Inspiration Byte
-// 2009-2015
+// 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
-// Description: Dark package file (dpk)
+// Description: Data package file (dpk)
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "DPKFileReader.h"
@@ -19,6 +19,9 @@
 #include "utils/strtools.h"
 #include "DebugInterface.h"
 
+#include "IVirtualStream.h"
+#include "utils/CRC32.h"
+
 #ifdef _WIN32
 #include <direct.h>
 #include <shlobj.h>
@@ -28,16 +31,260 @@
 #include <sys/stat.h>
 #endif
 
+void encryptDecrypt(ubyte* buffer, int size, int hash)
+{
+	char* key = (char*)&hash;
+
+	while (size--)
+		buffer[size] = buffer[size] ^ key[size % 4];
+}
+
+//-----------------------------------------------------------------------------------------------------------------------
+
+CDPKFileStream::CDPKFileStream(const dpkfileinfo_t& info, FILE* fp)
+{
+	m_handle = fp;
+	m_info = info;
+	m_curPos = 0;
+	memset(&m_blockInfo, 0, sizeof(m_blockInfo));
+
+	// decode first block automatically
+	if (!m_info.numBlocks)
+		fseek(m_handle, m_info.offset, SEEK_SET);
+}
+
+
+CDPKFileStream::~CDPKFileStream()
+{
+}
+
+void CDPKFileStream::DecodeBlock(int blockIdx)
+{
+	int curBlockIdx = (float(m_curPos) / float(m_info.size)) * m_info.numBlocks;
+
+	if (curBlockIdx == blockIdx && m_blockInfo.size != 0)
+		return;
+
+	ubyte tmpBlock[DPK_BLOCK_MAXSIZE];
+
+	// find the block
+	fseek(m_handle, m_info.offset, SEEK_SET);
+
+	// seek to the block
+	for(int i = 0; i < m_info.numBlocks; i++)
+	{
+		dpkblock_t blockHdr;
+		fread(&blockHdr, 1, sizeof(blockHdr), m_handle);
+
+		int readSize = (blockHdr.flags & DPKFILE_FLAG_COMPRESSED) ? blockHdr.compressedSize : blockHdr.size;
+
+		Msg("DecodeBlock %d size = %d\n", i, readSize);
+
+		if (i == blockIdx)
+		{
+			ubyte* readMem = (blockHdr.flags & DPKFILE_FLAG_COMPRESSED) ? tmpBlock : m_blockData;
+
+			// read block and decompress/decrypt
+			fread(readMem, 1, readSize, m_handle);
+
+			// decrypt first as it was encrypted last
+			if (blockHdr.flags & DPKFILE_FLAG_ENCRYPTED)
+			{
+				// decrypt
+				encryptDecrypt(readMem, readSize, m_info.filenameHash);
+			}
+
+			// then decompress
+			if (blockHdr.flags & DPKFILE_FLAG_COMPRESSED)
+			{
+				// so our readMem is already 'tmpBlock', so we only have to uncompress it to 'm_blockData'
+				
+				unsigned long destLen = blockHdr.size;
+				int status = uncompress(m_blockData, &destLen, tmpBlock, blockHdr.compressedSize);
+
+				if (status != Z_OK)
+					ASSERTMSG(false, varargs("Cannot decompress file block - %d!\n", status));
+				else
+					ASSERT(destLen == blockHdr.size);
+			}
+
+			// done. Keep block for further purposes
+			m_blockInfo = blockHdr;
+			return;
+		}
+
+		// skip
+		fseek(m_handle, readSize, SEEK_CUR);
+	}
+}
+
+// reads data from virtual stream
+size_t CDPKFileStream::Read(void* dest, size_t count, size_t size)
+{
+	const int fileRemainingBytes = m_info.size - m_curPos;
+	const int bytesToRead = min(count*size, fileRemainingBytes);
+
+	// read blocks if any
+	if (m_info.numBlocks)
+	{
+		Msg("READ for %u from blocks: %d of %d\n", m_info.filenameHash, bytesToRead, m_info.size);
+
+		int bytesToReadCnt = bytesToRead;
+		ubyte* destBuf = (ubyte*)dest;
+
+		int curPos = m_curPos;
+
+		// in case if user requested data more that one block size
+		do
+		{
+			// decode block
+			int curBlockIdx = (float(curPos) / float(m_info.size)) * m_info.numBlocks;	// FIXME: DO NOT USE FLOATING POINT NUMBERS!
+			DecodeBlock(curBlockIdx);
+
+			// after decode set position to satisfy conditions
+			m_curPos = curPos;
+
+			// calculate offsed within the block
+			const int blockOffset = curPos % DPK_BLOCK_MAXSIZE;
+
+			const int blockRemainingBytes = m_blockInfo.size - blockOffset;
+			const int blockBytesToRead = min(bytesToRead, blockRemainingBytes);
+
+			Msg("Block %d: read at %d (%d) - %d of %d\n", curBlockIdx, m_curPos, blockOffset, blockBytesToRead, m_blockInfo.size);
+
+			// read the data from block
+			memcpy(destBuf, m_blockData+blockOffset, blockBytesToRead);
+
+			destBuf += blockBytesToRead;
+			curPos += blockBytesToRead;
+
+			bytesToReadCnt -= blockBytesToRead;
+			
+		} while (bytesToReadCnt);
+
+		m_curPos = curPos;
+
+		return bytesToRead / size;
+	}
+	else
+	{
+		// read file straight
+		fread(dest, 1, bytesToRead, m_handle);
+
+		// return number of read elements
+		return bytesToRead / size;
+	}
+}
+
+// writes data to virtual stream
+size_t CDPKFileStream::Write(const void *src, size_t count, size_t size)
+{
+	ASSERTMSG(false, "CDPKFileStream does not support WRITE OPS");
+	return 0;
+}
+
+// seeks pointer to position
+int	CDPKFileStream::Seek(long nOffset, VirtStreamSeek_e seekType)
+{
+	uint32 startOffset = m_info.offset;
+	uint32 newOfs = m_curPos;
+
+	switch (seekType)
+	{
+		case VS_SEEK_SET:
+		{
+			newOfs = nOffset;
+			break;
+		}
+		case VS_SEEK_CUR:
+		{
+			newOfs += nOffset;
+			break;
+		}
+		case VS_SEEK_END:
+		{
+			newOfs = m_info.size + nOffset;
+			break;
+		}
+	}
+
+	if (newOfs < 0)
+		return -1;
+
+	// set the virtual offset
+	m_curPos = newOfs;
+
+	Msg("DPK %u seek => %d / %d\n", m_info.filenameHash, newOfs, m_info.size);
+
+	ASSERTMSG(newOfs <= m_info.size, varargs("CDPKFileStream::Seek - %u illegal seek => %d while file max is %d\n", m_info.filenameHash, newOfs, m_info.size));
+
+	if(m_info.numBlocks)
+		return 0;
+
+	return fseek(m_handle, startOffset + newOfs, SEEK_SET);
+}
+
+// fprintf analog
+void CDPKFileStream::Print(const char* fmt, ...)
+{
+	ASSERTMSG(false, "CDPKFileStream does not support WRITE OPS");
+}
+
+// returns current pointer position
+long CDPKFileStream::Tell()
+{
+	return m_curPos;
+}
+
+// returns memory allocated for this stream
+long CDPKFileStream::GetSize()
+{
+	return m_info.size;
+}
+
+// flushes stream from memory
+int	CDPKFileStream::Flush()
+{
+	// do nothing...
+	return 0;
+}
+
+// returns stream type
+VirtStreamType_e CDPKFileStream::GetType()
+{
+	return VS_TYPE_FILE_PACKAGE;
+}
+
+// returns CRC32 checksum of stream
+uint32 CDPKFileStream::GetCRC32()
+{
+	long pos = Tell();
+	long fSize = GetSize();
+
+	ubyte* pFileData = (ubyte*)malloc(fSize + 16);
+
+	Read(pFileData, 1, fSize);
+
+	Seek(pos, VS_SEEK_SET);
+
+	uint32 nCRC = CRC32_BlockChecksum(pFileData, fSize);
+
+	free(pFileData);
+
+	return nCRC;
+}
+
+//-----------------------------------------------------------------------------------------------------------------------
+// DPK file reader code
+//-----------------------------------------------------------------------------------------------------------------------
+
 CDPKFileReader::CDPKFileReader(Threading::CEqMutex& mutex) : m_FSMutex(mutex)
 {
     m_searchPath = 0;
-	m_dumpCount = 0;
+	m_dpkFiles = nullptr;
 
-	m_dpkFiles = NULL;
-
-	memset( m_key, 0, sizeof(m_key) );
+	memset(m_key, 0, sizeof(m_key));
 	memset(&m_header, 0, sizeof(m_header));
-	memset(m_handles,DPK_HANDLE_INVALID,sizeof(m_handles));
 }
 
 CDPKFileReader::~CDPKFileReader()
@@ -97,7 +344,7 @@ int	CDPKFileReader::FindFileIndex(const char* filename) const
 
 	int strHash = StringToHash(pszNewString, true);
 
-	//Msg("Requested file from package: %s\n",pszNewString);
+	Msg("DPK: %s = %u\n", pszNewString, strHash);
 
     for (int i = 0; i < m_header.numFiles; i++)
     {
@@ -280,105 +527,7 @@ void CDPKFileReader::DumpPackage(PACKAGE_DUMP_MODE mode)
 #endif // 0
 }
 
-dpkhandle_t CDPKFileReader::DecompressFile( int fileIndex )
-{
-	if(fileIndex == -1)
-		return DPK_HANDLE_INVALID;
-
-	Threading::CScopedMutex m(m_FSMutex);
-
-	dpkhandle_t handle = DPK_HANDLE_INVALID;
-	for( int i = 0; i < DPKX_MAX_HANDLES; i++ )
-	{
-		if(m_handles[i] == -1)
-		{
-			handle = i;
-			break;
-		}
-	}
-
-#ifdef _WIN32
-    mkdir(m_tempPath.c_str());
-#else
-    mkdir(m_tempPath.c_str(),S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
-#endif
-
-	m_handles[handle] = fileIndex;
-	m_dumpCount++;
-
-	dpkfileinfo_t& fileInfo = m_dpkFiles[fileIndex];
-
-	FILE* dpkFile = fopen( m_packageName.c_str(), "rb" );
-
-	if(!dpkFile)
-	{
-		MsgError("Failed to open package file '%s' for opening file, is something happened here?\n", m_packageName.c_str());
-		return DPK_HANDLE_INVALID;
-	}
-
-    long compressed_size = fileInfo.compressedSize;
-    ubyte* _compressedData = (ubyte*)malloc(compressed_size);
-
-    // Read compressed data from package
-	fseek(dpkFile, fileInfo.offset, SEEK_SET);
-    fread(_compressedData, compressed_size, 1, dpkFile);
-    fclose(dpkFile);
-	/*
-	if(fileInfo.flags & DPKFILE_FLAG_ENCRYPTED)
-	{
-		ubyte* encData = NULL;
-		compressed_size = decryptBlock(&encData, _compressedData, compressed_size, m_key);
-
-		//InfoMsg((char*)encData);
-
-		free(_compressedData);
-
-		_compressedData = encData;
-	}*/
-
-	char path[2048];
-	sprintf(path, "%s/%d.tmp", m_tempPath.c_str(), handle);
-
-	if(fileInfo.flags & DPKFILE_FLAG_COMPRESSED)
-	{
-		unsigned long realSize = fileInfo.size + 128;
-		ubyte* _UncompressedData = (ubyte*)malloc(realSize);
-
-		int status = uncompress(_UncompressedData, &realSize, _compressedData, compressed_size);
-
-		if (status == Z_OK)
-		{
-			FILE* writefile = fopen(path,"wb");
-			if (writefile)
-			{
-				fwrite( _UncompressedData, realSize, 1, writefile );
-				fclose( writefile );
-			}
-		}
-		else
-		{
-			MsgError("cannot decompress file '%d', if encrypted - key might be invalid!\n",status);
-		}
-
-		free(_UncompressedData);
-	}
-	else
-	{
-		FILE* writefile = fopen(path,"wb");
-		if (writefile)
-		{
-			fwrite( _compressedData,  fileInfo.size, 1, writefile );
-			fclose( writefile );
-		}
-	}
-
-	// free memory
-	free(_compressedData);
-
-	return handle;
-}
-
-DPKFILE* CDPKFileReader::Open(const char* filename,const char* mode)
+CDPKFileStream* CDPKFileReader::Open(const char* filename,const char* mode)
 {
 	//Msg("io::dpktryopen(%s)\n", filename);
 
@@ -392,193 +541,46 @@ DPKFILE* CDPKFileReader::Open(const char* filename,const char* mode)
 	if(strchr(mode, 'w') || strchr(mode, 'a') || strchr(mode, '+'))
 	{
 		MsgError("DPK only can open for reading!\n");
-		return NULL;
+		return nullptr;
 	}
 
 	// find file in DPK filename list
 	int dpkFileIndex = FindFileIndex(filename);
 
 	if (dpkFileIndex == -1)
-		return NULL;
+		return nullptr;
 
 	dpkfileinfo_t& fileInfo = m_dpkFiles[dpkFileIndex];
 
-	dpkhandle_t handle = DPK_HANDLE_INVALID;
+	FILE* file = fopen(m_packageName.c_str(), mode);
 
-	// decompress/decrypt the file if it has beed
-	if(	(fileInfo.flags & DPKFILE_FLAG_COMPRESSED) ||
-		(fileInfo.flags & DPKFILE_FLAG_ENCRYPTED))
+	if (!file)
 	{
-		DevMsg(DEVMSG_FS, "DPK decomp/decrypt file '%s' (%d)\n", filename, dpkFileIndex);
-		handle = DecompressFile(dpkFileIndex);
-
-		if(handle == DPK_HANDLE_INVALID)
-			return NULL;
+		ASSERTMSG(false, "CDPKFileReader::Open FATAL ERROR - failed to open package file");
+		return nullptr;
 	}
 
-	//
-	DPKFILE* file = new DPKFILE;
-	file->handle = handle;
-	file->info = &fileInfo;
+	CDPKFileStream* newStream = new CDPKFileStream(fileInfo, file);
+	newStream->m_host = this;
 
-	// if it has temp handles, open the decompressed file
-	if( handle != DPK_HANDLE_INVALID )
 	{
-		char path[2048];
-		sprintf(path, "%s/%d.tmp",m_tempPath.c_str(),handle);
-
-		file->file = fopen( path, mode );
-	}
-	else // open from package directly
-	{
-		file->file = fopen( m_packageName.c_str(), mode );
-
-		// this should never happen
-		ASSERT(file->file);
-
-		fseek( file->file, fileInfo.offset, SEEK_SET );
+		Threading::CScopedMutex m(m_FSMutex);
+		m_openFiles.append(newStream);
 	}
 
-    if (!file->file)
-    {
-        delete file;
-        return NULL;
-    }
-
-	Threading::CScopedMutex m(m_FSMutex);
-
-	m_openFiles.append( file );
-
-    return file;
+	return newStream;
 }
 
-void CDPKFileReader::Close( DPKFILE *fp )
+void CDPKFileReader::Close(CDPKFileStream* fp)
 {
     if (!fp)
         return;
 
 	Threading::CScopedMutex m(m_FSMutex);
 
-    if(m_openFiles.remove( fp ))
+    if(m_openFiles.fastRemove( fp ))
 	{
-		fclose(fp->file);
-
-		if( fp->handle != DPK_HANDLE_INVALID )
-		{
-			char path[2048];
-			sprintf( path, "%s/%d.tmp", m_tempPath.c_str(), fp->handle );
-
-			// try to remove file
-			remove(path);
-
-			// remove temp path
-			rmdir(m_tempPath.c_str());
-
-			m_handles[fp->handle] = DPK_HANDLE_INVALID;
-			m_dumpCount--;
-		}
-
+		fclose(fp->m_handle);
 		delete fp;
-	}
-}
-
-long CDPKFileReader::Seek( DPKFILE *fp, long pos, int seekType )
-{
-    if (!fp)
-        return 0;
-
-	if(	fp->handle != DPK_HANDLE_INVALID )
-	{
-		return fseek(fp->file, pos, seekType);
-	}
-	else
-	{
-		long finalOffset = fp->info->offset + pos;
-
-		if(seekType == SEEK_CUR)
-		{
-			seekType = SEEK_SET; // change to SET
-			finalOffset += Tell(fp);
-		}
-		else if(seekType == SEEK_END)
-		{
-			seekType = SEEK_SET; // change to SET
-			finalOffset += fp->info->size;
-		}
-
-		// make it clamped
-		finalOffset = max((uint64)finalOffset, fp->info->offset);
-		finalOffset = min((uint64)finalOffset, fp->info->offset+fp->info->size);
-
-		return fseek(fp->file, finalOffset, seekType);
-	}
-}
-
-long CDPKFileReader::Tell( DPKFILE *fp ) const
-{
-    if (!fp)
-        return 0;
-
-	return ftell(fp->file) - (fp->handle == DPK_HANDLE_INVALID ? fp->info->offset : 0);
-}
-
-int	CDPKFileReader::Eof( DPKFILE* fp ) const
-{
-	if(Tell(fp) >= fp->info->size)
-		return 1;
-
-	return 0;
-}
-
-size_t CDPKFileReader::Read( void* dest, size_t count, size_t size, DPKFILE *fp )
-{
-    if (!fp)
-        return 0;
-
-	if(	fp->handle != DPK_HANDLE_INVALID )
-	{
-		return fread(dest, count, size, fp->file);
-	}
-	else
-	{
-		uint32 fileSize = fp->info->size;
-
-		long readBytes = count*size;
-		long currentReadPos = Tell(fp);
-
-		long remainingBytes = fileSize-currentReadPos;
-
-		// set overflowing bytes to zero
-		if(readBytes > remainingBytes)
-		{
-			long overflowBytes = readBytes-remainingBytes;
-			memset((char*)dest+remainingBytes, 0, overflowBytes);
-
-			// and actually read less data
-			readBytes -= overflowBytes;
-		}
-
-		if(readBytes <= 0)
-			return 0;
-
-		return fread(dest, 1, readBytes, fp->file);
-	}
-}
-
-char* CDPKFileReader::Gets( char *dest, int destSize, DPKFILE *fp)
-{
-    if (!fp)
-        return NULL;
-
-	if(	fp->handle != DPK_HANDLE_INVALID )
-	{
-		return fgets( dest, destSize, fp->file );
-	}
-	else
-	{
-		if ( Tell(fp) >= fp->info->size )
-			return NULL;
-
-		return fgets( dest, destSize, fp->file );
 	}
 }

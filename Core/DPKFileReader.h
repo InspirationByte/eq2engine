@@ -1,8 +1,8 @@
 ///////////////////////////////////////////////////////////////////////////////
 // Copyright © Inspiration Byte
-// 2009-2015
+// 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
-// Description: Dark package file (dpk)
+// Description: Data package file (dpk)
 //////////////////////////////////////////////////////////////////////////////////
 
 #ifndef DPKFILEREADER_H
@@ -19,6 +19,8 @@
 #include "utils/eqthread.h"
 
 #include "dpk_defs.h"
+
+#include "IVirtualStream.h"
 
 typedef int dpkhandle_t;
 
@@ -38,6 +40,56 @@ enum PACKAGE_DUMP_MODE
 {
 	PACKAGE_INFO = 0,
 	PACKAGE_FILES,
+};
+
+//------------------------------------------------------------------------------------------
+
+class CDPKFileStream : public IVirtualStream
+{
+	friend class CDPKFileReader;
+	friend class CFileSystem;
+public:
+	CDPKFileStream(const dpkfileinfo_t& info, FILE* fp);
+	~CDPKFileStream();
+
+	// reads data from virtual stream
+	size_t Read(void *dest, size_t count, size_t size);
+
+	// writes data to virtual stream
+	size_t Write(const void *src, size_t count, size_t size);
+
+	// seeks pointer to position
+	int	Seek(long nOffset, VirtStreamSeek_e seekType);
+
+	// fprintf analog
+	void Print(const char* fmt, ...);
+
+	// returns current pointer position
+	long Tell();
+
+	// returns memory allocated for this stream
+	long GetSize();
+
+	// flushes stream from memory
+	int	Flush();
+
+	// returns stream type
+	VirtStreamType_e GetType();
+
+	// returns CRC32 checksum of stream
+	uint32 GetCRC32();
+
+protected:
+	void				DecodeBlock(int block);
+
+	ubyte				m_blockData[DPK_BLOCK_MAXSIZE];
+	dpkfileinfo_t		m_info;
+	dpkblock_t			m_blockInfo;
+
+	FILE*				m_handle;
+	int					m_curPos;
+
+	CDPKFileReader*		m_host;
 };
 
 //------------------------------------------------------------------------------------------
@@ -62,26 +114,14 @@ public:
 	int						FindFileIndex( const char* filename ) const;
 
 	// file data api
-	DPKFILE*				Open( const char* filename, const char* mode );
-	void					Close( DPKFILE* fp );
-	long					Seek( DPKFILE* fp, long pos, int seekType );
-	long					Tell( DPKFILE* fp ) const;
-	size_t					Read( void *dest, size_t count, size_t size, DPKFILE *fp );
-	char*					Gets( char *dest, int destSize, DPKFILE *fp);
-	int						Eof( DPKFILE* fp ) const;
+	CDPKFileStream*			Open( const char* filename, const char* mode );
+	void					Close(CDPKFileStream* fp );
 
 protected:
-	dpkhandle_t				DecompressFile( int fileIndex );
-
-
 	dpkheader_t				m_header;
 	dpkfileinfo_t*			m_dpkFiles;
 
-
-	dpkhandle_t				m_handles[DPKX_MAX_HANDLES];
-	int						m_dumpCount;
-
-	DkList<DPKFILE*>		m_openFiles;
+	DkList<CDPKFileStream*>	m_openFiles;
 
 	EqString				m_packageName;
 	int						m_searchPath;

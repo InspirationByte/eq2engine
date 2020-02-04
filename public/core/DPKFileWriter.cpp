@@ -1,11 +1,12 @@
-//////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
 // Copyright © Inspiration Byte
-// 2009-2015
+// 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
-// Description: Dark package file (dpk)
+// Description: Data package file (dpk)
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "DPKFileWriter.h"
+#include <math.h>
 
 #ifdef _WIN32
 #define ZLIB_WINAPI
@@ -17,7 +18,15 @@
 #include "core/DebugInterface.h"
 #include "core/cmd_pacifier.h"
 
-#pragma todo("linux code")
+#define DPK_WRITE_BLOCK (8*1024*1024)
+
+void encryptDecrypt(ubyte* buffer, int size, int hash)
+{
+	char* key = (char*)&hash;
+
+	while (size--)
+		buffer[size] = buffer[size] ^ key[size % 4];
+}
 
 CDPKFileWriter::CDPKFileWriter()
 {
@@ -118,7 +127,7 @@ bool CDPKFileWriter::BuildAndSave( const char* fileNamePrefix )
 
 void CDPKFileWriter::SetMountPath( const char* path )
 {
-	strncpy(m_mountPath, path, DPK_MAX_FILENAME_LENGTH);
+	strncpy(m_mountPath, path, DPK_STRING_SIZE);
 	FixSlashes(m_mountPath);
 	xstrlwr( m_mountPath );
 }
@@ -145,25 +154,14 @@ bool CDPKFileWriter::AddFile( const char* fileName )
 	memset(newInfo,0,sizeof(dpkfilewinfo_t));
 
 	{
-		strncpy(newInfo->filename, fileName, DPK_MAX_FILENAME_LENGTH);
-		FixSlashes(newInfo->filename);
-		xstrlwr( newInfo->filename );
+		// assign the filename and fix path separators
+		newInfo->fileName = _Es(fileName).LowerCase();
+		newInfo->fileName.Path_FixSlashes();
 
-		char fillMountedFilename[DPK_MAX_FILENAME_LENGTH];
-		strcpy(fillMountedFilename, m_mountPath);
+		EqString fillMountedFilename = CombinePath(2, m_mountPath, newInfo->fileName.c_str());
 
-		char correctPathSep[2] = {CORRECT_PATH_SEPARATOR, '\0'};
-
-		int len = strlen(fillMountedFilename);
-
-		if( len > 0 && fillMountedFilename[len-1] != CORRECT_PATH_SEPARATOR )
-			strcat(fillMountedFilename, correctPathSep);
-
-		strcat(fillMountedFilename, newInfo->filename);
-
-		//Msg("Add file '%s'\n", fillMountedFilename);
-
-		newInfo->pkinfo.filenameHash = StringToHash( fillMountedFilename, true );
+		//Msg("Add file '%s'\n", fillMountedFilename.c_str());
+		newInfo->pkinfo.filenameHash = StringToHash(fillMountedFilename.c_str(), true );
 	}
 
 	m_files.append(newInfo);
@@ -229,8 +227,6 @@ bool CDPKFileWriter::CheckCompressionIgnored(const char* extension) const
 	return false;
 }
 
-#define DPK_WRITE_BLOCK (8*1024*1024)
-
 bool CDPKFileWriter::WriteFiles()
 {
 	FILE* dpkTempDataFile = fopen("fcompress_temp.tmp", "rb");
@@ -276,6 +272,113 @@ bool CDPKFileWriter::WriteFiles()
 	return true;
 }
 
+void CDPKFileWriter::ProcessFile(FILE* output, dpkfilewinfo_t* info)
+{
+	dpkfileinfo_t* pkInfo = &info->pkinfo;
+
+	bool compressionEnabled = (m_compressionLevel > 0) && !CheckCompressionIgnored(info->fileName.Path_Extract_Ext().c_str());
+
+	long _fileSize = 0;
+	ubyte* _filedata = LoadFileBuffer(info->fileName.c_str(), &_fileSize);
+
+	if (!_filedata)
+	{
+		MsgError("Failed to open file '%s' while adding to archive\n", info->fileName.c_str());
+		return;
+	}
+
+	// set the size and offset in the file bigfile
+	pkInfo->size = _fileSize;
+	pkInfo->offset = m_header.fileInfoOffset;
+
+	// compressed and encrypted files has to be put into blocks
+	// uncompressed files are bypassing blocks
+	if (compressionEnabled || m_encryption > 0)
+	{
+		// temporary block for both compression and encryption 
+		// twice the size
+		ubyte tmpBlock[DPK_BLOCK_MAXSIZE*2];
+
+		// allocate block headers
+		dpkblock_t blockInfo;
+
+		int numBlocks = 0;
+
+		// write blocks
+		while(true)
+		{
+			memset(&blockInfo, 0, sizeof(dpkblock_t));
+
+			// get block offset
+			const int srcOffset = numBlocks*DPK_BLOCK_MAXSIZE;
+			const ubyte* srcBlock = _filedata+srcOffset;
+
+			blockInfo.size = DPK_BLOCK_MAXSIZE;
+
+			// if size is greater than remaining, we know that this is last block
+			if (blockInfo.size > _fileSize - srcOffset)
+				blockInfo.size = min(blockInfo.size, _fileSize - srcOffset);
+
+			int status = Z_DATA_ERROR;
+
+			// compress to tmpBlock
+			if(compressionEnabled)
+			{
+				unsigned long compressedSize = sizeof(tmpBlock);
+				memset(tmpBlock, 0, compressedSize);
+				status = compress2(tmpBlock, &compressedSize, srcBlock, blockInfo.size, m_compressionLevel);
+
+				if (status == Z_OK)
+				{
+					blockInfo.flags |= DPKFILE_FLAG_COMPRESSED;
+					blockInfo.compressedSize = compressedSize;
+				}
+				else
+				{
+					// failure of compression means that this block still needs to be written to temp
+					// compressedSize remains 0
+					memcpy(tmpBlock, srcBlock, blockInfo.size);
+				}
+			}
+			else
+				memcpy(tmpBlock, srcBlock, blockInfo.size);
+
+			int tmpBlockSize = (blockInfo.flags & DPKFILE_FLAG_COMPRESSED) ? blockInfo.compressedSize : blockInfo.size;
+
+			// encrypt tmpBlock
+			if(m_encryption > 0)
+			{
+				encryptDecrypt(tmpBlock, tmpBlockSize, info->pkinfo.filenameHash);
+				blockInfo.flags |= DPKFILE_FLAG_ENCRYPTED;
+			}
+
+			// write header and data
+			fwrite(&blockInfo, sizeof(blockInfo), 1, output);
+			fwrite(tmpBlock, 1, tmpBlockSize, output);
+
+			// increment file info offset in the main header
+			m_header.fileInfoOffset += sizeof(blockInfo) + tmpBlockSize;
+
+			numBlocks++;
+
+			// small block size indicates last block
+			if (blockInfo.size < DPK_BLOCK_MAXSIZE)
+				break;
+		}
+
+		// set the number of blocks
+		pkInfo->numBlocks = numBlocks;
+	}
+	else
+	{
+		fwrite(_filedata, _fileSize, 1, output);
+		m_header.fileInfoOffset += _fileSize;
+	}
+
+	// we're done with this file
+	free(_filedata);
+}
+
 bool CDPKFileWriter::SavePackage()
 {
 	// create temporary file
@@ -298,100 +401,7 @@ bool CDPKFileWriter::SavePackage()
 		UpdatePacifier((float)i / (float)m_files.numElem());
 
 		dpkfilewinfo_t* fileInfo = m_files[i];
-		dpkfileinfo_t* pkInfo = &m_files[i]->pkinfo;
-
-		long filesize = 0;
-		ubyte* _filedata = LoadFileBuffer( fileInfo->filename, &filesize );
-
-		bool shouldIgnoreCompression = CheckCompressionIgnored( _Es(fileInfo->filename).Path_Extract_Ext().c_str() );
-
-		fileInfo->size = filesize;
-
-		if( _filedata )
-		{
-			int status = Z_DATA_ERROR;
-
-			if( m_compressionLevel > 0 && !shouldIgnoreCompression )
-			{
-				unsigned long compressed_size = filesize + 128;
-				ubyte* _compressedData = (ubyte*)malloc(compressed_size);
-
-				memset(_compressedData, 0, compressed_size);
-
-				status = compress2(_compressedData, &compressed_size, (ubyte*)_filedata,filesize, m_compressionLevel);
-
-				if( status == Z_OK )
-				{
-					/*
-					if( m_encryption == 2 )
-					{
-						ubyte* encData = NULL;
-						compressed_size = encryptBlock(&encData, _compressedData, compressed_size, m_key);
-
-						free(_compressedData);
-
-						_compressedData = encData;
-
-						pkInfo->flags |= DPKFILE_FLAG_ENCRYPTED;
-					}*/
-
-					// compress & kill =)
-					fwrite(_compressedData, compressed_size, 1, dpk_temp_data);
-
-					pkInfo->offset = m_header.fileInfoOffset;
-					pkInfo->size = filesize;
-					pkInfo->compressedSize = compressed_size;
-
-					// set compression flag
-					pkInfo->flags |= DPKFILE_FLAG_COMPRESSED;
-
-					m_header.fileInfoOffset += compressed_size;
-
-					// free loaded file
-					free( _compressedData );
-					free( _filedata );
-
-					// flush our results always
-					fflush(dpk_temp_data);
-
-					continue;
-				}
-			}
-
-			long fileEncSize = filesize;
-
-			/*
-			if( m_encryption == 2 )
-			{
-				ubyte* encData = NULL;
-				fileEncSize = encryptBlock(&encData, _filedata, filesize, m_key);
-
-				free(_filedata);
-
-				_filedata = encData;
-
-				pkInfo->flags |= DPKFILE_FLAG_ENCRYPTED;
-			}*/
-
-			// write & kill =)
-			fwrite(_filedata, fileEncSize, 1, dpk_temp_data);
-
-			pkInfo->offset = m_header.fileInfoOffset;
-			pkInfo->size = filesize;
-			pkInfo->compressedSize = fileEncSize;
-
-			// not compressed, ignore flags
-			m_header.fileInfoOffset += fileEncSize;
-
-			free( _filedata );
-
-			// flush our results always
-			fflush(dpk_temp_data);
-		}
-		else
-		{
-			MsgError("Failed to open file '%s' while adding to archive\n", fileInfo->filename);
-		}
+		ProcessFile(dpk_temp_data, fileInfo);
 	}
 
 	fclose(dpk_temp_data);

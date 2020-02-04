@@ -47,47 +47,12 @@ protected:
 };
 
 //------------------------------------------------------------------------------
-// Virtual filesystem file of DarkTech Package file
-//------------------------------------------------------------------------------
-
-class CVirtualDPKFile : public IFile
-{
-	friend class CFileSystem;
-
-public:
-						CVirtualDPKFile(DPKFILE* pFile, CDPKFileReader* pPackage) : m_pFilePtr(pFile), m_pDKPReader(pPackage)
-						{
-						}
-
-    int					Seek( long pos, VirtStreamSeek_e seekType );
-    long				Tell();
-    size_t				Read( void *dest, size_t count, size_t size);
-    size_t				Write( const void *src, size_t count, size_t size);
-    int					Error();
-    int					Flush();
-
-    char*				Gets( char *dest, int destSize );
-
-	uint32				GetCRC32();
-
-	long				GetSize();
-
-	VirtStreamType_e	GetType() {return VS_TYPE_FILE_PACKAGE;}
-
-protected:
-	DPKFILE*			m_pFilePtr;
-	CDPKFileReader*		m_pDKPReader;
-};
-
-//------------------------------------------------------------------------------
 // Filesystem base
 //------------------------------------------------------------------------------
 
 class CFileSystem : public IFileSystem
 {
 	friend class CFile;
-	friend class CVirtualDPKFile;
-
 public:
 								 CFileSystem();
 								~CFileSystem();

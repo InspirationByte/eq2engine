@@ -28,6 +28,7 @@ void Usage()
 	Msg("-o / -out <name> - Output filename\n");
 	Msg("-m / -mount <directory> - Sets the mount path for package\n");
 	Msg("-c / -compression <level> - Sets the compression level of archive\n");
+	Msg("-e / -encryption <key> - Sets encryption of the package\n");
 }
 
 int _tmain(int argc, char **argv)
@@ -77,6 +78,10 @@ int _tmain(int argc, char **argv)
 		else if(!stricmp(arg, "-f") || !stricmp(arg, "-file"))
 		{
 			dpkWriter.AddFile( g_cmdLine->GetArgumentsOf(i) );
+		}
+		else if (!stricmp(arg, "-e") || !stricmp(arg, "-encryption"))
+		{
+			dpkWriter.SetEncryption(1, g_cmdLine->GetArgumentsOf(i));
 		}
 		else if(!stricmp(arg, "-d") || !stricmp(arg, "-dir"))
 		{
