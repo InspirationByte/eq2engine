@@ -78,6 +78,8 @@ void CDPKFileStream::DecodeBlock(int blockIdx)
 
 		int readSize = (blockHdr.flags & DPKFILE_FLAG_COMPRESSED) ? blockHdr.compressedSize : blockHdr.size;
 
+		Msg("DecodeBlock %d size = %d\n", i, readSize);
+
 		if (i == blockIdx)
 		{
 			ubyte* readMem = (blockHdr.flags & DPKFILE_FLAG_COMPRESSED) ? tmpBlock : m_blockData;
@@ -125,6 +127,8 @@ size_t CDPKFileStream::Read(void* dest, size_t count, size_t size)
 	// read blocks if any
 	if (m_info.numBlocks)
 	{
+		Msg("READ for %u from blocks: %d of %d\n", m_info.filenameHash, bytesToRead, m_info.size);
+
 		int bytesToReadCnt = bytesToRead;
 		ubyte* destBuf = (ubyte*)dest;
 
@@ -145,6 +149,8 @@ size_t CDPKFileStream::Read(void* dest, size_t count, size_t size)
 
 			const int blockRemainingBytes = m_blockInfo.size - blockOffset;
 			const int blockBytesToRead = min(bytesToRead, blockRemainingBytes);
+
+			Msg("Block %d: read at %d (%d) - %d of %d\n", curBlockIdx, m_curPos, blockOffset, blockBytesToRead, m_blockInfo.size);
 
 			// read the data from block
 			memcpy(destBuf, m_blockData+blockOffset, blockBytesToRead);
@@ -180,8 +186,8 @@ size_t CDPKFileStream::Write(const void *src, size_t count, size_t size)
 // seeks pointer to position
 int	CDPKFileStream::Seek(long nOffset, VirtStreamSeek_e seekType)
 {
-	int startOffset = m_info.offset;
-	int newOfs = m_curPos;
+	uint32 startOffset = m_info.offset;
+	uint32 newOfs = m_curPos;
 
 	switch (seekType)
 	{
@@ -207,6 +213,10 @@ int	CDPKFileStream::Seek(long nOffset, VirtStreamSeek_e seekType)
 
 	// set the virtual offset
 	m_curPos = newOfs;
+
+	Msg("DPK %u seek => %d / %d\n", m_info.filenameHash, newOfs, m_info.size);
+
+	ASSERTMSG(newOfs <= m_info.size, varargs("CDPKFileStream::Seek - %u illegal seek => %d while file max is %d\n", m_info.filenameHash, newOfs, m_info.size));
 
 	if(m_info.numBlocks)
 		return 0;
@@ -334,7 +344,7 @@ int	CDPKFileReader::FindFileIndex(const char* filename) const
 
 	int strHash = StringToHash(pszNewString, true);
 
-	//Msg("Requested file from package: %s\n",pszNewString);
+	Msg("DPK: %s = %u\n", pszNewString, strHash);
 
     for (int i = 0; i < m_header.numFiles; i++)
     {
