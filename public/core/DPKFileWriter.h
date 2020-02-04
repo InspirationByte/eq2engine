@@ -1,8 +1,8 @@
 ///////////////////////////////////////////////////////////////////////////////
 // Copyright © Inspiration Byte
-// 2009-2015
+// 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
-// Description: Dark package file (dpk)
+// Description: Data package file (dpk)
 //////////////////////////////////////////////////////////////////////////////////
 
 #ifndef DPKFILEWRITER_H
@@ -18,11 +18,12 @@
 #include "utils/DkList.h"
 #include "utils/eqstring.h"
 
+#define DPK_STRING_SIZE 255
+
 struct dpkfilewinfo_t
 {
 	dpkfileinfo_t	pkinfo;
-	char			filename[DPK_MAX_FILENAME_LENGTH];
-	long			size;
+	EqString		fileName;
 };
 
 ALIGNED_TYPE(dpkfileinfo_s, 2) dpkfileinfo_t;
@@ -46,6 +47,8 @@ public:
 
 protected:
 
+	void					ProcessFile(FILE* output, dpkfilewinfo_t* info);
+
 	bool					WriteFiles();
 	bool					SavePackage();
 
@@ -54,7 +57,7 @@ protected:
 	FILE*					m_file;
 	dpkheader_t				m_header;
 
-	char					m_mountPath[DPK_MAX_FILENAME_LENGTH];
+	char					m_mountPath[DPK_STRING_SIZE];
 
 	DkList<dpkfilewinfo_t*>	m_files;
 	DkList<EqString>		m_ignoreCompressionExt;
