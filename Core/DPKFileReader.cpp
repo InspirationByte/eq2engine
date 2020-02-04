@@ -46,11 +46,11 @@ CDPKFileStream::CDPKFileStream(const dpkfileinfo_t& info, FILE* fp)
 	m_handle = fp;
 	m_info = info;
 	m_curPos = 0;
-	memset(&m_blockInfo, 0, sizeof(m_blockInfo));
 
-	// decode first block automatically
-	if (!m_info.numBlocks)
-		fseek(m_handle, m_info.offset, SEEK_SET);
+	m_curBlockOfs = m_info.offset;
+	m_curBlockIdx = -1;
+
+	memset(&m_blockInfo, 0, sizeof(m_blockInfo));
 }
 
 
@@ -60,28 +60,41 @@ CDPKFileStream::~CDPKFileStream()
 
 void CDPKFileStream::DecodeBlock(int blockIdx)
 {
-	int curBlockIdx = (float(m_curPos) / float(m_info.size)) * m_info.numBlocks;
-
-	if (curBlockIdx == blockIdx && m_blockInfo.size != 0)
+	if (m_curBlockIdx == blockIdx)
 		return;
 
-	ubyte tmpBlock[DPK_BLOCK_MAXSIZE];
+	int startBlock = m_curBlockIdx;
 
-	// find the block
-	fseek(m_handle, m_info.offset, SEEK_SET);
+	if (blockIdx > startBlock && startBlock != -1)
+	{
+		// find the block starting from current block
+		fseek(m_handle, m_curBlockOfs, SEEK_SET);
+	}
+	else
+	{
+		// find the block from the beginning
+		fseek(m_handle, m_info.offset, SEEK_SET);
+		startBlock = 0;
+	}
 
 	// seek to the block
-	for(int i = 0; i < m_info.numBlocks; i++)
+	for(int i = startBlock; i < m_info.numBlocks; i++)
 	{
+		// store block info
+		m_curBlockOfs = ftell(m_handle);
+		m_curBlockIdx = i;
+
 		dpkblock_t blockHdr;
 		fread(&blockHdr, 1, sizeof(blockHdr), m_handle);
 
 		int readSize = (blockHdr.flags & DPKFILE_FLAG_COMPRESSED) ? blockHdr.compressedSize : blockHdr.size;
 
-		Msg("DecodeBlock %d size = %d\n", i, readSize);
-
 		if (i == blockIdx)
 		{
+			//Msg("DecodeBlock %d size = %d\n", i, readSize);
+
+			ubyte* tmpBlock = (ubyte*)malloc(DPK_BLOCK_MAXSIZE + 32);
+
 			ubyte* readMem = (blockHdr.flags & DPKFILE_FLAG_COMPRESSED) ? tmpBlock : m_blockData;
 
 			// read block and decompress/decrypt
@@ -106,6 +119,8 @@ void CDPKFileStream::DecodeBlock(int blockIdx)
 					ASSERTMSG(false, varargs("Cannot decompress file block - %d!\n", status));
 				else
 					ASSERT(destLen == blockHdr.size);
+
+				free(tmpBlock);
 			}
 
 			// done. Keep block for further purposes
@@ -124,10 +139,13 @@ size_t CDPKFileStream::Read(void* dest, size_t count, size_t size)
 	const int fileRemainingBytes = m_info.size - m_curPos;
 	const int bytesToRead = min(count*size, fileRemainingBytes);
 
+	if (bytesToRead == 0)
+		return 0;
+
 	// read blocks if any
 	if (m_info.numBlocks)
 	{
-		Msg("READ for %u from blocks: %d of %d\n", m_info.filenameHash, bytesToRead, m_info.size);
+		//Msg("READ for %u from blocks: %d of %d\n", m_info.filenameHash, bytesToRead, m_info.size);
 
 		int bytesToReadCnt = bytesToRead;
 		ubyte* destBuf = (ubyte*)dest;
@@ -138,19 +156,14 @@ size_t CDPKFileStream::Read(void* dest, size_t count, size_t size)
 		do
 		{
 			// decode block
-			int curBlockIdx = (float(curPos) / float(m_info.size)) * m_info.numBlocks;	// FIXME: DO NOT USE FLOATING POINT NUMBERS!
+			const int blockOffset = curPos % DPK_BLOCK_MAXSIZE;
+			const int curBlockIdx = curPos / DPK_BLOCK_MAXSIZE;
 			DecodeBlock(curBlockIdx);
 
-			// after decode set position to satisfy conditions
-			m_curPos = curPos;
-
-			// calculate offsed within the block
-			const int blockOffset = curPos % DPK_BLOCK_MAXSIZE;
-
 			const int blockRemainingBytes = m_blockInfo.size - blockOffset;
-			const int blockBytesToRead = min(bytesToRead, blockRemainingBytes);
+			const int blockBytesToRead = min(bytesToReadCnt, blockRemainingBytes);
 
-			Msg("Block %d: read at %d (%d) - %d of %d\n", curBlockIdx, m_curPos, blockOffset, blockBytesToRead, m_blockInfo.size);
+			//Msg("Block %d: read at %d (%d) - %d of %d\n", curBlockIdx, curPos, blockOffset, blockBytesToRead, m_blockInfo.size);
 
 			// read the data from block
 			memcpy(destBuf, m_blockData+blockOffset, blockBytesToRead);
@@ -168,8 +181,12 @@ size_t CDPKFileStream::Read(void* dest, size_t count, size_t size)
 	}
 	else
 	{
+		fseek(m_handle, m_info.offset + m_curPos, SEEK_SET);
+
 		// read file straight
 		fread(dest, 1, bytesToRead, m_handle);
+
+		m_curPos += bytesToRead;
 
 		// return number of read elements
 		return bytesToRead / size;
@@ -186,7 +203,6 @@ size_t CDPKFileStream::Write(const void *src, size_t count, size_t size)
 // seeks pointer to position
 int	CDPKFileStream::Seek(long nOffset, VirtStreamSeek_e seekType)
 {
-	uint32 startOffset = m_info.offset;
 	uint32 newOfs = m_curPos;
 
 	switch (seekType)
@@ -208,20 +224,18 @@ int	CDPKFileStream::Seek(long nOffset, VirtStreamSeek_e seekType)
 		}
 	}
 
+
 	if (newOfs < 0)
 		return -1;
+
+	ASSERTMSG(newOfs >= 0 && newOfs <= m_info.size, varargs("CDPKFileStream::Seek - %u illegal seek => %d while file max is %d\n", m_info.filenameHash, newOfs, m_info.size));
 
 	// set the virtual offset
 	m_curPos = newOfs;
 
-	Msg("DPK %u seek => %d / %d\n", m_info.filenameHash, newOfs, m_info.size);
+	//Msg("DPK %u seek => %d / %d\n", m_info.filenameHash, newOfs, m_info.size);
 
-	ASSERTMSG(newOfs <= m_info.size, varargs("CDPKFileStream::Seek - %u illegal seek => %d while file max is %d\n", m_info.filenameHash, newOfs, m_info.size));
-
-	if(m_info.numBlocks)
-		return 0;
-
-	return fseek(m_handle, startOffset + newOfs, SEEK_SET);
+	return 0;
 }
 
 // fprintf analog
@@ -344,7 +358,7 @@ int	CDPKFileReader::FindFileIndex(const char* filename) const
 
 	int strHash = StringToHash(pszNewString, true);
 
-	Msg("DPK: %s = %u\n", pszNewString, strHash);
+	//Msg("DPK: %s = %u\n", pszNewString, strHash);
 
     for (int i = 0; i < m_header.numFiles; i++)
     {

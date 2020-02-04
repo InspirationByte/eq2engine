@@ -807,7 +807,9 @@ void CCar::CreateCarPhysics()
 
 		if (winfo.m_hubcapPhysmodel == -1)
 		{
-			MsgWarning("Wheel physics model (%s) not found!!!\n", wconf.hubcapName);
+			if(strlen(wconf.hubcapName) > 0)
+				MsgWarning("Wheel physics model (%s) not found!!!\n", wconf.hubcapName);
+
 			winfo.m_hubcapPhysmodel = 0;
 		}
 

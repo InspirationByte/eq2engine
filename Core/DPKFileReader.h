@@ -86,6 +86,9 @@ protected:
 	dpkfileinfo_t		m_info;
 	dpkblock_t			m_blockInfo;
 
+	uint32				m_curBlockOfs;
+	int					m_curBlockIdx;
+
 	FILE*				m_handle;
 	int					m_curPos;
 
