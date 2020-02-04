@@ -309,6 +309,8 @@ void CSoundEmitterSystem::Init(float maxDistance, fnSoundEmitterUpdate updFunc /
 	m_defaultMaxDistance = maxDistance;
 	m_fnEmitterProcess = updFunc;
 
+	m_totalErrors = 0;
+
 	for (int i = 0; i < CHAN_COUNT; i++)
 	{
 		m_2dScriptVolume[i] = 1.0f;
@@ -443,8 +445,10 @@ void CSoundEmitterSystem::PrecacheSound(const char* pszName)
 
 		ISoundSample* pCachedSample = soundsystem->LoadSample(pSound->soundFileNames[i].GetData(), flags);
 
-		if(pCachedSample)
+		if (pCachedSample)
 			pSound->pSamples.append(pCachedSample);
+		else
+			m_totalErrors++;
 	}
 
 #ifndef NO_ENGINE
@@ -616,6 +620,10 @@ int CSoundEmitterSystem::EmitSound(EmitSound_t* emit)
 void CSoundEmitterSystem::Emit2DSound(EmitSound_t* emit, int channelType)
 {
 	ASSERT(emit);
+
+	// simple protection agains audio thiefs
+	if (m_totalErrors > 8)
+		return;
 
 	if ((emit->nFlags & EMITSOUND_FLAG_START_ON_UPDATE) || m_isPaused)
 	{

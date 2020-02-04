@@ -352,6 +352,8 @@ private:
 
 	float						m_2dChannelVolume[CHAN_COUNT];
 	float						m_2dScriptVolume[CHAN_COUNT];
+
+	int							m_totalErrors;
 };
 
 extern CSoundEmitterSystem* g_sounds;
