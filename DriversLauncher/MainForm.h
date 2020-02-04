@@ -73,14 +73,14 @@ namespace DriversLauncher {
 			this->pictureBox1->BackgroundImageLayout = System::Windows::Forms::ImageLayout::Stretch;
 			this->pictureBox1->Location = System::Drawing::Point(12, 12);
 			this->pictureBox1->Name = L"pictureBox1";
-			this->pictureBox1->Size = System::Drawing::Size(537, 217);
+			this->pictureBox1->Size = System::Drawing::Size(537, 392);
 			this->pictureBox1->TabIndex = 0;
 			this->pictureBox1->TabStop = false;
 			// 
 			// playBtn
 			// 
 			this->playBtn->Anchor = static_cast<System::Windows::Forms::AnchorStyles>((System::Windows::Forms::AnchorStyles::Bottom | System::Windows::Forms::AnchorStyles::Right));
-			this->playBtn->Location = System::Drawing::Point(435, 235);
+			this->playBtn->Location = System::Drawing::Point(435, 410);
 			this->playBtn->Name = L"playBtn";
 			this->playBtn->Size = System::Drawing::Size(114, 28);
 			this->playBtn->TabIndex = 1;
@@ -92,7 +92,7 @@ namespace DriversLauncher {
 			// 
 			this->m_resolutionList->Anchor = static_cast<System::Windows::Forms::AnchorStyles>((System::Windows::Forms::AnchorStyles::Bottom | System::Windows::Forms::AnchorStyles::Left));
 			this->m_resolutionList->FormattingEnabled = true;
-			this->m_resolutionList->Location = System::Drawing::Point(12, 238);
+			this->m_resolutionList->Location = System::Drawing::Point(12, 413);
 			this->m_resolutionList->Name = L"m_resolutionList";
 			this->m_resolutionList->Size = System::Drawing::Size(208, 21);
 			this->m_resolutionList->TabIndex = 2;
@@ -101,7 +101,7 @@ namespace DriversLauncher {
 			// 
 			this->m_fullscreen->Anchor = System::Windows::Forms::AnchorStyles::Bottom;
 			this->m_fullscreen->AutoSize = true;
-			this->m_fullscreen->Location = System::Drawing::Point(226, 242);
+			this->m_fullscreen->Location = System::Drawing::Point(226, 417);
 			this->m_fullscreen->Name = L"m_fullscreen";
 			this->m_fullscreen->Size = System::Drawing::Size(74, 17);
 			this->m_fullscreen->TabIndex = 3;
@@ -114,7 +114,7 @@ namespace DriversLauncher {
 			this->m_langSel->DisplayMember = L"Text";
 			this->m_langSel->DropDownStyle = System::Windows::Forms::ComboBoxStyle::DropDownList;
 			this->m_langSel->FormattingEnabled = true;
-			this->m_langSel->Location = System::Drawing::Point(308, 238);
+			this->m_langSel->Location = System::Drawing::Point(308, 413);
 			this->m_langSel->Name = L"m_langSel";
 			this->m_langSel->Size = System::Drawing::Size(121, 21);
 			this->m_langSel->TabIndex = 4;
@@ -124,7 +124,7 @@ namespace DriversLauncher {
 			// 
 			this->AutoScaleDimensions = System::Drawing::SizeF(6, 13);
 			this->AutoScaleMode = System::Windows::Forms::AutoScaleMode::Font;
-			this->ClientSize = System::Drawing::Size(565, 275);
+			this->ClientSize = System::Drawing::Size(565, 450);
 			this->Controls->Add(this->m_langSel);
 			this->Controls->Add(this->m_fullscreen);
 			this->Controls->Add(this->m_resolutionList);

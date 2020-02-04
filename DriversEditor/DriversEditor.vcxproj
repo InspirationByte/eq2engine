@@ -256,9 +256,11 @@ call copy_drvsyn_engine.bat $(ConfigurationName)</Command>
     <ClInclude Include="..\Engine\modelloader_shared.h" />
     <ClInclude Include="level_generator.h" />
     <ClInclude Include="LoadLevDialog.h" />
+    <ClInclude Include="MaterialAtlasList.h" />
     <ClInclude Include="NewLevelDialog.h" />
     <ClInclude Include="RegionEditFrame.h" />
     <ClInclude Include="TextureView.h" />
+    <ClInclude Include="UI_BlockEditor.h" />
     <ClInclude Include="UI_BuildingConstruct.h" />
     <ClInclude Include="UI_HeightEdit.h" />
     <ClInclude Include="UI_LevelModels.h" />
@@ -336,9 +338,11 @@ call copy_drvsyn_engine.bat $(ConfigurationName)</Command>
     <ClCompile Include="GenericImageListRenderer.cpp" />
     <ClCompile Include="level_generator.cpp" />
     <ClCompile Include="LoadLevDialog.cpp" />
+    <ClCompile Include="MaterialAtlasList.cpp" />
     <ClCompile Include="NewLevelDialog.cpp" />
     <ClCompile Include="RegionEditFrame.cpp" />
     <ClCompile Include="TextureView.cpp" />
+    <ClCompile Include="UI_BlockEditor.cpp" />
     <ClCompile Include="UI_BuildingConstruct.cpp" />
     <ClCompile Include="UI_HeightEdit.cpp" />
     <ClCompile Include="UI_LevelModels.cpp" />
@@ -351,7 +355,9 @@ call copy_drvsyn_engine.bat $(ConfigurationName)</Command>
   </ItemGroup>
   <ItemGroup>
     <Library Include="..\src_dependency\jpeg\lib\jpeg.lib" />
-    <Library Include="..\src_dependency\libogg\win32\VS2015\Win32\Release\libogg_static.lib" />
+    <Library Include="..\src_dependency\libogg\win32\VS2015\Win32\Release\libogg_static.lib">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </Library>
     <Library Include="..\src_dependency\openal-soft\build\Release\OpenAL32.lib" />
     <Library Include="..\src_dependency\libvorbis\win32\VS2010\Win32\Release\libvorbisfile_static.lib" />
     <Library Include="..\src_dependency\libvorbis\win32\VS2010\Win32\Release\libvorbis_static.lib" />

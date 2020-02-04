@@ -65,6 +65,9 @@
     <Filter Include="Source Files\Game\World">
       <UniqueIdentifier>{78fdd358-a674-4390-9069-c295012ef104}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\Editor\Modes\BlockEditor">
+      <UniqueIdentifier>{96f29c01-3c4c-4519-84e0-00b550f34273}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CommandAccessor.h">
@@ -427,6 +430,12 @@
     <ClInclude Include="..\DriversGame\GameDefs.h">
       <Filter>Source Files\Game\objects</Filter>
     </ClInclude>
+    <ClInclude Include="UI_BlockEditor.h">
+      <Filter>Source Files\Editor\Modes</Filter>
+    </ClInclude>
+    <ClInclude Include="MaterialAtlasList.h">
+      <Filter>Source Files\Editor</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="Notes.txt" />
@@ -650,6 +659,12 @@
     </ClCompile>
     <ClCompile Include="..\DriversGame\GameDefs.cpp">
       <Filter>Source Files\Game\objects</Filter>
+    </ClCompile>
+    <ClCompile Include="UI_BlockEditor.cpp">
+      <Filter>Source Files\Editor\Modes</Filter>
+    </ClCompile>
+    <ClCompile Include="MaterialAtlasList.cpp">
+      <Filter>Source Files\Editor</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

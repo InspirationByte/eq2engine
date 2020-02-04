@@ -99,6 +99,7 @@ protected:
 
 	IEditorTool*	m_hmapedit;
 	IEditorTool*	m_modelsedit;
+	IEditorTool*	m_blockedit;
 	IEditorTool*	m_roadedit;
 	IEditorTool*	m_splinesEdit;
 	IEditorTool*	m_occluderEditor;

@@ -16,6 +16,7 @@
 
 #include "UI_HeightEdit.h"
 #include "UI_LevelModels.h"
+#include "UI_BlockEditor.h"
 #include "UI_RoadEditor.h"
 #include "UI_OccluderEditor.h"
 #include "UI_BuildingConstruct.h"
@@ -278,6 +279,11 @@ CMainWindow::CMainWindow( wxWindow* parent, wxWindowID id, const wxString& title
 	m_notebook1->AddPage( (CUI_HeightEdit*)m_hmapedit, wxT("Heightfields"), true );
 
 	m_tools.append(m_hmapedit);
+
+	m_blockedit = new CUI_BlockEditor(m_notebook1);
+	m_notebook1->AddPage((CUI_BlockEditor*)m_blockedit, wxT("Blocks"), false);
+
+	m_tools.append(m_blockedit);
 
 	m_modelsedit = new CUI_LevelModels( m_notebook1 );
 	m_notebook1->AddPage( (CUI_LevelModels*)m_modelsedit, wxT("Objects"), false );
