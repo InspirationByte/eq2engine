@@ -672,9 +672,19 @@ void Lua_Console_RemoveCommandBase(ConCommandBase* cmdbase)
 	}
 
 	g_sysConsole->UnregisterCommand(cmdbase);
-	cmdbase->LuaCleanup();
 
+	cmdbase->LuaCleanup();
 	delete cmdbase;
+}
+
+void Lua_Console_RegisterCommandBase(ConCommandBase* cmdbase)
+{
+	g_sysConsole->RegisterCommand(cmdbase);
+}
+
+void Lua_Console_UnregisterCommandBase(ConCommandBase* cmdbase)
+{
+	g_sysConsole->UnregisterCommand(cmdbase);
 }
 
 int LLua_Console_FindCvar(lua_State* vm)
@@ -691,6 +701,9 @@ OOLUA_CFUNC(Lua_Console_ExecuteString, LLua_Console_ExecuteString)
 OOLUA_CFUNC(Lua_Console_CreateCommand, LLua_Console_CreateCommand)
 OOLUA_CFUNC(Lua_Console_CreateCvar, LLua_Console_CreateCvar)
 OOLUA_CFUNC(Lua_Console_RemoveCommandBase, LLua_Console_RemoveCommandBase)
+OOLUA_CFUNC(Lua_Console_RegisterCommandBase, LLua_Console_RegisterCommandBase)
+OOLUA_CFUNC(Lua_Console_UnregisterCommandBase, LLua_Console_UnregisterCommandBase)
+
 
 void Console_InitBinding(lua_State* state)
 {
@@ -714,7 +727,9 @@ void Console_InitBinding(lua_State* state)
 
 	consoleTab.set("CreateCommand", LLua_Console_CreateCommand);
 	consoleTab.set("CreateCvar", LLua_Console_CreateCvar);
-	consoleTab.set("RemoveCommandbase", LLua_Console_RemoveCommandBase);
+	consoleTab.set("RemoveCommandBase", LLua_Console_RemoveCommandBase);
+	consoleTab.set("RegisterCommandBase", LLua_Console_RegisterCommandBase);
+	consoleTab.set("UnregisterCommandBase", LLua_Console_UnregisterCommandBase);
 
 	OOLUA::set_global(state, "console", consoleTab);
 }

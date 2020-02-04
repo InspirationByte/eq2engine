@@ -1072,11 +1072,11 @@ void CHeightTileField::DebugRender(bool bDrawTiles, float gridHeight)
 	Vector3D halfsize = Vector3D(HFIELD_POINT_SIZE, 0, HFIELD_POINT_SIZE)*0.5f;
 	DrawGridH(HFIELD_POINT_SIZE, m_sizew*2, 
 		position + Vector3D(m_sizew*HFIELD_POINT_SIZE*0.5f, gridHeight, m_sizew*HFIELD_POINT_SIZE*0.5f) - halfsize,
-				ColorRGBA(1.0f, 1.0f, 1.0f, 0.5f), false);
+				ColorRGBA(1.0f, 1.0f, 1.0f, 0.25f), false);
 
 	DrawGridH(1, m_sizew * 2,
 		position + Vector3D(m_sizew*HFIELD_POINT_SIZE*0.5f, gridHeight, m_sizew*HFIELD_POINT_SIZE*0.5f) - halfsize,
-		ColorRGBA(1.0f, 1.0f, 1.0f, 0.25f), false);
+		ColorRGBA(1.0f, 1.0f, 1.0f, 0.1f), false);
 
 	if(!bDrawTiles)
 		return;

@@ -2120,8 +2120,8 @@ bool CGameLevel::FindObjectOnLevel(levCellObject_t& objectInfo, const char* name
 	return found;
 }
 
-#define OBSTACLE_STATIC_MAX_HEIGHT	(6.0f)
-#define OBSTACLE_PROP_MAX_HEIGHT	(6.0f)
+#define OBSTACLE_STATIC_MAX_HEIGHT	(4.0f)
+#define OBSTACLE_PROP_MAX_HEIGHT	(4.0f)
 
 void CGameLevel::Nav_ClearDynamicObstacleMap()
 {
@@ -2193,12 +2193,30 @@ void CGameLevel::Nav_AddObstacle(CLevelRegion* reg, regionObject_t* ref)
 				p2 = model->m_verts[model->m_indices[i + 2]].position;
 			}
 
-			if(p0.y > OBSTACLE_STATIC_MAX_HEIGHT && p1.y > OBSTACLE_STATIC_MAX_HEIGHT && p2.y > OBSTACLE_STATIC_MAX_HEIGHT)
-				continue;
-
 			v0 = (refTransform*Vector4D(p0, 1.0f)).xyz();
 			v1 = (refTransform*Vector4D(p1, 1.0f)).xyz();
 			v2 = (refTransform*Vector4D(p2, 1.0f)).xyz();
+
+			// check height
+			{
+				IVector2D tileXY0 = reg->PositionToCell(v0);
+				IVector2D tileXY1 = reg->PositionToCell(v1);
+				IVector2D tileXY2 = reg->PositionToCell(v2);
+
+				hfieldtile_t* tile0 = reg->GetHField()->GetTile(tileXY0.x, tileXY0.y);
+				float tileHeight0 = tile0 ? tile0->height*HFIELD_HEIGHT_STEP : 0;
+
+				hfieldtile_t* tile1 = reg->GetHField()->GetTile(tileXY1.x, tileXY1.y);
+				float tileHeight1 = tile1 ? tile1->height*HFIELD_HEIGHT_STEP : 0;
+
+				hfieldtile_t* tile2 = reg->GetHField()->GetTile(tileXY2.x, tileXY2.y);
+				float tileHeight2 = tile2 ? tile2->height*HFIELD_HEIGHT_STEP : 0;
+
+				if ((v0.y - tileHeight0) > OBSTACLE_STATIC_MAX_HEIGHT &&
+					(v1.y - tileHeight1) > OBSTACLE_STATIC_MAX_HEIGHT &&
+					(v2.y - tileHeight2) > OBSTACLE_STATIC_MAX_HEIGHT)
+					continue;
+			}
 
 			Vector3D normal;
 			ComputeTriangleNormal(v0, v1, v2, normal);
@@ -2263,12 +2281,30 @@ void CGameLevel::Nav_AddObstacle(CLevelRegion* reg, regionObject_t* ref)
 			p1 = physData->vertices[physData->indices[i + 1]];
 			p2 = physData->vertices[physData->indices[i + 2]];
 
-			if (p0.y > OBSTACLE_PROP_MAX_HEIGHT && p1.y > OBSTACLE_PROP_MAX_HEIGHT && p2.y > OBSTACLE_PROP_MAX_HEIGHT)
-				continue;
-
 			v0 = (ref->transform*Vector4D(p0, 1.0f)).xyz();
 			v1 = (ref->transform*Vector4D(p1, 1.0f)).xyz();
 			v2 = (ref->transform*Vector4D(p2, 1.0f)).xyz();
+
+			// check height
+			{
+				IVector2D tileXY0 = reg->PositionToCell(v0);
+				IVector2D tileXY1 = reg->PositionToCell(v1);
+				IVector2D tileXY2 = reg->PositionToCell(v2);
+
+				hfieldtile_t* tile0 = reg->GetHField()->GetTile(tileXY0.x, tileXY0.y);
+				float tileHeight0 = tile0 ? tile0->height*HFIELD_HEIGHT_STEP : 0;
+
+				hfieldtile_t* tile1 = reg->GetHField()->GetTile(tileXY1.x, tileXY1.y);
+				float tileHeight1 = tile1 ? tile1->height*HFIELD_HEIGHT_STEP : 0;
+
+				hfieldtile_t* tile2 = reg->GetHField()->GetTile(tileXY2.x, tileXY2.y);
+				float tileHeight2 = tile2 ? tile2->height*HFIELD_HEIGHT_STEP : 0;
+
+				if ((v0.y - tileHeight0) > OBSTACLE_PROP_MAX_HEIGHT &&
+					(v1.y - tileHeight1) > OBSTACLE_PROP_MAX_HEIGHT &&
+					(v2.y - tileHeight2) > OBSTACLE_PROP_MAX_HEIGHT)
+					continue;
+			}
 
 			Vector3D normal;
 			ComputeTriangleNormal(v0, v1, v2, normal);

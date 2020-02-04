@@ -355,9 +355,7 @@ call copy_drvsyn_engine.bat $(ConfigurationName)</Command>
   </ItemGroup>
   <ItemGroup>
     <Library Include="..\src_dependency\jpeg\lib\jpeg.lib" />
-    <Library Include="..\src_dependency\libogg\win32\VS2015\Win32\Release\libogg_static.lib">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-    </Library>
+    <Library Include="..\src_dependency\libogg\win32\VS2015\Win32\Release\libogg_static.lib" />
     <Library Include="..\src_dependency\openal-soft\build\Release\OpenAL32.lib" />
     <Library Include="..\src_dependency\libvorbis\win32\VS2010\Win32\Release\libvorbisfile_static.lib" />
     <Library Include="..\src_dependency\libvorbis\win32\VS2010\Win32\Release\libvorbis_static.lib" />

@@ -49,7 +49,7 @@ DECLARE_CMD_VARIANTS(test_scriptsound, "Test the scripted sound", sounds_list, 0
 
 ConVar emitsound_debug("scriptsound_debug", "0", NULL, CV_CHEAT);
 
-ConVar snd_effectsvolume("snd_effectsvolume", "0.5", NULL, CV_ARCHIVE);
+ConVar snd_effectsvolume("snd_effectsvolume", "1.0", NULL, CV_UNREGISTERED);
 ConVar snd_musicvolume("snd_musicvolume", "0.5", NULL, CV_ARCHIVE);
 ConVar snd_voicevolume("snd_voicevolume", "0.5", NULL, CV_ARCHIVE);
 
@@ -310,7 +310,10 @@ void CSoundEmitterSystem::Init(float maxDistance, fnSoundEmitterUpdate updFunc /
 	m_fnEmitterProcess = updFunc;
 
 	for (int i = 0; i < CHAN_COUNT; i++)
+	{
+		m_2dScriptVolume[i] = 1.0f;
 		m_2dChannelVolume[i] = 1.0f;
+	}
 
 	kvkeybase_t* soundSettings = GetCore()->GetConfig()->FindKeyBase("Sound");
 
@@ -654,13 +657,15 @@ void CSoundEmitterSystem::Emit2DSound(EmitSound_t* emit, int channelType)
 
 	if(staticChannel)
 	{
-		float startVolume = m_2dChannelVolume[channelType] * emit->fVolume * script->fVolume;
+		m_2dScriptVolume[channelType] = script->fVolume;
+
+		float startVolume = m_2dChannelVolume[channelType] * m_2dScriptVolume[channelType] * emit->fVolume;
 		float startPitch = emit->fPitch*script->fPitch;
 
 		if (channelType == CHAN_STREAM)
-			startVolume = m_2dChannelVolume[channelType] * snd_musicvolume.GetFloat();
+			startVolume = m_2dChannelVolume[channelType] * m_2dScriptVolume[channelType] * snd_musicvolume.GetFloat();
 		else if (channelType == CHAN_VOICE)
-			startVolume = m_2dChannelVolume[channelType] * snd_voicevolume.GetFloat();
+			startVolume = m_2dChannelVolume[channelType] * m_2dScriptVolume[channelType] * snd_voicevolume.GetFloat();
 
 		staticChannel->SetSample(bestSample);
 		staticChannel->SetVolume(startVolume);
@@ -777,7 +782,7 @@ void CSoundEmitterSystem::Update(bool force)
 	ISoundPlayable* musicChannel = soundsystem->GetStaticStreamChannel(CHAN_STREAM);
 
 	if(musicChannel)
-		musicChannel->SetVolume(m_2dChannelVolume[CHAN_STREAM] * snd_musicvolume.GetFloat());
+		musicChannel->SetVolume(m_2dChannelVolume[CHAN_STREAM] * m_2dScriptVolume[CHAN_STREAM] * snd_musicvolume.GetFloat());
 
 	// don't update
 	if(!force && soundsystem->GetPauseState())

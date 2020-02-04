@@ -351,6 +351,7 @@ private:
 	fnSoundEmitterUpdate		m_fnEmitterProcess;
 
 	float						m_2dChannelVolume[CHAN_COUNT];
+	float						m_2dScriptVolume[CHAN_COUNT];
 };
 
 extern CSoundEmitterSystem* g_sounds;
