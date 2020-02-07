@@ -1600,13 +1600,10 @@ void CUI_LevelModels::MousePlacementEvents( wxMouseEvent& event, hfieldtile_t* t
 			if (ref)
 			{
 				g_pEditorActionObserver->BeginModify(ref);
+				ref->def->Ref_Drop();	// drop old reference... in case of replacement
 
 				if (ref->def->m_info.type == LOBJ_TYPE_INTERNAL_STATIC)
-				{
-					// drop old reference... in case of replacement
-					ref->def->Ref_Drop();
 					ref->def = selectedDef;
-				}
 			}
 			else
 			{
@@ -1616,8 +1613,7 @@ void CUI_LevelModels::MousePlacementEvents( wxMouseEvent& event, hfieldtile_t* t
 			}
 
 			// grab new reference
-			if(ref->def->m_info.type == LOBJ_TYPE_INTERNAL_STATIC)
-				ref->def->Ref_Grab();
+			ref->def->Ref_Grab();
 
 			ref->rotation = Vector3D(0, -m_rotation*90.0f, 0);
 

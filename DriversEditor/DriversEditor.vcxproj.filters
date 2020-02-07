@@ -436,6 +436,12 @@
     <ClInclude Include="MaterialAtlasList.h">
       <Filter>Source Files\Editor</Filter>
     </ClInclude>
+    <ClInclude Include="BlockEditor\EqBrush.h">
+      <Filter>Source Files\Editor\Modes\BlockEditor</Filter>
+    </ClInclude>
+    <ClInclude Include="BlockEditor\BrushFace.h">
+      <Filter>Source Files\Editor\Modes\BlockEditor</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="Notes.txt" />
@@ -665,6 +671,9 @@
     </ClCompile>
     <ClCompile Include="MaterialAtlasList.cpp">
       <Filter>Source Files\Editor</Filter>
+    </ClCompile>
+    <ClCompile Include="BlockEditor\EqBrush.cpp">
+      <Filter>Source Files\Editor\Modes\BlockEditor</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

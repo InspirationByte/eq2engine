@@ -2214,8 +2214,7 @@ float CheckStudioRayIntersection(IEqModel* pModel, Vector3D& ray_start, Vector3D
 
 void CEditorLevelRegion::Ed_AddObject(regionObject_t* obj)
 {
-	if (obj->def->m_info.type == LOBJ_TYPE_INTERNAL_STATIC)
-		obj->def->Ref_Grab();
+	obj->def->Ref_Grab();
 
 	obj->regionIdx = m_regionIndex;
 	m_objects.addUnique(obj);
@@ -2228,12 +2227,10 @@ void CEditorLevelRegion::Ed_RemoveObject(regionObject_t* obj)
 	// before it can be dropped it must be registered in action observer
 	g_pEditorActionObserver->OnDelete(obj);
 
-	if (obj->def->m_info.type == LOBJ_TYPE_INTERNAL_STATIC)
-		obj->def->Ref_Drop();
-
 	obj->regionIdx = -1;
 	m_objects.fastRemove(obj);
 
+	// Ref_Drop is already called in destructor 
 	delete obj;
 }
 

@@ -557,7 +557,7 @@ void CGameLevel::ReadObjectDefsLump(IVirtualStream* stream, kvkeybase_t* kvDefs)
 		stream->Read(&def->m_info, 1, sizeof(levObjectDefInfo_t));
 
 #ifdef EDITOR
-		def->Ref_Grab();
+		def->Ref_Grab();	// grab reference for editor to ensure that model will be not removed
 		def->m_id = m_objectDefIdCounter++;
 #endif // EDITOR
 
