@@ -753,6 +753,8 @@ OOLUA_PROXY(CCar, CGameObject)
 
 	OOLUA_MFUNC(SetInfiniteMass)
 
+	OOLUA_MEM_FUNC_RENAME(SetControls, void, AnalogSetControls, float, float, bool, bool, bool);
+
 	OOLUA_MFUNC(HingeVehicle);
 	OOLUA_MFUNC(ReleaseHingedVehicle)
 	OOLUA_MEM_FUNC_CONST(OOLUA::maybe_null<CCar*>, GetHingedVehicle)

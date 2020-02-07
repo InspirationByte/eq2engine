@@ -4822,6 +4822,7 @@ OOLUA_EXPORT_FUNCTIONS(
 	Repair,
 	SetLight,
 	SetFelony,
+	SetControls,
 	Lock,
 	Enable,
 	SetInfiniteMass,

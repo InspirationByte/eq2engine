@@ -12,6 +12,7 @@
 #include "game_multiplayer.h"
 #include "DrvSynStates.h"
 #include "DrvSynHUD.h"
+#include "physics/BulletConvert.h"
 
 #include "state_game.h"
 #include "utils/singleton.h"
@@ -53,7 +54,7 @@ class CLCollisionData
 public:
 	CollisionData_t data;
 
-	Vector3D		GetPosition() const	{ return data.position; }
+	Vector3D		GetPosition() const		{ return data.position; }
 	Vector3D		GetNormal() const		{ return data.normal; }
 	float			GetLineFract() const	{ return data.fract; }
 	float			GetFract() const		{ return data.fract; }
@@ -87,6 +88,58 @@ OOLUA_PROXY_END
 
 OOLUA_EXPORT_FUNCTIONS(CLCollisionData)
 OOLUA_EXPORT_FUNCTIONS_CONST(CLCollisionData, GetPosition, GetNormal, GetLineFract, GetFract, GetHitObject)
+
+//-----------------------------------------------------------------------------------------
+
+class CPhysCollisionFilter
+{
+public:
+	eqPhysCollisionFilter filter;
+
+	CPhysCollisionFilter()
+	{
+		// it's always about dynamic objects, so...
+		filter.flags = EQPHYS_FILTER_FLAG_DYNAMICOBJECTS;
+		SetExclude();
+	}
+
+	void SetExclude()
+	{
+		filter.type = EQPHYS_FILTER_TYPE_EXCLUDE;
+	}
+
+	void SetInclude()
+	{
+		filter.type = EQPHYS_FILTER_TYPE_INCLUDE_ONLY;
+	}
+
+	void AddObject(CGameObject* obj)
+	{
+		if (IsCar(obj))
+		{
+			CCar* car = (CCar*)obj;
+			filter.AddObject( car->GetPhysicsBody() );
+
+			if(car->GetHingedBody())
+				filter.AddObject(car->GetHingedBody());
+		}
+		else
+		{
+			ASSERTMSG(false, "Lua's CLPhysicsCollisionFilter::AddObject unimplemented for this object type!");
+		}
+	}
+};
+
+OOLUA_PROXY(CPhysCollisionFilter)
+	OOLUA_MFUNC(SetExclude)
+	OOLUA_MFUNC(SetInclude)
+	OOLUA_MFUNC(AddObject)
+OOLUA_PROXY_END
+
+OOLUA_EXPORT_FUNCTIONS(CPhysCollisionFilter, SetExclude, SetInclude, AddObject)
+OOLUA_EXPORT_FUNCTIONS_CONST(CPhysCollisionFilter)
+
+//-----------------------------------------------------------------------------------------
 
 OOLUA_PROXY(CCameraAnimator)
 	OOLUA_TAGS( Abstract )
@@ -130,31 +183,57 @@ OOLUA_EXPORT_FUNCTIONS_CONST(
 	GetFOV
 )
 
-CLCollisionData Lua_Util_TestLine(const Vector3D& start, const Vector3D& end, int contents)
+//------------------------------------------------------------------------------
+
+CLCollisionData S_Util_CPhysicsEngine_TestLine(const Vector3D& start, const Vector3D& end, int contents, CPhysCollisionFilter* filter)
 {
 	CLCollisionData coll;
+	g_pPhysics->TestLine(start, end, coll.data, contents, filter ? &filter->filter : nullptr);
+	return coll;
+}
+OOLUA_CFUNC(S_Util_CPhysicsEngine_TestLine, L_Util_CPhysicsEngine_TestLine)
 
-	g_pPhysics->TestLine(start,end, coll.data, contents, NULL);
+CLCollisionData S_Util_CPhysicsEngine_TestSphere(float radius, const Vector3D& start, const Vector3D& end, int contents, CPhysCollisionFilter* filter)
+{
+	btSphereShape sphereTraceShape(radius);
+
+	CLCollisionData coll;
+	g_pPhysics->TestConvexSweep(&sphereTraceShape, identity(),
+		start, end, coll.data,
+		contents,
+		filter ? &filter->filter : nullptr);
 
 	return coll;
 }
+OOLUA_CFUNC(S_Util_CPhysicsEngine_TestSphere, L_Util_CPhysicsEngine_TestSphere)
 
-OOLUA_CFUNC(Lua_Util_TestLine, L_Lua_Util_TestLine)
+CLCollisionData S_Util_CPhysicsEngine_TestBox(const Vector3D& dims, const Vector3D& start, const Vector3D& end, int contents, CPhysCollisionFilter* filter)
+{
+	btBoxShape boxShape(EqBulletUtils::ConvertDKToBulletVectors(dims));
+
+	CLCollisionData coll;
+	g_pPhysics->TestConvexSweep(&boxShape, identity(),
+		start, end, coll.data,
+		contents,
+		filter ? &filter->filter : nullptr);
+
+	return coll;
+}
+OOLUA_CFUNC(S_Util_CPhysicsEngine_TestBox, L_Util_CPhysicsEngine_TestBox)
+
+//------------------------------------------------------------------------------
 
 bool Lua_SetMissionScript(const char* name)
 {
 	return g_State_Game->SetMissionScript(name);
 }
+OOLUA_CFUNC(Lua_SetMissionScript, L_SetMissionScript)
 
 bool Lua_StartReplay(const char* name, int mode)
 {
 	return g_State_Game->StartReplay(name, (EReplayMode)mode);
 }
-
-
-OOLUA_CFUNC(Lua_SetMissionScript, L_SetMissionScript)
 OOLUA_CFUNC(Lua_StartReplay, L_StartReplay)
-
 
 template <class T>
 T* CGameObject_DynamicCast(CGameObject* object, int typeId)
@@ -287,7 +366,8 @@ bool LuaBinding_InitDriverSyndicateBindings(lua_State* state)
 	LUA_SET_GLOBAL_ENUMCONST(state, REPLAYMODE_DEMO);
 
 	OOLUA::register_class<CLCollisionData>(state);
-
+	OOLUA::register_class<CPhysCollisionFilter>(state);
+	
 	OOLUA::register_class<CGameWorld>(state);
 	OOLUA::register_class<CGameSessionBase>(state);
 	OOLUA::register_class<CAIManager>(state);
@@ -319,9 +399,9 @@ bool LuaBinding_InitDriverSyndicateBindings(lua_State* state)
 	OOLUA::set_global(state, "cameraAnimator", g_pCameraAnimator);
 
 	OOLUA::Table utilTable = OOLUA::new_table(state);
-	utilTable.set("TestLine", L_Lua_Util_TestLine);
-	//utilTable.set("Cast", L_Lua_Util_);
-	//utilTable.set("TestModel", LLua_Console_ExecuteString);
+	utilTable.set("TestLine", L_Util_CPhysicsEngine_TestLine);
+	utilTable.set("TestSphere", L_Util_CPhysicsEngine_TestSphere);
+	utilTable.set("TestBox", L_Util_CPhysicsEngine_TestBox);
 
 	OOLUA::set_global(state, "gameutil", utilTable);
 

@@ -739,8 +739,26 @@ void Console_InitBinding(lua_State* state)
 // MAIN
 //---------------------------------------------------------------------------------------
 
-OOLUA_EXPORT_FUNCTIONS(IDebugOverlay, Line3D, Box3D, Polygon3D)
+OOLUA_EXPORT_FUNCTIONS(IDebugOverlay, Line3D, Box3D, Sphere3D, Polygon3D)
 OOLUA_EXPORT_FUNCTIONS_CONST(IDebugOverlay)
+
+void S_IDebugOverlay_Text(IDebugOverlay* _self, const ColorRGBA &color, char const* text)
+{
+	_self->Text(color, text);
+}
+OOLUA_CFUNC(S_IDebugOverlay_Text, L_IDebugOverlay_Text)
+
+void S_IDebugOverlay_TextFadeOut(IDebugOverlay* _self, int position, const ColorRGBA &color, float fFadeTime, char const* text)
+{
+	_self->TextFadeOut(position, color, fFadeTime, text);
+}
+OOLUA_CFUNC(S_IDebugOverlay_TextFadeOut, L_IDebugOverlay_TextFadeOut)
+
+void S_IDebugOverlay_Text3D(IDebugOverlay* _self, const Vector3D &origin, float distance, const ColorRGBA &color, float fTime, char const* text)
+{
+	_self->Text3D(origin, distance, color, fTime, text);
+}
+OOLUA_CFUNC(S_IDebugOverlay_Text3D, L_IDebugOverlay_Text3D)
 
 OOLUA_EXPORT_FUNCTIONS(ISoundController, StartSound, Play, Pause, Stop, SetPitch, SetVolume, SetOrigin, SetVelocity)
 OOLUA_EXPORT_FUNCTIONS_CONST(ISoundController, IsStopped)
@@ -781,6 +799,10 @@ bool LuaBinding_InitEngineBindings(lua_State* state)
 	
 	// debug overlay
 	OOLUA::register_class<IDebugOverlay>(state);
+	OOLUA::register_class_static<IDebugOverlay>(state, "Text", L_IDebugOverlay_Text);
+	OOLUA::register_class_static<IDebugOverlay>(state, "TextFadeOut", L_IDebugOverlay_TextFadeOut);
+	OOLUA::register_class_static<IDebugOverlay>(state, "Text3D", L_IDebugOverlay_Text3D);
+
 	OOLUA::set_global(state, "debugoverlay", debugoverlay);
 
 	// sound emitter system

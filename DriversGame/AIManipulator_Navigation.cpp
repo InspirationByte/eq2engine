@@ -609,7 +609,6 @@ void CAINavigationManipulator::UpdateAffector(ai_handling_t& handling, CCar* car
 			// steering
 			steeringDir = lerp(pathSteeringDir, correctionSteeringDir, correctionToPath);
 
-			
 			float forwardTraceDistanceBySpeed = RemapValClamp(speedMPS, 0.0f, 50.0f, 2.0f, 15.0f);
 
 			// trace forward from car using speed
