@@ -14,16 +14,6 @@
 class CCar;
 class CEqCollisionObject;
 
-struct pathFindResult3D_t
-{
-	Vector3D			start;
-	Vector3D			end;
-
-	DkList<Vector4D>	points;	// w is narrowness factor
-
-	void InitFrom(pathFindResult_t& path, CEqCollisionObject* ignore);
-};
-
 class CAINavigationManipulator
 {
 public:

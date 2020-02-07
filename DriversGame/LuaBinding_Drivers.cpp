@@ -221,6 +221,24 @@ CLCollisionData S_Util_CPhysicsEngine_TestBox(const Vector3D& dims, const Vector
 }
 OOLUA_CFUNC(S_Util_CPhysicsEngine_TestBox, L_Util_CPhysicsEngine_TestBox)
 
+OOLUA::Table S_Util_CGameLevel_Nav_FindPath(const Vector3D& from, const Vector3D& to, int iterations, bool fast)
+{
+	OOLUA::Table result = OOLUA::new_table(GetLuaState());
+
+	pathFindResult_t newPath;
+	if (g_pGameWorld->m_level.Nav_FindPath(from, to, newPath, iterations, fast))
+	{
+		pathFindResult3D_t result3D;
+		result3D.InitFrom(newPath, nullptr);
+
+		for (int i = 0; i < result3D.points.numElem(); i++)
+			result.set(i + 1, result3D.points[i]);
+	}
+
+	return result;
+}
+OOLUA_CFUNC(S_Util_CGameLevel_Nav_FindPath, L_Util_CGameLevel_Nav_FindPath)
+
 //------------------------------------------------------------------------------
 
 bool Lua_SetMissionScript(const char* name)
@@ -402,7 +420,8 @@ bool LuaBinding_InitDriverSyndicateBindings(lua_State* state)
 	utilTable.set("TestLine", L_Util_CPhysicsEngine_TestLine);
 	utilTable.set("TestSphere", L_Util_CPhysicsEngine_TestSphere);
 	utilTable.set("TestBox", L_Util_CPhysicsEngine_TestBox);
-
+	utilTable.set("FindPath", L_Util_CGameLevel_Nav_FindPath);
+	
 	OOLUA::set_global(state, "gameutil", utilTable);
 
 	OOLUA::Table gameObjectCastFuncs = OOLUA::new_table(state);

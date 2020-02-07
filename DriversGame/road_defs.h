@@ -63,6 +63,18 @@ struct pathFindResult_t
 	int					gridSelector;
 };
 
+class CEqCollisionObject;
+
+struct pathFindResult3D_t
+{
+	Vector3D			start;
+	Vector3D			end;
+
+	DkList<Vector4D>	points;	// w is narrowness factor
+
+	void InitFrom(pathFindResult_t& path, CEqCollisionObject* ignore);
+};
+
 // helper functions
 bool		IsOppositeDirectionTo(int dirA, int dirB);
 bool		CompareDirection(int dirA, int dirB);

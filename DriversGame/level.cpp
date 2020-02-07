@@ -2963,3 +2963,45 @@ IVector2D GetPerpendicularDirVec(const IVector2D& vec)
 {
 	return IVector2D(vec.y,vec.x);
 }
+
+//---------------------------------------------------------------------------
+
+void pathFindResult3D_t::InitFrom(pathFindResult_t& path, CEqCollisionObject* ignore)
+{
+	g_pGameWorld->m_level.m_navGridSelector = path.gridSelector;
+
+	start = g_pGameWorld->m_level.Nav_GlobalPointToPosition(path.start);
+	end = g_pGameWorld->m_level.Nav_GlobalPointToPosition(path.end);
+
+	points.clear();
+
+	btSphereShape _sphere(2.5f);
+	eqPhysCollisionFilter collFilter;
+	collFilter.type = EQPHYS_FILTER_TYPE_EXCLUDE;
+	collFilter.flags = EQPHYS_FILTER_FLAG_DYNAMICOBJECTS | EQPHYS_FILTER_FLAG_FORCE_RAYCAST;
+	collFilter.AddObject(ignore);
+
+	CollisionData_t coll;
+
+	Vector3D prevPoint = start;
+
+	for (int i = 0; i < path.points.numElem(); i++)
+	{
+		Vector4D point(g_pGameWorld->m_level.Nav_GlobalPointToPosition(path.points[i]), 0.0f);
+
+		if (ignore != nullptr)
+		{
+			if (g_pPhysics->TestConvexSweep(&_sphere, identity(), prevPoint, point.xyz(), coll, OBJECTCONTENTS_SOLID_OBJECTS, &collFilter))
+				point = Vector4D(point.xyz() + coll.normal * 2.0f, 0.0f);
+
+			// store narowness factor
+			point.w = coll.fract;
+		}
+
+		points.append(point);
+
+		prevPoint = point.xyz();
+	}
+
+	g_pGameWorld->m_level.m_navGridSelector = 0;
+}
