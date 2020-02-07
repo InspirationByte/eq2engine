@@ -28,6 +28,8 @@
 #include "DebugInterface.h"
 #include "utils/CRC32.h"
 
+const char archiveKey[] = { 'W','@','k','m','U','5','1','c', 0 };
+
 EXPORTED_INTERFACE(IFileSystem, CFileSystem);
 
 //------------------------------------------------------------------------------
@@ -739,7 +741,7 @@ bool CFileSystem::AddPackage(const char* packageName,SearchPath_e type)
         DevMsg(DEVMSG_FS, "Adding package file '%s'\n",packageName);
 
         pPackageReader->SetSearchPath(type);
-		//pPackageReader->SetKey("SdkwIuO4");
+		pPackageReader->SetKey(archiveKey);
 
         m_packages.append(pPackageReader);
         return true;

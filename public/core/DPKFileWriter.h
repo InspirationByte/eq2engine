@@ -17,6 +17,7 @@
 #include "dpk_defs.h"
 #include "utils/DkList.h"
 #include "utils/eqstring.h"
+#include "utils/IceKey.h"
 
 #define DPK_STRING_SIZE 255
 
@@ -64,7 +65,9 @@ protected:
 
 	int						m_compressionLevel;
 	int						m_encryption;
-	uint32					m_key[4];
+
+	IceKey					m_ice;
+	
 };
 
 #endif // DPK_FILE_WRITER_H

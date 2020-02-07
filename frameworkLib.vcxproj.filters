@@ -156,6 +156,9 @@
     <ClInclude Include="public\Utils\Tokenizer.h">
       <Filter>Source Files\Utils</Filter>
     </ClInclude>
+    <ClInclude Include="public\utils\IceKey.h">
+      <Filter>Source Files\Utils</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="public\Utils\eqstring.cpp">
@@ -231,6 +234,9 @@
       <Filter>Source Files\Utils</Filter>
     </ClCompile>
     <ClCompile Include="public\Utils\VirtualStream.cpp">
+      <Filter>Source Files\Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="public\utils\IceKey.cpp">
       <Filter>Source Files\Utils</Filter>
     </ClCompile>
   </ItemGroup>

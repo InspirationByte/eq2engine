@@ -17,6 +17,7 @@
 #include "utils/eqstring.h"
 #include "utils/DkList.h"
 #include "utils/eqthread.h"
+#include "utils/IceKey.h"
 
 #include "dpk_defs.h"
 
@@ -84,6 +85,7 @@ protected:
 
 	ubyte				m_blockData[DPK_BLOCK_MAXSIZE];
 	dpkfileinfo_t		m_info;
+	IceKey				m_ice;
 	dpkblock_t			m_blockInfo;
 
 	uint32				m_curBlockOfs;
@@ -110,7 +112,6 @@ public:
 	void					SetSearchPath(int search);
 
 	void					SetKey( const char* key );
-	char*					GetKey() const;
 
 	void					DumpPackage(PACKAGE_DUMP_MODE mode);
 
@@ -130,7 +131,7 @@ protected:
 	int						m_searchPath;
 	EqString				m_tempPath;
 
-	uint32					m_key[4];
+	EqString				m_key;
 
 	Threading::CEqMutex&	m_FSMutex;
 };

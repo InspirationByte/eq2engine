@@ -7,6 +7,7 @@
 
 #include "DPKFileWriter.h"
 #include <math.h>
+#include <malloc.h>
 
 #ifdef _WIN32
 #define ZLIB_WINAPI
@@ -20,19 +21,11 @@
 
 #define DPK_WRITE_BLOCK (8*1024*1024)
 
-void encryptDecrypt(ubyte* buffer, int size, int hash)
-{
-	char* key = (char*)&hash;
-
-	while (size--)
-		buffer[size] = buffer[size] ^ key[size % 4];
-}
-
-CDPKFileWriter::CDPKFileWriter()
+CDPKFileWriter::CDPKFileWriter() 
+	: m_ice(0)
 {
 	m_file = NULL;
 	memset(&m_header, 0, sizeof(m_header));
-	memset( m_key, 0, sizeof(m_key) );
 	memset( m_mountPath, 0, sizeof(m_mountPath) );
 
 	m_compressionLevel = 0;
@@ -82,20 +75,8 @@ void CDPKFileWriter::SetEncryption( int type, const char* key )
 {
 	m_encryption = type;
 
-	if(key)
-	{
-		memset( m_key, 0, sizeof(m_key));
-
-		int len = strlen(key);
-
-		if(len > sizeof(m_key))
-		{
-			MsgWarning("Too long key, truncated from %d to %d characters\n", len, sizeof(m_key));
-			len = sizeof(m_key);
-		}
-
-		memcpy( m_key, key, len );
-	}
+	if(type && key)
+		m_ice.set((const unsigned char*)key);
 }
 
 bool CDPKFileWriter::BuildAndSave( const char* fileNamePrefix )
@@ -348,7 +329,25 @@ void CDPKFileWriter::ProcessFile(FILE* output, dpkfilewinfo_t* info)
 			// encrypt tmpBlock
 			if(m_encryption > 0)
 			{
-				encryptDecrypt(tmpBlock, tmpBlockSize, info->pkinfo.filenameHash);
+				int iceBlockSize = m_ice.blockSize();
+
+				ubyte* iceTempBlock = (ubyte*)stackalloc(iceBlockSize);
+				ubyte* tmpBlockPtr = tmpBlock;
+
+				int bytesLeft = tmpBlockSize;
+
+				// encrypt block by block
+				while (bytesLeft > iceBlockSize)
+				{
+					m_ice.encrypt(tmpBlockPtr, iceTempBlock);
+					
+					// copy encrypted block
+					memcpy(tmpBlockPtr, iceTempBlock, iceBlockSize);
+
+					tmpBlockPtr += iceBlockSize;
+					bytesLeft -= iceBlockSize;
+				}
+
 				blockInfo.flags |= DPKFILE_FLAG_ENCRYPTED;
 			}
 

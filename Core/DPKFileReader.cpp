@@ -10,6 +10,8 @@
 
 #include "math/math_common.h"
 
+#include <malloc.h>
+
 #ifdef _WIN32
 #define ZLIB_WINAPI
 #endif // _WIN32
@@ -42,6 +44,7 @@ void encryptDecrypt(ubyte* buffer, int size, int hash)
 //-----------------------------------------------------------------------------------------------------------------------
 
 CDPKFileStream::CDPKFileStream(const dpkfileinfo_t& info, FILE* fp)
+	: m_ice(0)
 {
 	m_handle = fp;
 	m_info = info;
@@ -94,7 +97,6 @@ void CDPKFileStream::DecodeBlock(int blockIdx)
 			//Msg("DecodeBlock %d size = %d\n", i, readSize);
 
 			ubyte* tmpBlock = (ubyte*)malloc(DPK_BLOCK_MAXSIZE + 32);
-
 			ubyte* readMem = (blockHdr.flags & DPKFILE_FLAG_COMPRESSED) ? tmpBlock : m_blockData;
 
 			// read block and decompress/decrypt
@@ -103,8 +105,24 @@ void CDPKFileStream::DecodeBlock(int blockIdx)
 			// decrypt first as it was encrypted last
 			if (blockHdr.flags & DPKFILE_FLAG_ENCRYPTED)
 			{
-				// decrypt
-				encryptDecrypt(readMem, readSize, m_info.filenameHash);
+				int iceBlockSize = m_ice.blockSize();
+
+				ubyte* iceTempBlock = (ubyte*)stackalloc(iceBlockSize);
+				ubyte* tmpBlockPtr = readMem;
+
+				int bytesLeft = readSize;
+
+				// encrypt block by block
+				while (bytesLeft > iceBlockSize)
+				{
+					m_ice.decrypt(tmpBlockPtr, iceTempBlock);
+
+					// copy encrypted block
+					memcpy(tmpBlockPtr, iceTempBlock, iceBlockSize);
+
+					tmpBlockPtr += iceBlockSize;
+					bytesLeft -= iceBlockSize;
+				}
 			}
 
 			// then decompress
@@ -297,7 +315,6 @@ CDPKFileReader::CDPKFileReader(Threading::CEqMutex& mutex) : m_FSMutex(mutex)
     m_searchPath = 0;
 	m_dpkFiles = nullptr;
 
-	memset(m_key, 0, sizeof(m_key));
 	memset(&m_header, 0, sizeof(m_header));
 }
 
@@ -313,19 +330,7 @@ CDPKFileReader::~CDPKFileReader()
 
 void CDPKFileReader::SetKey(const char* key)
 {
-	memset( m_key, 0, sizeof(m_key));
-
-	int len = strlen(key);
-
-	if(len > sizeof(m_key))
-		len = sizeof(m_key);
-
-	memcpy( m_key, key, len );
-}
-
-char* CDPKFileReader::GetKey() const
-{
-	return (char*)m_key;
+	m_key = key;
 }
 
 // Fixes slashes in the directory name
@@ -576,6 +581,7 @@ CDPKFileStream* CDPKFileReader::Open(const char* filename,const char* mode)
 
 	CDPKFileStream* newStream = new CDPKFileStream(fileInfo, file);
 	newStream->m_host = this;
+	newStream->m_ice.set((unsigned char*)m_key.c_str());
 
 	{
 		Threading::CScopedMutex m(m_FSMutex);
