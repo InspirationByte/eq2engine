@@ -79,7 +79,7 @@ public:
 								CAIManager();
 								~CAIManager();
 
-	void						Init(const DkList<vehicleConfig_t*>& carConfigs, const DkList<pedestrianConfig_t*>& pedConfigs);
+	void						Init(const DkList<pedestrianConfig_t*>& pedConfigs);
 	void						Shutdown();
 
 	void						InitialSpawns(const Vector3D& spawnOrigin);
@@ -162,7 +162,7 @@ protected:
 	int							CircularSpawnTrafficCars( int x0, int y0, int radius );
 	int							CircularSpawnPedestrians(int x0, int y0, int radius);
 
-	void						InitZoneEntries(const DkList<vehicleConfig_t*>& carConfigs, const DkList<pedestrianConfig_t*>& pedConfigs);
+	void						InitZoneEntries(const DkList<pedestrianConfig_t*>& pedConfigs);
 
 	DkList<civCarEntry_t>		m_civCarEntries;
 	DkList<pedestrianEntry_t>	m_pedEntries;

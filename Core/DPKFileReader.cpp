@@ -96,7 +96,7 @@ void CDPKFileStream::DecodeBlock(int blockIdx)
 		{
 			//Msg("DecodeBlock %d size = %d\n", i, readSize);
 
-			ubyte* tmpBlock = (ubyte*)malloc(DPK_BLOCK_MAXSIZE + 32);
+			ubyte* tmpBlock = (ubyte*)malloc(DPK_BLOCK_MAXSIZE + 128);
 			ubyte* readMem = (blockHdr.flags & DPKFILE_FLAG_COMPRESSED) ? tmpBlock : m_blockData;
 
 			// read block and decompress/decrypt

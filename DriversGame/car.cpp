@@ -4071,6 +4071,16 @@ bool CCar::IsBurningOut() const
 	return (controlButtons & IN_BURNOUT);
 }
 
+float CCar::GetAccelBrake() const
+{
+	return m_accelRatio > 0 ? float(m_accelRatio*_oneBy1024) : -float(m_brakeRatio)*_oneBy1024;
+}
+
+float CCar::GetSteering() const
+{
+	return m_steerRatio * _oneBy1024;
+}
+
 float CCar::GetRPM() const
 {
 	return fabs(float(m_radsPerSec) * ( 60.0f / ( 2.0f * PI_F ) ) );
@@ -4850,6 +4860,8 @@ OOLUA_EXPORT_FUNCTIONS_CONST(
 	GetSpeedWheels,
 	GetLateralSliding,
 	GetTractionSliding,
+	GetAccelBrake,
+	GetSteering,
 	IsAccelerating,
 	IsBraking,
 	IsHandbraking,

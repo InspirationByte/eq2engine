@@ -81,7 +81,7 @@ CAIManager::~CAIManager()
 
 }
 
-void CAIManager::Init(const DkList<vehicleConfig_t*>& carConfigs, const DkList<pedestrianConfig_t*>& pedConfigs)
+void CAIManager::Init(const DkList<pedestrianConfig_t*>& pedConfigs)
 {
 	PrecacheObject(CAIPursuerCar);
 
@@ -112,7 +112,7 @@ void CAIManager::Init(const DkList<vehicleConfig_t*>& carConfigs, const DkList<p
 	m_copSpeechTime = RandomFloat(AI_COP_SPEECH_DELAY, AI_COP_SPEECH_DELAY + 5.0f);
 
 	// load car and pedestrian zones
-	InitZoneEntries(carConfigs, pedConfigs);
+	InitZoneEntries(pedConfigs);
 }
 
 void CAIManager::Shutdown()
@@ -131,7 +131,7 @@ void CAIManager::Shutdown()
 	m_roadBlocks.clear();
 }
 
-void CAIManager::InitZoneEntries(const DkList<vehicleConfig_t*>& carConfigs, const DkList<pedestrianConfig_t*>& pedConfigs)
+void CAIManager::InitZoneEntries(const DkList<pedestrianConfig_t*>& pedConfigs)
 {
 	EqString vehicleZoneFilename(varargs("scripts/levels/%s_vehiclezones.def", g_pGameWorld->GetLevelName()));
 
@@ -149,25 +149,6 @@ void CAIManager::InitZoneEntries(const DkList<vehicleConfig_t*>& carConfigs, con
 		{
 			MsgError("Failed to load vehicle zone file '%s'!\n", vehicleZoneFilename.c_str());
 			vehZoneError = true;
-
-			// assign to default zones
-			for (int i = 0; i < carConfigs.numElem(); i++)
-			{
-				civCarEntry_t entry;
-				entry.config = carConfigs[i];
-				entry.zoneList.append(spawnZoneInfo_t{ "default", 0 });
-
-				bool isRegisteredCop = !m_copCarName[PURSUER_TYPE_COP].CompareCaseIns(entry.config->carName);
-				if (isRegisteredCop)
-					entry.nextSpawn = m_copRespawnInterval;
-
-				if (entry.config->flags.isCop)
-					defaultCopCar = entry.config->carName;
-
-				entry.nextSpawn += INITIAL_SPAWN_INTERVAL + m_trafficSpawnInterval;
-
-				m_civCarEntries.append(entry);
-			}
 		}
 	}
 	
@@ -183,7 +164,7 @@ void CAIManager::InitZoneEntries(const DkList<vehicleConfig_t*>& carConfigs, con
 			// thru vehicles in zone preset
 			for (int j = 0; j < zone_kv->keys.numElem(); j++)
 			{
-				vehicleConfig_t* carConfig = g_pGameSession->FindCarEntryByName(zone_kv->keys[j]->name);
+				vehicleConfig_t* carConfig = g_pGameSession->GetVehicleConfig(zone_kv->keys[j]->name);
 
 				if (!carConfig)
 				{
@@ -1012,7 +993,7 @@ bool CAIManager::SpawnRoadBlockFor( CCar* car, float directionAngle )
 	placementVec -= perpendicular*curLane;
 	int numLanes = g_pGameWorld->m_level.Road_GetWidthInLanesAtPoint(placementVec, 32, 1);
 
-	vehicleConfig_t* conf = g_pGameSession->FindCarEntryByName(m_copCarName[PURSUER_TYPE_COP].c_str());
+	vehicleConfig_t* conf = g_pGameSession->GetVehicleConfig(m_copCarName[PURSUER_TYPE_COP].c_str());
 
 	if (!conf)
 		return 0;

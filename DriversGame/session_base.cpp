@@ -108,7 +108,7 @@ void CGameSessionBase::Init()
 	LoadCarsPedsRegistry();
 
 	// init AI manager and put car registry into it
-	g_pAIManager->Init(m_carEntries, m_pedEntries);
+	g_pAIManager->Init(m_pedEntries);
 
 	// start recorder
 	if (g_replayTracker->m_state != REPL_INIT_PLAYBACK)
@@ -405,47 +405,40 @@ void CGameSessionBase::UpdateMission(float fDt)
 
 CCar* CGameSessionBase::CreateCar(const char* name, int carType)
 {
-	for (int i = 0; i < m_carEntries.numElem(); i++)
+	vehicleConfig_t* config = GetVehicleConfig(name);
+
+	if (!config)
 	{
-		vehicleConfig_t* config = m_carEntries[i];
-
-		if (!config->carName.CompareCaseIns(name))
-		{
-			CCar* car = NULL;
-
-			if (carType == CAR_TYPE_NORMAL)
-			{
-				car = new CCar(config);
-			}
-			else if (carType == CAR_TYPE_TRAFFIC_AI)
-			{
-				CAITrafficCar* traffic = new CAITrafficCar(config);
-
-				car = traffic;
-			}
-			else if (carType == CAR_TYPE_PURSUER_COP_AI)
-			{
-				CAIPursuerCar* traffic = new CAIPursuerCar(config, PURSUER_TYPE_COP);
-
-				car = traffic;
-			}
-			else if (carType == CAR_TYPE_PURSUER_GANG_AI)
-			{
-				CAIPursuerCar* traffic = new CAIPursuerCar(config, PURSUER_TYPE_GANG);
-
-				car = traffic;
-			}
-
-			if (!car)
-				MsgError("Unknown car type '%d'\n", carType);
-
-			return car;
-		}
+		MsgError("Can't create car '%s'\n", name);
+		return nullptr;
 	}
 
-	MsgError("Can't create car '%s'\n", name);
+	CCar* car = nullptr;
 
-	return NULL;
+	if (carType == CAR_TYPE_NORMAL)
+	{
+		car = new CCar(config);
+	}
+	else if (carType == CAR_TYPE_TRAFFIC_AI)
+	{
+		CAITrafficCar* traffic = new CAITrafficCar(config);
+		car = traffic;
+	}
+	else if (carType == CAR_TYPE_PURSUER_COP_AI)
+	{
+		CAIPursuerCar* traffic = new CAIPursuerCar(config, PURSUER_TYPE_COP);
+		car = traffic;
+	}
+	else if (carType == CAR_TYPE_PURSUER_GANG_AI)
+	{
+		CAIPursuerCar* traffic = new CAIPursuerCar(config, PURSUER_TYPE_GANG);
+		car = traffic;
+	}
+
+	if (!car)
+		MsgError("Unknown car type '%d'\n", carType);
+
+	return car;
 }
 
 CAIPursuerCar* CGameSessionBase::CreatePursuerCar(const char* name, int type)
@@ -511,15 +504,16 @@ CAIPursuerCar* CGameSessionBase::Lua_CreatePursuerCar(const char* name, int type
 	return NULL;
 }
 
-bool CGameSessionBase::RegisterVehicleConfig(const char* name, kvkeybase_t* params)
+int CGameSessionBase::RegisterVehicleConfig(const char* name, kvkeybase_t* params)
 {
+	// reload car config
 	for (int i = 0; i < m_carEntries.numElem(); i++)
 	{
-		if (m_carEntries[i]->carName == name)
+		vehicleConfig_t* conf = m_carEntries[i];
+		if (conf->carName == name)
 		{
-			m_carEntries[i]->DestroyCleanup();
-
-			return ParseVehicleConfig(m_carEntries[i], params);
+			conf->DestroyCleanup();
+			return ParseVehicleConfig(conf, params);
 		}
 	}
 
@@ -532,12 +526,36 @@ bool CGameSessionBase::RegisterVehicleConfig(const char* name, kvkeybase_t* para
 	if (!ParseVehicleConfig(conf, params))
 	{
 		delete conf;
-		return false;
+		return -1;
 	}
 
-	m_carEntries.append(conf);
+	return m_carEntries.append(conf);
+}
 
-	return true;
+vehicleConfig_t* CGameSessionBase::GetVehicleConfig(const char* name)
+{
+	// find existing config
+	vehicleConfig_t* exConfig = FindVehicleConfig(name);
+
+	if (exConfig)
+		return exConfig;
+
+	// try load new one
+	EqString configPath = CombinePath(2, "scripts/vehicles", _Es(name)+".txt");
+
+	kvkeybase_t kvb;
+	if (!KV_LoadFromFile(configPath.c_str(), SP_MOD, &kvb))
+	{
+		MsgError("can't load car script '%s'\n", name);
+		return nullptr;
+	}
+
+	// register it!
+	int configIdx = RegisterVehicleConfig(name, &kvb);
+	if (configIdx == -1)
+		return nullptr;
+
+	return m_carEntries[configIdx];
 }
 
 void CGameSessionBase::LoadCarsPedsRegistry()
@@ -549,56 +567,7 @@ void CGameSessionBase::LoadCarsPedsRegistry()
 	PrecacheObject(CPedestrian);
 
 	// initialize vehicle list
-
 	KeyValues kvs;
-	if (kvs.LoadFromFile("scripts/vehicles.def"))
-	{
-		kvkeybase_t* vehicleRegistry = kvs.GetRootSection();
-
-		for (int i = 0; i < vehicleRegistry->keys.numElem(); i++)
-		{
-			kvkeybase_t* key = vehicleRegistry->keys[i];
-			if (!key->IsSection() && !key->IsDefinition())
-			{
-				vehicleConfig_t* conf = new vehicleConfig_t();
-				conf->carName = key->name;
-				conf->carScript = KV_GetValueString(key);
-
-				conf->scriptCRC = g_fileSystem->GetFileCRC32(conf->carScript.c_str(), SP_MOD);
-
-				if (conf->scriptCRC != 0)
-				{
-					kvkeybase_t kvb;
-
-					if (!KV_LoadFromFile(conf->carScript.c_str(), SP_MOD, &kvb))
-					{
-						MsgError("can't load car script '%s'\n", conf->carScript.c_str());
-						delete conf;
-						continue;
-					}
-
-					if (!ParseVehicleConfig(conf, &kvb))
-					{
-						MsgError("Car configuration '%s' is invalid!\n", conf->carScript.c_str());
-						delete conf;
-						continue;
-					}
-
-					m_carEntries.append(conf);
-				}
-				else
-				{
-					MsgError("Can't open car script '%s'\n", conf->carScript.c_str());
-					delete conf;
-				}
-
-			}
-		}
-	}
-	else
-		CrashMsg("FATAL: no scripts/vehicles.def file!");
-
-	kvs.GetRootSection()->Cleanup();
 
 	// initialize pedestrian list
 	if (kvs.LoadFromFile("scripts/pedestrians.def"))
@@ -640,7 +609,7 @@ void CGameSessionBase::GetCarNames(DkList<EqString>& list) const
 	}
 }
 
-vehicleConfig_t* CGameSessionBase::FindCarEntryByName(const char* name) const
+vehicleConfig_t* CGameSessionBase::FindVehicleConfig(const char* name) const
 {
 	for (int i = 0; i < m_carEntries.numElem(); i++)
 	{

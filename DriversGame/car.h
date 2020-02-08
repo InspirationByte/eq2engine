@@ -499,6 +499,9 @@ public:
 	bool					IsHandbraking() const;
 	bool					IsBurningOut() const;
 
+	float					GetAccelBrake() const;
+	float					GetSteering() const;
+
 	bool					IsAlive() const;
 	bool					IsFlippedOver( bool checkWheels = false ) const;
 	bool					IsInWater() const;
@@ -754,6 +757,8 @@ OOLUA_PROXY(CCar, CGameObject)
 	OOLUA_MFUNC(SetInfiniteMass)
 
 	OOLUA_MEM_FUNC_RENAME(SetControls, void, AnalogSetControls, float, float, bool, bool, bool);
+	OOLUA_MFUNC_CONST(GetAccelBrake)
+	OOLUA_MFUNC_CONST(GetSteering)
 
 	OOLUA_MFUNC(HingeVehicle);
 	OOLUA_MFUNC(ReleaseHingedVehicle)

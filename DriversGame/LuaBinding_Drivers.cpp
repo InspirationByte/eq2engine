@@ -226,13 +226,13 @@ OOLUA::Table S_Util_CGameLevel_Nav_FindPath(const Vector3D& from, const Vector3D
 	OOLUA::Table result = OOLUA::new_table(GetLuaState());
 
 	pathFindResult_t newPath;
-	if (g_pGameWorld->m_level.Nav_FindPath(from, to, newPath, iterations, fast))
+	if (g_pGameWorld->m_level.Nav_FindPath(to, from, newPath, iterations, fast))
 	{
 		pathFindResult3D_t result3D;
 		result3D.InitFrom(newPath, nullptr);
 
 		for (int i = 0; i < result3D.points.numElem(); i++)
-			result.set(i + 1, result3D.points[i]);
+			result.set(i + 1, result3D.points[i].xyz());
 	}
 
 	return result;

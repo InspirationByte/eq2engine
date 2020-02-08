@@ -278,7 +278,7 @@ void CDPKFileWriter::ProcessFile(FILE* output, dpkfilewinfo_t* info)
 	{
 		// temporary block for both compression and encryption 
 		// twice the size
-		ubyte tmpBlock[DPK_BLOCK_MAXSIZE*2];
+		ubyte tmpBlock[DPK_BLOCK_MAXSIZE + 128];
 
 		// allocate block headers
 		dpkblock_t blockInfo;

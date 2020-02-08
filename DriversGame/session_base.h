@@ -57,8 +57,6 @@ public:
 
 	int							GetPhysicsIterations() const;
 
-	vehicleConfig_t*			FindCarEntryByName(const char* name) const;
-
 	void						GetCarNames(DkList<EqString>& list) const;
 
 	void						FinalizeMissionManager();
@@ -70,9 +68,12 @@ public:
 
 	virtual void				UpdateLocalControls(int nControls, float steering, float accel_brake) = 0;
 
-
 	CCar*						CreateCar(const char* name, int type = CAR_TYPE_NORMAL);
 	CAIPursuerCar*				CreatePursuerCar(const char* name, int type = PURSUER_TYPE_COP);
+
+	int							RegisterVehicleConfig(const char* name, kvkeybase_t* params);
+	vehicleConfig_t*			GetVehicleConfig(const char* name);
+	vehicleConfig_t*			FindVehicleConfig(const char* name) const;
 
 	virtual CCar*				GetPlayerCar() const = 0;
 	virtual	void				SetPlayerCar(CCar* pCar) = 0;
@@ -104,8 +105,6 @@ public:
 
 	CCar*						Lua_CreateCar(const char* name, int type = CAR_TYPE_NORMAL);
 	CAIPursuerCar*				Lua_CreatePursuerCar(const char* name, int type = PURSUER_TYPE_COP);
-
-	bool						RegisterVehicleConfig(const char* name, kvkeybase_t* params);
 
 protected:
 
