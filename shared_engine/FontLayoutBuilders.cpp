@@ -38,7 +38,7 @@ void CRectangleTextLayoutBuilder::OnNewLine(const eqFontStyleParam_t& params,
 			}
 			else if (params.align & TEXT_ALIGN_RIGHT)
 			{
-				xPos = m_rectangle.vrightBottom.x - 2.0f;
+				xPos = m_rectangle.vrightBottom.x - 4.0f;
 				xPos -= newlineStringWidth;		// add some little bias
 			}
 		}
