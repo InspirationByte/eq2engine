@@ -17,36 +17,41 @@ void CRectangleTextLayoutBuilder::OnNewLine(const eqFontStyleParam_t& params,
 										const Vector2D& textStart,
 										Vector2D& curTextPos )
 {
-	if(lineNumber > 0)
+	float xPos = m_rectangle.vleftTop.x;
+
+	// calc start position for first time
+	if (params.align != TEXT_ALIGN_LEFT)
+	{
+		float newlineStringWidth;
+
+		if(isWideChar)
+			newlineStringWidth = m_font->GetStringWidth( (wchar_t*)strCurPos, params, -1, '\n' );
+		else
+			newlineStringWidth = m_font->GetStringWidth( (char*)strCurPos, params, -1, '\n' );
+
+		if (xPos + newlineStringWidth < m_rectangle.vrightBottom.x)
+		{
+			if (params.align & TEXT_ALIGN_HCENTER)
+			{
+				xPos = m_rectangle.GetCenter().x;
+				xPos -= newlineStringWidth * 0.5f;
+			}
+			else if (params.align & TEXT_ALIGN_RIGHT)
+			{
+				xPos = m_rectangle.vrightBottom.x - 2.0f;
+				xPos -= newlineStringWidth;		// add some little bias
+			}
+		}
+
+		xPos = floor(xPos);
+	}
+
+	curTextPos.x = xPos;
+
+	if (lineNumber > 0)
 		curTextPos.y += m_font->GetLineHeight(params);
 
 	m_linesProduced++;
-
-	float newlineStringWidth;
-
-	if(isWideChar)
-		newlineStringWidth = m_font->GetStringWidth( (wchar_t*)strCurPos, params, -1, '\n' );
-	else
-		newlineStringWidth = m_font->GetStringWidth( (char*)strCurPos, params, -1, '\n' );
-
-	curTextPos.x = m_rectangle.vleftTop.x;
-
-	// calc start position for first time
-	if( params.align != TEXT_ALIGN_LEFT )
-	{
-		if(params.align & TEXT_ALIGN_HCENTER)
-		{
-			curTextPos.x = m_rectangle.GetCenter().x;
-			curTextPos.x -= newlineStringWidth*0.5f;
-		}
-		else if(params.align & TEXT_ALIGN_RIGHT)
-		{
-			curTextPos.x = m_rectangle.vrightBottom.x - 2.0f;
-			curTextPos.x -= newlineStringWidth;		// add some little bias
-		}
-
-		curTextPos.x = floor(curTextPos.x);
-	}
 
 	m_newWord = true;
 }
@@ -98,15 +103,18 @@ bool CRectangleTextLayoutBuilder::LayoutChar(const eqFontStyleParam_t& params,
 				else
 					newlineStringWidth = m_font->GetStringWidth( (char*)strCurPos, params, -1, '\n' );
 
-				if(params.align & TEXT_ALIGN_HCENTER)
+				if (xPos + newlineStringWidth < m_rectangle.vrightBottom.x)
 				{
-					xPos = m_rectangle.GetCenter().x;
-					xPos -= floor(newlineStringWidth*0.5f);
-				}
-				else if(params.align & TEXT_ALIGN_RIGHT)
-				{
-					xPos = m_rectangle.vrightBottom.x;
-					xPos -= newlineStringWidth;
+					if (params.align & TEXT_ALIGN_HCENTER)
+					{
+						xPos = m_rectangle.GetCenter().x;
+						xPos -= floor(newlineStringWidth*0.5f);
+					}
+					else if (params.align & TEXT_ALIGN_RIGHT)
+					{
+						xPos = m_rectangle.vrightBottom.x;
+						xPos -= newlineStringWidth;
+					}
 				}
 
 				xPos = floor(xPos);
