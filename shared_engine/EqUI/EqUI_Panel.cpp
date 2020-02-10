@@ -224,3 +224,4 @@ public:
 
 DECLARE_EQUI_CONTROL(panel, Panel)
 DECLARE_EQUI_CONTROL(HudElement, HudDummyElement)
+DECLARE_EQUI_CONTROL(Container, HudDummyElement)

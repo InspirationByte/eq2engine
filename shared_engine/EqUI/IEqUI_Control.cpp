@@ -488,16 +488,15 @@ void IUIControl::Render()
 
 		// paint control itself
 		DrawSelf( clientRectRender );
+	}
 
-		HOOK_TO_CVAR(equi_debug)
+	HOOK_TO_CVAR(equi_debug)
+	if (equi_debug->GetBool())
+	{
+		DebugDrawRectangle(clientRectRender, ColorRGBA(1, 1, 0, 0.15), ColorRGBA(1, 1, 1, 0.15));
 
-		if (equi_debug->GetBool())
-		{
-			DebugDrawRectangle(clientRectRender, ColorRGBA(1,1,0,0.15), ColorRGBA(1, 1, 1, 0.15));
-
-			eqFontStyleParam_t params;
-			debugoverlay->GetFont()->RenderText(varargs("%s x=%d y=%d w=%d h=%d (v=%d)", m_name.c_str(), m_position.x, m_position.y, m_size.x, m_size.y, m_visible), clientRectRender.GetLeftBottom(), params);
-		}
+		eqFontStyleParam_t params;
+		debugoverlay->GetFont()->RenderText(varargs("%s x=%d y=%d w=%d h=%d (v=%d)", m_name.c_str(), m_position.x, m_position.y, m_size.x, m_size.y, m_visible), clientRectRender.GetLeftBottom(), params);
 	}
 
 	// render from last

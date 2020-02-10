@@ -67,6 +67,7 @@ void CUIManager::Init()
 	EQUI_REGISTER_CONTROL(image);
 
 	EQUI_REGISTER_CONTROL(HudElement);
+	EQUI_REGISTER_CONTROL(Container);
 
 	m_rootPanel = (equi::Panel*)CreateElement("Panel");
 	m_rootPanel->SetName("equi_root");
