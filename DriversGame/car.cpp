@@ -332,25 +332,30 @@ bool ParseVehicleConfig( vehicleConfig_t* conf, const kvkeybase_t* kvs )
 
 	if(visuals)
 	{
-		conf->visual.sirenType = KV_GetValueInt(visuals->FindKeyBase("siren_lights"), 0, SERVICE_LIGHTS_NONE);
-		conf->visual.sirenPositionWidth = KV_GetVector4D(visuals->FindKeyBase("siren_lights"), 1, vec4_zero);
+		kvkeybase_t* sirenLightsKey = visuals->FindKeyBase("siren_lights");
+		conf->visual.sirenType = KV_GetValueInt(sirenLightsKey, 0, SERVICE_LIGHTS_NONE);
+		conf->visual.sirenPositionWidth = KV_GetVector4D(sirenLightsKey, 1, vec4_zero);
 
-		conf->visual.headlightType = KV_GetValueInt(visuals->FindKeyBase("headlights"), 0, LIGHTS_SINGLE);
-		conf->visual.headlightPosition = KV_GetVector4D(visuals->FindKeyBase("headlights"), 1, vec4_zero);
+		kvkeybase_t* headlightsKey = visuals->FindKeyBase("headlights");
+		conf->visual.headlightType = KV_GetValueInt(headlightsKey, 0, LIGHTS_SINGLE);
+		conf->visual.headlightPosition = KV_GetVector4D(headlightsKey, 1, vec4_zero);
+
+		kvkeybase_t* brakelightsKey = visuals->FindKeyBase("brakelights");
+		conf->visual.brakelightType = KV_GetValueInt(brakelightsKey, 0, LIGHTS_SINGLE);
+		conf->visual.brakelightPosition = KV_GetVector4D(brakelightsKey, 1, vec4_zero);
 
 		conf->visual.backlightPosition = KV_GetVector4D(visuals->FindKeyBase("backlights"), 0, vec4_zero);
-
-		conf->visual.brakelightType = KV_GetValueInt(visuals->FindKeyBase("brakelights"), 0, LIGHTS_SINGLE);
-		conf->visual.brakelightPosition = KV_GetVector4D(visuals->FindKeyBase("brakelights"), 1, vec4_zero);
 
 		conf->visual.frontDimLights = KV_GetVector4D(visuals->FindKeyBase("frontdimlights"), 0, vec4_zero);
 		conf->visual.backDimLights = KV_GetVector4D(visuals->FindKeyBase("backdimlights"), 0, vec4_zero);
 
+		// smoke and flames position
 		conf->visual.enginePosition = KV_GetVector3D(visuals->FindKeyBase("engine"), 0, vec3_zero);
 
-		conf->visual.exhaustPosition = KV_GetVector3D(visuals->FindKeyBase("exhaust"), 0, vec3_zero);
-		conf->visual.exhaustDir = KV_GetValueInt(visuals->FindKeyBase("exhaust"), 3, -1);
-		conf->visual.exhaustType = KV_GetValueInt(visuals->FindKeyBase("exhaust"), 4, 0);
+		kvkeybase_t* exhaustKey = visuals->FindKeyBase("exhaust");
+		conf->visual.exhaustPosition = KV_GetVector3D(exhaustKey, 0, vec3_zero);
+		conf->visual.exhaustDir = KV_GetValueInt(exhaustKey, 3, -1);
+		conf->visual.exhaustType = KV_GetValueInt(exhaustKey, 4, 0);
 
 		conf->visual.driverPosition = KV_GetVector3D(visuals->FindKeyBase("driver"), 0, vec3_zero);
 	}
