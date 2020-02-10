@@ -525,7 +525,12 @@ void CPedestrianAI::DetectEscapeJob(void* data, int jobiter)
 				if (hasSirenOrHorn || length(projPos - pedPos) < AI_PEDESTRIAN_CAR_AFRAID_STRAIGHT_RADIUS)
 				{
 					pedAI->m_escapeFromPos = pedPos;
-					pedAI->m_escapeDir = fastNormalize(pedPos - projPos);
+					Vector3D projDir = pedPos - projPos;
+
+					if (length(projDir) < 0.01f)
+						projDir = pedPos - carPos;
+
+					pedAI->m_escapeDir = fastNormalize(projDir);
 
 					pedAI->AI_SetState(&CPedestrianAI::DoEscape);
 

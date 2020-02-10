@@ -41,8 +41,8 @@ void CRectangleTextLayoutBuilder::OnNewLine(const eqFontStyleParam_t& params,
 		}
 		else if(params.align & TEXT_ALIGN_RIGHT)
 		{
-			curTextPos.x = m_rectangle.vrightBottom.x-2.0f;
-			curTextPos.x -= newlineStringWidth;
+			curTextPos.x = m_rectangle.vrightBottom.x - 2.0f;
+			curTextPos.x -= newlineStringWidth;		// add some little bias
 		}
 
 		curTextPos.x = floor(curTextPos.x);
@@ -84,7 +84,7 @@ bool CRectangleTextLayoutBuilder::LayoutChar(const eqFontStyleParam_t& params,
 		}
 
 		// check character/word right bound is outside the rectangle right bound
-		if( curTextPos.x+wordSize > m_rectangle.vrightBottom.x )
+		if( curTextPos.x+wordSize > m_rectangle.vrightBottom.x && !m_newWord)
 		{
 			float xPos = m_rectangle.vleftTop.x;
 

@@ -119,6 +119,7 @@ void CObject_WaterFlow::OnPhysicsCollide(CollisionPairData_t& pair)
 
 		CEqRigidBody* body = (CEqRigidBody*)obj;
 		body->ApplyWorldImpulse(m_groundPos, Vector3D(vec3_up) * m_force * intensity);
+		body->TryWake(false);
 	}
 }
 
