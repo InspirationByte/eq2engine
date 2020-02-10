@@ -49,8 +49,8 @@ int ClipVertsAgainstPlane(Plane &plane, int vertexCount, Vector3D *vertex, Vecto
 		{
 			if (!negative[prev])
 			{
-				Vector3D v1 = vertex[prev];
-				Vector3D v2 = vertex[i];
+				v1 = vertex[prev];
+				v2 = vertex[i];
 
 				// Current vertex is on negative side of plane,
 				// but previous vertex is on positive side.
@@ -65,8 +65,8 @@ int ClipVertsAgainstPlane(Plane &plane, int vertexCount, Vector3D *vertex, Vecto
 		{
 			if (negative[prev])
 			{
-				Vector3D v1 = vertex[i];
-				Vector3D v2 = vertex[prev];
+				v1 = vertex[i];
+				v2 = vertex[prev];
 
 				// Current vertex is on positive side of plane,
 				// but previous vertex is on negative side.
@@ -100,7 +100,7 @@ void ChopWinding(winding_t &w, Plane &plane)
 		vertices[i] = w.vertices[i].position;
 
 	int nNewVerts = ClipVertsAgainstPlane(plane, nVerts, vertices, newVertices);
-	if(nNewVerts == -1)
+	if (nNewVerts == -1)
 		return;
 
 	w.vertices.clear();
@@ -112,8 +112,6 @@ void ChopWinding(winding_t &w, Plane &plane)
 	}
 }
 
-/**/
-
 void MakeInfiniteWinding(winding_t &w, Plane &plane)
 {
 	// compute needed vectors
@@ -121,8 +119,8 @@ void MakeInfiniteWinding(winding_t &w, Plane &plane)
 	VectorVectors(plane.normal, vRight, vUp);
 
 	// make vectors infinite
-	vRight *= MAX_COORD_UNITS;
-	vUp *= MAX_COORD_UNITS;
+	vRight *= DrvSynUnits::MaxCoordInUnits;
+	vUp *= DrvSynUnits::MaxCoordInUnits;
 
 	Vector3D org = -plane.normal * plane.offset;
 
@@ -151,6 +149,9 @@ void winding_t::CalculateTextureCoordinates()
 		texSizeH = pTex->GetHeight();
 	}
 
+	float texelW = 1.0f / texSizeW;
+	float texelH = 1.0f / texSizeH;
+
 	Vector3D axisAngles = VectorAngles(pAssignedFace->Plane.normal);
 	AngleVectors(axisAngles, NULL, &pAssignedFace->UAxis.normal, &pAssignedFace->VAxis.normal);
 
@@ -170,11 +171,11 @@ void winding_t::CalculateTextureCoordinates()
 		float U, V;
 		
 		U = dot(pAssignedFace->UAxis.normal, vertices[i].position);
-		U /= ( ( float )texSizeW ) * pAssignedFace->vScale.x;
+		U /= ( ( float )texSizeW ) * pAssignedFace->vScale.x * texelW;
 		U += ( pAssignedFace->UAxis.offset / ( float )texSizeW );
 
 		V = dot(pAssignedFace->VAxis.normal, vertices[i].position);
-		V /= ( ( float )texSizeH ) * pAssignedFace->vScale.y;
+		V /= ( ( float )texSizeH ) * pAssignedFace->vScale.y * texelH;
 		V += ( pAssignedFace->VAxis.offset / ( float )texSizeH );
 
 		vertices[i].texcoord.x = U;
@@ -504,7 +505,7 @@ bool CEditableBrush::CreateFromPlanes()
 		poly.pAssignedBrush = this;
 
 		MakeInfiniteWinding(poly, m_faces[i].Plane);
-
+		
 		for ( int j = 0; j < m_faces.numElem(); j++ )
 		{
 			if(j != i)
@@ -519,6 +520,8 @@ bool CEditableBrush::CreateFromPlanes()
 
 		poly.pAssignedFace = &m_faces[i];
 		m_polygons.append(poly);
+
+		Msg("Adding poly with %d verts\n", poly.vertices.numElem());
 	}
 
 	// remove empty faces
@@ -706,18 +709,18 @@ void CEditableBrush::UpdateRenderBuffer()
 
 	if(m_pVB)
 	{
-		eqlevelvertex_t* pData = NULL;
+		lmodeldrawvertex_t* pData = NULL;
 
 		if(m_pVB->Lock(0, verts.numElem(), (void**)&pData, false))
 		{
-			memcpy(pData,verts.ptr(),sizeof(eqlevelvertex_t)*verts.numElem());
+			memcpy(pData,verts.ptr(),sizeof(lmodeldrawvertex_t)*verts.numElem());
 
 			m_pVB->Unlock();
 		}
 	}
 	else
 	{
-		m_pVB = g_pShaderAPI->CreateVertexBuffer(BUFFER_DYNAMIC, verts.numElem(), sizeof(eqlevelvertex_t), verts.ptr());
+		m_pVB = g_pShaderAPI->CreateVertexBuffer(BUFFER_DYNAMIC, verts.numElem(), sizeof(lmodeldrawvertex_t), verts.ptr());
 	}
 }
 
@@ -1356,7 +1359,7 @@ void CEditableBrush::BuildObject(level_build_data_t* pLevelBuildData)
 */
 
 // creates a brush from volume, e.g a selection box
-CEditableBrush* CreateBrushFromVolume(Volume *pVolume)
+CEditableBrush* CreateBrushFromVolume(const Volume& volume, IMaterial* material)
 {
 	CEditableBrush* pBrush = new CEditableBrush;
 
@@ -1367,10 +1370,10 @@ CEditableBrush* CreateBrushFromVolume(Volume *pVolume)
 
 		// default some values
 		face.fRotation = 0.0f;
-		face.vScale = Vector2D(0.25f, 0.25f); // g_config.defaultTexScale
+		face.vScale = HFIELD_POINT_SIZE;
 
 		// make the N plane from current iteration
-		face.Plane = pVolume->GetPlane(i);
+		face.Plane = volume.GetPlane(i);
 
 		// make the U and V texture axes
 		VectorVectors(face.Plane.normal, face.UAxis.normal, face.VAxis.normal);
@@ -1378,7 +1381,7 @@ CEditableBrush* CreateBrushFromVolume(Volume *pVolume)
 		face.VAxis.offset = 0;
 
 		// apply the currently selected material
-		//face.pMaterial = g_editormainframe->GetMaterials()->GetSelectedMaterial();
+		face.pMaterial = material;
 
 		// append the face
 		pBrush->AddFace(face);

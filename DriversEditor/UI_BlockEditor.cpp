@@ -9,6 +9,8 @@
 #include "EditorLevel.h"
 #include "EditorMain.h"
 
+#include "BlockEditor/EqBrush.h"
+
 #include "MaterialAtlasList.h"
 
 float SnapFloat(int grid_spacing, float val)
@@ -142,7 +144,8 @@ CUI_BlockEditor::CUI_BlockEditor(wxWindow* parent) : wxPanel(parent, -1, wxDefau
 
 	m_cursorPos = vec3_zero;
 	m_selectedTool = BlockEdit_Selection;
-
+	m_draggablePlane = -1;
+	m_curBrush = nullptr;
 }
 
 CUI_BlockEditor::~CUI_BlockEditor()
@@ -185,6 +188,9 @@ void CUI_BlockEditor::ConstructToolbars(wxBoxSizer* addTo)
 	pToolBar->Realize();
 
 	addTo->Add(pToolBar);
+
+	m_mode = BLOCK_MODE_READY;
+	m_selectedTool = BlockEdit_Selection;
 }
 
 void CUI_BlockEditor::ProcessAllMenuCommands(wxCommandEvent& event)
@@ -246,6 +252,38 @@ void CUI_BlockEditor::MouseEventOnTile(wxMouseEvent& event, hfieldtile_t* tile, 
 	else if (m_selectedTool == BlockEdit_Brush)
 	{
 		// draw bounding box and press enter to create brush
+		if (event.ButtonIsDown(wxMOUSE_BTN_LEFT))
+		{
+			// draw the box
+			if (!event.Dragging())
+			{
+				m_mode = BLOCK_MODE_BOX;
+				m_creationBox.minPoint = cursorPos;
+				m_creationBox.maxPoint = cursorPos;
+				m_draggablePlane = -1;
+			}
+			else if (m_mode == BLOCK_MODE_BOX)
+			{
+				BoundingBox newBox = m_creationBox;
+
+				newBox.minPoint = cursorPos + Vector3D(0,1,0);
+
+				//if (newBox.minPoint.x == newBox.maxPoint.x)
+				//	newBox.maxPoint.x += 1.0f;
+
+				if (newBox.minPoint.y == newBox.maxPoint.y)
+					newBox.maxPoint.y += 1.0f;
+
+				//if (newBox.minPoint.z == newBox.maxPoint.z)
+				//	newBox.maxPoint.z += 1.0f;
+
+				m_creationBox = newBox;
+
+				m_centerAxis.SetProps(identity3(), m_creationBox.GetCenter());
+			}
+
+			debugoverlay->Sphere3D(m_cursorPos, 0.25f, ColorRGBA(1, 0, 0, 1), 0.0f);
+		}
 	}
 	else if (m_selectedTool == BlockEdit_Polygon)
 	{
@@ -263,8 +301,99 @@ void CUI_BlockEditor::MouseEventOnTile(wxMouseEvent& event, hfieldtile_t* tile, 
 	m_cursorPos = cursorPos;
 }
 
+int VolumeIntersectsRay(const Volume& vol, const Vector3D &start, const Vector3D &dir, Vector3D& intersectionPos)
+{
+	int planeId = -1;
+
+	Vector3D outintersection;
+	float best_dist = V_MAX_COORD;
+
+	for (int i = 0; i < 6; i++)
+	{
+		if (vol.GetPlane(i).GetIntersectionWithRay(start, dir, outintersection))
+		{
+			Vector3D v = start - outintersection;
+			float dist = length(start - outintersection);
+
+			// check sphere because we have epsilon
+			if (dist < best_dist && vol.IsSphereInside(outintersection + dir * 0.1f, 0.1f))
+			{
+				intersectionPos = outintersection;
+				best_dist = dist;
+				planeId = i;
+			}
+		}
+	}
+
+	return planeId;
+}
+
 void CUI_BlockEditor::ProcessMouseEvents(wxMouseEvent& event)
 {
+	Vector3D ray_start, ray_dir;
+	g_pMainFrame->GetMouseScreenVectors(event.GetX(), event.GetY(), ray_start, ray_dir);
+
+	if (m_mode == BLOCK_MODE_BOX)
+	{
+		BoundingBox bbox = m_creationBox;
+		bbox.Fix();
+
+		Volume boxVolume;
+		boxVolume.LoadBoundingBox(bbox.minPoint, bbox.maxPoint, true);
+
+		if (event.ControlDown() && event.ButtonIsDown(wxMOUSE_BTN_LEFT))
+		{
+			Vector3D intersectPos;
+			int planeIdx = VolumeIntersectsRay(boxVolume, ray_start, ray_dir, intersectPos);
+			m_draggablePlane = planeIdx;
+			if (planeIdx != -1)
+			{
+				const Plane& pl = boxVolume.GetPlane(planeIdx);
+				m_faceAxis.SetProps(identity3(), m_creationBox.GetCenter() - pl.normal*pl.Distance(m_creationBox.GetCenter()));
+			}
+
+			return;
+		}
+
+		if (m_draggablePlane != -1)
+		{
+			float clength = length(m_centerAxis.m_position - g_camera_target);
+
+			//int axes = m_faceAxis.TestRay(ray_start, ray_dir, clength, false);
+			//m_faceAxis.PerformTranslate
+		}
+
+		/*
+		if (m_draggablePlane != -1 && event.ButtonIsDown(wxMOUSE_BTN_LEFT))
+		{
+			Volume shadowVol = boxVolume;
+
+			Plane pl = boxVolume.GetPlane(m_draggablePlane);
+			pl.offset += pl.Distance(m_cursorPos);
+
+			shadowVol.SetupPlane(pl, m_draggablePlane);
+
+			BoundingBox shadowBox;
+			shadowVol.GetBBOXBack(shadowBox.minPoint, shadowBox.maxPoint);
+			shadowBox.Fix();
+
+			m_creationBox = shadowBox;
+
+			return;
+		}
+		
+		Vector3D intersectPos;
+		int planeIdx = VolumeIntersectsRay(boxVolume, ray_start, ray_dir, intersectPos);
+		if (planeIdx != -1)
+		{
+			m_draggablePlane = planeIdx;
+
+			const Plane& pl = boxVolume.GetPlane(planeIdx);
+			m_faceAxis.SetProps(identity3(), m_creationBox.GetCenter() - pl.normal*pl.Distance(m_creationBox.GetCenter()));
+		}
+		*/
+	}
+
 	CBaseTilebasedEditor::ProcessMouseEvents(event);
 
 	if (event.ButtonUp())
@@ -273,7 +402,27 @@ void CUI_BlockEditor::ProcessMouseEvents(wxMouseEvent& event)
 
 void CUI_BlockEditor::OnKey(wxKeyEvent& event, bool bDown)
 {
+	if (m_mode == BLOCK_MODE_BOX)
+	{
+		if (event.GetKeyCode() == WXK_RETURN)
+		{
+			if (!m_texPanel->GetSelectedMaterial())
+			{
+				wxMessageBox("You need to select material first");
+				return;
+			}
 
+			BoundingBox bbox = m_creationBox;
+			bbox.Fix();
+
+			Volume vol;
+			vol.LoadBoundingBox(bbox.maxPoint, bbox.minPoint, true);
+
+			m_curBrush = CreateBrushFromVolume(vol, m_texPanel->GetSelectedMaterial());
+
+			m_brushes.append(m_curBrush);
+		}
+	}
 }
 
 void CUI_BlockEditor::OnRender()
@@ -282,6 +431,36 @@ void CUI_BlockEditor::OnRender()
 		m_selectedTool == BlockEdit_Polygon)
 	{
 		debugoverlay->Sphere3D(m_cursorPos, 0.15f, ColorRGBA(1, 1, 0, 1), 0.0f);
+	}
+
+	materials->SetMatrix(MATRIXMODE_WORLD, identity4());
+
+	for (int i = 0; i < m_brushes.numElem(); i++)
+	{
+		CEditableBrush* brush = m_brushes[i];
+		if (brush == m_curBrush)
+		{
+			materials->SetAmbientColor(Vector4D(1,0.5,0.5,1));
+		}
+		else
+			materials->SetAmbientColor(color4_white);
+
+		brush->Render(0);
+	}
+
+	if (m_curBrush)
+		m_curBrush->Render(0);
+
+	if (m_mode == BLOCK_MODE_BOX)
+	{
+		float clength = length(m_centerAxis.m_position - g_camera_target);
+
+		debugoverlay->Box3D(m_creationBox.minPoint, m_creationBox.maxPoint, ColorRGBA(1, 1, 1, 1), 0.0f);
+		
+		if (m_draggablePlane != -1)
+			m_faceAxis.Draw(clength);
+		else
+			m_centerAxis.Draw(clength);
 	}
 
 	materials->SetMatrix(MATRIXMODE_WORLD, identity4());

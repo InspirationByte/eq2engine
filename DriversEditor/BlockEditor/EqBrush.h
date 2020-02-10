@@ -10,12 +10,12 @@
 
 #include "BrushFace.h"
 
-#include "levelobject.h"
-
 #include "materialsystem/IMaterialSystem.h"
 #include "math/Volume.h"
 #include "math/BoundingBox.h"
 #include "utils/DkLinkedList.h"
+
+#include "world.h"
 
 enum ClassifyPoly_e
 {
@@ -158,7 +158,7 @@ protected:
 };
 
 // creates a brush from volume, e.g a selection box
-CEditableBrush* CreateBrushFromVolume(Volume *pVolume);
+CEditableBrush* CreateBrushFromVolume(const Volume& volume, IMaterial* material);
 
 
 #endif // EQBRUSH_H

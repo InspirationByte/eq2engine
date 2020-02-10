@@ -25,6 +25,14 @@ enum EBlockEditorTools
 	BlockEdit_Clipper,
 };
 
+enum EBlockEditorMode
+{
+	BLOCK_MODE_READY = 0,
+	BLOCK_MODE_BOX,
+};
+
+class CEditableBrush;
+
 class CUI_BlockEditor : public wxPanel, public CBaseTilebasedEditor
 {
 	friend class CMaterialAtlasList;
@@ -57,6 +65,8 @@ protected:
 	wxPanel* m_settingsPanel;
 	CMaterialAtlasList* m_texPanel;
 
+	DkList<CEditableBrush*>		m_brushes;
+
 	wxPanel*					m_pSettingsPanel;
 	wxTextCtrl*					m_filtertext;
 	wxTextCtrl*					m_pTags;
@@ -70,6 +80,15 @@ protected:
 
 	Vector3D					m_cursorPos;
 	EBlockEditorTools			m_selectedTool;
+
+	EBlockEditorMode			m_mode;
+	BoundingBox					m_creationBox;
+	int							m_draggablePlane;
+
+	CEditGizmo					m_centerAxis;
+	CEditGizmo					m_faceAxis;
+
+	CEditableBrush*				m_curBrush;
 };
 
 #endif // UI_BLOCKEDITOR_H

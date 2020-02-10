@@ -310,20 +310,9 @@ CMainWindow::CMainWindow( wxWindow* parent, wxWindowID id, const wxString& title
 
 	m_tools.append(m_prefabmgr);
 
-
 	m_regionEditorFrame = new CRegionEditFrame(this);
 
-	/*
-	m_objectsedit = new wxPanel( m_notebook1, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
-	m_notebook1->AddPage( m_objectsedit, wxT("Level Objects"), false );
-	m_aiedit = new wxPanel( m_notebook1, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
-	m_notebook1->AddPage( m_aiedit, wxT("AI"), false );
-	m_missionedit = new wxPanel( m_notebook1, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
-	m_notebook1->AddPage( m_missionedit, wxT("Mission"), false );
-	*/
-	
 	bSizer4->Add( m_notebook1, 1, wxEXPAND, 5 );
-	
 	
 	m_nbPanel->SetSizer( bSizer4 );
 	m_nbPanel->Layout();
