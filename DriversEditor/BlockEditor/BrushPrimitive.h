@@ -25,7 +25,7 @@ enum ClassifyPoly_e
 	CPL_ONPLANE,
 };
 
-class CEditableBrush;
+class CBrushPrimitive;
 struct winding_t;
 
 inline void CopyWinding(const winding_t *from, winding_t *to);
@@ -44,7 +44,7 @@ struct winding_t
 	// classifies the next face over this
 	ClassifyPoly_e					Classify(winding_t *w);
 
-	CEditableBrush*					pAssignedBrush;
+	CBrushPrimitive*					pAssignedBrush;
 
 	// assingned face
 	brushFace_t*					pAssignedFace;
@@ -74,11 +74,11 @@ inline void CopyWinding(const winding_t *from, winding_t *to)
 void MakeInfiniteWinding(winding_t &w, Plane &plane);
 
 // editable brush class
-class CEditableBrush
+class CBrushPrimitive
 {
 public:
-	CEditableBrush();
-	~CEditableBrush();
+	CBrushPrimitive();
+	~CBrushPrimitive();
 
 // CBaseEditableObject members
 
@@ -86,12 +86,13 @@ public:
 
 	// draw brush
 	void							Render(int nViewRenderFlags);
+	void							RenderGhost();
 
 	// rendering bbox
 	Vector3D						GetBBoxMins()	{return m_bbox.minPoint;}
 	Vector3D						GetBBoxMaxs()	{return m_bbox.maxPoint;}
 
-	float							CheckLineIntersection(const Vector3D &start, const Vector3D &end, Vector3D &intersectionPos);
+	float							CheckLineIntersection(const Vector3D &start, const Vector3D &end, Vector3D &intersectionPos, int& face);
 
 	// updates texturing
 	void							UpdateSurfaceTextures();
@@ -117,7 +118,7 @@ public:
 	void							CalculateBBOX();
 
 	// is brush aabb intersects another brush aabb
-	bool							IsBrushIntersectsAABB(CEditableBrush *pBrush);
+	bool							IsBrushIntersectsAABB(CBrushPrimitive *pBrush);
 	bool							IsPointInside_Epsilon(Vector3D &point, float eps);
 	bool							IsPointInside(Vector3D &point);
 	bool							IsWindingFullyInsideBrush(winding_t* pWinding);
@@ -133,7 +134,7 @@ public:
 
 	void							AddFace(brushFace_t &face);
 
-	void							CutBrushByPlane(Plane &plane, CEditableBrush** ppNewBrush);
+	void							CutBrushByPlane(Plane &plane, CBrushPrimitive** ppNewBrush);
 
 	void							RemoveEmptyFaces();
 
@@ -141,7 +142,7 @@ public:
 	bool							CreateFromPlanes();
 
 	// copies this object
-	CEditableBrush*					CloneObject();
+	CBrushPrimitive*					CloneObject();
 
 protected:
 
@@ -158,7 +159,7 @@ protected:
 };
 
 // creates a brush from volume, e.g a selection box
-CEditableBrush* CreateBrushFromVolume(const Volume& volume, IMaterial* material);
+CBrushPrimitive* CreateBrushFromVolume(const Volume& volume, IMaterial* material);
 
 
 #endif // EQBRUSH_H

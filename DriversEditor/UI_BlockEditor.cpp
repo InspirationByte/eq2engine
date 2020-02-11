@@ -9,7 +9,7 @@
 #include "EditorLevel.h"
 #include "EditorMain.h"
 
-#include "BlockEditor/EqBrush.h"
+#include "BlockEditor/BrushPrimitive.h"
 
 #include "MaterialAtlasList.h"
 
@@ -145,7 +145,6 @@ CUI_BlockEditor::CUI_BlockEditor(wxWindow* parent) : wxPanel(parent, -1, wxDefau
 	m_cursorPos = vec3_zero;
 	m_selectedTool = BlockEdit_Selection;
 	m_draggablePlane = -1;
-	m_curBrush = nullptr;
 }
 
 CUI_BlockEditor::~CUI_BlockEditor()
@@ -328,12 +327,90 @@ int VolumeIntersectsRay(const Volume& vol, const Vector3D &start, const Vector3D
 	return planeId;
 }
 
+void CUI_BlockEditor::ToggleBrushSelection(CBrushPrimitive* brush)
+{
+	if (m_selectedBrushes.findIndex(brush) == -1)
+	{
+		m_selectedBrushes.addUnique(brush);
+		for (int i = 0; i < brush->GetFaceCount(); i++)
+		{
+			brush->GetFace(i)->nFlags &= ~BRUSH_FACE_SELECTED;
+			ToggleFaceSelection(brush->GetFace(i));
+		}
+	}
+	else
+	{
+		for (int i = 0; i < brush->GetFaceCount(); i++)
+		{
+			brush->GetFace(i)->nFlags |= BRUSH_FACE_SELECTED;
+			ToggleFaceSelection(brush->GetFace(i));
+		}
+
+		m_selectedBrushes.fastRemove(brush);
+	}
+}
+
+void CUI_BlockEditor::ToggleFaceSelection(brushFace_t* face)
+{
+	// toggle face selection
+	if (face->nFlags & BRUSH_FACE_SELECTED)
+	{
+		face->nFlags &= ~BRUSH_FACE_SELECTED;
+		m_selectedFaces.fastRemove(face);
+	}
+	else
+	{
+		face->nFlags |= BRUSH_FACE_SELECTED;
+		m_selectedFaces.addUnique(face);
+	}
+}
+
+void CUI_BlockEditor::CancelSelection()
+{
+	for (int i = 0; i < m_selectedFaces.numElem(); i++)
+		m_selectedFaces[i]->nFlags &= ~BRUSH_FACE_SELECTED;
+
+	m_selectedFaces.clear();
+	m_selectedBrushes.clear();
+}
+
 void CUI_BlockEditor::ProcessMouseEvents(wxMouseEvent& event)
 {
 	Vector3D ray_start, ray_dir;
 	g_pMainFrame->GetMouseScreenVectors(event.GetX(), event.GetY(), ray_start, ray_dir);
 
-	if (m_mode == BLOCK_MODE_BOX)
+	if (m_mode == BLOCK_MODE_READY && !event.Dragging())
+	{
+		if (event.ControlDown() && event.ButtonIsDown(wxMOUSE_BTN_LEFT) || event.ButtonIsDown(wxMOUSE_BTN_RIGHT))
+		{
+			CBrushPrimitive* nearestBrush = nullptr;
+			Vector3D intersectPos;
+			float intersectDist = DrvSynUnits::MaxCoordInUnits;
+			int intersectFace = -1;
+
+			for (int i = 0; i < m_brushes.numElem(); i++)
+			{
+				int hitFace = -1;
+
+				CBrushPrimitive* testBrush = m_brushes[i];
+				float dist = testBrush->CheckLineIntersection(ray_start, ray_start+ray_dir*DrvSynUnits::MaxCoordInUnits, intersectPos, hitFace);
+
+				if (dist < intersectDist)
+				{
+					nearestBrush = testBrush;
+					intersectFace = hitFace;
+					intersectDist = dist;
+				}
+			}
+
+			if (event.ButtonIsDown(wxMOUSE_BTN_LEFT))
+				ToggleBrushSelection(nearestBrush);
+			else if(intersectFace != -1)
+				ToggleFaceSelection(nearestBrush->GetFace(intersectFace));
+		}
+
+	}
+	else if (m_mode == BLOCK_MODE_BOX)
 	{
 		BoundingBox bbox = m_creationBox;
 		bbox.Fix();
@@ -418,10 +495,19 @@ void CUI_BlockEditor::OnKey(wxKeyEvent& event, bool bDown)
 			Volume vol;
 			vol.LoadBoundingBox(bbox.maxPoint, bbox.minPoint, true);
 
-			m_curBrush = CreateBrushFromVolume(vol, m_texPanel->GetSelectedMaterial());
+			CBrushPrimitive* brush = CreateBrushFromVolume(vol, m_texPanel->GetSelectedMaterial());
 
-			m_brushes.append(m_curBrush);
+			m_brushes.append(brush);
 		}
+		else if (event.GetKeyCode() == WXK_ESCAPE)
+		{
+			m_mode = BLOCK_MODE_READY;
+		}
+	}
+
+	if (event.GetKeyCode() == WXK_ESCAPE)
+	{
+		CancelSelection();
 	}
 }
 
@@ -437,19 +523,15 @@ void CUI_BlockEditor::OnRender()
 
 	for (int i = 0; i < m_brushes.numElem(); i++)
 	{
-		CEditableBrush* brush = m_brushes[i];
-		if (brush == m_curBrush)
-		{
-			materials->SetAmbientColor(Vector4D(1,0.5,0.5,1));
-		}
-		else
-			materials->SetAmbientColor(color4_white);
-
+		CBrushPrimitive* brush = m_brushes[i];
 		brush->Render(0);
 	}
 
-	if (m_curBrush)
-		m_curBrush->Render(0);
+	for (int i = 0; i < m_selectedBrushes.numElem(); i++)
+	{
+		CBrushPrimitive* brush = m_selectedBrushes[i];
+		brush->RenderGhost();
+	}
 
 	if (m_mode == BLOCK_MODE_BOX)
 	{

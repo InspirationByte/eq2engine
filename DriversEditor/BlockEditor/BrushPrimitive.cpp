@@ -5,7 +5,7 @@
 // Description: Convex polyhedra, for engine/editor/compiler
 //////////////////////////////////////////////////////////////////////////////////
 
-#include "EqBrush.h"
+#include "BrushPrimitive.h"
 #include <malloc.h>
 
 #include "world.h"
@@ -420,19 +420,19 @@ CEditableSurface* EqBrushWinding_t::MakeEditableSurface()
 // Brush member functions
 //-----------------------------------------
 
-CEditableBrush::CEditableBrush()
+CBrushPrimitive::CBrushPrimitive()
 {
 	m_pVB = NULL;
 	m_nAdditionalFlags = 0;
 }
 
-CEditableBrush::~CEditableBrush()
+CBrushPrimitive::~CBrushPrimitive()
 {
 	OnRemove();
 }
 
 // calculates bounding box for this brush
-void CEditableBrush::CalculateBBOX()
+void CBrushPrimitive::CalculateBBOX()
 {
 	m_bbox.Reset();
 
@@ -444,14 +444,14 @@ void CEditableBrush::CalculateBBOX()
 }
 
 // is brush aabb intersects another brush aabb
-bool CEditableBrush::IsBrushIntersectsAABB(CEditableBrush *pBrush)
+bool CBrushPrimitive::IsBrushIntersectsAABB(CBrushPrimitive *pBrush)
 {
 	BoundingBox another_box(pBrush->GetBBoxMins(),pBrush->GetBBoxMaxs());
 
 	return m_bbox.Intersects(another_box);
 }
 
-void CEditableBrush::SortVertsToDraw()
+void CBrushPrimitive::SortVertsToDraw()
 {
 	for(int i = 0; i < m_polygons.numElem(); i++)
 	{
@@ -461,7 +461,7 @@ void CEditableBrush::SortVertsToDraw()
 }
 
 // calculates the vertices from faces
-bool CEditableBrush::CreateFromPlanes()
+bool CBrushPrimitive::CreateFromPlanes()
 {
 	// check planes first
 	bool usePlane[MAX_BRUSH_PLANES];
@@ -533,7 +533,7 @@ bool CEditableBrush::CreateFromPlanes()
 	return true;
 }
 
-void CEditableBrush::RemoveEmptyFaces()
+void CBrushPrimitive::RemoveEmptyFaces()
 {
 	// remove empty faces
 	for(int i = 0; i < m_polygons.numElem(); i++)
@@ -548,7 +548,7 @@ void CEditableBrush::RemoveEmptyFaces()
 };
 
 // draw brush
-void CEditableBrush::Render(int nViewRenderFlags)
+void CBrushPrimitive::Render(int nViewRenderFlags)
 {
 	materials->SetCullMode(CULL_BACK);
 	materials->SetMatrix(MATRIXMODE_WORLD, identity4());
@@ -560,36 +560,19 @@ void CEditableBrush::Render(int nViewRenderFlags)
 	Matrix4x4 view;
 	materials->GetMatrix(MATRIXMODE_VIEW, view);
 
-	ColorRGBA ambientColor = color4_white;
+	ColorRGBA ambientColor = materials->GetAmbientColor();
 
 	int nFirstVertex = 0;
 	for(int i = 0; i < m_polygons.numElem(); i++)
 	{
 		winding_t& winding = m_polygons[i];
 
-		/*
-		// cancel if transparents disabled
-		if((nViewRenderFlags & VR_FLAG_NO_TRANSLUCENT) && (winding.pAssignedFace->pMaterial->GetFlags() & MATERIAL_FLAG_TRANSPARENT))
+		if(winding.pAssignedFace->nFlags & BRUSH_FACE_SELECTED)
 		{
-			nFirstVertex += polygons[i].vertices.numElem()+1;
-			continue;
-		}
-		
-		// cancel if opaques disabled
-		if((nViewRenderFlags & VR_FLAG_NO_OPAQUE) && !(winding.pAssignedFace->pMaterial->GetFlags() & MATERIAL_FLAG_TRANSPARENT))
-		{
-			nFirstVertex += winding.vertices.numElem()+1;
-			continue;
-		}*/
-
-		/*
-		if((polygons[i].pAssignedFace->nFlags & STFL_SELECTED) && !g_editormainframe->GetSurfaceDialog()->IsSelectionMaskDisabled())
-		{
-			ColorRGBA sel_color(1.0f,0.0f,0.0f,1.0f);
+			ColorRGBA sel_color(1.0f,0.5f,0.5f,1.0f);
 			materials->SetAmbientColor(sel_color);
 		}
 		else
-		*/
 			materials->SetAmbientColor(ambientColor);
 
 		// apply the material (slow in editor)
@@ -597,49 +580,39 @@ void CEditableBrush::Render(int nViewRenderFlags)
 		materials->Apply();
 
 		g_pShaderAPI->DrawNonIndexedPrimitives(PRIM_TRIANGLE_FAN, nFirstVertex, winding.vertices.numElem());
-		/*
-		if((polygons[i].pAssignedFace->nFlags & STFL_SELECTED) && !g_editormainframe->GetSurfaceDialog()->IsSelectionMaskDisabled())
-		{
-			ColorRGBA sel_color(1.0f,0.0f,0.0f,0.35f);
-			materials->SetAmbientColor(sel_color);
-
-			materials->BindMaterial(g_pLevel->GetFlatMaterial(), 0);
-			materials->SetDepthStates(true, false);
-
-			materials->Apply();
-			g_pShaderAPI->DrawNonIndexedPrimitives(PRIM_TRIANGLE_FAN, nFirstVertex, polygons[i].vertices.numElem());
-		}*/
 
 		nFirstVertex += winding.vertices.numElem()+1;
 	}
-
-	/*
-	IMeshBuilder* pMesh = g_pShaderAPI->CreateMeshBuilder();
-	for(int i = 0; i < polygons.numElem(); i++)
-	{
-		// apply the material (slow in editor)
-		materials->BindMaterial(polygons[i].pAssignedFace->pMaterial);
-
-		pMesh->Begin(PRIM_TRIANGLE_FAN);
-		for(int j = 0; j < polygons[i].vertices.numElem(); j++)
-		{
-			pMesh->Position3fv(polygons[i].vertices[j].position);
-			pMesh->Color3f(1.0f,0,0);
-			pMesh->AdvanceVertex();
-		}
-		pMesh->End();
-	}
-	g_pShaderAPI->DestroyMeshBuilder(pMesh);
-	*/
 }
 
-void CEditableBrush::AddFace(brushFace_t &face)
+void CBrushPrimitive::RenderGhost()
+{
+	materials->SetCullMode(CULL_BACK);
+	materials->SetMatrix(MATRIXMODE_WORLD, identity4());
+
+	g_pShaderAPI->SetVertexFormat(g_worldGlobals.levelObjectVF);
+	g_pShaderAPI->SetVertexBuffer(m_pVB, 0);
+	g_pShaderAPI->SetIndexBuffer(NULL);
+
+	materials->SetAmbientColor(color4_white);
+	materials->BindMaterial(materials->GetDefaultMaterial());
+	g_pShaderAPI->SetTexture(nullptr, nullptr, 0);
+
+	int nFirstVertex = 0;
+	for (int i = 0; i < m_polygons.numElem(); i++)
+	{
+		g_pShaderAPI->DrawNonIndexedPrimitives(PRIM_LINE_STRIP, nFirstVertex, m_polygons[i].vertices.numElem() + 1);
+		nFirstVertex += m_polygons[i].vertices.numElem() + 1;
+	}
+}
+
+void CBrushPrimitive::AddFace(brushFace_t &face)
 {
 	m_faces.append(face);
 }
 
 /*
-void CEditableBrush::AddFace(Texture_t &face, EqBrushWinding_t &winding)
+void CBrushPrimitive::AddFace(Texture_t &face, EqBrushWinding_t &winding)
 {
 	int face_id = faces.append(face);
 
@@ -647,7 +620,7 @@ void CEditableBrush::AddFace(Texture_t &face, EqBrushWinding_t &winding)
 	polygons.append(winding);
 }
 */
-void CEditableBrush::UpdateRenderData()
+void CBrushPrimitive::UpdateRenderData()
 {
 	CreateFromPlanes();
 	CalculateBBOX();
@@ -655,7 +628,7 @@ void CEditableBrush::UpdateRenderData()
 	UpdateRenderBuffer();
 }
 
-void CEditableBrush::UpdateRenderBuffer()
+void CBrushPrimitive::UpdateRenderBuffer()
 {
 	// adjust flags
 
@@ -667,32 +640,6 @@ void CEditableBrush::UpdateRenderBuffer()
 		winding_t& winding = m_polygons[i];
 
 		winding.CalculateTextureCoordinates();
-		/*
-		IMatVar* pVar = winding.pAssignedFace->pMaterial->FindMaterialVar("roomfiller");
-
-		if(pVar && pVar->GetInt() > 0)
-			m_nAdditionalFlags |= EDFL_ROOM;
-
-		pVar = winding.pAssignedFace->pMaterial->FindMaterialVar("areaportal");
-
-		if(pVar && pVar->GetInt() > 0)
-			m_nAdditionalFlags |= EDFL_AREAPORTAL;
-
-		pVar = winding.pAssignedFace->pMaterial->FindMaterialVar("playerclip");
-
-		if(pVar && pVar->GetInt() > 0)
-			m_nAdditionalFlags |= EDFL_CLIP;
-
-		pVar = winding.pAssignedFace->pMaterial->FindMaterialVar("npcclip");
-
-		if(pVar && pVar->GetInt() > 0)
-			m_nAdditionalFlags |= EDFL_CLIP;
-
-		pVar = winding.pAssignedFace->pMaterial->FindMaterialVar("physicsclip");
-
-		if(pVar && pVar->GetInt() > 0)
-			m_nAdditionalFlags |= EDFL_CLIP;
-		*/
 	}
 
 	DkList<lmodeldrawvertex_t> verts;
@@ -726,7 +673,7 @@ void CEditableBrush::UpdateRenderBuffer()
 
 /*
 // basic mesh modifications
-void CEditableBrush::Translate(Vector3D &position)
+void CBrushPrimitive::Translate(Vector3D &position)
 {
 	for(int i = 0; i < faces.numElem(); i++)
 	{
@@ -736,7 +683,7 @@ void CEditableBrush::Translate(Vector3D &position)
 	UpdateRenderData();
 }
 
-void CEditableBrush::Scale(Vector3D &scale, bool use_center, Vector3D &scale_center)
+void CBrushPrimitive::Scale(Vector3D &scale, bool use_center, Vector3D &scale_center)
 {
 	if(scale == vec3_zero)
 		return;
@@ -779,7 +726,7 @@ void CEditableBrush::Scale(Vector3D &scale, bool use_center, Vector3D &scale_cen
 	UpdateRenderData();
 }
 
-void CEditableBrush::Rotate(Vector3D &rotation_angles, bool use_center, Vector3D &rotation_center)
+void CBrushPrimitive::Rotate(Vector3D &rotation_angles, bool use_center, Vector3D &rotation_center)
 {
 	Vector3D bbox_center = bbox.GetCenter();
 
@@ -813,13 +760,13 @@ void CEditableBrush::Rotate(Vector3D &rotation_angles, bool use_center, Vector3D
 	UpdateRenderData();
 }
 */
-void CEditableBrush::OnRemove(bool bOnLevelCleanup)
+void CBrushPrimitive::OnRemove(bool bOnLevelCleanup)
 {
 	g_pShaderAPI->DestroyVertexBuffer(m_pVB);
 	m_pVB = NULL;
 }
 
-float CEditableBrush::CheckLineIntersection(const Vector3D &start, const Vector3D &end, Vector3D &intersectionPos)
+float CBrushPrimitive::CheckLineIntersection(const Vector3D &start, const Vector3D &end, Vector3D &intersectionPos, int& face)
 {
 	bool isinstersects = false;
 
@@ -831,10 +778,10 @@ float CEditableBrush::CheckLineIntersection(const Vector3D &start, const Vector3
 
 	for (int i = 0; i < m_faces.numElem(); i++)
 	{
-		brushFace_t& face = m_faces[i];
+		const brushFace_t& brushFace = m_faces[i];
 
 		float frac = 1.0f;
-		if(face.Plane.GetIntersectionWithRay(start, dir, outintersection))
+		if(brushFace.Plane.GetIntersectionWithRay(start, dir, outintersection))
 		{
 			frac = lineProjection(start, end, outintersection);
 
@@ -843,6 +790,7 @@ float CEditableBrush::CheckLineIntersection(const Vector3D &start, const Vector3
 				best_fraction = frac;
 				isinstersects = true;
 				intersectionPos = outintersection;
+				face = i;
 			}
 		}
 	}
@@ -850,7 +798,7 @@ float CEditableBrush::CheckLineIntersection(const Vector3D &start, const Vector3
 	return best_fraction;
 }
 
-bool CEditableBrush::IsPointInside(Vector3D &point)
+bool CBrushPrimitive::IsPointInside(Vector3D &point)
 {
 	for (int i = 0; i < m_faces.numElem(); i++)
 	{
@@ -861,7 +809,7 @@ bool CEditableBrush::IsPointInside(Vector3D &point)
 	return true;
 }
 
-bool CEditableBrush::IsPointInside_Epsilon(Vector3D &point, float eps)
+bool CBrushPrimitive::IsPointInside_Epsilon(Vector3D &point, float eps)
 {
 	for (int i = 0; i < m_faces.numElem(); i++)
 	{
@@ -873,7 +821,7 @@ bool CEditableBrush::IsPointInside_Epsilon(Vector3D &point, float eps)
 }
 
 // updates texturing
-void CEditableBrush::UpdateSurfaceTextures()
+void CBrushPrimitive::UpdateSurfaceTextures()
 {
 	UpdateRenderBuffer();
 }
@@ -895,7 +843,7 @@ struct ReadWriteFace_t
 };
 
 // saves this object
-bool CEditableBrush::WriteObject(IVirtualStream* pStream)
+bool CBrushPrimitive::WriteObject(IVirtualStream* pStream)
 {
 	// write face count
 	int num_faces = m_faces.numElem();
@@ -928,7 +876,7 @@ bool CEditableBrush::WriteObject(IVirtualStream* pStream)
 }
 
 // read this object
-bool CEditableBrush::ReadObject(IVirtualStream* pStream)
+bool CBrushPrimitive::ReadObject(IVirtualStream* pStream)
 {
 	// write face count
 	int num_faces;
@@ -959,9 +907,9 @@ bool CEditableBrush::ReadObject(IVirtualStream* pStream)
 }
 /*
 // copies this object
-CBaseEditableObject* CEditableBrush::CloneObject()
+CBaseEditableObject* CBrushPrimitive::CloneObject()
 {
-	CEditableBrush* pCloned = new CEditableBrush;
+	CBrushPrimitive* pCloned = new CBrushPrimitive;
 
 	for(int i = 0; i < faces.numElem(); i++)
 	{
@@ -979,9 +927,9 @@ CBaseEditableObject* CEditableBrush::CloneObject()
 	return pCloned;
 }
 */
-void CEditableBrush::CutBrushByPlane(Plane &plane, CEditableBrush** ppNewBrush)
+void CBrushPrimitive::CutBrushByPlane(Plane &plane, CBrushPrimitive** ppNewBrush)
 {
-	CEditableBrush* pNewBrush = new CEditableBrush;
+	CBrushPrimitive* pNewBrush = new CBrushPrimitive;
 	
 	for(int i = 0; i < m_faces.numElem(); i++)
 	{
@@ -1028,7 +976,7 @@ void CEditableBrush::CutBrushByPlane(Plane &plane, CEditableBrush** ppNewBrush)
 	*ppNewBrush = pNewBrush;
 }
 
-bool CEditableBrush::IsWindingFullyInsideBrush(winding_t* pWinding)
+bool CBrushPrimitive::IsWindingFullyInsideBrush(winding_t* pWinding)
 {
 	int nInside = 0;
 
@@ -1041,7 +989,7 @@ bool CEditableBrush::IsWindingFullyInsideBrush(winding_t* pWinding)
 	return false;
 }
 
-bool CEditableBrush::IsWindingIntersectsBrush(winding_t* pWinding)
+bool CBrushPrimitive::IsWindingIntersectsBrush(winding_t* pWinding)
 {
 	for(int i = 0; i < m_faces.numElem(); i++)
 	{
@@ -1063,7 +1011,7 @@ bool CEditableBrush::IsWindingIntersectsBrush(winding_t* pWinding)
 	return true;
 }
 
-bool CEditableBrush::IsTouchesBrush(winding_t* pWinding)
+bool CBrushPrimitive::IsTouchesBrush(winding_t* pWinding)
 {
 	// find one plane that touches another plane
 	for(int i = 0; i < m_polygons.numElem(); i++)
@@ -1202,7 +1150,7 @@ void BuildWinding(EqBrushWinding_t* winding, level_build_data_t* pLevelBuildData
 */
 
 // stores object in keyvalues
-void CEditableBrush::SaveToKeyValues(kvkeybase_t* pSection)
+void CBrushPrimitive::SaveToKeyValues(kvkeybase_t* pSection)
 {
 	kvkeybase_t* pFacesSec = pSection->AddKeyBase("faces");
 	
@@ -1239,7 +1187,7 @@ void CEditableBrush::SaveToKeyValues(kvkeybase_t* pSection)
 }
 
 // stores object in keyvalues
-bool CEditableBrush::LoadFromKeyValues(kvkeybase_t* pSection)
+bool CBrushPrimitive::LoadFromKeyValues(kvkeybase_t* pSection)
 {
 	kvkeybase_t* pFacesSec = pSection->FindKeyBase("faces", KV_FLAG_SECTION);
 	
@@ -1298,7 +1246,7 @@ bool CEditableBrush::LoadFromKeyValues(kvkeybase_t* pSection)
 
 /*
 // called when whole level builds
-void CEditableBrush::BuildObject(level_build_data_t* pLevelBuildData)
+void CBrushPrimitive::BuildObject(level_build_data_t* pLevelBuildData)
 {
 	bool bMakeOccluder = false;
 	bool bOccluderNotAllFaces = false;
@@ -1359,9 +1307,9 @@ void CEditableBrush::BuildObject(level_build_data_t* pLevelBuildData)
 */
 
 // creates a brush from volume, e.g a selection box
-CEditableBrush* CreateBrushFromVolume(const Volume& volume, IMaterial* material)
+CBrushPrimitive* CreateBrushFromVolume(const Volume& volume, IMaterial* material)
 {
-	CEditableBrush* pBrush = new CEditableBrush;
+	CBrushPrimitive* pBrush = new CBrushPrimitive;
 
 	// define a 6 planes
 	for(int i = 0; i < 6; i++)

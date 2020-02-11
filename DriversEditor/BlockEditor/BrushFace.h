@@ -11,6 +11,11 @@
 #include "math/Vector.h"
 #include "math/Plane.h"
 
+enum EBrushFaceFlags
+{
+	BRUSH_FACE_SELECTED = (1 << 0),
+};
+
 class IMaterial;
 
 struct brushFace_t

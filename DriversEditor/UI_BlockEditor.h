@@ -31,7 +31,8 @@ enum EBlockEditorMode
 	BLOCK_MODE_BOX,
 };
 
-class CEditableBrush;
+class CBrushPrimitive;
+struct brushFace_t;
 
 class CUI_BlockEditor : public wxPanel, public CBaseTilebasedEditor
 {
@@ -62,10 +63,14 @@ public:
 
 protected:
 
+	void				ToggleBrushSelection(CBrushPrimitive* brush);
+	void				ToggleFaceSelection(brushFace_t* face);
+	void				CancelSelection();
+
 	wxPanel* m_settingsPanel;
 	CMaterialAtlasList* m_texPanel;
 
-	DkList<CEditableBrush*>		m_brushes;
+	DkList<CBrushPrimitive*>		m_brushes;
 
 	wxPanel*					m_pSettingsPanel;
 	wxTextCtrl*					m_filtertext;
@@ -88,7 +93,8 @@ protected:
 	CEditGizmo					m_centerAxis;
 	CEditGizmo					m_faceAxis;
 
-	CEditableBrush*				m_curBrush;
+	DkList<CBrushPrimitive*>	m_selectedBrushes;
+	DkList<brushFace_t*>		m_selectedFaces;
 };
 
 #endif // UI_BLOCKEDITOR_H

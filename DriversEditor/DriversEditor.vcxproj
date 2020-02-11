@@ -198,7 +198,7 @@ call copy_drvsyn_engine.bat $(ConfigurationName)</Command>
     <ClInclude Include="..\utils\eq_physgen\scriptcompile.h" />
     <ClInclude Include="BaseTilebasedEditor.h" />
     <ClInclude Include="BlockEditor\BrushFace.h" />
-    <ClInclude Include="BlockEditor\EqBrush.h" />
+    <ClInclude Include="BlockEditor\BrushPrimitive.h" />
     <ClInclude Include="CommandAccessor.h" />
     <ClInclude Include="..\public\ConCommand.h" />
     <ClInclude Include="..\public\ConCommandBase.h" />
@@ -329,7 +329,7 @@ call copy_drvsyn_engine.bat $(ConfigurationName)</Command>
     <ClCompile Include="..\public\Utils\GeomTools.cpp" />
     <ClCompile Include="..\shared_engine\physics\BulletShapeCache.cpp" />
     <ClCompile Include="BaseTilebasedEditor.cpp" />
-    <ClCompile Include="BlockEditor\EqBrush.cpp" />
+    <ClCompile Include="BlockEditor\BrushPrimitive.cpp" />
     <ClCompile Include="EditorActionHistory.cpp" />
     <ClCompile Include="EditorLevel.cpp" />
     <ClCompile Include="EditorMain.cpp" />
