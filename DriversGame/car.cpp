@@ -120,6 +120,9 @@ const float STEERING_SPEED_REDUCE_CURVE = 1.25f;
 const float STEERING_REDUCE_SPEED_MIN	= 80.0f;
 const float STEERING_REDUCE_SPEED_MAX	= 160.0f;
 
+const float STEERING_SLIP_FORWARD_CORRECTION = 0.20f;
+const float STEERING_SLIP_REVERSE_CORRECTION = 0.25f;
+
 const float EXTEND_STEER_SPEED_MULTIPLIER = 1.75f;
 const float STEER_CENTER_SPEED_MULTIPLIER = 1.75f;
 
@@ -1977,8 +1980,14 @@ void CCar::UpdateVehiclePhysics(float delta)
 				{
 					float fSlipAngle = -atan2f( dot(wheelSlipForceDir,  wheelVelAtPoint ), fabs( dot(wheelForward, wheelVelAtPoint ) ) ) ;
 
-					if(isSteerWheel && wheelPitchSpeed > 0.1f)
-						fSlipAngle += m_steering * wheelConf.steerMultipler * 0.25f;
+					if (isSteerWheel)
+					{
+						if (wheelPitchSpeed < -0.1f)
+							fSlipAngle -= m_steering * wheelConf.steerMultipler * STEERING_SLIP_FORWARD_CORRECTION;
+						else
+							fSlipAngle += m_steering * wheelConf.steerMultipler * STEERING_SLIP_REVERSE_CORRECTION;
+					}
+
 
 					wheelSlipOppositeForce = DBSlipAngleToLateralForce( fSlipAngle, fLongitudinalForce, wheel.m_surfparam, *m_slipParams);
 				}
@@ -3758,13 +3767,20 @@ void CCar::UpdateSounds( float fDt )
 
 	if(isCar && m_sounds[CAR_SOUND_SIREN])
 	{
-		if( !IsAlive() && m_sirenDeathTime > 0 && m_conf->visual.sirenType != SERVICE_LIGHTS_NONE )
-		{
-			m_sounds[CAR_SOUND_SIREN]->SetPitch( m_sirenDeathTime / SIREN_SOUND_DEATHTIME );
-			m_sirenDeathTime -= fDt;
+		float deathTime = m_sirenDeathTime;
 
-			if(m_sirenDeathTime <= 0.0f)
+		if( !IsAlive() && deathTime > 0 && m_conf->visual.sirenType != SERVICE_LIGHTS_NONE )
+		{
+			float pitchVal = deathTime / SIREN_SOUND_DEATHTIME;
+
+			m_sounds[CAR_SOUND_SIREN]->SetPitch(pitchVal);
+			m_sounds[CAR_SOUND_SIREN]->SetVolume(clamp(pow(pitchVal, 0.5f), 0.0f, 1.0f));
+			deathTime -= fDt;
+
+			if(deathTime <= 0.0f)
 				m_sirenEnabled = false;
+
+			m_sirenDeathTime = deathTime;
 		}
 		else if(IsAlive())
 			m_sirenDeathTime = SIREN_SOUND_DEATHTIME;
