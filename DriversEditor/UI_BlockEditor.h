@@ -66,6 +66,7 @@ protected:
 	void				ToggleBrushSelection(CBrushPrimitive* brush);
 	void				ToggleFaceSelection(brushFace_t* face);
 	void				CancelSelection();
+	void				RecalcSelectionBox();
 
 	wxPanel* m_settingsPanel;
 	CMaterialAtlasList* m_texPanel;
@@ -93,6 +94,7 @@ protected:
 	CEditGizmo					m_centerAxis;
 	CEditGizmo					m_faceAxis;
 
+	BoundingBox					m_selectionBox;
 	DkList<CBrushPrimitive*>	m_selectedBrushes;
 	DkList<brushFace_t*>		m_selectedFaces;
 };

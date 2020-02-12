@@ -217,10 +217,6 @@ void winding_t::CalculateTextureCoordinates()
 		//vertices[i].tangent = normalize(vertices[i].tangent);
 		//vertices[i].binormal = normalize(vertices[i].binormal);
 		vertices[i].normal = normalize(vertices[i].normal);
-
-		//debugoverlay->Line3D(vertices[i].position, vertices[i].position + vertices[i].tangent*10,ColorRGBA(1,0,0,1),ColorRGBA(1,0,0,1),10);
-		//debugoverlay->Line3D(vertices[i].position, vertices[i].position + vertices[i].binormal*10,ColorRGBA(0,1,0,1),ColorRGBA(0,1,0,1),10);
-		//debugoverlay->Line3D(vertices[i].position, vertices[i].position + vertices[i].normal*10,ColorRGBA(0,0,1,1),ColorRGBA(0,0,1,1),10);
 	}
 }
 
@@ -263,14 +259,6 @@ bool winding_t::SortVerticesAsTriangleList()
 					fSmallestAngle	= fAngle;
 					nSmallestIdx	= j;
 				}
-				/*
-				Vector3D checkIVS = normalize(vertices[j].position - vertices[i].position);
-
-				//if(dot(a, checkIVS) < 0.0f)
-				{
-					Msg("NOT A CONVEX POLYGON (%g)\n", dot(a, checkIVS));
-					//return false;
-				}*/
 			}
 		}
 

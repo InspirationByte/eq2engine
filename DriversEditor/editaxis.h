@@ -21,6 +21,8 @@ enum EAxisSelectionFlags
 	AXIS_X = (1 << 0),
 	AXIS_Y = (1 << 1),
 	AXIS_Z = (1 << 2),
+
+	AXIS_ALL = AXIS_X | AXIS_Y | AXIS_Z
 };
 
 inline int _wrapIndex(int i, int l)
@@ -131,7 +133,7 @@ public:
 		return identity3();
 	}
 
-	void Draw(float camDist)
+	void Draw(float camDist, int axes = AXIS_ALL)
 	{
 		float fLength = camDist * EDAXIS_SCALE;
 		float fLengthHalf = fLength * 0.5f;
@@ -161,19 +163,19 @@ public:
 
 		meshBuilder.Begin(PRIM_LINES);
 
-		if (m_draggedAxes == 0 || (m_draggedAxes & AXIS_X))
+		if ((axes & AXIS_X) && m_draggedAxes == 0 || (m_draggedAxes & AXIS_X))
 		{
 			meshBuilder.Color3f(1, 0, 0);
 			meshBuilder.Line3fv(m_position, xPos);
 		}
 
-		if (m_draggedAxes == 0 || (m_draggedAxes & AXIS_Y))
+		if ((axes & AXIS_Y) && m_draggedAxes == 0 || (m_draggedAxes & AXIS_Y))
 		{
 			meshBuilder.Color3f(0, 1, 0);
 			meshBuilder.Line3fv(m_position, yPos);
 		}
 
-		if (m_draggedAxes == 0 || (m_draggedAxes & AXIS_Z))
+		if ((axes & AXIS_Z) && m_draggedAxes == 0 || (m_draggedAxes & AXIS_Z))
 		{
 			meshBuilder.Color3f(0, 0, 1);
 			meshBuilder.Line3fv(m_position, zPos);
@@ -182,21 +184,21 @@ public:
 		meshBuilder.End();
 
 		meshBuilder.Begin(PRIM_TRIANGLES);
-			if (m_draggedAxes == 0 || (m_draggedAxes & AXIS_X) && (m_draggedAxes & AXIS_Z))
+			if ((axes & AXIS_X) && m_draggedAxes == 0 || (m_draggedAxes & AXIS_X) && (m_draggedAxes & AXIS_Z))
 			{
 				meshBuilder.Color4f(1, 0, 1, 0.5f);
 				meshBuilder.Position3fv(m_position); meshBuilder.AdvanceVertex();
 				meshBuilder.Position3fv(m_position + v_z * fLengthHalf); meshBuilder.AdvanceVertex();
 				meshBuilder.Position3fv(m_position + v_x * fLengthHalf); meshBuilder.AdvanceVertex();
 			}
-			if (m_draggedAxes == 0 || (m_draggedAxes & AXIS_Y) && (m_draggedAxes & AXIS_Z))
+			if ((axes & AXIS_Y) && m_draggedAxes == 0 || (m_draggedAxes & AXIS_Y) && (m_draggedAxes & AXIS_Z))
 			{
 				meshBuilder.Color4f(0, 1, 1, 0.5f);
 				meshBuilder.Position3fv(m_position); meshBuilder.AdvanceVertex();
 				meshBuilder.Position3fv(m_position + v_y * fLengthHalf); meshBuilder.AdvanceVertex();
 				meshBuilder.Position3fv(m_position + v_z * fLengthHalf); meshBuilder.AdvanceVertex();
 			}
-			if (m_draggedAxes == 0 || (m_draggedAxes & AXIS_X) && (m_draggedAxes & AXIS_Y))
+			if ((axes & AXIS_Z) && m_draggedAxes == 0 || (m_draggedAxes & AXIS_X) && (m_draggedAxes & AXIS_Y))
 			{
 				meshBuilder.Color4f(1, 0, 0, 0.5f);
 				meshBuilder.Position3fv(m_position); meshBuilder.AdvanceVertex();
@@ -221,19 +223,19 @@ public:
 #undef EDAXISMAKESPRITE
 
 		meshBuilder.Begin(PRIM_TRIANGLES);
-		if (m_draggedAxes == 0 || (m_draggedAxes & AXIS_X))
+			if ((axes & AXIS_X) && m_draggedAxes == 0 || (m_draggedAxes & AXIS_X))
 			{
 				meshBuilder.Color4f(1, 0, 0, 0.5f);
 				meshBuilder.Quad3(quadPointsX[0], quadPointsX[1], quadPointsX[2], quadPointsX[3]);
 			}
 
-			if (m_draggedAxes == 0 || (m_draggedAxes & AXIS_Y))
+			if ((axes & AXIS_Y) && m_draggedAxes == 0 || (m_draggedAxes & AXIS_Y))
 			{
 				meshBuilder.Color4f(0, 1, 0, 0.5f);
 				meshBuilder.Quad3(quadPointsY[0], quadPointsY[1], quadPointsY[2], quadPointsY[3]);
 			}
 
-			if (m_draggedAxes == 0 || (m_draggedAxes & AXIS_Z))
+			if ((axes & AXIS_Z) && m_draggedAxes == 0 || (m_draggedAxes & AXIS_Z))
 			{
 				meshBuilder.Color4f(0, 0, 1, 0.5f);
 				meshBuilder.Quad3(quadPointsZ[0], quadPointsZ[1], quadPointsZ[2], quadPointsZ[3]);

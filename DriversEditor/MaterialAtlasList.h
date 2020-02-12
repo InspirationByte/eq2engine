@@ -71,7 +71,7 @@ class CMaterialAtlasList : public wxPanel, CGenericImageListRenderer<matAtlasEle
 public:
 	CMaterialAtlasList(wxWindow* parent);
 
-	void					ReloadMaterialList();
+	void					ReloadMaterialList(bool allowAtlases = true);
 
 	int						GetSelectedAtlas() const;
 	IMaterial*				GetSelectedMaterial() const;
@@ -115,6 +115,8 @@ protected:
 	int						m_nPreviewSize;
 
 	IEqSwapChain*			m_swapChain;
+
+	bool					m_allowAtlases;
 };
 
 #endif // MATERIALATLASLIST_H

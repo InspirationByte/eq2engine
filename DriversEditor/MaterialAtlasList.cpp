@@ -228,8 +228,10 @@ void CMaterialAtlasList::Redraw()
 	}
 }
 
-void CMaterialAtlasList::ReloadMaterialList()
+void CMaterialAtlasList::ReloadMaterialList(bool allowAtlases)
 {
+	m_allowAtlases = allowAtlases;
+
 	// reset
 	m_mouseOver = -1;
 	m_selection = -1;
@@ -299,30 +301,32 @@ void CMaterialAtlasList::UpdateAndFilterList()
 		// has atlas?
 		if (m_materialslist[i].atlas)
 		{
-			CTextureAtlas* atl = m_materialslist[i].atlas;
-
-			// enumerate all atlas entries and add them
-			for (int j = 0; j < atl->GetEntryCount(); j++)
+			if (m_allowAtlases)
 			{
-				TexAtlasEntry_t* entry = atl->GetEntry(j);
+				CTextureAtlas* atl = m_materialslist[i].atlas;
 
-				// try filter atlas entries along with material path
-				if (m_filter.Length() > 0)
+				// enumerate all atlas entries and add them
+				for (int j = 0; j < atl->GetEntryCount(); j++)
 				{
-					EqString matName(m_materialslist[i].material->GetName());
-					EqString entryName(entry->name);
+					TexAtlasEntry_t* entry = atl->GetEntry(j);
 
-					int foundIndex = matName.Find(m_filter.c_str());
-					int foundEntry = entryName.Find(m_filter.c_str());
+					// try filter atlas entries along with material path
+					if (m_filter.Length() > 0)
+					{
+						EqString matName(m_materialslist[i].material->GetName());
+						EqString entryName(entry->name);
 
-					if (foundIndex == -1 && foundEntry == -1)
-						continue;
+						int foundIndex = matName.Find(m_filter.c_str());
+						int foundEntry = entryName.Find(m_filter.c_str());
+
+						if (foundIndex == -1 && foundEntry == -1)
+							continue;
+					}
+
+					// add material with atlas entry
+					m_filteredList.append(matAtlasElem_t(entry, j, m_materialslist[i].material));
 				}
-
-				// add material with atlas entry
-				m_filteredList.append(matAtlasElem_t(entry, j, m_materialslist[i].material));
 			}
-
 		}
 		else // just add material
 		{
