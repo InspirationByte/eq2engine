@@ -718,7 +718,9 @@ void CMainWindow::NotifyUpdate()
 
 void CMainWindow::OnHistoryEvent(CUndoableObject* undoable, int eventType)
 {
-	m_selectedTool->OnHistoryEvent(undoable, eventType);
+	for(int i = 0; i < m_tools.numElem(); i++)
+		m_tools[i]->OnHistoryEvent(undoable, eventType);
+
 	NotifyUpdate();
 }
 

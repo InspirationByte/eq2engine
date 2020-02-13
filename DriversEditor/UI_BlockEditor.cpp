@@ -402,6 +402,7 @@ void CUI_BlockEditor::ProcessMouseEvents(wxMouseEvent& event)
 
 	BoundingBox& modeBox = m_mode == BLOCK_MODE_BOX ? m_creationBox : m_selectionBox;
 
+	// pick the box plane for dragging
 	{
 		BoundingBox bbox = modeBox;
 		bbox.Fix();
@@ -426,6 +427,7 @@ void CUI_BlockEditor::ProcessMouseEvents(wxMouseEvent& event)
 
 	if (m_mode == BLOCK_MODE_READY && !event.Dragging())
 	{
+		// selection of brushes and faces
 		if (event.ControlDown() && event.ButtonIsDown(wxMOUSE_BTN_LEFT) || event.ButtonIsDown(wxMOUSE_BTN_RIGHT))
 		{
 			CBrushPrimitive* nearestBrush = nullptr;
@@ -455,10 +457,6 @@ void CUI_BlockEditor::ProcessMouseEvents(wxMouseEvent& event)
 		}
 
 	}
-	else if (m_mode == BLOCK_MODE_BOX)
-	{
-
-	}
 
 	CBaseTilebasedEditor::ProcessMouseEvents(event);
 
@@ -468,6 +466,23 @@ void CUI_BlockEditor::ProcessMouseEvents(wxMouseEvent& event)
 
 void CUI_BlockEditor::OnKey(wxKeyEvent& event, bool bDown)
 {
+	if (bDown)
+		return;
+
+	if (m_selectedBrushes.numElem())
+	{
+		//if(m_mode == BLOCK_MODE_READY)
+
+		if (event.GetRawKeyCode() == 'G')
+		{
+			m_mode = BLOCK_MODE_TRANSLATE;
+		}
+		else if (event.GetRawKeyCode() == 'R')
+		{
+			m_mode = BLOCK_MODE_READY;
+		}
+	}
+
 	if (m_mode == BLOCK_MODE_BOX)
 	{
 		if (event.GetKeyCode() == WXK_RETURN)
@@ -478,27 +493,35 @@ void CUI_BlockEditor::OnKey(wxKeyEvent& event, bool bDown)
 				return;
 			}
 
-			BoundingBox bbox = m_creationBox;
-			bbox.Fix();
+			if (m_selectedTool == BlockEdit_Brush)
+			{
+				// Make a brush
+				BoundingBox bbox = m_creationBox;
+				bbox.Fix();
 
-			Volume vol;
-			vol.LoadBoundingBox(bbox.maxPoint, bbox.minPoint, true);
+				Volume vol;
+				vol.LoadBoundingBox(bbox.maxPoint, bbox.minPoint, true);
 
-			CBrushPrimitive* brush = CreateBrushFromVolume(vol, m_texPanel->GetSelectedMaterial());
+				CBrushPrimitive* brush = CreateBrushFromVolume(vol, m_texPanel->GetSelectedMaterial());
+				m_brushes.append(brush);
+			}
+			else if (m_selectedTool == BlockEdit_Polygon)
+			{
+				// make a polygon
+			}
 
-			m_brushes.append(brush);
 			m_mode = BLOCK_MODE_READY;
 		}
-		else if (event.GetKeyCode() == WXK_ESCAPE)
-		{
-			m_mode = BLOCK_MODE_READY;
-		}
+	}
+
+	if (m_mode != BLOCK_MODE_READY && event.GetKeyCode() == WXK_ESCAPE)
+	{
+		m_mode = BLOCK_MODE_READY;
+		return;
 	}
 
 	if (event.GetKeyCode() == WXK_ESCAPE)
-	{
 		CancelSelection();
-	}
 }
 
 void CUI_BlockEditor::OnRender()
@@ -511,44 +534,53 @@ void CUI_BlockEditor::OnRender()
 
 	materials->SetMatrix(MATRIXMODE_WORLD, identity4());
 
-	ColorRGBA ambColor = materials->GetAmbientColor();
-
-	for (int i = 0; i < m_brushes.numElem(); i++)
+	// TODO: draw region brushes
 	{
-		CBrushPrimitive* brush = m_brushes[i];
-		brush->Render(0);
+		ColorRGBA ambColor = materials->GetAmbientColor();
 
-		materials->SetAmbientColor(ambColor);
+		for (int i = 0; i < m_brushes.numElem(); i++)
+		{
+			CBrushPrimitive* brush = m_brushes[i];
+			brush->Render(0);
+
+			materials->SetAmbientColor(ambColor);
+		}
 	}
 
-	for (int i = 0; i < m_selectedBrushes.numElem(); i++)
+	// Draw selection
 	{
-		CBrushPrimitive* brush = m_selectedBrushes[i];
-		brush->RenderGhost();
+		for (int i = 0; i < m_selectedBrushes.numElem(); i++)
+		{
+			CBrushPrimitive* brush = m_selectedBrushes[i];
+			brush->RenderGhost();
+		}
+
+		if (m_selectedBrushes.numElem())
+		{
+			float clength = length(m_centerAxis.m_position - g_camera_target);
+			float flength = length(m_faceAxis.m_position - g_camera_target);
+
+			debugoverlay->Box3D(m_selectionBox.minPoint, m_selectionBox.maxPoint, ColorRGBA(1, 1, 1, 1), 0.0f);
+
+			if (m_mode == BLOCK_MODE_TRANSLATE || m_mode == BLOCK_MODE_ROTATE)
+				m_centerAxis.Draw(clength);
+			else if (m_draggablePlane != -1)
+				m_faceAxis.Draw(flength, AXIS_Z);
+		}
 	}
 
-	if (m_selectedBrushes.numElem())
-	{
-		float clength = length(m_centerAxis.m_position - g_camera_target);
-
-		debugoverlay->Box3D(m_selectionBox.minPoint, m_selectionBox.maxPoint, ColorRGBA(1, 1, 1, 1), 0.0f);
-
-		if (m_draggablePlane != -1)
-			m_faceAxis.Draw(clength, AXIS_Z);
-		
-		//m_centerAxis.Draw(clength);
-	}
 
 	if (m_mode == BLOCK_MODE_BOX)
 	{
 		float clength = length(m_centerAxis.m_position - g_camera_target);
+		float flength = length(m_faceAxis.m_position - g_camera_target);
 
 		debugoverlay->Box3D(m_creationBox.minPoint, m_creationBox.maxPoint, ColorRGBA(1, 1, 1, 1), 0.0f);
 		
 		if (m_draggablePlane != -1)
-			m_faceAxis.Draw(clength, AXIS_Z);
-		else
-			m_centerAxis.Draw(clength);
+			m_faceAxis.Draw(flength, AXIS_Z);
+
+		//m_centerAxis.Draw(clength);
 	}
 
 	materials->SetMatrix(MATRIXMODE_WORLD, identity4());

@@ -29,6 +29,9 @@ enum EBlockEditorMode
 {
 	BLOCK_MODE_READY = 0,
 	BLOCK_MODE_BOX,
+
+	BLOCK_MODE_TRANSLATE,
+	BLOCK_MODE_ROTATE,
 };
 
 class CBrushPrimitive;
