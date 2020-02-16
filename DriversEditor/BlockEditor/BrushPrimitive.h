@@ -125,9 +125,9 @@ public:
 	bool							IsWindingIntersectsBrush(winding_t* pWinding);
 	bool							IsTouchesBrush(winding_t* pWinding);
 
-	int								GetFaceCount() {return m_faces.numElem();}
-	brushFace_t*					GetFace(int nFace) {return &m_faces[nFace];}
-	winding_t*						GetFacePolygon(int nFace) {return &m_polygons[nFace];}
+	int								GetFaceCount() const				{return m_faces.numElem();}
+	brushFace_t*					GetFace(int nFace) const			{return (brushFace_t*)&m_faces[nFace];}
+	winding_t*						GetFacePolygon(int nFace) const		{return (winding_t*)&m_polygons[nFace];}
 
 	void							UpdateRenderData();
 	void							UpdateRenderBuffer();
@@ -142,7 +142,10 @@ public:
 	bool							CreateFromPlanes();
 
 	// copies this object
-	CBrushPrimitive*					CloneObject();
+	CBrushPrimitive*				CloneObject();
+
+	void							Translate(const Vector3D& offset);
+	void							Scale(const Vector3D &scale, bool use_center, const Vector3D &scale_center);
 
 protected:
 

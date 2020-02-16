@@ -1845,7 +1845,7 @@ void CUI_BuildingConstruct::OnRender()
 	if (m_selectedRegion)
 	{
 		CHeightTileFieldRenderable* field = m_selectedRegion->m_heightfield[0];
-		field->DebugRender(false, m_mouseOverTileHeight);
+		field->DebugRender(false, m_mouseOverTileHeight, GridSize());
 	}
 
 	if( m_selBuildings.numElem() > 0 )

@@ -130,7 +130,7 @@ void CBaseTilebasedEditor::OnRender()
 			}
 		}*/
 
-		thisField->DebugRender(g_pMainFrame->IsHfieldHelpersDrawn(), m_mouseOverTileHeight);
+		thisField->DebugRender(g_pMainFrame->IsHfieldHelpersDrawn(), m_mouseOverTileHeight, GridSize());
 	}
 }
 

@@ -327,7 +327,7 @@ void CUI_OccluderEditor::OnRender()
 	{
 		CHeightTileFieldRenderable* field = m_selectedRegion->m_heightfield[0];
 
-		field->DebugRender(false,m_mouseOverTileHeight);
+		field->DebugRender(false,m_mouseOverTileHeight, GridSize());
 
 		// TODO: all occluders:
 		occluderQuadVerts.resize( m_selectedRegion->m_occluders.numElem()*6 );

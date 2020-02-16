@@ -56,7 +56,7 @@ public:
 	Vector3D PerformTranslate(const Vector3D& rayStart, const Vector3D& rayDir, const Vector3D& planeNormal, int initAxes)
 	{
 		// movement plane
-		Plane pl(planeNormal, -dot(planeNormal, m_position));
+		Plane pl(planeNormal, -dot(planeNormal, m_position), true);
 
 		Vector3D point;
 		if (pl.GetIntersectionWithRay(rayStart, rayDir, point))
@@ -105,7 +105,7 @@ public:
 		Vector3D planeEdAxis = edAxis * sign(edAxis);
 
 		// movement plane
-		Plane pl(planeEdAxis, -dot(planeEdAxis, m_position));
+		Plane pl(planeEdAxis, -dot(planeEdAxis, m_position), true);
 
 		Vector3D point;
 		if (pl.GetIntersectionWithRay(rayStart, rayDir, point))

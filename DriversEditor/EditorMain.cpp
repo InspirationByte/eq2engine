@@ -399,6 +399,31 @@ CMainWindow::CMainWindow( wxWindow* parent, wxWindowID id, const wxString& title
 	m_pRenderPanel->Connect(wxEVT_MOTION, (wxObjectEventFunction)&CMainWindow::ProcessMouseEvents, NULL, this);
 	m_pRenderPanel->Connect(wxEVT_MOUSEWHEEL, (wxObjectEventFunction)&CMainWindow::ProcessMouseEvents, NULL, this);
 
+	/*
+	wxWindow* pclComponent = m_pRenderPanel;
+	if (pclComponent)
+	{
+		pclComponent->Connect(wxID_ANY,
+			wxEVT_KEY_DOWN,
+			wxKeyEventHandler(MyDialog::onKeyDown),
+			(wxObject*)NULL,
+			this);
+
+		wxWindowListNode* pclNode = pclComponent->GetChildren().GetFirst();
+		while (pclNode)
+		{
+			wxWindow* pclChild = pclNode->GetData();
+			this->connectKeyDownEvent(pclChild);
+
+			pclNode = pclNode->GetNext();
+	}
+	*/
+	
+	Connect(wxEVT_CHAR, (wxObjectEventFunction)&CMainWindow::ProcessKeyboardDownEvents, NULL, this);
+	Connect(wxEVT_KEY_DOWN, (wxObjectEventFunction)&CMainWindow::ProcessKeyboardDownEvents, NULL, this);
+	Connect(wxEVT_KEY_UP, (wxObjectEventFunction)&CMainWindow::ProcessKeyboardUpEvents, NULL, this);
+
+	m_pRenderPanel->Connect(wxEVT_CHAR, (wxObjectEventFunction)&CMainWindow::ProcessKeyboardDownEvents, NULL, this);
 	m_pRenderPanel->Connect(wxEVT_KEY_DOWN, (wxObjectEventFunction)&CMainWindow::ProcessKeyboardDownEvents, NULL, this);
 	m_pRenderPanel->Connect(wxEVT_KEY_UP, (wxObjectEventFunction)&CMainWindow::ProcessKeyboardUpEvents, NULL, this);
 

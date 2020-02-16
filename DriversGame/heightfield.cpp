@@ -1022,7 +1022,7 @@ void ListQuad(const Vector3D &v1, const Vector3D &v2, const Vector3D& v3, const 
 	verts.append(Vertex3D_t(v1, vec2_zero, color));
 }
 
-void DrawGridH(int size, int count, const Vector3D& pos, const ColorRGBA &color, bool for2D)
+void DrawGridH(float size, int count, const Vector3D& pos, const ColorRGBA &color, bool for2D)
 {
 	int grid_lines = count;
 
@@ -1033,13 +1033,15 @@ void DrawGridH(int size, int count, const Vector3D& pos, const ColorRGBA &color,
 
 	materials->BindMaterial(materials->GetDefaultMaterial());
 
+	int numOfLines = grid_lines / size;
+
 	CMeshBuilder meshBuilder(materials->GetDynamicMesh());
 	meshBuilder.Begin(PRIM_LINES);
 
-		for(int i = 0; i <= grid_lines / size;i++)
+		for(int i = 0; i <= numOfLines;i++)
 		{
 			int max_grid_size = grid_lines;
-			int grid_step = size*i;
+			float grid_step = size*float(i);
 
 			meshBuilder.Color4fv(color);
 
@@ -1060,7 +1062,7 @@ void DrawGridH(int size, int count, const Vector3D& pos, const ColorRGBA &color,
 	meshBuilder.End();
 }
 
-void CHeightTileField::DebugRender(bool bDrawTiles, float gridHeight)
+void CHeightTileField::DebugRender(bool bDrawTiles, float gridHeight, float gridSize)
 {
 	if(!m_sizew || !m_sizeh)
 		return;
@@ -1074,9 +1076,13 @@ void CHeightTileField::DebugRender(bool bDrawTiles, float gridHeight)
 		position + Vector3D(m_sizew*HFIELD_POINT_SIZE*0.5f, gridHeight, m_sizew*HFIELD_POINT_SIZE*0.5f) - halfsize,
 				ColorRGBA(1.0f, 1.0f, 1.0f, 0.25f), false);
 
-	DrawGridH(1, m_sizew * 2,
-		position + Vector3D(m_sizew*HFIELD_POINT_SIZE*0.5f, gridHeight, m_sizew*HFIELD_POINT_SIZE*0.5f) - halfsize,
-		ColorRGBA(1.0f, 1.0f, 1.0f, 0.1f), false);
+	if (gridSize < HFIELD_POINT_SIZE)
+	{
+		DrawGridH(gridSize, m_sizew * 2,
+			position + Vector3D(m_sizew*HFIELD_POINT_SIZE*0.5f, gridHeight, m_sizew*HFIELD_POINT_SIZE*0.5f) - halfsize,
+			ColorRGBA(1.0f, 1.0f, 1.0f, 0.1f), false);
+	}
+
 
 	if(!bDrawTiles)
 		return;

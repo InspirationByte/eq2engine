@@ -214,7 +214,7 @@ public:
 
 	bool						IsEmpty();
 
-	void						DebugRender(bool bDrawTiles, float gridHeight);
+	void						DebugRender(bool bDrawTiles, float gridHeight, float gridSize);
 
 	void						GetDecalPolygons( decalPrimitives_t& polys, occludingFrustum_t* frustum);
 

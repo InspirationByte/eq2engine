@@ -1836,7 +1836,7 @@ void CUI_LevelModels::OnRender()
 	materials->SetMatrix(MATRIXMODE_WORLD, identity4());
 
 	if(m_selectedRegion)
-		m_selectedRegion->m_heightfield[0]->DebugRender(false, m_mouseOverTileHeight);
+		m_selectedRegion->m_heightfield[0]->DebugRender(false, m_mouseOverTileHeight, GridSize());
 
 	if(m_editMode == MEDIT_PLACEMENT && !m_isSelecting)
 	{

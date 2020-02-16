@@ -262,7 +262,7 @@ void CUI_RoadEditor::OnRender()
 	{
 		CHeightTileFieldRenderable* field = m_selectedRegion->m_heightfield[0];
 
-		field->DebugRender(false, m_mouseOverTileHeight);
+		field->DebugRender(false, m_mouseOverTileHeight, GridSize());
 
 		//materials->BindMaterial(g_helpersMaterial);
 		

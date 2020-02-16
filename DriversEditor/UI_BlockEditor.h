@@ -32,6 +32,7 @@ enum EBlockEditorMode
 
 	BLOCK_MODE_TRANSLATE,
 	BLOCK_MODE_ROTATE,
+	BLOCK_MODE_SCALE
 };
 
 class CBrushPrimitive;
@@ -64,19 +65,22 @@ public:
 
 	void				Update_Refresh();
 
+	float				GridSize() const;
+
 protected:
 
 	void				ToggleBrushSelection(CBrushPrimitive* brush);
 	void				ToggleFaceSelection(brushFace_t* face);
 	void				CancelSelection();
+	void				DeleteSelection();
 	void				RecalcSelectionBox();
 
-	wxPanel* m_settingsPanel;
 	CMaterialAtlasList* m_texPanel;
 
-	DkList<CBrushPrimitive*>		m_brushes;
+	DkList<CBrushPrimitive*>	m_brushes;
 
 	wxPanel*					m_pSettingsPanel;
+	wxChoice*					m_gridSize;
 	wxTextCtrl*					m_filtertext;
 	wxTextCtrl*					m_pTags;
 
@@ -100,6 +104,8 @@ protected:
 	BoundingBox					m_selectionBox;
 	DkList<CBrushPrimitive*>	m_selectedBrushes;
 	DkList<brushFace_t*>		m_selectedFaces;
+
+	Vector3D					m_dragOffs;
 };
 
 #endif // UI_BLOCKEDITOR_H

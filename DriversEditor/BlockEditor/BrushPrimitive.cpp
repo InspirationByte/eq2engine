@@ -576,7 +576,6 @@ void CBrushPrimitive::Render(int nViewRenderFlags)
 void CBrushPrimitive::RenderGhost()
 {
 	materials->SetCullMode(CULL_BACK);
-	materials->SetMatrix(MATRIXMODE_WORLD, identity4());
 
 	g_pShaderAPI->SetVertexFormat(g_worldGlobals.levelObjectVF);
 	g_pShaderAPI->SetVertexBuffer(m_pVB, 0);
@@ -659,19 +658,19 @@ void CBrushPrimitive::UpdateRenderBuffer()
 	}
 }
 
-/*
 // basic mesh modifications
-void CBrushPrimitive::Translate(Vector3D &position)
+void CBrushPrimitive::Translate(const Vector3D& offset)
 {
-	for(int i = 0; i < faces.numElem(); i++)
+	for(int i = 0; i < m_faces.numElem(); i++)
 	{
-		faces[i].Plane.offset -= dot(faces[i].Plane.normal, position);
+		m_faces[i].Plane.offset -= dot(m_faces[i].Plane.normal, offset);
 	}
 
 	UpdateRenderData();
 }
 
-void CBrushPrimitive::Scale(Vector3D &scale, bool use_center, Vector3D &scale_center)
+
+void CBrushPrimitive::Scale(const Vector3D &scale, bool use_center, const Vector3D &scale_center)
 {
 	if(scale == vec3_zero)
 		return;
@@ -679,7 +678,7 @@ void CBrushPrimitive::Scale(Vector3D &scale, bool use_center, Vector3D &scale_ce
 	if(scale == Vector3D(1))
 		return;
 
-	Vector3D bbox_center = bbox.GetCenter();
+	Vector3D bbox_center = m_bbox.GetCenter();
 
 	if(use_center)
 		bbox_center = scale_center;
@@ -692,28 +691,34 @@ void CBrushPrimitive::Scale(Vector3D &scale, bool use_center, Vector3D &scale_ce
 	if(scale.z < 0)
 		invert = !invert;
 
-	for(int i = 0; i < polygons.numElem(); i++)
+	for(int i = 0; i < m_polygons.numElem(); i++)
 	{
-		for(int j = 0; j < polygons[i].vertices.numElem(); j++)
+		winding_t& poly = m_polygons[i];
+		brushFace_t& face = m_faces[i];
+
+		for(int j = 0; j < m_polygons[i].vertices.numElem(); j++)
 		{
-			polygons[i].vertices[j].position -= bbox_center;
-			polygons[i].vertices[j].position *= scale;
-			polygons[i].vertices[j].position += bbox_center;
+			lmodeldrawvertex_t& vert = poly.vertices[j];
+
+			vert.position -= bbox_center;
+			vert.position *= scale;
+			vert.position += bbox_center;
 		}
 
 		// redefine planes
-		faces[i].Plane = Plane(polygons[i].vertices[0].position, polygons[i].vertices[1].position, polygons[i].vertices[2].position, true);
+		face.Plane = Plane(poly.vertices[0].position, poly.vertices[1].position, poly.vertices[2].position, true);
 
 		if(invert)
 		{
-			faces[i].Plane.normal = -faces[i].Plane.normal;
-			faces[i].Plane.offset = -faces[i].Plane.offset;
+			face.Plane.normal = -face.Plane.normal;
+			face.Plane.offset = -face.Plane.offset;
 		}
 	}
 
 	UpdateRenderData();
 }
 
+/*
 void CBrushPrimitive::Rotate(Vector3D &rotation_angles, bool use_center, Vector3D &rotation_center)
 {
 	Vector3D bbox_center = bbox.GetCenter();
@@ -1310,6 +1315,8 @@ CBrushPrimitive* CreateBrushFromVolume(const Volume& volume, IMaterial* material
 
 		// make the N plane from current iteration
 		face.Plane = volume.GetPlane(i);
+		face.Plane.normal *= -1.0f;
+		face.Plane.offset *= -1.0f;
 
 		// make the U and V texture axes
 		VectorVectors(face.Plane.normal, face.UAxis.normal, face.VAxis.normal);

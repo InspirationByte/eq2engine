@@ -360,7 +360,7 @@ void CUI_PrefabManager::OnRender()
 	if(m_selectedRegion)
 	{
 		CHeightTileFieldRenderable* field = m_selectedRegion->m_heightfield[0];
-		field->DebugRender(false, m_mouseOverTileHeight);
+		field->DebugRender(false, m_mouseOverTileHeight, GridSize());
 
 		int placementHeight = GetPlacementHeight(field->GetTile(m_mouseOverTile.x, m_mouseOverTile.y));
 

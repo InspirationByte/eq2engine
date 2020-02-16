@@ -30,6 +30,8 @@ public:
 
 	virtual void				MouseEventOnTile( wxMouseEvent& event, hfieldtile_t* tile, int tx, int ty, const Vector3D& ppos ) = 0;
 
+	virtual float				GridSize() const { return HFIELD_POINT_SIZE; }
+
 protected:
 	CEditorLevelRegion*			m_selectedRegion;
 	IVector2D					m_mouseOverTile;

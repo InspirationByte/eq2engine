@@ -13,17 +13,49 @@
 
 #include "MaterialAtlasList.h"
 
-float SnapFloat(int grid_spacing, float val)
+const float s_GridSizes[]
+{
+	HFIELD_HEIGHT_STEP,
+	HFIELD_HEIGHT_STEP * 2.5,
+	HFIELD_HEIGHT_STEP * 5,
+	HFIELD_HEIGHT_STEP * 10,	// default
+	HFIELD_HEIGHT_STEP * 20,
+	HFIELD_HEIGHT_STEP * 40,
+};
+
+const int s_numGridSizes = sizeof(s_GridSizes) / sizeof(float);
+const int s_defaultGridSelection = 3;
+
+//--------------------------------------------------------------------------------------
+// Some math helpers
+
+float SnapFloat(float grid_spacing, float val)
 {
 	return round(val / grid_spacing) * grid_spacing;
 }
 
-Vector3D SnapVector(int grid_spacing, const Vector3D &vector)
+Vector3D SnapVector(float grid_spacing, const Vector3D &vector)
 {
 	return Vector3D(
 		SnapFloat(grid_spacing, vector.x),
 		SnapFloat(grid_spacing, vector.y),
 		SnapFloat(grid_spacing, vector.z));
+}
+
+void BoxToVolume(const BoundingBox& bbox, Volume& volume)
+{
+	// use old box
+	BoundingBox conv_box = bbox;
+	conv_box.Fix();
+
+	// make volume
+	volume.LoadBoundingBox(conv_box.minPoint, conv_box.maxPoint, true);
+}
+
+void VolumeToBox(const Volume& volume, BoundingBox& bbox)
+{
+	// make bbox from volume
+	volume.GetBBOXBack(bbox.minPoint, bbox.maxPoint);
 }
 
 //--------------------------------------------------------------------------------------
@@ -57,8 +89,21 @@ CUI_BlockEditor::CUI_BlockEditor(wxWindow* parent) : wxPanel(parent, -1, wxDefau
 
 	bSizer28->Add(bSizer29, 0, wxEXPAND, 5);
 
-	m_settingsPanel = new wxPanel(this, wxID_ANY, wxDefaultPosition, wxSize(120, -1), wxTAB_TRAVERSAL);
-	bSizer28->Add(m_settingsPanel, 0, wxEXPAND | wxALL, 5);
+	wxBoxSizer* bSizer30;
+	bSizer30 = new wxBoxSizer(wxVERTICAL);
+
+	wxString gridSizeChoices[s_numGridSizes];
+
+	// populate grid size
+	for (int i = 0; i < s_numGridSizes; i++)
+		gridSizeChoices[i] = varargs("Grid %.2f", s_GridSizes[i]);
+	
+	m_gridSize = new wxChoice(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, s_numGridSizes, gridSizeChoices, 0);
+	m_gridSize->Select(s_defaultGridSelection);
+
+	bSizer30->Add(m_gridSize, 0, wxALL, 5);
+
+	bSizer28->Add(bSizer30, 0, wxEXPAND, 5);
 
 	m_texPanel = new CMaterialAtlasList(this);
 
@@ -145,6 +190,7 @@ CUI_BlockEditor::CUI_BlockEditor(wxWindow* parent) : wxPanel(parent, -1, wxDefau
 	m_cursorPos = vec3_zero;
 	m_selectedTool = BlockEdit_Selection;
 	m_draggablePlane = -1;
+	m_dragOffs = vec3_zero;
 }
 
 CUI_BlockEditor::~CUI_BlockEditor()
@@ -156,7 +202,7 @@ void CUI_BlockEditor::ConstructToolbars(wxBoxSizer* addTo)
 {
 	SetSizer(new wxBoxSizer(wxVERTICAL));
 
-	wxToolBar *pToolBar = new wxToolBar(this, -1, wxDefaultPosition, wxSize(36, 400), wxTB_FLAT | wxTB_NODIVIDER | wxTB_VERTICAL/* | wxTB_HORZ_TEXT*/);//CreateToolBar(wxTB_FLAT | wxTB_NODIVIDER | wxTB_VERTICAL);
+	wxToolBar *pToolBar = new wxToolBar(this, -1, wxDefaultPosition, wxSize(64, 400), wxTB_FLAT | wxTB_NODIVIDER | wxTB_VERTICAL/* | wxTB_HORZ_TEXT*/);//CreateToolBar(wxTB_FLAT | wxTB_NODIVIDER | wxTB_VERTICAL);
 
 	wxBitmap toolBarBitmaps[15];
 
@@ -190,6 +236,12 @@ void CUI_BlockEditor::ConstructToolbars(wxBoxSizer* addTo)
 
 	m_mode = BLOCK_MODE_READY;
 	m_selectedTool = BlockEdit_Selection;
+}
+
+float CUI_BlockEditor::GridSize() const
+{
+	int selectedGridSizeIdx = m_gridSize->GetCurrentSelection();
+	return s_GridSizes[selectedGridSizeIdx];
 }
 
 void CUI_BlockEditor::ProcessAllMenuCommands(wxCommandEvent& event)
@@ -239,7 +291,7 @@ void CUI_BlockEditor::OnFilterTextChanged(wxCommandEvent& event)
 
 void CUI_BlockEditor::MouseEventOnTile(wxMouseEvent& event, hfieldtile_t* tile, int tx, int ty, const Vector3D& ppos)
 {
-	Vector3D cursorPos = SnapVector(1, ppos);
+	Vector3D cursorPos = SnapVector(GridSize(), ppos);
 
 	BoundingBox modeBox = (m_mode == BLOCK_MODE_BOX) ? m_creationBox : m_selectionBox;
 
@@ -349,6 +401,23 @@ void CUI_BlockEditor::CancelSelection()
 
 	m_selectedFaces.clear();
 	m_selectedBrushes.clear();
+	m_mode = BLOCK_MODE_READY;
+	m_draggablePlane = -1;
+}
+
+void CUI_BlockEditor::DeleteSelection()
+{
+	for (int i = 0; i < m_selectedBrushes.numElem(); i++)
+	{
+		CBrushPrimitive* brush = m_selectedBrushes[i];
+
+		// TODO: editor level code
+		if(m_brushes.fastRemove(brush))
+			delete brush;
+	}
+
+	m_selectedBrushes.clear();
+	m_mode = BLOCK_MODE_READY;
 }
 
 void CUI_BlockEditor::RecalcSelectionBox()
@@ -363,6 +432,7 @@ void CUI_BlockEditor::RecalcSelectionBox()
 		m_selectionBox.AddVertex(brush->GetBBoxMaxs());
 	}
 		
+	m_centerAxis.SetProps(identity3(), m_selectionBox.GetCenter());
 }
 
 int VolumeIntersectsRay(const Volume& vol, const Vector3D &start, const Vector3D &dir, Vector3D& intersectionPos)
@@ -404,11 +474,8 @@ void CUI_BlockEditor::ProcessMouseEvents(wxMouseEvent& event)
 
 	// pick the box plane for dragging
 	{
-		BoundingBox bbox = modeBox;
-		bbox.Fix();
-
 		Volume boxVolume;
-		boxVolume.LoadBoundingBox(bbox.minPoint, bbox.maxPoint, true);
+		BoxToVolume(modeBox, boxVolume);
 
 		Vector3D intersectPos;
 		int planeIdx = VolumeIntersectsRay(boxVolume, ray_start, ray_dir, intersectPos);
@@ -421,7 +488,7 @@ void CUI_BlockEditor::ProcessMouseEvents(wxMouseEvent& event)
 			Vector3D r, u;
 			VectorVectors(pl.normal, r, u);
 
-			m_faceAxis.SetProps(!Matrix3x3(-r, -u, -pl.normal), bbox.GetCenter() - pl.normal*pl.Distance(bbox.GetCenter()));
+			m_faceAxis.SetProps(!Matrix3x3(-r, -u, -pl.normal), modeBox.GetCenter() - pl.normal*pl.Distance(modeBox.GetCenter()));
 		}
 	}
 
@@ -450,18 +517,108 @@ void CUI_BlockEditor::ProcessMouseEvents(wxMouseEvent& event)
 				}
 			}
 
-			if (event.ButtonIsDown(wxMOUSE_BTN_LEFT))
-				ToggleBrushSelection(nearestBrush);
-			else if(intersectFace != -1)
-				ToggleFaceSelection(nearestBrush->GetFace(intersectFace));
+			if (nearestBrush)
+			{
+				if (event.ButtonIsDown(wxMOUSE_BTN_LEFT))
+					ToggleBrushSelection(nearestBrush);
+				else if (intersectFace != -1)
+					ToggleFaceSelection(nearestBrush->GetFace(intersectFace));
+			}
+		}
+	}
+
+	float clength = length(m_centerAxis.m_position - g_camera_target);
+	float flength = length(m_faceAxis.m_position - g_camera_target);
+
+	if ((m_mode == BLOCK_MODE_TRANSLATE || m_mode == BLOCK_MODE_ROTATE))
+	{
+		// TODO: use camera parameters
+		Vector3D plane_dir = normalize(m_centerAxis.m_position - g_camera_target);
+
+		int initCenterAxes = m_centerAxis.TestRay(ray_start, ray_dir, clength, true);
+
+		if (event.Dragging())
+		{
+			Vector3D movement = m_centerAxis.PerformTranslate(ray_start, ray_dir, plane_dir, initCenterAxes);
+				
+			m_dragOffs += movement;
+
+			m_centerAxis.m_position += movement;
+			return;
+		}
+		else if (event.ButtonUp())
+		{
+			// do operations
+			if (m_mode == BLOCK_MODE_TRANSLATE)
+			{
+				Vector3D dragOfs = SnapVector(GridSize(), m_dragOffs);
+
+				for (int i = 0; i < m_selectedBrushes.numElem(); i++)
+				{
+					CBrushPrimitive* brush = m_selectedBrushes[i];
+					brush->Translate(dragOfs);
+				}
+			}
+			else if (m_mode == BLOCK_MODE_ROTATE)
+			{
+			
+			}
+
+			RecalcSelectionBox();
+			m_centerAxis.EndDrag();
+			g_pEditorActionObserver->EndAction();
+			m_dragOffs = vec3_zero;
 		}
 
+		return;
+	}
+	else if(m_selectedTool == BlockEdit_Selection && (m_mode == BLOCK_MODE_READY || m_mode == BLOCK_MODE_SCALE) && m_draggablePlane != -1)
+	{
+		int initFaceAxes = m_faceAxis.TestRay(ray_start, ray_dir, clength, false);
+
+		// TODO: use camera parameters
+		Vector3D plane_dir = normalize(m_faceAxis.m_position - g_camera_target);
+
+		if (event.Dragging())
+		{
+			m_mode = BLOCK_MODE_SCALE;
+
+			Vector3D movement = m_faceAxis.PerformTranslate(ray_start, ray_dir, plane_dir, initFaceAxes);
+
+			m_dragOffs += movement;
+
+			m_faceAxis.m_position += movement;
+		}
+		else if (event.ButtonUp())
+		{
+			Volume boxVolume;
+			BoxToVolume(modeBox, boxVolume);
+
+			Plane pl = boxVolume.GetPlane(m_draggablePlane);
+
+			Vector3D dragOfs = SnapVector(GridSize(), m_dragOffs);
+			pl.offset -= dot(pl.normal, dragOfs);
+
+			/*
+			// scale up them all using bounding box
+			for (int i = 0; i < m_selectedBrushes.numElem(); i++)
+			{
+				CBrushPrimitive* brush = m_selectedBrushes[i];
+				brush->Translate(dragOfs);
+			}
+			*/
+
+			m_mode = BLOCK_MODE_READY;
+			RecalcSelectionBox();
+			m_faceAxis.EndDrag();
+			g_pEditorActionObserver->EndAction();
+			m_dragOffs = vec3_zero;
+		}
+
+		return;
 	}
 
 	CBaseTilebasedEditor::ProcessMouseEvents(event);
-
-	if (event.ButtonUp())
-		g_pEditorActionObserver->EndAction();
 }
 
 void CUI_BlockEditor::OnKey(wxKeyEvent& event, bool bDown)
@@ -469,10 +626,16 @@ void CUI_BlockEditor::OnKey(wxKeyEvent& event, bool bDown)
 	if (bDown)
 		return;
 
-	if (m_selectedBrushes.numElem())
+	if (event.GetRawKeyCode() >= '1' && event.GetRawKeyCode() <= '9')
 	{
-		//if(m_mode == BLOCK_MODE_READY)
+		int idx = event.GetRawKeyCode() - '1';
 
+		if(idx < s_numGridSizes)
+			m_gridSize->Select(idx);
+	}
+
+	if (m_selectedBrushes.numElem() && m_mode == BLOCK_MODE_READY)
+	{
 		if (event.GetRawKeyCode() == 'G')
 		{
 			m_mode = BLOCK_MODE_TRANSLATE;
@@ -480,6 +643,10 @@ void CUI_BlockEditor::OnKey(wxKeyEvent& event, bool bDown)
 		else if (event.GetRawKeyCode() == 'R')
 		{
 			m_mode = BLOCK_MODE_READY;
+		}
+		else if (event.GetKeyCode() == WXK_DELETE)
+		{
+			DeleteSelection();
 		}
 	}
 
@@ -496,11 +663,8 @@ void CUI_BlockEditor::OnKey(wxKeyEvent& event, bool bDown)
 			if (m_selectedTool == BlockEdit_Brush)
 			{
 				// Make a brush
-				BoundingBox bbox = m_creationBox;
-				bbox.Fix();
-
 				Volume vol;
-				vol.LoadBoundingBox(bbox.maxPoint, bbox.minPoint, true);
+				BoxToVolume(m_creationBox, vol);
 
 				CBrushPrimitive* brush = CreateBrushFromVolume(vol, m_texPanel->GetSelectedMaterial());
 				m_brushes.append(brush);
@@ -547,20 +711,55 @@ void CUI_BlockEditor::OnRender()
 		}
 	}
 
+	Vector3D dragTranslation = SnapVector(GridSize(), m_dragOffs);
+
 	// Draw selection
 	{
+		// this selection box that can be modified
+		BoundingBox selectionBox = m_selectionBox;
+
+		Volume selectionBoxVolume;
+		BoxToVolume(selectionBox, selectionBoxVolume);
+
+		if (m_mode == BLOCK_MODE_READY)
+		{
+
+		}
+		else if (m_mode == BLOCK_MODE_SCALE)
+		{
+			// modify the plane
+			Plane pl = selectionBoxVolume.GetPlane(m_draggablePlane);
+
+			// move the dragged plane
+			pl.offset -= dot(pl.normal, dragTranslation);
+			selectionBoxVolume.SetupPlane(pl, m_draggablePlane);
+
+			// convert volume to box back; It will be used to calculate the final scale from difference
+			VolumeToBox(selectionBoxVolume, selectionBox);
+		}
+
+		if (m_mode == BLOCK_MODE_TRANSLATE)
+			materials->SetMatrix(MATRIXMODE_WORLD, translate(dragTranslation.x, dragTranslation.y, dragTranslation.z));
+		
 		for (int i = 0; i < m_selectedBrushes.numElem(); i++)
 		{
+			if (m_mode == BLOCK_MODE_SCALE)
+			{
+
+			}
+
 			CBrushPrimitive* brush = m_selectedBrushes[i];
 			brush->RenderGhost();
 		}
 
+		materials->SetMatrix(MATRIXMODE_WORLD, identity4());
 		if (m_selectedBrushes.numElem())
 		{
 			float clength = length(m_centerAxis.m_position - g_camera_target);
 			float flength = length(m_faceAxis.m_position - g_camera_target);
 
-			debugoverlay->Box3D(m_selectionBox.minPoint, m_selectionBox.maxPoint, ColorRGBA(1, 1, 1, 1), 0.0f);
+			// draw selection box
+			debugoverlay->Box3D(selectionBox.minPoint, selectionBox.maxPoint, ColorRGBA(1, 1, 1, 1), 0.0f);
 
 			if (m_mode == BLOCK_MODE_TRANSLATE || m_mode == BLOCK_MODE_ROTATE)
 				m_centerAxis.Draw(clength);
@@ -569,6 +768,7 @@ void CUI_BlockEditor::OnRender()
 		}
 	}
 
+	materials->SetMatrix(MATRIXMODE_WORLD, identity4());
 
 	if (m_mode == BLOCK_MODE_BOX)
 	{
