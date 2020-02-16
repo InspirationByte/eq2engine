@@ -426,6 +426,9 @@ bool CPedestrianAI::GetNextPath(int dir)
 
 				if (nCell != m_prevRoadCell && nCell != m_nextRoadCell)
 				{
+					if(m_curDir != dir)
+						m_cellOffset = Vector2D(RandomFloat(-1.0f, 1.0f), RandomFloat(-1.0f, 1.0f));
+
 					m_prevRoadCell = m_nextRoadCell;
 					m_nextRoadCell = nCell;
 					m_nextRoadTile = nTile;
@@ -468,6 +471,7 @@ const float AI_PEDESTRIAN_CAR_AFRAID_MIN_RADIUS = 2.5f;
 const float AI_PEDESTRIAN_CAR_AFRAID_STRAIGHT_RADIUS = 2.5f;
 const float AI_PEDESTRIAN_CAR_AFRAID_VELOCITY = 1.0f;
 const float AI_PEDESTRIAN_ESCAPE_CHECK_TIME = 0.25f;
+const float AI_PEDESTRIAN_ESCAPE_RADIUS = 0.7f;
 
 void CPedestrianAI::DetectEscapeJob(void* data, int jobiter)
 {
@@ -563,7 +567,7 @@ int	CPedestrianAI::DoEscape(float fDt, EStateTransition transition)
 	Vector3D pedPos = m_host->GetOrigin();
 	Vector3D pedAngles = m_host->GetAngles();
 
-	if (lengthSqr(pedPos - m_escapeFromPos) > AI_PEDESTRIAN_CAR_AFRAID_MIN_RADIUS*AI_PEDESTRIAN_CAR_AFRAID_MIN_RADIUS)
+	if (lengthSqr(pedPos - m_escapeFromPos) > AI_PEDESTRIAN_ESCAPE_RADIUS*AI_PEDESTRIAN_ESCAPE_RADIUS)
 	{
 		AI_SetState(&CPedestrianAI::DoWalk);
 		return 0;
@@ -628,7 +632,7 @@ int	CPedestrianAI::DoWalk(float fDt, EStateTransition transition)
 	
 	int controlButtons = 0;
 
-	Vector3D nextCellPos = g_pGameWorld->m_level.GlobalTilePointToPosition(m_nextRoadTile);
+	Vector3D nextCellPos = g_pGameWorld->m_level.GlobalTilePointToPosition(m_nextRoadTile) + Vector3D(m_cellOffset.x,0, m_cellOffset.y);
 
 	Vector3D dirToCell = fastNormalize(nextCellPos - pedPos);
 	Vector3D dirAngles = VectorAngles(dirToCell);

@@ -28,6 +28,8 @@ public:
 
 		m_prevDir = m_curDir = -1;
 		m_nextEscapeCheckTime = 0.0f;
+
+		m_cellOffset = vec2_zero;
 	}
 
 	int					DoWalk(float fDt, EStateTransition transition);
@@ -42,6 +44,8 @@ public:
 
 	Vector3D			m_escapeDir;
 	Vector3D			m_escapeFromPos;
+
+	Vector2D			m_cellOffset;
 
 	IVector2D			m_nextRoadTile;
 
@@ -60,9 +64,10 @@ public:
 
 struct pedestrianConfig_t
 {
-	bool hasAI;
 	EqString name;
 	EqString model;
+	bool hasAI;
+	int spawnInterval;
 };
 
 struct spritePedSegment_t

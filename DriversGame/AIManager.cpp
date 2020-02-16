@@ -28,6 +28,7 @@ ConVar g_pedestrians_mindist("g_pedestrians_mindist", "30", nullptr, CV_CHEAT);
 ConVar g_pedestrians_maxdist("g_pedestrians_maxdist", "32", nullptr, CV_CHEAT);
 
 const int	INITIAL_SPAWN_INTERVAL = 10;
+const int	PEDESTRIAN_SPAWN_INTERVAL = 0;
 
 const int	AI_COP_SPEECH_QUEUE = 6;
 
@@ -213,7 +214,7 @@ void CAIManager::InitZoneEntries(const DkList<pedestrianConfig_t*>& pedConfigs)
 
 	// init the cop car
 	kvkeybase_t* copConfigName = kvs.GetRootSection()->FindKeyBase("copcar");
-	g_pAIManager->SetCopCarConfig(KV_GetValueString(copConfigName, 0, defaultCopCar.c_str()), PURSUER_TYPE_COP);
+	SetCopCarConfig(KV_GetValueString(copConfigName, 0, defaultCopCar.c_str()), PURSUER_TYPE_COP);
 
 	// init peds
 	for (int i = 0; i < pedConfigs.numElem(); i++)
@@ -840,7 +841,16 @@ CPedestrian* CAIManager::SpawnPedestrian(const IVector2D& globalCell)
 
 	int randomPedEntry = g_replayRandom.Get(0, m_pedEntries.numElem()-1);
 
-	CPedestrian* spawnedPed = new CPedestrian(m_pedEntries[randomPedEntry].config);
+	pedestrianEntry_t& entry = m_pedEntries[randomPedEntry];
+	if (entry.nextSpawn > 0)
+	{
+		entry.nextSpawn--;
+		return nullptr;
+	}
+
+	entry.nextSpawn = entry.config->spawnInterval + PEDESTRIAN_SPAWN_INTERVAL;
+
+	CPedestrian* spawnedPed = new CPedestrian(entry.config);
 	spawnedPed->Spawn();
 	spawnedPed->SetOrigin(pedPos);
 

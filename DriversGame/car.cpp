@@ -1359,7 +1359,7 @@ void CCar::UpdateVehiclePhysics(float delta)
 	bool inputBurnout = false;
 	bool inputFastSteer = false;
 
-	bool needsWake = IsFlippedOver();
+	const int wheelCount = GetWheelCount();
 
 	if( m_enabled )
 	{
@@ -1384,20 +1384,34 @@ void CCar::UpdateVehiclePhysics(float delta)
 
 	int controlsChanged = controlButtons & m_oldControlButtons;
 
-	if (controlButtons != m_oldControlButtons && !((controlsChanged & IN_HORN) || (controlsChanged & IN_SIREN)))
-		needsWake = true;
-
 	if(controlButtons & IN_FASTSTEER )
 		inputFastSteer = true;
 
-	if(controlButtons & IN_STEERLEFT )
+	bool needsWake = false;
+
+	if (controlButtons & IN_STEERLEFT)
+	{
 		inputSteering -= (float)((float)m_steerRatio*_oneBy1024);
-	else if(controlButtons & IN_STEERRIGHT )
+	}
+	else if (controlButtons & IN_STEERRIGHT)
+	{
 		inputSteering += (float)((float)m_steerRatio*_oneBy1024);
+	}
 	else if(controlButtons & IN_ANALOGSTEER)
 	{
 		inputSteering = (float)((float)m_steerRatio*_oneBy1024);
 		m_steering = inputSteering;
+	}
+
+	if (controlButtons != m_oldControlButtons && !((controlsChanged & IN_HORN) || (controlsChanged & IN_SIREN)))
+		needsWake = true;
+
+	// if any wheel is above the ground, it needs to be awake
+	for (int i = 0; i < wheelCount; i++)
+	{
+		CCarWheel& wheel = m_wheels[i];
+		if (wheel.m_collisionInfo.fract >= 1.0f && fabs(wheel.m_pitchVel) > 1.0f)
+			needsWake = true;
 	}
 
 	//------------------------------------------------------------------------------------------
@@ -1488,8 +1502,6 @@ void CCar::UpdateVehiclePhysics(float delta)
 	// kick in wake
 	if (needsWake)
 		carBody->TryWake(false);
-
-	int wheelCount = GetWheelCount();
 
 	for (int i = 0; i < wheelCount; i++)
 	{

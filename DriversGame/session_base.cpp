@@ -583,6 +583,7 @@ void CGameSessionBase::LoadCarsPedsRegistry()
 				conf->name = key->name;
 				conf->model = KV_GetValueString(key);
 				conf->hasAI = KV_GetValueBool(key, 1, true);
+				conf->spawnInterval = KV_GetValueInt(key, 2, 0);
 
 				if (g_fileSystem->FileExist(conf->model.c_str(), SP_MOD))
 				{
