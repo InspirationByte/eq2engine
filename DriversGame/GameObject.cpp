@@ -370,7 +370,7 @@ void CGameObject::Draw( int nRenderFlags )
 	DrawEGF(nRenderFlags, nullptr);
 }
 
-void CGameObject::DrawEGF(int nRenderFlags, Matrix4x4* boneTransforms)
+void CGameObject::DrawEGF(int nRenderFlags, Matrix4x4* boneTransforms, int materialGroup)
 {
 	materials->SetMatrix(MATRIXMODE_WORLD, m_worldMatrix);
 	materials->SetCullMode((nRenderFlags & RFLAG_FLIP_VIEWPORT_X) ? CULL_FRONT : CULL_BACK);
@@ -410,7 +410,7 @@ void CGameObject::DrawEGF(int nRenderFlags, Matrix4x4* boneTransforms)
 				materials->SetSkinningEnabled(true);
 
 			int materialIndex = modDesc->pGroup(j)->materialIndex;
-			materials->BindMaterial(m_pModel->GetMaterial(materialIndex), 0);
+			materials->BindMaterial(m_pModel->GetMaterial(materialIndex, materialGroup), 0);
 
 			m_pModel->PrepareForSkinning( boneTransforms );
 			m_pModel->DrawGroup(nModDescId, j);

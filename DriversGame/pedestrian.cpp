@@ -93,6 +93,7 @@ void DrawJackParticle(const Vector3D& from, const Vector3D& to, float width, Tex
 CPedestrian::CPedestrian() : CAnimatingEGF(), CControllableGameObject(), m_thinker(this), m_physObj(nullptr)
 {
 	m_pedState = 0;
+	m_skin = 0;
 
 	m_thinkTime = 0.0f;
 	m_hasAI = false;
@@ -177,6 +178,8 @@ void CPedestrian::Spawn()
 	if (m_jack)
 		SetModel(JACK_PED_MODEL);
 
+	m_skin = RandomInt(0, m_pModel->GetHWData()->numMaterialGroups-1);
+
 	BaseClass::Spawn();
 }
 
@@ -225,7 +228,7 @@ void CPedestrian::Draw(int nRenderFlags)
 		}
 	}
 
-	DrawEGF(nRenderFlags, m_boneTransforms);
+	DrawEGF(nRenderFlags, m_boneTransforms, m_skin);
 
 	m_shadowDecal.dirty = true;
 }

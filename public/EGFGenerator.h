@@ -76,6 +76,11 @@ struct egfcaMaterialDesc_t
 	int					used;
 };
 
+struct egfcaMaterialGroup_t
+{
+	DkList<egfcaMaterialDesc_t> materials;
+};
+
 class CMemoryStream;
 
 //
@@ -118,6 +123,7 @@ protected:
 	void				ParseLodData(kvkeybase_t* pSection, int lodIdx);
 	void				LoadLods(kvkeybase_t* pSection);
 	bool				LoadBodyGroups(kvkeybase_t* pSection);
+	bool				LoadMaterialGroups(kvkeybase_t* pSection);
 	bool				LoadMaterialPaths(kvkeybase_t* pSection);
 	bool				LoadMotionPackagePaths(kvkeybase_t* pSection);
 
@@ -132,6 +138,8 @@ protected:
 	// preprocessing
 	void				MergeBones();
 	void				BuildBoneChains();
+
+	int					UsedMaterialIndex(const char* pszName);
 
 	// writing to stream
 	void				WriteGroup(CMemoryStream* stream, dsmgroup_t* srcGroup, esmshapekey_t* modShapeKey, modelgroupdesc_t* dstGroup);
@@ -156,7 +164,10 @@ protected:
 	DkList<cbone_t>					m_bones;		// bone list
 	DkList<studioattachment_t>		m_attachments;	// attachment list
 	DkList<studiobodygroup_t>		m_bodygroups;	// body group list
-	DkList<egfcaMaterialDesc_t>		m_materials;	// materials that this model uses
+
+	DkList<egfcaMaterialDesc_t>		m_materials;	// materials that referenced by models
+	DkList<egfcaMaterialDesc_t*>	m_usedMaterials;// materials that used by models referenced by body groups
+	DkList<egfcaMaterialGroup_t*>	m_matGroups;	// material groups
 
 	Vector3D						m_modelScale;
 	Vector3D						m_modelOffset;

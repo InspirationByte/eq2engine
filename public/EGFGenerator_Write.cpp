@@ -195,16 +195,21 @@ void ReverseStrip(int* indices, int len)
 	delete [] original;
 }
 
+int CEGFGenerator::UsedMaterialIndex(const char* pszName)
+{
+	int matIdx = GetMaterialIndex(pszName);
+
+	egfcaMaterialDesc_t* material = &m_materials[matIdx];
+	material->used++;
+
+	return m_usedMaterials.addUnique(material);
+}
+
 // writes group
 void CEGFGenerator::WriteGroup(CMemoryStream* stream, dsmgroup_t* srcGroup, esmshapekey_t* modShapeKey, modelgroupdesc_t* dstGroup)
 {
-	int material_index = -1;
-	
-	if(m_notextures == false)
-		material_index = GetMaterialIndex( srcGroup->texture );
-
 	// DSM groups to be generated indices and optimized here
-	dstGroup->materialIndex = material_index;
+	dstGroup->materialIndex = m_notextures ? -1 : UsedMaterialIndex(srcGroup->texture);
 
 	// triangle list by default
 	dstGroup->primitiveType = EGFPRIM_TRIANGLES;
@@ -515,10 +520,7 @@ void CEGFGenerator::WriteModels(CMemoryStream* stream)
 			WriteGroup(stream, modelRef.model->groups[j], key, groupDesc);
 
 			if(groupDesc->materialIndex != -1)
-			{
-				Msg("Group %s:%d material used: %s\n", modelRef.model->name, j, m_materials[groupDesc->materialIndex].materialname);
-				m_materials[groupDesc->materialIndex].used++;
-			}
+				Msg("Group %s:%d material used: %s\n", modelRef.model->name, j, m_usedMaterials[groupDesc->materialIndex]->materialname);
 		}
 	}
 }
@@ -609,21 +611,21 @@ void CEGFGenerator::WriteIkChains(CMemoryStream* stream)
 
 	for(int i = 0; i < m_ikchains.numElem(); i++)
 	{
+		ikchain_t& srcChain = m_ikchains[i];
 		studioikchain_t* chain = header->pIkChain(i);
 
-		chain->numLinks = m_ikchains[i].link_list.numElem();
+		chain->numLinks = srcChain.link_list.numElem();
 
-		strcpy(chain->name, m_ikchains[i].name);
+		strcpy(chain->name, srcChain.name);
 
 		chain->linksOffset = OBJ_WRITE_OFS(header->pIkChain(i));
 
 		// write link list flipped
-		//for(int j = g_ikchains[i].link_list.numElem()-1; j > -1; j--)
-		for(int j = 0; j < m_ikchains[i].link_list.numElem(); j++)
+		for(int j = 0; j < srcChain.link_list.numElem(); j++)
 		{
-			int link_id = (m_ikchains[i].link_list.numElem() - 1) - j;
+			int link_id = (srcChain.link_list.numElem() - 1) - j;
 
-			ciklink_t& link = m_ikchains[i].link_list[link_id];
+			ciklink_t& link = srcChain.link_list[link_id];
 
 			Msg("IK chain bone id: %d\n", link.bone->referencebone->bone_id);
 
@@ -647,22 +649,50 @@ void CEGFGenerator::WriteMaterialDescs(CMemoryStream* stream)
 
 	header->materialsOffset = WRITE_OFS;
 	header->numMaterials = 0;
+	//header->numMaterialGroups = 0;
 
-	for(int i = 0; i < m_materials.numElem(); i++)
+	// get used materials
+	for(int i = 0; i < m_usedMaterials.numElem(); i++)
 	{
-		egfcaMaterialDesc_t& mat = m_materials[i];
-
-		if(!mat.used)
-			continue;
+		egfcaMaterialDesc_t* mat = m_usedMaterials[i];
 
 		header->numMaterials++;
 
-		EqString mat_no_ext(mat.materialname);
+		EqString mat_no_ext(mat->materialname);
 
 		studiomaterialdesc_t* matDesc = header->pMaterial(i);
 		strcpy(matDesc->materialname, mat_no_ext.Path_Strip_Ext().c_str());
 
 		WTYPE_ADVANCE(studiomaterialdesc_t);
+	}
+
+	// write material groups
+	for (int i = 0; i < m_matGroups.numElem(); i++)
+	{
+		egfcaMaterialGroup_t* grp = m_matGroups[i];
+		int materialGroupStart = header->numMaterials;
+
+		//header->numMaterialGroups++;
+
+		for (int j = 0; j < grp->materials.numElem(); j++)
+		{
+			egfcaMaterialDesc_t& baseMat = m_materials[j];
+
+			if (!baseMat.used)
+				continue;
+
+			int usedMaterialIdx = m_usedMaterials.findIndex(&baseMat);
+			egfcaMaterialDesc_t& mat = grp->materials[usedMaterialIdx];
+
+			header->numMaterials++;
+
+			EqString mat_no_ext(mat.materialname);
+
+			studiomaterialdesc_t* matDesc = header->pMaterial(materialGroupStart + j);
+			strcpy(matDesc->materialname, mat_no_ext.Path_Strip_Ext().c_str());
+
+			WTYPE_ADVANCE(studiomaterialdesc_t);
+		}
 	}
 }
 

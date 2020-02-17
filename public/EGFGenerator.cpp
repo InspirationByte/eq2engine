@@ -549,6 +549,57 @@ bool CEGFGenerator::LoadBodyGroups(kvkeybase_t* pSection)
 }
 
 //************************************
+// Load material groups
+//************************************
+bool CEGFGenerator::LoadMaterialGroups(kvkeybase_t* pSection)
+{
+	MsgInfo("* Default materialGroup:\n\t");
+	for (int i = 0; i < m_materials.numElem(); i++)
+		MsgInfo("%s ", m_materials[i].materialname);
+	MsgInfo("\n");
+
+	for (int i = 0; i < pSection->keys.numElem(); i++)
+	{
+		kvkeybase_t* keyBase = pSection->keys[i];
+
+		if (!stricmp(keyBase->name, "materialGroup"))
+		{
+			if (!keyBase->values.numElem())
+			{
+				MsgError("materialGroup: must have material names as values!\n");
+				MsgError("	usage: materialGroup \"<material1>\" \"<material2>\" ... \"<materialN>\"\n");
+				return false;
+			}
+
+			if (keyBase->values.numElem() != m_materials.numElem())
+			{
+				MsgError("materialGroup: must have same material count specified (%d)!\n", m_materials.numElem());
+				MsgError("	usage: materialGroup \"<material1>\" \"<material2>\" ... \"<materialN>\"\n");
+				return false;
+			}
+
+			egfcaMaterialGroup_t* group = new egfcaMaterialGroup_t();
+			m_matGroups.append(group);
+
+			MsgInfo("Added materialGroup: ");
+
+			for (int j = 0; j < keyBase->values.numElem(); j++)
+			{
+				// create new material
+				egfcaMaterialDesc_t desc;
+				strcpy(desc.materialname, KV_GetValueString(keyBase, j));
+
+				MsgInfo("%s ", desc.materialname);
+
+				group->materials.append(desc);
+			}
+
+			MsgInfo("\n");
+		}
+	}
+}
+
+//************************************
 // Checks bone for availablity in list
 //************************************
 bool BoneListCheckForBone(char* pszName, DkList<dsmskelbone_t*> &pBones)
@@ -1151,6 +1202,9 @@ bool CEGFGenerator::InitFromKeyValues(kvkeybase_t* mainsection)
 
 	// parse body groups
 	if( !LoadBodyGroups( mainsection ) )
+		return false;
+
+	if (!LoadMaterialGroups(mainsection))
 		return false;
 
 	// merge bones first

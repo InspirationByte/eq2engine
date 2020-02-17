@@ -204,10 +204,14 @@ struct studioHwData_t
 		modelrefs = nullptr;
 		joints = nullptr;
 		numMotionPackages = 0;
+		numMaterialGroups = 0;
 	}
 
 	// loaded/cached studio model
 	studiohdr_t*		studio;
+
+	int					numUsedMaterials;
+	int					numMaterialGroups;
 
 	// POD data
 	studioPhysData_t		physModel;

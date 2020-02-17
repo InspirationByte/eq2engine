@@ -419,6 +419,8 @@ bool CEngineStudioEGF::LoadGenerateVertexBuffer()
 
 	auto lodModels = new studioModelRef_t[pHdr->numModels];
 	m_hwdata->modelrefs = lodModels;
+
+	int maxMaterialIdx = -1;
 	
 	// TODO: this should be optimized by the compiler
 	{
@@ -481,6 +483,9 @@ bool CEngineStudioEGF::LoadGenerateVertexBuffer()
 
 				// set index count for lod group
 				groupDescs[j].indexcount = pGroup->numIndices;
+
+				if (pGroup->materialIndex > maxMaterialIdx)
+					maxMaterialIdx = pGroup->materialIndex;
 			}
 		}
 
@@ -505,8 +510,14 @@ bool CEngineStudioEGF::LoadGenerateVertexBuffer()
 		delete[] allIndices;
 	}
 
+	
 	// try to load materials
 	m_numMaterials = pHdr->numMaterials;
+
+	int numUsedMaterials = maxMaterialIdx + 1;
+
+	m_hwdata->numUsedMaterials = numUsedMaterials;
+	m_hwdata->numMaterialGroups = numUsedMaterials ? m_numMaterials / numUsedMaterials : 0;
 
 	// init materials
 	memset(m_materials, 0, sizeof(m_materials));
@@ -565,9 +576,7 @@ bool CEngineStudioEGF::LoadGenerateVertexBuffer()
 		MsgError("  In following search paths:");
 
 		for(int i = 0; i < pHdr->numMaterialSearchPaths; i++)
-		{
 			MsgError( "   '%s'\n", pHdr->pMaterialSearchPath(i)->searchPath );
-		}
 	}
 
 	return true;
@@ -610,12 +619,12 @@ void CEngineStudioEGF::LoadMaterials()
 		materials->PutMaterialToLoadingQueue( m_materials[i] );
 }
 
-IMaterial* CEngineStudioEGF::GetMaterial(int materialIdx)
+IMaterial* CEngineStudioEGF::GetMaterial(int materialIdx, int materialGroupIdx)
 {
 	if(materialIdx == -1)
 		return materials->GetDefaultMaterial();
 
-	return m_materials[materialIdx];
+	return m_materials[m_hwdata->numUsedMaterials*materialGroupIdx + materialIdx];
 }
 
 void CEngineStudioEGF::LoadSetupBones()

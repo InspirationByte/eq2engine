@@ -135,6 +135,7 @@ protected:
 	CPedestrianAI		m_thinker;
 
 	bool				m_jack;
+	int					m_skin;
 };
 
 #endif // PEDESTRIAN_H

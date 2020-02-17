@@ -126,7 +126,7 @@ public:
 
 	// returns material assigned to the group
 	// materialIndex = <studiohwdata_t>->studio->pModelDesc(nModel)->pGroup(nTexGroup)->materialIndex;
-	virtual IMaterial*			GetMaterial(int materialIdx) = 0;
+	virtual IMaterial*			GetMaterial(int materialIdx, int materialGroupIdx = 0) = 0;
 };
 
 

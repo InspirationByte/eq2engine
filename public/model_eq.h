@@ -8,7 +8,6 @@
 #ifndef EQMODEL_H
 #define EQMODEL_H
 
-// EQGF is a base format for all DarkTech Engines (egf, eaf, dgf)
 #define EQUILIBRIUM_MODEL_VERSION		13
 #define EQUILIBRIUM_MODEL_SIGNATURE		(('F'<<24)+('G'<<16)+('Q'<<8)+'E')
 
@@ -120,19 +119,6 @@ struct studiovertexdesc_s
 };
 
 ALIGNED_TYPE(studiovertexdesc_s, 4) studiovertexdesc_t;
-
-// egf optimized loading data
-struct egf_ohd_data_t
-{
-	int			ident;
-	char		model_path[256];
-	int			numIndices;
-	int			numVertices;
-	Vector3D	mins;
-	Vector3D	maxs;
-	int			numGroups;
-	int			numBones;
-};
 
 // model group
 struct modelgroupdesc_s

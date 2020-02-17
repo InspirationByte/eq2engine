@@ -291,7 +291,7 @@ public:
 
 protected:
 
-	virtual void				DrawEGF(int nRenderFlags, Matrix4x4* boneTransforms);
+	virtual void				DrawEGF(int nRenderFlags, Matrix4x4* boneTransforms, int materialGroup = 0);
 
 	virtual void				OnPhysicsFrame(float fDt);
 	virtual void				OnPrePhysicsFrame(float fDt) {}

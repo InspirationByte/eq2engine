@@ -68,7 +68,7 @@ public:
 
 	bool				PrepareForSkinning(Matrix4x4* jointMatrices);
 
-	IMaterial*			GetMaterial(int materialIdx);
+	IMaterial*			GetMaterial(int materialIdx, int materialGroupIdx = 0);
 
 private:
 
@@ -82,31 +82,30 @@ private:
 
 	//-----------------------------------------------
 
+	// array of material index for each group
+	IMaterial*			m_materials[MAX_STUDIOMATERIALS];
+	BoundingBox			m_aabb;
+	EqString			m_szPath;
+
 	IEqModelInstancer*	m_instancer;
 	studioHwData_t*		m_hwdata;
 
 	IVertexBuffer*		m_pVB;
 	IIndexBuffer*		m_pIB;
 
-	// array of material index for each group
-	IMaterial*			m_materials[MAX_STUDIOMATERIALS];
+	EGFHwVertex_t*		m_softwareVerts;
 
 	bool				m_forceSoftwareSkinning;
 	bool				m_skinningDirty;
 
-	uint8				m_numMaterials;
-	volatile short		m_readyState;
+	int					m_numMaterials;
 
 	int					m_numVertices;
 	int					m_numIndices;
 
-	EGFHwVertex_t*		m_softwareVerts;
-
-	BoundingBox			m_aabb;
-	EqString			m_szPath;
-
 	int					m_cacheIdx;
 
+	volatile short		m_readyState;
 };
 
 //-------------------------------------------------------------------------------------
