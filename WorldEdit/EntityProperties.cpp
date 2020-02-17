@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////////////
 // Copyright © Inspiration Byte
-// 2009-2015
+// 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
 // Description: Entity properties dialog
 //////////////////////////////////////////////////////////////////////////////////
@@ -392,7 +392,7 @@ void CEntityPropertiesPanel::OnOpenModel(wxCommandEvent &event)
 	if(m_currentParamType == PARAM_TYPE_MATERIAL)
 		file = new wxFileDialog(NULL, "Open material file", varargs("%s/materials", g_fileSystem->GetCurrentGameDirectory()), "*.mat", "Equilibrium Material file (*.mat)|*.mat;", wxFD_FILE_MUST_EXIST | wxFD_OPEN);
 	else if(m_currentParamType == PARAM_TYPE_MODEL)
-		file = new wxFileDialog(NULL, "Open EGF model", varargs("%s/models", g_fileSystem->GetCurrentGameDirectory()), "*.egf", "Equilibrium Geometry Files (*.egf)|*.egf;", wxFD_FILE_MUST_EXIST | wxFD_OPEN);
+		file = new wxFileDialog(NULL, "Open EGF model", varargs("%s/models", g_fileSystem->GetCurrentGameDirectory()), "*.egf", "Equilibrium Graphics Files (*.egf)|*.egf;", wxFD_FILE_MUST_EXIST | wxFD_OPEN);
 
 	if(file && (file->ShowModal() == wxID_OK))
 	{

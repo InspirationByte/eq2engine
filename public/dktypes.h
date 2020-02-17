@@ -1,8 +1,8 @@
 //////////////////////////////////////////////////////////////////////////////////
 // Copyright © Inspiration Byte
-// 2009-2015
+// 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
-// Description: DarkTech type definitions
+// Description: Equilibrium type definitions
 //////////////////////////////////////////////////////////////////////////////////
 
 #ifndef DKTYPES_H
@@ -23,7 +23,7 @@
 #define FORCEINLINE __forceinline
 
 // classname of the main application window
-#define DARKTECH_WINDOW_CLASSNAME "Equilibrium_9826C328_598D_4C2E_85D4_0FF8E0310366"
+#define Equilibrium_WINDOW_CLASSNAME "Equilibrium_9826C328_598D_4C2E_85D4_0FF8E0310366"
 
 // Define some sized types
 typedef unsigned char	uint8;

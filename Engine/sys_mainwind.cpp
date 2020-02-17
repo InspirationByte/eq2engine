@@ -1,8 +1,8 @@
 //////////////////////////////////////////////////////////////////////////////////
 // Copyright © Inspiration Byte
-// 2009-2015
+// 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
-// Description: DarkTech main entry point
+// Description: Equilibrium main entry point
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "sys_enginehost.h"
@@ -146,11 +146,11 @@ bool RegisterWindowClass(HINSTANCE hInst)
 {
 	WNDCLASS wincl;
 
-	UnregisterClass( DARKTECH_WINDOW_CLASSNAME, hInst );
+	UnregisterClass( Equilibrium_WINDOW_CLASSNAME, hInst );
 
 	// Declare window class
 	wincl.hInstance = hInst;
-	wincl.lpszClassName = DARKTECH_WINDOW_CLASSNAME;
+	wincl.lpszClassName = Equilibrium_WINDOW_CLASSNAME;
 	wincl.lpfnWndProc = WinProc;
 	wincl.style = 0;
 	wincl.hIcon = LoadIcon(hInst, IDI_APPLICATION);
@@ -333,7 +333,7 @@ int RunEngine(HINSTANCE hInst)
 #ifdef PLAT_SDL
 	SDL_Quit();
 #elif PLAT_WIN
-	UnregisterClass( DARKTECH_WINDOW_CLASSNAME, hInst );
+	UnregisterClass( Equilibrium_WINDOW_CLASSNAME, hInst );
 #endif
 
 	return 0;

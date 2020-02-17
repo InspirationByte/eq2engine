@@ -1,10 +1,10 @@
 ============================================================================================
-	This file is information about DarkTech Engine family.
+	This file is information about Equilibrium Engine family.
 
-	DarkTech is a simple module-based game engine family, that created for development of 
+	Equilibrium is a simple module-based game engine family, that created for development of 
 	simple, creative AA and AAA-class games in any genre and setting.
 
-	DarkTech "Equilibrium" (EqEngine) - the game engine that will be used in White Cage's
+	Equilibrium "Equilibrium" (EqEngine) - the game engine that will be used in White Cage's
 	alternate story "Stronger than Death". 
 	This engine is oriented for closed, non-large locations. The main features of engine:
 	 - Realistic or unrealistic rendering, that depends on setting and artists
@@ -13,7 +13,7 @@
 		based animating of characters
 	 - Flexible modular architecture
 
-	DarkTech "Sunshine" (Sungine) will became a second generation, started from fork of
+	Equilibrium "Sunshine" (Sungine) will became a second generation, started from fork of
 	first version engine. Most parts ofcode will be rewritten or updated. This engine will
 	be introduced in our new game. This engine planned to support more platforms, including
 	linux, osx and next-gen consoles.
@@ -25,7 +25,7 @@
 	 - Content creation tools
 	 - Publishing
 
-	 DarkTech "Muscle" (Muscle Engine) will become a third generation game engine for actual
+	 Equilibrium "Muscle" (Muscle Engine) will become a third generation game engine for actual
 	 AAA title "White Cage". The engine will support extra lighting system including emissive
 	 surfaces in realtime and very large locations with explorable game world.
 

@@ -1,8 +1,8 @@
 //////////////////////////////////////////////////////////////////////////////////
 // Copyright © Inspiration Byte
-// 2009-2017
+// 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
-// Description: Equilibrium Geometry File script compler and generator
+// Description: Equilibrium Graphics File script compler and generator
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "DebugInterface.h"
@@ -53,7 +53,7 @@ clodmodel_t* CEGFGenerator::FindModelLodGroupByName(const char* pszName)
 //************************************
 // Finds egfCa model
 //************************************
-egfcamodel_t* CEGFGenerator::FindModelByName(const char* pszName)
+egfcaModel_t* CEGFGenerator::FindModelByName(const char* pszName)
 {
 	for(int i = 0; i < m_modelrefs.numElem(); i++)
 	{
@@ -124,9 +124,9 @@ void CEGFGenerator::AddModelLodUsageReference(int lodModelIndex)
 //************************************
 // Loads a model
 //************************************
-egfcamodel_t CEGFGenerator::LoadModel(const char* pszFileName)
+egfcaModel_t CEGFGenerator::LoadModel(const char* pszFileName)
 {
-	egfcamodel_t mod;
+	egfcaModel_t mod;
 
 	mod.model = new dsmmodel_t;
 
@@ -210,7 +210,7 @@ egfcamodel_t CEGFGenerator::LoadModel(const char* pszFileName)
 			}
 
 			// create new material
-			egfcamaterialdesc_t desc;
+			egfcaMaterialDesc_t desc;
 			strcpy(desc.materialname, mod.model->groups[i]->texture);
 
 			m_materials.append(desc);
@@ -223,7 +223,7 @@ egfcamodel_t CEGFGenerator::LoadModel(const char* pszFileName)
 //************************************
 // Frees model ref
 //************************************
-void CEGFGenerator::FreeModel( egfcamodel_t& mod )
+void CEGFGenerator::FreeModel( egfcaModel_t& mod )
 {
 	FreeDSM(mod.model);
 	delete mod.model;
@@ -270,11 +270,11 @@ dsmmodel_t* CEGFGenerator::ParseAndLoadModels(kvkeybase_t* pKeyBase)
 	}
 
 	// load the models
-	DkList<egfcamodel_t> models;
+	DkList<egfcaModel_t> models;
 
 	for(int i = 0; i < modelfilenames.numElem(); i++)
 	{
-		egfcamodel_t model = LoadModel( modelfilenames[i].GetData() );
+		egfcaModel_t model = LoadModel( modelfilenames[i].GetData() );
 
 		if(!model.model)
 			continue;
@@ -331,7 +331,7 @@ dsmmodel_t* CEGFGenerator::ParseAndLoadModels(kvkeybase_t* pKeyBase)
 			FreeModel(models[i]);
 		}
 
-		egfcamodel_t mref;
+		egfcaModel_t mref;
 		mref.model = merged;
 		mref.shapeData = nullptr;
 
@@ -773,7 +773,7 @@ bool CEGFGenerator::LoadMaterialPaths(kvkeybase_t* pSection)
 //************************************
 // Loads material pathes to use in engine
 //************************************
-bool CEGFGenerator::LoadMotionPackagePatchs(kvkeybase_t* pSection)
+bool CEGFGenerator::LoadMotionPackagePaths(kvkeybase_t* pSection)
 {
 	for(int i = 0; i < pSection->keys.numElem(); i++)
 	{
@@ -1076,12 +1076,12 @@ void CEGFGenerator::LoadPhysModels(kvkeybase_t* mainsection)
 		kvkeybase_t* modelNamePair = physObjectSec->FindKeyBase("model");
 		if(modelNamePair)
 		{
-			egfcamodel_t* foundRef = FindModelByName( KV_GetValueString(modelNamePair) );
+			egfcaModel_t* foundRef = FindModelByName( KV_GetValueString(modelNamePair) );
 
 			if(!foundRef)
 			{
 				// scaling already performed here
-				egfcamodel_t newRef = LoadModel( KV_GetValueString(modelNamePair) );
+				egfcaModel_t newRef = LoadModel( KV_GetValueString(modelNamePair) );
 
 				if(newRef.model == nullptr)
 				{
@@ -1164,7 +1164,7 @@ bool CEGFGenerator::InitFromKeyValues(kvkeybase_t* mainsection)
 		return false;
 
 	// external motion packages
-	LoadMotionPackagePatchs( mainsection );
+	LoadMotionPackagePaths( mainsection );
 
 	// load attachments if available
 	LoadAttachments( mainsection );

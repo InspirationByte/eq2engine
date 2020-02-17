@@ -1,13 +1,8 @@
 //////////////////////////////////////////////////////////////////////////////////
 // Copyright © Inspiration Byte
-// 2009-2015
+// 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
-// Description: DarkTech physics powered by Bullet
-// Using Bullet Continuous Collision Detection and Physics Library
-// Copyright (c) 2003-2006 Erwin Coumans  http://continuousphysics.com/Bullet/
-//
-// Happy New Year with New (Heavily updated) Physics Interface
-//
+// Description: Equilibrium physics powered by Bullet
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "DkBulletPhysics.h"

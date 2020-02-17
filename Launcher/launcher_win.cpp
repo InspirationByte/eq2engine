@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////////////
 // Copyright © Inspiration Byte
-// 2009-2015
+// 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
 // Description: Windows platform launcher
 //////////////////////////////////////////////////////////////////////////////////
@@ -76,7 +76,7 @@ int WINAPI WinMain(HINSTANCE hThisInst, HINSTANCE hLastInst, LPSTR lpszCmdLine, 
 	// handle to the single instance mutex
 	HANDLE hMutex = NULL;
 
-	hMutex = CreateMutex(NULL, true, DARKTECH_WINDOW_CLASSNAME);
+	hMutex = CreateMutex(NULL, true, Equilibrium_WINDOW_CLASSNAME);
 
 	// limit this app to a single instance only (make sure classname is unique)
 	if(GetLastError() == ERROR_ALREADY_EXISTS)
@@ -87,7 +87,7 @@ int WINAPI WinMain(HINSTANCE hThisInst, HINSTANCE hLastInst, LPSTR lpszCmdLine, 
 
 		// set focus to the other main window (if possible, may not be created yet) then exit
 		// if the class name is unique we don't worry about searching against the title
-		if((hPrevious = FindWindow(DARKTECH_WINDOW_CLASSNAME, NULL)) != NULL)
+		if((hPrevious = FindWindow(Equilibrium_WINDOW_CLASSNAME, NULL)) != NULL)
 			ShowWindow(hPrevious, SW_SHOWNORMAL);
 
 		return -1;

@@ -1,11 +1,10 @@
-//-=-=-=-=-=-=-=-=-=-= Copyright (C) Damage Byte L.L.C 2009-2012 =-=-=-=-=-=-=-=-=-=-=-
-//
+//////////////////////////////////////////////////////////////////////////////////
+// Copyright © Inspiration Byte
+// 2009-2020
+//////////////////////////////////////////////////////////////////////////////////
 // Description: Smart scoped pointer is a great way to control deallocation of memory 
 //				whithin the scope (epilog)
-//
-//				Recommended to use in complex procedures
-//
-//-=-=-=-D-=-A-=-M-=-A-=-G-=-E-=-=-B-=-Y-=-T-=-E-=-=-S-=-T-=-U-=-D-=-I-=-O-=-S-=-=-=-=-
+//////////////////////////////////////////////////////////////////////////////////
 
 #ifndef SCOPEDPTR_H
 #define SCOPEDPTR_H

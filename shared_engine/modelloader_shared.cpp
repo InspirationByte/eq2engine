@@ -1,8 +1,8 @@
 //////////////////////////////////////////////////////////////////////////////////
 // Copyright © Inspiration Byte
-// 2009-2015
+// 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
-// Description: DarkTech engine model loader
+// Description: Equilibrium Graphics File loader
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "DebugInterface.h"
@@ -27,7 +27,7 @@ void ConvertHeaderToLatestVersion(basemodelheader_t* pHdr)
 
 }
 
-// loads all supported darktech model formats
+// loads all supported EGF model formats
 studiohdr_t* Studio_LoadModel(const char* pszPath)
 {
 	long len = 0;
@@ -228,7 +228,7 @@ studioMotionData_t* Studio_LoadMotionData(const char* pszPath, int boneCount)
 		pData += pLump->size;
 	}
 
-	// first processing done, convert animca animations to darktech format.
+	// first processing done, convert animca animations to EGF format.
 	pMotion->animations = (studioAnimation_t*)PPAlloc(sizeof(studioAnimation_t)*numAnimDescs);
 
 	//Msg("Num anim descs: %d\n", numAnimDescs);

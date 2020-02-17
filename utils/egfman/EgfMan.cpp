@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////////////
 // Copyright © Inspiration Byte
-// 2009-2015
+// 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
 // Description: Equilibrium Engine Geometry viewer - new with physics support
 //
@@ -746,7 +746,7 @@ void CEGFViewFrame::ProcessAllMenuCommands(wxCommandEvent& event)
 		wxFileDialog* file = new wxFileDialog(NULL, "Open EGF model", 
 													varargs("%s/models", g_fileSystem->GetCurrentGameDirectory()), 
 													"*.egf", 
-													"Equilibrium Geometry File (*.egf)|*.egf;", 
+													"Equilibrium Graphics File (*.egf)|*.egf;", 
 													wxFD_FILE_MUST_EXIST | wxFD_OPEN);
 
 		if(file && file->ShowModal() == wxID_OK)

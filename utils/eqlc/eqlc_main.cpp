@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////////////
 // Copyright © Inspiration Byte
-// 2009-2015
+// 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
 // Description: Lightmap compiler main
 //////////////////////////////////////////////////////////////////////////////////
@@ -110,11 +110,11 @@ bool RegisterWindowClass(HINSTANCE hInst)
 {
 	WNDCLASS wincl;
 
-	UnregisterClass( DARKTECH_WINDOW_CLASSNAME, hInst );
+	UnregisterClass( Equilibrium_WINDOW_CLASSNAME, hInst );
 
 	// Declare window class
 	wincl.hInstance = hInst;
-	wincl.lpszClassName = DARKTECH_WINDOW_CLASSNAME;
+	wincl.lpszClassName = Equilibrium_WINDOW_CLASSNAME;
 	wincl.lpfnWndProc = WinProc;
 	wincl.style = 0;
 	wincl.hIcon = LoadIcon(hInst, IDI_APPLICATION);
@@ -152,7 +152,7 @@ void InitMatSystem()
 		exit(0);
 	}
 
-	HWND window = CreateWindow(DARKTECH_WINDOW_CLASSNAME, "EQLC Render Window", WS_OVERLAPPEDWINDOW, 0, 0, 800, 800, HWND_DESKTOP, NULL, NULL, NULL);
+	HWND window = CreateWindow(Equilibrium_WINDOW_CLASSNAME, "EQLC Render Window", WS_OVERLAPPEDWINDOW, 0, 0, 800, 800, HWND_DESKTOP, NULL, NULL, NULL);
 
 	matsystem_render_config_t materials_config;
 
@@ -282,7 +282,7 @@ int main(int argc, char **argv)
 
 	materials->Shutdown();
 
-	UnregisterClass(DARKTECH_WINDOW_CLASSNAME, NULL);
+	UnregisterClass(Equilibrium_WINDOW_CLASSNAME, NULL);
 
 	GetCore()->Shutdown();
 	return 0;

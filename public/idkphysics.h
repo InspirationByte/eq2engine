@@ -1,8 +1,8 @@
 //////////////////////////////////////////////////////////////////////////////////
 // Copyright © Inspiration Byte
-// 2009-2015
+// 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
-// Description: DarkTech physics public header
+// Description: Equilibrium physics public header
 //
 // TODO:	cleanup in code, move some structures to physics_shared.h
 //			simplify usage
@@ -187,7 +187,7 @@ struct physmodelcreateinfo_t // TODO: remove me
 
 	bool genConvex;
 	float convexMargin;
-	bool flipXAxis; // shity darktech
+	bool flipXAxis;
 	// float convexDecompRatio;
 
 	bool isStatic; // not affected by mass, damping and impulses

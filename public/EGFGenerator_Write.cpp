@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////////////
 // Copyright © Inspiration Byte
-// 2009-2015
+// 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
 // Description: Eq Geometry Format Writer
 //////////////////////////////////////////////////////////////////////////////////
@@ -457,6 +457,17 @@ skipOptimize:
 //************************************
 void CEGFGenerator::WriteModels(CMemoryStream* stream)
 {
+	/*
+	Structure:
+
+		studiomodeldesc_t		models[numModels]
+		studiomodeldesc_t		groups[numGroups]
+
+		studiovertexdesc_t		vertices[sumVertsOfGroups]
+		uint32					indices[sumIndicesOfGroups]
+		
+	*/
+
 	studiohdr_t* header = (studiohdr_t*)stream->GetBasePointer();
 
 	// Write models
@@ -470,7 +481,7 @@ void CEGFGenerator::WriteModels(CMemoryStream* stream)
 
 	for(int i = 0; i < m_modelrefs.numElem(); i++)
 	{
-		egfcamodel_t& modelRef = m_modelrefs[i];
+		egfcaModel_t& modelRef = m_modelrefs[i];
 		if(!modelRef.used)
 			continue;
 
@@ -487,7 +498,7 @@ void CEGFGenerator::WriteModels(CMemoryStream* stream)
 
 	for(int i = 0; i < m_modelrefs.numElem(); i++)
 	{
-		egfcamodel_t& modelRef = m_modelrefs[i];
+		egfcaModel_t& modelRef = m_modelrefs[i];
 		if(!modelRef.used)
 			continue;
 
@@ -639,7 +650,7 @@ void CEGFGenerator::WriteMaterialDescs(CMemoryStream* stream)
 
 	for(int i = 0; i < m_materials.numElem(); i++)
 	{
-		egfcamaterialdesc_t& mat = m_materials[i];
+		egfcaMaterialDesc_t& mat = m_materials[i];
 
 		if(!mat.used)
 			continue;

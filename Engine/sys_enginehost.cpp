@@ -1,8 +1,8 @@
 //////////////////////////////////////////////////////////////////////////////////
 // Copyright © Inspiration Byte
-// 2009-2015
+// 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
-// Description: DarkTech engine system class
+// Description: Equilibrium engine system class
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "DebugInterface.h"
@@ -626,7 +626,7 @@ EQWNDHANDLE CreateEngineWindow()
 		nAdjustedTall = wRect.bottom;
 	} 
 
-	handle = CreateWindow(	DARKTECH_WINDOW_CLASSNAME, 
+	handle = CreateWindow(	Equilibrium_WINDOW_CLASSNAME, 
 							"Engine Window",
 							nWindowFlags,
 							nAdjustedPosX, nAdjustedPosY, 

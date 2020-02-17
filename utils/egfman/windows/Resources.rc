@@ -62,12 +62,12 @@ BEGIN
     BEGIN
         BLOCK "040904B0"
         BEGIN
-            VALUE "FileDescription", "DarkTech Editor Launcher\0"
+            VALUE "FileDescription", "EGFMan\0"
             VALUE "FileVersion", "0, 0, 2, 1\0"
-            VALUE "InternalName", "DkEditor\0"
-            VALUE "LegalCopyright", "Copyright © 2007-2009 Two Dark Interactive Kazakhstan\0"
-            VALUE "OriginalFilename", "Editor.exe\0"
-            VALUE "ProductName", "DarkTech\0"
+            VALUE "InternalName", "EGFMan\0"
+            VALUE "LegalCopyright", "Copyright © 2009-2020 Inspiration Byte\0"
+            VALUE "OriginalFilename", "egfman.exe\0"
+            VALUE "ProductName", "Equilibrium\0"
             VALUE "ProductVersion", "0, 0, 2, 1\0"
         END
     END

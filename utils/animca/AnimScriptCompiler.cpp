@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////////////
 // Copyright © Inspiration Byte
-// 2009-2015
+// 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
 // Description:
 //////////////////////////////////////////////////////////////////////////////////
@@ -27,18 +27,6 @@ bool IsValidModelIdentifier(int id)
 	{
 		case EQUILIBRIUM_MODEL_SIGNATURE:
 			return true;
-#ifdef EQUILIBRIUMFX_MODEL_FORMAT
-		case EQUILIBRIUMFX_MODEL_SIGNATURE:
-			return true;
-#endif
-#ifdef SUNSHINE_MODEL_FORMAT
-		case SUNSHINE_MODEL_SIGNATURE:
-			return true;
-#endif
-#ifdef SUNSHINEFX_MODEL_FORMAT
-		case SUNSHINEFX_MODEL_SIGNATURE:
-			return true;
-#endif
 	}
 	return false;
 }
@@ -48,7 +36,7 @@ void ConvertHeaderToLatestVersion(basemodelheader_t* pHdr)
 	// initial, not used
 }
 
-// loads all supported darktech model formats
+// loads all supported Equilibrium model formats
 studiohdr_t* Studio_LoadModel(const char* pszPath)
 {
 	long len = 0;

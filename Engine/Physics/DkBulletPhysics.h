@@ -1,10 +1,8 @@
 //////////////////////////////////////////////////////////////////////////////////
 // Copyright © Inspiration Byte
-// 2009-2015
+// 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
-// Description: DarkTech physics powered by Bullet
-// Using Bullet Continuous Collision Detection and Physics Library
-// Copyright (c) 2003-2006 Erwin Coumans  http://continuousphysics.com/Bullet
+// Description: Equilibrium physics powered by Bullet
 ///////////////////////////////////////////////////////////////////////////////////
 
 #ifndef DKPHYSICS_IS_DEFINED
@@ -13,7 +11,6 @@
 #include "platform/Platform.h"
 #include "DebugInterface.h"
 
-// DarkTech headers
 #include "IDkPhysics.h"
 
 #include "../shared_engine/physics/BulletConvert.h"

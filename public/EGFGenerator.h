@@ -1,8 +1,8 @@
 //////////////////////////////////////////////////////////////////////////////////
 // Copyright © Inspiration Byte
-// 2009-2017
+// 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
-// Description: Equilibrium Geometry File script compler and generator
+// Description: Equilibrium Graphics File script compler and generator
 //////////////////////////////////////////////////////////////////////////////////
 
 #ifndef EGFGENERATOR_H
@@ -47,9 +47,9 @@ struct clodmodel_t
 struct esmshapedata_t;
 struct esmshapekey_t;
 
-struct egfcamodel_t
+struct egfcaModel_t
 {
-	egfcamodel_t()
+	egfcaModel_t()
 	{
 		model = nullptr;
 		shapeData = nullptr;
@@ -65,9 +65,9 @@ struct egfcamodel_t
 	int					used;
 };
 
-struct egfcamaterialdesc_t
+struct egfcaMaterialDesc_t
 {
-	egfcamaterialdesc_t()
+	egfcaMaterialDesc_t()
 	{
 		used = 0;
 	}
@@ -102,7 +102,7 @@ protected:
 	// helper functions
 	cbone_t*			FindBoneByName(const char* pszName);
 	clodmodel_t*		FindModelLodGroupByName(const char* pszName);
-	egfcamodel_t*		FindModelByName(const char* pszName);
+	egfcaModel_t*		FindModelByName(const char* pszName);
 
 
 	int					FindModelLodIdGroupByName(const char* pszName);
@@ -110,8 +110,8 @@ protected:
 	int					GetReferenceIndex(dsmmodel_t* pRef);
 
 	// loader functions
-	egfcamodel_t		LoadModel(const char* pszFileName);
-	void				FreeModel( egfcamodel_t& mod );
+	egfcaModel_t		LoadModel(const char* pszFileName);
+	void				FreeModel( egfcaModel_t& mod );
 
 	dsmmodel_t*			ParseAndLoadModels(kvkeybase_t* pKeyBase);
 	bool				LoadModels(kvkeybase_t* pSection);
@@ -119,7 +119,7 @@ protected:
 	void				LoadLods(kvkeybase_t* pSection);
 	bool				LoadBodyGroups(kvkeybase_t* pSection);
 	bool				LoadMaterialPaths(kvkeybase_t* pSection);
-	bool				LoadMotionPackagePatchs(kvkeybase_t* pSection);
+	bool				LoadMotionPackagePaths(kvkeybase_t* pSection);
 
 	void				AddModelLodUsageReference(int modelLodIndex);
 
@@ -146,7 +146,7 @@ protected:
 	void				WriteBones(CMemoryStream* stream);
 
 	// data
-	DkList<egfcamodel_t>			m_modelrefs;	// all loaded model references
+	DkList<egfcaModel_t>			m_modelrefs;	// all loaded model references
 
 	DkList<clodmodel_t>				m_modellodrefs;	// all LOD reference models including main LOD
 	DkList<studiolodparams_t>		m_lodparams;	// lod parameters
@@ -156,7 +156,7 @@ protected:
 	DkList<cbone_t>					m_bones;		// bone list
 	DkList<studioattachment_t>		m_attachments;	// attachment list
 	DkList<studiobodygroup_t>		m_bodygroups;	// body group list
-	DkList<egfcamaterialdesc_t>		m_materials;	// materials that this model uses
+	DkList<egfcaMaterialDesc_t>		m_materials;	// materials that this model uses
 
 	Vector3D						m_modelScale;
 	Vector3D						m_modelOffset;
