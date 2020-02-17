@@ -178,7 +178,16 @@ void CPedestrian::Spawn()
 	if (m_jack)
 		SetModel(JACK_PED_MODEL);
 
+	// randomize skin appearance
 	m_skin = RandomInt(0, m_pModel->GetHWData()->numMaterialGroups-1);
+
+	// randomize model appeareance
+	int numBodyGroups = m_pModel->GetHWData()->studio->numBodyGroups;
+	for (int i = 1; i < numBodyGroups; i++)
+	{
+		if (RandomInt(0, 2) == 0)
+			m_bodyGroupFlags |= (1 << i);	// randomize body group 2
+	}
 
 	BaseClass::Spawn();
 }
