@@ -434,9 +434,7 @@ void CBrushPrimitive::CalculateBBOX()
 // is brush aabb intersects another brush aabb
 bool CBrushPrimitive::IsBrushIntersectsAABB(CBrushPrimitive *pBrush)
 {
-	BoundingBox another_box(pBrush->GetBBoxMins(),pBrush->GetBBoxMaxs());
-
-	return m_bbox.Intersects(another_box);
+	return m_bbox.Intersects(pBrush->GetBBox());
 }
 
 void CBrushPrimitive::SortVertsToDraw()
@@ -658,61 +656,21 @@ void CBrushPrimitive::UpdateRenderBuffer()
 	}
 }
 
-// basic mesh modifications
-void CBrushPrimitive::Translate(const Vector3D& offset)
+void CBrushPrimitive::Transform(const Matrix4x4& mat)
 {
-	for(int i = 0; i < m_faces.numElem(); i++)
-	{
-		m_faces[i].Plane.offset -= dot(m_faces[i].Plane.normal, offset);
-	}
-
-	UpdateRenderData();
-}
-
-
-void CBrushPrimitive::Scale(const Vector3D &scale, bool use_center, const Vector3D &scale_center)
-{
-	if(scale == vec3_zero)
-		return;
-
-	if(scale == Vector3D(1))
-		return;
-
-	Vector3D bbox_center = m_bbox.GetCenter();
-
-	if(use_center)
-		bbox_center = scale_center;
-
-	bool invert = false;
-	if(scale.x < 0)
-		invert = !invert;
-	if(scale.y < 0)
-		invert = !invert;
-	if(scale.z < 0)
-		invert = !invert;
-
-	for(int i = 0; i < m_polygons.numElem(); i++)
+	for (int i = 0; i < m_polygons.numElem(); i++)
 	{
 		winding_t& poly = m_polygons[i];
 		brushFace_t& face = m_faces[i];
 
-		for(int j = 0; j < m_polygons[i].vertices.numElem(); j++)
-		{
-			lmodeldrawvertex_t& vert = poly.vertices[j];
+		Vector4D O(face.Plane.normal * -face.Plane.offset, 1.0f);
+		Vector4D N(face.Plane.normal, 0.0f);
 
-			vert.position -= bbox_center;
-			vert.position *= scale;
-			vert.position += bbox_center;
-		}
+		O = mat * O;				// transform point
+		N = transpose(!mat) * N;	// transform (rotate) the normal
 
-		// redefine planes
-		face.Plane = Plane(poly.vertices[0].position, poly.vertices[1].position, poly.vertices[2].position, true);
-
-		if(invert)
-		{
-			face.Plane.normal = -face.Plane.normal;
-			face.Plane.offset = -face.Plane.offset;
-		}
+		// reinitialize the plane
+		face.Plane = Plane(N.xyz(), -dot(O.xyz(), N.xyz()), true);
 	}
 
 	UpdateRenderData();

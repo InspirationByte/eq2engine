@@ -44,13 +44,13 @@ struct winding_t
 	// classifies the next face over this
 	ClassifyPoly_e					Classify(winding_t *w);
 
-	CBrushPrimitive*					pAssignedBrush;
+	CBrushPrimitive*				pAssignedBrush;
 
 	// assingned face
 	brushFace_t*					pAssignedFace;
 
 	// vertex data
-	DkList<lmodeldrawvertex_t>			vertices;
+	DkList<lmodeldrawvertex_t>		vertices;
 
 	// make valid assignment
 	winding_t & operator = (const winding_t &u)
@@ -89,8 +89,7 @@ public:
 	void							RenderGhost();
 
 	// rendering bbox
-	Vector3D						GetBBoxMins()	{return m_bbox.minPoint;}
-	Vector3D						GetBBoxMaxs()	{return m_bbox.maxPoint;}
+	const BoundingBox&				GetBBox() const	{return m_bbox;}
 
 	float							CheckLineIntersection(const Vector3D &start, const Vector3D &end, Vector3D &intersectionPos, int& face);
 
@@ -144,8 +143,7 @@ public:
 	// copies this object
 	CBrushPrimitive*				CloneObject();
 
-	void							Translate(const Vector3D& offset);
-	void							Scale(const Vector3D &scale, bool use_center, const Vector3D &scale_center);
+	void							Transform(const Matrix4x4& mat);
 
 protected:
 

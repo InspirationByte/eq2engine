@@ -555,6 +555,10 @@ vehicleConfig_t* CGameSessionBase::GetVehicleConfig(const char* name)
 	if (configIdx == -1)
 		return nullptr;
 
+	// store the car script name
+	// for 'car_reload'
+	m_carEntries[configIdx]->carScript = configPath.c_str();
+
 	return m_carEntries[configIdx];
 }
 
