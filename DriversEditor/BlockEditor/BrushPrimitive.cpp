@@ -676,41 +676,6 @@ void CBrushPrimitive::Transform(const Matrix4x4& mat)
 	UpdateRenderData();
 }
 
-/*
-void CBrushPrimitive::Rotate(Vector3D &rotation_angles, bool use_center, Vector3D &rotation_center)
-{
-	Vector3D bbox_center = bbox.GetCenter();
-
-	if(use_center)
-		bbox_center = rotation_center;
-
-	Matrix3x3 rotation = rotateXYZ3(DEG2RAD(rotation_angles.x),DEG2RAD(rotation_angles.y),DEG2RAD(rotation_angles.z));
-
-	for(int i = 0; i < faces.numElem(); i++)
-	{
-		// move planes
-		// TODO: texture lock variabled
-		faces[i].Plane.offset += dot(faces[i].Plane.normal, bbox_center);
-		faces[i].UAxis.offset += dot(faces[i].UAxis.normal, bbox_center);
-		faces[i].VAxis.offset += dot(faces[i].VAxis.normal, bbox_center);
-
-		// rotate surface normal
-		faces[i].Plane.normal = rotation*faces[i].Plane.normal;
-
-		// rotate texture axes
-		faces[i].UAxis.normal = rotation*faces[i].UAxis.normal;
-		faces[i].VAxis.normal = rotation*faces[i].VAxis.normal;
-
-		// move planes back
-		// TODO: texture lock variabled
-		faces[i].Plane.offset -= dot(faces[i].Plane.normal, bbox_center);
-		faces[i].UAxis.offset -= dot(faces[i].UAxis.normal, bbox_center);
-		faces[i].VAxis.offset -= dot(faces[i].VAxis.normal, bbox_center);
-	}
-
-	UpdateRenderData();
-}
-*/
 void CBrushPrimitive::OnRemove(bool bOnLevelCleanup)
 {
 	g_pShaderAPI->DestroyVertexBuffer(m_pVB);

@@ -106,6 +106,8 @@ protected:
 	DkList<brushFace_t*>		m_selectedFaces;
 
 	Vector3D					m_dragOffs;
+	Matrix3x3					m_dragInitRot;
+	Matrix3x3					m_dragRot;
 };
 
 #endif // UI_BLOCKEDITOR_H

@@ -1563,7 +1563,7 @@ void CEditableSurface::CutSurfaceByPlane(Plane &plane, CEditableSurface** ppSurf
 
 	for(int i = 0; i < m_numAllVerts; i++)
 	{
-		if(plane.ClassifyPointEpsilon( m_pVertexData[i].position, 0.0f) == CP_BACK)
+		if(plane.ClassifyPoint( m_pVertexData[i].position, 0.0f) == CP_BACK)
 			nNegative++;
 	}
 	

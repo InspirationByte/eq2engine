@@ -1185,7 +1185,7 @@ void SplitGeomByPlane(decal_geom_data_t* surf, Plane &plane, decal_geom_data_t* 
 		front_vert_remap[i] = -1;
 		back_vert_remap[i] = -1;
 
-		if(plane.ClassifyPointEpsilon( surf->verts[i].position, 0.0f) == CP_BACK)
+		if(plane.ClassifyPoint( surf->verts[i].position, 0.0f) == CP_BACK)
 			nNegative++;
 	}
 
@@ -2093,8 +2093,8 @@ int CEqLevel::GetRoomsForSphere(const Vector3D &point, float radius, int* room_i
 			// check for between the portal planes
 			ClassifyPlane_e cp_side[2];
 
-			cp_side[0] = pPortal->m_planes[0].ClassifyPointEpsilon(point, 0.05f+radius);
-			cp_side[1] = pPortal->m_planes[1].ClassifyPointEpsilon(point, 0.05f+radius);
+			cp_side[0] = pPortal->m_planes[0].ClassifyPoint(point, 0.05f+radius);
+			cp_side[1] = pPortal->m_planes[1].ClassifyPoint(point, 0.05f+radius);
 		
 			if((cp_side[0] == CP_BACK && cp_side[1] == CP_BACK) || (cp_side[0] == CP_ONPLANE && cp_side[1] == CP_ONPLANE))
 			{

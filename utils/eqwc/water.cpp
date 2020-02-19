@@ -16,7 +16,7 @@ bool IsPointInsideWaterVolume(cwwatervolume_t* volume, Vector3D &point, float ep
 {
 	for(int i = 0; i < volume->volumePlanes.numElem(); i++)
 	{
-		ClassifyPlane_e nPlaneClass = volume->volumePlanes[i].ClassifyPointEpsilon(point, eps);
+		ClassifyPlane_e nPlaneClass = volume->volumePlanes[i].ClassifyPoint(point, eps);
 
 		if(nPlaneClass == CP_FRONT)
 			return false;

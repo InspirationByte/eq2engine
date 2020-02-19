@@ -79,19 +79,7 @@ struct Plane_t
 		return dot(normal, pos) + offset;
 	}
 
-	ClassifyPlane_e ClassifyPoint(const TVec3D<T> &pos) const
-	{
-		T fDist = Distance(pos);
-
-		if (fDist > 0.0001f)
-			return CP_FRONT;
-		else if (fDist < -0.0001f)
-			return CP_BACK;
-
-		return CP_ONPLANE;
-	}
-
-	ClassifyPlane_e ClassifyPointEpsilon(const TVec3D<T> &pos, const T eps)
+	ClassifyPlane_e ClassifyPoint(const TVec3D<T> &pos, const T eps = 0.0001f) const
 	{
 		T fDist = Distance(pos);
 
@@ -101,6 +89,24 @@ struct Plane_t
 			return CP_BACK;
 
 		return CP_ONPLANE;
+	}
+
+	bool GetIntersectionWithPlane(const Plane_t<T>& plane, TVec3D<T>& p, TVec3D<T>& dir, const T eps = 0.0f) const
+	{
+		const TVec3D<T> axis = cross(normal, plane.normal);
+		const T det = lengthSqr(axis);
+
+		// check for parallelity
+		if (abs(det) > eps)
+		{
+			// calculate the final (point, normal)
+			p = ((cross(axis, plane.normal) * offset) + (cross(normal, axis) * plane.offset)) / det;
+			dir = axis;
+
+			return true;
+		}
+
+		return false;
 	}
 
 	bool GetIntersectionWithPlanes(const Plane_t<T>& o1, const Plane_t<T>& o2, TVec3D<T>& outPoint) const

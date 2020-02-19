@@ -45,7 +45,7 @@ void SplitSurfaceByPlane(cwlitsurface_t* surf, Plane &plane, cwlitsurface_t* fro
 		front_vert_remap[i] = -1;
 		back_vert_remap[i] = -1;
 
-		if(plane.ClassifyPointEpsilon( surf->pVerts[i].position, 0.0f) == CP_BACK)
+		if(plane.ClassifyPoint( surf->pVerts[i].position, 0.0f) == CP_BACK)
 			nNegative++;
 	}
 
@@ -438,7 +438,7 @@ bool IsPointInsideVolume(cwroomvolume_t* volume, Vector3D &point, float eps = 0.
 {
 	for(int i = 0; i < volume->volumePlanes.numElem(); i++)
 	{
-		ClassifyPlane_e nPlaneClass = volume->volumePlanes[i].ClassifyPointEpsilon(point, eps);
+		ClassifyPlane_e nPlaneClass = volume->volumePlanes[i].ClassifyPoint(point, eps);
 
 		if(nPlaneClass == CP_FRONT)
 			return false;
@@ -451,7 +451,7 @@ bool IsPointInsideBrush(cwbrush_t* volume, Vector3D &point, float eps = 0.1f)
 {
 	for(int i = 0; i < volume->numfaces; i++)
 	{
-		ClassifyPlane_e nPlaneClass = volume->faces[i].Plane.ClassifyPointEpsilon(point, eps);
+		ClassifyPlane_e nPlaneClass = volume->faces[i].Plane.ClassifyPoint(point, eps);
 
 		if(nPlaneClass == CP_FRONT)
 			return false;

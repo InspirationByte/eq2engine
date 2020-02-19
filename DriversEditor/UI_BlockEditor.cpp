@@ -190,7 +190,10 @@ CUI_BlockEditor::CUI_BlockEditor(wxWindow* parent) : wxPanel(parent, -1, wxDefau
 	m_cursorPos = vec3_zero;
 	m_selectedTool = BlockEdit_Selection;
 	m_draggablePlane = -1;
+
 	m_dragOffs = vec3_zero;
+	m_dragRot = identity3();
+	m_dragInitRot = identity3();
 }
 
 CUI_BlockEditor::~CUI_BlockEditor()
@@ -560,13 +563,29 @@ void CUI_BlockEditor::ProcessMouseEvents(wxMouseEvent& event)
 
 		int initCenterAxes = m_centerAxis.TestRay(ray_start, ray_dir, clength, true);
 
+		// Initialize rotation
+		if (m_mode == BLOCK_MODE_ROTATE)
+		{
+			if (event.ButtonIsDown(wxMOUSE_BTN_LEFT))
+			{
+				int initAxes = m_centerAxis.TestRay(ray_start, ray_dir, clength, false);
+
+				m_dragRot = m_centerAxis.PerformRotation(ray_start, ray_dir, initAxes);
+
+				if (!event.Dragging())
+					m_dragInitRot = m_dragRot;
+			}
+		}
+
 		if (event.Dragging())
 		{
-			Vector3D movement = m_centerAxis.PerformTranslate(ray_start, ray_dir, plane_dir, initCenterAxes);
-				
-			m_dragOffs += movement;
+			if (m_mode == BLOCK_MODE_TRANSLATE)
+			{
+				Vector3D movement = m_centerAxis.PerformTranslate(ray_start, ray_dir, plane_dir, initCenterAxes);
+				m_dragOffs += movement;
+				m_centerAxis.m_position += movement;
+			}
 
-			m_centerAxis.m_position += movement;
 			return;
 		}
 		else if (event.ButtonUp())
@@ -576,6 +595,9 @@ void CUI_BlockEditor::ProcessMouseEvents(wxMouseEvent& event)
 				// do operations
 				if (m_mode == BLOCK_MODE_TRANSLATE)
 				{
+					//------------------------------------------------------
+					// PERFORM ROTATION OF SELECTION
+
 					Vector3D dragOfs = SnapVector(GridSize(), m_dragOffs);
 
 					for (int i = 0; i < m_selectedBrushes.numElem(); i++)
@@ -586,7 +608,33 @@ void CUI_BlockEditor::ProcessMouseEvents(wxMouseEvent& event)
 				}
 				else if (m_mode == BLOCK_MODE_ROTATE)
 				{
+					//------------------------------------------------------
+					// PERFORM ROTATION OF SELECTION
 
+					Matrix3x3 dragRotation = !(!m_dragInitRot*m_dragRot);
+
+					// snap rotation by 15 degrees
+					{
+						Vector3D dragEulers = EulerMatrixXYZ(dragRotation);
+						Vector3D snappedDragEulers = SnapVector(15.0f, VRAD2DEG(dragEulers));
+
+						dragRotation = rotateXYZ3(DEG2RAD(snappedDragEulers.x), DEG2RAD(snappedDragEulers.y), DEG2RAD(snappedDragEulers.z));
+					}
+
+					for (int i = 0; i < m_selectedBrushes.numElem(); i++)
+					{
+						CBrushPrimitive* brush = m_selectedBrushes[i];
+
+						const Vector3D brushOrigin = brush->GetBBox().GetCenter();
+						const Vector3D brushOriginToSelection = (brushOrigin - m_selectionBox.GetCenter());
+						const Vector3D brushOriginTransformed = (dragRotation*brushOriginToSelection) + modeBox.GetCenter();
+
+						Matrix4x4 rendermatrix = (translate(brushOriginTransformed)*(Matrix4x4(dragRotation))*translate(-brushOrigin));
+
+						brush->Transform(rendermatrix);
+					}
+
+					m_mode = BLOCK_MODE_READY;
 				}
 
 				RecalcSelectionBox();
@@ -607,6 +655,7 @@ void CUI_BlockEditor::ProcessMouseEvents(wxMouseEvent& event)
 
 			m_centerAxis.EndDrag();
 			m_dragOffs = vec3_zero;
+			m_dragRot = m_dragInitRot = identity3();
 		}
 
 		return;
@@ -636,6 +685,9 @@ void CUI_BlockEditor::ProcessMouseEvents(wxMouseEvent& event)
 			}
 			else if (event.ButtonUp())
 			{
+				//------------------------------------------------------
+				// PERFORM SCALE OF SELECTION
+
 				Volume boxVolume;
 				BoxToVolume(modeBox, boxVolume);
 
@@ -673,10 +725,6 @@ void CUI_BlockEditor::ProcessMouseEvents(wxMouseEvent& event)
 						Matrix4x4 rendermatrix = (translate(brushOriginTransformed)*(scaleMat)*translate(-brushOrigin));
 
 						brush->Transform(rendermatrix);
-
-						// FIXME: this is wrong!
-						//brush->Translate(-box_center_offset);
-						//brush->Scale(scale_factor, true, -box_center_offset);
 					}
 
 					m_mode = BLOCK_MODE_READY;
@@ -721,7 +769,7 @@ void CUI_BlockEditor::OnKey(wxKeyEvent& event, bool bDown)
 		}
 		else if (event.GetRawKeyCode() == 'R')
 		{
-			m_mode = BLOCK_MODE_READY;
+			m_mode = BLOCK_MODE_ROTATE;
 		}
 		else if (event.GetKeyCode() == WXK_DELETE)
 		{
@@ -791,6 +839,15 @@ void CUI_BlockEditor::OnRender()
 	}
 
 	Vector3D dragTranslation = SnapVector(GridSize(), m_dragOffs);
+	Matrix3x3 dragRotation = !(!m_dragInitRot*m_dragRot);
+
+	// snap rotation by 15 degrees
+	{
+		Vector3D dragEulers = EulerMatrixXYZ(dragRotation);
+		Vector3D snappedDragEulers = SnapVector(15.0f, VRAD2DEG(dragEulers));
+
+		dragRotation = rotateXYZ3(DEG2RAD(snappedDragEulers.x), DEG2RAD(snappedDragEulers.y), DEG2RAD(snappedDragEulers.z));
+	}
 
 	// Draw selection
 	{
@@ -832,13 +889,21 @@ void CUI_BlockEditor::OnRender()
 			if (m_mode == BLOCK_MODE_SCALE)
 			{
 				const Vector3D brushOrigin = brush->GetBBox().GetCenter();
-
 				const Vector3D brushOriginToSelection = (brushOrigin - m_selectionBox.GetCenter());
-
 				const Vector3D brushOriginTransformed = brushOriginToSelection*scale_factor + selectionBox.GetCenter();
 
 				Matrix4x4 scaleMat = scale4(scale_factor.x, scale_factor.y, scale_factor.z);
 				Matrix4x4 rendermatrix = (translate(brushOriginTransformed)*(scaleMat)*translate(-brushOrigin));
+
+				materials->SetMatrix(MATRIXMODE_WORLD, rendermatrix);
+			}
+			else if (m_mode == BLOCK_MODE_ROTATE)
+			{
+				const Vector3D brushOrigin = brush->GetBBox().GetCenter();
+				const Vector3D brushOriginToSelection = (brushOrigin - m_selectionBox.GetCenter());
+				const Vector3D brushOriginTransformed = (dragRotation*brushOriginToSelection) + selectionBox.GetCenter();
+
+				Matrix4x4 rendermatrix = (translate(brushOriginTransformed)*(Matrix4x4(dragRotation))*translate(-brushOrigin));
 
 				materials->SetMatrix(MATRIXMODE_WORLD, rendermatrix);
 			}
@@ -853,7 +918,7 @@ void CUI_BlockEditor::OnRender()
 			float flength = length(m_faceAxis.m_position - g_camera_target);
 
 			// draw selection box
-			debugoverlay->Box3D(selectionBox.minPoint, selectionBox.maxPoint, ColorRGBA(1, 1, 1, 1), 0.0f);
+			debugoverlay->Box3D(selectionBox.minPoint, selectionBox.maxPoint, ColorRGBA(1, 1, 0, 1), 0.0f);
 
 			if (m_mode == BLOCK_MODE_TRANSLATE || m_mode == BLOCK_MODE_ROTATE)
 				m_centerAxis.Draw(clength);

@@ -1267,7 +1267,7 @@ void CViewRenderer::FloodViewThroughPortal_r(portalStack_t* pStack, int nRenderF
 		int nVisibleSide = pAreaRoom->m_pPortalSides[i];
 		
 		// don't check if backfacing
-		int cp_side = pPortal->m_planes[nVisibleSide].ClassifyPointEpsilon(m_pCurrentView->GetOrigin(), 0.05f);
+		int cp_side = pPortal->m_planes[nVisibleSide].ClassifyPoint(m_pCurrentView->GetOrigin(), 0.05f);
 		if(cp_side == CP_BACK)
 			continue;
 

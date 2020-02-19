@@ -51,6 +51,7 @@ public:
 	void EndDrag()
 	{
 		m_draggedAxes = 0;
+		m_dragMode = 0;
 	}
 
 	Vector3D PerformTranslate(const Vector3D& rayStart, const Vector3D& rayDir, const Vector3D& planeNormal, int initAxes)
@@ -65,6 +66,7 @@ public:
 			{
 				m_dragStart = m_position - point;
 				m_draggedAxes = initAxes;
+				m_dragMode = 0;
 			}
 
 			Vector3D movement = (point - m_position) + m_dragStart;
@@ -92,6 +94,7 @@ public:
 		{
 			//m_dragStart = m_position - point;
 			m_draggedAxes = initAxes;
+			m_dragMode = 1;
 		}
 
 		Vector3D axsMod((m_draggedAxes & AXIS_X) ? 1.0f : 0.0f,
@@ -161,6 +164,7 @@ public:
 		Vector3D yPos = m_position + v_y * fLength;
 		Vector3D zPos = m_position + v_z * fLength;
 
+		// draw lines
 		meshBuilder.Begin(PRIM_LINES);
 
 		if ((axes & AXIS_X) && m_draggedAxes == 0 || (m_draggedAxes & AXIS_X))
@@ -182,6 +186,31 @@ public:
 		}
 
 		meshBuilder.End();
+
+		if (m_dragMode == 1 && m_draggedAxes)
+		{
+			Matrix3x3 circleAngle = (m_draggedAxes & AXIS_X) ? rotateZ3(DEG2RAD(90)) : 
+									(m_draggedAxes & AXIS_Z) ? rotateX3(DEG2RAD(90)) : identity3();
+
+			// draw circle
+			meshBuilder.Begin(PRIM_LINE_STRIP);
+
+				meshBuilder.Color4f(1.0f, 1.0f, 0.0f, 0.8f);
+				for (int i = 0; i < 33; i++)
+				{
+					float angle = 360.0f*(float)i / 32.0f;
+
+					float si, co;
+					SinCos(DEG2RAD(angle), &si, &co);
+
+					Vector3D circleAngleVec = circleAngle*Vector3D(si, 0, co)*fLength;
+
+					meshBuilder.Position3fv(m_position + circleAngleVec);
+					meshBuilder.AdvanceVertex();
+				}
+
+			meshBuilder.End();
+		}
 
 		meshBuilder.Begin(PRIM_TRIANGLES);
 			if ((axes & AXIS_X) && m_draggedAxes == 0 || (m_draggedAxes & AXIS_X) && (m_draggedAxes & AXIS_Z))
@@ -298,6 +327,7 @@ public:
 protected:
 	Vector3D	m_dragStart;
 	int			m_draggedAxes;
+	int			m_dragMode;
 };
 
 
