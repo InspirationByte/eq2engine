@@ -57,6 +57,8 @@ public:
 	void				MouseEventOnTile(wxMouseEvent& event, hfieldtile_t* tile, int tx, int ty, const Vector3D& ppos);
 	void				ProcessMouseEvents(wxMouseEvent& event);
 
+	bool				ProcessSelectionAndBrushMouseEvents(wxMouseEvent& event);
+
 	void				OnKey(wxKeyEvent& event, bool bDown);
 	void				OnRender();
 
@@ -74,6 +76,8 @@ protected:
 	void				CancelSelection();
 	void				DeleteSelection();
 	void				RecalcSelectionBox();
+
+	void				RenderBrushVerts(CBrushPrimitive* pBrush);
 
 	CMaterialAtlasList* m_texPanel;
 
@@ -105,6 +109,7 @@ protected:
 	DkList<CBrushPrimitive*>	m_selectedBrushes;
 	DkList<brushFace_t*>		m_selectedFaces;
 
+	// dragging properties
 	Vector3D					m_dragOffs;
 	Matrix3x3					m_dragInitRot;
 	Matrix3x3					m_dragRot;

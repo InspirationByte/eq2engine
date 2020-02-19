@@ -301,11 +301,7 @@ void CUI_BlockEditor::MouseEventOnTile(wxMouseEvent& event, hfieldtile_t* tile, 
 	// selecting brushes within region
 	// moving
 	// editing
-	if (m_selectedTool == BlockEdit_Selection)
-	{
-	
-	}
-	else if (m_selectedTool == BlockEdit_Brush)
+	if (m_selectedTool == BlockEdit_Brush)
 	{
 		// draw bounding box and press enter to create brush
 		if (event.ButtonIsDown(wxMOUSE_BTN_LEFT))
@@ -314,24 +310,36 @@ void CUI_BlockEditor::MouseEventOnTile(wxMouseEvent& event, hfieldtile_t* tile, 
 			if (!event.Dragging())
 			{
 				m_mode = BLOCK_MODE_BOX;
-				m_creationBox.minPoint = cursorPos;
-				m_creationBox.maxPoint = cursorPos;
+
+				m_creationBox.minPoint.x = cursorPos.x;
+				m_creationBox.minPoint.z = cursorPos.z;
+
+				m_creationBox.maxPoint.x = cursorPos.x;
+				m_creationBox.maxPoint.z = cursorPos.z;
+
+				if (m_creationBox.minPoint.y > m_creationBox.maxPoint.y)
+				{
+					m_creationBox.minPoint.y = cursorPos.y;
+					m_creationBox.maxPoint.y = cursorPos.y + GridSize();
+				}
+
 				m_draggablePlane = -1;
 			}
 			else if (m_mode == BLOCK_MODE_BOX)
 			{
 				BoundingBox newBox = m_creationBox;
 
-				newBox.minPoint = cursorPos + Vector3D(0,1,0);
+				newBox.minPoint.x = cursorPos.x;
+				newBox.minPoint.z = cursorPos.z;
 
 				//if (newBox.minPoint.x == newBox.maxPoint.x)
-				//	newBox.maxPoint.x += 1.0f;
+				//	newBox.maxPoint.x += GridSize();
 
 				if (newBox.minPoint.y == newBox.maxPoint.y)
 					newBox.maxPoint.y += GridSize();
 
 				//if (newBox.minPoint.z == newBox.maxPoint.z)
-				//	newBox.maxPoint.z += 1.0f;
+				//	newBox.maxPoint.z += GridSize();
 
 				m_creationBox = newBox;
 
@@ -344,14 +352,6 @@ void CUI_BlockEditor::MouseEventOnTile(wxMouseEvent& event, hfieldtile_t* tile, 
 	else if (m_selectedTool == BlockEdit_Polygon)
 	{
 		// draw polygon and press enter to create brushes
-	}
-	else if (m_selectedTool == BlockEdit_VertexManip)
-	{
-		// vertex selection and movement
-	}
-	else if (m_selectedTool == BlockEdit_Clipper)
-	{
-		// draw a plane using 2 vertices and split brushes
 	}
 
 	m_cursorPos = cursorPos;
@@ -492,10 +492,25 @@ void CUI_BlockEditor::ProcessMouseEvents(wxMouseEvent& event)
 	Vector3D ray_start, ray_dir;
 	g_pMainFrame->GetMouseScreenVectors(event.GetX(), event.GetY(), ray_start, ray_dir);
 
+	if (m_selectedTool == BlockEdit_Selection || m_selectedTool == BlockEdit_Brush)
+	{
+		if (!ProcessSelectionAndBrushMouseEvents(event))
+			return;
+	}
+
+
+	CBaseTilebasedEditor::ProcessMouseEvents(event);
+}
+
+bool CUI_BlockEditor::ProcessSelectionAndBrushMouseEvents(wxMouseEvent& event)
+{
+	Vector3D ray_start, ray_dir;
+	g_pMainFrame->GetMouseScreenVectors(event.GetX(), event.GetY(), ray_start, ray_dir);
+
 	BoundingBox& modeBox = (m_selectedTool == BlockEdit_Selection) ? m_selectionBox : m_creationBox;
 
 	// pick the box plane for dragging
-	if(m_mode != BLOCK_MODE_SCALE)
+	if (m_mode != BLOCK_MODE_SCALE)
 	{
 		Volume boxVolume;
 		BoxToVolume(modeBox, boxVolume);
@@ -542,7 +557,7 @@ void CUI_BlockEditor::ProcessMouseEvents(wxMouseEvent& event)
 					}
 				}
 
-				if (nearestBrush)
+				if (nearestBrush && intersectFace >= 0)
 				{
 					if (event.ButtonIsDown(wxMOUSE_BTN_LEFT))
 						ToggleBrushSelection(nearestBrush);
@@ -586,7 +601,7 @@ void CUI_BlockEditor::ProcessMouseEvents(wxMouseEvent& event)
 				m_centerAxis.m_position += movement;
 			}
 
-			return;
+			return false;
 		}
 		else if (event.ButtonUp())
 		{
@@ -658,9 +673,9 @@ void CUI_BlockEditor::ProcessMouseEvents(wxMouseEvent& event)
 			m_dragRot = m_dragInitRot = identity3();
 		}
 
-		return;
+		return false;
 	}
-	else if((m_mode == BLOCK_MODE_READY || m_mode == BLOCK_MODE_BOX || m_mode == BLOCK_MODE_SCALE) && m_draggablePlane != -1)
+	else if ((m_mode == BLOCK_MODE_READY || m_mode == BLOCK_MODE_BOX || m_mode == BLOCK_MODE_SCALE) && m_draggablePlane != -1)
 	{
 		int initFaceAxes = m_faceAxis.TestRay(ray_start, ray_dir, flength, false);
 
@@ -670,7 +685,7 @@ void CUI_BlockEditor::ProcessMouseEvents(wxMouseEvent& event)
 		if (event.ButtonDown(wxMOUSE_BTN_LEFT) && (m_mode == BLOCK_MODE_READY || m_mode == BLOCK_MODE_BOX) && (initFaceAxes & AXIS_Z))
 		{
 			m_mode = BLOCK_MODE_SCALE;
-			return;
+			return false;
 		}
 		else if (m_mode == BLOCK_MODE_SCALE)
 		{
@@ -681,7 +696,7 @@ void CUI_BlockEditor::ProcessMouseEvents(wxMouseEvent& event)
 				m_dragOffs += movement;
 
 				m_faceAxis.m_position += movement;
-				return;
+				return false;
 			}
 			else if (event.ButtonUp())
 			{
@@ -745,7 +760,7 @@ void CUI_BlockEditor::ProcessMouseEvents(wxMouseEvent& event)
 		}
 	}
 
-	CBaseTilebasedEditor::ProcessMouseEvents(event);
+	return true;
 }
 
 void CUI_BlockEditor::OnKey(wxKeyEvent& event, bool bDown)
@@ -810,6 +825,48 @@ void CUI_BlockEditor::OnKey(wxKeyEvent& event, bool bDown)
 		CancelSelection();
 	}
 		
+}
+
+void CUI_BlockEditor::RenderBrushVerts(CBrushPrimitive* pBrush)
+{
+	Matrix4x4 view, proj;
+	materials->GetMatrix(MATRIXMODE_PROJECTION, proj);
+	materials->GetMatrix(MATRIXMODE_VIEW, view);
+
+	IVector2D screenSize = g_pMainFrame->GetRenderPanelDimensions();
+	materials->Setup2D(screenSize.x, screenSize.y);
+
+	// TODO: render only shared vertices
+
+	for (int i = 0; i < pBrush->GetFaceCount(); i++)
+	{
+		brushFace_t* face = pBrush->GetFace(i);
+		winding_t* winding = pBrush->GetFacePolygon(i);
+
+		if (!(face->nFlags & BRUSH_FACE_SELECTED))
+			continue;
+
+		for (int j = 0; j < winding->vertices.numElem(); j++)
+		{
+			lmodeldrawvertex_t& vert = winding->vertices[j];
+
+			Vector2D pointScr;
+			if (!PointToScreen(vert.position, pointScr, proj*view, screenSize))
+			{
+				// draw only single point
+				Vertex2D_t pointA[] = { MAKETEXQUAD(pointScr.x - 3,pointScr.y - 3,pointScr.x + 3,pointScr.y + 3, 0) };
+
+				materials->DrawPrimitives2DFFP(PRIM_TRIANGLE_STRIP, pointA, elementsOf(pointA), NULL, ColorRGBA(1, 1, 0.5f, 1));
+
+				// draw only single point
+				Vertex2D_t pointR[] = { MAKETEXRECT(pointScr.x - 3,pointScr.y - 3,pointScr.x + 3,pointScr.y + 3, 0) };
+				materials->DrawPrimitives2DFFP(PRIM_LINE_STRIP, pointR, elementsOf(pointR), NULL, ColorRGBA(0, 0, 0, 1));
+			}
+		}
+	}
+
+	materials->SetMatrix(MATRIXMODE_PROJECTION, proj);
+	materials->SetMatrix(MATRIXMODE_VIEW, view);
 }
 
 void CUI_BlockEditor::OnRender()
@@ -909,6 +966,8 @@ void CUI_BlockEditor::OnRender()
 			}
 			
 			brush->RenderGhost();
+
+			RenderBrushVerts(brush);
 		}
 
 		materials->SetMatrix(MATRIXMODE_WORLD, identity4());

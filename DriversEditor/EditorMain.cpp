@@ -1197,6 +1197,13 @@ CLevelRegion* CMainWindow::GetRegionAtScreenPos(int mx, int my, float height, in
 	return NULL;
 }
 
+IVector2D CMainWindow::GetRenderPanelDimensions() const
+{
+	IVector2D renderPanelSize;
+	m_pRenderPanel->GetSize(&renderPanelSize.x, &renderPanelSize.y);
+	return renderPanelSize;
+}
+
 void CMainWindow::OnSashSize( wxSplitterEvent& event )
 {
 	if(materials)
