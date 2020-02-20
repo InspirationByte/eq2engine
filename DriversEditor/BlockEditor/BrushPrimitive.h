@@ -32,6 +32,9 @@ inline void CopyWinding(const winding_t *from, winding_t *to);
 
 struct winding_t
 {
+	brushFace_t						face;
+	CBrushPrimitive*				brush;
+
 	// calculates the texture coordinates for this 
 	void							CalculateTextureCoordinates();
 
@@ -40,14 +43,7 @@ struct winding_t
 
 	// splits the face by this face, and results a
 	void							Split(const winding_t *w, winding_t *front, winding_t *back );
-
-	// classifies the next face over this
 	ClassifyPoly_e					Classify(winding_t *w);
-
-	CBrushPrimitive*				pAssignedBrush;
-
-	// assingned face
-	brushFace_t*					pAssignedFace;
 
 	// vertex data
 	DkList<lmodeldrawvertex_t>		vertices;
@@ -64,8 +60,8 @@ struct winding_t
 
 inline void CopyWinding(const winding_t *from, winding_t *to)
 {
-	to->pAssignedBrush = from->pAssignedBrush;
-	to->pAssignedFace = from->pAssignedFace;
+	to->brush = from->brush;
+	to->face = from->face;
 
 	for(int i = 0; i < from->vertices.numElem(); i++)
 		to->vertices.append(from->vertices[i]);
@@ -124,9 +120,9 @@ public:
 	bool							IsWindingIntersectsBrush(winding_t* pWinding);
 	bool							IsTouchesBrush(winding_t* pWinding);
 
-	int								GetFaceCount() const				{return m_faces.numElem();}
-	brushFace_t*					GetFace(int nFace) const			{return (brushFace_t*)&m_faces[nFace];}
-	winding_t*						GetFacePolygon(int nFace) const		{return (winding_t*)&m_polygons[nFace];}
+	int								GetFaceCount() const				{return m_windingFaces.numElem();}
+	brushFace_t*					GetFace(int nFace) const			{return (brushFace_t*)&m_windingFaces[nFace].face;}
+	winding_t*						GetFacePolygon(int nFace) const		{return (winding_t*)&m_windingFaces[nFace];}
 
 	void							UpdateRenderData();
 	void							UpdateRenderBuffer();
@@ -151,8 +147,7 @@ protected:
 	void							SortVertsToDraw();
 
 	BoundingBox						m_bbox;
-	DkList<brushFace_t>				m_faces;
-	DkList<winding_t>				m_polygons;
+	DkList<winding_t>				m_windingFaces;
 
 	IVertexBuffer*					m_pVB;
 

@@ -125,6 +125,7 @@ void MakeInfiniteWinding(winding_t &w, Plane &plane)
 	Vector3D org = -plane.normal * plane.offset;
 
 	// and finally fill really big winding
+	w.vertices.clear(false);
 	w.vertices.append(lmodeldrawvertex_t(org - vRight + vUp, plane.normal, vec2_zero));
 	w.vertices.append(lmodeldrawvertex_t(org + vRight + vUp, plane.normal, vec2_zero));
 	w.vertices.append(lmodeldrawvertex_t(org + vRight - vUp, plane.normal, vec2_zero));
@@ -141,7 +142,7 @@ void winding_t::CalculateTextureCoordinates()
 	int texSizeW = 32;
 	int texSizeH = 32;
 
-	ITexture* pTex = pAssignedFace->pMaterial->GetBaseTexture();
+	ITexture* pTex = face.pMaterial->GetBaseTexture();
 
 	if(pTex)
 	{
@@ -152,31 +153,31 @@ void winding_t::CalculateTextureCoordinates()
 	float texelW = 1.0f / texSizeW;
 	float texelH = 1.0f / texSizeH;
 
-	Vector3D axisAngles = VectorAngles(pAssignedFace->Plane.normal);
-	AngleVectors(axisAngles, NULL, &pAssignedFace->UAxis.normal, &pAssignedFace->VAxis.normal);
+	Vector3D axisAngles = VectorAngles(face.Plane.normal);
+	AngleVectors(axisAngles, NULL, &face.UAxis.normal, &face.VAxis.normal);
 
-	pAssignedFace->VAxis.normal *= -1;
-	//VectorVectors(pAssignedFace->Plane.normal, pAssignedFace->UAxis.normal, pAssignedFace->VAxis.normal);
+	face.VAxis.normal *= -1;
+	//VectorVectors(face.Plane.normal, face.UAxis.normal, face.VAxis.normal);
 
-	Matrix3x3 texMatrix(pAssignedFace->UAxis.normal, pAssignedFace->VAxis.normal, pAssignedFace->Plane.normal);
+	Matrix3x3 texMatrix(face.UAxis.normal, face.VAxis.normal, face.Plane.normal);
 
-	Matrix3x3 rotationMat = rotateZXY3( 0.0f, 0.0f, DEG2RAD(pAssignedFace->fRotation));
+	Matrix3x3 rotationMat = rotateZXY3( 0.0f, 0.0f, DEG2RAD(face.fRotation));
 	texMatrix = rotationMat*texMatrix;
 
-	pAssignedFace->UAxis.normal = -texMatrix.rows[0];
-	pAssignedFace->VAxis.normal = texMatrix.rows[1];
+	face.UAxis.normal = -texMatrix.rows[0];
+	face.VAxis.normal = texMatrix.rows[1];
 	
 	for(int i = 0; i < vertices.numElem(); i++ )
 	{
 		float U, V;
 		
-		U = dot(pAssignedFace->UAxis.normal, vertices[i].position);
-		U /= ( ( float )texSizeW ) * pAssignedFace->vScale.x * texelW;
-		U += ( pAssignedFace->UAxis.offset / ( float )texSizeW );
+		U = dot(face.UAxis.normal, vertices[i].position);
+		U /= ( ( float )texSizeW ) * face.vScale.x * texelW;
+		U += (face.UAxis.offset / ( float )texSizeW );
 
-		V = dot(pAssignedFace->VAxis.normal, vertices[i].position);
-		V /= ( ( float )texSizeH ) * pAssignedFace->vScale.y * texelH;
-		V += ( pAssignedFace->VAxis.offset / ( float )texSizeH );
+		V = dot(face.VAxis.normal, vertices[i].position);
+		V /= ( ( float )texSizeH ) * face.vScale.y * texelH;
+		V += (face.VAxis.offset / ( float )texSizeH );
 
 		vertices[i].texcoord.x = U;
 		vertices[i].texcoord.y = V;
@@ -243,7 +244,7 @@ bool winding_t::SortVerticesAsTriangleList()
 		int		nSmallestIdx	= -1;
 
 		Vector3D a = normalize(vertices[i].position - center);
-		Plane p( vertices[i].position, center, center + pAssignedFace->Plane.normal );
+		Plane p( vertices[i].position, center, center + face.Plane.normal );
 
 		for(int j = i+1; j < vertices.numElem(); j++)
 		{
@@ -281,13 +282,13 @@ void winding_t::Split(const winding_t *w, winding_t *front, winding_t *back )
 	ClassifyPlane_e	*pCP = (ClassifyPlane_e*)stackalloc(w->vertices.numElem()*sizeof(ClassifyPlane_e));
 
 	for ( int i = 0; i < w->vertices.numElem(); i++ )
-		pCP[ i ] = pAssignedFace->Plane.ClassifyPoint ( w->vertices[i].position );
+		pCP[ i ] = face.Plane.ClassifyPoint ( w->vertices[i].position );
 
-	front->pAssignedBrush	= w->pAssignedBrush;
-	back->pAssignedBrush	= w->pAssignedBrush;
+	front->brush = w->brush;
+	back->brush	= w->brush;
 
-	front->pAssignedFace	= w->pAssignedFace;
-	back->pAssignedFace		= w->pAssignedFace;
+	front->face	= w->face;
+	back->face = w->face;
 
 	for ( int i = 0; i < w->vertices.numElem(); i++ )
 	{
@@ -333,7 +334,7 @@ void winding_t::Split(const winding_t *w, winding_t *front, winding_t *back )
 			lmodeldrawvertex_t	v;	// New vertex created by splitting
 			float p;			// Percentage between the two points
 
-			pAssignedFace->Plane.GetIntersectionLineFraction(w->vertices[i].position, w->vertices[iNext].position, v.position, p );
+			face.Plane.GetIntersectionLineFraction(w->vertices[i].position, w->vertices[iNext].position, v.position, p );
 
 			v.texcoord = lerp(w->vertices[i].texcoord, w->vertices[iNext].texcoord, p);
 
@@ -351,7 +352,7 @@ ClassifyPoly_e winding_t::Classify(winding_t *w)
 
 	for ( int i = 0; i < w->vertices.numElem(); i++ )
 	{
-		dist = pAssignedFace->Plane.Distance(w->vertices[i].position);
+		dist = face.Plane.Distance(w->vertices[i].position);
 
 		if ( dist > 0.0001f )
 		{
@@ -399,7 +400,7 @@ CEditableSurface* EqBrushWinding_t::MakeEditableSurface()
 	}
 
 	pSurface->MakeCustomMesh(vertices.ptr(), indices.ptr(), vertices.numElem(), indices.numElem());
-	pSurface->SetMaterial(pAssignedFace->pMaterial);
+	pSurface->SetMaterial(face.pMaterial);
 
 	return pSurface;
 }
@@ -424,10 +425,12 @@ void CBrushPrimitive::CalculateBBOX()
 {
 	m_bbox.Reset();
 
-	for(int i = 0; i < m_polygons.numElem(); i++)
+	for(int i = 0; i < m_windingFaces.numElem(); i++)
 	{
-		for(int j = 0; j < m_polygons[i].vertices.numElem(); j++)
-			m_bbox.AddVertex(m_polygons[i].vertices[j].position);
+		winding_t& winding = m_windingFaces[i];
+
+		for(int j = 0; j < winding.vertices.numElem(); j++)
+			m_bbox.AddVertex(winding.vertices[j].position);
 	}
 }
 
@@ -439,9 +442,9 @@ bool CBrushPrimitive::IsBrushIntersectsAABB(CBrushPrimitive *pBrush)
 
 void CBrushPrimitive::SortVertsToDraw()
 {
-	for(int i = 0; i < m_polygons.numElem(); i++)
+	for(int i = 0; i < m_windingFaces.numElem(); i++)
 	{
-		if(!m_polygons[i].SortVerticesAsTriangleList())
+		if(!m_windingFaces[i].SortVerticesAsTriangleList())
 			Msg("\nERROR: Degenerate plane %d on brush\n", i);
 	}
 }
@@ -453,9 +456,11 @@ bool CBrushPrimitive::CreateFromPlanes()
 	bool usePlane[MAX_BRUSH_PLANES];
 	memset(usePlane,0,sizeof(usePlane));
 
-	for ( int i = 0; i < m_faces.numElem(); i++ )
+	for ( int i = 0; i < m_windingFaces.numElem(); i++ )
 	{
-		if(m_faces[i].Plane.normal == vec3_zero)
+		brushFace_t& face = m_windingFaces[i].face;
+
+		if(face.Plane.normal == vec3_zero)
 		{
 			Msg("Brush: Invalid plane %d\n", i);
 			usePlane[i] = false;
@@ -468,7 +473,8 @@ bool CBrushPrimitive::CreateFromPlanes()
 			brushFace_t* faceCheck = GetFace(j);
 
 			// check duplicate planes
-			if((dot(m_faces[i].Plane.normal, faceCheck->Plane.normal) > 0.999) && (fabs(m_faces[i].Plane.offset - faceCheck->Plane.offset) < 0.01))
+			if( (dot(face.Plane.normal, faceCheck->Plane.normal) > 0.999) && 
+				(fabs(face.Plane.offset - faceCheck->Plane.offset) < 0.01))
 			{
 				Msg("Brush: Duplicate plane found %d\n", j);
 				usePlane[j] = false;
@@ -476,36 +482,32 @@ bool CBrushPrimitive::CreateFromPlanes()
 		}
 	}
 	
-	m_polygons.clear();
-
-	for ( int i = 0; i < m_faces.numElem(); i++ )
+	for ( int i = 0; i < m_windingFaces.numElem(); i++ )
 	{
 		if(!usePlane[i])
 		{
-			m_faces.removeIndex(i);
+			m_windingFaces.fastRemoveIndex(i);
 			i--;
 			continue;
 		}
 
-		winding_t poly;
-		poly.pAssignedBrush = this;
+		winding_t& poly = m_windingFaces[i];
+		brushFace_t& face = poly.face;
+		poly.brush = this;
 
-		MakeInfiniteWinding(poly, m_faces[i].Plane);
+		MakeInfiniteWinding(poly, face.Plane);
 		
-		for ( int j = 0; j < m_faces.numElem(); j++ )
+		for ( int j = 0; j < m_windingFaces.numElem(); j++ )
 		{
 			if(j != i)
 			{
 				Plane clipPlane;
-				clipPlane.normal = -m_faces[j].Plane.normal;
-				clipPlane.offset = -m_faces[j].Plane.offset;
+				clipPlane.normal = -m_windingFaces[j].face.Plane.normal;
+				clipPlane.offset = -m_windingFaces[j].face.Plane.offset;
 
 				ChopWinding(poly, clipPlane);
 			}
 		}
-
-		poly.pAssignedFace = &m_faces[i];
-		m_polygons.append(poly);
 
 		Msg("Adding poly with %d verts\n", poly.vertices.numElem());
 	}
@@ -522,12 +524,11 @@ bool CBrushPrimitive::CreateFromPlanes()
 void CBrushPrimitive::RemoveEmptyFaces()
 {
 	// remove empty faces
-	for(int i = 0; i < m_polygons.numElem(); i++)
+	for(int i = 0; i < m_windingFaces.numElem(); i++)
 	{
-		if(m_polygons[i].vertices.numElem() < 3)
+		if(m_windingFaces[i].vertices.numElem() < 3)
 		{
-			m_polygons.removeIndex(i);
-			m_faces.removeIndex(i);
+			m_windingFaces.removeIndex(i);
 			i--;
 		}
 	}
@@ -549,11 +550,11 @@ void CBrushPrimitive::Render(int nViewRenderFlags)
 	ColorRGBA ambientColor = materials->GetAmbientColor();
 
 	int nFirstVertex = 0;
-	for(int i = 0; i < m_polygons.numElem(); i++)
+	for(int i = 0; i < m_windingFaces.numElem(); i++)
 	{
-		winding_t& winding = m_polygons[i];
+		winding_t& winding = m_windingFaces[i];
 
-		if(winding.pAssignedFace->nFlags & BRUSH_FACE_SELECTED)
+		if(winding.face.nFlags & BRUSH_FACE_SELECTED)
 		{
 			ColorRGBA sel_color(1.0f,0.5f,0.5f,1.0f);
 			materials->SetAmbientColor(sel_color);
@@ -562,7 +563,7 @@ void CBrushPrimitive::Render(int nViewRenderFlags)
 			materials->SetAmbientColor(ambientColor);
 
 		// apply the material (slow in editor)
-		materials->BindMaterial(winding.pAssignedFace->pMaterial, 0);
+		materials->BindMaterial(winding.face.pMaterial, 0);
 		materials->Apply();
 
 		g_pShaderAPI->DrawNonIndexedPrimitives(PRIM_TRIANGLE_FAN, nFirstVertex, winding.vertices.numElem());
@@ -584,16 +585,20 @@ void CBrushPrimitive::RenderGhost()
 	g_pShaderAPI->SetTexture(nullptr, nullptr, 0);
 
 	int nFirstVertex = 0;
-	for (int i = 0; i < m_polygons.numElem(); i++)
+	for (int i = 0; i < m_windingFaces.numElem(); i++)
 	{
-		g_pShaderAPI->DrawNonIndexedPrimitives(PRIM_LINE_STRIP, nFirstVertex, m_polygons[i].vertices.numElem() + 1);
-		nFirstVertex += m_polygons[i].vertices.numElem() + 1;
+		g_pShaderAPI->DrawNonIndexedPrimitives(PRIM_LINE_STRIP, nFirstVertex, m_windingFaces[i].vertices.numElem() + 1);
+		nFirstVertex += m_windingFaces[i].vertices.numElem() + 1;
 	}
 }
 
 void CBrushPrimitive::AddFace(brushFace_t &face)
 {
-	m_faces.append(face);
+	winding_t winding;
+	winding.face = face;
+	winding.brush = this;
+
+	m_windingFaces.append(winding);
 }
 
 /*
@@ -620,18 +625,17 @@ void CBrushPrimitive::UpdateRenderBuffer()
 	// reset first!
 	m_nAdditionalFlags = 0;
 
-	for(int i = 0; i < m_polygons.numElem(); i++)
+	for(int i = 0; i < m_windingFaces.numElem(); i++)
 	{
-		winding_t& winding = m_polygons[i];
-
+		winding_t& winding = m_windingFaces[i];
 		winding.CalculateTextureCoordinates();
 	}
 
 	DkList<lmodeldrawvertex_t> verts;
 
-	for(int i = 0; i < m_polygons.numElem(); i++)
+	for(int i = 0; i < m_windingFaces.numElem(); i++)
 	{
-		winding_t& winding = m_polygons[i];
+		winding_t& winding = m_windingFaces[i];
 
 		verts.append(winding.vertices);
 
@@ -658,10 +662,10 @@ void CBrushPrimitive::UpdateRenderBuffer()
 
 void CBrushPrimitive::Transform(const Matrix4x4& mat)
 {
-	for (int i = 0; i < m_polygons.numElem(); i++)
+	for (int i = 0; i < m_windingFaces.numElem(); i++)
 	{
-		winding_t& poly = m_polygons[i];
-		brushFace_t& face = m_faces[i];
+		winding_t& poly = m_windingFaces[i];
+		brushFace_t& face = poly.face;
 
 		Vector4D O(face.Plane.normal * -face.Plane.offset, 1.0f);
 		Vector4D N(face.Plane.normal, 0.0f);
@@ -692,9 +696,9 @@ float CBrushPrimitive::CheckLineIntersection(const Vector3D &start, const Vector
 
 	Vector3D dir = normalize(end - start);
 
-	for (int i = 0; i < m_faces.numElem(); i++)
+	for (int i = 0; i < m_windingFaces.numElem(); i++)
 	{
-		const brushFace_t& brushFace = m_faces[i];
+		const brushFace_t& brushFace = m_windingFaces[i].face;
 
 		float frac = 1.0f;
 		if(brushFace.Plane.GetIntersectionWithRay(start, dir, outintersection))
@@ -716,9 +720,9 @@ float CBrushPrimitive::CheckLineIntersection(const Vector3D &start, const Vector
 
 bool CBrushPrimitive::IsPointInside(Vector3D &point)
 {
-	for (int i = 0; i < m_faces.numElem(); i++)
+	for (int i = 0; i < m_windingFaces.numElem(); i++)
 	{
-		if(m_faces[i].Plane.ClassifyPoint(point) == CP_FRONT)
+		if(m_windingFaces[i].face.Plane.ClassifyPoint(point) == CP_FRONT)
 			return false;
 	}
 
@@ -727,9 +731,9 @@ bool CBrushPrimitive::IsPointInside(Vector3D &point)
 
 bool CBrushPrimitive::IsPointInside_Epsilon(Vector3D &point, float eps)
 {
-	for (int i = 0; i < m_faces.numElem(); i++)
+	for (int i = 0; i < m_windingFaces.numElem(); i++)
 	{
-		if(m_faces[i].Plane.Distance(point) > eps)
+		if(m_windingFaces[i].face.Plane.Distance(point) > eps)
 			return false;
 	}
 
@@ -762,12 +766,12 @@ struct ReadWriteFace_t
 bool CBrushPrimitive::WriteObject(IVirtualStream* pStream)
 {
 	// write face count
-	int num_faces = m_faces.numElem();
+	int num_faces = m_windingFaces.numElem();
 	pStream->Write(&num_faces, 1, sizeof(int));
 
-	for(int i = 0; i < m_faces.numElem(); i++)
+	for(int i = 0; i < m_windingFaces.numElem(); i++)
 	{
-		brushFace_t& face = m_faces[i];
+		brushFace_t& face = m_windingFaces[i].face;
 
 		ReadWriteFace_t wface;
 		memset(&face, 0,sizeof(ReadWriteFace_t));
@@ -813,7 +817,7 @@ bool CBrushPrimitive::ReadObject(IVirtualStream* pStream)
 
 		addFace.pMaterial = materials->GetMaterial(face.materialname);
 
-		m_faces.append(addFace);
+		AddFace(addFace);
 	}
 
 	// calculate face verts
@@ -847,16 +851,16 @@ void CBrushPrimitive::CutBrushByPlane(Plane &plane, CBrushPrimitive** ppNewBrush
 {
 	CBrushPrimitive* pNewBrush = new CBrushPrimitive;
 	
-	for(int i = 0; i < m_faces.numElem(); i++)
+	for(int i = 0; i < m_windingFaces.numElem(); i++)
 	{
-		for(int j = 0; j < m_polygons[i].vertices.numElem(); j++)
+		for(int j = 0; j < m_windingFaces[i].vertices.numElem(); j++)
 		{
-			ClassifyPlane_e plClass = plane.ClassifyPoint(m_polygons[i].vertices[j].position);
+			ClassifyPlane_e plClass = plane.ClassifyPoint(m_windingFaces[i].vertices[j].position);
 
 			// only on back of plane
 			if(plClass == CP_BACK)
 			{
-				pNewBrush->AddFace(m_faces[i]);
+				pNewBrush->AddFace(m_windingFaces[i].face);
 				break;
 			}
 		}
@@ -907,17 +911,17 @@ bool CBrushPrimitive::IsWindingFullyInsideBrush(winding_t* pWinding)
 
 bool CBrushPrimitive::IsWindingIntersectsBrush(winding_t* pWinding)
 {
-	for(int i = 0; i < m_faces.numElem(); i++)
+	for(int i = 0; i < m_windingFaces.numElem(); i++)
 	{
-		for(int j = 0; j < m_faces.numElem(); j++)
+		for(int j = 0; j < m_windingFaces.numElem(); j++)
 		{
 			Vector3D out_point;
 
-			if(pWinding->pAssignedFace->Plane.GetIntersectionWithPlanes(m_faces[i].Plane, m_faces[j].Plane, out_point))
+			if(pWinding->face.Plane.GetIntersectionWithPlanes(m_windingFaces[i].face.Plane, m_windingFaces[j].face.Plane, out_point))
 			{
-				for(int k = 0; k < m_faces.numElem(); k++)
+				for(int k = 0; k < m_windingFaces.numElem(); k++)
 				{
-					if(m_faces[k].Plane.ClassifyPoint(out_point) == CP_FRONT)
+					if(m_windingFaces[k].face.Plane.ClassifyPoint(out_point) == CP_FRONT)
 						return false;
 				}
 			}
@@ -930,9 +934,9 @@ bool CBrushPrimitive::IsWindingIntersectsBrush(winding_t* pWinding)
 bool CBrushPrimitive::IsTouchesBrush(winding_t* pWinding)
 {
 	// find one plane that touches another plane
-	for(int i = 0; i < m_polygons.numElem(); i++)
+	for(int i = 0; i < m_windingFaces.numElem(); i++)
 	{
-		if(pWinding->Classify(&m_polygons[i]) == CPL_ONPLANE)
+		if(pWinding->Classify(&m_windingFaces[i]) == CPL_ONPLANE)
 			return true;
 	}
 
@@ -1070,9 +1074,9 @@ void CBrushPrimitive::SaveToKeyValues(kvkeybase_t* pSection)
 {
 	kvkeybase_t* pFacesSec = pSection->AddKeyBase("faces");
 	
-	for(int i = 0; i < m_faces.numElem(); i++)
+	for(int i = 0; i < m_windingFaces.numElem(); i++)
 	{
-		brushFace_t& face = m_faces[i];
+		brushFace_t& face = m_windingFaces[i].face;
 
 		kvkeybase_t* pThisFace = pFacesSec->AddKeyBase(varargs("f%d", i));
 		pThisFace->AddKeyBase("nplane", varargs("%f %f %f %f", 
@@ -1151,7 +1155,7 @@ bool CBrushPrimitive::LoadFromKeyValues(kvkeybase_t* pSection)
 		//face.nFlags |= KV_GetValueBool(pPair, false) ? STFL_NOSUBDIVISION : 0;
 
 		// add face
-		m_faces.append(face);
+		AddFace(face);
 	}
 
 	// calculate face verts

@@ -26,6 +26,12 @@ const float s_GridSizes[]
 const int s_numGridSizes = sizeof(s_GridSizes) / sizeof(float);
 const int s_defaultGridSelection = 3;
 
+struct faceSelect_t
+{
+	winding_t* windingFace;
+	DkList<int> vertex_ids;
+};
+
 //--------------------------------------------------------------------------------------
 // Some math helpers
 
@@ -212,9 +218,9 @@ void CUI_BlockEditor::ConstructToolbars(wxBoxSizer* addTo)
 	toolBarBitmaps[0] = wxBitmap("Editor/resource/tool_select.bmp", wxBITMAP_TYPE_BMP);
 	toolBarBitmaps[1] = wxBitmap("Editor/resource/tool_brush.bmp", wxBITMAP_TYPE_BMP);
 	toolBarBitmaps[2] = wxBitmap("Editor/resource/tool_surface.bmp", wxBITMAP_TYPE_BMP);
-	toolBarBitmaps[3] = wxBitmap("Editor/resource/tool_clipper.bmp", wxBITMAP_TYPE_BMP);
-	toolBarBitmaps[4] = wxBitmap("Editor/resource/tool_vertexmanip.bmp", wxBITMAP_TYPE_BMP);
-
+	toolBarBitmaps[3] = wxBitmap("Editor/resource/tool_vertexmanip.bmp", wxBITMAP_TYPE_BMP);
+	toolBarBitmaps[4] = wxBitmap("Editor/resource/tool_clipper.bmp", wxBITMAP_TYPE_BMP);
+	
 	int w = toolBarBitmaps[0].GetWidth(),
 		h = toolBarBitmaps[0].GetHeight();
 
@@ -362,10 +368,11 @@ void CUI_BlockEditor::ToggleBrushSelection(CBrushPrimitive* brush)
 	if (m_selectedBrushes.findIndex(brush) == -1)
 	{
 		m_selectedBrushes.addUnique(brush);
+
 		for (int i = 0; i < brush->GetFaceCount(); i++)
 		{
 			brush->GetFace(i)->nFlags &= ~BRUSH_FACE_SELECTED;
-			ToggleFaceSelection(brush->GetFace(i));
+			ToggleFaceSelection(brush->GetFacePolygon(i));
 		}
 	}
 	else
@@ -373,7 +380,7 @@ void CUI_BlockEditor::ToggleBrushSelection(CBrushPrimitive* brush)
 		for (int i = 0; i < brush->GetFaceCount(); i++)
 		{
 			brush->GetFace(i)->nFlags |= BRUSH_FACE_SELECTED;
-			ToggleFaceSelection(brush->GetFace(i));
+			ToggleFaceSelection(brush->GetFacePolygon(i));
 		}
 
 		m_selectedBrushes.fastRemove(brush);
@@ -382,18 +389,18 @@ void CUI_BlockEditor::ToggleBrushSelection(CBrushPrimitive* brush)
 	RecalcSelectionBox();
 }
 
-void CUI_BlockEditor::ToggleFaceSelection(brushFace_t* face)
+void CUI_BlockEditor::ToggleFaceSelection(winding_t* winding)
 {
 	// toggle face selection
-	if (face->nFlags & BRUSH_FACE_SELECTED)
+	if (winding->face.nFlags & BRUSH_FACE_SELECTED)
 	{
-		face->nFlags &= ~BRUSH_FACE_SELECTED;
-		m_selectedFaces.fastRemove(face);
+		winding->face.nFlags &= ~BRUSH_FACE_SELECTED;
+		m_selectedFaces.fastRemove(winding);
 	}
 	else
 	{
-		face->nFlags |= BRUSH_FACE_SELECTED;
-		m_selectedFaces.addUnique(face);
+		winding->face.nFlags |= BRUSH_FACE_SELECTED;
+		m_selectedFaces.addUnique(winding);
 	}
 }
 
@@ -408,7 +415,7 @@ void CUI_BlockEditor::CancelSelection()
 		}
 
 		for (int i = 0; i < m_selectedFaces.numElem(); i++)
-			m_selectedFaces[i]->nFlags &= ~BRUSH_FACE_SELECTED;
+			m_selectedFaces[i]->face.nFlags &= ~BRUSH_FACE_SELECTED;
 
 		m_selectedFaces.clear();
 		m_selectedBrushes.clear();
@@ -434,7 +441,7 @@ void CUI_BlockEditor::DeleteSelection()
 		CBrushPrimitive* brush = m_selectedBrushes[i];
 
 		// TODO: editor level code
-		if(m_brushes.fastRemove(brush))
+		if (m_brushes.fastRemove(brush))
 			delete brush;
 	}
 
@@ -497,7 +504,11 @@ void CUI_BlockEditor::ProcessMouseEvents(wxMouseEvent& event)
 		if (!ProcessSelectionAndBrushMouseEvents(event))
 			return;
 	}
-
+	if (m_selectedTool == BlockEdit_VertexManip)
+	{
+		if (!ProcessVertexManipMouseEvents(event))
+			return;
+	}
 
 	CBaseTilebasedEditor::ProcessMouseEvents(event);
 }
@@ -535,7 +546,7 @@ bool CUI_BlockEditor::ProcessSelectionAndBrushMouseEvents(wxMouseEvent& event)
 		if (m_selectedTool == BlockEdit_Selection)
 		{
 			// selection of brushes and faces
-			if (event.ControlDown() && event.ButtonIsDown(wxMOUSE_BTN_LEFT) || event.ButtonIsDown(wxMOUSE_BTN_RIGHT))
+			if (event.ControlDown() && (event.ButtonIsDown(wxMOUSE_BTN_LEFT) || event.ButtonIsDown(wxMOUSE_BTN_RIGHT)))
 			{
 				CBrushPrimitive* nearestBrush = nullptr;
 				Vector3D intersectPos;
@@ -562,7 +573,7 @@ bool CUI_BlockEditor::ProcessSelectionAndBrushMouseEvents(wxMouseEvent& event)
 					if (event.ButtonIsDown(wxMOUSE_BTN_LEFT))
 						ToggleBrushSelection(nearestBrush);
 					else if (intersectFace != -1)
-						ToggleFaceSelection(nearestBrush->GetFace(intersectFace));
+						ToggleFaceSelection(nearestBrush->GetFacePolygon(intersectFace));
 				}
 			}
 		}
@@ -763,6 +774,11 @@ bool CUI_BlockEditor::ProcessSelectionAndBrushMouseEvents(wxMouseEvent& event)
 	return true;
 }
 
+bool CUI_BlockEditor::ProcessVertexManipMouseEvents(wxMouseEvent& event)
+{
+	return true;
+}
+
 void CUI_BlockEditor::OnKey(wxKeyEvent& event, bool bDown)
 {
 	if (bDown)
@@ -824,10 +840,32 @@ void CUI_BlockEditor::OnKey(wxKeyEvent& event, bool bDown)
 	{
 		CancelSelection();
 	}
-		
 }
 
-void CUI_BlockEditor::RenderBrushVerts(CBrushPrimitive* pBrush)
+void RenderWindingVerts(winding_t* winding, const Matrix4x4& view, const Matrix4x4& proj)
+{
+	IVector2D screenSize = g_pMainFrame->GetRenderPanelDimensions();
+
+	for (int i = 0; i < winding->vertices.numElem(); i++)
+	{
+		lmodeldrawvertex_t& vert = winding->vertices[i];
+
+		Vector2D pointScr;
+		if (!PointToScreen(vert.position, pointScr, proj*view, screenSize))
+		{
+			// draw only single point
+			Vertex2D_t pointA[] = { MAKETEXQUAD(pointScr.x - 3,pointScr.y - 3,pointScr.x + 3,pointScr.y + 3, 0) };
+
+			materials->DrawPrimitives2DFFP(PRIM_TRIANGLE_STRIP, pointA, elementsOf(pointA), NULL, ColorRGBA(1, 1, 0.5f, 1));
+
+			// draw only single point
+			Vertex2D_t pointR[] = { MAKETEXRECT(pointScr.x - 3,pointScr.y - 3,pointScr.x + 3,pointScr.y + 3, 0) };
+			materials->DrawPrimitives2DFFP(PRIM_LINE_STRIP, pointR, elementsOf(pointR), NULL, ColorRGBA(0, 0, 0, 1));
+		}
+	}
+}
+
+void CUI_BlockEditor::RenderSelectedWindings()
 {
 	Matrix4x4 view, proj;
 	materials->GetMatrix(MATRIXMODE_PROJECTION, proj);
@@ -838,31 +876,9 @@ void CUI_BlockEditor::RenderBrushVerts(CBrushPrimitive* pBrush)
 
 	// TODO: render only shared vertices
 
-	for (int i = 0; i < pBrush->GetFaceCount(); i++)
+	for (int i = 0; i < m_selectedFaces.numElem(); i++)
 	{
-		brushFace_t* face = pBrush->GetFace(i);
-		winding_t* winding = pBrush->GetFacePolygon(i);
-
-		if (!(face->nFlags & BRUSH_FACE_SELECTED))
-			continue;
-
-		for (int j = 0; j < winding->vertices.numElem(); j++)
-		{
-			lmodeldrawvertex_t& vert = winding->vertices[j];
-
-			Vector2D pointScr;
-			if (!PointToScreen(vert.position, pointScr, proj*view, screenSize))
-			{
-				// draw only single point
-				Vertex2D_t pointA[] = { MAKETEXQUAD(pointScr.x - 3,pointScr.y - 3,pointScr.x + 3,pointScr.y + 3, 0) };
-
-				materials->DrawPrimitives2DFFP(PRIM_TRIANGLE_STRIP, pointA, elementsOf(pointA), NULL, ColorRGBA(1, 1, 0.5f, 1));
-
-				// draw only single point
-				Vertex2D_t pointR[] = { MAKETEXRECT(pointScr.x - 3,pointScr.y - 3,pointScr.x + 3,pointScr.y + 3, 0) };
-				materials->DrawPrimitives2DFFP(PRIM_LINE_STRIP, pointR, elementsOf(pointR), NULL, ColorRGBA(0, 0, 0, 1));
-			}
-		}
+		RenderWindingVerts(m_selectedFaces[i], view, proj);
 	}
 
 	materials->SetMatrix(MATRIXMODE_PROJECTION, proj);
@@ -966,12 +982,15 @@ void CUI_BlockEditor::OnRender()
 			}
 			
 			brush->RenderGhost();
+		}
 
-			RenderBrushVerts(brush);
+		if (m_selectedTool == BlockEdit_VertexManip)
+		{
+			RenderSelectedWindings();
 		}
 
 		materials->SetMatrix(MATRIXMODE_WORLD, identity4());
-		if (m_selectedBrushes.numElem())
+		if (m_selectedTool == BlockEdit_Selection && m_selectedBrushes.numElem())
 		{
 			float clength = length(m_centerAxis.m_position - g_camera_target);
 			float flength = length(m_faceAxis.m_position - g_camera_target);
