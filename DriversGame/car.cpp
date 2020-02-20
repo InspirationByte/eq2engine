@@ -4381,17 +4381,18 @@ void CCar::DrawShadow(float distance)
 	Vector3D forwardVec = GetForwardVector();
 	TexAtlasEntry_t* carShadow = g_worldGlobals.veh_shadow;
 
+	Vector3D origin = GetOrigin();
+	Rectangle_t flipRect = carShadow ? carShadow->rect : Rectangle_t(0, 0, 1, 1);
+
 	Vector2D shadowSize(m_conf->physics.body_size.x+0.35f, m_conf->physics.body_size.z+0.25f);
 
 	if(distance < r_carShadowDetailDistance.GetFloat())
 	{
-		Rectangle_t flipRect = carShadow ? carShadow->rect : Rectangle_t(0,0,1,1);
-
 		// project from top
 		Matrix4x4 proj, view, viewProj;
 		proj = orthoMatrix(-shadowSize.x, shadowSize.x, -shadowSize.y, shadowSize.y, -1.5f, 1.0f);
 		view = Matrix4x4( rotateX3(DEG2RAD(-90)) * !m_worldMatrix.getRotationComponent());
-		view.translate(-GetOrigin());
+		view.translate(-origin);
 
 		viewProj = proj*view;
 
@@ -4409,15 +4410,15 @@ void CCar::DrawShadow(float distance)
 		PFXVertex_t* verts;
 		if(carShadow && g_vehicleEffects->AllocateGeom(4,4, &verts, NULL, true) != -1)
 		{
-			verts[0].point = GetOrigin() + shadowSize.y*forwardVec + shadowSize.x*rightVec;
-			verts[1].point = GetOrigin() + shadowSize.y*forwardVec + shadowSize.x*-rightVec;
-			verts[2].point = GetOrigin() + shadowSize.y*-forwardVec + shadowSize.x*rightVec;
-			verts[3].point = GetOrigin() + shadowSize.y*-forwardVec + shadowSize.x*-rightVec;
+			verts[0].point = origin + shadowSize.y*forwardVec + shadowSize.x*rightVec;
+			verts[1].point = origin + shadowSize.y*forwardVec + shadowSize.x*-rightVec;
+			verts[2].point = origin + shadowSize.y*-forwardVec + shadowSize.x*rightVec;
+			verts[3].point = origin + shadowSize.y*-forwardVec + shadowSize.x*-rightVec;
 
-			verts[0].texcoord = carShadow->rect.GetRightTop();
-			verts[1].texcoord = carShadow->rect.GetLeftTop();
-			verts[2].texcoord = carShadow->rect.GetRightBottom();
-			verts[3].texcoord = carShadow->rect.GetLeftBottom();
+			verts[0].texcoord = flipRect.GetRightTop();
+			verts[1].texcoord = flipRect.GetLeftTop();
+			verts[2].texcoord = flipRect.GetRightBottom();
+			verts[3].texcoord = flipRect.GetLeftBottom();
 
 			eqPhysCollisionFilter collFilter;
 			collFilter.flags = EQPHYS_FILTER_FLAG_DISALLOW_DYNAMIC;
@@ -4696,10 +4697,12 @@ void CCar::Repair(bool unlock)
 	// restore hubcaps
 	for(int i = 0; i < GetWheelCount(); i++)
 	{
-		m_wheels[i].m_damage = 0.0f;
-		m_wheels[i].m_hubcapLoose = 0.0f;
-		m_wheels[i].m_flags.lostHubcap = false;
-		m_wheels[i].m_bodyGroupFlags = (1 << m_wheels[i].m_defaultBodyGroup);
+		CCarWheel& wheel = m_wheels[i];
+
+		wheel.m_damage = 0.0f;
+		wheel.m_hubcapLoose = 0.0f;
+		wheel.m_flags.lostHubcap = false;
+		wheel.m_bodyGroupFlags = (1 << wheel.m_defaultBodyGroup);
 	}
 
 	if(unlock)

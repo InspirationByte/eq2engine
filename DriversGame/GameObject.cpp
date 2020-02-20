@@ -541,7 +541,7 @@ void CGameObject::L_RegisterEventHandler(const OOLUA::Table& tableRef)
 
 OOLUA::Table& CGameObject::L_GetEventHandler() const
 {
-	return m_luaEvtHandler;
+	return (OOLUA::Table&)m_luaEvtHandler;
 }
 
 #endif // NO_LUA
@@ -576,20 +576,20 @@ void CGameObject::OnCarCollisionEvent( const CollisionPairData_t& pair, CGameObj
 #ifndef NO_LUA
 
 OOLUA_EXPORT_FUNCTIONS(CGameObject,
+	Spawn, Remove,
+	SetModel,
+	SetName,
+	SetOrigin, SetAngles, SetVelocity,
 	SetDrawFlags,
 	SetBodyGroups,
-	SetName,
-	Spawn, Remove, 
-	SetModel, 
-	SetOrigin, SetAngles, SetVelocity, 
 	SetContents, SetCollideMask, 
 	SetEventHandler)
 
 OOLUA_EXPORT_FUNCTIONS_CONST(CGameObject, 
+	GetName,
+	GetOrigin, GetAngles, GetVelocity,
 	GetDrawFlags,
 	GetBodyGroups,
-	GetName,
-	GetOrigin, GetAngles, GetVelocity, 
 	GetScriptID, GetType, 
 	GetContents, GetCollideMask,
 	GetEventHandler)

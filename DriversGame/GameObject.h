@@ -350,6 +350,9 @@ OOLUA_PROXY(CGameObject)
 	OOLUA_MFUNC_CONST(GetAngles)
 	OOLUA_MFUNC_CONST(GetVelocity)
 
+	OOLUA_MFUNC(SetName)
+	OOLUA_MFUNC_CONST(GetName)
+
 	OOLUA_MFUNC(SetDrawFlags)
 	OOLUA_MFUNC_CONST(GetDrawFlags)
 
@@ -363,7 +366,7 @@ OOLUA_PROXY(CGameObject)
 	OOLUA_MEM_FUNC_RENAME(Spawn, void, L_Activate)
 
 	OOLUA_MEM_FUNC_RENAME(SetEventHandler, void, L_RegisterEventHandler, const OOLUA::Table&)
-	OOLUA_MEM_FUNC_RENAME_CONST(GetEventHandler, OOLUA::Table&, L_GetEventHandler)
+	OOLUA_MEM_FUNC_CONST_RENAME(GetEventHandler, OOLUA::Table&, L_GetEventHandler)
 	
 	OOLUA_MEM_FUNC_RENAME(SetContents, void, L_SetContents, int)
 	OOLUA_MEM_FUNC_RENAME(SetCollideMask, void, L_SetCollideMask, int)
