@@ -77,6 +77,7 @@ protected:
 	void				ToggleFaceSelection(winding_t* winding);
 	void				CancelSelection();
 	void				DeleteSelection();
+	void				DeleteBrush(CBrushPrimitive* brush);
 	void				RecalcSelectionBox();
 
 	void				RenderSelectedWindings();

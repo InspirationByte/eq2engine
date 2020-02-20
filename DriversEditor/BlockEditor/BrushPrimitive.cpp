@@ -290,8 +290,13 @@ void winding_t::Split(const winding_t *w, winding_t *front, winding_t *back )
 	front->face	= w->face;
 	back->face = w->face;
 
+	front->faceId = -1;
+	back->faceId = -1;
+	
 	for ( int i = 0; i < w->vertices.numElem(); i++ )
 	{
+		const lmodeldrawvertex_t& vert = w->vertices[i];
+
 		//
 		// Add point to appropriate list
 		//
@@ -299,18 +304,18 @@ void winding_t::Split(const winding_t *w, winding_t *front, winding_t *back )
 		{
 			case CP_FRONT:
 			{
-				front->vertices.append(w->vertices[i]);
+				front->vertices.append(vert);
 			}
 			break;
 			case CP_BACK:
 			{
-				back->vertices.append(w->vertices[i]);
+				back->vertices.append(vert);
 			}
 			break;
 			case CP_ONPLANE:
 			{
-				front->vertices.append(w->vertices[i]);
-				back->vertices.append(w->vertices[i]);
+				front->vertices.append(vert);
+				back->vertices.append(vert);
 			}
 			break;
 		}
@@ -331,12 +336,14 @@ void winding_t::Split(const winding_t *w, winding_t *front, winding_t *back )
 
 		if (!bIgnore && (pCP[i] != pCP[iNext]))
 		{
+			const lmodeldrawvertex_t& nextVert = w->vertices[iNext];
+
 			lmodeldrawvertex_t	v;	// New vertex created by splitting
 			float p;			// Percentage between the two points
 
-			face.Plane.GetIntersectionLineFraction(w->vertices[i].position, w->vertices[iNext].position, v.position, p );
+			face.Plane.GetIntersectionLineFraction(vert.position, nextVert.position, v.position, p );
 
-			v.texcoord = lerp(w->vertices[i].texcoord, w->vertices[iNext].texcoord, p);
+			v.texcoord = lerp(vert.texcoord, nextVert.texcoord, p);
 
 			front->vertices.append(v);
 			back->vertices.append(v);
@@ -494,6 +501,7 @@ bool CBrushPrimitive::CreateFromPlanes()
 		winding_t& poly = m_windingFaces[i];
 		brushFace_t& face = poly.face;
 		poly.brush = this;
+		poly.faceId = i;
 
 		MakeInfiniteWinding(poly, face.Plane);
 		
@@ -572,7 +580,7 @@ void CBrushPrimitive::Render(int nViewRenderFlags)
 	}
 }
 
-void CBrushPrimitive::RenderGhost()
+void CBrushPrimitive::RenderGhost(int face /*= -1*/)
 {
 	materials->SetCullMode(CULL_BACK);
 
@@ -587,7 +595,9 @@ void CBrushPrimitive::RenderGhost()
 	int nFirstVertex = 0;
 	for (int i = 0; i < m_windingFaces.numElem(); i++)
 	{
-		g_pShaderAPI->DrawNonIndexedPrimitives(PRIM_LINE_STRIP, nFirstVertex, m_windingFaces[i].vertices.numElem() + 1);
+		if(face == -1 || face == i)
+			g_pShaderAPI->DrawNonIndexedPrimitives(PRIM_LINE_STRIP, nFirstVertex, m_windingFaces[i].vertices.numElem() + 1);
+
 		nFirstVertex += m_windingFaces[i].vertices.numElem() + 1;
 	}
 }
@@ -598,7 +608,8 @@ void CBrushPrimitive::AddFace(brushFace_t &face)
 	winding.face = face;
 	winding.brush = this;
 
-	m_windingFaces.append(winding);
+	int id = m_windingFaces.append(winding);
+	m_windingFaces[id].faceId = id;
 }
 
 /*
@@ -610,12 +621,18 @@ void CBrushPrimitive::AddFace(Texture_t &face, EqBrushWinding_t &winding)
 	polygons.append(winding);
 }
 */
-void CBrushPrimitive::UpdateRenderData()
+bool CBrushPrimitive::UpdateRenderData()
 {
 	CreateFromPlanes();
+
+	if (m_windingFaces.numElem() == 0)
+		return false;
+
 	CalculateBBOX();
 
 	UpdateRenderBuffer();
+
+	return true;
 }
 
 void CBrushPrimitive::UpdateRenderBuffer()

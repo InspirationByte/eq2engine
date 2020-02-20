@@ -33,7 +33,10 @@ inline void CopyWinding(const winding_t *from, winding_t *to);
 struct winding_t
 {
 	brushFace_t						face;
+	DkList<lmodeldrawvertex_t>		vertices;
+
 	CBrushPrimitive*				brush;
+	int								faceId;
 
 	// calculates the texture coordinates for this 
 	void							CalculateTextureCoordinates();
@@ -44,9 +47,6 @@ struct winding_t
 	// splits the face by this face, and results a
 	void							Split(const winding_t *w, winding_t *front, winding_t *back );
 	ClassifyPoly_e					Classify(winding_t *w);
-
-	// vertex data
-	DkList<lmodeldrawvertex_t>		vertices;
 
 	// make valid assignment
 	winding_t & operator = (const winding_t &u)
@@ -82,7 +82,7 @@ public:
 
 	// draw brush
 	void							Render(int nViewRenderFlags);
-	void							RenderGhost();
+	void							RenderGhost(int face = -1);
 
 	// rendering bbox
 	const BoundingBox&				GetBBox() const	{return m_bbox;}
@@ -124,8 +124,7 @@ public:
 	brushFace_t*					GetFace(int nFace) const			{return (brushFace_t*)&m_windingFaces[nFace].face;}
 	winding_t*						GetFacePolygon(int nFace) const		{return (winding_t*)&m_windingFaces[nFace];}
 
-	void							UpdateRenderData();
-	void							UpdateRenderBuffer();
+	bool							UpdateRenderData();
 
 	void							AddFace(brushFace_t &face);
 
@@ -142,6 +141,7 @@ public:
 	void							Transform(const Matrix4x4& mat);
 
 protected:
+	void							UpdateRenderBuffer();
 
 	// sort to draw
 	void							SortVertsToDraw();
