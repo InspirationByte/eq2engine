@@ -17,7 +17,7 @@
 
 const float DEFAULT_CAMERA_FOV		= 52.0f;
 
-const float CAM_TURN_SPEED			= 3.5f;
+const float CAM_TURN_SPEED			= 2.65f;
 const float CAM_LOOK_TURN_SPEED		= 15.0f;
 
 const float CAM_HEIGHT_TRACE		= -0.3f;
@@ -369,6 +369,13 @@ void CCameraAnimator::Animate(ECameraMode mode,
 
 		Vector3D fLookAngleDiff = AnglesDiff(m_interpLookAngle, desiredLookAngle);
 
+		if (fDt*CAM_LOOK_TURN_SPEED > length(fLookAngleDiff))
+		{
+			fLookAngleDiff = vec3_zero;
+			m_interpLookAngle = desiredLookAngle;
+		}
+
+
 		m_interpLookAngle += fLookAngleDiff * fDt * CAM_LOOK_TURN_SPEED;
 		m_interpLookAngle = NormalizeAngles180(m_interpLookAngle);
 	}
@@ -383,6 +390,7 @@ void CCameraAnimator::Animate(ECameraMode mode,
 		Yangle += 360.0f;
 
 	float fAngDiff = AngleDiff(m_interpCamAngle, Yangle);
+
 	m_interpCamAngle += fAngDiff * fDt * CAM_TURN_SPEED;
 
 	Vector3D finalLookAngle = Vector3D(0, m_interpCamAngle, 0) - m_interpLookAngle;
