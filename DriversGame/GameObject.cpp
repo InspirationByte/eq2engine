@@ -440,6 +440,26 @@ void CGameObject::ConfigureCamera(cameraConfig_t& conf, eqPhysCollisionFilter& f
 	conf.fov = 70.0f;
 }
 
+void CGameObject::SetDrawFlags(ubyte newFlags)
+{
+	m_drawFlags = newFlags;
+}
+
+ubyte CGameObject::GetDrawFlags() const 
+{
+	return m_drawFlags;
+}
+
+void CGameObject::SetBodyGroups(ubyte newBodyGroup)
+{
+	m_bodyGroupFlags = newBodyGroup;
+}
+
+ubyte CGameObject::GetBodyGroups() const
+{ 
+	return m_bodyGroupFlags; 
+}
+
 void CGameObject::SetUserData(void* dataPtr)
 {
 	m_userData = dataPtr;
@@ -519,7 +539,7 @@ void CGameObject::L_RegisterEventHandler(const OOLUA::Table& tableRef)
 	m_luaOnRemove.Get(m_luaEvtHandler, "OnRemove", true);
 }
 
-OOLUA::Table& CGameObject::L_GetEventHandler()
+OOLUA::Table& CGameObject::L_GetEventHandler() const
 {
 	return m_luaEvtHandler;
 }
@@ -555,7 +575,23 @@ void CGameObject::OnCarCollisionEvent( const CollisionPairData_t& pair, CGameObj
 
 #ifndef NO_LUA
 
-OOLUA_EXPORT_FUNCTIONS(CGameObject,SetName, Spawn, Remove, SetModel, SetOrigin, SetAngles, SetVelocity, SetContents, SetCollideMask, SetEventHandler, GetEventHandler)
-OOLUA_EXPORT_FUNCTIONS_CONST(CGameObject, GetName, GetOrigin, GetAngles, GetVelocity, GetScriptID, GetType, GetContents, GetCollideMask)
+OOLUA_EXPORT_FUNCTIONS(CGameObject,
+	SetDrawFlags,
+	SetBodyGroups,
+	SetName,
+	Spawn, Remove, 
+	SetModel, 
+	SetOrigin, SetAngles, SetVelocity, 
+	SetContents, SetCollideMask, 
+	SetEventHandler)
+
+OOLUA_EXPORT_FUNCTIONS_CONST(CGameObject, 
+	GetDrawFlags,
+	GetBodyGroups,
+	GetName,
+	GetOrigin, GetAngles, GetVelocity, 
+	GetScriptID, GetType, 
+	GetContents, GetCollideMask,
+	GetEventHandler)
 
 #endif // NO_LUA
