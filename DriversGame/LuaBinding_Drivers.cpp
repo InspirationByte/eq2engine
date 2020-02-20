@@ -326,6 +326,9 @@ bool LuaBinding_InitDriverSyndicateBindings(lua_State* state)
 	LUA_SET_GLOBAL_ENUMCONST(state, GO_STATIC);
 	LUA_SET_GLOBAL_ENUMCONST(state, GO_LIGHT_TRAFFIC);
 
+	LUA_SET_GLOBAL_ENUMCONST(state, GO_DRAW_FLAG_SHADOW);
+	LUA_SET_GLOBAL_ENUMCONST(state, GO_DRAW_FLAG_NODRAW);
+	LUA_SET_GLOBAL_ENUMCONST(state, GO_DRAW_FLAG_ILLUMINATED);
 
 	//-------------------
 	// vehicle stuff

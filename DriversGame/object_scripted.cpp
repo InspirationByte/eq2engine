@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright � Inspiration Byte
+// Copyright © Inspiration Byte
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
 // Description: scripted object
@@ -65,7 +65,7 @@ void CObject_Scripted::Spawn()
 
 void CObject_Scripted::Draw( int nRenderFlags )
 {
-	// TODO: actulally we can draw something
+	BaseClass::Draw(nRenderFlags);
 }
 
 void CObject_Scripted::Simulate(float fDt)
