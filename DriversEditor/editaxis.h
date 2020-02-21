@@ -192,6 +192,8 @@ public:
 			Matrix3x3 circleAngle = (m_draggedAxes & AXIS_X) ? rotateZ3(DEG2RAD(90)) : 
 									(m_draggedAxes & AXIS_Z) ? rotateX3(DEG2RAD(90)) : identity3();
 
+			circleAngle = m_rotation * circleAngle;
+
 			// draw circle
 			meshBuilder.Begin(PRIM_LINE_STRIP);
 

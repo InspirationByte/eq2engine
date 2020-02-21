@@ -46,7 +46,10 @@ struct winding_t
 
 	// splits the face by this face, and results a
 	void							Split(const winding_t *w, winding_t *front, winding_t *back );
+
 	ClassifyPoly_e					Classify(winding_t *w);
+
+	void							Transform(const Matrix4x4& mat);
 
 	// make valid assignment
 	winding_t & operator = (const winding_t &u)

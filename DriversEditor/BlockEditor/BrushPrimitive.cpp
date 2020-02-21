@@ -384,6 +384,19 @@ ClassifyPoly_e winding_t::Classify(winding_t *w)
 
 	return CPL_ONPLANE;
 }
+
+void winding_t::Transform(const Matrix4x4& mat)
+{
+	Vector4D O(face.Plane.normal * -face.Plane.offset, 1.0f);
+	Vector4D N(face.Plane.normal, 0.0f);
+
+	O = mat * O;				// transform point
+	N = transpose(!mat) * N;	// transform (rotate) the normal
+
+	// reinitialize the plane
+	face.Plane = Plane(N.xyz(), -dot(O.xyz(), N.xyz()), true);
+}
+
 /*
 // makes editable surface from this winding (and no way back)
 CEditableSurface* EqBrushWinding_t::MakeEditableSurface()
@@ -680,19 +693,7 @@ void CBrushPrimitive::UpdateRenderBuffer()
 void CBrushPrimitive::Transform(const Matrix4x4& mat)
 {
 	for (int i = 0; i < m_windingFaces.numElem(); i++)
-	{
-		winding_t& poly = m_windingFaces[i];
-		brushFace_t& face = poly.face;
-
-		Vector4D O(face.Plane.normal * -face.Plane.offset, 1.0f);
-		Vector4D N(face.Plane.normal, 0.0f);
-
-		O = mat * O;				// transform point
-		N = transpose(!mat) * N;	// transform (rotate) the normal
-
-		// reinitialize the plane
-		face.Plane = Plane(N.xyz(), -dot(O.xyz(), N.xyz()), true);
-	}
+		m_windingFaces[i].Transform(mat);
 
 	UpdateRenderData();
 }

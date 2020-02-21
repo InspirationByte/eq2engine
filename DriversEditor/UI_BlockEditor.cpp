@@ -302,7 +302,7 @@ void CUI_BlockEditor::MouseEventOnTile(wxMouseEvent& event, hfieldtile_t* tile, 
 {
 	Vector3D cursorPos = SnapVector(GridSize(), ppos);
 
-	BoundingBox modeBox = (m_mode == BLOCK_MODE_BOX) ? m_creationBox : m_selectionBox;
+	BoundingBox modeBox = (m_mode == BLOCK_MODE_CREATION) ? m_creationBox : m_selectionBox;
 
 	// selecting brushes within region
 	// moving
@@ -315,7 +315,7 @@ void CUI_BlockEditor::MouseEventOnTile(wxMouseEvent& event, hfieldtile_t* tile, 
 			// draw the box
 			if (!event.Dragging())
 			{
-				m_mode = BLOCK_MODE_BOX;
+				m_mode = BLOCK_MODE_CREATION;
 
 				m_creationBox.minPoint.x = cursorPos.x;
 				m_creationBox.minPoint.z = cursorPos.z;
@@ -331,7 +331,7 @@ void CUI_BlockEditor::MouseEventOnTile(wxMouseEvent& event, hfieldtile_t* tile, 
 
 				m_draggablePlane = -1;
 			}
-			else if (m_mode == BLOCK_MODE_BOX)
+			else if (m_mode == BLOCK_MODE_CREATION)
 			{
 				BoundingBox newBox = m_creationBox;
 
@@ -431,9 +431,9 @@ void CUI_BlockEditor::CancelSelection()
 	}
 	else if (m_selectedTool == BlockEdit_Brush)
 	{
-		if (m_mode > BLOCK_MODE_BOX)
+		if (m_mode > BLOCK_MODE_CREATION)
 		{
-			m_mode = BLOCK_MODE_BOX;
+			m_mode = BLOCK_MODE_CREATION;
 			return;
 		}
 			
@@ -537,33 +537,57 @@ bool CUI_BlockEditor::ProcessSelectionAndBrushMouseEvents(wxMouseEvent& event)
 	Vector3D ray_start, ray_dir;
 	g_pMainFrame->GetMouseScreenVectors(event.GetX(), event.GetY(), ray_start, ray_dir);
 
-	BoundingBox& modeBox = (m_selectedTool == BlockEdit_Selection) ? m_selectionBox : m_creationBox;
+	BoundingBox& editBox = (m_selectedTool == BlockEdit_Brush) ? m_creationBox : m_selectionBox;
+	CEditGizmo& editGizmo = (m_selectedFaces.numElem() == 1 || m_mode == BLOCK_MODE_READY || m_mode == BLOCK_MODE_CREATION || m_mode == BLOCK_MODE_SCALE) ? m_faceAxis : m_centerAxis;
+	float editGizmoSize = length(editGizmo.m_position - g_camera_target);
+	Vector3D editGizmoDir = normalize(editGizmo.m_position - g_camera_target);
+	int editGizmoInitAxes = 0;
 
-	// pick the box plane for dragging
-	if (m_mode == BLOCK_MODE_BOX || m_mode == BLOCK_MODE_READY && m_selectedBrushes.numElem())
+	bool isFaceGizmo = (&editGizmo == &m_faceAxis);
+
+	if (m_selectedTool == BlockEdit_Brush)
 	{
-		Volume boxVolume;
-		BoxToVolume(modeBox, boxVolume);
-
-		Vector3D intersectPos;
-		int planeIdx = VolumeIntersectsRay(boxVolume, ray_start, ray_dir, intersectPos);
-		if (planeIdx != -1)
+		// edit editBox
+	}
+	else if (m_selectedTool == BlockEdit_Selection)
+	{
+		if (m_selectedBrushes.numElem())
 		{
-			m_draggablePlane = planeIdx;
-
-			const Plane& pl = boxVolume.GetPlane(planeIdx);
-
-			Vector3D r, u;
-			VectorVectors(pl.normal, r, u);
-
-			m_faceAxis.SetProps(!Matrix3x3(-r, -u, -pl.normal), modeBox.GetCenter() - pl.normal*pl.Distance(modeBox.GetCenter()));
+			// edit m_selectedBrushes
+		}
+		else
+		{
+			// edit m_selectedFaces[0]
 		}
 	}
 
 	if (!event.Dragging())
 	{
+		// pick the box plane
+		if (isFaceGizmo && !event.ButtonUp() && !event.ButtonDown() && !m_selectedFaces.numElem() || m_selectedBrushes.numElem())
+		{
+			Volume boxVolume;
+			BoxToVolume(editBox, boxVolume);
+
+			Vector3D intersectPos;
+			int planeIdx = VolumeIntersectsRay(boxVolume, ray_start, ray_dir, intersectPos);
+			if (planeIdx != -1)
+			{
+				m_draggablePlane = planeIdx;
+
+				const Plane& pl = boxVolume.GetPlane(planeIdx);
+
+				Vector3D r, u;
+				VectorVectors(pl.normal, r, u);
+
+				m_faceAxis.SetProps(!Matrix3x3(-r, -u, -pl.normal), editBox.GetCenter() - pl.normal*pl.Distance(editBox.GetCenter()));
+			}
+		}
+
+		// perform selection actions
 		if (m_selectedTool == BlockEdit_Selection)
 		{
+			// TODO: as EditorLevel code
 			// selection of brushes and faces
 			if (event.ControlDown() && (event.ButtonIsDown(wxMOUSE_BTN_LEFT) || event.ButtonIsDown(wxMOUSE_BTN_RIGHT)))
 			{
@@ -596,224 +620,214 @@ bool CUI_BlockEditor::ProcessSelectionAndBrushMouseEvents(wxMouseEvent& event)
 				}
 			}
 		}
+
+		// if left button down, try init gizmo axis
+		if (event.ButtonIsDown(wxMOUSE_BTN_LEFT))
+		{
+			bool multipleAxes = !isFaceGizmo && (m_mode == BLOCK_MODE_TRANSLATE);
+			editGizmoInitAxes = editGizmo.TestRay(ray_start, ray_dir, editGizmoSize, multipleAxes);
+
+			// if face gizmo dragged - turn it to scale mode
+			if (isFaceGizmo && editGizmoInitAxes == AXIS_Z && (m_mode != BLOCK_MODE_ROTATE))
+			{
+				m_mode = BLOCK_MODE_SCALE;
+			}
+		}
 	}
 
-	CEditGizmo& editGizmo = (m_mode == BLOCK_MODE_READY) ? m_faceAxis : m_centerAxis;
-
-	float clength = length(m_centerAxis.m_position - g_camera_target);
-	float flength = length(m_faceAxis.m_position - g_camera_target);
-
-	if ((m_mode == BLOCK_MODE_TRANSLATE || m_mode == BLOCK_MODE_ROTATE))
+	if (m_mode == BLOCK_MODE_TRANSLATE || m_mode == BLOCK_MODE_SCALE)
 	{
-		// TODO: use camera parameters
-		Vector3D plane_dir = normalize(m_centerAxis.m_position - g_camera_target);
+		Vector3D movement = editGizmo.PerformTranslate(ray_start, ray_dir, editGizmoDir, editGizmoInitAxes);
+		m_dragOffs += movement;
 
-		int initCenterAxes = m_centerAxis.TestRay(ray_start, ray_dir, clength, true);
+		editGizmo.m_position += movement;
+	}
+	else if (m_mode == BLOCK_MODE_ROTATE)
+	{
+		m_dragRot = editGizmo.PerformRotation(ray_start, ray_dir, editGizmoInitAxes);
 
-		// Initialize rotation
-		if (m_mode == BLOCK_MODE_ROTATE)
+		if (!event.Dragging() && !event.ButtonUp())
+			m_dragInitRot = m_dragRot;
+	}
+
+	// if button was released
+	if (event.ButtonUp(wxMOUSE_BTN_LEFT))
+	{
+		if (m_mode == BLOCK_MODE_TRANSLATE)
 		{
-			if (event.ButtonIsDown(wxMOUSE_BTN_LEFT))
+			Vector3D dragOfs = SnapVector(GridSize(), m_dragOffs);
+
+			if (m_selectedTool == BlockEdit_Brush)
 			{
-				int initAxes = m_centerAxis.TestRay(ray_start, ray_dir, clength, false);
+				//------------------------------------------------------
+				// MODIFY CREATION BOX
 
-				m_dragRot = m_centerAxis.PerformRotation(ray_start, ray_dir, initAxes);
-
-				if (!event.Dragging())
-					m_dragInitRot = m_dragRot;
+				editBox.minPoint += dragOfs;
+				editBox.maxPoint += dragOfs;
+				m_mode = BLOCK_MODE_CREATION;
 			}
-		}
-
-		if (event.Dragging())
-		{
-			if (m_mode == BLOCK_MODE_TRANSLATE)
+			else
 			{
-				Vector3D movement = m_centerAxis.PerformTranslate(ray_start, ray_dir, plane_dir, initCenterAxes);
-				m_dragOffs += movement;
-				m_centerAxis.m_position += movement;
-			}
+				//------------------------------------------------------
+				// PERFORM MOVEMENT OF SELECTION
 
-			return false;
-		}
-		else if (event.ButtonUp())
-		{
-			if (m_selectedTool == BlockEdit_Selection)
-			{
-				// do operations
-				if (m_mode == BLOCK_MODE_TRANSLATE)
+				for (int i = 0; i < m_selectedBrushes.numElem(); i++)
 				{
-					//------------------------------------------------------
-					// PERFORM ROTATION OF SELECTION
-
-					Vector3D dragOfs = SnapVector(GridSize(), m_dragOffs);
-
-					for (int i = 0; i < m_selectedBrushes.numElem(); i++)
-					{
-						CBrushPrimitive* brush = m_selectedBrushes[i];
-						brush->Transform(translate(dragOfs));
-					}
-				}
-				else if (m_mode == BLOCK_MODE_ROTATE)
-				{
-					//------------------------------------------------------
-					// PERFORM ROTATION OF SELECTION
-
-					Matrix3x3 dragRotation = !(!m_dragInitRot*m_dragRot);
-
-					// snap rotation by 15 degrees
-					{
-						Vector3D dragEulers = EulerMatrixXYZ(dragRotation);
-						Vector3D snappedDragEulers = SnapVector(15.0f, VRAD2DEG(dragEulers));
-
-						dragRotation = rotateXYZ3(DEG2RAD(snappedDragEulers.x), DEG2RAD(snappedDragEulers.y), DEG2RAD(snappedDragEulers.z));
-					}
-
-					for (int i = 0; i < m_selectedBrushes.numElem(); i++)
-					{
-						CBrushPrimitive* brush = m_selectedBrushes[i];
-
-						const Vector3D brushOrigin = brush->GetBBox().GetCenter();
-						const Vector3D brushOriginToSelection = (brushOrigin - m_selectionBox.GetCenter());
-						const Vector3D brushOriginTransformed = (dragRotation*brushOriginToSelection) + modeBox.GetCenter();
-
-						Matrix4x4 rendermatrix = (translate(brushOriginTransformed)*(Matrix4x4(dragRotation))*translate(-brushOrigin));
-
-						brush->Transform(rendermatrix);
-					}
-
-					m_mode = BLOCK_MODE_READY;
+					CBrushPrimitive* brush = m_selectedBrushes[i];
+					brush->Transform(translate(dragOfs));
 				}
 
 				RecalcSelectionBox();
-				g_pEditorActionObserver->EndAction();
+				m_mode = BLOCK_MODE_READY;
 			}
-			else if (m_selectedTool == BlockEdit_Brush)
-			{
-				if (m_mode == BLOCK_MODE_TRANSLATE)
-				{
-					Vector3D dragOfs = SnapVector(GridSize(), m_dragOffs);
-					modeBox.minPoint += dragOfs;
-					modeBox.maxPoint += dragOfs;
+		}
+		if (m_mode == BLOCK_MODE_ROTATE)
+		{
+			Matrix3x3 dragRotation = !(!m_dragInitRot*m_dragRot);
 
-					m_centerAxis.SetProps(identity3(), modeBox.GetCenter());
-					m_mode = BLOCK_MODE_BOX;
+			// snap rotation by 15 degrees
+			{
+				Vector3D dragEulers = EulerMatrixXYZ(dragRotation);
+				Vector3D snappedDragEulers = SnapVector(15.0f, VRAD2DEG(dragEulers));
+
+				dragRotation = rotateXYZ3(DEG2RAD(snappedDragEulers.x), DEG2RAD(snappedDragEulers.y), DEG2RAD(snappedDragEulers.z));
+			}
+
+			if (isFaceGizmo)
+			{
+				//------------------------------------------------------
+				// PERFORM ROTATION OF WINDING
+
+				const Plane& pl = m_selectedFaces[0]->face.Plane;
+				CBrushPrimitive* brush = m_selectedFaces[0]->brush;
+
+				const Vector3D faceOrigin = m_faceAxis.m_position + pl.normal*pl.Distance(brush->GetBBox().GetCenter());
+				const Vector3D faceOriginToSelection = (faceOrigin - m_faceAxis.m_position);
+				const Vector3D faceOriginTransformed = (dragRotation*faceOriginToSelection) + m_faceAxis.m_position;
+
+				Matrix4x4 rendermatrix = (translate(faceOriginTransformed)*(Matrix4x4(dragRotation))*translate(-faceOrigin));
+
+				m_selectedFaces[0]->Transform(rendermatrix);
+
+				if (!m_selectedFaces[0]->brush->UpdateRenderData())
+				{
+					DeleteBrush(m_selectedFaces[0]->brush);
+					wxMessageBox("Brush was deleted!");
+				}
+
+				RecalcSelectionBox();
+				m_mode = BLOCK_MODE_READY;
+			}
+			else
+			{
+				//------------------------------------------------------
+				// PERFORM ROTATION OF SELECTION
+
+				for (int i = 0; i < m_selectedBrushes.numElem(); i++)
+				{
+					CBrushPrimitive* brush = m_selectedBrushes[i];
+
+					const Vector3D brushOrigin = brush->GetBBox().GetCenter();
+					const Vector3D brushOriginToSelection = (brushOrigin - editBox.GetCenter());
+					const Vector3D brushOriginTransformed = (dragRotation*brushOriginToSelection) + editBox.GetCenter();
+
+					Matrix4x4 rendermatrix = (translate(brushOriginTransformed)*(Matrix4x4(dragRotation))*translate(-brushOrigin));
+
+					brush->Transform(rendermatrix);
 				}
 			}
 
-			m_centerAxis.EndDrag();
-			m_dragOffs = vec3_zero;
-			m_dragRot = m_dragInitRot = identity3();
-		}
-
-		return false;
-	}
-	else if ((m_mode == BLOCK_MODE_READY || m_mode == BLOCK_MODE_BOX || m_mode == BLOCK_MODE_SCALE))
-	{
-		int initFaceAxes = m_faceAxis.TestRay(ray_start, ray_dir, flength, false);
-
-		// TODO: use camera parameters
-		Vector3D plane_dir = normalize(m_faceAxis.m_position - g_camera_target);
-
-		if (event.ButtonDown(wxMOUSE_BTN_LEFT) && (m_mode == BLOCK_MODE_READY || m_mode == BLOCK_MODE_BOX) && (initFaceAxes & AXIS_Z))
-		{
-			m_mode = BLOCK_MODE_SCALE;
-			return false;
+			RecalcSelectionBox();
+			m_mode = BLOCK_MODE_READY;
 		}
 		else if (m_mode == BLOCK_MODE_SCALE)
 		{
-			if (event.Dragging())
+			// scale the editing box
+			Volume boxVolume;
+			BoxToVolume(editBox, boxVolume);
+
+			// modify plane of box
+			if (m_draggablePlane != -1)
 			{
-				Vector3D movement = m_faceAxis.PerformTranslate(ray_start, ray_dir, plane_dir, initFaceAxes);
+				Plane pl = boxVolume.GetPlane(m_draggablePlane);
 
-				m_dragOffs += movement;
+				Vector3D dragOfs = SnapVector(GridSize(), m_dragOffs);
+				pl.offset -= dot(pl.normal, dragOfs);
 
-				m_faceAxis.m_position += movement;
-				return false;
+				boxVolume.SetupPlane(pl, m_draggablePlane);
 			}
-			else if (event.ButtonUp())
+
+			// convert volume to box back; It will be used to calculate the final scale from difference
+			BoundingBox selectionBox;
+			VolumeToBox(boxVolume, selectionBox);
+
+			if (m_selectedTool == BlockEdit_Brush)
+			{
+				//------------------------------------------------------
+				// MODIFY CREATION BOX
+				editBox = selectionBox;
+				m_mode = BLOCK_MODE_CREATION;
+			}
+			else if (m_selectedFaces.numElem() == 1)
+			{
+				//------------------------------------------------------
+				// MOVE WINDING
+				Plane& pl = m_selectedFaces[0]->face.Plane;
+				float distFromPl = SnapFloat(GridSize(), pl.Distance(m_faceAxis.m_position));
+
+				pl.offset -= distFromPl;
+
+				if (!m_selectedFaces[0]->brush->UpdateRenderData())
+				{
+					DeleteBrush(m_selectedFaces[0]->brush);
+					wxMessageBox("Brush was deleted!");
+				}
+
+				RecalcSelectionBox();
+				m_mode = BLOCK_MODE_READY;
+			}
+			else
 			{
 				//------------------------------------------------------
 				// PERFORM SCALE OF SELECTION
 
-				Volume boxVolume;
-				BoxToVolume(modeBox, boxVolume);
+				// calculate diffs
+				const Vector3D prev_box_size = editBox.GetSize();
+				const Vector3D curr_box_size = selectionBox.GetSize();
+				const Vector3D scale_factor = curr_box_size / prev_box_size;
+				const Vector3D box_center_offset = (selectionBox.GetCenter() - editBox.GetCenter()) / scale_factor;
 
-				// modify plane of box
-				if (m_draggablePlane != -1)
+				// scale up them all using bounding box
+				for (int i = 0; i < m_selectedBrushes.numElem(); i++)
 				{
-					Plane pl = boxVolume.GetPlane(m_draggablePlane);
+					CBrushPrimitive* brush = m_selectedBrushes[i];
 
-					Vector3D dragOfs = SnapVector(GridSize(), m_dragOffs);
-					pl.offset -= dot(pl.normal, dragOfs);
+					const Vector3D brushOrigin = brush->GetBBox().GetCenter();
 
-					boxVolume.SetupPlane(pl, m_draggablePlane);
+					const Vector3D brushOriginToSelection = (brushOrigin - editBox.GetCenter());
+
+					const Vector3D brushOriginTransformed = brushOriginToSelection * scale_factor + selectionBox.GetCenter();
+
+					Matrix4x4 scaleMat = scale4(scale_factor.x, scale_factor.y, scale_factor.z);
+					Matrix4x4 rendermatrix = (translate(brushOriginTransformed)*(scaleMat)*translate(-brushOrigin));
+
+					brush->Transform(rendermatrix);
 				}
 
-				// convert volume to box back; It will be used to calculate the final scale from difference
-				BoundingBox selectionBox;
-				VolumeToBox(boxVolume, selectionBox);
-
-				if (m_selectedTool == BlockEdit_Selection)
-				{
-					if (m_selectedBrushes.numElem())
-					{
-						// calculate diffs
-						const Vector3D prev_box_size = modeBox.GetSize();
-						const Vector3D curr_box_size = selectionBox.GetSize();
-						const Vector3D scale_factor = curr_box_size / prev_box_size;
-						const Vector3D box_center_offset = (selectionBox.GetCenter() - modeBox.GetCenter()) / scale_factor;
-
-						// scale up them all using bounding box
-						for (int i = 0; i < m_selectedBrushes.numElem(); i++)
-						{
-							CBrushPrimitive* brush = m_selectedBrushes[i];
-
-							const Vector3D brushOrigin = brush->GetBBox().GetCenter();
-
-							const Vector3D brushOriginToSelection = (brushOrigin - modeBox.GetCenter());
-
-							const Vector3D brushOriginTransformed = brushOriginToSelection * scale_factor + selectionBox.GetCenter();
-
-							Matrix4x4 scaleMat = scale4(scale_factor.x, scale_factor.y, scale_factor.z);
-							Matrix4x4 rendermatrix = (translate(brushOriginTransformed)*(scaleMat)*translate(-brushOrigin));
-
-							brush->Transform(rendermatrix);
-						}
-					}
-					else if (m_selectedFaces.numElem() == 1)
-					{
-						if (m_selectedFaces.numElem() == 1)
-						{
-							Plane& pl = m_selectedFaces[0]->face.Plane;
-							float distFromPl = SnapFloat(GridSize(), pl.Distance(m_faceAxis.m_position));
-
-							pl.offset -= distFromPl;
-
-							if (!m_selectedFaces[0]->brush->UpdateRenderData())
-							{
-								DeleteBrush(m_selectedFaces[0]->brush);
-								wxMessageBox("Brush was deleted!");
-							}
-						}
-					}
-
-					m_mode = BLOCK_MODE_READY;
-					RecalcSelectionBox();
-					g_pEditorActionObserver->EndAction();
-				}
-				else if (m_selectedTool == BlockEdit_Brush)
-				{
-					modeBox = selectionBox;
-
-					m_centerAxis.SetProps(identity3(), modeBox.GetCenter());
-					m_mode = BLOCK_MODE_BOX;
-				}
-
-				m_faceAxis.EndDrag();
-				m_dragOffs = vec3_zero;
+				RecalcSelectionBox();
+				m_mode = BLOCK_MODE_READY;
 			}
 		}
+
+		g_pEditorActionObserver->EndAction();
+
+		editGizmo.EndDrag();
+		m_dragOffs = vec3_zero;
+		m_dragRot = m_dragInitRot = identity3();
 	}
+
+	if (event.ButtonIsDown(wxMOUSE_BTN_LEFT) && m_mode != BLOCK_MODE_READY && m_mode != BLOCK_MODE_CREATION)
+		return false;
 
 	return true;
 }
@@ -836,7 +850,7 @@ void CUI_BlockEditor::OnKey(wxKeyEvent& event, bool bDown)
 			m_gridSize->Select(idx);
 	}
 
-	if ((m_selectedBrushes.numElem() || m_selectedFaces.numElem() == 1) && m_mode == BLOCK_MODE_READY || m_mode == BLOCK_MODE_BOX)
+	if ((m_selectedBrushes.numElem() || m_selectedFaces.numElem() == 1) && m_mode == BLOCK_MODE_READY || m_mode == BLOCK_MODE_CREATION)
 	{
 		if (event.GetRawKeyCode() == 'G')
 		{
@@ -852,7 +866,7 @@ void CUI_BlockEditor::OnKey(wxKeyEvent& event, bool bDown)
 		}
 	}
 
-	if (m_mode == BLOCK_MODE_BOX)
+	if (m_mode == BLOCK_MODE_CREATION)
 	{
 		if (event.GetKeyCode() == WXK_RETURN)
 		{
@@ -931,7 +945,44 @@ void CUI_BlockEditor::RenderSelectedWindings()
 
 void CUI_BlockEditor::OnRender()
 {
-	debugoverlay->Text(color4_white, "BLOCK AXIS: %s", (m_mode == BLOCK_MODE_READY || m_mode == BLOCK_MODE_BOX || m_selectedFaces.numElem() == 1) ? "face" : "center");
+	debugoverlay->Text(color4_white, "BLOCK AXIS: %s", (m_selectedFaces.numElem() == 1 || m_mode == BLOCK_MODE_READY || m_mode == BLOCK_MODE_CREATION || m_mode == BLOCK_MODE_SCALE) ? "face" : "center");
+
+	if (m_selectedTool == BlockEdit_Brush)
+	{
+		debugoverlay->Text(color4_white, "EDITING: %s", m_mode == BLOCK_MODE_CREATION ? "box" : "none");
+	}
+	else if (m_selectedTool == BlockEdit_Selection)
+	{
+		if (m_selectedBrushes.numElem())
+		{
+			debugoverlay->Text(color4_white, "EDITING: %s", "selected brushes");
+		}
+		else
+		{
+			debugoverlay->Text(color4_white, "EDITING: %s", m_selectedFaces.numElem() == 1 ? "face" : "none");
+		}
+	}
+	
+	if (m_mode == BLOCK_MODE_READY)
+	{
+		debugoverlay->Text(color4_white, "mode: ready");
+	}
+	else if (m_mode == BLOCK_MODE_CREATION)
+	{
+		debugoverlay->Text(color4_white, "mode: creation");
+	}
+	else if (m_mode == BLOCK_MODE_TRANSLATE)
+	{
+		debugoverlay->Text(color4_white, "mode: translate");
+	}
+	else if (m_mode == BLOCK_MODE_ROTATE)
+	{
+		debugoverlay->Text(color4_white, "mode: rotate");
+	}
+	else if (m_mode == BLOCK_MODE_SCALE)
+	{
+		debugoverlay->Text(color4_white, "mode: scale");
+	}
 
 	materials->SetMatrix(MATRIXMODE_WORLD, identity4());
 	CBaseTilebasedEditor::OnRender();
@@ -1052,11 +1103,24 @@ void CUI_BlockEditor::OnRender()
 		else if (m_selectedFaces.numElem() == 1)
 		{
 			CBrushPrimitive* brush = m_selectedFaces[0]->brush;
-			Plane& pl = m_selectedFaces[0]->face.Plane;
-			
-			float distFromPl = SnapFloat(GridSize(), pl.Distance(m_faceAxis.m_position));
+			const Plane& pl = m_selectedFaces[0]->face.Plane;
 
-			materials->SetMatrix(MATRIXMODE_WORLD, translate(pl.normal*distFromPl));
+			if (m_mode == BLOCK_MODE_ROTATE)
+			{
+				const Vector3D faceOrigin = m_faceAxis.m_position + pl.normal*pl.Distance(brush->GetBBox().GetCenter());
+				const Vector3D faceOriginToSelection = (faceOrigin - m_faceAxis.m_position);
+				const Vector3D faceOriginTransformed = (dragRotation*faceOriginToSelection) + m_faceAxis.m_position;
+
+				Matrix4x4 rendermatrix = (translate(faceOriginTransformed)*(Matrix4x4(dragRotation))*translate(-faceOrigin));
+				materials->SetMatrix(MATRIXMODE_WORLD, rendermatrix);
+			}
+			else
+			{
+				float distFromPl = SnapFloat(GridSize(), pl.Distance(m_faceAxis.m_position));
+
+				materials->SetMatrix(MATRIXMODE_WORLD, translate(pl.normal*distFromPl));
+			}
+
 			brush->RenderGhost(m_selectedFaces[0]->faceId);
 
 			materials->SetMatrix(MATRIXMODE_WORLD, identity4());
@@ -1070,7 +1134,7 @@ void CUI_BlockEditor::OnRender()
 
 	if (m_selectedTool == BlockEdit_Brush)
 	{
-		if (m_mode >= BLOCK_MODE_BOX)
+		if (m_mode >= BLOCK_MODE_CREATION)
 		{
 			float clength = length(m_centerAxis.m_position - g_camera_target);
 			float flength = length(m_faceAxis.m_position - g_camera_target);
