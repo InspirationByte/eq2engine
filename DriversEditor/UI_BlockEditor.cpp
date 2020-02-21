@@ -403,12 +403,11 @@ void CUI_BlockEditor::ToggleFaceSelection(winding_t* winding)
 		m_selectedFaces.addUnique(winding);
 
 		const Plane& pl = winding->face.Plane;
-		Vector3D center = winding->brush->GetBBox().GetCenter();
 
 		Vector3D r, u;
 		VectorVectors(pl.normal, r, u);
 
-		m_faceAxis.SetProps(!Matrix3x3(r, u, pl.normal), center - pl.normal*pl.Distance(center));
+		m_faceAxis.SetProps(!Matrix3x3(r, u, pl.normal), winding->GetCenter());
 	}
 }
 
@@ -701,7 +700,7 @@ bool CUI_BlockEditor::ProcessSelectionAndBrushMouseEvents(wxMouseEvent& event)
 				const Plane& pl = m_selectedFaces[0]->face.Plane;
 				CBrushPrimitive* brush = m_selectedFaces[0]->brush;
 
-				const Vector3D faceOrigin = m_faceAxis.m_position + pl.normal*pl.Distance(brush->GetBBox().GetCenter());
+				const Vector3D faceOrigin = m_selectedFaces[0]->GetCenter();
 				const Vector3D faceOriginToSelection = (faceOrigin - m_faceAxis.m_position);
 				const Vector3D faceOriginTransformed = (dragRotation*faceOriginToSelection) + m_faceAxis.m_position;
 
@@ -714,6 +713,10 @@ bool CUI_BlockEditor::ProcessSelectionAndBrushMouseEvents(wxMouseEvent& event)
 					DeleteBrush(m_selectedFaces[0]->brush);
 					wxMessageBox("Brush was deleted!");
 				}
+
+				Vector3D r, u;
+				VectorVectors(pl.normal, r, u);
+				m_faceAxis.SetProps(!Matrix3x3(r, u, pl.normal), m_selectedFaces[0]->GetCenter());
 
 				RecalcSelectionBox();
 				m_mode = BLOCK_MODE_READY;
@@ -1107,7 +1110,7 @@ void CUI_BlockEditor::OnRender()
 
 			if (m_mode == BLOCK_MODE_ROTATE)
 			{
-				const Vector3D faceOrigin = m_faceAxis.m_position + pl.normal*pl.Distance(brush->GetBBox().GetCenter());
+				const Vector3D faceOrigin = m_selectedFaces[0]->GetCenter();
 				const Vector3D faceOriginToSelection = (faceOrigin - m_faceAxis.m_position);
 				const Vector3D faceOriginTransformed = (dragRotation*faceOriginToSelection) + m_faceAxis.m_position;
 

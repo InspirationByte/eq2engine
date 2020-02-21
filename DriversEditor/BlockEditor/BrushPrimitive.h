@@ -44,6 +44,8 @@ struct winding_t
 	// sorts the vertices, makes them as triangle list
 	bool							SortVerticesAsTriangleList();
 
+	Vector3D						GetCenter() const;
+
 	// splits the face by this face, and results a
 	void							Split(const winding_t *w, winding_t *front, winding_t *back );
 

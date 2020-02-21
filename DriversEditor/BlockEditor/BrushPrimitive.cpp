@@ -276,6 +276,23 @@ bool winding_t::SortVerticesAsTriangleList()
 	return true;
 }
 
+Vector3D winding_t::GetCenter() const
+{
+	if (!vertices.numElem())
+	{
+		Vector3D center = brush->GetBBox().GetCenter();
+		return center - face.Plane.normal * face.Plane.Distance(center);
+	}
+
+	const float invDiv = 1.0f / (float)vertices.numElem();
+
+	Vector3D vec(0.0f);
+	for (int i = 0; i < vertices.numElem(); i++)
+		vec += vertices[i].position*invDiv;
+
+	return vec;
+}
+
 // splits the face by this face, and results a
 void winding_t::Split(const winding_t *w, winding_t *front, winding_t *back )
 {
