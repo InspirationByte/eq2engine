@@ -104,11 +104,12 @@ public:
 	bool		GeneratePOD();
 
 protected:
+	egfcaModel_t		GetDummyModel();
+
 	// helper functions
 	cbone_t*			FindBoneByName(const char* pszName);
 	clodmodel_t*		FindModelLodGroupByName(const char* pszName);
 	egfcaModel_t*		FindModelByName(const char* pszName);
-
 
 	int					FindModelLodIdGroupByName(const char* pszName);
 	int					GetMaterialIndex(const char* pszName);

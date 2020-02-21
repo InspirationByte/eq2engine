@@ -121,13 +121,24 @@ void CEGFGenerator::AddModelLodUsageReference(int lodModelIndex)
 	}
 }
 
+egfcaModel_t CEGFGenerator::GetDummyModel()
+{
+	egfcaModel_t mod;
+	mod.model = new dsmmodel_t;
+	strcpy(mod.model->name, "_dummy");
+
+	return mod;
+}
+
 //************************************
 // Loads a model
 //************************************
 egfcaModel_t CEGFGenerator::LoadModel(const char* pszFileName)
 {
-	egfcaModel_t mod;
+	if (!stricmp(pszFileName, "_dummy"))
+		return GetDummyModel();
 
+	egfcaModel_t mod;
 	mod.model = new dsmmodel_t;
 
 	EqString modelPath( CombinePath(3, m_refsPath.c_str(), CORRECT_PATH_SEPARATOR_STR, pszFileName) );
@@ -349,7 +360,7 @@ dsmmodel_t* CEGFGenerator::ParseAndLoadModels(kvkeybase_t* pKeyBase)
 	}
 	else
 	{
-		MsgError("got model definition, but nothing added\n");
+		MsgError("got model definition '%s', but nothing added\n", pKeyBase->name);
 	}
 
 	return nullptr;
