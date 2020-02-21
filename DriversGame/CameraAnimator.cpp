@@ -369,7 +369,7 @@ void CCameraAnimator::Animate(ECameraMode mode,
 
 		Vector3D fLookAngleDiff = AnglesDiff(m_interpLookAngle, desiredLookAngle);
 
-		if (fDt*CAM_LOOK_TURN_SPEED > length(fLookAngleDiff))
+		if (fDt*CAM_LOOK_TURN_SPEED*0.5f > length(fLookAngleDiff))
 		{
 			fLookAngleDiff = vec3_zero;
 			m_interpLookAngle = desiredLookAngle;

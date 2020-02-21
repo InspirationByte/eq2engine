@@ -4287,7 +4287,7 @@ void CCar::DrawBody( int nRenderFlags, int nLOD)
 		return;
 
 	studiohdr_t* pHdr = m_pModel->GetHWData()->studio;
-
+	/*
 	if(nLOD > 0 && r_enableObjectsInstancing.GetBool() && m_pModel->GetInstancer())
 	{
 		CGameObjectInstancer* instancer = (CGameObjectInstancer*)m_pModel->GetInstancer();
@@ -4303,7 +4303,7 @@ void CCar::DrawBody( int nRenderFlags, int nLOD)
 		// g_pShaderAPI->SetShaderConstantVector4D("CarColor", m_carColor);
 		return;
 	}
-
+	*/
 	CTextureAtlas* licPlateAtlas = g_worldGlobals.licPlatesMat && g_worldGlobals.licPlatesMat->GetAtlas() ? g_worldGlobals.licPlatesMat->GetAtlas() : nullptr;
 	TexAtlasEntry_t* licPlateRect = licPlateAtlas ? licPlateAtlas->GetEntry(m_licPlateId) : nullptr;
 
