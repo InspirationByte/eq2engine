@@ -26,12 +26,6 @@ const float s_GridSizes[]
 const int s_numGridSizes = sizeof(s_GridSizes) / sizeof(float);
 const int s_defaultGridSelection = 3;
 
-struct faceSelect_t
-{
-	winding_t* windingFace;
-	DkList<int> vertex_ids;
-};
-
 //--------------------------------------------------------------------------------------
 // Some math helpers
 
@@ -391,16 +385,32 @@ void CUI_BlockEditor::ToggleBrushSelection(CBrushPrimitive* brush)
 
 void CUI_BlockEditor::ToggleFaceSelection(winding_t* winding)
 {
+	int selectedFaceIdx = -1;
+	for (int i = 0; i < m_selectedFaces.numElem(); i++)
+	{
+		if (m_selectedFaces[i].winding == winding)
+		{
+			selectedFaceIdx = i;
+			break;
+		}
+	}
+
 	// toggle face selection
-	if (winding->face.nFlags & BRUSH_FACE_SELECTED)
+	if ((winding->face.nFlags & BRUSH_FACE_SELECTED))
 	{
 		winding->face.nFlags &= ~BRUSH_FACE_SELECTED;
-		m_selectedFaces.fastRemove(winding);
+		m_selectedFaces.fastRemoveIndex(selectedFaceIdx);
 	}
 	else
 	{
 		winding->face.nFlags |= BRUSH_FACE_SELECTED;
-		m_selectedFaces.addUnique(winding);
+
+		if (selectedFaceIdx == -1)
+		{
+			faceSelect_t faceSel(winding);
+			m_selectedFaces.append(faceSel);
+		}
+
 
 		const Plane& pl = winding->face.Plane;
 
@@ -422,7 +432,7 @@ void CUI_BlockEditor::CancelSelection()
 		}
 
 		for (int i = 0; i < m_selectedFaces.numElem(); i++)
-			m_selectedFaces[i]->face.nFlags &= ~BRUSH_FACE_SELECTED;
+			m_selectedFaces[i].winding->face.nFlags &= ~BRUSH_FACE_SELECTED;
 
 		m_selectedFaces.clear();
 		m_selectedBrushes.clear();
@@ -563,7 +573,7 @@ bool CUI_BlockEditor::ProcessSelectionAndBrushMouseEvents(wxMouseEvent& event)
 	if (!event.Dragging())
 	{
 		// pick the box plane
-		if (isFaceGizmo && !event.ButtonUp() && !event.ButtonDown() && !m_selectedFaces.numElem() || m_selectedBrushes.numElem())
+		if ((isFaceGizmo && !m_selectedFaces.numElem() || m_selectedBrushes.numElem()) && !event.ButtonUp() && !event.ButtonDown())
 		{
 			Volume boxVolume;
 			BoxToVolume(editBox, boxVolume);
@@ -697,26 +707,28 @@ bool CUI_BlockEditor::ProcessSelectionAndBrushMouseEvents(wxMouseEvent& event)
 				//------------------------------------------------------
 				// PERFORM ROTATION OF WINDING
 
-				const Plane& pl = m_selectedFaces[0]->face.Plane;
-				CBrushPrimitive* brush = m_selectedFaces[0]->brush;
+				winding_t* selWinding = m_selectedFaces[0].winding;
 
-				const Vector3D faceOrigin = m_selectedFaces[0]->GetCenter();
+				const Plane& pl = selWinding->face.Plane;
+				CBrushPrimitive* brush = selWinding->brush;
+
+				const Vector3D faceOrigin = selWinding->GetCenter();
 				const Vector3D faceOriginToSelection = (faceOrigin - m_faceAxis.m_position);
 				const Vector3D faceOriginTransformed = (dragRotation*faceOriginToSelection) + m_faceAxis.m_position;
 
 				Matrix4x4 rendermatrix = (translate(faceOriginTransformed)*(Matrix4x4(dragRotation))*translate(-faceOrigin));
 
-				m_selectedFaces[0]->Transform(rendermatrix);
+				selWinding->Transform(rendermatrix);
 
-				if (!m_selectedFaces[0]->brush->UpdateRenderData())
+				if (!selWinding->brush->UpdateRenderData())
 				{
-					DeleteBrush(m_selectedFaces[0]->brush);
+					DeleteBrush(selWinding->brush);
 					wxMessageBox("Brush was deleted!");
 				}
 
 				Vector3D r, u;
 				VectorVectors(pl.normal, r, u);
-				m_faceAxis.SetProps(!Matrix3x3(r, u, pl.normal), m_selectedFaces[0]->GetCenter());
+				m_faceAxis.SetProps(!Matrix3x3(r, u, pl.normal), selWinding->GetCenter());
 
 				RecalcSelectionBox();
 				m_mode = BLOCK_MODE_READY;
@@ -775,14 +787,17 @@ bool CUI_BlockEditor::ProcessSelectionAndBrushMouseEvents(wxMouseEvent& event)
 			{
 				//------------------------------------------------------
 				// MOVE WINDING
-				Plane& pl = m_selectedFaces[0]->face.Plane;
+
+				winding_t* selWinding = m_selectedFaces[0].winding;
+
+				Plane& pl = selWinding->face.Plane;
 				float distFromPl = SnapFloat(GridSize(), pl.Distance(m_faceAxis.m_position));
 
 				pl.offset -= distFromPl;
 
-				if (!m_selectedFaces[0]->brush->UpdateRenderData())
+				if (!selWinding->brush->UpdateRenderData())
 				{
-					DeleteBrush(m_selectedFaces[0]->brush);
+					DeleteBrush(selWinding->brush);
 					wxMessageBox("Brush was deleted!");
 				}
 
@@ -903,13 +918,17 @@ void CUI_BlockEditor::OnKey(wxKeyEvent& event, bool bDown)
 	}
 }
 
-void RenderWindingVerts(winding_t* winding, const Matrix4x4& view, const Matrix4x4& proj)
+void RenderWindingVerts(faceSelect_t& faceSel, const Matrix4x4& view, const Matrix4x4& proj)
 {
 	IVector2D screenSize = g_pMainFrame->GetRenderPanelDimensions();
 
-	for (int i = 0; i < winding->vertices.numElem(); i++)
+	for (int i = 0; i < faceSel.winding->vertices.numElem(); i++)
 	{
-		lmodeldrawvertex_t& vert = winding->vertices[i];
+		lmodeldrawvertex_t& vert = faceSel.winding->vertices[i];
+
+		ColorRGBA vertexCol(1, 1, 0.5f, 1);
+		if (faceSel.selVerts.findIndex(i) != -1)
+			vertexCol = ColorRGBA(1, 0, 0, 1);
 
 		Vector2D pointScr;
 		if (!PointToScreen(vert.position, pointScr, proj*view, screenSize))
@@ -917,7 +936,7 @@ void RenderWindingVerts(winding_t* winding, const Matrix4x4& view, const Matrix4
 			// draw only single point
 			Vertex2D_t pointA[] = { MAKETEXQUAD(pointScr.x - 3,pointScr.y - 3,pointScr.x + 3,pointScr.y + 3, 0) };
 
-			materials->DrawPrimitives2DFFP(PRIM_TRIANGLE_STRIP, pointA, elementsOf(pointA), NULL, ColorRGBA(1, 1, 0.5f, 1));
+			materials->DrawPrimitives2DFFP(PRIM_TRIANGLE_STRIP, pointA, elementsOf(pointA), NULL, vertexCol);
 
 			// draw only single point
 			Vertex2D_t pointR[] = { MAKETEXRECT(pointScr.x - 3,pointScr.y - 3,pointScr.x + 3,pointScr.y + 3, 0) };
@@ -1105,12 +1124,14 @@ void CUI_BlockEditor::OnRender()
 		}
 		else if (m_selectedFaces.numElem() == 1)
 		{
-			CBrushPrimitive* brush = m_selectedFaces[0]->brush;
-			const Plane& pl = m_selectedFaces[0]->face.Plane;
+			winding_t* selWinding = m_selectedFaces[0].winding;
+
+			CBrushPrimitive* brush = selWinding->brush;
+			const Plane& pl = selWinding->face.Plane;
 
 			if (m_mode == BLOCK_MODE_ROTATE)
 			{
-				const Vector3D faceOrigin = m_selectedFaces[0]->GetCenter();
+				const Vector3D faceOrigin = selWinding->GetCenter();
 				const Vector3D faceOriginToSelection = (faceOrigin - m_faceAxis.m_position);
 				const Vector3D faceOriginTransformed = (dragRotation*faceOriginToSelection) + m_faceAxis.m_position;
 
@@ -1124,11 +1145,12 @@ void CUI_BlockEditor::OnRender()
 				materials->SetMatrix(MATRIXMODE_WORLD, translate(pl.normal*distFromPl));
 			}
 
-			brush->RenderGhost(m_selectedFaces[0]->faceId);
+			brush->RenderGhost(selWinding->faceId);
 
 			materials->SetMatrix(MATRIXMODE_WORLD, identity4());
 
-			m_faceAxis.Draw(flength, (m_mode == BLOCK_MODE_ROTATE) ? AXIS_ALL : AXIS_Z);
+			if (m_selectedTool == BlockEdit_Selection)
+				m_faceAxis.Draw(flength, (m_mode == BLOCK_MODE_ROTATE) ? AXIS_ALL : AXIS_Z);
 		}
 			
 	}

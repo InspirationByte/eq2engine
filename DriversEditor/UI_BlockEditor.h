@@ -36,8 +36,18 @@ enum EBlockEditorMode
 };
 
 class CBrushPrimitive;
-struct faceSelect_t;
 struct winding_t;
+
+struct faceSelect_t
+{
+	faceSelect_t() : winding(nullptr) {}
+	faceSelect_t(winding_t* w) : winding(w)
+	{
+	}
+
+	winding_t* winding;
+	DkList<int> selVerts;
+};
 
 class CUI_BlockEditor : public wxPanel, public CBaseTilebasedEditor
 {
@@ -110,7 +120,7 @@ protected:
 
 	BoundingBox					m_selectionBox;
 	DkList<CBrushPrimitive*>	m_selectedBrushes;
-	DkList<winding_t*>			m_selectedFaces;
+	DkList<faceSelect_t>		m_selectedFaces;
 
 	// dragging properties
 	Vector3D					m_dragOffs;
