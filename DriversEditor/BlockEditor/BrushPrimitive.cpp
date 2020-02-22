@@ -6,6 +6,7 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "BrushPrimitive.h"
+#include "materialsystem/MeshBuilder.h"
 #include <malloc.h>
 
 #include "world.h"
@@ -14,130 +15,12 @@
 #include "coord.h"
 #include "Utils/GeomTools.h"
 
-#define MAX_BRUSH_PLANES		256
-#define MAX_POINTS_ON_WINDING	128
-#define MAX_WINDING_VERTS		256
-
-int ClipVertsAgainstPlane(Plane &plane, int vertexCount, Vector3D *vertex, Vector3D *newVertex)
-{
-	bool negative[MAX_WINDING_VERTS];
-	float t;
-	Vector3D v, v1, v2;
-
-	// classify vertices
-	int negativeCount = 0;
-	for (int i = 0; i < vertexCount; i++)
-	{
-		negative[i] = (plane.ClassifyPoint(vertex[i]) != CP_FRONT);
-		negativeCount += negative[i];
-	}
-	
-	if(negativeCount == vertexCount)
-		return 0; // completely culled, we have no polygon
-
-	if(negativeCount == 0)
-		return -1;			// not clipped
-
-	int count = 0;
-
-	for (int i = 0; i < vertexCount; i++)
-	{
-		// prev is the index of the previous vertex
-		int	prev = (i != 0) ? i - 1 : vertexCount - 1;
-		
-		if (negative[i])
-		{
-			if (!negative[prev])
-			{
-				v1 = vertex[prev];
-				v2 = vertex[i];
-
-				// Current vertex is on negative side of plane,
-				// but previous vertex is on positive side.
-				Vector3D edge = v1 - v2;
-				t = plane.Distance(v1) / dot(plane.normal, edge);
-
-				newVertex[count] = lerp(v1,v2,t);
-				count++;
-			}
-		}
-		else
-		{
-			if (negative[prev])
-			{
-				v1 = vertex[i];
-				v2 = vertex[prev];
-
-				// Current vertex is on positive side of plane,
-				// but previous vertex is on negative side.
-				Vector3D edge = v1 - v2;
-
-				t = plane.Distance(v1) / dot(plane.normal, edge);
-
-				newVertex[count] = lerp(v1,v2,t);
-				
-				count++;
-			}
-			
-			// include current vertex
-			newVertex[count] = vertex[i];
-			count++;
-		}
-	}
-	
-	// return new clipped vertex count
-	return count;
-}
-
-void ChopWinding(winding_t &w, Plane &plane)
-{
-	Vector3D newVertices[MAX_POINTS_ON_WINDING];
-	Vector3D vertices[MAX_POINTS_ON_WINDING];
-
-	int nVerts = w.vertices.numElem();
-
-	for(int i = 0; i < nVerts; i++)
-		vertices[i] = w.vertices[i].position;
-
-	int nNewVerts = ClipVertsAgainstPlane(plane, nVerts, vertices, newVertices);
-	if (nNewVerts == -1)
-		return;
-
-	w.vertices.clear();
-
-	for(int i = 0; i < nNewVerts; i++)
-	{
-		lmodeldrawvertex_t vertex(newVertices[i], vec3_zero, vec2_zero);
-		w.vertices.append(vertex);
-	}
-}
-
-void MakeInfiniteWinding(winding_t &w, Plane &plane)
-{
-	// compute needed vectors
-	Vector3D vRight, vUp;
-	VectorVectors(plane.normal, vRight, vUp);
-
-	// make vectors infinite
-	vRight *= DrvSynUnits::MaxCoordInUnits;
-	vUp *= DrvSynUnits::MaxCoordInUnits;
-
-	Vector3D org = -plane.normal * plane.offset;
-
-	// and finally fill really big winding
-	w.vertices.clear(false);
-	w.vertices.append(lmodeldrawvertex_t(org - vRight + vUp, plane.normal, vec2_zero));
-	w.vertices.append(lmodeldrawvertex_t(org + vRight + vUp, plane.normal, vec2_zero));
-	w.vertices.append(lmodeldrawvertex_t(org + vRight - vUp, plane.normal, vec2_zero));
-	w.vertices.append(lmodeldrawvertex_t(org - vRight - vUp, plane.normal, vec2_zero));
-}
-
 //-----------------------------------------
 // Brush face member functions
 //-----------------------------------------
 
 // calculates the texture coordinates for this 
-void winding_t::CalculateTextureCoordinates()
+void winding_t::CalculateTextureCoordinates(lmodeldrawvertex_t* verts, int vertCount)
 {
 	int texSizeW = 32;
 	int texSizeH = 32;
@@ -150,8 +33,8 @@ void winding_t::CalculateTextureCoordinates()
 		texSizeH = pTex->GetHeight();
 	}
 
-	float texelW = 1.0f / texSizeW;
-	float texelH = 1.0f / texSizeH;
+	const float texelW = 1.0f / texSizeW;
+	const float texelH = 1.0f / texSizeH;
 
 	Vector3D axisAngles = VectorAngles(face.Plane.normal);
 	AngleVectors(axisAngles, NULL, &face.UAxis.normal, &face.VAxis.normal);
@@ -167,27 +50,27 @@ void winding_t::CalculateTextureCoordinates()
 	face.UAxis.normal = -texMatrix.rows[0];
 	face.VAxis.normal = texMatrix.rows[1];
 	
-	for(int i = 0; i < vertices.numElem(); i++ )
+	for(int i = 0; i < vertCount; i++ )
 	{
 		float U, V;
 		
-		U = dot(face.UAxis.normal, vertices[i].position);
+		U = dot(face.UAxis.normal, verts[i].position);
 		U /= ( ( float )texSizeW ) * face.vScale.x * texelW;
-		U += (face.UAxis.offset / ( float )texSizeW );
+		U += face.UAxis.offset * texelW;
 
-		V = dot(face.VAxis.normal, vertices[i].position);
+		V = dot(face.VAxis.normal, verts[i].position);
 		V /= ( ( float )texSizeH ) * face.vScale.y * texelH;
-		V += (face.VAxis.offset / ( float )texSizeH );
+		V += face.VAxis.offset * texelH;
 
-		vertices[i].texcoord.x = U;
-		vertices[i].texcoord.y = V;
+		verts[i].texcoord.x = U;
+		verts[i].texcoord.y = V;
 
-		//vertices[i].tangent = vec3_zero;
-		//vertices[i].binormal = vec3_zero;
-		vertices[i].normal = vec3_zero;
+		//verts[i].tangent = vec3_zero;
+		//verts[i].binormal = vec3_zero;
+		verts[i].normal = vec3_zero;
 	}
 
-	int num_triangles = ((vertices.numElem() < 4) ? 1 : (2 + vertices.numElem() - 4));
+	int num_triangles = ((vertCount < 4) ? 1 : (2 + vertCount - 4));
 
 	for(int i = 0; i < num_triangles; i++ )
 	{
@@ -196,62 +79,68 @@ void winding_t::CalculateTextureCoordinates()
 		int idx2 = i+2;
 
 		Vector3D t,b,n;
-		ComputeTriangleTBN(	vertices[idx0].position, vertices[idx1].position, vertices[idx2].position,
-							vertices[idx0].texcoord, vertices[idx1].texcoord, vertices[idx2].texcoord, 
+		ComputeTriangleTBN( verts[idx0].position, verts[idx1].position, verts[idx2].position,
+							verts[idx0].texcoord, verts[idx1].texcoord, verts[idx2].texcoord,
 							n,t,b);
 
-		//vertices[idx0].tangent += t;
-		//vertices[idx0].binormal += b;
-		vertices[idx0].normal += n;
+		//verts[idx0].tangent += t;
+		//verts[idx0].binormal += b;
+		verts[idx0].normal += n;
 
-		//vertices[idx1].tangent += t;
-		//vertices[idx1].binormal += b;
-		vertices[idx1].normal += n;
+		//verts[idx1].tangent += t;
+		//verts[idx1].binormal += b;
+		verts[idx1].normal += n;
 
-		//vertices[idx2].tangent += t;
-		//vertices[idx2].binormal += b;
-		vertices[idx2].normal += n;
+		//verts[idx2].tangent += t;
+		//verts[idx2].binormal += b;
+		verts[idx2].normal += n;
 	}
 
-	for(int i = 0; i < vertices.numElem(); i++)
+	for(int i = 0; i < vertCount; i++)
 	{
-		//vertices[i].tangent = normalize(vertices[i].tangent);
-		//vertices[i].binormal = normalize(vertices[i].binormal);
-		vertices[i].normal = normalize(vertices[i].normal);
+		//verts[i].tangent = normalize(verts[i].tangent);
+		//verts[i].binormal = normalize(verts[i].binormal);
+		verts[i].normal = normalize(verts[i].normal);
 	}
 }
 
-// sorts the vertices, makes them as triangle list
-bool winding_t::SortVerticesAsTriangleList()
+// sorts the drawVerts, makes them as triangle list
+bool winding_t::SortIndices()
 {
-	if(vertices.numElem() < 3)
+	if(vertex_ids.numElem() < 3)
 	{
-		MsgError("ERROR: Polygon has less than 3 vertices (%d)\n", vertices.numElem());
+		MsgError("ERROR: Polygon has less than 3 vertices (%d)\n", vertex_ids.numElem());
 		return true;
 	}
 
-	// get the center of that poly
-	Vector3D center(0);
-	for ( int i = 0; i < vertices.numElem(); i++ )
-		center += vertices[i].position;
+	const DkList<Vector3D>& brushVerts = brush->m_verts;
 
-	center /= vertices.numElem();
+	// get the center of that poly
+	float countFac = 1.0f / (float)vertex_ids.numElem();
+
+	Vector3D center(0);
+	for ( int i = 0; i < vertex_ids.numElem(); i++ )
+		center += brushVerts[vertex_ids[i]] * countFac;
 
 	// sort them now
-	for ( int i = 0; i < vertices.numElem()-2; i++ )
+	for ( int i = 0; i < vertex_ids.numElem() -2; i++ )
 	{
+		Vector3D iVert = brushVerts[vertex_ids[i]];
+
 		float	fSmallestAngle	= -1;
 		int		nSmallestIdx	= -1;
 
-		Vector3D a = normalize(vertices[i].position - center);
-		Plane p( vertices[i].position, center, center + face.Plane.normal );
+		Vector3D a = normalize(iVert - center);
+		Plane p(iVert, center, center + face.Plane.normal, true );
 
-		for(int j = i+1; j < vertices.numElem(); j++)
+		for(int j = i+1; j < vertex_ids.numElem(); j++)
 		{
+			Vector3D jVert = brushVerts[vertex_ids[j]];
+
 			// the vertex is in front or lies on the plane
-			if (p.ClassifyPoint (vertices[j].position) != CP_BACK)
+			if (p.ClassifyPoint(jVert) != CP_BACK)
 			{
-				Vector3D b = normalize(vertices[j].position - center);
+				Vector3D b = normalize(jVert - center);
 
 				float fAngle = dot(b,a);
 
@@ -264,13 +153,10 @@ bool winding_t::SortVerticesAsTriangleList()
 		}
 
 		if (nSmallestIdx == -1)
-		{
 			return false;
-		}
 
-		lmodeldrawvertex_t vtx = vertices[nSmallestIdx];
-		vertices[ nSmallestIdx ] = vertices[i+1];
-		vertices[i+1] = vtx;
+		// swap the indices
+		QuickSwap(vertex_ids[nSmallestIdx], vertex_ids[i + 1]);
 	}
 
 	return true;
@@ -278,105 +164,63 @@ bool winding_t::SortVerticesAsTriangleList()
 
 Vector3D winding_t::GetCenter() const
 {
-	if (!vertices.numElem())
+	if (!vertex_ids.numElem())
 	{
+		// use brush center instead (not likely to be executed)
 		Vector3D center = brush->GetBBox().GetCenter();
 		return center - face.Plane.normal * face.Plane.Distance(center);
 	}
 
-	const float invDiv = 1.0f / (float)vertices.numElem();
+	const DkList<Vector3D>& verts = brush->m_verts;
+
+	const float invDiv = 1.0f / (float)vertex_ids.numElem();
 
 	Vector3D vec(0.0f);
-	for (int i = 0; i < vertices.numElem(); i++)
-		vec += vertices[i].position*invDiv;
+	for (int i = 0; i < vertex_ids.numElem(); i++)
+		vec += verts[vertex_ids[i]] * invDiv;
 
 	return vec;
 }
 
-// splits the face by this face, and results a
-void winding_t::Split(const winding_t *w, winding_t *front, winding_t *back )
+int winding_t::CheckRayIntersectionWithVertex(const Vector3D &start, const Vector3D &dir, float vertexScale)
 {
-	ClassifyPlane_e	*pCP = (ClassifyPlane_e*)stackalloc(w->vertices.numElem()*sizeof(ClassifyPlane_e));
+	float nearestVertDist = MAX_COORD_UNITS;
+	int nearestVert = -1;
 
-	for ( int i = 0; i < w->vertices.numElem(); i++ )
-		pCP[ i ] = face.Plane.ClassifyPoint ( w->vertices[i].position );
+	const DkList<Vector3D>& verts = brush->m_verts;
 
-	front->brush = w->brush;
-	back->brush	= w->brush;
-
-	front->face	= w->face;
-	back->face = w->face;
-
-	front->faceId = -1;
-	back->faceId = -1;
-	
-	for ( int i = 0; i < w->vertices.numElem(); i++ )
+	for (int i = 0; i < vertex_ids.numElem(); i++)
 	{
-		const lmodeldrawvertex_t& vert = w->vertices[i];
+		Vector3D vert = verts[vertex_ids[i]];
 
-		//
-		// Add point to appropriate list
-		//
-		switch (pCP[i])
+		Plane pl(dir, -dot(dir, vert));
+
+		Vector3D rayPlaneOut;
+		if (pl.GetIntersectionWithRay(start, dir, rayPlaneOut))
 		{
-			case CP_FRONT:
+			float dist = length(vert - rayPlaneOut);
+			if (dist < nearestVertDist && dist <= vertexScale)
 			{
-				front->vertices.append(vert);
+				nearestVert = vertex_ids[i];
+				nearestVertDist = dist;
 			}
-			break;
-			case CP_BACK:
-			{
-				back->vertices.append(vert);
-			}
-			break;
-			case CP_ONPLANE:
-			{
-				front->vertices.append(vert);
-				back->vertices.append(vert);
-			}
-			break;
-		}
-
-		//
-		// Check if edges should be split
-		//
-		int		iNext	= i + 1;
-		bool	bIgnore	= false;
-
-		if ( i == w->vertices.numElem()-1)
-			iNext = 0;
-
-		if((pCP[i] == CP_ONPLANE) && (pCP[iNext] != CP_ONPLANE))
-			bIgnore = true;
-		else if((pCP[iNext] == CP_ONPLANE) && ( pCP[i] != CP_ONPLANE))
-			bIgnore = true;
-
-		if (!bIgnore && (pCP[i] != pCP[iNext]))
-		{
-			const lmodeldrawvertex_t& nextVert = w->vertices[iNext];
-
-			lmodeldrawvertex_t	v;	// New vertex created by splitting
-			float p;			// Percentage between the two points
-
-			face.Plane.GetIntersectionLineFraction(vert.position, nextVert.position, v.position, p );
-
-			v.texcoord = lerp(vert.texcoord, nextVert.texcoord, p);
-
-			front->vertices.append(v);
-			back->vertices.append(v);
 		}
 	}
+
+	return nearestVert;
 }
 
 // classifies the next face over this
-ClassifyPoly_e winding_t::Classify(winding_t *w)
+ClassifyPoly_e winding_t::Classify(winding_t *w) const
 {
 	bool	bFront = false, bBack = false;
 	float	dist;
 
-	for ( int i = 0; i < w->vertices.numElem(); i++ )
+	const DkList<Vector3D>& wVerts = w->brush->m_verts;
+
+	for ( int i = 0; i < w->vertex_ids.numElem(); i++ )
 	{
-		dist = face.Plane.Distance(w->vertices[i].position);
+		dist = face.Plane.Distance(wVerts[w->vertex_ids[i]]);
 
 		if ( dist > 0.0001f )
 		{
@@ -422,7 +266,7 @@ CEditableSurface* EqBrushWinding_t::MakeEditableSurface()
 
 	DkList<int>	indices;
 
-	int num_triangles = ((vertices.numElem() < 4) ? 1 : (2 + vertices.numElem() - 4));
+	int num_triangles = ((drawVerts.numElem() < 4) ? 1 : (2 + drawVerts.numElem() - 4));
 	int num_indices = num_triangles*3;
 
 	for(int i = 0; i < num_triangles; i++)
@@ -436,7 +280,7 @@ CEditableSurface* EqBrushWinding_t::MakeEditableSurface()
 		indices.append(idx2);
 	}
 
-	pSurface->MakeCustomMesh(vertices.ptr(), indices.ptr(), vertices.numElem(), indices.numElem());
+	pSurface->MakeCustomMesh(drawVerts.ptr(), indices.ptr(), drawVerts.numElem(), indices.numElem());
 	pSurface->SetMaterial(face.pMaterial);
 
 	return pSurface;
@@ -449,7 +293,6 @@ CEditableSurface* EqBrushWinding_t::MakeEditableSurface()
 CBrushPrimitive::CBrushPrimitive()
 {
 	m_pVB = NULL;
-	m_nAdditionalFlags = 0;
 }
 
 CBrushPrimitive::~CBrushPrimitive()
@@ -457,118 +300,79 @@ CBrushPrimitive::~CBrushPrimitive()
 	OnRemove();
 }
 
-// calculates bounding box for this brush
-void CBrushPrimitive::CalculateBBOX()
+// calculates the vertices from faces
+bool CBrushPrimitive::AssignWindingVertices()
 {
+	m_verts.clear();
 	m_bbox.Reset();
 
-	for(int i = 0; i < m_windingFaces.numElem(); i++)
+	CalculateVerts(m_verts);
+
+	// add new vertices to BBOX
+	for (int i = 0; i < m_verts.numElem(); i++)
+		m_bbox.AddVertex(m_verts[i]);
+
+	// clear vertex ids as we're recalculating
+	for (int i = 0; i < m_windingFaces.numElem(); i++)
 	{
 		winding_t& winding = m_windingFaces[i];
-
-		for(int j = 0; j < winding.vertices.numElem(); j++)
-			m_bbox.AddVertex(winding.vertices[j].position);
+		winding.vertex_ids.clear();
 	}
-}
 
-// is brush aabb intersects another brush aabb
-bool CBrushPrimitive::IsBrushIntersectsAABB(CBrushPrimitive *pBrush)
-{
-	return m_bbox.Intersects(pBrush->GetBBox());
-}
+	int numVerts = 0;
 
-void CBrushPrimitive::SortVertsToDraw()
-{
-	for(int i = 0; i < m_windingFaces.numElem(); i++)
+	// add vertex indices
+	// as it's almost the same as GetBrushVerts works, it's safe to use same indexes
+	for (int i = 0; i < m_windingFaces.numElem(); i++)
 	{
-		if(!m_windingFaces[i].SortVerticesAsTriangleList())
-			Msg("\nERROR: Degenerate plane %d on brush\n", i);
-	}
-}
+		winding_t& iWinding = m_windingFaces[i];
 
-// calculates the vertices from faces
-bool CBrushPrimitive::CreateFromPlanes()
-{
-	// check planes first
-	bool usePlane[MAX_BRUSH_PLANES];
-	memset(usePlane,0,sizeof(usePlane));
+		const Plane& iPlane = iWinding.face.Plane;
 
-	for ( int i = 0; i < m_windingFaces.numElem(); i++ )
-	{
-		brushFace_t& face = m_windingFaces[i].face;
-
-		if(face.Plane.normal == vec3_zero)
+		for (int j = i + 1; j < m_windingFaces.numElem(); j++)
 		{
-			Msg("Brush: Invalid plane %d\n", i);
-			usePlane[i] = false;
-			continue;
-		}
+			winding_t& jWinding = m_windingFaces[j];
+			const Plane& jPlane = jWinding.face.Plane;
 
-		usePlane[i] = true;
-		for (int j = 0; j < i; j++)
-		{
-			brushFace_t* faceCheck = GetFace(j);
-
-			// check duplicate planes
-			if( (dot(face.Plane.normal, faceCheck->Plane.normal) > 0.999) && 
-				(fabs(face.Plane.offset - faceCheck->Plane.offset) < 0.01))
+			for (int k = j + 1; k < m_windingFaces.numElem(); k++)
 			{
-				Msg("Brush: Duplicate plane found %d\n", j);
-				usePlane[j] = false;
+				winding_t& kWinding = m_windingFaces[k];
+				const Plane& kPlane = kWinding.face.Plane;
+
+				// calculate vertices by intersection of three planes
+				Vector3D point;
+				if (iPlane.GetIntersectionWithPlanes(jPlane, kPlane, point) && IsPointInside(point))
+				{
+					// those verts can be recalculated; base algorithm is unchanged
+					// add only indices
+					int vertex_id = numVerts++;
+					iWinding.vertex_ids.append(vertex_id);
+					jWinding.vertex_ids.append(vertex_id);
+					kWinding.vertex_ids.append(vertex_id);
+				}
 			}
 		}
 	}
-	
-	for ( int i = 0; i < m_windingFaces.numElem(); i++ )
+
+	// remove empty faces and sort indices
+	ValidateWindings();
+
+	return (m_windingFaces.numElem() > 0);
+}
+
+void CBrushPrimitive::ValidateWindings()
+{
+	// remove empty faces
+	for(int i = 0; i < m_windingFaces.numElem(); i++)
 	{
-		if(!usePlane[i])
+		if(m_windingFaces[i].vertex_ids.numElem() < 3)
 		{
 			m_windingFaces.fastRemoveIndex(i);
 			i--;
 			continue;
 		}
 
-		winding_t& poly = m_windingFaces[i];
-		brushFace_t& face = poly.face;
-		poly.brush = this;
-		poly.faceId = i;
-
-		MakeInfiniteWinding(poly, face.Plane);
-		
-		for ( int j = 0; j < m_windingFaces.numElem(); j++ )
-		{
-			if(j != i)
-			{
-				Plane clipPlane;
-				clipPlane.normal = -m_windingFaces[j].face.Plane.normal;
-				clipPlane.offset = -m_windingFaces[j].face.Plane.offset;
-
-				ChopWinding(poly, clipPlane);
-			}
-		}
-
-		Msg("Adding poly with %d verts\n", poly.vertices.numElem());
-	}
-
-	// remove empty faces
-	RemoveEmptyFaces();
-
-	// and sort vertices
-	SortVertsToDraw();
-
-	return true;
-}
-
-void CBrushPrimitive::RemoveEmptyFaces()
-{
-	// remove empty faces
-	for(int i = 0; i < m_windingFaces.numElem(); i++)
-	{
-		if(m_windingFaces[i].vertices.numElem() < 3)
-		{
-			m_windingFaces.removeIndex(i);
-			i--;
-		}
+		m_windingFaces[i].SortIndices();
 	}
 };
 
@@ -591,6 +395,7 @@ void CBrushPrimitive::Render(int nViewRenderFlags)
 	for(int i = 0; i < m_windingFaces.numElem(); i++)
 	{
 		winding_t& winding = m_windingFaces[i];
+		int numVerts = winding.vertex_ids.numElem();
 
 		if(winding.face.nFlags & BRUSH_FACE_SELECTED)
 		{
@@ -604,9 +409,9 @@ void CBrushPrimitive::Render(int nViewRenderFlags)
 		materials->BindMaterial(winding.face.pMaterial, 0);
 		materials->Apply();
 
-		g_pShaderAPI->DrawNonIndexedPrimitives(PRIM_TRIANGLE_FAN, nFirstVertex, winding.vertices.numElem());
+		g_pShaderAPI->DrawNonIndexedPrimitives(PRIM_TRIANGLE_FAN, nFirstVertex, numVerts);
 
-		nFirstVertex += winding.vertices.numElem()+1;
+		nFirstVertex += numVerts + 1;
 	}
 }
 
@@ -625,10 +430,43 @@ void CBrushPrimitive::RenderGhost(int face /*= -1*/)
 	int nFirstVertex = 0;
 	for (int i = 0; i < m_windingFaces.numElem(); i++)
 	{
-		if(face == -1 || face == i)
-			g_pShaderAPI->DrawNonIndexedPrimitives(PRIM_LINE_STRIP, nFirstVertex, m_windingFaces[i].vertices.numElem() + 1);
+		int numVerts = m_windingFaces[i].vertex_ids.numElem() + 1;
 
-		nFirstVertex += m_windingFaces[i].vertices.numElem() + 1;
+		if(face == -1 || face == i)
+			g_pShaderAPI->DrawNonIndexedPrimitives(PRIM_LINE_STRIP, nFirstVertex, numVerts);
+
+		nFirstVertex += numVerts;
+	}
+}
+
+void CBrushPrimitive::RenderGhostCustom(const DkList<Vector3D>& verts, int face /*= -1*/)
+{
+	materials->SetCullMode(CULL_BACK);
+
+	//g_pShaderAPI->SetVertexFormat(g_worldGlobals.levelObjectVF);
+	//g_pShaderAPI->SetVertexBuffer(m_pVB, 0);
+	//g_pShaderAPI->SetIndexBuffer(NULL);
+
+	materials->SetAmbientColor(color4_white);
+	materials->BindMaterial(materials->GetDefaultMaterial());
+	g_pShaderAPI->SetTexture(nullptr, nullptr, 0);
+
+	CMeshBuilder meshBuilder(materials->GetDynamicMesh());
+
+	for (int i = 0; i < m_windingFaces.numElem(); i++)
+	{
+		winding_t& winding = m_windingFaces[i];
+		int numVerts = winding.vertex_ids.numElem();
+
+		if (face == -1 || face == i)
+		{
+			meshBuilder.Begin(PRIM_LINE_STRIP);
+			for (int j = 0; j < numVerts+1; j++)
+			{
+				meshBuilder.Position3fv(verts[winding.vertex_ids[j % numVerts]]);
+			}
+			meshBuilder.End();
+		}
 	}
 }
 
@@ -642,23 +480,10 @@ void CBrushPrimitive::AddFace(brushFace_t &face)
 	m_windingFaces[id].faceId = id;
 }
 
-/*
-void CBrushPrimitive::AddFace(Texture_t &face, EqBrushWinding_t &winding)
+bool CBrushPrimitive::Update()
 {
-	int face_id = faces.append(face);
-
-	winding.pAssignedFace = &faces[face_id];
-	polygons.append(winding);
-}
-*/
-bool CBrushPrimitive::UpdateRenderData()
-{
-	CreateFromPlanes();
-
-	if (m_windingFaces.numElem() == 0)
+	if (!AssignWindingVertices())
 		return false;
-
-	CalculateBBOX();
 
 	UpdateRenderBuffer();
 
@@ -667,58 +492,77 @@ bool CBrushPrimitive::UpdateRenderData()
 
 void CBrushPrimitive::UpdateRenderBuffer()
 {
-	// adjust flags
+	DkList<lmodeldrawvertex_t> vertexBuffer;
 
-	// reset first!
-	m_nAdditionalFlags = 0;
-
-	for(int i = 0; i < m_windingFaces.numElem(); i++)
+	for (int i = 0; i < m_windingFaces.numElem(); i++)
 	{
 		winding_t& winding = m_windingFaces[i];
-		winding.CalculateTextureCoordinates();
-	}
+		DkList<lmodeldrawvertex_t> windingVerts;
+		
+		for (int j = 0; j < winding.vertex_ids.numElem(); j++)
+		{
+			lmodeldrawvertex_t vert(m_verts[winding.vertex_ids[j]], vec3_zero, vec2_zero);
+			windingVerts.append(vert);
+		}
 
-	DkList<lmodeldrawvertex_t> verts;
-
-	for(int i = 0; i < m_windingFaces.numElem(); i++)
-	{
-		winding_t& winding = m_windingFaces[i];
-
-		verts.append(winding.vertices);
-
-		// HACK: add the first vertex to the last
-		verts.append(winding.vertices[0]);
+		// calculate texture coordinates for newly generated face draw verts
+		winding.CalculateTextureCoordinates(windingVerts.ptr(), windingVerts.numElem());
+		vertexBuffer.append(windingVerts);
+		vertexBuffer.append(windingVerts[0]);
 	}
 
 	if(m_pVB)
 	{
 		lmodeldrawvertex_t* pData = NULL;
 
-		if(m_pVB->Lock(0, verts.numElem(), (void**)&pData, false))
+		if(m_pVB->Lock(0, vertexBuffer.numElem(), (void**)&pData, false))
 		{
-			memcpy(pData,verts.ptr(),sizeof(lmodeldrawvertex_t)*verts.numElem());
+			memcpy(pData, vertexBuffer.ptr(),sizeof(lmodeldrawvertex_t)*vertexBuffer.numElem());
 
 			m_pVB->Unlock();
 		}
 	}
 	else
 	{
-		m_pVB = g_pShaderAPI->CreateVertexBuffer(BUFFER_DYNAMIC, verts.numElem(), sizeof(lmodeldrawvertex_t), verts.ptr());
+		m_pVB = g_pShaderAPI->CreateVertexBuffer(BUFFER_DYNAMIC, vertexBuffer.numElem(), sizeof(lmodeldrawvertex_t), vertexBuffer.ptr());
 	}
 }
 
-void CBrushPrimitive::Transform(const Matrix4x4& mat)
+bool CBrushPrimitive::Transform(const Matrix4x4& mat)
 {
 	for (int i = 0; i < m_windingFaces.numElem(); i++)
 		m_windingFaces[i].Transform(mat);
 
-	UpdateRenderData();
+	return Update();
 }
 
-void CBrushPrimitive::OnRemove(bool bOnLevelCleanup)
+void CBrushPrimitive::OnRemove()
 {
 	g_pShaderAPI->DestroyVertexBuffer(m_pVB);
 	m_pVB = NULL;
+}
+
+void CBrushPrimitive::CalculateVerts(DkList<Vector3D>& verts)
+{
+	for (int i = 0; i < m_windingFaces.numElem(); i++)
+	{
+		const Plane& iPlane = m_windingFaces[i].face.Plane;
+		for (int j = i + 1; j < m_windingFaces.numElem(); j++)
+		{
+			const Plane& jPlane = m_windingFaces[j].face.Plane;
+			for (int k = j + 1; k < m_windingFaces.numElem(); k++)
+			{
+				const Plane& kPlane = m_windingFaces[k].face.Plane;
+
+				Vector3D point;
+				if (iPlane.GetIntersectionWithPlanes(jPlane, kPlane, point))
+				{
+					if (IsPointInside(point))
+						verts.append(point);
+				}
+			}
+		}
+	}
 }
 
 float CBrushPrimitive::CheckLineIntersection(const Vector3D &start, const Vector3D &end, Vector3D &intersectionPos, int& face)
@@ -736,11 +580,11 @@ float CBrushPrimitive::CheckLineIntersection(const Vector3D &start, const Vector
 		const brushFace_t& brushFace = m_windingFaces[i].face;
 
 		float frac = 1.0f;
-		if(brushFace.Plane.GetIntersectionWithRay(start, dir, outintersection))
+		if (brushFace.Plane.GetIntersectionWithRay(start, dir, outintersection))
 		{
 			frac = lineProjection(start, end, outintersection);
 
-			if(frac < best_fraction && frac >= 0 && IsPointInside(outintersection + dir*0.1f))
+			if (frac < best_fraction && frac >= 0 && IsPointInside(outintersection + dir * 0.1f))
 			{
 				best_fraction = frac;
 				isinstersects = true;
@@ -751,6 +595,23 @@ float CBrushPrimitive::CheckLineIntersection(const Vector3D &start, const Vector
 	}
 
 	return best_fraction;
+}
+
+// is brush aabb intersects another brush aabb
+bool CBrushPrimitive::IsBrushIntersectsAABB(CBrushPrimitive *pBrush)
+{
+	return m_bbox.Intersects(pBrush->GetBBox());
+}
+
+bool CBrushPrimitive::IsPointInside_Epsilon(Vector3D &point, float eps)
+{
+	for (int i = 0; i < m_windingFaces.numElem(); i++)
+	{
+		if (m_windingFaces[i].face.Plane.Distance(point) > eps)
+			return false;
+	}
+
+	return true;
 }
 
 bool CBrushPrimitive::IsPointInside(Vector3D &point)
@@ -764,181 +625,16 @@ bool CBrushPrimitive::IsPointInside(Vector3D &point)
 	return true;
 }
 
-bool CBrushPrimitive::IsPointInside_Epsilon(Vector3D &point, float eps)
-{
-	for (int i = 0; i < m_windingFaces.numElem(); i++)
-	{
-		if(m_windingFaces[i].face.Plane.Distance(point) > eps)
-			return false;
-	}
-
-	return true;
-}
-
-// updates texturing
-void CBrushPrimitive::UpdateSurfaceTextures()
-{
-	UpdateRenderBuffer();
-}
-
-struct ReadWriteFace_t
-{
-	Plane							NPlane;		// normal plane
-	Plane							UAxis;		// tangent plane
-	Plane							VAxis;		// binormal plane
-
-	// texture scale
-	Vector2D						vTexScale;
-
-	// texture rotation
-	float							fTexRotation;
-
-	// face material
-	char							materialname[256];
-};
-
-// saves this object
-bool CBrushPrimitive::WriteObject(IVirtualStream* pStream)
-{
-	// write face count
-	int num_faces = m_windingFaces.numElem();
-	pStream->Write(&num_faces, 1, sizeof(int));
-
-	for(int i = 0; i < m_windingFaces.numElem(); i++)
-	{
-		brushFace_t& face = m_windingFaces[i].face;
-
-		ReadWriteFace_t wface;
-		memset(&face, 0,sizeof(ReadWriteFace_t));
-
-		wface.NPlane = face.Plane;
-		wface.UAxis = face.UAxis;
-		wface.VAxis = face.VAxis;
-		wface.vTexScale = face.vScale;
-		wface.fTexRotation = face.fRotation;
-
-		if(face.pMaterial)
-		{
-			strcpy(wface.materialname, face.pMaterial->GetName());
-		}
-		else
-			strcpy(wface.materialname, "ERROR");
-
-		pStream->Write(&face, 1, sizeof(ReadWriteFace_t));
-	}
-
-	return true;
-}
-
-// read this object
-bool CBrushPrimitive::ReadObject(IVirtualStream* pStream)
-{
-	// write face count
-	int num_faces;
-	pStream->Read(&num_faces, 1, sizeof(int));
-
-	for(int i = 0; i < num_faces; i++)
-	{
-		ReadWriteFace_t face;
-		pStream->Read(&face, 1, sizeof(ReadWriteFace_t));
-
-		brushFace_t addFace;
-
-		addFace.Plane = face.NPlane;
-		addFace.UAxis = face.UAxis;
-		addFace.VAxis = face.VAxis;
-		addFace.vScale = face.vTexScale;
-		addFace.fRotation = face.fTexRotation;
-
-		addFace.pMaterial = materials->GetMaterial(face.materialname);
-
-		AddFace(addFace);
-	}
-
-	// calculate face verts
-	UpdateRenderData();
-
-	return true;
-}
-/*
-// copies this object
-CBaseEditableObject* CBrushPrimitive::CloneObject()
-{
-	CBrushPrimitive* pCloned = new CBrushPrimitive;
-
-	for(int i = 0; i < faces.numElem(); i++)
-	{
-		Texture_t tex = faces[i];
-		tex.nFlags &= ~STFL_SELECTED;
-
-		pCloned->AddFace(tex);
-	}
-
-	pCloned->SetName(GetName());
-	pCloned->bbox = bbox;
-
-	pCloned->UpdateRenderData();
-
-	return pCloned;
-}
-*/
-void CBrushPrimitive::CutBrushByPlane(Plane &plane, CBrushPrimitive** ppNewBrush)
-{
-	CBrushPrimitive* pNewBrush = new CBrushPrimitive;
-	
-	for(int i = 0; i < m_windingFaces.numElem(); i++)
-	{
-		for(int j = 0; j < m_windingFaces[i].vertices.numElem(); j++)
-		{
-			ClassifyPlane_e plClass = plane.ClassifyPoint(m_windingFaces[i].vertices[j].position);
-
-			// only on back of plane
-			if(plClass == CP_BACK)
-			{
-				pNewBrush->AddFace(m_windingFaces[i].face);
-				break;
-			}
-		}
-	}
-
-	if(pNewBrush->GetFaceCount() == 0)
-		return;
-
-	{
-		// add new faces
-		brushFace_t face;
-
-		// default some values
-		face.fRotation = 0.0f;
-		face.vScale = Vector2D(0.25f, 0.25f); // g_config.defaultTexScale
-
-		// make the N plane from current iteration
-		face.Plane = plane;
-
-		// make the U and V texture axes
-		VectorVectors(face.Plane.normal, face.UAxis.normal, face.VAxis.normal);
-		face.UAxis.offset = 0;
-		face.VAxis.offset = 0;
-
-		// apply the currently selected material
-		//face.pMaterial = g_editormainframe->GetMaterials()->GetSelectedMaterial();
-
-		// append the face
-		pNewBrush->AddFace(face);
-	}
-
-	pNewBrush->UpdateRenderData();
-	*ppNewBrush = pNewBrush;
-}
-
 bool CBrushPrimitive::IsWindingFullyInsideBrush(winding_t* pWinding)
 {
 	int nInside = 0;
 
-	for(int i = 0; i < pWinding->vertices.numElem(); i++)
-		nInside += IsPointInside(pWinding->vertices[i].position);
+	DkList<int>& indices = pWinding->vertex_ids;
 
-	if(nInside == pWinding->vertices.numElem())
+	for(int i = 0; i < indices.numElem(); i++)
+		nInside += IsPointInside(m_verts[indices[i]]);
+
+	if(nInside == indices.numElem())
 		return true;
 
 	return false;
@@ -978,131 +674,160 @@ bool CBrushPrimitive::IsTouchesBrush(winding_t* pWinding)
 	return false;
 }
 
-/*
-void BuildWinding(EqBrushWinding_t* winding, level_build_data_t* pLevelBuildData)
+// copies this object
+CBrushPrimitive* CBrushPrimitive::Clone()
 {
-	IMatVar* pNodraw = winding->pAssignedFace->pMaterial->FindMaterialVar("nodraw");
-	IMatVar* pNoCollide = winding->pAssignedFace->pMaterial->FindMaterialVar("nocollide");
+	CBrushPrimitive* clone = new CBrushPrimitive();
 
-	bool nodraw = false;
-	bool nocollide = false;
-
-	if(pNodraw && pNodraw->GetInt() > 0)
-		nodraw = true;
-
-	if(pNoCollide && pNoCollide->GetInt() > 0)
-		nocollide = true;
-
-	if(nodraw && nocollide)
-		return;
-
-	// if winding has no verts, remove
-	if(winding->vertices.numElem() == 0)
-		return;
-
-	BoundingBox bbox;
-
-	int start_vert = pLevelBuildData->vertices.numElem();
-	int start_indx = pLevelBuildData->indices.numElem();
-
-	int phys_start_vert = pLevelBuildData->phys_vertices.numElem();
-	int phys_start_indx = pLevelBuildData->phys_indices.numElem();
-
-	int num_triangles = ((winding->vertices.numElem() < 4) ? 1 : (2 + winding->vertices.numElem() - 4));
-	int num_indices = num_triangles*3;
-
-	int material_id = pLevelBuildData->used_materials.findIndex(winding->pAssignedFace->pMaterial);
-
-	if(material_id == -1)
-		material_id = pLevelBuildData->used_materials.append(winding->pAssignedFace->pMaterial);
-
-	if(!nodraw)
+	for (int i = 0; i < m_windingFaces.numElem(); i++)
 	{
-		// add visual indices
-		for(int j = 0; j < winding->vertices.numElem(); j++)
-		{
-			bbox.AddVertex(winding->vertices[j].position);
-			pLevelBuildData->vertices.append(winding->vertices[j]);
-		}
+		brushFace_t& tex = m_windingFaces[i].face;
+		tex.nFlags &= ~BRUSH_FACE_SELECTED;
 
-		for(int j = 0; j < num_triangles; j++)
-		{
-			int idx0 = 0;
-			int idx1 = j + 1;
-			int idx2 = j + 2;
-
-			// add vertex indices
-			pLevelBuildData->indices.append(start_vert+idx0);
-			pLevelBuildData->indices.append(start_vert+idx1);
-			pLevelBuildData->indices.append(start_vert+idx2);
-		}
-
-		// build surface data
-		eqlevelsurf_t surf;
-
-		surf.material_id = material_id;
-		surf.flags = 0;
-		surf.firstindex = start_indx;
-		surf.firstvertex = start_vert;
-
-		surf.numindices = num_indices;
-		surf.numvertices = winding->vertices.numElem();
-
-		surf.mins = bbox.minPoint;
-		surf.maxs = bbox.maxPoint;
-
-		// for first time it needs to be attached to root
-		//surf.octreeid = 0;
-
-		// for now occlusion wasn't built
-		//surf.occdata_geom_id = -1;
-
-		// add surface
-		pLevelBuildData->surfaces.append(surf);
+		clone->AddFace(tex);
 	}
 
-	if(!nocollide)
-	{
-		// add physics vertices
-		for(int j = 0; j < winding->vertices.numElem(); j++)
-			pLevelBuildData->phys_vertices.append(winding->vertices[j]);
-
-		for(int j = 0; j < num_triangles; j++)
-		{
-			int idx0 = 0;
-			int idx1 = j + 1;
-			int idx2 = j + 2;
-
-			// add physics indices
-			pLevelBuildData->phys_indices.append(phys_start_vert+idx0);
-			pLevelBuildData->phys_indices.append(phys_start_vert+idx1);
-			pLevelBuildData->phys_indices.append(phys_start_vert+idx2);
-		}
-
-		eqlevelphyssurf_t phys_surface;
-
-		phys_surface.material_id = material_id;
-		phys_surface.firstindex = phys_start_indx;
-		phys_surface.firstvertex = phys_start_vert;
-
-		phys_surface.numindices = num_indices;
-		phys_surface.numvertices = winding->vertices.numElem();
-
-		IMatVar* pSurfPropsVar = winding->pAssignedFace->pMaterial->FindMaterialVar("surfaceprops");
-
-		if(pSurfPropsVar)
-			strcpy(phys_surface.surfaceprops, pSurfPropsVar->GetString());
-		else
-			strcpy(phys_surface.surfaceprops, "default");
-
-		// no occlusion for physics surfaces
-//			phys_surface.occdata_geom_id = -1;
-
-		// add surface
-		pLevelBuildData->phys_surfaces.append(phys_surface);
-	}
+	clone->m_bbox = m_bbox;
+	clone->Update();
+	return clone;
 }
-*/
+
+void CBrushPrimitive::CutBrushByPlane(Plane &plane, CBrushPrimitive** ppNewBrush)
+{
+	CBrushPrimitive* newBrush = new CBrushPrimitive;
+
+	for (int i = 0; i < m_windingFaces.numElem(); i++)
+	{
+		winding_t& winding = m_windingFaces[i];
+		for (int j = 0; j < winding.vertex_ids.numElem(); j++)
+		{
+			ClassifyPlane_e plClass = plane.ClassifyPoint(m_verts[winding.vertex_ids[j]]);
+
+			// only on back of plane
+			if (plClass == CP_BACK)
+			{
+				newBrush->AddFace(m_windingFaces[i].face);
+				break;
+			}
+		}
+	}
+
+	if (newBrush->GetFaceCount() == 0)
+		return;
+
+	{
+		// add new faces
+		brushFace_t face;
+
+		// default some values
+		face.fRotation = 0.0f;
+		face.vScale = Vector2D(0.25f, 0.25f); // g_config.defaultTexScale
+
+		// make the N plane from current iteration
+		face.Plane = plane;
+
+		// make the U and V texture axes
+		VectorVectors(face.Plane.normal, face.UAxis.normal, face.VAxis.normal);
+		face.UAxis.offset = 0;
+		face.VAxis.offset = 0;
+
+		// apply the currently selected material
+		//face.pMaterial = g_editormainframe->GetMaterials()->GetSelectedMaterial();
+
+		// append the face
+		newBrush->AddFace(face);
+	}
+
+	if (!newBrush->Update())
+	{
+		delete newBrush;
+		return;
+	}
+
+	*ppNewBrush = newBrush;
+}
+
+//-----------------------------------------------------------------------------------
+
+struct ReadWriteFace_t
+{
+	Plane							NPlane;		// normal plane
+	Plane							UAxis;		// tangent plane
+	Plane							VAxis;		// binormal plane
+
+	// texture scale
+	Vector2D						vTexScale;
+
+	// texture rotation
+	float							fTexRotation;
+
+	// face material
+	char							materialname[256];
+};
+
+// saves this object
+bool CBrushPrimitive::WriteObject(IVirtualStream* pStream)
+{
+	// write face count
+	int num_faces = m_windingFaces.numElem();
+	pStream->Write(&num_faces, 1, sizeof(int));
+
+	for (int i = 0; i < m_windingFaces.numElem(); i++)
+	{
+		brushFace_t& face = m_windingFaces[i].face;
+
+		ReadWriteFace_t wface;
+		memset(&face, 0, sizeof(ReadWriteFace_t));
+
+		wface.NPlane = face.Plane;
+		wface.UAxis = face.UAxis;
+		wface.VAxis = face.VAxis;
+		wface.vTexScale = face.vScale;
+		wface.fTexRotation = face.fRotation;
+
+		if (face.pMaterial)
+		{
+			strcpy(wface.materialname, face.pMaterial->GetName());
+		}
+		else
+			strcpy(wface.materialname, "ERROR");
+
+		pStream->Write(&face, 1, sizeof(ReadWriteFace_t));
+	}
+
+	return true;
+}
+
+// read this object
+bool CBrushPrimitive::ReadObject(IVirtualStream* pStream)
+{
+	// write face count
+	int num_faces;
+	pStream->Read(&num_faces, 1, sizeof(int));
+
+	for (int i = 0; i < num_faces; i++)
+	{
+		ReadWriteFace_t face;
+		pStream->Read(&face, 1, sizeof(ReadWriteFace_t));
+
+		brushFace_t addFace;
+
+		addFace.Plane = face.NPlane;
+		addFace.UAxis = face.UAxis;
+		addFace.VAxis = face.VAxis;
+		addFace.vScale = face.vTexScale;
+		addFace.fRotation = face.fTexRotation;
+
+		addFace.pMaterial = materials->GetMaterial(face.materialname);
+
+		AddFace(addFace);
+	}
+
+	// calculate face verts
+	Update();
+
+	return true;
+}
 
 // stores object in keyvalues
 void CBrushPrimitive::SaveToKeyValues(kvkeybase_t* pSection)
@@ -1194,77 +919,15 @@ bool CBrushPrimitive::LoadFromKeyValues(kvkeybase_t* pSection)
 	}
 
 	// calculate face verts
-	UpdateRenderData();
+	Update();
 
 	return true;
 }
 
-/*
-// called when whole level builds
-void CBrushPrimitive::BuildObject(level_build_data_t* pLevelBuildData)
-{
-	bool bMakeOccluder = false;
-	bool bOccluderNotAllFaces = false;
-
-	for(int i = 0; i < faces.numElem(); i++)
-	{
-		IMatVar* pOccluder = faces[i].pMaterial->FindMaterialVar("occlusion");
-		if(pOccluder && pOccluder->GetInt() > 0)
-		{
-			// make occluder brush
-			bMakeOccluder = true;
-		}
-		else
-		{
-			if(bMakeOccluder)
-				bOccluderNotAllFaces = true;
-
-			bMakeOccluder = false;
-		}
-	}
-
-	if(bOccluderNotAllFaces)
-	{
-		MsgError("Warning: Brush (objectid=%d): not all brush face uses occluder material, forcing it to be occluder\n", m_id);
-		bMakeOccluder = true;
-	}
-
-	if(bMakeOccluder)
-	{
-		int nFirstPlane = pLevelBuildData->occluderplanes.numElem();
-		int nNumPlanes = faces.numElem();
-
-		for(int i = 0; i < nNumPlanes; i++)
-		{
-			pLevelBuildData->occluderplanes.append(Vector4D(faces[i].Plane.normal, faces[i].Plane.offset));
-		}
-
-		eqlevelvolumeoccluder_t occluder;
-
-		occluder.firstPlane = nFirstPlane;
-		occluder.numPlanes = nNumPlanes;
-		occluder.mins = bbox.minPoint;
-		occluder.maxs = bbox.maxPoint;
-
-		pLevelBuildData->occluders.append(occluder);
-
-		// don't generate visual and physics part of this brush
-		return;
-	}
-
-	
-	// add without copying
-	for(int i = 0; i < polygons.numElem(); i++)
-		pLevelBuildData->brushwinding.append(&polygons[i]);
-
-	//UpdateRenderBuffer();
-}
-*/
-
 // creates a brush from volume, e.g a selection box
-CBrushPrimitive* CreateBrushFromVolume(const Volume& volume, IMaterial* material)
+CBrushPrimitive* CBrushPrimitive::CreateFromVolume(const Volume& volume, IMaterial* material)
 {
-	CBrushPrimitive* pBrush = new CBrushPrimitive;
+	CBrushPrimitive* brush = new CBrushPrimitive;
 
 	// define a 6 planes
 	for(int i = 0; i < 6; i++)
@@ -1289,11 +952,16 @@ CBrushPrimitive* CreateBrushFromVolume(const Volume& volume, IMaterial* material
 		face.pMaterial = material;
 
 		// append the face
-		pBrush->AddFace(face);
+		brush->AddFace(face);
 	}
 
-	// calculates face verts
-	pBrush->UpdateRenderData();
+	// calculate face verts
+	if (!brush->Update())
+	{
+		// don't create empty brushes!
+		delete brush;
+		return nullptr;
+	}
 
-	return pBrush;
+	return brush;
 }

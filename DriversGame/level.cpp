@@ -1512,6 +1512,7 @@ bool CGameLevel::Road_FindBestCellForTrafficLight( IVector2D& out, const Vector3
 	// do some more left steps
 	for (int r = 0; r < 2; r++)
 	{
+		// TODO: Left-handed road system simply by changing 'rightDir' to negative...
 		IVector2D roadTilePos = cellPos - rightDir * (r + 1) - forwardDir;
 		
 		roadTile = Road_GetGlobalTileAt(roadTilePos);

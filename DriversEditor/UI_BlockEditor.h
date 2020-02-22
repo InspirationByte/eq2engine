@@ -38,15 +38,15 @@ enum EBlockEditorMode
 class CBrushPrimitive;
 struct winding_t;
 
-struct faceSelect_t
+struct brushVertexSelect_t
 {
-	faceSelect_t() : winding(nullptr) {}
-	faceSelect_t(winding_t* w) : winding(w)
+	brushVertexSelect_t() : brush(nullptr) {}
+	brushVertexSelect_t(CBrushPrimitive* b) : brush(b)
 	{
 	}
 
-	winding_t* winding;
-	DkList<int> selVerts;
+	CBrushPrimitive* brush;
+	DkList<int> vertex_ids;
 };
 
 class CUI_BlockEditor : public wxPanel, public CBaseTilebasedEditor
@@ -89,8 +89,15 @@ protected:
 	void				DeleteSelection();
 	void				DeleteBrush(CBrushPrimitive* brush);
 	void				RecalcSelectionBox();
+	void				RecalcVertexSelection();
 
+	int					GetSelectedVertsCount();
+
+	//void				RenderWindingVerts(faceSelect_t& faceSel, const Matrix4x4& view, const Matrix4x4& proj);
 	void				RenderSelectedWindings();
+
+
+	Matrix4x4			CalcSelectionTransform(CBrushPrimitive* brush);
 
 	CMaterialAtlasList* m_texPanel;
 
@@ -119,8 +126,11 @@ protected:
 	CEditGizmo					m_faceAxis;
 
 	BoundingBox					m_selectionBox;
+
 	DkList<CBrushPrimitive*>	m_selectedBrushes;
-	DkList<faceSelect_t>		m_selectedFaces;
+	DkList<winding_t*>			m_selectedFaces;
+
+	DkList<brushVertexSelect_t>	m_selectedVerts;
 
 	// dragging properties
 	Vector3D					m_dragOffs;
