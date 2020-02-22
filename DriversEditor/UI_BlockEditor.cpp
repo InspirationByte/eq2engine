@@ -379,8 +379,6 @@ void CUI_BlockEditor::ToggleBrushSelection(CBrushPrimitive* brush)
 
 		m_selectedBrushes.fastRemove(brush);
 	}
-
-	RecalcSelectionBox();
 }
 
 void CUI_BlockEditor::ToggleFaceSelection(winding_t* winding)
@@ -410,14 +408,6 @@ void CUI_BlockEditor::ToggleFaceSelection(winding_t* winding)
 			faceSelect_t faceSel(winding);
 			m_selectedFaces.append(faceSel);
 		}
-
-
-		const Plane& pl = winding->face.Plane;
-
-		Vector3D r, u;
-		VectorVectors(pl.normal, r, u);
-
-		m_faceAxis.SetProps(!Matrix3x3(r, u, pl.normal), winding->GetCenter());
 	}
 }
 
@@ -490,6 +480,27 @@ void CUI_BlockEditor::RecalcSelectionBox()
 	}
 		
 	m_centerAxis.SetProps(identity3(), m_selectionBox.GetCenter());
+
+	float selectionFac = 1.0f / (float)m_selectedFaces.numElem();
+	Vector3D selectionCenter(0);
+	Vector3D selectionNormal(0);
+	for (int i = 0; i < m_selectedFaces.numElem(); i++)
+	{
+		winding_t* winding = m_selectedFaces[i].winding;
+
+		const Plane& pl = winding->face.Plane;
+
+		selectionCenter += winding->GetCenter()*selectionFac;
+		selectionNormal += pl.normal*selectionFac;
+	}
+
+	if (m_selectedFaces.numElem())
+	{
+		Vector3D r, u;
+		VectorVectors(selectionNormal, r, u);
+
+		m_faceAxis.SetProps(!Matrix3x3(r, u, selectionNormal), selectionCenter);
+	}
 }
 
 int VolumeIntersectsRay(const Volume& vol, const Vector3D &start, const Vector3D &dir, Vector3D& intersectionPos)
@@ -527,6 +538,44 @@ void CUI_BlockEditor::ProcessMouseEvents(wxMouseEvent& event)
 	Vector3D ray_start, ray_dir;
 	g_pMainFrame->GetMouseScreenVectors(event.GetX(), event.GetY(), ray_start, ray_dir);
 
+	if (!event.Dragging())
+	{
+		// TODO: as EditorLevel code
+		// selection of brushes and faces
+		if (event.ControlDown() && (event.ButtonIsDown(wxMOUSE_BTN_LEFT) || event.ButtonIsDown(wxMOUSE_BTN_RIGHT)))
+		{
+			CBrushPrimitive* nearestBrush = nullptr;
+			Vector3D intersectPos;
+			float intersectDist = DrvSynUnits::MaxCoordInUnits;
+			int intersectFace = -1;
+
+			for (int i = 0; i < m_brushes.numElem(); i++)
+			{
+				int hitFace = -1;
+
+				CBrushPrimitive* testBrush = m_brushes[i];
+				float dist = testBrush->CheckLineIntersection(ray_start, ray_start + ray_dir * DrvSynUnits::MaxCoordInUnits, intersectPos, hitFace);
+
+				if (dist < intersectDist)
+				{
+					nearestBrush = testBrush;
+					intersectFace = hitFace;
+					intersectDist = dist;
+				}
+			}
+
+			if (nearestBrush && intersectFace >= 0)
+			{
+				if (event.ButtonIsDown(wxMOUSE_BTN_LEFT) && m_selectedTool == BlockEdit_Selection)
+					ToggleBrushSelection(nearestBrush);
+				else if (event.ButtonIsDown(wxMOUSE_BTN_RIGHT) && intersectFace != -1 && (m_selectedTool == BlockEdit_Selection || m_selectedTool == BlockEdit_VertexManip))
+					ToggleFaceSelection(nearestBrush->GetFacePolygon(intersectFace));
+			}
+
+			RecalcSelectionBox();
+		}
+	}
+
 	if (m_selectedTool == BlockEdit_Selection || m_selectedTool == BlockEdit_Brush)
 	{
 		if (!ProcessSelectionAndBrushMouseEvents(event))
@@ -554,22 +603,6 @@ bool CUI_BlockEditor::ProcessSelectionAndBrushMouseEvents(wxMouseEvent& event)
 
 	bool isFaceGizmo = (&editGizmo == &m_faceAxis);
 
-	if (m_selectedTool == BlockEdit_Brush)
-	{
-		// edit editBox
-	}
-	else if (m_selectedTool == BlockEdit_Selection)
-	{
-		if (m_selectedBrushes.numElem())
-		{
-			// edit m_selectedBrushes
-		}
-		else
-		{
-			// edit m_selectedFaces[0]
-		}
-	}
-
 	if (!event.Dragging())
 	{
 		// pick the box plane
@@ -590,43 +623,6 @@ bool CUI_BlockEditor::ProcessSelectionAndBrushMouseEvents(wxMouseEvent& event)
 				VectorVectors(pl.normal, r, u);
 
 				m_faceAxis.SetProps(!Matrix3x3(-r, -u, -pl.normal), editBox.GetCenter() - pl.normal*pl.Distance(editBox.GetCenter()));
-			}
-		}
-
-		// perform selection actions
-		if (m_selectedTool == BlockEdit_Selection)
-		{
-			// TODO: as EditorLevel code
-			// selection of brushes and faces
-			if (event.ControlDown() && (event.ButtonIsDown(wxMOUSE_BTN_LEFT) || event.ButtonIsDown(wxMOUSE_BTN_RIGHT)))
-			{
-				CBrushPrimitive* nearestBrush = nullptr;
-				Vector3D intersectPos;
-				float intersectDist = DrvSynUnits::MaxCoordInUnits;
-				int intersectFace = -1;
-
-				for (int i = 0; i < m_brushes.numElem(); i++)
-				{
-					int hitFace = -1;
-
-					CBrushPrimitive* testBrush = m_brushes[i];
-					float dist = testBrush->CheckLineIntersection(ray_start, ray_start + ray_dir * DrvSynUnits::MaxCoordInUnits, intersectPos, hitFace);
-
-					if (dist < intersectDist)
-					{
-						nearestBrush = testBrush;
-						intersectFace = hitFace;
-						intersectDist = dist;
-					}
-				}
-
-				if (nearestBrush && intersectFace >= 0)
-				{
-					if (event.ButtonIsDown(wxMOUSE_BTN_LEFT))
-						ToggleBrushSelection(nearestBrush);
-					else if (intersectFace != -1)
-						ToggleFaceSelection(nearestBrush->GetFacePolygon(intersectFace));
-				}
 			}
 		}
 
@@ -868,13 +864,13 @@ void CUI_BlockEditor::OnKey(wxKeyEvent& event, bool bDown)
 			m_gridSize->Select(idx);
 	}
 
-	if ((m_selectedBrushes.numElem() || m_selectedFaces.numElem() == 1) && m_mode == BLOCK_MODE_READY || m_mode == BLOCK_MODE_CREATION)
+	if ((m_selectedBrushes.numElem() || m_selectedFaces.numElem() == 1) && (m_mode == BLOCK_MODE_READY || m_mode == BLOCK_MODE_CREATION))
 	{
 		if (event.GetRawKeyCode() == 'G')
 		{
 			m_mode = BLOCK_MODE_TRANSLATE;
 		}
-		else if (event.GetRawKeyCode() == 'R')
+		else if (event.GetRawKeyCode() == 'R' && m_mode != BLOCK_MODE_CREATION)
 		{
 			m_mode = BLOCK_MODE_ROTATE;
 		}
@@ -1112,47 +1108,49 @@ void CUI_BlockEditor::OnRender()
 		}
 
 		materials->SetMatrix(MATRIXMODE_WORLD, identity4());
-		if (m_selectedTool == BlockEdit_Selection && m_selectedBrushes.numElem())
+		if (m_selectedTool == BlockEdit_Selection)
 		{
-			// draw selection box
-			debugoverlay->Box3D(selectionBox.minPoint, selectionBox.maxPoint, ColorRGBA(1, 1, 0, 1), 0.0f);
-
-			if (m_mode == BLOCK_MODE_TRANSLATE || m_mode == BLOCK_MODE_ROTATE)
-				m_centerAxis.Draw(clength);
-			else if (m_draggablePlane != -1)
-				m_faceAxis.Draw(flength, AXIS_Z);
-		}
-		else if (m_selectedFaces.numElem() == 1)
-		{
-			winding_t* selWinding = m_selectedFaces[0].winding;
-
-			CBrushPrimitive* brush = selWinding->brush;
-			const Plane& pl = selWinding->face.Plane;
-
-			if (m_mode == BLOCK_MODE_ROTATE)
+			if (m_selectedBrushes.numElem())
 			{
-				const Vector3D faceOrigin = selWinding->GetCenter();
-				const Vector3D faceOriginToSelection = (faceOrigin - m_faceAxis.m_position);
-				const Vector3D faceOriginTransformed = (dragRotation*faceOriginToSelection) + m_faceAxis.m_position;
+				// draw selection box
+				debugoverlay->Box3D(selectionBox.minPoint, selectionBox.maxPoint, ColorRGBA(1, 1, 0, 1), 0.0f);
 
-				Matrix4x4 rendermatrix = (translate(faceOriginTransformed)*(Matrix4x4(dragRotation))*translate(-faceOrigin));
-				materials->SetMatrix(MATRIXMODE_WORLD, rendermatrix);
+				if (m_mode == BLOCK_MODE_TRANSLATE || m_mode == BLOCK_MODE_ROTATE)
+					m_centerAxis.Draw(clength);
+				else if (m_draggablePlane != -1)
+					m_faceAxis.Draw(flength, AXIS_Z);
 			}
-			else
+			else if (m_selectedFaces.numElem() == 1)
 			{
-				float distFromPl = SnapFloat(GridSize(), pl.Distance(m_faceAxis.m_position));
+				winding_t* selWinding = m_selectedFaces[0].winding;
 
-				materials->SetMatrix(MATRIXMODE_WORLD, translate(pl.normal*distFromPl));
+				CBrushPrimitive* brush = selWinding->brush;
+				const Plane& pl = selWinding->face.Plane;
+
+				if (m_mode == BLOCK_MODE_ROTATE)
+				{
+					const Vector3D faceOrigin = selWinding->GetCenter();
+					const Vector3D faceOriginToSelection = (faceOrigin - m_faceAxis.m_position);
+					const Vector3D faceOriginTransformed = (dragRotation*faceOriginToSelection) + m_faceAxis.m_position;
+
+					Matrix4x4 rendermatrix = (translate(faceOriginTransformed)*(Matrix4x4(dragRotation))*translate(-faceOrigin));
+					materials->SetMatrix(MATRIXMODE_WORLD, rendermatrix);
+				}
+				else
+				{
+					float distFromPl = SnapFloat(GridSize(), pl.Distance(m_faceAxis.m_position));
+
+					materials->SetMatrix(MATRIXMODE_WORLD, translate(pl.normal*distFromPl));
+				}
+
+				brush->RenderGhost(selWinding->faceId);
+
+				materials->SetMatrix(MATRIXMODE_WORLD, identity4());
+
+				if (m_selectedTool == BlockEdit_Selection)
+					m_faceAxis.Draw(flength, (m_mode == BLOCK_MODE_ROTATE) ? AXIS_ALL : AXIS_Z);
 			}
-
-			brush->RenderGhost(selWinding->faceId);
-
-			materials->SetMatrix(MATRIXMODE_WORLD, identity4());
-
-			if (m_selectedTool == BlockEdit_Selection)
-				m_faceAxis.Draw(flength, (m_mode == BLOCK_MODE_ROTATE) ? AXIS_ALL : AXIS_Z);
-		}
-			
+		}	
 	}
 
 	materials->SetMatrix(MATRIXMODE_WORLD, identity4());

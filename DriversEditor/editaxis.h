@@ -90,9 +90,9 @@ public:
 
 	Matrix3x3 PerformRotation(const Vector3D& rayStart, const Vector3D& rayDir, int initAxes)
 	{
-		if (!m_draggedAxes)
+		bool init = (!m_draggedAxes);
+		if (init)
 		{
-			//m_dragStart = m_position - point;
 			m_draggedAxes = initAxes;
 			m_dragMode = 1;
 		}
@@ -119,6 +119,12 @@ public:
 						(m_draggedAxes & AXIS_Z) ? 2 : -1;
 
 			Vector3D dirVec = normalize(point-m_position);
+
+			if(init)
+				m_dragStart = dirVec;
+
+			m_dragDirCur = dirVec;
+
 			Vector3D rDirVec = cross(planeEdAxis, dirVec);
 
 			Matrix3x3 rotation(rDirVec, planeEdAxis, dirVec);
@@ -195,10 +201,13 @@ public:
 			circleAngle = m_rotation * circleAngle;
 
 			// draw circle
-			meshBuilder.Begin(PRIM_LINE_STRIP);
+			meshBuilder.Begin(PRIM_LINES);
 
-				meshBuilder.Color4f(1.0f, 1.0f, 0.0f, 0.8f);
-				for (int i = 0; i < 33; i++)
+				ColorRGBA axisColor = (m_draggedAxes & AXIS_X) ? ColorRGBA(1.0f, 0.25f, 0.25f, 1.0f) :
+									  (m_draggedAxes & AXIS_Z) ? ColorRGBA(0.0f, 0.25f, 1.0f, 1.0f) : ColorRGBA(0.25f, 1.0f, 0.25f, 1.0f);
+
+				meshBuilder.Color4fv(axisColor);
+				for (int i = 0; i < 32; i++)
 				{
 					float angle = 360.0f*(float)i / 32.0f;
 
@@ -210,6 +219,10 @@ public:
 					meshBuilder.Position3fv(m_position + circleAngleVec);
 					meshBuilder.AdvanceVertex();
 				}
+
+				meshBuilder.Color4f(1.0f, 1.0f, 0.0f, 0.8f);
+				meshBuilder.Line3fv(m_position, m_position + m_dragStart * fLength);
+				meshBuilder.Line3fv(m_position, m_position + m_dragDirCur * fLength);
 
 			meshBuilder.End();
 		}
@@ -328,6 +341,7 @@ public:
 
 protected:
 	Vector3D	m_dragStart;
+	Vector3D	m_dragDirCur;
 	int			m_draggedAxes;
 	int			m_dragMode;
 };
