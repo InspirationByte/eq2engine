@@ -1437,7 +1437,6 @@ void CUI_LevelModels::MouseTranslateEvents( wxMouseEvent& event, const Vector3D&
 		for (int i = 0; i < m_selRefs.numElem(); i++)
 		{
 			refselectioninfo_t& selection = m_selRefs[i];
-
 			regionObject_t* ref = selection.selRef;
 
 			// make undoable
@@ -1451,10 +1450,10 @@ void CUI_LevelModels::MouseTranslateEvents( wxMouseEvent& event, const Vector3D&
 			{
 				IVector2D tilePos = selection.selRegion->PositionToCell(ref->position);
 
-				int regW = selection.selRegion->GetHField()->m_sizew;
-				int regH = selection.selRegion->GetHField()->m_sizeh;
-
 				// move selection to new region and recalculate it's position
+				const int regW = selection.selRegion->GetHField()->m_sizew;
+				const int regH = selection.selRegion->GetHField()->m_sizeh;
+
 				if (tilePos.x < 0 || tilePos.y < 0 || tilePos.x >= regW || tilePos.y >= regH)
 				{
 					MoveRefToNewRegion(selection);
@@ -1471,6 +1470,19 @@ void CUI_LevelModels::MouseTranslateEvents( wxMouseEvent& event, const Vector3D&
 
 	if(event.ButtonUp(wxMOUSE_BTN_LEFT))
 	{
+		for (int i = 0; i < m_selRefs.numElem(); i++)
+		{
+			refselectioninfo_t& selection = m_selRefs[i];
+			regionObject_t* ref = selection.selRef;
+
+			if (ref->tile_x != 0xFFFF)
+			{
+				// stick to tile
+				Matrix4x4 transform = transpose(GetModelRefRenderMatrix(selection.selRegion, ref));
+				ref->position = transform.getTranslationComponent();
+			}
+		}
+
 		m_editAxis.EndDrag();
 
 		m_dragRot = identity3();

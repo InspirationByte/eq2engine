@@ -394,10 +394,10 @@ void CUI_BlockEditor::ToggleFaceSelection(winding_t* winding)
 	}
 
 	// toggle face selection
-	if ((winding->face.nFlags & BRUSH_FACE_SELECTED))
+	if (winding->face.nFlags & BRUSH_FACE_SELECTED)
 	{
 		winding->face.nFlags &= ~BRUSH_FACE_SELECTED;
-		m_selectedFaces.fastRemoveIndex(selectedFaceIdx);
+		m_selectedFaces.fastRemove(winding);
 	}
 	else
 	{
@@ -406,6 +406,35 @@ void CUI_BlockEditor::ToggleFaceSelection(winding_t* winding)
 		if (selectedFaceIdx == -1)
 			m_selectedFaces.append(winding);
 	}
+}
+
+void CUI_BlockEditor::ToggleVertexSelection(CBrushPrimitive* brush, int vertex_idx)
+{
+	int brushsel_idx = -1;
+	for (int i = 0; i < m_selectedVerts.numElem(); i++)
+	{
+		if (m_selectedVerts[i].brush == brush)
+		{
+			brushsel_idx = i;
+			break;
+		}
+	}
+
+	if (brushsel_idx == -1)
+		brushsel_idx = m_selectedVerts.append(brush);
+
+	// add vertex to selection
+	brushVertexSelect_t& brushVerts = m_selectedVerts[brushsel_idx];
+	int idx = brushVerts.vertex_ids.findIndex(vertex_idx);
+
+	if (idx == -1)
+		brushVerts.vertex_ids.append(vertex_idx);
+	else
+		brushVerts.vertex_ids.fastRemoveIndex(idx);
+
+	// remove if all verts unselected
+	if (brushVerts.vertex_ids.numElem() == 0)
+		m_selectedVerts.fastRemoveIndex(brushsel_idx);
 }
 
 void CUI_BlockEditor::CancelSelection()
@@ -666,7 +695,7 @@ bool CUI_BlockEditor::ProcessSelectionAndBrushMouseEvents(wxMouseEvent& event)
 	}
 
 	// if button was released
-	if (event.ButtonUp(wxMOUSE_BTN_LEFT))
+	if (event.ButtonUp(wxMOUSE_BTN_LEFT) && !event.ControlDown())
 	{
 		if (m_mode == BLOCK_MODE_TRANSLATE)
 		{
@@ -877,27 +906,20 @@ bool CUI_BlockEditor::ProcessVertexManipMouseEvents(wxMouseEvent& event)
 
 	if (!event.Dragging() && event.ControlDown() && event.ButtonIsDown(wxMOUSE_BTN_LEFT))
 	{
-		/*
 		// Select vertices
 		for (int i = 0; i < m_selectedFaces.numElem(); i++)
 		{
-			faceSelect_t& faceSel = m_selectedFaces[i];
-
-			winding_t* winding = faceSel.winding;
+			winding_t* winding = m_selectedFaces[i];
 			float vertScale = length(winding->GetCenter() - g_camera_target);
 
-			int vertexIdx = winding->CheckRayIntersectionWithVertex(ray_start, ray_dir, vertScale * 0.01f);
+			int vertex_id = winding->CheckRayIntersectionWithVertex(ray_start, ray_dir, vertScale * 0.01f);
 
-			if (vertexIdx != -1)
+			if (vertex_id != -1)
 			{
-				int selIdx = faceSel.selVerts.findIndex(vertexIdx);
-
-				if (selIdx == -1)
-					faceSel.selVerts.append(vertexIdx);
-				else
-					faceSel.selVerts.fastRemoveIndex(selIdx);
+				ToggleVertexSelection(winding->brush, vertex_id);
+				break; // this done because vertex could be already selected by previous winding in m_selectedFaces
 			}
-		}*/
+		}
 
 		RecalcVertexSelection();
 	}
@@ -948,21 +970,18 @@ void CUI_BlockEditor::RecalcVertexSelection()
 {
 	Vector3D selCenter(0);
 	int numSelectedVerts = 0;
-	/*
-	// Select vertices
-	for (int i = 0; i < m_selectedFaces.numElem(); i++)
-	{
-		faceSelect_t& faceSel = m_selectedFaces[i];
-		CBrushPrimitive* brush = m_selectedFaces[i].winding->brush;
 
-		for (int j = 0; j < faceSel.selVerts.numElem(); j++)
-		{
-			int selIdx = faceSel.selVerts[j];
-			selCenter += brush->GetVerts()[faceSel.winding->vertex_ids[selIdx]];
-		}
-		numSelectedVerts += faceSel.selVerts.numElem();
+	for (int i = 0; i < m_selectedVerts.numElem(); i++)
+	{
+		brushVertexSelect_t& vertSel = m_selectedVerts[i];
+		const DkList<Vector3D>& verts = vertSel.brush->GetVerts();
+
+		for (int j = 0; j < vertSel.vertex_ids.numElem(); j++)
+			selCenter += verts[vertSel.vertex_ids[j]];
+
+		numSelectedVerts += vertSel.vertex_ids.numElem();
 	}
-	*/
+
 	if (numSelectedVerts)
 	{
 		selCenter /= (float)numSelectedVerts;
@@ -975,7 +994,7 @@ int CUI_BlockEditor::GetSelectedVertsCount()
 	int numSelectedVerts = 0;
 
 	// Select vertices
-	for (int i = 0; i < m_selectedFaces.numElem(); i++)
+	for (int i = 0; i < m_selectedVerts.numElem(); i++)
 		numSelectedVerts += m_selectedVerts[i].vertex_ids.numElem();
 
 	return numSelectedVerts;
@@ -1055,26 +1074,22 @@ void CUI_BlockEditor::OnKey(wxKeyEvent& event, bool bDown)
 		CancelSelection();
 }
 
-/*
-void CUI_BlockEditor::RenderWindingVerts(faceSelect_t& faceSel, const Matrix4x4& view, const Matrix4x4& proj)
+
+void CUI_BlockEditor::RenderBrushVerts(DkList<Vector3D>& verts, DkList<int>* selected_ids, const Matrix4x4& view, const Matrix4x4& proj)
 {
 	IVector2D screenSize = g_pMainFrame->GetRenderPanelDimensions();
 
-	Vector3D dragOfs = SnapVector(GridSize(), m_dragOffs);
-
-	CBrushPrimitive* brush = faceSel.winding->brush;
-
-	for (int i = 0; i < faceSel.winding->vertex_ids.numElem(); i++)
+	for (int i = 0; i < verts.numElem(); i++)
 	{
-		Vector3D vert = brush->GetVerts()[faceSel.winding->vertex_ids[i]];
+		Vector3D vert = verts[i];
 
 		Vector3D vertPos(vert);
 		ColorRGBA vertexCol(1, 1, 0.5f, 1);
 
-		if (faceSel.selVerts.findIndex(i) != -1)
+		if (selected_ids && selected_ids->findIndex(i) != -1)
 		{
 			vertexCol = ColorRGBA(1, 0, 0, 1);
-			vertPos += dragOfs;
+			//vertPos += dragOfs;
 		}
 
 		Vector2D pointScr;
@@ -1091,8 +1106,8 @@ void CUI_BlockEditor::RenderWindingVerts(faceSelect_t& faceSel, const Matrix4x4&
 		}
 	}
 }
-*/
-void CUI_BlockEditor::RenderSelectedWindings()
+
+void CUI_BlockEditor::RenderVertsAndSelection()
 {
 	Matrix4x4 view, proj;
 	materials->GetMatrix(MATRIXMODE_PROJECTION, proj);
@@ -1100,15 +1115,52 @@ void CUI_BlockEditor::RenderSelectedWindings()
 
 	IVector2D screenSize = g_pMainFrame->GetRenderPanelDimensions();
 
-	materials->Setup2D(screenSize.x, screenSize.y);
+	DkList<CBrushPrimitive*> selectedBrushes;
 	for (int i = 0; i < m_selectedFaces.numElem(); i++)
-	{
-		winding_t* winding = m_selectedFaces[i];
-		//RenderWindingVerts(m_selectedFaces[i], view, proj);
-	}
+		selectedBrushes.addUnique(m_selectedFaces[i]->brush);
 
-	materials->SetMatrix(MATRIXMODE_PROJECTION, proj);
-	materials->SetMatrix(MATRIXMODE_VIEW, view);
+	Vector3D dragOfs = SnapVector(GridSize(), m_dragOffs);
+
+	for (int i = 0; i < selectedBrushes.numElem(); i++)
+	{
+		CBrushPrimitive* brush = selectedBrushes[i];
+
+		DkList<Vector3D> brushVerts;
+		brushVerts.append(brush->GetVerts());
+
+		DkList<int>* selected_ids = nullptr;
+		for (int j = 0; j < m_selectedVerts.numElem(); j++)
+		{
+			if (m_selectedVerts[j].brush == brush)
+			{
+				selected_ids = &m_selectedVerts[j].vertex_ids;
+				break;
+			}
+		}
+		
+		// modify vertices
+		if(selected_ids)
+		{
+			if (m_mode == BLOCK_MODE_TRANSLATE)
+			{
+				for (int j = 0; j < selected_ids->numElem(); j++)
+				{
+					brushVerts[selected_ids->ptr()[j]] += dragOfs;
+				}
+			}
+		}
+
+
+		// render brush with custom vertex set
+		brush->RenderGhostCustom(brushVerts);
+
+		// render vertices
+		materials->Setup2D(screenSize.x, screenSize.y);
+		RenderBrushVerts(brushVerts, selected_ids, view, proj);
+
+		materials->SetMatrix(MATRIXMODE_PROJECTION, proj);
+		materials->SetMatrix(MATRIXMODE_VIEW, view);
+	}
 }
 
 Matrix4x4 CUI_BlockEditor::CalcSelectionTransform(CBrushPrimitive* brush)
@@ -1355,7 +1407,7 @@ void CUI_BlockEditor::OnRender()
 			//
 			// DRAW VERTEX TOOL STUFF
 			//
-			RenderSelectedWindings();
+			RenderVertsAndSelection();
 
 			if (m_mode == BLOCK_MODE_TRANSLATE)
 			{

@@ -85,6 +85,8 @@ protected:
 
 	void				ToggleBrushSelection(CBrushPrimitive* brush);
 	void				ToggleFaceSelection(winding_t* winding);
+	void				ToggleVertexSelection(CBrushPrimitive* brush, int vertex_idx);
+
 	void				CancelSelection();
 	void				DeleteSelection();
 	void				DeleteBrush(CBrushPrimitive* brush);
@@ -93,9 +95,8 @@ protected:
 
 	int					GetSelectedVertsCount();
 
-	//void				RenderWindingVerts(faceSelect_t& faceSel, const Matrix4x4& view, const Matrix4x4& proj);
-	void				RenderSelectedWindings();
-
+	void				RenderBrushVerts(DkList<Vector3D>& verts, DkList<int>* selected_ids, const Matrix4x4& view, const Matrix4x4& proj);
+	void				RenderVertsAndSelection();
 
 	Matrix4x4			CalcSelectionTransform(CBrushPrimitive* brush);
 

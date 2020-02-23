@@ -464,6 +464,7 @@ void CBrushPrimitive::RenderGhostCustom(const DkList<Vector3D>& verts, int face 
 			for (int j = 0; j < numVerts+1; j++)
 			{
 				meshBuilder.Position3fv(verts[winding.vertex_ids[j % numVerts]]);
+				meshBuilder.AdvanceVertex();
 			}
 			meshBuilder.End();
 		}
