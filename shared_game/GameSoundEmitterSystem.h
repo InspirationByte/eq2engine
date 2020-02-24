@@ -288,6 +288,8 @@ public:
 	void						Init(float maxDistance, fnSoundEmitterUpdate updFunc = nullptr);
 	void						Shutdown();
 
+	void						LoadScriptSoundFile(const char* fileName);
+
 	void						SetPaused(bool paused);
 	bool						IsPaused();
 
@@ -307,7 +309,6 @@ public:
 	void						Set2DChannelsVolume(ESoundChannelType channelType, float volume);
 
 	void						Update(bool force = false);													// updates sound emitter system
-
 	bool						UpdateEmitter( EmitterData_t* emit, soundParams_t &params, bool bForceNoInterp = false );
 
 	soundScriptDesc_t*			FindSound(const char* soundName) const;						// searches for loaded script sound
@@ -316,9 +317,7 @@ public:
 	void						RemoveSoundController(ISoundController* cont);
 
 	void						InvalidateSoundChannelObject(CSoundChannelObject* pEnt);
-
 protected:
-	void						LoadScriptSoundFile(const char* fileName);
 
 	ISoundSample*				FindBestSample(soundScriptDesc_t* script, int sampleId = -1);
 

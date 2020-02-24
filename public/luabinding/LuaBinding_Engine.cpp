@@ -766,7 +766,7 @@ OOLUA_EXPORT_FUNCTIONS_CONST(ISoundController, IsStopped)
 OOLUA_EXPORT_FUNCTIONS(EmitParams, set_sampleId)
 OOLUA_EXPORT_FUNCTIONS_CONST(EmitParams, get_sampleId)
 
-OOLUA_EXPORT_FUNCTIONS(CSoundEmitterSystem, Precache, Emit, Emit2D, CreateController, RemoveController)
+OOLUA_EXPORT_FUNCTIONS(CSoundEmitterSystem, Precache, Emit, Emit2D, CreateController, RemoveController, LoadScript)
 OOLUA_EXPORT_FUNCTIONS_CONST(CSoundEmitterSystem)
 
 OOLUA_EXPORT_FUNCTIONS(Networking::CNetMessageBuffer,

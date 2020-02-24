@@ -326,6 +326,8 @@ OOLUA_PROXY( CSoundEmitterSystem )
 	OOLUA_MEM_FUNC_RENAME( Emit, int, EmitSound, EmitParams* )
 	OOLUA_MEM_FUNC_RENAME( Emit2D, void, Emit2DSound, EmitParams*, int )
 
+	OOLUA_MEM_FUNC_RENAME( LoadScript, void, LoadScriptSoundFile, const char* )
+
 	OOLUA_MEM_FUNC_RENAME( CreateController, ISoundController*, CreateSoundController, EmitParams* )
 	OOLUA_MEM_FUNC_RENAME( RemoveController, void, RemoveSoundController, ISoundController* )
 
