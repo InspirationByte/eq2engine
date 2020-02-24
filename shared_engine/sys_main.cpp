@@ -105,28 +105,6 @@ int main(int argc, char** argv)
 	if(!g_fileSystem->Init(false))
 		return -2;
 
-	kvkeybase_t* fileSystemSettings = GetCore()->GetConfig()->FindKeyBase("FileSystem");
-
-	// Search for mods folder
-	if (fileSystemSettings && KV_GetValueBool(fileSystemSettings->FindKeyBase("EnableMods"), 0, false))
-	{
-		CFileSystemFind modsFind("Mods/*.*", SP_ROOT);
-
-		for(int i = 0; modsFind.Next(); i++)
-		{
-			if (!modsFind.IsDirectory())
-				continue;
-
-			const char* modPath = modsFind.GetPath();
-
-			if(stricmp(modPath, "..") && stricmp(modPath, "."))
-			{
-				MsgInfo("*** Registered Mod '%s' ***\n", modPath);
-				g_fileSystem->AddSearchPath(varargs("$MOD$_%d", i), varargs("Mods/%s", modPath));
-			};
-		} 
-	}
-
 	g_localizer->AddTokensFile("game");
 
 	// initialize timers
