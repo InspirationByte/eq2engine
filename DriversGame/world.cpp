@@ -1434,6 +1434,8 @@ void CGameWorld::UpdateRenderables( const occludingFrustum_t& frustum )
 
 }
 
+ConVar r_enableLights("r_lights", "1", nullptr, CV_ARCHIVE);
+
 bool CGameWorld::AddLight(const wlight_t& light)
 {
 	if(m_numLights >= MAX_LIGHTS_QUEUE-1)
@@ -1444,6 +1446,9 @@ bool CGameWorld::AddLight(const wlight_t& light)
 
 	if( !m_occludingFrustum.IsSphereVisible(light.position.xyz(), light.position.w) )
 		return false;
+
+	if (!r_enableLights.GetBool())
+		return true;
 
 	float fDistance = length(light.position.xyz() - m_view.GetOrigin());
 

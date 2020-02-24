@@ -955,6 +955,14 @@ bool CUI_BlockEditor::ProcessVertexManipMouseEvents(wxMouseEvent& event)
 
 	if (event.ButtonUp(wxMOUSE_BTN_LEFT))
 	{
+		if (m_mode == BLOCK_MODE_TRANSLATE)
+		{
+			Vector3D dragOfs = SnapVector(GridSize(), m_dragOffs);
+		}
+		else if (m_mode == BLOCK_MODE_ROTATE)
+		{
+			
+		}
 
 		g_pEditorActionObserver->EndAction();
 
