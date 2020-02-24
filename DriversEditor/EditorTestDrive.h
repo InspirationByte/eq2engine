@@ -34,10 +34,10 @@ public:
 
 protected:
 
-	CCar*				CreateCar(const char* name) const;
+	CCar*				CreateCar(const char* name);
 
 	EqString					m_carName;
-	DkList<vehicleConfig_t*>	m_carEntries;
+	vehicleConfig_t*			m_carEntry;
 
 	CCar*						m_car;
 

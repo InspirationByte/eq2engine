@@ -216,7 +216,7 @@ struct wlightdata_t
 };
 
 void LoadDefLightData( wlightdata_t& out, kvkeybase_t* sec );
-bool DrawDefLightData( Matrix4x4& objDefMatrix, const wlightdata_t& data, float brightness );
+bool DrawDefLightData( const Matrix4x4& objDefMatrix, const wlightdata_t& data, float brightness );
 
 // model container, for editor
 class CLevObjectDef :

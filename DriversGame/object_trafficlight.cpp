@@ -108,7 +108,7 @@ void CObject_TrafficLight::Spawn()
 
 	for(int i = 0; i < m_keyValues->keys.numElem(); i++)
 	{
-		if(!stricmp(m_keyValues->keys[i]->name, "light"))
+		if(!stricmp(m_keyValues->keys[i]->name, "trafficlight"))
 		{
 			trafficlights_t light;
 			light.position = KV_GetVector3D(m_keyValues->keys[i]);

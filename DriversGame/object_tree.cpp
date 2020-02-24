@@ -52,7 +52,7 @@ void CObject_Tree::Spawn()
 		m_pModel->SetInstancer( instancer );
 	}
 
-	m_blbList = g_pGameWorld->FindBillboardList(KV_GetValueString(m_keyValues->FindKeyBase("billboardListName")));
+	m_blbList = g_pGameWorld->GetBillboardList(KV_GetValueString(m_keyValues->FindKeyBase("billboardListName")));
 
 	m_smashSound = KV_GetValueString(m_keyValues->FindKeyBase("smashsound"), 0, "");
 

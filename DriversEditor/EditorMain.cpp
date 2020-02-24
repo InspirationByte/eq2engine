@@ -476,9 +476,14 @@ CMainWindow::CMainWindow( wxWindow* parent, wxWindowID id, const wxString& title
 
 	m_editingPrefab = false;
 
+	// Init level
 	g_pGameWorld->Init();
 	g_pGameWorld->InitEnvironment();
 	g_pGameWorld->m_level.Init(16, 16, 64, true);
+
+	g_pGameWorld->m_level.NewLevel();
+
+	OnLevelLoad();
 
 	g_editorTestGame->Init();
 
@@ -726,6 +731,8 @@ void CMainWindow::NewLevelPrompt()
 		}
 		else
 			g_pGameWorld->m_level.Init(wide, tall, cellSize, true);
+
+		g_pGameWorld->m_level.NewLevel();
 
 		OnLevelLoad();
 	}

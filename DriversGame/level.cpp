@@ -25,7 +25,6 @@ using namespace EqBulletUtils;
 using namespace Threading;
 
 ConVar r_enableLevelInstancing("r_enableLevelInstancing", "1", "Enable level models instancing if available", CV_ARCHIVE);
-ConVar r_drawStaticLights("r_drawStaticLights", "1", "Draw static lights", CV_CHEAT);
 ConVar w_freeze("w_freeze", "0", "Freeze region spooler", CV_CHEAT);
 
 //-----------------------------------------------------------------------------------------
@@ -85,6 +84,7 @@ void CGameLevel::Cleanup()
 		delete m_objectDefs[i];
 
 	m_objectDefs.clear();
+	m_objectDefsCfg.clear();
 
 	if(m_instanceBuffer)
 		g_pShaderAPI->DestroyVertexBuffer(m_instanceBuffer);
@@ -98,7 +98,7 @@ void CGameLevel::Cleanup()
 	m_navGridSelector = 0;
 }
 
-bool CGameLevel::Load(const char* levelname, kvkeybase_t* kvDefs)
+bool CGameLevel::Load(const char* levelname)
 {
 	IFile* pFile = g_fileSystem->Open(varargs(LEVELS_PATH "%s.lev", levelname), "rb", SP_MOD);
 
@@ -110,10 +110,10 @@ bool CGameLevel::Load(const char* levelname, kvkeybase_t* kvDefs)
 
 	m_levelName = levelname;
 
-	return CGameLevel::_Load(pFile, kvDefs);
+	return CGameLevel::_Load(pFile);
 }
 
-bool CGameLevel::_Load(IFile* pFile, kvkeybase_t* kvDefs)
+bool CGameLevel::_Load(IFile* pFile)
 {
 	Cleanup();
 
@@ -221,7 +221,8 @@ bool CGameLevel::_Load(IFile* pFile, kvkeybase_t* kvDefs)
 		{
 			DevMsg(DEVMSG_GAME, "LEVLUMP_OBJECTDEFS size = %d\n", lump.size);
 
-			ReadObjectDefsLump(pFile, kvDefs);
+			// then read and validate in lev file
+			ReadObjectDefsLump(pFile);
 		}
 		else if(lump.type == LEVLUMP_HEIGHTFIELDS)
 		{
@@ -407,89 +408,46 @@ void CGameLevel::PreloadRegion(int x, int y)
 
 //-------------------------------------------------------------------------------------------------
 
-void LoadDefLightData( wlightdata_t& out, kvkeybase_t* sec )
+bool CGameLevel::LoadObjectDefs(const char* name)
 {
-	for(int i = 0; i < sec->keys.numElem(); i++)
+	KeyValues kvs;
+	if (!kvs.LoadFromFile(name))
+		return false;
+
+	kvkeybase_t* root = kvs.GetRootSection();
+	for (int i = 0; i < root->keys.numElem(); i++)
 	{
-		if(!stricmp(sec->keys[i]->name, "light"))
+		kvkeybase_t* kbase = root->keys[i];
+		if (!stricmp(kbase->name, "include") && kbase->ValueCount() > 0)
 		{
-			wlight_t light;
-			light.position = KV_GetVector4D(sec->keys[i]);
-			light.color = KV_GetVector4D(sec->keys[i], 4);
+			if (!LoadObjectDefs(KV_GetValueString(kbase)))
+				MsgError("Cannot include object def file '%s'!\n", KV_GetValueString(kbase));
 
-			out.m_lights.append(light);
-		}
-		else if(!stricmp(sec->keys[i]->name, "glow"))
-		{
-			wglow_t light;
-			light.position = KV_GetVector4D(sec->keys[i]);
-			light.color = KV_GetVector4D(sec->keys[i], 4);
-			light.type = KV_GetValueInt(sec->keys[i], 8);
-
-			out.m_glows.append(light);
-		}
-	}
-}
-
-//
-// from car.cpp, pls move
-//
-extern void DrawLightEffect(const Vector3D& position, const ColorRGBA& color, float size, int type = 0);
-
-bool DrawDefLightData( Matrix4x4& objDefMatrix, const wlightdata_t& data, float brightness )
-{
-	bool lightsAdded = false;
-
-	if(g_pGameWorld->m_envConfig.lightsType & WLIGHTS_LAMPS)
-	{
-		for(int i = 0; i < data.m_lights.numElem(); i++)
-		{
-			wlight_t light = data.m_lights[i];
-			light.color.w *= brightness * g_pGameWorld->m_envConfig.streetLightIntensity;
-
-///-------------------------------------------
-			// transform light position
-			Vector3D lightPos = light.position.xyz();
-			lightPos = (objDefMatrix*Vector4D(lightPos, 1.0f)).xyz();
-
-			light.position = Vector4D(lightPos, light.position.w);
-///-------------------------------------------
-
-			bool added = r_drawStaticLights.GetBool() ? g_pGameWorld->AddLight( light ) : true;
-
-			lightsAdded = lightsAdded || added;
+			continue;
 		}
 
-		if(!lightsAdded)
-			return false;
+		CLevObjectDef* def = FindObjectDefByName(KV_GetValueString(kbase));
 
-		float extraBrightness = 0.0f + g_pGameWorld->m_envWetness*0.08f;
-		float extraSizeScale = 1.0f + g_pGameWorld->m_envWetness*0.25f;
-
-		for(int i = 0; i < data.m_glows.numElem(); i++)
+		// we have to add new def
+		if (def)
 		{
-			// transform light position
-			Vector3D lightPos = data.m_glows[i].position.xyz();
-			lightPos = (objDefMatrix*Vector4D(lightPos, 1.0f)).xyz();
-
-			if(g_pGameWorld->m_frustum.IsSphereInside(lightPos, data.m_glows[i].position.w))
-			{
-				ColorRGBA glowColor = data.m_glows[i].color;
-
-				ColorRGBA extraGlowColor = lerp(glowColor*extraBrightness, Vector4D(extraBrightness), 0.25f);
-
-				DrawLightEffect(lightPos,
-								glowColor * glowColor.w*brightness + extraBrightness,
-								data.m_glows[i].position.w * extraSizeScale,
-								data.m_glows[i].type);
-			}
+			MsgWarning("Object def '%s' is already registered\n", KV_GetValueString(kbase));
+			continue;
 		}
+
+		def = new CLevObjectDef();
+
+		def->m_name = KV_GetValueString(kbase, 0, "unnamed_def");
+		def->m_defType = kbase->name;
+		def->m_info.type = LOBJ_TYPE_OBJECT_CFG;
+
+		m_objectDefsCfg.append(def);
+
+		InitObjectDefFromKeyValues(def, kbase);
 	}
 
 	return true;
 }
-
-//-------------------------------------------------------------------------------------------------
 
 void CGameLevel::InitObjectDefFromKeyValues(CLevObjectDef* def, kvkeybase_t* defDesc)
 {
@@ -520,6 +478,7 @@ void CGameLevel::InitObjectDefFromKeyValues(CLevObjectDef* def, kvkeybase_t* def
 		kvkeybase_t* modelKey = defDesc->FindKeyBase("model");
 
 		// try precache model
+		// TODO: dynamic method instead
 		if (modelKey)
 		{
 			// try precache model
@@ -529,40 +488,81 @@ void CGameLevel::InitObjectDefFromKeyValues(CLevObjectDef* def, kvkeybase_t* def
 	}
 }
 
-void CGameLevel::ReadObjectDefsLump(IVirtualStream* stream, kvkeybase_t* kvDefs)
+CLevObjectDef* CGameLevel::FindObjectDefByName(const char* name) const
+{
+	for (int i = 0; i < m_objectDefsCfg.numElem(); i++)
+	{
+		if (!m_objectDefsCfg[i]->m_name.CompareCaseIns(name))
+			return m_objectDefsCfg[i];
+	}
+
+	return nullptr;
+}
+
+void CGameLevel::ReadObjectDefsLump(IVirtualStream* stream)
 {
 #ifdef EDITOR
 	m_objectDefIdCounter = 0;
 #endif // EDITOR
 
-	//long fpos = stream->Tell();
+	// load level object definition file
+	EqString defFileName(varargs("scripts/levels/%s_objects.def", m_levelName.c_str()));
 
-	int numModels = 0;
-	int modelNamesSize = 0;
-	stream->Read(&numModels, 1, sizeof(int));
-	stream->Read(&modelNamesSize, 1, sizeof(int));
+	if (!LoadObjectDefs(defFileName.c_str()))
+	{
+		MsgWarning("WARNING! '%s' cannot be loaded or not found\n", defFileName.c_str());
 
-	char* modelNamesData = new char[modelNamesSize];
+		defFileName = varargs("scripts/levels/%s_objects.def", "default");
+		if (!LoadObjectDefs(defFileName.c_str()))
+			CrashMsg("ERROR! '%s' cannot be loaded or not found\n", defFileName.c_str());
+	}
 
-	stream->Read(modelNamesData, 1, modelNamesSize);
+	// now read the lump
 
-	char* modelNamePtr = modelNamesData;
+	int numDefs = 0;
+	int objectDefNamesSize = 0;
+	stream->Read(&numDefs, 1, sizeof(int));
+	stream->Read(&objectDefNamesSize, 1, sizeof(int));
+
+	char* objectDefNames = new char[objectDefNamesSize];
+	stream->Read(objectDefNames, 1, objectDefNamesSize);
+
+	char* objectDefNamesPtr = objectDefNames;
 
 	// load level models and associate objects from <levelname>_objects.txt
-	for(int i = 0; i < numModels; i++)
+	for(int i = 0; i < numDefs; i++)
 	{
-		CLevObjectDef* def = new CLevObjectDef();
-		def->m_name = modelNamePtr;
+		levObjectDefInfo_t defInfo;
+		stream->Read(&defInfo, 1, sizeof(defInfo));
 
-		stream->Read(&def->m_info, 1, sizeof(levObjectDefInfo_t));
+		CLevObjectDef* def = nullptr;
 
-#ifdef EDITOR
-		def->Ref_Grab();	// grab reference for editor to ensure that model will be not removed
-		def->m_id = m_objectDefIdCounter++;
-#endif // EDITOR
-
-		if(def->m_info.type == LOBJ_TYPE_INTERNAL_STATIC)
+		if (defInfo.type == LOBJ_TYPE_OBJECT_CFG)
 		{
+			// validate object def
+			CLevObjectDef* def = FindObjectDefByName(objectDefNamesPtr);
+
+			if (!def)
+			{
+				// add empty def to not mess up indexes
+				def = new CLevObjectDef();
+				def->m_name = objectDefNamesPtr;
+				def->m_info = defInfo;
+				def->m_defType = "INVALID";
+				def->m_defModel = g_studioModelCache->GetModel(0);
+
+				MsgError("Cannot find object def '%s'\n", objectDefNamesPtr);
+			}
+
+			m_objectDefs.append(def);
+		}
+		else if (defInfo.type == LOBJ_TYPE_INTERNAL_STATIC)
+		{
+			// read object def info
+			CLevObjectDef* def = new CLevObjectDef();
+			def->m_name = objectDefNamesPtr;
+			def->m_info = defInfo;
+
 			def->m_modelOffset = stream->Tell();
 
 #ifndef EDITOR
@@ -570,99 +570,31 @@ void CGameLevel::ReadObjectDefsLump(IVirtualStream* stream, kvkeybase_t* kvDefs)
 #else
 			def->PreloadModel(stream);
 #endif // EDITOR
+
+			m_objectDefs.append(def);
 		}
-		else if(def->m_info.type == LOBJ_TYPE_OBJECT_CFG)
-		{
-			def->m_model = NULL;
-
-			kvkeybase_t* foundDef = NULL;
-
-			for(int j = 0; j < kvDefs->keys.numElem(); j++)
-			{
-				kvkeybase_t* objSec = kvDefs->keys[j];
-
-				if(!objSec->IsSection())
-					continue;
-
-				if(!stricmp(objSec->name, "billboardlist"))
-					continue;
-
-				if( KV_GetValueBool(objSec->FindKeyBase("IsExist")) )
-					continue;
-
-				if(!stricmp(KV_GetValueString(objSec, 0, "error_no_def"), modelNamePtr))
-				{
-					foundDef = objSec;
-					foundDef->SetKey("IsExist", "1");
-					break;
-				}
-			}
-
-			if(foundDef)
-			{
-				InitObjectDefFromKeyValues(def, foundDef);
-			}
-			else
-			{
-				MsgError("Cannot find object def '%s'\n", modelNamePtr);
-				def->m_defType = "INVALID";
-
-				// error model
-				def->m_defModel = g_studioModelCache->GetModel(0);
-			}
-		}
-
-		m_objectDefs.append(def);
-
-		// valid?
-		modelNamePtr += strlen(modelNamePtr)+1;
-	}
-
-	//
-	// load new objects from <levname>_objects.def
-	//
-	for(int i = 0; i < kvDefs->keys.numElem(); i++)
-	{
-		kvkeybase_t* defSection = kvDefs->keys[i];
-
-		if(!defSection->IsSection())
-			continue;
-
-		if(!stricmp(defSection->name, "billboardlist"))
-			continue;
-
-		bool isAlreadyAdded = KV_GetValueBool(defSection->FindKeyBase("IsExist"), 0, false);
-
-		if(isAlreadyAdded)
-			continue;
-
-		kvkeybase_t* modelName = defSection->FindKeyBase("model");
-
-		// precache model
-		int modelIdx = g_studioModelCache->PrecacheModel( KV_GetValueString(modelName, 0, "models/error.egf"));
-
-		CLevObjectDef* def = new CLevObjectDef();
-		def->m_name = KV_GetValueString(defSection, 0, "unnamed_def");
-		def->m_defType = defSection->name;
-
-		MsgInfo("Adding object definition '%s'\n", def->m_name.c_str());
-
-		def->m_defKeyvalues = new kvkeybase_t();
-		def->m_defKeyvalues->MergeFrom( defSection, true );
-
-		def->m_info.type = LOBJ_TYPE_OBJECT_CFG;
-
-		def->m_model = NULL;
-		def->m_defModel = g_studioModelCache->GetModel(modelIdx);
 
 #ifdef EDITOR
-		def->m_placeable = KV_GetValueBool(defSection->FindKeyBase("placeable"), 0, true);
+		if (def)
+		{
+			def->Ref_Grab();	// grab reference for editor to ensure that model will be not removed
+			def->m_id = m_objectDefIdCounter++;
+		}
 #endif // EDITOR
 
-		m_objectDefs.append(def);
+
+
+		objectDefNamesPtr += strlen(objectDefNamesPtr)+1;
 	}
 
-	delete [] modelNamesData;
+	// add object defs that are new
+	for (int i = 0; i < m_objectDefsCfg.numElem(); i++)
+	{
+		if (m_objectDefs.findIndex(m_objectDefsCfg[i]) == -1)
+			m_objectDefs.append(m_objectDefsCfg[i]);
+	}
+
+	delete [] objectDefNames;
 }
 
 void CGameLevel::ReadHeightfieldsLump( IVirtualStream* stream )

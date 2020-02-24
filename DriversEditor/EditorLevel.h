@@ -138,7 +138,9 @@ class CEditorLevel : public CGameLevel, public IMaterialRenderParamCallbacks
 	friend class CEditorLevelRegion;
 public:
 
-	bool			Load(const char* levelname, kvkeybase_t* kvDefs);
+	void			NewLevel();
+
+	bool			Load(const char* levelname);
 	bool			Save(const char* levelname, bool isfinal = false);
 
 	bool			LoadPrefab(const char* prefabName);

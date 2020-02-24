@@ -33,59 +33,11 @@ CEditorTestGame::~CEditorTestGame()
 void CEditorTestGame::Init()
 {
 	PrecacheObject( CCar );
-
-	// initialize vehicle list
-	KeyValues kvs;
-	if(kvs.LoadFromFile("scripts/vehicles.def"))
-	{
-		kvkeybase_t* vehicleRegistry = kvs.GetRootSection();
-
-		for(int i = 0; i < vehicleRegistry->keys.numElem(); i++)
-		{
-			kvkeybase_t* key = vehicleRegistry->keys[i];
-			if(!key->IsSection() && !key->IsDefinition())
-			{
-				vehicleConfig_t* carent = new vehicleConfig_t();
-				carent->carName = key->name;
-				carent->carScript = KV_GetValueString(key);
-
-				kvkeybase_t vehScript;
-
-				if( !KV_LoadFromFile(carent->carScript.c_str(), SP_MOD, &vehScript) )
-				{
-					MsgError("Can't open car script '%s'\n", carent->carScript.c_str());
-					delete carent;
-					return;
-				}
-
-				if(!ParseVehicleConfig(carent, &vehScript))
-				{
-					MsgError("Car configuration '%s' is invalid!\n", carent->carScript.c_str());
-					delete carent;
-					return;
-				}
-
-				PrecacheStudioModel( carent->visual.cleanModelName.c_str() );
-				PrecacheStudioModel( carent->visual.damModelName.c_str() );
-				m_carEntries.append(carent);
-			}
-		}
-	}
-	else
-	{
-		MsgError("FATAL: no scripts/vehicles.txt file!");
-	}
 }
 
 void CEditorTestGame::Destroy()
 {
 	EndGame();
-
-	// delete old entries
-	for(int i = 0; i < m_carEntries.numElem(); i++)
-		delete m_carEntries[i];
-
-	m_carEntries.clear(false);
 }
 
 //-------------------------------------------
@@ -151,6 +103,9 @@ void CEditorTestGame::EndGame()
 
 	m_car = nullptr;
 
+	delete m_carEntry;
+	m_carEntry = nullptr;
+
 	g_pPhysics->SceneDestroyBroadphase();
 	m_clientButtons = 0;
 }
@@ -192,15 +147,27 @@ void CEditorTestGame::OnKeyPress(int keyCode, bool down)
 
 //-------------------------------------------
 
-CCar* CEditorTestGame::CreateCar(const char* name) const
+CCar* CEditorTestGame::CreateCar(const char* name)
 {
-	for(int i = 0; i < m_carEntries.numElem(); i++)
+	EqString configPath = CombinePath(2, "scripts/vehicles", _Es(name) + ".txt");
+
+	kvkeybase_t kvb;
+	if (!KV_LoadFromFile(configPath.c_str(), SP_MOD, &kvb))
 	{
-		if(!m_carEntries[i]->carName.CompareCaseIns(name))
-		{
-			return new CCar(m_carEntries[i]);
-		}
+		MsgError("can't load car script '%s'\n", name);
+		return nullptr;
 	}
 
-	return nullptr;
+	vehicleConfig_t* conf = new vehicleConfig_t();
+	conf->carName = name;
+	conf->carScript = name;
+
+	conf->scriptCRC = 0;
+
+	if (!ParseVehicleConfig(conf, &kvb))
+		return nullptr;
+
+	m_carEntry = conf;
+
+	return new CCar(m_carEntry);
 }

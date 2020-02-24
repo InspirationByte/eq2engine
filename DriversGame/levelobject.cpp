@@ -913,3 +913,77 @@ float CLevelModel::Ed_TraceRayDist(const Vector3D& start, const Vector3D& dir)
 }
 
 #endif // EDITOR
+
+//------------------------------------------------------------------------------------
+
+void LoadDefLightData(wlightdata_t& out, kvkeybase_t* sec)
+{
+	for (int i = 0; i < sec->keys.numElem(); i++)
+	{
+		if (!stricmp(sec->keys[i]->name, "light"))
+		{
+			wlight_t light;
+			light.position = KV_GetVector4D(sec->keys[i]);
+			light.color = KV_GetVector4D(sec->keys[i], 4);
+
+			out.m_lights.append(light);
+		}
+		else if (!stricmp(sec->keys[i]->name, "glow"))
+		{
+			wglow_t light;
+			light.position = KV_GetVector4D(sec->keys[i]);
+			light.color = KV_GetVector4D(sec->keys[i], 4);
+			light.type = KV_GetValueInt(sec->keys[i], 8);
+
+			out.m_glows.append(light);
+		}
+	}
+}
+
+//
+// from car.cpp, pls move
+//
+extern void DrawLightEffect(const Vector3D& position, const ColorRGBA& color, float size, int type = 0);
+
+bool DrawDefLightData(const Matrix4x4& objDefMatrix, const wlightdata_t& data, float brightness)
+{
+	if (g_pGameWorld->m_envConfig.lightsType & WLIGHTS_LAMPS)
+	{
+		for (int i = 0; i < data.m_lights.numElem(); i++)
+		{
+			wlight_t light = data.m_lights[i];
+			light.color.w *= brightness * g_pGameWorld->m_envConfig.streetLightIntensity;
+
+			// transform light position
+			Vector3D lightPos = light.position.xyz();
+			lightPos = (objDefMatrix*Vector4D(lightPos, 1.0f)).xyz();
+
+			light.position = Vector4D(lightPos, light.position.w);
+
+			g_pGameWorld->AddLight(light);
+		}
+
+		float extraBrightness = 0.0f + g_pGameWorld->m_envWetness*0.08f;
+		float extraSizeScale = 1.0f + g_pGameWorld->m_envWetness*0.25f;
+
+		for (int i = 0; i < data.m_glows.numElem(); i++)
+		{
+			// transform light position
+			Vector3D lightPos = data.m_glows[i].position.xyz();
+			lightPos = (objDefMatrix*Vector4D(lightPos, 1.0f)).xyz();
+
+			if (!g_pGameWorld->m_occludingFrustum.IsSphereVisible(lightPos, data.m_glows[i].position.w))
+				continue;
+
+			ColorRGBA glowColor = data.m_glows[i].color;
+			ColorRGBA extraGlowColor = lerp(glowColor*extraBrightness, Vector4D(extraBrightness), 0.25f);
+
+			DrawLightEffect(lightPos,
+				glowColor * glowColor.w*brightness + extraBrightness,
+				data.m_glows[i].position.w * extraSizeScale,
+				data.m_glows[i].type);
+		}
+	}
+
+	return true;
+}

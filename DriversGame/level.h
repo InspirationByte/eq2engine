@@ -45,6 +45,8 @@ static float s_invNavGridScales[2] = { 1.0f/float(AI_NAV_DETAILED_SCALE), 1.0f }
 class CGameLevel : public CEqThread
 {
 	friend class CLevelRegion;
+	friend class CGameWorld;
+	friend class CModelListRenderPanel;
 public:
 	CGameLevel();
 	virtual ~CGameLevel() {}
@@ -54,7 +56,7 @@ public:
 
 	void							UnloadRegions();
 
-	bool							Load(const char* levelname, kvkeybase_t* kvDefs);
+	bool							Load(const char* levelname);
 
 	//-------------------------------------------------------------------------
 	// region spooling
@@ -83,7 +85,9 @@ public:
 	// useful if you need to find spawn point on non-loaded level
 	bool							FindObjectOnLevel(levCellObject_t& objectInfo, const char* name, const char* defName = NULL) const;
 
-	void							InitObjectDefFromKeyValues(CLevObjectDef* def, kvkeybase_t* defDesc);
+	bool							LoadObjectDefs(const char* name);
+
+	CLevObjectDef*					FindObjectDefByName(const char* name) const;
 
 	//-------------------------------------------------------------------------
 	// 2D grid stuff
@@ -175,7 +179,6 @@ public:
 	void							GetDecalPolygons( decalPrimitives_t& polys, occludingFrustum_t* frustum = NULL);
 
 	// TODO: render code
-
 	DkList<CLevObjectDef*>			m_objectDefs;
 
 	int								m_wide;
@@ -189,8 +192,7 @@ public:
 
 protected:
 
-	bool					_Load(IFile* levFile, kvkeybase_t* kvDefs);
-
+	bool					_Load(IFile* levFile);
 
 	void					Nav_GlobalToLocalPoint(const IVector2D& point, IVector2D& outLocalPoint, CLevelRegion** pRegion) const;
 	void					Nav_LocalToGlobalPoint(const IVector2D& point, const CLevelRegion* pRegion, IVector2D& outGlobalPoint) const;
@@ -201,7 +203,9 @@ protected:
 
 	int						Run();
 
-	void					ReadObjectDefsLump(IVirtualStream* stream, kvkeybase_t* kvDefs);
+	void					InitObjectDefFromKeyValues(CLevObjectDef* def, kvkeybase_t* defDesc);
+
+	void					ReadObjectDefsLump(IVirtualStream* stream);
 	void					ReadHeightfieldsLump(IVirtualStream* stream);
 	void					ReadRoadsLump(IVirtualStream* stream);
 
@@ -219,6 +223,8 @@ protected:
 #else
 	CLevelRegion*			m_regions;
 #endif // EDITOR
+
+	DkList<CLevObjectDef*>	m_objectDefsCfg;
 
 	int*					m_regionOffsets;			// spooling data offsets in LEVLUMP_REGIONS
 	int*					m_occluderOffsets;			// spooling data offsets in LEVLUMP_OCCLUDERS

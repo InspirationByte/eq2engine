@@ -568,9 +568,18 @@ bool GenerateBuildingModel( buildingSource_t* building )
 
 //-------------------------------------------------------------------------------------------
 
-bool CEditorLevel::Load(const char* levelname, kvkeybase_t* kvDefs)
+void CEditorLevel::NewLevel()
 {
-	bool result = CGameLevel::Load(levelname, kvDefs);
+	EqString defFileName = varargs("scripts/levels/%s_objects.def", "default");
+	LoadObjectDefs(defFileName.c_str());
+
+	// add object defs configs
+	m_objectDefs.append(m_objectDefsCfg);
+}
+
+bool CEditorLevel::Load(const char* levelname)
+{
+	bool result = CGameLevel::Load(levelname);
 
 	if(result)
 	{
@@ -643,9 +652,7 @@ bool CEditorLevel::LoadPrefab(const char* prefabName)
 	Msg("Loading prefab '%s'...\n", prefabName);
 
 	m_levelName = prefabName;
-
-	kvkeybase_t empty;
-	return CGameLevel::_Load(pFile, &empty);
+	return CGameLevel::_Load(pFile);
 }
 
 bool CEditorLevel::SavePrefab(const char* prefabName)

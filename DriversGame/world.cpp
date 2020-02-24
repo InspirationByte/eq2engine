@@ -685,6 +685,15 @@ void CGameWorld::Init()
 		g_worldGlobals.licPlatesMat->Ref_Grab();
 	}
 
+	// load tree atlas
+	// FIXME: this should be loaded different way...
+	if (!g_treeAtlas)
+	{
+		g_treeAtlas = new CPFXAtlasGroup();
+		g_treeAtlas->Init("trees/billboard_trees", false);
+		g_pPFXRenderer->AddRenderGroup(g_treeAtlas);
+	}
+
 	g_pPFXRenderer->PreloadMaterials();
 
 	g_pRainEmitter->Init();
@@ -2446,7 +2455,7 @@ CViewParams* CGameWorld::GetView()
 	return &m_view;
 }
 
-CBillboardList* CGameWorld::FindBillboardList(const char* name) const
+CBillboardList* CGameWorld::GetBillboardList(const char* name)
 {
 	for(int i = 0; i < m_billboardModels.numElem(); i++)
 	{
@@ -2454,7 +2463,19 @@ CBillboardList* CGameWorld::FindBillboardList(const char* name) const
 			return m_billboardModels[i];
 	}
 
-	return NULL;
+	KeyValues blbKV;
+	if (!blbKV.LoadFromFile(name))
+		return nullptr;
+
+	CBillboardList* pBillboardList = new CBillboardList();
+	pBillboardList->m_name = name;
+
+	// load our file
+	pBillboardList->LoadBlb(blbKV.GetRootSection());
+
+	m_billboardModels.append(pBillboardList);
+
+	return pBillboardList;
 }
 
 void CGameWorld::QueryNearestRegions(const Vector3D& pos, bool waitLoad )
@@ -2473,50 +2494,8 @@ bool CGameWorld::LoadLevel()
 
 	if(!m_levelLoaded)
 	{
-		// load object definition file
-		KeyValues objectDefsKV;
-		if( !objectDefsKV.LoadFromFile(varargs("scripts/levels/%s_objects.def", m_levelname.GetData())) )
-		{
-			MsgWarning("Object definition file for '%s' cannot be loaded or not found\n", m_levelname.GetData());
-
-			if( !objectDefsKV.LoadFromFile(varargs("scripts/levels/default_objects.def", m_levelname.GetData())) )
-			{
-				MsgError("DEFAULT Object definition file for '%s' cannot be loaded or not found\n");
-			}
-		}
-
-		// load tree atlas
-		if (!g_treeAtlas)
-		{
-			g_treeAtlas = new CPFXAtlasGroup();
-			g_treeAtlas->Init("trees/billboard_trees", false);
-			g_pPFXRenderer->AddRenderGroup(g_treeAtlas);
-		}
-
-		// load billboard lists
-		for(int i = 0; i < objectDefsKV.GetRootSection()->keys.numElem(); i++)
-		{
-			kvkeybase_t* kvk = objectDefsKV.GetRootSection()->keys[i];
-
-			if(!stricmp(kvk->name, "billboardlist"))
-			{
-				KeyValues blbKV;
-				if(blbKV.LoadFromFile(KV_GetValueString(kvk, 1)))
-				{
-					CBillboardList* pBillboardList = new CBillboardList();
-
-					// set the name for searching
-					pBillboardList->m_name = KV_GetValueString(kvk, 0);
-
-					// load our file
-					pBillboardList->LoadBlb( blbKV.GetRootSection() );
-
-					m_billboardModels.append(pBillboardList);
-				}
-			}
-		}
-
-		result = m_level.Load( m_levelname.GetData(), objectDefsKV.GetRootSection() );
+		// load level file
+		result = m_level.Load( m_levelname.GetData() );
 	}
 
 	if(result)

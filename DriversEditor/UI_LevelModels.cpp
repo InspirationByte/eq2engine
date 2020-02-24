@@ -808,13 +808,14 @@ void CModelListRenderPanel::RefreshLevelModels()
 			Msg("Removing invalid object def '%s'\n", def->m_name.c_str());
 
 			delete def;
-			g_pGameWorld->m_level.m_objectDefs.removeIndex(i);
+			g_pGameWorld->m_level.m_objectDefs.fastRemoveIndex(i);
+			g_pGameWorld->m_level.m_objectDefsCfg.fastRemove(def);
 			i--;
 			continue;
 		}
 
 		if(def->m_placeable)
-			m_filteredList.append(def);
+			m_filteredList.addUnique(def);
 	}
 
 	// refresh definition list?

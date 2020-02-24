@@ -185,7 +185,8 @@ public:
 	void							InitEnvironment();
 
 	void							FillEnviromentList(DkList<EqString>& list);
-	CBillboardList*					FindBillboardList(const char* name) const;
+
+	CBillboardList*					GetBillboardList(const char* name);
 
 public:
 	CViewParams						m_view;
