@@ -124,4 +124,67 @@ public:
 
 INTERFACE_SINGLETON( IFileSystem, CFileSystem, FILESYSTEM_INTERFACE_VERSION, g_fileSystem )
 
+//-----------------------------------------------------------------------------------------
+// Filesystem find helper class
+//-----------------------------------------------------------------------------------------
+
+class CFileSystemFind
+{
+public:
+	CFileSystemFind(const char* wildcard, int searchPath = -1);
+	~CFileSystemFind();
+
+	void			Init(const char* wildcard, int searchPath = -1);
+	bool			IsDirectory() const;
+	const char*		GetPath() const;
+
+	bool			Next();
+
+protected:
+	int				m_searchPath;
+	char*			m_wildcard;
+
+	char*			m_curPath;
+	DKFINDDATA*		m_fd;
+};
+
+//-----------------------------------------------------------------------------------------
+
+inline CFileSystemFind::CFileSystemFind(const char* wildcard, int searchPath) 
+	: m_fd(nullptr), m_curPath(nullptr)
+{
+	Init(wildcard, searchPath);
+}
+
+inline void CFileSystemFind::Init(const char* wildcard, int searchPath)
+{
+	m_wildcard = (char*)wildcard;
+	m_searchPath = searchPath;
+}
+
+inline CFileSystemFind::~CFileSystemFind()
+{
+	g_fileSystem->FindClose(m_fd);
+}
+
+inline bool  CFileSystemFind::IsDirectory() const
+{
+	return g_fileSystem->FindIsDirectory(m_fd);
+}
+
+inline const char* CFileSystemFind::GetPath() const
+{
+	return m_curPath;
+}
+
+inline bool CFileSystemFind::Next()
+{
+	if (!m_fd)
+		m_curPath = (char*)g_fileSystem->FindFirst(m_wildcard, &m_fd, m_searchPath);
+	else
+		m_curPath = (char*)g_fileSystem->FindNext(m_fd);
+
+	return (m_fd && m_curPath);
+}
+
 #endif // IFILESYSTEM_H

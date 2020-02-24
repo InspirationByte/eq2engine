@@ -27,6 +27,11 @@ void WMsg(const char* str)
 	Msg(str);
 }
 
+void WMsgInfo(const char* str)
+{
+	MsgInfo(str);
+}
+
 void WMsgWarning(const char* str)
 {
 	MsgWarning(str);
@@ -43,6 +48,7 @@ void WMsgAccept(const char* str)
 }
 
 OOLUA_CFUNC( WMsg, LMsg )
+OOLUA_CFUNC( WMsgInfo, LMsgInfo )
 OOLUA_CFUNC( WMsgWarning, LMsgWarning)
 OOLUA_CFUNC( WMsgError, LMsgError)
 OOLUA_CFUNC( WMsgAccept, LMsgAccept)
@@ -67,7 +73,6 @@ void WMsgBoxAbort(const char* str)
 	CrashMsg(str);
 }
 
-
 OOLUA_CFUNC( WMsgBox, LMsgBox )
 OOLUA_CFUNC( WMsgBoxWarning, LMsgBoxWarning)
 OOLUA_CFUNC( WMsgBoxError, LMsgBoxError)
@@ -76,6 +81,7 @@ OOLUA_CFUNC( WMsgBoxAbort, LMsgBoxAbort)
 void DebugMessages_InitBinding(lua_State* state)
 {
 	OOLUA::set_global(state, "Msg", LMsg);
+	OOLUA::set_global(state, "MsgInfo", LMsgInfo);
 	OOLUA::set_global(state, "MsgWarning", LMsgWarning);
 	OOLUA::set_global(state, "MsgError", LMsgError);
 	OOLUA::set_global(state, "MsgAccept", LMsgAccept);
@@ -85,6 +91,18 @@ void DebugMessages_InitBinding(lua_State* state)
 	OOLUA::set_global(state, "MsgBoxError", LMsgBoxError);
 	OOLUA::set_global(state, "MsgBoxAbort", LMsgBoxAbort);
 }
+
+//---------------------------------------------------------------------------------------
+// Core
+//---------------------------------------------------------------------------------------
+
+kvkeybase_t* S_DkCore_GetConfig(const char* section_name)
+{
+	KeyValues* kvs = GetCore()->GetConfig();
+	return kvs ? kvs->FindKeyBase(section_name) : nullptr;
+}
+
+OOLUA_CFUNC(S_DkCore_GetConfig, L_DkCore_GetConfig)
 
 //---------------------------------------------------------------------------------------
 // Filesystem
@@ -120,6 +138,9 @@ OOLUA_EXPORT_FUNCTIONS_CONST(IFile)
 
 OOLUA_EXPORT_FUNCTIONS(IFileSystem, Open, Close, FileCopy, GetFileSize, GetFileCRC32, AddPackage, AddSearchPath, RemoveSearchPath)
 OOLUA_EXPORT_FUNCTIONS_CONST(IFileSystem, FileExist, FileRemove, GetCurrentGameDirectory, GetCurrentDataDirectory, MakeDir, RemoveDir)
+
+OOLUA_EXPORT_FUNCTIONS(CFileSystemFind, Init, Next)
+OOLUA_EXPORT_FUNCTIONS_CONST(CFileSystemFind, IsDirectory, GetPath)
 
 OOLUA_EXPORT_FUNCTIONS(kvpairvalue_t, SetValueFrom, SetStringValue, SetValueFromString)
 OOLUA_EXPORT_FUNCTIONS_CONST(kvpairvalue_t, get_type, get_value, get_nValue, get_bValue, get_fValue)
@@ -218,6 +239,8 @@ void FileSystem_InitBinding(lua_State* state)
 	OOLUA::register_class<IFileSystem>(state);
 	OOLUA::register_class_static<IFileSystem>(state, "GetFileBuffer", L_IFileSystem_GetFileBuffer);
 	
+	OOLUA::register_class <CFileSystemFind>(state);
+
 	IFileSystem* fsInstance = g_fileSystem.GetInstancePtr();
 	OOLUA::set_global(state, "fileSystem", fsInstance);
 
@@ -832,6 +855,10 @@ bool LuaBinding_InitEngineBindings(lua_State* state)
 	eqStateTable.set("ScheduleNextStateType", L_ScheduleNextStateType);
 	OOLUA::set_global(state, "EqStateMgr", eqStateTable);
 
+	OOLUA::Table eqCoreTable = OOLUA::new_table(state);
+	eqStateTable.set("GetConfig", L_DkCore_GetConfig);
+	OOLUA::set_global(state, "core", eqStateTable);
+	
 	return true;
 }
 

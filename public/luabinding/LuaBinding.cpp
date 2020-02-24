@@ -243,7 +243,9 @@ static void eqlua_open_libs(lua_State *L)
 	lua_pop(L, 1);
 }
 
-bool LuaBinding_LoadAndDoFile(lua_State* state, const char* filename, const char* pszFuncName)
+bool LuaBinding_DoBuffer(lua_State* state, const char* data, int size, const char* filename, OOLUA::Table* returnTable);
+
+bool LuaBinding_LoadAndDoFile(lua_State* state, const char* filename, const char* pszFuncName, OOLUA::Table* returnTable)
 {
 	DevMsg(DEVMSG_GAME, "running '%s'...\n", filename);
 
@@ -277,10 +279,10 @@ bool LuaBinding_LoadAndDoFile(lua_State* state, const char* filename, const char
 		return false;
 	}
 
-	bool result = LuaBinding_DoBuffer(state, filebuf, fileSize, filename);
+	bool result = LuaBinding_DoBuffer(state, filebuf, fileSize, filename, returnTable);
 
 	PPFree((void*)filebuf);
-
+	
 	// установить глобальную переменную file
 	if( is_caller_ok )
 	{
@@ -292,8 +294,12 @@ bool LuaBinding_LoadAndDoFile(lua_State* state, const char* filename, const char
 	//return OOLUA::run_file(state, filename);
 }
 
+bool LuaBinding_LoadAndDoFile(lua_State* state, const char* filename, const char* pszFuncName)
+{
+	return LuaBinding_LoadAndDoFile(state, filename, pszFuncName, nullptr);
+}
 
-bool LuaBinding_DoBuffer(lua_State* state, const char* data, int size, const char* filename)
+bool LuaBinding_DoBuffer(lua_State* state, const char* data, int size, const char* filename, OOLUA::Table* returnTable)
 {
 	LuaStackGuard s(state);
 
@@ -319,7 +325,15 @@ bool LuaBinding_DoBuffer(lua_State* state, const char* data, int size, const cha
 	res = lua_pcall(state, 0, 1, err_idx);
 
 	if (res == 0)
+	{
+		if (lua_istable(state, -1))
+		{
+			if (returnTable)
+				OOLUA::pull(state, *returnTable);
+		}
+
 		return true;
+	}
 
 	if (res != LUA_ERRMEM)
 	{
@@ -330,7 +344,11 @@ bool LuaBinding_DoBuffer(lua_State* state, const char* data, int size, const cha
 	MsgError("LuaBinding_DoBuffer: lua_pcall error\n");
 
 	return false;
+}
 
+bool LuaBinding_DoBuffer(lua_State* state, const char* data, int size, const char* filename)
+{
+	return LuaBinding_DoBuffer(state, data, size, filename, nullptr);
 }
 
 // чисто модулезагрузчик есть жи
@@ -351,7 +369,9 @@ int LuaBinding_ModuleFunc(lua_State* state)
 			filename = checkFilename;
 	}
 
-	if( !LuaBinding_LoadAndDoFile(state, filename.c_str(), "module()") )
+	OOLUA::Table returnTable;
+
+	if( !LuaBinding_LoadAndDoFile(state, filename.c_str(), "module()", &returnTable) )
 	{
 		EqString err = OOLUA::get_last_error(state).c_str();
 		OOLUA::reset_error_value(state);
@@ -359,17 +379,18 @@ int LuaBinding_ModuleFunc(lua_State* state)
 
 		return 0;
 	}
-
-	LuaStackGuard s(state);
-
+	
 	if(curr_file)
 	{
+		LuaStackGuard s(state);
 		// установить глобальную переменную file назад
 		lua_pushstring(state, curr_file);
 		lua_setglobal(state, "__FILE__");
 	}
 
-	return 0;
+	OOLUA::push(state, returnTable);
+
+	return 1;
 }
 
 int LuaErrorHandler(lua_State* L)

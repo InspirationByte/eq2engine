@@ -146,6 +146,19 @@ OOLUA_PROXY(IFileSystem)
 
 OOLUA_PROXY_END
 
+OOLUA_PROXY(CFileSystemFind)
+	OOLUA_TAGS(No_default_constructor)
+
+	OOLUA_CTORS(
+		OOLUA_CTOR(const char*, int)
+	)
+
+	OOLUA_MFUNC(Init)
+	OOLUA_MFUNC_CONST(IsDirectory)
+	OOLUA_MFUNC_CONST(GetPath)
+	OOLUA_MFUNC(Next);
+
+OOLUA_PROXY_END
 
 //----------------------------------------------
 

@@ -110,25 +110,21 @@ int main(int argc, char** argv)
 	// Search for mods folder
 	if (fileSystemSettings && KV_GetValueBool(fileSystemSettings->FindKeyBase("EnableMods"), 0, false))
 	{
-		DKFINDDATA* findData = nullptr;
-		char* modPath = (char*)g_fileSystem->FindFirst("Mods/*.*", &findData, SP_ROOT);
+		CFileSystemFind modsFind("Mods/*.*", SP_ROOT);
 
-		if (modPath)
+		for(int i = 0; modsFind.Next(); i++)
 		{
-			int count = 0;
+			if (!modsFind.IsDirectory())
+				continue;
 
-			while (modPath = (char*)g_fileSystem->FindNext(findData))
+			const char* modPath = modsFind.GetPath();
+
+			if(stricmp(modPath, "..") && stricmp(modPath, "."))
 			{
-				if (g_fileSystem->FindIsDirectory(findData) && stricmp(modPath, "..") && stricmp(modPath, "."))
-				{
-					MsgInfo("*** Registered Mod '%s' ***\n", modPath);
-					g_fileSystem->AddSearchPath(varargs("$MOD$_%d", count), varargs("Mods/%s", modPath));
-					count++;
-				}
-			}
-
-			g_fileSystem->FindClose(findData);
-		}
+				MsgInfo("*** Registered Mod '%s' ***\n", modPath);
+				g_fileSystem->AddSearchPath(varargs("$MOD$_%d", i), varargs("Mods/%s", modPath));
+			};
+		} 
 	}
 
 	g_localizer->AddTokensFile("game");
