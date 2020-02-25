@@ -12,6 +12,7 @@ BEGIN_SHADER_CLASS(Skinned)
 	SHADER_INIT_PARAMS()
 	{
 		m_pBaseTexture	= NULL;
+		m_pCubemap = NULL;
 
 		SHADER_PASS(Ambient) = NULL;
 		SHADER_FOGPASS(Ambient) = NULL;
@@ -31,6 +32,10 @@ BEGIN_SHADER_CLASS(Skinned)
 		// load textures from parameters
 		SHADER_PARAM_TEXTURE(BaseTexture, m_pBaseTexture);
 
+		// load cubemap if available
+		if (materials->GetConfiguration().enableSpecular)
+			SHADER_PARAM_TEXTURE_NOERROR(Cubemap, m_pCubemap);
+
 		// set texture setup
 		SetParameterFunctor(SHADERPARAM_BASETEXTURE, &ThisShaderClass::SetupBaseTexture);
 
@@ -43,11 +48,15 @@ BEGIN_SHADER_CLASS(Skinned)
 			return true;
 
 		SHADER_PARAM_BOOL(AlphaSelfIllumination, m_alphaSelfIllum, false);
+		SHADER_PARAM_FLOAT(SpecularScale, m_fSpecularScale, 0.0f);
 
 		//------------------------------------------
 		// begin shader definitions
 		//------------------------------------------
 		SHADERDEFINES_BEGIN;
+
+		bool bBaseTextureSpecularAlpha;
+		SHADER_PARAM_BOOL(BaseTextureSpecularAlpha, bBaseTextureSpecularAlpha, false);
 
 		// define fog parameter.
 		SHADER_DECLARE_SIMPLE_DEFINITION(materials->GetConfiguration().editormode, "EDITOR");
@@ -57,6 +66,15 @@ BEGIN_SHADER_CLASS(Skinned)
 
 		// define specular usage
 		SHADER_DECLARE_SIMPLE_DEFINITION(m_alphaSelfIllum, "ALPHASELFILLUMINATION")
+
+		bool useCubemap = (m_nFlags & MATERIAL_FLAG_USE_ENVCUBEMAP) || (m_pCubemap != NULL);
+
+		// define cubemap parameter.
+		SHADER_DECLARE_SIMPLE_DEFINITION(useCubemap, "USE_CUBEMAP");
+
+		SHADER_BEGIN_DEFINITION(bBaseTextureSpecularAlpha, "USE_BASETEXTUREALPHA_SPECULAR")
+			SHADER_DECLARE_SIMPLE_DEFINITION(true, "USE_SPECULAR");
+		SHADER_END_DEFINITION;
 
 		// compile without fog
 		SHADER_FIND_OR_COMPILE(Ambient, "Skinned");
@@ -109,6 +127,8 @@ BEGIN_SHADER_CLASS(Skinned)
 
 		SetupDefaultParameter(SHADERPARAM_COLOR);
 		SetupDefaultParameter(SHADERPARAM_FOG);
+
+		g_pShaderAPI->SetShaderConstantFloat("SPECULAR_SCALE", m_fSpecularScale);
 	}
 
 	void SetColorModulation()
@@ -123,11 +143,21 @@ BEGIN_SHADER_CLASS(Skinned)
 		g_pShaderAPI->SetTexture(pSetupTexture, "BaseTexture", 0);
 	}
 
+	void ParamSetup_Cubemap()
+	{
+		if (m_nFlags & MATERIAL_FLAG_USE_ENVCUBEMAP)
+			g_pShaderAPI->SetTexture(materials->GetEnvironmentMapTexture(), "CubemapTexture", 12);
+		else
+			g_pShaderAPI->SetTexture(m_pCubemap, "CubemapTexture", 12);
+	}
+
 	ITexture*	GetBaseTexture(int stage)	{ return m_pBaseTexture; }
 	ITexture*	GetBumpTexture(int stage)	{ return NULL; }
 
 	ITexture*			m_pBaseTexture;
+	ITexture*			m_pCubemap;
 
+	float				m_fSpecularScale;
 	bool				m_alphaSelfIllum;
 
 	SHADER_DECLARE_PASS(Ambient);

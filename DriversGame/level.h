@@ -143,7 +143,7 @@ public:
 	int								Road_GetWidthInLanesAtPoint( const IVector2D& point, int numIterations = 16, int iterationsOnEmpty = 0 );	// calculates road width in lanes from road at global tile 2D point
 	int								Road_GetWidthInLanesAtPos( const Vector3D& pos, int numIterations = 16 );		// calculates road width in lanes from road at 3D position
 
-	bool							Road_FindBestCellForTrafficLight( IVector2D& out, const Vector3D& origin, int trafficDir, int juncIterations = 16 );
+	bool							Road_FindBestCellForTrafficLight( IVector2D& out, const Vector3D& origin, int trafficDir, int juncIterations = 16, bool leftHanded = false );
 
 	//-------------------------------------------------------------------------
 	// navigation grid

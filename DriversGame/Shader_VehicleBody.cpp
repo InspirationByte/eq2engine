@@ -60,8 +60,6 @@ BEGIN_SHADER_CLASS(DrvSynVehicle)
 
 		bool bLicensePlate;
 		SHADER_PARAM_BOOL(LicensePlate, bLicensePlate, false);
-
-		// parallax scale
 		SHADER_PARAM_FLOAT(SpecularScale, m_fSpecularScale, 0.0f);
 
 		//------------------------------------------

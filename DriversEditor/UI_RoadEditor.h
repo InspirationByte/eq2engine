@@ -26,6 +26,8 @@ public:
 	void						SetRotation(int rot);
 
 	void						OnRotationOrTypeTextChanged(wxCommandEvent& event);
+	void						OnTrafficTypeChanged(wxCommandEvent& event);
+	
 
 	// IEditorTool stuff
 
@@ -34,6 +36,7 @@ public:
 	void						OnKey(wxKeyEvent& event, bool bDown);
 	void						OnRender();
 
+	void						OnLevelLoad();;
 	void						InitTool();
 	void						ReloadTool();
 	void						ShutdownTool();
@@ -46,7 +49,7 @@ public:
 protected:
 
 	wxChoice*					m_typeSel;
-	wxCheckBox*					m_parking;
+	wxCheckBox*					m_lefthanded;
 	wxChoice*					m_rotationSel;
 
 	int							m_rotation;

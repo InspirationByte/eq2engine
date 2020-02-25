@@ -568,6 +568,11 @@ bool GenerateBuildingModel( buildingSource_t* building )
 
 //-------------------------------------------------------------------------------------------
 
+CEditorLevel::CEditorLevel() : CGameLevel()
+{
+	m_leftHandedRoads = false;
+}
+
 void CEditorLevel::NewLevel()
 {
 	EqString defFileName = varargs("scripts/levels/%s_objects.def", "default");
@@ -575,6 +580,8 @@ void CEditorLevel::NewLevel()
 
 	// add object defs configs
 	m_objectDefs.append(m_objectDefsCfg);
+
+	m_leftHandedRoads = false;
 }
 
 bool CEditorLevel::Load(const char* levelname)
@@ -584,21 +591,57 @@ bool CEditorLevel::Load(const char* levelname)
 	if(result)
 	{
 		LoadEditorBuildings(levelname);
+		LoadEditorRoads(levelname);
 	}
 
 	return result;
 }
 
-bool CEditorLevel::Save(const char* levelname, bool isFinal)
+void CEditorLevel::BackupFiles(const char* levelname)
 {
 	EqString levelFileName(varargs(LEVELS_PATH "%s.lev", levelname));
 	EqString backupFileName(varargs(LEVELS_PATH "%s.lev.BAK", levelname));
 
-	// create backups first
+	// backup lev file
 	{
+		// remove old backup
 		g_fileSystem->FileRemove(backupFileName.c_str(), SP_MOD);
+
+		// rename existing file to backup
 		g_fileSystem->Rename(levelFileName.c_str(), backupFileName.c_str(), SP_MOD);
 	}
+
+	EqString folderPath(varargs(LEVELS_PATH "%s_editor", levelname));
+	EqString folderPathBkp(varargs(LEVELS_PATH "%s_editor.BAK", levelname));
+
+	// backup folder
+	{
+		EqString buildingsPathBkp(folderPathBkp + "/buildings.ekv");
+		EqString buildingTemplateModelsPathBkp(folderPathBkp + "/buildingTemplateModels.dat");
+		EqString buildingTemplatesPathBkp(folderPathBkp + "/buildingTemplates.def");
+		EqString roadsPathBkp(folderPathBkp + "/roads.ekv");
+
+		// remove old backuip
+		g_fileSystem->FileRemove(buildingsPathBkp.c_str(), SP_MOD);
+		g_fileSystem->FileRemove(buildingTemplateModelsPathBkp.c_str(), SP_MOD);
+		g_fileSystem->FileRemove(buildingTemplatesPathBkp.c_str(), SP_MOD);
+		g_fileSystem->FileRemove(roadsPathBkp.c_str(), SP_MOD);
+
+		g_fileSystem->RemoveDir(folderPathBkp.c_str(), SP_MOD);
+
+		// rename existing folder to backup
+		g_fileSystem->Rename(folderPath.c_str(), folderPathBkp.c_str(), SP_MOD);
+	}
+
+	// make folder <levelName>_editor and put this stuff there
+	g_fileSystem->MakeDir(folderPath.c_str(), SP_MOD);
+}
+
+bool CEditorLevel::Save(const char* levelname, bool isFinal)
+{
+	BackupFiles(levelname);
+	
+	EqString levelFileName(varargs(LEVELS_PATH "%s.lev", levelname));
 
 	IFile* pFile = g_fileSystem->Open(levelFileName.c_str(), "wb", SP_MOD);
 
@@ -624,6 +667,7 @@ bool CEditorLevel::Save(const char* levelname, bool isFinal)
 
 	// editor-related stuff
 	SaveEditorBuildings( levelname );
+	SaveEditorRoads( levelname );
 
 	levLump_t endLump;
 	endLump.type = LEVLUMP_ENDMARKER;
@@ -1116,27 +1160,7 @@ void CEditorLevel::Ed_DestroyPhysics()
 
 void CEditorLevel::SaveEditorBuildings( const char* levelName )
 {
-	EqString folderPath(varargs(LEVELS_PATH "%s_editor", levelName));
-	EqString folderPathBkp(varargs(LEVELS_PATH "%s_editor.BAK", levelName));
-
-	EqString buildingsPath(folderPath + "/buildings.ekv");
-
-	// create backups first
-	{
-		EqString buildingsPathBkp(folderPathBkp + "/buildings.ekv");
-		EqString buildingTemplateModelsPathBkp(folderPathBkp + "/buildingTemplateModels.dat");
-		EqString buildingTemplatesPathBkp(folderPathBkp + "/buildingTemplates.def");
-
-		g_fileSystem->FileRemove(buildingsPathBkp.c_str(), SP_MOD);
-		g_fileSystem->FileRemove(buildingTemplateModelsPathBkp.c_str(), SP_MOD);
-		g_fileSystem->FileRemove(buildingTemplatesPathBkp.c_str(), SP_MOD);
-
-		g_fileSystem->RemoveDir(folderPathBkp.c_str(), SP_MOD);
-		g_fileSystem->Rename(folderPath.c_str(), folderPathBkp.c_str(), SP_MOD);
-	}
-
-	// make folder <levelName>_editor and put this stuff there
-	g_fileSystem->MakeDir(folderPath.c_str(), SP_MOD);
+	EqString buildingsPath = varargs(LEVELS_PATH "%s_editor/buildings.ekv", levelName);
 
 	KeyValues kvs;
 	kvkeybase_t* root = kvs.GetRootSection();
@@ -1168,10 +1192,10 @@ typedef std::pair<CEditorLevelRegion*, regionObject_t*> regionObjectPair_t;
 
 void CEditorLevel::LoadEditorBuildings( const char* levelName )
 {
-	EqString path = varargs(LEVELS_PATH "%s_editor/buildings.ekv", levelName);
+	EqString buildingsPath = varargs(LEVELS_PATH "%s_editor/buildings.ekv", levelName);
 
 	KeyValues kvs;
-	if(!kvs.LoadFromFile(path.c_str(), SP_MOD))
+	if(!kvs.LoadFromFile(buildingsPath.c_str(), SP_MOD))
 		return;
 
 	kvkeybase_t* root = kvs.GetRootSection();
@@ -1223,6 +1247,30 @@ void CEditorLevel::PostLoadEditorBuildings( DkList<buildLayerColl_t*>& buildingT
 	}
 }
 
+void CEditorLevel::SaveEditorRoads(const char* levelName)
+{
+	EqString roadsPath = varargs(LEVELS_PATH "%s_editor/roads.ekv", levelName);
+
+	KeyValues kvs;
+	kvkeybase_t* root = kvs.GetRootSection();
+
+	root->SetKey("lefthanded", m_leftHandedRoads);
+
+	kvs.SaveToFile(roadsPath.c_str(), SP_MOD);
+}
+
+void CEditorLevel::LoadEditorRoads(const char* levelName)
+{
+	EqString roadsPath = varargs(LEVELS_PATH "%s_editor/roads.ekv", levelName);
+
+	KeyValues kvs;
+	if (!kvs.LoadFromFile(roadsPath.c_str(), SP_MOD))
+		return;
+
+	kvkeybase_t* root = kvs.GetRootSection();
+	m_leftHandedRoads = KV_GetValueBool(root->FindKeyBase("lefthanded"), 0, false);
+}
+
 void CEditorLevel::OnPreApplyMaterial( IMaterial* pMaterial )
 {
 	if( pMaterial->GetState() != MATERIAL_LOAD_OK )
@@ -1259,6 +1307,16 @@ void CEditorLevel::Ed_Render(const Vector3D& cameraPosition, const Matrix4x4& vi
 	}
 
 	materials->SetMaterialRenderParamCallback(nullptr);
+}
+
+void CEditorLevel::Ed_SetRoadsLeftHanded(bool enable)
+{
+	m_leftHandedRoads = enable;
+}
+
+bool CEditorLevel::Ed_IsRoadsLeftHanded() const
+{
+	return m_leftHandedRoads;
 }
 
 CEditorLevel* CEditorLevel::CreatePrefab(const IVector2D& minCell, const IVector2D& maxCell, int flags)
@@ -2045,6 +2103,8 @@ void CEditorLevelRegion::PostprocessCellObject(regionObject_t* obj)
 	if(!obj->def)
 		return;
 
+	bool leftHandedRoads = ((CEditorLevel*)m_level)->m_leftHandedRoads;
+
 	if(obj->def->m_info.type == LOBJ_TYPE_OBJECT_CFG)
 	{
 		// process traffic lights
@@ -2060,7 +2120,7 @@ void CEditorLevelRegion::PostprocessCellObject(regionObject_t* obj)
 			IVector2D rightDir = IVector2D(dx[laneRowDir],dy[laneRowDir]);
 
 			IVector2D roadPos;
-			if(m_level->Road_FindBestCellForTrafficLight(roadPos, obj->position, trafficDir, 24))
+			if(m_level->Road_FindBestCellForTrafficLight(roadPos, obj->position, trafficDir, 24, leftHandedRoads))
 			{
 				// move to first lane
 				int laneIndex = m_level->Road_GetLaneIndexAtPoint( roadPos )-1;

@@ -138,7 +138,11 @@ class CEditorLevel : public CGameLevel, public IMaterialRenderParamCallbacks
 	friend class CEditorLevelRegion;
 public:
 
+	CEditorLevel();
+
 	void			NewLevel();
+
+	void			BackupFiles(const char* levelname);
 
 	bool			Load(const char* levelname);
 	bool			Save(const char* levelname, bool isfinal = false);
@@ -162,9 +166,11 @@ public:
 
 	void			Ed_SwapRegions(CEditorLevelRegion& sourceRegion, CEditorLevelRegion& targetRegion);
 
+	void			Ed_SetRoadsLeftHanded(bool enable);
+	bool			Ed_IsRoadsLeftHanded() const;
+
 	// moves object to new region if possible
 	CEditorLevelRegion*	Ed_MakeObjectRegionValid(regionObject_t* obj, CLevelRegion* itsRegion);
-
 
 	void			WriteLevelRegions(IVirtualStream* stream, bool isFinal);
 	void			WriteObjectDefsLump(IVirtualStream* stream);
@@ -172,6 +178,9 @@ public:
 
 	void			SaveEditorBuildings( const char* levelName );
 	void			LoadEditorBuildings( const char* levelName );
+
+	void			SaveEditorRoads(const char* levelName);
+	void			LoadEditorRoads(const char* levelName);
 
 	void			PostLoadEditorBuildings( DkList<buildLayerColl_t*>& buildingTemplates );
 
@@ -185,6 +194,8 @@ protected:
 	void			PrefabRoads(CEditorLevel* destLevel, const IVector2D& prefabOffset, int regionIdx, const IVector2D& regionMinCell, const IVector2D& regionMaxCell);
 
 	void			PlacePrefabHeightfields(const IVector2D& globalTile, int height, int rotation, CEditorLevel* prefab, int regionIdx);
+
+	bool			m_leftHandedRoads;
 };
 
 //-----------------------------------------------------------------------------------

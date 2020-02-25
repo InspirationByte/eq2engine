@@ -1421,7 +1421,7 @@ levroadcell_t* CGameLevel::Road_GetGlobalTileAt(const IVector2D& point, CLevelRe
 	return NULL;
 }
 
-bool CGameLevel::Road_FindBestCellForTrafficLight( IVector2D& out, const Vector3D& origin, int trafficDir, int juncIterations )
+bool CGameLevel::Road_FindBestCellForTrafficLight( IVector2D& out, const Vector3D& origin, int trafficDir, int juncIterations, bool leftHanded)
 {
 	CScopedMutex m(m_mutex);
 
@@ -1432,19 +1432,20 @@ bool CGameLevel::Road_FindBestCellForTrafficLight( IVector2D& out, const Vector3
 	int dy[4] = ROADNEIGHBOUR_OFFS_Y(0);
 
 	IVector2D forwardDir = IVector2D(dx[trafficDir],dy[trafficDir]);
-	IVector2D rightDir = IVector2D(dx[laneRowDir],dy[laneRowDir]);
+
+	// Left-handed road system simply by changing 'rightDir' to negative...
+	IVector2D rightDir = IVector2D(dx[laneRowDir], dy[laneRowDir]) * (leftHanded ? -1 : 1);
 
 	levroadcell_t* roadTile = NULL;
 	
 	/*
 	first method
-		Find passing straight from left and back one step
+		Find passing straight from left (right) and back one step
 	*/
 
 	// do some more left steps
 	for (int r = 0; r < 2; r++)
 	{
-		// TODO: Left-handed road system simply by changing 'rightDir' to negative...
 		IVector2D roadTilePos = cellPos - rightDir * (r + 1) - forwardDir;
 		
 		roadTile = Road_GetGlobalTileAt(roadTilePos);
@@ -1488,7 +1489,7 @@ bool CGameLevel::Road_FindBestCellForTrafficLight( IVector2D& out, const Vector3
 		/*
 		third method
 			Find passing straight using only backwards iteration through junctions
-			If we have found straight in wrong direction (not perpendicular), just try searching to right
+			If we have found straight in wrong direction (not perpendicular), just try searching to right (left)
 		*/
 
 		IVector2D checkTilePos = cellPos;

@@ -35,15 +35,17 @@ CUI_RoadEditor::CUI_RoadEditor( wxWindow* parent) : wxPanel( parent, -1, wxDefau
 	m_rotationSel->SetSelection( 0 );
 	fgSizer5->Add( m_rotationSel, 0, wxALL|wxEXPAND, 5 );
 
-	m_parking = new wxCheckBox(this, wxID_ANY, wxT("Is parking"));
+	m_lefthanded = new wxCheckBox(this, wxID_ANY, wxT("Left-hand traffic"));
 
-	fgSizer5->Add( m_parking, 0, wxALL|wxEXPAND, 5 );
+	fgSizer5->Add(m_lefthanded, 0, wxALL|wxEXPAND, 5 );
 
 	this->SetSizer( fgSizer5 );
 	this->Layout();
 
 	m_typeSel->Connect(wxEVT_CHOICE, (wxObjectEventFunction)&CUI_RoadEditor::OnRotationOrTypeTextChanged, NULL, this);
 	m_rotationSel->Connect(wxEVT_CHOICE, (wxObjectEventFunction)&CUI_RoadEditor::OnRotationOrTypeTextChanged, NULL, this);
+	m_lefthanded->Connect(wxEVT_CHECKBOX, (wxObjectEventFunction)&CUI_RoadEditor::OnTrafficTypeChanged, NULL, this);
+
 
 	m_type = ROADTYPE_STRAIGHT;
 	m_rotation = 0;
@@ -88,8 +90,11 @@ void CUI_RoadEditor::OnRotationOrTypeTextChanged(wxCommandEvent& event)
 {
 	m_rotation = m_rotationSel->GetSelection();
 	m_type = m_typeSel->GetSelection()+1;
+}
 
-	m_parking->SetValue(false);
+void CUI_RoadEditor::OnTrafficTypeChanged(wxCommandEvent& event)
+{
+	g_pGameWorld->m_level.Ed_SetRoadsLeftHanded(event.IsChecked());
 }
 
 // IEditorTool stuff
@@ -121,8 +126,9 @@ void CUI_RoadEditor::MouseEventOnTile( wxMouseEvent& event, hfieldtile_t* tile, 
 
 			roadCell->flags = 0;
 
-			if( m_parking->GetValue() )
-				roadCell->flags |= ROAD_FLAG_PARKING;
+			// TODO: do something else...
+			//if( m_parking->GetValue() )
+			//	roadCell->flags |= ROAD_FLAG_PARKING;
 		}
 		else if(event.ButtonUp(wxMOUSE_BTN_MIDDLE))
 		{
@@ -360,6 +366,11 @@ void CUI_RoadEditor::OnRender()
 	}
 
 	CBaseTilebasedEditor::OnRender();
+}
+
+void CUI_RoadEditor::OnLevelLoad()
+{
+	m_lefthanded->SetValue(g_pGameWorld->m_level.Ed_IsRoadsLeftHanded());
 }
 
 void CUI_RoadEditor::InitTool()
