@@ -34,12 +34,12 @@ inline int _wrapIndex(int i, int l)
 class CEditGizmo
 {
 public:
-	CEditGizmo() : m_draggedAxes(0) {}
-
-	CEditGizmo(const Matrix3x3& rotate, const Vector3D& pos)
+	CEditGizmo()
 	{
-		SetProps(rotate, pos);
+		m_dragStart = vec3_zero;
+		m_dragDirCur = vec3_zero;
 		m_draggedAxes = 0;
+		m_dragMode = 0;
 	}
 
 	void SetProps(const Matrix3x3& rotate, const Vector3D& pos)
@@ -50,6 +50,8 @@ public:
 
 	void EndDrag()
 	{
+		m_dragStart = vec3_zero;
+		m_dragDirCur = vec3_zero;
 		m_draggedAxes = 0;
 		m_dragMode = 0;
 	}

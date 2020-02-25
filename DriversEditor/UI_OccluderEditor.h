@@ -58,7 +58,6 @@ protected:
 	void				ClearSelection();
 
 	int							m_mode;
-	Vector3D					m_occluderPoints[2];
 
 	DkList<selectedOccluder_t>	m_selection;
 
