@@ -598,6 +598,15 @@ void CGameWorld::Init()
 		m_skyModel = g_studioModelCache->GetModel(cacheIdx);
 	}
 
+	// load tree atlas
+	// FIXME: this should be loaded different way...
+	if (!g_treeAtlas)
+	{
+		g_treeAtlas = new CPFXAtlasGroup();
+		g_treeAtlas->Init("trees/billboard_trees", false);
+		g_pPFXRenderer->AddRenderGroup(g_treeAtlas);
+	}
+
 	if(!g_vehicleLights)
 	{
 		g_vehicleLights = new CPFXAtlasGroup();
@@ -683,15 +692,6 @@ void CGameWorld::Init()
 		// TODO: dynamically generated license plates
 		g_worldGlobals.licPlatesMat = materials->GetMaterial("models/vehicles/lplates");
 		g_worldGlobals.licPlatesMat->Ref_Grab();
-	}
-
-	// load tree atlas
-	// FIXME: this should be loaded different way...
-	if (!g_treeAtlas)
-	{
-		g_treeAtlas = new CPFXAtlasGroup();
-		g_treeAtlas->Init("trees/billboard_trees", false);
-		g_pPFXRenderer->AddRenderGroup(g_treeAtlas);
 	}
 
 	g_pPFXRenderer->PreloadMaterials();
