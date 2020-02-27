@@ -390,7 +390,10 @@ CModelListRenderPanel::CModelListRenderPanel(wxWindow* parent) : wxPanel( parent
 
 	m_contextMenu->Append(MODCONTEXT_PROPERTIES, wxT("Properties"), wxT("Show properties of this model"));
 	m_contextMenu->Append(MODCONTEXT_RENAME, wxT("Rename..."), wxT("Rename model"));
-	m_contextMenu->Append(MODCONTEXT_REMOVE, wxT("Remove"), wxT("Removes this model"));
+	m_contextMenu->Append(MODCONTEXT_REMOVE, wxT("Remove model"), wxT("Removes this model and all objects"));
+
+	m_cfgContextMenu = new wxMenu();
+	m_cfgContextMenu->Append(MODCONTEXT_REMOVE, wxT("Removes all objects"), wxT("Remove all objects with this def"));
 }
 
 void CModelListRenderPanel::OnMouseMotion(wxMouseEvent& event)
@@ -524,34 +527,14 @@ void CModelListRenderPanel::OnMouseClick(wxMouseEvent& event)
 
 	CLevObjectDef* cont = GetSelectedModelContainer();
 
-	if(event.RightUp() && cont && cont->m_info.type == LOBJ_TYPE_INTERNAL_STATIC)
+	if(event.RightUp() && cont)
 	{
-		PopupMenu(m_contextMenu);
+		if (cont->m_info.type == LOBJ_TYPE_INTERNAL_STATIC)
+			PopupMenu(m_contextMenu);
+		else if (cont->m_info.type == LOBJ_TYPE_OBJECT_CFG)
+			PopupMenu(m_cfgContextMenu);
+		
 	}
-
-	/*
-	for(int i = 0; i < g_pLevel->GetEditableCount(); i++)
-	{
-		CBaseEditableObject* pObject = (CBaseEditableObject*)g_pLevel->GetEditable(i);
-
-		bool changed = false;
-
-		for(int j = 0; j < pObject->GetSurfaceTextureCount(); j++)
-		{
-			if(!(pObject->GetSurfaceTexture(j)->nFlags & STFL_SELECTED))
-				continue;
-
-			 pObject->GetSurfaceTexture(j)->pMaterial = GetSelectedMaterial();
-			 changed = true;
-		}
-
-		if(changed)
-			pObject->UpdateSurfaceTextures();
-	}
-	
-
-	g_editormainframe->UpdateAllWindows();
-	*/
 }
 
 void CModelListRenderPanel::OnIdle(wxIdleEvent &event)
@@ -840,30 +823,10 @@ void CModelListRenderPanel::AddModel(CLevObjectDef* def)
 
 void CModelListRenderPanel::RemoveModel(CLevObjectDef* container)
 {
-	for(int x = 0; x < g_pGameWorld->m_level.m_wide; x++)
-	{
-		for(int y = 0; y < g_pGameWorld->m_level.m_tall; y++)
-		{
-			// int idx = y*g_pGameWorld->m_level.m_wide + x;
+	g_pGameWorld->m_level.Ed_RemoveObjectDef(container);
 
-			CLevelRegion* pReg = g_pGameWorld->m_level.GetRegionAt(IVector2D(x,y));
-
-			for(int i = 0; i < pReg->m_objects.numElem(); i++)
-			{
-				if(pReg->m_objects[i]->def == container)
-				{
-					delete pReg->m_objects[i];
-					pReg->m_objects.fastRemoveIndex(i);
-					i--;
-				}
-			}
-		}
-	}
-
-	g_pGameWorld->m_level.m_objectDefs.remove(container);
-
-	delete container;
-	RefreshLevelModels();
+	if (container->m_info.type == LOBJ_TYPE_INTERNAL_STATIC)
+		RefreshLevelModels();
 }
 
 //-----------------------------------------------------------------------------------------------------------------

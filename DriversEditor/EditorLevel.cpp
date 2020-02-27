@@ -860,6 +860,35 @@ struct zoneRegions_t
 	DkList<int> regionList;
 };
 
+void CEditorLevel::Ed_RemoveObjectDef(CLevObjectDef* def)
+{
+	// remove all objects first
+	for (int x = 0; x < m_wide; x++)
+	{
+		for (int y = 0; y < m_tall; y++)
+		{
+			CLevelRegion* pReg = GetRegionAt(IVector2D(x, y));
+
+			for (int i = 0; i < pReg->m_objects.numElem(); i++)
+			{
+				if (pReg->m_objects[i]->def == def)
+				{
+					delete pReg->m_objects[i];
+					pReg->m_objects.fastRemoveIndex(i);
+					i--;
+				}
+			}
+		}
+	}
+
+	// now remove object def
+	if (def->m_info.type == LOBJ_TYPE_INTERNAL_STATIC)
+	{
+		g_pGameWorld->m_level.m_objectDefs.remove(def);
+		delete def;
+	}
+}
+
 CEditorLevelRegion* CEditorLevel::Ed_MakeObjectRegionValid(regionObject_t* obj, CLevelRegion* itsRegion)
 {
 	CEditorLevelRegion* correctReg = (CEditorLevelRegion*)GetRegionAtPosition(obj->position);
