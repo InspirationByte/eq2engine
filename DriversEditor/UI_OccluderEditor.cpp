@@ -178,12 +178,15 @@ void CUI_OccluderEditor::ProcessMouseEvents( wxMouseEvent& event )
 		return;
 	}
 
-	if (m_selection.numElem() > 0)
+	if (!event.ControlDown())
 	{
-		Vector3D ray_start, ray_dir;
-		g_pMainFrame->GetMouseScreenVectors(event.GetX(), event.GetY(), ray_start, ray_dir);
+		if (m_selection.numElem() > 0)
+		{
+			Vector3D ray_start, ray_dir;
+			g_pMainFrame->GetMouseScreenVectors(event.GetX(), event.GetY(), ray_start, ray_dir);
 
-		MouseTranslateEvents(event, ray_start, ray_dir);
+			MouseTranslateEvents(event, ray_start, ray_dir);
+		}
 	}
 	else
 	{
