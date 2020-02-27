@@ -74,6 +74,7 @@ struct pedestrianEntry_t
 class CAIManager
 {
 	friend class				CGameSessionBase;
+	friend class				CCar;
 
 public:
 								CAIManager();
@@ -152,6 +153,9 @@ public:
 	void						UpdateNavigationVelocityMap(float fDt);
 
 protected:
+
+	void						TrackCar(CCar* car);
+	void						UntrackCar(CCar* car);
 
 	void						PaintVelocityMapFrom(CCar* car);
 	void						PaintNavigationLine(const IVector2D& start, const IVector2D& end);

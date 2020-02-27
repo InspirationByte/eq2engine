@@ -992,7 +992,6 @@ void CCar::Spawn()
 	}
 
 	// spawn cars with enabled headlights
-
 }
 
 void CCar::AlignToGround()
@@ -1027,6 +1026,9 @@ void CCar::OnRemove()
 	ReleaseHingedVehicle();
 
 #ifndef EDITOR
+	// remove car from AI manager
+	g_pAIManager->UntrackCar(this);
+
 	if(m_replayID != REPLAY_NOT_TRACKED)
 		g_replayTracker->PushSpawnOrRemoveEvent( REPLAY_EVENT_REMOVE, this, (m_state == GO_STATE_REMOVE_BY_SCRIPT) ? REPLAY_FLAG_SCRIPT_CALL : 0 );
 #endif // EDITOR
@@ -1048,7 +1050,6 @@ void CCar::OnRemove()
 		m_assignedRoadblock->activeCars.fastRemove(this);
 		m_assignedRoadblock = nullptr;
 	}
-
 }
 
 void CCar::PlaceOnRoadCell(CLevelRegion* reg, levroadcell_t* cell)

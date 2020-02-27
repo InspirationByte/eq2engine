@@ -384,7 +384,7 @@ CCar* CAIManager::SpawnTrafficCar(const IVector2D& globalCell)
 		((CAITrafficCar*)spawnedCar)->InitAI( false ); // TODO: chance of stoped, empty and active car on parking lane
 
 	g_pGameWorld->AddObject(spawnedCar);
-	m_trafficCars.append(spawnedCar);
+	TrackCar(spawnedCar);
 
 	m_spawnedTrafficCars++;
 
@@ -932,6 +932,16 @@ void CAIManager::RemoveAllCars()
 	m_spawnedTrafficCars = 0;
 }
 
+void CAIManager::TrackCar(CCar* car)
+{
+	m_trafficCars.append(car);
+}
+
+void CAIManager::UntrackCar(CCar* car)
+{
+	m_trafficCars.fastRemove(car);
+}
+
 civCarEntry_t* CAIManager::FindCivCarEntry( const char* name )
 {
 	for(int i = 0; i < m_civCarEntries.numElem(); i++)
@@ -1063,7 +1073,7 @@ bool CAIManager::SpawnRoadBlockFor( CCar* car, float directionAngle )
 		roadblock->activeCars.append( copBlockCar );
 
 		// also it has to be added to traffic cars
-		m_trafficCars.append( copBlockCar );
+		TrackCar( copBlockCar );
 		m_spawnedTrafficCars++;
 	}
 
