@@ -749,7 +749,7 @@ void CEditorLevel::WriteObjectDefsLump(IVirtualStream* stream)
 
 			if (def->m_info.type == LOBJ_TYPE_OBJECT_CFG &&
 				def->m_defType == "INVALID" &&
-				def->Ref_Count() == 0)
+				def->Ref_Count() <= 1) // including editor reference
 			{
 				Msg("Removing INVALUD and UNUSED object def '%s'\n", def->m_name.c_str());
 

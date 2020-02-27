@@ -533,7 +533,6 @@ void CModelListRenderPanel::OnMouseClick(wxMouseEvent& event)
 			PopupMenu(m_contextMenu);
 		else if (cont->m_info.type == LOBJ_TYPE_OBJECT_CFG)
 			PopupMenu(m_cfgContextMenu);
-		
 	}
 }
 
