@@ -219,14 +219,11 @@ void CGameObject::L_Activate()
 	g_pGameWorld->AddObject( this );
 }
 
-void  CGameObject::Remove()
-{
-	m_state = GO_STATE_REMOVE;
-}
-
 void  CGameObject::L_Remove()
 {
-	m_state = GO_STATE_REMOVE_BY_SCRIPT;
+	if (m_replayID == REPLAY_NOT_TRACKED || 
+		m_replayID != REPLAY_NOT_TRACKED && g_replayTracker->m_state != REPL_PLAYING)
+		m_state = GO_STATE_REMOVE_BY_SCRIPT;
 }
 
 void CGameObject::Spawn()

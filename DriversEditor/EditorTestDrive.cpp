@@ -54,7 +54,7 @@ bool CEditorTestGame::BeginGame( const char* carName, const Vector3D& startPos )
 	if(wasGameRunning)
 	{
 		if(m_car)
-			m_car->Remove();
+			m_car->L_Remove();
 
 		m_car = NULL;
 	}
@@ -99,7 +99,7 @@ void CEditorTestGame::EndGame()
 	g_pGameWorld->m_level.Ed_DestroyPhysics();
 
 	if(m_car)
-		m_car->Remove();
+		m_car->L_Remove();
 
 	m_car = nullptr;
 

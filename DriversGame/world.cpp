@@ -913,7 +913,7 @@ int CGameWorld::AddObject(CGameObject* pObject)
 	if (_objList.findIndex(pObject) == -1)
 	{
 		pObject->m_objId = objectId = m_objectIndexCounter++;
-		_objList.append(pObject);
+		_objList.addUnique(pObject);
 
 		if (!postPronedSpawn)
 			OnObjectSpawnedEvent(pObject);

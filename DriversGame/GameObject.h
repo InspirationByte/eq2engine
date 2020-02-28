@@ -210,7 +210,6 @@ public:
 	void						Ref_DeleteObject();
 
 	virtual void				Precache();
-	void						Remove();
 
 	virtual void				Spawn();
 	virtual void				OnRemove();
@@ -263,7 +262,7 @@ public:
 	//------------------------
 	// fast lua helpers
 
-	// Adds object like g_gameWorld->AddObject, but made for script registrator. DON'T USE IN C++
+	// Adds object like g_gameWorld->AddObject, but made for script registrator.
 	void						L_Remove();
 	void						L_Activate();
 	virtual void				L_SetContents(int contents)		{}
