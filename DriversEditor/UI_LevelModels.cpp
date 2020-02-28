@@ -180,7 +180,7 @@ public:
 		wxBoxSizer* bSizer14;
 		bSizer14 = new wxBoxSizer( wxVERTICAL );
 	
-		m_replaceBtn = new wxButton( this, BTN_REPLACE, wxT("Replace"), wxDefaultPosition, wxDefaultSize, 0 );
+		m_replaceBtn = new wxButton( this, BTN_REPLACE, wxT("Replace in Selection"), wxDefaultPosition, wxDefaultSize, 0 );
 		bSizer14->Add( m_replaceBtn, 0, wxALL|wxALIGN_BOTTOM, 5 );
 	
 		m_replaceAllBtn = new wxButton( this, BTN_REPLACE_ALL, wxT("Replace ALL"), wxDefaultPosition, wxDefaultSize, 0 );
@@ -390,7 +390,10 @@ CModelListRenderPanel::CModelListRenderPanel(wxWindow* parent) : wxPanel( parent
 
 	m_contextMenu->Append(MODCONTEXT_PROPERTIES, wxT("Properties"), wxT("Show properties of this model"));
 	m_contextMenu->Append(MODCONTEXT_RENAME, wxT("Rename..."), wxT("Rename model"));
-	m_contextMenu->Append(MODCONTEXT_REMOVE, wxT("Remove"), wxT("Removes this model"));
+	m_contextMenu->Append(MODCONTEXT_REMOVE, wxT("Remove model"), wxT("Removes this model and all objects"));
+
+	m_cfgContextMenu = new wxMenu();
+	m_cfgContextMenu->Append(MODCONTEXT_REMOVE, wxT("Removes all objects"), wxT("Remove all objects with this def"));
 }
 
 void CModelListRenderPanel::OnMouseMotion(wxMouseEvent& event)
@@ -524,34 +527,13 @@ void CModelListRenderPanel::OnMouseClick(wxMouseEvent& event)
 
 	CLevObjectDef* cont = GetSelectedModelContainer();
 
-	if(event.RightUp() && cont && cont->m_info.type == LOBJ_TYPE_INTERNAL_STATIC)
+	if(event.RightUp() && cont)
 	{
-		PopupMenu(m_contextMenu);
+		if (cont->m_info.type == LOBJ_TYPE_INTERNAL_STATIC)
+			PopupMenu(m_contextMenu);
+		else if (cont->m_info.type == LOBJ_TYPE_OBJECT_CFG)
+			PopupMenu(m_cfgContextMenu);
 	}
-
-	/*
-	for(int i = 0; i < g_pLevel->GetEditableCount(); i++)
-	{
-		CBaseEditableObject* pObject = (CBaseEditableObject*)g_pLevel->GetEditable(i);
-
-		bool changed = false;
-
-		for(int j = 0; j < pObject->GetSurfaceTextureCount(); j++)
-		{
-			if(!(pObject->GetSurfaceTexture(j)->nFlags & STFL_SELECTED))
-				continue;
-
-			 pObject->GetSurfaceTexture(j)->pMaterial = GetSelectedMaterial();
-			 changed = true;
-		}
-
-		if(changed)
-			pObject->UpdateSurfaceTextures();
-	}
-	
-
-	g_editormainframe->UpdateAllWindows();
-	*/
 }
 
 void CModelListRenderPanel::OnIdle(wxIdleEvent &event)
@@ -585,6 +567,10 @@ void CModelListRenderPanel::ItemPostRender( int id, CLevObjectDef*& item, const 
 	Vector2D lt = name_rect.GetLeftTop();
 	Vector2D rb = name_rect.GetRightBottom();
 
+	eqFontStyleParam_t fontParam;
+	fontParam.styleFlag = TEXT_STYLE_SHADOW | TEXT_STYLE_FROM_CAP;
+	fontParam.textColor = ColorRGBA(1, 1, 1, 1);
+
 	Vertex2D_t name_line[] = {MAKETEXQUAD(lt.x, lt.y, rb.x, rb.y, 0)};
 
 	ColorRGBA nameBackCol = item->m_info.type == LOBJ_TYPE_INTERNAL_STATIC ? ColorRGBA(0.25,0.25,1,1) : ColorRGBA(0.5,0.5,0.25,1);
@@ -594,12 +580,22 @@ void CModelListRenderPanel::ItemPostRender( int id, CLevObjectDef*& item, const 
 	else if(m_mouseOver == id)
 		nameBackCol = ColorRGBA(0.25,0.1,0.25,1);
 
+	if (!item->m_defType.Compare("INVALID"))
+		nameBackCol = fontParam.textColor = ColorRGBA(1, 0, 0, 1);
+
 	// draw name panel
 	materials->DrawPrimitives2DFFP(PRIM_TRIANGLE_STRIP, name_line, 4, NULL, nameBackCol);
 
-	eqFontStyleParam_t fontParam;
-	fontParam.styleFlag = TEXT_STYLE_SHADOW | TEXT_STYLE_FROM_CAP;
-	fontParam.textColor = ColorRGBA(1,1,1,1);
+	if (item->m_info.type == LOBJ_TYPE_INTERNAL_STATIC)
+	{
+		// render text
+		m_debugFont->RenderText("model", rect.vleftTop, fontParam);
+	}
+	else if (item->m_info.type == LOBJ_TYPE_OBJECT_CFG)
+	{
+		// render text
+		m_debugFont->RenderText(item->m_defType.c_str(), rect.vleftTop, fontParam);
+	}
 
 	// render text
 	m_debugFont->RenderText(item->m_name.c_str(), name_rect.vleftTop, fontParam);
@@ -802,18 +798,6 @@ void CModelListRenderPanel::RefreshLevelModels()
 	{
 		CLevObjectDef* def = g_pGameWorld->m_level.m_objectDefs[i];
 
-		if(def->m_info.type == LOBJ_TYPE_OBJECT_CFG &&
-			def->m_defType == "INVALID")
-		{
-			Msg("Removing invalid object def '%s'\n", def->m_name.c_str());
-
-			delete def;
-			g_pGameWorld->m_level.m_objectDefs.fastRemoveIndex(i);
-			g_pGameWorld->m_level.m_objectDefsCfg.fastRemove(def);
-			i--;
-			continue;
-		}
-
 		if(def->m_placeable)
 			m_filteredList.addUnique(def);
 	}
@@ -838,30 +822,10 @@ void CModelListRenderPanel::AddModel(CLevObjectDef* def)
 
 void CModelListRenderPanel::RemoveModel(CLevObjectDef* container)
 {
-	for(int x = 0; x < g_pGameWorld->m_level.m_wide; x++)
-	{
-		for(int y = 0; y < g_pGameWorld->m_level.m_tall; y++)
-		{
-			// int idx = y*g_pGameWorld->m_level.m_wide + x;
+	g_pGameWorld->m_level.Ed_RemoveObjectDef(container);
 
-			CLevelRegion* pReg = g_pGameWorld->m_level.GetRegionAt(IVector2D(x,y));
-
-			for(int i = 0; i < pReg->m_objects.numElem(); i++)
-			{
-				if(pReg->m_objects[i]->def == container)
-				{
-					delete pReg->m_objects[i];
-					pReg->m_objects.fastRemoveIndex(i);
-					i--;
-				}
-			}
-		}
-	}
-
-	g_pGameWorld->m_level.m_objectDefs.remove(container);
-
-	delete container;
-	RefreshLevelModels();
+	if (container->m_info.type == LOBJ_TYPE_INTERNAL_STATIC)
+		RefreshLevelModels();
 }
 
 //-----------------------------------------------------------------------------------------------------------------

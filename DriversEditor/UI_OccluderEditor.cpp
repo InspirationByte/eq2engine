@@ -174,8 +174,6 @@ void CUI_OccluderEditor::ProcessMouseEvents( wxMouseEvent& event )
 		{
 			m_newOccl.height = fabs(point.y-nearestCheckPos.y);
 		}
-
-		return;
 	}
 
 	if (!event.ControlDown())
@@ -188,10 +186,8 @@ void CUI_OccluderEditor::ProcessMouseEvents( wxMouseEvent& event )
 			MouseTranslateEvents(event, ray_start, ray_dir);
 		}
 	}
-	else
-	{
-		CBaseTilebasedEditor::ProcessMouseEvents(event);
-	}
+
+	CBaseTilebasedEditor::ProcessMouseEvents(event);
 }
 
 void CUI_OccluderEditor::OnKey(wxKeyEvent& event, bool bDown)

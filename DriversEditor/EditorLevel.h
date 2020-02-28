@@ -169,6 +169,8 @@ public:
 	void			Ed_SetRoadsLeftHanded(bool enable);
 	bool			Ed_IsRoadsLeftHanded() const;
 
+	void			Ed_RemoveObjectDef(CLevObjectDef* def);
+
 	// moves object to new region if possible
 	CEditorLevelRegion*	Ed_MakeObjectRegionValid(regionObject_t* obj, CLevelRegion* itsRegion);
 

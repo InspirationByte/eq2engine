@@ -737,43 +737,55 @@ void CEditorLevel::WriteObjectDefsLump(IVirtualStream* stream)
 	if(m_objectDefs.numElem() == 0)
 		return;
 
+	// write model names
+	CMemoryStream defNames;
+	defNames.Open(NULL, VS_OPEN_WRITE, 2048);
+
+	{
+		char nullSymbol = '\0';
+		for (int i = 0; i < m_objectDefs.numElem(); i++)
+		{
+			CLevObjectDef* def = m_objectDefs[i];
+
+			if (def->m_info.type == LOBJ_TYPE_OBJECT_CFG &&
+				def->m_defType == "INVALID" &&
+				def->Ref_Count() <= 1) // including editor reference
+			{
+				Msg("Removing INVALUD and UNUSED object def '%s'\n", def->m_name.c_str());
+
+				m_objectDefs.fastRemoveIndex(i);
+				i--;
+				continue;
+			}
+
+			defNames.Print(def->m_name.c_str());
+			defNames.Write(&nullSymbol, 1, 1);
+		}
+		defNames.Write(&nullSymbol, 1, 1);
+	}
+
+	int defNamesLength = defNames.Tell();
+
 	CMemoryStream objectDefsLump;
 	objectDefsLump.Open(NULL, VS_OPEN_WRITE, 2048);
 
 	int numModels = m_objectDefs.numElem();
 	objectDefsLump.Write(&numModels, 1, sizeof(int));
-
-	// write model names
-	CMemoryStream defNames;
-	defNames.Open(NULL, VS_OPEN_WRITE, 2048);
-
-	char nullSymbol = '\0';
-
-	for(int i = 0; i < m_objectDefs.numElem(); i++)
-	{
-		defNames.Print(m_objectDefs[i]->m_name.c_str());
-		defNames.Write(&nullSymbol, 1, 1);
-	}
-
-	defNames.Write(&nullSymbol, 1, 1);
-
-	int defNamesLength = defNames.Tell();
-
 	objectDefsLump.Write(&defNamesLength, 1, sizeof(int));
 	objectDefsLump.Write(defNames.GetBasePointer(), 1, defNamesLength);
 
 	// write model data
 	for(int i = 0; i < m_objectDefs.numElem(); i++)
 	{
+		CLevObjectDef* def = m_objectDefs[i];
+
 		CMemoryStream modeldata;
 		modeldata.Open(NULL, VS_OPEN_WRITE, 2048);
 
-		levObjectDefInfo_t& defInfo = m_objectDefs[i]->m_info;
+		levObjectDefInfo_t& defInfo = def->m_info;
 
 		if(defInfo.type == LOBJ_TYPE_INTERNAL_STATIC)
-		{
-			m_objectDefs[i]->m_model->Save( &modeldata );
-		}
+			def->m_model->Save( &modeldata );
 
 		defInfo.size = modeldata.Tell();
 
@@ -847,6 +859,35 @@ struct zoneRegions_t
 	EqString zoneName;
 	DkList<int> regionList;
 };
+
+void CEditorLevel::Ed_RemoveObjectDef(CLevObjectDef* def)
+{
+	// remove all objects first
+	for (int x = 0; x < m_wide; x++)
+	{
+		for (int y = 0; y < m_tall; y++)
+		{
+			CLevelRegion* pReg = GetRegionAt(IVector2D(x, y));
+
+			for (int i = 0; i < pReg->m_objects.numElem(); i++)
+			{
+				if (pReg->m_objects[i]->def == def)
+				{
+					delete pReg->m_objects[i];
+					pReg->m_objects.fastRemoveIndex(i);
+					i--;
+				}
+			}
+		}
+	}
+
+	// now remove object def
+	if (def->m_info.type == LOBJ_TYPE_INTERNAL_STATIC)
+	{
+		g_pGameWorld->m_level.m_objectDefs.remove(def);
+		delete def;
+	}
+}
 
 CEditorLevelRegion* CEditorLevel::Ed_MakeObjectRegionValid(regionObject_t* obj, CLevelRegion* itsRegion)
 {

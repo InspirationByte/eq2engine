@@ -540,7 +540,7 @@ void CGameLevel::ReadObjectDefsLump(IVirtualStream* stream)
 		if (defInfo.type == LOBJ_TYPE_OBJECT_CFG)
 		{
 			// validate object def
-			CLevObjectDef* def = FindObjectDefByName(objectDefNamesPtr);
+			def = FindObjectDefByName(objectDefNamesPtr);
 
 			if (!def)
 			{
@@ -559,7 +559,7 @@ void CGameLevel::ReadObjectDefsLump(IVirtualStream* stream)
 		else if (defInfo.type == LOBJ_TYPE_INTERNAL_STATIC)
 		{
 			// read object def info
-			CLevObjectDef* def = new CLevObjectDef();
+			def = new CLevObjectDef();
 			def->m_name = objectDefNamesPtr;
 			def->m_info = defInfo;
 
@@ -582,16 +582,22 @@ void CGameLevel::ReadObjectDefsLump(IVirtualStream* stream)
 		}
 #endif // EDITOR
 
-
-
 		objectDefNamesPtr += strlen(objectDefNamesPtr)+1;
 	}
 
 	// add object defs that are new
 	for (int i = 0; i < m_objectDefsCfg.numElem(); i++)
 	{
-		if (m_objectDefs.findIndex(m_objectDefsCfg[i]) == -1)
-			m_objectDefs.append(m_objectDefsCfg[i]);
+		CLevObjectDef* def = m_objectDefsCfg[i];
+
+		if (m_objectDefs.findIndex(def) == -1)
+		{
+#ifdef EDITOR
+			def->Ref_Grab();
+			def->m_id = m_objectDefIdCounter++;
+#endif // EDITOR
+			m_objectDefs.append(def);
+		}
 	}
 
 	delete [] objectDefNames;

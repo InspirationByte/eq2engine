@@ -77,6 +77,7 @@ protected:
 	void					ItemPostRender( int id, CLevObjectDef*& item, const IRectangle& rect );
 
 	wxMenu*					m_contextMenu;
+	wxMenu*					m_cfgContextMenu;
 
 	wxString				m_filter;
 	wxString				m_filterTags;
