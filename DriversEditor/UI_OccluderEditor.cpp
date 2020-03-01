@@ -16,6 +16,7 @@ CUI_OccluderEditor::CUI_OccluderEditor( wxWindow* parent) : wxPanel( parent, -1,
 {
 	m_mode = ED_OCCL_READY;
 	m_currentGizmo = -1;
+	m_placeRegion = nullptr;
 }
 
 CUI_OccluderEditor::~CUI_OccluderEditor()
@@ -26,8 +27,6 @@ CUI_OccluderEditor::~CUI_OccluderEditor()
 
 void CUI_OccluderEditor::MouseEventOnTile( wxMouseEvent& event, hfieldtile_t* tile, int tx, int ty, const Vector3D& ppos  )
 {
-	//int tileIdx = m_selectedRegion->GetHField()->m_sizew*ty + tx;
-
 	if (m_mode == ED_OCCL_POINT2)
 		m_newOccl.end = ppos;
 
@@ -41,6 +40,7 @@ void CUI_OccluderEditor::MouseEventOnTile( wxMouseEvent& event, hfieldtile_t* ti
 			if (m_mode == ED_OCCL_POINT1)
 			{
 				m_newOccl.start = ppos;
+				m_placeRegion = m_selectedRegion;
 			}
 			else if (m_mode == ED_OCCL_POINT2)
 			{
@@ -152,7 +152,7 @@ void CUI_OccluderEditor::ProcessMouseEvents( wxMouseEvent& event )
 			if(m_mode == ED_OCCL_DONE)
 			{
 				// add to current region
-				m_selectedRegion->m_occluders.append( m_newOccl );
+				m_placeRegion->m_occluders.append( m_newOccl );
 
 				g_pMainFrame->NotifyUpdate();
 

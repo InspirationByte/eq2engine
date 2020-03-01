@@ -22,6 +22,8 @@ ConVar in_joy_repeatDelayInit("in_joy_repeatDelayInit", "1", "Joystick input rep
 ConVar in_joy_repeatDelay("in_joy_repeatDelay", "0.2", "Joystick input repeat delay", CV_ARCHIVE);
 ConVar in_joy_rumble("in_joy_rumble", "1", "Rumble", CV_ARCHIVE);
 
+ConVar in_joy_id("in_joy_id", "-1", "Joystick to use. -1 is for all", CV_ARCHIVE);
+
 #define CONTROLLER_DB_FILENAME "cfg/controllers.db"
 
 DECLARE_CMD(in_joy_addMapping, "Adds joystick mapping in SDL2 format", 0)
@@ -159,8 +161,7 @@ void CEqGameControllerSDL::Open(int device)
 	{
 		m_haptic = SDL_HapticOpenFromJoystick(j);
 
-		MsgInfo("Haptic effects: %d\n", SDL_HapticNumEffects(m_haptic));
-		MsgInfo("Haptic query: %x\n", SDL_HapticQuery(m_haptic));
+		MsgInfo("Haptic - effects: %d, query: %d\n", SDL_HapticNumEffects(m_haptic), SDL_HapticQuery(m_haptic));
 
 		if (SDL_HapticRumbleSupported(m_haptic)) 
 		{
@@ -289,10 +290,13 @@ void CEqGameControllerSDL::ProcessInputEvent(SDL_Event* event)
 
 			if (cIndex >= 0)
 			{
-				CEqGameControllerSDL& jc = s_controllers[cIndex];
+				if (in_joy_id.GetInt() == -1 || in_joy_id.GetInt() == cIndex)
+				{
+					CEqGameControllerSDL& jc = s_controllers[cIndex];
 
-				// handle axis motion
-				g_pHost->TrapJoyAxis_Event((short)axis, event->caxis.value);
+					// handle axis motion
+					g_pHost->TrapJoyAxis_Event((short)axis, event->caxis.value);
+				}
 			}
 
 			break;
@@ -314,18 +318,19 @@ void CEqGameControllerSDL::ProcessInputEvent(SDL_Event* event)
 
 			if (cIndex >= 0)
 			{
-				CEqGameControllerSDL& jc = s_controllers[cIndex];
+				if (in_joy_id.GetInt() == -1 || in_joy_id.GetInt() == cIndex)
+				{
+					CEqGameControllerSDL& jc = s_controllers[cIndex];
 
-				if (down)
-					jc.m_pressed[button] = in_joy_repeatDelayInit.GetFloat();
-				else
-					jc.m_pressed.erase(button);
+					if (down)
+						jc.m_pressed[button] = in_joy_repeatDelayInit.GetFloat();
+					else
+						jc.m_pressed.erase(button);
 
-				// handle button up/down
-				g_pHost->TrapJoyButton_Event((short)button, down);
+					// handle button up/down
+					g_pHost->TrapJoyButton_Event((short)button, down);
+				}
 			}
-
-			
 			
 			break;
 		}

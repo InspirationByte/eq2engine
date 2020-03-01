@@ -57,14 +57,15 @@ protected:
 	void				DeleteSelection();
 	void				ClearSelection();
 
-	int							m_mode;
-
 	DkList<selectedOccluder_t>	m_selection;
 
+	CEditGizmo					m_editPoints[3];
 	levOccluderLine_t			m_newOccl;
 
-	CEditGizmo				m_editPoints[3];
-	int						m_currentGizmo;
+	int							m_currentGizmo;
+	int							m_mode;
+
+	CEditorLevelRegion*			m_placeRegion;
 };
 
 #endif // UI_OCCLUDEREDITOR_H

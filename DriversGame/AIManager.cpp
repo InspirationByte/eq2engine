@@ -107,7 +107,7 @@ void CAIManager::Init(const DkList<pedestrianConfig_t*>& pedConfigs)
 	m_leadPosition = vec3_zero;
 
 	for (int i = 0; i < PURSUER_TYPE_COUNT; i++)
-		m_copCarName[i] = "";
+		m_patrolCarNames[i] = "";
 
 	m_copLoudhailerTime = RandomFloat(AI_COP_TAUNT_DELAY, AI_COP_TAUNT_DELAY + 5.0f);
 	m_copSpeechTime = RandomFloat(AI_COP_SPEECH_DELAY, AI_COP_SPEECH_DELAY + 5.0f);
@@ -184,7 +184,7 @@ void CAIManager::InitZoneEntries(const DkList<pedestrianConfig_t*>& pedConfigs)
 					civCarEntry_t entry;
 					entry.config = carConfig;
 
-					bool isRegisteredCop = !m_copCarName[PURSUER_TYPE_COP].CompareCaseIns(entry.config->carName);
+					bool isRegisteredCop = !m_patrolCarNames[PURSUER_TYPE_COP].CompareCaseIns(entry.config->carName);
 					if (isRegisteredCop)
 						entry.nextSpawn = m_copRespawnInterval;
 
@@ -214,7 +214,7 @@ void CAIManager::InitZoneEntries(const DkList<pedestrianConfig_t*>& pedConfigs)
 
 	// init the cop car
 	kvkeybase_t* copConfigName = kvs.GetRootSection()->FindKeyBase("copcar");
-	SetCopCarConfig(KV_GetValueString(copConfigName, 0, defaultCopCar.c_str()), PURSUER_TYPE_COP);
+	SetCopCar(KV_GetValueString(copConfigName, 0, defaultCopCar.c_str()), PURSUER_TYPE_COP);
 
 	// init peds
 	for (int i = 0; i < pedConfigs.numElem(); i++)
@@ -306,8 +306,8 @@ CCar* CAIManager::SpawnTrafficCar(const IVector2D& globalCell)
 
 	if (isParkingLot)
 	{
-		bool isRegisteredCop = !m_copCarName[PURSUER_TYPE_COP].CompareCaseIns(carConf->carName);
-		bool isRegisteredGang = !m_copCarName[PURSUER_TYPE_GANG].CompareCaseIns(carConf->carName);
+		bool isRegisteredCop = !m_patrolCarNames[PURSUER_TYPE_COP].CompareCaseIns(carConf->carName);
+		bool isRegisteredGang = !m_patrolCarNames[PURSUER_TYPE_GANG].CompareCaseIns(carConf->carName);
 
 		if (--carEntry->nextSpawn > 0)
 			return nullptr;
@@ -339,8 +339,8 @@ CCar* CAIManager::SpawnTrafficCar(const IVector2D& globalCell)
 		else if (--carEntry->nextSpawn > 0)
 			return nullptr;
 
-		bool isRegisteredCop = !m_copCarName[PURSUER_TYPE_COP].CompareCaseIns(carConf->carName);
-		bool isRegisteredGang = !m_copCarName[PURSUER_TYPE_GANG].CompareCaseIns(carConf->carName);
+		bool isRegisteredCop = !m_patrolCarNames[PURSUER_TYPE_COP].CompareCaseIns(carConf->carName);
+		bool isRegisteredGang = !m_patrolCarNames[PURSUER_TYPE_GANG].CompareCaseIns(carConf->carName);
 
 		carEntry->nextSpawn = (isRegisteredCop ? m_copRespawnInterval : carEntry->GetZoneSpawnInterval("default")) + m_trafficSpawnInterval;
 
@@ -1013,7 +1013,7 @@ bool CAIManager::SpawnRoadBlockFor( CCar* car, float directionAngle )
 	placementVec -= perpendicular*curLane;
 	int numLanes = g_pGameWorld->m_level.Road_GetWidthInLanesAtPoint(placementVec, 32, 1);
 
-	vehicleConfig_t* conf = g_pGameSession->GetVehicleConfig(m_copCarName[PURSUER_TYPE_COP].c_str());
+	vehicleConfig_t* conf = g_pGameSession->GetVehicleConfig(m_patrolCarNames[PURSUER_TYPE_COP].c_str());
 
 	if (!conf)
 		return 0;
@@ -1216,14 +1216,14 @@ float CAIManager::GetCopMaxSpeed() const
 }
 
 // sets cop car configuration
-void CAIManager::SetCopCarConfig(const char* car_name, int type )
+void CAIManager::SetCopCar(const char* car_name, int type )
 {
-	m_copCarName[type] = car_name;
+	m_patrolCarNames[type] = car_name;
 	m_copsEntryIdx = 0;
 
 	for (int i = 0; i < m_civCarEntries.numElem(); i++)
 	{
-		bool isRegisteredCop = !m_copCarName[PURSUER_TYPE_COP].CompareCaseIns(m_civCarEntries[i].config->carName);
+		bool isRegisteredCop = !m_patrolCarNames[PURSUER_TYPE_COP].CompareCaseIns(m_civCarEntries[i].config->carName);
 
 		if (isRegisteredCop)
 		{
@@ -1295,7 +1295,7 @@ OOLUA_EXPORT_FUNCTIONS(
 	SetTrafficSpawnInterval,
 	SetTrafficCarsEnabled,
 	SetCopsEnabled,
-	SetCopCarConfig,
+	SetCopCar,
 	SetCopMaxDamage,
 	SetCopAccelerationModifier,
 	SetCopMaxSpeed,

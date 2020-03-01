@@ -99,14 +99,11 @@ void CShadowRenderer::Init()
 	m_shadowTexture = g_pShaderAPI->CreateNamedRenderTarget("_dshadow", m_shadowTextureSize.x, m_shadowTextureSize.y, shadowRendertargetFormat);
 	m_shadowTexture->Ref_Grab();
 
-	// shadow render target for rendering and blitting
-	//m_shadowRt = g_pShaderAPI->CreateNamedRenderTarget("_rt_shadow", 256, 256, FORMAT_R8);
-	//m_shadowRt->Ref_Grab();
-
 	kvkeybase_t shadowBuildParams;
 	shadowBuildParams.SetKey("nofog", true);
 	shadowBuildParams.SetKey("zwrite", false);
 	shadowBuildParams.SetKey("ztest", false);
+	//shadowBuildParams.SetKey("translucent", true);
 
 	{
 		shadowBuildParams.SetName("ShadowBuildVehicle");
@@ -583,7 +580,6 @@ void CShadowRenderer::RenderShadow(CGameObject* object, ubyte bodyGroups, int mo
 			{
 				materials->BindMaterial(m_matVehicle, 0);
 
-
 				CCar* car = (CCar*)object;
 
 				IEqModel* cleanModel = car->GetModel();
@@ -616,7 +612,7 @@ void CShadowRenderer::RenderShadow(CGameObject* object, ubyte bodyGroups, int mo
 
 				materials->SetSkinningEnabled(false);
 #else
-				MsgWarning("RenderShadow: NOT SUPPORTED for SKINNED\n");
+				// NOT SUPPORTED for SKINNED
 #endif // PLAT_ANDROID
 			}
 			else

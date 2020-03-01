@@ -551,8 +551,8 @@ EInfractionType CAIPursuerCar::CheckTrafficInfraction(CCar* car, bool checkFelon
 			float speedDiff = hitCar->GetSpeed() - carSpeed;
 
 			// There is no infraction if bodyB has inflicted this damage to us
-			if(carSpeed < hitCar->GetSpeed())
-				return INFRACTION_NONE;
+			//if(carSpeed < hitCar->GetSpeed())
+			//	return INFRACTION_NONE;
 
 			if (hitCar->ObjType() == GO_CAR_AI)
 			{

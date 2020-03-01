@@ -140,7 +140,7 @@ public:
 
 	void						CopLoudhailerTold();
 
-	void						SetCopCarConfig(const char* car_name, int type);	// sets cop car configuration
+	void						SetCopCar(const char* car_name, int type);	// sets cop car configuration
 
 	bool						SpawnRoadBlockFor( CCar* car, float directionAngle);
 	bool						IsRoadBlockSpawn() const;
@@ -175,15 +175,13 @@ protected:
 	Vector3D					m_leadRemovePosition;
 	Vector3D					m_leadVelocity;
 
-	EqString					m_copCarName[PURSUER_TYPE_COUNT];
+	EqString					m_patrolCarNames[PURSUER_TYPE_COUNT];
 	bool						m_enableCops;
 
 	bool						m_enableTrafficCars;
 	int							m_numMaxTrafficCars;
 
 	int							m_trafficSpawnInterval;
-
-	//int							m_carEntryIdx;
 	int							m_copsEntryIdx;
 
 	float						m_copMaxDamage;
@@ -237,7 +235,7 @@ OOLUA_PROXY(CAIManager)
 	OOLUA_MFUNC(SetCopsEnabled)
 	OOLUA_MFUNC_CONST(IsCopsEnabled)
 
-	OOLUA_MFUNC(SetCopCarConfig)
+	OOLUA_MFUNC(SetCopCar)
 
 	OOLUA_MFUNC(SetCopMaxDamage)
 	OOLUA_MFUNC_CONST(GetCopMaxDamage)

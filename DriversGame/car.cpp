@@ -4534,13 +4534,6 @@ CGameObject* CCar::GetChildShadowCaster(int idx) const
 
 int CCar::GetChildCasterCount() const
 {
-#ifndef EDITOR
-	// don't render car
-	if(	g_pCameraAnimator->GetRealMode() == CAM_MODE_INCAR &&
-		g_pGameSession->GetViewObject() == this)
-		return 0;
-#endif // EDITOR
-
 	return m_conf->physics.numWheels;
 }
 

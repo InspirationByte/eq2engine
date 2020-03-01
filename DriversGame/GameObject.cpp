@@ -221,8 +221,10 @@ void CGameObject::L_Activate()
 
 void  CGameObject::L_Remove()
 {
+#ifndef EDITOR
 	if (m_replayID == REPLAY_NOT_TRACKED || 
 		m_replayID != REPLAY_NOT_TRACKED && g_replayTracker->m_state != REPL_PLAYING)
+#endif // EDITOR
 		m_state = GO_STATE_REMOVE_BY_SCRIPT;
 }
 
