@@ -2647,8 +2647,6 @@ void CCar::UpdateLightsState()
 {
 	if(g_debug_car_lights.GetBool())
 		SetLight(0xFFFFFFFF, true);
-
-	SetLight(CAR_LIGHT_SERVICELIGHTS, m_sirenEnabled);
 }
 
 ConVar r_carLights("r_carLights", "1", "Car light rendering type", CV_ARCHIVE);
@@ -2683,6 +2681,8 @@ void CCar::Simulate( float fDt )
 	{
 		m_oldSirenState = m_sirenEnabled;
 		m_sirenEnabled = !m_sirenEnabled;
+
+		SetLight(CAR_LIGHT_SERVICELIGHTS, m_sirenEnabled);
 	}
 
 	if ((controlButtons & IN_SIGNAL_LEFT) && !(m_oldControlButtons & IN_SIGNAL_LEFT))
@@ -3790,8 +3790,11 @@ void CCar::UpdateSounds( float fDt )
 			m_sounds[CAR_SOUND_SIREN]->SetVolume(clamp(pow(pitchVal, 0.5f), 0.0f, 1.0f));
 			deathTime -= fDt;
 
-			if(deathTime <= 0.0f)
+			if (deathTime <= 0.0f)
+			{
 				m_sirenEnabled = false;
+				SetLight(CAR_LIGHT_SERVICELIGHTS, false);
+			}
 
 			m_sirenDeathTime = deathTime;
 		}

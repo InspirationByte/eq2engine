@@ -867,7 +867,10 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 		if (m_type == PURSUER_TYPE_COP)
 		{
 			if (m_conf->visual.sirenType != SERVICE_LIGHTS_NONE)
+			{
+				SetLight(CAR_LIGHT_SERVICELIGHTS, true);
 				m_sirenEnabled = true;
+			}
 		}
 
 		// reset the emergency lights

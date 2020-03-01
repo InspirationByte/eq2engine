@@ -1053,14 +1053,13 @@ bool CAIManager::SpawnRoadBlockFor( CCar* car, float directionAngle )
 
 		CAIPursuerCar* copBlockCar = new CAIPursuerCar(conf, PURSUER_TYPE_COP);
 
-		copBlockCar->m_sirenEnabled = true;
-
 		copBlockCar->Spawn();
 		copBlockCar->Enable(false);
 		copBlockCar->PlaceOnRoadCell(pReg, roadCell);
 		copBlockCar->InitAI(false);
 		copBlockCar->SetTorqueScale(m_copAccelerationModifier);
 		copBlockCar->SetMaxDamage(m_copMaxDamage);
+		copBlockCar->SetLight(CAR_LIGHT_SERVICELIGHTS, true);
 
 		g_pGameWorld->AddObject(copBlockCar);
 
