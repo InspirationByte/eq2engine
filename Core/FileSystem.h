@@ -103,10 +103,8 @@ public:
 	uint32						GetFileCRC32(const char* filename, int searchFlags = -1);
 
     // Package tools
-    bool						AddPackage(const char* packageName,SearchPath_e type);
-
-	// extracts single file from package
-	void						ExtractFile(const char* filename, bool onlyNonExist = false);
+    bool						AddPackage(const char* packageName, SearchPath_e type);
+	void						RemovePackage(const char* packageName);
 
 	//------------------------------------------------------------
 	// Locator

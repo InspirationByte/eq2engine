@@ -756,6 +756,21 @@ bool CFileSystem::AddPackage(const char* packageName,SearchPath_e type)
     return false;
 }
 
+void CFileSystem::RemovePackage(const char* packageName)
+{
+	for (int i = 0; i < m_packages.numElem(); i++)
+	{
+		CDPKFileReader* pkg = m_packages[i];
+
+		if (!stricmp(pkg->GetPackageFilename(), packageName))
+		{
+			m_packages.fastRemoveIndex(i);
+			delete pkg;
+			i--;
+		}
+	}
+}
+
 // sets fallback directory for mod
 void CFileSystem::AddSearchPath(const char* pathId, const char* pszDir)
 {
@@ -813,58 +828,6 @@ const char* CFileSystem::GetCurrentGameDirectory() const
 const char* CFileSystem::GetCurrentDataDirectory() const
 {
     return m_dataDir.GetData();
-}
-
-// extracts single file from package
-void CFileSystem::ExtractFile(const char* filename, bool onlyNonExist)
-{
-	if(onlyNonExist)
-	{
-		FILE* file = fopen(filename, "rb");
-		if(file)
-		{
-			fclose(file);
-			return;
-		}
-	}
-
-	// FIXME: DELETE THIS METHOD
-
-	/*
-	// do it from last package
-    for (int i = m_packages.numElem()-1; i >= 0;i--)
-	{
-		int file_id = m_packages[i]->FindFileIndex( filename );
-		if( file_id != -1 )
-		{
-			DPKFILE* pFile = m_packages[i]->Open(filename, "rb");
-
-			m_packages[i]->Seek(pFile, 0, SEEK_END);
-			long file_size = m_packages[i]->Tell(pFile);
-			m_packages[i]->Seek(pFile, 0, SEEK_SET);
-
-			ubyte* file_buffer = new ubyte[file_size];
-
-			m_packages[i]->Read(file_buffer, 1, file_size, pFile);
-			m_packages[i]->Close(pFile);
-
-			FILE* pSavedFile = fopen(filename, "wb");
-
-			if(pSavedFile)
-			{
-				fwrite(file_buffer, file_size, 1, pSavedFile);
-				fclose(pSavedFile);
-			}
-			else
-				MsgError("Can't dump file!\n");
-
-			delete [] file_buffer;
-
-			//exit because we dont want more same files to be extracted
-			return;
-		}
-	}
-	*/
 }
 
 // opens directory for search props

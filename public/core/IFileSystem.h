@@ -94,9 +94,7 @@ public:
 
     // Package tools
     virtual bool			AddPackage(const char* packageName,SearchPath_e type) = 0;
-
-	// extracts a single file to it's directory (usable for dll's)
-	virtual void			ExtractFile(const char* filename, bool onlyNonExist) = 0;
+	virtual void			RemovePackage(const char* packageName) = 0;
 
 	//------------------------------------------------------------
 	// Locator

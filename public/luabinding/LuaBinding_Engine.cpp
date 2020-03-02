@@ -136,7 +136,7 @@ OOLUA_CFUNC(S_IFileSystem_GetFileBuffer, L_IFileSystem_GetFileBuffer)
 OOLUA_EXPORT_FUNCTIONS(IFile, Seek, Tell, GetSize, Flush, GetCRC32)
 OOLUA_EXPORT_FUNCTIONS_CONST(IFile)
 
-OOLUA_EXPORT_FUNCTIONS(IFileSystem, Open, Close, FileCopy, GetFileSize, GetFileCRC32, AddPackage, AddSearchPath, RemoveSearchPath)
+OOLUA_EXPORT_FUNCTIONS(IFileSystem, Open, Close, FileCopy, GetFileSize, GetFileCRC32, AddPackage, RemovePackage, AddSearchPath, RemoveSearchPath)
 OOLUA_EXPORT_FUNCTIONS_CONST(IFileSystem, FileExist, FileRemove, GetCurrentGameDirectory, GetCurrentDataDirectory, MakeDir, RemoveDir)
 
 OOLUA_EXPORT_FUNCTIONS(CFileSystemFind, Init, Next)

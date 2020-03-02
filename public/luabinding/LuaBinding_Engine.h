@@ -122,6 +122,7 @@ OOLUA_PROXY(IFileSystem)
 	)
 
 	OOLUA_MFUNC(AddPackage)
+	OOLUA_MFUNC(RemovePackage)
 	
 	OOLUA_MFUNC(AddSearchPath)
 	OOLUA_MFUNC(RemoveSearchPath)
