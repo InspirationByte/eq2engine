@@ -157,6 +157,7 @@ void CUI_OccluderEditor::ProcessMouseEvents( wxMouseEvent& event )
 				g_pMainFrame->NotifyUpdate();
 
 				m_mode = ED_OCCL_READY;
+				return;
 			}
 		}
 
