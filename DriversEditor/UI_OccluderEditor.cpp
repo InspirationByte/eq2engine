@@ -30,7 +30,7 @@ void CUI_OccluderEditor::MouseEventOnTile( wxMouseEvent& event, hfieldtile_t* ti
 	if (m_mode == ED_OCCL_POINT2)
 		m_newOccl.end = ppos;
 
-	if (!event.ControlDown() && !event.AltDown())
+	if (!event.ControlDown() && !event.AltDown() && !m_selection.numElem())
 	{
 		if (event.ButtonIsDown(wxMOUSE_BTN_LEFT) && !event.Dragging())
 		{

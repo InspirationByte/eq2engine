@@ -95,6 +95,7 @@ protected:
 
 	int					GetSelectedVertsCount();
 
+	void				MoveBrushVerts(DkList<Vector3D>& outVerts, CBrushPrimitive* brush);
 	void				RenderBrushVerts(DkList<Vector3D>& verts, DkList<int>* selected_ids, const Matrix4x4& view, const Matrix4x4& proj);
 	void				RenderVertsAndSelection();
 
@@ -137,6 +138,8 @@ protected:
 	Vector3D					m_dragOffs;
 	Matrix3x3					m_dragInitRot;
 	Matrix3x3					m_dragRot;
+
+	bool						m_anyDragged;
 };
 
 #endif // UI_BLOCKEDITOR_H

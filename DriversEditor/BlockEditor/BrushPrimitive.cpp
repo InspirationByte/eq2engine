@@ -210,6 +210,14 @@ int winding_t::CheckRayIntersectionWithVertex(const Vector3D &start, const Vecto
 	return nearestVert;
 }
 
+bool winding_t::CheckRayIntersection(const Vector3D &start, const Vector3D &dir, Vector3D &intersectionPos)
+{
+	if (face.Plane.GetIntersectionWithRay(start, dir, intersectionPos))
+		return brush->IsPointInside(intersectionPos + dir * 0.1f);
+
+	return false;
+}
+
 // classifies the next face over this
 ClassifyPoly_e winding_t::Classify(winding_t *w) const
 {
@@ -372,7 +380,10 @@ void CBrushPrimitive::ValidateWindings()
 			continue;
 		}
 
-		m_windingFaces[i].SortIndices();
+		if (!m_windingFaces[i].SortIndices())
+		{
+			Msg("\nERROR: Degenerate plane %d on brush\n", i);
+		}
 	}
 };
 
@@ -479,6 +490,85 @@ void CBrushPrimitive::AddFace(brushFace_t &face)
 
 	int id = m_windingFaces.append(winding);
 	m_windingFaces[id].faceId = id;
+}
+
+bool CBrushPrimitive::AdjustFacesByVerts(const DkList<Vector3D>& verts)
+{
+	// must be same vertex indices from GetVerts
+	for (int i = 0; i < m_windingFaces.numElem(); i++)
+	{
+		winding_t& winding = m_windingFaces[i];
+
+		// TODO: complex checks for all verties
+
+		Vector3D v0, v1, v2;
+		int nVerts = winding.vertex_ids.numElem();
+
+		int goodTriangle = -1;
+
+		// run through all fan verts and check for degenerate
+		for (int j = 0; j < nVerts - 2; j++)
+		{
+			v0 = verts[winding.vertex_ids[0]];
+			v1 = verts[winding.vertex_ids[j+1]];
+			v2 = verts[winding.vertex_ids[j+2]];
+
+			float area = TriangleArea(v0, v1, v2);
+
+			// if we found good area, use it
+			if (area >= 1.0f)
+			{
+				goodTriangle = j;
+				break;
+			}
+		}
+
+		// if we're not found good triangle, it's surely degenerate
+		if(goodTriangle == -1)
+		{
+			m_windingFaces.fastRemoveIndex(i);
+			i--;
+			continue;
+		}
+
+		Plane newPlane = Plane(v0, v1, v2, true);
+
+		// FIXME: should I invert plane as that could be negative by resolving from triangle?
+		if (dot(newPlane.normal, winding.face.Plane.normal) < 0.0f)
+		{
+			newPlane.normal = -newPlane.normal;
+			newPlane.offset = -newPlane.offset;
+		}
+
+		winding.face.Plane = newPlane;
+	}
+
+	// there's not point on checking brush that has less that 3 planes
+	if (m_windingFaces.numElem() < 3)
+	{
+		return false;
+	}
+
+	// check if planes are coplanar
+	for (int i = 0; i < m_windingFaces.numElem(); i++)
+	{
+		winding_t& iWinding = m_windingFaces[i];
+
+		for (int j = i; j < m_windingFaces.numElem(); j++)
+		{
+			if (i == j)
+				continue;
+
+			winding_t& jWinding = m_windingFaces[j];
+
+			if (dot(iWinding.face.Plane.normal, jWinding.face.Plane.normal) >= 0.999f)
+			{
+				MsgWarning("Brush plane %d is coplanar to %d!\n", i, j);
+			}
+		}
+	}
+
+	return Update();
 }
 
 bool CBrushPrimitive::Update()
