@@ -544,7 +544,10 @@ void CUI_BlockEditor::RecalcSelectionBox()
 	}
 		
 	m_centerAxis.SetProps(identity3(), m_selectionBox.GetCenter());
+}
 
+void CUI_BlockEditor::RecalcFaceSelection()
+{
 	float selectionFac = 1.0f / (float)m_selectedFaces.numElem();
 	Vector3D selectionCenter(0);
 	Vector3D selectionNormal(0);
@@ -631,12 +634,16 @@ void CUI_BlockEditor::ProcessMouseEvents(wxMouseEvent& event)
 			if (nearestBrush && intersectFace >= 0)
 			{
 				if (event.ButtonIsDown(wxMOUSE_BTN_LEFT) && m_selectedTool == BlockEdit_Selection)
+				{
 					ToggleBrushSelection(nearestBrush);
+					RecalcSelectionBox();
+				}
 				else if (event.ButtonIsDown(wxMOUSE_BTN_RIGHT) && intersectFace != -1 && (m_selectedTool == BlockEdit_Selection || m_selectedTool == BlockEdit_VertexManip))
+				{
 					ToggleFaceSelection(nearestBrush->GetFacePolygon(intersectFace));
+					RecalcFaceSelection();
+				}
 			}
-
-			RecalcSelectionBox();
 		}
 	}
 
@@ -802,6 +809,7 @@ bool CUI_BlockEditor::ProcessSelectionAndBrushMouseEvents(wxMouseEvent& event)
 				}
 
 				RecalcSelectionBox();
+				RecalcFaceSelection();
 				m_mode = BLOCK_MODE_READY;
 			}
 			else
@@ -877,6 +885,7 @@ bool CUI_BlockEditor::ProcessSelectionAndBrushMouseEvents(wxMouseEvent& event)
 				}
 
 				RecalcSelectionBox();
+				RecalcFaceSelection();
 				m_mode = BLOCK_MODE_READY;
 			}
 			else
@@ -1031,6 +1040,8 @@ bool CUI_BlockEditor::ProcessVertexManipMouseEvents(wxMouseEvent& event)
 				wxMessageBox("Brush was deleted!");
 				continue;
 			}
+
+			// TODO: properly unselect deleted faces
 
 			// if vertex count differs we should deselect all vertices
 			if (brush->GetVerts().numElem() != brushVerts.numElem())

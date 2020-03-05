@@ -90,7 +90,9 @@ protected:
 	void				CancelSelection();
 	void				DeleteSelection();
 	void				DeleteBrush(CBrushPrimitive* brush);
+
 	void				RecalcSelectionBox();
+	void				RecalcFaceSelection();
 	void				RecalcVertexSelection();
 
 	int					GetSelectedVertsCount();
