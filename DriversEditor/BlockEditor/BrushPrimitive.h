@@ -83,12 +83,15 @@ public:
 
 	int								GetFaceCount() const { return m_windingFaces.numElem(); }
 	brushFace_t*					GetFace(int nFace) const { return (brushFace_t*)&m_windingFaces[nFace].face; }
+
 	winding_t*						GetFacePolygon(int nFace) const { return (winding_t*)&m_windingFaces[nFace]; }
+	winding_t*						GetFacePolygonById(int faceId) const;
 	
 	float							CheckLineIntersection(const Vector3D &start, const Vector3D &end, Vector3D &intersectionPos, int& face);
+
+	bool							IsPointInside(const Vector3D &point, int ignorePlane = -1);
 	bool							IsBrushIntersectsAABB(CBrushPrimitive *pBrush);
-	bool							IsPointInside_Epsilon(Vector3D &point, float eps);
-	bool							IsPointInside(Vector3D &point);
+	
 	bool							IsWindingFullyInsideBrush(winding_t* pWinding);
 	bool							IsWindingIntersectsBrush(winding_t* pWinding);
 	bool							IsTouchesBrush(winding_t* pWinding);

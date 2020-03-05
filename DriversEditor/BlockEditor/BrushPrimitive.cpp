@@ -213,7 +213,9 @@ int winding_t::CheckRayIntersectionWithVertex(const Vector3D &start, const Vecto
 bool winding_t::CheckRayIntersection(const Vector3D &start, const Vector3D &dir, Vector3D &intersectionPos)
 {
 	if (face.Plane.GetIntersectionWithRay(start, dir, intersectionPos))
+	{
 		return brush->IsPointInside(intersectionPos + dir * 0.1f);
+	}
 
 	return false;
 }
@@ -656,6 +658,16 @@ void CBrushPrimitive::CalculateVerts(DkList<Vector3D>& verts)
 	}
 }
 
+winding_t* CBrushPrimitive::GetFacePolygonById(int faceId) const
+{
+	for (int i = 0; i < m_windingFaces.numElem(); i++)
+	{
+		if (m_windingFaces[i].faceId == faceId)
+			return (winding_t*)&m_windingFaces[i];
+	}
+	return nullptr;
+}
+
 float CBrushPrimitive::CheckLineIntersection(const Vector3D &start, const Vector3D &end, Vector3D &intersectionPos, int& face)
 {
 	bool isinstersects = false;
@@ -675,7 +687,7 @@ float CBrushPrimitive::CheckLineIntersection(const Vector3D &start, const Vector
 		{
 			frac = lineProjection(start, end, outintersection);
 
-			if (frac < best_fraction && frac >= 0 && IsPointInside(outintersection + dir * 0.1f))
+			if (frac < best_fraction && frac >= 0 && IsPointInside(outintersection + dir * 0.1f, i))
 			{
 				best_fraction = frac;
 				isinstersects = true;
@@ -694,21 +706,13 @@ bool CBrushPrimitive::IsBrushIntersectsAABB(CBrushPrimitive *pBrush)
 	return m_bbox.Intersects(pBrush->GetBBox());
 }
 
-bool CBrushPrimitive::IsPointInside_Epsilon(Vector3D &point, float eps)
+bool CBrushPrimitive::IsPointInside(const Vector3D &point, int ignorePlane /*= -1*/)
 {
 	for (int i = 0; i < m_windingFaces.numElem(); i++)
 	{
-		if (m_windingFaces[i].face.Plane.Distance(point) > eps)
-			return false;
-	}
+		if (ignorePlane == i)
+			continue;
 
-	return true;
-}
-
-bool CBrushPrimitive::IsPointInside(Vector3D &point)
-{
-	for (int i = 0; i < m_windingFaces.numElem(); i++)
-	{
 		if(m_windingFaces[i].face.Plane.ClassifyPoint(point) == CP_FRONT)
 			return false;
 	}

@@ -1033,6 +1033,20 @@ bool CUI_BlockEditor::ProcessVertexManipMouseEvents(wxMouseEvent& event)
 			// modify vertices
 			MoveBrushVerts(brushVerts, brush);
 
+			// properly deselect further deleted faces
+			// save the selection
+			DkList<int> selectedFaceIds;
+			for (int j = 0; j < brush->GetFaceCount(); j++)
+			{
+				winding_t* winding = brush->GetFacePolygon(j);
+
+				if (winding->face.nFlags & BRUSH_FACE_SELECTED)
+				{
+					m_selectedFaces.fastRemove(winding);	// remove from selection
+					selectedFaceIds.append(winding->faceId);
+				}
+			}
+
 			// reconstruct brush using those vertices
 			if (!brush->AdjustFacesByVerts(brushVerts))
 			{
@@ -1041,7 +1055,14 @@ bool CUI_BlockEditor::ProcessVertexManipMouseEvents(wxMouseEvent& event)
 				continue;
 			}
 
-			// TODO: properly unselect deleted faces
+			// reselect the faces
+			for (int j = 0; j < selectedFaceIds.numElem(); j++)
+			{
+				winding_t* winding = brush->GetFacePolygonById(selectedFaceIds[j]);
+
+				if(winding)
+					m_selectedFaces.append(winding);
+			}
 
 			// if vertex count differs we should deselect all vertices
 			if (brush->GetVerts().numElem() != brushVerts.numElem())
@@ -1499,9 +1520,6 @@ void CUI_BlockEditor::OnRender()
 			//
 			if (m_mode >= BLOCK_MODE_CREATION)
 			{
-				float clength = length(m_centerAxis.m_position - g_camera_target);
-				float flength = length(m_faceAxis.m_position - g_camera_target);
-
 				BoundingBox creationBox = m_creationBox;
 
 				Volume creationBoxVolume;
