@@ -4673,15 +4673,46 @@ float CCar::GetDamage() const
 	return m_gameDamage;
 }
 
-float CCar::GetBodyDamage() const // max. 6.0f
+void CCar::SetBodyDamage(float damage[CB_PART_COUNT])
 {
-	float fDamage = 0.0f;
-
-	for(int i = 0; i < CB_PART_COUNT; i++)
-		fDamage += m_bodyParts[i].damage;
-
-	return fDamage;
+	for (int i = 0; i < CB_PART_COUNT; i++)
+		m_bodyParts[i].damage = damage[i];
+	RefreshWindowDamageEffects();
 }
+
+void CCar::GetBodyDamage(float damage[CB_PART_COUNT]) const
+{
+	for(int i = 0; i < CB_PART_COUNT; i++)
+		damage[i] = m_bodyParts[i].damage;
+}
+
+#ifndef EDITOR
+void CCar::L_SetBodyDamage(OOLUA::Table& table)
+{
+	for (int i = 0; i < CB_PART_COUNT; i++)
+	{
+		float damageValue = 0.0f;
+		table.safe_at(i + 1, damageValue);
+
+		m_bodyParts[i].damage = damageValue;
+	}
+
+	RefreshWindowDamageEffects();
+}
+
+OOLUA::Table CCar::L_GetBodyDamage() const
+{
+	OOLUA::Table table = OOLUA::new_table(GetLuaState());
+
+	for (int i = 0; i < CB_PART_COUNT; i++)
+	{
+		float damageValue = 0.0f;
+		table.set(i + 1, m_bodyParts[i].damage);
+	}
+
+	return table;
+}
+#endif // EDITOR
 
 void CCar::Repair(bool unlock)
 {

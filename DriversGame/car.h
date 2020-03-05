@@ -466,11 +466,16 @@ public:
 
 	CEqRigidBody*			GetPhysicsBody() const;
 
+#ifndef EDITOR
+	void					L_SetBodyDamage(OOLUA::Table& table);
+	OOLUA::Table			L_GetBodyDamage() const;
+
 	void					L_SetContents(int contents);
 	void					L_SetCollideMask(int contents);
 
 	int						L_GetContents() const;
 	int						L_GetCollideMask() const;
+#endif // EDITOR
 
 	void					RefreshWindowDamageEffects();
 
@@ -516,9 +521,10 @@ public:
 	float					GetTorqueScale() const;
 
 	void					SetDamage( float damage );
-
 	float					GetDamage() const;
-	float					GetBodyDamage() const; // max. 6.0f
+
+	void					SetBodyDamage(float damage[CB_PART_COUNT]);
+	void					GetBodyDamage(float damage[CB_PART_COUNT]) const;
 
 	void					SetFelony(float percentage);
 	float					GetFelony() const;
@@ -721,7 +727,9 @@ OOLUA_PROXY(CCar, CGameObject)
 	OOLUA_MFUNC(SetDamage)
 
 	OOLUA_MFUNC_CONST(GetDamage)
-	OOLUA_MFUNC_CONST(GetBodyDamage)
+
+	OOLUA_MEM_FUNC_RENAME(SetBodyDamage, void, L_SetBodyDamage, OOLUA::Table&)
+	OOLUA_MEM_FUNC_CONST_RENAME(GetBodyDamage, OOLUA::Table, L_GetBodyDamage)
 
 	OOLUA_MFUNC(Repair)
 
