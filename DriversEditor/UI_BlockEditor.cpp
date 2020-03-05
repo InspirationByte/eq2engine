@@ -196,6 +196,8 @@ CUI_BlockEditor::CUI_BlockEditor(wxWindow* parent) : wxPanel(parent, -1, wxDefau
 	m_dragInitRot = identity3();
 
 	m_anyDragged = false;
+
+	memset(&m_clipper, 0, sizeof(m_clipper));
 }
 
 CUI_BlockEditor::~CUI_BlockEditor()
@@ -652,9 +654,14 @@ void CUI_BlockEditor::ProcessMouseEvents(wxMouseEvent& event)
 		if (!ProcessSelectionAndBrushMouseEvents(event))
 			return;
 	}
-	if (m_selectedTool == BlockEdit_VertexManip)
+	else if (m_selectedTool == BlockEdit_VertexManip)
 	{
 		if (!ProcessVertexManipMouseEvents(event))
+			return;
+	}
+	else if (m_selectedTool == BlockEdit_Clipper)
+	{
+		if (!ProcessClipperMouseEvents(event))
 			return;
 	}
 
@@ -1088,6 +1095,14 @@ bool CUI_BlockEditor::ProcessVertexManipMouseEvents(wxMouseEvent& event)
 		m_dragOffs = vec3_zero;
 		m_dragRot = m_dragInitRot = identity3();
 	}
+
+	return true;
+}
+
+bool CUI_BlockEditor::ProcessClipperMouseEvents(wxMouseEvent& event)
+{
+	Vector3D ray_start, ray_dir;
+	g_pMainFrame->GetMouseScreenVectors(event.GetX(), event.GetY(), ray_start, ray_dir);
 
 	return true;
 }

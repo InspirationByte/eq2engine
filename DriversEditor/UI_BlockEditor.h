@@ -70,6 +70,7 @@ public:
 
 	bool				ProcessSelectionAndBrushMouseEvents(wxMouseEvent& event);
 	bool				ProcessVertexManipMouseEvents(wxMouseEvent& event);
+	bool				ProcessClipperMouseEvents(wxMouseEvent& event);
 
 	void				OnKey(wxKeyEvent& event, bool bDown);
 	void				OnRender();
@@ -133,8 +134,17 @@ protected:
 
 	DkList<CBrushPrimitive*>	m_selectedBrushes;
 	DkList<winding_t*>			m_selectedFaces;
-
 	DkList<brushVertexSelect_t>	m_selectedVerts;
+
+	// clipper stuff
+	struct {
+		Vector3D start;
+		Vector3D end;
+
+		Vector3D dir;	// the plane axis
+
+		CBrushPrimitive*		resultPreview[2];
+	} m_clipper;
 
 	// dragging properties
 	Vector3D					m_dragOffs;
