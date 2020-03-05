@@ -696,6 +696,8 @@ bool CState_Game::DoLoadingFrame()
 			PrecacheStudioModel("models/error.egf");
 			PrecacheScriptSound("menu.back");
 			PrecacheScriptSound("menu.roll");
+			PrecacheScriptSound("menu.click");
+			PrecacheScriptSound("menu.switch");
 			break;
 		}
 		case 3:
@@ -998,8 +1000,6 @@ bool CState_Game::Update( float fDt )
 		font->RenderText(loadingStr, Vector2D(screenSize.x / 2, screenSize.y / 2), fontParam);
 	}
 
-	
-
 	if(m_exitGame || m_scheduledRestart || m_scheduledQuickReplay)
 	{
 		if(m_scheduledQuickReplay == REPLAY_SCHEDULE_REPLAY_NORESTART)
@@ -1087,6 +1087,8 @@ void CState_Game::DrawMenu( float fDt )
 	if( !m_showMenu )
 		return;
 
+	bool goingFromMenu = m_exitGame || m_scheduledRestart || m_scheduledQuickReplay;
+
 	const IVector2D& screenSize = g_pHost->GetWindowSize();
 
 	materials->Setup2D(screenSize.x,screenSize.y);
@@ -1103,6 +1105,7 @@ void CState_Game::DrawMenu( float fDt )
 	fontParam.styleFlag |= TEXT_STYLE_SHADOW;
 	fontParam.textColor = color4_white;
 	fontParam.scale = m_menuDummy->GetFontScale() * m_menuDummy->CalcScaling();
+	float lineHeight = font->GetLineHeight(fontParam);
 
 	{
 		lua_State* state = GetLuaState();
@@ -1115,7 +1118,7 @@ void CState_Game::DrawMenu( float fDt )
 			numElems++;
 		oolua_ipairs_end()
 
-		int menuPosY = halfScreen.y - numElems*font->GetLineHeight(fontParam)*0.5f;
+		int menuPosY = halfScreen.y - numElems * lineHeight*0.5f;
 
 		Vector2D mTextPos(halfScreen.x, menuPosY);
 
@@ -1130,13 +1133,12 @@ void CState_Game::DrawMenu( float fDt )
 
 			const wchar_t* token = GetMenuItemString(elem);
 
-			if(m_selection == idx)
-				fontParam.textColor = ColorRGBA(1,0.7f,0.0f,1.0f);
+			if (m_selection == idx)
+				fontParam.textColor = ColorRGBA(1, 0.7f, 0.0f, 1.0f);
 			else
-				fontParam.textColor = ColorRGBA(1,1,1,1.0f);
+				fontParam.textColor = ColorRGBA(1, 1, 1, 1.0f);
 
-			Vector2D eTextPos(halfScreen.x, menuPosY+_i_index_*font->GetLineHeight(fontParam));
-
+			Vector2D eTextPos(halfScreen.x, menuPosY + _i_index_ * lineHeight);
 			font->RenderText(token ? token : L"No token", eTextPos, fontParam);
 		oolua_ipairs_end()
 
@@ -1456,8 +1458,12 @@ void CState_Game::HandleKeyPress( int key, bool down )
 
 		if(key == KEY_ENTER || key == KEY_JOY_A)
 		{
-			if(PreEnterSelection())
+			if (PreEnterSelection())
+			{
+				EmitSound_t ep("menu.click");
+				g_sounds->Emit2DSound(&ep);
 				EnterSelection();
+			}
 		}
 		else if(key == KEY_LEFT || key == KEY_RIGHT || key == KEY_JOY_DPAD_LEFT || key == KEY_JOY_DPAD_RIGHT)
 		{
@@ -1465,7 +1471,7 @@ void CState_Game::HandleKeyPress( int key, bool down )
 
 			if(ChangeSelection(direction))
 			{
-				EmitSound_t es("menu.roll");
+				EmitSound_t es("menu.switch");
 				g_sounds->Emit2DSound( &es );
 			}
 		}
@@ -1539,35 +1545,34 @@ void CState_Game::HandleMouseMove( int x,  int y, float deltaX, float deltaY )
 		fontParam.styleFlag |= TEXT_STYLE_SHADOW;
 		fontParam.textColor = color4_white;
 		fontParam.scale = m_menuDummy->GetFontScale() * m_menuDummy->CalcScaling();
+		float lineHeight = font->GetLineHeight(fontParam);
 
 		{
 			EqLua::LuaStackGuard g(GetLuaState());
 
-			int numElems = 0;
+			int numElems = -1;
 
 			oolua_ipairs(m_menuElems)
 				numElems++;
 			oolua_ipairs_end()
 
-			int menuPosY = halfScreen.y - numElems * font->GetLineHeight(fontParam)*0.5f;
-
-			Vector2D mTextPos(halfScreen.x, menuPosY);
+			int menuPosY = halfScreen.y - numElems * lineHeight * 0.5f;
 
 			oolua_ipairs(m_menuElems)
-				int idx = _i_index_ - 1;
+				int idx = _i_index_-1;
 
-			OOLUA::Table elem;
-			m_menuElems.safe_at(_i_index_, elem);
+				OOLUA::Table elem;
+				m_menuElems.safe_at(_i_index_, elem);
 
-			float lineWidth = 400;
-			float lineHeight = font->GetLineHeight(fontParam);
+				float lineWidth = 400;
+				float itemHeight = 0.5f * lineHeight;
 
-			Vector2D eTextPos(halfScreen.x, menuPosY + _i_index_ * font->GetLineHeight(fontParam));
+				Vector2D eTextPos(halfScreen.x, menuPosY + idx * lineHeight);
 
-			Rectangle_t rect(eTextPos - Vector2D(lineWidth, lineHeight), eTextPos + Vector2D(lineWidth, 0));
+				Rectangle_t rect(eTextPos - Vector2D(lineWidth, 0), eTextPos + Vector2D(lineWidth, itemHeight));
 
-			if (rect.IsInRectangle(Vector2D(x, y)))
-				Event_SelectMenuItem(idx);
+				if (rect.IsInRectangle(Vector2D(x, y)))
+					Event_SelectMenuItem(idx);
 
 			oolua_ipairs_end()
 		}
@@ -1616,7 +1621,12 @@ void CState_Game::HandleMouseClick( int x, int y, int buttons, bool down )
 		if (buttons == MOU_B1 && !down)
 		{
 			if (PreEnterSelection())
+			{
+				EmitSound_t ep("menu.click");
+				g_sounds->Emit2DSound(&ep);
 				EnterSelection();
+			}
+				
 		}
 
 		return;

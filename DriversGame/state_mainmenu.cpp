@@ -40,9 +40,10 @@ void CState_MainMenu::OnEnter( CBaseStateHandler* from )
 {
 	g_sounds->Init(100.0f);
 
-	g_sounds->PrecacheSound( "menu.back" );
-	g_sounds->PrecacheSound( "menu.roll" );
-	g_sounds->PrecacheSound( "menu.click" );
+	g_sounds->PrecacheSound("menu.back");
+	g_sounds->PrecacheSound("menu.roll");
+	g_sounds->PrecacheSound("menu.click");
+	g_sounds->PrecacheSound("menu.switch");
 	g_sounds->PrecacheSound("menu.music");
 
 	m_fade = 0.0f;
@@ -593,7 +594,7 @@ void CState_MainMenu::HandleKeyPress( int key, bool down )
 
 			if (ChangeSelection(direction))
 			{
-				EmitSound_t es("menu.roll");
+				EmitSound_t es("menu.switch");
 				g_sounds->EmitSound(&es);
 			}
 		}
@@ -645,6 +646,7 @@ void CState_MainMenu::HandleMouseMove( int x, int y, float deltaX, float deltaY 
 	fontParam.scale = m_menuDummy->GetFontScale()*menuScaling;
 
 	Vector2D menuPos = m_menuDummy->GetPosition()*menuScaling;
+	float lineHeight = font->GetLineHeight(fontParam);
 
 	{
 		EqLua::LuaStackGuard g(GetLuaState());
@@ -656,11 +658,11 @@ void CState_MainMenu::HandleMouseMove( int x, int y, float deltaX, float deltaY 
 			m_menuElems.safe_at(_i_index_, elem);
 
 			float lineWidth = 400;
-			float lineHeight = font->GetLineHeight(fontParam);
+			float itemHeight = 0.5f * lineHeight;
 
-			Vector2D elemPos(menuPos.x, menuPos.y+_i_index_*lineHeight + m_menuScrollInterp * lineHeight);
+			Vector2D elemPos(menuPos.x, menuPos.y + idx*lineHeight + m_menuScrollInterp*lineHeight);
 
-			Rectangle_t rect(elemPos - Vector2D(0, lineHeight), elemPos + Vector2D(lineWidth, 0));
+			Rectangle_t rect(elemPos, elemPos + Vector2D(lineWidth, itemHeight));
 
 			if(rect.IsInRectangle(Vector2D(x,y)))
 				Event_SelectMenuItem( idx );
@@ -723,20 +725,21 @@ void CState_MainMenu::Event_SelectionEnter(const char* actionName /*= "onEnter"*
 	if (GetCurrentMenuElement(elem))
 	{
 		EmitSound_t es(!stricmp(actionName, "onDelete") ? "menu.back" : "menu.click");
-		g_sounds->EmitSound(&es);
 
 		std::string actionNameStr;
 		if (elem.safe_at("inputActionName", actionNameStr))
 		{
 			EnterSelection(actionName);
-		}
-		else
-		{
-			PreEnterSelection();
 
+			g_sounds->EmitSound(&es);
+		}
+		else if(PreEnterSelection())
+		{
 			m_menuMode = MENUMODE_ENTER;
 			m_textEffect = 1.0f;
 			m_textFade = 1.0f;
+
+			g_sounds->EmitSound(&es);
 		}
 	}
 }

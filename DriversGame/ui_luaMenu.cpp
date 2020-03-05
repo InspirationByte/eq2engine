@@ -106,10 +106,10 @@ bool CLuaMenu::PreEnterSelection()
 	OOLUA::Table elem;
 	if (GetCurrentMenuElement(elem))
 	{
-		EqLua::LuaTableFuncRef onChange;
-		if (onChange.Get(elem, "onChange", true))
+		OOLUA::Lua_func_ref enterFunc;
+		if (!elem.safe_at("onEnter", enterFunc))
 			return false;
-
+		
 		bool isFinal = false;
 		elem.safe_at("isFinal", isFinal);
 
