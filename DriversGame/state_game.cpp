@@ -1273,7 +1273,8 @@ void CState_Game::DoGameFrame(float fDt)
 	g_nOldControlButtons = g_nClientButtons;
 }
 
-ConVar g_alwaysfreelook("g_alwaysfreelook", "0", nullptr, CV_ARCHIVE);
+ConVar g_alwaysfreelook("g_alwaysFreeLook", "0", nullptr, CV_ARCHIVE);
+ConVar g_carAsListener("g_carAsListener", "0", "Use car position as listen position (replays only)", 0);
 
 bool GotFreeLook()
 {
@@ -1288,6 +1289,8 @@ void CState_Game::DoCameraUpdates( float fDt )
 		camControls &= ~IN_CHANGECAM;
 
 	CViewParams* curView = g_pGameWorld->GetView();
+
+	Vector3D viewObjectPos(0.0f);
 
 	if( Director_FreeCameraActive() )
 	{
@@ -1348,6 +1351,9 @@ void CState_Game::DoCameraUpdates( float fDt )
 
 			g_pCameraAnimator->SetAngles(lookAngles);
 
+			if (viewObject)
+				viewObjectPos = viewObject->GetOrigin();
+
 			/*
 			if( viewObject && viewObject->GetPhysicsBody() )
 			{
@@ -1390,6 +1396,8 @@ void CState_Game::DoCameraUpdates( float fDt )
 
 	sndEffect_t* sndEffect = nullptr;
 	{
+		// TODO: different effect types.
+		// and mixing volume
 		const float TUNNEL_SOUND_TRACE_UPDIST = 15.0f;
 		const float TUNNEL_SOUND_TRACE_FORWARD = 15.0f;
 
@@ -1410,7 +1418,9 @@ void CState_Game::DoCameraUpdates( float fDt )
 			sndEffect = m_tunnelEfx;
 	}
 
-	soundsystem->SetListener(curView->GetOrigin(), f, u, viewVelocity, sndEffect);
+	bool carAsListener = g_carAsListener.GetBool() && (g_replayTracker->m_state == REPL_PLAYING);
+
+	soundsystem->SetListener(carAsListener ? viewObjectPos : curView->GetOrigin(), f, u, viewVelocity, sndEffect);
 
 	effectrenderer->SetViewSortPosition(curView->GetOrigin());
 	g_pRainEmitter->SetViewVelocity(viewVelocity);
