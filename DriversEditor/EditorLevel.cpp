@@ -2407,6 +2407,17 @@ int	CEditorLevelRegion::Ed_SelectBuilding(const Vector3D& start, const Vector3D&
 	return bestDistrefIdx;
 }
 
+int CEditorLevelRegion::Ed_GetOccluderIdx(levOccluderLine_t* occluder)
+{
+	for (int i = 0; i < m_occluders.numElem(); i++)
+	{
+		if (&m_occluders[i] == occluder)
+			return i;
+	}
+
+	return -1;
+}
+
 int CEditorLevelRegion::Ed_ReplaceDefs(CLevObjectDef* whichReplace, CLevObjectDef* replaceTo)
 {
 	int numReplaced = 0;

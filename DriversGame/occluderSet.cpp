@@ -13,24 +13,29 @@
 ConVar r_debugOccluders("r_debugOccluders", "0", NULL, CV_CHEAT);
 ConVar r_occlusion("r_occlusion", "1", NULL, CV_CHEAT);
 
-occludingVolume_t::occludingVolume_t(levOccluderLine_t* occl, const Vector3D& cameraPos)
+occludingVolume_t::occludingVolume_t(const Vector3D& cameraPos, CLevelRegion* srcReg, levOccluderLine_t* srcOcc)
 {
 	if(!r_occlusion.GetBool())
 		return;
 
-	Plane pl(occl->start, occl->end, occl->end+Vector3D(0,occl->height,0));
+#ifdef EDITOR
+	sourceOccluder = srcOcc;
+	sourceRegion = srcReg;
+#endif // EDITOR
+
+	Plane pl(srcOcc->start, srcOcc->end, srcOcc->end+Vector3D(0, srcOcc->height,0));
 
 	Vector3D a,b;
 
 	if( pl.Distance(cameraPos) < 0 )
 	{
-		a = occl->start;
-		b = occl->end;
+		a = srcOcc->start;
+		b = srcOcc->end;
 	}
 	else
 	{
-		a = occl->end;
-		b = occl->start;
+		a = srcOcc->end;
+		b = srcOcc->start;
 
 		pl.normal *= -1.0f;
 		pl.offset *= -1.0f;
@@ -39,8 +44,8 @@ occludingVolume_t::occludingVolume_t(levOccluderLine_t* occl, const Vector3D& ca
 	Vector3D aDir = -cross(vec3_up, fastNormalize(cameraPos-a));
 	Vector3D bDir = cross(vec3_up, fastNormalize(cameraPos-b));
 
-	Vector3D aTopPos = a + Vector3D(0, occl->height, 0);
-	Vector3D bTopPos = b + Vector3D(0, occl->height, 0);
+	Vector3D aTopPos = a + Vector3D(0, srcOcc->height, 0);
+	Vector3D bTopPos = b + Vector3D(0, srcOcc->height, 0);
 
 	Vector3D topDir = fastNormalize(cross(aTopPos-bTopPos, cameraPos-bTopPos));
 

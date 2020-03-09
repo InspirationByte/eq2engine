@@ -8,6 +8,8 @@
 #include "UI_OccluderEditor.h"
 #include "EditorLevel.h"
 #include "EditorMain.h"
+#include "world.h"
+
 
 
 extern Vector3D g_camera_target;
@@ -213,18 +215,17 @@ void CUI_OccluderEditor::OnKey(wxKeyEvent& event, bool bDown)
 
 void CUI_OccluderEditor::SelectOccluder(const Vector3D& rayStart, const Vector3D& rayDir)
 {
-	if(!m_selectedRegion)
-		return;
-
 	selectedOccluder_t nearest;
 	nearest.occIdx = -1;
 	nearest.region = nullptr;
 
 	float fNearestDist = DrvSynUnits::MaxCoordInUnits;
 
-	for(int i = 0; i < m_selectedRegion->m_occluders.numElem(); i++)
+	DkList<occludingVolume_t*>& volumes = g_pGameWorld->m_occludingFrustum.occluderSets;
+
+	for(int i = 0; i < volumes.numElem(); i++)
 	{
-		levOccluderLine_t& occl = m_selectedRegion->m_occluders[i];
+		levOccluderLine_t& occl = *volumes[i]->sourceOccluder;
 
 		Vector3D p1 = occl.start + Vector3D(0,occl.height,0);
 		Vector3D p2 = occl.start;
@@ -239,8 +240,10 @@ void CUI_OccluderEditor::SelectOccluder(const Vector3D& rayStart, const Vector3D
 			{
 				fNearestDist = frac;
 
-				nearest.occIdx = i;
-				nearest.region = m_selectedRegion;
+				CEditorLevelRegion* reg = (CEditorLevelRegion*)volumes[i]->sourceRegion;
+
+				nearest.occIdx = reg->Ed_GetOccluderIdx(volumes[i]->sourceOccluder);
+				nearest.region = reg;
 			}
 				
 		}
@@ -251,7 +254,7 @@ void CUI_OccluderEditor::SelectOccluder(const Vector3D& rayStart, const Vector3D
 		// try deselect
 		for(int i = 0; i < m_selection.numElem(); i++)
 		{
-			if(m_selection[i].region == nearest.region &&
+			if(	m_selection[i].region == nearest.region &&
 				m_selection[i].occIdx == nearest.occIdx)
 			{
 				m_selection.fastRemoveIndex(i);
@@ -294,6 +297,8 @@ extern void ListQuadTex(const Vector3D &v1, const Vector3D &v2, const Vector3D& 
 
 void CUI_OccluderEditor::OnRender()
 {
+	DkList<occludingVolume_t*>& volumes = g_pGameWorld->m_occludingFrustum.occluderSets;
+
 	materials->SetMatrix(MATRIXMODE_WORLD, identity4());
 
 	DepthStencilStateParams_t depth;
@@ -328,42 +333,42 @@ void CUI_OccluderEditor::OnRender()
 		CHeightTileFieldRenderable* field = m_selectedRegion->m_heightfield[0];
 
 		field->DebugRender(false,m_mouseOverTileHeight, GridSize());
+	}
 
-		// TODO: all occluders:
-		occluderQuadVerts.resize( m_selectedRegion->m_occluders.numElem()*6 );
+	// render occluders
+	occluderQuadVerts.resize(volumes.numElem() * 6);
 
-		for(int i = 0; i < m_selectedRegion->m_occluders.numElem(); i++)
+	for (int i = 0; i < volumes.numElem(); i++)
+	{
+		levOccluderLine_t& occl = *volumes[i]->sourceOccluder;
+
+		Vector3D p1 = occl.start + Vector3D(0, occl.height, 0);
+		Vector3D p2 = occl.start;
+		Vector3D p3 = occl.end;
+		Vector3D p4 = occl.end + Vector3D(0, occl.height, 0);
+
+		ListQuadTex(p1, p2, p3, p4, 0, color4_white, occluderQuadVerts);
+
+		debugoverlay->Line3D(p1, p2, ColorRGBA(1, 1, 1, 1), ColorRGBA(1, 1, 1, 1), 0.0f);
+		debugoverlay->Line3D(p3, p4, ColorRGBA(1, 1, 1, 1), ColorRGBA(1, 1, 1, 1), 0.0f);
+		debugoverlay->Line3D(p1, p4, ColorRGBA(1, 1, 1, 1), ColorRGBA(1, 1, 1, 1), 0.0f);
+	}
+
+	// current
+	if (m_mode > ED_OCCL_READY)
+	{
+		debugoverlay->Line3D(m_newOccl.start, m_newOccl.end, ColorRGBA(1, 1, 1, 1), ColorRGBA(1, 1, 1, 1), 0.0f);
+		debugoverlay->Sphere3D(m_newOccl.start, 0.5f, ColorRGBA(1, 1, 0, 1), 0.0f);
+		debugoverlay->Sphere3D(m_newOccl.end, 0.5f, ColorRGBA(1, 1, 0, 1), 0.0f);
+
+		if (m_mode == ED_OCCL_HEIGHT)
 		{
-			levOccluderLine_t& occl =  m_selectedRegion->m_occluders[i];
-			
-			Vector3D p1 = occl.start + Vector3D(0,occl.height,0);
-			Vector3D p2 = occl.start;
-			Vector3D p3 = occl.end;
-			Vector3D p4 = occl.end + Vector3D(0,occl.height,0);
+			Vector3D p1 = m_newOccl.start + Vector3D(0, m_newOccl.height, 0);
+			Vector3D p2 = m_newOccl.start;
+			Vector3D p3 = m_newOccl.end;
+			Vector3D p4 = m_newOccl.end + Vector3D(0, m_newOccl.height, 0);
 
 			ListQuadTex(p1, p2, p3, p4, 0, color4_white, occluderQuadVerts);
-
-			debugoverlay->Line3D(p1, p2, ColorRGBA(1, 1, 1, 1), ColorRGBA(1, 1, 1, 1), 0.0f);
-			debugoverlay->Line3D(p3, p4, ColorRGBA(1, 1, 1, 1), ColorRGBA(1, 1, 1, 1), 0.0f);
-			debugoverlay->Line3D(p1, p4, ColorRGBA(1, 1, 1, 1), ColorRGBA(1, 1, 1, 1), 0.0f);
-		}
-
-		// current
-		if(m_mode > ED_OCCL_READY)
-		{
-			debugoverlay->Line3D(m_newOccl.start, m_newOccl.end, ColorRGBA(1,1,1,1), ColorRGBA(1,1,1,1), 0.0f);
-			debugoverlay->Sphere3D(m_newOccl.start, 0.5f, ColorRGBA(1, 1, 0, 1), 0.0f);
-			debugoverlay->Sphere3D(m_newOccl.end, 0.5f, ColorRGBA(1, 1, 0, 1), 0.0f);
-
-			if(m_mode == ED_OCCL_HEIGHT)
-			{
-				Vector3D p1 = m_newOccl.start + Vector3D(0,m_newOccl.height,0);
-				Vector3D p2 = m_newOccl.start;
-				Vector3D p3 = m_newOccl.end;
-				Vector3D p4 = m_newOccl.end + Vector3D(0,m_newOccl.height,0);
-
-				ListQuadTex(p1, p2, p3, p4, 0, color4_white, occluderQuadVerts);
-			}
 		}
 	}
 

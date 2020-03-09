@@ -14,19 +14,25 @@
 
 #include "levfile.h"
 
+class CLevelRegion;
+
 struct occludingVolume_t
 {
 	PPMEM_MANAGED_OBJECT()
 
 	occludingVolume_t() {}
-	occludingVolume_t(levOccluderLine_t* occl, const Vector3D& cameraPos);
+	occludingVolume_t(const Vector3D& cameraPos, CLevelRegion* srcReg, levOccluderLine_t* srcOcc);
 
-	// TODO: check funcs
+	// check funcs
+	bool IsBeingOccluded( const BoundingBox& bbox, float eps) const;
+	bool IsBeingOccluded( const Vector3D& pos, float radius) const;
 
 	Plane planes[4]; // near, top, left, right
 
-	bool IsBeingOccluded( const BoundingBox& bbox, float eps) const;
-	bool IsBeingOccluded( const Vector3D& pos, float radius) const;
+#ifdef EDITOR
+	levOccluderLine_t*	sourceOccluder;
+	CLevelRegion*		sourceRegion;
+#endif // EDITOR
 };
 
 // occluding frustum

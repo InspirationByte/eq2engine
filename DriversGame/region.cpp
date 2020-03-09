@@ -349,12 +349,14 @@ static Vector3D s_sortCamPos;
 
 int occluderComparator(levOccluderLine_t* const& a, levOccluderLine_t* const& b)
 {
-	Vector3D am = lerp(a->start, a->end, 0.5f);
-	Vector3D bm = lerp(b->start, b->end, 0.5f);
+	Vector3D am = (a->start+a->end)*0.5f;
+	Vector3D bm = (b->start, b->end)*0.5f;
 	float ad = lengthSqr(s_sortCamPos-am);
 	float bd = lengthSqr(s_sortCamPos-bm);
 
-	return ad>bd;
+	float diff = (ad - bd);
+
+	return sign(diff);
 }
 
 void CLevelRegion::CollectVisibleOccluders( occludingFrustum_t& frustumOccluders, const Vector3D& cameraPosition )
@@ -377,6 +379,7 @@ void CLevelRegion::CollectVisibleOccluders( occludingFrustum_t& frustumOccluders
 	// sort occluders
 	occluders.sort( occluderComparator );
 
+	// go from closest to furthest
 	for(int i = 0; i < occluders.numElem(); i++)
 	{
 		levOccluderLine_t* occl = occluders[i];
@@ -391,17 +394,8 @@ void CLevelRegion::CollectVisibleOccluders( occludingFrustum_t& frustumOccluders
 		BoundingBox bbox;
 		bbox.AddVertices(verts,4);
 
-		bool basicVisibility = frustumOccluders.frustum.IsBoxInside(bbox.minPoint,bbox.maxPoint);
-
-		bool visibleThruOccl = (frustumOccluders.IsSphereVisibleThruOcc(verts[0], 0.0f) ||
-								frustumOccluders.IsSphereVisibleThruOcc(verts[1], 0.0f) ||
-								frustumOccluders.IsSphereVisibleThruOcc(verts[2], 0.0f) ||
-								frustumOccluders.IsSphereVisibleThruOcc(verts[3], 0.0f));
-
-		if( basicVisibility && visibleThruOccl)
-		{
-			frustumOccluders.occluderSets.append( new occludingVolume_t(occl, cameraPosition) );
-		}
+		if( frustumOccluders.IsBoxVisible(bbox) )
+			frustumOccluders.occluderSets.append( new occludingVolume_t(cameraPosition, this, occl) );
 	}
 }
 
@@ -443,7 +437,7 @@ void CLevelRegion::Render(const Vector3D& cameraPosition, const occludingFrustum
 		if(cont->m_info.type == LOBJ_TYPE_INTERNAL_STATIC)
 		{
 			//if( frustum.IsBoxInside(cont->m_model->m_bbox.minPoint, cont->m_model->m_bbox.maxPoint) )
-			if( occlFrustum.IsSphereVisible( ref->position, length(ref->bbox.GetSize())) )
+			if (occlFrustum.IsBoxVisible(ref->bbox)) //if( occlFrustum.IsSphereVisible( ref->position, length(ref->bbox.GetSize())) )
 			{
 				if (caps.isInstancingSupported && !(cont->m_info.modelflags & LMODEL_FLAG_UNIQUE))
 				{
@@ -477,7 +471,7 @@ void CLevelRegion::Render(const Vector3D& cameraPosition, const occludingFrustum
 			if (cont->m_defModel)
 				bbox = cont->m_defModel->GetAABB();
 
-			if( occlFrustum.IsSphereVisible( ref->position, length(bbox.GetSize())) )
+			if (occlFrustum.IsBoxVisible(ref->bbox)) //occlFrustum.IsSphereVisible( ref->position, length(bbox.GetSize())) )
 				cont->Render(fDist, ref->bbox, false, nRenderFlags);
 		}
 #else
@@ -491,7 +485,7 @@ void CLevelRegion::Render(const Vector3D& cameraPosition, const occludingFrustum
 		if(renderTranslucency && !cont->m_model->m_hasTransparentSubsets)
 			continue;
 
-		if( occlFrustum.IsSphereVisible( ref->position, length(ref->bbox.GetSize())) )
+		if( occlFrustum.IsBoxVisible(ref->bbox) ) //ref->position, length(ref->bbox.GetSize())) )
 		{
 			levObjInstanceData_t* instData = cont->m_instData;
 

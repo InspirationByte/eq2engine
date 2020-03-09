@@ -229,6 +229,8 @@ public:
 	int							Ed_SelectRef(const Vector3D& start, const Vector3D& dir, float& dist);
 	int							Ed_SelectBuilding(const Vector3D& start, const Vector3D& dir, float& dist);
 
+	int							Ed_GetOccluderIdx(levOccluderLine_t* occluder);
+
 	int							Ed_ReplaceDefs(CLevObjectDef* whichReplace, CLevObjectDef* replaceTo);
 	void						Render(const Vector3D& cameraPosition, const occludingFrustum_t& frustumOccluders, int nRenderFlags);
 
