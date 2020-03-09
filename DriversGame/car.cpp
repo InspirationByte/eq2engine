@@ -1185,6 +1185,7 @@ CEqRigidBody* CCar::GetPhysicsBody() const
 	return m_physObj->GetBody();
 }
 
+#ifndef EDITOR
 void CCar::L_SetContents(int contents)
 {
 	if (!m_physObj)
@@ -1216,6 +1217,7 @@ int	CCar::L_GetCollideMask() const
 
 	return m_physObj->GetBody()->GetCollideMask();
 }
+#endif // EDITOR
 
 void CCar::SetControlButtons(int flags)
 {

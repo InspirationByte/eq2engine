@@ -219,6 +219,7 @@ OOLUA_PROXY(CAIManager)
 	OOLUA_TAGS(Abstract)
 
 	OOLUA_MFUNC(RemoveAllCars)
+	OOLUA_MFUNC(RemoveAllPedestrians)
 
 	OOLUA_MFUNC(MakePursued)
 	OOLUA_MFUNC(StopPursuit)

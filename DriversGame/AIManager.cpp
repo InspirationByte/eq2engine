@@ -1290,6 +1290,7 @@ OOLUA_EXPORT_FUNCTIONS(
 	MakePursued,
 	StopPursuit,
 	RemoveAllCars,
+	RemoveAllPedestrians,
 	SetMaxTrafficCars,
 	SetTrafficSpawnInterval,
 	SetTrafficCarsEnabled,

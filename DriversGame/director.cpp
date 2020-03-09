@@ -781,7 +781,8 @@ void Director_Draw( float fDt )
 				"&#FFFF00;6&; %s%s Tripod - follow with zoom&;&;\n\n"
 
 				"Zoom: &#FFFF00;MOUSE WHEEL&; (%.2f deg.)\n"
-				"Tilt: &#FFFF00;RMB and MOUSE MOVE&; (%.2f deg.)\n\n"
+				"Tilt: &#FFFF00;RMB and MOUSE MOVE&; (%.2f deg.)\n"
+				"Rotate: &#FFFF00;Hold ALT and MOUSE MOVE&;\n\n"
 
 				"Insert camera: &#FFFF00;NUMPAD ADD&;\n"
 				"Replace camera: &#FFFF00;NUMPAD ENTER&;\n"
