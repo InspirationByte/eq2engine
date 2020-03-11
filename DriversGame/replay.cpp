@@ -400,6 +400,8 @@ void CReplayTracker::PlayVehicleFrame(replayCarStream_t* rep)
 				body->SetOrientation(frameLerpOrient);
 				body->SetLinearVelocity(frameLerpLinVel);
 				body->SetAngularVelocity(frameLerpAngVel);
+
+				body->TryWake();
 			}
 		}
 		return;
@@ -421,6 +423,8 @@ void CReplayTracker::PlayVehicleFrame(replayCarStream_t* rep)
 	body->SetOrientation(Quaternion(frame.car_rot.w, frame.car_rot.x, frame.car_rot.y, frame.car_rot.z));
 	body->SetLinearVelocity(frame.car_vel);
 	body->SetAngularVelocity(frame.car_angvel);
+
+	body->TryWake();
 
 	// unpack
 	uint16 accelControl = frame.control_vars.acceleration;
