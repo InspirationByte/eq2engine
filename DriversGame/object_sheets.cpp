@@ -66,9 +66,12 @@ void CObject_Sheets::Spawn()
 
 bool CObject_Sheets::InitSheets()
 {
-	float radius = KV_GetValueFloat(m_keyValues->FindKeyBase("radius"), 0, 2.0f);
 	kvkeybase_t* textures = m_keyValues->FindKeyBase("textures");
+
+	float radius = KV_GetValueFloat(m_keyValues->FindKeyBase("radius"), 0, 2.0f);
 	int count = KV_GetValueInt(m_keyValues->FindKeyBase("count"), 0, SHEET_COUNT);
+	float scale = KV_GetValueFloat(m_keyValues->FindKeyBase("scale"), 0, 1.0f);
+	float weight = KV_GetValueFloat(m_keyValues->FindKeyBase("weight"), 0, 1.0f);
 
 	for(int i = 0; i < count; i++)
 	{
@@ -77,6 +80,8 @@ bool CObject_Sheets::InitSheets()
 		sheetpart_t part;
 		part.atlas = g_translParticles;	// TODO: other atlas
 		part.entry = part.atlas->FindEntry( textureName );
+		part.scale = scale;
+		part.weight = weight;
 
 		Vector3D randomPos;
 		AngleVectors(Vector3D(0.0f,RandomFloat(0.0f,360.0f),0.0f), &randomPos);
@@ -137,7 +142,6 @@ void CObject_Sheets::Simulate( float fDt )
 
 	PFXVertex_t* sheetQuad;
 
-	const float sheetScale = 0.2f;
 	ColorRGBA color(g_pGameWorld->m_info.ambientColor+g_pGameWorld->m_info.sunColor);
 
 	for( int i = 0; i < m_sheets.numElem(); i++ )
@@ -163,7 +167,7 @@ void CObject_Sheets::Simulate( float fDt )
 				distToBodyFac = 1.0f-distToBodyFac;
 
 				sheet.velocity += vel*distToBodyFac*SHEET_VELOCITY_SCALE*fDt;
-				sheet.origin += Vector3D(0, sheet.velocity*fDt, 0);
+				sheet.origin += Vector3D(0, sheet.velocity * fDt, 0);
 
 				sheet.angle += sheet.velocity*fDt;
 			}
@@ -181,7 +185,7 @@ void CObject_Sheets::Simulate( float fDt )
 
 				sheet.angle += fDt*SHEET_GRAVITY;
 
-				sheet.velocity += SHEET_GRAVITY*fDt;
+				sheet.velocity += SHEET_GRAVITY*fDt * sheet.weight;
 				sheet.origin += Vector3D(0, sheet.velocity*fDt, 0);
 			}
 			else
@@ -207,23 +211,25 @@ void CObject_Sheets::Simulate( float fDt )
 
 		AngleVectors(sheetAngle, NULL, &vUp, &vRight);
 
-		Rectangle_t texCoords(0,0,1,1);
-		texCoords = sheet.entry->rect;
+		Rectangle_t texCoords = sheet.entry->rect;
+		
+		Vector2D size(texCoords.GetSize() * sheet.scale);
+
 		if(sheet.atlas->AllocateGeom(4,4, &sheetQuad, NULL, true) != -1)
 		{
-			sheetQuad[0].point = sheetPos + (vUp * sheetScale) + (sheetScale * vRight);
+			sheetQuad[0].point = sheetPos + (vUp * size.x) + (size.y * vRight);
 			sheetQuad[0].texcoord = Vector2D(texCoords.vrightBottom.x, texCoords.vrightBottom.y);
 			sheetQuad[0].color = color;
 
-			sheetQuad[1].point = sheetPos + (vUp * sheetScale) - (sheetScale * vRight);
+			sheetQuad[1].point = sheetPos + (vUp * size.x) - (size.y * vRight);
 			sheetQuad[1].texcoord = Vector2D(texCoords.vrightBottom.x, texCoords.vleftTop.y);
 			sheetQuad[1].color = color;
 
-			sheetQuad[2].point = sheetPos - (vUp * sheetScale) + (sheetScale * vRight);
+			sheetQuad[2].point = sheetPos - (vUp * size.x) + (size.y * vRight);
 			sheetQuad[2].texcoord = Vector2D(texCoords.vleftTop.x, texCoords.vrightBottom.y);
 			sheetQuad[2].color = color;
 
-			sheetQuad[3].point = sheetPos - (vUp * sheetScale) - (sheetScale * vRight);
+			sheetQuad[3].point = sheetPos - (vUp * size.x) - (size.y * vRight);
 			sheetQuad[3].texcoord = Vector2D(texCoords.vleftTop.x, texCoords.vleftTop.y);
 			sheetQuad[3].color = color;
 		}

@@ -43,9 +43,6 @@ TODO:
 // max world size is +/-32768
 #define EQPHYS_MAX_WORLDSIZE	32767.0f
 
-// fixed time step is the default
-static const float s_fixedTimeStep(1.0f / 60.0f);
-
 class CEqRigidBody;
 class CEqCollisionObject;
 
@@ -343,10 +340,10 @@ public:
 
 	void							SetDebugRaycast(bool enable) {m_debugRaycast = enable;}
 
-	static void						CellCollisionDetectionJob(void* data, int iter);
+	//static void						CellCollisionDetectionJob(void* data, int iter);
 
-	void							SolveBodyCollisions(CEqRigidBody* bodyA, CEqRigidBody* bodyB, float fDt);
-	void							SolveStaticVsBodyCollision(CEqCollisionObject* staticObj, CEqRigidBody* bodyB, float fDt, DkList<ContactPair_t>& contactPairs);
+	void							DetectBodyCollisions(CEqRigidBody* bodyA, CEqRigidBody* bodyB, float fDt);
+	void							DetectStaticVsBodyCollision(CEqCollisionObject* staticObj, CEqRigidBody* bodyB, float fDt, DkList<ContactPair_t>& contactPairs);
 
 protected:
 
@@ -378,10 +375,6 @@ protected:
 
 protected:
 
-	
-
-	Threading::CEqMutex&			m_mutex;
-
 	DkList<eqPhysSurfParam_t*>		m_physSurfaceParams;
 
 	DkList<CEqRigidBody*>			m_moveable;
@@ -393,6 +386,8 @@ protected:
 
 	DkList<IEqPhysicsConstraint*>	m_constraints;
 	DkList<IEqPhysicsController*>	m_controllers;
+
+	Threading::CEqMutex&			m_mutex;
 
 	btCollisionWorld*				m_collisionWorld;
 	btCollisionConfiguration*		m_collConfig;

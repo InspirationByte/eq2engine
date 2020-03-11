@@ -20,11 +20,14 @@ struct sheetpart_t
 	{
 		velocity = 0.0f;
 		angle = 0.0f;
+		scale = 1.0f;
 	}
 
 	Vector3D			origin;
 	float				velocity;
 	float				angle;
+	float				scale;
+	float				weight;
 
 	CPFXAtlasGroup*		atlas;
 	TexAtlasEntry_t*	entry;

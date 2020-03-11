@@ -546,7 +546,7 @@ void CEqPhysics::DestroyController( IEqPhysicsController* controller )
 
 //-----------------------------------------------------------------------------------------------
 
-void CEqPhysics::SolveBodyCollisions(CEqRigidBody* bodyA, CEqRigidBody* bodyB, float fDt)
+void CEqPhysics::DetectBodyCollisions(CEqRigidBody* bodyA, CEqRigidBody* bodyB, float fDt)
 {
 	//PROFILE_FUNC();
 
@@ -673,7 +673,7 @@ void CEqPhysics::SolveBodyCollisions(CEqRigidBody* bodyA, CEqRigidBody* bodyB, f
 	}
 }
 
-void CEqPhysics::SolveStaticVsBodyCollision(CEqCollisionObject* staticObj, CEqRigidBody* bodyB, float fDt, DkList<ContactPair_t>& contactPairs)
+void CEqPhysics::DetectStaticVsBodyCollision(CEqCollisionObject* staticObj, CEqRigidBody* bodyB, float fDt, DkList<ContactPair_t>& contactPairs)
 {
 	//PROFILE_FUNC();
 
@@ -858,7 +858,7 @@ void CEqPhysics::IntegrateSingle(CEqRigidBody* body)
 	}
 
 }
-
+/*
 struct eqCollisionDetectionJob_t
 {
 	eqParallelJob_t base;
@@ -866,7 +866,7 @@ struct eqCollisionDetectionJob_t
 	collgridcell_t* cell;
 	CEqPhysics*		physics;
 };
-/*
+
 void CEqPhysics::CellCollisionDetectionJob(void* data, int iter)
 {
 	eqCollisionDetectionJob_t* job = (eqCollisionDetectionJob_t*)data;
@@ -909,7 +909,6 @@ void CollisionDetectionJobCompleted()
 	eqCollisionDetectionJob_t* job = (eqCollisionDetectionJob_t*)data;
 	delete job;
 }
-
 */
 
 void CEqPhysics::DetectCollisionsSingle(CEqRigidBody* body)
@@ -961,7 +960,7 @@ void CEqPhysics::DetectCollisionsSingle(CEqRigidBody* body)
 
 			// iterate over static objects in cell
 			for (int j = 0; j < numGridObjs; j++)
-				SolveStaticVsBodyCollision(ncell->m_gridObjects[j], body, body->GetLastFrameTime(), body->m_contactPairs);
+				DetectStaticVsBodyCollision(ncell->m_gridObjects[j], body, body->GetLastFrameTime(), body->m_contactPairs);
 
 			// if object is only affected by other dynamic objects, don't waste my cycles!
 			if (disabledResponse)
@@ -978,15 +977,16 @@ void CEqPhysics::DetectCollisionsSingle(CEqRigidBody* body)
 					continue;
 
 				if (collObj->IsDynamic())
-					SolveBodyCollisions(body, (CEqRigidBody*)collObj, body->GetLastFrameTime());
+					DetectBodyCollisions(body, (CEqRigidBody*)collObj, body->GetLastFrameTime());
 				else // purpose for triggers
-					SolveStaticVsBodyCollision(collObj, body, body->GetLastFrameTime(), body->m_contactPairs);
+					DetectStaticVsBodyCollision(collObj, body, body->GetLastFrameTime(), body->m_contactPairs);
 			}
 		}
 	}
 
 	g_parallelJobs->Submit();
 }
+
 
 ConVar ph_carVsCarErp("ph_carVsCarErp", "0.15", "Car versus car erp", CV_CHEAT);
 
@@ -1198,7 +1198,9 @@ void CEqPhysics::SimulateStep(float deltaTime, int iteration, FNSIMULATECALLBACK
 
 	// calculate collisions
 	for (int i = 0; i < m_moveable.numElem(); i++)
-		DetectCollisionsSingle( m_moveable[i] );
+	{
+		DetectCollisionsSingle(m_moveable[i]);
+	}
 
 	// TODO: job barrier
 
