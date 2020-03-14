@@ -1258,11 +1258,7 @@ void CState_Game::DoGameFrame(float fDt)
 
 	// director camera is updated in real time
 	if (Director_IsActive())
-	{
-		cameraFrameTimes = g_pHost->GetSysFrameTime();
-		const float minCameraFrameTime = (1.0f / 60.0f);
-		cameraFrameTimes = max(cameraFrameTimes, minCameraFrameTime);
-	}
+		cameraFrameTimes = g_pHost->GetFrameTime();
 
 	DoCameraUpdates(cameraFrameTimes);
 
@@ -1294,9 +1290,7 @@ void CState_Game::DoCameraUpdates( float fDt )
 
 	if( Director_FreeCameraActive() )
 	{
-		float cameraFrameTimes = g_pHost->GetSysFrameTime();
-		const float minCameraFrameTime = (1.0f / 60.0f);
-		cameraFrameTimes = max(cameraFrameTimes, minCameraFrameTime);
+		float cameraFrameTimes = g_pHost->GetFrameTime();
 
 		Director_UpdateFreeCamera(cameraFrameTimes);
 

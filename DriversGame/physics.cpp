@@ -26,8 +26,6 @@ ConVar ph_debugrender("ph_debugrender", "0", NULL, CV_CHEAT);
 
 using namespace EqBulletUtils;
 
-#define PH_GRAVITY -9.81
-
 // high frequency object wrapper
 // used for vehicles
 CPhysicsHFObject::CPhysicsHFObject( CEqCollisionObject* pObj, CGameObject* owner ) : IEqPhysCallback(pObj)
@@ -153,19 +151,11 @@ void CPhysicsEngine::SceneShutdown()
 #endif // m_physics
 }
 
-
-//extern ConVar sys_timescale;
-
-const int constIterationsFramerate = 60;
-
 void PhysDebugRender(void* arg)
 {
 	CPhysicsEngine* physEngine = (CPhysicsEngine*)arg;
-
 	physEngine->m_physics.DebugDrawBodies( ph_debugrender.GetInt() );
 }
-
-const float PHYSICS_FRAME_INTERVAL = (1.0f / 60.0f);
 
 void CPhysicsEngine::Simulate( float fDt, int numIterations, FNSIMULATECALLBACK preIntegrateFn )
 {
@@ -175,19 +165,14 @@ void CPhysicsEngine::Simulate( float fDt, int numIterations, FNSIMULATECALLBACK 
 
 	m_dtAccumulator += fDt;
 
+	int executedIterations = 0;
+
 	// increase fixed frames if we're going low
-	while(m_dtAccumulator > PHYSICS_FRAME_INTERVAL)
+	while(m_dtAccumulator > fDt)
 	{
-		//if(ph_singleiter.GetBool())
-		//	numIterations = 1;
-
 		// do real iteration count
-		for(int i = 0; i < numIterations; i++)
-		{
-			m_physics.SimulateStep(timestep, i, preIntegrateFn);
-		}
-
-		m_dtAccumulator -= PHYSICS_FRAME_INTERVAL;
+		m_physics.SimulateStep(timestep, executedIterations++, preIntegrateFn);
+		m_dtAccumulator -= timestep;
 	}
 
 	// debug rendering

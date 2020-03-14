@@ -168,7 +168,7 @@ float CGameSessionBase::LoadCarReplay(CCar* pCar, const char* filename)
 	int numTicks = 0;
 	g_replayTracker->LoadVehicleReplay(pCar, filename, numTicks);
 
-	float fixedTicksDelta = 1.0f / (sys_maxfps.GetFloat()*GetPhysicsIterations());
+	float fixedTicksDelta = PHYSICS_FRAME_INTERVAL / GetPhysicsIterations();
 
 	return numTicks * fixedTicksDelta;
 }

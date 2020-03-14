@@ -19,8 +19,9 @@
 
 #include "drivers_coord.h"
 
-class CHeightTileField;
+const float PHYSICS_FRAME_INTERVAL = (1.0f / 60.0f);
 
+class CHeightTileField;
 class CGameObject;
 
 // the physics high frequency object

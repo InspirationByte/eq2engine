@@ -1096,14 +1096,18 @@ void CCar::SetOrientation(const Quaternion& q)
 
 void CCar::SetVelocity(const Vector3D& vel)
 {
-	m_physObj->GetBody()->SetLinearVelocity( vel  );
-	m_physObj->GetBody()->TryWake();
+	CEqRigidBody* body = m_physObj->GetBody();
+
+	body->SetLinearVelocity( vel  );
+	body->TryWake();
 }
 
 void CCar::SetAngularVelocity(const Vector3D& vel)
 {
-	m_physObj->GetBody()->SetAngularVelocity( vel );
-	m_physObj->GetBody()->TryWake();
+	CEqRigidBody* body = m_physObj->GetBody();
+
+	body->SetAngularVelocity( vel );
+	body->TryWake();
 }
 
 ConVar cam_custom("cam_custom", "0", NULL, CV_CHEAT);
@@ -1406,7 +1410,7 @@ void CCar::UpdateVehiclePhysics(float delta)
 		m_steering = inputSteering;
 	}
 
-	if (controlButtons != m_oldControlButtons && !((controlsChanged & IN_HORN) || (controlsChanged & IN_SIREN)))
+	if (controlsChanged)// && !((controlsChanged & IN_HORN) || (controlsChanged & IN_SIREN)))
 		needsWake = true;
 
 	// if any wheel is above the ground, it needs to be awake
@@ -1426,6 +1430,9 @@ void CCar::UpdateVehiclePhysics(float delta)
 	{
 		inputAcceleration = 1.0f;
 	}
+
+	//if (inputAcceleration > 0 || inputBrake > 0)
+	//	needsWake = true;
 
 	if (bDoBurnout)
 	{

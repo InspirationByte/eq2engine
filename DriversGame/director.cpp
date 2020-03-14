@@ -446,7 +446,7 @@ void Director_UpdateFreeCamera(float fDt)
 	btSphereShape collShape(0.5f);
 
 	// update camera collision
-	if(camSpeed > 1.0f)
+	if(camSpeed > 100.0f * fDt)
 	{
 		g_freeCamProps.velocity -= normalize(g_freeCamProps.velocity) * 90.0f * fDt;
 
