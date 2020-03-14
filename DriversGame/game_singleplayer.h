@@ -23,6 +23,8 @@ public:
 
 	virtual int			GetSessionType() const { return SESSION_SINGLE; }
 
+	float				GetTimescale() const;
+
 	virtual bool		IsClient() const { return true; }
 	virtual bool		IsServer() const { return true; }
 
@@ -36,16 +38,21 @@ public:
 
 	void				UpdateLocalControls(int nControls, float steering, float accel_brake);
 
-protected:
-	void				UpdatePlayerControls();
+	void				GoThrill();
+	void				LeaveThrill();
 
+protected:
+	void				UpdateMission(float fDt);
+
+	void				UpdatePlayerControls();
 	void				UpdateAsPlayerPedestrian(const playerControl_t& control, CPedestrian* ped);
 
 	CCar*				m_playerCar;
 	CPedestrian*		m_playerPedestrian;
 
-
 	playerControl_t		m_playerControl;
+
+	float				m_thrillTimeout;
 };
 
 

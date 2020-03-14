@@ -63,6 +63,8 @@ void DkSoundAmbient::Play()
 	alSourcei(m_alSource, AL_LOOPING, loopEnabled);
 
 	alSourcef(m_alSource, AL_GAIN, m_volume);
+
+	//DkSoundSystemLocal* pSoundSystem = static_cast<DkSoundSystemLocal*>(soundsystem);
 	alSourcef(m_alSource, AL_PITCH, m_pitch);
 
 	// option for streaming
@@ -115,8 +117,10 @@ void DkSoundAmbient::SetVolume(float val)
 
 void DkSoundAmbient::SetPitch(float val)
 {
-	alSourcef(m_alSource, AL_PITCH, val);
 	m_pitch = val;
+
+	//DkSoundSystemLocal* pSoundSystem = static_cast<DkSoundSystemLocal*>(soundsystem);
+	alSourcef(m_alSource, AL_PITCH, m_pitch);
 }
 
 void DkSoundAmbient::SetSample(ISoundSample* sample)
@@ -151,6 +155,9 @@ void DkSoundAmbient::Update()
 {
 	if(!m_sample)
 		return;
+
+	//DkSoundSystemLocal* pSoundSystem = static_cast<DkSoundSystemLocal*>(soundsystem);
+	//alSourcef(m_alSource, AL_PITCH, m_pitch * pSoundSystem->m_pitchFactor);
 
 	if( m_sample->m_flags & SAMPLE_FLAG_STREAMED )
 		UpdateStreaming();

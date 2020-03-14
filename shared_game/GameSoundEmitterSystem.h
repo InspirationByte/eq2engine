@@ -308,7 +308,7 @@ public:
 
 	void						Set2DChannelsVolume(ESoundChannelType channelType, float volume);
 
-	void						Update(bool force = false);													// updates sound emitter system
+	void						Update(float pitchScale = 1.0f, bool force = false);													// updates sound emitter system
 	bool						UpdateEmitter( EmitterData_t* emit, soundParams_t &params, bool bForceNoInterp = false );
 
 	soundScriptDesc_t*			FindSound(const char* soundName) const;						// searches for loaded script sound

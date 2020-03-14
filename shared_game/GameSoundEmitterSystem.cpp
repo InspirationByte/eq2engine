@@ -782,9 +782,9 @@ void CSoundEmitterSystem::StopAll2DSounds()
 	}
 }
 
-void CSoundEmitterSystem::Update(bool force)
+void CSoundEmitterSystem::Update(float pitchScale, bool force)
 {
-	soundsystem->Update();
+	soundsystem->Update(pitchScale);
 
 	// update music volume always
 	ISoundPlayable* musicChannel = soundsystem->GetStaticStreamChannel(CHAN_STREAM);

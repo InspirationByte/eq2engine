@@ -52,15 +52,15 @@ public:
 
 protected:
 
-	EqString				m_smashSound;
+	void					OnPhysicsCollide(CollisionPairData_t& pair);
 
 	DkList<sheetpart_t>		m_sheets;
+	EqString				m_smashSound;
 
-	CEqCollisionObject*		m_ghostObject;
-
-	bool					m_wasInit;
+	CPhysicsHFObject*		m_hfObject;
 
 	float					m_initDelay;
+	bool					m_wasInit;
 };
 
 #endif // OBJECT_SHEETS_H

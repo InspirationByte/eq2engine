@@ -12,17 +12,23 @@
 
 #include "Shiny.h"
 
-#define SHEET_COUNT				15
-#define SHEET_GRAVITY			(-3.0f)
-#define SHEET_MIN_VELOCITY		(6.5f)
-#define SHEET_VELOCITY_SCALE	(2.0f)
+#define SHEET_COUNT							15
+#define SHEET_GRAVITY						(-28.0f)
+#define SHEET_MAX_FALL_VELOCITY				(-1.6f)
+#define SHEET_MIN_AFFECTION_VELOCITY		(3.5f)
+#define SHEET_MIN_AFFECTION_HEIGHT			(1.2f)
+
+#define SHEET_ANGULAR_SCALE					(2.5f)
+#define SHEET_VELOCITY_SCALE				(5.0f)
+#define SHEETS_MAX_RAIN_DENSITY				(5.0f)
+#define SHEET_REST_TIMEFACTOR				(4.0f)
 
 extern CPFXAtlasGroup* g_translParticles;
 
 CObject_Sheets::CObject_Sheets( kvkeybase_t* kvdata )
 {
 	m_keyValues = kvdata;
-	m_ghostObject = NULL;
+	m_hfObject = NULL;
 	m_initDelay = 2.0f;
 }
 
@@ -35,8 +41,12 @@ void CObject_Sheets::OnRemove()
 {
 	BaseClass::OnRemove();
 
-	g_pPhysics->m_physics.DestroyGhostObject(m_ghostObject);
-	m_ghostObject = NULL;
+	if (m_hfObject)
+	{
+		g_pPhysics->m_physics.DestroyGhostObject(m_hfObject->m_object);
+		delete m_hfObject;
+		m_hfObject = NULL;
+	}
 }
 
 void CObject_Sheets::Spawn()
@@ -45,21 +55,22 @@ void CObject_Sheets::Spawn()
 
 	float radius = KV_GetValueFloat(m_keyValues->FindKeyBase("radius"), 0, 2.0f);
 
-	m_ghostObject = new CEqCollisionObject();
+	CEqCollisionObject* triggerObject = new CEqCollisionObject();
+	m_hfObject = new CPhysicsHFObject(triggerObject, this);
 
-	m_ghostObject->Initialize( radius );
+	triggerObject->Initialize( radius );
 
-	m_ghostObject->SetCollideMask(0);
-	m_ghostObject->SetContents(OBJECTCONTENTS_DEBRIS);
+	triggerObject->SetCollideMask(0);
+	triggerObject->SetContents(OBJECTCONTENTS_DEBRIS);
 
-	m_ghostObject->SetPosition(GetOrigin());
+	triggerObject->SetPosition(GetOrigin());
 
-	m_ghostObject->SetUserData(this);
+	triggerObject->SetUserData(this);
 
-	m_bbox = m_ghostObject->m_aabb_transformed;
+	m_bbox = triggerObject->m_aabb_transformed;
 
 	// Next call will add NO_RAYCAST, COLLISION_LIST and DISABLE_RESPONSE flags automatically
-	g_pPhysics->m_physics.AddGhostObject( m_ghostObject );
+	g_pPhysics->m_physics.AddGhostObject(triggerObject);
 
 	m_wasInit = InitSheets();
 }
@@ -103,6 +114,41 @@ bool CObject_Sheets::InitSheets()
 	return m_sheets.numElem() > 0;
 }
 
+void CObject_Sheets::OnPhysicsCollide(CollisionPairData_t& pair)
+{
+	CEqCollisionObject* obj = pair.GetOppositeTo(m_hfObject->m_object);
+
+	if (!obj)
+		return;
+
+	if (g_pGameWorld->m_envConfig.rainDensity > SHEETS_MAX_RAIN_DENSITY)
+		return;
+
+	// apply force to the object
+	if (obj->IsDynamic())
+	{
+		CEqRigidBody* body = (CEqRigidBody*)obj;
+
+		for (int i = 0; i < m_sheets.numElem(); i++)
+		{
+			sheetpart_t& sheet = m_sheets[i];
+
+			float vel = length(body->GetVelocityAtWorldPoint(sheet.origin)) - SHEET_MIN_AFFECTION_VELOCITY;
+
+			if (vel > 0.0f && fsimilar(sheet.origin.y, GetOrigin().y, SHEET_MIN_AFFECTION_HEIGHT))
+			{
+				float bodyToSheetDist = (float)length(body->GetPosition() - sheet.origin);
+
+				float distToBodyFac = RemapValClamp(bodyToSheetDist, 0.0f, 3.5f, 0.0f, 1.0f);
+				distToBodyFac = 1.0f - powf(distToBodyFac, 2.0f);
+
+				sheet.velocity += vel * distToBodyFac * SHEET_VELOCITY_SCALE * body->GetLastFrameTime();
+			}
+		}
+	}
+}
+
+
 void CObject_Sheets::Simulate( float fDt )
 {
 	PROFILE_FUNC();
@@ -120,25 +166,38 @@ void CObject_Sheets::Simulate( float fDt )
 		return;
 	}
 
-	CEqRigidBody* body = NULL;
-
-	bool canRender = g_pGameWorld->m_occludingFrustum.IsBoxVisible(m_bbox);
-
-	m_bbox.Reset();
-
-	if(g_pGameWorld->m_envConfig.rainDensity < 5.0f)
+	for (int i = 0; i < m_sheets.numElem(); i++)
 	{
-		if(m_ghostObject->m_collisionList.numElem() > 0 && m_ghostObject->m_collisionList[0].bodyB)
-		{
-			CEqCollisionObject* obj = m_ghostObject->m_collisionList[0].bodyB;
+		sheetpart_t& sheet = m_sheets[i];
 
-			if(obj->m_flags & BODY_ISCAR)
-				body = (CEqRigidBody*)obj;
+		sheet.origin += vec3_up * sheet.velocity * fDt;
+		sheet.angle += fabs(sheet.velocity) * fDt;
+
+		CollisionData_t coll;
+		if (!g_pPhysics->TestLine(sheet.origin + Vector3D(0, 4.0f, 0), sheet.origin - Vector3D(0, 0.1f, 0), coll, OBJECTCONTENTS_SOLID_GROUND))
+		{
+			//if(fDt > 0.0f && sheet.velocity > 0.0f)
+			//	sheet.velocity *= 0.85f;
+
+			const float maxFallVelocity = SHEET_MAX_FALL_VELOCITY;
+
+			sheet.velocity += SHEET_GRAVITY * fDt;
+			if (sheet.velocity < maxFallVelocity)
+				sheet.velocity = maxFallVelocity;
+		}
+		else
+		{
+			sheet.velocity -= sign(sheet.velocity) * SHEET_REST_TIMEFACTOR * fDt;
+
+			if (fabs(sheet.velocity) <= fDt * SHEET_REST_TIMEFACTOR)
+				sheet.velocity = 0.0f;
+
+			sheet.origin = coll.position + Vector3D(0, 0.05f, 0);
 		}
 	}
 
-	// we have to deal with cleaning up collision list
-	m_ghostObject->m_collisionList.clear( false );
+	bool canRender = g_pGameWorld->m_occludingFrustum.IsBoxVisible(m_bbox);
+	m_bbox.Reset();
 
 	PFXVertex_t* sheetQuad;
 
@@ -148,57 +207,8 @@ void CObject_Sheets::Simulate( float fDt )
 	{
 		sheetpart_t& sheet = m_sheets[i];
 
-		bool appliedForce = false;
-
-		float featherAngle = sin( sheet.angle*2.0f );
-
-		if( body )
-		{
-			float vel = length(body->GetVelocityAtWorldPoint( sheet.origin ));
-
-			if(vel > SHEET_MIN_VELOCITY && (sheet.origin.y-GetOrigin().y) < 2.0f)
-			{
-				vel -= SHEET_MIN_VELOCITY;
-
-				appliedForce = true;
-				float distToBodyFac = clamp((float)length(body->GetPosition()-sheet.origin)/3.5f, 0.0f, 1.0f);
-
-				distToBodyFac *= distToBodyFac;
-				distToBodyFac = 1.0f-distToBodyFac;
-
-				sheet.velocity += vel*distToBodyFac*SHEET_VELOCITY_SCALE*fDt;
-				sheet.origin += Vector3D(0, sheet.velocity * fDt, 0);
-
-				sheet.angle += sheet.velocity*fDt;
-			}
-
-			featherAngle *= clamp((float)fabs(sheet.velocity)*0.5f, 0.0f, 1.0f);
-		}
-
-		if(!appliedForce && sheet.velocity != 0.0f)
-		{
-			CollisionData_t coll;
-			if( !g_pPhysics->TestLine(sheet.origin + Vector3D(0,10.0f, 0), sheet.origin - Vector3D(0,0.01f, 0), coll, OBJECTCONTENTS_SOLID_GROUND) )
-			{
-				if(fDt > 0.0f && sheet.velocity > 0.0f)
-					sheet.velocity *= 0.85f;
-
-				sheet.angle += fDt*SHEET_GRAVITY;
-
-				sheet.velocity += SHEET_GRAVITY*fDt * sheet.weight;
-				sheet.origin += Vector3D(0, sheet.velocity*fDt, 0);
-			}
-			else
-			{
-				sheet.velocity = 0.0f;
-				sheet.origin = coll.position;
-				featherAngle = 0.0f;
-			}
-		}
-		else if(sheet.velocity == 0.0f)
-			featherAngle = 0.0f;
-
-		featherAngle += sinf(featherAngle);
+		float featherAngle = sin(sheet.angle*2.0f) * fabs(clamp(sheet.velocity, -1.0f, 1.0f));
+		featherAngle += SHEET_ANGULAR_SCALE * sinf(featherAngle);
 
 		Vector3D sheetPos = sheet.origin + Vector3D(sin(sheet.angle)*1.5f, 0.015f, -cos(sheet.angle)*1.5f);
 		m_bbox.AddVertex( sheetPos );
@@ -207,7 +217,7 @@ void CObject_Sheets::Simulate( float fDt )
 			continue;
 
 		Vector3D vRight, vUp;
-		Vector3D sheetAngle(-90.0f+featherAngle*45.0f, sheet.angle*5.0f, sheet.angle+featherAngle*25.0f);
+		Vector3D sheetAngle(-90.0f+featherAngle*45.0f, (featherAngle + sheet.angle)*5.0f, sheet.angle+featherAngle*25.0f);
 
 		AngleVectors(sheetAngle, NULL, &vUp, &vRight);
 

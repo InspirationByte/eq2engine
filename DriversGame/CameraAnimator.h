@@ -38,6 +38,7 @@ class CEqRigidBody;
 class CGameObject;
 
 bool IsStaticCameraMode(ECameraMode mode);
+bool IsCarCamera(ECameraMode mode);
 
 class CCameraAnimator
 {

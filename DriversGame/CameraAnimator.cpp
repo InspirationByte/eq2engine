@@ -15,6 +15,8 @@
 #include "CameraAnimator.h"
 #include "input.h"
 
+#include "world.h"
+
 const float DEFAULT_CAMERA_FOV		= 52.0f;
 
 const float CAM_TURN_SPEED			= 2.65f;
@@ -60,6 +62,13 @@ bool IsGameCamera(ECameraMode mode)
 	return	mode == CAM_MODE_INCAR ||
 			mode == CAM_MODE_OUTCAR ||
 			mode == CAM_MODE_TRIPOD_FOLLOW_ZOOM;
+}
+
+bool IsCarCamera(ECameraMode mode)
+{
+	return	mode == CAM_MODE_INCAR ||
+		mode == CAM_MODE_ONCAR ||
+		mode == CAM_MODE_OUTCAR;
 }
 
 DECLARE_CMD(v_shake, "shakes view", 0)
@@ -219,6 +228,7 @@ void CCameraAnimator::Update( float fDt, int nButtons, CGameObject* target)
 
 				// compute drop position
 				m_dropPos = target->GetOrigin() + vec3_up*cam.heightInCar - forward*cam.distInCar*2.0f;
+
 			}
 
 			m_mode = (ECameraMode)newMode;

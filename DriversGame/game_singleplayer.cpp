@@ -21,6 +21,17 @@ void fng_car_variants(const ConCommandBase* base, DkList<EqString>& list, const 
 
 ConVar g_car("g_car", "rollo", fng_car_variants, "player car", CV_ARCHIVE);
 
+const float THRILL_TIMESCALE = 0.65f;
+const float THRILL_TIMEOUT = 5.0f * THRILL_TIMESCALE;
+
+DECLARE_CMD(cam_go_thrill, "Thrill camera", 0)
+{
+	if (g_pGameSession && g_pGameSession->GetSessionType() == SESSION_SINGLE)
+	{
+		((CSingleGameSession*)g_pGameSession)->GoThrill();
+	}
+}
+
 CSingleGameSession::CSingleGameSession()
 {
 
@@ -35,6 +46,7 @@ void CSingleGameSession::Init()
 {
 	m_playerCar = nullptr;
 	m_playerPedestrian = nullptr;
+	m_thrillTimeout = 0.0f;
 
 	memset(&m_playerControl, 0, sizeof(m_playerControl));
 
@@ -146,4 +158,101 @@ void CSingleGameSession::UpdatePlayerControls()
 		UpdateAsPlayerPedestrian(m_playerControl, m_playerPedestrian);
 	else
 		UpdateAsPlayerCar(m_playerControl, m_playerCar);
+}
+
+void CSingleGameSession::LeaveThrill()
+{
+	m_thrillTimeout = 0.0f;
+	g_pCameraAnimator->SetScripted(false);
+	g_pCameraAnimator->SetMode(CAM_MODE_OUTCAR);
+}
+
+void CSingleGameSession::GoThrill()
+{
+	// thrill camera is valid for game only, not replay
+	if (g_replayTracker->m_state != REPL_RECORDING)
+		return;
+
+	if (g_pCameraAnimator->IsScripted())
+	{
+		if (m_thrillTimeout > 0.0f)
+			LeaveThrill();
+
+		return;
+	}
+
+	m_thrillTimeout = THRILL_TIMEOUT;
+	g_pCameraAnimator->SetScripted(true);
+
+	CCar* focusCar = GetLeadCar();
+
+	// trace far back to determine distToTarget
+	{
+		cameraConfig_t cam;
+		eqPhysCollisionFilter tmp;
+
+		focusCar->ConfigureCamera(cam, tmp);
+
+		const Vector3D& velocity = focusCar->GetVelocity();
+		const Vector3D forward = focusCar->GetForwardVector();
+		const Vector3D right = focusCar->GetRightVector();
+
+		float thrillDir = sign(dot(velocity, forward));
+
+		CollisionData_t trace_coll;
+
+		float rightVecFactor = RandomFloat(-1, 1);
+
+		Vector3D trace_start = focusCar->GetOrigin() + vec3_up * 2.0f;
+		Vector3D target_pos = focusCar->GetOrigin() + forward * thrillDir * 15.0f + velocity * 0.5f + right * sign(rightVecFactor) * 4.0f;
+
+		int props = OBJECTCONTENTS_SOLID_GROUND | OBJECTCONTENTS_SOLID_OBJECTS | OBJECTCONTENTS_VEHICLE;
+
+		// trace forward
+		btBoxShape sphere(btVector3(0.5f, 0.5f, 0.5f));
+		if (g_pPhysics->TestConvexSweep(&sphere, identity(), trace_start, target_pos, trace_coll, props, &tmp))
+		{
+			target_pos = lerp(trace_start, target_pos, trace_coll.fract);
+		}
+
+
+		// trace down
+		if (g_pPhysics->TestConvexSweep(&sphere, identity(), target_pos, target_pos - Vector3D(0, 10.0f, 0.0f), trace_coll, props, &tmp))
+			target_pos = trace_coll.position + 1.0f;
+
+		g_pCameraAnimator->SetMode(CAM_MODE_TRIPOD_FOLLOW_ZOOM);
+		g_pCameraAnimator->SetOrigin(target_pos);
+	}
+}
+
+void CSingleGameSession::UpdateMission(float fDt)
+{
+	CGameSessionBase::UpdateMission(fDt);
+
+	float thrillTime = m_thrillTimeout;
+	if (thrillTime > 0)
+	{
+		thrillTime -= fDt;
+
+		// if player has changed the mode, get out from thrill
+		if (IsCarCamera((ECameraMode)g_pCameraAnimator->GetMode()))
+			thrillTime = 0.0f;
+
+		g_pCameraAnimator->Update(fDt, g_nClientButtons, GetPlayerCar());
+
+		if (thrillTime <= 0.0f)
+		{
+			LeaveThrill();
+		}
+	}
+
+	m_thrillTimeout = thrillTime;
+}
+
+float CSingleGameSession::GetTimescale() const
+{
+	if(m_thrillTimeout > 0.0f)
+		return THRILL_TIMESCALE;
+
+	return 1.0f;
 }

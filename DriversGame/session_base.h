@@ -55,8 +55,6 @@ public:
 
 	virtual void				OnLoadingDone();
 
-	int							GetPhysicsIterations() const;
-
 	void						GetCarNames(DkList<EqString>& list) const;
 
 	void						FinalizeMissionManager();
@@ -65,6 +63,9 @@ public:
 
 	virtual void				Update(float fDt);
 	virtual void				UpdateMission(float fDt);
+
+	virtual float				GetTimescale() const { return 1.0f; }
+	virtual int					GetPhysicsIterations() const;
 
 	virtual void				UpdateLocalControls(int nControls, float steering, float accel_brake) = 0;
 

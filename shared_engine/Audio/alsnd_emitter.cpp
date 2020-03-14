@@ -96,7 +96,7 @@ void DkSoundEmitterLocal::UpdateParams()
 	alSourcef(chnl->alSource, AL_ROLLOFF_FACTOR, m_params.rolloff);
 	alSourcef(chnl->alSource, AL_AIR_ABSORPTION_FACTOR, m_params.airAbsorption);
 	alSourcef(chnl->alSource, AL_GAIN, m_params.volume);
-	alSourcef(chnl->alSource, AL_PITCH, m_params.pitch);
+	alSourcef(chnl->alSource, AL_PITCH, m_params.pitch * pSoundSystem->m_pitchFactor);
 }
 
 bool DkSoundEmitterLocal::SelfAssignChannel()
@@ -337,7 +337,7 @@ void DkSoundEmitterLocal::SetPitch(float val)
 
 	sndChannel_t* chnl = pSoundSystem->m_channels[m_nChannel];
 
-	alSourcef(chnl->alSource,AL_PITCH, m_params.pitch);
+	alSourcef(chnl->alSource,AL_PITCH, m_params.pitch * pSoundSystem->m_pitchFactor);
 }
 
 void DkSoundEmitterLocal::SetParams(soundParams_t *param)

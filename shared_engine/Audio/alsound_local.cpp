@@ -131,7 +131,7 @@ DkSoundSystemLocal::DkSoundSystemLocal()
 	m_init = false;
 	m_pauseState = false;
 
-	m_masterVolume = 1.0f;
+	m_pitchFactor = 1.0f;
 
 	m_dev = nullptr;
 	m_ctx = nullptr;
@@ -239,7 +239,6 @@ void DkSoundSystemLocal::Init()
 
 	//Set Gain
 	alListenerf(AL_GAIN, snd_mastervolume.GetFloat());
-	alListenerf(AL_PITCH, 1.0f);
 
 	alDistanceModel(AL_INVERSE_DISTANCE_CLAMPED);
 
@@ -343,13 +342,14 @@ void DkSoundSystemLocal::ReloadEFX()
 	InitEFX();
 }
 
-void DkSoundSystemLocal::Update()
+void DkSoundSystemLocal::Update(float pitchFactor)
 {
 	if(!m_init)
 		return;
 
 	alDopplerFactor( snd_dopplerFac.GetFloat() );
 	alSpeedOfSound( snd_doppler_soundSpeed.GetFloat() );
+	m_pitchFactor = pitchFactor;
 
 	// Update mixer volume and time scale
 	alListenerf(AL_GAIN, snd_mastervolume.GetFloat());

@@ -55,6 +55,8 @@ public:
 
 	void		HandleJoyAxis( short axis, short value );
 
+	float		GetTimescale() const;
+
 	int			GetPauseMode() const;
 	void		SetPauseState( bool pause );
 

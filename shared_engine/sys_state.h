@@ -49,6 +49,7 @@ public:
 	virtual void		HandleJoyAxis( short axis, short value ) {}
 
 	virtual void		GetMouseCursorProperties(bool& visible, bool& centered) {visible = false; centered = false;}
+	virtual float		GetTimescale() const { return 1.0f; }
 
 	void				SetNextState(CBaseStateHandler* state, bool force = false)	{m_nextState = state;m_forceNextState = force;}
 	CBaseStateHandler*	GetNextState(bool* force = NULL) const						{if(force)*force = m_forceNextState; return m_nextState;}

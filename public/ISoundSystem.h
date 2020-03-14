@@ -109,7 +109,7 @@ public:
 	virtual						~ISoundSystem() {}
 
 	virtual void				Init() = 0;
-	virtual void				Update() = 0;
+	virtual void				Update(float pitchFactor) = 0;
 	virtual	void				Shutdown() = 0;
 
 	virtual bool				IsInitialized() = 0;

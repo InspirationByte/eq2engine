@@ -51,7 +51,7 @@ public:
 							DkSoundSystemLocal();
 
 	void					Init();
-	void					Update();
+	void					Update(float pitchFactor);
 	void					Shutdown();
 
 	bool					InitContext();
@@ -132,7 +132,7 @@ protected:
 
 	sndEffect_t*			m_currEffect;
 
-	float					m_masterVolume;
+	float					m_pitchFactor;
 };
 
 #endif // ALSOUND_LOCAL_H

@@ -30,16 +30,17 @@ public:
 	void					OnPhysicsCollide(CollisionPairData_t& pair);
 
 protected:
-	CPhysicsHFObject*		m_hfObject;
-	float					m_lifeTime;
-	float					m_force;
-
-	float					m_nextRippleTime;
-
 	Vector3D				m_groundPos;
 	Vector3D				m_groundNormal;
 
 	ISoundController*		m_waterFlowSound;
+
+	CPhysicsHFObject*		m_hfObject;
+
+	float					m_lifeTime;
+	float					m_force;
+
+	float					m_nextRippleTime;
 };
 
 #endif // OBJECT_WATERFLOW_H

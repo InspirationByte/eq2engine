@@ -465,8 +465,6 @@ bool CGameHost::FilterTime( double dTime )
 	// Accumulate some time
 	m_fGameCurTime += dTime;
 
-	double timescale = sys_timescale.GetFloat();
-
 	double fps = GAME_MAX_FRAMERATE;
 	if ( fps != 0 )
 	{
@@ -476,7 +474,7 @@ bool CGameHost::FilterTime( double dTime )
 
 		double minframetime = 1.0 / fps;
 
-		m_fGameFrameTime = (m_fGameCurTime - m_fGameOldTime) * (double)sys_timescale.GetFloat();
+		m_fGameFrameTime = (m_fGameCurTime - m_fGameOldTime);
 
 		if(m_fGameFrameTime < minframetime )
 			return false;
@@ -485,7 +483,7 @@ bool CGameHost::FilterTime( double dTime )
 	}
 	else
 	{
-		m_fGameFrameTime = (m_fGameCurTime - m_fGameOldTime) * (double)sys_timescale.GetFloat();
+		m_fGameFrameTime = (m_fGameCurTime - m_fGameOldTime);
 	}
 
 	m_fGameFrameTime = min( m_fGameFrameTime, MAX_FRAMETIME );
@@ -590,7 +588,9 @@ bool CGameHost::Frame()
 
 	PROFILE_BLOCK(UpdateStates);
 
-	if(!EqStateMgr::UpdateStates( m_fGameFrameTime ))
+	double timescale = (EqStateMgr::GetCurrentState() ? EqStateMgr::GetCurrentState()->GetTimescale() : 1.0f) * sys_timescale.GetFloat();
+
+	if(!EqStateMgr::UpdateStates( m_fGameFrameTime * timescale))
 	{
 		m_nQuitState = CGameHost::QUIT_TODESKTOP;
 		return false;
@@ -598,7 +598,7 @@ bool CGameHost::Frame()
 
 	PROFILE_END();
 
-	g_sounds->Update();
+	g_sounds->Update(timescale);
 
 	// Engine frames status
 	static float gameAccTime = 0.1f;

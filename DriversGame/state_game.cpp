@@ -1051,6 +1051,18 @@ bool CState_Game::Update( float fDt )
 	return true;
 }
 
+float CState_Game::GetTimescale() const
+{
+	if (!g_pGameSession)
+		return 1.0f;
+
+	int pauseMode = GetPauseMode();
+	if (pauseMode > 0)
+		return 1.0f;
+
+	return g_pGameSession->GetTimescale();
+}
+
 bool CState_Game::UpdatePauseState()
 {
 	int pauseMode = GetPauseMode();
