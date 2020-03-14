@@ -85,6 +85,9 @@ public:
 	void						ShowMap(bool enable)	{m_showMap = enable;}
 	bool						IsMapShown() const		{return m_showMap;}
 
+	void						ShowMotionBlur(bool enable) { m_showMotionBlur = enable; }
+	bool						IsMotionBlurShown() const { return m_showMotionBlur; }
+
 	void						FadeIn( bool useCurtains = false );
 	void						FadeOut();
 
@@ -98,35 +101,22 @@ protected:
 
 	void						DoDebugDisplay();
 
-	bool								m_enable;
-	bool								m_enableInReplay;
+	void						RenderBlur(const IVector2D& screenSize);
 
-	bool								m_showMap;
+	std::map<int, hudDisplayObject_t>	m_displayObjects;
 
-	float								m_radarBlank;
+	EqWString							m_screenMessageText;
+	EqWString							m_screenAlertText;
+
+	float								m_screenMessageTime;
 
 	ITexture*							m_mapTexture;
 	ITexture*							m_mapRenderTarget;
 
-	std::map<int, hudDisplayObject_t>	m_displayObjects;
-	int									m_handleCounter;
-
-	CCar*								m_mainVehicle;
-	float								m_curTime;
-
-	float								m_screenMessageTime;
-	EqWString							m_screenMessageText;
-
-	EqWString							m_screenAlertText;
-
-	float								m_screenAlertTime;
-	float								m_screenAlertInTime;
-
-	EScreenAlertType					m_screenAlertType;
-
-	float								m_fadeValue;
-	bool								m_fadeCurtains;
-	bool								m_faded;
+	ITexture*							m_framebufferTex;
+	ITexture*							m_blurAccumTex;
+	IMaterial*							m_blurAccumMat;
+	IMaterial*							m_blurMat;
 
 	ILocToken*							m_felonyTok;
 
@@ -140,6 +130,28 @@ protected:
 
 	IEqModel*							m_hudModels;
 	CGameObject							m_hudObjectDummy;
+
+	CCar*								m_mainVehicle;
+	float								m_curTime;
+
+	int									m_handleCounter;
+
+	float								m_radarBlank;
+	float								m_screenAlertTime;
+	float								m_screenAlertInTime;
+
+	EScreenAlertType					m_screenAlertType;
+
+	float								m_fadeValue;
+
+	bool								m_fadeCurtains;
+	bool								m_faded;
+
+	bool								m_enable;
+	bool								m_enableInReplay;
+
+	bool								m_showMap;
+	bool								m_showMotionBlur;
 };
 
 #ifndef __INTELLISENSE__

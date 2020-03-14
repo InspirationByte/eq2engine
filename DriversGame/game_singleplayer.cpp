@@ -13,6 +13,10 @@
 
 #include "DrvSynHUD.h"
 
+const float THRILL_TIMESCALE = 0.65f;
+const float THRILL_TIMEOUT = 7.0f * THRILL_TIMESCALE;
+const float THRILL_LEAD_TO_PLAYER_MAX_DISTANCE = 80.0f;
+
 void fng_car_variants(const ConCommandBase* base, DkList<EqString>& list, const char* query)
 {
 	if (g_pGameSession)
@@ -20,9 +24,6 @@ void fng_car_variants(const ConCommandBase* base, DkList<EqString>& list, const 
 }
 
 ConVar g_car("g_car", "rollo", fng_car_variants, "player car", CV_ARCHIVE);
-
-const float THRILL_TIMESCALE = 0.65f;
-const float THRILL_TIMEOUT = 5.0f * THRILL_TIMESCALE;
 
 DECLARE_CMD(cam_go_thrill, "Thrill camera", 0)
 {
@@ -163,8 +164,11 @@ void CSingleGameSession::UpdatePlayerControls()
 void CSingleGameSession::LeaveThrill()
 {
 	m_thrillTimeout = 0.0f;
-	g_pCameraAnimator->SetScripted(false);
-	g_pCameraAnimator->SetMode(CAM_MODE_OUTCAR);
+
+	if (!g_pCameraAnimator->IsScripted())
+		g_pCameraAnimator->SetMode(CAM_MODE_OUTCAR);
+
+	g_pGameHUD->ShowMotionBlur(false);
 }
 
 void CSingleGameSession::GoThrill()
@@ -174,17 +178,24 @@ void CSingleGameSession::GoThrill()
 		return;
 
 	if (g_pCameraAnimator->IsScripted())
-	{
-		if (m_thrillTimeout > 0.0f)
-			LeaveThrill();
+		return;
 
+	if (m_thrillTimeout > 0.0f)
+	{
+		LeaveThrill();
 		return;
 	}
 
 	m_thrillTimeout = THRILL_TIMEOUT;
-	g_pCameraAnimator->SetScripted(true);
+	//g_pCameraAnimator->SetScripted(true);
 
 	CCar* focusCar = GetLeadCar();
+
+	if (focusCar != GetPlayerCar())
+	{
+		if (distance(focusCar->GetOrigin(), GetPlayerCar()->GetOrigin()) > THRILL_LEAD_TO_PLAYER_MAX_DISTANCE)
+			focusCar = GetPlayerCar();
+	}
 
 	// trace far back to determine distToTarget
 	{
@@ -215,7 +226,6 @@ void CSingleGameSession::GoThrill()
 			target_pos = lerp(trace_start, target_pos, trace_coll.fract);
 		}
 
-
 		// trace down
 		if (g_pPhysics->TestConvexSweep(&sphere, identity(), target_pos, target_pos - Vector3D(0, 10.0f, 0.0f), trace_coll, props, &tmp))
 			target_pos = trace_coll.position + 1.0f;
@@ -223,6 +233,8 @@ void CSingleGameSession::GoThrill()
 		g_pCameraAnimator->SetMode(CAM_MODE_TRIPOD_FOLLOW_ZOOM);
 		g_pCameraAnimator->SetOrigin(target_pos);
 	}
+
+	g_pGameHUD->ShowMotionBlur(true);
 }
 
 void CSingleGameSession::UpdateMission(float fDt)
@@ -238,12 +250,18 @@ void CSingleGameSession::UpdateMission(float fDt)
 		if (IsCarCamera((ECameraMode)g_pCameraAnimator->GetMode()))
 			thrillTime = 0.0f;
 
-		g_pCameraAnimator->Update(fDt, g_nClientButtons, GetPlayerCar());
+		//g_pCameraAnimator->Update(fDt, g_nClientButtons, GetPlayerCar());
 
-		if (thrillTime <= 0.0f)
+		if (thrillTime <= 0.0f || g_pCameraAnimator->IsScripted())
 		{
 			LeaveThrill();
+			thrillTime = 0.0f;
 		}
+	}
+	else if (m_missionStatus == MIS_STATUS_FAILED)
+	{
+		GoThrill();
+		return;
 	}
 
 	m_thrillTimeout = thrillTime;

@@ -113,7 +113,7 @@ void CReplayTracker::Clear()
 {
 	m_currentEvent = 0;
 	m_numFrames = 0;
-	m_playbackPhysIterations = g_pGameSession->GetPhysicsIterations();
+	m_playbackPhysIterations = 2;
 
 	ClearEvents();
 	

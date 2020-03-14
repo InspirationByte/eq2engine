@@ -45,7 +45,8 @@ DECLARE_CMD(hud_showLastMessage, NULL, 0)
 
 CDrvSynHUDManager::CDrvSynHUDManager()
 	: m_handleCounter(0), m_mainVehicle(nullptr), m_curTime(0.0f), m_mapTexture(nullptr), m_showMap(true), m_screenAlertTime(0.0f), m_screenMessageTime(0.0f), 
-		m_hudLayout(nullptr), m_hudDamageBar(nullptr), 	m_hudFelonyBar(nullptr), m_hudMap(nullptr), m_hudTimer(nullptr), m_fadeValue(0.0f), m_fadeCurtains(false), m_faded(false)
+		m_hudLayout(nullptr), m_hudDamageBar(nullptr), 	m_hudFelonyBar(nullptr), m_hudMap(nullptr), m_hudTimer(nullptr), m_fadeValue(0.0f), m_fadeCurtains(false), m_faded(false),
+	m_blurAccumMat(nullptr), m_blurMat(nullptr), m_framebufferTex(nullptr), m_blurAccumTex(nullptr)
 {
 }
 
@@ -86,6 +87,47 @@ void CDrvSynHUDManager::Init()
 	m_faded = false;
 	m_fadeCurtains = false;
 	m_fadeValue = 0.0f;
+	m_showMotionBlur = false;
+
+	if (!m_framebufferTex)
+	{
+		m_framebufferTex = g_pShaderAPI->CreateNamedRenderTarget("_hud_framebuffer", 512, 512, FORMAT_RGB8, TEXFILTER_LINEAR, TEXADDRESS_CLAMP);
+		m_framebufferTex->Ref_Grab();
+	}
+
+	if (!m_blurAccumTex)
+	{
+		m_blurAccumTex = g_pShaderAPI->CreateNamedRenderTarget("_rt_blur", 512, 512, FORMAT_RGB8, TEXFILTER_LINEAR, TEXADDRESS_CLAMP);
+		m_blurAccumTex->Ref_Grab();
+	}
+
+	if (!m_blurAccumMat)
+	{
+		kvkeybase_t blurAccumulatorMat;
+		blurAccumulatorMat.SetName("BaseUnlit");
+		blurAccumulatorMat.SetKey("basetexture", "_hud_framebuffer");
+		blurAccumulatorMat.SetKey("translucent", true);
+		blurAccumulatorMat.SetKey("color", "[1 1 1 0.1]");
+		blurAccumulatorMat.SetKey("ztest", false);
+		blurAccumulatorMat.SetKey("zwrite", false);
+
+		m_blurAccumMat = materials->CreateMaterial("_hudBlurAccum", &blurAccumulatorMat);
+		m_blurAccumMat->Ref_Grab();
+	}
+
+	if (!m_blurMat)
+	{
+		kvkeybase_t blurMat;
+		blurMat.SetName("BaseUnlit");
+		blurMat.SetKey("basetexture", "_rt_blur");
+		blurMat.SetKey("translucent", true);
+		blurMat.SetKey("color", "[1.25 1.25 1.25 0.6]");
+		blurMat.SetKey("ztest", false);
+		blurMat.SetKey("zwrite", false);
+
+		m_blurMat = materials->CreateMaterial("_hudMotionBlur", &blurMat);
+		m_blurMat->Ref_Grab();
+	}
 
 	m_radarBlank = 0.0f;
 
@@ -96,6 +138,40 @@ void CDrvSynHUDManager::Init()
 
 	int hudModelCacheId = PrecacheStudioModel("/models/misc/hud_models.egf");
 	m_hudObjectDummy.SetModel("/models/misc/hud_models.egf");
+}
+
+void CDrvSynHUDManager::RenderBlur(const IVector2D& screenSize)
+{
+	materials->SetCullMode(CULL_FRONT);
+
+	g_pShaderAPI->CopyFramebufferToTexture(m_framebufferTex);
+	g_pShaderAPI->ChangeRenderTarget(m_blurAccumTex);
+
+	materials->BindMaterial(m_blurAccumMat);
+
+	CMeshBuilder meshBuilder(materials->GetDynamicMesh());
+
+	Rectangle_t screenRect(0,0, screenSize.x, screenSize.y);
+
+	Rectangle_t texCoords(0, 0, 1, 1);
+	if (g_pShaderAPI->GetShaderAPIClass() == SHADERAPI_OPENGL)
+		texCoords.FlipY();
+
+	// render blur to accumulator texture
+	meshBuilder.Begin(PRIM_TRIANGLE_STRIP);
+		meshBuilder.TexturedQuad2(screenRect.GetRightTop(), screenRect.GetLeftTop(), screenRect.GetRightBottom(), screenRect.GetLeftBottom(),
+								  texCoords.GetRightTop(), texCoords.GetLeftTop(), texCoords.GetRightBottom(), texCoords.GetLeftBottom());
+	meshBuilder.End();
+
+	g_pShaderAPI->ChangeRenderTargetToBackBuffer();
+
+	// render accumulated texture on screen
+	materials->BindMaterial(m_blurMat);
+
+	meshBuilder.Begin(PRIM_TRIANGLE_STRIP);
+		meshBuilder.TexturedQuad2(screenRect.GetRightTop(), screenRect.GetLeftTop(), screenRect.GetRightBottom(), screenRect.GetLeftBottom(),
+			texCoords.GetRightTop(), texCoords.GetLeftTop(), texCoords.GetRightBottom(), texCoords.GetLeftBottom());
+	meshBuilder.End();
 }
 
 void InitHUDBaseKeyValues_r(kvkeybase_t* hudKVs, kvkeybase_t* baseKVs)
@@ -192,6 +268,18 @@ void CDrvSynHUDManager::Cleanup()
 
 	g_pShaderAPI->FreeTexture(m_mapRenderTarget);
 	m_mapRenderTarget = nullptr;
+
+	g_pShaderAPI->FreeTexture(m_framebufferTex);
+	m_framebufferTex = nullptr;
+
+	g_pShaderAPI->FreeTexture(m_blurAccumTex);
+	m_blurAccumTex = nullptr;
+
+	materials->FreeMaterial(m_blurAccumMat);
+	m_blurAccumMat = nullptr;
+
+	materials->FreeMaterial(m_blurMat);
+	m_blurMat = nullptr;
 
 	InvalidateObjects();
 
@@ -571,6 +659,9 @@ void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize)
 	m_curTime += fDt;
 
 	materials->Setup2D(screenSize.x,screenSize.y);
+
+	if (m_showMotionBlur)
+		RenderBlur(screenSize);
 
 	materials->SetAmbientColor(ColorRGBA(1,1,1,1));
 	m_hudLayout->SetSize(screenSize);
