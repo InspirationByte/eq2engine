@@ -351,8 +351,11 @@ int CAIPursuerCar::PassiveCopState( float fDt, EStateTransition transition )
 		// gang just starts pursuing
 		if (m_type == PURSUER_TYPE_GANG)
 		{
-			SetPursuitTarget(checkCar);
-			BeginPursuit(pursuitStartDelay);
+			if (checkCar->IsEnabled())
+			{
+				SetPursuitTarget(checkCar);
+				BeginPursuit(pursuitStartDelay);
+			}
 			return 0;
 		}
 
