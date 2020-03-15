@@ -29,7 +29,12 @@ DECLARE_CMD(cam_go_thrill, "Thrill camera", 0)
 {
 	if (g_pGameSession && g_pGameSession->GetSessionType() == SESSION_SINGLE)
 	{
-		((CSingleGameSession*)g_pGameSession)->GoThrill();
+		CSingleGameSession* session = (CSingleGameSession*)g_pGameSession;
+
+		if (session->IsInThrill())
+			session->LeaveThrill();
+		else
+			session->GoThrill();
 	}
 }
 
@@ -161,6 +166,11 @@ void CSingleGameSession::UpdatePlayerControls()
 		UpdateAsPlayerCar(m_playerControl, m_playerCar);
 }
 
+bool CSingleGameSession::IsInThrill() const
+{
+	return (m_thrillTimeout > 0.0f);
+}
+
 void CSingleGameSession::LeaveThrill()
 {
 	m_thrillTimeout = 0.0f;
@@ -180,12 +190,6 @@ void CSingleGameSession::GoThrill()
 	if (g_pCameraAnimator->IsScripted())
 		return;
 
-	if (m_thrillTimeout > 0.0f)
-	{
-		LeaveThrill();
-		return;
-	}
-
 	m_thrillTimeout = THRILL_TIMEOUT;
 	//g_pCameraAnimator->SetScripted(true);
 
@@ -196,6 +200,12 @@ void CSingleGameSession::GoThrill()
 		if (distance(focusCar->GetOrigin(), GetPlayerCar()->GetOrigin()) > THRILL_LEAD_TO_PLAYER_MAX_DISTANCE)
 			focusCar = GetPlayerCar();
 	}
+
+	if (focusCar == nullptr)
+		return;
+
+	if (focusCar->IsInWater())
+		return;
 
 	// trace far back to determine distToTarget
 	{

@@ -38,6 +38,7 @@ public:
 
 	void				UpdateLocalControls(int nControls, float steering, float accel_brake);
 
+	bool				IsInThrill() const;
 	void				GoThrill();
 	void				LeaveThrill();
 
