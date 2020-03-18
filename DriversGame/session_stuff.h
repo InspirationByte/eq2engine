@@ -12,6 +12,8 @@
 #include "session_base.h"
 #include "replay.h"
 
+//-------------------------------------------------------------
+
 struct server_client_info_t
 {
 	int			clientID;
@@ -24,6 +26,6 @@ struct server_client_info_t
 };
 
 extern server_client_info_t		g_svclientInfo;
-extern CReplayTracker*				g_replayTracker;
+extern CReplayTracker*			g_replayTracker;
 
 #endif // SESSION_STUFF_H

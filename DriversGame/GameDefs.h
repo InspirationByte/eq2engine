@@ -10,6 +10,22 @@
 
 #include "dktypes.h"
 
+enum EEventType
+{
+	EVT_INVALID = -1,
+
+	// GO_CAR events
+	EVT_CAR_HORN,
+	EVT_CAR_SIREN,
+	EVT_CAR_DAMAGE_INFLICT,		// has data as CollisionPairData_t
+	EVT_CAR_DAMAGE_RECIEVE,		// has data as CollisionPairData_t
+	EVT_CAR_DEATH,
+
+	EVT_PEDESTRIAN_SCARED,
+
+	EVT_COUNT,
+};
+
 // There are some traffic infraction types that cop can recognize
 enum EInfractionType
 {
@@ -50,11 +66,11 @@ struct PursuerData_t
 	float	speechTimer;
 
 	int		pursuedByCount;
-	bool	announced;
-	bool	copsHasAttention;
-
 	float	lastDirectionTimer;
 	int		lastDirection;		// swne
+
+	bool	announced;
+	bool	copsHasAttention;
 };
 
 struct RoadBlockInfo_t
@@ -89,5 +105,40 @@ struct slipAngleCurveParams_t
 const slipAngleCurveParams_t& GetDefaultSlipCurveParams();
 const slipAngleCurveParams_t& GetAISlipCurveParams();
 
+//--------------------------------------------------------------------
+
+struct eventArgs_t
+{
+	CGameObject* owner;
+
+	Vector3D origin;
+	void* data;
+};
+
+typedef void(*eventFunc)(const eventArgs_t& args);
+
+struct eventSubscription_t
+{
+	eventFunc func;
+	bool unsubscribe;
+};
+
+class CEventSubject
+{
+public:
+	CEventSubject();
+	~CEventSubject();
+
+	eventSubscription_t*	Subscribe(eventFunc func);
+
+	void					Raise(const eventArgs_t& args);
+
+	void					Raise(CGameObject* owner, const Vector3D& origin, void* data = nullptr);
+
+private:
+	DkList<eventSubscription_t*> m_subscriptions;
+};
+
+extern CEventSubject g_worldEvents[EVT_COUNT];
 
 #endif // GAMEDEFS_H

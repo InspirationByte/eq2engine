@@ -297,7 +297,9 @@ protected:
 
 	virtual void				OnPhysicsFrame(float fDt);
 	virtual void				OnPrePhysicsFrame(float fDt) {}
-	virtual void				OnPhysicsCollide(CollisionPairData_t& pair) {}
+
+	virtual void				OnPhysicsPreCollide(const ContactPair_t& pair) {}
+	virtual void				OnPhysicsCollide(const CollisionPairData_t& pair) {}
 
 	virtual void				UpdateTransform();
 

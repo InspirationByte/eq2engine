@@ -2368,6 +2368,10 @@ void CCar::OnPhysicsFrame( float fDt )
 		{
 			hitGameObject = (CGameObject*)coll.bodyB->GetUserData();
 			hitGameObject->OnCarCollisionEvent(coll, this);
+
+			// raise damaged car event
+			g_worldEvents[EVT_CAR_DAMAGE_INFLICT].Raise(this, coll.position, &coll);
+			g_worldEvents[EVT_CAR_DAMAGE_RECIEVE].Raise(hitGameObject, coll.position, &coll);
 		}
 
 		// don't apply collision damage if this is a trigger or water
@@ -2600,7 +2604,7 @@ void CCar::OnPhysicsFrame( float fDt )
 	}
 } 
 
-void CCar::OnPhysicsCollide(CollisionPairData_t& pair)
+void CCar::OnPhysicsCollide(const CollisionPairData_t& pair)
 {
 	// we went underwater
 	if (pair.bodyB->GetContents() & OBJECTCONTENTS_WATER)
@@ -3903,6 +3907,9 @@ void CCar::UpdateSounds( float fDt )
 		if((controlButtons & IN_HORN) && !(m_oldControlButtons & IN_HORN) && hornSound->IsStopped())
 		{
 			hornSound->Play();
+
+			// raise horn event
+			g_worldEvents[EVT_CAR_HORN].Raise(this, GetOrigin());
 		}
 		else if(!(controlButtons & IN_HORN) && (m_oldControlButtons & IN_HORN))
 		{
@@ -4021,6 +4028,9 @@ void CCar::UpdateSounds( float fDt )
 
 		if( m_sirenEnabled && IsAlive() )
 		{
+			// raise horn event
+			g_worldEvents[EVT_CAR_SIREN].Raise(this, GetOrigin());
+
 			int sampleId = sirenSound->GetEmitParams().sampleId;
 
 			if((controlButtons & IN_HORN) && sampleId == 0)
@@ -4590,6 +4600,9 @@ void CCar::OnDeath( CGameObject* deathBy )
 	int deathByReplayId = deathBy ? deathBy->m_replayID : REPLAY_NOT_TRACKED;
 	g_replayTracker->PushEvent( REPLAY_EVENT_CAR_DEATH, m_replayID, (void*)(intptr_t)deathByReplayId );
 #endif // EDITOR
+
+	// push car death world event
+	g_worldEvents[EVT_CAR_DEATH].Raise(this, GetOrigin(), deathBy);
 
 #ifndef NO_LUA
 	OOLUA::Script& state = GetLuaState();

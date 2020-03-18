@@ -37,6 +37,7 @@ struct playerControl_t
 	float	accelBrakeValue;
 };
 
+
 //--------------------------------------------------------------------------------------
 
 class CGameSessionBase

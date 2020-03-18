@@ -27,7 +27,7 @@ public:
 
 	int						ObjType() const		{return GO_DEBRIS;}
 
-	void					OnPhysicsCollide(CollisionPairData_t& pair);
+	void					OnPhysicsCollide(const CollisionPairData_t& pair);
 
 protected:
 	Vector3D				m_groundPos;

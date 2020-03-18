@@ -38,7 +38,7 @@ public:
 
 	void					OnUnpackMessage( CNetMessageBuffer* buffer );
 
-	void					OnPhysicsCollide(CollisionPairData_t& pair);
+	void					OnPhysicsCollide(const CollisionPairData_t& pair);
 
 	void					L_SetContents(int contents);
 	void					L_SetCollideMask(int contents);

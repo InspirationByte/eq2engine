@@ -55,6 +55,11 @@ const float PHYSICS_DEFAULT_RESTITUTION = 0.25f;
 const float PHYSICS_DEFAULT_TIRE_FRICTION = 0.2f;
 const float PHYSICS_DEFAULT_TIRE_TRACTION = 1.0f;
 
+CEqCollisionObject* ContactPair_t::GetOppositeTo(CEqCollisionObject* obj) const
+{
+	return (obj == bodyA) ? bodyB : bodyA;
+}
+
 CEqCollisionObject* CollisionPairData_t::GetOppositeTo(CEqCollisionObject* obj) const
 {
 	return (obj == bodyA) ? bodyB : bodyA;
@@ -198,7 +203,7 @@ void CEqPhysics::InitWorld()
 	m_collConfig = new btDefaultCollisionConfiguration();
 
 	// use the default collision dispatcher. For parallel processing you can use a diffent dispatcher (see Extras/BulletMultiThreaded)
-	m_collDispatcher = new btCollisionDispatcherMt( m_collConfig );
+	m_collDispatcher = new btCollisionDispatcher( m_collConfig );
 	m_collDispatcher->setDispatcherFlags( btCollisionDispatcher::CD_DISABLE_CONTACTPOOL_DYNAMIC_ALLOCATION );
 
 	// broadphase not required
@@ -769,6 +774,7 @@ void CEqPhysics::DetectStaticVsBodyCollision(CEqCollisionObject* staticObj, CEqR
 			hitDepth = 1.0f;
 
 		int idx = contactPairs.append(ContactPair_t());
+
 		ContactPair_t& newPair = contactPairs[idx];
 		newPair.normal = hitNormal;
 		newPair.flags = COLLPAIRFLAG_OBJECTA_STATIC;
@@ -856,60 +862,7 @@ void CEqPhysics::IntegrateSingle(CEqRigidBody* body)
 			body->SetCell(newCell);
 		}
 	}
-
 }
-/*
-struct eqCollisionDetectionJob_t
-{
-	eqParallelJob_t base;
-	CEqRigidBody*	body;
-	collgridcell_t* cell;
-	CEqPhysics*		physics;
-};
-
-void CEqPhysics::CellCollisionDetectionJob(void* data, int iter)
-{
-	eqCollisionDetectionJob_t* job = (eqCollisionDetectionJob_t*)data;
-
-	CEqRigidBody*	body = job->body;
-	collgridcell_t* cell = job->cell;
-	CEqPhysics*		physics = job->physics;
-
-	bool disabledResponse = (body->m_flags & COLLOBJ_DISABLE_RESPONSE);
-
-	int numGridObjs = job->cell->m_gridObjects.numElem();
-
-	// iterate over static objects in cell
-	for (int j = 0; j < numGridObjs; j++)
-		physics->SolveStaticVsBodyCollision(cell->m_gridObjects[j], body, body->GetLastFrameTime(), body->m_contactPairs);
-
-	// if object is only affected by other dynamic objects, don't waste my cycles!
-	if (disabledResponse)
-		return;
-
-	int numGridDynObjs = cell->m_dynamicObjs.numElem();
-
-	// iterate over dynamic objects in cell
-	for (int j = 0; j < numGridDynObjs; j++)
-	{
-		CEqCollisionObject* collObj = cell->m_dynamicObjs[j];
-
-		if (collObj == body)
-			continue;
-
-		if (collObj->IsDynamic())
-			physics->SolveBodyCollisions(body, (CEqRigidBody*)collObj, body->GetLastFrameTime());
-		else // purpose for triggers
-			physics->SolveStaticVsBodyCollision(collObj, body, body->GetLastFrameTime(), body->m_contactPairs);
-	}
-}
-
-void CollisionDetectionJobCompleted()
-{
-	eqCollisionDetectionJob_t* job = (eqCollisionDetectionJob_t*)data;
-	delete job;
-}
-*/
 
 void CEqPhysics::DetectCollisionsSingle(CEqRigidBody* body)
 {
@@ -929,7 +882,7 @@ void CEqPhysics::DetectCollisionsSingle(CEqRigidBody* body)
 
 	// get the grid box range for searching collision objects
 	IVector2D crMin, crMax;
-	m_grid.FindBoxRange(aabb.minPoint, aabb.maxPoint, crMin, crMax, ph_grid_tolerance.GetFloat() );
+	m_grid.FindBoxRange(aabb, crMin, crMax, ph_grid_tolerance.GetFloat() );
 
 	// in this range do all collision checks
 	// might be slow
@@ -941,37 +894,26 @@ void CEqPhysics::DetectCollisionsSingle(CEqRigidBody* body)
 
 			if(!ncell)
 				continue;
-			/*
-			// SHOULD BE DEBUGGED, crashes in current state
-			// also needs a barrier after whole DetectCollisionsSingle cycle
 
-			eqCollisionDetectionJob_t* job = new eqCollisionDetectionJob_t;
-			job->base.func = CEqPhysics::CellCollisionDetectionJob;
-			job->base.onComplete = CollisionDetectionJobCompleted;
-			job->base.arguments = job;
-			job->body = body;
-			job->cell = ncell;
-			job->physics = this;
-
-			g_parallelJobs->AddJob((eqParallelJob_t*)job);
-			*/
+			const DkList<CEqCollisionObject*>& gridObjects = ncell->m_gridObjects;
+			const DkList<CEqCollisionObject*>& dynamicObjects = ncell->m_dynamicObjs;
 			
-			int numGridObjs = ncell->m_gridObjects.numElem();
+			int numGridObjs = gridObjects.numElem();
 
 			// iterate over static objects in cell
-			for (int j = 0; j < numGridObjs; j++)
-				DetectStaticVsBodyCollision(ncell->m_gridObjects[j], body, body->GetLastFrameTime(), body->m_contactPairs);
+			for (int i = 0; i < numGridObjs; i++)
+				DetectStaticVsBodyCollision(gridObjects[i], body, body->GetLastFrameTime(), body->m_contactPairs);
 
 			// if object is only affected by other dynamic objects, don't waste my cycles!
 			if (disabledResponse)
 				continue;
 
-			int numGridDynObjs = ncell->m_dynamicObjs.numElem();
+			int numGridDynObjs = dynamicObjects.numElem();
 
 			// iterate over dynamic objects in cell
-			for (int j = 0; j < numGridDynObjs; j++)
+			for (int i = 0; i < numGridDynObjs; i++)
 			{
-				CEqCollisionObject* collObj = ncell->m_dynamicObjs[j];
+				CEqCollisionObject* collObj = dynamicObjects[i];
 
 				if (collObj == body)
 					continue;
@@ -983,8 +925,6 @@ void CEqPhysics::DetectCollisionsSingle(CEqRigidBody* body)
 			}
 		}
 	}
-
-	g_parallelJobs->Submit();
 }
 
 
@@ -1005,6 +945,19 @@ void CEqPhysics::ProcessContactPair(const ContactPair_t& pair)
 
 	float combinedErp = ph_erp.GetFloat() + pair.bodyA->m_erp + pair.bodyB->m_erp;
 	combinedErp = max(combinedErp, ph_erp.GetFloat());
+
+	IEqPhysCallback* callbacksA = pair.bodyA->m_callbacks;
+	IEqPhysCallback* callbacksB = pair.bodyB->m_callbacks;
+
+	//-----------------------------------------------
+	// OBJECT A
+	if (callbacksA)
+		callbacksA->OnPreCollide(pair);
+
+	//-----------------------------------------------
+	// OBJECT B
+	if (callbacksB)
+		callbacksB->OnPreCollide(pair);
 
 	if (pair.flags & COLLPAIRFLAG_OBJECTA_STATIC)
 	{
@@ -1059,7 +1012,6 @@ void CEqPhysics::ProcessContactPair(const ContactPair_t& pair)
 	// OBJECT A
 	{
 		DkList<CollisionPairData_t>& pairs = pair.bodyA->m_collisionList;
-		IEqPhysCallback* callbacks = pair.bodyA->m_callbacks;
 
 		bool canAddPair = (bodyAFlags & COLLOBJ_COLLISIONLIST) && pairs.numElem() < PHYSICS_COLLISION_LIST_MAX;
 
@@ -1086,15 +1038,14 @@ void CEqPhysics::ProcessContactPair(const ContactPair_t& pair)
 		if (bodyBFlags & COLLOBJ_DISABLE_RESPONSE)
 			collData.flags |= COLLPAIRFLAG_OBJECTB_NO_RESPONSE;
 
-		if (callbacks)
-			callbacks->OnCollide(collData);
+		if (callbacksA)
+			callbacksA->OnCollide(collData);
 	}
 
 	//-----------------------------------------------
 	// OBJECT B
 	{
 		DkList<CollisionPairData_t>& pairs = pair.bodyB->m_collisionList;
-		IEqPhysCallback* callbacks = pair.bodyB->m_callbacks;
 
 		bool canAddPair = (bodyBFlags & COLLOBJ_COLLISIONLIST) && pairs.numElem() < PHYSICS_COLLISION_LIST_MAX;
 
@@ -1123,8 +1074,8 @@ void CEqPhysics::ProcessContactPair(const ContactPair_t& pair)
 		if (bodyBFlags & COLLOBJ_DISABLE_RESPONSE)
 			collData.flags |= COLLPAIRFLAG_OBJECTA_NO_RESPONSE;
 
-		if (callbacks)
-			callbacks->OnCollide(collData);
+		if (callbacksB)
+			callbacksB->OnCollide(collData);
 	}
 }
 
@@ -1209,14 +1160,16 @@ void CEqPhysics::SimulateStep(float deltaTime, int iteration, FNSIMULATECALLBACK
 	{
 		CEqRigidBody* body = m_moveable[i];
 
-		int numContactPairs = body->m_contactPairs.numElem();
+		const DkList<ContactPair_t>& pairs = body->m_contactPairs;
+		int numContactPairs = pairs.numElem();
+
 		for (int j = 0; j < numContactPairs; j++)
-			ProcessContactPair(body->m_contactPairs[j]);
+			ProcessContactPair(pairs[j]);
 
 		// set after collisions processed
 		body->UpdateBoundingBoxTransform();
 
-		IEqPhysCallback* callbacks = m_moveable[i]->m_callbacks;
+		IEqPhysCallback* callbacks = body->m_callbacks;
 
 		if (callbacks) // execute post simulation callbacks
 			callbacks->PostSimulate(m_fDt);

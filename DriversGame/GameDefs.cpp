@@ -9,7 +9,7 @@
 #include "GameDefs.h"
 
 ConVar		g_autoHandbrake("g_autoHandbrake", "1", "Auto handbrake for steering help", CV_ARCHIVE);
-ConVar		g_invicibility("g_invicibility", "0", "No damage for player car", CV_CHEAT);
+ConVar		g_invincibility("g_invincibility", "0", "No damage for player car", CV_CHEAT);
 ConVar		g_infiniteMass("g_infiniteMass", "0", "Infinite mass for player car", CV_CHEAT);
 ConVar		g_difficulty("g_difficulty", "0", "Difficulty of the game", CV_ARCHIVE);
 
@@ -46,3 +46,62 @@ const slipAngleCurveParams_t& GetAISlipCurveParams()
 	// FIXME: should be different by g_difficulty
 	return s_AISlipAngleParams;
 }
+
+//-------------------------------------------------------------------------------------------
+
+CEventSubject::CEventSubject()
+{
+
+}
+
+CEventSubject::~CEventSubject()
+{
+	for (int i = 0; i < m_subscriptions.numElem(); i++)
+	{
+		delete m_subscriptions[i];
+	}
+
+	m_subscriptions.clear();
+}
+
+eventSubscription_t* CEventSubject::Subscribe(eventFunc func)
+{
+	eventSubscription_t* sub = new eventSubscription_t();
+	sub->func = func;
+	sub->unsubscribe = false;
+
+	m_subscriptions.append(sub);
+
+	return sub;
+}
+
+void CEventSubject::Raise(CGameObject* owner, const Vector3D& origin, void* data)
+{
+	eventArgs_t args;
+	args.owner = owner;
+	args.origin = origin;
+	args.data = data;
+
+	Raise(args);
+}
+
+void CEventSubject::Raise(const eventArgs_t& args)
+{
+	for (int i = 0; i < m_subscriptions.numElem(); i++)
+	{
+		eventSubscription_t* sub = m_subscriptions[i];
+
+		if (sub->unsubscribe)
+		{
+			delete sub;
+			m_subscriptions.fastRemoveIndex(i);
+			i--;
+			continue;
+		}
+
+		sub->func(args);
+	}
+}
+
+// declare world events
+CEventSubject g_worldEvents[EVT_COUNT];

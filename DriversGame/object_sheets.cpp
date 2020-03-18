@@ -114,7 +114,7 @@ bool CObject_Sheets::InitSheets()
 	return m_sheets.numElem() > 0;
 }
 
-void CObject_Sheets::OnPhysicsCollide(CollisionPairData_t& pair)
+void CObject_Sheets::OnPhysicsCollide(const CollisionPairData_t& pair)
 {
 	CEqCollisionObject* obj = pair.GetOppositeTo(m_hfObject->m_object);
 

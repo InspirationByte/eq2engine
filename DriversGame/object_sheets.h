@@ -52,7 +52,7 @@ public:
 
 protected:
 
-	void					OnPhysicsCollide(CollisionPairData_t& pair);
+	void					OnPhysicsCollide(const CollisionPairData_t& pair);
 
 	DkList<sheetpart_t>		m_sheets;
 	EqString				m_smashSound;

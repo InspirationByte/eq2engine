@@ -8,7 +8,7 @@
 #ifndef EQCOLLISION_OBJECTGRID_H
 #define EQCOLLISION_OBJECTGRID_H
 
-#include "math/Vector.h"
+#include "math/BoundingBox.h"
 #include "utils/DkList.h"
 #include "ppmem.h"
 
@@ -50,7 +50,7 @@ public:
 
 	bool				GetCellBounds(int x, int y, Vector3D& mins, Vector3D& maxs) const;
 
-	void				FindBoxRange(const Vector3D& mins, const Vector3D& maxs, IVector2D& cr_min, IVector2D& cr_max, float extTolerance) const;
+	void				FindBoxRange(const BoundingBox& bbox, IVector2D& cr_min, IVector2D& cr_max, float extTolerance) const;
 
 	void				DebugRender();
 

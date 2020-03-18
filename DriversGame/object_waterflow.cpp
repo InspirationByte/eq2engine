@@ -108,7 +108,7 @@ void CObject_WaterFlow::Spawn()
 	g_pPhysics->m_physics.AddGhostObject( triggerObject );
 }
 
-void CObject_WaterFlow::OnPhysicsCollide(CollisionPairData_t& pair)
+void CObject_WaterFlow::OnPhysicsCollide(const CollisionPairData_t& pair)
 {
 	CEqCollisionObject* obj = pair.GetOppositeTo(m_hfObject->m_object);
 

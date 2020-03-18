@@ -76,26 +76,30 @@ struct CollisionData_t
 
 	FVector3D			position;			// position in world
 	Vector3D			normal;
-	float				fract;				// collision depth (if RayTest or SweepTest - factor between start[Transform] and end[Transform])
-	int					materialIndex;
 
 	CEqCollisionObject*	hitobject;
+
+	float				fract;				// collision depth (if RayTest or SweepTest - factor between start[Transform] and end[Transform])
+	int					materialIndex;
 };
 
 struct ContactPair_t
 {
+	CEqCollisionObject* GetOppositeTo(CEqCollisionObject* obj) const;
+
+	Vector3D			normal;
+	FVector3D			position;
+
 	CEqCollisionObject*	bodyA;
 	CEqCollisionObject*	bodyB;
 
 	float				restitutionA;
 	float				frictionA;
 
-	int					flags;
-
 	float				dt;
 	float				depth;
-	Vector3D			normal;
-	FVector3D			position;
+
+	int					flags;
 };
 
 struct CollisionPairData_t
@@ -105,13 +109,14 @@ struct CollisionPairData_t
 		flags = 0;
 	}
 
-	CEqCollisionObject*	bodyA;
-	CEqCollisionObject*	bodyB;
-
 	CEqCollisionObject* GetOppositeTo(CEqCollisionObject* obj) const;
 
 	FVector3D			position;			// position in world
 	Vector3D			normal;
+
+	CEqCollisionObject*	bodyA;
+	CEqCollisionObject*	bodyB;
+
 	float				fract;				// collision depth (if RayTest or SweepTest - factor between start[Transform] and end[Transform])
 	float				appliedImpulse;
 	float				impactVelocity;
@@ -144,16 +149,17 @@ enum EPhysFilterFlags
 
 struct eqPhysSurfParam_t
 {
-	int			id;
-
 	EqString	name;
-	char		word;
+
+	int			id;
 
 	float		restitution;
 	float		friction;
 
 	float		tirefriction;
 	float		tirefriction_traction;
+
+	char		word;
 };
 
 //----------------------------------------------
@@ -207,10 +213,10 @@ struct eqPhysCollisionFilter
 		return false;
 	}
 
+	void*	objectPtrs[MAX_COLLISION_FILTER_OBJECTS];
+
 	int		type;
 	int		flags;
-
-	void*	objectPtrs[MAX_COLLISION_FILTER_OBJECTS];
 	int		numObjects;
 };
 
@@ -340,10 +346,10 @@ public:
 
 	void							SetDebugRaycast(bool enable) {m_debugRaycast = enable;}
 
-	//static void						CellCollisionDetectionJob(void* data, int iter);
-
 	void							DetectBodyCollisions(CEqRigidBody* bodyA, CEqRigidBody* bodyB, float fDt);
 	void							DetectStaticVsBodyCollision(CEqCollisionObject* staticObj, CEqRigidBody* bodyB, float fDt, DkList<ContactPair_t>& contactPairs);
+
+	//static void						CellCollisionDetectionJob(void* data, int iter);
 
 protected:
 

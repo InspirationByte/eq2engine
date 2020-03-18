@@ -20,7 +20,7 @@
 #include "pedestrian.h"
 
 extern ConVar g_autoHandbrake;
-extern ConVar g_invicibility;
+extern ConVar g_invincibility;
 extern ConVar g_infiniteMass;
 extern ConVar g_difficulty;
 
@@ -265,7 +265,7 @@ void Game_OnPhysicsUpdate(float fDt, int iterNum)
 	if (g_replayTracker)
 	{
 		// always regenerate predictable random
-		g_replayRandom.SetSeed(g_replayTracker->m_tick);
+		//g_replayRandom.SetSeed(g_replayTracker->m_tick);
 		g_replayRandom.Regenerate();
 	}
 
@@ -324,7 +324,7 @@ void CGameSessionBase::UpdateAsPlayerCar(const playerControl_t& control, CCar* c
 	{
 		// apply cheats
 		{
-			if (g_invicibility.GetBool())
+			if (g_invincibility.GetBool())
 				car->SetDamage(0.0f);
 
 			car->SetInfiniteMass(g_infiniteMass.GetBool());

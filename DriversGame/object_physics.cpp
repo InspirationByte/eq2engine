@@ -248,7 +248,7 @@ void CObject_Physics::Draw( int nRenderFlags )
 		BaseClass::Draw( nRenderFlags );
 }
 
-void CObject_Physics::OnPhysicsCollide(CollisionPairData_t& pair)
+void CObject_Physics::OnPhysicsCollide(const CollisionPairData_t& pair)
 {
 	CEqRigidBody* body = m_hfObj->GetBody();
 

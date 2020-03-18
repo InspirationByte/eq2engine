@@ -121,13 +121,16 @@ collgridcell_t*	CEqCollisionBroadphaseGrid::GetPreallocatedCellAtPos(const Vecto
 {
 	float halfGridNeg = m_gridSize*-0.5f;
 
-	Vector2D center(m_gridWide*halfGridNeg, m_gridTall*halfGridNeg);
-	IVector2D xz_pos((origin.xz() - center) * m_invGridSize);
+	const int gridWide = m_gridWide;
+	const int gridTall = m_gridTall;
 
-	if(xz_pos.x < 0 || xz_pos.x >= m_gridWide)
+	const Vector2D center(gridWide*halfGridNeg, gridTall*halfGridNeg);
+	const IVector2D xz_pos((origin.xz() - center) * m_invGridSize);
+
+	if(xz_pos.x < 0 || xz_pos.x >= gridWide)
 		return NULL;
 
-	if(xz_pos.y < 0 || xz_pos.y >= m_gridTall)
+	if(xz_pos.y < 0 || xz_pos.y >= gridTall)
 		return NULL;
 
 	return GetAllocCellAt( xz_pos.x, xz_pos.y );
@@ -135,29 +138,35 @@ collgridcell_t*	CEqCollisionBroadphaseGrid::GetPreallocatedCellAtPos(const Vecto
 
 collgridcell_t* CEqCollisionBroadphaseGrid::GetCellAtPos(const Vector3D& origin) const
 {
-	float halfGridNeg = m_gridSize*-0.5f;
+	const float halfGridNeg = m_gridSize*-0.5f;
 
-	Vector2D center(m_gridWide*halfGridNeg, m_gridTall*halfGridNeg);
-	IVector2D xz_pos((origin.xz() - center) * m_invGridSize);
+	const int gridWide = m_gridWide;
+	const int gridTall = m_gridTall;
 
-	if(xz_pos.x < 0 || xz_pos.x >= m_gridWide)
+	const Vector2D center(gridWide*halfGridNeg, gridTall*halfGridNeg);
+	const IVector2D xz_pos((origin.xz() - center) * m_invGridSize);
+
+	if(xz_pos.x < 0 || xz_pos.x >= gridWide)
 		return NULL;
 
-	if(xz_pos.y < 0 || xz_pos.y >= m_gridTall)
+	if(xz_pos.y < 0 || xz_pos.y >= gridTall)
 		return NULL;
 
-	return m_gridMap[xz_pos.y*m_gridWide + xz_pos.x];
+	return m_gridMap[xz_pos.y*gridWide + xz_pos.x];
 }
 
 collgridcell_t* CEqCollisionBroadphaseGrid::GetCellAt(int x, int y) const
 {
-	if(x < 0 || x >= m_gridWide)
+	const int gridWide = m_gridWide;
+	const int gridTall = m_gridTall;
+
+	if(x < 0 || x >= gridWide)
 		return NULL;
 
-	if(y < 0 || y >= m_gridTall)
+	if(y < 0 || y >= gridTall)
 		return NULL;
 
-	return m_gridMap[y*m_gridWide + x];
+	return m_gridMap[y*gridWide + x];
 }
 
 bool CEqCollisionBroadphaseGrid::GetCellBounds(int x, int y, Vector3D& mins, Vector3D& maxs) const
@@ -167,28 +176,34 @@ bool CEqCollisionBroadphaseGrid::GetCellBounds(int x, int y, Vector3D& mins, Vec
 	if(!cell)
 		return false;
 
-	float cellHeight = cell->cellBoundUsed;
+	const float cellHeight = cell->cellBoundUsed;
+	const int gridWide = m_gridWide;
+	const int gridTall = m_gridTall;
+	const int gridSize = m_gridSize;
 
-	Vector3D center(m_gridWide*m_gridSize*-0.5f, 0, m_gridTall*m_gridSize*-0.5f);
+	Vector3D center(gridWide*gridSize*-0.5f, 0, gridTall*gridSize*-0.5f);
 
-	mins = Vector3D(x*m_gridSize, -cellHeight, y*m_gridSize) + center;
-	maxs = Vector3D((x+1)*m_gridSize, cellHeight, (y+1)*m_gridSize) + center;
+	mins = Vector3D(x*gridSize, -cellHeight, y*gridSize) + center;
+	maxs = Vector3D((x+1)*gridSize, cellHeight, (y+1)*gridSize) + center;
 
 	return true;
 }
 
 collgridcell_t*	CEqCollisionBroadphaseGrid::GetAllocCellAt(int x, int y)
 {
-	if(x < 0 || x >= m_gridWide)
+	const int gridWide = m_gridWide;
+	const int gridTall = m_gridTall;
+
+	if(x < 0 || x >= gridWide)
 		return nullptr;
 
-	if(y < 0 || y >= m_gridTall)
+	if(y < 0 || y >= gridTall)
 		return nullptr;
 
 	if(!m_gridMap)
 		return nullptr;
 
-	int cellIdx = y * m_gridWide + x;
+	int cellIdx = y * gridWide + x;
 
 	if(!m_gridMap[cellIdx])
 	{
@@ -206,24 +221,30 @@ collgridcell_t*	CEqCollisionBroadphaseGrid::GetAllocCellAt(int x, int y)
 
 void CEqCollisionBroadphaseGrid::FreeCellAt( int x, int y )
 {
-	if(x < 0 || x >= m_gridWide)
+	const int gridWide = m_gridWide;
+	const int gridTall = m_gridTall;
+
+	if(x < 0 || x >= gridWide)
 		return;
 
-	if(y < 0 || y >= m_gridTall)
+	if(y < 0 || y >= gridTall)
 		return;
 
 	if(m_gridMap == NULL)
 		return;
 
-	int cellIdx = y * m_gridWide + x;
+	int cellIdx = y * gridWide + x;
 
 	collgridcell_t* cell = m_gridMap[cellIdx];
 
 	if(cell)
 	{
-		for(int i = 0; i < cell->m_dynamicObjs.numElem(); i++)
+		DkList<CEqCollisionObject*>& dynamicObjs = cell->m_dynamicObjs;
+		int count = dynamicObjs.numElem();
+
+		for(int i = 0; i < count; i++)
 		{
-			CEqCollisionObject* pObj = (CEqCollisionObject*)cell->m_dynamicObjs[i];
+			CEqCollisionObject* pObj = dynamicObjs[i];
 			pObj->SetCell(NULL);
 		}
 
@@ -236,24 +257,26 @@ void CEqCollisionBroadphaseGrid::FreeCellAt( int x, int y )
 	}
 }
 
-void CEqCollisionBroadphaseGrid::FindBoxRange(const Vector3D& mins, const Vector3D& maxs, IVector2D& cr_min, IVector2D& cr_max, float extTolerance) const
+void CEqCollisionBroadphaseGrid::FindBoxRange(const BoundingBox& bbox, IVector2D& cr_min, IVector2D& cr_max, float extTolerance) const
 {
-	float halfGridNeg = m_gridSize*-0.5f;
-	Vector2D center(m_gridWide*halfGridNeg, m_gridTall*halfGridNeg);
+	const float invGridSize = m_invGridSize;
+	const float halfGridNeg = m_gridSize*-0.5f;
 
-	Vector2D xz_pos1((mins.xz() - center) * m_invGridSize);
-	Vector2D xz_pos2((maxs.xz() - center) * m_invGridSize);
+	const Vector2D center(m_gridWide*halfGridNeg, m_gridTall*halfGridNeg);
+
+	const Vector2D xz_pos1((bbox.minPoint.xz() - center) * invGridSize);
+	const Vector2D xz_pos2((bbox.maxPoint.xz() - center) * invGridSize);
 
 	if(extTolerance > 0 )
 	{
 		const float EXT_TOLERANCE		= extTolerance;	// the percentage of cell size
 		const float EXT_TOLERANCE_REC	= 1.0f - EXT_TOLERANCE;
 
-		float dx1 = xz_pos1.x - floor(xz_pos1.x);
-		float dy1 = xz_pos1.y - floor(xz_pos1.y);
+		const float dx1 = xz_pos1.x - floor(xz_pos1.x);
+		const float dy1 = xz_pos1.y - floor(xz_pos1.y);
 
-		float dx2 = xz_pos2.x - floor(xz_pos2.x);
-		float dy2 = xz_pos2.y - floor(xz_pos2.y);
+		const float dx2 = xz_pos2.x - floor(xz_pos2.x);
+		const float dy2 = xz_pos2.y - floor(xz_pos2.y);
 
 		cr_min.x = (dx1 < EXT_TOLERANCE) ? (floor(xz_pos1.x)-1) : floor(xz_pos1.x);
 		cr_min.y = (dy1 < EXT_TOLERANCE) ? (floor(xz_pos1.y)-1) : floor(xz_pos1.y);
@@ -298,7 +321,7 @@ void CEqCollisionBroadphaseGrid::AddStaticObjectToGrid( CEqCollisionObject* coll
 		float boxSizeY = bbox.maxPoint.y;
 
 		IVector2D crMin, crMax;
-		FindBoxRange(bbox.minPoint, bbox.maxPoint, crMin, crMax, 0.0f );
+		FindBoxRange(bbox, crMin, crMax, 0.0f );
 
 		// in this range do...
 		for(int y = crMin.y; y < crMax.y+1; y++)
