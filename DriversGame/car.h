@@ -582,6 +582,8 @@ protected:
 
 	virtual void			OnPrePhysicsFrame( float fDt );
 	virtual void			OnPhysicsFrame( float fDt );
+	
+	virtual void			OnPhysicsPreCollide(const ContactPair_t& pair);
 	virtual void			OnPhysicsCollide(const CollisionPairData_t& pair);
 
 	bool					UpdateWaterState( float fDt, bool hasCollidedWater );

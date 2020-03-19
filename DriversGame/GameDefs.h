@@ -14,11 +14,11 @@ enum EEventType
 {
 	EVT_INVALID = -1,
 
+	EVT_COLLISION,		// has data as ContactPair_t*
+
 	// GO_CAR events
 	EVT_CAR_HORN,
 	EVT_CAR_SIREN,
-	EVT_CAR_DAMAGE_INFLICT,		// has data as CollisionPairData_t
-	EVT_CAR_DAMAGE_RECIEVE,		// has data as CollisionPairData_t
 	EVT_CAR_DEATH,
 
 	EVT_PEDESTRIAN_SCARED,
@@ -43,6 +43,8 @@ enum EInfractionType
 	INFRACTION_HIT,					// hit the wall / building
 	INFRACTION_HIT_VEHICLE,			// hit another vehicle
 	INFRACTION_HIT_SQUAD_VEHICLE,	// hit a squad car
+
+	INFRACTION_SCARING_PEDESTRIANS,	// scaring pedestrians
 
 	INFRACTION_COUNT,
 };
@@ -109,19 +111,46 @@ const slipAngleCurveParams_t& GetAISlipCurveParams();
 
 struct eventArgs_t
 {
-	CGameObject* owner;
+	void* handler;		// subscribed object
+
+	void* creator;		// event creator, first argument of Raise()
 
 	Vector3D origin;
 	void* data;
 };
 
-typedef void(*eventFunc)(const eventArgs_t& args);
+typedef void(*eventFunc_t)(const eventArgs_t& args);
 
-struct eventSubscription_t
+
+//--------------------------------------------------------------
+struct eventSubscription_t;
+
+struct eventSub_t
 {
-	eventFunc func;
-	bool unsubscribe;
+	eventSub_t() : m_sub(nullptr)
+	{
+	}
+
+	~eventSub_t()
+	{
+		Unsubscribe();
+	}
+
+	void Unsubscribe();
+
+	eventSub_t& operator = (const eventSubscription_t* sub)
+	{
+		Unsubscribe();
+
+		m_sub = (eventSubscription_t*)sub;
+		return *this;
+	}
+
+private:
+	eventSubscription_t* m_sub;
 };
+
+//--------------------------------------------------------------
 
 class CEventSubject
 {
@@ -129,15 +158,16 @@ public:
 	CEventSubject();
 	~CEventSubject();
 
-	eventSubscription_t*	Subscribe(eventFunc func);
+	eventSubscription_t*	Subscribe(eventFunc_t func, void* handler);
 
 	void					Raise(const eventArgs_t& args);
 
-	void					Raise(CGameObject* owner, const Vector3D& origin, void* data = nullptr);
+	void					Raise(void* creator, const Vector3D& origin, void* data = nullptr);
 
 private:
-	DkList<eventSubscription_t*> m_subscriptions;
+	eventSubscription_t*	m_subs;
 };
+
 
 extern CEventSubject g_worldEvents[EVT_COUNT];
 

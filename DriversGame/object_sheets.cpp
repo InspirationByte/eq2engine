@@ -28,7 +28,7 @@ extern CPFXAtlasGroup* g_translParticles;
 CObject_Sheets::CObject_Sheets( kvkeybase_t* kvdata )
 {
 	m_keyValues = kvdata;
-	m_hfObject = NULL;
+	m_hfObject = nullptr;
 	m_initDelay = 2.0f;
 }
 
@@ -44,8 +44,9 @@ void CObject_Sheets::OnRemove()
 	if (m_hfObject)
 	{
 		g_pPhysics->m_physics.DestroyGhostObject(m_hfObject->m_object);
+		m_hfObject->m_object = nullptr;
 		delete m_hfObject;
-		m_hfObject = NULL;
+		m_hfObject = nullptr;
 	}
 }
 
@@ -142,7 +143,7 @@ void CObject_Sheets::OnPhysicsCollide(const CollisionPairData_t& pair)
 				float distToBodyFac = RemapValClamp(bodyToSheetDist, 0.0f, 3.5f, 0.0f, 1.0f);
 				distToBodyFac = 1.0f - powf(distToBodyFac, 2.0f);
 
-				sheet.velocity += vel * distToBodyFac * SHEET_VELOCITY_SCALE * body->GetLastFrameTime();
+				sheet.velocity += (vel * distToBodyFac * SHEET_VELOCITY_SCALE * body->GetLastFrameTime()) / sheet.weight;
 			}
 		}
 	}
@@ -207,7 +208,7 @@ void CObject_Sheets::Simulate( float fDt )
 	{
 		sheetpart_t& sheet = m_sheets[i];
 
-		float featherAngle = sin(sheet.angle*2.0f) * fabs(clamp(sheet.velocity, -1.0f, 1.0f));
+		float featherAngle = sin(sheet.angle*2.0f) * fabs(clamp(sheet.velocity, -1.0f, 1.0f))*0.25f;
 		featherAngle += SHEET_ANGULAR_SCALE * sinf(featherAngle);
 
 		Vector3D sheetPos = sheet.origin + Vector3D(sin(sheet.angle)*1.5f, 0.015f, -cos(sheet.angle)*1.5f);
@@ -217,7 +218,7 @@ void CObject_Sheets::Simulate( float fDt )
 			continue;
 
 		Vector3D vRight, vUp;
-		Vector3D sheetAngle(-90.0f+featherAngle*45.0f, (featherAngle + sheet.angle)*5.0f, sheet.angle+featherAngle*25.0f);
+		Vector3D sheetAngle(-90.0f+featherAngle*65.0f, (featherAngle + sheet.angle)*25.0f, sheet.angle+featherAngle*55.0f);
 
 		AngleVectors(sheetAngle, NULL, &vUp, &vRight);
 

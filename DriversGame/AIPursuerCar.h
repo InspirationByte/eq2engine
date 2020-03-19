@@ -56,6 +56,10 @@ public:
 	void				SetMaxSpeed(float fSpeed);
 	void				SetTorqueScale(float fScale);
 
+	static void			Evt_CollisionEventHandler(const eventArgs_t& args);
+	static void			Evt_CarDeathEventHandler(const eventArgs_t& args);
+	static void			Evt_ScarePedsEventHandler(const eventArgs_t& args);
+
 protected:
 
 	int					PassiveCopState( float fDt, EStateTransition transition );
@@ -65,8 +69,10 @@ protected:
 
 	void				UpdateInfractions(CCar* checkCar, bool passive);
 
-	EInfractionType		CheckTrafficInfraction( CCar* car, bool checkFelony = true, bool checkSpeeding = true );
-	
+	EInfractionType		CheckTrafficInfraction(CCar* car, bool checkFelony = true, bool checkSpeeding = true );
+	EInfractionType		CheckCollisionInfraction(CCar* car, const ContactPair_t& pair);
+
+	void				ProcessInfraction(CCar* car, EInfractionType infraction);
 
 	bool				Speak( const char* soundName, CCar* target, bool force = false, float priority = 0.5f);
 
@@ -105,6 +111,12 @@ protected:
 	CAIHandlingAffector<CAITargetAvoidanceManipulator>		m_targetAvoidance;
 
 	ISoundController*		m_loudhailer;
+
+	const char*				m_previousSpeech;
+
+	eventSub_t				m_collisionEventSub;
+	eventSub_t				m_carDeathEventSub;
+	eventSub_t				m_scarePedsEventSub;
 };
 
 CAIPursuerCar* UTIL_CastToPursuer(CCar* car);

@@ -40,8 +40,9 @@ void CObject_WaterFlow::OnRemove()
 	if (m_hfObject)
 	{
 		g_pPhysics->m_physics.DestroyGhostObject(m_hfObject->m_object);
+		m_hfObject->m_object = nullptr;
 		delete m_hfObject;
-		m_hfObject = NULL;
+		m_hfObject = nullptr;
 	}
 
 	g_sounds->RemoveSoundController(m_waterFlowSound);

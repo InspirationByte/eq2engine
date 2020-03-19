@@ -27,14 +27,13 @@ ConVar ph_margin("ph_margin", "0.0001", "no desc", CV_CHEAT);
 IEqPhysCallback::IEqPhysCallback(CEqCollisionObject* object) : m_object(object)
 {
 	ASSERT(m_object);
-
 	m_object->m_callbacks = this;
 }
 
 IEqPhysCallback::~IEqPhysCallback()
 {
-	ASSERT(m_object);
-	m_object->m_callbacks = nullptr;
+	if(m_object)
+		m_object->m_callbacks = nullptr;
 }
 
 CEqCollisionObject::CEqCollisionObject() : m_collisionList(PHYSICS_COLLISION_LIST_MAX)

@@ -19,28 +19,9 @@ enum EStateTransition
 	STATE_TRANSITION_EPILOG,	// when state ends work
 };
 
-class CEvent;
 class CFSM_Base;
 class CGameObject;
 typedef int (CFSM_Base::*fnStateHandler)( float fDt, EStateTransition transition );
-typedef void (CFSM_Base::*fnEventHandler)( CEvent* );
-
-//
-// Events... used for... events!
-//
-class CEvent
-{
-	friend class CFSM_Base;
-public:
-	CEvent(CGameObject* sender) : m_sender(sender)
-	{}
-	virtual				~CEvent() {}
-	virtual int			GetType() = 0;
-
-protected:
-	CGameObject*		m_sender;
-	CEvent*				m_next;
-};
 
 //
 // The basis of FSM
@@ -58,24 +39,13 @@ public:
 	void				FSMSetState(fnStateHandler stateFn);
 	void				FSMSetNextState(fnStateHandler stateFn, float delay);
 
-	void				DoEvents();
-
 	fnStateHandler		FSMGetCurrentState() const {return m_curState;}
 
-	void				RaiseEvent( CEvent* evt );
-	void				SetEventHandler( int type, fnEventHandler fnHandler );
-
 private:
-	void							PushEvent( CEvent* evt );
-
 	fnStateHandler					m_curState;
 
 	fnStateHandler					m_nextState;
 	float							m_nextDelay;
-
-	std::map<int, fnEventHandler>	m_handlers;
-
-	CEvent*							m_firstEvent;
 };
 
 #define AI_State(fn) static_cast<fnStateHandler>(fn)

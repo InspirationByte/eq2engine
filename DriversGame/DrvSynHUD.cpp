@@ -1048,7 +1048,7 @@ void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize)
 			m_screenAlertInTime -= fDt;
 			m_screenAlertInTime = max(m_screenAlertInTime, 0.0f);
 
-			Vector2D screenMessagePos(screenSize.x / 2, screenSize.y / 2.8);
+			Vector2D screenMessagePos(screenSize.x / 2, screenSize.y / 3.5);
 
 			float clampedAlertTime = clamp(m_screenAlertTime, 0.0f, 1.0f);
 
@@ -1125,7 +1125,7 @@ void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize)
 			scrMsgParams.textColor = ColorRGBA(1,1,0.25f,textAlpha);
 			scrMsgParams.scale = 30.0f;
 
-			Vector2D screenMessagePos(screenSize.x / 2, (float)screenSize.y / 3 - textYOffs);
+			Vector2D screenMessagePos(screenSize.x / 2, (float)screenSize.y / 2.5f - textYOffs);
 
 			roboto30b->RenderText(m_screenMessageText.c_str(), screenMessagePos, scrMsgParams);
 

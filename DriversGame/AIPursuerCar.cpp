@@ -44,6 +44,8 @@ const float AI_COP_COLLISION_FELONY_VEHICLE	= 0.15f;
 const float AI_COP_COLLISION_FELONY_DEBRIS	= 0.02f;
 const float AI_COP_COLLISION_FELONY_REDLIGHT = 0.010f;
 
+const float AI_COP_SCAREPEDS_FELONY			= 0.01f;
+
 const float AI_COP_COLLISION_CHECKTIME		= 0.01f;
 
 const float AI_COP_TIME_TO_LOST_TARGET		= 30.0f;
@@ -108,7 +110,10 @@ const InfractionDesc g_infractions[INFRACTION_COUNT] =
 	{"cop.hitvehicle", AI_COP_COLLISION_FELONY_VEHICLE, AI_COP_COLLISION_FELONY_VEHICLE, 1.0f},
 
 	//INFRACTION_HIT_SQUAD_VEHICLE
-	{nullptr, AI_COP_COLLISION_FELONY_VEHICLE, 0.02f, 1.0f},
+	{"cop.squad_car_hit", AI_COP_COLLISION_FELONY_VEHICLE, 0.02f, 1.0f},
+
+	//INFRACTION_SCARING_PEDESTRIANS
+	{nullptr, AI_COP_SCAREPEDS_FELONY, AI_COP_SCAREPEDS_FELONY, 0.5f},
 };
 
 //------------------------------------------------------------------------------------------------
@@ -168,10 +173,21 @@ void CAIPursuerCar::Spawn()
 	}
 
 	SetMaxDamage( g_pAIManager->GetCopMaxDamage() );
+
+	if (m_type == PURSUER_TYPE_COP)
+	{
+		m_collisionEventSub = g_worldEvents[EVT_COLLISION].Subscribe(CAIPursuerCar::Evt_CollisionEventHandler, this);
+		m_carDeathEventSub = g_worldEvents[EVT_CAR_DEATH].Subscribe(CAIPursuerCar::Evt_CarDeathEventHandler, this);
+		m_scarePedsEventSub = g_worldEvents[EVT_PEDESTRIAN_SCARED].Subscribe(CAIPursuerCar::Evt_ScarePedsEventHandler, this);
+	}
 }
 
 void CAIPursuerCar::OnRemove()
 {
+	m_collisionEventSub.Unsubscribe();
+	m_carDeathEventSub.Unsubscribe();
+	m_scarePedsEventSub.Unsubscribe();
+
 	EndPursuit(true);
 
 	if (m_loudhailer)
@@ -180,6 +196,72 @@ void CAIPursuerCar::OnRemove()
 	m_loudhailer = NULL;
 
 	BaseClass::OnRemove();
+}
+
+void CAIPursuerCar::Evt_CarDeathEventHandler(const eventArgs_t& args)
+{
+	CAIPursuerCar* thisCar = (CAIPursuerCar*)args.handler;
+	CGameObject* creator = (CGameObject*)args.creator;
+
+	if (thisCar == creator)
+		return;
+
+	if (IsCar(creator))
+	{
+		CCar* car = (CCar*)creator;
+		CAIPursuerCar* otherPursuer = UTIL_CastToPursuer((CCar*)creator);
+
+		if (thisCar->CheckObjectVisibility((CCar*)creator))
+		{
+			if (otherPursuer && otherPursuer->GetPursuerType() == PURSUER_TYPE_COP)
+			{
+				thisCar->Speak("cop.squad_car_down", thisCar->m_target, false, 0.8f);
+			}
+			else
+			{
+				if(creator == thisCar->m_target)
+					thisCar->Speak("cop.heavilydamaged", thisCar->m_target, false, 1.0f);
+				else
+					thisCar->Speak("cop.majorincident", thisCar->m_target, false, 0.8f);
+			}
+				
+		}
+	}
+}
+
+void CAIPursuerCar::Evt_CollisionEventHandler(const eventArgs_t& args)
+{
+	CAIPursuerCar* thisCar = (CAIPursuerCar*)args.handler;
+	CGameObject* creator = (CGameObject*)args.creator;
+
+	if (creator && IsCar(creator))
+	{
+		CCar* car = (CCar*)creator;
+
+		if (thisCar->CheckObjectVisibility(car))
+		{
+			ContactPair_t* pair = (ContactPair_t*)args.data;
+
+			EInfractionType infraction = thisCar->CheckCollisionInfraction(car, *pair);
+
+			if(infraction > INFRACTION_NONE)
+				thisCar->ProcessInfraction(car, infraction);
+		}
+	}	
+}
+
+void CAIPursuerCar::Evt_ScarePedsEventHandler(const eventArgs_t& args)
+{
+	CAIPursuerCar* thisCar = (CAIPursuerCar*)args.handler;
+	CGameObject* creator = (CGameObject*)args.creator;
+
+	if (creator && IsCar(creator))
+	{
+		CCar* car = (CCar*)creator;
+
+		if (thisCar->CheckObjectVisibility(car))
+			thisCar->ProcessInfraction(car, INFRACTION_SCARING_PEDESTRIANS);
+	}
 }
 
 void CAIPursuerCar::Precache()
@@ -202,7 +284,9 @@ void CAIPursuerCar::Precache()
 	PrecacheScriptSound("cop.check");
 	PrecacheScriptSound("cop.squad_car_hit");
 	PrecacheScriptSound("cop.squad_car_down");
-	
+	PrecacheScriptSound("cop.majorincident");
+	PrecacheScriptSound("cop.heavilydamaged");
+	PrecacheScriptSound("cop.relatedincident");
 	
 
 	BaseClass::Precache();
@@ -232,6 +316,11 @@ bool CAIPursuerCar::Speak(const char* soundName, CCar* target, bool force, float
 
 	if (g_pGameSession->GetPlayerCar() != target)
 		return false;
+
+	if (m_previousSpeech == soundName)
+		soundName = "cop.relatedincident";
+
+	m_previousSpeech = soundName;
 
 	return g_pAIManager->MakeCopSpeech(soundName, force, priority);
 }
@@ -488,6 +577,60 @@ bool CAIPursuerCar::InPursuit() const
 	return m_target && FSMGetCurrentState() == &CAIPursuerCar::PursueTarget;
 }
 
+EInfractionType CAIPursuerCar::CheckCollisionInfraction(CCar* car, const ContactPair_t& pair)
+{
+	float carSpeed = car->GetSpeed();
+
+	CEqCollisionObject* bodyB = pair.GetOppositeTo(car->GetPhysicsBody());
+
+	int contents = bodyB->GetContents();
+
+	if (contents == OBJECTCONTENTS_SOLID_GROUND)
+		return INFRACTION_NONE;
+	else if (contents == OBJECTCONTENTS_VEHICLE)
+	{
+		CCar* hitCar = (CCar*)pair.GetOppositeTo(car->GetPhysicsBody())->GetUserData();
+
+		if (InPursuit() && hitCar == this)
+			return INFRACTION_NONE;
+
+		if (hitCar == car->GetHingedVehicle())
+			return INFRACTION_NONE;
+
+		float speedDiff = carSpeed - hitCar->GetSpeed();
+
+		// There is no infraction if bodyB has inflicted this damage to us
+		if(speedDiff < 10.0f)
+			return INFRACTION_NONE;
+
+		if (hitCar->ObjType() == GO_CAR_AI)
+		{
+			CAITrafficCar* tfc = (CAITrafficCar*)hitCar;
+			if (tfc->IsPursuer() && tfc->m_conf->flags.isCop && !tfc->m_assignedRoadblock)	// don't check collision with me pls
+			{
+				return INFRACTION_HIT_SQUAD_VEHICLE;
+			}
+		}
+
+		return INFRACTION_HIT_VEHICLE;
+	}
+	else if (contents == OBJECTCONTENTS_DEBRIS)
+	{
+		CObject_Debris* obj = (CObject_Debris*)bodyB->GetUserData();
+
+		if (obj && obj->IsSmashed())
+			return INFRACTION_NONE;
+
+		return INFRACTION_HIT_MINOR;
+	}
+	else
+	{
+		return INFRACTION_HIT;
+	}
+
+	return INFRACTION_NONE;
+}
+
 EInfractionType CAIPursuerCar::CheckTrafficInfraction(CCar* car, bool checkFelony, bool checkSpeeding )
 {
 	if (!car)
@@ -512,8 +655,6 @@ EInfractionType CAIPursuerCar::CheckTrafficInfraction(CCar* car, bool checkFelon
 		return INFRACTION_SPEEDING;
 	}
 
-	DkList<CollisionPairData_t>& collisionList = car->m_collisionList;
-
 	// don't register other infractions if speed less than 5 km/h
 	if(carSpeed < 5.0f)
 		return INFRACTION_NONE;
@@ -521,68 +662,6 @@ EInfractionType CAIPursuerCar::CheckTrafficInfraction(CCar* car, bool checkFelon
 	Vector3D car_vel = car->GetVelocity();
 	Vector3D car_forward = car->GetForwardVector();
 	float car_wheelSpeed = car->GetSpeedWheels();
-
-	// check collision
-	for(int i = 0; i < collisionList.numElem(); i++)
-	{
-		CollisionPairData_t& pair = collisionList[i];
-
-		if (pair.flags & COLLPAIRFLAG_USER_PROCESSED2)
-			continue;
-
-		pair.flags |= COLLPAIRFLAG_USER_PROCESSED2;
-
-		CEqCollisionObject* bodyB = pair.GetOppositeTo(car->GetPhysicsBody());
-
-		if(bodyB->m_flags & COLLOBJ_ISGHOST)
-			continue;
-
-		int contents = bodyB->GetContents();
-
-		if(contents == OBJECTCONTENTS_SOLID_GROUND)
-			return INFRACTION_NONE;
-		else if(contents == OBJECTCONTENTS_VEHICLE)
-		{
-			CCar* hitCar = (CCar*)pair.GetOppositeTo(car->GetPhysicsBody())->GetUserData();
-
-			if(InPursuit() && hitCar == this)
-				return INFRACTION_NONE;
-
-			if(hitCar == car->GetHingedVehicle())
-				return INFRACTION_NONE;
-
-			float speedDiff = hitCar->GetSpeed() - carSpeed;
-
-			// There is no infraction if bodyB has inflicted this damage to us
-			//if(carSpeed < hitCar->GetSpeed())
-			//	return INFRACTION_NONE;
-
-			if (hitCar->ObjType() == GO_CAR_AI)
-			{
-				CAITrafficCar* tfc = (CAITrafficCar*)hitCar;
-				if (tfc->IsPursuer() && tfc->m_conf->flags.isCop && !tfc->m_assignedRoadblock)	// don't check collision with me pls
-				{
-					return INFRACTION_HIT_SQUAD_VEHICLE;
-				}
-			}
-
-			return INFRACTION_HIT_VEHICLE;
-		}
-		else if(contents == OBJECTCONTENTS_DEBRIS)
-		{
-			CObject_Debris* obj = (CObject_Debris*)bodyB->GetUserData();
-
-			if(obj && obj->IsSmashed())
-				continue;
-
-			return INFRACTION_HIT_MINOR;
-		}
-		else
-		{
-			return INFRACTION_HIT;
-		}
-			
-	}
 
 	straight_t straight = g_pGameWorld->m_level.Road_GetStraightAtPos(car->GetOrigin(), 2);
 
@@ -707,8 +786,13 @@ bool CAIPursuerCar::CheckObjectVisibility(CCar* obj)
 
 void CAIPursuerCar::UpdateInfractions(CCar* car, bool passive)
 {
-	int infraction = CheckTrafficInfraction(car, passive, passive);
+	EInfractionType infraction = CheckTrafficInfraction(car, passive, passive);
 
+	ProcessInfraction(car, infraction);
+}
+
+void CAIPursuerCar::ProcessInfraction(CCar* car, EInfractionType infraction)
+{
 	PursuerData_t& pursuer = car->GetPursuerData();
 
 	float gameTime = g_pGameSession->GetGameTime();
@@ -758,7 +842,11 @@ bool CAIPursuerCar::UpdateTarget(float fDt)
 				const InfractionDesc& infractionDesc = g_infractions[i];
 
 				newFelony += infractionDesc.activeFelony;
-				Speak(infractionDesc.speech, m_target, false, 0.8f);
+
+				if (!(i == INFRACTION_HIT_SQUAD_VEHICLE && g_pAIManager->GetMaxCops() > 4))
+				{
+					Speak(infractionDesc.speech, m_target, false, 0.8f);
+				}
 			}
 
 			// tell about running a roadblock

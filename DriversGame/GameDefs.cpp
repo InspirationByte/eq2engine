@@ -49,36 +49,60 @@ const slipAngleCurveParams_t& GetAISlipCurveParams()
 
 //-------------------------------------------------------------------------------------------
 
+struct eventSubscription_t
+{
+	PPMEM_MANAGED_OBJECT()
+
+	eventSubscription_t* next;
+	eventFunc_t		func;
+
+	void*			handler;
+	bool			unsubscribe;
+};
+
+void eventSub_t::Unsubscribe()
+{
+	if (m_sub)
+		m_sub->unsubscribe = true;
+	m_sub = nullptr;
+}
+
+//-------------------------------------------------------------------------------------------
+
 CEventSubject::CEventSubject()
 {
-
+	m_subs = nullptr;
 }
 
 CEventSubject::~CEventSubject()
 {
-	for (int i = 0; i < m_subscriptions.numElem(); i++)
+	eventSubscription_t* sub = m_subs;
+	while (sub)
 	{
-		delete m_subscriptions[i];
+		eventSubscription_t* nextSub = sub->next;
+		delete sub;
+		sub = nextSub;
 	}
-
-	m_subscriptions.clear();
+	m_subs = nullptr;
 }
 
-eventSubscription_t* CEventSubject::Subscribe(eventFunc func)
+eventSubscription_t* CEventSubject::Subscribe(eventFunc_t func, void* handler)
 {
 	eventSubscription_t* sub = new eventSubscription_t();
 	sub->func = func;
+	sub->handler = handler;
 	sub->unsubscribe = false;
 
-	m_subscriptions.append(sub);
+	sub->next = m_subs;
+	m_subs = sub;
 
 	return sub;
 }
 
-void CEventSubject::Raise(CGameObject* owner, const Vector3D& origin, void* data)
+void CEventSubject::Raise(void* creator, const Vector3D& origin, void* data)
 {
 	eventArgs_t args;
-	args.owner = owner;
+	args.creator = creator;
 	args.origin = origin;
 	args.data = data;
 
@@ -87,19 +111,36 @@ void CEventSubject::Raise(CGameObject* owner, const Vector3D& origin, void* data
 
 void CEventSubject::Raise(const eventArgs_t& args)
 {
-	for (int i = 0; i < m_subscriptions.numElem(); i++)
-	{
-		eventSubscription_t* sub = m_subscriptions[i];
+	eventArgs_t handlerArgs = args;
 
+	eventSubscription_t* sub = m_subs;
+	eventSubscription_t* prevSub = nullptr;
+	while (sub)
+	{
 		if (sub->unsubscribe)
 		{
+			if (m_subs == sub)		// quickly migrate to next element
+				m_subs = sub->next;
+
+			if (prevSub)			// link previous with next
+				prevSub->next = sub->next;
+
 			delete sub;
-			m_subscriptions.fastRemoveIndex(i);
-			i--;
+			sub = nullptr;
+
+			if(prevSub)				// goto (del)sub->next
+				sub = prevSub->next;
+
 			continue;
 		}
 
-		sub->func(args);
+		// set the right handler and go
+		handlerArgs.handler = sub->handler;
+		sub->func(handlerArgs);
+
+		// goto next
+		prevSub = sub;
+		sub = sub->next;
 	}
 }
 

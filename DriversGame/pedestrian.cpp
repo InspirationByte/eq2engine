@@ -6,7 +6,8 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "pedestrian.h"
-#include "CameraAnimator.h"
+#include "car.h"
+//#include "CameraAnimator.h"
 #include "input.h"
 #include "world.h"
 #include "eqParallelJobs.h"
@@ -140,6 +141,8 @@ void CPedestrian::OnRemove()
 	g_pPhysics->RemoveObject(m_physObj);
 	m_physObj = nullptr;
 
+	m_thinker.DestroyAI();
+
 	BaseClass::OnRemove();
 }
 
@@ -172,8 +175,10 @@ void CPedestrian::Spawn()
 	m_physObj = new CPhysicsHFObject(body, this);
 	g_pPhysics->AddObject(m_physObj);
 
-	if(m_hasAI)
-		m_thinker.FSMSetState(AI_State(&CPedestrianAI::SearchDaWay));
+	if (m_hasAI)
+	{
+		m_thinker.InitAI();
+	}
 
 	if (m_jack)
 		SetModel(JACK_PED_MODEL);
@@ -412,6 +417,64 @@ void CPedestrian::HandleAnimatingEvent(AnimationEvent nEvent, char* options)
 //--------------------------------------------------------------
 // PEDESTRIAN THINKER FSM
 
+const float AI_PEDESTRIAN_CAR_HORN_MIN_RADIUS = 5.0f;
+const float AI_PEDESTRIAN_CAR_HORN_SPEED_SCALE = 0.025f;
+
+const float AI_PEDESTRIAN_CAR_AFRAID_MAX_RADIUS = 15.0f;
+const float AI_PEDESTRIAN_CAR_AFRAID_MIN_RADIUS = 2.5f;
+const float AI_PEDESTRIAN_CAR_AFRAID_STRAIGHT_RADIUS = 2.5f;
+const float AI_PEDESTRIAN_CAR_AFRAID_VELOCITY = 1.0f;
+const float AI_PEDESTRIAN_ESCAPE_CHECK_TIME = 0.25f;
+const float AI_PEDESTRIAN_ESCAPE_RADIUS = 0.7f;
+
+CPedestrianAI::CPedestrianAI(CPedestrian* host)
+{
+	m_host = host;
+	m_nextRoadTile = 0;
+
+	m_prevRoadCell = nullptr;
+	m_nextRoadCell = nullptr;
+
+	m_prevDir = m_curDir = -1;
+	m_nextEscapeCheckTime = 0.0f;
+
+	m_cellOffset = vec2_zero;
+}
+
+void CPedestrianAI::InitAI()
+{
+	m_signalEvent = g_worldEvents[EVT_CAR_HORN].Subscribe(CPedestrianAI::Evt_CarHornHandler, this);
+	FSMSetState(AI_State(&CPedestrianAI::SearchDaWay));
+}
+
+void CPedestrianAI::DestroyAI()
+{
+	m_signalEvent.Unsubscribe();
+}
+
+void CPedestrianAI::Evt_CarHornHandler(const eventArgs_t& args)
+{
+	CPedestrianAI* thisAI = (CPedestrianAI*)args.handler;
+	CCar* creator = (CCar*)args.creator;
+	Vector3D origin = thisAI->m_host->GetOrigin();
+
+	Vector3D hornPos = args.origin + creator->GetVelocity()*0.25f;
+
+	const float maxHornDist = AI_PEDESTRIAN_CAR_HORN_MIN_RADIUS + creator->GetSpeed()*AI_PEDESTRIAN_CAR_HORN_SPEED_SCALE;
+
+	float dist = length(hornPos - origin);
+	if (dist > maxHornDist)
+		return;
+
+	Vector3D escapeDir = origin - hornPos;
+
+	thisAI->m_escapeFromPos = origin;
+	thisAI->m_escapeDir = fastNormalize(escapeDir);
+	thisAI->m_escapeObject = creator;
+
+	thisAI->AI_SetNextState(&CPedestrianAI::DoEscape, 0.0f);
+}
+
 bool CPedestrianAI::GetNextPath(int dir)
 {
 	// get the road tile
@@ -478,13 +541,6 @@ int	CPedestrianAI::SearchDaWay(float fDt, EStateTransition transition)
 	return 0;
 }
 
-const float AI_PEDESTRIAN_CAR_AFRAID_MAX_RADIUS = 15.0f;
-const float AI_PEDESTRIAN_CAR_AFRAID_MIN_RADIUS = 2.5f;
-const float AI_PEDESTRIAN_CAR_AFRAID_STRAIGHT_RADIUS = 2.5f;
-const float AI_PEDESTRIAN_CAR_AFRAID_VELOCITY = 1.0f;
-const float AI_PEDESTRIAN_ESCAPE_CHECK_TIME = 0.25f;
-const float AI_PEDESTRIAN_ESCAPE_RADIUS = 0.7f;
-
 void CPedestrianAI::DetectEscapeJob(void* data, int jobiter)
 {
 	CPedestrianAI* pedAI = (CPedestrianAI*)data;
@@ -520,17 +576,16 @@ void CPedestrianAI::DetectEscapeJob(void* data, int jobiter)
 		float velocity = lengthSqr(carVel);
 		float dist = lengthSqr(carPos - pedPos);
 
-		bool hasSirenOrHorn = nearCar->GetControlButtons() & IN_HORN;
 		bool tooNearToCar = (dist < AI_PEDESTRIAN_CAR_AFRAID_MIN_RADIUS*AI_PEDESTRIAN_CAR_AFRAID_MIN_RADIUS);
 
 		if (projResult > 0.0f && projResult < 1.0f && (velocity > AI_PEDESTRIAN_CAR_AFRAID_VELOCITY*AI_PEDESTRIAN_CAR_AFRAID_VELOCITY) ||
-			hasSirenOrHorn ||
 			tooNearToCar)
 		{
 			if (tooNearToCar)
 			{
 				pedAI->m_escapeFromPos = pedPos;
 				pedAI->m_escapeDir = fastNormalize(pedPos - carPos);
+				pedAI->m_escapeObject = nearestCars[i];
 
 				pedAI->AI_SetState(&CPedestrianAI::DoEscape);
 			}
@@ -538,7 +593,7 @@ void CPedestrianAI::DetectEscapeJob(void* data, int jobiter)
 			{
 				Vector3D projPos = lerp(carPos, carHeadingPos, projResult);
 
-				if (hasSirenOrHorn || length(projPos - pedPos) < AI_PEDESTRIAN_CAR_AFRAID_STRAIGHT_RADIUS)
+				if (length(projPos - pedPos) < AI_PEDESTRIAN_CAR_AFRAID_STRAIGHT_RADIUS)
 				{
 					pedAI->m_escapeFromPos = pedPos;
 					Vector3D projDir = pedPos - projPos;
@@ -547,7 +602,7 @@ void CPedestrianAI::DetectEscapeJob(void* data, int jobiter)
 						projDir = pedPos - carPos;
 
 					pedAI->m_escapeDir = fastNormalize(projDir);
-
+					pedAI->m_escapeObject = nearestCars[i];
 					pedAI->AI_SetState(&CPedestrianAI::DoEscape);
 
 					return;
@@ -603,6 +658,12 @@ int	CPedestrianAI::DoEscape(float fDt, EStateTransition transition)
 	controlButtons |= IN_ACCELERATE | IN_BURNOUT;
 
 	m_host->SetControlButtons(controlButtons);
+
+	if (m_escapeObject)
+	{
+		g_worldEvents[EVT_PEDESTRIAN_SCARED].Raise(m_escapeObject, m_escapeFromPos, m_host);
+		m_escapeObject = nullptr;
+	}
 
 	return 0;
 }

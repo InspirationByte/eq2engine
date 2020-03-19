@@ -11,6 +11,7 @@
 #include "ControllableObject.h"
 #include "Animating.h"
 #include "EventFSM.h"
+#include "GameDefs.h"
 
 class CPedestrian;
 
@@ -18,19 +19,10 @@ class CPedestrianAI : public CFSM_Base
 {
 	friend class CPedestrian;
 public:
-	CPedestrianAI(CPedestrian* host)
-	{
-		m_host = host;
-		m_nextRoadTile = 0;
+	CPedestrianAI(CPedestrian* host);
 
-		m_prevRoadCell = nullptr;
-		m_nextRoadCell = nullptr;
-
-		m_prevDir = m_curDir = -1;
-		m_nextEscapeCheckTime = 0.0f;
-
-		m_cellOffset = vec2_zero;
-	}
+	void				InitAI();
+	void				DestroyAI();
 
 	int					DoWalk(float fDt, EStateTransition transition);
 	int					DoEscape(float fDt, EStateTransition transition);
@@ -41,6 +33,7 @@ public:
 	void				DetectEscape();
 
 	static void			DetectEscapeJob(void* data, int i);
+	static void			Evt_CarHornHandler(const eventArgs_t& args);
 
 	Vector3D			m_escapeDir;
 	Vector3D			m_escapeFromPos;
@@ -58,6 +51,9 @@ public:
 	levroadcell_t*		m_prevRoadCell;
 
 	CPedestrian*		m_host;
+	CGameObject*		m_escapeObject;
+
+	eventSub_t			m_signalEvent;
 };
 
 //------------------------------------------------------

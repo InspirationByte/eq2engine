@@ -387,7 +387,7 @@ void CReplayTracker::PlayVehicleFrame(replayCarStream_t* rep)
 			replayCarFrame_t& prevFrame = rep->replayArray[rep->curr_frame - 1];
 
 			// interpolate the replay if time difference between frames is huge
-			if ((frame.tick - prevFrame.tick) >= CORRECTION_TICK)
+			if ((frame.tick - prevFrame.tick) >= CORRECTION_TICK && car->IsEnabled())
 			{
 				float frameLerpValue = RemapVal((float)m_tick, (float)prevFrame.tick, (float)frame.tick, 0.0f, 1.0f);
 

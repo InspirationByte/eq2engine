@@ -190,9 +190,6 @@ void CSingleGameSession::GoThrill()
 	if (g_pCameraAnimator->IsScripted())
 		return;
 
-	m_thrillTimeout = THRILL_TIMEOUT;
-	//g_pCameraAnimator->SetScripted(true);
-
 	CCar* focusCar = GetLeadCar();
 
 	if (focusCar != GetPlayerCar())
@@ -206,6 +203,8 @@ void CSingleGameSession::GoThrill()
 
 	if (focusCar->IsInWater())
 		return;
+
+	m_thrillTimeout = THRILL_TIMEOUT;
 
 	// trace far back to determine distToTarget
 	{

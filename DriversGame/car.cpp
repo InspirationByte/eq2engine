@@ -2368,10 +2368,6 @@ void CCar::OnPhysicsFrame( float fDt )
 		{
 			hitGameObject = (CGameObject*)coll.bodyB->GetUserData();
 			hitGameObject->OnCarCollisionEvent(coll, this);
-
-			// raise damaged car event
-			g_worldEvents[EVT_CAR_DAMAGE_INFLICT].Raise(this, coll.position, &coll);
-			g_worldEvents[EVT_CAR_DAMAGE_RECIEVE].Raise(hitGameObject, coll.position, &coll);
 		}
 
 		// don't apply collision damage if this is a trigger or water
@@ -2603,6 +2599,24 @@ void CCar::OnPhysicsFrame( float fDt )
 		}
 	}
 } 
+
+void CCar::OnPhysicsPreCollide(const ContactPair_t& pair)
+{
+	CEqCollisionObject* hitObj = pair.GetOppositeTo(m_physObj->GetBody());
+
+	// TODO: make it safe
+	if (!(hitObj->GetContents() & OBJECTCONTENTS_SOLID_GROUND) && !(hitObj->m_flags & COLLOBJ_ISGHOST))
+	{
+		// raise damaged car event
+		g_worldEvents[EVT_COLLISION].Raise(this, pair.position, (void*)&pair);
+
+		if(hitObj->GetUserData())
+		{
+			//	CGameObject* hitGameObject = (CGameObject*)hitObj;
+			//	g_worldEvents[EVT_COLLISION].Raise(hitGameObject, pair.position, (void*)&pair);
+		}
+	}
+}
 
 void CCar::OnPhysicsCollide(const CollisionPairData_t& pair)
 {
@@ -2953,9 +2967,10 @@ void CCar::Simulate( float fDt )
 	// render siren lights
 	if ( isCar && (m_lightsEnabled & CAR_LIGHT_SERVICELIGHTS) )
 	{
-		Vector3D siren_pos_noX(0.0f, m_conf->visual.sirenPositionWidth.y, m_conf->visual.sirenPositionWidth.z);
+		Vector4D lightsPosWidth = m_conf->visual.sirenPositionWidth;
+		Vector3D siren_pos_centered(0.0f, lightsPosWidth.y, lightsPosWidth.z);
 
-		Vector3D siren_position = (worldMatrix * Vector4D(siren_pos_noX, 1.0f)).xyz();
+		Vector3D siren_position = (worldMatrix * Vector4D(siren_pos_centered, 1.0f)).xyz();
 
 		switch(m_conf->visual.sirenType)
 		{
@@ -2969,7 +2984,7 @@ void CCar::Simulate( float fDt )
 
 				ColorRGB color = colors[m_conf->visual.sirenType-SERVICE_LIGHTS_BLUE];
 
-				PoliceSirenEffect(m_curTime, color, siren_position, rightVec, m_conf->visual.sirenPositionWidth.x, m_conf->visual.sirenPositionWidth.w);
+				PoliceSirenEffect(m_curTime, color, siren_position, rightVec, lightsPosWidth.x, lightsPosWidth.w);
 
 				float fSin = fabs(sinf(m_curTime*16.0f));
 				float fSinFactor = clamp(fSin, 0.5f, 1.0f);
@@ -2986,6 +3001,9 @@ void CCar::Simulate( float fDt )
 			case SERVICE_LIGHTS_DOUBLE_RED:
 			case SERVICE_LIGHTS_DOUBLE_BLUERED:
 			{
+				Vector3D siren_positionL = (worldMatrix * Vector4D(-lightsPosWidth.x, lightsPosWidth.y, lightsPosWidth.z, 1.0f)).xyz();
+				Vector3D siren_positionR = (worldMatrix * Vector4D(lightsPosWidth.x, lightsPosWidth.y, lightsPosWidth.z, 1.0f)).xyz();
+
 				ColorRGB colors[3][2] = {
 					{ColorRGB(0, 0.25, 1),ColorRGB(0, 0.25, 1)},
 					{ColorRGB(1, 0.25, 0),ColorRGB(1, 0.25, 0)},
@@ -2995,14 +3013,18 @@ void CCar::Simulate( float fDt )
 				ColorRGB col1(colors[m_conf->visual.sirenType-SERVICE_LIGHTS_DOUBLE_BLUE][0]);
 				ColorRGB col2(colors[m_conf->visual.sirenType - SERVICE_LIGHTS_DOUBLE_BLUE][1]);
 
-				PoliceSirenEffect(-m_curTime + PI_F*2.0f, col1, siren_position, rightVec, -m_conf->visual.sirenPositionWidth.x, m_conf->visual.sirenPositionWidth.w);
-				PoliceSirenEffect(m_curTime, col2, siren_position, rightVec, m_conf->visual.sirenPositionWidth.x, m_conf->visual.sirenPositionWidth.w);
+				PoliceSirenEffect(-m_curTime + PI_F*2.0f, col1, siren_position, rightVec, -lightsPosWidth.x, lightsPosWidth.w);
+				PoliceSirenEffect(m_curTime, col2, siren_position, rightVec, lightsPosWidth.x, lightsPosWidth.w);
 
 				float fSin = fabs(sinf(m_curTime*20.0f));
-				float fSinFactor = clamp(fSin, 0.5f, 1.0f);
+				float fSinFactor = clamp(fSin, 0.85f, 1.0f);
+
+				float lrFactor = (fSin - 0.5f);
+				float powFac = powf(fabs(lrFactor), 0.5f);
+				float powLrFac = powFac*sign(lrFactor) + 0.5f;
 
 				wlight_t light;
-				light.position = Vector4D(siren_position, 20.0f);
+				light.position = Vector4D(lerp(siren_positionL, siren_positionR, powLrFac), 20.0f);
 				light.color = ColorRGBA(lerp(col1, col2, fSin), fSinFactor);
 
 				g_pGameWorld->AddLight(light);
@@ -3904,12 +3926,13 @@ void CCar::UpdateSounds( float fDt )
 	
 	if(!m_sirenEnabled)
 	{
+		// raise horn event
+		if(controlButtons & IN_HORN)
+			g_worldEvents[EVT_CAR_HORN].Raise(this, GetOrigin());
+
 		if((controlButtons & IN_HORN) && !(m_oldControlButtons & IN_HORN) && hornSound->IsStopped())
 		{
 			hornSound->Play();
-
-			// raise horn event
-			g_worldEvents[EVT_CAR_HORN].Raise(this, GetOrigin());
 		}
 		else if(!(controlButtons & IN_HORN) && (m_oldControlButtons & IN_HORN))
 		{
