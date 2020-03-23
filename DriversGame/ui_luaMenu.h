@@ -25,8 +25,6 @@ public:
 	bool					PreEnterSelection();
 	bool					ChangeSelection(int dir);
 
-	void					GetMenuTitleToken(EqWString& text);
-
 	bool					GetCurrentMenuElement(OOLUA::Table& elem);
 
 	virtual void			OnEnterSelection( bool isFinal ) = 0;
@@ -37,21 +35,15 @@ protected:
 	const wchar_t*			GetMenuItemString(OOLUA::Table& menuElem);
 
 	void					SetMenuObject(OOLUA::Table& tabl);
+	void					PushMenu(OOLUA::Table& tabl, OOLUA::Table& paramsTable);
 
-	void					SetMenuStackTop(OOLUA::Table& tabl);
-	void					SetMenuTable(OOLUA::Table& tabl);
-	
-	void					PushMenu(OOLUA::Table& tabl, const std::string& titleToken, int selection = 0);
+	virtual void			UpdateCurrentMenu();
 
 	OOLUA::Table			m_menuStack;
 
 	EqLua::LuaTableFuncRef	m_stackReset;
-	EqLua::LuaTableFuncRef	m_stackGetTop;
-	EqLua::LuaTableFuncRef	m_stackGetCurMenu;
 	EqLua::LuaTableFuncRef	m_stackPush;
 	EqLua::LuaTableFuncRef	m_stackPop;
-	EqLua::LuaTableFuncRef	m_stackCanPop;
-	EqLua::LuaTableFuncRef	m_stackGetTitleToken;
 
 	OOLUA::Table			m_menuElems;
 	int						m_selection;

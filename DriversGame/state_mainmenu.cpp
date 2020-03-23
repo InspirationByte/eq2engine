@@ -66,17 +66,47 @@ void CState_MainMenu::OnEnter( CBaseStateHandler* from )
 		WarningMsg("Failed to get MainMenuStack table (DrvSynMenus.lua ???)!\n");
 	}
 
-	SetMenuObject( mainMenuStack );
-
 	//EmitSound_t es("music.menu", EMITSOUND_FLAG_FORCE_CACHED);
 	//g_sounds->Emit2DSound( &es );
 
 	// init hud layout
 	m_uiLayout = equi::Manager->CreateElement("Panel");
 
+	// SetMenuObject invokes UpdateCurrentMenu which calls InitUIScheme()
+	SetMenuObject(mainMenuStack);
+	
+
+	EmitSound_t es("menu.music");
+	g_sounds->Emit2DSound(&es);
+
+	ResetKeys();
+	m_keysError = false;
+}
+
+void CState_MainMenu::UpdateCurrentMenu()
+{
+	CLuaMenu::UpdateCurrentMenu();
+
+	OOLUA::Table currentStack;
+	if (!m_menuStack.safe_at("stack", currentStack))
+		return;
+
+	std::string schemeName;
+	currentStack.safe_at("schemeName", schemeName);
+
+	InitUIScheme(schemeName.length() ? schemeName.c_str() : nullptr);
+}
+
+void CState_MainMenu::InitUIScheme(const char* schemeName)
+{
+	if (!schemeName)
+		schemeName = "ui_mainmenu";
+
+	m_uiLayout->ClearChilds();
+
 	kvkeybase_t uiKvs;
 
-	if (KV_LoadFromFile("resources/ui_mainmenu.res", SP_MOD, &uiKvs))
+	if (KV_LoadFromFile(varargs("resources/%s.res", schemeName), SP_MOD, &uiKvs))
 		m_uiLayout->InitFromKeyValues(&uiKvs);
 
 	m_menuDummy = m_uiLayout->FindChild("Menu");
@@ -107,13 +137,6 @@ void CState_MainMenu::OnEnter( CBaseStateHandler* from )
 
 		m_maxMenuItems = floor((m_menuDummy->GetSize().y * menuScaling.y) / lineHeight);
 	}
-
-
-	EmitSound_t es("menu.music");
-	g_sounds->Emit2DSound(&es);
-
-	ResetKeys();
-	m_keysError = false;
 }
 
 void CState_MainMenu::OnEnterSelection( bool isFinal )

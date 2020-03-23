@@ -20,53 +20,69 @@ void CLuaMenu::SetMenuObject(OOLUA::Table& tabl)
 
 	lua_State* state = GetLuaState();
 
-	m_stackGetTitleToken.Get(m_menuStack, "GetTitleToken");
 	m_stackReset.Get(m_menuStack, "Reset");
-	m_stackGetCurMenu.Get(m_menuStack, "GetCurrentMenu");
-	m_stackGetTop.Get(m_menuStack, "GetTop");
 	m_stackPush.Get(m_menuStack, "Push");
 	m_stackPop.Get(m_menuStack, "Pop");
-	m_stackCanPop.Get(m_menuStack, "CanPop");
 
-	if( m_stackReset.Push() && m_stackReset.Call(0, 1) )
+	if( m_stackReset.Push() && m_stackReset.Call(0, 0) )
 	{
-		OOLUA::Table stackTop;
-		OOLUA::pull( state, stackTop );
-
-		SetMenuStackTop( stackTop );
+		UpdateCurrentMenu();
 	}
 }
 
-void CLuaMenu::SetMenuStackTop(OOLUA::Table& tabl)
+//
+// Refreshes the menu. Should be called after Push or Pop
+//
+void CLuaMenu::UpdateCurrentMenu()
 {
-	if(!tabl.safe_at(3, m_selection))
+	OOLUA::Table currentStack;
+	if (!m_menuStack.safe_at("stack", currentStack))
+		return;
+
+	if (!currentStack.safe_at("prevSelection", m_selection))
 		m_selection = 0;
 
 	lua_State* state = GetLuaState();
 
-	if( m_stackGetCurMenu.Push() && m_stackGetCurMenu.Call(0, 1) )
+	// update items
+	OOLUA::Table itemsTable;
+	if (currentStack.safe_at("items", itemsTable))
 	{
-		OOLUA::Table menuTable;
-		OOLUA::pull( state, menuTable );
+		EqLua::LuaStackGuard g(state);
 
-		SetMenuTable( menuTable );
+		m_numElems = 0;
+		oolua_ipairs(itemsTable)
+			m_numElems++;
+		oolua_ipairs_end()
+
+		m_menuElems = itemsTable;
+	}
+
+	// update title string
+	std::string tok_str;
+	ILocToken* tok = nullptr;
+
+	if (currentStack.safe_at("title", tok_str))
+	{
+		m_menuTitleStr = LocalizedString(tok_str.c_str());
+	}
+	else if (currentStack.safe_at("title", tok))
+	{
+		m_menuTitleStr = tok ? tok->GetText() : L"(nulltoken)";
 	}
 }
 
-void CLuaMenu::PushMenu(OOLUA::Table& tabl, const std::string& titleToken, int selection)
+void CLuaMenu::PushMenu(OOLUA::Table& tabl, OOLUA::Table& paramsTable)
 {
 	lua_State* state = GetLuaState();
 
 	if( m_stackPush.Push() && 
 		OOLUA::push(state, tabl) && 
-		OOLUA::push(state, titleToken) &&
-		OOLUA::push(state, selection) && 
-		m_stackPush.Call(3, 1) )
+		OOLUA::push(state, m_selection) &&
+		OOLUA::push(state, paramsTable) &&
+		m_stackPush.Call(3, 0) )
 	{
-		OOLUA::Table newStackTop;
-		OOLUA::pull( state, newStackTop );
-
-		SetMenuStackTop( newStackTop );
+		UpdateCurrentMenu();
 	}
 }
 
@@ -77,28 +93,20 @@ void CLuaMenu::PopMenu()
 
 	lua_State* state = GetLuaState();
 
-	if( m_stackPop.Push() && m_stackPop.Call(0, 1) )
+	if( m_stackPop.Push() && m_stackPop.Call(0, 0) )
 	{
-		OOLUA::Table newStackTop;
-		OOLUA::pull( state, newStackTop );
-
-		SetMenuStackTop( newStackTop );
+		UpdateCurrentMenu();
 	}
 }
 
 bool CLuaMenu::IsCanPopMenu()
 {
-	lua_State* state = GetLuaState();
+	OOLUA::Table currentStack;
+	if (!m_menuStack.safe_at("stack", currentStack))
+		return false;
 
-	if( m_stackCanPop.Push() && m_stackCanPop.Call(0, 1) )
-	{
-		bool canPop = false;
-		OOLUA::pull( state, canPop );
-
-		return canPop;
-	}
-
-	return false;
+	OOLUA::Table _dummy;
+	return currentStack.safe_at("prevStack", _dummy);
 }
 
 bool CLuaMenu::PreEnterSelection()
@@ -138,30 +146,6 @@ bool CLuaMenu::ChangeSelection(int dir)
 	}
 
 	return false;
-}
-
-void CLuaMenu::GetMenuTitleToken(EqWString& outText)
-{
-	lua_State* state = GetLuaState();
-
-	if( m_stackGetTitleToken.Push() && m_stackGetTitleToken.Call(0, 1) )
-	{
-		int type = lua_type(state, -1);
-
-		if (type == LUA_TSTRING)
-		{
-			std::string tok_str;
-			OOLUA::pull(state, tok_str);
-			outText = LocalizedString(tok_str.c_str());
-		}
-		else if (type == LUA_TUSERDATA)
-		{
-			ILocToken* tok = NULL;
-			OOLUA::pull( state, tok );
-
-			outText = tok ? tok->GetText() : L"(nulltoken)";
-		}
-	}
 }
 
 bool CLuaMenu::GetCurrentMenuElement(OOLUA::Table& elem)
@@ -206,27 +190,14 @@ void CLuaMenu::EnterSelection(const char* actionFunc /*= "onEnter"*/)
 
 			OOLUA::Table nextMenu;
 			if (params.safe_at("nextMenu", nextMenu))
-				PushMenu(nextMenu, newTitleToken, m_selection);
+			{
+				PushMenu(nextMenu, params);
+			}
 
-			GetMenuTitleToken(m_menuTitleStr);
 		}
 	}
 	else
 		MsgError("CLuaMenu::EnterSelection error:\n %s\n", OOLUA::get_last_error(state).c_str());
-}
-
-void CLuaMenu::SetMenuTable( OOLUA::Table& tabl )
-{
-	m_menuElems = tabl;
-	GetMenuTitleToken(m_menuTitleStr);
-
-	m_numElems = 0;
-
-	EqLua::LuaStackGuard g(GetLuaState());
-
-	oolua_ipairs(m_menuElems)
-		m_numElems++;
-	oolua_ipairs_end()
 }
 
 const wchar_t* CLuaMenu::GetMenuItemString(OOLUA::Table& menuElem)

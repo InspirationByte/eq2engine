@@ -48,6 +48,10 @@ public:
 
 protected:
 
+	void		UpdateCurrentMenu();
+
+	void		InitUIScheme(const char* schemeName = nullptr);
+
 	void		ResetScroll();
 
 	void		ResetKeys();
