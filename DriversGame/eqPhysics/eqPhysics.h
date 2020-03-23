@@ -393,11 +393,12 @@ protected:
 	DkList<IEqPhysicsConstraint*>	m_constraints;
 	DkList<IEqPhysicsController*>	m_controllers;
 
-	Threading::CEqMutex&			m_mutex;
-
+	btDispatcherInfo				m_dispatchInfo;
 	btCollisionWorld*				m_collisionWorld;
 	btCollisionConfiguration*		m_collConfig;
 	btCollisionDispatcher*			m_collDispatcher;
+
+	Threading::CEqMutex&			m_mutex;
 
 	int								m_numRayQueries;
 

@@ -67,7 +67,6 @@ CEqCollisionObject* CollisionPairData_t::GetOppositeTo(CEqCollisionObject* obj) 
 
 //------------------------------------------------------------------------------------------------------------
 
-
 static int btInternalGetHash(int partId, int triangleIndex)
 {
 	int hash = (partId<<(31-MAX_NUM_PARTS_IN_BITS)) | triangleIndex;
@@ -106,28 +105,75 @@ void AdjustSingleSidedContact(btManifoldPoint& cp, const btCollisionObjectWrappe
 
 //----------------------------------------------------------------------------------------------
 
-class EqPhysContactResultCallback : public btCollisionWorld::ContactResultCallback
+struct CEqManifoldResult : public btManifoldResult
 {
-public:
-	EqPhysContactResultCallback(bool singleSided, const Vector3D& center) : m_center(center), m_singleSided(singleSided)
+	CEqManifoldResult(const btCollisionObjectWrapper* obj0Wrap, const btCollisionObjectWrapper* obj1Wrap, bool singleSided, const Vector3D& center)
+		: btManifoldResult(obj0Wrap, obj1Wrap), m_center(center), m_singleSided(singleSided)
 	{
+		m_closestPointDistanceThreshold = 0.0f;
 	}
 
-	btScalar addSingleResult(btManifoldPoint& cp, const btCollisionObjectWrapper* colObj0Wrap, int partId0, int index0, const btCollisionObjectWrapper* colObj1Wrap, int partId1, int index1)
+	virtual void addContactPoint(const btVector3& normalOnBInWorld, const btVector3& pointInWorld, btScalar depth)
 	{
-		if(m_singleSided)
+		bool isSwapped = m_manifoldPtr->getBody0() != m_body0Wrap->getCollisionObject();
+
+		btVector3 pointA = pointInWorld + normalOnBInWorld * depth;
+		btVector3 localA;
+		btVector3 localB;
+
+		if (isSwapped)
+		{
+			localA = m_body1Wrap->getWorldTransform().invXform(pointA);
+			localB = m_body0Wrap->getWorldTransform().invXform(pointInWorld);
+		}
+		else
+		{
+			localA = m_body0Wrap->getWorldTransform().invXform(pointA);
+			localB = m_body1Wrap->getWorldTransform().invXform(pointInWorld);
+		}
+
+		btManifoldPoint newPt(localA, localB, normalOnBInWorld, depth);
+		newPt.m_positionWorldOnA = pointA;
+		newPt.m_positionWorldOnB = pointInWorld;
+
+		//BP mod, store contact triangles.
+		if (isSwapped)
+		{
+			newPt.m_partId0 = m_partId1;
+			newPt.m_partId1 = m_partId0;
+			newPt.m_index0 = m_index1;
+			newPt.m_index1 = m_index0;
+		}
+		else
+		{
+			newPt.m_partId0 = m_partId0;
+			newPt.m_partId1 = m_partId1;
+			newPt.m_index0 = m_index0;
+			newPt.m_index1 = m_index1;
+		}
+
+		//experimental feature info, for per-triangle material etc.
+		const btCollisionObjectWrapper* obj0Wrap = isSwapped ? m_body1Wrap : m_body0Wrap;
+		const btCollisionObjectWrapper* obj1Wrap = isSwapped ? m_body0Wrap : m_body1Wrap;
+
+		addSingleResult(newPt, obj0Wrap, newPt.m_partId0, newPt.m_index0, obj1Wrap);
+	}
+
+	void addSingleResult(btManifoldPoint& cp, const btCollisionObjectWrapper* colObj0Wrap, int partId0, int index0, const btCollisionObjectWrapper* colObj1Wrap)
+	{
+		if (m_singleSided)
 			AdjustSingleSidedContact(cp, colObj1Wrap);
 		else
-			btAdjustInternalEdgeContacts(cp, colObj1Wrap,colObj0Wrap, partId1, index1);
+			btAdjustInternalEdgeContacts(cp, colObj1Wrap, colObj0Wrap, cp.m_partId1, cp.m_index1);
 
 		float distance = cp.getDistance();
 
 		// if something is a NaN we have to deny it
 		if (cp.m_positionWorldOnA != cp.m_positionWorldOnA || cp.m_normalWorldOnB != cp.m_normalWorldOnB)
-			return 1.0f;
+			return;
 
 		int numColls = m_collisions.numElem();
-		m_collisions.setNum(numColls+1);
+		m_collisions.setNum(numColls + 1);
 
 		CollisionData_t& data = m_collisions[numColls];
 
@@ -136,18 +182,16 @@ public:
 		data.position = ConvertBulletToDKVectors(cp.m_positionWorldOnA) - m_center;
 		data.materialIndex = -1;
 
-		if ( colObj1Wrap->getCollisionShape()->getShapeType() == TRIANGLE_SHAPE_PROXYTYPE )
+		if (colObj1Wrap->getCollisionShape()->getShapeType() == TRIANGLE_SHAPE_PROXYTYPE)
 		{
 			CEqCollisionObject* obj = (CEqCollisionObject*)colObj1Wrap->getCollisionObject()->getUserPointer();
 
-			if(obj && obj->GetMesh())
+			if (obj && obj->GetMesh())
 			{
 				CEqBulletIndexedMesh* mesh = (CEqBulletIndexedMesh*)obj->GetMesh();
-				data.materialIndex = mesh->getSubPartMaterialId(partId1);
+				data.materialIndex = mesh->getSubPartMaterialId(cp.m_partId1);
 			}
 		}
-
-		return 1.0f;
 	}
 
 	DkList<CollisionData_t> m_collisions;
@@ -206,8 +250,11 @@ void CEqPhysics::InitWorld()
 	m_collDispatcher = new btCollisionDispatcher( m_collConfig );
 	m_collDispatcher->setDispatcherFlags( btCollisionDispatcher::CD_DISABLE_CONTACTPOOL_DYNAMIC_ALLOCATION );
 
-	// broadphase not required
+	// still required for raycasts
 	m_collisionWorld = new btCollisionWorld(m_collDispatcher, NULL, m_collConfig);
+
+	m_dispatchInfo.m_enableSatConvex = false;
+	m_dispatchInfo.m_useContinuous = false;
 
 	InitSurfaceParams( m_physSurfaceParams );
 }
@@ -268,19 +315,16 @@ void CEqPhysics::DestroyWorld()
 	}
 	m_physSurfaceParams.clear();
 
-	if(m_collisionWorld)
+	if (m_collisionWorld)
 		delete m_collisionWorld;
-
 	m_collisionWorld = NULL;
 
 	if(m_collDispatcher)
 		delete m_collDispatcher;
-
 	m_collDispatcher = NULL;
 
 	if(m_collConfig)
 		delete m_collConfig;
-
 	m_collConfig = NULL;
 }
 
@@ -629,16 +673,30 @@ void CEqPhysics::DetectBodyCollisions(CEqRigidBody* bodyA, CEqRigidBody* bodyB, 
 	eqTransB = transpose(eqTransB);
 	eqTransB.rows[3] += Vector4D(bodyB->GetPosition()+center, 1.0f);
 
-	objA->setWorldTransform(ConvertMatrix4ToBullet(eqTransA));
-	objB->setWorldTransform(ConvertMatrix4ToBullet(eqTransB));
+	btTransform transA = ConvertMatrix4ToBullet(eqTransA);
+	btTransform transB = ConvertMatrix4ToBullet(eqTransB);
+
+	//objA->setWorldTransform(transA);
+	//objB->setWorldTransform(transB);
 
 	//PROFILE_END();
 
-	EqPhysContactResultCallback cbResult(true,center);
+	btCollisionObjectWrapper obA(nullptr, bodyA->m_shape, objA, transA, -1, -1);
+	btCollisionObjectWrapper obB(nullptr, bodyB->m_shape, objB, transB, -1, -1);
 
-	//PROFILE_BEGIN(contactPairTest);
-	m_collisionWorld->contactPairTest(objA, objB, cbResult);
-	//PROFILE_END();
+	CEqManifoldResult cbResult(&obA, &obB, true, center);
+
+	{
+		btCollisionAlgorithm* algorithm = m_collDispatcher->findAlgorithm(&obA, &obB, 0, BT_CONTACT_POINT_ALGORITHMS);
+		if (algorithm)
+		{
+			//discrete collision detection query
+			algorithm->processCollision(&obA, &obB, m_dispatchInfo, &cbResult);
+
+			algorithm->~btCollisionAlgorithm();
+			m_collDispatcher->freeCollisionAlgorithm(algorithm);
+		}
+	}
 
 	// so collision test were performed, get our results to contact pairs
 	DkList<ContactPair_t>& pairs = bodyA->m_contactPairs;
@@ -673,7 +731,7 @@ void CEqPhysics::DetectBodyCollisions(CEqRigidBody* bodyA, CEqRigidBody* bodyB, 
 		{
 			debugoverlay->Box3D(hitPos-0.01f,hitPos+0.01f, ColorRGBA(1,1,0,0.15f), 1.0f);
 			debugoverlay->Line3D(hitPos, hitPos+hitNormal, ColorRGBA(0,0,1,1), ColorRGBA(0,0,1,1), 1.0f);
-			debugoverlay->Text3D(hitPos, 50.0f, ColorRGBA(1,1,0,1), 0.0f, "penetration depth: %f", hitDepth);
+			debugoverlay->Text3D(hitPos, 50.0f, ColorRGBA(1,1,0,1), 1.0f, "penetration depth: %f", hitDepth);
 		}
 	}
 }
@@ -740,13 +798,22 @@ void CEqPhysics::DetectStaticVsBodyCollision(CEqCollisionObject* staticObj, CEqR
 	objA->setWorldTransform(transA);
 	objB->setWorldTransform(transB);
 
-	//PROFILE_END();
+	btCollisionObjectWrapper obA(nullptr, staticObj->m_shape, objA, transA, -1, -1);
+	btCollisionObjectWrapper obB(nullptr, bodyB->m_shape, objB, transB, -1, -1);
+	
+	CEqManifoldResult cbResult(&obA, &obB, /*(bodyB->m_flags & BODY_ISCAR)*/true, center);
 
-	EqPhysContactResultCallback	cbResult(/*(bodyB->m_flags & BODY_ISCAR)*/true, center);
+	{
+		btCollisionAlgorithm* algorithm = m_collDispatcher->findAlgorithm(&obA, &obB, 0, BT_CONTACT_POINT_ALGORITHMS);
+		if (algorithm)
+		{
+			//discrete collision detection query
+			algorithm->processCollision(&obA, &obB, m_dispatchInfo, &cbResult);
 
-	//PROFILE_BEGIN(contactPairTest);
-	m_collisionWorld->contactPairTest(objA, objB, cbResult);
-	//PROFILE_END();
+			algorithm->~btCollisionAlgorithm();
+			m_collDispatcher->freeCollisionAlgorithm(algorithm);
+		}
+	}
 
 	int numCollResults = cbResult.m_collisions.numElem();
 
@@ -804,7 +871,7 @@ void CEqPhysics::DetectStaticVsBodyCollision(CEqCollisionObject* staticObj, CEqR
 		{
 			debugoverlay->Box3D(hitPos-0.01f,hitPos+0.01f, ColorRGBA(1,1,0,0.15f), 1.0f);
 			debugoverlay->Line3D(hitPos, hitPos+hitNormal, ColorRGBA(0,0,1,1), ColorRGBA(0,0,1,1), 1.0f);
-			debugoverlay->Text3D(hitPos, 50.0f, ColorRGBA(1,1,0,1), 0.0f, "penetration depth: %f", hitDepth);
+			debugoverlay->Text3D(hitPos, 50.0f, ColorRGBA(1,1,0,1), 1.0f, "penetration depth: %f", hitDepth);
 		}
 	}
 }
