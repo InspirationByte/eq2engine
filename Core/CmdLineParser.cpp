@@ -122,10 +122,11 @@ void CommandLineParse::ExecuteCommandLine(unsigned int CmdFilterFlags/* = -1*/) 
 		cmdStr.Append(' ');
 		cmdStr.Append(argumentValueStr);
 
-		g_sysConsole->AppendToCommandBuffer( cmdStr.c_str() );
+		g_sysConsole->SetCommandBuffer(cmdStr.c_str());
+		g_sysConsole->ExecuteCommandBuffer(CmdFilterFlags);
 	}
 
-	g_sysConsole->ExecuteCommandBuffer(CmdFilterFlags);
+	//g_sysConsole->ExecuteCommandBuffer(CmdFilterFlags);
 }
 
 const char* CommandLineParse::GetArgumentString(int index) const

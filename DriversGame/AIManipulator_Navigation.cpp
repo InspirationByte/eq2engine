@@ -583,7 +583,7 @@ void CAINavigationManipulator::UpdateAffector(ai_handling_t& handling, CCar* car
 				debugoverlay->Line3D(steeringTargetColl.position, carPos, ColorRGBA(1, 0, 0, 1.0f), ColorRGBA(1, 0, 0, 1.0f), fDt);
 				debugoverlay->Sphere3D(steeringTargetColl.position, traceShapeRadius, ColorRGBA(1, 1, 0, 1.0f), fDt);
 
-				float AI_OBSTACLE_FRONTAL_CORRECTION_AMOUNT = 0.75f;
+				float AI_OBSTACLE_FRONTAL_CORRECTION_AMOUNT = 0.55f;
 
 				Vector3D collPoint(steeringTargetColl.position);
 

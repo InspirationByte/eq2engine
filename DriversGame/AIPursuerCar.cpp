@@ -30,7 +30,7 @@ const float AI_COPVIEW_FOV_WANTED	= 90.0f;
 const float AI_COPVIEW_FAR_ROADBLOCK	= 10.0f;
 
 const float AI_COPVIEW_RADIUS			= 18.0f;
-const float AI_COPVIEW_RADIUS_WANTED	= 25.0f;
+const float AI_COPVIEW_RADIUS_WANTED	= 45.0f;
 const float AI_COPVIEW_RADIUS_PURSUIT	= 100.0f;
 const float AI_COPVIEW_RADIUS_ROADBLOCK = 15.0f;
 
@@ -45,17 +45,7 @@ const float AI_COP_COLLISION_FELONY_DEBRIS	= 0.02f;
 const float AI_COP_COLLISION_FELONY_REDLIGHT = 0.010f;
 
 const float AI_COP_SCAREPEDS_FELONY			= 0.01f;
-
-const float AI_COP_COLLISION_CHECKTIME		= 0.01f;
-
-const float AI_COP_TIME_TO_LOST_TARGET		= 30.0f;
-const float AI_COP_TIME_TO_LOST_TARGET_FAR	= 5.0f;
 const float AI_COP_TIME_TO_TELL_DIRECTION	= 10.0f;
-
-const float AI_COP_LOST_TARGET_FARDIST		= 160.0f;
-
-const float AI_COP_BECOME_ANGRY_PURSUIT_TIME = 60.0f;
-const float AI_COP_BECOME_ANGRY_FELONY		 = 0.65f;
 
 const float AI_COP_ROADBLOCK_WIDTH			= 10.0f;
 
@@ -65,8 +55,15 @@ const float AI_ALTER_SIREN_CHANGETIME		= 2.0f;
 const float AI_CHASER_MAX_DISTANCE = 50.0f;
 
 const float AI_ANGRY_ACTIVE_TIME = 5.0f;
-
 const float AI_ANGRY_ACTIVE_DELAY = AI_ANGRY_ACTIVE_TIME + 5.0f;
+
+
+
+const float AI_COP_TIME_TO_LOST_TARGET = 30.0f;
+const float AI_COP_TIME_TO_LOST_TARGET_FAR = 5.0f;
+const float AI_COP_LOST_TARGET_FARDIST = 160.0f;
+const float AI_COP_BECOME_ANGRY_PURSUIT_TIME = 60.0f;
+const float AI_COP_BECOME_ANGRY_FELONY = 0.65f;
 
 //------------------------------------------------------------------------------------------------
 

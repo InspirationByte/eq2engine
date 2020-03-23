@@ -541,6 +541,9 @@ OOLUA_EXPORT_FUNCTIONS_CONST(ConCommand)
 OOLUA_EXPORT_FUNCTIONS(ConVar, RevertToDefaultValue, SetString, SetFloat, SetInt, SetBool)
 OOLUA_EXPORT_FUNCTIONS_CONST(ConVar, HasClamp, GetMinClamp, GetMaxClamp, GetFloat, GetString, GetInt, GetBool)
 
+OOLUA_EXPORT_FUNCTIONS(ICommandLineParse)
+OOLUA_EXPORT_FUNCTIONS_CONST(ICommandLineParse, FindArgument, GetArgumentString, GetArgumentsOf, GetArgumentCount)
+
 ConVar* Lua_Console_FindCvar(const char* name)
 {
 	return (ConVar*)g_sysConsole->FindCvar(name);
@@ -727,7 +730,6 @@ OOLUA_CFUNC(Lua_Console_RemoveCommandBase, LLua_Console_RemoveCommandBase)
 OOLUA_CFUNC(Lua_Console_RegisterCommandBase, LLua_Console_RegisterCommandBase)
 OOLUA_CFUNC(Lua_Console_UnregisterCommandBase, LLua_Console_UnregisterCommandBase)
 
-
 void Console_InitBinding(lua_State* state)
 {
 	LUA_SET_GLOBAL_ENUMCONST(state, CV_UNREGISTERED);
@@ -743,6 +745,8 @@ void Console_InitBinding(lua_State* state)
 	OOLUA::register_class_static<ConVar>(state, "SetVariantsCallback", L_ConCommandBase_SetVariantsCallback);
 	OOLUA::register_class_static<ConCommand>(state, "SetVariantsCallback", L_ConCommandBase_SetVariantsCallback);
 	
+	OOLUA::register_class<ICommandLineParse>(state);
+
 	OOLUA::Table consoleTab = OOLUA::new_table(state);
 	consoleTab.set("FindCvar", LLua_Console_FindCvar);
 	consoleTab.set("FindCommand", LLua_Console_FindCommand);
@@ -754,7 +758,10 @@ void Console_InitBinding(lua_State* state)
 	consoleTab.set("RegisterCommandBase", LLua_Console_RegisterCommandBase);
 	consoleTab.set("UnregisterCommandBase", LLua_Console_UnregisterCommandBase);
 
+	ICommandLineParse* cmdLineInstance = g_cmdLine.GetInstancePtr();
+
 	OOLUA::set_global(state, "console", consoleTab);
+	OOLUA::set_global(state, "cmdline", cmdLineInstance);
 }
 
 

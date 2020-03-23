@@ -67,7 +67,7 @@ void CAITargetChaserManipulator::UpdateAffector(ai_handling_t& handling, CCar* c
 	const float AI_BRAKE_TARGET_DISTANCE_SCALING = 2.5f;
 	const float AI_BRAKE_TARGET_DISTANCE_CURVE = 0.5f;
 
-	const float AI_STEERING_TARGET_DISTANCE_SCALING = 0.25f;
+	const float AI_STEERING_TARGET_DISTANCE_SCALING = 0.1f;
 	const float AI_STEERING_TARGET_DISTANCE_CURVE = 2.5f;
 
 	const float AI_LOWSPEED_CURVE = 15.0f;

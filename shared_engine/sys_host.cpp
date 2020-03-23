@@ -268,6 +268,13 @@ bool CGameHost::InitSystems( EQWNDHANDLE pWindow, bool bWindowed )
 
 	materials_config.threadedloader = true;
 
+	// init game states and proceed
+	if (!EqStateMgr::InitRegisterStates())
+		return false;
+
+	// override configuration file by executing command line
+	g_cmdLine->ExecuteCommandLine();
+
 	if( !g_fontCache->Init() )
 		return false;
 
@@ -279,12 +286,6 @@ bool CGameHost::InitSystems( EQWNDHANDLE pWindow, bool bWindowed )
 	g_parallelJobs->Init((int)ceil((float)g_cpuCaps->GetCPUCount() / 2.0f) + 1);
 
 	Networking::InitNetworking();
-
-	// init game states and proceed
-	if(!EqStateMgr::InitRegisterStates())
-	{
-		return false;
-	}
 
 	// finally init input and adjust bindings
 	g_inputCommandBinder->Init();
@@ -588,9 +589,9 @@ bool CGameHost::Frame()
 
 	PROFILE_BLOCK(UpdateStates);
 
-	double timescale = (EqStateMgr::GetCurrentState() ? EqStateMgr::GetCurrentState()->GetTimescale() : 1.0f) * sys_timescale.GetFloat();
+	double timescale = (EqStateMgr::GetCurrentState() ? EqStateMgr::GetCurrentState()->GetTimescale() : 1.0f);
 
-	if(!EqStateMgr::UpdateStates( m_fGameFrameTime * timescale))
+	if(!EqStateMgr::UpdateStates( m_fGameFrameTime * timescale * sys_timescale.GetFloat()))
 	{
 		m_nQuitState = CGameHost::QUIT_TODESKTOP;
 		return false;

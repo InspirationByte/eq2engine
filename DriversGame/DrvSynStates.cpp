@@ -50,7 +50,6 @@ bool InitRegisterStates()
 	g_states[GAME_STATE_TITLESCREEN] = g_State_Title;
 	g_states[GAME_STATE_MAINMENU] = g_State_MainMenu;
 	g_states[GAME_STATE_MPLOBBY] = g_State_NetLobby;
-	
 
 	// Lua binding is initialized from here
 	if (!LuaBinding_InitDriverSyndicateBindings(GetLuaState()))

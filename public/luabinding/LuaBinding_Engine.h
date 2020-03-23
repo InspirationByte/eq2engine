@@ -24,6 +24,7 @@
 #include "network/NetMessageBuffer.h"
 #include "ILocalize.h"
 #include "IConCommandFactory.h"
+#include "ICmdLineParser.h"
 
 #include "EqUI/IEqUI_Control.h"
 #include "EqUI/EqUI_Manager.h"
@@ -91,6 +92,20 @@ OOLUA_PROXY( ConVar, ConCommandBase )
 	OOLUA_MFUNC_CONST(GetInt)
 	OOLUA_MFUNC_CONST(GetBool)
 
+OOLUA_PROXY_END
+
+OOLUA_PROXY(ICommandLineParse)
+	OOLUA_TAGS(
+		No_default_constructor,
+		Abstract
+	)
+
+	OOLUA_MFUNC_CONST(FindArgument)
+
+	OOLUA_MFUNC_CONST(GetArgumentString)
+
+	OOLUA_MFUNC_CONST(GetArgumentsOf)
+	OOLUA_MFUNC_CONST(GetArgumentCount)
 OOLUA_PROXY_END
 
 //----------------------------------------------
