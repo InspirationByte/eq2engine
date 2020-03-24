@@ -219,7 +219,7 @@ void CAIPursuerCar::Evt_CarDeathEventHandler(const eventArgs_t& args)
 				if(creator == thisCar->m_target)
 					thisCar->Speak("cop.heavilydamaged", thisCar->m_target, false, 1.0f);
 				else
-					thisCar->Speak("cop.majorincident", thisCar->m_target, false, 0.8f);
+					thisCar->Speak("cop.majorincident", thisCar->m_target, false, 0.6f);
 			}
 				
 		}

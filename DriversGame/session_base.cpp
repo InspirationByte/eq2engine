@@ -265,7 +265,7 @@ void Game_OnPhysicsUpdate(float fDt, int iterNum)
 	if (g_replayTracker)
 	{
 		// always regenerate predictable random
-		//g_replayRandom.SetSeed(g_replayTracker->m_tick);
+		g_replayRandom.SetSeed(g_replayTracker->m_tick);
 		g_replayRandom.Regenerate();
 	}
 

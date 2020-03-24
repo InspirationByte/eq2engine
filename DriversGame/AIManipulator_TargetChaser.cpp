@@ -164,7 +164,7 @@ void CAITargetChaserManipulator::UpdateAffector(ai_handling_t& handling, CCar* c
 
 		if (shouldDoSteeringCorrection)
 		{
-			float AI_OBSTACLE_FRONTAL_CORRECTION_AMOUNT = 0.5f;
+			float AI_OBSTACLE_FRONTAL_CORRECTION_AMOUNT = 0.65f;
 
 			Vector3D collPoint(steeringTargetColl.position);
 

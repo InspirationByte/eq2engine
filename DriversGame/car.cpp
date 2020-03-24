@@ -469,6 +469,7 @@ ConVar g_debug_car_lights("g_debug_car_lights", "0");
 
 ConVar r_drawSkidMarks("r_drawSkidMarks", "1", "Draw skidmarks, 1 - player, 2 - all cars", CV_ARCHIVE);
 ConVar r_carShadowDetailDistance("r_carShadowDetailDistance", "50.0", "Detailed shadow distance", CV_ARCHIVE);
+ConVar r_carServiceLightBrightness("r_carServiceLightBrightness", "1.0", 0.0f, 1.0f, "Service lights flashing brightness", CV_ARCHIVE);
 
 extern CPFXAtlasGroup* g_vehicleEffects;
 extern CPFXAtlasGroup* g_translParticles;
@@ -3023,11 +3024,14 @@ void CCar::Simulate( float fDt )
 				float powFac = powf(fabs(lrFactor), 0.5f);
 				float powLrFac = powFac*sign(lrFactor) + 0.5f;
 
-				wlight_t light;
-				light.position = Vector4D(lerp(siren_positionL, siren_positionR, powLrFac), 20.0f);
-				light.color = ColorRGBA(lerp(col1, col2, fSin), fSinFactor);
+				if (r_carServiceLightBrightness.GetFloat() > 0)
+				{
+					wlight_t light;
+					light.position = Vector4D(lerp(siren_positionL, siren_positionR, powLrFac), 20.0f);
+					light.color = ColorRGBA(lerp(col1, col2, fSin), fSinFactor * r_carServiceLightBrightness.GetFloat());
 
-				g_pGameWorld->AddLight(light);
+					g_pGameWorld->AddLight(light);
+				}
 
 				break;
 			}
