@@ -71,6 +71,7 @@ void CState_MainMenu::OnEnter( CBaseStateHandler* from )
 
 	// init hud layout
 	m_uiLayout = equi::Manager->CreateElement("Panel");
+	m_schemeName = "";
 
 	// SetMenuObject invokes UpdateCurrentMenu which calls InitUIScheme()
 	SetMenuObject(mainMenuStack);
@@ -101,6 +102,11 @@ void CState_MainMenu::InitUIScheme(const char* schemeName)
 {
 	if (!schemeName)
 		schemeName = "ui_mainmenu";
+
+	if (!m_schemeName.CompareCaseIns(schemeName))
+		return;
+
+	m_schemeName = schemeName;
 
 	m_uiLayout->ClearChilds();
 
@@ -219,6 +225,8 @@ bool CState_MainMenu::Update( float fDt )
 	if (!m_menuDummy)
 		return true;
 
+	IRectangle rect = m_menuDummy->GetClientRectangle();
+
 	IEqFont* font = m_menuDummy->GetFont();
 
 	CMeshBuilder meshBuilder(materials->GetDynamicMesh());
@@ -229,20 +237,17 @@ bool CState_MainMenu::Update( float fDt )
 
 	Vector2D menuScaling = m_menuDummy->CalcScaling();
 
-	Vector2D screenMessagePos(m_menuDummy->GetPosition()*menuScaling);
-	screenMessagePos.y -= 65;
-
 	// interpolate scroll smoothly
 	m_menuScrollInterp = lerp(m_menuScrollInterp, m_menuScrollTarget, fDt*16.0f);
 
 	eqFontStyleParam_t fontParam;
 	fontParam.align = m_menuDummy->GetTextAlignment();
-	fontParam.styleFlag |= TEXT_STYLE_SHADOW | TEXT_STYLE_FROM_CAP;
-	fontParam.textColor = color4_white;
+
+	fontParam.textColor = color4_white;	fontParam.styleFlag |= TEXT_STYLE_SHADOW | TEXT_STYLE_FROM_CAP;
 	fontParam.scale = m_menuDummy->GetFontScale()*menuScaling;
 
-	Vector2D menuPos = m_menuDummy->GetPosition()*menuScaling;
-	Vector2D menuSize = m_menuDummy->GetSize()*menuScaling;
+	Vector2D menuPos = (m_menuDummy->GetTextAlignment() == TEXT_ALIGN_RIGHT) ? rect.GetRightTop() : (m_menuDummy->GetTextAlignment() & TEXT_ALIGN_HCENTER) ? ((rect.GetLeftTop()+rect.GetRightTop()) / 2) : rect.GetLeftTop();
+	Vector2D menuSize = rect.GetSize();
 
 	DkList<OOLUA::Table> menuItems;
 	{
@@ -304,14 +309,14 @@ bool CState_MainMenu::Update( float fDt )
 				fontParam.textColor.w *= 1.0f - ((menuPos.y - elemPos.y) / 200.0f);
 
 				if (i == m_selection && m_selection < -m_menuScrollTarget)
-					m_menuScrollTarget = -m_selection;
+					m_menuScrollTarget++;
 			}
 			else if (elemPos.y > menuPos.y + menuSize.y)
 			{
 				fontParam.textColor.w *= 1.0f - ((elemPos.y - (menuPos.y + menuSize.y)) / 80.0f);
 
 				if (i == m_selection && m_selection > -m_menuScrollTarget)
-					m_menuScrollTarget = -m_selection;
+					m_menuScrollTarget--;
 			}
 				
 
@@ -360,10 +365,17 @@ bool CState_MainMenu::Update( float fDt )
 	}
 
 	{
+
+		const float messageSizeY = 26.0f*menuScaling.y;
+
+		float clampedAlertTime = clamp(m_fade, 0.0f, 1.0f);
+
+		// ok for 3 seconds
+		float textXPos = -2000.0f * pow(1.0f - m_textFade, 4.0f) + (-2000.0f * pow(1.0f - clampedAlertTime, 4.0f));
+
+		Vector2D screenMessagePos(menuPos + Vector2D(textXPos, -32.0f*menuScaling.y));
+
 		Vertex2D_t verts[6];
-
-		const float messageSizeY = 55.0f;
-
 		Vertex2D_t baseVerts[] = { MAKETEXQUAD(0.0f, screenMessagePos.y, screenSize.x, screenMessagePos.y + messageSizeY, 0.0f) };
 
 		baseVerts[0].color.w = 0.0f;
@@ -377,13 +389,8 @@ bool CState_MainMenu::Update( float fDt )
 		verts[4] = baseVerts[2];
 		verts[5] = baseVerts[3];
 
-		verts[2] = Vertex2D_t::Interpolate(verts[0], verts[4], 0.25f);
-		verts[3] = Vertex2D_t::Interpolate(verts[1], verts[5], 0.25f);
-
-		verts[2].color.w = 1.0f;
-		verts[3].color.w = 1.0f;
-
-		float clampedAlertTime = clamp(m_fade, 0.0f, 1.0f);
+		verts[2] = Vertex2D_t(Vector2D(screenMessagePos.x, verts[0].position.y), 0.0f, m_textFade*0.75f); //Vertex2D_t::Interpolate(verts[0], verts[4], 0.5f);
+		verts[3] = Vertex2D_t(Vector2D(screenMessagePos.x, verts[1].position.y), 0.0f, m_textFade*0.75f); //Vertex2D_t::Interpolate(verts[1], verts[5], 0.5f);
 
 		float alpha = clampedAlertTime;
 
@@ -392,14 +399,13 @@ bool CState_MainMenu::Update( float fDt )
 		materials->DrawPrimitives2DFFP(PRIM_TRIANGLE_STRIP, verts, elementsOf(verts), NULL, alertColor, &blending);
 
 		eqFontStyleParam_t scrMsgParams;
+		scrMsgParams.align = m_menuDummy->GetTextAlignment();
 		scrMsgParams.styleFlag |= TEXT_STYLE_SHADOW | TEXT_STYLE_USE_TAGS;
 		scrMsgParams.textColor = ColorRGBA(1, 1, 1, alpha);
-		scrMsgParams.scale = 30.0f;
+		scrMsgParams.scale = 14.0f*menuScaling;
 
-		// ok for 3 seconds
-		float textXPos = -2000.0f * pow(1.0f - m_textFade, 4.0f) + (-2000.0f * pow(1.0f - clampedAlertTime, 4.0f));
-
-		font->RenderText(m_menuTitleStr.c_str(), screenMessagePos + Vector2D(textXPos, messageSizeY*0.7f), scrMsgParams);
+		screenMessagePos.y += messageSizeY * 0.7f;
+		font->RenderText(m_menuTitleStr.c_str(), screenMessagePos, scrMsgParams);
 	}
 
 	materials->SetMatrix(MATRIXMODE_VIEW, identity4());
@@ -660,6 +666,7 @@ void CState_MainMenu::HandleMouseMove( int x, int y, float deltaX, float deltaY 
 
 	IEqFont* font = m_menuDummy->GetFont();
 
+	IRectangle rect = m_menuDummy->GetClientRectangle();
 	Vector2D menuScaling = m_menuDummy->CalcScaling();
 
 	eqFontStyleParam_t fontParam;
@@ -668,7 +675,7 @@ void CState_MainMenu::HandleMouseMove( int x, int y, float deltaX, float deltaY 
 	fontParam.textColor = color4_white;
 	fontParam.scale = m_menuDummy->GetFontScale()*menuScaling;
 
-	Vector2D menuPos = m_menuDummy->GetPosition()*menuScaling;
+	Vector2D menuPos = rect.GetLeftTop();
 	float lineHeight = font->GetLineHeight(fontParam);
 
 	{
@@ -680,7 +687,7 @@ void CState_MainMenu::HandleMouseMove( int x, int y, float deltaX, float deltaY 
 			OOLUA::Table elem;
 			m_menuElems.safe_at(_i_index_, elem);
 
-			float lineWidth = 400;
+			float lineWidth = rect.GetSize().x;
 			float itemHeight = 0.5f * lineHeight;
 
 			Vector2D elemPos(menuPos.x, menuPos.y + idx*lineHeight + m_menuScrollInterp*lineHeight);

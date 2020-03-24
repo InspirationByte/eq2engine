@@ -78,6 +78,8 @@ protected:
 	equi::IUIControl*		m_menuHeaderDummy;
 
 	int						m_maxMenuItems;
+	EqString				m_schemeName;
+
 };
 
 extern CState_MainMenu* g_State_MainMenu;
