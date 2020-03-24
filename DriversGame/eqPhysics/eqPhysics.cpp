@@ -194,6 +194,38 @@ struct CEqManifoldResult : public btManifoldResult
 		}
 	}
 
+	bool GetSingleContact(CollisionData_t& cd, const Vector3D& facingPos)
+	{
+		int numAddedCollisions = 0;
+
+		memset(&cd, 0, sizeof(CollisionData_t));
+		for (int i = 0; i < m_collisions.numElem(); i++)
+		{
+			CollisionData_t& coll = m_collisions[i];
+
+			Plane pl(coll.normal, -dot(coll.normal, (Vector3D)coll.position));
+
+			if (pl.ClassifyPoint(facingPos) == CP_BACK)
+				continue;
+
+			cd.fract += coll.fract;
+			cd.normal += coll.normal;
+			cd.position += coll.position;
+			numAddedCollisions++;
+
+			cd.materialIndex = coll.materialIndex;
+			cd.hitobject = coll.hitobject;
+		}
+
+		float collF = 1.0f / numAddedCollisions;
+
+		cd.fract *= collF;
+		cd.normal *= collF;
+		cd.position *= collF;
+
+		return numAddedCollisions > 0;
+	}
+
 	DkList<CollisionData_t> m_collisions;
 	Vector3D				m_center;
 	bool					m_singleSided;
@@ -813,6 +845,19 @@ void CEqPhysics::DetectStaticVsBodyCollision(CEqCollisionObject* staticObj, CEqR
 			algorithm->~btCollisionAlgorithm();
 			m_collDispatcher->freeCollisionAlgorithm(algorithm);
 		}
+	}
+
+	if (staticObj->m_flags & COLLOBJ_SINGLE_CONTACT)
+	{
+		// HACK: convert to single contact if static object has studio shape
+		CollisionData_t singleColl;
+		if (cbResult.GetSingleContact(singleColl, bodyB->GetPosition()))
+		{
+			cbResult.m_collisions.setNum(1);
+			cbResult.m_collisions[0] = singleColl;
+		}
+		else
+			cbResult.m_collisions.clear(false);
 	}
 
 	int numCollResults = cbResult.m_collisions.numElem();

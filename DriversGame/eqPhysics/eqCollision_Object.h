@@ -42,6 +42,10 @@ enum ECollisionObjectFlags
 	// is ghost object
 	COLLOBJ_ISGHOST					= (1 << 4),
 
+	// object has single contact point (affects collision response)
+	// only used with static triangle meshes
+	COLLOBJ_SINGLE_CONTACT			= (1 << 5),
+
 	//---------------
 	// special flags
 
