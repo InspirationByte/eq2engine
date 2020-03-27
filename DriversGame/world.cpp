@@ -1479,7 +1479,13 @@ bool CGameWorld::AddLight(const wlight_t& light)
 
 void CGameWorld::BuildViewMatrices(int width, int height, int nRenderFlags)
 {
-	m_view.GetMatrices(m_matrices[MATRIXMODE_PROJECTION], m_matrices[MATRIXMODE_VIEW], width, height, m_sceneinfo.m_fZNear, m_sceneinfo.m_fZFar);
+	// test sun light
+	float fWidth = r_ortho.GetBool() ? r_ortho_size.GetFloat() : width;
+	float fHeight = r_ortho.GetBool() ? r_ortho_size.GetFloat() : height;
+	float fNear = r_ortho.GetBool() ? -500.0f : m_sceneinfo.m_fZNear;
+	float fFar = r_ortho.GetBool() ? 500.0f : m_sceneinfo.m_fZFar;
+
+	m_view.GetMatrices(m_matrices[MATRIXMODE_PROJECTION], m_matrices[MATRIXMODE_VIEW], fWidth, fHeight, fNear, fFar, r_ortho.GetBool());
 
 	m_matrices[MATRIXMODE_WORLD] = identity4();
 

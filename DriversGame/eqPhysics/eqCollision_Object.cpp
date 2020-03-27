@@ -20,7 +20,7 @@
 
 using namespace EqBulletUtils;
 
-ConVar ph_margin("ph_margin", "0.0001", "no desc", CV_CHEAT);
+ConVar ph_margin("ph_margin", "0.001", nullptr, CV_CHEAT);
 
 #define AABB_GROWVALUE	 (0.15f)
 

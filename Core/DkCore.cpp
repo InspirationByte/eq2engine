@@ -298,14 +298,18 @@ bool CDkCore::Init(const char* pszApplicationName,int argc, char **argv)
 	static EqString strCmdLine;
 	strCmdLine.Empty();
 
-	char tmp_path[2048];
+	char tmp_str[2048];
 
     // Append arguments
     for (int i = 0; i < argc; i++)
     {
-		sprintf(tmp_path, "%s ",argv[i]);
+		bool hasSpaces = strchr(argv[i], ' ') || strchr(argv[i], '\t');
+		if (hasSpaces)
+			sprintf(tmp_str, "\"%s\" ", argv[i]);
+		else
+			sprintf(tmp_str, "%s ", argv[i]);
 
-        strCmdLine.Append(tmp_path);
+        strCmdLine.Append(tmp_str);
     }
 
     return Init(pszApplicationName, (char*)strCmdLine.GetData());

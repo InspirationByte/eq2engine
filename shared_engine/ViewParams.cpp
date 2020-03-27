@@ -65,7 +65,7 @@ void CViewParams::GetMatrices(Matrix4x4& proj, Matrix4x4& view, float width, flo
 	Vector3D vRadianRotation = VDEG2RAD(m_vecAngles);
 
 	if(orthographic)
-		proj = orthoMatrix(width*-m_fFOV, width*m_fFOV, height*-m_fFOV, height*m_fFOV, zNear, zFar);
+		proj = orthoMatrixR(width*-m_fFOV, width*m_fFOV, height*-m_fFOV, height*m_fFOV, zNear, zFar);
 	else
 		proj = perspectiveMatrixY(DEG2RAD(m_fFOV), width, height, zNear, zFar);
 
