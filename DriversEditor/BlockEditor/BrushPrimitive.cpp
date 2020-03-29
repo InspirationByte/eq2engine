@@ -933,31 +933,13 @@ void CBrushPrimitive::SaveToKeyValues(kvkeybase_t* pSection)
 	{
 		brushFace_t& face = m_windingFaces[i].face;
 
-		kvkeybase_t* pThisFace = pFacesSec->AddKeyBase(varargs("f%d", i));
-		pThisFace->AddKeyBase("nplane", varargs("%f %f %f %f", 
-			face.Plane.normal.x, face.Plane.normal.y, face.Plane.normal.z,
-			face.Plane.offset
-			));
+		kvkeybase_t* faceKV = pFacesSec->AddKeyBase("face", (char*)face.pMaterial->GetName());
+		faceKV->SetKey("N", Vector4D(face.Plane.normal, face.Plane.offset));
+		faceKV->SetKey("U", Vector4D(face.UAxis.normal, face.UAxis.offset));
+		faceKV->SetKey("V", Vector4D(face.VAxis.normal, face.VAxis.offset));
 
-		pThisFace->AddKeyBase("uplane", varargs("%f %f %f %f", 
-			face.UAxis.normal.x, face.UAxis.normal.y, face.UAxis.normal.z,
-			face.UAxis.offset
-			));
-
-		pThisFace->AddKeyBase("vplane", varargs("%f %f %f %f", 
-			face.VAxis.normal.x, face.VAxis.normal.y, face.VAxis.normal.z,
-			face.VAxis.offset
-			));
-
-		pThisFace->AddKeyBase("texscale", varargs("%f %f", 
-			face.vScale.x, face.vScale.y
-			));
-
-		pThisFace->AddKeyBase("rotation", varargs("%f", face.fRotation));
-		pThisFace->AddKeyBase("material", (char*)face.pMaterial->GetName());
-		pThisFace->AddKeyBase("smoothinggroup", varargs("%d", face.nSmoothingGroup));
-		//pThisFace->AddKeyBase("nocollide", varargs("%d", face.nFlags & STFL_NOCOLLIDE));
-		//pThisFace->AddKeyBase("nosubdivision", varargs("%d", face.nFlags & STFL_NOSUBDIVISION));
+		faceKV->SetKey("TS", face.vScale);
+		faceKV->SetKey("TR", face.fRotation);
 	}
 }
 
@@ -968,48 +950,31 @@ bool CBrushPrimitive::LoadFromKeyValues(kvkeybase_t* pSection)
 	
 	for(int i = 0; i < pFacesSec->keys.numElem(); i++)
 	{
-		kvkeybase_t* pThisFace = pFacesSec->keys[i];
-
 		brushFace_t face;
+		kvkeybase_t* faceKV = pFacesSec->keys[i];
 
-		kvkeybase_t* pPair = pThisFace->FindKeyBase("nplane");
+		if (stricmp("face", faceKV->name))
+			continue;
 
-		Vector4D plane = KV_GetVector4D(pPair);
+		Vector4D NPlane = KV_GetVector4D(faceKV->FindKeyBase("N"));
+		face.Plane.normal = NPlane.xyz();
+		face.Plane.offset = NPlane.w;
 
-		face.Plane.normal = plane.xyz();
-		face.Plane.offset = plane.w;
+		Vector4D UPlane = KV_GetVector4D(faceKV->FindKeyBase("U"));
+		face.UAxis.normal = UPlane.xyz();
+		face.UAxis.offset = UPlane.w;
 
-		pPair = pThisFace->FindKeyBase("uplane");
-		plane = KV_GetVector4D(pPair);
+		Vector4D VPlane = KV_GetVector4D(faceKV->FindKeyBase("V"));
+		face.VAxis.normal = VPlane.xyz();
+		face.VAxis.offset = VPlane.w;
 
-		face.UAxis.normal = plane.xyz();
-		face.UAxis.offset = plane.w;
+		face.vScale = KV_GetVector2D(faceKV->FindKeyBase("TS"));
+		face.fRotation = KV_GetValueFloat(faceKV->FindKeyBase("TR"));
 
-		pPair = pThisFace->FindKeyBase("vplane");
-		plane = KV_GetVector4D(pPair);
+		// using section value
+		face.pMaterial = materials->GetMaterial(KV_GetValueString(faceKV));
+		face.pMaterial->Ref_Grab();
 
-		face.VAxis.normal = plane.xyz();
-		face.VAxis.offset = plane.w;
-
-		pPair = pThisFace->FindKeyBase("texscale");
-		face.vScale = KV_GetVector2D(pPair);
-
-		pPair = pThisFace->FindKeyBase("rotation");
-		face.fRotation = KV_GetValueFloat(pPair);
-
-		pPair = pThisFace->FindKeyBase("material");
-		face.pMaterial = materials->GetMaterial(KV_GetValueString(pPair));
-
-		pPair = pThisFace->FindKeyBase("smoothinggroup");
-		face.nSmoothingGroup = KV_GetValueInt(pPair);
-
-		//pPair = pThisFace->FindKeyBase("nocollide");
-		//face.nFlags |= KV_GetValueBool(pPair, false) ? STFL_NOCOLLIDE : 0;
-
-		//pPair = pThisFace->FindKeyBase("nosubdivision");
-		//face.nFlags |= KV_GetValueBool(pPair, false) ? STFL_NOSUBDIVISION : 0;
-
-		// add face
 		AddFace(face);
 	}
 
