@@ -200,6 +200,9 @@ struct CEqManifoldResult : public btManifoldResult
 
 		Vector3D bodyPos = relativeBody->GetPosition();
 
+		CollisionData_t* closest = nullptr;
+		float closestDist = PHYSICS_WORLD_MAX_UNITS;
+
 		memset(&cd, 0, sizeof(CollisionData_t));
 		for (int i = 0; i < m_collisions.numElem(); i++)
 		{
@@ -850,7 +853,7 @@ void CEqPhysics::DetectStaticVsBodyCollision(CEqCollisionObject* staticObj, CEqR
 			m_collDispatcher->freeCollisionAlgorithm(algorithm);
 		}
 	}
-
+	/*
 	if (staticObj->m_flags & COLLOBJ_SINGLE_CONTACT)
 	{
 		// HACK: convert to single contact if static object has studio shape
@@ -862,7 +865,7 @@ void CEqPhysics::DetectStaticVsBodyCollision(CEqCollisionObject* staticObj, CEqR
 		}
 		else
 			cbResult.m_collisions.clear(false);
-	}
+	}*/
 
 	int numCollResults = cbResult.m_collisions.numElem();
 
@@ -1122,9 +1125,11 @@ void CEqPhysics::ProcessContactPair(const ContactPair_t& pair)
 
 		impactVelocity = fabs( dot(pair.normal, bodyA->GetVelocityAtWorldPoint(pair.position) - bodyB->GetVelocityAtWorldPoint(pair.position)) );
 
+		if ((bodyAFlags & BODY_FORCE_FREEZE) || (bodyBFlags & BODY_FORCE_FREEZE))
+			positionalError = pair.depth * 100.0f;
+
 		// apply response
 		appliedImpulse = 2.0f * CEqRigidBody::ApplyImpulseResponseTo2(bodyA, bodyB, pair.position, pair.normal, positionalError);
-
 		bodyADisableResponse = (bodyAFlags & COLLOBJ_DISABLE_RESPONSE) > 0;
 	}
 

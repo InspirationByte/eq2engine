@@ -660,11 +660,11 @@ float CEqRigidBody::ApplyImpulseResponseTo2( CEqRigidBody* bodyA, CEqRigidBody* 
 	Vector3D impactpoint_velocityA = bodyA->GetVelocityAtLocalPoint(contactRelativePosA);
 	Vector3D impactpoint_velocityB = bodyB->GetVelocityAtLocalPoint(contactRelativePosB);
 
-	float combined_rest = 1.0f+(bodyA->GetRestitution()*bodyB->GetRestitution());
+	float combined_rest = 1.0f + (bodyA->GetRestitution()*bodyB->GetRestitution());
 
-	Vector3D vel_sub = impactpoint_velocityA-impactpoint_velocityB;
+	Vector3D vel_sub = impactpoint_velocityB-impactpoint_velocityA;
 
-	float impulse_speed = -dot(vel_sub, normal);
+	float impulse_speed = dot(vel_sub, normal);
 
 	float denomA = bodyA->ComputeImpulseDenominator(contactRelativePosA, normal);
 	float denomB = bodyB->ComputeImpulseDenominator(contactRelativePosB, normal);

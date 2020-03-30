@@ -65,7 +65,7 @@ void CObject_Static::Spawn()
 		physobject_t* obj = &m_pModel->GetHWData()->physModel.objects[0].object;
 
 		// deny wheel and camera collisions
-		m_physObj->m_flags = COLLOBJ_NO_RAYCAST | COLLOBJ_SINGLE_CONTACT;
+		m_physObj->m_flags = COLLOBJ_NO_RAYCAST;// | COLLOBJ_SINGLE_CONTACT;
 
 		m_physObj->SetPosition( m_vecOrigin );
 		m_physObj->SetOrientation(Quaternion(DEG2RAD(m_vecAngles.x),DEG2RAD(m_vecAngles.y),DEG2RAD(m_vecAngles.z)));

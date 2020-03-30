@@ -77,17 +77,21 @@ void CSingleGameSession::Init()
 		}
 	}
 
-	// load regions on player car position
-	if (GetPlayerCar())
-	{
-		// also enable headlights on player car if needed
-		bool headLightsEnabled = GetPlayerCar()->IsEnabled() && (g_pGameWorld->m_envConfig.lightsType & WLIGHTS_CARS);
-		GetPlayerCar()->SetLight(headLightsEnabled, headLightsEnabled);
+	CCar* playerCar = GetPlayerCar();
+	CPedestrian* playerPed = GetPlayerPedestrian();
 
-		g_pGameWorld->QueryNearestRegions(GetPlayerCar()->GetOrigin(), false);
+	Vector3D queryPos = playerCar ? playerCar->GetOrigin() : (playerPed ? playerPed->GetOrigin() : 0.0f);
+
+	// load regions player car position
+	if (playerCar || playerPed)
+		g_pGameWorld->QueryNearestRegions(queryPos, false);
+
+	// also enable headlights on player car if needed
+	if (playerCar)
+	{
+		bool headLightsEnabled = playerCar->IsEnabled() && (g_pGameWorld->m_envConfig.lightsType & WLIGHTS_CARS);
+		playerCar->SetLight(CAR_LIGHT_LOWBEAMS, headLightsEnabled);
 	}
-	else if (GetPlayerPedestrian())
-		g_pGameWorld->QueryNearestRegions(GetPlayerPedestrian()->GetOrigin(), false);
 }
 
 void CSingleGameSession::Shutdown()
@@ -110,12 +114,10 @@ void CSingleGameSession::SetPlayerCar(CCar* pCar)
 		m_playerCar->m_isLocalCar = false;
 
 	m_playerCar = pCar;
+	g_pGameHUD->SetDisplayMainVehicle(pCar);
 
-	// FIXME: multiple HUD instances for split screen
-	g_pGameHUD->SetDisplayMainVehicle(m_playerCar);
-
-	if (m_playerCar)
-		m_playerCar->m_isLocalCar = true;
+	if (pCar)
+		pCar->m_isLocalCar = true;
 }
 
 CGameObject* CSingleGameSession::GetViewObject() const
@@ -208,36 +210,39 @@ void CSingleGameSession::GoThrill()
 
 	// trace far back to determine distToTarget
 	{
-		cameraConfig_t cam;
-		eqPhysCollisionFilter tmp;
-
-		focusCar->ConfigureCamera(cam, tmp);
+		eqPhysCollisionFilter filter(focusCar->GetPhysicsBody());
 
 		const Vector3D& velocity = focusCar->GetVelocity();
 		const Vector3D forward = focusCar->GetForwardVector();
 		const Vector3D right = focusCar->GetRightVector();
 
-		float thrillDir = sign(dot(velocity, forward));
-
-		CollisionData_t trace_coll;
-
 		float rightVecFactor = RandomFloat(-1, 1);
 
-		Vector3D trace_start = focusCar->GetOrigin() + vec3_up * 2.0f;
-		Vector3D target_pos = focusCar->GetOrigin() + forward * thrillDir * 15.0f + velocity * 0.5f + right * sign(rightVecFactor) * 4.0f;
+		Vector3D traceStart = focusCar->GetOrigin() + vec3_up * 2.0f;
+		Vector3D targetPosFront = traceStart + forward * 15.0f + velocity * 0.5f + right * sign(rightVecFactor) * 4.0f;
+		Vector3D targetPosBack = traceStart + forward * -15.0f + velocity * -0.5f + right * sign(rightVecFactor) * 4.0f;
 
 		int props = OBJECTCONTENTS_SOLID_GROUND | OBJECTCONTENTS_SOLID_OBJECTS | OBJECTCONTENTS_VEHICLE;
 
-		// trace forward
+		// trace sphere forward and back
 		btBoxShape sphere(btVector3(0.5f, 0.5f, 0.5f));
-		if (g_pPhysics->TestConvexSweep(&sphere, identity(), trace_start, target_pos, trace_coll, props, &tmp))
-		{
-			target_pos = lerp(trace_start, target_pos, trace_coll.fract);
-		}
+
+		CollisionData_t traceForward;
+		CollisionData_t traceBack;
+		g_pPhysics->TestConvexSweep(&sphere, identity(), traceStart, targetPosFront, traceForward, props, &filter);
+		g_pPhysics->TestConvexSweep(&sphere, identity(), traceStart, targetPosBack, traceBack, props, &filter);
+
+		// adjust target pos
+		targetPosFront = lerp(traceStart, targetPosFront, traceForward.fract);
+		targetPosBack = lerp(traceStart, targetPosBack, traceBack.fract);
+
+		// select best target pos
+		// use furthest trace. Front is in priority (>=)
+		Vector3D target_pos = (traceForward.fract >= traceBack.fract) ? targetPosFront : targetPosBack;
 
 		// trace down
-		if (g_pPhysics->TestConvexSweep(&sphere, identity(), target_pos, target_pos - Vector3D(0, 10.0f, 0.0f), trace_coll, props, &tmp))
-			target_pos = trace_coll.position + 1.0f;
+		if (g_pPhysics->TestConvexSweep(&sphere, identity(), target_pos, target_pos - Vector3D(0, 10.0f, 0.0f), traceForward, props, &filter))
+			target_pos = traceForward.position + 1.0f;
 
 		g_pCameraAnimator->SetMode(CAM_MODE_TRIPOD_FOLLOW_ZOOM);
 		g_pCameraAnimator->SetOrigin(target_pos);

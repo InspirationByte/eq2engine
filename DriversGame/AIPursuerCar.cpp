@@ -57,7 +57,7 @@ const float AI_CHASER_MAX_DISTANCE = 50.0f;
 const float AI_ANGRY_ACTIVE_TIME = 5.0f;
 const float AI_ANGRY_ACTIVE_DELAY = AI_ANGRY_ACTIVE_TIME + 5.0f;
 
-
+const float AI_BACKUP_BLOCK_PURSUERS_DIST = 30.0f;
 
 const float AI_COP_TIME_TO_LOST_TARGET = 30.0f;
 const float AI_COP_TIME_TO_LOST_TARGET_FAR = 5.0f;
@@ -315,7 +315,11 @@ bool CAIPursuerCar::Speak(const char* soundName, CCar* target, bool force, float
 		return false;
 
 	if (!force && m_previousSpeech == soundName)
+	{
 		soundName = "cop.relatedincident";
+		priority *= 0.5f;
+	}
+
 
 	m_previousSpeech = soundName;
 
@@ -603,7 +607,7 @@ EInfractionType CAIPursuerCar::CheckCollisionInfraction(CCar* car, const Contact
 		if (hitCar->ObjType() == GO_CAR_AI)
 		{
 			CAITrafficCar* tfc = (CAITrafficCar*)hitCar;
-			if (tfc->IsPursuer() && tfc->m_conf->flags.isCop && !tfc->m_assignedRoadblock)	// don't check collision with me pls
+			if (tfc->IsPursuer() && tfc->IsAlive() && tfc->m_conf->flags.isCop && !tfc->m_assignedRoadblock)	// don't check collision with me pls
 			{
 				return INFRACTION_HIT_SQUAD_VEHICLE;
 			}
@@ -1047,33 +1051,84 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 	float mySpeed = GetSpeed();
 
 	const Vector3D& carPos = GetOrigin();
+	const Vector3D carForward = GetForwardVector();
 
 	const Vector3D& targetPos = m_target->GetOrigin();
 	const Vector3D& targetVelocity = m_target->GetVelocity();
 
-	// update navigation affector parameters
-	m_nav.m_manipulator.m_driveTarget = targetPos;
-	m_nav.m_manipulator.m_driveTargetVelocity = targetVelocity;
-	m_nav.m_manipulator.m_excludeColl = m_target->GetPhysicsBody();
+	const Vector3D targetCarDir = m_target->GetForwardVector();
+	const Vector3D targetMoveDir = dot(targetCarDir, targetVelocity+targetCarDir*0.1f) >= 0.0f ? targetCarDir : -targetCarDir;
 
-	m_chaser.m_manipulator.m_driveTarget = targetPos;
-	m_chaser.m_manipulator.m_driveTargetVelocity = targetVelocity;
-	m_chaser.m_manipulator.m_excludeColl = m_target->GetPhysicsBody();
+	// front plane of target according to it's direction to make blocking escaping target
+	const Vector3D targetCarFrontPos = targetPos + targetMoveDir * m_target->m_conf->physics.body_size.z;
+	Plane targetFrontPl(targetCarDir, -dot(targetCarDir, targetCarFrontPos));
+	Plane targetFrontDirPl(targetMoveDir, -dot(targetMoveDir, targetCarFrontPos));
+
+	float angryTimer = m_angryTimer;
 
 	if (m_angry)
 	{
-		m_angryTimer -= fDt;
-		if (m_angryTimer < 0)
-			m_angryTimer = AI_ANGRY_ACTIVE_DELAY;
+		angryTimer -= fDt;
+		if (angryTimer < 0)
+			angryTimer = AI_ANGRY_ACTIVE_DELAY;
+
+		m_angryTimer = angryTimer;
+	}
+	const bool angryActive = !(angryTimer < AI_ANGRY_ACTIVE_TIME);
+
+	int nearestPursuers = 0;
+	if (angryActive)
+	{
+		DkList<CCar*> nearestAlivePursuers;
+		g_pAIManager->QueryTrafficCars(nearestAlivePursuers, AI_BACKUP_BLOCK_PURSUERS_DIST, carPos, carForward, 0.0f);
+		
+		for (int i = 0; i < nearestAlivePursuers.numElem(); i++)
+		{
+			CCar* car = nearestAlivePursuers[i];
+
+			if (car == this)
+				continue;
+
+			CAIPursuerCar* pursuer = UTIL_CastToPursuer(car);
+			if (pursuer && pursuer->IsEnabled() && pursuer->IsAlive() && !pursuer->IsFlippedOver())
+				nearestPursuers++;
+		}
+
+
 	}
 
+	const float distToTarget = length(targetPos - carPos);
+
+	// if cannot block he will just ram target
+	const bool isInFrontOfTarget = (targetFrontPl.ClassifyPoint(carPos) == CP_FRONT);
+	const bool canBlockTarget = nearestPursuers && angryActive && !isInFrontOfTarget;
+
+	//const Vector3D targetPosFrontFaceA = carPos + targetMoveDir * 8.0f;
+	const Vector3D targetPosFrontFaceB = targetPos + targetMoveDir * m_target->m_conf->physics.body_size.z * 10.0f;
+
+	const Vector3D targetCarFrontFarPos = targetPosFrontFaceB;//lerp(targetPosFrontFaceA, targetPosFrontFaceB, clamp(dot(targetMoveDir, carForward), 0.5f, 1.0f));
+
+	// if we are facing to the target direction, we might be in front of it
+	const bool isInFrontAndCoFacing = (targetFrontDirPl.ClassifyPoint(carPos) == CP_FRONT) && (dot(targetMoveDir, carForward) > 0.0f);
+
+	const Vector3D targetCarBlockPos = targetPos + targetMoveDir * m_target->m_conf->physics.body_size.z * 4.0f;
+	Vector3D driveTargetPos = canBlockTarget ? targetCarBlockPos : (isInFrontOfTarget && distToTarget > 8.0f ? targetCarFrontFarPos : targetPos);
+
+	// update navigation affector parameters
+	m_nav.m_manipulator.m_driveTarget = driveTargetPos;
+	m_nav.m_manipulator.m_driveTargetVelocity = targetVelocity;
+	m_nav.m_manipulator.m_excludeColl = m_target->GetPhysicsBody();
+
+	// adjust chares to block or ram
+	m_chaser.m_manipulator.m_driveTarget = driveTargetPos;
+	m_chaser.m_manipulator.m_driveTargetVelocity = canBlockTarget ? vec3_zero : targetVelocity;
+	m_chaser.m_manipulator.m_excludeColl = canBlockTarget ? nullptr : m_target->GetPhysicsBody();
+
 	// update target avoidance affector parameters
-	m_targetAvoidance.m_manipulator.m_avoidanceRadius = length(m_target->m_bbox.GetSize());
-	m_targetAvoidance.m_manipulator.m_enabled = (m_angryTimer < AI_ANGRY_ACTIVE_TIME);
+	m_targetAvoidance.m_manipulator.m_avoidanceRadius = length(m_target->m_bbox.GetSize())*0.5f;	// TODO: AIManager variable
+	m_targetAvoidance.m_manipulator.m_enabled = !angryActive;
 	m_targetAvoidance.m_manipulator.m_targetPosition = targetPos;
 	m_targetAvoidance.m_manipulator.m_targetVelocity = targetVelocity;
-
-	float distToTarget = length(targetPos - GetOrigin());
 
 	bool doesHaveStraightPath = true;
 
@@ -1171,8 +1226,7 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 					handling.braking,
 					steering);
 
-	if(handling.acceleration > 0.05f)
-		GetPhysicsBody()->TryWake(false);
+	GetPhysicsBody()->TryWake(false);
 
 	return 0;
 }

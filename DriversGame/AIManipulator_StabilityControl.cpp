@@ -96,6 +96,10 @@ void CAIStabilityControlManipulator::UpdateAffector(ai_handling_t& handling, CCa
 		float accelCompensation = fabs(handling.steering) * fabs(lateralSliding) * accelReduceFactor * AI_STEERING_SLIDING_ACCELERATOR_COMPENSATION_SCALE;
 
 		handling.acceleration -= max(accelCompensation, AI_STEERING_SLIDING_ACCELERATOR_COMPENSATION_MIN) - AI_STEERING_SLIDING_ACCELERATOR_COMPENSATION_MIN;
+
+		// too much compensation?
+		if (handling.acceleration < 0.0f)
+			handling.acceleration = 1.0f;
 	}
 	else
 		handling.autoHandbrake = abs(m_initialHandling.steering) > AI_AUTOHANDBRAKE_STEERING_PERCENTAGE;
