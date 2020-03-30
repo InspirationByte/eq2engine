@@ -852,7 +852,7 @@ void CState_Game::DrawLoadingScreen( float fDt )
 
 		float loadingPercentage = float(loadingProgress) / 8.0f;
 
-		m_fade = lerp(m_fade, loadingPercentage, fDt*4.0f);
+		m_fade = lerp(m_fade, loadingPercentage, fDt*8.0f);
 
 		Vector2D rect[] = { MAKEQUAD(screenSize.x * pow(m_fade, 8.0f), screenSize.y - 100, screenSize.x * m_fade * 1.25f, screenSize.y - 85, 0) };
 		Vector2D rect2[] = { MAKEQUAD(screenSize.x * (1.0f - pow(m_fade, 2.0f)), screenSize.y - 120, screenSize.x * (1.0f - pow(m_fade, 6.0f)) * 2.5f, screenSize.y - 105, 0) };

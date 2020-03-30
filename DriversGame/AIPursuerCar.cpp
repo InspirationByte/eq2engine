@@ -314,7 +314,7 @@ bool CAIPursuerCar::Speak(const char* soundName, CCar* target, bool force, float
 	if (g_pGameSession->GetPlayerCar() != target)
 		return false;
 
-	if (m_previousSpeech == soundName)
+	if (!force && m_previousSpeech == soundName)
 		soundName = "cop.relatedincident";
 
 	m_previousSpeech = soundName;

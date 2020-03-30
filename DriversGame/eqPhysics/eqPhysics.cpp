@@ -194,9 +194,11 @@ struct CEqManifoldResult : public btManifoldResult
 		}
 	}
 
-	bool GetSingleContact(CollisionData_t& cd, const Vector3D& facingPos)
+	bool GetSingleContact(CollisionData_t& cd, CEqRigidBody* relativeBody)
 	{
 		int numAddedCollisions = 0;
+
+		Vector3D bodyPos = relativeBody->GetPosition();
 
 		memset(&cd, 0, sizeof(CollisionData_t));
 		for (int i = 0; i < m_collisions.numElem(); i++)
@@ -205,7 +207,9 @@ struct CEqManifoldResult : public btManifoldResult
 
 			Plane pl(coll.normal, -dot(coll.normal, (Vector3D)coll.position));
 
-			if (pl.ClassifyPoint(facingPos) == CP_BACK)
+			Vector3D velToPoint = relativeBody->GetVelocityAtWorldPoint(coll.position);
+
+			if (dot(velToPoint, coll.normal) > 0.0f)
 				continue;
 
 			cd.fract += coll.fract;
@@ -851,7 +855,7 @@ void CEqPhysics::DetectStaticVsBodyCollision(CEqCollisionObject* staticObj, CEqR
 	{
 		// HACK: convert to single contact if static object has studio shape
 		CollisionData_t singleColl;
-		if (cbResult.GetSingleContact(singleColl, bodyB->GetPosition()))
+		if (cbResult.GetSingleContact(singleColl, bodyB))
 		{
 			cbResult.m_collisions.setNum(1);
 			cbResult.m_collisions[0] = singleColl;
@@ -879,11 +883,17 @@ void CEqPhysics::DetectStaticVsBodyCollision(CEqCollisionObject* staticObj, CEqR
 			hitDepth *= -1.0f;
 		}
 
+
 		if(hitDepth < 0 && !(staticObj->m_flags & COLLOBJ_ISGHOST))
 			continue;
 
 		if(hitDepth > 1.0f)
 			hitDepth = 1.0f;
+
+		//Vector3D velToPoint = bodyB->GetVelocityAtWorldPoint(hitPos);
+
+		//if (dot(velToPoint, hitNormal) > 0.0f)
+		//	continue;
 
 		int idx = contactPairs.append(ContactPair_t());
 
