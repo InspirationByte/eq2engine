@@ -408,6 +408,9 @@ void ShaderAPIGL::Init( shaderAPIParams_t &params)
 
 void ShaderAPIGL::Shutdown()
 {
+	glDeleteFramebuffers(1, &m_frameBuffer);
+	m_frameBuffer = 0;
+
 	glWorker.StopThread();
 	ShaderAPI_Base::Shutdown();
 }
