@@ -12,7 +12,7 @@ ConVar ai_debug_stability("ai_debug_stability", "0");
 
 const float AI_STABILITY_MIN_INAIR_TIME = 0.15f;
 const float AI_STABILITY_LANDING_COOLDOWN = 0.25f;
-const float AI_MIN_LATERALSLIDE = 0.5f;
+const float AI_MIN_LATERALSLIDE = 0.3f;
 const float AI_MIN_ANGULARVEL = 0.35f;
 
 const float AI_STEERING_SLIDING_ACCELERATOR_COMPENSATION_SCALE = 0.15f;
@@ -81,7 +81,7 @@ void CAIStabilityControlManipulator::UpdateAffector(ai_handling_t& handling, CCa
 
 		handling.steering = clamp(handling.steering, -AI_CORRECTION_LIMIT, AI_CORRECTION_LIMIT)*counterSteeringScale;
 
-		float correctionFactor = RemapVal(carSpeedMPS, AI_SPEED_CORRECTION_MINSPEED, AI_SPEED_CORRECTION_MAXSPEED, AI_SPEED_CORRECTION_INITIAL, 1.0f);
+		float correctionFactor = RemapVal(carSpeedMPS, AI_SPEED_CORRECTION_MINSPEED, AI_SPEED_CORRECTION_MAXSPEED, AI_SPEED_CORRECTION_INITIAL, 1.0f) * (1.0f-m_initialHandling.braking);
 
 		handling.steering *= correctionFactor;
 		//handling.acceleration *= correctionFactor;
