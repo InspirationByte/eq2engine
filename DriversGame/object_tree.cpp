@@ -147,7 +147,7 @@ void CObject_Tree::Draw( int nRenderFlags )
 
 void CObject_Tree::Simulate(float fDt)
 {
-
+	BaseClass::Simulate(fDt);
 }
 
 void CObject_Tree::OnCarCollisionEvent(const CollisionPairData_t& pair, CGameObject* hitBy)

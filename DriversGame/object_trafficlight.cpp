@@ -213,6 +213,7 @@ void CObject_TrafficLight::Draw( int nRenderFlags )
 
 void CObject_TrafficLight::Simulate(float fDt)
 {
+	BaseClass::Simulate(fDt);
 	PROFILE_FUNC();
 
 	if(!m_killed)

@@ -152,6 +152,7 @@ void CObject_Sheets::OnPhysicsCollide(const CollisionPairData_t& pair)
 
 void CObject_Sheets::Simulate( float fDt )
 {
+	BaseClass::Simulate(fDt);
 	PROFILE_FUNC();
 
 	if(!m_wasInit)

@@ -336,7 +336,11 @@ void CObject_Debris::SetAngles(const Vector3D& angles)
 void CObject_Debris::SetVelocity(const Vector3D& vel)
 {
 	if(m_physBody)
-		m_physBody->SetLinearVelocity( vel  );
+	{
+		m_physBody->SetLinearVelocity(vel);
+		m_physBody->TryWake();
+	}
+		
 }
 
 const Vector3D& CObject_Debris::GetOrigin() const

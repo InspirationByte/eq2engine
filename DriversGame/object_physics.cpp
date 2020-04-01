@@ -199,6 +199,7 @@ void CObject_Physics::SetVelocity(const Vector3D& vel)
 		return;
 
 	m_hfObj->GetBody()->SetLinearVelocity( vel  );
+	m_hfObj->GetBody()->TryWake();
 }
 
 const Vector3D& CObject_Physics::GetVelocity() const
@@ -285,12 +286,7 @@ void CObject_Physics::OnPhysicsCollide(const CollisionPairData_t& pair)
 
 void CObject_Physics::Simulate(float fDt)
 {
-	PROFILE_FUNC();
-
-	if(fDt <= 0.0f)
-		return;
-
-
+	BaseClass::Simulate(fDt);
 }
 
 void CObject_Physics::OnUnpackMessage( CNetMessageBuffer* buffer )

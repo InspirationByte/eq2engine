@@ -259,11 +259,13 @@ void CGameObject::OnRemove()
 
 	if( m_luaOnRemove.Push() )
 	{
-		if(!m_luaOnRemove.Call(1, 0, 0))
+		if(!m_luaOnRemove.Call(0, 0, 0))
 		{
 			MsgError("CGameObject:OnRemove error:\n %s\n", OOLUA::get_last_error(state).c_str());
 		}
 	}
+	
+
 #endif // NO_LUA
 
 #ifndef EDITOR
@@ -291,6 +293,18 @@ void CGameObject::UpdateTransform()
 
 void CGameObject::Simulate( float fDt )
 {
+	OOLUA::Script& state = GetLuaState();
+	EqLua::LuaStackGuard g(state);
+
+	if (m_luaOnSimulate.Push())
+	{
+		OOLUA::push(state, fDt);
+		if (!m_luaOnSimulate.Call(1, 0, 0))
+		{
+			MsgError("CGameObject:OnSimulate error:\n %s\n", OOLUA::get_last_error(state).c_str());
+		}
+	}
+
 	UpdateTransform();
 }
 
@@ -536,6 +550,7 @@ void CGameObject::L_RegisterEventHandler(const OOLUA::Table& tableRef)
 	m_luaEvtHandler = tableRef;
 	m_luaOnCarCollision.Get(m_luaEvtHandler, "OnCarCollision", true);
 	m_luaOnRemove.Get(m_luaEvtHandler, "OnRemove", true);
+	m_luaOnSimulate.Get(m_luaEvtHandler, "OnSimulate", true);
 }
 
 OOLUA::Table& CGameObject::L_GetEventHandler() const

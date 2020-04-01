@@ -153,6 +153,8 @@ void CObject_Static::Draw( int nRenderFlags )
 
 void CObject_Static::Simulate(float fDt)
 {
+	BaseClass::Simulate(fDt);
+
 	PROFILE_FUNC();
 
 	if((g_pGameWorld->m_envConfig.lightsType & WLIGHTS_LAMPS) && !m_killed)
