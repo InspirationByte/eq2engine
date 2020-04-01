@@ -426,6 +426,8 @@ void CObject_Debris::BreakAndSpawnDebris()
 
 		part->m_smashSound = m_smashSound;
 	}
+
+	m_numBreakParts = 0;
 }
 
 ConVar g_debris_as_physics("g_debris_as_physics", "0", "Thread debris as physics objects", CV_CHEAT);
