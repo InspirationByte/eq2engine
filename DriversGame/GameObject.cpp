@@ -293,6 +293,7 @@ void CGameObject::UpdateTransform()
 
 void CGameObject::Simulate( float fDt )
 {
+#ifndef NO_LUA
 	OOLUA::Script& state = GetLuaState();
 	EqLua::LuaStackGuard g(state);
 
@@ -304,6 +305,7 @@ void CGameObject::Simulate( float fDt )
 			MsgError("CGameObject:OnSimulate error:\n %s\n", OOLUA::get_last_error(state).c_str());
 		}
 	}
+#endif // NO_LUA
 
 	UpdateTransform();
 }

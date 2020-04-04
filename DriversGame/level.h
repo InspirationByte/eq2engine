@@ -197,6 +197,7 @@ protected:
 	void					Nav_GlobalToLocalPoint(const IVector2D& point, IVector2D& outLocalPoint, CLevelRegion** pRegion) const;
 	void					Nav_LocalToGlobalPoint(const IVector2D& point, const CLevelRegion* pRegion, IVector2D& outGlobalPoint) const;
 
+	void					Nav_FlushRegion(CLevelRegion* reg);
 	void					Nav_ClearCellStates(ECellClearStateMode mode);
 
 	int						UpdateRegionLoading();

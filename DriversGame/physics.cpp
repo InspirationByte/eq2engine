@@ -205,10 +205,10 @@ bool CPhysicsEngine::TestConvexSweep(btCollisionShape* shape, const Quaternion& 
 }
 
 // object add/remove functions
-void CPhysicsEngine::AddObject( CPhysicsHFObject* pPhysObject )
+void CPhysicsEngine::AddObject(CPhysicsHFObject* pPhysObject, bool moveable)
 {
 	m_hfBodies.append( pPhysObject );
-	m_physics.AddToWorld(pPhysObject->GetBody());
+	m_physics.AddToWorld(pPhysObject->GetBody(), moveable);
 }
 
 eqPhysSurfParam_t* CPhysicsEngine::FindSurfaceParam( const char* name )

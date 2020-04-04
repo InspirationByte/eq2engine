@@ -2655,9 +2655,9 @@ void CCar::ReleaseHubcap(int wheel)
 	CObject_Debris* hubcapObj = new CObject_Debris(NULL);
 	hubcapObj->SpawnAsHubcap(wdata.GetModel(), wdata.m_hubcapBodygroup, wdata.m_hubcapPhysmodel);
 	hubcapObj->SetOrigin( wheelPos );
-	hubcapObj->m_physBody->SetOrientation( Quaternion(wheelTranslation.getRotationComponent()) );
-	hubcapObj->m_physBody->SetLinearVelocity( wdata.m_velocityVec );
-	hubcapObj->m_physBody->SetAngularVelocity( wheelTranslation.rows[0].xyz() * -sign(wheelConf.suspensionTop.x) * angularVel );
+	hubcapObj->GetPhysicsBody()->SetOrientation( Quaternion(wheelTranslation.getRotationComponent()) );
+	hubcapObj->GetPhysicsBody()->SetLinearVelocity( wdata.m_velocityVec );
+	hubcapObj->GetPhysicsBody()->SetAngularVelocity( wheelTranslation.rows[0].xyz() * -sign(wheelConf.suspensionTop.x) * angularVel );
 	g_pGameWorld->AddObject(hubcapObj);
 
 	wdata.m_flags.lostHubcap = true;

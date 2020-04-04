@@ -63,7 +63,8 @@ public:
 
 
 	// object add/remove functions
-	void						AddObject( CPhysicsHFObject* pPhysObject );
+	void						AddObject(CPhysicsHFObject* pPhysObject, bool moveable = true );
+
 	void						AddHeightField(CHeightTileField* pField);
 
 	void						RemoveObject( CPhysicsHFObject* pPhysObject );

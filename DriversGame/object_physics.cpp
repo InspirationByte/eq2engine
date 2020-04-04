@@ -267,7 +267,10 @@ void CObject_Physics::OnPhysicsCollide(const CollisionPairData_t& pair)
 	if (pair.impactVelocity > m_breakForce)
 	{
 		if (m_breakForce > 0.0f)
-			m_hfObj->GetBody()->Wake();
+		{
+			g_pPhysics->m_physics.AddToMoveableList(body);
+			body->Wake();
+		}
 
 		if (!m_breakSpawnedObject && m_breakSpawn.Length() > 0)
 		{

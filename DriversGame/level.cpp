@@ -2093,6 +2093,8 @@ void CGameLevel::Nav_AddObstacle(CLevelRegion* reg, regionObject_t* ref)
 
 	CLevObjectDef* def = ref->def;
 
+	CHeightTileField* hfield = reg->GetHField();
+
 	if(def->m_info.type == LOBJ_TYPE_INTERNAL_STATIC)
 	{
 		// static model processing
@@ -2143,13 +2145,13 @@ void CGameLevel::Nav_AddObstacle(CLevelRegion* reg, regionObject_t* ref)
 				IVector2D tileXY1 = reg->PositionToCell(v1);
 				IVector2D tileXY2 = reg->PositionToCell(v2);
 
-				hfieldtile_t* tile0 = reg->GetHField()->GetTile(tileXY0.x, tileXY0.y);
+				hfieldtile_t* tile0 = hfield->GetTile(tileXY0.x, tileXY0.y);
 				float tileHeight0 = tile0 ? tile0->height*HFIELD_HEIGHT_STEP : 0;
 
-				hfieldtile_t* tile1 = reg->GetHField()->GetTile(tileXY1.x, tileXY1.y);
+				hfieldtile_t* tile1 = hfield->GetTile(tileXY1.x, tileXY1.y);
 				float tileHeight1 = tile1 ? tile1->height*HFIELD_HEIGHT_STEP : 0;
 
-				hfieldtile_t* tile2 = reg->GetHField()->GetTile(tileXY2.x, tileXY2.y);
+				hfieldtile_t* tile2 = hfield->GetTile(tileXY2.x, tileXY2.y);
 				float tileHeight2 = tile2 ? tile2->height*HFIELD_HEIGHT_STEP : 0;
 
 				if ((v0.y - tileHeight0) > OBSTACLE_STATIC_MAX_HEIGHT &&
@@ -2231,13 +2233,13 @@ void CGameLevel::Nav_AddObstacle(CLevelRegion* reg, regionObject_t* ref)
 				IVector2D tileXY1 = reg->PositionToCell(v1);
 				IVector2D tileXY2 = reg->PositionToCell(v2);
 
-				hfieldtile_t* tile0 = reg->GetHField()->GetTile(tileXY0.x, tileXY0.y);
+				hfieldtile_t* tile0 = hfield->GetTile(tileXY0.x, tileXY0.y);
 				float tileHeight0 = tile0 ? tile0->height*HFIELD_HEIGHT_STEP : 0;
 
-				hfieldtile_t* tile1 = reg->GetHField()->GetTile(tileXY1.x, tileXY1.y);
+				hfieldtile_t* tile1 = hfield->GetTile(tileXY1.x, tileXY1.y);
 				float tileHeight1 = tile1 ? tile1->height*HFIELD_HEIGHT_STEP : 0;
 
-				hfieldtile_t* tile2 = reg->GetHField()->GetTile(tileXY2.x, tileXY2.y);
+				hfieldtile_t* tile2 = hfield->GetTile(tileXY2.x, tileXY2.y);
 				float tileHeight2 = tile2 ? tile2->height*HFIELD_HEIGHT_STEP : 0;
 
 				if ((v0.y - tileHeight0) > OBSTACLE_PROP_MAX_HEIGHT &&
@@ -2395,7 +2397,7 @@ ubyte& CGameLevel::Nav_GetTileAtGlobalPoint(const IVector2D& point, bool obstacl
 	CScopedMutex m(m_mutex);
 	Nav_GlobalToLocalPoint(point, localPoint, &reg);
 
-	if (reg && reg->m_isLoaded && reg->m_navGrid[m_navGridSelector].staticObst)
+	if (reg && reg->m_navGrid[m_navGridSelector].staticObst)
 	{
 		int idx = localPoint.y*navSize + localPoint.x;
 
@@ -2445,10 +2447,29 @@ navcell_t& CGameLevel::Nav_GetTileAndCellAtGlobalPoint(const IVector2D& point, u
 	return emptyCell;
 }
 
+/*
+void CGameLevel::Nav_FlushRegion(CLevelRegion* reg)
+{
+	CScopedMutex m(m_mutex);
+	if (!reg->m_isLoaded)
+		return;
+
+	// add obstacles
+	if (reg->m_navGrid[0].dirty || reg->m_navGrid[1].dirty)
+	{
+		DkList<regionObject_t*>& objects = reg->m_objects;
+
+		for (int i = 0; i < objects.numElem(); i++)
+			Nav_AddObstacle(reg, objects[i]);
+
+		reg->m_navGrid[0].dirty = false;
+		reg->m_navGrid[1].dirty = false;
+	}
+}
+*/
 void CGameLevel::Nav_ClearCellStates(ECellClearStateMode mode)
 {
 	//int navSize = (m_cellsSize*s_navGridScales[m_navGridSelector]);
-
 	for (int x = 0; x < m_wide; x++)
 	{
 		for (int y = 0; y < m_tall; y++)
@@ -2477,16 +2498,6 @@ void CGameLevel::Nav_ClearCellStates(ECellClearStateMode mode)
 						break;
 					}
 				}
-				
-				if (reg.m_navGrid[0].dirty || reg.m_navGrid[1].dirty)
-				{
-					for (int i = 0; i < reg.m_objects.numElem(); i++)
-						Nav_AddObstacle(&reg, reg.m_objects[i]);
-
-					reg.m_navGrid[0].dirty = false;
-					reg.m_navGrid[1].dirty = false;
-				}
-				
 			}
 		}
 	}

@@ -691,7 +691,6 @@ void CLevelRegion::InitNavigationGrid()
 			}
 		}
 	}
-	/*
 	// THIS DOES NOT WORK WELL, BUT SHOULD...
 	if (m_navGrid[0].dirty || m_navGrid[1].dirty)
 	{
@@ -701,12 +700,13 @@ void CLevelRegion::InitNavigationGrid()
 		m_navGrid[0].dirty = false;
 		m_navGrid[1].dirty = false;
 	}
-	*/
 
 	// init debug maps
 	if (nav_debug_map.GetInt() > 0)
 	{
-		m_navGrid[0].debugObstacleMap = g_pShaderAPI->CreateProceduralTexture(varargs("navgrid_%d", m_regionIndex), FORMAT_RGBA8, m_navGrid[0].wide, m_navGrid[0].tall, 1, 1, TEXFILTER_NEAREST, TEXADDRESS_CLAMP, TEXFLAG_NOQUALITYLOD);
+		m_navGrid[0].debugObstacleMap = g_pShaderAPI->CreateProceduralTexture(varargs("navgrid_%d", m_regionIndex), 
+			FORMAT_RGBA8, m_navGrid[0].wide, m_navGrid[0].tall, 1, 1, TEXFILTER_NEAREST, TEXADDRESS_CLAMP, TEXFLAG_NOQUALITYLOD);
+
 		m_navGrid[0].debugObstacleMap->Ref_Grab();
 	}
 }

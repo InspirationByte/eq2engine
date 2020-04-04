@@ -205,10 +205,9 @@ void CAIPursuerCar::Evt_CarDeathEventHandler(const eventArgs_t& args)
 
 	if (IsCar(creator))
 	{
-		CCar* car = (CCar*)creator;
 		CAIPursuerCar* otherPursuer = UTIL_CastToPursuer((CCar*)creator);
 
-		if (thisCar->CheckObjectVisibility((CCar*)creator))
+		if (otherPursuer && thisCar->CheckObjectVisibility(otherPursuer))
 		{
 			if (otherPursuer && otherPursuer->GetPursuerType() == PURSUER_TYPE_COP)
 			{
@@ -1049,6 +1048,7 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 	}
 
 	float mySpeed = GetSpeed();
+	float targetSpeedMPS = length(m_target->GetVelocity().xz());
 
 	const Vector3D& carPos = GetOrigin();
 	const Vector3D carForward = GetForwardVector();
@@ -1093,8 +1093,6 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 			if (pursuer && pursuer->IsEnabled() && pursuer->IsAlive() && !pursuer->IsFlippedOver())
 				nearestPursuers++;
 		}
-
-
 	}
 
 	const float distToTarget = length(targetPos - carPos);
@@ -1104,7 +1102,7 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 	const bool canBlockTarget = nearestPursuers && angryActive && !isInFrontOfTarget;
 
 	//const Vector3D targetPosFrontFaceA = carPos + targetMoveDir * 8.0f;
-	const Vector3D targetPosFrontFaceB = targetPos + targetMoveDir * m_target->m_conf->physics.body_size.z * 10.0f;
+	const Vector3D targetPosFrontFaceB = targetPos + targetMoveDir * m_target->m_conf->physics.body_size.z * min(targetSpeedMPS, 10.0f);
 
 	const Vector3D targetCarFrontFarPos = targetPosFrontFaceB;//lerp(targetPosFrontFaceA, targetPosFrontFaceB, clamp(dot(targetMoveDir, carForward), 0.5f, 1.0f));
 
@@ -1113,6 +1111,20 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 
 	const Vector3D targetCarBlockPos = targetPos + targetMoveDir * m_target->m_conf->physics.body_size.z * 4.0f;
 	Vector3D driveTargetPos = canBlockTarget ? targetCarBlockPos : (isInFrontOfTarget && distToTarget > 8.0f ? targetCarFrontFarPos : targetPos);
+
+	{
+		CollisionData_t targetCheckColl;
+		CEqRigidBody* filterObjects[] = { GetPhysicsBody(), m_target->GetPhysicsBody() };
+		eqPhysCollisionFilter collFilter(filterObjects, 2);
+
+		// check if advanced drive target is unreachable
+		btSphereShape sphereTraceShape(m_conf->physics.body_size.x);
+		if (g_pPhysics->TestConvexSweep(&sphereTraceShape, identity(), carPos, driveTargetPos, targetCheckColl, OBJECTCONTENTS_SOLID_OBJECTS, &collFilter))
+		{
+			driveTargetPos = targetPos;
+		}
+	}
+
 
 	// update navigation affector parameters
 	m_nav.m_manipulator.m_driveTarget = driveTargetPos;

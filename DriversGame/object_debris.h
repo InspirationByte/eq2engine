@@ -54,7 +54,9 @@ public:
 
 	int					ObjType() const		{ return GO_DEBRIS; }
 
-	bool				IsSmashed() const { return m_physBody && (m_physBody->m_flags & BODY_MOVEABLE) > 0; }
+	bool				IsSmashed() const;
+
+	CEqRigidBody*		GetPhysicsBody() const;
 
 	void				L_SetContents(int contents);
 	void				L_SetCollideMask(int contents);
@@ -64,9 +66,10 @@ public:
 
 protected:
 
-	void				BreakAndSpawnDebris();
+	void				OnPhysicsCollide(const CollisionPairData_t& pair);
+	void				BreakAndSpawnDebris(const CollisionPairData_t& coll);
 
-	CEqRigidBody*		m_physBody;
+	CPhysicsHFObject*	m_hfObj;
 	float				m_fTimeToRemove;
 	EqString			m_smashSound;
 	eqPhysSurfParam_t*	m_surfParams;
