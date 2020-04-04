@@ -17,6 +17,13 @@ CAITargetChaserManipulator::CAITargetChaserManipulator()
 	m_driveTarget = vec3_zero;
 }
 
+void CAITargetChaserManipulator::Setup(const Vector3D&driveTargetPos, const Vector3D& targetVelocity, CEqCollisionObject* excludeCollObj)
+{
+	m_driveTarget = driveTargetPos;
+	m_driveTargetVelocity = targetVelocity;
+	m_excludeColl = excludeCollObj;
+}
+
 void CAITargetChaserManipulator::UpdateAffector(ai_handling_t& handling, CCar* car, float fDt)
 {
 	eqPhysCollisionFilter collFilter;

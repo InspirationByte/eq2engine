@@ -121,6 +121,13 @@ CAINavigationManipulator::CAINavigationManipulator()
 	m_init = false;
 }
 
+void CAINavigationManipulator::Setup(const Vector3D&driveTargetPos, const Vector3D& targetVelocity, CEqCollisionObject* excludeCollObj)
+{
+	m_driveTarget = driveTargetPos;
+	m_driveTargetVelocity = targetVelocity;
+	m_excludeColl = excludeCollObj;
+}
+
 void CAINavigationManipulator::SetPath(pathFindResult_t& newPath, const Vector3D& searchPos, CCar* ignoreObj)
 {
 	SimplifyPath(newPath);

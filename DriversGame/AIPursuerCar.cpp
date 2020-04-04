@@ -1047,20 +1047,22 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 		return 0;
 	}
 
+	CCar* target = m_target;
+
 	float mySpeed = GetSpeed();
-	float targetSpeedMPS = length(m_target->GetVelocity().xz());
+	float targetSpeedMPS = length(target->GetVelocity().xz());
 
 	const Vector3D& carPos = GetOrigin();
 	const Vector3D carForward = GetForwardVector();
 
-	const Vector3D& targetPos = m_target->GetOrigin();
-	const Vector3D& targetVelocity = m_target->GetVelocity();
+	const Vector3D& targetPos = target->GetOrigin();
+	const Vector3D& targetVelocity = target->GetVelocity();
 
-	const Vector3D targetCarDir = m_target->GetForwardVector();
+	const Vector3D targetCarDir = target->GetForwardVector();
 	const Vector3D targetMoveDir = dot(targetCarDir, targetVelocity+targetCarDir*0.1f) >= 0.0f ? targetCarDir : -targetCarDir;
 
 	// front plane of target according to it's direction to make blocking escaping target
-	const Vector3D targetCarFrontPos = targetPos + targetMoveDir * m_target->m_conf->physics.body_size.z;
+	const Vector3D targetCarFrontPos = targetPos + targetMoveDir * target->m_conf->physics.body_size.z;
 	Plane targetFrontPl(targetCarDir, -dot(targetCarDir, targetCarFrontPos));
 	Plane targetFrontDirPl(targetMoveDir, -dot(targetMoveDir, targetCarFrontPos));
 
@@ -1097,51 +1099,6 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 
 	const float distToTarget = length(targetPos - carPos);
 
-	// if cannot block he will just ram target
-	const bool isInFrontOfTarget = (targetFrontPl.ClassifyPoint(carPos) == CP_FRONT);
-	const bool canBlockTarget = nearestPursuers && angryActive && !isInFrontOfTarget;
-
-	//const Vector3D targetPosFrontFaceA = carPos + targetMoveDir * 8.0f;
-	const Vector3D targetPosFrontFaceB = targetPos + targetMoveDir * m_target->m_conf->physics.body_size.z * min(targetSpeedMPS, 10.0f);
-
-	const Vector3D targetCarFrontFarPos = targetPosFrontFaceB;//lerp(targetPosFrontFaceA, targetPosFrontFaceB, clamp(dot(targetMoveDir, carForward), 0.5f, 1.0f));
-
-	// if we are facing to the target direction, we might be in front of it
-	const bool isInFrontAndCoFacing = (targetFrontDirPl.ClassifyPoint(carPos) == CP_FRONT) && (dot(targetMoveDir, carForward) > 0.0f);
-
-	const Vector3D targetCarBlockPos = targetPos + targetMoveDir * m_target->m_conf->physics.body_size.z * 4.0f;
-	Vector3D driveTargetPos = canBlockTarget ? targetCarBlockPos : (isInFrontOfTarget && distToTarget > 8.0f ? targetCarFrontFarPos : targetPos);
-
-	{
-		CollisionData_t targetCheckColl;
-		CEqRigidBody* filterObjects[] = { GetPhysicsBody(), m_target->GetPhysicsBody() };
-		eqPhysCollisionFilter collFilter(filterObjects, 2);
-
-		// check if advanced drive target is unreachable
-		btSphereShape sphereTraceShape(m_conf->physics.body_size.x);
-		if (g_pPhysics->TestConvexSweep(&sphereTraceShape, identity(), carPos, driveTargetPos, targetCheckColl, OBJECTCONTENTS_SOLID_OBJECTS, &collFilter))
-		{
-			driveTargetPos = targetPos;
-		}
-	}
-
-
-	// update navigation affector parameters
-	m_nav.m_manipulator.m_driveTarget = driveTargetPos;
-	m_nav.m_manipulator.m_driveTargetVelocity = targetVelocity;
-	m_nav.m_manipulator.m_excludeColl = m_target->GetPhysicsBody();
-
-	// adjust chares to block or ram
-	m_chaser.m_manipulator.m_driveTarget = driveTargetPos;
-	m_chaser.m_manipulator.m_driveTargetVelocity = canBlockTarget ? vec3_zero : targetVelocity;
-	m_chaser.m_manipulator.m_excludeColl = canBlockTarget ? nullptr : m_target->GetPhysicsBody();
-
-	// update target avoidance affector parameters
-	m_targetAvoidance.m_manipulator.m_avoidanceRadius = length(m_target->m_bbox.GetSize())*0.5f;	// TODO: AIManager variable
-	m_targetAvoidance.m_manipulator.m_enabled = !angryActive;
-	m_targetAvoidance.m_manipulator.m_targetPosition = targetPos;
-	m_targetAvoidance.m_manipulator.m_targetVelocity = targetVelocity;
-
 	bool doesHaveStraightPath = true;
 
 	// test for the straight path and visibility
@@ -1156,6 +1113,35 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 	{
 		doesHaveStraightPath = false;
 	}
+
+	const bool isTargetOnGround = target->IsAnyWheelOnGround();
+
+	// if cannot block he will just ram target
+	const bool isInFrontOfTarget = isTargetOnGround && (targetFrontPl.ClassifyPoint(carPos) == CP_FRONT);
+	const bool canBlockTarget = isTargetOnGround && nearestPursuers && angryActive && !isInFrontOfTarget;
+
+	//const Vector3D targetPosFrontFaceA = carPos + targetMoveDir * 8.0f;
+	const Vector3D targetPosFrontFaceB = targetPos + targetMoveDir * target->m_conf->physics.body_size.z * 10.0f; //min(targetSpeedMPS, 10.0f) * 0.8f;
+
+	const Vector3D targetCarFrontFarPos = targetPosFrontFaceB;//lerp(targetPosFrontFaceA, targetPosFrontFaceB, clamp(dot(targetMoveDir, carForward), 0.5f, 1.0f));
+
+	// if we are facing to the target direction, we might be in front of it
+	const bool isInFrontAndCoFacing = (targetFrontDirPl.ClassifyPoint(carPos) == CP_FRONT) && (dot(targetMoveDir, carForward) > 0.0f);
+
+	const Vector3D targetCarBlockPos = targetPos + targetMoveDir * target->m_conf->physics.body_size.z * 4.0f;
+	Vector3D driveTargetPos = canBlockTarget ? targetCarBlockPos : (isInFrontOfTarget && distToTarget > 8.0f ? targetCarFrontFarPos : targetPos);
+
+	if(!doesHaveStraightPath || targetSpeedMPS < 3.0f)
+		driveTargetPos = targetPos;
+
+	// update navigation affector parameters
+	m_nav.m_manipulator.Setup(driveTargetPos, targetVelocity, target->GetPhysicsBody());
+
+	// adjust chares to block or ram
+	m_chaser.m_manipulator.Setup(driveTargetPos, canBlockTarget ? vec3_zero : targetVelocity, canBlockTarget ? nullptr : target->GetPhysicsBody());
+
+	// update target avoidance affector parameters
+	m_targetAvoidance.m_manipulator.Setup(!angryActive, length(target->m_bbox.GetSize())*0.5f, targetPos, targetVelocity);
 
 	// do regular updates of ai navigation
 	m_nav.Update(this, fDt);

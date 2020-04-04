@@ -12,6 +12,17 @@ const float AI_DISTANCE_CURVE = 1.0f;
 const float AI_DISTANCE_SPEED_SCALE = 0.5f;
 const float AI_BRAKEDIST_SCALE = 0.35f;
 
+void CAITargetAvoidanceManipulator::Setup(bool enabled, float radius, const Vector3D& targetPos, const Vector3D& targetVelocity)
+{
+	m_enabled = enabled;
+	if (enabled)
+	{
+		m_avoidanceRadius = radius;
+		m_targetPosition = targetPos;
+		m_targetVelocity = targetVelocity;
+	}
+}
+
 void CAITargetAvoidanceManipulator::UpdateAffector(ai_handling_t& handling, CCar* car, float fDt)
 {
 	const float carSpeed = car->GetSpeed()*KPH_TO_MPS;

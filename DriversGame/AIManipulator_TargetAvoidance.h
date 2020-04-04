@@ -17,6 +17,7 @@ class CAITargetAvoidanceManipulator
 public:
 	CAITargetAvoidanceManipulator() {}
 
+	void Setup(bool enabled, float radius, const Vector3D& targetPos, const Vector3D& targetVelocity);
 	void UpdateAffector(ai_handling_t& handling, CCar* car, float fDt);
 
 	Vector3D			m_targetPosition;

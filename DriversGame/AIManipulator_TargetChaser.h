@@ -19,10 +19,12 @@ class CAITargetChaserManipulator
 public:
 	CAITargetChaserManipulator();
 
-	void UpdateAffector(ai_handling_t& handling, CCar* car, float fDt);
+	void				Setup(const Vector3D&driveTargetPos, const Vector3D& targetVelocity, CEqCollisionObject* excludeCollObj);
+	void				UpdateAffector(ai_handling_t& handling, CCar* car, float fDt);
 
 	Vector3D			m_outSteeringTargetPos;
 
+private:
 	// the position driver needs reach to
 	Vector3D			m_driveTarget;
 	Vector3D			m_driveTargetVelocity;
