@@ -1582,6 +1582,17 @@ void CUI_BlockEditor::OnRender()
 				m_centerAxis.Draw(clength);
 			}
 		}
+		else if (m_selectedTool == BlockEdit_Clipper)
+		{
+			//
+			// DRAW CLIPPER TOOL STUFF
+			//
+			if (m_mode == BLOCK_MODE_CLIPPER)
+			{
+
+			}
+
+		}
 	}
 
 	materials->SetMatrix(MATRIXMODE_WORLD, identity4());

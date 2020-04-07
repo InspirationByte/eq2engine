@@ -29,6 +29,7 @@ enum EBlockEditorMode
 {
 	BLOCK_MODE_READY = 0,
 	BLOCK_MODE_CREATION,
+	BLOCK_MODE_CLIPPER,
 
 	BLOCK_MODE_TRANSLATE,
 	BLOCK_MODE_ROTATE,
@@ -143,7 +144,7 @@ protected:
 
 		Vector3D dir;	// the plane axis
 
-		CBrushPrimitive*		resultPreview[2];
+		//CBrushPrimitive*		resultPreview[2];
 	} m_clipper;
 
 	// dragging properties
