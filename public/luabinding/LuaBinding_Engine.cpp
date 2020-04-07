@@ -279,6 +279,25 @@ OOLUA_EXPORT_FUNCTIONS_CONST(Vector4D, get_x, get_y, get_z, get_w, xy, xz, xw, y
 OOLUA_EXPORT_FUNCTIONS(Plane, set_normal, set_offset)
 OOLUA_EXPORT_FUNCTIONS_CONST(Plane, get_normal, get_offset, Distance, GetIntersectionWithRay, GetIntersectionLineFraction)
 
+OOLUA_EXPORT_FUNCTIONS(Quaternion, set_x, set_y, set_z, set_w, normalize, fastNormalize)
+OOLUA_EXPORT_FUNCTIONS_CONST(Quaternion, get_x, get_y, get_z, get_w, asVector4D, isNan)
+
+Quaternion qinverse(const Quaternion& quat) 
+{
+	return !quat;
+}
+
+int L_qinverse(lua_State* vm) { OOLUA_C_FUNCTION(Quaternion, qinverse, const Quaternion &) }
+int L_qslerp(lua_State* vm) { OOLUA_C_FUNCTION(Quaternion, slerp, const Quaternion &, const Quaternion &, const float) }
+int L_qscerp(lua_State* vm) { OOLUA_C_FUNCTION(Quaternion, scerp, const Quaternion &, const Quaternion &, const Quaternion &, const Quaternion &, const float);}
+int L_qlength(lua_State* vm) { OOLUA_C_FUNCTION(float, length, const Quaternion&);}
+int L_qeulers(lua_State* vm) { OOLUA_C_FUNCTION(TVec3D<float>, eulers, const Quaternion&);}
+int L_qrenormalize(lua_State* vm) { OOLUA_C_FUNCTION(void, renormalize, Quaternion&);}
+int L_qaxisAngle(lua_State* vm) { OOLUA_C_FUNCTION(void, axisAngle, const Quaternion&, TVec3D<float>&, float&);}
+int L_qcompare(lua_State* vm) { OOLUA_C_FUNCTION(bool, compare_epsilon, const Quaternion&, const Quaternion&, const float);}
+int L_qrotate(lua_State* vm) { OOLUA_C_FUNCTION(TVec3D<float>, rotateVector, const TVec3D<float>&, const Quaternion&);}
+int L_qidentity(lua_State* vm) { OOLUA_C_FUNCTION(Quaternion, identity);}
+
 OOLUA_CFUNC(VectorAngles, L_VectorAngles)
 
 OOLUA_CFUNC(ConstrainAngle180, L_ConstrainAngle180)
@@ -343,6 +362,7 @@ void Math_InitBinding(lua_State* state)
 	OOLUA::register_class<Vector3D>(state);
 	OOLUA::register_class<Vector4D>(state);
 	OOLUA::register_class<Plane>(state);
+	OOLUA::register_class<Quaternion>(state);
 
 	OOLUA::set_global(state, "f_fract", L_fract);
 	OOLUA::set_global(state, "f_lerp", L_lerp);
@@ -375,6 +395,17 @@ void Math_InitBinding(lua_State* state)
 	OOLUA::set_global(state, "v3d_dot", L_v3d_dot);
 	OOLUA::set_global(state, "v3d_normalize", L_v3d_normalize);
 	OOLUA::set_global(state, "v3d_lineProjection", L_v3d_lineProjection);
+
+	OOLUA::set_global(state, "qinverse", L_qinverse);
+	OOLUA::set_global(state, "qslerp", L_qslerp);
+	OOLUA::set_global(state, "qscerp", L_qscerp);
+	OOLUA::set_global(state, "qlength", L_qlength);
+	OOLUA::set_global(state, "qeulers", L_qeulers);
+	OOLUA::set_global(state, "qrenormalize", L_qrenormalize);
+	OOLUA::set_global(state, "qaxisAngle", L_qaxisAngle);
+	OOLUA::set_global(state, "qcompare", L_qcompare);
+	OOLUA::set_global(state, "qrotate", L_qrotate);
+	OOLUA::set_global(state, "qidentity", L_qidentity);
 
 	OOLUA::set_global(state, "v3d_cross", L_v3d_cross);
 	OOLUA::set_global(state, "v3d_reflect", L_v3d_reflect);

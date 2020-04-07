@@ -16,7 +16,7 @@
 
 #include "math/DkMath.h"
 
-#ifndef __INTELLISENSE__
+//#ifndef __INTELLISENSE__
 
 //
 // Vector2D
@@ -137,6 +137,40 @@ OOLUA_PROXY( Vector4D )
 OOLUA_PROXY_END
 
 //
+// Quaternion
+//
+OOLUA_PROXY(Quaternion)
+	OOLUA_TAGS(
+		Equal_op
+		, Add_op
+		, Sub_op
+		, Mul_op
+		, No_shared
+	)
+
+	OOLUA_CTORS(
+		OOLUA_CTOR(const float, const float)
+		OOLUA_CTOR(const float, const float, const float)
+		OOLUA_CTOR(const float, const float, const float, const float)
+		OOLUA_CTOR(const Vector4D&)
+		OOLUA_CTOR(const float, const TVec3D<float>&)
+	)
+
+	OOLUA_MGET_MSET(x)
+	OOLUA_MGET_MSET(y)
+	OOLUA_MGET_MSET(z)
+	OOLUA_MGET_MSET(w)
+
+	OOLUA_MFUNC_CONST(asVector4D)
+
+	OOLUA_MFUNC(normalize)
+	OOLUA_MFUNC(fastNormalize)
+
+	OOLUA_MFUNC_CONST(isNan)
+
+OOLUA_PROXY_END
+
+//
 // Plane
 //
 
@@ -155,7 +189,7 @@ OOLUA_PROXY( Plane )
 	OOLUA_MGET_MSET( offset )
 OOLUA_PROXY_END
 
-#endif // __INTELLISENSE__
+//#endif // __INTELLISENSE__
 
 
 // HACK: get TVec*D values pushed using OOLua and not getting fucking frustrated with SharedPtr thingy
