@@ -596,18 +596,20 @@ void CLevelRegion::InitNavigationGrid()
 			road.posY = y;
 
 			// adjust priority by road
-			if (road.type != ROADTYPE_PARKINGLOT)
+			if (road.type != ROADTYPE_PARKINGLOT && 
+				road.type != ROADTYPE_PAVEMENT &&
+				road.type != ROADTYPE_NOROAD)
 			{
 				// fast navgrid uses same resolution
 				m_navGrid[1].staticObst[idx] = 4 - AI_NAVIGATION_ROAD_PRIORITY;
 
 				// higher the priority of road nodes
-				for (int j = 0; j < AI_NAV_DETAILED_SCALE; j++)
+				for (int xx = 0; xx < AI_NAV_DETAILED_SCALE; xx++)
 				{
-					for (int k = 0; k < AI_NAV_DETAILED_SCALE; k++)
+					for (int yy = 0; yy < AI_NAV_DETAILED_SCALE; yy++)
 					{
-						int ofsX = road.posX*AI_NAV_DETAILED_SCALE + j;
-						int ofsY = road.posY*AI_NAV_DETAILED_SCALE + k;
+						int ofsX = road.posX*AI_NAV_DETAILED_SCALE + xx;
+						int ofsY = road.posY*AI_NAV_DETAILED_SCALE + yy;
 
 						int navCellIdx = ofsY * m_navGrid[0].tall + ofsX;
 						m_navGrid[0].staticObst[navCellIdx] = 4 - AI_NAVIGATION_ROAD_PRIORITY;
