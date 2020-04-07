@@ -223,6 +223,44 @@ Vector3D CAINavigationManipulator::GetAdvancedPointByDist(int& startSeg, float d
 	return point + dir*distFromSegment;
 }
 
+Vector3D CAINavigationManipulator::GetAdvancedPointByDistLimitedDirection(int& startSeg, float distFromSegment, const Vector3D& limitDir, float limitCosAngle)
+{
+	Vector3D currPointPos;
+	Vector3D nextPointPos;
+
+	if (m_path.points.numElem() == 0)
+		return 0.0f;
+
+	Vector3D dir;
+
+	while (startSeg < m_path.points.numElem() - 2)
+	{
+		currPointPos = m_path.points[startSeg].xyz();
+		nextPointPos = m_path.points[startSeg + 1].xyz();
+
+		Vector3D segVec = nextPointPos - currPointPos;
+
+		float segLen = length(segVec);
+		dir = segVec / segLen;
+
+		if (dot(limitDir, dir) < limitCosAngle)
+			break;
+
+		if (distFromSegment > segLen)
+		{
+			distFromSegment -= segLen;
+			startSeg++;
+		}
+		else
+			break;
+	}
+
+	currPointPos = m_path.points[startSeg].xyz();
+	nextPointPos = m_path.points[startSeg + 1].xyz();
+
+	return currPointPos + fastNormalize(nextPointPos - currPointPos) * distFromSegment;
+}
+
 float CAINavigationManipulator::GetNarrownessAt(const Vector3D& pos, float distToSegment)
 {
 	int segIdx = FindSegmentByPosition(pos, distToSegment);
@@ -513,26 +551,7 @@ void CAINavigationManipulator::UpdateAffector(ai_handling_t& handling, CCar* car
 		Vector3D brakeDir = carForward;
 
 		float pathVelocityFactor = 1.0f - GetPointVelocityFactor(segmentByCarPosition, carPos, carVelocity);
-
-		// brake is computed first
-		{
-			float brakeDistanceOnSegment = brakeDistAtCurSpeed * 0.45f;
-
-			int pathIdx = segmentByCarPosition;
-			Vector3D positionA = GetAdvancedPointByDist(pathIdx, pathPosOnSegment + brakeDistanceOnSegment);
-
-			pathIdx = segmentByCarPosition;
-			Vector3D positionB = GetAdvancedPointByDist(pathIdx, pathPosOnSegment + brakeDistanceOnSegment + 1.0f);
-
-			// this should be from car pos
-			positionA = lerp(carFrontPos, positionA, RemapValClamp(speedMPS, 0.0f, 20.0f, 0.0f, 1.0f));
-
-			brakeDir = fastNormalize(positionB - positionA);
-
-			//debugoverlay->Box3D(positionA - 0.25f, positionA + 0.25f, ColorRGBA(1, 0, 0, 1.0f), fDt);
-			//debugoverlay->Line3D(positionA, positionB, ColorRGBA(1, 0, 0, 1.0f), ColorRGBA(1, 0, 0, 1.0f), fDt);
-			//debugoverlay->Box3D(positionB - 0.25f, positionB + 0.25f, ColorRGBA(1, 0, 0, 1.0f), fDt);
-		};
+		Vector3D velocityDir = normalize(lerp(carForward, carVelocity, lowSpeedFactor));
 
 		// compute steering
 		{
@@ -548,9 +567,13 @@ void CAINavigationManipulator::UpdateAffector(ai_handling_t& handling, CCar* car
 			// this should be from car pos
 			positionA = lerp(carFrontPos, positionA, RemapValClamp(speedMPS, 0.0f, 25.0f, 0.0f, 1.0f));
 
-			//debugoverlay->Box3D(positionA - 0.25f, positionA + 0.25f, ColorRGBA(1, 0, 0, 1.0f), fDt);
-			//debugoverlay->Line3D(positionA, positionB, ColorRGBA(1, 0, 0, 1.0f), ColorRGBA(1, 0, 0, 1.0f), fDt);
-			//debugoverlay->Box3D(positionB - 0.25f, positionB + 0.25f, ColorRGBA(1, 0, 0, 1.0f), fDt);
+			if (ai_debug_navigator.GetBool())
+			{
+				debugoverlay->Box3D(positionA - 0.25f, positionA + 0.25f, ColorRGBA(1, 0, 1, 1.0f), fDt);
+				debugoverlay->Line3D(positionA, positionB, ColorRGBA(1, 0, 1, 1.0f), ColorRGBA(1, 0, 0, 1.0f), fDt);
+				debugoverlay->Box3D(positionB - 0.25f, positionB + 0.25f, ColorRGBA(1, 0, 1, 1.0f), fDt);
+			}
+
 
 			// calculate correction
 			const float AI_STEERING_PATH_CORRECTION_DISTANCE = 9.0f;
@@ -602,12 +625,37 @@ void CAINavigationManipulator::UpdateAffector(ai_handling_t& handling, CCar* car
 			}
 		}
 
+		// compute brakes
+		{
+			const float AI_BRAKE_ANGLE_LIMIT = 0.55f;
+
+			float brakeDistanceOnSegment = brakeDistAtCurSpeed * 0.55f;
+
+			int pathIdx = segmentByCarPosition;
+			Vector3D positionA = GetAdvancedPointByDistLimitedDirection(pathIdx, pathPosOnSegment + brakeDistanceOnSegment, velocityDir, AI_BRAKE_ANGLE_LIMIT);
+
+			pathIdx = segmentByCarPosition;
+			Vector3D positionB = GetAdvancedPointByDistLimitedDirection(pathIdx, pathPosOnSegment + brakeDistanceOnSegment + 5.0f, velocityDir, AI_BRAKE_ANGLE_LIMIT);
+
+			// this should be from car pos
+			positionA = lerp(carFrontPos, positionA, RemapValClamp(speedMPS, 0.0f, 20.0f, 0.0f, 1.0f));
+
+			brakeDir = fastNormalize(positionB - positionA);
+
+			if (ai_debug_navigator.GetBool())
+			{
+				debugoverlay->Box3D(positionA - 0.25f, positionA + 0.25f, ColorRGBA(1, 0, 0, 1.0f), fDt);
+				debugoverlay->Line3D(positionA, positionB, ColorRGBA(1, 0, 0, 1.0f), ColorRGBA(1, 0, 0, 1.0f), fDt);
+				debugoverlay->Box3D(positionB - 0.25f, positionB + 0.25f, ColorRGBA(1, 0, 0, 1.0f), fDt);
+			}
+		}
+
 		// finalize steering
 		Vector3D relateiveSteeringDir = fastNormalize((!bodyMat.getRotationComponent()) * steeringDir);
 
-		const float AI_BRAKE_CURVE = 1.0f;
+		const float AI_BRAKE_CURVE = 2.0f;
 		const float AI_BRAKE_LIMIT = 0.9f;
-		const float AI_BRAKE_PATH_FACTOR = 0.8f;
+		const float AI_BRAKE_PATH_FACTOR = 0.45f;
 
 		float brakeFactor = powf((1.0f - fabs(dot(brakeDir, carForward))) + pathVelocityFactor* AI_BRAKE_PATH_FACTOR, AI_BRAKE_CURVE*weatherBrakePow);
 

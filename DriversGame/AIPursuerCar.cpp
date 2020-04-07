@@ -933,7 +933,7 @@ bool CAIPursuerCar::UpdateTarget(float fDt)
 
 		float timeToLostTarget = (distToTarget > AI_COP_LOST_TARGET_FARDIST) ? AI_COP_TIME_TO_LOST_TARGET_FAR : AI_COP_TIME_TO_LOST_TARGET;
 
-		if (pursuerData.lastSeenTimer > timeToLostTarget || m_lastSeenTargetTimer > timeToLostTarget)
+		if (!ai_debug_pursuer.GetBool() && (pursuerData.lastSeenTimer > timeToLostTarget || m_lastSeenTargetTimer > timeToLostTarget))
 		{
 			EndPursuit(false);
 			return false;

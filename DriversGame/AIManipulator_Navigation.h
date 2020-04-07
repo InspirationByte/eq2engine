@@ -29,6 +29,7 @@ protected:
 	void		SetPath(pathFindResult_t& newPath, const Vector3D& searchPos, CCar* ignoreObj);
 
 	Vector3D	GetAdvancedPointByDist(int& startSeg, float distFromSegment);
+	Vector3D	GetAdvancedPointByDistLimitedDirection(int& startSeg, float distFromSegment, const Vector3D& limitDir, float limitCosAngle);
 	Vector3D	GetPoint(int startSeg, float distFromSegment, int& outSeg, Vector3D& outDir, float& outSegLen, float& outDistFromSegmen);
 	float		GetPointVelocityFactor(int startSeg, const Vector3D& position, const Vector3D& velocity);
 
