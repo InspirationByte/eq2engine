@@ -808,7 +808,8 @@ bool CState_Game::StartReplay( const char* path, EReplayMode mode)
 {
 	if(g_replayTracker->LoadFromFile( path ))
 	{
-		EqStateMgr::ChangeState( this );
+		EqStateMgr::ScheduleNextState( this );
+
 		m_scheduledQuickReplay = REPLAY_SCHEDULE_REPLAY_NORESTART;
 		m_storedMissionStatus = MIS_STATUS_FAILED;
 

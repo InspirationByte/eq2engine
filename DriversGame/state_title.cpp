@@ -124,7 +124,7 @@ bool CState_Title::Update( float fDt )
 				m_demoId = 0;
 
 			if(result)
-				return true;
+				return false;
 		}
 	}
 	else

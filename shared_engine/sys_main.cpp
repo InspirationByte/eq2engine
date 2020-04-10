@@ -31,7 +31,7 @@
 //#include "Resources/resource.h"
 #endif // _WIN32
 
-DECLARE_CVAR_NONSTATIC(__cheats,1,"Wireframe",0);
+DECLARE_CVAR_NONSTATIC(__cheats,1,"Wireframe",CV_INVISIBLE);
 
 #if defined(ANDROID) && defined(EQ_USE_SDL)
 
