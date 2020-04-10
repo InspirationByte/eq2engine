@@ -108,9 +108,9 @@ enum EDriverConditionFlags
 
 static const float s_weatherBrakeDistanceModifier[WEATHER_COUNT] =	// * (1.0f - tirefriction)
 {
-	0.65f,	// 0.50f,
-	0.68f,	// 0.57f,
-	0.71f	// 0.59f,
+	1.0f,
+	1.25f,
+	1.5f,
 };
 
 static const float s_weatherBrakeCurve[WEATHER_COUNT] =	// * tirefriction

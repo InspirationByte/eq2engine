@@ -95,7 +95,7 @@ void CAITargetChaserManipulator::UpdateAffector(ai_handling_t& handling, CCar* c
 		tireFrictionModifier /= float(numWheels);
 	}
 
-	float weatherBrakeDistModifier = s_weatherBrakeDistanceModifier[g_pGameWorld->m_envConfig.weatherType] * (1.0f - tireFrictionModifier);
+	float weatherBrakeDistModifier = s_weatherBrakeDistanceModifier[g_pGameWorld->m_envConfig.weatherType] / (tireFrictionModifier * 5.0f); // 0.20*5 == 1.0f
 	float weatherBrakePow = s_weatherBrakeCurve[g_pGameWorld->m_envConfig.weatherType] * tireFrictionModifier;
 
 	float lowSpeedFactor = pow(RemapValClamp(speedMPS, 0.0f, AI_LOWSPEED_END, 0.0f, 1.0f), AI_LOWSPEED_CURVE);
