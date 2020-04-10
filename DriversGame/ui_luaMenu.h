@@ -30,20 +30,26 @@ public:
 	virtual void			OnEnterSelection( bool isFinal ) = 0;
 	virtual void			OnMenuCommand( const char* command ) {}
 
+	void					UpdateMenu(float fDt);
+
 protected:
 
 	const wchar_t*			GetMenuItemString(OOLUA::Table& menuElem);
 
-	void					SetMenuObject(OOLUA::Table& tabl);
-	void					PushMenu(OOLUA::Table& tabl, OOLUA::Table& paramsTable);
+	void					SetMenuStack(OOLUA::Table& tabl);
+	void					PushMenu(OOLUA::Table& paramsTable);
 
 	virtual void			UpdateCurrentMenu();
 
 	OOLUA::Table			m_menuStack;
 
-	EqLua::LuaTableFuncRef	m_stackReset;
+	EqLua::LuaTableFuncRef	m_stackInitItems;
 	EqLua::LuaTableFuncRef	m_stackPush;
 	EqLua::LuaTableFuncRef	m_stackPop;
+	EqLua::LuaTableFuncRef	m_stackReset;
+	EqLua::LuaTableFuncRef	m_stackUpdate
+		;
+	EqLua::LuaTableFuncRef	m_updateUIScheme;
 
 	OOLUA::Table			m_menuElems;
 	int						m_selection;

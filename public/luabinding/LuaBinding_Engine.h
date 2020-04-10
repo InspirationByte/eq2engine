@@ -29,6 +29,7 @@
 #include "EqUI/IEqUI_Control.h"
 #include "EqUI/EqUI_Manager.h"
 #include "EqUI/EqUI_Panel.h"
+#include "EqUI/EqUI_Image.h"
 
 //#ifndef __INTELLISENSE__
 
@@ -445,6 +446,13 @@ OOLUA_PROXY(equi::Panel, equi::IUIControl)
 
 	OOLUA_MFUNC( CenterOnScreen )
 OOLUA_PROXY_END
+
+OOLUA_PROXY(equi::Image, equi::IUIControl)
+	OOLUA_TAGS(Abstract)
+
+	OOLUA_MFUNC(SetMaterial)
+OOLUA_PROXY_END
+
 
 //
 // UI panel manager

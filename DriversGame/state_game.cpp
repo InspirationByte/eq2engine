@@ -572,7 +572,7 @@ void CState_Game::SetupMenuStack( const char* name )
 		return;
 	}
 
-	SetMenuObject(menuStackObject);
+	SetMenuStack(menuStackObject);
 }
 
 void CState_Game::OnMenuCommand( const char* command )
@@ -1107,6 +1107,8 @@ void CState_Game::DrawMenu( float fDt )
 	materials->Setup2D(screenSize.x,screenSize.y);
 
 	m_uiLayout->SetSize(screenSize);
+	CLuaMenu::UpdateMenu(fDt);
+
 	m_uiLayout->Render();
 
 	IVector2D halfScreen(screenSize.x/2, screenSize.y/2);

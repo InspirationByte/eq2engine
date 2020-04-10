@@ -73,10 +73,9 @@ void CState_MainMenu::OnEnter( CBaseStateHandler* from )
 	m_uiLayout = equi::Manager->CreateElement("Panel");
 	m_schemeName = "";
 
-	// SetMenuObject invokes UpdateCurrentMenu which calls InitUIScheme()
-	SetMenuObject(mainMenuStack);
+	// SetMenuStack invokes UpdateCurrentMenu which calls InitUIScheme()
+	SetMenuStack(mainMenuStack);
 	
-
 	EmitSound_t es("menu.music");
 	g_sounds->Emit2DSound(&es);
 
@@ -86,8 +85,6 @@ void CState_MainMenu::OnEnter( CBaseStateHandler* from )
 
 void CState_MainMenu::UpdateCurrentMenu()
 {
-	CLuaMenu::UpdateCurrentMenu();
-
 	OOLUA::Table currentStack;
 	if (!m_menuStack.safe_at("stack", currentStack))
 		return;
@@ -96,6 +93,8 @@ void CState_MainMenu::UpdateCurrentMenu()
 	currentStack.safe_at("schemeName", schemeName);
 
 	InitUIScheme(schemeName.length() ? schemeName.c_str() : nullptr);
+
+	CLuaMenu::UpdateCurrentMenu();
 }
 
 void CState_MainMenu::InitUIScheme(const char* schemeName)
@@ -142,6 +141,15 @@ void CState_MainMenu::InitUIScheme(const char* schemeName)
 		float lineHeight = font->GetLineHeight(fontParam);
 
 		m_maxMenuItems = floor((m_menuDummy->GetSize().y * menuScaling.y) / lineHeight);
+	}
+
+	// update scheme
+	if (m_updateUIScheme.Push())
+	{
+		OOLUA::push(GetLuaState(), (equi::Panel*&)m_uiLayout);
+
+		if (!m_updateUIScheme.Call(1, 0))
+			MsgError("CState_MainMenu::InitUIScheme error:\n %s\n", OOLUA::get_last_error(GetLuaState()).c_str());
 	}
 }
 
@@ -218,6 +226,8 @@ bool CState_MainMenu::Update( float fDt )
 	IVector2D halfScreen(screenSize.x/2, screenSize.y/2);
 
 	m_uiLayout->SetSize(screenSize);
+	CLuaMenu::UpdateMenu(fDt);
+
 	m_uiLayout->Render();
 
 	//materials->SetMatrix(MATRIXMODE_VIEW, rotateZ4(DEG2RAD(-7)));

@@ -493,6 +493,11 @@ OOLUA_EXPORT_FUNCTIONS_CONST(equi::Panel,
 	GetSelectionColor
 )
 
+OOLUA_EXPORT_FUNCTIONS(equi::Image,
+	SetMaterial
+)
+OOLUA_EXPORT_FUNCTIONS_CONST(equi::Image)
+
 OOLUA_EXPORT_FUNCTIONS(equi::CUIManager,
 
 	//RegisterFactory,
@@ -519,7 +524,7 @@ OOLUA_EXPORT_FUNCTIONS_CONST(equi::CUIManager,
 // Cast functions
 int L_equi_castto_panel( lua_State* vm ) { OOLUA_C_FUNCTION(OOLUA::maybe_null<equi::Panel*>, equi::DynamicCast, equi::IUIControl*) }
 //int L_equi_castto_label( lua_State* vm ) { OOLUA_C_FUNCTION(OOLUA::maybe_null<equi::Label*>, equi::DynamicCast, equi::IUIControl*) }
-//int L_equi_castto_image( lua_State* vm ) { OOLUA_C_FUNCTION(OOLUA::maybe_null<equi::Image*>, equi::DynamicCast, equi::IUIControl*) }
+int L_equi_castto_image( lua_State* vm ) { OOLUA_C_FUNCTION(OOLUA::maybe_null<equi::Image*>, equi::DynamicCast, equi::IUIControl*) }
 
 void EqUI_InitBinding(lua_State* state)
 {
@@ -542,12 +547,14 @@ void EqUI_InitBinding(lua_State* state)
 
 	OOLUA::register_class<equi::IUIControl>(state);
 	OOLUA::register_class<equi::Panel>(state);
+	OOLUA::register_class<equi::Image>(state);
 	OOLUA::register_class<equi::CUIManager>(state);
 
 	OOLUA::Table equiCastFuncsTab = OOLUA::new_table(state);
 	equiCastFuncsTab.set("panel", L_equi_castto_panel);
+	equiCastFuncsTab.set("image", L_equi_castto_image);
 	//equiCastFuncsTab.set("label", L_equi_castto_label);
-	//equiCastFuncsTab.set("image", L_equi_castto_image);
+	
 
 	OOLUA::set_global(state, "equi_cast", equiCastFuncsTab);
 	OOLUA::set_global(state, "equi", equi::Manager);

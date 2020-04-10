@@ -14,19 +14,43 @@ CLuaMenu::CLuaMenu()
 	m_selection = 0;
 }
 
-void CLuaMenu::SetMenuObject(OOLUA::Table& tabl)
+void CLuaMenu::SetMenuStack(OOLUA::Table& newStack)
 {
-	m_menuStack = tabl;
+	m_menuStack = newStack;
 
 	lua_State* state = GetLuaState();
 
-	m_stackReset.Get(m_menuStack, "Reset");
 	m_stackPush.Get(m_menuStack, "Push");
 	m_stackPop.Get(m_menuStack, "Pop");
+	m_stackReset.Get(m_menuStack, "Reset");
+	m_stackUpdate.Get(m_menuStack, "Update");
+	m_stackInitItems.Get(m_menuStack, "InitItems");
+	m_updateUIScheme.Get(m_menuStack, "UpdateUIScheme");
 
-	if( m_stackReset.Push() && m_stackReset.Call(0, 0) )
+	OOLUA::Table initialMenu;
+	m_menuStack.safe_at("initialMenu", initialMenu);
+
+	OOLUA::Table paramsTable = OOLUA::new_table(state);
+	paramsTable.set("nextMenu", initialMenu);
+
+	if (m_stackReset.Push() && m_stackReset.Call(0,0))
 	{
-		UpdateCurrentMenu();
+		PushMenu(paramsTable);
+	}
+	else
+		MsgError("CLuaMenu::UpdateCurrentMenu UpdateItems error:\n %s\n", OOLUA::get_last_error(state).c_str());
+}
+
+void CLuaMenu::UpdateMenu(float fDt)
+{
+	lua_State* state = GetLuaState();
+	if (m_stackUpdate.Push())
+	{
+		OOLUA::push(state, fDt);
+		if(!m_stackUpdate.Call(1, 0))
+		{
+			MsgError("CLuaMenu::UpdateCurrentMenu UpdateItems error:\n %s\n", OOLUA::get_last_error(state).c_str());
+		}
 	}
 }
 
@@ -35,55 +59,62 @@ void CLuaMenu::SetMenuObject(OOLUA::Table& tabl)
 //
 void CLuaMenu::UpdateCurrentMenu()
 {
-	OOLUA::Table currentStack;
-	if (!m_menuStack.safe_at("stack", currentStack))
-		return;
-
-	if (!currentStack.safe_at("prevSelection", m_selection))
-		m_selection = 0;
-
 	lua_State* state = GetLuaState();
 
-	// update items
-	OOLUA::Table itemsTable;
-	if (currentStack.safe_at("items", itemsTable))
+	// initialize items
+	if (m_stackInitItems.Push() && m_stackInitItems.Call(0, 0))
 	{
-		EqLua::LuaStackGuard g(state);
+		OOLUA::Table currentStack;
+		if (!m_menuStack.safe_at("stack", currentStack))
+			return;
 
-		m_numElems = 0;
-		oolua_ipairs(itemsTable)
-			m_numElems++;
-		oolua_ipairs_end()
+		if (!currentStack.safe_at("prevSelection", m_selection))
+			m_selection = 0;
 
-		m_menuElems = itemsTable;
+		// update items
+		OOLUA::Table itemsTable;
+		if (currentStack.safe_at("items", itemsTable))
+		{
+			EqLua::LuaStackGuard g(state);
+
+			m_numElems = 0;
+			oolua_ipairs(itemsTable)
+				m_numElems++;
+			oolua_ipairs_end()
+
+			m_menuElems = itemsTable;
+		}
+
+		// update title string
+		std::string tok_str;
+		ILocToken* tok = nullptr;
+
+		if (currentStack.safe_at("title", tok_str))
+		{
+			m_menuTitleStr = LocalizedString(tok_str.c_str());
+		}
+		else if (currentStack.safe_at("title", tok))
+		{
+			m_menuTitleStr = tok ? tok->GetText() : L"(nulltoken)";
+		}
 	}
-
-	// update title string
-	std::string tok_str;
-	ILocToken* tok = nullptr;
-
-	if (currentStack.safe_at("title", tok_str))
-	{
-		m_menuTitleStr = LocalizedString(tok_str.c_str());
-	}
-	else if (currentStack.safe_at("title", tok))
-	{
-		m_menuTitleStr = tok ? tok->GetText() : L"(nulltoken)";
-	}
+	else
+		MsgError("CLuaMenu::UpdateCurrentMenu UpdateItems error:\n %s\n", OOLUA::get_last_error(state).c_str());
 }
 
-void CLuaMenu::PushMenu(OOLUA::Table& tabl, OOLUA::Table& paramsTable)
+void CLuaMenu::PushMenu(OOLUA::Table& paramsTable)
 {
 	lua_State* state = GetLuaState();
 
 	if( m_stackPush.Push() && 
-		OOLUA::push(state, tabl) && 
 		OOLUA::push(state, m_selection) &&
 		OOLUA::push(state, paramsTable) &&
-		m_stackPush.Call(3, 0) )
+		m_stackPush.Call(2, 0) )
 	{
 		UpdateCurrentMenu();
 	}
+	else
+		MsgError("CLuaMenu::PushMenu error:\n %s\n", OOLUA::get_last_error(state).c_str());
 }
 
 void CLuaMenu::PopMenu()
@@ -97,6 +128,8 @@ void CLuaMenu::PopMenu()
 	{
 		UpdateCurrentMenu();
 	}
+	else
+		MsgError("CLuaMenu::PopMenu error:\n %s\n", OOLUA::get_last_error(state).c_str());
 }
 
 bool CLuaMenu::IsCanPopMenu()
@@ -138,11 +171,15 @@ bool CLuaMenu::ChangeSelection(int dir)
 	{
 		EqLua::LuaTableFuncRef onChange;
 
-		if(onChange.Get(elem, "onChange", true) && 
-			onChange.Push() && 
-			OOLUA::push(state,dir) && 
+		if (onChange.Get(elem, "onChange", true) &&
+			onChange.Push() &&
+			OOLUA::push(state, dir) &&
 			onChange.Call(1, 1))
+		{
 			return true;
+		}
+		else
+			MsgError("CLuaMenu::ChangeSelection error:\n %s\n", OOLUA::get_last_error(state).c_str());
 	}
 
 	return false;
@@ -181,19 +218,13 @@ void CLuaMenu::EnterSelection(const char* actionFunc /*= "onEnter"*/)
 
 			if(params.safe_at("menuCommand", commandStr))
 			{
-				if(!stricmp(commandStr.c_str(), "Pop"))
+				if (!stricmp(commandStr.c_str(), "Pop"))
+				{
 					PopMenu();
+				}
 			}
-
-			std::string newTitleToken = "";
-			params.safe_at("titleToken", newTitleToken);
-
-			OOLUA::Table nextMenu;
-			if (params.safe_at("nextMenu", nextMenu))
-			{
-				PushMenu(nextMenu, params);
-			}
-
+			else
+				PushMenu(params);
 		}
 	}
 	else

@@ -198,9 +198,8 @@ T* DynamicCast(IUIControl* control)
 		return nullptr;
 
 	if(!stricmp(T::Classname(), control->GetClassname())) 
-	{
 		return (T*)control;
-	}
+
 	return nullptr;
 }
 
