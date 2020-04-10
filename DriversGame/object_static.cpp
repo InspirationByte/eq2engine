@@ -57,43 +57,48 @@ void CObject_Static::Spawn()
 
 		m_pModel->SetInstancer( instancer );
 	}
-	
-	m_physObj = new CEqCollisionObject();
 
-	if( m_physObj->Initialize(&m_pModel->GetHWData()->physModel, 0) )//
+	studioPhysData_t& physData = m_pModel->GetHWData()->physModel;
+
+	if (physData.numObjects)
 	{
-		physobject_t* obj = &m_pModel->GetHWData()->physModel.objects[0].object;
+		m_physObj = new CEqCollisionObject();
 
-		// deny wheel and camera collisions
-		m_physObj->m_flags = COLLOBJ_NO_RAYCAST;// | COLLOBJ_SINGLE_CONTACT;
-
-		m_physObj->SetPosition( m_vecOrigin );
-		m_physObj->SetOrientation(Quaternion(DEG2RAD(m_vecAngles.x),DEG2RAD(m_vecAngles.y),DEG2RAD(m_vecAngles.z)));
-		m_physObj->SetUserData(this);
-
-		m_physObj->SetContents( OBJECTCONTENTS_SOLID_OBJECTS );
-		m_physObj->SetCollideMask( 0 );
-
-		// set friction from surface parameters
-		eqPhysSurfParam_t* surfParams = g_pPhysics->FindSurfaceParam(obj->surfaceprops);
-
-		if(surfParams)
+		if (m_physObj->Initialize(&physData, 0))
 		{
-			// friction is reduced
-			m_physObj->SetFriction( surfParams->friction * 0.25f );
-			m_physObj->SetRestitution( surfParams->restitution );
+			physobject_t* obj = &m_pModel->GetHWData()->physModel.objects[0].object;
+
+			// deny wheel and camera collisions
+			m_physObj->m_flags = COLLOBJ_NO_RAYCAST;// | COLLOBJ_SINGLE_CONTACT;
+
+			m_physObj->SetPosition(m_vecOrigin);
+			m_physObj->SetOrientation(Quaternion(DEG2RAD(m_vecAngles.x), DEG2RAD(m_vecAngles.y), DEG2RAD(m_vecAngles.z)));
+			m_physObj->SetUserData(this);
+
+			m_physObj->SetContents(OBJECTCONTENTS_SOLID_OBJECTS);
+			m_physObj->SetCollideMask(0);
+
+			// set friction from surface parameters
+			eqPhysSurfParam_t* surfParams = g_pPhysics->FindSurfaceParam(obj->surfaceprops);
+
+			if (surfParams)
+			{
+				// friction is reduced
+				m_physObj->SetFriction(surfParams->friction * 0.25f);
+				m_physObj->SetRestitution(surfParams->restitution);
+			}
+
+			g_pPhysics->m_physics.AddStaticObject(m_physObj);
+
+			m_bbox = m_physObj->m_aabb_transformed;
+
+			m_physObj->ConstructRenderMatrix(m_worldMatrix);
 		}
-
-		g_pPhysics->m_physics.AddStaticObject( m_physObj );
-
-		m_bbox = m_physObj->m_aabb_transformed;
-
-		m_physObj->ConstructRenderMatrix(m_worldMatrix);
-	}
-	else
-	{
-		MsgError("No physics model for '%s'\n", m_pModel->GetName());
-		delete m_physObj;
+		else
+		{
+			MsgError("No physics model for '%s'\n", m_pModel->GetName());
+			delete m_physObj;
+		}
 	}
 
 	LoadDefLightData(m_light, m_keyValues);
@@ -130,7 +135,8 @@ void CObject_Static::Draw( int nRenderFlags )
 	//if(!g_pGameWorld->m_frustum.IsSphereInside(GetOrigin(), length(m_pModel->GetBBoxMaxs())))
 	//	return;
 
-	m_physObj->ConstructRenderMatrix(m_worldMatrix);
+	if(m_physObj)
+		m_physObj->ConstructRenderMatrix(m_worldMatrix);
 
 	if(r_enableObjectsInstancing.GetBool() && m_pModel->GetInstancer())
 	{
