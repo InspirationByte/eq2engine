@@ -12,8 +12,8 @@ ConVar ai_debug_stability("ai_debug_stability", "0");
 
 const float AI_STABILITY_MIN_INAIR_TIME = 0.15f;
 const float AI_STABILITY_LANDING_COOLDOWN = 0.25f;
-const float AI_MIN_LATERALSLIDE = 0.3f;
-const float AI_MIN_ANGULARVEL = 0.35f;
+const float AI_MIN_LATERALSLIDE = 0.15f;
+const float AI_MIN_ANGULARVEL = 0.45f;
 
 const float AI_STEERING_SLIDING_ACCELERATOR_COMPENSATION_SCALE = 0.15f;
 const float AI_STEERING_SLIDING_ACCELERATOR_COMPENSATION_MIN = 0.2f;

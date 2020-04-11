@@ -527,6 +527,8 @@ void CAIPursuerCar::BeginPursuit( float delay )
 
 	targetPursuerData.announced = true;
 
+	m_refreshTime = 0.0f;
+
 	AI_SetNextState(&CAIPursuerCar::PursueTarget, delay);
 }
 
@@ -1026,7 +1028,6 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 		EndPursuit(true);
 
 		AI_SetState( &CAIPursuerCar::DeadState );
-		m_refreshTime = 0.0f;
 		return 0;
 	}
 
@@ -1120,8 +1121,10 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 	const bool isInFrontOfTarget = isTargetOnGround && (targetFrontPl.ClassifyPoint(carPos) == CP_FRONT);
 	const bool canBlockTarget = isTargetOnGround && nearestPursuers && angryActive && !isInFrontOfTarget;
 
+	const float frontFaceVelocityFactor = RemapValClamp(targetSpeedMPS, 0.0f, 4.0f, 0.0f, 20.0f);
+
 	//const Vector3D targetPosFrontFaceA = carPos + targetMoveDir * 8.0f;
-	const Vector3D targetPosFrontFaceB = targetPos + targetMoveDir * target->m_conf->physics.body_size.z * 10.0f; //min(targetSpeedMPS, 10.0f) * 0.8f;
+	const Vector3D targetPosFrontFaceB = targetPos + targetMoveDir * frontFaceVelocityFactor; //min(targetSpeedMPS, 10.0f) * 0.8f;
 
 	const Vector3D targetCarFrontFarPos = targetPosFrontFaceB;//lerp(targetPosFrontFaceA, targetPosFrontFaceB, clamp(dot(targetMoveDir, carForward), 0.5f, 1.0f));
 

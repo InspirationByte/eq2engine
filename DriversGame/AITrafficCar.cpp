@@ -23,7 +23,6 @@ ConVar g_traffic_maxspeed("g_trafficMaxspeed", "50.0", NULL, CV_CHEAT); // FIXME
 
 ConVar ai_debug_freeze("ai_debug_freeze", "0", NULL, 0);
 
-
 const float AICAR_THINK_TIME = 0.15f;
 const float AI_TRAFFIC_MAX_DAMAGE = 2.0f;
 
