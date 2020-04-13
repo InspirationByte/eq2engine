@@ -157,6 +157,7 @@ void MakeSparks(const Vector3D& origin, const Vector3D& velocity, const Vector3D
 void MakeWaterSplash(const Vector3D& origin, const Vector3D& velocity, const Vector3D& randomAngCone, float lifetime, int count, float particleScale = 1.0f);
 
 void DrawLightEffect(const Vector3D& position, const ColorRGBA& color, float size, int type = 0);
+void DrawSpotLightEffect(const Vector3D& positionA, const Vector3D& positionB, const ColorRGBA& color, float size, int type = 0);
 void PoliceSirenEffect(float fCurTime, const ColorRGB& color, const Vector3D& pos, const Vector3D& dir_right, float rDist, float width);
 
 #endif // PARTICLEEFFECTS_H

@@ -9,6 +9,7 @@
 #include "utils/GeomTools.h"
 #include "eqPhysics/eqBulletIndexedMesh.h"
 #include "VertexFormatBuilder.h"
+#include "ParticleEffects.h"
 
 extern ConVar r_enableLevelInstancing;
 
@@ -937,18 +938,25 @@ void LoadDefLightData(wlightdata_t& out, kvkeybase_t* sec)
 
 			out.m_glows.append(light);
 		}
+		else if (!stricmp(sec->keys[i]->name, "spotglow"))
+		{
+			wspotglow_t light;
+			light.position = KV_GetVector4D(sec->keys[i]);
+			light.positionB = KV_GetVector3D(sec->keys[i], 4);
+			light.color = KV_GetVector4D(sec->keys[i], 7);
+			light.type = KV_GetValueInt(sec->keys[i], 11);
+
+			out.m_spotGlows.append(light);
+		}
 	}
 }
 
-//
-// from car.cpp, pls move
-//
-extern void DrawLightEffect(const Vector3D& position, const ColorRGBA& color, float size, int type = 0);
-
 bool DrawDefLightData(const Matrix4x4& objDefMatrix, const wlightdata_t& data, float brightness)
 {
+	// FIXME: is this needed here?
 	if (g_pGameWorld->m_envConfig.lightsType & WLIGHTS_LAMPS)
 	{
+		// draw lights
 		for (int i = 0; i < data.m_lights.numElem(); i++)
 		{
 			wlight_t light = data.m_lights[i];
@@ -966,22 +974,46 @@ bool DrawDefLightData(const Matrix4x4& objDefMatrix, const wlightdata_t& data, f
 		float extraBrightness = 0.0f + g_pGameWorld->m_envWetness*0.08f;
 		float extraSizeScale = 1.0f + g_pGameWorld->m_envWetness*0.25f;
 
+		// Draw 
 		for (int i = 0; i < data.m_glows.numElem(); i++)
 		{
+			const wglow_t& glow = data.m_glows[i];
+
 			// transform light position
-			Vector3D lightPos = data.m_glows[i].position.xyz();
+			Vector3D lightPos = glow.position.xyz();
 			lightPos = (objDefMatrix*Vector4D(lightPos, 1.0f)).xyz();
 
-			if (!g_pGameWorld->m_occludingFrustum.IsSphereVisible(lightPos, data.m_glows[i].position.w))
+			if (!g_pGameWorld->m_occludingFrustum.IsSphereVisible(lightPos, glow.position.w))
 				continue;
 
-			ColorRGBA glowColor = data.m_glows[i].color;
-			ColorRGBA extraGlowColor = lerp(glowColor*extraBrightness, Vector4D(extraBrightness), 0.25f);
+			ColorRGBA glowColor = glow.color * glow.color.w*(brightness + extraBrightness);
 
 			DrawLightEffect(lightPos,
-				glowColor * glowColor.w*brightness + extraBrightness,
-				data.m_glows[i].position.w * extraSizeScale,
-				data.m_glows[i].type);
+				glowColor,
+				glow.position.w * extraSizeScale,
+				glow.type);
+		}
+
+		// Draw spot glows
+		for (int i = 0; i < data.m_spotGlows.numElem(); i++)
+		{
+			const wspotglow_t& glow = data.m_spotGlows[i];
+
+			// transform light position
+			Vector3D lightPosA = glow.position.xyz();
+			lightPosA = (objDefMatrix*Vector4D(lightPosA, 1.0f)).xyz();
+
+			Vector3D lightPosB = glow.positionB;
+			lightPosB = (objDefMatrix*Vector4D(lightPosB, 1.0f)).xyz();
+
+			float size = length(lightPosA - lightPosB) + glow.position.w;
+
+			if (!g_pGameWorld->m_occludingFrustum.IsSphereVisible((lightPosA+lightPosB)*0.5f, size))
+				continue;
+
+			ColorRGBA glowColor = glow.color * glow.color.w*(brightness + extraBrightness);
+
+			DrawSpotLightEffect(lightPosA, lightPosB, glowColor, glow.position.w * extraSizeScale, glow.type);
 		}
 	}
 

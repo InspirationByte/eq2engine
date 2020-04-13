@@ -194,7 +194,6 @@ struct levObjInstanceData_t
 	int						numInstances;
 };
 
-
 // only omni lights
 struct wlight_t
 {
@@ -204,15 +203,24 @@ struct wlight_t
 
 struct wglow_t
 {
+	ColorRGBA	color;		// r g b intensity
+	Vector4D	position;	// x y z radius
 	int			type;
-	Vector4D	position;
-	ColorRGBA	color;
+};
+
+struct wspotglow_t
+{
+	ColorRGBA	color;		// r g b intensity
+	Vector4D	position;	// x y z width
+	Vector3D	positionB;	// x y z
+	int			type;		// texture type
 };
 
 struct wlightdata_t
 {
-	DkList<wlight_t>	m_lights;
-	DkList<wglow_t>		m_glows;
+	DkList<wlight_t>		m_lights;
+	DkList<wglow_t>			m_glows;
+	DkList<wspotglow_t>		m_spotGlows;
 };
 
 void LoadDefLightData( wlightdata_t& out, kvkeybase_t* sec );

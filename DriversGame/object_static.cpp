@@ -12,11 +12,6 @@
 
 #include "Shiny.h"
 
-struct staticInstance_t
-{
-	Matrix4x4	world;
-};
-
 CObject_Static::CObject_Static( kvkeybase_t* kvdata )
 {
 	m_keyValues = kvdata;

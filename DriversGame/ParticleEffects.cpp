@@ -497,6 +497,53 @@ void DrawLightEffect(const Vector3D& position, const ColorRGBA& color, float siz
 	Effects_DrawBillboard(&effect, &g_pGameWorld->m_view, NULL);
 }
 
+// spot
+void DrawSpotLightEffect(const Vector3D& positionA, const Vector3D& positionB, const ColorRGBA& color, float size, int type)
+{
+	PFXVertex_t* verts;
+	if (g_additPartcles->AllocateGeom(4, 4, &verts, NULL, true) < 0)
+		return;
+
+	TexAtlasEntry_t* entry = NULL;
+
+	if (type == 0)
+		entry = g_additPartcles->FindEntry("spot1");
+
+	Rectangle_t rect = entry ? entry->rect : Rectangle_t(0.0f, 0.0f, 1.0f, 1.0f);
+	CViewParams& view = g_pGameWorld->m_view;
+
+	Vector3D viewDir = fastNormalize(positionA - effectrenderer->GetViewSortPosition());
+	Vector3D lineDir = fastNormalize(positionB - positionA);
+
+	Vector3D ccross = fastNormalize(cross(lineDir, viewDir));
+
+	Vector3D temp;
+
+	VectorMA(positionB, size, ccross, temp );
+
+	verts[0].point = temp;
+	verts[0].texcoord = rect.GetRightTop();		// lt = rt
+	verts[0].color = color;
+
+	VectorMA(positionB, -size, ccross, temp );
+
+	verts[1].point = temp;
+	verts[1].texcoord = rect.GetLeftTop();	// lb = lt
+	verts[1].color = color;
+
+	VectorMA(positionA, size, ccross, temp );
+
+	verts[2].point = temp;
+	verts[2].texcoord = rect.GetRightBottom();		// rt = rb
+	verts[2].color = color;
+
+	VectorMA(positionA, -size, ccross, temp );
+
+	verts[3].point = temp;
+	verts[3].texcoord = rect.GetLeftBottom();	// rb = lb
+	verts[3].color = color;
+}
+
 //
 // Police siren flashing effects
 //
