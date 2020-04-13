@@ -39,10 +39,10 @@ const float AI_COP_CHECK_MAXSPEED = 80.0f; // 80 kph and you will be pursued
 const float AI_COP_MINFELONY			= 0.1f;
 const float AI_COP_MINFELONY_CHECK		= 0.05f;
 
-const float AI_COP_COLLISION_FELONY			= 0.06f;
-const float AI_COP_COLLISION_FELONY_VEHICLE	= 0.15f;
+const float AI_COP_COLLISION_FELONY			= 0.03f;
+const float AI_COP_COLLISION_FELONY_VEHICLE	= 0.10f;
 const float AI_COP_COLLISION_FELONY_DEBRIS	= 0.02f;
-const float AI_COP_COLLISION_FELONY_REDLIGHT = 0.010f;
+const float AI_COP_COLLISION_FELONY_REDLIGHT = 0.01f;
 
 const float AI_COP_SCAREPEDS_FELONY			= 0.01f;
 const float AI_COP_TIME_TO_TELL_DIRECTION	= 10.0f;
@@ -63,7 +63,7 @@ const float AI_COP_TIME_TO_LOST_TARGET = 30.0f;
 const float AI_COP_TIME_TO_LOST_TARGET_FAR = 5.0f;
 const float AI_COP_LOST_TARGET_FARDIST = 160.0f;
 const float AI_COP_BECOME_ANGRY_PURSUIT_TIME = 60.0f;
-const float AI_COP_BECOME_ANGRY_FELONY = 0.65f;
+const float AI_COP_BECOME_ANGRY_FELONY = 0.75f;
 
 //------------------------------------------------------------------------------------------------
 

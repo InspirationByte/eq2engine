@@ -2511,10 +2511,17 @@ bool CGameLevel::Nav_FindPath(const Vector3D& start, const Vector3D& end, pathFi
 	return Nav_FindPath2D(startPoint, endPoint, result, iterationLimit, fast);
 }
 
-float estimateDist(const IVector2D& src, const IVector2D& dest)
+// d: cost
+// d2: diagonal cost
+float estimateDist(const IVector2D& src, const IVector2D& dest, float d, float d2)
 {
 	// use Euclidean method, result looks best for the driving game
-	return length(Vector2D(dest) - Vector2D(src));
+	//return length(Vector2D(dest) - Vector2D(src));
+
+	float dx = abs(src.x - dest.x);
+	float dy = abs(src.y - dest.y);
+
+	return d * (dx + dy) + (d2 - 2 * d) * min(dx, dy);
 }
 
 int sortOpenCells(const cellpoint_t& a, const cellpoint_t& b)
@@ -2586,7 +2593,7 @@ bool CGameLevel::Nav_FindPath2D(const IVector2D& start, const IVector2D& end, pa
 			if(neighbourTile == 0)	// wall?
 				continue;
 
-			float distBetween = estimateDist(curPoint, neighbourPoint);
+			float distBetween = estimateDist(curPoint, neighbourPoint, 0.5f, 0.95f);
 
 			float g = curCell.g + distBetween;  // dist from start + distance between the two nodes
 
@@ -2594,7 +2601,7 @@ bool CGameLevel::Nav_FindPath2D(const IVector2D& start, const IVector2D& end, pa
 			if(((neighbourCell.flags & 0x1) || (neighbourCell.flags & 0x2)) && neighbourCell.g < g)
 				continue; // consider next successor
 
-			float h = estimateDist(neighbourPoint, end);
+			float h = estimateDist(neighbourPoint, end, 0.5f, 0.95f);
 			float f = g + h; // compute f(n')
 			neighbourCell.f = f;
 			neighbourCell.g = g;

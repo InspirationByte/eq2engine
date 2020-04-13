@@ -147,7 +147,7 @@ void CObject_Debris::Spawn()
 		}
 
 		body->SetMass(obj->mass);
-		body->SetGravity(body->GetGravity() * 3.5f);
+		body->SetGravity(body->GetGravity() * 2.0f);
 		body->SetDebugName("hubcap");
 
 		// additional error correction required
