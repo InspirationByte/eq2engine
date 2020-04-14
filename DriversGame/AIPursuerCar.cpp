@@ -315,13 +315,16 @@ bool CAIPursuerCar::Speak(const char* soundName, CCar* target, bool force, float
 
 	if (!force && m_previousSpeech == soundName)
 	{
-		soundName = "cop.relatedincident";
-		priority *= 0.5f;
+		if (m_previousSpeech != "cop.relatedincident")
+		{
+			soundName = "cop.relatedincident";
+			priority *= 0.5f;
+		}
+		else
+			return;
 	}
 
-
 	m_previousSpeech = soundName;
-
 	return g_pAIManager->MakeCopSpeech(soundName, force, priority);
 }
 
