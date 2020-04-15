@@ -1084,7 +1084,7 @@ void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize)
 			verts[3].color.w = 1.0f;
 
 
-			ColorRGBA alertColor(1.0f, 0.7f, 0.0f, alpha);
+			ColorRGBA alertColor(1.0f, 0.57f, 0.0f, alpha);
 
 			if (m_screenAlertType == HUD_ALERT_SUCCESS)
 			{

@@ -266,7 +266,7 @@ CState_Game::CState_Game() : CBaseStateHandler()
 
 	m_replayMode = REPLAYMODE_NONE;
 	m_isGameRunning = false;
-	m_fade = 1.0f;
+	m_fade = 0.0f;
 	m_isLoading = -1;
 	m_missionScriptName = "defaultmission";
 	m_scheduledQuickReplay = REPLAY_SCHEDULE_NONE;
@@ -626,7 +626,7 @@ void CState_Game::OnEnter( CBaseStateHandler* from )
 	m_scheduledRestart = false;
 	m_scheduledQuickReplay = REPLAY_SCHEDULE_NONE;
 
-	m_fade = 1.0f;
+	m_fade = 0.0f;
 
 	m_menuTitleStr = LocalizedString("#MENU_GAME_TITLE_PAUSE");
 
@@ -842,7 +842,7 @@ void CState_Game::DrawLoadingScreen( float fDt )
 	materials->SetDepthStates(false, false);
 	materials->BindMaterial(materials->GetDefaultMaterial());
 
-	ColorRGBA blockCol(0.55, 0.4, 0.0, 1.0f);
+	ColorRGBA alertColor(1.0f, 0.57f, 0.0f, 1.0f);
 
 	// draw progress bar
 	{
@@ -859,7 +859,7 @@ void CState_Game::DrawLoadingScreen( float fDt )
 		Vector2D rect2[] = { MAKEQUAD(screenSize.x * (1.0f - pow(m_fade, 2.0f)), screenSize.y - 120, screenSize.x * (1.0f - pow(m_fade, 6.0f)) * 2.5f, screenSize.y - 105, 0) };
 
 		meshBuilder.Begin(PRIM_TRIANGLE_STRIP);
-			meshBuilder.Color4fv(blockCol);
+			meshBuilder.Color4fv(alertColor);
 			meshBuilder.Quad2(rect[0], rect[1], rect[2], rect[3]);
 			meshBuilder.Quad2(rect2[0], rect2[1], rect2[2], rect2[3]);
 		meshBuilder.End();
@@ -1459,7 +1459,7 @@ void CState_Game::HandleKeyPress( int key, bool down )
 
 		if (IsMenuActive() && IsCanPopMenu())
 		{
-			EmitSound_t es("menu.back");
+			EmitSound_t es("menu.back", 0.5f, 1.0f);
 			g_sounds->Emit2DSound(&es);
 
 			PopMenu();
@@ -1479,7 +1479,7 @@ void CState_Game::HandleKeyPress( int key, bool down )
 		{
 			if (PreEnterSelection())
 			{
-				EmitSound_t ep("menu.click");
+				EmitSound_t ep("menu.click", 0.5f, 1.0f);
 				g_sounds->Emit2DSound(&ep);
 				EnterSelection();
 			}
@@ -1490,7 +1490,7 @@ void CState_Game::HandleKeyPress( int key, bool down )
 
 			if(ChangeSelection(direction))
 			{
-				EmitSound_t es("menu.switch");
+				EmitSound_t es("menu.switch", 0.5f, 1.0f);
 				g_sounds->Emit2DSound( &es );
 			}
 		}
@@ -1511,7 +1511,7 @@ redecrement:
 			if (GetCurrentMenuElement(elem) && elem.safe_at("_spacer", _spacer))
 				goto redecrement;
 
-			EmitSound_t ep("menu.roll");
+			EmitSound_t ep("menu.roll", 0.5f, 1.0f);
 			g_sounds->Emit2DSound(&ep);
 		}
 		else if(key == KEY_DOWN || key == KEY_JOY_DPAD_DOWN)
@@ -1527,7 +1527,7 @@ reincrement:
 			if (GetCurrentMenuElement(elem) && elem.safe_at("_spacer", _spacer))
 				goto reincrement;
 
-			EmitSound_t ep("menu.roll");
+			EmitSound_t ep("menu.roll", 0.5f, 1.0f);
 			g_sounds->Emit2DSound(&ep);
 		}
 	}
@@ -1626,7 +1626,7 @@ void CState_Game::Event_SelectMenuItem(int index)
 
 	m_selection = index;
 
-	EmitSound_t ep("menu.roll");
+	EmitSound_t ep("menu.roll", 0.5f, 1.0f);
 	g_sounds->Emit2DSound(&ep);
 }
 
@@ -1641,7 +1641,7 @@ void CState_Game::HandleMouseClick( int x, int y, int buttons, bool down )
 		{
 			if (PreEnterSelection())
 			{
-				EmitSound_t ep("menu.click");
+				EmitSound_t ep("menu.click", 0.5f, 1.0f);
 				g_sounds->Emit2DSound(&ep);
 				EnterSelection();
 			}

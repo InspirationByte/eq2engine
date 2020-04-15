@@ -161,11 +161,11 @@ void DrawWindowRectangle(const Rectangle_t &rect, const ColorRGBA &color1, const
 		meshBuilder.Quad2(rect.GetLeftBottom(), rect.GetRightBottom(), rect.GetLeftTop(), rect.GetRightTop());
 
 		// put borders
-		meshBuilder.Color4fv(color2);
-		meshBuilder.Quad2(r0[0], r0[1], r0[2], r0[3]);
-		meshBuilder.Quad2(r1[0], r1[1], r1[2], r1[3]);
-		meshBuilder.Quad2(r2[0], r2[1], r2[2], r2[3]);
-		meshBuilder.Quad2(r3[0], r3[1], r3[2], r3[3]);
+		//meshBuilder.Color4fv(color2);
+		//meshBuilder.Quad2(r0[0], r0[1], r0[2], r0[3]);
+		//meshBuilder.Quad2(r1[0], r1[1], r1[2], r1[3]);
+		//meshBuilder.Quad2(r2[0], r2[1], r2[2], r2[3]);
+		//meshBuilder.Quad2(r3[0], r3[1], r3[2], r3[3]);
 	meshBuilder.End();
 }
 

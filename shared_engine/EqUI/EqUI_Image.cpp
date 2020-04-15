@@ -17,7 +17,8 @@ namespace equi
 
 Image::Image() : IUIControl(), m_material(nullptr)
 {
-
+	m_color = color4_white;
+	m_imageFlags = 0;
 }
 
 Image::~Image()
@@ -28,6 +29,13 @@ Image::~Image()
 void Image::InitFromKeyValues( kvkeybase_t* sec, bool noClear )
 {
 	BaseClass::InitFromKeyValues(sec, noClear);
+
+	m_color = KV_GetVector4D(sec->FindKeyBase("color"), 0, m_color);
+
+	bool flipX = KV_GetValueBool(sec->FindKeyBase("flipx"), 0, (m_imageFlags & FLIP_X) > 0);
+	bool flipY = KV_GetValueBool(sec->FindKeyBase("flipy"), 0, (m_imageFlags & FLIP_Y) > 0);
+
+	m_imageFlags = (flipX ? FLIP_X : 0) | (flipY ? FLIP_Y : 0);
 
 	kvkeybase_t* pathBase = sec->FindKeyBase("path");
 	if (pathBase != nullptr)
@@ -70,16 +78,34 @@ void Image::SetMaterial(const char* materialName)
 	//materials->PutMaterialToLoadingQueue(m_material);
 }
 
+void Image::SetColor(const ColorRGBA &color)
+{
+	m_color = color;
+}
+
+void Image::GetColor(ColorRGBA &color) const
+{
+	color = m_color;
+}
+
 void Image::DrawSelf( const IRectangle& rect )
 {
+	materials->SetAmbientColor(m_color);
 	materials->BindMaterial(m_material);
-	
+
+	Rectangle_t atlasRect = m_atlasRegion;
+	if (m_imageFlags & FLIP_X)
+		atlasRect.FlipX();
+
+	if (m_imageFlags & FLIP_Y)
+		atlasRect.FlipY();
+
 	// draw all rectangles with just single draw call
 	CMeshBuilder meshBuilder(materials->GetDynamicMesh());
 	meshBuilder.Begin(PRIM_TRIANGLE_STRIP);
 		//meshBuilder.Color4fv(m_color);
 		meshBuilder.TexturedQuad2(rect.GetLeftBottom(), rect.GetRightBottom(), rect.GetLeftTop(), rect.GetRightTop(), 
-			m_atlasRegion.GetLeftBottom(), m_atlasRegion.GetRightBottom(), m_atlasRegion.GetLeftTop(), m_atlasRegion.GetRightTop());
+			atlasRect.GetLeftBottom(), atlasRect.GetRightBottom(), atlasRect.GetLeftTop(), atlasRect.GetRightTop());
 	meshBuilder.End();
 }
 

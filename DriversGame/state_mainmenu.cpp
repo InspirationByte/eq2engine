@@ -44,7 +44,7 @@ void CState_MainMenu::OnEnter( CBaseStateHandler* from )
 	g_sounds->PrecacheSound("menu.roll");
 	g_sounds->PrecacheSound("menu.click");
 	g_sounds->PrecacheSound("menu.switch");
-	g_sounds->PrecacheSound("menu.music");
+	g_sounds->PrecacheSound("menu.titlemusic");
 
 	m_fade = 0.0f;
 	m_textFade = 0.0f;
@@ -75,12 +75,17 @@ void CState_MainMenu::OnEnter( CBaseStateHandler* from )
 
 	// SetMenuStack invokes UpdateCurrentMenu which calls InitUIScheme()
 	SetMenuStack(mainMenuStack);
-	
-	EmitSound_t es("menu.music");
-	g_sounds->Emit2DSound(&es);
 
 	ResetKeys();
 	m_keysError = false;
+
+	// play title music if it's not playing
+	ISoundPlayable* musicChannel = soundsystem->GetStaticStreamChannel(CHAN_STREAM);
+	if (musicChannel->GetState() != SOUND_STATE_PLAYING)
+	{
+		EmitSound_t musicES("menu.titlemusic");
+		g_sounds->Emit2DSound(&musicES);
+	}
 }
 
 void CState_MainMenu::UpdateCurrentMenu()
@@ -191,6 +196,7 @@ void CState_MainMenu::OnLeave( CBaseStateHandler* to )
 {
 	delete m_uiLayout;
 	m_uiLayout = m_menuDummy = nullptr;
+
 	g_sounds->Shutdown();
 }
 
@@ -256,7 +262,8 @@ bool CState_MainMenu::Update( float fDt )
 	fontParam.textColor = color4_white;	fontParam.styleFlag |= TEXT_STYLE_SHADOW | TEXT_STYLE_FROM_CAP;
 	fontParam.scale = m_menuDummy->GetFontScale()*menuScaling;
 
-	Vector2D menuPos = (m_menuDummy->GetTextAlignment() == TEXT_ALIGN_RIGHT) ? rect.GetRightTop() : (m_menuDummy->GetTextAlignment() & TEXT_ALIGN_HCENTER) ? ((rect.GetLeftTop()+rect.GetRightTop()) / 2) : rect.GetLeftTop();
+	Vector2D menuPos = (m_menuDummy->GetTextAlignment() == TEXT_ALIGN_RIGHT) ? rect.GetRightTop() : 
+		(m_menuDummy->GetTextAlignment() & TEXT_ALIGN_HCENTER) ? ((rect.GetLeftTop()+rect.GetRightTop()) / 2) : rect.GetLeftTop();
 	Vector2D menuSize = rect.GetSize();
 
 	DkList<OOLUA::Table> menuItems;
@@ -374,39 +381,11 @@ bool CState_MainMenu::Update( float fDt )
 		}
 	}
 
+	if(m_menuTitleStr.Length())
 	{
+		float alpha = clamp(m_fade, 0.0f, 1.0f);
 
-		const float messageSizeY = 26.0f*menuScaling.y;
-
-		float clampedAlertTime = clamp(m_fade, 0.0f, 1.0f);
-
-		// ok for 3 seconds
-		float textXPos = -2000.0f * pow(1.0f - m_textFade, 4.0f) + (-2000.0f * pow(1.0f - clampedAlertTime, 4.0f));
-
-		Vector2D screenMessagePos(menuPos + Vector2D(textXPos, -32.0f*menuScaling.y));
-
-		Vertex2D_t verts[6];
-		Vertex2D_t baseVerts[] = { MAKETEXQUAD(0.0f, screenMessagePos.y, screenSize.x, screenMessagePos.y + messageSizeY, 0.0f) };
-
-		baseVerts[0].color.w = 0.0f;
-		baseVerts[1].color.w = 0.0f;
-		baseVerts[2].color.w = 0.0f;
-		baseVerts[3].color.w = 0.0f;
-
-		verts[0] = baseVerts[0];
-		verts[1] = baseVerts[1];
-
-		verts[4] = baseVerts[2];
-		verts[5] = baseVerts[3];
-
-		verts[2] = Vertex2D_t(Vector2D(screenMessagePos.x, verts[0].position.y), 0.0f, m_textFade*0.75f); //Vertex2D_t::Interpolate(verts[0], verts[4], 0.5f);
-		verts[3] = Vertex2D_t(Vector2D(screenMessagePos.x, verts[1].position.y), 0.0f, m_textFade*0.75f); //Vertex2D_t::Interpolate(verts[1], verts[5], 0.5f);
-
-		float alpha = clampedAlertTime;
-
-		ColorRGBA alertColor(1.0f, 0.7f, 0.0f, alpha);
-
-		materials->DrawPrimitives2DFFP(PRIM_TRIANGLE_STRIP, verts, elementsOf(verts), NULL, alertColor, &blending);
+		ColorRGBA alertColor(1.0f, 0.57f, 0.0f, alpha);
 
 		eqFontStyleParam_t scrMsgParams;
 		scrMsgParams.align = m_menuDummy->GetTextAlignment();
@@ -414,7 +393,53 @@ bool CState_MainMenu::Update( float fDt )
 		scrMsgParams.textColor = ColorRGBA(1, 1, 1, alpha);
 		scrMsgParams.scale = 14.0f*menuScaling;
 
-		screenMessagePos.y += messageSizeY * 0.7f;
+		const float messageWidth = font->GetStringWidth(m_menuTitleStr.c_str(), scrMsgParams);
+		const float messageHeight = 26.0f*menuScaling.y;
+
+		// ok for 3 seconds
+		float textXPos = -2000.0f * pow(1.0f - m_textFade, 4.0f) + (-2000.0f * pow(1.0f - alpha, 4.0f));
+
+		Vector2D screenMessagePos(menuPos + Vector2D(textXPos, -32.0f*menuScaling.y));
+
+		{
+			float messageLineStart = screenMessagePos.x;
+			float messageLineEnd = screenMessagePos.x + messageWidth;
+
+			if (scrMsgParams.align & TEXT_ALIGN_RIGHT)
+			{
+				messageLineStart = screenMessagePos.x - messageWidth;
+				messageLineEnd = screenMessagePos.x;
+			}
+			else if (scrMsgParams.align & TEXT_ALIGN_HCENTER)
+			{
+				messageLineStart = screenMessagePos.x - messageWidth;
+				messageLineEnd = screenMessagePos.x + messageWidth;
+			}
+
+			messageLineStart -= messageWidth;
+			messageLineEnd += messageWidth;
+
+			Vertex2D_t verts[6];
+			Vertex2D_t baseVerts[] = { MAKETEXQUAD(messageLineStart, screenMessagePos.y, messageLineEnd, screenMessagePos.y + messageHeight, 0.0f) };
+
+			baseVerts[0].color.w = 0.0f;
+			baseVerts[1].color.w = 0.0f;
+			baseVerts[2].color.w = 0.0f;
+			baseVerts[3].color.w = 0.0f;
+
+			verts[0] = baseVerts[0];
+			verts[1] = baseVerts[1];
+
+			verts[4] = baseVerts[2];
+			verts[5] = baseVerts[3];
+
+			verts[2] = Vertex2D_t(Vector2D((messageLineStart + messageLineEnd)*0.5f, verts[0].position.y), 0.0f, m_textFade*0.75f);
+			verts[3] = Vertex2D_t(Vector2D((messageLineStart + messageLineEnd)*0.5f, verts[1].position.y), 0.0f, m_textFade*0.75f);
+			
+			materials->DrawPrimitives2DFFP(PRIM_TRIANGLE_STRIP, verts, elementsOf(verts), NULL, alertColor, &blending);
+		}
+
+		screenMessagePos.y += messageHeight * 0.7f;
 		font->RenderText(m_menuTitleStr.c_str(), screenMessagePos, scrMsgParams);
 	}
 
@@ -475,8 +500,8 @@ bool CState_MainMenu::Update( float fDt )
 	}
 
 	// fade music
-	if(m_goesFromMenu)
-		g_sounds->Set2DChannelsVolume(CHAN_STREAM, 0.0f);
+	//if(m_goesFromMenu)
+	//	g_sounds->Set2DChannelsVolume(CHAN_STREAM, 0.0f);
 
 	return !(m_goesFromMenu && m_fade == 0.0f);
 }

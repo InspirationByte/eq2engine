@@ -463,6 +463,7 @@ OOLUA_EXPORT_FUNCTIONS(equi::IUIControl,
 	SetSize,
 	SetPosition,
 	//SetRectangle,
+	SetTransform,
 	AddChild,
 	RemoveChild,
 	FindChild,
@@ -485,18 +486,18 @@ OOLUA_EXPORT_FUNCTIONS_CONST(equi::IUIControl,
 )
 
 OOLUA_EXPORT_FUNCTIONS(equi::Panel, 
-	SetColor, 
-	SetSelectionColor, 
+	SetColor, SetSelectionColor, 
 	CenterOnScreen
 )
 OOLUA_EXPORT_FUNCTIONS_CONST(equi::Panel, 
-	GetSelectionColor
+	GetColor, GetSelectionColor
 )
 
 OOLUA_EXPORT_FUNCTIONS(equi::Image,
-	SetMaterial
+	SetMaterial,
+	SetColor
 )
-OOLUA_EXPORT_FUNCTIONS_CONST(equi::Image)
+OOLUA_EXPORT_FUNCTIONS_CONST(equi::Image, GetColor)
 
 OOLUA_EXPORT_FUNCTIONS(equi::CUIManager,
 

@@ -16,6 +16,12 @@ class IMaterial;
 namespace equi
 {
 
+	enum EImageFlags
+	{
+		FLIP_X = (1 << 0),
+		FLIP_Y = (1 << 1),
+	};
+
 // eq label class
 class Image : public IUIControl
 {
@@ -29,6 +35,10 @@ public:
 
 	void			SetMaterial(const char* materialName);
 
+	// apperance
+	void			SetColor(const ColorRGBA &color);
+	void			GetColor(ColorRGBA &color) const;
+
 	// events
 	bool			ProcessMouseEvents(float x, float y, int nMouseButtons, int flags) {return true;}
 	bool			ProcessKeyboardEvents(int nKeyButtons, int flags) {return true;}
@@ -39,6 +49,9 @@ public:
 
 	IMaterial*		m_material;
 	Rectangle_t		m_atlasRegion;
+
+	ColorRGBA		m_color;
+	int				m_imageFlags;
 };
 
 };

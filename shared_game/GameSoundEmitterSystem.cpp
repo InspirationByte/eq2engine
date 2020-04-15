@@ -789,8 +789,10 @@ void CSoundEmitterSystem::Update(float pitchScale, bool force)
 	// update music volume always
 	ISoundPlayable* musicChannel = soundsystem->GetStaticStreamChannel(CHAN_STREAM);
 
-	if(musicChannel)
+	if (musicChannel)
+	{
 		musicChannel->SetVolume(m_2dChannelVolume[CHAN_STREAM] * m_2dScriptVolume[CHAN_STREAM] * snd_musicvolume.GetFloat());
+	}
 
 	// don't update
 	if(!force && soundsystem->GetPauseState())

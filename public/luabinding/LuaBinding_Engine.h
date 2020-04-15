@@ -422,6 +422,8 @@ OOLUA_PROXY(equi::IUIControl)
 
 	//OOLUA_MFUNC_CONST( GetClientRectangle )
 
+	OOLUA_MFUNC( SetTransform )
+
 	// child controls
 	OOLUA_MFUNC( AddChild )
 	OOLUA_MFUNC( RemoveChild )
@@ -451,6 +453,9 @@ OOLUA_PROXY(equi::Image, equi::IUIControl)
 	OOLUA_TAGS(Abstract)
 
 	OOLUA_MFUNC(SetMaterial)
+
+	OOLUA_MFUNC(SetColor)
+	OOLUA_MFUNC_CONST(GetColor)
 OOLUA_PROXY_END
 
 

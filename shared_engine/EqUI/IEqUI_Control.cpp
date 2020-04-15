@@ -32,6 +32,10 @@ IUIControl::IUIControl()
 	m_scaling(UI_SCALING_NONE), m_anchors(0), m_alignment(UI_ALIGN_LEFT | UI_ALIGN_TOP),m_textAlignment(TEXT_ALIGN_LEFT | TEXT_ALIGN_TOP)
 {
 	m_label = "Control";
+
+	m_transform.rotation = 0.0f;
+	m_transform.translation = 0.0f;
+	m_transform.scale = 1.0f;
 }
 
 IUIControl::~IUIControl()
@@ -154,6 +158,20 @@ void IUIControl::InitFromKeyValues( kvkeybase_t* sec, bool noClear )
 	}
 
 	//------------------------------------------------------------------------------
+	kvkeybase_t* transform = sec->FindKeyBase("transform");
+
+	if (transform)
+	{
+		float rotateVal = KV_GetValueFloat(transform->FindKeyBase("rotate"), 0.0f);
+		rotateVal = rotateVal;
+
+		Vector2D scaleVal = KV_GetIVector2D(transform->FindKeyBase("scale"), 0, 1.0f);
+		Vector2D translate = KV_GetIVector2D(transform->FindKeyBase("translate"), 0, 0.0f);
+
+		SetTransform(translate, scaleVal, rotateVal);
+	}
+
+	//------------------------------------------------------------------------------
 	kvkeybase_t* textAlign = sec->FindKeyBase("textAlign");
 
 	if (textAlign)
@@ -259,6 +277,14 @@ void IUIControl::SetRectangle(const IRectangle& rect)
 {
 	SetPosition(rect.vleftTop);
 	SetSize(rect.vrightBottom - m_position);
+}
+
+// sets new transformation. Set all zeros to reset
+void IUIControl::SetTransform(const Vector2D& translateVal, const Vector2D& scaleVal, float rotateVal)
+{
+	m_transform.translation = translateVal;
+	m_transform.scale = scaleVal;
+	m_transform.rotation = rotateVal;
 }
 
 bool IUIControl::IsVisible() const
@@ -467,7 +493,7 @@ void IUIControl::Render()
 
 	RasterizerStateParams_t rasterState;
 	//rasterState.fillMode = FILL_SOLID;
-	//rasterState.cullMode = CULL_NONE;
+	rasterState.cullMode = CULL_NONE;
 	rasterState.scissor = true;
 
 	IRectangle clientRectRender = GetClientRectangle();
@@ -475,16 +501,35 @@ void IUIControl::Render()
 	materials->SetAmbientColor(color4_white);	// max color mode
 	materials->SetFogInfo(FogInfo_t());			// disable fog
 
+	// calculate absolute transformation using previous matrix
+	Matrix4x4 prevTransform;
+	materials->GetMatrix(MATRIXMODE_WORLD, prevTransform);
+
+	Matrix4x4 clientPosMat = translate((float)clientRectRender.GetCenter().x, (float)clientRectRender.GetCenter().y, 0.0f);
+	Matrix4x4 rotationScale = clientPosMat * scale4(m_transform.scale.x, m_transform.scale.y, 1.0f) * rotateZ4(DEG2RAD(m_transform.rotation));
+	rotationScale = rotationScale * !clientPosMat;
+
+	Matrix4x4 localTransform = rotationScale * translate(m_transform.translation.x, m_transform.translation.y, 0.0f);
+
+	Matrix4x4 newTransform = (prevTransform * localTransform);
+
+	// load new absolulte transformation
+	materials->SetMatrix(MATRIXMODE_WORLD, newTransform);
+
 	if( m_parent && m_selfVisible )
 	{
+		// set scissor rect before childs are rendered
+		// only if no transformation applied
+		if (newTransform.rows[0].x != 1.0f)
+			rasterState.scissor = false;
+
+		IRectangle scissorRect = GetClientScissorRectangle();
+		g_pShaderAPI->SetScissorRectangle(scissorRect);
+
 		// force rasterizer state
 		// other states are pretty useless
 		materials->SetRasterizerStates(rasterState);
 		materials->SetShaderParameterOverriden(SHADERPARAM_RASTERSETUP, true);
-
-		// set scissor rect before childs are rendered
-		IRectangle scissorRect = GetClientScissorRectangle();
-		g_pShaderAPI->SetScissorRectangle(scissorRect);
 
 		// paint control itself
 		DrawSelf( clientRectRender );
@@ -504,10 +549,16 @@ void IUIControl::Render()
 	{
 		do
 		{
+			// load new absolulte transformation
+			materials->SetMatrix(MATRIXMODE_WORLD, newTransform);
+
 			m_childs.getCurrent()->Render();
 		}
 		while(m_childs.goToPrev());
 	}
+
+	// always reset previous absolute transformation
+	materials->SetMatrix(MATRIXMODE_WORLD, prevTransform);
 }
 
 IUIControl* IUIControl::HitTest(const IVector2D& point)

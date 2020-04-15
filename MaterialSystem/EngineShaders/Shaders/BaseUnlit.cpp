@@ -74,7 +74,7 @@ BEGIN_SHADER_CLASS(BaseUnlit)
 
 	void SetColorModulation()
 	{
-		ColorRGBA setColor = m_pColorVar->GetVector4();//materials->GetAmbientColor();
+		ColorRGBA setColor = m_pColorVar->GetVector4()*materials->GetAmbientColor();
 
 		g_pShaderAPI->SetShaderConstantVector4D("AmbientColor", setColor);
 	}

@@ -104,6 +104,9 @@ public:
 	void						SetRectangle(const IRectangle& rect);
 	virtual IRectangle			GetRectangle() const;
 
+	// sets new transformation. Set all zeros to reset
+	void						SetTransform(const Vector2D& translate, const Vector2D& scale, float rotate);
+
 	// drawn rectangle
 	virtual IRectangle			GetClientRectangle() const;
 
@@ -189,6 +192,14 @@ protected:
 	Vector2D					m_fontScale;
 	ColorRGBA					m_textColor;
 	int							m_textAlignment;
+
+	struct ui_transform
+	{
+		float					rotation;
+		Vector2D				translation;
+		Vector2D				scale;
+	} m_transform;
+
 };
 
 template <class T> 

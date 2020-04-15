@@ -86,15 +86,11 @@ void CState_Title::OnEnter( CBaseStateHandler* from )
 
 	if (m_titleText)
 		m_titlePos = m_titleText->GetPosition();
-
-	EmitSound_t es("menu.titlemusic");
-	g_sounds->Emit2DSound(&es);
-
 }
 
 void CState_Title::OnLeave( CBaseStateHandler* to )
 {
-	g_sounds->Shutdown();
+	//g_sounds->Shutdown();
 
 	delete m_uiLayout;
 	m_uiLayout = nullptr;
@@ -200,10 +196,6 @@ bool CState_Title::Update( float fDt )
 		meshBuilder.Quad2(screenRect[0], screenRect[1], screenRect[2], screenRect[3]);
 	meshBuilder.End();
 
-	// fade music
-	if(m_goesFromTitle)
-		g_sounds->Set2DChannelsVolume(CHAN_STREAM, m_fade);
-
 	return !(m_goesFromTitle && m_fade == 0.0f);
 }
 
@@ -239,6 +231,10 @@ void CState_Title::GoToMainMenu()
 
 	EmitSound_t es("menu.click");
 	g_sounds->EmitSound(&es);
+
+	// play title music
+	EmitSound_t musicES("menu.titlemusic");
+	g_sounds->Emit2DSound(&musicES);
 
 	SetNextState(g_State_MainMenu);
 }

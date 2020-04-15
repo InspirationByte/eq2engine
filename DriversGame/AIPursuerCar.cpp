@@ -321,7 +321,7 @@ bool CAIPursuerCar::Speak(const char* soundName, CCar* target, bool force, float
 			priority *= 0.5f;
 		}
 		else
-			return;
+			return false;
 	}
 
 	m_previousSpeech = soundName;
