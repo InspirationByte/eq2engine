@@ -1458,7 +1458,7 @@ kvkeybase_t* KV_LoadFromFile( const char* pszFileName, int nSearchFlags, kvkeyba
 
 	if(pBase)
 	{
-		pBase->SetName(pszFileName);
+		pBase->SetName(_Es(pszFileName).Path_Strip_Path().c_str());
         pBase->unicode = isUTF8;
 	}
 
