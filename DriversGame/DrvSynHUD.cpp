@@ -866,7 +866,7 @@ void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize)
 
 		if( m_mainVehicle )
 		{
-			felonyPercent = m_mainVehicle->GetFelony()*100;
+			felonyPercent = fabs(m_mainVehicle->GetFelony())*100;
 
 			mainVehicleHasFelony = felonyPercent >= 10.0f;
 

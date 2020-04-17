@@ -438,7 +438,12 @@ int CAIPursuerCar::PassiveCopState( float fDt, EStateTransition transition )
 		if (!CheckObjectVisibility(checkCar))
 			continue;
 
-		float pursuitStartDelay = checkCar->GetFelony() > AI_COP_MINFELONY ? AI_COP_BEGINPURSUIT_ARMED_DELAY : AI_COP_BEGINPURSUIT_PASSIVE_DELAY;
+		float newFelony = checkCar->GetFelony();
+
+		if (newFelony < 0) // don't check negative felony
+			continue;
+
+		float pursuitStartDelay = newFelony > AI_COP_MINFELONY ? AI_COP_BEGINPURSUIT_ARMED_DELAY : AI_COP_BEGINPURSUIT_PASSIVE_DELAY;
 
 		// gang just starts pursuing
 		if (m_type == PURSUER_TYPE_GANG)
@@ -455,8 +460,6 @@ int CAIPursuerCar::PassiveCopState( float fDt, EStateTransition transition )
 		UpdateInfractions(checkCar, true);
 
 		PursuerData_t& pursuerData = checkCar->GetPursuerData();
-
-		float newFelony = checkCar->GetFelony();
 
 		// go through all infraction types
 		for (int j = 0; j < INFRACTION_COUNT; j++)
@@ -1324,5 +1327,7 @@ OOLUA_EXPORT_FUNCTIONS(
 )
 
 OOLUA_EXPORT_FUNCTIONS_CONST(
-	CAIPursuerCar
+	CAIPursuerCar,
+	GetPursuerType,
+	InPursuit,
 )

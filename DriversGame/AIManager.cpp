@@ -1106,7 +1106,7 @@ void CAIManager::StopPursuit( CCar* car )
 	{
 		CAIPursuerCar* pursuer = UTIL_CastToPursuer(m_trafficCars[i]);
 
-		if(pursuer && !pursuer->InPursuit() && pursuer->GetPursuitTarget() == car)
+		if(pursuer && pursuer->InPursuit() && pursuer->GetPursuitTarget() == car)
 			pursuer->EndPursuit(!pursuer->IsAlive());
 	}
 }

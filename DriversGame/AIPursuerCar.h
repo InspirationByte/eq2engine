@@ -53,6 +53,8 @@ public:
 
 	EPursuerAIType		GetPursuerType() const {return m_type;}
 
+	int					L_GetPursuerType() const { return m_type; }
+
 	void				SetMaxSpeed(float fSpeed);
 	void				SetTorqueScale(float fScale);
 
@@ -130,6 +132,10 @@ OOLUA_PROXY(CAIPursuerCar, CAITrafficCar)
 	OOLUA_MFUNC(CheckObjectVisibility)
 	OOLUA_MFUNC(BeginPursuit)
 	OOLUA_MFUNC(EndPursuit)
+
+	OOLUA_MFUNC_CONST(InPursuit)
+
+	OOLUA_MEM_FUNC_CONST_RENAME(GetPursuerType, int, L_GetPursuerType)
 OOLUA_PROXY_END
 #endif // __INTELLISENSE__
 #endif // NO_LUA

@@ -572,7 +572,7 @@ void CState_MainMenu::HandleJoyAxis(short axis, short value)
 	{
 		int joyAxisCode = axis + JOYSTICK_START_AXES;
 
-		bool down = abs(value) > 1000;
+		bool down = abs(value) >= (SHRT_MAX/2);
 
 		if (down)
 		{
