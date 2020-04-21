@@ -300,7 +300,9 @@ void kvkeybase_t::ClearValues()
 // sets keybase name
 void kvkeybase_t::SetName(const char* pszName)
 {
-	strcpy( name, pszName );
+	strncpy( name, pszName, sizeof(name));
+	name[sizeof(name) - 1] = 0;
+
 	nameHash = StringToHash(name, true);
 }
 
