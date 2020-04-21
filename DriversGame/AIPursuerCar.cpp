@@ -128,6 +128,18 @@ CAIPursuerCar* UTIL_CastToPursuer(CCar* car)
 	return (CAIPursuerCar*)trafficCar;
 }
 
+bool CanInitiatePursuitInPassiveMode(CCar* checkCar)
+{
+	// restrict to player cars and lead cars
+	if (checkCar->ObjType() != GO_CAR)
+		return false;
+
+	if (checkCar->GetFelony() < 0.0f)
+		return false;
+
+	return checkCar->IsEnabled() && checkCar->m_conf->flags.isCar;
+}
+
 //------------------------------------------------------------------------------------------------
 
 CAIPursuerCar::CAIPursuerCar() : CAITrafficCar(nullptr)
@@ -342,13 +354,15 @@ void CAIPursuerCar::DoPoliceLoudhailer()
 		g_pAIManager->CopLoudhailerTold();
 	}
 }
-
+/*
 void CAIPursuerCar::OnPrePhysicsFrame( float fDt )
 {
 	BaseClass::OnPrePhysicsFrame(fDt);
 
 	UpdateTarget(fDt);
 
+	// VERY PASSIVE MODE
+	// for roadblock car
 	if(	IsAlive() && !m_enabled)
 	{
 		DkList<CGameObject*> nearestCars;
@@ -362,16 +376,18 @@ void CAIPursuerCar::OnPrePhysicsFrame( float fDt )
 		{
 			CCar* checkCar = (CCar*)nearestCars[i];
 
-			if (CheckObjectVisibility(checkCar) &&
-				checkCar->GetFelony() > AI_COP_MINFELONY &&
-				checkCar->GetPursuedCount() == 0)
+			if (CanInitiatePursuitInPassiveMode(checkCar) && 
+				CheckObjectVisibility(checkCar))
 			{
+				if (!(m_type == PURSUER_TYPE_COP && checkCar->GetFelony() > AI_COP_MINFELONY))
+					continue;
+
 				SetPursuitTarget(checkCar);
 				BeginPursuit(0.0f);
 			}
 		}
 	}
-}
+}*/
 
 void CAIPursuerCar::OnPhysicsFrame( float fDt )
 {
@@ -379,33 +395,42 @@ void CAIPursuerCar::OnPhysicsFrame( float fDt )
 
 	if(IsAlive())
 	{
-		// update blocking
-		m_collAvoidance.m_manipulator.m_isColliding = m_collisionList.numElem() > 0;
-
-		if (!m_collAvoidance.m_manipulator.m_enabled && m_collAvoidance.m_manipulator.m_isColliding && !m_collAvoidance.m_manipulator.m_collidingPositionSet)
-		{
-			m_collAvoidance.m_manipulator.m_lastCollidingPosition = m_collisionList[0].position;
-			m_collAvoidance.m_manipulator.m_collidingPositionSet = true;
-		}
-		else if(!m_collAvoidance.m_manipulator.m_enabled)
-		{
-			m_collAvoidance.m_manipulator.m_collidingPositionSet = false;
-		}
-
 		if (!g_pGameWorld->IsValidObject(m_target))
+		{
 			m_target = nullptr;
+			EndPursuit(true);
+		}
 
 		// update target infraction
-		if(!m_target)
+		if (m_target)
 		{
-			PassiveCopState( fDt, STATE_TRANSITION_NONE );
+			UpdateTarget(fDt);
+			
+			// update blocking state
+			m_collAvoidance.m_manipulator.m_isColliding = m_collisionList.numElem() > 0;
+
+			if (!m_collAvoidance.m_manipulator.m_enabled && m_collAvoidance.m_manipulator.m_isColliding && !m_collAvoidance.m_manipulator.m_collidingPositionSet)
+			{
+				m_collAvoidance.m_manipulator.m_lastCollidingPosition = m_collisionList[0].position;
+				m_collAvoidance.m_manipulator.m_collidingPositionSet = true;
+			}
+			else if (!m_collAvoidance.m_manipulator.m_enabled)
+			{
+				m_collAvoidance.m_manipulator.m_collidingPositionSet = false;
+			}
+		}
+		else
+		{
+			PassiveCopState(fDt);
 		}
 	}
 	else
 	{
 		// death by water?
-		if(m_inWater)
+		if (m_inWater)
+		{
 			EndPursuit(true);
+		}
 	}
 
 }
@@ -417,7 +442,7 @@ int	CAIPursuerCar::TrafficDrive( float fDt, EStateTransition transition )
 	return res;
 }
 
-int CAIPursuerCar::PassiveCopState( float fDt, EStateTransition transition )
+int CAIPursuerCar::PassiveCopState( float fDt )
 {
 	DkList<CGameObject*> nearestCars;
 	g_pGameWorld->QueryObjects(nearestCars, AI_COPVIEW_RADIUS_PURSUIT, GetOrigin(), nullptr, [](CGameObject* x, void*) {
@@ -435,15 +460,10 @@ int CAIPursuerCar::PassiveCopState( float fDt, EStateTransition transition )
 			continue;
 
 		// check infraction in visible range
-		if (!CheckObjectVisibility(checkCar))
+		if (!(CanInitiatePursuitInPassiveMode(checkCar) && CheckObjectVisibility(checkCar)))
 			continue;
 
 		float newFelony = checkCar->GetFelony();
-
-		if (newFelony < 0) // don't check negative felony
-			continue;
-
-		float pursuitStartDelay = newFelony > AI_COP_MINFELONY ? AI_COP_BEGINPURSUIT_ARMED_DELAY : AI_COP_BEGINPURSUIT_PASSIVE_DELAY;
 
 		// gang just starts pursuing
 		if (m_type == PURSUER_TYPE_GANG)
@@ -451,8 +471,9 @@ int CAIPursuerCar::PassiveCopState( float fDt, EStateTransition transition )
 			if (checkCar->IsEnabled())
 			{
 				SetPursuitTarget(checkCar);
-				BeginPursuit(pursuitStartDelay);
+				BeginPursuit( 0.0f );
 			}
+
 			return 0;
 		}
 
@@ -476,6 +497,8 @@ int CAIPursuerCar::PassiveCopState( float fDt, EStateTransition transition )
 
 		if (newFelony >= AI_COP_MINFELONY)
 		{
+			float pursuitStartDelay = newFelony > AI_COP_MINFELONY ? AI_COP_BEGINPURSUIT_ARMED_DELAY : AI_COP_BEGINPURSUIT_PASSIVE_DELAY;
+
 			SetPursuitTarget(checkCar);
 			BeginPursuit(pursuitStartDelay);
 		}
@@ -500,7 +523,7 @@ void CAIPursuerCar::BeginPursuit( float delay )
 	if (!m_target)
 		return;
 
-	if(!IsAlive() || !m_target->m_conf->flags.isCar)
+	if(!IsAlive())
 	{
 		SetPursuitTarget(nullptr);
 		return;
@@ -946,6 +969,9 @@ bool CAIPursuerCar::UpdateTarget(float fDt)
 			EndPursuit(false);
 			return false;
 		}
+
+		if (m_pursuitTime > AI_COP_BECOME_ANGRY_PURSUIT_TIME)
+			m_angry = true;
 	}
 
 	return true;
@@ -1295,13 +1321,6 @@ void CAIPursuerCar::SetPursuitTarget(CCar* obj)
 	if (m_target && g_pGameWorld->IsValidObject(m_target)) 
 		m_target->DecrementPursue();
 
-	// restrict to player cars and lead cars
-	if (obj && obj->ObjType() != GO_CAR)
-	{
-		m_target = nullptr;
-		return;
-	}
-
 	m_target = obj;
 
 	if (m_target && g_pGameWorld->IsValidObject(m_target))
@@ -1323,11 +1342,13 @@ OOLUA_EXPORT_FUNCTIONS(
 	SetPursuitTarget,
 	CheckObjectVisibility,
 	BeginPursuit,
-	EndPursuit
+	EndPursuit,
+	SetAngry
 )
 
 OOLUA_EXPORT_FUNCTIONS_CONST(
 	CAIPursuerCar,
 	GetPursuerType,
 	InPursuit,
+	IsAngry
 )

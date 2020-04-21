@@ -42,6 +42,9 @@ public:
 	bool				IsPursuer() const { return true; }
 	bool				InPursuit() const;
 
+	void				SetAngry(bool enable) { m_angry = enable; }
+	bool				IsAngry() const { return m_angry; }
+
 	void				SetPursuitTarget(CCar* obj);
 
 	CCar*				GetPursuitTarget() const { return m_target; }
@@ -64,10 +67,10 @@ public:
 
 protected:
 
-	int					PassiveCopState( float fDt, EStateTransition transition );
-
-	virtual void		OnPrePhysicsFrame( float fDt );
+	int					PassiveCopState( float fDt );
 	virtual void		OnPhysicsFrame( float fDt );
+
+	//virtual void		OnPrePhysicsFrame( float fDt );
 
 	void				UpdateInfractions(CCar* checkCar, bool passive);
 
@@ -132,8 +135,10 @@ OOLUA_PROXY(CAIPursuerCar, CAITrafficCar)
 	OOLUA_MFUNC(CheckObjectVisibility)
 	OOLUA_MFUNC(BeginPursuit)
 	OOLUA_MFUNC(EndPursuit)
+	OOLUA_MFUNC(SetAngry)
 
 	OOLUA_MFUNC_CONST(InPursuit)
+	OOLUA_MFUNC_CONST(IsAngry)
 
 	OOLUA_MEM_FUNC_CONST_RENAME(GetPursuerType, int, L_GetPursuerType)
 OOLUA_PROXY_END
