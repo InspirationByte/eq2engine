@@ -7,6 +7,11 @@
 
 #include "object_scripted.h"
 
+CObject_Scripted::CObject_Scripted()
+{
+
+}
+
 CObject_Scripted::CObject_Scripted( kvkeybase_t* kvdata )
 {
 	m_scriptName = KV_GetValueString(kvdata->FindKeyBase("bind"));
@@ -21,9 +26,10 @@ void CObject_Scripted::OnRemove()
 	OOLUA::Script& state = GetLuaState();
 	EqLua::LuaStackGuard g(state);
 
-	if(m_onRemove.Push())
+	if(m_onRemove.Push(false))
 	{
-		if(!m_onRemove.Call(0, 0, 0))
+		OOLUA::push(state, this);	// push 'self'
+		if(!m_onRemove.Call(1, 0, 0))
 			MsgError("Error in script call OnRemove:\n%s\n", OOLUA::get_last_error(state).c_str());
 	}
 
@@ -54,6 +60,7 @@ void CObject_Scripted::Spawn()
 	
 		if(m_onSpawn.Push())
 		{
+			//OOLUA::push(state, this);
 			if(!m_onSpawn.Call(0, 0, 0))
 				MsgError("Error in script call OnSpawn:\n%s\n", OOLUA::get_last_error(state).c_str());
 		}
@@ -73,9 +80,14 @@ void CObject_Scripted::Simulate(float fDt)
 	OOLUA::Script& state = GetLuaState();
 	EqLua::LuaStackGuard g(state);
 
-	if(m_simulate.Push() && state.push(fDt))
+	if(m_simulate.Push())
 	{
+		//OOLUA::push(state, this);
+		OOLUA::push(state, fDt);
 		if(!m_simulate.Call(1, 0, 0))
 			MsgError("Error in script call Simulate:\n%s\n", OOLUA::get_last_error(state).c_str());
 	}
 }
+
+OOLUA_EXPORT_FUNCTIONS(CObject_Scripted)
+OOLUA_EXPORT_FUNCTIONS_CONST(CObject_Scripted)

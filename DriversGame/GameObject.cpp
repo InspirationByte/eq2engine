@@ -257,9 +257,10 @@ void CGameObject::OnRemove()
 	OOLUA::Script& state = GetLuaState();
 	EqLua::LuaStackGuard g(state);
 
-	if( m_luaOnRemove.Push() )
+	if( m_luaOnRemove.Push(false) )
 	{
-		if(!m_luaOnRemove.Call(0, 0, 0))
+		OOLUA::push(state, this);	// push 'self'
+		if(!m_luaOnRemove.Call(1, 0, 0))
 		{
 			MsgError("CGameObject:OnRemove error:\n %s\n", OOLUA::get_last_error(state).c_str());
 		}
@@ -297,10 +298,11 @@ void CGameObject::Simulate( float fDt )
 	OOLUA::Script& state = GetLuaState();
 	EqLua::LuaStackGuard g(state);
 
-	if (m_luaOnSimulate.Push())
+	if (m_luaOnSimulate.Push(false))
 	{
+		OOLUA::push(state, this);	// push 'self'
 		OOLUA::push(state, fDt);
-		if (!m_luaOnSimulate.Call(1, 0, 0))
+		if (!m_luaOnSimulate.Call(2, 0, 0))
 		{
 			MsgError("CGameObject:OnSimulate error:\n %s\n", OOLUA::get_last_error(state).c_str());
 		}
@@ -509,11 +511,12 @@ void CGameObject::OnPackMessage( CNetMessageBuffer* buffer, DkList<int>& changeL
 	OOLUA::Script& state = GetLuaState();
 	EqLua::LuaStackGuard g(state);
 
-	if( m_luaOnPackMessage.Push() )
+	if( m_luaOnPackMessage.Push(false) )
 	{
+		OOLUA::push(state, this);
 		OOLUA::push(state, buffer);
 	
-		if(!m_luaOnPackMessage.Call(1, 0, 0))
+		if(!m_luaOnPackMessage.Call(2, 0, 0))
 		{
 			MsgError("CGameObject:OnPackMessage error:\n %s\n", OOLUA::get_last_error(state).c_str());
 		}
@@ -530,11 +533,12 @@ void CGameObject::OnUnpackMessage( CNetMessageBuffer* buffer )
 	OOLUA::Script& state = GetLuaState();
 	EqLua::LuaStackGuard g(state);
 
-	if( m_luaOnUnpackMessage.Push() )
+	if( m_luaOnUnpackMessage.Push(false) )
 	{
+		OOLUA::push(state, this);
 		OOLUA::push(state, buffer);
 	
-		if(!m_luaOnUnpackMessage.Call(1, 0, 0))
+		if(!m_luaOnUnpackMessage.Call(2, 0, 0))
 		{
 			MsgError("CGameObject:OnUnpackMessage error:\n %s\n", OOLUA::get_last_error(state).c_str());
 		}
@@ -568,8 +572,9 @@ void CGameObject::OnCarCollisionEvent( const CollisionPairData_t& pair, CGameObj
 	OOLUA::Script& state = GetLuaState();
 	EqLua::LuaStackGuard g(state);
 
-	if( m_luaOnCarCollision.Push() )
+	if( m_luaOnCarCollision.Push(false) )
 	{
+		OOLUA::push(state, this);	// push 'self'
 		OOLUA::Table tab = OOLUA::new_table(state);
 
 		// why i can't push them as vector3d?
@@ -579,9 +584,9 @@ void CGameObject::OnCarCollisionEvent( const CollisionPairData_t& pair, CGameObj
 		tab.set("velocity", pair.impactVelocity);
 		tab.set("hitBy", hitBy);
 
-		OOLUA::push(state, tab);
+		OOLUA::push(state, tab);	// push 'params'
 	
-		if(!m_luaOnCarCollision.Call(1, 0, 0))
+		if(!m_luaOnCarCollision.Call(2, 0, 0))
 		{
 			MsgError("CGameObject:OnCarCollision error:\n %s\n", OOLUA::get_last_error(state).c_str());
 		}

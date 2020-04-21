@@ -120,7 +120,7 @@ void LuaStackGuard::Release()
 LuaTableFuncRef::LuaTableFuncRef()
 {
 	m_isError = true;
-	m_isTablePushed = false;
+	m_funcPushLevel = 0;
 }
 
 // gets the reference to function
@@ -149,9 +149,12 @@ bool LuaTableFuncRef::Get(const OOLUA::Table& table, const char* funcName, bool 
 }
 
 // pushes function and self table
-bool LuaTableFuncRef::Push()
+bool LuaTableFuncRef::Push(bool pushSelf)
 {
 	if(m_isError)
+		return false;
+
+	if (m_funcPushLevel > 0)
 		return false;
 
 	lua_State* vm = m_table.state();
@@ -161,14 +164,21 @@ bool LuaTableFuncRef::Push()
 	m_err_idx = lua_gettop(vm);
 
 	// call table function, passing parameters
-	if(!m_ref.push(vm))
+	if (!m_ref.push(vm))
 		return false;
+
+	m_funcPushLevel++;
 
 	// place a parent of this function
-	if(!OOLUA::push(vm, m_table))
-		return false;
-
-	m_isTablePushed = true;
+	if (pushSelf)
+	{
+		if (OOLUA::push(vm, m_table))
+		{
+			m_funcPushLevel++;
+		}
+		else
+			return false;
+	}
 
 	return true;
 }
@@ -181,11 +191,11 @@ bool LuaTableFuncRef::Call(int nArgs, int nRet, int nErrIndex/* = 0*/)
 
 	lua_State* vm = m_table.state();
 
-	ASSERT(m_isTablePushed);
+	ASSERT(m_funcPushLevel > 0);
 
-	int res = lua_pcall(vm, nArgs+1, nRet, nErrIndex == 0 ? m_err_idx : nErrIndex);
+	int res = lua_pcall(vm, nArgs + (m_funcPushLevel - 1), nRet, nErrIndex == 0 ? m_err_idx : nErrIndex);
 
-	m_isTablePushed = false;
+	m_funcPushLevel = 0;
 
 	if(res != 0)
 		OOLUA::INTERNAL::set_error_from_top_of_stack_and_pop_the_error( vm );

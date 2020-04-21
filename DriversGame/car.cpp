@@ -2489,15 +2489,16 @@ void CCar::OnPhysicsFrame( float fDt )
 		OOLUA::Script& state = GetLuaState();
 		EqLua::LuaStackGuard g(state);
 
-		if( m_luaOnCollision.Push() )
+		if( m_luaOnCollision.Push(false) )
 		{
+			OOLUA::push(state, this);	// push 'self'
 			OOLUA::Table tab = OOLUA::new_table(state);
 
 			tab.set("impulse", fHitImpulse);
 
 			OOLUA::push(state, tab);
 
-			if(!m_luaOnCollision.Call(1, 0, 0))
+			if(!m_luaOnCollision.Call(2, 0, 0))
 			{
 				MsgError("CGameObject:OnCollide error:\n %s\n", OOLUA::get_last_error(state).c_str());
 			}
@@ -4635,8 +4636,9 @@ void CCar::OnDeath( CGameObject* deathBy )
 	OOLUA::Script& state = GetLuaState();
 	EqLua::LuaStackGuard g(state);
 
-	if( m_luaOnDeath.Push() )
+	if( m_luaOnDeath.Push(false) )
 	{
+		OOLUA::push(state, this);	// push 'self'
 		if(deathBy != NULL)
 		{
 			switch(deathBy->ObjType())
@@ -4652,7 +4654,7 @@ void CCar::OnDeath( CGameObject* deathBy )
 		else
 			lua_pushnil(state);
 
-		if(!m_luaOnDeath.Call(1, 0, 0))
+		if(!m_luaOnDeath.Call(2, 0, 0))
 		{
 			MsgError("CGameObject:OnDeath error:\n %s\n", OOLUA::get_last_error(state).c_str());
 		}

@@ -38,7 +38,7 @@ void CLuaMenu::SetMenuStack(OOLUA::Table& newStack)
 		PushMenu(paramsTable);
 	}
 	else
-		MsgError("CLuaMenu::UpdateCurrentMenu UpdateItems error:\n %s\n", OOLUA::get_last_error(state).c_str());
+		MsgError("CLuaMenu::SetMenuStack Reset error:\n %s\n", OOLUA::get_last_error(state).c_str());
 }
 
 void CLuaMenu::UpdateMenu(float fDt)

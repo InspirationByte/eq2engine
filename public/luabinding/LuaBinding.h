@@ -56,7 +56,7 @@ public:
 	bool					Get(const OOLUA::Table& table, const char* funcName, bool quiet = false);
 
 	// pushes function and this
-	bool					Push();
+	bool					Push(bool pushSelf = true);
 
 	// call function, on error return false and use OOLUA error handler
 	bool					Call(int nArgs, int nRet, int nErrIndex = 0);
@@ -65,9 +65,9 @@ public:
 	OOLUA::Table			m_table;
 
 	int						m_err_idx;
+	int						m_funcPushLevel;	// 0 - none, 1 - function, 2 - function + table
 
 	bool					m_isError;
-	bool					m_isTablePushed;
 };
 
 //-----------------------------------------

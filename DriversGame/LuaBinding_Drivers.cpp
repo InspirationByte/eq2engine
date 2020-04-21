@@ -16,6 +16,7 @@
 
 #include "state_game.h"
 #include "utils/singleton.h"
+#include "object_scripted.h"
 
 class CLuaStateSingleton : public CSingletonAbstract<lua_State>
 {
@@ -408,6 +409,9 @@ bool LuaBinding_InitDriverSyndicateBindings(lua_State* state)
 
 	// init object classes
 	OOLUA::register_class<CCar>(state);
+	OOLUA::register_class<CGameObject>(state);
+	OOLUA::register_class<CObject_Scripted>(state);
+	
 	//OOLUA::register_class_static<CCar>(state, "nullptr", CCarNULLPointer );
 
 	OOLUA::register_class<CAITrafficCar>(state);

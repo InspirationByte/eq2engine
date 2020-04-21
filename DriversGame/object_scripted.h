@@ -16,6 +16,7 @@ class CObject_Scripted : public CGameObject
 public:
 	DECLARE_CLASS( CObject_Scripted, CGameObject )
 
+	CObject_Scripted();
 	CObject_Scripted( kvkeybase_t* kvdata );
 	~CObject_Scripted();
 
