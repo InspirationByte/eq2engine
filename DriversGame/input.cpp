@@ -17,12 +17,13 @@ ConVar in_joy_accel_linear("in_joy_accel_linear", "1.0", "Joystick acceleration 
 ConVar in_joy_brake_linear("in_joy_brake_linear", "1.0", "Joystick acceleration linearity", CV_ARCHIVE);
 
 int		g_nClientButtons = 0;
+bool	g_joySticksUsedSteering = false;
+bool	g_joySticksUsedAccelBrake = false;
 
 float	g_joySteeringValue = 1.0f;
 float	g_joyAccelBrakeValue = 1.0f;
 Vector2D	g_joyFreecamMove(0.0f);
 Vector2D	g_joyFreecamLook(0.0f);
-
 
 void ZeroInputControls()
 {
@@ -49,9 +50,13 @@ void JoyAction_Steering( short input )
 	// cutoff
 	if (fabs(value) < in_joy_deadzone.GetFloat())
 	{
-		g_nClientButtons &= ~IN_STEERLEFT;
-		g_nClientButtons &= ~IN_STEERRIGHT;
-		g_nClientButtons &= ~IN_ANALOGSTEER;
+		if (g_joySticksUsedSteering)
+		{
+			g_nClientButtons &= ~IN_STEERLEFT;
+			g_nClientButtons &= ~IN_STEERRIGHT;
+			g_nClientButtons &= ~IN_ANALOGSTEER;
+		}
+
 		return;
 	}
 
@@ -68,6 +73,8 @@ void JoyAction_Steering( short input )
 		g_nClientButtons &= ~IN_STEERRIGHT;
 		g_nClientButtons |= IN_ANALOGSTEER;
 	}
+
+	g_joySticksUsedSteering = true;
 }
 
 void JoyAction_Accel_Brake( short input )
@@ -77,8 +84,11 @@ void JoyAction_Accel_Brake( short input )
 	// cutoff
 	if (fabs(value) < in_joy_deadzone.GetFloat())
 	{
-		g_nClientButtons &= ~IN_BRAKE;
-		g_nClientButtons &= ~IN_ACCELERATE;
+		if (g_joySticksUsedAccelBrake)
+		{
+			g_nClientButtons &= ~IN_BRAKE;
+			g_nClientButtons &= ~IN_ACCELERATE;
+		}
 		return;
 	}
 
@@ -96,6 +106,8 @@ void JoyAction_Accel_Brake( short input )
 
 		g_joyAccelBrakeValue = -RemapInput(value, in_joy_accel_linear.GetFloat());
 	}
+
+	g_joySticksUsedAccelBrake = true;
 }
 
 void JoyAction_Accel(short input)
@@ -151,6 +163,7 @@ DECLARE_CMD_RENAME(act_accel_enable, "+accel", nullptr, CV_CLIENTCONTROLS)
 {
 	g_nClientButtons |= IN_ACCELERATE;
 	g_joyAccelBrakeValue = 1.0f;
+	g_joySticksUsedAccelBrake = false;
 }
 DECLARE_CMD_RENAME(act_accel_disable ,"-accel", nullptr, CV_CLIENTCONTROLS)
 {
@@ -162,6 +175,7 @@ DECLARE_CMD_RENAME(act_brake_enable, "+brake", nullptr, CV_CLIENTCONTROLS)
 {
 	g_nClientButtons |= IN_BRAKE;
 	g_joyAccelBrakeValue = 1.0f;
+	g_joySticksUsedAccelBrake = false;
 }
 
 DECLARE_CMD_RENAME(act_brake_disable ,"-brake", nullptr, CV_CLIENTCONTROLS)
@@ -176,6 +190,7 @@ DECLARE_CMD_RENAME(act_left_enable, "+steerleft", nullptr, CV_CLIENTCONTROLS)
 	g_nClientButtons &= ~IN_STEERRIGHT;
 	g_nClientButtons &= ~IN_ANALOGSTEER;
 	g_joySteeringValue = 1.0f;
+	g_joySticksUsedSteering = false;
 }
 DECLARE_CMD_RENAME(act_left_disable ,"-steerleft", nullptr, CV_CLIENTCONTROLS)
 {
@@ -189,6 +204,7 @@ DECLARE_CMD_RENAME(act_right_enable, "+steerright", nullptr, CV_CLIENTCONTROLS)
 	g_nClientButtons &= ~IN_STEERLEFT;
 	g_nClientButtons &= ~IN_ANALOGSTEER;
 	g_joySteeringValue = 1.0f;
+	g_joySticksUsedSteering = false;
 }
 DECLARE_CMD_RENAME(act_right_disable, "-steerright", nullptr, CV_CLIENTCONTROLS)
 {
