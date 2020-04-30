@@ -49,6 +49,9 @@ ConVar cam_velocity_forwardmod("cam_velocity_forwardmod", "1.0");
 ConVar cam_velocity_sidemod("cam_velocity_sidemod", "-0.5");
 ConVar cam_velocity_upmod("cam_velocity_upmod", "1.0");
 
+ConVar cam_outcar_tiltx("cam_outcar_tiltx", "0", "Outside camera X angle tilt factor", CV_ARCHIVE);
+ConVar cam_outcar_addheight("cam_outcar_addheight", "0.25", "Height add by change of X angle", CV_ARCHIVE);
+
 bool IsStaticCameraMode(ECameraMode mode)
 {
 	return	mode == CAM_MODE_TRIPOD ||
@@ -90,7 +93,8 @@ CCameraAnimator::CCameraAnimator() :
 	m_vecCameraSpringVel(0.0f),
 	m_cameraDistVar(100.0f),
 	m_interpLookAngle(0.0f),
-	m_interpCamAngle(0.0f),
+	m_interpCamAngleY(0.0f),
+	m_interpCamAngleX(0.0f),
 	m_dropPos(0.0f),
 	m_rotation(0.0f),
 	m_cameraFOV(DEFAULT_CAMERA_FOV),
@@ -154,7 +158,8 @@ void CCameraAnimator::Reset()
 	m_vecCameraVelDiff = vec3_zero;
 	m_vecCameraSpringVel = vec3_zero;
 	m_interpLookAngle = 0.0f;
-	m_interpCamAngle = 0.0f;
+	m_interpCamAngleY = 0.0f;
+	m_interpCamAngleX = 0.0f;
 	m_scriptControl = false;
 
 	m_oldBtns = 0;
@@ -392,18 +397,29 @@ void CCameraAnimator::Animate(ECameraMode mode,
 
 	bool bLookBack = (m_btns & IN_LOOKLEFT) && (m_btns & IN_LOOKRIGHT);
 
-	Vector3D cam_vec = cross(vec3_up, targetForward);
+	// Y angle
+	float Yangle;
+	{
+		Vector3D cam_vec = cross(vec3_up, targetForward);
+		Yangle = RAD2DEG(atan2f(cam_vec.z, cam_vec.x));
 
-	float Yangle = RAD2DEG(atan2f(cam_vec.z, cam_vec.x));
+		if (Yangle < 0.0)
+			Yangle += 360.0f;
 
-	if (Yangle < 0.0)
-		Yangle += 360.0f;
+		float fAngDiff = AngleDiff(m_interpCamAngleY, Yangle);
+		m_interpCamAngleY += fAngDiff * fDt * CAM_TURN_SPEED;
+	}
 
-	float fAngDiff = AngleDiff(m_interpCamAngle, Yangle);
+	// X angle
+	{
+		Vector3D cam_vec = rotateVector(targetForward, !Quaternion(0, DEG2RAD(Yangle), 0));
+		float Xangle = -RAD2DEG(atan2f(cam_vec.y, cam_vec.z));
 
-	m_interpCamAngle += fAngDiff * fDt * CAM_TURN_SPEED;
+		float fAngDiff = AngleDiff(m_interpCamAngleX, Xangle);
+		m_interpCamAngleX += fAngDiff * fDt * CAM_TURN_SPEED;
+	}
 
-	Vector3D finalLookAngle = Vector3D(0, m_interpCamAngle, 0) - m_interpLookAngle;
+	Vector3D finalLookAngle = Vector3D(cam_outcar_tiltx.GetFloat() * m_interpCamAngleX, m_interpCamAngleY, 0) - m_interpLookAngle;
 	Vector3D finalLookAngleIn = m_interpLookAngle;
 
 	if (bLookBack)
@@ -419,14 +435,18 @@ void CCameraAnimator::Animate(ECameraMode mode,
 			float desiredHeight = m_camConfig.height;
 			float desiredDist = m_camConfig.dist;
 
-			Vector3D forward;
-			AngleVectors(finalLookAngle, &forward);
+			Vector3D forward, up;
+			AngleVectors(finalLookAngle, &forward, NULL, &up);
 
 			float heightOffset = 0.0f;
 
+			// adding height for outside camera
+			float heightAddFactor = fabs(m_interpCamAngleX);
+			heightAddFactor = min(heightAddFactor, 25.0f);
+			finalTargetPos.y += cam_outcar_addheight.GetFloat();
+
 			// trace camera for height
 			{
-				
 				Vector3D camPosTest = finalTargetPos - forward * desiredDist;
 
 				Vector3D cam_pos_hi = camPosTest + Vector3D(0, desiredHeight*3.0f, 0);

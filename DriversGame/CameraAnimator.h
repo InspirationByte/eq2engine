@@ -92,7 +92,8 @@ protected:
 
 	Vector3D				m_interpLookAngle;
 
-	float					m_interpCamAngle;
+	float					m_interpCamAngleY;
+	float					m_interpCamAngleX;
 	Vector3D				m_vecCameraVel;
 	Vector3D				m_vecCameraVelDiff;
 
