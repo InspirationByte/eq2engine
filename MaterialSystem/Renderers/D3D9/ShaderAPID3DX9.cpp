@@ -971,8 +971,8 @@ void ShaderAPID3DX9::ApplyConstants()
 		// apply pixel shader constants
 		if (minPSDirty < maxPSDirty)
 		{
-			//m_pD3DDevice->SetPixelShaderConstantF(minPSDirty, (const float *) (m_psRegs + minPSDirty), maxPSDirty - minPSDirty + 1);
-			m_pD3DDevice->SetPixelShaderConstantF(0, (const float *)m_psRegs, 224);
+			m_pD3DDevice->SetPixelShaderConstantF(minPSDirty, (const float *) (m_psRegs + minPSDirty), maxPSDirty - minPSDirty + 1);
+			//m_pD3DDevice->SetPixelShaderConstantF(0, (const float *)m_psRegs, 224);
 			m_nMinPSDirty = 224;
 			m_nMaxPSDirty = -1;
 		}
