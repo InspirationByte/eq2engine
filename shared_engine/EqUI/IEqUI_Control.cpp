@@ -165,8 +165,8 @@ void IUIControl::InitFromKeyValues( kvkeybase_t* sec, bool noClear )
 		float rotateVal = KV_GetValueFloat(transform->FindKeyBase("rotate"), 0.0f);
 		rotateVal = rotateVal;
 
-		Vector2D scaleVal = KV_GetIVector2D(transform->FindKeyBase("scale"), 0, 1.0f);
-		Vector2D translate = KV_GetIVector2D(transform->FindKeyBase("translate"), 0, 0.0f);
+		Vector2D scaleVal = KV_GetVector2D(transform->FindKeyBase("scale"), 0, 1.0f);
+		Vector2D translate = KV_GetVector2D(transform->FindKeyBase("translate"), 0, 0.0f);
 
 		SetTransform(translate, scaleVal, rotateVal);
 	}
