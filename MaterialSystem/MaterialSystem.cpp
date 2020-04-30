@@ -912,13 +912,13 @@ bool CMaterialSystem::BindMaterial(IMaterial* pMaterial, int flags)
 	else
 		success = (*materialstate_callbacks[subRoutineId])(setMaterial, m_paramOverrideMask);
 
-	if(flags & MATERIAL_BIND_PREAPPLY)
-		Apply();
+	m_setMaterial = setMaterial;
 
-	if(!(flags & MATERIAL_BIND_KEEPOVERRIDE))
+	if (!(flags & MATERIAL_BIND_KEEPOVERRIDE))
 		m_paramOverrideMask = 0xFFFFFFFF; // reset override mask shortly after we bind material
 
-	m_setMaterial = setMaterial;
+	if(flags & MATERIAL_BIND_PREAPPLY)
+		Apply();
 
 	return success;
 }
