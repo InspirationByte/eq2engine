@@ -66,8 +66,9 @@ public:
 
 protected:
 
+	void				OnPhysicsPreCollide(const ContactPair_t& pair);
 	void				OnPhysicsCollide(const CollisionPairData_t& pair);
-	void				BreakAndSpawnDebris(const CollisionPairData_t& coll);
+	void				BreakAndSpawnDebris();
 
 	CPhysicsHFObject*	m_hfObj;
 	float				m_fTimeToRemove;

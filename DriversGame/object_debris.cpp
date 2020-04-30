@@ -396,7 +396,7 @@ void CObject_Debris::Draw( int nRenderFlags )
 		BaseClass::Draw( nRenderFlags );
 }
 
-void CObject_Debris::BreakAndSpawnDebris(const CollisionPairData_t& coll)
+void CObject_Debris::BreakAndSpawnDebris()
 {
 	// remove this instance
 	if(m_numBreakParts)
@@ -437,10 +437,58 @@ void CObject_Debris::BreakAndSpawnDebris(const CollisionPairData_t& coll)
 	m_numBreakParts = 0;
 }
 
+void CObject_Debris::OnPhysicsPreCollide(const ContactPair_t& pair)
+{
+	CEqRigidBody* body = m_hfObj->GetBody();
+	eqPhysSurfParam_t* surf = m_surfParams;
+	CEqCollisionObject* obj = pair.GetOppositeTo(body);
+
+	bool moved = (body->m_flags & BODY_MOVEABLE) > 0;
+
+	if (!moved && obj->IsDynamic())
+	{
+		if (m_smashSpawn.Length() > 0)
+		{
+			CGameObject* otherObject = g_pGameWorld->CreateObject(m_smashSpawn.c_str());
+			if (otherObject)
+			{
+				otherObject->SetOrigin(GetOrigin() + m_smashSpawnOffset);
+				otherObject->Spawn();
+				g_pGameWorld->AddObject(otherObject);
+
+				m_smashSpawnedObject = otherObject;
+			}
+		}
+
+		moved = true;
+		m_fTimeToRemove = 0.0f;
+
+		g_pPhysics->m_physics.AddToMoveableList(body);
+		body->Wake();
+
+		CEqRigidBody* body = (CEqRigidBody*)obj;
+		bool isCar = (body->m_flags & BODY_ISCAR) > 0;
+
+		if (isCar)
+		{
+			EmitSound_t ep;
+
+			ep.name = (char*)m_smashSound.c_str();
+
+			ep.fPitch = RandomFloat(1.0f, 1.1f);
+			ep.fVolume = 1.0f;
+			ep.origin = pair.position;
+
+			EmitSoundWithParams(&ep);
+		}
+	}
+}
+
 void CObject_Debris::OnPhysicsCollide(const CollisionPairData_t& pair)
 {
 	CEqRigidBody* body = m_hfObj->GetBody();
 	eqPhysSurfParam_t* surf = m_surfParams;
+	CEqCollisionObject* obj = pair.GetOppositeTo(body);
 
 	float impulse = pair.appliedImpulse * body->GetInvMass();
 
@@ -452,7 +500,6 @@ void CObject_Debris::OnPhysicsCollide(const CollisionPairData_t& pair)
 		MakeSparks(pair.position + pair.normal*0.05f, reflDir, Vector3D(5.0f), 1.0f, 6);
 	}
 
-	CEqCollisionObject* obj = pair.GetOppositeTo(body);
 	EmitHitSoundEffect(this, m_smashSound.c_str(), pair.position, pair.impactVelocity, 50.0f);
 
 	if (impulse > 10.0f)
@@ -460,7 +507,7 @@ void CObject_Debris::OnPhysicsCollide(const CollisionPairData_t& pair)
 		if (m_numBreakParts > 0)
 		{
 			// make debris
-			BreakAndSpawnDebris(pair);
+			BreakAndSpawnDebris();
 		}
 		else if (m_pModel->GetHWData()->studio->numBodyGroups > 1 && m_bodyGroupFlags == (1 << 0))
 			m_bodyGroupFlags = (1 << 1);	// change look of model
