@@ -165,8 +165,8 @@ struct TVec3D
 
 	operator T *() const { return (T *) &x; }
 
-	const TVec2D<T>& xy() const { return (TVec2D<T>&)*this; }
-	TVec2D<T> yz() const { return TVec2D<T>(y, z); }
+	const TVec2D<T>& xy() const { return *(TVec2D<T>*)&x; }
+	const TVec2D<T>& yz() const { return *(TVec2D<T>*)&y; }
 	TVec2D<T> xz() const { return TVec2D<T>(x, z); }
 
 	template <class T2>
@@ -323,15 +323,16 @@ struct TVec4D
 	}
 	operator T *() const { return (T *) &x; }
 
-	const TVec2D<T>& xy() const { return (TVec2D<T>&)*this; }
+	const TVec3D<T>& xyz() const { return *(TVec3D<T>*)&x; }
+	const TVec3D<T>& yzw() const { return *(TVec3D<T>*)&y; }
+
+	const TVec2D<T>& xy() const { return *(TVec2D<T>*)&x; }
+	const TVec2D<T>& yz() const { return *(TVec2D<T>*)&y; }
+	const TVec2D<T>& zw() const { return *(TVec2D<T>*)&z; }
+
 	TVec2D<T> xz() const { return TVec2D<T>(x, z); }
 	TVec2D<T> xw() const { return TVec2D<T>(x, w); }
-	TVec2D<T> yz() const { return TVec2D<T>(y, z); }
 	TVec2D<T> yw() const { return TVec2D<T>(y, w); }
-	TVec2D<T> zw() const { return TVec2D<T>(z, w); }
-
-	const TVec3D<T>& xyz() const { return (TVec3D<T>&)*this; }
-	TVec3D<T> yzw() const { return TVec3D<T>(y, z, w); }
 
 	template <class T2>
 	void operator += (const T2 s);
