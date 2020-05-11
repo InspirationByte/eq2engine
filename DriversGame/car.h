@@ -106,6 +106,12 @@ enum ECarSound
 	CAR_SOUND_CONFIGURABLE = CAR_SOUND_BRAKERELEASE+1,
 };
 
+enum ECarLightFlags
+{
+	CAR_LIGHT_FLAG_DOUBLE = (1 << 0),
+	CAR_LIGHT_FLAG_VERTICAL = (1 << 1),
+};
+
 enum EEngineType
 {
 	CAR_ENGINE_PETROL = 0,
@@ -165,6 +171,13 @@ public:
 
 	CNetworkVar(Vector4D, col1);
 	CNetworkVar(Vector4D, col2);
+};
+
+struct lightConfig_t
+{
+	Vector4D value;		// x y z double_width
+	int8 type;			// ECarLightTypeFlags
+	int8 flags;			// ECarLightFlags
 };
 
 struct vehicleConfig_t
@@ -241,21 +254,27 @@ struct vehicleConfig_t
 		EqString					damModelName;
 		EqString					wheelModelName;
 
+		Vector3D					enginePosition;
+		Vector3D					exhaustPosition;
+
+		Vector3D					driverPosition;
+
+		lightConfig_t				lights[16];
+		int8						numLights;
+
 		Vector4D					sirenPositionWidth;
 		Vector4D					headlightPosition;
 		Vector4D					backlightPosition;
 		Vector4D					brakelightPosition;
 		Vector4D					frontDimLights;
 		Vector4D					backDimLights;
-		Vector3D					enginePosition;
-		Vector3D					exhaustPosition;
-		Vector3D					driverPosition;
-
-		int8						sirenType;
 		int8						headlightType;
 		int8						brakelightType;
-		int8						exhaustType;	// 0 - single, 1 - double
-		int8						exhaustDir;		// 0 - back, 1 - left, 2 - up
+		int8						sirenType;
+
+		bool						hasServiceLights;
+		int8						exhaustType;		// 0 - single, 1 - double
+		int8						exhaustDir;			// 0 - back, 1 - left, 2 - up
 	} visual;
 
 	/*
@@ -313,7 +332,6 @@ struct carBodyPart_t
 	Vector3D	pos;
 	float		radius;
 };
-
 
 //-----------------------------------------------------------------------
 // wheel model that does instancing
@@ -373,7 +391,6 @@ protected:
 typedef float (*TORQUECURVEFUNC)( float rpm );
 
 class CLevelRegion;
-
 
 //-----------------------------------------------------------------------
 // The vehicle itself

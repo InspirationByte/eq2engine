@@ -363,17 +363,30 @@ const FVector3D& CEqRigidBody::GetCenterOfMass() const
 // applies local impulse
 void CEqRigidBody::ApplyImpulse(const FVector3D& rel_pos, const Vector3D& impulse)
 {
-	m_linearVelocity += impulse*m_invMass;
-	m_angularVelocity += m_invInertiaTensor*cross(Vector3D(rel_pos+m_centerOfMassTrans), impulse);
+	m_linearVelocity += impulse * m_invMass;
+	m_angularVelocity += m_invInertiaTensor*cross(Vector3D(rel_pos + m_centerOfMassTrans), impulse);
+}
+
+// applies world impulse
+void CEqRigidBody::ApplyWorldImpulse(const FVector3D& position, const Vector3D& impulse)
+{
+	m_linearVelocity += impulse * m_invMass;
+	m_angularVelocity += m_invInertiaTensor * cross(Vector3D((m_position - position) + m_centerOfMassTrans), impulse);
 }
 
 // applies local force
 void CEqRigidBody::ApplyForce(const FVector3D& rel_pos, const Vector3D& force)
 {
 	m_totalForce += force;
-
 	Vector3D torqueAdd = cross(Vector3D(rel_pos+m_centerOfMassTrans), force);
+	m_totalTorque += torqueAdd;
+}
 
+// applies world impulse
+void CEqRigidBody::ApplyWorldForce(const FVector3D& position, const Vector3D& force)
+{
+	m_totalForce += force;
+	Vector3D torqueAdd = cross(Vector3D((m_position - position) + m_centerOfMassTrans), force);
 	m_totalTorque += torqueAdd;
 }
 
@@ -405,23 +418,6 @@ void CEqRigidBody::ApplyAngularForceAt(const FVector3D& rel_pos, const Vector3D&
 void CEqRigidBody::ApplyLinearForce(const Vector3D& force)
 {
 	m_totalForce += force;
-}
-
-// applies world impulse
-void CEqRigidBody::ApplyWorldImpulse(const FVector3D& position, const Vector3D& impulse)
-{
-	m_linearVelocity += impulse*m_invMass;
-	m_angularVelocity += m_invInertiaTensor*cross(Vector3D((m_position-position)+m_centerOfMassTrans), impulse);
-}
-
-// applies world impulse
-void CEqRigidBody::ApplyWorldForce(const FVector3D& position, const Vector3D& force)
-{
-	m_totalForce += force;
-
-	Vector3D torqueAdd = cross(Vector3D((m_position-position)+m_centerOfMassTrans), force);
-
-	m_totalTorque += torqueAdd;
 }
 
 //--------------------
@@ -463,7 +459,6 @@ Vector3D CEqRigidBody::GetVelocityAtWorldPoint(const FVector3D& point) const
 float CEqRigidBody::ComputeImpulseDenominator(const FVector3D& pos, const Vector3D& normal) const
 {
 	Vector3D r0 = pos+m_centerOfMassTrans;
-
 	Vector3D c0 = cross(r0, normal);
 
 	Vector3D vec = cross(m_invInertiaTensor*c0, r0);
@@ -517,8 +512,7 @@ const Matrix3x3& CEqRigidBody::GetWorldInvInertiaTensor() const
 //
 // STATIC
 //
-Vector3D CEqRigidBody::ComputeFrictionVelocity(	const FVector3D& pos,
-												const Vector3D& collNormal,
+Vector3D CEqRigidBody::ComputeFrictionVelocity(	const Vector3D& collNormal,
 												const Vector3D& collPointVelocity,
 												float normalImpulse, float denominator,
 												float staticFriction, float dynamicFriction)
@@ -555,8 +549,7 @@ Vector3D CEqRigidBody::ComputeFrictionVelocity(	const FVector3D& pos,
 //
 // STATIC
 //
-Vector3D CEqRigidBody::ComputeFrictionVelocity2(const FVector3D& pos,
-												const Vector3D& collNormal,
+Vector3D CEqRigidBody::ComputeFrictionVelocity2(const Vector3D& collNormal,
 												const Vector3D& collPointVelocityA, const Vector3D& collPointVelocityB,
 												float normalImpulse, float denominator,
 												float staticFriction, float dynamicFriction)
@@ -607,11 +600,11 @@ float CEqRigidBody::ApplyImpulseResponseTo(CEqRigidBody* body, const FVector3D& 
 
 	float combined_rest = 1.0f + (restitutionA*body->GetRestitution());
 
-	float impulse_speed = -dot(impactpoint_velocity, normal);
+	const float impulse_speed = -dot(impactpoint_velocity, normal);
 
-	float denom = body->ComputeImpulseDenominator(contactRelativePos, normal);
+	const float denom = body->ComputeImpulseDenominator(contactRelativePos, normal);
 
-	float jacDiagABInv = 1.0f / denom;
+	const float jacDiagABInv = 1.0f / denom;
 
     float penetrationImpulse = posError * jacDiagABInv;
     float velocityImpulse = impulse_speed * jacDiagABInv;
@@ -632,7 +625,7 @@ float CEqRigidBody::ApplyImpulseResponseTo(CEqRigidBody* body, const FVector3D& 
 
 	float combined_friction = (frictionA + body->GetFriction())*0.5f;
 
-	Vector3D frictionImpulse = ComputeFrictionVelocity(point, normal, impactpoint_velocity, normalImpulse, denom, combined_friction, body->GetFriction());
+	Vector3D frictionImpulse = ComputeFrictionVelocity(normal, impactpoint_velocity, normalImpulse, denom, combined_friction, body->GetFriction());
 
 	// apply friction of impact
 	impactVel += frictionImpulse;
@@ -664,12 +657,12 @@ float CEqRigidBody::ApplyImpulseResponseTo2( CEqRigidBody* bodyA, CEqRigidBody* 
 
 	Vector3D vel_sub = impactpoint_velocityB-impactpoint_velocityA;
 
-	float impulse_speed = dot(vel_sub, normal);
+	const float impulse_speed = dot(vel_sub, normal);
 
-	float denomA = bodyA->ComputeImpulseDenominator(contactRelativePosA, normal);
-	float denomB = bodyB->ComputeImpulseDenominator(contactRelativePosB, normal);
+	const float denomA = bodyA->ComputeImpulseDenominator(contactRelativePosA, normal);
+	const float denomB = bodyB->ComputeImpulseDenominator(contactRelativePosB, normal);
 
-	float jacDiagABInv = 1.0f / (denomA+denomB);
+	const float jacDiagABInv = 1.0f / (denomA+denomB);
 
     float penetrationImpulse = posError * jacDiagABInv;
     float velocityImpulse = impulse_speed * jacDiagABInv;
@@ -704,7 +697,7 @@ float CEqRigidBody::ApplyImpulseResponseTo2( CEqRigidBody* bodyA, CEqRigidBody* 
 
 	float combined_friction = (bodyA->GetFriction()+bodyB->GetFriction())*0.5f;
 
-	Vector3D frictionImpulse = ComputeFrictionVelocity(point, normal, impactpoint_velocityA-impactpoint_velocityB, normalImpulse, denomA+denomB, combined_friction, combined_friction);
+	Vector3D frictionImpulse = ComputeFrictionVelocity(normal, impactpoint_velocityA-impactpoint_velocityB, normalImpulse, denomA+denomB, combined_friction, combined_friction);
 
 	impactVelA += frictionImpulse;
 	impactVelB -= frictionImpulse;

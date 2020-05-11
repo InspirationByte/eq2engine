@@ -186,6 +186,7 @@ const float SKID_WATERTRAIL_MIN_WETNESS		= 0.25f; // wetness level before skid s
 const float CAR_PHYSICS_RESTITUTION			= 0.5f;
 const float CAR_PHYSICS_FRICTION			= 0.25f;
 
+const float JUMP_NOSE_DOWN_FACTOR			= -0.6f;
 
 bool ParseVehicleConfig( vehicleConfig_t* conf, const kvkeybase_t* kvs )
 {
@@ -335,6 +336,17 @@ bool ParseVehicleConfig( vehicleConfig_t* conf, const kvkeybase_t* kvs )
 
 	if(visuals)
 	{
+		/*
+		for (int i = 0; i < visuals->keys.numElem(); i++)
+		{
+			kvkeybase_t* lightDef = visuals->keys[i];
+			
+			lightConfig_t& light = conf->visual.lights[conf->visual.numLights++];
+			light.type = KV_GetValueInt(lightDef, 0, 0);
+			light.flags = KV_GetValueInt(lightDef, 1, 0);
+			light.value = KV_GetVector4D(lightDef, 2, vec4_zero);
+		}*/
+
 		kvkeybase_t* sirenLightsKey = visuals->FindKeyBase("siren_lights");
 		conf->visual.sirenType = KV_GetValueInt(sirenLightsKey, 0, SERVICE_LIGHTS_NONE);
 		conf->visual.sirenPositionWidth = KV_GetVector4D(sirenLightsKey, 1, vec4_zero);
@@ -1537,6 +1549,7 @@ void CCar::UpdateVehiclePhysics(float delta)
 	int numHandbrakeWheelsOnGround = 0;
 	int numDriveWheelsOnGround = 0;
 	int numWheelsOnGround = 0;
+	int numWheelsOnGroundOld = 0;
 
 	float wheelsSpeed = 0.0f;
 
@@ -1546,6 +1559,8 @@ void CCar::UpdateVehiclePhysics(float delta)
 	eqPhysCollisionFilter collFilter;
 	collFilter.flags = EQPHYS_FILTER_FLAG_DISALLOW_DYNAMIC;
 	collFilter.AddObject(carBody);
+
+	
 
 	// Raycast the wheels and do some simple calculations
 	for(int i = 0; i < wheelCount; i++)
@@ -1561,6 +1576,9 @@ void CCar::UpdateVehiclePhysics(float delta)
 
 		float fractionOld = wheel.m_collisionInfo.fract;
 		float fractionOldDist = suspensionLength * fractionOld;
+
+		if (fractionOld < 1.0f)
+			numWheelsOnGroundOld++;
 
 		// trace solid ground only
 		g_pPhysics->TestLine(line_start, line_end, wheel.m_collisionInfo, OBJECTCONTENTS_SOLID_GROUND, &collFilter);
@@ -1603,6 +1621,12 @@ void CCar::UpdateVehiclePhysics(float delta)
 
 		// update effects
 		UpdateWheelEffect(i, delta);
+	}
+
+	// nose_down :)
+	if (numWheelsOnGroundOld && !numWheelsOnGround)
+	{
+		carBody->ApplyAngularImpulse(GetRightVector() * carBody->GetMass() * JUMP_NOSE_DOWN_FACTOR);
 	}
 
 	float wheelMod = 1.0f / numDriveWheels; //(numDriveWheelsOnGround > 0) ? (1.0f / (float)numDriveWheelsOnGround) : 1.0f;

@@ -101,8 +101,8 @@ class CEqRigidBody : public CEqCollisionObject
 public:
 
 	/// Computes friction velocity to apply
-	static Vector3D		ComputeFrictionVelocity( const FVector3D& position, const Vector3D& collNormal, const Vector3D& collVelocity, float normalImpulse, float denominator, float staticFriction, float dynamicFriction);
-	static Vector3D		ComputeFrictionVelocity2( const FVector3D& position, const Vector3D& collNormal, const Vector3D& collVelocityA, const Vector3D& collVelocityB, float normalImpulse, float denominator, float staticFriction, float dynamicFriction);
+	static Vector3D		ComputeFrictionVelocity( const Vector3D& collNormal, const Vector3D& collVelocity, float normalImpulse, float denominator, float staticFriction, float dynamicFriction);
+	static Vector3D		ComputeFrictionVelocity2( const Vector3D& collNormal, const Vector3D& collVelocityA, const Vector3D& collVelocityB, float normalImpulse, float denominator, float staticFriction, float dynamicFriction);
 
 	/// Simply applies impulse response to single body
 	static float		ApplyImpulseResponseTo(CEqRigidBody* body, const FVector3D& point, const Vector3D& normal, float posError, float restitutionA, float frictionA, float percentage = 1.0f);
