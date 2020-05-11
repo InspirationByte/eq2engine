@@ -226,22 +226,25 @@ bool CompareCheatCode(int* c1, int* codeSeq)
 
 void CState_Title::GoToMainMenu()
 {
-	m_goesFromTitle = true;
-	m_textEffect = 1.0f;
+	if (!m_goesFromTitle && m_fade == 1.0f && m_actionTimeout > 0.0f)
+	{
+		m_goesFromTitle = true;
+		m_textEffect = 1.0f;
 
-	EmitSound_t es("menu.click");
-	g_sounds->EmitSound(&es);
+		EmitSound_t es("menu.click");
+		g_sounds->EmitSound(&es);
 
-	// play title music
-	EmitSound_t musicES("menu.titlemusic");
-	g_sounds->Emit2DSound(&musicES);
+		// play title music
+		EmitSound_t musicES("menu.titlemusic");
+		g_sounds->Emit2DSound(&musicES);
 
-	SetNextState(g_State_MainMenu);
+		SetNextState(g_State_MainMenu);
+	}
 }
 
 void CState_Title::HandleKeyPress( int key, bool down )
 {
-	if((key == KEY_ENTER || key == KEY_JOY_START) && down == true && !m_goesFromTitle && m_fade == 1.0f && m_actionTimeout > 0.0f)
+	if((key == KEY_ENTER || key == KEY_JOY_START) && down == true)
 	{
 		if(CompareCheatCode(m_codeKeysEntered, g_KonamiCode))
 		{

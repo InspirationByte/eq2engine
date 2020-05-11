@@ -266,6 +266,8 @@ bool CState_MainMenu::Update( float fDt )
 		(m_menuDummy->GetTextAlignment() & TEXT_ALIGN_HCENTER) ? ((rect.GetLeftTop()+rect.GetRightTop()) / 2) : rect.GetLeftTop();
 	Vector2D menuSize = rect.GetSize();
 
+	float maxLineWidth = 16.0f;
+
 	DkList<OOLUA::Table> menuItems;
 	{
 		EqLua::LuaStackGuard g(GetLuaState());
@@ -274,6 +276,12 @@ bool CState_MainMenu::Update( float fDt )
 
 			OOLUA::Table elem;
 			m_menuElems.safe_at(_i_index_, elem);
+
+			const wchar_t* token = GetMenuItemString(elem);
+			float lineWidth = font->GetStringWidth(token, fontParam);
+
+			if (lineWidth > maxLineWidth)
+				maxLineWidth = lineWidth;
 
 			menuItems.append(elem);
 
@@ -287,12 +295,48 @@ bool CState_MainMenu::Update( float fDt )
 		{
 			OOLUA::Table& elem = menuItems[i];
 
+			bool _spacer;
+			if (elem.safe_at("_spacer", _spacer))
+				continue;
+
 			const wchar_t* token = GetMenuItemString(elem);
 
+			fontParam.textColor = ColorRGBA(1, 1, 1, pow(m_textFade, 5.0f));
+
+			// draw selection indicator
 			if (m_selection == i)
-				fontParam.textColor = ColorRGBA(1, 0.7f, 0.0f, pow(m_textFade, 5.0f));
-			else
-				fontParam.textColor = ColorRGBA(1, 1, 1, pow(m_textFade, 5.0f));
+			{
+				/*
+				g_pShaderAPI->SetTexture(NULL, NULL, 0);
+				materials->SetBlendingStates(blending);
+				materials->SetRasterizerStates(CULL_FRONT, FILL_SOLID);
+				materials->SetDepthStates(false, false);
+				materials->BindMaterial(materials->GetDefaultMaterial());
+
+				ColorRGBA selColor(1.0f, 0.57f, 0.0f, pow(m_textFade, 5.0f));
+
+				float baseLine = font->GetBaselineOffs(fontParam);
+				float XOffset = -8.0f * menuScaling.x;
+
+				if (m_menuDummy->GetTextAlignment() == TEXT_ALIGN_RIGHT)
+					XOffset = -lineWidth;
+				else if (m_menuDummy->GetTextAlignment() & TEXT_ALIGN_HCENTER)
+					XOffset = lineWidth * -0.5f;
+
+				Vector2D quadVerts[] = { MAKEQUAD(elemPos.x + XOffset, elemPos.y + baseLine - lineHeight, elemPos.x + lineWidth + XOffset, elemPos.y + baseLine, 0.0f) };
+
+				quadVerts[0].x += 4.5f * menuScaling.x;
+				quadVerts[2].x += 4.5f * menuScaling.x;
+
+				meshBuilder.Begin(PRIM_TRIANGLE_STRIP);
+					meshBuilder.Color4fv(selColor);
+					meshBuilder.Quad2(quadVerts[0], quadVerts[1], quadVerts[2], quadVerts[3]);
+				meshBuilder.End();
+				*/
+
+				ColorRGBA selColor(1.0f, 0.57f, 0.0f, pow(m_textFade, 5.0f));
+				fontParam.textColor = selColor;
+			}
 
 			if ((m_goesFromMenu || m_menuMode == MENUMODE_ENTER) && m_menuMode != MENUMODE_BACK)
 			{
@@ -318,6 +362,7 @@ bool CState_MainMenu::Update( float fDt )
 			}
 
 			float lineHeight = font->GetLineHeight(fontParam);
+			float lineWidth = font->GetStringWidth(token, fontParam) + 16.0f * menuScaling.x;
 
 			Vector2D elemPos(menuPos.x, menuPos.y + i * lineHeight + m_menuScrollInterp*lineHeight);
 
@@ -335,7 +380,7 @@ bool CState_MainMenu::Update( float fDt )
 				if (i == m_selection && m_selection > -m_menuScrollTarget)
 					m_menuScrollTarget--;
 			}
-				
+			
 
 			font->RenderText(token, elemPos, fontParam);
 
