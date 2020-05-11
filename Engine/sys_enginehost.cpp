@@ -1049,7 +1049,7 @@ int CEngineHost::Frame()
 		if(engine->GetGameState() == IEngineGame::GAME_IDLE)
 			engine->SetGameState(IEngineGame::GAME_PAUSE);
 
-		soundsystem->Update();
+		soundsystem->Update(1.0f);
 
 		BeginScene();
 		EndScene();
@@ -1097,7 +1097,7 @@ int CEngineHost::Frame()
 	float measuresound = MEASURE_TIME_BEGIN();
 
 	// Update sound system
-	soundsystem->Update();
+	//soundsystem->Update();
 	float measureresult = MEASURE_TIME_STATS(measuresound);
 
 	// Engine frames status

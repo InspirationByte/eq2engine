@@ -25,7 +25,7 @@ DKMODULE* LoadGameModule()
 #endif // PLAT_WIN
 
 	// first extract it from package if it's not exist
-	g_fileSystem->ExtractFile( moduleName.GetData(), true );
+	//g_fileSystem->ExtractFile( moduleName.GetData(), true );
 
 	// loads game library from current game directory
 	return g_fileSystem->LoadModule( moduleName.GetData() );

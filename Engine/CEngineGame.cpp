@@ -543,7 +543,7 @@ void CEngineGame::UnloadGame(bool freeCache, bool force)
 
 		m_bIsGameLoaded = false;
 		gamedll->GameUnload();
-		soundsystem->Update();
+		soundsystem->Update(1.0f);
 		g_pEngineHost->SetCursorShow(true);
 
 		// stop network threads

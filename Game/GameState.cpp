@@ -111,7 +111,7 @@ void GAME_STATE_GameEndSession()
 
 	g_pSoundEffect = NULL;
 	soundsystem->SetListener(vec3_zero, Vector3D(0,0,1), Vector3D(0,1,0), NULL);
-	soundsystem->Update();
+	soundsystem->Update(1.0f);
 
 	for(int i = 0; i < ents->numElem(); i++)
 	{
