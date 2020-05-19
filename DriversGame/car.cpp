@@ -2045,20 +2045,6 @@ void CCar::UpdateVehiclePhysics(float delta)
 					// supress slip force on low speeds
 					wheelSlipOppositeForce = dot(wheelSlipForceDir, wheelVelAtPoint ) * -4.0f ;
 				}
-				
-				// contact surface modifier (perpendicularness to ground)
-				{
-					const float SURFACE_GRIP_SCALE = 1.0f;
-					const float SURFACE_GRIP_DEADZONE = 0.1f;
-
-					float surfaceForceMod = dot( wheel_right, wheel.m_collisionInfo.normal );
-					surfaceForceMod = 1.0f - fabs ( surfaceForceMod );
-
-					float fGrip = surfaceForceMod;
-					fGrip = clamp( (fGrip * SURFACE_GRIP_SCALE) + SURFACE_GRIP_DEADZONE, 0.0f , 1.0f );
-
-					wheelSlipOppositeForce *= fGrip;
-				}
 			}
 
 			//
