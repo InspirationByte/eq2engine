@@ -1122,7 +1122,7 @@ void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize)
 			eqFontStyleParam_t scrMsgParams;
 			scrMsgParams.styleFlag |= TEXT_STYLE_SHADOW | TEXT_STYLE_USE_TAGS;
 			scrMsgParams.align = TEXT_ALIGN_HCENTER;
-			scrMsgParams.textColor = ColorRGBA(1,1,0.25f,textAlpha);
+			scrMsgParams.textColor = ColorRGBA(1, 0.7f, 0.0f, textAlpha);
 			scrMsgParams.scale = 30.0f;
 
 			Vector2D screenMessagePos(screenSize.x / 2, (float)screenSize.y / 2.5f - textYOffs);

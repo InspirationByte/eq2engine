@@ -66,7 +66,7 @@ public:
 
 protected:
 
-	void				OnPhysicsPreCollide(const ContactPair_t& pair);
+	void				OnPhysicsPreCollide(ContactPair_t& pair);
 	void				OnPhysicsCollide(const CollisionPairData_t& pair);
 	void				BreakAndSpawnDebris();
 

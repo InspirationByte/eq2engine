@@ -1055,7 +1055,7 @@ void CEqPhysics::DetectCollisionsSingle(CEqRigidBody* body)
 
 ConVar ph_carVsCarErp("ph_carVsCarErp", "0.15", "Car versus car erp", CV_CHEAT);
 
-void CEqPhysics::ProcessContactPair(const ContactPair_t& pair)
+void CEqPhysics::ProcessContactPair(ContactPair_t& pair)
 {
 	PROFILE_FUNC();
 
@@ -1089,7 +1089,7 @@ void CEqPhysics::ProcessContactPair(const ContactPair_t& pair)
 		CEqCollisionObject* bodyA = pair.bodyA;
 
 		// correct position
-		if (!(bodyAFlags & COLLOBJ_DISABLE_RESPONSE) && pair.depth > 0)
+		if (!(pair.flags & COLLPAIRFLAG_OBJECTB_NO_RESPONSE) && !(bodyAFlags & COLLOBJ_DISABLE_RESPONSE) && pair.depth > 0)
 		{
 			float positionalError = combinedErp * pair.depth * pair.dt;
 
@@ -1104,7 +1104,7 @@ void CEqPhysics::ProcessContactPair(const ContactPair_t& pair)
 			appliedImpulse = CEqRigidBody::ApplyImpulseResponseTo(bodyB, pair.position, pair.normal, positionalError, pair.restitutionA, pair.frictionA);
 		}
 
-		bodyADisableResponse = (bodyAFlags & COLLOBJ_DISABLE_RESPONSE) > 0;
+		bodyADisableResponse = (bodyAFlags & COLLOBJ_DISABLE_RESPONSE);
 	}
 	else
 	{
@@ -1117,10 +1117,18 @@ void CEqPhysics::ProcessContactPair(const ContactPair_t& pair)
 		float positionalError = varyErp * pair.depth * pair.dt;
 
 		// correct position
-		if (!(bodyAFlags & BODY_FORCE_FREEZE) && !(bodyAFlags & BODY_INFINITEMASS) && !(bodyBFlags & COLLOBJ_DISABLE_RESPONSE) && pair.depth > 0)
+		if (pair.depth > 0 &&
+			!(pair.flags & COLLPAIRFLAG_OBJECTA_NO_RESPONSE) && 
+			!(bodyAFlags & BODY_FORCE_FREEZE) && 
+			!(bodyAFlags & BODY_INFINITEMASS) && 
+			!(bodyBFlags & COLLOBJ_DISABLE_RESPONSE))
 			bodyA->SetPosition(bodyA->GetPosition() + pair.normal*positionalError);
 
-		if (!(bodyBFlags & BODY_FORCE_FREEZE) && !(bodyBFlags & BODY_INFINITEMASS) && !(bodyAFlags & COLLOBJ_DISABLE_RESPONSE) && pair.depth > 0)
+		if (pair.depth > 0 &&
+			!(pair.flags & COLLPAIRFLAG_OBJECTB_NO_RESPONSE) && 
+			!(bodyBFlags & BODY_FORCE_FREEZE) && 
+			!(bodyBFlags & BODY_INFINITEMASS) && 
+			!(bodyAFlags & COLLOBJ_DISABLE_RESPONSE))
 			bodyB->SetPosition(bodyB->GetPosition() - pair.normal*positionalError);
 
 		impactVelocity = fabs( dot(pair.normal, bodyA->GetVelocityAtWorldPoint(pair.position) - bodyB->GetVelocityAtWorldPoint(pair.position)) );
@@ -1129,8 +1137,8 @@ void CEqPhysics::ProcessContactPair(const ContactPair_t& pair)
 			positionalError = pair.depth * 100.0f;
 
 		// apply response
-		appliedImpulse = 2.0f * CEqRigidBody::ApplyImpulseResponseTo2(bodyA, bodyB, pair.position, pair.normal, positionalError);
-		bodyADisableResponse = (bodyAFlags & COLLOBJ_DISABLE_RESPONSE) > 0;
+		appliedImpulse = 2.0f * CEqRigidBody::ApplyImpulseResponseTo2(bodyA, bodyB, pair.position, pair.normal, positionalError, pair.flags);
+		bodyADisableResponse = (bodyAFlags & COLLOBJ_DISABLE_RESPONSE);
 	}
 
 	CollisionPairData_t tempPairData;
@@ -1159,10 +1167,10 @@ void CEqPhysics::ProcessContactPair(const ContactPair_t& pair)
 		collData.impactVelocity = impactVelocity;
 		collData.flags = 0;
 
-		if (bodyAFlags & COLLOBJ_DISABLE_RESPONSE)
+		if (bodyAFlags & COLLOBJ_DISABLE_RESPONSE || (pair.flags & COLLPAIRFLAG_OBJECTA_NO_RESPONSE))
 			collData.flags |= COLLPAIRFLAG_OBJECTA_NO_RESPONSE;
 
-		if (bodyBFlags & COLLOBJ_DISABLE_RESPONSE)
+		if (bodyBFlags & COLLOBJ_DISABLE_RESPONSE || (pair.flags & COLLPAIRFLAG_OBJECTB_NO_RESPONSE))
 			collData.flags |= COLLPAIRFLAG_OBJECTB_NO_RESPONSE;
 
 		if (callbacksA)
@@ -1195,10 +1203,10 @@ void CEqPhysics::ProcessContactPair(const ContactPair_t& pair)
 		if ((bodyBFlags & BODY_ISCAR) && !(pair.flags & COLLPAIRFLAG_OBJECTA_STATIC))
 			collData.flags = COLLPAIRFLAG_NO_SOUND;
 
-		if (bodyADisableResponse)
+		if (bodyADisableResponse || (pair.flags & COLLPAIRFLAG_OBJECTA_NO_RESPONSE))
 			collData.flags |= COLLPAIRFLAG_OBJECTB_NO_RESPONSE;
 
-		if (bodyBFlags & COLLOBJ_DISABLE_RESPONSE)
+		if (bodyBFlags & COLLOBJ_DISABLE_RESPONSE || (pair.flags & COLLPAIRFLAG_OBJECTB_NO_RESPONSE))
 			collData.flags |= COLLPAIRFLAG_OBJECTA_NO_RESPONSE;
 
 		if (callbacksB)
@@ -1287,7 +1295,7 @@ void CEqPhysics::SimulateStep(float deltaTime, int iteration, FNSIMULATECALLBACK
 	{
 		CEqRigidBody* body = m_moveable[i];
 
-		const DkList<ContactPair_t>& pairs = body->m_contactPairs;
+		DkList<ContactPair_t>& pairs = body->m_contactPairs;
 		int numContactPairs = pairs.numElem();
 
 		for (int j = 0; j < numContactPairs; j++)

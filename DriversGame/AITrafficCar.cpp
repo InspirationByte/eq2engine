@@ -32,7 +32,6 @@ CAITrafficCar::CAITrafficCar( vehicleConfig_t* carConfig ) : CCar(carConfig), CF
 {
 	m_autohandbrake = false;
 	m_autogearswitch = false;
-	m_hasDamage = false;
 
 	m_thinkTime = 0.0f;
 	m_refreshTime = AICAR_THINK_TIME;
@@ -83,6 +82,7 @@ int CAITrafficCar::InitTrafficState( float fDt, EStateTransition transition )
 		else
 			AI_SetState( &CAITrafficCar::SearchForRoad );
 	}
+
 
 	return 0;
 }

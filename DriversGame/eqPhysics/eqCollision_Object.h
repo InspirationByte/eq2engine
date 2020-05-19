@@ -64,7 +64,7 @@ public:
 	virtual void		PostSimulate(float fDt) = 0;
 
 	// called before collision processed
-	virtual void		OnPreCollide(const ContactPair_t& pair) = 0;
+	virtual void		OnPreCollide(ContactPair_t& pair) = 0;
 
 	// called after collision processed and applied impulses
 	virtual void		OnCollide(const CollisionPairData_t& pair) = 0;

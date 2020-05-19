@@ -35,4 +35,28 @@ protected:
 	short			m_steerRatio;
 };
 
+//--------------------------------------------------------------
+#if 0
+class ICarDriver
+{
+	friend class CCar;
+public:
+	virtual ~ICarDriver() {}
+
+	virtual void Init() = 0;
+
+	// OnCarCollisionEvent
+	virtual void OnHitByCar(const CollisionPairData_t& pair, CGameObject* hitBy) = 0;
+
+	// called by OnPrePhysicsFrame
+	virtual void Update(float fDt) = 0;
+
+	// for type casting
+	virtual ECarDriverType GetType() const = 0;
+
+private:
+	CCar* m_owner;
+};
+#endif
+
 #endif // CONTROLLABLE_H

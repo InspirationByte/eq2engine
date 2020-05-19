@@ -155,13 +155,13 @@ void CObject_Debris::Spawn()
 
 		//body->SetCenterOfMass( obj->mass_center);
 
-		body->m_flags = COLLOBJ_DISABLE_RESPONSE | BODY_FORCE_FREEZE;
+		body->m_flags = BODY_FORCE_FREEZE;
 
 		body->SetPosition( m_vecOrigin );
 		body->SetOrientation(Quaternion(DEG2RAD(m_vecAngles.x),DEG2RAD(m_vecAngles.y),DEG2RAD(m_vecAngles.z)));
 
 		body->SetContents( OBJECTCONTENTS_DEBRIS );
-		body->SetCollideMask( COLLIDEMASK_DEBRIS );
+		body->SetCollideMask( COLLIDEMASK_DEBRIS | OBJECTCONTENTS_DEBRIS);
 
 		body->SetUserData(this);
 
@@ -437,14 +437,16 @@ void CObject_Debris::BreakAndSpawnDebris()
 	m_numBreakParts = 0;
 }
 
-void CObject_Debris::OnPhysicsPreCollide(const ContactPair_t& pair)
+void CObject_Debris::OnPhysicsPreCollide(ContactPair_t& pair)
 {
 	CEqRigidBody* body = m_hfObj->GetBody();
 	eqPhysSurfParam_t* surf = m_surfParams;
 	CEqCollisionObject* obj = pair.GetOppositeTo(body);
 
-	bool moved = (body->m_flags & BODY_MOVEABLE) > 0;
+	if (obj->m_flags & BODY_ISCAR)	// disable response for cars
+		pair.flags |= (pair.bodyA == body) ? COLLPAIRFLAG_OBJECTB_NO_RESPONSE : COLLPAIRFLAG_OBJECTA_NO_RESPONSE;
 
+	bool moved = (body->m_flags & BODY_MOVEABLE) > 0;
 	if (!moved && obj->IsDynamic())
 	{
 		if (m_smashSpawn.Length() > 0)
@@ -465,22 +467,6 @@ void CObject_Debris::OnPhysicsPreCollide(const ContactPair_t& pair)
 
 		g_pPhysics->m_physics.AddToMoveableList(body);
 		body->Wake();
-
-		CEqRigidBody* body = (CEqRigidBody*)obj;
-		bool isCar = (body->m_flags & BODY_ISCAR) > 0;
-
-		if (isCar)
-		{
-			EmitSound_t ep;
-
-			ep.name = (char*)m_smashSound.c_str();
-
-			ep.fPitch = RandomFloat(1.0f, 1.1f);
-			ep.fVolume = 1.0f;
-			ep.origin = pair.position;
-
-			EmitSoundWithParams(&ep);
-		}
 	}
 }
 
@@ -502,6 +488,8 @@ void CObject_Debris::OnPhysicsCollide(const CollisionPairData_t& pair)
 
 	EmitHitSoundEffect(this, m_smashSound.c_str(), pair.position, pair.impactVelocity, 50.0f);
 
+	const float timeToRemove = m_fTimeToRemove;
+
 	if (impulse > 10.0f)
 	{
 		if (m_numBreakParts > 0)
@@ -510,8 +498,27 @@ void CObject_Debris::OnPhysicsCollide(const CollisionPairData_t& pair)
 			BreakAndSpawnDebris();
 		}
 		else if (m_pModel->GetHWData()->studio->numBodyGroups > 1 && m_bodyGroupFlags == (1 << 0))
+		{
 			m_bodyGroupFlags = (1 << 1);	// change look of model
+		}
+
+		if (timeToRemove == 0.0f)	// not moved yet
+		{
+			// play the sound
+			EmitSound_t ep;
+
+			ep.name = (char*)m_smashSound.c_str();
+
+			ep.fPitch = RandomFloat(1.0f, 1.1f);
+			ep.fVolume = 1.0f;
+			ep.origin = pair.position;
+
+			EmitSoundWithParams(&ep);
+		}
 	}
+
+	if(timeToRemove < -0.5f)
+		body->m_flags |= COLLOBJ_DISABLE_RESPONSE;
 
 	bool moved = (body->m_flags & BODY_MOVEABLE) > 0;
 

@@ -55,7 +55,6 @@ public:
 	bool				CheckObjectVisibility(CCar* obj);
 
 	EPursuerAIType		GetPursuerType() const {return m_type;}
-
 	int					L_GetPursuerType() const { return m_type; }
 
 	void				SetMaxSpeed(float fSpeed);

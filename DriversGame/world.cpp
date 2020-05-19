@@ -1370,7 +1370,7 @@ void CGameWorld::UpdateWorld(float fDt)
 	// reset light count, 'Simulate' will add new lights
 	m_numLights = 0;
 
-	for(int i = 0; i < MAX_LIGHTS; i++)
+	for(int i = 0; i < MAX_LIGHTS_QUEUE; i++)
 	{
 		m_lights[i].position = vec4_zero;
 		m_lights[i].color = vec4_zero;
@@ -1769,12 +1769,10 @@ int CGameWorld::GetLightIndexList(const BoundingBox& bbox, int* lights, int maxL
 		lights[i] = -1;
 
 	int numLights = 0;
+	int maximum = min(m_numLights, maxLights);
 
-	for(int i = 0; i < m_numLights; i++)
+	for(int i = 0; i < maximum; i++)
 	{
-		if(numLights >= maxLights-1)
-			break;
-
 		const Vector4D light = m_lights[i].position;
 
 		if(!bbox.IntersectsSphere(light.xyz(), light.w))
@@ -1786,7 +1784,7 @@ int CGameWorld::GetLightIndexList(const BoundingBox& bbox, int* lights, int maxL
 	return numLights;
 }
 
-void CGameWorld::GetLightList(const BoundingBox& bbox, wlight_t lights[MAX_LIGHTS], int& numLights) const
+int CGameWorld::GetLightList(const BoundingBox& bbox, wlight_t lights[MAX_LIGHTS]) const
 {
 	memset(lights, 0, sizeof(lights));
 	int appliedLights = 0;
@@ -1806,7 +1804,7 @@ void CGameWorld::GetLightList(const BoundingBox& bbox, wlight_t lights[MAX_LIGHT
 		lights[appliedLights++] = light;
 	}
 
-	numLights = appliedLights;
+	return appliedLights;
 }
 
 ConVar r_disableLightUpdates("r_disableLightUpdates", "0", "Light updates disabled (test only)", CV_CHEAT);

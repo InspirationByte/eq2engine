@@ -47,14 +47,14 @@ static const char* s_pBodyPartsNames[] =
 
 static Vector3D s_BodyPartDirections[] =
 {
-	Vector3D(-1.0f,0,1),
-	Vector3D(1.0f,0,1),
+	Vector3D(-1.0f,0,1),		// fr l
+	Vector3D(1.0f,0,1),			// fr r
 
-	Vector3D(-1.0f,0,0),
-	Vector3D(1.0f,0,0),
+	Vector3D(-1.0f,0,0),		// left
+	Vector3D(1.0f,0,0),			// right
 
-	Vector3D(-1.0f,0,-1.0f),
-	Vector3D(1.0f,0,-1.0f),
+	Vector3D(-1.0f,0,-1.0f),	// bk l
+	Vector3D(1.0f,0,-1.0f),		// bk r
 
 	Vector3D(0,1.0f,0),
 };
@@ -144,7 +144,8 @@ const float MIN_VISUAL_BODYPART_DAMAGE	= 0.32f;
 
 const float DAMAGE_MINIMPACT			= 0.45f;
 const float DAMAGE_SCALE				= 0.12f;
-const float	DAMAGE_VISUAL_SCALE			= 0.75f;
+const float	DAMAGE_VISUAL_SCALE_PLAYER	= 0.5f;
+const float	DAMAGE_VISUAL_SCALE			= 1.0f;
 const float DAMAGE_WHEEL_SCALE			= 0.5f;
 
 const float DEFAULT_MAX_SPEED			= 150.0f;
@@ -834,6 +835,7 @@ void CCar::CreateCarPhysics()
 			winfo.m_hubcapPhysmodel = 0;
 		}
 
+		winfo.m_hubcapRandomFactor = float(g_replayRandom.Get(2, 4)) * 0.25f;
 
 		winfo.m_bodyGroupFlags = (1 << winfo.m_defaultBodyGroup);
 	}
@@ -1589,7 +1591,7 @@ void CCar::UpdateVehiclePhysics(float delta)
 		if(m_isLocalCar && fractionOld < 1.0f && (fractionOldDist - fractionNewDist) >= HFIELD_HEIGHT_STEP)
 		{
 			// add damage to hubcap
-			wheel.m_hubcapLoose += (fractionOldDist - fractionNewDist) * 0.01f * length(wheel.m_velocityVec);
+			wheel.m_hubcapLoose += wheel.m_hubcapRandomFactor * (fractionOldDist - fractionNewDist) * 0.01f * length(wheel.m_velocityVec);
 
 			EmitSound_t ep;
 
@@ -2343,6 +2345,153 @@ bool CCar::UpdateWaterState( float fDt, bool hasCollidedWater )
 	return false;
 }
 
+void CCar::ApplyDamage(Vector3D& localHitPos, float impact, CGameObject* hitBy)
+{
+	if (impact < DAMAGE_MINIMPACT)
+		return;
+
+	// damage wheels
+	int wheelCount = GetWheelCount();
+
+	// apply damage to wheels
+	for (int w = 0; w < wheelCount; w++)
+	{
+		carWheelConfig_t& conf = m_conf->physics.wheels[w];
+
+		float dmgDist = length(conf.suspensionBottom - localHitPos);
+
+		if (dmgDist < 1.0f)
+			m_wheels[w].m_damage += (1.0f - dmgDist)*impact * DAMAGE_WHEEL_SCALE;
+	}
+
+#ifndef EDITOR
+	if (!g_pGameSession->IsServer())				// process damage model only on server
+		return;
+
+	if (g_replayTracker->m_state != REPL_RECORDING)
+		return;
+#endif // EDITOR
+
+
+	bool isWasAlive = IsAlive();
+
+	Vector3D bbox_pos = m_conf->physics.body_center;
+	Vector3D bbox_size = m_conf->physics.body_size;
+
+	for (int cb = 0; cb < CB_PART_COUNT; cb++)
+	{
+		Vector3D pos;
+		float radius;
+
+		switch (cb)
+		{
+		case CB_FRONT_LEFT:
+		case CB_FRONT_RIGHT:
+		{
+			float posSign = (cb == CB_FRONT_LEFT) ? -1.0f : 1.0f;
+			pos = bbox_pos + vec3_forward * bbox_size.z + vec3_right * bbox_size.x*posSign;
+			radius = bbox_size.x*2.0f;
+
+			break;
+		}
+		case CB_BACK_LEFT:
+		case CB_BACK_RIGHT:
+		{
+			float posSign = (cb == CB_BACK_LEFT) ? -1.0f : 1.0f;
+			pos = bbox_pos - vec3_forward * bbox_size.z + vec3_right * bbox_size.x*posSign;
+			radius = bbox_size.x*2.0f;
+
+			break;
+		}
+		case CB_SIDE_LEFT:
+		case CB_SIDE_RIGHT:
+		{
+			float posSign = (cb == CB_SIDE_LEFT) ? -1.0f : 1.0f;
+			pos = bbox_pos + vec3_right * bbox_size.x * posSign;
+			radius = bbox_size.z*1.5f;
+
+			break;
+		}
+		case CB_TOP_ROOF:
+		{
+			pos = bbox_pos + vec3_up * bbox_size.y;
+			radius = bbox_size.x;
+		}
+		default:
+			continue;
+		}
+
+		float hitDist = length(localHitPos - pos);
+
+		if (hitDist > radius)
+			continue;
+
+		float fDot = dot(s_BodyPartDirections[cb], fastNormalize(localHitPos));
+
+		if (fDot < 0.25f)
+			continue;
+
+		float zoneDistFactor = 1.0f - (hitDist / radius);
+
+		// TODO: velocity vector
+		float zoneDamage = zoneDistFactor * impact * DAMAGE_SCALE;
+		m_bodyParts[cb].damage += zoneDamage * (m_isLocalCar ? DAMAGE_VISUAL_SCALE_PLAYER : DAMAGE_VISUAL_SCALE);
+
+		// clamp
+		m_bodyParts[cb].damage = min(m_bodyParts[cb].damage, 1.0f);
+
+		// set total damage
+		SetDamage(GetDamage() + zoneDamage);
+	}
+
+	/*
+	// apply visual damage
+	for(int cb = 0; cb < CB_PART_COUNT; cb++)
+	{
+		Vector3D bodyPartPos = bbox_pos + bbox_size*s_BodyPartDirections[cb];
+
+		float fDot = dot(s_BodyPartDirections[cb], fastNormalize(localHitPos));
+
+		if(fDot < 0.25f)
+			continue;
+
+		// apply constant roof damage when car is flipped
+		if (cb == CB_TOP_ROOF)
+		{
+			if(dot(upVec, vec3_up) < 0.0f)
+				m_bodyParts[cb].damage += fDamageImpact;
+
+			// clamp
+			m_bodyParts[cb].damage = min(m_bodyParts[cb].damage, 1.0f);
+
+			continue;
+		}
+
+		float fDamageToApply = pow(fDot, 2.0f) * fDamageImpact*DAMAGE_SCALE;
+		m_bodyParts[cb].damage += fDamageToApply * DAMAGE_VISUAL_SCALE;
+
+		bool isWasAlive = IsAlive();
+		SetDamage(GetDamage() + fDamageToApply);
+		bool isStillAlive = IsAlive();
+
+		if(isWasAlive && !isStillAlive)
+		{
+			// trigger death
+			OnDeath( hitGameObject );
+		}
+
+		// clamp
+		m_bodyParts[cb].damage = min(m_bodyParts[cb].damage, 1.0f);
+	}*/
+
+	OnNetworkStateChanged(NULL);
+	RefreshWindowDamageEffects();
+
+	// trigger death
+	if (isWasAlive && !IsAlive())
+		OnDeath(hitBy);
+}
+
 void CCar::OnPhysicsFrame( float fDt )
 {
 	CEqRigidBody* carBody = m_physObj->GetBody();
@@ -2358,12 +2507,18 @@ void CCar::OnPhysicsFrame( float fDt )
 	Vector3D	hitNormal = Vector3D(0,0,1);
 	float		collSpeed = 0.0f;
 
+	Vector3D	rightVec = GetRightVector();
+	Vector3D	forwardVec = GetForwardVector();
+	Vector3D	upVec = GetUpVector();
+
 	bool		doImpulseSound = false;
 	bool		hasHitWater = false;
 
 	Matrix4x4 worldMatrix;
 	carBody->ConstructRenderMatrix(worldMatrix);
 	m_worldMatrix = worldMatrix;
+
+	Matrix4x4 invWorldMatrix = !worldMatrix;
 
 	// TODO: move all processing to OnPhysicsCollide
 	for(int i = 0; i < m_collisionList.numElem(); i++)
@@ -2411,67 +2566,32 @@ void CCar::OnPhysicsFrame( float fDt )
 		}
 
 		EmitCollisionParticles(coll.position, wVelocity, coll.normal, (coll.appliedImpulse/3500.0f)+1, coll.appliedImpulse);
-
+		
+		// calculate damage impact
 		float fDotUp = clamp(1.0f-(float)fabs(dot(vec3_up, coll.normal)), 0.5f, 1.0f);
 		float invMassA = carBody->GetInvMass();
 
 		float fDamageImpact = (coll.appliedImpulse * fDotUp) * invMassA * 0.5f;
 
-		Vector3D localHitPos = (!(Matrix4x4(worldMatrix))*Vector4D(coll.position, 1.0f)).xyz();
+		float impactScale = 1.0f;
 
-		if(fDamageImpact > DAMAGE_MINIMPACT
-#ifndef EDITOR
-			&& g_pGameSession->IsServer()				// process damage model only on server
-#endif // EDITOR
-			)
+		if (coll.bodyB->IsDynamic())
+			impactScale = 0.5f;		// half the damage
 
-#ifndef EDITOR
-		// process damage and death only when not playing replays
-		if (g_replayTracker->m_state != REPL_PLAYING)
-#endif // EDITOR
+		// apply damage to this car
 		{
-			// apply visual damage
-			for(int cb = 0; cb < CB_PART_COUNT; cb++)
-			{
-				float fDot = dot(fastNormalize(s_BodyPartDirections[cb]), fastNormalize(localHitPos));
-
-				if(fDot < 0.2)
-					continue;
-
-				float fDamageToApply = pow(fDot, 2.0f) * fDamageImpact*DAMAGE_SCALE;
-				m_bodyParts[cb].damage += fDamageToApply * DAMAGE_VISUAL_SCALE;
-
-				bool isWasAlive = IsAlive();
-				SetDamage(GetDamage() + fDamageToApply);
-				bool isStillAlive = IsAlive();
-
-				if(isWasAlive && !isStillAlive)
-				{
-					// trigger death
-					OnDeath( hitGameObject );
-				}
-
-				// clamp
-				m_bodyParts[cb].damage = min(m_bodyParts[cb].damage, 1.0f);
-
-				OnNetworkStateChanged(NULL);
-			}
-
-			RefreshWindowDamageEffects();
+			Vector3D localHitPos = (invWorldMatrix*Vector4D(coll.position, 1.0f)).xyz();			
+			ApplyDamage(localHitPos, fDamageImpact*impactScale, hitGameObject);
 		}
 
-		int wheelCount = GetWheelCount();
-
-		// make damage to wheels
-		// hubcap effects
-		for (int w = 0; w < wheelCount; w++)
+		// and apply damage to other car
+		if (IsCar(hitGameObject))
 		{
-			Vector3D pos = m_wheels[w].GetOrigin() - Vector3D(coll.position);
+			CCar* otherCar = (CCar*)hitGameObject;
 
-			float dmgDist = length(pos);
+			Vector3D otherCarLocalHitPos = ((!otherCar->m_worldMatrix) * Vector4D(coll.position, 1.0f)).xyz();
 
-			if (dmgDist < 1.0f)
-				m_wheels[w].m_damage += (1.0f - dmgDist)*fDamageImpact * DAMAGE_WHEEL_SCALE;
+			otherCar->ApplyDamage(otherCarLocalHitPos, fDamageImpact*impactScale, this);
 		}
 
 		fHitImpulse += fDamageImpact * DAMAGE_SOUND_SCALE;
@@ -2562,8 +2682,8 @@ void CCar::OnPhysicsFrame( float fDt )
 			float tractionSliding = GetTractionSlidingAtWheel(i);
 
 			// if you burnout too much, or brake
-			if (tractionSliding > 4.0f)
-				addLoose += tractionSliding * fDt * 0.001f;
+			//if (tractionSliding > 4.0f)
+			//	addLoose += tractionSliding * fDt * 0.001f;
 		}
 
 		// if vehicle landing on ground hubcaps may go away
@@ -2575,7 +2695,7 @@ void CCar::OnPhysicsFrame( float fDt )
 				addLoose += pow(wheelLandingVelocity, 2.0f) * 0.05f;
 		}
 
-		wheel.m_hubcapLoose += addLoose;
+		wheel.m_hubcapLoose += wheel.m_hubcapRandomFactor*addLoose;
 
 		bool looseHubcap = false;
 
@@ -2585,7 +2705,7 @@ void CCar::OnPhysicsFrame( float fDt )
 			looseHubcap = true;
 		}
 			
-		if (wheel.m_damage >= WHEEL_MIN_DAMAGE_LOOSE_HUBCAP)
+		if (wheel.m_damage >= wheel.m_hubcapRandomFactor*WHEEL_MIN_DAMAGE_LOOSE_HUBCAP)
 			looseHubcap = true;
 
 		if(looseHubcap)
@@ -2626,7 +2746,7 @@ void CCar::OnPhysicsFrame( float fDt )
 	}
 } 
 
-void CCar::OnPhysicsPreCollide(const ContactPair_t& pair)
+void CCar::OnPhysicsPreCollide(ContactPair_t& pair)
 {
 	CEqCollisionObject* hitObj = pair.GetOppositeTo(m_physObj->GetBody());
 
@@ -2772,11 +2892,10 @@ void CCar::Simulate( float fDt )
 
 	Vector3D cam_pos = g_pGameWorld->m_view.GetOrigin();
 
-	Vector3D rightVec = GetRightVector();
-	Vector3D forwardVec = GetForwardVector();
-	Vector3D upVec = GetUpVector();
-
 	Matrix4x4 worldMatrix = m_worldMatrix;
+	Vector3D	rightVec = GetRightVector();
+	Vector3D	forwardVec = GetForwardVector();
+	Vector3D	upVec = GetUpVector();
 
 	if( isCar && r_carLights.GetBool() && IsLightEnabled(CAR_LIGHT_LOWBEAMS) && (m_bodyParts[CB_FRONT_LEFT].damage < 1.0f || m_bodyParts[CB_FRONT_RIGHT].damage < 1.0f) )
 	{

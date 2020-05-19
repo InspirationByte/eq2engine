@@ -97,7 +97,7 @@ void CPhysicsHFObject::UpdateOrigin()
 	m_owner->m_vecOrigin = m_object->GetPosition();
 }
 
-void CPhysicsHFObject::OnPreCollide(const ContactPair_t& pair)
+void CPhysicsHFObject::OnPreCollide(ContactPair_t& pair)
 {
 	m_owner->OnPhysicsPreCollide(pair);
 }

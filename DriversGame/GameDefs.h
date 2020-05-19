@@ -49,6 +49,13 @@ enum EInfractionType
 	INFRACTION_COUNT,
 };
 
+enum ECarDriverType
+{
+	CAR_DRIVER_SIMPLE = 0,
+	CAR_DRIVER_TRAFFIC,
+	CAR_DRIVER_PURSUER
+};
+
 const float INFRACTION_SKIP_REGISTER_TIME = 2.0f;
 
 // cop data

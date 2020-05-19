@@ -339,7 +339,7 @@ public:
 	void							DetectCollisionsSingle(CEqRigidBody* body);
 
 	///< processes contact pairs
-	void							ProcessContactPair(const ContactPair_t& pair);
+	void							ProcessContactPair(ContactPair_t& pair);
 
 	// checks collision (made especially for rays, but could be used in other situations)
 	bool							CheckAllowContactTest(eqPhysCollisionFilter* filterParams,CEqCollisionObject* object);

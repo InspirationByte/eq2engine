@@ -34,7 +34,7 @@ public:
 	void			PreSimulate( float fDt );
 	void			PostSimulate( float fDt );
 
-	void			OnPreCollide(const ContactPair_t& pair);
+	void			OnPreCollide(ContactPair_t& pair);
 	void			OnCollide(const CollisionPairData_t& pair);
 
 	void			UpdateOrigin();

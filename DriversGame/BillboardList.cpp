@@ -289,8 +289,7 @@ void CBillboardList::DrawBillboards()
 	BoundingBox lightBbox(m_aabb.minPoint+transformPos, m_aabb.maxPoint+transformPos);
 
 	wlight_t applyLights[MAX_LIGHTS];
-	int numLights = 0;
-	g_pGameWorld->GetLightList(lightBbox, applyLights, numLights);
+	int numLights = g_pGameWorld->GetLightList(lightBbox, applyLights);
 
 	float fDistToCenter = length(g_pGameWorld->m_view.GetOrigin() - transformPos);
 	float distCurved = powf(fDistToCenter / BILLBOARD_DISAPPEAR_DISTANCE, 0.5f)*BILLBOARD_DISAPPEAR_DISTANCE;

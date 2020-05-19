@@ -370,6 +370,7 @@ protected:
 	float						m_skidTime;
 	float						m_damage;				// this parameter affects hubcaps
 	float						m_hubcapLoose;
+	float						m_hubcapRandomFactor;
 
 	int8						m_defaultBodyGroup;
 	int8						m_hubcapBodygroup;	// loose hubcaps
@@ -592,6 +593,8 @@ public:
 	RoadBlockInfo_t*		m_assignedRoadblock;
 
 protected:
+	void					ApplyDamage(Vector3D& position, float impulse, CGameObject* hitBy);
+
 	void					CreateCarPhysics();
 	void					InitCarSound();
 
@@ -600,7 +603,7 @@ protected:
 	virtual void			OnPrePhysicsFrame( float fDt );
 	virtual void			OnPhysicsFrame( float fDt );
 	
-	virtual void			OnPhysicsPreCollide(const ContactPair_t& pair);
+	virtual void			OnPhysicsPreCollide(ContactPair_t& pair);
 	virtual void			OnPhysicsCollide(const CollisionPairData_t& pair);
 
 	bool					UpdateWaterState( float fDt, bool hasCollidedWater );

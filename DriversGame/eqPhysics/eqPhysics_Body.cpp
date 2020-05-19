@@ -641,7 +641,7 @@ float CEqRigidBody::ApplyImpulseResponseTo(CEqRigidBody* body, const FVector3D& 
 //
 // STATIC
 //
-float CEqRigidBody::ApplyImpulseResponseTo2( CEqRigidBody* bodyA, CEqRigidBody* bodyB, const FVector3D& point, const Vector3D& normal, float posError)
+float CEqRigidBody::ApplyImpulseResponseTo2( CEqRigidBody* bodyA, CEqRigidBody* bodyB, const FVector3D& point, const Vector3D& normal, float posError, int pairFlag)
 {
 	if(!bodyA || !bodyB)
 		return 0.0f;
@@ -706,13 +706,17 @@ float CEqRigidBody::ApplyImpulseResponseTo2( CEqRigidBody* bodyA, CEqRigidBody* 
 	bodyB->TryWake();
 
 	// apply now
-	if( !(bodyA->m_flags & BODY_INFINITEMASS) && !(bodyB->m_flags & COLLOBJ_DISABLE_RESPONSE))
+	if( !(pairFlag & COLLPAIRFLAG_OBJECTA_NO_RESPONSE) && 
+		!(bodyA->m_flags & BODY_INFINITEMASS) && 
+		!(bodyB->m_flags & COLLOBJ_DISABLE_RESPONSE))
 	{
 		bodyA->ApplyImpulse(contactRelativePosA, impactVelA);
 		bodyA->TryWake();
 	}
 
-	if( !(bodyB->m_flags & BODY_INFINITEMASS) && !(bodyA->m_flags & COLLOBJ_DISABLE_RESPONSE))
+	if( !(pairFlag & COLLPAIRFLAG_OBJECTB_NO_RESPONSE) && 
+		!(bodyB->m_flags & BODY_INFINITEMASS) && 
+		!(bodyA->m_flags & COLLOBJ_DISABLE_RESPONSE))
 	{
 		bodyB->ApplyImpulse(contactRelativePosB, impactVelB);
 		bodyB->TryWake();

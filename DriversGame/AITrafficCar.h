@@ -56,14 +56,11 @@ protected:
 
 	virtual int			DeadState( float fDt, EStateTransition transition );
 
+	CAIHandlingAffector<CAITrafficManipulator>	m_traffic;
+	CAIHornSequencer	m_hornSequencer;
+
 	float				m_thinkTime;
 	float				m_refreshTime;
-
-	CAIHandlingAffector<CAITrafficManipulator>	m_traffic;
-
-	bool				m_hasDamage;
-
-	CAIHornSequencer	m_hornSequencer;
 };
 
 #ifndef NO_LUA
