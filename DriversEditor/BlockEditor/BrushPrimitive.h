@@ -50,7 +50,7 @@ struct winding_t
 	// returns vertex index of brush
 	int								CheckRayIntersectionWithVertex(const Vector3D &start, const Vector3D &dir, float vertexScale);
 	bool							CheckRayIntersection(const Vector3D &start, const Vector3D &dir, Vector3D &intersectionPos);
-	void							Transform(const Matrix4x4& mat);
+	void							Transform(const Matrix4x4& mat, bool textureLock);
 };
 
 //-------------------------------------------------------------------
@@ -99,9 +99,9 @@ public:
 	// Updates geometry. Required after individual winding modifications or AddFace
 	bool							Update();
 
-	bool							Transform(const Matrix4x4& mat);
+	bool							Transform(const Matrix4x4& mat, bool textureLock);
 	void							AddFace(brushFace_t &face);
-	bool							AdjustFacesByVerts(const DkList<Vector3D>& verts);	// must be same vertex indices from GetVerts
+	bool							AdjustFacesByVerts(const DkList<Vector3D>& verts, bool textureLock);	// must be same vertex indices from GetVerts
 
 	// copies this object
 	CBrushPrimitive*				Clone();

@@ -13,7 +13,8 @@
 
 enum EBrushFaceFlags
 {
-	BRUSH_FACE_SELECTED = (1 << 0),
+	BRUSH_FACE_SELECTED				= (1 << 0),
+	BRUSH_FACE_TEXMATRIX_SETUP		= (1 << 1)		// indicates if texture matrix is set up
 };
 
 class IMaterial;

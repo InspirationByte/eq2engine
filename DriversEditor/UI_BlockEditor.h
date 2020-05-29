@@ -111,8 +111,11 @@ protected:
 
 	wxPanel*					m_pSettingsPanel;
 	wxChoice*					m_gridSize;
+	wxCheckBox*					m_textureLock;
+
 	wxTextCtrl*					m_filtertext;
 	wxTextCtrl*					m_pTags;
+	
 
 	wxCheckBox*					m_onlyusedmaterials;
 	wxCheckBox*					m_pSortByDate;

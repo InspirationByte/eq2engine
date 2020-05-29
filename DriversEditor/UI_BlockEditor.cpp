@@ -103,6 +103,9 @@ CUI_BlockEditor::CUI_BlockEditor(wxWindow* parent) : wxPanel(parent, -1, wxDefau
 
 	bSizer30->Add(m_gridSize, 0, wxALL, 5);
 
+	m_textureLock = new wxCheckBox(this, wxID_ANY, wxT("Texture lock"), wxDefaultPosition, wxDefaultSize, 0);
+	bSizer30->Add(m_textureLock, 0, wxALL, 5);
+
 	bSizer28->Add(bSizer30, 0, wxEXPAND, 5);
 
 	m_texPanel = new CMaterialAtlasList(this);
@@ -762,7 +765,7 @@ bool CUI_BlockEditor::ProcessSelectionAndBrushMouseEvents(wxMouseEvent& event)
 				for (int i = 0; i < m_selectedBrushes.numElem(); i++)
 				{
 					CBrushPrimitive* brush = m_selectedBrushes[i];
-					if (!brush->Transform(translate(dragOfs)))
+					if (!brush->Transform(translate(dragOfs), m_textureLock->IsChecked()))
 					{
 						DeleteBrush(brush);
 						i--;
@@ -801,7 +804,7 @@ bool CUI_BlockEditor::ProcessSelectionAndBrushMouseEvents(wxMouseEvent& event)
 
 				Matrix4x4 rendermatrix = (translate(faceOriginTransformed)*(Matrix4x4(dragRotation))*translate(-faceOrigin));
 
-				selWinding->Transform(rendermatrix);
+				selWinding->Transform(rendermatrix, m_textureLock->IsChecked());
 
 				if (!selWinding->brush->Update())
 				{
@@ -834,7 +837,7 @@ bool CUI_BlockEditor::ProcessSelectionAndBrushMouseEvents(wxMouseEvent& event)
 
 					Matrix4x4 rendermatrix = (translate(brushOriginTransformed)*(Matrix4x4(dragRotation))*translate(-brushOrigin));
 
-					if (!brush->Transform(rendermatrix))
+					if (!brush->Transform(rendermatrix, m_textureLock->IsChecked()))
 					{
 						DeleteBrush(brush);
 						i--;
@@ -920,7 +923,7 @@ bool CUI_BlockEditor::ProcessSelectionAndBrushMouseEvents(wxMouseEvent& event)
 					Matrix4x4 scaleMat = scale4(scale_factor.x, scale_factor.y, scale_factor.z);
 					Matrix4x4 rendermatrix = (translate(brushOriginTransformed)*(scaleMat)*translate(-brushOrigin));
 
-					if (!brush->Transform(rendermatrix))
+					if (!brush->Transform(rendermatrix, m_textureLock->IsChecked()))
 					{
 						DeleteBrush(brush);
 						i--;
@@ -1055,7 +1058,7 @@ bool CUI_BlockEditor::ProcessVertexManipMouseEvents(wxMouseEvent& event)
 			}
 
 			// reconstruct brush using those vertices
-			if (!brush->AdjustFacesByVerts(brushVerts))
+			if (!brush->AdjustFacesByVerts(brushVerts, m_textureLock->IsChecked()))
 			{
 				DeleteBrush(brush);
 				wxMessageBox("Brush was deleted!");

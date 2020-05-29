@@ -36,31 +36,33 @@ void winding_t::CalculateTextureCoordinates(lmodeldrawvertex_t* verts, int vertC
 	const float texelW = 1.0f / texSizeW;
 	const float texelH = 1.0f / texSizeH;
 
-	Vector3D axisAngles = VectorAngles(face.Plane.normal);
-	AngleVectors(axisAngles, NULL, &face.UAxis.normal, &face.VAxis.normal);
+	if(!(face.nFlags & BRUSH_FACE_TEXMATRIX_SETUP))
+	{
+		face.nFlags |= BRUSH_FACE_TEXMATRIX_SETUP;
 
-	face.VAxis.normal *= -1;
-	//VectorVectors(face.Plane.normal, face.UAxis.normal, face.VAxis.normal);
+		Vector3D axisAngles = VectorAngles(face.Plane.normal);
+		AngleVectors(axisAngles, NULL, &face.UAxis.normal, &face.VAxis.normal);
 
-	Matrix3x3 texMatrix(face.UAxis.normal, face.VAxis.normal, face.Plane.normal);
+		Matrix3x3 texMatrix(face.UAxis.normal, face.VAxis.normal, face.Plane.normal);
 
-	Matrix3x3 rotationMat = rotateZXY3( 0.0f, 0.0f, DEG2RAD(face.fRotation));
-	texMatrix = rotationMat*texMatrix;
+		Matrix3x3 rotationMat = rotateZXY3(0.0f, 0.0f, DEG2RAD(face.fRotation));
+		texMatrix = rotationMat * texMatrix;
 
-	face.UAxis.normal = -texMatrix.rows[0];
-	face.VAxis.normal = texMatrix.rows[1];
-	
+		face.UAxis.normal = texMatrix.rows[0];
+		face.VAxis.normal = texMatrix.rows[1];
+	}
+
 	for(int i = 0; i < vertCount; i++ )
 	{
 		float U, V;
 		
-		U = dot(face.UAxis.normal, verts[i].position);
+		U = face.UAxis.Distance(verts[i].position); // dot(face.UAxis.normal, verts[i].position);
 		U /= ( ( float )texSizeW ) * face.vScale.x * texelW;
-		U += face.UAxis.offset * texelW;
+		//U += face.UAxis.offset * texelW;
 
-		V = dot(face.VAxis.normal, verts[i].position);
+		V = face.VAxis.Distance(verts[i].position); //dot(face.VAxis.normal, verts[i].position);
 		V /= ( ( float )texSizeH ) * face.vScale.y * texelH;
-		V += face.VAxis.offset * texelH;
+		//V += face.VAxis.offset * texelH;
 
 		verts[i].texcoord.x = U;
 		verts[i].texcoord.y = V;
@@ -256,16 +258,45 @@ ClassifyPoly_e winding_t::Classify(winding_t *w) const
 	return CPL_ONPLANE;
 }
 
-void winding_t::Transform(const Matrix4x4& mat)
+void winding_t::Transform(const Matrix4x4& mat, bool textureLock)
 {
-	Vector4D O(face.Plane.normal * -face.Plane.offset, 1.0f);
-	Vector4D N(face.Plane.normal, 0.0f);
+	// transform face plane
+	{
+		Vector4D O(face.Plane.normal * -face.Plane.offset, 1.0f);
+		Vector4D N(face.Plane.normal, 0.0f);
 
-	O = mat * O;				// transform point
-	N = transpose(!mat) * N;	// transform (rotate) the normal
+		O = mat * O;				// transform point
+		N = transpose(!mat) * N;	// transform (rotate) the normal
 
-	// reinitialize the plane
-	face.Plane = Plane(N.xyz(), -dot(O.xyz(), N.xyz()), true);
+		// reinitialize the plane
+		face.Plane = Plane(N.xyz(), -dot(O.xyz(), N.xyz()), true);
+	}
+
+	if (!textureLock)
+		return;
+
+	// transform U and V planes
+	{
+		Vector4D O(face.UAxis.normal * -face.UAxis.offset, 1.0f);
+		Vector4D N(face.UAxis.normal, 0.0f);
+
+		O = mat * O;				// transform point
+		N = transpose(!mat) * N;	// transform (rotate) the normal
+
+		// reinitialize the plane
+		face.UAxis = Plane(N.xyz(), -dot(O.xyz(), N.xyz()), true);
+	}
+
+	{
+		Vector4D O(face.VAxis.normal * -face.VAxis.offset, 1.0f);
+		Vector4D N(face.VAxis.normal, 0.0f);
+
+		O = mat * O;				// transform point
+		N = transpose(!mat) * N;	// transform (rotate) the normal
+
+		// reinitialize the plane
+		face.VAxis = Plane(N.xyz(), -dot(O.xyz(), N.xyz()), true);
+	}
 }
 
 /*
@@ -367,25 +398,35 @@ bool CBrushPrimitive::AssignWindingVertices()
 	// remove empty faces and sort indices
 	ValidateWindings();
 
-	return (m_windingFaces.numElem() > 0);
+	return (m_windingFaces.numElem() > 2);
 }
 
 void CBrushPrimitive::ValidateWindings()
 {
+	DkList<int> degenerateIds;
+	int count = 0;
+
 	// remove empty faces
-	for(int i = 0; i < m_windingFaces.numElem(); i++)
+	for(int i = 0; i < m_windingFaces.numElem(); i++, count++)
 	{
 		if(m_windingFaces[i].vertex_ids.numElem() < 3)
 		{
+			degenerateIds.append(count);
 			m_windingFaces.fastRemoveIndex(i);
 			i--;
 			continue;
 		}
 
 		if (!m_windingFaces[i].SortIndices())
-		{
-			Msg("\nERROR: Degenerate plane %d on brush\n", i);
-		}
+			degenerateIds.append(count);
+	}
+
+	if(degenerateIds.numElem())
+	{
+		Msg("\nERROR: degenerate planes");
+		for (int i = 0; i < degenerateIds.numElem(); i++)
+			Msg(" %d", i);
+		Msg(" on brush\n");
 	}
 };
 
@@ -494,7 +535,7 @@ void CBrushPrimitive::AddFace(brushFace_t &face)
 	m_windingFaces[id].faceId = id;
 }
 
-bool CBrushPrimitive::AdjustFacesByVerts(const DkList<Vector3D>& verts)
+bool CBrushPrimitive::AdjustFacesByVerts(const DkList<Vector3D>& verts, bool textureLock)
 {
 	// must be same vertex indices from GetVerts
 	for (int i = 0; i < m_windingFaces.numElem(); i++)
@@ -518,7 +559,7 @@ bool CBrushPrimitive::AdjustFacesByVerts(const DkList<Vector3D>& verts)
 			float area = TriangleArea(v0, v1, v2);
 
 			// if we found good area, use it
-			if (area >= 1.0f)
+			if (area >= 0.1f)
 			{
 				goodTriangle = j;
 				break;
@@ -535,12 +576,19 @@ bool CBrushPrimitive::AdjustFacesByVerts(const DkList<Vector3D>& verts)
 
 		Plane newPlane = Plane(v0, v1, v2, true);
 
-		// FIXME: should I invert plane as that could be negative by resolving from triangle?
-		if (dot(newPlane.normal, winding.face.Plane.normal) < 0.0f)
+		float planeCos = dot(newPlane.normal, winding.face.Plane.normal);
+
+		if (!textureLock && planeCos < 0.95)	// texture matrix has to be reset
 		{
-			newPlane.normal = -newPlane.normal;
-			newPlane.offset = -newPlane.offset;
+			winding.face.nFlags &= ~BRUSH_FACE_TEXMATRIX_SETUP;
 		}
+
+		// FIXME: should I invert plane as that could be negative by resolving from triangle?
+		//if (planeCos < 0.0f)
+		//{
+		//	newPlane.normal = -newPlane.normal;
+		//	newPlane.offset = -newPlane.offset;
+		//}
 
 		winding.face.Plane = newPlane;
 	}
@@ -621,10 +669,10 @@ void CBrushPrimitive::UpdateRenderBuffer()
 	}
 }
 
-bool CBrushPrimitive::Transform(const Matrix4x4& mat)
+bool CBrushPrimitive::Transform(const Matrix4x4& mat, bool textureLock)
 {
 	for (int i = 0; i < m_windingFaces.numElem(); i++)
-		m_windingFaces[i].Transform(mat);
+		m_windingFaces[i].Transform(mat, textureLock);
 
 	return Update();
 }

@@ -66,6 +66,9 @@ public:
 		{
 			if (!m_draggedAxes)
 			{
+				if (initAxes == 0)
+					return vec3_zero;
+
 				m_dragStart = m_position - point;
 				m_draggedAxes = initAxes;
 				m_dragMode = 0;
@@ -95,6 +98,9 @@ public:
 		bool init = (!m_draggedAxes);
 		if (init)
 		{
+			if (initAxes == 0)
+				return identity3();
+
 			m_draggedAxes = initAxes;
 			m_dragMode = 1;
 		}
@@ -287,8 +293,6 @@ public:
 				meshBuilder.Quad3(quadPointsZ[0], quadPointsZ[1], quadPointsZ[2], quadPointsZ[3]);
 			}
 		meshBuilder.End();
-
-
 	}
 
 	int	TestRay(const Vector3D& start, const Vector3D& dir, float camDist, bool testPlanes = true)
