@@ -82,6 +82,8 @@ ConVar r_drawsky("r_drawsky", "1", NULL, CV_CHEAT);
 ConVar r_ortho("r_ortho", "0", NULL, CV_CHEAT);
 ConVar r_ortho_size("r_ortho_size", "0.5", NULL, CV_ARCHIVE);
 
+ConVar r_drawObjectsDistanceMultiplier("r_drawObjectsDistanceMultiplier", "1", NULL, CV_ARCHIVE);
+
 #define TRAFFICLIGHT_TIME 15.0f
 
 DkList<EqString> g_envList;
@@ -1417,6 +1419,13 @@ void CGameWorld::UpdateRenderables( const occludingFrustum_t& frustum )
 	if (!r_drawObjects.GetBool())
 		return;
 
+	FogInfo_t curFog;
+	materials->GetFogInfo(curFog);
+
+	Vector3D mainViewPos = m_view.GetOrigin();
+	const float maxViewDistance = (curFog.enableFog ? curFog.fogfar : m_sceneinfo.m_fZFar) * r_drawObjectsDistanceMultiplier.GetFloat();
+	const float maxViewDistanceSqr = maxViewDistance * maxViewDistance;
+
 	// simulate objects of world
 	int numObjects = m_gameObjects.numElem();
 	for(int i = 0; i < numObjects; i++)
@@ -1424,6 +1433,11 @@ void CGameWorld::UpdateRenderables( const occludingFrustum_t& frustum )
 		CGameObject* obj = m_gameObjects[i];
 
 		PROFILE_BEGIN(Visibility);
+
+		// far view clipping
+		Vector3D objPos = obj->GetOrigin();
+		if (lengthSqr(mainViewPos - objPos) > maxViewDistanceSqr)
+			continue;
 
 		// sorted insert into render list
 		if( obj->CheckVisibility( frustum ) )

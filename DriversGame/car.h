@@ -243,10 +243,11 @@ struct vehicleConfig_t
 
 		float						shiftAccelFactor;
 
+		float						steeringSpeed;
+		float						noseDownScale;
+
 		carWheelConfig_t*			wheels;
 		int8						numWheels;
-
-		float						steeringSpeed;
 	} physics;
 
 	struct {

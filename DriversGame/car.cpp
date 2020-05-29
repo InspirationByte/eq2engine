@@ -228,9 +228,12 @@ bool ParseVehicleConfig( vehicleConfig_t* conf, const kvkeybase_t* kvs )
 	conf->physics.steeringSpeed = KV_GetValueFloat(kvs->FindKeyBase("steerSpeed"), 0, STEERING_CONST);
 	conf->physics.handbrakeScale = KV_GetValueFloat(kvs->FindKeyBase("handbrakeScale"), 0, 1.0f);
 
+	conf->physics.noseDownScale = KV_GetValueFloat(kvs->FindKeyBase("noseDownScale"), 0, 1.0f);
+
 	kvkeybase_t* hingePoints = kvs->FindKeyBase("hingePoints");
 	conf->physics.hingePoints[0] = 0.0f;
 	conf->physics.hingePoints[1] = 0.0f;
+	
 
 	if(hingePoints)
 	{
@@ -1628,7 +1631,7 @@ void CCar::UpdateVehiclePhysics(float delta)
 	// nose_down :)
 	if (numWheelsOnGroundOld && !numWheelsOnGround)
 	{
-		carBody->ApplyAngularImpulse(GetRightVector() * carBody->GetMass() * JUMP_NOSE_DOWN_FACTOR);
+		carBody->ApplyAngularImpulse(GetRightVector() * carBody->GetMass() * JUMP_NOSE_DOWN_FACTOR * m_conf->physics.noseDownScale);
 	}
 
 	float wheelMod = 1.0f / numDriveWheels; //(numDriveWheelsOnGround > 0) ? (1.0f / (float)numDriveWheelsOnGround) : 1.0f;
@@ -2394,7 +2397,7 @@ void CCar::ApplyDamage(Vector3D& localHitPos, float impact, CGameObject* hitBy)
 		{
 			float posSign = (cb == CB_SIDE_LEFT) ? -1.0f : 1.0f;
 			pos = bbox_pos + vec3_right * bbox_size.x * posSign;
-			radius = bbox_size.z*1.5f;
+			radius = bbox_size.z*0.5f;
 
 			break;
 		}
