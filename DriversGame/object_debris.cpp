@@ -35,6 +35,7 @@ CObject_Debris::CObject_Debris( kvkeybase_t* kvdata )
 	m_smashSpawnedObject = nullptr;
 
 	m_numBreakParts = 0;
+	m_affectOthers = true;
 }
 
 CObject_Debris::~CObject_Debris()
@@ -82,6 +83,7 @@ void CObject_Debris::Spawn()
 
 	m_smashSpawn = KV_GetValueString(m_keyValues->FindKeyBase("smashSpawn"), 0, "");
 	m_smashSpawnOffset = KV_GetVector3D(m_keyValues->FindKeyBase("smashSpawnOffset"), 0, vec3_zero);
+	m_affectOthers = KV_GetValueBool(m_keyValues->FindKeyBase("affectothers"), 0, true);
 
 	if(KV_GetValueBool(m_keyValues->FindKeyBase("castshadow"), 0, true))
 		m_drawFlags |= GO_DRAW_FLAG_SHADOW;
@@ -156,6 +158,9 @@ void CObject_Debris::Spawn()
 		//body->SetCenterOfMass( obj->mass_center);
 
 		body->m_flags = BODY_FORCE_FREEZE;
+
+		if (!m_affectOthers)
+			body->m_flags |= COLLOBJ_DISABLE_COLLISION_CHECK;
 
 		body->SetPosition( m_vecOrigin );
 		body->SetOrientation(Quaternion(DEG2RAD(m_vecAngles.x),DEG2RAD(m_vecAngles.y),DEG2RAD(m_vecAngles.z)));

@@ -70,20 +70,24 @@ protected:
 	void				OnPhysicsCollide(const CollisionPairData_t& pair);
 	void				BreakAndSpawnDebris();
 
-	CPhysicsHFObject*	m_hfObj;
-	float				m_fTimeToRemove;
+	EqString			m_smashSpawn;
 	EqString			m_smashSound;
+
+	Vector3D			m_smashSpawnOffset;
+
+	breakSpawn_t*		m_breakSpawn;
+	CGameObject*		m_smashSpawnedObject;
+
+	CPhysicsHFObject*	m_hfObj;
 	eqPhysSurfParam_t*	m_surfParams;
 
-	float				m_breakMinForce;
 	breakablePart_t*	m_breakable;
 	int					m_numBreakParts;
 
-	EqString			m_smashSpawn;
-	Vector3D			m_smashSpawnOffset;
-	CGameObject*		m_smashSpawnedObject;
+	float				m_breakMinForce;
+	float				m_fTimeToRemove;
 
-	breakSpawn_t*		m_breakSpawn;
+	bool				m_affectOthers;
 };
 
 #endif // OBJECT_DEBRIS_H

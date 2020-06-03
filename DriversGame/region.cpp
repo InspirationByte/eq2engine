@@ -51,7 +51,7 @@ void regionObject_t::RemoveGameObject()
 }
 
 #ifdef EDITOR
-CUndoableObject* _regionObjectFactory(IVirtualStream* stream)
+CUndoableObject* regionObject_t::_regionObjectFactory(IVirtualStream* stream)
 {
 	regionObject_t* obj = new regionObject_t();
 	obj->Undoable_ReadObjectData(stream);

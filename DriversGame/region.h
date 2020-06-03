@@ -151,11 +151,14 @@ class CLevelModel;
 #ifdef EDITOR
 class regionObject_t : public CUndoableObject
 {
-public:
+protected:
+	static CUndoableObject*	_regionObjectFactory(IVirtualStream* stream);
+
 	UndoableFactoryFunc	Undoable_GetFactoryFunc();
 	void				Undoable_Remove();
 	bool				Undoable_WriteObjectData(IVirtualStream* stream);	// writing object
 	void				Undoable_ReadObjectData(IVirtualStream* stream);	// reading object
+public:
 
 #else
 struct regionObject_t
