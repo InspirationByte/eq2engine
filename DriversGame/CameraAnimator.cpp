@@ -14,15 +14,16 @@
 #include "car.h"
 #include "CameraAnimator.h"
 #include "input.h"
+#include "heightfield.h"
 
 #include "world.h"
 
 const float DEFAULT_CAMERA_FOV		= 52.0f;
 
-const float CAM_TURN_SPEED			= 2.65f;
+const float CAM_TURN_SPEED			= 3.0f;
 const float CAM_LOOK_TURN_SPEED		= 15.0f;
 
-const float CAM_HEIGHT_TRACE		= -0.3f;
+const float CAM_HEIGHT_TRACE		= -0.5f;
 
 const float ZOOM_START_DIST			= 8.0f;
 const float ZOOM_END_DIST			= 200.0f;
@@ -436,36 +437,38 @@ void CCameraAnimator::Animate(ECameraMode mode,
 			float desiredDist = m_camConfig.dist;
 
 			Vector3D forward, up;
-			AngleVectors(finalLookAngle, &forward, NULL, &up);
+			AngleVectors(finalLookAngle, &forward, nullptr, &up);
 
 			float heightOffset = 0.0f;
 
 			// adding height for outside camera
-			float heightAddFactor = fabs(m_interpCamAngleX);
-			heightAddFactor = min(heightAddFactor, 25.0f);
 			finalTargetPos.y += cam_outcar_addheight.GetFloat();
 
 			// trace camera for height
 			{
+				CollisionData_t height_coll;
+
 				Vector3D camPosTest = finalTargetPos - forward * desiredDist;
 
-				Vector3D cam_pos_hi = camPosTest + Vector3D(0, desiredHeight*3.0f, 0);
-				Vector3D cam_pos_low = camPosTest + Vector3D(0, CAM_HEIGHT_TRACE, 0);
+				Vector3D cam_pos_hi(camPosTest.x, camPosTest.y + desiredHeight + 1.0f, camPosTest.z);
 
-				CollisionData_t height_coll;
+				// first trace up to determine maximum height
+				g_pPhysics->TestLine(camPosTest, cam_pos_hi, height_coll, OBJECTCONTENTS_SOLID_GROUND);
+
+				if (height_coll.fract < 1.0f)
+					cam_pos_hi.y = height_coll.position.y - 0.01f;
+
+				Vector3D cam_pos_low = camPosTest + vec3_up * CAM_HEIGHT_TRACE;
+
+				// second trace down
 				g_pPhysics->TestLine(cam_pos_hi, cam_pos_low, height_coll, OBJECTCONTENTS_SOLID_GROUND | OBJECTCONTENTS_WATER);
 
-				float facingGround = dot(height_coll.normal, vec3_up);
-
-				if (height_coll.fract < 1.0f && facingGround > 0.5f)
-				{
-					heightOffset = (height_coll.position.y - cam_pos_low.y);
-					desiredDist *= height_coll.fract*0.5f+0.5f;
-				}
+				if (height_coll.position.y > cam_pos_low.y)
+					heightOffset = (height_coll.position.y - cam_pos_low.y) *desiredHeight;
 			}
-
-			Vector3D camTargetPos = finalTargetPos + Vector3D(0, desiredHeight, 0);
-			Vector3D finalCamPos = finalTargetPos + Vector3D(0, desiredHeight + heightOffset, 0) - forward*desiredDist;
+			
+			Vector3D camTargetPos = finalTargetPos + vec3_up * desiredHeight;
+			Vector3D finalCamPos = finalTargetPos + vec3_up * (desiredHeight + heightOffset) - forward*desiredDist;
 
 			// trace far back to determine distToTarget
 			{
