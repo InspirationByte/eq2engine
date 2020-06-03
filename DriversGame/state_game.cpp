@@ -1303,10 +1303,10 @@ void CState_Game::DoCameraUpdates( float fDt )
 
 	Vector3D viewObjectPos(0.0f);
 
+	float cameraFrameTimes = g_pHost->GetFrameTime();
+
 	if( Director_FreeCameraActive() )
 	{
-		float cameraFrameTimes = g_pHost->GetFrameTime();
-
 		Director_UpdateFreeCamera(cameraFrameTimes);
 
 		curView->SetOrigin(g_freeCamProps.position);

@@ -634,7 +634,7 @@ CGameObject* CGameSessionBase::GetViewObject() const
 			return g_replayTracker->GetCarByReplayIndex(cam->targetIdx);
 	}
 
-	if (m_viewObject)
+	if (g_pGameWorld->IsValidObject(m_viewObject))
 		return m_viewObject;
 
 	if (m_viewObject == nullptr)
