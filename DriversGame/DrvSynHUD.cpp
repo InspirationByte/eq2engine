@@ -1180,7 +1180,7 @@ void CDrvSynHUDManager::DoDebugDisplay()
 		defFont->RenderText(varargs("Speed from wheels: %.2f KPH (%.2f MPS) at gear: %d, RPM: %d", m_mainVehicle->GetSpeedWheels(), m_mainVehicle->GetSpeedWheels()*KPH_TO_MPS, m_mainVehicle->GetGear(), (int)m_mainVehicle->GetRPM()), debugOffset + DEBUG_LINE_OFS, style);
 		defFont->RenderText(varargs("Lateral slide: %.2f", m_mainVehicle->GetLateralSlidingAtBody()), debugOffset + DEBUG_LINE_OFS * 2, style);
 		defFont->RenderText(varargs("Traction slide: %.2f", m_mainVehicle->GetTractionSliding(true)), debugOffset + DEBUG_LINE_OFS * 3, style);
-		defFont->RenderText(varargs("Steering - input: %.2f output: %.2f helper: %.2f", steer, (float)m_mainVehicle->m_steering, (float)m_mainVehicle->m_steeringHelper), debugOffset + DEBUG_LINE_OFS * 5, style);
+		defFont->RenderText(varargs("Steering - input: %.2f output: %.2f helper: %.2f", steer, (float)m_mainVehicle->m_steering, (float)m_mainVehicle->m_autobrake), debugOffset + DEBUG_LINE_OFS * 5, style);
 		defFont->RenderText(varargs("Acceleration: %.2f", accel), debugOffset + DEBUG_LINE_OFS * 6, style);
 		defFont->RenderText(varargs("Brake: %.2f", brake), debugOffset + DEBUG_LINE_OFS * 7, style);
 	}

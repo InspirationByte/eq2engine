@@ -712,7 +712,7 @@ CCar::CCar( vehicleConfig_t* config ) :
 	m_fEngineRPM(0.0f),
 	m_nPrevGear(-1),
 	m_steering(0.0f),
-	m_steeringHelper(0.0f),
+	m_autobrake(0.0f),
 	m_fAcceleration(0.0f),
 	m_fBreakage(0.0f),
 	m_fAccelEffect(0.0f),
@@ -1480,7 +1480,7 @@ void CCar::UpdateVehiclePhysics(float delta)
 	//--------------------------------------------------------
 
 	FReal steering = m_steering;
-	FReal steeringHelper = m_steeringHelper;
+	FReal autobrake = m_autobrake;
 
 	{
 		float steerSpeedMultiplier = 1.0f;
@@ -1498,7 +1498,7 @@ void CCar::UpdateVehiclePhysics(float delta)
 		// and also disable autohandbrake
 		if (steer_diff*steering < 0)
 		{
-			steeringHelper = 0.0f;
+			autobrake = 0.0f;
 			steerSpeedMultiplier *= STEER_CENTER_SPEED_MULTIPLIER;
 		}
 
@@ -1509,15 +1509,16 @@ void CCar::UpdateVehiclePhysics(float delta)
 
 		if (FPmath::abs(inputSteering) > STEERING_HELP_START)
 		{
-			FReal steerHelp_diff = inputSteering - steeringHelper;
-			if (FPmath::abs(steerHelp_diff) > 0.1f)
-				steeringHelper += FPmath::sign(steerHelp_diff) * STEERING_HELP_CONST * steerSpeedMultiplier * delta;
+			FReal steerHelp_diff = inputSteering - autobrake;
+
+			if (FPmath::abs(steerHelp_diff) > 0.01f)
+				autobrake += FPmath::sign(steerHelp_diff) * STEERING_HELP_CONST * steerSpeedMultiplier * delta;
 			else
-				steeringHelper = inputSteering;
+				autobrake = inputSteering;
 		}
 
 		if (fsimilar(inputSteering, 0.0f, 0.1f))
-			steeringHelper = 0;
+			autobrake = 0;
 
 		const FReal MAX_EXTENDED_STEERING_INPUT = 1.0f;
 		const FReal MAX_STEERING_RELAXED_INPUT = 0.6f;
@@ -1525,7 +1526,7 @@ void CCar::UpdateVehiclePhysics(float delta)
 		FReal steer_clamp = inputFastSteer ? MAX_EXTENDED_STEERING_INPUT : MAX_STEERING_RELAXED_INPUT;
 
 		m_steering = clamp(steering, -steer_clamp, steer_clamp);
-		m_steeringHelper = steeringHelper;
+		m_autobrake = autobrake;
 	}
 
 	// kick in wake
@@ -1719,16 +1720,19 @@ void CCar::UpdateVehiclePhysics(float delta)
 
 		float carForwardSpeed = dot(GetForwardVector().xz(), GetVelocity().xz()) * MPS_TO_KPH;
 
-		float handbrakeFactor = RemapVal(carForwardSpeed, AUTOHANDBRAKE_MIN_SPEED, AUTOHANDBRAKE_MAX_SPEED, 0.0f, 1.0f);
+		float handbrakeFactor = RemapVal(carForwardSpeed, AUTOHANDBRAKE_MIN_SPEED, AUTOHANDBRAKE_MAX_SPEED, 0.0f, 1.0f) - inputBrake;
 
-		float fLateral = GetLateralSlidingAtBody();
-		float fLateralSign = sign(GetLateralSlidingAtBody())*-0.01f;
+		float fLateral = -GetLateralSlidingAtBody();
+		float fLateralSign = sign(fLateral)*0.001f;
 
-		if( fLateralSign > 0 && (steeringHelper > fLateralSign)
-			|| fLateralSign < 0 && (steeringHelper < fLateralSign) || fabs(fLateral) < 5.0f)
+		if (fabs(autobrake) > AUTOHANDBRAKE_START_MIN)
+			autoHandbrakeHelper = (FPmath::abs(autobrake) - AUTOHANDBRAKE_START_MIN)*AUTOHANDBRAKE_SCALE * handbrakeFactor;
+
+		if (fLateral > 2.0f  && autobrake < fLateralSign ||
+			fLateral < -2.0f && autobrake > fLateralSign)
 		{
-			if(fabs(steeringHelper) > AUTOHANDBRAKE_START_MIN)
-				autoHandbrakeHelper = (FPmath::abs(steeringHelper)-AUTOHANDBRAKE_START_MIN)*AUTOHANDBRAKE_SCALE * handbrakeFactor;
+			autoHandbrakeHelper = 0.0f;
+			m_autobrake = 0.0f;
 		}
 
 		autoHandbrakeHelper = clamp(autoHandbrakeHelper,0.0f,AUTOHANDBRAKE_MAX_FACTOR);
