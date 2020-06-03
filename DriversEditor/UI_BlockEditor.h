@@ -85,6 +85,8 @@ public:
 
 protected:
 
+	void				OnHistoryEvent(CUndoableObject* undoable, int eventType);
+
 	void				ToggleBrushSelection(CBrushPrimitive* brush);
 	void				ToggleFaceSelection(winding_t* winding);
 	void				ToggleVertexSelection(CBrushPrimitive* brush, int vertex_idx);
@@ -103,11 +105,13 @@ protected:
 	void				RenderBrushVerts(DkList<Vector3D>& verts, DkList<int>* selected_ids, const Matrix4x4& view, const Matrix4x4& proj);
 	void				RenderVertsAndSelection();
 
+	void				UpdateCursor(wxMouseEvent& event, const Vector3D& ppos);
+
 	Matrix4x4			CalcSelectionTransform(CBrushPrimitive* brush);
 
 	CMaterialAtlasList* m_texPanel;
 
-	DkList<CBrushPrimitive*>	m_brushes;
+	//DkList<CBrushPrimitive*>	m_brushes;
 
 	wxPanel*					m_pSettingsPanel;
 	wxChoice*					m_gridSize;

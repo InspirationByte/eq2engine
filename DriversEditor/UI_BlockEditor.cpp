@@ -301,21 +301,25 @@ void CUI_BlockEditor::OnFilterTextChanged(wxCommandEvent& event)
 
 void CUI_BlockEditor::MouseEventOnTile(wxMouseEvent& event, hfieldtile_t* tile, int tx, int ty, const Vector3D& ppos)
 {
-	Vector3D cursorPos = SnapVector(GridSize(), ppos);
-
 	BoundingBox modeBox = (m_mode == BLOCK_MODE_CREATION) ? m_creationBox : m_selectionBox;
+
+	UpdateCursor(event, ppos);
 
 	// selecting brushes within region
 	// moving
 	// editing
 	if (m_selectedTool == BlockEdit_Brush)
 	{
+		Vector3D cursorPos = m_cursorPos;
+
 		// draw bounding box and press enter to create brush
 		if (event.ButtonIsDown(wxMOUSE_BTN_LEFT))
 		{
 			// draw the box
 			if (!event.Dragging())
 			{
+				// FIXME: UNCERTAIN - needs better logic
+
 				m_mode = BLOCK_MODE_CREATION;
 
 				m_creationBox.minPoint.x = cursorPos.x;
@@ -323,6 +327,9 @@ void CUI_BlockEditor::MouseEventOnTile(wxMouseEvent& event, hfieldtile_t* tile, 
 
 				m_creationBox.maxPoint.x = cursorPos.x;
 				m_creationBox.maxPoint.z = cursorPos.z;
+
+				//m_creationBox.minPoint.y = cursorPos.y;
+				//m_creationBox.maxPoint.y = cursorPos.y;
 
 				if (m_creationBox.minPoint.y > m_creationBox.maxPoint.y)
 				{
@@ -360,8 +367,6 @@ void CUI_BlockEditor::MouseEventOnTile(wxMouseEvent& event, hfieldtile_t* tile, 
 	{
 		// draw polygon and press enter to create brushes
 	}
-
-	m_cursorPos = cursorPos;
 }
 
 void CUI_BlockEditor::ToggleBrushSelection(CBrushPrimitive* brush)
@@ -474,7 +479,9 @@ void CUI_BlockEditor::CancelSelection()
 			m_mode = BLOCK_MODE_CREATION;
 			return;
 		}
-			
+
+		//m_creationBox.maxPoint.y = m_creationBox.minPoint.y = 0;
+
 		m_mode = BLOCK_MODE_READY;
 		m_draggablePlane = -1;
 	}
@@ -498,9 +505,11 @@ void CUI_BlockEditor::DeleteSelection()
 		{
 			CBrushPrimitive* brush = m_selectedBrushes[i];
 
-			// TODO: editor level code
-			if (m_brushes.fastRemove(brush))
-				delete brush;
+			CEditorLevelRegion& reg = g_pGameWorld->m_level.m_regions[brush->m_regionIdx];
+			reg.Ed_RemoveBrush(brush);
+
+			//if (m_brushes.fastRemove(brush))
+			//	delete brush;
 		}
 
 		m_selectedBrushes.clear();
@@ -532,8 +541,11 @@ void CUI_BlockEditor::DeleteBrush(CBrushPrimitive* brush)
 
 	m_selectedBrushes.fastRemove(brush);
 
-	if (m_brushes.fastRemove(brush))
-		delete brush;
+	CEditorLevelRegion& reg = g_pGameWorld->m_level.m_regions[brush->m_regionIdx];
+	reg.Ed_RemoveBrush(brush);
+
+	//if (m_brushes.fastRemove(brush))
+	//	delete brush;
 }
 
 void CUI_BlockEditor::RecalcSelectionBox()
@@ -616,6 +628,29 @@ void CUI_BlockEditor::ProcessMouseEvents(wxMouseEvent& event)
 		// selection of brushes and faces
 		if (event.ControlDown() && (event.ButtonIsDown(wxMOUSE_BTN_LEFT) || event.ButtonIsDown(wxMOUSE_BTN_RIGHT)))
 		{
+			CEditorLevelRegion* reg = NULL;
+			float dist = DrvSynUnits::MaxCoordInMeters;
+			int faceId = -1;
+			int brushId = g_pGameWorld->m_level.Ed_SelectBrushAndReg(ray_start, ray_dir, &reg, dist, faceId);
+			CBrushPrimitive* nearestBrush = nullptr;
+
+			if (faceId >= 0)
+			{
+				nearestBrush = reg->m_brushes[brushId];
+
+				if (event.ButtonIsDown(wxMOUSE_BTN_LEFT) && m_selectedTool == BlockEdit_Selection)
+				{
+					ToggleBrushSelection(nearestBrush);
+					RecalcSelectionBox();
+				}
+				else if (event.ButtonIsDown(wxMOUSE_BTN_RIGHT) && faceId != -1 && (m_selectedTool == BlockEdit_Selection || m_selectedTool == BlockEdit_VertexManip))
+				{
+					ToggleFaceSelection(nearestBrush->GetFacePolygon(faceId));
+					RecalcFaceSelection();
+				}
+			}
+
+			/*
 			CBrushPrimitive* nearestBrush = nullptr;
 			Vector3D intersectPos;
 			float intersectDist = DrvSynUnits::MaxCoordInUnits;
@@ -635,8 +670,8 @@ void CUI_BlockEditor::ProcessMouseEvents(wxMouseEvent& event)
 					intersectDist = dist;
 				}
 			}
-
-			if (nearestBrush && intersectFace >= 0)
+			
+			if (nearestBrush && faceId >= 0)
 			{
 				if (event.ButtonIsDown(wxMOUSE_BTN_LEFT) && m_selectedTool == BlockEdit_Selection)
 				{
@@ -649,6 +684,7 @@ void CUI_BlockEditor::ProcessMouseEvents(wxMouseEvent& event)
 					RecalcFaceSelection();
 				}
 			}
+			*/
 		}
 	}
 
@@ -755,7 +791,7 @@ bool CUI_BlockEditor::ProcessSelectionAndBrushMouseEvents(wxMouseEvent& event)
 
 				editBox.minPoint += dragOfs;
 				editBox.maxPoint += dragOfs;
-				m_mode = BLOCK_MODE_CREATION;
+				//m_mode = BLOCK_MODE_CREATION;
 			}
 			else
 			{
@@ -765,6 +801,10 @@ bool CUI_BlockEditor::ProcessSelectionAndBrushMouseEvents(wxMouseEvent& event)
 				for (int i = 0; i < m_selectedBrushes.numElem(); i++)
 				{
 					CBrushPrimitive* brush = m_selectedBrushes[i];
+
+					// make undoable
+					g_pEditorActionObserver->BeginModify(brush);
+
 					if (!brush->Transform(translate(dragOfs), m_textureLock->IsChecked()))
 					{
 						DeleteBrush(brush);
@@ -773,7 +813,7 @@ bool CUI_BlockEditor::ProcessSelectionAndBrushMouseEvents(wxMouseEvent& event)
 				}
 
 				RecalcSelectionBox();
-				m_mode = BLOCK_MODE_READY;
+				//m_mode = BLOCK_MODE_READY;
 			}
 		}
 		if (m_mode == BLOCK_MODE_ROTATE)
@@ -797,6 +837,9 @@ bool CUI_BlockEditor::ProcessSelectionAndBrushMouseEvents(wxMouseEvent& event)
 
 				const Plane& pl = selWinding->face.Plane;
 				CBrushPrimitive* brush = selWinding->brush;
+
+				// make undoable
+				g_pEditorActionObserver->BeginModify(brush);
 
 				const Vector3D faceOrigin = selWinding->GetCenter();
 				const Vector3D faceOriginToSelection = (faceOrigin - m_faceAxis.m_position);
@@ -830,6 +873,9 @@ bool CUI_BlockEditor::ProcessSelectionAndBrushMouseEvents(wxMouseEvent& event)
 				for (int i = 0; i < m_selectedBrushes.numElem(); i++)
 				{
 					CBrushPrimitive* brush = m_selectedBrushes[i];
+
+					// make undoable
+					g_pEditorActionObserver->BeginModify(brush);
 
 					const Vector3D brushOrigin = brush->GetBBox().GetCenter();
 					const Vector3D brushOriginToSelection = (brushOrigin - editBox.GetCenter());
@@ -883,6 +929,9 @@ bool CUI_BlockEditor::ProcessSelectionAndBrushMouseEvents(wxMouseEvent& event)
 
 				winding_t* selWinding = m_selectedFaces[0];
 
+				// make undoable
+				g_pEditorActionObserver->BeginModify(selWinding->brush);
+
 				Plane& pl = selWinding->face.Plane;
 				float distFromPl = SnapFloat(GridSize(), pl.Distance(m_faceAxis.m_position));
 
@@ -914,6 +963,9 @@ bool CUI_BlockEditor::ProcessSelectionAndBrushMouseEvents(wxMouseEvent& event)
 				{
 					CBrushPrimitive* brush = m_selectedBrushes[i];
 
+					// make undoable
+					g_pEditorActionObserver->BeginModify(brush);
+
 					const Vector3D brushOrigin = brush->GetBBox().GetCenter();
 
 					const Vector3D brushOriginToSelection = (brushOrigin - editBox.GetCenter());
@@ -936,6 +988,7 @@ bool CUI_BlockEditor::ProcessSelectionAndBrushMouseEvents(wxMouseEvent& event)
 		}
 
 		g_pEditorActionObserver->EndAction();
+		g_pMainFrame->NotifyUpdate();
 
 		editGizmo.EndDrag();
 		m_dragOffs = vec3_zero;
@@ -1036,6 +1089,9 @@ bool CUI_BlockEditor::ProcessVertexManipMouseEvents(wxMouseEvent& event)
 		{
 			CBrushPrimitive* brush = selectedBrushes[i];
 
+			// make undoable
+			g_pEditorActionObserver->BeginModify(brush);
+
 			// clone brush vertices for renderer
 			DkList<Vector3D> brushVerts;
 			brushVerts.append(brush->GetVerts());
@@ -1102,10 +1158,69 @@ bool CUI_BlockEditor::ProcessVertexManipMouseEvents(wxMouseEvent& event)
 	return true;
 }
 
+void CUI_BlockEditor::UpdateCursor(wxMouseEvent& event, const Vector3D& ppos)
+{
+	Vector3D ray_start, ray_dir;
+	g_pMainFrame->GetMouseScreenVectors(event.GetX(), event.GetY(), ray_start, ray_dir);
+
+	// TODO: trace other world
+	CEditorLevelRegion* reg = NULL;
+	float dist = DrvSynUnits::MaxCoordInMeters;
+	int faceId = -1;
+	int brushId = g_pGameWorld->m_level.Ed_SelectBrushAndReg(ray_start, ray_dir, &reg, dist, faceId);
+
+	if (faceId >= 0)
+	{
+		Vector3D cursorPos = SnapVector(GridSize(), ray_start + ray_dir*dist);
+		m_cursorPos = cursorPos;
+	}
+	else
+	{
+		Vector3D cursorPos = SnapVector(GridSize(), ppos);
+		m_cursorPos = cursorPos;
+	}
+
+	/*
+	CBrushPrimitive* nearestBrush = nullptr;
+	Vector3D intersectPos;
+	float intersectDist = DrvSynUnits::MaxCoordInUnits;
+	int intersectFace = -1;
+
+	for (int i = 0; i < m_brushes.numElem(); i++)
+	{
+		int hitFace = -1;
+
+		CBrushPrimitive* testBrush = m_brushes[i];
+		float dist = testBrush->CheckLineIntersection(ray_start, ray_start + ray_dir * DrvSynUnits::MaxCoordInUnits, intersectPos, hitFace);
+
+		if (dist < intersectDist)
+		{
+			nearestBrush = testBrush;
+			intersectFace = hitFace;
+			intersectDist = dist;
+		}
+	}
+
+	// place cursor on brush
+	if (intersectFace >= 0)
+	{
+		Vector3D cursorPos = SnapVector(GridSize(), intersectPos);
+		m_cursorPos = cursorPos;
+	}
+	else
+	{
+		Vector3D cursorPos = SnapVector(GridSize(), ppos);
+		m_cursorPos = cursorPos;
+	}
+	*/
+}
+
 bool CUI_BlockEditor::ProcessClipperMouseEvents(wxMouseEvent& event)
 {
 	Vector3D ray_start, ray_dir;
 	g_pMainFrame->GetMouseScreenVectors(event.GetX(), event.GetY(), ray_start, ray_dir);
+
+
 
 	return true;
 }
@@ -1160,7 +1275,7 @@ void CUI_BlockEditor::OnKey(wxKeyEvent& event, bool bDown)
 
 
 	bool canChangeMode = (m_selectedTool == BlockEdit_Selection && (m_selectedBrushes.numElem() || m_selectedBrushes.numElem() == 0 && m_selectedFaces.numElem() == 1)) ||
-						 (m_selectedTool == BlockEdit_Brush && m_mode != BLOCK_MODE_CREATION) ||
+						 (m_selectedTool == BlockEdit_Brush && m_mode == BLOCK_MODE_CREATION) ||
 						 (m_selectedTool == BlockEdit_VertexManip && GetSelectedVertsCount());
 
 	if (canChangeMode)
@@ -1180,33 +1295,33 @@ void CUI_BlockEditor::OnKey(wxKeyEvent& event, bool bDown)
 		}
 	}
 
-	if (m_mode == BLOCK_MODE_CREATION)
+	if (event.GetKeyCode() == WXK_RETURN)
 	{
-		if (event.GetKeyCode() == WXK_RETURN)
+		if (m_selectedTool == BlockEdit_Brush)
 		{
-			if (!m_texPanel->GetSelectedMaterial())
+			if (m_mode == BLOCK_MODE_CREATION || m_mode == BLOCK_MODE_TRANSLATE)
 			{
-				wxMessageBox("You need to select material first");
-				return;
-			}
+				if (!m_texPanel->GetSelectedMaterial())
+				{
+					wxMessageBox("You need to select material first");
+					return;
+				}
 
-			if (m_selectedTool == BlockEdit_Brush)
-			{
 				// Make a brush
 				Volume vol;
 				BoxToVolume(m_creationBox, vol);
 
 				CBrushPrimitive* brush = CBrushPrimitive::CreateFromVolume(vol, m_texPanel->GetSelectedMaterial());
 
-				if (brush)
-				{
-					m_brushes.append(brush);
-				}
+				CEditorLevelRegion* region = (CEditorLevelRegion*)g_pGameWorld->m_level.GetRegionAtPosition(m_creationBox.GetCenter());
+				region->Ed_AddBrush(brush);
+
+				m_mode = BLOCK_MODE_READY;
 			}
-			else if (m_selectedTool == BlockEdit_Polygon)
-			{
-				// make a polygon
-			}
+		}
+		else if (m_selectedTool == BlockEdit_Polygon)
+		{
+			// make a polygon
 
 			m_mode = BLOCK_MODE_READY;
 		}
@@ -1399,6 +1514,40 @@ Matrix4x4 CUI_BlockEditor::CalcSelectionTransform(CBrushPrimitive* brush)
 	return identity4();
 }
 
+void CUI_BlockEditor::OnHistoryEvent(CUndoableObject* undoable, int eventType)
+{
+	if (eventType == HIST_ACT_DELETION)
+	{
+		CUndoableObject* brush = dynamic_cast<CUndoableObject*>(undoable);
+
+		if (brush)
+		{
+			for (int i = 0; i < m_selectedBrushes.numElem(); i++)
+			{
+				if (m_selectedBrushes[i] == brush)
+				{
+					m_selectedBrushes.fastRemoveIndex(i);
+					i--;
+				}
+			}
+		}
+	}
+
+	if (eventType == HIST_ACT_COMPLETED)
+	{
+		m_selectedBrushes.clear();
+		m_selectedFaces.clear();
+		m_selectedVerts.clear();
+
+		CancelSelection();
+		CancelSelection();
+		CancelSelection();
+
+		//RecalcSelectionBox();
+		//RecalcFaceSelection();
+	}
+}
+
 void CUI_BlockEditor::OnRender()
 {
 	materials->SetMatrix(MATRIXMODE_WORLD, identity4());
@@ -1406,26 +1555,13 @@ void CUI_BlockEditor::OnRender()
 
 	// Draw 3D cursor
 	if (m_selectedTool == BlockEdit_Brush ||
-		m_selectedTool == BlockEdit_Polygon)
+		m_selectedTool == BlockEdit_Polygon ||
+		m_selectedTool == BlockEdit_Clipper)
 	{
 		debugoverlay->Sphere3D(m_cursorPos, 0.15f, ColorRGBA(1, 1, 0, 1), 0.0f);
 	}
 
 	materials->SetMatrix(MATRIXMODE_WORLD, identity4());
-
-	// DRAW WORLD OF BRUSHES
-	// TODO: EditorLevel code
-	{
-		ColorRGBA ambColor = materials->GetAmbientColor();
-
-		for (int i = 0; i < m_brushes.numElem(); i++)
-		{
-			CBrushPrimitive* brush = m_brushes[i];
-			brush->Render(0);
-
-			materials->SetAmbientColor(ambColor);
-		}
-	}
 
 	Vector3D dragTranslation = SnapVector(GridSize(), m_dragOffs);
 	Matrix3x3 dragRotation = !(!m_dragInitRot*m_dragRot);
@@ -1496,7 +1632,14 @@ void CUI_BlockEditor::OnRender()
 				debugoverlay->Box3D(selectionBox.minPoint, selectionBox.maxPoint, ColorRGBA(1, 1, 0, 1), 0.0f);
 
 				if (m_mode == BLOCK_MODE_TRANSLATE || m_mode == BLOCK_MODE_ROTATE)
+				{
 					m_centerAxis.Draw(clength);
+
+					if (m_mode == BLOCK_MODE_TRANSLATE)
+						debugoverlay->Text3D(m_centerAxis.m_position + Vector3D(0.0f, clength, 0.0f)*EDAXIS_SCALE, 250.0f, ColorRGBA(1), 0.0f, "Translate");
+					else if (m_mode == BLOCK_MODE_ROTATE)
+						debugoverlay->Text3D(m_centerAxis.m_position + Vector3D(0.0f, clength, 0.0f)*EDAXIS_SCALE, 250.0f, ColorRGBA(1), 0.0f, "Rotation");
+				}
 				else if (m_draggablePlane != -1)
 					m_faceAxis.Draw(flength, AXIS_Z);
 			}
@@ -1564,7 +1707,10 @@ void CUI_BlockEditor::OnRender()
 				debugoverlay->Box3D(creationBox.minPoint, creationBox.maxPoint, ColorRGBA(1, 1, 1, 1), 0.0f);
 
 				if (m_mode == BLOCK_MODE_TRANSLATE)
+				{
 					m_centerAxis.Draw(clength);
+					debugoverlay->Text3D(m_centerAxis.m_position + Vector3D(0.0f, clength, 0.0f)*EDAXIS_SCALE, 250.0f, ColorRGBA(1), 0.0f, "Translate");
+				}
 				else if (m_draggablePlane != -1)
 					m_faceAxis.Draw(flength, AXIS_Z);
 			}
@@ -1594,7 +1740,6 @@ void CUI_BlockEditor::OnRender()
 			{
 
 			}
-
 		}
 	}
 

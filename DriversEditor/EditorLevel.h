@@ -21,6 +21,7 @@ class CLevelModel;
 class IMaterial;
 class IVirtualStream;
 struct kvkeybase_t;
+class CBrushPrimitive;
 
 class CLayerModel : public CEditorPreviewable
 {
@@ -161,6 +162,7 @@ public:
 
 	int				Ed_SelectRefAndReg(const Vector3D& start, const Vector3D& dir, CEditorLevelRegion** reg, float& dist);
 	int				Ed_SelectBuildingAndReg(const Vector3D& start, const Vector3D& dir, CEditorLevelRegion** reg, float& dist);
+	int				Ed_SelectBrushAndReg(const Vector3D& start, const Vector3D& dir, CEditorLevelRegion** reg, float& dist, int& faceId);
 
 	bool			Ed_GenerateMap(LevelGenParams_t& genParams, const CImage* img);
 
@@ -172,7 +174,7 @@ public:
 	void			Ed_RemoveObjectDef(CLevObjectDef* def);
 
 	// moves object to new region if possible
-	CEditorLevelRegion*	Ed_MakeObjectRegionValid(regionObject_t* obj, CLevelRegion* itsRegion);
+	CEditorLevelRegion*	Ed_MakeObjectRegionValid(regionObject_t* obj);
 
 	void			WriteLevelRegions(IVirtualStream* stream, bool isFinal);
 	void			WriteObjectDefsLump(IVirtualStream* stream);
@@ -183,6 +185,9 @@ public:
 
 	void			SaveEditorRoads(const char* levelName);
 	void			LoadEditorRoads(const char* levelName);
+
+	void			SaveEditorBrushes(const char* levelName);
+	void			LoadEditorBrushes(const char* levelName);
 
 	void			PostLoadEditorBuildings( DkList<buildLayerColl_t*>& buildingTemplates );
 
@@ -226,8 +231,12 @@ public:
 	void						Ed_AddObject(regionObject_t* obj);
 	void						Ed_RemoveObject(regionObject_t* obj);
 
+	void						Ed_AddBrush(CBrushPrimitive* obj);
+	void						Ed_RemoveBrush(CBrushPrimitive* obj);
+
 	int							Ed_SelectRef(const Vector3D& start, const Vector3D& dir, float& dist);
 	int							Ed_SelectBuilding(const Vector3D& start, const Vector3D& dir, float& dist);
+	int							Ed_SelectBrush(const Vector3D& start, const Vector3D& dir, float& dist, int& faceId);
 
 	int							Ed_GetOccluderIdx(levOccluderLine_t* occluder);
 
@@ -242,6 +251,8 @@ public:
 	bool						m_physicsPreview;
 
 	DkList<buildingSource_t*>	m_buildings;
+
+	DkList<CBrushPrimitive*>	m_brushes;
 };
 
 #endif // EDITORLEVEL_H

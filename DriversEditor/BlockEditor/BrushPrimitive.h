@@ -14,6 +14,7 @@
 #include "math/Volume.h"
 #include "math/BoundingBox.h"
 #include "utils/DkLinkedList.h"
+#include "../EditorActionHistory.h"
 
 #include "world.h"
 
@@ -56,10 +57,12 @@ struct winding_t
 //-------------------------------------------------------------------
 
 // editable brush class
-class CBrushPrimitive
+class CBrushPrimitive: public CUndoableObject
 {
 	friend struct winding_t;
-
+	friend class CEditorLevelRegion;
+	friend class CEditorLevel;
+	friend class CUI_BlockEditor;
 public:
 
 	// creates a brush from volume, e.g a selection box
@@ -116,6 +119,13 @@ public:
 	bool							LoadFromKeyValues(kvkeybase_t* pSection);
 
 protected:
+	static CUndoableObject*			_brushPrimitiveFactory(IVirtualStream* stream);
+
+	UndoableFactoryFunc				Undoable_GetFactoryFunc();
+	void							Undoable_Remove();
+	bool							Undoable_WriteObjectData(IVirtualStream* stream);	// writing object
+	void							Undoable_ReadObjectData(IVirtualStream* stream);	// reading object
+
 	// calculates the vertices from faces
 	bool							AssignWindingVertices();
 	void							ValidateWindings();
@@ -126,6 +136,8 @@ protected:
 	DkList<winding_t>				m_windingFaces;
 
 	IVertexBuffer*					m_pVB;
+
+	int								m_regionIdx;
 };
 
 

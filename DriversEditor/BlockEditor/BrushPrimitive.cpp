@@ -334,6 +334,7 @@ CEditableSurface* EqBrushWinding_t::MakeEditableSurface()
 CBrushPrimitive::CBrushPrimitive()
 {
 	m_pVB = NULL;
+	m_regionIdx = -1;
 }
 
 CBrushPrimitive::~CBrushPrimitive()
@@ -440,8 +441,8 @@ void CBrushPrimitive::Render(int nViewRenderFlags)
 	g_pShaderAPI->SetVertexBuffer(m_pVB,0);
 	g_pShaderAPI->SetIndexBuffer(NULL);
 
-	Matrix4x4 view;
-	materials->GetMatrix(MATRIXMODE_VIEW, view);
+	//Matrix4x4 view;
+	//materials->GetMatrix(MATRIXMODE_VIEW, view);
 
 	ColorRGBA ambientColor = materials->GetAmbientColor();
 
@@ -467,6 +468,8 @@ void CBrushPrimitive::Render(int nViewRenderFlags)
 
 		nFirstVertex += numVerts + 1;
 	}
+
+	materials->SetAmbientColor(ambientColor);
 }
 
 void CBrushPrimitive::RenderGhost(int face /*= -1*/)
@@ -914,13 +917,14 @@ bool CBrushPrimitive::WriteObject(IVirtualStream* pStream)
 	// write face count
 	int num_faces = m_windingFaces.numElem();
 	pStream->Write(&num_faces, 1, sizeof(int));
+	pStream->Write(&m_regionIdx, 1, sizeof(int));
 
-	for (int i = 0; i < m_windingFaces.numElem(); i++)
+	for (int i = 0; i < num_faces; i++)
 	{
 		brushFace_t& face = m_windingFaces[i].face;
 
 		ReadWriteFace_t wface;
-		memset(&face, 0, sizeof(ReadWriteFace_t));
+		memset(&wface, 0, sizeof(ReadWriteFace_t));
 
 		wface.NPlane = face.Plane;
 		wface.UAxis = face.UAxis;
@@ -935,7 +939,7 @@ bool CBrushPrimitive::WriteObject(IVirtualStream* pStream)
 		else
 			strcpy(wface.materialname, "ERROR");
 
-		pStream->Write(&face, 1, sizeof(ReadWriteFace_t));
+		pStream->Write(&wface, 1, sizeof(ReadWriteFace_t));
 	}
 
 	return true;
@@ -944,9 +948,16 @@ bool CBrushPrimitive::WriteObject(IVirtualStream* pStream)
 // read this object
 bool CBrushPrimitive::ReadObject(IVirtualStream* pStream)
 {
+	m_windingFaces.clear();
+	m_verts.clear();
+
 	// write face count
 	int num_faces;
 	pStream->Read(&num_faces, 1, sizeof(int));
+	pStream->Read(&m_regionIdx, 1, sizeof(int));
+
+	Msg("Read faces %d\n", num_faces);
+	Msg("Read region %d\n", m_regionIdx);
 
 	for (int i = 0; i < num_faces; i++)
 	{
@@ -967,15 +978,14 @@ bool CBrushPrimitive::ReadObject(IVirtualStream* pStream)
 	}
 
 	// calculate face verts
-	Update();
-
-	return true;
+	return Update();
 }
 
 // stores object in keyvalues
 void CBrushPrimitive::SaveToKeyValues(kvkeybase_t* pSection)
 {
 	kvkeybase_t* pFacesSec = pSection->AddKeyBase("faces");
+	pSection->SetKey("region", m_regionIdx);
 	
 	for(int i = 0; i < m_windingFaces.numElem(); i++)
 	{
@@ -995,6 +1005,7 @@ void CBrushPrimitive::SaveToKeyValues(kvkeybase_t* pSection)
 bool CBrushPrimitive::LoadFromKeyValues(kvkeybase_t* pSection)
 {
 	kvkeybase_t* pFacesSec = pSection->FindKeyBase("faces", KV_FLAG_SECTION);
+	m_regionIdx = KV_GetValueInt(pSection->FindKeyBase("region"), 0, -1);
 	
 	for(int i = 0; i < pFacesSec->keys.numElem(); i++)
 	{
@@ -1003,6 +1014,9 @@ bool CBrushPrimitive::LoadFromKeyValues(kvkeybase_t* pSection)
 
 		if (stricmp("face", faceKV->name))
 			continue;
+
+		// loaded face has texture matrix set up
+		face.nFlags |= BRUSH_FACE_TEXMATRIX_SETUP;
 
 		Vector4D NPlane = KV_GetVector4D(faceKV->FindKeyBase("N"));
 		face.Plane.normal = NPlane.xyz();
@@ -1072,4 +1086,48 @@ CBrushPrimitive* CBrushPrimitive::CreateFromVolume(const Volume& volume, IMateri
 	}
 
 	return brush;
+}
+
+// UNDOABLE
+
+CUndoableObject* CBrushPrimitive::_brushPrimitiveFactory(IVirtualStream* stream)
+{
+	CBrushPrimitive* obj = new CBrushPrimitive();
+	obj->Undoable_ReadObjectData(stream);
+
+	return obj;
+}
+
+UndoableFactoryFunc CBrushPrimitive::Undoable_GetFactoryFunc()
+{
+	return _brushPrimitiveFactory;
+}
+
+void CBrushPrimitive::Undoable_Remove()
+{
+	CEditorLevelRegion& region = g_pGameWorld->m_level.m_regions[m_regionIdx];
+	region.m_brushes.fastRemove(this);
+	delete this;
+}
+
+bool CBrushPrimitive::Undoable_WriteObjectData(IVirtualStream* stream)
+{
+	return WriteObject(stream);
+}
+
+void CBrushPrimitive::Undoable_ReadObjectData(IVirtualStream* stream)
+{
+	int prevRegionIdx = m_regionIdx;
+
+	ReadObject(stream);
+
+	// move to new region if needed
+	if (prevRegionIdx != m_regionIdx)
+	{
+		if (prevRegionIdx >= 0)
+			g_pGameWorld->m_level.m_regions[prevRegionIdx].m_brushes.fastRemove(this);
+
+		if (m_regionIdx >= 0)
+			g_pGameWorld->m_level.m_regions[m_regionIdx].m_brushes.append(this);
+	}
 }

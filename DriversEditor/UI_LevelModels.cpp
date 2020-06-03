@@ -1378,7 +1378,7 @@ void MoveRefToNewRegion(refselectioninfo_t& selection)
 		ref->position = transform.getTranslationComponent();
 	}*/
 
-	selection.selRegion = g_pGameWorld->m_level.Ed_MakeObjectRegionValid(selection.selRef, selection.selRegion);
+	selection.selRegion = g_pGameWorld->m_level.Ed_MakeObjectRegionValid(selection.selRef);
 }
 
 void CUI_LevelModels::MouseTranslateEvents( wxMouseEvent& event, const Vector3D& ray_start, const Vector3D& ray_dir )
@@ -1482,10 +1482,10 @@ void CUI_LevelModels::MouseRotateEvents( wxMouseEvent& event, const Vector3D& ra
 	{
 		int initAxes = m_editAxis.TestRay(ray_start, ray_dir, clength, false);
 
-		m_dragRot = m_editAxis.PerformRotation(ray_start, ray_dir, initAxes);
+			m_dragRot = m_editAxis.PerformRotation(ray_start, ray_dir, initAxes);
 
-		if (!event.Dragging())
-			m_dragInitRot = m_dragRot;
+			if (!event.Dragging())
+				m_dragInitRot = m_dragRot;
 	}
 
 	if(event.ButtonUp(wxMOUSE_BTN_LEFT))

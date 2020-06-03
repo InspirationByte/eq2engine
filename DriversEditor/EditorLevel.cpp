@@ -10,6 +10,7 @@
 #include "IMaterialSystem.h"
 #include "IDebugOverlay.h"
 #include "world.h"
+#include "BlockEditor/BrushPrimitive.h"
 
 #include "utils/VirtualStream.h"
 
@@ -591,6 +592,7 @@ bool CEditorLevel::Load(const char* levelname)
 	if(result)
 	{
 		LoadEditorBuildings(levelname);
+		LoadEditorBrushes(levelname);
 		LoadEditorRoads(levelname);
 	}
 
@@ -620,12 +622,14 @@ void CEditorLevel::BackupFiles(const char* levelname)
 		EqString buildingTemplateModelsPathBkp(folderPathBkp + "/buildingTemplateModels.dat");
 		EqString buildingTemplatesPathBkp(folderPathBkp + "/buildingTemplates.def");
 		EqString roadsPathBkp(folderPathBkp + "/roads.ekv");
+		EqString blocksPathBkp(folderPathBkp + "/brushes.ekv");
 
 		// remove old backuip
 		g_fileSystem->FileRemove(buildingsPathBkp.c_str(), SP_MOD);
 		g_fileSystem->FileRemove(buildingTemplateModelsPathBkp.c_str(), SP_MOD);
 		g_fileSystem->FileRemove(buildingTemplatesPathBkp.c_str(), SP_MOD);
 		g_fileSystem->FileRemove(roadsPathBkp.c_str(), SP_MOD);
+		g_fileSystem->FileRemove(blocksPathBkp.c_str(), SP_MOD);
 
 		g_fileSystem->RemoveDir(folderPathBkp.c_str(), SP_MOD);
 
@@ -667,6 +671,7 @@ bool CEditorLevel::Save(const char* levelname, bool isFinal)
 
 	// editor-related stuff
 	SaveEditorBuildings( levelname );
+	SaveEditorBrushes( levelname );
 	SaveEditorRoads( levelname );
 
 	levLump_t endLump;
@@ -889,16 +894,19 @@ void CEditorLevel::Ed_RemoveObjectDef(CLevObjectDef* def)
 	}
 }
 
-CEditorLevelRegion* CEditorLevel::Ed_MakeObjectRegionValid(regionObject_t* obj, CLevelRegion* itsRegion)
+
+CEditorLevelRegion* CEditorLevel::Ed_MakeObjectRegionValid(regionObject_t* obj)
 {
 	CEditorLevelRegion* correctReg = (CEditorLevelRegion*)GetRegionAtPosition(obj->position);
-
+	
 	// if region at it's position does not matching, it should be moved
-	if (correctReg != itsRegion)
+	if (correctReg->m_regionIndex != obj->regionIdx)
 	{
-		//g_pEditorActionObserver->OnDelete(obj);
+		CEditorLevelRegion* curReg = &m_regions[obj->regionIdx];
 
-		itsRegion->m_objects.fastRemove(obj);
+		// might be incorrect with region index
+		//g_pEditorActionObserver->OnDelete(obj);
+		curReg->m_objects.fastRemove(obj);
 
 		obj->regionIdx = correctReg->m_regionIndex;
 		correctReg->m_objects.append(obj);
@@ -954,7 +962,7 @@ void CEditorLevel::WriteLevelRegions(IVirtualStream* file, bool isFinal)
 			{
 				regionObject_t* object = reg.m_objects[i];
 
-				Ed_MakeObjectRegionValid(object, &reg);
+				Ed_MakeObjectRegionValid(object);
 			}
 		}
 	}
@@ -1213,11 +1221,11 @@ void CEditorLevel::SaveEditorBuildings( const char* levelName )
 		{
 			int idx = y*m_wide+x;
 
-			CEditorLevelRegion* reg = (CEditorLevelRegion*)&m_regions[idx];
+			CEditorLevelRegion& reg = m_regions[idx];
 
-			for(int i = 0; i < reg->m_buildings.numElem(); i++)
+			for(int i = 0; i < reg.m_buildings.numElem(); i++)
 			{
-				buildingSource_t* buildingSrc = reg->m_buildings[i];
+				buildingSource_t* buildingSrc = reg.m_buildings[i];
 				kvkeybase_t* bldKvs = root->AddKeyBase("", varargs("%d", i));
 
 				bldKvs->SetKey("region", varargs("%d", idx));
@@ -1288,6 +1296,7 @@ void CEditorLevel::PostLoadEditorBuildings( DkList<buildLayerColl_t*>& buildingT
 	}
 }
 
+// road properties
 void CEditorLevel::SaveEditorRoads(const char* levelName)
 {
 	EqString roadsPath = varargs(LEVELS_PATH "%s_editor/roads.ekv", levelName);
@@ -1310,6 +1319,60 @@ void CEditorLevel::LoadEditorRoads(const char* levelName)
 
 	kvkeybase_t* root = kvs.GetRootSection();
 	m_leftHandedRoads = KV_GetValueBool(root->FindKeyBase("lefthanded"), 0, false);
+}
+
+// brush blocks
+void CEditorLevel::SaveEditorBrushes(const char* levelName)
+{
+	EqString blocksPath = varargs(LEVELS_PATH "%s_editor/brushes.ekv", levelName);
+
+	KeyValues kvs;
+	kvkeybase_t* root = kvs.GetRootSection();
+
+	for (int x = 0; x < m_wide; x++)
+	{
+		for (int y = 0; y < m_tall; y++)
+		{
+			int idx = y * m_wide + x;
+
+			CEditorLevelRegion& region = m_regions[idx];
+			for (int i = 0; i < region.m_brushes.numElem(); i++)
+			{
+				kvkeybase_t* brushKvs = root->AddKeyBase("brush", varargs("%d", i));
+
+				region.m_brushes[i]->SaveToKeyValues(brushKvs);
+			}
+		}
+	}
+
+	kvs.SaveToFile(blocksPath.c_str(), SP_MOD);
+}
+
+void CEditorLevel::LoadEditorBrushes(const char* levelName)
+{
+	EqString blocksPath = varargs(LEVELS_PATH "%s_editor/brushes.ekv", levelName);
+
+	KeyValues kvs;
+	if (!kvs.LoadFromFile(blocksPath.c_str(), SP_MOD))
+		return;
+
+	kvkeybase_t* root = kvs.GetRootSection();
+
+	for (int i = 0; i < root->keys.numElem(); i++)
+	{
+		kvkeybase_t* brushKvs = root->keys[i];
+
+		CBrushPrimitive* newBrush = new CBrushPrimitive();
+		if (newBrush->LoadFromKeyValues(brushKvs))
+		{
+			int regIndex = newBrush->m_regionIdx;
+			CEditorLevelRegion* reg = (CEditorLevelRegion*)&m_regions[regIndex];
+
+			reg->m_brushes.append(newBrush);
+		}
+		else
+			delete newBrush;
+	}
 }
 
 void CEditorLevel::OnPreApplyMaterial( IMaterial* pMaterial )
@@ -1687,7 +1750,7 @@ void CEditorLevel::PlacePrefabHeightfields(const IVector2D& position, int height
 int CEditorLevel::Ed_SelectRefAndReg(const Vector3D& start, const Vector3D& dir, CEditorLevelRegion** reg, float& dist)
 {
 	float max_dist = DrvSynUnits::MaxCoordInUnits;
-	int bestDistrefIdx = NULL;
+	int bestDistrefIdx = -1;
 	CEditorLevelRegion* bestReg = NULL;
 
 	// build region offsets
@@ -1722,7 +1785,7 @@ int CEditorLevel::Ed_SelectRefAndReg(const Vector3D& start, const Vector3D& dir,
 int	CEditorLevel::Ed_SelectBuildingAndReg(const Vector3D& start, const Vector3D& dir, CEditorLevelRegion** reg, float& dist)
 {
 	float max_dist = DrvSynUnits::MaxCoordInUnits;
-	int bestDistrefIdx = NULL;
+	int bestDistrefIdx = -1;
 	CEditorLevelRegion* bestReg = NULL;
 
 	// build region offsets
@@ -1749,6 +1812,42 @@ int	CEditorLevel::Ed_SelectBuildingAndReg(const Vector3D& start, const Vector3D&
 	*reg = bestReg;
 	dist = max_dist;
 	return bestDistrefIdx;
+}
+
+int CEditorLevel::Ed_SelectBrushAndReg(const Vector3D& start, const Vector3D& dir, CEditorLevelRegion** reg, float& dist, int& faceId)
+{
+	float max_dist = DrvSynUnits::MaxCoordInUnits;
+	int bestDistBrushIdx = -1;
+	int bestBrushFaceId = -1;
+	CEditorLevelRegion* bestReg = NULL;
+
+	// build region offsets
+	for (int x = 0; x < m_wide; x++)
+	{
+		for (int y = 0; y < m_tall; y++)
+		{
+			int idx = y * m_wide + x;
+
+			CEditorLevelRegion& sreg = *(CEditorLevelRegion*)&m_regions[idx];
+
+			float refdist = DrvSynUnits::MaxCoordInUnits;
+			int brushFaceId = -1;
+			int foundIdx = sreg.Ed_SelectBrush(start, dir, refdist, brushFaceId);
+
+			if (brushFaceId != -1 && (refdist < max_dist))
+			{
+				max_dist = refdist;
+				bestReg = &sreg;
+				bestDistBrushIdx = foundIdx;
+				bestBrushFaceId = brushFaceId;
+			}
+		}
+	}
+
+	*reg = bestReg;
+	dist = max_dist;
+	faceId = bestBrushFaceId;
+	return bestDistBrushIdx;
 }
 
 void CEditorLevel::Ed_Prerender(const Vector3D& cameraPosition)
@@ -1911,6 +2010,11 @@ void CEditorLevelRegion::Cleanup()
 		delete m_buildings[i];
 
 	m_buildings.clear();
+
+	for (int i = 0; i < m_brushes.numElem(); i++)
+		delete m_brushes[i];
+
+	m_brushes.clear();
 }
 
 CEditorLevelRegion::CEditorLevelRegion() : CLevelRegion(), m_physicsPreview(false)
@@ -2283,7 +2387,7 @@ float CheckStudioRayIntersection(IEqModel* pModel, Vector3D& ray_start, Vector3D
 			int numIndices = (pGroup->primitiveType == EGFPRIM_TRI_STRIP) ? pGroup->numIndices - 2 : pGroup->numIndices;
 			int indexStep = (pGroup->primitiveType == EGFPRIM_TRI_STRIP) ? 1 : 3;
 
-			for (uint32 k = 0; k < numIndices; k += indexStep)
+			for (int k = 0; k < numIndices; k += indexStep)
 			{
 				// skip strip degenerates
 				if (pIndices[k] == pIndices[k+1] || pIndices[k] == pIndices[k+2] || pIndices[k+1] == pIndices[k+2])
@@ -2337,6 +2441,26 @@ void CEditorLevelRegion::Ed_RemoveObject(regionObject_t* obj)
 
 	obj->regionIdx = -1;
 	m_objects.fastRemove(obj);
+
+	// Ref_Drop is already called in destructor 
+	delete obj;
+}
+
+void CEditorLevelRegion::Ed_AddBrush(CBrushPrimitive* obj)
+{
+	obj->m_regionIdx = m_regionIndex;
+	m_brushes.addUnique(obj);
+
+	g_pEditorActionObserver->OnCreate(obj);
+}
+
+void CEditorLevelRegion::Ed_RemoveBrush(CBrushPrimitive* obj)
+{
+	// before it can be dropped it must be registered in action observer
+	g_pEditorActionObserver->OnDelete(obj);
+
+	obj->m_regionIdx = -1;
+	m_brushes.fastRemove(obj);
 
 	// Ref_Drop is already called in destructor 
 	delete obj;
@@ -2405,6 +2529,36 @@ int	CEditorLevelRegion::Ed_SelectBuilding(const Vector3D& start, const Vector3D&
 	dist = fMaxDist;
 
 	return bestDistrefIdx;
+}
+
+int	CEditorLevelRegion::Ed_SelectBrush(const Vector3D& start, const Vector3D& dir, float& dist, int& faceId)
+{
+	int nearestBrushId = -1;
+	Vector3D intersectPos;
+	float intersectDist = DrvSynUnits::MaxCoordInUnits;
+	int intersectFace = -1;
+
+	Vector3D end = start + dir * DrvSynUnits::MaxCoordInUnits;
+
+	for (int i = 0; i < m_brushes.numElem(); i++)
+	{
+		int hitFace = -1;
+
+		CBrushPrimitive* testBrush = m_brushes[i];
+		float bdist = testBrush->CheckLineIntersection(start, end, intersectPos, hitFace);
+
+		if (bdist < intersectDist)
+		{
+			nearestBrushId = i;
+			intersectFace = hitFace;
+			intersectDist = bdist;
+		}
+	}
+
+	faceId = intersectFace;
+	dist = intersectDist * DrvSynUnits::MaxCoordInUnits;
+
+	return intersectFace >= 0 ? nearestBrushId : -1;
 }
 
 int CEditorLevelRegion::Ed_GetOccluderIdx(levOccluderLine_t* occluder)
@@ -2533,5 +2687,11 @@ void CEditorLevelRegion::Render(const Vector3D& cameraPosition, const occludingF
 			continue;
 
 		RenderBuilding(m_buildings[i], NULL);
+	}
+
+	for (int i = 0; i < m_brushes.numElem(); i++)
+	{
+		CBrushPrimitive* brush = m_brushes[i];
+		brush->Render(0);
 	}
 }
