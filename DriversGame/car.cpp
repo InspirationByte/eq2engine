@@ -1720,7 +1720,7 @@ void CCar::UpdateVehiclePhysics(float delta)
 
 		float carForwardSpeed = dot(GetForwardVector().xz(), GetVelocity().xz()) * MPS_TO_KPH;
 
-		float handbrakeFactor = RemapVal(carForwardSpeed, AUTOHANDBRAKE_MIN_SPEED, AUTOHANDBRAKE_MAX_SPEED, 0.0f, 1.0f) - inputBrake;
+		float handbrakeFactor = RemapVal(carForwardSpeed, AUTOHANDBRAKE_MIN_SPEED, AUTOHANDBRAKE_MAX_SPEED, 0.0f, 1.0f);
 
 		float fLateral = -GetLateralSlidingAtBody();
 		float fLateralSign = sign(fLateral)*0.001f;
