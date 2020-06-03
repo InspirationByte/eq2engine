@@ -26,6 +26,7 @@
 #include "BulletCollision/CollisionShapes/btTriangleShape.h"
 #include "BulletCollision/CollisionDispatch/btInternalEdgeUtility.h"
 #include "BulletCollision/CollisionDispatch/btCollisionDispatcherMt.h"
+#include "BulletCollision/NarrowPhaseCollision/btRaycastCallback.h"
 
 #include "eqBulletIndexedMesh.h"
 
@@ -1001,7 +1002,7 @@ void CEqPhysics::DetectCollisionsSingle(CEqRigidBody* body)
 	if (!body->IsCanIntegrate())
 		return;
 
-	bool disabledResponse = (body->m_flags & COLLOBJ_DISABLE_RESPONSE);
+	bool disabledCollisionChecks = (body->m_flags & COLLOBJ_DISABLE_COLLISION_CHECK);
 
 	const BoundingBox& aabb = body->m_aabb_transformed;
 
@@ -1030,7 +1031,7 @@ void CEqPhysics::DetectCollisionsSingle(CEqRigidBody* body)
 				DetectStaticVsBodyCollision(gridObjects[i], body, body->GetLastFrameTime(), body->m_contactPairs);
 
 			// if object is only affected by other dynamic objects, don't waste my cycles!
-			if (disabledResponse)
+			if (disabledCollisionChecks)
 				continue;
 
 			int numGridDynObjs = dynamicObjects.numElem();
@@ -1558,6 +1559,7 @@ public:
 	CEqRayTestCallback(const btVector3&	rayFromWorld,const btVector3&	rayToWorld) : ClosestRayResultCallback(rayFromWorld, rayToWorld)
 	{
 		m_surfMaterialId = 0;
+		m_flags |= btTriangleRaycastCallback::kF_FilterBackfaces;
 	}
 
 	btScalar addSingleResult(btCollisionWorld::LocalRayResult& rayResult,bool normalInWorldSpace)
