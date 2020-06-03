@@ -797,7 +797,7 @@ kvkeybase_t& kvkeybase_t::AddKey(const char* name, bool bValue)
 
 kvkeybase_t& kvkeybase_t::AddKey(const char* name, const Vector2D& vecValue)
 {
-	kvkeybase_t* pPair = AddKeyBase(name, NULL, KVPAIR_BOOL);
+	kvkeybase_t* pPair = AddKeyBase(name, NULL, KVPAIR_FLOAT);
 	pPair->AddValue(vecValue);
 
 	return *this;
@@ -805,7 +805,7 @@ kvkeybase_t& kvkeybase_t::AddKey(const char* name, const Vector2D& vecValue)
 
 kvkeybase_t& kvkeybase_t::AddKey(const char* name, const Vector3D& vecValue)
 {
-	kvkeybase_t* pPair = AddKeyBase(name, NULL, KVPAIR_BOOL);
+	kvkeybase_t* pPair = AddKeyBase(name, NULL, KVPAIR_FLOAT);
 	pPair->AddValue(vecValue);
 
 	return *this;
@@ -813,7 +813,7 @@ kvkeybase_t& kvkeybase_t::AddKey(const char* name, const Vector3D& vecValue)
 
 kvkeybase_t& kvkeybase_t::AddKey(const char* name, const Vector4D& vecValue)
 {
-	kvkeybase_t* pPair = AddKeyBase(name, NULL, KVPAIR_BOOL);
+	kvkeybase_t* pPair = AddKeyBase(name, NULL, KVPAIR_FLOAT);
 	pPair->AddValue(vecValue);
 
 	return *this;
