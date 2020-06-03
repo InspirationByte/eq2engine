@@ -407,17 +407,10 @@ void CAIPursuerCar::OnPhysicsFrame( float fDt )
 			UpdateTarget(fDt);
 			
 			// update blocking state
-			m_collAvoidance.m_manipulator.m_isColliding = m_collisionList.numElem() > 0;
+			bool colliding = m_collisionList.numElem() > 0;
 
-			if (!m_collAvoidance.m_manipulator.m_enabled && m_collAvoidance.m_manipulator.m_isColliding && !m_collAvoidance.m_manipulator.m_collidingPositionSet)
-			{
-				m_collAvoidance.m_manipulator.m_lastCollidingPosition = m_collisionList[0].position;
-				m_collAvoidance.m_manipulator.m_collidingPositionSet = true;
-			}
-			else if (!m_collAvoidance.m_manipulator.m_enabled)
-			{
-				m_collAvoidance.m_manipulator.m_collidingPositionSet = false;
-			}
+			if(colliding)
+				m_collAvoidance.m_manipulator.Trigger(m_collisionList[0]);
 		}
 		else
 		{
@@ -1176,7 +1169,7 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 	m_chaser.m_manipulator.Setup(driveTargetPos, canBlockTarget ? vec3_zero : targetVelocity, canBlockTarget ? nullptr : target->GetPhysicsBody());
 
 	// update target avoidance affector parameters
-	m_targetAvoidance.m_manipulator.Setup(!angryActive, length(target->m_bbox.GetSize())*0.5f, targetPos, targetVelocity);
+	m_targetAvoidance.m_manipulator.Setup(!angryActive, length(target->m_bbox.GetSize())*1.5f, targetPos, targetVelocity);
 
 	// do regular updates of ai navigation
 	m_nav.Update(this, fDt);
@@ -1206,13 +1199,23 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 	// target avoidance
 	m_targetAvoidance.Update(this, fDt);
 
-	// TODO: apply stability control handling amounts to the final handling
-	// based on the game difficulty
-	handling += m_stability.m_handling;
-	handling += m_targetAvoidance.m_handling;
-
 	if (m_collAvoidance.m_manipulator.m_enabled)
+	{
 		handling = m_collAvoidance.m_handling;
+	}
+	else
+	{
+		// TODO: apply stability control handling amounts to the final handling
+		// based on the game difficulty
+		handling += m_stability.m_handling;
+		handling += m_targetAvoidance.m_handling;
+
+		if (GetSpeedWheels() < -0.01f && handling.braking > 0.1f)
+		{
+			handling.braking = 0.0f;
+			handling.acceleration = 1.0f;
+		}
+	}
 
 	if(!m_stability.m_handling.autoHandbrake)
 		handling.autoHandbrake = false;

@@ -14,7 +14,7 @@ const float AI_COP_BLOCK_DELAY						= 1.0f;
 const float AI_COP_BLOCK_COOLDOWN					= 1.0f;
 const float AI_COP_BLOCK_REALIZE_FRONTAL_TIME		= 0.8f;
 const float AI_COP_BLOCK_REALIZE_COLLISION_TIME		= 0.3f;
-const float AI_COP_BLOCK_MAX_SPEED					= 1.0f;	// meters per second
+const float AI_COP_BLOCK_MAX_SPEED					= 4.0f;	// meters per second
 const float AI_COP_BLOCK_DISTANCE_FROM_COLLISION	= 1.5f;
 
 CAICollisionAvoidanceManipulator::CAICollisionAvoidanceManipulator()
@@ -25,6 +25,21 @@ CAICollisionAvoidanceManipulator::CAICollisionAvoidanceManipulator()
 	m_blockingTime = 0.0f;
 	m_cooldownTimer = AI_COP_BLOCK_COOLDOWN;
 	m_enabled = false;
+}
+
+void CAICollisionAvoidanceManipulator::Trigger(const CollisionPairData_t& pair)
+{
+	m_isColliding = true;
+
+	if (m_enabled && !m_collidingPositionSet)
+	{
+		m_lastCollidingPosition = pair.position;
+		m_collidingPositionSet = true;
+	}
+	else
+	{
+		m_collidingPositionSet = false;
+	}
 }
 
 void CAICollisionAvoidanceManipulator::UpdateAffector(ai_handling_t& handling, CCar* car, float fDt)
@@ -70,6 +85,7 @@ void CAICollisionAvoidanceManipulator::UpdateAffector(ai_handling_t& handling, C
 			m_cooldownTimer = AI_COP_BLOCK_COOLDOWN;
 			m_collidingPositionSet = false;
 			m_enabled = false;
+			m_isColliding = false;
 		}
 	}
 	else if((m_cooldownTimer -= fDt) < 0.0f)

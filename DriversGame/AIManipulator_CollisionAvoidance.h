@@ -9,6 +9,7 @@
 #define AIMANIPULATOR_COLLISIONAVOIDANCE_H
 
 #include "AIHandling.h"
+#include "eqPhysics/eqPhysics.h"
 
 class CCar;
 
@@ -17,6 +18,7 @@ class CAICollisionAvoidanceManipulator
 public:
 	CAICollisionAvoidanceManipulator();
 
+	void Trigger(const CollisionPairData_t& pair);
 	void UpdateAffector(ai_handling_t& handling, CCar* car, float fDt);
 
 	ai_handling_t	m_initialHandling;
