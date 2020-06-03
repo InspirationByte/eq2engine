@@ -493,34 +493,35 @@ extern CPFXAtlasGroup* g_additPartcles;
 extern CPFXAtlasGroup* g_vehicleLights;
 extern CPFXAtlasGroup* g_vehicleShadows;
 
-#define PETROL_ENGINE_CURVE				(1.4f)
-#define PETROL_MINIMAL_TORQUE_FACTOR	(6.4f)
+#define PETROL_ENGINE_CURVE				(0.7f)
+#define PETROL_MINIMAL_TORQUE_FACTOR	(8.0f)
+#define PETROL_PEAK_TORQUE_FACTOR		(70.0f)
 
-#define DIESEL_ENGINE_CURVE				(0.8f)
+#define DIESEL_ENGINE_CURVE				(0.5f)
 #define DIESEL_MINIMAL_TORQUE_FACTOR	(6.0f)
+#define DIESEL_PEAK_TORQUE_FACTOR		(90.0f)
 
-#define PEAK_TORQUE_FACTOR				(90.0f)
 
 float PetrolEngineTorqueByRPM( float rpm )
 {
-	float fTorque = ( rpm * ( 0.245f * 0.001f ) );
+	float fTorque = ( rpm * ( 0.225f * 0.001f ) );
 
 	fTorque *= fTorque;
 	fTorque -= PETROL_ENGINE_CURVE;
 	fTorque *= fTorque;
 
-	return ( PETROL_MINIMAL_TORQUE_FACTOR - fTorque ) * PEAK_TORQUE_FACTOR;
+	return (PETROL_MINIMAL_TORQUE_FACTOR - fTorque) * PETROL_PEAK_TORQUE_FACTOR;
 }
 
 float DieselEngineTorqueByRPM( float rpm )
 {
-	float fTorque = ( rpm * ( 0.225f * 0.001f ) );
+	float fTorque = ( rpm * (0.225f * 0.001f ) );
 
 	fTorque *= fTorque;
 	fTorque -= DIESEL_ENGINE_CURVE;
 	fTorque *= fTorque;
 
-	return ( DIESEL_MINIMAL_TORQUE_FACTOR - fTorque ) * PEAK_TORQUE_FACTOR;
+	return (DIESEL_MINIMAL_TORQUE_FACTOR - fTorque) * DIESEL_PEAK_TORQUE_FACTOR;
 }
 
 static TORQUECURVEFUNC s_torqueFuncs[] =

@@ -37,6 +37,7 @@ void	Director_KeyPress(int key, bool down);
 
 bool	Director_FreeCameraActive();
 void	Director_UpdateFreeCamera( float fDt );
+
 void	Director_MouseMove( int x, int y, float deltaX, float deltaY  );
 void	Director_Reset();
 
