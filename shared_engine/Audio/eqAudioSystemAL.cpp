@@ -365,7 +365,7 @@ bool CEqAudioSystemAL::QueueStreamVoice(AudioVoice_t& voice, ALuint buffer)
 	int sampleSize = formatInfo->bitwidth / 8 * formatInfo->channels;
 
 	if (formatInfo->bitwidth == 8)
-		alFormat = formatInfo->channels == 2 ? AL_FORMAT_MONO16 : AL_FORMAT_MONO8;
+		alFormat = formatInfo->channels == 2 ? AL_FORMAT_STEREO8 : AL_FORMAT_MONO8;
 	else if (formatInfo->bitwidth == 16)
 		alFormat = formatInfo->channels == 2 ? AL_FORMAT_STEREO16 : AL_FORMAT_MONO16;
 	else

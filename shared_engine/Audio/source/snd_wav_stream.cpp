@@ -79,6 +79,7 @@ int CSoundSource_WaveStream::ReadData(ubyte *pOutput, int nStart, int nBytes)
 	m_reader->SetPos( m_dataOffset + nStart );
 	m_reader->ReadData( pOutput, nBytes );
 
+	/*
 	int fin = nBytes / (m_format.bitwidth / 8);
 
 	for ( int i = 0; i < fin; i++ )
@@ -94,6 +95,7 @@ int CSoundSource_WaveStream::ReadData(ubyte *pOutput, int nStart, int nBytes)
 			((signed char *)pOutput)[i] = sample;
 		}
 	}
+	*/
 
 	return 0;
 }

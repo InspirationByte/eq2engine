@@ -48,6 +48,7 @@ void CSoundSource_WaveCache::ParseData(CRIFF_Parser &chunk)
 	//
 	chunk.ReadChunk( m_dataCache );
 
+	/*
 	//
 	//  convert
 	//
@@ -64,6 +65,7 @@ void CSoundSource_WaveCache::ParseData(CRIFF_Parser &chunk)
 			((signed char *)m_dataCache)[i] = sample;
 		}
 	}
+	*/
 }
 
 int CSoundSource_WaveCache::GetSamples(ubyte *pOutput, int nSamples, int nOffset, bool bLooping)

@@ -100,8 +100,9 @@ void InitSoundSystem( EQWNDHANDLE wnd )
 		params.state = VOICE_STATE_PLAYING;
 		params.looping = true;
 		params.pitch = 2.0;
+		params.relative = true;
 
-		g_soundEngine->UpdateVoice(g_musicChan, params, VOICE_UPDATE_STATE | VOICE_UPDATE_LOOPING | VOICE_UPDATE_PITCH);
+		g_soundEngine->UpdateVoice(g_musicChan, params, VOICE_UPDATE_STATE | VOICE_UPDATE_LOOPING | VOICE_UPDATE_PITCH | VOICE_UPDATE_RELATIVE);
 	}
 
 	/*
@@ -386,8 +387,9 @@ void CMainWindow::ProcessAllMenuCommands(wxCommandEvent& event)
 				params.state = VOICE_STATE_PLAYING;
 				params.looping = true;
 				params.pitch = RandomFloat(0.5f, 2.0f);
+				params.relative = true;
 
-				g_soundEngine->UpdateVoice(g_musicChan, params, VOICE_UPDATE_STATE | VOICE_UPDATE_LOOPING | VOICE_UPDATE_PITCH);
+				g_soundEngine->UpdateVoice(g_musicChan, params, VOICE_UPDATE_STATE | VOICE_UPDATE_LOOPING | VOICE_UPDATE_PITCH | VOICE_UPDATE_RELATIVE);
 			}
 		}
 		else

@@ -36,7 +36,7 @@ void CSoundSource_OpenALCache::InitWav(CSoundSource_WaveCache* wav)
 	ALenum alFormat;
 
 	if (m_format.bitwidth == 8)
-		alFormat = m_format.channels == 2 ? AL_FORMAT_MONO16 : AL_FORMAT_MONO8;
+		alFormat = m_format.channels == 2 ? AL_FORMAT_STEREO8 : AL_FORMAT_MONO8;
 	else if (m_format.bitwidth == 16)
 		alFormat = m_format.channels == 2 ? AL_FORMAT_STEREO16 : AL_FORMAT_MONO16;
 	else
