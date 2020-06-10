@@ -275,6 +275,7 @@ void CAIPursuerCar::Evt_ScarePedsEventHandler(const eventArgs_t& args)
 void CAIPursuerCar::Precache()
 {
 	PrecacheScriptSound("cop.pursuit");
+	PrecacheScriptSound("cop.pursuit_2nd");
 	PrecacheScriptSound("cop.pursuit_continue");
 	PrecacheScriptSound("cop.lost");
 	PrecacheScriptSound("cop.backup");
@@ -311,7 +312,6 @@ void CAIPursuerCar::OnCarCollisionEvent(const CollisionPairData_t& pair, CGameOb
 		if(m_angry && hitBy == m_target)	// reset angry timer
 			m_angryTimer = AI_ANGRY_ACTIVE_TIME;
 	}
-		
 }
 
 bool CAIPursuerCar::Speak(const char* soundName, CCar* target, bool force, float priority)
@@ -527,23 +527,21 @@ void CAIPursuerCar::BeginPursuit( float delay )
 	PursuerData_t& targetPursuerData = m_target->GetPursuerData();
 
 	// announce pursuit for cops
-	if (m_type == PURSUER_TYPE_COP && 
-		!targetPursuerData.announced)
+	if (m_type == PURSUER_TYPE_COP && !targetPursuerData.announced)
 	{
-		float targetFelony = m_target->GetFelony();
-
-		if (targetFelony >= AI_COP_MINFELONY)
+		if (!targetPursuerData.firstEncounter)
+		{
+			targetPursuerData.firstEncounter = true;
+			Speak("cop.pursuit", m_target, true);
+		}
+		else
 		{
 			int val = RandomInt(0, 1);
 
 			if (val)
-				Speak("cop.pursuit_continue", m_target, true);
+				Speak("cop.pursuit_2nd", m_target, true);
 			else
 				SpeakTargetDirection("cop.takehimup", true);
-		}
-		else
-		{
-			Speak("cop.pursuit", m_target, true);
 		}
 	}
 
@@ -623,20 +621,25 @@ EInfractionType CAIPursuerCar::CheckCollisionInfraction(CCar* car, const Contact
 
 		float speedDiff = carSpeed - hitCar->GetSpeed();
 
-		// There is no infraction if bodyB has inflicted this damage to us
-		if(speedDiff < 10.0f)
-			return INFRACTION_NONE;
+		bool hitSquadVehicle = false;
 
 		if (hitCar->ObjType() == GO_CAR_AI)
 		{
 			CAITrafficCar* tfc = (CAITrafficCar*)hitCar;
 			if (tfc->IsPursuer() && tfc->IsAlive() && tfc->m_conf->flags.isCop && !tfc->m_assignedRoadblock)	// don't check collision with me pls
-			{
-				return INFRACTION_HIT_SQUAD_VEHICLE;
-			}
+				hitSquadVehicle = true;
 		}
 
-		return INFRACTION_HIT_VEHICLE;
+		if (!InPursuit() && hitSquadVehicle)
+			return INFRACTION_HIT_SQUAD_VEHICLE;
+
+		const float minSpeedDiff = hitSquadVehicle ? 50.0f : 10.0f;
+
+		// There is no infraction if bodyB has inflicted this damage to us
+		if(speedDiff < minSpeedDiff)
+			return INFRACTION_NONE;
+
+		return hitSquadVehicle ? INFRACTION_HIT_SQUAD_VEHICLE : INFRACTION_HIT_VEHICLE;
 	}
 	else if (contents == OBJECTCONTENTS_DEBRIS)
 	{

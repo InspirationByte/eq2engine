@@ -17,7 +17,6 @@
 #include "Shiny.h"
 
 #pragma todo("Peer2peer network model for AI cars")
-#pragma todo("Teach how to brake to the line strictly - enter 'required speed' parameter")
 
 ConVar g_traffic_maxspeed("g_trafficMaxspeed", "50.0", NULL, CV_CHEAT); // FIXME: DO NOT USE!
 
@@ -188,7 +187,7 @@ void CAITrafficCar::OnCarCollisionEvent(const CollisionPairData_t& pair, CGameOb
 		GetPhysicsBody()->SetMinFrameTime(0.0f);
 
 		if(IsAlive())
-			m_hornSequencer.SignalNoSequence(0.7f, 0.5f);
+			m_hornSequencer.SignalNoSequence(1.5f, 0.2f);
 	}
 }
 

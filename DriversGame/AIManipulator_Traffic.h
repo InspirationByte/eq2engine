@@ -66,6 +66,7 @@ public:
 	bool				m_changingDirection;
 
 	float				m_prevFract;
+	float				m_frontBlockTime;
 
 	float				m_maxSpeed;
 	float				m_speedModifier;

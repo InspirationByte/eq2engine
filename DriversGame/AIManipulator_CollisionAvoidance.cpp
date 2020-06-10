@@ -90,6 +90,18 @@ void CAICollisionAvoidanceManipulator::UpdateAffector(ai_handling_t& handling, C
 	}
 	else if((m_cooldownTimer -= fDt) < 0.0f)
 	{
+		if (m_isColliding && m_collidingPositionSet)
+		{
+			Plane pl(carForwardDir, -dot(carForwardDir, car->GetOrigin()));
+
+			if (pl.Distance(m_lastCollidingPosition) < 0.0f)
+			{
+				m_collidingPositionSet = false;
+				m_isColliding = false;
+			}
+		}
+
+
 		bool frontBlock = (frontColl.fract < 1.0f);
 		if ((m_isColliding || frontBlock) && speedMPS < AI_COP_BLOCK_MAX_SPEED)
 		{
@@ -103,38 +115,4 @@ void CAICollisionAvoidanceManipulator::UpdateAffector(ai_handling_t& handling, C
 			}
 		}
 	}
-
-
-	/*
-	if (m_blockTimeout <= 0.0f && (frontBlocked || m_isColliding) && speedMPS < AI_COP_BLOCK_MAX_SPEED)
-	{
-		m_blockingTime += fDt;
-
-		if( m_isColliding && m_blockingTime > AI_COP_BLOCK_REALIZE_COLLISION_TIME ||
-			frontBlocked && m_blockingTime > AI_COP_BLOCK_REALIZE_FRONTAL_TIME)
-		{
-			m_blockTimeout = AI_COP_BLOCK_DELAY;
-			m_blockingTime = 0.0f;
-		}
-	}
-	else
-	{
-		float distFromCollPoint = length(m_lastCollidingPosition-car->GetOrigin());
-
-		if(distFromCollPoint > AI_COP_BLOCK_DISTANCE_FROM_COLLISION)
-			m_blockTimeout = 0.0f;
-
-		m_blockTimeout -= fDt;
-
-		if (m_blockTimeout > 0.0f || frontColl.fract < 1.0f && speedMPS < AI_COP_BLOCK_MAX_SPEED)
-		{
-			handling.braking = 1.0f;
-			handling.acceleration = 0.0f;
-			handling.steering = m_initialHandling.steering*-1.0f;
-
-			m_enabled = true;
-		}
-		else if(m_blockTimeout <= 0.0f)
-			m_collidingPositionSet = false;
-	}*/
 }

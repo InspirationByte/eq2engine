@@ -199,6 +199,8 @@ CAITrafficManipulator::CAITrafficManipulator()
 	m_triggerHorn = -1.0f;
 	m_triggerHornDuration = -1.0f;
 
+	m_frontBlockTime = 0.0f;
+
 	m_maxSpeed = 60.0f;
 }
 
@@ -759,24 +761,32 @@ void CAITrafficManipulator::UpdateAffector(ai_handling_t& handling, CCar* car, f
 	float slopeBrakeModifier = fabs(hillDir.y);
 	slopeBrakeModifier = powf(max(0.0f, slopeBrakeModifier), 3.0f);
 
-	//
-	// Breakage on red light
-	//
-	if (distToStop < AI_ROAD_STOP_DIST && distToStop > 0.0f)
+	bool isAllowedToMove = false;
+	bool hasToStopAtTrafficLight = false;
+
+	// set isAllowedToMove
 	{
 		// brake on global traffic light value
 		int trafficLightDir = g_pGameWorld->m_globalTrafficLightDirection;
 
-		int curDir = m_straights[STRAIGHT_CURRENT].direction;
+		int curStraightDir = m_straights[STRAIGHT_CURRENT].direction;
 
 		levroadcell_t* roadTile = g_pGameWorld->m_level.Road_GetGlobalTileAt(carPosOnCell);
 
 		// check current tile for traffic light indication
 		bool hasTrafficLight = roadTile ? (roadTile->flags & ROAD_FLAG_TRAFFICLIGHT) : false;
 
-		bool isAllowedToMove = hasTrafficLight ? (trafficLightDir % 2 == curDir % 2) : true;
+		isAllowedToMove = hasTrafficLight ? (trafficLightDir % 2 == curStraightDir % 2) : true;
 
-		if (!g_disableTrafficLights.GetBool() && (!isAllowedToMove || (g_pGameWorld->m_globalTrafficLightTime < 2.0f)))
+		hasToStopAtTrafficLight = !g_disableTrafficLights.GetBool() && (!isAllowedToMove || (g_pGameWorld->m_globalTrafficLightTime < 2.0f));
+	}
+
+	//
+	// Breakage on red light
+	//
+	if (distToStop < AI_ROAD_STOP_DIST && distToStop > 0.0f)
+	{
+		if (hasToStopAtTrafficLight)
 		{
 			float brakeSpeedDiff = brakeDistAtCurSpeed + AI_STOPLINE_DIST - distToStop;
 			brakeSpeedDiff = max(brakeSpeedDiff, 0.0f);
@@ -908,6 +918,8 @@ void CAITrafficManipulator::UpdateAffector(ai_handling_t& handling, CCar* car, f
 
 			if (hitObj)
 			{
+				float frontBlockTime = m_frontBlockTime;
+
 				if ((hitObj->m_flags & BODY_ISCAR))
 				{
 					CCar* pCar = (CCar*)hitObj->GetUserData();
@@ -923,18 +935,34 @@ void CAITrafficManipulator::UpdateAffector(ai_handling_t& handling, CCar* car, f
 
 					float fromPrevPercentage = frontFract / m_prevFract;
 
-					if (lineDist < AI_CAR_TRACE_DIST_MIN || (1.0f - fromPrevPercentage) >= 0.45f)
+					const float HORN_TRIGGER_TIMER = pCar->m_isLocalCar ? 1.0f : 4.0f;
+					const float HORN_STOP_TIME = 15.0f;
+
+					// check if any other cars blocking our way
+					if (!hasToStopAtTrafficLight && frontCarSpeed < 1.0f)
+						frontBlockTime += fDt;
+					else
+						frontBlockTime = 0.0f;
+
+					bool frontBlockHorn = frontBlockTime > HORN_TRIGGER_TIMER && frontBlockTime < HORN_STOP_TIME;
+
+					if (lineDist < AI_CAR_TRACE_DIST_MIN || (1.0f - fromPrevPercentage) >= 0.45f || frontBlockHorn)
 					{
 						// if vehicle direction and speed differs
 						float velDiff = dot((carVelocity + carForward) - pCar->GetVelocity(), carForward);
 
-						if ((velDiff > 15.0f || (1.0f - fromPrevPercentage) >= 0.45f) && carForwardSpeed > 0.25f)
+						if ((velDiff > 15.0f || (1.0f - fromPrevPercentage) >= 0.45f) && carForwardSpeed > 0.25f || frontBlockHorn)
 						{
 							m_triggerHorn = 0.3f;
-							m_triggerHornDuration = 0.0f;
+							m_triggerHornDuration = frontBlockHorn ? 0.0f : 1.0f;
 						}
-						
 					}
+
+					m_frontBlockTime = frontBlockTime;
+				}
+				else
+				{
+					m_frontBlockTime = 0.0f;
 				}
 			}
 

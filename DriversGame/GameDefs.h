@@ -80,6 +80,7 @@ struct PursuerData_t
 
 	bool	announced;
 	bool	copsHasAttention;
+	bool	firstEncounter;
 };
 
 struct RoadBlockInfo_t

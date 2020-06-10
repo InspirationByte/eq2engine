@@ -652,7 +652,7 @@ void CAINavigationManipulator::UpdateAffector(ai_handling_t& handling, CCar* car
 				traceContents,
 				&collFilter);
 
-			if (steeringTargetCollL.fract < 1.0f)
+			if (steeringTargetCollL.fract < 1.0f && fabs(steeringTargetCollL.normal.y) < 0.5f)
 			{
 				debugoverlay->Line3D(steeringTargetCollL.position, carPos, ColorRGBA(1, 0, 0, 1.0f), ColorRGBA(1, 0, 0, 1.0f), fDt);
 				debugoverlay->Sphere3D(steeringTargetCollL.position, traceShapeRadius, ColorRGBA(1, 1, 0, 1.0f), fDt);

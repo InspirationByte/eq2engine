@@ -142,7 +142,7 @@ public:
 
 	void						SetCopCar(const char* car_name, int type);	// sets cop car configuration
 
-	bool						SpawnRoadBlockFor( CCar* car, float directionAngle);
+	bool						CreateRoadBlock( const Vector3D& position, float directionAngle, float distance = -1);
 	bool						IsRoadBlockSpawn() const;
 
 	void						UpdateRoadblocks();
@@ -152,10 +152,11 @@ public:
 
 	void						UpdateNavigationVelocityMap(float fDt);
 
-protected:
-
 	void						TrackCar(CCar* car);
 	void						UntrackCar(CCar* car);
+
+protected:
+	void						RemoveCarsInSphere(const Vector3D& pos, float radius);
 
 	void						PaintVelocityMapFrom(CCar* car);
 	void						PaintNavigationLine(const IVector2D& start, const IVector2D& end);
@@ -224,6 +225,9 @@ OOLUA_PROXY(CAIManager)
 	OOLUA_MFUNC(MakePursued)
 	OOLUA_MFUNC(StopPursuit)
 
+	OOLUA_MFUNC(TrackCar)
+	OOLUA_MFUNC(UntrackCar)
+
 	OOLUA_MFUNC(SetMaxTrafficCars)
 	OOLUA_MFUNC_CONST(GetMaxTrafficCars)
 
@@ -255,7 +259,7 @@ OOLUA_PROXY(CAIManager)
 
 	OOLUA_MFUNC(MakeCopSpeech)
 
-	OOLUA_MFUNC(SpawnRoadBlockFor)
+	OOLUA_MFUNC(CreateRoadBlock)
 	OOLUA_MFUNC_CONST(IsRoadBlockSpawn)
 
 	OOLUA_MEM_FUNC_CONST_RENAME(QueryTrafficCars, OOLUA::Table, L_QueryTrafficCars, float, const Vector3D&)

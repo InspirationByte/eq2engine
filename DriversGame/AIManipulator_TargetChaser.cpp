@@ -153,7 +153,7 @@ void CAITargetChaserManipulator::UpdateAffector(ai_handling_t& handling, CCar* c
 		traceContents,
 		&collFilter);
 
-	if (steeringTargetColl.fract < 1.0f)
+	if (steeringTargetColl.fract < 1.0f && fabs(steeringTargetColl.normal.y) < 0.5f)
 	{
 		bool shouldDoSteeringCorrection = true;
 

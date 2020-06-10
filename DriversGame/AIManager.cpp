@@ -959,7 +959,7 @@ DECLARE_CMD(force_roadblock, "Forces spawn roadblock on cur car", CV_CHEAT)
 {
 	float targetAngle = VectorAngles(normalize(g_pGameSession->GetPlayerCar()->GetVelocity())).y+45.0f;
 
-	g_pAIManager->SpawnRoadBlockFor( g_pGameSession->GetPlayerCar(), targetAngle );
+	g_pAIManager->CreateRoadBlock( g_pGameSession->GetPlayerCar()->GetOrigin(), targetAngle );
 }
 
 IVector2D GetDirectionVec(int dirIdx);
@@ -978,13 +978,13 @@ DECLARE_CMD(road_info, "Road info on player car position", CV_CHEAT)
 	MsgInfo("Road width: %d, current lane: %d\n", numLanes, curLane);
 }
 
-bool CAIManager::SpawnRoadBlockFor( CCar* car, float directionAngle )
+bool CAIManager::CreateRoadBlock(const Vector3D& position, float directionAngle, float distance /*= -1*/)
 {
 	if (g_replayTracker->m_state == REPL_PLAYING)
 		return true;
 
-	IVector2D playerCarCell;
-	if (!g_pGameWorld->m_level.GetTileGlobal( car->GetOrigin(), playerCarCell ))
+	IVector2D cellAtPosition;
+	if (!g_pGameWorld->m_level.GetTileGlobal( position, cellAtPosition))
 		return false;
 
 	directionAngle = NormalizeAngle360( -directionAngle );
@@ -997,10 +997,10 @@ bool CAIManager::SpawnRoadBlockFor( CCar* car, float directionAngle )
 	if (targetDir > 3)
 		targetDir -= 4;
 
-	int radius = g_traffic_mindist.GetInt();
+	int radius = distance < 0 ? g_traffic_mindist.GetInt() : distance;
 
 	IVector2D carDir = GetDirectionVec(targetDir);
-	IVector2D placementVec = playerCarCell - carDir*radius;
+	IVector2D placementVec = cellAtPosition - carDir*radius;
 
 	levroadcell_t* startCellPlacement = g_pGameWorld->m_level.Road_GetGlobalTileAt(placementVec);
 
@@ -1055,10 +1055,13 @@ bool CAIManager::SpawnRoadBlockFor( CCar* car, float directionAngle )
 
 		copBlockCar->Spawn();
 		copBlockCar->Enable(false);
+
 		copBlockCar->PlaceOnRoadCell(pReg, roadCell);
 		copBlockCar->InitAI(false);
+
 		copBlockCar->SetTorqueScale(m_copAccelerationModifier);
 		copBlockCar->SetMaxDamage(m_copMaxDamage);
+
 		copBlockCar->SetLight(CAR_LIGHT_SERVICELIGHTS, true);
 
 		g_pGameWorld->AddObject(copBlockCar);
@@ -1071,19 +1074,43 @@ bool CAIManager::SpawnRoadBlockFor( CCar* car, float directionAngle )
 		copBlockCar->m_assignedRoadblock = roadblock;
 		roadblock->activeCars.append( copBlockCar );
 
+		// remove any car in 10 meters
+		RemoveCarsInSphere(copBlockCar->GetOrigin(), 10.0f);
+	}
+
+	// spawn road block
+	for (int i = 0; i < roadblock->activeCars.numElem(); i++)
+	{
+		CCar* copBlockCar = roadblock->activeCars[i];
+
 		// also it has to be added to traffic cars
-		TrackCar( copBlockCar );
+		TrackCar(copBlockCar);
 		m_spawnedTrafficCars++;
 	}
 
 	roadblock->totalSpawns = roadblock->activeCars.numElem();
 
 	if (roadblock->totalSpawns == 0)
+	{
 		delete roadblock;
+		roadblock = nullptr;
+	}		
 	else
 		m_roadBlocks.append(roadblock);
 
 	return (roadblock != nullptr);
+}
+
+// used for roadblocks...
+void CAIManager::RemoveCarsInSphere(const Vector3D& pos, float radius)
+{
+	for (int i = 0; i < m_trafficCars.numElem(); i++)
+	{
+		CCar* car = m_trafficCars[i];
+
+		if (length(car->GetOrigin() - pos) < radius)
+			g_pGameWorld->RemoveObject(car);
+	}
 }
 
 void CAIManager::MakePursued( CCar* car )
@@ -1289,8 +1316,13 @@ OOLUA_EXPORT_FUNCTIONS(
 
 	MakePursued,
 	StopPursuit,
+
+	TrackCar,
+	UntrackCar,
+
 	RemoveAllCars,
 	RemoveAllPedestrians,
+
 	SetMaxTrafficCars,
 	SetTrafficSpawnInterval,
 	SetTrafficCarsEnabled,
@@ -1302,7 +1334,7 @@ OOLUA_EXPORT_FUNCTIONS(
 	SetMaxCops,
 	SetCopRespawnInterval,
 	MakeCopSpeech,
-	SpawnRoadBlockFor
+	CreateRoadBlock
 )
 
 OOLUA_EXPORT_FUNCTIONS_CONST(
