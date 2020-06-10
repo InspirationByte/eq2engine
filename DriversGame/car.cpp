@@ -120,8 +120,8 @@ const float STEERING_SPEED_REDUCE_CURVE = 1.25f;
 const float STEERING_REDUCE_SPEED_MIN	= 80.0f;
 const float STEERING_REDUCE_SPEED_MAX	= 160.0f;
 
-const float STEERING_SLIP_FORWARD_CORRECTION = 0.20f;
-const float STEERING_SLIP_REVERSE_CORRECTION = 0.25f;
+const float STEERING_SLIP_FORWARD_CORRECTION = 0.25f; 
+const float STEERING_SLIP_REVERSE_CORRECTION = 0.20f;
 
 const float EXTEND_STEER_SPEED_MULTIPLIER = 1.75f;
 const float STEER_CENTER_SPEED_MULTIPLIER = 1.75f;
@@ -1722,18 +1722,8 @@ void CCar::UpdateVehiclePhysics(float delta)
 
 		float handbrakeFactor = RemapVal(carForwardSpeed, AUTOHANDBRAKE_MIN_SPEED, AUTOHANDBRAKE_MAX_SPEED, 0.0f, 1.0f);
 
-		float fLateral = -GetLateralSlidingAtBody();
-		float fLateralSign = sign(fLateral)*0.001f;
-
 		if (fabs(autobrake) > AUTOHANDBRAKE_START_MIN)
 			autoHandbrakeHelper = (FPmath::abs(autobrake) - AUTOHANDBRAKE_START_MIN)*AUTOHANDBRAKE_SCALE * handbrakeFactor;
-
-		if (fLateral > 2.0f  && autobrake < fLateralSign ||
-			fLateral < -2.0f && autobrake > fLateralSign)
-		{
-			autoHandbrakeHelper = 0.0f;
-			m_autobrake = 0.0f;
-		}
 
 		autoHandbrakeHelper = clamp(autoHandbrakeHelper,0.0f,AUTOHANDBRAKE_MAX_FACTOR);
 	}
@@ -1892,6 +1882,9 @@ void CCar::UpdateVehiclePhysics(float delta)
 
 	Matrix3x3 transposedRotation(transpose(worldMatrix.getRotationComponent()));
 
+	float fBodyLateral = -GetLateralSlidingAtBody();
+	float fBodyLateralSign = sign(fBodyLateral)*0.001f;
+
 	// springs for wheels
 	for(int i = 0; i < wheelCount; i++)
 	{
@@ -1911,7 +1904,9 @@ void CCar::UpdateVehiclePhysics(float delta)
 
 		// get wheel vectors
 		Vector3D wheel_right = wrotation.rows[0];
+		Vector3D wheel_up = wrotation.rows[1];
 		Vector3D wheel_forward = wrotation.rows[2];
+		
 
 		float fPitchFac = RemapVal(m_conf->physics.burnoutMaxSpeed - GetSpeed(), 0.0f, 70.0f, 0.0f, 1.0f);
 
@@ -2003,16 +1998,19 @@ void CCar::UpdateVehiclePhysics(float delta)
 				fLongitudinalForce = longitudial;
 
 				if( isDriveWheel && bDoBurnout )
-				{
 					fLongitudinalForce += wheelTractionFrictionScale * (1.0f-fPitchFac);
-				}
 
-				float handbrakes = autoHandbrakeHelper+inputHandbrake;
-
-				if(isHandbrakeWheel && handbrakes > 0.0f)
+				if (isHandbrakeWheel)
 				{
-					fLongitudinalForce += handbrakes*m_conf->physics.handbrakeScale;
+					fLongitudinalForce += inputHandbrake * m_conf->physics.handbrakeScale;
+
+					if (!(fBodyLateral > 2.0f  && autobrake < fBodyLateralSign ||
+						  fBodyLateral < -2.0f && autobrake > fBodyLateralSign))
+					{
+						fLongitudinalForce += autoHandbrakeHelper;
+					}
 				}
+					
 			}
 
 
@@ -2040,13 +2038,14 @@ void CCar::UpdateVehiclePhysics(float delta)
 					if (isSteerWheel)
 					{
 						if (wheelPitchSpeed < -0.1f)
-							fSlipAngle -= m_steering * wheelConf.steerMultipler * STEERING_SLIP_FORWARD_CORRECTION;
+							fSlipAngle -= m_steering * wheelConf.steerMultipler * STEERING_SLIP_REVERSE_CORRECTION;
 						else
-							fSlipAngle += m_steering * wheelConf.steerMultipler * STEERING_SLIP_REVERSE_CORRECTION;
+							fSlipAngle += m_steering * wheelConf.steerMultipler * autoHandbrakeHelper;
 					}
 
-
 					wheelSlipOppositeForce = DBSlipAngleToLateralForce( fSlipAngle, fLongitudinalForce, wheel.m_surfparam, *m_slipParams);
+
+					fSlipAngle *= pow(dot(wheel_up, wheel.m_collisionInfo.normal), 0.5f);
 				}
 				else
 				{
@@ -2747,14 +2746,22 @@ void CCar::OnPhysicsPreCollide(ContactPair_t& pair)
 	// TODO: make it safe
 	if (!(hitObj->GetContents() & OBJECTCONTENTS_SOLID_GROUND) && !(hitObj->m_flags & COLLOBJ_ISGHOST))
 	{
+		// change hit normal
+		if (pair.normal.y < 0.75f)
+			pair.normal.y *= 0.5f;
+
+		pair.normal = normalize(pair.normal);
+
 		// raise damaged car event
 		g_worldEvents[EVT_COLLISION].Raise(this, pair.position, (void*)&pair);
 
+		/*
 		if(hitObj->GetUserData())
 		{
-			//	CGameObject* hitGameObject = (CGameObject*)hitObj;
-			//	g_worldEvents[EVT_COLLISION].Raise(hitGameObject, pair.position, (void*)&pair);
+			CGameObject* hitGameObject = (CGameObject*)hitObj;
+			g_worldEvents[EVT_COLLISION].Raise(hitGameObject, pair.position, (void*)&pair);
 		}
+		*/
 	}
 }
 

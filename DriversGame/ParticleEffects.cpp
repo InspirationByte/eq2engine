@@ -498,7 +498,7 @@ void DrawLightEffect(const Vector3D& position, const ColorRGBA& color, float siz
 }
 
 // spot
-void DrawSpotLightEffect(const Vector3D& positionA, const Vector3D& positionB, const ColorRGBA& color, float size, int type)
+void DrawLightLineEffect(const Vector3D& positionA, const Vector3D& positionB, const ColorRGBA& color, float size, int type)
 {
 	PFXVertex_t* verts;
 	if (g_additPartcles->AllocateGeom(4, 4, &verts, NULL, true) < 0)
@@ -508,6 +508,11 @@ void DrawSpotLightEffect(const Vector3D& positionA, const Vector3D& positionB, c
 
 	if (type == 0)
 		entry = g_additPartcles->FindEntry("spot1");
+	else if (type == 1)
+		entry = g_additPartcles->FindEntry("glow1");
+	else if (type == 2)
+		entry = g_additPartcles->FindEntry("glow2");
+
 
 	Rectangle_t rect = entry ? entry->rect : Rectangle_t(0.0f, 0.0f, 1.0f, 1.0f);
 	CViewParams& view = g_pGameWorld->m_view;
@@ -518,7 +523,6 @@ void DrawSpotLightEffect(const Vector3D& positionA, const Vector3D& positionB, c
 	Vector3D ccross = fastNormalize(cross(lineDir, viewDir));
 
 	Vector3D temp;
-
 	VectorMA(positionB, size, ccross, temp );
 
 	verts[0].point = temp;
