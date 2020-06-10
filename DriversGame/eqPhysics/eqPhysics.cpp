@@ -51,7 +51,7 @@ ConVar ph_erp("ph_erp", "0.25", "Collision correction", CV_CHEAT);
 // cvar value mostly depends on velocity
 ConVar ph_grid_tolerance("ph_grid_tolerance", "0.1", NULL, CV_CHEAT);
 
-const float PHYSICS_DEFAULT_FRICTION = 12.9f;
+const float PHYSICS_DEFAULT_FRICTION = 0.5f;
 const float PHYSICS_DEFAULT_RESTITUTION = 0.25f;
 const float PHYSICS_DEFAULT_TIRE_FRICTION = 0.2f;
 const float PHYSICS_DEFAULT_TIRE_TRACTION = 1.0f;

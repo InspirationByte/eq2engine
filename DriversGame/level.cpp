@@ -2668,7 +2668,7 @@ bool CGameLevel::Nav_FindPath2D(const IVector2D& start, const IVector2D& end, pa
 			testPoint = prevPoint;
 			lastCell = Nav_GetCellStateAtGlobalPoint(testPoint);
 		}
-		while(true);
+		while(true); // FIXME: limit!
 	}
 
 	return (result.points.numElem() > 1);
