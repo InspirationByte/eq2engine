@@ -657,6 +657,11 @@ void CSoundEmitterSystem::Emit2DSound(EmitSound_t* emit, int channelType)
 	if (!bestSample)
 		return;
 
+	if (emitsound_debug.GetBool())
+	{
+		MsgInfo("started 2D sound '%s'\n", script->pszName);
+	}
+
 	// use the channel defined by the script
 	if(channelType == -1)
 		channelType = script->channelType;
