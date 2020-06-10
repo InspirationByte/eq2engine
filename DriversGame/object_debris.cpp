@@ -472,6 +472,22 @@ void CObject_Debris::OnPhysicsPreCollide(ContactPair_t& pair)
 
 		g_pPhysics->m_physics.AddToMoveableList(body);
 		body->Wake();
+
+		CEqRigidBody* body = (CEqRigidBody*)obj;
+		bool isCar = (body->m_flags & BODY_ISCAR) > 0;
+
+		if (isCar)
+		{
+			EmitSound_t ep;
+
+			ep.name = (char*)m_smashSound.c_str();
+
+			ep.fPitch = RandomFloat(1.0f, 1.1f);
+			ep.fVolume = 1.0f;
+			ep.origin = pair.position;
+
+			EmitSoundWithParams(&ep);
+		}
 	}
 }
 
@@ -524,46 +540,6 @@ void CObject_Debris::OnPhysicsCollide(const CollisionPairData_t& pair)
 
 	if(timeToRemove < -0.5f)
 		body->m_flags |= COLLOBJ_DISABLE_RESPONSE;
-
-	bool moved = (body->m_flags & BODY_MOVEABLE) > 0;
-
-	if (!moved && obj->IsDynamic())
-	{
-		if (m_smashSpawn.Length() > 0)
-		{
-			CGameObject* otherObject = g_pGameWorld->CreateObject(m_smashSpawn.c_str());
-			if (otherObject)
-			{
-				otherObject->SetOrigin(GetOrigin() + m_smashSpawnOffset);
-				otherObject->Spawn();
-				g_pGameWorld->AddObject(otherObject);
-
-				m_smashSpawnedObject = otherObject;
-			}
-		}
-
-		moved = true;
-		m_fTimeToRemove = 0.0f;
-
-		g_pPhysics->m_physics.AddToMoveableList(body);
-		body->Wake();
-
-		CEqRigidBody* body = (CEqRigidBody*)obj;
-		bool isCar = (body->m_flags & BODY_ISCAR) > 0;
-
-		if (isCar)
-		{
-			EmitSound_t ep;
-
-			ep.name = (char*)m_smashSound.c_str();
-
-			ep.fPitch = RandomFloat(1.0f, 1.1f);
-			ep.fVolume = 1.0f;
-			ep.origin = pair.position;
-
-			EmitSoundWithParams(&ep);
-		}
-	}
 }
 
 ConVar g_debris_as_physics("g_debris_as_physics", "0", "Thread debris as physics objects", CV_CHEAT);
