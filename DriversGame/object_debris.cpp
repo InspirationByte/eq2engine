@@ -448,7 +448,9 @@ void CObject_Debris::OnPhysicsPreCollide(ContactPair_t& pair)
 	eqPhysSurfParam_t* surf = m_surfParams;
 	CEqCollisionObject* obj = pair.GetOppositeTo(body);
 
-	if (obj->m_flags & BODY_ISCAR)	// disable response for cars
+	bool isCar = (obj->m_flags & BODY_ISCAR) > 0;
+
+	if (isCar)	// disable response for cars
 		pair.flags |= (pair.bodyA == body) ? COLLPAIRFLAG_OBJECTB_NO_RESPONSE : COLLPAIRFLAG_OBJECTA_NO_RESPONSE;
 
 	bool moved = (body->m_flags & BODY_MOVEABLE) > 0;
@@ -473,10 +475,7 @@ void CObject_Debris::OnPhysicsPreCollide(ContactPair_t& pair)
 		g_pPhysics->m_physics.AddToMoveableList(body);
 		body->Wake();
 
-		CEqRigidBody* body = (CEqRigidBody*)obj;
-		bool isCar = (body->m_flags & BODY_ISCAR) > 0;
-
-		if (isCar)
+		if (isCar && m_smashSound.Length())
 		{
 			EmitSound_t ep;
 
@@ -541,8 +540,6 @@ void CObject_Debris::OnPhysicsCollide(const CollisionPairData_t& pair)
 	if(timeToRemove < -0.5f)
 		body->m_flags |= COLLOBJ_DISABLE_RESPONSE;
 }
-
-ConVar g_debris_as_physics("g_debris_as_physics", "0", "Thread debris as physics objects", CV_CHEAT);
 
 void CObject_Debris::Simulate(float fDt)
 {

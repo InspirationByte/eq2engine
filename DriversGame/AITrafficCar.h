@@ -39,6 +39,8 @@ public:
 	~CAITrafficCar();
 
 	virtual void		InitAI( bool isParked );
+	virtual void		Precache();
+	virtual void		OnRemove();
 
 	virtual void		Spawn();
 	virtual void		OnCarCollisionEvent(const CollisionPairData_t& pair, CGameObject* hitBy);
@@ -58,9 +60,12 @@ protected:
 
 	CAIHandlingAffector<CAITrafficManipulator>	m_traffic;
 	CAIHornSequencer	m_hornSequencer;
+	ISoundController*	m_music;
 
 	float				m_thinkTime;
 	float				m_refreshTime;
+
+	
 };
 
 #ifndef NO_LUA

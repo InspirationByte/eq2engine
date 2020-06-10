@@ -920,43 +920,49 @@ void CAITrafficManipulator::UpdateAffector(ai_handling_t& handling, CCar* car, f
 			{
 				float frontBlockTime = m_frontBlockTime;
 
-				if ((hitObj->m_flags & BODY_ISCAR))
+				if (hitObj->m_flags & BODY_ISCAR)
 				{
 					CCar* pCar = (CCar*)hitObj->GetUserData();
 
-					// add the velocity difference
-					float frontCarSpeed = dot(pCar->GetVelocity(), pCar->GetForwardVector());
-
-					if (frontCarSpeed > 8.0f)
-						diffForwardSpeed -= frontCarSpeed * 0.5f;
-
-					if (m_prevFract == 0.0f)
-						m_prevFract = 0.05f;
-
-					float fromPrevPercentage = frontFract / m_prevFract;
-
-					const float HORN_TRIGGER_TIMER = pCar->m_isLocalCar ? 1.0f : 4.0f;
-					const float HORN_STOP_TIME = 15.0f;
-
-					// check if any other cars blocking our way
-					if (!hasToStopAtTrafficLight && frontCarSpeed < 1.0f)
-						frontBlockTime += fDt;
-					else
-						frontBlockTime = 0.0f;
-
-					bool frontBlockHorn = frontBlockTime > HORN_TRIGGER_TIMER && frontBlockTime < HORN_STOP_TIME;
-
-					if (lineDist < AI_CAR_TRACE_DIST_MIN || (1.0f - fromPrevPercentage) >= 0.45f || frontBlockHorn)
+					// honk only to alive and enabled
+					if (pCar->IsAlive() && pCar->IsEnabled() && !pCar->m_assignedRoadblock)
 					{
-						// if vehicle direction and speed differs
-						float velDiff = dot((carVelocity + carForward) - pCar->GetVelocity(), carForward);
+						// add the velocity difference
+						float frontCarSpeed = dot(pCar->GetVelocity(), pCar->GetForwardVector());
 
-						if ((velDiff > 15.0f || (1.0f - fromPrevPercentage) >= 0.45f) && carForwardSpeed > 0.25f || frontBlockHorn)
+						if (frontCarSpeed > 8.0f)
+							diffForwardSpeed -= frontCarSpeed * 0.5f;
+
+						if (m_prevFract == 0.0f)
+							m_prevFract = 0.05f;
+
+						float fromPrevPercentage = frontFract / m_prevFract;
+
+						const float HORN_TRIGGER_TIMER = pCar->m_isLocalCar ? 1.0f : 4.0f;
+						const float HORN_STOP_TIME = 15.0f;
+
+						// check if any other cars blocking our way
+						if (!hasToStopAtTrafficLight && frontCarSpeed < 1.0f)
+							frontBlockTime += fDt;
+						else
+							frontBlockTime = 0.0f;
+
+						bool frontBlockHorn = frontBlockTime > HORN_TRIGGER_TIMER && frontBlockTime < HORN_STOP_TIME;
+
+						if (lineDist < AI_CAR_TRACE_DIST_MIN || (1.0f - fromPrevPercentage) >= 0.45f || frontBlockHorn)
 						{
-							m_triggerHorn = 0.3f;
-							m_triggerHornDuration = frontBlockHorn ? 0.0f : 1.0f;
+							// if vehicle direction and speed differs
+							float velDiff = dot((carVelocity + carForward) - pCar->GetVelocity(), carForward);
+
+							if ((velDiff > 15.0f || (1.0f - fromPrevPercentage) >= 0.45f) && carForwardSpeed > 0.25f || frontBlockHorn)
+							{
+								m_triggerHorn = 0.3f;
+								m_triggerHornDuration = frontBlockHorn ? 0.0f : 1.0f;
+							}
 						}
 					}
+					else
+						frontBlockTime = 0.0f;
 
 					m_frontBlockTime = frontBlockTime;
 				}

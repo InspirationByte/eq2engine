@@ -1004,7 +1004,8 @@ bool CAIManager::CreateRoadBlock(const Vector3D& position, float directionAngle,
 
 	levroadcell_t* startCellPlacement = g_pGameWorld->m_level.Road_GetGlobalTileAt(placementVec);
 
-	if(!startCellPlacement || (startCellPlacement && !(startCellPlacement->type == ERoadType::ROADTYPE_STRAIGHT || startCellPlacement->type == ERoadType::ROADTYPE_PARKINGLOT)))
+	if(!startCellPlacement || 
+		(startCellPlacement && !(startCellPlacement->type == ERoadType::ROADTYPE_STRAIGHT || startCellPlacement->type == ERoadType::ROADTYPE_PARKINGLOT)))
 		return false;
 
 	IVector2D perpendicular = GetDirectionVec(startCellPlacement->direction-1);
@@ -1044,12 +1045,8 @@ bool CAIManager::CreateRoadBlock(const Vector3D& position, float directionAngle,
 		if (!pReg->m_isLoaded)
 			continue;
 		
-		/*
-		if (roadCell->type != ROADTYPE_STRAIGHT)
-		{
-			MsgError( "Can't spawn where no straight road (%d)\n", roadCell->type);
+		if (roadCell->type == ROADTYPE_PARKINGLOT || roadCell->type == ROADTYPE_PAVEMENT)
 			continue;
-		}*/
 
 		CAIPursuerCar* copBlockCar = new CAIPursuerCar(conf, PURSUER_TYPE_COP);
 

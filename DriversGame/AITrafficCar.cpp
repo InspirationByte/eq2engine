@@ -40,6 +40,7 @@ CAITrafficCar::CAITrafficCar( vehicleConfig_t* carConfig ) : CCar(carConfig), CF
 	SetMaxDamage(AI_TRAFFIC_MAX_DAMAGE);
 
 	m_gearboxShiftThreshold = 0.6f;
+	m_music = nullptr;
 }
 
 CAITrafficCar::~CAITrafficCar()
@@ -86,6 +87,21 @@ int CAITrafficCar::InitTrafficState( float fDt, EStateTransition transition )
 	return 0;
 }
 
+void CAITrafficCar::Precache()
+{
+	BaseClass::Precache();
+
+	PrecacheScriptSound("generic.carmusic");
+}
+
+void CAITrafficCar::OnRemove()
+{
+	BaseClass::OnRemove();
+
+	if (m_music)
+		g_sounds->RemoveSoundController(m_music);
+}
+
 void CAITrafficCar::Spawn()
 {
 	BaseClass::Spawn();
@@ -95,6 +111,12 @@ void CAITrafficCar::Spawn()
 
 	// perform lazy collision checks
 	GetPhysicsBody()->SetMinFrameTime(1.0f / 30.0f);
+
+	/*
+	if (!IsPursuer() && RandomInt(0,10) == 0)
+	{
+		m_music = CreateCarSound("generic.carmusic", 1.0f);
+	}*/
 }
 
 int CAITrafficCar::DeadState( float fDt, EStateTransition transition )
@@ -119,6 +141,12 @@ void CAITrafficCar::OnPrePhysicsFrame( float fDt )
 	}
 	else
 		GetPhysicsBody()->Wake();
+
+	if (m_music)
+	{
+		m_music->SetOrigin(GetOrigin());
+		m_music->SetVelocity(GetVelocity());
+	}
 
 	BaseClass::OnPrePhysicsFrame(fDt);
 
@@ -224,6 +252,11 @@ int CAITrafficCar::TrafficDrive(float fDt, EStateTransition transition)
 
 	if(transition != EStateTransition::STATE_TRANSITION_NONE)
 		return 0;
+
+	if (m_music && m_music->IsStopped())
+	{
+		m_music->Play();
+	}
 
 	// if this car was flipped, so put it to death state
 	// but only if it's not a pursuer type
