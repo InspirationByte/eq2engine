@@ -100,6 +100,9 @@
     <Filter Include="Файлы исходного кода\Animation">
       <UniqueIdentifier>{ec9012dd-00c6-4638-93ac-0dcc2a7e36f2}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Файлы исходного кода\EngineLib\Audio\source">
+      <UniqueIdentifier>{19518118-3928-49d4-8f0b-621f3fd9b17d}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\public\Math\math_util.cpp">
@@ -470,6 +473,27 @@
     </ClCompile>
     <ClCompile Include="Rain.cpp">
       <Filter>Файлы исходного кода\Particles</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_engine\Audio\source\snd_ogg_cache.cpp">
+      <Filter>Файлы исходного кода\EngineLib\Audio\source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_engine\Audio\source\snd_ogg_source.cpp">
+      <Filter>Файлы исходного кода\EngineLib\Audio\source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_engine\Audio\source\snd_ogg_stream.cpp">
+      <Filter>Файлы исходного кода\EngineLib\Audio\source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_engine\Audio\source\snd_source.cpp">
+      <Filter>Файлы исходного кода\EngineLib\Audio\source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_engine\Audio\source\snd_wav_cache.cpp">
+      <Filter>Файлы исходного кода\EngineLib\Audio\source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_engine\Audio\source\snd_wav_source.cpp">
+      <Filter>Файлы исходного кода\EngineLib\Audio\source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared_engine\Audio\source\snd_wav_stream.cpp">
+      <Filter>Файлы исходного кода\EngineLib\Audio\source</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -918,6 +942,27 @@
     </ClInclude>
     <ClInclude Include="Rain.h">
       <Filter>Файлы исходного кода\Particles</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_engine\Audio\source\snd_ogg_cache.h">
+      <Filter>Файлы исходного кода\EngineLib\Audio\source</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_engine\Audio\source\snd_ogg_source.h">
+      <Filter>Файлы исходного кода\EngineLib\Audio\source</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_engine\Audio\source\snd_ogg_stream.h">
+      <Filter>Файлы исходного кода\EngineLib\Audio\source</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_engine\Audio\source\snd_source.h">
+      <Filter>Файлы исходного кода\EngineLib\Audio\source</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_engine\Audio\source\snd_wav_cache.h">
+      <Filter>Файлы исходного кода\EngineLib\Audio\source</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_engine\Audio\source\snd_wav_source.h">
+      <Filter>Файлы исходного кода\EngineLib\Audio\source</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared_engine\Audio\source\snd_wav_stream.h">
+      <Filter>Файлы исходного кода\EngineLib\Audio\source</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

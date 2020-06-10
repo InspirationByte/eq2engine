@@ -119,6 +119,13 @@ call copy_drvsyn_engine.bat $(ConfigurationName)</Command>
     <ClCompile Include="..\shared_engine\Audio\alsnd_sample.cpp" />
     <ClCompile Include="..\shared_engine\Audio\alsound_local.cpp" />
     <ClCompile Include="..\shared_engine\Audio\soundzero.cpp" />
+    <ClCompile Include="..\shared_engine\Audio\source\snd_ogg_cache.cpp" />
+    <ClCompile Include="..\shared_engine\Audio\source\snd_ogg_source.cpp" />
+    <ClCompile Include="..\shared_engine\Audio\source\snd_ogg_stream.cpp" />
+    <ClCompile Include="..\shared_engine\Audio\source\snd_source.cpp" />
+    <ClCompile Include="..\shared_engine\Audio\source\snd_wav_cache.cpp" />
+    <ClCompile Include="..\shared_engine\Audio\source\snd_wav_source.cpp" />
+    <ClCompile Include="..\shared_engine\Audio\source\snd_wav_stream.cpp" />
     <ClCompile Include="..\shared_engine\DebugOverlay.cpp" />
     <ClCompile Include="..\shared_engine\EGFInstancer.cpp" />
     <ClCompile Include="..\shared_engine\EqUI\EqUI_Button.cpp" />
@@ -283,6 +290,13 @@ call copy_drvsyn_engine.bat $(ConfigurationName)</Command>
     <ClInclude Include="..\shared_engine\Audio\alsnd_sample.h" />
     <ClInclude Include="..\shared_engine\Audio\alsound_local.h" />
     <ClInclude Include="..\shared_engine\Audio\soundzero.h" />
+    <ClInclude Include="..\shared_engine\Audio\source\snd_ogg_cache.h" />
+    <ClInclude Include="..\shared_engine\Audio\source\snd_ogg_source.h" />
+    <ClInclude Include="..\shared_engine\Audio\source\snd_ogg_stream.h" />
+    <ClInclude Include="..\shared_engine\Audio\source\snd_source.h" />
+    <ClInclude Include="..\shared_engine\Audio\source\snd_wav_cache.h" />
+    <ClInclude Include="..\shared_engine\Audio\source\snd_wav_source.h" />
+    <ClInclude Include="..\shared_engine\Audio\source\snd_wav_stream.h" />
     <ClInclude Include="..\shared_engine\DebugOverlay.h" />
     <ClInclude Include="..\shared_engine\EGFInstancer.h" />
     <ClInclude Include="..\shared_engine\EqUI\EqUI_Button.h" />
