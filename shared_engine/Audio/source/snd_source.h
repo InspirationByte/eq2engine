@@ -29,11 +29,11 @@ public:
 	virtual int             GetSamples(ubyte *pOutput, int nSamples, int nOffset, bool bLooping) = 0;
 	virtual soundFormat_t*	GetFormat() = 0;
 	virtual const char*		GetFilename() const = 0;
+	virtual int				GetSampleCount() const = 0;
 
 	virtual float           GetLoopPosition(float flPosition) = 0;
 
 	virtual bool			IsStreaming() = 0;
-
 private:
 	virtual bool			Load(const char *szFilename) = 0;
 	virtual void			Unload () = 0;

@@ -70,7 +70,7 @@ void DkSoundAmbient::Play()
 	// option for streaming
 	if( m_sample->m_flags & SAMPLE_FLAG_STREAMED )
 	{
-		EqString soundPath = (_Es(SOUND_DEFAULT_PATH) +  m_sample->m_szName).c_str();
+		EqString soundPath(_Es(SOUND_DEFAULT_PATH) +  m_sample->m_szName);
 
 		if(GetState() != SOUND_STATE_PAUSED)
 		{

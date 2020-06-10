@@ -23,6 +23,7 @@ public:
 	virtual soundFormat_t*	GetFormat()						{ return &m_format; }
 	virtual const char*		GetFilename() const				{ return m_filename.c_str(); }
 	virtual float			GetLoopPosition(float flPosition);
+	virtual int				GetSampleCount() const			{ return m_numSamples; }
 
 protected:
 	void					ParseChunk(CRIFF_Parser &chunk);

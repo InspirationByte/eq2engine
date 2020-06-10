@@ -4,10 +4,29 @@
 //////////////////////////////////////////////////////////////////////////////////
 // Description: Equilibrium Engine Sound system
 //
-//				Sound system//////////////////////////////////////////////////////////////////////////////////
+//				Sound system
+//////////////////////////////////////////////////////////////////////////////////
 
 #ifndef ALSOUND_LOCAL_H
 #define ALSOUND_LOCAL_H
+
+/*
+/NEW DATA SCHEME
+
+EqAudioAL
+	EqAudioVoiceAL Voices[]
+
+EqAudioVoiceAL
+	AlSource Source
+	Albuffer StreamQueue[4]
+	ISoundSource SampleSource
+	AlEffect Effect
+
+ISoundSource
+	Data/Stream
+	Length
+	Duration
+*/
 
 #include "soundzero.h"
 
@@ -15,7 +34,7 @@
 #include "alsnd_emitter.h"
 #include "alsnd_stream.h"
 
-#define SOUND_EFX_SLOTS					2
+#define SOUND_EFX_SLOTS	2
 
 struct sndEffect_t
 {

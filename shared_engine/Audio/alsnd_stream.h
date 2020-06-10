@@ -55,23 +55,21 @@ protected:
 
 //
 
-	float				m_volume;
-	float				m_pitch;
+	OggVorbis_File		m_oggStream;
+	ALuint				m_buffers[AMB_STREAM_BUFFERS];
+
+	IFile*				m_oggFile;
+	vorbis_info*		m_vorbisInfo;
 
 	ALenum				m_format;
 	ALuint				m_alSource;
-	ALuint				m_buffers[AMB_STREAM_BUFFERS];
-	
+
+	float				m_volume;
+	float				m_pitch;
+
 	bool				m_playing : 1;
 	bool				m_loaded : 1;
 	bool				m_ready : 1;
-
-	IFile*				m_oggFile;
-	OggVorbis_File		m_oggStream;
-
-	vorbis_info*		m_vorbisInfo;
-	//vorbis_comment*		m_vorbisComment;
-	
 };
 
 #endif
