@@ -14,6 +14,7 @@ class CSoundSource_OggStream : public CSoundSource_OggCache
 {
 public:
 	virtual int     GetSamples(ubyte *pOutput, int nSamples, int nOffset, bool bLooping);
+	ubyte*			GetDataPtr(int& dataSize) const { dataSize = 0; return nullptr; }
 
 	virtual bool	Load(const char* filename);
 	virtual void	Unload();

@@ -17,7 +17,8 @@
 #include "scene_def.h"
 #include "ViewParams.h"
 
-#include "SoundEngineV2/soundinterface.h"
+//#include "SoundEngineV2/soundinterface.h"
+#include "Audio/eqAudioSystemAL.h"
 
 #include <wx/settings.h>
 
@@ -50,11 +51,29 @@ float				g_fCamSpeed = 10.0;
 #define SOUND_COUNT_TEST 4
 #define MAX_LOOP_SOUNDS 5
 
-int g_loopingSound[MAX_LOOP_SOUNDS] = {-1};
-int g_staticSound = -1;
+//int g_loopingSound[MAX_LOOP_SOUNDS] = {-1};
+//int g_staticSound = -1;
 
-ISoundEngine* g_soundEngine = NULL;
-ISoundChannel* g_musicChan = NULL;
+//ISoundEngine* g_soundEngine = NULL;
+//ISoundChannel* g_musicChan = NULL;
+
+CEqAudioSystemAL* g_soundEngine = NULL;
+ISoundSource* g_loopingSound[MAX_LOOP_SOUNDS];
+ISoundSource* g_staticSound;
+
+VoiceHandle_t g_musicChan = VOICE_INVALID_HANDLE;
+
+int musicUpdateCb(void* obj, voiceParams_t& params)
+{
+	if (params.state != VOICE_STATE_PLAYING)
+	{
+		//params.state = VOICE_STATE_PLAYING;
+		//params.looping = true;
+		return VOICE_UPDATE_DO_REWIND;
+	}
+
+	return 0;
+}
 
 void InitSoundSystem( EQWNDHANDLE wnd )
 {
@@ -62,6 +81,30 @@ void InitSoundSystem( EQWNDHANDLE wnd )
 	g_sysConsole->ParseFileToCommandBuffer("eqSoundSystemTest.cfg");
 	g_sysConsole->ExecuteCommandBuffer();
 
+	g_soundEngine = new CEqAudioSystemAL();
+	g_soundEngine->Init();
+
+	g_loopingSound[0] = g_soundEngine->LoadSample("sounds/SoundTest/StreamingStereo.wav");
+	g_loopingSound[1] = g_soundEngine->LoadSample("sounds/SoundTest/StreamingStereo.ogg");
+	g_loopingSound[2] = g_soundEngine->LoadSample("sounds/SoundTest/Sine22.wav");
+	g_loopingSound[3] = g_soundEngine->LoadSample("sounds/SoundTest/Sine44.wav");
+	g_loopingSound[4] = nullptr;
+
+	g_staticSound = g_soundEngine->LoadSample("sounds/SoundTest/StaticTest.wav");
+
+	g_musicChan = g_soundEngine->GetFreeVoice(g_loopingSound[0], nullptr, musicUpdateCb);
+
+	if (g_musicChan != VOICE_INVALID_HANDLE)
+	{
+		voiceParams_t params;
+		params.state = VOICE_STATE_PLAYING;
+		params.looping = true;
+		params.pitch = 2.0;
+
+		g_soundEngine->UpdateVoice(g_musicChan, params, VOICE_UPDATE_STATE | VOICE_UPDATE_LOOPING | VOICE_UPDATE_PITCH);
+	}
+
+	/*
 	g_soundEngine = ISoundEngine::Create();
 	g_soundEngine->Initialize( wnd );
 
@@ -80,6 +123,7 @@ void InitSoundSystem( EQWNDHANDLE wnd )
 		g_musicChan->SetPitch(1.0f);
 		g_musicChan->PlayLoop(g_loopingSound[0]);
 	}	
+	*/
 }
 
 class CWXTemplateApplication: public wxApp
@@ -256,8 +300,6 @@ CMainWindow::CMainWindow( wxWindow* parent, wxWindowID id, const wxString& title
 
 	InitMatSystem( (EQWNDHANDLE)m_renderPanel->GetHandle() );
 
-	InitSoundSystem( (EQWNDHANDLE)m_renderPanel->GetHandle() );
-
 	g_fontCache->Init();
 
 	debugoverlay->Init();
@@ -283,6 +325,8 @@ CMainWindow::CMainWindow( wxWindow* parent, wxWindowID id, const wxString& title
 
 	m_bIsMoving = false;
 	m_bDoRefresh = false;
+
+	InitSoundSystem( (EQWNDHANDLE)m_renderPanel->GetHandle() );
 
 	RefreshGUI();
 }
@@ -320,6 +364,7 @@ void CMainWindow::ProcessAllMenuCommands(wxCommandEvent& event)
 	{
 		int soundId = event.GetId()-Event_LoopSounds_Sound;
 
+		/*
 		if(g_loopingSound[soundId] != -1)
 		{
 			g_musicChan->SetAttenuation(0.0f);
@@ -327,6 +372,29 @@ void CMainWindow::ProcessAllMenuCommands(wxCommandEvent& event)
 		}
 		else
 			g_musicChan->StopSound();
+			*/
+
+		if (g_loopingSound[soundId] != nullptr)
+		{
+			g_soundEngine->ReleaseVoice(g_musicChan);
+			g_musicChan = g_soundEngine->GetFreeVoice(g_loopingSound[soundId], nullptr, musicUpdateCb);
+
+			
+			if (g_musicChan != VOICE_INVALID_HANDLE)
+			{
+				voiceParams_t params;
+				params.state = VOICE_STATE_PLAYING;
+				params.looping = true;
+				params.pitch = RandomFloat(0.5f, 2.0f);
+
+				g_soundEngine->UpdateVoice(g_musicChan, params, VOICE_UPDATE_STATE | VOICE_UPDATE_LOOPING | VOICE_UPDATE_PITCH);
+			}
+		}
+		else
+		{
+			g_soundEngine->ReleaseVoice(g_musicChan);
+			g_musicChan = VOICE_INVALID_HANDLE;
+		}
 	}
 }
 
@@ -470,7 +538,17 @@ void CMainWindow::ProcessKeyboardUpEvents(wxKeyEvent& event)
 	{
 		Vector3D randomPos(RandomFloat(-10.0f, 10.0f), RandomFloat(-10.0f, 10.0f), RandomFloat(-10.0f, 10.0f));
 
-		g_soundEngine->PlaySound(g_staticSound, randomPos, 1.0f, 10.0f);
+		//g_soundEngine->PlaySound(g_staticSound, randomPos, 1.0f, 10.0f);
+
+		VoiceHandle_t handle = g_soundEngine->GetFreeVoice(g_staticSound, nullptr, nullptr);
+		if (handle != VOICE_INVALID_HANDLE)
+		{
+			voiceParams_t params;
+			params.position = randomPos;
+			params.state = VOICE_STATE_PLAYING;
+
+			g_soundEngine->UpdateVoice(handle, params, VOICE_UPDATE_POSITION | VOICE_UPDATE_STATE);
+		}
 		
 		debugoverlay->Box3D(randomPos-1.0f, randomPos+1.0f, ColorRGBA(1,1,0,1), 1.0f);
 	}
@@ -618,7 +696,8 @@ void CMainWindow::ReDraw()
 		g_pCameraParams.SetAngles(g_camera_rotation);
 		g_pCameraParams.SetOrigin(g_camera_target);
 
-		g_soundEngine->SetListener(g_camera_target, forward,right,up);
+		//g_soundEngine->SetListener(g_camera_target, forward,right,up);
+		g_soundEngine->SetListener(g_camera_target, vec3_zero, forward, up);
 		g_soundEngine->Update();
 
 		debugoverlay->Box3D(-1.0f, 1.0f, ColorRGBA(1,1,1,1), 1.0f);
@@ -677,7 +756,8 @@ void CMainWindow::OnCloseCmd(wxCloseEvent& event)
 	Msg("EXIT CLEANUP...\n");
 
 	g_soundEngine->Shutdown();
-	ISoundEngine::Destroy(g_soundEngine);
+	delete g_soundEngine;
+	//ISoundEngine::Destroy(g_soundEngine);
 
 	Destroy();
 

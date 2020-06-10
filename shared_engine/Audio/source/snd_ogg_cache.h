@@ -12,11 +12,13 @@
 
 class CSoundSource_OggCache : public CSoundSource_Ogg
 {
+	friend class CSoundSource_OpenALCache;
 public:
-	virtual int     GetSamples(ubyte *pOutput, int nSamples, int nOffset, bool bLooping);
+	int				GetSamples(ubyte *pOutput, int nSamples, int nOffset, bool bLooping);
+	ubyte*			GetDataPtr(int& dataSize) const { dataSize = m_cacheSize; return m_dataCache; }
 
-	virtual bool	Load(const char* filename);
-	virtual void	Unload();
+	bool			Load(const char* filename);
+	void			Unload();
 
 	bool			IsStreaming() { return false; }
 

@@ -30,6 +30,7 @@ protected:
 
 	virtual void			ParseFormat(CRIFF_Parser &chunk);
 	virtual void			ParseCue(CRIFF_Parser &chunk);
+	virtual void			ParseSample(CRIFF_Parser &chunk);
 	virtual void			ParseData(CRIFF_Parser &chunk) = 0;
 
 	soundFormat_t			m_format;
@@ -37,6 +38,7 @@ protected:
 
 	int						m_numSamples;
 	int						m_loopStart;
+	int						m_loopEnd;
 };
 
 #endif // SND_WAV_SOURCE_H

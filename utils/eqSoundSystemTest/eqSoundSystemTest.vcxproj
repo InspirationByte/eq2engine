@@ -59,11 +59,14 @@
     <ReferencePath Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(ReferencePath)</ReferencePath>
     <LibraryPath Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(ProjectDir)..\..\src_dependency\wxWidgets\lib\vc_lib;$(ProjectDir)..\..\src_depndency\dx9sdk\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <IncludePath>$(IncludePath)</IncludePath>
+  </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
-      <Optimization>MaxSpeed</Optimization>
+      <Optimization>Disabled</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <AdditionalIncludeDirectories>..\..\FileSystem;..\..\Engine;..\..\public;..\..\public\core;..\..\shared_game;..\..\shared_engine;..\..\src_dependency\wxWidgets\include;..\..\src_dependency\wxWidgets\include\msvc;..\..\src_dependency\wxWidgets\include\msw;..\..\src_dependency\libogg\include;..\..\src_dependency\libvorbis\include;..\..\src_depndency\dx9sdk\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\FileSystem;..\..\Engine;..\..\public;..\..\public\core;..\..\shared_game;..\..\shared_engine;..\..\src_dependency\wxWidgets\include;..\..\src_dependency\wxWidgets\include\msvc;..\..\src_dependency\wxWidgets\include\msw;..\..\src_dependency\libogg\include;..\..\src_dependency\libvorbis\include;..\..\src_dependency\openal-soft\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;ENGINE_EXPORT;PHYSICS_EXPORT;NO_GAME;NO_ENGINE;NOENGINE;EDITOR;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <FunctionLevelLinking>false</FunctionLevelLinking>
@@ -73,8 +76,8 @@
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <StringPooling>true</StringPooling>
       <MinimalRebuild>true</MinimalRebuild>
-      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
-      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+      <InlineFunctionExpansion>Disabled</InlineFunctionExpansion>
+      <FavorSizeOrSpeed>Neither</FavorSizeOrSpeed>
       <WholeProgramOptimization>false</WholeProgramOptimization>
       <FloatingPointExceptions>false</FloatingPointExceptions>
     </ClCompile>
@@ -137,6 +140,8 @@
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\shared_engine\Audio\eqAudioSystemAL.h" />
+    <ClInclude Include="..\..\shared_engine\Audio\source\snd_al_source.h" />
     <ClInclude Include="eqSoundSystemTest.h" />
     <ClInclude Include="SoundEngineV2\snd_channel.h" />
     <ClInclude Include="SoundEngineV2\snd_defs.h" />
@@ -210,6 +215,8 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\public\math\math_util.cpp" />
+    <ClCompile Include="..\..\shared_engine\Audio\eqAudioSystemAL.cpp" />
+    <ClCompile Include="..\..\shared_engine\Audio\source\snd_al_source.cpp" />
     <ClCompile Include="..\..\shared_engine\Font.cpp" />
     <ClCompile Include="..\..\shared_engine\FontCache.cpp" />
     <ClCompile Include="eqSoundSystemTest.cpp" />
@@ -272,6 +279,7 @@
     <Library Include="..\..\src_dependency\libogg\win32\VS2015\Win32\Release\libogg_static.lib" />
     <Library Include="..\..\src_dependency\libvorbis\win32\VS2010\Win32\Release\libvorbisfile_static.lib" />
     <Library Include="..\..\src_dependency\libvorbis\win32\VS2010\Win32\Release\libvorbis_static.lib" />
+    <Library Include="..\..\src_dependency\openal-soft\build\Release\OpenAL32.lib" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\coreLib.vcxproj">

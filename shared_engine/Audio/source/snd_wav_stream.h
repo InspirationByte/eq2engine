@@ -11,6 +11,7 @@ class CSoundSource_WaveStream : public CSoundSource_Wave
 {
 public:
 	int				GetSamples (ubyte *pOutput, int nSamples, int nOffset, bool bLooping);
+	ubyte*			GetDataPtr(int& dataSize) const { dataSize = 0; return nullptr; }
 
 	bool			Load(const char *szFilename);
 	void			Unload();

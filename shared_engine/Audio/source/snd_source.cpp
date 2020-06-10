@@ -46,7 +46,7 @@ ISoundSource* ISoundSource::CreateSound( const char* szFilename )
 			pSource = (ISoundSource*)new CSoundSource_OggCache;
 	}
 	else
-		MsgError( "unknown sound format: %s\n", szFilename );
+		MsgError( "Unknown sound format: %s\n", szFilename );
 
 
 	if ( pSource )

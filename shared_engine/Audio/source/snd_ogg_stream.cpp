@@ -65,31 +65,22 @@ int CSoundSource_OggStream::GetSamples(ubyte* pOutput, int nSamples, int nOffset
 	int     nRemaining;
 	int     nBytes, nStart;
 
-	int     nSampleSize = m_format.channels * sizeof(short);
+	int     nSampleSize = m_format.channels * m_format.bitwidth / 8;
 
 	nBytes = nSamples * nSampleSize;
 	nStart = nOffset * nSampleSize;
 
 	nRemaining = nBytes;
 
-	if ( nBytes + nStart > m_dataSize )
+	if (nBytes + nStart > m_dataSize)
 		nBytes = m_dataSize - nStart;
 
-	if (nOffset > m_numSamples)
-		nOffset -= m_numSamples;
-
-	ReadData( pOutput, nOffset, nBytes );
+	ReadData(pOutput, nOffset, nBytes);
 	nRemaining -= nBytes;
-	
-	// if we still have remaining data to fill stream for loop, but stream is at EOF, read it again
-	if ( nRemaining && bLooping )
+
+	if (nRemaining && bLooping)
 	{
-		nOffset += nSamples;
-
-		if (nOffset > m_numSamples)
-			nOffset -= m_numSamples;
-
-		ReadData( pOutput+nBytes, nOffset, nRemaining );
+		ReadData(pOutput + nBytes, 0, nRemaining);
 
 		return (nBytes + nRemaining) / nSampleSize;
 	}

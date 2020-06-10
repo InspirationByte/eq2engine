@@ -27,6 +27,8 @@ public:
 //----------------------------------------------------
 
 	virtual int             GetSamples(ubyte *pOutput, int nSamples, int nOffset, bool bLooping) = 0;
+	virtual ubyte*			GetDataPtr(int& dataSize) const = 0;
+
 	virtual soundFormat_t*	GetFormat() = 0;
 	virtual const char*		GetFilename() const = 0;
 	virtual int				GetSampleCount() const = 0;

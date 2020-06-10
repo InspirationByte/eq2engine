@@ -78,8 +78,10 @@ int CSoundSource_WaveCache::GetSamples(ubyte *pOutput, int nSamples, int nOffset
 
 	nRemaining = nBytes;
 
-	if ( nStart + nBytes > m_cacheSize )
-		nBytes = m_cacheSize - nStart;
+	int size = /*bLooping && */m_loopEnd ? m_loopEnd : m_cacheSize;
+
+	if ( nStart + nBytes > size)
+		nBytes = size - nStart;
 
 	memcpy( (void *)pOutput, (void *)(m_dataCache+nStart), nBytes );
 
@@ -95,8 +97,8 @@ int CSoundSource_WaveCache::GetSamples(ubyte *pOutput, int nSamples, int nOffset
 		{
 			int loopBytes = m_loopStart * nSampleSize;
 
-			if ( loopBytes + nBytes > m_cacheSize )
-				nBytes = m_cacheSize - loopBytes;
+			if ( loopBytes + nBytes > size)
+				nBytes = size - loopBytes;
 
 			memcpy( (void *)(pOutput+nCompleted), (void *)(m_dataCache+loopBytes), nBytes );
 			nRemaining -= nBytes;
@@ -104,8 +106,8 @@ int CSoundSource_WaveCache::GetSamples(ubyte *pOutput, int nSamples, int nOffset
 		}
 		else
 		{
-			if ( nBytes > m_cacheSize )
-				nBytes = m_cacheSize;
+			if ( nBytes > size)
+				nBytes = size;
 
 			memcpy( (void *)(pOutput+nCompleted), (void *)m_dataCache, nBytes );
 			nRemaining -= nBytes;

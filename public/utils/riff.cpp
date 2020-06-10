@@ -91,9 +91,23 @@ void CRIFF_Parser::ChunkClose ()
 	}
 }
 
-int CRIFF_Parser::ReadChunk( void* pOutput )
+int CRIFF_Parser::ReadChunk( void* pOutput, int maxLen )
 {
-	return ReadData( pOutput, m_curChunk.Size );
+	int numToRead = m_curChunk.Size;
+
+	if (maxLen != -1)
+		numToRead = maxLen;
+
+	int readCount = ReadData( pOutput, numToRead);
+
+	if (numToRead < m_curChunk.Size)
+	{
+		m_pos += m_curChunk.Size - numToRead;
+		if (m_riff)
+			m_riff->Seek(m_curChunk.Size - numToRead, VS_SEEK_CUR);
+	}
+
+	return readCount;
 }
 
 int CRIFF_Parser::ReadData(void* dest, int len)

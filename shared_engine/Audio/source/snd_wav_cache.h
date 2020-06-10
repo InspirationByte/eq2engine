@@ -12,8 +12,10 @@
 
 class CSoundSource_WaveCache : public CSoundSource_Wave
 {
+	friend class CSoundSource_OpenALCache;
 public:
 	virtual int     GetSamples(ubyte *pOutput, int nSamples, int nOffset, bool bLooping);
+	ubyte*			GetDataPtr(int& dataSize) const { dataSize = m_cacheSize; return m_dataCache; }
 
 	virtual bool	Load(const char *szFilename);
 	virtual void	Unload();

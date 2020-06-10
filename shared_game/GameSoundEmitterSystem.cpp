@@ -688,6 +688,7 @@ void CSoundEmitterSystem::Emit2DSound(EmitSound_t* emit, int channelType)
 	}
 }
 
+
 bool CSoundEmitterSystem::UpdateEmitter( EmitterData_t* emitter, soundParams_t &params, bool bForceNoInterp )
 {
 	ISoundEmitter* source = emitter->soundSource;
@@ -787,6 +788,9 @@ void CSoundEmitterSystem::StopAll2DSounds()
 	}
 }
 
+//
+// Updates all emitters and sound system itself
+//
 void CSoundEmitterSystem::Update(float pitchScale, bool force)
 {
 	soundsystem->Update(pitchScale);
@@ -795,14 +799,13 @@ void CSoundEmitterSystem::Update(float pitchScale, bool force)
 	ISoundPlayable* musicChannel = soundsystem->GetStaticStreamChannel(CHAN_STREAM);
 
 	if (musicChannel)
-	{
 		musicChannel->SetVolume(m_2dChannelVolume[CHAN_STREAM] * m_2dScriptVolume[CHAN_STREAM] * snd_musicvolume.GetFloat());
-	}
 
 	// don't update
 	if(!force && soundsystem->GetPauseState())
 		return;
 
+	// start all pending sounds we accumulated during sound pause
 	if (!m_isPaused)
 	{
 		if (m_pendingStartSounds2D.numElem())
@@ -836,6 +839,7 @@ void CSoundEmitterSystem::Update(float pitchScale, bool force)
 		}
 	}
 
+	// update all sound emitters
 	for(int i = 0; i < m_emitters.numElem(); i++)
 	{
 		EmitterData_t* emitter = m_emitters[i];
@@ -871,6 +875,9 @@ void CSoundEmitterSystem::Update(float pitchScale, bool force)
 	}
 }
 
+//
+// Loads sound scripts
+//
 void CSoundEmitterSystem::LoadScriptSoundFile(const char* fileName)
 {
 	KeyValues kv;
@@ -965,6 +972,9 @@ void CSoundEmitterSystem::LoadScriptSoundFile(const char* fileName)
 	}
 }
 
+//
+// picks best sample randomly.
+//
 ISoundSample* CSoundEmitterSystem::FindBestSample(soundScriptDesc_t* script, int sampleId /*= -1*/)
 {
 	int numSamples = script->pSamples.numElem();

@@ -92,7 +92,7 @@ public:
 	int             GetPos();
 	int             SetPos(int pos);
 
-	int				ReadChunk(void* dest);
+	int				ReadChunk(void* dest, int maxLen = -1);
 	int				ReadData(void* dest, int len);
 	int				ReadInt();
 
