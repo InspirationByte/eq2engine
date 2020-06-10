@@ -355,7 +355,7 @@ void CGameLevel::LoadRegionAt(int regionIndex, IVirtualStream* stream)
 	int loffset = stream->Tell();
 
 #ifndef EDITOR
-	// Reload materials
+	// init heightfield materials
 	for(int i = 0; i < reg.GetNumHFields(); i++)
 	{
 		CHeightTileField* hfield = reg.GetHField(i);
@@ -2076,8 +2076,6 @@ void CGameLevel::Nav_AddObstacle(CLevelRegion* reg, regionObject_t* ref)
 		return;
 	}
 
-	CScopedMutex m(m_mutex);
-
 	/*
 		transformedModel = transformModelRef(ref)
 		foreach triangle in transformedModel
@@ -2104,6 +2102,9 @@ void CGameLevel::Nav_AddObstacle(CLevelRegion* reg, regionObject_t* ref)
 			return;
 
 		CLevelModel* model = def->m_model;
+
+		if (!model)
+			return;
 
 		Matrix4x4 refTransform = ref->transform;
 
@@ -2173,28 +2174,33 @@ void CGameLevel::Nav_AddObstacle(CLevelRegion* reg, regionObject_t* ref)
 			vertbox.AddVertex(v1);
 			vertbox.AddVertex(v2);
 
-			// other thread will not bother this op
-			for(m_navGridSelector = 0; m_navGridSelector < 2; m_navGridSelector++)
 			{
-				// get a cell range
-				IVector2D min, max;
-				Nav_GetCellRangeFromAABB(vertbox.minPoint, vertbox.maxPoint, min, max);
+				CScopedMutex m(m_mutex);
 
-				// in this range do...
-				for (int y = min.y; y < max.y; y++)
+				// other thread will not bother this op
+				for (m_navGridSelector = 0; m_navGridSelector < 2; m_navGridSelector++)
 				{
-					for (int x = min.x; x < max.x; x++)
-					{
-						//Vector3D pointPos = Nav_GlobalPointToPosition(IVector2D(x, y));
-						//debugoverlay->Box3D(pointPos - 0.5f, pointPos + 0.5f, ColorRGBA(1, 0, 1, 0.1f));
+					// get a cell range
+					IVector2D min, max;
+					Nav_GetCellRangeFromAABB(vertbox.minPoint, vertbox.maxPoint, min, max);
 
-						ubyte& tile = Nav_GetTileAtGlobalPoint(IVector2D(x, y));
-						tile = 0;
+					// in this range do...
+					for (int y = min.y; y < max.y; y++)
+					{
+						for (int x = min.x; x < max.x; x++)
+						{
+							//Vector3D pointPos = Nav_GlobalPointToPosition(IVector2D(x, y));
+							//debugoverlay->Box3D(pointPos - 0.5f, pointPos + 0.5f, ColorRGBA(1, 0, 1, 0.1f));
+
+							ubyte& tile = Nav_GetTileAtGlobalPoint(IVector2D(x, y));
+							tile = 0;
+						}
 					}
 				}
-			}
 
-			m_navGridSelector = 0;
+
+				m_navGridSelector = 0;
+			}
 		}
 
 	}
@@ -2261,28 +2267,32 @@ void CGameLevel::Nav_AddObstacle(CLevelRegion* reg, regionObject_t* ref)
 			vertbox.AddVertex(v1);
 			vertbox.AddVertex(v2);
 
-			// other thread will not bother this op
-			for (m_navGridSelector = 0; m_navGridSelector < 2; m_navGridSelector++)
 			{
-				// get a cell range
-				IVector2D min, max;
-				Nav_GetCellRangeFromAABB(vertbox.minPoint, vertbox.maxPoint, min, max, 2.0f);
+				CScopedMutex m(m_mutex);
 
-				// in this range do...
-				for (int y = min.y; y < max.y; y++)
+				// other thread will not bother this op
+				for (m_navGridSelector = 0; m_navGridSelector < 2; m_navGridSelector++)
 				{
-					for (int x = min.x; x < max.x; x++)
-					{
-						//Vector3D pointPos = Nav_GlobalPointToPosition(IVector2D(x, y));
-						//debugoverlay->Box3D(pointPos - 0.5f, pointPos + 0.5f, ColorRGBA(1, 0, 1, 0.1f));
+					// get a cell range
+					IVector2D min, max;
+					Nav_GetCellRangeFromAABB(vertbox.minPoint, vertbox.maxPoint, min, max, 2.0f);
 
-						ubyte& tile = Nav_GetTileAtGlobalPoint(IVector2D(x, y));
-						tile = 0;
+					// in this range do...
+					for (int y = min.y; y < max.y; y++)
+					{
+						for (int x = min.x; x < max.x; x++)
+						{
+							//Vector3D pointPos = Nav_GlobalPointToPosition(IVector2D(x, y));
+							//debugoverlay->Box3D(pointPos - 0.5f, pointPos + 0.5f, ColorRGBA(1, 0, 1, 0.1f));
+
+							ubyte& tile = Nav_GetTileAtGlobalPoint(IVector2D(x, y));
+							tile = 0;
+						}
 					}
 				}
-			}
 
-			m_navGridSelector = 0;
+				m_navGridSelector = 0;
+			}
 		}
 	}
 }

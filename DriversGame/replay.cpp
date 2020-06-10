@@ -1086,11 +1086,14 @@ void CReplayTracker::PushSpawnOrRemoveEvent( EReplayEventType type, CGameObject*
 	// assign replay index
 	if( type == REPLAY_EVENT_SPAWN )
 	{
-		evt.replayIndex = RecordVehicle( (CCar*)object );
+		if (IsCar(object))
+		{
+			evt.replayIndex = RecordVehicle((CCar*)object);
 
-		// store object ID
-		int carType = m_vehicles[evt.replayIndex].type;
-		evt.eventData = (void*)(intptr_t)carType;
+			// store object ID
+			int carType = m_vehicles[evt.replayIndex].type;
+			evt.eventData = (void*)(intptr_t)carType;
+		}
 	}
 	else if( type == REPLAY_EVENT_REMOVE )
 	{

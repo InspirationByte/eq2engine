@@ -200,7 +200,10 @@ void CLevObjectDef::Render( float lodDistance, const BoundingBox& bbox, bool pre
 
 void CLevObjectDef::PreloadModel(IVirtualStream* stream)
 {
-	if (m_model || m_info.type != LOBJ_TYPE_INTERNAL_STATIC)
+	if (m_info.type == LOBJ_TYPE_OBJECT_CFG)
+		return;
+
+	if (m_model)
 		return;
 
 	const ShaderAPICaps_t& caps = g_pShaderAPI->GetCaps();
@@ -608,6 +611,9 @@ void CLevelModel::GetDecalPolygons( decalPrimitives_t& polys, const Matrix4x4& t
 	// transform volume (optimization)
 	// BUG: wrong rotation
 	//Volume tVolume = transform * volume;
+
+	if (!m_phybatches)
+		return;
 	
 	// in game only physics verts are available
 	for(int i = 0; i < m_numBatches; i++)
@@ -1013,7 +1019,7 @@ bool DrawDefLightData(const Matrix4x4& objDefMatrix, const wlightdata_t& data, f
 
 			ColorRGBA glowColor = glow.color * glow.color.w*(brightness + extraBrightness);
 
-			DrawSpotLightEffect(lightPosA, lightPosB, glowColor, glow.position.w * extraSizeScale, glow.type);
+			DrawLightLineEffect(lightPosA, lightPosB, glowColor, glow.position.w * extraSizeScale, glow.type);
 		}
 	}
 

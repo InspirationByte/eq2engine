@@ -931,17 +931,22 @@ void CLevelRegion::ReadLoadRegion(IVirtualStream* stream, DkList<CLevObjectDef*>
 
 		if(m_heightfield[i]->m_hasTransparentSubsets)
 			m_hasTransparentSubsets = true;
+
+#ifndef EDITOR
+		g_pPhysics->AddHeightField(m_heightfield[i]);
+#endif //EDITOR
 	}
 
 	levRegionDataInfo_t	regdatahdr;
 	stream->Read(&regdatahdr, 1, sizeof(levRegionDataInfo_t));
+
+	levObjectDefInfo_t defInfo;
 
 	//
 	// Load models (object definitions)
 	//
 	for(int i = 0; i < regdatahdr.numObjectDefs; i++)
 	{
-		levObjectDefInfo_t defInfo;
 		stream->Read(&defInfo, 1, sizeof(levObjectDefInfo_t));
 
 #ifdef EDITOR
@@ -957,6 +962,7 @@ void CLevelRegion::ReadLoadRegion(IVirtualStream* stream, DkList<CLevObjectDef*>
 		def->m_info = defInfo;
 		def->m_modelOffset = stream->Tell();
 
+		// FIXME: add to task manager?
 		def->PreloadModel(stream);
 
 		m_regionDefs.append(def);
@@ -1004,12 +1010,12 @@ void CLevelRegion::ReadLoadRegion(IVirtualStream* stream, DkList<CLevObjectDef*>
 		// calculate the transformation
 		ref->transform = GetModelRefRenderMatrix( this, ref );
 
+		// def model has to be loaded
+		// also it will be loaded for m_regionDefs
+		ref->def->PreloadModel(stream);
+
 		if(ref->def->m_info.type == LOBJ_TYPE_INTERNAL_STATIC)
 		{
-			// def model has to be loaded
-			// also it will be loaded for m_regionDefs
-			ref->def->PreloadModel(stream);
-
 			CLevelModel* model = ref->def->m_model;
 
 #ifndef EDITOR
@@ -1033,21 +1039,21 @@ void CLevelRegion::ReadLoadRegion(IVirtualStream* stream, DkList<CLevObjectDef*>
 		else
 		{
 			// create object, spawn in game cycle
-			CGameObject* newObj = g_pGameWorld->CreateGameObject( ref->def->m_defType.c_str(), ref->def->m_defKeyvalues );
+			CGameObject* newObj = g_pGameWorld->CreateGameObject(ref->def->m_defType.c_str(), ref->def->m_defKeyvalues);
 
-			if(newObj)
+			if (newObj)
 			{
 				Vector3D eulAngles = EulerMatrixXYZ(ref->transform.getRotationComponent());
 
-				newObj->SetOrigin( transpose(ref->transform).getTranslationComponent() );
-				newObj->SetAngles( VRAD2DEG(eulAngles) );
-				newObj->SetUserData( ref );
+				newObj->SetOrigin(transpose(ref->transform).getTranslationComponent());
+				newObj->SetAngles(VRAD2DEG(eulAngles));
+				newObj->SetUserData(ref);
 
 				// game name of this object
-				if( ref->name.Length() > 0 )
-					newObj->SetName( ref->name.c_str() );
-				else if(newObj->ObjType() != GO_SCRIPTED)
-					newObj->SetName( varargs("_reg%d_ref%d", m_regionIndex, i) );
+				if (ref->name.Length() > 0)
+					newObj->SetName(ref->name.c_str());
+				else if (newObj->ObjType() != GO_SCRIPTED)
+					newObj->SetName(varargs("_reg%d_ref%d", m_regionIndex, i));
 
 				// let the game objects to be spawned on game frame
 				ref->game_objectId = g_pGameWorld->AddObject(newObj);
@@ -1071,14 +1077,6 @@ void CLevelRegion::ReadLoadRegion(IVirtualStream* stream, DkList<CLevObjectDef*>
 #endif // EDITOR
 		}
 	}
-
-#ifndef EDITOR
-	for(int i = 0; i < GetNumHFields(); i++)
-	{
-		if(m_heightfield[i])
-			g_pPhysics->AddHeightField( m_heightfield[i] );
-	}
-#endif //EDITOR
 
 	// init navigation grid
 	InitNavigationGrid();
