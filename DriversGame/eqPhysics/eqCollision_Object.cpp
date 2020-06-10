@@ -159,7 +159,7 @@ bool CEqCollisionObject::Initialize( studioPhysData_t* data, int nObject )
 	return true;
 }
 
-bool CEqCollisionObject::Initialize( CEqBulletIndexedMesh* mesh )
+bool CEqCollisionObject::Initialize( CEqBulletIndexedMesh* mesh, bool internalEdges )
 {
 	ASSERT(!m_shape);
 
@@ -168,8 +168,11 @@ bool CEqCollisionObject::Initialize( CEqBulletIndexedMesh* mesh )
 	m_shape = new btBvhTriangleMeshShape(m_mesh, true, true);
 	m_shape->setMargin(ph_margin.GetFloat());
 
-	m_trimap = new btTriangleInfoMap();
-	btGenerateInternalEdgeInfo((btBvhTriangleMeshShape*)m_shape, m_trimap);
+	if (internalEdges)
+	{
+		m_trimap = new btTriangleInfoMap();
+		btGenerateInternalEdgeInfo((btBvhTriangleMeshShape*)m_shape, m_trimap);
+	}
 
 	InitAABB();
 

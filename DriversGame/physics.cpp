@@ -300,7 +300,7 @@ void CPhysicsEngine::AddHeightField( CHeightTileField* pField )
 		if(param)
 			staticObject->m_surfParam = param->id;
 
-		staticObject->Initialize(mesh);
+		staticObject->Initialize(mesh, true);
 		staticObject->SetPosition(pField->m_position);
 
 		fieldInfo->m_collisionObjects.append( staticObject );

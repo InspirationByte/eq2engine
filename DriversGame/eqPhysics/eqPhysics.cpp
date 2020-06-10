@@ -68,40 +68,43 @@ CEqCollisionObject* CollisionPairData_t::GetOppositeTo(CEqCollisionObject* obj) 
 
 //------------------------------------------------------------------------------------------------------------
 
-static int btInternalGetHash(int partId, int triangleIndex)
+static inline int btInternalGetHash(int partId, int triangleIndex)
 {
-	int hash = (partId<<(31-MAX_NUM_PARTS_IN_BITS)) | triangleIndex;
-	return hash;
+	return (partId << (31 - MAX_NUM_PARTS_IN_BITS)) | triangleIndex;
 }
 
 /// Adjusts collision for using single side, ignoring internal triangle edges
 /// If this info map is missing, or the triangle is not store in this map, nothing will be done
-void AdjustSingleSidedContact(btManifoldPoint& cp, const btCollisionObjectWrapper* colObj0Wrap)
+void AdjustSingleSidedContact(btManifoldPoint& cp, const btCollisionObjectWrapper* colObj0Wrap, int partId0, int index0)
 {
 	const btCollisionShape* shape = colObj0Wrap->getCollisionShape();
 
-	//btAssert(colObj0->getCollisionShape()->getShapeType() == TRIANGLE_SHAPE_PROXYTYPE);
 	if (shape->getShapeType() != TRIANGLE_SHAPE_PROXYTYPE)
 		return;
 
-	const btCollisionShape* collObjShape = colObj0Wrap->getCollisionObject()->getCollisionShape();
+	const btCollisionObject* obj = colObj0Wrap->getCollisionObject();
+	const btCollisionShape* collObjShape = obj->getCollisionShape();
 
-	btBvhTriangleMeshShape* trimesh = 0;
+	btBvhTriangleMeshShape* trimesh = nullptr;
 
-	if(collObjShape->getShapeType() == SCALED_TRIANGLE_MESH_SHAPE_PROXYTYPE )
-	   trimesh = ((btScaledBvhTriangleMeshShape*)collObjShape)->getChildShape();
+	if (shape->getShapeType() == SCALED_TRIANGLE_MESH_SHAPE_PROXYTYPE)
+		trimesh = ((btScaledBvhTriangleMeshShape*)collObjShape)->getChildShape();
 	else
-	   trimesh = (btBvhTriangleMeshShape*)collObjShape;
+		trimesh = (btBvhTriangleMeshShape*)collObjShape;
+
+	btTriangleInfoMap* triangleInfoMapPtr = trimesh->getTriangleInfoMap();
+	if (!triangleInfoMapPtr)
+		return;
+
+	if (triangleInfoMapPtr->findIndex(btInternalGetHash(partId0, index0)) == BT_HASH_NULL)
+		return;
 
 	const btTriangleShape* tri_shape = static_cast<const btTriangleShape*>(shape);
 
 	btVector3 tri_normal;
 	tri_shape->calcNormal(tri_normal);
 
-	btMatrix3x3 basis = colObj0Wrap->getCollisionObject()->getWorldTransform().getBasis();
-
-	btVector3 newNormal = basis * tri_normal;
-	cp.m_normalWorldOnB = basis * tri_normal;
+	cp.m_normalWorldOnB = obj->getWorldTransform().getBasis() * tri_normal;
 }
 
 //----------------------------------------------------------------------------------------------
@@ -163,14 +166,15 @@ struct CEqManifoldResult : public btManifoldResult
 	void addSingleResult(btManifoldPoint& cp, const btCollisionObjectWrapper* colObj0Wrap, int partId0, int index0, const btCollisionObjectWrapper* colObj1Wrap)
 	{
 		if (m_singleSided)
-			AdjustSingleSidedContact(cp, colObj1Wrap);
+			AdjustSingleSidedContact(cp, colObj1Wrap, cp.m_partId1, cp.m_index1);
 		else
 			btAdjustInternalEdgeContacts(cp, colObj1Wrap, colObj0Wrap, cp.m_partId1, cp.m_index1);
 
 		float distance = cp.getDistance();
 
 		// if something is a NaN we have to deny it
-		if (cp.m_positionWorldOnA != cp.m_positionWorldOnA || cp.m_normalWorldOnB != cp.m_normalWorldOnB)
+		if (cp.m_positionWorldOnA != cp.m_positionWorldOnA || 
+			cp.m_normalWorldOnB != cp.m_normalWorldOnB)
 			return;
 
 		int numColls = m_collisions.numElem();
@@ -193,45 +197,6 @@ struct CEqManifoldResult : public btManifoldResult
 				data.materialIndex = mesh->getSubPartMaterialId(cp.m_partId1);
 			}
 		}
-	}
-
-	bool GetSingleContact(CollisionData_t& cd, CEqRigidBody* relativeBody)
-	{
-		int numAddedCollisions = 0;
-
-		Vector3D bodyPos = relativeBody->GetPosition();
-
-		CollisionData_t* closest = nullptr;
-		float closestDist = PHYSICS_WORLD_MAX_UNITS;
-
-		memset(&cd, 0, sizeof(CollisionData_t));
-		for (int i = 0; i < m_collisions.numElem(); i++)
-		{
-			CollisionData_t& coll = m_collisions[i];
-
-			Plane pl(coll.normal, -dot(coll.normal, (Vector3D)coll.position));
-
-			Vector3D velToPoint = relativeBody->GetVelocityAtWorldPoint(coll.position);
-
-			if (dot(velToPoint, coll.normal) > 0.0f)
-				continue;
-
-			cd.fract += coll.fract;
-			cd.normal += coll.normal;
-			cd.position += coll.position;
-			numAddedCollisions++;
-
-			cd.materialIndex = coll.materialIndex;
-			cd.hitobject = coll.hitobject;
-		}
-
-		float collF = 1.0f / numAddedCollisions;
-
-		cd.fract *= collF;
-		cd.normal *= collF;
-		cd.position *= collF;
-
-		return numAddedCollisions > 0;
 	}
 
 	DkList<CollisionData_t> m_collisions;
@@ -854,19 +819,6 @@ void CEqPhysics::DetectStaticVsBodyCollision(CEqCollisionObject* staticObj, CEqR
 			m_collDispatcher->freeCollisionAlgorithm(algorithm);
 		}
 	}
-	/*
-	if (staticObj->m_flags & COLLOBJ_SINGLE_CONTACT)
-	{
-		// HACK: convert to single contact if static object has studio shape
-		CollisionData_t singleColl;
-		if (cbResult.GetSingleContact(singleColl, bodyB))
-		{
-			cbResult.m_collisions.setNum(1);
-			cbResult.m_collisions[0] = singleColl;
-		}
-		else
-			cbResult.m_collisions.clear(false);
-	}*/
 
 	int numCollResults = cbResult.m_collisions.numElem();
 

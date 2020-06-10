@@ -495,7 +495,7 @@ void CLevelModel::CreateCollisionObjectFor( regionObject_t* ref )
 	bool isGround = (ref->def->m_info.modelflags & LMODEL_FLAG_ISGROUND) || (ref->def->m_info.modelflags & LMODEL_FLAG_DRIVEABLE);
 
 	CEqCollisionObject* collObj = new CEqCollisionObject();
-	collObj->Initialize(m_physicsMesh);
+	collObj->Initialize(m_physicsMesh, isGround);
 
 	collObj->SetOrientation( Quaternion(transform.getRotationComponent()) );
 	collObj->SetPosition( transform.getTranslationComponent() );

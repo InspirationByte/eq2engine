@@ -42,10 +42,6 @@ enum ECollisionObjectFlags
 	// is ghost object
 	COLLOBJ_ISGHOST					= (1 << 4),
 
-	// object has single contact point (affects collision response)
-	// only used with static triangle meshes
-	COLLOBJ_SINGLE_CONTACT			= (1 << 5),
-
 	//---------------
 	// special flags
 
@@ -84,7 +80,7 @@ public:
 
 	// objects that will be created
 	bool						Initialize(studioPhysData_t* data, int nObject = 0);				///< Convex shape or other
-	bool						Initialize(CEqBulletIndexedMesh* mesh);								///< Triangle mesh shape TODO: different container
+	bool						Initialize(CEqBulletIndexedMesh* mesh, bool internalEdges);			///< Triangle mesh shape TODO: different container
 	bool						Initialize(const FVector3D& boxMins, const FVector3D& boxMaxs);		///< bounding box
 	bool						Initialize(float radius);											///< sphere
 	bool						Initialize(float radius, float height);								///< cylinder
