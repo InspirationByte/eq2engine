@@ -719,14 +719,11 @@ CLevelRegion* CGameLevel::GetRegionAt(const IVector2D& XYPos) const
 bool CGameLevel::PositionToRegionOffset(const Vector3D& pos, IVector2D& outXYPos) const
 {
 	int cellSize = HFIELD_POINT_SIZE*m_cellsSize;
-
-	Vector3D center(m_wide*cellSize*-0.5f, 0, m_tall*cellSize*-0.5f);
-
-	Vector3D zeroed_pos = pos - center;
-
 	float p_size = (1.0f / (float)cellSize);
 
-	Vector2D xz_pos = (zeroed_pos.xz()) * p_size;
+	Vector2D center(m_wide*cellSize*-0.5f, m_tall*cellSize*-0.5f);
+
+	Vector2D xz_pos = (pos.xz() - center) * p_size;
 
 	outXYPos.x = xz_pos.x;
 	outXYPos.y = xz_pos.y;
@@ -738,6 +735,42 @@ bool CGameLevel::PositionToRegionOffset(const Vector3D& pos, IVector2D& outXYPos
 		return false;
 
 	return true;
+}
+
+void CGameLevel::FindRegionBoxRange(const BoundingBox& bbox, IVector2D& cr_min, IVector2D& cr_max, float extTolerance) const
+{
+	int cellSize = HFIELD_POINT_SIZE * m_cellsSize;
+	float p_size = (1.0f / (float)cellSize);
+
+	Vector2D center(m_wide*cellSize*-0.5f, m_tall*cellSize*-0.5f);
+
+	const Vector2D xz_pos1 = (bbox.minPoint.xz() - center) * p_size;
+	const Vector2D xz_pos2 = (bbox.minPoint.xz() - center) * p_size;
+
+	if (extTolerance > 0)
+	{
+		const float EXT_TOLERANCE = extTolerance;	// the percentage of cell size
+		const float EXT_TOLERANCE_REC = 1.0f - EXT_TOLERANCE;
+
+		const float dx1 = xz_pos1.x - floor(xz_pos1.x);
+		const float dy1 = xz_pos1.y - floor(xz_pos1.y);
+
+		const float dx2 = xz_pos2.x - floor(xz_pos2.x);
+		const float dy2 = xz_pos2.y - floor(xz_pos2.y);
+
+		cr_min.x = (dx1 < EXT_TOLERANCE) ? (floor(xz_pos1.x) - 1) : floor(xz_pos1.x);
+		cr_min.y = (dy1 < EXT_TOLERANCE) ? (floor(xz_pos1.y) - 1) : floor(xz_pos1.y);
+
+		cr_max.x = (dx2 > EXT_TOLERANCE_REC) ? (floor(xz_pos2.x) + 1) : floor(xz_pos2.x);
+		cr_max.y = (dy2 > EXT_TOLERANCE_REC) ? (floor(xz_pos2.y) + 1) : floor(xz_pos2.y);
+	}
+	else
+	{
+		cr_min.x = floor(xz_pos1.x);
+		cr_min.y = floor(xz_pos1.y);
+		cr_max.x = floor(xz_pos2.x);
+		cr_max.y = floor(xz_pos2.y);
+	}
 }
 
 IVector2D CGameLevel::PositionToGlobalTilePoint( const Vector3D& pos ) const
@@ -2756,11 +2789,10 @@ void CGameLevel::GetDecalPolygons(decalPrimitives_t& polys, occludingFrustum_t* 
 	polys.verts.setNum(0, false);
 
 	IVector2D rMin, rMax;
-	PositionToRegionOffset(polys.settings.bounds.minPoint, rMin);
-	PositionToRegionOffset(polys.settings.bounds.maxPoint, rMax);
+	FindRegionBoxRange(polys.settings.bounds, rMin, rMax, 0.15f);
 
-	clamp(rMin, IVector2D(0, 0), IVector2D(m_wide, m_tall));
-	clamp(rMax, IVector2D(0, 0), IVector2D(m_wide, m_tall));
+	clamp(rMin, IVector2D(0, 0), IVector2D(m_wide-1, m_tall-1));
+	clamp(rMax, IVector2D(0, 0), IVector2D(m_wide-1, m_tall-1));
 
 	for (int x = rMin.x; x < rMax.x+1; x++)
 	{
@@ -2776,7 +2808,7 @@ void CGameLevel::GetDecalPolygons(decalPrimitives_t& polys, occludingFrustum_t* 
 					continue;
 			}
 
-			
+
 			if(!polys.settings.clipVolume.IsBoxInside(reg.m_bbox.minPoint, reg.m_bbox.maxPoint))
 				continue;
 

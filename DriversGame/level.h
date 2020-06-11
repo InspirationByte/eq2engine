@@ -97,6 +97,7 @@ public:
 	CHeightTileFieldRenderable*		GetHeightFieldAt(const IVector2D& XYPos, int idx = 0) const;		// returns heightfield if region at global 2D point
 
 	bool							PositionToRegionOffset(const Vector3D& pos, IVector2D& outXYPos) const;			// calculates region index from 3D position
+	void							FindRegionBoxRange(const BoundingBox& bbox, IVector2D& cr_min, IVector2D& cr_max, float extTolerance) const;
 
 	CLevelRegion*					GetRegionAt(const IVector2D& XYPos) const;							// returns region at global 2D point
 	CLevelRegion*					GetRegionAtPosition(const Vector3D& pos) const;						// returns region which belongs to 3D position

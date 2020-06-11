@@ -925,6 +925,7 @@ void CLevelRegion::GetDecalPolygons(decalPrimitives_t& polys, occludingFrustum_t
 		if(def->m_info.type != LOBJ_TYPE_INTERNAL_STATIC)
 			continue;
 
+		
 		if( !polys.settings.clipVolume.IsBoxInside(ref->bbox.minPoint, ref->bbox.maxPoint) )
 			continue;
 

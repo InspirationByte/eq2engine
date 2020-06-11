@@ -2332,7 +2332,6 @@ void CGameWorld::Draw( int nRenderFlags )
 
 	// wait scheduled PFX render, decals, etc
 	g_worldGlobals.effectsUpdateCompleted.Wait();
-	g_worldGlobals.effectsUpdateCompleted.Clear();
 
 	// draw particle effects
 	PROFILE_CODE( g_pPFXRenderer->Render( nRenderFlags ) );

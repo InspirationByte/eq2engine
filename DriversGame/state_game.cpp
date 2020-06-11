@@ -1209,13 +1209,15 @@ void GRJob_DrawEffects(void* data, int i)
 
 	g_pRainEmitter->Update_Draw(fDt, g_pGameWorld->m_envConfig.rainDensity, 200.0f);
 
-	g_worldGlobals.effectsUpdateCompleted.Raise();
+	g_worldGlobals.effectsUpdateCompleted.Clear();
 }
 
 void CState_Game::RenderMainView3D( float fDt )
 {
 	static float jobFrametime = fDt;
 	jobFrametime = fDt;
+
+	g_worldGlobals.effectsUpdateCompleted.Raise();
 
 	// post draw effects
 	g_parallelJobs->AddJob(GRJob_DrawEffects, &jobFrametime);
