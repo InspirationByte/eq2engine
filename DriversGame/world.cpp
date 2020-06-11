@@ -2327,8 +2327,8 @@ void CGameWorld::Draw( int nRenderFlags )
 	DrawMoon();
 
 	// we have to wait for decals here
-	//while (g_worldGlobals.decalsQueue.GetValue())
-	//	Threading::Yield();
+	while (g_worldGlobals.decalsQueue.GetValue())
+		Threading::Yield();
 
 	// wait scheduled PFX render, decals, etc
 	g_worldGlobals.effectsUpdateCompleted.Wait();

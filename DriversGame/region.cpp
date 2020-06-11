@@ -11,6 +11,8 @@
 
 #ifdef EDITOR
 #include "../DriversEditor/EditorLevel.h"
+#else
+#include "state_game.h"
 #endif // EDITOR
 
 #define AI_NAVIGATION_ROAD_PRIORITY (1)
@@ -701,7 +703,7 @@ void CLevelRegion::InitNavigationGrid()
 		//	m_level->Nav_AddObstacle(this, m_objects[i]);
 
 		
-		eqParallelJob_t* job = g_parallelJobs->AddJob(NavAddObstacleJob, this, m_objects.numElem());
+		g_parallelJobs->AddJob(NavAddObstacleJob, this, m_objects.numElem());
 		g_parallelJobs->Submit();
 		
 
@@ -940,6 +942,9 @@ void CLevelRegion::InitRegionHeightfieldsJob(void *data, int i)
 	if (!reg->m_heightfield[i])
 		return;
 
+	if (reg->m_heightfield[i]->m_levOffset == 0)
+		return;
+
 	reg->m_heightfield[i]->GenerateRenderData(nav_debug_map.GetBool());
 
 	if (reg->m_heightfield[i]->m_hasTransparentSubsets)
@@ -955,8 +960,22 @@ void CLevelRegion::ReadLoadRegion(IVirtualStream* stream, DkList<CLevObjectDef*>
 	if(m_isLoaded)
 		return;
 
-	g_parallelJobs->AddJob(InitRegionHeightfieldsJob, this, GetNumHFields());
-	g_parallelJobs->Submit();
+#ifndef EDITOR
+	if (!g_State_Game->IsGameRunning())
+	{
+#endif
+		g_parallelJobs->AddJob(InitRegionHeightfieldsJob, this, GetNumHFields());
+		g_parallelJobs->Submit();
+#ifndef EDITOR
+	}
+	else
+	{
+		for (int i = 0; i < GetNumHFields(); i++)
+		{
+			InitRegionHeightfieldsJob(this, i);
+		}
+	}
+#endif
 
 	levRegionDataInfo_t	regdatahdr;
 	stream->Read(&regdatahdr, 1, sizeof(levRegionDataInfo_t));

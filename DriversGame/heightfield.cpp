@@ -684,7 +684,7 @@ void CHeightTileField::Generate(EHFieldGeometryGenerateMode mode, DkList<hfieldb
 			int pt_idx = y*m_sizew + x;
 			hfieldtile_t& point = m_points[pt_idx];
 
-			if( point.texture == -1 )
+			if( point.texture == -1 || !m_materials.inRange(point.texture))
 				continue;
 
 			hfieldmaterial_t* hmat = m_materials[point.texture];
