@@ -265,6 +265,9 @@ public:
 
 	//----------------------------------------------------
 
+	static void						NavAddObstacleJob(void *data, int i);
+	static void						InitRegionHeightfieldsJob(void *data, int i);
+
 	BoundingBox						m_bbox;
 
 	CHeightTileFieldRenderable*		m_heightfield[ENGINE_REGION_MAX_HFIELDS];	///< heightfield used on region

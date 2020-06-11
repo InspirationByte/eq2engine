@@ -369,7 +369,15 @@ void CObject_Debris::Draw( int nRenderFlags )
 
 	// draw wheels
 	if (!body->IsFrozen())
-		m_shadowDecal.dirty = true;
+	{
+		bool shadowDirty = lengthSqr(body->GetPosition() - m_shadowDecal.position) > SHADOW_UPDATE_TOLERANCE;
+
+		if (shadowDirty)
+		{
+			m_shadowDecal.dirty = true;
+			m_shadowDecal.position = body->GetPosition();
+		}
+	}
 
 	//if(!g_pGameWorld->m_frustum.IsSphereInside(GetOrigin(), length(objBody->m_aabb.maxPoint)))
 	//	return;

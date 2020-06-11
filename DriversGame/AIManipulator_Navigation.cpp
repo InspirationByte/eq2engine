@@ -55,8 +55,6 @@ void SimplifyPath(pathFindResult_t& path)
 {
 	if(path.points.numElem() <= 2)
 		return;
-	
-	g_pGameWorld->m_level.m_navGridSelector = path.gridSelector;
 
 	IVector2D lastPointPos = path.points[0];
 	IVector2D lastDir2D = path.points[1]-lastPointPos;
@@ -69,7 +67,7 @@ void SimplifyPath(pathFindResult_t& path)
 		IVector2D dir2D(pointPos-lastPointPos);
 
 		// check for height
-		Vector3D posOn3D = g_pGameWorld->m_level.Nav_GlobalPointToPosition(path.points[i]);
+		Vector3D posOn3D = g_pGameWorld->m_level.Nav_GlobalPointToPosition(path.points[i], path.gridSelector);
 
 		bool heightChanged = false;
 
@@ -107,8 +105,6 @@ void SimplifyPath(pathFindResult_t& path)
 		i--;
 		path.points.removeIndex(i);
 	}
-
-	g_pGameWorld->m_level.m_navGridSelector = 0;
 }
 
 CAINavigationManipulator::CAINavigationManipulator()
@@ -430,13 +426,11 @@ void CAINavigationManipulator::UpdateAffector(ai_handling_t& handling, CCar* car
 				searchStart = m_lastSuccessfulSearchPos;
 
 			// if we're too far, search using fast grid
+			// change the grid selector
 			bool fastSearch = (length(m_targetSuccessfulSearchPos - searchStart) > AI_PATH_SEARCH_DETAILED_MAX_RADIUS);
 
-			if(fastSearch) // change the grid selector
-				g_pGameWorld->m_level.m_navGridSelector = 1;
-
 			pathFindResult_t newPath;
-			if( g_pGameWorld->m_level.Nav_FindPath(m_targetSuccessfulSearchPos, searchStart, newPath, AI_PATH_SEARCH_ITERATIONS, fastSearch))
+			if( g_pGameWorld->m_level.Nav_FindPath(m_targetSuccessfulSearchPos, searchStart, newPath, AI_PATH_SEARCH_ITERATIONS, fastSearch ? 1 : 0))
 			{
 				SetPath(newPath, carPos, car);
 			}
@@ -449,9 +443,6 @@ void CAINavigationManipulator::UpdateAffector(ai_handling_t& handling, CCar* car
 
 				m_timeToUpdatePath = AI_PATH_TIME_TO_UPDATE_FORCE;
 			}
-
-			// reset grid selectr
-			g_pGameWorld->m_level.m_navGridSelector = 0;
 
 			if(ai_debug_search.GetBool())
 				debugoverlay->TextFadeOut(0, color4_white, 10.0f, "path search result: %d points, tries: %d", newPath.points.numElem(), trials);

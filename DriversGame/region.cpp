@@ -7,6 +7,7 @@
 
 #include "world.h"
 #include "heightfield.h"
+#include "eqParallelJobs.h"
 
 #ifdef EDITOR
 #include "../DriversEditor/EditorLevel.h"
@@ -263,28 +264,26 @@ void GetModelRefRenderQuaternionPosition(Quaternion& rotation, Vector3D& positio
 
 	Matrix3x3 m = rotateXYZ3(DEG2RAD(ref->rotation.x), DEG2RAD(ref->rotation.y), DEG2RAD(ref->rotation.z));
 
-	Vector3D addHeight(0.0f);
+	float addh = 0.0f;
 
 	CLevObjectDef* objectDef = ref->def;
 
 	if (objectDef->m_info.type == LOBJ_TYPE_OBJECT_CFG && objectDef->m_defModel != NULL)
-		addHeight.y = -objectDef->m_defModel->GetAABB().minPoint.y;
+		addh = -objectDef->m_defModel->GetAABB().minPoint.y;
 
 	if (ref->tile_x != 0xFFFF)
 	{
 		hfieldtile_t* tile = defField.GetTile(ref->tile_x, ref->tile_y);
 
-		Vector3D tilePosition(ref->tile_x*HFIELD_POINT_SIZE, tile ? tile->height*HFIELD_HEIGHT_STEP : 0, ref->tile_y*HFIELD_POINT_SIZE);
+		Vector3D tilePosition(ref->tile_x*HFIELD_POINT_SIZE, (tile ? tile->height*HFIELD_HEIGHT_STEP : 0) + addh, ref->tile_y*HFIELD_POINT_SIZE);
 
-		position = defField.m_position + tilePosition + addHeight;
+		position = defField.m_position + tilePosition;
 
 		if (objectDef != NULL && (objectDef->m_info.modelflags & LMODEL_FLAG_ALIGNTOCELL) &&
 			objectDef->m_info.type != LOBJ_TYPE_OBJECT_CFG)
 		{
-			Vector3D t, b, n;
-			defField.GetTileTBN(ref->tile_x, ref->tile_y, t, b, n);
-
-			Matrix3x3 tileAngle(b, n, t);
+			Matrix3x3 tileAngle;
+			defField.GetTileTBN(ref->tile_x, ref->tile_y, tileAngle.rows[2], tileAngle.rows[0], tileAngle.rows[1]);
 
 			rotation = Quaternion((!tileAngle)*m);
 		}
@@ -305,41 +304,39 @@ Matrix4x4 GetModelRefRenderMatrix(CLevelRegion* reg, regionObject_t* ref)
 
 	Matrix4x4 m = rotateXYZ4(DEG2RAD(ref->rotation.x), DEG2RAD(ref->rotation.y), DEG2RAD(ref->rotation.z));
 
-	Vector3D addHeight(0.0f);
+	float addh = 0.0f;
 
 	CLevObjectDef* objectDef = ref->def;
 
 	if(objectDef->m_info.type == LOBJ_TYPE_OBJECT_CFG && objectDef->m_defModel != NULL)
-		addHeight.y = -objectDef->m_defModel->GetAABB().minPoint.y;
+		addh = -objectDef->m_defModel->GetAABB().minPoint.y;
 
 	if(ref->tile_x!= 0xFFFF)
 	{
 		hfieldtile_t* tile = defField.GetTile( ref->tile_x, ref->tile_y );
 
-		Vector3D tilePosition(ref->tile_x*HFIELD_POINT_SIZE, tile ? tile->height*HFIELD_HEIGHT_STEP : 0, ref->tile_y*HFIELD_POINT_SIZE);
-		Vector3D modelPosition = defField.m_position + tilePosition + addHeight;
+		Vector3D tilePosition(ref->tile_x*HFIELD_POINT_SIZE, (tile ? tile->height*HFIELD_HEIGHT_STEP : 0) + addh, ref->tile_y*HFIELD_POINT_SIZE);
+		Vector3D modelPosition = defField.m_position + tilePosition;
 
 		if( objectDef != NULL && (objectDef->m_info.modelflags & LMODEL_FLAG_ALIGNTOCELL) &&
 			objectDef->m_info.type != LOBJ_TYPE_OBJECT_CFG )
 		{
-			Vector3D t,b,n;
-			defField.GetTileTBN( ref->tile_x, ref->tile_y, t,b,n );
+			Matrix4x4 tileAngle;
+			tileAngle.rows[0].w = 0.0f;
+			tileAngle.rows[1].w = 0.0f;
+			tileAngle.rows[2].w = 0.0f;
+			tileAngle.rows[3] = Vector4D(0.0f, 0.0f, 0.0f, 1.0f);
+			
+			defField.GetTileTBN(ref->tile_x, ref->tile_y, *(Vector3D*)(float*)tileAngle.rows[2], *(Vector3D*)(float*)tileAngle.rows[0], *(Vector3D*)(float*)tileAngle.rows[1]);
 
-			Matrix4x4 tileAngle(Vector4D(b, 0), Vector4D(n, 0), Vector4D(t, 0), Vector4D(0,0,0,1));
-
-			tileAngle = (!tileAngle)*m;
-			//Matrix4x4 tileShear(Vector4D(b, 0), Vector4D(0,1,0,0), Vector4D(t, 0), Vector4D(0,0,0,1));
-
-			//Matrix4x4 tilemat = shearY(cosf(atan2f(b.x, b.y)))*tileTBN;
-
-			m = translate(modelPosition)/* * tileShear*/ * tileAngle;
+			m = translate(modelPosition) *(!tileAngle)*m;
 		}
 		else
 			m = translate(modelPosition)*m;
 	}
 	else
 	{
-		m = translate(ref->position + addHeight)*m;
+		m = translate(ref->position + vec3_up*addh)*m; // maybe I should add addh
 	}
 
 	return m;
@@ -444,12 +441,14 @@ void CLevelRegion::Render(const Vector3D& cameraPosition, const occludingFrustum
 					if(!cont->m_instData)	// make new instancing data
 						cont->m_instData = new levObjInstanceData_t;
 
-					regObjectInstance_t& inst = cont->m_instData->instances[cont->m_instData->numInstances++];
+					regObjectInstance_t inst;
 
 					Vector3D refPos(0.0f);
 					GetModelRefRenderQuaternionPosition(inst.rotation, refPos, this, ref);
 
 					inst.position = Vector4D(refPos, 1.0f);
+
+					cont->m_instData->instances[cont->m_instData->numInstances++] = inst;
 				}
 				else
 				{
@@ -485,29 +484,29 @@ void CLevelRegion::Render(const Vector3D& cameraPosition, const occludingFrustum
 		if(renderTranslucency && !cont->m_model->m_hasTransparentSubsets)
 			continue;
 
-		if( occlFrustum.IsBoxVisible(ref->bbox) ) //ref->position, length(ref->bbox.GetSize())) )
+		if (!occlFrustum.IsBoxVisible(ref->bbox)) //ref->position, length(ref->bbox.GetSize())) )
+			continue;
+
+		levObjInstanceData_t* instData = cont->m_instData;
+
+		if(	caps.isInstancingSupported &&
+			r_enableLevelInstancing.GetBool() && 
+			instData)
 		{
-			levObjInstanceData_t* instData = cont->m_instData;
+			regObjectInstance_t inst;
 
-			if(	caps.isInstancingSupported &&
-				r_enableLevelInstancing.GetBool() && 
-				instData)
-			{
-				regObjectInstance_t& inst = instData->instances[instData->numInstances++];
-			
-				Vector3D refPos(0.0f);
-				GetModelRefRenderQuaternionPosition(inst.rotation, refPos, this, ref);
+			GetModelRefRenderQuaternionPosition(inst.rotation, *(Vector3D*)(float*)inst.position, this, ref);
 
-				inst.position = Vector4D(refPos, 1.0f);
-			}
-			else
-			{
-				float fDist = length(cameraPosition - ref->position);
-				materials->SetMatrix(MATRIXMODE_WORLD, GetModelRefRenderMatrix(this, ref));
-
-				cont->Render(fDist, ref->bbox, false, nRenderFlags);
-			}
+			instData->instances[instData->numInstances++] = inst;
 		}
+		else
+		{
+			float fDist = length(cameraPosition - ref->position);
+			materials->SetMatrix(MATRIXMODE_WORLD, GetModelRefRenderMatrix(this, ref));
+
+			cont->Render(fDist, ref->bbox, false, nRenderFlags);
+		}
+
 #endif	// EDITOR
 	}
 
@@ -570,6 +569,8 @@ void CLevelRegion::Init(int cellsSize, const IVector2D& regPos, const Vector3D& 
 		m_roads = new levroadcell_t[cellsSize * cellsSize];
 #endif // EDITOR
 }
+
+
 
 void CLevelRegion::InitNavigationGrid()
 {
@@ -696,12 +697,19 @@ void CLevelRegion::InitNavigationGrid()
 	// THIS DOES NOT WORK WELL, BUT SHOULD...
 	if (m_navGrid[0].dirty || m_navGrid[1].dirty)
 	{
-		for (int i = 0; i < m_objects.numElem(); i++)
-			m_level->Nav_AddObstacle(this, m_objects[i]);
+		//for (int i = 0; i < m_objects.numElem(); i++)
+		//	m_level->Nav_AddObstacle(this, m_objects[i]);
+
+		
+		eqParallelJob_t* job = g_parallelJobs->AddJob(NavAddObstacleJob, this, m_objects.numElem());
+		g_parallelJobs->Submit();
+		
 
 		m_navGrid[0].dirty = false;
 		m_navGrid[1].dirty = false;
 	}
+
+	
 
 	// init debug maps
 	if (nav_debug_map.GetInt() > 0)
@@ -711,6 +719,14 @@ void CLevelRegion::InitNavigationGrid()
 
 		m_navGrid[0].debugObstacleMap->Ref_Grab();
 	}
+}
+
+void CLevelRegion::NavAddObstacleJob(void *data, int i)
+{
+	CLevelRegion* thisReg = (CLevelRegion*)data;
+	regionObject_t* regObj = thisReg->m_objects[i];
+
+	thisReg->m_level->Nav_AddObstacle(thisReg, regObj);
 }
 
 void CLevelRegion::UpdateDebugMaps()
@@ -917,17 +933,39 @@ void CLevelRegion::GetDecalPolygons(decalPrimitives_t& polys, occludingFrustum_t
 	}
 }
 
+void CLevelRegion::InitRegionHeightfieldsJob(void *data, int i)
+{
+	CLevelRegion* reg = (CLevelRegion*)data;
+
+	if (!reg->m_heightfield[i])
+		return;
+
+	reg->m_heightfield[i]->GenerateRenderData(nav_debug_map.GetBool());
+
+	if (reg->m_heightfield[i]->m_hasTransparentSubsets)
+		reg->m_hasTransparentSubsets = true;
+
+#ifndef EDITOR
+	g_pPhysics->AddHeightField(reg->m_heightfield[i]);
+#endif //EDITOR
+}
+
 void CLevelRegion::ReadLoadRegion(IVirtualStream* stream, DkList<CLevObjectDef*>& levelmodels)
 {
 	if(m_isLoaded)
 		return;
 
+	g_parallelJobs->AddJob(InitRegionHeightfieldsJob, this, GetNumHFields());
+	g_parallelJobs->Submit();
+
+
+	/*
 	for(int i = 0; i < GetNumHFields(); i++)
 	{
 		if(!m_heightfield[i])
 			continue;
 
-		m_heightfield[i]->GenereateRenderData( nav_debug_map.GetBool() );
+		m_heightfield[i]->GenerateRenderData( nav_debug_map.GetBool() );
 
 		if(m_heightfield[i]->m_hasTransparentSubsets)
 			m_hasTransparentSubsets = true;
@@ -935,7 +973,7 @@ void CLevelRegion::ReadLoadRegion(IVirtualStream* stream, DkList<CLevObjectDef*>
 #ifndef EDITOR
 		g_pPhysics->AddHeightField(m_heightfield[i]);
 #endif //EDITOR
-	}
+	}*/
 
 	levRegionDataInfo_t	regdatahdr;
 	stream->Read(&regdatahdr, 1, sizeof(levRegionDataInfo_t));

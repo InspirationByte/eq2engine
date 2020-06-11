@@ -224,10 +224,6 @@ inline void CEGFInstancer<IT>::Draw( int renderFlags, IEqModel* model )
 	
 			studiomodeldesc_t* modDesc = pHdr->pModelDesc(nModDescId);
 
-			// before lock we have to unbind our buffer
-			//
-			g_pShaderAPI->ChangeVertexBuffer(NULL, 2);
-
 			// upload instance buffer
 			instBuffer->Update(m_instances[i][lod], numInst, 0, true);
 
@@ -250,6 +246,7 @@ inline void CEGFInstancer<IT>::Draw( int renderFlags, IEqModel* model )
 		}
 	}
 
+	g_pShaderAPI->SetVertexBuffer(NULL, 2);
 	materials->SetInstancingEnabled(false);
 	m_hasInstances = false;
 }

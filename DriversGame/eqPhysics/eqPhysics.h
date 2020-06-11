@@ -347,7 +347,7 @@ public:
 	void							SetDebugRaycast(bool enable) {m_debugRaycast = enable;}
 
 	void							DetectBodyCollisions(CEqRigidBody* bodyA, CEqRigidBody* bodyB, float fDt);
-	void							DetectStaticVsBodyCollision(CEqCollisionObject* staticObj, CEqRigidBody* bodyB, float fDt, DkList<ContactPair_t>& contactPairs);
+	void							DetectStaticVsBodyCollision(CEqCollisionObject* staticObj, CEqRigidBody* bodyB, float fDt);
 
 	//static void						CellCollisionDetectionJob(void* data, int iter);
 

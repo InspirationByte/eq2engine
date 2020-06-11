@@ -476,7 +476,7 @@ CLevelModel* CBuildingModelGenerator::GenerateModel()
 	memcpy(model->m_verts, allVerts.ptr(), sizeof(lmodeldrawvertex_t)*model->m_numVerts);
 	memcpy(model->m_indices, allIndices.ptr(), sizeof(uint16)*model->m_numIndices);
 
-	model->GenereateRenderData();
+	model->GenerateRenderData();
 
 	return model;
 }
@@ -1537,7 +1537,7 @@ void CEditorLevel::PrefabHeightfields(CEditorLevel* destLevel, const IVector2D& 
 		if(hasTiles)
 		{
 			destField->SetChanged();
-			destField->GenereateRenderData();
+			destField->GenerateRenderData();
 		}
 	}
 

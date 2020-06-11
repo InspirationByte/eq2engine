@@ -1265,7 +1265,7 @@ void CHeightTileFieldRenderable::CleanRenderData(bool deleteVBO)
 	m_isChanged = true;
 }
 
-void CHeightTileFieldRenderable::GenereateRenderData(bool debug)
+void CHeightTileFieldRenderable::GenerateRenderData(bool debug)
 {
 	if(!m_isChanged)
 		return;
@@ -1391,7 +1391,7 @@ void CHeightTileFieldRenderable::Render(int nDrawFlags, const occludingFrustum_t
 		g_pShaderAPI->ApplyBuffers();
 
 		// regenerate again
-		GenereateRenderData();
+		GenerateRenderData();
 
 		m_isChanged = false;
 	}

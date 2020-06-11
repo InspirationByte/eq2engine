@@ -69,6 +69,9 @@ struct lensFlareTable_t
 
 struct WorldGlobals_t
 {
+	CEqSignal				effectsUpdateCompleted;
+	CEqInterlockedInteger	decalsQueue;
+
 	IVertexFormat*			vehicleVF;
 	IVertexFormat*			gameObjectVF;
 	IVertexFormat*			levelObjectVF;

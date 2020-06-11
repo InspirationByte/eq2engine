@@ -249,6 +249,8 @@ void CGameObject::Spawn()
 #endif // EDITOR
 
 	m_state = GO_STATE_IDLE;
+
+	m_shadowDecal.position = DrvSynUnits::MaxCoordInMeters;
 }
 
 void CGameObject::OnRemove()

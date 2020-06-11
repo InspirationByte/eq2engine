@@ -1318,13 +1318,13 @@ void CGameWorld::UpdateEnvironmentTransition(float fDt)
 void CGameWorld::UpdateWorld(float fDt)
 {
 	PROFILE_FUNC();
-
+	/*
 	static float jobFrametime = fDt;
 	jobFrametime = fDt;
 
 	g_parallelJobs->AddJob(GWJob_UpdateWorldAndEffects, &jobFrametime);
 	g_parallelJobs->Submit();
-
+	*/
 	if( fDt > 0 )
 	{
 		UpdateEnvironmentTransition(fDt);
@@ -1432,8 +1432,6 @@ void CGameWorld::UpdateRenderables( const occludingFrustum_t& frustum )
 	{
 		CGameObject* obj = m_gameObjects[i];
 
-		PROFILE_BEGIN(Visibility);
-
 		// far view clipping
 		Vector3D objPos = obj->GetOrigin();
 		if (lengthSqr(mainViewPos - objPos) > maxViewDistanceSqr)
@@ -1442,8 +1440,6 @@ void CGameWorld::UpdateRenderables( const occludingFrustum_t& frustum )
 		// sorted insert into render list
 		if( obj->CheckVisibility( frustum ) )
 			m_renderingObjects.insertSorted( obj, SortGameObjectsByDistance );
-
-		PROFILE_END();
 
 		PROFILE_CODE( obj->PreDraw() );
 
@@ -2245,7 +2241,7 @@ void CGameWorld::Draw( int nRenderFlags )
 	m_shadowRenderer.Clear();
 #endif // EDITOR
 
-	PROFILE_CODE(UpdateRenderables(m_occludingFrustum));
+	UpdateRenderables(m_occludingFrustum);
 
 	// setup culling
 	materials->SetCullMode((nRenderFlags & RFLAG_FLIP_VIEWPORT_X) ? CULL_FRONT : CULL_BACK);
@@ -2332,7 +2328,13 @@ void CGameWorld::Draw( int nRenderFlags )
 	materials->SetMatrix(MATRIXMODE_PROJECTION, m_matrices[MATRIXMODE_PROJECTION]);
 
 	// wait scheduled PFX render, decals, etc
-	g_parallelJobs->Wait();
+	g_worldGlobals.effectsUpdateCompleted.Wait();
+	g_worldGlobals.effectsUpdateCompleted.Clear();
+
+	if(g_worldGlobals.decalsQueue.GetValue())
+	{
+		MsgWarning("%d decals still in queue\n", g_worldGlobals.decalsQueue.GetValue());
+	}
 
 	DrawMoon();
 

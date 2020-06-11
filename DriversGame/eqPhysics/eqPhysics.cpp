@@ -502,10 +502,12 @@ void CEqPhysics::RemoveStaticObject( CEqCollisionObject* object )
 	if(!object)
 		return;
 
-	if(m_grid.IsInit())
-		m_grid.RemoveStaticObjectFromGrid(object);
-
-	if(!m_staticObjects.remove(object))
+	if (m_staticObjects.remove(object))
+	{
+		if (m_grid.IsInit())
+			m_grid.RemoveStaticObjectFromGrid(object);
+	}
+	else
 		MsgError("CEqPhysics::RemoveStaticObject - INVALID\n");
 }
 
@@ -516,11 +518,13 @@ void CEqPhysics::DestroyStaticObject( CEqCollisionObject* object )
 
 	Threading::CScopedMutex m(m_mutex);
 
-	if(m_grid.IsInit())
-		m_grid.RemoveStaticObjectFromGrid(object);
+	if (m_staticObjects.remove(object))
+	{
+		if (m_grid.IsInit())
+			m_grid.RemoveStaticObjectFromGrid(object);
 
-	if(m_staticObjects.remove(object))
 		delete object;
+	}
 	else
 		MsgError("CEqPhysics::DestroyStaticObject - INVALID\n");
 }
@@ -704,8 +708,6 @@ void CEqPhysics::DetectBodyCollisions(CEqRigidBody* bodyA, CEqRigidBody* bodyB, 
 	}
 
 	// so collision test were performed, get our results to contact pairs
-	DkList<ContactPair_t>& pairs = bodyA->m_contactPairs;
-
 	int numCollResults = cbResult.m_collisions.numElem();
 
 	float iter_delta = 1.0f / numCollResults;
@@ -721,9 +723,7 @@ void CEqPhysics::DetectBodyCollisions(CEqRigidBody* bodyA, CEqRigidBody* bodyB, 
 		if(hitDepth < 0 && !(bodyA->m_flags & COLLOBJ_ISGHOST))
 			continue;
 
-		int idx = pairs.append(ContactPair_t());
-
-		ContactPair_t& newPair = pairs[idx];
+		ContactPair_t newPair;
 		newPair.normal = hitNormal;
 		newPair.flags = 0;
 		newPair.depth = hitDepth;
@@ -731,6 +731,8 @@ void CEqPhysics::DetectBodyCollisions(CEqRigidBody* bodyA, CEqRigidBody* bodyB, 
 		newPair.bodyA = bodyA;
 		newPair.bodyB = bodyB;
 		newPair.dt = iter_delta;
+
+		bodyA->m_contactPairs.append(newPair);
 
 		if(ph_showcontacts.GetBool())
 		{
@@ -741,7 +743,7 @@ void CEqPhysics::DetectBodyCollisions(CEqRigidBody* bodyA, CEqRigidBody* bodyB, 
 	}
 }
 
-void CEqPhysics::DetectStaticVsBodyCollision(CEqCollisionObject* staticObj, CEqRigidBody* bodyB, float fDt, DkList<ContactPair_t>& contactPairs)
+void CEqPhysics::DetectStaticVsBodyCollision(CEqCollisionObject* staticObj, CEqRigidBody* bodyB, float fDt)
 {
 	//PROFILE_FUNC();
 
@@ -851,9 +853,7 @@ void CEqPhysics::DetectStaticVsBodyCollision(CEqCollisionObject* staticObj, CEqR
 		//if (dot(velToPoint, hitNormal) > 0.0f)
 		//	continue;
 
-		int idx = contactPairs.append(ContactPair_t());
-
-		ContactPair_t& newPair = contactPairs[idx];
+		ContactPair_t newPair;
 		newPair.normal = hitNormal;
 		newPair.flags = COLLPAIRFLAG_OBJECTA_STATIC;
 		newPair.depth = hitDepth;
@@ -877,6 +877,8 @@ void CEqPhysics::DetectStaticVsBodyCollision(CEqCollisionObject* staticObj, CEqR
 
 		newPair.restitutionA *= staticObj->m_restitution;
 		newPair.frictionA *= staticObj->m_friction;
+
+		bodyB->m_contactPairs.append(newPair);
 
 		if(ph_showcontacts.GetBool())
 		{
@@ -980,7 +982,7 @@ void CEqPhysics::DetectCollisionsSingle(CEqRigidBody* body)
 
 			// iterate over static objects in cell
 			for (int i = 0; i < numGridObjs; i++)
-				DetectStaticVsBodyCollision(gridObjects[i], body, body->GetLastFrameTime(), body->m_contactPairs);
+				DetectStaticVsBodyCollision(gridObjects[i], body, body->GetLastFrameTime());
 
 			// if object is only affected by other dynamic objects, don't waste my cycles!
 			if (disabledCollisionChecks)
@@ -999,7 +1001,7 @@ void CEqPhysics::DetectCollisionsSingle(CEqRigidBody* body)
 				if (collObj->IsDynamic())
 					DetectBodyCollisions(body, (CEqRigidBody*)collObj, body->GetLastFrameTime());
 				else // purpose for triggers
-					DetectStaticVsBodyCollision(collObj, body, body->GetLastFrameTime(), body->m_contactPairs);
+					DetectStaticVsBodyCollision(collObj, body, body->GetLastFrameTime());
 			}
 		}
 	}
@@ -1011,6 +1013,8 @@ ConVar ph_carVsCarErp("ph_carVsCarErp", "0.15", "Car versus car erp", CV_CHEAT);
 void CEqPhysics::ProcessContactPair(ContactPair_t& pair)
 {
 	PROFILE_FUNC();
+
+	CollisionPairData_t collData;
 
 	CEqRigidBody* bodyB = (CEqRigidBody*)pair.bodyB;
 	int bodyAFlags = pair.bodyA->m_flags;
@@ -1101,16 +1105,6 @@ void CEqPhysics::ProcessContactPair(ContactPair_t& pair)
 	{
 		DkList<CollisionPairData_t>& pairs = pair.bodyA->m_collisionList;
 
-		bool canAddPair = (bodyAFlags & COLLOBJ_COLLISIONLIST) && pairs.numElem() < PHYSICS_COLLISION_LIST_MAX;
-
-		int oldNum = pairs.numElem();
-
-		// All objects have collision list
-		if (canAddPair)
-			pairs.setNum(oldNum + 1);
-
-		CollisionPairData_t& collData = canAddPair ? pairs[oldNum] : tempPairData;
-
 		collData.bodyA = pair.bodyA;
 		collData.bodyB = pair.bodyB;
 		collData.fract = pair.depth;
@@ -1128,21 +1122,15 @@ void CEqPhysics::ProcessContactPair(ContactPair_t& pair)
 
 		if (callbacksA)
 			callbacksA->OnCollide(collData);
+
+		if((bodyAFlags & COLLOBJ_COLLISIONLIST) && pairs.numElem() < PHYSICS_COLLISION_LIST_MAX)
+			pairs.append(collData);
 	}
 
 	//-----------------------------------------------
 	// OBJECT B
 	{
 		DkList<CollisionPairData_t>& pairs = pair.bodyB->m_collisionList;
-
-		bool canAddPair = (bodyBFlags & COLLOBJ_COLLISIONLIST) && pairs.numElem() < PHYSICS_COLLISION_LIST_MAX;
-
-		int oldNum = pairs.numElem();
-
-		if (canAddPair)
-			pairs.setNum(oldNum + 1);
-
-		CollisionPairData_t& collData = canAddPair ? pairs[oldNum] : tempPairData;
 
 		collData.bodyA = pair.bodyB;
 		collData.bodyB = pair.bodyA;
@@ -1164,6 +1152,9 @@ void CEqPhysics::ProcessContactPair(ContactPair_t& pair)
 
 		if (callbacksB)
 			callbacksB->OnCollide(collData);
+
+		if((bodyBFlags & COLLOBJ_COLLISIONLIST) && pairs.numElem() < PHYSICS_COLLISION_LIST_MAX)
+			pairs.append(collData);
 	}
 }
 

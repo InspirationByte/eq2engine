@@ -2842,7 +2842,15 @@ void CCar::Simulate( float fDt )
 
 	// draw wheels
 	if (!carBody->IsFrozen())
-		m_shadowDecal.dirty = true;
+	{
+		bool shadowDirty = lengthSqr(carBody->GetPosition() - m_shadowDecal.position) > SHADOW_UPDATE_TOLERANCE;
+
+		if (shadowDirty)
+		{
+			m_shadowDecal.dirty = true;
+			m_shadowDecal.position = carBody->GetPosition();
+		}
+	}
 
 	// cleanup our collision list here
 	m_collisionList.clear();

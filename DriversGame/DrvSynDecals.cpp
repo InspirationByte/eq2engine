@@ -13,7 +13,7 @@
 ConVar r_clipdecals("r_clipdecals", "1");
 ConVar r_clipdecalplane("r_clipdecalplane", "-1");
 
-bool DefaultDecalTriangleProcessFunc(struct decalSettings_t& settings, PFXVertex_t& v1, PFXVertex_t& v2, PFXVertex_t& v3)
+bool DefaultDecalTriangleProcessFunc(struct decalPrimitives_t* decal, struct decalSettings_t& settings, PFXVertex_t& v1, PFXVertex_t& v2, PFXVertex_t& v3)
 {
 	if(dot(NormalOfTriangle(v1.point,v2.point,v3.point), settings.facingDir) < 0.0f)
 		return false;
@@ -21,7 +21,7 @@ bool DefaultDecalTriangleProcessFunc(struct decalSettings_t& settings, PFXVertex
 	return true;
 }
 
-bool LightDecalTriangleProcessFunc(struct decalSettings_t& settings, PFXVertex_t& v1, PFXVertex_t& v2, PFXVertex_t& v3)
+bool LightDecalTriangleProcessFunc(struct decalPrimitives_t* decal, struct decalSettings_t& settings, PFXVertex_t& v1, PFXVertex_t& v2, PFXVertex_t& v3)
 {
 	if(dot(NormalOfTriangle(v1.point,v2.point,v3.point), settings.facingDir) < 0.0f)
 		return false;
@@ -82,7 +82,7 @@ void decalPrimitives_t::AddTriangle(const Vector3D& p1, const Vector3D& p2, cons
 	PFXVertex_t v2(p2, vec2_zero, color4_white);
 	PFXVertex_t v3(p3, vec2_zero, color4_white);
 
-	if((*settings.processFunc)(settings, v1, v2, v3) == false)
+	if((*settings.processFunc)(this, settings, v1, v2, v3) == false)
 		return;
 
 	verts.append(v1);
@@ -309,10 +309,14 @@ void DecalPolygonsJob(void* data, int i)
 	decalPrimitives_t decal;
 	decal.settings = decalData->settings;
 	ProjectDecalToSpriteBuilder(decal, decalData->group, decalData->rect, decalData->viewProj, decalData->color);
+
+	g_worldGlobals.decalsQueue.Decrement();
 }
 
 void ProjectDecalToSpriteBuilderAddJob(const decalSettings_t& settings, CSpriteBuilder<PFXVertex_t>* group, const Rectangle_t& rect, const Matrix4x4& viewProj, const ColorRGBA& color)
 {
+	g_worldGlobals.decalsQueue.Increment();
+
 	eqDecalPolygonJob_t* job = new eqDecalPolygonJob_t;
 	job->base.func = DecalPolygonsJob;
 	job->base.onComplete = DecalJobCompleted;

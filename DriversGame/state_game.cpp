@@ -918,7 +918,7 @@ bool CState_Game::Update( float fDt )
 		}
 
 		// wait for world and materials to be loaded
-		if (g_pGameWorld->m_level.IsWorkDone() && materials->GetLoadingQueue() == 0)
+		if (g_pGameWorld->m_level.IsWorkDone() && g_parallelJobs->AllJobsCompleted() && materials->GetLoadingQueue() == 0)
 			OnLoadingDone();
 
 		return true;
@@ -1206,6 +1206,10 @@ void GRJob_DrawEffects(void* data, int i)
 {
 	float fDt = *(float*)data;
 	effectrenderer->DrawEffects( fDt );
+
+	g_pRainEmitter->Update_Draw(fDt, g_pGameWorld->m_envConfig.rainDensity, 200.0f);
+
+	g_worldGlobals.effectsUpdateCompleted.Raise();
 }
 
 void CState_Game::RenderMainView3D( float fDt )
@@ -1232,6 +1236,8 @@ void CState_Game::RenderMainView3D( float fDt )
 	g_pGameHUD->Render3D(fDt);
 }
 
+#include <sstream>
+
 void CState_Game::RenderMainView2D( float fDt )
 {
 	const IVector2D& screenSize = g_pHost->GetWindowSize();
@@ -1256,7 +1262,15 @@ void CState_Game::RenderMainView2D( float fDt )
 
 		static IEqFont* consoleFont = g_fontCache->GetFont("console", 16);
 
-		consoleFont->RenderText(profilerStr.c_str(), Vector2D(45), params);
+		std::istringstream iss(profilerStr);
+
+		int lineNum = 0;
+		for (std::string line; std::getline(iss, line); lineNum++)
+		{
+			float line_pos = consoleFont->GetLineHeight(params) * lineNum;
+			consoleFont->RenderText(line.c_str(), Vector2D(45, 45 + line_pos), params);
+		}
+
 	}
 }
 

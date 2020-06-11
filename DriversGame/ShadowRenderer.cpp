@@ -255,12 +255,10 @@ inline int AtlasPackComparison(PackerRectangle *const &elem0, PackerRectangle *c
 	return (elem1->width + elem1->height) - (elem0->width + elem0->height);
 }
 
-bool ShadowDecalClipping(struct decalSettings_t& settings, PFXVertex_t& v1, PFXVertex_t& v2, PFXVertex_t& v3)
+bool ShadowDecalClipping(struct decalPrimitives_t* decal, struct decalSettings_t& settings, PFXVertex_t& v1, PFXVertex_t& v2, PFXVertex_t& v3)
 {
-	CGameObject* object = ((shadowListObject_t*)settings.userData)->object;
-
 	Vector3D triNormal = NormalOfTriangle(v1.point,v2.point,v3.point);
-	Vector3D facingToObjectNormal = fastNormalize(object->GetOrigin() - v1.point);
+	Vector3D facingToObjectNormal = fastNormalize(decal->position - v1.point);
 
 	if(dot(triNormal, facingToObjectNormal) < 0.0f || dot(triNormal, settings.facingDir) < 0.0f)
 		return false;
@@ -346,8 +344,6 @@ void CShadowRenderer::RenderShadowCasters()
 	decalSettings.avoidMaterialFlags = MATERIAL_FLAG_WATER; // only avoid water
 	decalSettings.skipTexCoords = true;
 
-	PROFILE_BEGIN(GenerateDecals);
-
 	// generate decals before render targets
 	for (int i = 0; i < m_packer.GetRectangleCount(); i++)
 	{
@@ -382,7 +378,7 @@ void CShadowRenderer::RenderShadowCasters()
 		viewProj = proj * view;
 
 		float shadowAlpha = length(orthoView.GetOrigin() - viewPos) * distFac;
-		shadowAlpha = 1.0f - pow(max(0.0f, shadowAlpha), 8.0f);
+		shadowAlpha = 1.0f - pow(max(0.0f, shadowAlpha), 16.0f);
 
 		if (shadowAlpha <= 0.0f)
 		{
@@ -408,9 +404,14 @@ void CShadowRenderer::RenderShadowCasters()
 		if (flipY)
 			texCoordRect.FlipY();
 
-		// copy over
+		//ProjectDecalToSpriteBuilderAddJob(decalSettings, this, texCoordRect, viewProj, ColorRGBA(1.0f, 1.0f, 1.0f, shadowAlpha));
+
+		PROFILE_BEGIN(ProjectDecal);
+
 		decalPrimitivesRef_t ref = ProjectDecalToSpriteBuilder(shadowDecal, this, texCoordRect, viewProj);
 
+		PROFILE_END();
+		
 		// don't draw decal if it has no polys at all
 		if (!ref.numVerts)
 		{
@@ -418,8 +419,12 @@ void CShadowRenderer::RenderShadowCasters()
 			continue;
 		}
 
+		PROFILE_BEGIN(DecalTexture);
+
 		// recalc texture coords and apply shadow alpha
 		DecalTexture(ref, viewProj, texCoordRect, ColorRGBA(1.0f, 1.0f, 1.0f, shadowAlpha));
+
+		PROFILE_END();
 
 		materials->SetMatrix(MATRIXMODE_VIEW, view);
 		materials->SetMatrix(MATRIXMODE_PROJECTION, proj);
@@ -457,8 +462,6 @@ void CShadowRenderer::RenderShadowCasters()
 	}
 
 	m_packer.Cleanup();
-
-	PROFILE_END();
 
 	g_pShaderAPI->ChangeRenderTargetToBackBuffer();
 

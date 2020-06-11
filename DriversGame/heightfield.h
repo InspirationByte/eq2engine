@@ -288,7 +288,7 @@ public:
 
 	void					CleanRenderData(bool deleteVBO = true);
 
-	void					GenereateRenderData(bool debug = false);
+	void					GenerateRenderData(bool debug = false);
 
 	void					SetChanged() {m_isChanged = true;}
 	bool					IsChanged() const {return m_isChanged;}

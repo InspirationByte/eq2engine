@@ -22,6 +22,8 @@
 #define AI_NAV_DETAILED_SCALE		2
 #define LEVELS_PATH					"levels/"
 
+#define LEVEL_INSTANCE_BUFFERS (4)
+
 struct cellpoint_t
 {
 	IVector2D	point;
@@ -155,24 +157,24 @@ public:
 	//
 	// conversions
 	//
-	void							Nav_GetCellRangeFromAABB(const Vector3D& mins, const Vector3D& maxs, IVector2D& xy1, IVector2D& xy2, float offs = 1.5f) const;		// calculates bounds
+	void							Nav_GetCellRangeFromAABB(const Vector3D& mins, const Vector3D& maxs, IVector2D& xy1, IVector2D& xy2, float offs = 1.5f, int subGrid = 0) const;		// calculates bounds
 
-	IVector2D						Nav_PositionToGlobalNavPoint(const Vector3D& pos) const;	// converts 3D position to navigation grid 2D point
+	IVector2D						Nav_PositionToGlobalNavPoint(const Vector3D& pos, int subGrid = 0) const;	// converts 3D position to navigation grid 2D point
 
-	Vector3D						Nav_GlobalPointToPosition(const IVector2D& point) const;	// converts 2D navigation point to 3D position
+	Vector3D						Nav_GlobalPointToPosition(const IVector2D& point, int subGrid = 0) const;	// converts 2D navigation point to 3D position
 
-	bool							Nav_FindPath(const Vector3D& start, const Vector3D& end, pathFindResult_t& result, int iterationLimit = 256, bool fast = false);
-	bool							Nav_FindPath2D(const IVector2D& start, const IVector2D& end, pathFindResult_t& result, int iterationLimit = 256, bool fast = false);
+	bool							Nav_FindPath(const Vector3D& start, const Vector3D& end, pathFindResult_t& result, int iterationLimit = 256, int subGrid = 0);
+	bool							Nav_FindPath2D(const IVector2D& start, const IVector2D& end, pathFindResult_t& result, int iterationLimit = 256, int subGrid = 0);
 
-	float							Nav_TestLine(const Vector3D& start, const Vector3D& end, bool obstacles = false);
-	float							Nav_TestLine2D(const IVector2D& start, const IVector2D& end, bool obstacles = false);
+	float							Nav_TestLine(const Vector3D& start, const Vector3D& end, bool obstacles = false, int subGrid = 0);
+	float							Nav_TestLine2D(const IVector2D& start, const IVector2D& end, bool obstacles = false, int subGrid = 0);
 
-	navcell_t&						Nav_GetCellStateAtGlobalPoint(const IVector2D& point);
+	navcell_t&						Nav_GetCellStateAtGlobalPoint(const IVector2D& point, int subGrid = 0);
 
-	ubyte&							Nav_GetTileAtGlobalPoint(const IVector2D& point, bool obstacles = false);
-	ubyte&							Nav_GetTileAtPosition(const Vector3D& position, bool obstacles = false);
+	ubyte&							Nav_GetTileAtGlobalPoint(const IVector2D& point, bool obstacles = false, int subGrid = 0);
+	ubyte&							Nav_GetTileAtPosition(const Vector3D& position, bool obstacles = false, int subGrid = 0);
 
-	navcell_t&						Nav_GetTileAndCellAtGlobalPoint(const IVector2D& point, ubyte& tile);
+	navcell_t&						Nav_GetTileAndCellAtGlobalPoint(const IVector2D& point, ubyte& tile, int subGrid = 0);
 
 	//----------------------------------
 
@@ -186,18 +188,16 @@ public:
 
 	int								m_cellsSize;
 
-	int								m_navGridSelector;
-
 	CEqMutex&						m_mutex;
 
 protected:
 
 	bool					_Load(IFile* levFile);
 
-	void					Nav_GlobalToLocalPoint(const IVector2D& point, IVector2D& outLocalPoint, CLevelRegion** pRegion) const;
-	void					Nav_LocalToGlobalPoint(const IVector2D& point, const CLevelRegion* pRegion, IVector2D& outGlobalPoint) const;
+	void					Nav_GlobalToLocalPoint(const IVector2D& point, IVector2D& outLocalPoint, CLevelRegion** pRegion, int subGrid) const;
+	void					Nav_LocalToGlobalPoint(const IVector2D& point, const CLevelRegion* pRegion, IVector2D& outGlobalPoint, int subGrid) const;
 
-	void					Nav_FlushRegion(CLevelRegion* reg);
+	void					Nav_FlushRegion(CLevelRegion* reg, int subGrid = 0);
 	void					Nav_ClearCellStates(ECellClearStateMode mode);
 
 	int						UpdateRegionLoading();
@@ -236,7 +236,7 @@ protected:
 
 	EqString				m_levelName;
 
-	IVertexBuffer*			m_instanceBuffer;
+	IVertexBuffer*			m_instanceBuffer[LEVEL_INSTANCE_BUFFERS];
 
 	DkList<cellpoint_t>		m_navOpenSet;
 	ubyte					m_defaultNavTile;

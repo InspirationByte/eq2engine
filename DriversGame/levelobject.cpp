@@ -520,7 +520,7 @@ void CLevelModel::CreateCollisionObjectFor( regionObject_t* ref )
 	ref->static_phys_object = collObj;
 }
 
-bool CLevelModel::GenereateRenderData()
+bool CLevelModel::GenerateRenderData()
 {
 	if(!m_indices || !m_verts)
 		return false;
@@ -801,7 +801,7 @@ bool CLevelModel::CreateFrom(dsmmodel_t* pModel)
 
 	GeneratePhysicsData();
 
-	return GenereateRenderData();
+	return GenerateRenderData();
 #else
 	return false;
 #endif
@@ -849,7 +849,7 @@ void CLevelModel::Load(IVirtualStream* stream)
 	stream->Read(m_verts, 1, sizeof(lmodeldrawvertex_t)*m_numVerts);
 	stream->Read(m_indices, 1, sizeof(uint16)*m_numIndices);
 
-	GenereateRenderData();
+	GenerateRenderData();
 }
 
 void CLevelModel::Save(IVirtualStream* stream) const

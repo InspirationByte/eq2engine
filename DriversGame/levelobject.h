@@ -122,7 +122,7 @@ public:
 	void					Render(int nDrawFlags);
 
 	bool					CreateFrom(dsmmodel_t* pModel);
-	bool					GenereateRenderData();
+	bool					GenerateRenderData();
 	void					PreloadTextures();
 
 	void					Load(IVirtualStream* stream);

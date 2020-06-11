@@ -1751,51 +1751,37 @@ void ShaderAPID3DX9::ChangeVertexFormat(IVertexFormat* pVertexFormat)
 // Changes the vertex buffer
 void ShaderAPID3DX9::ChangeVertexBuffer(IVertexBuffer* pVertexBuffer,int nStream, const intptr offset)
 {
-	if (pVertexBuffer != m_pCurrentVertexBuffers[nStream] || offset != m_nCurrentOffsets[nStream])
+	UINT nStreamParam1 = 1;
+	UINT nStreamParam2 = 1;
+
+	CVertexBufferD3DX9* pVB = (CVertexBufferD3DX9*)(pVertexBuffer);
+
+	if (nStream == 2)	// FIXME: instance stream ID
 	{
-		CVertexBufferD3DX9* pVB = (CVertexBufferD3DX9*)(pVertexBuffer);
-		//CVertexFormatD3DX9* pCurrentFormat = (CVertexFormatD3DX9*)(m_pCurrentVertexFormat);
+		if (pVB && (pVB->GetFlags() & VERTBUFFER_FLAG_INSTANCEDATA))
+		{
+			uint numInstances = pVB->GetVertexCount();
 
+			nStreamParam1 = (D3DSTREAMSOURCE_INDEXEDDATA | numInstances);
+			nStreamParam2 = (D3DSTREAMSOURCE_INSTANCEDATA | 1);
+		}
+
+		if (m_nSelectedStreamParam[0] != nStreamParam1 || m_nSelectedStreamParam[nStream] != nStreamParam2)
+		{
+			m_pD3DDevice->SetStreamSourceFreq(0, nStreamParam1);
+			m_pD3DDevice->SetStreamSourceFreq(nStream, nStreamParam2);
+
+			m_nSelectedStreamParam[0] = nStreamParam1;
+			m_nSelectedStreamParam[nStream] = nStreamParam2;
+		}
+	}
+
+	if (pVB != m_pCurrentVertexBuffers[nStream] || m_nCurrentOffsets[nStream] != offset)
+	{
 		if (pVB == NULL)
-		{
-			m_pD3DDevice->SetStreamSource( nStream, NULL, 0, 0 );
-
-			if( m_nSelectedStreamParam[nStream] != 1 && (nStream > 0) )
-			{
-				m_pD3DDevice->SetStreamSourceFreq(0, 1);
-				m_pD3DDevice->SetStreamSourceFreq(nStream, 1);
-				m_nSelectedStreamParam[0] = 1;
-				m_nSelectedStreamParam[nStream] = 1;
-			}
-		}
+			m_pD3DDevice->SetStreamSource(nStream, NULL, 0, 0 );
 		else 
-		{
-			
-			UINT nStreamParam1 = 1;
-			UINT nStreamParam2 = 1;
-
-			if(	(nStream > 0) && 
-				(pVB->GetFlags() & VERTBUFFER_FLAG_INSTANCEDATA))
-			{
-				uint numInstances = pVB->GetVertexCount();
-
-				nStreamParam1 = (D3DSTREAMSOURCE_INDEXEDDATA | numInstances);
-				nStreamParam2 = (D3DSTREAMSOURCE_INSTANCEDATA | 1U);
-			}
-
-			if(	(nStream > 0) &&
-				(m_nSelectedStreamParam[nStream] != nStreamParam2 && m_nSelectedStreamParam[0] != nStreamParam1))
-			{
-				m_pD3DDevice->SetStreamSourceFreq(0, nStreamParam1);
-				m_pD3DDevice->SetStreamSourceFreq(nStream, nStreamParam2);
-				
-				m_nSelectedStreamParam[0] = nStreamParam1;
-				m_nSelectedStreamParam[nStream] = nStreamParam2;
-			}
-			
-			// bind stream with offset
 			m_pD3DDevice->SetStreamSource(nStream, pVB->m_pVertexBuffer, (UINT)offset*pVB->GetStrideSize(), pVB->GetStrideSize());
-		}
 
 		m_pCurrentVertexBuffers[nStream] = pVertexBuffer;
 		m_nCurrentOffsets[nStream] = offset;

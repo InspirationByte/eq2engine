@@ -13,27 +13,25 @@
 #include "IMaterialSystem.h"
 #include "EqParticles.h"
 
-typedef bool(*DECALPROCESSTRIANGLEFN)(struct decalSettings_t& settings, PFXVertex_t& v1, PFXVertex_t& v2, PFXVertex_t& v3);
+const float SHADOW_UPDATE_TOLERANCE = 0.1f;
 
-bool DefaultDecalTriangleProcessFunc(struct decalSettings_t& settings, PFXVertex_t& v1, PFXVertex_t& v2, PFXVertex_t& v3);
-bool LightDecalTriangleProcessFunc(struct decalSettings_t& settings, PFXVertex_t& v1, PFXVertex_t& v2, PFXVertex_t& v3);
+typedef bool(*DECALPROCESSTRIANGLEFN)(struct decalPrimitives_t* decal, struct decalSettings_t& settings, PFXVertex_t& v1, PFXVertex_t& v2, PFXVertex_t& v3);
+
+bool DefaultDecalTriangleProcessFunc(struct decalPrimitives_t* decal, struct decalSettings_t& settings, PFXVertex_t& v1, PFXVertex_t& v2, PFXVertex_t& v3);
+bool LightDecalTriangleProcessFunc(struct decalPrimitives_t* decal, struct decalSettings_t& settings, PFXVertex_t& v1, PFXVertex_t& v2, PFXVertex_t& v3);
 
 struct decalSettings_t
 {
 	decalSettings_t();
 
-	DECALPROCESSTRIANGLEFN	processFunc;
-
+	Volume		clipVolume;
 	Vector3D	facingDir;
 
-	Volume		clipVolume;
-	bool		customClipVolume;
-
-	bool		skipTexCoords;
-
-	int			avoidMaterialFlags;
-	
+	DECALPROCESSTRIANGLEFN	processFunc;
 	void*		userData;
+	int			avoidMaterialFlags;
+	bool		customClipVolume;
+	bool		skipTexCoords;
 };
 
 
@@ -42,17 +40,16 @@ struct decalPrimitives_t
 	decalPrimitives_t();
 
 	void Clear();
-
 	void AddTriangle(const Vector3D& p1, const Vector3D& p2, const Vector3D& p3);
-
-	BoundingBox				bbox;
-
-	bool					dirty;
 
 	DkList<PFXVertex_t>		verts;
 	DkList<int16>			indices;
-
 	decalSettings_t			settings;
+
+	BoundingBox				bbox;
+	Vector3D				position;
+
+	bool					dirty;
 };
 
 inline bool decalVertComparator(const PFXVertex_t& a, const PFXVertex_t& b)

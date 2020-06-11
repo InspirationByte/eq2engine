@@ -244,7 +244,13 @@ void CPedestrian::Draw(int nRenderFlags)
 
 	DrawEGF(nRenderFlags, m_boneTransforms, m_skin);
 
-	m_shadowDecal.dirty = true;
+	bool shadowDirty = lengthSqr(physBody->GetPosition() - m_shadowDecal.position) > SHADOW_UPDATE_TOLERANCE;
+	
+	if (shadowDirty)
+	{
+		m_shadowDecal.dirty = true;
+		m_shadowDecal.position = physBody->GetPosition();
+	}
 }
 
 const float ACCEL_RATIO = 12.0f;

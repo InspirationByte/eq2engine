@@ -40,15 +40,13 @@ CGameLevel::CGameLevel() :
 	m_regionOffsets(NULL),
 	m_occluderOffsets(NULL),
 	m_numRegions(0),
-	m_navGridSelector(0),
 	m_regionDataLumpOffset(0),
 	m_occluderDataLumpOffset(0),
 	m_levelName("Unnamed"),
-	m_instanceBuffer(NULL),
 	m_mutex(GetGlobalMutex(MUTEXPURPOSE_LEVEL_LOADER)),
 	m_navOpenSet(1024)
 {
-
+	memset(m_instanceBuffer, 0, sizeof(m_instanceBuffer));
 }
 
 void CGameLevel::Cleanup()
@@ -86,16 +84,19 @@ void CGameLevel::Cleanup()
 	m_objectDefs.clear();
 	m_objectDefsCfg.clear();
 
-	if(m_instanceBuffer)
-		g_pShaderAPI->DestroyVertexBuffer(m_instanceBuffer);
-	m_instanceBuffer = NULL;
+	for (int i = 0; i < LEVEL_INSTANCE_BUFFERS; i++)
+	{
+		if (m_instanceBuffer[i])
+			g_pShaderAPI->DestroyVertexBuffer(m_instanceBuffer[i]);
+
+		m_instanceBuffer[i] = NULL;
+	}
 
 	m_wide = 0;
 	m_tall = 0;
 	m_occluderDataLumpOffset = 0;
 	m_numRegions = 0;
 	m_regionDataLumpOffset = 0;
-	m_navGridSelector = 0;
 }
 
 bool CGameLevel::Load(const char* levelname)
@@ -276,8 +277,6 @@ void CGameLevel::Init(int wide, int tall, int cells, bool clean)
 	m_tall = tall;
 	m_cellsSize = cells;
 
-	m_navGridSelector = 0;
-
 #ifdef EDITOR
 	m_regions = new CEditorLevelRegion[m_wide*m_tall];
 #else
@@ -319,10 +318,13 @@ void CGameLevel::Init(int wide, int tall, int cells, bool clean)
 
 	const ShaderAPICaps_t& caps = g_pShaderAPI->GetCaps();
 
-	if(!m_instanceBuffer && caps.isInstancingSupported && r_enableLevelInstancing.GetBool())
+	if(caps.isInstancingSupported && r_enableLevelInstancing.GetBool())
 	{
-		m_instanceBuffer = g_pShaderAPI->CreateVertexBuffer(BUFFER_DYNAMIC, MAX_MODEL_INSTANCES, sizeof(regObjectInstance_t));
-		m_instanceBuffer->SetFlags( VERTBUFFER_FLAG_INSTANCEDATA );
+		for (int i = 0; i < LEVEL_INSTANCE_BUFFERS; i++)
+		{
+			m_instanceBuffer[i] = g_pShaderAPI->CreateVertexBuffer(BUFFER_DYNAMIC, MAX_MODEL_INSTANCES, sizeof(regObjectInstance_t));
+			m_instanceBuffer[i]->SetFlags(VERTBUFFER_FLAG_INSTANCEDATA);
+		}
 	}
 }
 
@@ -1429,7 +1431,6 @@ levroadcell_t* CGameLevel::Road_GetGlobalTileAt(const IVector2D& point, CLevelRe
 
 bool CGameLevel::Road_FindBestCellForTrafficLight( IVector2D& out, const Vector3D& origin, int trafficDir, int juncIterations, bool leftHanded)
 {
-	CScopedMutex m(m_mutex);
 
 	IVector2D cellPos = PositionToGlobalTilePoint(origin);
 	int laneRowDir = GetPerpendicularDir(trafficDir);
@@ -1711,40 +1712,83 @@ void CGameLevel::Render(const Vector3D& cameraPosition, const occludingFrustum_t
 		materials->SetInstancingEnabled( true ); // matsystem switch to use instancing in shaders
 		materials->SetMatrix(MATRIXMODE_WORLD, identity4());
 
-		// force disable vertex buffer
-		g_pShaderAPI->SetVertexBuffer( NULL, 2 );
-
 		// walk thru all defs
 		int numObjectDefs = m_objectDefs.numElem();
-		for(int i = 0; i < numObjectDefs; i++)
+
+		int instanceBufIdx = 0;
+
+		for(int i = 0; i < numObjectDefs; i += LEVEL_INSTANCE_BUFFERS)
 		{
+			for (int j = 0; j < LEVEL_INSTANCE_BUFFERS; j++)
+			{
+				if (i+j >= numObjectDefs)
+					break;
+
+				if (m_objectDefs[i+j]->m_info.type != LOBJ_TYPE_INTERNAL_STATIC)
+					continue;
+
+				if (renderTranslucency && !m_objectDefs[i+j]->m_model->m_hasTransparentSubsets)
+					continue;
+
+				levObjInstanceData_t* instData = m_objectDefs[i+j]->m_instData;
+
+				if (instData && instData->numInstances)
+				{
+					IVertexBuffer* instanceBuf = m_instanceBuffer[j];
+					instanceBuf->Update(instData->instances, instData->numInstances, 0, true);
+				}
+			}
+
+			for (int j = 0; j < LEVEL_INSTANCE_BUFFERS; j++)
+			{
+				if (i + j >= numObjectDefs)
+					break;
+
+				if (m_objectDefs[i+j]->m_info.type != LOBJ_TYPE_INTERNAL_STATIC)
+					continue;
+
+				if (renderTranslucency && !m_objectDefs[i+j]->m_model->m_hasTransparentSubsets)
+					continue;
+
+				levObjInstanceData_t* instData = m_objectDefs[i+j]->m_instData;
+
+				if (instData && instData->numInstances)
+				{
+					g_pShaderAPI->SetVertexBuffer(m_instanceBuffer[j], 2);
+
+					m_objectDefs[i+j]->m_model->Render(nRenderFlags);
+					instData->numInstances = 0;
+				}
+			}
+			
+			/*
 			CLevObjectDef* def = m_objectDefs[i];
 
 			if(def->m_info.type != LOBJ_TYPE_INTERNAL_STATIC)
 				continue;
 
-			if(!def->m_model || !def->m_instData)
-				continue;
-
+			CLevelModel* model = def->m_model;
 			levObjInstanceData_t* instData = def->m_instData;
 
-			if(instData->numInstances == 0)
+			if(!model || !instData)
 				continue;
 
-			CLevelModel* model = def->m_model;
+			if(instData->numInstances == 0)
+				continue;	
 			
 			if(renderTranslucency && !model->m_hasTransparentSubsets)
 				continue;
+
+			IVertexBuffer* instanceBuf = m_instanceBuffer[instanceBufIdx++];
+			instanceBuf->Update(instData->instances, instData->numInstances, 0, true);
+
+			instanceBufIdx = (instanceBufIdx+1) % LEVEL_INSTANCE_BUFFERS;
 
 			// before lock we have to unbind our buffer
 			g_pShaderAPI->ChangeVertexBuffer(NULL, 2);
 
 			// set vertex buffer
-			g_pShaderAPI->SetVertexBuffer( m_instanceBuffer, 2 );
-
-			int numInstances = instData->numInstances;
-
-			m_instanceBuffer->Update(instData->instances, numInstances, 0, true);
+			g_pShaderAPI->SetVertexBuffer(instanceBuf, 2 );
 
 			model->Render(nRenderFlags);
 
@@ -1752,14 +1796,13 @@ void CGameLevel::Render(const Vector3D& cameraPosition, const occludingFrustum_t
 			instData->numInstances = 0;
 
 			// disable this vertex buffer or our cars will be drawn many times
-			g_pShaderAPI->SetVertexBuffer( NULL, 2 );
+			g_pShaderAPI->SetVertexBuffer( NULL, 2 );*/
 		}
 
 		materials->SetInstancingEnabled( false );
 
-		// force disable vertex buffer
+		// disable instancing
 		g_pShaderAPI->SetVertexBuffer( NULL, 2 );
-		g_pShaderAPI->ChangeVertexBuffer(NULL, 2);
 	}
 }
 
@@ -1814,8 +1857,14 @@ int CGameLevel::UpdateRegionLoading()
 		DevMsg(DEVMSG_CORE, "*** %d regions loaded for %g seconds\n", numLoadedRegions, loadTime);
 
 	// wait for matsystem
-	if(numLoadedRegions)
+	if (numLoadedRegions)
+	{
+		// force complete decals
+		while (g_worldGlobals.decalsQueue.GetValue())
+			Threading::Yield();
+
 		materials->Wait();
+	}
 
 	return numLoadedRegions;
 }
@@ -2174,32 +2223,25 @@ void CGameLevel::Nav_AddObstacle(CLevelRegion* reg, regionObject_t* ref)
 			vertbox.AddVertex(v1);
 			vertbox.AddVertex(v2);
 
+			// other thread will not bother this op
+			for (int i = 0; i < 2; i++)
 			{
-				CScopedMutex m(m_mutex);
+				// get a cell range
+				IVector2D min, max;
+				Nav_GetCellRangeFromAABB(vertbox.minPoint, vertbox.maxPoint, min, max, 1.5f, i);
 
-				// other thread will not bother this op
-				for (m_navGridSelector = 0; m_navGridSelector < 2; m_navGridSelector++)
+				// in this range do...
+				for (int y = min.y; y < max.y; y++)
 				{
-					// get a cell range
-					IVector2D min, max;
-					Nav_GetCellRangeFromAABB(vertbox.minPoint, vertbox.maxPoint, min, max);
-
-					// in this range do...
-					for (int y = min.y; y < max.y; y++)
+					for (int x = min.x; x < max.x; x++)
 					{
-						for (int x = min.x; x < max.x; x++)
-						{
-							//Vector3D pointPos = Nav_GlobalPointToPosition(IVector2D(x, y));
-							//debugoverlay->Box3D(pointPos - 0.5f, pointPos + 0.5f, ColorRGBA(1, 0, 1, 0.1f));
+						//Vector3D pointPos = Nav_GlobalPointToPosition(IVector2D(x, y));
+						//debugoverlay->Box3D(pointPos - 0.5f, pointPos + 0.5f, ColorRGBA(1, 0, 1, 0.1f));
 
-							ubyte& tile = Nav_GetTileAtGlobalPoint(IVector2D(x, y));
-							tile = 0;
-						}
+						ubyte& tile = Nav_GetTileAtGlobalPoint(IVector2D(x, y), false, i);
+						tile = 0;
 					}
 				}
-
-
-				m_navGridSelector = 0;
 			}
 		}
 
@@ -2267,45 +2309,39 @@ void CGameLevel::Nav_AddObstacle(CLevelRegion* reg, regionObject_t* ref)
 			vertbox.AddVertex(v1);
 			vertbox.AddVertex(v2);
 
+			// other thread will not bother this op
+			for (int i = 0; i < 2; i++)
 			{
-				CScopedMutex m(m_mutex);
+				// get a cell range
+				IVector2D min, max;
+				Nav_GetCellRangeFromAABB(vertbox.minPoint, vertbox.maxPoint, min, max, 2.0f, i);
 
-				// other thread will not bother this op
-				for (m_navGridSelector = 0; m_navGridSelector < 2; m_navGridSelector++)
+				// in this range do...
+				for (int y = min.y; y < max.y; y++)
 				{
-					// get a cell range
-					IVector2D min, max;
-					Nav_GetCellRangeFromAABB(vertbox.minPoint, vertbox.maxPoint, min, max, 2.0f);
-
-					// in this range do...
-					for (int y = min.y; y < max.y; y++)
+					for (int x = min.x; x < max.x; x++)
 					{
-						for (int x = min.x; x < max.x; x++)
-						{
-							//Vector3D pointPos = Nav_GlobalPointToPosition(IVector2D(x, y));
-							//debugoverlay->Box3D(pointPos - 0.5f, pointPos + 0.5f, ColorRGBA(1, 0, 1, 0.1f));
+						//Vector3D pointPos = Nav_GlobalPointToPosition(IVector2D(x, y));
+						//debugoverlay->Box3D(pointPos - 0.5f, pointPos + 0.5f, ColorRGBA(1, 0, 1, 0.1f));
 
-							ubyte& tile = Nav_GetTileAtGlobalPoint(IVector2D(x, y));
-							tile = 0;
-						}
+						ubyte& tile = Nav_GetTileAtGlobalPoint(IVector2D(x, y), false, i);
+						tile = 0;
 					}
 				}
-
-				m_navGridSelector = 0;
 			}
 		}
 	}
 }
 
-void CGameLevel::Nav_GetCellRangeFromAABB(const Vector3D& mins, const Vector3D& maxs, IVector2D& xy1, IVector2D& xy2, float offs) const
+void CGameLevel::Nav_GetCellRangeFromAABB(const Vector3D& mins, const Vector3D& maxs, IVector2D& xy1, IVector2D& xy2, float offs, int subGrid) const
 {
-	xy1 = Nav_PositionToGlobalNavPoint(mins-offs);
-	xy2 = Nav_PositionToGlobalNavPoint(maxs+offs);
+	xy1 = Nav_PositionToGlobalNavPoint(mins-offs, subGrid);
+	xy2 = Nav_PositionToGlobalNavPoint(maxs+offs, subGrid);
 }
 
-void CGameLevel::Nav_GlobalToLocalPoint(const IVector2D& point, IVector2D& outLocalPoint, CLevelRegion** pRegion) const
+void CGameLevel::Nav_GlobalToLocalPoint(const IVector2D& point, IVector2D& outLocalPoint, CLevelRegion** pRegion, int subGrid) const
 {
-	int navGridSize = m_cellsSize*s_navGridScales[m_navGridSelector];
+	int navGridSize = m_cellsSize*s_navGridScales[subGrid];
 
 	IVector2D regPos = point / navGridSize;
 
@@ -2314,23 +2350,23 @@ void CGameLevel::Nav_GlobalToLocalPoint(const IVector2D& point, IVector2D& outLo
 	(*pRegion) = GetRegionAt(regPos);
 }
 
-void CGameLevel::Nav_LocalToGlobalPoint(const IVector2D& point, const CLevelRegion* pRegion, IVector2D& outGlobalPoint) const
+void CGameLevel::Nav_LocalToGlobalPoint(const IVector2D& point, const CLevelRegion* pRegion, IVector2D& outGlobalPoint, int subGrid) const
 {
-	int navGridSize = m_cellsSize*s_navGridScales[m_navGridSelector];
+	int navGridSize = m_cellsSize*s_navGridScales[subGrid];
 	outGlobalPoint = pRegion->m_heightfield[0]->m_regionPos * navGridSize + point;
 }
 
-#define NAV_POINT_SIZE (HFIELD_POINT_SIZE * s_invNavGridScales[m_navGridSelector])
+#define NAV_POINT_SIZE(subGrid) (HFIELD_POINT_SIZE * s_invNavGridScales[subGrid])
 
 //
 // conversions
 //
-IVector2D CGameLevel::Nav_PositionToGlobalNavPoint(const Vector3D& pos) const
+IVector2D CGameLevel::Nav_PositionToGlobalNavPoint(const Vector3D& pos, int subGrid) const
 {
 	IVector2D gridWorldSize(m_wide, m_tall);
-	gridWorldSize *= m_cellsSize*s_navGridScales[m_navGridSelector];
+	gridWorldSize *= m_cellsSize*s_navGridScales[subGrid];
 
-	float p_size = (1.0f / NAV_POINT_SIZE);
+	float p_size = (1.0f / NAV_POINT_SIZE(subGrid));
 
 	Vector2D xz_pos = pos.xz() * p_size + gridWorldSize/2;
 
@@ -2342,30 +2378,30 @@ IVector2D CGameLevel::Nav_PositionToGlobalNavPoint(const Vector3D& pos) const
 	return out;
 }
 
-Vector3D CGameLevel::Nav_GlobalPointToPosition(const IVector2D& point) const
+Vector3D CGameLevel::Nav_GlobalPointToPosition(const IVector2D& point, int subGrid) const
 {
 	IVector2D outXYPos;
 	CLevelRegion* pRegion;
 
-	Nav_GlobalToLocalPoint(point, outXYPos, &pRegion);
+	Nav_GlobalToLocalPoint(point, outXYPos, &pRegion, subGrid);
 
 	if (pRegion)
 	{
 		CHeightTileField& defField = *pRegion->m_heightfield[0];
 
-		hfieldtile_t* tile = defField.GetTile(outXYPos.x * s_invNavGridScales[m_navGridSelector], outXYPos.y * s_invNavGridScales[m_navGridSelector]);
+		hfieldtile_t* tile = defField.GetTile(outXYPos.x * s_invNavGridScales[subGrid], outXYPos.y * s_invNavGridScales[subGrid]);
 
 		Vector3D tile_position;
 
 		if (tile)
-			tile_position = defField.m_position + Vector3D(outXYPos.x*NAV_POINT_SIZE, tile->height*HFIELD_HEIGHT_STEP, outXYPos.y*NAV_POINT_SIZE);
+			tile_position = defField.m_position + Vector3D(outXYPos.x*NAV_POINT_SIZE(subGrid), tile->height*HFIELD_HEIGHT_STEP, outXYPos.y*NAV_POINT_SIZE(subGrid));
 		else
-			tile_position = defField.m_position + Vector3D(outXYPos.x*NAV_POINT_SIZE, 0, outXYPos.y*NAV_POINT_SIZE);
+			tile_position = defField.m_position + Vector3D(outXYPos.x*NAV_POINT_SIZE(subGrid), 0, outXYPos.y*NAV_POINT_SIZE(subGrid));
 
-		float offsetFactor = float(s_navGridScales[m_navGridSelector]) - 1.0f;
+		float offsetFactor = float(s_navGridScales[subGrid]) - 1.0f;
 
-		tile_position.x -= NAV_POINT_SIZE*0.5f*offsetFactor;
-		tile_position.z -= NAV_POINT_SIZE*0.5f*offsetFactor;
+		tile_position.x -= NAV_POINT_SIZE(subGrid)*0.5f*offsetFactor;
+		tile_position.z -= NAV_POINT_SIZE(subGrid)*0.5f*offsetFactor;
 
 		return tile_position;
 	}
@@ -2373,19 +2409,19 @@ Vector3D CGameLevel::Nav_GlobalPointToPosition(const IVector2D& point) const
 	return Vector3D(0, 0, 0);
 }
 
-navcell_t& CGameLevel::Nav_GetCellStateAtGlobalPoint(const IVector2D& point)
+navcell_t& CGameLevel::Nav_GetCellStateAtGlobalPoint(const IVector2D& point, int subGrid)
 {
-	int navSize = m_cellsSize*s_navGridScales[m_navGridSelector];
+	int navSize = m_cellsSize*s_navGridScales[subGrid];
 
 	IVector2D localPoint;
 	CLevelRegion* reg;
 
-	Nav_GlobalToLocalPoint(point, localPoint, &reg);
+	Nav_GlobalToLocalPoint(point, localPoint, &reg, subGrid);
 
 	CScopedMutex m(m_mutex);
 
 	if (reg && reg->m_isLoaded)
-		return reg->m_navGrid[m_navGridSelector].cellStates[localPoint.y*navSize + localPoint.x];
+		return reg->m_navGrid[subGrid].cellStates[localPoint.y*navSize + localPoint.x];
 
 	static navcell_t emptyCell;
 	emptyCell.f = 10000.0f;
@@ -2397,49 +2433,48 @@ navcell_t& CGameLevel::Nav_GetCellStateAtGlobalPoint(const IVector2D& point)
 	return emptyCell;
 }
 
-ubyte& CGameLevel::Nav_GetTileAtGlobalPoint(const IVector2D& point, bool obstacles)
+ubyte& CGameLevel::Nav_GetTileAtGlobalPoint(const IVector2D& point, bool obstacles, int subGrid)
 {
-	int navSize = m_cellsSize*s_navGridScales[m_navGridSelector];
+	int navSize = m_cellsSize*s_navGridScales[subGrid];
 
 	IVector2D localPoint;
 	CLevelRegion* reg;
 
-	CScopedMutex m(m_mutex);
-	Nav_GlobalToLocalPoint(point, localPoint, &reg);
+	Nav_GlobalToLocalPoint(point, localPoint, &reg, subGrid);
 
-	if (reg && reg->m_navGrid[m_navGridSelector].staticObst)
+	if (reg && reg->m_navGrid[subGrid].staticObst)
 	{
 		int idx = localPoint.y*navSize + localPoint.x;
 
-		return obstacles ? reg->m_navGrid[m_navGridSelector].dynamicObst[idx] : reg->m_navGrid[m_navGridSelector].staticObst[idx];
+		return obstacles ? reg->m_navGrid[subGrid].dynamicObst[idx] : reg->m_navGrid[subGrid].staticObst[idx];
 	}
 
 	return m_defaultNavTile;
 }
 
-ubyte& CGameLevel::Nav_GetTileAtPosition(const Vector3D& position, bool obstacles)
+ubyte& CGameLevel::Nav_GetTileAtPosition(const Vector3D& position, bool obstacles, int subGrid)
 {
-	IVector2D point = Nav_PositionToGlobalNavPoint(position);
+	IVector2D point = Nav_PositionToGlobalNavPoint(position, subGrid);
 
-	return Nav_GetTileAtGlobalPoint(point, obstacles);
+	return Nav_GetTileAtGlobalPoint(point, obstacles, subGrid);
 }
 
-navcell_t& CGameLevel::Nav_GetTileAndCellAtGlobalPoint(const IVector2D& point, ubyte& tile)
+navcell_t& CGameLevel::Nav_GetTileAndCellAtGlobalPoint(const IVector2D& point, ubyte& tile, int subGrid)
 {
-	int navSize = m_cellsSize*s_navGridScales[m_navGridSelector];
+	int navSize = m_cellsSize*s_navGridScales[subGrid];
 
 	IVector2D localPoint;
 	CLevelRegion* reg;
 
-	Nav_GlobalToLocalPoint(point, localPoint, &reg);
+	Nav_GlobalToLocalPoint(point, localPoint, &reg, subGrid);
 
 	CScopedMutex m(m_mutex);
 
-	if (reg && reg->m_isLoaded && reg->m_navGrid[m_navGridSelector].staticObst)
+	if (reg && reg->m_isLoaded && reg->m_navGrid[subGrid].staticObst)
 	{
 		int idx = localPoint.y*navSize + localPoint.x;
 
-		navGrid_t& grid = reg->m_navGrid[m_navGridSelector];
+		navGrid_t& grid = reg->m_navGrid[subGrid];
 
 		tile = grid.staticObst[idx];//min(grid.dynamicObst[idx], grid.staticObst[idx]);
 		return grid.cellStates[idx];
@@ -2457,29 +2492,9 @@ navcell_t& CGameLevel::Nav_GetTileAndCellAtGlobalPoint(const IVector2D& point, u
 	return emptyCell;
 }
 
-/*
-void CGameLevel::Nav_FlushRegion(CLevelRegion* reg)
-{
-	CScopedMutex m(m_mutex);
-	if (!reg->m_isLoaded)
-		return;
 
-	// add obstacles
-	if (reg->m_navGrid[0].dirty || reg->m_navGrid[1].dirty)
-	{
-		DkList<regionObject_t*>& objects = reg->m_objects;
-
-		for (int i = 0; i < objects.numElem(); i++)
-			Nav_AddObstacle(reg, objects[i]);
-
-		reg->m_navGrid[0].dirty = false;
-		reg->m_navGrid[1].dirty = false;
-	}
-}
-*/
 void CGameLevel::Nav_ClearCellStates(ECellClearStateMode mode)
 {
-	//int navSize = (m_cellsSize*s_navGridScales[m_navGridSelector]);
 	for (int x = 0; x < m_wide; x++)
 	{
 		for (int y = 0; y < m_tall; y++)
@@ -2513,12 +2528,12 @@ void CGameLevel::Nav_ClearCellStates(ECellClearStateMode mode)
 	}
 }
 
-bool CGameLevel::Nav_FindPath(const Vector3D& start, const Vector3D& end, pathFindResult_t& result, int iterationLimit, bool fast)
+bool CGameLevel::Nav_FindPath(const Vector3D& start, const Vector3D& end, pathFindResult_t& result, int iterationLimit, int subGrid)
 {
-	IVector2D startPoint = Nav_PositionToGlobalNavPoint(start);
-	IVector2D endPoint = Nav_PositionToGlobalNavPoint(end);
+	IVector2D startPoint = Nav_PositionToGlobalNavPoint(start, subGrid);
+	IVector2D endPoint = Nav_PositionToGlobalNavPoint(end, subGrid);
 
-	return Nav_FindPath2D(startPoint, endPoint, result, iterationLimit, fast);
+	return Nav_FindPath2D(startPoint, endPoint, result, iterationLimit, subGrid);
 }
 
 // d: cost
@@ -2539,12 +2554,12 @@ int sortOpenCells(const cellpoint_t& a, const cellpoint_t& b)
 	return b.cell->f < a.cell->f;
 }
 
-bool CGameLevel::Nav_FindPath2D(const IVector2D& start, const IVector2D& end, pathFindResult_t& result, int iterationLimit, bool fast)
+bool CGameLevel::Nav_FindPath2D(const IVector2D& start, const IVector2D& end, pathFindResult_t& result, int iterationLimit, int subGrid)
 {
 	if(start == end)
 		return false;
 
-	result.gridSelector = m_navGridSelector;
+	result.gridSelector = subGrid;
 	result.points.setNum(0,false);
 
 	// directions
@@ -2555,8 +2570,8 @@ bool CGameLevel::Nav_FindPath2D(const IVector2D& start, const IVector2D& end, pa
 	Nav_ClearCellStates( NAV_CLEAR_WORKSTATES );
 
 	ubyte startTile = 0;
-	ubyte endTile = Nav_GetTileAtGlobalPoint(end);
-	navcell_t& startCell = Nav_GetTileAndCellAtGlobalPoint(start, startTile);
+	ubyte endTile = Nav_GetTileAtGlobalPoint(end, false, subGrid);
+	navcell_t& startCell = Nav_GetTileAndCellAtGlobalPoint(start, startTile, subGrid);
 
 	// don't search from empty tiles
 	if(startTile == 0 || endTile == 0)
@@ -2581,7 +2596,7 @@ bool CGameLevel::Nav_FindPath2D(const IVector2D& start, const IVector2D& end, pa
 		}
 
 		ubyte curTile = 0;
-		navcell_t& curCell = Nav_GetTileAndCellAtGlobalPoint(curPoint, curTile);
+		navcell_t& curCell = Nav_GetTileAndCellAtGlobalPoint(curPoint, curTile, subGrid);
 
 		// make it closed
 		curCell.flags |= 0x1;
@@ -2598,7 +2613,7 @@ bool CGameLevel::Nav_FindPath2D(const IVector2D& start, const IVector2D& end, pa
 			IVector2D neighbourPoint(curPoint + IVector2D(dx[i], dy[i]));
 
 			ubyte neighbourTile;
-			navcell_t& neighbourCell = Nav_GetTileAndCellAtGlobalPoint(neighbourPoint, neighbourTile);
+			navcell_t& neighbourCell = Nav_GetTileAndCellAtGlobalPoint(neighbourPoint, neighbourTile, subGrid);
 
 			if(neighbourTile == 0)	// wall?
 				continue;
@@ -2632,8 +2647,8 @@ bool CGameLevel::Nav_FindPath2D(const IVector2D& start, const IVector2D& end, pa
 				/*
 				// DEBUG DRAW
 				Vector3D offset(0.0f, 0.25f, 0.0f);
-				Vector3D pointPos = Nav_GlobalPointToPosition(neighbourPoint) + offset;
-				Vector3D pointPos2 = Nav_GlobalPointToPosition(curPoint) + offset;
+				Vector3D pointPos = Nav_GlobalPointToPosition(neighbourPoint, subGrid) + offset;
+				Vector3D pointPos2 = Nav_GlobalPointToPosition(curPoint, subGrid) + offset;
 
 				float dispalyTime = 0.1f;
 
@@ -2648,7 +2663,7 @@ bool CGameLevel::Nav_FindPath2D(const IVector2D& start, const IVector2D& end, pa
 	if(foundPath)
 	{
 		IVector2D testPoint = end;
-		navcell_t lastCell = Nav_GetCellStateAtGlobalPoint(testPoint);
+		navcell_t lastCell = Nav_GetCellStateAtGlobalPoint(testPoint, subGrid);
 
 		int lastDir = -1;
 
@@ -2666,7 +2681,7 @@ bool CGameLevel::Nav_FindPath2D(const IVector2D& start, const IVector2D& end, pa
 			lastDir = lastCell.parentDir;
 
 			testPoint = prevPoint;
-			lastCell = Nav_GetCellStateAtGlobalPoint(testPoint);
+			lastCell = Nav_GetCellStateAtGlobalPoint(testPoint, subGrid);
 		}
 		while(true); // FIXME: limit!
 	}
@@ -2674,15 +2689,15 @@ bool CGameLevel::Nav_FindPath2D(const IVector2D& start, const IVector2D& end, pa
 	return (result.points.numElem() > 1);
 }
 
-float CGameLevel::Nav_TestLine(const Vector3D& start, const Vector3D& end, bool obstacles)
+float CGameLevel::Nav_TestLine(const Vector3D& start, const Vector3D& end, bool obstacles, int subGrid)
 {
-	IVector2D startPoint = Nav_PositionToGlobalNavPoint(start);
-	IVector2D endPoint = Nav_PositionToGlobalNavPoint(end);
+	IVector2D startPoint = Nav_PositionToGlobalNavPoint(start, subGrid);
+	IVector2D endPoint = Nav_PositionToGlobalNavPoint(end, subGrid);
 
-	return Nav_TestLine2D(startPoint, endPoint, obstacles);
+	return Nav_TestLine2D(startPoint, endPoint, obstacles, subGrid);
 }
 
-float CGameLevel::Nav_TestLine2D(const IVector2D& start, const IVector2D& end, bool obstacles)
+float CGameLevel::Nav_TestLine2D(const IVector2D& start, const IVector2D& end, bool obstacles, int subGrid)
 {
 	int x1,y1,x2,y2;
 
@@ -2695,11 +2710,11 @@ float CGameLevel::Nav_TestLine2D(const IVector2D& start, const IVector2D& end, b
     int dy = -abs(y2 - y1), sy = y1 < y2 ? 1 : -1;
     int err = dx + dy, e2;
 
-	bool initializedInObstacle = Nav_GetTileAtGlobalPoint(start, obstacles) == 0;
+	bool initializedInObstacle = Nav_GetTileAtGlobalPoint(start, obstacles, subGrid) == 0;
 
     for (;;)
 	{
-		ubyte& navCellValue = Nav_GetTileAtGlobalPoint(IVector2D(x1,y1), obstacles);
+		ubyte& navCellValue = Nav_GetTileAtGlobalPoint(IVector2D(x1,y1), obstacles, subGrid);
 
 		if(navCellValue == 0)
 		{
@@ -2936,10 +2951,8 @@ IVector2D GetPerpendicularDirVec(const IVector2D& vec)
 
 void pathFindResult3D_t::InitFrom(pathFindResult_t& path, CEqCollisionObject* ignore)
 {
-	g_pGameWorld->m_level.m_navGridSelector = path.gridSelector;
-
-	start = g_pGameWorld->m_level.Nav_GlobalPointToPosition(path.start);
-	end = g_pGameWorld->m_level.Nav_GlobalPointToPosition(path.end);
+	start = g_pGameWorld->m_level.Nav_GlobalPointToPosition(path.start, path.gridSelector);
+	end = g_pGameWorld->m_level.Nav_GlobalPointToPosition(path.end, path.gridSelector);
 
 	points.clear();
 
@@ -2955,7 +2968,7 @@ void pathFindResult3D_t::InitFrom(pathFindResult_t& path, CEqCollisionObject* ig
 
 	for (int i = 0; i < path.points.numElem(); i++)
 	{
-		Vector4D point(g_pGameWorld->m_level.Nav_GlobalPointToPosition(path.points[i]), 0.0f);
+		Vector4D point(g_pGameWorld->m_level.Nav_GlobalPointToPosition(path.points[i], path.gridSelector), 0.0f);
 
 		if (ignore != nullptr)
 		{
@@ -2970,6 +2983,4 @@ void pathFindResult3D_t::InitFrom(pathFindResult_t& path, CEqCollisionObject* ig
 
 		prevPoint = point.xyz();
 	}
-
-	g_pGameWorld->m_level.m_navGridSelector = 0;
 }
