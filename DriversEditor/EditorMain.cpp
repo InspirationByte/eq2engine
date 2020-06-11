@@ -1290,20 +1290,19 @@ void CMainWindow::ReDraw()
 	// compute time since last frame
 	g_realtime = Platform_GetCurrentTime();
 	
-	/*
-	float fps = 1000;
+	float fps = 120;
 
-	if ( fps != 0 )
+	if (fps != 0)
 	{
 		// Limit fps to withing tolerable range
-		fps = max( MIN_FPS, fps );
-		fps = min( MAX_FPS, fps );
+		fps = max(MIN_FPS, fps);
+		fps = min(MAX_FPS, fps);
 
 		float minframetime = 1.0 / fps;
 
-		if(( g_realtime - g_oldrealtime ) < minframetime )
+		if ((g_realtime - g_oldrealtime) < minframetime)
 			return;
-	}*/
+	}
 	
 	g_frametime = g_realtime - g_oldrealtime;
 	g_oldrealtime = g_realtime;
