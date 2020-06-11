@@ -71,6 +71,7 @@ struct WorldGlobals_t
 {
 	CEqSignal				effectsUpdateCompleted;
 	CEqInterlockedInteger	decalsQueue;
+	CEqInterlockedInteger	sheetsQueue;
 
 	IVertexFormat*			vehicleVF;
 	IVertexFormat*			gameObjectVF;
@@ -167,6 +168,8 @@ public:
 
 	//-------------------------------------------------------------------------
 	// world rendering
+
+	float							GetFrameTime() const { return m_frameTime; }
 
 	void							BuildViewMatrices(int width, int height, int nRenderFlags);
 	void							UpdateOccludingFrustum();

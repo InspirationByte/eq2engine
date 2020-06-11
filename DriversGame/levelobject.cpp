@@ -10,6 +10,7 @@
 #include "eqPhysics/eqBulletIndexedMesh.h"
 #include "VertexFormatBuilder.h"
 #include "ParticleEffects.h"
+#include "eqParallelJobs.h"
 
 extern ConVar r_enableLevelInstancing;
 
@@ -216,14 +217,14 @@ void CLevObjectDef::PreloadModel(IVirtualStream* stream)
 
 	// load model
 	CLevelModel* model = new CLevelModel();
+	m_model = model;
+
 	model->Load(stream);
 	model->PreloadTextures();
 
 	// generate physics geometry
 	bool isGroundModel = (m_info.modelflags & LMODEL_FLAG_ISGROUND);
 	model->GeneratePhysicsData(isGroundModel);
-
-	m_model = model;
 
 	// init instancer
 	if (!(m_info.modelflags & LMODEL_FLAG_GENERATED))

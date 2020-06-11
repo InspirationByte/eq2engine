@@ -531,6 +531,10 @@ void CGameWorld::InitEnvironment()
 
 void CGameWorld::Init()
 {
+	g_worldGlobals.sheetsQueue.SetValue(0);
+	g_worldGlobals.decalsQueue.SetValue(0);
+	g_worldGlobals.effectsUpdateCompleted.Clear();
+
 	g_replayRandom.SetSeed(0);
 	m_objectIndexCounter = 0;
 
@@ -1318,13 +1322,9 @@ void CGameWorld::UpdateEnvironmentTransition(float fDt)
 void CGameWorld::UpdateWorld(float fDt)
 {
 	PROFILE_FUNC();
-	/*
-	static float jobFrametime = fDt;
-	jobFrametime = fDt;
 
-	g_parallelJobs->AddJob(GWJob_UpdateWorldAndEffects, &jobFrametime);
-	g_parallelJobs->Submit();
-	*/
+	m_frameTime = fDt;
+
 	if( fDt > 0 )
 	{
 		UpdateEnvironmentTransition(fDt);
@@ -1408,7 +1408,7 @@ void CGameWorld::UpdateWorld(float fDt)
 		}
 	}
 
-	m_frameTime = fDt;
+	
 	m_curTime += m_frameTime;
 }
 
@@ -2260,9 +2260,6 @@ void CGameWorld::Draw( int nRenderFlags )
 			PROFILE_CODE( obj->Draw( nRenderFlags ) );
 		}while(m_renderingObjects.goToNext());
 
-		// submit jobs (usually car shadows and other particles)
-		g_parallelJobs->Submit();
-
 		PROFILE_END();
 
 		// draw instanced models
@@ -2327,16 +2324,15 @@ void CGameWorld::Draw( int nRenderFlags )
 	// restore projection and draw the particles
 	materials->SetMatrix(MATRIXMODE_PROJECTION, m_matrices[MATRIXMODE_PROJECTION]);
 
+	DrawMoon();
+
+	// we have to wait for decals here
+	//while (g_worldGlobals.decalsQueue.GetValue())
+	//	Threading::Yield();
+
 	// wait scheduled PFX render, decals, etc
 	g_worldGlobals.effectsUpdateCompleted.Wait();
 	g_worldGlobals.effectsUpdateCompleted.Clear();
-
-	if(g_worldGlobals.decalsQueue.GetValue())
-	{
-		MsgWarning("%d decals still in queue\n", g_worldGlobals.decalsQueue.GetValue());
-	}
-
-	DrawMoon();
 
 	// draw particle effects
 	PROFILE_CODE( g_pPFXRenderer->Render( nRenderFlags ) );

@@ -283,7 +283,7 @@ bool CGameHost::InitSystems( EQWNDHANDLE pWindow, bool bWindowed )
 	soundsystem->Init();
 	debugoverlay->Init();
 	equi::Manager->Init();
-	g_parallelJobs->Init((int)ceil((float)g_cpuCaps->GetCPUCount() / 2.0f) + 1);
+	g_parallelJobs->Init(g_cpuCaps->GetCPUCount());
 
 	Networking::InitNetworking();
 

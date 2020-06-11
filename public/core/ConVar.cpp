@@ -224,8 +224,12 @@ void ConVar::InternalSetString(char const *value)
 	char* pszOldValue = (char*)stackalloc( m_iStringLength+1 );
 	pszOldValue[0] = '\0';
 
-	if ( m_fnChangeCallback && m_szValueString )
-		memcpy( pszOldValue, m_szValueString, m_iStringLength+1 );
+	if (m_fnChangeCallback && m_szValueString)
+	{
+		strncpy(pszOldValue, m_szValueString, m_iStringLength + 1);
+		pszOldValue[m_iStringLength] = '\0';
+	}
+
 
 	if (len > m_iStringLength)
 	{

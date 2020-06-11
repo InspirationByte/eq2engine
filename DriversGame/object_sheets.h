@@ -44,7 +44,9 @@ public:
 	void					OnRemove();
 	void					Spawn();
 
+	static void				SheetsUpdateJob(void *data, int i);
 	void					Simulate( float fDt );
+	void					UpdateSheets( float fDt );
 
 	int						ObjType() const		{return GO_DEBRIS;}
 

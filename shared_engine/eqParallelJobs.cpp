@@ -108,14 +108,17 @@ namespace Threading
 	}
 
 	// adds the job
-	void CEqParallelJobThreads::AddJob(jobFunction_t func, void* args)
+	eqParallelJob_t* CEqParallelJobThreads::AddJob(jobFunction_t func, void* args, int count /*= 1*/)
 	{
 		eqParallelJob_t* job = new eqParallelJob_t;
 		job->flags = JOB_FLAG_DELETE;
 		job->func = func;
 		job->arguments = args;
+		job->numIter = count;
 
 		AddJob( job );
+
+		return job;
 	}
 
 	void CEqParallelJobThreads::AddJob(eqParallelJob_t* job)
@@ -139,6 +142,11 @@ namespace Threading
 		}
 		else
 			m_mutex.Unlock();
+	}
+
+	bool CEqParallelJobThreads::AllJobsCompleted() const
+	{
+		return m_workQueue.getCount() == 0;
 	}
 
 	// wait for completion

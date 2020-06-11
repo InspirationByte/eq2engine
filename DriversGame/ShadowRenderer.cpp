@@ -391,6 +391,7 @@ void CShadowRenderer::RenderShadowCasters()
 		decalSettings.clipVolume.LoadAsFrustum(viewProj);
 		decalSettings.clipVolume.SetupPlane(nearPlane, VOLUME_PLANE_NEAR);
 		decalSettings.customClipVolume = true;
+		decalSettings.bounds = firstObject->m_bbox;
 
 		shadowDecal.settings = decalSettings;
 

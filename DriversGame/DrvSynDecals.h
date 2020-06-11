@@ -25,6 +25,7 @@ struct decalSettings_t
 	decalSettings_t();
 
 	Volume		clipVolume;
+	BoundingBox bounds;
 	Vector3D	facingDir;
 
 	DECALPROCESSTRIANGLEFN	processFunc;

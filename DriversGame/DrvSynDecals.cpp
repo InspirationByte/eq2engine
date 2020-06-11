@@ -328,4 +328,5 @@ void ProjectDecalToSpriteBuilderAddJob(const decalSettings_t& settings, CSpriteB
 	job->color = color;
 
 	g_parallelJobs->AddJob((eqParallelJob_t*)job);
+	g_parallelJobs->Submit();
 }

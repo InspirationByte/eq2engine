@@ -229,12 +229,7 @@ bool IsPointInCone( Vector3D &pt, Vector3D &origin, Vector3D &axis, float cosAng
 Vector3D NormalOfTriangle(const Vector3D& v0, const Vector3D& v1, const Vector3D& v2)
 {
 	//Calculate vectors along polygon sides
-	Vector3D side0 = v0 - v1;
-	Vector3D side1 = v2 - v1;
-
-	//Calculate normal
-	Vector3D normal = cross(side1, side0);
-	return normalize(normal);
+	return fastNormalize(cross(v2 - v1, v0 - v1));
 }
 
 // Returns MATRIX_RIGHTHANDED if matrix is right-handed, else returns MATRIX_LEFTHANDED.

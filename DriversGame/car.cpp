@@ -2983,6 +2983,7 @@ void CCar::Simulate( float fDt )
 				decalSettings_t lightDecalSettings;
 				lightDecalSettings.avoidMaterialFlags = MATERIAL_FLAG_WATER; // only avoid water
 				lightDecalSettings.facingDir = normalize(vec3_up - forwardVec);
+				lightDecalSettings.bounds = m_bbox;
 
 				// might be slow on mobile device
 				lightDecalSettings.processFunc = LightDecalTriangleProcessFunc;
@@ -4602,6 +4603,7 @@ void CCar::DrawShadow(float distance)
 		decalSettings_t shadowDecalSettings;
 		shadowDecalSettings.avoidMaterialFlags = MATERIAL_FLAG_WATER; // only avoid water
 		shadowDecalSettings.facingDir = vec3_up;
+		shadowDecalSettings.bounds = m_bbox;
 
 		// might be slow on mobile device
 		shadowDecalSettings.processFunc = LightDecalTriangleProcessFunc;

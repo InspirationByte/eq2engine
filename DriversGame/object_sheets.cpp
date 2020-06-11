@@ -7,6 +7,7 @@
 
 #include "object_sheets.h"
 #include "world.h"
+#include "eqParallelJobs.h"
 
 #include "EqParticles.h"
 
@@ -149,24 +150,9 @@ void CObject_Sheets::OnPhysicsCollide(const CollisionPairData_t& pair)
 	}
 }
 
-
-void CObject_Sheets::Simulate( float fDt )
+void CObject_Sheets::UpdateSheets(float fDt)
 {
-	BaseClass::Simulate(fDt);
-	PROFILE_FUNC();
-
-	if(!m_wasInit)
-	{
-		m_initDelay -= fDt;
-
-		if(m_initDelay <= 0.0f)
-		{
-			m_wasInit = InitSheets();
-			m_initDelay = 2.0f;
-		}
-
-		return;
-	}
+	//g_worldGlobals.decalsQueue.Increment();
 
 	for (int i = 0; i < m_sheets.numElem(); i++)
 	{
@@ -203,9 +189,9 @@ void CObject_Sheets::Simulate( float fDt )
 
 	PFXVertex_t* sheetQuad;
 
-	ColorRGBA color(g_pGameWorld->m_info.ambientColor+g_pGameWorld->m_info.sunColor);
+	ColorRGBA color(g_pGameWorld->m_info.ambientColor + g_pGameWorld->m_info.sunColor);
 
-	for( int i = 0; i < m_sheets.numElem(); i++ )
+	for (int i = 0; i < m_sheets.numElem(); i++)
 	{
 		sheetpart_t& sheet = m_sheets[i];
 
@@ -213,21 +199,21 @@ void CObject_Sheets::Simulate( float fDt )
 		featherAngle += SHEET_ANGULAR_SCALE * sinf(featherAngle);
 
 		Vector3D sheetPos = sheet.origin + Vector3D(sin(sheet.angle)*1.5f, 0.015f, -cos(sheet.angle)*1.5f);
-		m_bbox.AddVertex( sheetPos );
+		m_bbox.AddVertex(sheetPos);
 
-		if(!canRender)
+		if (!canRender)
 			continue;
 
 		Vector3D vRight, vUp;
-		Vector3D sheetAngle(-90.0f+featherAngle*65.0f, (featherAngle + sheet.angle)*25.0f, sheet.angle+featherAngle*55.0f);
+		Vector3D sheetAngle(-90.0f + featherAngle * 65.0f, (featherAngle + sheet.angle)*25.0f, sheet.angle + featherAngle * 55.0f);
 
 		AngleVectors(sheetAngle, NULL, &vUp, &vRight);
 
 		Rectangle_t texCoords = sheet.entry->rect;
-		
+
 		Vector2D size(texCoords.GetSize() * sheet.scale);
 
-		if(sheet.atlas->AllocateGeom(4,4, &sheetQuad, NULL, true) != -1)
+		if (sheet.atlas->AllocateGeom(4, 4, &sheetQuad, NULL, true) != -1)
 		{
 			sheetQuad[0].point = sheetPos + (vUp * size.x) + (size.y * vRight);
 			sheetQuad[0].texcoord = Vector2D(texCoords.vrightBottom.x, texCoords.vrightBottom.y);
@@ -246,4 +232,34 @@ void CObject_Sheets::Simulate( float fDt )
 			sheetQuad[3].color = color;
 		}
 	}
+}
+
+void CObject_Sheets::SheetsUpdateJob(void *data, int i)
+{
+	CObject_Sheets* thisSheet = (CObject_Sheets*)data;
+	thisSheet->UpdateSheets(g_pGameWorld->GetFrameTime());
+
+	g_worldGlobals.sheetsQueue.Decrement();
+}
+
+void CObject_Sheets::Simulate( float fDt )
+{
+	BaseClass::Simulate(fDt);
+	PROFILE_FUNC();
+
+	if(!m_wasInit)
+	{
+		m_initDelay -= fDt;
+
+		if(m_initDelay <= 0.0f)
+		{
+			m_wasInit = InitSheets();
+			m_initDelay = 2.0f;
+		}
+
+		return;
+	}
+
+	g_worldGlobals.sheetsQueue.Increment();
+	g_parallelJobs->AddJob(SheetsUpdateJob, this);
 }

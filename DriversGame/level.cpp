@@ -2755,9 +2755,16 @@ void CGameLevel::GetDecalPolygons(decalPrimitives_t& polys, occludingFrustum_t* 
 	polys.indices.setNum(0, false);
 	polys.verts.setNum(0, false);
 
-	for (int x = 0; x < m_wide; x++)
+	IVector2D rMin, rMax;
+	PositionToRegionOffset(polys.settings.bounds.minPoint, rMin);
+	PositionToRegionOffset(polys.settings.bounds.maxPoint, rMax);
+
+	clamp(rMin, IVector2D(0, 0), IVector2D(m_wide, m_tall));
+	clamp(rMax, IVector2D(0, 0), IVector2D(m_wide, m_tall));
+
+	for (int x = rMin.x; x < rMax.x+1; x++)
 	{
-		for (int y = 0; y < m_tall; y++)
+		for (int y = rMin.y; y < rMax.y+1; y++)
 		{
 			int idx = y*m_wide + x;
 

@@ -97,7 +97,7 @@ namespace Threading
 		void							GetThreadIds( DkList<uintptr_t>& list ) const;
 
 		// adds the job
-		void							AddJob( jobFunction_t func, void* args );	// and puts JOB_FLAG_DELETE flag for this job
+		eqParallelJob_t*				AddJob( jobFunction_t func, void* args, int count = 1);	// and puts JOB_FLAG_DELETE flag for this job
 		void							AddJob( eqParallelJob_t* job );
 
 		// this submits jobs to the CEqJobThreads
@@ -105,6 +105,9 @@ namespace Threading
 
 		// wait for completion
 		void							Wait();
+
+		// returns state if all jobs has been done
+		bool							AllJobsCompleted() const;
 
 		// wait for specific job
 		void							WaitForJob(eqParallelJob_t* job);

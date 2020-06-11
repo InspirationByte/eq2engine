@@ -958,23 +958,6 @@ void CLevelRegion::ReadLoadRegion(IVirtualStream* stream, DkList<CLevObjectDef*>
 	g_parallelJobs->AddJob(InitRegionHeightfieldsJob, this, GetNumHFields());
 	g_parallelJobs->Submit();
 
-
-	/*
-	for(int i = 0; i < GetNumHFields(); i++)
-	{
-		if(!m_heightfield[i])
-			continue;
-
-		m_heightfield[i]->GenerateRenderData( nav_debug_map.GetBool() );
-
-		if(m_heightfield[i]->m_hasTransparentSubsets)
-			m_hasTransparentSubsets = true;
-
-#ifndef EDITOR
-		g_pPhysics->AddHeightField(m_heightfield[i]);
-#endif //EDITOR
-	}*/
-
 	levRegionDataInfo_t	regdatahdr;
 	stream->Read(&regdatahdr, 1, sizeof(levRegionDataInfo_t));
 
