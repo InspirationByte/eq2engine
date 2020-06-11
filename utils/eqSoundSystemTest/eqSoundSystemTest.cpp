@@ -67,11 +67,16 @@ int musicUpdateCb(void* obj, voiceParams_t& params)
 {
 	if (params.state != VOICE_STATE_PLAYING)
 	{
-		//params.state = VOICE_STATE_PLAYING;
-		//params.looping = true;
-		return VOICE_UPDATE_DO_REWIND;
+		params.state = VOICE_STATE_PLAYING;
+		return VOICE_UPDATE_DO_REWIND | VOICE_UPDATE_STATE;
 	}
 
+	return 0;
+}
+
+int dummyUpdateCb(void* obj, voiceParams_t& params)
+{
+	debugoverlay->Text(color4_white, "voice id=%d", params.id);
 	return 0;
 }
 
@@ -98,7 +103,7 @@ void InitSoundSystem( EQWNDHANDLE wnd )
 	{
 		voiceParams_t params;
 		params.state = VOICE_STATE_PLAYING;
-		params.looping = true;
+		params.looping = false;
 		params.pitch = 2.0;
 		params.relative = true;
 
@@ -385,7 +390,7 @@ void CMainWindow::ProcessAllMenuCommands(wxCommandEvent& event)
 			{
 				voiceParams_t params;
 				params.state = VOICE_STATE_PLAYING;
-				params.looping = true;
+				params.looping = false;
 				params.pitch = RandomFloat(0.5f, 2.0f);
 				params.relative = true;
 
@@ -542,14 +547,15 @@ void CMainWindow::ProcessKeyboardUpEvents(wxKeyEvent& event)
 
 		//g_soundEngine->PlaySound(g_staticSound, randomPos, 1.0f, 10.0f);
 
-		VoiceHandle_t handle = g_soundEngine->GetFreeVoice(g_staticSound, nullptr, nullptr);
+		VoiceHandle_t handle = g_soundEngine->GetFreeVoice(g_staticSound, nullptr, dummyUpdateCb);
 		if (handle != VOICE_INVALID_HANDLE)
 		{
 			voiceParams_t params;
 			params.position = randomPos;
 			params.state = VOICE_STATE_PLAYING;
+			params.releaseOnStop = true;
 
-			g_soundEngine->UpdateVoice(handle, params, VOICE_UPDATE_POSITION | VOICE_UPDATE_STATE);
+			g_soundEngine->UpdateVoice(handle, params, VOICE_UPDATE_POSITION | VOICE_UPDATE_STATE | VOICE_UPDATE_RELEASE_ON_STOP);
 		}
 		
 		debugoverlay->Box3D(randomPos-1.0f, randomPos+1.0f, ColorRGBA(1,1,0,1), 1.0f);

@@ -57,6 +57,7 @@ struct voiceParams_t
 	bool				relative;
 	bool				looping;
 	bool				releaseOnStop;
+	VoiceHandle_t		id;						// read-only
 };
 
 typedef int (*VoiceUpdateCallback)(void* obj, voiceParams_t& params);		// returns EVoiceUpdateFlags
@@ -114,12 +115,12 @@ public:
 	VoiceHandle_t			GetFreeVoice(ISoundSource* sample, void* callbackObject, VoiceUpdateCallback fnCallback);
 	void					ReleaseVoice(VoiceHandle_t voice);
 
+	void					GetVoiceParams(VoiceHandle_t handle, voiceParams_t& params);
 	void					UpdateVoice(VoiceHandle_t handle, voiceParams_t params, int mask);
 
-protected:
+private:
 	void					SuspendVoicesWithSample(ISoundSource* sample);
 
-private:
 	bool					InitContext();
 	void					DestroyContext();
 
@@ -127,7 +128,7 @@ private:
 	void					SetupVoice(AudioVoice_t& voice, ISoundSource* sample);
 
 	void					EmptyBuffers(AudioVoice_t& voice);
-	void					UpdateVoice(AudioVoice_t& voice);
+	void					DoVoiceUpdate(AudioVoice_t& voice);
 
 	DkList<AudioVoice_t>	m_voices;
 	DkList<ISoundSource*>	m_samples;
