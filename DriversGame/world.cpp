@@ -139,14 +139,26 @@ END_NETWORK_TABLE()
 
 CGameWorld::CGameWorld()
 {
-	memset(&g_worldGlobals, 0, sizeof(g_worldGlobals));
+	g_worldGlobals.vehicleVF = nullptr;
+	g_worldGlobals.gameObjectVF = nullptr;
+	g_worldGlobals.levelObjectVF = nullptr;
+	g_worldGlobals.licPlatesMat = nullptr;
+	g_worldGlobals.objectInstBuffer = nullptr;
+	g_worldGlobals.trans_grasspart = nullptr;
+	g_worldGlobals.trans_smoke2 = nullptr;
+	g_worldGlobals.trans_raindrops = nullptr;
+	g_worldGlobals.trans_rainripple = nullptr;
+	g_worldGlobals.trans_fleck = nullptr;
+	g_worldGlobals.veh_skidmark_asphalt = nullptr;
+	g_worldGlobals.veh_raintrail = nullptr;
+	g_worldGlobals.veh_shadow = nullptr;
 
-	m_rainSound = NULL;
+	m_rainSound = nullptr;
 
-	m_skyColor = NULL;
-	m_skyModel = NULL;
+	m_skyColor = nullptr;
+	m_skyModel = nullptr;
 
-	m_lastQueriedRegion = NULL;
+	m_lastQueriedRegion = nullptr;
 
 	m_sceneinfo.m_fZNear = 0.25f;
 #ifdef EDITOR
@@ -533,7 +545,6 @@ void CGameWorld::Init()
 {
 	g_worldGlobals.sheetsQueue.SetValue(0);
 	g_worldGlobals.decalsQueue.SetValue(0);
-	g_worldGlobals.effectsUpdateCompleted.Clear();
 
 	g_replayRandom.SetSeed(0);
 	m_objectIndexCounter = 0;
@@ -2330,10 +2341,6 @@ void CGameWorld::Draw( int nRenderFlags )
 	materials->SetMatrix(MATRIXMODE_PROJECTION, m_matrices[MATRIXMODE_PROJECTION]);
 
 	DrawMoon();
-
-	// we have to wait for decals here
-	while (g_worldGlobals.decalsQueue.GetValue())
-		Threading::Yield();
 
 	// wait scheduled PFX render, decals, etc
 	g_worldGlobals.effectsUpdateCompleted.Wait();

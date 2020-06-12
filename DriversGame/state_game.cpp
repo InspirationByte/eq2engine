@@ -1207,15 +1207,17 @@ void GRJob_DrawEffects(void* data, int i)
 	float fDt = *(float*)data;
 	effectrenderer->DrawEffects( fDt );
 
-	g_worldGlobals.effectsUpdateCompleted.Clear();
+	g_worldGlobals.effectsUpdateCompleted.Raise();
 }
 
 void CState_Game::RenderMainView3D( float fDt )
 {
+	// we have to wait for decals here
+	while (g_worldGlobals.decalsQueue.GetValue())
+		Threading::Yield();
+
 	static float jobFrametime = fDt;
 	jobFrametime = fDt;
-
-	g_worldGlobals.effectsUpdateCompleted.Raise();
 
 	// post draw effects
 	g_parallelJobs->AddJob(GRJob_DrawEffects, &jobFrametime);
