@@ -96,9 +96,7 @@ EqString CombinePath(int num, ...)
 		{
 			joinedPath.Append(_Es(pathPart));
 
-			EqString separatorCheck = joinedPath.Right(1);
-
-			if(i != num-1 && *separatorCheck.c_str() != CORRECT_PATH_SEPARATOR)
+			if(i != num-1 && *joinedPath.Right(1).c_str() != CORRECT_PATH_SEPARATOR )
 				joinedPath.Append(CORRECT_PATH_SEPARATOR);
 		}
     }

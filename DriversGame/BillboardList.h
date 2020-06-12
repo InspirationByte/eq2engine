@@ -34,7 +34,7 @@ public:
 
 	void					DestroyBlb();
 
-	virtual void			DrawBillboards(); // draws billboards with applied matrices
+	virtual void			DrawBillboards(Matrix4x4 viewMat, Matrix4x4 worldMat); // draws billboards with applied matrices
 
 	CPFXAtlasGroup*			m_renderGroup;	// used render group, only for reference!!!
 

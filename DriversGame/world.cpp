@@ -130,6 +130,21 @@ int SortGameObjectsByDistance(CGameObject* const& a, CGameObject* const& b)
 	return (int)sign(distB - distA);
 }
 
+WorldGlobals_t::mtstruct_t::mtstruct_t() : 
+	decalsCompleted(true), 
+	sheetsCompleted(true), 
+	treesCompleted(true), 
+	effectsUpdateCompleted(true), 
+	rainUpdateCompleted(true)
+{
+	decalsCompleted.Raise();
+	sheetsCompleted.Raise();
+	treesCompleted.Raise();
+	effectsUpdateCompleted.Raise();
+	rainUpdateCompleted.Raise();
+}
+
+
 BEGIN_NETWORK_TABLE_NO_BASE( CGameWorld )
 	DEFINE_SENDPROP_FLOAT(m_fNextThunderTime),
 	DEFINE_SENDPROP_FLOAT(m_fThunderTime),
@@ -543,8 +558,9 @@ void CGameWorld::InitEnvironment()
 
 void CGameWorld::Init()
 {
-	g_worldGlobals.sheetsQueue.SetValue(0);
-	g_worldGlobals.decalsQueue.SetValue(0);
+	g_worldGlobals.mt.sheetsQueue.SetValue(0);
+	g_worldGlobals.mt.decalsQueue.SetValue(0);
+	g_worldGlobals.mt.treeQueue.SetValue(0);
 
 	g_replayRandom.SetSeed(0);
 	m_objectIndexCounter = 0;
@@ -1181,12 +1197,6 @@ void CGameWorld::Cleanup( bool unloadLevel )
 	}
 }
 
-void GWJob_UpdateWorldAndEffects(void* data, int i)
-{
-	float fDt = *(float*)data;
-	g_pRainEmitter->Update_Draw(fDt, g_pGameWorld->m_envConfig.rainDensity, 200.0f);
-}
-
 void CGameWorld::UpdateTrafficLightState(float fDt)
 {
 	if( fDt <= 0.0f )
@@ -1330,13 +1340,23 @@ void CGameWorld::UpdateEnvironmentTransition(float fDt)
 	debugoverlay->Text(ColorRGBA(1, 1, 0, 1), "     trans: %g", transitionPercent);
 }
 
+void CGameWorld::UpdateWorldAndEffectsJob(void* data, int i)
+{
+	float fDt = *(float*)data;
+	g_pRainEmitter->Update_Draw(fDt, g_pGameWorld->m_envConfig.rainDensity, 200.0f);
+
+	g_worldGlobals.mt.rainUpdateCompleted.Raise();
+}
+
 void CGameWorld::UpdateWorld(float fDt)
 {
 	PROFILE_FUNC();
 
 	static float jobFrametime = fDt;
 	jobFrametime = fDt;
-	g_parallelJobs->AddJob(GWJob_UpdateWorldAndEffects, &jobFrametime);			
+
+	g_worldGlobals.mt.rainUpdateCompleted.Clear();
+	g_parallelJobs->AddJob(UpdateWorldAndEffectsJob, &jobFrametime);
 	g_parallelJobs->Submit();
 
 	m_frameTime = fDt;
@@ -2340,10 +2360,17 @@ void CGameWorld::Draw( int nRenderFlags )
 	// restore projection and draw the particles
 	materials->SetMatrix(MATRIXMODE_PROJECTION, m_matrices[MATRIXMODE_PROJECTION]);
 
-	DrawMoon();
+	// wait for sheers, decals, trees
+	g_worldGlobals.mt.sheetsCompleted.Wait();
+	g_worldGlobals.mt.treesCompleted.Wait();
+	g_worldGlobals.mt.decalsCompleted.Wait();
+	g_worldGlobals.mt.rainUpdateCompleted.Wait();
 
-	// wait scheduled PFX render, decals, etc
-	g_worldGlobals.effectsUpdateCompleted.Wait();
+	// wait for effectrenderer
+	g_worldGlobals.mt.effectsUpdateCompleted.Wait();
+
+
+	DrawMoon();
 
 	// draw particle effects
 	PROFILE_CODE( g_pPFXRenderer->Render( nRenderFlags ) );

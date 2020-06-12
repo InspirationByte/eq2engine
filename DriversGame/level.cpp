@@ -1892,10 +1892,6 @@ int CGameLevel::UpdateRegionLoading()
 	// wait for matsystem
 	if (numLoadedRegions)
 	{
-		// force complete decals
-		while (g_worldGlobals.decalsQueue.GetValue())
-			Threading::Yield();
-
 		materials->Wait();
 	}
 

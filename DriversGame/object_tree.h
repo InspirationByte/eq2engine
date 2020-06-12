@@ -35,6 +35,8 @@ public:
 
 	void				OnCarCollisionEvent(const CollisionPairData_t& pair, CGameObject* hitBy);
 
+	static void			DrawTreeJob(void *data, int i);
+
 protected:
 
 	CEqCollisionObject*	m_physObj;

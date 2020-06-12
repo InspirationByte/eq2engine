@@ -765,7 +765,7 @@ void CMainWindow::ReDraw()
 		if(g_pModel)
 		{
 			RenderModel();
-			g_billboardList.DrawBillboards();
+			g_billboardList.DrawBillboards(g_mViewMat, identity4());
 			g_pPFXRenderer->Render(0);
 		}
 

@@ -69,9 +69,20 @@ struct lensFlareTable_t
 
 struct WorldGlobals_t
 {
-	CEqSignal				effectsUpdateCompleted;
-	CEqInterlockedInteger	decalsQueue;
-	CEqInterlockedInteger	sheetsQueue;
+	struct mtstruct_t {
+		mtstruct_t();
+
+		CEqSignal				decalsCompleted;
+		CEqSignal				sheetsCompleted;
+		CEqSignal				treesCompleted;
+
+		CEqSignal				effectsUpdateCompleted;
+		CEqSignal				rainUpdateCompleted;
+
+		CEqInterlockedInteger	decalsQueue;
+		CEqInterlockedInteger	sheetsQueue;
+		CEqInterlockedInteger	treeQueue;
+	} mt;
 
 	IVertexFormat*			vehicleVF;
 	IVertexFormat*			gameObjectVF;
@@ -223,6 +234,8 @@ public:
 	CNetworkVar(int,				m_globalTrafficLightDirection);
 
 protected:
+
+	static void						UpdateWorldAndEffectsJob(void* data, int i);
 
 	void							OnObjectSpawnedEvent(CGameObject* obj);
 	void							OnObjectRemovedEvent(CGameObject* obj);

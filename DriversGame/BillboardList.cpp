@@ -269,16 +269,12 @@ const float BILLBOARD_DISAPPEAR_DISTANCE = 180.0f;
 ConVar r_drawBillboardLists("r_drawBillboardLists", "1", "Draw billboard lists (used by trees)", CV_CHEAT );
 ConVar r_billboardDistanceScaling("r_billboardDistanceScaling", "0.007", nullptr, CV_CHEAT);
 
-void CBillboardList::DrawBillboards()
+void CBillboardList::DrawBillboards(Matrix4x4 viewMat, Matrix4x4 worldMat)
 {
     if(!r_drawBillboardLists.GetBool())
         return;
 
 	PFXBillboard_t effect;
-
-	Matrix4x4 viewMat, worldMat;
-	materials->GetMatrix(MATRIXMODE_VIEW, viewMat);
-	materials->GetMatrix(MATRIXMODE_WORLD, worldMat);
 
 	Vector3D transformPos = transpose(worldMat).getTranslationComponent();
 

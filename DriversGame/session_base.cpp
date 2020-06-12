@@ -538,7 +538,7 @@ vehicleConfig_t* CGameSessionBase::GetVehicleConfig(const char* name)
 		return exConfig;
 
 	// try load new one
-	EqString configPath = CombinePath(2, "scripts/vehicles", _Es(name)+".txt");
+	EqString configPath(CombinePath(2, "scripts/vehicles", name) + ".txt");
 
 	kvkeybase_t kvb;
 	if (!KV_LoadFromFile(configPath.c_str(), SP_MOD, &kvb))

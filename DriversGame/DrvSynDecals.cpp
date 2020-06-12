@@ -310,12 +310,15 @@ void DecalPolygonsJob(void* data, int i)
 	decal.settings = decalData->settings;
 	ProjectDecalToSpriteBuilder(decal, decalData->group, decalData->rect, decalData->viewProj, decalData->color);
 
-	g_worldGlobals.decalsQueue.Decrement();
+	if (g_worldGlobals.mt.decalsQueue.Decrement() == 0)
+		g_worldGlobals.mt.decalsCompleted.Raise();
+
 }
 
 void ProjectDecalToSpriteBuilderAddJob(const decalSettings_t& settings, CSpriteBuilder<PFXVertex_t>* group, const Rectangle_t& rect, const Matrix4x4& viewProj, const ColorRGBA& color)
 {
-	g_worldGlobals.decalsQueue.Increment();
+	if(g_worldGlobals.mt.decalsQueue.Increment())
+		g_worldGlobals.mt.decalsCompleted.Clear();
 
 	eqDecalPolygonJob_t* job = new eqDecalPolygonJob_t;
 	job->base.func = DecalPolygonsJob;

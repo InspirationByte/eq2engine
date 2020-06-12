@@ -239,7 +239,8 @@ void CObject_Sheets::SheetsUpdateJob(void *data, int i)
 	CObject_Sheets* thisSheet = (CObject_Sheets*)data;
 	thisSheet->UpdateSheets(g_pGameWorld->GetFrameTime());
 
-	g_worldGlobals.sheetsQueue.Decrement();
+	if (g_worldGlobals.mt.sheetsQueue.Decrement() == 0)
+		g_worldGlobals.mt.sheetsCompleted.Raise();
 }
 
 void CObject_Sheets::Simulate( float fDt )
@@ -260,6 +261,10 @@ void CObject_Sheets::Simulate( float fDt )
 		return;
 	}
 
-	g_worldGlobals.sheetsQueue.Increment();
+	if(g_worldGlobals.mt.sheetsQueue.Increment())
+		g_worldGlobals.mt.sheetsCompleted.Clear();
+
 	g_parallelJobs->AddJob(SheetsUpdateJob, this);
+	g_parallelJobs->Submit();
+
 }

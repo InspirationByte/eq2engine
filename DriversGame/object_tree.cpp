@@ -8,6 +8,7 @@
 #include "object_tree.h"
 #include "materialsystem/IMaterialSystem.h"
 #include "world.h"
+#include "eqParallelJobs.h"
 
 #include "Shiny.h"
 
@@ -110,6 +111,15 @@ void CObject_Tree::SetVelocity(const Vector3D& vel)
 
 extern ConVar r_enableObjectsInstancing;
 
+void CObject_Tree::DrawTreeJob(void *data, int i)
+{
+	CObject_Tree* thisTree = (CObject_Tree*)data;
+	thisTree->m_blbList->DrawBillboards(g_pGameWorld->m_matrices[MATRIXMODE_VIEW], thisTree->m_worldMatrix);
+
+	if (g_worldGlobals.mt.treeQueue.Decrement() == 0)
+		g_worldGlobals.mt.treesCompleted.Raise();
+}
+
 void CObject_Tree::Draw( int nRenderFlags )
 {
 	PROFILE_FUNC();
@@ -140,8 +150,12 @@ void CObject_Tree::Draw( int nRenderFlags )
 	// draw
 	if(m_blbList)
 	{
-		materials->SetMatrix( MATRIXMODE_WORLD, m_worldMatrix);
-		m_blbList->DrawBillboards();
+		if(g_worldGlobals.mt.treeQueue.Increment())
+			g_worldGlobals.mt.treesCompleted.Clear();
+		g_parallelJobs->AddJob(DrawTreeJob, this);
+		g_parallelJobs->Submit();
+
+		//m_blbList->DrawBillboards(g_pGameWorld->m_matrices[MATRIXMODE_VIEW], m_worldMatrix);
 	}
 }
 
