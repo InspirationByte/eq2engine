@@ -1323,6 +1323,11 @@ void CGameWorld::UpdateWorld(float fDt)
 {
 	PROFILE_FUNC();
 
+	static float jobFrametime = fDt;
+	jobFrametime = fDt;
+	g_parallelJobs->AddJob(GWJob_UpdateWorldAndEffects, &jobFrametime);			
+	g_parallelJobs->Submit();
+
 	m_frameTime = fDt;
 
 	if( fDt > 0 )

@@ -1207,8 +1207,6 @@ void GRJob_DrawEffects(void* data, int i)
 	float fDt = *(float*)data;
 	effectrenderer->DrawEffects( fDt );
 
-	g_pRainEmitter->Update_Draw(fDt, g_pGameWorld->m_envConfig.rainDensity, 200.0f);
-
 	g_worldGlobals.effectsUpdateCompleted.Clear();
 }
 

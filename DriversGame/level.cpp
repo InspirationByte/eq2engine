@@ -2791,8 +2791,8 @@ void CGameLevel::GetDecalPolygons(decalPrimitives_t& polys, occludingFrustum_t* 
 	IVector2D rMin, rMax;
 	FindRegionBoxRange(polys.settings.bounds, rMin, rMax, 0.15f);
 
-	clamp(rMin, IVector2D(0, 0), IVector2D(m_wide-1, m_tall-1));
-	clamp(rMax, IVector2D(0, 0), IVector2D(m_wide-1, m_tall-1));
+	rMin = clamp(rMin, IVector2D(0, 0), IVector2D(m_wide-1, m_tall-1));
+	rMax = clamp(rMax, IVector2D(0, 0), IVector2D(m_wide-1, m_tall-1));
 
 	for (int x = rMin.x; x < rMax.x+1; x++)
 	{
