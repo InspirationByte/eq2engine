@@ -74,7 +74,8 @@ CNewLevelDialog::CNewLevelDialog( wxWindow* parent ) : wxDialog( parent, -1, wxT
 	m_imageTemplateFilename = new wxFilePickerCtrl( this, wxID_ANY, wxEmptyString, wxT("Select an image file"), wxT("Image files (*.png;*.tga)|*.png;*.tga"), wxDefaultPosition, wxDefaultSize, wxFLP_FILE_MUST_EXIST|wxFLP_OPEN|wxFLP_USE_TEXTCTRL );
 	bSizer14->Add( m_imageTemplateFilename, 0, wxALL|wxEXPAND, 5 );
 	
-	bSizer14->Add( new wxButton( this, wxID_OK, wxT("Create"), wxDefaultPosition, wxDefaultSize, 0 ), 0, wxALL|wxALIGN_RIGHT, 5 );
+	wxButton* okButton = new wxButton(this, wxID_ANY, wxT("Create"), wxDefaultPosition, wxDefaultSize, 0);
+	bSizer14->Add(okButton, 0, wxALL|wxALIGN_RIGHT, 5 );
 	
 	
 	this->SetSizer( bSizer14 );
@@ -90,6 +91,10 @@ CNewLevelDialog::CNewLevelDialog( wxWindow* parent ) : wxDialog( parent, -1, wxT
 	m_imageTemplateFilename->Enable(enablement);
 	m_widthSel->Enable(!enablement);
 	m_heightTall->Enable(!enablement);
+
+	SetReturnCode(wxID_CANCEL);
+
+	okButton->Connect(wxEVT_BUTTON, wxCommandEventHandler(CNewLevelDialog::Submit), NULL, this);
 }
 
 CNewLevelDialog::~CNewLevelDialog()
@@ -133,4 +138,9 @@ void CNewLevelDialog::OnCheckEnableTemplate( wxCommandEvent& event )
 	m_imageTemplateFilename->Enable(enablement);
 	m_widthSel->Enable(!enablement);
 	m_heightTall->Enable(!enablement);
+}
+
+void CNewLevelDialog::Submit(wxCommandEvent& evt)
+{
+	EndModal(wxID_OK);
 }

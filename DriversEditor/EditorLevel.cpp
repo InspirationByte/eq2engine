@@ -2667,16 +2667,24 @@ void CEditorLevelRegion::Render(const Vector3D& cameraPosition, const occludingF
 
 	for(int i = 0; i < m_objects.numElem(); i++)
 	{
-		if(m_objects[i]->def->m_info.type != LOBJ_TYPE_OBJECT_CFG)
-			continue;
+		regionObject_t* regobj = m_objects[i];
 
-		if(m_objects[i]->name.Length() > 0)
+		bool selected = regobj->hide;
+
+		if(regobj->name.Length() || selected)
 		{
-			debugoverlay->Text3D(m_objects[i]->position, editor_objectnames_distance.GetFloat(), ColorRGBA(1), 0.0f, varargs("%s '%s'", m_objects[i]->def->m_name.c_str(), m_objects[i]->name.c_str()) );
+			if (regobj->name.Length())
+			{
+				debugoverlay->Text3D(regobj->position, editor_objectnames_distance.GetFloat(), ColorRGBA(1,1,0,1), 0.0f, varargs("%s '%s'", regobj->def->m_name.c_str(), regobj->name.c_str()));
+			}
+			else
+			{
+				debugoverlay->Text3D(regobj->position, editor_objectnames_distance.GetFloat(), ColorRGBA(1,1,0,1), 0.0f, varargs("%s", regobj->def->m_name.c_str()));
+			}
 		}
 		else if(!editor_objectnames_onlynamed.GetBool())
 		{
-			debugoverlay->Text3D(m_objects[i]->position, editor_objectnames_distance.GetFloat(), ColorRGBA(1), 0.0f, m_objects[i]->def->m_name.c_str());
+			debugoverlay->Text3D(regobj->position, editor_objectnames_distance.GetFloat(), ColorRGBA(1), 0.0f, regobj->def->m_name.c_str());
 		}
 	}
 

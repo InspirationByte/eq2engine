@@ -59,6 +59,8 @@ public:
 		m_alignToGround = new wxCheckBox( this, wxID_ANY, wxT("aligned to tile"), wxDefaultPosition, wxDefaultSize, 0 );
 		gSizer2->Add( m_alignToGround, 0, wxALL, 5 );
 	
+		m_physclip_only = new wxCheckBox(this, wxID_ANY, wxT("only PhysiscClip collision"), wxDefaultPosition, wxDefaultSize, 0);
+		gSizer2->Add(m_physclip_only, 0, wxALL, 5);
 	
 		bSizer13->Add( gSizer2, 0, wxEXPAND, 5 );
 	
@@ -70,8 +72,9 @@ public:
 	
 		bSizer11->Add( bSizer13, 1, wxEXPAND, 5 );
 	
-		bSizer11->Add( new wxButton( this, wxID_OK, wxT("OK"), wxDefaultPosition, wxDefaultSize, 0 ), 0, wxALL|wxALIGN_RIGHT, 5 );
-	
+		wxButton* okButton = new wxButton(this, wxID_ANY, wxT("OK"), wxDefaultPosition, wxDefaultSize, 0);
+		bSizer11->Add(okButton, 0, wxALL|wxALIGN_RIGHT, 5 );
+
 	
 		this->SetSizer( bSizer11 );
 		this->Layout();
@@ -92,7 +95,12 @@ public:
 		if(modelFlags & LMODEL_FLAG_DRIVEABLE)
 			m_driveable->SetValue(true);
 
+		if (modelFlags & LMODEL_FLAG_PHY_CLIP_ONLY)
+			m_physclip_only->SetValue(true);
+
 		m_plcLevel->SetValue(modPlace);
+
+		okButton->Connect(wxEVT_BUTTON, wxCommandEventHandler(CUI_ModelProps::Submit), NULL, this);
 	}
 
 	~CUI_ModelProps()
@@ -108,6 +116,8 @@ public:
 		nFlags |= m_noCollide->GetValue() ? LMODEL_FLAG_NOCOLLIDE : 0;
 		nFlags |= m_alignToGround->GetValue() ? LMODEL_FLAG_ALIGNTOCELL : 0;
 		nFlags |= m_driveable->GetValue() ? LMODEL_FLAG_DRIVEABLE : 0;
+		nFlags |= m_physclip_only->GetValue() ? LMODEL_FLAG_PHY_CLIP_ONLY : 0;
+		
 
 		return nFlags;
 	}
@@ -117,11 +127,17 @@ public:
 		return m_plcLevel->GetValue();
 	}
 
+	void Submit(wxCommandEvent& evt)
+	{
+		EndModal(wxID_OK);
+	}
+
 protected:
 	wxCheckBox* m_isGround;
 	wxCheckBox* m_noCollide;
 	wxCheckBox* m_alignToGround;
 	wxCheckBox* m_driveable;
+	wxCheckBox* m_physclip_only;
 
 	wxSpinCtrl* m_plcLevel;
 };
@@ -363,6 +379,7 @@ enum EModelContextMenu
 	MODCONTEXT_PROPERTIES = 1000,
 	MODCONTEXT_REMOVE,
 	MODCONTEXT_RENAME,
+	MODCONTEXT_REFRESHPREVIEW,
 
 	MODCONTEXT_COUNT,
 };
@@ -391,9 +408,12 @@ CModelListRenderPanel::CModelListRenderPanel(wxWindow* parent) : wxPanel( parent
 	m_contextMenu->Append(MODCONTEXT_PROPERTIES, wxT("Properties"), wxT("Show properties of this model"));
 	m_contextMenu->Append(MODCONTEXT_RENAME, wxT("Rename..."), wxT("Rename model"));
 	m_contextMenu->Append(MODCONTEXT_REMOVE, wxT("Remove model"), wxT("Removes this model and all objects"));
+	m_contextMenu->Append(MODCONTEXT_REFRESHPREVIEW, wxT("Refresh preview"));
+
 
 	m_cfgContextMenu = new wxMenu();
-	m_cfgContextMenu->Append(MODCONTEXT_REMOVE, wxT("Removes all objects"), wxT("Remove all objects with this def"));
+	m_cfgContextMenu->Append(MODCONTEXT_REMOVE, wxT("Remove all objects"), wxT("Remove all objects with this def"));
+	m_cfgContextMenu->Append(MODCONTEXT_REFRESHPREVIEW, wxT("Refresh preview"));
 }
 
 void CModelListRenderPanel::OnMouseMotion(wxMouseEvent& event)
@@ -477,6 +497,7 @@ void CModelListRenderPanel::OnContextEvent(wxCommandEvent& event)
 		{
 			cont->m_info.modelflags = propDialog->GetModelFlags();
 			cont->m_info.level = propDialog->GetModelLevel();
+			g_pMainFrame->NotifyUpdate();
 		}
 		
 		propDialog->Destroy(); 
@@ -515,6 +536,12 @@ void CModelListRenderPanel::OnContextEvent(wxCommandEvent& event)
 
 		((CUI_LevelModels*)GetParent())->RefreshModelReplacement();
 	}
+	else if (event.GetId() == MODCONTEXT_REFRESHPREVIEW)
+	{
+		cont->SetDirtyPreview();
+		cont->RefreshPreview();
+	}
+	
 }
 
 void CModelListRenderPanel::OnMouseClick(wxMouseEvent& event)
@@ -649,9 +676,12 @@ void CModelListRenderPanel::RebuildPreviewShots()
 {
 	DkList<CLevObjectDef*>& modellist = g_pGameWorld->m_level.m_objectDefs;
 
+	materials->SetAmbientColor(color4_white);
+
 	// build/rebuild preview using rendertarget and blitting
 	for(int i = 0; i < modellist.numElem(); i++)
 	{
+		modellist[i]->SetDirtyPreview();
 		modellist[i]->RefreshPreview();
 	}
 
@@ -1906,7 +1936,7 @@ void CUI_LevelModels::OnRender()
 			//	m_editAxis.SetProps(wmatrix.getRotationComponent(), selectionRef->position);
 
 			if(m_editMode == MEDIT_PLACEMENT && selectionRef->tile_x != 0xFFFF)
-				debugoverlay->Text3D(selectionRef->position, 250.0f, ColorRGBA(1), 0.0f, "Bound to tile");
+				debugoverlay->Text3D(selectionRef->position + vec3_up, 250.0f, ColorRGBA(1), 0.0f, "Bound to tile");
 
 			debugoverlay->Box3D(selectionRef->bbox.minPoint, selectionRef->bbox.maxPoint, ColorRGBA(1, 1, 1, 0.75f));
 		}

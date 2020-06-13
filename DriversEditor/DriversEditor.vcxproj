@@ -208,6 +208,7 @@ call copy_drvsyn_engine.bat $(ConfigurationName)</Command>
     <ClInclude Include="..\public\core_base_header.h" />
     <ClInclude Include="..\public\CPU.h" />
     <ClInclude Include="..\public\DebugInterface.h" />
+    <ClInclude Include="DefEditor\UI_DefEdtior.h" />
     <ClInclude Include="DkCore.h" />
     <ClInclude Include="DragDropObjects.h" />
     <ClInclude Include="editaxis.h" />

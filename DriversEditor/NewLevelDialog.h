@@ -24,6 +24,8 @@ public:
 	const char*	GetLevelImageFileName();
 
 	void		OnCheckEnableTemplate( wxCommandEvent& event );
+
+	void		Submit(wxCommandEvent& evt);
 	
 protected:
 	wxComboBox* m_widthSel;

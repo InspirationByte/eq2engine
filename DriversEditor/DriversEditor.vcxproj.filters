@@ -68,6 +68,9 @@
     <Filter Include="Source Files\Editor\Modes\BlockEditor">
       <UniqueIdentifier>{96f29c01-3c4c-4519-84e0-00b550f34273}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\Editor\Modes\DefEditor">
+      <UniqueIdentifier>{e0f12d73-e691-437a-842f-7fe853f16073}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CommandAccessor.h">
@@ -441,6 +444,9 @@
     </ClInclude>
     <ClInclude Include="BlockEditor\BrushPrimitive.h">
       <Filter>Source Files\Editor\Modes\BlockEditor</Filter>
+    </ClInclude>
+    <ClInclude Include="DefEditor\UI_DefEdtior.h">
+      <Filter>Source Files\Editor\Modes\DefEditor</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
