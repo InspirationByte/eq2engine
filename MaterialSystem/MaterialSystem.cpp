@@ -489,14 +489,16 @@ IMaterial* CMaterialSystem::CreateMaterial(const char* szMaterialName, kvkeybase
 	else
 		pMaterial->Init( szMaterialName, params);
 
-	CScopedMutex m(m_Mutex);
-	g_pLoadBeginCallback();
-
 	if( m_forcePreloadMaterials )
 		PutMaterialToLoadingQueue( pMaterial );
 
+	g_pLoadBeginCallback();
+
 	// add to list
-	m_loadedMaterials.append(pMaterial);
+	{
+		CScopedMutex m(m_Mutex);
+		m_loadedMaterials.append(pMaterial);
+	}
 
 	g_pLoadEndCallback();
 

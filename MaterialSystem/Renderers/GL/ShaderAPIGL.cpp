@@ -875,12 +875,12 @@ void ShaderAPIGL::FreeTexture(ITexture* pTexture)
 	if(pTex == NULL)
 		return;
 
+	CScopedMutex scoped(m_Mutex);
+
 	if(pTex->Ref_Count() == 0)
 		MsgWarning("texture %s refcount==0\n",pTex->GetName());
 
 	//ASSERT(pTex->numReferences > 0);
-
-	CScopedMutex scoped(m_Mutex);
 
 	pTex->Ref_Drop();
 
@@ -926,8 +926,6 @@ ITexture* ShaderAPIGL::CreateNamedRenderTarget(	const char* pszName,
 
 	pTexture->glTarget = (tex_flags & TEXFLAG_CUBEMAP) ? GL_TEXTURE_CUBE_MAP : GL_TEXTURE_2D;
 
-	CScopedMutex scoped(m_Mutex);
-
 	SamplerStateParam_t texSamplerParams = MakeSamplerState(textureFilterType,textureAddress,textureAddress,textureAddress);
 
 	pTexture->SetSamplerState(texSamplerParams);
@@ -935,6 +933,8 @@ ITexture* ShaderAPIGL::CreateNamedRenderTarget(	const char* pszName,
 	Finish();
 
 	pTexture->textures.setNum(1);
+
+	m_Mutex.Lock();
 
 	glGenTextures(1, &pTexture->textures[0].glTexID);
 	GLCheckError("gen tex");
@@ -945,8 +945,10 @@ ITexture* ShaderAPIGL::CreateNamedRenderTarget(	const char* pszName,
 
 	// this generates the render target
 	ResizeRenderTarget(pTexture, width,height);
-
+	
 	m_TextureList.append(pTexture);
+	m_Mutex.Unlock();
+
 	return pTexture;
 }
 

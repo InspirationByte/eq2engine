@@ -1240,12 +1240,12 @@ void ShaderAPID3DX9::FreeTexture(ITexture* pTexture)
 
 	Finish();
 
+	CScopedMutex scoped(m_Mutex);
+
 	if(pTex->Ref_Count() == 0)
 		MsgWarning("texture %s refcount==0\n",pTexture->GetName());
 
 	//ASSERT(pTex->numReferences > 0);
-
-	CScopedMutex scoped(m_Mutex);
 
 	pTex->Ref_Drop();
 
@@ -1353,8 +1353,6 @@ ITexture* ShaderAPID3DX9::CreateRenderTarget(int width, int height, ETextureForm
 	pTexture->SetFlags(tex_flags);
 	pTexture->SetName("_rt_001");
 
-	CScopedMutex scoped(m_Mutex);
-
 	SamplerStateParam_t texSamplerParams = MakeSamplerState(textureFilterType,textureAddress,textureAddress,textureAddress);
 
 	pTexture->SetSamplerState(texSamplerParams);
@@ -1369,6 +1367,8 @@ ITexture* ShaderAPID3DX9::CreateRenderTarget(int width, int height, ETextureForm
 
 	if (InternalCreateRenderTarget(m_pD3DDevice, pTexture, tex_flags))
 	{
+		CScopedMutex scoped(m_Mutex);
+
 		m_TextureList.append(pTexture);
 		return pTexture;
 	} 
@@ -1396,8 +1396,6 @@ ITexture* ShaderAPID3DX9::CreateNamedRenderTarget(const char* pszName,int width,
 
 	pTexture->SetName(pszName);
 
-	CScopedMutex scoped(m_Mutex);
-
 	SamplerStateParam_t texSamplerParams = MakeSamplerState(textureFilterType,textureAddress,textureAddress,textureAddress);
 
 	pTexture->SetSamplerState(texSamplerParams);
@@ -1409,6 +1407,7 @@ ITexture* ShaderAPID3DX9::CreateNamedRenderTarget(const char* pszName,int width,
 
 	if (InternalCreateRenderTarget(m_pD3DDevice, pTexture, nFlags))
 	{
+		CScopedMutex scoped(m_Mutex);
 		m_TextureList.append(pTexture);
 		return pTexture;
 	} 
@@ -1987,8 +1986,6 @@ bool ShaderAPID3DX9::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 
 	if(!pShader)
 		return false;
-
-	CScopedMutex m(m_Mutex);
 
 	g_fileSystem->MakeDir("ShaderCache_DX9", SP_MOD);
 
@@ -2580,7 +2577,7 @@ IVertexFormat* ShaderAPID3DX9::CreateVertexFormat(VertexFormatDesc_s* formatDesc
 	D3DVERTEXELEMENT9* vertexElements = new D3DVERTEXELEMENT9[nAttribs + 1];
 	pFormat->GenVertexElement( vertexElements );
 
-	CScopedMutex scoped(m_Mutex);
+	
 
 	HRESULT hr = m_pD3DDevice->CreateVertexDeclaration(vertexElements, &pFormat->m_pVertexDecl);
 	delete [] vertexElements;
@@ -2593,7 +2590,9 @@ IVertexFormat* ShaderAPID3DX9::CreateVertexFormat(VertexFormatDesc_s* formatDesc
 		return NULL;
 	}
 
+	m_Mutex.Lock();
 	m_VFList.append(pFormat);
+	m_Mutex.Unlock();
 
 	return pFormat;
 }
@@ -2619,8 +2618,6 @@ IVertexBuffer* ShaderAPID3DX9::CreateVertexBuffer(ER_BufferAccess nBufAccess, in
 
 	bool dynamic = (pBuffer->m_nUsage & D3DUSAGE_DYNAMIC) != 0;
 
-	CScopedMutex scoped(m_Mutex);
-
 	if (m_pD3DDevice->CreateVertexBuffer(pBuffer->m_nInitialSize, pBuffer->m_nUsage, 0, dynamic ? D3DPOOL_DEFAULT : D3DPOOL_MANAGED, &pBuffer->m_pVertexBuffer, NULL) != D3D_OK)
 	{
 		MsgError("Direct3D Error: Couldn't create vertex buffer with size %d\n", pBuffer->m_nSize);
@@ -2636,7 +2633,9 @@ IVertexBuffer* ShaderAPID3DX9::CreateVertexBuffer(ER_BufferAccess nBufAccess, in
 		pBuffer->m_pVertexBuffer->Unlock();
 	}
 
+	m_Mutex.Lock();
 	m_VBList.append(pBuffer);
+	m_Mutex.Unlock();
 
 	return pBuffer;
 
@@ -2664,8 +2663,6 @@ IIndexBuffer* ShaderAPID3DX9::CreateIndexBuffer(int nIndices, int nIndexSize, ER
 		hr = m_pD3DDevice->TestCooperativeLevel();
 	}
 
-	CScopedMutex scoped(m_Mutex);
-
 	if (m_pD3DDevice->CreateIndexBuffer(pBuffer->m_nInitialSize, pBuffer->m_nUsage, nIndexSize == 2? D3DFMT_INDEX16 : D3DFMT_INDEX32, dynamic ? D3DPOOL_DEFAULT : D3DPOOL_MANAGED, &pBuffer->m_pIndexBuffer, NULL) != D3D_OK)
 	{
 		MsgError("Direct3D Error: Couldn't create index buffer with size %d\n", pBuffer->m_nInitialSize);
@@ -2681,7 +2678,9 @@ IIndexBuffer* ShaderAPID3DX9::CreateIndexBuffer(int nIndices, int nIndexSize, ER
 		pBuffer->m_pIndexBuffer->Unlock();
 	} 
 
+	m_Mutex.Lock();
 	m_IBList.append(pBuffer);
+	m_Mutex.Unlock();
 
 	return pBuffer;
 }
