@@ -289,9 +289,9 @@ public:
 	DkList<regZone_t>				m_zones;
 
 	// TODO: road array, visibility data and other....
-	bool							m_isLoaded;
 	int								m_regionIndex;
 
+	volatile bool					m_isLoaded;
 	bool							m_scriptEventCallbackCalled;
 	bool							m_hasTransparentSubsets;
 

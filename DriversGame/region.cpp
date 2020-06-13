@@ -1106,23 +1106,17 @@ void CLevelRegion::ReadLoadRegion(IVirtualStream* stream, DkList<CLevObjectDef*>
 		ref->CalcBoundingBox();
 
 		// finally add that object
-		{
-			CScopedMutex m(m_level->m_mutex);
-
-			ASSERT(ref);
-			m_objects.append(ref);
+		ASSERT(ref);
+		m_objects.append(ref);
 
 #ifndef EDITOR
-			if(ref->def->m_info.type == LOBJ_TYPE_INTERNAL_STATIC)
-				m_staticObjects.append(ref);
+		if(ref->def->m_info.type == LOBJ_TYPE_INTERNAL_STATIC)
+			m_staticObjects.append(ref);
 #endif // EDITOR
-		}
 	}
 
 	// init navigation grid
 	InitNavigationGrid();
-
-	Threading::Yield();
 
 	{
 		CScopedMutex m(m_level->m_mutex);

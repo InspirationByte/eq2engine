@@ -938,9 +938,6 @@ int CGameWorld::AddObject(CGameObject* pObject)
 
 	DkList<CGameObject*>& _objList = postPronedSpawn ? m_nonSpawnedObjects : m_gameObjects;
 
-	if(postPronedSpawn)
-		m_level.m_mutex.Lock();
-
 	int objectId = -1;
 
 	if (_objList.findIndex(pObject) == -1)
@@ -951,9 +948,6 @@ int CGameWorld::AddObject(CGameObject* pObject)
 		if (!postPronedSpawn)
 			OnObjectSpawnedEvent(pObject);
 	}
-
-	if (postPronedSpawn)
-		m_level.m_mutex.Unlock();
 
 	return objectId;
 }
@@ -1065,6 +1059,8 @@ void CGameWorld::Cleanup( bool unloadLevel )
 
 	if(unloadLevel)
 	{
+		CScopedMutex m(GetGlobalMutex(MUTEXPURPOSE_GAME));
+
 		for(int i = 0; i < m_nonSpawnedObjects.numElem(); i++)
 		{
 			m_nonSpawnedObjects[i]->OnRemove();
@@ -1255,7 +1251,6 @@ void CGameWorld::SpawnPendingObjects()
 
 	// non-spawned objects are in locked manner
 	// because regions can push objects into m_nonSpawnedObjects
-	m_level.m_mutex.Lock();
 
 	// spawn objects
 	for (int i = 0; i < m_nonSpawnedObjects.numElem(); i++)
@@ -1269,8 +1264,6 @@ void CGameWorld::SpawnPendingObjects()
 
 	m_gameObjects.append(m_nonSpawnedObjects);
 	m_nonSpawnedObjects.clear();
-
-	m_level.m_mutex.Unlock();
 }
 
 void CGameWorld::UpdateEnvironmentTransition(float fDt)

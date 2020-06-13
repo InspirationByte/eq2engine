@@ -45,6 +45,7 @@ enum ECollisionObjectFlags
 	//---------------
 	// special flags
 
+	COLLOBJ_IS_PROCESSING			= (1 << 30),
 	COLLOBJ_TRANSFORM_DIRTY			= (1 << 31),
 };
 
@@ -141,18 +142,19 @@ public:
 
 	//--------------------
 
+	DkList<CollisionPairData_t>	m_collisionList;
+
 	BoundingBox					m_aabb;																///< bounding box
 	BoundingBox					m_aabb_transformed;													///< transformed bounding box, does not updated in dynamic objects
 
 	IVector4D					m_cellRange;														///< static object cell range for broadphase searching
 
+	IEqPhysCallback*			m_callbacks;
+
 	int							m_surfParam;														///< surface parameters if no CEqBulletIndexedMesh defined
-	int							m_flags;															///< collision object flags, ECollisionObjectFlags and EBodyFlags
+	volatile int				m_flags;															///< collision object flags, ECollisionObjectFlags and EBodyFlags
 
 	float						m_erp;
-
-	DkList<CollisionPairData_t>	m_collisionList;
-	IEqPhysCallback*			m_callbacks;
 
 	//--------------------------------------------------------------------------------
 protected:
@@ -162,31 +164,28 @@ protected:
 	EqString					m_debugName;
 #endif // _DEBUG
 
+	Matrix4x4					m_cachedTransform;
 	Quaternion					m_orientation;			// floating point Quaternions are ok
-
-	// also dynamics
+	Vector3D					m_center;
 	FVector3D					m_position;				// fixed point positions are ideal
 
 	btCollisionObject*			m_collObject;
 	btCollisionShape*			m_shape;
-	bool						m_studioShape;
 
 	CEqBulletIndexedMesh*		m_mesh;
 	btTriangleInfoMap*			m_trimap;
 
 	collgridcell_t*				m_cell;
 	
-	Vector3D					m_center;
-
 	void*						m_userData;
 
 	int							m_contents;
 	int							m_collMask;
 
-	Matrix4x4					m_cachedTransform;
-
 	float						m_restitution;
 	float						m_friction;
+
+	bool						m_studioShape;
 };
 
 #endif // EQCOLLISION_OBJECT_H

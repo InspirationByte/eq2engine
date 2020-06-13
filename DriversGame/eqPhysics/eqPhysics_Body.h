@@ -187,6 +187,10 @@ protected:
 	void					UpdateInertiaTensor();		///< updates inertia tensor
 	void					AccumulateForces(float time);	///< accumulates forces
 
+	DkList<ContactPair_t>			m_contactPairs; // contact pair list in single frame
+	DkList<IEqPhysicsConstraint*>	m_constraints;
+
+	Matrix3x3						m_invInertiaTensor;
 
 	Vector3D						m_linearVelocity;	// linear velocity - IS READ ONLY! To set: linearMomentum * mass
 	Vector3D						m_angularVelocity;
@@ -197,8 +201,6 @@ protected:
 	Vector3D						m_totalTorque;
 	Vector3D						m_totalForce;
 
-	Matrix3x3						m_invInertiaTensor;
-
 	// constant params
 	Vector3D						m_inertia;
 	Vector3D						m_invInertia;
@@ -207,13 +209,10 @@ protected:
 
 	float							m_freezeTime;
 
-	bool							m_minFrameTimeIgnoreMotion;
 	float							m_minFrameTime;
 	float							m_frameTimeAccumulator;
 	float							m_lastFrameTime;
-
-	DkList<ContactPair_t>			m_contactPairs; // contact pair list in single frame
-	DkList<IEqPhysicsConstraint*>	m_constraints;
+	bool							m_minFrameTimeIgnoreMotion;
 
 public:
 	FVector3D			m_centerOfMassTrans;

@@ -310,13 +310,15 @@ void CPhysicsEngine::AddHeightField( CHeightTileField* pField )
 		staticObject->SetRestitution(0.0f);
 		staticObject->SetFriction(1.0f);
 
-		mutex.Lock();
-
 		if(param->word == 'W')	// water?
 		{
+			
 			// add it as ghost object
 			staticObject->SetContents( OBJECTCONTENTS_WATER );
-			m_physics.AddGhostObject( staticObject );
+			{
+				CScopedMutex m(mutex);
+				m_physics.AddGhostObject(staticObject);
+			}
 
 			// raycast allowed
 			staticObject->m_flags &= ~COLLOBJ_NO_RAYCAST;
@@ -325,10 +327,11 @@ void CPhysicsEngine::AddHeightField( CHeightTileField* pField )
 		{
 			// add normally
 			staticObject->SetContents( OBJECTCONTENTS_SOLID_GROUND );
-			m_physics.AddStaticObject( staticObject );
+			{
+				CScopedMutex m(mutex);
+				m_physics.AddStaticObject(staticObject);
+			}
 		}
-
-		mutex.Unlock();
 	}
 
 	// set user data and add
@@ -364,8 +367,6 @@ void CPhysicsEngine::RemoveHeightField( CHeightTileField* pPhysObject )
 	{
 		hfieldPhysicsData_t* fieldInfo = pPhysObject->m_physData;
 
-		mutex.Lock();
-
 		for(int i = 0; i < fieldInfo->m_collisionObjects.numElem(); i++)
 		{
 			CEqCollisionObject* obj = fieldInfo->m_collisionObjects[i];
@@ -377,21 +378,19 @@ void CPhysicsEngine::RemoveHeightField( CHeightTileField* pPhysObject )
 				m_physics.DestroyStaticObject( obj );
 		}
 
-		
-
 		for (int i = 0; i < fieldInfo->m_batches.numElem(); i++)
 			delete fieldInfo->m_batches[i];
 
 		for(int i = 0; i < fieldInfo->m_meshes.numElem(); i++)
 			delete fieldInfo->m_meshes[i];
 
-		mutex.Unlock();
-
 		delete fieldInfo;
 		pPhysObject->m_physData = NULL;
 	}
 
+	mutex.Lock();
 	m_heightFields.fastRemove( pPhysObject );
+	mutex.Unlock();
 }
 
 

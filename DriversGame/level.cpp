@@ -809,8 +809,6 @@ bool CGameLevel::GetRegionAndTile(const Vector3D& pos, CLevelRegion** pReg, IVec
 {
 	CLevelRegion* pRegion = GetRegionAtPosition(pos);
 
-	CScopedMutex m(m_mutex);
-
 	if(pRegion && pRegion->m_heightfield[0]->PointAtPos(pos, outXYPos.x, outXYPos.y))
 	{
 		(*pReg) = pRegion;
@@ -1029,8 +1027,6 @@ straight_t CGameLevel::Road_GetStraightAtPos( const Vector3D& pos, int numIterat
 
 roadJunction_t CGameLevel::Road_GetJunctionAtPoint( const IVector2D& point, int numIterations ) const
 {
-//	CScopedMutex m(m_mutex);
-
 	const int MAX_ITERATIONS_TO_JUNCTION_START = 0;
 
 	CLevelRegion* pRegion = NULL;
@@ -1202,8 +1198,6 @@ void Road_GetJunctionExits(DkList<straight_t>& exits, const straight_t& road, co
 
 int	CGameLevel::Road_GetLaneIndexAtPoint( const IVector2D& point, int numIterations)
 {
-//	CScopedMutex m(m_mutex);
-
 	CLevelRegion* pRegion = NULL;
 
 	IVector2D localPos;
@@ -1270,8 +1264,6 @@ int	CGameLevel::Road_GetLaneIndexAtPos( const Vector3D& pos, int numIterations)
 
 int	CGameLevel::Road_GetWidthInLanesAtPoint( const IVector2D& point, int numIterations, int iterationsOnEmpty )
 {
-	//CScopedMutex m(m_mutex);
-
 	CLevelRegion* pRegion = NULL;
 
 	IVector2D localPos;
@@ -1359,8 +1351,6 @@ int	CGameLevel::Road_GetWidthInLanesAtPos( const Vector3D& pos, int numIteration
 
 int	CGameLevel::Road_GetNumLanesAtPoint( const IVector2D& point, int numIterations )
 {
-	//CScopedMutex m(m_mutex);
-
 	CLevelRegion* pRegion = NULL;
 
 	IVector2D localPos;
@@ -1440,8 +1430,6 @@ levroadcell_t* CGameLevel::Road_GetGlobalTile(const Vector3D& pos, CLevelRegion*
 
 levroadcell_t* CGameLevel::Road_GetGlobalTileAt(const IVector2D& point, CLevelRegion** pRegion) const
 {
-//	CScopedMutex m(m_mutex);
-
 	IVector2D outXYPos;
 
 	CLevelRegion* reg = NULL;
@@ -1991,7 +1979,7 @@ int CGameLevel::UpdateRegions( RegionLoadUnloadCallbackFunc func )
 
 void CGameLevel::RespawnAllObjects()
 {
-	CScopedMutex m(m_mutex);
+	//CScopedMutex m(m_mutex);
 
 	for(int x = 0; x < m_wide; x++)
 	{
@@ -2370,7 +2358,7 @@ void CGameLevel::Nav_GetCellRangeFromAABB(const Vector3D& mins, const Vector3D& 
 
 void CGameLevel::Nav_GlobalToLocalPoint(const IVector2D& point, IVector2D& outLocalPoint, CLevelRegion** pRegion, int subGrid) const
 {
-	int navGridSize = m_cellsSize*s_navGridScales[subGrid];
+	const int navGridSize = m_cellsSize*s_navGridScales[subGrid];
 
 	IVector2D regPos = point / navGridSize;
 
@@ -2381,7 +2369,7 @@ void CGameLevel::Nav_GlobalToLocalPoint(const IVector2D& point, IVector2D& outLo
 
 void CGameLevel::Nav_LocalToGlobalPoint(const IVector2D& point, const CLevelRegion* pRegion, IVector2D& outGlobalPoint, int subGrid) const
 {
-	int navGridSize = m_cellsSize*s_navGridScales[subGrid];
+	const int navGridSize = m_cellsSize*s_navGridScales[subGrid];
 	outGlobalPoint = pRegion->m_heightfield[0]->m_regionPos * navGridSize + point;
 }
 
@@ -2395,7 +2383,7 @@ IVector2D CGameLevel::Nav_PositionToGlobalNavPoint(const Vector3D& pos, int subG
 	IVector2D gridWorldSize(m_wide, m_tall);
 	gridWorldSize *= m_cellsSize*s_navGridScales[subGrid];
 
-	float p_size = (1.0f / NAV_POINT_SIZE(subGrid));
+	const float p_size = (1.0f / NAV_POINT_SIZE(subGrid));
 
 	Vector2D xz_pos = pos.xz() * p_size + gridWorldSize/2;
 

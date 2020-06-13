@@ -88,14 +88,12 @@ enum ELevObjectType
 enum ELevModelFlags
 {
 	LMODEL_FLAG_ISGROUND		= (1 << 0),
-
 	LMODEL_FLAG_NOCOLLIDE		= (1 << 1),
 	LMODEL_FLAG_ALIGNTOCELL		= (1 << 2),		// object matrix is modified by cell
 	LMODEL_FLAG_UNIQUE			= (1 << 3),		// model is unique so it stored in global model list/lump
-
 	LMODEL_FLAG_GENERATED		= (1 << 4),
-
 	LMODEL_FLAG_DRIVEABLE		= (1 << 5),		// same as IsGround, but don't excludes walls
+	LMODEL_FLAG_PHY_CLIP_ONLY	= (1 << 6)		// materials that defines PhysicsClip 1 only will be allowed
 };
 
 struct levObjectDefInfo_s
