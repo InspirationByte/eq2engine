@@ -106,6 +106,86 @@ enum
 };
 
 
+class CAddonSelectionDialog : public wxDialog
+{
+public:
+	CAddonSelectionDialog(wxWindow* parent)
+		: wxDialog(parent, -1, wxT("Select the addon"), wxDefaultPosition, wxSize(250, 128), wxDEFAULT_DIALOG_STYLE | wxDIALOG_NO_PARENT)
+	{
+		this->SetSizeHints(wxDefaultSize, wxDefaultSize);
+
+		wxBoxSizer* bSizer17;
+		bSizer17 = new wxBoxSizer(wxVERTICAL);
+
+		bSizer17->Add(new wxStaticText(this, wxID_ANY, wxT("Addon"), wxDefaultPosition, wxDefaultSize, 0), 0, wxALL, 5);
+
+		m_pGamesList = new wxComboBox(this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize(200, -1), 0, NULL, 0);
+		bSizer17->Add(m_pGamesList, 0, wxALL | wxALIGN_CENTER_HORIZONTAL, 5);
+
+		bSizer17->Add(new wxButton(this, wxID_OK, wxT("OK"), wxDefaultPosition, wxDefaultSize, 0), 0, wxALL | wxALIGN_CENTER_HORIZONTAL, 5);
+
+		this->SetSizer(bSizer17);
+		this->Layout();
+
+		this->Centre(wxBOTH);
+	}
+
+	~CAddonSelectionDialog()
+	{
+
+	}
+
+	void ScanAddons()
+	{
+		CFileSystemFind addonsFind("Addons/*.*", SP_ROOT);
+
+		while (addonsFind.Next())
+		{
+			if (!addonsFind.IsDirectory())
+				continue;
+
+			EqString modInit = CombinePath(2, addonsFind.GetPath(), "ModInit.lua");
+
+			if (g_fileSystem->FileExist(modInit.c_str()))
+			{
+				m_pGamesList->Append(addonsFind.GetPath());
+			}
+		}
+	}
+
+	void OnButtonClick(wxCommandEvent& event)
+	{
+		if (event.GetId() == wxID_OK)
+		{
+			g_fileSystem->AddSearchPath("$MOD$", m_pGamesList->GetValue());
+
+			// get the default game name
+			KeyValues kv;
+
+			if (kv.LoadFromFile("EqEditor/EqEditSettings.CFG"))
+			{
+				kvkeybase_t* pSection = kv.GetRootSection();
+				pSection->SetKey("last_game", m_pGamesList->GetValue());
+
+				kv.SaveToFile("EqEditor/EqEditSettings.CFG");
+			}
+
+			EndModal(wxID_OK);
+		}
+	}
+
+protected:
+
+	DECLARE_EVENT_TABLE();
+
+	wxComboBox*			m_pGamesList;
+};
+
+BEGIN_EVENT_TABLE(CAddonSelectionDialog, wxDialog)
+	EVT_BUTTON(-1, OnButtonClick)
+END_EVENT_TABLE()
+
+//-----------------------------------------------------------------------------
 
 BEGIN_EVENT_TABLE(CMainWindow, wxFrame)
 	EVT_SIZE(OnSize)
@@ -1508,6 +1588,13 @@ bool CEGFViewApp::OnInit()
 #endif // _WIN32
 
 	InitCore(GetCommandLineA());
+
+	CAddonSelectionDialog* addonSelDialog = new CAddonSelectionDialog(NULL);
+
+	addonSelDialog->ScanAddons();
+
+	addonSelDialog->Centre();
+	addonSelDialog->ShowModal();
 
 	setlocale(LC_ALL,"C");
 

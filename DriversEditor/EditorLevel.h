@@ -248,7 +248,7 @@ public:
 
 	bool						m_modified; // needs saving?
 
-	bool						m_physicsPreview;
+	volatile bool				m_physicsPreview;
 
 	DkList<buildingSource_t*>	m_buildings;
 

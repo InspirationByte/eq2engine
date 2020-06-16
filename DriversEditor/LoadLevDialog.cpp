@@ -67,28 +67,15 @@ void CLoadLevelDialog::RebuildLevelList()
 {
 	m_levels->Clear();
 
-	EqString level_dir(g_fileSystem->GetCurrentGameDirectory());
-	level_dir = level_dir + EqString("/levels/*.lev");
+	CFileSystemFind levelsFind("levels/*.lev", SP_MOD);
 
-	DKFINDDATA* findData = nullptr;
-	char* foundFile = (char*)g_fileSystem->FindFirst(level_dir.c_str(), &findData, SP_ROOT);
-
-	if (foundFile)
+	while(levelsFind.Next())
 	{
-		EqString fileName(foundFile);
+		if (levelsFind.IsDirectory())
+			continue;
 
-		if (!g_fileSystem->FindIsDirectory(findData))
-			m_levels->Append(fileName.Path_Strip_Ext().c_str());
-
-		while (foundFile = (char*)g_fileSystem->FindNext(findData))
-		{
-			fileName.Assign(foundFile);
-
-			if (!g_fileSystem->FindIsDirectory(findData))
-				m_levels->Append(fileName.Path_Strip_Ext().c_str());
-		}
-
-		g_fileSystem->FindClose(findData);
+		const char* filename = levelsFind.GetPath();
+		m_levels->Append(_Es(filename).Path_Strip_Ext().c_str());
 	}
 }
 
