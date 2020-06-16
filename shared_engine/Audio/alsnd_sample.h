@@ -28,6 +28,7 @@ public:
 					~DkSoundSampleLocal();
 
 	static void		SampleLoaderJob( void* loadSampleData, int i );
+	static void		Job(DkSoundSampleLocal* job);
 
 	void			Init(const char *name, int flags);
 
@@ -38,6 +39,7 @@ public:
 	const char*		GetName() const {return m_szName.c_str();}
 
 	void			WaitForLoad();
+	bool			IsLoaded() const;
 
 	int				GetFlags() const {return m_flags;}
 

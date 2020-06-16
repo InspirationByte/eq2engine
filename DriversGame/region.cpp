@@ -8,6 +8,7 @@
 #include "world.h"
 #include "heightfield.h"
 #include "eqParallelJobs.h"
+#include "eqGlobalMutex.h"
 
 #ifdef EDITOR
 #include "../DriversEditor/EditorLevel.h"
@@ -33,7 +34,10 @@ regionObject_t::~regionObject_t()
 
 	RemoveGameObject();
 
-	def->Ref_Drop();
+	{
+		CScopedMutex m(GetGlobalMutex(MUTEXPURPOSE_LEVEL_LOADER));
+		def->Ref_Drop();
+	}
 }
 
 void regionObject_t::RemoveGameObject()
@@ -1046,7 +1050,11 @@ void CLevelRegion::ReadLoadRegion(IVirtualStream* stream, DkList<CLevObjectDef*>
 			ref->def = levelmodels[cellObj.objectDefId];
 
 		// reference object
-		ref->def->Ref_Grab();
+		{
+			CScopedMutex m(m_level->m_mutex);
+			ref->def->Ref_Grab();
+		}
+		
 
 		// calculate the transformation
 		ref->transform = GetModelRefRenderMatrix( this, ref );

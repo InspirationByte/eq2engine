@@ -112,9 +112,6 @@ bool DkSoundEmitterLocal::SelfAssignChannel()
 		chnl->emitter = this;
 		chnl->lastPauseOffsetBytes = 0;
 
-		// wait for sample
-		m_sample->WaitForLoad();
-
 		alSourcei(chnl->alSource, AL_BUFFER, m_sample->m_alBuffer);
 
 		alSourcei(chnl->alSource, AL_LOOPING, (m_sample->m_flags & SAMPLE_FLAG_LOOPING) > 0 ? AL_TRUE : AL_FALSE);
@@ -276,7 +273,7 @@ bool DkSoundEmitterLocal::IsVirtual() const
 
 bool DkSoundEmitterLocal::HasToBeVirtual()
 {
-	if ((length(vPosition - soundsystem->GetListenerPosition())) > m_params.maxDistance)
+	if (m_sample && !m_sample->IsLoaded() || (length(vPosition - soundsystem->GetListenerPosition())) > m_params.maxDistance)
 		return true;
 
 	return false;

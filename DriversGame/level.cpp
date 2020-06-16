@@ -387,8 +387,6 @@ void CGameLevel::LoadRegionAt(int regionIndex, IVirtualStream* stream)
 		reg.ReadLoadOccluders(stream);
 	}
 
-	reg.m_scriptEventCallbackCalled = false;
-
 	// return back
 	stream->Seek(loffset, VS_SEEK_SET);
 }
@@ -1567,15 +1565,15 @@ CLevelRegion* CGameLevel::QueryNearestRegions( const Vector3D& pos, bool waitLoa
 	return nullptr;
 }
 
-CLevelRegion* CGameLevel::QueryNearestRegions( const IVector2D& point, bool waitLoad )
+CLevelRegion* CGameLevel::QueryNearestRegions(const IVector2D& point, bool waitLoad)
 {
+	int numNeedToLoad = 0;
+
 #ifdef EDITOR
 	CEditorLevelRegion* region = (CEditorLevelRegion*)GetRegionAt(point);
 
 	if (!region)
 		return nullptr;
-
-	int numNeedToLoad = !region->m_physicsPreview && (m_regionOffsets[point.y*m_wide + point.x] != -1);
 #else
 	CLevelRegion* region = GetRegionAt(point);
 
@@ -1592,12 +1590,23 @@ CLevelRegion* CGameLevel::QueryNearestRegions( const IVector2D& point, bool wait
 			waitLoad = false;
 	}
 
-	int numNeedToLoad = !region->m_isLoaded && (m_regionOffsets[point.y*m_wide + point.x] != -1);
 #endif // EDITOR
 
 	// query this region
-	region->m_queryTimes.Increment();
+	if (m_regionOffsets[point.y*m_wide + point.x] != -1)
+	{
+#ifdef EDITOR
+		if (!region->m_physicsPreview)
+#else
+		if (!region->m_isLoaded)
+#endif
+		{
+			numNeedToLoad++;
+		}
 
+		region->m_queryTimes.Increment();
+	}
+		
 	int dx[8] = NEIGHBOR_OFFS_XDX(point.x, 1);
 	int dy[8] = NEIGHBOR_OFFS_YDY(point.y, 1);
 
@@ -1606,19 +1615,16 @@ CLevelRegion* CGameLevel::QueryNearestRegions( const IVector2D& point, bool wait
 	{
 		CLevelRegion* nregion = GetRegionAt(IVector2D(dx[i], dy[i]));
 
-		if(nregion)
+		if(nregion && m_regionOffsets[dy[i] * m_wide + dx[i]] != -1)
 		{
-			{
-				CScopedMutex m(m_mutex);
 #ifdef EDITOR
-				CEditorLevelRegion* neditorreg = (CEditorLevelRegion*)nregion;
-
-				if (!neditorreg->m_physicsPreview)
-					numNeedToLoad += (m_regionOffsets[dy[i] * m_wide + dx[i]] != -1);
+			CEditorLevelRegion* neditorreg = (CEditorLevelRegion*)nregion;
+			if (!neditorreg->m_physicsPreview)
 #else
-				if (!nregion->m_isLoaded)
-					numNeedToLoad += (m_regionOffsets[dy[i] * m_wide + dx[i]] != -1);
-#endif // EDITOR
+			if (!nregion->m_isLoaded)
+#endif
+			{
+				numNeedToLoad++;
 			}
 
 			nregion->m_queryTimes.Increment();
@@ -1837,51 +1843,75 @@ int	CGameLevel::Run()
 int CGameLevel::UpdateRegionLoading()
 {
 	int numLoadedRegions = 0;
+	int numFreedRegions = 0;
 
 	float startLoadTime = Platform_GetCurrentTime();
+
+	if (w_freeze.GetBool())
+		return 0;
 
 	for(int x = 0; x < m_wide; x++)
 	{
 		for(int y = 0; y < m_tall; y++)
 		{
 			int idx = y*m_wide+x;
+
 #ifdef EDITOR
 			// try preloading region
-			if( !m_regions[idx].m_physicsPreview &&
-				(m_regions[idx].m_queryTimes.GetValue() > 0) &&
-				m_regionOffsets[idx] != -1 )
+			if( !m_regions[idx].m_physicsPreview && (m_regions[idx].m_queryTimes.GetValue() > 0))
 			{
 				CEditorLevelRegion* reg = (CEditorLevelRegion*)&m_regions[idx];
 				reg->Ed_InitPhysics();
+			}
 #else
-			{
-				CScopedMutex m(m_mutex);
-				if (m_regions[idx].m_isLoaded)
-					continue;
-			}
+			if (m_regionOffsets[idx] == -1)
+				continue;
 
-			// try preloading region
-			if (!w_freeze.GetBool() &&
-				(m_regions[idx].m_queryTimes.GetValue() > 0) &&
-				m_regionOffsets[idx] != -1)
+			m_mutex.Lock();
+
+			if (m_regions[idx].m_isLoaded)
 			{
-				PreloadRegion(x,y);
-#endif // EDITOR
-				numLoadedRegions++;
-				DevMsg(DEVMSG_CORE, "Region %d loaded\n", idx);
+				m_mutex.Unlock();
+
+				// check for unloading
+				if (m_regions[idx].m_queryTimes.GetValue() <= 0)
+				{
+					// unload region
+					m_regions[idx].Cleanup();
+					m_regions[idx].m_scriptEventCallbackCalled = false;
+					numFreedRegions++;
+
+					DevMsg(DEVMSG_GAME, "Region %d freed\n", idx);
+				}
 			}
+			else
+			{
+				m_mutex.Unlock();
+
+				// check for loading
+				if (m_regions[idx].m_queryTimes.GetValue() > 0) 
+				{
+					PreloadRegion(x, y);
+					m_regions[idx].m_scriptEventCallbackCalled = false;
+					numLoadedRegions++;
+
+					DevMsg(DEVMSG_GAME, "Region %d loaded\n", idx);
+				}
+			}
+#endif // EDITOR
 		}
 	}
 
 	float loadTime = Platform_GetCurrentTime()-startLoadTime;
 	if (numLoadedRegions)
-		DevMsg(DEVMSG_CORE, "*** %d regions loaded for %g seconds\n", numLoadedRegions, loadTime);
+		DevMsg(DEVMSG_GAME, "*** %d regions loaded for %g seconds\n", numLoadedRegions, loadTime);
+
+	if (numFreedRegions)
+		DevMsg(DEVMSG_GAME, "*** %d regions freed\n", numFreedRegions);
 
 	// wait for matsystem
 	if (numLoadedRegions)
-	{
 		materials->Wait();
-	}
 
 	return numLoadedRegions;
 }
@@ -1916,15 +1946,13 @@ void CGameLevel::UnloadRegions()
 
 				numFreedRegions++;
 			}
-
-			region.m_queryTimes.SetValue(0);
 		}
 	}
 }
 
 int CGameLevel::UpdateRegions( RegionLoadUnloadCallbackFunc func )
 {
-	int numFreedRegions = 0;
+	int numRegionsToFree = 0;
 
 	// unloading only available after loading
 	if(!IsWorkDone())
@@ -1938,31 +1966,14 @@ int CGameLevel::UpdateRegions( RegionLoadUnloadCallbackFunc func )
 
 			CLevelRegion& region = m_regions[idx];
 
-#ifndef EDITOR
-
-			m_mutex.Lock();
-
-			if(!w_freeze.GetBool() &&
-				region.m_isLoaded &&
-				(region.m_queryTimes.GetValue() <= 0) &&
-				m_regionOffsets[idx] != -1 )
+			if (region.m_queryTimes.Decrement() < 0)
 			{
-				m_mutex.Unlock();
+				region.m_queryTimes.SetValue(0);
+				CScopedMutex m(m_mutex);
 
-				// unload region
-				region.Cleanup();
-				region.m_scriptEventCallbackCalled = false;
-
-				numFreedRegions++;
+				if (region.m_isLoaded)
+					numRegionsToFree++;
 			}
-			else
-			{
-				m_mutex.Unlock();
-#pragma todo("SPAWN objects from UpdateRegions, not from loader thread")
-			}
-#endif // EDITOR
-
-			region.m_queryTimes.SetValue(0);
 
 			if( !region.m_scriptEventCallbackCalled )
 			{
@@ -1974,7 +1985,12 @@ int CGameLevel::UpdateRegions( RegionLoadUnloadCallbackFunc func )
 		}
 	}
 
-	return numFreedRegions;
+	if (numRegionsToFree)
+	{
+		SignalWork();
+	}
+
+	return numRegionsToFree;
 }
 
 void CGameLevel::RespawnAllObjects()

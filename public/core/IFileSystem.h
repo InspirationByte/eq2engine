@@ -129,6 +129,7 @@ INTERFACE_SINGLETON( IFileSystem, CFileSystem, FILESYSTEM_INTERFACE_VERSION, g_f
 class CFileSystemFind
 {
 public:
+	CFileSystemFind();
 	CFileSystemFind(const char* wildcard, int searchPath = -1);
 	~CFileSystemFind();
 
@@ -148,8 +149,11 @@ protected:
 
 //-----------------------------------------------------------------------------------------
 
-inline CFileSystemFind::CFileSystemFind(const char* wildcard, int searchPath) 
-	: m_fd(nullptr), m_curPath(nullptr)
+inline CFileSystemFind::CFileSystemFind() : m_fd(nullptr), m_curPath(nullptr)
+{
+}
+
+inline CFileSystemFind::CFileSystemFind(const char* wildcard, int searchPath) : CFileSystemFind()
 {
 	Init(wildcard, searchPath);
 }

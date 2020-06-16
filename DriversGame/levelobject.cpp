@@ -11,6 +11,7 @@
 #include "VertexFormatBuilder.h"
 #include "ParticleEffects.h"
 #include "eqParallelJobs.h"
+#include "eqGlobalMutex.h"
 
 extern ConVar r_enableLevelInstancing;
 
@@ -204,8 +205,20 @@ void CLevObjectDef::PreloadModel(IVirtualStream* stream)
 	if (m_info.type == LOBJ_TYPE_OBJECT_CFG)
 		return;
 
+	CEqMutex& mutex = GetGlobalMutex(MUTEXPURPOSE_LEVEL_LOADER);
+
+	mutex.Lock();
 	if (m_model)
+	{
+		mutex.Unlock();
 		return;
+	}
+
+	// load model
+	CLevelModel* model = new CLevelModel();
+	m_model = model;
+
+	mutex.Unlock();
 
 	const ShaderAPICaps_t& caps = g_pShaderAPI->GetCaps();
 
@@ -214,10 +227,6 @@ void CLevObjectDef::PreloadModel(IVirtualStream* stream)
 
 	if (storedPos != m_modelOffset)
 		stream->Seek(m_modelOffset, VS_SEEK_SET);
-
-	// load model
-	CLevelModel* model = new CLevelModel();
-	m_model = model;
 
 	model->Load(stream);
 	model->PreloadTextures();

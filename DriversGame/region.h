@@ -292,7 +292,7 @@ public:
 	int								m_regionIndex;
 
 	volatile bool					m_isLoaded;
-	bool							m_scriptEventCallbackCalled;
+	volatile bool					m_scriptEventCallbackCalled;
 	bool							m_hasTransparentSubsets;
 
 	CEqInterlockedInteger			m_queryTimes;		///< render (client) or physics engine query for server

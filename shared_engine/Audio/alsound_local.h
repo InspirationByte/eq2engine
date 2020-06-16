@@ -70,8 +70,10 @@ public:
 							DkSoundSystemLocal();
 
 	void					Init();
-	void					Update(float pitchFactor);
 	void					Shutdown();
+
+	void					Update(float pitchFactor);
+	
 
 	bool					InitContext();
 	void					ShutdownContext();

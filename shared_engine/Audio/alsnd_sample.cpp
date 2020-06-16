@@ -18,6 +18,8 @@
 #include "DebugInterface.h"
 #include "alsound_local.h"
 
+#include "eqParallelJobs.h"
+
 // WAVE FILE LOADER
 typedef struct                                  /* WAV File-header */
 {
@@ -440,6 +442,11 @@ void DkSoundSampleLocal::WaitForLoad()
 	while( m_loadState == SAMPLE_LOAD_IN_PROGRESS ) {Threading::Yield();}
 }
 
+bool DkSoundSampleLocal::IsLoaded() const
+{
+	return m_loadState == SAMPLE_LOAD_OK;
+}
+
 float DkSoundSampleLocal::GetDuration() const
 {
 	return m_duration;
@@ -451,10 +458,16 @@ void DkSoundSampleLocal::SampleLoaderJob(void* smp, int i)
 {
 	DkSoundSampleLocal* sample = (DkSoundSampleLocal*)smp;
 
-	sample->m_loadState = SAMPLE_LOAD_IN_PROGRESS;
-
 	if(sample->Load())
 		sample->m_loadState = SAMPLE_LOAD_OK;
 	else
 		sample->m_loadState = SAMPLE_LOAD_ERROR;
+}
+
+
+void DkSoundSampleLocal::Job(DkSoundSampleLocal* sample)
+{
+	sample->m_loadState = SAMPLE_LOAD_IN_PROGRESS;
+	g_parallelJobs->AddJob(DkSoundSampleLocal::SampleLoaderJob, sample);
+	g_parallelJobs->Submit();
 }

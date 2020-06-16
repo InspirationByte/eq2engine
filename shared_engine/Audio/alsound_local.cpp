@@ -21,7 +21,7 @@
 #include "ConCommand.h"
 #include "ConVar.h"
 #include "utils/KeyValues.h"
-#include "eqParallelJobs.h"
+
 
 #include "IDebugOverlay.h"
 #include "IDkCore.h"
@@ -690,8 +690,7 @@ ISoundSample* DkSoundSystemLocal::LoadSample(const char *name, int nFlags)
 
 	if(job_soundLoader.GetBool())
 	{
-		g_parallelJobs->AddJob( DkSoundSampleLocal::SampleLoaderJob, pNewSample );
-		g_parallelJobs->Submit();
+		DkSoundSampleLocal::Job(pNewSample);
 	}
 	else
 	{

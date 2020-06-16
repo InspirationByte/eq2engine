@@ -1407,12 +1407,8 @@ void CGameWorld::UpdateWorld(float fDt)
 		m_lights[i].color = vec4_zero;
 	}
 
-	PROFILE_BEGIN(UpdateWorldObjectStates);
-
-	m_level.UpdateRegions(RegionCallbackFunc);
+	// spawn region objects
 	SpawnPendingObjects();
-
-	PROFILE_END();
 
 	// simulate objects of world
 	PROFILE_CODE( SimulateObjects(fDt) );
@@ -1437,6 +1433,7 @@ void CGameWorld::UpdateWorld(float fDt)
 		}
 	}
 
+	m_level.UpdateRegions(RegionCallbackFunc);
 	
 	m_curTime += m_frameTime;
 }
