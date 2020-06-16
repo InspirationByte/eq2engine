@@ -305,7 +305,7 @@ void CAIPursuerCar::OnCarCollisionEvent(const CollisionPairData_t& pair, CGameOb
 {
 	BaseClass::OnCarCollisionEvent(pair, hitBy);
 
-	if (InPursuit())
+	if (InPursuit() || m_assignedRoadblock)
 	{
 		m_hornSequencer.ShutUp();
 

@@ -1564,7 +1564,7 @@ void CCar::UpdateVehiclePhysics(float delta)
 	CollisionData_t coll_line;
 
 	eqPhysCollisionFilter collFilter;
-	collFilter.flags = EQPHYS_FILTER_FLAG_DISALLOW_DYNAMIC;
+	collFilter.flags = 0;// EQPHYS_FILTER_FLAG_DISALLOW_DYNAMIC;
 	collFilter.AddObject(carBody);
 
 	
@@ -1588,7 +1588,7 @@ void CCar::UpdateVehiclePhysics(float delta)
 			numWheelsOnGroundOld++;
 
 		// trace solid ground only
-		g_pPhysics->TestLine(line_start, line_end, wheel.m_collisionInfo, OBJECTCONTENTS_SOLID_GROUND, &collFilter);
+		g_pPhysics->TestLine(line_start, line_end, wheel.m_collisionInfo, OBJECTCONTENTS_SOLID_GROUND | OBJECTCONTENTS_OBJECT, &collFilter);
 
 		float fractionNewDist = suspensionLength * wheel.m_collisionInfo.fract;
 
@@ -3643,7 +3643,9 @@ void CCar::DrawWheelEffects(int wheelIdx)
 	CCarWheel& wheel = m_wheels[wheelIdx];
 	carWheelConfig_t& wheelConf = m_conf->physics.wheels[wheelIdx];
 
-	if(!wheel.m_flags.onGround)
+	// don't add skid marks
+	if(!wheel.m_flags.onGround || 
+		wheel.m_collisionInfo.hitobject->IsDynamic())
 	{
 		if(!wheel.m_flags.doSkidmarks)
 			wheel.m_flags.lastDoSkidmarks = wheel.m_flags.doSkidmarks;
