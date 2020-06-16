@@ -1815,13 +1815,6 @@ void ShaderAPID3DX9::DestroyVertexFormat(IVertexFormat* pFormat)
 
 	if(m_VFList.remove(pVF))
 	{
-		// reset if in use
-		if(m_pCurrentVertexFormat == pVF)
-		{
-			Reset(STATE_RESET_VBO);
-			ApplyBuffers();
-		}
-
 		DevMsg(DEVMSG_SHADERAPI,"Destroying vertex format\n");
 
 		if(pVF->m_pVertexDecl)
@@ -1843,9 +1836,6 @@ void ShaderAPID3DX9::DestroyVertexBuffer(IVertexBuffer* pVertexBuffer)
 	if(m_VBList.remove(pVB))
 	{
 		// reset if in use
-		Reset(STATE_RESET_VBO);
-		ApplyBuffers();
-
 		DevMsg(DEVMSG_SHADERAPI,"Destroying vertex buffer\n");
 
 		if(pVB->m_pVertexBuffer)
@@ -1868,9 +1858,6 @@ void ShaderAPID3DX9::DestroyIndexBuffer(IIndexBuffer* pIndexBuffer)
 	if(m_IBList.remove(pIB))
 	{
 		// reset if in use
-		Reset(STATE_RESET_VBO);
-		ApplyBuffers();
-
 		DevMsg(DEVMSG_SHADERAPI,"Destroying index buffer\n");
 
 		if(pIB->m_pIndexBuffer)
@@ -1936,13 +1923,6 @@ void ShaderAPID3DX9::DestroyShaderProgram(IShaderProgram* pShaderProgram)
 	// remove it if reference is zero
 	if(pShader->Ref_Count() <= 0)
 	{
-		// Cancel shader and destroy
-		if(m_pCurrentShader == pShaderProgram)
-		{
-			Reset(STATE_RESET_SHADER);
-			ApplyShaderProgram();
-		}
-
 		m_ShaderList.remove(pShader);
 
 		delete pShader;

@@ -1762,17 +1762,13 @@ void ShaderAPIGL::DestroyShaderProgram(IShaderProgram* pShaderProgram)
 	// remove it if reference is zero
 	if(pShader->Ref_Count() <= 0)
 	{
-		// Cancel shader and destroy
-		if(m_pCurrentShader == pShaderProgram)
-		{
-			Reset(STATE_RESET_SHADER);
-			Apply();
-		}
-
 		m_ShaderList.remove(pShader);
 
-		delete pShader;
-		
+		glWorker.Do([pShader]() {
+			delete pShader;
+
+			return 0;
+		});
 	}
 }
 
@@ -2330,14 +2326,7 @@ void ShaderAPIGL::DestroyVertexFormat(IVertexFormat* pFormat)
 
 	if(m_VFList.remove(pFormat))
 	{
-		// reset if in use
-		if (m_pCurrentVertexFormat == pFormat)
-		{
-			Reset(STATE_RESET_VF);
-			ApplyBuffers();
-		}
-
-		delete pVF;
+		delete pVF;	
 	}
 }
 
@@ -2352,13 +2341,13 @@ void ShaderAPIGL::DestroyVertexBuffer(IVertexBuffer* pVertexBuffer)
 
 	if(m_VBList.remove(pVertexBuffer))
 	{
-		Reset(STATE_RESET_VF | STATE_RESET_VB);
-		ApplyBuffers();
+		glWorker.Do([pVB]() {
+			const int numBuffers = (pVB->m_access == BUFFER_DYNAMIC) ? MAX_VB_SWITCHING : 1;
 
-		const int numBuffers = (pVB->m_access == BUFFER_DYNAMIC) ? MAX_VB_SWITCHING : 1;
-
-		glDeleteBuffers(numBuffers, pVB->m_nGL_VB_Index);
-		GLCheckError("delete vertex buffer");
+			glDeleteBuffers(numBuffers, pVB->m_nGL_VB_Index);
+			GLCheckError("delete vertex buffer");
+			return 0;
+		});
 
 		delete pVB;
 	}
@@ -2376,13 +2365,15 @@ void ShaderAPIGL::DestroyIndexBuffer(IIndexBuffer* pIndexBuffer)
 
 	if(m_IBList.remove(pIndexBuffer))
 	{
-		Reset(STATE_RESET_IB);
-		ApplyBuffers();
+		glWorker.Do([pIB]() {
+			const int numBuffers = (pIB->m_access == BUFFER_DYNAMIC) ? MAX_IB_SWITCHING : 1;
 
-		const int numBuffers = (pIB->m_access == BUFFER_DYNAMIC) ? MAX_IB_SWITCHING : 1;
+			glDeleteBuffers(numBuffers, pIB->m_nGL_IB_Index);
+			GLCheckError("delete index buffer");
 
-		glDeleteBuffers(numBuffers, pIB->m_nGL_IB_Index);
-		GLCheckError("delete index buffer");
+			return 0;
+		});
+
 
 		delete pIndexBuffer;
 	}
