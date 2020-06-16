@@ -138,6 +138,7 @@ protected:
 	IVertexBuffer*					m_pVB;
 
 	int								m_regionIdx;
+	int								m_groupId;
 };
 
 

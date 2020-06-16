@@ -335,6 +335,7 @@ CBrushPrimitive::CBrushPrimitive()
 {
 	m_pVB = NULL;
 	m_regionIdx = -1;
+	m_groupId = -1;
 }
 
 CBrushPrimitive::~CBrushPrimitive()
