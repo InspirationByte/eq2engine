@@ -258,7 +258,7 @@ void CMaterialAtlasList::ReloadMaterialList(bool allowAtlases)
 	m_loadfilter.clear();
 
 	KeyValues kv;
-	if (kv.LoadFromFile("EqEditProjectSettings.cfg"))
+	if (kv.LoadFromFile("EqEditProjectSettings.cfg", SP_MOD))
 	{
 		Msg("Adding material ignore filters from 'EqEditProjectSettings.cfg'\n");
 
@@ -270,7 +270,7 @@ void CMaterialAtlasList::ReloadMaterialList(bool allowAtlases)
 				EqString pathStr(KV_GetValueString(pSection->keys[i]));
 				pathStr.Path_FixSlashes();
 
-				m_loadfilter.append(pathStr.c_str());
+				m_loadfilter.append(pathStr);
 			}
 		}
 	}
@@ -279,10 +279,10 @@ void CMaterialAtlasList::ReloadMaterialList(bool allowAtlases)
 	m_materialslist.clear();
 	m_filteredList.clear();
 
-	EqString base_path(EqString(g_fileSystem->GetCurrentGameDirectory()) + EqString("/") + materials->GetMaterialPath());
-	base_path = base_path.Left(base_path.Length() - 1);
+	//EqString base_path(EqString(g_fileSystem->GetCurrentGameDirectory()) + EqString("/") + materials->GetMaterialPath());
+	//base_path = base_path.Left(base_path.Length() - 1);
 
-	CheckDirForMaterials(base_path.GetData());
+	CheckDirForMaterials(materials->GetMaterialPath());
 
 	UpdateAndFilterList();
 
@@ -383,67 +383,58 @@ void CMaterialAtlasList::SelectMaterial(IMaterial* pMaterial, int atlasIdx)
 
 bool CMaterialAtlasList::CheckDirForMaterials(const char* filename_to_add)
 {
-	EqString dir_name = filename_to_add;
-	EqString dirname = dir_name + CORRECT_PATH_SEPARATOR + EqString("*.*");
-
-	WIN32_FIND_DATAA wfd;
-	HANDLE hFile;
+	EqString searchPath = CombinePath(2, filename_to_add, "*.*");
 
 	for (int i = 0; i < m_loadfilter.numElem(); i++)
 	{
-		if (dir_name.Find(m_loadfilter[i].GetData(), false) != -1)
+		Msg("searchPath: %s vs %s\n", searchPath.c_str(), m_loadfilter[i].c_str());
+
+		if (searchPath.Find(m_loadfilter[i].c_str(), false) != -1)
 			return false;
 	}
 
-	EqString tex_dir(EqString(g_fileSystem->GetCurrentGameDirectory()) + materials->GetMaterialPath());
+	CFileSystemFind materialsFind(searchPath.c_str(), SP_MOD);
 
 	Msg("Searching directory for materials: '%s'\n", filename_to_add);
 
-	hFile = FindFirstFileA(dirname.GetData(), &wfd);
-	if (hFile != NULL)
+	int materials_str_length = strlen(materials->GetMaterialPath());
+
+	while (materialsFind.Next())
 	{
-		while (1)
+		if (materialsFind.IsDirectory())
 		{
-			if (!FindNextFileA(hFile, &wfd))
-				break;
+			if (!stricmp("..", materialsFind.GetPath()) || !stricmp(".", materialsFind.GetPath()))
+				continue;
 
-			if ((wfd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY))
+			// search recursively
+			CheckDirForMaterials( CombinePath(2, filename_to_add, materialsFind.GetPath()).c_str() );
+		}
+		else
+		{
+			EqString fileName = CombinePath(2, filename_to_add, materialsFind.GetPath());
+
+			if (fileName.Path_Extract_Ext() != "mat")
+				continue;
+
+			IMaterial* pMaterial = materials->GetMaterial( fileName.Path_Strip_Ext().c_str() + materials_str_length);
+			if (pMaterial)
 			{
-				if (!stricmp("..", wfd.cFileName) || !stricmp(".", wfd.cFileName))
-					continue;
-
-				CheckDirForMaterials(varargs("%s%c%s", dir_name.GetData(), CORRECT_PATH_SEPARATOR, wfd.cFileName));
-			}
-			else
-			{
-				EqString filename = dir_name + CORRECT_PATH_SEPARATOR + wfd.cFileName;
-
-				EqString ext = filename.Path_Extract_Ext();
-
-				if (ext == "mat")
+				IMatVar* pVar = pMaterial->FindMaterialVar("showineditor");
+				if (pVar && pVar->GetInt() == 0)
 				{
-					filename = filename.Path_Strip_Ext();
-					filename = filename.Right(filename.Length() - tex_dir.Length());
-
-					IMaterial* pMaterial = materials->GetMaterial(filename.GetData());
-					if (pMaterial)
-					{
-						IMatVar* pVar = pMaterial->FindMaterialVar("showineditor");
-						if (pVar && pVar->GetInt() == 0)
-							continue;
-					}
-
-					CTextureAtlas* atlas = pMaterial->GetAtlas(); // try load new atlas
-
-					// finally
-					m_materialslist.append(matAtlas_t(atlas, pMaterial));
-
-					pMaterial->Ref_Grab();
+					pMaterial->Ref_Grab(); // do safely
+					materials->FreeMaterial(pMaterial);
+					continue;
 				}
 			}
-		}
 
-		FindClose(hFile);
+			CTextureAtlas* atlas = pMaterial->GetAtlas(); // try load new atlas
+
+			// finally
+			m_materialslist.append(matAtlas_t(atlas, pMaterial));
+
+			pMaterial->Ref_Grab();
+		}
 	}
 
 	m_selection = -1;

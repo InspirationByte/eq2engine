@@ -110,14 +110,14 @@ class CAddonSelectionDialog : public wxDialog
 {
 public:
 	CAddonSelectionDialog(wxWindow* parent)
-		: wxDialog(parent, -1, wxT("Select the addon"), wxDefaultPosition, wxSize(250, 128), wxDEFAULT_DIALOG_STYLE | wxDIALOG_NO_PARENT)
+		: wxDialog(parent, -1, wxT("Prompt"), wxDefaultPosition, wxSize(250, 128), wxDEFAULT_DIALOG_STYLE | wxDIALOG_NO_PARENT)
 	{
 		this->SetSizeHints(wxDefaultSize, wxDefaultSize);
 
 		wxBoxSizer* bSizer17;
 		bSizer17 = new wxBoxSizer(wxVERTICAL);
 
-		bSizer17->Add(new wxStaticText(this, wxID_ANY, wxT("Addon"), wxDefaultPosition, wxDefaultSize, 0), 0, wxALL, 5);
+		bSizer17->Add(new wxStaticText(this, wxID_ANY, wxT("Enter Addon folder"), wxDefaultPosition, wxDefaultSize, 0), 0, wxALL, 5);
 
 		m_pGamesList = new wxComboBox(this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize(200, -1), 0, NULL, 0);
 		bSizer17->Add(m_pGamesList, 0, wxALL | wxALIGN_CENTER_HORIZONTAL, 5);
@@ -144,11 +144,11 @@ public:
 			if (!addonsFind.IsDirectory())
 				continue;
 
-			EqString modInit = CombinePath(2, addonsFind.GetPath(), "ModInit.lua");
+			EqString modInitPath = CombinePath(3, "Addons", addonsFind.GetPath(), "ModInit.lua");
 
-			if (g_fileSystem->FileExist(modInit.c_str()))
+			if (g_fileSystem->FileExist(modInitPath.c_str(), SP_ROOT))
 			{
-				m_pGamesList->Append(addonsFind.GetPath());
+				m_pGamesList->Append(CombinePath(2, "Addons", addonsFind.GetPath()).c_str());
 			}
 		}
 	}
@@ -157,17 +157,9 @@ public:
 	{
 		if (event.GetId() == wxID_OK)
 		{
-			g_fileSystem->AddSearchPath("$MOD$", m_pGamesList->GetValue());
-
-			// get the default game name
-			KeyValues kv;
-
-			if (kv.LoadFromFile("EqEditor/EqEditSettings.CFG"))
+			if (m_pGamesList->GetValue().length())
 			{
-				kvkeybase_t* pSection = kv.GetRootSection();
-				pSection->SetKey("last_game", m_pGamesList->GetValue());
-
-				kv.SaveToFile("EqEditor/EqEditSettings.CFG");
+				g_fileSystem->AddSearchPath("$MOD$", m_pGamesList->GetValue());
 			}
 
 			EndModal(wxID_OK);

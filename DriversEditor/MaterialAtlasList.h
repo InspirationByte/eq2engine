@@ -105,16 +105,15 @@ protected:
 
 	bool					CheckDirForMaterials(const char* filename_to_add);
 
-	DkList<matAtlas_t>		m_materialslist;
-
 	DkList<EqString>		m_loadfilter;
+	DkList<matAtlas_t>		m_materialslist;
 
 	wxString				m_filter;
 	wxString				m_filterTags;
 
-	int						m_nPreviewSize;
-
 	IEqSwapChain*			m_swapChain;
+
+	int						m_nPreviewSize;
 
 	bool					m_allowAtlases;
 };
