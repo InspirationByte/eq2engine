@@ -770,7 +770,7 @@ bool CAIPursuerCar::CheckObjectVisibility(CCar* obj)
 		visibilitySphere = AI_COPVIEW_RADIUS_ROADBLOCK;
 	}
 
-	float distToCar = length(obj->GetOrigin() - GetOrigin());
+	float distToCarSqr = lengthSqr(obj->GetOrigin() - GetOrigin());
 
 	//debugoverlay->Box3D(GetOrigin() - visibilitySphere, GetOrigin() + visibilitySphere, ColorRGBA(1,1,0,1), 0.1f);
 
@@ -790,7 +790,7 @@ bool CAIPursuerCar::CheckObjectVisibility(CCar* obj)
 	frustum.LoadAsFrustum(viewprojection);
 
 	// do frustum checks for player cars
-	if(	distToCar < visibilitySphere ||
+	if(distToCarSqr < (visibilitySphere*visibilitySphere) ||
 		frustum.IsPointInside(obj->GetOrigin()))
 	{
 		// Trace convex car

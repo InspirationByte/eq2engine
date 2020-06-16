@@ -1009,8 +1009,6 @@ void CCar::Spawn()
 
 		m_driverModel.GetModel()->SetInstancer( instancer );
 	}
-
-	// spawn cars with enabled headlights
 }
 
 void CCar::AlignToGround()
