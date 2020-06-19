@@ -594,6 +594,7 @@ bool CEditorLevel::Load(const char* levelname)
 		LoadEditorBuildings(levelname);
 		LoadEditorBrushes(levelname);
 		LoadEditorRoads(levelname);
+		LoadEditorMisc(levelname);
 	}
 
 	return result;
@@ -623,6 +624,7 @@ void CEditorLevel::BackupFiles(const char* levelname)
 		EqString buildingTemplatesPathBkp(folderPathBkp + "/buildingTemplates.def");
 		EqString roadsPathBkp(folderPathBkp + "/roads.ekv");
 		EqString blocksPathBkp(folderPathBkp + "/brushes.ekv");
+		EqString settingsPathBkp(folderPathBkp + "/settings.txt");
 
 		// remove old backuip
 		g_fileSystem->FileRemove(buildingsPathBkp.c_str(), SP_MOD);
@@ -630,6 +632,7 @@ void CEditorLevel::BackupFiles(const char* levelname)
 		g_fileSystem->FileRemove(buildingTemplatesPathBkp.c_str(), SP_MOD);
 		g_fileSystem->FileRemove(roadsPathBkp.c_str(), SP_MOD);
 		g_fileSystem->FileRemove(blocksPathBkp.c_str(), SP_MOD);
+		g_fileSystem->FileRemove(settingsPathBkp.c_str(), SP_MOD);
 
 		g_fileSystem->RemoveDir(folderPathBkp.c_str(), SP_MOD);
 
@@ -673,6 +676,7 @@ bool CEditorLevel::Save(const char* levelname, bool isFinal)
 	SaveEditorBuildings( levelname );
 	SaveEditorBrushes( levelname );
 	SaveEditorRoads( levelname );
+	SaveEditorMisc( levelname );
 
 	levLump_t endLump;
 	endLump.type = LEVLUMP_ENDMARKER;
@@ -686,6 +690,36 @@ bool CEditorLevel::Save(const char* levelname, bool isFinal)
 	m_levelName = levelname;
 
 	return true;
+}
+
+extern Vector3D		g_camera_rotation;
+extern Vector3D		g_camera_target;
+
+void CEditorLevel::SaveEditorMisc(const char* levelName)
+{
+	EqString settingsPath = varargs(LEVELS_PATH "%s_editor/settings.txt", levelName);
+
+	KeyValues kvs;
+	kvkeybase_t* root = kvs.GetRootSection();
+
+	root->SetKey("CameraPosition", g_camera_target);
+	root->SetKey("CameraRotation", g_camera_rotation);
+
+	kvs.SaveToFile(settingsPath.c_str());
+}
+
+void CEditorLevel::LoadEditorMisc(const char* levelName)
+{
+	EqString settingsPath = varargs(LEVELS_PATH "%s_editor/settings.txt", levelName);
+
+	KeyValues kvs;
+	if (!kvs.LoadFromFile(settingsPath.c_str(), SP_MOD))
+		return;
+
+	kvkeybase_t* root = kvs.GetRootSection();
+
+	g_camera_target = KV_GetVector3D(root->FindKeyBase("CameraPosition"));
+	g_camera_rotation = KV_GetVector3D(root->FindKeyBase("CameraRotation"));
 }
 
 bool CEditorLevel::LoadPrefab(const char* prefabName)
@@ -955,7 +989,7 @@ void CEditorLevel::WriteLevelRegions(IVirtualStream* file, bool isFinal)
 
 			CEditorLevelRegion& reg = *(CEditorLevelRegion*)&m_regions[idx];
 		
-			reg.ClearRoadTrafficLightStates();
+			reg.IdentifyRoads();
 
 			// move objects to right regions too
 			for (int i = 0; i < reg.m_objects.numElem(); i++)
@@ -2094,18 +2128,36 @@ int FindObjectDef(DkList<CLevObjectDef*>& listObjects, CLevObjectDef* container)
 	return -1;
 }
 
-void CEditorLevelRegion::ClearRoadTrafficLightStates()
+void CEditorLevelRegion::IdentifyRoads()
 {
 	if (!m_roads)
 		return;
 
+	int wide = m_heightfield[0]->m_sizew;
+	int tall = m_heightfield[0]->m_sizeh;
+
 	// before we do PostprocessCellObject, make sure we remove all traffic light flags from straights
-	for (int x = 0; x < m_heightfield[0]->m_sizew; x++)
+	for (int x = 0; x < wide; x++)
 	{
-		for (int y = 0; y < m_heightfield[0]->m_sizeh; y++)
+		for (int y = 0; y < tall; y++)
 		{
-			int idx = y * m_heightfield[0]->m_sizew + x;
+			int idx = y * wide + x;
+
+			m_roads[idx].id = 0xFFFF;
 			m_roads[idx].flags &= ~ROAD_FLAG_TRAFFICLIGHT;
+		}
+	}
+
+	// before we do PostprocessCellObject, make sure we remove all traffic light flags from straights
+	for (int x = 0; x < wide; x++)
+	{
+		for (int y = 0; y < tall; y++)
+		{
+			int idx = y * wide + x;
+			if (m_roads[idx].id == 0xFFFF && m_roads[idx].type == ROADTYPE_JUNCTION)
+			{
+				IdentifyJunction(x, y);
+			}
 		}
 	}
 }
@@ -2321,17 +2373,20 @@ void CEditorLevelRegion::WriteRegionRoads( IVirtualStream* stream )
 
 	if (m_roads)
 	{
-		for (int x = 0; x < m_heightfield[0]->m_sizew; x++)
+		int wide = m_heightfield[0]->m_sizew;
+		int tall = m_heightfield[0]->m_sizeh;
+
+		for (int x = 0; x < wide; x++)
 		{
-			for (int y = 0; y < m_heightfield[0]->m_sizeh; y++)
+			for (int y = 0; y < tall; y++)
 			{
-				int idx = y * m_heightfield[0]->m_sizew + x;
+				int idx = y * wide + x;
 
 				if (m_roads[idx].type == ROADTYPE_NOROAD && m_roads[idx].flags == 0)
 					continue;
 
-				m_roads[idx].posX = x;
-				m_roads[idx].posY = y;
+				m_roads[idx].x = x;
+				m_roads[idx].y = y;
 
 				cells.Write(&m_roads[idx], 1, sizeof(levroadcell_t));
 				numRoadCells++;

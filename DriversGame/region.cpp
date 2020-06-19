@@ -599,9 +599,6 @@ void CLevelRegion::InitNavigationGrid()
 
 			levroadcell_t& road = m_roads[idx];
 
-			road.posX = x;
-			road.posY = y;
-
 			// adjust priority by road
 			if (road.type != ROADTYPE_PARKINGLOT && 
 				road.type != ROADTYPE_PAVEMENT &&
@@ -615,8 +612,8 @@ void CLevelRegion::InitNavigationGrid()
 				{
 					for (int yy = 0; yy < AI_NAV_DETAILED_SCALE; yy++)
 					{
-						int ofsX = road.posX*AI_NAV_DETAILED_SCALE + xx;
-						int ofsY = road.posY*AI_NAV_DETAILED_SCALE + yy;
+						int ofsX = road.x*AI_NAV_DETAILED_SCALE + xx;
+						int ofsY = road.y*AI_NAV_DETAILED_SCALE + yy;
 
 						int navCellIdx = ofsY * m_navGrid[0].tall + ofsX;
 						m_navGrid[0].staticObst[navCellIdx] = 4 - AI_NAVIGATION_ROAD_PRIORITY;
@@ -1175,7 +1172,7 @@ void CLevelRegion::RespawnObjects()
 #endif // EDITOR
 }
 
-void CLevelRegion::ReadLoadRoads(IVirtualStream* stream)
+void CLevelRegion::ReadLoadRoads(IVirtualStream* stream, bool fix)
 {
 	CHeightTileField* field = GetHField(0);
 
@@ -1188,13 +1185,34 @@ void CLevelRegion::ReadLoadRoads(IVirtualStream* stream)
 	int numRoadCells = 0;
 	stream->Read(&numRoadCells, 1, sizeof(int));
 
-	for (int i = 0; i < numRoadCells; i++)
-	{
-		levroadcell_t tmpCell;
-		stream->Read(&tmpCell, 1, sizeof(levroadcell_t));
+	if(fix)
+	{ 
+		for (int i = 0; i < numRoadCells; i++)
+		{
+			oldlevroadcell_t tmpCell;
+			stream->Read(&tmpCell, 1, sizeof(oldlevroadcell_t));
 
-		int idx = tmpCell.posY * field->m_sizew + tmpCell.posX;
-		m_roads[idx] = tmpCell;
+			levroadcell_t newCell;
+			newCell.direction = tmpCell.direction;
+			newCell.flags = tmpCell.flags;
+			newCell.type = tmpCell.type;
+			newCell.x = tmpCell.posX;
+			newCell.y = tmpCell.posY;
+
+			int idx = newCell.y * field->m_sizew + newCell.x;
+			m_roads[idx] = newCell;
+		}
+	}
+	else
+	{
+		for (int i = 0; i < numRoadCells; i++)
+		{
+			levroadcell_t tmpCell;
+			stream->Read(&tmpCell, 1, sizeof(levroadcell_t));
+
+			int idx = tmpCell.y * field->m_sizew + tmpCell.x;
+			m_roads[idx] = tmpCell;
+		}
 	}
 }
 

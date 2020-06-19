@@ -16,7 +16,7 @@ enum ELevelLumps
 	// server-required lumps
 	LEVLUMP_HEIGHTFIELDS = 0,	// heightfield data
 	LEVLUMP_VISIBILITY,			// visibility bits for each region and their subdivisions
-	LEVLUMP_ROADS,				// roads (straights) which are connected with junctions
+	LEVLUMP_OLDROADS,			// ------ old structures
 	LEVLUMP_NAVIGATIONGRIDS,	// A* navigation grids for each heightfield
 	LEVLUMP_OCCLUDERS,			// occlusion lines
 
@@ -27,6 +27,7 @@ enum ELevelLumps
 	LEVLUMP_OBJECTDEFS,			// object definition cache ()
 
 	LEVLUMP_ZONES,				// region zone name lists of levZoneRegions_t
+	LEVLUMP_ROADS,				// roads (straights) which are connected with junctions
 
 	// TODO: curves?
 
@@ -172,9 +173,9 @@ enum ERoadFlags
 inline bool IsJunctionType(ERoadType type)				{ return (type == ROADTYPE_JUNCTION);  }
 inline bool IsJunctionOrPavementType(ERoadType type)	{ return (type == ROADTYPE_JUNCTION || type == ROADTYPE_PAVEMENT);  }
 
-struct levroadcell_s
+struct oldlevroadcell_s
 {
-	levroadcell_s()
+	oldlevroadcell_s()
 	{
 		type = ROADTYPE_NOROAD;
 		flags = 0;
@@ -191,7 +192,28 @@ struct levroadcell_s
 	ushort	posY;
 };
 
-ALIGNED_TYPE(levroadcell_s,4) levroadcell_t;
+ALIGNED_TYPE(oldlevroadcell_s,4) oldlevroadcell_t;
+
+// new road
+struct levroadcell_s
+{
+	levroadcell_s()
+	{
+		type = ROADTYPE_NOROAD;
+		flags = 0;
+		direction = ROADDIR_NORTH;
+		id = 0xFFFF;
+	}
+
+	ushort	id;				// used for junction identification; Also suitable for roads
+	uint8	type;			// ERoadType
+	uint8	flags;			// ERoadFlags
+	uint8	direction;		// ERoadDir
+	uint8	x;
+	uint8	y;
+};
+
+ALIGNED_TYPE(levroadcell_s, 4) levroadcell_t;
 
 //-----------------------------------------------------------------------------------
 

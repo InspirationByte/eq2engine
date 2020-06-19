@@ -117,7 +117,7 @@ public:
 		wxBoxSizer* bSizer17;
 		bSizer17 = new wxBoxSizer(wxVERTICAL);
 
-		bSizer17->Add(new wxStaticText(this, wxID_ANY, wxT("Enter Addon folder"), wxDefaultPosition, wxDefaultSize, 0), 0, wxALL, 5);
+		bSizer17->Add(new wxStaticText(this, wxID_ANY, wxT("Select addon (Empty for base game)"), wxDefaultPosition, wxDefaultSize, 0), 0, wxALL, 5);
 
 		m_pGamesList = new wxComboBox(this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize(200, -1), 0, NULL, 0);
 		bSizer17->Add(m_pGamesList, 0, wxALL | wxALIGN_CENTER_HORIZONTAL, 5);
@@ -159,7 +159,7 @@ public:
 		{
 			if (m_pGamesList->GetValue().length())
 			{
-				g_fileSystem->AddSearchPath("$MOD$", m_pGamesList->GetValue());
+				g_fileSystem->AddSearchPath("$MOD$_$WRITE$", m_pGamesList->GetValue());
 			}
 
 			EndModal(wxID_OK);
@@ -1167,6 +1167,9 @@ void CMainWindow::ProcessMouseEvents(wxMouseEvent& event)
 
 	g_camera_rotation = cam_angles;
 	g_camera_target = cam_pos;
+
+	g_camera_rotation.x = ConstrainAngle360(g_camera_rotation.x);
+	g_camera_rotation.y = ConstrainAngle360(g_camera_rotation.y);
 }
 
 void CMainWindow::ProcessKeyboardDownEvents(wxKeyEvent& event)
@@ -1362,6 +1365,7 @@ void CMainWindow::ReDraw()
 	// compute time since last frame
 	g_realtime = Platform_GetCurrentTime();
 	
+	/*
 	float fps = 120;
 
 	if (fps != 0)
@@ -1374,7 +1378,7 @@ void CMainWindow::ReDraw()
 
 		if ((g_realtime - g_oldrealtime) < minframetime)
 			return;
-	}
+	}*/
 	
 	g_frametime = g_realtime - g_oldrealtime;
 	g_oldrealtime = g_realtime;
@@ -1522,6 +1526,8 @@ bool InitCore(char *pCmdLine)
 
 	if(!g_fileSystem->Init(false))
 		return false;
+
+	kvkeybase_t* pFilesystem = GetCore()->GetConfig()->FindKeyBase("FileSystem", KV_FLAG_SECTION);
 
 	g_fileSystem->AddSearchPath("$EDITOR$", "Editor");
 

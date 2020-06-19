@@ -189,6 +189,9 @@ public:
 	void			SaveEditorBrushes(const char* levelName);
 	void			LoadEditorBrushes(const char* levelName);
 
+	void			SaveEditorMisc(const char* levelName);
+	void			LoadEditorMisc(const char* levelName);
+
 	void			PostLoadEditorBuildings( DkList<buildLayerColl_t*>& buildingTemplates );
 
 	CEditorLevel*	CreatePrefab(const IVector2D& minCell, const IVector2D& maxCell, int flags /*EPrefabCreationFlags*/);
@@ -225,8 +228,9 @@ public:
 	void						WriteRegionOccluders(IVirtualStream* stream);
 	void						WriteRegionRoads(IVirtualStream* stream);
 
-	void						ClearRoadTrafficLightStates();
+	void						IdentifyRoads();
 	void						PostprocessCellObject(regionObject_t* obj);
+	
 
 	void						Ed_AddObject(regionObject_t* obj);
 	void						Ed_RemoveObject(regionObject_t* obj);

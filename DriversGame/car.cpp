@@ -1075,8 +1075,8 @@ void CCar::PlaceOnRoadCell(CLevelRegion* reg, levroadcell_t* cell)
 		return;
 
 	Vector3D t,b,n;
-	reg->GetHField()->GetTileTBN(cell->posX, cell->posY, t,b,n);
-	Vector3D pos = reg->CellToPosition(cell->posX, cell->posY);
+	reg->GetHField()->GetTileTBN(cell->x, cell->y, t,b,n);
+	Vector3D pos = reg->CellToPosition(cell->x, cell->y);
 
 	float roadCellAngle = cell->direction*-90.0f + 180.0f;
 

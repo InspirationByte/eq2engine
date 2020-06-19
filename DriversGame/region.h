@@ -248,7 +248,7 @@ public:
 	IVector2D						GetTileAndNeighbourRegion(int x, int y, CLevelRegion** reg) const;
 
 	void							ReadLoadRegion(IVirtualStream* stream, DkList<CLevObjectDef*>& models);
-	void							ReadLoadRoads(IVirtualStream* stream);
+	void							ReadLoadRoads(IVirtualStream* stream, bool fix);
 	void							ReadLoadOccluders(IVirtualStream* stream);
 
 	void							RespawnObjects();

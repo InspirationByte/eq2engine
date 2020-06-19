@@ -193,6 +193,17 @@ bool CGameLevel::_Load(IFile* pFile)
 			pFile->Seek(lump.size, VS_SEEK_CUR);
 #endif
 		}
+		else if (lump.type == LEVLUMP_OLDROADS)
+		{
+			DevMsg(DEVMSG_GAME, "LEVLUMP_OLDROADS size = %d\n", lump.size);
+
+			int lump_pos = pFile->Tell();
+
+			// read road offsets
+			ReadRoadsLump(pFile, true);
+
+			pFile->Seek(lump_pos + lump.size, VS_SEEK_SET);
+		}
 		else if(lump.type == LEVLUMP_ROADS)
 		{
 			DevMsg(DEVMSG_GAME, "LEVLUMP_ROADS size = %d\n", lump.size);
@@ -200,7 +211,7 @@ bool CGameLevel::_Load(IFile* pFile)
 			int lump_pos = pFile->Tell();
 
 			// read road offsets
-			ReadRoadsLump(pFile);
+			ReadRoadsLump(pFile, false);
 
 			pFile->Seek(lump_pos+lump.size, VS_SEEK_SET);
 		}
@@ -650,7 +661,7 @@ void CGameLevel::ReadHeightfieldsLump( IVirtualStream* stream )
 	}
 }
 
-void CGameLevel::ReadRoadsLump(IVirtualStream* stream)
+void CGameLevel::ReadRoadsLump(IVirtualStream* stream, bool fix)
 {
 	int* roadOffsets = new int[m_wide*m_tall];
 	stream->Read(roadOffsets, m_wide*m_tall, sizeof(int));
@@ -670,7 +681,7 @@ void CGameLevel::ReadRoadsLump(IVirtualStream* stream)
 			int roadsOffset = roadDataOffset + roadOffsets[idx];
 			stream->Seek(roadsOffset, VS_SEEK_SET);
 
-			m_regions[idx].ReadLoadRoads(stream);
+			m_regions[idx].ReadLoadRoads(stream, fix);
 		}
 	}
 
@@ -920,12 +931,72 @@ float CGameLevel::GetWaterLevelAt(const IVector2D& tilePos) const
 
 //------------------------------------------------------------------------------------------------------------------------------------
 
+int CGameLevel::Road_GetFullStraight(straight_t& str, int numIterations /*= 32*/) const
+{
+	if (str.direction == -1)
+		return 0;
+
+	int doneIterations;
+
+	CLevelRegion* pRegion = NULL;
+
+	IVector2D localStartPos;
+
+	if (GetRegionAndTileAt(str.start, &pRegion, localStartPos))
+	{
+		if (!pRegion->m_roads)
+			return 0;
+
+		int tileIdx = localStartPos.y * m_cellsSize + localStartPos.x;
+
+		levroadcell_t& startCell = pRegion->m_roads[tileIdx];
+
+		int dx[4] = ROADNEIGHBOUR_OFFS_X(0);
+		int dy[4] = ROADNEIGHBOUR_OFFS_Y(0);
+
+		IVector2D lastPos = localStartPos;
+
+		for (int i = 0; i < numIterations; i++)
+		{
+			// go that direction
+			IVector2D xyPos = lastPos - IVector2D(dx[str.direction], dy[str.direction]);
+
+			lastPos = xyPos;
+
+			CLevelRegion* pNextRegion;
+
+			xyPos = pRegion->GetTileAndNeighbourRegion(xyPos.x, xyPos.y, &pNextRegion);
+			int nextTileIdx = xyPos.y * m_cellsSize + xyPos.x;
+
+			if (!pNextRegion)
+				break;
+
+			if (!pNextRegion->m_roads)
+				break;
+
+			levroadcell_t& roadCell = pNextRegion->m_roads[nextTileIdx];
+
+			if (roadCell.type != ROADTYPE_STRAIGHT || roadCell.direction != str.direction)
+				break;
+
+			// move straight start position
+			str.start -= IVector2D(dx[str.direction], dy[str.direction]);
+			str.breakIter++;
+
+			doneIterations++;
+		}
+	}
+
+	return doneIterations;
+}
+
 
 straight_t CGameLevel::Road_GetStraightAtPoint( const IVector2D& point, int numIterations ) const
 {
 	CLevelRegion* pRegion = NULL;
 
 	straight_t straight;
+
 	IVector2D localPos;
 
 	if( GetRegionAndTileAt(point, &pRegion, localPos ))
@@ -1022,7 +1093,6 @@ straight_t CGameLevel::Road_GetStraightAtPos( const Vector3D& pos, int numIterat
 
 	return Road_GetStraightAtPoint(globPos, numIterations);
 }
-
 roadJunction_t CGameLevel::Road_GetJunctionAtPoint( const IVector2D& point, int numIterations ) const
 {
 	const int MAX_ITERATIONS_TO_JUNCTION_START = 0;

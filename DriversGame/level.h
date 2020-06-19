@@ -132,16 +132,18 @@ public:
 	straight_t						Road_GetStraightAtPoint( const IVector2D& point, int numIterations = 4 ) const;		// calculates straight starting from global tile 2D point
 	straight_t						Road_GetStraightAtPos( const Vector3D& pos, int numIterations = 4 ) const;			// calculates straight starting from 3D position
 
+	int								Road_GetFullStraight(straight_t& str, int numIterations = 32) const;				// extends start point of straight
+
 	roadJunction_t					Road_GetJunctionAtPoint( const IVector2D& point, int numIterations = 4 ) const;		// calculates junction starting from global tile 2D point
 	roadJunction_t					Road_GetJunctionAtPos( const Vector3D& pos, int numIterations = 4 ) const;			// calculates junction starting from 3D position
 
-	// current road lane
+	// get road lane
 	int								Road_GetLaneIndexAtPoint( const IVector2D& point, int numIterations = 8 );			// calculates lane number from road at global tile 2D point
 	int								Road_GetLaneIndexAtPos( const Vector3D& pos, int numIterations = 8 );				// calculates lane number from road at 3D position
 
 	// road width in lane count
 	int								Road_GetNumLanesAtPoint( const IVector2D& point, int numIterations = 8 );			// calculates lane count from lane at global tile 2D point
-	int								Road_GetNumLanesAtPos( const Vector3D& pos, int numIterations = 8 );					// calculates lane count from lane at 3D position
+	int								Road_GetNumLanesAtPos( const Vector3D& pos, int numIterations = 8 );				// calculates lane count from lane at 3D position
 
 	int								Road_GetWidthInLanesAtPoint( const IVector2D& point, int numIterations = 16, int iterationsOnEmpty = 0 );	// calculates road width in lanes from road at global tile 2D point
 	int								Road_GetWidthInLanesAtPos( const Vector3D& pos, int numIterations = 16 );		// calculates road width in lanes from road at 3D position
@@ -207,7 +209,7 @@ protected:
 
 	void					ReadObjectDefsLump(IVirtualStream* stream);
 	void					ReadHeightfieldsLump(IVirtualStream* stream);
-	void					ReadRoadsLump(IVirtualStream* stream);
+	void					ReadRoadsLump(IVirtualStream* stream, bool fix);
 
 	void					ReadRegionInfo(IVirtualStream* stream);
 

@@ -491,7 +491,7 @@ bool CPedestrianAI::GetNextPath(int dir)
 	if (cell && cell->type == ROADTYPE_PAVEMENT)
 	{
 		IVector2D curTile;
-		g_pGameWorld->m_level.LocalToGlobalPoint(IVector2D(cell->posX, cell->posY), reg, curTile);
+		g_pGameWorld->m_level.LocalToGlobalPoint(IVector2D(cell->x, cell->y), reg, curTile);
 
 		int tileOfsX[] = ROADNEIGHBOUR_OFFS_X(curTile.x);
 		int tileOfsY[] = ROADNEIGHBOUR_OFFS_Y(curTile.y);
@@ -503,7 +503,7 @@ bool CPedestrianAI::GetNextPath(int dir)
 			if (nCell && nCell->type == ROADTYPE_PAVEMENT)
 			{
 				IVector2D nTile;
-				g_pGameWorld->m_level.LocalToGlobalPoint(IVector2D(nCell->posX, nCell->posY), reg, nTile);
+				g_pGameWorld->m_level.LocalToGlobalPoint(IVector2D(nCell->x, nCell->y), reg, nTile);
 
 				if (nCell != m_prevRoadCell && nCell != m_nextRoadCell)
 				{
