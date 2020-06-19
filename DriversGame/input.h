@@ -58,11 +58,11 @@ void RegisterInputJoysticEssentials();
 #define DECLARE_ACTION(localName, bitFlag)											\
 	DECLARE_CMD_RENAME(act_##localName##_enable ,"+"#localName, nullptr, CV_CLIENTCONTROLS) \
 	{				\
-		g_nClientButtons |= bitFlag;											\
+		g_nClientButtons |= (bitFlag);											\
 	}																				\
 	DECLARE_CMD_RENAME(act_##localName##_disable ,"-"#localName, nullptr, CV_CLIENTCONTROLS) \
 	{																				\
-		g_nClientButtons &= ~bitFlag;											\
+		g_nClientButtons &= ~(bitFlag);											\
 	}																				\
 
 #endif // INPUT_H

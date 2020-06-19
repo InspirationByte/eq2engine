@@ -224,8 +224,12 @@ void DkSoundSampleLocal::Init(const char *name, int flags)
 
 bool DkSoundSampleLocal::Load()
 {
-	if(m_flags & SAMPLE_FLAG_STREAMED)
+	if (m_flags & SAMPLE_FLAG_STREAMED)
+	{
+		m_loadState = SAMPLE_LOAD_OK;
 		return true;
+	}
+
 
 	EqString ext = m_szName.Path_Extract_Ext();
 
@@ -246,6 +250,8 @@ bool DkSoundSampleLocal::Load()
 		status = false;
 		MsgError("DkSoundSample::Load '%s' failed, extension not supported\n", m_szName.c_str());
 	}
+
+	m_loadState = status ? SAMPLE_LOAD_OK : SAMPLE_LOAD_ERROR;
 
 	return status;
 }
@@ -458,10 +464,7 @@ void DkSoundSampleLocal::SampleLoaderJob(void* smp, int i)
 {
 	DkSoundSampleLocal* sample = (DkSoundSampleLocal*)smp;
 
-	if(sample->Load())
-		sample->m_loadState = SAMPLE_LOAD_OK;
-	else
-		sample->m_loadState = SAMPLE_LOAD_ERROR;
+	sample->Load();
 }
 
 

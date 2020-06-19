@@ -88,8 +88,8 @@ public:
 	void						ShowMotionBlur(bool enable) { m_showMotionBlur = enable; }
 	bool						IsMotionBlurShown() const { return m_showMotionBlur; }
 
-	void						FadeIn( bool useCurtains = false );
-	void						FadeOut();
+	void						FadeIn( bool useCurtains, float time );
+	void						FadeOut( bool useCurtains, float time );
 
 	equi::IUIControl*			FindChildElement(const char* name) const;
 	equi::IUIControl*			GetRootElement() const;
@@ -143,9 +143,9 @@ protected:
 	EScreenAlertType					m_screenAlertType;
 
 	float								m_fadeValue;
+	float								m_fadeTarget;		// both time and target value
 
 	bool								m_fadeCurtains;
-	bool								m_faded;
 
 	bool								m_enable;
 	bool								m_enableInReplay;

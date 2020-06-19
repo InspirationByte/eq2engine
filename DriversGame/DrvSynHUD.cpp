@@ -45,8 +45,9 @@ DECLARE_CMD(hud_showLastMessage, NULL, 0)
 
 CDrvSynHUDManager::CDrvSynHUDManager()
 	: m_handleCounter(0), m_mainVehicle(nullptr), m_curTime(0.0f), m_mapTexture(nullptr), m_showMap(true), m_screenAlertTime(0.0f), m_screenMessageTime(0.0f), 
-		m_hudLayout(nullptr), m_hudDamageBar(nullptr), 	m_hudFelonyBar(nullptr), m_hudMap(nullptr), m_hudTimer(nullptr), m_fadeValue(0.0f), m_fadeCurtains(false), m_faded(false),
-	m_blurAccumMat(nullptr), m_blurMat(nullptr), m_framebufferTex(nullptr), m_blurAccumTex(nullptr)
+		m_hudLayout(nullptr), m_hudDamageBar(nullptr), 	m_hudFelonyBar(nullptr), m_hudMap(nullptr), m_hudTimer(nullptr), 
+		m_fadeValue(0.0f), m_fadeCurtains(false), m_fadeTarget(false),
+		m_blurAccumMat(nullptr), m_blurMat(nullptr), m_framebufferTex(nullptr), m_blurAccumTex(nullptr)
 {
 }
 
@@ -84,7 +85,7 @@ void CDrvSynHUDManager::Init()
 	m_screenAlertInTime = 0.0f;
 	m_screenAlertText.Clear();
 
-	m_faded = false;
+	m_fadeTarget = 0.0f;
 	m_fadeCurtains = false;
 	m_fadeValue = 0.0f;
 	m_showMotionBlur = false;
@@ -326,18 +327,18 @@ void CDrvSynHUDManager::SetTimeDisplay(bool enabled, double time)
 	}
 }
 
-void CDrvSynHUDManager::FadeIn( bool useCurtains )
+void CDrvSynHUDManager::FadeIn( bool useCurtains, float time)
 {
-	m_fadeValue = 1.0f;
-	m_faded = false;
+	m_fadeValue = time;
+	m_fadeTarget = -time;
 	m_fadeCurtains = useCurtains;
 }
 
-void CDrvSynHUDManager::FadeOut()
+void CDrvSynHUDManager::FadeOut(bool useCurtains, float time)
 {
 	m_fadeValue = 0.0f;
-	m_faded = true;
-	m_fadeCurtains = false;
+	m_fadeTarget = time;
+	m_fadeCurtains = useCurtains;
 }
 
 equi::IUIControl* CDrvSynHUDManager::FindChildElement(const char* name) const
@@ -705,26 +706,31 @@ void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize)
 	materials->SetRasterizerStates(CULL_FRONT, FILL_SOLID);
 	materials->SetDepthStates(false, false);
 	materials->BindMaterial(materials->GetDefaultMaterial());
+	
+	float fadeTarget = m_fadeTarget;
+	float fadeValue = m_fadeValue;
 
 	// fade screen
-	if(m_fadeValue > 0.0f)
+	if (fadeValue > 0.0f && fabs(fadeTarget) > 0)
 	{
 		ColorRGBA blockCol(0.0, 0.0, 0.0, 1.0f);
 
-		if(m_fadeCurtains)
+		float fadeFactor = fadeValue / fabs(fadeTarget);
+
+		if (m_fadeCurtains)
 		{
-			Vector2D rectTop[] = { MAKEQUAD(0, 0,screenSize.x, screenSize.y*m_fadeValue*0.5f, 0) };
-			Vector2D rectBot[] = { MAKEQUAD(0, screenSize.y*0.5f + screenSize.y*(1.0f - m_fadeValue)*0.5f,screenSize.x, screenSize.y, 0) };
+			Vector2D rectTop[] = { MAKEQUAD(0, 0,screenSize.x, screenSize.y*fadeFactor*0.5f, 0) };
+			Vector2D rectBot[] = { MAKEQUAD(0, screenSize.y*0.5f + screenSize.y*(1.0f - fadeFactor)*0.5f,screenSize.x, screenSize.y, 0) };
 
 			meshBuilder.Begin(PRIM_TRIANGLE_STRIP);
-				meshBuilder.Color4fv(blockCol);
+			meshBuilder.Color4fv(blockCol);
 				meshBuilder.Quad2(rectTop[0], rectTop[1], rectTop[2], rectTop[3]);
 				meshBuilder.Quad2(rectBot[0], rectBot[1], rectBot[2], rectBot[3]);
 			meshBuilder.End();
 		}
 		else
 		{
-			blockCol.w = m_fadeValue;
+			blockCol.w = fadeFactor;
 
 			Vector2D rect[] = { MAKEQUAD(0, 0,screenSize.x, screenSize.y, 0) };
 
@@ -735,12 +741,12 @@ void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize)
 		}
 	}
 
-	if(m_faded)
-		m_fadeValue += fDt;
+	if (fadeTarget < 0)	// fade in
+		fadeValue -= fDt;
 	else
-		m_fadeValue -= fDt * (m_fadeCurtains ? 4.0f : 1.0f);
+		fadeValue += fDt;
 
-	m_fadeValue = clamp(m_fadeValue, 0.0f, 1.0f);
+	m_fadeValue = clamp(fadeValue, 0.0f, fabs(fadeTarget));
 
 	if(hudEnabled)
 	{
@@ -998,6 +1004,8 @@ void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize)
 		}
 	}
 
+	m_hudLayout->Render();
+
 	if (hud_show_controls.GetBool() && m_mainVehicle)
 	{
 		eqFontStyleParam_t style;
@@ -1132,8 +1140,6 @@ void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize)
 			m_screenMessageTime -= fDt;
 		}
 	}
-
-	m_hudLayout->Render();
 }
 
 

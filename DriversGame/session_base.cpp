@@ -118,7 +118,7 @@ void CGameSessionBase::Init()
 		g_replayTracker->StartPlay();
 
 	// just before the scripted call occurs, we fade in by default
-	g_pGameHUD->FadeIn(true);
+	g_pGameHUD->FadeIn(true, 0.3f);
 
 	//
 	// MISSION SCRIPT INITIALIZER CALL
