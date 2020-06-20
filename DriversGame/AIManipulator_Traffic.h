@@ -19,11 +19,13 @@ struct junctionDetail_t
 	junctionDetail_t()
 	{
 		selectedExit = 0;
+		id = 0xFFFF;
 	}
 
 	DkList<straight_t>	exits;
 	int					selectedExit;
 	int					size;
+	ushort				id;
 	bool				availDirs[4];
 };
 

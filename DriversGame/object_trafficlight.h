@@ -43,16 +43,17 @@ public:
 
 protected:
 
+	DkList<trafficlights_t>	m_lights;
+
 	CEqCollisionObject*		m_physObj;
 
 	int						m_trafficDir;	// the traffic light direction
+	float					m_flickerTime;
 
-	DkList<trafficlights_t>	m_lights;
-	
+	ushort					m_junctionId;
 
 	bool					m_flicker;
 	bool					m_killed;
-	float					m_flickerTime;
 };
 
 #endif // OBJECT_TRAFFICLIGHT_H

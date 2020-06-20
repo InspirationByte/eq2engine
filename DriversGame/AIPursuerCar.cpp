@@ -728,7 +728,7 @@ EInfractionType CAIPursuerCar::CheckTrafficInfraction(CCar* car, bool checkFelon
 		Plane		roadEndPlane(roadDir, -dot(roadDir, endPos));
 
 		// brake on global traffic light value
-		int trafficLightDir = g_pGameWorld->m_globalTrafficLightDirection;
+		int trafficLightDir = g_pGameWorld->m_trafficLightPhase[cell_checkRed->id % 2] % 2;
 
 		int curDir = straight_checkRed.direction % 2;
 

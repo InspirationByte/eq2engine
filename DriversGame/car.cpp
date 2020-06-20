@@ -1083,7 +1083,9 @@ void CCar::PlaceOnRoadCell(CLevelRegion* reg, levroadcell_t* cell)
 	Matrix3x3 cellAngle(b,n,t);
 	Matrix3x3 finalAngle = !cellAngle*rotateY3(DEG2RAD(roadCellAngle) );
 
-	SetOrigin(pos - Vector3D(0.0f, m_conf->physics.wheels[0].suspensionBottom.y, 0.0f));
+	float yOffset = (1.0f - n.y) * 10.0f - m_conf->physics.wheels[0].suspensionBottom.y;
+
+	SetOrigin(pos + Vector3D(0.0f, yOffset, 0.0f));
 
 	Quaternion rotation( finalAngle );
 	renormalize(rotation);

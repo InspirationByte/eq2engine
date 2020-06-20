@@ -44,6 +44,7 @@ struct roadJunction_t
 	{
 		startIter = 0;
 		breakIter = 0;
+		id = 0xFFFF;
 	}
 
 	IVector2D	start;
@@ -51,6 +52,8 @@ struct roadJunction_t
 
 	int			startIter;
 	int			breakIter;
+
+	ushort		id;
 };
 
 struct pathFindResult_t

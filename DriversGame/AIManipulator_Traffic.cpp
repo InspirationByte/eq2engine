@@ -288,6 +288,7 @@ void CAITrafficManipulator::ChangeRoad(const straight_t& road)
 
 	// do it every time now
 	m_junction.selectedExit = -1;
+	m_junction.id = 0xFFFF;
 	m_junction.exits.clear();
 
 	//SearchJunctionAndStraight();
@@ -299,6 +300,7 @@ void CAITrafficManipulator::SearchJunctionAndStraight()
 
 	m_junction.exits.clear(false);
 	m_junction.selectedExit = -1;
+	m_junction.id = 0xFFFF;
 
 	if (!HasRoad())
 		return;
@@ -309,6 +311,7 @@ void CAITrafficManipulator::SearchJunctionAndStraight()
 		return;
 
 	m_junction.size = junc.breakIter;
+	m_junction.id = junc.id;
 
 	Road_GetJunctionExits(m_junction.exits, m_straights[STRAIGHT_CURRENT], junc);
 
@@ -767,7 +770,7 @@ void CAITrafficManipulator::UpdateAffector(ai_handling_t& handling, CCar* car, f
 	// set isAllowedToMove
 	{
 		// brake on global traffic light value
-		int trafficLightDir = g_pGameWorld->m_globalTrafficLightDirection;
+		int trafficLightDir = g_pGameWorld->m_trafficLightPhase[m_junction.id % 2] % 2;
 
 		int curStraightDir = m_straights[STRAIGHT_CURRENT].direction;
 
@@ -778,7 +781,7 @@ void CAITrafficManipulator::UpdateAffector(ai_handling_t& handling, CCar* car, f
 
 		isAllowedToMove = hasTrafficLight ? (trafficLightDir % 2 == curStraightDir % 2) : true;
 
-		hasToStopAtTrafficLight = !g_disableTrafficLights.GetBool() && (!isAllowedToMove || (g_pGameWorld->m_globalTrafficLightTime < 2.0f));
+		hasToStopAtTrafficLight = !g_disableTrafficLights.GetBool() && (!isAllowedToMove || (g_pGameWorld->m_trafficLightTime[m_junction.id % 2] < 2.0f));
 	}
 
 	//

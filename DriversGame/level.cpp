@@ -1102,6 +1102,7 @@ roadJunction_t CGameLevel::Road_GetJunctionAtPoint( const IVector2D& point, int 
 	roadJunction_t junction;
 	junction.breakIter = 0;
 	junction.startIter = -1;
+	junction.id = 0xFFFF;
 
 	IVector2D localPos;
 
@@ -1128,6 +1129,7 @@ roadJunction_t CGameLevel::Road_GetJunctionAtPoint( const IVector2D& point, int 
 		// if we already on junction
 		if(IsJunctionType((ERoadType)startCell.type))
 		{
+			junction.id = startCell.id;
 			return junction;
 		}
 
@@ -1172,6 +1174,8 @@ roadJunction_t CGameLevel::Road_GetJunctionAtPoint( const IVector2D& point, int 
 
 				junction.startIter = i;
 			}
+
+			junction.id = roadCell.id;
 
 			// set the original direction
 			junction.end = xyPos;
@@ -1540,7 +1544,7 @@ bool CGameLevel::Road_FindBestCellForTrafficLight( IVector2D& out, const Vector3
 	*/
 
 	// do some more left steps
-	for (int r = 0; r < 2; r++)
+	for (int r = 0; r < 4; r++)
 	{
 		IVector2D roadTilePos = cellPos - rightDir * (r + 1) - forwardDir;
 		

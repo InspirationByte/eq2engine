@@ -142,7 +142,7 @@ public:
 
 	void						SetCopCar(const char* car_name, int type);	// sets cop car configuration
 
-	bool						CreateRoadBlock( const Vector3D& position, float directionAngle, float distance = -1);
+	bool						CreateRoadBlock( const Vector3D& position, float directionAngle, int rows, float distance = -1);
 	bool						IsRoadBlockSpawn() const;
 
 	void						UpdateRoadblocks();

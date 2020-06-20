@@ -30,6 +30,7 @@ CObject_TrafficLight::CObject_TrafficLight( kvkeybase_t* kvdata )
 	m_killed = false;
 	m_flickerTime = 0;
 	m_trafficDir = 0;
+	m_junctionId = 0xFFFF;
 }
 
 CObject_TrafficLight::~CObject_TrafficLight()
@@ -125,6 +126,34 @@ void CObject_TrafficLight::Spawn()
 		}
 	}
 
+	// get it's junction
+	{
+		IVector2D cellPos = g_pGameWorld->m_level.PositionToGlobalTilePoint(GetOrigin());
+
+		int dx[4] = ROADNEIGHBOUR_OFFS_X(0);
+		int dy[4] = ROADNEIGHBOUR_OFFS_Y(0);
+
+		int laneRowDir = GetPerpendicularDir(m_trafficDir);
+		IVector2D forwardDir = IVector2D(dx[m_trafficDir], dy[m_trafficDir]);
+		IVector2D rightDir = IVector2D(dx[laneRowDir], dy[laneRowDir]);
+
+		for (int i = 0; i < 4; i++)
+		{
+			for (int j = 0; j < 4; j++)
+			{
+				levroadcell_t* roadCell = g_pGameWorld->m_level.Road_GetGlobalTileAt(cellPos - rightDir * i - forwardDir * i + IVector2D(dx[j], dy[j]));
+				if (roadCell->type == ROADTYPE_JUNCTION)
+				{
+					m_junctionId = roadCell->id;
+					break;
+				}
+			}
+
+			if (m_junctionId != 0xFFFF)
+				break;
+		}
+	}
+
 	BaseClass::Spawn();
 }
 
@@ -185,6 +214,7 @@ void CObject_TrafficLight::Draw( int nRenderFlags )
 			Vector3D bestCellPos = g_pGameWorld->m_level.GlobalTilePointToPosition(bestCell);
 
 			debugoverlay->Box3D(bestCellPos-2,bestCellPos+2, ColorRGBA(0,1,1,1));
+			debugoverlay->Text3D(cellDirOrigin, 100.0f, color4_white, 0.0f, "junction id: %d\n", m_junctionId);
 		}
 	}
 
@@ -244,25 +274,25 @@ void CObject_TrafficLight::Simulate(float fDt)
 		float greenBlinker = 1.0f;
 		bool drawOrange = false;
 
-		float globalTrafficLightTime = g_pGameWorld->m_globalTrafficLightTime;
+		float trafficLightTime = g_pGameWorld->m_trafficLightTime[m_junctionId % 2];
 
 		// green light - blinks if remaining time less than 6 seconds, then yellow light shown when less than 2 seconds
-		if(g_pGameWorld->m_globalTrafficLightDirection == trafDir)
+		if(g_pGameWorld->m_trafficLightPhase[m_junctionId % 2] % 2 == trafDir)
 		{
-			drawOrange = (globalTrafficLightTime < 2.0f);
+			drawOrange = (trafficLightTime < 2.0f);
 
-			bool blinkGreen = (globalTrafficLightTime < 6.0f) && !drawOrange;
+			bool blinkGreen = (trafficLightTime < 6.0f) && !drawOrange;
 
 			drawnLightType = 2;
 
 			if(blinkGreen)
-				greenBlinker = clamp(sinf(globalTrafficLightTime*7.0f)*100.0f, 0.0f, 1.0f);
+				greenBlinker = clamp(sinf(trafficLightTime*7.0f)*100.0f, 0.0f, 1.0f);
 			else if(drawOrange)
 				drawnLightType = -1;
 		}
 		else // red light - shown always and yellow shows when time is less than 3 seconds
 		{
-			drawOrange = (globalTrafficLightTime < 3.0f);
+			drawOrange = (trafficLightTime < 3.0f);
 			drawnLightType = 0;
 		}
 

@@ -297,6 +297,8 @@ void CUI_RoadEditor::OnRender()
 				if(cell->type == ROADTYPE_NOROAD && cell->flags == 0)
 					continue;
 
+				
+
 				float dxv[4] = NEIGHBOR_OFFS_DX(x, 0.5f);
 				float dyv[4] = NEIGHBOR_OFFS_DY(y, 0.5f);
 
@@ -312,6 +314,8 @@ void CUI_RoadEditor::OnRender()
 				p3 += field->m_position;
 				p4 += field->m_position;
 
+				
+
 				ColorRGBA tileColor(0.75, 0.75, 0.75, 0.5f);
 
 				TexAtlasEntry_t* entry = m_trafficDir;
@@ -326,6 +330,8 @@ void CUI_RoadEditor::OnRender()
 				else if(cell->type == ROADTYPE_JUNCTION)
 				{
 					entry = m_trafficDirVar;
+
+					debugoverlay->Text3D(p1 + Vector3D(HFIELD_POINT_SIZE*0.5f,0, HFIELD_POINT_SIZE*0.5f), 100.0f, color4_white, 0.0f, "id: %d", cell->id);
 				}
 				else if(cell->type == ROADTYPE_PARKINGLOT)
 				{

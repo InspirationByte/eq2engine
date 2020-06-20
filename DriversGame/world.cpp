@@ -148,8 +148,8 @@ WorldGlobals_t::mtstruct_t::mtstruct_t() :
 BEGIN_NETWORK_TABLE_NO_BASE( CGameWorld )
 	DEFINE_SENDPROP_FLOAT(m_fNextThunderTime),
 	DEFINE_SENDPROP_FLOAT(m_fThunderTime),
-	DEFINE_SENDPROP_FLOAT(m_globalTrafficLightTime),
-	DEFINE_SENDPROP_INT(m_globalTrafficLightDirection),
+	//DEFINE_SENDPROP_FLOAT(m_globalTrafficLightTime),
+	//DEFINE_SENDPROP_INT(m_globalTrafficLightDirection),
 END_NETWORK_TABLE()
 
 CGameWorld::CGameWorld()
@@ -195,9 +195,6 @@ CGameWorld::CGameWorld()
 	m_envMap = nullptr;
 	m_fogEnvMap = nullptr;
 	m_skyMaterial = nullptr;
-
-	m_globalTrafficLightTime = 0.0f;
-	m_globalTrafficLightDirection = 0;
 
 	m_levelLoaded = false;
 
@@ -568,8 +565,11 @@ void CGameWorld::Init()
 	m_frameTime = 0.0f;
 	m_curTime = 0.0f;
 
-	m_globalTrafficLightTime = 0.0f;
-	m_globalTrafficLightDirection = 0;
+	for (int i = 0; i < 2; i++)
+	{
+		m_trafficLightTime[i] = 0.0f;
+		m_trafficLightPhase[i] = i;
+	}
 
 	m_lensIntensityTiming = 0.0f;
 
@@ -1198,12 +1198,15 @@ void CGameWorld::UpdateTrafficLightState(float fDt)
 	if( fDt <= 0.0f )
 		return;
 
-	m_globalTrafficLightTime -= fDt;
-
-	if(m_globalTrafficLightTime <= 0.0f)
+	for (int i = 0; i < 2; i++)
 	{
-		m_globalTrafficLightTime = TRAFFICLIGHT_TIME;
-		m_globalTrafficLightDirection = !m_globalTrafficLightDirection;
+		m_trafficLightTime[i] -= fDt;
+
+		if (m_trafficLightTime[i] > 0.0f)
+			continue;
+
+		m_trafficLightTime[i] = TRAFFICLIGHT_TIME;
+		m_trafficLightPhase[i]++;
 	}
 }
 

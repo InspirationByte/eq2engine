@@ -951,6 +951,13 @@ CEditorLevelRegion* CEditorLevel::Ed_MakeObjectRegionValid(regionObject_t* obj)
 	return correctReg;
 }
 
+// junction type
+struct junctionInfo_t
+{
+	DkList<IVector2D> cells;	// XZ pairs of global junctions
+	ushort id;
+};
+
 void CEditorLevel::WriteLevelRegions(IVirtualStream* file, bool isFinal)
 {
 	// ---------- LEVLUMP_REGIONINFO ----------
@@ -980,6 +987,9 @@ void CEditorLevel::WriteLevelRegions(IVirtualStream* file, bool isFinal)
 
 	DkList<zoneRegions_t> zoneRegionList;
 
+	// junction collection for identification
+	DkList<junctionInfo_t*> junctions;
+
 	// prepare regions
 	for (int x = 0; x < m_wide; x++)
 	{
@@ -989,7 +999,7 @@ void CEditorLevel::WriteLevelRegions(IVirtualStream* file, bool isFinal)
 
 			CEditorLevelRegion& reg = *(CEditorLevelRegion*)&m_regions[idx];
 		
-			reg.IdentifyRoads();
+			reg.IdentifyRoads(junctions);
 
 			// move objects to right regions too
 			for (int i = 0; i < reg.m_objects.numElem(); i++)
@@ -1000,6 +1010,13 @@ void CEditorLevel::WriteLevelRegions(IVirtualStream* file, bool isFinal)
 			}
 		}
 	}
+
+	Msg("Found road junctions on level: %d\n", junctions.numElem());
+
+	for (int i = 0; i < junctions.numElem(); i++)
+		delete junctions[i];
+
+	junctions.clear();
 
 	// process cell objects before writing
 	for (int x = 0; x < m_wide; x++)
@@ -2128,7 +2145,38 @@ int FindObjectDef(DkList<CLevObjectDef*>& listObjects, CLevObjectDef* container)
 	return -1;
 }
 
-void CEditorLevelRegion::IdentifyRoads()
+bool hasCell(junctionInfo_t* jn, const IVector2D& point)
+{
+	int dx[8] = NEIGHBOR_OFFS_XDX(point.x, 1);
+	int dy[8] = NEIGHBOR_OFFS_YDY(point.y, 1);
+
+	for (int i = 0; i < 8; i++)
+	{
+		for (int j = 0; j < jn->cells.numElem(); j++)
+		{
+			if (jn->cells[j].x == dx[i] && jn->cells[j].y == dy[i] ||
+				jn->cells[j].x == point.x && jn->cells[j].y == point.y)
+				return true;
+		}
+	}
+
+	return false;
+}
+
+// finds point by neighbours pixel.
+// only suitable for x,y iteration approach
+junctionInfo_t* GetJunctionByNeighbour(DkList<junctionInfo_t*>& junctions, const IVector2D& point)
+{
+	for (int i = 0; i < junctions.numElem(); i++)
+	{
+		if (hasCell(junctions[i], point))
+			return junctions[i];
+	}
+
+	return nullptr;
+}
+
+void CEditorLevelRegion::IdentifyRoads(DkList<junctionInfo_t*>& junctions)
 {
 	if (!m_roads)
 		return;
@@ -2148,16 +2196,55 @@ void CEditorLevelRegion::IdentifyRoads()
 		}
 	}
 
-	// before we do PostprocessCellObject, make sure we remove all traffic light flags from straights
+	// identify junctions
+	for (int y = 0; y < tall; y++)
+	{
+		for (int x = 0; x < wide; x++)
+		{
+			int idx = y * wide + x;
+
+			if (m_roads[idx].type != ROADTYPE_JUNCTION)
+				continue;
+
+			IVector2D globalRoadPt;
+			m_level->LocalToGlobalPoint(IVector2D(x,y), this, globalRoadPt);
+
+			junctionInfo_t* jn = GetJunctionByNeighbour(junctions, globalRoadPt);
+
+			if (!jn)
+			{
+				jn = new junctionInfo_t();
+				jn->id = junctions.append(jn);
+			}
+
+			jn->cells.append(globalRoadPt);
+			m_roads[idx].id = jn->id;
+		}
+	}
+
+	// identify junctions second pass
 	for (int x = 0; x < wide; x++)
 	{
 		for (int y = 0; y < tall; y++)
 		{
 			int idx = y * wide + x;
-			if (m_roads[idx].id == 0xFFFF && m_roads[idx].type == ROADTYPE_JUNCTION)
+
+			if (m_roads[idx].type != ROADTYPE_JUNCTION)
+				continue;
+
+			IVector2D globalRoadPt;
+			m_level->LocalToGlobalPoint(IVector2D(x, y), this, globalRoadPt);
+
+			junctionInfo_t* jn = GetJunctionByNeighbour(junctions, globalRoadPt);
+
+			if (!jn)
 			{
-				IdentifyJunction(x, y);
+				jn = new junctionInfo_t();
+				jn->id = junctions.append(jn);
 			}
+
+			jn->cells.append(globalRoadPt);
+			m_roads[idx].id = jn->id;
 		}
 	}
 }

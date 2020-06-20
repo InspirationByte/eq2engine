@@ -210,6 +210,8 @@ protected:
 
 //-----------------------------------------------------------------------------------
 
+struct junctionInfo_t;
+
 class CEditorLevelRegion : public CLevelRegion
 {
 	friend class CEditorLevel;
@@ -228,7 +230,7 @@ public:
 	void						WriteRegionOccluders(IVirtualStream* stream);
 	void						WriteRegionRoads(IVirtualStream* stream);
 
-	void						IdentifyRoads();
+	void						IdentifyRoads(DkList<junctionInfo_t*>& junctions);
 	void						PostprocessCellObject(regionObject_t* obj);
 	
 

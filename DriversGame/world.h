@@ -230,8 +230,8 @@ public:
 
 	float							m_envMapRegenTime;
 
-	CNetworkVar(float,				m_globalTrafficLightTime);
-	CNetworkVar(int,				m_globalTrafficLightDirection);
+	float							m_trafficLightTime[2];
+	int								m_trafficLightPhase[2];
 
 protected:
 
