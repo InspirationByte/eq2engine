@@ -678,6 +678,12 @@ inline TVec4D<T> cerp(const TVec4D<T> &u0, const TVec4D<T> &u1, const TVec4D<T> 
 }
 
 template <typename T>
+inline T sameSign(T a, T b)
+{
+	return a * b >= 0;
+}
+
+template <typename T>
 inline T sign(const T v)
 {
 	return (T)(v > 0) - (v < 0);
@@ -699,6 +705,17 @@ template <typename T>
 inline TVec4D<T> sign(const TVec4D<T> &v)
 {
 	return TVec4D<T>(sign(v.x), sign(v.y), sign(v.z), sign(v.w));
+}
+
+template <typename T>
+T approachValue(T v, T t, T s)
+{
+	const T newValue = v + s;
+
+	const T diffBefore = v - t;
+	const T diffAfter = newValue - t;
+
+	return diffBefore * diffAfter < 0 ? t : newValue;
 }
 
 template <typename T, typename T2>

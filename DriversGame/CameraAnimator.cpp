@@ -23,7 +23,8 @@ const float DEFAULT_CAMERA_FOV		= 52.0f;
 const float CAM_TURN_SPEED			= 3.0f;
 const float CAM_LOOK_TURN_SPEED		= 15.0f;
 
-const float CAM_HEIGHT_TRACE		= -0.5f;
+const float CAM_HEIGHT_TRACE_LOW	= -0.5f;
+const float CAM_HEIGHT_TRACE_HIGH	= 2.5f;
 
 const float ZOOM_START_DIST			= 8.0f;
 const float ZOOM_END_DIST			= 200.0f;
@@ -383,17 +384,14 @@ void CCameraAnimator::Animate(ECameraMode mode,
 
 		desiredLookAngle += m_rotation;
 
-		Vector3D fLookAngleDiff = AnglesDiff(m_interpLookAngle, desiredLookAngle);
+		Vector3D lookAngleDiff = AnglesDiff(m_interpLookAngle, desiredLookAngle);
 
-		if (fDt*CAM_LOOK_TURN_SPEED*0.5f > length(fLookAngleDiff))
-		{
-			fLookAngleDiff = vec3_zero;
-			m_interpLookAngle = desiredLookAngle;
-		}
+		Vector3D newLookAngle(
+			approachValue(m_interpLookAngle.x, desiredLookAngle.x, lookAngleDiff.x * fDt * CAM_LOOK_TURN_SPEED),
+			approachValue(m_interpLookAngle.y, desiredLookAngle.y, lookAngleDiff.y * fDt * CAM_LOOK_TURN_SPEED),
+			approachValue(m_interpLookAngle.z, desiredLookAngle.z, lookAngleDiff.z * fDt * CAM_LOOK_TURN_SPEED));
 
-
-		m_interpLookAngle += fLookAngleDiff * fDt * CAM_LOOK_TURN_SPEED;
-		m_interpLookAngle = NormalizeAngles180(m_interpLookAngle);
+		m_interpLookAngle = NormalizeAngles180(newLookAngle);
 	}
 
 	bool bLookBack = (m_btns & IN_LOOKLEFT) && (m_btns & IN_LOOKRIGHT);
@@ -450,7 +448,7 @@ void CCameraAnimator::Animate(ECameraMode mode,
 
 				Vector3D camPosTest = finalTargetPos - forward * desiredDist;
 
-				Vector3D cam_pos_hi(camPosTest.x, camPosTest.y + desiredHeight + 1.0f, camPosTest.z);
+				Vector3D cam_pos_hi(camPosTest.x, camPosTest.y + desiredHeight + CAM_HEIGHT_TRACE_HIGH, camPosTest.z);
 
 				// first trace up to determine maximum height
 				g_pPhysics->TestLine(camPosTest, cam_pos_hi, height_coll, OBJECTCONTENTS_SOLID_GROUND);
@@ -458,7 +456,7 @@ void CCameraAnimator::Animate(ECameraMode mode,
 				if (height_coll.fract < 1.0f)
 					cam_pos_hi.y = height_coll.position.y - 0.01f;
 
-				Vector3D cam_pos_low = camPosTest + vec3_up * CAM_HEIGHT_TRACE;
+				Vector3D cam_pos_low = camPosTest + vec3_up * CAM_HEIGHT_TRACE_LOW;
 
 				// second trace down
 				g_pPhysics->TestLine(cam_pos_hi, cam_pos_low, height_coll, OBJECTCONTENTS_SOLID_GROUND | OBJECTCONTENTS_WATER);

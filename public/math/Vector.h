@@ -481,6 +481,10 @@ TVec3D<T>	cerp(const TVec3D<T> &u0, const TVec3D<T> &u1, const TVec3D<T> &u2, co
 template <typename T>
 TVec4D<T>	cerp(const TVec4D<T> &u0, const TVec4D<T> &u1, const TVec4D<T> &u2, const TVec4D<T> &u3, float x);
 
+// sign comparison
+template <typename T>
+T			sameSign(T a, T b);
+
 // returns sign of value (-1 or 1)
 template <typename T>
 T			sign(const T v);
@@ -496,6 +500,10 @@ TVec3D<T>	sign(const TVec3D<T> &v);
 // returns vector4 sign of value (-1 or 1)
 template <typename T>
 TVec4D<T>	sign(const TVec4D<T> &v);
+
+// returns value + step with error correction of difference overflowing a target value
+template <typename T>
+T			approachValue(T v, T t, T s);
 
 // clamps value (v) to min (c0) and max (c1)
 template <typename T, typename T2>
