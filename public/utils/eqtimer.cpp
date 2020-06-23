@@ -23,35 +23,33 @@ float MEASURE_TIME_STATS(float begintime)
 CEqTimer::CEqTimer()
 {
 #ifdef _WIN32
-	QueryPerformanceFrequency(&m_PerformanceFrequency);
-	//m_PerformanceFrequency.QuadPart = m_PerformanceFrequency.QuadPart / 1000.0;
-
-	QueryPerformanceCounter(&m_ClockStart);
-
+	QueryPerformanceFrequency(&m_performanceFrequency);
 #else
-	 gettimeofday(&m_timeStart, NULL);
+	gettimeofday(&m_timeStart, NULL);
 #endif // _WIN32
 }
 
-double CEqTimer::GetTime()
+double CEqTimer::GetTime(bool reset /*= false*/)
 {
 #ifdef _WIN32
+	LARGE_INTEGER curr;
 
-	LARGE_INTEGER CurrentTime;
+	QueryPerformanceCounter( &curr);
 
-	QueryPerformanceCounter( &CurrentTime );
+	double value = double(curr.QuadPart - m_clockStart.QuadPart) / double(m_performanceFrequency.QuadPart);
 
-	//QueryPerformanceFrequency(&m_PerformanceFrequency);
-	//m_PerformanceFrequency.QuadPart = m_PerformanceFrequency.QuadPart / 1000.0;
-
-	return (double)( CurrentTime.QuadPart - m_ClockStart.QuadPart ) / (double)(m_PerformanceFrequency.QuadPart);
-
+	if (reset)
+		m_clockStart = curr;
 #else
-	// linux impl
     timeval curr;
 
     gettimeofday(&curr, NULL);
 
-    return (float(curr.tv_sec - m_timeStart.tv_sec) + 0.000001f * float(curr.tv_usec - m_timeStart.tv_usec));
+	double value = (float(curr.tv_sec - m_timeStart.tv_sec) + 0.000001f * float(curr.tv_usec - m_timeStart.tv_usec));
+
+	if (reset)
+		m_timeStart = curr;
 #endif // _WIN32
+
+	return value;
 }

@@ -26,13 +26,12 @@ class CEqTimer
 public:
 			CEqTimer();
 
-	double	GetTime();
+	double	GetTime(bool reset = false);
 
 protected:
 #ifdef _WIN32
-	LARGE_INTEGER	m_PerformanceFrequency;
-	//LARGE_INTEGER	m_MSPerformanceFrequency;
-	LARGE_INTEGER	m_ClockStart;
+	LARGE_INTEGER	m_performanceFrequency;
+	LARGE_INTEGER	m_clockStart;
 #else
 	timeval			m_timeStart;
 #endif // _WIN32

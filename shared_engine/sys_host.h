@@ -74,9 +74,7 @@ public:
 
 	void				SetWindowTitle(const char* windowTitle);
 
-	double				GetCurTime() const {return m_fCurTime;}
-	double				GetFrameTime() const {return m_fGameFrameTime;}
-	double				GetSysFrameTime() const { return m_fFrameTime; }
+	double				GetFrameTime() const {return m_accumTime;}
 
 	const IVector2D&	GetWindowSize() const {return m_winSize;}
 	IEqFont*			GetDefaultFont() const {return m_pDefaultFont;}
@@ -99,14 +97,21 @@ protected:
 
 	void				BeginScene();
 	void				EndScene();
+
 	bool				FilterTime( double fDt );
 
-	EQWNDHANDLE	m_pWindow;
+	debugGraphBucket_t m_fpsGraph;
 
 	IVector2D	m_winSize;
 	IVector2D	m_mousePos;
 	IVector2D	m_prevMousePos;
 	Vector2D	m_mouseDelta;
+
+	CEqTimer	m_timer;
+
+	EQWNDHANDLE	m_pWindow;
+
+	IEqFont*	m_pDefaultFont;
 
 	int			m_nQuitState;
 
@@ -114,24 +119,12 @@ protected:
 	bool		m_bDoneTrapping;
 	bool		m_skipMouseMove;
 
-	debugGraphBucket_t m_fpsGraph;
-
 	int			m_nTrapKey;
 	int			m_nTrapButtons;
 
 	bool		m_cursorCentered;
 
-	IEqFont*	m_pDefaultFont;
-
-	CEqTimer	m_timer;
-
-	double		m_fCurTime;
-	double		m_fFrameTime;
-	double		m_fOldTime;
-
-	double		m_fGameCurTime;
-	double		m_fGameFrameTime;
-	double		m_fGameOldTime;
+	double		m_accumTime;
 };
 
 extern CGameHost* g_pHost;

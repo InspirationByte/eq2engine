@@ -404,13 +404,7 @@ CGameHost::CGameHost() :
 	m_bTrapMode(false), m_skipMouseMove(false), m_bDoneTrapping(false), m_nTrapKey(0), m_nTrapButtons(0), m_cursorCentered(false),
 	m_pDefaultFont(NULL)
 {
-	m_fCurTime = 0;
-	m_fFrameTime = 0;
-	m_fOldTime = 0;
-
-	m_fGameCurTime = 0;
-	m_fGameFrameTime = 0;
-	m_fGameOldTime = 0;
+	m_accumTime = 0.0;
 
 	m_fpsGraph.Init("Frames per sec", ColorRGB(1,1,0), 80.0f);
 }
@@ -464,7 +458,11 @@ ConVar sys_timescale("sys_timescale", "1.0f", "Time scale", CV_CHEAT);
 bool CGameHost::FilterTime( double dTime )
 {
 	// Accumulate some time
-	m_fGameCurTime += dTime;
+	double frameTime = m_accumTime + dTime;
+
+	// limit to minimal frame time
+	frameTime = min(frameTime, MAX_FRAMETIME);
+	m_accumTime = max(frameTime, MIN_FRAMETIME);
 
 	double fps = GAME_MAX_FRAMERATE;
 	if ( fps != 0 )
@@ -475,22 +473,9 @@ bool CGameHost::FilterTime( double dTime )
 
 		double minframetime = 1.0 / fps;
 
-		m_fGameFrameTime = (m_fGameCurTime - m_fGameOldTime);
-
-		if(m_fGameFrameTime < minframetime )
+		if (frameTime < minframetime)
 			return false;
-
-		//m_fGameFrameTime = minframetime * (double)sys_timescale.GetFloat();
 	}
-	else
-	{
-		m_fGameFrameTime = (m_fGameCurTime - m_fGameOldTime);
-	}
-
-	m_fGameFrameTime = min( m_fGameFrameTime, MAX_FRAMETIME );
-	m_fGameFrameTime = max( m_fGameFrameTime, MIN_FRAMETIME );
-
-	m_fGameOldTime = m_fGameCurTime;
 
 	return true;
 }
@@ -531,22 +516,12 @@ void CGameHost::SetCursorShow(bool bShow)
 	SDL_ShowCursor(bShow);
 }
 
-extern bool s_bActive;
-
 ConVar r_showFPS("r_showFPS", "0", "Show the framerate", CV_ARCHIVE);
 ConVar r_showFPSGraph("r_showFPSGraph", "0", "Show the framerate graph", CV_ARCHIVE);
 
 bool CGameHost::Frame()
 {
-	m_fCurTime		= m_timer.GetTime();
-
-	// Set frame time
-	m_fFrameTime	= m_fCurTime - m_fOldTime;
-
-	// If the time is < 0, that means we've restarted.
-	// Set the new time high enough so the engine will run a frame
-	//if ( m_fFrameTime < 0.001 ) // 512 FPS
-	//	return;
+	double elapsedTime = m_timer.GetTime(true);
 
 	// Engine frames status
 	static float accTime = 0.1f;
@@ -560,17 +535,17 @@ bool CGameHost::Frame()
 		accTime = 0;
 	}
 
-	accTime += m_fFrameTime;
+	accTime += elapsedTime;
 	nFrames++;
-
-	m_fOldTime		= m_fCurTime;
 
 	m_prevMousePos = m_mousePos;
 
-	if( !FilterTime( m_fFrameTime ) )
+	if (!FilterTime(elapsedTime))
 		return false;
 
-	CEqGameControllerSDL::RepeatEvents(m_fGameFrameTime);
+	double gameFrameTime = m_accumTime;
+
+	CEqGameControllerSDL::RepeatEvents(gameFrameTime);
 
 	UpdateCursorState();
 
@@ -591,7 +566,7 @@ bool CGameHost::Frame()
 
 	double timescale = (EqStateMgr::GetCurrentState() ? EqStateMgr::GetCurrentState()->GetTimescale() : 1.0f);
 
-	if(!EqStateMgr::UpdateStates( m_fGameFrameTime * timescale * sys_timescale.GetFloat()))
+	if(!EqStateMgr::UpdateStates(gameFrameTime * timescale * sys_timescale.GetFloat()))
 	{
 		m_nQuitState = CGameHost::QUIT_TODESKTOP;
 		return false;
@@ -613,7 +588,7 @@ bool CGameHost::Frame()
 		gameAccTime = 0;
 	}
 
-	gameAccTime += m_fGameFrameTime;
+	gameAccTime += gameFrameTime;
 	nGameFrames++;
 
 	// game fps graph
@@ -631,10 +606,9 @@ bool CGameHost::Frame()
 
 	debugoverlay->Text(Vector4D(1,1,0,1), "-----ENGINE STATISTICS-----");
 	debugoverlay->Text(Vector4D(1), "System framerate: %i", fps);
-	debugoverlay->Text(Vector4D(1), "Game framerate: %i (ft=%g)", gamefps, m_fGameFrameTime);
+	debugoverlay->Text(Vector4D(1), "Game framerate: %i (ft=%g)", gamefps, gameFrameTime);
 	debugoverlay->Text(Vector4D(1), "DPS/DIPS: %i/%i", g_pShaderAPI->GetDrawCallsCount(), g_pShaderAPI->GetDrawIndexedPrimitiveCallsCount());
 	debugoverlay->Text(Vector4D(1), "primitives: %i", g_pShaderAPI->GetTrianglesCount());
-	debugoverlay->Text(Vector4D(1,1,1,1), "engtime: %.2f\n", m_fCurTime);
 
 	debugoverlay->Draw(m_winSize.x, m_winSize.y);
 
@@ -661,15 +635,14 @@ bool CGameHost::Frame()
 
 	// console should be drawn as normal in overdraw mode
 	materials->GetConfiguration().overdrawMode = false;
-	g_consoleInput->DrawSelf(m_winSize.x, m_winSize.y, m_fGameFrameTime);
+	g_consoleInput->DrawSelf(m_winSize.x, m_winSize.y, gameFrameTime);
 
 	// End frame from render lib
 	EndScene();
 
 	g_pShaderAPI->ResetCounters();
 
-	// Remember old time
-	m_fOldTime		= m_fCurTime;
+	m_accumTime = 0.0f;
 
 	return true;
 }
