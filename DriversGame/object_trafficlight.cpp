@@ -137,11 +137,13 @@ void CObject_TrafficLight::Spawn()
 		IVector2D forwardDir = IVector2D(dx[m_trafficDir], dy[m_trafficDir]);
 		IVector2D rightDir = IVector2D(dx[laneRowDir], dy[laneRowDir]);
 
-		for (int i = 0; i < 4; i++)
+		for (int i = 0; i < 8; i++)
 		{
+			int ii = i - 4;
+
 			for (int j = 0; j < 4; j++)
 			{
-				levroadcell_t* roadCell = g_pGameWorld->m_level.Road_GetGlobalTileAt(cellPos - rightDir * i - forwardDir * i + IVector2D(dx[j], dy[j]));
+				levroadcell_t* roadCell = g_pGameWorld->m_level.Road_GetGlobalTileAt(cellPos - rightDir * ii - forwardDir * ii + IVector2D(dx[j], dy[j]));
 				if (roadCell->type == ROADTYPE_JUNCTION)
 				{
 					m_junctionId = roadCell->id;

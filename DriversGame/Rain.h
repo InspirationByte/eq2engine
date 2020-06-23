@@ -70,7 +70,7 @@ protected:
 
 	Vector3D				m_viewVelocity;
 
-	float					m_curTime;
+	float					m_lightsTime;
 };
 
 extern RainEmitter* g_pRainEmitter;

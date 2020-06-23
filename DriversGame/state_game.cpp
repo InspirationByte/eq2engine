@@ -510,7 +510,7 @@ void CState_Game::ReplayFastSeek(int tick)
 		g_pGameSession->Init();
 
 		g_pGameWorld->m_frameTime = 0.0f;
-		g_pGameWorld->m_curTime = 0.0f;
+		g_pGameWorld->m_lightsTime = 0.0f;
 	}
 
 	// reset buttons
@@ -536,7 +536,7 @@ void CState_Game::ReplayFastSeek(int tick)
 
 		g_pGameWorld->UpdateEnvironmentTransition(frameRate);
 		g_pGameWorld->m_frameTime = frameRate;
-		g_pGameWorld->m_curTime += frameRate;
+		g_pGameWorld->m_lightsTime += frameRate;
 	}
 
 	if(framesToDo > 0 || tick == 0)
@@ -977,7 +977,7 @@ bool CState_Game::Update( float fDt )
 		eqFontStyleParam_t fontParam;
 		fontParam.styleFlag |= TEXT_STYLE_SHADOW;
 		fontParam.align = TEXT_ALIGN_HCENTER;
-		fontParam.textColor = ColorRGBA(fabs(sinf(g_pHost->GetCurTime()*2.0f)),0.0f,0.0f,1.0f);
+		fontParam.textColor = ColorRGBA(fabs(sinf(fDt*2.0f)),0.0f,0.0f,1.0f);
 		fontParam.scale = 30.0f;
 
 		const wchar_t* demoStr = LocalizedString("#DEMO");

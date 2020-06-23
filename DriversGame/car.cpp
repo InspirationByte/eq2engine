@@ -717,7 +717,7 @@ CCar::CCar( vehicleConfig_t* config ) :
 	m_fBreakage(0.0f),
 	m_fAccelEffect(0.0f),
 	m_engineIdleFactor(1.0f),
-	m_curTime(0),
+	m_lightsTime(0),
 	m_sirenEnabled(false),
 	m_oldSirenState(false),
 	m_isLocalCar(false),
@@ -2123,12 +2123,12 @@ void CCar::UpdateVehiclePhysics(float delta)
 			Vector3D springForcePos = wheel.m_collisionInfo.position;
 
 			// TODO: dependency on other wheels
-			float fAntiRollFac = springPowerFac+ANTIROLL_FACTOR_DEADZONE;
+			float fAntiRollFac = springPowerFac;// +ANTIROLL_FACTOR_DEADZONE;
 
 			if(fAntiRollFac > ANTIROLL_FACTOR_MAX)
 				fAntiRollFac = ANTIROLL_FACTOR_MAX;
 
-			springForcePos += worldMatrix.rows[1].xyz() * fAntiRollFac * m_conf->physics.antiRoll * ANTIROLL_SCALE;
+			springForcePos += vec3_up/*worldMatrix.rows[1].xyz()*/ * fAntiRollFac * m_conf->physics.antiRoll * ANTIROLL_SCALE;
 
 			// apply force of wheel to the car body so it can "stand" on the wheels
 			carBody->ApplyWorldForce(springForcePos, springForce);
@@ -3013,7 +3013,7 @@ void CCar::Simulate( float fDt )
 
 	m_oldControlButtons = controlButtons;
 
-	m_curTime += fDt;
+	m_lightsTime = fmodf(m_lightsTime+fDt, PI_F);
 	m_engineSmokeTime += fDt;
 
 	bool visible = g_pGameWorld->m_occludingFrustum.IsSphereVisible(GetOrigin(), length(m_conf->physics.body_size));
@@ -3139,9 +3139,9 @@ void CCar::Simulate( float fDt )
 
 				ColorRGB color = colors[m_conf->visual.sirenType-SERVICE_LIGHTS_BLUE];
 
-				PoliceSirenEffect(m_curTime, color, siren_position, rightVec, lightsPosWidth.x, lightsPosWidth.w);
+				PoliceSirenEffect(m_lightsTime, color, siren_position, rightVec, lightsPosWidth.x, lightsPosWidth.w);
 
-				float fSin = fabs(sinf(m_curTime*16.0f));
+				float fSin = fabs(sinf(m_lightsTime*16.0f));
 				float fSinFactor = clamp(fSin, 0.5f, 1.0f);
 
 				wlight_t light;
@@ -3168,10 +3168,10 @@ void CCar::Simulate( float fDt )
 				ColorRGB col1(colors[m_conf->visual.sirenType-SERVICE_LIGHTS_DOUBLE_BLUE][0]);
 				ColorRGB col2(colors[m_conf->visual.sirenType - SERVICE_LIGHTS_DOUBLE_BLUE][1]);
 
-				PoliceSirenEffect(-m_curTime + PI_F*2.0f, col1, siren_position, rightVec, -lightsPosWidth.x, lightsPosWidth.w);
-				PoliceSirenEffect(m_curTime, col2, siren_position, rightVec, lightsPosWidth.x, lightsPosWidth.w);
+				PoliceSirenEffect(-m_lightsTime + PI_F*2.0f, col1, siren_position, rightVec, -lightsPosWidth.x, lightsPosWidth.w);
+				PoliceSirenEffect(m_lightsTime, col2, siren_position, rightVec, lightsPosWidth.x, lightsPosWidth.w);
 
-				float fSin = fabs(sinf(m_curTime*20.0f));
+				float fSin = fabs(sinf(m_lightsTime*20.0f));
 				float fSinFactor = clamp(fSin, 0.85f, 1.0f);
 
 				float lrFactor = (fSin - 0.5f);
@@ -3411,7 +3411,7 @@ void CCar::Simulate( float fDt )
 
 			ColorRGBA dimLightsColor(1,0.8,0.0f, 1.0f);
 
-			dimLightsColor *= clamp(sinf(m_curTime*10.0f)*1.6f, 0.0f, 1.0f);
+			dimLightsColor *= clamp(sinf(m_lightsTime*10.0f)*1.6f, 0.0f, 1.0f);
 
 			if(IsLightEnabled(CAR_LIGHT_DIM_LEFT))
 			{
@@ -4054,7 +4054,7 @@ void CCar::UpdateSounds( float fDt )
 		const float SKID_RADIAL_SOUNDPITCH_SCALE = 0.68f;
 
 		float wheelSkidPitchModifier = IDEAL_WHEEL_RADIUS - fWheelRad;
-		float fSkidPitch = clamp(0.7f*fSkid + 0.25f, 0.35f, 1.0f) - 0.15f*saturate(sinf(m_curTime*1.25f)*8.0f - fTractionLevel);
+		float fSkidPitch = clamp(0.7f*fSkid + 0.25f, 0.35f, 1.0f) - 0.15f*saturate(sinf(m_lightsTime*1.25f)*8.0f - fTractionLevel);
 
 		skidSound->SetVolume(fSkidVol);
 		skidSound->SetPitch(fSkidPitch + wheelSkidPitchModifier * SKID_RADIAL_SOUNDPITCH_SCALE);

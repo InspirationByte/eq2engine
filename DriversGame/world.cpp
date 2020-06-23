@@ -563,7 +563,7 @@ void CGameWorld::Init()
 	m_objectIndexCounter = 0;
 
 	m_frameTime = 0.0f;
-	m_curTime = 0.0f;
+	m_lightsTime = 0.0f;
 
 	for (int i = 0; i < 2; i++)
 	{
@@ -1438,7 +1438,7 @@ void CGameWorld::UpdateWorld(float fDt)
 
 	m_level.UpdateRegions(RegionCallbackFunc);
 	
-	m_curTime += m_frameTime;
+	m_lightsTime += m_frameTime;
 }
 
 void CGameWorld::UpdateRenderables( const occludingFrustum_t& frustum )
@@ -1793,7 +1793,9 @@ void CGameWorld::OnPreApplyMaterial( IMaterial* pMaterial )
 	g_pShaderAPI->SetShaderConstantVector4D("SunColor", sunColor);
 	g_pShaderAPI->SetShaderConstantVector3D("SunDir", m_info.sunDir);
 
-	g_pShaderAPI->SetShaderConstantFloat("GameTime", m_curTime);
+	// for water
+	// % PI for mobiles...
+	g_pShaderAPI->SetShaderConstantFloat("GameTime", fmodf(m_lightsTime, PI_F));
 
 	Vector2D envParams;
 	envParams.x = m_envWetness;		// wetness

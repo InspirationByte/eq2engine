@@ -44,7 +44,7 @@ DECLARE_CMD(hud_showLastMessage, NULL, 0)
 //----------------------------------------------------------------------------------
 
 CDrvSynHUDManager::CDrvSynHUDManager()
-	: m_handleCounter(0), m_mainVehicle(nullptr), m_curTime(0.0f), m_mapTexture(nullptr), m_showMap(true), m_screenAlertTime(0.0f), m_screenMessageTime(0.0f), 
+	: m_handleCounter(0), m_mainVehicle(nullptr), m_lightsTime(0.0f), m_mapTexture(nullptr), m_showMap(true), m_screenAlertTime(0.0f), m_screenMessageTime(0.0f), 
 		m_hudLayout(nullptr), m_hudDamageBar(nullptr), 	m_hudFelonyBar(nullptr), m_hudMap(nullptr), m_hudTimer(nullptr), 
 		m_fadeValue(0.0f), m_fadeCurtains(false), m_fadeTarget(false),
 		m_blurAccumMat(nullptr), m_blurMat(nullptr), m_framebufferTex(nullptr), m_blurAccumTex(nullptr)
@@ -75,7 +75,7 @@ void CDrvSynHUDManager::Init()
 	m_showMap = (m_mapTexture != NULL);
 
 	m_handleCounter = 0;
-	m_curTime = 0.0f;
+	m_lightsTime = 0.0f;
 
 	m_screenMessageTime = 0.0f;
 	m_screenMessageText.Clear();
@@ -364,7 +364,7 @@ void CDrvSynHUDManager::DrawDamageBar(CMeshBuilder& meshBuilder, Rectangle_t& re
 
 		if (percentage > 0.85f)
 		{
-			float flashValue = sin(m_curTime*16.0f) * 5.0f;
+			float flashValue = sin(m_lightsTime*16.0f) * 5.0f;
 			flashValue = clamp(flashValue, 0.0f, 1.0f);
 
 			damageColor = lerp(ColorRGBA(0.5f, 0.0f, 0.0f, alpha), ColorRGBA(0.8f, 0.2f, 0.2f, alpha), flashValue) * 1.5f;
@@ -494,7 +494,7 @@ void CDrvSynHUDManager::DrawWorldIntoMap(const CViewParams& params, float fDt)
 
 			// draw dot also
 			{
-				float colorValue = inPursuit ? sin(m_curTime*16.0) : 0.0f;
+				float colorValue = inPursuit ? sin(m_lightsTime*16.0) : 0.0f;
 				colorValue = clamp(colorValue*100.0f, 0.0f, 1.0f);
 
 				meshBuilder.Color4fv(ColorRGBA(ColorRGB(colorValue), 1.0f));
@@ -657,7 +657,7 @@ void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize)
 
 	m_hudLayout->SetVisible(hudEnabled);
 
-	m_curTime += fDt;
+	m_lightsTime += fDt;
 
 	materials->Setup2D(screenSize.x,screenSize.y);
 
@@ -879,7 +879,7 @@ void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize)
 			// if cars pursues me
 			if(felonyPercent >= 10.0f && mainVehicleInPursuit)
 			{
-				float colorValue = clamp(sinf(m_curTime*16.0)*16,-1.0f,1.0f); //sin(g_pHost->m_fGameCurTime*8.0f);
+				float colorValue = clamp(sinf(m_lightsTime*16.0)*16,-1.0f,1.0f); //sin(g_pHost->m_fGameCurTime*8.0f);
 
 				float v1 = pow(-min(0.0f,colorValue), 2.0f);
 				float v2 = pow(max(0.0f,colorValue), 2.0f);
@@ -981,7 +981,7 @@ void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize)
 					// draw flashing red-blue radar
 					if (mainVehicleInPursuit)
 					{
-						float colorValue = sin(m_curTime*16.0);
+						float colorValue = sin(m_lightsTime*16.0);
 
 						float v1 = pow(-min(0.0f, colorValue), 2.0f);
 						float v2 = pow(max(0.0f, colorValue), 2.0f);

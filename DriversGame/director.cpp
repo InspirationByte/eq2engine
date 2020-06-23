@@ -498,6 +498,9 @@ void Director_Draw( float fDt )
 	if(!Director_IsActive())
 		return;
 
+	static float directorTime = 0.0f;
+	directorTime += g_pHost->GetFrameTime();
+
 	const IVector2D& screenSize = g_pHost->GetWindowSize();
 	materials->Setup2D(screenSize.x,screenSize.y);
 
@@ -613,7 +616,9 @@ void Director_Draw( float fDt )
 				}
 
 				if (g_pause.GetBool())
-					camRectColor *= fabs(sinf((float)g_pHost->GetCurTime()*2.0f));
+				{
+					camRectColor *= fabs(sinf(directorTime*2.0f));
+				}
 			}
 
 			meshBuilder.Color4fv(ColorRGBA(camRectColor, 0.7f));

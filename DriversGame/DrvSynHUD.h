@@ -132,7 +132,7 @@ protected:
 	CGameObject							m_hudObjectDummy;
 
 	CCar*								m_mainVehicle;
-	float								m_curTime;
+	float								m_lightsTime;
 
 	int									m_handleCounter;
 

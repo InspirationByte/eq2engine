@@ -646,6 +646,11 @@ protected:
 
 	CGameObject				m_driverModel;
 
+#ifndef NO_LUA
+	EqLua::LuaTableFuncRef	m_luaOnCollision;
+	EqLua::LuaTableFuncRef	m_luaOnDeath;
+#endif // NO_LUA
+
 	CCarWheel*				m_wheels;
 
 	carBodyPart_t			m_bodyParts[CB_PART_WINDOW_PARTS];
@@ -669,7 +674,6 @@ protected:
 	FReal					m_autobrake;
 	FReal					m_steering;
 
-
 	//
 	// dynamic config parts
 	//
@@ -683,15 +687,16 @@ protected:
 	// visual properties
 	//
 
+	CNetworkVarEmbedded(PursuerData_t, m_pursuerData);
 	CNetworkVarEmbedded(carColorScheme_t,	m_carColor);
+
+	ISoundController*		m_sounds[CAR_SOUND_COUNT];
 
 	IEqModel*				m_pDamagedModel;
 
 	//---------------------------------------------
 
-	ISoundController*		m_sounds[CAR_SOUND_COUNT];
-
-	float					m_curTime;
+	float					m_lightsTime;
 
 	float					m_effectTime;
 	float					m_engineSmokeTime;
@@ -704,9 +709,7 @@ protected:
 	CNetworkVar(float,		m_gameDamage);
 	CNetworkVar(float,		m_gameMaxDamage);
 
-	CNetworkVarEmbedded(PursuerData_t, m_pursuerData);
-
-	CNetworkVar(ubyte,		m_lightsEnabled);
+	CNetworkVar(ubyte, m_lightsEnabled);
 
 	bool					m_visible;
 
@@ -717,11 +720,6 @@ protected:
 	CNetworkVar(bool,		m_inWater);
 
 	CNetworkVar(bool,		m_hasDriver);
-
-#ifndef NO_LUA
-	EqLua::LuaTableFuncRef	m_luaOnCollision;
-	EqLua::LuaTableFuncRef	m_luaOnDeath;
-#endif // NO_LUA
 };
 
 #ifndef NO_LUA

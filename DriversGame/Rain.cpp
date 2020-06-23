@@ -205,6 +205,7 @@ void RainEmitter::Update_Draw(float dt, float emit_rate, float rain_speed)
 	}
 
 	m_curTime += dt;
+	m_curTime = fmodf(m_curTime, PI_F);
 }
 
 void RainEmitter::EmitParticles(float dt, float rate, float rain_speed)

@@ -309,7 +309,7 @@ protected:
 	CNetworkVar(float,				m_fThunderTime);
 
 	float							m_frameTime;
-	float							m_curTime;
+	float							m_lightsTime;
 
 	sceneinfo_t						m_sceneinfo;
 
