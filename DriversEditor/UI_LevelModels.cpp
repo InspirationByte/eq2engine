@@ -324,26 +324,23 @@ public:
 
 		int numObjectDefs = g_pGameWorld->m_level.m_objectDefs.numElem();
 
+		wxString str;
+
 		for(int i = 0; i < numObjectDefs; i++)
 		{
-			EqString model_name = g_pGameWorld->m_level.m_objectDefs[i]->m_name;
+			CLevObjectDef* def = g_pGameWorld->m_level.m_objectDefs[i];
+			int numRefs = def->Ref_Count();
 
-			if(g_pGameWorld->m_level.m_objectDefs[i]->m_info.type == LOBJ_TYPE_INTERNAL_STATIC)
-			{
-				int numRefs = g_pGameWorld->m_level.m_objectDefs[i]->Ref_Count();
+			char* typeStr = (def->m_info.type == LOBJ_TYPE_INTERNAL_STATIC) ? "" : "[dyn] ";
 
-				model_name = model_name + varargs(" (%d)", numRefs);
-			}
-			else
-			{
-				model_name = model_name + " (dyn obj)";
-			}
+			str = def->m_name.c_str();
+			str.append(varargs(" %s(%d)", typeStr, numRefs));
 
-			int idx1 = m_selection1->Append( model_name.c_str() );
-			int idx2 = m_selection2->Append( model_name.c_str() );
+			int idx1 = m_selection1->Append(str);
+			int idx2 = m_selection2->Append(str);
 
-			m_selection1->SetClientData(idx1, g_pGameWorld->m_level.m_objectDefs[i]);
-			m_selection2->SetClientData(idx2, g_pGameWorld->m_level.m_objectDefs[i]);
+			m_selection1->SetClientData(idx1, def);
+			m_selection2->SetClientData(idx2, def);
 		}
 
 		m_preview1->SetTexture( NULL );
@@ -497,12 +494,11 @@ void CModelListRenderPanel::OnContextEvent(wxCommandEvent& event)
 		{
 			cont->m_info.modelflags = propDialog->GetModelFlags();
 			cont->m_info.level = propDialog->GetModelLevel();
+
 			g_pMainFrame->NotifyUpdate();
 		}
 		
 		propDialog->Destroy(); 
-
-		((CUI_LevelModels*)GetParent())->RefreshModelReplacement();
 	}
 	else if(event.GetId() == MODCONTEXT_RENAME)
 	{
@@ -519,8 +515,6 @@ void CModelListRenderPanel::OnContextEvent(wxCommandEvent& event)
 		delete dlg;
 
 		Redraw();
-
-		((CUI_LevelModels*)GetParent())->RefreshModelReplacement();
 	}
 	else if(event.GetId() == MODCONTEXT_REMOVE)
 	{
@@ -533,8 +527,6 @@ void CModelListRenderPanel::OnContextEvent(wxCommandEvent& event)
 			return;
 
 		RemoveModel( cont );
-
-		((CUI_LevelModels*)GetParent())->RefreshModelReplacement();
 	}
 	else if (event.GetId() == MODCONTEXT_REFRESHPREVIEW)
 	{
@@ -1112,8 +1104,6 @@ void CUI_LevelModels::OnButtons(wxCommandEvent& event)
 		}
 
 		delete file;
-
-		RefreshModelReplacement();
 	}
 	else if(event.GetId() == ELM_IMPORTOVER)
 	{
@@ -1160,8 +1150,6 @@ void CUI_LevelModels::OnButtons(wxCommandEvent& event)
 		}
 
 		delete file;
-
-		//m_modelReplacement->RefreshObjectDefLists();
 	}
 	else if(event.GetId() == ELM_EXPORT)
 	{
@@ -1173,6 +1161,7 @@ void CUI_LevelModels::OnButtons(wxCommandEvent& event)
 	}
 	else if(event.GetId() == ELM_REPLACE_REFS)
 	{
+		m_modelReplacement->RefreshObjectDefLists();
 		m_modelReplacement->CenterOnParent();
 		m_modelReplacement->Show();
 	}
@@ -1561,11 +1550,6 @@ void CUI_LevelModels::MouseRotateEvents( wxMouseEvent& event, const Vector3D& ra
 
 		g_pEditorActionObserver->EndAction();
 	}
-}
-
-void CUI_LevelModels::RefreshModelReplacement()
-{
-	m_modelReplacement->RefreshObjectDefLists();
 }
 
 void CUI_LevelModels::RebuildPreviewShots()
@@ -1986,7 +1970,6 @@ void CUI_LevelModels::OnLevelUnload()
 void CUI_LevelModels::OnLevelLoad()
 {
 	m_modelPicker->RefreshLevelModels();
-	RefreshModelReplacement();
 }
 
 void CUI_LevelModels::OnSwitchedTo()

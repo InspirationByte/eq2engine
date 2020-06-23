@@ -230,7 +230,7 @@ public:
 	void						WriteRegionOccluders(IVirtualStream* stream);
 	void						WriteRegionRoads(IVirtualStream* stream);
 
-	void						IdentifyRoads(DkList<junctionInfo_t*>& junctions);
+	bool						IdentifyRoads(DkList<junctionInfo_t*>& junctions);
 	void						PostprocessCellObject(regionObject_t* obj);
 	
 

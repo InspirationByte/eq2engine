@@ -125,6 +125,7 @@ void CUI_RoadEditor::MouseEventOnTile( wxMouseEvent& event, hfieldtile_t* tile, 
 			roadCell->direction = GetRotation();
 
 			roadCell->flags = 0;
+			roadCell->id = 0xFFFF;
 
 			// TODO: do something else...
 			//if( m_parking->GetValue() )
@@ -140,6 +141,7 @@ void CUI_RoadEditor::MouseEventOnTile( wxMouseEvent& event, hfieldtile_t* tile, 
 			// remove
 			roadCell->type = ROADTYPE_NOROAD;
 			roadCell->flags = 0;
+			roadCell->id = 0xFFFF;
 		}
 	}
 }
@@ -202,6 +204,7 @@ void CUI_RoadEditor::PaintPointGlobal(int x, int y, int direction)
 
 	roadCell->direction = direction;
 	roadCell->flags = 0;
+	roadCell->id = 0xFFFF; // FIXME: assign to to neighbour junction?
 }
 
 void CUI_RoadEditor::OnKey(wxKeyEvent& event, bool bDown)
@@ -331,7 +334,7 @@ void CUI_RoadEditor::OnRender()
 				{
 					entry = m_trafficDirVar;
 
-					debugoverlay->Text3D(p1 + Vector3D(HFIELD_POINT_SIZE*0.5f,0, HFIELD_POINT_SIZE*0.5f), 100.0f, color4_white, 0.0f, "id: %d", cell->id);
+					//debugoverlay->Text3D(p1 + Vector3D(HFIELD_POINT_SIZE*0.5f,0, HFIELD_POINT_SIZE*0.5f), 100.0f, color4_white, 0.0f, "id: %d", cell->id);
 				}
 				else if(cell->type == ROADTYPE_PARKINGLOT)
 				{

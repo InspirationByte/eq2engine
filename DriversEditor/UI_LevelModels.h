@@ -103,9 +103,6 @@ public:
 	int							GetRotation();
 	void						SetRotation(int rot);
 
-	void						OnRotationTextChanged(wxCommandEvent& event);
-
-	void						RefreshModelReplacement();
 	void						RebuildPreviewShots();
 
 	// IEditorTool stuff
