@@ -1705,7 +1705,7 @@ void CUI_BlockEditor::RenderClipper()
 
 	g_pShaderAPI->SetTexture(NULL, 0, 0);
 	materials->SetBlendingStates(blending);
-	materials->SetRasterizerStates(CULL_FRONT, FILL_SOLID);
+	materials->SetRasterizerStates(m_clipper.sides == 3 ? CULL_NONE : CULL_BACK, FILL_SOLID);
 	materials->SetDepthStates(false, false);
 
 	materials->BindMaterial(materials->GetDefaultMaterial());
