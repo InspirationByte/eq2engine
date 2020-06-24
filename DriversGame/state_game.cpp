@@ -510,7 +510,7 @@ void CState_Game::ReplayFastSeek(int tick)
 		g_pGameSession->Init();
 
 		g_pGameWorld->m_frameTime = 0.0f;
-		g_pGameWorld->m_lightsTime = 0.0f;
+		g_pGameWorld->m_waterWavesTime = 0.0f;
 	}
 
 	// reset buttons
@@ -536,7 +536,7 @@ void CState_Game::ReplayFastSeek(int tick)
 
 		g_pGameWorld->UpdateEnvironmentTransition(frameRate);
 		g_pGameWorld->m_frameTime = frameRate;
-		g_pGameWorld->m_lightsTime += frameRate;
+		g_pGameWorld->m_waterWavesTime += frameRate;
 	}
 
 	if(framesToDo > 0 || tick == 0)

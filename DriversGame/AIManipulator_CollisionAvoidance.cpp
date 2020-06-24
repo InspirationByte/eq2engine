@@ -14,7 +14,7 @@ const float AI_COP_BLOCK_DELAY						= 1.0f;
 const float AI_COP_BLOCK_COOLDOWN					= 1.0f;
 const float AI_COP_BLOCK_REALIZE_FRONTAL_TIME		= 0.8f;
 const float AI_COP_BLOCK_REALIZE_COLLISION_TIME		= 0.8f;
-const float AI_COP_BLOCK_MAX_SPEED					= 4.0f;	// meters per second
+const float AI_COP_BLOCK_MAX_SPEED					= 1.0f;	// meters per second
 const float AI_COP_BLOCK_DISTANCE_FROM_COLLISION	= 1.5f;
 
 CAICollisionAvoidanceManipulator::CAICollisionAvoidanceManipulator()
