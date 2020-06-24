@@ -171,9 +171,7 @@ void CCameraAnimator::Reset()
 	m_shakeMagnitude = 0.0f;
 
 	//m_targetForwardSpeedModifier = 1.0f;
-
-	if(m_mode > CAM_MODE_INCAR)
-		m_mode = CAM_MODE_OUTCAR;
+	m_mode = CAM_MODE_OUTCAR;
 }
 
 void CCameraAnimator::SetMode(int newMode)
