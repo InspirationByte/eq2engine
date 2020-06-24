@@ -15,6 +15,141 @@
 #include "coord.h"
 #include "Utils/GeomTools.h"
 
+// clips vertices
+void ChopVertsByPlane(DkList<Vector3D>& verts, const Plane &plane, ClassifyPlane_e side)
+{
+	DkList<bool> negative;
+	DkList<Vector3D> newVerts;
+
+	float t;
+	Vector3D v, v1, v2;
+
+	// classify vertices
+	int negativeCount = 0;
+	for (int i = 0; i < verts.numElem(); i++)
+	{
+		negative.append(plane.ClassifyPoint(verts[i]) != side);
+		negativeCount += negative[i];
+	}
+
+	if (negativeCount == verts.numElem())
+	{
+		verts.clear();
+		return; // completely culled, we have no polygon
+	}
+
+	if (negativeCount == 0)
+		return;			// not clipped
+
+	for (int i = 0; i < verts.numElem(); i++)
+	{
+		// prev is the index of the previous vertex
+		int	prev = (i != 0) ? i - 1 : verts.numElem() - 1;
+
+		if (negative[i])
+		{
+			if (!negative[prev])
+			{
+				v1 = verts[prev];
+				v2 = verts[i];
+
+				// Current vertex is on negative side of plane,
+				// but previous vertex is on positive side.
+				Vector3D edge = v1 - v2;
+				t = plane.Distance(v1) / dot(plane.normal, edge);
+
+				newVerts.append(lerp(v1, v2, t));
+			}
+		}
+		else
+		{
+			if (negative[prev])
+			{
+				v1 = verts[i];
+				v2 = verts[prev];
+
+				// Current vertex is on positive side of plane,
+				// but previous vertex is on negative side.
+				Vector3D edge = v1 - v2;
+
+				t = plane.Distance(v1) / dot(plane.normal, edge);
+
+				newVerts.append(lerp(v1, v2, t));
+			}
+
+			// include current vertex
+			newVerts.append(verts[i]);
+		}
+	}
+
+	// swap with new verts
+	newVerts.swap(verts);
+}
+
+// performs vertex sort into triangle fan
+void SortVerts(DkList<Vector3D>& verts, const Vector3D& planeNormal)
+{
+	// get the center of that poly
+	Vector3D center(0);
+	for (int i = 0; i < verts.numElem(); i++)
+		center += verts[i];
+
+	center /= verts.numElem();
+
+	// sort them now
+	for (int i = 0; i < verts.numElem() - 2; i++)
+	{
+		float	fSmallestAngle = -1;
+		int		nSmallestIdx = -1;
+
+		Vector3D a = normalize(verts[i] - center);
+		Plane p(verts[i], center, center + planeNormal);
+
+		for (int j = i + 1; j < verts.numElem(); j++)
+		{
+			// the vertex is in front or lies on the plane
+			if (p.ClassifyPoint(verts[j]) != CP_BACK)
+			{
+				Vector3D b = normalize(verts[j] - center);
+
+				float fAngle = dot(b, a);
+
+				if (fAngle > fSmallestAngle)
+				{
+					fSmallestAngle = fAngle;
+					nSmallestIdx = j;
+				}
+			}
+		}
+
+		if (nSmallestIdx == -1)
+			return;
+
+		swap(verts[nSmallestIdx], verts[i + 1]);
+	}
+}
+
+void MakeInfiniteVertexPlane(DkList<Vector3D>& verts, const Plane &plane)
+{
+	// compute needed vectors
+	Vector3D vRight, vUp;
+	VectorVectors(plane.normal, vRight, vUp);
+
+	// make vectors infinite
+	vRight *= MAX_COORD_UNITS;
+	vUp *= MAX_COORD_UNITS;
+
+	Vector3D org = -plane.normal * plane.offset;
+
+	verts.clear();
+
+	// and finally fill really big winding
+	verts.append(org - vRight + vUp);
+	verts.append(org + vRight + vUp);
+	verts.append(org + vRight - vUp);
+	verts.append(org - vRight - vUp);
+}
+
 //-----------------------------------------
 // Brush face member functions
 //-----------------------------------------
@@ -67,11 +202,13 @@ void winding_t::CalculateTextureCoordinates(lmodeldrawvertex_t* verts, int vertC
 		verts[i].texcoord.x = U;
 		verts[i].texcoord.y = V;
 
+		// TODO: smoothing group
 		//verts[i].tangent = vec3_zero;
 		//verts[i].binormal = vec3_zero;
-		verts[i].normal = vec3_zero;
+		verts[i].normal = face.Plane.normal;// vec3_zero;
 	}
 
+	/*
 	int num_triangles = ((vertCount < 4) ? 1 : (2 + vertCount - 4));
 
 	for(int i = 0; i < num_triangles; i++ )
@@ -103,7 +240,7 @@ void winding_t::CalculateTextureCoordinates(lmodeldrawvertex_t* verts, int vertC
 		//verts[i].tangent = normalize(verts[i].tangent);
 		//verts[i].binormal = normalize(verts[i].binormal);
 		verts[i].normal = normalize(verts[i].normal);
-	}
+	}*/
 }
 
 // sorts the drawVerts, makes them as triangle list
@@ -340,7 +477,7 @@ CBrushPrimitive::CBrushPrimitive()
 
 CBrushPrimitive::~CBrushPrimitive()
 {
-	OnRemove();
+	Clear(true);
 }
 
 // calculates the vertices from faces
@@ -435,6 +572,9 @@ void CBrushPrimitive::ValidateWindings()
 // draw brush
 void CBrushPrimitive::Render(int nViewRenderFlags)
 {
+	if (!m_pVB)
+		UpdateRenderBuffer();
+
 	materials->SetCullMode(CULL_BACK);
 	materials->SetMatrix(MATRIXMODE_WORLD, identity4());
 
@@ -535,6 +675,8 @@ void CBrushPrimitive::AddFace(brushFace_t &face)
 	winding.face = face;
 	winding.brush = this;
 
+	winding.face.nFlags &= ~BRUSH_FACE_SELECTED;
+
 	int id = m_windingFaces.append(winding);
 	m_windingFaces[id].faceId = id;
 }
@@ -625,12 +767,13 @@ bool CBrushPrimitive::AdjustFacesByVerts(const DkList<Vector3D>& verts, bool tex
 	return Update();
 }
 
-bool CBrushPrimitive::Update()
+bool CBrushPrimitive::Update(bool updateRenderBuffer /*= true*/)
 {
 	if (!AssignWindingVertices())
 		return false;
 
-	UpdateRenderBuffer();
+	if(updateRenderBuffer)
+		UpdateRenderBuffer();
 
 	return true;
 }
@@ -681,10 +824,24 @@ bool CBrushPrimitive::Transform(const Matrix4x4& mat, bool textureLock)
 	return Update();
 }
 
-void CBrushPrimitive::OnRemove()
+void CBrushPrimitive::Clear(bool destroyVBO)
 {
-	g_pShaderAPI->DestroyVertexBuffer(m_pVB);
-	m_pVB = NULL;
+	m_regionIdx = -1;
+	m_groupId = -1;
+
+	m_verts.clear();
+	m_bbox.Reset();
+
+	for (int i = 0; i < m_windingFaces.numElem(); i++)
+		materials->FreeMaterial(m_windingFaces[i].face.pMaterial);
+
+	m_windingFaces.clear();
+
+	if (destroyVBO && m_pVB)
+	{
+		g_pShaderAPI->DestroyVertexBuffer(m_pVB);
+		m_pVB = nullptr;
+	}
 }
 
 void CBrushPrimitive::CalculateVerts(DkList<Vector3D>& verts)
@@ -835,25 +992,32 @@ CBrushPrimitive* CBrushPrimitive::Clone()
 	}
 
 	clone->m_bbox = m_bbox;
-	clone->Update();
+	clone->Update(false);
 	return clone;
 }
 
-void CBrushPrimitive::CutBrushByPlane(Plane &plane, CBrushPrimitive** ppNewBrush)
+void CBrushPrimitive::CutBrushByPlane(const Plane &plane, ClassifyPlane_e side, IMaterial* fillMaterial, CBrushPrimitive** ppNewBrush)
 {
-	CBrushPrimitive* newBrush = new CBrushPrimitive;
+	CBrushPrimitive* newBrush = *ppNewBrush ? *ppNewBrush : new CBrushPrimitive;
+
+	newBrush->Clear(false);
 
 	for (int i = 0; i < m_windingFaces.numElem(); i++)
 	{
+		// use vertices to determine which planes are going to be used
+		// this is simpler method
+
 		winding_t& winding = m_windingFaces[i];
 		for (int j = 0; j < winding.vertex_ids.numElem(); j++)
 		{
 			ClassifyPlane_e plClass = plane.ClassifyPoint(m_verts[winding.vertex_ids[j]]);
 
 			// only on back of plane
-			if (plClass == CP_BACK)
+			if (plClass == side)
 			{
 				newBrush->AddFace(m_windingFaces[i].face);
+				m_windingFaces[i].face.pMaterial->Ref_Grab();
+
 				break;
 			}
 		}
@@ -868,10 +1032,17 @@ void CBrushPrimitive::CutBrushByPlane(Plane &plane, CBrushPrimitive** ppNewBrush
 
 		// default some values
 		face.fRotation = 0.0f;
-		face.vScale = Vector2D(0.25f, 0.25f); // g_config.defaultTexScale
+		face.vScale = HFIELD_POINT_SIZE; // g_config.defaultTexScale
 
 		// make the N plane from current iteration
 		face.Plane = plane;
+
+		// invert plane if needed
+		if (side == CP_FRONT)
+		{
+			face.Plane.normal *= -1.0f;
+			face.Plane.offset *= -1.0f;
+		}
 
 		// make the U and V texture axes
 		VectorVectors(face.Plane.normal, face.UAxis.normal, face.VAxis.normal);
@@ -879,15 +1050,18 @@ void CBrushPrimitive::CutBrushByPlane(Plane &plane, CBrushPrimitive** ppNewBrush
 		face.VAxis.offset = 0;
 
 		// apply the currently selected material
-		//face.pMaterial = g_editormainframe->GetMaterials()->GetSelectedMaterial();
+		face.pMaterial = fillMaterial ? fillMaterial : materials->GetDefaultMaterial();
+		face.pMaterial->Ref_Grab();
 
 		// append the face
 		newBrush->AddFace(face);
 	}
 
-	if (!newBrush->Update())
+	if (!newBrush->Update(false))
 	{
-		delete newBrush;
+		if(!*ppNewBrush)
+			delete newBrush;
+
 		return;
 	}
 
@@ -1073,13 +1247,14 @@ CBrushPrimitive* CBrushPrimitive::CreateFromVolume(const Volume& volume, IMateri
 
 		// apply the currently selected material
 		face.pMaterial = material;
+		face.pMaterial->Ref_Grab();
 
 		// append the face
 		brush->AddFace(face);
 	}
 
 	// calculate face verts
-	if (!brush->Update())
+	if (!brush->Update(false))
 	{
 		// don't create empty brushes!
 		delete brush;

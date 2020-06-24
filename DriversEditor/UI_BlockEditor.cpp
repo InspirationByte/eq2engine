@@ -8,6 +8,7 @@
 #include "UI_BlockEditor.h"
 #include "EditorLevel.h"
 #include "EditorMain.h"
+#include "MeshBuilder.h"
 
 #include "BlockEditor/BrushPrimitive.h"
 
@@ -25,6 +26,8 @@ const float s_GridSizes[]
 
 const int s_numGridSizes = sizeof(s_GridSizes) / sizeof(float);
 const int s_defaultGridSelection = 3;
+
+CBrushPrimitive	g_clippedBrushDisplay;
 
 //--------------------------------------------------------------------------------------
 // Some math helpers
@@ -191,6 +194,7 @@ CUI_BlockEditor::CUI_BlockEditor(wxWindow* parent) : wxPanel(parent, -1, wxDefau
 	//--------------------------------------------------
 
 	m_cursorPos = vec3_zero;
+	m_cursorDir = vec3_up;
 	m_selectedTool = BlockEdit_Selection;
 	m_draggablePlane = -1;
 
@@ -494,6 +498,13 @@ void CUI_BlockEditor::CancelSelection()
 		}
 
 		m_selectedVerts.clear();
+	}
+	else if (m_selectedTool == BlockEdit_Clipper)
+	{
+		if (m_mode == BLOCK_MODE_CLIPPER)
+		{
+			m_mode = BLOCK_MODE_READY;
+		}
 	}
 }
 
@@ -1171,13 +1182,17 @@ void CUI_BlockEditor::UpdateCursor(wxMouseEvent& event, const Vector3D& ppos)
 
 	if (faceId >= 0)
 	{
+		CBrushPrimitive* nearestBrush = reg->m_brushes[brushId];
+
 		Vector3D cursorPos = SnapVector(GridSize(), ray_start + ray_dir*dist);
 		m_cursorPos = cursorPos;
+		m_cursorDir = nearestBrush->GetFace(faceId)->Plane.normal;
 	}
 	else
 	{
 		Vector3D cursorPos = SnapVector(GridSize(), ppos);
 		m_cursorPos = cursorPos;
+		m_cursorDir = vec3_up;
 	}
 
 	/*
@@ -1220,7 +1235,22 @@ bool CUI_BlockEditor::ProcessClipperMouseEvents(wxMouseEvent& event)
 	Vector3D ray_start, ray_dir;
 	g_pMainFrame->GetMouseScreenVectors(event.GetX(), event.GetY(), ray_start, ray_dir);
 
+	if (event.ButtonIsDown(wxMOUSE_BTN_LEFT) && m_selectedBrushes.numElem())
+	{
+		if (event.Dragging() && m_mode == BLOCK_MODE_CLIPPER)
+		{
+			m_clipper.end = m_cursorPos;
 
+			if (m_clipper.sides == 0)
+				m_clipper.sides = 1;	// front site
+		}
+		else
+		{
+			m_mode = BLOCK_MODE_CLIPPER;
+			m_clipper.start = m_cursorPos;
+			m_clipper.dir = m_cursorDir;
+		}
+	}
 
 	return true;
 }
@@ -1259,6 +1289,52 @@ int CUI_BlockEditor::GetSelectedVertsCount()
 	return numSelectedVerts;
 }
 
+void CUI_BlockEditor::ClipSelectedBrushes()
+{
+	if (!m_texPanel->GetSelectedMaterial())
+	{
+		wxMessageBox("You need to select material first");
+		return;
+	}
+
+	Vector3D clipperPlaneDir = normalize(cross(normalize(m_clipper.start - m_clipper.end), m_clipper.dir));
+	Plane clipperPlane(clipperPlaneDir, -dot(clipperPlaneDir, m_clipper.start), true);
+
+	//(m_clipper.sides == 0) ? CP_FRONT : CP_BACK
+
+	// go thru all selected brushes and make a testing clipping
+	for (int i = 0; i < m_selectedBrushes.numElem(); i++)
+	{
+		CBrushPrimitive* brush = m_selectedBrushes[i];
+		CBrushPrimitive* newBrush[2] = { nullptr };
+
+		CEditorLevelRegion* brushReg = &g_pGameWorld->m_level.m_regions[brush->m_regionIdx];
+
+		// cut the brushd
+		if(m_clipper.sides & 1)
+			brush->CutBrushByPlane(clipperPlane, CP_FRONT, m_texPanel->GetSelectedMaterial(), &newBrush[0]);
+
+		if(m_clipper.sides & 2)
+			brush->CutBrushByPlane(clipperPlane, CP_BACK, m_texPanel->GetSelectedMaterial(), &newBrush[1]);
+
+		// add brushes to world
+		for (int j = 0; j < 2; j++)
+		{
+			if (newBrush[j])
+				brushReg->Ed_AddBrush(newBrush[j]);
+		}
+
+		// remove old brush
+		brushReg->Ed_RemoveBrush(brush);
+	}
+
+	g_pEditorActionObserver->EndAction();
+
+	m_selectedBrushes.clear();
+	m_selectedFaces.clear();
+	m_mode = BLOCK_MODE_READY;
+}
+
 void CUI_BlockEditor::OnKey(wxKeyEvent& event, bool bDown)
 {
 	if (bDown)
@@ -1295,6 +1371,18 @@ void CUI_BlockEditor::OnKey(wxKeyEvent& event, bool bDown)
 		}
 	}
 
+	if (m_selectedTool == BlockEdit_Clipper)
+	{
+		if (event.GetRawKeyCode() == 'X')
+		{
+			m_clipper.sides++;
+
+			m_clipper.sides = m_clipper.sides % 4;
+			if (m_clipper.sides == 0)
+				m_clipper.sides++;
+		}
+	}
+
 	if (event.GetKeyCode() == WXK_RETURN)
 	{
 		if (m_selectedTool == BlockEdit_Brush)
@@ -1325,45 +1413,17 @@ void CUI_BlockEditor::OnKey(wxKeyEvent& event, bool bDown)
 
 			m_mode = BLOCK_MODE_READY;
 		}
+		else if (m_selectedTool == BlockEdit_Clipper)
+		{
+			// clip selected brushes
+			ClipSelectedBrushes();
+		}
 	}
 
 	if (event.GetKeyCode() == WXK_DELETE)
 		DeleteSelection();
 	else if (event.GetKeyCode() == WXK_ESCAPE)
 		CancelSelection();
-}
-
-
-void CUI_BlockEditor::RenderBrushVerts(DkList<Vector3D>& verts, DkList<int>* selected_ids, const Matrix4x4& view, const Matrix4x4& proj)
-{
-	IVector2D screenSize = g_pMainFrame->GetRenderPanelDimensions();
-
-	for (int i = 0; i < verts.numElem(); i++)
-	{
-		Vector3D vert = verts[i];
-
-		Vector3D vertPos(vert);
-		ColorRGBA vertexCol(1, 1, 0.5f, 1);
-
-		if (selected_ids && selected_ids->findIndex(i) != -1)
-		{
-			vertexCol = ColorRGBA(1, 0, 0, 1);
-			//vertPos += dragOfs;
-		}
-
-		Vector2D pointScr;
-		if (!PointToScreen(vertPos, pointScr, proj*view, screenSize))
-		{
-			// draw only single point
-			Vertex2D_t pointA[] = { MAKETEXQUAD(pointScr.x - 3,pointScr.y - 3,pointScr.x + 3,pointScr.y + 3, 0) };
-
-			materials->DrawPrimitives2DFFP(PRIM_TRIANGLE_STRIP, pointA, elementsOf(pointA), NULL, vertexCol);
-
-			// draw only single point
-			Vertex2D_t pointR[] = { MAKETEXRECT(pointScr.x - 3,pointScr.y - 3,pointScr.x + 3,pointScr.y + 3, 0) };
-			materials->DrawPrimitives2DFFP(PRIM_LINE_STRIP, pointR, elementsOf(pointR), NULL, ColorRGBA(0, 0, 0, 1));
-		}
-	}
 }
 
 void CUI_BlockEditor::MoveBrushVerts(DkList<Vector3D>& outVerts, CBrushPrimitive* brush)
@@ -1399,52 +1459,6 @@ void CUI_BlockEditor::MoveBrushVerts(DkList<Vector3D>& outVerts, CBrushPrimitive
 			brushVerts[vs->vertex_ids[j]] += dragOfs;
 		}
 		*/
-	}
-}
-
-void CUI_BlockEditor::RenderVertsAndSelection()
-{
-	Matrix4x4 view, proj;
-	materials->GetMatrix(MATRIXMODE_PROJECTION, proj);
-	materials->GetMatrix(MATRIXMODE_VIEW, view);
-
-	IVector2D screenSize = g_pMainFrame->GetRenderPanelDimensions();
-
-	DkList<CBrushPrimitive*> selectedBrushes;
-	for (int i = 0; i < m_selectedFaces.numElem(); i++)
-		selectedBrushes.addUnique(m_selectedFaces[i]->brush);
-
-	materials->SetAmbientColor(color4_white);
-	for (int i = 0; i < selectedBrushes.numElem(); i++)
-	{
-		CBrushPrimitive* brush = selectedBrushes[i];
-
-		// clone brush vertices for renderer
-		DkList<Vector3D> brushVerts;
-		brushVerts.append(brush->GetVerts());
-
-		// modify vertices
-		MoveBrushVerts(brushVerts, brush);
-
-		// render brush with custom vertex set
-		brush->RenderGhostCustom(brushVerts);
-
-		brushVertexSelect_t* vs = nullptr;
-		for (int j = 0; j < m_selectedVerts.numElem(); j++)
-		{
-			if (m_selectedVerts[j].brush == brush)
-			{
-				vs = &m_selectedVerts[j];
-				break;
-			}
-		}
-
-		// render vertices
-		materials->Setup2D(screenSize.x, screenSize.y);
-		RenderBrushVerts(brushVerts, vs ? &vs->vertex_ids : nullptr, view, proj);
-
-		materials->SetMatrix(MATRIXMODE_PROJECTION, proj);
-		materials->SetMatrix(MATRIXMODE_VIEW, view);
 	}
 }
 
@@ -1545,6 +1559,250 @@ void CUI_BlockEditor::OnHistoryEvent(CUndoableObject* undoable, int eventType)
 
 		//RecalcSelectionBox();
 		//RecalcFaceSelection();
+	}
+}
+
+
+void CUI_BlockEditor::RenderBrushVerts(DkList<Vector3D>& verts, DkList<int>* selected_ids, const Matrix4x4& view, const Matrix4x4& proj)
+{
+	IVector2D screenSize = g_pMainFrame->GetRenderPanelDimensions();
+
+	for (int i = 0; i < verts.numElem(); i++)
+	{
+		Vector3D vert = verts[i];
+
+		Vector3D vertPos(vert);
+		ColorRGBA vertexCol(1, 1, 0.5f, 1);
+
+		if (selected_ids && selected_ids->findIndex(i) != -1)
+		{
+			vertexCol = ColorRGBA(1, 0, 0, 1);
+			//vertPos += dragOfs;
+		}
+
+		Vector2D pointScr;
+		if (!PointToScreen(vertPos, pointScr, proj*view, screenSize))
+		{
+			// draw only single point
+			Vertex2D_t pointA[] = { MAKETEXQUAD(pointScr.x - 3,pointScr.y - 3,pointScr.x + 3,pointScr.y + 3, 0) };
+
+			materials->DrawPrimitives2DFFP(PRIM_TRIANGLE_STRIP, pointA, elementsOf(pointA), NULL, vertexCol);
+
+			// draw only single point
+			Vertex2D_t pointR[] = { MAKETEXRECT(pointScr.x - 3,pointScr.y - 3,pointScr.x + 3,pointScr.y + 3, 0) };
+			materials->DrawPrimitives2DFFP(PRIM_LINE_STRIP, pointR, elementsOf(pointR), NULL, ColorRGBA(0, 0, 0, 1));
+		}
+	}
+}
+
+void CUI_BlockEditor::RenderVertsAndSelection()
+{
+	Matrix4x4 view, proj;
+	materials->GetMatrix(MATRIXMODE_PROJECTION, proj);
+	materials->GetMatrix(MATRIXMODE_VIEW, view);
+
+	IVector2D screenSize = g_pMainFrame->GetRenderPanelDimensions();
+
+	DkList<CBrushPrimitive*> selectedBrushes;
+	for (int i = 0; i < m_selectedFaces.numElem(); i++)
+		selectedBrushes.addUnique(m_selectedFaces[i]->brush);
+
+	materials->SetAmbientColor(color4_white);
+	for (int i = 0; i < selectedBrushes.numElem(); i++)
+	{
+		CBrushPrimitive* brush = selectedBrushes[i];
+
+		// clone brush vertices for renderer
+		DkList<Vector3D> brushVerts;
+		brushVerts.append(brush->GetVerts());
+
+		// modify vertices
+		MoveBrushVerts(brushVerts, brush);
+
+		// render brush with custom vertex set
+		brush->RenderGhostCustom(brushVerts);
+
+		brushVertexSelect_t* vs = nullptr;
+		for (int j = 0; j < m_selectedVerts.numElem(); j++)
+		{
+			if (m_selectedVerts[j].brush == brush)
+			{
+				vs = &m_selectedVerts[j];
+				break;
+			}
+		}
+
+		// render vertices
+		materials->Setup2D(screenSize.x, screenSize.y);
+		RenderBrushVerts(brushVerts, vs ? &vs->vertex_ids : nullptr, view, proj);
+
+		materials->SetMatrix(MATRIXMODE_PROJECTION, proj);
+		materials->SetMatrix(MATRIXMODE_VIEW, view);
+	}
+}
+
+void CUI_BlockEditor::RenderClipper()
+{
+	DepthStencilStateParams_t depthTest;
+
+	depthTest.depthTest = true;
+	depthTest.depthWrite = false;
+	depthTest.depthFunc = COMP_LEQUAL;
+
+	Matrix4x4 view, proj;
+	materials->GetMatrix(MATRIXMODE_PROJECTION, proj);
+	materials->GetMatrix(MATRIXMODE_VIEW, view);
+
+	IVector2D screenSize = g_pMainFrame->GetRenderPanelDimensions();
+
+	// render vertices
+	materials->Setup2D(screenSize.x, screenSize.y);
+
+	ColorRGBA vertexCol(1, 1, 0.5f, 1);
+
+	// start point
+	{
+		Vector2D pointScr;
+		if (!PointToScreen(m_clipper.start, pointScr, proj*view, screenSize))
+		{
+			// draw only single point
+			Vertex2D_t pointA[] = { MAKETEXQUAD(pointScr.x - 3,pointScr.y - 3,pointScr.x + 3,pointScr.y + 3, 0) };
+
+			materials->DrawPrimitives2DFFP(PRIM_TRIANGLE_STRIP, pointA, elementsOf(pointA), NULL, vertexCol);
+
+			// draw only single point
+			Vertex2D_t pointR[] = { MAKETEXRECT(pointScr.x - 3,pointScr.y - 3,pointScr.x + 3,pointScr.y + 3, 0) };
+			materials->DrawPrimitives2DFFP(PRIM_LINE_STRIP, pointR, elementsOf(pointR), NULL, ColorRGBA(0, 0, 0, 1));
+		}
+	}
+
+	// end point
+	{
+		Vector2D pointScr;
+		if (!PointToScreen(m_clipper.end, pointScr, proj*view, screenSize))
+		{
+			// draw only single point
+			Vertex2D_t pointA[] = { MAKETEXQUAD(pointScr.x - 3,pointScr.y - 3,pointScr.x + 3,pointScr.y + 3, 0) };
+
+			materials->DrawPrimitives2DFFP(PRIM_TRIANGLE_STRIP, pointA, elementsOf(pointA), NULL, vertexCol);
+
+			// draw only single point
+			Vertex2D_t pointR[] = { MAKETEXRECT(pointScr.x - 3,pointScr.y - 3,pointScr.x + 3,pointScr.y + 3, 0) };
+			materials->DrawPrimitives2DFFP(PRIM_LINE_STRIP, pointR, elementsOf(pointR), NULL, ColorRGBA(0, 0, 0, 1));
+		}
+	}
+
+	// draw line between points
+	debugoverlay->Line3D(m_clipper.start, m_clipper.end, ColorRGBA(1,0,0,1), ColorRGBA(1, 0, 0, 1), 0.0f);
+
+
+	materials->SetMatrix(MATRIXMODE_PROJECTION, proj);
+	materials->SetMatrix(MATRIXMODE_VIEW, view);
+
+	BlendStateParam_t blending;
+	blending.srcFactor = BLENDFACTOR_SRC_ALPHA;
+	blending.dstFactor = BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
+
+	g_pShaderAPI->SetTexture(NULL, 0, 0);
+	materials->SetBlendingStates(blending);
+	materials->SetRasterizerStates(CULL_FRONT, FILL_SOLID);
+	materials->SetDepthStates(false, false);
+
+	materials->BindMaterial(materials->GetDefaultMaterial());
+
+	Vector3D clipperPlaneDir = normalize(cross(normalize(m_clipper.start - m_clipper.end), m_clipper.dir));
+	Plane clipperPlane(clipperPlaneDir, -dot(clipperPlaneDir, m_clipper.start), true);
+
+	DkList<Vector3D> clipperPlaneVerts;
+
+	CMeshBuilder meshBuilder(materials->GetDynamicMesh());
+
+	// go thru all selected brushes and make a testing clipping
+	if (m_clipper.sides == 3) // both sides
+	{
+		// render just clip plane
+		for (int i = 0; i < m_selectedBrushes.numElem(); i++)
+		{
+			CBrushPrimitive* brush = m_selectedBrushes[i];
+
+			MakeInfiniteVertexPlane(clipperPlaneVerts, clipperPlane);
+
+			// clip verts against brush, result should be inside brush
+			for (int j = 0; j < brush->GetFaceCount(); j++)
+			{
+				Plane brushPlane = brush->GetFace(j)->Plane;
+				ChopVertsByPlane(clipperPlaneVerts, brushPlane, CP_BACK);
+			}
+
+			SortVerts(clipperPlaneVerts, clipperPlane.normal);
+
+			meshBuilder.Begin(PRIM_TRIANGLE_FAN);
+			meshBuilder.Color4f(0.0f, 0.0f, 1.0f, 0.25f);
+
+			// draw verts
+			for (int j = 0; j < clipperPlaneVerts.numElem(); j++)
+			{
+				meshBuilder.Position3fv(clipperPlaneVerts[j]);
+				meshBuilder.AdvanceVertex();
+			}
+
+			meshBuilder.End();
+
+			// display line
+			meshBuilder.Begin(PRIM_LINE_STRIP);
+			meshBuilder.Color4f(1.0f, 1.0f, 1.0f, 0.5f);
+
+			for (int j = 0; j < clipperPlaneVerts.numElem(); j++)
+			{
+				meshBuilder.Position3fv(clipperPlaneVerts[j]);
+				meshBuilder.AdvanceVertex();
+			}
+			meshBuilder.End();
+		}
+	}
+	else // single side
+	{
+		CBrushPrimitive* clipBrush = &g_clippedBrushDisplay;
+
+		// render clipped brushes
+		for (int i = 0; i < m_selectedBrushes.numElem(); i++)
+		{
+			CBrushPrimitive* brush = m_selectedBrushes[i];
+
+			brush->CutBrushByPlane(clipperPlane, (m_clipper.sides == 1) ? CP_FRONT : CP_BACK, nullptr, &clipBrush);
+
+			// Am I drowning into the shitcode?
+			for (int j = 0; j < clipBrush->GetFaceCount(); j++)
+			{
+				meshBuilder.Begin(PRIM_TRIANGLE_FAN);
+				meshBuilder.Color4f(0.0f, 0.0f, 1.0f, 0.25f);
+
+				winding_t* winding = clipBrush->GetFacePolygon(j);
+
+				// draw verts
+				for (int k = 0; k < winding->vertex_ids.numElem(); k++)
+				{
+					int vtxId = winding->vertex_ids[k];
+
+					meshBuilder.Position3fv(clipBrush->GetVerts()[vtxId]);
+					meshBuilder.AdvanceVertex();
+				}
+
+				meshBuilder.End();
+
+				// display line
+				meshBuilder.Begin(PRIM_LINE_STRIP);
+				meshBuilder.Color4f(1.0f, 1.0f, 1.0f, 0.5f);
+
+				for (int k = 0; k < winding->vertex_ids.numElem(); k++)
+				{
+					int vtxId = winding->vertex_ids[k];
+					meshBuilder.Position3fv(clipBrush->GetVerts()[vtxId]);
+					meshBuilder.AdvanceVertex();
+				}
+				meshBuilder.End();
+			}
+		}
 	}
 }
 
@@ -1738,7 +1996,8 @@ void CUI_BlockEditor::OnRender()
 			//
 			if (m_mode == BLOCK_MODE_CLIPPER)
 			{
-
+				// display the line
+				RenderClipper();
 			}
 		}
 	}
@@ -1753,6 +2012,8 @@ void CUI_BlockEditor::InitTool()
 
 void CUI_BlockEditor::OnLevelUnload()
 {
+	g_clippedBrushDisplay.Clear(true);
+
 	m_texPanel->SelectMaterial(NULL, 0);
 	CBaseTilebasedEditor::OnLevelUnload();
 }

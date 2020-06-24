@@ -18,6 +18,11 @@
 
 #include "world.h"
 
+// some utils for clipper tool and other visualization
+void MakeInfiniteVertexPlane(DkList<Vector3D>& verts, const Plane &plane);
+void ChopVertsByPlane(DkList<Vector3D>& verts, const Plane &plane, ClassifyPlane_e side);
+void SortVerts(DkList<Vector3D>& verts, const Vector3D& planeNormal);
+
 enum ClassifyPoly_e
 {
 	CPL_FRONT = 0,
@@ -72,7 +77,7 @@ public:
 	CBrushPrimitive();
 	~CBrushPrimitive();
 
-	void							OnRemove();
+	void							Clear(bool destroyVBO);
 
 	// draw brush
 	void							Render(int nViewRenderFlags);
@@ -100,7 +105,8 @@ public:
 	bool							IsTouchesBrush(winding_t* pWinding);
 
 	// Updates geometry. Required after individual winding modifications or AddFace
-	bool							Update();
+	bool							Update(bool updateRenderBuffer = true);
+	void							UpdateRenderBuffer();
 
 	bool							Transform(const Matrix4x4& mat, bool textureLock);
 	void							AddFace(brushFace_t &face);
@@ -108,7 +114,7 @@ public:
 
 	// copies this object
 	CBrushPrimitive*				Clone();
-	void							CutBrushByPlane(Plane &plane, CBrushPrimitive** ppNewBrush);
+	void							CutBrushByPlane(const Plane &plane, ClassifyPlane_e side, IMaterial* fillMaterial, CBrushPrimitive** ppNewBrush);
 
 	// saves this object
 	bool							WriteObject(IVirtualStream*	pStream);
@@ -129,7 +135,6 @@ protected:
 	// calculates the vertices from faces
 	bool							AssignWindingVertices();
 	void							ValidateWindings();
-	void							UpdateRenderBuffer();
 
 	BoundingBox						m_bbox;
 	DkList<Vector3D>				m_verts;

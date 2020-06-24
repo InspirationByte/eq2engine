@@ -99,10 +99,12 @@ protected:
 	void				RecalcVertexSelection();
 
 	int					GetSelectedVertsCount();
-
 	void				MoveBrushVerts(DkList<Vector3D>& outVerts, CBrushPrimitive* brush);
+	void				ClipSelectedBrushes();
+
 	void				RenderBrushVerts(DkList<Vector3D>& verts, DkList<int>* selected_ids, const Matrix4x4& view, const Matrix4x4& proj);
 	void				RenderVertsAndSelection();
+	void				RenderClipper();
 
 	void				UpdateCursor(wxMouseEvent& event, const Vector3D& ppos);
 
@@ -128,6 +130,7 @@ protected:
 	//----------------------------------------------
 
 	Vector3D					m_cursorPos;
+	Vector3D					m_cursorDir;
 	EBlockEditorTools			m_selectedTool;
 
 	EBlockEditorMode			m_mode;
@@ -149,8 +152,7 @@ protected:
 		Vector3D end;
 
 		Vector3D dir;	// the plane axis
-
-		//CBrushPrimitive*		resultPreview[2];
+		int		 sides;		// 1 = front, 2 = back, 3 = both
 	} m_clipper;
 
 	// dragging properties
