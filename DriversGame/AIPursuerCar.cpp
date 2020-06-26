@@ -1035,7 +1035,7 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 		// restore torque and speed
 		m_maxSpeed = m_conf->physics.maxSpeed;
 		m_torqueScale = 1.0f;
-		m_gearboxShiftThreshold = 0.6f;
+		m_gearboxShiftThreshold = 0.75f;
 	}
 	else
 	{

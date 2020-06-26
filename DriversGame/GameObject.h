@@ -317,9 +317,10 @@ protected:
 	EqString					m_defname;
 
 	void*						m_userData;
+	int							m_drawFlags;		// EGameObjectDrawFlags
 
-	ubyte						m_bodyGroupFlags;
-	ubyte						m_drawFlags;		// EGameObjectDrawFlags
+	uint16						m_bodyGroupFlags;
+
 
 #ifndef NO_LUA
 	OOLUA::Table				m_luaEvtHandler;

@@ -1997,8 +1997,8 @@ void CCar::UpdateVehiclePhysics(float delta)
 
 				fLongitudinalForce = longitudial;
 
-				if( isDriveWheel && bDoBurnout )
-					fLongitudinalForce += wheelTractionFrictionScale * (1.0f-fPitchFac);
+				//if( isDriveWheel && bDoBurnout && !isSteerWheel )
+				//	fLongitudinalForce += wheelTractionFrictionScale * (1.0f-fPitchFac);
 
 				if (isHandbrakeWheel)
 				{
@@ -2061,7 +2061,7 @@ void CCar::UpdateVehiclePhysics(float delta)
 			{
 				if (fAcceleration > 0.01f)
 				{
-					if (bDoBurnout)
+					if (bDoBurnout && !isSteerWheel) // steer wheels still has to be in control
 					{
 						wheelTractionForce += acceleratorAbs * driveGroundWheelMod * wheelTractionFrictionScale;
 						wheelSlipOppositeForce *= wheelTractionFrictionScale * (1.0f - fPitchFac); // BY DIFFERENCE

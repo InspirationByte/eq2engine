@@ -12,7 +12,7 @@
 #include "materialsystem/IMaterialSystem.h"
 
 #define MAX_EGF_INSTANCES			256
-#define MAX_INSTANCE_BODYGROUPS		8		// only 4 groups can be instanced
+#define MAX_INSTANCE_BODYGROUPS		16		// only 4 groups can be instanced
 #define MAX_INSTANCE_LODS			4		// only 4 lods can be instanced
 
 //---------------------------------------------------------------------

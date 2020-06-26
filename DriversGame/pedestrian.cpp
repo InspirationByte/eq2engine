@@ -380,7 +380,7 @@ void CPedestrian::UpdateTransform()
 	Vector3D offset(vec3_up*PEDESTRIAN_PHYSICS_RADIUS);
 
 	// refresh it's matrix
-	m_worldMatrix = translate(m_vecOrigin - offset)*rotateY4(DEG2RAD(m_pedSteerAngle.y));
+	m_worldMatrix = translate(Vector3D(m_physObj->GetBody()->GetPosition()) - offset)*rotateY4(DEG2RAD(m_pedSteerAngle.y));
 }
 
 void CPedestrian::SetOrigin(const Vector3D& origin)

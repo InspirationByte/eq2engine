@@ -39,7 +39,7 @@ CAITrafficCar::CAITrafficCar( vehicleConfig_t* carConfig ) : CCar(carConfig), CF
 
 	SetMaxDamage(AI_TRAFFIC_MAX_DAMAGE);
 
-	m_gearboxShiftThreshold = 0.6f;
+	m_gearboxShiftThreshold = 0.75f;
 	m_music = nullptr;
 }
 
