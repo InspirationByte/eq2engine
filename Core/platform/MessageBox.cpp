@@ -300,12 +300,14 @@ IEXPORTS_LAUNCHER void _InternalAssert(const char *file, int line, const char *s
 
 IEXPORTS_LAUNCHER void _InternalAssert(const char *file, int line, const char *statement)
 {
-#ifdef USE_GTK
+	MsgError("\n*Assertion failed, file \"%s\", line %d\n*Expression \"%s\"", file, line, statement);
+
+#ifndef USE_GTK
+	ErrorMsg("\n*Assertion failed, file \"%s\", line %d\n*Expression \"%s\"", file, line, statement);
+#else
     char str[1024];
     sprintf(str, "%s\n\nFile: %s\nLine: %d\n\nBreak on this error?", statement, file, line);
-#endif // #ifdef USE_GTK
-    MsgError("\n*Assertion failed, file \"%s\", line %d\n*Expression \"%s\"", file, line, statement);
-#ifdef USE_GTK
+
     InitMessageBoxPlatform();
 
     GtkWidget *dialog = gtk_message_dialog_new(NULL, GTK_DIALOG_DESTROY_WITH_PARENT, GTK_MESSAGE_ERROR, GTK_BUTTONS_YES_NO, str);
