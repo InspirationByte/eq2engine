@@ -1322,9 +1322,6 @@ bool CEqPhysics::TestLineCollisionOnCell(int y, int x,
 	F func,
 	void* args)
 {
-
-	Threading::CScopedMutex m(m_mutex);
-
 	collgridcell_t* cell = m_grid.GetCellAt(x,y);
 
 	if (!cell)
@@ -1354,6 +1351,8 @@ bool CEqPhysics::TestLineCollisionOnCell(int y, int x,
 	// static objects are not checked if line is not in Y bound
 	if(staticInBoundTest && (objectTypeTesting & 0x1))
 	{
+		Threading::CScopedMutex m(m_mutex);
+
 		int numGridObjs = cell->m_gridObjects.numElem();
 		for (int i = 0; i < numGridObjs; i++)
 		{
@@ -1371,6 +1370,8 @@ bool CEqPhysics::TestLineCollisionOnCell(int y, int x,
 
 	if(objectTypeTesting & 0x2)
 	{
+		Threading::CScopedMutex m(m_mutex);
+
 		// test dynamic objects within cell
 		int numGridDynamicObjs = cell->m_dynamicObjs.numElem();
 		for (int i = 0; i < numGridDynamicObjs; i++)

@@ -2401,8 +2401,10 @@ PRIMCOUNTER g_pGLPrimCounterCallbacks[] =
 // Indexed primitive drawer
 void ShaderAPIGL::DrawIndexedPrimitives(ER_PrimitiveType nType, int nFirstIndex, int nIndices, int nFirstVertex, int nVertices, int nBaseVertex)
 {
-	ASSERT(m_pCurrentIndexBuffer != NULL);
 	ASSERT(nVertices > 0);
+
+	if (!m_pCurrentIndexBuffer)
+		return;
 
 	int nTris = g_pGLPrimCounterCallbacks[nType](nIndices);
 

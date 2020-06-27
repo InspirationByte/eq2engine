@@ -1066,7 +1066,7 @@ void CLevelRegion::ReadLoadRegion(IVirtualStream* stream, DkList<CLevObjectDef*>
 
 #ifndef EDITOR
 			bool noCollide = (ref->def->m_info.modelflags & LMODEL_FLAG_NOCOLLIDE) || 
-							!(ref->def->m_info.modelflags & LMODEL_FLAG_ISGROUND) || w_noCollide.GetBool();
+							!(ref->def->m_info.modelflags & LMODEL_FLAG_ISGROUND) && w_noCollide.GetBool();
 
 			if(!noCollide)
 			{

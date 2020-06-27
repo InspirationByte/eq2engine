@@ -184,25 +184,22 @@ void CObject_Sheets::UpdateSheets(float fDt)
 		}
 	}
 
-	bool canRender = g_pGameWorld->m_occludingFrustum.IsBoxVisible(m_bbox);
-	m_bbox.Reset();
-
 	PFXVertex_t* sheetQuad;
 
 	ColorRGBA color(g_pGameWorld->m_info.ambientColor + g_pGameWorld->m_info.sunColor);
+
+	if (!g_pGameWorld->m_occludingFrustum.IsBoxVisible(m_bbox))
+		return;
 
 	for (int i = 0; i < m_sheets.numElem(); i++)
 	{
 		sheetpart_t& sheet = m_sheets[i];
 
-		float featherAngle = sin(sheet.angle*2.0f) * fabs(clamp(sheet.velocity, -1.0f, 1.0f))*0.25f;
+		float featherAngle = sinf(sheet.angle*2.0f) * fabs(clamp(sheet.velocity, -1.0f, 1.0f))*0.25f;
 		featherAngle += SHEET_ANGULAR_SCALE * sinf(featherAngle);
 
-		Vector3D sheetPos = sheet.origin + Vector3D(sin(sheet.angle)*1.5f, 0.015f, -cos(sheet.angle)*1.5f);
+		Vector3D sheetPos = sheet.origin + Vector3D(sinf(sheet.angle)*1.5f, 0.015f, -cosf(sheet.angle)*1.5f);
 		m_bbox.AddVertex(sheetPos);
-
-		if (!canRender)
-			continue;
 
 		Vector3D vRight, vUp;
 		Vector3D sheetAngle(-90.0f + featherAngle * 65.0f, (featherAngle + sheet.angle)*25.0f, sheet.angle + featherAngle * 55.0f);
@@ -257,14 +254,14 @@ void CObject_Sheets::Simulate( float fDt )
 			m_wasInit = InitSheets();
 			m_initDelay = 2.0f;
 		}
-
-		return;
 	}
 
-	if(g_worldGlobals.mt.sheetsQueue.Increment())
-		g_worldGlobals.mt.sheetsCompleted.Clear();
+	if(m_sheets.numElem())
+	{
+		if (g_worldGlobals.mt.sheetsQueue.Increment())
+			g_worldGlobals.mt.sheetsCompleted.Clear();
 
-	g_parallelJobs->AddJob(SheetsUpdateJob, this);
-	g_parallelJobs->Submit();
-
+		g_parallelJobs->AddJob(SheetsUpdateJob, this);
+		g_parallelJobs->Submit();
+	}
 }

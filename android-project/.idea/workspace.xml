@@ -6,28 +6,12 @@
     </shared>
   </component>
   <component name="AndroidLogFilters">
-    <option name="TOOL_WINDOW_CUSTOM_FILTER" value="shader" />
+    <option name="TOOL_WINDOW_CUSTOM_FILTER" value="game" />
     <option name="TOOL_WINDOW_CONFIGURED_FILTER" value="No Filters" />
   </component>
   <component name="ChangeListManager">
     <list default="true" id="c9096593-b4df-4b83-813a-05c2d4299dea" name="Default" comment="">
-      <change beforePath="$PROJECT_DIR$/../Core/DPKFileReader.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../Core/DPKFileReader.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../Core/DPKFileReader.h" beforeDir="false" afterPath="$PROJECT_DIR$/../Core/DPKFileReader.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../DriversGame/AIManager.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../DriversGame/AIManager.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../DriversGame/AIManipulator_CollisionAvoidance.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../DriversGame/AIManipulator_CollisionAvoidance.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../DriversGame/AIManipulator_Navigation.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../DriversGame/AIManipulator_Navigation.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../DriversGame/AIManipulator_StabilityControl.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../DriversGame/AIManipulator_StabilityControl.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../DriversGame/AIManipulator_TargetChaser.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../DriversGame/AIManipulator_TargetChaser.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../DriversGame/AIManipulator_Traffic.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../DriversGame/AIManipulator_Traffic.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../DriversGame/DrvSynHUD.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../DriversGame/DrvSynHUD.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../DriversGame/GameDefs.h" beforeDir="false" afterPath="$PROJECT_DIR$/../DriversGame/GameDefs.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../DriversGame/region.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../DriversGame/region.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../MaterialSystem/DynamicMesh.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../MaterialSystem/DynamicMesh.cpp" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../MaterialSystem/Renderers/GL/ShaderAPIGL.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../MaterialSystem/Renderers/GL/ShaderAPIGL.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../MaterialSystem/Renderers/ShaderAPIGL.vcxproj.filters" beforeDir="false" afterPath="$PROJECT_DIR$/../MaterialSystem/Renderers/ShaderAPIGL.vcxproj.filters" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../jni/prevLib.mk" beforeDir="false" afterPath="$PROJECT_DIR$/../jni/prevLib.mk" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../public/math/math_common.h" beforeDir="false" afterPath="$PROJECT_DIR$/../public/math/math_common.h" afterDir="false" />
     </list>
     <ignored path="android-project.iws" />
     <ignored path=".idea/workspace.xml" />
@@ -111,8 +95,8 @@
       <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/../MaterialSystem/Renderers/GL/ShaderAPIGL.cpp">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="-185">
-              <caret line="2031" column="42" selection-start-line="2031" selection-start-column="42" selection-end-line="2031" selection-end-column="42" />
+            <state relative-caret-position="291">
+              <caret line="2068" selection-start-line="2068" selection-end-line="2068" />
             </state>
           </provider>
         </entry>
@@ -267,7 +251,11 @@
     </panes>
   </component>
   <component name="PropertiesComponent">
+    <property name="DEBUGGABLE_DEVICE" value="xiaomi-redmi_7-71a4d18" />
+    <property name="DEBUGGABLE_PROCESS" value="com.insbyte.driversyndicate" />
+    <property name="DEBUGGER_ID" value="Auto" />
     <property name="SHARE_PROJECT_CONFIGURATION_FILES" value="true" />
+    <property name="SHOW_ALL_PROCESSES" value="false" />
     <property name="android.project.structure.last.selected" value="app" />
     <property name="android.project.structure.proportion" value="0.15" />
     <property name="android.sdk.path" value="$USER_HOME$/Android/Sdk" />
@@ -652,9 +640,9 @@
       <window_info anchor="bottom" id="Version Control" order="10" weight="0.32936078" />
       <window_info anchor="bottom" id="Terminal" order="11" sideWeight="0.49359658" weight="0.32936078" />
       <window_info anchor="bottom" id="Messages" order="12" sideWeight="0.36179295" weight="0.32929516" />
-      <window_info anchor="bottom" id="Android Profiler" order="13" show_stripe_button="false" />
-      <window_info anchor="bottom" id="Logcat" order="14" weight="0.32936078" />
-      <window_info active="true" anchor="bottom" id="Build" order="15" visible="true" weight="0.32936078" />
+      <window_info anchor="bottom" id="Android Profiler" order="13" />
+      <window_info active="true" anchor="bottom" id="Logcat" order="14" visible="true" weight="0.32936078" />
+      <window_info anchor="bottom" id="Build" order="15" weight="0.32936078" />
       <window_info anchor="right" id="Commander" order="0" weight="0.4" />
       <window_info anchor="right" id="Ant Build" order="1" weight="0.25" />
       <window_info anchor="right" content_ui="combo" id="Hierarchy" order="2" weight="0.25" />
@@ -896,8 +884,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/../MaterialSystem/Renderers/GL/ShaderAPIGL.cpp">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-185">
-          <caret line="2031" column="42" selection-start-line="2031" selection-start-column="42" selection-end-line="2031" selection-end-column="42" />
+        <state relative-caret-position="291">
+          <caret line="2068" selection-start-line="2068" selection-end-line="2068" />
         </state>
       </provider>
     </entry>

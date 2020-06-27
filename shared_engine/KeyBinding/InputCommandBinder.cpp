@@ -534,7 +534,7 @@ void CInputCommandBinder::OnMouseWheel( int scroll )
 
 void CInputCommandBinder::OnTouchEvent( const Vector2D& pos, int finger, bool down )
 {
-	if(in_touchzones_debug.GetBool())
+	if(in_touchzones_debug.GetInt() == 2)
 		MsgWarning("-- Touch [%g %g] (%d)\n", pos.x, pos.y, down);
 
 	for(int i = 0; i < m_touchZones.numElem(); i++)
@@ -553,7 +553,7 @@ void CInputCommandBinder::OnTouchEvent( const Vector2D& pos, int finger, bool do
 		}
 		else if( rect.IsInRectangle(pos) )
 		{
-			if(in_touchzones_debug.GetBool())
+			if (in_touchzones_debug.GetInt() == 2)
 				Msg("found zone %s\n", tz->name.c_str());
 
 			tz->finger = finger;
