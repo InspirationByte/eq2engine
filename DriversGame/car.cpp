@@ -1502,19 +1502,13 @@ void CCar::UpdateVehiclePhysics(float delta)
 			steerSpeedMultiplier *= STEER_CENTER_SPEED_MULTIPLIER;
 		}
 
-		if(FPmath::abs(steer_diff) > 0.005f)
-			steering += FPmath::sign(steer_diff) * m_conf->physics.steeringSpeed * steerSpeedMultiplier * delta;
-		else
-			steering = inputSteering;
+		steering = approachValue(steering, inputSteering, FPmath::sign(steer_diff) * m_conf->physics.steeringSpeed * steerSpeedMultiplier * delta);
 
 		if (FPmath::abs(inputSteering) > STEERING_HELP_START)
 		{
 			FReal steerHelp_diff = inputSteering - autobrake;
 
-			if (FPmath::abs(steerHelp_diff) > 0.01f)
-				autobrake += FPmath::sign(steerHelp_diff) * STEERING_HELP_CONST * steerSpeedMultiplier * delta;
-			else
-				autobrake = inputSteering;
+			autobrake = approachValue(autobrake, inputSteering, FPmath::sign(steerHelp_diff) * STEERING_HELP_CONST * steerSpeedMultiplier * delta);
 		}
 
 		if (fsimilar(inputSteering, 0.0f, 0.1f))

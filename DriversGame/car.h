@@ -629,6 +629,8 @@ protected:
 	void					UpdateWheelEffect(int nWheel, float fDt);
 	void					UpdateVehiclePhysics(float fDt);
 
+	static void				UpdateVehiclePhysicsJob(void *data, int i);
+
 	void					UpdateTransform();
 
 	virtual void			OnDeath( CGameObject* deathBy );
