@@ -788,7 +788,7 @@ bool CLevelRegion::FindObject(levCellObject_t& objectInfo, const char* name, CLe
 		if(obj->name.Length() == 0)
 			continue;
 
-		if((!def || def && def == obj->def) && !obj->name.CompareCaseIns(name))
+		if((!def || def == obj->def) && !obj->name.CompareCaseIns(name))
 		{
 			strcpy(objectInfo.name, obj->name.c_str());
 
@@ -1066,7 +1066,7 @@ void CLevelRegion::ReadLoadRegion(IVirtualStream* stream, DkList<CLevObjectDef*>
 
 #ifndef EDITOR
 			bool noCollide = (ref->def->m_info.modelflags & LMODEL_FLAG_NOCOLLIDE) || 
-							!(ref->def->m_info.modelflags & LMODEL_FLAG_ISGROUND) && w_noCollide.GetBool();
+							!(ref->def->m_info.modelflags & LMODEL_FLAG_ISGROUND) || w_noCollide.GetBool();
 
 			if(!noCollide)
 			{

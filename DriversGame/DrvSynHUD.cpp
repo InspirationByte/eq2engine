@@ -746,7 +746,8 @@ void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize)
 	else
 		fadeValue += fDt;
 
-	m_fadeValue = clamp(fadeValue, 0.0f, fabs(fadeTarget));
+	// stupid fuck named GCC could not get proper function match here
+	m_fadeValue = clamp<float, float>(fadeValue, 0.0f, fabs(fadeTarget));
 
 	if(hudEnabled)
 	{
@@ -1264,7 +1265,7 @@ void CDrvSynHUDManager::RemoveTrackingObject( int handle )
 {
 	if(m_displayObjects.count(handle) > 0)
 	{
-		hudDisplayObject_t& obj = m_displayObjects[handle];
+		//hudDisplayObject_t& obj = m_displayObjects[handle];
 		//if(obj.object)
 		//	obj.object->Ref_Drop();
 

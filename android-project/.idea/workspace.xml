@@ -11,7 +11,23 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="c9096593-b4df-4b83-813a-05c2d4299dea" name="Default" comment="">
+      <change beforePath="$PROJECT_DIR$/../Core/DPKFileReader.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../Core/DPKFileReader.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Core/DPKFileReader.h" beforeDir="false" afterPath="$PROJECT_DIR$/../Core/DPKFileReader.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../DriversGame/AIManager.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../DriversGame/AIManager.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../DriversGame/AIManipulator_CollisionAvoidance.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../DriversGame/AIManipulator_CollisionAvoidance.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../DriversGame/AIManipulator_Navigation.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../DriversGame/AIManipulator_Navigation.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../DriversGame/AIManipulator_StabilityControl.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../DriversGame/AIManipulator_StabilityControl.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../DriversGame/AIManipulator_TargetChaser.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../DriversGame/AIManipulator_TargetChaser.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../DriversGame/AIManipulator_Traffic.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../DriversGame/AIManipulator_Traffic.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../DriversGame/DrvSynHUD.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../DriversGame/DrvSynHUD.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../DriversGame/GameDefs.h" beforeDir="false" afterPath="$PROJECT_DIR$/../DriversGame/GameDefs.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../DriversGame/region.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../DriversGame/region.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../MaterialSystem/DynamicMesh.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../MaterialSystem/DynamicMesh.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../MaterialSystem/Renderers/GL/ShaderAPIGL.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../MaterialSystem/Renderers/GL/ShaderAPIGL.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../MaterialSystem/Renderers/ShaderAPIGL.vcxproj.filters" beforeDir="false" afterPath="$PROJECT_DIR$/../MaterialSystem/Renderers/ShaderAPIGL.vcxproj.filters" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../jni/prevLib.mk" beforeDir="false" afterPath="$PROJECT_DIR$/../jni/prevLib.mk" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../public/math/math_common.h" beforeDir="false" afterPath="$PROJECT_DIR$/../public/math/math_common.h" afterDir="false" />
     </list>
     <ignored path="android-project.iws" />
     <ignored path=".idea/workspace.xml" />
@@ -82,14 +98,23 @@
           </provider>
         </entry>
       </file>
-      <file pinned="false" current-in-tab="true">
+      <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/app/src/main/AndroidManifest.xml">
+          <provider editor-type-id="android-manifest" />
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="269">
-              <caret line="18" column="7" selection-start-line="18" selection-start-column="7" selection-end-line="18" selection-end-column="7" />
+            <state relative-caret-position="490">
+              <caret line="31" column="68" selection-start-line="31" selection-start-column="68" selection-end-line="31" selection-end-column="68" />
             </state>
           </provider>
-          <provider editor-type-id="android-manifest" />
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/../MaterialSystem/Renderers/GL/ShaderAPIGL.cpp">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="-185">
+              <caret line="2031" column="42" selection-start-line="2031" selection-start-column="42" selection-end-line="2031" selection-end-column="42" />
+            </state>
+          </provider>
         </entry>
       </file>
       <file pinned="false" current-in-tab="false">
@@ -162,7 +187,6 @@
         <option value="$PROJECT_DIR$/../public/imaging/ImageLoader.cpp" />
         <option value="$PROJECT_DIR$/../MaterialSystem/Renderers/GL/VertexBufferGL.cpp" />
         <option value="$PROJECT_DIR$/../MaterialSystem/Renderers/GL/IndexBufferGL.cpp" />
-        <option value="$PROJECT_DIR$/../MaterialSystem/Renderers/GL/ShaderAPIGL.cpp" />
         <option value="$PROJECT_DIR$/../DriversGame/ShadowRenderer.cpp" />
         <option value="$PROJECT_DIR$/../MaterialSystem/EngineShaders/Shaders/BaseParticle.cpp" />
         <option value="$PROJECT_DIR$/../MaterialSystem/materialvar.cpp" />
@@ -177,6 +201,7 @@
         <option value="D:/USERS_DOCUMENTS/AndroidStudio/DeviceExplorer/xiaomi-redmi_7-71a4d18/storage/6135-3937/eqengine/GameData/cfg/user.cfg" />
         <option value="$PROJECT_DIR$/app/src/main/java/org/libsdl/app/SDLActivity.java" />
         <option value="$PROJECT_DIR$/app/src/main/AndroidManifest.xml" />
+        <option value="$PROJECT_DIR$/../MaterialSystem/Renderers/GL/ShaderAPIGL.cpp" />
       </list>
     </option>
   </component>
@@ -191,8 +216,9 @@
       <foldersAlwaysOnTop value="true" />
     </navigator>
     <panes>
-      <pane id="Scope" />
       <pane id="ProjectPane" />
+      <pane id="Scope" />
+      <pane id="PackagesPane" />
       <pane id="AndroidView">
         <subPane>
           <expand>
@@ -238,7 +264,6 @@
           <select />
         </subPane>
       </pane>
-      <pane id="PackagesPane" />
     </panes>
   </component>
   <component name="PropertiesComponent">
@@ -604,12 +629,11 @@
   </component>
   <component name="ToolWindowManager">
     <frame x="-8" y="-8" width="1936" height="1056" extended-state="6" />
-    <editor active="true" />
     <layout>
-      <window_info active="true" content_ui="combo" id="Project" order="0" sideWeight="0.4767064" visible="true" weight="0.17910448" />
+      <window_info content_ui="combo" id="Project" order="0" sideWeight="0.4749596" visible="true" weight="0.17324094" />
       <window_info id="Structure" order="1" weight="0.25" />
       <window_info id="Captures" order="2" side_tool="true" weight="0.25" />
-      <window_info id="Build Variants" order="3" sideWeight="0.5232936" side_tool="true" visible="true" weight="0.17910448" />
+      <window_info id="Build Variants" order="3" sideWeight="0.5250404" side_tool="true" visible="true" weight="0.17324094" />
       <window_info id="Favorites" order="4" side_tool="true" />
       <window_info id="Capture Tool" order="5" />
       <window_info id="Palette&#9;" order="6" />
@@ -628,9 +652,9 @@
       <window_info anchor="bottom" id="Version Control" order="10" weight="0.32936078" />
       <window_info anchor="bottom" id="Terminal" order="11" sideWeight="0.49359658" weight="0.32936078" />
       <window_info anchor="bottom" id="Messages" order="12" sideWeight="0.36179295" weight="0.32929516" />
-      <window_info anchor="bottom" id="Android Profiler" order="13" />
+      <window_info anchor="bottom" id="Android Profiler" order="13" show_stripe_button="false" />
       <window_info anchor="bottom" id="Logcat" order="14" weight="0.32936078" />
-      <window_info anchor="bottom" id="Build" order="15" weight="0.32936078" />
+      <window_info active="true" anchor="bottom" id="Build" order="15" visible="true" weight="0.32936078" />
       <window_info anchor="right" id="Commander" order="0" weight="0.4" />
       <window_info anchor="right" id="Ant Build" order="1" weight="0.25" />
       <window_info anchor="right" content_ui="combo" id="Hierarchy" order="2" weight="0.25" />
@@ -691,16 +715,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/../MaterialSystem/Renderers/GL/ShaderAPIGL.cpp">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="56400">
-          <caret line="2820" selection-start-line="2820" selection-end-line="2820" />
-          <folding>
-            <element signature="e#75049#75087#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/../DriversGame/ShadowRenderer.cpp">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="600">
@@ -733,8 +747,8 @@
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/app/src/main/res/layout/main.xml">
-      <provider editor-type-id="text-editor" />
       <provider selected="true" editor-type-id="android-designer2" />
+      <provider editor-type-id="text-editor" />
     </entry>
     <entry file="file://$PROJECT_DIR$/../jni/libGame_DrvSyn.mk">
       <provider selected="true" editor-type-id="text-editor">
@@ -873,12 +887,19 @@
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/app/src/main/AndroidManifest.xml">
+      <provider editor-type-id="android-manifest" />
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="269">
-          <caret line="18" column="7" selection-start-line="18" selection-start-column="7" selection-end-line="18" selection-end-column="7" />
+        <state relative-caret-position="490">
+          <caret line="31" column="68" selection-start-line="31" selection-start-column="68" selection-end-line="31" selection-end-column="68" />
         </state>
       </provider>
-      <provider editor-type-id="android-manifest" />
+    </entry>
+    <entry file="file://$PROJECT_DIR$/../MaterialSystem/Renderers/GL/ShaderAPIGL.cpp">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-185">
+          <caret line="2031" column="42" selection-start-line="2031" selection-start-column="42" selection-end-line="2031" selection-end-column="42" />
+        </state>
+      </provider>
     </entry>
   </component>
 </project>

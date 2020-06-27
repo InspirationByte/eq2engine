@@ -31,7 +31,7 @@ void CAIStabilityControlManipulator::UpdateAffector(ai_handling_t& handling, CCa
 
 	const float carSpeedMPS = car->GetSpeed()*KPH_TO_MPS;
 
-	const Vector3D& linearVelocity = car->GetVelocity();
+	//const Vector3D& linearVelocity = car->GetVelocity();
 	const Vector3D& angularVelocity = car->GetPhysicsBody()->GetAngularVelocity();
 
 	if(ai_debug_stability.GetBool())
@@ -56,7 +56,7 @@ void CAIStabilityControlManipulator::UpdateAffector(ai_handling_t& handling, CCa
 	const float AI_SPEED_CORRECTION_MAXSPEED = 25.0f;	// meters per sec
 	const float AI_SPEED_CORRECTION_INITIAL = 0.25f;
 
-	float torqueRange = 1.0f / car->GetTorqueScale();
+	//float torqueRange = 1.0f / car->GetTorqueScale();
 
 	bool allWheelsOnGround = (car->GetWheelCount() - car->GetWheelsOnGround()) == 0;
 

@@ -526,7 +526,7 @@ void CAINavigationManipulator::UpdateAffector(ai_handling_t& handling, CCar* car
 		const Vector4D& carPosSegmentStart = m_path.points[segmentByCarPosition];
 		const Vector4D& carPosSegmentEnd = m_path.points[segmentByCarPosition + 1];
 
-		float carPosSegmentLength = length(carPosSegmentStart - carPosSegmentEnd);
+		//float carPosSegmentLength = length(carPosSegmentStart - carPosSegmentEnd);
 		float carPosSegmentProj = lineProjection(carPosSegmentStart.xyz(), carPosSegmentEnd.xyz(), carPos);
 
 		// calculate distance between car position and point on the segment by car position

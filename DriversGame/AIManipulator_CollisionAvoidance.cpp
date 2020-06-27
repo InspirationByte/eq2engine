@@ -44,7 +44,7 @@ void CAICollisionAvoidanceManipulator::Trigger(const CollisionPairData_t& pair)
 
 void CAICollisionAvoidanceManipulator::UpdateAffector(ai_handling_t& handling, CCar* car, float fDt)
 {
-	const Vector3D& linearVelocity = car->GetVelocity();
+	//const Vector3D& linearVelocity = car->GetVelocity();
 	Vector3D carBodySize = car->m_conf->physics.body_size;
 	Vector3D carForwardDir = car->GetForwardVector();
 

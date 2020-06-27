@@ -45,6 +45,8 @@ enum PACKAGE_DUMP_MODE
 
 //------------------------------------------------------------------------------------------
 
+class CDPKFileReader;
+
 class CDPKFileStream : public IVirtualStream
 {
 	friend class CDPKFileReader;

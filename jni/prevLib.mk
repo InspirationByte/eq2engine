@@ -36,6 +36,7 @@ LOCAL_SRC_FILES := \
 	public/utils/KeyValues.cpp\
 	public/utils/VirtualStream.cpp\
 	public/utils/perlin.cpp\
+	public/utils/IceKey.cpp\
 	public/math/FVector.cpp\
 	public/math/FixedMath.cpp\
 	public/math/Volume.cpp\

@@ -2027,7 +2027,7 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 			glGetProgramiv(prog->m_program, GL_OBJECT_ACTIVE_UNIFORMS_ARB, &uniformCount);
 			glGetProgramiv(prog->m_program, GL_OBJECT_ACTIVE_UNIFORM_MAX_LENGTH_ARB, &maxLength);
 
-			if(maxLength == 0 && uniformCount > 0 || uniformCount > 256)
+			if(maxLength == 0 && (uniformCount > 0 || uniformCount > 256))
 			{
 				if(vendor == VENDOR_INTEL)
 					DevMsg(DEVMSG_SHADERAPI, "Guess who? It's Intel! uniformCount to be zeroed\n");

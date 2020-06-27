@@ -78,7 +78,7 @@ CDynamicMesh::~CDynamicMesh()
 
 bool CDynamicMesh::Init( VertexFormatDesc_t* desc, int numAttribs )
 {
-	if(m_vertexBuffer != NULL && m_indexBuffer != NULL && m_vertexFormat != NULL)
+	if(m_vertexBuffer != nullptr && m_indexBuffer != nullptr && m_vertexFormat != nullptr)
 		return true;
 
 	ASSERTMSG(numAttribs > 0, "CDynamicMesh::Init - numAttribs is ZERO!\n");
@@ -105,12 +105,12 @@ bool CDynamicMesh::Init( VertexFormatDesc_t* desc, int numAttribs )
 	m_vertices = PPAlloc(MAX_DYNAMIC_VERTICES*m_vertexStride);
 	m_indices = (uint16*)PPAlloc(MAX_DYNAMIC_INDICES*sizeof(uint16));
 
-	return (m_vertexBuffer != NULL && m_indexBuffer != NULL && m_vertexFormat != NULL);
+	return (m_vertexBuffer != nullptr && m_indexBuffer != nullptr && m_vertexFormat != nullptr);
 }
 
 void CDynamicMesh::Destroy()
 {
-	if(m_vertexBuffer == NULL && m_indexBuffer == NULL && m_vertexFormat == NULL)
+	if(m_vertexBuffer == nullptr && m_indexBuffer == nullptr && m_vertexFormat == nullptr)
 		return;
 
 	Reset();
@@ -124,13 +124,13 @@ void CDynamicMesh::Destroy()
 	PPFree(m_vertices);
 	PPFree(m_indices);
 
-	memset(m_vertexBuffer, 0, sizeof(m_vertexBuffer));
-	memset(m_indexBuffer, 0, sizeof(m_indexBuffer));
+	m_vertexBuffer = nullptr;
+	m_indexBuffer = nullptr;
 
-	m_vertexFormat = NULL;
+	m_vertexFormat = nullptr;
 
-	m_vertices = NULL;
-	m_indices = NULL;
+	m_vertices = nullptr;
+	m_indices = nullptr;
 }
 
 // returns a pointer to vertex format description

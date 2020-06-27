@@ -84,6 +84,8 @@ struct PursuerData_t
 	bool	exposedToRoadblock;
 };
 
+class CCar;
+
 struct RoadBlockInfo_t
 {
 	RoadBlockInfo_t() : targetEnteredRoadblock(nullptr), runARoadblock(false)

@@ -66,12 +66,6 @@
     <ClCompile Include="GL\gl_loader.cpp">
       <Filter>Source Files\Renderer\OpenGL</Filter>
     </ClCompile>
-    <ClCompile Include="GL\glad.c">
-      <Filter>Source Files\Renderer\OpenGL</Filter>
-    </ClCompile>
-    <ClCompile Include="GL\glad_es3.c">
-      <Filter>Source Files\Renderer\OpenGL</Filter>
-    </ClCompile>
     <ClCompile Include="Shared\ShaderAPIMain.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -80,6 +74,12 @@
     </ClCompile>
     <ClCompile Include="Shared\ShaderAPI_Base.cpp">
       <Filter>Source Files\Shared</Filter>
+    </ClCompile>
+    <ClCompile Include="GL\glad_es3.c">
+      <Filter>Source Files\Renderer\OpenGL</Filter>
+    </ClCompile>
+    <ClCompile Include="GL\glad.c">
+      <Filter>Source Files\Renderer\OpenGL</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

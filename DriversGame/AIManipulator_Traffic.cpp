@@ -454,7 +454,7 @@ void CAITrafficManipulator::RoadProvision()
 
 void CAITrafficManipulator::HandleJunctionExit(CCar* car)
 {
-	straight_t& current = m_straights[STRAIGHT_CURRENT];
+	//straight_t& current = m_straights[STRAIGHT_CURRENT];
 
 	IVector2D carPosOnCell = g_pGameWorld->m_level.PositionToGlobalTilePoint(car->GetOrigin());
 	int cellsBeforeEnd = GetCellsBeforeStraightEnd(carPosOnCell, m_straights[STRAIGHT_CURRENT]);
@@ -575,7 +575,7 @@ void CAITrafficManipulator::HandleJunctionExit(CCar* car)
 				}
 				else
 				{
-					int bestLane = m_straights[STRAIGHT_CURRENT].lane;
+					//int bestLane = m_straights[STRAIGHT_CURRENT].lane;
 
 					// try select forward
 					for (int i = 0; i < m_junction.exits.numElem(); i++)
@@ -674,7 +674,7 @@ void CAITrafficManipulator::UpdateAffector(ai_handling_t& handling, CCar* car, f
 	}
 
 	Plane		roadRealEndPlane(roadDir, -dot(roadDir, realEndPos));
-	float		distToChange = roadRealEndPlane.Distance(carPos);
+	//float		distToChange = roadRealEndPlane.Distance(carPos);
 
 	float invStraightDist = 1.0f / length(startPos - endPos);
 	float projWay = lineProjection(startPos, endPos, carPos);

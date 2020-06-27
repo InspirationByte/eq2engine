@@ -26,38 +26,18 @@
 
 #define roundf(x) floorf((x) + 0.5f)
 
-#ifdef _MSC_VER
-#ifndef min
-#define min(x, y) ((x < y)? x : y)
+#if defined(_INC_MINMAX)
+#error Please remove minmax from includes
 #endif
 
-#ifndef max
-#define max(x, y) ((x > y)? x : y)
-#endif
-#else
-#define NOMINMAX
 #undef min
 #undef max
 
-#define MAKE_MINMAX_FOR( type )	\
-	inline type min(type x, type y) {return (x < y)? x : y;} \
-	inline type max(type x, type y) {return (x > y)? x : y;}
+template <class T, class T2 = T, class TR = T>
+inline TR min(T x, T2 y) {return (TR)((x < y)? x : y);}
 
-MAKE_MINMAX_FOR(float)
-MAKE_MINMAX_FOR(double)
-
-MAKE_MINMAX_FOR(int8)
-MAKE_MINMAX_FOR(uint8)
-
-MAKE_MINMAX_FOR(int16)
-MAKE_MINMAX_FOR(uint16)
-
-MAKE_MINMAX_FOR(int32)
-MAKE_MINMAX_FOR(uint32)
-
-MAKE_MINMAX_FOR(int64)
-MAKE_MINMAX_FOR(uint64)
-#endif // _WIN32
+template <class T, class T2 = T, class TR = T>
+inline TR max(T x, T2 y) {return (TR)((x > y)? x : y);}
 
 // Math routines done in optimized assembly math package routines
 inline void SinCos( float radians, float *sine, float *cosine )

@@ -191,7 +191,7 @@ void CAIManager::InitZoneEntries(const DkList<pedestrianConfig_t*>& pedConfigs)
 					entry.nextSpawn += INITIAL_SPAWN_INTERVAL + m_trafficSpawnInterval;
 
 					int idx = g_pAIManager->m_civCarEntries.append(entry);
-					civCarEntry = &g_pAIManager->m_civCarEntries[j];
+					civCarEntry = &g_pAIManager->m_civCarEntries[idx];
 				}
 
 				int spawnInterval = KV_GetValueInt(zone_kv->keys[j], 0, 0);

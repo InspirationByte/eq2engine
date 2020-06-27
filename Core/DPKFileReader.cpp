@@ -134,9 +134,13 @@ void CDPKFileStream::DecodeBlock(int blockIdx)
 				int status = uncompress(m_blockData, &destLen, tmpBlock, blockHdr.compressedSize);
 
 				if (status != Z_OK)
+				{
 					ASSERTMSG(false, varargs("Cannot decompress file block - %d!\n", status));
+				}
 				else
+				{
 					ASSERT(destLen == blockHdr.size);
+				}
 
 				free(tmpBlock);
 			}
@@ -221,7 +225,7 @@ size_t CDPKFileStream::Write(const void *src, size_t count, size_t size)
 // seeks pointer to position
 int	CDPKFileStream::Seek(long nOffset, VirtStreamSeek_e seekType)
 {
-	uint32 newOfs = m_curPos;
+	int newOfs = m_curPos;
 
 	switch (seekType)
 	{
@@ -440,11 +444,8 @@ const char* CDPKFileReader::GetPackageFilename() const
 
 void CDPKFileReader::DumpPackage(PACKAGE_DUMP_MODE mode)
 {
-    if (!m_header.numFiles == 0)
-    {
-        Msg("Before doing dumping you need to set package name!\n");
+    if (m_header.numFiles == 0)
         return;
-    }
 
 #if 0
 
