@@ -7,7 +7,7 @@ LOCAL_PATH				:= $(SRC_PATH)
 
 LOCAL_MODULE    		:= prevLib
 LOCAL_MODULE_FILENAME	:= prevLib
-LOCAL_CFLAGS    		:= -DCROSSLINK_LIB -DANDROID -std=c++11 -pthread -fexceptions
+LOCAL_CFLAGS    		:= -DCROSSLINK_LIB
 LOCAL_EXPORT_LDLIBS := -lz
 
 LOCAL_C_INCLUDES:= \

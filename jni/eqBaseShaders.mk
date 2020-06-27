@@ -7,7 +7,7 @@ LOCAL_PATH				:= $(SRC_PATH)
 
 LOCAL_MODULE    		:= eqBaseShaders
 LOCAL_MODULE_FILENAME	:= libeqBaseShaders
-LOCAL_CFLAGS    		:= -DANDROID -DEQSHADER_LIBRARY -std=c++11 -pthread -fexceptions
+LOCAL_CFLAGS    		:= -DEQSHADER_LIBRARY
 
 LOCAL_C_INCLUDES:= \
 	$(LOCAL_PATH)/public\

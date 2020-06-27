@@ -11,7 +11,25 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="c9096593-b4df-4b83-813a-05c2d4299dea" name="Default" comment="">
-      <change beforePath="$PROJECT_DIR$/../MaterialSystem/Renderers/GL/ShaderAPIGL.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../MaterialSystem/Renderers/GL/ShaderAPIGL.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../DriversGame/CameraAnimator.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../DriversGame/CameraAnimator.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../DriversGame/car.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../DriversGame/car.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../DriversGame/car.h" beforeDir="false" afterPath="$PROJECT_DIR$/../DriversGame/car.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../DriversGame/physics.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../DriversGame/physics.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../DriversGame/physics.h" beforeDir="false" afterPath="$PROJECT_DIR$/../DriversGame/physics.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../DriversGame/session_base.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../DriversGame/session_base.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../DriversGame/session_base.h" beforeDir="false" afterPath="$PROJECT_DIR$/../DriversGame/session_base.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../DriversGame/state_game.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../DriversGame/state_game.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../DriversGame/world.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../DriversGame/world.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../jni/Application.mk" beforeDir="false" afterPath="$PROJECT_DIR$/../jni/Application.mk" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../jni/coreLib.mk" beforeDir="false" afterPath="$PROJECT_DIR$/../jni/coreLib.mk" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../jni/eqBaseShaders.mk" beforeDir="false" afterPath="$PROJECT_DIR$/../jni/eqBaseShaders.mk" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../jni/eqCore.mk" beforeDir="false" afterPath="$PROJECT_DIR$/../jni/eqCore.mk" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../jni/eqGLRHI.mk" beforeDir="false" afterPath="$PROJECT_DIR$/../jni/eqGLRHI.mk" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../jni/eqMatSystem.mk" beforeDir="false" afterPath="$PROJECT_DIR$/../jni/eqMatSystem.mk" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../jni/eqNullRHI.mk" beforeDir="false" afterPath="$PROJECT_DIR$/../jni/eqNullRHI.mk" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../jni/libGame_DrvSyn.mk" beforeDir="false" afterPath="$PROJECT_DIR$/../jni/libGame_DrvSyn.mk" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../jni/prevLib.mk" beforeDir="false" afterPath="$PROJECT_DIR$/../jni/prevLib.mk" afterDir="false" />
     </list>
     <ignored path="android-project.iws" />
     <ignored path=".idea/workspace.xml" />
@@ -92,11 +110,23 @@
           </provider>
         </entry>
       </file>
-      <file pinned="false" current-in-tab="true">
+      <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/../MaterialSystem/Renderers/GL/ShaderAPIGL.cpp">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="291">
+            <state relative-caret-position="189">
               <caret line="2068" selection-start-line="2068" selection-end-line="2068" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/../DriversGame/session_base.cpp">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="17">
+              <caret line="65" column="13" selection-start-line="65" selection-start-column="13" selection-end-line="65" selection-end-column="13" />
+              <folding>
+                <element signature="e#1357#1366#0" expanded="true" />
+              </folding>
             </state>
           </provider>
         </entry>
@@ -186,11 +216,12 @@
         <option value="$PROJECT_DIR$/app/src/main/java/org/libsdl/app/SDLActivity.java" />
         <option value="$PROJECT_DIR$/app/src/main/AndroidManifest.xml" />
         <option value="$PROJECT_DIR$/../MaterialSystem/Renderers/GL/ShaderAPIGL.cpp" />
+        <option value="$PROJECT_DIR$/../DriversGame/session_base.cpp" />
       </list>
     </option>
   </component>
   <component name="ProjectFrameBounds" extendedState="6">
-    <option name="x" value="-8" />
+    <option name="x" value="8" />
     <option name="width" value="1920" />
     <option name="height" value="1032" />
   </component>
@@ -617,6 +648,7 @@
   </component>
   <component name="ToolWindowManager">
     <frame x="-8" y="-8" width="1936" height="1056" extended-state="6" />
+    <editor active="true" />
     <layout>
       <window_info content_ui="combo" id="Project" order="0" sideWeight="0.4749596" visible="true" weight="0.17324094" />
       <window_info id="Structure" order="1" weight="0.25" />
@@ -641,8 +673,8 @@
       <window_info anchor="bottom" id="Terminal" order="11" sideWeight="0.49359658" weight="0.32936078" />
       <window_info anchor="bottom" id="Messages" order="12" sideWeight="0.36179295" weight="0.32929516" />
       <window_info anchor="bottom" id="Android Profiler" order="13" />
-      <window_info active="true" anchor="bottom" id="Logcat" order="14" visible="true" weight="0.32936078" />
-      <window_info anchor="bottom" id="Build" order="15" weight="0.32936078" />
+      <window_info anchor="bottom" id="Logcat" order="14" weight="0.32936078" />
+      <window_info active="true" anchor="bottom" id="Build" order="15" visible="true" weight="0.32936078" />
       <window_info anchor="right" id="Commander" order="0" weight="0.4" />
       <window_info anchor="right" id="Ant Build" order="1" weight="0.25" />
       <window_info anchor="right" content_ui="combo" id="Hierarchy" order="2" weight="0.25" />
@@ -884,8 +916,18 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/../MaterialSystem/Renderers/GL/ShaderAPIGL.cpp">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="291">
+        <state relative-caret-position="189">
           <caret line="2068" selection-start-line="2068" selection-end-line="2068" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/../DriversGame/session_base.cpp">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="17">
+          <caret line="65" column="13" selection-start-line="65" selection-start-column="13" selection-end-line="65" selection-end-column="13" />
+          <folding>
+            <element signature="e#1357#1366#0" expanded="true" />
+          </folding>
         </state>
       </provider>
     </entry>
