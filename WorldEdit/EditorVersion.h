@@ -17,7 +17,7 @@
 #endif
 
 //Don't Change! The BuildNumberIncreator will done this!
-#define BUILD_NUMBER_EDITOR 6234
+#define BUILD_NUMBER_EDITOR 6235
 
 // Subtract value for alpha, beta, release
 #define BUILD_NUMBER_SUBTRACTED 0

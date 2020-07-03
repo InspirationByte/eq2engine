@@ -12,6 +12,7 @@
 #include "IViewRenderer.h"
 #include "IDebugOverlay.h"
 #include "math/Random.h"
+#include "eqGlobalMutex.h"
 
 #ifndef NO_ENGINE
 #include "IEngineHost.h"
@@ -293,10 +294,11 @@ void EmitSound_t::Init( const char* pszName, const Vector3D& pos, float volume, 
 //
 //----------------------------------------------------------------------------
 
-CSoundEmitterSystem::CSoundEmitterSystem() : 
+CSoundEmitterSystem::CSoundEmitterSystem() :
 	m_isInit(false),
-	m_defaultMaxDistance(100.0f), 
-	m_isPaused(false)
+	m_defaultMaxDistance(100.0f),
+	m_isPaused(false),
+	m_mutex(Threading::GetGlobalMutex(Threading::MUTEXPURPOSE_AUDIO))
 {
 
 }
@@ -490,6 +492,8 @@ int CSoundEmitterSystem::EmitSound(EmitSound_t* emit)
 
 	if((emit->nFlags & EMITSOUND_FLAG_START_ON_UPDATE) || m_isPaused)
 	{
+		Threading::CScopedMutex m(m_mutex);
+
 		EmitSound_t newEmit = (*emit);
 		newEmit.nFlags &= ~EMITSOUND_FLAG_START_ON_UPDATE;
 		newEmit.name = xstrdup(newEmit.name);
@@ -611,7 +615,10 @@ int CSoundEmitterSystem::EmitSound(EmitSound_t* emit)
 	sndSource->SetParams(&sParams);
 	sndSource->Play();
 
-	emit->emitterIndex = m_emitters.append(edata);
+	{
+		Threading::CScopedMutex m(m_mutex);
+		emit->emitterIndex = m_emitters.append(edata);
+	}
 
 	// return channel type
 	return edata->channelType;
@@ -627,6 +634,8 @@ void CSoundEmitterSystem::Emit2DSound(EmitSound_t* emit, int channelType)
 
 	if ((emit->nFlags & EMITSOUND_FLAG_START_ON_UPDATE) || m_isPaused)
 	{
+		Threading::CScopedMutex m(m_mutex);
+
 		EmitSound_t newEmit = (*emit);
 		newEmit.nFlags &= ~EMITSOUND_FLAG_START_ON_UPDATE;
 		newEmit.emitterIndex = channelType;	// temporary
@@ -666,25 +675,29 @@ void CSoundEmitterSystem::Emit2DSound(EmitSound_t* emit, int channelType)
 	if(channelType == -1)
 		channelType = script->channelType;
 
-	ISoundPlayable* staticChannel = soundsystem->GetStaticStreamChannel(channelType);
-
-	if(staticChannel)
 	{
-		m_2dScriptVolume[channelType] = script->fVolume;
+		Threading::CScopedMutex m(m_mutex);
 
-		float startVolume = m_2dChannelVolume[channelType] * m_2dScriptVolume[channelType] * emit->fVolume;
-		float startPitch = emit->fPitch*script->fPitch;
+		ISoundPlayable* staticChannel = soundsystem->GetStaticStreamChannel(channelType);
 
-		if (channelType == CHAN_STREAM)
-			startVolume = m_2dChannelVolume[channelType] * m_2dScriptVolume[channelType] * snd_musicvolume.GetFloat();
-		else if (channelType == CHAN_VOICE)
-			startVolume = m_2dChannelVolume[channelType] * m_2dScriptVolume[channelType] * snd_voicevolume.GetFloat();
+		if (staticChannel)
+		{
+			m_2dScriptVolume[channelType] = script->fVolume;
 
-		staticChannel->SetSample(bestSample);
-		staticChannel->SetVolume(startVolume);
-		staticChannel->SetPitch(startPitch);
+			float startVolume = m_2dChannelVolume[channelType] * m_2dScriptVolume[channelType] * emit->fVolume;
+			float startPitch = emit->fPitch*script->fPitch;
 
-		staticChannel->Play();
+			if (channelType == CHAN_STREAM)
+				startVolume = m_2dChannelVolume[channelType] * m_2dScriptVolume[channelType] * snd_musicvolume.GetFloat();
+			else if (channelType == CHAN_VOICE)
+				startVolume = m_2dChannelVolume[channelType] * m_2dScriptVolume[channelType] * snd_voicevolume.GetFloat();
+
+			staticChannel->SetSample(bestSample);
+			staticChannel->SetVolume(startVolume);
+			staticChannel->SetPitch(startPitch);
+
+			staticChannel->Play();
+		}
 	}
 }
 
@@ -810,6 +823,8 @@ void CSoundEmitterSystem::Update(float pitchScale, bool force)
 	{
 		if (m_pendingStartSounds2D.numElem())
 		{
+			Threading::CScopedMutex m(m_mutex);
+
 			// play sounds
 			for (int i = 0; i < m_pendingStartSounds2D.numElem(); i++)
 			{
@@ -825,6 +840,8 @@ void CSoundEmitterSystem::Update(float pitchScale, bool force)
 
 		if (m_pendingStartSounds.numElem())
 		{
+			Threading::CScopedMutex m(m_mutex);
+
 			// play sounds
 			for (int i = 0; i < m_pendingStartSounds.numElem(); i++)
 			{
@@ -860,6 +877,8 @@ void CSoundEmitterSystem::Update(float pitchScale, bool force)
 
 		if( remove )
 		{
+			Threading::CScopedMutex m(m_mutex);
+
 			if(emitter->controller)
 				emitter->controller->Stop(true);
 

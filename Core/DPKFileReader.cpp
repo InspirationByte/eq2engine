@@ -337,43 +337,30 @@ void CDPKFileReader::SetKey(const char* key)
 	m_key = key;
 }
 
-// Fixes slashes in the directory name
-static void RebuildFilePath( char *str, char *newstr )
-{
-	char* pnewstr = newstr;
-	char cprev = 0;
-
-    while ( *str )
-    {
-		while(cprev == *str && (cprev == CORRECT_PATH_SEPARATOR))
-			str++;
-
-		*pnewstr = *str;
-		pnewstr++;
-
-		cprev = *str;
-        str++;
-    }
-
-	*pnewstr = 0;
-}
-
 int	CDPKFileReader::FindFileIndex(const char* filename) const
 {
-	char* pszNewString = (char*)stackalloc(strlen(filename)+1);
-	RebuildFilePath((char*)filename, pszNewString);
-	FixSlashes(pszNewString);
-	xstrlwr(pszNewString);
+	EqString fullFilename(filename);
+	fullFilename = fullFilename.LowerCase();
+	fullFilename.Path_FixSlashes();
 
-	int strHash = StringToHash(pszNewString, true);
+	int mountPathPos = fullFilename.Find(m_mountPath.c_str(), false, 0);
 
-	//Msg("DPK: %s = %u\n", pszNewString, strHash);
+	if (mountPathPos != 0)
+		return -1;
+
+	// replace
+	EqString pkgFileName = fullFilename.Right(fullFilename.Length() - m_mountPath.Length() - 1);
+
+	// convert to DPK filename
+	DPK_FixSlashes(pkgFileName);
+
+	int strHash = StringToHash(pkgFileName.c_str(), true);
 
     for (int i = 0; i < m_header.numFiles; i++)
     {
 		const dpkfileinfo_t& file = m_dpkFiles[i];
 
-		if( file.filenameHash == strHash )
+		if (file.filenameHash == strHash)
 			return i;
     }
 
@@ -395,7 +382,6 @@ bool CDPKFileReader::SetPackageFilename(const char *filename)
 	delete [] m_dpkFiles;
 
     m_packageName = filename;
-	m_tempPath = getenv("TEMP") + _Es("/_pktmp_") + _Es(filename).Path_Strip_Ext();
 
     FILE* dpkFile = fopen(m_packageName.c_str(),"rb");
 
@@ -423,6 +409,13 @@ bool CDPKFileReader::SetPackageFilename(const char *filename)
 		fclose(dpkFile);
         return false;
     }
+
+	// read mount path
+	char mountPath[DPK_STRING_SIZE];
+	fread(mountPath, DPK_STRING_SIZE, 1, dpkFile);
+
+	m_mountPath = mountPath;
+	m_mountPath.Path_FixSlashes();
 
 	DevMsg(DEVMSG_FS, "Package '%s' loading OK\n", m_packageName.c_str());
 
@@ -547,7 +540,7 @@ void CDPKFileReader::DumpPackage(PACKAGE_DUMP_MODE mode)
 #endif // 0
 }
 
-CDPKFileStream* CDPKFileReader::Open(const char* filename,const char* mode)
+CDPKFileStream* CDPKFileReader::Open(const char* filename, const char* mode)
 {
 	//Msg("io::dpktryopen(%s)\n", filename);
 

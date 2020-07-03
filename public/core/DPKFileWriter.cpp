@@ -21,6 +21,48 @@
 
 #define DPK_WRITE_BLOCK (8*1024*1024)
 
+// Fixes slashes in the directory name
+void DPK_RebuildFilePath(const char *str, char *newstr)
+{
+	char* pnewstr = newstr;
+	char cprev = 0;
+
+	while (*str)
+	{
+		while (cprev == *str && (cprev == CORRECT_PATH_SEPARATOR || cprev == INCORRECT_PATH_SEPARATOR))
+			str++;
+
+		*pnewstr = *str;
+		pnewstr++;
+
+		cprev = *str;
+		str++;
+	}
+
+	*pnewstr = 0;
+}
+
+void DPK_FixSlashes(EqString& str)
+{
+	char* tempStr = (char*)stackalloc(str.Length() + 1);
+	memset(tempStr, 0, str.Length());
+
+	DPK_RebuildFilePath(str.c_str(), tempStr);
+
+	char* ptr = tempStr;
+	while (*ptr)
+	{
+		if (*ptr == '\\')
+			*ptr = '/';
+
+		ptr++;
+	}
+
+	str.Assign(tempStr);
+}
+
+#ifndef ANDROID
+
 CDPKFileWriter::CDPKFileWriter() 
 	: m_ice(0)
 {
@@ -109,6 +151,8 @@ bool CDPKFileWriter::BuildAndSave( const char* fileNamePrefix )
 void CDPKFileWriter::SetMountPath( const char* path )
 {
 	strncpy(m_mountPath, path, DPK_STRING_SIZE);
+	m_mountPath[DPK_STRING_SIZE - 1] = '\0';
+
 	FixSlashes(m_mountPath);
 	xstrlwr( m_mountPath );
 }
@@ -137,12 +181,12 @@ bool CDPKFileWriter::AddFile( const char* fileName )
 	{
 		// assign the filename and fix path separators
 		newInfo->fileName = _Es(fileName).LowerCase();
-		newInfo->fileName.Path_FixSlashes();
+		DPK_FixSlashes(newInfo->fileName);
 
-		EqString fillMountedFilename = CombinePath(2, m_mountPath, newInfo->fileName.c_str());
+		//Msg("adding file: '%s'\n", newInfo->fileName.c_str());
 
-		//Msg("Add file '%s'\n", fillMountedFilename.c_str());
-		newInfo->pkinfo.filenameHash = StringToHash(fillMountedFilename.c_str(), true );
+		newInfo->pkinfo.filenameHash = StringToHash(newInfo->fileName.c_str(), true );
+		//Msg("DPK: %s = %u\n", newInfo->fileName.c_str(), newInfo->pkinfo.filenameHash);
 	}
 
 	m_files.append(newInfo);
@@ -151,7 +195,7 @@ bool CDPKFileWriter::AddFile( const char* fileName )
 	return true;
 }
 
-void CDPKFileWriter::AddDirecory(const char* filename_to_add, bool bRecurse)
+void CDPKFileWriter::AddDirectory(const char* filename_to_add, bool bRecurse)
 {
 	EqString dir_name(filename_to_add);
 	EqString dirname(dir_name + "/*.*");
@@ -176,7 +220,7 @@ void CDPKFileWriter::AddDirecory(const char* filename_to_add, bool bRecurse)
 					continue;
 
 				if(bRecurse)
-					AddDirecory( varargs("%s/%s",dir_name.c_str(),wfd.cFileName), true );
+					AddDirectory( varargs("%s/%s",dir_name.c_str(),wfd.cFileName), true );
 			}
 			else
 			{
@@ -393,7 +437,7 @@ bool CDPKFileWriter::SavePackage()
 	StartPacifier("Compressing files, this may take a while: ");
 
 	// write fileinfo to the end of main file
-	m_header.fileInfoOffset = sizeof(dpkheader_t);
+	m_header.fileInfoOffset = sizeof(dpkheader_t) + DPK_STRING_SIZE;
 
 	for(int i = 0; i < m_files.numElem();i++)
 	{
@@ -413,6 +457,9 @@ bool CDPKFileWriter::SavePackage()
 	// Write header
 	fwrite(&m_header,sizeof(m_header),1,m_file);
 
+	// Write mount path
+	fwrite(m_mountPath, DPK_STRING_SIZE, 1, m_file);
+
 	// Write temp file to main file
 	WriteFiles();
 
@@ -420,6 +467,7 @@ bool CDPKFileWriter::SavePackage()
 	for(int i = 0; i < m_files.numElem();i++)
 	{
 		fwrite( &m_files[i]->pkinfo, sizeof(dpkfileinfo_t), 1, m_file );
+		fflush(m_file);
 		delete m_files[i];
 	}
 
@@ -431,3 +479,5 @@ bool CDPKFileWriter::SavePackage()
 
 	return true;
 }
+
+#endif // !ANDROID

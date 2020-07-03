@@ -12,6 +12,7 @@
 #include "ISoundSystem.h"
 #include "utils/eqstring.h"
 #include "utils/DkList.h"
+#include "utils/eqthread.h"
 
 class BaseEntity;
 
@@ -335,24 +336,26 @@ private:
 private:
 #endif
 
+	float						m_2dChannelVolume[CHAN_COUNT];
+	float						m_2dScriptVolume[CHAN_COUNT];
+
+	float						m_defaultMaxDistance;
+
+	int							m_totalErrors;
+
+	fnSoundEmitterUpdate		m_fnEmitterProcess;
+
 	DkList<EmitterData_t*>		m_emitters;
 	DkList<ISoundController*>	m_controllers;
 
 	DkList<EmitSound_t>			m_pendingStartSounds;
 	DkList<EmitSound_t>			m_pendingStartSounds2D;
 
+	Threading::CEqMutex&		m_mutex;
+
 	bool						m_isInit;
 
-	bool						m_isPaused;
-
-	float						m_defaultMaxDistance;
-
-	fnSoundEmitterUpdate		m_fnEmitterProcess;
-
-	float						m_2dChannelVolume[CHAN_COUNT];
-	float						m_2dScriptVolume[CHAN_COUNT];
-
-	int							m_totalErrors;
+	bool						m_isPaused;	
 };
 
 extern CSoundEmitterSystem* g_sounds;

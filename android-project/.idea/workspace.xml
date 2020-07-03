@@ -11,25 +11,14 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="c9096593-b4df-4b83-813a-05c2d4299dea" name="Default" comment="">
+      <change beforePath="$PROJECT_DIR$/../DriversEditor/EditorTestDrive.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../DriversEditor/EditorTestDrive.cpp" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../DriversGame/CameraAnimator.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../DriversGame/CameraAnimator.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../DriversGame/car.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../DriversGame/car.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../DriversGame/car.h" beforeDir="false" afterPath="$PROJECT_DIR$/../DriversGame/car.h" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../DriversGame/physics.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../DriversGame/physics.cpp" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../DriversGame/physics.h" beforeDir="false" afterPath="$PROJECT_DIR$/../DriversGame/physics.h" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../DriversGame/session_base.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../DriversGame/session_base.cpp" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../DriversGame/session_base.h" beforeDir="false" afterPath="$PROJECT_DIR$/../DriversGame/session_base.h" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../DriversGame/state_game.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../DriversGame/state_game.cpp" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../DriversGame/world.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../DriversGame/world.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../jni/Application.mk" beforeDir="false" afterPath="$PROJECT_DIR$/../jni/Application.mk" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../jni/coreLib.mk" beforeDir="false" afterPath="$PROJECT_DIR$/../jni/coreLib.mk" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../jni/eqBaseShaders.mk" beforeDir="false" afterPath="$PROJECT_DIR$/../jni/eqBaseShaders.mk" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../jni/eqCore.mk" beforeDir="false" afterPath="$PROJECT_DIR$/../jni/eqCore.mk" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../jni/eqGLRHI.mk" beforeDir="false" afterPath="$PROJECT_DIR$/../jni/eqGLRHI.mk" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../jni/eqMatSystem.mk" beforeDir="false" afterPath="$PROJECT_DIR$/../jni/eqMatSystem.mk" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../jni/eqNullRHI.mk" beforeDir="false" afterPath="$PROJECT_DIR$/../jni/eqNullRHI.mk" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../jni/libGame_DrvSyn.mk" beforeDir="false" afterPath="$PROJECT_DIR$/../jni/libGame_DrvSyn.mk" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../jni/prevLib.mk" beforeDir="false" afterPath="$PROJECT_DIR$/../jni/prevLib.mk" afterDir="false" />
     </list>
     <ignored path="android-project.iws" />
     <ignored path=".idea/workspace.xml" />
@@ -648,7 +637,6 @@
   </component>
   <component name="ToolWindowManager">
     <frame x="-8" y="-8" width="1936" height="1056" extended-state="6" />
-    <editor active="true" />
     <layout>
       <window_info content_ui="combo" id="Project" order="0" sideWeight="0.4749596" visible="true" weight="0.17324094" />
       <window_info id="Structure" order="1" weight="0.25" />

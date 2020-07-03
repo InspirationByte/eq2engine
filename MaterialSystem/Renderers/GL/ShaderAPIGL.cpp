@@ -320,6 +320,13 @@ void ShaderAPIGL::PrintAPIInfo()
 {
 	Msg("ShaderAPI: ShaderAPIGL\n");
 
+	Msg("  Maximum texture anisotropy: %d\n", m_caps.maxTextureAnisotropicLevel);
+	Msg("  Maximum drawable textures: %d\n", m_caps.maxTextureUnits);
+	Msg("  Maximum vertex textures: %d\n", m_caps.maxVertexTextureUnits);
+	Msg("  Maximum texture size: %d x %d\n", m_caps.maxTextureSize, m_caps.maxTextureSize);
+
+	Msg("  Instancing supported: %d\n", m_caps.isInstancingSupported);
+
 	MsgInfo("------ Loaded textures ------\n");
 
 	CScopedMutex scoped(m_Mutex);
@@ -428,7 +435,9 @@ void ShaderAPIGL::Reset(int nResetType/* = STATE_RESET_ALL*/)
 
 void ShaderAPIGL::ApplyTextures()
 {
-	for (int i = 0; i < m_caps.maxTextureUnits; i++)
+	int i;
+
+	for (i = 0; i < m_caps.maxTextureUnits; i++)
 	{
 		CGLTexture* pSelectedTexture = (CGLTexture*)m_pSelectedTextures[i];
 		CGLTexture* pCurrentTexture = (CGLTexture*)m_pCurrentTextures[i];
@@ -471,7 +480,25 @@ void ShaderAPIGL::ApplyTextures()
 		}
 	}
 
+	for (i = 0; i < m_caps.maxVertexTextureUnits; i++)
+	{
+		CGLTexture* pTexture = (CGLTexture*)m_pSelectedVertexTextures[i];
+		if (pTexture != m_pCurrentVertexTextures[i])
+		{
+			if (pTexture == NULL)
+			{
+				//m_pD3DDevice->SetTexture(D3DVERTEXTEXTURESAMPLER0 + i, NULL);
+				//m_pSelectedVertexSamplerStates[i] = NULL;
+			}
+			else
+			{
+				//m_pD3DDevice->SetTexture(D3DVERTEXTEXTURESAMPLER0 + i, pTexture->GetCurrentTexture());
+				//m_pSelectedVertexSamplerStates[i] = (SamplerStateParam_t*)&pTexture->GetSamplerState();
+			}
 
+			m_pCurrentVertexTextures[i] = pTexture;
+		}
+	}
 }
 
 void ShaderAPIGL::ApplySamplerState()

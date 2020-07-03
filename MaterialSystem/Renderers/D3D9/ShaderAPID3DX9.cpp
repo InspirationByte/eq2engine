@@ -596,7 +596,7 @@ void ShaderAPID3DX9::ApplyTextures()
 		}
 	}
 
-	for(i = 0; i < MAX_VERTEXTEXTURES; i++)
+	for(i = 0; i < m_caps.maxVertexTextureUnits; i++)
 	{
 		CD3D9Texture* pTexture = (CD3D9Texture*)m_pSelectedVertexTextures[i];
 		if (pTexture != m_pCurrentVertexTextures[i])

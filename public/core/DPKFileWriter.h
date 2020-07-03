@@ -19,8 +19,6 @@
 #include "utils/eqstring.h"
 #include "utils/IceKey.h"
 
-#define DPK_STRING_SIZE 255
-
 struct dpkfilewinfo_t
 {
 	dpkfileinfo_t	pkinfo;
@@ -40,7 +38,7 @@ public:
 	void					SetMountPath( const char* path );
 
 	bool					AddFile( const char* fileName );
-	void					AddDirecory( const char* directoryname, bool bRecurse );
+	void					AddDirectory( const char* directoryname, bool bRecurse );
 
 	void					AddIgnoreCompressionExtension( const char* extension );
 

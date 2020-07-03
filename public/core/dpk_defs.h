@@ -9,11 +9,13 @@
 #define DPK_DEFS_H
 
 #include "dktypes.h"
+#include "utils/eqstring.h"
 
-#define DPK_VERSION					5
+#define DPK_VERSION					6
 #define DPK_SIGNATURE				MCHAR4('E','Q','P','K')
 
 #define DPK_BLOCK_MAXSIZE			(8*1024)
+#define DPK_STRING_SIZE				255
 
 enum EFileFlags
 {
@@ -60,5 +62,8 @@ struct dpkfileinfo_s
 	short	flags;
 };
 ALIGNED_TYPE(dpkfileinfo_s, 2) dpkfileinfo_t;
+
+// dpk path fix
+void DPK_FixSlashes(EqString& str);
 
 #endif //DPK_DEFS_H

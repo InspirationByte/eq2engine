@@ -130,10 +130,10 @@ protected:
 	DkList<CDPKFileStream*>	m_openFiles;
 
 	EqString				m_packageName;
-	int						m_searchPath;
-	EqString				m_tempPath;
-
+	EqString				m_mountPath;
 	EqString				m_key;
+
+	int						m_searchPath;
 
 	Threading::CEqMutex&	m_FSMutex;
 };

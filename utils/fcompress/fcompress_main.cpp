@@ -85,7 +85,7 @@ int _tmain(int argc, char **argv)
 		}
 		else if(!stricmp(arg, "-d") || !stricmp(arg, "-dir"))
 		{
-			dpkWriter.AddDirecory( g_cmdLine->GetArgumentsOf(i), true );
+			dpkWriter.AddDirectory( g_cmdLine->GetArgumentsOf(i), true );
 		}
 		else if(!stricmp(arg, "-m") || !stricmp(arg, "-mount"))
 		{

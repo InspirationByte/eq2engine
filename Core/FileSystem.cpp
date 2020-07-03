@@ -214,6 +214,7 @@ void CFileSystem::Shutdown()
 		delete m_packages[i];
 
 	m_packages.clear();
+	m_directories.clear();
 
 	g_localizer->Shutdown();
 }
@@ -632,6 +633,25 @@ IFile* CFileSystem::GetFileHandle(const char* filename,const char* options, int 
 
 				return pFileHandle;
 			}
+
+			if (!isWrite)
+			{
+				// If failed to load directly, load it from package, in backward order
+				for (int j = m_packages.numElem() - 1; j >= 0; j--)
+				{
+					CDPKFileReader* pPackageReader = m_packages[j];
+					CDPKFileStream* pPackedFile = pPackageReader->Open(tmp_path, options);
+
+					if (pPackedFile)
+					{
+						m_FSMutex.Lock();
+						m_openFiles.append(pPackedFile);
+						m_FSMutex.Unlock();
+
+						return pPackedFile;
+					}
+				}
+			}
 		}
     }
 
@@ -650,6 +670,25 @@ IFile* CFileSystem::GetFileHandle(const char* filename,const char* options, int 
 
 			return pFileHandle;
         }
+
+		if (!isWrite)
+		{
+			// If failed to load directly, load it from package, in backward order
+			for (int j = m_packages.numElem() - 1; j >= 0; j--)
+			{
+				CDPKFileReader* pPackageReader = m_packages[j];
+				CDPKFileStream* pPackedFile = pPackageReader->Open(tmp_path, options);
+
+				if (pPackedFile)
+				{
+					m_FSMutex.Lock();
+					m_openFiles.append(pPackedFile);
+					m_FSMutex.Unlock();
+
+					return pPackedFile;
+				}
+			}
+		}
     }
 
     // And checking root.
@@ -666,20 +705,13 @@ IFile* CFileSystem::GetFileHandle(const char* filename,const char* options, int 
 
 			return pFileHandle;
 		}
-    }
 
-    // If failed to load directly, load it from package, in backward order
-    // NOTE: basepath is not added to DPK paths
-    for (int i = m_packages.numElem()-1; i >= 0;i--)
-    {
-        CDPKFileReader* pPackageReader = m_packages[i];
-		//DkStr temp;
-        if (flags & SP_MOD)
-        {
-			for(int j = 0; j < m_directories.numElem(); j++)
+		if (!isWrite)
+		{
+			// If failed to load directly, load it from package, in backward order
+			for (int j = m_packages.numElem() - 1; j >= 0; j--)
 			{
-				sprintf(tmp_path, "%s/%s", m_directories[j].path.c_str(),pFilePath);
-
+				CDPKFileReader* pPackageReader = m_packages[j];
 				CDPKFileStream* pPackedFile = pPackageReader->Open(tmp_path, options);
 
 				if (pPackedFile)
@@ -691,35 +723,7 @@ IFile* CFileSystem::GetFileHandle(const char* filename,const char* options, int 
 					return pPackedFile;
 				}
 			}
-        }
-        if (flags & SP_DATA)
-        {
-			sprintf(tmp_path, "%s/%s",m_dataDir.GetData(),pFilePath);
-
-			CDPKFileStream* pPackedFile = pPackageReader->Open(tmp_path, options);
-
-            if (pPackedFile)
-            {
-				m_FSMutex.Lock();
-				m_openFiles.append(pPackedFile);
-				m_FSMutex.Unlock();
-
-				return pPackedFile;
-            }
-        }
-        if (flags & SP_ROOT)
-        {
-			CDPKFileStream* pPackedFile = pPackageReader->Open(tmp_path, options);
-
-            if (pPackedFile)
-            {
-				m_FSMutex.Lock();
-				m_openFiles.append(pPackedFile);
-				m_FSMutex.Unlock();
-
-				return pPackedFile;
-            }
-        }
+		}
     }
 
     //Return NULL filename if file not found
