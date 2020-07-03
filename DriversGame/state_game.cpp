@@ -33,12 +33,14 @@
 #include "DrvSynHUD.h"
 
 #include "Shiny.h"
+#include <sstream>
 
 #include "director.h"
-
 #include "world.h"
-
 #include "input.h"
+
+
+
 
 static CCameraAnimator	s_cameraAnimator;
 CCameraAnimator*		g_pCameraAnimator = &s_cameraAnimator;
@@ -977,7 +979,7 @@ bool CState_Game::Update( float fDt )
 		eqFontStyleParam_t fontParam;
 		fontParam.styleFlag |= TEXT_STYLE_SHADOW;
 		fontParam.align = TEXT_ALIGN_HCENTER;
-		fontParam.textColor = ColorRGBA(fabs(sinf(fDt*2.0f)),0.0f,0.0f,1.0f);
+		fontParam.textColor = ColorRGBA(0.8f,0.0f,0.0f,1.0f);
 		fontParam.scale = 30.0f;
 
 		const wchar_t* demoStr = LocalizedString("#DEMO");
@@ -1236,15 +1238,13 @@ void CState_Game::RenderMainView3D( float fDt )
 	g_pGameHUD->Render3D(fDt);
 }
 
-#include <sstream>
-
 void CState_Game::RenderMainView2D( float fDt )
 {
 	const IVector2D& screenSize = g_pHost->GetWindowSize();
 
 	// draw HUD
 	if(!(Director_IsActive() && g_pause.GetBool()))
-		g_pGameHUD->Render( fDt, screenSize );
+		g_pGameHUD->Render( fDt, screenSize, !((g_nClientButtons & IN_LOOKLEFT) && (g_nClientButtons & IN_LOOKRIGHT)));
 
 	Director_Draw( fDt );
 
@@ -1293,6 +1293,9 @@ void CState_Game::DoGameFrame(float fDt)
 
 	// render all
 	RenderMainView3D( fDt );
+
+	g_pGameSession->UpdatePhysics(fDt);
+
 	RenderMainView2D( fDt );
 
 	g_nOldControlButtons = g_nClientButtons;

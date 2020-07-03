@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright ï¿½ Inspiration Byte
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
 // Description: Game session base implementations
@@ -59,10 +59,14 @@ CGameSessionBase::~CGameSessionBase()
 
 int CGameSessionBase::GetPhysicsIterations() const
 {
-//	if(g_replayTracker->m_state == REPL_PLAYING)
-//		return g_replayTracker->m_playbackPhysIterations;
+	//if(g_replayTracker->m_state == REPL_PLAYING)
+	//	return g_replayTracker->m_playbackPhysIterations;
 
+#ifdef ANDROID
+	return 1;
+#else
 	return 2;
+#endif
 }
 
 void CGameSessionBase::Init()
@@ -267,6 +271,9 @@ void Game_OnPhysicsUpdate(float fDt, int iterNum)
 		// always regenerate predictable random
 		g_replayRandom.SetSeed(g_replayTracker->m_tick);
 		g_replayRandom.Regenerate();
+
+		// do replays and prerecorded stuff
+		g_replayTracker->UpdatePlayback(fDt);
 	}
 
 	// next is only calculated at the server
@@ -298,19 +305,6 @@ void Game_OnPhysicsUpdate(float fDt, int iterNum)
 
 		g_pAIManager->UpdateNavigationVelocityMap(fDt);
 	}
-
-	// do replays and prerecorded stuff
-	if (g_replayTracker)
-		g_replayTracker->UpdatePlayback(fDt);
-}
-
-void GameJob_UpdatePhysics(void* data)
-{
-	float fDt = *(float*)data;
-
-	float phys_begin = MEASURE_TIME_BEGIN();
-	g_pPhysics->Simulate(fDt, g_pGameSession->GetPhysicsIterations(), Game_OnPhysicsUpdate);
-	debugoverlay->Text(ColorRGBA(1, 1, 0, 1), "physics time, ms: %g", abs(MEASURE_TIME_STATS(phys_begin)));
 }
 
 void CGameSessionBase::UpdateAsPlayerCar(const playerControl_t& control, CCar* car)
@@ -344,6 +338,15 @@ void CGameSessionBase::UpdateAsPlayerCar(const playerControl_t& control, CCar* c
 	}
 }
 
+void CGameSessionBase::UpdatePhysics(float fDt)
+{
+	if (fDt <= 0.0f)
+		return;
+
+	UpdatePlayerControls();
+	g_pPhysics->Simulate(fDt, GetPhysicsIterations(), Game_OnPhysicsUpdate);
+}
+
 //
 // Updates the game
 //
@@ -368,13 +371,6 @@ void CGameSessionBase::Update(float fDt)
 	}
 
 	m_gameTime += fDt;
-
-	UpdatePlayerControls();
-
-	float phys_begin = MEASURE_TIME_BEGIN();
-	g_pPhysics->Simulate(fDt, GetPhysicsIterations(), Game_OnPhysicsUpdate);
-
-	debugoverlay->Text(ColorRGBA(1, 1, 0, 1), "physics time, ms: %g", abs(MEASURE_TIME_STATS(phys_begin)));
 
 	g_pAIManager->UpdateCopStuff(fDt);
 

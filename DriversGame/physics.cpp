@@ -123,6 +123,8 @@ void CPhysicsEngine::SceneInit()
 #endif // m_physics
 
 	m_dtAccumulator = 0.0f;
+
+	StartWorkerThread("PhysicsThread");
 }
 
 #ifdef EDITOR
@@ -139,6 +141,8 @@ void CPhysicsEngine::SceneDestroyBroadphase()
 
 void CPhysicsEngine::SceneShutdown()
 {
+	StopThread();
+
 	// Destruye el array de objetos dinámicos
 	for(int i = 0; i < m_hfBodies.numElem(); i++)
 	{
@@ -162,23 +166,52 @@ void PhysDebugRender(void* arg)
 	physEngine->m_physics.DebugDrawBodies( ph_debugrender.GetInt() );
 }
 
+int CPhysicsEngine::Run()
+{
+	float fDtAccum = m_dtAccumulator;
+
+	// increase fixed frames if we're going low
+	const double timestep = PHYSICS_FRAME_INTERVAL / m_runIterations;
+	while (fDtAccum > m_runDelta)
+	{
+		// do real iteration count
+		m_physics.SimulateStep(timestep, m_iteration++, m_iterationCallback);
+		fDtAccum -= timestep;
+	}
+
+	m_dtAccumulator = fDtAccum;
+
+	return 0;
+}
+
 void CPhysicsEngine::Simulate( float fDt, int numIterations, FNSIMULATECALLBACK preIntegrateFn )
 {
 	PROFILE_FUNC();
 
-	double timestep = PHYSICS_FRAME_INTERVAL / numIterations;
-
 	m_dtAccumulator += fDt;
+
+	m_runDelta = fDt;
+	m_iterationCallback = preIntegrateFn;
+	m_runIterations = numIterations;
+
+	SignalWork();
+
+	/*
+	float fDtAccum = m_dtAccumulator;
 
 	int executedIterations = 0;
 
 	// increase fixed frames if we're going low
-	while(m_dtAccumulator > fDt)
+	const double timestep = PHYSICS_FRAME_INTERVAL / numIterations;
+	while(fDtAccum > fDt)
 	{
 		// do real iteration count
 		m_physics.SimulateStep(timestep, executedIterations++, preIntegrateFn);
-		m_dtAccumulator -= timestep;
+		fDtAccum -= timestep;
 	}
+
+	m_dtAccumulator = fDtAccum;
+	*/
 
 	// debug rendering
 	if(ph_debugrender.GetBool())

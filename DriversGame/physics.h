@@ -17,6 +17,8 @@
 #include "eqPhysics/eqPhysics_Body.h"
 #include "eqPhysics/eqCollision_Object.h"
 
+#include "utils/eqthread.h"
+
 #include "drivers_coord.h"
 
 const float PHYSICS_FRAME_INTERVAL = (1.0f / 60.0f);
@@ -45,7 +47,7 @@ public:
 };
 
 // Physics engine/world
-class CPhysicsEngine
+class CPhysicsEngine : public Threading::CEqThread
 {
 public:
 								CPhysicsEngine();
@@ -81,10 +83,16 @@ public:
 
 protected:
 
+	int							Run();
+
 	DkList<CPhysicsHFObject*>	m_hfBodies;
 	DkList<CHeightTileField*>	m_heightFields;		// heightfield is sort of static objects
 
-	float						m_dtAccumulator;
+	int							m_iteration;
+	volatile float				m_dtAccumulator;
+	volatile int				m_runIterations;
+	volatile float				m_runDelta;
+	volatile FNSIMULATECALLBACK	m_iterationCallback;
 };
 
 extern CPhysicsEngine* g_pPhysics;

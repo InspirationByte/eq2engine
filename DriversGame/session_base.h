@@ -64,6 +64,7 @@ public:
 
 	virtual void				Update(float fDt);
 	virtual void				UpdateMission(float fDt);
+	void						UpdatePhysics(float fDt);
 
 	virtual float				GetTimescale() const { return 1.0f; }
 	virtual int					GetPhysicsIterations() const;

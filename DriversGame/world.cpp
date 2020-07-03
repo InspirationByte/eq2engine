@@ -921,6 +921,8 @@ void CGameWorld::OnObjectRemovedEvent(CGameObject* obj)
 	}
 #endif // NO_LUA
 
+	g_pPhysics->WaitForThread();
+
 	obj->OnRemove();
 
 	if (obj->m_state != GO_STATE_REMOVED)
@@ -995,6 +997,8 @@ bool CGameWorld::IsValidObject(CGameObject* pObject) const
 
 void CGameWorld::RemoveAllObjects()
 {
+	g_pPhysics->WaitForThread();
+
 	m_renderingObjects.clear();
 
 	for (int i = 0; i < m_gameObjects.numElem(); i++)
@@ -1409,6 +1413,8 @@ void CGameWorld::UpdateWorld(float fDt)
 		m_lights[i].position = vec4_zero;
 		m_lights[i].color = vec4_zero;
 	}
+
+	g_pPhysics->WaitForThread();
 
 	// spawn region objects
 	SpawnPendingObjects();
