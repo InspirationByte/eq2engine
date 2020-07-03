@@ -53,6 +53,11 @@ const slipAngleCurveParams_t& GetAISlipCurveParams()
 	return s_AISlipAngleParams;
 }
 
+float GetAICenterOfMassCorrection()
+{
+	return -0.15f;
+}
+
 //-------------------------------------------------------------------------------------------
 
 struct eventSubscription_t

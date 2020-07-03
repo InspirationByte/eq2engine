@@ -118,7 +118,7 @@ void CEditorTestGame::Update( float fDt )
 	m_car->GetPhysicsBody()->Wake();
 
 	g_pPhysics->Simulate(fDt, 4, nullptr);
-
+	g_pPhysics->WaitForThread();
 	g_pCameraAnimator->Update( fDt, m_clientButtons, m_car );
 }
 

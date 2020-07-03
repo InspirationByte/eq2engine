@@ -59,7 +59,7 @@ public:
 	void						SetHudScheme(const char* name);
 
 	// render the screen with maps and shit
-	void						Render( float fDt, const IVector2D& screenSize);
+	void						Render( float fDt, const IVector2D& screenSize, bool shownHud);
 	void						Render3D( float fDt );
 
 	// main object to display

@@ -272,7 +272,7 @@ void CObject_Physics::OnPhysicsCollide(const CollisionPairData_t& pair)
 	}
 
 	// it's only broken if car collision force was greateer
-	if (pair.impactVelocity > m_breakForce)
+	if (pair.impactVelocity > m_breakForce && pair.GetOppositeTo(body)->GetContents() != OBJECTCONTENTS_DEBRIS)
 	{
 		if (m_breakForce > 0.0f)
 		{

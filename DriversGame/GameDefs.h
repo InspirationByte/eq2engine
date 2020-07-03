@@ -117,6 +117,7 @@ struct slipAngleCurveParams_t
 
 const slipAngleCurveParams_t& GetDefaultSlipCurveParams();
 const slipAngleCurveParams_t& GetAISlipCurveParams();
+float GetAICenterOfMassCorrection();
 
 //--------------------------------------------------------------------
 

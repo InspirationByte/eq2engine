@@ -1012,7 +1012,7 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 		m_angryTimer = 0.0f;
 
 		m_slipParams = &(slipAngleCurveParams_t&)GetAISlipCurveParams();
-		GetPhysicsBody()->SetCenterOfMass(m_conf->physics.virtualMassCenter + Vector3D(0.0f,-0.15f, 0.0f));
+		GetPhysicsBody()->SetCenterOfMass(m_conf->physics.virtualMassCenter + GetAICenterOfMassCorrection() * vec3_up);
 
 		// set desired torque and speed
 		m_maxSpeed = m_savedMaxSpeed;

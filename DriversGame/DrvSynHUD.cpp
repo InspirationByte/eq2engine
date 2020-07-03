@@ -646,11 +646,12 @@ void CDrvSynHUDManager::Render3D( float fDt )
 }
 
 // render the screen with maps and shit
-void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize)
+void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize, bool shownHud)
 {
 	bool replayHud = (g_replayTracker->m_state == REPL_PLAYING);
 
-	bool hudEnabled =	(m_screenAlertType != HUD_ALERT_DANGER) && 
+	bool hudEnabled =	shownHud && 
+						(m_screenAlertType != HUD_ALERT_DANGER) &&
 						m_enable && 
 						r_drawHUD.GetBool() && 
 						(!replayHud || m_enableInReplay && !Director_IsActive());

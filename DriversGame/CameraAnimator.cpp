@@ -250,8 +250,8 @@ void CCameraAnimator::Update( float fDt, int nButtons, CGameObject* target)
 				m_mode = CAM_MODE_OUTCAR;
 		}
 
-		if (fDt <= 0.0f)
-			return;
+		//if (fDt <= 0.0f)
+		//	return;
 
 		AnimateForObject(m_mode, fDt, target, collFilter);
 	}
