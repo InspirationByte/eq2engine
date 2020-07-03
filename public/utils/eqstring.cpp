@@ -319,7 +319,7 @@ void EqString::Insert(const char* pszStr, int nInsertPos)
 
 	if( ExtendAlloc( nNewLen+1 ) )
 	{
-		char* tmp = (char*)stackalloc(m_nLength - nInsertPos);
+		char* tmp = (char*)stackalloc(m_nLength - nInsertPos + 1);
 		strcpy(tmp, &m_pszString[nInsertPos]);
 
 		// copy the part to the far
@@ -339,7 +339,7 @@ void EqString::Insert(const EqString &str, int nInsertPos)
 
 	if( ExtendAlloc( nNewLen+1 ) )
 	{
-		char* tmp = (char*)stackalloc(m_nLength - nInsertPos);
+		char* tmp = (char*)stackalloc(m_nLength - nInsertPos + 1);
 		strcpy(tmp, &m_pszString[nInsertPos]);
 
 		// copy the part to the far

@@ -150,7 +150,7 @@ void ExtractFileBase(const char* path, char* dest)
 //------------------------------------------
 int StringToHash( const char *str, bool caseIns )
 {
-	int hash = 0;
+	int hash = strlen(str);
 	for (; *str; str++)
 	{
 		int v1 = hash >> 19;

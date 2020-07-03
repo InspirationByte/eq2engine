@@ -40,6 +40,10 @@ DECLARE_CMD(con_show, "Show console", 0)
 {
 	g_consoleInput->SetVisible(true);
 	g_consoleInput->SetLogVisible(false);
+
+#if defined(PLAT_SDL) && defined(ANDROID)
+	SDL_StartTextInput();
+#endif
 }
 
 // shows console with log
@@ -54,6 +58,10 @@ DECLARE_CMD(con_hide, "Hides console", 0)
 {
 	g_consoleInput->SetVisible(false);
 	g_consoleInput->SetLogVisible(false);
+
+#if defined(PLAT_SDL) && defined(ANDROID)
+	SDL_StopTextInput();
+#endif
 }
 
 // spew function for console

@@ -23,6 +23,7 @@ enum EMutexPurpose
 	MUTEXPURPOSE_PHYSICS,			// physics engine
 	MUTEXPURPOSE_RENDERER,			// rendering
 	MUTEXPURPOSE_GAME,				// game thread locking
+	MUTEXPURPOSE_AUDIO,
 
 	MUTEXPURPOSE_USED,
 };

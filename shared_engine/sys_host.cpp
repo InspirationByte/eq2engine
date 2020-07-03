@@ -319,12 +319,14 @@ void InputCommands_SDL(SDL_Event* event)
 			int nKey = event->key.keysym.scancode;
 
 			// do translation
-			if(nKey == SDL_SCANCODE_RSHIFT)
+			if (nKey == SDL_SCANCODE_RSHIFT)
 				nKey = SDL_SCANCODE_LSHIFT;
-			else if(nKey == SDL_SCANCODE_RCTRL)
+			else if (nKey == SDL_SCANCODE_RCTRL)
 				nKey = SDL_SCANCODE_LCTRL;
-			else if(nKey == SDL_SCANCODE_RALT)
+			else if (nKey == SDL_SCANCODE_RALT)
 				nKey = SDL_SCANCODE_LALT;
+			else if (nKey == SDL_SCANCODE_AC_BACK)
+				nKey = SDL_SCANCODE_ESCAPE;
 
 			g_pHost->TrapKey_Event( nKey, (event->type == SDL_KEYUP) ? false : true );
 		}

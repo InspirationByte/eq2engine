@@ -18,6 +18,7 @@ LOCAL_SRC_FILES := \
 	public/core/cmd_pacifier.cpp \
 	public/core/ConCommandBase.cpp \
 	public/core/ConCommand.cpp \
-	public/core/ConVar.cpp
+	public/core/ConVar.cpp \
+	public/core/DPKFileWriter.cpp
 
 include $(BUILD_STATIC_LIBRARY)

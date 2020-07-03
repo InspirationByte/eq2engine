@@ -11,14 +11,41 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="c9096593-b4df-4b83-813a-05c2d4299dea" name="Default" comment="">
+      <change beforePath="$PROJECT_DIR$/../Core/DPKFileReader.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../Core/DPKFileReader.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Core/DPKFileReader.h" beforeDir="false" afterPath="$PROJECT_DIR$/../Core/DPKFileReader.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Core/FileSystem.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../Core/FileSystem.cpp" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../DriversEditor/EditorTestDrive.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../DriversEditor/EditorTestDrive.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../DriversGame/AIPursuerCar.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../DriversGame/AIPursuerCar.cpp" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../DriversGame/CameraAnimator.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../DriversGame/CameraAnimator.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../DriversGame/DrvSynHUD.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../DriversGame/DrvSynHUD.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../DriversGame/DrvSynHUD.h" beforeDir="false" afterPath="$PROJECT_DIR$/../DriversGame/DrvSynHUD.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../DriversGame/GameDefs.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../DriversGame/GameDefs.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../DriversGame/GameDefs.h" beforeDir="false" afterPath="$PROJECT_DIR$/../DriversGame/GameDefs.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../DriversGame/input.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../DriversGame/input.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../DriversGame/input.h" beforeDir="false" afterPath="$PROJECT_DIR$/../DriversGame/input.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../DriversGame/object_physics.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../DriversGame/object_physics.cpp" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../DriversGame/physics.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../DriversGame/physics.cpp" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../DriversGame/physics.h" beforeDir="false" afterPath="$PROJECT_DIR$/../DriversGame/physics.h" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../DriversGame/session_base.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../DriversGame/session_base.cpp" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../DriversGame/session_base.h" beforeDir="false" afterPath="$PROJECT_DIR$/../DriversGame/session_base.h" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../DriversGame/state_game.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../DriversGame/state_game.cpp" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../DriversGame/world.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../DriversGame/world.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../MaterialSystem/Renderers/D3D9/ShaderAPID3DX9.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../MaterialSystem/Renderers/D3D9/ShaderAPID3DX9.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../MaterialSystem/Renderers/GL/CGLRenderLib.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../MaterialSystem/Renderers/GL/CGLRenderLib.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../MaterialSystem/Renderers/GL/ShaderAPIGL.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../MaterialSystem/Renderers/GL/ShaderAPIGL.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../WorldEdit/EditorVersion.h" beforeDir="false" afterPath="$PROJECT_DIR$/../WorldEdit/EditorVersion.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../jni/coreLib.mk" beforeDir="false" afterPath="$PROJECT_DIR$/../jni/coreLib.mk" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../public/core/DPKFileWriter.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../public/core/DPKFileWriter.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../public/core/DPKFileWriter.h" beforeDir="false" afterPath="$PROJECT_DIR$/../public/core/DPKFileWriter.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../public/core/dpk_defs.h" beforeDir="false" afterPath="$PROJECT_DIR$/../public/core/dpk_defs.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../public/utils/strtools.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../public/utils/strtools.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../shared_engine/eqGlobalMutex.h" beforeDir="false" afterPath="$PROJECT_DIR$/../shared_engine/eqGlobalMutex.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../shared_engine/sys_host.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../shared_engine/sys_host.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../shared_engine/sys_in_console.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../shared_engine/sys_in_console.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../shared_game/GameSoundEmitterSystem.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../shared_game/GameSoundEmitterSystem.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../shared_game/GameSoundEmitterSystem.h" beforeDir="false" afterPath="$PROJECT_DIR$/../shared_game/GameSoundEmitterSystem.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../utils/fcompress/fcompress_main.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../utils/fcompress/fcompress_main.cpp" afterDir="false" />
     </list>
     <ignored path="android-project.iws" />
     <ignored path=".idea/workspace.xml" />
@@ -89,74 +116,14 @@
           </provider>
         </entry>
       </file>
-      <file pinned="false" current-in-tab="false">
+      <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/app/src/main/AndroidManifest.xml">
-          <provider editor-type-id="android-manifest" />
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="490">
+            <state relative-caret-position="509">
               <caret line="31" column="68" selection-start-line="31" selection-start-column="68" selection-end-line="31" selection-end-column="68" />
             </state>
           </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/../MaterialSystem/Renderers/GL/ShaderAPIGL.cpp">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="189">
-              <caret line="2068" selection-start-line="2068" selection-end-line="2068" />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="true">
-        <entry file="file://$PROJECT_DIR$/../DriversGame/session_base.cpp">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="17">
-              <caret line="65" column="13" selection-start-line="65" selection-start-column="13" selection-end-line="65" selection-end-column="13" />
-              <folding>
-                <element signature="e#1357#1366#0" expanded="true" />
-              </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/app/src/main/java/com/insbyte/driversyndicate/EqEngineActivity.java">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="153">
-              <caret line="10" column="53" selection-start-line="10" selection-start-column="29" selection-end-line="10" selection-end-column="53" />
-              <folding>
-                <element signature="imports" expanded="true" />
-              </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/app/src/main/java/org/libsdl/app/SDLControllerManager.java">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="918">
-              <caret line="62" column="7" selection-start-line="62" selection-start-column="7" selection-end-line="62" selection-end-column="7" />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/settings.gradle">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="17">
-              <caret line="1" selection-start-line="1" selection-end-line="1" />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/local.properties">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="119">
-              <caret line="7" column="45" selection-start-line="7" selection-start-column="45" selection-end-line="7" selection-end-column="45" />
-            </state>
-          </provider>
+          <provider editor-type-id="android-manifest" />
         </entry>
       </file>
     </leaf>
@@ -220,9 +187,6 @@
       <foldersAlwaysOnTop value="true" />
     </navigator>
     <panes>
-      <pane id="ProjectPane" />
-      <pane id="Scope" />
-      <pane id="PackagesPane" />
       <pane id="AndroidView">
         <subPane>
           <expand>
@@ -268,6 +232,9 @@
           <select />
         </subPane>
       </pane>
+      <pane id="PackagesPane" />
+      <pane id="ProjectPane" />
+      <pane id="Scope" />
     </panes>
   </component>
   <component name="PropertiesComponent">
@@ -638,10 +605,10 @@
   <component name="ToolWindowManager">
     <frame x="-8" y="-8" width="1936" height="1056" extended-state="6" />
     <layout>
-      <window_info content_ui="combo" id="Project" order="0" sideWeight="0.4749596" visible="true" weight="0.17324094" />
+      <window_info content_ui="combo" id="Project" order="0" sideWeight="0.4717286" visible="true" weight="0.17324094" />
       <window_info id="Structure" order="1" weight="0.25" />
       <window_info id="Captures" order="2" side_tool="true" weight="0.25" />
-      <window_info id="Build Variants" order="3" sideWeight="0.5250404" side_tool="true" visible="true" weight="0.17324094" />
+      <window_info id="Build Variants" order="3" sideWeight="0.5282714" side_tool="true" visible="true" weight="0.17324094" />
       <window_info id="Favorites" order="4" side_tool="true" />
       <window_info id="Capture Tool" order="5" />
       <window_info id="Palette&#9;" order="6" />
@@ -661,8 +628,8 @@
       <window_info anchor="bottom" id="Terminal" order="11" sideWeight="0.49359658" weight="0.32936078" />
       <window_info anchor="bottom" id="Messages" order="12" sideWeight="0.36179295" weight="0.32929516" />
       <window_info anchor="bottom" id="Android Profiler" order="13" />
-      <window_info anchor="bottom" id="Logcat" order="14" weight="0.32936078" />
-      <window_info active="true" anchor="bottom" id="Build" order="15" visible="true" weight="0.32936078" />
+      <window_info active="true" anchor="bottom" id="Logcat" order="14" visible="true" weight="0.32936078" />
+      <window_info anchor="bottom" id="Build" order="15" weight="0.32936078" />
       <window_info anchor="right" id="Commander" order="0" weight="0.4" />
       <window_info anchor="right" id="Ant Build" order="1" weight="0.25" />
       <window_info anchor="right" content_ui="combo" id="Hierarchy" order="2" weight="0.25" />
@@ -727,7 +694,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="600">
           <caret line="30" column="25" selection-start-line="30" selection-start-column="25" selection-end-line="30" selection-end-column="25" />
-          <folding />
         </state>
       </provider>
     </entry>
@@ -755,8 +721,8 @@
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/app/src/main/res/layout/main.xml">
-      <provider selected="true" editor-type-id="android-designer2" />
       <provider editor-type-id="text-editor" />
+      <provider selected="true" editor-type-id="android-designer2" />
     </entry>
     <entry file="file://$PROJECT_DIR$/../jni/libGame_DrvSyn.mk">
       <provider selected="true" editor-type-id="text-editor">
@@ -863,6 +829,13 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/../MaterialSystem/Renderers/GL/ShaderAPIGL.cpp">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="35156">
+          <caret line="2088" selection-start-line="2088" selection-end-line="2088" />
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/app/src/main/java/com/insbyte/driversyndicate/EqEngineActivity.java">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="153">
@@ -894,21 +867,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/app/src/main/AndroidManifest.xml">
-      <provider editor-type-id="android-manifest" />
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="490">
-          <caret line="31" column="68" selection-start-line="31" selection-start-column="68" selection-end-line="31" selection-end-column="68" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/../MaterialSystem/Renderers/GL/ShaderAPIGL.cpp">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="189">
-          <caret line="2068" selection-start-line="2068" selection-end-line="2068" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/../DriversGame/session_base.cpp">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="17">
@@ -918,6 +876,28 @@
           </folding>
         </state>
       </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/../public/core/DPKFileWriter.cpp">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="758">
+          <caret line="344" selection-start-line="344" selection-end-line="344" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/../DriversGame/state_mainmenu.cpp">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="214">
+          <caret line="393" column="17" selection-start-line="393" selection-start-column="17" selection-end-line="393" selection-end-column="17" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/app/src/main/AndroidManifest.xml">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="509">
+          <caret line="31" column="68" selection-start-line="31" selection-start-column="68" selection-end-line="31" selection-end-column="68" />
+        </state>
+      </provider>
+      <provider editor-type-id="android-manifest" />
     </entry>
   </component>
 </project>

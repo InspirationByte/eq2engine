@@ -344,8 +344,8 @@ void CDkCore::Shutdown()
 	m_coreConfiguration = NULL;
 
 	// drop all modules
-	for (int i = 0; i < m_interfaces.numElem(); i++)
-		delete m_interfaces[i].ptr;
+	//for (int i = 0; i < m_interfaces.numElem(); i++)
+	//	delete m_interfaces[i].ptr;
 
 	m_interfaces.clear();
 
