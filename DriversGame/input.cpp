@@ -71,7 +71,7 @@ void JoyAction_Steering( short input )
 	else
 	{
 		g_nClientButtons &= ~IN_STEERRIGHT;
-		g_nClientButtons |= IN_ANALOGSTEER;
+		g_nClientButtons |= IN_ANALOGSTEER | IN_FASTSTEER; // fast steer for extending range
 	}
 
 	g_joySticksUsedSteering = true;
