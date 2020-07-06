@@ -7,6 +7,7 @@
 
 #include "car.h"
 #include "GameDefs.h"
+#include "AIManager.h"
 
 ConVar		g_autoHandbrake("g_autoHandbrake", "1", "Auto handbrake for steering help", CV_ARCHIVE);
 ConVar		g_invincibility("g_invincibility", "0", "No damage for player car", CV_CHEAT);
@@ -47,15 +48,15 @@ const slipAngleCurveParams_t& GetAISlipCurveParams()
 	difficultySlip = s_AISlipAngleParams;
 
 	// FIXME: should be different than using g_difficulty
-	//difficultySlip.fInitialGradient += 1.0f * g_difficulty.GetFloat();
-	//difficultySlip.fSegmentEndB += g_difficulty.GetFloat() * 0.1f;
+	difficultySlip.fInitialGradient += 1.0f * g_pAIManager->GetCopHandlingDifficulty();
+	difficultySlip.fSegmentEndB += g_pAIManager->GetCopHandlingDifficulty() * 0.1f;
 
 	return s_AISlipAngleParams;
 }
 
 float GetAICenterOfMassCorrection()
 {
-	return -0.15f;
+	return -0.15f * g_pAIManager->GetCopHandlingDifficulty();
 }
 
 //-------------------------------------------------------------------------------------------

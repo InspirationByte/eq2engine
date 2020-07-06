@@ -120,6 +120,9 @@ public:
 	void						SetCopsEnabled(bool enable);									// switch to spawn
 	bool						IsCopsEnabled() const;
 
+	void						SetAllCarsPursuers(bool enable);
+	bool						IsAllCarsPursuers() const;
+
 	void						SetMaxCops(int count);											// maximum cop count
 	int							GetMaxCops() const;
 
@@ -132,8 +135,12 @@ public:
 	void						SetCopMaxDamage(float maxHitPoints);							// sets the maximum hitpoints for cop cars
 	float						GetCopMaxDamage() const;
 
-	void						SetCopMaxSpeed(float maxSpeed);							// sets the maximum hitpoints for cop cars
+	void						SetCopMaxSpeed(float maxSpeed);									// sets the maximum hitpoints for cop cars
 	float						GetCopMaxSpeed() const;
+
+	void						SetCopHandlingDifficulty(float value);							// sets the cop handling difficulty
+	float						GetCopHandlingDifficulty() const;
+
 
 	bool						MakeCopSpeech(const char* soundScriptName, bool force, float priority);			// shedules a cop speech
 	bool						IsCopsCanUseLoudhailer(CCar* copCar, CCar* target) const;
@@ -169,6 +176,8 @@ protected:
 
 	void						InitZoneEntries(const DkList<pedestrianConfig_t*>& pedConfigs);
 
+	civCarEntry_t*				GetNextSpawnCarConfig(bool requestPursuer);
+
 	DkList<civCarEntry_t>		m_civCarEntries;
 	DkList<pedestrianEntry_t>	m_pedEntries;
 
@@ -178,20 +187,22 @@ protected:
 
 	EqString					m_patrolCarNames[PURSUER_TYPE_COUNT];
 	bool						m_enableCops;
+	bool						m_allCarsPursuers;
 
 	bool						m_enableTrafficCars;
 	int							m_numMaxTrafficCars;
 
 	int							m_trafficSpawnInterval;
-	int							m_copsEntryIdx;
 
 	float						m_copMaxDamage;
 	float						m_copAccelerationModifier;
 	float						m_copMaxSpeed;
+	float						m_copHandlingDifficulty;
 
 	int							m_numMaxCops;
 
 	int							m_copRespawnInterval;
+	int							m_nextCopSpawn;
 
 	float						m_copLoudhailerTime;
 	float						m_copSpeechTime;
@@ -206,7 +217,6 @@ protected:
 	float						m_velocityMapUpdateTime;
 
 public:
-	int							m_spawnedTrafficCars;
 	DkList<CCar*>				m_trafficCars;
 	DkList<CPedestrian*>		m_pedestrians;
 	DkList<RoadBlockInfo_t*>	m_roadBlocks;
@@ -240,6 +250,9 @@ OOLUA_PROXY(CAIManager)
 	OOLUA_MFUNC(SetCopsEnabled)
 	OOLUA_MFUNC_CONST(IsCopsEnabled)
 
+	OOLUA_MFUNC(SetAllCarsPursuers)
+	OOLUA_MFUNC_CONST(IsAllCarsPursuers)
+
 	OOLUA_MFUNC(SetCopCar)
 
 	OOLUA_MFUNC(SetCopMaxDamage)
@@ -256,6 +269,9 @@ OOLUA_PROXY(CAIManager)
 
 	OOLUA_MFUNC(SetCopRespawnInterval)
 	OOLUA_MFUNC_CONST(GetCopRespawnInterval)
+
+	OOLUA_MFUNC(SetCopHandlingDifficulty)
+	OOLUA_MFUNC_CONST(GetCopHandlingDifficulty)
 
 	OOLUA_MFUNC(MakeCopSpeech)
 
