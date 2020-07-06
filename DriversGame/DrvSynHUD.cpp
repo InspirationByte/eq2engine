@@ -641,6 +641,11 @@ void CDrvSynHUDManager::Render3D( float fDt )
 
 				m_hudObjectDummy.Draw(0);
 			}
+
+			obj.flashValue -= fDt * 1.5f;
+
+			if (obj.flashValue < 0.0f)
+				obj.flashValue = 1.0f;
 		}
 	}
 }
@@ -829,11 +834,6 @@ void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize, bool sho
 							markPos = car->GetOrigin() + vec3_up*car->m_conf->cameraConf.height;
 							maxVisibleDistance = 50.0f;
 						}
-
-						obj.flashValue -= fDt * 1.5f;
-
-						if (obj.flashValue < 0.0f)
-							obj.flashValue = 1.0f;
 
 						Vector3D screenPos;
 						PointToScreen_Z(markPos, screenPos, g_pGameWorld->m_viewprojection, Vector2D((float)screenSize.x,(float)screenSize.y));
