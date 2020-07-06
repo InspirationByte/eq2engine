@@ -184,8 +184,8 @@ const float HINGE_DISCONNECT_COS_ANGLE		= 0.2f;
 const float SKID_SMOKE_MAX_WETNESS			= 0.5f; // wetness level before skid sound disappear
 const float SKID_WATERTRAIL_MIN_WETNESS		= 0.25f; // wetness level before skid sound disappear
 
-const float CAR_PHYSICS_RESTITUTION			= 0.5f;
-const float CAR_PHYSICS_FRICTION			= 0.25f;
+const float CAR_PHYSICS_RESTITUTION			= 0.0f;
+const float CAR_PHYSICS_FRICTION			= 0.35f;
 
 const float JUMP_NOSE_DOWN_FACTOR			= -0.6f;
 
@@ -840,6 +840,8 @@ void CCar::CreateCarPhysics()
 		}
 
 		winfo.m_hubcapRandomFactor = float(g_replayRandom.Get(2, 4)) * 0.25f;
+		winfo.m_hubcapLoose = ((float)g_replayRandom.Get(0, 1000) / 1000.0f) * 0.5f;
+		g_replayRandom.Regenerate();
 
 		winfo.m_bodyGroupFlags = (1 << winfo.m_defaultBodyGroup);
 	}
@@ -1129,10 +1131,7 @@ void CCar::SetAngularVelocity(const Vector3D& vel)
 	body->TryWake();
 }
 
-ConVar cam_custom("cam_custom", "0", NULL, CV_CHEAT);
-ConVar cam_custom_height("cam_custom_height", "1.3", NULL, CV_ARCHIVE);
-ConVar cam_custom_dist("cam_custom_dist", "7", NULL, CV_ARCHIVE);
-ConVar cam_custom_fov("cam_custom_fov", "52", NULL, CV_ARCHIVE);
+ConVar cam_fov("cam_fov", "57", 50, 80, NULL, CV_ARCHIVE);
 
 void CCar::ConfigureCamera(cameraConfig_t& conf, eqPhysCollisionFilter& filter) const
 {
@@ -1154,14 +1153,9 @@ void CCar::ConfigureCamera(cameraConfig_t& conf, eqPhysCollisionFilter& filter) 
 	else
 	{
 		conf = m_conf->cameraConf;
-
-		if (cam_custom.GetBool())
-		{
-			conf.dist = cam_custom_dist.GetFloat();
-			conf.height = cam_custom_height.GetFloat();
-			conf.fov = cam_custom_fov.GetFloat();
-		}
 	}
+
+	conf.fov = cam_fov.GetFloat();
 }
 
 const Quaternion& CCar::GetOrientation() const
@@ -1353,7 +1347,9 @@ CEqRigidBody* CCar::GetHingedBody() const
 int	CCar::GetControlButtons() const
 {
 	if (m_locked) // TODO: cvar option to lock or not
-		return IN_HANDBRAKE;
+	{
+		return (GetSpeed() > 20) ? (IN_BRAKE | IN_ACCELERATE) : IN_HANDBRAKE;
+	}
 
 	return CControllableGameObject::GetControlButtons();
 }
@@ -1389,6 +1385,12 @@ void CCar::UpdateVehiclePhysics(float delta)
 
 	if( m_enabled )
 	{
+		if (m_locked)
+		{
+			m_brakeRatio = 1023;
+			m_accelRatio = 1023;
+		}
+
 		if( isCar )
 		{
 			if(controlButtons & IN_ACCELERATE)
@@ -2664,7 +2666,7 @@ void CCar::OnPhysicsFrame( float fDt )
 		// skidding can do this
 		if (lateralSliding > 2.0f)
 		{
-			addLoose += lateralSliding * fDt * 0.0035f;
+			addLoose += lateralSliding * fDt * 0.01f;
 
 			float tractionSliding = GetTractionSlidingAtWheel(i);
 
@@ -4929,7 +4931,6 @@ void CCar::Repair(bool unlock)
 		CCarWheel& wheel = m_wheels[i];
 
 		wheel.m_damage = 0.0f;
-		wheel.m_hubcapLoose = 0.0f;
 		wheel.m_flags.lostHubcap = false;
 		wheel.m_bodyGroupFlags = (1 << wheel.m_defaultBodyGroup);
 	}
