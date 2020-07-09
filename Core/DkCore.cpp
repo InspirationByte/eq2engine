@@ -172,6 +172,8 @@ bool CDkCore::Init(const char* pszApplicationName, const char* pszCommandLine)
 
 	if(!m_coreConfiguration->LoadFromFile("EQ.CONFIG", SP_ROOT))
 	{
+		MsgWarning("EQ.CONFIG missing");
+
 		// try create default settings
 		kvkeybase_t* appDebug = coreConfigRoot->AddKeyBase("ApplicationDebug");
 		appDebug->SetKey("ForceLogApplications", pszApplicationName);

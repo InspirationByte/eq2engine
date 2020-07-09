@@ -8,6 +8,8 @@
 #include "DPKFileReader.h"
 #include "platform/Platform.h"
 
+#include "IFileSystem.h"		// for base path
+
 #include "math/math_common.h"
 
 #include <malloc.h>
@@ -382,13 +384,14 @@ bool CDPKFileReader::SetPackageFilename(const char *filename)
 	delete [] m_dpkFiles;
 
     m_packageName = filename;
+	m_packagePath = CombinePath(2, g_fileSystem->GetBasePath(), filename);
 
-    FILE* dpkFile = fopen(m_packageName.c_str(),"rb");
+    FILE* dpkFile = fopen(m_packagePath.c_str(),"rb");
 
     // Now fill the header data and create object table
     if (!dpkFile)
     {
-		ErrorMsg(varargs("Cannot open package '%s'\n", m_packageName.c_str()));
+		ErrorMsg(varargs("Cannot open package '%s'\n", m_packagePath.c_str()));
 		return false;
 	}
 
@@ -565,7 +568,7 @@ CDPKFileStream* CDPKFileReader::Open(const char* filename, const char* mode)
 
 	dpkfileinfo_t& fileInfo = m_dpkFiles[dpkFileIndex];
 
-	FILE* file = fopen(m_packageName.c_str(), mode);
+	FILE* file = fopen(m_packagePath.c_str(), mode);
 
 	if (!file)
 	{

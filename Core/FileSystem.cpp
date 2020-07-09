@@ -636,6 +636,9 @@ IFile* CFileSystem::GetFileHandle(const char* filename,const char* options, int 
 
 			if (!isWrite)
 			{
+				// base path is not used when dealing with package files
+				sprintf(tmp_path, "%s/%s", m_directories[i].path.c_str(), pFilePath);
+
 				// If failed to load directly, load it from package, in backward order
 				for (int j = m_packages.numElem() - 1; j >= 0; j--)
 				{
@@ -673,6 +676,9 @@ IFile* CFileSystem::GetFileHandle(const char* filename,const char* options, int 
 
 		if (!isWrite)
 		{
+			// base path is not used when dealing with package files
+			sprintf(tmp_path, "%s/%s", m_dataDir.c_str(), pFilePath);
+
 			// If failed to load directly, load it from package, in backward order
 			for (int j = m_packages.numElem() - 1; j >= 0; j--)
 			{
@@ -708,6 +714,9 @@ IFile* CFileSystem::GetFileHandle(const char* filename,const char* options, int 
 
 		if (!isWrite)
 		{
+			// base path is not used when dealing with package files
+			sprintf(tmp_path, "%s", pFilePath);
+
 			// If failed to load directly, load it from package, in backward order
 			for (int j = m_packages.numElem() - 1; j >= 0; j--)
 			{

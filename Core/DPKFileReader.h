@@ -129,6 +129,7 @@ protected:
 
 	DkList<CDPKFileStream*>	m_openFiles;
 
+	EqString				m_packagePath;
 	EqString				m_packageName;
 	EqString				m_mountPath;
 	EqString				m_key;

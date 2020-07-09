@@ -20,6 +20,7 @@ extern "C"
 
 #include "utils/geomtools.h"
 #include "utils/VirtualStream.h"
+#include "math/math_util.h"
 
 #include "dsm_esm_loader.h"
 
@@ -65,20 +66,22 @@ const char* GetACTCErrorString(int result)
 
 //---------------------------------------------------------------------------------------
 
+#define COMPARISION_EPSILON (0.0001f)
+
 // from exporter - compares two verts
 bool CompareVertex(const studiovertexdesc_t &v0, const studiovertexdesc_t &v1)
 {
-	if(	compare_epsilon(v0.point, v1.point, 0.0015f) &&
-		compare_epsilon(v0.normal, v1.normal, 0.0015f) &&
-		compare_epsilon(v0.texCoord, v1.texCoord, 0.0025f) &&
+	if(	compare_epsilon(v0.point, v1.point, COMPARISION_EPSILON) &&
+		compare_epsilon(v0.normal, v1.normal, COMPARISION_EPSILON) &&
+		compare_epsilon(v0.texCoord, v1.texCoord, COMPARISION_EPSILON) &&
 		v0.boneweights.bones[0] == v1.boneweights.bones[0] &&
 		v0.boneweights.bones[1] == v1.boneweights.bones[1] &&
 		v0.boneweights.bones[2] == v1.boneweights.bones[2] &&
 		v0.boneweights.bones[3] == v1.boneweights.bones[3] &&
-		fsimilar(v0.boneweights.weight[0],v1.boneweights.weight[0], 0.0025f) &&
-		fsimilar(v0.boneweights.weight[1],v1.boneweights.weight[1], 0.0025f) &&
-		fsimilar(v0.boneweights.weight[2],v1.boneweights.weight[2], 0.0025f) &&
-		fsimilar(v0.boneweights.weight[3],v1.boneweights.weight[3], 0.0025f)
+		fsimilar(v0.boneweights.weight[0],v1.boneweights.weight[0], COMPARISION_EPSILON) &&
+		fsimilar(v0.boneweights.weight[1],v1.boneweights.weight[1], COMPARISION_EPSILON) &&
+		fsimilar(v0.boneweights.weight[2],v1.boneweights.weight[2], COMPARISION_EPSILON) &&
+		fsimilar(v0.boneweights.weight[3],v1.boneweights.weight[3], COMPARISION_EPSILON)
 		)
 		return true;
 
@@ -104,15 +107,15 @@ int FindVertexInList(const DkList<studiovertexdesc_t>& verts, const studiovertex
 // from exporter - compares two verts
 bool CompareVertexNoPosition(const studiovertexdesc_t &v0, const studiovertexdesc_t &v1)
 {
-	if(	compare_epsilon(v0.texCoord, v1.texCoord, 0.0001f) &&
+	if(	compare_epsilon(v0.texCoord, v1.texCoord, COMPARISION_EPSILON) &&
 		v0.boneweights.bones[0] == v1.boneweights.bones[0] &&
 		v0.boneweights.bones[1] == v1.boneweights.bones[1] &&
 		v0.boneweights.bones[2] == v1.boneweights.bones[2] &&
 		v0.boneweights.bones[3] == v1.boneweights.bones[3] &&
-		fsimilar(v0.boneweights.weight[0],v1.boneweights.weight[0], 0.0001f) &&
-		fsimilar(v0.boneweights.weight[1],v1.boneweights.weight[1], 0.0001f) &&
-		fsimilar(v0.boneweights.weight[2],v1.boneweights.weight[2], 0.0001f) &&
-		fsimilar(v0.boneweights.weight[3],v1.boneweights.weight[3], 0.0001f)
+		fsimilar(v0.boneweights.weight[0],v1.boneweights.weight[0], COMPARISION_EPSILON) &&
+		fsimilar(v0.boneweights.weight[1],v1.boneweights.weight[1], COMPARISION_EPSILON) &&
+		fsimilar(v0.boneweights.weight[2],v1.boneweights.weight[2], COMPARISION_EPSILON) &&
+		fsimilar(v0.boneweights.weight[3],v1.boneweights.weight[3], COMPARISION_EPSILON)
 		)
 		return true;
 
@@ -171,14 +174,14 @@ studiovertexdesc_t MakeStudioVertex(const dsmvertex_t& vert)
 	return vertex;
 }
 
-void ApplyShapeKeyOnVertex( esmshapekey_t* modShapeKey, const dsmvertex_t& vert, studiovertexdesc_t& studioVert )
+void ApplyShapeKeyOnVertex( esmshapekey_t* modShapeKey, const dsmvertex_t& vert, studiovertexdesc_t& studioVert, float weight )
 {
 	for(int i = 0; i < modShapeKey->verts.numElem(); i++)
 	{
 		if( modShapeKey->verts[i].vertexId == vert.vertexId )
 		{
-			studioVert.point = modShapeKey->verts[i].position;
-			studioVert.normal = modShapeKey->verts[i].normal;
+			studioVert.point = lerp(studioVert.point, modShapeKey->verts[i].position, weight);
+			studioVert.normal = lerp(studioVert.normal, modShapeKey->verts[i].normal, weight);
 			return;
 		}
 	}
@@ -244,7 +247,7 @@ void CEGFGenerator::WriteGroup(CMemoryStream* stream, dsmgroup_t* srcGroup, esms
 			// modify vertex by shape key
 			if( modShapeKey )
 			{
-				ApplyShapeKeyOnVertex(modShapeKey, srcGroup->verts[i], vertex2);
+				ApplyShapeKeyOnVertex(modShapeKey, srcGroup->verts[i], vertex2, 1.0f);
 				gVertexList2.append(vertex2);
 			}
 		}
@@ -282,14 +285,17 @@ void CEGFGenerator::WriteGroup(CMemoryStream* stream, dsmgroup_t* srcGroup, esms
 							tangent,
 							binormal);
 
-		float fTriangleArea = 1.0f; // TriangleArea(usedVertList[idx0].point,usedVertList[idx1].point, usedVertList[idx2].point);
+		float fTriangleArea = 1.0f;// TriangleArea(usedVertList[idx0].point, usedVertList[idx1].point, usedVertList[idx2].point);
 
+		//usedVertList[idx0].normal += unormal*fTriangleArea;
 		usedVertList[idx0].tangent += tangent*fTriangleArea;
 		usedVertList[idx0].binormal += binormal*fTriangleArea;
 
+		//usedVertList[idx1].normal += unormal*fTriangleArea;
 		usedVertList[idx1].tangent += tangent*fTriangleArea;
 		usedVertList[idx1].binormal += binormal*fTriangleArea;
 
+		//usedVertList[idx2].normal += unormal*fTriangleArea;
 		usedVertList[idx2].tangent += tangent*fTriangleArea;
 		usedVertList[idx2].binormal += binormal*fTriangleArea;
 	}
@@ -297,6 +303,7 @@ void CEGFGenerator::WriteGroup(CMemoryStream* stream, dsmgroup_t* srcGroup, esms
 	// normalize resulting tangent space
 	for(int32 i = 0; i < usedVertList.numElem(); i++)
 	{
+		//usedVertList[i].normal = normalize(usedVertList[i].normal);
 		usedVertList[i].tangent = normalize(usedVertList[i].tangent);
 		usedVertList[i].binormal = normalize(usedVertList[i].binormal);
 	}
