@@ -40,14 +40,13 @@
 #include "input.h"
 
 
-
-
 static CCameraAnimator	s_cameraAnimator;
 CCameraAnimator*		g_pCameraAnimator = &s_cameraAnimator;
 
 extern ConVar			net_server;
 
 ConVar					g_pause("g_pause", "0");
+ConVar					r_no3D("r_no3D", "0", nullptr, CV_CHEAT);
 int						g_nOldControlButtons	= 0;
 
 Vector3D				g_freeLookAngles;
@@ -1222,6 +1221,8 @@ void CState_Game::RenderMainView3D( float fDt )
 	g_parallelJobs->AddJob(GRJob_DrawEffects, &jobFrametime);
 	g_parallelJobs->Submit();
 	
+	if (r_no3D.GetBool())
+		return;
 
 	// rebuild view
 	const IVector2D& screenSize = g_pHost->GetWindowSize();

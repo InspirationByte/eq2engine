@@ -297,7 +297,7 @@ void CObject_Physics::OnPhysicsCollide(const CollisionPairData_t& pair)
 
 void CObject_Physics::Simulate(float fDt)
 {
-	BaseClass::Simulate(fDt);
+	DoOnSimulateCallback(fDt);
 }
 
 void CObject_Physics::OnUnpackMessage( CNetMessageBuffer* buffer )

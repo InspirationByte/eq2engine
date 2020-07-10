@@ -122,7 +122,7 @@ void CObject_Tree::DrawTreeJob(void *data, int i)
 
 void CObject_Tree::Draw( int nRenderFlags )
 {
-	PROFILE_FUNC();
+	//PROFILE_FUNC();
 
 	//if(!g_pGameWorld->m_frustum.IsSphereInside(GetOrigin(), length(m_pModel->GetBBoxMaxs())))
 	//	return;
@@ -161,7 +161,7 @@ void CObject_Tree::Draw( int nRenderFlags )
 
 void CObject_Tree::Simulate(float fDt)
 {
-	BaseClass::Simulate(fDt);
+	// no need
 }
 
 void CObject_Tree::OnCarCollisionEvent(const CollisionPairData_t& pair, CGameObject* hitBy)

@@ -155,8 +155,6 @@ protected:
 	Vector3D*				m_physVerts;	// this is used after GeneratePhysicsData
 	uint16*					m_indices;
 
-	bool					m_hasTransparentSubsets;
-
 	int						m_numVerts;
 	int						m_numIndices;
 

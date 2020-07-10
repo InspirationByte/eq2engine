@@ -21,6 +21,9 @@
 
 #include "eqGlobalMutex.h"
 
+
+#include "Shiny.h"
+
 using namespace EqBulletUtils;
 using namespace Threading;
 
@@ -1765,8 +1768,6 @@ extern ConVar r_regularLightTextureUpdates;
 
 void CGameLevel::Render(const Vector3D& cameraPosition, const occludingFrustum_t& occlFrustum, int nRenderFlags)
 {
-	bool renderTranslucency = (nRenderFlags & RFLAG_TRANSLUCENCY) > 0;
-
 	// don't render too far?
 	IVector2D camPosReg;
 
@@ -1777,12 +1778,7 @@ void CGameLevel::Render(const Vector3D& cameraPosition, const occludingFrustum_t
 
 		// query this region
 		if(region)
-		{
-			bool render = !(renderTranslucency && !region->m_hasTransparentSubsets); 
-
-			if(render)
-				region->Render( cameraPosition, occlFrustum, nRenderFlags );
-		}
+			region->Render( cameraPosition, occlFrustum, nRenderFlags );
 		
 		int dx[8] = NEIGHBOR_OFFS_XDX(camPosReg.x, 1);
 		int dy[8] = NEIGHBOR_OFFS_YDY(camPosReg.y, 1);
@@ -1792,24 +1788,17 @@ void CGameLevel::Render(const Vector3D& cameraPosition, const occludingFrustum_t
 		{
 			CLevelRegion* nregion = GetRegionAt(IVector2D(dx[i], dy[i]));
 
-			if(nregion && !(renderTranslucency && !nregion->m_hasTransparentSubsets))
-			{
-				bool render = occlFrustum.IsBoxVisible( nregion->m_bbox );
-
-				if(render)
-					nregion->Render( cameraPosition, occlFrustum, nRenderFlags );
-			}
+			if(nregion)
+				nregion->Render( cameraPosition, occlFrustum, nRenderFlags );
 		}
 	}
-
-	// FIXME: DISABLED
-	if(renderTranslucency)
-		return;
 
 	const ShaderAPICaps_t& caps = g_pShaderAPI->GetCaps();
 
 	if(caps.isInstancingSupported && r_enableLevelInstancing.GetBool())
 	{
+		PROFILE_BEGIN(DrawInstances);
+
 		materials->SetInstancingEnabled( true ); // matsystem switch to use instancing in shaders
 		materials->SetMatrix(MATRIXMODE_WORLD, identity4());
 
@@ -1828,9 +1817,6 @@ void CGameLevel::Render(const Vector3D& cameraPosition, const occludingFrustum_t
 				if (m_objectDefs[i+j]->m_info.type != LOBJ_TYPE_INTERNAL_STATIC)
 					continue;
 
-				if (renderTranslucency && !m_objectDefs[i+j]->m_model->m_hasTransparentSubsets)
-					continue;
-
 				levObjInstanceData_t* instData = m_objectDefs[i+j]->m_instData;
 
 				if (instData && instData->numInstances)
@@ -1846,9 +1832,6 @@ void CGameLevel::Render(const Vector3D& cameraPosition, const occludingFrustum_t
 					break;
 
 				if (m_objectDefs[i+j]->m_info.type != LOBJ_TYPE_INTERNAL_STATIC)
-					continue;
-
-				if (renderTranslucency && !m_objectDefs[i+j]->m_model->m_hasTransparentSubsets)
 					continue;
 
 				levObjInstanceData_t* instData = m_objectDefs[i+j]->m_instData;
@@ -1904,6 +1887,8 @@ void CGameLevel::Render(const Vector3D& cameraPosition, const occludingFrustum_t
 
 		// disable instancing
 		g_pShaderAPI->SetVertexBuffer( NULL, 2 );
+
+		PROFILE_END();
 	}
 }
 

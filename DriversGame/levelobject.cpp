@@ -312,7 +312,6 @@ CLevelModel::CLevelModel() :
 	m_numIndices (0),
 	m_vertexBuffer(NULL),
 	m_indexBuffer(NULL),
-	m_hasTransparentSubsets(false),
 	m_physicsMesh(NULL)
 {
 	m_bbox.Reset();
@@ -361,8 +360,6 @@ void CLevelModel::Cleanup()
 
 	delete m_physicsMesh;
 	m_physicsMesh = NULL;
-
-	m_hasTransparentSubsets = false;
 }
 
 bool physModelVertexComparator(const Vector3D &a, const Vector3D &b)
@@ -844,9 +841,6 @@ void CLevelModel::Load(IVirtualStream* stream)
 
 		m_batches[i].pMaterial = materials->GetMaterial(batch.materialname);
 		m_batches[i].pMaterial->Ref_Grab();
-
-		if(m_batches[i].pMaterial->GetFlags() & MATERIAL_FLAG_TRANSPARENT)
-			m_hasTransparentSubsets = true;
 	}
 
 	if(m_numVerts == 0 || m_numIndices == 0)

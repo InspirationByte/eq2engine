@@ -116,80 +116,21 @@ bool CObject_Sheets::InitSheets()
 	return m_sheets.numElem() > 0;
 }
 
-void CObject_Sheets::OnPhysicsCollide(const CollisionPairData_t& pair)
+bool CObject_Sheets::CheckVisibility(const occludingFrustum_t& frustum) const
 {
-	CEqCollisionObject* obj = pair.GetOppositeTo(m_hfObject->m_object);
+	float sphereSize = length(m_bbox.GetSize());
 
-	if (!obj)
-		return;
+	if (!frustum.IsSphereVisible(GetOrigin(), sphereSize))
+		return false;
 
-	if (g_pGameWorld->m_envConfig.rainDensity > SHEETS_MAX_RAIN_DENSITY)
-		return;
-
-	// apply force to the object
-	if (obj->IsDynamic())
-	{
-		CEqRigidBody* body = (CEqRigidBody*)obj;
-
-		for (int i = 0; i < m_sheets.numElem(); i++)
-		{
-			sheetpart_t& sheet = m_sheets[i];
-
-			float vel = length(body->GetVelocityAtWorldPoint(sheet.origin)) - SHEET_MIN_AFFECTION_VELOCITY;
-
-			if (vel > 0.0f && fsimilar(sheet.origin.y, GetOrigin().y, SHEET_MIN_AFFECTION_HEIGHT))
-			{
-				float bodyToSheetDist = (float)length(body->GetPosition() - sheet.origin);
-
-				float distToBodyFac = RemapValClamp(bodyToSheetDist, 0.0f, 3.5f, 0.0f, 1.0f);
-				distToBodyFac = 1.0f - powf(distToBodyFac, 2.0f);
-
-				sheet.velocity += (vel * distToBodyFac * SHEET_VELOCITY_SCALE * body->GetLastFrameTime()) / sheet.weight;
-			}
-		}
-	}
+	return true;
 }
 
-void CObject_Sheets::UpdateSheets(float fDt)
+void CObject_Sheets::Draw(int nRenderFlags)
 {
-	//g_worldGlobals.decalsQueue.Increment();
-
-	for (int i = 0; i < m_sheets.numElem(); i++)
-	{
-		sheetpart_t& sheet = m_sheets[i];
-
-		sheet.origin += vec3_up * sheet.velocity * fDt;
-		sheet.angle += fabs(sheet.velocity) * fDt;
-
-		CollisionData_t coll;
-		if (!g_pPhysics->TestLine(sheet.origin + Vector3D(0, 4.0f, 0), sheet.origin - Vector3D(0, 0.1f, 0), coll, OBJECTCONTENTS_SOLID_GROUND))
-		{
-			//if(fDt > 0.0f && sheet.velocity > 0.0f)
-			//	sheet.velocity *= 0.85f;
-
-			const float maxFallVelocity = SHEET_MAX_FALL_VELOCITY;
-
-			sheet.velocity += SHEET_GRAVITY * fDt;
-			if (sheet.velocity < maxFallVelocity)
-				sheet.velocity = maxFallVelocity;
-		}
-		else
-		{
-			sheet.velocity -= sign(sheet.velocity) * SHEET_REST_TIMEFACTOR * fDt;
-
-			if (fabs(sheet.velocity) <= fDt * SHEET_REST_TIMEFACTOR)
-				sheet.velocity = 0.0f;
-
-			sheet.origin = coll.position + Vector3D(0, 0.05f, 0);
-		}
-	}
-
 	PFXVertex_t* sheetQuad;
 
 	ColorRGBA color(g_pGameWorld->m_info.ambientColor + g_pGameWorld->m_info.sunColor);
-
-	if (!g_pGameWorld->m_occludingFrustum.IsBoxVisible(m_bbox))
-		return;
 
 	for (int i = 0; i < m_sheets.numElem(); i++)
 	{
@@ -231,6 +172,83 @@ void CObject_Sheets::UpdateSheets(float fDt)
 	}
 }
 
+void CObject_Sheets::OnPhysicsCollide(const CollisionPairData_t& pair)
+{
+	CEqCollisionObject* obj = pair.GetOppositeTo(m_hfObject->m_object);
+
+	if (!obj)
+		return;
+
+	if (g_pGameWorld->m_envConfig.rainDensity > SHEETS_MAX_RAIN_DENSITY)
+		return;
+
+	// apply force to the object
+	if (obj->IsDynamic())
+	{
+		CEqRigidBody* body = (CEqRigidBody*)obj;
+
+		for (int i = 0; i < m_sheets.numElem(); i++)
+		{
+			sheetpart_t& sheet = m_sheets[i];
+
+			float vel = length(body->GetVelocityAtWorldPoint(sheet.origin)) - SHEET_MIN_AFFECTION_VELOCITY;
+
+			if (vel > 0.0f && fsimilar(sheet.origin.y, GetOrigin().y, SHEET_MIN_AFFECTION_HEIGHT))
+			{
+				float bodyToSheetDist = (float)length(body->GetPosition() - sheet.origin);
+
+				float distToBodyFac = RemapValClamp(bodyToSheetDist, 0.0f, 3.5f, 0.0f, 1.0f);
+				distToBodyFac = 1.0f - powf(distToBodyFac, 2.0f);
+
+				sheet.velocity += (vel * distToBodyFac * SHEET_VELOCITY_SCALE * body->GetLastFrameTime()) / sheet.weight;
+
+				m_active = true; // activate
+			}
+		}
+	}
+}
+
+void CObject_Sheets::UpdateSheets(float fDt)
+{
+	int numInactive = 0;
+
+	for (int i = 0; i < m_sheets.numElem(); i++)
+	{
+		sheetpart_t& sheet = m_sheets[i];
+
+		sheet.origin += vec3_up * sheet.velocity * fDt;
+		sheet.angle += fabs(sheet.velocity) * fDt;
+
+		CollisionData_t coll;
+		if (!g_pPhysics->TestLine(sheet.origin + Vector3D(0, 4.0f, 0), sheet.origin - Vector3D(0, 0.1f, 0), coll, OBJECTCONTENTS_SOLID_GROUND))
+		{
+			//if(fDt > 0.0f && sheet.velocity > 0.0f)
+			//	sheet.velocity *= 0.85f;
+
+			const float maxFallVelocity = SHEET_MAX_FALL_VELOCITY;
+
+			sheet.velocity += SHEET_GRAVITY * fDt;
+			if (sheet.velocity < maxFallVelocity)
+				sheet.velocity = maxFallVelocity;
+		}
+		else
+		{
+			sheet.velocity -= sign(sheet.velocity) * SHEET_REST_TIMEFACTOR * fDt;
+
+			if (fabs(sheet.velocity) <= fDt * SHEET_REST_TIMEFACTOR)
+			{
+				sheet.velocity = 0.0f;
+				numInactive++;
+			}
+
+
+			sheet.origin = coll.position + Vector3D(0, 0.05f, 0);
+		}
+	}
+
+	m_active = (numInactive < m_sheets.numElem());
+}
+
 void CObject_Sheets::SheetsUpdateJob(void *data, int i)
 {
 	CObject_Sheets* thisSheet = (CObject_Sheets*)data;
@@ -242,9 +260,6 @@ void CObject_Sheets::SheetsUpdateJob(void *data, int i)
 
 void CObject_Sheets::Simulate( float fDt )
 {
-	BaseClass::Simulate(fDt);
-	PROFILE_FUNC();
-
 	if(!m_wasInit)
 	{
 		m_initDelay -= fDt;
@@ -256,7 +271,7 @@ void CObject_Sheets::Simulate( float fDt )
 		}
 	}
 
-	if(m_sheets.numElem())
+	if(m_active && m_sheets.numElem())
 	{
 		if (g_worldGlobals.mt.sheetsQueue.Increment())
 			g_worldGlobals.mt.sheetsCompleted.Clear();

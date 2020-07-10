@@ -296,6 +296,12 @@ void CGameObject::UpdateTransform()
 
 void CGameObject::Simulate( float fDt )
 {
+	DoOnSimulateCallback(fDt);
+	UpdateTransform();
+}
+
+void CGameObject::DoOnSimulateCallback(float fDt)
+{
 #ifndef NO_LUA
 	OOLUA::Script& state = GetLuaState();
 	EqLua::LuaStackGuard g(state);
@@ -310,8 +316,6 @@ void CGameObject::Simulate( float fDt )
 		}
 	}
 #endif // NO_LUA
-
-	UpdateTransform();
 }
 
 void CGameObject::SetOrigin( const Vector3D& origin )

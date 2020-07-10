@@ -59,8 +59,6 @@ ConVar fog_color_b("fog_color_b","0.5",NULL,CV_ARCHIVE);
 ConVar fog_far("fog_far","400",NULL,CV_ARCHIVE);
 ConVar fog_near("fog_near","20",NULL,CV_ARCHIVE);
 
-ConVar r_no3D("r_no3D", "0", "Disable whole 3D rendering", CV_CHEAT);
-
 ConVar r_drawWorld("r_drawWorld", "1", NULL, CV_CHEAT);
 ConVar r_drawObjects("r_drawObjects", "1", NULL, CV_CHEAT);
 ConVar r_drawReflections("r_drawReflections", "1", NULL, CV_ARCHIVE);
@@ -1236,8 +1234,20 @@ void CGameWorld::SimulateObjects( float fDt )
 	{
 		CGameObject* obj = m_gameObjects[i];
 
-		if(obj->m_state == GO_STATE_IDLE)
-			obj->Simulate( fDt );
+		// delete objects
+		if (IsRemoveState(obj->m_state))
+		{
+			CScopedMutex m(GetGlobalMutex(MUTEXPURPOSE_GAME));
+
+			if (m_gameObjects.fastRemove(obj))
+			{
+				OnObjectRemovedEvent(obj);
+				i--;
+			}
+			continue;
+		}
+
+		obj->Simulate(fDt);
 	}
 }
 
@@ -1406,13 +1416,8 @@ void CGameWorld::UpdateWorld(float fDt)
 	}
 
 	// reset light count, 'Simulate' will add new lights
+	memset(m_lights, 0, sizeof(m_lights));
 	m_numLights = 0;
-
-	for(int i = 0; i < MAX_LIGHTS_QUEUE; i++)
-	{
-		m_lights[i].position = vec4_zero;
-		m_lights[i].color = vec4_zero;
-	}
 
 	g_pPhysics->WaitForThread();
 
@@ -1421,26 +1426,6 @@ void CGameWorld::UpdateWorld(float fDt)
 
 	// simulate objects of world
 	PROFILE_CODE( SimulateObjects(fDt) );
-
-	// remove marked objects after simulation
-	{
-		CScopedMutex m(GetGlobalMutex(MUTEXPURPOSE_GAME));
-
-		// remove objects
-		for(int i = 0; i < m_gameObjects.numElem(); i++)
-		{
-			CGameObject* obj = m_gameObjects[i];
-
-			if(!IsRemoveState(obj->m_state))
-                continue;
-
-			if (m_gameObjects.fastRemove(obj))
-			{
-				OnObjectRemovedEvent(obj);
-				i--;
-			}
-		}
-	}
 
 	m_level.UpdateRegions(RegionCallbackFunc);
 	
@@ -1457,7 +1442,7 @@ void CGameWorld::UpdateRenderables( const occludingFrustum_t& frustum )
 	FogInfo_t curFog;
 	materials->GetFogInfo(curFog);
 
-	Vector3D mainViewPos = m_view.GetOrigin();
+	const Vector3D mainViewPos = m_view.GetOrigin();
 	const float maxViewDistance = (curFog.enableFog ? curFog.fogfar : m_sceneinfo.m_fZFar) * r_drawObjectsDistanceMultiplier.GetFloat();
 	const float maxViewDistanceSqr = maxViewDistance * maxViewDistance;
 
@@ -1468,21 +1453,21 @@ void CGameWorld::UpdateRenderables( const occludingFrustum_t& frustum )
 		CGameObject* obj = m_gameObjects[i];
 
 		// far view clipping
-		Vector3D objPos = obj->GetOrigin();
-		if (lengthSqr(mainViewPos - objPos) > maxViewDistanceSqr)
-			continue;
+		if (lengthSqr(mainViewPos - obj->GetOrigin()) < maxViewDistanceSqr)
+		{
+			// sorted insert into render list
+			if( obj->CheckVisibility( frustum ) )
+				m_renderingObjects.insertSorted( obj, SortGameObjectsByDistance );
 
-		// sorted insert into render list
-		if( obj->CheckVisibility( frustum ) )
-			m_renderingObjects.insertSorted( obj, SortGameObjectsByDistance );
-
-		PROFILE_CODE( obj->PreDraw() );
+			PROFILE_CODE( obj->PreDraw() );
 
 #ifndef EDITOR
-		PROFILE_BEGIN(AddShadowCaster);
-		m_shadowRenderer.AddShadowCaster(obj);
-		PROFILE_END();
+			PROFILE_BEGIN(AddShadowCaster);
+			m_shadowRenderer.AddShadowCaster(obj);
+			PROFILE_END();
 #endif // EDITOR
+		}
+
 	}
 	
 
@@ -2151,14 +2136,6 @@ void CGameWorld::DrawReflections()
 
 void CGameWorld::Draw( int nRenderFlags )
 {
-	if(r_no3D.GetBool())
-	{
-		g_parallelJobs->Wait();
-		g_pPFXRenderer->ClearBuffers();
-
-		return;
-	}
-
 	// we need to regenerate cubemap for reflections and pretty texture for the fog
 	GenerateEnvmapAndFogTextures();
 
@@ -2317,11 +2294,6 @@ void CGameWorld::Draw( int nRenderFlags )
 
 	PROFILE_END();
 
-	PROFILE_BEGIN(PostDraw);
-	for (int i = 0; i < m_gameObjects.numElem(); i++)
-		m_gameObjects[i]->PostDraw();
-	PROFILE_END();
-
 	/*
 	if(r_drawWorld.GetBool())
 	{
@@ -2367,11 +2339,10 @@ void CGameWorld::Draw( int nRenderFlags )
 	g_worldGlobals.mt.decalsCompleted.Wait();
 	g_worldGlobals.mt.rainUpdateCompleted.Wait();
 
+	DrawMoon();
+
 	// wait for effectrenderer
 	g_worldGlobals.mt.effectsUpdateCompleted.Wait();
-
-
-	DrawMoon();
 
 	// draw particle effects
 	PROFILE_CODE( g_pPFXRenderer->Render( nRenderFlags ) );
@@ -2803,7 +2774,6 @@ OOLUA::Table CGameWorld::L_QueryObjects(float radius, const Vector3D& position, 
 
 	int objectCount = m_gameObjects.numElem();
 	const float radiusSqr = radius * radius;
-
 
 	for (int i = 0; i < objectCount; i++)
 	{

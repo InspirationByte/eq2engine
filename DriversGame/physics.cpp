@@ -22,6 +22,7 @@
 #include "Shiny.h"
 
 ConVar ph_debugrender("ph_debugrender", "0", NULL, CV_CHEAT);
+ConVar ph_stop("ph_stop", "0", nullptr, CV_CHEAT);
 //ConVar ph_singleiter("ph_singleiter", "0");
 
 using namespace EqBulletUtils;
@@ -39,7 +40,7 @@ CPhysicsHFObject::~CPhysicsHFObject()
 
 void CPhysicsHFObject::PreSimulate( float fDt )
 {
-	PROFILE_FUNC();
+	//PROFILE_FUNC();
 
 	if (m_object->IsDynamic())
 	{
@@ -66,7 +67,7 @@ void CPhysicsHFObject::PreSimulate( float fDt )
 
 void CPhysicsHFObject::PostSimulate( float fDt )
 {
-	PROFILE_FUNC();
+	//PROFILE_FUNC();
 
 	if (m_object->IsDynamic())
 	{
@@ -186,7 +187,10 @@ int CPhysicsEngine::Run()
 
 void CPhysicsEngine::Simulate( float fDt, int numIterations, FNSIMULATECALLBACK preIntegrateFn )
 {
-	PROFILE_FUNC();
+	//PROFILE_FUNC();
+
+	if (ph_stop.GetBool())
+		return;
 
 	m_dtAccumulator += fDt;
 

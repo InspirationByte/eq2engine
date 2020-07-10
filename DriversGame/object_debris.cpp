@@ -551,10 +551,7 @@ void CObject_Debris::OnPhysicsCollide(const CollisionPairData_t& pair)
 
 void CObject_Debris::Simulate(float fDt)
 {
-	PROFILE_FUNC();
-
-	if(fDt <= 0.0f)
-		return;
+	DoOnSimulateCallback(fDt);
 
 	CEqRigidBody* body = m_hfObj->GetBody();
 	bool moved = (body->m_flags & BODY_MOVEABLE) > 0;
@@ -562,10 +559,6 @@ void CObject_Debris::Simulate(float fDt)
 	if(moved)
 	{
 		m_fTimeToRemove -= fDt;
-
-		m_vecOrigin = body->GetPosition();
-		Vector3D eulersAng = eulers(body->GetOrientation());
-		m_vecAngles = VRAD2DEG(eulersAng);
 
 		if(m_fTimeToRemove < 0.0f)
 		{
@@ -580,16 +573,6 @@ void CObject_Debris::Simulate(float fDt)
 
 			body->m_flags &= ~BODY_FORCE_FREEZE;
 		}
-	}
-
-
-	auto& collList = body->m_collisionList;
-
-	// process collisions
-	for(int i = 0; i < collList.numElem(); i++)
-	{
-		const CollisionPairData_t& pair = collList[i];
-
 	}
 }
 

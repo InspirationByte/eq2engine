@@ -342,8 +342,10 @@ void CEqRigidBody::UpdateInertiaTensor()
 {
 	const Vector3D inertia = m_invInertia;
 
+	//rotateVector(m_centerOfMass, m_orientation);
+
 	Matrix3x3 orientMat(m_orientation);
-	m_centerOfMassTrans = orientMat*Vector3D(m_centerOfMass);
+	m_centerOfMassTrans = rotateVector(m_centerOfMass, m_orientation);// orientMat*Vector3D(m_centerOfMass);
 	m_invInertiaTensor = orientMat*scale3(inertia.x, inertia.y, inertia.z)*transpose(orientMat);
 }
 
@@ -594,11 +596,11 @@ float CEqRigidBody::ApplyImpulseResponseTo(CEqRigidBody* body, const FVector3D& 
 		return 0.0f;
 
 	// relative hit position to compute impact point velocity
-	FVector3D contactRelativePos = body->GetPosition()-point;
+	const FVector3D contactRelativePos = body->GetPosition()-point;
 
-	Vector3D impactpoint_velocity = body->GetVelocityAtLocalPoint(contactRelativePos);
+	const Vector3D impactpoint_velocity = body->GetVelocityAtLocalPoint(contactRelativePos);
 
-	float combined_rest = 1.0f + (restitutionA*body->GetRestitution());
+	const float combined_rest = 1.0f + (restitutionA*body->GetRestitution());
 
 	const float impulse_speed = -dot(impactpoint_velocity, normal);
 
@@ -606,9 +608,9 @@ float CEqRigidBody::ApplyImpulseResponseTo(CEqRigidBody* body, const FVector3D& 
 
 	const float jacDiagABInv = 1.0f / denom;
 
-    float penetrationImpulse = posError * jacDiagABInv;
-    float velocityImpulse = impulse_speed * jacDiagABInv;
-	float velocityImpulseRest = impulse_speed * combined_rest * jacDiagABInv;
+	const float penetrationImpulse = posError * jacDiagABInv;
+	const float velocityImpulse = impulse_speed * jacDiagABInv;
+	const float velocityImpulseRest = impulse_speed * combined_rest * jacDiagABInv;
 
     float normalImpulseRest = penetrationImpulse + velocityImpulseRest;
 	normalImpulseRest = (0.0f > normalImpulseRest) ? 0.0f : normalImpulseRest;
@@ -647,15 +649,15 @@ float CEqRigidBody::ApplyImpulseResponseTo2( CEqRigidBody* bodyA, CEqRigidBody* 
 		return 0.0f;
 
 	// relative hit position to compute impact point velocity
-	FVector3D contactRelativePosA = bodyA->GetPosition()-point;
-	FVector3D contactRelativePosB = bodyB->GetPosition()-point;
+	const FVector3D contactRelativePosA = bodyA->GetPosition()-point;
+	const FVector3D contactRelativePosB = bodyB->GetPosition()-point;
 
-	Vector3D impactpoint_velocityA = bodyA->GetVelocityAtLocalPoint(contactRelativePosA);
-	Vector3D impactpoint_velocityB = bodyB->GetVelocityAtLocalPoint(contactRelativePosB);
+	const Vector3D impactpoint_velocityA = bodyA->GetVelocityAtLocalPoint(contactRelativePosA);
+	const Vector3D impactpoint_velocityB = bodyB->GetVelocityAtLocalPoint(contactRelativePosB);
 
-	float combined_rest = 1.0f + (bodyA->GetRestitution()*bodyB->GetRestitution());
+	const float combined_rest = 1.0f + (bodyA->GetRestitution()*bodyB->GetRestitution());
 
-	Vector3D vel_sub = impactpoint_velocityB-impactpoint_velocityA;
+	const Vector3D vel_sub = impactpoint_velocityB-impactpoint_velocityA;
 
 	const float impulse_speed = dot(vel_sub, normal);
 
@@ -664,8 +666,8 @@ float CEqRigidBody::ApplyImpulseResponseTo2( CEqRigidBody* bodyA, CEqRigidBody* 
 
 	const float jacDiagABInv = 1.0f / (denomA+denomB);
 
-    float penetrationImpulse = posError * jacDiagABInv;
-    float velocityImpulse = impulse_speed * jacDiagABInv;
+	const float penetrationImpulse = posError * jacDiagABInv;
+	const float velocityImpulse = impulse_speed * jacDiagABInv;
 
 	float velocityImpulseRest = impulse_speed * combined_rest * jacDiagABInv;
 

@@ -1356,14 +1356,13 @@ int	CCar::GetControlButtons() const
 
 void CCar::UpdateVehiclePhysics(float delta)
 {
-	PROFILE_FUNC();
+	//PROFILE_FUNC();
 
 	CEqRigidBody* carBody = m_physObj->GetBody();
 
 	// retrieve body matrix
 	Matrix4x4 worldMatrix;
 	carBody->ConstructRenderMatrix(worldMatrix);
-	m_worldMatrix = worldMatrix;
 
 	int controlButtons = GetControlButtons();
 
@@ -2505,7 +2504,6 @@ void CCar::OnPhysicsFrame( float fDt )
 
 	Matrix4x4 worldMatrix;
 	carBody->ConstructRenderMatrix(worldMatrix);
-	m_worldMatrix = worldMatrix;
 
 	Matrix4x4 invWorldMatrix = !worldMatrix;
 
@@ -2824,8 +2822,6 @@ ConVar r_carLights_dist("r_carLights_dist", "50.0", NULL, CV_ARCHIVE);
 
 void CCar::Simulate( float fDt )
 {
-	PROFILE_FUNC();
-
 	BaseClass::Simulate(fDt);
 
 	if(!m_physObj)
@@ -3755,7 +3751,7 @@ void CCar::DrawSkidmarkTrails(int wheelIdx)
 	}
 }
 
-void CCar::PostDraw()
+void CCar::PreDraw()
 {
 	bool drawOnLocal = m_isLocalCar && (r_drawSkidMarks.GetInt() != 0);
 	bool drawOnOther = !m_isLocalCar && (r_drawSkidMarks.GetInt() == 2);

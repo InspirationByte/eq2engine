@@ -245,84 +245,83 @@ void CObject_TrafficLight::Draw( int nRenderFlags )
 
 void CObject_TrafficLight::Simulate(float fDt)
 {
-	BaseClass::Simulate(fDt);
-	PROFILE_FUNC();
+	DoOnSimulateCallback(fDt);
 
-	if(!m_killed)
+	if (m_killed)
+		return;
+
+	float flickerVal = 1.0f;
+
+	if(m_flicker)
 	{
-		float flickerVal = 1.0f;
+		m_flickerTime += fDt;
 
-		if(m_flicker)
-		{
-			m_flickerTime += fDt;
-
-			flickerVal = fabs(sin(sin(m_flickerTime*10.0f)*2.5f))*0.5f+0.5f;
-		}
-
-		int trafDir = m_trafficDir % 2;
-
-		Vector3D dir;
-		AngleVectors(m_vecAngles-Vector3D(0.0f,90.0f,0.0f), &dir);
-
-		Vector3D cam_pos = g_pGameWorld->m_view.GetOrigin();
-		Vector3D cam_forward;
-		AngleVectors(g_pGameWorld->m_view.GetAngles(), &cam_forward);
-
-		Plane pl(dir,-dot(dir, m_vecOrigin+dir*5.0f));
-
-		float fAngFade = clamp( pl.Distance(cam_pos), 0.0f, 8.0f) * 0.125f;
-
-		int drawnLightType = 0;
-		float greenBlinker = 1.0f;
-		bool drawOrange = false;
-
-		float trafficLightTime = g_pGameWorld->m_trafficLightTime[m_junctionId % 2];
-
-		// green light - blinks if remaining time less than 6 seconds, then yellow light shown when less than 2 seconds
-		if(g_pGameWorld->m_trafficLightPhase[m_junctionId % 2] % 2 == trafDir)
-		{
-			drawOrange = (trafficLightTime < 2.0f);
-
-			bool blinkGreen = (trafficLightTime < 6.0f) && !drawOrange;
-
-			drawnLightType = 2;
-
-			if(blinkGreen)
-				greenBlinker = clamp(sinf(trafficLightTime*7.0f)*100.0f, 0.0f, 1.0f);
-			else if(drawOrange)
-				drawnLightType = -1;
-		}
-		else // red light - shown always and yellow shows when time is less than 3 seconds
-		{
-			drawOrange = (trafficLightTime < 3.0f);
-			drawnLightType = 0;
-		}
-
-
-		if( CheckVisibility(g_pGameWorld->m_occludingFrustum) )
-		{
-			for(int i = 0; i < m_lights.numElem(); i++)
-			{
-				trafficlights_t tl = m_lights[i];
-
-				if(tl.type == 0 && drawnLightType == 0)
-				{
-					DrawLightEffect(tl.position, ColorRGBA(lightColorTypes[tl.type]*flickerVal, 1.0f) * fAngFade, TRAFFICLIGHT_GLOW_SIZE, 1);
-					DrawLightEffect(tl.position, ColorRGBA(lightColorTypes[tl.type]*flickerVal*0.5f, 1.0f) * fAngFade, TRAFFICLIGHT_GLOW_SIZE*2.0f, 2);
-				}
-				else if(tl.type == 2 && drawnLightType == 2)
-				{
-					DrawLightEffect(tl.position, ColorRGBA(lightColorTypes[tl.type]*flickerVal, 1.0f) * fAngFade * greenBlinker, TRAFFICLIGHT_GLOW_SIZE, 1);
-					DrawLightEffect(tl.position, ColorRGBA(lightColorTypes[tl.type]*flickerVal*0.5f, 1.0f) * fAngFade * greenBlinker, TRAFFICLIGHT_GLOW_SIZE*2.0f, 2);
-				}
-				else if(tl.type == 1 && drawOrange)
-				{
-					DrawLightEffect(tl.position, ColorRGBA(lightColorTypes[tl.type]*flickerVal, 1.0f) * fAngFade, TRAFFICLIGHT_GLOW_SIZE, 1);
-					DrawLightEffect(tl.position, ColorRGBA(lightColorTypes[tl.type]*flickerVal*0.5f, 1.0f) * fAngFade, TRAFFICLIGHT_GLOW_SIZE*2.0f, 2);
-				}
-			} // for
-		} // check
+		flickerVal = fabs(sin(sin(m_flickerTime*10.0f)*2.5f))*0.5f+0.5f;
 	}
+
+	int trafDir = m_trafficDir % 2;
+
+	Vector3D dir;
+	AngleVectors(m_vecAngles-Vector3D(0.0f,90.0f,0.0f), &dir);
+
+	Vector3D cam_pos = g_pGameWorld->m_view.GetOrigin();
+	Vector3D cam_forward;
+	AngleVectors(g_pGameWorld->m_view.GetAngles(), &cam_forward);
+
+	Plane pl(dir,-dot(dir, m_vecOrigin+dir*5.0f));
+
+	float fAngFade = clamp( pl.Distance(cam_pos), 0.0f, 8.0f) * 0.125f;
+
+	int drawnLightType = 0;
+	float greenBlinker = 1.0f;
+	bool drawOrange = false;
+
+	float trafficLightTime = g_pGameWorld->m_trafficLightTime[m_junctionId % 2];
+
+	// green light - blinks if remaining time less than 6 seconds, then yellow light shown when less than 2 seconds
+	if(g_pGameWorld->m_trafficLightPhase[m_junctionId % 2] % 2 == trafDir)
+	{
+		drawOrange = (trafficLightTime < 2.0f);
+
+		bool blinkGreen = (trafficLightTime < 6.0f) && !drawOrange;
+
+		drawnLightType = 2;
+
+		if(blinkGreen)
+			greenBlinker = clamp(sinf(trafficLightTime*7.0f)*100.0f, 0.0f, 1.0f);
+		else if(drawOrange)
+			drawnLightType = -1;
+	}
+	else // red light - shown always and yellow shows when time is less than 3 seconds
+	{
+		drawOrange = (trafficLightTime < 3.0f);
+		drawnLightType = 0;
+	}
+
+
+	if( CheckVisibility(g_pGameWorld->m_occludingFrustum) )
+	{
+		for(int i = 0; i < m_lights.numElem(); i++)
+		{
+			trafficlights_t tl = m_lights[i];
+
+			if(tl.type == 0 && drawnLightType == 0)
+			{
+				DrawLightEffect(tl.position, ColorRGBA(lightColorTypes[tl.type]*flickerVal, 1.0f) * fAngFade, TRAFFICLIGHT_GLOW_SIZE, 1);
+				DrawLightEffect(tl.position, ColorRGBA(lightColorTypes[tl.type]*flickerVal*0.5f, 1.0f) * fAngFade, TRAFFICLIGHT_GLOW_SIZE*2.0f, 2);
+			}
+			else if(tl.type == 2 && drawnLightType == 2)
+			{
+				DrawLightEffect(tl.position, ColorRGBA(lightColorTypes[tl.type]*flickerVal, 1.0f) * fAngFade * greenBlinker, TRAFFICLIGHT_GLOW_SIZE, 1);
+				DrawLightEffect(tl.position, ColorRGBA(lightColorTypes[tl.type]*flickerVal*0.5f, 1.0f) * fAngFade * greenBlinker, TRAFFICLIGHT_GLOW_SIZE*2.0f, 2);
+			}
+			else if(tl.type == 1 && drawOrange)
+			{
+				DrawLightEffect(tl.position, ColorRGBA(lightColorTypes[tl.type]*flickerVal, 1.0f) * fAngFade, TRAFFICLIGHT_GLOW_SIZE, 1);
+				DrawLightEffect(tl.position, ColorRGBA(lightColorTypes[tl.type]*flickerVal*0.5f, 1.0f) * fAngFade, TRAFFICLIGHT_GLOW_SIZE*2.0f, 2);
+			}
+		} // for
+	} // check
 }
 
 void CObject_TrafficLight::OnCarCollisionEvent(const CollisionPairData_t& pair, CGameObject* hitBy)

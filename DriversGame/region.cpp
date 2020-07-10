@@ -16,6 +16,8 @@
 #include "state_game.h"
 #endif // EDITOR
 
+#include "Shiny.h"
+
 #define AI_NAVIGATION_ROAD_PRIORITY (1)
 
 extern ConVar r_enableLevelInstancing;
@@ -176,8 +178,6 @@ CLevelRegion::CLevelRegion()
 	m_level = nullptr;
 	m_roads = nullptr;
 	m_regionIndex = -1;
-
-	m_hasTransparentSubsets = false;
 
 	m_isLoaded = false;
 	m_scriptEventCallbackCalled = true;
@@ -412,7 +412,7 @@ void CLevelRegion::Render(const Vector3D& cameraPosition, const occludingFrustum
 	}
 #endif // EDITOR
 
-	bool renderTranslucency = (nRenderFlags & RFLAG_TRANSLUCENCY) > 0;
+	PROFILE_FUNC();
 
 	const ShaderAPICaps_t& caps = g_pShaderAPI->GetCaps();
 
@@ -428,9 +428,6 @@ void CLevelRegion::Render(const Vector3D& cameraPosition, const occludingFrustum
 		regionObject_t* ref = m_objects[i];
 		CLevObjectDef* cont = ref->def;
 
-		if(ref->hide)
-			continue;
-
 //----------------------------------------------------------------
 // IN-EDITOR RENDERER
 //----------------------------------------------------------------
@@ -439,8 +436,7 @@ void CLevelRegion::Render(const Vector3D& cameraPosition, const occludingFrustum
 
 		if(cont->m_info.type == LOBJ_TYPE_INTERNAL_STATIC)
 		{
-			//if( frustum.IsBoxInside(cont->m_model->m_bbox.minPoint, cont->m_model->m_bbox.maxPoint) )
-			if (occlFrustum.IsBoxVisible(ref->bbox)) //if( occlFrustum.IsSphereVisible( ref->position, length(ref->bbox.GetSize())) )
+			if (occlFrustum.IsBoxVisible(ref->bbox))
 			{
 				if (caps.isInstancingSupported && !(cont->m_info.modelflags & LMODEL_FLAG_UNIQUE))
 				{
@@ -487,21 +483,24 @@ void CLevelRegion::Render(const Vector3D& cameraPosition, const occludingFrustum
 		regionObject_t* ref = m_staticObjects[i];
 		CLevObjectDef* cont = ref->def;
 
-		if(renderTranslucency && !cont->m_model->m_hasTransparentSubsets)
-			continue;
-
 		if (!occlFrustum.IsBoxVisible(ref->bbox)) //ref->position, length(ref->bbox.GetSize())) )
 			continue;
 
 		levObjInstanceData_t* instData = cont->m_instData;
 
+		PROFILE_BEGIN(DrawOrInstance);
+
 		if(	caps.isInstancingSupported &&
 			r_enableLevelInstancing.GetBool() && 
 			instData)
 		{
-			regObjectInstance_t inst;
+			Matrix4x4 transform = ref->transform;
 
-			GetModelRefRenderQuaternionPosition(inst.rotation, *(Vector3D*)(float*)inst.position, this, ref);
+			regObjectInstance_t inst;
+			inst.rotation = transform.getRotationComponent();
+			inst.position = Vector4D(transform.getTranslationComponentTransposed(), 1.0f);
+
+			//GetModelRefRenderQuaternionPosition(inst.rotation, *(Vector3D*)(float*)inst.position, this, ref);
 
 			instData->instances[instData->numInstances++] = inst;
 		}
@@ -513,12 +512,16 @@ void CLevelRegion::Render(const Vector3D& cameraPosition, const occludingFrustum
 			cont->Render(fDist, ref->bbox, false, nRenderFlags);
 		}
 
+		PROFILE_END();
+
 #endif	// EDITOR
 	}
 
 	materials->SetMatrix(MATRIXMODE_WORLD, identity4());
 
 	int numHFields = GetNumHFields();
+
+	PROFILE_BEGIN(DrawHFields);
 
 	if(nav_debug_map.GetBool())
 	{
@@ -536,6 +539,8 @@ void CLevelRegion::Render(const Vector3D& cameraPosition, const occludingFrustum
 				m_heightfield[i]->Render( nRenderFlags, occlFrustum );
 		}
 	}
+
+	PROFILE_END();
 }
 
 void CLevelRegion::Init(int cellsSize, const IVector2D& regPos, const Vector3D& hfieldPos)
@@ -862,8 +867,6 @@ void CLevelRegion::Cleanup()
 	}
 #endif // EDITOR
 
-	m_hasTransparentSubsets = false;
-
 	m_queryTimes.SetValue(0);
 
 	DevMsg(DEVMSG_CORE, "Region %d freed\n", m_regionIndex);
@@ -949,13 +952,12 @@ void CLevelRegion::InitRegionHeightfieldsJob(void *data, int i)
 
 	reg->m_heightfield[i]->GenerateRenderData(nav_debug_map.GetBool());
 
-	if (reg->m_heightfield[i]->m_hasTransparentSubsets)
-		reg->m_hasTransparentSubsets = true;
-
 #ifndef EDITOR
 	g_pPhysics->AddHeightField(reg->m_heightfield[i]);
 #endif //EDITOR
 }
+
+ConVar w_nospawn("w_nospawn", "0", nullptr, CV_CHEAT);
 
 void CLevelRegion::ReadLoadRegion(IVirtualStream* stream, DkList<CLevObjectDef*>& levelmodels)
 {
@@ -1077,12 +1079,9 @@ void CLevelRegion::ReadLoadRegion(IVirtualStream* stream, DkList<CLevObjectDef*>
 				g_pPhysics->m_physics.AddStaticObject( ref->static_phys_object );
 			}
 #endif // EDITOR
-
-			if(model->m_hasTransparentSubsets)
-				m_hasTransparentSubsets = true;
 		}
 #ifndef EDITOR
-		else
+		else if(!w_nospawn.GetBool())
 		{
 			// create object, spawn in game cycle
 			CGameObject* newObj = g_pGameWorld->CreateGameObject(ref->def->m_defType.c_str(), ref->def->m_defKeyvalues);
@@ -1146,6 +1145,10 @@ void CLevelRegion::RespawnObjects()
 			continue;
 
 		ref->RemoveGameObject();
+
+		if (w_nospawn.GetBool())
+			continue;
+
 		ref->transform = GetModelRefRenderMatrix( this, ref );
 
 		// create object, spawn in game cycle

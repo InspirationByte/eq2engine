@@ -154,11 +154,12 @@ void CObject_Static::Draw( int nRenderFlags )
 
 void CObject_Static::Simulate(float fDt)
 {
-	BaseClass::Simulate(fDt);
+	DoOnSimulateCallback(fDt);
 
-	PROFILE_FUNC();
+	if (m_killed)
+		return;
 
-	if((g_pGameWorld->m_envConfig.lightsType & WLIGHTS_LAMPS) && !m_killed)
+	if((g_pGameWorld->m_envConfig.lightsType & WLIGHTS_LAMPS))
 	{
 		float flickerVal = 1.0f;
 

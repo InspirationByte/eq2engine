@@ -236,7 +236,6 @@ public:
 	virtual	bool				CheckVisibility( const occludingFrustum_t& frustum ) const;
 
 	virtual void				PreDraw() {}
-	virtual void				PostDraw() {}
 	virtual void				Draw( int nRenderFlags );
 
 	virtual CGameObject*		GetChildShadowCaster(int idx) const;
@@ -302,6 +301,7 @@ protected:
 	virtual void				OnPhysicsCollide(const CollisionPairData_t& pair) {}
 
 	virtual void				UpdateTransform();
+	void						DoOnSimulateCallback(float fDt);
 
 	decalPrimitives_t			m_shadowDecal;
 

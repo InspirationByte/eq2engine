@@ -33,7 +33,7 @@
 #include "eqParallelJobs.h"
 #include "eqGlobalMutex.h"
 
-#include "Shiny.h"
+//#include "Shiny.h"
 
 #include "../shared_engine/physics/BulletConvert.h"
 
@@ -253,13 +253,12 @@ void CEqPhysics::InitWorld()
 
 	// use the default collision dispatcher. For parallel processing you can use a diffent dispatcher (see Extras/BulletMultiThreaded)
 	m_collDispatcher = new btCollisionDispatcher( m_collConfig );
-	m_collDispatcher->setDispatcherFlags( btCollisionDispatcher::CD_DISABLE_CONTACTPOOL_DYNAMIC_ALLOCATION );
 
 	// still required for raycasts
 	m_collisionWorld = new btCollisionWorld(m_collDispatcher, NULL, m_collConfig);
 
-	m_dispatchInfo.m_enableSatConvex = false;
-	m_dispatchInfo.m_useContinuous = false;
+	m_dispatchInfo.m_enableSatConvex = true;
+	m_dispatchInfo.m_useContinuous = true;
 
 	InitSurfaceParams( m_physSurfaceParams );
 }
@@ -915,7 +914,7 @@ void CEqPhysics::SetupBodyOnCell( CEqCollisionObject* body )
 
 void CEqPhysics::IntegrateSingle(CEqRigidBody* body)
 {
-	PROFILE_FUNC();
+	//PROFILE_FUNC();
 
 	collgridcell_t* oldCell = body->GetCell();
 
@@ -946,7 +945,7 @@ void CEqPhysics::IntegrateSingle(CEqRigidBody* body)
 
 void CEqPhysics::DetectCollisionsSingle(CEqRigidBody* body)
 {
-	PROFILE_FUNC();
+	//PROFILE_FUNC();
 
 	// don't refresh frozen object, other will wake up us (or user)
 	if (body->IsFrozen())
@@ -1012,7 +1011,7 @@ ConVar ph_carVsCarErp("ph_carVsCarErp", "0.15", "Car versus car erp", CV_CHEAT);
 
 void CEqPhysics::ProcessContactPair(ContactPair_t& pair)
 {
-	PROFILE_FUNC();
+	//PROFILE_FUNC();
 
 	CollisionPairData_t collData;
 
@@ -1173,7 +1172,7 @@ void CEqPhysics::SimulateStep(float deltaTime, int iteration, FNSIMULATECALLBACK
 	// save delta
 	m_fDt = deltaTime;
 
-	PROFILE_FUNC();
+	//PROFILE_FUNC();
 	
 	// prepare all the constraints
 	for (int i = 0; i < m_constraints.numElem(); i++)

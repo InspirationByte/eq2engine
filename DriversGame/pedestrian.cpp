@@ -263,7 +263,7 @@ const float PEDESTRIAN_THINK_TIME = 0.0f;
 
 void CPedestrian::OnPhysicsFrame(float fDt)
 {
-	PROFILE_FUNC();
+	//PROFILE_FUNC();
 
 	CEqRigidBody* physBody = m_physObj->GetBody();
 
@@ -277,9 +277,9 @@ void CPedestrian::OnPhysicsFrame(float fDt)
 	// do pedestrian thinker
 	if (m_hasAI)
 	{
-		PROFILE_BEGIN(DoStatesAndEvents);
+		//PROFILE_BEGIN(DoStatesAndEvents);
 		int res = m_thinker.DoStatesAndEvents(fDt);
-		PROFILE_END();
+		//PROFILE_END();
 	}
 
 	int controlButtons = GetControlButtons();
@@ -369,7 +369,6 @@ void CPedestrian::Simulate(float fDt)
 		AdvanceFrame(fDt);
 	}
 
-	
 	DebugRender(m_worldMatrix);
 
 	BaseClass::Simulate(fDt);

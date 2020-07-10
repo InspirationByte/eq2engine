@@ -420,7 +420,7 @@ public:
 	virtual void			PlaceOnRoadCell(CLevelRegion* reg, levroadcell_t* cell);
 
 	void					Draw( int nRenderFlags );
-	void					PostDraw();
+	void					PreDraw();
 
 	IEqModel*				GetDamagedModel() const { return m_pDamagedModel; }
 

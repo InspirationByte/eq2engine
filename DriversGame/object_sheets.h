@@ -43,6 +43,8 @@ public:
 
 	void					OnRemove();
 	void					Spawn();
+	void					Draw(int nRenderFlags);
+	bool					CheckVisibility(const occludingFrustum_t& frustum) const;
 
 	static void				SheetsUpdateJob(void *data, int i);
 	void					Simulate( float fDt );
@@ -63,6 +65,7 @@ protected:
 
 	float					m_initDelay;
 	bool					m_wasInit;
+	bool					m_active;
 };
 
 #endif // OBJECT_SHEETS_H

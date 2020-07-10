@@ -150,7 +150,7 @@ void CAITrafficCar::OnPrePhysicsFrame( float fDt )
 
 	BaseClass::OnPrePhysicsFrame(fDt);
 
-	PROFILE_BEGIN(AITrafficCar_Think);
+	//PROFILE_BEGIN(AITrafficCar_Think);
 
 	if( !g_disableTrafficCarThink.GetBool())
 	{
@@ -200,7 +200,7 @@ void CAITrafficCar::OnPrePhysicsFrame( float fDt )
 	if (IsLightEnabled(CAR_LIGHT_LOWBEAMS) != headLightsEnabled)
 		SetLight(headLightsEnabled, headLightsEnabled);
 
-	PROFILE_END();
+	//PROFILE_END();
 }
 
 void CAITrafficCar::OnCarCollisionEvent(const CollisionPairData_t& pair, CGameObject* hitBy)

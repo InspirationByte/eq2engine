@@ -129,8 +129,6 @@ void CObject_WaterFlow::OnPhysicsCollide(const CollisionPairData_t& pair)
 
 void CObject_WaterFlow::Simulate( float fDt )
 {
-	BaseClass::Simulate(fDt);
-
 	if (fDt <= 0.0f)
 		return;
 
