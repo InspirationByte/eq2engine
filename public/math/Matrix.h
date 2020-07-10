@@ -195,6 +195,9 @@ struct TMat4 // Matrix4x4
 
 	const TVec3D<T>&	getTranslationComponent() const;
 	TMat3<T>			getRotationComponent() const;
+
+	const TVec3D<T>		getTranslationComponentTransposed() const;
+	TMat3<T>			getRotationComponentTransposed() const;
 };
 
 template <typename T>

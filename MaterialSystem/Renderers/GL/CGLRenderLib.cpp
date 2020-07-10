@@ -229,7 +229,7 @@ void CGLRenderLib::InitSharedContexts()
 #ifdef USE_GLES2
 	// context attribute list
 	EGLint contextAttr[] = {
-		EGL_CONTEXT_CLIENT_VERSION, 2,
+		EGL_CONTEXT_CLIENT_VERSION, 3,
 		EGL_NONE
 	};
 

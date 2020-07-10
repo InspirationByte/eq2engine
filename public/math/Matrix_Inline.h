@@ -225,6 +225,21 @@ inline TMat3<T> TMat4<T>::getRotationComponent() const
 }
 
 template <typename T>
+inline const TVec3D<T> TMat4<T>::getTranslationComponentTransposed() const
+{
+	return TVec3D<T>(rows[0].w, rows[1].w, rows[2].w);
+}
+
+template <typename T>
+inline TMat3<T> TMat4<T>::getRotationComponentTransposed() const
+{
+	return TMat3<T>(
+		TMat3<T>(rows[0].x, rows[1].x, rows[2].x),
+		TMat3<T>(rows[0].y, rows[1].y, rows[2].y),
+		TMat3<T>(rows[0].z, rows[1].z, rows[2].z));
+}
+
+template <typename T>
 inline void TMat4<T>::translate(const TVec3D<T> &v)
 {
 	rows[0].w += dot(rows[0].xyz(), v);

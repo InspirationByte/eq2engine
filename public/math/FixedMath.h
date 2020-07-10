@@ -8,8 +8,6 @@
 #ifndef FIXEDMATH_H
 #define FIXEDMATH_H
 
-//#define FLOAT_AS_FREAL
-
 #include "dktypes.h"
 
 #ifdef FLOAT_AS_FREAL
