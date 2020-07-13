@@ -11,41 +11,25 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="c9096593-b4df-4b83-813a-05c2d4299dea" name="Default" comment="">
-      <change beforePath="$PROJECT_DIR$/../DriversGame/AITrafficCar.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../DriversGame/AITrafficCar.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../DriversGame/car.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../DriversGame/car.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../DriversGame/eqPhysics/eqPhysics.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../DriversGame/eqPhysics/eqPhysics.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../DriversGame/eqPhysics/eqPhysics_Body.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../DriversGame/eqPhysics/eqPhysics_Body.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../DriversGame/level.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../DriversGame/level.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../DriversEditor/EditorLevel.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../DriversEditor/EditorLevel.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../DriversGame/AIManager.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../DriversGame/AIManager.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../DriversGame/AIPursuerCar.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../DriversGame/AIPursuerCar.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../DriversGame/GameDefs.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../DriversGame/GameDefs.cpp" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../DriversGame/levelobject.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../DriversGame/levelobject.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../DriversGame/levelobject.h" beforeDir="false" afterPath="$PROJECT_DIR$/../DriversGame/levelobject.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../DriversGame/object_debris.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../DriversGame/object_debris.cpp" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../DriversGame/object_sheets.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../DriversGame/object_sheets.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../DriversGame/object_static.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../DriversGame/object_static.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../DriversGame/object_tree.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../DriversGame/object_tree.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../DriversGame/pedestrian.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../DriversGame/pedestrian.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../DriversGame/physics.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../DriversGame/physics.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../DriversGame/region.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../DriversGame/region.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../DriversGame/region.h" beforeDir="false" afterPath="$PROJECT_DIR$/../DriversGame/region.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../DriversGame/session_base.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../DriversGame/session_base.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../DriversGame/state_game.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../DriversGame/state_game.cpp" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../DriversGame/world.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../DriversGame/world.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../MaterialSystem/Renderers/GL/CGLRenderLib.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../MaterialSystem/Renderers/GL/CGLRenderLib.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../MaterialSystem/Renderers/GL/ShaderAPIGL.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../MaterialSystem/Renderers/GL/ShaderAPIGL.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/gradle.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/gradle.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/modules.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/modules.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../jni/libGame_DrvSyn.mk" beforeDir="false" afterPath="$PROJECT_DIR$/../jni/libGame_DrvSyn.mk" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../public/math/FixedMath.h" beforeDir="false" afterPath="$PROJECT_DIR$/../public/math/FixedMath.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../public/math/Matrix.h" beforeDir="false" afterPath="$PROJECT_DIR$/../public/math/Matrix.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../public/math/Matrix_Inline.h" beforeDir="false" afterPath="$PROJECT_DIR$/../public/math/Matrix_Inline.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../shared_engine/sys_host.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../shared_engine/sys_host.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../shared_engine/sys_window.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../shared_engine/sys_window.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/android-project.iml" beforeDir="false" afterPath="$PROJECT_DIR$/android-project.iml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/app.iml" beforeDir="false" afterPath="$PROJECT_DIR$/app/app.iml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/build.gradle" beforeDir="false" afterPath="$PROJECT_DIR$/app/build.gradle" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/src/main/AndroidManifest.xml" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/AndroidManifest.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/build.gradle" beforeDir="false" afterPath="$PROJECT_DIR$/build.gradle" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gradle/wrapper/gradle-wrapper.properties" beforeDir="false" afterPath="$PROJECT_DIR$/gradle/wrapper/gradle-wrapper.properties" afterDir="false" />
     </list>
-    <ignored path="android-project.iws" />
-    <ignored path=".idea/workspace.xml" />
-    <ignored path="$PROJECT_DIR$/.gradle/" />
-    <ignored path="$PROJECT_DIR$/app/.gradle/" />
-    <ignored path="$PROJECT_DIR$/app/build/" />
-    <ignored path="$PROJECT_DIR$/build/" />
-    <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -53,9 +37,6 @@
   </component>
   <component name="CreatePatchCommitExecutor">
     <option name="PATCH_PATH" value="" />
-  </component>
-  <component name="DefaultGradleProjectSettings">
-    <option name="isMigrated" value="true" />
   </component>
   <component name="ExecutionTargetManager" SELECTED_TARGET="71a4d18" />
   <component name="ExternalProjectsData">
@@ -73,140 +54,8 @@
   <component name="FavoritesManager">
     <favorites_list name="android-project" />
   </component>
-  <component name="FileEditorManager">
-    <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/app/src/main/java/org/libsdl/app/SDLActivity.java">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="29750">
-              <caret line="1806" column="59" selection-start-line="1806" selection-start-column="55" selection-end-line="1806" selection-end-column="59" />
-              <folding>
-                <element signature="e#4701#4702#0" expanded="true" />
-                <element signature="e#4734#4735#0" expanded="true" />
-                <element signature="e#5982#5983#0" expanded="true" />
-                <element signature="e#6018#6019#0" expanded="true" />
-                <element signature="e#14639#14640#0" expanded="true" />
-                <element signature="e#14683#14684#0" expanded="true" />
-                <element signature="e#15042#15043#0" expanded="true" />
-                <element signature="e#15079#15080#0" expanded="true" />
-                <element signature="e#18343#18344#0" expanded="true" />
-                <element signature="e#18371#18372#0" expanded="true" />
-                <element signature="e#34260#34261#0" expanded="true" />
-                <element signature="e#34299#34300#0" expanded="true" />
-                <element signature="e#37717#37718#0" expanded="true" />
-                <element signature="e#37758#37759#0" expanded="true" />
-                <element signature="e#52337#52338#0" expanded="true" />
-                <element signature="e#52396#52397#0" expanded="true" />
-                <element signature="e#52506#52507#0" expanded="true" />
-                <element signature="e#52565#52566#0" expanded="true" />
-                <element signature="e#58132#58133#0" expanded="true" />
-                <element signature="e#58194#58195#0" expanded="true" />
-                <element signature="e#58487#58488#0" expanded="true" />
-                <element signature="e#58534#58535#0" expanded="true" />
-              </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/app/src/main/AndroidManifest.xml">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="170">
-              <caret line="10" column="53" selection-start-line="10" selection-start-column="53" selection-end-line="10" selection-end-column="53" />
-            </state>
-          </provider>
-          <provider editor-type-id="android-manifest" />
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/app/src/main/java/com/insbyte/driversyndicate/EqEngineActivity.java">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="221">
-              <caret line="14" column="28" selection-start-line="14" selection-start-column="28" selection-end-line="14" selection-end-column="28" />
-              <folding>
-                <element signature="imports" expanded="true" />
-              </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/../shared_engine/sys_main.cpp">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="3587">
-              <caret line="211" selection-start-line="211" selection-end-line="211" />
-              <folding>
-                <element signature="e#6123#6263#0" expanded="true" />
-              </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="true">
-        <entry file="file://$PROJECT_DIR$/app/src/main/assets/EQ.CONFIG">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="112">
-              <caret line="41" column="18" selection-start-line="41" selection-start-column="18" selection-end-line="41" selection-end-column="18" />
-            </state>
-          </provider>
-        </entry>
-      </file>
-    </leaf>
-  </component>
-  <component name="FindInProjectRecents">
-    <findStrings>
-      <find>exp</find>
-      <find>com.android.tools.build:gradle-experimental:0.11.0.</find>
-      <find>mips64el-linux-android</find>
-      <find>ndk</find>
-      <find>ndkBuildRelease</find>
-      <find>ambi</find>
-      <find>armeabi</find>
-      <find>getArguments</find>
-      <find>openg</find>
-      <find>config</find>
-      <find>OnconfigurationChanged</find>
-      <find>surfaceChanged</find>
-      <find>Detaching surface</find>
-      <find>surfaceDestroyed</find>
-      <find>onNativeSurfaceDestroyed</find>
-      <find>error:</find>
-      <find>library</find>
-      <find>libraries</find>
-      <find>game</find>
-      <find>env</find>
-      <find>transpo</find>
-    </findStrings>
-  </component>
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$/.." />
-  </component>
-  <component name="IdeDocumentHistory">
-    <option name="CHANGED_PATHS">
-      <list>
-        <option value="$PROJECT_DIR$/../public/imaging/ImageLoader.cpp" />
-        <option value="$PROJECT_DIR$/../MaterialSystem/Renderers/GL/VertexBufferGL.cpp" />
-        <option value="$PROJECT_DIR$/../MaterialSystem/Renderers/GL/IndexBufferGL.cpp" />
-        <option value="$PROJECT_DIR$/../DriversGame/ShadowRenderer.cpp" />
-        <option value="$PROJECT_DIR$/../MaterialSystem/EngineShaders/Shaders/BaseParticle.cpp" />
-        <option value="$PROJECT_DIR$/../MaterialSystem/materialvar.cpp" />
-        <option value="$PROJECT_DIR$/app/src/main/res/values/strings.xml" />
-        <option value="$PROJECT_DIR$/build.gradle" />
-        <option value="$PROJECT_DIR$/local.properties" />
-        <option value="$PROJECT_DIR$/../jni/libGame_DrvSyn.mk" />
-        <option value="$PROJECT_DIR$/app/src/main/java/org/libsdl/app/SDLControllerManager.java" />
-        <option value="$PROJECT_DIR$/app/build.gradle" />
-        <option value="$PROJECT_DIR$/app/src/main/java/com/insbyte/driversyndicate/EqEngineActivity.java" />
-        <option value="D:/USERS_DOCUMENTS/AndroidStudio/DeviceExplorer/xiaomi-redmi_7-71a4d18/storage/6135-3937/eqengine/EQ.CONFIG" />
-        <option value="D:/USERS_DOCUMENTS/AndroidStudio/DeviceExplorer/xiaomi-redmi_7-71a4d18/storage/6135-3937/eqengine/GameData/cfg/user.cfg" />
-        <option value="$PROJECT_DIR$/app/src/main/java/org/libsdl/app/SDLActivity.java" />
-        <option value="$PROJECT_DIR$/../MaterialSystem/Renderers/GL/ShaderAPIGL.cpp" />
-        <option value="$PROJECT_DIR$/../DriversGame/session_base.cpp" />
-        <option value="$PROJECT_DIR$/app/src/main/AndroidManifest.xml" />
-        <option value="$PROJECT_DIR$/../shared_engine/sys_main.cpp" />
-        <option value="$PROJECT_DIR$/app/src/main/assets/EQ.CONFIG" />
-      </list>
-    </option>
   </component>
   <component name="ProjectFrameBounds" extendedState="7">
     <option name="x" value="427" />
@@ -214,59 +63,8 @@
     <option name="height" value="803" />
   </component>
   <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
-  <component name="ProjectView">
-    <navigator proportions="" version="1">
-      <foldersAlwaysOnTop value="true" />
-    </navigator>
-    <panes>
-      <pane id="ProjectPane" />
-      <pane id="Scope" />
-      <pane id="PackagesPane" />
-      <pane id="AndroidView">
-        <subPane>
-          <expand>
-            <path>
-              <item name="android-project" type="1abcf292:AndroidViewProjectNode" />
-              <item name="app" type="feadf853:AndroidModuleNode" />
-            </path>
-            <path>
-              <item name="android-project" type="1abcf292:AndroidViewProjectNode" />
-              <item name="app" type="feadf853:AndroidModuleNode" />
-              <item name="manifests" type="f94875db:AndroidManifestsGroupNode" />
-            </path>
-            <path>
-              <item name="android-project" type="1abcf292:AndroidViewProjectNode" />
-              <item name="app" type="feadf853:AndroidModuleNode" />
-              <item name="java" type="edd41e36:AndroidSourceTypeNode" />
-            </path>
-            <path>
-              <item name="android-project" type="1abcf292:AndroidViewProjectNode" />
-              <item name="app" type="feadf853:AndroidModuleNode" />
-              <item name="java (generated)" type="edd41e36:AndroidSourceTypeNode" />
-            </path>
-            <path>
-              <item name="android-project" type="1abcf292:AndroidViewProjectNode" />
-              <item name="app" type="feadf853:AndroidModuleNode" />
-              <item name="java (generated)" type="edd41e36:AndroidSourceTypeNode" />
-              <item name="driversyndicate" type="cbb59c9e:AndroidPsiDirectoryNode" />
-            </path>
-            <path>
-              <item name="android-project" type="1abcf292:AndroidViewProjectNode" />
-              <item name="app" type="feadf853:AndroidModuleNode" />
-              <item name="assets" type="edd41e36:AndroidSourceTypeNode" />
-            </path>
-            <path>
-              <item name="android-project" type="1abcf292:AndroidViewProjectNode" />
-              <item name="app" type="feadf853:AndroidModuleNode" />
-              <item name="res" type="d4f16f75:AndroidResFolderNode" />
-            </path>
-          </expand>
-          <select />
-        </subPane>
-      </pane>
-    </panes>
-  </component>
   <component name="PropertiesComponent">
+    <property name="BundleExportedModule" value="app" />
     <property name="DEBUGGABLE_DEVICE" value="xiaomi-redmi_7-71a4d18" />
     <property name="DEBUGGABLE_PROCESS" value="com.insbyte.driversyndicate" />
     <property name="DEBUGGER_ID" value="Auto" />
@@ -278,23 +76,14 @@
     <property name="device.picker.selection" value="75OBLRFIIZ8PTOW4" />
     <property name="last_opened_file_path" value="$PROJECT_DIR$/../../DriversGame/CONTENT_SOURCES/Z_mobile/eqengine/materials_etc2.epk" />
     <property name="not.eligible.for.single.variant.sync" value="true" />
-    <property name="project.structure.last.edited" value="Build Variants" />
+    <property name="project.structure.last.edited" value="Variables" />
     <property name="project.structure.proportion" value="0.17" />
     <property name="project.structure.side.proportion" value="0.2" />
     <property name="settings.editor.selected.configurable" value="reference.settingsdialog.project.gradle" />
     <property name="settings.editor.splitter.proportion" value="0.2" />
   </component>
-  <component name="RunDashboard">
-    <option name="ruleStates">
-      <list>
-        <RuleState>
-          <option name="name" value="ConfigurationTypeDashboardGroupingRule" />
-        </RuleState>
-        <RuleState>
-          <option name="name" value="StatusDashboardGroupingRule" />
-        </RuleState>
-      </list>
-    </option>
+  <component name="PsdUISettings">
+    <option name="LAST_EDITED_BUILD_TYPE" value="release" />
   </component>
   <component name="RunManager" selected="Android App.app">
     <configuration default="true" type="AndroidRunConfigurationType" factoryName="Android Application">
@@ -364,6 +153,12 @@
       </Profilers>
       <method />
     </configuration>
+    <configuration default="true" type="Applet">
+      <option name="POLICY_FILE" value="$APPLICATION_HOME_DIR$/bin/appletviewer.policy" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
     <configuration default="true" type="JUnit" factoryName="JUnit">
       <extension name="coverage" enabled="false" merge="false" sample_coverage="true" runner="idea" />
       <module name="" />
@@ -411,8 +206,6 @@
       <option name="SKIP_NOOP_APK_INSTALLATIONS" value="true" />
       <option name="FORCE_STOP_RUNNING_APP" value="true" />
       <option name="TARGET_SELECTION_MODE" value="SHOW_DIALOG" />
-      <option name="USE_LAST_SELECTED_DEVICE" value="false" />
-      <option name="PREFERRED_AVD" value="" />
       <option name="SELECTED_CLOUD_MATRIX_CONFIGURATION_ID" value="-1" />
       <option name="SELECTED_CLOUD_MATRIX_PROJECT_ID" value="" />
       <option name="DEBUGGER_TYPE" value="Native" />
@@ -464,8 +257,6 @@
       <option name="SKIP_NOOP_APK_INSTALLATIONS" value="true" />
       <option name="FORCE_STOP_RUNNING_APP" value="true" />
       <option name="TARGET_SELECTION_MODE" value="SHOW_DIALOG" />
-      <option name="USE_LAST_SELECTED_DEVICE" value="false" />
-      <option name="PREFERRED_AVD" value="" />
       <option name="SELECTED_CLOUD_MATRIX_CONFIGURATION_ID" value="-1" />
       <option name="SELECTED_CLOUD_MATRIX_PROJECT_ID" value="" />
       <option name="DEBUGGER_TYPE" value="Auto" />
@@ -536,19 +327,13 @@
       <option name="ACTIVITY_CLASS" value="" />
       <method />
     </configuration>
-    <configuration default="true" type="Applet">
-      <option name="POLICY_FILE" value="$APPLICATION_HOME_DIR$/bin/appletviewer.policy" />
-      <method v="2">
-        <option name="Make" enabled="true" />
-      </method>
-    </configuration>
     <configuration default="true" type="Application" factoryName="Application">
       <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
       <method v="2">
         <option name="Make" enabled="true" />
       </method>
     </configuration>
-    <configuration default="true" type="JetRunConfigurationType" factoryName="Kotlin">
+    <configuration default="true" type="JetRunConfigurationType">
       <module name="app" />
       <option name="VM_PARAMETERS" />
       <option name="PROGRAM_PARAMETERS" />
@@ -561,7 +346,7 @@
         <option name="Make" enabled="true" />
       </method>
     </configuration>
-    <configuration default="true" type="KotlinStandaloneScriptRunConfigurationType" factoryName="Kotlin script">
+    <configuration default="true" type="KotlinStandaloneScriptRunConfigurationType">
       <option name="filePath" />
       <option name="vmParameters" />
       <option name="alternativeJrePath" />
@@ -622,56 +407,6 @@
     </task>
     <servers />
   </component>
-  <component name="TodoView">
-    <todo-panel id="selected-file">
-      <is-autoscroll-to-source value="true" />
-    </todo-panel>
-    <todo-panel id="all">
-      <are-packages-shown value="true" />
-      <is-autoscroll-to-source value="true" />
-    </todo-panel>
-  </component>
-  <component name="ToolWindowManager">
-    <frame x="-8" y="-8" width="1936" height="1056" extended-state="6" />
-    <editor active="true" />
-    <layout>
-      <window_info content_ui="combo" id="Project" order="0" sideWeight="0.46688208" visible="true" weight="0.17324094" />
-      <window_info id="Structure" order="1" weight="0.25" />
-      <window_info id="Captures" order="2" side_tool="true" weight="0.25" />
-      <window_info id="Build Variants" order="3" sideWeight="0.53311795" side_tool="true" visible="true" weight="0.17324094" />
-      <window_info id="Favorites" order="4" side_tool="true" />
-      <window_info id="Capture Tool" order="5" />
-      <window_info id="Palette&#9;" order="6" />
-      <window_info id="Image Layers" order="7" />
-      <window_info id="Resources Explorer" order="8" weight="0.32995737" />
-      <window_info anchor="bottom" id="Message" order="0" />
-      <window_info anchor="bottom" id="Find" order="1" sideWeight="0.48932764" weight="0.32936078" />
-      <window_info anchor="bottom" id="Run" order="2" sideWeight="0.48932764" weight="0.3564464" />
-      <window_info anchor="bottom" id="Debug" order="3" sideWeight="0.47225186" weight="0.39869988" />
-      <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
-      <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
-      <window_info anchor="bottom" id="TODO" order="6" sideWeight="0.4914621" weight="0.32827735" />
-      <window_info anchor="bottom" id="Gradle Console" order="7" sideWeight="0.5277481" side_tool="true" visible="true" weight="0.32929516" />
-      <window_info anchor="bottom" id="Android Monitor" order="8" sideWeight="0.44450372" weight="0.3284091" />
-      <window_info anchor="bottom" id="Event Log" order="9" sideWeight="0.50053304" side_tool="true" visible="true" weight="0.32936078" />
-      <window_info anchor="bottom" id="Version Control" order="10" weight="0.32936078" />
-      <window_info anchor="bottom" id="Terminal" order="11" sideWeight="0.49359658" weight="0.32936078" />
-      <window_info anchor="bottom" id="Messages" order="12" sideWeight="0.36179295" weight="0.32929516" />
-      <window_info anchor="bottom" id="Android Profiler" order="13" />
-      <window_info anchor="bottom" id="Logcat" order="14" sideWeight="0.48720682" weight="0.32936078" />
-      <window_info active="true" anchor="bottom" id="Build" order="15" sideWeight="0.49946696" visible="true" weight="0.32936078" />
-      <window_info anchor="right" id="Commander" order="0" weight="0.4" />
-      <window_info anchor="right" id="Ant Build" order="1" weight="0.25" />
-      <window_info anchor="right" content_ui="combo" id="Hierarchy" order="2" weight="0.25" />
-      <window_info anchor="right" id="Designer" order="3" />
-      <window_info anchor="right" id="Capture Analysis" order="4" />
-      <window_info anchor="right" id="Android Model" order="5" side_tool="true" />
-      <window_info anchor="right" id="Gradle" order="6" />
-      <window_info anchor="right" id="Theme Preview" order="7" />
-      <window_info anchor="right" id="Device File Explorer" order="8" sideWeight="0.5012563" side_tool="true" visible="true" weight="0.32995737" />
-      <window_info anchor="right" id="Assistant" order="9" sideWeight="0.4987437" weight="0.32995737" />
-    </layout>
-  </component>
   <component name="Vcs.Log.UiProperties">
     <option name="RECENTLY_FILTERED_USER_GROUPS">
       <collection />
@@ -680,271 +415,10 @@
       <collection />
     </option>
   </component>
-  <component name="editorHistoryManager">
-    <entry file="file://$PROJECT_DIR$/../public/imaging/ImageLoader.cpp">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="9960">
-          <caret line="498" column="12" selection-start-line="498" selection-start-column="12" selection-end-line="498" selection-end-column="12" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/../src_dependency/openal-soft/Alc/ALc.c" />
-    <entry file="file://$PROJECT_DIR$/../src_dependency/openal-soft/OpenAL32/Include/alFilter.h">
-      <provider selected="true" editor-type-id="text-editor">
-        <state>
-          <caret line="39" column="66" selection-start-line="39" selection-start-column="66" selection-end-line="39" selection-end-column="66" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/../src_dependency/openal-soft/OpenAL32/Include/alMain.h">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="720">
-          <caret line="36" column="19" selection-start-line="36" selection-start-column="19" selection-end-line="36" selection-end-column="19" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/../MaterialSystem/Renderers/GL/VertexBufferGL.cpp">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="2680">
-          <caret line="134" selection-start-line="134" selection-end-line="134" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/../MaterialSystem/Renderers/GL/IndexBufferGL.cpp">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="2540">
-          <caret line="127" column="9" selection-start-line="127" selection-start-column="9" selection-end-line="127" selection-end-column="9" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/../DriversGame/ShadowRenderer.cpp">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="600">
-          <caret line="30" column="25" selection-start-line="30" selection-start-column="25" selection-end-line="30" selection-end-column="25" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/../MaterialSystem/EngineShaders/Shaders/BaseParticle.cpp">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="1820">
-          <caret line="91" selection-start-line="91" selection-end-line="91" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$USER_HOME$/Android/Sdk/ndk-bundle/build/core/build-binary.mk" />
-    <entry file="file://$PROJECT_DIR$/../MaterialSystem/materialvar.cpp">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="194">
-          <caret line="113" column="68" selection-start-line="113" selection-start-column="68" selection-end-line="113" selection-end-column="68" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/app/src/main/res/values/strings.xml">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="51">
-          <caret line="3" column="12" lean-forward="true" selection-start-line="3" selection-start-column="12" selection-end-line="3" selection-end-column="12" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/app/src/main/res/layout/main.xml">
-      <provider selected="true" editor-type-id="android-designer2" />
-      <provider editor-type-id="text-editor" />
-    </entry>
-    <entry file="file://$PROJECT_DIR$/../jni/libGame_DrvSyn.mk">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="180">
-          <caret line="75" column="50" selection-start-line="75" selection-start-column="50" selection-end-line="75" selection-end-column="50" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/../public/materialsystem/MeshBuilder.h">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="112">
-          <caret line="656" column="16" selection-start-line="656" selection-start-column="16" selection-end-line="656" selection-end-column="16" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/gradle/wrapper/gradle-wrapper.properties">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="102">
-          <caret line="6" selection-start-line="6" selection-end-line="6" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/build.gradle">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="306">
-          <caret line="18" selection-start-line="18" selection-end-line="18" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/app/build.gradle">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="170">
-          <caret line="10" column="42" selection-start-line="10" selection-start-column="42" selection-end-line="10" selection-end-column="42" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://D:/USERS_DOCUMENTS/AndroidStudio/DeviceExplorer/xiaomi-redmi_7-71a4d18/storage/6135-3937/eqengine/EQ.CONFIG" />
-    <entry file="file://D:/USERS_DOCUMENTS/AndroidStudio/DeviceExplorer/xiaomi-redmi_7-71a4d18/storage/6135-3937/eqengine/GameData/cfg/user.cfg" />
-    <entry file="jar://$USER_HOME$/AppData/Local/Android/Sdk/platforms/android-26/android.jar!/java/lang/Object.class">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="493">
-          <caret line="42" column="29" selection-start-line="42" selection-start-column="29" selection-end-line="42" selection-end-column="29" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="jar://$USER_HOME$/AppData/Local/Android/Sdk/platforms/android-26/android.jar!/java/lang/Thread.class">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="833">
-          <caret line="66" column="16" selection-start-line="66" selection-start-column="16" selection-end-line="66" selection-end-column="16" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="jar://$USER_HOME$/AppData/Local/Android/Sdk/platforms/android-26/android.jar!/java/lang/reflect/Method.class">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="663">
-          <caret line="72" column="25" selection-start-line="72" selection-start-column="25" selection-end-line="72" selection-end-column="25" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="jar://$USER_HOME$/AppData/Local/Android/Sdk/platforms/android-26/android.jar!/android/os/MessageQueue.class">
-      <provider selected="true" editor-type-id="text-editor" />
-    </entry>
-    <entry file="file://$PROJECT_DIR$/app/src/main/res/drawable-mdpi/ic_launcher.png">
-      <provider selected="true" editor-type-id="images" />
-    </entry>
-    <entry file="file://$PROJECT_DIR$/app/src/main/res/drawable-xhdpi/ic_launcher.png">
-      <provider selected="true" editor-type-id="images" />
-    </entry>
-    <entry file="file://$PROJECT_DIR$/app/src/main/res/drawable-hdpi/ic_launcher.png">
-      <provider selected="true" editor-type-id="images" />
-    </entry>
-    <entry file="file://$PROJECT_DIR$/app/src/main/res/drawable-xxhdpi/ic_launcher.png">
-      <provider selected="true" editor-type-id="images" />
-    </entry>
-    <entry file="file://$PROJECT_DIR$/../MaterialSystem/Renderers/GL/ShaderAPIGL.cpp">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="35156">
-          <caret line="2088" selection-start-line="2088" selection-end-line="2088" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/app/src/main/java/org/libsdl/app/SDLControllerManager.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="918">
-          <caret line="62" column="7" selection-start-line="62" selection-start-column="7" selection-end-line="62" selection-end-column="7" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/settings.gradle">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="17">
-          <caret line="1" selection-start-line="1" selection-end-line="1" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/local.properties">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="119">
-          <caret line="7" column="45" selection-start-line="7" selection-start-column="45" selection-end-line="7" selection-end-column="45" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/../DriversGame/session_base.cpp">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="17">
-          <caret line="65" column="13" selection-start-line="65" selection-start-column="13" selection-end-line="65" selection-end-column="13" />
-          <folding>
-            <element signature="e#1357#1366#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/../public/core/DPKFileWriter.cpp">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="758">
-          <caret line="344" selection-start-line="344" selection-end-line="344" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/../DriversGame/state_mainmenu.cpp">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="214">
-          <caret line="393" column="17" selection-start-line="393" selection-start-column="17" selection-end-line="393" selection-end-column="17" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/app/src/main/java/org/libsdl/app/SDLActivity.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="29750">
-          <caret line="1806" column="59" selection-start-line="1806" selection-start-column="55" selection-end-line="1806" selection-end-column="59" />
-          <folding>
-            <element signature="e#4701#4702#0" expanded="true" />
-            <element signature="e#4734#4735#0" expanded="true" />
-            <element signature="e#5982#5983#0" expanded="true" />
-            <element signature="e#6018#6019#0" expanded="true" />
-            <element signature="e#14639#14640#0" expanded="true" />
-            <element signature="e#14683#14684#0" expanded="true" />
-            <element signature="e#15042#15043#0" expanded="true" />
-            <element signature="e#15079#15080#0" expanded="true" />
-            <element signature="e#18343#18344#0" expanded="true" />
-            <element signature="e#18371#18372#0" expanded="true" />
-            <element signature="e#34260#34261#0" expanded="true" />
-            <element signature="e#34299#34300#0" expanded="true" />
-            <element signature="e#37717#37718#0" expanded="true" />
-            <element signature="e#37758#37759#0" expanded="true" />
-            <element signature="e#52337#52338#0" expanded="true" />
-            <element signature="e#52396#52397#0" expanded="true" />
-            <element signature="e#52506#52507#0" expanded="true" />
-            <element signature="e#52565#52566#0" expanded="true" />
-            <element signature="e#58132#58133#0" expanded="true" />
-            <element signature="e#58194#58195#0" expanded="true" />
-            <element signature="e#58487#58488#0" expanded="true" />
-            <element signature="e#58534#58535#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/app/src/main/AndroidManifest.xml">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="170">
-          <caret line="10" column="53" selection-start-line="10" selection-start-column="53" selection-end-line="10" selection-end-column="53" />
-        </state>
-      </provider>
-      <provider editor-type-id="android-manifest" />
-    </entry>
-    <entry file="file://$PROJECT_DIR$/app/src/main/java/com/insbyte/driversyndicate/EqEngineActivity.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="221">
-          <caret line="14" column="28" selection-start-line="14" selection-start-column="28" selection-end-line="14" selection-end-column="28" />
-          <folding>
-            <element signature="imports" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/../shared_engine/sys_main.cpp">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="3587">
-          <caret line="211" selection-start-line="211" selection-end-line="211" />
-          <folding>
-            <element signature="e#6123#6263#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/app/src/main/assets/EQ.CONFIG">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="112">
-          <caret line="41" column="18" selection-start-line="41" selection-start-column="18" selection-end-line="41" selection-end-column="18" />
-        </state>
-      </provider>
-    </entry>
+  <component name="WindowStateProjectService">
+    <state x="477" y="251" key="#PSD" timestamp="1594665488259">
+      <screen x="0" y="0" width="1920" height="1040" />
+    </state>
+    <state x="477" y="251" key="#PSD/0.0.1920.1040@0.0.1920.1040" timestamp="1594665488259" />
   </component>
 </project>
