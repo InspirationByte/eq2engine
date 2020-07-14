@@ -792,9 +792,6 @@ bool CLevelModel::CreateFrom(dsmmodel_t* pModel)
 
 		m_batches[i].pMaterial = materials->GetMaterial(materialName.c_str());
 		m_batches[i].pMaterial->Ref_Grab();
-
-		if(m_batches[i].pMaterial->GetFlags() & MATERIAL_FLAG_TRANSPARENT)
-			m_hasTransparentSubsets = true;
 	}
 
 	m_numVerts = vertexdata.numElem();

@@ -1982,7 +1982,6 @@ void CEditorLevel::Ed_SwapRegions(CEditorLevelRegion& sourceRegion, CEditorLevel
 	const Vector3D targetRegPos3D = Vector3D(targetRegionPos.x*nStepSize, 0, targetRegionPos.y*nStepSize) - center;
 
 	//QuickSwap(targetRegion.m_bbox, sourceRegion.m_bbox);
-	QuickSwap(targetRegion.m_hasTransparentSubsets, sourceRegion.m_hasTransparentSubsets);
 
 	for (int i = 0; i < ENGINE_REGION_MAX_HFIELDS; i++)
 	{

@@ -137,8 +137,8 @@ void CDrvSynHUDManager::Init()
 	// init hud layout
 	m_hudLayout = equi::Manager->CreateElement("HudElement");
 
-	int hudModelCacheId = PrecacheStudioModel("/models/misc/hud_models.egf");
-	m_hudObjectDummy.SetModel("/models/misc/hud_models.egf");
+	int hudModelCacheId = PrecacheStudioModel("models/misc/hud_models.egf");
+	m_hudObjectDummy.SetModel("models/misc/hud_models.egf");
 }
 
 void CDrvSynHUDManager::RenderBlur(const IVector2D& screenSize)

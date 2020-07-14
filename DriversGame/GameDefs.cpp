@@ -47,16 +47,22 @@ const slipAngleCurveParams_t& GetAISlipCurveParams()
 	static slipAngleCurveParams_t difficultySlip;
 	difficultySlip = s_AISlipAngleParams;
 
+#ifndef EDITOR
 	// FIXME: should be different than using g_difficulty
 	difficultySlip.fInitialGradient += 1.0f * g_pAIManager->GetCopHandlingDifficulty();
 	difficultySlip.fSegmentEndB += g_pAIManager->GetCopHandlingDifficulty() * 0.1f;
+#endif
 
 	return s_AISlipAngleParams;
 }
 
 float GetAICenterOfMassCorrection()
 {
+#ifndef EDITOR
 	return -0.15f * g_pAIManager->GetCopHandlingDifficulty();
+#else
+	return -0.15f;
+#endif
 }
 
 //-------------------------------------------------------------------------------------------

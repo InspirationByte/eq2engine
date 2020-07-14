@@ -2092,6 +2092,8 @@ void CGameWorld::DrawReflections()
 
 		materials->SetMaterialRenderParamCallback(this);
 
+		materials->SetCullMode(CULL_BACK);
+
 		m_level.Render(newViewPos, m_occludingFrustum, 0);
 
 		// restore

@@ -31,6 +31,7 @@ CObject_Sheets::CObject_Sheets( kvkeybase_t* kvdata )
 	m_keyValues = kvdata;
 	m_hfObject = nullptr;
 	m_initDelay = 2.0f;
+	m_active = false;
 }
 
 CObject_Sheets::~CObject_Sheets()

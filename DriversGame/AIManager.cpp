@@ -32,7 +32,7 @@ const int	PEDESTRIAN_SPAWN_INTERVAL = 0;
 
 const int	AI_COP_SPEECH_QUEUE = 6;
 
-const float AI_COP_SPEECH_DELAY = 4.0f;		// delay before next speech
+const float AI_COP_SPEECH_DELAY = 6.0f;		// delay before next speech
 const float AI_COP_TAUNT_DELAY = 5.0f;		// delay before next taunt
 
 const float AI_COP_DEFAULT_DAMAGE = 4.0f;
