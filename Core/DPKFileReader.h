@@ -8,46 +8,29 @@
 #ifndef DPKFILEREADER_H
 #define DPKFILEREADER_H
 
+#include "BasePackageFileReader.h"
+
 #include <stdio.h>
 
 #ifdef _WIN32
 #include <direct.h>
 #endif
 
-#include "utils/eqstring.h"
 #include "utils/DkList.h"
-#include "utils/eqthread.h"
 #include "utils/IceKey.h"
 
 #include "dpk_defs.h"
-
-#include "IVirtualStream.h"
 
 typedef int dpkhandle_t;
 
 #define DPKX_MAX_HANDLES		32
 #define DPK_HANDLE_INVALID		(-1)
 
-struct DPKFILE
-{
-	FILE*			file;
-	dpkfileinfo_t*	info;
-	dpkhandle_t		handle;
-
-	int				packageId;
-};
-
-enum PACKAGE_DUMP_MODE
-{
-	PACKAGE_INFO = 0,
-	PACKAGE_FILES,
-};
-
 //------------------------------------------------------------------------------------------
 
 class CDPKFileReader;
 
-class CDPKFileStream : public IVirtualStream
+class CDPKFileStream : public CBasePackageFileStream
 {
 	friend class CDPKFileReader;
 	friend class CFileSystem;
@@ -82,6 +65,8 @@ public:
 	// returns CRC32 checksum of stream
 	uint32 GetCRC32();
 
+	CBasePackageFileReader* GetHostPackage() const;
+
 protected:
 	void				DecodeBlock(int block);
 
@@ -101,42 +86,25 @@ protected:
 
 //------------------------------------------------------------------------------------------
 
-class CDPKFileReader
+class CDPKFileReader : public CBasePackageFileReader
 {
 public:
-							CDPKFileReader(Threading::CEqMutex& fsMutex);
-							~CDPKFileReader();
+	CDPKFileReader(Threading::CEqMutex& fsMutex);
+	~CDPKFileReader();
 
 	bool					SetPackageFilename( const char* filename );
-	const char*				GetPackageFilename() const;
-
-	int						GetSearchPath() const;
-	void					SetSearchPath(int search);
-
-	void					SetKey( const char* key );
-
-	void					DumpPackage(PACKAGE_DUMP_MODE mode);
-
-	int						FindFileIndex( const char* filename ) const;
-
-	// file data api
-	CDPKFileStream*			Open( const char* filename, const char* mode );
-	void					Close(CDPKFileStream* fp );
+	IVirtualStream*			Open( const char* filename, const char* mode );
+	void					Close(IVirtualStream* fp );
+	bool					FileExists(const char* filename) const;
 
 protected:
+
+	int						FindFileIndex(const char* filename) const;
+
 	dpkheader_t				m_header;
 	dpkfileinfo_t*			m_dpkFiles;
 
 	DkList<CDPKFileStream*>	m_openFiles;
-
-	EqString				m_packagePath;
-	EqString				m_packageName;
-	EqString				m_mountPath;
-	EqString				m_key;
-
-	int						m_searchPath;
-
-	Threading::CEqMutex&	m_FSMutex;
 };
 
 #endif //DPK_FILE_READER_H

@@ -13,6 +13,9 @@
 #include "IDkCore.h"
 #include "ILocalize.h"
 
+#include "DPKFileReader.h"
+#include "ZipFileReader.h"
+
 #ifdef _WIN32 // Not in linux
 
 #include <direct.h>	// mkdir()
@@ -23,6 +26,7 @@
 #include <unistd.h> // rmdir(), access()
 #include <stdarg.h> // va_*
 #include <dlfcn.h>
+#include <glob.h>     // glob(), globfree()
 #endif
 
 #include "DebugInterface.h"
@@ -125,7 +129,9 @@ struct DKFINDDATA
 	WIN32_FIND_DATAA	wfd;
 	HANDLE				fileHandle;
 #else
-
+	glob_t				gl;
+	int					index;
+	int					pathlen;
 #endif // _WIN32
 };
 
@@ -140,6 +146,16 @@ CFileSystem::CFileSystem() : m_isInit(false), m_editorMode(false)
 CFileSystem::~CFileSystem()
 {
 
+}
+
+SearchPath_e GetSearchPathByName(const char* str)
+{
+	if (!stricmp(str, "SP_MOD"))
+		return SP_MOD;
+	else if (!stricmp(str, "SP_DATA"))
+		return SP_DATA;
+
+	return SP_ROOT;
 }
 
 bool CFileSystem::Init(bool bEditorMode)
@@ -176,11 +192,13 @@ bool CFileSystem::Init(bool bEditorMode)
 		 MsgInfo("* Game Data directory: %s\n", GetCurrentGameDirectory());
 	}
 
-	for(int i = 0;i < pFilesystem->keys.numElem();i++)
+	for(int i = 0;i < pFilesystem->keys.numElem(); i++)
 	{
 		if(!stricmp(pFilesystem->keys[i]->name, "AddPackage" ))
 		{
-			if(!AddPackage( KV_GetValueString(pFilesystem->keys[i]), SP_MOD ))
+			SearchPath_e packageSearchPathFlag = GetSearchPathByName(KV_GetValueString(pFilesystem->keys[i], 1, "SP_MOD"));
+
+			if(!AddPackage( KV_GetValueString(pFilesystem->keys[i]), packageSearchPathFlag))
 				return false;
 		}
 	}
@@ -242,10 +260,10 @@ void CFileSystem::Close( IFile* fp )
 		fclose(pFile->m_pFilePtr);
 		delete fp;
 	}
-	else if(vsType == VS_TYPE_FILE_PACKAGE)
+	else if(vsType == VS_TYPE_FILE_PACKAGE) // DPK or ZIP
 	{
-		CDPKFileStream* pFile = (CDPKFileStream*)fp;
-		pFile->m_host->Close(pFile);
+		CBasePackageFileStream* pFile = (CBasePackageFileStream*)fp;
+		pFile->GetHostPackage()->Close(pFile);
 	}
 
 	m_FSMutex.Lock();
@@ -416,6 +434,18 @@ bool CFileSystem::FileExist(const char* filename, int searchFlags) const
 			sprintf(tmp_path, "%s%s/%s", basePath.c_str(), m_directories[i].path.c_str(), pFilePath);
 			if (access(tmp_path, F_OK ) != -1)
 				return true;
+
+			// base path is not used when dealing with package files
+			sprintf(tmp_path, "%s/%s", m_directories[i].path.c_str(), pFilePath);
+
+			// If failed to load directly, load it from package, in backward order
+			for (int j = m_packages.numElem() - 1; j >= 0; j--)
+			{
+				CBasePackageFileReader* pPackageReader = m_packages[j];
+
+				if ((flags & pPackageReader->GetSearchPath()) && pPackageReader->FileExists(tmp_path))
+					return true;
+			}
 		}
     }
 
@@ -425,6 +455,18 @@ bool CFileSystem::FileExist(const char* filename, int searchFlags) const
 		sprintf(tmp_path, "%s%s/%s", basePath.c_str(), m_dataDir.c_str(), pFilePath);
 		if (access(tmp_path, F_OK ) != -1)
 			return true;
+
+		// base path is not used when dealing with package files
+		sprintf(tmp_path, "%s/%s", m_dataDir.c_str(), pFilePath);
+
+		// If failed to load directly, load it from package, in backward order
+		for (int j = m_packages.numElem() - 1; j >= 0; j--)
+		{
+			CBasePackageFileReader* pPackageReader = m_packages[j];
+
+			if ((flags & pPackageReader->GetSearchPath()) && pPackageReader->FileExists(tmp_path))
+				return true;
+		}
     }
 
     // And checking root.
@@ -434,33 +476,18 @@ bool CFileSystem::FileExist(const char* filename, int searchFlags) const
 		sprintf(tmp_path, "%s%s", basePath.c_str(), pFilePath);
 		if (access(tmp_path, F_OK ) != -1)
 			return true;
-    }
 
-	// check packages
-    for (int i = m_packages.numElem()-1; i >= 0;i--)
-    {
-        CDPKFileReader* pPackageReader = m_packages[i];
+		// base path is not used when dealing with package files
+		sprintf(tmp_path, "%s", pFilePath);
 
-        if (flags & SP_MOD)
-        {
-			for(int j = 0; j < m_directories.numElem(); j++)
-			{
-				sprintf(tmp_path, "%s/%s", m_directories[j].path.c_str(),pFilePath);
-				if (pPackageReader->FindFileIndex( tmp_path ) != -1)
-					return true;
-			}
-        }
-        if (flags & SP_DATA)
-        {
-			sprintf(tmp_path, "%s/%s",m_dataDir.GetData(),pFilePath);
-			if (pPackageReader->FindFileIndex( tmp_path ) != -1)
+		// If failed to load directly, load it from package, in backward order
+		for (int j = m_packages.numElem() - 1; j >= 0; j--)
+		{
+			CBasePackageFileReader* pPackageReader = m_packages[j];
+
+			if ((flags & pPackageReader->GetSearchPath()) && pPackageReader->FileExists(tmp_path))
 				return true;
-        }
-        if (flags & SP_ROOT)
-        {
-			if (pPackageReader->FindFileIndex( pFilePath ) != -1)
-				return true;
-        }
+		}
     }
 
 	return false;
@@ -642,8 +669,12 @@ IFile* CFileSystem::GetFileHandle(const char* filename,const char* options, int 
 				// If failed to load directly, load it from package, in backward order
 				for (int j = m_packages.numElem() - 1; j >= 0; j--)
 				{
-					CDPKFileReader* pPackageReader = m_packages[j];
-					CDPKFileStream* pPackedFile = pPackageReader->Open(tmp_path, options);
+					CBasePackageFileReader* pPackageReader = m_packages[j];
+
+					if (!(flags & pPackageReader->GetSearchPath()))
+						continue;
+
+					IFile* pPackedFile = pPackageReader->Open(tmp_path, options);
 
 					if (pPackedFile)
 					{
@@ -682,8 +713,12 @@ IFile* CFileSystem::GetFileHandle(const char* filename,const char* options, int 
 			// If failed to load directly, load it from package, in backward order
 			for (int j = m_packages.numElem() - 1; j >= 0; j--)
 			{
-				CDPKFileReader* pPackageReader = m_packages[j];
-				CDPKFileStream* pPackedFile = pPackageReader->Open(tmp_path, options);
+				CBasePackageFileReader* pPackageReader = m_packages[j];
+
+				if (!(flags & pPackageReader->GetSearchPath()))
+					continue;
+
+				IFile* pPackedFile = pPackageReader->Open(tmp_path, options);
 
 				if (pPackedFile)
 				{
@@ -720,8 +755,12 @@ IFile* CFileSystem::GetFileHandle(const char* filename,const char* options, int 
 			// If failed to load directly, load it from package, in backward order
 			for (int j = m_packages.numElem() - 1; j >= 0; j--)
 			{
-				CDPKFileReader* pPackageReader = m_packages[j];
-				CDPKFileStream* pPackedFile = pPackageReader->Open(tmp_path, options);
+				CBasePackageFileReader* pPackageReader = m_packages[j];
+
+				if (!(flags & pPackageReader->GetSearchPath()))
+					continue;
+
+				IFile* pPackedFile = pPackageReader->Open(tmp_path, options);
 
 				if (pPackedFile)
 				{
@@ -739,7 +778,7 @@ IFile* CFileSystem::GetFileHandle(const char* filename,const char* options, int 
     return NULL;
 }
 
-bool CFileSystem::AddPackage(const char* packageName,SearchPath_e type)
+bool CFileSystem::AddPackage(const char* packageName, SearchPath_e type)
 {
 	for(int i = 0; i < m_packages.numElem();i++)
 	{
@@ -747,7 +786,15 @@ bool CFileSystem::AddPackage(const char* packageName,SearchPath_e type)
 			return false;
 	}
 
-    CDPKFileReader* pPackageReader = new CDPKFileReader(m_FSMutex);
+	EqString fileExt(_Es(packageName).Path_Extract_Ext());
+
+	CBasePackageFileReader* pPackageReader = nullptr;
+
+	// allow zip files to be loaded
+	if (!fileExt.CompareCaseIns("zip") || !fileExt.CompareCaseIns("obb"))
+		pPackageReader = new CZipFileReader(m_FSMutex);
+	else
+		pPackageReader = new CDPKFileReader(m_FSMutex);
 
     if (pPackageReader->SetPackageFilename( packageName ))
     {
@@ -773,12 +820,12 @@ void CFileSystem::RemovePackage(const char* packageName)
 {
 	for (int i = 0; i < m_packages.numElem(); i++)
 	{
-		CDPKFileReader* pkg = m_packages[i];
+		CBasePackageFileReader* pPackageReader = m_packages[i];
 
-		if (!stricmp(pkg->GetPackageFilename(), packageName))
+		if (!stricmp(pPackageReader->GetPackageFilename(), packageName))
 		{
 			m_packages.fastRemoveIndex(i);
-			delete pkg;
+			delete pPackageReader;
 			i--;
 		}
 	}
@@ -859,18 +906,22 @@ const char* CFileSystem::FindFirst(const char* wildcard, DKFINDDATA** findData, 
 	newFind->wildcard = wildcard;
 	newFind->wildcard.Path_FixSlashes();
 
+#ifndef _WIN32
+	newFind->wildcard.ReplaceSubstr("*.*", "*");
+#endif
+
 	m_findDatas.append(newFind);
 
-	EqString fsBaseDir;
+	EqString fsBaseDir = m_basePath.c_str();
 
 	if(searchPath == SP_DATA)
 	{
-		fsBaseDir = m_dataDir;
+		fsBaseDir = CombinePath(2, m_basePath.c_str(), m_dataDir.c_str());
 	}
 	else if(searchPath == SP_MOD)
 	{
 		newFind->searchPathId = 0;
-		fsBaseDir = m_directories[0].path;
+		fsBaseDir = CombinePath(2, m_basePath.c_str(), m_directories[0].path.c_str());
 	}
 
 	EqString searchWildcard( CombinePath(2, fsBaseDir.c_str(), newFind->wildcard.c_str()) );
@@ -880,8 +931,16 @@ const char* CFileSystem::FindFirst(const char* wildcard, DKFINDDATA** findData, 
 
 	if(newFind->fileHandle != INVALID_HANDLE_VALUE)
 		return newFind->wfd.cFileName;
-#else
 
+#else // POSIX
+	newFind->index = -1;
+
+	if (glob(searchWildcard.c_str(), 0, NULL, &newFind->gl) == 0)
+	{
+		newFind->pathlen = searchWildcard.Path_Extract_Path().Length();
+		newFind->index = 0;
+		return newFind->gl.gl_pathv[newFind->index] + newFind->pathlen;
+	}
 #endif // _WIN32
 
 	if(newFind->searchPathId != -1)
@@ -891,7 +950,7 @@ const char* CFileSystem::FindFirst(const char* wildcard, DKFINDDATA** findData, 
 		// try reinitialize
 		while(newFind->searchPathId < m_directories.numElem())
 		{
-			fsBaseDir = m_directories[newFind->searchPathId].path;
+			fsBaseDir = CombinePath(2, m_basePath.c_str(), m_directories[newFind->searchPathId].path.c_str());
 
 			searchWildcard = CombinePath(2, fsBaseDir.c_str(), newFind->wildcard.c_str());
 
@@ -900,8 +959,13 @@ const char* CFileSystem::FindFirst(const char* wildcard, DKFINDDATA** findData, 
 
 			if(newFind->fileHandle != INVALID_HANDLE_VALUE)
 				return newFind->wfd.cFileName;
-#else
-
+#else // POSIX
+			if (glob(searchWildcard.c_str(), 0, NULL, &newFind->gl) == 0)
+			{
+				newFind->pathlen = searchWildcard.Path_Extract_Path().Length();
+				newFind->index = 0;
+				return newFind->gl.gl_pathv[newFind->index] + newFind->pathlen;
+			}
 #endif // _WIN32
 
 			newFind->searchPathId++;
@@ -923,8 +987,10 @@ const char* CFileSystem::FindNext(DKFINDDATA* findData) const
 #ifdef _WIN32
 	if(!::FindNextFileA(findData->fileHandle, &findData->wfd))
 #else
-//#error "POSIX FindNextFile"
-    return nullptr;
+	if (findData->index < 0)
+		return nullptr;
+
+	if (findData->index >= findData->gl.gl_pathc)
 #endif // _WIN32
 	{
 		if(findData->searchPathId == -1)
@@ -935,7 +1001,7 @@ const char* CFileSystem::FindNext(DKFINDDATA* findData) const
 		// try reinitialize
 		while(findData->searchPathId < m_directories.numElem())
 		{
-			EqString fsBaseDir(m_directories[findData->searchPathId].path);
+			EqString fsBaseDir = CombinePath(2, m_basePath.c_str(), m_directories[findData->searchPathId].path.c_str());
 
 			EqString searchWildcard( CombinePath(2, fsBaseDir.c_str(), findData->wildcard.c_str()) );
 
@@ -948,8 +1014,16 @@ const char* CFileSystem::FindNext(DKFINDDATA* findData) const
 
 			if(findData->fileHandle != INVALID_HANDLE_VALUE)
 				return findData->wfd.cFileName;
-#else
+#else // POSIX
+			globfree(&findData->gl);
+			findData->index = -1;
 
+			if (glob(searchWildcard.c_str(), 0, NULL, &findData->gl) == 0)
+			{
+				findData->pathlen = searchWildcard.Path_Extract_Path().Length();
+				findData->index = 0;
+				return findData->gl.gl_pathv[findData->index] + findData->pathlen;
+			}
 #endif // _WIN32
 
 			findData->searchPathId++;
@@ -961,7 +1035,8 @@ const char* CFileSystem::FindNext(DKFINDDATA* findData) const
 #ifdef _WIN32
 	return findData->wfd.cFileName;
 #else
-
+	findData->index++;
+	return findData->gl.gl_pathv[findData->index] + findData->pathlen;
 #endif // _WIN32
 }
 
@@ -975,7 +1050,8 @@ void CFileSystem::FindClose(DKFINDDATA* findData)
 #ifdef _WIN32
 		::FindClose(findData->fileHandle);
 #else
-
+		if(findData->index >= 0)
+			globfree(&findData->gl);
 #endif // _WIN32
 		delete findData;
 	}
@@ -989,6 +1065,13 @@ bool CFileSystem::FindIsDirectory(DKFINDDATA* findData) const
 #ifdef _WIN32
 	return (findData->wfd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY);
 #else
+	struct stat st;
+
+	if (stat(findData->gl.gl_pathv[findData->index], &st) == 0)
+	{
+		return (st.st_mode & S_IFDIR) > 0;
+	}
+
 	return false;
 #endif // _WIN32
 }

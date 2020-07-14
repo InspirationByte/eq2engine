@@ -14,10 +14,6 @@
 
 #include <malloc.h>
 
-#ifdef _WIN32
-#define ZLIB_WINAPI
-#endif // _WIN32
-
 #include <zlib.h>
 
 #include "utils/strtools.h"
@@ -61,6 +57,11 @@ CDPKFileStream::CDPKFileStream(const dpkfileinfo_t& info, FILE* fp)
 
 CDPKFileStream::~CDPKFileStream()
 {
+}
+
+CBasePackageFileReader* CDPKFileStream::GetHostPackage() const
+{ 
+	return (CBasePackageFileReader*)m_host;
 }
 
 void CDPKFileStream::DecodeBlock(int blockIdx)
@@ -313,10 +314,10 @@ uint32 CDPKFileStream::GetCRC32()
 }
 
 //-----------------------------------------------------------------------------------------------------------------------
-// DPK file reader code
+// DPK host
 //-----------------------------------------------------------------------------------------------------------------------
 
-CDPKFileReader::CDPKFileReader(Threading::CEqMutex& mutex) : m_FSMutex(mutex)
+CDPKFileReader::CDPKFileReader(Threading::CEqMutex& mutex) : CBasePackageFileReader(mutex)
 {
     m_searchPath = 0;
 	m_dpkFiles = nullptr;
@@ -334,9 +335,9 @@ CDPKFileReader::~CDPKFileReader()
 	delete [] m_dpkFiles;
 }
 
-void CDPKFileReader::SetKey(const char* key)
+bool CDPKFileReader::FileExists(const char* filename) const
 {
-	m_key = key;
+	return FindFileIndex(filename) != -1;
 }
 
 int	CDPKFileReader::FindFileIndex(const char* filename) const
@@ -369,19 +370,10 @@ int	CDPKFileReader::FindFileIndex(const char* filename) const
     return -1;
 }
 
-int CDPKFileReader::GetSearchPath() const
-{
-    return m_searchPath;
-}
-
-void CDPKFileReader::SetSearchPath(int search)
-{
-    m_searchPath = search;
-}
-
 bool CDPKFileReader::SetPackageFilename(const char *filename)
 {
 	delete [] m_dpkFiles;
+	m_dpkFiles = nullptr;
 
     m_packageName = filename;
 	m_packagePath = CombinePath(2, g_fileSystem->GetBasePath(), filename);
@@ -433,117 +425,7 @@ bool CDPKFileReader::SetPackageFilename(const char *filename)
     return true;
 }
 
-const char* CDPKFileReader::GetPackageFilename() const
-{
-	return m_packageName.c_str();
-}
-
-void CDPKFileReader::DumpPackage(PACKAGE_DUMP_MODE mode)
-{
-    if (m_header.numFiles == 0)
-        return;
-
-#if 0
-
-	 PACKAGE DUMP DISABLED
-    if (mode == PACKAGE_INFO)
-    {
-        for (int i = 0; i < m_hDPKFileInfos.numElem();i++)
-        {
-            Msg("File: %s\n",m_hDPKFileInfos[i]->m_pszFileName);
-            Msg("  Compressed size: %d\n",m_hDPKFileInfos[i]->m_iFileCompressedSize);
-            Msg("  Data start: %d\n",m_hDPKFileInfos[i]->m_iFileStart);
-            Msg("  Size: %d\n",m_hDPKFileInfos[i]->m_iFileSize);
-        }
-
-        Msg("Total files count: %i\n",m_pHdr->m_iFileCount);
-    }
-
-
-
-    else if (mode == PACKAGE_FILES)
-    {
-        Msg("Unpacking '%s'\n", m_szPackageName.GetData());
-
-        for (int i = 0; i < m_hDPKFileInfos.numElem();i++)
-        {
-            FILE *dpkData = fopen(m_szPackageName.GetData(),"rb");
-            fseek(dpkData,m_hDPKFileInfos[i]->m_iFileStart,SEEK_SET);
-
-            int hierarchy_size = UTIL_GetNumSlashes(m_hDPKFileInfos[i]->m_pszFileName);
-            for (int j = 1;j < hierarchy_size;j++)
-            {
-                EqString dirName = UTIL_GetDirectoryNameEx(m_hDPKFileInfos[i]->m_pszFileName,j);
-#ifdef _WIN32
-                mkdir(dirName.GetData());
-#else
-                mkdir(dirName.GetData(),S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
-#endif
-            }
-
-            if (!(m_hDPKFileInfos[i]->m_nFlags & DPK_FLAG_COMPRESSED))
-            {
-                // Simply write and continue
-                unsigned long size = m_hDPKFileInfos[i]->m_iFileCompressedSize;
-                unsigned char* _data = (unsigned char* )PPAlloc(size);
-
-                // Read compressed data from package
-                fread(_data,size,1,dpkData);
-
-                fclose(dpkData);
-
-                FILE *writefile = fopen(m_hDPKFileInfos[i]->m_pszFileName,"wb");
-                if (writefile)
-                {
-                    Msg("Writing file '%s'\n",m_hDPKFileInfos[i]->m_pszFileName);
-                    fwrite(_data,size,1,dpkData);
-                    fclose(writefile);
-                }
-
-                PPFree(_data);
-
-                continue;
-            }
-
-            unsigned long compressed_size = m_hDPKFileInfos[i]->m_iFileCompressedSize;
-            unsigned char* _compressedData = (unsigned char*)PPAlloc(compressed_size);
-
-            // Read compressed data from package
-            fread(_compressedData,compressed_size,1,dpkData);
-
-            fclose(dpkData);
-
-            unsigned long realSize = m_hDPKFileInfos[i]->m_iFileSize + 250;
-            unsigned char* _UncompressedData = (unsigned char*)PPAlloc(realSize);
-
-            int status = uncompress(_UncompressedData,&realSize,_compressedData,compressed_size);
-
-			PPFree(_compressedData);
-
-            if (status == Z_OK)
-            {
-                FILE *writefile = fopen(m_hDPKFileInfos[i]->m_pszFileName,"wb");
-                if (writefile)
-                {
-                    Msg("Writing file '%s'\n",m_hDPKFileInfos[i]->m_pszFileName);
-
-                    fwrite(_UncompressedData,realSize,1,dpkData);
-                    fclose(writefile);
-                }
-            }
-            else
-            {
-                Msg("Cannot decompress file (%d)!\n",status);
-            }
-
-            PPFree(_UncompressedData);
-        }
-
-    }
-#endif // 0
-}
-
-CDPKFileStream* CDPKFileReader::Open(const char* filename, const char* mode)
+IVirtualStream* CDPKFileReader::Open(const char* filename, const char* mode)
 {
 	//Msg("io::dpktryopen(%s)\n", filename);
 
@@ -588,16 +470,18 @@ CDPKFileStream* CDPKFileReader::Open(const char* filename, const char* mode)
 	return newStream;
 }
 
-void CDPKFileReader::Close(CDPKFileStream* fp)
+void CDPKFileReader::Close(IVirtualStream* fp)
 {
     if (!fp)
         return;
 
+	CDPKFileStream* fsp = (CDPKFileStream*)fp;
+
 	Threading::CScopedMutex m(m_FSMutex);
 
-    if(m_openFiles.fastRemove( fp ))
+    if(m_openFiles.fastRemove(fsp))
 	{
-		fclose(fp->m_handle);
-		delete fp;
+		fclose(fsp->m_handle);
+		delete fsp;
 	}
 }

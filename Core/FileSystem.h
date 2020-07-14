@@ -9,8 +9,8 @@
 #define CFILESYSTEM_H
 
 #include "IFileSystem.h"
-#include "DPKFileReader.h"
 #include "utils/eqthread.h"
+#include "utils/DkList.h"
 
 using namespace Threading;
 
@@ -49,6 +49,8 @@ protected:
 //------------------------------------------------------------------------------
 // Filesystem base
 //------------------------------------------------------------------------------
+
+class CBasePackageFileReader;
 
 class CFileSystem : public IFileSystem
 {
@@ -151,18 +153,18 @@ private:
 		bool mainWritePath;
 	};
 
-	DkList<SearchPath_t>		m_directories;		// mod data, for fall back
+	DkList<SearchPath_t>				m_directories;		// mod data, for fall back
 
     // Packages currently loaded
-    DkList<CDPKFileReader*>		m_packages;
-    DkList<IFile*>				m_openFiles;
-	DkList<DKFINDDATA*>			m_findDatas;
-	DkList<DKMODULE*>			m_modules;
+    DkList<CBasePackageFileReader*>		m_packages;
+    DkList<IFile*>						m_openFiles;
+	DkList<DKFINDDATA*>					m_findDatas;
+	DkList<DKMODULE*>					m_modules;
 
-    bool						m_editorMode;
-	bool						m_isInit;
+    bool								m_editorMode;
+	bool								m_isInit;
 
-	CEqMutex					m_FSMutex;
+	CEqMutex							m_FSMutex;
 };
 
 #endif // CFILESYSTEM_H
