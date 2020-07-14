@@ -37,6 +37,9 @@
     <Filter Include="Source Files\CPU">
       <UniqueIdentifier>{cfdb1d12-3d79-4baa-bae9-efd20d511aa8}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\FileSystem\minizip">
+      <UniqueIdentifier>{25b2afa5-f9bc-4633-8c40-9216c56f3a84}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="CoreVersion.cpp">
@@ -78,14 +81,17 @@
     <ClCompile Include="platform\Platform.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="ZipFileReader.cpp">
+      <Filter>Source Files\FileSystem</Filter>
+    </ClCompile>
+    <ClCompile Include="minizip\ioapi.c">
+      <Filter>Source Files\FileSystem\minizip</Filter>
+    </ClCompile>
+    <ClCompile Include="minizip\unzip.c">
+      <Filter>Source Files\FileSystem\minizip</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\Engine\Imaging\zconf.h">
-      <Filter>Source Files\FileSystem</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Engine\Imaging\zlib.h">
-      <Filter>Source Files\FileSystem</Filter>
-    </ClInclude>
     <ClInclude Include="Localize.h">
       <Filter>Source Files\Localizer</Filter>
     </ClInclude>
@@ -154,6 +160,18 @@
     </ClInclude>
     <ClInclude Include="eqCPUServices.h">
       <Filter>Source Files\CPU</Filter>
+    </ClInclude>
+    <ClInclude Include="minizip\ioapi.h">
+      <Filter>Source Files\FileSystem\minizip</Filter>
+    </ClInclude>
+    <ClInclude Include="minizip\unzip.h">
+      <Filter>Source Files\FileSystem\minizip</Filter>
+    </ClInclude>
+    <ClInclude Include="ZipFileReader.h">
+      <Filter>Source Files\FileSystem</Filter>
+    </ClInclude>
+    <ClInclude Include="BasePackageFileReader.h">
+      <Filter>Source Files\FileSystem</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

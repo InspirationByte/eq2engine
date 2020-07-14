@@ -4,8 +4,8 @@
 -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
       package="com.insbyte.driversyndicate"
-      android:versionCode="1"
-      android:versionName="1.0"
+      android:versionCode="2"
+      android:versionName="alpha-1.0a"
       android:installLocation="preferExternal">
 
     <!-- Create a Java class extending SDLActivity and place it in a

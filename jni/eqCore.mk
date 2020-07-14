@@ -24,6 +24,9 @@ LOCAL_SRC_FILES := \
 	Core/ConCommandFactory.cpp	\
 	Core/CoreVersion.cpp		\
 	Core/DPKFileReader.cpp		\
+	Core/ZipFileReader.cpp		\
+	Core/minizip/unzip.c		\
+	Core/minizip/ioapi.c		\
 	Core/DkCore.cpp				\
 	Core/ExceptionHandler.cpp	\
 	Core/FileSystem.cpp			\

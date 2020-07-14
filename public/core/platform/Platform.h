@@ -117,7 +117,7 @@
 #define DEFINE_STR(x) "#define " #x " " _STR_(x) "\n"
 
 #define elementsOf(x)					(sizeof(x) / sizeof(x[0]))
-#define offsetOf(structure,member)		(size_t)&(((structure *)0)->member)
+#define offsetOf(structure,member)		(uintptr_t)&(((structure *)0)->member)
 #define elementSizeOf(structure,member)	sizeof(((structure *)0)->member)
 
 // Abstract class identifier

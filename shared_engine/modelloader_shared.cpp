@@ -9,9 +9,6 @@
 #include "modelloader_shared.h"
 #include "IFileSystem.h"
 
-#ifdef _WIN32
-#define ZLIB_WINAPI
-#endif // _WIN32
 #include <zlib.h>
 
 bool IsValidModelIdentifier(int id)

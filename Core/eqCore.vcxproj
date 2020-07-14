@@ -143,19 +143,21 @@
     <ClCompile Include="DebugInterface.cpp" />
     <ClCompile Include="FileSystem.cpp" />
     <ClCompile Include="Localize.cpp" />
+    <ClCompile Include="minizip\ioapi.c" />
+    <ClCompile Include="minizip\unzip.c" />
     <ClCompile Include="platform\MessageBox.cpp" />
     <ClCompile Include="platform\Platform.cpp" />
     <ClCompile Include="ppmem.cpp" />
+    <ClCompile Include="ZipFileReader.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\public\core\cpuInstrDefs.h" />
     <ClInclude Include="..\public\core\IEqCPUServices.h" />
     <ClInclude Include="..\public\core_interface_expose.h" />
+    <ClInclude Include="BasePackageFileReader.h" />
     <ClInclude Include="DPKFileReader.h" />
     <ClInclude Include="eqCPUServices.h" />
     <ClInclude Include="FileSystem.h" />
-    <ClInclude Include="..\Engine\Imaging\zconf.h" />
-    <ClInclude Include="..\Engine\Imaging\zlib.h" />
     <ClInclude Include="Localize.h" />
     <ClInclude Include="CmdLineParser.h" />
     <ClInclude Include="ConCommandFactory.h" />
@@ -172,13 +174,13 @@
     <ClInclude Include="..\public\Platform\Platform.h" />
     <ClInclude Include="..\public\Utils\String.h" />
     <ClInclude Include="..\public\Utils\strtools.h" />
+    <ClInclude Include="minizip\ioapi.h" />
+    <ClInclude Include="minizip\unzip.h" />
     <ClInclude Include="resource.h" />
+    <ClInclude Include="ZipFileReader.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Resources.rc" />
-  </ItemGroup>
-  <ItemGroup>
-    <Library Include="..\src_dependency\zlib\contrib\vstudio\vc14\x86\ZlibStatReleaseWithoutAsm\zlibstat.lib" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\coreLib.vcxproj">
@@ -187,6 +189,9 @@
     <ProjectReference Include="..\frameworkLib.vcxproj">
       <Project>{5eddcdb2-e467-4db3-ad7e-4e78f5020028}</Project>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Library Include="..\src_dependency\zlib\contrib\vstudio\vc14\x86\ZlibStatReleaseWithoutAsm\zlibstat.lib" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

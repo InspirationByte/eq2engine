@@ -19,7 +19,7 @@ include $(DEP_LIBS_MK)/ogg.mk
 include $(DEP_LIBS_MK)/vorbis.mk
 include $(DEP_LIBS_MK)/openal-soft.mk
 include $(DEP_LIBS_MK)/Shiny.mk
-include $(DEP_LIBS_MK)/luajit.mk
+include $(DEP_LIBS_MK)/luajit.mk  # no JIT support for arm64-v8a
 include $(DEP_LIBS_MK)/oolua.mk
 include $(DEP_LIBS_MK)/bullet.mk
 

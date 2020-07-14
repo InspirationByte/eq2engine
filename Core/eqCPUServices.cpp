@@ -50,6 +50,10 @@ void cpuidAsm(uint32 op, uint32 reg[4]);
 
 #pragma todo("ARM cpuid, rdtsc")
 
+#elif defined(__aarch64__)
+
+#pragma todo("ARM64 cpuid, rdtsc")
+
 #elif defined(__PIC__) && !defined(__x86_64__)
 
 #define cpuid(in, a, b, c, d)   \
@@ -79,6 +83,10 @@ void cpuidAsm(uint32 op, uint32 reg[4]);
 #endif
 
 #if defined(__arm__)
+
+#define rdtsc(a, d) a=d=0;
+
+#elif defined(__aarch64__)
 
 #define rdtsc(a, d) a=d=0;
 

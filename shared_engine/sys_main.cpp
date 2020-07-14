@@ -140,7 +140,8 @@ bool Android_InitCore(int argc, char** argv)
 	while ((filename = AAssetDir_getNextFileName(assetDir)) != NULL)
 	{
 		//search for desired file
-		if (!stricmp(filename, "EQ.CONFIG"))
+		if (!stricmp(filename, "EQ.CONFIG") ||
+			!stricmp(filename, "eqBase.epk"))
 		{
 			AAsset *asset = AAssetManager_open(g_jni.assetManager, filename, AASSET_MODE_STREAMING);
 

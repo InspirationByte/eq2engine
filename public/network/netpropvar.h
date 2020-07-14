@@ -128,8 +128,6 @@ protected:
 
 //--------------------------------------------------------------------------------------------------------
 
-#define MyOffsetOf( type, var ) ( (int)&((type*)0)->var )
-
 // Internal macros used in definitions of network vars.
 #define NETWORK_VAR_START( type, name ) \
 	class NetworkVar_##name; \
@@ -171,7 +169,7 @@ static inline void DispatchNetworkStateChanged(T* pObj, void *pVar)
 	class NetworkVar_##name; \
 	friend class NetworkVar_##name; \
 	typedef ThisClass ThisClass_##name; \
-	static inline int GetOffset_##name() { return MyOffsetOf(ThisClass,name); } \
+	static inline int GetOffset_##name() { return offsetOf(ThisClass,name); } \
 	class NetworkVar_##name : public type \
 	{ \
 		template< class T > NetworkVar_##name& operator=( const T &val ) { *((type*)this) = val; return *this; } \
