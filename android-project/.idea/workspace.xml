@@ -11,35 +11,9 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="c9096593-b4df-4b83-813a-05c2d4299dea" name="Default" comment="">
-      <change beforePath="$PROJECT_DIR$/../Core/DPKFileReader.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../Core/DPKFileReader.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../Core/DPKFileReader.h" beforeDir="false" afterPath="$PROJECT_DIR$/../Core/DPKFileReader.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../Core/FileSystem.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../Core/FileSystem.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../Core/FileSystem.h" beforeDir="false" afterPath="$PROJECT_DIR$/../Core/FileSystem.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../Core/eqCPUServices.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../Core/eqCPUServices.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../Core/eqCore.vcxproj" beforeDir="false" afterPath="$PROJECT_DIR$/../Core/eqCore.vcxproj" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../Core/eqCore.vcxproj.filters" beforeDir="false" afterPath="$PROJECT_DIR$/../Core/eqCore.vcxproj.filters" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../DriversEditor/EditorLevel.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../DriversEditor/EditorLevel.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../DriversGame/AIManager.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../DriversGame/AIManager.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../DriversGame/AIPursuerCar.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../DriversGame/AIPursuerCar.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../DriversGame/GameDefs.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../DriversGame/GameDefs.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../DriversGame/levelobject.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../DriversGame/levelobject.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../DriversGame/object_sheets.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../DriversGame/object_sheets.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../DriversGame/world.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../DriversGame/world.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../MaterialSystem/Renderers/GL/ShaderAPIGL.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../MaterialSystem/Renderers/GL/ShaderAPIGL.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/gradle.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/gradle.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../Core/ZipFileReader.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../Core/ZipFileReader.cpp" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/build.gradle" beforeDir="false" afterPath="$PROJECT_DIR$/app/build.gradle" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/src/main/AndroidManifest.xml" beforeDir="false" afterPath="$PROJECT_DIR$/app/src/main/AndroidManifest.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../jni/Android.mk" beforeDir="false" afterPath="$PROJECT_DIR$/../jni/Android.mk" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../jni/Application.mk" beforeDir="false" afterPath="$PROJECT_DIR$/../jni/Application.mk" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../jni/eqCore.mk" beforeDir="false" afterPath="$PROJECT_DIR$/../jni/eqCore.mk" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../public/core/DPKFileWriter.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../public/core/DPKFileWriter.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../public/core/platform/Platform.h" beforeDir="false" afterPath="$PROJECT_DIR$/../public/core/platform/Platform.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../public/network/NetInterfaces.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../public/network/NetInterfaces.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../public/network/netpropvar.h" beforeDir="false" afterPath="$PROJECT_DIR$/../public/network/netpropvar.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../shared_engine/modelloader_shared.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../shared_engine/modelloader_shared.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../shared_engine/sys_main.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../shared_engine/sys_main.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../src_dependency/zlib/contrib/vstudio/vc14/zlibstat.vcxproj" beforeDir="false" afterPath="$PROJECT_DIR$/../src_dependency/zlib/contrib/vstudio/vc14/zlibstat.vcxproj" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/app.iml" beforeDir="false" afterPath="$PROJECT_DIR$/app/app.iml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -452,9 +426,9 @@
       <screen x="0" y="0" width="1920" height="1040" />
     </state>
     <state width="1877" height="281" key="GridCell.Tab.0.right/0.0.1920.1040@0.0.1920.1040" timestamp="1594746044289" />
-    <state x="849" y="323" key="com.intellij.ide.util.TipDialog" timestamp="1594707602866">
+    <state x="849" y="323" key="com.intellij.ide.util.TipDialog" timestamp="1594750108053">
       <screen x="0" y="0" width="1920" height="1040" />
     </state>
-    <state x="849" y="323" key="com.intellij.ide.util.TipDialog/0.0.1920.1040@0.0.1920.1040" timestamp="1594707602866" />
+    <state x="849" y="323" key="com.intellij.ide.util.TipDialog/0.0.1920.1040@0.0.1920.1040" timestamp="1594750108053" />
   </component>
 </project>

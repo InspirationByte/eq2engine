@@ -183,7 +183,7 @@ bool CZipFileReader::SetPackageFilename(const char* filename)
 		zf.filename = zf.filename.LowerCase();
 		zf.hash = StringToHash(zf.filename.c_str());
 
-		Msg("Adding file '%s' %d\n", zf.filename.c_str(), zf.hash);
+		//Msg("Adding file '%s' %d\n", zf.filename.c_str(), zf.hash);
 
 		unzGetFilePos(zip, &zf.pos);
 	
@@ -296,7 +296,7 @@ unzFile	CZipFileReader::GetZippedFile(const char* filename) const
 
 	int strHash = StringToHash(pkgFileName.c_str(), true);
 
-	Msg("Request file '%s' %d\n", pkgFileName.c_str(), strHash);
+	//Msg("Request file '%s' %d\n", pkgFileName.c_str(), strHash);
 
 	for (int i = 0; i < m_files.numElem(); i++)
 	{

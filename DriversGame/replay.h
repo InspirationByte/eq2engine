@@ -26,7 +26,7 @@ TODO:
 
 #define VEHICLEREPLAY_IDENT MCHAR4('D','S','R','P')
 
-#define VEHICLEREPLAY_VERSION	5
+#define VEHICLEREPLAY_VERSION	6
 #define CAMERAREPLAY_VERSION	2
 
 #define USERREPLAYS_PATH "UserReplays/"
@@ -173,9 +173,10 @@ ALIGNED_TYPE(replayFileEvent_s,4) replayFileEvent_t;
 
 struct replayHeader_s
 {
-	int		idreplay;		// VEHICLEREPLAY_IDENT
+	int		idreplay;			// VEHICLEREPLAY_IDENT
 
-	int		version;		// VEHICLEREPLAY_VERSION
+	int		version;			// VEHICLEREPLAY_VERSION
+	int		physIterations;		// number of physics iteration
 
 	char	levelname[64];
 	char	envname[64];
@@ -187,7 +188,6 @@ ALIGNED_TYPE(replayHeader_s,4) replayHeader_t;
 struct replayCameraHeader_s
 {
 	int		version;		// CAMERAREPLAY_VERSION
-
 	int		numCameras;
 };
 
@@ -286,8 +286,11 @@ protected:
 	bool					SetupReplayCar( int index );
 	void					ClearEvents();
 
+
 private:
-	
+	int							GetPlaybackTick(int tick) const;
+
+	EqString					m_filename;
 
 	DkList<int>					m_activeVehicles;
 
@@ -295,10 +298,9 @@ private:
 	DkList<replayEvent_t>		m_events;
 	
 	int							m_currentEvent;
-
 	int							m_playbackPhysIterations;
 
-	EqString					m_filename;
+	
 };
 
 extern CReplayTracker* g_replayTracker;

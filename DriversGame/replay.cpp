@@ -186,6 +186,18 @@ void CReplayTracker::Stop()
 	m_state = REPL_NONE;
 }
 
+int CReplayTracker::GetPlaybackTick(int tick) const
+{
+	int tickRate = g_pGameSession->GetPhysicsIterations();
+
+	if (m_playbackPhysIterations > tickRate)
+		return tick * m_playbackPhysIterations;
+	else if (tickRate > m_playbackPhysIterations)
+		return tick / tickRate;
+
+	return tick;
+}
+
 void CReplayTracker::UpdatePlayback( float fDt )
 {
 	if(m_state == REPL_NONE)
@@ -202,7 +214,7 @@ void CReplayTracker::UpdatePlayback( float fDt )
 		{
 			for(int i = m_currentCamera+1; i < m_cameras.numElem(); i++)
 			{
-				if(m_tick >= m_cameras[i].startTick)
+				if(GetPlaybackTick(m_tick) >= m_cameras[i].startTick)
 				{
 					m_currentCamera = i;
 					break;
@@ -348,7 +360,7 @@ bool CReplayTracker::IsCarPlaying( CCar* pCar )
 		replayCarFrame_t& frame = veh.replayArray[lastFrameIdx];
 
 		// wait for our tick
-		return (m_tick <= frame.tick);
+		return (GetPlaybackTick(m_tick) <= frame.tick);
 	}
 
 	return false;
@@ -366,7 +378,7 @@ void CReplayTracker::PlayVehicleFrame(replayCarStream_t* rep)
 	if(rep->curr_frame >= rep->replayArray.numElem())
 		return; // done playing it
 
-	//if (m_tick < rep->first_tick)
+	//if (GetPlaybackTick(m_tick) < rep->first_tick)
 	//	return;
 
 	replayCarFrame_t& frame = rep->replayArray[rep->curr_frame];
@@ -375,7 +387,7 @@ void CReplayTracker::PlayVehicleFrame(replayCarStream_t* rep)
 	CEqRigidBody* body = car->GetPhysicsBody();
 
 	// wait for our tick
-	if (m_tick < frame.tick)
+	if (GetPlaybackTick(m_tick) < frame.tick)
 	{
 		// only interpolate cars that not player/lead/view car
 		if (rep->curr_frame > 0 && 
@@ -389,7 +401,7 @@ void CReplayTracker::PlayVehicleFrame(replayCarStream_t* rep)
 			// interpolate the replay if time difference between frames is huge
 			if ((frame.tick - prevFrame.tick) >= CORRECTION_TICK && car->IsEnabled())
 			{
-				float frameLerpValue = RemapVal((float)m_tick, (float)prevFrame.tick, (float)frame.tick, 0.0f, 1.0f);
+				float frameLerpValue = RemapVal((float)GetPlaybackTick(m_tick), (float)prevFrame.tick, (float)frame.tick, 0.0f, 1.0f);
 
 				auto frameLerpPos = lerp(prevFrame.car_origin, frame.car_origin, frameLerpValue);
 				auto frameLerpOrient = slerp(Quaternion(prevFrame.car_rot), Quaternion(frame.car_rot), frameLerpValue);
@@ -551,7 +563,7 @@ void CReplayTracker::SaveToFile( const char* filename )
 		replayHeader_t hdr;
 		hdr.idreplay = VEHICLEREPLAY_IDENT;
 		hdr.version = VEHICLEREPLAY_VERSION;
-		//hdr.phys_iterations = g_pGameSession->GetPhysicsIterations();
+		hdr.physIterations = g_pGameSession->GetPhysicsIterations();
 
 		strcpy(hdr.levelname, g_pGameWorld->GetLevelName());
 		strcpy(hdr.envname, g_pGameWorld->GetEnvironmentName());
@@ -736,7 +748,23 @@ bool CReplayTracker::SaveVehicleReplay( CCar* target, const char* filename )
 
 	if(pFile)
 	{
+		int numVehicles = 1;
+
+		replayHeader_t hdr;
+		hdr.idreplay = VEHICLEREPLAY_IDENT;
+		hdr.version = VEHICLEREPLAY_VERSION;
+		hdr.physIterations = g_pGameSession->GetPhysicsIterations();
+
+		strcpy(hdr.levelname, g_pGameWorld->GetLevelName());
+		strcpy(hdr.envname, g_pGameWorld->GetEnvironmentName());
+		strcpy(hdr.missionscript, g_State_Game->GetMissionScriptName());
+
+		pFile->Write(&hdr, 1, sizeof(hdr));
+		pFile->Write(&numVehicles, 1, sizeof(numVehicles));
+
 		WriteVehicleAndFrames(rep, pFile);
+		
+		// save spawn events too
 
 		g_fileSystem->Close(pFile);
 
@@ -826,12 +854,21 @@ bool CReplayTracker::LoadVehicleReplay( CCar* target, const char* filename, int&
 		return true;
 	}
 
+	int tickRate = g_pGameSession->GetPhysicsIterations();
+
 	Msg("Loading vehicle frames from '%s'\n", filename);
 
 	IFile* pFile = g_fileSystem->Open((_Es(filename) + ".vr").c_str(), "rb", SP_MOD);
 
 	if(pFile)
 	{
+		int numVehicles = 0;
+
+		replayHeader_t hdr;
+		pFile->Read(&hdr, 1, sizeof(hdr));
+
+		pFile->Read(&numVehicles, 1, sizeof(numVehicles));
+
 		// read replay file header
 		replayFileCarStream_t data;
 		pFile->Read(&data, 1, sizeof(replayFileCarStream_t));
@@ -851,6 +888,9 @@ bool CReplayTracker::LoadVehicleReplay( CCar* target, const char* filename, int&
 
 		replayCarStream_t& veh = m_vehicles[repIdx];
 
+		//hdr.physIterations
+		//g_pGameSession->GetPhysicsIterations()
+
 		if(!wereTracked)
 		{
 			// don't overwrite some data
@@ -867,18 +907,21 @@ bool CReplayTracker::LoadVehicleReplay( CCar* target, const char* filename, int&
 		else
 			veh.curr_frame = veh.replayArray.numElem();
 
+		int prevTick = 0;
+
 		// read frames of vehicle controls
 		for(int j = 0; j < data.numFrames; j++)
 		{
 			replayCarFrame_t control;
 			pFile->Read(&control, 1, sizeof(replayCarFrame_t));
 
-			tickCount = control.tick;
-
 			// add offset to the ticks
-			control.tick += m_tick;
+			int newTick = GetPlaybackTick(control.tick);
+			tickCount = newTick;
+			control.tick = control.tick + m_tick;
 
-			veh.replayArray.append(control);
+			//if(newTick > prevTick)
+				veh.replayArray.append(control);
 		}
 
 		// read events if we have some
@@ -962,7 +1005,7 @@ bool CReplayTracker::LoadFromFile(const char* filename)
 
 	Clear();
 
-	//m_playbackPhysIterations = hdr.phys_iterations;
+	m_playbackPhysIterations = hdr.physIterations;
 
 	int veh_count = 0;
 	pFile->Read(&veh_count, 1, sizeof(int));
@@ -1155,7 +1198,7 @@ void CReplayTracker::RaiseTickEvents()
 	{
 		replayEvent_t& evt = m_events[i];
 
-		if(evt.frameIndex > m_tick)
+		if(evt.frameIndex > GetPlaybackTick(m_tick))
 			break;
 
 		RaiseReplayEvent( evt );
