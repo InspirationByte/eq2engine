@@ -84,6 +84,8 @@ public:
 
 protected:
 
+	void		InitLoadingScreen();
+
 	void		StopAllSounds();
 
 	void		InitializeSession();

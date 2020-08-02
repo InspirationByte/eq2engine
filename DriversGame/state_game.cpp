@@ -356,6 +356,8 @@ bool CState_Game::DoLoadMission()
 		m_missionScriptName = "defaultmission";
 	}
 
+	InitLoadingScreen();
+
 	return true;
 }
 
@@ -657,25 +659,32 @@ void CState_Game::OnEnter( CBaseStateHandler* from )
 	{
 		m_loadingScreen = equi::Manager->CreateElement("Panel");
 
-		OOLUA::Table missionTable;
-		if (!OOLUA::get_global(GetLuaState(), "MISSION", missionTable))
-		{
-			MsgError("Failed to get MISSION table!\n");
-			return;
-		}
-
-		std::string loadingScreenName;
-		if (!missionTable.safe_at("LoadingScreen", loadingScreenName))
-		{
-			MsgWarning("LoadingScreen not found in MISSION table!\n");
-			return;
-		}
-
-		kvkeybase_t loadingKvs;
-
-		if (KV_LoadFromFile(loadingScreenName.c_str(), SP_MOD, &loadingKvs))
-			m_loadingScreen->InitFromKeyValues(&loadingKvs);
+		InitLoadingScreen();
 	}
+}
+
+void CState_Game::InitLoadingScreen()
+{
+	m_loadingScreen->ClearChilds(true);
+
+	OOLUA::Table missionTable;
+	if (!OOLUA::get_global(GetLuaState(), "MISSION", missionTable))
+	{
+		MsgError("Failed to get MISSION table!\n");
+		return;
+	}
+
+	std::string loadingScreenName;
+	if (!missionTable.safe_at("LoadingScreen", loadingScreenName))
+	{
+		MsgWarning("LoadingScreen not found in MISSION table!\n");
+		return;
+	}
+
+	kvkeybase_t loadingKvs;
+
+	if (KV_LoadFromFile(loadingScreenName.c_str(), SP_MOD, &loadingKvs))
+		m_loadingScreen->InitFromKeyValues(&loadingKvs);
 }
 
 bool CState_Game::DoLoadingFrame()
@@ -896,6 +905,9 @@ void CState_Game::OnLoadingDone()
 	}
 }
 
+ConVar loadingscreen_debug("loadingscreen_debug", "0", nullptr, CV_CHEAT);
+
+
 //-------------------------------------------------------------------------------
 // Game frame step along with rendering
 //-------------------------------------------------------------------------------
@@ -906,7 +918,7 @@ bool CState_Game::Update( float fDt )
 
 	const IVector2D& screenSize = g_pHost->GetWindowSize();
 
-	if(!m_isGameRunning)
+	if(!m_isGameRunning || loadingscreen_debug.GetBool())
 	{
 		DrawLoadingScreen( fDt );
 		
