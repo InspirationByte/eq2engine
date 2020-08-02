@@ -27,6 +27,8 @@
 
 #include "utils/DkLinkedList.h"
 
+#include "EngineVersion.h"
+
 #ifdef _WIN32
 //#include "Resources/resource.h"
 #endif // _WIN32
@@ -242,6 +244,9 @@ int main(int argc, char** argv)
 		GetCore()->Shutdown();
 		return -2;
 	}
+
+	// add the copyright
+	g_localizer->AddToken("GAME_VERSION", varargs_w(L"Build %d %s %s", BUILD_NUMBER_ENGINE, L"" COMPILE_DATE, L"" COMPILE_TIME));
 
 	g_localizer->AddTokensFile("game");
 

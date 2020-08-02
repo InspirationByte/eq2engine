@@ -119,7 +119,12 @@ void CObject_Physics::Spawn()
 	m_breakSpawnOffset = KV_GetVector3D(m_keyValues->FindKeyBase("breakSpawnOffset"), 0, vec3_zero);
 	m_breakForce = KV_GetValueFloat(m_keyValues->FindKeyBase("breakForce"), 0, 0.0f);
 
-	g_sounds->PrecacheSound(m_smashSound.c_str());
+	if (m_smashSound.Length() > 0)
+	{
+		g_sounds->PrecacheSound((m_smashSound + "_light").c_str());
+		g_sounds->PrecacheSound((m_smashSound + "_medium").c_str());
+		g_sounds->PrecacheSound((m_smashSound + "_hard").c_str());
+	}
 
 	CEqRigidBody* body = new CEqRigidBody();
 
@@ -270,6 +275,8 @@ void CObject_Physics::OnPhysicsCollide(const CollisionPairData_t& pair)
 		Vector3D reflDir = reflect(wVelocity, pair.normal);
 		MakeSparks(pair.position + pair.normal*0.05f, reflDir, Vector3D(5.0f), 1.0f, 8);
 	}
+
+	EmitHitSoundEffect(this, m_smashSound.c_str(), pair.position, pair.impactVelocity * 5.0f, 50.0f);
 
 	// it's only broken if car collision force was greateer
 	if (pair.impactVelocity > m_breakForce && pair.GetOppositeTo(body)->GetContents() != OBJECTCONTENTS_DEBRIS)
