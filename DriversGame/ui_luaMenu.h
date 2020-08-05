@@ -47,8 +47,7 @@ protected:
 	EqLua::LuaTableFuncRef	m_stackPush;
 	EqLua::LuaTableFuncRef	m_stackPop;
 	EqLua::LuaTableFuncRef	m_stackReset;
-	EqLua::LuaTableFuncRef	m_stackUpdate
-		;
+	EqLua::LuaTableFuncRef	m_stackUpdate;
 	EqLua::LuaTableFuncRef	m_updateUIScheme;
 
 	OOLUA::Table			m_menuElems;
@@ -56,6 +55,7 @@ protected:
 	int						m_numElems;
 
 	EqWString				m_menuTitleStr;
+
 
 };
 

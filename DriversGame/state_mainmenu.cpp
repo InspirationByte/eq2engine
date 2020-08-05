@@ -48,6 +48,7 @@ void CState_MainMenu::OnEnter( CBaseStateHandler* from )
 
 	m_fade = 0.0f;
 	m_textFade = 0.0f;
+	m_menuSelectionInterp = 0.0f;
 	m_menuMode = MENUMODE_NONE;
 	m_goesFromMenu = false;
 
@@ -224,6 +225,7 @@ bool CState_MainMenu::Update( float fDt )
 
 	m_fade = clamp(m_fade, 0.0f, 1.0f);
 	m_textFade = clamp(m_textFade, 0.0f, 1.0f);
+	m_menuSelectionInterp = clamp(approachValue(m_menuSelectionInterp, 1.0f, fDt*5.0f), 0.0f, 1.0f);
 
 	materials->Setup2D(screenSize.x,screenSize.y);
 
@@ -259,7 +261,8 @@ bool CState_MainMenu::Update( float fDt )
 	eqFontStyleParam_t fontParam;
 	fontParam.align = m_menuDummy->GetTextAlignment();
 
-	fontParam.textColor = color4_white;	fontParam.styleFlag |= TEXT_STYLE_SHADOW | TEXT_STYLE_FROM_CAP;
+	fontParam.textColor = color4_white;
+	fontParam.styleFlag |= TEXT_STYLE_SHADOW | TEXT_STYLE_FROM_CAP;
 	fontParam.scale = m_menuDummy->GetFontScale()*menuScaling;
 
 	Vector2D menuPos = (m_menuDummy->GetTextAlignment() == TEXT_ALIGN_RIGHT) ? rect.GetRightTop() : 
@@ -303,10 +306,14 @@ bool CState_MainMenu::Update( float fDt )
 
 			fontParam.textColor = ColorRGBA(1, 1, 1, pow(m_textFade, 5.0f));
 
+			float lineHeight = font->GetLineHeight(fontParam);
+			float lineWidth = font->GetStringWidth(token, fontParam) + 16.0f * menuScaling.x;
+
+			Vector2D elemPos(menuPos.x, menuPos.y + i * lineHeight + m_menuScrollInterp * lineHeight);
+
 			// draw selection indicator
 			if (m_selection == i)
 			{
-				/*
 				g_pShaderAPI->SetTexture(NULL, NULL, 0);
 				materials->SetBlendingStates(blending);
 				materials->SetRasterizerStates(CULL_FRONT, FILL_SOLID);
@@ -318,12 +325,25 @@ bool CState_MainMenu::Update( float fDt )
 				float baseLine = font->GetBaselineOffs(fontParam);
 				float XOffset = -8.0f * menuScaling.x;
 
-				if (m_menuDummy->GetTextAlignment() == TEXT_ALIGN_RIGHT)
-					XOffset = -lineWidth;
-				else if (m_menuDummy->GetTextAlignment() & TEXT_ALIGN_HCENTER)
-					XOffset = lineWidth * -0.5f;
+				float lineW = 6.0f * menuScaling.x; // lineWidth
 
-				Vector2D quadVerts[] = { MAKEQUAD(elemPos.x + XOffset, elemPos.y + baseLine - lineHeight, elemPos.x + lineWidth + XOffset, elemPos.y + baseLine, 0.0f) };
+				float elemOffsX = 0.0f;
+
+				if (m_menuDummy->GetTextAlignment() == TEXT_ALIGN_RIGHT)
+				{
+					XOffset = -lineW + 8.0f * menuScaling.x;
+					elemOffsX -= m_menuSelectionInterp * 8.0f * menuScaling.x;					// move it lil bit
+				}
+				else if (m_menuDummy->GetTextAlignment() == TEXT_ALIGN_HCENTER)
+				{
+					XOffset = lineW * -0.5f;
+				}
+				else if (m_menuDummy->GetTextAlignment() == TEXT_ALIGN_LEFT)
+				{
+					elemOffsX += m_menuSelectionInterp * 8.0f * menuScaling.x;					// move it lil bit
+				}
+
+				Vector2D quadVerts[] = { MAKEQUAD(elemPos.x + XOffset, elemPos.y + baseLine - lineHeight, elemPos.x + lineW + XOffset, elemPos.y + baseLine, 0.0f) };
 
 				quadVerts[0].x += 4.5f * menuScaling.x;
 				quadVerts[2].x += 4.5f * menuScaling.x;
@@ -332,10 +352,11 @@ bool CState_MainMenu::Update( float fDt )
 					meshBuilder.Color4fv(selColor);
 					meshBuilder.Quad2(quadVerts[0], quadVerts[1], quadVerts[2], quadVerts[3]);
 				meshBuilder.End();
-				*/
 
-				ColorRGBA selColor(1.0f, 0.57f, 0.0f, pow(m_textFade, 5.0f));
-				fontParam.textColor = selColor;
+				elemPos.x += elemOffsX;
+
+				//ColorRGBA selColor(1.0f, 0.57f, 0.0f, pow(m_textFade, 5.0f));
+				fontParam.textColor = lerp(fontParam.textColor, selColor, m_menuSelectionInterp);
 			}
 
 			if ((m_goesFromMenu || m_menuMode == MENUMODE_ENTER) && m_menuMode != MENUMODE_BACK)
@@ -361,10 +382,6 @@ bool CState_MainMenu::Update( float fDt )
 				}
 			}
 
-			float lineHeight = font->GetLineHeight(fontParam);
-			float lineWidth = font->GetStringWidth(token, fontParam) + 16.0f * menuScaling.x;
-
-			Vector2D elemPos(menuPos.x, menuPos.y + i * lineHeight + m_menuScrollInterp*lineHeight);
 
 			if (elemPos.y < menuPos.y)
 			{
@@ -422,7 +439,6 @@ bool CState_MainMenu::Update( float fDt )
 
 				font->RenderText(boundKeysWString.c_str(), elemPos + Vector2D(160.0f, 0.0f)*menuScaling, inputActionFontParam);
 			}
-
 		}
 	}
 
@@ -533,10 +549,12 @@ bool CState_MainMenu::Update( float fDt )
 		if(m_menuMode == MENUMODE_ENTER)
 		{
 			EnterSelection();
+			m_menuSelectionInterp = 0.0f;
 		}
 		else if(m_menuMode == MENUMODE_BACK)
 		{
 			PopMenu();
+			m_menuSelectionInterp = 0.0f;
 		}
 
 		ResetScroll();
@@ -741,9 +759,6 @@ void CState_MainMenu::HandleMouseMove( int x, int y, float deltaX, float deltaY 
 		return;
 
 	// perform a hit test
-	const IVector2D& screenSize = g_pHost->GetWindowSize();
-	IVector2D halfScreen(screenSize.x/2, screenSize.y/2);
-
 	IEqFont* font = m_menuDummy->GetFont();
 
 	IRectangle rect = m_menuDummy->GetClientRectangle();
@@ -772,9 +787,9 @@ void CState_MainMenu::HandleMouseMove( int x, int y, float deltaX, float deltaY 
 
 			Vector2D elemPos(menuPos.x, menuPos.y + idx*lineHeight + m_menuScrollInterp*lineHeight);
 
-			Rectangle_t rect(elemPos, elemPos + Vector2D(lineWidth, itemHeight));
+			Rectangle_t itemrect(elemPos, elemPos + Vector2D(lineWidth, itemHeight));
 
-			if(rect.IsInRectangle(Vector2D(x,y)))
+			if(itemrect.IsInRectangle(Vector2D(x,y)))
 				Event_SelectMenuItem( idx );
 
 		oolua_ipairs_end()
@@ -861,6 +876,7 @@ void CState_MainMenu::Event_SelectionUp()
 
 redecrement:
 	m_selection--;
+	m_menuSelectionInterp = 0.0f;
 
 	if(m_selection < 0)
 	{
@@ -884,6 +900,7 @@ void CState_MainMenu::Event_SelectionDown()
 
 reincrement:
 	m_selection++;
+	m_menuSelectionInterp = 0.0f;
 
 	if(m_selection > m_numElems-1)
 		m_selection = 0;
@@ -909,6 +926,7 @@ void CState_MainMenu::Event_SelectMenuItem(int index)
 		return;
 
 	m_selection = index;
+	m_menuSelectionInterp = 0.0f;
 
 	EmitSound_t ep("menu.roll");
 	g_sounds->EmitSound(&ep);

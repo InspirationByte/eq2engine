@@ -143,6 +143,8 @@ protected:
 	equi::IUIControl*	m_menuDummy;
 
 	equi::IUIControl*	m_loadingScreen;
+
+	float				m_menuSelectionInterp;
 };
 
 //--------------------------------------------------------------------------------------

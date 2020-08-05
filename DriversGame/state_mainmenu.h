@@ -72,6 +72,7 @@ protected:
 
 	float					m_menuScrollInterp;
 	float					m_menuScrollTarget;
+	float					m_menuSelectionInterp;
 
 	equi::IUIControl*		m_uiLayout;
 	equi::IUIControl*		m_menuDummy;

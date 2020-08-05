@@ -625,6 +625,7 @@ void CState_Game::OnEnter( CBaseStateHandler* from )
 	m_loadingError = false;
 	m_exitGame = false;
 	m_showMenu = false;
+	m_menuSelectionInterp = 0.0f;
 
 	m_scheduledRestart = false;
 	m_scheduledQuickReplay = REPLAY_SCHEDULE_NONE;
@@ -790,6 +791,7 @@ void CState_Game::SetPauseState( bool state )
 	if(m_showMenu)
 	{
 		m_selection = 0;
+		m_menuSelectionInterp = 0.0f;
 
 		int missionStatus = (m_replayMode == REPLAYMODE_QUICK_REPLAY) ? m_storedMissionStatus : g_pGameSession->GetMissionStatus();
 
@@ -1034,7 +1036,7 @@ bool CState_Game::Update( float fDt )
 
 		materials->DrawPrimitives2DFFP(PRIM_TRIANGLE_STRIP,tmprect1,elementsOf(tmprect1), NULL, blockCol, &blending);
 
-		m_fade += fDt;
+		m_fade += fDt * 4.0f;
 
 		if(m_fade >= 1.0f)
 		{
@@ -1115,6 +1117,8 @@ void CState_Game::DrawMenu( float fDt )
 
 	bool goingFromMenu = m_exitGame || m_scheduledRestart || m_scheduledQuickReplay;
 
+	m_menuSelectionInterp = clamp(approachValue(m_menuSelectionInterp, 1.0f, fDt * 5.0f), 0.0f, 1.0f);
+
 	const IVector2D& screenSize = g_pHost->GetWindowSize();
 
 	materials->Setup2D(screenSize.x,screenSize.y);
@@ -1124,52 +1128,130 @@ void CState_Game::DrawMenu( float fDt )
 
 	m_uiLayout->Render();
 
-	IVector2D halfScreen(screenSize.x/2, screenSize.y/2);
+	IRectangle rect = m_menuDummy->GetClientRectangle();
 
 	IEqFont* font = m_menuDummy->GetFont();
 
+	Vector2D menuScaling = m_menuDummy->CalcScaling();
+
 	eqFontStyleParam_t fontParam;
 	fontParam.align = m_menuDummy->GetTextAlignment();
-	fontParam.styleFlag |= TEXT_STYLE_SHADOW;
+	fontParam.styleFlag |= TEXT_STYLE_SHADOW | TEXT_STYLE_FROM_CAP;
 	fontParam.textColor = color4_white;
-	fontParam.scale = m_menuDummy->GetFontScale() * m_menuDummy->CalcScaling();
+	fontParam.scale = m_menuDummy->GetFontScale() * menuScaling;
 	float lineHeight = font->GetLineHeight(fontParam);
 
+	Vector2D menuPos = (m_menuDummy->GetTextAlignment() == TEXT_ALIGN_RIGHT) ? rect.GetRightTop() :
+		(m_menuDummy->GetTextAlignment() & TEXT_ALIGN_HCENTER) ? ((rect.GetLeftTop() + rect.GetRightTop()) / 2) : rect.GetLeftTop();
+	Vector2D menuSize = rect.GetSize();
+
+	CMeshBuilder meshBuilder(materials->GetDynamicMesh());
+
+	BlendStateParam_t blending;
+	blending.srcFactor = BLENDFACTOR_SRC_ALPHA;
+	blending.dstFactor = BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
+
+	if (!goingFromMenu)
 	{
 		lua_State* state = GetLuaState();
-
 		EqLua::LuaStackGuard g(state);
 
-		int numElems = 0;
+		float maxLineWidth = 16.0f;
 
-		oolua_ipairs(m_menuElems)
-			numElems++;
-		oolua_ipairs_end()
-
-		int menuPosY = halfScreen.y - numElems * lineHeight*0.5f;
-
-		Vector2D mTextPos(halfScreen.x, menuPosY);
-
-		fontParam.textColor = ColorRGBA(0.7f,0.7f,0.7f,1.0f);
-		font->RenderText(m_menuTitleStr.c_str(), mTextPos, fontParam);
-
-		oolua_ipairs(m_menuElems)
-			int idx = _i_index_-1;
+		DkList<OOLUA::Table> menuItems;
+		{
+			oolua_ipairs(m_menuElems)
 
 			OOLUA::Table elem;
 			m_menuElems.safe_at(_i_index_, elem);
 
 			const wchar_t* token = GetMenuItemString(elem);
+			float lineWidth = font->GetStringWidth(token, fontParam);
 
-			if (m_selection == idx)
-				fontParam.textColor = ColorRGBA(1, 0.7f, 0.0f, 1.0f);
-			else
-				fontParam.textColor = ColorRGBA(1, 1, 1, 1.0f);
+			if (lineWidth > maxLineWidth)
+				maxLineWidth = lineWidth;
 
-			Vector2D eTextPos(halfScreen.x, menuPosY + _i_index_ * lineHeight);
-			font->RenderText(token ? token : L"No token", eTextPos, fontParam);
-		oolua_ipairs_end()
+			menuItems.append(elem);
 
+			oolua_ipairs_end()
+		}
+
+		fontParam.textColor = ColorRGBA(0.7f,0.7f,0.7f,1.0f);
+		font->RenderText(m_menuTitleStr.c_str(), menuPos, fontParam);
+
+		// move for title
+		menuPos.y += lineHeight;
+
+		for (int i = 0; i < menuItems.numElem(); i++)
+		{
+			OOLUA::Table& elem = menuItems[i];
+
+			bool _spacer;
+			if (elem.safe_at("_spacer", _spacer))
+				continue;
+
+			const wchar_t* token = GetMenuItemString(elem);
+
+			fontParam.textColor = ColorRGBA(1, 1, 1, 1.0f);
+
+			Vector2D elemPos(menuPos.x, menuPos.y + i * lineHeight);
+
+			// draw selection indicator
+			if (m_selection == i)
+			{
+				g_pShaderAPI->SetTexture(NULL, NULL, 0);
+				materials->SetBlendingStates(blending);
+				materials->SetRasterizerStates(CULL_FRONT, FILL_SOLID);
+				materials->SetDepthStates(false, false);
+				materials->BindMaterial(materials->GetDefaultMaterial());
+
+				ColorRGBA selColor(1.0f, 0.57f, 0.0f, 1.0f);
+
+				float baseLine = font->GetBaselineOffs(fontParam);
+				float XOffset = -8.0f * menuScaling.x;
+
+				float lineW = 6.0f * menuScaling.x; // lineWidth
+
+				float elemOffsX = 0.0f;
+
+				if (m_menuDummy->GetTextAlignment() == TEXT_ALIGN_RIGHT)
+				{
+					XOffset = -lineW + 8.0f * menuScaling.x;
+					elemOffsX -= m_menuSelectionInterp * 8.0f * menuScaling.x;					// move it lil bit
+				}
+				else if (m_menuDummy->GetTextAlignment() == TEXT_ALIGN_HCENTER)
+				{
+					XOffset = lineW * -0.5f;
+				}
+				else if (m_menuDummy->GetTextAlignment() == TEXT_ALIGN_LEFT)
+				{
+					elemOffsX += m_menuSelectionInterp * 8.0f * menuScaling.x;					// move it lil bit
+				}
+
+				Vector2D quadVerts[] = { MAKEQUAD(elemPos.x + XOffset, elemPos.y + baseLine - lineHeight, elemPos.x + lineW + XOffset, elemPos.y + baseLine, 0.0f) };
+
+				quadVerts[0].x += 4.5f * menuScaling.x;
+				quadVerts[2].x += 4.5f * menuScaling.x;
+
+				meshBuilder.Begin(PRIM_TRIANGLE_STRIP);
+				meshBuilder.Color4fv(selColor);
+				meshBuilder.Quad2(quadVerts[0], quadVerts[1], quadVerts[2], quadVerts[3]);
+				meshBuilder.End();
+
+				elemPos.x += elemOffsX;
+
+				//ColorRGBA selColor(1.0f, 0.57f, 0.0f, pow(m_textFade, 5.0f));
+				fontParam.textColor = lerp(fontParam.textColor, selColor, m_menuSelectionInterp);
+			}
+
+			//if (m_selection == i)
+			//	fontParam.textColor = ColorRGBA(1, 0.7f, 0.0f, 1.0f);
+			//else
+			//	fontParam.textColor = ColorRGBA(1, 1, 1, 1.0f);
+
+			
+			font->RenderText(token ? token : L"No token", elemPos, fontParam);
+		}
 	}
 }
 
@@ -1493,6 +1575,7 @@ void CState_Game::HandleKeyPress( int key, bool down )
 			g_sounds->Emit2DSound(&es);
 
 			PopMenu();
+			m_menuSelectionInterp = 0.0f;
 
 			return;
 		}
@@ -1512,6 +1595,7 @@ void CState_Game::HandleKeyPress( int key, bool down )
 				EmitSound_t ep("menu.click", 0.5f, 1.0f);
 				g_sounds->Emit2DSound(&ep);
 				EnterSelection();
+				m_menuSelectionInterp = 0.0f;
 			}
 		}
 		else if(key == KEY_LEFT || key == KEY_RIGHT || key == KEY_JOY_DPAD_LEFT || key == KEY_JOY_DPAD_RIGHT)
@@ -1529,6 +1613,7 @@ void CState_Game::HandleKeyPress( int key, bool down )
 redecrement:
 
 			m_selection--;
+			m_menuSelectionInterp = 0.0f;
 
 			if(m_selection < 0)
 			{
@@ -1548,6 +1633,7 @@ redecrement:
 		{
 reincrement:
 			m_selection++;
+			m_menuSelectionInterp = 0.0f;
 
 			if(m_selection > m_numElems-1)
 				m_selection = 0;
@@ -1584,43 +1670,40 @@ void CState_Game::HandleMouseMove( int x,  int y, float deltaX, float deltaY )
 	if( IsMenuActive() )
 	{
 		// perform a hit test
-		const IVector2D& screenSize = g_pHost->GetWindowSize();
-		IVector2D halfScreen(screenSize.x / 2, screenSize.y / 2);
-
 		IEqFont* font = m_menuDummy->GetFont();
+
+		IRectangle rect = m_menuDummy->GetClientRectangle();
+		Vector2D menuScaling = m_menuDummy->CalcScaling();
 
 		eqFontStyleParam_t fontParam;
 		fontParam.align = m_menuDummy->GetTextAlignment();
 		fontParam.styleFlag |= TEXT_STYLE_SHADOW;
 		fontParam.textColor = color4_white;
-		fontParam.scale = m_menuDummy->GetFontScale() * m_menuDummy->CalcScaling();
+		fontParam.scale = m_menuDummy->GetFontScale() * menuScaling;
+
+		Vector2D menuPos = rect.GetLeftTop();
 		float lineHeight = font->GetLineHeight(fontParam);
+
+		// for title
+		menuPos.y += lineHeight;
 
 		{
 			EqLua::LuaStackGuard g(GetLuaState());
 
-			int numElems = -1;
-
 			oolua_ipairs(m_menuElems)
-				numElems++;
-			oolua_ipairs_end()
-
-			int menuPosY = halfScreen.y - numElems * lineHeight * 0.5f;
-
-			oolua_ipairs(m_menuElems)
-				int idx = _i_index_-1;
+				int idx = _i_index_ - 1;
 
 				OOLUA::Table elem;
 				m_menuElems.safe_at(_i_index_, elem);
 
-				float lineWidth = 400;
+				float lineWidth = rect.GetSize().x;
 				float itemHeight = 0.5f * lineHeight;
 
-				Vector2D eTextPos(halfScreen.x, menuPosY + idx * lineHeight);
+				Vector2D elemPos(menuPos.x, menuPos.y + idx * lineHeight);
 
-				Rectangle_t rect(eTextPos - Vector2D(lineWidth, 0), eTextPos + Vector2D(lineWidth, itemHeight));
+				Rectangle_t itemrect(elemPos, elemPos + Vector2D(lineWidth, itemHeight));
 
-				if (rect.IsInRectangle(Vector2D(x, y)))
+				if (itemrect.IsInRectangle(Vector2D(x, y)))
 					Event_SelectMenuItem(idx);
 
 			oolua_ipairs_end()
@@ -1655,6 +1738,7 @@ void CState_Game::Event_SelectMenuItem(int index)
 		return;
 
 	m_selection = index;
+	m_menuSelectionInterp = 0.0f;
 
 	EmitSound_t ep("menu.roll", 0.5f, 1.0f);
 	g_sounds->Emit2DSound(&ep);
@@ -1674,6 +1758,7 @@ void CState_Game::HandleMouseClick( int x, int y, int buttons, bool down )
 				EmitSound_t ep("menu.click", 0.5f, 1.0f);
 				g_sounds->Emit2DSound(&ep);
 				EnterSelection();
+				m_menuSelectionInterp = 0.0f;
 			}
 				
 		}
