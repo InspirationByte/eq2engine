@@ -254,7 +254,10 @@ void CState_Title::HandleKeyPress( int key, bool down )
 			memset(m_codeKeysEntered, 0, sizeof(m_codeKeysEntered));
 			m_codePos = 0;
 
-			GetLuaState().call("kkkode");
+			OOLUA::Script& state = GetLuaState();
+
+			if (!state.call("kkkode"))
+				MsgError("Error in script call kcode:\n%s\n", OOLUA::get_last_error(state).c_str());
 
 			return;
 		}

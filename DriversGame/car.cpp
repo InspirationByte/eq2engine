@@ -2432,46 +2432,6 @@ void CCar::ApplyDamage(Vector3D& localHitPos, float impact, CGameObject* hitBy)
 		SetDamage(GetDamage() + zoneDamage);
 	}
 
-	/*
-	// apply visual damage
-	for(int cb = 0; cb < CB_PART_COUNT; cb++)
-	{
-		Vector3D bodyPartPos = bbox_pos + bbox_size*s_BodyPartDirections[cb];
-
-		float fDot = dot(s_BodyPartDirections[cb], fastNormalize(localHitPos));
-
-		if(fDot < 0.25f)
-			continue;
-
-		// apply constant roof damage when car is flipped
-		if (cb == CB_TOP_ROOF)
-		{
-			if(dot(upVec, vec3_up) < 0.0f)
-				m_bodyParts[cb].damage += fDamageImpact;
-
-			// clamp
-			m_bodyParts[cb].damage = min(m_bodyParts[cb].damage, 1.0f);
-
-			continue;
-		}
-
-		float fDamageToApply = pow(fDot, 2.0f) * fDamageImpact*DAMAGE_SCALE;
-		m_bodyParts[cb].damage += fDamageToApply * DAMAGE_VISUAL_SCALE;
-
-		bool isWasAlive = IsAlive();
-		SetDamage(GetDamage() + fDamageToApply);
-		bool isStillAlive = IsAlive();
-
-		if(isWasAlive && !isStillAlive)
-		{
-			// trigger death
-			OnDeath( hitGameObject );
-		}
-
-		// clamp
-		m_bodyParts[cb].damage = min(m_bodyParts[cb].damage, 1.0f);
-	}*/
-
 	OnNetworkStateChanged(NULL);
 	RefreshWindowDamageEffects();
 
