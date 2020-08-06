@@ -450,153 +450,153 @@ enum EMouseCodes
 // the name associations
 struct keyNameMap_t
 {
-	const char	*name;
+	const char*	name;
 	int		    keynum;
+	const char* hrname;		// human-readable name
 };
 
 static keyNameMap_t s_keyMapList[] =
 {
 	//{"MOUSE_MOVE", MOU_MOVE},
 
-	{"TAB", KEY_TAB},
-	{"ENTER", KEY_ENTER},
-	{"ESCAPE", KEY_ESCAPE},
-	{"SPACE", KEY_SPACE},
-	{"BACKSPACE", KEY_BACKSPACE},
+	{"TAB", KEY_TAB, nullptr},
+	{"ENTER", KEY_ENTER, nullptr},
+	{"ESCAPE", KEY_ESCAPE, nullptr},
+	{"SPACE", KEY_SPACE, nullptr},
+	{"BACKSPACE", KEY_BACKSPACE, nullptr},
 
-	{"UPARROW", KEY_UP},
-	{"DOWNARROW", KEY_DOWN},
-	{"LEFTARROW", KEY_LEFT},
-	{"RIGHTARROW", KEY_RIGHT},
+	{"UPARROW", KEY_UP, nullptr},
+	{"DOWNARROW", KEY_DOWN, nullptr},
+	{"LEFTARROW", KEY_LEFT, nullptr},
+	{"RIGHTARROW", KEY_RIGHT, nullptr},
 
-	{"LALT", KEY_LALT},
-	{"RALT", KEY_RALT},
-	{"CTRL", KEY_CTRL},
-	{"SHIFT", KEY_SHIFT},
+	{"LALT", KEY_LALT, nullptr},
+	{"RALT", KEY_RALT, nullptr},
+	{"CTRL", KEY_CTRL, nullptr},
+	{"SHIFT", KEY_SHIFT, nullptr},
 
-	{"CAPSLOCK", KEY_CAPSLOCK},
+	{"CAPSLOCK", KEY_CAPSLOCK, nullptr},
 
-	{"F1", KEY_F1},
-	{"F2", KEY_F2},
-	{"F3", KEY_F3},
-	{"F4", KEY_F4},
-	{"F5", KEY_F5},
-	{"F6", KEY_F6},
-	{"F7", KEY_F7},
-	{"F8", KEY_F8},
-	{"F9", KEY_F9},
-	{"F10", KEY_F10},
-	{"F11", KEY_F11},
-	{"F12", KEY_F12},
+	{"F1", KEY_F1, nullptr},
+	{"F2", KEY_F2, nullptr},
+	{"F3", KEY_F3, nullptr},
+	{"F4", KEY_F4, nullptr},
+	{"F5", KEY_F5, nullptr},
+	{"F6", KEY_F6, nullptr},
+	{"F7", KEY_F7, nullptr},
+	{"F8", KEY_F8, nullptr},
+	{"F9", KEY_F9, nullptr},
+	{"F10", KEY_F10, nullptr},
+	{"F11", KEY_F11, nullptr},
+	{"F12", KEY_F12, nullptr},
 
-	{"INS", KEY_INSERT},
-	{"DEL", KEY_DELETE},
-	{"PGDN", KEY_PGDN},
-	{"PGUP", KEY_PGUP},
-	{"HOME", KEY_HOME},
-	{"END", KEY_END},
+	{"INS", KEY_INSERT, nullptr},
+	{"DEL", KEY_DELETE, nullptr},
+	{"PGDN", KEY_PGDN, nullptr},
+	{"PGUP", KEY_PGUP, nullptr},
+	{"HOME", KEY_HOME, nullptr},
+	{"END", KEY_END, nullptr},
 
-	{"MOUSE1", MOU_B1},
-	{"MOUSE2", MOU_B2},
-	{"MOUSE3", MOU_B3},
-	{"MOUSE4", MOU_B4},
-	{"MOUSE5", MOU_B5},
+	{"MOUSE1", MOU_B1, "#IN_MOU_B1"},
+	{"MOUSE2", MOU_B2, "#IN_MOU_B2"},
+	{"MOUSE3", MOU_B3, "#IN_MOU_B3"},
+	{"MOUSE4", MOU_B4, "#IN_MOU_B4"},
+	{"MOUSE5", MOU_B5, "#IN_MOU_B5"},
 
-	{"NUM_1", KEY_1},
-	{"NUM_2", KEY_2},
-	{"NUM_3", KEY_3},
-	{"NUM_4", KEY_4},
-	{"NUM_5", KEY_5},
-	{"NUM_6", KEY_6},
-	{"NUM_7", KEY_7},
-	{"NUM_8", KEY_8},
-	{"NUM_9", KEY_9},
-	{"NUM_0",KEY_0},
+	{"NUM_1", KEY_1, nullptr},
+	{"NUM_2", KEY_2, nullptr},
+	{"NUM_3", KEY_3, nullptr},
+	{"NUM_4", KEY_4, nullptr},
+	{"NUM_5", KEY_5, nullptr},
+	{"NUM_6", KEY_6, nullptr},
+	{"NUM_7", KEY_7, nullptr},
+	{"NUM_8", KEY_8, nullptr},
+	{"NUM_9", KEY_9, nullptr},
+	{"NUM_0",KEY_0, nullptr},
 
-	{"A", KEY_A},
-	{"B", KEY_B},
-	{"C", KEY_C},
-	{"D", KEY_D},
-	{"E", KEY_E},
-	{"F", KEY_F},
-	{"G", KEY_G},
-	{"H", KEY_H},
-	{"I", KEY_I},
-	{"J", KEY_J},
-	{"K", KEY_K},
-	{"L", KEY_L},
-	{"M", KEY_M},
-	{"N", KEY_N},
-	{"O", KEY_O},
-	{"P", KEY_P},
-	{"Q", KEY_Q},
-	{"R", KEY_R},
-	{"S", KEY_S},
-	{"T", KEY_T},
-	{"U", KEY_U},
-	{"V", KEY_V},
-	{"W", KEY_W},
-	{"X", KEY_X},
-	{"Y", KEY_Y},
-	{"Z", KEY_Z},
+	{"A", KEY_A, nullptr},
+	{"B", KEY_B, nullptr},
+	{"C", KEY_C, nullptr},
+	{"D", KEY_D, nullptr},
+	{"E", KEY_E, nullptr},
+	{"F", KEY_F, nullptr},
+	{"G", KEY_G, nullptr},
+	{"H", KEY_H, nullptr},
+	{"I", KEY_I, nullptr},
+	{"J", KEY_J, nullptr},
+	{"K", KEY_K, nullptr},
+	{"L", KEY_L, nullptr},
+	{"M", KEY_M, nullptr},
+	{"N", KEY_N, nullptr},
+	{"O", KEY_O, nullptr},
+	{"P", KEY_P, nullptr},
+	{"Q", KEY_Q, nullptr},
+	{"R", KEY_R, nullptr},
+	{"S", KEY_S, nullptr},
+	{"T", KEY_T, nullptr},
+	{"U", KEY_U, nullptr},
+	{"V", KEY_V, nullptr},
+	{"W", KEY_W, nullptr},
+	{"X", KEY_X, nullptr},
+	{"Y", KEY_Y, nullptr},
+	{"Z", KEY_Z, nullptr},
 
-	{"KP_HOME",			KEY_NUMPAD7 },
-	{"KP_UPARROW",		KEY_NUMPAD8 },
-	{"KP_PGUP",			KEY_NUMPAD9 },
-	{"KP_LEFTARROW",	KEY_NUMPAD4 },
-	{"KP_5",			KEY_NUMPAD5 },
-	{"KP_RIGHTARROW",	KEY_NUMPAD6 },
-	{"KP_END",			KEY_NUMPAD1 },
-	{"KP_DOWNARROW",	KEY_NUMPAD2 },
-	{"KP_PGDN",			KEY_NUMPAD3 },
-	{"CAPSLOCK",		KEY_CAPSLOCK },
-	{"KP_ADD",			KEY_ADD},
-	{"KP_SUB",			KEY_SUBTRACT},
-	{"KP_MUL",			KEY_MULTIPLY},
-	{"KP_DIV",			KEY_DIVIDE},
-	{"KP_ENTER",		KEY_KP_ENTER},
+	{"KP_HOME",			KEY_NUMPAD7, nullptr },
+	{"KP_UPARROW",		KEY_NUMPAD8, nullptr },
+	{"KP_PGUP",			KEY_NUMPAD9, nullptr },
+	{"KP_LEFTARROW",	KEY_NUMPAD4, nullptr },
+	{"KP_5",			KEY_NUMPAD5, nullptr },
+	{"KP_RIGHTARROW",	KEY_NUMPAD6, nullptr },
+	{"KP_END",			KEY_NUMPAD1, nullptr },
+	{"KP_DOWNARROW",	KEY_NUMPAD2, nullptr },
+	{"KP_PGDN",			KEY_NUMPAD3, nullptr },
+	{"CAPSLOCK",		KEY_CAPSLOCK, nullptr },
+	{"KP_ADD",			KEY_ADD, nullptr},
+	{"KP_SUB",			KEY_SUBTRACT, nullptr},
+	{"KP_MUL",			KEY_MULTIPLY, nullptr},
+	{"KP_DIV",			KEY_DIVIDE, nullptr},
+	{"KP_ENTER",		KEY_KP_ENTER, nullptr},
 
-	{"MWHEELUP",		MOU_WHUP },
-	{"MWHEELUP",		MOU_WHUP },
-	{"MWHEELDOWN",		MOU_WHDN },
-	{"PAUSE",			KEY_PAUSE},
-	{"SEMICOLON",		';'},	// because a raw semicolon seperates commands
-	{"COMMA",			KEY_COMMA },
-	{"PERIOD",			KEY_PERIOD },
-	{"LBRACKET",		KEY_LBRACKET },
-	{"RBRACKET",		KEY_RBRACKET },
-	{"MINUS",			KEY_MINUS },
-	{"EQUALS",			KEY_EQUALS },
-	{"SLASH",			KEY_SLASH },
-	{"BACKSLASH",		KEY_BACKSLASH },
+	{"MWHEELUP",		MOU_WHUP, "#IN_MOU_WHUP" },
+	{"MWHEELDOWN",		MOU_WHDN, "#IN_MOU_WHDN" },
+	{"PAUSE",			KEY_PAUSE, nullptr },
+	{"SEMICOLON",		';', nullptr },	// because a raw semicolon seperates commands
+	{"COMMA",			KEY_COMMA, nullptr },
+	{"PERIOD",			KEY_PERIOD, nullptr },
+	{"LBRACKET",		KEY_LBRACKET, nullptr },
+	{"RBRACKET",		KEY_RBRACKET, nullptr },
+	{"MINUS",			KEY_MINUS, nullptr },
+	{"EQUALS",			KEY_EQUALS, nullptr },
+	{"SLASH",			KEY_SLASH, nullptr },
+	{"BACKSLASH",		KEY_BACKSLASH, nullptr },
 
-	{"GRAVE",			KEY_TILDE},
+	{"GRAVE",			KEY_TILDE, nullptr },
 
 #ifdef PLAT_SDL
-	{"JOY_A", KEY_JOY_A },
-	{"JOY_B", KEY_JOY_B },
-	{"JOY_X", KEY_JOY_X},
-	{"JOY_Y", KEY_JOY_Y },
-	{"JOY_BACK", KEY_JOY_BACK },
-	{"JOY_GUIDE", KEY_JOY_GUIDE },
-	{"JOY_START", KEY_JOY_START },
-	{"JOY_LSTICK", KEY_JOY_LSTICK },
-	{"JOY_RSTICK", KEY_JOY_RSTICK },
-	{"JOY_LSHOULDER", KEY_JOY_LSHOULDER },
-	{"JOY_RSHOULDER", KEY_JOY_RSHOULDER },
-	{"JOY_DPAD_UP", KEY_JOY_DPAD_UP },
-	{"JOY_DPAD_DOWN", KEY_JOY_DPAD_DOWN },
-	{"JOY_DPAD_LEFT", KEY_JOY_DPAD_LEFT},
-	{"JOY_DPAD_RIGHT", KEY_JOY_DPAD_RIGHT },
+	{"JOY_A", KEY_JOY_A, "#IN_JOY_A" },
+	{"JOY_B", KEY_JOY_B, "#IN_JOY_B" },
+	{"JOY_X", KEY_JOY_X, "#IN_JOY_X" },
+	{"JOY_Y", KEY_JOY_Y, "#IN_JOY_Y" },
+	{"JOY_BACK", KEY_JOY_BACK, "#IN_JOY_BACK" },
+	{"JOY_GUIDE", KEY_JOY_GUIDE, "#IN_JOY_GUIDE" },
+	{"JOY_START", KEY_JOY_START, "#IN_JOY_START" },
+	{"JOY_LSTICK", KEY_JOY_LSTICK, "#IN_JOY_LSTICK" },
+	{"JOY_RSTICK", KEY_JOY_RSTICK, "#IN_JOY_RSTICK" },
+	{"JOY_LSHOULDER", KEY_JOY_LSHOULDER, "#IN_JOY_LSHOULDER" },
+	{"JOY_RSHOULDER", KEY_JOY_RSHOULDER, "#IN_JOY_RSHOULDER" },
+	{"JOY_DPAD_UP", KEY_JOY_DPAD_UP, "#IN_JOY_DPAD_UP" },
+	{"JOY_DPAD_DOWN", KEY_JOY_DPAD_DOWN, "#IN_JOY_DPAD_DOWN" },
+	{"JOY_DPAD_LEFT", KEY_JOY_DPAD_LEFT, "#IN_JOY_DPAD_LEFT" },
+	{"JOY_DPAD_RIGHT", KEY_JOY_DPAD_RIGHT, "#IN_JOY_DPAD_RIGHT" },
 
-	{"JOYAXIS_LX", JOYSTICK_START_AXES + SDL_CONTROLLER_AXIS_LEFTX },
-	{"JOYAXIS_LY", JOYSTICK_START_AXES + SDL_CONTROLLER_AXIS_LEFTY },
-	{"JOYAXIS_RX", JOYSTICK_START_AXES + SDL_CONTROLLER_AXIS_RIGHTX },
-	{"JOYAXIS_RY", JOYSTICK_START_AXES + SDL_CONTROLLER_AXIS_RIGHTY },
-	{"JOYAXIS_TL", JOYSTICK_START_AXES + SDL_CONTROLLER_AXIS_TRIGGERLEFT },
-	{"JOYAXIS_TR", JOYSTICK_START_AXES + SDL_CONTROLLER_AXIS_TRIGGERRIGHT },
+	{"JOYAXIS_LX", JOYSTICK_START_AXES + SDL_CONTROLLER_AXIS_LEFTX, "#IN_JOYAXIS_LX" },
+	{"JOYAXIS_LY", JOYSTICK_START_AXES + SDL_CONTROLLER_AXIS_LEFTY, "#IN_JOYAXIS_LY" },
+	{"JOYAXIS_RX", JOYSTICK_START_AXES + SDL_CONTROLLER_AXIS_RIGHTX, "#IN_JOYAXIS_RX" },
+	{"JOYAXIS_RY", JOYSTICK_START_AXES + SDL_CONTROLLER_AXIS_RIGHTY, "#IN_JOYAXIS_RY" },
+	{"JOYAXIS_TL", JOYSTICK_START_AXES + SDL_CONTROLLER_AXIS_TRIGGERLEFT, "#IN_JOYAXIS_TL" },
+	{"JOYAXIS_TR", JOYSTICK_START_AXES + SDL_CONTROLLER_AXIS_TRIGGERRIGHT, "#IN_JOYAXIS_TR" },
 #endif
-	{NULL,0}
+	{ nullptr, 0, nullptr}
 };
 
 // Convert string to key
@@ -605,10 +605,8 @@ static int KeyStringToKeyIndex(const char *str)
 	if (!str)
 		return -1;
 
-	keyNameMap_t	*kn = NULL;
-
 	int keyind = 0;
-	for( kn = s_keyMapList ; kn->name ; kn++)
+	for(keyNameMap_t* kn = s_keyMapList; kn->name; kn++)
 	{
 		if (!stricmp(str,kn->name))
 			return keyind;
@@ -621,18 +619,25 @@ static int KeyStringToKeyIndex(const char *str)
 
 static const char* KeyIndexToString(int key)
 {
-	keyNameMap_t	*kn = NULL;
-
-	int keyind = 0;
-	for( kn = s_keyMapList ; kn->name ; kn++)
+	for(keyNameMap_t* kn = s_keyMapList; kn->name; kn++)
 	{
 		if (kn->keynum == key)
 			return kn->name;
-
-		keyind++;
 	}
 
 	return "UNKNOWN";
 }
+
+static const char* KeyIndexToHumanReadableString(int key)
+{
+	for (keyNameMap_t* kn = s_keyMapList; kn->name; kn++)
+	{
+		if (kn->keynum == key)
+			return kn->hrname;
+	}
+
+	return "UNKNOWN";
+}
+
 
 #endif // IN_KEYS_IDENT_H

@@ -159,7 +159,7 @@ protected:
 };
 
 bool UTIL_GetBindingKeyIndices(int outKeys[3], const char* pszKeyStr);
-void UTIL_GetBindingKeyString(EqString& outStr, in_binding_t* binding);
+void UTIL_GetBindingKeyString(EqString& outStr, in_binding_t* binding, bool humanReadable = false);
 
 
 extern CInputCommandBinder* g_inputCommandBinder;

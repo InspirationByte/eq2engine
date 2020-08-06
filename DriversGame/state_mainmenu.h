@@ -57,7 +57,7 @@ protected:
 	void		ResetKeys();
 	bool		MapKeysToCurrentAction();
 
-	void		GetEnteredKeysString(EqString& keysStr, bool unbind = false);
+	void		GetEnteredKeysString(EqString& keysStr, bool unbind = false, bool humanReadable = false);
 
 	float					m_fade;
 	float					m_textFade;

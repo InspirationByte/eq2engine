@@ -79,7 +79,7 @@ bool UTIL_GetBindingKeyIndices(int outKeys[3], const char* pszKeyStr)
 	return true;
 }
 
-void UTIL_GetBindingKeyString(EqString& outStr, in_binding_t* binding)
+void UTIL_GetBindingKeyString(EqString& outStr, in_binding_t* binding, bool humanReadable /*= false*/)
 {
 	if (!binding)
 		return;
@@ -90,11 +90,17 @@ void UTIL_GetBindingKeyString(EqString& outStr, in_binding_t* binding)
 
 	for (int i = 0; i < validModifiers; i++)
 	{
-		outStr.Append(s_keyMapList[binding->mod_index[i]].name);
+		if(humanReadable)
+			outStr.Append(s_keyMapList[binding->mod_index[i]].hrname); // TODO: apply localizer
+		else
+			outStr.Append(s_keyMapList[binding->mod_index[i]].name);
 		outStr.Append('+');
 	}
 
-	outStr.Append(s_keyMapList[binding->key_index].name);
+	if (humanReadable)
+		outStr.Append(s_keyMapList[binding->key_index].hrname); // TODO: apply localizer
+	else
+		outStr.Append(s_keyMapList[binding->key_index].name);
 }
 
 //---------------------------------------------------------
@@ -106,6 +112,18 @@ CInputCommandBinder::CInputCommandBinder() : m_init(false)
 void CInputCommandBinder::Init()
 {
 	InitTouchZones();
+
+#ifdef PLAT_SDL
+	// init key names
+	for (keyNameMap_t* kn = s_keyMapList; kn->name; kn++)
+	{
+		if (!kn->hrname)
+		{
+			
+			kn->hrname = xstrdup(SDL_GetKeyName(SDL_SCANCODE_TO_KEYCODE(kn->keynum)));
+		}
+	}
+#endif // PLAT_SDL
 
 	// resolve bindings
 	for(int i = 0; i < m_bindings.numElem(); i++)
@@ -124,6 +142,18 @@ void CInputCommandBinder::Init()
 
 void CInputCommandBinder::Shutdown()
 {
+#ifdef PLAT_SDL
+	// free key names
+	for (keyNameMap_t* kn = s_keyMapList; kn->name; kn++)
+	{
+		if (kn->hrname && *kn->hrname != '#')
+		{
+			delete[] kn->hrname;
+			kn->hrname = nullptr;
+		}
+	}
+#endif // PLAT_SDL
+
 	m_touchZones.clear();
 	UnbindAll();
 

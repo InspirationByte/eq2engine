@@ -410,7 +410,7 @@ bool CState_MainMenu::Update( float fDt )
 				while (binding = g_inputCommandBinder->FindBindingByCommandName(inputActionName.c_str(), nullptr, binding))
 				{
 					EqString bindStr;
-					UTIL_GetBindingKeyString(bindStr, binding);
+					UTIL_GetBindingKeyString(bindStr, binding, true);
 
 					if (boundKeys.Length() > 0)
 						boundKeys.Append(", ");
@@ -425,7 +425,7 @@ bool CState_MainMenu::Update( float fDt )
 				if (m_menuMode == MENUMODE_INPUT_WAITER && m_selection == i)
 				{
 					EqString keysStr;
-					GetEnteredKeysString(keysStr);
+					GetEnteredKeysString(keysStr, false, true);
 
 					EqWString keysWStr(keysStr);
 					boundKeysWString = varargs_w(LocalizedString("#MENU_SETTINGS_CONTROL_PRESSKEY"), keysWStr.c_str());
@@ -580,7 +580,7 @@ void CState_MainMenu::ResetKeys()
 	m_keysPos = 0;
 }
 
-void CState_MainMenu::GetEnteredKeysString(EqString& keysStr, bool unbind /*= false*/)
+void CState_MainMenu::GetEnteredKeysString(EqString& keysStr, bool unbind /*= false*/, bool humanReadable /*= false*/)
 {
 	int* currKey = m_keysEntered;
 
@@ -593,7 +593,10 @@ void CState_MainMenu::GetEnteredKeysString(EqString& keysStr, bool unbind /*= fa
 		if (keysStr.Length() > 0)
 			keysStr.Append('+');
 
-		keysStr.Append(KeyIndexToString(*currKey));
+		if(humanReadable)
+			keysStr.Append(KeyIndexToHumanReadableString(*currKey)); // TODO: apply localizer
+		else
+			keysStr.Append(KeyIndexToString(*currKey));
 	}
 }
 
