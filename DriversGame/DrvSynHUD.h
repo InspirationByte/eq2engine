@@ -94,9 +94,10 @@ public:
 	equi::IUIControl*			FindChildElement(const char* name) const;
 	equi::IUIControl*			GetRootElement() const;
 
+	void						DrawWorldIntoMap(const CViewParams& params, float fDt);
+
 protected:
 
-	void						DrawWorldIntoMap(const CViewParams& params, float fDt);
 	void						DrawDamageBar(CMeshBuilder& meshBuilder, Rectangle_t& rect, float percentage, float alpha = 1.0f);
 
 	void						DoDebugDisplay();

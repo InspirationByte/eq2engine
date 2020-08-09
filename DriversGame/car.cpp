@@ -229,6 +229,7 @@ bool ParseVehicleConfig( vehicleConfig_t* conf, const kvkeybase_t* kvs )
 	conf->physics.handbrakeScale = KV_GetValueFloat(kvs->FindKeyBase("handbrakeScale"), 0, 1.0f);
 
 	conf->physics.noseDownScale = KV_GetValueFloat(kvs->FindKeyBase("noseDownScale"), 0, 1.0f);
+	conf->physics.downForce = KV_GetValueFloat(kvs->FindKeyBase("downForce"), 0, 100.0f);
 
 	kvkeybase_t* hingePoints = kvs->FindKeyBase("hingePoints");
 	conf->physics.hingePoints[0] = 0.0f;
@@ -2159,6 +2160,12 @@ void CCar::UpdateVehiclePhysics(float delta)
 		// normalize
 		wheel.m_pitch = DEG2RAD(ConstrainAngle180(RAD2DEG(wheel.m_pitch)));
 	}
+
+	{
+		float downForce = length(carBody->GetLinearVelocity().xz()) * m_conf->physics.downForce;// * delta;
+		carBody->ApplyForce(carBody->GetCenterOfMass(), Vector3D(0, -downForce, 0));
+	}
+
 
 	CCar* hingedCar = GetHingedVehicle();
 

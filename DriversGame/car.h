@@ -245,6 +245,7 @@ struct vehicleConfig_t
 
 		float						steeringSpeed;
 		float						noseDownScale;
+		float						downForce;
 
 		carWheelConfig_t*			wheels;
 		int8						numWheels;

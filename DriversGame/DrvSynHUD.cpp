@@ -418,12 +418,12 @@ void CDrvSynHUDManager::DrawWorldIntoMap(const CViewParams& params, float fDt)
 
 	Vertex2D_t mapVerts[] = { MAKETEXQUAD(imgHalf.x, -imgHalf.y, -imgHalf.x, imgHalf.y, 0) };
 
-#define MAKE_3D(v) Vector3D(v.x,0.0f,v.y)
+#define VECTOR_TO_MAP(v) Vector3D(v.x,0.0f,v.y)
 
 	// draw the map rectangle
 	meshBuilder.Begin(PRIM_TRIANGLES);
 		meshBuilder.Color4f(1, 1, 1, 0.75f);
-		meshBuilder.TexturedQuad3(MAKE_3D(mapVerts[0].position), MAKE_3D(mapVerts[1].position), MAKE_3D(mapVerts[2].position), MAKE_3D(mapVerts[3].position),
+		meshBuilder.TexturedQuad3(VECTOR_TO_MAP(mapVerts[0].position), VECTOR_TO_MAP(mapVerts[1].position), VECTOR_TO_MAP(mapVerts[2].position), VECTOR_TO_MAP(mapVerts[3].position),
 			mapVerts[0].texCoord, mapVerts[1].texCoord, mapVerts[2].texCoord, mapVerts[3].texCoord);
 	meshBuilder.End();
 
@@ -938,7 +938,10 @@ void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize, bool sho
 			g_pShaderAPI->ChangeRenderTarget(m_mapRenderTarget, 0, nullptr, 0);
 			g_pShaderAPI->Clear(true, false, false);
 
-			CViewParams mapView(viewPos + Vector3D(0,250.0f * hud_mapZoom.GetFloat(),0) + viewForward*100.0f * hud_mapZoom.GetFloat(), Vector3D(60.0f,viewRotation + 180.0f,0), 70.0f);
+			CViewParams mapView(
+				viewPos + Vector3D(0,250.0f * hud_mapZoom.GetFloat(),0) + viewForward*100.0f * hud_mapZoom.GetFloat(), 
+				Vector3D(60.0f,viewRotation + 180.0f,0),
+				70.0f);
 
 			DrawWorldIntoMap(mapView, fDt);
 
