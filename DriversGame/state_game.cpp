@@ -481,8 +481,8 @@ void CState_Game::QuickRestart(bool intoReplay)
 
 	ShutdownSession(true);
 
-	// loader to the phase 5 (world loading)
-	m_isLoading = 5;
+	// loader to the phase 4 (world loading)
+	m_isLoading = 4;
 }
 
 void CState_Game::ReplayFastSeek(int tick)
@@ -700,6 +700,7 @@ bool CState_Game::DoLoadingFrame()
 		{
 			g_sounds->Init(EQ_DRVSYN_DEFAULT_SOUND_DISTANCE);
 			g_sounds->SetPaused(true);
+			m_loadingError = !DoLoadMission();
 			break;
 		}
 		case 2:
@@ -719,20 +720,15 @@ bool CState_Game::DoLoadingFrame()
 		}
 		case 4:
 		{
-			m_loadingError = !DoLoadMission();
+			m_loadingError = !g_pGameWorld->LoadLevel();
 			break;
 		}
 		case 5:
 		{
-			m_loadingError = !g_pGameWorld->LoadLevel();
-			break;
-		}
-		case 6:
-		{
 			g_pGameWorld->Init();
 			break;
 		}
-		case 7:	// FINAL
+		case 6:	// FINAL
 		{
 			InitializeSession();
 
@@ -861,9 +857,9 @@ void CState_Game::DrawLoadingScreen( float fDt )
 		if(m_isLoading == 0)
 			m_fade = 0.0f;
 
-		int loadingProgress = m_isLoading == -1 ? 8 : m_isLoading;
+		int loadingProgress = m_isLoading == -1 ? 7 : m_isLoading;
 
-		float loadingPercentage = float(loadingProgress) / 8.0f;
+		float loadingPercentage = float(loadingProgress) / 7.0f;
 
 		m_fade = lerp(m_fade, loadingPercentage, fDt*8.0f);
 

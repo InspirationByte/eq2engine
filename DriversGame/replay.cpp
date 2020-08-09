@@ -867,6 +867,20 @@ bool CReplayTracker::LoadVehicleReplay( CCar* target, const char* filename, int&
 		replayHeader_t hdr;
 		pFile->Read(&hdr, 1, sizeof(hdr));
 
+		if (hdr.idreplay != VEHICLEREPLAY_IDENT)
+		{
+			MsgError("Error: '%s' is not a valid replay file!\n", filename);
+			g_fileSystem->Close(pFile);
+			return false;
+		}
+
+		if (hdr.version != VEHICLEREPLAY_VERSION)
+		{
+			MsgError("Error: Replay '%s' has invalid version!\n", filename);
+			g_fileSystem->Close(pFile);
+			return false;
+		}
+
 		pFile->Read(&numVehicles, 1, sizeof(numVehicles));
 
 		// read replay file header
