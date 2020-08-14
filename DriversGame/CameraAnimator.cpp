@@ -27,12 +27,12 @@ const float CAM_HEIGHT_TRACE_LOW	= -0.5f;
 const float CAM_HEIGHT_TRACE_HIGH	= 2.5f;
 
 const float ZOOM_START_DIST			= 8.0f;
-const float ZOOM_END_DIST			= 200.0f;
+const float ZOOM_END_DIST			= 45.0f;
 
 const float MAX_CAR_DIST			= 250.0f;
 
 const float START_FOV				= 40.0f;
-const float END_FOV					= 10.0f;
+const float END_FOV					= 8.0f;
 
 const float CAM_DISTANCE_SPEED		= 2.0f;
 
@@ -367,8 +367,12 @@ void CCameraAnimator::Animate(ECameraMode mode,
 	}
 	else
 	{
-		m_vecCameraVelDiff = vec3_zero;
-		m_vecCameraSpringVel = vec3_zero;
+		Vector3D camVelDiff = (targetVelocity - m_vecCameraVel) * CAR_ACCEL_VEL_FACTOR;
+		m_vecCameraSpringVel += camVelDiff;
+		SpringFunction(m_vecCameraVelDiff, m_vecCameraSpringVel, cam_velocity_springconst.GetFloat(), cam_velocity_springdamp.GetFloat(), fDt);
+
+		//m_vecCameraVelDiff = vec3_zero;
+		//m_vecCameraSpringVel = vec3_zero;
 		m_vecCameraVel = targetVelocity;
 	}
 
@@ -525,29 +529,24 @@ void CCameraAnimator::Animate(ECameraMode mode,
 		case CAM_MODE_TRIPOD_FOLLOW:
 		case CAM_MODE_TRIPOD_FOLLOW_ZOOM:
 		{
-			Vector3D cam_target = finalTargetPos + targetUp * m_camConfig.heightInCar;
+			Vector3D cam_target = (finalTargetPos - m_vecCameraVelDiff);
+			float distToTarget = length(m_dropPos - cam_target);
+
+			float zoomFactor = RemapValClamp(distToTarget, ZOOM_START_DIST, ZOOM_END_DIST, 0.0f, 1.0f);
+
+			if (mode == CAM_MODE_TRIPOD_FOLLOW_ZOOM)
+			{
+				m_computedView.SetFOV(lerp(START_FOV, END_FOV, zoomFactor));
+			}
+			else
+				m_computedView.SetFOV(m_cameraFOV);
+
+			cam_target += targetUp * m_camConfig.height * (zoomFactor*0.25f + 0.5f);
 			Vector3D cam_angles = VectorAngles(normalize(cam_target - m_dropPos));
 
 			m_computedView.SetAngles(cam_angles + shakeVec);
 			m_computedView.SetOrigin(m_dropPos);
 
-			if (mode == CAM_MODE_TRIPOD_FOLLOW_ZOOM)
-			{
-				float distToTarget = length(m_dropPos - cam_target);
-
-				float zoomDistance = ZOOM_START_DIST + distToTarget;
-				zoomDistance = min(zoomDistance, ZOOM_END_DIST);
-
-				float distance_factor = zoomDistance / ZOOM_END_DIST;
-
-				float fFov = lerp(START_FOV, END_FOV, clamp(2.5f + logf(distance_factor), 0.0f, 1.0f));
-
-				m_computedView.SetFOV(fFov);
-			}
-			else
-			{
-				m_computedView.SetFOV(m_cameraFOV);
-			}
 			break;
 		}
 		case CAM_MODE_TRIPOD:
