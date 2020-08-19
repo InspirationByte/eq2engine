@@ -31,10 +31,7 @@ DECLARE_CMD(cam_go_thrill, "Thrill camera", 0)
 	{
 		CSingleGameSession* session = (CSingleGameSession*)g_pGameSession;
 
-		if (session->IsInThrill())
-			session->LeaveThrill();
-		else
-			session->GoThrill();
+		session->GoThrill();
 	}
 }
 

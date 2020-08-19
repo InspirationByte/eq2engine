@@ -801,11 +801,12 @@ void CDrvSynHUDManager::Render( float fDt, const IVector2D& screenSize, bool sho
 							{
 								float distFadeFac = (100.0f - dist) / 100.0f;
 
-								float height = (1.0f-clamp((10.0f - dist) / 10.0f, 0.0f, 1.0f)) * 90.0f;
+								float height = (1.0f-clamp((10.0f - dist) / 10.0f, 0.0f, 1.0f)) * 80.0f;
 
 								meshBuilder.Color4f(1, 0, 0, distFadeFac);
-								meshBuilder.Triangle2(Vector2D(screenSize.x - (screenPos.x + 40.0f), screenSize.y),
-														Vector2D(screenSize.x - (screenPos.x - 40.0f), screenSize.y),
+
+								meshBuilder.Triangle2(Vector2D(screenSize.x - (screenPos.x + 20.0f), screenSize.y - height * 0.5f),
+														Vector2D(screenSize.x - (screenPos.x - 20.0f), screenSize.y - height * 0.5f),
 														Vector2D(screenSize.x-screenPos.x, screenSize.y - height));
 							}
 						}
