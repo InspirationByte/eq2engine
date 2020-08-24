@@ -116,7 +116,8 @@ CCameraAnimator::CCameraAnimator() :
 
 void CCameraAnimator::SetFOV(float fFOV)
 {
-	m_cameraFOV = fFOV;
+	if(m_mode != CAM_MODE_TRIPOD_FOLLOW_ZOOM)
+		m_cameraFOV = fFOV;
 }
 
 void CCameraAnimator::SetOrigin(const Vector3D& camPos)
@@ -180,11 +181,11 @@ void CCameraAnimator::SetMode(int newMode)
 	{
 		m_interpLookAngle = vec3_zero;
 		m_rotation = vec3_zero;
-	}
 
-	// invalidate due to rapid FOV changes
-	if (newMode == CAM_MODE_TRIPOD_FOLLOW_ZOOM)
-		m_cameraFOV = -1.0f;
+		// invalidate due to rapid FOV changes
+		if (newMode == CAM_MODE_TRIPOD_FOLLOW_ZOOM)
+			m_cameraFOV = -1.0f;
+	}
 
 	m_mode = (ECameraMode)newMode;
 }

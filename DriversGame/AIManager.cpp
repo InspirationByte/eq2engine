@@ -647,7 +647,6 @@ void CAIManager::InitialSpawns(const Vector3D& spawnOrigin)
 
 void CAIManager::UpdateNavigationVelocityMap(float fDt)
 {
-	/*
 	m_velocityMapUpdateTime += fDt;
 
 	if(m_velocityMapUpdateTime > 0.5f)
@@ -663,7 +662,7 @@ void CAIManager::UpdateNavigationVelocityMap(float fDt)
 	{
 		PaintVelocityMapFrom(m_trafficCars[i]);
 	}
-	*/
+
 	// update debugging of navigation maps here
 	g_pGameWorld->m_level.UpdateDebugMaps();
 	
@@ -671,9 +670,10 @@ void CAIManager::UpdateNavigationVelocityMap(float fDt)
 
 void CAIManager::PaintVelocityMapFrom(CCar* car)
 {
-	int dx[8] = NEIGHBOR_OFFS_XDX(0,1);
-	int dy[8] = NEIGHBOR_OFFS_YDY(0,1);
-
+	CAIPursuerCar* pursuer = UTIL_CastToPursuer(car);
+	if (pursuer && pursuer->InPursuit())
+		return;
+		
 	Vector3D carForward = car->GetForwardVector();
 	Vector3D bodySizeOffset = carForward*car->m_conf->physics.body_size.z;
 

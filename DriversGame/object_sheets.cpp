@@ -108,7 +108,7 @@ bool CObject_Sheets::InitSheets()
 		CollisionData_t coll;
 		if( g_pPhysics->TestLine(part.origin, endPos, coll, OBJECTCONTENTS_SOLID_GROUND) )
 		{
-			part.origin = coll.position;
+			part.origin = coll.position + Vector3D(0, 0.05f, 0);
 			part.angle = RandomFloat(-70.0f,80.0f);
 			m_sheets.append( part );
 		}

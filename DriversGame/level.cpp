@@ -2568,7 +2568,7 @@ navcell_t& CGameLevel::Nav_GetTileAndCellAtGlobalPoint(const IVector2D& point, u
 
 		navGrid_t& grid = reg->m_navGrid[subGrid];
 
-		tile = grid.staticObst[idx];//min(grid.dynamicObst[idx], grid.staticObst[idx]);
+		tile = min(grid.dynamicObst[idx], grid.staticObst[idx]);
 		return grid.cellStates[idx];
 	}
 
