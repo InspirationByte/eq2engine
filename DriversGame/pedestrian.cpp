@@ -426,8 +426,8 @@ const float AI_PEDESTRIAN_CAR_HORN_MIN_RADIUS = 5.0f;
 const float AI_PEDESTRIAN_CAR_HORN_SPEED_SCALE = 0.025f;
 
 const float AI_PEDESTRIAN_CAR_AFRAID_MAX_RADIUS = 15.0f;
-const float AI_PEDESTRIAN_CAR_AFRAID_MIN_RADIUS = 2.5f;
-const float AI_PEDESTRIAN_CAR_AFRAID_STRAIGHT_RADIUS = 2.5f;
+const float AI_PEDESTRIAN_CAR_AFRAID_MIN_RADIUS = 4.0f;
+const float AI_PEDESTRIAN_CAR_AFRAID_STRAIGHT_RADIUS = 4.5f;
 const float AI_PEDESTRIAN_CAR_AFRAID_VELOCITY = 1.0f;
 const float AI_PEDESTRIAN_ESCAPE_CHECK_TIME = 0.25f;
 const float AI_PEDESTRIAN_ESCAPE_RADIUS = 0.7f;
@@ -581,7 +581,7 @@ void CPedestrianAI::DetectEscapeJob(void* data, int jobiter)
 		float velocity = lengthSqr(carVel);
 		float dist = lengthSqr(carPos - pedPos);
 
-		bool tooNearToCar = (dist < AI_PEDESTRIAN_CAR_AFRAID_MIN_RADIUS*AI_PEDESTRIAN_CAR_AFRAID_MIN_RADIUS);
+		bool tooNearToCar = nearCar->m_bbox.Intersects(pedAI->m_host->m_bbox);
 
 		if (projResult > 0.0f && projResult < 1.0f && (velocity > AI_PEDESTRIAN_CAR_AFRAID_VELOCITY*AI_PEDESTRIAN_CAR_AFRAID_VELOCITY) ||
 			tooNearToCar)
