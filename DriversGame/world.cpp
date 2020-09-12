@@ -2588,6 +2588,7 @@ const char*	CGameWorld::GetLevelName() const
 #include "object_trafficlight.h"
 #include "object_sheets.h"
 #include "object_scripted.h"
+#include "object_emitter.h"
 #include "pedestrian.h"
 
 
@@ -2637,6 +2638,10 @@ CGameObject* CGameWorld::CreateGameObject( const char* typeName, kvkeybase_t* kv
 	else if(!stricmp(typeName, "scripted"))
 	{
 		return new CObject_Scripted(kvdata);
+	}
+	else if (!stricmp(typeName, "emitter"))
+	{
+		return new CObject_EffectEmitter(kvdata);
 	}
 
 	MsgError("CGameWorld::CreateGameObject error: Invalid type '%s'\n", typeName);

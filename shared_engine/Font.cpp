@@ -380,6 +380,7 @@ void CFont::BuildCharVertexBuffer(CMeshBuilder& builder, const CHAR_T* str, cons
 
 ConVar r_font_sdf_start("r_font_sdf_start", "0.94");
 ConVar r_font_sdf_range("r_font_sdf_range", "0.06");
+ConVar r_font_debug("r_font_debug", "0", nullptr, CV_CHEAT);
 
 //
 // Renders new styled tagged text - wide chars only
@@ -392,6 +393,34 @@ void CFont::RenderText(const wchar_t* pszText, const Vector2D& start, const eqFo
 
 	IDynamicMesh* dynMesh = materials->GetDynamicMesh();
 	CMeshBuilder meshBuilder(dynMesh);
+
+	if (r_font_debug.GetBool())
+	{
+		RasterizerStateParams_t raster;
+		raster.scissor = (params.styleFlag & TEXT_STYLE_SCISSOR) > 0;
+		BlendStateParam_t blending;
+		blending.srcFactor = BLENDFACTOR_SRC_ALPHA;
+		blending.dstFactor = BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
+
+		materials->SetDepthStates(false, false);
+		materials->SetBlendingStates(blending);
+		materials->SetRasterizerStates(raster);
+
+		materials->SetAmbientColor(color4_white);
+		materials->SetMatrix(MATRIXMODE_WORLD, identity4());
+
+		g_pShaderAPI->SetTexture(nullptr, nullptr, 0);
+		materials->BindMaterial(materials->GetDefaultMaterial());
+
+		// set character color
+		meshBuilder.Color4f(1.0f, 0.0f, 0.0f, 0.8f);
+
+		meshBuilder.Begin(PRIM_LINES);
+
+		meshBuilder.Line2fv(start, start + IVector2D(512, 0));
+
+		meshBuilder.End();
+	}
 
 	// first we building vertex buffer
 	meshBuilder.Begin( PRIM_TRIANGLE_STRIP );
@@ -412,7 +441,7 @@ void CFont::RenderText(const wchar_t* pszText, const Vector2D& start, const eqFo
 	materials->SetBlendingStates(blending);
 	materials->SetRasterizerStates(raster);
 
-	g_pShaderAPI->SetTexture(m_fontTexture, NULL, 0);
+	g_pShaderAPI->SetTexture(m_fontTexture, nullptr, 0);
 
 	CEqFontCache* fontCache = ((CEqFontCache*)g_fontCache);
 

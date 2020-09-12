@@ -581,12 +581,21 @@ void CReplayTracker::SaveToFile( const char* filename )
 		// write events
 		WriteEvents(rplFile);
 
+		// read extra data
+		hdr.extraDataSize = g_pGameSession->SaveReplayExtraData(rplFile);
+
+		// write header again
+		rplFile->Seek(0, VS_SEEK_SET);
+		rplFile->Write(&hdr, 1, sizeof(replayHeader_t));
+
+		// kompleted
 		g_fileSystem->Close(rplFile);
 
 		Msg("Replay '%s' saved\n", filename);
 		m_unsaved = false;
 	}
 
+	// save camera file
 	if(m_cameras.numElem() > 0)
 	{
 		EqString camsFilename = m_filename.Path_Strip_Ext() + ".rcam";
@@ -957,6 +966,10 @@ bool CReplayTracker::LoadVehicleReplay( CCar* target, const char* filename, int&
 
 		// make this vehicle active if not
 		m_activeVehicles.addUnique( repIdx );
+
+		// read extra data
+		if(hdr.extraDataSize)
+			g_pGameSession->ReadReplayExtraData(pFile, hdr.extraDataSize);
 
 		g_fileSystem->Close(pFile);
 

@@ -18,9 +18,12 @@ enum EPursuerAIType
 	PURSUER_TYPE_COUNT,
 };
 
-const float AI_COPVIEW_FAR					= 60.0f;
-const float AI_COPVIEW_FAR_WANTED			= 100.0f;
+const float AI_COPVIEW_FAR					= 70.0f;
+const float AI_COPVIEW_FAR_WANTED			= 120.0f;
 const float AI_COPVIEW_FAR_HASSTRAIGHTPATH	= 40.0f;
+
+const float AI_COPVIEW_FOV					= 55.0f;
+const float AI_COPVIEW_FOV_WANTED			= 90.0f;
 
 class CAIPursuerCar : public CAITrafficCar
 {

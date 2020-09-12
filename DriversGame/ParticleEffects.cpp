@@ -83,8 +83,10 @@ bool CFleckEffect::DrawEffect(float dTime)
 		effect.fZAngle = 0.0f;
 	}*/
 
-	effect.fWide = fStartSize;
-	effect.fTall = fStartSize;
+	Vector2D size = m_atlEntry->rect.GetSize();
+
+	effect.fWide = size.y * fStartSize * 0.5f;
+	effect.fTall = size.x * fStartSize;
 
 	Effects_DrawBillboard(&effect, &g_pGameWorld->m_view, NULL);
 
@@ -152,7 +154,7 @@ bool CSmokeEffect::DrawEffect(float dTime)
 	effect.fZAngle = lifeTimePerc*rotate;
 
 	effect.fWide = lerp(fStartSize, fEndSize, 1.0f-lifeTimePerc);
-	effect.fTall = lerp(fStartSize, fEndSize, 1.0f-lifeTimePerc);
+	effect.fTall = lerp(fStartSize, fEndSize, 1.0f - lifeTimePerc);
 
 	// no frustum for now
 	Effects_DrawBillboard(&effect, &g_pGameWorld->m_view, NULL);

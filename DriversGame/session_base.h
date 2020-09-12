@@ -103,6 +103,9 @@ public:
 
 	double						GetGameTime() const { return m_gameTime; }
 
+	int							SaveReplayExtraData(IVirtualStream* stream);
+	void						ReadReplayExtraData(IVirtualStream* stream, int data);
+
 	//-------------------------------------------------------------------------
 	// functions only used by Lua
 

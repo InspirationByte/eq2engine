@@ -180,7 +180,9 @@ struct replayHeader_s
 
 	char	levelname[64];
 	char	envname[64];
-	char	missionscript[64];
+	char	missionscript[60];
+
+	int		extraDataSize;		// KeyValues mission data
 };
 
 ALIGNED_TYPE(replayHeader_s,4) replayHeader_t;
@@ -289,6 +291,9 @@ protected:
 
 private:
 	int							GetPlaybackTick(int tick) const;
+
+	kvkeybase_t					m_missionData;
+	kvkeybase_t					m_missionSettings;
 
 	EqString					m_filename;
 

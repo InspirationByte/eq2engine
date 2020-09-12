@@ -1381,6 +1381,9 @@ void CCar::UpdateVehiclePhysics(float delta)
 	bool inputBurnout = false;
 	bool inputFastSteer = false;
 
+	float wheelSpeed = GetSpeedWheels();
+	float speed = GetSpeed();
+
 	const int wheelCount = GetWheelCount();
 
 	if( m_enabled )
@@ -1406,6 +1409,14 @@ void CCar::UpdateVehiclePhysics(float delta)
 		// non-car vehicles still can brake
 		if(controlButtons & IN_BRAKE )
 			inputBrake = (float)((float)m_brakeRatio*_oneBy1024);
+
+		if (inputAcceleration > 0 && inputBrake > 0)
+		{
+			if (wheelSpeed > 0.01f)
+				inputAcceleration = 0;
+			else if (wheelSpeed < -0.01f)
+				inputBrake = 0;
+		}
 	}
 	else
 		inputHandbrake = 1;
@@ -1445,7 +1456,7 @@ void CCar::UpdateVehiclePhysics(float delta)
 	//------------------------------------------------------------------------------------------
 
 	// do acceleration and burnout
-	bool bDoBurnout = inputBurnout && (GetSpeed() < m_conf->physics.burnoutMaxSpeed);
+	bool bDoBurnout = inputBurnout && (speed < m_conf->physics.burnoutMaxSpeed);
 
 	if (inputBurnout)
 	{
@@ -1487,8 +1498,6 @@ void CCar::UpdateVehiclePhysics(float delta)
 	{
 		float steerSpeedMultiplier = 1.0f;
 		FReal steer_diff = inputSteering-steering;
-
-		float speed = GetSpeed();
 
 		steerSpeedMultiplier = RemapValClamp(STEERING_REDUCE_SPEED_MAX-speed, STEERING_REDUCE_SPEED_MIN, STEERING_REDUCE_SPEED_MAX, STEERING_SPEED_REDUCE_FACTOR, 1.0f);
 		steerSpeedMultiplier = powf(steerSpeedMultiplier, STEERING_SPEED_REDUCE_CURVE);
@@ -1562,8 +1571,6 @@ void CCar::UpdateVehiclePhysics(float delta)
 	eqPhysCollisionFilter collFilter;
 	collFilter.flags = 0;// EQPHYS_FILTER_FLAG_DISALLOW_DYNAMIC;
 	collFilter.AddObject(carBody);
-
-	
 
 	// Raycast the wheels and do some simple calculations
 	for(int i = 0; i < wheelCount; i++)
@@ -1706,7 +1713,7 @@ void CCar::UpdateVehiclePhysics(float delta)
 
 	float autoHandbrakeHelper = 0.0f;
 
-	if( m_autohandbrake && GetSpeedWheels() > 0.0f && !bDoBurnout )
+	if( m_autohandbrake && wheelSpeed > 0.0f && !bDoBurnout )
 	{
 		const float AUTOHANDBRAKE_MIN_SPEED		= 8.0f;
 		const float AUTOHANDBRAKE_MAX_SPEED		= 40.0f;
@@ -2161,6 +2168,7 @@ void CCar::UpdateVehiclePhysics(float delta)
 		wheel.m_pitch = DEG2RAD(ConstrainAngle180(RAD2DEG(wheel.m_pitch)));
 	}
 
+	if(numWheelsOnGround > 0)
 	{
 		float downForce = length(carBody->GetLinearVelocity().xz()) * m_conf->physics.downForce;// * delta;
 		carBody->ApplyForce(carBody->GetCenterOfMass(), Vector3D(0, -downForce, 0));
@@ -2218,8 +2226,8 @@ void CCar::EmitCollisionParticles(const Vector3D& position, const Vector3D& velo
 
 		if(wlen > 10.5f && fCollImpulse > 150)
 		{
-			const float FLECK_SCALE = 0.8f;
-			const int FLECK_COUNT = 2;
+			const float FLECK_SCALE = 45.8f;
+			const int FLECK_COUNT = 4;
 
 			int partCount = numDamageParticles*FLECK_COUNT;
 

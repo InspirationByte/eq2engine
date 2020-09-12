@@ -269,6 +269,15 @@ enum EMouseCodes
 #define KEY_Y			int('Y')
 #define KEY_Z			int('Z')
 
+#define KEY_COMMA		int(',')
+#define KEY_PERIOD		int('.')
+#define KEY_LBRACKET	int('[')
+#define KEY_RBRACKET	int(']')
+#define KEY_MINUS		int('-')
+#define KEY_EQUALS		int('=')
+#define KEY_SLASH		int('/')
+#define KEY_BACKSLASH	int('\\')
+
 #define	JOYSTICK_START_AXES	512
 
 #elif defined(LINUX)

@@ -454,7 +454,7 @@ void CDrvSynHUDManager::DrawWorldIntoMap(const CViewParams& params, float fDt)
 
 			Vector3D cop_forward = pursuer->GetForwardVector();
 
-			float Yangle = -RAD2DEG(atan2f(cop_forward.z, cop_forward.x));
+			
 
 			Vector3D copPos = (pursuer->GetOrigin() + pursuer->GetForwardVector()) * Vector3D(1.0f,0.0f,1.0f);
 
@@ -469,20 +469,23 @@ void CDrvSynHUDManager::DrawWorldIntoMap(const CViewParams& params, float fDt)
 
 			// draw cop car frustum
 			float size = hasAttention ? AI_COPVIEW_FAR_WANTED : AI_COPVIEW_FAR;
-			float angFac = hasAttention ? 22.0f : 12.0f;
-			float angOffs = hasAttention ? 0.0f : 45.0f;
+			float fov = hasAttention ? AI_COPVIEW_FOV_WANTED : AI_COPVIEW_FOV;
+			float angFac = fov / 4.0f;
+			float angOffs = fov;// *-0.5f;// fov * 0.25f;
+
+			float Yangle = RAD2DEG(atan2f(cop_forward.z, cop_forward.x));
 
 			meshBuilder.Color4f(1,1,1,0.0f);
-			for(int j = 0; j < 8; j++)
+			for(int j = 0; j < 9; j++)
 			{
 				float ss,cs;
-				float angle = (float(j)+0.5f) * angFac + Yangle + angOffs;
+				float angle = -float(j) * angFac + Yangle + angOffs;
 				SinCos(DEG2RAD(angle), &ss, &cs);
 
-				if(j < 1 || j > 6)
-					meshBuilder.Position3fv(copPos + Vector3D(ss, 0.0f, cs)*size*0.35f);
+				if(j < 1 || j > 7)
+					meshBuilder.Position3fv(copPos + Vector3D(cs, 0.0f, ss)*size*0.35f);
 				else
-					meshBuilder.Position3fv(copPos + Vector3D(ss, 0.0f, cs)*size);
+					meshBuilder.Position3fv(copPos + Vector3D(cs, 0.0f, ss)*size);
 
 				if(j > 0)
 					meshBuilder.AdvanceVertexIndex(vtxIdx);

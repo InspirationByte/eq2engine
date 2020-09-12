@@ -69,6 +69,12 @@ void Game_QuickRestart(bool intoReplay)
 	g_State_Game->QuickRestart(intoReplay);
 }
 
+void Game_FullRestart()
+{
+	g_State_Game->UnloadGame();
+	g_State_Game->OnEnter(g_State_Game);
+}
+
 void Game_OnPhysicsUpdate(float fDt, int iterNum);
 
 DECLARE_CMD(restart, "Restarts game quickly", 0)
@@ -267,6 +273,7 @@ CState_Game::CState_Game() : CBaseStateHandler()
 
 	m_replayMode = REPLAYMODE_NONE;
 	m_isGameRunning = false;
+	m_missionChanged = false;
 	m_fade = 0.0f;
 	m_isLoading = -1;
 	m_missionScriptName = "defaultmission";
@@ -356,6 +363,8 @@ bool CState_Game::DoLoadMission()
 		m_missionScriptName = "defaultmission";
 	}
 
+	m_missionChanged = false;
+
 	InitLoadingScreen();
 
 	return true;
@@ -363,6 +372,7 @@ bool CState_Game::DoLoadMission()
 
 bool CState_Game::SetMissionScript( const char* name )
 {
+	m_missionChanged = true;
 	m_missionScriptName = name;
 
 	EqString scriptFileName(varargs("scripts/missions/%s.lua", m_missionScriptName.c_str()));
@@ -555,6 +565,7 @@ void CState_Game::OnEnterSelection( bool isFinal )
 	if(isFinal)
 	{
 		m_fade = 0.0f;
+
 		m_exitGame = true;
 	}
 }
@@ -1038,6 +1049,9 @@ bool CState_Game::Update( float fDt )
 		{
 			if(m_scheduledRestart)
 				Game_QuickRestart(false);
+
+			if (m_missionChanged)
+				Game_FullRestart();
 
 			if(m_scheduledQuickReplay > 0)
 			{

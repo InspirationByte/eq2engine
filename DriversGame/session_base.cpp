@@ -153,6 +153,16 @@ void CGameSessionBase::Init()
 	m_missionStatus = MIS_STATUS_INGAME;
 }
 
+int CGameSessionBase::SaveReplayExtraData(IVirtualStream* stream)
+{
+	return 0; // YOUR CODE HERE
+}
+
+void CGameSessionBase::ReadReplayExtraData(IVirtualStream* stream, int data)
+{
+}
+
+
 void CGameSessionBase::OnLoadingDone()
 {
 	if (IsServer())

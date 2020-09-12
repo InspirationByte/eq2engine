@@ -24,9 +24,6 @@ ConVar g_railroadCops("g_railroadCops", "0", NULL, CV_CHEAT);
 const float AI_COP_BEGINPURSUIT_ARMED_DELAY		= 0.15f;
 const float AI_COP_BEGINPURSUIT_PASSIVE_DELAY	= 0.4f;
 
-const float AI_COPVIEW_FOV			= 85.0f;
-const float AI_COPVIEW_FOV_WANTED	= 90.0f;
-
 const float AI_COPVIEW_FAR_ROADBLOCK	= 10.0f;
 
 const float AI_COPVIEW_RADIUS			= 18.0f;

@@ -291,6 +291,7 @@ bool CState_MainMenu::Update( float fDt )
 		oolua_ipairs_end()
 	}
 
+	// draw menu items
 	{
 		EqLua::LuaStackGuard g(GetLuaState());
 
@@ -322,7 +323,7 @@ bool CState_MainMenu::Update( float fDt )
 
 				ColorRGBA selColor(1.0f, 0.57f, 0.0f, pow(m_textFade, 5.0f));
 
-				float baseLine = font->GetBaselineOffs(fontParam);
+				float baseLine = font->GetBaselineOffs(fontParam) - 3.0f * menuScaling.y;
 				float XOffset = -8.0f * menuScaling.x;
 
 				float lineW = 6.0f * menuScaling.x; // lineWidth
@@ -442,6 +443,7 @@ bool CState_MainMenu::Update( float fDt )
 		}
 	}
 
+	// draw menu title
 	if(m_menuTitleStr.Length())
 	{
 		float alpha = clamp(m_fade, 0.0f, 1.0f);
@@ -460,7 +462,7 @@ bool CState_MainMenu::Update( float fDt )
 		// ok for 3 seconds
 		float textXPos = -2000.0f * pow(1.0f - m_textFade, 4.0f) + (-2000.0f * pow(1.0f - alpha, 4.0f));
 
-		Vector2D screenMessagePos(menuPos + Vector2D(textXPos, -32.0f*menuScaling.y));
+		Vector2D screenMessagePos(menuPos + Vector2D(textXPos, -42.0f*menuScaling.y));
 
 		{
 			float messageLineStart = screenMessagePos.x;

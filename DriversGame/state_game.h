@@ -128,6 +128,7 @@ protected:
 
 	bool				m_showMenu;
 
+	bool				m_missionChanged;
 	bool				m_scheduledRestart;
 	int					m_scheduledQuickReplay;
 

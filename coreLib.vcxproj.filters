@@ -41,8 +41,8 @@
     <ClInclude Include="public\core\ConVar.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="Core\DPKFileWriter.h">
-      <Filter>Source Files</Filter>
+    <ClInclude Include="public\core\DPKFileWriter.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -61,7 +61,7 @@
     <ClCompile Include="public\core\ConVar.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Core\DPKFileWriter.cpp">
+    <ClCompile Include="public\core\DPKFileWriter.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

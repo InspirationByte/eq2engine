@@ -427,7 +427,9 @@ const float AI_PEDESTRIAN_CAR_HORN_SPEED_SCALE = 0.025f;
 
 const float AI_PEDESTRIAN_CAR_AFRAID_MAX_RADIUS = 15.0f;
 const float AI_PEDESTRIAN_CAR_AFRAID_MIN_RADIUS = 4.0f;
-const float AI_PEDESTRIAN_CAR_AFRAID_STRAIGHT_RADIUS = 4.5f;
+const float AI_PEDESTRIAN_CAR_AFRAID_SPEED_MODIFIER = 0.1f;
+const float AI_PEDESTRIAN_CAR_AFRAID_STRAIGHT_RADIUS = 2.5f;
+
 const float AI_PEDESTRIAN_CAR_AFRAID_VELOCITY = 1.0f;
 const float AI_PEDESTRIAN_ESCAPE_CHECK_TIME = 0.25f;
 const float AI_PEDESTRIAN_ESCAPE_RADIUS = 0.7f;
@@ -598,7 +600,7 @@ void CPedestrianAI::DetectEscapeJob(void* data, int jobiter)
 			{
 				Vector3D projPos = lerp(carPos, carHeadingPos, projResult);
 
-				if (length(projPos - pedPos) < AI_PEDESTRIAN_CAR_AFRAID_STRAIGHT_RADIUS)
+				if (length(projPos - pedPos) < AI_PEDESTRIAN_CAR_AFRAID_STRAIGHT_RADIUS + length(carVel.xz()) * AI_PEDESTRIAN_CAR_AFRAID_SPEED_MODIFIER)
 				{
 					pedAI->m_escapeFromPos = pedPos;
 					Vector3D projDir = pedPos - projPos;

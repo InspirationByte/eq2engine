@@ -248,6 +248,14 @@ bool Lua_SetMissionScript(const char* name)
 }
 OOLUA_CFUNC(Lua_SetMissionScript, L_SetMissionScript)
 
+bool Lua_GetMissionScriptName()
+{
+	return g_State_Game->GetMissionScriptName();
+}
+OOLUA_CFUNC(Lua_GetMissionScriptName, L_GetMissionScriptName)
+
+
+
 bool Lua_StartReplay(const char* name, int mode)
 {
 	return g_State_Game->StartReplay(name, (EReplayMode)mode);
@@ -402,6 +410,8 @@ bool LuaBinding_InitDriverSyndicateBindings(lua_State* state)
 	OOLUA::set_global(GetLuaState(), "gameHUD", g_pGameHUD);
 
 	OOLUA::set_global(state, "SetMissionScript", L_SetMissionScript);
+	OOLUA::set_global(state, "GetMissionScriptName", L_GetMissionScriptName);
+	
 	OOLUA::set_global(state, "StartReplay", L_StartReplay);
 	
 	//OOLUA::set_global(state, "SetCurrentState", L_SetCurrentState);

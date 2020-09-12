@@ -56,8 +56,9 @@ void CObject_Debris::OnRemove()
 
 	if (m_smashSpawnedObject)
 	{
-		if(g_pGameWorld->IsValidObject(m_smashSpawnedObject))
-			m_smashSpawnedObject->m_state = GO_STATE_REMOVE;
+		//if(g_pGameWorld->IsValidObject(m_smashSpawnedObject))
+		//	m_smashSpawnedObject->m_state = GO_STATE_REMOVE;
+
 		m_smashSpawnedObject = nullptr;
 	}
 }
@@ -473,7 +474,8 @@ void CObject_Debris::OnPhysicsPreCollide(ContactPair_t& pair)
 				otherObject->Spawn();
 				g_pGameWorld->AddObject(otherObject);
 
-				m_smashSpawnedObject = otherObject;
+				if(!m_numBreakParts)
+					m_smashSpawnedObject = otherObject;
 			}
 		}
 
