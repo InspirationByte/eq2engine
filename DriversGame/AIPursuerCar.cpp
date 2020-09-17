@@ -214,18 +214,20 @@ void CAIPursuerCar::Evt_CarDeathEventHandler(const eventArgs_t& args)
 
 	if (IsCar(creator))
 	{
-		CAIPursuerCar* otherPursuer = UTIL_CastToPursuer((CCar*)creator);
+		CCar* car = (CCar*)creator;
 
-		if (otherPursuer && thisCar->CheckObjectVisibility(otherPursuer))
+		if (thisCar->CheckObjectVisibility(car))
 		{
+			CAIPursuerCar* otherPursuer = UTIL_CastToPursuer(car);
+
 			if (otherPursuer && otherPursuer->GetPursuerType() == PURSUER_TYPE_COP)
 			{
 				thisCar->Speak("cop.squad_car_down", thisCar->m_target, false, 0.8f);
 			}
 			else
 			{
-				if(creator == thisCar->m_target)
-					thisCar->Speak("cop.heavilydamaged", thisCar->m_target, false, 1.0f);
+				if(car == thisCar->m_target)
+					thisCar->Speak("cop.heavilydamaged", thisCar->m_target, true, 1.0f);
 				else
 					thisCar->Speak("cop.majorincident", thisCar->m_target, false, 0.6f);
 			}
@@ -532,6 +534,7 @@ void CAIPursuerCar::BeginPursuit( float delay )
 		if (!targetPursuerData.firstEncounter)
 		{
 			targetPursuerData.firstEncounter = true;
+
 			Speak("cop.pursuit", m_target, true);
 		}
 		else
