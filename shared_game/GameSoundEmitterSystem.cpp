@@ -391,7 +391,10 @@ ISoundController* CSoundEmitterSystem::CreateSoundController(EmitSound_t *ep)
 
 	CSoundController* pController = new CSoundController();
 
-	m_controllers.append(pController);
+	{
+		Threading::CScopedMutex m(m_mutex);
+		m_controllers.append(pController);
+	}
 
 	// copy sound name
 	pController->m_soundName.Assign(ep->name); 
@@ -407,14 +410,14 @@ void CSoundEmitterSystem::RemoveSoundController(ISoundController* cont)
 	if(!cont)
 		return;
 
-	cont->Stop();
-
-	delete cont;
-
-	int idx = m_controllers.findIndex(cont);
-
-	if( idx != -1)
-		m_controllers.fastRemoveIndex( idx );
+	{
+		Threading::CScopedMutex m(m_mutex);
+		if (m_controllers.fastRemove(cont))
+		{
+			cont->Stop();
+			delete cont;
+		}
+	}
 }
 
 void CSoundEmitterSystem::InvalidateSoundChannelObject(CSoundChannelObject* pEnt)
@@ -540,6 +543,8 @@ int CSoundEmitterSystem::EmitSound(EmitSound_t* emit)
 
 			if(firstPlayingSound != -1)
 			{
+				Threading::CScopedMutex m(m_mutex);
+
 				EmitterData_t* substEmitter = m_emitters[firstPlayingSound];
 
 				// if index is valid, shut up this sound
@@ -586,8 +591,13 @@ int CSoundEmitterSystem::EmitSound(EmitSound_t* emit)
 	sParams.airAbsorption		= script->fAirAbsorption;
 	sParams.is2D				= script->is2d;
 
-	ISoundEmitter* sndSource = soundsystem->AllocEmitter();
+	ISoundEmitter* sndSource;
 	
+	{
+		Threading::CScopedMutex m(m_mutex);
+		sndSource = soundsystem->AllocEmitter();
+	}
+
 	// setup default values
 	sndSource->SetPosition(edata->origin);
 	sndSource->SetVelocity(edata->velocity);
