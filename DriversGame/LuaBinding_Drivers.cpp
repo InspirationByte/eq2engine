@@ -222,6 +222,7 @@ CLCollisionData S_Util_CPhysicsEngine_TestBox(const Vector3D& dims, const Vector
 }
 OOLUA_CFUNC(S_Util_CPhysicsEngine_TestBox, L_Util_CPhysicsEngine_TestBox)
 
+// navigation function
 OOLUA::Table S_Util_CGameLevel_Nav_FindPath(const Vector3D& from, const Vector3D& to, int iterations, bool fast)
 {
 	OOLUA::Table result = OOLUA::new_table(GetLuaState());
@@ -240,6 +241,143 @@ OOLUA::Table S_Util_CGameLevel_Nav_FindPath(const Vector3D& from, const Vector3D
 }
 OOLUA_CFUNC(S_Util_CGameLevel_Nav_FindPath, L_Util_CGameLevel_Nav_FindPath)
 
+// road info function
+OOLUA::Table S_Util_CGameLevel_Road_GetRoadAtPosition(const Vector3D& pos, int numIterations)
+{
+	OOLUA::Table result = OOLUA::new_table(GetLuaState());
+
+	IVector2D cellAtPosition;
+	if (!g_pGameWorld->m_level.GetTileGlobal(pos, cellAtPosition))
+	{
+		result.set("numLanes", 0);
+		return result;
+	}
+
+
+	straight_t straight = g_pGameWorld->m_level.Road_GetStraightAtPos(pos, 4);
+	IVector2D straightDirVec = GetDirectionVec(straight.direction);
+	IVector2D perpendicularVec = GetDirectionVec(straight.direction - 1);
+	IVector2D placementVec = cellAtPosition - straightDirVec;
+
+	int curLane = g_pGameWorld->m_level.Road_GetLaneIndexAtPoint(placementVec, 16) - 1;
+	placementVec -= perpendicularVec * curLane;
+	int numLanes = g_pGameWorld->m_level.Road_GetWidthInLanesAtPoint(placementVec, 32, 1);
+
+	Vector3D roadStart = g_pGameWorld->m_level.GlobalTilePointToPosition(placementVec);
+	Vector3D roadEnd = g_pGameWorld->m_level.GlobalTilePointToPosition(placementVec + perpendicularVec * numLanes);
+
+	result.set("startPos", roadStart);
+	result.set("endPos", roadEnd);
+	result.set("numLanes", numLanes);
+	result.set("directionXZ", straightDirVec);
+
+	return result;
+}
+OOLUA_CFUNC(S_Util_CGameLevel_Road_GetRoadAtPosition, L_Util_CGameLevel_Road_GetRoadAtPosition)
+
+// road utility function
+OOLUA::Table S_Util_CGameLevel_Road_GetStraightAtPosition(const Vector3D& pos, int numIterations)
+{
+	OOLUA::Table result = OOLUA::new_table(GetLuaState());
+
+	straight_t straight = g_pGameWorld->m_level.Road_GetStraightAtPos(pos, numIterations);
+
+	Vector3D roadStart = g_pGameWorld->m_level.GlobalTilePointToPosition(straight.start);
+	Vector3D roadEnd = g_pGameWorld->m_level.GlobalTilePointToPosition(straight.end);
+
+	straight.lane = g_pGameWorld->m_level.Road_GetLaneIndexAtPoint(straight.start, 16);
+	int numLanes = g_pGameWorld->m_level.Road_GetNumLanesAtPoint(straight.start, 16);
+
+	IVector2D directionXZ = GetDirectionVec(straight.direction);
+
+	result.set("id", straight.id);
+	result.set("startPos", roadStart);
+	result.set("endPos", roadEnd);
+	result.set("directionXZ", directionXZ);
+	result.set("hasTrafficLight", straight.hasTrafficLight);
+	result.set("lane", straight.lane);
+	result.set("numLanes", numLanes);
+
+	return result;
+}
+OOLUA_CFUNC(S_Util_CGameLevel_Road_GetStraightAtPosition, L_Util_CGameLevel_Road_GetStraightAtPosition)
+
+// road and junction utility function
+OOLUA::Table S_Util_CGameLevel_GetJunctionAtPosition(const Vector3D& pos, int numIterations)
+{
+	OOLUA::Table result = OOLUA::new_table(GetLuaState());
+
+	straight_t straight = g_pGameWorld->m_level.Road_GetStraightAtPos(pos, numIterations);
+	roadJunction_t junction = g_pGameWorld->m_level.Road_GetJunctionAtPoint(straight.end, numIterations);
+
+	DkList<straight_t> exits;
+	Road_GetJunctionExits(exits, straight, junction);
+
+	OOLUA::Table straightTable = OOLUA::new_table(GetLuaState());
+	{
+		Vector3D roadStart = g_pGameWorld->m_level.GlobalTilePointToPosition(straight.start);
+		Vector3D roadEnd = g_pGameWorld->m_level.GlobalTilePointToPosition(straight.end);
+
+		straight.lane = g_pGameWorld->m_level.Road_GetLaneIndexAtPoint(straight.start, 16);
+		int numLanes = g_pGameWorld->m_level.Road_GetNumLanesAtPoint(straight.start, 16);
+
+		IVector2D directionXZ = GetDirectionVec(straight.direction);
+
+		straightTable.set("id", straight.id);
+		straightTable.set("startPos", roadStart);
+		straightTable.set("endPos", roadEnd);
+		straightTable.set("directionXZ", directionXZ);
+		straightTable.set("hasTrafficLight", straight.hasTrafficLight);
+		straightTable.set("lane", straight.lane);
+		straightTable.set("numLanes", numLanes);
+	}
+
+	OOLUA::Table junctionTable = OOLUA::new_table(GetLuaState());
+	{
+		Vector3D juncStart = g_pGameWorld->m_level.GlobalTilePointToPosition(junction.start);
+		Vector3D juncEnd = g_pGameWorld->m_level.GlobalTilePointToPosition(junction.end);
+
+		junctionTable.set("id", junction.id);
+		junctionTable.set("startPos", juncStart);
+		junctionTable.set("endPos", juncEnd);
+
+		OOLUA::Table junctionExitsTable = OOLUA::new_table(GetLuaState());
+
+		for (int i = 0; i < exits.numElem(); i++)
+		{
+			straight_t& exitStr = exits[i];
+
+			OOLUA::Table exitStraightTable = OOLUA::new_table(GetLuaState());
+
+			Vector3D roadStart = g_pGameWorld->m_level.GlobalTilePointToPosition(exitStr.start);
+			Vector3D roadEnd = g_pGameWorld->m_level.GlobalTilePointToPosition(exitStr.end);
+
+			exitStr.lane = g_pGameWorld->m_level.Road_GetLaneIndexAtPoint(exitStr.start, 16);
+			int numLanes = g_pGameWorld->m_level.Road_GetNumLanesAtPoint(exitStr.start, 16);
+
+			IVector2D directionXZ = GetDirectionVec(exitStr.direction);
+
+			exitStraightTable.set("id", exitStr.id);
+			exitStraightTable.set("startPos", roadStart);
+			exitStraightTable.set("endPos", roadEnd);
+			exitStraightTable.set("directionXZ", directionXZ);
+			exitStraightTable.set("hasTrafficLight", exitStr.hasTrafficLight);
+			exitStraightTable.set("lane", exitStr.lane);
+			exitStraightTable.set("numLanes", numLanes);
+
+			junctionExitsTable.set(i + 1, exitStraightTable);
+		}
+
+		junctionTable.set("exits", junctionExitsTable);
+	}
+
+	result.set("straight", straightTable);
+	result.set("junction", junctionTable);
+
+	return result;
+}
+OOLUA_CFUNC(S_Util_CGameLevel_GetJunctionAtPosition, L_Util_CGameLevel_GetJunctionAtPosition)
+
 //------------------------------------------------------------------------------
 
 bool Lua_SetMissionScript(const char* name)
@@ -248,7 +386,7 @@ bool Lua_SetMissionScript(const char* name)
 }
 OOLUA_CFUNC(Lua_SetMissionScript, L_SetMissionScript)
 
-bool Lua_GetMissionScriptName()
+const char* Lua_GetMissionScriptName()
 {
 	return g_State_Game->GetMissionScriptName();
 }
@@ -438,6 +576,10 @@ bool LuaBinding_InitDriverSyndicateBindings(lua_State* state)
 	utilTable.set("TestSphere", L_Util_CPhysicsEngine_TestSphere);
 	utilTable.set("TestBox", L_Util_CPhysicsEngine_TestBox);
 	utilTable.set("FindPath", L_Util_CGameLevel_Nav_FindPath);
+	utilTable.set("GetRoadAtPosition", L_Util_CGameLevel_Road_GetRoadAtPosition);
+	utilTable.set("GetStraightAtPosition", L_Util_CGameLevel_Road_GetStraightAtPosition);
+	utilTable.set("GetJunctionAtPosition", L_Util_CGameLevel_GetJunctionAtPosition);
+	
 	
 	OOLUA::set_global(state, "gameutil", utilTable);
 

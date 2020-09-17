@@ -428,6 +428,9 @@ void CLevelRegion::Render(const Vector3D& cameraPosition, const occludingFrustum
 		regionObject_t* ref = m_objects[i];
 		CLevObjectDef* cont = ref->def;
 
+		if (ref->hide)
+			continue;
+
 //----------------------------------------------------------------
 // IN-EDITOR RENDERER
 //----------------------------------------------------------------

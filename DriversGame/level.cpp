@@ -1026,6 +1026,17 @@ straight_t CGameLevel::Road_GetStraightAtPoint( const IVector2D& point, int numI
 
 		int roadDir = startCell.direction;
 
+		// calculate straight ID right here
+		// FIXME: might be incorrect
+		{
+			IVector2D totalWidthHeightCells(m_cellsSize * m_wide, m_cellsSize * m_tall);
+
+			if(roadDir % 2 == 1)
+				straight.id = point[roadDir] + m_cellsSize * m_wide;
+			else
+				straight.id = point[roadDir];
+		}
+
 		int checkRoadDir = roadDir;
 
 		IVector2D lastPos = localPos;
@@ -1064,8 +1075,7 @@ straight_t CGameLevel::Road_GetStraightAtPoint( const IVector2D& point, int numI
 			if(roadCell.flags & ROAD_FLAG_TRAFFICLIGHT)
 				straight.hasTrafficLight = true;
 
-			if(	roadCell.direction != checkRoadDir &&
-				i < straight.dirChangeIter)
+			if(	roadCell.direction != checkRoadDir && i < straight.dirChangeIter)
 			{
 				straight.dirChangeIter = i;
 			}

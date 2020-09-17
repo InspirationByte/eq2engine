@@ -25,17 +25,20 @@ struct straight_t
 		direction = -1;
 		lane = -1;
 		hasTrafficLight = false;
+		id = 0xFFFF;
 	}
 
 	IVector2D	start;
 	IVector2D	end;
 
-	bool		hasTrafficLight;
-
 	int			breakIter;
 	int			dirChangeIter;
 	int			direction;
 	int			lane;
+
+	ushort		id;
+
+	bool		hasTrafficLight;
 };
 
 struct roadJunction_t
