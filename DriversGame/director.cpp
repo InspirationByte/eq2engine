@@ -176,8 +176,10 @@ void Director_Action(EDirectorActionType type)
 		Director_GetNewCameraProps(&cam);
 
 		// zero camera rotation pls
-		if(cam.type == CAM_MODE_OUTCAR)
+		if (currentCamera && (cam.type == CAM_MODE_OUTCAR || cam.type == CAM_MODE_INCAR) && currentCamera->type != cam.type)
+		{
 			cam.rotation = vec3_zero;
+		}
 
 		int camIndex = g_replayTracker->AddCamera(cam);
 		g_replayTracker->m_currentCamera = camIndex;
@@ -406,8 +408,15 @@ bool Director_FreeCameraActive()
 
 void Director_UpdateFreeCamera(float fDt)
 {
+	//replayCamera_t* currentCamera = g_replayTracker->GetCurrentCamera();
+
+	float joyFreecamMultiplier = (g_nClientButtons & IN_FASTSTEER) ? 2.0f : 1.0f;
+
 	Vector3D f, r;
 	AngleVectors(g_freeCamProps.angles, &f, &r);
+
+	g_freeCamProps.angles.x += g_joyFreecamLook.x * joyFreecamMultiplier;
+	g_freeCamProps.angles.y += g_joyFreecamLook.y * joyFreecamMultiplier;
 
 	Vector3D camMoveVec(0.0f);
 
@@ -424,13 +433,8 @@ void Director_UpdateFreeCamera(float fDt)
 	else if(g_freeCamProps.buttons & IN_RIGHT)
 		camMoveVec += r;
 
-	float joyFreecamMultiplier = (g_nClientButtons & IN_FASTSTEER) ? 2.0f : 1.0f;
-
 	camMoveVec += r * g_joyFreecamMove.x;
 	camMoveVec += f * g_joyFreecamMove.y;
-
-	g_freeCamProps.angles.x += g_joyFreecamLook.x * joyFreecamMultiplier;
-	g_freeCamProps.angles.y += g_joyFreecamLook.y * joyFreecamMultiplier;
 
 	g_freeCamProps.velocity += camMoveVec * 200.0f * fDt;
 
