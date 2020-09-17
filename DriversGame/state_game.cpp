@@ -1217,7 +1217,7 @@ void CState_Game::DrawMenu( float fDt )
 
 				ColorRGBA selColor(1.0f, 0.57f, 0.0f, 1.0f);
 
-				float baseLine = font->GetBaselineOffs(fontParam);
+				float baseLine = font->GetBaselineOffs(fontParam) - 3.0f * menuScaling.y;
 				float XOffset = -8.0f * menuScaling.x;
 
 				float lineW = 6.0f * menuScaling.x; // lineWidth
