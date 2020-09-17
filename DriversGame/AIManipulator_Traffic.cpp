@@ -1076,8 +1076,8 @@ void CAITrafficManipulator::UpdateAffector(ai_handling_t& handling, CCar* car, f
 		car->GetPhysicsBody()->Wake();
 
 	// if we're near a slope that goes down, apply some brakes
-	if (hillDir.y < 0.0f)
-		handling.braking += (1.0f - hillChangeSpeedFactor) * AI_SLOPE_BRAKE_MODIFIER_DIFF;
+	//if (hillDir.y < 0.0f)
+	//	handling.braking += (1.0f - hillChangeSpeedFactor) * AI_SLOPE_BRAKE_MODIFIER_DIFF;
 
 	handling.steering = clamp(fSteeringAngle, -0.95f, 0.95f);
 
