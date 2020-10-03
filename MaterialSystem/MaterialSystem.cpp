@@ -481,7 +481,7 @@ IMaterial* CMaterialSystem::CreateMaterial(const char* szMaterialName, kvkeybase
 	ASSERT(strlen(szMaterialName) > 0);
 
 	// create new material
-	CMaterial* pMaterial = new CMaterial();
+	CMaterial* pMaterial = new CMaterial(m_Mutex);
 
 	// if no params, we can load it a usual way
 	if(params == nullptr)

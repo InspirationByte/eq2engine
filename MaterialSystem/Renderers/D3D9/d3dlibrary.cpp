@@ -295,7 +295,7 @@ void CD3DRenderLib::ExitAPI()
 		m_d3dFactory = NULL;
 	}
 
-	DestroyWindow(hwnd);
+	//DestroyWindow(hwnd);
 }
 
 void CD3DRenderLib::BeginFrame()

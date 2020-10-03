@@ -20,7 +20,8 @@
 #define MATERIAL_FILE_EXTENSION		".mat"
 #define ATLAS_FILE_EXTENSION		".atlas"
 
-CMaterial::CMaterial() : m_state(MATERIAL_LOAD_ERROR), m_shader(nullptr), m_proxyIsDirty(true), m_loadFromDisk(true), m_frameBound(0), m_atlas(nullptr)
+CMaterial::CMaterial(Threading::CEqMutex& mutex) 
+	: m_state(MATERIAL_LOAD_ERROR), m_shader(nullptr), m_proxyIsDirty(true), m_loadFromDisk(true), m_frameBound(0), m_atlas(nullptr), m_Mutex(mutex)
 {
 }
 
@@ -307,7 +308,7 @@ IMatVar *CMaterial::FindMaterialVar(const char* pszVarName) const
 {
 	int nameHash = StringToHash(pszVarName, true);
 
-	for(int i = 0;i < m_variables.numElem();i++)
+	for(int i = 0; i < m_variables.numElem(); i++)
 	{
 		if(m_variables[i]->m_nameHash == nameHash)
 			return m_variables[i];
@@ -359,11 +360,13 @@ CTextureAtlas* CMaterial::GetAtlas() const
 // creates or finds existing material vars
 IMatVar* CMaterial::CreateMaterialVar(const char* pszVarName, const char* defaultParam)
 {
+	Threading::CScopedMutex m(m_Mutex);
+
 	IMatVar *pMatVar = FindMaterialVar(pszVarName);
 
 	if(!pMatVar)
 	{
-		CMatVar *pVar = new CMatVar;
+		CMatVar *pVar = new CMatVar();
 		pVar->Init(pszVarName, defaultParam);
 
 		m_variables.append(pVar);
@@ -377,15 +380,10 @@ IMatVar* CMaterial::CreateMaterialVar(const char* pszVarName, const char* defaul
 // remove material var
 void CMaterial::RemoveMaterialVar(IMatVar* pVar)
 {
-	for(int i = 0; i < m_variables.numElem();i++)
-	{
-		if(m_variables[i] == pVar)
-		{
-			delete m_variables[i];
-			m_variables.removeIndex(i);
-			return;
-		}
-	}
+	Threading::CScopedMutex m(m_Mutex);
+
+	if (m_variables.fastRemove((CMatVar*)pVar))
+		delete pVar;
 }
 
 void CMaterial::Ref_DeleteObject()
@@ -394,6 +392,8 @@ void CMaterial::Ref_DeleteObject()
 
 void CMaterial::Cleanup(bool dropVars, bool dropShader)
 {
+	Threading::CScopedMutex m(m_Mutex);
+
 	// drop shader if we need
 	if(dropShader && m_shader)
 	{

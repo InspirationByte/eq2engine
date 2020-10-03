@@ -13,6 +13,7 @@
 #include "materialvar.h"
 #include "utils/DkList.h"
 #include "utils/eqstring.h"
+#include "utils/eqthread.h"
 
 struct kvkeybase_t;
 class IMaterialProxy;
@@ -24,7 +25,7 @@ public:
 	friend class			CMaterialSystem;
 
 							// constructor, destructor
-							CMaterial();
+							CMaterial(Threading::CEqMutex& mutex);
 							~CMaterial();
 
 	const char*				GetName() const {return m_szMaterialName.GetData();}
@@ -83,6 +84,8 @@ protected:
 
 	EqString				m_szMaterialName;
 	EqString				m_szShaderName;
+
+	Threading::CEqMutex&	m_Mutex;
 };
 
 
