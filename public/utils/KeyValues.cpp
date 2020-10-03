@@ -1832,7 +1832,7 @@ kvkeybase_t* KV_ParseSection( const char* pszBuffer, const char* pszFileName, kv
 		// or if in quotes and there is closing character
 		// TODO: check \" inside quotes
 		if( pCurrentKeyBase && pFirstLetter &&
-			((!bInQuotes && (isspace(c) || (c == KV_BREAK))) ||
+			((!bInQuotes && (isspace((ubyte)c) || (c == KV_BREAK))) ||
 			(bInQuotes && (c == KV_STRING_BEGIN_END))))
 		{
 			char prevSymbol = *(pData-1);
