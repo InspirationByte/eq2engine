@@ -193,6 +193,7 @@ protected:
 	int							m_numMaxTrafficCars;
 
 	int							m_trafficSpawnInterval;
+	int							m_trafficSpawnCounter;
 
 	float						m_copMaxDamage;
 	float						m_copAccelerationModifier;

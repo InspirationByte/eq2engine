@@ -27,29 +27,29 @@ ConVar ai_changelane("ai_changelane", "-1", NULL, CV_CHEAT);
 static float trafficSpeedModifier[WEATHER_COUNT] =
 {
 	1.0f,
-	0.9f,
-	0.85f
+	1.0f,
+	1.0f
 };
 
 static float trafficBrakeDistModifier[WEATHER_COUNT] =
 {
 	1.0f,
-	1.2f,
-	1.45f
+	1.1f,
+	1.15f
 };
 
 
 #define ROADNEIGHBOUR_OFFS_PX(x)		{x+1, x, x-1, x}		// non-diagonal, perpendicular
 #define ROADNEIGHBOUR_OFFS_PY(y)		{y, y-1, y, y+1}
 
-const float AI_STOPLINE_DIST = 4.7f;
-const float AI_OBSTACLE_DIST = 4.8f;
+const float AI_STOPLINE_DIST = 2.0f;
+const float AI_OBSTACLE_DIST = 5.0f;
+
+const float AI_ROAD_STOP_DIST = AI_STOPLINE_DIST + 16.0f;
+const float AI_OBSTACLE_STOP_DIST = AI_OBSTACLE_DIST + 2.0f;
 
 const float AI_SIDECHECK_DIST_FR = 5.0f;
 const float AI_SIDECHECK_DIST_RR = 20.0f;
-
-const float AI_ROAD_STOP_DIST = 16.0f;
-
 const float AI_CAR_TRACE_DIST_MIN = 6.0f;
 const float AI_CAR_TRACE_DIST_MAX = 25.0f;
 
@@ -65,7 +65,7 @@ const float AI_LANE_SWITCH_SHORTDELAY = 1.0f;
 
 const float AI_EMERGENCY_ESCAPE_TIME = 0.5f;
 
-const float AI_SLOPE_BRAKE_MODIFIER = 3.0f;
+const float AI_SLOPE_BRAKE_MODIFIER = 6.0f;
 const float AI_SLOPE_BRAKE_MODIFIER_DIFF = 4.0f;
 const float AI_SLOPE_ACCELERATOR_MODIFIER = 4.0f;
 
@@ -117,6 +117,20 @@ bool SolveIntersection(int curDirection,
 		return true;
 	}
 
+	// any direction allowed
+	if (curRoadWidthLanes == 1)
+	{
+		if (destRoadWidth == 1)
+			return true;
+
+		if (CompareDirection(curDirection, destDirection + 1))	// go left
+			destLane = destRoadWidth;
+		else if (CompareDirection(curDirection, destDirection - 1))	// go right
+			destLane = min(destRoadWidth, 2);
+		
+		return true;
+	}
+
 	if (curLane == curRoadWidthLanes)	// last (left) lane
 	{
 		if (curDirection == destDirection)	// check forward
@@ -147,7 +161,7 @@ bool SolveIntersection(int curDirection,
 		{
 			// allow long cars to go into the second lane, otherwise only to the first lane
 			if (destRoadWidth >= 2 && isLongCar)
-				destLane = 2;
+				destLane = min(destRoadWidth, 2);
 			else
 				destLane = 1;
 
@@ -459,7 +473,7 @@ void CAITrafficManipulator::HandleJunctionExit(CCar* car)
 	IVector2D carPosOnCell = g_pGameWorld->m_level.PositionToGlobalTilePoint(car->GetOrigin());
 	int cellsBeforeEnd = GetCellsBeforeStraightEnd(carPosOnCell, m_straights[STRAIGHT_CURRENT]);
 
-	int curRoadWidth = g_pGameWorld->m_level.Road_GetNumLanesAtPoint(m_straights[STRAIGHT_CURRENT].start);
+	int curRoadWidth = g_pGameWorld->m_level.Road_GetNumLanesAtPoint(carPosOnCell);
 
 	if (m_junction.selectedExit != -1)
 	{
@@ -738,8 +752,6 @@ void CAITrafficManipulator::UpdateAffector(ai_handling_t& handling, CCar* car, f
 		debugoverlay->TextFadeOut(0, 1.0f, 5.0f, "changing direction: %d\n", m_changingDirection);
 		debugoverlay->TextFadeOut(0, 1.0f, 5.0f, "num exit straights: %d\n", m_junction.exits.numElem());
 		debugoverlay->TextFadeOut(0, 1.0f, 5.0f, "selected next straight: %d\n", m_junction.selectedExit);
-		
-		
 	}
 
 	// disable lights turning
@@ -794,19 +806,19 @@ void CAITrafficManipulator::UpdateAffector(ai_handling_t& handling, CCar* car, f
 			float brakeSpeedDiff = brakeDistAtCurSpeed + AI_STOPLINE_DIST - distToStop;
 			brakeSpeedDiff = max(brakeSpeedDiff, 0.0f);
 
-			float brake = fabs(brakeSpeedDiff / AI_ROAD_STOP_DIST + surfaceFactor);
+			float brake = fabs(brakeSpeedDiff / AI_ROAD_STOP_DIST) + surfaceFactor;
 			brake += slopeBrakeModifier * AI_SLOPE_BRAKE_MODIFIER;
 			brake = min(brake, 0.9f);
 
-			if (distToStop > AI_STOPLINE_DIST)
+			if (distToStop > AI_STOPLINE_DIST * 2.0f && carForwardSpeed > 1.0f)
 			{
-				handling.acceleration -= brake * 2.0f;
+				handling.acceleration -= brake;// *2.0f;
 				handling.braking = brake;
 			}
 			else
 			{
 				handling.acceleration = 0.0f;
-				handling.braking = brake;
+				handling.braking = brake + 0.1f;
 			}
 		}
 		else if (m_junction.selectedExit != -1)
@@ -824,11 +836,11 @@ void CAITrafficManipulator::UpdateAffector(ai_handling_t& handling, CCar* car, f
 			}
 		}
 	}
-
-	// if we're on intersection
-	// yield cars moving from front
-	if (m_changingDirection && !isOnCurrRoad)
+	else if (m_changingDirection && !isOnCurrRoad)
 	{
+		// if we're on intersection
+		// yield cars moving from front
+
 		DkList<CCar*> forwardCars;
 		g_pAIManager->QueryTrafficCars(forwardCars, float(m_junction.size)*HFIELD_POINT_SIZE, carPos, carForward, 0.8f);
 
@@ -889,7 +901,7 @@ void CAITrafficManipulator::UpdateAffector(ai_handling_t& handling, CCar* car, f
 	// Breakage when has object in front
 	//
 	{
-		float fTraceDist = AI_CAR_TRACE_DIST_MAX * trafficBrakeDistModifier[g_pGameWorld->m_envConfig.weatherType];
+		float fTraceDist = AI_OBSTACLE_DIST + carSpeed; // trafficBrakeDistModifier[g_pGameWorld->m_envConfig.weatherType];
 
 		CollisionData_t frontObjColl;
 
@@ -975,7 +987,7 @@ void CAITrafficManipulator::UpdateAffector(ai_handling_t& handling, CCar* car, f
 				}
 			}
 
-			if (lineDist < AI_ROAD_STOP_DIST)
+			if (lineDist < AI_OBSTACLE_STOP_DIST)
 			{
 				float dbrakeToStopTime = diffForwardSpeed / brakeDistancePerSec * 2.0f;
 				float dbrakeDistAtCurSpeed = brakeDistancePerSec * dbrakeToStopTime;
@@ -987,14 +999,14 @@ void CAITrafficManipulator::UpdateAffector(ai_handling_t& handling, CCar* car, f
 				brake += slopeBrakeModifier * AI_SLOPE_BRAKE_MODIFIER;
 				brake = min(brake, 0.9f);
 
-				if (lineDist > AI_OBSTACLE_DIST)
+				if (lineDist > AI_OBSTACLE_DIST * 2.0f && carForwardSpeed > 1.0f)
 				{
-					handling.acceleration -= brake * 2.0f;
+					handling.acceleration -= brake;// *2.0f;
 					handling.braking = brake;
 				}
 				else
 				{
-					handling.braking = brake;
+					handling.braking = brake + 0.1f;
 					handling.acceleration = 0.0f;
 				}
 			}
@@ -1076,8 +1088,8 @@ void CAITrafficManipulator::UpdateAffector(ai_handling_t& handling, CCar* car, f
 		car->GetPhysicsBody()->Wake();
 
 	// if we're near a slope that goes down, apply some brakes
-	//if (hillDir.y < 0.0f)
-	//	handling.braking += (1.0f - hillChangeSpeedFactor) * AI_SLOPE_BRAKE_MODIFIER_DIFF;
+	if (hillDir.y < 0.0f && handling.braking > 0.05f)
+		handling.braking += (1.0f - hillChangeSpeedFactor) * AI_SLOPE_BRAKE_MODIFIER_DIFF;
 
 	handling.steering = clamp(fSteeringAngle, -0.95f, 0.95f);
 

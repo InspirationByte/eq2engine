@@ -144,7 +144,7 @@ void CObject_TrafficLight::Spawn()
 			for (int j = 0; j < 4; j++)
 			{
 				levroadcell_t* roadCell = g_pGameWorld->m_level.Road_GetGlobalTileAt(cellPos - rightDir * ii - forwardDir * ii + IVector2D(dx[j], dy[j]));
-				if (roadCell->type == ROADTYPE_JUNCTION)
+				if (roadCell && roadCell->type == ROADTYPE_JUNCTION)
 				{
 					m_junctionId = roadCell->id;
 					break;

@@ -20,7 +20,7 @@ ConVar g_trafficMaxCars("g_trafficMaxCars", "48", nullptr, CV_CHEAT);
 ConVar g_pedestriansMax("g_pedestriansMax", "40", nullptr, CV_CHEAT);
 
 ConVar g_traffic_initial_mindist("g_traffic_initial_mindist", "15", nullptr, CV_CHEAT);
-ConVar g_traffic_mindist("g_traffic_mindist", "50", nullptr, CV_CHEAT);
+ConVar g_traffic_mindist("g_traffic_mindist", "45", nullptr, CV_CHEAT);
 ConVar g_traffic_maxdist("g_traffic_maxdist", "51", nullptr, CV_CHEAT);
 
 ConVar g_pedestrians_initial_mindist("g_pedestrians_initial_mindist", "10", nullptr, CV_CHEAT);
@@ -71,6 +71,7 @@ void CAIManager::Init(const DkList<pedestrianConfig_t*>& pedConfigs)
 	m_pedsUpdateTime = 0.0f;
 	m_velocityMapUpdateTime = 0.0f;
 	m_trafficSpawnInterval = 0;
+	m_trafficSpawnCounter = 0;
 
 	m_enableCops = true;
 	m_allCarsPursuers = false;
@@ -232,10 +233,36 @@ CCar* CAIManager::SpawnTrafficCar(const IVector2D& globalCell)
 	if (!(roadCell->type == ROADTYPE_STRAIGHT || isParkingLot))
 		return nullptr;
 
+	IVector2D placementCell = globalCell;
+
 	// don't spawn cars on short roads
 	if (!isParkingLot)
 	{
-		straight_t str = g_pGameWorld->m_level.Road_GetStraightAtPoint(globalCell, 2);
+		straight_t str = g_pGameWorld->m_level.Road_GetStraightAtPoint(placementCell, 4);
+
+		// randomize lane
+		IVector2D straightDirVec = GetDirectionVec(str.direction);
+		IVector2D perpendicularVec = GetDirectionVec(str.direction - 1);
+		IVector2D placementVec = placementCell - straightDirVec;
+
+		int curLane = g_pGameWorld->m_level.Road_GetLaneIndexAtPoint(placementVec, 16) - 1;
+		placementVec -= perpendicularVec * curLane;
+		int numLanes = g_pGameWorld->m_level.Road_GetWidthInLanesAtPoint(placementVec, 32, 1);
+
+		if (numLanes > 0)
+		{
+			int rndLane = (m_trafficSpawnCounter + g_replayRandom.Get(32, 512)) % numLanes;
+			g_replayRandom.Regenerate();
+
+			// update road cell
+			placementCell = placementVec + perpendicularVec * rndLane;
+			roadCell = g_pGameWorld->m_level.Road_GetGlobalTileAt(placementCell, &pReg);
+
+			if (!roadCell || roadCell && roadCell->type != ROADTYPE_STRAIGHT)
+				return nullptr;
+
+			str = g_pGameWorld->m_level.Road_GetStraightAtPoint(placementCell, 4);
+		}
 
 		if (str.breakIter <= 1)
 			return nullptr;
@@ -248,7 +275,7 @@ CCar* CAIManager::SpawnTrafficCar(const IVector2D& globalCell)
 		if (!g_pGameWorld->m_level.GetTileGlobal(m_trafficCars[j]->GetOrigin(), trafficPosGlobal))
 			continue;
 
-		if (distance(trafficPosGlobal, globalCell) < AI_TRAFFIC_SPAWN_DISTANCE_THRESH*AI_TRAFFIC_SPAWN_DISTANCE_THRESH)
+		if (distance(trafficPosGlobal, placementCell) < AI_TRAFFIC_SPAWN_DISTANCE_THRESH*AI_TRAFFIC_SPAWN_DISTANCE_THRESH)
 			return nullptr;
 	}
 
@@ -259,7 +286,7 @@ CCar* CAIManager::SpawnTrafficCar(const IVector2D& globalCell)
 		if (length(IVector2D(m_leadVelocity.xz())) > 3)
 		{
 			// if velocity is negative to new spawn origin, cancel spawning
-			if (dot(globalCell - leadCellPos, IVector2D(m_leadVelocity.xz())) < 0)
+			if (dot(placementCell - leadCellPos, IVector2D(m_leadVelocity.xz())) < 0)
 				return nullptr;
 		}
 	}
@@ -335,7 +362,8 @@ CCar* CAIManager::SpawnTrafficCar(const IVector2D& globalCell)
 
 			spawnedCar = pursuer;
 		}
-		else if(!isCopCar)
+
+		if(!requestCopCar && !isCopCar)
 		{
 			if (--carEntry->nextSpawn > 0)
 				return nullptr;
@@ -462,41 +490,29 @@ void CAIManager::QueryTrafficCars(DkList<CCar*>& list, float radius, const Vecto
 
 int CAIManager::CircularSpawnTrafficCars(int x0, int y0, int radius)
 {
-	int f = 1 - radius;
-	int ddF_x = 0;
-	int ddF_y = -2 * radius;
-	int x = 0;
-	int y = radius;
-
 	int count = 0;
-	
-	while (x < y)
+	int oldCounter = m_trafficSpawnCounter;
+
+	// make spawn queries
+	while(true)
 	{
-		if (f >= 0)
-		{
-			y--;
-			ddF_y += 2;
-			f += ddF_y;
-		}
+		float angle = (float(m_trafficSpawnCounter) / 360.0f) * M_PI * 2.0f;
 
-		x++;
-		ddF_x += 2;
-		f += ddF_x + 1;
+		m_trafficSpawnCounter++;
 
-		count += SpawnTrafficCar(IVector2D(x0 + x, y0 + y)) != nullptr;
-		count += SpawnTrafficCar(IVector2D(x0 - x, y0 + y)) != nullptr;
-		count += SpawnTrafficCar(IVector2D(x0 + x, y0 - y)) != nullptr;
-		count += SpawnTrafficCar(IVector2D(x0 - x, y0 - y)) != nullptr;
-		count += SpawnTrafficCar(IVector2D(x0 + y, y0 + x)) != nullptr;
-		count += SpawnTrafficCar(IVector2D(x0 - y, y0 + x)) != nullptr;
-		count += SpawnTrafficCar(IVector2D(x0 + y, y0 - x)) != nullptr;
-		count += SpawnTrafficCar(IVector2D(x0 - y, y0 - x)) != nullptr;
+		if (m_trafficSpawnCounter > 360)
+			m_trafficSpawnCounter = 0;
+
+		if (m_trafficSpawnCounter == oldCounter)
+			break;
+
+		double fs, fc;
+		SinCos(angle, &fs, &fc);
+
+		IVector2D spawnCell(x0 + fc * float(radius), y0 + fs * float(radius));
+
+		count += SpawnTrafficCar(spawnCell) != nullptr;
 	}
-
-	count += SpawnTrafficCar(IVector2D(x0, y0 + radius)) != nullptr;
-	count += SpawnTrafficCar(IVector2D(x0, y0 - radius)) != nullptr;
-	count += SpawnTrafficCar(IVector2D(x0 + radius, y0)) != nullptr;
-	count += SpawnTrafficCar(IVector2D(x0 - radius, y0)) != nullptr;
 
 	return count;
 }
@@ -1035,104 +1051,97 @@ bool CAIManager::CreateRoadBlock(const Vector3D& position, float directionAngle,
 	roadblock->roadblockPosB = g_pGameWorld->m_level.GlobalTilePointToPosition(placementVec+perpendicular*numLanes);
 
 	float roadBlockWidth = length(roadblock->roadblockPosA.xz() - roadblock->roadblockPosB.xz());
-	float roadBlockStep = conf->physics.body_size.z*2.0f + 1.0f;
-
+	
 	debugoverlay->Line3D(roadblock->roadblockPosA + vec3_up, roadblock->roadblockPosB + vec3_up, ColorRGBA(1,0,0,1), ColorRGBA(0,1,0,1), 100.0f);
 
-	int numRoadBlockCops = ceil(roadBlockWidth / roadBlockStep) + extraCars;
-
-	for (int i = 0; i < numRoadBlockCops; i++)
+	// front cars
 	{
-		Vector3D spawnPos = lerp(roadblock->roadblockPosA, roadblock->roadblockPosB, (float)i / (float)numRoadBlockCops); // (roadBlockStep * i) / roadBlockWidth);
+		float roadBlockStep = conf->physics.body_size.z*2.0f + 1.0f;
+		
+		int numRoadBlockCops = ceil(roadBlockWidth / roadBlockStep);
 
-		CLevelRegion* pReg = NULL;
-		levroadcell_t* roadCell = g_pGameWorld->m_level.Road_GetGlobalTile(spawnPos, &pReg);
+		for (int i = 0; i < numRoadBlockCops; i++)
+		{
+			Vector3D spawnPos = lerp(roadblock->roadblockPosA, roadblock->roadblockPosB, (float)i / (float)numRoadBlockCops);
 
-		CAIPursuerCar* copBlockCar = new CAIPursuerCar(conf, PURSUER_TYPE_COP);
+			CLevelRegion* pReg = NULL;
+			levroadcell_t* roadCell = g_pGameWorld->m_level.Road_GetGlobalTile(spawnPos, &pReg);
 
-		copBlockCar->Spawn();
-		copBlockCar->Enable(false);
+			CAIPursuerCar* copBlockCar = new CAIPursuerCar(conf, PURSUER_TYPE_COP);
 
-		copBlockCar->PlaceOnRoadCell(pReg, roadCell);
+			copBlockCar->Spawn();
+			copBlockCar->Enable(false);
 
-		spawnPos.y = copBlockCar->GetOrigin().y;
-		copBlockCar->SetOrigin(Vector3D(spawnPos.x, spawnPos.y, spawnPos.z));
+			copBlockCar->PlaceOnRoadCell(pReg, roadCell);
 
-		copBlockCar->InitAI(false);
+			copBlockCar->InitAI(false);
 
-		copBlockCar->SetTorqueScale(m_copAccelerationModifier);
-		copBlockCar->SetMaxDamage(m_copMaxDamage);
+			copBlockCar->SetTorqueScale(m_copAccelerationModifier);
+			copBlockCar->SetMaxDamage(m_copMaxDamage);
 
-		copBlockCar->SetLight(CAR_LIGHT_SERVICELIGHTS, true);
+			copBlockCar->SetLight(CAR_LIGHT_SERVICELIGHTS, true);
 
-		g_pGameWorld->AddObject(copBlockCar);
+			g_pGameWorld->AddObject(copBlockCar);
 
-		float angle = 120.0f - (i % 2)*60.0f;
+			spawnPos.y = copBlockCar->GetOrigin().y;
+			copBlockCar->SetOrigin(Vector3D(spawnPos.x, spawnPos.y, spawnPos.z));
 
-		copBlockCar->SetAngles(Vector3D(0.0f, targetDir*-90.0f + angle, 0.0f));
+			float angle = 120.0f - (i % 2)*75.0f;
+			copBlockCar->SetAngles(Vector3D(0.0f, targetDir*-90.0f + angle, 0.0f));
 
-		// assign this car to roadblock
-		copBlockCar->m_assignedRoadblock = roadblock;
-		roadblock->activeCars.append(copBlockCar);
+			// assign this car to roadblock
+			copBlockCar->m_assignedRoadblock = roadblock;
+			roadblock->activeCars.append(copBlockCar);
 
-		// remove any car in 10 meters
-		RemoveCarsInSphere(copBlockCar->GetOrigin(), 16.0f);
+			// remove any car in 10 meters
+			RemoveCarsInSphere(copBlockCar->GetOrigin(), 12.0f);
+		}
 	}
 
-	/*
-	Msg("NEW road block cop count: %d\n", numRoadBlockCops);
-
-	for(int i = 0; i < numLanes; i++)
+	// back cars
 	{
-		IVector2D blockPoint = placementVec + carDir*IVector2D(i % 2)*3; // offset in 3 tiles while checker
-
-		placementVec += perpendicular;
-
-		if (rows < 2 && i % 2 == 0)
-			continue;
-
-		CLevelRegion* pReg = NULL;
-		levroadcell_t* roadCell = g_pGameWorld->m_level.Road_GetGlobalTileAt(blockPoint, &pReg);
-
-		Vector3D gPos = g_pGameWorld->m_level.GlobalTilePointToPosition(blockPoint);
-		debugoverlay->Box3D(gPos - 0.5f, gPos + 0.5f, ColorRGBA(1, 1, 0, 0.5f), 1000.0f);
-
-		// no tile - no spawn
-		if (!pReg || !roadCell)
-			continue;
-
-		if (!pReg->m_isLoaded)
-			continue;
+		float roadBlockStep = conf->physics.body_size.z*2.0f + 1.0f;
 		
-		if (roadCell->type == ROADTYPE_PARKINGLOT || roadCell->type == ROADTYPE_PAVEMENT)
-			continue;
+		int numRoadBlockCops = ceil(roadBlockWidth / roadBlockStep) / 2 + extraCars;
 
-		CAIPursuerCar* copBlockCar = new CAIPursuerCar(conf, PURSUER_TYPE_COP);
+		for (int i = 0; i < numRoadBlockCops; i++)
+		{
+			Vector3D spawnPos = lerp(roadblock->roadblockPosA, roadblock->roadblockPosB, (float)i / (float)numRoadBlockCops);
+			spawnPos -= Vector3D(carDir.x, 0, carDir.y) * 7.0f;
 
-		copBlockCar->Spawn();
-		copBlockCar->Enable(false);
+			CLevelRegion* pReg = NULL;
+			levroadcell_t* roadCell = g_pGameWorld->m_level.Road_GetGlobalTile(spawnPos, &pReg);
 
-		copBlockCar->PlaceOnRoadCell(pReg, roadCell);
-		copBlockCar->InitAI(false);
+			CAIPursuerCar* copBlockCar = new CAIPursuerCar(conf, PURSUER_TYPE_COP);
 
-		copBlockCar->SetTorqueScale(m_copAccelerationModifier);
-		copBlockCar->SetMaxDamage(m_copMaxDamage);
+			copBlockCar->Spawn();
+			copBlockCar->Enable(false);
 
-		copBlockCar->SetLight(CAR_LIGHT_SERVICELIGHTS, true);
+			copBlockCar->PlaceOnRoadCell(pReg, roadCell);
 
-		g_pGameWorld->AddObject(copBlockCar);
+			copBlockCar->InitAI(false);
 
-		float angle = 120.0f - (i % 2)*60.0f;
+			copBlockCar->SetTorqueScale(m_copAccelerationModifier);
+			copBlockCar->SetMaxDamage(m_copMaxDamage);
 
-		copBlockCar->SetAngles(Vector3D(0.0f, targetDir*-90.0f + angle, 0.0f));
+			copBlockCar->SetLight(CAR_LIGHT_SERVICELIGHTS, true);
 
-		// assign this car to roadblock
-		copBlockCar->m_assignedRoadblock = roadblock;
-		roadblock->activeCars.append( copBlockCar );
+			g_pGameWorld->AddObject(copBlockCar);
 
-		// remove any car in 10 meters
-		RemoveCarsInSphere(copBlockCar->GetOrigin(), 16.0f);
-	}*/
+			spawnPos.y = copBlockCar->GetOrigin().y;
+			copBlockCar->SetOrigin(Vector3D(spawnPos.x, spawnPos.y, spawnPos.z));
+
+			float angle = 200.0f - (i % 2)*25.0f;
+			copBlockCar->SetAngles(Vector3D(0.0f, targetDir*-90.0f + angle, 0.0f));
+
+			// assign this car to roadblock
+			copBlockCar->m_assignedRoadblock = roadblock;
+			roadblock->activeCars.append(copBlockCar);
+
+			// remove any car in 10 meters
+			RemoveCarsInSphere(copBlockCar->GetOrigin(), 12.0f);
+		}
+	}
 
 	// spawn road block
 	for (int i = 0; i < roadblock->activeCars.numElem(); i++)

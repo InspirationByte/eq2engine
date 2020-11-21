@@ -227,7 +227,7 @@ void CAIPursuerCar::Evt_CarDeathEventHandler(const eventArgs_t& args)
 			else
 			{
 				if(car == thisCar->m_target)
-					thisCar->Speak("cop.heavilydamaged", thisCar->m_target, true, 1.0f);
+					thisCar->Speak("cop.heavilydamaged", thisCar->m_target, false, 1.0f);
 				else
 					thisCar->Speak("cop.majorincident", thisCar->m_target, false, 0.6f);
 			}
@@ -1339,11 +1339,17 @@ void CAIPursuerCar::SetPursuitTarget(CCar* obj)
 void CAIPursuerCar::SetMaxSpeed(float fSpeed)
 {
 	m_savedMaxSpeed = fSpeed;
+
+	if (InPursuit())
+		m_savedMaxSpeed = fSpeed;
 }
 
 void CAIPursuerCar::SetTorqueScale(float fScale)
 {
 	m_savedTorqueScale = fScale;
+
+	if (InPursuit())
+		m_torqueScale = fScale;
 }
 
 OOLUA_EXPORT_FUNCTIONS(
