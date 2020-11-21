@@ -362,6 +362,45 @@ int occluderComparator(levOccluderLine_t* const& a, levOccluderLine_t* const& b)
 	return sign(diff);
 }
 
+void CLevelRegion::CollectOccluders(occludingFrustum_t& frustumOccluders, const Vector3D& cameraPosition)
+{
+	{
+		CScopedMutex m(m_level->m_mutex);
+
+		if (!m_isLoaded)
+			return;
+	}
+
+	static DkList<levOccluderLine_t*> occluders;
+	occluders.clear(false);
+
+	for(int i = 0; i < m_occluders.numElem(); i++)
+		occluders.append( &m_occluders[i] );
+
+	s_sortCamPos = cameraPosition;
+
+	// sort occluders
+	occluders.sort( occluderComparator );
+
+	// go from closest to furthest
+	for(int i = 0; i < occluders.numElem(); i++)
+	{
+		levOccluderLine_t* occl = occluders[i];
+
+		Vector3D verts[4] = {
+			occl->start,
+			occl->end,
+			occl->start + Vector3D(0, occl->height, 0),
+			occl->end + Vector3D(0, occl->height, 0)
+		};
+
+		BoundingBox bbox;
+		bbox.AddVertices(verts,4);
+
+		frustumOccluders.occluderSets.append( new occludingVolume_t(cameraPosition, this, occl) );
+	}
+}
+
 void CLevelRegion::CollectVisibleOccluders( occludingFrustum_t& frustumOccluders, const Vector3D& cameraPosition )
 {
 	{

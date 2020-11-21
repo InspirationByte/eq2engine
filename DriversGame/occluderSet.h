@@ -28,6 +28,7 @@ struct occludingVolume_t
 	bool IsBeingOccluded( const Vector3D& pos, float radius) const;
 
 	Plane planes[4]; // near, top, left, right
+	Vector3D position;
 
 #ifdef EDITOR
 	levOccluderLine_t*	sourceOccluder;

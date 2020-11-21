@@ -23,6 +23,8 @@ occludingVolume_t::occludingVolume_t(const Vector3D& cameraPos, CLevelRegion* sr
 	sourceRegion = srcReg;
 #endif // EDITOR
 
+	position = (srcOcc->start + srcOcc->end) * 0.5f;
+
 	Plane pl(srcOcc->start, srcOcc->end, srcOcc->end+Vector3D(0, srcOcc->height,0));
 
 	Vector3D a,b;

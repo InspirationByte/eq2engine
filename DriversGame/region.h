@@ -240,6 +240,7 @@ public:
 
 	bool							IsRegionEmpty();	///< returns true if no models or placed tiles of heightfield found here
 
+	void							CollectOccluders(occludingFrustum_t& frustumOccluders, const Vector3D& cameraPosition);
 	void							CollectVisibleOccluders(occludingFrustum_t& frustumOccluders, const Vector3D& cameraPosition);
 	virtual void					Render(const Vector3D& cameraPosition, const occludingFrustum_t& frustumOccluders, int nRenderFlags);
 
