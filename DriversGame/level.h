@@ -72,6 +72,7 @@ public:
 	//-------------------------------------------------------------------------
 	// rendering
 
+	void							CollectOccluders(occludingFrustum_t& frustumOccluders, const Vector3D& cameraPosition);
 	void							CollectVisibleOccluders(occludingFrustum_t& frustumOccluders, const Vector3D& cameraPosition);
 	void							Render(const Vector3D& cameraPosition, const occludingFrustum_t& frustumOccluders, int nRenderFlags);
 

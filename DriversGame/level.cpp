@@ -1730,6 +1730,41 @@ CLevelRegion* CGameLevel::QueryNearestRegions(const IVector2D& point, bool waitL
 	return region;
 }
 
+void CGameLevel::CollectOccluders(occludingFrustum_t& frustumOccluders, const Vector3D& cameraPosition)
+{
+	CScopedMutex m(m_mutex);
+	frustumOccluders.Clear();
+
+	// don't render too far?
+	IVector2D camPosReg;
+
+	// mark renderable regions
+	if( PositionToRegionOffset(cameraPosition, camPosReg) )
+	{
+		CLevelRegion* region = GetRegionAt(camPosReg);
+
+		// query this region
+		if(region)
+		{
+			region->CollectOccluders(frustumOccluders, cameraPosition);
+		}
+
+		int dx[8] = NEIGHBOR_OFFS_XDX(camPosReg.x, 1);
+		int dy[8] = NEIGHBOR_OFFS_YDY(camPosReg.y, 1);
+
+		// surrounding regions frustum
+		for(int i = 0; i < 8; i++)
+		{
+			CLevelRegion* nregion = GetRegionAt(IVector2D(dx[i], dy[i]));
+
+			if(nregion)
+			{
+				nregion->CollectOccluders(frustumOccluders, cameraPosition);
+			}
+		}
+	}
+}
+
 void CGameLevel::CollectVisibleOccluders(occludingFrustum_t& frustumOccluders, const Vector3D& cameraPosition)
 {
 	CScopedMutex m(m_mutex);
@@ -2022,11 +2057,12 @@ void CGameLevel::UnloadRegions()
 int CGameLevel::UpdateRegions( RegionLoadUnloadCallbackFunc func )
 {
 	int numRegionsToFree = 0;
+	static float unloadingTimer = 0.0f;
 
 	// unloading only available after loading
 	if(!IsWorkDone())
 		return 0;
-
+	
 	for(int x = 0; x < m_wide; x++)
 	{
 		for(int y = 0; y < m_tall; y++)
@@ -2056,7 +2092,16 @@ int CGameLevel::UpdateRegions( RegionLoadUnloadCallbackFunc func )
 
 	if (numRegionsToFree)
 	{
-		SignalWork();
+		if (unloadingTimer <= 0.0f)
+		{
+			unloadingTimer += g_pGameWorld->GetFrameTime();
+
+			if (unloadingTimer > 1.0f)
+			{
+				SignalWork();
+				unloadingTimer = 0.0f;
+			}
+		}
 	}
 
 	return numRegionsToFree;

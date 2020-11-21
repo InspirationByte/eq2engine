@@ -31,10 +31,10 @@ struct straight_t
 	IVector2D	start;
 	IVector2D	end;
 
-	int			breakIter;
-	int			dirChangeIter;
-	int			direction;
-	int			lane;
+	short			breakIter;
+	short			dirChangeIter;
+	short		direction;
+	short		lane;
 
 	ushort		id;
 
@@ -53,8 +53,8 @@ struct roadJunction_t
 	IVector2D	start;
 	IVector2D	end;
 
-	int			startIter;
-	int			breakIter;
+	short		startIter;
+	short		breakIter;
 
 	ushort		id;
 };
@@ -66,7 +66,7 @@ struct pathFindResult_t
 
 	DkList<IVector2D>	points;	// z is distance in cells
 
-	int					gridSelector;
+	short				gridSelector;
 };
 
 class CEqCollisionObject;
