@@ -1916,12 +1916,17 @@ void CCar::UpdateVehiclePhysics(float delta)
 		if(wheel.m_collisionInfo.fract < 1.0f)
 		{
 			// calculate wheel traction friction
-			float wheelTractionFrictionScale = 0.2f;
+			float wheelFrictionScale = 0.2f;
+			float wheelTractionScale = 1.0f;
 
-			if(wheel.m_surfparam)
-				wheelTractionFrictionScale = wheel.m_surfparam->tirefriction;
+			if (wheel.m_surfparam)
+			{
+				wheelFrictionScale = wheel.m_surfparam->tirefriction;
+				wheelTractionScale = wheel.m_surfparam->tirefriction_traction;
+			}
 
-			wheelTractionFrictionScale *= s_weatherTireFrictionMod[g_pGameWorld->m_envConfig.weatherType];
+
+			wheelFrictionScale *= s_weatherTireFrictionMod[g_pGameWorld->m_envConfig.weatherType];
 
 			// recalculate wheel velocity
 			Vector3D wheelVelAtPoint = carBody->GetVelocityAtWorldPoint(wheel.m_collisionInfo.position);
@@ -1935,7 +1940,7 @@ void CCar::UpdateVehiclePhysics(float delta)
 				float fac1 = wheel.m_collisionInfo.position.x*0.65f;
 				float fac2 = wheel.m_collisionInfo.position.z*0.65f;
 
-				wheel.m_collisionInfo.fract += ((0.5f-sin(fac1))+(0.5f-sin(fac2+0.5f)))*wheelConf.radius*0.11f;
+				wheel.m_collisionInfo.fract += ((0.5f-sin(fac1))+(0.5f-sin(fac2+0.5f)))*wheelConf.radius*0.15f;
 			}
 
 			//
@@ -2066,8 +2071,8 @@ void CCar::UpdateVehiclePhysics(float delta)
 				{
 					if (bDoBurnout && !isSteerWheel) // steer wheels still has to be in control
 					{
-						wheelTractionForce += acceleratorAbs * driveGroundWheelMod * wheelTractionFrictionScale;
-						wheelSlipOppositeForce *= wheelTractionFrictionScale * (1.0f - fPitchFac); // BY DIFFERENCE
+						wheelTractionForce += acceleratorAbs * driveGroundWheelMod * wheelFrictionScale;
+						wheelSlipOppositeForce *= wheelFrictionScale * (1.0f - fPitchFac); // BY DIFFERENCE
 					}
 
 					wheelTractionForce += fAccelerator * driveGroundWheelMod;
@@ -2093,10 +2098,10 @@ void CCar::UpdateVehiclePhysics(float delta)
 			//
 			if(fabs(fBraker) > 0 && fabs(wheelPitchSpeed) > 0)
 			{
-				wheelTractionForce -= sign(wheelPitchSpeed) * fabs(fBraker * wheelConf.brakeTorque) * wheelTractionFrictionScale * 4.0f * (1.0f + springPowerFac);
+				wheelTractionForce -= sign(wheelPitchSpeed) * fabs(fBraker * wheelConf.brakeTorque) * wheelFrictionScale * 4.0f * (1.0f + springPowerFac);
 
 				if (fBraker >= 0.95f)
-					wheelPitchSpeed -= wheelPitchSpeed * 3.0f * wheelTractionFrictionScale;
+					wheelPitchSpeed -= wheelPitchSpeed * 3.0f * wheelFrictionScale;
 			}
 
 			//
@@ -2106,7 +2111,7 @@ void CCar::UpdateVehiclePhysics(float delta)
 			{
 				const float HANDBRAKE_TORQUE = 8500.0f;
 
-				wheelTractionForce -= sign(wheelPitchSpeed) * HANDBRAKE_TORQUE * wheelTractionFrictionScale * 3.0f;
+				wheelTractionForce -= sign(wheelPitchSpeed) * HANDBRAKE_TORQUE * wheelFrictionScale * 3.0f;
 
 				if(inputHandbrake == 1.0f)
 					wheelPitchSpeed = 0.0f;
@@ -2120,7 +2125,7 @@ void CCar::UpdateVehiclePhysics(float delta)
 			wheelSlipOppositeForce *= springPower;
 
 			springForce += wheelSlipForceDir * wheelSlipOppositeForce;
-			springForce += wheelTractionForceDir * wheelTractionForce;
+			springForce += wheelTractionForceDir * wheelTractionForce * wheelTractionScale;
 
 			// spring force position in a couple with antiroll
 			Vector3D springForcePos = wheel.m_collisionInfo.position;
