@@ -82,6 +82,8 @@ ConVar r_ortho_size("r_ortho_size", "0.5", NULL, CV_ARCHIVE);
 
 ConVar r_drawObjectsDistanceMultiplier("r_drawObjectsDistanceMultiplier", "1", NULL, CV_ARCHIVE);
 
+ConVar w_maxSpawnedObjectsPerFrame("w_maxSpawnedObjectsPerFrame", "16");
+
 #define TRAFFICLIGHT_TIME 15.0f
 
 DkList<EqString> g_envList;
@@ -1262,25 +1264,32 @@ void CGameWorld::ForceUpdateObjects()
 	}
 }
 
-void CGameWorld::SpawnPendingObjects()
+
+
+void CGameWorld::SpawnPendingObjects(int maxCount)
 {
 	CScopedMutex m(GetGlobalMutex(MUTEXPURPOSE_GAME));
 
 	// non-spawned objects are in locked manner
 	// because regions can push objects into m_nonSpawnedObjects
 
+	int toSpawn = (maxCount == -1) ? INT_MAX : maxCount;
+	
 	// spawn objects
-	for (int i = 0; i < m_nonSpawnedObjects.numElem(); i++)
+	for (int i = 0; i < m_nonSpawnedObjects.numElem() && toSpawn > 0; i++)
 	{
 		CGameObject* obj = m_nonSpawnedObjects[i];
 
 		obj->Spawn();
-
 		OnObjectSpawnedEvent(obj);
-	}
 
-	m_gameObjects.append(m_nonSpawnedObjects);
-	m_nonSpawnedObjects.clear();
+		m_gameObjects.append(obj);
+
+		toSpawn--;
+		
+		m_nonSpawnedObjects.fastRemoveIndex(i);
+		i--;
+	}
 }
 
 void CGameWorld::UpdateEnvironmentTransition(float fDt)
@@ -1358,6 +1367,8 @@ void CGameWorld::UpdateWorldAndEffectsJob(void* data, int i)
 	g_worldGlobals.mt.rainUpdateCompleted.Raise();
 }
 
+
+
 void CGameWorld::UpdateWorld(float fDt)
 {
 	PROFILE_FUNC();
@@ -1422,7 +1433,7 @@ void CGameWorld::UpdateWorld(float fDt)
 	g_pPhysics->WaitForThread();
 
 	// spawn region objects
-	SpawnPendingObjects();
+	SpawnPendingObjects(w_maxSpawnedObjectsPerFrame.GetInt());
 
 	// simulate objects of world
 	PROFILE_CODE( SimulateObjects(fDt) );

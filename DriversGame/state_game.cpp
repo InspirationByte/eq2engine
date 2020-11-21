@@ -897,6 +897,8 @@ void CState_Game::OnLoadingDone()
 	else
 		m_gameMenuName = Director_IsActive() ? "Director" : "Replay";
 
+	g_pGameWorld->SpawnPendingObjects(-1);
+
 	m_isGameRunning = true;
 	g_pGameSession->OnLoadingDone();
 
@@ -977,6 +979,7 @@ bool CState_Game::Update( float fDt )
 	if (!queryRegionLoaded)
 	{
 		fGameFrameDt = 0.0f;
+		g_pGameWorld->SpawnPendingObjects(-1);
 	}
 
 	// reset buttons

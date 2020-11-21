@@ -596,11 +596,11 @@ int CSoundEmitterSystem::EmitSound(EmitSound_t* emit)
 	{
 		Threading::CScopedMutex m(m_mutex);
 		sndSource = soundsystem->AllocEmitter();
-	}
 
-	// setup default values
-	sndSource->SetPosition(edata->origin);
-	sndSource->SetVelocity(edata->velocity);
+		// setup default values
+		sndSource->SetPosition(edata->origin);
+		sndSource->SetVelocity(edata->velocity);
+	}
 
 	// update emitter before playing
 	edata->soundSource = sndSource;
@@ -621,12 +621,12 @@ int CSoundEmitterSystem::EmitSound(EmitSound_t* emit)
 	//if(!script->loop)
 	//	sParams.pitch += RandomFloat(-0.05f,0.05f);
 
-	sndSource->SetSample(bestSample);
-	sndSource->SetParams(&sParams);
-	sndSource->Play();
-
 	{
 		Threading::CScopedMutex m(m_mutex);
+		sndSource->SetSample(bestSample);
+		sndSource->SetParams(&sParams);
+		sndSource->Play();
+
 		emit->emitterIndex = m_emitters.append(edata);
 	}
 

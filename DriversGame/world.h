@@ -166,7 +166,7 @@ public:
 	void							UpdateEnvironmentTransition( float fDt );
 
 	void							ForceUpdateObjects();
-	void							SpawnPendingObjects();
+	void							SpawnPendingObjects(int maxCount);
 
 	void							UpdateWorld( float fDt );
 	void							UpdateTrafficLightState( float fDt );

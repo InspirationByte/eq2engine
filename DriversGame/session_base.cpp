@@ -345,6 +345,41 @@ void CGameSessionBase::UpdateAsPlayerCar(const playerControl_t& control, CCar* c
 			control.steeringValue);
 
 		car->UpdateLightsState();
+
+		// do road testing
+#if 0
+		{
+			Vector3D pos = car->GetOrigin();
+
+			straight_t str = g_pGameWorld->m_level.Road_GetStraightAtPos(pos, 16);
+
+			roadJunction_t junction = g_pGameWorld->m_level.Road_GetJunctionAtPoint(str.end, 16);
+
+			DkList<straight_t> exits;
+
+			Road_GetJunctionExits(exits, str, junction);
+
+			Vector3D roadStart = g_pGameWorld->m_level.GlobalTilePointToPosition(str.start);
+			Vector3D roadEnd = g_pGameWorld->m_level.GlobalTilePointToPosition(str.end);
+
+			debugoverlay->Line3D(roadStart, roadEnd, ColorRGBA(1, 0, 0, 1), ColorRGBA(1, 0, 0, 1), 0.0f);
+
+			// draw
+			for (int i = 0; i < exits.numElem(); i++)
+			{
+				straight_t& road = exits[i];
+
+				Vector3D start = g_pGameWorld->m_level.GlobalTilePointToPosition(road.start);
+				Vector3D end = g_pGameWorld->m_level.GlobalTilePointToPosition(road.end);
+
+				debugoverlay->Line3D(roadEnd, start, ColorRGBA(1, 1, 0, 1), ColorRGBA(1, 0, 0, 1), 0.0f);
+				debugoverlay->Line3D(start, end, ColorRGBA(1, 1, 0, 1), ColorRGBA(1, 0, 0, 1), 0.0f);
+
+				debugoverlay->Box3D(start - 0.85f, start + 0.85f, ColorRGBA(1, 1, 0, 1), 0.0f);
+				debugoverlay->Box3D(end - 0.5f, end + 0.5f, ColorRGBA(0.5, 1, 0, 1), 0.0f);
+			}
+		}
+#endif
 	}
 }
 
