@@ -161,7 +161,7 @@ void CDPKFileStream::DecodeBlock(int blockIdx)
 // reads data from virtual stream
 size_t CDPKFileStream::Read(void* dest, size_t count, size_t size)
 {
-	const int fileRemainingBytes = m_info.size - m_curPos;
+	const size_t fileRemainingBytes = m_info.size - m_curPos;
 	const int bytesToRead = min(count*size, fileRemainingBytes);
 
 	if (bytesToRead == 0)
