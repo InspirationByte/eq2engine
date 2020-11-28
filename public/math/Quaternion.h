@@ -61,7 +61,7 @@ Quaternion operator + (const Quaternion &u, const Quaternion &v);
 Quaternion operator - (const Quaternion &u, const Quaternion &v);
 Quaternion operator - (const Quaternion &v);
 Quaternion operator * (const Quaternion &u, const Quaternion &v);
-Quaternion operator * (const float scalar, const Quaternion &v);
+Quaternion operator * (float scalar, const Quaternion &v);
 Quaternion operator * (const Quaternion &v, const float scalar);
 Quaternion operator / (const Quaternion &v, const float dividend);
 Quaternion operator * (const TVec3D<float>& v, const Quaternion &q);

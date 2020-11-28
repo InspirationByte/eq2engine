@@ -369,6 +369,14 @@ Quaternion scerp(const Quaternion &q0, const Quaternion &q1, const Quaternion &q
 	return slerp(slerp(q1, q2, t), slerp(q0, q3, t), 2 * t * (1 - t));
 }
 
+// inverses quaternion
+Quaternion inverse(const Quaternion& q)
+{
+	const float r_len = 1.0f / length(q);
+	const Quaternion cq = !q; // find conjugate
+
+	return Quaternion(cq.w / r_len, cq.x / r_len, cq.y / r_len,cq.z / r_len);
+}			
 // ------------------------------------------------------------------------------
 
 float length(const Quaternion &q)
@@ -417,7 +425,7 @@ Vector3D eulers(const Quaternion &q)
 	return euler;
 }
 
-// compares quaternion with epsilon
+// compares two quaternions with epsilon
 bool compare_epsilon(const Quaternion &u, const Quaternion &v, const float eps)
 {
 	// FIXME: use quaternion difference
