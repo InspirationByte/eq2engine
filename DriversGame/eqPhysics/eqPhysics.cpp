@@ -1196,7 +1196,6 @@ void CEqPhysics::SimulateStep(float deltaTime, int iteration, FNSIMULATECALLBACK
 
 		// clear contact pairs and results
 		body->ClearContacts();
-		IntegrateSingle(body);
 
 		// set for collision detection
 		body->UpdateBoundingBoxTransform();
@@ -1211,13 +1210,11 @@ void CEqPhysics::SimulateStep(float deltaTime, int iteration, FNSIMULATECALLBACK
 			contr->Update( m_fDt );
 	}
 
-	// update all constraints
-	for (int i = 0; i < m_constraints.numElem(); i++)
+	// solve positions
+	for (int i = 0; i < m_moveable.numElem(); i++)
 	{
-		IEqPhysicsConstraint* constr = m_constraints[i];
-
-		if (constr->IsEnabled())
-			constr->Apply( m_fDt );
+		CEqRigidBody* body = m_moveable[i];
+		IntegrateSingle(body);
 	}
 
 	m_fDt = deltaTime;
@@ -1251,6 +1248,15 @@ void CEqPhysics::SimulateStep(float deltaTime, int iteration, FNSIMULATECALLBACK
 
 		if (callbacks) // execute post simulation callbacks
 			callbacks->PostSimulate(m_fDt);
+	}
+
+	// update all constraints
+	for (int i = 0; i < m_constraints.numElem(); i++)
+	{
+		IEqPhysicsConstraint* constr = m_constraints[i];
+
+		if (constr->IsEnabled())
+			constr->Apply( m_fDt );
 	}
 
 	m_numRayQueries = 0;

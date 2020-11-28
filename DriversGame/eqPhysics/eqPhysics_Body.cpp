@@ -600,7 +600,7 @@ float CEqRigidBody::ApplyImpulseResponseTo(CEqRigidBody* body, const FVector3D& 
 
 	const Vector3D impactpoint_velocity = body->GetVelocityAtLocalPoint(contactRelativePos);
 
-	const float combined_rest = 1.0f + (restitutionA*body->GetRestitution());
+	const float combined_rest = 1.0 + (restitutionA + body->GetRestitution());
 
 	const float impulse_speed = -dot(impactpoint_velocity, normal);
 
@@ -655,7 +655,7 @@ float CEqRigidBody::ApplyImpulseResponseTo2( CEqRigidBody* bodyA, CEqRigidBody* 
 	const Vector3D impactpoint_velocityA = bodyA->GetVelocityAtLocalPoint(contactRelativePosA);
 	const Vector3D impactpoint_velocityB = bodyB->GetVelocityAtLocalPoint(contactRelativePosB);
 
-	const float combined_rest = 1.0f + (bodyA->GetRestitution()*bodyB->GetRestitution());
+	const float combined_rest = 1.0f + (bodyA->GetRestitution() + bodyB->GetRestitution());
 
 	const Vector3D vel_sub = impactpoint_velocityB-impactpoint_velocityA;
 

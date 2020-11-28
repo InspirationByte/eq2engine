@@ -63,7 +63,7 @@ void CEqPhysicsPointConstraint::PreApply(float dt)
 	
 	if (deviationAmount > m_allowedDistance)
 	{
-		m_VrExtra = ((deviationAmount - m_allowedDistance) / ( deviationAmount * max(m_timescale, dt) )) * deviation;
+		m_VrExtra = ((deviationAmount - m_allowedDistance) / (deviationAmount * max(m_timescale, dt)))* deviation;
 	}
 	else
 	{
@@ -75,49 +75,53 @@ bool CEqPhysicsPointConstraint::Apply(float dt)
 {
 	m_satisfied = true;
 
-	//bool body0FrozenPre = (m_body0->m_flags & BODY_FROZEN);
-	//bool body1FrozenPre = (m_body1->m_flags & BODY_FROZEN);
-	//  if (body0FrozenPre && body1FrozenPre)
-	//    return false;
+#define CONSTRAINT_STEPS 8
 
-	// velocity at point, but computed a bit differently
-	const Vector3D currentVel0(m_body0->GetLinearVelocity() + cross(m_R0, m_body0->GetAngularVelocity()));
-	const Vector3D currentVel1(m_body1->GetLinearVelocity() + cross(m_R1, m_body1->GetAngularVelocity()));
+	const float compliance = 0.0f;
+	const float stepSize = dt / CONSTRAINT_STEPS;
+	const float dstep = compliance / (stepSize * stepSize);
+	
+	for(int i = 0; i < CONSTRAINT_STEPS; i++)
+	{		
+		// velocity at point, but computed a bit differently
+		const Vector3D currentVel0(m_body0->GetLinearVelocity() + cross(m_R0, m_body0->GetAngularVelocity()));
+		const Vector3D currentVel1(m_body1->GetLinearVelocity() + cross(m_R1, m_body1->GetAngularVelocity()));
+		
+		// add a "correction" based on the deviation of point 0
+		Vector3D Vr(m_VrExtra + currentVel0 - currentVel1);
 
-	// add a "correction" based on the deviation of point 0
-	Vector3D Vr(m_VrExtra + currentVel0 - currentVel1);
+		float normalVel = length(Vr);
+		if (normalVel < minVelForProcessing)
+			return false;
+	
+		// limit things
+		if (normalVel > MaxVelocityMagnitude)
+		{
+			Vr *= MaxVelocityMagnitude / normalVel;
+			normalVel = MaxVelocityMagnitude;
+		}
 
-	float normalVel = length(Vr);
-	if (normalVel < minVelForProcessing)
-		return false;
+		const Vector3D N = Vr / normalVel;
 
-	// limit things
-	if (normalVel > MaxVelocityMagnitude)
-	{
-		Vr *= MaxVelocityMagnitude / normalVel;
-		normalVel = MaxVelocityMagnitude;
+		const float numerator = -normalVel - dstep;
+		const float denominator = dstep + m_body0->GetInvMass() + m_body1->GetInvMass() + 
+			dot(N, cross(m_body0->GetWorldInvInertiaTensor() * (cross(m_R0, N)), m_R0)) + 
+			dot(N, cross(m_body1->GetWorldInvInertiaTensor() * (cross(m_R1, N)), m_R1));
+
+		if (denominator < 0.001f)
+			return false;
+	
+		const Vector3D normalImpulse = (numerator / denominator) * N;
+
+		if (!(m_flags & CONSTRAINT_FLAG_BODYA_NOIMPULSE))
+			m_body0->ApplyWorldImpulse(m_worldPos, normalImpulse);
+
+		if (!(m_flags & CONSTRAINT_FLAG_BODYB_NOIMPULSE))
+			m_body1->ApplyWorldImpulse(m_worldPos, -normalImpulse);
+
+		m_body0->TryWake();
+		m_body1->TryWake();
 	}
-
-	const Vector3D N = Vr / normalVel;
-
-	const float numerator = -normalVel;
-	const float denominator =	m_body0->GetInvMass() + m_body1->GetInvMass() + 
-								dot(N, cross(m_body0->GetWorldInvInertiaTensor() * (cross(m_R0, N)), m_R0)) + 
-								dot(N, cross(m_body1->GetWorldInvInertiaTensor() * (cross(m_R1, N)), m_R1));
-
-	if (denominator < 0.001f)
-		return false;
-
-	const Vector3D normalImpulse = (numerator / denominator) * N;
-
-	if(!(m_flags & CONSTRAINT_FLAG_BODYA_NOIMPULSE))
-		m_body0->ApplyWorldImpulse(m_worldPos, normalImpulse);
-
-	if(!(m_flags & CONSTRAINT_FLAG_BODYB_NOIMPULSE))
-		m_body1->ApplyWorldImpulse(m_worldPos, -normalImpulse);
-
-	m_body0->TryWake();
-	m_body1->TryWake();
 
 	m_body0->SetConstraintsUnsatisfied();
 	m_body1->SetConstraintsUnsatisfied();

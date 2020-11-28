@@ -580,6 +580,9 @@ void CLevelModel::Render(int nDrawFlags)
 		lmodel_batch_t& batch = m_batches[i];
 		int matFlags = batch.pMaterial->GetFlags();
 
+		if (batch.pMaterial->GetState() == MATERIAL_LOAD_INQUEUE)
+			continue;
+
 		if (matFlags & MATERIAL_FLAG_INVISIBLE)
 			continue;
 

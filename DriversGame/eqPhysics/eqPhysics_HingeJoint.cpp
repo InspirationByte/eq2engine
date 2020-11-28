@@ -69,7 +69,7 @@ void CEqPhysicsHingeJoint::Init(CEqRigidBody* body0, CEqRigidBody* body1,
 	FVector3D relPos1b = hingePosRel1 - hingeHalfWidth * m_hingeAxis;
 
 	float timescale = 1.0f / 20.0f;
-	float allowedDistanceMid = 0.05f;
+	float allowedDistanceMid = 0.01f;
 	float allowedDistanceSide = sidewaysSlack * hingeHalfWidth;
 
 	m_sidePointConstraints[0].Init(body0, relPos0a, body1, relPos1a, allowedDistanceSide, flags);

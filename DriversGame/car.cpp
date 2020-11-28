@@ -184,8 +184,8 @@ const float HINGE_DISCONNECT_COS_ANGLE		= 0.2f;
 const float SKID_SMOKE_MAX_WETNESS			= 0.5f; // wetness level before skid sound disappear
 const float SKID_WATERTRAIL_MIN_WETNESS		= 0.25f; // wetness level before skid sound disappear
 
-const float CAR_PHYSICS_RESTITUTION			= 0.0f;
-const float CAR_PHYSICS_FRICTION			= 0.35f;
+const float CAR_PHYSICS_RESTITUTION			= 0.1f;
+const float CAR_PHYSICS_FRICTION			= 0.5f;
 
 const float JUMP_NOSE_DOWN_FACTOR			= -0.6f;
 

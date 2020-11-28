@@ -146,7 +146,7 @@ void CObject_Debris::Spawn()
 		else
 		{
 			body->SetFriction( 0.8f );
-			body->SetRestitution( 0.15f );
+			body->SetRestitution( 0.0f );
 		}
 
 		body->SetMass(obj->mass);
@@ -213,7 +213,7 @@ void CObject_Debris::SpawnAsHubcap(IEqModel* model, int8 bodyGroup, int physObje
 		physobject_t* obj = &m_pModel->GetHWData()->physModel.objects[0].object;
 
 		body->SetFriction( 0.7f );
-		body->SetRestitution( 0.8f );
+		body->SetRestitution( 0.0f );
 		body->SetMass(obj->mass);
 		body->SetGravity(body->GetGravity() * 2.0f);
 		body->SetDebugName("hubcap");
@@ -280,11 +280,9 @@ void CObject_Debris::SpawnAsBreakablePart(IEqModel* model, int8 bodyGroup, int p
 		else
 		{
 			body->SetFriction( 0.8f );
-			body->SetRestitution( 0.15f );
+			body->SetRestitution( 0.0f );
 		}
 
-		body->SetFriction( 0.7f );
-		body->SetRestitution( 0.8f );
 		body->SetMass(obj->mass);
 		body->SetGravity(body->GetGravity() * 2.0f);
 		body->SetDebugName("brkbl");
