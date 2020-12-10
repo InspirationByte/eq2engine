@@ -489,7 +489,7 @@ int CAIPursuerCar::PassiveCopState( float fDt )
 
 		if (newFelony >= AI_COP_MINFELONY)
 		{
-			if (pursuerData.pursuedByCount < g_pAIManager->GetMaxCops())
+			if (!m_assignedRoadblock || m_assignedRoadblock && pursuerData.pursuedByCount < g_pAIManager->GetMaxCops())
 			{
 				float pursuitStartDelay = newFelony > AI_COP_MINFELONY ? AI_COP_BEGINPURSUIT_ARMED_DELAY : AI_COP_BEGINPURSUIT_PASSIVE_DELAY;
 
