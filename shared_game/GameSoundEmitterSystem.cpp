@@ -538,13 +538,13 @@ int CSoundEmitterSystem::EmitSound(EmitSound_t* emit)
 		// if entity reached the maximum sound count for self
 		if(usedSounds >= s_soundChannelMaxEmitters[script->channelType])
 		{
+			Threading::CScopedMutex m(m_mutex);
+			
 			// find currently playing sound index
 			int firstPlayingSound = GetEmitterIndexByEntityAndChannel( pChanObj, script->channelType );
 
 			if(firstPlayingSound != -1)
 			{
-				Threading::CScopedMutex m(m_mutex);
-
 				EmitterData_t* substEmitter = m_emitters[firstPlayingSound];
 
 				// if index is valid, shut up this sound
@@ -770,6 +770,8 @@ void CSoundEmitterSystem::StopAllEmitters()
 
 	for (int i = 0; i < m_emitters.numElem(); i++)
 	{
+		Threading::CScopedMutex m(m_mutex);
+		
 		EmitterData_t* em = m_emitters[i];
 
 		if (em->soundSource)
@@ -888,7 +890,7 @@ void CSoundEmitterSystem::Update(float pitchScale, bool force)
 		if( remove )
 		{
 			Threading::CScopedMutex m(m_mutex);
-
+			
 			if(emitter->controller)
 				emitter->controller->Stop(true);
 
