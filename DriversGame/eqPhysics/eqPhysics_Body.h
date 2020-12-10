@@ -105,10 +105,13 @@ public:
 	static Vector3D		ComputeFrictionVelocity2( const Vector3D& collNormal, const Vector3D& collVelocityA, const Vector3D& collVelocityB, float normalImpulse, float denominator, float staticFriction, float dynamicFriction);
 
 	/// Simply applies impulse response to single body
+	static float		ApplyImpulseResponseTo(ContactPair_t& pair, float error_correction_factor);
+
+	// OLD
 	static float		ApplyImpulseResponseTo(CEqRigidBody* body, const FVector3D& point, const Vector3D& normal, float posError, float restitutionA, float frictionA, float percentage = 1.0f);
 
 	/// Simply applies impulse response to two bodies
-	static float		ApplyImpulseResponseTo2( CEqRigidBody* bodyA, CEqRigidBody* bodyB, const FVector3D& point, const Vector3D& normal, float posError, int pairFlags);
+	static float		ApplyImpulseResponseTo2(CEqRigidBody* bodyA, CEqRigidBody* bodyB, const FVector3D& point, const Vector3D& normal, float posError, int pairFlags);
 
 	//---------------------------------------------------------------
 
@@ -138,6 +141,7 @@ public:
 	void					ApplyWorldImpulse(const FVector3D& position, const Vector3D& impulse);		///< apply impulse at world position
 	void					ApplyWorldForce(const FVector3D& position, const Vector3D& force);			///< apply impulse at world position
 
+	void					SetPosition(const FVector3D& position);										///< sets new position
 	void					SetOrientation(const Quaternion& orient);									///< sets new orientation and updates inertia tensor
 
 	void					SetCenterOfMass(const FVector3D& center);									///< sets new center of mass
@@ -170,8 +174,9 @@ public:
 	float					GetLastFrameTime();															///< returns last frame time (used if min frame time set)
 	bool					IsCanIntegrate( bool checkIgnore = false);
 
-	void					Integrate( float time );													///< called when physics takes timestep
-
+	void					Integrate( float time );													///< integrates velocities on body and stores position
+	void					Update( float time );														///< updates body position
+	
 	// constraints
 	void					AddConstraint( IEqPhysicsConstraint* constraint );
 	void					RemoveConstraint( IEqPhysicsConstraint* constraint );
@@ -179,9 +184,10 @@ public:
 
 	void					SetConstraintsUnsatisfied();
 
+	float					ComputeImpulseDenominator(const FVector3D& pos, const Vector3D& normal) const;
+
 protected:
 
-	float					ComputeImpulseDenominator(const FVector3D& pos, const Vector3D& normal) const;
 
 	void					ComputeInertia(float scale);
 	void					UpdateInertiaTensor();		///< updates inertia tensor
@@ -215,7 +221,10 @@ protected:
 	bool							m_minFrameTimeIgnoreMotion;
 
 public:
-	FVector3D			m_centerOfMassTrans;
+	FVector3D						m_centerOfMassTrans;
+
+	Quaternion						m_prevOrientation;
+	FVector3D						m_prevPosition;
 
 protected:
 

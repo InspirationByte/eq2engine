@@ -824,7 +824,7 @@ void CEqPhysics::DetectStaticVsBodyCollision(CEqCollisionObject* staticObj, CEqR
 	int numCollResults = cbResult.m_collisions.numElem();
 
 	float iter_delta = 1.0f / numCollResults;
-
+	
 	for(int j = 0; j < numCollResults; j++)
 	{
 		CollisionData_t& coll = cbResult.m_collisions[j];
@@ -834,7 +834,7 @@ void CEqPhysics::DetectStaticVsBodyCollision(CEqCollisionObject* staticObj, CEqR
 		FVector3D	hitPos = coll.position;
 
 		// convex shapes are front faced?
-		if( !staticObj->m_shape->isConcave() )
+		if( staticObj->m_shape && !staticObj->m_shape->isConcave() )
 		{
 			hitNormal *= -1.0f;
 			hitDepth *= -1.0f;
@@ -1024,8 +1024,6 @@ void CEqPhysics::ProcessContactPair(ContactPair_t& pair)
 
 	bool bodyADisableResponse = false;
 
-	float combinedErp = ph_erp.GetFloat() + pair.bodyA->m_erp + pair.bodyB->m_erp;
-	combinedErp = max(combinedErp, ph_erp.GetFloat());
 
 	IEqPhysCallback* callbacksA = pair.bodyA->m_callbacks;
 	IEqPhysCallback* callbacksB = pair.bodyB->m_callbacks;
@@ -1047,17 +1045,25 @@ void CEqPhysics::ProcessContactPair(ContactPair_t& pair)
 		// correct position
 		if (!(pair.flags & COLLPAIRFLAG_OBJECTB_NO_RESPONSE) && !(bodyAFlags & COLLOBJ_DISABLE_RESPONSE) && pair.depth > 0)
 		{
-			float positionalError = combinedErp * pair.depth * pair.dt;
-
-			bodyB->SetPosition(bodyB->GetPosition() + pair.normal * positionalError);
-
 			impactVelocity = fabs(dot(pair.normal, bodyB->GetVelocityAtWorldPoint(pair.position)));
 
 			if (impactVelocity < 0)
 				impactVelocity = 0.0f;
 
 			// apply response
-			appliedImpulse = CEqRigidBody::ApplyImpulseResponseTo(bodyB, pair.position, pair.normal, positionalError, pair.restitutionA, pair.frictionA);
+			pair.normal *= -1.0f;
+			pair.depth *= -1.0f;
+
+			float combinedErp = ph_erp.GetFloat() + pair.bodyA->m_erp + pair.bodyB->m_erp;
+			float positionalError = combinedErp * pair.depth * pair.dt;
+
+			combinedErp = max(combinedErp, ph_erp.GetFloat());
+
+			bodyB->m_position += pair.normal * positionalError * combinedErp;
+			bodyB->m_prevPosition += pair.normal * positionalError * combinedErp;
+			
+			appliedImpulse = CEqRigidBody::ApplyImpulseResponseTo(pair, positionalError * combinedErp);
+			//appliedImpulse =  CEqRigidBody::ApplyImpulseResponseTo(bodyB, pair.position, pair.normal, 0.0, pair.restitutionA, pair.frictionA);
 		}
 
 		bodyADisableResponse = (bodyAFlags & COLLOBJ_DISABLE_RESPONSE);
@@ -1067,10 +1073,17 @@ void CEqPhysics::ProcessContactPair(ContactPair_t& pair)
 		CEqRigidBody* bodyA = (CEqRigidBody*)pair.bodyA;
 
 		bool isCarCollidingWithCar = (bodyAFlags & BODY_ISCAR) && (bodyBFlags & BODY_ISCAR);
+		float varyErp = (isCarCollidingWithCar ? ph_carVsCarErp.GetFloat() : ph_erp.GetFloat());
+		
+		int bodyAFlags = pair.bodyA->m_flags;
+		int bodyBFlags = bodyB->m_flags;
 
-		float varyErp = (isCarCollidingWithCar ? ph_carVsCarErp.GetFloat() : combinedErp);
+		float combinedErp = varyErp + pair.bodyA->m_erp + pair.bodyB->m_erp;
+		float positionalError = combinedErp * pair.depth * pair.dt;
 
-		float positionalError = varyErp * pair.depth * pair.dt;
+		combinedErp = max(combinedErp, varyErp);
+
+		impactVelocity = fabs( dot(pair.normal, bodyA->GetVelocityAtWorldPoint(pair.position) - bodyB->GetVelocityAtWorldPoint(pair.position)) );
 
 		// correct position
 		if (pair.depth > 0 &&
@@ -1078,22 +1091,24 @@ void CEqPhysics::ProcessContactPair(ContactPair_t& pair)
 			!(bodyAFlags & BODY_FORCE_FREEZE) && 
 			!(bodyAFlags & BODY_INFINITEMASS) && 
 			!(bodyBFlags & COLLOBJ_DISABLE_RESPONSE))
-			bodyA->SetPosition(bodyA->GetPosition() + pair.normal*positionalError);
+		{
+			bodyA->m_position += pair.normal * positionalError * combinedErp;
+			bodyA->m_prevPosition += pair.normal * positionalError * combinedErp;
+		}
 
 		if (pair.depth > 0 &&
 			!(pair.flags & COLLPAIRFLAG_OBJECTB_NO_RESPONSE) && 
 			!(bodyBFlags & BODY_FORCE_FREEZE) && 
 			!(bodyBFlags & BODY_INFINITEMASS) && 
 			!(bodyAFlags & COLLOBJ_DISABLE_RESPONSE))
-			bodyB->SetPosition(bodyB->GetPosition() - pair.normal*positionalError);
-
-		impactVelocity = fabs( dot(pair.normal, bodyA->GetVelocityAtWorldPoint(pair.position) - bodyB->GetVelocityAtWorldPoint(pair.position)) );
-
-		if ((bodyAFlags & BODY_FORCE_FREEZE) || (bodyBFlags & BODY_FORCE_FREEZE))
-			positionalError = pair.depth * 100.0f;
+		{
+			bodyB->m_position -= pair.normal * positionalError * combinedErp;
+			bodyB->m_prevPosition -= pair.normal * positionalError * combinedErp;
+		}
 
 		// apply response
-		appliedImpulse = 2.0f * CEqRigidBody::ApplyImpulseResponseTo2(bodyA, bodyB, pair.position, pair.normal, positionalError, pair.flags);
+		//appliedImpulse = 2.0f * CEqRigidBody::ApplyImpulseResponseTo2(bodyA, bodyB, pair.position, pair.normal, 0.0, pair.flags);
+		appliedImpulse = 2.0f * CEqRigidBody::ApplyImpulseResponseTo(pair, positionalError * combinedErp);
 		bodyADisableResponse = (bodyAFlags & COLLOBJ_DISABLE_RESPONSE);
 	}
 
@@ -1183,6 +1198,15 @@ void CEqPhysics::SimulateStep(float deltaTime, int iteration, FNSIMULATECALLBACK
 			constr->PreApply( m_fDt );
 	}
 
+	// update the controllers
+	for (int i = 0; i < m_controllers.numElem(); i++)
+	{
+		IEqPhysicsController* contr = m_controllers[i];
+
+		if(contr->IsEnabled())
+			contr->Update( m_fDt );
+	}
+	
 	// move all bodies
 	for (int i = 0; i < m_moveable.numElem(); i++)
 	{
@@ -1197,23 +1221,7 @@ void CEqPhysics::SimulateStep(float deltaTime, int iteration, FNSIMULATECALLBACK
 		// clear contact pairs and results
 		body->ClearContacts();
 
-		// set for collision detection
-		body->UpdateBoundingBoxTransform();
-	}
-
-	// update the controllers
-	for (int i = 0; i < m_controllers.numElem(); i++)
-	{
-		IEqPhysicsController* contr = m_controllers[i];
-
-		if(contr->IsEnabled())
-			contr->Update( m_fDt );
-	}
-
-	// solve positions
-	for (int i = 0; i < m_moveable.numElem(); i++)
-	{
-		CEqRigidBody* body = m_moveable[i];
+		// apply velocities
 		IntegrateSingle(body);
 	}
 
@@ -1230,6 +1238,13 @@ void CEqPhysics::SimulateStep(float deltaTime, int iteration, FNSIMULATECALLBACK
 
 	// TODO: job barrier
 
+	// solve positions
+	for (int i = 0; i < m_moveable.numElem(); i++)
+	{
+		CEqRigidBody* body = m_moveable[i];
+		body->Update(m_fDt);
+	}
+	
 	// process generated contact pairs
 	for (int i = 0; i < m_moveable.numElem(); i++)
 	{
@@ -1240,9 +1255,6 @@ void CEqPhysics::SimulateStep(float deltaTime, int iteration, FNSIMULATECALLBACK
 
 		for (int j = 0; j < numContactPairs; j++)
 			ProcessContactPair(pairs[j]);
-
-		// set after collisions processed
-		body->UpdateBoundingBoxTransform();
 
 		IEqPhysCallback* callbacks = body->m_callbacks;
 

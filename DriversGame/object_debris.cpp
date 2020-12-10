@@ -151,7 +151,7 @@ void CObject_Debris::Spawn()
 
 		body->SetMass(obj->mass);
 		body->SetGravity(body->GetGravity() * 2.0f);
-		body->SetDebugName("hubcap");
+		body->SetDebugName("debris");
 
 		// additional error correction required
 		body->m_erp = DEBRIS_ERP;
@@ -213,7 +213,7 @@ void CObject_Debris::SpawnAsHubcap(IEqModel* model, int8 bodyGroup, int physObje
 		physobject_t* obj = &m_pModel->GetHWData()->physModel.objects[0].object;
 
 		body->SetFriction( 0.7f );
-		body->SetRestitution( 0.0f );
+		body->SetRestitution( 0.5f );
 		body->SetMass(obj->mass);
 		body->SetGravity(body->GetGravity() * 2.0f);
 		body->SetDebugName("hubcap");

@@ -151,7 +151,7 @@ const float DAMAGE_WHEEL_SCALE			= 0.5f;
 const float DEFAULT_MAX_SPEED			= 150.0f;
 const float BURNOUT_MAX_SPEED			= 70.0f;
 
-const float DAMAGE_SOUND_SCALE			= 0.25f;
+const float DAMAGE_SOUND_SCALE			= 0.5f;
 const float SIREN_SOUND_DEATHTIME		= 3.5f;
 
 const float	DAMAGE_WATERDAMAGE_RATE		= 5.5f;
@@ -2690,7 +2690,7 @@ void CCar::OnPhysicsFrame( float fDt )
 	{
 		float fDotUp = dot(vec3_up, hitNormal);
 
-		if( fHitImpulse > 0.08f )
+		if( fHitImpulse > 0.15f )
 		{
 			if(doImpulseSound)
 			{
@@ -2698,7 +2698,7 @@ void CCar::OnPhysicsFrame( float fDt )
 
 				bool minImpactSound = (fDotUp > 0.5f);
 
-				if(fHitImpulse < 0.2f && !minImpactSound)
+				if(fHitImpulse < 0.1f && !minImpactSound)
 					ep.name = "generic.hit";
 				else if(fHitImpulse < 1.5f)
 					ep.name = "generic.impact";
