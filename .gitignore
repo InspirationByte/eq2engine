@@ -32,6 +32,7 @@ Desktop.ini
 *.lib
 *.exp
 *.exe
+*.aps
 libs/
 libs_android/
 plugins/
@@ -46,4 +47,6 @@ utils/driver_level*/
 obj/
 android-project/app/
 android-project/build/
+android-project/.gradle/
+android-project/.idea/caches
 *.*~
