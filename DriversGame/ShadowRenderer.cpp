@@ -96,7 +96,8 @@ void CShadowRenderer::Init()
 	m_shadowTexelSize = 1.0f / m_shadowTextureSize;
 
 	// create shadow render target
-	m_shadowTexture = g_pShaderAPI->CreateNamedRenderTarget("_dshadow", m_shadowTextureSize.x, m_shadowTextureSize.y, shadowRendertargetFormat);
+	m_shadowTexture = g_pShaderAPI->CreateNamedRenderTarget("_dshadow", m_shadowTextureSize.x, m_shadowTextureSize.y, shadowRendertargetFormat,
+		TEXFILTER_LINEAR, TEXADDRESS_CLAMP, COMP_NEVER, TEXFLAG_RENDERDEPTH);
 	m_shadowTexture->Ref_Grab();
 
 	kvkeybase_t shadowBuildParams;
@@ -319,7 +320,7 @@ void CShadowRenderer::RenderShadowCasters()
 
 	// clear the shadow atlas
 	g_pShaderAPI->ChangeRenderTarget( m_shadowTexture );
-	g_pShaderAPI->Clear( true,false,false, ColorRGBA(1.0f) );
+	g_pShaderAPI->Clear( true,true,false, ColorRGBA(1.0f), 0.0f );
 
 	// now start rendering to temporary shadow buffer
 	//g_pShaderAPI->ChangeRenderTarget( m_shadowRt );

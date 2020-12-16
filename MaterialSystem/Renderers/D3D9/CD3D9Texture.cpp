@@ -19,6 +19,7 @@ CD3D9Texture::CD3D9Texture() : CTexture()
 	m_bIsLocked = false;
 	m_pLockSurface = NULL;
 	m_texSize = 0;
+	m_dummyDepth = NULL;
 }
 
 CD3D9Texture::~CD3D9Texture()
@@ -46,6 +47,9 @@ void CD3D9Texture::ReleaseSurfaces()
 		surfaces[i]->Release();
 
 	surfaces.clear();
+
+	if (m_dummyDepth)
+		m_dummyDepth->Release();
 }
 
 LPDIRECT3DBASETEXTURE9 CD3D9Texture::GetCurrentTexture()

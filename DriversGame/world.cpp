@@ -840,20 +840,16 @@ void CGameWorld::Init()
 	{
 		if (!m_reflectionTex)
 		{
-			m_reflectionTex = g_pShaderAPI->CreateNamedRenderTarget("_reflection", 512, 256, reflTextureTargetFormat, TEXFILTER_LINEAR, TEXADDRESS_CLAMP);
+			m_reflectionTex = g_pShaderAPI->CreateNamedRenderTarget("_reflection", 512, 256, 
+				reflTextureTargetFormat, TEXFILTER_LINEAR, TEXADDRESS_CLAMP);
 			m_reflectionTex->Ref_Grab();
 		}
 
 		if (!m_tempReflTex)
 		{
-			m_tempReflTex = g_pShaderAPI->CreateNamedRenderTarget("_tempReflection", 512, 256, reflTextureTargetFormat, TEXFILTER_NEAREST, TEXADDRESS_CLAMP);
+			m_tempReflTex = g_pShaderAPI->CreateNamedRenderTarget("_tempReflection", 512, 256, 
+				reflTextureTargetFormat, TEXFILTER_NEAREST, TEXADDRESS_CLAMP, COMP_NEVER, TEXFLAG_RENDERDEPTH);
 			m_tempReflTex->Ref_Grab();
-		}
-
-		if (!m_reflDepth)
-		{
-			m_reflDepth = g_pShaderAPI->CreateNamedRenderTarget("_reflDepth", 512, 256, FORMAT_D16, TEXFILTER_NEAREST);
-			m_reflDepth->Ref_Grab();
 		}
 	}
 	else
@@ -1165,9 +1161,6 @@ void CGameWorld::Cleanup( bool unloadLevel )
 
 		g_pShaderAPI->FreeTexture(m_tempReflTex);
 		m_tempReflTex = nullptr;
-
-		g_pShaderAPI->FreeTexture(m_reflDepth);
-		m_reflDepth = nullptr;
 
 		materials->FreeMaterial(m_blurYMaterial);
 		m_blurYMaterial = nullptr;
@@ -2085,7 +2078,7 @@ void CGameWorld::DrawReflections()
 	}
 
 	// draw into temporary buffer
-	g_pShaderAPI->ChangeRenderTarget(m_tempReflTex, 0, m_reflDepth, 0);
+	g_pShaderAPI->ChangeRenderTarget(m_tempReflTex, 0, NULL, 0);
 	g_pShaderAPI->Clear(true,true,false);
 	
 	materials->SetMatrix(MATRIXMODE_VIEW, view);

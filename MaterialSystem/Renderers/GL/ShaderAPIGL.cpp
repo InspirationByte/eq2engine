@@ -375,6 +375,8 @@ void ShaderAPIGL::Init( shaderAPIParams_t &params)
 	for (int i = 0; i < m_caps.maxRenderTargets; i++)
 		m_drawBuffers[i] = GL_COLOR_ATTACHMENT0 + i;
 
+	m_currentGLDepth = GL_NONE;
+
 	// Init the base shader API
 	ShaderAPI_Base::Init(params);
 
@@ -928,7 +930,7 @@ ITexture* ShaderAPIGL::CreateRenderTarget(	int width, int height,
 											ER_CompareFunc comparison,
 											int nFlags)
 {
-	return CreateNamedRenderTarget("__rt_001", width, height, nRTFormat, textureFilterType,textureAddress,comparison,nFlags);
+	return CreateNamedRenderTarget(varargs("_sapi_rt_%d", m_TextureList.numElem()), width, height, nRTFormat, textureFilterType,textureAddress,comparison,nFlags);
 }
 
 // It will add new rendertarget
@@ -943,15 +945,10 @@ ITexture* ShaderAPIGL::CreateNamedRenderTarget(	const char* pszName,
 
 	pTexture->SetDimensions(width,height);
 	pTexture->SetFormat(nRTFormat);
-
-	int tex_flags = nFlags;
-
-	tex_flags |= TEXFLAG_RENDERTARGET;
-
-	pTexture->SetFlags(tex_flags);
+	pTexture->SetFlags(nFlags | TEXFLAG_RENDERTARGET);
 	pTexture->SetName(pszName);
 
-	pTexture->glTarget = (tex_flags & TEXFLAG_CUBEMAP) ? GL_TEXTURE_CUBE_MAP : GL_TEXTURE_2D;
+	pTexture->glTarget = (nFlags & TEXFLAG_CUBEMAP) ? GL_TEXTURE_CUBE_MAP : GL_TEXTURE_2D;
 
 	SamplerStateParam_t texSamplerParams = MakeSamplerState(textureFilterType,textureAddress,textureAddress,textureAddress);
 
@@ -963,11 +960,19 @@ ITexture* ShaderAPIGL::CreateNamedRenderTarget(	const char* pszName,
 
 	m_Mutex.Lock();
 
+	if (nFlags & TEXFLAG_RENDERDEPTH)
+	{
+		glGenTextures(1, &pTexture->glDepthID);
+		GLCheckError("gen depth tex");
+
+		glBindTexture(GL_TEXTURE_2D, pTexture->glDepthID);
+		SetupGLSamplerState(GL_TEXTURE_2D, texSamplerParams);
+	}
+
 	glGenTextures(1, &pTexture->textures[0].glTexID);
 	GLCheckError("gen tex");
 
 	glBindTexture(pTexture->glTarget, pTexture->textures[0].glTexID);
-
 	SetupGLSamplerState(pTexture->glTarget, texSamplerParams);
 
 	// this generates the render target
@@ -997,6 +1002,20 @@ void ShaderAPIGL::ResizeRenderTarget(ITexture* pRT, int newWide, int newTall)
 	}
 	else
 	{
+		if (pTex->glDepthID != GL_NONE)
+		{
+			// make a depth texture first
+			// use glDepthID
+			ETextureFormat depthFmt = FORMAT_D16;
+			GLint depthInternalFormat = internalFormats[depthFmt];
+			GLenum depthSrcFormat = IsStencilFormat(depthFmt) ? GL_DEPTH_STENCIL : GL_DEPTH_COMPONENT;
+			GLenum depthSrcType = chanTypePerFormat[depthFmt];
+
+			glBindTexture(GL_TEXTURE_2D, pTex->glDepthID);
+			glTexImage2D(GL_TEXTURE_2D, 0, depthInternalFormat, newWide, newTall, 0, depthSrcFormat, depthSrcType, NULL);
+			glBindTexture(GL_TEXTURE_2D, 0);
+		}
+		
 		GLint internalFormat = internalFormats[format];
 		GLenum srcFormat = chanCountTypes[GetChannelCount(format)];
 		GLenum srcType = chanTypePerFormat[format];
@@ -1424,37 +1443,40 @@ void ShaderAPIGL::ChangeRenderTargets(ITexture** pRenderTargets, int nNumRTs, in
 		m_nCurrentRenderTargets = nNumRTs;
 	}
 
+	GLuint bestDepth = nNumRTs ? ((CGLTexture*)pRenderTargets[0])->glDepthID : GL_NONE;
+	GLuint bestTarget = GL_TEXTURE_2D;
+	ETextureFormat bestFormat = nNumRTs ? FORMAT_D16 : FORMAT_NONE;
+	
 	CGLTexture* pDepth = (CGLTexture*)pDepthTarget;
 
 	if (pDepth != m_pCurrentDepthRenderTarget)
 	{
-		if (pDepth != NULL && pDepth->glTarget != GL_RENDERBUFFER)
+		if(pDepth)
 		{
-			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, pDepth->textures[0].glTexID, 0);
-			if (IsStencilFormat(pDepth->GetFormat()))
-			{
-				glFramebufferTexture2D(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_TEXTURE_2D, pDepth->textures[0].glTexID, 0);
-			}
-			else
-			{
-				glFramebufferTexture2D(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_TEXTURE_2D, 0, 0);
-			}
+			bestDepth = (pDepth->glTarget == GL_RENDERBUFFER) ? pDepth->glDepthID : pDepth->textures[0].glTexID;
+			bestTarget = pDepth->glTarget == GL_RENDERBUFFER ? GL_RENDERBUFFER : GL_TEXTURE_2D;
+			bestFormat = pDepth->GetFormat();
+		}
+		
+		m_pCurrentDepthRenderTarget = pDepth;
+	}
+
+	if (m_currentGLDepth != bestDepth)
+	{
+		bool isStencil = IsStencilFormat(bestFormat);
+		
+		if(bestTarget == GL_RENDERBUFFER)
+		{
+			glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, bestTarget, bestDepth);
+			glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_RENDERBUFFER, isStencil ? bestTarget : GL_NONE);
 		}
 		else
 		{
-			glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, (pDepth == NULL) ? 0 : pDepth->textures[0].glTexID);
-
-			if (pDepth != NULL && IsStencilFormat(pDepth->GetFormat()))
-			{
-				glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_RENDERBUFFER, pDepth->textures[0].glTexID);
-			}
-			else
-			{
-				glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_RENDERBUFFER, 0);
-			}
+			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, bestTarget, bestDepth, 0);
+			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_RENDERBUFFER, isStencil ? bestTarget : GL_NONE, 0);
 		}
-
-		m_pCurrentDepthRenderTarget = pDepth;
+		
+		m_currentGLDepth = bestDepth;
 	}
 
 	// like in D3D, set the viewport as texture size by default
@@ -1507,19 +1529,16 @@ void ShaderAPIGL::ChangeRenderTargetToBackBuffer()
 	if (m_frameBuffer == 0)
 		return;
 
-	glBindFramebuffer(GL_FRAMEBUFFER,0);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	SetViewport(0, 0, m_nViewportWidth, m_nViewportHeight);
 
 	int numRTs = m_nCurrentRenderTargets;
 
 	for (int i = 0; i < numRTs; i++)
-	{
-		if (m_pCurrentColorRenderTargets[i] != NULL)
-			m_pCurrentColorRenderTargets[i] = NULL;
-	}
+		m_pCurrentColorRenderTargets[i] = NULL;
 
-	if (m_pCurrentDepthRenderTarget != NULL)
-		m_pCurrentDepthRenderTarget = NULL;
+	m_pCurrentDepthRenderTarget = NULL;
+	m_currentGLDepth = GL_NONE;
 }
 
 //-------------------------------------------------------------

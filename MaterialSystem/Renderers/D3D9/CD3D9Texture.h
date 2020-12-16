@@ -39,6 +39,7 @@ public:
 
 	DkList<LPDIRECT3DBASETEXTURE9>	textures;
 	DkList<LPDIRECT3DSURFACE9>		surfaces;
+	LPDIRECT3DSURFACE9		m_dummyDepth;
 
 	D3DPOOL					m_pool;
 	DWORD					usage;

@@ -290,6 +290,7 @@ enum ER_TextureFlags
 	// texture identification flags
 	TEXFLAG_MANAGED					= (1 << 8),		// managed by video driver. Internal.
 	TEXFLAG_RENDERTARGET			= (1 << 9),		// this is a rendertarget texture
+	TEXFLAG_RENDERDEPTH				= (1 << 10),	// rendertarget with depth texture
 	TEXFLAG_FOREIGN					= (1 << 10),	// texture is created not by ShaderAPI
 
 	TEXFLAG_NULL_ON_ERROR			= (1 << 11),

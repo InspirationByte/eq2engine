@@ -24,8 +24,8 @@ extern bool GLCheckError(const char* op);
 CGLTexture::CGLTexture()
 {
 	m_flLod = 0.0f;
-	glTarget = 0;
-	glDepthID = 0;
+	glTarget = GL_NONE;
+	glDepthID = GL_NONE;
 	m_texSize = 0;
 	m_nLockLevel = 0;
 	m_bIsLocked = false;
@@ -61,6 +61,11 @@ void CGLTexture::ReleaseTextures()
 			glDeleteTextures(1, &textures[i].glTexID);
 			GLCheckError("del tex");
 		}
+
+		if(glDepthID != GL_NONE)
+			glDeleteTextures(1, &glDepthID);
+	
+		GLCheckError("del depth");
 	}
 }
 

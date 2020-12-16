@@ -362,6 +362,8 @@ private:
 	GLuint					m_frameBuffer;
 	GLuint					m_depthBuffer;
 
+	GLuint					m_currentGLDepth;
+	
 	GLenum					m_drawBuffers[MAX_MRTS];
 
 	int						m_boundInstanceStream;

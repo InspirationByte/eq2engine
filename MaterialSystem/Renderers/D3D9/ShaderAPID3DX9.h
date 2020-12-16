@@ -13,6 +13,14 @@
 #include "../Shared/ShaderAPI_Base.h"
 #include "D3D9RenderState.h"
 
+enum EGraphicsVendor
+{
+	VENDOR_ATI,
+	VENDOR_NV,
+	VENDOR_INTEL,
+	VENDOR_OTHER,
+};
+
 class ShaderAPID3DX9 : public ShaderAPI_Base
 {
 public:
@@ -305,6 +313,8 @@ protected:
 	int							GetSamplerUnit(IShaderProgram* pProgram,const char* pszSamplerName);
 
 private:
+	static bool					InternalCreateRenderTarget(LPDIRECT3DDEVICE9 dev, CD3D9Texture* tex, int nFlags);
+	
 	// Sampler states is not binding same as OpenGL
 	SamplerStateParam_t*		m_pSelectedSamplerStates[MAX_SAMPLERSTATE];
 	SamplerStateParam_t*		m_pCurrentSamplerStates[MAX_SAMPLERSTATE];
@@ -328,6 +338,7 @@ private:
 	int							m_nCurrentDepthFunc;
 	bool						m_bCurrentDepthTestEnable;
 	bool						m_bCurrentDepthWriteEnable;
+	LPDIRECT3DSURFACE9			m_pCurrentDepthSurface;
 
 	bool						m_bDoStencilTest;
 
@@ -390,6 +401,8 @@ private:
 
 	bool						m_bDeviceIsLost;
 	bool						m_bDeviceAtReset;
+
+	EGraphicsVendor				m_vendor;
 };
 
 #endif // SHADERAPID3DX9_H

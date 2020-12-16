@@ -15,6 +15,7 @@
 #include "D3D9SwapChain.h"
 
 #include "Imaging/ImageLoader.h"
+#include "utils/strtools.h"
 
 HOOK_TO_CVAR(r_screen);
 
@@ -86,11 +87,22 @@ DWORD ComputeDeviceFlags( const D3DCAPS9& caps, bool bSoftwareVertexProcessing )
 
 bool CD3DRenderLib::InitAPI( shaderAPIParams_t &params )
 {
+	EGraphicsVendor vendor;
+	
 	// get device information
 	D3DADAPTER_IDENTIFIER9 dai;
 	if (!FAILED(m_d3dFactory->GetAdapterIdentifier(D3DADAPTER_DEFAULT, 0, &dai)))
 	{
 		Msg(" \n*Detected video adapter: %s\n", dai.Description, dai.Driver);
+		
+		if (xstristr(dai.Description, "nvidia"))
+			vendor = VENDOR_NV;
+		else if (xstristr(dai.Description, "ati") || xstristr(dai.Description, "amd") || xstristr(dai.Description, "radeon"))
+			vendor = VENDOR_ATI;
+		else if (xstristr(dai.Description, "intel"))
+			vendor = VENDOR_INTEL;
+		else
+			vendor = VENDOR_OTHER;
 	}
 
 	// clear present parameters
@@ -110,7 +122,7 @@ bool CD3DRenderLib::InitAPI( shaderAPIParams_t &params )
 
 	// set backbuffer bits
 	int depthBits = params.depthBits;
-	int stencilBits = 0;
+	int stencilBits = 1;
 
 	// setup backbuffer format
 	m_d3dpp.BackBufferFormat = formats[ params.screenFormat ];
@@ -121,7 +133,7 @@ bool CD3DRenderLib::InitAPI( shaderAPIParams_t &params )
 
 	int nModes = m_d3dFactory->GetAdapterModeCount(D3DADAPTER_DEFAULT, m_d3dpp.BackBufferFormat);
 
-	m_d3dpp.BackBufferWidth  = m_width;
+	m_d3dpp.BackBufferWidth = m_width;
 	m_d3dpp.BackBufferHeight = m_height;
 	m_d3dpp.BackBufferCount  = 1;
 
@@ -153,7 +165,7 @@ bool CD3DRenderLib::InitAPI( shaderAPIParams_t &params )
 	m_d3dpp.hDeviceWindow	= hwnd;
 
 	m_d3dpp.MultiSampleQuality = 0;
-	m_d3dpp.EnableAutoDepthStencil = (depthBits > 0);
+	m_d3dpp.EnableAutoDepthStencil = TRUE;// (depthBits > 0);
 	m_d3dpp.AutoDepthStencilFormat = (depthBits > 16)? ((stencilBits > 0)? D3DFMT_D24S8 : D3DFMT_D24X8) : D3DFMT_D16;
 
 #ifdef USE_D3DEX
@@ -222,6 +234,7 @@ bool CD3DRenderLib::InitAPI( shaderAPIParams_t &params )
 	params.multiSamplingMode = multiSample;
 
 	s_shaderApi.SetD3DDevice(m_rhi, m_d3dCaps);
+	s_shaderApi.m_vendor = vendor;
 
 	//-------------------------------------------
 	// init caps
@@ -366,18 +379,18 @@ void CD3DRenderLib::EndFrame(IEqSwapChain* swapChain)
 
 void CD3DRenderLib::SetBackbufferSize(const int w, const int h)
 {
-	if (m_rhi != NULL && (m_width != w || m_height != h))
-	{
-		m_d3dpp.BackBufferWidth  = w;
-		m_d3dpp.BackBufferHeight = h;
+	if (m_rhi == NULL || m_width == w && m_height == h)
+		return;
 
-		m_bResized = true;
+	m_width = w;
+	m_height = h;
 
-		s_shaderApi.m_bDeviceIsLost = true;
+	m_d3dpp.BackBufferWidth = w;
+	m_d3dpp.BackBufferHeight = h;
+	m_d3dpp.EnableAutoDepthStencil = TRUE;
 
-		m_width = w;
-		m_height = h;
-	}
+	m_bResized = true;
+	s_shaderApi.m_bDeviceIsLost = true;
 }
 
 // reports focus state

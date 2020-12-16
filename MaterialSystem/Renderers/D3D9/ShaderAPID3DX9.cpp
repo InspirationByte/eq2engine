@@ -319,9 +319,6 @@ bool ShaderAPID3DX9::ResetDevice( D3DPRESENT_PARAMETERS &d3dpp )
 	{
 		CD3D9Texture* pTex = (CD3D9Texture*)(m_TextureList[i]);
 
-		//if(m_TextureList[i] == m_pBackBuffer || m_TextureList[i] == m_pDepthBuffer)
-		//	continue;
-
 		bool is_rendertarget = (pTex->GetFlags() & TEXFLAG_RENDERTARGET) > 0;
 		bool is_managed = (pTex->GetFlags() & TEXFLAG_MANAGED) > 0;
 
@@ -350,6 +347,8 @@ bool ShaderAPID3DX9::ResetDevice( D3DPRESENT_PARAMETERS &d3dpp )
 
 bool ShaderAPID3DX9::CreateD3DFrameBufferSurfaces()
 {
+	m_pCurrentDepthSurface = NULL;
+	
 	if(!m_pFBColor)
 	{
 		if (m_pD3DDevice->GetRenderTarget(0, &m_pFBColor) != D3D_OK)
@@ -358,35 +357,6 @@ bool ShaderAPID3DX9::CreateD3DFrameBufferSurfaces()
 
 	if(!m_pFBDepth)
 		m_pD3DDevice->GetDepthStencilSurface(&m_pFBDepth);
-
-	/*
-	// So, this is useless in Direct3D9 due to API
-
-	if(!m_pBackBuffer)
-	{
-		m_pBackBuffer = DNew(CD3D9Texture);
-		m_TextureList.append(m_pBackBuffer);
-	}
-
-	if(!m_pDepthBuffer)
-	{
-		m_pDepthBuffer = DNew(CD3D9Texture);
-		m_TextureList.append(m_pDepthBuffer);
-	}
-
-	m_pBackBuffer->SetName("_rt_backbuffer");
-	m_pDepthBuffer->SetName("_rt_backdepthbuffer");
-
-	// They are an screensized
-	m_pBackBuffer->SetFlags(TEXFLAG_RENDERTARGET | TEXFLAG_BACKBUFFER);
-	m_pDepthBuffer->SetFlags(TEXFLAG_RENDERTARGET | TEXFLAG_FOREIGN | TEXTURE_FLAG_DEPTHBUFFER);
-
-	((CD3D9Texture*)m_pBackBuffer)->surfaces.append(m_pFBColor);
-	((CD3D9Texture*)m_pDepthBuffer)->surfaces.append(m_pFBDepth);
-
-	((CD3D9Texture*)m_pBackBuffer)->released = false;
-	((CD3D9Texture*)m_pDepthBuffer)->released = false;
-	*/
 
 	return true;
 }
@@ -401,14 +371,6 @@ void ShaderAPID3DX9::ReleaseD3DFrameBufferSurfaces()
 
 	m_pFBColor = NULL;
 	m_pFBDepth = NULL;
-
-	/*
-	if(m_pBackBuffer)
-		((CD3D9Texture*)m_pBackBuffer)->surfaces.clear();
-
-	if(m_pDepthBuffer)
-		((CD3D9Texture*)m_pDepthBuffer)->surfaces.clear();
-		*/
 }
 
 // Init + Shurdown
@@ -1263,7 +1225,7 @@ static LPDIRECT3DSURFACE9* CreateSurfaces(int num)
 	return new LPDIRECT3DSURFACE9[num];
 }
 
-bool InternalCreateRenderTarget(LPDIRECT3DDEVICE9 dev, CD3D9Texture *tex, int nFlags)
+bool ShaderAPID3DX9::InternalCreateRenderTarget(LPDIRECT3DDEVICE9 dev, CD3D9Texture *tex, int nFlags)
 {
 	if (IsDepthFormat(tex->GetFormat()))
 	{
@@ -1284,6 +1246,17 @@ bool InternalCreateRenderTarget(LPDIRECT3DDEVICE9 dev, CD3D9Texture *tex, int nF
 	}
 	else 
 	{
+		if(nFlags & TEXFLAG_RENDERDEPTH)
+		{
+			if (dev->CreateDepthStencilSurface(tex->GetWidth(), tex->GetHeight(), D3DFMT_D16,
+				D3DMULTISAMPLE_NONE, 0, TRUE, &tex->m_dummyDepth, NULL) != D3D_OK)
+			{
+				MsgError("!!! Couldn't create '%s' depth surface for RT with size %d %d\n", tex->GetName(), tex->GetWidth(), tex->GetHeight());
+				ASSERT(!"Couldn't create depth surface for RT");
+				return false;
+			}
+		}
+		
 		if (nFlags & TEXFLAG_CUBEMAP)
 		{
 			tex->m_pool = D3DPOOL_DEFAULT;
@@ -1346,26 +1319,19 @@ ITexture* ShaderAPID3DX9::CreateRenderTarget(int width, int height, ETextureForm
 	pTexture->SetFormat(nRTFormat);
 	pTexture->usage = D3DUSAGE_RENDERTARGET;
 
-	int tex_flags = nFlags;
-
-	tex_flags |= TEXFLAG_RENDERTARGET;
-
-	pTexture->SetFlags(tex_flags);
-	pTexture->SetName("_rt_001");
+	pTexture->SetFlags(nFlags | TEXFLAG_RENDERTARGET);
+	pTexture->SetName(varargs("_sapi_rt_%d", m_TextureList.numElem()));
 
 	SamplerStateParam_t texSamplerParams = MakeSamplerState(textureFilterType,textureAddress,textureAddress,textureAddress);
 
 	pTexture->SetSamplerState(texSamplerParams);
-
-	//if (nFlags & TEXTURE_FLAG_RENDERTOVERTEXBUFFER)
-	//	pTexture->usage |= D3DUSAGE_DMAP;
 
 	Finish();
 
 	// do spin wait (if in other thread)
 	DEVICE_SPIN_WAIT
 
-	if (InternalCreateRenderTarget(m_pD3DDevice, pTexture, tex_flags))
+	if (InternalCreateRenderTarget(m_pD3DDevice, pTexture, nFlags))
 	{
 		CScopedMutex scoped(m_Mutex);
 
@@ -1388,20 +1354,12 @@ ITexture* ShaderAPID3DX9::CreateNamedRenderTarget(const char* pszName,int width,
 	pTexture->SetFormat(nRTFormat);
 	pTexture->usage = D3DUSAGE_RENDERTARGET;
 
-	int tex_flags = nFlags;
-
-	tex_flags |= TEXFLAG_RENDERTARGET;
-
-	pTexture->SetFlags(tex_flags);
-
+	pTexture->SetFlags(nFlags | TEXFLAG_RENDERTARGET);
 	pTexture->SetName(pszName);
 
 	SamplerStateParam_t texSamplerParams = MakeSamplerState(textureFilterType,textureAddress,textureAddress,textureAddress);
 
 	pTexture->SetSamplerState(texSamplerParams);
-
-	//if (nFlags & TEXTURE_FLAG_RENDERTOVERTEXBUFFER)
-	//	pTexture->usage |= D3DUSAGE_DMAP;
 
 	Finish();
 
@@ -1564,16 +1522,22 @@ void ShaderAPID3DX9::ChangeRenderTargets(ITexture** pRenderTargets, int nNumRTs,
 		}
 	}
 
+	LPDIRECT3DSURFACE9 bestDepth = nNumRTs ? ((CD3D9Texture*)pRenderTargets[0])->m_dummyDepth : NULL;
+
 	if (pDepthTarget != m_pCurrentDepthRenderTarget)
 	{
 		CD3D9Texture* pDepthRenderTarget = (CD3D9Texture*)(pDepthTarget);
 
-		if (pDepthTarget == NULL)
-			m_pD3DDevice->SetDepthStencilSurface(NULL);
-		else
-			m_pD3DDevice->SetDepthStencilSurface(pDepthRenderTarget->surfaces[0 /*nDepthSlice ??? */]);
+		if (pDepthTarget)
+			bestDepth = pDepthRenderTarget->surfaces[0 /*nDepthSlice ??? */];
 
 		m_pCurrentDepthRenderTarget = pDepthRenderTarget;
+	}
+
+	if (m_pCurrentDepthSurface != bestDepth)
+	{
+		m_pD3DDevice->SetDepthStencilSurface(bestDepth);
+		m_pCurrentDepthSurface = bestDepth;
 	}
 }
 
@@ -1588,7 +1552,7 @@ void ShaderAPID3DX9::ChangeRenderTargetToBackBuffer()
 		m_pCurrentColorRenderTargets[0] = NULL;
 	}
 
-	for (register uint8 i = 1; i < m_caps.maxRenderTargets; i++)
+	for (int i = 1; i < m_caps.maxRenderTargets; i++)
 	{
 		if (m_pCurrentColorRenderTargets[i] != NULL)
 		{
@@ -1597,10 +1561,10 @@ void ShaderAPID3DX9::ChangeRenderTargetToBackBuffer()
 		}
 	}
 
-	if (m_pCurrentDepthRenderTarget != NULL)
+	if (m_pCurrentDepthSurface != NULL)
 	{
 		m_pD3DDevice->SetDepthStencilSurface(m_pFBDepth);
-		m_pCurrentDepthRenderTarget = NULL;
+		m_pCurrentDepthSurface = NULL;
 	}
 }
 
