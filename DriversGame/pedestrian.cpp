@@ -161,14 +161,15 @@ void CPedestrian::Spawn()
 
 	body->SetPosition(m_vecOrigin);
 
-	body->m_flags |= BODY_DISABLE_DAMPING | COLLOBJ_DISABLE_RESPONSE | BODY_FROZEN;
+	body->m_flags |= BODY_DISABLE_DAMPING | COLLOBJ_DISABLE_RESPONSE | BODY_FROZEN | COLLOBJ_DISABLE_COLLISION_CHECK;
 
 	body->SetMass(85.0f);
 	body->SetFriction(0.0f);
 	body->SetRestitution(0.0f);
 	body->SetAngularFactor(vec3_zero);
-	body->m_erp = 0.15f;
 	body->SetGravity(18.0f);
+
+	body->m_erp = 0.2f;
 	
 	body->SetUserData(this);
 
@@ -356,7 +357,6 @@ void CPedestrian::Simulate(float fDt)
 	if (length(g_pGameWorld->m_view.GetOrigin() - GetOrigin()) > PEDESTRIAN_FRAMERATE_RADIUS)
 	{
 		m_physObj->GetBody()->SetMinFrameTime(PEDESTRIAN_FAR_THINKTIME);
-
 		if ((m_thinkTime -= fDt) < 0.0f)
 		{
 			AdvanceFrame(PEDESTRIAN_FAR_THINKTIME);

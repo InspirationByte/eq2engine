@@ -1055,7 +1055,7 @@ void CEqPhysics::ProcessContactPair(ContactPair_t& pair)
 			pair.depth *= -1.0f;
 
 			float combinedErp = ph_erp.GetFloat() + pair.bodyA->m_erp + pair.bodyB->m_erp;
-			float positionalError = combinedErp * pair.depth * pair.dt;
+			float positionalError = pair.depth * pair.dt;
 
 			combinedErp = max(combinedErp, ph_erp.GetFloat());
 
@@ -1079,7 +1079,7 @@ void CEqPhysics::ProcessContactPair(ContactPair_t& pair)
 		int bodyBFlags = bodyB->m_flags;
 
 		float combinedErp = varyErp + pair.bodyA->m_erp + pair.bodyB->m_erp;
-		float positionalError = combinedErp * pair.depth * pair.dt;
+		float positionalError = pair.depth * pair.dt;
 
 		combinedErp = max(combinedErp, varyErp);
 
