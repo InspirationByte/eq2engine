@@ -509,7 +509,7 @@ void CCameraAnimator::Animate(ECameraMode mode,
 		}
 		case CAM_MODE_INCAR:
 		{
-			Vector3D desiredAngles = EulerMatrixZXY(targetRotation * Quaternion(-DEG2RAD(finalLookAngleIn.y), vec3_up) * Quaternion(DEG2RAD(1.5), vec3_right));
+			Vector3D desiredAngles = EulerMatrixZXY(targetRotation * Quaternion(-DEG2RAD(finalLookAngleIn.y), vec3_up) * Quaternion(DEG2RAD(4.5), vec3_right));
 			desiredAngles = VRAD2DEG(desiredAngles);
 			desiredAngles *= Vector3D(-1, 1, -1);
 
@@ -543,7 +543,7 @@ void CCameraAnimator::Animate(ECameraMode mode,
 			else
 				m_computedView.SetFOV(m_cameraFOV);
 
-			cam_target += targetUp * m_camConfig.height * (zoomFactor*0.25f + 0.5f);
+			cam_target += vec3_up * m_camConfig.height * (zoomFactor*0.25f + 0.5f);
 			Vector3D cam_angles = VectorAngles(normalize(cam_target - m_dropPos));
 
 			m_computedView.SetAngles(cam_angles + shakeVec);
