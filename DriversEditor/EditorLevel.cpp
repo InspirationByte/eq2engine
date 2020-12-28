@@ -1981,7 +1981,7 @@ void CEditorLevel::Ed_SwapRegions(CEditorLevelRegion& sourceRegion, CEditorLevel
 	const Vector3D srcRegPos3D = Vector3D(srcRegionPos.x*nStepSize, 0, srcRegionPos.y*nStepSize) - center;
 	const Vector3D targetRegPos3D = Vector3D(targetRegionPos.x*nStepSize, 0, targetRegionPos.y*nStepSize) - center;
 
-	//QuickSwap(targetRegion.m_bbox, sourceRegion.m_bbox);
+	QuickSwap(targetRegion.m_bbox, sourceRegion.m_bbox);
 
 	for (int i = 0; i < ENGINE_REGION_MAX_HFIELDS; i++)
 	{
@@ -2019,13 +2019,23 @@ void CEditorLevel::Ed_SwapRegions(CEditorLevelRegion& sourceRegion, CEditorLevel
 
 	// process objects
 	{
+		targetRegion.m_objects.swap(sourceRegion.m_objects);
+
 		for (int i = 0; i < sourceRegion.m_objects.numElem(); i++)
-			sourceRegion.m_objects[i]->position += delta3D;
+		{
+			sourceRegion.m_objects[i]->position -= delta3D;
+			sourceRegion.m_objects[i]->regionIdx = sourceRegionIdx;
+			sourceRegion.m_objects[i]->transform = GetModelRefRenderMatrix(&sourceRegion, sourceRegion.m_objects[i]);
+			sourceRegion.m_objects[i]->CalcBoundingBox();
+		}
 
 		for (int i = 0; i < targetRegion.m_objects.numElem(); i++)
-			targetRegion.m_objects[i]->position -= delta3D;
-
-		targetRegion.m_objects.swap(sourceRegion.m_objects);
+		{
+			targetRegion.m_objects[i]->position += delta3D;
+			targetRegion.m_objects[i]->regionIdx = targetRegionIdx;
+			targetRegion.m_objects[i]->transform = GetModelRefRenderMatrix(&targetRegion, targetRegion.m_objects[i]);
+			targetRegion.m_objects[i]->CalcBoundingBox();
+		}
 	}
 
 	// process buildings
@@ -2129,6 +2139,8 @@ void CEditorLevelRegion::Ed_DestroyPhysics()
 	if (!m_physicsPreview)
 		return;
 
+	g_pPhysics->WaitForThread();
+
 	for(int i = 0; i < GetNumHFields(); i++)
 	{
 		if(m_heightfield[i])
@@ -2143,7 +2155,6 @@ void CEditorLevelRegion::Ed_DestroyPhysics()
 		{
 			// create collision objects and translate them
 			CLevelModel* model = ref->def->m_model;
-
 			g_pPhysics->m_physics.DestroyStaticObject( ref->static_phys_object );
 			ref->static_phys_object = NULL;
 		}

@@ -226,7 +226,8 @@ void CRegionEditFrame::MoveRegions(const IVector2D& delta)
 			if (srcRegIdx == targetRegIdx)
 				break;
 
-			srcReg.swapTemp.Init(g_pGameWorld->m_level.m_cellsSize, 0, vec3_zero);
+			//srcReg.swapTemp.Init(g_pGameWorld->m_level.m_cellsSize, 0, vec3_zero);
+			srcReg.swapTemp.m_regionIndex = 0;
 
 			// swap source to temp
 			g_pGameWorld->m_level.Ed_SwapRegions(srcReg.swapTemp, *srcReg.region);
@@ -245,7 +246,7 @@ void CRegionEditFrame::MoveRegions(const IVector2D& delta)
 			g_pGameWorld->m_level.Ed_SwapRegions(srcReg.swapTemp, *targetReg.region);
 
 			// destructor is called explicitly
-			srcReg.swapTemp.~CEditorLevelRegion();
+			//srcReg.swapTemp.~CEditorLevelRegion();
 
 			srcReg.region->m_modified = true;
 			targetReg.region->m_modified = true;
