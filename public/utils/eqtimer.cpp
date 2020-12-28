@@ -23,7 +23,7 @@ float MEASURE_TIME_STATS(float begintime)
 CEqTimer::CEqTimer()
 {
 #ifdef _WIN32
-	QueryPerformanceFrequency(&m_performanceFrequency);
+	QueryPerformanceCounter((LARGE_INTEGER*)&m_clockStart);
 #else
 	gettimeofday(&m_timeStart, NULL);
 #endif // _WIN32
@@ -33,13 +33,14 @@ double CEqTimer::GetTime(bool reset /*= false*/)
 {
 #ifdef _WIN32
 	LARGE_INTEGER curr;
+	LARGE_INTEGER performanceFrequency;
+	QueryPerformanceFrequency(&performanceFrequency);
+	QueryPerformanceCounter(&curr);
 
-	QueryPerformanceCounter( &curr);
-
-	double value = double(curr.QuadPart - m_clockStart.QuadPart) / double(m_performanceFrequency.QuadPart);
+	double value = double(curr.QuadPart - m_clockStart) / double(performanceFrequency.QuadPart);
 
 	if (reset)
-		m_clockStart = curr;
+		m_clockStart = curr.QuadPart;
 #else
     timeval curr;
 

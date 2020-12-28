@@ -30,8 +30,7 @@ public:
 
 protected:
 #ifdef _WIN32
-	LARGE_INTEGER	m_performanceFrequency;
-	LARGE_INTEGER	m_clockStart;
+	uint64			m_clockStart;
 #else
 	timeval			m_timeStart;
 #endif // _WIN32
