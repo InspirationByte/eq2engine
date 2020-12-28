@@ -489,7 +489,7 @@ bool CGLRenderLib::InitAPI(shaderAPIParams_t& params)
 		wgl::BLUE_BITS_ARB,			8,
 		wgl::ALPHA_BITS_ARB,		(dm.dmBitsPerPel > 24) ? 8 : 0,
 		wgl::DEPTH_BITS_ARB,		24,
-		wgl::STENCIL_BITS_ARB,		0,
+		wgl::STENCIL_BITS_ARB,		1,
 		0
 	};
 

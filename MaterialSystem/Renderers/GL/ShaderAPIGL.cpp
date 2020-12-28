@@ -1291,7 +1291,7 @@ void ShaderAPIGL::CopyFramebufferToTexture(ITexture* pTargetTexture)
 	glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_frameBuffer);
 
-	glBlitFramebuffer(0, 0, m_nViewportWidth, m_nViewportHeight, 0, pTargetTexture->GetHeight(), pTargetTexture->GetWidth(), 0, GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT, GL_NEAREST);
+	glBlitFramebuffer(0, 0, m_nViewportWidth, m_nViewportHeight, 0, 0, pTargetTexture->GetWidth(), pTargetTexture->GetHeight(), GL_COLOR_BUFFER_BIT, GL_NEAREST);
 
 	glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
@@ -1468,12 +1468,12 @@ void ShaderAPIGL::ChangeRenderTargets(ITexture** pRenderTargets, int nNumRTs, in
 		if(bestTarget == GL_RENDERBUFFER)
 		{
 			glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, bestTarget, bestDepth);
-			glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_RENDERBUFFER, isStencil ? bestTarget : GL_NONE);
+			glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, bestTarget, isStencil ? bestTarget : GL_NONE);
 		}
 		else
 		{
 			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, bestTarget, bestDepth, 0);
-			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_RENDERBUFFER, isStencil ? bestTarget : GL_NONE, 0);
+			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, bestTarget, isStencil ? bestTarget : GL_NONE, 0);
 		}
 		
 		m_currentGLDepth = bestDepth;
