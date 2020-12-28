@@ -110,7 +110,7 @@ const float CAMERA_MAX_FOV				= 90.0f;
 
 const float CAMERA_DISTANCE_BIAS		= 0.25f;
 
-const float ACCELERATION_CONST			= 2.0f;
+const float ACCELERATION_CONST			= 3.0f;
 const float	ACCELERATION_SOUND_CONST	= 10.0f;
 
 const float STEERING_CONST				= 1.5f;
@@ -133,7 +133,7 @@ const float ANTIROLL_FACTOR_DEADZONE	= 0.01f;
 const float ANTIROLL_FACTOR_MAX			= 1.0f;
 const float ANTIROLL_SCALE				= 4.0f;
 
-const float DEFAULT_SHIFT_ACCEL_FACTOR	= 0.25f;
+const float DEFAULT_SHIFT_ACCEL_FACTOR	= 0.0f;
 const float	GEARBOX_SHIFT_DELAY			= 0.35f;
 
 const float DEFAULT_CAR_INERTIA_SCALE	= 1.5f;
@@ -195,11 +195,12 @@ bool ParseVehicleConfig( vehicleConfig_t* conf, const kvkeybase_t* kvs )
 	conf->visual.damModelName = KV_GetValueString(kvs->FindKeyBase("damagedModel"), 0, conf->visual.cleanModelName.c_str());
 	conf->visual.wheelModelName = KV_GetValueString(kvs->FindKeyBase("wheelModel"), 0, "models/vehicles/wheel.egf");
 	
-
 	conf->flags.isCar = KV_GetValueBool(kvs->FindKeyBase("isCar"), 0, true);
 	conf->flags.allowParked = KV_GetValueBool(kvs->FindKeyBase("allowParked"), 0, true);
 	conf->flags.isCop = KV_GetValueBool(kvs->FindKeyBase("isCop"), 0, false);
 	conf->flags.reverseWhine = KV_GetValueBool(kvs->FindKeyBase("reverseWhine"), 0, true);
+	conf->flags.reverseWarning = KV_GetValueBool(kvs->FindKeyBase("reverseWarning"), 0, false);
+	conf->flags.sirenSwitchable = KV_GetValueBool(kvs->FindKeyBase("sirenSwitchable"), 0, true);
 
 	ASSERTMSG(conf->visual.cleanModelName.Length(), "ParseVehicleConfig - missing cleanModel!\n");
 
@@ -350,11 +351,23 @@ bool ParseVehicleConfig( vehicleConfig_t* conf, const kvkeybase_t* kvs )
 			light.type = KV_GetValueInt(lightDef, 0, 0);
 			light.flags = KV_GetValueInt(lightDef, 1, 0);
 			light.value = KV_GetVector4D(lightDef, 2, vec4_zero);
-		}*/
+		}
+		*/
 
-		kvkeybase_t* sirenLightsKey = visuals->FindKeyBase("siren_lights");
-		conf->visual.sirenType = KV_GetValueInt(sirenLightsKey, 0, SERVICE_LIGHTS_NONE);
-		conf->visual.sirenPositionWidth = KV_GetVector4D(sirenLightsKey, 1, vec4_zero);
+		conf->visual.numServiceLights = 0;
+
+		for (int i = 0; i < visuals->keys.numElem(); i++)
+		{
+			kvkeybase_t* lightSec = visuals->keys[i];
+			if (!stricmp(lightSec->name, "siren_lights"))
+			{
+				int n = conf->visual.numServiceLights;
+				conf->visual.serviceLights[n].type = KV_GetValueInt(lightSec, 0, SERVICE_LIGHTS_NONE);
+				conf->visual.serviceLights[n].flags = 0;
+				conf->visual.serviceLights[n].value = KV_GetVector4D(lightSec, 1, vec4_zero);
+				conf->visual.numServiceLights++;
+			}
+		}
 
 		kvkeybase_t* headlightsKey = visuals->FindKeyBase("headlights");
 		conf->visual.headlightType = KV_GetValueInt(headlightsKey, 0, LIGHTS_SINGLE);
@@ -917,6 +930,9 @@ void CCar::InitCarSound()
 	if(m_conf->flags.reverseWhine)
 		m_sounds[CAR_SOUND_WHINE] = CreateCarSound("generic.whine", 0.45f);
 
+	if (m_conf->flags.reverseWarning)
+		m_sounds[CAR_SOUND_REVERSE_WARNING] = CreateCarSound("generic.reversewarning", 0.45f);
+
 	m_sounds[CAR_SOUND_ENGINE_IDLE] = CreateCarSound(m_conf->sounds[CAR_SOUND_ENGINE_IDLE].c_str(), 0.45f);
 	m_sounds[CAR_SOUND_ENGINE] = CreateCarSound(m_conf->sounds[CAR_SOUND_ENGINE].c_str(), 0.45f);
 	m_sounds[CAR_SOUND_ENGINE_LOW] = CreateCarSound(m_conf->sounds[CAR_SOUND_ENGINE_LOW].c_str(), 0.45f);
@@ -926,7 +942,7 @@ void CCar::InitCarSound()
 	if(m_conf->sounds[CAR_SOUND_BRAKERELEASE].Length() > 0)
 		m_sounds[CAR_SOUND_BRAKERELEASE] = CreateCarSound(m_conf->sounds[CAR_SOUND_BRAKERELEASE].c_str(), 1.0f);
 
-	if(m_conf->visual.sirenType != SERVICE_LIGHTS_NONE)
+	if(m_conf->visual.numServiceLights > 0)
 	{
 		EmitSound_t siren_ep;
 
@@ -1937,10 +1953,13 @@ void CCar::UpdateVehiclePhysics(float delta)
 			//
 			if(wheel.m_surfparam && wheel.m_surfparam->word == 'G') // wheel on grass
 			{
-				float fac1 = wheel.m_collisionInfo.position.x*0.65f;
-				float fac2 = wheel.m_collisionInfo.position.z*0.65f;
+				const float GRASS_FLOAT_DISTANCE_SCALE = 0.55f;
+				const float GRASS_FLOAT_HEIGHT_FACTOR = 0.125f;
+				
+				float fac1 = wheel.m_collisionInfo.position.x * GRASS_FLOAT_DISTANCE_SCALE;
+				float fac2 = wheel.m_collisionInfo.position.z * GRASS_FLOAT_DISTANCE_SCALE;
 
-				wheel.m_collisionInfo.fract += ((0.5f-sin(fac1))+(0.5f-sin(fac2+0.5f)))*wheelConf.radius*0.15f;
+				wheel.m_collisionInfo.fract += ((0.5f-sinf(fac1))+(0.5f-sinf(fac2+0.5f)))*wheelConf.radius * GRASS_FLOAT_HEIGHT_FACTOR;
 			}
 
 			//
@@ -2833,7 +2852,7 @@ void CCar::Simulate( float fDt )
 
 	int controlButtons = GetControlButtons();
 
-	if(	(m_conf->visual.sirenType > SERVICE_LIGHTS_NONE) && (controlButtons & IN_SIREN) && !(m_oldControlButtons & IN_SIREN))
+	if(	(m_conf->visual.numServiceLights > 0) && (controlButtons & IN_SIREN) && !(m_oldControlButtons & IN_SIREN))
 	{
 		m_oldSirenState = m_sirenEnabled;
 		m_sirenEnabled = !m_sirenEnabled;
@@ -3096,72 +3115,77 @@ void CCar::Simulate( float fDt )
 	// render siren lights
 	if ( isCar && (m_lightsEnabled & CAR_LIGHT_SERVICELIGHTS) )
 	{
-		Vector4D lightsPosWidth = m_conf->visual.sirenPositionWidth;
-		Vector3D siren_pos_centered(0.0f, lightsPosWidth.y, lightsPosWidth.z);
-
-		Vector3D siren_position = (worldMatrix * Vector4D(siren_pos_centered, 1.0f)).xyz();
-
-		switch(m_conf->visual.sirenType)
+		for (int i = 0; i < m_conf->visual.numServiceLights; i++)
 		{
-			case SERVICE_LIGHTS_BLUE:
-			case SERVICE_LIGHTS_RED:
+			lightConfig_t& slight = m_conf->visual.serviceLights[i];
+
+			Vector4D lightsPosWidth = slight.value;
+			Vector3D siren_pos_centered(0.0f, lightsPosWidth.y, lightsPosWidth.z);
+
+			Vector3D siren_position = (worldMatrix * Vector4D(siren_pos_centered, 1.0f)).xyz();
+
+			switch (slight.type)
 			{
-				ColorRGB colors[2] = {
-					ColorRGB(0, 0.25, 1),
-					ColorRGB(1, 0.25, 0)
-				};
-
-				ColorRGB color = colors[m_conf->visual.sirenType-SERVICE_LIGHTS_BLUE];
-
-				PoliceSirenEffect(m_lightsTime, color, siren_position, rightVec, lightsPosWidth.x, lightsPosWidth.w);
-
-				float fSin = fabs(sinf(m_lightsTime*16.0f));
-				float fSinFactor = clamp(fSin, 0.5f, 1.0f);
-
-				wlight_t light;
-				light.position = Vector4D(siren_position, 20.0f);
-				light.color = ColorRGBA(color, fSinFactor);
-
-				g_pGameWorld->AddLight(light);
-
-				break;
-			}
-			case SERVICE_LIGHTS_DOUBLE_BLUE:
-			case SERVICE_LIGHTS_DOUBLE_RED:
-			case SERVICE_LIGHTS_DOUBLE_BLUERED:
-			{
-				Vector3D siren_positionL = (worldMatrix * Vector4D(-lightsPosWidth.x, lightsPosWidth.y, lightsPosWidth.z, 1.0f)).xyz();
-				Vector3D siren_positionR = (worldMatrix * Vector4D(lightsPosWidth.x, lightsPosWidth.y, lightsPosWidth.z, 1.0f)).xyz();
-
-				ColorRGB colors[3][2] = {
-					{ColorRGB(0, 0.25, 1),ColorRGB(0, 0.25, 1)},
-					{ColorRGB(1, 0.25, 0),ColorRGB(1, 0.25, 0)},
-					{ColorRGB(1, 0.25, 0),ColorRGB(0, 0.25, 1)},
-				};
-
-				ColorRGB col1(colors[m_conf->visual.sirenType-SERVICE_LIGHTS_DOUBLE_BLUE][0]);
-				ColorRGB col2(colors[m_conf->visual.sirenType - SERVICE_LIGHTS_DOUBLE_BLUE][1]);
-
-				PoliceSirenEffect(-m_lightsTime + PI_F*2.0f, col1, siren_position, rightVec, -lightsPosWidth.x, lightsPosWidth.w);
-				PoliceSirenEffect(m_lightsTime, col2, siren_position, rightVec, lightsPosWidth.x, lightsPosWidth.w);
-
-				float fSin = fabs(sinf(m_lightsTime*20.0f));
-				float fSinFactor = clamp(fSin, 0.85f, 1.0f);
-
-				float lrFactor = (fSin - 0.5f);
-				float powFac = powf(fabs(lrFactor), 0.5f);
-				float powLrFac = powFac*sign(lrFactor) + 0.5f;
-
-				if (r_carServiceLightBrightness.GetFloat() > 0)
+				case SERVICE_LIGHTS_BLUE:
+				case SERVICE_LIGHTS_RED:
 				{
+					ColorRGB colors[2] = {
+						ColorRGB(0, 0.25, 1),
+						ColorRGB(1, 0.25, 0)
+					};
+
+					ColorRGB color = colors[slight.type - SERVICE_LIGHTS_BLUE];
+
+					PoliceSirenEffect(m_lightsTime, color, siren_position, rightVec, lightsPosWidth.x, lightsPosWidth.w);
+
+					float fSin = fabs(sinf(m_lightsTime * 16.0f));
+					float fSinFactor = clamp(fSin, 0.5f, 1.0f);
+
 					wlight_t light;
-					light.position = Vector4D(lerp(siren_positionL, siren_positionR, powLrFac), 20.0f);
-					light.color = ColorRGBA(lerp(col1, col2, fSin), fSinFactor * r_carServiceLightBrightness.GetFloat());
+					light.position = Vector4D(siren_position, 20.0f);
+					light.color = ColorRGBA(color, fSinFactor);
 
 					g_pGameWorld->AddLight(light);
-				}
 
-				break;
+					break;
+				}
+				case SERVICE_LIGHTS_DOUBLE_BLUE:
+				case SERVICE_LIGHTS_DOUBLE_RED:
+				case SERVICE_LIGHTS_DOUBLE_BLUERED:
+				{
+					Vector3D siren_positionL = (worldMatrix * Vector4D(-lightsPosWidth.x, lightsPosWidth.y, lightsPosWidth.z, 1.0f)).xyz();
+					Vector3D siren_positionR = (worldMatrix * Vector4D(lightsPosWidth.x, lightsPosWidth.y, lightsPosWidth.z, 1.0f)).xyz();
+
+					ColorRGB colors[3][2] = {
+						{ColorRGB(0, 0.25, 1),ColorRGB(0, 0.25, 1)},
+						{ColorRGB(1, 0.25, 0),ColorRGB(1, 0.25, 0)},
+						{ColorRGB(1, 0.25, 0),ColorRGB(0, 0.25, 1)},
+					};
+
+					ColorRGB col1(colors[slight.type - SERVICE_LIGHTS_DOUBLE_BLUE][0]);
+					ColorRGB col2(colors[slight.type - SERVICE_LIGHTS_DOUBLE_BLUE][1]);
+
+					PoliceSirenEffect(-m_lightsTime + PI_F * 2.0f, col1, siren_position, rightVec, -lightsPosWidth.x, lightsPosWidth.w);
+					PoliceSirenEffect(m_lightsTime, col2, siren_position, rightVec, lightsPosWidth.x, lightsPosWidth.w);
+
+					float fSin = fabs(sinf(m_lightsTime * 20.0f));
+					float fSinFactor = clamp(fSin, 0.85f, 1.0f);
+
+					float lrFactor = (fSin - 0.5f);
+					float powFac = powf(fabs(lrFactor), 0.5f);
+					float powLrFac = powFac * sign(lrFactor) + 0.5f;
+
+					if (r_carServiceLightBrightness.GetFloat() > 0)
+					{
+						wlight_t light;
+						light.position = Vector4D(lerp(siren_positionL, siren_positionR, powLrFac), 20.0f);
+						light.color = ColorRGBA(lerp(col1, col2, fSin), fSinFactor * r_carServiceLightBrightness.GetFloat());
+
+						g_pGameWorld->AddLight(light);
+					}
+
+					break;
+				}
 			}
 		}
 	}
@@ -3951,7 +3975,7 @@ void CCar::UpdateSounds( float fDt )
 	{
 		float deathTime = m_sirenDeathTime;
 
-		if( !IsAlive() && deathTime > 0 && m_conf->visual.sirenType != SERVICE_LIGHTS_NONE )
+		if( !IsAlive() && deathTime > 0 && m_conf->visual.numServiceLights > 0 )
 		{
 			float pitchVal = deathTime / SIREN_SOUND_DEATHTIME;
 
@@ -4090,6 +4114,7 @@ void CCar::UpdateSounds( float fDt )
 	ISoundController* engineSound = m_sounds[CAR_SOUND_ENGINE];
 	ISoundController* engineLowSound = m_sounds[CAR_SOUND_ENGINE_LOW];
 	ISoundController* whineSound = m_sounds[CAR_SOUND_WHINE];
+	ISoundController* reverseWarnSound = m_sounds[CAR_SOUND_REVERSE_WARNING];
 
 	// update engine sound pitch by RPM value
 	float fRpmC = RemapValClamp(m_fEngineRPM, 600.0f, 10000.0f, 0.35f, 3.5f);
@@ -4098,6 +4123,27 @@ void CCar::UpdateSounds( float fDt )
 	engineLowSound->SetPitch(fRpmC);
 	idleSound->SetPitch(fRpmC + 0.65f);
 
+	// reverse warning
+	if (m_isLocalCar && reverseWarnSound != nullptr && IsDriveWheelsOnGround())
+	{
+		if (m_nGear == 0)
+		{
+			if (reverseWarnSound->IsStopped())
+				reverseWarnSound->Play();
+		}
+		else
+		{
+			if (!reverseWarnSound->IsStopped())
+				reverseWarnSound->Stop();
+		}
+	}
+	else
+	{
+		if (reverseWarnSound != nullptr && !reverseWarnSound->IsStopped())
+			reverseWarnSound->Stop();
+	}
+
+	// reverse gear whine
 	if(m_isLocalCar && whineSound != nullptr && IsDriveWheelsOnGround())
 	{
 		if(m_nGear == 0 )
@@ -4185,21 +4231,27 @@ void CCar::UpdateSounds( float fDt )
 
 		if( m_sirenEnabled && IsAlive() )
 		{
+			EmitSound_t& ep = sirenSound->GetEmitParams();
+
 			// raise horn event
 			g_worldEvents[EVT_CAR_SIREN].Raise(this, GetOrigin());
 
-			int sampleId = sirenSound->GetEmitParams().sampleId;
-
-			if((controlButtons & IN_HORN) && sampleId == 0)
-				sampleId = 1;
-			else if(!(controlButtons & IN_HORN) && sampleId == 1)
-				sampleId = 0;
-
-			if(sirenSound->GetEmitParams().sampleId != sampleId )
+			if (m_conf->flags.sirenSwitchable)
 			{
-				sirenSound->Stop();
-				sirenSound->GetEmitParams().sampleId = sampleId;
-				sirenSound->Play();
+				int newSampleId = ep.sampleId;
+
+				if ((controlButtons & IN_HORN) && newSampleId == 0)
+					newSampleId = 1;
+				else if (!(controlButtons & IN_HORN) && newSampleId == 1)
+					newSampleId = 0;
+
+				if (ep.sampleId != newSampleId)
+				{
+					ep.sampleId = newSampleId;
+
+					sirenSound->Stop();
+					sirenSound->Play();
+				}
 			}
 		}
 	}

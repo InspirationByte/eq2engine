@@ -990,7 +990,7 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 
 		if (m_type == PURSUER_TYPE_COP)
 		{
-			if (m_conf->visual.sirenType != SERVICE_LIGHTS_NONE)
+			if (m_conf->visual.numServiceLights > 0)
 			{
 				SetLight(CAR_LIGHT_SERVICELIGHTS, true);
 				m_sirenEnabled = true;
@@ -1229,7 +1229,7 @@ int	CAIPursuerCar::PursueTarget( float fDt, EStateTransition transition )
 	int controls = IN_ACCELERATE | IN_ANALOGSTEER;
 
 	// alternating siren sound by speed
-	if(	m_type == PURSUER_TYPE_COP && m_conf->visual.sirenType > 0 )
+	if(	m_type == PURSUER_TYPE_COP && m_conf->visual.numServiceLights > 0)
 	{
 		bool newAlterState = (mySpeed > AI_ALTER_SIREN_MIN_SPEED);
 

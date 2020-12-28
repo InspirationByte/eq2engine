@@ -99,6 +99,7 @@ enum ECarSound
 	CAR_SOUND_BRAKERELEASE,
 
 	CAR_SOUND_WHINE,
+	CAR_SOUND_REVERSE_WARNING,
 	CAR_SOUND_SKID,
 	CAR_SOUND_SURFACE,
 
@@ -215,6 +216,8 @@ struct vehicleConfig_t
 		bool						isCop : 1;
 		bool						allowParked : 1;
 		bool						reverseWhine: 1;
+		bool						reverseWarning: 1;
+		bool						sirenSwitchable : 1;
 	} flags;
 
 	struct {
@@ -261,10 +264,9 @@ struct vehicleConfig_t
 
 		Vector3D					driverPosition;
 
-		lightConfig_t				lights[16];
-		int8						numLights;
+		//lightConfig_t				lights[16];
+		lightConfig_t				serviceLights[4];
 
-		Vector4D					sirenPositionWidth;
 		Vector4D					headlightPosition;
 		Vector4D					backlightPosition;
 		Vector4D					brakelightPosition;
@@ -272,22 +274,12 @@ struct vehicleConfig_t
 		Vector4D					backDimLights;
 		int8						headlightType;
 		int8						brakelightType;
-		int8						sirenType;
-
-		bool						hasServiceLights;
 		int8						exhaustType;		// 0 - single, 1 - double
 		int8						exhaustDir;			// 0 - back, 1 - left, 2 - up
-	} visual;
 
-	/*
-	struct{
-		EqString					engineIdle;
-		EqString					engineRPMLow;
-		EqString					engineRPMHigh;
-		EqString					hornSignal;
-		EqString					siren;
-		EqString					brakeRelease;
-	} sounds;*/
+		//int8						numLights;
+		int8						numServiceLights;
+	} visual;
 
 	EqString					sounds[CAR_SOUND_CONFIGURABLE];
 
