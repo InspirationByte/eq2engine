@@ -520,6 +520,7 @@ int CSoundEmitterSystem::EmitSound(EmitSound_t* emit)
 
 	if(script->pSamples.numElem() == 0 && (emit->nFlags & EMITSOUND_FLAG_FORCE_CACHED))
 	{
+		Threading::CScopedMutex m(m_mutex);
 		MsgWarning("Warning! use of EMITSOUND_FLAG_FORCE_CACHED flag!\n");
 		PrecacheSound( emit->name );
 	}
@@ -600,11 +601,11 @@ int CSoundEmitterSystem::EmitSound(EmitSound_t* emit)
 		// setup default values
 		sndSource->SetPosition(edata->origin);
 		sndSource->SetVelocity(edata->velocity);
-	}
 
-	// update emitter before playing
-	edata->soundSource = sndSource;
-	UpdateEmitter( edata, sParams, true );
+		// update emitter before playing
+		edata->soundSource = sndSource;
+		UpdateEmitter(edata, sParams, true);
+	}
 
 	if (emit->nFlags & EMITSOUND_FLAG_STARTSILENT)
 		sParams.volume = 0.0f;

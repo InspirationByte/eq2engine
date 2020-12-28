@@ -47,6 +47,7 @@ void regionObject_t::RemoveGameObject()
 	if (def->m_info.type == LOBJ_TYPE_INTERNAL_STATIC)
 	{
 #ifndef EDITOR
+		g_pPhysics->WaitForThread();
 		g_pPhysics->m_physics.DestroyStaticObject(static_phys_object);
 		static_phys_object = NULL;
 #endif // EDITOR

@@ -384,6 +384,8 @@ void CPhysicsEngine::RemoveObject( CPhysicsHFObject* pPhysObject )
 	if(!pPhysObject)
 		return;
 
+	WaitForThread();
+
 	pPhysObject->m_object->SetUserData(NULL);
 
 	CEqRigidBody* body = pPhysObject->GetBody();
@@ -398,6 +400,8 @@ void CPhysicsEngine::RemoveObject( CPhysicsHFObject* pPhysObject )
 
 void CPhysicsEngine::RemoveHeightField( CHeightTileField* pPhysObject )
 {
+	WaitForThread();
+
     Threading::CEqMutex& mutex = Threading::GetGlobalMutex(Threading::MUTEXPURPOSE_LEVEL_LOADER);
 
 	if( pPhysObject->m_physData )

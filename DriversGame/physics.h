@@ -72,7 +72,6 @@ public:
 	void						RemoveObject( CPhysicsHFObject* pPhysObject );
 	void						RemoveHeightField( CHeightTileField* pPhysObject );
 
-
 	bool						TestLine(const FVector3D& start, const FVector3D& end, CollisionData_t& coll, int rayMask = COLLISION_MASK_ALL, eqPhysCollisionFilter* filter = NULL);
 	bool						TestConvexSweep(btCollisionShape* shape, const Quaternion& rotation, const FVector3D& start, const FVector3D& end, CollisionData_t& coll, int rayMask = COLLISION_MASK_ALL, eqPhysCollisionFilter* filter = NULL);
 
