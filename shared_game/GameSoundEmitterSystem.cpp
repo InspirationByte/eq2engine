@@ -13,6 +13,7 @@
 #include "IDebugOverlay.h"
 #include "math/Random.h"
 #include "eqGlobalMutex.h"
+#include "eqParallelJobs.h"
 
 #ifndef NO_ENGINE
 #include "IEngineHost.h"
@@ -444,6 +445,8 @@ void CSoundEmitterSystem::PrecacheSound(const char* pszName)
 	g_pEngineHost->EnterResourceLoading();
 #endif
 
+	Threading::CScopedMutex m(m_mutex);
+
 	for(int i = 0; i < pSound->soundFileNames.numElem(); i++)
 	{
 		int flags = (pSound->extraStreaming ? SAMPLE_FLAG_STREAMED : 0) | (pSound->loop ? SAMPLE_FLAG_LOOPING : 0);
@@ -499,6 +502,7 @@ int CSoundEmitterSystem::EmitSound(EmitSound_t* emit)
 
 		EmitSound_t newEmit = (*emit);
 		newEmit.nFlags &= ~EMITSOUND_FLAG_START_ON_UPDATE;
+		newEmit.nFlags |= EMITSOUND_FLAG_PENDING;
 		newEmit.name = xstrdup(newEmit.name);
 
 		m_pendingStartSounds.append( newEmit );
@@ -649,6 +653,7 @@ void CSoundEmitterSystem::Emit2DSound(EmitSound_t* emit, int channelType)
 
 		EmitSound_t newEmit = (*emit);
 		newEmit.nFlags &= ~EMITSOUND_FLAG_START_ON_UPDATE;
+		newEmit.nFlags |= EMITSOUND_FLAG_PENDING;
 		newEmit.emitterIndex = channelType;	// temporary
 		newEmit.name = xstrdup(newEmit.name);
 
@@ -707,11 +712,28 @@ void CSoundEmitterSystem::Emit2DSound(EmitSound_t* emit, int channelType)
 			staticChannel->SetVolume(startVolume);
 			staticChannel->SetPitch(startPitch);
 
-			staticChannel->Play();
+			if (emit->nFlags & EMITSOUND_FLAG_PENDING)
+			{
+				staticChannel->Play();
+			}
+			else
+			{
+				// stop stream before we can send a job
+				if (staticChannel->GetState() == ESoundState::SOUND_STATE_PLAYING)
+					staticChannel->Stop();
+
+				g_parallelJobs->AddJob(JobSchedulePlayStaticChannel, staticChannel);
+				g_parallelJobs->Submit();
+			}
 		}
 	}
 }
 
+void CSoundEmitterSystem::JobSchedulePlayStaticChannel(void* data, int i)
+{
+	ISoundPlayable* staticChannel = (ISoundPlayable*)data;
+	staticChannel->Play();
+}
 
 bool CSoundEmitterSystem::UpdateEmitter( EmitterData_t* emitter, soundParams_t &params, bool bForceNoInterp )
 {

@@ -61,22 +61,22 @@ CEqAudioSystemAL* g_soundEngine = NULL;
 ISoundSource* g_loopingSound[MAX_LOOP_SOUNDS];
 ISoundSource* g_staticSound;
 
-VoiceHandle_t g_musicChan = VOICE_INVALID_HANDLE;
+ChannelHandle_t g_musicChan = CHANNEL_INVALID_HANDLE;
 
-int musicUpdateCb(void* obj, voiceParams_t& params)
+int musicUpdateCb(void* obj, channelParams_t& params)
 {
-	if (params.state != VOICE_STATE_PLAYING)
+	if (params.state != CHANNEL_STATE_PLAYING)
 	{
-		params.state = VOICE_STATE_PLAYING;
-		return VOICE_UPDATE_DO_REWIND | VOICE_UPDATE_STATE;
+		params.state = CHANNEL_STATE_PLAYING;
+		return AUDIO_CHAN_UPDATE_DO_REWIND | AUDIO_CHAN_UPDATE_STATE;
 	}
 
 	return 0;
 }
 
-int dummyUpdateCb(void* obj, voiceParams_t& params)
+int dummyUpdateCb(void* obj, channelParams_t& params)
 {
-	debugoverlay->Text(color4_white, "voice id=%d", params.id);
+	debugoverlay->Text(color4_white, "chan id=%d", params.id);
 	return 0;
 }
 
@@ -97,17 +97,17 @@ void InitSoundSystem( EQWNDHANDLE wnd )
 
 	g_staticSound = g_soundEngine->LoadSample("sounds/SoundTest/StaticTest.wav");
 
-	g_musicChan = g_soundEngine->GetFreeVoice(g_loopingSound[0], nullptr, musicUpdateCb);
+	g_musicChan = g_soundEngine->GetFreeChannel(g_loopingSound[0], nullptr, musicUpdateCb);
 
-	if (g_musicChan != VOICE_INVALID_HANDLE)
+	if (g_musicChan != CHANNEL_INVALID_HANDLE)
 	{
-		voiceParams_t params;
-		params.state = VOICE_STATE_PLAYING;
+		channelParams_t params;
+		params.state = CHANNEL_STATE_PLAYING;
 		params.looping = false;
 		params.pitch = 2.0;
 		params.relative = true;
 
-		g_soundEngine->UpdateVoice(g_musicChan, params, VOICE_UPDATE_STATE | VOICE_UPDATE_LOOPING | VOICE_UPDATE_PITCH | VOICE_UPDATE_RELATIVE);
+		g_soundEngine->UpdateChannel(g_musicChan, params, AUDIO_CHAN_UPDATE_STATE | AUDIO_CHAN_UPDATE_LOOPING | AUDIO_CHAN_UPDATE_PITCH | AUDIO_CHAN_UPDATE_RELATIVE);
 	}
 
 	/*
@@ -382,25 +382,25 @@ void CMainWindow::ProcessAllMenuCommands(wxCommandEvent& event)
 
 		if (g_loopingSound[soundId] != nullptr)
 		{
-			g_soundEngine->ReleaseVoice(g_musicChan);
-			g_musicChan = g_soundEngine->GetFreeVoice(g_loopingSound[soundId], nullptr, musicUpdateCb);
+			g_soundEngine->ReleaseChannel(g_musicChan);
+			g_musicChan = g_soundEngine->GetFreeChannel(g_loopingSound[soundId], nullptr, musicUpdateCb);
 
 			
-			if (g_musicChan != VOICE_INVALID_HANDLE)
+			if (g_musicChan != CHANNEL_INVALID_HANDLE)
 			{
-				voiceParams_t params;
-				params.state = VOICE_STATE_PLAYING;
+				channelParams_t params;
+				params.state = CHANNEL_STATE_PLAYING;
 				params.looping = false;
 				params.pitch = RandomFloat(0.5f, 2.0f);
 				params.relative = true;
 
-				g_soundEngine->UpdateVoice(g_musicChan, params, VOICE_UPDATE_STATE | VOICE_UPDATE_LOOPING | VOICE_UPDATE_PITCH | VOICE_UPDATE_RELATIVE);
+				g_soundEngine->UpdateChannel(g_musicChan, params, AUDIO_CHAN_UPDATE_STATE | AUDIO_CHAN_UPDATE_LOOPING | AUDIO_CHAN_UPDATE_PITCH | AUDIO_CHAN_UPDATE_RELATIVE);
 			}
 		}
 		else
 		{
-			g_soundEngine->ReleaseVoice(g_musicChan);
-			g_musicChan = VOICE_INVALID_HANDLE;
+			g_soundEngine->ReleaseChannel(g_musicChan);
+			g_musicChan = CHANNEL_INVALID_HANDLE;
 		}
 	}
 }
@@ -547,15 +547,15 @@ void CMainWindow::ProcessKeyboardUpEvents(wxKeyEvent& event)
 
 		//g_soundEngine->PlaySound(g_staticSound, randomPos, 1.0f, 10.0f);
 
-		VoiceHandle_t handle = g_soundEngine->GetFreeVoice(g_staticSound, nullptr, dummyUpdateCb);
-		if (handle != VOICE_INVALID_HANDLE)
+		ChannelHandle_t handle = g_soundEngine->GetFreeChannel(g_staticSound, nullptr, dummyUpdateCb);
+		if (handle != CHANNEL_INVALID_HANDLE)
 		{
-			voiceParams_t params;
+			channelParams_t params;
 			params.position = randomPos;
-			params.state = VOICE_STATE_PLAYING;
+			params.state = CHANNEL_STATE_PLAYING;
 			params.releaseOnStop = true;
 
-			g_soundEngine->UpdateVoice(handle, params, VOICE_UPDATE_POSITION | VOICE_UPDATE_STATE | VOICE_UPDATE_RELEASE_ON_STOP);
+			g_soundEngine->UpdateChannel(handle, params, AUDIO_CHAN_UPDATE_POSITION | AUDIO_CHAN_UPDATE_STATE | AUDIO_CHAN_UPDATE_RELEASE_ON_STOP);
 		}
 		
 		debugoverlay->Box3D(randomPos-1.0f, randomPos+1.0f, ColorRGBA(1,1,0,1), 1.0f);

@@ -220,7 +220,7 @@ void CGameSessionBase::ClearCarsPedsRegistry()
 void CGameSessionBase::Shutdown()
 {
 	g_pAIManager->Shutdown();
-
+	
 	m_leadCar = NULL;
 
 	ClearCarsPedsRegistry();

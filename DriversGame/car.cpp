@@ -126,7 +126,7 @@ const float STEERING_SLIP_REVERSE_CORRECTION = 0.20f;
 const float EXTEND_STEER_SPEED_MULTIPLIER = 1.75f;
 const float STEER_CENTER_SPEED_MULTIPLIER = 1.75f;
 
-const float STEERING_HELP_START			= 0.25f;
+const float STEERING_HELP_START			= 0.15f;
 const float STEERING_HELP_CONST			= 0.75f;
 
 const float ANTIROLL_FACTOR_DEADZONE	= 0.01f;
@@ -1053,6 +1053,7 @@ void CCar::AlignToGround()
 	pos = Vector3D(m_vecOrigin.x, pos.y - suspLowPos, m_vecOrigin.z);
 
 	SetOrigin( pos );
+	SetVelocity(vec3_zero);
 }
 
 void CCar::OnRemove()
@@ -1108,6 +1109,7 @@ void CCar::PlaceOnRoadCell(CLevelRegion* reg, levroadcell_t* cell)
 
 	Quaternion rotation( finalAngle );
 	renormalize(rotation);
+
 	m_physObj->GetBody()->SetOrientation(rotation);
 }
 
@@ -1129,15 +1131,19 @@ void CCar::SetAngles(const Vector3D& angles)
 
 void CCar::SetOrientation(const Quaternion& q)
 {
-	m_physObj->GetBody()->SetOrientation(q);
+	if (m_physObj)
+		m_physObj->GetBody()->SetOrientation(q);
 }
 
 void CCar::SetVelocity(const Vector3D& vel)
 {
-	CEqRigidBody* body = m_physObj->GetBody();
+	if (m_physObj)
+	{
+		CEqRigidBody* body = m_physObj->GetBody();
 
-	body->SetLinearVelocity( vel  );
-	body->TryWake();
+		body->SetLinearVelocity(vel);
+		body->TryWake();
+	}
 }
 
 void CCar::SetAngularVelocity(const Vector3D& vel)
@@ -1731,15 +1737,15 @@ void CCar::UpdateVehiclePhysics(float delta)
 
 	if( m_autohandbrake && wheelSpeed > 0.0f && !bDoBurnout )
 	{
-		const float AUTOHANDBRAKE_MIN_SPEED		= 8.0f;
-		const float AUTOHANDBRAKE_MAX_SPEED		= 40.0f;
+		const float AUTOHANDBRAKE_MIN_SPEED		= 20.0f;
+		const float AUTOHANDBRAKE_MAX_SPEED		= 35.0f;
 		const float AUTOHANDBRAKE_MAX_FACTOR	= 5.0f;
-		const float AUTOHANDBRAKE_SCALE			= 2.0f;
+		const float AUTOHANDBRAKE_SCALE			= 3.0f;
 		const float AUTOHANDBRAKE_START_MIN		= 0.1f;
 
 		float carForwardSpeed = dot(GetForwardVector().xz(), GetVelocity().xz()) * MPS_TO_KPH;
 
-		float handbrakeFactor = RemapVal(carForwardSpeed, AUTOHANDBRAKE_MIN_SPEED, AUTOHANDBRAKE_MAX_SPEED, 0.0f, 1.0f);
+		float handbrakeFactor = RemapValClamp(carForwardSpeed, AUTOHANDBRAKE_MIN_SPEED, AUTOHANDBRAKE_MAX_SPEED, 0.0f, 1.0f);
 
 		if (fabs(autobrake) > AUTOHANDBRAKE_START_MIN)
 			autoHandbrakeHelper = (FPmath::abs(autobrake) - AUTOHANDBRAKE_START_MIN)*AUTOHANDBRAKE_SCALE * handbrakeFactor;
@@ -2111,6 +2117,7 @@ void CCar::UpdateVehiclePhysics(float delta)
 				float velocityDamp = wheelPitchSpeed * engineBrakeModifier * 0.25f + sign(wheelPitchSpeed)*clamp((float)fabs(wheelPitchSpeed), 0.0f, 1.0f);
 				wheelTractionForce -= velocityDamp * (1.0f - dampingFactor) * WHELL_ROLL_RESISTANCE_CONST;
 			}
+
 
 			//
 			// apply brake
@@ -4332,8 +4339,15 @@ bool CCar::IsHandbraking() const
 
 bool CCar::IsBurningOut() const
 {
-	int controlButtons = GetControlButtons();
-	return (controlButtons & IN_BURNOUT);
+	int numWheels = GetWheelCount();
+
+	for (int i = 0; i < numWheels; i++)
+	{
+		if (m_wheels[i].m_flags.isBurningOut)
+			return true;
+	}
+	
+	return false;
 }
 
 float CCar::GetAccelBrake() const
@@ -4349,6 +4363,11 @@ float CCar::GetSteering() const
 float CCar::GetRPM() const
 {
 	return fabs(float(m_radsPerSec) * ( 60.0f / ( 2.0f * PI_F ) ) );
+}
+
+float CCar::GetDisplayRPM() const
+{
+	return m_fEngineRPM;
 }
 
 int CCar::GetGear() const
@@ -5142,6 +5161,7 @@ OOLUA_EXPORT_FUNCTIONS_CONST(
 	IsInWater,
 	IsFlippedOver,
 	IsAnyWheelOnGround,
+	IsDriveWheelsOnGround,
 	GetMaxDamage,
 	GetMaxSpeed,
 	GetTorqueScale,
@@ -5154,6 +5174,9 @@ OOLUA_EXPORT_FUNCTIONS_CONST(
 	GetUpVector,
 	GetSpeed,
 	GetSpeedWheels,
+	GetRPM,
+	GetDisplayRPM,
+	GetGear,
 	GetLateralSliding,
 	GetTractionSliding,
 	GetAccelBrake,

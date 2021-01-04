@@ -157,9 +157,9 @@ bool CEqAudioSystemAL::InitContext()
 void CEqAudioSystemAL::DestroyContext()
 {
 	// delete voices
-	for (int i = 0; i < m_voices.numElem(); i++)
+	for (int i = 0; i < m_channels.numElem(); i++)
 	{
-		AudioVoice_t& v = m_voices[i];
+		AudioChannel_t& v = m_channels[i];
 
 		alDeleteBuffers(STREAM_BUFFER_COUNT, v.m_buffers);
 		alDeleteSources(1, &v.m_source);
@@ -181,13 +181,13 @@ void CEqAudioSystemAL::Init()
 	m_noSound = false;
 
 	// init voices
-	m_voices.setNum(snd_voices.GetInt());
-	memset(m_voices.ptr(), 0, sizeof(AudioVoice_t));
+	m_channels.setNum(snd_voices.GetInt());
+	memset(m_channels.ptr(), 0, sizeof(AudioChannel_t));
 
-	for (int i = 0; i < m_voices.numElem(); i++)
+	for (int i = 0; i < m_channels.numElem(); i++)
 	{
-		AudioVoice_t& v = m_voices[i];
-		v.m_id = VOICE_INVALID_HANDLE;
+		AudioChannel_t& v = m_channels[i];
+		v.m_id = CHANNEL_INVALID_HANDLE;
 		v.m_callback = nullptr;
 		v.m_callbackObject = nullptr;
 
@@ -215,7 +215,7 @@ void CEqAudioSystemAL::Shutdown()
 	m_noSound = true;
 
 	// clear voices
-	m_voices.clear();
+	m_channels.clear();
 
 	// delete sample sources
 	while(m_samples.numElem() > 0)
@@ -264,7 +264,7 @@ ISoundSource* CEqAudioSystemAL::LoadSample(const char* filename)
 void CEqAudioSystemAL::FreeSample(ISoundSource* sampleSource)
 {
 	// stop voices using that sample
-	SuspendVoicesWithSample(sampleSource);
+	SuspendChannelsWithSample(sampleSource);
 
 	// free
 	ISoundSource::DestroySound(sampleSource);
@@ -273,14 +273,14 @@ void CEqAudioSystemAL::FreeSample(ISoundSource* sampleSource)
 
 //-----------------------------------------------
 
-VoiceHandle_t CEqAudioSystemAL::GetFreeVoice(ISoundSource* sample, void* callbackObject, VoiceUpdateCallback fnCallback)
+ChannelHandle_t CEqAudioSystemAL::GetFreeChannel(ISoundSource* sample, void* callbackObject, ChannelUpdateCallback fnCallback)
 {
 	if(sample == nullptr)
-		return VOICE_INVALID_HANDLE;
+		return CHANNEL_INVALID_HANDLE;
 
-	for (int i = 0; i < m_voices.numElem(); i++)
+	for (int i = 0; i < m_channels.numElem(); i++)
 	{
-		AudioVoice_t& v = m_voices[i];
+		AudioChannel_t& v = m_channels[i];
 
 		// both stupid and clever...
 		if (v.m_id == -1)
@@ -288,7 +288,7 @@ VoiceHandle_t CEqAudioSystemAL::GetFreeVoice(ISoundSource* sample, void* callbac
 			v.m_callbackObject = callbackObject;
 			v.m_callback = fnCallback;
 
-			SetupVoice(v, sample);
+			SetupChannel(v, sample);
 
 			v.m_id = i;
 			return i;
@@ -296,36 +296,36 @@ VoiceHandle_t CEqAudioSystemAL::GetFreeVoice(ISoundSource* sample, void* callbac
 	}
 
 	// no free voices left
-	return VOICE_INVALID_HANDLE;
+	return CHANNEL_INVALID_HANDLE;
 }
 
-void CEqAudioSystemAL::ReleaseVoice(VoiceHandle_t voice)
+void CEqAudioSystemAL::ReleaseChannel(ChannelHandle_t voice)
 {
-	if (voice == VOICE_INVALID_HANDLE)
+	if (voice == CHANNEL_INVALID_HANDLE)
 		return;
 
-	AudioVoice_t& v = m_voices[voice];
+	AudioChannel_t& v = m_channels[voice];
 
 	// both stupid and clever...
 	if (v.m_id == voice)
 	{
 		EmptyBuffers(v);
 
-		v.m_id = VOICE_INVALID_HANDLE;
+		v.m_id = CHANNEL_INVALID_HANDLE;
 		v.m_callback = nullptr;
 		v.m_callbackObject = nullptr;
-		v.m_state = VOICE_STATE_STOPPED;
+		v.m_state = CHANNEL_STATE_STOPPED;
 	}
 
 }
 
 //-----------------------------------------------
 
-void CEqAudioSystemAL::SuspendVoicesWithSample(ISoundSource* sample)
+void CEqAudioSystemAL::SuspendChannelsWithSample(ISoundSource* sample)
 {
-	for (int i = 0; i < m_voices.numElem(); i++)
+	for (int i = 0; i < m_channels.numElem(); i++)
 	{
-		AudioVoice_t& v = m_voices[i];
+		AudioChannel_t& v = m_channels[i];
 
 		if (v.m_sample == sample)
 		{
@@ -336,7 +336,7 @@ void CEqAudioSystemAL::SuspendVoicesWithSample(ISoundSource* sample)
 
 //-----------------------------------------------
 
-void CEqAudioSystemAL::SetupVoice(AudioVoice_t& voice, ISoundSource* sample)
+void CEqAudioSystemAL::SetupChannel(AudioChannel_t& voice, ISoundSource* sample)
 {
 	// setup voice defaults
 	voice.m_sample = sample;
@@ -352,7 +352,7 @@ void CEqAudioSystemAL::SetupVoice(AudioVoice_t& voice, ISoundSource* sample)
 	}
 }
 
-bool CEqAudioSystemAL::QueueStreamVoice(AudioVoice_t& voice, ALuint buffer)
+bool CEqAudioSystemAL::QueueStreamChannel(AudioChannel_t& voice, ALuint buffer)
 {
 	static ubyte pcmBuffer[STREAM_BUFFER_SIZE];
 
@@ -380,7 +380,7 @@ bool CEqAudioSystemAL::QueueStreamVoice(AudioVoice_t& voice, ALuint buffer)
 		// FIXME: might be invalid
 		if (voice.m_looping)
 		{
-			voice.m_streamPos = voice.m_streamPos % sample->GetSampleCount();
+			voice.m_streamPos %= sample->GetSampleCount();
 		}
 
 		// upload to specific buffer
@@ -394,51 +394,51 @@ bool CEqAudioSystemAL::QueueStreamVoice(AudioVoice_t& voice, ALuint buffer)
 }
 
 // dequeues buffers
-void CEqAudioSystemAL::EmptyBuffers(AudioVoice_t& voice)
+void CEqAudioSystemAL::EmptyBuffers(AudioChannel_t& channel)
 {
 	int numQueued;
 	int sourceType;
 	ALuint qbuffer;
 
 	// stop source
-	alSourceStop(voice.m_source);
+	alSourceStop(channel.m_source);
 
-	alGetSourcei(voice.m_source, AL_SOURCE_TYPE, &sourceType);
+	alGetSourcei(channel.m_source, AL_SOURCE_TYPE, &sourceType);
 
 	if (sourceType == AL_STREAMING)
 	{
 		numQueued = 0;
-		alGetSourcei(voice.m_source, AL_BUFFERS_QUEUED, &numQueued);
+		alGetSourcei(channel.m_source, AL_BUFFERS_QUEUED, &numQueued);
 
 		while (numQueued--)
-			alSourceUnqueueBuffers(voice.m_source, 1, &qbuffer);
+			alSourceUnqueueBuffers(channel.m_source, 1, &qbuffer);
 
 		// make silent buffer
 		for (int i = 0; i < STREAM_BUFFER_COUNT; i++)
-			alBufferData(voice.m_buffers[i], AL_FORMAT_MONO16, (short*)_silence, BUFFER_SILENCE_SIZE, 8000);
+			alBufferData(channel.m_buffers[i], AL_FORMAT_MONO16, (short*)_silence, BUFFER_SILENCE_SIZE, 8000);
 	}
 	else
 	{
-		alSourcei(voice.m_source, AL_BUFFER, 0);
+		alSourcei(channel.m_source, AL_BUFFER, 0);
 	}
 
-	voice.m_sample = nullptr;
-	voice.m_streamPos = 0;
+	channel.m_sample = nullptr;
+	channel.m_streamPos = 0;
 }
 
-// updates all voices
+// updates all channels
 void CEqAudioSystemAL::Update()
 {
-	for (int i = 0; i < m_voices.numElem(); i++)
+	for (int i = 0; i < m_channels.numElem(); i++)
 	{
-		DoVoiceUpdate(m_voices[i]);
+		DoChannelUpdate(m_channels[i]);
 	}
 }
 
-// Updates voice with user parameters
-void CEqAudioSystemAL::UpdateVoice(VoiceHandle_t handle, voiceParams_t params, int mask)
+// Updates channel with user parameters
+void CEqAudioSystemAL::UpdateChannel(ChannelHandle_t handle, channelParams_t params, int mask)
 {
-	if (handle == VOICE_INVALID_HANDLE)
+	if (handle == CHANNEL_INVALID_HANDLE)
 		return;
 
 	if (mask == 0)
@@ -449,213 +449,213 @@ void CEqAudioSystemAL::UpdateVoice(VoiceHandle_t handle, voiceParams_t params, i
 	int numQueued;
 	bool isStreaming;
 
-	AudioVoice_t& voice = m_voices[handle];
+	AudioChannel_t& chan = m_channels[handle];
 
-	isStreaming = voice.m_sample->IsStreaming();
+	isStreaming = chan.m_sample->IsStreaming();
 
-	if (mask & VOICE_UPDATE_POSITION)
-		alSourcefv(voice.m_source, AL_POSITION, params.position);
+	if (mask & AUDIO_CHAN_UPDATE_POSITION)
+		alSourcefv(chan.m_source, AL_POSITION, params.position);
 
-	if (mask & VOICE_UPDATE_VELOCITY)
-		alSourcefv(voice.m_source, AL_VELOCITY, params.velocity);
+	if (mask & AUDIO_CHAN_UPDATE_VELOCITY)
+		alSourcefv(chan.m_source, AL_VELOCITY, params.velocity);
 
-	if (mask & VOICE_UPDATE_VOLUME)
-		alSourcef(voice.m_source, AL_GAIN, params.volume);
+	if (mask & AUDIO_CHAN_UPDATE_VOLUME)
+		alSourcef(chan.m_source, AL_GAIN, params.volume);
 
-	if (mask & VOICE_UPDATE_PITCH)
-		alSourcef(voice.m_source, AL_PITCH, params.pitch);
+	if (mask & AUDIO_CHAN_UPDATE_PITCH)
+		alSourcef(chan.m_source, AL_PITCH, params.pitch);
 
-	if (mask & VOICE_UPDATE_REF_DIST)
-		alSourcef(voice.m_source, AL_REFERENCE_DISTANCE, params.referenceDistance);
+	if (mask & AUDIO_CHAN_UPDATE_REF_DIST)
+		alSourcef(chan.m_source, AL_REFERENCE_DISTANCE, params.referenceDistance);
 
-	if (mask & VOICE_UPDATE_AIRABSORPTION)
-		alSourcef(voice.m_source, AL_AIR_ABSORPTION_FACTOR, params.airAbsorption);
+	if (mask & AUDIO_CHAN_UPDATE_AIRABSORPTION)
+		alSourcef(chan.m_source, AL_AIR_ABSORPTION_FACTOR, params.airAbsorption);
 
-	if (mask & VOICE_UPDATE_RELATIVE)
+	if (mask & AUDIO_CHAN_UPDATE_RELATIVE)
 	{
 		tempValue = params.relative == true ? AL_TRUE : AL_FALSE;
-		alSourcei(voice.m_source, AL_SOURCE_RELATIVE, tempValue);
+		alSourcei(chan.m_source, AL_SOURCE_RELATIVE, tempValue);
 	}
 
-	if (mask & VOICE_UPDATE_LOOPING)
+	if (mask & AUDIO_CHAN_UPDATE_LOOPING)
 	{
-		voice.m_looping = params.looping;
+		chan.m_looping = params.looping;
 
 		if(!isStreaming)
-			alSourcei(voice.m_source, AL_LOOPING, voice.m_looping ? AL_TRUE : AL_FALSE);
+			alSourcei(chan.m_source, AL_LOOPING, chan.m_looping ? AL_TRUE : AL_FALSE);
 	}
 
-	if (mask & VOICE_UPDATE_DO_REWIND)
+	if (mask & AUDIO_CHAN_UPDATE_DO_REWIND)
 	{
-		voice.m_streamPos = 0;
+		chan.m_streamPos = 0;
 		alSourceRewind(mask);
 	}
 
-	if (mask & VOICE_UPDATE_RELEASE_ON_STOP)
-		voice.m_releaseOnStop = params.releaseOnStop;
+	if (mask & AUDIO_CHAN_UPDATE_RELEASE_ON_STOP)
+		chan.m_releaseOnStop = params.releaseOnStop;
 
 	// change state
-	if (mask & VOICE_UPDATE_STATE)
+	if (mask & AUDIO_CHAN_UPDATE_STATE)
 	{
-		if (params.state == VOICE_STATE_STOPPED)
+		if (params.state == CHANNEL_STATE_STOPPED)
 		{
-			alSourceStop(voice.m_source);
+			alSourceStop(chan.m_source);
 		}
-		else if (params.state == VOICE_STATE_PAUSED)
+		else if (params.state == CHANNEL_STATE_PAUSED)
 		{
-			alSourcePause(voice.m_source);
+			alSourcePause(chan.m_source);
 		}
-		else if (params.state == VOICE_STATE_PLAYING)
+		else if (params.state == CHANNEL_STATE_PLAYING)
 		{
 			// re-queue stream buffers
 			if (isStreaming)
 			{
-				alSourceStop(voice.m_source);
+				alSourceStop(chan.m_source);
 
 				// first dequeue buffers
 				numQueued = 0;
-				alGetSourcei(voice.m_source, AL_BUFFERS_QUEUED, &numQueued);
+				alGetSourcei(chan.m_source, AL_BUFFERS_QUEUED, &numQueued);
 
 				while (numQueued--)
-					alSourceUnqueueBuffers(voice.m_source, 1, &qbuffer);
+					alSourceUnqueueBuffers(chan.m_source, 1, &qbuffer);
 
 				for (int i = 0; i < STREAM_BUFFER_COUNT; i++)
 				{
-					if (!QueueStreamVoice(voice, voice.m_buffers[i]))
+					if (!QueueStreamChannel(chan, chan.m_buffers[i]))
 						break; // too short
 				}
 			}
 
-			alSourcePlay(voice.m_source);
+			alSourcePlay(chan.m_source);
 		}
 
-		voice.m_state = params.state;
+		chan.m_state = params.state;
 	}
 }
 
-void CEqAudioSystemAL::GetVoiceParams(VoiceHandle_t handle, voiceParams_t& params)
+void CEqAudioSystemAL::GetChannelParams(ChannelHandle_t handle, channelParams_t& params)
 {
-	if (handle == VOICE_INVALID_HANDLE)
+	if (handle == CHANNEL_INVALID_HANDLE)
 		return;
 
 	int sourceState;
 	int tempValue;
 
-	AudioVoice_t& voice = m_voices[handle];
+	AudioChannel_t& chan = m_channels[handle];
 
-	if (voice.m_id == VOICE_INVALID_HANDLE)
+	if (chan.m_id == CHANNEL_INVALID_HANDLE)
 		return;
 
-	params.id = voice.m_id;
+	params.id = chan.m_id;
 
-	bool isStreaming = voice.m_sample->IsStreaming();
+	bool isStreaming = chan.m_sample->IsStreaming();
 
 	// get current state of alSource
-	alGetSourcefv(voice.m_source, AL_POSITION, params.position);
-	alGetSourcefv(voice.m_source, AL_VELOCITY, params.velocity);
-	alGetSourcef(voice.m_source, AL_GAIN, &params.volume);
-	alGetSourcef(voice.m_source, AL_PITCH, &params.pitch);
-	alGetSourcef(voice.m_source, AL_REFERENCE_DISTANCE, &params.referenceDistance);
-	alGetSourcef(voice.m_source, AL_ROLLOFF_FACTOR, &params.rolloff);
-	alGetSourcef(voice.m_source, AL_AIR_ABSORPTION_FACTOR, &params.airAbsorption);
+	alGetSourcefv(chan.m_source, AL_POSITION, params.position);
+	alGetSourcefv(chan.m_source, AL_VELOCITY, params.velocity);
+	alGetSourcef(chan.m_source, AL_GAIN, &params.volume);
+	alGetSourcef(chan.m_source, AL_PITCH, &params.pitch);
+	alGetSourcef(chan.m_source, AL_REFERENCE_DISTANCE, &params.referenceDistance);
+	alGetSourcef(chan.m_source, AL_ROLLOFF_FACTOR, &params.rolloff);
+	alGetSourcef(chan.m_source, AL_AIR_ABSORPTION_FACTOR, &params.airAbsorption);
 
-	params.looping = voice.m_looping;
+	params.looping = chan.m_looping;
 
-	alGetSourcei(voice.m_source, AL_SOURCE_RELATIVE, &tempValue);
+	alGetSourcei(chan.m_source, AL_SOURCE_RELATIVE, &tempValue);
 	params.relative = (tempValue == AL_TRUE);
 
 	if (isStreaming)
 	{
-		// use voice state
-		params.state = voice.m_state;
+		// use channel state
+		params.state = chan.m_state;
 	}
 	else
 	{
-		alGetSourcei(voice.m_source, AL_SOURCE_STATE, &sourceState);
+		alGetSourcei(chan.m_source, AL_SOURCE_STATE, &sourceState);
 
 		// use AL state
 		if (sourceState == AL_INITIAL || sourceState == AL_STOPPED)
-			params.state = VOICE_STATE_STOPPED;
+			params.state = CHANNEL_STATE_STOPPED;
 		else if (sourceState == AL_PLAYING)
-			params.state = VOICE_STATE_PLAYING;
+			params.state = CHANNEL_STATE_PLAYING;
 		else if (sourceState == AL_PAUSED)
-			params.state = VOICE_STATE_PAUSED;
+			params.state = CHANNEL_STATE_PAUSED;
 	}
 
-	params.releaseOnStop = voice.m_releaseOnStop;
+	params.releaseOnStop = chan.m_releaseOnStop;
 }
 
-// updates voice (in cycle)
-void CEqAudioSystemAL::DoVoiceUpdate(AudioVoice_t& voice)
+// updates channel (in cycle)
+void CEqAudioSystemAL::DoChannelUpdate(AudioChannel_t& chan)
 {
-	if (voice.m_sample == nullptr)
+	if (chan.m_sample == nullptr)
 		return;
 
 	int tempValue;
 	int sourceState;
 
-	alGetSourcei(voice.m_source, AL_SOURCE_STATE, &sourceState);
+	alGetSourcei(chan.m_source, AL_SOURCE_STATE, &sourceState);
 
-	bool isStreaming = voice.m_sample->IsStreaming();
+	bool isStreaming = chan.m_sample->IsStreaming();
 
 	// process user callback
-	if (voice.m_callback)
+	if (chan.m_callback)
 	{
-		voiceParams_t params;
-		GetVoiceParams(voice.m_id, params);
+		channelParams_t params;
+		GetChannelParams(chan.m_id, params);
 
-		int mask = voice.m_callback(voice.m_callbackObject, params);
+		int mask = chan.m_callback(chan.m_callbackObject, params);
 
-		// update voice parameters
-		UpdateVoice(voice.m_id, params, mask);
+		// update channel parameters
+		UpdateChannel(chan.m_id, params, mask);
 	}
 
 	// get source state again
-	alGetSourcei(voice.m_source, AL_SOURCE_STATE, &sourceState);
+	alGetSourcei(chan.m_source, AL_SOURCE_STATE, &sourceState);
 
 	if (isStreaming)
 	{
 		// always disable internal looping for streams
-		alSourcei(voice.m_source, AL_LOOPING, AL_FALSE);
+		alSourcei(chan.m_source, AL_LOOPING, AL_FALSE);
 
 		// update buffers
-		if (voice.m_state == VOICE_STATE_PLAYING)
+		if (chan.m_state == CHANNEL_STATE_PLAYING)
 		{
 			int	processedBuffers;
-			alGetSourcei(voice.m_source, AL_BUFFERS_PROCESSED, &processedBuffers);
+			alGetSourcei(chan.m_source, AL_BUFFERS_PROCESSED, &processedBuffers);
 
 			while (processedBuffers--)
 			{
 				// dequeue and get buffer
 				ALuint buffer;
-				alSourceUnqueueBuffers(voice.m_source, 1, &buffer);
+				alSourceUnqueueBuffers(chan.m_source, 1, &buffer);
 
-				if (!QueueStreamVoice(voice, buffer))
+				if (!QueueStreamChannel(chan, buffer))
 				{
-					voice.m_state = VOICE_STATE_STOPPED;
+					chan.m_state = CHANNEL_STATE_STOPPED;
 					break;
 				}
 			}
 
 			if (sourceState != AL_PLAYING)
-				alSourcePlay(voice.m_source);
+				alSourcePlay(chan.m_source);
 		}
 	}
 	else
 	{
 		if (sourceState == AL_INITIAL || sourceState == AL_STOPPED)
-			voice.m_state = VOICE_STATE_STOPPED;
+			chan.m_state = CHANNEL_STATE_STOPPED;
 		else if (sourceState == AL_PLAYING)
-			voice.m_state = VOICE_STATE_PLAYING;
+			chan.m_state = CHANNEL_STATE_PLAYING;
 		else if (sourceState == AL_PAUSED)
-			voice.m_state = VOICE_STATE_PAUSED;
+			chan.m_state = CHANNEL_STATE_PAUSED;
 	}
 
-	// release voice if stopped
-	if (voice.m_releaseOnStop && voice.m_state == VOICE_STATE_STOPPED)
+	// release channel if stopped
+	if (chan.m_releaseOnStop && chan.m_state == CHANNEL_STATE_STOPPED)
 	{
 		// drop voice
-		ReleaseVoice(voice.m_id);
+		ReleaseChannel(chan.m_id);
 	}
 }
 

@@ -82,13 +82,13 @@ void DrvSynTimerElement::DrawSelf(const IRectangle& rect)
 
 		materials->BindMaterial(materials->GetDefaultMaterial());
 
-		int secs = ceil(m_timeDisplayValue);
+		//int secs = ceil(m_timeDisplayValue);
 
 		Vector2D center = rect.GetCenter();
 		float arrowSize = rect.GetSize().y * 0.5f;
 
 		// setup angle
-		float arrowAngle = fabs(float(secs) / 60.0f * 360.0f);
+		float arrowAngle = fabs(float(m_timeDisplayValue) / 60.0f * 360.0f);
 
 		Matrix2x2 rotation = rotate2( - DEG2RAD(arrowAngle));
 
@@ -102,7 +102,7 @@ void DrvSynTimerElement::DrawSelf(const IRectangle& rect)
 
 		CMeshBuilder meshBuilder(materials->GetDynamicMesh());
 		meshBuilder.Begin(PRIM_TRIANGLE_STRIP);
-			meshBuilder.Color4f(0.0f, 0.0f, 0.0f, 1.0f);
+			meshBuilder.Color4fv(m_textColor);
 
 			meshBuilder.Triangle2(center + rotation*vertices[0], center + rotation*vertices[1], center + rotation*vertices[2]);
 			

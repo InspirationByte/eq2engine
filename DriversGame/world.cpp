@@ -1597,45 +1597,11 @@ void CopyPixels(int* src, int* dest, int w1, int h1, int w2, int h2, bool flipY)
 
 ConVar r_skyToCubemap("r_skyToCubemap", "1");
 
-void CGameWorld::GenerateEnvmapAndFogTextures()
+ITexture* s_tempRenderTarget = NULL;
+
+void CGameWorld::GenerateEnvmapAndFogTexturesJob(void* data, int)
 {
-	if(!m_envMapsDirty)
-		return;
-
-	if(!r_skyToCubemap.GetBool())
-		return;
-
-	materials->Wait();
-
-	m_envMapsDirty = false;
-
-	// TODO: more efficient way
-
-	ITexture* tempRenderTarget = g_pShaderAPI->CreateNamedRenderTarget("_tempSkyboxRender", 256, 256, FORMAT_RGBA8,
-										TEXFILTER_LINEAR, TEXADDRESS_CLAMP, COMP_NEVER, TEXFLAG_CUBEMAP);
-
-	tempRenderTarget->Ref_Grab();
-
-	materials->SetMaterialRenderParamCallback(this);
-	materials->SetEnvironmentMapTexture(nullptr);
-
-	// render the skybox into cubemap
-	for(int i = 0; i < 6; i++)
-	{
-		g_pShaderAPI->ChangeRenderTarget(tempRenderTarget, i);
-		g_pShaderAPI->Clear(true, false, false);
-
-		// Draw sky
-		materials->SetMatrix(MATRIXMODE_PROJECTION, cubeProjectionMatrixD3D(0.1f, 1000.0f));
-		materials->SetMatrix(MATRIXMODE_VIEW, cubeViewMatrix(i));
-		materials->SetMatrix(MATRIXMODE_WORLD, translate(Vector3D(0, m_envSkyProps.x, 0)) * rotateY4(m_envSkyProps.y));
-
-		m_skyColor->SetVector4( 1.0f );
-		DrawSkyBox(0xf);
-	}
-
-	g_pShaderAPI->ChangeRenderTargetToBackBuffer();
-	//g_pShaderAPI->Finish();
+	CGameWorld* thisWorld = (CGameWorld*)data;
 
 	texlockdata_t tempLock;
 
@@ -1646,30 +1612,32 @@ void CGameWorld::GenerateEnvmapAndFogTextures()
 	ubyte* envMapData = envMap.GetPixels(0);
 	ubyte* fogEnvMapData = fogEnvMap.GetPixels(0);
 
-	int envMapFace = envMap.GetMipMappedSize(0,1) / 6;
-	int fogEnvMapFace = fogEnvMap.GetMipMappedSize(0,1) / 6;
+	int envMapFace = envMap.GetMipMappedSize(0, 1) / 6;
+	int fogEnvMapFace = fogEnvMap.GetMipMappedSize(0, 1) / 6;
 
 	bool isOpenGL = (g_pShaderAPI->GetShaderAPIClass() == SHADERAPI_OPENGL);
 
 	// do resize by software
-	for(int i = 0; i < 6; i++)
+	for (int i = 0; i < 6; i++)
 	{
-		tempRenderTarget->Lock(&tempLock, NULL, false, true, 0, i );
-		if(tempLock.pData)
+		s_tempRenderTarget->Lock(&tempLock, NULL, false, true, 0, i);
+		if (tempLock.pData)
 		{
-			CopyPixels((int*)tempLock.pData, (int*)envMapData, tempRenderTarget->GetWidth(), tempRenderTarget->GetHeight(), envMap.GetWidth(), envMap.GetHeight(), isOpenGL);
+			CopyPixels((int*)tempLock.pData, (int*)envMapData, s_tempRenderTarget->GetWidth(), s_tempRenderTarget->GetHeight(), envMap.GetWidth(), envMap.GetHeight(), isOpenGL);
 			envMapData += envMapFace;
 
-			CopyPixels((int*)tempLock.pData, (int*)fogEnvMapData, tempRenderTarget->GetWidth(), tempRenderTarget->GetHeight(), fogEnvMap.GetWidth(), fogEnvMap.GetHeight(), isOpenGL);
+			CopyPixels((int*)tempLock.pData, (int*)fogEnvMapData, s_tempRenderTarget->GetWidth(), s_tempRenderTarget->GetHeight(), fogEnvMap.GetWidth(), fogEnvMap.GetHeight(), isOpenGL);
 			fogEnvMapData += fogEnvMapFace;
 
-			tempRenderTarget->Unlock();
+			s_tempRenderTarget->Unlock();
 		}
 	}
 
+	g_pShaderAPI->FreeTexture(s_tempRenderTarget);
+
 	//g_pShaderAPI->Finish();
 
-	if(!isOpenGL)
+	if (!isOpenGL)
 	{
 		// swap on D3D
 		envMap.SwapChannels(0, 2);
@@ -1689,17 +1657,14 @@ void CGameWorld::GenerateEnvmapAndFogTextures()
 
 	SamplerStateParam_t sampler = g_pShaderAPI->MakeSamplerState(TEXFILTER_LINEAR, TEXADDRESS_CLAMP, TEXADDRESS_CLAMP, TEXADDRESS_CLAMP);
 
-	// set cubemap to none before we freeing the texture
-	g_pShaderAPI->FreeTexture(m_envMap);
+	thisWorld->m_envMap = g_pShaderAPI->CreateTexture(envMapImg, sampler);
+	thisWorld->m_envMap->Ref_Grab();
 
-	m_envMap = g_pShaderAPI->CreateTexture(envMapImg, sampler);
-	m_envMap->Ref_Grab();
+	g_pShaderAPI->FreeTexture(thisWorld->m_fogEnvMap);
+	thisWorld->m_fogEnvMap = g_pShaderAPI->CreateTexture(fogEnvMapImg, sampler);
+	thisWorld->m_fogEnvMap->Ref_Grab();
 
-	g_pShaderAPI->FreeTexture(m_fogEnvMap);
-	m_fogEnvMap = g_pShaderAPI->CreateTexture(fogEnvMapImg, sampler);
-	m_fogEnvMap->Ref_Grab();
-
-	g_pShaderAPI->FreeTexture( tempRenderTarget );
+	
 
 	/*
 	NEW CODE:
@@ -1752,6 +1717,54 @@ void CGameWorld::GenerateEnvmapAndFogTextures()
 
 	g_pShaderAPI->ChangeRenderTargetToBackBuffer();
 	*/
+}
+
+void CGameWorld::GenerateEnvmapAndFogTextures()
+{
+	if (!m_envMapsDirty)
+		return;
+		
+	if (!r_skyToCubemap.GetBool())
+		return;
+		
+	materials->Wait();
+
+	m_envMapsDirty = false;
+
+	// TODO: more efficient way
+
+	s_tempRenderTarget = g_pShaderAPI->CreateNamedRenderTarget("_tempSkyboxRender", 256, 256, FORMAT_RGBA8,
+										TEXFILTER_LINEAR, TEXADDRESS_CLAMP, COMP_NEVER, TEXFLAG_CUBEMAP);
+
+	s_tempRenderTarget->Ref_Grab();
+
+	materials->SetMaterialRenderParamCallback(this);
+	materials->SetEnvironmentMapTexture(nullptr);
+
+	// render the skybox into cubemap
+	for(int i = 0; i < 6; i++)
+	{
+		g_pShaderAPI->ChangeRenderTarget(s_tempRenderTarget, i);
+		g_pShaderAPI->Clear(true, false, false);
+
+		// Draw sky
+		materials->SetMatrix(MATRIXMODE_PROJECTION, cubeProjectionMatrixD3D(0.1f, 1000.0f));
+		materials->SetMatrix(MATRIXMODE_VIEW, cubeViewMatrix(i));
+		materials->SetMatrix(MATRIXMODE_WORLD, translate(Vector3D(0, m_envSkyProps.x, 0)) * rotateY4(m_envSkyProps.y));
+
+		m_skyColor->SetVector4( 1.0f );
+		DrawSkyBox(0xf);
+	}
+
+	// set cubemap to none before we freeing the texture
+	g_pShaderAPI->FreeTexture(m_envMap);
+	m_envMap = NULL;
+
+	g_pShaderAPI->ChangeRenderTargetToBackBuffer();
+	g_pShaderAPI->Reset(STATE_RESET_TEX);
+
+	g_parallelJobs->AddJob(GenerateEnvmapAndFogTexturesJob, this);
+	g_parallelJobs->Submit();
 }
 
 void CGameWorld::OnPreApplyMaterial( IMaterial* pMaterial )
@@ -1886,6 +1899,13 @@ void CGameWorld::UpdateOccludingFrustum()
 	m_frustum.LoadAsFrustum(m_viewprojection);
 
 	m_level.CollectVisibleOccluders( m_occludingFrustum, m_view.GetOrigin() );
+	g_parallelJobs->AddJob(UpdateOccludingFrustumJob, this);
+}
+
+void CGameWorld::UpdateOccludingFrustumJob(void* data, int i)
+{
+	CGameWorld* thisWorld = (CGameWorld*)data;
+	thisWorld->m_level.CollectVisibleOccluders(thisWorld->m_occludingFrustum, thisWorld->m_view.GetOrigin());
 }
 
 void CGameWorld::DrawMoon()

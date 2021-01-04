@@ -380,6 +380,15 @@ OOLUA_CFUNC(S_Util_CGameLevel_GetJunctionAtPosition, L_Util_CGameLevel_GetJuncti
 
 //------------------------------------------------------------------------------
 
+OOLUA_EXPORT_FUNCTIONS(equi::DrvSynTimerElement,
+	SetType, SetTimeValue
+)
+OOLUA_EXPORT_FUNCTIONS_CONST(equi::DrvSynTimerElement)
+
+int L_equi_castto_timer(lua_State* vm) { OOLUA_C_FUNCTION(OOLUA::maybe_null<equi::DrvSynTimerElement*>, equi::DynamicCast, equi::IUIControl*) }
+
+//------------------------------------------------------------------------------
+
 bool Lua_SetMissionScript(const char* name)
 {
 	return g_State_Game->SetMissionScript(name);
@@ -428,7 +437,6 @@ DECLARE_CMD(lua_reload, "Reloads _init.lua script", CV_CHEAT)
 	{
 		MsgError("__init.lua reload error:\n\n%s\n", OOLUA::get_last_error(GetLuaState()).c_str());
 	}
-
 }
 
 bool LuaBinding_InitDriverSyndicateBindings(lua_State* state)
@@ -564,6 +572,15 @@ bool LuaBinding_InitDriverSyndicateBindings(lua_State* state)
 
 	OOLUA::register_class<CAITrafficCar>(state);
 	OOLUA::register_class<CAIPursuerCar>(state);
+
+	{
+		OOLUA::Table equiCastFuncsTab;
+		OOLUA::get_global(state, "equi_cast", equiCastFuncsTab);
+
+		OOLUA::register_class<equi::DrvSynTimerElement>(state);
+		equiCastFuncsTab.set("timer", L_equi_castto_timer);
+	}
+
 
 	OOLUA::set_global(state, "world", g_pGameWorld);
 	OOLUA::set_global_to_nil(state, "game");

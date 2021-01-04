@@ -124,8 +124,6 @@ void CPhysicsEngine::SceneInit()
 #endif // m_physics
 
 	m_dtAccumulator = 0.0f;
-
-	StartWorkerThread("PhysicsThread");
 }
 
 #ifdef EDITOR
@@ -191,6 +189,12 @@ void CPhysicsEngine::Simulate( float fDt, int numIterations, FNSIMULATECALLBACK 
 
 	if (ph_stop.GetBool())
 		return;
+
+	if (!IsRunning())
+	{
+		StartWorkerThread("PhysicsThread");
+		m_dtAccumulator = 0.0f;
+	}
 
 	m_dtAccumulator += fDt;
 

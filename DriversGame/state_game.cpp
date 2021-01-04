@@ -335,11 +335,13 @@ void CState_Game::UnloadGame()
 	g_studioModelCache->ReleaseCache();
 	g_sounds->Shutdown();
 
-	if(g_pPhysics)
+	if (g_pPhysics)
+	{
 		g_pPhysics->SceneShutdown();
 
-	delete g_pPhysics;
-	g_pPhysics = nullptr;
+		delete g_pPhysics;
+		g_pPhysics = nullptr;
+	}
 
 	m_isGameRunning = false;
 }
@@ -422,6 +424,7 @@ void CState_Game::ShutdownSession(bool restart)
 {
 	Msg("-- ShutdownSession%s --\n", restart ? " - Restart" : "");
 	g_parallelJobs->Wait();
+	g_pPhysics->StopThread();
 
 	effectrenderer->RemoveAllEffects();
 
@@ -1323,20 +1326,21 @@ void CState_Game::RenderMainView3D( float fDt )
 	static float jobFrametime = fDt;
 	jobFrametime = fDt;
 
+	if (r_no3D.GetBool())
+		return;
+
 	// post draw effects
 	g_worldGlobals.mt.effectsUpdateCompleted.Clear();
 	g_parallelJobs->AddJob(GRJob_DrawEffects, &jobFrametime);
-	g_parallelJobs->Submit();
-	
-	if (r_no3D.GetBool())
-		return;
 
 	// rebuild view
 	const IVector2D& screenSize = g_pHost->GetWindowSize();
 	g_pGameWorld->BuildViewMatrices(screenSize.x,screenSize.y, 0);
 
 	// frustum update
-	PROFILE_CODE(g_pGameWorld->UpdateOccludingFrustum());
+	g_pGameWorld->UpdateOccludingFrustum();
+
+	g_parallelJobs->Submit();
 
 	// render world
 	PROFILE_CODE(g_pGameWorld->Draw( 0 ));

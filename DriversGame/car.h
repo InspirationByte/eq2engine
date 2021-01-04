@@ -427,6 +427,7 @@ public:
 	//-----------------------------------
 
 	float					GetRPM() const;
+	float					GetDisplayRPM() const;
 	int						GetGear() const;
 
 	int						GetWheelsOnGround(int wheelFlags = 0xFF) const;
@@ -726,7 +727,8 @@ OOLUA_PROXY(CCar, CGameObject)
 	OOLUA_MFUNC(AlignToGround)
 
 	OOLUA_MFUNC_CONST(IsAnyWheelOnGround)
-
+	OOLUA_MFUNC_CONST(IsDriveWheelsOnGround)
+	
 	OOLUA_MFUNC_CONST(IsAlive)
 	OOLUA_MFUNC_CONST(IsInWater)
 	OOLUA_MFUNC_CONST(IsFlippedOver)
@@ -764,6 +766,9 @@ OOLUA_PROXY(CCar, CGameObject)
 
 	OOLUA_MFUNC_CONST(GetSpeed)
 	OOLUA_MFUNC_CONST(GetSpeedWheels)
+	OOLUA_MFUNC_CONST(GetRPM)
+	OOLUA_MFUNC_CONST(GetDisplayRPM)
+	OOLUA_MFUNC_CONST(GetGear)
 
 	OOLUA_MFUNC_CONST(IsAccelerating)
 	OOLUA_MFUNC_CONST(IsBraking)

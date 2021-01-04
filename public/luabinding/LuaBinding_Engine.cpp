@@ -555,6 +555,7 @@ void EqUI_InitBinding(lua_State* state)
 	equiCastFuncsTab.set("panel", L_equi_castto_panel);
 	equiCastFuncsTab.set("image", L_equi_castto_image);
 	//equiCastFuncsTab.set("label", L_equi_castto_label);
+
 	
 
 	OOLUA::set_global(state, "equi_cast", equiCastFuncsTab);

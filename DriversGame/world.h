@@ -235,6 +235,8 @@ public:
 
 protected:
 
+	static void						GenerateEnvmapAndFogTexturesJob(void* data, int i);
+	static void						UpdateOccludingFrustumJob(void* data, int i);
 	static void						UpdateWorldAndEffectsJob(void* data, int i);
 
 	void							OnObjectSpawnedEvent(CGameObject* obj);

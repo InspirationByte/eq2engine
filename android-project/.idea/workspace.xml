@@ -11,13 +11,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="c9096593-b4df-4b83-813a-05c2d4299dea" name="Default" comment="">
-      <change beforePath="$PROJECT_DIR$/../DriversGame/AIManipulator_Traffic.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../DriversGame/AIManipulator_Traffic.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../DriversGame/LuaBinding_Drivers.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../DriversGame/LuaBinding_Drivers.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../DriversGame/car.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../DriversGame/car.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../DriversGame/state_game.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../DriversGame/state_game.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/app.iml" beforeDir="false" afterPath="$PROJECT_DIR$/app/app.iml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../shared_game/GameSoundEmitterSystem.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/../shared_game/GameSoundEmitterSystem.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../premake_vs2017.bat" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -405,33 +399,13 @@
     </option>
   </component>
   <component name="WindowStateProjectService">
-    <state x="477" y="251" key="#PSD" timestamp="1594665488259">
+    <state x="762" y="271" key="FileChooserDialogImpl" timestamp="1607784702760">
       <screen x="0" y="0" width="1920" height="1040" />
     </state>
-    <state x="477" y="251" key="#PSD/0.0.1920.1040@0.0.1920.1040" timestamp="1594665488259" />
-    <state x="593" y="181" key="FileChooserDialogImpl" timestamp="1594666852532">
+    <state x="762" y="271" key="FileChooserDialogImpl/0.0.1920.1040@0.0.1920.1040" timestamp="1607784702760" />
+    <state x="849" y="323" key="com.intellij.ide.util.TipDialog" timestamp="1607784708635">
       <screen x="0" y="0" width="1920" height="1040" />
     </state>
-    <state x="593" y="181" key="FileChooserDialogImpl/0.0.1920.1040@0.0.1920.1040" timestamp="1594666852532" />
-    <state width="1877" height="281" key="GridCell.Tab.0.bottom" timestamp="1594746044289">
-      <screen x="0" y="0" width="1920" height="1040" />
-    </state>
-    <state width="1877" height="281" key="GridCell.Tab.0.bottom/0.0.1920.1040@0.0.1920.1040" timestamp="1594746044289" />
-    <state width="1877" height="281" key="GridCell.Tab.0.center" timestamp="1594746044289">
-      <screen x="0" y="0" width="1920" height="1040" />
-    </state>
-    <state width="1877" height="281" key="GridCell.Tab.0.center/0.0.1920.1040@0.0.1920.1040" timestamp="1594746044289" />
-    <state width="1877" height="281" key="GridCell.Tab.0.left" timestamp="1594746044289">
-      <screen x="0" y="0" width="1920" height="1040" />
-    </state>
-    <state width="1877" height="281" key="GridCell.Tab.0.left/0.0.1920.1040@0.0.1920.1040" timestamp="1594746044289" />
-    <state width="1877" height="281" key="GridCell.Tab.0.right" timestamp="1594746044289">
-      <screen x="0" y="0" width="1920" height="1040" />
-    </state>
-    <state width="1877" height="281" key="GridCell.Tab.0.right/0.0.1920.1040@0.0.1920.1040" timestamp="1594746044289" />
-    <state x="849" y="323" key="com.intellij.ide.util.TipDialog" timestamp="1600100326357">
-      <screen x="0" y="0" width="1920" height="1040" />
-    </state>
-    <state x="849" y="323" key="com.intellij.ide.util.TipDialog/0.0.1920.1040@0.0.1920.1040" timestamp="1600100326357" />
+    <state x="849" y="323" key="com.intellij.ide.util.TipDialog/0.0.1920.1040@0.0.1920.1040" timestamp="1607784708635" />
   </component>
 </project>

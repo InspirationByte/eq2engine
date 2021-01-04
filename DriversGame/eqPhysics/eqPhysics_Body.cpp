@@ -67,7 +67,7 @@ CEqRigidBody::CEqRigidBody() : CEqCollisionObject()
 	m_lastFrameTime = 0.0f;
 	m_minFrameTimeIgnoreMotion = false;
 
-	m_prevPosition = vec3_zero;
+	m_prevPosition = FVector3D(0.0f);
 	m_prevOrientation = identity();
 }
 

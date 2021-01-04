@@ -297,14 +297,6 @@ int CHeightTileField::WriteToStream( IVirtualStream* stream )
 	return stream->Tell() - fpos;
 }
 
-// optimizes heightfield, removing unused cells
-void CHeightTileField::Optimize()
-{
-	// refresh size, position
-
-	// GenerateRenderData();
-}
-
 // get/set
 bool CHeightTileField::SetPointMaterial(int x, int y, IMaterial* pMaterial, int atlIdx)
 {
@@ -1237,10 +1229,10 @@ void CHeightTileFieldRenderable::Undoable_ReadObjectData( IVirtualStream* stream
 
 void CHeightTileFieldRenderable::CleanRenderData(bool deleteVBO)
 {
-	delete [] m_batches;
-	m_batches = NULL;
-
 	m_numBatches = 0;
+
+	delete[] m_batches;
+	m_batches = NULL;
 
 	if(deleteVBO)
 	{
@@ -1267,10 +1259,8 @@ void CHeightTileFieldRenderable::CleanRenderData(bool deleteVBO)
 
 void CHeightTileFieldRenderable::GenerateRenderData(bool debug)
 {
-	if(!m_isChanged)
+	if (!m_isChanged)
 		return;
-
-	m_isChanged = false;
 
 	// delete generated only
 	CleanRenderData(false);
@@ -1286,10 +1276,11 @@ void CHeightTileFieldRenderable::GenerateRenderData(bool debug)
 	if(generated.numElem() == 0)
 	{
 		m_numBatches = 0;
+		m_batches = NULL;
 		return;
 	}
 
-	m_batches = new hfielddrawbatch_t[generated.numElem()];
+	hfielddrawbatch_t* renderBatches = new hfielddrawbatch_t[generated.numElem()];
 	DkList<hfielddrawvertex_t>	verts;
 	DkList<int>					indices;
 
@@ -1309,7 +1300,7 @@ void CHeightTileFieldRenderable::GenerateRenderData(bool debug)
 
 	for(int i = 0; i < generated.numElem(); i++)
 	{
-		hfielddrawbatch_t& drawbatch = m_batches[i];
+		hfielddrawbatch_t& drawbatch = renderBatches[i];
 		const hfieldbatch_t* batch = generated[i];
 
 		drawbatch.startVertex = verts.numElem();
@@ -1330,10 +1321,6 @@ void CHeightTileFieldRenderable::GenerateRenderData(bool debug)
 		// that' all, folks
 		delete generated[i];
 	}
-
-	m_numVerts = verts.numElem();
-
-	m_numBatches = generated.numElem();
 
 	if(!m_vertexbuffer || !m_indexbuffer || !m_format)
 	{
@@ -1370,6 +1357,11 @@ void CHeightTileFieldRenderable::GenerateRenderData(bool debug)
 	m_vertexbuffer->Update(verts.ptr(), verts.numElem(), 0, true);
 	m_indexbuffer->Update(indices.ptr(), indices.numElem(), 0, true);
 #endif
+
+	m_numVerts = verts.numElem();
+	m_batches = renderBatches;
+	m_numBatches = generated.numElem();
+	m_isChanged = false;
 }
 
 ConVar r_drawHeightfields("r_drawHeightfields", "1", NULL, CV_CHEAT);
@@ -1395,13 +1387,32 @@ void CHeightTileFieldRenderable::Render(int nDrawFlags, const occludingFrustum_t
 
 		m_isChanged = false;
 	}
+#else
+	if (m_isChanged)
+		return;
+
 #endif // EDITOR
 
-	for(int i = 0; i < m_numBatches; i++)
+	int numBatches;
+	hfielddrawbatch_t* batches;
+
+	numBatches = m_numBatches;
+	batches = m_batches;
+
+	// no batches generated yet?
+	if (!batches)
+		return;
+	
+	for(int i = 0; i < numBatches; i++)
 	{
-		hfielddrawbatch_t& batch = m_batches[i];
+		hfielddrawbatch_t& batch = batches[i];
 
 		if(!occlSet.IsBoxVisible(batch.bbox))
+			continue;
+
+		int status = batch.pMaterial->GetState();
+
+		if (status != MATERIAL_LOAD_OK && status != MATERIAL_LOAD_ERROR)
 			continue;
 
 		bool isTransparent = (batch.pMaterial->GetFlags() & MATERIAL_FLAG_TRANSPARENT) > 0;

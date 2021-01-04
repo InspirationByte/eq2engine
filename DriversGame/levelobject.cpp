@@ -580,15 +580,17 @@ void CLevelModel::Render(int nDrawFlags)
 		lmodel_batch_t& batch = m_batches[i];
 		int matFlags = batch.pMaterial->GetFlags();
 
-		if (batch.pMaterial->GetState() == MATERIAL_LOAD_INQUEUE)
-			continue;
+		int status = batch.pMaterial->GetState();
 
+		if (status != MATERIAL_LOAD_OK && status != MATERIAL_LOAD_ERROR)
+			continue;
+	
 		if (matFlags & MATERIAL_FLAG_INVISIBLE)
 			continue;
 
 		bool isTransparent = (matFlags & MATERIAL_FLAG_TRANSPARENT) > 0;
 
-		if(isTransparent != renderTranslucency)
+		if (isTransparent != renderTranslucency)
 			continue;
 
 		materials->BindMaterial(batch.pMaterial, 0);

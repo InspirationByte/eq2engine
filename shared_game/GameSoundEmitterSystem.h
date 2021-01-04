@@ -25,6 +25,8 @@ enum EEmitSoundFlags
 	EMITSOUND_FLAG_FORCE_2D			= (1 << 3),		// force 2D sound (music, etc.)
 	EMITSOUND_FLAG_STARTSILENT		= (1 << 4),		// starts silent
 	EMITSOUND_FLAG_START_ON_UPDATE	= (1 << 5),		// start playing sound on emitter system update
+
+	EMITSOUND_FLAG_PENDING			= (1 << 6),		// was in pending list
 };
 
 // channel type for entity call
@@ -319,6 +321,8 @@ public:
 
 	void						InvalidateSoundChannelObject(CSoundChannelObject* pEnt);
 protected:
+
+	static void					JobSchedulePlayStaticChannel(void* data, int i);
 
 	ISoundSample*				FindBestSample(soundScriptDesc_t* script, int sampleId = -1);
 

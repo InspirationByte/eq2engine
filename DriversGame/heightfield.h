@@ -195,8 +195,6 @@ public:
 
 	int							WriteToStream( IVirtualStream* stream );
 
-	void						Optimize();
-
 	// get/set
 	bool						SetPointMaterial(int x, int y, IMaterial* pMaterial, int atlIdx = 0);
 
