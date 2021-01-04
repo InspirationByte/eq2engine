@@ -141,7 +141,8 @@ egfcaModel_t CEGFGenerator::LoadModel(const char* pszFileName)
 	egfcaModel_t mod;
 	mod.model = new dsmmodel_t;
 
-	EqString modelPath( CombinePath(3, m_refsPath.c_str(), CORRECT_PATH_SEPARATOR_STR, pszFileName) );
+	EqString modelPath;
+	CombinePath(modelPath, 3, m_refsPath.c_str(), CORRECT_PATH_SEPARATOR_STR, pszFileName);
 
 	EqString ext(modelPath.Path_Extract_Ext());
 
@@ -155,7 +156,7 @@ egfcaModel_t CEGFGenerator::LoadModel(const char* pszFileName)
 		if( LoadESXShapes( mod.shapeData, modelPath.c_str() ))
 		{
 			// use referenced filename by the shape file
-			modelPath = CombinePath(3, m_refsPath.c_str(), CORRECT_PATH_SEPARATOR_STR, mod.shapeData->reference.c_str());
+			CombinePath(modelPath, 3, m_refsPath.c_str(), CORRECT_PATH_SEPARATOR_STR, mod.shapeData->reference.c_str());
 		}
 		else
 		{
@@ -1190,7 +1191,8 @@ bool CEGFGenerator::InitFromKeyValues(kvkeybase_t* mainsection)
 	// set source path if defined by script
 	if(pSourcePath)
 	{
-		m_refsPath = CombinePath(3, m_refsPath.c_str(), CORRECT_PATH_SEPARATOR_STR, KV_GetValueString(pSourcePath, 0, ""));
+		EqString path;
+		CombinePath(m_refsPath, 3, m_refsPath.c_str(), CORRECT_PATH_SEPARATOR_STR, KV_GetValueString(pSourcePath, 0, ""));
 	}
 
 	// get new model filename

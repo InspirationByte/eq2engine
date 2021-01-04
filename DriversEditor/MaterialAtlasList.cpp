@@ -383,7 +383,8 @@ void CMaterialAtlasList::SelectMaterial(IMaterial* pMaterial, int atlasIdx)
 
 bool CMaterialAtlasList::CheckDirForMaterials(const char* filename_to_add)
 {
-	EqString searchPath = CombinePath(2, filename_to_add, "*.*");
+	EqString searchPath;
+	CombinePath(searchPath, 2, filename_to_add, "*.*");
 
 	for (int i = 0; i < m_loadfilter.numElem(); i++)
 	{
@@ -406,12 +407,16 @@ bool CMaterialAtlasList::CheckDirForMaterials(const char* filename_to_add)
 			if (!stricmp("..", materialsFind.GetPath()) || !stricmp(".", materialsFind.GetPath()))
 				continue;
 
+			EqString tmpDir;
+			CombinePath(tmpDir, 2, filename_to_add, materialsFind.GetPath());
+
 			// search recursively
-			CheckDirForMaterials( CombinePath(2, filename_to_add, materialsFind.GetPath()).c_str() );
+			CheckDirForMaterials(tmpDir.c_str() );
 		}
 		else
 		{
-			EqString fileName = CombinePath(2, filename_to_add, materialsFind.GetPath());
+			EqString fileName;
+			CombinePath(fileName, 2, filename_to_add, materialsFind.GetPath());
 
 			if (fileName.Path_Extract_Ext() != "mat")
 				continue;

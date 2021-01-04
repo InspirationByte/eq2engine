@@ -144,11 +144,15 @@ public:
 			if (!addonsFind.IsDirectory())
 				continue;
 
-			EqString modInitPath = CombinePath(3, "Addons", addonsFind.GetPath(), "ModInit.lua");
+			EqString modInitPath;
+			CombinePath(modInitPath, 3, "Addons", addonsFind.GetPath(), "ModInit.lua");
 
 			if (g_fileSystem->FileExist(modInitPath.c_str(), SP_ROOT))
 			{
-				m_pGamesList->Append(CombinePath(2, "Addons", addonsFind.GetPath()).c_str());
+				EqString addonPath;
+				CombinePath(addonPath, 2, "Addons", addonsFind.GetPath());
+				
+				m_pGamesList->Append(addonPath.c_str());
 			}
 		}
 	}

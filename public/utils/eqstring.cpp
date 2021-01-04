@@ -477,6 +477,28 @@ int EqString::ReplaceSubstr(const char* find, const char* replaceTo, bool bCaseS
 	return foundStrIdx;
 }
 
+// swaps two strings
+void EqString::Swap(EqString& otherStr)
+{
+	if(m_pszString == m_baseBuffer)
+	{
+		char tempBuffer[sizeof(m_baseBuffer)];
+
+		memcpy(tempBuffer, m_baseBuffer, sizeof(m_baseBuffer));
+		memcpy(m_baseBuffer, otherStr.m_baseBuffer, sizeof(m_baseBuffer));
+		memcpy(otherStr.m_baseBuffer, tempBuffer, sizeof(m_baseBuffer));
+
+		// no need in swapping pointers
+	}
+	else
+	{
+		QuickSwap(m_pszString, otherStr.m_pszString);
+	}
+
+	QuickSwap(m_nLength, otherStr.m_nLength);
+	QuickSwap(m_nAllocated, otherStr.m_nAllocated);
+}
+
 // other
 EqString EqString::Path_Strip_Ext() const
 {

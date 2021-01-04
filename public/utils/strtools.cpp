@@ -80,9 +80,9 @@ wchar_t* wcsncpy(wchar_t * __restrict dst, const wchar_t * __restrict src, size_
 }
 #endif // PLAT_DROID
 
-EqString CombinePath(int num, ...)
+void CombinePath(EqString& outPath, int num, ...)
 {
-	EqString joinedPath;
+	EqString newStr;
 
 	va_list		argptr;
 	va_start (argptr,num);
@@ -94,16 +94,17 @@ EqString CombinePath(int num, ...)
 
 		if(pathPart.Length() > 0)
 		{
-			joinedPath.Append(_Es(pathPart));
+			newStr.Append(_Es(pathPart));
 
-			if(i != num-1 && *joinedPath.Right(1).c_str() != CORRECT_PATH_SEPARATOR )
-				joinedPath.Append(CORRECT_PATH_SEPARATOR);
+			if(i != num-1 && *newStr.Right(1).c_str() != CORRECT_PATH_SEPARATOR )
+				newStr.Append(CORRECT_PATH_SEPARATOR);
 		}
     }
 
 	va_end (argptr);
 
-	return joinedPath;
+	// drop old outPath, replace with new string
+	outPath.Swap(newStr);
 }
 
 void FixSlashes( char* str )
