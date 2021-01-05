@@ -12,7 +12,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "ConCommandBase.h"
-#include "InterfaceManager.h"
 
 #define CONCOMMAND_ARGUMENTS ConCommand* cmd, DkList<EqString>& args
 

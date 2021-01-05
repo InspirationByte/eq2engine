@@ -5,6 +5,9 @@
 // Description: Equilibrium localization
 //////////////////////////////////////////////////////////////////////////////////
 
+#define CORE_INTERFACE_EXPORT
+#include "InterfaceManager.h"
+
 #include "utils/strtools.h"
 
 #include "Localize.h"

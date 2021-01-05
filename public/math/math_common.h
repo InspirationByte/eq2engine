@@ -43,11 +43,7 @@ inline TR max(T x, T2 y) {return (TR)((x > y)? x : y);}
 inline void SinCos( float radians, float *sine, float *cosine )
 {
 	// GCC handles better...
-
-	//*sine = sin(radians);
-	//*cosine = cos(radians);
-
-#ifdef _WIN32
+#if defined(_WIN32) && !defined(_WIN64)
 	_asm
 	{
 		fld		DWORD PTR [radians]
@@ -60,19 +56,8 @@ inline void SinCos( float radians, float *sine, float *cosine )
 		fstp DWORD PTR [eax]
 	}
 #else
-
 	*sine = sinf(radians);
 	*cosine = cosf(radians);
-
-/*
-	register double __cosr, __sinr;
- 	__asm __volatile__
-    		("fsincos"
-     	: "=t" (__cosr), "=u" (__sinr) : "0" (radians));
-
-  	*sine = __sinr;
-  	*cosine = __cosr;
-	*/
 #endif
 
 }

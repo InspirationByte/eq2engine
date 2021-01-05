@@ -7,6 +7,10 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+
+#define CORE_INTERFACE_EXPORT
+#include "InterfaceManager.h"
+
 #include "ConCommandFactory.h"
 #include "IFileSystem.h"
 #include "utils/strtools.h"

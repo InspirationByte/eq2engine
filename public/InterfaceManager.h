@@ -41,7 +41,7 @@ public:
 #ifdef CROSSLINK_LIB
 #	define IEXPORTS			ONLY_IMPORTS
 #else
-#	ifdef DLL_EXPORT
+#	ifdef COREDLL_EXPORT
 #		define IEXPORTS		ONLY_EXPORTS
 #	else
 #		define IEXPORTS		ONLY_IMPORTS
@@ -79,30 +79,12 @@ public:
 //-----------------------------------------------------------------------------------------------------------------
 // new interface export macros with using singletons
 
-#ifdef DLL_EXPORT
+#ifdef CORE_INTERFACE_EXPORT
 
 // dll export version
 #	define INTERFACE_SINGLETON(abstractclass, classname, interfacename, localname)			\
 		IEXPORTS abstractclass* Get##classname();\
 		static abstractclass* localname = Get##classname();		// this thing is designed to fool the LLVM/GCC because it's fucking mystery
-
-/*
-		class _##classname##Singleton : public CSingletonAbstract<abstractclass>	\
-		{	\
-		public:\
-            virtual	~_##classname##Singleton()  { Destroy(); }  \
-		protected:	\
-			void	Initialize()	\
-			{	\
-				if(!pInstance) pInstance = (abstractclass*)Get##classname();	\
-			}	\
-			void	Destroy()	\
-			{	\
-				pInstance = NULL;	\
-			}	\
-		};	\
-		static _##classname##Singleton localname IFACE_PRIORITY_EXPORT2; \
-*/
 
 #define EXPORTED_INTERFACE( interfacename, classname)							\
 	static classname s_##classname IFACE_PRIORITY_EXPORT1;						\

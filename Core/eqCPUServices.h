@@ -9,9 +9,7 @@
 #define EQCPUSERVICES_H
 
 #include "IEqCPUServices.h"
-
 #include "platform/Platform.h"
-#include "InterfaceManager.h"
 
 class CEqCPUCaps : public IEqCPUCaps
 {

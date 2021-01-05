@@ -37,17 +37,8 @@
     <Filter Include="Source Files\CPU">
       <UniqueIdentifier>{cfdb1d12-3d79-4baa-bae9-efd20d511aa8}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\FileSystem\minizip">
-      <UniqueIdentifier>{25b2afa5-f9bc-4633-8c40-9216c56f3a84}</UniqueIdentifier>
-    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="CoreVersion.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="DkCore.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="ExceptionHandler.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -84,11 +75,8 @@
     <ClCompile Include="ZipFileReader.cpp">
       <Filter>Source Files\FileSystem</Filter>
     </ClCompile>
-    <ClCompile Include="minizip\ioapi.c">
-      <Filter>Source Files\FileSystem\minizip</Filter>
-    </ClCompile>
-    <ClCompile Include="minizip\unzip.c">
-      <Filter>Source Files\FileSystem\minizip</Filter>
+    <ClCompile Include="eqCore.cpp">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -131,23 +119,8 @@
     <ClInclude Include="..\public\DebugInterface.h">
       <Filter>Source Files\Debug</Filter>
     </ClInclude>
-    <ClInclude Include="..\public\IDkCore.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="CoreVersion.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\public\core_base_header.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="ConCommandFactory.h">
       <Filter>Source Files\Console</Filter>
-    </ClInclude>
-    <ClInclude Include="DkCore.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\public\core_interface_expose.h">
-      <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="DPKFileReader.h">
       <Filter>Source Files\FileSystem</Filter>
@@ -161,17 +134,14 @@
     <ClInclude Include="eqCPUServices.h">
       <Filter>Source Files\CPU</Filter>
     </ClInclude>
-    <ClInclude Include="minizip\ioapi.h">
-      <Filter>Source Files\FileSystem\minizip</Filter>
-    </ClInclude>
-    <ClInclude Include="minizip\unzip.h">
-      <Filter>Source Files\FileSystem\minizip</Filter>
-    </ClInclude>
     <ClInclude Include="ZipFileReader.h">
       <Filter>Source Files\FileSystem</Filter>
     </ClInclude>
     <ClInclude Include="BasePackageFileReader.h">
       <Filter>Source Files\FileSystem</Filter>
+    </ClInclude>
+    <ClInclude Include="eqCore.h">
+      <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -180,7 +150,10 @@
     </ResourceCompile>
   </ItemGroup>
   <ItemGroup>
-    <Library Include="..\src_dependency\zlib\contrib\vstudio\vc14\x86\ZlibStatReleaseWithoutAsm\zlibstat.lib">
+    <Library Include="..\src_dependency\zlib\Release\MiniZip.lib">
+      <Filter>Libs</Filter>
+    </Library>
+    <Library Include="..\src_dependency\zlib\Release\ZLib.lib">
       <Filter>Libs</Filter>
     </Library>
   </ItemGroup>

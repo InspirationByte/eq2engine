@@ -70,7 +70,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <AdditionalIncludeDirectories>..\FileSystem;..\Engine\Imaging;..\Engine;..\public;..\public\core;..\src_dependency\sdl2\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;SUPRESS_DEVMESSAGES;USECRTMEMDEBUG;_CRT_SECURE_NO_WARNINGS;_CRT_SECURE_NO_DEPRECATE;DLL_EXPORT;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_CRT_SECURE_NO_WARNINGS;_CRT_SECURE_NO_DEPRECATE;COREDLL_EXPORT;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <PrecompiledHeader>
       </PrecompiledHeader>
@@ -133,9 +133,8 @@
     <PostBuildEvent />
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="CoreVersion.cpp" />
     <ClCompile Include="eqCPUServices.cpp" />
-    <ClCompile Include="DkCore.cpp" />
+    <ClCompile Include="eqCore.cpp" />
     <ClCompile Include="DPKFileReader.cpp" />
     <ClCompile Include="ExceptionHandler.cpp" />
     <ClCompile Include="ConCommandFactory.cpp" />
@@ -143,8 +142,6 @@
     <ClCompile Include="DebugInterface.cpp" />
     <ClCompile Include="FileSystem.cpp" />
     <ClCompile Include="Localize.cpp" />
-    <ClCompile Include="minizip\ioapi.c" />
-    <ClCompile Include="minizip\unzip.c" />
     <ClCompile Include="platform\MessageBox.cpp" />
     <ClCompile Include="platform\Platform.cpp" />
     <ClCompile Include="ppmem.cpp" />
@@ -153,7 +150,6 @@
   <ItemGroup>
     <ClInclude Include="..\public\core\cpuInstrDefs.h" />
     <ClInclude Include="..\public\core\IEqCPUServices.h" />
-    <ClInclude Include="..\public\core_interface_expose.h" />
     <ClInclude Include="BasePackageFileReader.h" />
     <ClInclude Include="DPKFileReader.h" />
     <ClInclude Include="eqCPUServices.h" />
@@ -161,21 +157,16 @@
     <ClInclude Include="Localize.h" />
     <ClInclude Include="CmdLineParser.h" />
     <ClInclude Include="ConCommandFactory.h" />
-    <ClInclude Include="..\public\core_base_header.h" />
-    <ClInclude Include="CoreVersion.h" />
     <ClInclude Include="..\public\DebugInterface.h" />
-    <ClInclude Include="DkCore.h" />
+    <ClInclude Include="eqCore.h" />
     <ClInclude Include="ExceptionHandler.h" />
     <ClInclude Include="..\public\ICmdLineParser.h" />
     <ClInclude Include="..\public\ICommandAccessor.h" />
     <ClInclude Include="..\public\IConCommandFactory.h" />
-    <ClInclude Include="..\public\IDkCore.h" />
     <ClInclude Include="..\public\InterfaceManager.h" />
     <ClInclude Include="..\public\Platform\Platform.h" />
     <ClInclude Include="..\public\Utils\String.h" />
     <ClInclude Include="..\public\Utils\strtools.h" />
-    <ClInclude Include="minizip\ioapi.h" />
-    <ClInclude Include="minizip\unzip.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="ZipFileReader.h" />
   </ItemGroup>
@@ -191,7 +182,8 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <Library Include="..\src_dependency\zlib\contrib\vstudio\vc14\x86\ZlibStatReleaseWithoutAsm\zlibstat.lib" />
+    <Library Include="..\src_dependency\zlib\Release\MiniZip.lib" />
+    <Library Include="..\src_dependency\zlib\Release\ZLib.lib" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

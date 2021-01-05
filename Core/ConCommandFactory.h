@@ -13,8 +13,10 @@
 #include <stdlib.h>
 #include "ConVar.h"
 #include "ConCommand.h"
-#include "InterfaceManager.h"
 #include "IConCommandFactory.h"
+
+#define CORE_INTERFACE_EXPORT
+#include "InterfaceManager.h"
 
 //	Console variable factory
 

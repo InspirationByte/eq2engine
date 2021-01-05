@@ -5,6 +5,9 @@
 // Description: CPU detection
 //////////////////////////////////////////////////////////////////////////////////
 
+#define CORE_INTERFACE_EXPORT
+#include "InterfaceManager.h"
+
 #include "eqCPUServices.h"
 #include "DebugInterface.h"
 #include "ConCommandFactory.h"

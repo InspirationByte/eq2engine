@@ -5,6 +5,9 @@
 // Description: Equilibrium Filesystem
 //////////////////////////////////////////////////////////////////////////////////
 
+#define CORE_INTERFACE_EXPORT
+#include "InterfaceManager.h"
+
 #include "FileSystem.h"
 
 #include "utils/SmartPtr.h"
@@ -17,7 +20,6 @@
 #include "ZipFileReader.h"
 
 #ifdef _WIN32 // Not in linux
-
 #include <direct.h>	// mkdir()
 #include <io.h> // _access()
 #define access		_access
@@ -29,12 +31,23 @@
 #include <glob.h>     // glob(), globfree()
 #endif
 
+#include "ConCommand.h"
 #include "DebugInterface.h"
 #include "utils/CRC32.h"
 
 const char archiveKey[] = { 'W','@','k','m','U','5','1','c', 0 };
 
 EXPORTED_INTERFACE(IFileSystem, CFileSystem);
+
+DECLARE_CONCOMMAND_FN(addpackage)
+{
+	if (CMD_ARGC)
+		g_fileSystem->AddPackage(CMD_ARGV(0).c_str(), SP_ROOT);
+	else
+		MsgWarning("Usage: fs_addpackage <package name>\n");
+}
+
+ConCommand* c_addpackage = NULL;
 
 //------------------------------------------------------------------------------
 // File stream
@@ -160,6 +173,11 @@ SearchPath_e GetSearchPathByName(const char* str)
 
 bool CFileSystem::Init(bool bEditorMode)
 {
+	ASSERTMSG(!m_isInit, "ERROR - Filesystem module already initialized!");
+
+	if (m_isInit)
+		return false;
+	
     Msg("\n-------- Filesystem Init --------\n\n");
 
     m_editorMode = bEditorMode;
@@ -205,6 +223,8 @@ bool CFileSystem::Init(bool bEditorMode)
 
 	g_localizer->Init();
 
+	c_addpackage = new ConCommand("fs_addpackage", CONCOMMAND_FN(addpackage), "Add packages");
+
 	m_isInit = true;
 
     return true;
@@ -235,6 +255,9 @@ void CFileSystem::Shutdown()
 	m_directories.clear();
 
 	g_localizer->Shutdown();
+
+	delete c_addpackage;
+	c_addpackage = NULL;
 }
 
 void CFileSystem::SetBasePath(const char* path) 

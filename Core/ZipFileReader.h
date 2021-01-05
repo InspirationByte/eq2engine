@@ -9,7 +9,7 @@
 #define ZIPFILEREADER_H
 
 #include "BasePackageFileReader.h"
-#include "minizip/unzip.h"
+#include "contrib/minizip/unzip.h"
 
 #include "utils/DkList.h"
 #include "IVirtualStream.h"

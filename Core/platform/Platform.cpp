@@ -7,57 +7,6 @@
 
 #include "platform/Platform.h"
 #include "platform/MessageBox.h"
-#include "DebugInterface.h"
-#include <time.h>
-
-#ifndef _WIN32
-#include <stdarg.h>
-#endif // _WIN32
-
-#ifdef _WIN32
-
-static LARGE_INTEGER g_PerformanceFrequency;
-static LARGE_INTEGER g_ClockStart;
-
-#else
-
-#include <sys/time.h>
-#include <errno.h>
-timeval start;
-
-#endif // _WIN32
-
-// Platform QueryPerformanceCounterkAlertCautionAlert initializer
-IEXPORTS void Platform_InitTime()
-{
-#ifdef _WIN32
-    if ( !g_PerformanceFrequency.QuadPart )
-    {
-        QueryPerformanceFrequency(&g_PerformanceFrequency);
-        QueryPerformanceCounter(&g_ClockStart);
-    }
-#else
-	gettimeofday(&start, NULL);
-#endif // _WIN32
-}
-
-// returns current time since application is running
-IEXPORTS float Platform_GetCurrentTime()
-{
-#ifdef _WIN32
-
-    LARGE_INTEGER curr;
-    QueryPerformanceCounter(&curr);
-    return (float) (double(curr.QuadPart) / double(g_PerformanceFrequency.QuadPart));
-
-#else
-
-    timeval curr;
-    gettimeofday(&curr, NULL);
-    return (float(curr.tv_sec - start.tv_sec) + 0.000001f * float(curr.tv_usec - start.tv_usec));
-
-#endif // _WIN32
-}
 
 // sleeps the execution thread and let other processes to run for a specified amount of time.
 IEXPORTS void Platform_Sleep(uint32 nMilliseconds)
@@ -75,7 +24,6 @@ IEXPORTS void Platform_Sleep(uint32 nMilliseconds)
     while(nanosleep(&ts, NULL)==-1 && errno == EINTR){}
 #endif //_WIN32
 }
-
 
 IEXPORTS void AssertValidReadPtr( void* ptr, int count/* = 1*/ )
 {

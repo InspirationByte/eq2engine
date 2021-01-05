@@ -12,7 +12,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "ConCommandBase.h"
-#include "InterfaceManager.h"
 
 // The Microsoft C++ Compiler fixes the typedef problem
 // Buf for linux we needs this:
