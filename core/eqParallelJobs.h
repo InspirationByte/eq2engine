@@ -32,7 +32,7 @@ This is the diferrent conception of jobs
 //
 // The job execution thread
 //
-class CEqJobThread : public Threading::CEqThread, public IEqJobThread
+class CEqJobThread : public Threading::CEqThread
 {
 	friend class CEqParallelJobThreads;
 public:
@@ -87,11 +87,17 @@ protected:
 
 	// called from worker thread
 	bool							AssignFreeJob( CEqJobThread* requestBy );
+	void							AddCompleted(eqParallelJob_t* job);
+	void							CompleteJobCallbacks();
 
-	Threading::CEqMutex				m_mutex;
+
 	DkList<CEqJobThread*>			m_jobThreads;
 
 	DkLinkedList<eqParallelJob_t*>	m_workQueue;
+	DkLinkedList<eqParallelJob_t*>	m_completedJobs;
+
+	Threading::CEqMutex				m_mutex;
+	uintptr_t						m_mainThreadId;
 };
 
 #endif // EQPARALLELJOBS_H

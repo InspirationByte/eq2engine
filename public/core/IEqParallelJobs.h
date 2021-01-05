@@ -25,19 +25,12 @@ struct eqParallelJob_t
 	{
 	}
 
-	jobFunction_t	func;
-	jobComplete_t	onComplete;
+	jobFunction_t	func;				// job function. This is a parallel work
+	jobComplete_t	onComplete;			// job completion callback after all numIter is complete. Always executed before Submit() called on job manager
 	void* arguments;
 	volatile int	flags;		// EJobFlags
 	uintptr_t		threadId;	// выбор потока
 	int				numIter;
-};
-
-// job runner thread
-abstract_class IEqJobThread
-{
-	virtual bool						AssignJob(eqParallelJob_t* job) = 0;
-	virtual const eqParallelJob_t*		GetCurrentJob() const = 0;
 };
 
 // job arranger thread
