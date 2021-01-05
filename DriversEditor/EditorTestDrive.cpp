@@ -149,7 +149,8 @@ void CEditorTestGame::OnKeyPress(int keyCode, bool down)
 
 CCar* CEditorTestGame::CreateCar(const char* name)
 {
-	EqString configPath = CombinePath(2, "scripts/vehicles", _Es(name) + ".txt");
+	EqString configPath;
+	CombinePath(configPath, 2, "scripts/vehicles", _Es(name) + ".txt");
 
 	kvkeybase_t kvb;
 	if (!KV_LoadFromFile(configPath.c_str(), SP_MOD, &kvb))

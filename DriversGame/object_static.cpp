@@ -154,7 +154,7 @@ void CObject_Static::Draw( int nRenderFlags )
 
 void CObject_Static::Simulate(float fDt)
 {
-	DoOnSimulateCallback(fDt);
+	BaseClass::Simulate(fDt);
 
 	if (m_killed)
 		return;

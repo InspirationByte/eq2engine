@@ -159,7 +159,7 @@ bool CZipFileReader::SetPackageFilename(const char* filename)
 	char path[2048];
 
 	m_packageName = filename;
-	m_packagePath = CombinePath(2, g_fileSystem->GetBasePath(), filename);
+	CombinePath(m_packagePath, 2, g_fileSystem->GetBasePath(), filename);
 
 	// perform test
 	unzFile zip = GetNewZipHandle();

@@ -1341,7 +1341,7 @@ void CAIPursuerCar::SetMaxSpeed(float fSpeed)
 	m_savedMaxSpeed = fSpeed;
 
 	if (InPursuit())
-		m_savedMaxSpeed = fSpeed;
+		m_maxSpeed = fSpeed;
 }
 
 void CAIPursuerCar::SetTorqueScale(float fScale)

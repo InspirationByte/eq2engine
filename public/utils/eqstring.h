@@ -128,6 +128,9 @@ public:
 	// searches for substring and replaces it
 	int			ReplaceSubstr(const char* find, const char* replaceTo, bool bCaseSensetive = false, int nStart = 0);
 
+	// swaps two strings
+	void		Swap(EqString& otherStr);
+	
 	//------------------------------------------------------------------------------------------------
 
 	EqString& operator = (const EqString& other)

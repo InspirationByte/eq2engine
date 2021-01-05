@@ -18,33 +18,33 @@
 //-----------------------------------------------------------------
 // TODO: interface code
 
-typedef int VoiceHandle_t;
-#define VOICE_INVALID_HANDLE (-1)
+typedef int ChannelHandle_t;
+#define CHANNEL_INVALID_HANDLE (-1)
 
 enum EVoiceUpdateFlags
 {
-	VOICE_UPDATE_POSITION		= (1 << 0),
-	VOICE_UPDATE_VELOCITY		= (1 << 1),
-	VOICE_UPDATE_VOLUME			= (1 << 2),
-	VOICE_UPDATE_PITCH			= (1 << 3),
-	VOICE_UPDATE_REF_DIST		= (1 << 4),
-	VOICE_UPDATE_AIRABSORPTION	= (1 << 5),
-	VOICE_UPDATE_RELATIVE		= (1 << 6),
-	VOICE_UPDATE_STATE			= (1 << 7),
-	VOICE_UPDATE_LOOPING		= (1 << 8),
+	AUDIO_CHAN_UPDATE_POSITION			= (1 << 0),
+	AUDIO_CHAN_UPDATE_VELOCITY			= (1 << 1),
+	AUDIO_CHAN_UPDATE_VOLUME			= (1 << 2),
+	AUDIO_CHAN_UPDATE_PITCH				= (1 << 3),
+	AUDIO_CHAN_UPDATE_REF_DIST			= (1 << 4),
+	AUDIO_CHAN_UPDATE_AIRABSORPTION		= (1 << 5),
+	AUDIO_CHAN_UPDATE_RELATIVE			= (1 << 6),
+	AUDIO_CHAN_UPDATE_STATE				= (1 << 7),
+	AUDIO_CHAN_UPDATE_LOOPING			= (1 << 8),
 
-	VOICE_UPDATE_DO_REWIND			= (1 << 16),
-	VOICE_UPDATE_RELEASE_ON_STOP	= (1 << 17)
+	AUDIO_CHAN_UPDATE_DO_REWIND			= (1 << 16),
+	AUDIO_CHAN_UPDATE_RELEASE_ON_STOP	= (1 << 17)
 };
 
-enum EVoiceState
+enum EChannelState
 {
-	VOICE_STATE_STOPPED = 0,
-	VOICE_STATE_PLAYING,
-	VOICE_STATE_PAUSED
+	CHANNEL_STATE_STOPPED = 0,
+	CHANNEL_STATE_PLAYING,
+	CHANNEL_STATE_PAUSED
 };
 
-struct voiceParams_t
+struct channelParams_t
 {
 	Vector3D			position;
 	Vector3D			velocity;
@@ -53,31 +53,31 @@ struct voiceParams_t
 	float				referenceDistance;
 	float				rolloff;
 	float				airAbsorption;
-	EVoiceState			state;
+	EChannelState		state;
 	bool				relative;
 	bool				looping;
 	bool				releaseOnStop;
-	VoiceHandle_t		id;						// read-only
+	ChannelHandle_t		id;						// read-only
 };
 
-typedef int (*VoiceUpdateCallback)(void* obj, voiceParams_t& params);		// returns EVoiceUpdateFlags
+typedef int (*ChannelUpdateCallback)(void* obj, channelParams_t& params);		// returns EVoiceUpdateFlags
 
 //-----------------------------------------------------------------
 
 #define STREAM_BUFFER_COUNT		(4)
 #define STREAM_BUFFER_SIZE		(1024*8) // 8 kb
 
-struct AudioVoice_t
+struct AudioChannel_t
 {
 	ALuint					m_buffers[STREAM_BUFFER_COUNT];
 	ISoundSource*			m_sample;
-	VoiceUpdateCallback		m_callback;
+	ChannelUpdateCallback	m_callback;
 	void*					m_callbackObject;
 	ALuint					m_source;
 	int						m_streamPos;
-	EVoiceState				m_state;
+	EChannelState			m_state;
 
-	VoiceHandle_t			m_id;
+	ChannelHandle_t			m_id;
 	bool					m_releaseOnStop;
 	bool					m_looping;
 	
@@ -112,25 +112,25 @@ public:
 	ISoundSource*			LoadSample(const char* filename);
 	void					FreeSample(ISoundSource* sample);
 
-	VoiceHandle_t			GetFreeVoice(ISoundSource* sample, void* callbackObject, VoiceUpdateCallback fnCallback);
-	void					ReleaseVoice(VoiceHandle_t voice);
+	ChannelHandle_t			GetFreeChannel(ISoundSource* sample, void* callbackObject, ChannelUpdateCallback fnCallback);
+	void					ReleaseChannel(ChannelHandle_t channel);
 
-	void					GetVoiceParams(VoiceHandle_t handle, voiceParams_t& params);
-	void					UpdateVoice(VoiceHandle_t handle, voiceParams_t params, int mask);
+	void					GetChannelParams(ChannelHandle_t handle, channelParams_t& params);
+	void					UpdateChannel(ChannelHandle_t handle, channelParams_t params, int mask);
 
 private:
-	void					SuspendVoicesWithSample(ISoundSource* sample);
+	void					SuspendChannelsWithSample(ISoundSource* sample);
 
 	bool					InitContext();
 	void					DestroyContext();
 
-	bool					QueueStreamVoice(AudioVoice_t& voice, ALuint buffer);
-	void					SetupVoice(AudioVoice_t& voice, ISoundSource* sample);
+	bool					QueueStreamChannel(AudioChannel_t& channel, ALuint buffer);
+	void					SetupChannel(AudioChannel_t& channel, ISoundSource* sample);
 
-	void					EmptyBuffers(AudioVoice_t& voice);
-	void					DoVoiceUpdate(AudioVoice_t& voice);
+	void					EmptyBuffers(AudioChannel_t& channel);
+	void					DoChannelUpdate(AudioChannel_t& channel);
 
-	DkList<AudioVoice_t>	m_voices;
+	DkList<AudioChannel_t>	m_channels;
 	DkList<ISoundSource*>	m_samples;
 
 	ALCcontext*				m_ctx;

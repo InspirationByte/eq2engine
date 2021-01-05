@@ -82,7 +82,7 @@ void CState_MainMenu::OnEnter( CBaseStateHandler* from )
 
 	// play title music if it's not playing
 	ISoundPlayable* musicChannel = soundsystem->GetStaticStreamChannel(CHAN_STREAM);
-	if (musicChannel->GetState() != SOUND_STATE_PLAYING)
+	if (musicChannel->GetState() != SOUND_STATE_PLAYING && musicChannel->GetSample() == NULL)
 	{
 		EmitSound_t musicES("menu.titlemusic");
 		g_sounds->Emit2DSound(&musicES);

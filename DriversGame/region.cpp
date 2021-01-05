@@ -444,14 +444,6 @@ void CLevelRegion::CollectVisibleOccluders( occludingFrustum_t& frustumOccluders
 
 void CLevelRegion::Render(const Vector3D& cameraPosition, const occludingFrustum_t& occlFrustum, int nRenderFlags)
 {
-#ifndef EDITOR
-	{
-		CScopedMutex m(m_level->m_mutex);
-		if (!m_isLoaded)
-			return;
-	}
-#endif // EDITOR
-
 	PROFILE_FUNC();
 
 	const ShaderAPICaps_t& caps = g_pShaderAPI->GetCaps();
@@ -748,19 +740,11 @@ void CLevelRegion::InitNavigationGrid()
 	// THIS DOES NOT WORK WELL, BUT SHOULD...
 	if (m_navGrid[0].dirty || m_navGrid[1].dirty)
 	{
-		//for (int i = 0; i < m_objects.numElem(); i++)
-		//	m_level->Nav_AddObstacle(this, m_objects[i]);
-
-		
 		g_parallelJobs->AddJob(NavAddObstacleJob, this, m_objects.numElem());
-		g_parallelJobs->Submit();
-		
 
 		m_navGrid[0].dirty = false;
 		m_navGrid[1].dirty = false;
 	}
-
-	
 
 	// init debug maps
 	if (nav_debug_map.GetInt() > 0)
@@ -983,7 +967,7 @@ void CLevelRegion::GetDecalPolygons(decalPrimitives_t& polys, occludingFrustum_t
 	}
 }
 
-void CLevelRegion::InitRegionHeightfieldsJob(void *data, int i)
+void CLevelRegion::InitRegionHeightfieldsGraphicsJob(void* data, int i)
 {
 	CLevelRegion* reg = (CLevelRegion*)data;
 
@@ -994,10 +978,19 @@ void CLevelRegion::InitRegionHeightfieldsJob(void *data, int i)
 		return;
 
 	reg->m_heightfield[i]->GenerateRenderData(nav_debug_map.GetBool());
+}
 
-#ifndef EDITOR
+void CLevelRegion::InitRegionHeightfieldsPhysicsJob(void* data, int i)
+{
+	CLevelRegion* reg = (CLevelRegion*)data;
+	
+	if (!reg->m_heightfield[i])
+		return;
+
+	if (reg->m_heightfield[i]->m_levOffset == 0)
+		return;
+
 	g_pPhysics->AddHeightField(reg->m_heightfield[i]);
-#endif //EDITOR
 }
 
 ConVar w_nospawn("w_nospawn", "0", nullptr, CV_CHEAT);
@@ -1006,23 +999,6 @@ void CLevelRegion::ReadLoadRegion(IVirtualStream* stream, DkList<CLevObjectDef*>
 {
 	if(m_isLoaded)
 		return;
-
-#ifndef EDITOR
-	if (!g_State_Game->IsGameRunning())
-	{
-#endif
-		g_parallelJobs->AddJob(InitRegionHeightfieldsJob, this, GetNumHFields());
-		g_parallelJobs->Submit();
-#ifndef EDITOR
-	}
-	else
-	{
-		for (int i = 0; i < GetNumHFields(); i++)
-		{
-			InitRegionHeightfieldsJob(this, i);
-		}
-	}
-#endif
 
 	levRegionDataInfo_t	regdatahdr;
 	stream->Read(&regdatahdr, 1, sizeof(levRegionDataInfo_t));
@@ -1163,12 +1139,26 @@ void CLevelRegion::ReadLoadRegion(IVirtualStream* stream, DkList<CLevObjectDef*>
 	}
 
 	// init navigation grid
-	InitNavigationGrid();
+	g_parallelJobs->AddJob(InitNavigationGridJob, this);
+
+#ifndef EDITOR
+	// Generate heightfield geometry
+	g_parallelJobs->AddJob(InitRegionHeightfieldsPhysicsJob, this, GetNumHFields());
+	g_parallelJobs->AddJob(InitRegionHeightfieldsGraphicsJob, this, GetNumHFields());
+#endif
+
+	g_parallelJobs->Submit();
 
 	{
 		CScopedMutex m(m_level->m_mutex);
 		m_isLoaded = true;
 	}
+}
+
+void CLevelRegion::InitNavigationGridJob(void* data, int i)
+{
+	CLevelRegion* reg = (CLevelRegion*)data;
+	reg->InitNavigationGrid();
 }
 
 void CLevelRegion::RespawnObjects()

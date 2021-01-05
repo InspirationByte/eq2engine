@@ -315,8 +315,9 @@ void LoadMaterialImages(const char* materialFileName)
 			{
 				const char* imageName = KV_GetValueString(key, 0, "");
 
-				EqString filename( CombinePath(2, g_batchConfig.sourceMaterialPath.c_str(), varargs("%s.%s", imageName,  g_batchConfig.sourceImageExt.c_str())) );
-
+				EqString filename;
+				CombinePath(filename, 2, g_batchConfig.sourceMaterialPath.c_str(), varargs("%s.%s", imageName, g_batchConfig.sourceImageExt.c_str()));
+				
 				if (!g_fileSystem->FileExist(filename.c_str()))
 				{
 					MsgError("  - texture '%s' does not exists!\n", filename.c_str());
@@ -326,7 +327,9 @@ void LoadMaterialImages(const char* materialFileName)
 				if (!matFileSaved)
 				{
 					// make path
-					EqString targetFilePath(CombinePath(2, g_targetProps.targetFolder.c_str(), _Es(imageName).Path_Strip_Name().c_str()));
+					EqString targetFilePath;
+					CombinePath(targetFilePath, 2, g_targetProps.targetFolder.c_str(), _Es(imageName).Path_Strip_Name().c_str());
+					
 					MakePath(targetFilePath.c_str());
 
 					EqString materialFileName(targetFilePath.Path_Strip_Name() + _Es(materialFileName).Path_Strip_Path());
@@ -367,13 +370,15 @@ void SearchFolderForMaterialsAndGetTextures(const char* wildcard)
 		{
 			if (g_fileSystem->FindIsDirectory(findData) && stricmp(fileName, ".") && stricmp(fileName, ".."))
 			{
-				EqString searchTemplate(CombinePath(3, searchFolder.c_str(), fileName, "*.*"));
+				EqString searchTemplate;
+				CombinePath(searchTemplate, 3, searchFolder.c_str(), fileName, "*.*");
 
 				SearchFolderForMaterialsAndGetTextures(searchTemplate.c_str());
 			}
 			else if (xstristr(fileName, ".mat"))
 			{
-				EqString fullMaterialPath(CombinePath(2, searchFolder.c_str(), fileName));
+				EqString fullMaterialPath;
+				CombinePath(fullMaterialPath, 2, searchFolder.c_str(), fileName);
 				LoadMaterialImages(fullMaterialPath.c_str());
 			}
 		}
@@ -398,9 +403,14 @@ bool hasMatchingCRC(uint32 crc)
 void ProcessTexture(TexInfo_t* textureInfo)
 {
 	// before this, create folders...
-	EqString sourceFilename(CombinePath(2, g_batchConfig.sourceMaterialPath.c_str(), varargs("%s.%s", textureInfo->sourcePath.c_str(), g_batchConfig.sourceImageExt.c_str())) );
-	EqString targetFilename(CombinePath(2, g_targetProps.targetFolder.c_str(), textureInfo->sourcePath.Path_Strip_Ext() + ".dds" ));
-	EqString targetFilePath(CombinePath(2, g_targetProps.targetFolder.c_str(), textureInfo->sourcePath.Path_Strip_Name().c_str() ));
+	EqString sourceFilename;
+	CombinePath(sourceFilename, 2, g_batchConfig.sourceMaterialPath.c_str(), varargs("%s.%s", textureInfo->sourcePath.c_str(), g_batchConfig.sourceImageExt.c_str()));
+	
+	EqString targetFilename;
+	CombinePath(targetFilename, 2, g_targetProps.targetFolder.c_str(), textureInfo->sourcePath.Path_Strip_Ext() + ".dds");
+	
+	EqString targetFilePath;
+	CombinePath(targetFilePath, 2, g_targetProps.targetFolder.c_str(), textureInfo->sourcePath.Path_Strip_Name().c_str());
 
 	targetFilePath = targetFilePath.TrimChar(CORRECT_PATH_SEPARATOR);
 
@@ -500,7 +510,8 @@ void CookMaterialsToTarget(const char* pszTargetName)
 
 	// perform batch conversion
 	{
-		EqString searchTemplate(CombinePath(2, g_batchConfig.sourceMaterialPath.c_str(), "*.*"));
+		EqString searchTemplate;
+		CombinePath(searchTemplate, 2, g_batchConfig.sourceMaterialPath.c_str(), "*.*");
 
 		Msg("Material source path: '%s'\n", searchTemplate.c_str());
 

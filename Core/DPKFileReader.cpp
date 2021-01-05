@@ -376,7 +376,7 @@ bool CDPKFileReader::SetPackageFilename(const char *filename)
 	m_dpkFiles = nullptr;
 
     m_packageName = filename;
-	m_packagePath = CombinePath(2, g_fileSystem->GetBasePath(), filename);
+	CombinePath(m_packagePath, 2, g_fileSystem->GetBasePath(), filename);
 
     FILE* dpkFile = fopen(m_packagePath.c_str(),"rb");
 

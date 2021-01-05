@@ -216,7 +216,8 @@ void CDrvSynHUDManager::SetHudScheme(const char* name)
 		kvkeybase_t* hudBasePath = hudKvs.FindKeyBase("base");
 		if(hudBasePath)
 		{
-			EqString hudPath(CombinePath(2, baseHudPath.c_str(), KV_GetValueString(hudBasePath)));
+			EqString hudPath;
+			CombinePath(hudPath, 2, baseHudPath.c_str(), KV_GetValueString(hudBasePath));
 			baseHud = KV_LoadFromFile(hudPath.c_str(), SP_MOD);
 
 			if(!baseHud)

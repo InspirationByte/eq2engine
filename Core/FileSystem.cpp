@@ -939,15 +939,16 @@ const char* CFileSystem::FindFirst(const char* wildcard, DKFINDDATA** findData, 
 
 	if(searchPath == SP_DATA)
 	{
-		fsBaseDir = CombinePath(2, m_basePath.c_str(), m_dataDir.c_str());
+		CombinePath(fsBaseDir, 2, m_basePath.c_str(), m_dataDir.c_str());
 	}
 	else if(searchPath == SP_MOD)
 	{
 		newFind->searchPathId = 0;
-		fsBaseDir = CombinePath(2, m_basePath.c_str(), m_directories[0].path.c_str());
+		CombinePath(fsBaseDir, 2, m_basePath.c_str(), m_directories[0].path.c_str());
 	}
 
-	EqString searchWildcard( CombinePath(2, fsBaseDir.c_str(), newFind->wildcard.c_str()) );
+	EqString searchWildcard;
+	CombinePath(searchWildcard, 2, fsBaseDir.c_str(), newFind->wildcard.c_str());
 
 #ifdef _WIN32
 	newFind->fileHandle = ::FindFirstFileA(searchWildcard.c_str(), &newFind->wfd);
@@ -973,9 +974,8 @@ const char* CFileSystem::FindFirst(const char* wildcard, DKFINDDATA** findData, 
 		// try reinitialize
 		while(newFind->searchPathId < m_directories.numElem())
 		{
-			fsBaseDir = CombinePath(2, m_basePath.c_str(), m_directories[newFind->searchPathId].path.c_str());
-
-			searchWildcard = CombinePath(2, fsBaseDir.c_str(), newFind->wildcard.c_str());
+			CombinePath(fsBaseDir, 2, m_basePath.c_str(), m_directories[newFind->searchPathId].path.c_str());
+			CombinePath(searchWildcard, 2, fsBaseDir.c_str(), newFind->wildcard.c_str());
 
 #ifdef _WIN32
 			newFind->fileHandle = ::FindFirstFileA(searchWildcard.c_str(), &newFind->wfd);
@@ -1024,9 +1024,11 @@ const char* CFileSystem::FindNext(DKFINDDATA* findData) const
 		// try reinitialize
 		while(findData->searchPathId < m_directories.numElem())
 		{
-			EqString fsBaseDir = CombinePath(2, m_basePath.c_str(), m_directories[findData->searchPathId].path.c_str());
-
-			EqString searchWildcard( CombinePath(2, fsBaseDir.c_str(), findData->wildcard.c_str()) );
+			EqString fsBaseDir;
+			EqString searchWildcard;
+			
+			CombinePath(fsBaseDir, 2, m_basePath.c_str(), m_directories[findData->searchPathId].path.c_str());		
+			CombinePath(searchWildcard, 2, fsBaseDir.c_str(), findData->wildcard.c_str());
 
 #ifdef _WIN32
 			// close existing find

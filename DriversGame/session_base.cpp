@@ -220,7 +220,7 @@ void CGameSessionBase::ClearCarsPedsRegistry()
 void CGameSessionBase::Shutdown()
 {
 	g_pAIManager->Shutdown();
-
+	
 	m_leadCar = NULL;
 
 	ClearCarsPedsRegistry();
@@ -579,7 +579,9 @@ vehicleConfig_t* CGameSessionBase::GetVehicleConfig(const char* name)
 		return exConfig;
 
 	// try load new one
-	EqString configPath(CombinePath(2, "scripts/vehicles", name) + ".txt");
+	EqString configPath;
+	CombinePath(configPath, 2, "scripts/vehicles", name);
+	configPath.Append(".txt");
 
 	kvkeybase_t kvb;
 	if (!KV_LoadFromFile(configPath.c_str(), SP_MOD, &kvb))

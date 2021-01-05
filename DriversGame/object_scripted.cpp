@@ -87,6 +87,8 @@ void CObject_Scripted::Simulate(float fDt)
 		if(!m_simulate.Call(1, 0, 0))
 			MsgError("Error in script call Simulate:\n%s\n", OOLUA::get_last_error(state).c_str());
 	}
+
+	BaseClass::Simulate(fDt);
 }
 
 OOLUA_EXPORT_FUNCTIONS(CObject_Scripted)

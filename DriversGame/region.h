@@ -267,7 +267,9 @@ public:
 	//----------------------------------------------------
 
 	static void						NavAddObstacleJob(void *data, int i);
-	static void						InitRegionHeightfieldsJob(void *data, int i);
+	static void						InitRegionHeightfieldsGraphicsJob(void* data, int i);
+	static void						InitRegionHeightfieldsPhysicsJob(void *data, int i);
+	static void						InitNavigationGridJob(void* data, int i);
 
 	BoundingBox						m_bbox;
 

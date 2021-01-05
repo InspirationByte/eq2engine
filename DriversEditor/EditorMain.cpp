@@ -144,11 +144,15 @@ public:
 			if (!addonsFind.IsDirectory())
 				continue;
 
-			EqString modInitPath = CombinePath(3, "Addons", addonsFind.GetPath(), "ModInit.lua");
+			EqString modInitPath;
+			CombinePath(modInitPath, 3, "Addons", addonsFind.GetPath(), "ModInit.lua");
 
 			if (g_fileSystem->FileExist(modInitPath.c_str(), SP_ROOT))
 			{
-				m_pGamesList->Append(CombinePath(2, "Addons", addonsFind.GetPath()).c_str());
+				EqString addonPath;
+				CombinePath(addonPath, 2, "Addons", addonsFind.GetPath());
+				
+				m_pGamesList->Append(addonPath.c_str());
 			}
 		}
 	}
@@ -1422,6 +1426,8 @@ void CMainWindow::ReDraw()
 		g_pGameWorld->SetView(g_pCameraParams);
 		g_pGameWorld->BuildViewMatrices(w,h, 0);
 
+		g_pGameWorld->UpdateOccludingFrustum();
+
 		effectrenderer->SetViewSortPosition( g_pCameraParams.GetOrigin() );
 		effectrenderer->DrawEffects( g_frametime );
 
@@ -1434,8 +1440,6 @@ void CMainWindow::ReDraw()
 		g_pGameWorld->UpdateWorld(g_frametime);
 
 		int nRenderFlags = 0;
-
-		g_pGameWorld->UpdateOccludingFrustum();
 
 		// Now we can draw our model
 		g_pGameWorld->Draw(nRenderFlags);
