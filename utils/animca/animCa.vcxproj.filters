@@ -4,17 +4,60 @@
     <Filter Include="Libs">
       <UniqueIdentifier>{e877e46b-370c-414f-a81a-e0f2d455b511}</UniqueIdentifier>
     </Filter>
+    <Filter Include="public">
+      <UniqueIdentifier>{16f9dee6-79fc-4eea-a669-a6caebefbc47}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="public\egf">
+      <UniqueIdentifier>{058f47a3-a5b6-4743-92f0-092dffec6088}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="public\math">
+      <UniqueIdentifier>{fe428028-f584-4b3a-8bc1-367d0471bc95}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="AnimCa_main.cpp" />
-    <ClCompile Include="..\..\public\dsm_obj_loader.cpp" />
     <ClCompile Include="AnimScriptCompiler.cpp" />
-    <ClCompile Include="..\..\public\dsm_esm_loader.cpp" />
-    <ClCompile Include="..\..\public\dsm_loader.cpp" />
-    <ClCompile Include="..\..\public\math\math_util.cpp" />
+    <ClCompile Include="..\..\public\egf\dsm_esm_loader.cpp">
+      <Filter>public\egf</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\public\egf\dsm_loader.cpp">
+      <Filter>public\egf</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\public\egf\dsm_obj_loader.cpp">
+      <Filter>public\egf</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\public\math\math_util.cpp">
+      <Filter>public\math</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <Library Include="..\..\src_dependency\zlib\contrib\vstudio\vc14\x86\ZlibStatReleaseWithoutAsm\zlibstat.lib">
+    <ClInclude Include="..\..\public\egf\dsm_esm_loader.h">
+      <Filter>public\egf</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\public\egf\dsm_loader.h">
+      <Filter>public\egf</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\public\egf\dsm_obj_loader.h">
+      <Filter>public\egf</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\public\egf\model.h">
+      <Filter>public\egf</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\public\egf\model_eq.h">
+      <Filter>public\egf</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\public\egf\motionpackage.h">
+      <Filter>public\egf</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\public\egf\physmodel.h">
+      <Filter>public\egf</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\public\math\math_util.h">
+      <Filter>public\math</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Library Include="..\..\src_dependency\zlib\Release\ZLib.lib">
       <Filter>Libs</Filter>
     </Library>
   </ItemGroup>

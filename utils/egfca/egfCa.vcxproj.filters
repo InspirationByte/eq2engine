@@ -18,61 +18,79 @@
       <Extensions>
       </Extensions>
     </Filter>
+    <Filter Include="public\egf">
+      <UniqueIdentifier>{e8f58dbd-07ce-4429-87a3-c174f6371dd2}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="egfca_main.cpp" />
-    <ClCompile Include="..\..\public\mtriangle_framework.cpp">
-      <Filter>public\utils</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\public\Utils\GeomTools.cpp">
       <Filter>public\utils</Filter>
     </ClCompile>
     <ClCompile Include="..\..\public\math\math_util.cpp">
       <Filter>public\math</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\public\dsm_esm_loader.cpp">
-      <Filter>public</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\public\dsm_loader.cpp">
-      <Filter>public</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\public\dsm_obj_loader.cpp">
-      <Filter>public</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\public\EGFGenerator.cpp">
-      <Filter>public</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\public\EGFGenerator_Write.cpp">
-      <Filter>public</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\public\EGFPhysicsGenerator.cpp">
-      <Filter>public</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src_dependency\actc\tc.c">
       <Filter>actc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\public\egf\dsm_esm_loader.cpp">
+      <Filter>public\egf</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\public\egf\dsm_loader.cpp">
+      <Filter>public\egf</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\public\egf\dsm_obj_loader.cpp">
+      <Filter>public\egf</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\public\egf\EGFGenerator.cpp">
+      <Filter>public\egf</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\public\egf\EGFGenerator_Write.cpp">
+      <Filter>public\egf</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\public\egf\EGFPhysicsGenerator.cpp">
+      <Filter>public\egf</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\public\utils\mtriangle_framework.cpp">
+      <Filter>public\utils</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\public\Utils\GeomTools.h">
       <Filter>public\utils</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\public\dsm_esm_loader.h">
-      <Filter>public</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\public\dsm_loader.h">
-      <Filter>public</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\public\dsm_obj_loader.h">
-      <Filter>public</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\public\EGFGenerator.h">
-      <Filter>public</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\public\EGFPhysicsGenerator.h">
-      <Filter>public</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src_dependency\actc\tc.h">
       <Filter>actc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\public\egf\dsm_esm_loader.h">
+      <Filter>public\egf</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\public\egf\dsm_loader.h">
+      <Filter>public\egf</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\public\egf\dsm_obj_loader.h">
+      <Filter>public\egf</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\public\egf\EGFGenerator.h">
+      <Filter>public\egf</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\public\egf\EGFPhysicsGenerator.h">
+      <Filter>public\egf</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\public\egf\model.h">
+      <Filter>public\egf</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\public\egf\model_eq.h">
+      <Filter>public\egf</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\public\egf\motionpackage.h">
+      <Filter>public\egf</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\public\egf\physmodel.h">
+      <Filter>public\egf</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\public\utils\mtriangle_framework.h">
+      <Filter>public\utils</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -9,8 +9,8 @@
 
 #include "math/DkMath.h"
 #include "utils/align.h"
-#include "dsm_esm_loader.h"
-#include "model.h"
+#include "egf/dsm_esm_loader.h"
+#include "egf/model.h"
 
 #include <zlib.h>
 

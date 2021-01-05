@@ -123,20 +123,6 @@
 // Abstract class identifier
 #define abstract_class class
 
-
-//---------------------------------------------------------------------------------------------
-// Timer
-//---------------------------------------------------------------------------------------------
-
-// Platform QueryPerformanceCounter initializer
-IEXPORTS void	Platform_InitTime();
-
-// returns current time since application is running
-IEXPORTS float	Platform_GetCurrentTime();
-
-// sleeps the execution thread and let other processes to run for a specified amount of time.
-IEXPORTS void	Platform_Sleep(uint32 nMilliseconds);
-
 //------------------------------------------------------------------------------------------------
 
 #ifdef PLAT_WIN

@@ -193,6 +193,7 @@
     <ClInclude Include="public\Utils\CRC32.h" />
     <ClInclude Include="public\Utils\DkLinkedList.h" />
     <ClInclude Include="public\utils\DkList.h" />
+    <ClInclude Include="public\utils\eqGlobalMutex.h" />
     <ClInclude Include="public\Utils\eqthread.h" />
     <ClInclude Include="public\utils\eqwstring.h" />
     <ClInclude Include="public\utils\IceKey.h" />
@@ -225,6 +226,7 @@
     <ClCompile Include="public\Network\NetInterfaces.cpp" />
     <ClCompile Include="public\Network\net_defs.cpp" />
     <ClCompile Include="public\Utils\CRC32.cpp" />
+    <ClCompile Include="public\utils\eqGlobalMutex.cpp" />
     <ClCompile Include="public\Utils\eqthread.cpp" />
     <ClCompile Include="public\utils\eqwstring.cpp" />
     <ClCompile Include="public\utils\IceKey.cpp" />

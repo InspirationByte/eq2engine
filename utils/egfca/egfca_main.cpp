@@ -19,7 +19,7 @@
 #include <iostream>
 #include <malloc.h>
 
-#include "EGFGenerator.h"
+#include "egf/EGFGenerator.h"
 
 #ifdef _WIN32
 #include <tchar.h>

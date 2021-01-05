@@ -238,15 +238,12 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\public\dsm_esm_loader.cpp" />
-    <ClCompile Include="..\..\public\dsm_loader.cpp" />
-    <ClCompile Include="..\..\public\dsm_obj_loader.cpp" />
+    <ClCompile Include="..\..\public\egf\dsm_esm_loader.cpp" />
+    <ClCompile Include="..\..\public\egf\dsm_loader.cpp" />
+    <ClCompile Include="..\..\public\egf\dsm_obj_loader.cpp" />
     <ClCompile Include="..\..\public\math\math_util.cpp" />
     <ClCompile Include="AnimCa_main.cpp" />
     <ClCompile Include="AnimScriptCompiler.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <Library Include="..\..\src_dependency\zlib\contrib\vstudio\vc14\x86\ZlibStatReleaseWithoutAsm\zlibstat.lib" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\coreLib.vcxproj">
@@ -258,6 +255,19 @@
     <ProjectReference Include="..\..\frameworkLib.vcxproj">
       <Project>{5eddcdb2-e467-4db3-ad7e-4e78f5020028}</Project>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\public\egf\dsm_esm_loader.h" />
+    <ClInclude Include="..\..\public\egf\dsm_loader.h" />
+    <ClInclude Include="..\..\public\egf\dsm_obj_loader.h" />
+    <ClInclude Include="..\..\public\egf\model.h" />
+    <ClInclude Include="..\..\public\egf\model_eq.h" />
+    <ClInclude Include="..\..\public\egf\motionpackage.h" />
+    <ClInclude Include="..\..\public\egf\physmodel.h" />
+    <ClInclude Include="..\..\public\math\math_util.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <Library Include="..\..\src_dependency\zlib\Release\ZLib.lib" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -10,14 +10,15 @@
 
 #include "platform/Platform.h"
 #include "utils/strtools.h"
-#include "IDkCore.h"
 #include "utils/align.h"
+#include "IDkCore.h"
+
 #include "DebugInterface.h"
 #include "cmdlib.h"
 
 #include <iostream>
 #include <malloc.h>
-#include "model.h"
+#include "egf/model.h"
 #include "IConCommandFactory.h"
 #include "IFileSystem.h"
 

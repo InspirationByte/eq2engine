@@ -126,6 +126,7 @@ void SetCurrentThreadName( const char *name )
 
 void Yield()
 {
+	// FIXME: Sleep(1)
 	SwitchToThread();
 }
 

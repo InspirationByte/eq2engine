@@ -7,7 +7,7 @@
 
 #include "core_base_header.h"
 #include "DebugInterface.h"
-#include "IVirtualStream.h"
+#include "utils/IVirtualStream.h"
 
 #include "cmdlib.h"
 

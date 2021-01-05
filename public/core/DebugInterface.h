@@ -21,6 +21,8 @@ typedef enum
 
 typedef void (*SpewFunc_fn)(SpewType_t,const char*);
 
+// console/log messages
+
 IEXPORTS void	Msg(const char *fmt,...);
 IEXPORTS void	MsgInfo(const char *fmt,...);
 IEXPORTS void	MsgWarning(const char *fmt,...);

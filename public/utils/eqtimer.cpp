@@ -7,17 +7,6 @@
 
 #include "eqtimer.h"
 #include <math.h>
-
-float MEASURE_TIME_BEGIN()
-{
-	return Platform_GetCurrentTime();
-}
-
-float MEASURE_TIME_STATS(float begintime)
-{
-	return fabs(Platform_GetCurrentTime() - begintime)*1000.0f;
-}
-
 //---------------------------------------------------------------------------
 
 CEqTimer::CEqTimer()

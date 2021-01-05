@@ -8,7 +8,7 @@
 #ifndef RENDERER_CONSTANTS_H
 #define RENDERER_CONSTANTS_H
 
-#include "textureformats.h"
+#include "imaging/textureformats.h"
 
 #include "math/Vector.h"
 #include "math/Matrix.h"

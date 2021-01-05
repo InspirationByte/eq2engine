@@ -125,25 +125,30 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\public\dsm_esm_loader.cpp" />
-    <ClCompile Include="..\..\public\dsm_loader.cpp" />
-    <ClCompile Include="..\..\public\dsm_obj_loader.cpp" />
-    <ClCompile Include="..\..\public\EGFGenerator.cpp" />
-    <ClCompile Include="..\..\public\EGFGenerator_Write.cpp" />
-    <ClCompile Include="..\..\public\EGFPhysicsGenerator.cpp" />
+    <ClCompile Include="..\..\public\egf\dsm_esm_loader.cpp" />
+    <ClCompile Include="..\..\public\egf\dsm_loader.cpp" />
+    <ClCompile Include="..\..\public\egf\dsm_obj_loader.cpp" />
+    <ClCompile Include="..\..\public\egf\EGFGenerator.cpp" />
+    <ClCompile Include="..\..\public\egf\EGFGenerator_Write.cpp" />
+    <ClCompile Include="..\..\public\egf\EGFPhysicsGenerator.cpp" />
     <ClCompile Include="..\..\public\math\math_util.cpp" />
-    <ClCompile Include="..\..\public\mtriangle_framework.cpp" />
     <ClCompile Include="..\..\public\Utils\GeomTools.cpp" />
+    <ClCompile Include="..\..\public\utils\mtriangle_framework.cpp" />
     <ClCompile Include="..\..\src_dependency\actc\tc.c" />
     <ClCompile Include="egfca_main.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\public\dsm_esm_loader.h" />
-    <ClInclude Include="..\..\public\dsm_loader.h" />
-    <ClInclude Include="..\..\public\dsm_obj_loader.h" />
-    <ClInclude Include="..\..\public\EGFGenerator.h" />
-    <ClInclude Include="..\..\public\EGFPhysicsGenerator.h" />
+    <ClInclude Include="..\..\public\egf\dsm_esm_loader.h" />
+    <ClInclude Include="..\..\public\egf\dsm_loader.h" />
+    <ClInclude Include="..\..\public\egf\dsm_obj_loader.h" />
+    <ClInclude Include="..\..\public\egf\EGFGenerator.h" />
+    <ClInclude Include="..\..\public\egf\EGFPhysicsGenerator.h" />
+    <ClInclude Include="..\..\public\egf\model.h" />
+    <ClInclude Include="..\..\public\egf\model_eq.h" />
+    <ClInclude Include="..\..\public\egf\motionpackage.h" />
+    <ClInclude Include="..\..\public\egf\physmodel.h" />
     <ClInclude Include="..\..\public\Utils\GeomTools.h" />
+    <ClInclude Include="..\..\public\utils\mtriangle_framework.h" />
     <ClInclude Include="..\..\src_dependency\actc\tc.h" />
   </ItemGroup>
   <ItemGroup>
