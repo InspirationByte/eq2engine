@@ -167,7 +167,7 @@ bool EqString::Resize(uint nSize, bool bCopy)
 	// use base buffer we requesting size less than base buffer
 	char* pszNewBuffer = m_baseBuffer;
 
-	if(nSize > sizeof(m_baseBuffer))
+	if(nSize > EQSTRING_BASE_BUFFER)
 	{
 		pszNewBuffer = new char[ newSize ]; // make new
 		pszNewBuffer[0] = 0;
@@ -480,23 +480,28 @@ int EqString::ReplaceSubstr(const char* find, const char* replaceTo, bool bCaseS
 // swaps two strings
 void EqString::Swap(EqString& otherStr)
 {
-	if(m_pszString == m_baseBuffer)
-	{
-		char tempBuffer[sizeof(m_baseBuffer)];
+	char tempBuffer[EQSTRING_BASE_BUFFER];
 
-		memcpy(tempBuffer, m_baseBuffer, sizeof(m_baseBuffer));
-		memcpy(m_baseBuffer, otherStr.m_baseBuffer, sizeof(m_baseBuffer));
-		memcpy(otherStr.m_baseBuffer, tempBuffer, sizeof(m_baseBuffer));
+	memcpy(tempBuffer, m_baseBuffer, EQSTRING_BASE_BUFFER);
+	memcpy(m_baseBuffer, otherStr.m_baseBuffer, EQSTRING_BASE_BUFFER);
+	memcpy(otherStr.m_baseBuffer, tempBuffer, EQSTRING_BASE_BUFFER);
 
-		// no need in swapping pointers
-	}
-	else
+	// swap pointers if any of the strings are allocated
+	if(m_pszString != m_baseBuffer || 
+		otherStr.m_pszString != m_baseBuffer)
 	{
 		QuickSwap(m_pszString, otherStr.m_pszString);
 	}
 
 	QuickSwap(m_nLength, otherStr.m_nLength);
 	QuickSwap(m_nAllocated, otherStr.m_nAllocated);
+
+	// restore pointers properly to base buffer
+	if(m_nLength < EQSTRING_BASE_BUFFER)
+		m_pszString = m_baseBuffer;
+
+	if (otherStr.m_nLength < EQSTRING_BASE_BUFFER)
+		otherStr.m_pszString = otherStr.m_baseBuffer;
 }
 
 // other

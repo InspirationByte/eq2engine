@@ -142,7 +142,7 @@ egfcaModel_t CEGFGenerator::LoadModel(const char* pszFileName)
 	mod.model = new dsmmodel_t;
 
 	EqString modelPath;
-	CombinePath(modelPath, 3, m_refsPath.c_str(), CORRECT_PATH_SEPARATOR_STR, pszFileName);
+	CombinePath(modelPath, 2, m_refsPath.c_str(), pszFileName);
 
 	EqString ext(modelPath.Path_Extract_Ext());
 
@@ -156,7 +156,7 @@ egfcaModel_t CEGFGenerator::LoadModel(const char* pszFileName)
 		if( LoadESXShapes( mod.shapeData, modelPath.c_str() ))
 		{
 			// use referenced filename by the shape file
-			CombinePath(modelPath, 3, m_refsPath.c_str(), CORRECT_PATH_SEPARATOR_STR, mod.shapeData->reference.c_str());
+			CombinePath(modelPath, 2, m_refsPath.c_str(), mod.shapeData->reference.c_str());
 		}
 		else
 		{
@@ -168,6 +168,7 @@ egfcaModel_t CEGFGenerator::LoadModel(const char* pszFileName)
 	// load DSM model
 	if(!LoadSharedModel(mod.model, modelPath.c_str()))
 	{
+		MsgError("Reference model '%s' cannot be loaded!\n", modelPath.c_str());
 		FreeModel(mod);
 		return mod;
 	}
@@ -270,15 +271,17 @@ dsmmodel_t* CEGFGenerator::ParseAndLoadModels(kvkeybase_t* pKeyBase)
 		else
 			shapeByModels.append("");
 
+		// add model
 		modelfilenames.append( KV_GetValueString(pKeyBase, 1) );
 	}
 
-	// get section data
+	// go through all keys inside model section
 	for(int i = 0; i < pKeyBase->keys.numElem(); i++)
 	{
 		modelfilenames.append( pKeyBase->keys[i]->name );
-
 		shapeByModels.append("");
+
+		Msg("Adding model '%s'\n", pKeyBase->keys[i]->name);
 	}
 
 	// load the models
@@ -286,7 +289,8 @@ dsmmodel_t* CEGFGenerator::ParseAndLoadModels(kvkeybase_t* pKeyBase)
 
 	for(int i = 0; i < modelfilenames.numElem(); i++)
 	{
-		egfcaModel_t model = LoadModel( modelfilenames[i].GetData() );
+		Msg("Loading model '%s'\n", modelfilenames[i].c_str());
+		egfcaModel_t model = LoadModel( modelfilenames[i].c_str() );
 
 		if(!model.model)
 			continue;
@@ -361,7 +365,7 @@ dsmmodel_t* CEGFGenerator::ParseAndLoadModels(kvkeybase_t* pKeyBase)
 	}
 	else
 	{
-		MsgError("got model definition '%s', but nothing added\n", pKeyBase->name);
+		MsgError("got model definition '%s', but nothing added\n", KV_GetValueString(pKeyBase));
 	}
 
 	return nullptr;
@@ -609,8 +613,6 @@ bool CEGFGenerator::LoadMaterialGroups(kvkeybase_t* pSection)
 			MsgInfo("\n");
 		}
 	}
-
-	return true;
 }
 
 //************************************
@@ -1194,7 +1196,7 @@ bool CEGFGenerator::InitFromKeyValues(kvkeybase_t* mainsection)
 	if(pSourcePath)
 	{
 		EqString path;
-		CombinePath(m_refsPath, 3, m_refsPath.c_str(), CORRECT_PATH_SEPARATOR_STR, KV_GetValueString(pSourcePath, 0, ""));
+		CombinePath(m_refsPath, 2, m_refsPath.c_str(), KV_GetValueString(pSourcePath, 0, ""));
 	}
 
 	// get new model filename
