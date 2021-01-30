@@ -26,6 +26,7 @@ OOLUA_PROXY( IVector2D )
         Equal_op
         , Less_op
         , Less_equal_op
+		, Not_equal_op
         , Add_op
         , Sub_op
         , Mul_op
@@ -49,6 +50,7 @@ OOLUA_PROXY( Vector2D )
         Equal_op
         , Less_op
         , Less_equal_op
+		, Not_equal_op
         , Add_op
         , Sub_op
         , Mul_op
@@ -72,6 +74,7 @@ OOLUA_PROXY( Vector3D )
         Equal_op
         , Less_op
         , Less_equal_op
+		, Not_equal_op
         , Add_op
         , Sub_op
         , Mul_op
@@ -103,6 +106,7 @@ OOLUA_PROXY( Vector4D )
         Equal_op
         , Less_op
         , Less_equal_op
+		, Not_equal_op
         , Add_op
         , Sub_op
         , Mul_op
@@ -142,6 +146,7 @@ OOLUA_PROXY_END
 OOLUA_PROXY(Quaternion)
 	OOLUA_TAGS(
 		Equal_op
+		, Not_equal_op
 		, Add_op
 		, Sub_op
 		, Mul_op

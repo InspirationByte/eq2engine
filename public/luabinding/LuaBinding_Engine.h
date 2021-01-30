@@ -137,7 +137,9 @@ OOLUA_PROXY(IFileSystem)
 		Abstract
 	)
 
-	OOLUA_MFUNC(AddPackage)
+	//OOLUA_MEM_FUNC(bool, AddPackage, const char*, SearchPath_e, const char*)
+	OOLUA_MEM_FUNC_RENAME(AddPackageMnt, bool, AddPackage, const char*, SearchPath_e, const char*)
+
 	OOLUA_MFUNC(RemovePackage)
 	
 	OOLUA_MFUNC(AddSearchPath)

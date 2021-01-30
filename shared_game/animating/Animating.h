@@ -46,10 +46,11 @@ public:
 	Activity					GetCurrentActivity(int slot = 0);			// returns current activity
 
 	bool						IsSequencePlaying(int slot = 0) const;
-	void						SetSequence(int seqIdx, int slot = 0);	// sets animation
-	void						PlaySequence(int slot = 0);					// plays/resumes animation
-	void						StopSequence(int slot = 0);					// stops/pauses animation
-	void						ResetSequenceTime(int slot = 0);			// resets animation time, and restarts animation
+	void						SetSequence(int seqIdx, int slot = 0);			// sets new sequence
+	void						SetSequenceByName(char* name, int slot = 0);	// sets new sequence by it's name
+	void						PlaySequence(int slot = 0);						// plays/resumes animation
+	void						StopSequence(int slot = 0);						// stops/pauses animation
+	void						ResetSequenceTime(int slot = 0);				// resets animation time, and restarts animation
 	void						SetSequenceTime(float newTime, int slot = 0);	// sets new animation time
 
 	float						GetCurrentAnimationDuration() const;			// returns duration time of the current animation
@@ -86,8 +87,6 @@ protected:
 
 	virtual Activity			TranslateActivity(Activity act, int slotindex = 0) const;			// translates activity
 	virtual void				HandleAnimatingEvent(AnimationEvent nEvent, char* options) = 0;
-
-protected:
 
 	virtual void				AddMotions(studioHwData_t::motionData_t* motionData);
 

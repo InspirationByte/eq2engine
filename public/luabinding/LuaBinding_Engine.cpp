@@ -17,6 +17,7 @@
 #include "Network/NETThread.h"
 
 #include "sys_state.h"
+#include "sys_host.h"
 
 //---------------------------------------------------------------------------------------
 // Debug output
@@ -129,14 +130,21 @@ std::string S_IFileSystem_GetFileBuffer(IFileSystem* fs, const char* filename, i
 	return fileBuf;
 }
 
+bool S_IFileSystem_AddPackage_NoMount(IFileSystem* fs, const char* packageName, SearchPath_e type)
+{
+	return fs->AddPackage(packageName, type);
+}
+
 OOLUA_CFUNC(S_IVirtualStream_Read, L_IVirtualStream_Read)
 OOLUA_CFUNC(S_IVirtualStream_Write, L_IVirtualStream_Write)
+
+OOLUA_CFUNC(S_IFileSystem_AddPackage_NoMount, L_IFileSystem_AddPackage_NoMount)
 OOLUA_CFUNC(S_IFileSystem_GetFileBuffer, L_IFileSystem_GetFileBuffer)
 
 OOLUA_EXPORT_FUNCTIONS(IFile, Seek, Tell, GetSize, Flush, GetCRC32)
 OOLUA_EXPORT_FUNCTIONS_CONST(IFile)
 
-OOLUA_EXPORT_FUNCTIONS(IFileSystem, Open, Close, FileCopy, GetFileSize, GetFileCRC32, AddPackage, RemovePackage, AddSearchPath, RemoveSearchPath)
+OOLUA_EXPORT_FUNCTIONS(IFileSystem, Open, Close, FileCopy, GetFileSize, GetFileCRC32, AddPackageMnt, RemovePackage, AddSearchPath, RemoveSearchPath)
 OOLUA_EXPORT_FUNCTIONS_CONST(IFileSystem, FileExist, FileRemove, GetCurrentGameDirectory, GetCurrentDataDirectory, MakeDir, RemoveDir)
 
 OOLUA_EXPORT_FUNCTIONS(CFileSystemFind, Init, Next)
@@ -232,11 +240,16 @@ void FileSystem_InitBinding(lua_State* state)
 	LUA_SET_GLOBAL_ENUMCONST(state, SP_MOD);
 	LUA_SET_GLOBAL_ENUMCONST(state, SP_ROOT);
 
+	LUA_SET_GLOBAL_ENUMCONST(state, KV_FLAG_SECTION);
+	LUA_SET_GLOBAL_ENUMCONST(state, KV_FLAG_NOVALUE);
+	LUA_SET_GLOBAL_ENUMCONST(state, KV_FLAG_ARRAY);
+
 	OOLUA::register_class<IFile>(state);
 	OOLUA::register_class_static<IFile>(state, "Read", L_IVirtualStream_Read);	// register using static
 	OOLUA::register_class_static<IFile>(state, "Write", L_IVirtualStream_Write);
 
 	OOLUA::register_class<IFileSystem>(state);
+	OOLUA::register_class_static<IFileSystem>(state, "AddPackage", L_IFileSystem_AddPackage_NoMount);
 	OOLUA::register_class_static<IFileSystem>(state, "GetFileBuffer", L_IFileSystem_GetFileBuffer);
 	
 	OOLUA::register_class <CFileSystemFind>(state);
@@ -282,16 +295,33 @@ OOLUA_EXPORT_FUNCTIONS_CONST(Plane, get_normal, get_offset, Distance, GetInterse
 OOLUA_EXPORT_FUNCTIONS(Quaternion, set_x, set_y, set_z, set_w, normalize, fastNormalize)
 OOLUA_EXPORT_FUNCTIONS_CONST(Quaternion, get_x, get_y, get_z, get_w, asVector4D, isNan)
 
-Quaternion qinverse(const Quaternion& quat) 
+Quaternion qconjugate(const Quaternion& quat) 
 {
 	return !quat;
 }
 
-int L_qinverse(lua_State* vm) { OOLUA_C_FUNCTION(Quaternion, qinverse, const Quaternion &) }
+OOLUA::Table qeulers(const Quaternion& q, EQuatRotationSequence seq)
+{
+	OOLUA::Script& state = GetLuaState();
+	OOLUA::Table table = OOLUA::new_table(state);
+
+	float res[3];
+	quaternionToEulers(q, seq, res);
+
+	table.set(1, res[0]);
+	table.set(2, res[1]);
+	table.set(3, res[2]);
+
+	return table;
+}
+
+int L_qconjugate(lua_State* vm) { OOLUA_C_FUNCTION(Quaternion, qconjugate, const Quaternion &) }
 int L_qslerp(lua_State* vm) { OOLUA_C_FUNCTION(Quaternion, slerp, const Quaternion &, const Quaternion &, const float) }
 int L_qscerp(lua_State* vm) { OOLUA_C_FUNCTION(Quaternion, scerp, const Quaternion &, const Quaternion &, const Quaternion &, const Quaternion &, const float);}
+int L_qinverse(lua_State* vm) { OOLUA_C_FUNCTION(Quaternion, inverse, const Quaternion&); }
 int L_qlength(lua_State* vm) { OOLUA_C_FUNCTION(float, length, const Quaternion&);}
-int L_qeulers(lua_State* vm) { OOLUA_C_FUNCTION(TVec3D<float>, eulers, const Quaternion&);}
+int L_qeulers(lua_State* vm) { OOLUA_C_FUNCTION(OOLUA::Table, qeulers, const Quaternion&, EQuatRotationSequence) }
+int L_qeulersXYZ(lua_State* vm) { OOLUA_C_FUNCTION(TVec3D<float>, eulersXYZ, const Quaternion&);}
 int L_qrenormalize(lua_State* vm) { OOLUA_C_FUNCTION(void, renormalize, Quaternion&);}
 int L_qaxisAngle(lua_State* vm) { OOLUA_C_FUNCTION(void, axisAngle, const Quaternion&, TVec3D<float>&, float&);}
 int L_qcompare(lua_State* vm) { OOLUA_C_FUNCTION(bool, compare_epsilon, const Quaternion&, const Quaternion&, const float);}
@@ -357,6 +387,13 @@ int L_v3d_reflect(lua_State* vm) { OOLUA_C_FUNCTION(Vector3D, reflect, const Vec
 
 void Math_InitBinding(lua_State* state)
 {
+	LUA_SET_GLOBAL_ENUMCONST(state, QuatRot_zyx);
+	LUA_SET_GLOBAL_ENUMCONST(state, QuatRot_zxy);
+	LUA_SET_GLOBAL_ENUMCONST(state, QuatRot_yxz);
+	LUA_SET_GLOBAL_ENUMCONST(state, QuatRot_yzx);
+	LUA_SET_GLOBAL_ENUMCONST(state, QuatRot_xyz);
+	LUA_SET_GLOBAL_ENUMCONST(state, QuatRot_xzy);
+
 	OOLUA::register_class<Vector2D>(state);
 	OOLUA::register_class<IVector2D>(state);
 	OOLUA::register_class<Vector3D>(state);
@@ -395,20 +432,21 @@ void Math_InitBinding(lua_State* state)
 	OOLUA::set_global(state, "v3d_dot", L_v3d_dot);
 	OOLUA::set_global(state, "v3d_normalize", L_v3d_normalize);
 	OOLUA::set_global(state, "v3d_lineProjection", L_v3d_lineProjection);
+	OOLUA::set_global(state, "v3d_cross", L_v3d_cross);
+	OOLUA::set_global(state, "v3d_reflect", L_v3d_reflect);
 
 	OOLUA::set_global(state, "qinverse", L_qinverse);
+	OOLUA::set_global(state, "qconjugate", L_qconjugate);
 	OOLUA::set_global(state, "qslerp", L_qslerp);
 	OOLUA::set_global(state, "qscerp", L_qscerp);
 	OOLUA::set_global(state, "qlength", L_qlength);
-	OOLUA::set_global(state, "qeulers", L_qeulers);
+	OOLUA::set_global(state, "qeulersSel", L_qeulers);
+	OOLUA::set_global(state, "qeulers", L_qeulersXYZ);
 	OOLUA::set_global(state, "qrenormalize", L_qrenormalize);
 	OOLUA::set_global(state, "qaxisAngle", L_qaxisAngle);
 	OOLUA::set_global(state, "qcompare", L_qcompare);
 	OOLUA::set_global(state, "qrotate", L_qrotate);
 	OOLUA::set_global(state, "qidentity", L_qidentity);
-
-	OOLUA::set_global(state, "v3d_cross", L_v3d_cross);
-	OOLUA::set_global(state, "v3d_reflect", L_v3d_reflect);
 
 	OOLUA::set_global(state, "ConstrainAngle180", L_ConstrainAngle180);
 	OOLUA::set_global(state, "ConstrainAngle360", L_ConstrainAngle360);
@@ -426,11 +464,8 @@ void Math_InitBinding(lua_State* state)
 // EqUI
 //---------------------------------------------------------------------------------------
 
-OOLUA_EXPORT_FUNCTIONS(ILocToken)
-OOLUA_EXPORT_FUNCTIONS_CONST(ILocToken)
-
-OOLUA_EXPORT_FUNCTIONS(IEqFont)
-OOLUA_EXPORT_FUNCTIONS_CONST(IEqFont)
+OOLUA_EXPORT_NO_FUNCTIONS(ILocToken)
+OOLUA_EXPORT_NO_FUNCTIONS(IEqFont)
 
 OOLUA_EXPORT_FUNCTIONS(CEqFontCache)
 OOLUA_EXPORT_FUNCTIONS_CONST(CEqFontCache, GetFont)
@@ -858,6 +893,31 @@ OOLUA_CFUNC(S_CNetMessageBuffer_ReadString, L_CNetMessageBuffer_ReadString)
 OOLUA_EXPORT_FUNCTIONS(Networking::CNetworkThread, SendData, SendEvent, SendWaitDataEvent)
 OOLUA_EXPORT_FUNCTIONS_CONST(Networking::CNetworkThread)
 
+double S_Host_GetFrameTime()
+{
+	return g_pHost->GetFrameTime();
+}
+
+void S_Host_RequestTextInput()
+{
+	g_pHost->RequestTextInput();
+}
+
+void S_Host_ReleaseTextInput()
+{
+	g_pHost->ReleaseTextInput();
+}
+
+bool S_Host_IsTextInputShown()
+{
+	return g_pHost->IsTextInputShown();
+}
+
+OOLUA_CFUNC(S_Host_GetFrameTime, L_Host_GetFrameTime)
+OOLUA_CFUNC(S_Host_RequestTextInput, L_Host_RequestTextInput)
+OOLUA_CFUNC(S_Host_ReleaseTextInput, L_Host_ReleaseTextInput)
+OOLUA_CFUNC(S_Host_IsTextInputShown, L_Host_IsTextInputShown)
+
 bool LuaBinding_InitEngineBindings(lua_State* state)
 {
 	// base modules
@@ -895,17 +955,32 @@ bool LuaBinding_InitEngineBindings(lua_State* state)
 	OOLUA::register_class<Networking::CNetworkThread>(state);
 	
 	// engine state manager
-	OOLUA::Table eqStateTable = OOLUA::new_table(state);
-	eqStateTable.set("ChangeStateType", L_ChangeStateType);
-	eqStateTable.set("SetCurrentStateType", L_SetCurrentStateType);
-	eqStateTable.set("GetCurrentStateType", L_GetCurrentStateType);
-	eqStateTable.set("ScheduleNextStateType", L_ScheduleNextStateType);
-	OOLUA::set_global(state, "EqStateMgr", eqStateTable);
+	{
+		OOLUA::Table eqStateTable = OOLUA::new_table(state);
+		eqStateTable.set("ChangeStateType", L_ChangeStateType);
+		eqStateTable.set("SetCurrentStateType", L_SetCurrentStateType);
+		eqStateTable.set("GetCurrentStateType", L_GetCurrentStateType);
+		eqStateTable.set("ScheduleNextStateType", L_ScheduleNextStateType);
+		OOLUA::set_global(state, "EqStateMgr", eqStateTable);
+	}
 
-	OOLUA::Table eqCoreTable = OOLUA::new_table(state);
-	eqStateTable.set("GetConfig", L_DkCore_GetConfig);
-	OOLUA::set_global(state, "core", eqStateTable);
-	
+	// engine host
+	{
+		OOLUA::Table hostTable = OOLUA::new_table(state);
+		hostTable.set("GetFrameTime", L_Host_GetFrameTime);
+		hostTable.set("RequestTextInput", L_Host_RequestTextInput);
+		hostTable.set("ReleaseTextInput", L_Host_ReleaseTextInput);
+		hostTable.set("IsTextInputShown", L_Host_IsTextInputShown);
+		OOLUA::set_global(state, "host", hostTable);
+	}
+
+	// eqCore
+	{
+		OOLUA::Table eqCoreTable = OOLUA::new_table(state);
+		eqCoreTable.set("GetConfig", L_DkCore_GetConfig);
+		OOLUA::set_global(state, "core", eqCoreTable);
+	}
+
 	return true;
 }
 

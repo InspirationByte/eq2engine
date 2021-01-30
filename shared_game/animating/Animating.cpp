@@ -72,7 +72,7 @@ inline void InterpolateFrameTransform(const animframe_t &frame1, const animframe
 
 	Quaternion finQuat = slerp(q1, q2, value);
 
-	out.angBoneAngles = eulers(finQuat);
+	out.angBoneAngles = eulersXYZ(finQuat);
 	out.vecBonePosition = lerp(frame1.vecBonePosition, frame2.vecBonePosition, value);
 }
 
@@ -91,7 +91,7 @@ inline void AddMultiplyFrameTransform(const animframe_t &frame1, const animframe
 
 	Quaternion finQuat = q1 * q2;
 
-	out.angBoneAngles = eulers(finQuat);
+	out.angBoneAngles = eulersXYZ(finQuat);
 
 	out.vecBonePosition = frame1.vecBonePosition + frame2.vecBonePosition;
 }
@@ -361,6 +361,21 @@ void CAnimatingEGF::SetActivity(Activity act, int slot)
 	if (seqIdx == -1)
 	{
 		MsgWarning("Activity \"%s\" not valid!\n", GetActivityName(act));
+	}
+
+	SetSequence(seqIdx, slot);
+
+	ResetSequenceTime(slot);
+	PlaySequence(slot);
+}
+
+void CAnimatingEGF::SetSequenceByName(char* name, int slot)
+{
+	int seqIdx = FindSequence(name);
+
+	if (seqIdx == -1)
+	{
+		MsgWarning("Sequence \"%s\" not valid!\n", name);
 	}
 
 	SetSequence(seqIdx, slot);
@@ -862,7 +877,7 @@ void IKLimitDOF(giklink_t* link)
 	// gimbal lock always occurent
 	// better to use quaternions...
 
-	Vector3D euler = eulers(link->quat);
+	Vector3D euler = eulersXYZ(link->quat);
 
 	euler = VRAD2DEG(euler);
 

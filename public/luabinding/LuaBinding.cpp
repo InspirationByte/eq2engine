@@ -116,17 +116,56 @@ void LuaStackGuard::Release()
 }
 
 //--------------------------------------------------------------------------------------------------
+// Table function reference
+
+LuaUserDataFuncRef::LuaUserDataFuncRef()
+{
+	m_isError = true;
+	m_funcPushLevel = 0;
+}
+
+void LuaUserDataFuncRef::Release()
+{
+	m_ref.set_ref(m_ref.state(), LUA_REFNIL);
+}
+
+// call function, on error return false and use OOLUA error handler
+bool LuaUserDataFuncRef::Call(int nArgs, int nRet, int nErrIndex/* = 0*/)
+{
+	if (m_isError)
+		return false;
+
+	ASSERT(m_funcPushLevel > 0);
+
+	int res = lua_pcall(m_state, nArgs + (m_funcPushLevel - 1), nRet, nErrIndex == 0 ? m_err_idx : nErrIndex);
+
+	m_funcPushLevel = 0;
+
+	if (res != 0)
+		OOLUA::INTERNAL::set_error_from_top_of_stack_and_pop_the_error(m_state);
+
+	return (res == 0);
+}
+
+//--------------------------------------------------------------------------------------------------
+// Table function reference
 
 LuaTableFuncRef::LuaTableFuncRef()
 {
 	m_isError = true;
 	m_funcPushLevel = 0;
 }
-
+	
+void LuaTableFuncRef::Release()
+{
+	m_ref.set_ref(m_ref.state(), LUA_REFNIL);
+}
+	
 // gets the reference to function
 bool LuaTableFuncRef::Get(const OOLUA::Table& table, const char* funcName, bool quiet)
 {
 	m_table = table;
+
 	if(!m_table.valid())
 	{
 		MsgError("LuaTableFuncRef::Get error: table is not valid\n");
@@ -429,6 +468,40 @@ int LuaErrorHandler(lua_State* L)
 	}
 
 	return 1;
+}
+
+static DkList<EqString> s_luaErrors;
+
+void LuaBinding_ClearErrors(lua_State* state)
+{
+	OOLUA::reset_error_value(state);
+	s_luaErrors.clear();
+}
+	
+bool LuaBinding_GetErrors(DkList<EqString>* errors)
+{
+	if(errors)
+		errors->append(s_luaErrors);
+
+	return s_luaErrors.numElem() > 0;
+}
+	
+const char* LuaBinding_GetLastError(lua_State* state)
+{
+	static std::string last_error;
+
+	last_error = OOLUA::get_last_error(state);
+	const char* errorString = last_error.c_str();
+
+	if(errorString[0] != '\0')
+	{
+		s_luaErrors.append(errorString);
+	
+		if (s_luaErrors.numElem() > 4)
+			s_luaErrors.removeIndex(0);
+	}
+	
+	return errorString;
 }
 
 lua_State* LuaBinding_AllocState()

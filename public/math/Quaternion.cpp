@@ -384,7 +384,91 @@ float length(const Quaternion &q)
 	return sqrt(q.w * q.w + q.x * q.x + q.y * q.y + q.z * q.z);
 }
 
-Vector3D eulers(const Quaternion &q)
+void threeAxisRot(float r11, float r12, float r21, float r31, float r32, float* res)
+{
+	res[0] = atan2f(r31, r32);
+	res[1] = asinf(r21);
+	res[2] = atan2f(r11, r12);
+}
+
+
+void quaternionToEulers(const Quaternion& q, EQuatRotationSequence seq, float res[3])
+{
+	switch(seq)
+	{
+		case QuatRot_zyx:
+		{
+			threeAxisRot(2 * (q.x * q.y + q.w * q.z),
+				q.w * q.w + q.x * q.x - q.y * q.y - q.z * q.z,
+				-2 * (q.x * q.z - q.w * q.y),
+				2 * (q.y * q.z + q.w * q.x),
+				q.w * q.w - q.x * q.x - q.y * q.y + q.z * q.z, 
+				res);
+			break;
+		}
+		case QuatRot_zxy:
+		{
+			threeAxisRot(-2 * (q.x * q.y - q.w * q.z),
+				q.w * q.w - q.x * q.x + q.y * q.y - q.z * q.z,
+				2 * (q.y * q.z + q.w * q.x),
+				-2 * (q.x * q.z - q.w * q.y),
+				q.w * q.w - q.x * q.x - q.y * q.y + q.z * q.z, 
+				res);
+
+			break;
+		}
+		case QuatRot_yxz:
+		{
+			threeAxisRot(2 * (q.x * q.z + q.w * q.y),
+					 q.w * q.w - q.x * q.x - q.y * q.y + q.z * q.z,
+					-2 * (q.y * q.z - q.w * q.x),
+					 2 * (q.x * q.y + q.w * q.z),
+					 q.w * q.w - q.x * q.x + q.y * q.y - q.z * q.z, 
+				res);
+			break;
+		}
+		case QuatRot_yzx:
+		{
+			threeAxisRot(-2 * (q.x * q.z - q.w * q.y),
+				q.w * q.w + q.x * q.x - q.y * q.y - q.z * q.z,
+				2 * (q.x * q.y + q.w * q.z),
+				-2 * (q.y * q.z - q.w * q.x),
+				q.w * q.w - q.x * q.x + q.y * q.y - q.z * q.z,
+				res);
+
+			break;
+		}
+		case QuatRot_xyz:
+		{
+			threeAxisRot(-2 * (q.y * q.z - q.w * q.x),
+				q.w * q.w - q.x * q.x - q.y * q.y + q.z * q.z,
+				2 * (q.x * q.z + q.w * q.y),
+				-2 * (q.x * q.y - q.w * q.z),
+				q.w * q.w + q.x * q.x - q.y * q.y - q.z * q.z, 
+				res);
+
+			break;
+		}
+		case QuatRot_xzy:
+		{
+			threeAxisRot(2 * (q.y * q.z + q.w * q.x),
+				q.w * q.w - q.x * q.x + q.y * q.y - q.z * q.z,
+				-2 * (q.x * q.y - q.w * q.z),
+				2 * (q.x * q.z + q.w * q.y),
+				q.w * q.w + q.x * q.x - q.y * q.y - q.z * q.z, 
+				res);
+			break;
+		}
+		default:
+		{
+			res[0] = 0.0f;
+			res[1] = 0.0f;
+			res[2] = 0.0f;
+		}
+	}
+}
+
+Vector3D eulersXYZ(const Quaternion &q)
 {
 	const double sqw = q.w*q.w;
 	const double sqx = q.x*q.x;

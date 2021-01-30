@@ -24,6 +24,26 @@ struct TVec4D;
 #include "Matrix.h"
 #endif // FORWARD_DECLARED
 
+//--------------------------------------------------------
+// Note: 
+//--------------------------------------------------------
+// return values of res[] depends on rotSeq.
+// i.e.
+// for rotSeq zyx, 
+// x = res[0], y = res[1], z = res[2]
+// for rotSeq xyz
+// z = res[0], y = res[1], x = res[2]
+// ...
+enum EQuatRotationSequence
+{
+	QuatRot_zyx,
+	QuatRot_zxy,
+	QuatRot_yxz,
+	QuatRot_yzx,
+	QuatRot_xyz,
+	QuatRot_xzy,
+};
+
 struct Quaternion
 {
 	float x,y,z,w;
@@ -73,11 +93,17 @@ Quaternion operator ! (const Quaternion &q);
 Quaternion		slerp(const Quaternion &q0, const Quaternion &q1, const float t);
 Quaternion		scerp(const Quaternion &q0, const Quaternion &q1, const Quaternion &q2, const Quaternion &q3, const float t);
 
+// finds inverse of quaternion
+Quaternion		inverse(const Quaternion& q);
+
 // length of quaternion
 float			length(const Quaternion &q);
 
 // returns euler angles of quaternion
-TVec3D<float>	eulers(const Quaternion &q);
+TVec3D<float>	eulersXYZ(const Quaternion &q);
+
+// stores euler angles of quaternion to res
+void			quaternionToEulers(const Quaternion& q, EQuatRotationSequence seq, float res[3]);
 
 // recalculates w comp
 void			renormalize(Quaternion& q);
