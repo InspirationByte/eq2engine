@@ -514,6 +514,9 @@ void CInputCommandBinder::OnKeyEvent(int keyIdent, bool bPressed)
 	else
 		m_currentButtons.fastRemove(keyIdent);
 
+	DkList<in_binding_t*> complexExecuteList;
+	DkList<in_binding_t*> executeList;
+
 	for(int i = 0; i < m_bindings.numElem();i++)
 	{
 		in_binding_t* binding = m_bindings[i];
@@ -523,8 +526,31 @@ void CInputCommandBinder::OnKeyEvent(int keyIdent, bool bPressed)
 			continue;
 
 		// check on the keymap
-		if(s_keyMapList[binding->key_index].keynum == keyIdent)
-			ExecuteBinding( binding, bPressed);
+		if (s_keyMapList[binding->key_index].keynum == keyIdent)
+		{
+			int validModifiers = (binding->mod_index[1] != -1) ? 2 : ((binding->mod_index[0] != -1) ? 1 : 0);
+
+			if (validModifiers)
+				complexExecuteList.append(binding);
+			else
+				executeList.append(binding);
+		}
+	}
+
+	// complex actions are in favor
+	if (complexExecuteList.numElem())
+	{
+		for (int i = 0; i < complexExecuteList.numElem(); i++)
+		{
+			ExecuteBinding(complexExecuteList[i], bPressed);
+		}
+
+		return;
+	}
+
+	for (int i = 0; i < executeList.numElem(); i++)
+	{
+		ExecuteBinding(executeList[i], bPressed);
 	}
 }
 
