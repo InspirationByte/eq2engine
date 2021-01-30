@@ -149,6 +149,8 @@ void* Helper_GetEGLSurfaceFromSDL()
 
 #endif // ANDROID
 
+ConVar sys_jobthreads("sys_jobthreads", "4", 4, 8, "Maximum parallel job threads", CV_ARCHIVE);
+
 bool CGameHost::InitSystems( EQWNDHANDLE pWindow, bool bWindowed )
 {
 	m_pWindow = pWindow;
@@ -283,7 +285,7 @@ bool CGameHost::InitSystems( EQWNDHANDLE pWindow, bool bWindowed )
 	soundsystem->Init();
 	debugoverlay->Init();
 	equi::Manager->Init();
-	g_parallelJobs->Init(g_cpuCaps->GetCPUCount());
+	g_parallelJobs->Init(sys_jobthreads.GetInt());
 
 	Networking::InitNetworking();
 
@@ -415,10 +417,10 @@ void CGameHost::ShutdownSystems()
 {
 	Msg("---------  ShutdownSystems ---------\n");
 
-	g_parallelJobs->Wait();
-
 	// calls OnLeave and unloads state
 	EqStateMgr::ChangeState( NULL );
+
+	g_parallelJobs->Wait();
 
 	// Save configuration before full unload
 	WriteCfgFile( user_cfg.GetString(), true );
@@ -426,6 +428,8 @@ void CGameHost::ShutdownSystems()
 	// shutdown any dependent bindings to avoid crashes
 	LuaBinding_ShutdownEngineBindings();
 
+	g_parallelJobs->Shutdown();
+	
 	equi::Manager->Shutdown();
 	g_fontCache->Shutdown();
 
@@ -437,7 +441,6 @@ void CGameHost::ShutdownSystems()
 	// shutdown systems...
 	Networking::ShutdownNetworking();
 
-	g_parallelJobs->Shutdown();
 	materials->Shutdown();
 	g_fileSystem->FreeModule( g_matsysmodule );
 

@@ -22,13 +22,13 @@ public:
 	//----------------
 	bool			IsInitialized()									{ return (pInstance != NULL); }
 
-	T*				GetInstancePtr()								{ Initialize(); return pInstance; }
+	virtual T*		GetInstancePtr()								{ Initialize(); return pInstance; }
 
 	// only instance pointer supported
-	T*				operator->()									{ Initialize(); return pInstance; }
+	T*				operator->()									{ return GetInstancePtr(); }
 
-	operator const	T&() const										{ Initialize(); return *pInstance; }
-	operator		T&()											{ Initialize(); return *pInstance; }
+	operator const	T&() const										{ return GetInstancePtr(); }
+	operator		T&()											{ return GetInstancePtr(); }
 
 protected:
 	// initialization function. Can be overrided

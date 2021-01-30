@@ -79,7 +79,6 @@ CEqParallelJobThreads::CEqParallelJobThreads()
 
 CEqParallelJobThreads::~CEqParallelJobThreads()
 {
-	Shutdown();
 }
 
 // creates new job thread
@@ -103,6 +102,8 @@ bool CEqParallelJobThreads::Init( int numThreads )
 
 void CEqParallelJobThreads::Shutdown()
 {
+	Wait();
+
 	for (int i = 0; i < m_jobThreads.numElem(); i++)
 		delete m_jobThreads[i];
 
