@@ -10,8 +10,6 @@
 
 #include "IFileSystem.h"		// for base path
 
-#include "math/math_common.h"
-
 #include <malloc.h>
 
 #include <zlib.h>
@@ -370,7 +368,7 @@ int	CDPKFileReader::FindFileIndex(const char* filename) const
     return -1;
 }
 
-bool CDPKFileReader::SetPackageFilename(const char *filename)
+bool CDPKFileReader::InitPackage(const char *filename, const char* mountPath /*= nullptr*/)
 {
 	delete [] m_dpkFiles;
 	m_dpkFiles = nullptr;
@@ -383,7 +381,7 @@ bool CDPKFileReader::SetPackageFilename(const char *filename)
     // Now fill the header data and create object table
     if (!dpkFile)
     {
-		ErrorMsg(varargs("Cannot open package '%s'\n", m_packagePath.c_str()));
+		MsgError("Cannot open package '%s'\n", m_packagePath.c_str());
 		return false;
 	}
 
@@ -406,10 +404,15 @@ bool CDPKFileReader::SetPackageFilename(const char *filename)
     }
 
 	// read mount path
-	char mountPath[DPK_STRING_SIZE];
-	fread(mountPath, DPK_STRING_SIZE, 1, dpkFile);
+	char dpkMountPath[DPK_STRING_SIZE];
+	fread(dpkMountPath, DPK_STRING_SIZE, 1, dpkFile);
 
-	m_mountPath = mountPath;
+	// if custom mount path provided, use it
+	if(mountPath)
+		m_mountPath = mountPath;
+	else
+		m_mountPath = dpkMountPath;
+	
 	m_mountPath.Path_FixSlashes();
 
 	DevMsg(DEVMSG_FS, "Package '%s' loading OK\n", m_packageName.c_str());

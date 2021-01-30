@@ -93,7 +93,7 @@ public:
 	virtual uint32			GetFileCRC32(const char* filename, int searchFlags = -1) = 0;
 
     // Package tools
-    virtual bool			AddPackage(const char* packageName,SearchPath_e type) = 0;
+    virtual bool			AddPackage(const char* packageName, SearchPath_e type, const char* mountPath = nullptr) = 0;
 	virtual void			RemovePackage(const char* packageName) = 0;
 
 	//------------------------------------------------------------

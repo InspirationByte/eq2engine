@@ -92,7 +92,8 @@ public:
 	CDPKFileReader(Threading::CEqMutex& fsMutex);
 	~CDPKFileReader();
 
-	bool					SetPackageFilename( const char* filename );
+	bool					InitPackage( const char* filename, const char* mountPath /*= nullptr*/);
+
 	IVirtualStream*			Open( const char* filename, const char* mode );
 	void					Close(IVirtualStream* fp );
 	bool					FileExists(const char* filename) const;

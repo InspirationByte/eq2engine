@@ -9,7 +9,6 @@
 #define BASEPACKAGEFILEREADER_H
 
 #include "utils/IVirtualStream.h"
-
 #include "utils/eqstring.h"
 #include "utils/eqthread.h"
 
@@ -33,7 +32,8 @@ public:
 
 	virtual ~CBasePackageFileReader() {}
 
-	virtual bool					SetPackageFilename(const char* filename) = 0;
+	virtual bool					InitPackage(const char* filename, const char* mountPath = nullptr) = 0;
+
 	virtual IVirtualStream*			Open(const char* filename, const char* mode) = 0;
 	virtual void					Close(IVirtualStream* fp) = 0;
 	virtual bool					FileExists(const char* filename) const = 0;

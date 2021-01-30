@@ -154,7 +154,7 @@ CZipFileReader::~CZipFileReader()
 	}
 }
 
-bool CZipFileReader::SetPackageFilename(const char* filename)
+bool CZipFileReader::InitPackage(const char* filename, const char* mountPath/* = nullptr*/)
 {
 	char path[2048];
 
@@ -165,7 +165,7 @@ bool CZipFileReader::SetPackageFilename(const char* filename)
 	unzFile zip = GetNewZipHandle();
 	if (!zip)
 	{
-		ErrorMsg(varargs("Cannot open Zip package '%s'\n", m_packagePath.c_str()));
+		MsgError("Cannot open Zip package '%s'\n", m_packagePath.c_str());
 		return false;
 	}
 
@@ -173,6 +173,7 @@ bool CZipFileReader::SetPackageFilename(const char* filename)
 	unz_global_info ugi;
 	unzGetGlobalInfo(zip, &ugi);
 
+	// hash all file names and positions
 	for (int i = 0; i < ugi.number_entry; i++)
 	{
 		unz_file_info ufi;
@@ -183,8 +184,6 @@ bool CZipFileReader::SetPackageFilename(const char* filename)
 		zf.filename = zf.filename.LowerCase();
 		zf.hash = StringToHash(zf.filename.c_str());
 
-		//Msg("Adding file '%s' %d\n", zf.filename.c_str(), zf.hash);
-
 		unzGetFilePos(zip, &zf.pos);
 	
 		m_files.append(zf);
@@ -192,7 +191,13 @@ bool CZipFileReader::SetPackageFilename(const char* filename)
 		unzGoToNextFile(zip);
 	}
 
-	if (unzLocateFile(zip, "dpkmount", 2) == UNZ_OK)
+	// if custom mount path provided, use it
+	if (mountPath)
+	{
+		m_mountPath = mountPath;
+		m_mountPath.Path_FixSlashes();
+	}
+	else if (unzLocateFile(zip, "dpkmount", 2) == UNZ_OK)
 	{
 		if (unzOpenCurrentFile(zip) == UNZ_OK)
 		{

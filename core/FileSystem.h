@@ -105,7 +105,7 @@ public:
 	uint32						GetFileCRC32(const char* filename, int searchFlags = -1);
 
     // Package tools
-    bool						AddPackage(const char* packageName, SearchPath_e type);
+    bool						AddPackage(const char* packageName, SearchPath_e type, const char* mountPath = nullptr);
 	void						RemovePackage(const char* packageName);
 
 	//------------------------------------------------------------
