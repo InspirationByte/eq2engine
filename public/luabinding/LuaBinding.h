@@ -12,6 +12,10 @@
 #include "utils/eqstring.h"
 #include "oolua.h"
 #include "DebugInterface.h"
+#include <utils/AsyncWorkQueue.h>
+
+
+
 
 class IVirtualStream;
 
@@ -19,7 +23,6 @@ extern OOLUA::Script& GetLuaState();
 
 namespace EqLua
 {
-
 int eqlua_stack_trace(lua_State* vm);
 //-----------------------------------------
 
@@ -60,6 +63,10 @@ public:
 	// call function, on error return false and use OOLUA error handler
 	bool					Call(int nArgs, int nRet, int nErrIndex = 0);
 
+	bool					IsValid() { return !m_isError; }
+
+protected:
+
 	OOLUA::Lua_func_ref		m_ref;
 	lua_State*				m_state;
 
@@ -85,6 +92,10 @@ public:
 
 	// call function, on error return false and use OOLUA error handler
 	bool					Call(int nArgs, int nRet, int nErrIndex = 0);
+
+	bool					IsValid() { return !m_isError; }
+
+protected:
 
 	OOLUA::Lua_func_ref		m_ref;
 	OOLUA::Table			m_table;
@@ -240,5 +251,8 @@ inline bool LuaCallUserdataCallback(const T& object, const char* functionName, O
 }
 
 };
+
+extern CAsyncWorkQueue g_luaAsyncQueue;
+
 
 #endif // LUABINDING_H

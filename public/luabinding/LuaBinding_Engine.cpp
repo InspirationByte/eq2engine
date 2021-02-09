@@ -498,6 +498,7 @@ OOLUA_EXPORT_FUNCTIONS(equi::IUIControl,
 	SetSize,
 	SetPosition,
 	//SetRectangle,
+	SetTextColor,
 	SetTransform,
 	AddChild,
 	RemoveChild,
@@ -515,6 +516,7 @@ OOLUA_EXPORT_FUNCTIONS_CONST(equi::IUIControl,
 	GetPosition,
 	//GetRectangle,
 	//GetClientRectangle,
+	GetTextColor,
 	GetClassname,
 	GetParent
 	//GetFont
@@ -595,6 +597,20 @@ void EqUI_InitBinding(lua_State* state)
 
 	OOLUA::set_global(state, "equi_cast", equiCastFuncsTab);
 	OOLUA::set_global(state, "equi", equi::Manager);
+}
+
+#include "in_keys_ident.h"
+
+void Input_InitBinding(lua_State* state)
+{
+	OOLUA::Table inputKeys = OOLUA::new_table(state);
+
+	for (keyNameMap_t* kn = s_keyMapList; kn->name; kn++)
+	{
+		inputKeys.set(kn->name, kn->keynum);
+	}
+
+	OOLUA::set_global(state, "inputMap", inputKeys);
 }
 
 // Engine state
@@ -926,6 +942,7 @@ bool LuaBinding_InitEngineBindings(lua_State* state)
 	FileSystem_InitBinding(state);
 	Math_InitBinding(state);
 	EqUI_InitBinding(state);
+	Input_InitBinding(state);
 	
 	// debug overlay
 	OOLUA::register_class<IDebugOverlay>(state);

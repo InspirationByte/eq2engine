@@ -13,11 +13,7 @@
 
 #include "utils/strtools.h"
 
-extern "C"
-{
-//#include "lundump.h"
-//#include "lapi.h"
-}
+CAsyncWorkQueue g_luaAsyncQueue;
 
 namespace EqLua
 {
@@ -292,9 +288,9 @@ static void eqlua_open_libs(lua_State *L)
 	lua_pop(L, 1);
 }
 
-bool LuaBinding_DoBuffer(lua_State* state, const char* data, int size, const char* filename, OOLUA::Table* returnTable);
+bool LuaBinding_DoBuffer(lua_State* state, const char* data, int size, const char* filename, int* returnRef);
 
-bool LuaBinding_LoadAndDoFile(lua_State* state, const char* filename, const char* pszFuncName, OOLUA::Table* returnTable)
+bool LuaBinding_LoadAndDoFile(lua_State* state, const char* filename, const char* pszFuncName, int* returnRef)
 {
 	DevMsg(DEVMSG_GAME, "running '%s'...\n", filename);
 
@@ -328,7 +324,7 @@ bool LuaBinding_LoadAndDoFile(lua_State* state, const char* filename, const char
 		return false;
 	}
 
-	bool result = LuaBinding_DoBuffer(state, filebuf, fileSize, filename, returnTable);
+	bool result = LuaBinding_DoBuffer(state, filebuf, fileSize, filename, returnRef);
 
 	PPFree((void*)filebuf);
 	
@@ -340,7 +336,6 @@ bool LuaBinding_LoadAndDoFile(lua_State* state, const char* filename, const char
 	}
 
 	return result;
-	//return OOLUA::run_file(state, filename);
 }
 
 bool LuaBinding_LoadAndDoFile(lua_State* state, const char* filename, const char* pszFuncName)
@@ -348,7 +343,7 @@ bool LuaBinding_LoadAndDoFile(lua_State* state, const char* filename, const char
 	return LuaBinding_LoadAndDoFile(state, filename, pszFuncName, nullptr);
 }
 
-bool LuaBinding_DoBuffer(lua_State* state, const char* data, int size, const char* filename, OOLUA::Table* returnTable)
+bool LuaBinding_DoBuffer(lua_State* state, const char* data, int size, const char* filename, int* returnRef)
 {
 	LuaStackGuard s(state);
 
@@ -375,10 +370,12 @@ bool LuaBinding_DoBuffer(lua_State* state, const char* data, int size, const cha
 
 	if (res == 0)
 	{
-		if (lua_istable(state, -1))
+		if (returnRef)
 		{
-			if (returnTable)
-				OOLUA::pull(state, *returnTable);
+			if (!lua_isnil(state, -1))
+				*returnRef = luaL_ref(state, LUA_REGISTRYINDEX);
+			else
+				*returnRef = LUA_REFNIL;
 		}
 
 		return true;
@@ -418,9 +415,9 @@ int LuaBinding_ModuleFunc(lua_State* state)
 			filename = checkFilename;
 	}
 
-	OOLUA::Table returnTable;
+	int returnRef;
 
-	if( !LuaBinding_LoadAndDoFile(state, filename.c_str(), "module()", &returnTable) )
+	if( !LuaBinding_LoadAndDoFile(state, filename.c_str(), "module()", &returnRef) )
 	{
 		EqString err = OOLUA::get_last_error(state).c_str();
 		OOLUA::reset_error_value(state);
@@ -437,7 +434,17 @@ int LuaBinding_ModuleFunc(lua_State* state)
 		lua_setglobal(state, "__FILE__");
 	}
 
-	OOLUA::push(state, returnTable);
+	if (returnRef == LUA_REFNIL || returnRef == LUA_NOREF)
+	{
+		lua_pushnil(state);
+	}
+	else
+	{
+		lua_rawgeti(state, LUA_REGISTRYINDEX, returnRef);
+
+		// don't pollute the registry
+		luaL_unref(state, LUA_REGISTRYINDEX, returnRef);
+	}
 
 	return 1;
 }

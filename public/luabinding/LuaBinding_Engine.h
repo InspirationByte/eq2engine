@@ -424,6 +424,9 @@ OOLUA_PROXY(equi::IUIControl)
 
 	//OOLUA_MFUNC_CONST( GetClientRectangle )
 
+	OOLUA_MFUNC(SetTextColor)
+	OOLUA_MFUNC_CONST(GetTextColor)
+
 	OOLUA_MFUNC( SetTransform )
 
 	// child controls
