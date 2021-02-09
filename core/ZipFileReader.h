@@ -89,4 +89,4 @@ protected:
 	DkList<zfileinfo_t>		m_files;
 };
 
-#endif ZIPFILEREADER_H
+#endif // ZIPFILEREADER_H

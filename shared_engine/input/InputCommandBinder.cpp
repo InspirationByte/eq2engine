@@ -60,7 +60,7 @@ bool UTIL_GetBindingKeyIndices(int outKeys[3], const char* pszKeyStr)
 			if (outKeys[i] == -1)
 			{
 				MsgError("Unknown key/mapping '%s'\n", modifier.c_str());
-				return nullptr;
+				return false;
 			}
 
 			keyStr = subStart + 1;
