@@ -222,7 +222,6 @@
     <ClCompile Include="..\..\Engine\Physics\DkPhysicsJoint.cpp" />
     <ClCompile Include="..\..\Engine\Physics\DkPhysicsRope.cpp" />
     <ClCompile Include="..\..\shared_engine\eqGlobalMutex.cpp" />
-    <ClCompile Include="..\..\shared_engine\eqParallelJobs.cpp" />
     <ClCompile Include="..\..\shared_engine\FontCache.cpp" />
     <ClCompile Include="..\..\shared_engine\studio_egf.cpp" />
     <ClCompile Include="..\..\shared_game\Animating.cpp" />

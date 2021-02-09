@@ -10,7 +10,7 @@
 #define IMATERIAL_H
 
 #include "ppmem.h"
-#include "refcounted.h"
+#include "utils/refcounted.h"
 
 // WARNING: modifying this you must recompile all engine!
 enum MaterialFlags_e

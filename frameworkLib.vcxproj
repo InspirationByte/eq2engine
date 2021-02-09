@@ -225,6 +225,7 @@
     <ClCompile Include="public\Network\NetMessageBuffer.cpp" />
     <ClCompile Include="public\Network\NetInterfaces.cpp" />
     <ClCompile Include="public\Network\net_defs.cpp" />
+    <ClCompile Include="public\utils\AsyncWorkQueue.cpp" />
     <ClCompile Include="public\Utils\CRC32.cpp" />
     <ClCompile Include="public\utils\eqGlobalMutex.cpp" />
     <ClCompile Include="public\Utils\eqthread.cpp" />
@@ -236,6 +237,7 @@
     <ClCompile Include="public\Utils\strtools.cpp" />
     <ClCompile Include="public\Utils\eqtimer.cpp" />
     <ClCompile Include="public\Utils\eqstring.cpp" />
+    <ClCompile Include="public\utils\TextureAtlas.cpp" />
     <ClCompile Include="public\Utils\Tokenizer.cpp" />
     <ClCompile Include="public\Utils\VirtualStream.cpp" />
   </ItemGroup>

@@ -245,5 +245,11 @@
     <ClCompile Include="public\utils\eqGlobalMutex.cpp">
       <Filter>Source Files\Utils</Filter>
     </ClCompile>
+    <ClCompile Include="public\utils\AsyncWorkQueue.cpp">
+      <Filter>Source Files\Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="public\utils\TextureAtlas.cpp">
+      <Filter>Source Files\Utils</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

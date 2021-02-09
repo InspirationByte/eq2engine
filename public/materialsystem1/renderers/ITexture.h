@@ -8,9 +8,9 @@
 #ifndef ITEXTURE_H
 #define ITEXTURE_H
 
-#include "textureformats.h"
+#include "utils/refcounted.h"
+#include "imaging/textureformats.h"
 #include "ShaderAPI_defs.h"
-#include "refcounted.h"
 #include "math/Rectangle.h"
 #include "ppmem.h"
 

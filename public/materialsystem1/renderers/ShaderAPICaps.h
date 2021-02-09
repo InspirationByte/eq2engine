@@ -9,7 +9,7 @@
 #ifndef SHADERAPICAPS_H
 #define SHADERAPICAPS_H
 
-#include "textureformats.h"
+#include "imaging/textureformats.h"
 #include "ShaderAPI_defs.h"
 
 enum EShaderSupportFlags

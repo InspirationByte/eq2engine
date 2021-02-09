@@ -13,7 +13,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tools", "Tools", "{A0162FED
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Renderers", "Renderers", "{F3665CE3-B2CB-4C13-ADF2-569EDB79A907}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "MatSystem", "MaterialSystem\MatSystem.vcxproj", "{A0CF9C6B-7EED-43C1-A8E1-D99D2A2B5CDD}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "MatSystem", "MaterialSystem1\MatSystem.vcxproj", "{A0CF9C6B-7EED-43C1-A8E1-D99D2A2B5CDD}"
 	ProjectSection(ProjectDependencies) = postProject
 		{5EDDCDB2-E467-4DB3-AD7E-4E78F5020028} = {5EDDCDB2-E467-4DB3-AD7E-4E78F5020028}
 	EndProjectSection
@@ -34,19 +34,19 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "egfman", "utils\egfman\egfm
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "atlasgen", "utils\atlasgen\atlasgen.vcxproj", "{E882DFBB-C856-479E-9175-41CAFE7D144C}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ShaderAPID3D9", "MaterialSystem\Renderers\ShaderAPID3D9.vcxproj", "{88207507-AEBE-4E8B-AD01-FE6AFEE994F7}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ShaderAPID3D9", "MaterialSystem1\Renderers\ShaderAPID3D9.vcxproj", "{88207507-AEBE-4E8B-AD01-FE6AFEE994F7}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ShaderAPID3D10", "MaterialSystem\Renderers\ShaderAPID3D10.vcxproj", "{D19F601D-D3A0-4162-9703-98236A70F46E}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ShaderAPID3D10", "MaterialSystem1\Renderers\ShaderAPID3D10.vcxproj", "{D19F601D-D3A0-4162-9703-98236A70F46E}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ShaderAPINull", "MaterialSystem\Renderers\ShaderAPIEmpty.vcxproj", "{0AAEF7D5-CDC3-432A-8632-3E529F71C708}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ShaderAPINull", "MaterialSystem1\Renderers\ShaderAPIEmpty.vcxproj", "{0AAEF7D5-CDC3-432A-8632-3E529F71C708}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ShaderAPIGL", "MaterialSystem\Renderers\ShaderAPIGL.vcxproj", "{23249CCD-E8E0-49E1-ABD2-97B4611AC18E}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ShaderAPIGL", "MaterialSystem1\Renderers\ShaderAPIGL.vcxproj", "{23249CCD-E8E0-49E1-ABD2-97B4611AC18E}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "EngineShaders", "MaterialSystem\EngineShaders\EngineShaders.vcxproj", "{6A83A676-BD41-4667-AD01-D88601BD4FBC}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "EngineShaders", "MaterialSystem1\EngineShaders\EngineShaders.vcxproj", "{6A83A676-BD41-4667-AD01-D88601BD4FBC}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "coreLib", "coreLib.vcxproj", "{591567D2-96D1-4CBC-988B-07B7794AD489}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "MaterialSystem", "MaterialSystem", "{3271F3A5-5D5C-41E6-9DED-D61A3CC47E91}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "MaterialSystem1", "MaterialSystem1", "{3271F3A5-5D5C-41E6-9DED-D61A3CC47E91}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "DOCS", "DOCS", "{B8B31B61-24D5-4999-AF10-AB7ADD95B8C4}"
 EndProject

@@ -8,7 +8,7 @@
 #ifndef PLATFORM_H
 #define PLATFORM_H
 
-#include "dktypes.h"
+#include "core/dktypes.h"
 #include "InterfaceManager.h"
 
 //---------------------------------------------

@@ -5,7 +5,7 @@
 // Description: Base shader public code
 //////////////////////////////////////////////////////////////////////////////////
 
-#include "materialsystem/IMaterialSystem.h"
+#include "materialsystem1/IMaterialSystem.h"
 #include "utils/strtools.h"
 #include "scene_def.h"
 

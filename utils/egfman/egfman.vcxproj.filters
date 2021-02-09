@@ -324,7 +324,6 @@
       <Filter>Source Files\EngineLib\Renderer\Debug</Filter>
     </ClCompile>
     <ClCompile Include="..\..\shared_engine\eqGlobalMutex.cpp" />
-    <ClCompile Include="..\..\shared_engine\eqParallelJobs.cpp" />
     <ClCompile Include="..\..\shared_engine\Font.cpp">
       <Filter>Source Files\EngineLib</Filter>
     </ClCompile>
