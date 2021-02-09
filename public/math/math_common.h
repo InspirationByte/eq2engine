@@ -24,7 +24,7 @@
 #define F_EPS			0.0001f
 #define V_MAX_COORD		393216.0f		// common maximum in the Equilibrium engine
 
-#define roundf(x) floorf((x) + 0.5f)
+//#define roundf(x) floorf((x) + 0.5f)
 
 #if defined(_INC_MINMAX)
 #error Please remove minmax from includes
@@ -43,7 +43,11 @@ inline TR max(T x, T2 y) {return (TR)((x > y)? x : y);}
 inline void SinCos( float radians, float *sine, float *cosine )
 {
 	// GCC handles better...
-#if defined(_WIN32) && !defined(_WIN64)
+
+	//*sine = sin(radians);
+	//*cosine = cos(radians);
+
+#ifdef _WIN32
 	_asm
 	{
 		fld		DWORD PTR [radians]
@@ -56,8 +60,19 @@ inline void SinCos( float radians, float *sine, float *cosine )
 		fstp DWORD PTR [eax]
 	}
 #else
+
 	*sine = sinf(radians);
 	*cosine = cosf(radians);
+
+/*
+	register double __cosr, __sinr;
+ 	__asm __volatile__
+    		("fsincos"
+     	: "=t" (__cosr), "=u" (__sinr) : "0" (radians));
+
+  	*sine = __sinr;
+  	*cosine = __cosr;
+	*/
 #endif
 
 }
@@ -146,6 +161,7 @@ inline unsigned int getLowerPowerOfTwo(const unsigned int x)
 	return i >> 1;
 }
 
+/*
 #if !defined(_MSC_VER) || _MSC_VER < 1800
 inline int round(float x)
 {
@@ -156,6 +172,7 @@ inline int round(float x)
 	}
 }
 #endif // _MSC_VER
+*/
 
 inline bool fsimilar( float a, float b, float cmp = F_EPS )
 {
