@@ -36,3 +36,13 @@ target("atlasgen")
     add_headerfiles("atlasgen/*.h")
     add_packages("jpeg")
     add_eqcore_deps()
+
+----------------------------------------------
+-- Texture cooker (TexCooker)
+
+target("texcooker")
+    set_group(Groups.tools)
+    set_kind("binary")
+    add_files("texcooker/*.cpp")
+    add_headerfiles("texcooker/*.h")
+    add_eqcore_deps()

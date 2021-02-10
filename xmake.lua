@@ -9,7 +9,7 @@ set_arch("x64") -- TODO: x86 builds too
 
 -- some packages
 add_requires("zlib", "libjpeg")
-set_targetdir("bin_$(arch)")
+set_targetdir("bin/$(arch)")
 
 -----------------------------------------------------
 
