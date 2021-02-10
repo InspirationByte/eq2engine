@@ -92,9 +92,9 @@ protected:
 	int WaitForResult(work_t* work);
 
 	DkList<work_t*> m_pendingWork;
-	CEqMutex m_workMutex;
-	uint m_workCounter;
-	bool m_started;
+	CEqMutex		m_workMutex;
+	uint			m_workCounter;
+	bool			m_started;
 };
 
 int GLWorkerThread::WaitForResult(work_t* work)
@@ -103,7 +103,7 @@ int GLWorkerThread::WaitForResult(work_t* work)
 
 	// wait
 	while (work->result == WORK_PENDING_MARKER)
-		Threading::Yield();
+		Platform_Sleep(1);
 
 	// retrieve result and delete
 	int result = work->result;
@@ -141,17 +141,6 @@ int GLWorkerThread::AddWork(std::function<int()> f, bool blocking)
 int GLWorkerThread::Run()
 {
 	work_t* currentWork = nullptr;
-
-	/*
-	// switch to the shared context
-	if (g_shaderApi.m_asyncOperationActive != m_started)
-	{
-		if (m_started)
-			g_shaderApi.BeginAsyncOperation(GetThreadID());
-		else
-			g_shaderApi.EndAsyncOperation();
-	}
-	*/
 
 	// find some work
 	while (!currentWork)
