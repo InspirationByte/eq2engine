@@ -912,8 +912,6 @@ const char* CFileSystem::FindFirst(const char* wildcard, DKFINDDATA** findData, 
 	newFind->wildcard.ReplaceSubstr("*.*", "*");
 #endif
 
-	m_findDatas.append(newFind);
-
 	EqString fsBaseDir = m_basePath.c_str();
 
 	if(searchPath == SP_DATA)
@@ -929,6 +927,8 @@ const char* CFileSystem::FindFirst(const char* wildcard, DKFINDDATA** findData, 
 	EqString searchWildcard;
 	CombinePath(searchWildcard, 2, fsBaseDir.c_str(), newFind->wildcard.c_str());
 
+	m_findDatas.append(newFind);
+
 #ifdef _WIN32
 	newFind->fileHandle = ::FindFirstFileA(searchWildcard.c_str(), &newFind->wfd);
 
@@ -938,7 +938,7 @@ const char* CFileSystem::FindFirst(const char* wildcard, DKFINDDATA** findData, 
 #else // POSIX
 	newFind->index = -1;
 
-	if (glob(searchWildcard.c_str(), 0, NULL, &newFind->gl) == 0)
+	if (glob(searchWildcard.c_str(), 0, NULL, &newFind->gl) == 0 && newFind->gl.gl_pathc > 0)
 	{
 		newFind->pathlen = searchWildcard.Path_Extract_Path().Length();
 		newFind->index = 0;

@@ -6,28 +6,14 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "DPKFileReader.h"
-#include "platform/Platform.h"
-
 #include "IFileSystem.h"		// for base path
+#include "DebugInterface.h"
 
 #include <malloc.h>
-
 #include <zlib.h>
 
 #include "utils/strtools.h"
-#include "utils/IVirtualStream.h"
 #include "utils/CRC32.h"
-
-#include "DebugInterface.h"
-
-#ifdef _WIN32
-#include <direct.h>
-#include <shlobj.h>
-#include <malloc.h>
-#else
-#include <unistd.h>
-#include <sys/stat.h>
-#endif
 
 void encryptDecrypt(ubyte* buffer, int size, int hash)
 {
@@ -374,7 +360,11 @@ bool CDPKFileReader::InitPackage(const char *filename, const char* mountPath /*=
 	m_dpkFiles = nullptr;
 
     m_packageName = filename;
-	CombinePath(m_packagePath, 2, g_fileSystem->GetBasePath(), filename);
+
+	if (filename[0] != CORRECT_PATH_SEPARATOR)
+		CombinePath(m_packagePath, 2, g_fileSystem->GetBasePath(), filename);
+	else
+		m_packagePath = m_packageName;
 
     FILE* dpkFile = fopen(m_packagePath.c_str(),"rb");
 

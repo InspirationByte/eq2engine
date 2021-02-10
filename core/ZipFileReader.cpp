@@ -7,9 +7,10 @@
 
 
 #include "ZipFileReader.h"
-#include "utils/strtools.h"
 #include "IFileSystem.h"
 #include "DebugInterface.h"
+
+#include "utils/strtools.h"
 #include "utils/CRC32.h"
 
 CZipFileStream::CZipFileStream(unzFile zip) : m_zipHandle(zip)
@@ -159,7 +160,11 @@ bool CZipFileReader::InitPackage(const char* filename, const char* mountPath/* =
 	char path[2048];
 
 	m_packageName = filename;
-	CombinePath(m_packagePath, 2, g_fileSystem->GetBasePath(), filename);
+
+	if (filename[0] != CORRECT_PATH_SEPARATOR)
+		CombinePath(m_packagePath, 2, g_fileSystem->GetBasePath(), filename);
+	else
+		m_packagePath = m_packageName;
 
 	// perform test
 	unzFile zip = GetNewZipHandle();
