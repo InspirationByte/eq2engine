@@ -9,7 +9,7 @@
 #ifndef IMATERIAL_H
 #define IMATERIAL_H
 
-#include "ppmem.h"
+#include "core/ppmem.h"
 #include "utils/refcounted.h"
 
 // WARNING: modifying this you must recompile all engine!

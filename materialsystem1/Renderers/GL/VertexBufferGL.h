@@ -8,7 +8,7 @@
 #ifndef VERTEXBUFFERGL_H
 #define VERTEXBUFFERGL_H
 
-#include "IVertexBuffer.h"
+#include "renderers/IVertexBuffer.h"
 
 #define MAX_VB_SWITCHING 8
 

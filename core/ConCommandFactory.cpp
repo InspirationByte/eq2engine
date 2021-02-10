@@ -5,18 +5,18 @@
 // Description: Variables factory
 //////////////////////////////////////////////////////////////////////////////////
 
+#include "ConCommandFactory.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "InterfaceManager.h"
+#include "core/IFileSystem.h"
+#include "core/ConVar.h"
+#include "core/ConCommand.h"
+#include "core/DebugInterface.h"
+#include "core/IDkCore.h"
 
-#include "ConCommandFactory.h"
-#include "IFileSystem.h"
 #include "utils/strtools.h"
-#include "ConVar.h"
-#include "ConCommand.h"
-#include "DebugInterface.h"
-#include "IDkCore.h"
 
 EXPORTED_INTERFACE(IConsoleCommands, CConsoleCommands);
 

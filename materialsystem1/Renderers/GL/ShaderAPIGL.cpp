@@ -15,16 +15,15 @@
 #include "GLRenderState.h"
 #include "GLOcclusionQuery.h"
 
-#include "DebugInterface.h"
-
 #include "shaderapigl_def.h"
 
 #include "imaging/ImageLoader.h"
 
-#include "IConCommandFactory.h"
+#include "core/DebugInterface.h"
+#include "core/IConCommandFactory.h"
+
 #include "utils/strtools.h"
 #include "utils/KeyValues.h"
-
 #include "utils/eqthread.h"
 
 #include <functional>

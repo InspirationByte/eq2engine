@@ -8,8 +8,10 @@
 #ifndef D3D9SHADERPROGRAM_H
 #define D3D9SHADERPROGRAM_H
 
-#include "IShaderProgram.h"
-#include "Utils/EqString.h"
+#include "renderers/IShaderProgram.h"
+#include "renderers/ShaderAPI_defs.h"
+#include "utils/EqString.h"
+#include <d3d9.h>
 
 #define MAX_CONSTANT_NAMELEN 64
 

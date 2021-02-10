@@ -8,9 +8,8 @@
 #ifndef DYNAMICMESH_H
 #define DYNAMICMESH_H
 
-#include "IDynamicMesh.h"
-#include "renderers/IShaderAPI.h"
-#include "utils/DkList.h"
+#include "materialsystem1/IDynamicMesh.h"
+#include "materialsystem1/renderers/IShaderAPI.h"
 
 class CDynamicMesh : public IDynamicMesh
 {

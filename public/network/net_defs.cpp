@@ -6,8 +6,8 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "net_defs.h"
-#include "DebugInterface.h"
-#include "dktypes.h"
+#include "core/DebugInterface.h"
+#include "core/dktypes.h"
 
 namespace Networking
 {

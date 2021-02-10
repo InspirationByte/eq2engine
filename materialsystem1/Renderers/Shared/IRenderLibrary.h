@@ -8,11 +8,10 @@
 #ifndef IRENDERLIB_H
 #define IRENDERLIB_H
 
-#include "IShaderAPI.h"
-#include "IEqSwapChain.h"
-#include "DebugInterface.h"
+#include "materialsystem1/renderers/IShaderAPI.h"
+#include "materialsystem1/renderers/IEqSwapChain.h"
 
-#include "InterfaceManager.h"
+#include "core/InterfaceManager.h"
 
 #define RENDERER_INTERFACE_VERSION	"DkRenderer_010"
 

@@ -7,8 +7,8 @@
 
 #ifdef _WIN32
 
-#include "platform/Platform.h"
-#include "DebugInterface.h"
+#include "core/platform/Platform.h"
+#include "core/DebugInterface.h"
 
 #include <crtdbg.h>
 

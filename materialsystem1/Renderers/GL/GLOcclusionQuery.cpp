@@ -9,9 +9,9 @@
 #include "ShaderAPIGL.h"
 
 #ifdef USE_GLES2
-#include "glad_es3.h"
+#include <glad_es3.h>
 #else
-#include "glad.h"
+#include <glad.h>
 #endif
 
 CGLOcclusionQuery::CGLOcclusionQuery()

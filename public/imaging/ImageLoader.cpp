@@ -6,15 +6,15 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "ImageLoader.h"
-#include "DebugInterface.h"
-#include "ConVar.h"
+#include "core/DebugInterface.h"
+#include "core/IFileSystem.h"
 
 #include "math/math_common.h"
 
 #include <string.h>
 #include <stdlib.h>
 
-#include "../math/Vector.h"
+#include "math/Vector.h"
 
 #ifndef NO_JPEG
 

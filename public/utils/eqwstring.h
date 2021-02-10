@@ -10,7 +10,8 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include "dktypes.h"
+
+#include "core/dktypes.h"
 
 #ifdef __GNUG__
 class EqString;

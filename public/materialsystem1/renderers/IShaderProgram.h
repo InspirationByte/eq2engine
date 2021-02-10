@@ -8,7 +8,7 @@
 #ifndef ISHADERPROGRAM_H
 #define ISHADERPROGRAM_H
 
-#include "ppmem.h"
+#include "core/ppmem.h"
 #include "utils/refcounted.h"
 
 class IShaderProgram : public RefCountedObject

@@ -8,7 +8,7 @@
 #ifndef DKLINKEDLIST_H
 #define DKLINKEDLIST_H
 
-#include "dktypes.h"
+#include "core/dktypes.h"
 
 template <class TYPE>
 struct DkLLNode

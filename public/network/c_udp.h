@@ -12,11 +12,13 @@
 
 #include "utils/DkList.h"
 #include "utils/eqthread.h"
-#include <map>
 
-#include "platform/Platform.h"
-#include "net_defs.h"
+#include "core/platform/Platform.h"
 #include "utils/VirtualStream.h"
+
+#include "net_defs.h"
+
+#include <map>
 
 #define CUDP_MESSAGE_ID_IMMEDIATE			(-3)
 #define CUDP_MESSAGE_ID_ERROR				(-2)

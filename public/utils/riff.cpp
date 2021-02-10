@@ -6,7 +6,7 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "riff.h"
-#include "DebugInterface.h"
+#include "core/DebugInterface.h"
 
 CRIFF_Parser::CRIFF_Parser(const char* szFilename)
 {

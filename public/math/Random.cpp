@@ -6,7 +6,7 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include <stdlib.h>
-#include "dktypes.h"
+#include "core/dktypes.h"
 #include "Random.h"
 #include <math.h>
 

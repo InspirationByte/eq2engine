@@ -9,15 +9,13 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "c_udp.h"
-#include "net_defs.h"
 
-#include "DebugInterface.h"
+#include "core/DebugInterface.h"
+#include "core/ConVar.h"
 
 #include "utils/strtools.h"
 #include "utils/CRC32.h"
 #include "utils/KeyValues.h"
-
-#include "ConVar.h"
 
 ConVar net_fakelag("net_fakelag", "0", "Simulate lagging packets\n", CV_CHEAT);
 

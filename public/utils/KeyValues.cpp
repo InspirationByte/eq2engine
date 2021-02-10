@@ -8,20 +8,21 @@
 
 // Core interface helper
 #include <stdarg.h>
+#ifdef LINUX
+#include <ctype.h>
+#else
+#include <malloc.h>
+#endif
 
-#include "core_base_header.h"
-#include "DebugInterface.h"
+#include "core/DebugInterface.h"
+#include "core/IFileSystem.h"
 
 #include "KeyValues.h"
 
+
+
 #include "utils/VirtualStream.h"
-
-#ifdef LINUX
-#include <ctype.h>
-#endif
-
 #include "utils/strtools.h"
-#include "IVirtualStream.h"
 
 static const char* s_szkKVValueTypes[KVPAIR_TYPES] =
 {

@@ -8,7 +8,7 @@
 #ifndef CLOCALIZE
 #define CLOCALIZE
 
-#include "ILocalize.h"
+#include "core/ILocalize.h"
 #include "utils/DkList.h"
 #include "utils/eqstring.h"
 #include "utils/eqwstring.h"

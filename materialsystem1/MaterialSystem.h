@@ -14,16 +14,16 @@
 
 #include <unordered_map>
 
-#include "IMaterialSystem.h"
-#include "DynamicMesh.h"
-
+#include "core/platform/Platform.h"
+#include "utils/eqthread.h"
 #include "utils/DkList.h"
-#include "platform/Platform.h"
+
+#include "materialsystem1/IMaterialSystem.h"
+#include "materialsystem1/scene_def.h"
+
+#include "DynamicMesh.h"
 #include "material.h"
 
-#include "scene_def.h"
-
-#include "utils/eqthread.h"
 
 using namespace Threading;
 

@@ -6,8 +6,8 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "NetInterfaces.h"
-#include "DebugInterface.h"
-#include "IConCommandFactory.h"
+#include "core/DebugInterface.h"
+#include "core/IConCommandFactory.h"
 
 #include <zlib.h>
 

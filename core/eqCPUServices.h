@@ -8,8 +8,8 @@
 #ifndef EQCPUSERVICES_H
 #define EQCPUSERVICES_H
 
-#include "IEqCPUServices.h"
-#include "platform/Platform.h"
+#include "core/IEqCPUServices.h"
+#include "core/platform/Platform.h"
 
 class CEqCPUCaps : public IEqCPUCaps
 {

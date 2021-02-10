@@ -8,8 +8,8 @@
 #ifndef IOCCLUSIONQUERY_H
 #define IOCCLUSIONQUERY_H
 
-#include "dktypes.h"
-#include "ppmem.h"
+#include "core/dktypes.h"
+#include "core/ppmem.h"
 
 class IOcclusionQuery
 {

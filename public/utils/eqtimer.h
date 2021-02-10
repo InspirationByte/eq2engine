@@ -11,7 +11,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "platform/Platform.h"
+#include "core/dktypes.h"
 
 #ifndef _WIN32
 #include <sys/time.h>

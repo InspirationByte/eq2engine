@@ -15,18 +15,17 @@
 //
 //////////////////////////////////////////////////////////////////////////////////
 
-#include "ppmem.h"
+#include "core/ppmem.h"
 
-#include <malloc.h>
-
-#include <unordered_map>
-#include "DebugInterface.h"
-#include "IConCommandFactory.h"
-#include "ICmdLineParser.h"
+#include "core/DebugInterface.h"
+#include "core/IConCommandFactory.h"
+#include "core/ICmdLineParser.h"
 #include "utils/strtools.h"
 #include "utils/eqthread.h"
 
 #include <stdio.h>
+#include <malloc.h>
+#include <unordered_map>
 
 #if defined(_DEBUG) && defined(_WIN32)
 #define pp_internal_malloc(s)	_malloc_dbg(s, _NORMAL_BLOCK, pszFileName, nLine)

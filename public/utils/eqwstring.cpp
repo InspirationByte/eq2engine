@@ -11,7 +11,7 @@
 
 #include <stdio.h>
 #include <malloc.h>
-#include "platform/Platform.h"
+#include "core/platform/Platform.h"
 #include "strtools.h"
 
 #ifdef PLAT_POSIX

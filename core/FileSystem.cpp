@@ -7,11 +7,14 @@
 
 #include "FileSystem.h"
 
+#include "core/IDkCore.h"
+#include "core/ILocalize.h"
+#include "core/DebugInterface.h"
+
 #include "utils/SmartPtr.h"
 #include "utils/KeyValues.h"
 #include "utils/strtools.h"
-#include "IDkCore.h"
-#include "ILocalize.h"
+#include "utils/CRC32.h"
 
 #include "DPKFileReader.h"
 #include "ZipFileReader.h"
@@ -20,17 +23,19 @@
 
 #include <direct.h>	// mkdir()
 #include <io.h> // _access()
+
 #define access		_access
 #define F_OK		0       // Test for existence.
+
 #else
+
 #include <unistd.h> // rmdir(), access()
 #include <stdarg.h> // va_*
 #include <dlfcn.h>
 #include <glob.h>     // glob(), globfree()
+
 #endif
 
-#include "DebugInterface.h"
-#include "utils/CRC32.h"
 
 const char archiveKey[] = { 'W','@','k','m','U','5','1','c', 0 };
 

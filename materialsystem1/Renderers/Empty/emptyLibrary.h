@@ -8,8 +8,8 @@
 #ifndef CGLRENDERLIB_H
 #define CGLRENDERLIB_H
 
-#include "IShaderAPI.h"
-#include "../Shared/IRenderLibrary.h"
+#include "renderers/IShaderAPI.h"
+#include "IRenderLibrary.h"
 
 class CEmptyRenderLib : public IRenderLibrary
 {

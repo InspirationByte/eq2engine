@@ -47,7 +47,7 @@ inline void SinCos( float radians, float *sine, float *cosine )
 	//*sine = sin(radians);
 	//*cosine = cos(radians);
 
-#ifdef _WIN32
+#if defined(_WIN32) && !defined(_WIN64)
 	_asm
 	{
 		fld		DWORD PTR [radians]

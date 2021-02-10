@@ -9,7 +9,7 @@
 #ifndef CMATVAR_H
 #define CMATVAR_H
 
-#include "IMaterialVar.h"
+#include "materialsystem1/IMaterialVar.h"
 #include "utils/eqstring.h"
 
 class CMatVar : public IMatVar

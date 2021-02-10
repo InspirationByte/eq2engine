@@ -5,11 +5,10 @@
 // Description: CPU detection
 //////////////////////////////////////////////////////////////////////////////////
 
-#include "InterfaceManager.h"
-
 #include "eqCPUServices.h"
-#include "DebugInterface.h"
 #include "ConCommandFactory.h"
+
+#include "core/DebugInterface.h"
 
 EXPORTED_INTERFACE(IEqCPUCaps, CEqCPUCaps);
 
@@ -24,10 +23,11 @@ EXPORTED_INTERFACE(IEqCPUCaps, CEqCPUCaps);
 
 #define cpuid(func, a, b, c, d) { int res[4]; __cpuid(res, func); a = res[0]; b = res[1]; c = res[2]; d = res[3]; }
 
+#define getCycleNumber() __rdtsc()
+
 #else
 void cpuidAsm(uint32 func, uint32 *a, uint32 *b, uint32 *c, uint32 *d);
 #define cpuid(func, a, b, c, d) cpuidAsm(func, &a, &b, &c, &d)
-
 
 #pragma warning(disable: 4035)
 inline uint64 getCycleNumber()
@@ -119,11 +119,10 @@ inline uint64 getCycleNumber()
 #define WIN32_LEAN_AND_MEAN
 #include "Windows.h"
 
-#ifndef _WIN64
 uint64 getHz()
 {
-	LARGE_INTEGER t1,t2,tf;
-	uint64 c1,c2;
+	LARGE_INTEGER t1, t2, tf;
+	uint64 c1, c2;
 
 	QueryPerformanceFrequency(&tf);
 	QueryPerformanceCounter(&t1);
@@ -138,6 +137,7 @@ uint64 getHz()
 	return ((c2 - c1) * tf.QuadPart / (t2.QuadPart - t1.QuadPart));
 }
 
+#ifndef _WIN64
 void cpuidAsm(uint32 func, uint32 *a, uint32 *b, uint32 *c, uint32 *d)
 {
 	__asm {

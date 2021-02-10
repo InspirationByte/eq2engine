@@ -8,7 +8,7 @@
 #ifndef INDEXBUFFERD3DX9_H
 #define INDEXBUFFERD3DX9_H
 
-#include "IIndexBuffer.h"
+#include "renderers/IIndexBuffer.h"
 
 struct iborestoredata_t
 {

@@ -5,8 +5,8 @@
 // Description: Provides all shared definitions of engine
 //////////////////////////////////////////////////////////////////////////////////
 
-#include "platform/Platform.h"
-#include "platform/MessageBox.h"
+#include "core/platform/Platform.h"
+#include "core/platform/MessageBox.h"
 
 // sleeps the execution thread and let other processes to run for a specified amount of time.
 IEXPORTS void Platform_Sleep(uint32 nMilliseconds)

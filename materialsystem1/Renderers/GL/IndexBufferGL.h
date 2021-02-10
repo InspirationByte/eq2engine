@@ -8,7 +8,7 @@
 #ifndef INDEXBUFFERGL_H
 #define INDEXBUFFERGL_H
 
-#include "IIndexBuffer.h"
+#include "renderers/IIndexBuffer.h"
 
 #define MAX_IB_SWITCHING 8
 

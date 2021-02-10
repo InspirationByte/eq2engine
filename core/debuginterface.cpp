@@ -5,13 +5,12 @@
 // Description: Core Debug interface
 //////////////////////////////////////////////////////////////////////////////////
 
-#include "DebugInterface.h"
-#include "core_base_header.h"
-
-#include "platform/Platform.h"
+#include "core/DebugInterface.h"
+#include "core/platform/Platform.h"
+#include "core/core_base_header.h"
 #include "resource.h"
-#include <stdarg.h>
 #include "utils/eqthread.h"
+#include <stdarg.h>
 
 #ifdef _WIN32
 #include <direct.h>
@@ -54,7 +53,7 @@ void Log_Init()
 
 #ifndef NO_CORE
 	char tmp_path[2048];
-	sprintf(tmp_path, "logs/%s_%s.log",GetCore()->GetApplicationName(),GetCore()->GetCurrentUserName());
+	sprintf(tmp_path, "logs/%s.log",GetCore()->GetApplicationName());
 
 	Log_WriteBOM( tmp_path );
 

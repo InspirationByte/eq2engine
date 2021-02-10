@@ -15,11 +15,14 @@
 #define CONCAT2(f0, f1, f2) f0##f1##f2
 #define CONCAT3(f0, f1, f2, f3) f0##f1##f2##f3
 
-#ifdef _WIN32
+#if defined(_WIN32)
 
 #include <mmintrin.h>
 #include <emmintrin.h>
+
+#if !defined(_WIN64)
 #include <mm3dnow.h>
+#endif
 
 
 typedef __m64 v8qi;

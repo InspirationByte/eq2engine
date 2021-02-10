@@ -7,8 +7,9 @@
 
 
 #include "ZipFileReader.h"
-#include "IFileSystem.h"
-#include "DebugInterface.h"
+
+#include "core/IFileSystem.h"
+#include "core/DebugInterface.h"
 
 #include "utils/strtools.h"
 #include "utils/CRC32.h"

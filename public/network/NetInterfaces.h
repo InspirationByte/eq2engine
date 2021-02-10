@@ -9,7 +9,7 @@
 #define NETINTERFACES_H
 
 #include "c_udp.h"
-#include "platform/Platform.h"
+#include "core/dktypes.h"
 #include "utils/DkList.h"
 #include "utils/eqstring.h"
 

@@ -9,7 +9,7 @@
 #define CMDLINEPARSER_H
 
 #include <stdio.h>
-#include "ICmdLineParser.h"
+#include "core/ICmdLineParser.h"
 #include "utils/DkList.h"
 #include "utils/eqstring.h"
 

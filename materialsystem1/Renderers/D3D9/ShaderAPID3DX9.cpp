@@ -5,7 +5,12 @@
 // Description: Equilibrium Direct3D 9 ShaderAPI
 //////////////////////////////////////////////////////////////////////////////////
 
-#include "DebugInterface.h"
+#include <d3dx9.h>
+
+#include "core/DebugInterface.h"
+#include "core/IConCommandFactory.h"
+#include "core/IFileSystem.h"
+
 #include "ShaderAPID3DX9.h"
 #include "CD3D9Texture.h"
 #include "d3dx9_def.h"
@@ -13,18 +18,15 @@
 #include "VertexFormatD3DX9.h"
 #include "VertexBufferD3DX9.h"
 #include "IndexBufferD3DX9.h"
+
 #include "D3D9ShaderProgram.h"
 #include "D3D9OcclusionQuery.h"
 
+#include "imaging/ImageLoader.h"
+
 #include "utils/VirtualStream.h"
-
-#include "Imaging/ImageLoader.h"
-
-#include "IConCommandFactory.h"
 #include "utils/strtools.h"
 #include "utils/KeyValues.h"
-
-#include <d3dx9.h>
 
 HOOK_TO_CVAR(r_loadmiplevel);
 
@@ -32,6 +34,8 @@ bool InternalCreateRenderTarget(LPDIRECT3DDEVICE9 dev, CD3D9Texture *tex, int nF
 
 // only needed for unmanaged textures
 #define DEVICE_SPIN_WAIT while(m_bDeviceAtReset){if(!m_bDeviceAtReset) break;}
+
+#pragma warning(disable:4838)
 
 ShaderAPID3DX9::~ShaderAPID3DX9()
 {

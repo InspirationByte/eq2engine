@@ -25,8 +25,6 @@ public:
 
 	virtual char*					GetApplicationName() = 0; // returns current application name string
 
-	virtual char*					GetCurrentUserName() = 0;	// returns current user name string
-
 	virtual bool					IsInitialized() = 0;	// Return status of initialization
 
 	// now configuration is global for all applications

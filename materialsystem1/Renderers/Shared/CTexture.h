@@ -8,7 +8,7 @@
 #ifndef CTEXTURE_H
 #define CTEXTURE_H
 
-#include "ITexture.h"
+#include "renderers/ITexture.h"
 #include "utils/eqstring.h"
 
 class CTexture : public ITexture

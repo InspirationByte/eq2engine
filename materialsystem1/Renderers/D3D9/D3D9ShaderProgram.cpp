@@ -5,11 +5,11 @@
 // Description: DX9 Shader program for ShaderAPID3DX9
 //////////////////////////////////////////////////////////////////////////////////
 
+#include "D3D9ShaderProgram.h"
+#include "renderers/ShaderAPI_defs.h"
+
 #include <d3d9.h>
 #include <d3dx9.h>
-
-#include "ShaderAPI_defs.h"
-#include "D3D9ShaderProgram.h"
 
 CD3D9ShaderProgram::CD3D9ShaderProgram()
 {

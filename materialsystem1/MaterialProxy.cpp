@@ -7,7 +7,10 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "MaterialProxy.h"
-#include "IMaterialSystem.h"
+
+#include "utils/KeyValues.h"
+
+#include "materialsystem1/IMaterialSystem.h"
 
 //---------------------------------------------------------------------
 // ADD proxy

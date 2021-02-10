@@ -6,8 +6,8 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "VirtualStream.h"
-#include "IFileSystem.h"
-#include "platform/MessageBox.h"
+#include "core/IFileSystem.h"
+#include "core/platform/MessageBox.h"
 #include "utils/CRC32.h"
 
 #ifdef PLAT_POSIX

@@ -5,16 +5,15 @@
 // Description: Equilibrium OpenGL ShaderAPI
 //////////////////////////////////////////////////////////////////////////////////
 
-#include "IDkCore.h"
 #include "CGLRenderLib.h"
-#include "IConCommandFactory.h"
+
+#include "core/IConCommandFactory.h"
+#include "core/IDkCore.h"
+#include "core/DebugInterface.h"
+
 #include "utils/strtools.h"
 
 #include "gl_loader.h"
-
-#if !defined(IS_OPENGL)
-#error "IS_OPENGL'' Should in your project!!!"
-#endif // PLAT_LINUX && !IS_OPENGL
 
 #ifdef USE_GLES2
 

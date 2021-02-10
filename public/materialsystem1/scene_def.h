@@ -8,8 +8,7 @@
 #ifndef SCENE_DEF_H
 #define SCENE_DEF_H
 
-#include "dktypes.h"
-#include "math/DkMath.h"
+#include "core/dktypes.h"
 
 // fog parameters
 struct FogInfo_t

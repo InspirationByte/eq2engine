@@ -32,9 +32,10 @@ key_section
 class IVirtualStream;
 
 #include "core/platform/Platform.h"
+#include "core/ppmem.h"
+
 #include "utils/DkList.h"
 #include "math/DkMath.h"
-#include "ppmem.h"
 
 //
 enum EKVPairType

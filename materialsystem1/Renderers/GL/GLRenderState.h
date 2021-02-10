@@ -8,7 +8,7 @@
 #ifndef GLRENDERSTATE_H
 #define GLRENDERSTATE_H
 
-#include "IRenderState.h"
+#include "renderers/IRenderState.h"
 
 // it's just a simple holder, no more...
 class CGLDepthStencilState : public IRenderState

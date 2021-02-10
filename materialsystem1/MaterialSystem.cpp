@@ -9,19 +9,24 @@
 //			 - Shader management
 //////////////////////////////////////////////////////////////////////////////////
 
-#include "platform/Platform.h"
-#include "ConVar.h"
-#include "ConCommand.h"
-
 #include "MaterialSystem.h"
-#include "MeshBuilder.h"
-#include "MaterialProxy.h"
+
+#include "core/platform/Platform.h"
+#include "core/ConVar.h"
+#include "core/ConCommand.h"
+#include "core/IFileSystem.h"
 
 #include "utils/strtools.h"
+#include "utils/KeyValues.h"
+
+#include "materialsystem1/MeshBuilder.h"
 
 #include "Renderers/Shared/IRenderLibrary.h"
 #include "imaging/ImageLoader.h"
 #include "imaging/PixWriter.h"
+
+
+#include "MaterialProxy.h"
 
 DECLARE_INTERNAL_SHADERS()
 

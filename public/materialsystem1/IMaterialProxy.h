@@ -8,12 +8,12 @@
 #ifndef IMATERIALPROXY_H
 #define IMATERIALPROXY_H
 
-#include "DebugInterface.h"
-#include "utils/KeyValues.h"
-#include <stdlib.h>
+#include "core/DebugInterface.h"
 
 #include "IMaterial.h"
 #include "IMaterialVar.h"
+
+struct kvkeybase_t;
 
 class IMaterialProxy
 {

@@ -8,7 +8,7 @@
 #ifndef D3D9RENDERSTATE_H
 #define D3D9RENDERSTATE_H
 
-#include "IRenderState.h"
+#include "renderers/IRenderState.h"
 
 // it's just a simple holder, no more...
 class CD3D9DepthStencilState : public IRenderState

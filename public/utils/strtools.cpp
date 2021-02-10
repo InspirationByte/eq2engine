@@ -5,11 +5,14 @@
 // Description: Special String tools to do lesser memory errors
 //////////////////////////////////////////////////////////////////////////////////
 
+#include "strtools.h"
+
 #include <stdarg.h>
 #include <stdio.h>
-#include "platform/Platform.h"
-#include "strtools.h"
-#include "DebugInterface.h"
+#include "core/platform/Platform.h"
+#include "core/DebugInterface.h"
+
+
 
 #include <wchar.h>
 #include <wctype.h>
@@ -278,8 +281,6 @@ char* xstrdup(const char*  s)
     }
     return t;
 }
-
-#include "DebugInterface.h"
 
 // is space?
 //------------------------------------------

@@ -11,13 +11,13 @@
 #include "net_defs.h"
 #include "NetInterfaces.h"
 
-#include "DebugInterface.h"
-#include <string.h>
-#include <time.h>
-
+#include "core/DebugInterface.h"
 #include "math/Vector.h"
 
 #include "utils/VirtualStream.h"
+
+#include <string.h>
+#include <time.h>
 
 struct kvkeybase_t;
 

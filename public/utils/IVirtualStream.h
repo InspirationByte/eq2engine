@@ -8,7 +8,7 @@
 #ifndef IVRITUALSTREAM_H
 #define IVRITUALSTREAM_H
 
-#include "ppmem.h"
+#include "core/ppmem.h"
 
 enum VirtStreamType_e
 {

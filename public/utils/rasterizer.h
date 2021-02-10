@@ -10,7 +10,7 @@
 #ifndef RASTERIZER_H
 #define RASTERIZER_H
 
-#include "DebugInterface.h"
+#include "core/DebugInterface.h"
 #include "Math/math_util.h"
 #include "math/Plane.h"
 

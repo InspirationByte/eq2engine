@@ -8,7 +8,7 @@
 #ifndef RECTANGLEPACKER_H
 #define RECTANGLEPACKER_H
 
-#include "dktypes.h"
+#include "core/dktypes.h"
 #include "utils/DkList.h"
 #include "math/Rectangle.h"
 

@@ -8,15 +8,12 @@
 #ifndef D3D9SWAPCHAIN_H
 #define D3D9SWAPCHAIN_H
 
-#include "IEqSwapChain.h"
-
+#include "renderers/IEqSwapChain.h"
 #include <d3d9.h>
-
-#include "CD3D9Texture.h"
 
 class CD3D9SwapChain : public IEqSwapChain
 {
-friend class		CD3DRenderLib;
+	friend class		CD3DRenderLib;
 public:
 
 

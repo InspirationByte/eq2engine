@@ -8,7 +8,8 @@
 #include "CD3D9Texture.h"
 #include "ShaderAPID3DX9.h"
 #include "d3dx9_def.h"
-#include "DebugInterface.h"
+
+#include "core/DebugInterface.h"
 #include "imaging/ImageLoader.h"
 
 extern ShaderAPID3DX9 s_shaderApi;

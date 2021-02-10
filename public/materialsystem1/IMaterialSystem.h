@@ -12,8 +12,8 @@
 #ifndef IMATERIALSYSTEM_H
 #define IMATERIALSYSTEM_H
 
-#include "DebugInterface.h"
-#include "IDkCore.h"
+#include "core/DebugInterface.h"
+#include "core/IDkCore.h"
 
 #include "renderers/IShaderAPI.h"
 

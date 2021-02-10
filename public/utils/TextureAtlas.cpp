@@ -6,7 +6,10 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "TextureAtlas.h"
-#include "core_base_header.h"
+#include "KeyValues.h"
+#include "core/IFileSystem.h"
+#include "core/DebugInterface.h"
+#include "strtools.h"
 
 // parses .atlas file
 CTextureAtlas* TexAtlas_LoadAtlas(const char* pszFileName, bool quiet)

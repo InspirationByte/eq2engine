@@ -10,8 +10,8 @@
 
 #include <d3d9.h>
 
-#include "IShaderAPI.h"
-#include "../Shared/IRenderLibrary.h"
+#include "renderers/IShaderAPI.h"
+#include "IRenderLibrary.h"
 
 class CD3DRenderLib : public IRenderLibrary
 {

@@ -6,13 +6,13 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "CGLTexture.h"
-#include "DebugInterface.h"
+#include "core/DebugInterface.h"
 #include "imaging/ImageLoader.h"
 
 #ifdef USE_GLES2
-#include "glad_es3.h"
+#include <glad_es3.h>
 #else
-#include "glad.h"
+#include <glad.h>
 #endif
 
 #include "shaderapigl_def.h"

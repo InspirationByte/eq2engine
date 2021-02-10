@@ -8,7 +8,7 @@
 #ifndef MATERIALPROXY_H
 #define MATERIALPROXY_H
 
-#include "IMaterialProxy.h"
+#include "materialsystem1/IMaterialProxy.h"
 
 void InitStandardMaterialProxies();
 

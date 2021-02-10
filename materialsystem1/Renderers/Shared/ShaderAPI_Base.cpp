@@ -9,11 +9,13 @@
 //				The renderer may do anti-wallhacking functions
 //////////////////////////////////////////////////////////////////////////////////
 
-#include "DebugInterface.h"
-#include "IConCommandFactory.h"
-
 #include "ShaderAPI_Base.h"
 #include "CTexture.h"
+
+#include "core/DebugInterface.h"
+#include "core/IConCommandFactory.h"
+#include "core/IFileSystem.h"
+
 #include "imaging/PixWriter.h"
 #include "imaging/ImageLoader.h"
 
@@ -963,7 +965,7 @@ bool isShaderIncDef(const char ch)
 //-------------------------------------------------------------
 void ProcessShaderFileIncludes(char** buffer, const char* pszFileName, shaderProgramText_t& textData, bool bStart = false)
 {
-	if(!(*buffer))
+	if (!(*buffer))
 		return;
 
 	int nLine = 0;
@@ -976,11 +978,12 @@ void ProcessShaderFileIncludes(char** buffer, const char* pszFileName, shaderPro
 	// set main source filename
 	EqString newSrc;
 
-#ifdef IS_OPENGL
-	newSrc = varargs("\r\n#line 1 %d\r\n", textData.includes.numElem());		// I hate, hate and hate GLSL for not supporting source file names, only file numbers.
-#else
-	newSrc = "\r\n#line 1 \"" + _Es(pszFileName) + "\"\r\n";
-#endif // IS_OPENGL
+	bool isOpenGL = g_pShaderAPI->GetShaderAPIClass() == SHADERAPI_OPENGL;
+
+	if (isOpenGL)
+		newSrc = varargs("\r\n#line 1 %d\r\n", textData.includes.numElem());		// I hate, hate and hate GLSL for not supporting source file names, only file numbers.
+	else
+		newSrc = "\r\n#line 1 \"" + _Es(pszFileName) + "\"\r\n";
 
 	bool afterSkipLine = false;
 
@@ -1035,13 +1038,13 @@ void ProcessShaderFileIncludes(char** buffer, const char* pszFileName, shaderPro
 		}
 
 		// restore line counter
-		if(afterSkipLine)
+		if (afterSkipLine)
 		{
-#ifdef IS_OPENGL
-			newSrc = newSrc + varargs("#line %d %d\r\n", nLine, textData.includes.numElem());
-#else
-			newSrc = newSrc + varargs("#line %d \"", nLine) + _Es(pszFileName) + "\"\r\n";
-#endif // IS_OPENGL
+			if (isOpenGL)
+				newSrc = newSrc + varargs("#line %d %d\r\n", nLine, textData.includes.numElem());
+			else
+				newSrc = newSrc + varargs("#line %d \"", nLine) + _Es(pszFileName) + "\"\r\n";
+
 			afterSkipLine = false;
 		}
 

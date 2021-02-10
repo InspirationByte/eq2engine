@@ -8,7 +8,7 @@
 #ifndef VERTEXFORMATGL_H
 #define VERTEXFORMATGL_H
 
-#include "IVertexFormat.h"
+#include "renderers/IVertexFormat.h"
 
 #define MAX_GL_GENERIC_ATTRIB 24
 

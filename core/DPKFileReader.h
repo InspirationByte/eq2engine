@@ -13,7 +13,7 @@
 #include "utils/DkList.h"
 #include "utils/IceKey.h"
 
-#include "dpk_defs.h"
+#include "core/dpk_defs.h"
 
 typedef int dpkhandle_t;
 

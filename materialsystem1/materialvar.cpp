@@ -5,10 +5,12 @@
 // Description: Equilibrium materialvar
 //////////////////////////////////////////////////////////////////////////////////
 
-#include "DebugInterface.h"
 #include "materialvar.h"
+
+#include "core/DebugInterface.h"
 #include "utils/strtools.h"
-#include "renderers/IShaderAPI.h"
+
+#include "materialsystem1/renderers/IShaderAPI.h"
 
 CMatVar::CMatVar() : m_nameHash(0), m_nValue(0), m_vector(0.0f), m_pAssignedTexture(NULL), m_isDirtyString(0)
 {

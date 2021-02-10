@@ -5,12 +5,11 @@
 // Description: Command line parser
 //////////////////////////////////////////////////////////////////////////////////
 
-#include "InterfaceManager.h"
 
 #include "CmdLineParser.h"
 #include "ConCommandFactory.h"
 #include "utils/strtools.h"
-#include "platform/Platform.h"
+
 #include <ctype.h>
 
 EXPORTED_INTERFACE(ICommandLineParse, CommandLineParse);

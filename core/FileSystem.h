@@ -8,7 +8,7 @@
 #ifndef CFILESYSTEM_H
 #define CFILESYSTEM_H
 
-#include "IFileSystem.h"
+#include "core/IFileSystem.h"
 #include "utils/eqthread.h"
 #include "utils/DkList.h"
 

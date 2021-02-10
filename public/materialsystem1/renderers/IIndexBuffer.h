@@ -10,7 +10,7 @@
 #define IINDEXBUFFER_H
 
 #include "ShaderAPI_defs.h"
-#include "ppmem.h"
+#include "core/ppmem.h"
 
 class IIndexBuffer
 {

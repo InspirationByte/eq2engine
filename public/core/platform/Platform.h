@@ -9,7 +9,7 @@
 #define PLATFORM_H
 
 #include "core/dktypes.h"
-#include "InterfaceManager.h"
+#include "core/InterfaceManager.h"
 
 //---------------------------------------------
 // Platform definitions
@@ -174,5 +174,7 @@ typedef HICON			EQCURSOR;
 typedef void*			EQWNDHANDLE;
 typedef void*			EQCURSOR;
 #endif // PLAT_SDL
+
+IEXPORTS void Platform_Sleep(uint32 nMilliseconds);
 
 #endif // PLATFORM_H

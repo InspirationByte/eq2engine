@@ -8,13 +8,12 @@
 #ifndef IMAGE_H
 #define IMAGE_H
 
-#include <stdio.h>
-#include "platform/Platform.h"
+#include "core/platform/Platform.h"
 #include "utils/eqstring.h"
 
 #include "textureformats.h"
 
-#include "IFileSystem.h"
+class IVirtualStream;
 
 #define ALL_MIPMAPS 127
 
@@ -85,12 +84,12 @@ public:
 	bool			LoadTGA(const char *fileName);
 #endif // NO_TGA
 
-	bool			LoadDDSfromHandle(IFile *fileHandle, uint flags = 0);
+	bool			LoadDDSfromHandle(IVirtualStream *fileHandle, uint flags = 0);
 #ifndef NO_JPEG
-	bool			LoadJPEGfromHandle(IFile *fileHandle);
+	bool			LoadJPEGfromHandle(IVirtualStream*fileHandle);
 #endif // NO_JPEG
 #ifndef NO_TGA
-	bool			LoadTGAfromHandle(IFile *fileHandle);
+	bool			LoadTGAfromHandle(IVirtualStream*fileHandle);
 #endif // NO_TGA
 
 	bool			SaveDDS(const char *fileName);
@@ -102,7 +101,7 @@ public:
 #endif // NO_TGA
 
 	bool			LoadImage(const char *fileName, uint flags = 0);
-	bool			LoadFromHandle(IFile *fileHandle,const char *fileName, uint flags = 0);
+	bool			LoadFromHandle(IVirtualStream*fileHandle,const char *fileName, uint flags = 0);
 
 	bool			SaveImage(const char *fileName);
 

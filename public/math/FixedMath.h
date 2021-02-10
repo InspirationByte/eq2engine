@@ -8,7 +8,7 @@
 #ifndef FIXEDMATH_H
 #define FIXEDMATH_H
 
-#include "dktypes.h"
+#include "core/dktypes.h"
 
 #ifdef FLOAT_AS_FREAL
 #include <limits.h>

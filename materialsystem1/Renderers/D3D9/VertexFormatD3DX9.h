@@ -8,7 +8,7 @@
 #ifndef VERTEXFORMATD3DX9_H
 #define VERTEXFORMATD3DX9_H
 
-#include "IVertexFormat.h"
+#include "renderers/IVertexFormat.h"
 
 //**************************************
 // Vertex format

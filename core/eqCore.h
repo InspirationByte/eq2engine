@@ -8,8 +8,7 @@
 #ifndef CDKCORE
 #define CDKCORE
 
-#include "IDkCore.h"
-#include "IFileSystem.h"
+#include "core/IDkCore.h"
 #include "utils/KeyValues.h"
 #include "utils/eqstring.h"
 
@@ -17,7 +16,7 @@
 struct coreInterface_t
 {
 	const char*				name;		// module name
-	DKMODULE*				module;		// module which loads this interface
+	struct DKMODULE*		module;		// module which loads this interface
 	ICoreModuleInterface*	ptr;		// the interface pointer itself
 };
 
@@ -35,8 +34,6 @@ public:
 	void					Shutdown();	// Shutdowns core
 
 	char*					GetApplicationName();
-
-	char*					GetCurrentUserName();
 
 	bool					IsInitialized() {return m_bInitialized;}
 

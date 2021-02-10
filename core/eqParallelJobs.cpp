@@ -5,10 +5,8 @@
 // Description: Equilibrium multithreaded parallel jobs
 //////////////////////////////////////////////////////////////////////////////////
 
-#include "InterfaceManager.h"
-
 #include "eqParallelJobs.h"
-#include "DebugInterface.h"
+#include "core/DebugInterface.h"
 #include "utils/strtools.h"
 
 EXPORTED_INTERFACE(IEqParallelJobThreads, CEqParallelJobThreads);

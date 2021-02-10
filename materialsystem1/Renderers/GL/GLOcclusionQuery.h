@@ -8,7 +8,7 @@
 #ifndef GLOCCLUSIONQUERY_H
 #define GLOCCLUSIONQUERY_H
 
-#include "IOcclusionQuery.h"
+#include "renderers/IOcclusionQuery.h"
 
 class CGLOcclusionQuery : public IOcclusionQuery
 {

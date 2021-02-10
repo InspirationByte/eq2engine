@@ -9,7 +9,7 @@
 #define CMATERIAL_H
 
 //#include "DebugInterface.h"
-#include "IMaterial.h"
+#include "materialsystem1/IMaterial.h"
 #include "materialvar.h"
 #include "utils/DkList.h"
 #include "utils/eqstring.h"

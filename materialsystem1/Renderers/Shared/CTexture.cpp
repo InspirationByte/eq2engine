@@ -6,10 +6,9 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "CTexture.h"
-#include "utils/strtools.h"
-#include "DebugInterface.h"
 
-#include "IShaderAPI.h"
+#include "core/DebugInterface.h"
+#include "utils/strtools.h"
 
 CTexture::CTexture()
 {

@@ -8,7 +8,7 @@
 #ifndef EQTHREAD_H
 #define EQTHREAD_H
 
-#include "platform/Platform.h"
+#include "core/platform/Platform.h"
 
 #ifdef PLAT_POSIX
 

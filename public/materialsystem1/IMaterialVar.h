@@ -8,7 +8,7 @@
 #define IMATERIALVAR_H
 
 #include "math/Vector.h"
-#include "ppmem.h"
+#include "core/ppmem.h"
 
 class ITexture;
 

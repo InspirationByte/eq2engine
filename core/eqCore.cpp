@@ -13,20 +13,18 @@
 #include <crtdbg.h>
 #endif
 
-#include "InterfaceManager.h"
-
 #include "eqCore.h"
 
-#include "ILocalize.h"
-#include "DebugInterface.h"
+#include "core/IFileSystem.h"
+#include "core/InterfaceManager.h"
+#include "core/ILocalize.h"
+#include "core/DebugInterface.h"
+#include "eqCPUServices.h"
+
 #include "ExceptionHandler.h"
 #include "ConCommandFactory.h"
 
-#include "eqCPUServices.h"
-
 #include "utils/eqstring.h"
-
-
 
 #ifdef PLAT_POSIX
 #include <time.h>
@@ -66,23 +64,6 @@ IEXPORTS void*	_GetDkCoreInterface(const char* pszName)
 void DkCore_onExit( void )
 {
 	g_pIDkCore->Shutdown();
-}
-
-EqString UTIL_GetUserName()
-{
-#ifdef _WIN32
-    char buffer[257];
-
-    DWORD size;
-    size=sizeof(buffer);
-    if (GetUserNameA(buffer,&size)==0)
-        return "nouser";
-
-    return buffer;
-#else
-	// TODO: linux user name
-    return "";
-#endif
 }
 
 ConVar *c_SupressAccessorMessages = NULL;
@@ -156,7 +137,6 @@ bool CDkCore::Init(const char* pszApplicationName, const char* pszCommandLine)
 	}
 
 	m_szApplicationName = pszApplicationName;
-	m_szCurrentSessionUserName = UTIL_GetUserName();
 
 	m_coreConfiguration = new KeyValues();
 	kvkeybase_t* coreConfigRoot = m_coreConfiguration->GetRootSection();
@@ -234,7 +214,7 @@ bool CDkCore::Init(const char* pszApplicationName, const char* pszCommandLine)
 	remove("logs/Assert.log");
 
 	char tmp_path[2048];
-	sprintf(tmp_path, "logs/%s_%s.log", m_szApplicationName.GetData(), m_szCurrentSessionUserName.GetData());
+	sprintf(tmp_path, "logs/%s.log", m_szApplicationName.GetData());
 
 	remove(tmp_path);
 
@@ -383,11 +363,6 @@ void CDkCore::Shutdown()
 char* CDkCore::GetApplicationName()
 {
     return (char*)m_szApplicationName.GetData();
-}
-
-char* CDkCore::GetCurrentUserName()
-{
-    return (char*)m_szCurrentSessionUserName.GetData();
 }
 
 // Interface management for engine

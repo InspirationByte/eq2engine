@@ -11,9 +11,13 @@
 
 #include <stdio.h>
 #include <malloc.h>
-#include "platform/Platform.h"
+
+#include "core/platform/Platform.h"
+
 #include "strtools.h"
 #include "math/math_common.h"
+
+
 
 #ifdef PLAT_POSIX
 #include <string.h>

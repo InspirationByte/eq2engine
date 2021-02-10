@@ -6,7 +6,7 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "RectanglePacker.h"
-#include "DebugInterface.h"
+#include "core/DebugInterface.h"
 
 struct PackerNode 
 {

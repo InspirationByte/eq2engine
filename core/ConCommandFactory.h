@@ -11,11 +11,9 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include "ConVar.h"
-#include "ConCommand.h"
-#include "IConCommandFactory.h"
-
-#include "InterfaceManager.h"
+#include "core/ConVar.h"
+#include "core/ConCommand.h"
+#include "core/IConCommandFactory.h"
 
 //	Console variable factory
 

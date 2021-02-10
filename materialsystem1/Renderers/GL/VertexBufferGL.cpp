@@ -5,18 +5,21 @@
 // Description: Equilibrium OpenGL ShaderAPI
 //////////////////////////////////////////////////////////////////////////////////
 
-#include <malloc.h>
+#include "VertexBufferGL.h"
 
 #include "ShaderAPIGL.h"
-#include "VertexBufferGL.h"
-#include "DebugInterface.h"
 #include "shaderapigl_def.h"
 
+#include "core/DebugInterface.h"
+
 #ifdef USE_GLES2
-#include "glad_es3.h"
+#include <glad_es3.h>
 #else
-#include "glad.h"
+#include <glad.h>
 #endif
+
+#include <malloc.h>
+
 
 extern ShaderAPIGL g_shaderApi;
 

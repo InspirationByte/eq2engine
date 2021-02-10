@@ -5,15 +5,15 @@
 // Description: System messageboxes
 //////////////////////////////////////////////////////////////////////////////////
 
-#include "platform/MessageBox.h"
+#include "core/platform/MessageBox.h"
 #include <string.h>
 #include <stdarg.h>
 
 #ifndef _DKLAUNCHER_
 
-#include "DebugInterface.h"
-#include "IDkCore.h"
-#include "ConCommand.h"
+#include "core/DebugInterface.h"
+#include "core/IDkCore.h"
+#include "core/ConCommand.h"
 
 #endif // _DKLAUNCHER_
 

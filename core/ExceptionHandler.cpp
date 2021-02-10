@@ -5,18 +5,20 @@
 // Description: Crash report library connection
 //////////////////////////////////////////////////////////////////////////////////
 
-#include "platform/Platform.h"
-#include "platform/MessageBox.h"
-#include "ppmem.h"
-#include "stdio.h"
-#include "IDkCore.h"
-#include "DebugInterface.h"
 #include "ExceptionHandler.h"
+
+#include "core/platform/Platform.h"
+#include "core/platform/MessageBox.h"
+#include "core/ppmem.h"
+#include "core/IDkCore.h"
+#include "core/DebugInterface.h"
+
+#include <stdio.h>
+#include <stdlib.h>
 
 #ifdef _WIN32
 
-#include "dbgHelp.h"
-#include "stdlib.h"
+#include <DbgHelp.h>
 
 typedef struct _MODULEINFO {  LPVOID lpBaseOfDll;  DWORD SizeOfImage;  LPVOID EntryPoint;
 } MODULEINFO, *LPMODULEINFO;
@@ -118,7 +120,7 @@ void CreateMiniDump( EXCEPTION_POINTERS* pep )
 	// Open the file
 
 	char tmp_path[2048];
-	sprintf(tmp_path, "logs/CrashDump_%s_%s.dmp", GetCore()->GetApplicationName(), GetCore()->GetCurrentUserName());
+	sprintf(tmp_path, "logs/CrashDump_%s.dmp", GetCore()->GetApplicationName());
 
 	HANDLE hFile = CreateFileA(tmp_path, GENERIC_READ | GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL );
 
@@ -160,7 +162,7 @@ static LONG WINAPI _exceptionCB(EXCEPTION_POINTERS *ExceptionInfo)
 	GetExceptionStrings( pRecord->ExceptionCode, &pName, &pDescription );
 
 	char tmp_path[2048];
-	sprintf(tmp_path, "\nUnhandled Exception !!!\nException code: %s (%p)\nAddress: %p\n\n\nSee application log for details.",pName, (void*)pRecord->ExceptionCode, pRecord->ExceptionAddress);
+	sprintf(tmp_path, "\nUnhandled Exception !!!\nException code: %s (0x%x)\nAddress: %p\n\n\nSee application log for details.",pName, pRecord->ExceptionCode, pRecord->ExceptionAddress);
 
 	_InternalAssert(NULL, NULL, tmp_path);
 

@@ -9,8 +9,6 @@
 #define VIRTUALSTREAM_H
 
 #include "IVirtualStream.h"
-#include "IFileSystem.h"
-#include "DebugInterface.h"
 
 //--------------------------
 // CMemoryStream - File stream
@@ -59,10 +57,10 @@ public:
 	VirtStreamType_e	GetType() { return VS_TYPE_MEMORY; }
 
 	// reads file to this stream
-	bool				ReadFromFileStream( IFile* pFile );
+	bool				ReadFromFileStream(IVirtualStream* pFile );
 
 	// saves stream to file for stream (only for memory stream )
-	void				WriteToFileStream( IFile* pFile );
+	void				WriteToFileStream( IVirtualStream* pFile );
 
 	// returns current pointer to the stream (only memory stream)
 	ubyte*				GetCurrentPointer();

@@ -9,7 +9,7 @@
 #define DKLIST_H
 
 #include "core/platform/MessageBox.h"
-#include "dktypes.h"
+#include "core/dktypes.h"
 
 #define USE_QSORT
 

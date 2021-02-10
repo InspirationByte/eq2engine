@@ -5,11 +5,12 @@
 // Description: D3D Rendering library interface
 //////////////////////////////////////////////////////////////////////////////////
 
-#include "DebugInterface.h"
+#include "core/DebugInterface.h"
+#include "core/IDkCore.h"
+#include "core/IConCommandFactory.h"
+
 #include "emptyLibrary.h"
 #include "ShaderAPIEmpty.h"
-#include "IDkCore.h"
-#include "IConCommandFactory.h"
 
 HOOK_TO_CVAR(r_screen);
 

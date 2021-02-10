@@ -8,7 +8,7 @@
 #ifndef D3D9OCCLUSIONQUERY_H
 #define D3D9OCCLUSIONQUERY_H
 
-#include "IOcclusionQuery.h"
+#include "renderers/IOcclusionQuery.h"
 #include <d3d9.h>
 
 class CD3D9OcclusionQuery : public IOcclusionQuery

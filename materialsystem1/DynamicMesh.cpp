@@ -6,7 +6,7 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "DynamicMesh.h"
-#include "DebugInterface.h"
+#include "core/DebugInterface.h"
 
 // pack vertex format description to uint16
 struct vertexFormatId_t

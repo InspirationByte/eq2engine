@@ -8,8 +8,8 @@
 #ifndef SND_RIFF_H
 #define SND_RIFF_H
 
-#include "IFileSystem.h"
-#include "dktypes.h"
+#include "core/IFileSystem.h"
+#include "core/dktypes.h"
 
 #define RIFF_ID				MCHAR4('R','I','F','F')
 #define WAVE_ID				MCHAR4('W','A','V','E')

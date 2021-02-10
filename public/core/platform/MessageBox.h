@@ -8,7 +8,7 @@
 #ifndef MESSAGEBOX_H
 #define MESSAGEBOX_H
 
-#include "InterfaceManager.h"
+#include "core/InterfaceManager.h"
 
 #ifdef _DKLAUNCHER_
 #define IEXPORTS_LAUNCHER

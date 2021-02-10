@@ -9,7 +9,7 @@
 #define PIXWRITER_H
 
 #include "textureformats.h"
-#include "DebugInterface.h"
+#include "core/DebugInterface.h"
 
 class PixelWriter
 {

@@ -10,7 +10,7 @@
 #define SCOPEDPTR_H
 
 #include <malloc.h>
-#include "ppmem.h"
+#include "core/ppmem.h"
 
 enum PtrAllocType_e
 {

@@ -8,15 +8,19 @@
 //			serialize material file to memory buffer
 //////////////////////////////////////////////////////////////////////////////////
 
-#include "DebugInterface.h"
-
 #include "material.h"
+
+#include "materialsystem1/IMaterialSystem.h"
+
+#include "core/DebugInterface.h"
+#include "core/IFileSystem.h"
+
 #include "utils/strtools.h"
 #include "utils/eqthread.h"
 #include "utils/TextureAtlas.h"
-#include "BaseShader.h"
-#include "IFileSystem.h"
+#include "utils/KeyValues.h"
 
+//#include "materialsystem1/BaseShader.h"
 
 #define MATERIAL_FILE_EXTENSION		".mat"
 #define ATLAS_FILE_EXTENSION		".atlas"

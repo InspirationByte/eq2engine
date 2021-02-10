@@ -9,10 +9,8 @@
 #ifndef IVERTEXFORMAT_H
 #define IVERTEXFORMAT_H
 
-
-#include "platform/Platform.h"
 #include "ShaderAPI_defs.h"
-#include "ppmem.h"
+#include "core/ppmem.h"
 
 class IVertexFormat
 {

@@ -7,8 +7,9 @@
 
 #include "D3D9SwapChain.h"
 #include "ShaderAPID3DX9.h"
-#include "DebugInterface.h"
 #include "d3dx9_def.h"
+
+#include "core/DebugInterface.h"
 
 CD3D9SwapChain::~CD3D9SwapChain()
 {

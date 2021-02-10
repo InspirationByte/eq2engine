@@ -149,15 +149,6 @@
     <ClInclude Include="GL\glad_es3.h">
       <Filter>Source Files\Renderer\OpenGL</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\public\MaterialSystem\Renderers\IVertexBuffer.h">
-      <Filter>Source Files\Renderer\Interfaces</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\public\MaterialSystem\Renderers\IVertexFormat.h">
-      <Filter>Source Files\Renderer\Interfaces</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\public\MaterialSystem\Renderers\IIndexBuffer.h">
-      <Filter>Source Files\Renderer\Interfaces</Filter>
-    </ClInclude>
     <ClInclude Include="Shared\CTexture.h">
       <Filter>Source Files\Shared</Filter>
     </ClInclude>
@@ -166,6 +157,15 @@
     </ClInclude>
     <ClInclude Include="Shared\ShaderAPI_Base.h">
       <Filter>Source Files\Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\public\materialsystem1\Renderers\IIndexBuffer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\public\materialsystem1\Renderers\IVertexBuffer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\public\materialsystem1\Renderers\IVertexFormat.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

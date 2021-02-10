@@ -11,10 +11,10 @@
 #include "../Shared/ShaderAPI_Base.h"
 
 #ifdef USE_GLES2
-#include "glad_es3.h"
+#include <glad_es3.h>
 #include <EGL/egl.h>
 #else
-#include "glad.h"
+#include <glad.h>
 #endif
 
 #ifdef LINUX

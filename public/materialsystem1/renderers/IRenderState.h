@@ -9,7 +9,7 @@
 #define IRENDERSTATE_H
 
 #include "ShaderAPI_defs.h"
-#include "ppmem.h"
+#include "core/ppmem.h"
 
 enum RenderStateType_e
 {
