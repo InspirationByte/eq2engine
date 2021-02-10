@@ -18,6 +18,12 @@
 #include "DebugInterface.h"
 #include "alsound_local.h"
 
+float CalculateSoundAttenuationVolume(const soundParams_t& params, const Vector3D& position)
+{
+	const float distanceSqr = lengthSqr(soundsystem->GetListenerPosition() - position);
+	return (1.0f - (distanceSqr / (params.maxDistance * params.maxDistance))) * params.volume;
+}
+
 DkSoundEmitterLocal::DkSoundEmitterLocal()
 {
 	m_virtual = false;
@@ -95,7 +101,7 @@ void DkSoundEmitterLocal::UpdateParams()
 	alSourcef(chnl->alSource, AL_MAX_DISTANCE, m_params.maxDistance);
 	alSourcef(chnl->alSource, AL_ROLLOFF_FACTOR, m_params.rolloff);
 	alSourcef(chnl->alSource, AL_AIR_ABSORPTION_FACTOR, m_params.airAbsorption);
-	alSourcef(chnl->alSource, AL_GAIN, m_params.volume);
+	alSourcef(chnl->alSource, AL_GAIN, CalculateSoundAttenuationVolume(m_params, vPosition));
 	alSourcef(chnl->alSource, AL_PITCH, m_params.pitch * pSoundSystem->m_pitchFactor);
 }
 
@@ -289,17 +295,24 @@ void DkSoundEmitterLocal::Update()
 	else if(m_sample && HasToBeVirtual())
 	{
 		DkSoundSystemLocal* pSoundSystem = static_cast<DkSoundSystemLocal*>(soundsystem);
-
 		sndChannel_t* chnl = pSoundSystem->m_channels[m_nChannel];
 
-		// free channel and switch to virtual mode
-		if (chnl->alState == AL_PLAYING)
+		if(HasToBeVirtual())
 		{
-			Stop();
+			// free channel and switch to virtual mode
+			if (chnl->alState == AL_PLAYING)
+			{
+				Stop();
 
-			m_virtual = true;
-			m_virtualState = AL_PLAYING;
+				m_virtual = true;
+				m_virtualState = AL_PLAYING;
+			}
 		}
+		else
+		{
+			alSourcef(chnl->alSource, AL_GAIN, CalculateSoundAttenuationVolume(m_params, vPosition));
+		}
+
 	}
 }
 
@@ -319,7 +332,7 @@ void DkSoundEmitterLocal::SetVolume(float val)
 
 	sndChannel_t* chnl = pSoundSystem->m_channels[m_nChannel];
 
-	alSourcef(chnl->alSource,AL_GAIN, m_params.volume);
+	alSourcef(chnl->alSource,AL_GAIN, CalculateSoundAttenuationVolume(m_params, vPosition));
 }
 
 

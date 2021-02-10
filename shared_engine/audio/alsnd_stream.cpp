@@ -16,6 +16,8 @@
 
 #include "DebugInterface.h"
 #include "alsound_local.h"
+#include "eqGlobalMutex.h"
+
 
 #define EQSOUND_STREAM_BUFFER_SIZE		(1024*8) // 8 kb
 
@@ -170,6 +172,8 @@ void DkSoundAmbient::OpenStreamFile(const char *name)
 	if( m_playing )
 		StopStreaming();
 
+	CScopedMutex m(GetGlobalMutex(MUTEXPURPOSE_AUDIO));
+
 	//Close previous file
 	if(m_oggFile)
 	{
@@ -258,7 +262,6 @@ void DkSoundAmbient::UpdateStreaming()
 			break;
     }
 
-
 	ALenum state;
 	alGetSourcei(m_alSource, AL_SOURCE_STATE, &state);
 
@@ -271,6 +274,8 @@ void DkSoundAmbient::ResetStream()
 	if(!m_loaded)
 		return;
 
+	CScopedMutex m(GetGlobalMutex(MUTEXPURPOSE_AUDIO));
+
 	m_playing = false;
 	m_ready = true;
 
@@ -282,6 +287,8 @@ void DkSoundAmbient::StartStreaming()
 	if(!m_loaded)
 		return;
 
+	CScopedMutex m(GetGlobalMutex(MUTEXPURPOSE_AUDIO));
+
 	alGenBuffers(AMB_STREAM_BUFFERS, m_buffers);
 
 	m_ready = true;
@@ -291,6 +298,8 @@ void DkSoundAmbient::StopStreaming()
 {
 	if(!m_loaded)
 		return;
+
+	CScopedMutex m(GetGlobalMutex(MUTEXPURPOSE_AUDIO));
 
 	m_ready = false;
 	m_playing = false;
@@ -308,6 +317,8 @@ void DkSoundAmbient::StopStreaming()
 
 bool DkSoundAmbient::UploadStream(ALuint buffer)
 {
+	CScopedMutex m(GetGlobalMutex(MUTEXPURPOSE_AUDIO));
+
 	static char pcmBuffer[EQSOUND_STREAM_BUFFER_SIZE];
 
 	char* destBuf = pcmBuffer;

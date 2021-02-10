@@ -7,8 +7,6 @@
 //				Sound system
 //////////////////////////////////////////////////////////////////////////////////
 
-#define AL_ALEXT_PROTOTYPES
-
 #include <AL/al.h>
 #include <AL/alc.h>
 #include <AL/alext.h>
@@ -25,6 +23,16 @@
 
 #include "IDebugOverlay.h"
 #include "IDkCore.h"
+
+// AL effects prototypes
+LPALGENEFFECTS _alGenEffects = nullptr;
+LPALEFFECTI _alEffecti = nullptr;
+LPALEFFECTF _alEffectf = nullptr;
+LPALGENAUXILIARYEFFECTSLOTS _alGenAuxiliaryEffectSlots = nullptr;
+LPALAUXILIARYEFFECTSLOTI _alAuxiliaryEffectSloti = nullptr;
+LPALDELETEAUXILIARYEFFECTSLOTS _alDeleteAuxiliaryEffectSlots = nullptr;
+LPALDELETEEFFECTS _alDeleteEffects = nullptr;
+
 
 #define MAX_AMBIENT_STREAMS 8
 
@@ -240,7 +248,7 @@ void DkSoundSystemLocal::Init()
 	//Set Gain
 	alListenerf(AL_GAIN, snd_mastervolume.GetFloat());
 
-	alDistanceModel(AL_INVERSE_DISTANCE_CLAMPED);
+	alDistanceModel(AL_INVERSE_DISTANCE);
 
 	int max_sends = 0;
 	alcGetIntegerv(m_dev, ALC_MAX_AUXILIARY_SENDS, 1, &max_sends);
@@ -273,9 +281,24 @@ void DkSoundSystemLocal::Init()
 
 void DkSoundSystemLocal::InitEFX()
 {
+	if (!alcIsExtensionPresent(m_dev, ALC_EXT_EFX_NAME))
+	{
+		MsgWarning("Sound effects are NOT supported!\n");
+		return;
+	}
+
+
+	_alGenEffects = (LPALGENEFFECTS)alGetProcAddress("alGenEffects");
+	_alEffecti = (LPALEFFECTI)alGetProcAddress("alEffecti");
+	_alEffectf = (LPALEFFECTF)alGetProcAddress("alEffectf");
+	_alGenAuxiliaryEffectSlots = (LPALGENAUXILIARYEFFECTSLOTS)alGetProcAddress("alGenAuxiliaryEffectSlots");
+	_alAuxiliaryEffectSloti = (LPALAUXILIARYEFFECTSLOTI)alGetProcAddress("alAuxiliaryEffectSloti");
+	_alDeleteAuxiliaryEffectSlots = (LPALDELETEAUXILIARYEFFECTSLOTS)alGetProcAddress("alDeleteAuxiliaryEffectSlots");
+	_alDeleteEffects = (LPALDELETEEFFECTS)alGetProcAddress("alDeleteEffects");
+
 	m_currEffect = nullptr;
 	m_currEffectSlotIdx = 0;
-	alGenAuxiliaryEffectSlots(SOUND_EFX_SLOTS, m_effectSlots);
+	_alGenAuxiliaryEffectSlots(SOUND_EFX_SLOTS, m_effectSlots);
 
 	// add default effect
 	sndEffect_t no_eff;
@@ -374,7 +397,7 @@ void DkSoundSystemLocal::Update(float pitchFactor)
 		if(snd_effect.GetInt() < m_effects.numElem())
 			m_currEffect = &m_effects[snd_effect.GetInt()];
 
-		alAuxiliaryEffectSloti(m_effectSlots[m_currEffectSlotIdx], AL_EFFECTSLOT_EFFECT, m_effects[snd_effect.GetInt()].nAlEffect);
+		_alAuxiliaryEffectSloti(m_effectSlots[m_currEffectSlotIdx], AL_EFFECTSLOT_EFFECT, m_effects[snd_effect.GetInt()].nAlEffect);
 	}
 
 	if( !m_pauseState )
@@ -474,9 +497,9 @@ sndEffect_t* DkSoundSystemLocal::FindEffect(const char* pszName)
 void DkSoundSystemLocal::ReleaseEffects()
 {
 	for (int i = 0; i < m_effects.numElem(); i++)
-		alDeleteEffects(1, &m_effects[i].nAlEffect);
+		_alDeleteEffects(1, &m_effects[i].nAlEffect);
 
-	alDeleteAuxiliaryEffectSlots(2, m_effectSlots);
+	_alDeleteAuxiliaryEffectSlots(2, m_effectSlots);
 
 	m_effects.clear();
 }
@@ -531,17 +554,17 @@ void DkSoundSystemLocal::SetListener( const Vector3D &position, const Vector3D &
 
 		if( m_currEffect )
 		{
-			alAuxiliaryEffectSloti(m_effectSlots[m_currEffectSlotIdx], AL_EFFECTSLOT_EFFECT, m_currEffect->nAlEffect);
+			_alAuxiliaryEffectSloti(m_effectSlots[m_currEffectSlotIdx], AL_EFFECTSLOT_EFFECT, m_currEffect->nAlEffect);
 		}
 		else
 		{
 			m_currEffectSlotIdx = 0;
-			alAuxiliaryEffectSloti(m_effectSlots[0], AL_EFFECTSLOT_EFFECT, AL_EFFECT_NULL);
-			alAuxiliaryEffectSloti(m_effectSlots[1], AL_EFFECTSLOT_EFFECT, AL_EFFECT_NULL);
+			_alAuxiliaryEffectSloti(m_effectSlots[0], AL_EFFECTSLOT_EFFECT, AL_EFFECT_NULL);
+			_alAuxiliaryEffectSloti(m_effectSlots[1], AL_EFFECTSLOT_EFFECT, AL_EFFECT_NULL);
 		}
 
 		// apply effect slot change to channels
-		for(register int i=0; i < m_channels.numElem(); i++)
+		for(int i = 0; i < m_channels.numElem(); i++)
 		{
 			// set current effect slot
 			if( m_currEffect /* && channels[i]->emitter->m_bShouldUseEffects */ )
@@ -750,28 +773,28 @@ bool DkSoundSystemLocal::CreateALEffect(const char* pszName, kvkeybase_t* pSecti
 {
 	if (!stricmp(pszName, "reverb"))
 	{
-		alGenEffects(1, &effect.nAlEffect);
+		_alGenEffects(1, &effect.nAlEffect);
 
-		alEffecti(effect.nAlEffect, AL_EFFECT_TYPE, AL_EFFECT_REVERB);
+		_alEffecti(effect.nAlEffect, AL_EFFECT_TYPE, AL_EFFECT_REVERB);
 
-		alEffectf(effect.nAlEffect, AL_REVERB_GAIN, KV_GetValueFloat(pSection->FindKeyBase("gain"), 0, 0.5f));
-		alEffectf(effect.nAlEffect, AL_REVERB_GAINHF, KV_GetValueFloat(pSection->FindKeyBase("gain_hf"), 0, 0.5f));
+		_alEffectf(effect.nAlEffect, AL_REVERB_GAIN, KV_GetValueFloat(pSection->FindKeyBase("gain"), 0, 0.5f));
+		_alEffectf(effect.nAlEffect, AL_REVERB_GAINHF, KV_GetValueFloat(pSection->FindKeyBase("gain_hf"), 0, 0.5f));
 
-		alEffectf(effect.nAlEffect, AL_REVERB_DECAY_TIME, KV_GetValueFloat(pSection->FindKeyBase("decay_time"), 0, 10.0f));
-		alEffectf(effect.nAlEffect, AL_REVERB_DECAY_HFRATIO, KV_GetValueFloat(pSection->FindKeyBase("decay_hf"), 0, 0.5f));
-		alEffectf(effect.nAlEffect, AL_REVERB_REFLECTIONS_DELAY, KV_GetValueFloat(pSection->FindKeyBase("reflection_delay"), 0, 0.0f));
-		alEffectf(effect.nAlEffect, AL_REVERB_REFLECTIONS_GAIN, KV_GetValueFloat(pSection->FindKeyBase("reflection_gain"), 0, 0.5f));
-		alEffectf(effect.nAlEffect, AL_REVERB_DIFFUSION, KV_GetValueFloat(pSection->FindKeyBase("diffusion"), 0, 0.5f));
-		alEffectf(effect.nAlEffect, AL_REVERB_DENSITY, KV_GetValueFloat(pSection->FindKeyBase("density"), 0, 0.5f));
-		alEffectf(effect.nAlEffect, AL_REVERB_AIR_ABSORPTION_GAINHF, KV_GetValueFloat(pSection->FindKeyBase("airabsorption_gain"), 0, 0.5f));
+		_alEffectf(effect.nAlEffect, AL_REVERB_DECAY_TIME, KV_GetValueFloat(pSection->FindKeyBase("decay_time"), 0, 10.0f));
+		_alEffectf(effect.nAlEffect, AL_REVERB_DECAY_HFRATIO, KV_GetValueFloat(pSection->FindKeyBase("decay_hf"), 0, 0.5f));
+		_alEffectf(effect.nAlEffect, AL_REVERB_REFLECTIONS_DELAY, KV_GetValueFloat(pSection->FindKeyBase("reflection_delay"), 0, 0.0f));
+		_alEffectf(effect.nAlEffect, AL_REVERB_REFLECTIONS_GAIN, KV_GetValueFloat(pSection->FindKeyBase("reflection_gain"), 0, 0.5f));
+		_alEffectf(effect.nAlEffect, AL_REVERB_DIFFUSION, KV_GetValueFloat(pSection->FindKeyBase("diffusion"), 0, 0.5f));
+		_alEffectf(effect.nAlEffect, AL_REVERB_DENSITY, KV_GetValueFloat(pSection->FindKeyBase("density"), 0, 0.5f));
+		_alEffectf(effect.nAlEffect, AL_REVERB_AIR_ABSORPTION_GAINHF, KV_GetValueFloat(pSection->FindKeyBase("airabsorption_gain"), 0, 0.5f));
 
 		return true;
 	}
 	else if (!stricmp(pszName, "echo"))
 	{
-		alGenEffects(1, &effect.nAlEffect);
+		_alGenEffects(1, &effect.nAlEffect);
 
-		alEffecti(effect.nAlEffect, AL_EFFECT_TYPE, AL_EFFECT_ECHO);
+		_alEffecti(effect.nAlEffect, AL_EFFECT_TYPE, AL_EFFECT_ECHO);
 
 		return true;
 	}
