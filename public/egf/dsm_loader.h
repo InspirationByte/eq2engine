@@ -11,7 +11,7 @@
 #include "math/Vector.h"
 #include "utils/DkList.h"
 #include "utils/eqstring.h"
-#include "ppmem.h"
+#include "core/ppmem.h"
 
 #define MAX_WEIGHTS 128	// this is a loader fix
 

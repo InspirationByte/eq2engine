@@ -8,7 +8,7 @@
 #ifndef ALIGN_H
 #define ALIGN_H
 
-#include "dktypes.h"
+#include "core/dktypes.h"
 
 #define ALIGN4( a ) a	= (ubyte *)((int)((ubyte *)a + 3) & ~ 3)
 #define ALIGN16( a ) a	= (ubyte *)((int)((ubyte *)a + 15) & ~ 15)

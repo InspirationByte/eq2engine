@@ -8,9 +8,11 @@
 #ifndef MODEL_H
 #define MODEL_H
 
-#include "math/DkMath.h"
+#include "core/dktypes.h"
+#include "core/ppmem.h"
 #include "utils/DkList.h"
-#include "dktypes.h"
+
+#include "math/DkMath.h"
 
 // for ER_PrimitiveType
 #include "materialsystem1/renderers/ShaderAPI_defs.h"
@@ -19,7 +21,7 @@
 
 #include "physmodel.h"
 
-#include "ppmem.h"
+
 
 // some definitions
 

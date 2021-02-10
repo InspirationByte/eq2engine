@@ -8,7 +8,7 @@
 #ifndef ANIMATIONFILE_H
 #define ANIMATIONFILE_H
 
-#include "platform/Platform.h"
+#include "core/platform/Platform.h"
 
 #define ANIMCA_IDENT			(('C'<<24)+('M'<<16)+('N'<<8)+'A') // MOTN for MOTioN data
 #define ANIMCA_VERSION			5

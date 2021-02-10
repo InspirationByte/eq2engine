@@ -5,7 +5,10 @@
 // Description:
 //////////////////////////////////////////////////////////////////////////////////
 
-#include "core_base_header.h"
+#include "core/IFileSystem.h"
+#include "core/DebugInterface.h"
+#include "core/ICmdLineParser.h"
+#include "utils/KeyValues.h"
 
 #include "math/DkMath.h"
 #include "utils/align.h"

@@ -8,7 +8,7 @@
 #ifndef PHYSMODEL_H
 #define PHYSMODEL_H
 
-#include "platform/Platform.h"
+#include "core/platform/Platform.h"
 
 #define PHYSMODEL_VERSION					2
 #define PHYSMODEL_ID						(('I'<<24)+('D'<<16)+('O'<<8)+'P') // PODI

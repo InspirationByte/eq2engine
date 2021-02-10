@@ -9,7 +9,7 @@ set_arch("x64") -- TODO: x86 builds too
 
 -- some packages
 add_requires("zlib", "libjpeg")
-set_targetdir("bin")
+set_targetdir("bin_$(arch)")
 
 -----------------------------------------------------
 
@@ -18,15 +18,15 @@ Groups = {
     core = "eqCoreFramework",
     engine1 = "Equilibrium 1 port",
     engine2 = "Equilibrium 2",
-    tools = "tools"
+    tools = "Tools"
 }
 
 -- folders for framework, libraries and tools
 Folders = {
-    public =  "public/",
-    engine = "shared_engine/",
-    game = "shared_engine/",
-    matsystem1 = "materialsystem1/"
+    public =  "$(projectdir)/public/",
+    matsystem1 = "$(projectdir)/materialsystem1/",
+    shared_engine = "$(projectdir)/shared_engine/",
+    shared_game = "$(projectdir)/shared_engine/",
 }
 
 local function add_eq_deps() -- for internal use only
@@ -128,7 +128,7 @@ target("eqMatSystem")
     set_kind("shared")
     add_files(
         Folders.matsystem1.. "*.cpp",
-        Folders.public..Folders.matsystem1.. "*.cpp")
+        Folders.public.."materialsystem1/*.cpp")
     add_headerfiles(Folders.matsystem1.."*.h")
     add_eqcore_deps()
 
@@ -141,7 +141,7 @@ target("eqRHIBaseLib")
     set_kind("static")
     add_files(Folders.matsystem1.. "renderers/Shared/*.cpp")
     add_headerfiles(Folders.matsystem1.."renderers/Shared/*.h")
-    add_includedirs(Folders.public..Folders.matsystem1, { public = true })
+    add_includedirs(Folders.public.."materialsystem1/", { public = true })
     add_includedirs(Folders.matsystem1.."renderers/Shared", { public = true })
     add_eqcore_deps()
 
@@ -193,73 +193,5 @@ if is_plat("windows") then
         add_deps("eqRHIBaseLib")
 end
     
-
---
--- If you want to known more usage about xmake, please see https://xmake.io
---
--- ## FAQ
---
--- You can enter the project directory firstly before building project.
---
---   $ cd projectdir
---
--- 1. How to build project?
---
---   $ xmake
---
--- 2. How to configure project?
---
---   $ xmake f -p [macosx|linux|iphoneos ..] -a [x86_64|i386|arm64 ..] -m [debug|release]
---
--- 3. Where is the build output directory?
---
---   The default output directory is `./build` and you can configure the output directory.
---
---   $ xmake f -o outputdir
---   $ xmake
---
--- 4. How to run and debug target after building project?
---
---   $ xmake run [targetname]
---   $ xmake run -d [targetname]
---
--- 5. How to install target to the system directory or other output directory?
---
---   $ xmake install
---   $ xmake install -o installdir
---
--- 6. Add some frequently-used compilation flags in xmake.lua
---
--- @code
---    -- add debug and release modes
---    add_rules("mode.debug", "mode.release")
---
---    -- add macro defination
---    add_defines("NDEBUG", "_GNU_SOURCE=1")
---
---    -- set warning all as error
---    set_warnings("all", "error")
---
---    -- set language: c99, c++11
---    set_languages("c99", "c++11")
---
---    -- set optimization: none, faster, fastest, smallest
---    set_optimize("fastest")
---
---    -- add include search directories
---    add_includedirs("/usr/include", "/usr/local/include")
---
---    -- add link libraries and search directories
---    add_links("tbox")
---    add_linkdirs("/usr/local/lib", "/usr/lib")
---
---    -- add system link libraries
---    add_syslinks("z", "pthread")
---
---    -- add compilation and link flags
---    add_cxflags("-stdnolib", "-fno-strict-aliasing")
---    add_ldflags("-L/usr/local/lib", "-lpthread", {force = true})
---
--- @endcode
---
+includes("utils/xmake-utils.lua")
 

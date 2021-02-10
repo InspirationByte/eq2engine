@@ -8,19 +8,20 @@
 
 #include <stdio.h>
 
-#include "platform/Platform.h"
+#include "core/DebugInterface.h"
+#include "core/cmdlib.h"
+#include "core/IDkCore.h"
+#include "core/platform/Platform.h"
+#include "core/IConCommandFactory.h"
+#include "core/IFileSystem.h"
+
 #include "utils/strtools.h"
 #include "utils/align.h"
-#include "IDkCore.h"
-
-#include "DebugInterface.h"
-#include "cmdlib.h"
 
 #include <iostream>
 #include <malloc.h>
 #include "egf/model.h"
-#include "IConCommandFactory.h"
-#include "IFileSystem.h"
+
 
 #ifdef _WIN32
 #include <tchar.h>
