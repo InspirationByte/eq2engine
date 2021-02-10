@@ -8,9 +8,9 @@
 #ifndef CENGINEMODEL_H
 #define CENGINEMODEL_H
 
-#include "IEqModel.h"
+#include "egf/IEqModel.h"
 #include "modelloader_shared.h"
-#include "materialsystem/IMaterialSystem.h"
+#include "materialsystem1/IMaterialSystem.h"
 
 // streams in studio models used exclusively in interpolation
 class CEngineStudioEGF : public IEqModel

@@ -5,9 +5,10 @@
 // Description: Equilibrium Graphics File script compler and generator
 //////////////////////////////////////////////////////////////////////////////////
 
-#include "DebugInterface.h"
-
 #include "EGFGenerator.h"
+
+#include "core/DebugInterface.h"
+#include "utils/strtools.h"
 
 #include "dsm_esm_loader.h"
 

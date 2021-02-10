@@ -10,18 +10,17 @@
 #ifdef USE_ACTC
 extern "C"
 {
-#	include "tc.h"
+#	include "actc/tc.h"
 }
 #endif // USE_ACTC
 
-#include "core_base_header.h"
+#include "core/DebugInterface.h"
 
 #include "EGFGenerator.h"
 
 #include "utils/geomtools.h"
 #include "utils/VirtualStream.h"
-//#include "math/math_util.h"
-//#include "utils/mtriangle_framework.h"
+#include "utils/strtools.h"
 
 #include "dsm_esm_loader.h"
 

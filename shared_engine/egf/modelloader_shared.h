@@ -8,8 +8,8 @@
 #ifndef MODELLOADER_SHARED_H
 #define MODELLOADER_SHARED_H
 
-#include "model.h"
-#include "ppmem.h"
+#include "egf/model.h"
+#include "core/ppmem.h"
 
 studiohdr_t*						Studio_LoadModel(const char* pszPath);
 studioHwData_t::motionData_t*		Studio_LoadMotionData(const char* pszPath, int numBones);

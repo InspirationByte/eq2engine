@@ -27,6 +27,7 @@ Folders = {
     matsystem1 = "$(projectdir)/materialsystem1/",
     shared_engine = "$(projectdir)/shared_engine/",
     shared_game = "$(projectdir)/shared_engine/",
+    dependency = "$(projectdir)/src_dependency/",
 }
 
 local function add_eq_deps() -- for internal use only
@@ -112,6 +113,11 @@ target("e2Core")
         "CORE_INTERFACE_EXPORT",
         "COREDLL_EXPORT")
 
+    if is_plat("android") then 
+        add_files("core/android_libc/*.c")
+        add_headerfiles("core/android_libc/*.h")
+    end
+
     add_packages("zlib")
     add_eq_deps()
 
@@ -186,8 +192,8 @@ if is_plat("windows") then
         set_group(Groups.engine1)
         set_kind("shared")
         add_files(Folders.matsystem1.. "renderers/D3D9/*.cpp")
-        add_includedirs("src_dependency/minidx9/include")
-        add_linkdirs("src_dependency/minidx9/lib/$(arch)")
+        add_includedirs(Folders.dependency.."minidx9/include")
+        add_linkdirs(Folders.dependency.."minidx9/lib/$(arch)")
         add_syslinks("d3d9", "d3dx9")
         add_headerfiles(Folders.matsystem1.."renderers/D3D9/**.h")
         add_deps("eqRHIBaseLib")

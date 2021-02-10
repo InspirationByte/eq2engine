@@ -6,7 +6,7 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "dsm_esm_loader.h"
-#include "core_base_header.h"
+#include "core/DebugInterface.h"
 
 bool isNotWhiteSpace(const char ch)
 {

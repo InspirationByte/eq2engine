@@ -8,7 +8,7 @@
 #ifndef EGFPHYSICSGENERATOR_H
 #define EGFPHYSICSGENERATOR_H
 
-#include "core_base_header.h"
+#include "utils/KeyValues.h"
 #include "dsm_loader.h"
 #include "model.h"
 

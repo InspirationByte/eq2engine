@@ -5,9 +5,10 @@
 // Description: Equilibrium Graphics File loader
 //////////////////////////////////////////////////////////////////////////////////
 
-#include "DebugInterface.h"
 #include "modelloader_shared.h"
-#include "IFileSystem.h"
+
+#include "core/DebugInterface.h"
+#include "core/IFileSystem.h"
 
 #include <zlib.h>
 

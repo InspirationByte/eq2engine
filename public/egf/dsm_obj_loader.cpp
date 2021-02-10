@@ -6,8 +6,10 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "dsm_obj_loader.h"
+
+#include "core/DebugInterface.h"
+#include "core/IFileSystem.h"
 #include "utils/Tokenizer.h"
-#include "core_base_header.h"
 
 #include "math/math_util.h"
 

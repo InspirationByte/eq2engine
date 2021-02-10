@@ -6,7 +6,8 @@
 //////////////////////////////////////////////////////////////////////////////////-
 
 #include "dsm_loader.h"
-#include "core_base_header.h"
+#include "core/DebugInterface.h"
+#include "utils/KeyValues.h"
 
 #pragma todo("Remove old DSM loader")
 
