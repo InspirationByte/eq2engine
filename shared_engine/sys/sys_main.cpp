@@ -30,7 +30,12 @@
 #include "EngineVersion.h"
 
 #ifdef _WIN32
-//#include "Resources/resource.h"
+#include <windows.h>
+extern "C"
+{
+	__declspec(dllexport) DWORD NvOptimusEnablement = 0x00000001;
+	__declspec(dllexport) int AmdPowerXpressRequestHighPerformance = 1;
+}
 #endif // _WIN32
 
 DECLARE_CVAR_NONSTATIC(__cheats,1,"Wireframe",CV_INVISIBLE);
@@ -90,6 +95,8 @@ struct JNI_t
 {
 	JNIEnv* env;
 	AAssetManager* assetManager;
+	EqString packageName;
+	EqString obbPath;
 } g_jni;
 
 // init Java Native Interface glue parts required to do some operations
@@ -109,6 +116,16 @@ void Android_InitJNI()
 	jobject raw_asset_manager = env->CallObjectMethod(raw_resources, method_get_assets);
 
 	g_jni.assetManager = AAssetManager_fromJava(env, raw_asset_manager);
+
+
+	{
+		jmethodID jMethod_id_pn = env->GetMethodID(class_activity, "getPackageName", "()Ljava/lang/String;");
+		jstring packageNameJstr = (jstring)env->CallObjectMethod(raw_activity, jMethod_id_pn);
+
+		const char* packageNameUtfStr = env->GetStringUTFChars(packageNameJstr, 0);
+		g_jni.packageName = packageNameUtfStr;
+		env->ReleaseStringUTFChars(packageNameJstr, packageNameUtfStr);
+	}
 }
 
 // init base path to extract
@@ -198,11 +215,30 @@ bool Android_InitCore(int argc, char** argv)
 		}
 	}
 
-	// first we let eqconfig
-	g_fileSystem->SetBasePath(bestStoragePath);
+	EqString dataPath("/data/" + g_jni.packageName + "/files");
+	EqString obbPath("/obb/" + g_jni.packageName);
+
+	EqString storageBase(_Es(bestStoragePath).Left(strlen(bestStoragePath) - dataPath.Length()));
+
+	EqString storagePath(storageBase + dataPath);
+	EqString storageObbPath(storageBase + obbPath);
+
+	// first we let eqconfig to be found
+	g_fileSystem->SetBasePath(storagePath.c_str());
+
+	g_jni.obbPath = storageObbPath;
 
 	// init core
-	return GetCore()->Init("Game", argc, argv);
+	bool result = GetCore()->Init("Game", argc, argv);
+
+	Msg("bestStoragePath: %s\n", bestStoragePath);
+	Msg("dataPath: %s\n", dataPath.c_str());
+	Msg("obbPath: %s\n", obbPath.c_str());
+
+	Msg("storagePath: %s\n", storagePath.c_str());
+	Msg("storageObbPath: %s\n", storageObbPath.c_str());
+
+	return result;
 }
 
 void Android_MountFileSystem()
@@ -213,8 +249,16 @@ void Android_MountFileSystem()
 	// as well as configuration file dir
 	g_fileSystem->MakeDir("cfg", SP_MOD);
 
-	// mount OBB file if available
+	// mount OBB file if available in config
+	kvkeybase_t* filesystemKvs = GetCore()->GetConfig()->FindKeyBase("Filesystem");
+	kvkeybase_t* obbPackageName = filesystemKvs->FindKeyBase("OBBPackage");
 
+	if (obbPackageName)
+	{
+		EqString packageFullPath;
+		CombinePath(packageFullPath, 2, g_jni.obbPath.c_str(), KV_GetValueString(obbPackageName));
+		g_fileSystem->AddPackage(packageFullPath.c_str(), SP_MOD);
+	}
 }
 
 #endif
