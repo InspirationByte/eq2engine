@@ -103,7 +103,7 @@ int GLWorkerThread::WaitForResult(work_t* work)
 
 	// wait
 	while (work->result == WORK_PENDING_MARKER)
-		Platform_Sleep(1);
+		Threading::Yield();
 
 	// retrieve result and delete
 	int result = work->result;

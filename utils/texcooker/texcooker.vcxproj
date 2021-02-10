@@ -90,10 +90,6 @@
     <ClCompile Include="TextureBatchCooker.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <Library Include="..\..\src_dependency\jpeg\lib\jpeg.lib" />
-    <Library Include="..\..\src_dependency\zlib\contrib\vstudio\vc14\x86\ZlibStatReleaseWithoutAsm\zlibstat.lib" />
-  </ItemGroup>
-  <ItemGroup>
     <ProjectReference Include="..\..\coreLib.vcxproj">
       <Project>{591567d2-96d1-4cbc-988b-07b7794ad489}</Project>
     </ProjectReference>

@@ -613,6 +613,8 @@ bool CEGFGenerator::LoadMaterialGroups(kvkeybase_t* pSection)
 			MsgInfo("\n");
 		}
 	}
+
+	return true;
 }
 
 //************************************

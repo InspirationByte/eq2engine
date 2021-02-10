@@ -10,12 +10,6 @@
 
 #include "BasePackageFileReader.h"
 
-#include <stdio.h>
-
-#ifdef _WIN32
-#include <direct.h>
-#endif
-
 #include "utils/DkList.h"
 #include "utils/IceKey.h"
 

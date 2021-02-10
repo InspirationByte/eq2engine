@@ -13,7 +13,7 @@
 #include "dktypes.h"
 
 // for ER_PrimitiveType
-#include "materialsystem/renderers/ShaderAPI_defs.h"
+#include "materialsystem1/renderers/ShaderAPI_defs.h"
 
 #include "motionpackage.h"
 

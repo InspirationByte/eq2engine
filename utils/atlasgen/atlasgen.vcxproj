@@ -91,10 +91,6 @@
     <ClCompile Include="AtlasImagePacker.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <Library Include="..\..\src_dependency\jpeg\lib\jpeg.lib" />
-    <Library Include="..\..\src_dependency\zlib\contrib\vstudio\vc14\x86\ZlibStatReleaseWithoutAsm\zlibstat.lib" />
-  </ItemGroup>
-  <ItemGroup>
     <ClInclude Include="..\..\public\Utils\RectanglePacker.h" />
   </ItemGroup>
   <ItemGroup>
@@ -107,6 +103,9 @@
     <ProjectReference Include="..\..\frameworkLib.vcxproj">
       <Project>{5eddcdb2-e467-4db3-ad7e-4e78f5020028}</Project>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Library Include="..\..\src_dependency\jpeg\lib\jpeg.lib" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

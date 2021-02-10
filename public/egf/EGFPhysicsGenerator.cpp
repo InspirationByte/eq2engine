@@ -8,7 +8,7 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "EGFPhysicsGenerator.h"
-#include "coord.h"
+#include "math/coord.h"
 #include "utils/mtriangle_framework.h"
 #include "utils/SmartPtr.h"
 #include "utils/VirtualStream.h"

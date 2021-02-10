@@ -12,7 +12,6 @@
 #include "minizip/unzip.h"
 
 #include "utils/DkList.h"
-#include "IVirtualStream.h"
 
 class CZipFileReader;
 
@@ -62,13 +61,6 @@ protected:
 
 //----------------------------------------------------------------------
 
-struct zfileinfo_t
-{
-	EqString filename;
-	int hash;
-	unz_file_pos pos;
-};
-
 class CZipFileReader : public CBasePackageFileReader
 {
 public:
@@ -84,6 +76,13 @@ public:
 protected:
 	unzFile					GetNewZipHandle() const;
 	unzFile					GetZippedFile(const char* filename) const;
+
+	struct zfileinfo_t
+	{
+		EqString filename;
+		int hash;
+		unz_file_pos pos;
+	};
 
 	DkList<CZipFileStream*>	m_openFiles;
 	DkList<zfileinfo_t>		m_files;

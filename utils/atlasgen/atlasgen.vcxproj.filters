@@ -26,16 +26,13 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <Library Include="..\..\src_dependency\jpeg\lib\jpeg.lib">
-      <Filter>Libs</Filter>
-    </Library>
-    <Library Include="..\..\src_dependency\zlib\contrib\vstudio\vc14\x86\ZlibStatReleaseWithoutAsm\zlibstat.lib">
-      <Filter>Libs</Filter>
-    </Library>
-  </ItemGroup>
-  <ItemGroup>
     <ClInclude Include="..\..\public\Utils\RectanglePacker.h">
       <Filter>Файлы исходного кода</Filter>
     </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Library Include="..\..\src_dependency\jpeg\lib\jpeg.lib">
+      <Filter>Libs</Filter>
+    </Library>
   </ItemGroup>
 </Project>

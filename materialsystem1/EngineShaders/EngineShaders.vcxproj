@@ -11,7 +11,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectName>EngineShaders</ProjectName>
+    <ProjectName>EngineShaders1</ProjectName>
     <ProjectGuid>{6A83A676-BD41-4667-AD01-D88601BD4FBC}</ProjectGuid>
     <RootNamespace>DkCore</RootNamespace>
     <Keyword>Win32Proj</Keyword>
