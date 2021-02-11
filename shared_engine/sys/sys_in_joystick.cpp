@@ -5,16 +5,16 @@
 // Description: Equilibrium joystick support brought by SDL
 //////////////////////////////////////////////////////////////////////////////////
 
-#include "DebugInterface.h"
+#include "core/DebugInterface.h"
+#include "core/IFileSystem.h"
+#include "core/ConVar.h"
 
 #include "sys_host.h"
 #include "sys_in_joystick.h"
 
-#include "in_keys_ident.h"
+#include "input/in_keys_ident.h"
 
-#include "IFileSystem.h"
-
-#include "ConVar.h"
+#include <SDL.h>
 
 ConVar in_joy_debug("in_joy_debug", "0", "Joystick debug messages", 0);
 
@@ -25,6 +25,8 @@ ConVar in_joy_rumble("in_joy_rumble", "1", "Rumble", CV_ARCHIVE);
 ConVar in_joy_id("in_joy_id", "-1", "Joystick to use. -1 is for all", CV_ARCHIVE);
 
 #define CONTROLLER_DB_FILENAME "cfg/controllers.db"
+
+#ifdef PLAT_SDL
 
 DECLARE_CMD(in_joy_addMapping, "Adds joystick mapping in SDL2 format", 0)
 {
@@ -336,3 +338,5 @@ void CEqGameControllerSDL::ProcessInputEvent(SDL_Event* event)
 		}
 	}
 }
+
+#endif // PLAT_SDL

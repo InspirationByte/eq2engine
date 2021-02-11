@@ -8,7 +8,7 @@
 #ifndef ISTUDIOSHAPECACHE_H
 #define ISTUDIOSHAPECACHE_H
 
-#include "model.h"
+#include "egf/model.h"
 
 class IStudioShapeCache
 {

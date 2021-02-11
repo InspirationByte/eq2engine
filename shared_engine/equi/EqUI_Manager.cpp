@@ -6,9 +6,15 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "EqUI_Manager.h"
-#include "core_base_header.h"
-#include "in_keys_ident.h"
-#include "FontCache.h"
+#include "core/DebugInterface.h"
+#include "core/ConCommand.h"
+#include "core/ConVar.h"
+
+#include "utils/strtools.h"
+
+#include "input/in_keys_ident.h"
+
+#include "font/IFontCache.h"
 
 //-----
 // include all needed elements here

@@ -5,11 +5,14 @@
 // Description: Configuration file loader
 //////////////////////////////////////////////////////////////////////////////////
 
-#include "core_base_header.h"
+#include "core/DebugInterface.h"
+#include "core/ConCommandBase.h"
+#include "core/IConCommandFactory.h"
+#include "core/IFileSystem.h"
 
 #include "utils/strtools.h"
-#include "IConCommandFactory.h"
-#include "KeyBinding/InputCommandBinder.h"
+
+#include "input/InputCommandBinder.h"
 
 void WriteCfgFile(const char *pszFilename, bool bWriteKeyConfiguration /*= true*/)
 {

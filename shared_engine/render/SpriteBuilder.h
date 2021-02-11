@@ -8,7 +8,7 @@
 #ifndef SPRITEBUILDER_H
 #define SPRITEBUILDER_H
 
-#include "IMaterialSystem.h"
+#include "materialsystem1/IMaterialSystem.h"
 
 #define SVBO_MAX_SIZE(s, T)	((size_t)s*sizeof(T)*4)
 #define SIBO_MAX_SIZE(s)	((size_t)s*(sizeof(uint16)*6))

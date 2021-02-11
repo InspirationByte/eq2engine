@@ -6,16 +6,20 @@ add_rules("mode.debug", "mode.release")
 
 set_languages("c++14", "c98")
 set_arch("x64") -- TODO: x86 builds too
-
--- some packages
-add_requires("zlib", "libjpeg")
 set_targetdir("bin/$(arch)")
 
+-- some packages
+add_requires("zlib", "libjpeg", "bullet3")
+add_requireconfs("bullet3", {
+    configs = {
+        shared = false
+    }})
 -----------------------------------------------------
 
 -- default configuration capabilities
 Groups = {
-    core = "eqCoreFramework",
+    core = "Framework",
+    component = "Components",
     engine1 = "Equilibrium 1 port",
     engine2 = "Equilibrium 2",
     tools = "Tools"
@@ -26,7 +30,7 @@ Folders = {
     public =  "$(projectdir)/public/",
     matsystem1 = "$(projectdir)/materialsystem1/",
     shared_engine = "$(projectdir)/shared_engine/",
-    shared_game = "$(projectdir)/shared_engine/",
+    shared_game = "$(projectdir)/shared_game/",
     dependency = "$(projectdir)/src_dependency/",
 }
 
@@ -40,6 +44,18 @@ function add_eqcore_deps()
 end
 
 -----------------------------------------------------
+
+if is_plat("windows") or is_plat("linux") or is_plat("android") then
+    add_defines("PLAT_SDL=1")
+end
+
+function add_SDL2()
+    if is_plat("windows") or is_plat("android") then
+        add_includedirs(Folders.dependency.."SDL2/include")
+        add_linkdirs(Folders.dependency.."SDL2/lib/$(arch)")
+        add_links("SDL2")
+    end
+end
 
 if is_plat("windows") then
 
@@ -55,9 +71,10 @@ elseif is_plat("linux") then
         "-fpic")
 end
 
+-- default runtime configuration
 if is_mode("debug") or is_mode("releasedbg") then
 
-    add_defines("_DEBUG")
+    add_defines("EQ_DEBUG")
     set_symbols("debug")
 
 elseif is_mode("release") then
@@ -67,6 +84,18 @@ elseif is_mode("release") then
     add_defines("NDEBUG")
 
     set_optimize("fastest")
+end
+
+-- extra runtime configuration (if needed)
+function setup_runtime_config(crtDebug)
+    if is_mode("debug") then 
+        set_runtimes("MDd")
+
+        -- allow CRT debugging features on windows
+        if is_plat("windows") and crtDebug then
+            add_defines("CRT_DEBUG_ENABLED")
+        end
+    end
 end
 
 ----------------------------------------------
@@ -88,12 +117,11 @@ target("frameworkLib")
     add_files(
         Folders.public.. "/utils/*.cpp",
         Folders.public.. "/math/*.cpp",
-        Folders.public.. "/network/*.cpp",
         Folders.public.. "/imaging/*.cpp")
     add_headerfiles(
         Folders.public.. "/utils/*.h",
         Folders.public.. "/math/*.h",
-        Folders.public.. "/network/*.h")
+        Folders.public.. "/imaging/*.h")
     add_packages("zlib", "libjpeg")
     add_includedirs(Folders.public, { public = true })
 
@@ -103,6 +131,7 @@ target("frameworkLib")
 target("e2Core")
     set_group(Groups.core)
     set_kind("shared")
+    --setup_runtime_config(true)
     add_files(
         "core/**.cpp",
         "core/minizip/*.c")
@@ -125,6 +154,44 @@ target("e2Core")
         add_syslinks("User32", "DbgHelp", "Advapi32")
     end
     
+----------------------------------------------
+-- Various components
+
+-- fonts
+target("fontLib")
+    set_group(Groups.component)
+    set_kind("static")
+    add_files(Folders.shared_engine.. "font/**.cpp")
+    add_includedirs(Folders.shared_engine, { public = true })
+    add_eq_deps()
+
+-- render utility
+target("renderUtilLib")
+    set_group(Groups.component)
+    set_kind("static")
+    add_files(Folders.shared_engine.. "render/**.cpp")
+    add_includedirs(Folders.shared_engine, { public = true })
+    add_eq_deps()
+
+-- EGF
+target("egfLib")
+    set_group(Groups.component)
+    set_kind("static")
+    add_files(Folders.shared_engine.. "egf/**.cpp", Folders.shared_engine.. "egf/**.c")
+    add_headerfiles(Folders.shared_engine.. "egf/**.h")
+    add_includedirs(Folders.shared_engine, { public = true })
+    add_eq_deps()
+    add_deps("renderUtilLib")
+    add_packages("zlib", "bullet3")
+
+-- Animating game library
+target("animatingLib")
+    set_group(Groups.component)
+    set_kind("static")
+    add_files(Folders.shared_game.. "animating/**.cpp")
+    add_includedirs(Folders.shared_game, { public = true })
+    add_deps("egfLib")
+    add_eq_deps()
 
 ----------------------------------------------
 -- Equilirium Material System 1
@@ -198,6 +265,9 @@ if is_plat("windows") then
         add_headerfiles(Folders.matsystem1.."renderers/D3D9/**.h")
         add_deps("eqRHIBaseLib")
 end
-    
-includes("utils/xmake-utils.lua")
+
+-- only build tools for big machines
+if is_plat("windows", "linux") then
+    includes("utils/xmake-utils.lua")
+end
 

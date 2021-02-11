@@ -8,7 +8,7 @@
 #ifndef RAGDOLL_H
 #define RAGDOLL_H
 
-#include "DebugInterface.h"
+#include "core/DebugInterface.h"
 #include "math/Dkmath.h"
 #include "IDkPhysics.h"
 

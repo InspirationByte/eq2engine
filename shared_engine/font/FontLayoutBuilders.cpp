@@ -7,9 +7,8 @@
 
 #include "FontLayoutBuilders.h"
 
-#ifdef PLAT_POSIX
-#include <wctype.h> // iswspace
-#endif
+#include <ctype.h>		// isspace
+#include <wctype.h>		// iswspace
 
 void CRectangleTextLayoutBuilder::OnNewLine(const eqFontStyleParam_t& params,
 										void* strCurPos, bool isWideChar,

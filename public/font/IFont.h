@@ -21,7 +21,6 @@
 #define IFONT_H
 
 #include "math/Rectangle.h"
-#include "materialsystem/IMaterialSystem.h"
 
 // text styles
 enum ETextStyleFlag

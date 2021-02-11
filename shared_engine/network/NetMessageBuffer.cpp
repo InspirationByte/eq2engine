@@ -376,9 +376,9 @@ void CNetMessageBuffer::TryExtendSubMsg()
 	if((m_nSubMessageId < 0) || (m_nSubMessageId >= m_pMessage.numElem()))
 	{
 		submsg_t* newmsg = new submsg_t;
-#ifdef DEBUG
+#ifdef EQ_DEBUG
 		memset(newmsg->data, 0, sizeof(newmsg->data));
-#endif // DEBUG
+#endif // EQ_DEBUG
 
 		// make a new message id
 		m_nSubMessageId = m_pMessage.append( newmsg );

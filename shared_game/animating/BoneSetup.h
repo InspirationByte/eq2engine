@@ -10,11 +10,11 @@
 
 #include "Math/Vector.h"
 #include "Math/Matrix.h"
-#include "model.h"
+#include "egf/model.h"
 #include "anim_activity.h"
 
-#if !defined(NO_GAME) && !defined(NO_ENGINE)
-#include "DataMap.h"
+#if 0
+#include "entity/DataMap.h"
 #endif // #if !EDITOR && !NO_ENGINE
 
 struct gikchain_t;

@@ -8,14 +8,12 @@
 #ifndef LUABINDING_H
 #define LUABINDING_H
 
+#include "core/DebugInterface.h"
 #include "utils/DkList.h"
 #include "utils/eqstring.h"
+#include "utils/AsyncWorkQueue.h"
+
 #include "oolua.h"
-#include "DebugInterface.h"
-#include <utils/AsyncWorkQueue.h>
-
-
-
 
 class IVirtualStream;
 

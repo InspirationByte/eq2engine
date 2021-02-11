@@ -9,14 +9,16 @@
 #ifndef INPUTCOMMANDBINDER_H
 #define INPUTCOMMANDBINDER_H
 
+
+#include "core/ConCommand.h"
+
+#include "utils/DkList.h"
+
+#include "input/in_keys_ident.h"
+#include "math/Vector.h"
+
 #include <stdio.h>
 #include <stdlib.h>
-#include "ConCommand.h"
-#include "utils/DkList.h"
-#include "in_keys_ident.h"
-#include "IFileSystem.h"
-
-#include "math/Vector.h"
 
 // binding
 
@@ -78,7 +80,9 @@ struct axisAction_t
 	JOYAXISFUNC		func;
 };
 
-//
+
+class IVirtualStream;
+
 class CInputCommandBinder
 {
 public:
@@ -90,7 +94,7 @@ public:
 	void					InitTouchZones();
 
 	// saves binding using file handle
-	void					WriteBindings(IFile* cfgFile);
+	void					WriteBindings(IVirtualStream* stream);
 
 	// binds a command with arguments to known key
 	bool					BindKey( const char* pszKeyStr, const char* pszCommand, const char *pszArgs );

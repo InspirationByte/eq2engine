@@ -8,20 +8,24 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "EGFPhysicsGenerator.h"
-#include "math/coord.h"
+
+#include "core/DebugInterface.h"
+#include "core/IFileSystem.h"
 #include "utils/mtriangle_framework.h"
 #include "utils/SmartPtr.h"
 #include "utils/VirtualStream.h"
-//#include "utils/GeomTools.h"
+#include "utils/strtools.h"
+
+#include "math/coord.h"
 
 using namespace MTriangle;
 
 // physics
-#include "btBulletDynamicsCommon.h"
-#include "BulletCollision/CollisionDispatch/btInternalEdgeUtility.h"
-#include "BulletCollision/CollisionShapes/btShapeHull.h"
+#include <bullet/btBulletDynamicsCommon.h>
+#include <bullet/BulletCollision/CollisionDispatch/btInternalEdgeUtility.h>
+#include <bullet/BulletCollision/CollisionShapes/btShapeHull.h>
 
-#include "physmodel.h"
+#include "egf/physmodel.h"
 
 struct ragdolljoint_t
 {

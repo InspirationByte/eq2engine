@@ -36,6 +36,7 @@ struct eqParallelJob_t
 // job arranger thread
 abstract_class IEqParallelJobThreads : public ICoreModuleInterface
 {
+public:
 	// creates new job thread
 	virtual bool							Init(int numThreads) = 0;
 	virtual void							Shutdown() = 0;

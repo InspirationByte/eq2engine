@@ -8,9 +8,10 @@
 #ifndef SYS_STATE_H
 #define SYS_STATE_H
 
-#include "Font.h"
 #include "utils/KeyValues.h"
-#include "materialsystem/IMaterialSystem.h"
+
+#include "font/IFont.h"
+#include "materialsystem1/IMaterialSystem.h"
 
 #define GAME_STATE_NONE 0
 

@@ -6,14 +6,19 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "studio_egf.h"
-#include "DebugInterface.h"
-#include "math/math_util.h"
+
+#include "core/DebugInterface.h"
+#include "core/IEqParallelJobs.h"
+#include "core/ConVar.h"
+
+
 #include "utils/SmartPtr.h"
 #include "utils/GeomTools.h"
 #include "utils/strtools.h"
+
 #include "physics/IStudioShapeCache.h"
-#include "eqParallelJobs.h"
-#include "ConVar.h"
+#include "math/math_util.h"
+
 
 #ifdef NOPHYSICS
 

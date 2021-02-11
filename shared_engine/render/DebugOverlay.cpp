@@ -7,15 +7,16 @@
 
 
 #include "DebugOverlay.h"
-#include "DebugInterface.h"
-#include "ConVar.h"
 
-#include "FontCache.h"
+#include "core/DebugInterface.h"
+#include "core/ConVar.h"
+
+#include "font/IFontCache.h"
 #include "math/math_util.h"
 #include "utils/strtools.h"
 
-#include "materialsystem/IMaterialSystem.h"
-#include "materialsystem/MeshBuilder.h"
+#include "materialsystem1/IMaterialSystem.h"
+#include "materialsystem1/MeshBuilder.h"
 
 #ifndef _WIN32
 #include <stdarg.h>
@@ -30,6 +31,9 @@
 #define BOXES_DRAW_SUBDIV (64)
 #define LINES_DRAW_SUBDIV (128)
 #define POLYS_DRAW_SUBDIV (64)
+
+static CDebugOverlay g_DebugOverlays;
+IDebugOverlay* debugoverlay = (IDebugOverlay*)&g_DebugOverlays;
 
 static ConVar r_drawFrameStats("r_frameStats", DEBUG_DEFAULT_VALUE,NULL, CV_ARCHIVE);
 static ConVar r_debugdrawGraphs("r_debugDrawGraphs", DEBUG_DEFAULT_VALUE,NULL, CV_ARCHIVE);
@@ -100,11 +104,10 @@ CDebugOverlay::CDebugOverlay() :
 	m_FastBoxList(128),
 	m_FastLineList(128),
 	m_graphbuckets(4),
-	m_polygons(128)
+	m_polygons(128),
+	m_frameTime(0.0f)
 {
 	m_pDebugFont = NULL;
-
-	m_oldtime = 0;
 }
 
 void CDebugOverlay::Init()
@@ -791,11 +794,7 @@ void CDebugOverlay::SetMatrices( const Matrix4x4 &proj, const Matrix4x4 &view )
 
 void CDebugOverlay::Draw(int winWide, int winTall)
 {
-	float fCurTime = Platform_GetCurrentTime();
-
-	m_frametime = fCurTime - m_oldtime;
-
-	m_oldtime = fCurTime;
+	m_frameTime = m_timer.GetTime(true);
 
 	materials->SetMatrix(MATRIXMODE_PROJECTION, m_projMat);
 	materials->SetMatrix(MATRIXMODE_VIEW, m_viewMat);
@@ -819,16 +818,16 @@ void CDebugOverlay::Draw(int winWide, int winTall)
 	{
 		Threading::CScopedMutex m(m_mutex);
 
-		DrawBoxArray(m_BoxList, m_frametime);
-		DrawBoxArray(m_FastBoxList, m_frametime);
+		DrawBoxArray(m_BoxList, m_frameTime);
+		DrawBoxArray(m_FastBoxList, m_frameTime);
 
-		DrawSphereArray(m_SphereList, m_frametime);
-		DrawSphereArray(m_FastSphereList, m_frametime);
+		DrawSphereArray(m_SphereList, m_frameTime);
+		DrawSphereArray(m_FastSphereList, m_frameTime);
 
-		DrawLineArray(m_LineList, m_frametime);
-		DrawLineArray(m_FastLineList, m_frametime);
+		DrawLineArray(m_LineList, m_frameTime);
+		DrawLineArray(m_FastLineList, m_frameTime);
 
-		DrawPolygons(m_polygons, m_frametime);
+		DrawPolygons(m_polygons, m_frameTime);
 	}
 
 	// now rendering 2D stuff
@@ -873,7 +872,7 @@ void CDebugOverlay::Draw(int winWide, int winTall)
 
 			idx++;
 
-			current.lifetime -= m_frametime;
+			current.lifetime -= m_frameTime;
 
 		}while(m_LeftTextFadeArray.goToNext());
 	}
@@ -898,7 +897,7 @@ void CDebugOverlay::Draw(int winWide, int winTall)
 			if(current.dist > 0)
 				visible = (screen.z < current.dist);
 
-			current.lifetime -= m_frametime;
+			current.lifetime -= m_frameTime;
 
 			if(!beh && visible)
 			{
@@ -943,7 +942,7 @@ void CDebugOverlay::Draw(int winWide, int winTall)
 
 			m_pDebugFont->RenderText( current.pszText.GetData(), textPos, rTextFadeStyle);
 
-			current.lifetime -= m_frametime;
+			current.lifetime -= m_frameTime;
 		}
 	}
 
@@ -952,7 +951,7 @@ void CDebugOverlay::Draw(int winWide, int winTall)
 		Threading::CScopedMutex m(m_mutex);
 
 		for(int i = 0; i < m_graphbuckets.numElem(); i++)
-			DrawGraph( m_graphbuckets[i], i, m_pDebugFont, m_frametime);
+			DrawGraph( m_graphbuckets[i], i, m_pDebugFont, m_frameTime);
 
 		m_graphbuckets.clear();
 	}

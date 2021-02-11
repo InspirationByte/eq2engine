@@ -264,10 +264,8 @@ void InstallExceptionHandler()
 {
 	oldHandler = SetUnhandledExceptionFilter(_exceptionCB);
 
-//#ifdef _DEBUG
 	oldPureCall = _get_purecall_handler();
 	_set_purecall_handler( eqPureCallhandler );
-//#endif // _DEBUG
 
 	handler_installed = 1;
 }

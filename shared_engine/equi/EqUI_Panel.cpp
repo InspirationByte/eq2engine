@@ -11,9 +11,11 @@
 
 #include "EqUI_Manager.h"
 
-#include "materialsystem/MeshBuilder.h"
+#include "materialsystem1/IMaterialSystem.h"
+#include "materialsystem1/MeshBuilder.h"
+#include "materialsystem1/renderers/IShaderAPI.h"
 
-#include "in_keys_ident.h"
+#include "input/in_keys_ident.h"
 
 //-------------------------------------------------------------------
 // Base control

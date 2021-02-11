@@ -6,10 +6,10 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "EqUI_Button.h"
-#include "in_keys_ident.h"
+#include "input/in_keys_ident.h"
 
 #include "EqUI_Manager.h"
-#include "IFont.h"
+#include "font/IFont.h"
 
 namespace equi
 {
@@ -68,11 +68,6 @@ bool Button::ProcessMouseEvents(const IVector2D& mousePos, const IVector2D& mous
 
 bool Button::ProcessKeyboardEvents(int nKeyButtons, int flags)
 {
-	if(nKeyButtons == KEY_ENTER)
-	{
-		// ExecuteButtonCommand()
-	}
-
 	return true;
 }
 

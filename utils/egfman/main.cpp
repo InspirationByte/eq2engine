@@ -4,14 +4,16 @@
 //
 //***************************************************************************
 
+#include "core/DebugInterface.h"
+#include "core/IFileSystem.h"
+#include "core/IDkCore.h"
+
 #include <direct.h>
 #include <crtdbg.h>
 #include <iostream>
 
 #include <io.h>
 #include <fcntl.h>
-
-#include "DebugInterface.h"
 
 #include "Sys_Radiant.h"
 #include "EditorHeader.h"

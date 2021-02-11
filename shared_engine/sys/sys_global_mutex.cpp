@@ -2,9 +2,14 @@
 // Copyright © Inspiration Byte
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
-// Description: EGF model instancer
+// Description: EqEngine mutex storage
 //////////////////////////////////////////////////////////////////////////////////
 
-#include "EGFInstancer.h"
+#include "sys_global_mutex.h"
 
-// this is the truth about templates and inline...
+static Threading::CEqMutex s_mutexPurposes[MUTEXPURPOSE_USED];
+
+Threading::CEqMutex& Sys_GetGlobalMutex( EMutexPurpose purpose )
+{
+	return s_mutexPurposes[purpose];
+}

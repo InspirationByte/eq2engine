@@ -22,10 +22,11 @@
 #include <malloc.h>
 #include "egf/model.h"
 
-
 #ifdef _WIN32
 #include <tchar.h>
+#ifdef CRT_DEBUG_ENABLED
 #include <crtdbg.h>
+#endif
 #else
 #include <unistd.h>
 #endif
@@ -39,7 +40,7 @@ ConVar c_filename("filename","none","script file name", 0);
 int main(int argc, char **argv)
 {
 	//Only set debug info when connecting dll
-	#ifdef _DEBUG
+	#ifdef CRT_DEBUG_ENABLED
 		#define _CRTDBG_MAP_ALLOC
 		int flag = _CrtSetDbgFlag(_CRTDBG_REPORT_FLAG); // Get current flag
 		flag |= _CRTDBG_LEAK_CHECK_DF; // Turn on leak-checking bit

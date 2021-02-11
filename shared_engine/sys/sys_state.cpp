@@ -15,9 +15,9 @@
 
 #include "sys_state.h"
 
-#include "KeyBinding/InputCommandBinder.h"
+#include "input/InputCommandBinder.h"
 
-#include "IDebugOverlay.h"
+#include "render/IDebugOverlay.h"
 
 namespace EqStateMgr
 {

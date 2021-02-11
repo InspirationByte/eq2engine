@@ -8,8 +8,8 @@
 #include "EqUI_Label.h"
 
 #include "EqUI_Manager.h"
-#include "IFont.h"
-#include "FontLayoutBuilders.h"
+#include "font/IFont.h"
+#include "font/FontLayoutBuilders.h"
 
 namespace equi
 {

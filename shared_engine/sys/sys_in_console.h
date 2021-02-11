@@ -9,11 +9,12 @@
 #define CONSOLE_H
 
 #include <stdio.h>
-#include "DebugInterface.h"
+#include "core/DebugInterface.h"
 
 #include "utils/eqstring.h"
 #include "utils/DkList.h"
-#include "IFont.h"
+
+#include "font/IFont.h"
 
 struct ConAutoCompletion_t
 {

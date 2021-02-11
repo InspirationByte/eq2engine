@@ -15,6 +15,10 @@
 // Platform definitions
 //---------------------------------------------
 
+#if defined(_DEBUG) || defined(DEBUG)
+#define EQ_DEBUG
+#endif
+
 #ifdef EQ_USE_SDL
 #	define PLAT_SDL 1
 #	include <SDL.h>
@@ -69,7 +73,7 @@
 #  endif
 #  include <windows.h>
 
-#if defined(_DEBUG)
+#if defined(CRT_DEBUG_ENABLED)
 #	include <crtdbg.h>
 #endif
 
@@ -165,8 +169,11 @@
 
 // define window type
 #ifdef PLAT_SDL
-typedef SDL_Window*		EQWNDHANDLE;	// better use void
-typedef SDL_Cursor*		EQCURSOR;
+struct SDL_Window;
+struct SDL_Cursor;
+
+#define EQWNDHANDLE		SDL_Window*		
+#define EQCURSOR		SDL_Cursor*		
 #elif PLAT_WIN
 typedef HWND			EQWNDHANDLE;
 typedef HICON			EQCURSOR;

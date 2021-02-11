@@ -7,13 +7,12 @@
 
 #include "Animating.h"
 
-#include "DebugInterface.h"
-#include "ConVar.h"
-
-#include "IDebugOverlay.h"
+#include "core/DebugInterface.h"
+#include "core/ConVar.h"
+#include "render/IDebugOverlay.h"
 
 #include "anim_activity.h"
-#include "IEqModel.h"
+#include "egf/IEqModel.h"
 
 ConVar r_debug_ik("r_debug_ik", "0", "Draw debug information about Inverse Kinematics", CV_CHEAT);
 ConVar r_debug_skeleton("r_debug_skeleton", "0", "Draw debug information about bones", CV_CHEAT);

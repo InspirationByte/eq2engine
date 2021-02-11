@@ -8,9 +8,13 @@
 #include "EqUI_Image.h"
 
 #include "EqUI_Manager.h"
-#include "IFont.h"
+#include "font/IFont.h"
 
-#include "materialsystem/MeshBuilder.h"
+#include "utils/KeyValues.h"
+
+#include "materialsystem1/IMaterialSystem.h"
+#include "materialsystem1/MeshBuilder.h"
+#include "materialsystem1/renderers/IShaderAPI.h"
 
 namespace equi
 {

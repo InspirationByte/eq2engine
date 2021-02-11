@@ -12,8 +12,6 @@
 ///Math library & Utils
 #include "LinearMath/btTransform.h"
 
-#include "IDebugOverlay.h"
-
 #include "math/Vector.h"
 #include "math/Matrix.h"
 

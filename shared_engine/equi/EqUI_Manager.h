@@ -10,11 +10,12 @@
 
 #include "equi_defs.h"
 
-#include "materialsystem/IMaterialSystem.h"
 #include "math/Rectangle.h"
 #include "utils/DkList.h"
+#include "utils/EqString.h"
 
 class IEqFont;
+class IMaterial;
 
 namespace equi
 {

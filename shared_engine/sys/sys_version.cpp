@@ -5,8 +5,11 @@
 // Description: Engine version
 //////////////////////////////////////////////////////////////////////////////////
 
-#include "EngineVersion.h"
-#include "ConCommand.h"
+#include "sys_version.h"
+
+#include "core/DebugInterface.h"
+#include "core/ConCommand.h"
+
 #include "utils/strtools.h"
 
 #include <string.h>

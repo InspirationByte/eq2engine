@@ -10,17 +10,20 @@
 #include "EqUI_Manager.h"
 #include "EqUI_Panel.h"
 
-#include "IFileSystem.h"
-#include "FontCache.h"
+#include "core/IFileSystem.h"
+#include "core/IConCommandFactory.h"
+#include "core/ILocalize.h"
 
-#include "IConCommandFactory.h"
+#include "font/IFont.h"
+#include "font/IFontCache.h"
 
-#include "ILocalize.h"
+#include "materialsystem1/IMaterialSystem.h"
+#include "materialsystem1/MeshBuilder.h"
+#include "materialsystem1/renderers/IShaderAPI.h"
+#include "materialsystem1/scene_def.h"	// fog info
 
-#include "materialsystem/MeshBuilder.h"
-#include "IDebugOverlay.h"
+#include "render/IDebugOverlay.h"
 
-#include "scene_def.h"	// fog info
 
 namespace equi
 {

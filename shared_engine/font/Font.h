@@ -9,7 +9,7 @@
 #ifndef FONT_H
 #define FONT_H
 
-#include "IFont.h"
+#include "font/IFont.h"
 #include <map>
 
 class CMeshBuilder;

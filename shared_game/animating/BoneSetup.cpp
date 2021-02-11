@@ -6,7 +6,7 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "BoneSetup.h"
-#include "model.h"
+#include "egf/model.h"
 
 sequencetimer_t::sequencetimer_t()
 {

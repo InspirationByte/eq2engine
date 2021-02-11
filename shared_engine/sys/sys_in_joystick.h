@@ -8,10 +8,14 @@
 #ifndef SYS_IN_JOYSTICK_H
 #define SYS_IN_JOYSTICK_H
 
-#include "platform/Platform.h"
+#include "core/platform/Platform.h"
+
 #include <unordered_map>
 
 #define MAX_CONTROLLERS 4
+
+union SDL_Event;
+struct _SDL_Haptic;
 
 class CEqGameControllerSDL
 {
@@ -34,8 +38,9 @@ public:
 	const char* GetName() const;
 
 private:
+
 	SDL_GameController*			m_gameCont;
-	SDL_Haptic*					m_haptic;
+	_SDL_Haptic*					m_haptic;
 	SDL_JoystickID				m_instanceId;
 	bool						m_connected;
 

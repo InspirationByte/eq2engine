@@ -5,19 +5,22 @@
 // Description: Drivers window handler
 //////////////////////////////////////////////////////////////////////////////////
 
-#include "DebugInterface.h"
+#include "core/IFileSystem.h"
+#include "core/DebugInterface.h"
+#include "core/IConCommandFactory.h"
 
+#include "utils/strtools.h"
+#include "utils/eqthread.h"
+
+#include "sys_version.h"
 #include "sys_host.h"
-
 #include "sys_in_console.h"
 #include "sys_in_joystick.h"
 
 #include "imaging/ImageLoader.h"
-#include "IConCommandFactory.h"
-#include "utils/strtools.h"
-#include "utils/eqthread.h"
 
-#include "EngineVersion.h"
+#include <SDL.h>
+
 /*
 #ifdef _WIN32
 #include "Mmsystem.h"
@@ -33,6 +36,7 @@ DECLARE_CVAR(sys_sleep,0,"Sleep time for every frame",CV_ARCHIVE);
 
 DECLARE_CVAR(screenshotJpegQuality,100,"JPEG Quality",CV_ARCHIVE);
 
+#ifdef PLAT_SDL
 DECLARE_CMD(vid_listmodes, "Shows available video modes for your screen", 0)
 {
 	int display_count = SDL_GetNumVideoDisplays();
@@ -55,6 +59,7 @@ DECLARE_CMD(vid_listmodes, "Shows available video modes for your screen", 0)
 		}
 	}
 }
+#endif // PLAT_SDL
 
 DECLARE_CMD(screenshot, "Save screenshot", 0)
 {
@@ -104,14 +109,14 @@ EQWNDHANDLE Sys_CreateWindow()
 	DkList<EqString> args;
 	xstrsplit(str, "x", args);
 
+	EQWNDHANDLE handle = NULL;
+
+#ifdef PLAT_SDL
+
 	int nAdjustedPosX = SDL_WINDOWPOS_CENTERED;
 	int nAdjustedPosY = SDL_WINDOWPOS_CENTERED;
 	int nAdjustedWide = atoi(args[0].GetData());
 	int nAdjustedTall = atoi(args[1].GetData());
-
-	EQWNDHANDLE handle = NULL;
-
-#ifdef PLAT_SDL
 
 	int sdlFlags = SDL_WINDOW_SHOWN;
 
@@ -148,9 +153,9 @@ EQWNDHANDLE Sys_CreateWindow()
 		return NULL;
 	}
 
-#endif // PLAT_SDL
-
 	Msg("Created render window, %dx%d\n", nAdjustedWide, nAdjustedTall);
+
+#endif // PLAT_SDL
 
 	return handle;
 }

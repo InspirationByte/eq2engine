@@ -5,32 +5,37 @@
 // Description: System and module loader
 //////////////////////////////////////////////////////////////////////////////////
 
+
+#include "core/IConCommandFactory.h"
+#include "core/IEqCPUServices.h"
+#include "core/IEqParallelJobs.h"
+#include "core/IFileSystem.h"
+
+#include "utils/strtools.h"
+
+#include "sys/cfgloader.h"
 #include "sys_host.h"
 #include "sys_state.h"
-
 #include "sys_in_console.h"
 #include "sys_in_joystick.h"
 
+#include "input/InputCommandBinder.h"
+#include "font/IFontCache.h"
+
+#include "render/IDebugOverlay.h"
+
+#include "equi/EqUI_Manager.h"
+
+#if 0
+#include "audio/GameSoundEmitterSystem.h"
+#include "network/net_defs.h"
 #include "luabinding/LuaBinding_Engine.h"
 
-#include "IConCommandFactory.h"
+#include <Shiny.h>
+#endif
 
-#include "IEqCPUServices.h"
-#include "eqParallelJobs.h"
-#include "KeyBinding/InputCommandBinder.h"
-#include "FontCache.h"
-
-#include "DebugOverlay.h"
-
-#include "EqUI/EqUI_Manager.h"
-
-#include "GameSoundEmitterSystem.h"
-
-#include "network/net_defs.h"
-
-#include "cfgloader.h"
-
-#include "Shiny.h"
+#include <SDL.h>
+#include <SDL_syswm.h>
 
 #define DEFAULT_USERCONFIG_PATH		"cfg/user.cfg"
 
@@ -79,9 +84,6 @@ DKMODULE*			g_matsysmodule = NULL;
 
 IMaterialSystem*	materials = NULL;
 IShaderAPI*			g_pShaderAPI = NULL;
-
-static CDebugOverlay g_DebugOverlays;
-IDebugOverlay* debugoverlay = ( IDebugOverlay * )&g_DebugOverlays;
 
 DECLARE_CVAR(m_invert,0,"Mouse inversion enabled?", CV_ARCHIVE);
 
@@ -282,6 +284,7 @@ bool CGameHost::InitSystems( EQWNDHANDLE pWindow, bool bWindowed )
 
 	m_pDefaultFont = g_fontCache->GetFont("default",0);
 
+#if 0
 	soundsystem->Init();
 	debugoverlay->Init();
 	equi::Manager->Init();
@@ -295,7 +298,7 @@ bool CGameHost::InitSystems( EQWNDHANDLE pWindow, bool bWindowed )
 	// init console
 	g_consoleInput->Initialize();
 	g_consoleInput->SetAlternateHandler(LuaBinding_ConsoleHandler);
-
+#endif
 	MsgInfo("--- EqEngine systems init successfully ---\n");
 
 	int wide, tall;
@@ -425,6 +428,7 @@ void CGameHost::ShutdownSystems()
 	// Save configuration before full unload
 	WriteCfgFile( user_cfg.GetString(), true );
 
+#if 0
 	// shutdown any dependent bindings to avoid crashes
 	LuaBinding_ShutdownEngineBindings();
 
@@ -440,13 +444,11 @@ void CGameHost::ShutdownSystems()
 
 	// shutdown systems...
 	Networking::ShutdownNetworking();
-
+#endif
 	materials->Shutdown();
 	g_fileSystem->FreeModule( g_matsysmodule );
 
 	SDL_DestroyWindow(g_pHost->m_pWindow);
-
-	PROFILE_DESTROY();
 }
 
 ConVar sys_maxfps("sys_maxfps", "0", "Frame rate limit", CV_CHEAT);
@@ -567,8 +569,6 @@ bool CGameHost::Frame()
 	g_pShaderAPI->SetScissorRectangle( IRectangle(0,0,m_winSize.x, m_winSize.y) );
 	g_pShaderAPI->Clear(r_clear.GetBool(),true,false, ColorRGBA(0.1f,0.1f,0.1f,1.0f));
 
-	PROFILE_BLOCK(UpdateStates);
-
 	double timescale = (EqStateMgr::GetCurrentState() ? EqStateMgr::GetCurrentState()->GetTimescale() : 1.0f);
 
 	if(!EqStateMgr::UpdateStates(gameFrameTime * timescale * sys_timescale.GetFloat()))
@@ -577,9 +577,9 @@ bool CGameHost::Frame()
 		return false;
 	}
 
-	PROFILE_END();
-
+#if 0
 	g_sounds->Update(timescale);
+#endif
 
 	// Engine frames status
 	static float gameAccTime = 0.1f;
@@ -698,10 +698,10 @@ void CGameHost::BeginScene()
 void CGameHost::EndScene()
 {
 	// issue the rendering of anything
-	PROFILE_CODE(g_pShaderAPI->Flush(););
+	g_pShaderAPI->Flush();
 
 	// End frame from render lib
-	PROFILE_CODE(materials->EndFrame(NULL););
+	materials->EndFrame(NULL);
 }
 
 void CGameHost::RequestTextInput()

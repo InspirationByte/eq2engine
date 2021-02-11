@@ -12,6 +12,8 @@
 #include "core/DebugInterface.h"
 #include "core/platform/Platform.h"
 
+#include <malloc.h>
+
 bool CDataVariable::Convert( DataVarType_e newType )
 {
 	if ( newType == varType )

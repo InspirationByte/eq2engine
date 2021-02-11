@@ -9,7 +9,7 @@
 #define IFONTCACHE_H
 
 #include "IFont.h"
-#include "InterfaceManager.h"
+#include "core/InterfaceManager.h"
 
 #define FONTCACHE_INTERFACE_VERSION		"ENGINE_FontCache_002"
 

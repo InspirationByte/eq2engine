@@ -10,7 +10,7 @@
 
 #include "utils/KeyValues.h"
 #include "dsm_loader.h"
-#include "model.h"
+#include "egf/model.h"
 
 struct itriangle
 {

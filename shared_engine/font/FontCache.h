@@ -8,7 +8,11 @@
 #ifndef FONTCACHE_H
 #define FONTCACHE_H
 
-#include "IFontCache.h"
+#include "font/IFontCache.h"
+
+class IMatVar;
+class IMaterial;
+class ITexture;
 
 namespace eqFontsInternal
 {

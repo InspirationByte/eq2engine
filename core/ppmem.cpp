@@ -27,11 +27,11 @@
 #include <malloc.h>
 #include <unordered_map>
 
-#if defined(_DEBUG) && defined(_WIN32)
+#if defined(CRT_DEBUG_ENABLED) && defined(_WIN32)
 #define pp_internal_malloc(s)	_malloc_dbg(s, _NORMAL_BLOCK, pszFileName, nLine)
 #else
 #define pp_internal_malloc(s)	malloc(s)
-#endif // defined(_DEBUG) && defined(_WIN32)
+#endif // defined(CRT_DEBUG_ENABLED) && defined(_WIN32)
 
 using namespace Threading;
 
@@ -40,9 +40,9 @@ using namespace Threading;
 #define PPMEM_CHECKMARK			(0x1df001ed)	// i'd fooled :D
 #define PPMEM_DEBUG_TAG_MAX		32
 
-#ifdef _DEBUG
+#ifdef EQ_DEBUG
 #define PPMEM_DEBUG_TAGS
-#endif // _DEBUG
+#endif // EQ_DEBUG
 
 struct ppallocinfo_t
 {
@@ -88,7 +88,7 @@ bool g_enablePPMem = false;
 static ConCommand	ppmem_stats("ppmem_stats",CONCOMMAND_FN(ppmemstats), "Memory info",CV_UNREGISTERED);
 static ConVar		ppmem_break_on_alloc("ppmem_break_on_alloc", "-1", "Helps to catch allocation id at stack trace",CV_UNREGISTERED);
 
-#if defined(_DEBUG) && defined(_WIN32)
+#if defined(CRT_DEBUG_ENABLED) && defined(_WIN32)
 
 DECLARE_CMD(crtdebug_break_alloc, "Sets allocation ID to catch allocation", CV_UNREGISTERED)
 {
@@ -111,7 +111,7 @@ int EqAllocHook( int allocType, void *userData, size_t size, int blockType, long
 	return cond ? FALSE : TRUE;
 }
 
-#endif // defined(_DEBUG) && defined(_WIN32)
+#endif // defined(CRT_DEBUG_ENABLED) && defined(_WIN32)
 
 void PPMemInit()
 {
@@ -127,14 +127,11 @@ void PPMemInit()
 		g_sysConsole->RegisterCommand(&ppmem_break_on_alloc);
 	}
 
-#if defined(_DEBUG) && defined(_WIN32)
+#if defined(CRT_DEBUG_ENABLED) && defined(_WIN32)
 	g_sysConsole->RegisterCommand(&cmd_crtdebug_break_alloc);
 
-	//_crtBreakAlloc = 21657;
-	//_crtBreakAllocSize = 64;
-
 	_CrtSetAllocHook(EqAllocHook);
-#endif // defined(_DEBUG) && defined(_WIN32)
+#endif // defined(CRT_DEBUG_ENABLED) && defined(_WIN32)
 
 	//PPMemShutdown();
 }
@@ -150,9 +147,9 @@ void PPMemShutdown()
     g_sysConsole->UnregisterCommand(&ppmem_stats);
     g_sysConsole->UnregisterCommand(&ppmem_break_on_alloc);
 
-#if defined(_DEBUG) && defined(_WIN32)
+#if defined(CRT_DEBUG_ENABLED) && defined(_WIN32)
 	g_sysConsole->UnregisterCommand(&cmd_crtdebug_break_alloc);
-#endif // defined(_DEBUG) && defined(_WIN32)
+#endif // defined(CRT_DEBUG_ENABLED) && defined(_WIN32)
 }
 
 // Printing the statistics and tracked memory usage

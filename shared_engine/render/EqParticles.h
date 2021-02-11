@@ -9,11 +9,13 @@
 #ifndef EQPARTICLES_H
 #define EQPARTICLES_H
 
-#include "materialsystem/IMaterialSystem.h"
+#include "materialsystem1/IMaterialSystem.h"
 #include "BaseRenderableObject.h"
 #include "SpriteBuilder.h"
 
 #include "EffectRender.h"
+
+#include "math/coord.h"
 
 enum EPartRenderFlags
 {

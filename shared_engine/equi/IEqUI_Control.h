@@ -8,16 +8,16 @@
 #ifndef IEQUICONTROL_H
 #define IEQUICONTROL_H
 
-#include "math/DkMath.h"
-#include "math/Rectangle.h"
+#include "core/ppmem.h"
+
 #include "utils/DkList.h"
 #include "utils/DkLinkedList.h"
 #include "utils/eqstring.h"
 #include "utils/eqwstring.h"
+#include "utils/TextureAtlas.h"
 
-#include "TextureAtlas.h"
-
-#include "ppmem.h"
+#include "math/DkMath.h"
+#include "math/Rectangle.h"
 
 #ifdef GetParent
 #undef GetParent

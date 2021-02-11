@@ -8,9 +8,9 @@
 #ifndef IEQMODEL_H
 #define IEQMODEL_H
 
-#include "model.h"
-#include "ppmem.h"
-#include "Decals.h"
+#include "egf/model.h"
+#include "core/ppmem.h"
+#include "render/Decals.h"
 
 class IMaterial;
 class IMaterialSystem;

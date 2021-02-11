@@ -8,8 +8,8 @@
 #ifndef EGFINSTANCER_H
 #define EGFINSTANCER_H
 
-#include "IEqModel.h"
-#include "materialsystem/IMaterialSystem.h"
+#include "egf/IEqModel.h"
+#include "materialsystem1/IMaterialSystem.h"
 
 #define MAX_EGF_INSTANCES			256
 #define MAX_INSTANCE_BODYGROUPS		16		// only 4 groups can be instanced

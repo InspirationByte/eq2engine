@@ -7,18 +7,24 @@
 
 #include "sys_in_console.h"
 
-#include "FontLayoutBuilders.h"
+#include "core/IDkCOre.h"
+#include "core/IConCommandFactory.h"
 
-#include "IConCommandFactory.h"
-#include "EngineVersion.h"
-#include "FontCache.h"
-
-#include "IDebugOverlay.h"
-
-#include "materialsystem/MeshBuilder.h"
-#include "KeyBinding/InputCommandBinder.h"
-
+#include "utils/KeyValues.h"
 #include "utils/strtools.h"
+
+#include "render/IDebugOverlay.h"
+
+#include "font/FontLayoutBuilders.h"
+#include "font/FontCache.h"
+
+#include "materialsystem1/MeshBuilder.h"
+#include "materialsystem1/IMaterialSystem.h"
+#include "input/InputCommandBinder.h"
+
+#include "sys/sys_version.h"
+
+#include <SDL_clipboard.h>
 
 #ifdef _DEBUG
 #define CONSOLE_ENGINEVERSION_STR varargs(ENGINE_NAME " Engine " ENGINE_VERSION " DEBUG build %d (" COMPILE_DATE ")", BUILD_NUMBER_ENGINE)
@@ -1280,6 +1286,7 @@ bool CEqConsoleInput::KeyPress(int key, bool pressed)
 					m_startCursorPos = 0;
 				}
 				break;
+#ifdef PLAT_SDL
 			case KEY_C:
 				if(m_ctrlModifier)
 				{
@@ -1332,6 +1339,7 @@ bool CEqConsoleInput::KeyPress(int key, bool pressed)
 					SDL_free(clipBoardText);
 				}
 				break;
+#endif // PLAT_SDL
 			case KEY_ENTER:
 				if (m_inputText.Length() > 0)
 				{

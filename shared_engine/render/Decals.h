@@ -8,11 +8,8 @@
 #ifndef DECALS_H
 #define DECALS_H
 
-#include "eqlevel.h"
-#include "model.h"
-
+#include "core/ppmem.h"
 #include "math/BoundingBox.h"
-#include "ppmem.h"
 
 enum MakeDecalFlags_e
 {
@@ -78,6 +75,8 @@ struct tempdecal_t
 
 	BoundingBox			bbox;
 };
+
+struct eqlevelvertex_t;
 
 // static decal, that comes with shared VBO
 struct staticdecal_t

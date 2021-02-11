@@ -11,17 +11,21 @@ TODO:
 		- Text rendering shaders and effects
 */
 
-#include "DebugInterface.h"
+#include "core/DebugInterface.h"
+#include "core/ConVar.h"
+
 #include "math/Rectangle.h"
-#include "materialsystem/IMaterialSystem.h"
-#include "materialsystem/MeshBuilder.h"
-#include "Font.h"
+
+#include "utils/KeyValues.h"
 #include "utils/DkList.h"
 #include "utils/strtools.h"
 #include "utils/DkLinkedList.h"
-#include "FontCache.h"
 
-#include "ConVar.h"
+#include "materialsystem1/IMaterialSystem.h"
+#include "materialsystem1/MeshBuilder.h"
+
+#include "Font.h"
+#include "FontCache.h"
 
 #pragma todo("Rework font system - Add generator, better rotation support, effects, and text alignment/bounding")
 

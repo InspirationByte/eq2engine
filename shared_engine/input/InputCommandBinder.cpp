@@ -7,22 +7,20 @@
 
 #include "InputCommandBinder.h"
 
-#include "IConCommandFactory.h"
-#include "DebugInterface.h"
+#include "core/IConCommandFactory.h"
+#include "core/DebugInterface.h"
+#include "core/InterfaceManager.h"
+
 #include "utils/strtools.h"
-#include "InterfaceManager.h"
-
-#include "FontCache.h"
-
-#include "materialsystem/IMaterialSystem.h"
 #include "utils/KeyValues.h"
-
 #include "utils/strtools.h"
+#include "utils/IVirtualStream.h"
 
-#if !defined(EDITOR) && !defined(NO_ENGINE)
-#include "IEngineGame.h"
-#include "sys_in_console.h"
-#endif
+#include "materialsystem1/IMaterialSystem.h"
+
+#include "font/IFontCache.h"
+
+#include <SDL.h>
 
 static CInputCommandBinder s_inputCommandBinder;
 CInputCommandBinder* g_inputCommandBinder = &s_inputCommandBinder;
@@ -213,12 +211,12 @@ void CInputCommandBinder::InitTouchZones()
 }
 
 // saves binding using file handle
-void CInputCommandBinder::WriteBindings(IFile* cfgFile)
+void CInputCommandBinder::WriteBindings(IVirtualStream* stream)
 {
-	if(!cfgFile)
+	if(!stream)
 		return;
 
-	cfgFile->Print("unbindall\n" );
+	stream->Print("unbindall\n" );
 
 	for(int i = 0; i < m_bindings.numElem();i++)
 	{
@@ -228,7 +226,7 @@ void CInputCommandBinder::WriteBindings(IFile* cfgFile)
 		EqString keyNameString;
 		UTIL_GetBindingKeyString(keyNameString, binding);
 
-		cfgFile->Print("bind %s %s %s\n",	keyNameString.GetData(),
+		stream->Print("bind %s %s %s\n",	keyNameString.GetData(),
 											binding->commandString.GetData(),
 											binding->argumentString.GetData() );
 	}
@@ -696,12 +694,6 @@ void CInputCommandBinder::ExecuteBoundCommands(T* zone, bool bState)
 	// dispatch command
 	if(cmd)
 	{
-#if !defined(EDITOR) && !defined(NO_ENGINE)
-		// skip client controls if console enabled
-		if((cmd->GetFlags() & CV_CLIENTCONTROLS) && (engine->GetGameState() == IEngineGame::GAME_PAUSE || g_consoleInput->IsVisible()))
-			return;
-#endif
-
 		if(in_keys_debug.GetBool())
 			MsgWarning("dispatch %s\n", cmd->GetName());
 

@@ -8,9 +8,10 @@
 #ifndef EFFECTRENDER_H
 #define EFFECTRENDER_H
 
-#include "TextureAtlas.h"
+#include "core/ppmem.h"
+
+#include "utils/TextureAtlas.h"
 #include "utils/eqthread.h"
-#include "ppmem.h"
 
 #include "math/DkMath.h"
 

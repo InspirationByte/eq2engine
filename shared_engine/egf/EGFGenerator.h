@@ -10,7 +10,7 @@
 
 #include "dsm_loader.h"
 #include "dsm_obj_loader.h"
-#include "model.h"
+#include "egf/model.h"
 
 #include "EGFPhysicsGenerator.h"
 

@@ -5,8 +5,17 @@
 // Description: Equilibrium engine font cache
 //////////////////////////////////////////////////////////////////////////////////
 
+#include "core/IDkCore.h"
+#include "core/DebugInterface.h"
+#include "utils/DkList.h"
+#include "utils/EqString.h"
+#include "utils/KeyValues.h"
+
+#include "materialsystem1/IMaterialSystem.h"
+
 #include "FontCache.h"
 #include "Font.h"
+
 
 #define FONTBUFFER_MAX (16384)
 

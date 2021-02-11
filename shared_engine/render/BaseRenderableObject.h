@@ -9,7 +9,7 @@
 #define CBASERENDERABLE_H
 
 #include "math/DkMath.h"
-#include "dktypes.h"		// ubyte
+#include "core/dktypes.h"		// ubyte
 
 //------------------------------------------------
 // A new inheritable renderable object

@@ -6,15 +6,18 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "EffectRender.h"
-#include "core_base_header.h"
-#include "IDebugOverlay.h"
-#include "eqParallelJobs.h"
-#include "eqGlobalMutex.h"
+
+#include "core/DebugInterface.h"
+#include "core/ConVar.h"
+#include "core/IEqParallelJobs.h"
+
+#include "render/IDebugOverlay.h"
+
+#include "sys/sys_global_mutex.h"
 
 #pragma todo("non-indexed material group - use CPFXRenderGroup")
 
 ConVar r_sorteffects("r_sorteffects", "1", "Sorts effects. If you disable it, effects will not be sorted.", CV_ARCHIVE);
-
 
 
 int _SortParticles(IEffect* const &elem0, IEffect* const &elem1)
@@ -52,7 +55,7 @@ CEffectRenderer::CEffectRenderer()
 
 void CEffectRenderer::RegisterEffectForRender(IEffect* pEffect)
 {
-	Threading::CEqMutex& mutex = Threading::GetGlobalMutex(Threading::MUTEXPURPOSE_RENDERER);
+	Threading::CEqMutex& mutex = Sys_GetGlobalMutex(MUTEXPURPOSE_PARTICLES);
 	Threading::CScopedMutex m(mutex);
 
 	ASSERTMSG(pEffect != NULL, "RegisterEffectForRender - inserting NULL effect");
@@ -73,7 +76,7 @@ void CEffectRenderer::RegisterEffectForRender(IEffect* pEffect)
 
 void CEffectRenderer::DrawEffects(float dt)
 {
-	Threading::CEqMutex& mutex = Threading::GetGlobalMutex(Threading::MUTEXPURPOSE_RENDERER);
+	Threading::CEqMutex& mutex = Sys_GetGlobalMutex(MUTEXPURPOSE_PARTICLES);
 	Threading::CScopedMutex m(mutex);
 
 	// sort particles
@@ -99,7 +102,7 @@ void CEffectRenderer::DrawEffects(float dt)
 
 void CEffectRenderer::RemoveAllEffects()
 {
-	Threading::CEqMutex& mutex = Threading::GetGlobalMutex(Threading::MUTEXPURPOSE_RENDERER);
+	Threading::CEqMutex& mutex = Sys_GetGlobalMutex(MUTEXPURPOSE_PARTICLES);
 	Threading::CScopedMutex m(mutex);
 
 	for(int i = 0; i < m_numEffects.GetValue(); i++)
@@ -117,7 +120,7 @@ void CEffectRenderer::RemoveEffect(int index)
 	if ( index >= m_numEffects.GetValue() || index < 0 )
 		return;
 
-    Threading::CEqMutex& mutex = Threading::GetGlobalMutex(Threading::MUTEXPURPOSE_RENDERER);
+    Threading::CEqMutex& mutex = Sys_GetGlobalMutex(MUTEXPURPOSE_PARTICLES);
 	Threading::CScopedMutex m(mutex);
 
 	IEffect* effect = m_pEffectList[index];

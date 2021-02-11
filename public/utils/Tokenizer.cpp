@@ -8,10 +8,6 @@
 #include "Tokenizer.h"
 #include <stdio.h>
 
-#if defined(_DEBUG) && defined(_WIN32)
-#	include <crtdbg.h>
-#endif
-
 bool isWhiteSpace(const char ch)
 {
 	return (ch == ' ' || ch == '\t' || ch == '\r' || ch == '\n');

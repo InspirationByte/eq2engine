@@ -8,7 +8,7 @@
 #ifndef FONTLAYOUTBUILDERS_H
 #define FONTLAYOUTBUILDERS_H
 
-#include "IFont.h"
+#include "font/IFont.h"
 
 class CRectangleTextLayoutBuilder : public ITextLayoutBuilder
 {

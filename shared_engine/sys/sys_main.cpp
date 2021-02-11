@@ -10,24 +10,24 @@
 #include <io.h>
 #include <fcntl.h>
 
+#ifdef CRT_DEBUG_ENABLED
 #include <crtdbg.h>
+#endif
 
 #endif // _WIN32
 
-#include "platform/MessageBox.h"
-
-#include "IDkCore.h"
-#include "sys_window.h"
-
-#include "ConVar.h"
-#include "ILocalize.h"
-#include "IFileSystem.h"
-
-#include "sys_in_console.h"
+#include "core/platform/MessageBox.h"
+#include "core/IDkCore.h"
+#include "core/ConVar.h"
+#include "core/ILocalize.h"
+#include "core/IFileSystem.h"
 
 #include "utils/DkLinkedList.h"
 
-#include "EngineVersion.h"
+#include "sys_in_console.h"
+#include "sys_window.h"
+#include "sys_version.h"
+
 
 #ifdef _WIN32
 #include <windows.h>
@@ -291,11 +291,7 @@ int main(int argc, char** argv)
 
 	// add the copyright
 	g_localizer->AddToken("GAME_VERSION", varargs_w(L"Build %d %s %s", BUILD_NUMBER_ENGINE, L"" COMPILE_DATE, L"" COMPILE_TIME));
-
 	g_localizer->AddTokensFile("game");
-
-	// initialize timers
-	Platform_InitTime();
 
 	if (!Host_Init())
 	{
@@ -305,7 +301,6 @@ int main(int argc, char** argv)
 
 		return -3;
 	}
-
 
 	Host_GameLoop();
 

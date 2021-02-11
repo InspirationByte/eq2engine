@@ -12,7 +12,7 @@
 #ifndef IDEBUG_TEXT
 #define IDEBUG_TEXT
 
-#include "InterfaceManager.h"
+#include "core/InterfaceManager.h"
 
 #include "math/Vector.h"
 #include "math/Matrix.h"

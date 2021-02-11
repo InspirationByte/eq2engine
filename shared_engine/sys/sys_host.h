@@ -8,15 +8,15 @@
 #ifndef SYS_HOST_H
 #define SYS_HOST_H
 
-#include "ConCommand.h"
-
-#include "materialsystem/IMaterialSystem.h"
-
-#include "in_keys_ident.h"
-
+#include "core/ConCommand.h"
 #include "utils/eqtimer.h"
 
-#include "IDebugOverlay.h"
+#include "input/in_keys_ident.h"
+
+#include "render/IDebugOverlay.h"
+
+#include "materialsystem1/IMaterialSystem.h"
+
 
 class IEqFont;
 

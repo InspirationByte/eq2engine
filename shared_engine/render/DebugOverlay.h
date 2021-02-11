@@ -8,13 +8,15 @@
 #ifndef DEBUG_TEXT
 #define DEBUG_TEXT
 
-#include "IDebugOverlay.h"
-
 #include "utils/DkList.h"
 #include "utils/eqstring.h"
 #include "utils/eqthread.h"
+#include "utils/eqtimer.h"
+
 #include "math/Vector.h"
 #include "math/Volume.h"
+
+#include "render/IDebugOverlay.h"
 
 struct DebugTextNode_t
 {
@@ -121,13 +123,6 @@ public:
 private:
 	void							CleanOverlays();
 
-	IEqFont*						m_pDebugFont;
-
-	Matrix4x4						m_projMat;
-	Matrix4x4						m_viewMat;
-
-	Volume							m_frustum;
-
 	DkList<DebugTextNode_t>			m_TextArray;
 	DkList<DebugText3DNode_t>		m_Text3DArray;
 
@@ -149,10 +144,16 @@ private:
 
 	DkList<DebugDrawFunc_t>			m_drawFuncs;
 
-	float							m_frametime;
-	float							m_oldtime;
+	CEqTimer						m_timer;
 
 	Threading::CEqMutex				m_mutex;
+	IEqFont*						m_pDebugFont;
+
+	Matrix4x4						m_projMat;
+	Matrix4x4						m_viewMat;
+
+	Volume							m_frustum;
+	float							m_frameTime;
 };
 
 #endif //DEBUG_TEXT

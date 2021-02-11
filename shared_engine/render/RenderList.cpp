@@ -5,14 +5,13 @@
 // Description: DakrTech scene renderer renderable
 //////////////////////////////////////////////////////////////////////////////////
 
-#include <stdlib.h> // for qsort
-
-#include "DebugInterface.h"
-#include "IDebugOverlay.h"
+#include "core/DebugInterface.h"
 
 #include "RenderList.h"
-#include "Math/BoundingBox.h"
-#include "Math/math_util.h"
+#include "math/BoundingBox.h"
+#include "math/math_util.h"
+
+#include <stdlib.h> // for qsort
 
 #define MIN_OBJECT_RENDERLIST_MEMSIZE 128
 

@@ -7,16 +7,16 @@
 //
 ///////////////////////////////////////////////////////////////////////////////////
 
+#include <btBulletCollisionCommon.h>
+
 #include "BulletShapeCache.h"
-
-#include "btBulletCollisionCommon.h"
-
 #include "BulletConvert.h"
 
-#include "eqGlobalMutex.h"
+#include "core/ConVar.h"
+#include "core/DebugInterface.h"
 
-#include "ConVar.h"
-#include "DebugInterface.h"
+#include "sys/sys_global_mutex.h"
+
 
 using namespace EqBulletUtils;
 using namespace Threading;
@@ -76,7 +76,7 @@ btCollisionShape* InternalGenerateShape(int numVertices, Vector3D* vertices, int
 	return NULL;
 }
 
-CBulletStudioShapeCache::CBulletStudioShapeCache() : m_mutex(GetGlobalMutex(MUTEXPURPOSE_PHYSICS))
+CBulletStudioShapeCache::CBulletStudioShapeCache() : m_mutex(Sys_GetGlobalMutex(MUTEXPURPOSE_PHYSICS))
 {
 
 }
@@ -84,7 +84,7 @@ CBulletStudioShapeCache::CBulletStudioShapeCache() : m_mutex(GetGlobalMutex(MUTE
 // checks the shape is initialized for the cache
 bool CBulletStudioShapeCache::IsShapeCachePresent( studioPhysShapeCache_t* shapeInfo )
 {
-	Threading::CScopedMutex m( m_mutex );
+	CScopedMutex m( m_mutex );
 
 	for(int i = 0; i < m_collisionShapes.numElem(); i++)
 	{

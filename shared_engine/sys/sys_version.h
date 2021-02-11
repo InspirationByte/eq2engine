@@ -8,14 +8,12 @@
 #ifndef ENGVERSION_H
 #define ENGVERSION_H
 
-#include "DebugInterface.h"
-
 //#define ENGINE_NAME "Muscle"
 //#define ENGINE_NAME "DarkTech 'Altereality'"
-#define ENGINE_NAME			"Equilibrium"
+#define ENGINE_NAME			"Equilibrium 2"
 #define ENGINE_NAME_SHORT	"Eq"
 
-#define ENGINE_VERSION	"6"
+#define ENGINE_VERSION	"1"
 
 #define COMPILE_DATE __DATE__
 #define COMPILE_TIME __TIME__

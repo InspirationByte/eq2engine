@@ -5,6 +5,9 @@
 // Description: Eq Geometry Format Writer
 //////////////////////////////////////////////////////////////////////////////////
 
+
+#include "EGFGenerator.h"
+
 #define USE_ACTC
 
 #ifdef USE_ACTC
@@ -15,8 +18,7 @@ extern "C"
 #endif // USE_ACTC
 
 #include "core/DebugInterface.h"
-
-#include "EGFGenerator.h"
+#include "core/IFileSystem.h"
 
 #include "utils/geomtools.h"
 #include "utils/VirtualStream.h"

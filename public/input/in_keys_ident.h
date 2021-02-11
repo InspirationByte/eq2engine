@@ -10,9 +10,11 @@
 
 //#define MOU_MOVE   0x0080
 
-#include "platform/Platform.h"
+#include "core/platform/Platform.h"
 
 #ifdef PLAT_SDL
+#include <SDL_keycode.h>
+#include <SDL_gamecontroller.h>
 
 // SDL_Scancode
 
