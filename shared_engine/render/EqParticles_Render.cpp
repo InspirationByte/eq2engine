@@ -8,7 +8,7 @@
 #include "EqParticles.h"
 
 #include "core/IConCommandFactory.h"
-#include "sys/sys_global_mutex.h"
+#include "utils/global_mutex.h"
 
 #include "ViewParams.h"
 
@@ -221,7 +221,7 @@ int CPFXAtlasGroup::GetEntryCount() const
 
 //----------------------------------------------------------------------------------------------------------
 
-CParticleLowLevelRenderer::CParticleLowLevelRenderer() : m_mutex(Sys_GetGlobalMutex(MUTEXPURPOSE_PARTICLES))
+CParticleLowLevelRenderer::CParticleLowLevelRenderer() : m_mutex(GetGlobalMutex(MUTEXPURPOSE_PARTICLES))
 {
 	m_vertexBuffer = nullptr;
 	m_indexBuffer = nullptr;

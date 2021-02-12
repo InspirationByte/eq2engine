@@ -12,15 +12,18 @@ set_targetdir("bin/$(arch)")
 add_requires("zlib", "libjpeg", "bullet3")
 add_requireconfs("bullet3", {
     configs = {
-        shared = false
+        shared = false,
+        msvc_runtime_dll = true,
     }})
 -----------------------------------------------------
 
 -- default configuration capabilities
 Groups = {
     core = "Framework",
-    component = "Components",
+    
     engine1 = "Equilibrium 1 port",
+    component1 = "Equilibrium 1 port/Components",
+
     engine2 = "Equilibrium 2",
     tools = "Tools"
 }
@@ -34,7 +37,7 @@ Folders = {
     dependency = "$(projectdir)/src_dependency/",
 }
 
-local function add_eq_deps() -- for internal use only
+function add_eq_deps() -- for internal use only
     add_deps("coreLib", "frameworkLib")
 end
 
@@ -58,8 +61,8 @@ function add_SDL2()
 end
 
 if is_plat("windows") then
-
     add_defines(
+        "_UNICODE",
         "_CRT_SECURE_NO_WARNINGS",
         "_CRT_SECURE_NO_DEPRECATE")
 
@@ -70,6 +73,7 @@ elseif is_plat("linux") then
         "-fexceptions", 
         "-fpic")
 end
+
 
 -- default runtime configuration
 if is_mode("debug") or is_mode("releasedbg") then
@@ -88,13 +92,16 @@ end
 
 -- extra runtime configuration (if needed)
 function setup_runtime_config(crtDebug)
-    if is_mode("debug") then 
-        set_runtimes("MDd")
+    if is_mode("debug") then
+        set_runtimes("MD")
+        --[[set_runtimes("MDd")
 
         -- allow CRT debugging features on windows
         if is_plat("windows") and crtDebug then
             add_defines("CRT_DEBUG_ENABLED")
-        end
+        end]]
+    else 
+        set_runtimes("MD")
     end
 end
 
@@ -104,6 +111,7 @@ end
 target("coreLib")
     set_group(Groups.core)
     set_kind("static")
+    setup_runtime_config()
     add_files(Folders.public.. "/core/*.cpp")
     add_headerfiles(Folders.public.. "/core/**.h")
     add_includedirs(Folders.public, { public = true })
@@ -114,6 +122,7 @@ target("coreLib")
 target("frameworkLib")
     set_group(Groups.core)
     set_kind("static")
+    setup_runtime_config()
     add_files(
         Folders.public.. "/utils/*.cpp",
         Folders.public.. "/math/*.cpp",
@@ -131,7 +140,7 @@ target("frameworkLib")
 target("e2Core")
     set_group(Groups.core)
     set_kind("shared")
-    --setup_runtime_config(true)
+    setup_runtime_config()
     add_files(
         "core/**.cpp",
         "core/minizip/*.c")
@@ -153,118 +162,8 @@ target("e2Core")
     if is_os("windows") then
         add_syslinks("User32", "DbgHelp", "Advapi32")
     end
-    
-----------------------------------------------
--- Various components
 
--- fonts
-target("fontLib")
-    set_group(Groups.component)
-    set_kind("static")
-    add_files(Folders.shared_engine.. "font/**.cpp")
-    add_includedirs(Folders.shared_engine, { public = true })
-    add_eq_deps()
-
--- render utility
-target("renderUtilLib")
-    set_group(Groups.component)
-    set_kind("static")
-    add_files(Folders.shared_engine.. "render/**.cpp")
-    add_includedirs(Folders.shared_engine, { public = true })
-    add_eq_deps()
-
--- EGF
-target("egfLib")
-    set_group(Groups.component)
-    set_kind("static")
-    add_files(Folders.shared_engine.. "egf/**.cpp", Folders.shared_engine.. "egf/**.c")
-    add_headerfiles(Folders.shared_engine.. "egf/**.h")
-    add_includedirs(Folders.shared_engine, { public = true })
-    add_eq_deps()
-    add_deps("renderUtilLib")
-    add_packages("zlib", "bullet3")
-
--- Animating game library
-target("animatingLib")
-    set_group(Groups.component)
-    set_kind("static")
-    add_files(Folders.shared_game.. "animating/**.cpp")
-    add_includedirs(Folders.shared_game, { public = true })
-    add_deps("egfLib")
-    add_eq_deps()
-
-----------------------------------------------
--- Equilirium Material System 1
-
-target("eqMatSystem")
-    set_group(Groups.engine1)
-    set_kind("shared")
-    add_files(
-        Folders.matsystem1.. "*.cpp",
-        Folders.public.."materialsystem1/*.cpp")
-    add_headerfiles(Folders.matsystem1.."*.h")
-    add_eqcore_deps()
-
-----------------------------------------------
--- Render hardware interface libraries of Eq1
-
--- base library
-target("eqRHIBaseLib")
-    set_group(Groups.engine1)
-    set_kind("static")
-    add_files(Folders.matsystem1.. "renderers/Shared/*.cpp")
-    add_headerfiles(Folders.matsystem1.."renderers/Shared/*.h")
-    add_includedirs(Folders.public.."materialsystem1/", { public = true })
-    add_includedirs(Folders.matsystem1.."renderers/Shared", { public = true })
-    add_eqcore_deps()
-
--- empty renderer
-target("eqNullRHI")
-    set_group(Groups.engine1)
-    set_kind("shared")
-    add_files(Folders.matsystem1.. "renderers/Empty/*.cpp")
-    add_headerfiles(Folders.matsystem1.."renderers/Empty/*.h")
-    add_deps("eqRHIBaseLib")
-
--- OpenGL renderer
-target("eqGLRHI")
-    set_group(Groups.engine1)
-    set_kind("shared")
-    add_files(Folders.matsystem1.. "renderers/GL/*.cpp")
-    add_files(Folders.matsystem1.. "renderers/GL/loaders/gl_loader.cpp")
-    add_includedirs(Folders.matsystem1.. "renderers/GL/loaders")
-
-    if is_plat("windows") then
-        add_syslinks("OpenGL32", "Gdi32")
-        add_files(
-                Folders.matsystem1.. "renderers/GL/loaders/wgl_caps.cpp",
-                Folders.matsystem1.. "renderers/GL/loaders/glad.c")
-    elseif is_plat("linux") then
-    
-        add_files(
-            Folders.matsystem1.. "renderers/GL/loaders/glx_caps.cpp",
-                Folders.matsystem1.. "renderers/GL/loaders/glad.c")
-    elseif is_plat("android") then
-        add_files(Folders.matsystem1.. "renderers/GL/loaders/glad_es3.c")
-        add_defines("USE_GLES2")
-        add_syslinks("GLESv2", "EGL")
-    end
-
-    add_headerfiles(Folders.matsystem1.."renderers/GL/**.h")
-    add_deps("eqRHIBaseLib")
-
-if is_plat("windows") then 
-    -- Direct3D9 renderer
-    target("eqD3D9RHI")
-        set_group(Groups.engine1)
-        set_kind("shared")
-        add_files(Folders.matsystem1.. "renderers/D3D9/*.cpp")
-        add_includedirs(Folders.dependency.."minidx9/include")
-        add_linkdirs(Folders.dependency.."minidx9/lib/$(arch)")
-        add_syslinks("d3d9", "d3dx9")
-        add_headerfiles(Folders.matsystem1.."renderers/D3D9/**.h")
-        add_deps("eqRHIBaseLib")
-end
+includes("xmake-eq1.lua")
 
 -- only build tools for big machines
 if is_plat("windows", "linux") then

@@ -13,29 +13,34 @@
 //
 //////////////////////////////////////////////////////////////////////////////////
 
-#include <windows.h>
-#include <commdlg.h>
+#include "core/DebugInterface.h"
+#include "core/IFileSystem.h"
+#include "core/ConVar.h"
+#include "core/ILocalize.h"
 
-#include "EditorHeader.h"
-#include "FontCache.h"
+#include "utils/KeyValues.h"
+#include "utils/eqtimer.h"
 
-#include "DebugOverlay.h"
+#include "font/IFontCache.h"
+
+#include "render/DebugOverlay.h"
 #include "CAnimatedModel.h"
 #include "math/math_util.h"
-#include "Physics/DkBulletPhysics.h"
 
-#include "materialsystem/MeshBuilder.h"
+#include "dkphysics/DkBulletPhysics.h"
+#include "physics/PhysicsCollisionGroup.h"
 
-#include "scene_def.h"
-#include "ViewParams.h"
+#include "materialsystem1/MeshBuilder.h"
+
+#include "materialsystem1/scene_def.h"
+#include "render/ViewParams.h"
+
+#include "EditorHeader.h"
 
 ConVar cheats("__cheats", "1");
 
 static DkPhysics s_physics;
 IPhysics* physics = &s_physics;
-
-static CDebugOverlay g_DebugOverlays;
-IDebugOverlay *debugoverlay = ( IDebugOverlay * )&g_DebugOverlays;
 
 DKMODULE*			g_matsysmodule = NULL;
 IShaderAPI*			g_pShaderAPI = NULL;
@@ -47,13 +52,11 @@ Matrix4x4			g_mProjMat, g_mViewMat;
 sceneinfo_t			scinfo;
 CAnimatedModel		g_model;
 
-float				g_fRealtime = 0.0f;
-float				g_fOldrealtime = 0.0f;
-float				g_fFrametime = 0.0f;
-
 Vector3D			g_camera_rotation(25,225,0);
 Vector3D			g_camera_target(0);
 float				g_fCamDistance = 100.0;
+
+CEqTimer			g_timer;
 
 void SetOptimalCameraDistance()
 {
@@ -280,9 +283,13 @@ void InitMatSystem(HWND window)
 
 	materials->LoadShaderLibrary("eqBaseShaders.dll");
 
-	g_studioModelCache->PrecacheModel("models/error.egf");
+	if (!g_fontCache->Init())
+	{
+		ErrorMsg("Unable to init Font cache!\n");
+		return;
+	}
 
-	g_fontCache->Init();
+	g_studioModelCache->PrecacheModel("models/error.egf");
 
 	// register all shaders
 	REGISTER_INTERNAL_SHADERS();
@@ -593,6 +600,8 @@ CEGFViewFrame::CEGFViewFrame( wxWindow* parent, wxWindowID id, const wxString& t
 
 	m_bIsMoving = false;
 	m_bDoRefresh = true;
+
+	g_timer.GetTime(true);
 
 	RefreshGUI();
 }
@@ -1063,8 +1072,6 @@ void CEGFViewFrame::OnSize(wxSizeEvent& event)
 	}
 }
 
-float g_realtime = 0;
-float g_oldrealtime = 0;
 float g_frametime = 0;
 
 void ShowFPS()
@@ -1149,24 +1156,11 @@ void CEGFViewFrame::ReDraw()
 		return;
 
 	// compute time since last frame
-	g_realtime = Platform_GetCurrentTime();
-	
-	float fps = 100;
+	g_frametime += g_timer.GetTime(true);
 
-	if ( fps != 0 )
-	{
-		// Limit fps to withing tolerable range
-		fps = max( MIN_FPS, fps );
-		fps = min( MAX_FPS, fps );
-
-		float minframetime = 1.0 / fps;
-
-		if(( g_realtime - g_oldrealtime ) < minframetime )
-			return;
-	}
-	
-	g_frametime = g_realtime - g_oldrealtime;
-	g_oldrealtime = g_realtime;
+	// make 120 FPS
+	if (g_frametime < 1.0f / 120.0f)
+		return;
 
 	//m_bDoRefresh = false;
 
@@ -1454,7 +1448,7 @@ bool CEGFViewApp::OnInit()
 
 	g_localizer->AddTokensFile("EGFMan");
 
-	g_pMainFrame = new CEGFViewFrame( NULL, -1, DKLOC("TOKEN_TITLE", "EGFMan"));
+	g_pMainFrame = new CEGFViewFrame( NULL, -1, DKLOC("TOKEN_TITLE", "Equilibrium Graphics File viewer 1.0"));
 	g_pMainFrame->Centre();
 	g_pMainFrame->Show(true);
 

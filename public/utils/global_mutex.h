@@ -29,6 +29,6 @@ enum EMutexPurpose
 
 // TODO: interface
 
-Threading::CEqMutex&	Sys_GetGlobalMutex( EMutexPurpose purpose );
+Threading::CEqMutex& GetGlobalMutex( EMutexPurpose purpose );
 
 #endif // EQGLOBALMUTEX_H

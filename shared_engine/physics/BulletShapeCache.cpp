@@ -15,8 +15,7 @@
 #include "core/ConVar.h"
 #include "core/DebugInterface.h"
 
-#include "sys/sys_global_mutex.h"
-
+#include "utils/global_mutex.h"
 
 using namespace EqBulletUtils;
 using namespace Threading;
@@ -76,7 +75,7 @@ btCollisionShape* InternalGenerateShape(int numVertices, Vector3D* vertices, int
 	return NULL;
 }
 
-CBulletStudioShapeCache::CBulletStudioShapeCache() : m_mutex(Sys_GetGlobalMutex(MUTEXPURPOSE_PHYSICS))
+CBulletStudioShapeCache::CBulletStudioShapeCache() : m_mutex(GetGlobalMutex(MUTEXPURPOSE_PHYSICS))
 {
 
 }

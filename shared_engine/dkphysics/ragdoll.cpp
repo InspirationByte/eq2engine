@@ -7,8 +7,9 @@
 
 #include "ragdoll.h"
 #include "math/math_util.h"
-#include "IDebugOverlay.h"
-#include "BoneSetup.h"
+#include "render/IDebugOverlay.h"
+#include "animating/BoneSetup.h"
+#include "physics/PhysicsCollisionGroup.h"
 
 #define RAGDOLL_LINEAR_LIMIT (0.25)
 

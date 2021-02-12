@@ -6,9 +6,10 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "CAnimatedModel.h"
-#include "materialsystem/MeshBuilder.h"
+#include "materialsystem1/MeshBuilder.h"
 
-#include "IDebugOverlay.h"
+#include "render/IDebugOverlay.h"
+#include "physics/PhysicsCollisionGroup.h"
 
 #define INITIAL_TIME 0.0f
 

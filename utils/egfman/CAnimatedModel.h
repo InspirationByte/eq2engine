@@ -8,7 +8,7 @@
 
 #include "egf/studio_egf.h"
 #include "animating/Animating.h"
-#include "physics/ragdoll.h"
+#include "dkphysics/ragdoll.h"
 
 enum ViewerRenderFlags
 {

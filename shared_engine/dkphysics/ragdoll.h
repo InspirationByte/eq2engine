@@ -10,7 +10,7 @@
 
 #include "core/DebugInterface.h"
 #include "math/Dkmath.h"
-#include "IDkPhysics.h"
+#include "dkphysics/IDkPhysics.h"
 
 #define MAX_RAGDOLL_PARTS 32
 

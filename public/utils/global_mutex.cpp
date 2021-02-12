@@ -5,10 +5,8 @@
 // Description: EqEngine mutex storage
 //////////////////////////////////////////////////////////////////////////////////
 
-#include "eqGlobalMutex.h"
-
-namespace Threading
-{
+#include "global_mutex.h"
+#include "eqthread.h"
 
 static Threading::CEqMutex s_mutexPurposes[MUTEXPURPOSE_USED];
 
@@ -16,5 +14,3 @@ Threading::CEqMutex& GetGlobalMutex( EMutexPurpose purpose )
 {
 	return s_mutexPurposes[purpose];
 }
-
-};

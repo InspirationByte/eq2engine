@@ -13,10 +13,6 @@
 #include "Random.h"
 #include "BoundingBox.h"
 
-#ifdef USE_SIMD
-#include "SIMD.h"
-#endif
-
 #ifdef _WIN32
 #define isnan _isnan
 #endif // WIN32
