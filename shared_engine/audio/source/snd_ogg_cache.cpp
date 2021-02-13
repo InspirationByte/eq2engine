@@ -6,8 +6,10 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "snd_ogg_cache.h"
-#include "DebugInterface.h"
-#include "ppmem.h"
+
+#include "core/IFileSystem.h"
+#include "core/DebugInterface.h"
+#include "core/ppmem.h"
 
 bool CSoundSource_OggCache::Load(const char* filename)
 {

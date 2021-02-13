@@ -8,135 +8,114 @@
 #ifndef EQSOUNDSYSTEMAL_H
 #define EQSOUNDSYSTEMAL_H
 
-#include <AL/al.h>
-#include <AL/alc.h>
+#include "audio/IEqAudioSystem.h"
+
+#include "core/platform/Platform.h"
+
 #include "utils/DkList.h"
 
-#include "math/Vector.h"
 #include "source/snd_source.h"
 
-//-----------------------------------------------------------------
-// TODO: interface code
-
-typedef int ChannelHandle_t;
-#define CHANNEL_INVALID_HANDLE (-1)
-
-enum EVoiceUpdateFlags
-{
-	AUDIO_CHAN_UPDATE_POSITION			= (1 << 0),
-	AUDIO_CHAN_UPDATE_VELOCITY			= (1 << 1),
-	AUDIO_CHAN_UPDATE_VOLUME			= (1 << 2),
-	AUDIO_CHAN_UPDATE_PITCH				= (1 << 3),
-	AUDIO_CHAN_UPDATE_REF_DIST			= (1 << 4),
-	AUDIO_CHAN_UPDATE_AIRABSORPTION		= (1 << 5),
-	AUDIO_CHAN_UPDATE_RELATIVE			= (1 << 6),
-	AUDIO_CHAN_UPDATE_STATE				= (1 << 7),
-	AUDIO_CHAN_UPDATE_LOOPING			= (1 << 8),
-
-	AUDIO_CHAN_UPDATE_DO_REWIND			= (1 << 16),
-	AUDIO_CHAN_UPDATE_RELEASE_ON_STOP	= (1 << 17)
-};
-
-enum EChannelState
-{
-	CHANNEL_STATE_STOPPED = 0,
-	CHANNEL_STATE_PLAYING,
-	CHANNEL_STATE_PAUSED
-};
-
-struct channelParams_t
-{
-	Vector3D			position;
-	Vector3D			velocity;
-	float				volume;					// [0.0, 1.0]
-	float				pitch;					// [0.0, 100.0]
-	float				referenceDistance;
-	float				rolloff;
-	float				airAbsorption;
-	EChannelState		state;
-	bool				relative;
-	bool				looping;
-	bool				releaseOnStop;
-	ChannelHandle_t		id;						// read-only
-};
-
-typedef int (*ChannelUpdateCallback)(void* obj, channelParams_t& params);		// returns EVoiceUpdateFlags
 
 //-----------------------------------------------------------------
 
 #define STREAM_BUFFER_COUNT		(4)
 #define STREAM_BUFFER_SIZE		(1024*8) // 8 kb
 
-struct AudioChannel_t
-{
-	ALuint					m_buffers[STREAM_BUFFER_COUNT];
-	ISoundSource*			m_sample;
-	ChannelUpdateCallback	m_callback;
-	void*					m_callbackObject;
-	ALuint					m_source;
-	int						m_streamPos;
-	EChannelState			m_state;
-
-	ChannelHandle_t			m_id;
-	bool					m_releaseOnStop;
-	bool					m_looping;
-	
-};
-
 //-----------------------------------------------------------------
 
 // Audio system, controls voices
-class CEqAudioSystemAL
+class CEqAudioSystemAL : public IEqAudioSystem
 {
 public:
 	CEqAudioSystemAL();
 	~CEqAudioSystemAL();
 
-	void					Init();
-	void					Shutdown();
+	void						Init();
+	void						Shutdown();
 
-	void					Update();
+	IEqAudioSource*				CreateSource();
+	void						DestroySource(IEqAudioSource* source);
 
-	void					SetMasterVolume(float value);
+	void						Update();
+
+	void						StopAllSounds(int chanType = -1, void* callbackObject = nullptr);
+	void						PauseAllSounds(int chanType = -1, void* callbackObject = nullptr);
+	void						ResumeAllSounds(int chanType = -1, void* callbackObject = nullptr);
+
+	void						SetMasterVolume(float value);
 
 	// sets listener properties
-	void					SetListener(const Vector3D& position,
-										const Vector3D& velocity,
-										const Vector3D& forwardVec,
-										const Vector3D& upVec);
+	void						SetListener(const Vector3D& position,
+											const Vector3D& velocity,
+											const Vector3D& forwardVec,
+											const Vector3D& upVec);
 
 	// gets listener properties
-	void					GetListener(Vector3D& position, Vector3D& velocity);
+	void						GetListener(Vector3D& position, Vector3D& velocity);
 
 	// loads sample source data
-	ISoundSource*			LoadSample(const char* filename);
-	void					FreeSample(ISoundSource* sample);
-
-	ChannelHandle_t			GetFreeChannel(ISoundSource* sample, void* callbackObject, ChannelUpdateCallback fnCallback);
-	void					ReleaseChannel(ChannelHandle_t channel);
-
-	void					GetChannelParams(ChannelHandle_t handle, channelParams_t& params);
-	void					UpdateChannel(ChannelHandle_t handle, channelParams_t params, int mask);
+	ISoundSource*				LoadSample(const char* filename);
+	void						FreeSample(ISoundSource* sample);
 
 private:
-	void					SuspendChannelsWithSample(ISoundSource* sample);
+	void						SuspendSourcesWithSample(ISoundSource* sample);
 
-	bool					InitContext();
-	void					DestroyContext();
+	bool						InitContext();
+	void						DestroyContext();
 
-	bool					QueueStreamChannel(AudioChannel_t& channel, ALuint buffer);
-	void					SetupChannel(AudioChannel_t& channel, ISoundSource* sample);
+	DkList<IEqAudioSource*>		m_sources;	// tracked sources
+	DkList<ISoundSource*>		m_samples;
 
-	void					EmptyBuffers(AudioChannel_t& channel);
-	void					DoChannelUpdate(AudioChannel_t& channel);
+	ALCcontext*					m_ctx;
+	ALCdevice*					m_dev;
 
-	DkList<AudioChannel_t>	m_channels;
-	DkList<ISoundSource*>	m_samples;
+	bool						m_noSound;
+};
 
-	ALCcontext*				m_ctx;
-	ALCdevice*				m_dev;
+//-----------------------------------------------------------------
+// Sound source
 
-	bool					m_noSound;
+class CEqAudioSourceAL : public IEqAudioSource
+{
+	friend class CEqAudioSystemAL;
+public:
+	CEqAudioSourceAL();
+	CEqAudioSourceAL(int typeId, ISoundSource* sample, UpdateCallback fnCallback, void* callbackObject);
+
+	void					Setup(int chanType, ISoundSource* sample, UpdateCallback fnCallback = nullptr, void* callbackObject = nullptr);
+	void					Release();
+
+	// full scale
+	void					GetParams(params_t& params);
+	void					UpdateParams(params_t params, int mask);
+
+	// atomic
+	ESourceState			GetState() const { return m_state; }
+	bool					IsLooping() const { return m_looping; }
+
+protected:
+	bool					QueueStreamChannel(ALuint buffer);
+	void					SetupSample(ISoundSource* sample);
+
+	void					InitSource();
+
+	void					EmptyBuffers();
+	bool					DoUpdate();
+
+	ALuint					m_buffers[STREAM_BUFFER_COUNT];
+	ISoundSource*			m_sample;
+
+	UpdateCallback			m_callback;
+	void*					m_callbackObject;
+
+	ALuint					m_source;
+	int						m_streamPos;
+	ESourceState			m_state;
+
+	int						m_chanType;
+	bool					m_releaseOnStop;
+	bool					m_looping;
 };
 
 #endif EQSOUNDSYSTEMAL_H

@@ -6,7 +6,7 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "snd_wav_source.h"
-#include "platform/MessageBox.h"
+#include "core/platform/MessageBox.h"
 
 //---------------------------------------------------------------------
 
@@ -77,7 +77,7 @@ void CSoundSource_Wave::ParseSample(CRIFF_Parser &chunk)
 	}
 }
 
-float CSoundSource_Wave::GetLoopPosition(float flPosition)
+float CSoundSource_Wave::GetLoopPosition(float flPosition) const
 {
     while ( flPosition > m_numSamples )
         flPosition -= m_numSamples;

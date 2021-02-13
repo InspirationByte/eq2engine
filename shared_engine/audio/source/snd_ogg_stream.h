@@ -10,6 +10,8 @@
 
 #include "snd_ogg_cache.h"
 
+class IVirtualStream;
+
 class CSoundSource_OggStream : public CSoundSource_OggCache
 {
 public:
@@ -19,14 +21,14 @@ public:
 	virtual bool	Load(const char* filename);
 	virtual void	Unload();
 
-	bool			IsStreaming() { return true; }
+	bool			IsStreaming() const { return true; }
 
 protected:
 	void			ParseData(OggVorbis_File* file);
 
 	int				ReadData(ubyte *pOutput, int nStart, int nBytes);
 
-	IFile*			m_oggFile;
+	IVirtualStream*	m_oggFile;
 	OggVorbis_File	m_oggStream;
 
 	int				m_dataSize;     // in bytes

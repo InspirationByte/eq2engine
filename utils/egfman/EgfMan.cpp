@@ -23,7 +23,7 @@
 
 #include "font/IFontCache.h"
 
-#include "render/DebugOverlay.h"
+#include "render/IDebugOverlay.h"
 #include "CAnimatedModel.h"
 
 #include "math/Utility.h"
@@ -585,7 +585,7 @@ CEGFViewFrame::CEGFViewFrame( wxWindow* parent, wxWindowID id, const wxString& t
 
 	InitMatSystem(m_pRenderPanel->GetHWND());
 
-	debugoverlay->Init();
+	debugoverlay->Init(false);
 
 	// Connect Events
 	m_pRenderPanel->Connect(wxEVT_LEFT_DOWN, (wxObjectEventFunction)&CEGFViewFrame::ProcessMouseEvents, NULL, this);
@@ -1285,6 +1285,8 @@ void CEGFViewFrame::ReDraw()
 		materials->EndFrame( NULL );
 		Platform_Sleep(1);
 	}
+
+	g_frametime = 0.0f;
 }
 
 void CEGFViewFrame::RefreshGUI()

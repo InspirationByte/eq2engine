@@ -8,11 +8,9 @@
 #ifndef EDITORMAIN_H
 #define EDITORMAIN_H
 
-#include "platform/Platform.h"
+#include "core/platform/Platform.h"
 
 #include "wxui_header.h"
-
-#include "math/math_util.h"
 
 class CMainWindow : public wxFrame 
 {

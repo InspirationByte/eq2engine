@@ -8,7 +8,7 @@
 
 #include "snd_wav_cache.h"
 
-#include "DebugInterface.h"
+#include "core/DebugInterface.h"
 
 bool CSoundSource_WaveCache::Load(const char* szFilename)
 {

@@ -20,7 +20,7 @@ public:
 	virtual bool	Load(const char *szFilename);
 	virtual void	Unload();
 
-	bool			IsStreaming() { return false; }
+	bool			IsStreaming() const { return false; }
 
 protected:
 	virtual void    ParseData(CRIFF_Parser &chunk);

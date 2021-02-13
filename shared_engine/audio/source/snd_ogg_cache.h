@@ -20,7 +20,7 @@ public:
 	bool			Load(const char* filename);
 	void			Unload();
 
-	bool			IsStreaming() { return false; }
+	bool			IsStreaming() const { return false; }
 
 protected:
 	virtual void	ParseData(OggVorbis_File* file);

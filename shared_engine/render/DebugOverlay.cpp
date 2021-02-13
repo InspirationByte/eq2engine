@@ -23,12 +23,6 @@
 #include <stdarg.h>
 #endif
 
-#if !defined(EDITOR) &&  !defined(NO_GAME)
-#define DEBUG_DEFAULT_VALUE "0"
-#else
-#define DEBUG_DEFAULT_VALUE "1"
-#endif // !EDITOR && !NO_GAME
-
 #define BOXES_DRAW_SUBDIV (64)
 #define LINES_DRAW_SUBDIV (128)
 #define POLYS_DRAW_SUBDIV (64)
@@ -36,10 +30,10 @@
 static CDebugOverlay g_DebugOverlays;
 IDebugOverlay* debugoverlay = (IDebugOverlay*)&g_DebugOverlays;
 
-static ConVar r_drawFrameStats("r_frameStats", DEBUG_DEFAULT_VALUE,NULL, CV_ARCHIVE);
-static ConVar r_debugdrawGraphs("r_debugDrawGraphs", DEBUG_DEFAULT_VALUE,NULL, CV_ARCHIVE);
-static ConVar r_debugdrawShapes("r_debugDrawShapes", DEBUG_DEFAULT_VALUE,NULL, CV_ARCHIVE);
-static ConVar r_debugdrawLines("r_debugDrawLines", DEBUG_DEFAULT_VALUE,NULL, CV_ARCHIVE);
+static ConVar r_drawFrameStats("r_frameStats", "0", NULL, CV_ARCHIVE);
+static ConVar r_debugdrawGraphs("r_debugDrawGraphs", "0", NULL, CV_ARCHIVE);
+static ConVar r_debugdrawShapes("r_debugDrawShapes", "0", NULL, CV_ARCHIVE);
+static ConVar r_debugdrawLines("r_debugDrawLines", "0", NULL, CV_ARCHIVE);
 
 ITexture* g_pDebugTexture = NULL;
 
@@ -111,8 +105,16 @@ CDebugOverlay::CDebugOverlay() :
 	m_pDebugFont = NULL;
 }
 
-void CDebugOverlay::Init()
+void CDebugOverlay::Init(bool hidden)
 {
+	if (!hidden)
+	{
+		r_drawFrameStats.SetBool(true);
+		r_debugdrawGraphs.SetBool(true);
+		r_debugdrawShapes.SetBool(true);
+		r_debugdrawLines.SetBool(true);
+	}
+
 	m_pDebugFont = g_fontCache->GetFont("debug", 0);
 }
 

@@ -101,7 +101,8 @@ public:
 
 	IEqFont*						GetFont();
 
-	void							Init();
+	void							Init(bool hidden = true);
+
 	void							Text(const ColorRGBA &color, char const *fmt,...);
 	void							TextFadeOut(int position, const ColorRGBA &color,float fFadeTime, char const *fmt,...);
 

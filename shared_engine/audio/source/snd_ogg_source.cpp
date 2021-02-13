@@ -6,6 +6,7 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "snd_ogg_source.h"
+#include "core/IFileSystem.h"
 
 namespace eqVorbisFile
 {
@@ -64,7 +65,7 @@ void CSoundSource_Ogg::ParseFormat(vorbis_info& info)
 
 //---------------------------------------------------------
 
-float CSoundSource_Ogg::GetLoopPosition(float flPosition)
+float CSoundSource_Ogg::GetLoopPosition(float flPosition) const
 {
     while ( flPosition > m_numSamples )
         flPosition -= m_numSamples;

@@ -42,7 +42,7 @@ void CSoundSource_OpenALCache::InitWav(CSoundSource_WaveCache* wav)
 	else
 		alFormat = AL_FORMAT_MONO16;
 
-	alBufferData(m_alBuffer, alFormat, wav->m_dataCache, wav->m_cacheSize, m_format.frequency );
+	alBufferData(m_alBuffer, alFormat, wav->m_dataCache, wav->m_cacheSize, m_format.frequency);
 
 	int loopStart = wav->m_loopStart;
 	int loopEnd = wav->m_loopEnd;
@@ -50,8 +50,6 @@ void CSoundSource_OpenALCache::InitWav(CSoundSource_WaveCache* wav)
 	// setup additional loop points
 	if (loopStart > 0)
 	{
-		int loopEnd = wav->m_loopEnd;
-
 		if (loopEnd == -1)
 			alGetBufferi(m_alBuffer, AL_SAMPLE_LENGTH_SOFT, &loopEnd); // loop to the end
 
@@ -82,4 +80,44 @@ void CSoundSource_OpenALCache::InitOgg(CSoundSource_OggCache* ogg)
 void CSoundSource_OpenALCache::Unload()
 {
 	alDeleteBuffers(1, &m_alBuffer);
+}
+
+int CSoundSource_OpenALCache::GetSamples(ubyte* pOutput, int nSamples, int nOffset, bool bLooping) 
+{
+	return 0; 
+}
+
+ubyte* CSoundSource_OpenALCache::GetDataPtr(int& dataSize) const 
+{
+	return 0; 
+}
+
+soundFormat_t* CSoundSource_OpenALCache::GetFormat() const
+{
+	return (soundFormat_t*)&m_format;
+}
+
+const char* CSoundSource_OpenALCache::GetFilename() const 
+{
+	return m_filename.c_str(); 
+}
+
+int CSoundSource_OpenALCache::GetSampleCount() const 
+{ 
+	return 0;
+};
+
+float CSoundSource_OpenALCache::GetLoopPosition(float flPosition) const
+{
+	return 0;
+};
+
+bool CSoundSource_OpenALCache::IsStreaming() const
+{
+	return false;
+}
+
+bool CSoundSource_OpenALCache::Load(const char* szFilename) 
+{
+	return false; 
 }

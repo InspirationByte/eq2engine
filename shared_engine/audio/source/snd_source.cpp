@@ -7,15 +7,16 @@
 
 #include "snd_source.h"
 
+#include "core/IFileSystem.h"
+#include "core/DebugInterface.h"
+
+#include "utils/eqstring.h"
+
 #include "snd_wav_cache.h"
 #include "snd_wav_stream.h"
 
 #include "snd_ogg_cache.h"
 #include "snd_ogg_stream.h"
-
-#include "IFileSystem.h"
-#include "DebugInterface.h"
-#include "utils/eqstring.h"
 
 #define STREAM_THRESHOLD    (1024*1024)     // 1mb
 

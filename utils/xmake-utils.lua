@@ -48,20 +48,11 @@ target("texcooker")
     add_headerfiles("texcooker/*.h")
     add_eqcore_deps()
 
--- Equilibrium Graphics File manager (EGFMan)
-target("egfman")
-    set_group(Groups.tools)
-    set_kind("binary")
-    setup_runtime_config()
-    add_files("egfman/*.cpp")
-    add_headerfiles("egfman/*.h")
-    add_includedirs(Folders.dependency.."wxWidgets/include")
-    add_includedirs(Folders.dependency.."wxWidgets/include/msvc")
-    add_eqcore_deps()
-    add_deps("fontLib", "dkPhysicsLib")
-    add_packages("bullet3")
+local function add_wxwidgets()
     if is_plat("windows") then
-        add_files("egfman/**.rc")
+        add_includedirs(Folders.dependency.."wxWidgets/include")
+        add_includedirs(Folders.dependency.."wxWidgets/include/msvc")
+
         if is_arch("x64") then
             add_linkdirs(Folders.dependency.."wxWidgets/lib/vc_x64_lib")
         else
@@ -70,5 +61,34 @@ target("egfman")
     else
         error("FIXME: setup other platforms!")
     end
-
+end
     
+
+-- Equilibrium Graphics File manager (EGFMan)
+target("egfman")
+    set_group(Groups.tools)
+    set_kind("binary")
+    setup_runtime_config()
+    add_files("egfman/*.cpp")
+    add_headerfiles("egfman/*.h")
+    add_eqcore_deps()
+    add_deps("fontLib", "dkPhysicsLib")
+    add_packages("bullet3")
+    add_wxwidgets()
+    if is_plat("windows") then
+        add_files("egfman/**.rc")
+    end
+
+-- Equilibrium sound system test
+target("soundsystem_test")
+    set_group(Groups.tools)
+    set_kind("binary")
+    setup_runtime_config()
+    add_files("soundsystem_test/*.cpp")
+    add_headerfiles("soundsystem_test/*.h")
+    add_eqcore_deps()
+    add_deps("fontLib", "renderUtilLib", "soundSystemLib")
+    add_wxwidgets()
+    if is_plat("windows") then
+        add_files("soundsystem_test/**.rc")
+    end

@@ -9,7 +9,7 @@ set_arch("x64") -- TODO: x86 builds too
 set_targetdir("bin/$(arch)")
 
 -- some packages
-add_requires("zlib", "libjpeg", "bullet3")
+add_requires("zlib", "libjpeg", "bullet3", "libogg", "libvorbis")
 add_requireconfs("bullet3", {
     configs = {
         shared = false,
@@ -161,6 +161,32 @@ target("e2Core")
 
     if is_os("windows") then
         add_syslinks("User32", "DbgHelp", "Advapi32")
+    end
+
+----------------------------------------------
+-- Equilibruim 2
+
+target("soundSystemLib")
+    set_group(Groups.engine2)
+    set_kind("static")
+    setup_runtime_config()
+    add_files(Folders.shared_engine.. "audio/**.cpp")
+    add_headerfiles(Folders.shared_engine.. "audio/**.h")
+    add_headerfiles(Folders.public.. "audio/**.h")
+    add_includedirs(Folders.public, { public = true })
+    add_eq_deps()
+    add_deps("renderUtilLib")
+    add_packages("libvorbis", "libogg")
+    if is_plat("windows") then
+        add_includedirs(Folders.dependency.."openal-soft/include")
+        if is_arch("x64") then
+            add_linkdirs(Folders.dependency.."openal-soft/libs/Win64")
+        else
+            add_linkdirs(Folders.dependency.."openal-soft/libs/Win32")
+        end
+        add_links("OpenAL32")
+    else
+        print("FIXME: setup other platforms!")
     end
 
 includes("xmake-eq1.lua")

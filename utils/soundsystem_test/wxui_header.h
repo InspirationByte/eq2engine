@@ -9,7 +9,6 @@
 #ifndef EDITORHDR_H
 #define EDITORHDR_H
 
-#include "DebugInterface.h"
 
 #pragma warning(disable: 4003)
 
@@ -55,7 +54,5 @@
 #include "wx/fontdlg.h"
 #include "wx/textdlg.h"
 #include "wx/statline.h"
-
-#include "materialsystem/IMaterialSystem.h"
 
 #endif // EDITORHDR_H

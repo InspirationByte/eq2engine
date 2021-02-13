@@ -20,25 +20,26 @@ class CSoundSource_OggCache;
 class CSoundSource_OpenALCache : public ISoundSource
 {
 	friend class CEqAudioSystemAL;
+	friend class CEqAudioSourceAL;
 public:
 	CSoundSource_OpenALCache(ISoundSource* source);
 
-	virtual int             GetSamples(ubyte *pOutput, int nSamples, int nOffset, bool bLooping) { return 0; };
-	virtual ubyte*			GetDataPtr(int& dataSize) const { return 0; };
+	virtual int             GetSamples(ubyte* pOutput, int nSamples, int nOffset, bool bLooping);
+	virtual ubyte*			GetDataPtr(int& dataSize) const;
 
-	virtual soundFormat_t*	GetFormat() { return &m_format; };
-	virtual const char*		GetFilename() const { return m_filename.c_str(); }
-	virtual int				GetSampleCount() const { return 0; };
+	virtual soundFormat_t*	GetFormat() const;
+	virtual const char*		GetFilename() const;
+	virtual int				GetSampleCount() const;
 
-	virtual float           GetLoopPosition(float flPosition) { return 0; };
+	virtual float           GetLoopPosition(float flPosition) const;
 
-	virtual bool			IsStreaming() { return false; }
+	virtual bool			IsStreaming() const;
 
 private:
 	void					InitWav(CSoundSource_WaveCache* wav);
 	void					InitOgg(CSoundSource_OggCache* ogg);
 
-	virtual bool			Load(const char *szFilename) { return false; };
+	virtual bool			Load(const char* szFilename);
 	virtual void			Unload();
 
 	ALuint					m_alBuffer;

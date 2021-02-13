@@ -70,7 +70,7 @@ bool CEqFontCache::LoadFontDescriptionFile( const char* filename )
 	KeyValues kvs;
 	if(!kvs.LoadFromFile(filename, -1))
 	{
-		MsgError("ERROR: Cannot open font description file \"%s\"!", filename);
+		MsgError("ERROR: Cannot open font description file \"%s\"!\n", filename);
 		return false;
 	}
 

@@ -74,7 +74,7 @@ class IDebugOverlay
 public:
 	virtual IEqFont*			GetFont() = 0;
 
-	virtual void				Init() = 0;
+	virtual void				Init(bool hidden = true) = 0;
 
 	virtual void				Text(const ColorRGBA &color, char const *fmt,...) = 0;
 	virtual void				TextFadeOut(int position, const ColorRGBA &color, float fFadeTime, char const *fmt,...) = 0;

@@ -20,9 +20,9 @@ class CSoundSource_Wave : public ISoundSource
 public:
 	CSoundSource_Wave();
 
-	virtual soundFormat_t*	GetFormat()						{ return &m_format; }
+	virtual soundFormat_t*	GetFormat() const				{ return (soundFormat_t*)&m_format; }
 	virtual const char*		GetFilename() const				{ return m_filename.c_str(); }
-	virtual float			GetLoopPosition(float flPosition);
+	virtual float			GetLoopPosition(float flPosition) const;
 	virtual int				GetSampleCount() const			{ return m_numSamples; }
 
 protected:

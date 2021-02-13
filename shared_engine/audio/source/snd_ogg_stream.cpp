@@ -6,7 +6,10 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "snd_ogg_stream.h"
-#include "DebugInterface.h"
+
+#include "core/IFileSystem.h"
+#include "core/DebugInterface.h"
+
 
 bool CSoundSource_OggStream::Load(const char* filename)
 {
