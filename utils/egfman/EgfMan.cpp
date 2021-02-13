@@ -38,6 +38,8 @@
 
 #include "EditorHeader.h"
 
+#include "grid.h"
+
 ConVar cheats("__cheats", "1");
 
 static DkPhysics s_physics;
@@ -55,7 +57,7 @@ CAnimatedModel		g_model;
 
 Vector3D			g_camera_rotation(25,225,0);
 Vector3D			g_camera_target(0);
-float				g_fCamDistance = 100.0;
+float				g_fCamDistance = 10.0;
 
 CEqTimer			g_timer;
 
@@ -99,7 +101,10 @@ enum
 	Event_View_ResetView,
 	Event_View_ShowPhysModel,
 	Event_View_ShowBones,
+	Event_View_ShowFloor,
+	Event_View_ShowGrid,
 	Event_View_Wireframe,
+	
 
 	Event_Max_Menu_Range,
 
@@ -187,6 +192,8 @@ protected:
 	wxMenuBar*		m_pMenu;
 	wxMenuItem*		m_drawPhysModel;
 	wxMenuItem*		m_drawBones;
+	wxMenuItem*		m_drawFloor;
+	wxMenuItem*		m_drawGrid;
 	wxMenuItem*		m_wireframe;
 
 	bool			m_bDoRefresh;
@@ -560,7 +567,11 @@ CEGFViewFrame::CEGFViewFrame( wxWindow* parent, wxWindowID id, const wxString& t
 
 	m_drawPhysModel = menuView->Append( Event_View_ShowPhysModel, DKLOC("TOKEN_SHOWPHYSICSMODEL", "Show physics objects\tP"), wxEmptyString, wxITEM_CHECK );
 	m_drawBones = menuView->Append( Event_View_ShowBones, DKLOC("TOKEN_SHOWBONES", "Show bones\tB"), wxEmptyString, wxITEM_CHECK );
+	m_drawFloor = menuView->Append( Event_View_ShowFloor, DKLOC("TOKEN_SHOWFLOOR", "Show ground\tB"), wxEmptyString, wxITEM_CHECK);
+	m_drawGrid = menuView->Append(Event_View_ShowGrid, DKLOC("TOKEN_SHOWGRID", "Show grid\tB"), wxEmptyString, wxITEM_CHECK);
 	m_wireframe = menuView->Append( Event_View_Wireframe, DKLOC("TOKEN_WIREFRAME", "Wireframe\tW"), wxEmptyString, wxITEM_CHECK );
+
+	m_drawGrid->Check();
 
 	m_pMenu->Append( menuFile, DKLOC("TOKEN_FILE", "File") );
 	m_pMenu->Append( menuView, DKLOC("TOKEN_VIEW", "View") );
@@ -942,8 +953,8 @@ void CEGFViewFrame::ProcessMouseEvents(wxMouseEvent& event)
 		{
 			if(event.Dragging())
 			{
-				cam_angles.x += move_delta_y*0.5f;
-				cam_angles.y -= move_delta_x*0.5f;
+				cam_angles.x += move_delta_y * 0.1f;
+				cam_angles.y -= move_delta_x * 0.1f;
 
 				g_vLastMousePosition = prev_mouse_pos;
 			}
@@ -961,8 +972,10 @@ void CEGFViewFrame::ProcessMouseEvents(wxMouseEvent& event)
 				Vector3D forward;
 				AngleVectors(cam_angles, &forward, NULL, NULL);
 
-				g_fCamDistance += move_delta_y*0.5f;
-				//cam_pos -= forward*move_delta_y * camera_move_factor;
+				g_fCamDistance += move_delta_y * 0.05f;
+
+				if (g_fCamDistance < 0.1f)
+					g_fCamDistance = 0.1f;
 
 				m_bIsMoving = true;
 				bAnyMoveButton = true;
@@ -986,8 +999,8 @@ void CEGFViewFrame::ProcessMouseEvents(wxMouseEvent& event)
 				m_bIsMoving = true;
 				bAnyMoveButton = true;
 
-				cam_pos += right*move_delta_x * camera_move_factor/* * g_frametime * CAM_MOVE_SPEED*/;
-				cam_pos -= up*move_delta_y * camera_move_factor/* * g_frametime * CAM_MOVE_SPEED*/;
+				cam_pos += right*move_delta_x * camera_move_factor * g_fCamDistance * 0.01f;
+				cam_pos -= up*move_delta_y * camera_move_factor * g_fCamDistance * 0.01f;
 
 				g_vLastMousePosition = prev_mouse_pos;
 			}
@@ -1117,11 +1130,11 @@ void RenderFloor()
 	blending.srcFactor = BLENDFACTOR_SRC_ALPHA;
 	blending.dstFactor = BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
 
-	materials->SetAmbientColor(ColorRGBA(1,1,0,0.25f));
+	materials->SetAmbientColor(ColorRGBA(1, 1, 0, 0.15f));
+
 	materials->SetDepthStates(true,true);
 	materials->SetRasterizerStates(CULL_FRONT,FILL_SOLID);
 	materials->SetBlendingStates(blending);
-	materials->SetMatrix(MATRIXMODE_WORLD, identity4());
 
 	g_pShaderAPI->SetTexture(NULL, NULL, 0);
 
@@ -1178,7 +1191,7 @@ void CEGFViewFrame::ReDraw()
 		AngleVectors(g_camera_rotation, &forward, &right);
 
 		g_pCameraParams.SetAngles(g_camera_rotation);
-		g_pCameraParams.SetOrigin(g_camera_target + forward*-g_fCamDistance);
+		g_pCameraParams.SetOrigin(g_camera_target - forward * g_fCamDistance);
 
 		ShowFPS();
 
@@ -1255,8 +1268,17 @@ void CEGFViewFrame::ReDraw()
 
 		debugoverlay->Text(color4_white, "polygon count: %d\n", g_pShaderAPI->GetTrianglesCount());
 
+		// reset some values
+		materials->SetMatrix(MATRIXMODE_WORLD, identity4());
+
 		// draw floor 1x1 meters
-		RenderFloor();
+		if(m_drawFloor->IsChecked())
+			RenderFloor();
+
+		materials->SetAmbientColor(ColorRGBA(1, 1, 1, 1));
+
+		if (m_drawGrid->IsChecked())
+			DrawGrid(1.0f, 8, vec3_zero, ColorRGBA(1.0f, 1.0f, 1.0f, 0.25f), true);
 
 		debugoverlay->Draw(g_mProjMat, g_mViewMat, w,h);
 

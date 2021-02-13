@@ -65,6 +65,19 @@ target("eqMatSystem")
     add_headerfiles(Folders.matsystem1.."*.h")
     add_eqcore_deps()
 
+-- base shader library
+target("eqBaseShaders")
+    set_group(Groups.engine1)
+    set_kind("shared")
+    setup_runtime_config()
+    add_files(
+        Folders.matsystem1.."Shaders/*.cpp",
+        Folders.matsystem1.."Shaders/Base/*.cpp",
+        Folders.public.."materialsystem1/*.cpp")
+    add_headerfiles(Folders.matsystem1.."/Shaders/*.h")
+    add_includedirs(Folders.public.."materialsystem1")
+    add_eqcore_deps()
+
 ----------------------------------------------
 -- Render hardware interface libraries of Eq1
 
