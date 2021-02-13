@@ -9,11 +9,11 @@
 #include <math.h>
 #include <malloc.h>
 
-#include <zlib.h>
-
 #include "utils/strtools.h"
 #include "core/DebugInterface.h"
 #include "core/cmd_pacifier.h"
+
+#include <zlib.h>
 
 #define DPK_WRITE_BLOCK (8*1024*1024)
 

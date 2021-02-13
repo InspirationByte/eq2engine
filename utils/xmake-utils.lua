@@ -1,6 +1,18 @@
 set_project("Equilibrium tools")
 
 ----------------------------------------------
+-- Filesystem compression utility (fcompress)
+
+target("fcompress")
+    set_group(Groups.tools)
+    set_kind("binary")
+    setup_runtime_config()
+    add_files("fcompress/*.cpp")
+    add_headerfiles("fcompress/*.h")
+    add_eqcore_deps()
+    add_packages("zlib")
+
+----------------------------------------------
 -- Equilibrium Graphics File Compiler/Assembler tool (egfCA)
 
 target("egfca")
@@ -62,7 +74,6 @@ local function add_wxwidgets()
         error("FIXME: setup other platforms!")
     end
 end
-    
 
 -- Equilibrium Graphics File manager (EGFMan)
 target("egfman")

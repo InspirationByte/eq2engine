@@ -13,8 +13,8 @@
 #include <direct.h>
 #endif
 
-#include "platform/Platform.h"
-#include "dpk_defs.h"
+#include "core/platform/Platform.h"
+#include "core/dpk_defs.h"
 #include "utils/DkList.h"
 #include "utils/eqstring.h"
 #include "utils/IceKey.h"

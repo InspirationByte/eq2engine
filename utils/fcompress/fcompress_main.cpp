@@ -6,18 +6,25 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 
-#include <stdio.h>
-#include <tchar.h>
-#include <crtdbg.h>
-#include "platform/Platform.h"
-#include "DebugInterface.h"
-#include "DPKFileWriter.h"
-#include "DPKFileReader.h"
-#include "IDkCore.h"
-#include "IFileSystem.h"
-#include "cmdlib.h"
+#include "core/platform/Platform.h"
+#include "core/DebugInterface.h"
+
+#include "core/IDkCore.h"
+#include "core/IFileSystem.h"
+#include "core/cmdlib.h"
+
 #include "utils/eqtimer.h"
 #include "utils/strtools.h"
+
+#include "DPKFileWriter.h"
+
+
+#include <stdio.h>
+
+#ifdef _WIN32
+#include <tchar.h>
+#include <crtdbg.h>
+#endif
 
 void Usage()
 {
