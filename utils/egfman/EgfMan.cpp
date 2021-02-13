@@ -25,7 +25,8 @@
 
 #include "render/DebugOverlay.h"
 #include "CAnimatedModel.h"
-#include "math/math_util.h"
+
+#include "math/Utility.h"
 
 #include "dkphysics/DkBulletPhysics.h"
 #include "physics/PhysicsCollisionGroup.h"

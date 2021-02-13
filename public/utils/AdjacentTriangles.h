@@ -2,15 +2,15 @@
 // Copyright © Inspiration Byte
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
-// Description: The MTriangle adjacency generator
+// Description: The triangle adjacency generator
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef MTRIANGLE_FRAMEWORK_H
-#define MTRIANGLE_FRAMEWORK_H
+#ifndef ADJACENT_TRIANGLES_H
+#define ADJACENT_TRIANGLES_H
 
-#include "utils/GeomTools.h"
+#include "utils/DkList.h"
 
-namespace MTriangle
+namespace AdjacentTriangles
 {
 
 // edge
@@ -210,6 +210,6 @@ protected:
 	DkList<mtriangle_t>		m_triangleList;
 };
 
-}; // namespace MTriangle
+}; // namespace AdjacentTriangles
 
-#endif // MTRIANGLE_FRAMEWORK_H
+#endif // ADJACENT_TRIANGLES_H

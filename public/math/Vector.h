@@ -702,6 +702,6 @@ uint		rgbToRGB9E5(const ColorRGB &rgb);
 #define color3_white ColorRGB(1.0f)
 #define color4_white ColorRGBA(1.0f)
 
-#include "Vector_Inline.h"
+#include "Vector.inl"
 
 #endif //VECTOR_H

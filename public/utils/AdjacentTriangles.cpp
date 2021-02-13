@@ -2,12 +2,13 @@
 // Copyright © Inspiration Byte
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
-// Description: The MTriangle adjacency generator
+// Description: The triangle adjacency generator
 //////////////////////////////////////////////////////////////////////////////////
 
-#include "mtriangle_framework.h"
+#include "AdjacentTriangles.h"
+#include "math/Vector.h"
 
-namespace MTriangle
+namespace AdjacentTriangles
 {
 
 CAdjacentTriangleGraph::CAdjacentTriangleGraph(const DkList<int>& indices)
@@ -227,6 +228,12 @@ void CAdjacentTriangleGraph::BuildTriangleAdjacencyConnections( mtriangle_t* pTr
 	}
 }
 
+inline Vector3D UTIL_VertexAtPos(const ubyte* vertexBaseOffset, int stride, int vertexIndex)
+{
+	ubyte* pDataVertex = (ubyte*)vertexBaseOffset + vertexIndex * stride;
+	return *(Vector3D*)pDataVertex;
+}
+
 void CAdjacentTriangleGraph::BuildTriangleAdjacencyConnectionsByVerts(mtriangle_t* pTri, 
 																		int tri_id,
 																		const ubyte* input_verts, 
@@ -349,4 +356,4 @@ void CAdjacentTriangleGraph::BuildWithVertices(	const ubyte* input_verts,
 	// all done
 }
 
-}; // namespace MTriangle
+}; // namespace AdjacentTriangles

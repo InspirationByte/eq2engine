@@ -13,12 +13,11 @@
 
 
 #include "utils/SmartPtr.h"
-#include "utils/GeomTools.h"
 #include "utils/strtools.h"
 
 #include "physics/IStudioShapeCache.h"
-#include "math/math_util.h"
 
+#include "math/Utility.h"
 
 #ifdef NOPHYSICS
 

@@ -7,9 +7,9 @@
 
 #include "Matrix.h"
 #include "Vector.h"
-//#include "IShaderAPI.h"
 #include "Volume.h"
-#include "math_util.h"
+
+#include "Utility.h"
 
 bool PointToScreen(const Vector3D& point, Vector2D& screen, const Matrix4x4 &mvp, const Vector2D &screenDims)
 {
@@ -197,18 +197,6 @@ Vector3D PointFromUVOnTriangle( const Vector3D& v1, const Vector3D& v2, const Ve
 	return Vector3D(v1 + s*(v2-v1) + t*(v3-v1));
 }
 
-float TriangleArea( const Vector3D& v1, const Vector3D& v2, const Vector3D& v3)
-{
-	// compute edge lengths
-	float d1 = length(v1 - v2);
-	float d2 = length(v2 - v3);
-	float d3 = length(v3 - v1);
-
-	float h = (d1 + d2 + d3) * 0.5f;
-
-	return sqrtf(h * (h - d1) * (h - d2) * (h - d3));
-}
-
 bool IsPointInCone( Vector3D &pt, Vector3D &origin, Vector3D &axis, float cosAngle, float cone_length )
 {
 	Vector3D delta = pt - origin;
@@ -224,18 +212,6 @@ bool IsPointInCone( Vector3D &pt, Vector3D &origin, Vector3D &axis, float cosAng
 		return false;
 
 	return true;
-}
-
-Vector3D NormalOfTriangle(const Vector3D& v0, const Vector3D& v1, const Vector3D& v2)
-{
-	//Calculate vectors along polygon sides
-	return fastNormalize(cross(v2 - v1, v0 - v1));
-}
-
-// Returns MATRIX_RIGHTHANDED if matrix is right-handed, else returns MATRIX_LEFTHANDED.
-MatrixHandedness_e UTIL_GetMatrixHandedness(const Matrix4x4& matrix)
-{
-  return (dot(cross(matrix.rows[0].xyz(), matrix.rows[1].xyz()), matrix.rows[3].xyz()) > 0.0) ? MATRIX_LEFTHANDED : MATRIX_RIGHTHANDED;
 }
 
 #define INTERSECTION_EPS 0.0001
@@ -300,18 +276,6 @@ bool IsRayIntersectsTriangle(const Vector3D& pt1, const Vector3D& pt2, const Vec
 	}
 
 	return true;
-}
-
-// compares floats (for array sort)
-int UTIL_CompareFloats(float f1, float f2)
-{
-	if(f1 < f2)
-		return -1;
-
-	else if(f1 > f2)
-		return 1;
-
-	return 0;
 }
 
 // normalizes angles in [-180, 180]

@@ -9,7 +9,7 @@
 
 #include "RenderList.h"
 #include "math/BoundingBox.h"
-#include "math/math_util.h"
+#include "math/Utility.h"
 
 #include <stdlib.h> // for qsort
 
@@ -60,12 +60,23 @@ void CBasicRenderList::Clear()
 	m_ObjectList.resize(MIN_OBJECT_RENDERLIST_MEMSIZE);
 }
 
+// compares floats (for array sort)
+inline int DistComparator(float f1, float f2)
+{
+	if (f1 < f2)
+		return -1;
+	else if (f1 > f2)
+		return 1;
+
+	return 0;
+}
+
 static int DistanceCompare(const void* obj1, const void* obj2)
 {
 	CBaseRenderableObject* pObjectA = *(CBaseRenderableObject**)obj1;
 	CBaseRenderableObject* pObjectB = *(CBaseRenderableObject**)obj2;
 
-	return -UTIL_CompareFloats(pObjectA->m_fViewDistance, pObjectB->m_fViewDistance);
+	return -DistComparator(pObjectA->m_fViewDistance, pObjectB->m_fViewDistance);
 }
 
 void CBasicRenderList::SortByDistanceFrom(const Vector3D& origin)
@@ -76,20 +87,13 @@ void CBasicRenderList::SortByDistanceFrom(const Vector3D& origin)
 	{
 		BoundingBox bbox(m_ObjectList[i]->GetBBoxMins(), m_ObjectList[i]->GetBBoxMaxs());
 
-		Vector3D pos = origin;
-
 		float dist_to_camera;
 
 		// clamp point in bbox
-		if(!bbox.Contains(pos))
-		{
-			pos = bbox.ClampPoint(pos);
-			dist_to_camera = length(pos - origin);
-		}
+		if(!bbox.Contains(origin))
+			dist_to_camera = lengthSqr(bbox.ClampPoint(origin) - origin);
 		else
-		{
-			dist_to_camera = length(pos - bbox.GetCenter());
-		}
+			dist_to_camera = lengthSqr(origin - bbox.GetCenter());
 
 		m_ObjectList[i]->m_fViewDistance = dist_to_camera;
 	}

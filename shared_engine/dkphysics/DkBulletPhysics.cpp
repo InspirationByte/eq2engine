@@ -27,8 +27,6 @@
 #include "physics/IStudioShapeCache.h"
 #include "physics/PhysicsCollisionGroup.h"
 
-#include "utils/geomtools.h"
-
 static ConVar ph_gravity("ph_gravity","800","World gravity",CV_CHEAT);
 static ConVar ph_iterations("ph_iterations","10","Physics iterations",CV_CHEAT);
 ConVar ph_framerate_approx("ph_framerate_approx", "200", "Physics framerate approximately",CV_ARCHIVE);
@@ -890,37 +888,22 @@ btCollisionShape* InternalGenerateMesh(physmodelcreateinfo_t *info, DkList <btTr
 	if(!info->genConvex)
 	{
 		btTriangleIndexVertexArray* pTriMesh = new btTriangleIndexVertexArray(
-			(int)info->data->numIndices/3,
-			(int*)info->data->indices,
-			sizeof(int)*3,
-			info->data->numVertices,
-			(float*)info->data->vertices,
-			sizeof(Vector3D)
-			);
+			(int)info->data->numIndices/3, (int*)info->data->indices, sizeof(int)*3,
+			info->data->numVertices, (float*)info->data->vertices, sizeof(Vector3D));
 
 		triangleMeshes->append( pTriMesh );
 
-		
-
-		btCollisionShape* shape = new btBvhTriangleMeshShape(pTriMesh, false);
-
-
-
-
-		return shape;
+		return new btBvhTriangleMeshShape(pTriMesh, false);
 	}
 	else
 	{
+		const dkCollideData_t* cdata = info->data;
+
 		if(info->convexMargin != -1)
 		{
 			btTriangleIndexVertexArray* pTriMesh = new btTriangleIndexVertexArray(
-				(int)info->data->numIndices/3,
-				(int*)info->data->indices,
-				sizeof(int)*3,
-				info->data->numVertices,
-				(float*)info->data->vertices,
-				sizeof(Vector3D)
-				);
+				(int)cdata->numIndices/3, (int*)cdata->indices, sizeof(int)*3,
+				cdata->numVertices, (float*)cdata->vertices, sizeof(Vector3D));
 
 			btConvexTriangleMeshShape tmpConvexShape(pTriMesh);
 
@@ -936,7 +919,7 @@ btCollisionShape* InternalGenerateMesh(physmodelcreateinfo_t *info, DkList <btTr
 			// TODO: PhysGen code
 			btConvexHullShape* convexShape = new btConvexHullShape();
 
-			for (int i = 0;i < hull.numIndices(); i++)
+			for (int i = 0; i < hull.numIndices(); i++)
 			{
 				uint32 index = hull.getIndexPointer()[i];
 				convexShape->addPoint(hull.getVertexPointer()[index]);
@@ -950,9 +933,10 @@ btCollisionShape* InternalGenerateMesh(physmodelcreateinfo_t *info, DkList <btTr
 		{
 			btConvexHullShape* convexShape = new btConvexHullShape;
 
-			for(int i = 0; i < info->data->numVertices; i++)
+			for(int i = 0; i < cdata->numVertices; i++)
 			{
-				Vector3D pos = UTIL_VertexAtPos((ubyte*)info->data->vertices+info->data->vertexPosOffset, info->data->vertexSize, i);
+				ubyte* vertexPtr = (ubyte*)cdata->vertices + cdata->vertexPosOffset;
+				Vector3D pos = *(Vector3D*)(vertexPtr + cdata->vertexSize * i);
 
 				convexShape->addPoint(ConvertPositionToBullet(pos));
 			}

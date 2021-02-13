@@ -11,7 +11,7 @@
 #include "core/IFileSystem.h"
 #include "utils/Tokenizer.h"
 
-#include "math/math_util.h"
+#include "math/Utility.h"
 
 #pragma fixme("Normal index bug after group change?")
 
@@ -381,7 +381,8 @@ bool LoadOBJ(dsmmodel_t* model, const char* filename)
 				{
 					for(int v = 0; v < i-2; v++)
 					{
-						Vector3D cnormal = NormalOfTriangle(verts[0].position, verts[v+2].position, verts[v+1].position);
+						Vector3D cnormal;
+						ComputeTriangleNormal(verts[0].position, verts[v + 2].position, verts[v + 1].position, cnormal);
 
 						if(dot(cnormal, verts[0].normal) < 0.0f)
 						{
@@ -412,7 +413,8 @@ bool LoadOBJ(dsmmodel_t* model, const char* filename)
 				{
 					for(int v = 0; v < i-2; v++)
 					{
-						Vector3D cnormal = NormalOfTriangle(verts[0].position, verts[v+1].position, verts[v+2].position);
+						Vector3D cnormal;
+						ComputeTriangleNormal(verts[0].position, verts[v + 1].position, verts[v + 2].position, cnormal);
 
 						if(dot(cnormal, verts[0].normal) < 0.0f)
 						{

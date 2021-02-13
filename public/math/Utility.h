@@ -10,12 +10,6 @@
 
 #include "Matrix.h"
 
-enum MatrixHandedness_e
-{
-	MATRIX_RIGHTHANDED = 0,
-	MATRIX_LEFTHANDED,
-};
-
 bool				PointToScreen(const Vector3D& point, Vector2D& screen, const Matrix4x4 &mvp, const Vector2D &screenDims);
 bool				PointToScreen_Z(const Vector3D& point, Vector3D& screen, const Matrix4x4 &mvp, const Vector2D &screenDims);
 void				ScreenToDirection(	const Vector3D& cam_pos, const Vector2D& point, const Vector2D& screensize,
@@ -37,24 +31,31 @@ Vector3D			PointFromUVOnTriangle(  const Vector3D& v1, const Vector3D& v2, const
 // point in cone
 bool				IsPointInCone(Vector3D &pt, Vector3D &origin, Vector3D &axis, float cosAngle, float cone_length );
 
-// returns triangle's normal
-Vector3D			NormalOfTriangle(const Vector3D& v0, const Vector3D& v1, const Vector3D& v2);
+// checks triangle-ray intersection
+bool				IsRayIntersectsTriangle(const Vector3D& pt1, const Vector3D& pt2, const Vector3D& pt3, 
+											const Vector3D& linept, const Vector3D& vect, 
+											float& fraction, bool doTwoSided = false);
+
+//---------------------------------------------------------------------------------
+
+// Compute normal of triangle
+template <typename T>
+void				ComputeTriangleNormal(const TVec3D<T>& v0, const TVec3D<T>& v1, const TVec3D<T>& v2, 
+											TVec3D<T>& normal);
+
+// Compute a TBN space for triangle
+template <typename T, typename T2>
+void				ComputeTriangleTBN(	const TVec3D<T>& v0, const TVec3D<T>& v1, const TVec3D<T>& v2, 
+										const TVec2D<T2>& t0, const TVec2D<T2>& t1, const TVec2D<T2>& t2, 
+										TVec3D<T>& normal, TVec3D<T>& tangent, TVec3D<T>& binormal);
 
 // returns triangle area
-float				TriangleArea( const Vector3D& v1, const Vector3D& v2, const Vector3D& v3);
+template <typename T>
+float				ComputeTriangleArea(const TVec3D<T>& v0, const TVec3D<T>& v1, const TVec3D<T>& v2);
 
-// retruns matrix handness (check util only)
-MatrixHandedness_e	UTIL_GetMatrixHandedness(const Matrix4x4& matrix);
+#include "TriangleUtil.inl"
 
-// checks triangle-ray intersection
-bool				IsRayIntersectsTriangle(const Vector3D& pt1, const Vector3D& pt2, const Vector3D& pt3, const Vector3D& linept, const Vector3D& vect, float& fraction, bool doTwoSided = false);
-
-//------------------------------------------------------------------------------------------------------------------------
-
-// compares floating point for qsort
-int					UTIL_CompareFloats(float f1, float f2);
-
-//------------------------------------------------------------------------------------------------------------------------
+//---------------------------------------------------------------------------------
 
 // converts angles in [-180, 180]
 float				ConstrainAngle180(float x);

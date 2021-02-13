@@ -9,9 +9,6 @@ target("egfca")
     setup_runtime_config()
     add_files("egfca/*.cpp")
     add_headerfiles("egfca/*.h")
-    if is_plat("windows") then
-        add_files("egfca/*.rc")
-    end
     add_eqcore_deps()
     add_deps("egfLib")
 
@@ -24,9 +21,6 @@ target("animca")
     setup_runtime_config()
     add_files("animca/*.cpp")
     add_headerfiles("animca/*.h")
-    if is_plat("windows") then
-        add_files("animca/*.rc")
-    end
     add_packages("zlib")
     add_eqcore_deps()
     add_deps("egfLib")
@@ -67,7 +61,7 @@ target("egfman")
     add_deps("fontLib", "dkPhysicsLib")
     add_packages("bullet3")
     if is_plat("windows") then
-        add_files("egfman/*.rc")
+        add_files("egfman/**.rc")
         if is_arch("x64") then
             add_linkdirs(Folders.dependency.."wxWidgets/lib/vc_x64_lib")
         else

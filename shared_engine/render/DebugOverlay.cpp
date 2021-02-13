@@ -11,9 +11,10 @@
 #include "core/DebugInterface.h"
 #include "core/ConVar.h"
 
-#include "font/IFontCache.h"
-#include "math/math_util.h"
 #include "utils/strtools.h"
+
+#include "math/Utility.h"
+#include "font/IFontCache.h"
 
 #include "materialsystem1/IMaterialSystem.h"
 #include "materialsystem1/MeshBuilder.h"

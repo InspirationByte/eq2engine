@@ -9,7 +9,6 @@
 #define RECTANGLE_H
 
 #include "Vector.h"
-#include "math_util.h"
 
 template <class T, uint32 TMAX>
 struct TRectangle

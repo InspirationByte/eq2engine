@@ -129,7 +129,7 @@ target("frameworkLib")
         Folders.public.. "/imaging/*.cpp")
     add_headerfiles(
         Folders.public.. "/utils/*.h",
-        Folders.public.. "/math/*.h",
+        Folders.public.. "/math/*.h", Folders.public.. "/math/*.inl",
         Folders.public.. "/imaging/*.h")
     add_packages("zlib", "libjpeg")
     add_includedirs(Folders.public, { public = true })

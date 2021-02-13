@@ -20,11 +20,12 @@ extern "C"
 #include "core/DebugInterface.h"
 #include "core/IFileSystem.h"
 
-#include "utils/geomtools.h"
 #include "utils/VirtualStream.h"
 #include "utils/strtools.h"
 
 #include "dsm_esm_loader.h"
+
+#include "math/Utility.h"
 
 const char* GetACTCErrorString(int result)
 {

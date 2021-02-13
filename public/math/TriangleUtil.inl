@@ -8,13 +8,7 @@
 template <typename T>
 void ComputeTriangleNormal( const TVec3D<T> &v0, const TVec3D<T> &v1, const TVec3D<T> &v2, TVec3D<T>& normal)
 {
-	//Calculate vectors along polygon sides
-	TVec3D<T> side0=v0-v1;
-	TVec3D<T> side1=v2-v1;
-
-	//Calculate normal
-	normal = cross(side1, side0);
-	normal = normalize(normal);
+	normal = normalize(cross(v2 - v1, v0 - v1));
 }
 
 template <typename T, typename T2>

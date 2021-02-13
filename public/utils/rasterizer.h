@@ -11,7 +11,7 @@
 #define RASTERIZER_H
 
 #include "core/DebugInterface.h"
-#include "Math/math_util.h"
+#include "math/Utility.h"
 #include "math/Plane.h"
 
 template< class T >

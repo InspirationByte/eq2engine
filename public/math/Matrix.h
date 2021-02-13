@@ -457,6 +457,6 @@ typedef TMat4<float> float4x4;
 #include "Quaternion.h"
 #undef FORWARD_DECLARED
 
-#include "Matrix_Inline.h"
+#include "Matrix.inl"
 
 #endif // MATRIX_H
