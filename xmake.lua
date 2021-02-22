@@ -28,7 +28,6 @@ Groups = {
     tools = "Tools",
 
     game = "Game",
-    gametools = "GameTools"
 }
 
 -- folders for framework, libraries and tools
@@ -272,7 +271,7 @@ target("physicsLib")
     add_eq_deps()
 
 includes("xmake-eq1.lua")
-includes("game/xmake-game.lua")
+includes("game/DriverSyndicate/xmake.lua")
 includes("src_dependency/xmake.lua")
 
 -- only build tools for big machines
