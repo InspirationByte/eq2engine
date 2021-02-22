@@ -9,7 +9,7 @@ set_arch("x64") -- TODO: x86 builds too
 set_targetdir("bin/$(arch)")
 
 -- some packages
-add_requires("zlib", "libjpeg", "bullet3", "libogg", "libvorbis")
+add_requires("zlib", "libjpeg", "bullet3", "libogg", "libvorbis", "luajit")
 add_requireconfs("bullet3", {
     configs = {
         shared = false,
@@ -25,7 +25,10 @@ Groups = {
     component1 = "Equilibrium 1 port/Components",
 
     engine2 = "Equilibrium 2",
-    tools = "Tools"
+    tools = "Tools",
+
+    game = "Game",
+    gametools = "GameTools"
 }
 
 -- folders for framework, libraries and tools
@@ -35,7 +38,18 @@ Folders = {
     shared_engine = "$(projectdir)/shared_engine/",
     shared_game = "$(projectdir)/shared_game/",
     dependency = "$(projectdir)/src_dependency/",
+    game = "$(projectdir)/game/",
 }
+
+function add_sources_headers(folder, recursive)
+    if recursive then
+        add_files(folder.."/**.cpp")
+        add_headerfiles(folder.."/**.h")
+    else 
+        add_files(folder.."/**.cpp")
+        add_headerfiles(folder.."/**.h")
+    end
+end
 
 function add_eq_deps() -- for internal use only
     add_deps("coreLib", "frameworkLib")
@@ -58,6 +72,31 @@ function add_SDL2()
         add_linkdirs(Folders.dependency.."SDL2/lib/$(arch)")
         add_links("SDL2")
     end
+end
+
+function add_OpenAL()
+    if is_plat("windows") then
+        add_includedirs(Folders.dependency.."openal-soft/include")
+        if is_arch("x64") then
+            add_linkdirs(Folders.dependency.."openal-soft/libs/Win64")
+        else
+            add_linkdirs(Folders.dependency.."openal-soft/libs/Win32")
+        end
+        add_links("OpenAL32")
+    else
+        print("FIXME: setup other platforms!")
+    end
+end
+
+function add_OOLua()
+    add_includedirs(Folders.dependency.."oolua/include")
+    if is_arch("x64") then
+        add_linkdirs(Folders.dependency.."oolua/libs/x64")
+    else
+        add_linkdirs(Folders.dependency.."oolua/libs/x86")
+    end
+    add_links("oolua")
+    add_packages("luajit")
 end
 
 if is_plat("windows") then
@@ -102,6 +141,21 @@ function setup_runtime_config(crtDebug)
         end]]
     else 
         set_runtimes("MD")
+    end
+end
+
+function add_wxwidgets()
+    if is_plat("windows") then
+        add_includedirs(Folders.dependency.."wxWidgets/include")
+        add_includedirs(Folders.dependency.."wxWidgets/include/msvc")
+
+        if is_arch("x64") then
+            add_linkdirs(Folders.dependency.."wxWidgets/lib/vc_x64_lib")
+        else
+            add_linkdirs(Folders.dependency.."wxWidgets/lib/vc_lib")
+        end
+    else
+        print("FIXME: setup other platforms!")
     end
 end
 
@@ -166,6 +220,38 @@ target("e2Core")
 ----------------------------------------------
 -- Equilibruim 2
 
+target("sysLib")
+    set_group(Groups.engine2)
+    set_kind("static")
+    setup_runtime_config()
+    add_files(Folders.shared_engine.. "sys/**.cpp")
+    add_headerfiles(Folders.shared_engine.. "sys/**.h")
+    add_files(Folders.shared_engine.. "input/**.cpp")
+    add_headerfiles(Folders.shared_engine.. "input/**.h")
+    add_includedirs(Folders.shared_engine, { public = true })
+    add_eq_deps()
+    add_SDL2()
+
+target("equiLib")
+    set_group(Groups.engine2)
+    set_kind("static")
+    setup_runtime_config()
+    add_files(Folders.shared_engine.. "equi/**.cpp")
+    add_headerfiles(Folders.shared_engine.. "equi/**.h")
+    add_includedirs(Folders.shared_engine, { public = true })
+    add_eq_deps()
+
+target("networkLib")
+    set_group(Groups.engine2)
+    set_kind("static")
+    setup_runtime_config()
+    add_files(Folders.shared_engine.. "network/**.cpp")
+    add_headerfiles(Folders.shared_engine.. "network/**.h")
+    add_includedirs(Folders.shared_engine, { public = true })
+    add_packages("zlib")
+    add_syslinks("wsock32")
+    add_eq_deps()
+
 target("soundSystemLib")
     set_group(Groups.engine2)
     set_kind("static")
@@ -175,21 +261,21 @@ target("soundSystemLib")
     add_headerfiles(Folders.public.. "audio/**.h")
     add_includedirs(Folders.public, { public = true })
     add_eq_deps()
-    add_deps("renderUtilLib")
     add_packages("libvorbis", "libogg")
-    if is_plat("windows") then
-        add_includedirs(Folders.dependency.."openal-soft/include")
-        if is_arch("x64") then
-            add_linkdirs(Folders.dependency.."openal-soft/libs/Win64")
-        else
-            add_linkdirs(Folders.dependency.."openal-soft/libs/Win32")
-        end
-        add_links("OpenAL32")
-    else
-        print("FIXME: setup other platforms!")
-    end
+    add_OpenAL()
+
+target("physicsLib")
+    set_group(Groups.engine2)
+    set_kind("static")
+    setup_runtime_config()
+    add_files(Folders.shared_engine.. "physics/**.cpp")
+    add_includedirs(Folders.shared_engine, { public = true })
+    add_packages("bullet3")
+    add_eq_deps()
 
 includes("xmake-eq1.lua")
+includes("game/xmake-game.lua")
+includes("src_dependency/xmake.lua")
 
 -- only build tools for big machines
 if is_plat("windows", "linux") then

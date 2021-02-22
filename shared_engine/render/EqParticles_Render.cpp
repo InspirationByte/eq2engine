@@ -332,17 +332,10 @@ void CParticleLowLevelRenderer::PreloadMaterials()
 // prepares render buffers and sends renderables to ViewRenderer
 void CParticleLowLevelRenderer::Render(int nRenderFlags)
 {
-#ifndef NO_ENGINE
-	for(int i = 0; i < m_renderGroups.numElem(); i++)
-	{
-		// add to view renderer
-	}
-#else
 	for(int i = 0; i < m_renderGroups.numElem(); i++)
 	{
 		m_renderGroups[i]->Render( nRenderFlags );
 	}
-#endif
 }
 
 void CParticleLowLevelRenderer::ClearBuffers()

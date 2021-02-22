@@ -60,21 +60,6 @@ target("texcooker")
     add_headerfiles("texcooker/*.h")
     add_eqcore_deps()
 
-local function add_wxwidgets()
-    if is_plat("windows") then
-        add_includedirs(Folders.dependency.."wxWidgets/include")
-        add_includedirs(Folders.dependency.."wxWidgets/include/msvc")
-
-        if is_arch("x64") then
-            add_linkdirs(Folders.dependency.."wxWidgets/lib/vc_x64_lib")
-        else
-            add_linkdirs(Folders.dependency.."wxWidgets/lib/vc_lib")
-        end
-    else
-        error("FIXME: setup other platforms!")
-    end
-end
-
 -- Equilibrium Graphics File manager (EGFMan)
 target("egfman")
     set_group(Groups.tools)

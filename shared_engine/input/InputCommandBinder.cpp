@@ -469,6 +469,7 @@ void CInputCommandBinder::RegisterJoyAxisAction( const char* name, JOYAXISFUNC a
 	axisAction_t act;
 	act.name = "ax_" + _Es(name);
 	act.func = axisFunc;
+
 	m_axisActs.append( act );
 }
 

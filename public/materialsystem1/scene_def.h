@@ -147,16 +147,6 @@ struct dlight_t
 	void*					extraData;			// extra light data, area visibility for eqengine
 };
 
-inline void SetupLightDepthProps(const sceneinfo_t& info, int lighttype, float bias)
-{
-	float zNear = info.m_fZNear;
-	float zFar = info.m_fZFar;
-
-	Vector2D nearfar(zFar * zNear / (zNear - zFar), zFar / (zFar - zNear) + bias);
-
-	g_pShaderAPI->SetShaderConstantVector2D("LightShadowProps", nearfar);
-}
-
 inline void BuildLightVolume(dlight_t* light)
 {
 	light->lightBoundMin = light->position - light->radius;

@@ -100,6 +100,9 @@ public:
 	// loads materials
 	virtual	void				LoadMaterials() = 0;
 
+	// loads additional motion package
+	virtual void				LoadMotionPackage(const char* filename) = 0;
+
 //------------------------------------
 // Rendering
 //------------------------------------

@@ -173,7 +173,7 @@ protected:
 	IVector2D					m_size;
 
 	// for anchors
-	IVector2D					m_sizeDiff;	
+	Vector2D					m_sizeDiff;	
 	Vector2D					m_sizeDiffPerc;
 
 	bool						m_visible;

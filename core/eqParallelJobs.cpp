@@ -8,11 +8,16 @@
 #include "eqParallelJobs.h"
 #include "core/DebugInterface.h"
 #include "utils/strtools.h"
+#include "core/IDkCore.h"
 
 EXPORTED_INTERFACE(IEqParallelJobThreads, CEqParallelJobThreads);
 
-CEqJobThread::CEqJobThread(CEqParallelJobThreads* owner ) : m_owner(owner), m_curJob(nullptr)
+CEqJobThread::CEqJobThread(CEqParallelJobThreads* owner, int jobTypeId) 
+	: m_owner(owner), 
+	m_curJob(nullptr), 
+	m_threadJobTypeId(jobTypeId)
 {
+
 }
 
 int CEqJobThread::Run()
@@ -57,6 +62,11 @@ bool CEqJobThread::AssignJob( eqParallelJob_t* job )
 	if(job->threadId != 0)
 		return false;
 
+	// job only for specific thread?
+	if (job->typeId != -1 && m_threadJobTypeId != -1 && 
+		job->typeId != m_threadJobTypeId)
+		return false;
+
 	// применить работу к потоку
 	job->threadId = GetThreadID();
 	m_curJob = job;
@@ -73,6 +83,8 @@ const eqParallelJob_t* CEqJobThread::GetCurrentJob() const
 
 CEqParallelJobThreads::CEqParallelJobThreads()
 {
+	// required by mobile port
+	GetCore()->RegisterInterface(PARALLELJOBS_INTERFACE_VERSION, this);
 }
 
 CEqParallelJobThreads::~CEqParallelJobThreads()
@@ -80,18 +92,23 @@ CEqParallelJobThreads::~CEqParallelJobThreads()
 }
 
 // creates new job thread
-bool CEqParallelJobThreads::Init( int numThreads )
+bool CEqParallelJobThreads::Init(int numJobTypes, eqJobThreadDesc_t* jobTypes)
 {
-	if (numThreads == 0)
-		numThreads = 1;
+	ASSERTMSG(numJobTypes > 0 && jobTypes != nullptr, "EqParallelJobThreads ERROR: Invalid parameters passed to Init!!!");
 
-	MsgInfo("*Parallel jobs threads: %d\n", numThreads);
+	int numThreadsSpawned = 0;
 
-	for (int i = 0; i < numThreads; i++)
+	for (int i = 0; i < numJobTypes; i++)
 	{
-		m_jobThreads.append(new CEqJobThread(this));
-		m_jobThreads[i]->StartWorkerThread(varargs("jobThread_%d", i));
+		for (int j = 0; j < jobTypes[i].numThreads; j++)
+		{
+			m_jobThreads.append(new CEqJobThread(this, jobTypes[i].jobTypeId));
+			m_jobThreads[i]->StartWorkerThread(varargs("jobThread_%d_%d", jobTypes[i].jobTypeId, j));
+			numThreadsSpawned++;
+		}
 	}
+
+	MsgInfo("*Parallel jobs threads: %d\n", numThreadsSpawned);
 
 	m_mainThreadId = Threading::GetCurrentThreadID();
 
@@ -109,13 +126,10 @@ void CEqParallelJobThreads::Shutdown()
 }
 
 // adds the job
-eqParallelJob_t* CEqParallelJobThreads::AddJob(jobFunction_t func, void* args, int count /*= 1*/)
+eqParallelJob_t* CEqParallelJobThreads::AddJob(int jobTypeId, jobFunction_t func, void* args, int count /*= 1*/, jobComplete_t completeFn /*= nullptr*/)
 {
-	eqParallelJob_t* job = new eqParallelJob_t;
+	eqParallelJob_t* job = new eqParallelJob_t(jobTypeId, func, args, count, completeFn);
 	job->flags = JOB_FLAG_DELETE;
-	job->func = func;
-	job->arguments = args;
-	job->numIter = count;
 
 	AddJob( job );
 

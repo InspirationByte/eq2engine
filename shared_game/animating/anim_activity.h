@@ -13,6 +13,7 @@ typedef enum ACTIVITY_E
 	ACT_INVALID = -1,
 
 	ACT_RAGDOLL,
+	ACT_SCRIPTED_SEQUENCE,
 
 	// basic
 	ACT_IDLE,

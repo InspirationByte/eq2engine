@@ -12,8 +12,6 @@
 
 #include "utils/strtools.h"
 
-#include "input/in_keys_ident.h"
-
 #include "font/IFontCache.h"
 
 //-----
@@ -284,7 +282,7 @@ bool CUIManager::ProcessMouseEvents(float x, float y, int nMouseButtons, int fla
 	IUIControl* oldMouseOver = m_mouseOver;
 	m_mouseOver = m_rootPanel->HitTest(IVector2D(x,y));
 
-	if(nMouseButtons == MOU_B1)
+	if(nMouseButtons & 1)
 	{
 		if(flags & UIEVENT_UP)
 			m_keyboardFocus = m_mouseOver;
@@ -324,9 +322,6 @@ bool CUIManager::ProcessMouseEvents(float x, float y, int nMouseButtons, int fla
 
 bool CUIManager::ProcessKeyboardEvents(int nKeyButtons, int flags)
 {
-	if( nKeyButtons == KEY_TILDE )
-		return false;
-
 	if(!IsWindowsVisible())
 		return false;
 

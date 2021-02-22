@@ -6,7 +6,6 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "EqUI_Button.h"
-#include "input/in_keys_ident.h"
 
 #include "EqUI_Manager.h"
 #include "font/IFont.h"
@@ -48,7 +47,7 @@ bool Button::ProcessMouseEvents(const IVector2D& mousePos, const IVector2D& mous
 	if(flags & UIEVENT_MOUSE_OUT)
 		m_state = false;
 
-	if(nMouseButtons == MOU_B1)
+	if(nMouseButtons & 1)
 	{
 		if(flags & UIEVENT_DOWN)
 		{

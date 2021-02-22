@@ -142,3 +142,4 @@ if is_plat("windows") then
         add_headerfiles(Folders.matsystem1.."renderers/D3D9/**.h")
         add_deps("eqRHIBaseLib")
 end
+

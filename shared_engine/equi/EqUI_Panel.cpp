@@ -15,8 +15,6 @@
 #include "materialsystem1/MeshBuilder.h"
 #include "materialsystem1/renderers/IShaderAPI.h"
 
-#include "input/in_keys_ident.h"
-
 //-------------------------------------------------------------------
 // Base control
 //-------------------------------------------------------------------
@@ -191,7 +189,7 @@ void Panel::DrawSelf(const IRectangle& rect)
 
 bool Panel::ProcessMouseEvents(const IVector2D& mousePos, const IVector2D& mouseDelta, int nMouseButtons, int flags)
 {
-	if(nMouseButtons == MOU_B1)
+	if(nMouseButtons & 1)
 	{
 		m_grabbed = (flags & UIEVENT_UP) ? false : true;
 	}

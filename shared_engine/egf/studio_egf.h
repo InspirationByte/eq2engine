@@ -10,7 +10,10 @@
 
 #include "egf/IEqModel.h"
 #include "modelloader_shared.h"
-#include "materialsystem1/IMaterialSystem.h"
+
+class IVertexBuffer;
+class IIndexBuffer;
+
 
 // streams in studio models used exclusively in interpolation
 class CEngineStudioEGF : public IEqModel
@@ -49,6 +52,7 @@ public:
 
 	// loads materials for studio
 	void				LoadMaterials();
+	void				LoadMotionPackage(const char* filename);
 
 //------------------------------------
 // Rendering
@@ -84,6 +88,7 @@ private:
 
 	// array of material index for each group
 	IMaterial*			m_materials[MAX_STUDIOMATERIALS];
+	DkList<EqString>	m_additionalMotionPackages;
 	BoundingBox			m_aabb;
 	EqString			m_szPath;
 

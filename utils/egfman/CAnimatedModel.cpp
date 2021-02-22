@@ -6,6 +6,7 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "CAnimatedModel.h"
+#include "materialsystem1/IMaterialSystem.h"
 #include "materialsystem1/MeshBuilder.h"
 
 #include "render/IDebugOverlay.h"

@@ -91,6 +91,7 @@ namespace EqStateMgr
 	void					SignalPause();
 
 	bool					InitRegisterStates();
+	void					ShutdownStates();
 };
 
 //---------------------------------------------------------------------------------

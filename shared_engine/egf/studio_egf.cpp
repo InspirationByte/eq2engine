@@ -19,6 +19,8 @@
 
 #include "math/Utility.h"
 
+#include "materialsystem1/IMaterialSystem.h"
+
 #ifdef NOPHYSICS
 
 static CEmptyStudioShapeCache s_EmptyShapeCache;
@@ -27,7 +29,7 @@ IStudioShapeCache* g_pStudioShapeCache = (IStudioShapeCache*)&s_EmptyShapeCache;
 #endif
 
 ConVar r_lodtest("r_lodtest", "-1", -1.0f, MAX_MODELLODS, "Studio LOD test", CV_CHEAT);
-ConVar r_lodscale("r_lodscale", "1.0","Studio model LOD scale", CV_ARCHIVE);
+ConVar r_lodscale("r_lodscale", "1.0", "Studio model LOD scale", CV_ARCHIVE);
 ConVar r_lodstart("r_lodstart", "0", 0, MAX_MODELLODS, "Studio LOD start index", CV_ARCHIVE);
 
 ConVar r_notempdecals("r_notempdecals", "0", "Disables temp decals", CV_CHEAT);
@@ -69,33 +71,33 @@ struct bonequaternion_t
 };
 
 // multiplies bone
-Vector4D quatMul ( Vector4D &q1, Vector4D &q2 )
+Vector4D quatMul(Vector4D& q1, Vector4D& q2)
 {
-    Vector3D  im = q1.w * q2.xyz() + q1.xyz() * q2.w + cross ( q1.xyz(), q2.xyz() );
-    Vector4D  dt = q1 * q2;
-    float re = dot ( dt, Vector4D ( -1.0, -1.0, -1.0, 1.0 ) );
+	Vector3D  im = q1.w * q2.xyz() + q1.xyz() * q2.w + cross(q1.xyz(), q2.xyz());
+	Vector4D  dt = q1 * q2;
+	float re = dot(dt, Vector4D(-1.0, -1.0, -1.0, 1.0));
 
-    return Vector4D ( im, re );
+	return Vector4D(im, re);
 }
 
 // vector rotation
-Vector4D quatRotate (Vector3D &p, Vector4D &q )
+Vector4D quatRotate(Vector3D& p, Vector4D& q)
 {
-    Quaternion temp = Quaternion(q)*Quaternion(0.0f, p.x,p.y,p.z);
+	Quaternion temp = Quaternion(q) * Quaternion(0.0f, p.x, p.y, p.z);
 
-    return (temp * Quaternion( q.w, -q.x, -q.y, -q.z )).asVector4D();
+	return (temp * Quaternion(q.w, -q.x, -q.y, -q.z)).asVector4D();
 }
 
 // transforms bone
-Vector3D boneTransf(bonequaternion_t &bq, Vector3D &pos)
+Vector3D boneTransf(bonequaternion_t& bq, Vector3D& pos)
 {
-    return bq.origin.xyz() + quatRotate(pos, bq.quat).xyz();
+	return bq.origin.xyz() + quatRotate(pos, bq.quat).xyz();
 }
 
 ConVar r_force_softwareskinning("r_force_softwareskinning", "0", "Force software skinning", CV_CHEAT);
 
 // Software vertex transformation, only for compatibility
-bool TransformEGFVertex( EGFHwVertex_t& vert, Matrix4x4* pMatrices )
+bool TransformEGFVertex(EGFHwVertex_t& vert, Matrix4x4* pMatrices)
 {
 	bool bAffected = false;
 
@@ -104,24 +106,24 @@ bool TransformEGFVertex( EGFHwVertex_t& vert, Matrix4x4* pMatrices )
 	Vector3D vTangent = vec3_zero;
 	Vector3D vBinormal = vec3_zero;
 
-	for(int j = 0; j < 4; j++)
+	for (int j = 0; j < 4; j++)
 	{
 		int index = vert.boneIndices[j];
 
-		if(index == -1)
+		if (index == -1)
 			continue;
 
 		float weight = vert.boneWeights[j];
 
 		bAffected = true;
 
-		vPos += transform4( vert.pos, pMatrices[index] ) * weight;
-		vNormal += transform3( Vector3D(vert.normal), pMatrices[index] ) * weight;
-		vTangent += transform3( Vector3D(vert.tangent), pMatrices[index] ) * weight;
-		vBinormal += transform3( Vector3D(vert.binormal), pMatrices[index] ) * weight;
+		vPos += transform4(vert.pos, pMatrices[index]) * weight;
+		vNormal += transform3(Vector3D(vert.normal), pMatrices[index]) * weight;
+		vTangent += transform3(Vector3D(vert.tangent), pMatrices[index]) * weight;
+		vBinormal += transform3(Vector3D(vert.binormal), pMatrices[index]) * weight;
 	}
 
-	if(bAffected)
+	if (bAffected)
 	{
 		vert.pos = vPos;
 		vert.normal = vNormal;
@@ -137,27 +139,27 @@ bool TransformEGFVertex( EGFHwVertex_t& vert, Matrix4x4* pMatrices )
 //------------------------------------------
 bool CEngineStudioEGF::PrepareForSkinning(Matrix4x4* jointMatrices)
 {
-	if(!m_hwdata || (m_hwdata && !m_hwdata->studio))
+	if (!m_hwdata || (m_hwdata && !m_hwdata->studio))
 		return false;
 
-	if(m_hwdata->studio->numBones == 0)
+	if (m_hwdata->studio->numBones == 0)
 		return false; // model is not animatable, skip
 
-	if(!jointMatrices)
+	if (!jointMatrices)
 		return false;
 
 	// TODO: SOFTWARE SKINNING FOR BAD SLOWEST FOR SLOW PC's, and we've never fix it, HAHA!
 
 	/*if(g_pShaderAPI->IsSupportsHardwareSkinning() && !r_force_softwareskinning.GetBool())*/
-	if(!r_force_softwareskinning.GetBool())
+	if (!r_force_softwareskinning.GetBool())
 	{
-		if(m_skinningDirty)
+		if (m_skinningDirty)
 		{
 			EGFHwVertex_t* bufferData = NULL;
 
-			if(m_pVB->Lock( 0, m_numVertices, (void**)&bufferData, false))
+			if (m_pVB->Lock(0, m_numVertices, (void**)&bufferData, false))
 			{
-				memcpy( bufferData, m_softwareVerts, m_numVertices*sizeof(EGFHwVertex_t));
+				memcpy(bufferData, m_softwareVerts, m_numVertices * sizeof(EGFHwVertex_t));
 				m_pVB->Unlock();
 			}
 
@@ -168,7 +170,7 @@ bool CEngineStudioEGF::PrepareForSkinning(Matrix4x4* jointMatrices)
 
 		int numBones = m_hwdata->studio->numBones;
 
-		for(int i = 0; i < numBones; i++)
+		for (int i = 0; i < numBones; i++)
 		{
 			// FIXME: kind of slowness
 			Matrix4x4 toAbsTransform = (!m_hwdata->joints[i].absTrans * jointMatrices[i]);
@@ -180,18 +182,18 @@ bool CEngineStudioEGF::PrepareForSkinning(Matrix4x4* jointMatrices)
 		}
 
 		//g_pShaderAPI->SetVertexShaderConstantVector4DArray(100, (Vector4D*)&bquats[0].quat, m_hwdata->studio->numBones*2);
-		g_pShaderAPI->SetShaderConstantArrayVector4D("Bones", (Vector4D*)&bquats[0].quat, m_hwdata->studio->numBones*2);
+		g_pShaderAPI->SetShaderConstantArrayVector4D("Bones", (Vector4D*)&bquats[0].quat, m_hwdata->studio->numBones * 2);
 
 		return true;
 	}
-	else if(m_forceSoftwareSkinning && r_force_softwareskinning.GetBool())
+	else if (m_forceSoftwareSkinning && r_force_softwareskinning.GetBool())
 	{
 		m_skinningDirty = true;
 
 		Matrix4x4 tempMatrixArray[128];
 
 		// Send all matrices as 4x3
-		for(int i = 0; i < m_hwdata->studio->numBones; i++)
+		for (int i = 0; i < m_hwdata->studio->numBones; i++)
 		{
 			// FIXME: kind of slowness
 			tempMatrixArray[i] = (!m_hwdata->joints[i].absTrans * jointMatrices[i]);
@@ -199,14 +201,14 @@ bool CEngineStudioEGF::PrepareForSkinning(Matrix4x4* jointMatrices)
 
 		EGFHwVertex_t* bufferData = NULL;
 
-		if(m_pVB->Lock( 0, m_numVertices, (void**)&bufferData, false))
+		if (m_pVB->Lock(0, m_numVertices, (void**)&bufferData, false))
 		{
 			// setup each bone's transformation
-			for(register int i = 0; i < m_numVertices; i++)
+			for (register int i = 0; i < m_numVertices; i++)
 			{
 				EGFHwVertex_t vert = m_softwareVerts[i];
 
-				TransformEGFVertex( vert, tempMatrixArray );
+				TransformEGFVertex(vert, tempMatrixArray);
 
 				bufferData[i] = vert;
 
@@ -228,7 +230,7 @@ void CEngineStudioEGF::DestroyModel()
 	m_readyState = MODEL_LOAD_ERROR;
 
 	// instancer is removed here if set
-	if(m_instancer != NULL)
+	if (m_instancer != NULL)
 		delete m_instancer;
 
 	m_instancer = NULL;
@@ -239,14 +241,14 @@ void CEngineStudioEGF::DestroyModel()
 	g_pShaderAPI->DestroyVertexBuffer(m_pVB);
 	g_pShaderAPI->DestroyIndexBuffer(m_pIB);
 
-	for(int i = 0; i < m_numMaterials; i++)
+	for (int i = 0; i < m_numMaterials; i++)
 		materials->FreeMaterial(m_materials[i]);
 
 	memset(m_materials, 0, sizeof(m_materials));
 
 	m_numMaterials = 0;
 
-	if( m_forceSoftwareSkinning )
+	if (m_forceSoftwareSkinning)
 	{
 		PPFree(m_softwareVerts);
 		m_softwareVerts = NULL;
@@ -289,15 +291,15 @@ void CEngineStudioEGF::LoadPhysicsData()
 	EqString podFileName = m_szPath.Path_Strip_Ext();
 	podFileName.Append(".pod");
 
-	if( Studio_LoadPhysModel(podFileName.GetData(), &m_hwdata->physModel) )
-		g_pStudioShapeCache->InitStudioCache( &m_hwdata->physModel );
+	if (Studio_LoadPhysModel(podFileName.GetData(), &m_hwdata->physModel))
+		g_pStudioShapeCache->InitStudioCache(&m_hwdata->physModel);
 }
 
 extern ConVar r_detaillevel;
 
 int CopyGroupVertexDataToHWList(EGFHwVertex_t* hwVtxList, int currentVertexCount, modelgroupdesc_t* pGroup, BoundingBox& aabb)
 {
-	for(int32 i = 0; i < pGroup->numVertices; i++)
+	for (int32 i = 0; i < pGroup->numVertices; i++)
 	{
 		studiovertexdesc_t* pVertex = pGroup->pVertex(i);
 
@@ -310,7 +312,7 @@ int CopyGroupVertexDataToHWList(EGFHwVertex_t* hwVtxList, int currentVertexCount
 
 int CopyGroupIndexDataToHWList(void* indexData, int indexSize, int currentIndexCount, modelgroupdesc_t* pGroup, int vertex_add_offset)
 {
-	for(uint32 i = 0; i < pGroup->numIndices; i++)
+	for (uint32 i = 0; i < pGroup->numIndices; i++)
 	{
 		// always add offset to index (usually it's a current loadedvertices size)
 		int index = (*pGroup->pVertexIdx(i)) + vertex_add_offset;
@@ -330,18 +332,18 @@ int CopyGroupIndexDataToHWList(void* indexData, int indexSize, int currentIndexC
 	return pGroup->numIndices;
 }
 
-void CEngineStudioEGF::ModelLoaderJob( void* data, int i )
+void CEngineStudioEGF::ModelLoaderJob(void* data, int i)
 {
 	CEngineStudioEGF* model = (CEngineStudioEGF*)data;
 
 	// single-thread version
-	if(!model->LoadFromFile())
+	if (!model->LoadFromFile())
 	{
 		model->DestroyModel();
 		return;
 	}
 
-	if( !model->LoadGenerateVertexBuffer())
+	if (!model->LoadGenerateVertexBuffer())
 	{
 		model->DestroyModel();
 		return;
@@ -351,12 +353,10 @@ void CEngineStudioEGF::ModelLoaderJob( void* data, int i )
 	model->LoadPhysicsData();
 	model->LoadMaterials();
 
-	materials->Wait();
-
 	model->m_readyState = MODEL_LOAD_OK;
 }
 
-bool CEngineStudioEGF::LoadModel( const char* pszPath, bool useJob )
+bool CEngineStudioEGF::LoadModel(const char* pszPath, bool useJob)
 {
 	m_szPath = pszPath;
 	m_szPath.Path_FixSlashes();
@@ -364,22 +364,22 @@ bool CEngineStudioEGF::LoadModel( const char* pszPath, bool useJob )
 	// first we switch to loading
 	m_readyState = MODEL_LOAD_IN_PROGRESS;
 
-	if(useJob)
+	if (useJob)
 	{
-		g_parallelJobs->AddJob( ModelLoaderJob, this );
+		g_parallelJobs->AddJob(JOB_TYPE_SPOOL_EGF, ModelLoaderJob, this);
 		g_parallelJobs->Submit();
 		return true;
 	}
 
 	// single-thread version
 
-	if(!LoadFromFile())
+	if (!LoadFromFile())
 	{
 		DestroyModel();
 		return false;
 	}
 
-	if( !LoadGenerateVertexBuffer())
+	if (!LoadGenerateVertexBuffer())
 	{
 		DestroyModel();
 		return false;
@@ -398,9 +398,9 @@ bool CEngineStudioEGF::LoadModel( const char* pszPath, bool useJob )
 
 bool CEngineStudioEGF::LoadFromFile()
 {
-	studiohdr_t* pHdr = Studio_LoadModel( m_szPath.c_str() );
+	studiohdr_t* pHdr = Studio_LoadModel(m_szPath.c_str());
 
-	if(!pHdr)
+	if (!pHdr)
 		return false; // get out, nothing to load
 
 	// allocate hardware data
@@ -425,7 +425,7 @@ bool CEngineStudioEGF::LoadGenerateVertexBuffer()
 	m_hwdata->modelrefs = lodModels;
 
 	int maxMaterialIdx = -1;
-	
+
 	// TODO: this should be optimized by the compiler
 	{
 		// load all group vertices and indices
@@ -457,18 +457,18 @@ bool CEngineStudioEGF::LoadGenerateVertexBuffer()
 			nIndexSize = INDEX_SIZE_INT;
 
 		EGFHwVertex_t* allVerts = new EGFHwVertex_t[numVertices];
-		ubyte* allIndices = new ubyte[nIndexSize*numIndices];
+		ubyte* allIndices = new ubyte[nIndexSize * numIndices];
 
 		numVertices = 0;
 		numIndices = 0;
 
-		for(int i = 0; i < pHdr->numModels; i++)
+		for (int i = 0; i < pHdr->numModels; i++)
 		{
 			studiomodeldesc_t* pModelDesc = pHdr->pModelDesc(i);
 			auto groupDescs = new studioModelRefGroupDesc_t[pModelDesc->numGroups];
 			lodModels[i].groupDescs = groupDescs;
 
-			for(int j = 0; j < pModelDesc->numGroups; j++)
+			for (int j = 0; j < pModelDesc->numGroups; j++)
 			{
 				// add vertices, add indices
 				modelgroupdesc_t* pGroup = pModelDesc->pGroup(j);
@@ -498,15 +498,15 @@ bool CEngineStudioEGF::LoadGenerateVertexBuffer()
 		m_numIndices = numIndices;
 
 		// create hardware buffers
-		m_pVB = g_pShaderAPI->CreateVertexBuffer( BUFFER_STATIC, numVertices, sizeof(EGFHwVertex_t), allVerts );
+		m_pVB = g_pShaderAPI->CreateVertexBuffer(BUFFER_STATIC, numVertices, sizeof(EGFHwVertex_t), allVerts);
 		m_pIB = g_pShaderAPI->CreateIndexBuffer(m_numIndices, nIndexSize, BUFFER_STATIC, allIndices);
 
 		// if we using software skinning, we need to create temporary vertices
-		if(m_forceSoftwareSkinning)
+		if (m_forceSoftwareSkinning)
 		{
 			m_softwareVerts = PPAllocStructArray(EGFHwVertex_t, m_numVertices);
 
-			memcpy(m_softwareVerts, allVerts, sizeof(EGFHwVertex_t)*m_numVertices);
+			memcpy(m_softwareVerts, allVerts, sizeof(EGFHwVertex_t) * m_numVertices);
 		}
 
 		// done.
@@ -514,7 +514,7 @@ bool CEngineStudioEGF::LoadGenerateVertexBuffer()
 		delete[] allIndices;
 	}
 
-	
+
 	// try to load materials
 	m_numMaterials = pHdr->numMaterials;
 
@@ -528,31 +528,31 @@ bool CEngineStudioEGF::LoadGenerateVertexBuffer()
 
 	// try load materials properly
 	// this is a source engine - like material loading using material paths
-	for(int i = 0; i < m_numMaterials; i++)
+	for (int i = 0; i < m_numMaterials; i++)
 	{
-        EqString fpath(pHdr->pMaterial(i)->materialname);
+		EqString fpath(pHdr->pMaterial(i)->materialname);
 		fpath.Path_FixSlashes();
 
-        if(fpath.c_str()[0] == CORRECT_PATH_SEPARATOR)
-            fpath = EqString(fpath.c_str(),fpath.Length()-1);
+		if (fpath.c_str()[0] == CORRECT_PATH_SEPARATOR)
+			fpath = EqString(fpath.c_str(), fpath.Length() - 1);
 
-		for(int j = 0; j < pHdr->numMaterialSearchPaths; j++)
+		for (int j = 0; j < pHdr->numMaterialSearchPaths; j++)
 		{
-			if(!m_materials[i])
+			if (!m_materials[i])
 			{
-                EqString spath(pHdr->pMaterialSearchPath(j)->searchPath);
+				EqString spath(pHdr->pMaterialSearchPath(j)->searchPath);
 				spath.Path_FixSlashes();
 
-                if(spath.c_str()[spath.Length()-1] == CORRECT_PATH_SEPARATOR)
-                    spath = spath.Left(spath.Length()-1);
+				if (spath.c_str()[spath.Length() - 1] == CORRECT_PATH_SEPARATOR)
+					spath = spath.Left(spath.Length() - 1);
 
 				EqString extend_path = spath + CORRECT_PATH_SEPARATOR + fpath;
 
-				if(materials->IsMaterialExist( extend_path.GetData() ))
+				if (materials->IsMaterialExist(extend_path.GetData()))
 				{
 					m_materials[i] = materials->GetMaterial(extend_path.GetData());
 
-					if(!m_materials[i]->IsError() && !(m_materials[i]->GetFlags() & MATERIAL_FLAG_SKINNED))
+					if (!m_materials[i]->IsError() && !(m_materials[i]->GetFlags() & MATERIAL_FLAG_SKINNED))
 						MsgWarning("Warning! Material '%s' shader '%s' for model '%s' is invalid\n", m_materials[i]->GetName(), m_materials[i]->GetShaderName(), m_szPath.c_str());
 
 					m_materials[i]->Ref_Grab();
@@ -564,26 +564,48 @@ bool CEngineStudioEGF::LoadGenerateVertexBuffer()
 	bool bError = false;
 
 	// false-initialization of non-loaded materials
-	for(int i = 0; i < m_numMaterials; i++)
+	for (int i = 0; i < m_numMaterials; i++)
 	{
-		if(!m_materials[i])
+		if (!m_materials[i])
 		{
-			MsgError( "Couldn't load model material '%s'\n", pHdr->pMaterial(i)->materialname, m_szPath.c_str() );
+			MsgError("Couldn't load model material '%s'\n", pHdr->pMaterial(i)->materialname, m_szPath.c_str());
 			bError = true;
 
 			m_materials[i] = materials->GetMaterial("error");
 		}
 	}
 
-	if(bError)
+	if (bError)
 	{
 		MsgError("  In following search paths:");
 
-		for(int i = 0; i < pHdr->numMaterialSearchPaths; i++)
-			MsgError( "   '%s'\n", pHdr->pMaterialSearchPath(i)->searchPath );
+		for (int i = 0; i < pHdr->numMaterialSearchPaths; i++)
+			MsgError("   '%s'\n", pHdr->pMaterialSearchPath(i)->searchPath);
 	}
 
 	return true;
+}
+
+void CEngineStudioEGF::LoadMotionPackage(const char* filename)
+{
+	if (m_readyState == MODEL_LOAD_ERROR)
+		return;
+
+	if (m_readyState != MODEL_LOAD_OK)
+	{
+		m_additionalMotionPackages.append(filename);
+		return;
+	}
+
+	studiohdr_t* pHdr = m_hwdata->studio;
+
+	// Try load default motion file
+	m_hwdata->motiondata[m_hwdata->numMotionPackages] = Studio_LoadMotionData(filename, pHdr->numBones);
+
+	if (m_hwdata->motiondata[m_hwdata->numMotionPackages])
+		m_hwdata->numMotionPackages++;
+	else
+		MsgError("Can't open motion data package '%s'!\n", filename);
 }
 
 void CEngineStudioEGF::LoadMotionPackages()
@@ -593,15 +615,15 @@ void CEngineStudioEGF::LoadMotionPackages()
 	DevMsg(DEVMSG_CORE, "Loading animations for '%s'\n", m_szPath.c_str());
 
 	// Try load default motion file
-	m_hwdata->motiondata[0] = Studio_LoadMotionData(( m_szPath.Path_Strip_Ext() + ".mop").GetData(), pHdr->numBones);
+	m_hwdata->motiondata[m_hwdata->numMotionPackages] = Studio_LoadMotionData((m_szPath.Path_Strip_Ext() + ".mop").GetData(), pHdr->numBones);
 
-	if(m_hwdata->motiondata[0])
+	if (m_hwdata->motiondata[m_hwdata->numMotionPackages])
 		m_hwdata->numMotionPackages++;
 	else
 		DevMsg(DEVMSG_CORE, "Can't open motion data package, skipped\n");
 
 	// load external motion packages if available
-	for(int i = 0; i < pHdr->numMotionPackages; i++)
+	for (int i = 0; i < pHdr->numMotionPackages; i++)
 	{
 		int nPackages = m_hwdata->numMotionPackages;
 
@@ -609,26 +631,39 @@ void CEngineStudioEGF::LoadMotionPackages()
 
 		m_hwdata->motiondata[nPackages] = Studio_LoadMotionData(mopPath.c_str(), pHdr->numBones);
 
-		if(m_hwdata->motiondata[nPackages])
+		if (m_hwdata->motiondata[nPackages])
 			m_hwdata->numMotionPackages++;
 		else
 			MsgError("Can't open motion package '%s'\n", pHdr->pPackage(i)->packageName);
 	}
+
+	// load additional external motion packages requested by user
+	for (int i = 0; i < m_additionalMotionPackages.numElem(); i++)
+	{
+		// Try load default motion file
+		m_hwdata->motiondata[m_hwdata->numMotionPackages] = Studio_LoadMotionData(m_additionalMotionPackages[i].c_str(), pHdr->numBones);
+
+		if (m_hwdata->motiondata[m_hwdata->numMotionPackages])
+			m_hwdata->numMotionPackages++;
+		else
+			MsgError("Can't open motion data package '%s'!\n", m_additionalMotionPackages[i].c_str());
+	}
+	m_additionalMotionPackages.clear();
 }
 
 // loads materials for studio
 void CEngineStudioEGF::LoadMaterials()
 {
-	for(int i = 0; i < m_numMaterials; i++)
-		materials->PutMaterialToLoadingQueue( m_materials[i] );
+	for (int i = 0; i < m_numMaterials; i++)
+		materials->PutMaterialToLoadingQueue(m_materials[i]);
 }
 
 IMaterial* CEngineStudioEGF::GetMaterial(int materialIdx, int materialGroupIdx)
 {
-	if(materialIdx == -1)
+	if (materialIdx == -1)
 		return materials->GetDefaultMaterial();
 
-	return m_materials[m_hwdata->numUsedMaterials*materialGroupIdx + materialIdx];
+	return m_materials[m_hwdata->numUsedMaterials * materialGroupIdx + materialIdx];
 }
 
 void CEngineStudioEGF::LoadSetupBones()
@@ -677,7 +712,7 @@ void CEngineStudioEGF::LoadSetupBones()
 		bone->localTrans.setTranslation(bone->position);
 
 		if (bone->parentbone != -1)
-			bone->absTrans = bone->localTrans*m_hwdata->joints[bone->parentbone].absTrans;
+			bone->absTrans = bone->localTrans * m_hwdata->joints[bone->parentbone].absTrans;
 		else
 			bone->absTrans = bone->localTrans;
 	}
@@ -685,12 +720,12 @@ void CEngineStudioEGF::LoadSetupBones()
 
 void CEngineStudioEGF::DrawFull()
 {
-	if(m_numMaterials > 0)
+	if (m_numMaterials > 0)
 		materials->BindMaterial(m_materials[0]);
 
 	g_pShaderAPI->SetVertexFormat(g_studioModelCache->GetEGFVertexFormat());
 
-	g_pShaderAPI->SetVertexBuffer(m_pVB,0);
+	g_pShaderAPI->SetVertexBuffer(m_pVB, 0);
 	g_pShaderAPI->SetIndexBuffer(m_pIB);
 
 	materials->Apply();
@@ -700,45 +735,45 @@ void CEngineStudioEGF::DrawFull()
 
 int CEngineStudioEGF::SelectLod(float dist_to_camera)
 {
-	if(r_lodtest.GetInt() != -1)
+	if (r_lodtest.GetInt() != -1)
 		return r_lodtest.GetInt();
 
 	int numLods = m_hwdata->studio->numLodParams;
 
-	if( numLods < 2)
+	if (numLods < 2)
 		return 0;
 
 	int idealLOD = 0;
 
-	for(int i = r_lodstart.GetInt(); i < numLods; i++)
+	for (int i = r_lodstart.GetInt(); i < numLods; i++)
 	{
-		if(dist_to_camera > m_hwdata->studio->pLodParams(i)->distance * r_lodscale.GetFloat())
+		if (dist_to_camera > m_hwdata->studio->pLodParams(i)->distance * r_lodscale.GetFloat())
 			idealLOD = i;
 	}
 
 	return idealLOD;
 }
 
-void CEngineStudioEGF::SetupVBOStream( int nStream )
+void CEngineStudioEGF::SetupVBOStream(int nStream)
 {
-	if(m_numVertices == 0)
+	if (m_numVertices == 0)
 		return;
 
-	g_pShaderAPI->SetVertexBuffer( m_pVB, nStream);
+	g_pShaderAPI->SetVertexBuffer(m_pVB, nStream);
 }
 
 void CEngineStudioEGF::DrawGroup(int nModel, int nGroup, bool preSetVBO)
 {
-	if(m_numVertices == 0)
+	if (m_numVertices == 0)
 		return;
 
-	if(preSetVBO)
+	if (preSetVBO)
 	{
-		g_pShaderAPI->SetVertexFormat( g_studioModelCache->GetEGFVertexFormat() );
-		g_pShaderAPI->SetVertexBuffer( m_pVB, 0);
+		g_pShaderAPI->SetVertexFormat(g_studioModelCache->GetEGFVertexFormat());
+		g_pShaderAPI->SetVertexBuffer(m_pVB, 0);
 	}
 
-	g_pShaderAPI->SetIndexBuffer( m_pIB );
+	g_pShaderAPI->SetIndexBuffer(m_pIB);
 
 	materials->Apply();
 
@@ -748,9 +783,9 @@ void CEngineStudioEGF::DrawGroup(int nModel, int nGroup, bool preSetVBO)
 	int nIndexCount = groupDesc.indexcount;
 
 	// get primitive type
-	int8 nPrimType = m_hwdata->studio->pModelDesc( nModel )->pGroup( nGroup )->primitiveType;
+	int8 nPrimType = m_hwdata->studio->pModelDesc(nModel)->pGroup(nGroup)->primitiveType;
 
-	g_pShaderAPI->DrawIndexedPrimitives( (ER_PrimitiveType)nPrimType, nFirstIndex, nIndexCount, 0, m_numVertices );
+	g_pShaderAPI->DrawIndexedPrimitives((ER_PrimitiveType)nPrimType, nFirstIndex, nIndexCount, 0, m_numVertices);
 }
 
 const BoundingBox& CEngineStudioEGF::GetAABB() const
@@ -766,18 +801,18 @@ const char* CEngineStudioEGF::GetName() const
 studioHwData_t* CEngineStudioEGF::GetHWData() const
 {
 	// wait for loading end
-	while(m_readyState == MODEL_LOAD_IN_PROGRESS)
+	while (m_readyState == MODEL_LOAD_IN_PROGRESS)
 		Platform_Sleep(1);
 
 	return m_hwdata;
 }
 
 // instancing
-void CEngineStudioEGF::SetInstancer( IEqModelInstancer* instancer )
+void CEngineStudioEGF::SetInstancer(IEqModelInstancer* instancer)
 {
 	m_instancer = instancer;
 
-	if(m_instancer)
+	if (m_instancer)
 		m_instancer->ValidateAssert();
 }
 
@@ -791,18 +826,18 @@ bool egf_vertex_comp(const EGFHwVertex_t& a, const EGFHwVertex_t& b)
 	return (a.pos == b.pos) && (a.texcoord == b.texcoord);
 }
 
-void MakeDecalTexCoord(DkList<EGFHwVertex_t>& verts, DkList<int>& indices, const decalmakeinfo_t &info)
+void MakeDecalTexCoord(DkList<EGFHwVertex_t>& verts, DkList<int>& indices, const decalmakeinfo_t& info)
 {
 	Vector3D fSize = info.size * 2.0f;
 
-	if(info.flags & MAKEDECAL_FLAG_TEX_NORMAL)
+	if (info.flags & MAKEDECAL_FLAG_TEX_NORMAL)
 	{
 		int texSizeW = 1;
 		int texSizeH = 1;
 
 		ITexture* pTex = info.material->GetBaseTexture();
 
-		if(pTex)
+		if (pTex)
 		{
 			texSizeW = pTex->GetWidth();
 			texSizeH = pTex->GetHeight();
@@ -820,21 +855,21 @@ void MakeDecalTexCoord(DkList<EGFHwVertex_t>& verts, DkList<int>& indices, const
 
 		Matrix3x3 texMatrix(uaxis, vaxis, info.normal);
 
-		Matrix3x3 rotationMat = rotateZXY3( 0.0f, 0.0f, DEG2RAD(info.texRotation));
-		texMatrix = rotationMat*texMatrix;
+		Matrix3x3 rotationMat = rotateZXY3(0.0f, 0.0f, DEG2RAD(info.texRotation));
+		texMatrix = rotationMat * texMatrix;
 
 		uaxis = texMatrix.rows[0];
 		vaxis = texMatrix.rows[1];
 
-		for(int i = 0; i < verts.numElem(); i++)
+		for (int i = 0; i < verts.numElem(); i++)
 		{
-			float one_over_w = 1.0f / fabs(dot(fSize,uaxis*uaxis) * info.texScale.x);
-			float one_over_h = 1.0f / fabs(dot(fSize,vaxis*vaxis) * info.texScale.y);
+			float one_over_w = 1.0f / fabs(dot(fSize, uaxis * uaxis) * info.texScale.x);
+			float one_over_h = 1.0f / fabs(dot(fSize, vaxis * vaxis) * info.texScale.y);
 
 			float U, V;
 
-			U = dot(uaxis, info.origin-verts[i].pos) * one_over_w+0.5f;
-			V = dot(vaxis, info.origin-verts[i].pos) * one_over_h-0.5f;
+			U = dot(uaxis, info.origin - verts[i].pos) * one_over_w + 0.5f;
+			V = dot(vaxis, info.origin - verts[i].pos) * one_over_h - 0.5f;
 
 			verts[i].texcoord.x = U;
 			verts[i].texcoord.y = -V;
@@ -843,40 +878,40 @@ void MakeDecalTexCoord(DkList<EGFHwVertex_t>& verts, DkList<int>& indices, const
 	else
 	{
 		// generate new texture coordinates
-		for(int i = 0; i < verts.numElem(); i++)
+		for (int i = 0; i < verts.numElem(); i++)
 		{
 			verts[i].tangent = fastNormalize(verts[i].tangent);
 			verts[i].binormal = fastNormalize(verts[i].binormal);
 			verts[i].normal = fastNormalize(verts[i].normal);
 
-			float one_over_w = 1.0f / fabs(dot(fSize,Vector3D(verts[i].tangent)));
-			float one_over_h = 1.0f / fabs(dot(fSize,Vector3D(verts[i].binormal)));
+			float one_over_w = 1.0f / fabs(dot(fSize, Vector3D(verts[i].tangent)));
+			float one_over_h = 1.0f / fabs(dot(fSize, Vector3D(verts[i].binormal)));
 
-			Vector3D t,b;
+			Vector3D t, b;
 			t = Vector3D(verts[i].tangent);
 			b = Vector3D(verts[i].binormal);
 
-			verts[i].texcoord.x = fabs(dot(info.origin-verts[i].pos,t*sign(t))*one_over_w+0.5f);
-			verts[i].texcoord.y = fabs(dot(info.origin-verts[i].pos,b*sign(b))*one_over_h+0.5f);
+			verts[i].texcoord.x = fabs(dot(info.origin - verts[i].pos, t * sign(t)) * one_over_w + 0.5f);
+			verts[i].texcoord.y = fabs(dot(info.origin - verts[i].pos, b * sign(b)) * one_over_h + 0.5f);
 		}
 	}
 
 	// it needs TBN refreshing
-	for(int i = 0; i < indices.numElem(); i+=3)
+	for (int i = 0; i < indices.numElem(); i += 3)
 	{
-		int idxs[3] = {indices[i], indices[i+1], indices[i+2]};
+		int idxs[3] = { indices[i], indices[i + 1], indices[i + 2] };
 
-		Vector3D t,b,n;
+		Vector3D t, b, n;
 
-		ComputeTriangleTBN(	verts[idxs[0]].pos,
-							verts[idxs[1]].pos,
-							verts[idxs[2]].pos,
-							verts[idxs[0]].texcoord,
-							verts[idxs[1]].texcoord,
-							verts[idxs[2]].texcoord,
-							n,
-							t,
-							b);
+		ComputeTriangleTBN(verts[idxs[0]].pos,
+			verts[idxs[1]].pos,
+			verts[idxs[2]].pos,
+			verts[idxs[0]].texcoord,
+			verts[idxs[1]].texcoord,
+			verts[idxs[2]].texcoord,
+			n,
+			t,
+			b);
 
 		verts[idxs[0]].tangent = t;
 		verts[idxs[0]].binormal = b;
@@ -888,9 +923,9 @@ void MakeDecalTexCoord(DkList<EGFHwVertex_t>& verts, DkList<int>& indices, const
 }
 
 // makes dynamic temporary decal
-tempdecal_t* CEngineStudioEGF::MakeTempDecal( const decalmakeinfo_t& info, Matrix4x4* jointMatrices)
+tempdecal_t* CEngineStudioEGF::MakeTempDecal(const decalmakeinfo_t& info, Matrix4x4* jointMatrices)
 {
-	if(r_notempdecals.GetBool())
+	if (r_notempdecals.GetBool())
 		return NULL;
 
 	Vector3D decal_origin = info.origin;
@@ -905,10 +940,10 @@ tempdecal_t* CEngineStudioEGF::MakeTempDecal( const decalmakeinfo_t& info, Matri
 
 	Matrix4x4* tempMatrixArray = PPAllocStructArray(Matrix4x4, m_hwdata->studio->numBones);
 
-	if(jointMatrices)
+	if (jointMatrices)
 	{
 		// Send all matrices as 4x3
-		for(int i = 0; i < m_hwdata->studio->numBones; i++)
+		for (int i = 0; i < m_hwdata->studio->numBones; i++)
 		{
 			// FIXME: kind of slowness
 			tempMatrixArray[i] = (!m_hwdata->joints[i].absTrans * jointMatrices[i]);
@@ -918,25 +953,25 @@ tempdecal_t* CEngineStudioEGF::MakeTempDecal( const decalmakeinfo_t& info, Matri
 	BoundingBox bbox(decal_origin - info.size, decal_origin + info.size);
 
 	// we should transform every vertex and find an intersecting ones
-	for(int i = 0; i < pHdr->numBodyGroups; i++)
+	for (int i = 0; i < pHdr->numBodyGroups; i++)
 	{
 		int nLodableModelIndex = pHdr->pBodyGroups(i)->lodModelIndex;
 		int nModDescId = pHdr->pLodModel(nLodableModelIndex)->modelsIndexes[nLod];
 
-		while(nLod > 0 && nModDescId != -1)
+		while (nLod > 0 && nModDescId != -1)
 		{
 			nLod--;
 			nModDescId = pHdr->pLodModel(nLodableModelIndex)->modelsIndexes[nLod];
 		}
 
-		if(nModDescId == -1)
+		if (nModDescId == -1)
 			continue;
 
-		for(int j = 0; j < pHdr->pModelDesc(nModDescId)->numGroups; j++)
+		for (int j = 0; j < pHdr->pModelDesc(nModDescId)->numGroups; j++)
 		{
 			modelgroupdesc_t* pGroup = pHdr->pModelDesc(nModDescId)->pGroup(j);
 
-			uint32 *pIndices = pGroup->pVertexIdx(0);
+			uint32* pIndices = pGroup->pVertexIdx(0);
 
 			DkList<EGFHwVertex_t>	g_verts;
 			DkList<int>				g_indices;
@@ -975,7 +1010,7 @@ tempdecal_t* CEngineStudioEGF::MakeTempDecal( const decalmakeinfo_t& info, Matri
 				EGFHwVertex_t v1(*pGroup->pVertex(i1));
 				EGFHwVertex_t v2(*pGroup->pVertex(i2));
 
-				if(jointMatrices)
+				if (jointMatrices)
 				{
 					TransformEGFVertex(v0, tempMatrixArray);
 					TransformEGFVertex(v1, tempMatrixArray);
@@ -990,19 +1025,19 @@ tempdecal_t* CEngineStudioEGF::MakeTempDecal( const decalmakeinfo_t& info, Matri
 				// make and check surface normal
 				Vector3D normal = (v0.normal + v1.normal + v2.normal) / 3.0f;
 
-				if( bbox.Intersects(vbox) && dot(normal, decal_normal) < 0 )
+				if (bbox.Intersects(vbox) && dot(normal, decal_normal) < 0)
 				{
-					g_indices.append( g_verts.addUnique(v0, egf_vertex_comp) );
-					g_indices.append( g_verts.addUnique(v1, egf_vertex_comp) );
-					g_indices.append( g_verts.addUnique(v2, egf_vertex_comp) );
+					g_indices.append(g_verts.addUnique(v0, egf_vertex_comp));
+					g_indices.append(g_verts.addUnique(v1, egf_vertex_comp));
+					g_indices.append(g_verts.addUnique(v2, egf_vertex_comp));
 
 					g_orig_indices.append(pIndices[k]);
-					g_orig_indices.append(pIndices[k+1]);
-					g_orig_indices.append(pIndices[k+2]);
+					g_orig_indices.append(pIndices[k + 1]);
+					g_orig_indices.append(pIndices[k + 2]);
 				}
 			}
 
-			MakeDecalTexCoord( g_verts, g_indices, info );
+			MakeDecalTexCoord(g_verts, g_indices, info);
 
 			int nStart = verts.numElem();
 
@@ -1010,19 +1045,19 @@ tempdecal_t* CEngineStudioEGF::MakeTempDecal( const decalmakeinfo_t& info, Matri
 			indices.resize(g_indices.numElem());
 
 			// restore
-			for(int k = 0; k < g_indices.numElem(); k++)
+			for (int k = 0; k < g_indices.numElem(); k++)
 			{
 				g_verts[g_indices[k]].pos = pGroup->pVertex(g_orig_indices[k])->point;
-				indices.append( nStart + g_indices[k] );
+				indices.append(nStart + g_indices[k]);
 			}
 
-			verts.append( g_verts );
+			verts.append(g_verts);
 		}
 	}
 
-	PPFree( tempMatrixArray );
+	PPFree(tempMatrixArray);
 
-	if(verts.numElem() && indices.numElem())
+	if (verts.numElem() && indices.numElem())
 	{
 		tempdecal_t* pDecal = new tempdecal_t;
 
@@ -1037,9 +1072,9 @@ tempdecal_t* CEngineStudioEGF::MakeTempDecal( const decalmakeinfo_t& info, Matri
 		pDecal->indices = PPAllocStructArray(uint16, pDecal->numIndices);
 
 		// copy geometry
-		memcpy(pDecal->verts, verts.ptr(), sizeof(EGFHwVertex_t)*pDecal->numVerts);
+		memcpy(pDecal->verts, verts.ptr(), sizeof(EGFHwVertex_t) * pDecal->numVerts);
 
-		for(int i = 0; i < pDecal->numIndices; i++)
+		for (int i = 0; i < pDecal->numIndices; i++)
 			pDecal->indices[i] = indices[i];
 
 		return pDecal;
@@ -1064,7 +1099,7 @@ CStudioModelCache::CStudioModelCache()
 
 void CStudioModelCache::ReloadModels()
 {
-	g_pShaderAPI->Reset();
+	g_pShaderAPI->Reset(STATE_RESET_VBO);
 	g_pShaderAPI->Apply();
 
 }
@@ -1072,24 +1107,24 @@ void CStudioModelCache::ReloadModels()
 ConVar job_modelLoader("job_modelLoader", "0", "Load models in parallel threads", CV_ARCHIVE);
 
 // caches model and returns it's index
-int CStudioModelCache::PrecacheModel( const char* modelName )
+int CStudioModelCache::PrecacheModel(const char* modelName)
 {
-	if(strlen(modelName) <= 0)
+	if (strlen(modelName) <= 0)
 		return CACHE_INVALID_MODEL;
 
-	if(m_egfFormat == NULL)
+	if (m_egfFormat == NULL)
 		m_egfFormat = g_pShaderAPI->CreateVertexFormat(g_EGFHwVertexFormat, elementsOf(g_EGFHwVertexFormat));
 
-	int idx = GetModelIndex( modelName );
+	int idx = GetModelIndex(modelName);
 
-	if(idx == CACHE_INVALID_MODEL)
+	if (idx == CACHE_INVALID_MODEL)
 	{
 		DevMsg(DEVMSG_CORE, "Loading model '%s'\n", modelName);
 
 		CEngineStudioEGF* pModel = new CEngineStudioEGF;
 		pModel->m_cacheIdx = m_cachedList.append(pModel);
 
-		if(!pModel->LoadModel( modelName, job_modelLoader.GetBool() ))
+		if (!pModel->LoadModel(modelName, job_modelLoader.GetBool()))
 		{
 			m_cachedList[pModel->m_cacheIdx] = NULL;
 
@@ -1097,7 +1132,7 @@ int CStudioModelCache::PrecacheModel( const char* modelName )
 			pModel = NULL;
 		}
 
-		if(!pModel)
+		if (!pModel)
 			return 0; // return error model index
 
 		return pModel->m_cacheIdx;
@@ -1116,12 +1151,12 @@ IEqModel* CStudioModelCache::GetModel(int index) const
 {
 	IEqModel* model = NULL;
 
-	if(index == CACHE_INVALID_MODEL)
+	if (index == CACHE_INVALID_MODEL)
 		model = m_cachedList[0];
 	else
 		model = m_cachedList[index];
 
-	if(model && model->GetLoadingState() != MODEL_LOAD_ERROR)
+	if (model && model->GetLoadingState() != MODEL_LOAD_ERROR)
 		return model;
 	else
 		return m_cachedList[0];
@@ -1134,17 +1169,17 @@ const char* CStudioModelCache::GetModelFilename(IEqModel* pModel) const
 
 int CStudioModelCache::GetModelIndex(const char* modelName) const
 {
-	S_MALLOC(str, strlen(modelName)+10);
+	S_MALLOC(str, strlen(modelName) + 10);
 
 	strcpy(str, modelName);
 	FixSlashes(str);
 
-	for(int i = 0; i < m_cachedList.numElem(); i++)
+	for (int i = 0; i < m_cachedList.numElem(); i++)
 	{
-		if(m_cachedList[i] == NULL)
+		if (m_cachedList[i] == NULL)
 			continue;
 
-		if(!stricmp(m_cachedList[i]->GetName(), str))
+		if (!stricmp(m_cachedList[i]->GetName(), str))
 			return i;
 	}
 
@@ -1153,9 +1188,9 @@ int CStudioModelCache::GetModelIndex(const char* modelName) const
 
 int CStudioModelCache::GetModelIndex(IEqModel* pModel) const
 {
-	for(int i = 0; i < m_cachedList.numElem(); i++)
+	for (int i = 0; i < m_cachedList.numElem(); i++)
 	{
-		if(m_cachedList[i] == pModel)
+		if (m_cachedList[i] == pModel)
 			return i;
 	}
 
@@ -1170,9 +1205,9 @@ void CStudioModelCache::FreeCachedModel(IEqModel* pModel)
 
 void CStudioModelCache::ReleaseCache()
 {
-	for(int i = 0; i < m_cachedList.numElem(); i++)
+	for (int i = 0; i < m_cachedList.numElem(); i++)
 	{
-		if(m_cachedList[i])
+		if (m_cachedList[i])
 		{
 			delete m_cachedList[i];
 		}
@@ -1193,9 +1228,9 @@ IVertexFormat* CStudioModelCache::GetEGFVertexFormat() const
 void CStudioModelCache::PrintLoadedModels() const
 {
 	Msg("---MODELS---\n");
-	for(int i = 0; i < m_cachedList.numElem(); i++)
+	for (int i = 0; i < m_cachedList.numElem(); i++)
 	{
-		if(m_cachedList[i])
+		if (m_cachedList[i])
 			Msg("%s\n", m_cachedList[i]->GetName());
 	}
 	Msg("---END MODELS---\n");

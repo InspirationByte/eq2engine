@@ -37,7 +37,7 @@ class CEqJobThread : public Threading::CEqThread
 	friend class CEqParallelJobThreads;
 public:
 
-	CEqJobThread(CEqParallelJobThreads* owner );
+	CEqJobThread(CEqParallelJobThreads* owner, int threadJobTypeId );
 
 	int							Run();
 	bool						AssignJob(eqParallelJob_t* job);
@@ -48,6 +48,7 @@ protected:
 
 	volatile eqParallelJob_t*	m_curJob;
 	CEqParallelJobThreads*		m_owner;
+	int							m_threadJobTypeId;
 };
 
 //
@@ -64,11 +65,11 @@ public:
 	const char*						GetInterfaceName() const { return PARALLELJOBS_INTERFACE_VERSION; }
 
 	// creates new job thread
-	bool							Init( int numThreads );
+	bool							Init(int numJobTypes, eqJobThreadDesc_t* jobTypes);
 	void							Shutdown();
 
 	// adds the job
-	eqParallelJob_t*				AddJob( jobFunction_t func, void* args, int count = 1);	// and puts JOB_FLAG_DELETE flag for this job
+	eqParallelJob_t*				AddJob( int jobTypeId, jobFunction_t func, void* args, int count = 1, jobComplete_t completeFn = nullptr);	// and puts JOB_FLAG_DELETE flag for this job
 	void							AddJob( eqParallelJob_t* job );
 
 	// this submits jobs to the CEqJobThreads
@@ -83,12 +84,14 @@ public:
 	// wait for specific job
 	void							WaitForJob(eqParallelJob_t* job);
 
+	// manually invokes job callbacks on completed jobs
+	void							CompleteJobCallbacks();
+
 protected:
 
 	// called from worker thread
 	bool							AssignFreeJob( CEqJobThread* requestBy );
 	void							AddCompleted(eqParallelJob_t* job);
-	void							CompleteJobCallbacks();
 
 
 	DkList<CEqJobThread*>			m_jobThreads;

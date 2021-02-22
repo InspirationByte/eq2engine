@@ -6,16 +6,16 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "NETThread.h"
-#include "eqGlobalMutex.h"
-#include "ConVar.h"
+
+#include "core/ConVar.h"
 #include "utils/strtools.h"
+#include "utils/global_mutex.h"
+#include "math/Random.h"
 
 ConVar net_fakelatency("net_fakelatency", "0", "Simulate latency (value is in ms). Operating on recieved only\n", CV_CHEAT);
 ConVar net_fakelatency_randthresh("net_fakelatency_randthresh", "1.0f", "Fake latency randomization threshold\n", CV_CHEAT);
 
 using namespace Threading;
-
-extern OOLUA::Script& GetLuaState();
 
 namespace Networking
 {
@@ -93,27 +93,9 @@ CNetworkThread::~CNetworkThread()
 	StopWork();
 }
 
-CNetEvent* LUANetEventCallbackFactory(CNetworkThread* thread, CNetMessageBuffer* msg);
-
-#ifdef NO_LUA
-CNetEvent*	LUANetEventCallbackFactoryEmpty(CNetworkThread* thread, CNetMessageBuffer* msg)
-{
-	int luaEventId = msg->ReadInt();
-
-	MsgError("LUANetEventCallbackFactoryEmpty: attempt to read Lua event '%d',\nbut in this version Lua is unsupported\n");
-
-	return NULL;
-}
-#endif // NO_LUA
-
 void CNetworkThread::Init()
 {
-#ifndef NO_LUA
-	// register event class
-	RegisterEvent(LUANetEventCallbackFactory, NETTHREAD_EVENTS_LUA_START);
-#else
-	//RegisterEvent(LUANetEventCallbackFactoryEmpty, NETTHREAD_EVENTS_LUA_START);
-#endif // NO_LUA
+
 }
 
 INetworkInterface* CNetworkThread::GetNetworkInterface()
@@ -924,236 +906,5 @@ CNetEvent* CNetworkThread::CreateEvent( CNetMessageBuffer *pMsg, int eventIdenti
 
 	return NULL;
 }
-
-#ifndef NO_LUA
-
-
-
-CLuaNetEvent::CLuaNetEvent(lua_State* vm, OOLUA::Table& table)
-{
-	m_state = vm;
-	m_table = table;
-
-	EqLua::LuaStackGuard g(m_state);
-
-	m_table.push_on_stack( m_state );
-
-	lua_getfield(m_state, -1, "Pack");
-	m_pack.set_ref(m_state, luaL_ref(m_state, LUA_REGISTRYINDEX));
-
-	lua_getfield(m_state, -1, "Unpack");
-	m_unpack.set_ref(m_state, luaL_ref(m_state, LUA_REGISTRYINDEX));
-
-	lua_getfield(m_state, -1, "Process");
-	m_process.set_ref(m_state, luaL_ref(m_state, LUA_REGISTRYINDEX));
-
-	lua_getfield(m_state, -1, "OnDeliveryFailed");
-	m_deliveryfail.set_ref(m_state, luaL_ref(m_state, LUA_REGISTRYINDEX));
-}
-
-void CLuaNetEvent::Process( CNetworkThread* pNetThread )
-{
-	int n = lua_gettop(m_state);
-	lua_pop(m_state, n);
-
-	EqLua::LuaStackGuard s(m_state);
-
-	// call table function, passing parameters
-	if(!m_process.push(m_state))
-	{
-		MsgError("CLuaNetEvent::Unpack push failed\n");
-		return;
-	}
-
-	m_table.set( "eventId", m_nEventID );
-
-	// first we place a parent table of 'Pack' function it as this\self
-	m_table.push_on_stack(m_state);
-
-	// next are to place arguemnts
-	OOLUA::push(m_state, pNetThread);
-
-	int res = lua_pcall(m_state, 2, 0, 0);
-
-	// if error
-	if( res != 0 )
-	{
-		OOLUA::INTERNAL::set_error_from_top_of_stack_and_pop_the_error(m_state);
-
-#ifdef NETTHREAD_MESSAGEBOX_ERRORS
-		ErrorMsg(varargs("CLuaNetEvent::Process error:\n %s\n", OOLUA::get_last_error(m_state).c_str()));
-#else
-		MsgError("CLuaNetEvent::Process error:\n %s\n", OOLUA::get_last_error(m_state).c_str());
-#endif // NETTHREAD_MESSAGEBOX_ERRORS
-	}
-}
-
-void CLuaNetEvent::Unpack( CNetworkThread* pNetThread, CNetMessageBuffer* pStream )
-{
-	int n = lua_gettop(m_state);
-	lua_pop(m_state, n);
-
-	EqLua::LuaStackGuard s(m_state);
-
-	// call table function, passing parameters
-	if(!m_unpack.push(m_state))
-	{
-		MsgError("CLuaNetEvent::Unpack push failed\n");
-		return;
-	}
-
-	m_table.set( "eventId", m_nEventID );
-
-	// first we place a parent table of 'Pack' function it as this\self
-	m_table.push_on_stack(m_state);
-
-	// next are to place arguemnts
-	OOLUA::push(m_state, pNetThread);
-	OOLUA::push(m_state, pStream);
-
-	int res = lua_pcall(m_state, 3, 0, 0);
-
-	// if error
-	if( res != 0 )
-	{
-		OOLUA::INTERNAL::set_error_from_top_of_stack_and_pop_the_error(m_state);
-#ifdef NETTHREAD_MESSAGEBOX_ERRORS
-		ErrorMsg(varargs("CLuaNetEvent::Unpack error:\n %s\n", OOLUA::get_last_error(m_state).c_str()));
-#else
-		MsgError("CLuaNetEvent::Unpack error:\n %s\n", OOLUA::get_last_error(m_state).c_str());
-#endif // NETTHREAD_MESSAGEBOX_ERRORS
-	}
-}
-
-void CLuaNetEvent::Pack( CNetworkThread* pNetThread, CNetMessageBuffer* pStream )
-{
-	int n = lua_gettop(m_state);
-	lua_pop(m_state, n);
-
-	EqLua::LuaStackGuard s(m_state);
-
-	// call table function, passing parameters
-	if(!m_pack.push(m_state))
-	{
-		MsgError("CLuaNetEvent::Unpack push failed\n");
-		return;
-	}
-
-	// first we place a parent table of 'Pack' function it as this\self
-	m_table.push_on_stack(m_state);
-
-	// next are to place arguemnts
-	OOLUA::push(m_state, pNetThread);
-	OOLUA::push(m_state, pStream);
-
-	int res = lua_pcall(m_state, 3, 0, 0);
-
-	// if error
-	if( res != 0 )
-	{
-		OOLUA::INTERNAL::set_error_from_top_of_stack_and_pop_the_error(m_state);
-
-#ifdef NETTHREAD_MESSAGEBOX_ERRORS
-		ErrorMsg(varargs("CLuaNetEvent::Pack error:\n %s\n", OOLUA::get_last_error(m_script->state()).c_str()));
-#else
-		MsgError("CLuaNetEvent::Pack error:\n %s\n", OOLUA::get_last_error(m_state).c_str());
-#endif // NETTHREAD_MESSAGEBOX_ERRORS
-	}
-}
-
-// standard message handlers
-
-// delivery completely failed after retries: if returns false, this removes message
-bool CLuaNetEvent::OnDeliveryFailed()
-{
-	EqLua::LuaStackGuard s(m_state);
-
-	// call table function and return it's result
-	if(!m_deliveryfail.push(m_state))
-		return false;
-
-	// first we place a parent table of 'Pack' function it as this\self
-	m_table.push_on_stack(m_state);
-
-	int res = lua_pcall(m_state, 1, 0, 0);
-
-	bool result = false;
-
-	// if error
-	if( res != 0 )
-	{
-		OOLUA::INTERNAL::set_error_from_top_of_stack_and_pop_the_error(m_state);
-
-#ifdef NETTHREAD_MESSAGEBOX_ERRORS
-		ErrorMsg(varargs("CLuaNetEvent::OnDeliveryFailed error:\n %s\n", OOLUA::get_last_error(m_state).c_str()));
-#else
-		MsgError("CLuaNetEvent::OnDeliveryFailed error:\n %s\n", OOLUA::get_last_error(m_state).c_str());
-#endif // NETTHREAD_MESSAGEBOX_ERRORS
-	}
-	else
-	{
-		 OOLUA::pull(m_state, result);
-	}
-
-	return result;
-}
-
-CNetEvent* LUANetEventCallbackFactory(CNetworkThread* thread, CNetMessageBuffer* msg)
-{
-	OOLUA::Script& state = GetLuaState();
-
-	EqLua::LuaStackGuard s(state);
-
-	int nLuaEventID = msg->ReadInt();
-
-	if(!state.call("CreateNetEvent", nLuaEventID))
-	{
-		Msg("LUANetEventCallbackFactory error:\n %s\n", OOLUA::get_last_error(state).c_str());
-		//Msg("	-- this error could be if no CreateNetEvent function found, check 'netevents.lua'\n");
-		return NULL;
-	}
-
-	if (lua_isnil(state, -1))
-	{
-		MsgError("LuaNetEvent ID '%d' is not registered, maybe you forgot to AddNetEvent?\n", nLuaEventID);
-	}
-	else
-	{
-		if(!lua_istable(state, -1))
-		{
-			MsgError("LuaNetEvent ID '%d' has invalid factory type\n", nLuaEventID);
-			Msg("	-- follow the documentation in 'netevents.lua'\n");
-		}
-		else
-		{
-			OOLUA::Table table;
-
-			table.lua_get(state, -1);
-
-			return (CNetEvent*)new CLuaNetEvent(state, table);
-		}
-	}
-
-	return NULL;
-}
-
-
-// send event called in LUA
-int CNetworkThread::SendLuaEvent(OOLUA::Table& luaevent, int nEventType, int client_id)
-{
-	CLuaNetEvent* pEvent = new CLuaNetEvent(luaevent.state(), luaevent);
-
-	return SendEvent(pEvent, NETTHREAD_EVENTS_LUA_START + nEventType, client_id);
-}
-
-// send event with waiter called in LUA
-bool CNetworkThread::SendLuaWaitDataEvent(OOLUA::Table& luaevent, int nEventType, CNetMessageBuffer* pOutputData, int client_id)
-{
-	CLuaNetEvent* pEvent = new CLuaNetEvent(luaevent.state(), luaevent);
-
-	return SendWaitDataEvent(pEvent, NETTHREAD_EVENTS_LUA_START + nEventType, pOutputData, client_id);
-}
-
-#endif // NO_LUA
 
 }; // namespace Networking

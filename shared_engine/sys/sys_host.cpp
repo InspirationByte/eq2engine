@@ -26,14 +26,6 @@
 
 #include "equi/EqUI_Manager.h"
 
-#if 0
-#include "audio/GameSoundEmitterSystem.h"
-#include "network/net_defs.h"
-#include "luabinding/LuaBinding_Engine.h"
-
-#include <Shiny.h>
-#endif
-
 #include <SDL.h>
 #include <SDL_syswm.h>
 
@@ -150,8 +142,6 @@ void* Helper_GetEGLSurfaceFromSDL()
 }
 
 #endif // ANDROID
-
-ConVar sys_jobthreads("sys_jobthreads", "4", 4, 8, "Maximum parallel job threads", CV_ARCHIVE);
 
 bool CGameHost::InitSystems( EQWNDHANDLE pWindow, bool bWindowed )
 {
@@ -284,21 +274,15 @@ bool CGameHost::InitSystems( EQWNDHANDLE pWindow, bool bWindowed )
 
 	m_pDefaultFont = g_fontCache->GetFont("default",0);
 
-#if 0
-	soundsystem->Init();
 	debugoverlay->Init();
 	equi::Manager->Init();
-	g_parallelJobs->Init(sys_jobthreads.GetInt());
-
-	Networking::InitNetworking();
 
 	// finally init input and adjust bindings
 	g_inputCommandBinder->Init();
 
 	// init console
 	g_consoleInput->Initialize();
-	g_consoleInput->SetAlternateHandler(LuaBinding_ConsoleHandler);
-#endif
+
 	MsgInfo("--- EqEngine systems init successfully ---\n");
 
 	int wide, tall;
@@ -428,23 +412,15 @@ void CGameHost::ShutdownSystems()
 	// Save configuration before full unload
 	WriteCfgFile( user_cfg.GetString(), true );
 
-#if 0
-	// shutdown any dependent bindings to avoid crashes
-	LuaBinding_ShutdownEngineBindings();
-
 	g_parallelJobs->Shutdown();
 	
 	equi::Manager->Shutdown();
 	g_fontCache->Shutdown();
 
-	g_sounds->Shutdown();
-	soundsystem->Shutdown();
-
 	g_inputCommandBinder->Shutdown();
 
-	// shutdown systems...
-	Networking::ShutdownNetworking();
-#endif
+	EqStateMgr::ShutdownStates();
+
 	materials->Shutdown();
 	g_fileSystem->FreeModule( g_matsysmodule );
 
@@ -576,10 +552,6 @@ bool CGameHost::Frame()
 		m_nQuitState = CGameHost::QUIT_TODESKTOP;
 		return false;
 	}
-
-#if 0
-	g_sounds->Update(timescale);
-#endif
 
 	// Engine frames status
 	static float gameAccTime = 0.1f;

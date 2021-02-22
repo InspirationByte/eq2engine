@@ -17,10 +17,6 @@
 #include <sys/time.h>
 #endif // _WIN32
 
-float	MEASURE_TIME_BEGIN();
-float	MEASURE_TIME_STATS(float begintime);
-
-
 class CEqTimer
 {
 public:
