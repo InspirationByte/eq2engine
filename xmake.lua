@@ -41,13 +41,11 @@ Folders = {
     game = "$(projectdir)/game/",
 }
 
-function add_sources_headers(folder, recursive)
-    if recursive then
-        add_files(folder.."/**.cpp")
-        add_headerfiles(folder.."/**.h")
-    else 
-        add_files(folder.."/**.cpp")
-        add_headerfiles(folder.."/**.h")
+function add_sources_headers(...)
+    local arg = {...}
+    for i,v in ipairs(arg) do 
+        add_files(v..".cpp")
+        add_headerfiles(v..".h")
     end
 end
 

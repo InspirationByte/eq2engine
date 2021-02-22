@@ -636,7 +636,6 @@ int CNetworkThread::SendEvent( CNetEvent* pEvent, int nEventType, int client_id 
 	evt.client_id = client_id;
 	evt.flags = nFlags;
 
-#ifndef NO_LUA
 	int nLuaEventID = -1;
 
 	// Lua events starts from NETTHREAD_EVENTS_LUA_START
@@ -646,7 +645,6 @@ int CNetworkThread::SendEvent( CNetEvent* pEvent, int nEventType, int client_id 
 
 		evt.event_type = NETTHREAD_EVENTS_LUA_START;
 	}
-#endif // NO_LUA
 
 	evt.pEvent = pEvent;
 	evt.pStream = new CNetMessageBuffer(m_netInterface);
@@ -672,11 +670,9 @@ int CNetworkThread::SendEvent( CNetEvent* pEvent, int nEventType, int client_id 
 	evt.pStream->WriteUInt16( evt.event_type );
 	evt.pStream->WriteUInt16( evt.event_id ); // write increment event counter
 
-#ifndef NO_LUA
 	// handle Lua-handled network events
 	if(nLuaEventID >= 0)
 		evt.pStream->WriteUInt16( nLuaEventID );
-#endif // NO_LUA
 
 	pEvent->Pack( this, evt.pStream );
 

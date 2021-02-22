@@ -9,7 +9,7 @@
 #define NETPROPVAR_H
 
 #include "utils/DkList.h"
-#include "NetMessageBuffer.h"
+#include "utils/strtools.h"
 
 template <class TYPE, class CHANGER>
 class CNetworkVarBase

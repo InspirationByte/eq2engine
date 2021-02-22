@@ -9,13 +9,27 @@ target("DriversEditor")
     set_group(Groups.gametools)
     set_kind("binary")
     setup_runtime_config()
-    add_files(FolderDriversGame.."DriversEditor/*.cpp")
-    add_headerfiles(FolderDriversGame.."DriversEditor/*.h")
-    add_files(FolderDriversGame.."world/*.cpp")
-    add_headerfiles(FolderDriversGame.."world/*.h")
+    add_defines("EDITOR", "UNICODE", "SHINY_IS_COMPILED=FALSE")
+    add_sources_headers(
+        FolderDriversGame.."DriversEditor/**",
+        FolderDriversGame.."audio/*",
+        FolderDriversGame.."eqPhysics/*",
+        FolderDriversGame.."objects/GameObject*",
+        FolderDriversGame.."objects/ControllableObject*",
+        FolderDriversGame.."objects/car*",
+        FolderDriversGame.."render/**",
+        FolderDriversGame.."system/CameraAnimator",
+        FolderDriversGame.."system/physics",
+        FolderDriversGame.."system/GameDefs",
+        FolderDriversGame.."world/*")
+    add_files(Folders.public.."materialsystem1/*.cpp")
+    add_includedirs(FolderDriversGame)
     add_eqcore_deps()
-    add_deps("fontLib", "renderUtilLib", "soundSystemLib")
+    add_deps("fontLib", "renderUtilLib", "soundSystemLib", "egfLib", "animatingLib", "networkLib", "physicsLib")
+    add_packages("bullet3", "libvorbis", "libogg")
+    add_deps("shinyProfiler")
     add_wxwidgets()
+    add_OpenAL()
     if is_plat("windows") then
         add_files(FolderDriversGame.."DriversEditor/**.rc")
     end
@@ -24,16 +38,17 @@ target("DriversGame")
     set_group(Groups.game)
     set_kind("binary")
     setup_runtime_config()
-    add_sources_headers(FolderDriversGame.."DriversGame")
-    add_sources_headers(FolderDriversGame.."audio")
-    add_sources_headers(FolderDriversGame.."eqPhysics")
-    add_sources_headers(FolderDriversGame.."equi")
-    add_sources_headers(FolderDriversGame.."luabinding")
-    add_sources_headers(FolderDriversGame.."objects", true)
-    add_sources_headers(FolderDriversGame.."render", true)
-    add_sources_headers(FolderDriversGame.."session")
-    add_sources_headers(FolderDriversGame.."system")
-    add_sources_headers(FolderDriversGame.."world")
+    add_sources_headers(
+        FolderDriversGame.."DriversGame/*",
+        FolderDriversGame.."audio/*",
+        FolderDriversGame.."eqPhysics/*",
+        FolderDriversGame.."equi/*",
+        FolderDriversGame.."luabinding/*",
+        FolderDriversGame.."objects/**",
+        FolderDriversGame.."render/**",
+        FolderDriversGame.."session/*",
+        FolderDriversGame.."system/*",
+        FolderDriversGame.."world/*")
     add_files(Folders.public.."materialsystem1/*.cpp")
     add_includedirs(FolderDriversGame)
     add_eqcore_deps()
