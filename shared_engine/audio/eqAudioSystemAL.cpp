@@ -14,8 +14,13 @@
 
 #include "core/ConVar.h"
 #include "core/DebugInterface.h"
+#include "core/IDkCore.h"
+
+#include "utils/KeyValues.h"
+#include "utils/global_mutex.h"
 
 #include "source/snd_al_source.h"
+
 
 static CEqAudioSystemAL s_audioSystemAL;
 IEqAudioSystem* g_audioSystem = &s_audioSystemAL;
@@ -65,9 +70,17 @@ const char* getALErrorString(int err)
 	}
 }
 
+// AL effects prototypes
+LPALGENEFFECTS _alGenEffects = nullptr;
+LPALEFFECTI _alEffecti = nullptr;
+LPALEFFECTF _alEffectf = nullptr;
+LPALGENAUXILIARYEFFECTSLOTS _alGenAuxiliaryEffectSlots = nullptr;
+LPALAUXILIARYEFFECTSLOTI _alAuxiliaryEffectSloti = nullptr;
+LPALDELETEAUXILIARYEFFECTSLOTS _alDeleteAuxiliaryEffectSlots = nullptr;
+LPALDELETEEFFECTS _alDeleteEffects = nullptr;
+
 //---------------------------------------------------------
 
-static ConVar snd_voices("snd_voices", "48", 24, 128, "Audio voice count", CV_ARCHIVE);
 static ConVar snd_device("snd_device", "0", nullptr, CV_ARCHIVE);
 
 //---------------------------------------------------------
@@ -174,18 +187,134 @@ void CEqAudioSystemAL::Init()
 	if (!InitContext())
 		return;
 
+	InitEffects();
+
 	m_noSound = false;
 
 	// set other properties
 	alDistanceModel(AL_INVERSE_DISTANCE_CLAMPED);
 }
 
+void CEqAudioSystemAL::InitEffects()
+{
+	if (!alcIsExtensionPresent(m_dev, ALC_EXT_EFX_NAME))
+	{
+		MsgWarning("Sound effects are NOT supported!\n");
+		return;
+	}
+
+	_alGenEffects = (LPALGENEFFECTS)alGetProcAddress("alGenEffects");
+	_alEffecti = (LPALEFFECTI)alGetProcAddress("alEffecti");
+	_alEffectf = (LPALEFFECTF)alGetProcAddress("alEffectf");
+	_alGenAuxiliaryEffectSlots = (LPALGENAUXILIARYEFFECTSLOTS)alGetProcAddress("alGenAuxiliaryEffectSlots");
+	_alAuxiliaryEffectSloti = (LPALAUXILIARYEFFECTSLOTI)alGetProcAddress("alAuxiliaryEffectSloti");
+	_alDeleteAuxiliaryEffectSlots = (LPALDELETEAUXILIARYEFFECTSLOTS)alGetProcAddress("alDeleteAuxiliaryEffectSlots");
+	_alDeleteEffects = (LPALDELETEEFFECTS)alGetProcAddress("alDeleteEffects");
+
+	m_currEffect = nullptr;
+	m_currEffectSlotIdx = 0;
+	_alGenAuxiliaryEffectSlots(SOUND_EFX_SLOTS, m_effectSlots);
+
+	//
+	// Load effect presets from file
+	//
+	kvkeybase_t* soundSettings = GetCore()->GetConfig()->FindKeyBase("Sound");
+
+	const char* effectFilePath = soundSettings ? KV_GetValueString(soundSettings->FindKeyBase("EFXScript"), 0, nullptr) : nullptr;
+
+	if (effectFilePath == nullptr)
+	{
+		MsgError("InitEFX: EQCONFIG missing Sound:EFXScript !\n");
+		return;
+	}
+
+	KeyValues kv;
+	if (!kv.LoadFromFile(effectFilePath))
+	{
+		MsgError("InitEFX: Can't init EFX from '%s'\n", effectFilePath);
+		return;
+	}
+
+	for (int i = 0; i < kv.GetRootSection()->keys.numElem(); i++)
+	{
+		kvkeybase_t* pEffectSection = kv.GetRootSection()->keys[i];
+
+		sndEffect_t effect;
+		strcpy(effect.name, pEffectSection->name);
+
+		kvkeybase_t* pPair = pEffectSection->FindKeyBase("type");
+
+		if (pPair)
+		{
+			if (!CreateALEffect(KV_GetValueString(pPair), pEffectSection, effect))
+			{
+				MsgError("SOUND: Cannot create effect '%s' with type %s!\n", effect.name, KV_GetValueString(pPair));
+				continue;
+			}
+		}
+		else
+		{
+			MsgError("SOUND: Effect '%s' doesn't have type!\n", effect.name);
+			continue;
+		}
+
+		DevMsg(DEVMSG_SOUND, "registering sound effect '%s'\n", effect.name);
+
+		m_effects.append(effect);
+	}
+}
+
+bool CEqAudioSystemAL::CreateALEffect(const char* pszName, kvkeybase_t* pSection, sndEffect_t& effect)
+{
+	if (!stricmp(pszName, "reverb"))
+	{
+		_alGenEffects(1, &effect.nAlEffect);
+
+		_alEffecti(effect.nAlEffect, AL_EFFECT_TYPE, AL_EFFECT_REVERB);
+
+		_alEffectf(effect.nAlEffect, AL_REVERB_GAIN, KV_GetValueFloat(pSection->FindKeyBase("gain"), 0, 0.5f));
+		_alEffectf(effect.nAlEffect, AL_REVERB_GAINHF, KV_GetValueFloat(pSection->FindKeyBase("gain_hf"), 0, 0.5f));
+
+		_alEffectf(effect.nAlEffect, AL_REVERB_DECAY_TIME, KV_GetValueFloat(pSection->FindKeyBase("decay_time"), 0, 10.0f));
+		_alEffectf(effect.nAlEffect, AL_REVERB_DECAY_HFRATIO, KV_GetValueFloat(pSection->FindKeyBase("decay_hf"), 0, 0.5f));
+		_alEffectf(effect.nAlEffect, AL_REVERB_REFLECTIONS_DELAY, KV_GetValueFloat(pSection->FindKeyBase("reflection_delay"), 0, 0.0f));
+		_alEffectf(effect.nAlEffect, AL_REVERB_REFLECTIONS_GAIN, KV_GetValueFloat(pSection->FindKeyBase("reflection_gain"), 0, 0.5f));
+		_alEffectf(effect.nAlEffect, AL_REVERB_DIFFUSION, KV_GetValueFloat(pSection->FindKeyBase("diffusion"), 0, 0.5f));
+		_alEffectf(effect.nAlEffect, AL_REVERB_DENSITY, KV_GetValueFloat(pSection->FindKeyBase("density"), 0, 0.5f));
+		_alEffectf(effect.nAlEffect, AL_REVERB_AIR_ABSORPTION_GAINHF, KV_GetValueFloat(pSection->FindKeyBase("airabsorption_gain"), 0, 0.5f));
+
+		return true;
+	}
+	else if (!stricmp(pszName, "echo"))
+	{
+		_alGenEffects(1, &effect.nAlEffect);
+
+		_alEffecti(effect.nAlEffect, AL_EFFECT_TYPE, AL_EFFECT_ECHO);
+
+		return true;
+	}
+
+	return false;
+}
+
+void CEqAudioSystemAL::DestroyEffects()
+{
+	m_currEffectSlotIdx = 0;
+	m_currEffect = NULL;
+
+	for (int i = 0; i < m_effects.numElem(); i++)
+		_alDeleteEffects(1, &m_effects[i].nAlEffect);
+
+	_alDeleteAuxiliaryEffectSlots(2, m_effectSlots);
+
+	m_effects.clear();
+}
+
 // Destroys context and vocies
 void CEqAudioSystemAL::Shutdown()
 {
 	StopAllSounds();
-
-	m_noSound = true;
+	DestroyEffects();
 
 	// clear voices
 	m_sources.clear();
@@ -196,10 +325,14 @@ void CEqAudioSystemAL::Shutdown()
 
 	// destroy context
 	DestroyContext();
+
+	m_noSound = true;
 }
 
 IEqAudioSource* CEqAudioSystemAL::CreateSource()
 {
+	Threading::CScopedMutex m(GetGlobalMutex(MUTEXPURPOSE_AUDIO));
+
 	int index = m_sources.append(new CEqAudioSourceAL());
 	return m_sources[index];
 }
@@ -209,12 +342,10 @@ void CEqAudioSystemAL::DestroySource(IEqAudioSource* source)
 	if (!source)
 		return;
 
-	source->Release();
+	CEqAudioSourceAL* src = (CEqAudioSourceAL*)source;
 
-	if (m_sources.fastRemove(source))
-	{
-		delete source;
-	}
+	src->m_releaseOnStop = true;
+	src->m_forceStop = true;
 }
 
 void CEqAudioSystemAL::StopAllSounds(int chanType /*= -1*/, void* callbackObject /*= nullptr*/)
@@ -222,11 +353,10 @@ void CEqAudioSystemAL::StopAllSounds(int chanType /*= -1*/, void* callbackObject
 	// suspend all sources
 	for (int i = 0; i < m_sources.numElem(); i++)
 	{
-		CEqAudioSourceAL* source = (CEqAudioSourceAL*)m_sources[i];
+		CEqAudioSourceAL* source = (CEqAudioSourceAL*)m_sources[i].p();
 		if (chanType == -1 || source->m_chanType == chanType && source->m_callbackObject == callbackObject)
 		{
-			m_sources[i]->Release();
-			delete m_sources[i];
+			source->m_forceStop = true;
 		}
 	}
 }
@@ -239,7 +369,7 @@ void CEqAudioSystemAL::PauseAllSounds(int chanType /*= -1*/, void* callbackObjec
 	// suspend all sources
 	for (int i = 0; i < m_sources.numElem(); i++)
 	{
-		CEqAudioSourceAL* source = (CEqAudioSourceAL*)m_sources[i];
+		CEqAudioSourceAL* source = (CEqAudioSourceAL*)m_sources[i].p();
 		if (chanType == -1 || source->m_chanType == chanType && source->m_callbackObject == callbackObject)
 			source->UpdateParams(param, IEqAudioSource::UPDATE_STATE);
 	}
@@ -253,7 +383,7 @@ void CEqAudioSystemAL::ResumeAllSounds(int chanType /*= -1*/, void* callbackObje
 	// suspend all sources
 	for (int i = 0; i < m_sources.numElem(); i++)
 	{
-		CEqAudioSourceAL* source = (CEqAudioSourceAL*)m_sources[i];
+		CEqAudioSourceAL* source = (CEqAudioSourceAL*)m_sources[i].p();
 		if (chanType == -1 || source->m_chanType == chanType && source->m_callbackObject == callbackObject)
 			source->UpdateParams(param, IEqAudioSource::UPDATE_STATE);
 	}
@@ -306,13 +436,32 @@ void CEqAudioSystemAL::FreeSample(ISoundSource* sampleSource)
 	m_samples.fastRemove(sampleSource);
 }
 
+// finds the effect. May return EFFECTID_INVALID
+effectId_t CEqAudioSystemAL::FindEffect(const char* name) const
+{
+	for (int i = 0; i < m_effects.numElem(); i++)
+	{
+		if (!stricmp(m_effects[i].name, name))
+			return m_effects[i].nAlEffect;
+	}
+
+	return EFFECT_ID_NONE;
+}
+
+// sets the new effect
+void CEqAudioSystemAL::SetEffect(int slot, effectId_t effect)
+{
+	// used directly
+	_alAuxiliaryEffectSloti(m_effectSlots[slot], AL_EFFECTSLOT_EFFECT, effect);
+}
+
 //-----------------------------------------------
 
 void CEqAudioSystemAL::SuspendSourcesWithSample(ISoundSource* sample)
 {
 	for (int i = 0; i < m_sources.numElem(); i++)
 	{
-		CEqAudioSourceAL* src = (CEqAudioSourceAL*)m_sources[i];
+		CEqAudioSourceAL* src = (CEqAudioSourceAL*)m_sources[i].p();
 
 		if (src->m_sample == sample)
 		{
@@ -326,12 +475,19 @@ void CEqAudioSystemAL::Update()
 {
 	for (int i = 0; i < m_sources.numElem(); i++)
 	{
-		CEqAudioSourceAL* src = (CEqAudioSourceAL*)m_sources[i];
+		CEqAudioSourceAL* src = (CEqAudioSourceAL*)m_sources[i].p();
+
+		if (src->m_forceStop)
+		{
+			src->Release();
+			src->m_forceStop = false;
+		}
+
 		if (!src->DoUpdate())
 		{
 			if (src->m_releaseOnStop)
 			{
-				delete src;
+				Threading::CScopedMutex m(GetGlobalMutex(MUTEXPURPOSE_AUDIO));
 				m_sources.fastRemoveIndex(i);
 				i--;
 			}
@@ -378,6 +534,7 @@ CEqAudioSourceAL::CEqAudioSourceAL() :
 	m_state(STOPPED),
 	m_chanType(-1),
 	m_releaseOnStop(true),
+	m_forceStop(false),
 	m_looping(false)
 {
 	memset(m_buffers, 0, sizeof(m_buffers));
@@ -386,6 +543,16 @@ CEqAudioSourceAL::CEqAudioSourceAL() :
 CEqAudioSourceAL::CEqAudioSourceAL(int typeId, ISoundSource* sample, UpdateCallback fnCallback, void* callbackObject)
 {
 	Setup(typeId, sample, fnCallback, callbackObject);
+}
+
+CEqAudioSourceAL::~CEqAudioSourceAL()
+{
+	Release();
+}
+
+void CEqAudioSourceAL::Ref_DeleteObject()
+{
+	delete this;
 }
 
 // Updates channel with user parameters
@@ -425,6 +592,14 @@ void CEqAudioSourceAL::UpdateParams(params_t params, int mask)
 	if (mask & UPDATE_AIRABSORPTION)
 		alSourcef(thisSource, AL_AIR_ABSORPTION_FACTOR, params.airAbsorption);
 
+	if (mask & UPDATE_EFFECTSLOT)
+	{
+		if(params.effectSlot == -1)
+			alSource3i(thisSource, AL_AUXILIARY_SEND_FILTER, AL_EFFECTSLOT_NULL, 0, AL_FILTER_NULL);
+		else
+			alSource3i(thisSource, AL_AUXILIARY_SEND_FILTER, s_audioSystemAL.m_effectSlots[params.effectSlot], 0, AL_FILTER_NULL);
+	}
+
 	if (mask & UPDATE_RELATIVE)
 	{
 		tempValue = params.relative == true ? AL_TRUE : AL_FALSE;
@@ -442,7 +617,9 @@ void CEqAudioSourceAL::UpdateParams(params_t params, int mask)
 	if (mask & UPDATE_DO_REWIND)
 	{
 		m_streamPos = 0;
-		alSourceRewind(mask);
+
+		if(!isStreaming)
+			alSourceRewind(thisSource);
 	}
 
 	if (mask & UPDATE_RELEASE_ON_STOP)

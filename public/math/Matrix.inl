@@ -234,9 +234,9 @@ template <typename T>
 inline TMat3<T> TMat4<T>::getRotationComponentTransposed() const
 {
 	return TMat3<T>(
-		TMat3<T>(rows[0].x, rows[1].x, rows[2].x),
-		TMat3<T>(rows[0].y, rows[1].y, rows[2].y),
-		TMat3<T>(rows[0].z, rows[1].z, rows[2].z));
+		TVec3D<T>(rows[0].x, rows[1].x, rows[2].x),
+		TVec3D<T>(rows[0].y, rows[1].y, rows[2].y),
+		TVec3D<T>(rows[0].z, rows[1].z, rows[2].z));
 }
 
 template <typename T>

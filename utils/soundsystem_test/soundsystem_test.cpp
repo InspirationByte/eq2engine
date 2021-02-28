@@ -101,12 +101,12 @@ void InitSoundSystem( EQWNDHANDLE wnd )
 	g_staticSound = g_audioSystem->LoadSample("sounds/SoundTest/StaticTest.wav");
 
 	g_musicChan = g_audioSystem->CreateSource();
-	g_musicChan->Setup(0, g_loopingSound[0], nullptr, musicUpdateCb);
+	g_musicChan->Setup(0, g_loopingSound[0], musicUpdateCb, nullptr);
 
 	IEqAudioSource::params_t params;
 	params.state = IEqAudioSource::PLAYING;
 	params.looping = false;
-	params.pitch = 2.0;
+	params.pitch = 4.0;
 	params.relative = true;
 
 	g_musicChan->UpdateParams(params, IEqAudioSource::UPDATE_STATE | IEqAudioSource::UPDATE_LOOPING | IEqAudioSource::UPDATE_PITCH | IEqAudioSource::UPDATE_RELATIVE);
@@ -369,7 +369,7 @@ void CMainWindow::ProcessAllMenuCommands(wxCommandEvent& event)
 
 			IEqAudioSource::params_t params;
 			params.state = IEqAudioSource::PLAYING;
-			params.looping = false;
+			params.looping = true;
 			params.pitch = RandomFloat(0.5f, 2.0f);
 			params.relative = true;
 

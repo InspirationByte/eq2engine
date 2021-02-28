@@ -10,13 +10,19 @@
 
 #include "core/platform/Platform.h"
 #include "math/Vector.h"
+#include "utils/refcounted.h"
 
 class ISoundSource;
+
+typedef uint effectId_t;
+
+#define EFFECT_ID_NONE			(0)
+#define SOUND_EFX_SLOTS			(2)
 
 //-----------------------------------------------------------------
 // Audio source interface
 
-abstract_class IEqAudioSource
+abstract_class IEqAudioSource : RefCountedObject
 {
 public:
 	enum ESoundSourceUpdate
@@ -30,6 +36,7 @@ public:
 		UPDATE_RELATIVE = (1 << 6),
 		UPDATE_STATE = (1 << 7),
 		UPDATE_LOOPING = (1 << 8),
+		UPDATE_EFFECTSLOT = (1 << 9),
 
 		UPDATE_DO_REWIND = (1 << 16),
 		UPDATE_RELEASE_ON_STOP = (1 << 17)
@@ -52,6 +59,7 @@ public:
 		float				rolloff;
 		float				airAbsorption;
 		ESourceState		state;
+		int					effectSlot;
 		bool				relative;
 		bool				looping;
 		bool				releaseOnStop;
@@ -110,6 +118,12 @@ public:
 	// loads sample source data
 	virtual ISoundSource*		LoadSample(const char* filename) = 0;
 	virtual void				FreeSample(ISoundSource* sample) = 0;
+
+	// finds the effect. May return EFFECT_ID_NONE
+	virtual effectId_t			FindEffect(const char* name) const = 0;
+
+	// sets the new effect
+	virtual void				SetEffect(int slot, effectId_t effect) = 0;
 };
 
 extern IEqAudioSystem* g_audioSystem;

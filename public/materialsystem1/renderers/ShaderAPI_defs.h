@@ -185,7 +185,7 @@ static int s_attributeSize[] =
 // Buffer access type (for VBO)
 enum ER_BufferAccess
 {
-	BUFFER_DEFAULT		= 0,
+	BUFFER_STREAM		= 0,
 	BUFFER_STATIC,
 	BUFFER_DYNAMIC,
 };

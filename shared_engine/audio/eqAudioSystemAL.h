@@ -24,9 +24,12 @@
 
 //-----------------------------------------------------------------
 
+struct kvkeybase_t;
+
 // Audio system, controls voices
 class CEqAudioSystemAL : public IEqAudioSystem
 {
+	friend class CEqAudioSourceAL;
 public:
 	CEqAudioSystemAL();
 	~CEqAudioSystemAL();
@@ -58,19 +61,41 @@ public:
 	ISoundSource*				LoadSample(const char* filename);
 	void						FreeSample(ISoundSource* sample);
 
+	// finds the effect. May return EFFECT_ID_NONE
+	effectId_t					FindEffect(const char* name) const;
+
+	// sets the new effect
+	void						SetEffect(int slot, effectId_t effect);
+
 private:
-	void						SuspendSourcesWithSample(ISoundSource* sample);
+	struct sndEffect_t
+	{
+		char		name[32];
+		ALuint		nAlEffect;
+	};
 
-	bool						InitContext();
-	void						DestroyContext();
+	bool			CreateALEffect(const char* pszName, kvkeybase_t* pSection, sndEffect_t& effect);
+	void			SuspendSourcesWithSample(ISoundSource* sample);
 
-	DkList<IEqAudioSource*>		m_sources;	// tracked sources
-	DkList<ISoundSource*>		m_samples;
+	bool			InitContext();
+	void			InitEffects();
 
-	ALCcontext*					m_ctx;
-	ALCdevice*					m_dev;
+	void			DestroyContext();
+	void			DestroyEffects();
 
-	bool						m_noSound;
+	DkList<CRefPointer<IEqAudioSource*>>	m_sources;	// tracked sources
+	DkList<ISoundSource*>					m_samples;
+	DkList<sndEffect_t>						m_effects;
+
+	ALCcontext*								m_ctx;
+	ALCdevice*								m_dev;
+
+	ALuint									m_effectSlots[SOUND_EFX_SLOTS];
+	int										m_currEffectSlotIdx;
+
+	sndEffect_t*							m_currEffect;
+
+	bool									m_noSound;
 };
 
 //-----------------------------------------------------------------
@@ -82,6 +107,7 @@ class CEqAudioSourceAL : public IEqAudioSource
 public:
 	CEqAudioSourceAL();
 	CEqAudioSourceAL(int typeId, ISoundSource* sample, UpdateCallback fnCallback, void* callbackObject);
+	~CEqAudioSourceAL();
 
 	void					Setup(int chanType, ISoundSource* sample, UpdateCallback fnCallback = nullptr, void* callbackObject = nullptr);
 	void					Release();
@@ -95,6 +121,8 @@ public:
 	bool					IsLooping() const { return m_looping; }
 
 protected:
+	void					Ref_DeleteObject();
+
 	bool					QueueStreamChannel(ALuint buffer);
 	void					SetupSample(ISoundSource* sample);
 
@@ -115,6 +143,7 @@ protected:
 
 	int						m_chanType;
 	bool					m_releaseOnStop;
+	bool					m_forceStop;
 	bool					m_looping;
 };
 

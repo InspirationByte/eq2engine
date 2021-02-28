@@ -9,7 +9,7 @@ set_arch("x64") -- TODO: x86 builds too
 set_targetdir("bin/$(arch)")
 
 -- some packages
-add_requires("zlib", "libjpeg", "bullet3", "libogg", "libvorbis", "luajit")
+add_requires("zlib", "libjpeg", "bullet3", "libogg", "libvorbis")
 add_requireconfs("bullet3", {
     configs = {
         shared = false,
@@ -83,17 +83,6 @@ function add_OpenAL()
     else
         print("FIXME: setup other platforms!")
     end
-end
-
-function add_OOLua()
-    add_includedirs(Folders.dependency.."oolua/include")
-    if is_arch("x64") then
-        add_linkdirs(Folders.dependency.."oolua/libs/x64")
-    else
-        add_linkdirs(Folders.dependency.."oolua/libs/x86")
-    end
-    add_links("oolua")
-    add_packages("luajit")
 end
 
 if is_plat("windows") then

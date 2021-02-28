@@ -42,11 +42,6 @@ inline TR max(T x, T2 y) {return (TR)((x > y)? x : y);}
 // Math routines done in optimized assembly math package routines
 inline void SinCos( float radians, float *sine, float *cosine )
 {
-	// GCC handles better...
-
-	//*sine = sin(radians);
-	//*cosine = cos(radians);
-
 #if defined(_WIN32) && !defined(_WIN64)
 	_asm
 	{

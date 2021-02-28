@@ -147,8 +147,11 @@ private:
 class CScopedMutex
 {
 public:
-	CScopedMutex( CEqMutex & m ) : m_pMutex(&m) { m_pMutex->Lock(); }
-	~CScopedMutex()								{ m_pMutex->Unlock(); }
+	CScopedMutex( CEqMutex &m, bool blocking = true ) : m_pMutex(&m) 
+	{ m_pMutex->Lock(blocking); }
+
+	~CScopedMutex()								
+	{ m_pMutex->Unlock(); }
 
 private:
 	CEqMutex*	m_pMutex;	// NOTE: making this a reference causes a TypeInfo crash
