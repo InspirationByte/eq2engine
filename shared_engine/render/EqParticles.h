@@ -38,8 +38,8 @@ struct PFXVertex_t
 	}
 
 	Vector3D		point;
-	TVec2D<half>	texcoord;
-	TVec4D<half>	color;
+	Vector2D		texcoord;
+	Vector4D		color;
 
 	//TVec3D<half>	normal;
 	//half			unused;
@@ -47,8 +47,8 @@ struct PFXVertex_t
 
 static VertexFormatDesc_s g_PFXVertexFormatDesc[] = {
 	{ 0, 3, VERTEXATTRIB_POSITION, ATTRIBUTEFORMAT_FLOAT, "position" },		// position
-	{ 0, 2, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_HALF, "texcoord" },		// texture coord
-	{ 0, 4, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_HALF, "color" },			// color
+	{ 0, 2, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_FLOAT, "texcoord" },		// texture coord
+	{ 0, 4, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_FLOAT, "color" },		// color
 	//{ 0, 4, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_HALF, "normal" },		// normal; unused
 };
 

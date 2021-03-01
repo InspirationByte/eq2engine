@@ -63,6 +63,7 @@ target("eqMatSystem")
         Folders.matsystem1.. "*.cpp",
         Folders.public.."materialsystem1/*.cpp")
     add_headerfiles(Folders.matsystem1.."*.h")
+    add_headerfiles(Folders.public.."materialsystem1/*.h")
     add_eqcore_deps()
 
 -- base shader library

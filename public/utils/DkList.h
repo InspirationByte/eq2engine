@@ -116,6 +116,9 @@ public:
 	// swap the contents of the lists
 	void			swap( DkList<T> &other );
 
+	// swap the contents of the lists - raw
+	void			swap(T*& other, int& otherNumElem);
+
 	// assure list has given number of elements, but leave them uninitialized
 	void			assureSize( int newSize);
 
@@ -765,6 +768,18 @@ inline void DkList<T>::swap( DkList<T> &other )
 	QuickSwap( m_nSize, other.m_nSize );
 	QuickSwap( m_nGranularity, other.m_nGranularity );
 	QuickSwap( m_pListPtr, other.m_pListPtr );
+}
+
+// -----------------------------------------------------------------
+// swap the contents of the lists - raw
+// -----------------------------------------------------------------
+template< class T >
+inline void DkList<T>::swap(T*& other, int& otherNumElem)
+{
+	QuickSwap(m_nNumElem, otherNumElem);
+	QuickSwap(m_pListPtr, other);
+
+	m_nSize = otherNumElem;
 }
 
 // -----------------------------------------------------------------

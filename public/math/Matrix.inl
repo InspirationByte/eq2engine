@@ -821,7 +821,7 @@ inline TMat4<T> _identity4()
 template <typename T>
 inline TVec3D<T> transform3(const TVec3D<T> &in, const TMat3<T>& mat)
 {
-	TVec3D<T>  temp (
+	return TVec3D<T>(
 		(in[0] * mat.rows[0][0] +
 	     in[1] * mat.rows[1][0] +
 	     in[2] * mat.rows[2][0]),
@@ -833,14 +833,12 @@ inline TVec3D<T> transform3(const TVec3D<T> &in, const TMat3<T>& mat)
 	    (in[0] * mat.rows[0][2] +
 	     in[1] * mat.rows[1][2] +
 	     in[2] * mat.rows[2][2]));
-
-	return temp;
 }
 
 template <typename T>
 inline TVec3D<T> transform3(const TVec3D<T> &in, const TMat4<T>& mat)
 {
-	TVec3D<T> temp(
+	return TVec3D<T>(
 		(in[0] * mat.rows[0][0] +
 	    in[1] * mat.rows[1][0] +
 	    in[2] * mat.rows[2][0]),
@@ -852,14 +850,12 @@ inline TVec3D<T> transform3(const TVec3D<T> &in, const TMat4<T>& mat)
 	    (in[0] * mat.rows[0][2] +
 	    in[1] * mat.rows[1][2] +
 	    in[2] * mat.rows[2][2]) );
-
-	return temp;
 }
 
 template <typename T>
 inline TVec3D<T> transform4(const TVec3D<T> &in, const TMat4<T>& mat)
 {
-	TVec3D<T> temp(
+	return TVec3D<T>(
 		(in[0] *	mat.rows[0][0] +
 	    in[1] *		mat.rows[1][0] +
 	    in[2] *		mat.rows[2][0] +
@@ -874,20 +870,14 @@ inline TVec3D<T> transform4(const TVec3D<T> &in, const TMat4<T>& mat)
 	    in[1] *		mat.rows[1][2] +
 	    in[2] *		mat.rows[2][2]+
 	    mat.rows[3][2]));
-
-	return temp;
 }
 
 template <typename T>
 inline TVec3D<T> inverseRotateVec(const TVec3D<T> &vector, const TMat4<T> &matrix)
 {
-	TVec3D<T> tmp;
-
-	tmp[0] = vector[0] * matrix.rows[0][0] + vector[1] * matrix.rows[0][1] + vector[2] * matrix.rows[0][2];
-	tmp[1] = vector[0] * matrix.rows[1][0] + vector[1] * matrix.rows[1][1] + vector[2] * matrix.rows[1][2];
-	tmp[2] = vector[0] * matrix.rows[2][0] + vector[1] * matrix.rows[2][1] + vector[2] * matrix.rows[2][2];
-
-	return tmp;
+	return TVec3D<T>(vector[0] * matrix.rows[0][0] + vector[1] * matrix.rows[0][1] + vector[2] * matrix.rows[0][2],
+					 vector[0] * matrix.rows[1][0] + vector[1] * matrix.rows[1][1] + vector[2] * matrix.rows[1][2],
+					 vector[0] * matrix.rows[2][0] + vector[1] * matrix.rows[2][1] + vector[2] * matrix.rows[2][2]);
 }
 
 template <typename T>
@@ -895,9 +885,9 @@ inline TVec3D<T> inverseTranslateVec(const TVec3D<T> &vector, const TMat4<T> &ma
 {
 	TVec3D<T> tmp;
 
-	tmp[0] = vector[0] - matrix.rows[3][0];
-	tmp[1] = vector[1] - matrix.rows[3][1];
-	tmp[2] = vector[2] - matrix.rows[3][2];
+	return TVec3D<T>(vector[0] - matrix.rows[3][0],
+					 vector[1] - matrix.rows[3][1],
+					 vector[2] - matrix.rows[3][2]);
 
 	return tmp;
 }

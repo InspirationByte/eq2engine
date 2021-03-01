@@ -59,11 +59,11 @@ struct eqFontChar_t
 	}
 
 	// rectangle
-    half x0, y0;
-    half x1, y1;
+	float x0, y0;
+	float x1, y1;
 
-	half ofsX,ofsY;
-	half advX;
+	float ofsX,ofsY;
+	float advX;
 };
 
 class IEqFont;

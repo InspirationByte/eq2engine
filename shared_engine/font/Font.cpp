@@ -27,6 +27,8 @@ TODO:
 #include "Font.h"
 #include "FontCache.h"
 
+#include <stdexcept> 
+
 #pragma todo("Rework font system - Add generator, better rotation support, effects, and text alignment/bounding")
 
 #define FONT_DEFAULT_PATH "resources/fonts/"
@@ -550,10 +552,14 @@ const eqFontChar_t&	CFont::GetFontCharById( const int chrId ) const
 {
 	static eqFontChar_t null_default;
 
-	if(m_charMap.count(chrId) == 0)
+	try
+	{
+		return m_charMap.at(chrId);
+	}
+	catch (const std::out_of_range& oor)
+	{
 		return null_default;
-
-	return m_charMap.at(chrId);
+	}
 }
 
 //

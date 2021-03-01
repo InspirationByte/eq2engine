@@ -51,13 +51,11 @@ struct Quaternion
 	Quaternion() {}
 	Quaternion(const float Wx, const float Wy);
 	Quaternion(const float Wx, const float Wy, const float Wz);
-	Quaternion(const float iw, const float ix, const float iy, const float iz)
+	Quaternion(const float iw, const float ix, const float iy, const float iz) 
+		: w(iw), x(ix),y(iy),z(iz)
 	{
-		w = iw;
-		x = ix;
-		y = iy;
-		z = iz;
 	}
+
 	Quaternion(const TMat3<float> &m);
 	Quaternion(const TVec4D<float> &v);
 	Quaternion(const float a, const TVec3D<float>& axis);

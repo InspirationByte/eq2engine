@@ -33,18 +33,16 @@ struct TVec2D
 	TVec2D<T>() {}
 
 	template <class T2>
-	TVec2D(const TVec2D<T2>& other) : x((T)other.x), y((T)other.y) {}
+	TVec2D(const TVec2D<T2>& other) 
+		: x((T)other.x), y((T)other.y) {}
 
-	TVec2D<T>(const T ixy)
-	{
-		x = y = ixy;
-	}
+	TVec2D<T>(const T ixy) 
+		: x(ixy), y(ixy)
+	{}
 
 	TVec2D<T>(const T ix, const T iy)
-	{
-		x = ix;
-		y = iy;
-	}
+		: x(ix), y(iy)
+	{}
 
 	operator T *() const { return (T *) &x; }
 
@@ -137,31 +135,25 @@ struct TVec3D
 	TVec3D<T>() {}
 
 	template <class T2>
-	TVec3D(const TVec3D<T2>& other) : x((T)other.x), y((T)other.y), z((T)other.z) {}
+	TVec3D(const TVec3D<T2>& other) 
+		: x((T)other.x), y((T)other.y), z((T)other.z)
+	{}
 
 	TVec3D<T>(const T ixyz)
-	{
-		x = y = z = ixyz;
-	}
+		: x(ixyz), y(ixyz), z(ixyz)
+	{}
 
 	TVec3D<T>(const T ix, const T iy, const T iz)
-	{
-		x = ix;
-		y = iy;
-		z = iz;
-	}
+		: x(ix), y(iy), z(iz)
+	{}
+
 	TVec3D<T>(const TVec2D<T>& iv, const T iz)
-	{
-		x = iv.x;
-		y = iv.y;
-		z = iz;
-	}
+		: x(iv.x), y(iv.y), z(iz)
+	{}
+
 	TVec3D<T>(const T ix, const TVec2D<T>& iv)
-	{
-		x = ix;
-		y = iv.x;
-		z = iv.y;
-	}
+		: x(ix), y(iv.x), z(iv.y)
+	{}
 
 	operator T *() const { return (T *) &x; }
 
@@ -265,62 +257,42 @@ struct TVec4D
 	TVec4D<T>() {}
 
 	template <class T2>
-	TVec4D(const TVec4D<T2>& other) : x((T)other.x), y((T)other.y), z((T)other.z), w((T)other.w) {}
+	TVec4D(const TVec4D<T2>& other) 
+		: x((T)other.x), y((T)other.y), z((T)other.z), w((T)other.w) 
+	{}
 
 	TVec4D<T>(const T ixyzw)
-	{
-		x = y = z = w = ixyzw;
-	}
+		: x(ixyzw), y(ixyzw), z(ixyzw), w(ixyzw)
+	{}
 
 	TVec4D<T>(const T ix, const T iy, const T iz, const T iw)
-	{
-		x = ix;
-		y = iy;
-		z = iz;
-		w = iw;
-	}
+		: x(ix), y(iy), z(iz), w(iw)
+	{}
+
 	TVec4D<T>(const TVec2D<T>& iv, const T iz, const T iw)
-	{
-		x = iv.x;
-		y = iv.y;
-		z = iz;
-		w = iw;
-	}
+		: x(iv.x), y(iv.y), z(iz), w(iw)
+	{}
+
 	TVec4D<T>(const T ix, const TVec2D<T>& iv, const T iw)
-	{
-		x = ix;
-		y = iv.x;
-		z = iv.y;
-		w = iw;
-	}
+		: x(ix), y(iv.x), z(iv.y), w(iw)
+	{}
+
 	TVec4D<T>(const T ix, const T iy, const TVec2D<T>& iv)
-	{
-		x = ix;
-		y = iy;
-		z = iv.x;
-		w = iv.y;
-	}
+		: x(ix), y(iy), z(iv.x), w(iv.y)
+	{}
+
 	TVec4D<T>(const TVec2D<T>& iv0, const TVec2D<T>& iv1)
-	{
-		x = iv0.x;
-		y = iv0.y;
-		z = iv1.x;
-		w = iv1.y;
-	}
+		: x(iv0.x), y(iv0.y), z(iv1.x), w(iv1.y)
+	{}
+
 	TVec4D<T>(const TVec3D<T>& iv, const T iw)
-	{
-		x = iv.x;
-		y = iv.y;
-		z = iv.z;
-		w = iw;
-	}
+		: x(iv.x), y(iv.y), z(iv.z), w(iw)
+	{}
+
 	TVec4D<T>(const T ix, const TVec3D<T>& iv)
-	{
-		x = ix;
-		y = iv.x;
-		z = iv.y;
-		w = iv.z;
-	}
+		: x(ix), y(iv.x), z(iv.y), w(iv.z)
+	{}
+
 	operator T *() const { return (T *) &x; }
 
 	const TVec3D<T>& xyz() const { return *(TVec3D<T>*)&x; }
