@@ -41,44 +41,60 @@ IPhysicsObject* DkPhysicsJoint::GetPhysicsObjectB()
 
 Matrix4x4 DkPhysicsJoint::GetGlobalTransformA()
 {
-	return ConvertMatrix4ToEq((btTransform)m_pJointPointer->getCalculatedTransformA());
+	Matrix4x4 out;
+	ConvertMatrix4ToEq(out, (btTransform)m_pJointPointer->getCalculatedTransformA());
+	return out;
 }
 
 Matrix4x4 DkPhysicsJoint::GetGlobalTransformB()
 {
-	return ConvertMatrix4ToEq((btTransform)m_pJointPointer->getCalculatedTransformB());
+	Matrix4x4 out;
+	ConvertMatrix4ToEq(out, (btTransform)m_pJointPointer->getCalculatedTransformB());
+	return out;
 }
 
 Matrix4x4 DkPhysicsJoint::GetFrameTransformA()
 {
-	return ConvertMatrix4ToEq((btTransform)m_pJointPointer->getFrameOffsetA());
+	Matrix4x4 out;
+	ConvertMatrix4ToEq(out, (btTransform)m_pJointPointer->getFrameOffsetA());
+	return out;
 }
 
 Matrix4x4 DkPhysicsJoint::GetFrameTransformB()
 {
-	return ConvertMatrix4ToEq((btTransform)m_pJointPointer->getFrameOffsetB());
+	Matrix4x4 out;
+	ConvertMatrix4ToEq(out, (btTransform)m_pJointPointer->getFrameOffsetB());
+	return out;
 }
 
 // setters
 
 void DkPhysicsJoint::SetLinearLowerLimit(const Vector3D& linearLower)
 {
-	m_pJointPointer->setLinearLowerLimit(ConvertPositionToBullet(linearLower));
+	btVector3 vec;
+	ConvertPositionToBullet(vec, linearLower);
+	m_pJointPointer->setLinearLowerLimit(vec);
 }
 
 void DkPhysicsJoint::SetLinearUpperLimit(const Vector3D& linearUpper)
 {
-	m_pJointPointer->setLinearUpperLimit(ConvertPositionToBullet(linearUpper));
+	btVector3 vec;
+	ConvertPositionToBullet(vec, linearUpper);
+	m_pJointPointer->setLinearUpperLimit(vec);
 }
 
 void DkPhysicsJoint::SetAngularLowerLimit(const Vector3D& angularLower)
 {
-	m_pJointPointer->setAngularLowerLimit(ConvertDKToBulletVectors(angularLower));
+	btVector3 vec;
+	ConvertDKToBulletVectors(vec, angularLower);
+	m_pJointPointer->setAngularLowerLimit(vec);
 }
 
 void DkPhysicsJoint::SetAngularUpperLimit(const Vector3D& angularUpper)
 {
-	m_pJointPointer->setAngularUpperLimit(ConvertDKToBulletVectors(angularUpper));
+	btVector3 vec;
+	ConvertDKToBulletVectors(vec, angularUpper);
+	m_pJointPointer->setAngularUpperLimit(vec);
 }
 
 Vector3D DkPhysicsJoint::GetLinearLowerLimit()
@@ -86,7 +102,9 @@ Vector3D DkPhysicsJoint::GetLinearLowerLimit()
 	btVector3 linearLower;
 	m_pJointPointer->getLinearLowerLimit(linearLower);
 
-	return ConvertBulletToDKVectors(linearLower);
+	Vector3D out;
+	ConvertBulletToDKVectors(out, linearLower);
+	return out;
 }
 
 Vector3D DkPhysicsJoint::GetLinearUpperLimit()
@@ -94,7 +112,9 @@ Vector3D DkPhysicsJoint::GetLinearUpperLimit()
 	btVector3 linearUpper;
 	m_pJointPointer->getLinearUpperLimit(linearUpper);
 
-	return ConvertBulletToDKVectors(linearUpper);
+	Vector3D out;
+	ConvertBulletToDKVectors(out, linearUpper);
+	return out;
 }
 
 Vector3D DkPhysicsJoint::GetAngularLowerLimit()
@@ -102,7 +122,9 @@ Vector3D DkPhysicsJoint::GetAngularLowerLimit()
 	btVector3 angularLower;
 	m_pJointPointer->getAngularLowerLimit(angularLower);
 
-	return ConvertBulletToDKVectors(angularLower);
+	Vector3D out;
+	ConvertBulletToDKVectors(out, angularLower);
+	return out;
 }
 
 Vector3D DkPhysicsJoint::GetAngularUpperLimit()
@@ -110,7 +132,9 @@ Vector3D DkPhysicsJoint::GetAngularUpperLimit()
 	btVector3 angularUpper;
 	m_pJointPointer->getAngularUpperLimit(angularUpper);
 
-	return ConvertBulletToDKVectors(angularUpper);
+	Vector3D out;
+	ConvertBulletToDKVectors(out, angularUpper);
+	return out;
 }
 
 void DkPhysicsJoint::UpdateTransform()

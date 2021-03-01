@@ -22,17 +22,23 @@ int DkPhysicsRope::GetNodeCount()
 
 Vector3D DkPhysicsRope::GetNodePosition(int node)
 {
-	return ConvertPositionToEq(m_pRopeBody->m_nodes[node].m_x);
+	Vector3D out;
+	ConvertPositionToEq(out, m_pRopeBody->m_nodes[node].m_x);
+	return out;
 }
 
 Vector3D DkPhysicsRope::GetNodeVelocity(int node)
 {
-	return ConvertPositionToEq(m_pRopeBody->m_nodes[node].m_v);
+	Vector3D out;
+	ConvertPositionToEq(out, m_pRopeBody->m_nodes[node].m_v);
+	return out;
 }
 
 Vector3D DkPhysicsRope::GetNodeNormal(int node)
 {
-	return ConvertBulletToDKVectors(m_pRopeBody->m_nodes[node].m_n);
+	Vector3D out;
+	ConvertBulletToDKVectors(out, m_pRopeBody->m_nodes[node].m_n);
+	return out;
 }
 
 IPhysicsObject* DkPhysicsRope::GetAttachedObject(int index)

@@ -15,76 +15,61 @@
 #include "math/Vector.h"
 #include "math/Matrix.h"
 
-namespace EqBulletUtils
-{
-
 ///< converts Equilibrium units to Bullet units
 ///< input: any typed value with standard operators
-inline btScalar EQ2BULLET(float x)
-{
-	return x; // * (T)METERS_PER_UNIT
-}
+#define EQ2BULLET(x) x
 
 ///< converts bullet physics units to Equilibrium units
 ///< input: any typed value with standard operators
-inline float BULLET2EQ(btScalar x)
+#define BULLET2EQ(x) x
+
+namespace EqBulletUtils
 {
-	return x; // * (T)(1.0f/METERS_PER_UNIT))
+inline void ConvertDKToBulletVectors(btVector3& out, const Vector3D &v)
+{
+	out.setValue(v[0], v[1], v[2]);
 }
 
-inline btVector3 ConvertDKToBulletVectors(const Vector3D &v)
+inline void ConvertBulletToDKVectors(Vector3D& out, const btVector3 &v)
 {
-	return btVector3(v[0],v[1],v[2]);
+	out.x = v.m_floats[0];
+	out.y = v.m_floats[1];
+	out.z = v.m_floats[2];
 }
 
-inline Vector3D ConvertBulletToDKVectors(const btVector3 &v)
+inline void ConvertPositionToBullet(btVector3& out, const Vector3D &v)
 {
-	return Vector3D(v.m_floats[0],v.m_floats[1],v.m_floats[2]);
+	out.setValue(EQ2BULLET(v[0]), EQ2BULLET(v[1]), EQ2BULLET(v[2]));
 }
 
-inline btVector3 ConvertPositionToBullet(const Vector3D &v)
+inline void ConvertPositionToEq(Vector3D& out, const btVector3 &v)
 {
-	return btVector3(EQ2BULLET(v[0]),EQ2BULLET(v[1]),EQ2BULLET(v[2]));
+	out.x = BULLET2EQ(v.m_floats[0]);
+	out.y = BULLET2EQ(v.m_floats[1]);
+	out.z = BULLET2EQ(v.m_floats[2]);
 }
 
-inline Vector3D ConvertPositionToEq(const btVector3 &v)
+inline void ConvertMatrix4ToBullet(btTransform& out, const Matrix4x4 &matrix)
 {
-	return Vector3D(BULLET2EQ(v.m_floats[0]),BULLET2EQ(v.m_floats[1]),BULLET2EQ(v.m_floats[2]));
-}
-
-inline btTransform ConvertMatrix4ToBullet(const Matrix4x4 &matrix)
-{
-	btTransform out;
 	out.setFromOpenGLMatrix(matrix);
-	//out.setOrigin(out.getOrigin());
-
-	return out;
 }
 
-inline Matrix4x4 ConvertMatrix4ToEq(const btTransform &transform)
+inline void ConvertMatrix4ToEq(Matrix4x4& out, const btTransform &transform)
 {
-	btTransform temp = transform;
-	temp.setOrigin(temp.getOrigin());
-
-	Matrix4x4 out;
-	temp.getOpenGLMatrix((float*)&out);
-
-	return out;
+	transform.getOpenGLMatrix((float*)&out);
 }
 
-inline btQuaternion ConvertQuaternionToBullet(const Quaternion &quat)
+inline void ConvertQuaternionToBullet(btQuaternion& out, const Quaternion &quat)
 {
-	btQuaternion out;
 	out.setValue(quat.x,quat.y,quat.z,quat.w);
-
-	return out;
 }
 
-inline Quaternion ConvertQuaternionToEq(const btQuaternion &quat)
+inline void ConvertQuaternionToEq(Quaternion& out, const btQuaternion &quat)
 {
-	Quaternion out(quat.getW(), quat.getX(),quat.getY(),quat.getZ());
-
-	return out;
+	out.w = quat.getW();
+	out.x = quat.getX();
+	out.y = quat.getY();
+	out.z = quat.getZ();
 }
 
 }

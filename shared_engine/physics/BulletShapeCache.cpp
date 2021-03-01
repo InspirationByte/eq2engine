@@ -61,10 +61,15 @@ btCollisionShape* InternalGenerateShape(int numVertices, Vector3D* vertices, int
 		{
 			btConvexHullShape* convexShape = new btConvexHullShape;
 
-			for(int i = 0; i < numIndices; i++)
-				convexShape->addPoint(ConvertPositionToBullet(vertices[indices[i]]));
+			for (int i = 0; i < numIndices; i++)
+			{
+				btVector3 vec;
+				ConvertPositionToBullet(vec, vertices[indices[i]]);
+				convexShape->addPoint(vec, false);
+			}
 
 			convexShape->setMargin(EQ2BULLET(0.1f * margin));
+			convexShape->recalcLocalAabb();
 
 			return convexShape;
 		}

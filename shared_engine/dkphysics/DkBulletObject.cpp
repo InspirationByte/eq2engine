@@ -139,23 +139,31 @@ void CPhysicsObject::WakeUp()
 // Sets angular factor (may help with up-right vector)
 void CPhysicsObject::SetAngularFactor(Vector3D &factor)
 {
-	m_pPhyObjectPointer->setAngularFactor(ConvertDKToBulletVectors(factor));
+	btVector3 vec;
+	ConvertDKToBulletVectors(vec, factor);
+	m_pPhyObjectPointer->setAngularFactor(vec);
 }
 
 Vector3D CPhysicsObject::GetAngularFactor()
 {
-	return ConvertBulletToDKVectors((btVector3)m_pPhyObjectPointer->getAngularFactor());
+	Vector3D out;
+	ConvertBulletToDKVectors(out, m_pPhyObjectPointer->getAngularFactor());
+	return out;
 }
 
 // Sets linear factor
 void CPhysicsObject::SetLinearFactor(Vector3D &factor)
 {
-	m_pPhyObjectPointer->setLinearFactor(ConvertDKToBulletVectors(factor));
+	btVector3 vec;
+	ConvertDKToBulletVectors(vec, factor);
+	m_pPhyObjectPointer->setLinearFactor(vec);
 }
 
 Vector3D CPhysicsObject::GetLinearFactor()
 {
-	return ConvertBulletToDKVectors((btVector3)m_pPhyObjectPointer->getLinearFactor());
+	Vector3D out;
+	ConvertBulletToDKVectors(out, m_pPhyObjectPointer->getLinearFactor());
+	return out;
 }
 
 // Sets linear factor
@@ -261,12 +269,17 @@ void CPhysicsObject::ApplyImpulse(const Vector3D &impulse, const Vector3D &relat
 
 	m_pPhyObjectPointer->activate();
 
-	m_pPhyObjectPointer->applyImpulse(ConvertPositionToBullet((Vector3D)impulse)*METERS_PER_UNIT_INV, ConvertPositionToBullet((Vector3D)relativePos));
+	btVector3 vec, pos;
+	ConvertPositionToBullet(vec, impulse);
+	ConvertPositionToBullet(pos, relativePos);
+	m_pPhyObjectPointer->applyImpulse(vec * METERS_PER_UNIT_INV, pos);
 }
 
 void CPhysicsObject::AddLocalTorqueImpulse(const Vector3D &torque)
 {
-	m_pPhyObjectPointer->applyTorque(ConvertPositionToBullet(torque));
+	btVector3 vec;
+	ConvertPositionToBullet(vec, torque);
+	m_pPhyObjectPointer->applyTorque(vec);
 }
 
 void CPhysicsObject::AddForce(const Vector3D &force)
@@ -276,7 +289,9 @@ void CPhysicsObject::AddForce(const Vector3D &force)
 
 	m_pPhyObjectPointer->activate();
 
-	m_pPhyObjectPointer->applyCentralForce(ConvertPositionToBullet((Vector3D)force));
+	btVector3 vec;
+	ConvertPositionToBullet(vec, force);
+	m_pPhyObjectPointer->applyCentralForce(vec);
 }
 
 void CPhysicsObject::AddLocalForce(const Vector3D &force)
@@ -286,16 +301,22 @@ void CPhysicsObject::AddLocalForce(const Vector3D &force)
 
 	m_pPhyObjectPointer->activate();
 
-	m_pPhyObjectPointer->applyCentralForce(ConvertPositionToBullet((Vector3D)force));
+	btVector3 vec;
+	ConvertPositionToBullet(vec, force);
+	m_pPhyObjectPointer->applyCentralForce(vec);
 }
 
-void CPhysicsObject::AddForceAtPosition(const Vector3D &force,const Vector3D &pos)
+void CPhysicsObject::AddForceAtPosition(const Vector3D &force,const Vector3D &position)
 {
 	if(m_pPhyObjectPointer->getActivationState() == DISABLE_SIMULATION)
 		return;
 
+	btVector3 vec, pos;
+	ConvertPositionToBullet(vec, force);
+	ConvertPositionToBullet(pos, position);
+
 	m_pPhyObjectPointer->activate();
-	m_pPhyObjectPointer->applyForce(ConvertPositionToBullet((Vector3D)force), ConvertPositionToBullet((Vector3D)pos));
+	m_pPhyObjectPointer->applyForce(vec, pos);
 }
 
 void CPhysicsObject::AddForceAtLocalPosition(const Vector3D &force,const Vector3D &pos)
@@ -313,9 +334,11 @@ void CPhysicsObject::AddLocalForceAtLocalPosition(const Vector3D &force,const Ve
 
 }
 
-void CPhysicsObject::SetPosition(const Vector3D &pos)
+void CPhysicsObject::SetPosition(const Vector3D &position)
 {
-	m_pPhyObjectPointer->getWorldTransform().setOrigin(ConvertPositionToBullet((Vector3D)pos));
+	btVector3 pos;
+	ConvertPositionToBullet(pos, position);
+	m_pPhyObjectPointer->getWorldTransform().setOrigin(pos);
 }
 
 void CPhysicsObject::SetAngles(const Vector3D &ang)
@@ -325,9 +348,9 @@ void CPhysicsObject::SetAngles(const Vector3D &ang)
 	btMatrix3x3 rotational;
 	Matrix3x3 rotation = rotateXYZ3(DEG2RAD(ang.x),DEG2RAD(ang.y),DEG2RAD(ang.z));
 
-	rotational[0] = ConvertDKToBulletVectors(rotation.rows[0]);
-	rotational[1] = ConvertDKToBulletVectors(rotation.rows[1]);
-	rotational[2] = ConvertDKToBulletVectors(rotation.rows[2]);
+	ConvertDKToBulletVectors(rotational[0], rotation.rows[0]);
+	ConvertDKToBulletVectors(rotational[1], rotation.rows[1]);
+	ConvertDKToBulletVectors(rotational[2], rotation.rows[2]);
 	
 	m_pPhyObjectPointer->getWorldTransform().setBasis(rotational);
 	m_pPhyObjectPointer->getWorldTransform().setOrigin(origin);
@@ -335,13 +358,16 @@ void CPhysicsObject::SetAngles(const Vector3D &ang)
 
 void CPhysicsObject::SetVelocity(const Vector3D &linear)
 {
-	//m_pPhyObjectPointer->setInterpolationLinearVelocity(ConvertPositionToBullet((Vector3D)linear));
-	m_pPhyObjectPointer->setLinearVelocity(ConvertPositionToBullet((Vector3D)linear));
+	btVector3 vec;
+	ConvertPositionToBullet(vec, linear);
+	m_pPhyObjectPointer->setLinearVelocity(vec);
 }
 
 void CPhysicsObject::SetAngularVelocity(const Vector3D &vAxis, float velocity)
 {
-	m_pPhyObjectPointer->setAngularVelocity(ConvertPositionToBullet(vAxis*velocity));	
+	btVector3 vel;
+	ConvertPositionToBullet(vel, vAxis * velocity);
+	m_pPhyObjectPointer->setAngularVelocity(vel);
 }
 
 void CPhysicsObject::GetAABB(Vector3D &mins, Vector3D &maxs)
@@ -350,19 +376,15 @@ void CPhysicsObject::GetAABB(Vector3D &mins, Vector3D &maxs)
 
 	m_pPhyObjectPointer->getAabb(bmins, bmaxs);
 
-	mins = ConvertPositionToEq(bmins);
-	maxs = ConvertPositionToEq(bmaxs);
+	ConvertPositionToEq(mins, bmins);
+	ConvertPositionToEq(maxs, bmaxs);
 }
 
 Matrix4x4 CPhysicsObject::GetTransformMatrix()
 {
-	/*
 	Matrix4x4 mat;
-	btTransform trans = m_pPhyObjectPointer->getWorldTransform();
-	trans.setOrigin(trans.getOrigin() * (1.0f / METERS_PER_UNIT));
-	m_pPhyObjectPointer->getWorldTransform().getOpenGLMatrix((float*)&mat);
-	*/
-	return transpose( ConvertMatrix4ToEq( m_pPhyObjectPointer->getWorldTransform() ) );
+	ConvertMatrix4ToEq(mat, m_pPhyObjectPointer->getWorldTransform());
+	return transpose(mat);
 }
 
 Matrix4x4 CPhysicsObject::GetOrientationMatrix()
@@ -373,12 +395,9 @@ Matrix4x4 CPhysicsObject::GetOrientationMatrix()
 // set transformation of object
 void CPhysicsObject::SetTransformFromMatrix(Matrix4x4 &matrix)
 {
-	/*
 	btTransform trans;
-	trans.setFromOpenGLMatrix(matrix);
-	trans.setOrigin(trans.getOrigin()*METERS_PER_UNIT);
-	*/
-	m_pPhyObjectPointer->setWorldTransform(ConvertMatrix4ToBullet(matrix));
+	ConvertMatrix4ToBullet(trans, matrix);
+	m_pPhyObjectPointer->setWorldTransform(trans);
 }
 
 Vector3D CPhysicsObject::GetAngles()
@@ -393,26 +412,34 @@ Vector3D CPhysicsObject::GetAngles()
 
 Vector3D CPhysicsObject::GetPosition()
 {
-	return ConvertPositionToEq( m_pPhyObjectPointer->getWorldTransform().getOrigin() );
+	Vector3D out;
+	ConvertPositionToEq(out, m_pPhyObjectPointer->getWorldTransform().getOrigin() );
+	return out;
 }
 
 Vector3D CPhysicsObject::GetVelocity()
 {
-	btVector3 vec = m_pPhyObjectPointer->getLinearVelocity();
-	return ConvertPositionToEq(vec);
+	Vector3D out;
+	ConvertPositionToEq(out, m_pPhyObjectPointer->getLinearVelocity());
+	return out;
 }
 
 Vector3D CPhysicsObject::GetAngularVelocity()
 {
-	btVector3 vec = m_pPhyObjectPointer->getAngularVelocity();
-	return ConvertPositionToEq(vec);
+	Vector3D out;
+	ConvertBulletToDKVectors(out, m_pPhyObjectPointer->getAngularVelocity());
+	return out;
 }
 
 Vector3D CPhysicsObject::GetVelocityAtPoint(Vector3D &point)
 {
-	btVector3 vec = m_pPhyObjectPointer->getVelocityInLocalPoint(ConvertPositionToBullet(point));
+	btVector3 pt;
+	ConvertPositionToBullet(pt, point);
+	
+	Vector3D out;
+	ConvertPositionToEq(out, m_pPhyObjectPointer->getVelocityInLocalPoint(pt));
 
-	return ConvertPositionToEq(vec);
+	return out;
 }
 
 phySurfaceMaterial_t* CPhysicsObject::GetMaterial()
@@ -426,9 +453,11 @@ void CPhysicsObject::AddContactEventFromManifoldPoint(btManifoldPoint* pt, CPhys
 	if(m_numEvents >= MAX_CONTACT_EVENTS)
 		return;
 
-	Vector3D normal = ConvertBulletToDKVectors(pt->m_normalWorldOnB);
+	Vector3D normal;
+	ConvertBulletToDKVectors(normal, pt->m_normalWorldOnB);
 
-	Vector3D speed = ConvertPositionToEq(m_pPhyObjectPointer->getVelocityInLocalPoint(pt->m_positionWorldOnB - m_pPhyObjectPointer->getWorldTransform().getOrigin()));
+	Vector3D speed;
+	ConvertPositionToEq(speed, m_pPhyObjectPointer->getVelocityInLocalPoint(pt->m_positionWorldOnB - m_pPhyObjectPointer->getWorldTransform().getOrigin()));
 
 	float fImpulse = fabs(dot(speed, normal));
 
@@ -437,8 +466,8 @@ void CPhysicsObject::AddContactEventFromManifoldPoint(btManifoldPoint* pt, CPhys
 	m_ContactEvents[m_numEvents].pHitB				= objB;
 
 	m_ContactEvents[m_numEvents].vWorldHitNormal	= normal;
-	m_ContactEvents[m_numEvents].vWorldHitOriginA	= ConvertPositionToEq(pt->m_positionWorldOnA);
-	m_ContactEvents[m_numEvents].vWorldHitOriginB	= ConvertPositionToEq(pt->m_positionWorldOnB);
+	ConvertPositionToEq(m_ContactEvents[m_numEvents].vWorldHitOriginA, pt->m_positionWorldOnA);
+	ConvertPositionToEq(m_ContactEvents[m_numEvents].vWorldHitOriginB, pt->m_positionWorldOnB);
 
 	m_ContactEvents[m_numEvents].fImpulse			= fImpulse;
 	m_ContactEvents[m_numEvents].fCombinedFriction	= pt->m_combinedFriction;
@@ -483,9 +512,12 @@ void CPhysicsObject::SetChildShapeTransform(int shapeNum, Vector3D &localOrigin,
 {
 	if(m_pPhyObjectPointer->getCollisionShape()->getShapeType() == COMPOUND_SHAPE_PROXYTYPE)
 	{
+		btVector3 vec;
+		ConvertPositionToBullet(vec, localOrigin);
+
 		btTransform trans;
 		trans.setIdentity();
-		trans.setOrigin(ConvertPositionToBullet(localOrigin));
+		trans.setOrigin(vec);
 
 		btCompoundShape* pShape = (btCompoundShape*)m_pPhyObjectPointer->getCollisionShape();
 		pShape->updateChildTransform(shapeNum, trans);

@@ -309,16 +309,27 @@ class DkPhysicsDebugDrawer : public btIDebugDraw
 	void drawLine(const btVector3& from,const btVector3& to,const btVector3& color)
 	{
 #ifndef EQLC
-		debugoverlay->Line3D(ConvertPositionToEq((btVector3)from), ConvertPositionToEq((btVector3)to), ColorRGBA(ConvertBulletToDKVectors((btVector3)color), 1), ColorRGBA(ConvertBulletToDKVectors((btVector3)color), 1));
+		Vector3D _from, _to, col;
+		ConvertPositionToEq(_from, from);
+		ConvertPositionToEq(_to, to);
+		ConvertBulletToDKVectors(col, color);
+
+		debugoverlay->Line3D(_from, _to, ColorRGBA(col, 1), ColorRGBA(col, 1), 0.25f);
 #endif
 	}
 
 	void drawTriangle(const btVector3& v0,const btVector3& v1,const btVector3& v2,const btVector3& /*n0*/,const btVector3& /*n1*/,const btVector3& /*n2*/,const btVector3& color, btScalar alpha)
 	{
 #ifndef EQLC
-		ColorRGBA col(ConvertBulletToDKVectors((btVector3)color), alpha);
+		Vector3D _v0, _v1, _v2, _col;
+		ConvertBulletToDKVectors(_col, color);
+		ColorRGBA col(_col, alpha);
 
-		debugoverlay->Polygon3D(ConvertPositionToEq((btVector3)v0),ConvertPositionToEq((btVector3)v1),ConvertPositionToEq((btVector3)v2), col);
+		ConvertPositionToEq(_v0, v0);
+		ConvertPositionToEq(_v1, v1);
+		ConvertPositionToEq(_v2, v2);
+
+		debugoverlay->Polygon3D(_v0,_v1,_v2, col);
 		//drawTriangle(v0,v1,v2,color,alpha);
 #endif
 	}
@@ -326,8 +337,15 @@ class DkPhysicsDebugDrawer : public btIDebugDraw
 	void drawTriangle(const btVector3& v0,const btVector3& v1,const btVector3& v2,const btVector3& color, btScalar alpha)
 	{
 #ifndef EQLC
-		ColorRGBA col(ConvertBulletToDKVectors((btVector3)color), alpha);
-		debugoverlay->Polygon3D(ConvertPositionToEq((btVector3)v0),ConvertPositionToEq((btVector3)v1),ConvertPositionToEq((btVector3)v2), col);
+		Vector3D _v0, _v1, _v2, _col;
+		ConvertBulletToDKVectors(_col, color);
+		ColorRGBA col(_col, alpha);
+
+		ConvertPositionToEq(_v0, v0);
+		ConvertPositionToEq(_v1, v1);
+		ConvertPositionToEq(_v2, v2);
+
+		debugoverlay->Polygon3D(_v0, _v1, _v2, col);
 #endif
 	}
 
@@ -336,10 +354,12 @@ class DkPhysicsDebugDrawer : public btIDebugDraw
 		DevMsg(DEVMSG_CORE, "EqPhysics warining: %s\n", warn);
 	}
 
-	void draw3dText(const btVector3 &vec,const char *text)
+	void draw3dText(const btVector3 &position,const char *text)
 	{
 #ifndef EQLC
-		debugoverlay->Text3D(ConvertPositionToEq((btVector3)vec),-1, color4_white, 0.0f, "%s", text);
+		Vector3D pos;
+		ConvertPositionToEq(pos, position);
+		debugoverlay->Text3D(pos,-1, color4_white, 0.0f, "%s", text);
 #endif
 	}
 
@@ -529,8 +549,10 @@ bool DkPhysics::IsSupportsHardwareAcceleration()
 // Generic traceLine for physics
 void DkPhysics::InternalTraceLine(const Vector3D &tracestart, const Vector3D &traceend, int groupmask, internaltrace_t *trace, IPhysicsObject** pIgnoreList, int numIgnored)
 {
-	btVector3 strt = ConvertPositionToBullet(tracestart);
-	btVector3 end = ConvertPositionToBullet(traceend);
+	btVector3 strt; 
+	btVector3 end;
+	ConvertPositionToBullet(strt, tracestart);
+	ConvertPositionToBullet(end, traceend);
 
 	trace->origin = tracestart;
 	trace->traceEnd = traceend;
@@ -553,8 +575,8 @@ void DkPhysics::InternalTraceLine(const Vector3D &tracestart, const Vector3D &tr
 	{
 		trace->hitObj = (IPhysicsObject*)rayCallback.m_collisionObject->getUserPointer();
 		trace->fraction = rayCallback.m_closestHitFraction;
-		trace->traceEnd = ConvertPositionToEq(rayCallback.m_hitPointWorld);
-		trace->normal =  ConvertBulletToDKVectors(rayCallback.m_hitNormalWorld);
+		ConvertPositionToEq(trace->traceEnd, rayCallback.m_hitPointWorld);
+		ConvertBulletToDKVectors(trace->normal, rayCallback.m_hitNormalWorld);
 		trace->hitMaterial = ((CPhysicsObject*)trace->hitObj)->m_pRMaterial;
 
 		trace->traceEnd += trace->normal * RAYCAST_NORMAL_EPSILON;
@@ -564,8 +586,10 @@ void DkPhysics::InternalTraceLine(const Vector3D &tracestart, const Vector3D &tr
 // Generic traceLine for physics
 void DkPhysics::InternalTraceBox(const Vector3D &tracestart, const Vector3D &traceend, const Vector3D& boxSize,int groupmask,internaltrace_t *trace, IPhysicsObject** pIgnoreList, int numIgnored, Matrix4x4 *externalBoxTransform)
 {
-	btVector3 strt = ConvertPositionToBullet(tracestart);
-	btVector3 end = ConvertPositionToBullet(traceend);
+	btVector3 strt;
+	btVector3 end;
+	ConvertPositionToBullet(strt, tracestart);
+	ConvertPositionToBullet(end, traceend);
 
 	trace->origin = tracestart;
 	trace->traceEnd = traceend;
@@ -576,13 +600,16 @@ void DkPhysics::InternalTraceBox(const Vector3D &tracestart, const Vector3D &tra
 
 	IWClosestConvexSweepResultCB convexCallback( strt, end, groupmask, pIgnoreList, numIgnored);
 
-	hBox.setLocalScaling(ConvertPositionToBullet(boxSize));
+	btVector3 scaling;
+	ConvertPositionToBullet(scaling, boxSize);
+
+	hBox.setLocalScaling(scaling);
 
 	btTransform startTr;
 	startTr.setIdentity();
 
 	if(externalBoxTransform)
-		startTr = ConvertMatrix4ToBullet(*externalBoxTransform);
+		ConvertMatrix4ToBullet(startTr, *externalBoxTransform);
 
 	startTr.setOrigin(strt);
 
@@ -607,15 +634,17 @@ void DkPhysics::InternalTraceBox(const Vector3D &tracestart, const Vector3D &tra
 		trace->hitObj = (IPhysicsObject*)convexCallback.m_hitCollisionObject->getUserPointer();
 		trace->fraction = convexCallback.m_closestHitFraction;
 		trace->traceEnd = tracestart + ((traceend - tracestart) * trace->fraction);
-		trace->normal =  ConvertBulletToDKVectors(convexCallback.m_hitNormalWorld);
+		ConvertBulletToDKVectors(trace->normal, convexCallback.m_hitNormalWorld);
 	}
 }
 
 // Generic traceLine for physics
 void DkPhysics::InternalTraceSphere(const Vector3D &tracestart, const Vector3D &traceend, float sphereRadius,int groupmask,internaltrace_t* trace, IPhysicsObject** pIgnoreList, int numIgnored)
 {
-	btVector3 strt = ConvertPositionToBullet(tracestart);
-	btVector3 end = ConvertPositionToBullet(traceend);
+	btVector3 strt;
+	btVector3 end;
+	ConvertPositionToBullet(strt, tracestart);
+	ConvertPositionToBullet(end, traceend);
 
 	trace->origin = tracestart;
 	trace->traceEnd = traceend;
@@ -645,8 +674,8 @@ void DkPhysics::InternalTraceSphere(const Vector3D &tracestart, const Vector3D &
 	{
 		trace->hitObj = (IPhysicsObject*)convexCallback.m_hitCollisionObject->getUserPointer();
 		trace->fraction = convexCallback.m_closestHitFraction;
-		trace->traceEnd = ConvertPositionToEq(convexCallback.m_hitPointWorld);
-		trace->normal =  ConvertBulletToDKVectors(convexCallback.m_hitNormalWorld);
+		ConvertPositionToEq(trace->traceEnd, convexCallback.m_hitPointWorld);
+		ConvertBulletToDKVectors(trace->normal, convexCallback.m_hitNormalWorld);
 	}
 }
 
@@ -655,8 +684,10 @@ void DkPhysics::InternalTraceShape(const Vector3D &tracestart, const Vector3D &t
 {
 	ASSERT(shapeId != -1 );
 
-	btVector3 strt = ConvertPositionToBullet(tracestart);
-	btVector3 end = ConvertPositionToBullet(traceend);
+	btVector3 strt;
+	btVector3 end;
+	ConvertPositionToBullet(strt, tracestart);
+	ConvertPositionToBullet(end, traceend);
 
 	trace->origin = tracestart;
 	trace->traceEnd = traceend;
@@ -671,7 +702,7 @@ void DkPhysics::InternalTraceShape(const Vector3D &tracestart, const Vector3D &t
 	startTr.setIdentity();
 
 	if(transform)
-		startTr = ConvertMatrix4ToBullet(*transform);
+		ConvertMatrix4ToBullet(startTr, *transform);
 
 	startTr.setOrigin(strt);
 
@@ -694,8 +725,8 @@ void DkPhysics::InternalTraceShape(const Vector3D &tracestart, const Vector3D &t
 	{
 		trace->hitObj = (IPhysicsObject*)convexCallback.m_hitCollisionObject->getUserPointer();
 		trace->fraction = convexCallback.m_closestHitFraction;
-		trace->traceEnd = ConvertPositionToEq(convexCallback.m_hitPointWorld);
-		trace->normal =  ConvertBulletToDKVectors(convexCallback.m_hitNormalWorld);
+		ConvertPositionToEq(trace->traceEnd, convexCallback.m_hitPointWorld);
+		ConvertBulletToDKVectors(trace->normal, convexCallback.m_hitNormalWorld);
 	}
 }
 
@@ -853,13 +884,13 @@ btRigidBody* DkPhysics::LocalCreateRigidBody(float mass, const Vector3D &mass_ce
 
 	btVector3 localInertia(0,0,0);
 	if (isDynamic)
-	{
 		shape->calculateLocalInertia(mass, localInertia);
-	}
 
 	btTransform mass_center_transform;
+	btVector3 massCenter;
+	ConvertPositionToBullet(massCenter, mass_center);
 	mass_center_transform.setIdentity();
-	mass_center_transform.setOrigin(ConvertPositionToBullet(mass_center));
+	mass_center_transform.setOrigin(massCenter);
 	mass_center_transform.inverse();
 
 	//using motionstate is recommended, it provides interpolation capabilities, and only synchronizes 'active' objects
@@ -935,11 +966,14 @@ btCollisionShape* InternalGenerateMesh(physmodelcreateinfo_t *info, DkList <btTr
 
 			for(int i = 0; i < cdata->numVertices; i++)
 			{
+				btVector3 pos;
 				ubyte* vertexPtr = (ubyte*)cdata->vertices + cdata->vertexPosOffset;
-				Vector3D pos = *(Vector3D*)(vertexPtr + cdata->vertexSize * i);
+				ConvertPositionToBullet(pos, *(Vector3D*)(vertexPtr + cdata->vertexSize * i));
 
-				convexShape->addPoint(ConvertPositionToBullet(pos));
+				convexShape->addPoint(pos, false);
 			}
+
+			convexShape->recalcLocalAabb();
 
 			return convexShape;
 		}
@@ -952,7 +986,10 @@ btCollisionShape* InternalPrimitiveCreate(pritimiveinfo_t *priminfo)
 {
 	if(priminfo->primType == PHYSPRIM_BOX)
 	{
-		btCollisionShape* shape = new btBoxShape(ConvertPositionToBullet(*(Vector3D*)&priminfo->boxInfo));
+		btVector3 vec;
+		ConvertPositionToBullet(vec, *(Vector3D*)&priminfo->boxInfo);
+
+		btCollisionShape* shape = new btBoxShape(vec);
 		return shape;
 	}
 	else if(priminfo->primType == PHYSPRIM_SPHERE)
@@ -1185,8 +1222,10 @@ IPhysicsJoint* DkPhysics::CreateJoint(IPhysicsObject* pObjectA,IPhysicsObject* p
 	CPhysicsObject *pObjA = (CPhysicsObject*)pObjectA;
 	CPhysicsObject *pObjB = (CPhysicsObject*)pObjectB;
 
-	btTransform transA = ConvertMatrix4ToBullet(transformA);
-	btTransform transB = ConvertMatrix4ToBullet(transformB);
+	btTransform transA;
+	btTransform transB;
+	ConvertMatrix4ToBullet(transA, transformA);
+	ConvertMatrix4ToBullet(transB, transformB);
 
 	//pNewJoint->m_pJointPointer
 
@@ -1216,9 +1255,13 @@ IPhysicsRope* DkPhysics::CreateRope(const Vector3D &pointA, const Vector3D &poin
 {
 	CScopedMutex m(m_Mutex);
 
+	btVector3 pA, pB;
+	ConvertPositionToBullet(pA, pointA);
+	ConvertPositionToBullet(pB, pointB);
+
 	DkPhysicsRope* pRope = new DkPhysicsRope;
 
-	pRope->m_pRopeBody = btSoftBodyHelpers::CreateRope(m_softBodyWorldInfo, ConvertPositionToBullet(pointA), ConvertPositionToBullet(pointB), numSegments, 0);
+	pRope->m_pRopeBody = btSoftBodyHelpers::CreateRope(m_softBodyWorldInfo, pA, pB, numSegments, 0);
 
 	m_dynamicsWorld->addSoftBody(pRope->m_pRopeBody);
 
@@ -1277,15 +1320,19 @@ IPhysicsObject* DkPhysics::CreateObject( studioPhysData_t* data, int nObject )
 
 	pShape->setMargin(EQ2BULLET(0.05f));
 
+	btVector3 offset, massCenter;
+	ConvertPositionToBullet(offset, data->objects[nObject].object.offset);
+	ConvertPositionToBullet(massCenter, data->objects[nObject].object.mass_center);
+
 	// make object offset
 	btTransform object_start_transform;
 	object_start_transform.setIdentity();
-	object_start_transform.setOrigin(ConvertPositionToBullet(data->objects[nObject].object.offset));
+	object_start_transform.setOrigin(offset);
 
 	// make mass center
 	btTransform masscenter_transform;
 	masscenter_transform.setIdentity();
-	masscenter_transform.setOrigin(ConvertPositionToBullet(data->objects[nObject].object.mass_center));
+	masscenter_transform.setOrigin(massCenter);
 
 	btVector3 vLocalInertia(0,0,0);
 	pShape->calculateLocalInertia(data->objects[nObject].object.mass * METERS_PER_UNIT_INV, vLocalInertia);
@@ -1386,12 +1433,12 @@ IPhysicsObject* DkPhysics::CreateObjectCustom(int numShapes, int* shapeIdxs, con
 	// make object offset
 	btTransform object_start_transform;
 	object_start_transform.setIdentity();
-	object_start_transform.setOrigin(ConvertPositionToBullet(vec3_zero));
+	object_start_transform.setOrigin(btVector3(0.0f, 0.0f, 0.0f));
 
 	// make mass center
 	btTransform masscenter_transform;
 	masscenter_transform.setIdentity();
-	masscenter_transform.setOrigin(ConvertPositionToBullet(vec3_zero));
+	masscenter_transform.setOrigin(btVector3(0.0f,0.0f,0.0f));
 
 	btVector3 vLocalInertia(0,0,0);
 	pShape->calculateLocalInertia(mass * METERS_PER_UNIT_INV, vLocalInertia);
