@@ -89,6 +89,7 @@ class CEqMatSystemThreadedLoader : public CEqThread
 public:
 	virtual int Run()
 	{
+		/*
 		int counter = 0;
 
 		while(true)
@@ -112,7 +113,20 @@ public:
 				material->LoadShaderAndTextures();
 			}
 		}
+		*/
 
+		IMaterial* material = nullptr;
+
+		if(m_newMaterials.numElem())
+		{
+			CScopedMutex m(m_Mutex);
+			material = m_newMaterials[0];
+			m_newMaterials.fastRemoveIndex(0);
+		}
+		
+		if (material)
+			material->LoadShaderAndTextures();
+		
 		// run thread code here
 		return 0;
 	}
@@ -123,7 +137,7 @@ public:
 		m_newMaterials.addUnique( pMaterial );
 	}
 
-	int GetCount()
+	int GetCount() const
 	{
 		return m_newMaterials.numElem();
 	}

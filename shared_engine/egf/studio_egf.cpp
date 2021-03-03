@@ -332,7 +332,7 @@ int CopyGroupIndexDataToHWList(void* indexData, int indexSize, int currentIndexC
 	return pGroup->numIndices;
 }
 
-void CEngineStudioEGF::ModelLoaderJob(void* data, int i)
+void CEngineStudioEGF::LoadModelJob(void* data, int i)
 {
 	CEngineStudioEGF* model = (CEngineStudioEGF*)data;
 
@@ -343,17 +343,56 @@ void CEngineStudioEGF::ModelLoaderJob(void* data, int i)
 		return;
 	}
 
-	if (!model->LoadGenerateVertexBuffer())
-	{
-		model->DestroyModel();
-		return;
-	}
-
-	model->LoadMotionPackages();
-	model->LoadPhysicsData();
 	model->LoadMaterials();
+	model->LoadPhysicsData();
 
-	model->m_readyState = MODEL_LOAD_OK;
+	g_parallelJobs->AddJob(JOB_TYPE_SPOOL_EGF, LoadPhysicsJob, data, 1, OnLoadingJobComplete);
+	g_parallelJobs->AddJob(JOB_TYPE_SPOOL_EGF, LoadVertsJob, data, 1, OnLoadingJobComplete);
+	g_parallelJobs->AddJob(JOB_TYPE_SPOOL_EGF, LoadMotionJob, data, 1, OnLoadingJobComplete);
+
+	g_parallelJobs->Submit();
+}
+
+void CEngineStudioEGF::LoadVertsJob(void* data, int i)
+{
+	CEngineStudioEGF* model = (CEngineStudioEGF*)data;
+	
+	if (model->m_readyState == MODEL_LOAD_ERROR)
+		return;
+
+	if (!model->LoadGenerateVertexBuffer())
+		model->DestroyModel();
+}
+
+void CEngineStudioEGF::LoadPhysicsJob(void* data, int i)
+{
+	CEngineStudioEGF* model = (CEngineStudioEGF*)data;
+
+	if (model->m_readyState == MODEL_LOAD_ERROR)
+		return;
+
+	model->LoadPhysicsData();
+}
+
+void CEngineStudioEGF::LoadMotionJob(void* data, int i)
+{
+	CEngineStudioEGF* model = (CEngineStudioEGF*)data;
+	if (model->m_readyState == MODEL_LOAD_ERROR)
+		return;
+
+	model->LoadSetupBones();
+	model->LoadMotionPackages();
+}
+
+void CEngineStudioEGF::OnLoadingJobComplete(struct eqParallelJob_t* job)
+{
+	CEngineStudioEGF* model = (CEngineStudioEGF*)job->arguments;
+
+	if (model->m_readyState == MODEL_LOAD_ERROR)
+		return;
+	
+	if(model->m_loading.Decrement() <= 0)
+		model->m_readyState = MODEL_LOAD_OK;
 }
 
 bool CEngineStudioEGF::LoadModel(const char* pszPath, bool useJob)
@@ -364,9 +403,15 @@ bool CEngineStudioEGF::LoadModel(const char* pszPath, bool useJob)
 	// first we switch to loading
 	m_readyState = MODEL_LOAD_IN_PROGRESS;
 
+	// allocate hardware data
+	m_hwdata = new studioHwData_t;
+	memset(m_hwdata, 0, sizeof(studioHwData_t));
+
 	if (useJob)
 	{
-		g_parallelJobs->AddJob(JOB_TYPE_SPOOL_EGF, ModelLoaderJob, this);
+		m_loading.SetValue(4);
+		g_parallelJobs->AddJob(JOB_TYPE_SPOOL_EGF, LoadModelJob, this, 1, OnLoadingJobComplete);
+
 		g_parallelJobs->Submit();
 		return true;
 	}
@@ -379,15 +424,18 @@ bool CEngineStudioEGF::LoadModel(const char* pszPath, bool useJob)
 		return false;
 	}
 
+	LoadMaterials();
+	
 	if (!LoadGenerateVertexBuffer())
 	{
 		DestroyModel();
 		return false;
 	}
 
+	LoadSetupBones();
 	LoadMotionPackages();
 	LoadPhysicsData();
-	LoadMaterials();
+	
 
 	materials->Wait();
 
@@ -403,13 +451,7 @@ bool CEngineStudioEGF::LoadFromFile()
 	if (!pHdr)
 		return false; // get out, nothing to load
 
-	// allocate hardware data
-	m_hwdata = new studioHwData_t;
-	memset(m_hwdata, 0, sizeof(studioHwData_t));
-
 	m_hwdata->studio = pHdr;
-
-	LoadSetupBones();
 
 	return true;
 }
@@ -514,75 +556,6 @@ bool CEngineStudioEGF::LoadGenerateVertexBuffer()
 		delete[] allIndices;
 	}
 
-
-	// try to load materials
-	m_numMaterials = pHdr->numMaterials;
-
-	int numUsedMaterials = maxMaterialIdx + 1;
-
-	m_hwdata->numUsedMaterials = numUsedMaterials;
-	m_hwdata->numMaterialGroups = numUsedMaterials ? m_numMaterials / numUsedMaterials : 0;
-
-	// init materials
-	memset(m_materials, 0, sizeof(m_materials));
-
-	// try load materials properly
-	// this is a source engine - like material loading using material paths
-	for (int i = 0; i < m_numMaterials; i++)
-	{
-		EqString fpath(pHdr->pMaterial(i)->materialname);
-		fpath.Path_FixSlashes();
-
-		if (fpath.c_str()[0] == CORRECT_PATH_SEPARATOR)
-			fpath = EqString(fpath.c_str(), fpath.Length() - 1);
-
-		for (int j = 0; j < pHdr->numMaterialSearchPaths; j++)
-		{
-			if (!m_materials[i])
-			{
-				EqString spath(pHdr->pMaterialSearchPath(j)->searchPath);
-				spath.Path_FixSlashes();
-
-				if (spath.c_str()[spath.Length() - 1] == CORRECT_PATH_SEPARATOR)
-					spath = spath.Left(spath.Length() - 1);
-
-				EqString extend_path = spath + CORRECT_PATH_SEPARATOR + fpath;
-
-				if (materials->IsMaterialExist(extend_path.GetData()))
-				{
-					m_materials[i] = materials->GetMaterial(extend_path.GetData());
-
-					if (!m_materials[i]->IsError() && !(m_materials[i]->GetFlags() & MATERIAL_FLAG_SKINNED))
-						MsgWarning("Warning! Material '%s' shader '%s' for model '%s' is invalid\n", m_materials[i]->GetName(), m_materials[i]->GetShaderName(), m_szPath.c_str());
-
-					m_materials[i]->Ref_Grab();
-				}
-			}
-		}
-	}
-
-	bool bError = false;
-
-	// false-initialization of non-loaded materials
-	for (int i = 0; i < m_numMaterials; i++)
-	{
-		if (!m_materials[i])
-		{
-			MsgError("Couldn't load model material '%s'\n", pHdr->pMaterial(i)->materialname, m_szPath.c_str());
-			bError = true;
-
-			m_materials[i] = materials->GetMaterial("error");
-		}
-	}
-
-	if (bError)
-	{
-		MsgError("  In following search paths:");
-
-		for (int i = 0; i < pHdr->numMaterialSearchPaths; i++)
-			MsgError("   '%s'\n", pHdr->pMaterialSearchPath(i)->searchPath);
-	}
-
 	return true;
 }
 
@@ -654,8 +627,96 @@ void CEngineStudioEGF::LoadMotionPackages()
 // loads materials for studio
 void CEngineStudioEGF::LoadMaterials()
 {
+	studiohdr_t* pHdr = m_hwdata->studio;
+
+	auto lodModels = new studioModelRef_t[pHdr->numModels];
+	m_hwdata->modelrefs = lodModels;
+
+	int maxMaterialIdx = -1;
+
+	for (int i = 0; i < pHdr->numModels; i++)
+	{
+		studiomodeldesc_t* pModelDesc = pHdr->pModelDesc(i);
+
+		for (int j = 0; j < pModelDesc->numGroups; j++)
+		{
+			// add vertices, add indices
+			modelgroupdesc_t* pGroup = pModelDesc->pGroup(j);
+
+			if (pGroup->materialIndex > maxMaterialIdx)
+				maxMaterialIdx = pGroup->materialIndex;
+		}
+	}
+	
+	// try to load materials
+	m_numMaterials = pHdr->numMaterials;
+
+	int numUsedMaterials = maxMaterialIdx + 1;
+
+	m_hwdata->numUsedMaterials = numUsedMaterials;
+	m_hwdata->numMaterialGroups = numUsedMaterials ? m_numMaterials / numUsedMaterials : 0;
+
+	// init materials
+	memset(m_materials, 0, sizeof(m_materials));
+
+	// try load materials properly
+	// this is a source engine - like material loading using material paths
 	for (int i = 0; i < m_numMaterials; i++)
+	{
+		EqString fpath(pHdr->pMaterial(i)->materialname);
+		fpath.Path_FixSlashes();
+
+		if (fpath.c_str()[0] == CORRECT_PATH_SEPARATOR)
+			fpath = EqString(fpath.c_str(), fpath.Length() - 1);
+
+		for (int j = 0; j < pHdr->numMaterialSearchPaths; j++)
+		{
+			if (!m_materials[i])
+			{
+				EqString spath(pHdr->pMaterialSearchPath(j)->searchPath);
+				spath.Path_FixSlashes();
+
+				if (spath.c_str()[spath.Length() - 1] == CORRECT_PATH_SEPARATOR)
+					spath = spath.Left(spath.Length() - 1);
+
+				EqString extend_path = spath + CORRECT_PATH_SEPARATOR + fpath;
+
+				if (materials->IsMaterialExist(extend_path.GetData()))
+				{
+					m_materials[i] = materials->GetMaterial(extend_path.GetData());
+
+					if (!m_materials[i]->IsError() && !(m_materials[i]->GetFlags() & MATERIAL_FLAG_SKINNED))
+						MsgWarning("Warning! Material '%s' shader '%s' for model '%s' is invalid\n", m_materials[i]->GetName(), m_materials[i]->GetShaderName(), m_szPath.c_str());
+
+					m_materials[i]->Ref_Grab();
+				}
+			}
+		}
+	}
+
+	bool bError = false;
+
+	// false-initialization of non-loaded materials
+	for (int i = 0; i < m_numMaterials; i++)
+	{
+		if (!m_materials[i])
+		{
+			MsgError("Couldn't load model material '%s'\n", pHdr->pMaterial(i)->materialname, m_szPath.c_str());
+			bError = true;
+
+			m_materials[i] = materials->GetMaterial("error");
+		}
+
 		materials->PutMaterialToLoadingQueue(m_materials[i]);
+	}
+
+	if (bError)
+	{
+		MsgError("  In following search paths:");
+
+		for (int i = 0; i < pHdr->numMaterialSearchPaths; i++)
+			MsgError("   '%s'\n", pHdr->pMaterialSearchPath(i)->searchPath);
+	}
 }
 
 IMaterial* CEngineStudioEGF::GetMaterial(int materialIdx, int materialGroupIdx)
@@ -800,8 +861,7 @@ const char* CEngineStudioEGF::GetName() const
 
 studioHwData_t* CEngineStudioEGF::GetHWData() const
 {
-	// wait for loading end
-	while (m_readyState == MODEL_LOAD_IN_PROGRESS)
+	while ((!m_hwdata || m_hwdata && !m_hwdata->studio) && m_readyState == MODEL_LOAD_IN_PROGRESS) // wait for hwdata
 		Platform_Sleep(1);
 
 	return m_hwdata;

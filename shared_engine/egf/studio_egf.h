@@ -10,6 +10,7 @@
 
 #include "egf/IEqModel.h"
 #include "modelloader_shared.h"
+#include "utils/eqthread.h"
 
 class IVertexBuffer;
 class IIndexBuffer;
@@ -20,8 +21,6 @@ class CEngineStudioEGF : public IEqModel
 {
 	friend class		CStudioModelCache;
 public:
-
-	static void			ModelLoaderJob(void* data, int i);
 
 //------------------------------------------------------------
 
@@ -76,6 +75,14 @@ public:
 
 private:
 
+	static void			LoadModelJob(void* data, int i);
+	
+	static void			LoadVertsJob(void* data, int i);
+	static void			LoadPhysicsJob(void* data, int i);
+	static void			LoadMotionJob(void* data, int i);
+	
+	static void			OnLoadingJobComplete(struct eqParallelJob_t* job);
+	
 	bool				LoadFromFile();
 
 	void				LoadPhysicsData(); // loads physics object data
@@ -110,7 +117,8 @@ private:
 
 	int					m_cacheIdx;
 
-	volatile short		m_readyState;
+	volatile short						m_readyState;
+	Threading::CEqInterlockedInteger	m_loading;
 };
 
 //-------------------------------------------------------------------------------------
