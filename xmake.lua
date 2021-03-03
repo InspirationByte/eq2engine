@@ -9,7 +9,7 @@ set_arch("x64") -- TODO: x86 builds too
 set_targetdir("bin/$(arch)")
 
 -- some packages
-add_requires("zlib", "libjpeg", "bullet3", "libogg", "libvorbis")
+add_requires("zlib", "libjpeg", "bullet3", "libogg", "libvorbis", "libsdl")
 add_requireconfs("bullet3", {
     configs = {
         shared = false,
@@ -63,14 +63,6 @@ if is_plat("windows") or is_plat("linux") or is_plat("android") then
     add_defines("PLAT_SDL=1")
 end
 
-function add_SDL2()
-    if is_plat("windows") or is_plat("android") then
-        add_includedirs(Folders.dependency.."SDL2/include")
-        add_linkdirs(Folders.dependency.."SDL2/lib/$(arch)")
-        add_links("SDL2")
-    end
-end
-
 function add_OpenAL()
     if is_plat("windows") then
         add_includedirs(Folders.dependency.."openal-soft/include")
@@ -104,7 +96,7 @@ end
 if is_mode("debug") or is_mode("releasedbg") then
 
     add_defines("EQ_DEBUG")
-    set_symbols("debug")
+    set_symbols("debug", "edit")
 
 elseif is_mode("release") then
 
@@ -113,6 +105,7 @@ elseif is_mode("release") then
     add_defines("NDEBUG")
 
     set_optimize("fastest")
+    set_symbols("debug")
 end
 
 -- extra runtime configuration (if needed)
@@ -216,7 +209,7 @@ target("sysLib")
     add_headerfiles(Folders.shared_engine.. "input/**.h")
     add_includedirs(Folders.shared_engine, { public = true })
     add_eq_deps()
-    add_SDL2()
+    add_packages("libsdl")
 
 target("equiLib")
     set_group(Groups.engine2)

@@ -1,0 +1,6 @@
+target("shinyProfiler")
+    set_group("dependency")
+    set_kind("static")
+    add_files("/src/*.c")
+    add_headerfiles("include/**.h")
+    add_includedirs("include/", { public = true })
