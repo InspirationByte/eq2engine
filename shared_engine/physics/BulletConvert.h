@@ -10,7 +10,7 @@
 
 // Bullet headers
 ///Math library & Utils
-#include <bullet/LinearMath/btTransform.h>
+#include <LinearMath/btTransform.h>
 
 #include "math/Vector.h"
 #include "math/Matrix.h"

@@ -15,7 +15,7 @@
 
 #define RENDERER_INTERFACE_VERSION	"DkRenderer_010"
 
-class IRenderLibrary : public ICoreModuleInterface
+class IRenderLibrary : public IEqCoreModule
 {
 public:
 	virtual bool			InitCaps() = 0;

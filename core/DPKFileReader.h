@@ -15,6 +15,8 @@
 
 #include "core/dpk_defs.h"
 
+#include <stdio.h>
+
 typedef int dpkhandle_t;
 
 #define DPKX_MAX_HANDLES		32

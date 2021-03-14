@@ -8,10 +8,10 @@
 #ifndef IDKCORE
 #define IDKCORE
 
-#include "ICmdLineParser.h"
+#include "ICommandLine.h"
 
 class KeyValues;
-class ICommandLineParse;
+class ICommandLine;
 
 // DarkTech core interface
 class IDkCore
@@ -32,8 +32,8 @@ public:
 
 // Interface management for engine
 
-	virtual void					RegisterInterface(const char* pszName, ICoreModuleInterface* iface) = 0;	// registers interface for faster access
-	virtual ICoreModuleInterface*	GetInterface(const char* pszName) = 0;										// returns registered interface
+	virtual void					RegisterInterface(const char* pszName, IEqCoreModule* iface) = 0;	// registers interface for faster access
+	virtual IEqCoreModule*	GetInterface(const char* pszName) = 0;										// returns registered interface
 	virtual void					UnregisterInterface(const char* pszName) = 0;								// unregisters interface
 };
 

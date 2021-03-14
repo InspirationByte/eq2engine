@@ -19,7 +19,7 @@ using namespace EqBulletUtils;
 #define __BT_SKIP_UINT64_H	// SDL2 support
 
 // Bullet headers
-#include <bullet/btBulletDynamicsCommon.h>
+#include <btBulletDynamicsCommon.h>
 
 #define MAX_CONTACT_EVENTS 4 // per single object
 

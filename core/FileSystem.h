@@ -12,6 +12,8 @@
 #include "utils/eqthread.h"
 #include "utils/DkList.h"
 
+#include <stdio.h>
+
 using namespace Threading;
 
 //------------------------------------------------------------------------------

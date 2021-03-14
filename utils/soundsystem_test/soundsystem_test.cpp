@@ -8,7 +8,7 @@
 #include "core/DebugInterface.h"
 #include "core/IFileSystem.h"
 #include "core/ILocalize.h"
-#include "core/IConCommandFactory.h"
+#include "core/IConsoleCommands.h"
 
 #include "utils/eqtimer.h"
 
@@ -86,9 +86,9 @@ int dummyUpdateCb(void* obj, IEqAudioSource::params_t& params)
 
 void InitSoundSystem( EQWNDHANDLE wnd )
 {
-	g_sysConsole->ClearCommandBuffer();
-	g_sysConsole->ParseFileToCommandBuffer("eqSoundSystemTest.cfg");
-	g_sysConsole->ExecuteCommandBuffer();
+	g_consoleCommands->ClearCommandBuffer();
+	g_consoleCommands->ParseFileToCommandBuffer("eqSoundSystemTest.cfg");
+	g_consoleCommands->ExecuteCommandBuffer();
 
 	g_audioSystem->Init();
 

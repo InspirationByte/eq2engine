@@ -7,7 +7,7 @@
 
 #include "core/IFileSystem.h"
 #include "core/DebugInterface.h"
-#include "core/IConCommandFactory.h"
+#include "core/IConsoleCommands.h"
 
 #include "utils/strtools.h"
 #include "utils/eqthread.h"
@@ -239,9 +239,9 @@ bool Host_Init()
 	}
 
 	// execute configuration files and command line after all libraries are loaded.
-	g_sysConsole->ClearCommandBuffer();
-	g_sysConsole->ParseFileToCommandBuffer( DEFAULT_CONFIG_PATH );
-	g_sysConsole->ExecuteCommandBuffer();
+	g_consoleCommands->ClearCommandBuffer();
+	g_consoleCommands->ParseFileToCommandBuffer( DEFAULT_CONFIG_PATH );
+	g_consoleCommands->ExecuteCommandBuffer();
 
 	EQWNDHANDLE mainWindow = Sys_CreateWindow();
 

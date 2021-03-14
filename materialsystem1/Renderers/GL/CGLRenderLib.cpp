@@ -7,7 +7,7 @@
 
 #include "CGLRenderLib.h"
 
-#include "core/IConCommandFactory.h"
+#include "core/IConsoleCommands.h"
 #include "core/IDkCore.h"
 #include "core/DebugInterface.h"
 

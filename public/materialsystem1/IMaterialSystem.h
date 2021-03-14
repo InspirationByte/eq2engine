@@ -202,7 +202,7 @@ public:
 //----------------------------------------------------------------------------------------------------------------------
 // Material system inteface
 //----------------------------------------------------------------------------------------------------------------------
-class IMaterialSystem : public ICoreModuleInterface
+class IMaterialSystem : public IEqCoreModule
 {
 public:
 

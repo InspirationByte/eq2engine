@@ -7,7 +7,7 @@
 
 #include "EqParticles.h"
 
-#include "core/IConCommandFactory.h"
+#include "core/IConsoleCommands.h"
 #include "utils/global_mutex.h"
 
 #include "ViewParams.h"

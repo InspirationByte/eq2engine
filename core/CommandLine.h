@@ -9,15 +9,15 @@
 #define CMDLINEPARSER_H
 
 #include <stdio.h>
-#include "core/ICmdLineParser.h"
+#include "core/ICommandLine.h"
 #include "utils/DkList.h"
 #include "utils/eqstring.h"
 
-class CommandLineParse : public ICommandLineParse
+class CCommandLine : public ICommandLine
 {
 public:
-						CommandLineParse();
-						~CommandLineParse();
+						CCommandLine();
+						~CCommandLine();
 
 	void				Init(const char* pszCommandLine);
 	void				DeInit();

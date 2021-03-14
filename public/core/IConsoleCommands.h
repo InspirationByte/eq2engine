@@ -18,7 +18,7 @@
 
 #define CONSOLE_INTERFACE_VERSION		"CORE_ConsoleCommands_003"
 
-class IConsoleCommands : public ICoreModuleInterface
+class IConsoleCommands : public IEqCoreModule
 {
 public:
     friend class ConCommandBase;
@@ -54,6 +54,6 @@ public:
 	virtual DkList<EqString>&					GetFailedCommands() = 0;	
 };
 
-INTERFACE_SINGLETON( IConsoleCommands, CConsoleCommands, CONSOLE_INTERFACE_VERSION, g_sysConsole )
+INTERFACE_SINGLETON( IConsoleCommands, CConsoleCommands, CONSOLE_INTERFACE_VERSION, g_consoleCommands)
 
 #endif //_ICONCOMMANDFACTORY_H_

@@ -18,7 +18,7 @@
 //
 // CPU information interface
 //
-class IEqCPUCaps : public ICoreModuleInterface
+class IEqCPUCaps : public IEqCoreModule
 {
 public:
 						~IEqCPUCaps() {}

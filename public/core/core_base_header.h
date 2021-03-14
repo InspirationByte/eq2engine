@@ -19,14 +19,14 @@
 #include "utils/eqtimer.h"				// Time measuring
 #include "utils/KeyValues.h"			// json-like object notation
 
-#include "IConCommandFactory.h"			// Console command factory
+#include "IConsoleCommands.h"			// Console command factory
 
 #include "InterfaceManager.h"			// Manager of interfaces
 #include "IDkCore.h"					// Core class
 #include "IEqCPUServices.h"				// CPU
 #include "ILocalize.h"					// Localization system
 #include "ppmem.h"						// own memory allocator
-#include "ICmdLineParser.h"				// commandline parser interface
+#include "ICommandLine.h"				// commandline parser interface
 #include "IFileSystem.h"				// filesystem for handling files and archives
 
 #include "DebugInterface.h"				// debug message interface

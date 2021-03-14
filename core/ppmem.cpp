@@ -18,8 +18,8 @@
 #include "core/ppmem.h"
 
 #include "core/DebugInterface.h"
-#include "core/IConCommandFactory.h"
-#include "core/ICmdLineParser.h"
+#include "core/IConsoleCommands.h"
+#include "core/ICommandLine.h"
 #include "utils/strtools.h"
 #include "utils/eqthread.h"
 
@@ -123,12 +123,12 @@ void PPMemInit()
 	{
 		g_allocMemMutex = new CEqMutex();
 
-		g_sysConsole->RegisterCommand(&ppmem_stats);
-		g_sysConsole->RegisterCommand(&ppmem_break_on_alloc);
+		g_consoleCommands->RegisterCommand(&ppmem_stats);
+		g_consoleCommands->RegisterCommand(&ppmem_break_on_alloc);
 	}
 
 #if defined(CRT_DEBUG_ENABLED) && defined(_WIN32)
-	g_sysConsole->RegisterCommand(&cmd_crtdebug_break_alloc);
+	g_consoleCommands->RegisterCommand(&cmd_crtdebug_break_alloc);
 
 	_CrtSetAllocHook(EqAllocHook);
 #endif // defined(CRT_DEBUG_ENABLED) && defined(_WIN32)
@@ -144,11 +144,11 @@ void PPMemShutdown()
 	delete g_allocMemMutex;
 	g_allocMemMutex = NULL;
 
-    g_sysConsole->UnregisterCommand(&ppmem_stats);
-    g_sysConsole->UnregisterCommand(&ppmem_break_on_alloc);
+    g_consoleCommands->UnregisterCommand(&ppmem_stats);
+    g_consoleCommands->UnregisterCommand(&ppmem_break_on_alloc);
 
 #if defined(CRT_DEBUG_ENABLED) && defined(_WIN32)
-	g_sysConsole->UnregisterCommand(&cmd_crtdebug_break_alloc);
+	g_consoleCommands->UnregisterCommand(&cmd_crtdebug_break_alloc);
 #endif // defined(CRT_DEBUG_ENABLED) && defined(_WIN32)
 }
 

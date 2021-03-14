@@ -19,7 +19,7 @@ struct eqFontFamily_t;
 // equilibrium font cache interface
 //-------------------------------------------------------------------------------------
 
-class IEqFontCache : public ICoreModuleInterface
+class IEqFontCache : public IEqCoreModule
 {
 public:
 	virtual						~IEqFontCache() {}

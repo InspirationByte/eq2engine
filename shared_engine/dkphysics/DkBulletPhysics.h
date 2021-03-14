@@ -28,9 +28,9 @@ using namespace EqBulletUtils;
 #define __BT_SKIP_UINT64_H	// SDL2 support
 
 // Bullet headers
-#include <bullet/btBulletDynamicsCommon.h>
-#include <bullet/BulletSoftBody/btSoftBodyRigidBodyCollisionConfiguration.h>
-#include <bullet/BulletSoftBody/btSoftRigidDynamicsWorld.h>
+#include <btBulletDynamicsCommon.h>
+#include <BulletSoftBody/btSoftBodyRigidBodyCollisionConfiguration.h>
+#include <BulletSoftBody/btSoftRigidDynamicsWorld.h>
 
 class DkPhysics : public IPhysics
 {

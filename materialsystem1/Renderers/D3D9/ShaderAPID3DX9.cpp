@@ -8,7 +8,7 @@
 #include <d3dx9.h>
 
 #include "core/DebugInterface.h"
-#include "core/IConCommandFactory.h"
+#include "core/IConsoleCommands.h"
 #include "core/IFileSystem.h"
 
 #include "ShaderAPID3DX9.h"
@@ -592,8 +592,8 @@ void ShaderAPID3DX9::ApplySamplerState()
 
 		if (pSelectedSamplerState != pCurrentSamplerState)
 		{
-			SamplerStateParam_t ss = pSelectedSamplerState ? *pSelectedSamplerState : m_defaultSamplerState;
-			SamplerStateParam_t css = pCurrentSamplerState ? *pCurrentSamplerState : m_defaultSamplerState;
+			SamplerStateParam_t &ss = pSelectedSamplerState ? *pSelectedSamplerState : m_defaultSamplerState;
+			SamplerStateParam_t &css = pCurrentSamplerState ? *pCurrentSamplerState : m_defaultSamplerState;
 
 			if (ss.minFilter != css.minFilter)
 				m_pD3DDevice->SetSamplerState(i, D3DSAMP_MINFILTER, d3dFilterType[ss.minFilter]);
@@ -624,8 +624,8 @@ void ShaderAPID3DX9::ApplySamplerState()
 
 		if (pSelectedSamplerState != pCurrentSamplerState)
 		{
-			SamplerStateParam_t ss = pSelectedSamplerState ? *pSelectedSamplerState : m_defaultSamplerState;
-			SamplerStateParam_t css = pCurrentSamplerState ? *pCurrentSamplerState : m_defaultSamplerState;
+			SamplerStateParam_t &ss = pSelectedSamplerState ? *pSelectedSamplerState : m_defaultSamplerState;
+			SamplerStateParam_t &css = pCurrentSamplerState ? *pCurrentSamplerState : m_defaultSamplerState;
 
 			if (ss.minFilter != css.minFilter) m_pD3DDevice->SetSamplerState(D3DVERTEXTEXTURESAMPLER0+i, D3DSAMP_MINFILTER, d3dFilterType[ss.minFilter]);
 			if (ss.magFilter != css.magFilter)

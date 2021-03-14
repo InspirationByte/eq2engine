@@ -17,7 +17,7 @@ struct coreInterface_t
 {
 	const char*				name;		// module name
 	struct DKMODULE*		module;		// module which loads this interface
-	ICoreModuleInterface*	ptr;		// the interface pointer itself
+	IEqCoreModule*	ptr;		// the interface pointer itself
 };
 
 // Equilibrium core interface
@@ -42,8 +42,8 @@ public:
 
 // Interface management for engine
 
-	void					RegisterInterface(const char* pszName, ICoreModuleInterface* iface);	// registers interface for faster access
-	ICoreModuleInterface*	GetInterface(const char* pszName);										// returns registered interface
+	void					RegisterInterface(const char* pszName, IEqCoreModule* iface);	// registers interface for faster access
+	IEqCoreModule*	GetInterface(const char* pszName);										// returns registered interface
 	void					UnregisterInterface(const char* pszName);								// unregisters interface
 
 private:

@@ -42,7 +42,7 @@ struct DKFINDDATA;
 // Filesystem interface
 //------------------------------------------------------------------------------
 
-class IFileSystem : public ICoreModuleInterface
+class IFileSystem : public IEqCoreModule
 {
 public:
     // Initialization of filesystem

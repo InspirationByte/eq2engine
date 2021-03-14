@@ -12,8 +12,8 @@
 
 #define __BT_SKIP_UINT64_H	// SDL2 support
 
-#include <bullet/btBulletDynamicsCommon.h>
-#include <bullet/BulletSoftBody/btSoftBodyHelpers.h>
+#include <btBulletDynamicsCommon.h>
+#include <BulletSoftBody/btSoftBodyHelpers.h>
 
 class DkPhysicsRope : public IPhysicsRope
 {

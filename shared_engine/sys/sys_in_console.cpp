@@ -8,7 +8,7 @@
 #include "sys_in_console.h"
 
 #include "core/IDkCOre.h"
-#include "core/IConCommandFactory.h"
+#include "core/IConsoleCommands.h"
 
 #include "utils/KeyValues.h"
 #include "utils/strtools.h"
@@ -604,7 +604,7 @@ void CEqConsoleInput::OnTextUpdate()
 	if(spaceIdx != -1)
 	{
 		EqString firstArguemnt( inputText.Left(spaceIdx) );
-		m_fastfind_cmdbase = (ConCommandBase*)g_sysConsole->FindBase( firstArguemnt.c_str() );
+		m_fastfind_cmdbase = (ConCommandBase*)g_consoleCommands->FindBase( firstArguemnt.c_str() );
 
 		if(m_fastfind_cmdbase)
 		{
@@ -828,12 +828,12 @@ void CEqConsoleInput::ExecuteCurrentInput()
 {
 	MsgInfo("> %s\n",m_inputText.GetData());
 
-	g_sysConsole->ResetCounter();
-	g_sysConsole->SetCommandBuffer(m_inputText.GetData());
+	g_consoleCommands->ResetCounter();
+	g_consoleCommands->SetCommandBuffer(m_inputText.GetData());
 
-	bool execStatus = g_sysConsole->ExecuteCommandBuffer(0xFFFFFFFF, m_alternateHandler != NULL);
+	bool execStatus = g_consoleCommands->ExecuteCommandBuffer(0xFFFFFFFF, m_alternateHandler != NULL);
 
-	DkList<EqString>& failedCmds = g_sysConsole->GetFailedCommands();
+	DkList<EqString>& failedCmds = g_consoleCommands->GetFailedCommands();
 
 	bool hasFailed = failedCmds.numElem() > 0;
 
@@ -869,7 +869,7 @@ void CEqConsoleInput::UpdateCommandAutocompletionList(const EqString& queryStr)
 	m_foundCmdList.clear();
 	m_cmdSelection = -1;
 
-	const DkList<ConCommandBase*>* baseList = g_sysConsole->GetAllCommands();
+	const DkList<ConCommandBase*>* baseList = g_consoleCommands->GetAllCommands();
 
 	for(int i = 0; i < baseList->numElem();i++)
 	{

@@ -19,10 +19,10 @@
 #include "egf/model.h"
 
 //#include "BulletMultiThreaded/btParallelConstraintSolver.h"
-#include <bullet/BulletCollision/CollisionDispatch/btInternalEdgeUtility.h>
-#include <bullet/BulletCollision/CollisionShapes/btShapeHull.h>
-#include <bullet/BulletCollision/Gimpact/btGImpactShape.h>
-#include <bullet/BulletCollision/Gimpact/btGImpactCollisionAlgorithm.h>
+#include <BulletCollision/CollisionDispatch/btInternalEdgeUtility.h>
+#include <BulletCollision/CollisionShapes/btShapeHull.h>
+#include <BulletCollision/Gimpact/btGImpactShape.h>
+#include <BulletCollision/Gimpact/btGImpactCollisionAlgorithm.h>
 
 #include "physics/IStudioShapeCache.h"
 #include "physics/PhysicsCollisionGroup.h"

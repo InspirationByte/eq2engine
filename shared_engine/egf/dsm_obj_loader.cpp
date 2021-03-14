@@ -13,6 +13,8 @@
 
 #include "math/Utility.h"
 
+#include <stdio.h>
+
 #pragma fixme("Normal index bug after group change?")
 
 extern int xstrsplitws(char* str, char **pointer_array);

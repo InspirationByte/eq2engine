@@ -9,6 +9,8 @@
 #include "core/DebugInterface.h"
 #include "utils/KeyValues.h"
 
+#include <stdio.h>
+
 #pragma todo("Remove old DSM loader")
 
 extern bool LoadOBJ(dsmmodel_t* model, const char* filename);

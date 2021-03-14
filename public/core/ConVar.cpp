@@ -6,8 +6,8 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "ConVar.h"
-#include "IConCommandFactory.h"
-#include "ICmdLineParser.h"
+#include "IConsoleCommands.h"
+#include "ICommandLine.h"
 #include "DebugInterface.h"
 
 #include "utils/DkList.h"

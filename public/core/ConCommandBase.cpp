@@ -6,7 +6,7 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "ConCommandBase.h"
-#include "IConCommandFactory.h"
+#include "IConsoleCommands.h"
 //#include "core_base_header.h"
 
 static const char* defaultDescString = "No description";

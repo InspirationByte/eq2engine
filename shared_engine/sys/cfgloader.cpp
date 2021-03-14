@@ -7,7 +7,7 @@
 
 #include "core/DebugInterface.h"
 #include "core/ConCommandBase.h"
-#include "core/IConCommandFactory.h"
+#include "core/IConsoleCommands.h"
 #include "core/IFileSystem.h"
 
 #include "utils/strtools.h"
@@ -30,7 +30,7 @@ void WriteCfgFile(const char *pszFilename, bool bWriteKeyConfiguration /*= true*
 	if(bWriteKeyConfiguration)
 		g_inputCommandBinder->WriteBindings(cfgfile);
 
-	const DkList<ConCommandBase*> *base = g_sysConsole->GetAllCommands();
+	const DkList<ConCommandBase*> *base = g_consoleCommands->GetAllCommands();
 
 	for(int i = 0; i < base->numElem();i++)
 	{

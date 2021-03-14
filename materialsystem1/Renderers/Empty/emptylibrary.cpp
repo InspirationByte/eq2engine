@@ -7,7 +7,7 @@
 
 #include "core/DebugInterface.h"
 #include "core/IDkCore.h"
-#include "core/IConCommandFactory.h"
+#include "core/IConsoleCommands.h"
 
 #include "emptyLibrary.h"
 #include "ShaderAPIEmpty.h"

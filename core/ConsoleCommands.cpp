@@ -5,7 +5,7 @@
 // Description: Variables factory
 //////////////////////////////////////////////////////////////////////////////////
 
-#include "ConCommandFactory.h"
+#include "ConsoleCommands.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -27,7 +27,7 @@ bool IsAllowedToExecute(ConCommandBase* base)
 	if (base->GetFlags() & CV_INITONLY)
 		return false;
 
-	static ConVar* cheats = (ConVar*)g_sysConsole->FindCvar("__cheats");
+	static ConVar* cheats = (ConVar*)g_consoleCommands->FindCvar("__cheats");
 
 	bool cheatsEnabled = cheats ? cheats->GetBool() : false;
 
@@ -71,7 +71,7 @@ DECLARE_CONCOMMAND_FN(cvarlist)
 	int iCVCount = 0;
 	// Loop through cvars...
 
-	const DkList<ConCommandBase*> *pCommandBases = g_sysConsole->GetAllCommands();
+	const DkList<ConCommandBase*> *pCommandBases = g_consoleCommands->GetAllCommands();
 
 	for (int i = 0; i < pCommandBases->numElem(); i++)
 	{
@@ -99,7 +99,7 @@ DECLARE_CONCOMMAND_FN(cmdlist)
 	int iCVCount = 0;
 
 	// Loop through cvars...
-	const DkList<ConCommandBase*>* pCommandBases = g_sysConsole->GetAllCommands();
+	const DkList<ConCommandBase*>* pCommandBases = g_consoleCommands->GetAllCommands();
 
 	for (int i = 0; i < pCommandBases->numElem(); i++)
 	{
@@ -121,7 +121,7 @@ DECLARE_CONCOMMAND_FN(cmdlist)
 void cvar_list_collect(const ConCommandBase* cmd, DkList<EqString>& list, const char* query)
 {
 	const ConCommandBase* pBase;
-	const DkList<ConCommandBase*>* pCommandBases = g_sysConsole->GetAllCommands();
+	const DkList<ConCommandBase*>* pCommandBases = g_consoleCommands->GetAllCommands();
 
 	const int LIST_LIMIT = 50;
 
@@ -154,7 +154,7 @@ DECLARE_CONCOMMAND_FN(revertcvar)
 		return;
 	}
 
-	ConVar* cv = (ConVar*)g_sysConsole->FindCvar(CMD_ARGV(0).c_str());
+	ConVar* cv = (ConVar*)g_consoleCommands->FindCvar(CMD_ARGV(0).c_str());
 	if (cv)
 	{
 		cv->SetValue(cv->GetDefaultValue());
@@ -172,7 +172,7 @@ DECLARE_CONCOMMAND_FN(togglecvar)
 		return;
 	}
 
-	ConVar *pConVar = (ConVar*)g_sysConsole->FindCvar(CMD_ARGV(0).c_str());
+	ConVar *pConVar = (ConVar*)g_consoleCommands->FindCvar(CMD_ARGV(0).c_str());
 
 	if (!pConVar)
 	{
@@ -197,7 +197,7 @@ DECLARE_CONCOMMAND_FN(exec)
 		return;
 	}
 
-	g_sysConsole->ParseFileToCommandBuffer(CMD_ARGV(0).c_str());
+	g_consoleCommands->ParseFileToCommandBuffer(CMD_ARGV(0).c_str());
 }
 
 DECLARE_CONCOMMAND_FN(set)
@@ -208,7 +208,7 @@ DECLARE_CONCOMMAND_FN(set)
 		return;
 	}
 
-	ConVar *pConVar = (ConVar*)g_sysConsole->FindCvar(CMD_ARGV(0).c_str());
+	ConVar *pConVar = (ConVar*)g_consoleCommands->FindCvar(CMD_ARGV(0).c_str());
 
 	if (!pConVar)
 	{
@@ -236,7 +236,7 @@ DECLARE_CONCOMMAND_FN(seti)
 		return;
 	}
 
-	ConVar *pConVar = (ConVar*)g_sysConsole->FindCvar(CMD_ARGV(0).c_str());
+	ConVar *pConVar = (ConVar*)g_consoleCommands->FindCvar(CMD_ARGV(0).c_str());
 
 	if (!pConVar)
 	{

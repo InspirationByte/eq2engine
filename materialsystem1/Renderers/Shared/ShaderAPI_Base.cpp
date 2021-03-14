@@ -13,7 +13,7 @@
 #include "CTexture.h"
 
 #include "core/DebugInterface.h"
-#include "core/IConCommandFactory.h"
+#include "core/IConsoleCommands.h"
 #include "core/IFileSystem.h"
 
 #include "imaging/PixWriter.h"
@@ -94,7 +94,7 @@ void ShaderAPI_Base::Init( shaderAPIParams_t &params )
 	m_pErrorTexture = GenerateErrorTexture();
 	m_pErrorTexture->Ref_Grab();
 
-	ConVar* r_debug_showTexture = (ConVar*)g_sysConsole->FindCvar("r_debug_showTexture");
+	ConVar* r_debug_showTexture = (ConVar*)g_consoleCommands->FindCvar("r_debug_showTexture");
 
 	if(r_debug_showTexture)
 		r_debug_showTexture->SetVariantsCallback(GetConsoleTextureList);
@@ -117,7 +117,7 @@ ETextureFormat ShaderAPI_Base::GetScreenFormat()
 
 void ShaderAPI_Base::Shutdown()
 {
-	ConVar* r_debug_showTexture = (ConVar*)g_sysConsole->FindCvar("r_debug_showTexture");
+	ConVar* r_debug_showTexture = (ConVar*)g_consoleCommands->FindCvar("r_debug_showTexture");
 
 	if(r_debug_showTexture)
 		r_debug_showTexture->SetVariantsCallback(nullptr);

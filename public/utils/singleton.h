@@ -13,14 +13,14 @@ template <class T>
 class CSingletonAbstract
 {
 public:
-					CSingletonAbstract()							{ pInstance = NULL; }
+					CSingletonAbstract()							{ pInstance = nullptr; }
 					CSingletonAbstract(CSingletonAbstract const&)	{}
 
 	virtual			~CSingletonAbstract()							{}
 	void operator	=(CSingletonAbstract const&)					{}
 
 	//----------------
-	bool			IsInitialized()									{ return (pInstance != NULL); }
+	bool			IsInitialized()									{ return (pInstance != nullptr); }
 
 	virtual T*		GetInstancePtr()								{ Initialize(); return pInstance; }
 
@@ -53,7 +53,7 @@ public:
 	virtual void	Initialize()					{ if(!CSingletonAbstract<T>::pInstance) CSingletonAbstract<T>::pInstance = new T; }
 
 	// deletion function. Can be overrided
-	virtual void	Destroy()						{ if(CSingletonAbstract<T>::pInstance) delete CSingletonAbstract<T>::pInstance; CSingletonAbstract<T>::pInstance = NULL; }
+	virtual void	Destroy()						{ if(CSingletonAbstract<T>::pInstance) delete CSingletonAbstract<T>::pInstance; CSingletonAbstract<T>::pInstance = nullptr; }
 };
 
 //#ifdef __GNUC__

@@ -203,7 +203,7 @@ static void SetDefaultPhysModelInfoParams(physmodelcreateinfo_t* info) // TODO: 
 	info->flipXAxis = true;
 }
 
-class IPhysics : public ICoreModuleInterface
+class IPhysics : public IEqCoreModule
 {
 public:
 	virtual bool 								Init(int nSceneSize) = 0;						// Initialize physics

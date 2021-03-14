@@ -6,34 +6,34 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 
-#include "CmdLineParser.h"
-#include "ConCommandFactory.h"
+#include "CommandLine.h"
+#include "ConsoleCommands.h"
 #include "utils/strtools.h"
 
 #include <ctype.h>
 
-EXPORTED_INTERFACE(ICommandLineParse, CommandLineParse);
+EXPORTED_INTERFACE(ICommandLine, CCommandLine);
 
-CommandLineParse::CommandLineParse()
+CCommandLine::CCommandLine()
 {
 }
 
-CommandLineParse::~CommandLineParse()
+CCommandLine::~CCommandLine()
 {
 }
 
-void CommandLineParse::Init(const char* pszCommandLine)
+void CCommandLine::Init(const char* pszCommandLine)
 {
 	m_args.clear();
 	Parse(pszCommandLine);
 }
 
-void CommandLineParse::DeInit()
+void CCommandLine::DeInit()
 {
 	m_args.clear();
 }
 
-void CommandLineParse::Parse(const char* pszCommandLine)
+void CCommandLine::Parse(const char* pszCommandLine)
 {
 	const char *pChar = pszCommandLine;
 
@@ -87,7 +87,7 @@ void CommandLineParse::Parse(const char* pszCommandLine)
 		AddArgument( pFirstLetter, pChar );
 }
 
-void CommandLineParse::AddArgument( const char *pFirst, const char *pLast )
+void CCommandLine::AddArgument( const char *pFirst, const char *pLast )
 {
 	if ( pLast == pFirst )	// skip empty strings
 		return;
@@ -95,17 +95,17 @@ void CommandLineParse::AddArgument( const char *pFirst, const char *pLast )
 	m_args.append(_Es(pFirst, (pLast - pFirst)));
 }
 
-int	CommandLineParse::GetArgumentCount() const
+int	CCommandLine::GetArgumentCount() const
 {
 	return m_args.numElem();
 }
 
-void CommandLineParse::ExecuteCommandLine(unsigned int CmdFilterFlags/* = -1*/) const
+void CCommandLine::ExecuteCommandLine(unsigned int CmdFilterFlags/* = -1*/) const
 {
 	if(!m_args.numElem())
 		return;
 
-	g_sysConsole->ClearCommandBuffer();
+	g_consoleCommands->ClearCommandBuffer();
 
 	for (int i = 0; i < GetArgumentCount(); i++ )
 	{
@@ -121,14 +121,14 @@ void CommandLineParse::ExecuteCommandLine(unsigned int CmdFilterFlags/* = -1*/) 
 		cmdStr.Append(' ');
 		cmdStr.Append(argumentValueStr);
 
-		g_sysConsole->SetCommandBuffer(cmdStr.c_str());
-		g_sysConsole->ExecuteCommandBuffer(CmdFilterFlags);
+		g_consoleCommands->SetCommandBuffer(cmdStr.c_str());
+		g_consoleCommands->ExecuteCommandBuffer(CmdFilterFlags);
 	}
 
-	//g_sysConsole->ExecuteCommandBuffer(CmdFilterFlags);
+	//g_consoleCommands->ExecuteCommandBuffer(CmdFilterFlags);
 }
 
-const char* CommandLineParse::GetArgumentString(int index) const
+const char* CCommandLine::GetArgumentString(int index) const
 {
 	if(!m_args.inRange(index))
 		return nullptr;
@@ -136,7 +136,7 @@ const char* CommandLineParse::GetArgumentString(int index) const
 	return m_args[index].c_str();
 }
 
-int CommandLineParse::FindArgument(const char* arg, int startfrom /* = 0 */) const
+int CCommandLine::FindArgument(const char* arg, int startfrom /* = 0 */) const
 {
 	if(!m_args.inRange(startfrom))
 		return -1;
@@ -150,7 +150,7 @@ int CommandLineParse::FindArgument(const char* arg, int startfrom /* = 0 */) con
 	return -1;
 }
 
-const char* CommandLineParse::GetArgumentsOf(int paramIndex) const
+const char* CCommandLine::GetArgumentsOf(int paramIndex) const
 {
 	if(paramIndex == -1)
 		return nullptr;

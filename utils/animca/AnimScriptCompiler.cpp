@@ -7,7 +7,7 @@
 
 #include "core/IFileSystem.h"
 #include "core/DebugInterface.h"
-#include "core/ICmdLineParser.h"
+#include "core/ICommandLine.h"
 #include "utils/KeyValues.h"
 
 #include "math/DkMath.h"

@@ -6,7 +6,7 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "eqCPUServices.h"
-#include "ConCommandFactory.h"
+#include "ConsoleCommands.h"
 
 #include "core/DebugInterface.h"
 

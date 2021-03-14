@@ -5,16 +5,15 @@
 // Description: Provides base interface loading
 //////////////////////////////////////////////////////////////////////////////////
 
-#include <stdio.h>
-#include "utils/singleton.h"
-
 #ifndef INTERFACEMANAGER_H
 #define INTERFACEMANAGER_H
+
+#include "utils/singleton.h"
 
 //--------------------------------------------------------------
 // The base core interface to be queried
 //--------------------------------------------------------------
-class ICoreModuleInterface
+class IEqCoreModule
 {
 public:
 	virtual bool		IsInitialized() const = 0;

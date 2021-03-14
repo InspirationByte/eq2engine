@@ -7,7 +7,7 @@
 
 #include "ConCommand.h"
 #include "ConVar.h"
-#include "IConCommandFactory.h"
+#include "IConsoleCommands.h"
 #include "DebugInterface.h"
 
 ConCommand::ConCommand(char const *name,CON_COMMAND_CALLBACK callback,char const *desc, int flags /*= 0*/) : ConCommandBase()
@@ -31,7 +31,7 @@ void ConCommand::DispatchFunc(DkList<EqString>& args)
 {
 	if((GetFlags() & CV_CHEAT))
 	{
-		ConVar *cheats = (ConVar*)g_sysConsole->FindCvar("__cheats"); //find cheats cvar
+		ConVar *cheats = (ConVar*)g_consoleCommands->FindCvar("__cheats"); //find cheats cvar
 		if(cheats)
 		{
 			if(!cheats->GetBool())

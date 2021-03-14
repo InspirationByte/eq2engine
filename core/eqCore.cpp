@@ -24,7 +24,7 @@
 #include "eqCPUServices.h"
 
 #include "ExceptionHandler.h"
-#include "ConCommandFactory.h"
+#include "ConsoleCommands.h"
 
 #include "utils/eqstring.h"
 
@@ -221,7 +221,7 @@ bool CDkCore::Init(const char* pszApplicationName, const char* pszCommandLine)
 	remove(tmp_path);
 
 	// Reset counter of same commands
-	g_sysConsole->ResetCounter();
+	g_consoleCommands->ResetCounter();
 
 	// Show core message
 	MsgAccept("Equilibrium 2 - %s %s\n", __DATE__, __TIME__);
@@ -231,11 +231,11 @@ bool CDkCore::Init(const char* pszApplicationName, const char* pszCommandLine)
 	cpuCaps->Init();
 
 	// Регистрация некоторых комманд.
-	g_sysConsole->RegisterCommand(&c_developer);
-	g_sysConsole->RegisterCommand(&c_echo);
+	g_consoleCommands->RegisterCommand(&c_developer);
+	g_consoleCommands->RegisterCommand(&c_echo);
 
 	// Регистрация некоторых комманд.
-	((CConsoleCommands*)g_sysConsole)->RegisterCommands();
+	((CConsoleCommands*)g_consoleCommands)->RegisterCommands();
 
 	c_log_enable = new ConCommand("log_enable",CONCOMMAND_FN(log_enable));
 	c_log_disable = new ConCommand("log_disable",CONCOMMAND_FN(log_disable));
@@ -288,7 +288,7 @@ void CDkCore::InitSubInterfaces()
 	PPMemInit();
 
 	// register core interfaces
-	RegisterInterface( CMDLINE_INTERFACE_VERSION, GetCommandLineParse());
+	RegisterInterface( CMDLINE_INTERFACE_VERSION, GetCCommandLine());
 	RegisterInterface( LOCALIZER_INTERFACE_VERSION , GetCLocalize());
 	RegisterInterface( CPUSERVICES_INTERFACE_VERSION , GetCEqCPUCaps());
 }
@@ -319,7 +319,7 @@ void CDkCore::Shutdown()
     // Никакого spew'а
     SetSpewFunction(nullspew);
 
-    ((CConsoleCommands*)g_sysConsole)->DeInit();
+    ((CConsoleCommands*)g_consoleCommands)->DeInit();
 
     g_cmdLine->DeInit();
 
@@ -369,7 +369,7 @@ char* CDkCore::GetApplicationName()
 
 // Interface management for engine
 
-void CDkCore::RegisterInterface(const char* pszName, ICoreModuleInterface* ifPtr)
+void CDkCore::RegisterInterface(const char* pszName, IEqCoreModule* ifPtr)
 {
 	//MsgInfo("Registering interface '%s'...\n", pszName);
 
@@ -386,7 +386,7 @@ void CDkCore::RegisterInterface(const char* pszName, ICoreModuleInterface* ifPtr
 	m_interfaces.append(iface);
 }
 
-ICoreModuleInterface* CDkCore::GetInterface(const char* pszName)
+IEqCoreModule* CDkCore::GetInterface(const char* pszName)
 {
 	for(int i = 0; i < m_interfaces.numElem(); i++)
 	{

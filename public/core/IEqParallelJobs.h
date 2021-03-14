@@ -64,7 +64,7 @@ struct eqJobThreadDesc_t
 };
 
 // job arranger thread
-abstract_class IEqParallelJobThreads : public ICoreModuleInterface
+abstract_class IEqParallelJobThreads : public IEqCoreModule
 {
 public:
 	// creates new job thread

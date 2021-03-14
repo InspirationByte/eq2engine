@@ -1,0 +1,23 @@
+
+
+Eq2MatSystem
+	3D Device
+		Swap Chains
+		Device Events ?
+
+	MeshMaterialInstanceRenderer
+
+		MaterialProperties
+			PersistentProperties
+			DynamicProperties
+					
+		MeshInterface
+			Buffers
+			VertexLayout
+	
+		Instances
+			Buffers
+			InstanceLayout
+			
+		GraphicsPipeline
+			VS(IAS) -> PS

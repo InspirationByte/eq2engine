@@ -146,10 +146,10 @@ void CEqParallelJobThreads::AddJob(eqParallelJob_t* job)
 // this submits jobs to the CEqJobThreads
 void CEqParallelJobThreads::Submit()
 {
-	m_mutex.Lock();
-
 	CompleteJobCallbacks();
 
+	m_mutex.Lock();
+	
 	// now signal threads to search for their new jobs
 	if (m_workQueue.getCount())
 	{
@@ -168,6 +168,8 @@ void CEqParallelJobThreads::CompleteJobCallbacks()
 	if (Threading::GetCurrentThreadID() != m_mainThreadId)
 		return;
 
+	m_mutex.Lock();
+	
 	// execute all job completion callbacks first
 	if (m_completedJobs.goToFirst())
 	{
@@ -185,6 +187,7 @@ void CEqParallelJobThreads::CompleteJobCallbacks()
 
 		m_completedJobs.clear();
 	}
+	m_mutex.Unlock();
 }
 
 bool CEqParallelJobThreads::AllJobsCompleted() const
@@ -198,20 +201,17 @@ void CEqParallelJobThreads::Wait()
 	for (int i = 0; i < m_jobThreads.numElem(); i++)
 		m_jobThreads[i]->WaitForThread();
 
-	m_mutex.Lock();
 	CompleteJobCallbacks();
-	m_mutex.Unlock();
 }
 
 // wait for specific job
 void CEqParallelJobThreads::WaitForJob(eqParallelJob_t* job)
 {
-	while(!(job->flags & JOB_FLAG_EXECUTED)) { Threading::Yield(); }
-
-	// FIXME: should I do this here too?
-	m_mutex.Lock();
-	CompleteJobCallbacks();
-	m_mutex.Unlock();
+	while(!(job->flags & JOB_FLAG_EXECUTED))
+	{
+		CompleteJobCallbacks();
+		Threading::Yield();
+	}
 }
 
 // called by job thread

@@ -11,7 +11,7 @@
 #include "EqUI_Panel.h"
 
 #include "core/IFileSystem.h"
-#include "core/IConCommandFactory.h"
+#include "core/IConsoleCommands.h"
 #include "core/ILocalize.h"
 
 #include "font/IFont.h"
@@ -684,9 +684,9 @@ bool IUIControl::ProcessCommand(DkList<EqString>& args)
 	else if(!stricmp("engine", UICMD_ARGV(0).c_str()))
 	{
 		// execute console commands
-		g_sysConsole->SetCommandBuffer(UICMD_ARGV(1).c_str());
-		g_sysConsole->ExecuteCommandBuffer();
-		g_sysConsole->ClearCommandBuffer();
+		g_consoleCommands->SetCommandBuffer(UICMD_ARGV(1).c_str());
+		g_consoleCommands->ExecuteCommandBuffer();
+		g_consoleCommands->ClearCommandBuffer();
 	}
 	else if(!stricmp("showpanel", UICMD_ARGV(0).c_str()))
 	{

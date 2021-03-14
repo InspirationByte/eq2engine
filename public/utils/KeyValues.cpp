@@ -8,6 +8,8 @@
 
 // Core interface helper
 #include <stdarg.h>
+#include <stdio.h>
+
 #ifdef LINUX
 #include <ctype.h>
 #else
@@ -18,8 +20,6 @@
 #include "core/IFileSystem.h"
 
 #include "KeyValues.h"
-
-
 
 #include "utils/VirtualStream.h"
 #include "utils/strtools.h"

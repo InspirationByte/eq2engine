@@ -14,7 +14,7 @@
 
 #define CMDLINE_INTERFACE_VERSION		"CORE_CommandLine_001"
 
-class ICommandLineParse : public ICoreModuleInterface
+class ICommandLine : public IEqCoreModule
 {
 public:
 	virtual void			Init(const char* pszCommandLine) = 0;
@@ -30,6 +30,6 @@ public:
 	virtual int				GetArgumentCount() const = 0;
 };
 
-INTERFACE_SINGLETON( ICommandLineParse, CommandLineParse, CMDLINE_INTERFACE_VERSION, g_cmdLine )
+INTERFACE_SINGLETON(ICommandLine, CCommandLine, CMDLINE_INTERFACE_VERSION, g_cmdLine )
 
 #endif //ICMDLINEPARSER_H

@@ -33,7 +33,7 @@ public:
 //--------------------------------------------------------------
 // Token cache
 //--------------------------------------------------------------
-class ILocalize : public ICoreModuleInterface
+class ILocalize : public IEqCoreModule
 {
 public:
 							~ILocalize() {}

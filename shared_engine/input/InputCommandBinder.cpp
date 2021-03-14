@@ -7,7 +7,7 @@
 
 #include "InputCommandBinder.h"
 
-#include "core/IConCommandFactory.h"
+#include "core/IConsoleCommands.h"
 #include "core/DebugInterface.h"
 #include "core/InterfaceManager.h"
 
@@ -186,12 +186,12 @@ void CInputCommandBinder::InitTouchZones()
 		// resolve commands
 
 		// if we connecting libraries dynamically, that wouldn't properly execute
-		newZone.cmd_act = (ConCommand*)g_sysConsole->FindCommand(varargs("+%s", newZone.commandString.c_str()));
-		newZone.cmd_deact = (ConCommand*)g_sysConsole->FindCommand(varargs("-%s", newZone.commandString.c_str()));
+		newZone.cmd_act = (ConCommand*)g_consoleCommands->FindCommand(varargs("+%s", newZone.commandString.c_str()));
+		newZone.cmd_deact = (ConCommand*)g_consoleCommands->FindCommand(varargs("-%s", newZone.commandString.c_str()));
 
 		// if found only one command with plus or minus
 		if(!newZone.cmd_act || !newZone.cmd_deact)
-			newZone.cmd_act = (ConCommand*)g_sysConsole->FindCommand( newZone.commandString.c_str() );
+			newZone.cmd_act = (ConCommand*)g_consoleCommands->FindCommand( newZone.commandString.c_str() );
 
 		DevMsg(DEVMSG_CORE, "Touchzone: %s (%s) [x=%g,y=%g] [w=%g,h=%g]\n", 
 			newZone.name.c_str(), newZone.commandString.c_str(), 
@@ -302,12 +302,12 @@ bool CInputCommandBinder::ResolveCommandBinding(in_binding_t* binding)
 	if(!binding->boundAction)
 	{
 		// if we connecting libraries dynamically, that wouldn't properly execute
-		binding->cmd_act = (ConCommand*)g_sysConsole->FindCommand(varargs("+%s", binding->commandString.c_str()));
-		binding->cmd_deact = (ConCommand*)g_sysConsole->FindCommand(varargs("-%s", binding->commandString.c_str()));
+		binding->cmd_act = (ConCommand*)g_consoleCommands->FindCommand(varargs("+%s", binding->commandString.c_str()));
+		binding->cmd_deact = (ConCommand*)g_consoleCommands->FindCommand(varargs("-%s", binding->commandString.c_str()));
 
 		// if found only one command with plus or minus
 		if(!binding->cmd_act || !binding->cmd_deact)
-			binding->cmd_act = (ConCommand*)g_sysConsole->FindCommand( binding->commandString.c_str() );
+			binding->cmd_act = (ConCommand*)g_consoleCommands->FindCommand( binding->commandString.c_str() );
 	}
 
 	// if anly command found

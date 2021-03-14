@@ -27,8 +27,8 @@ target("egfLib")
     add_headerfiles(Folders.shared_engine.. "egf/**.h")
     add_includedirs(Folders.shared_engine, { public = true })
     add_eq_deps()
-    add_deps("renderUtilLib")
-    add_packages("zlib", "bullet3")
+    add_deps("renderUtilLib", "bullet2")
+    add_packages("zlib")
 
 -- Animating game library
 target("animatingLib")
@@ -48,8 +48,7 @@ target("dkPhysicsLib")
     add_files(  Folders.shared_engine.. "dkphysics/**.cpp",
                 Folders.shared_engine.. "physics/**.cpp")
     add_includedirs(Folders.shared_engine, { public = true })
-    add_deps("egfLib", "animatingLib")
-    add_packages("bullet3")
+    add_deps("egfLib", "animatingLib", "bullet2")
     add_eq_deps()
 
 ----------------------------------------------

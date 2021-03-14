@@ -47,7 +47,7 @@ public:
 	// makes dynamic temporary decal
 	tempdecal_t*		MakeTempDecal( const decalmakeinfo_t& info, Matrix4x4* jointMatrices);
 
-	int					GetLoadingState() const		{return m_readyState;}
+	int					GetLoadingState() const;
 
 	// loads materials for studio
 	void				LoadMaterials();

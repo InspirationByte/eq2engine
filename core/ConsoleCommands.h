@@ -13,7 +13,7 @@
 #include <stdlib.h>
 #include "core/ConVar.h"
 #include "core/ConCommand.h"
-#include "core/IConCommandFactory.h"
+#include "core/IConsoleCommands.h"
 
 //	Console variable factory
 

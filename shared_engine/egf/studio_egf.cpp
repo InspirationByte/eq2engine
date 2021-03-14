@@ -336,7 +336,7 @@ void CEngineStudioEGF::LoadModelJob(void* data, int i)
 {
 	CEngineStudioEGF* model = (CEngineStudioEGF*)data;
 
-	// single-thread version
+	// multi-threaded version
 	if (!model->LoadFromFile())
 	{
 		model->DestroyModel();
@@ -346,7 +346,7 @@ void CEngineStudioEGF::LoadModelJob(void* data, int i)
 	model->LoadMaterials();
 	model->LoadPhysicsData();
 
-	g_parallelJobs->AddJob(JOB_TYPE_SPOOL_EGF, LoadPhysicsJob, data, 1, OnLoadingJobComplete);
+	//g_parallelJobs->AddJob(JOB_TYPE_SPOOL_EGF, LoadPhysicsJob, data, 1, OnLoadingJobComplete);
 	g_parallelJobs->AddJob(JOB_TYPE_SPOOL_EGF, LoadVertsJob, data, 1, OnLoadingJobComplete);
 	g_parallelJobs->AddJob(JOB_TYPE_SPOOL_EGF, LoadMotionJob, data, 1, OnLoadingJobComplete);
 
@@ -409,7 +409,7 @@ bool CEngineStudioEGF::LoadModel(const char* pszPath, bool useJob)
 
 	if (useJob)
 	{
-		m_loading.SetValue(4);
+		m_loading.SetValue(3);
 		g_parallelJobs->AddJob(JOB_TYPE_SPOOL_EGF, LoadModelJob, this, 1, OnLoadingJobComplete);
 
 		g_parallelJobs->Submit();
@@ -859,9 +859,15 @@ const char* CEngineStudioEGF::GetName() const
 	return m_szPath.c_str();
 }
 
+int	CEngineStudioEGF::GetLoadingState() const
+{
+	g_parallelJobs->CompleteJobCallbacks();
+	return m_readyState;
+}
+
 studioHwData_t* CEngineStudioEGF::GetHWData() const
 {
-	while ((!m_hwdata || m_hwdata && !m_hwdata->studio) && m_readyState == MODEL_LOAD_IN_PROGRESS) // wait for hwdata
+	while ((!m_hwdata || m_hwdata && !m_hwdata->studio) && GetLoadingState() == MODEL_LOAD_IN_PROGRESS) // wait for hwdata
 		Platform_Sleep(1);
 
 	return m_hwdata;

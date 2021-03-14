@@ -552,14 +552,10 @@ const eqFontChar_t&	CFont::GetFontCharById( const int chrId ) const
 {
 	static eqFontChar_t null_default;
 
-	try
-	{
-		return m_charMap.at(chrId);
-	}
-	catch (const std::out_of_range& oor)
-	{
+	if(!m_charMap.count(chrId))
 		return null_default;
-	}
+	
+	return m_charMap.at(chrId);
 }
 
 //

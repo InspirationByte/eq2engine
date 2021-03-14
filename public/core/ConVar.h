@@ -114,6 +114,6 @@ private:
 #define DECLARE_CVAR_CLAMP_NONSTATIC	DECLARE_CVAR_CLAMPED_NONSTATIC
 
 #define HOOK_TO_CVAR(name)		\
-	static ConVar *name = (ConVar*)g_sysConsole->FindCvar(#name);
+	static ConVar *name = (ConVar*)g_consoleCommands->FindCvar(#name);
 
 #endif //_CONVARSYSTEM_H_

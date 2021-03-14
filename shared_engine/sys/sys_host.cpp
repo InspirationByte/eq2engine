@@ -6,7 +6,7 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 
-#include "core/IConCommandFactory.h"
+#include "core/IConsoleCommands.h"
 #include "core/IEqCPUServices.h"
 #include "core/IEqParallelJobs.h"
 #include "core/IFileSystem.h"
@@ -36,7 +36,7 @@ ConVar user_cfg("user_cfg", DEFAULT_USERCONFIG_PATH, "User configuration file lo
 DECLARE_CMD(exec_user_cfg, "Executes user configuration file (from cvar 'cfg_user' value)", 0)
 {
 	MsgInfo("* Executing user configuration file '%s'\n", user_cfg.GetString());
-	g_sysConsole->ParseFileToCommandBuffer( user_cfg.GetString() );
+	g_consoleCommands->ParseFileToCommandBuffer( user_cfg.GetString() );
 }
 
 ConCommand cc_exit("exit",CGameHost::HostExitCmd,"Closes current instance of engine");

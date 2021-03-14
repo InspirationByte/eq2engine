@@ -21,9 +21,9 @@
 using namespace AdjacentTriangles;
 
 // physics
-#include <bullet/btBulletDynamicsCommon.h>
-#include <bullet/BulletCollision/CollisionDispatch/btInternalEdgeUtility.h>
-#include <bullet/BulletCollision/CollisionShapes/btShapeHull.h>
+#include <btBulletDynamicsCommon.h>
+#include <BulletCollision/CollisionDispatch/btInternalEdgeUtility.h>
+#include <BulletCollision/CollisionShapes/btShapeHull.h>
 
 #include "egf/physmodel.h"
 

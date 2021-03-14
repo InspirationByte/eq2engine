@@ -10,9 +10,8 @@
 #include "core/platform/MessageBox.h"
 #include "utils/CRC32.h"
 
-#ifdef PLAT_POSIX
 #include <stdarg.h> // va_*
-#endif // LINUX
+#include <stdio.h>
 
 #define VSTREAM_GRANULARITY 1024	// 1kb
 

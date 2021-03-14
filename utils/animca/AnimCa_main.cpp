@@ -12,7 +12,7 @@
 #include "core/cmdlib.h"
 #include "core/IDkCore.h"
 #include "core/platform/Platform.h"
-#include "core/IConCommandFactory.h"
+#include "core/IConsoleCommands.h"
 #include "core/IFileSystem.h"
 
 #include "utils/strtools.h"

@@ -9,12 +9,8 @@ set_arch("x64") -- TODO: x86 builds too
 set_targetdir("bin/$(arch)")
 
 -- some packages
-add_requires("zlib", "libjpeg", "bullet3", "libogg", "libvorbis", "libsdl")
-add_requireconfs("bullet3", {
-    configs = {
-        shared = false,
-        msvc_runtime_dll = true,
-    }})
+add_requires("zlib", "libjpeg", "libogg", "libvorbis", "libsdl")
+
 -----------------------------------------------------
 
 -- default configuration capabilities
@@ -123,6 +119,9 @@ function setup_runtime_config(crtDebug)
     end
 end
 
+-- add dependency packages that not in Xmake repo
+includes("src_dependency/xmake.lua")
+
 function add_wxwidgets()
     if is_plat("windows") then
         add_includedirs(Folders.dependency.."wxWidgets/include")
@@ -178,14 +177,14 @@ target("e2Core")
         "core/**.cpp",
         "core/minizip/*.c")
     add_headerfiles(
-        "core/*.h",
-        "core/platform/*.h")
+        "core/**.h",
+        Folders.public.. "/core/**.h")
     add_defines(
         "CORE_INTERFACE_EXPORT",
         "COREDLL_EXPORT")
 
     if is_plat("android") then 
-        add_files("core/android_libc/*.c")
+        add_files("core/android_libc/*.c") 
         add_headerfiles("core/android_libc/*.h")
     end
 
@@ -249,12 +248,11 @@ target("physicsLib")
     setup_runtime_config()
     add_files(Folders.shared_engine.. "physics/**.cpp")
     add_includedirs(Folders.shared_engine, { public = true })
-    add_packages("bullet3")
+    add_deps("bullet2")
     add_eq_deps()
 
 includes("xmake-eq1.lua")
 includes("game/DriverSyndicate/xmake.lua")
-includes("src_dependency/xmake.lua")
 
 -- only build tools for big machines
 if is_plat("windows", "linux") then
