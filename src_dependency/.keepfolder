@@ -1,43 +1,12 @@
-* **zlib**
-	Windows: download latest zlib source and build zlibstatic/zlibstat
-	Linux:
-	Android:
-
-* **jpeg**
-	Windows: download jpeg-6b-4-lib.zip and jpeg-6b-4-bin.zip
-	Linux:
-	Android: you have to put sources to **libjpeg** folder 
-	
 * **minidx9**
 	Windows: download cutdown version from https://github.com/hrydgard/minidx9
 	
-* **SDL2**
-	Windows: download SDL2 development package
-	
 * **openal-soft**
 	Windows: clone https://github.com/kcat/openal-soft, adjust your CMake build folder to 'build' and compile
-	
-* **libogg**
-	Windows: download latest sources and build static libraries
-
-* **libvorbis**
-	Windows: download latest sources and build static libraries
-	
-* **Shiny**
-	Windows: download latest snapshot / clone from https://sourceforge.net/p/shinyprofiler, build only **Shiny** project
-	
-* **lua**
-	Windows/Linux/Android: download stable build of LuaJIT 2.x.x and build by following the official instructions
 
 * **oolua**
 	Windows/Linux/Android: download latest snapshot / clone from https://github.com/SoapyMan/oolua, configure by premake5, also configure with "premake5 --class_functions=30 oolua-gen", copy lua headers to 'include/lua'
-	
-* **bullet**
-	Windows: using premake, create project files for vs2012. 
-			Change build settings to Multithreaded DLL option, otherwise it won't link.
-			Required projects: LinearMath, BulletCollision, BulletDynamics, BulletSoftBody, ConvexDecomposition
 			
 * **wxWidgets**
 	Windows/Linux: use wxWidgets 3.1, you can build it by yourself or download compiled dev package.
-	
-There has to be more dependencies, but there is enough for building **Driver Syndicate**.
+
