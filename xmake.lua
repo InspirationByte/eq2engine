@@ -69,7 +69,7 @@ function add_OpenAL()
         end
         add_links("OpenAL32")
     else
-        print("FIXME: setup other platforms!")
+        --print("FIXME: setup other platforms!")
     end
 end
 
@@ -133,7 +133,7 @@ function add_wxwidgets()
             add_linkdirs(Folders.dependency.."wxWidgets/lib/vc_lib")
         end
     else
-        print("FIXME: setup other platforms!")
+        --print("FIXME: setup other platforms!")
     end
 end
 
@@ -165,6 +165,7 @@ target("frameworkLib")
         Folders.public.. "/imaging/*.h")
     add_packages("zlib", "libjpeg")
     add_includedirs(Folders.public, { public = true })
+    add_syslinks("User32")
 
 ----------------------------------------------
 -- e2Core
