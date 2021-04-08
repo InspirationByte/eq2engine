@@ -43,7 +43,7 @@ void DPK_FixSlashes(EqString& str)
 	char* tempStr = (char*)stackalloc(str.Length() + 1);
 	memset(tempStr, 0, str.Length());
 
-	DPK_RebuildFilePath(str.c_str(), tempStr);
+	DPK_RebuildFilePath(str.ToCString(), tempStr);
 
 	char* ptr = tempStr;
 	while (*ptr)
@@ -127,7 +127,7 @@ bool CDPKFileWriter::BuildAndSave( const char* fileNamePrefix )
 
 	EqString fileName = fileNamePrefix;
 
-	FILE* dpkFile = fopen( fileName.c_str(), "wb" );
+	FILE* dpkFile = fopen( fileName.ToCString(), "wb" );
 
 	if( !dpkFile )
 	{
@@ -179,10 +179,10 @@ bool CDPKFileWriter::AddFile( const char* fileName )
 		newInfo->fileName = _Es(fileName).LowerCase();
 		DPK_FixSlashes(newInfo->fileName);
 
-		//Msg("adding file: '%s'\n", newInfo->fileName.c_str());
+		//Msg("adding file: '%s'\n", newInfo->fileName.ToCString());
 
-		newInfo->pkinfo.filenameHash = StringToHash(newInfo->fileName.c_str(), true );
-		//Msg("DPK: %s = %u\n", newInfo->fileName.c_str(), newInfo->pkinfo.filenameHash);
+		newInfo->pkinfo.filenameHash = StringToHash(newInfo->fileName.ToCString(), true );
+		//Msg("DPK: %s = %u\n", newInfo->fileName.ToCString(), newInfo->pkinfo.filenameHash);
 	}
 
 	m_files.append(newInfo);
@@ -202,7 +202,7 @@ void CDPKFileWriter::AddDirectory(const char* filename_to_add, bool bRecurse)
 	WIN32_FIND_DATAA wfd;
 	HANDLE hFile;
 
-	hFile = FindFirstFileA(dirname.c_str(), &wfd);
+	hFile = FindFirstFileA(dirname.ToCString(), &wfd);
 	if(hFile != NULL)
 	{
 		while(1)
@@ -216,13 +216,13 @@ void CDPKFileWriter::AddDirectory(const char* filename_to_add, bool bRecurse)
 					continue;
 
 				if(bRecurse)
-					AddDirectory( varargs("%s/%s",dir_name.c_str(),wfd.cFileName), true );
+					AddDirectory( varargs("%s/%s",dir_name.ToCString(),wfd.cFileName), true );
 			}
 			else
 			{
 				EqString filename(dir_name + "/" + wfd.cFileName);
 
-				AddFile(filename.c_str());
+				AddFile(filename.ToCString());
 			}
 		}
 
@@ -241,7 +241,7 @@ bool CDPKFileWriter::CheckCompressionIgnored(const char* extension) const
 {
 	for(int i = 0; i < m_ignoreCompressionExt.numElem(); i++)
 	{
-		if(!stricmp(m_ignoreCompressionExt[i].c_str(), extension))
+		if(!stricmp(m_ignoreCompressionExt[i].ToCString(), extension))
 			return true;
 	}
 
@@ -297,14 +297,14 @@ void CDPKFileWriter::ProcessFile(FILE* output, dpkfilewinfo_t* info)
 {
 	dpkfileinfo_t* pkInfo = &info->pkinfo;
 
-	bool compressionEnabled = (m_compressionLevel > 0) && !CheckCompressionIgnored(info->fileName.Path_Extract_Ext().c_str());
+	bool compressionEnabled = (m_compressionLevel > 0) && !CheckCompressionIgnored(info->fileName.Path_Extract_Ext().ToCString());
 
 	long _fileSize = 0;
-	ubyte* _filedata = LoadFileBuffer(info->fileName.c_str(), &_fileSize);
+	ubyte* _filedata = LoadFileBuffer(info->fileName.ToCString(), &_fileSize);
 
 	if (!_filedata)
 	{
-		MsgError("Failed to open file '%s' while adding to archive\n", info->fileName.c_str());
+		MsgError("Failed to open file '%s' while adding to archive\n", info->fileName.ToCString());
 		return;
 	}
 

@@ -127,7 +127,7 @@ DECLARE_CMD(con_addAutoCompletion,"Adds autocompletion variants", CV_INVISIBLE)
 	ConAutoCompletion_t* newItem = new ConAutoCompletion_t;
 	newItem->cmd_name = CMD_ARGV(0);
 
-	xstrsplit(CMD_ARGV(1).c_str(),",",newItem->args);
+	xstrsplit(CMD_ARGV(1).ToCString(),",",newItem->args);
 
 	g_consoleInput->AddAutoCompletion(newItem);
 }
@@ -190,7 +190,7 @@ void CEqConsoleInput::SpewFunc(SpewType_t type, const char* pMsg)
 
 			// output to debugoverlay if enabled
 			if(con_minicon.GetBool() && debugoverlay != NULL)
-				debugoverlay->TextFadeOut(0, s_spewColors[type], CON_MINICON_TIME, currentSpewLine->text.c_str());
+				debugoverlay->TextFadeOut(0, s_spewColors[type], CON_MINICON_TIME, currentSpewLine->text.ToCString());
 
 			s_spewMessages.append(currentSpewLine);
 		}
@@ -272,7 +272,7 @@ void CEqConsoleInput::AddAutoCompletion(ConAutoCompletion_t* newItem)
 {
 	for(int i = 0; i < m_customAutocompletion.numElem();i++)
 	{
-		if(!m_customAutocompletion[i]->cmd_name.CompareCaseIns(newItem->cmd_name.c_str()))
+		if(!m_customAutocompletion[i]->cmd_name.CompareCaseIns(newItem->cmd_name.ToCString()))
 		{
 			delete newItem;
 			return;
@@ -356,7 +356,7 @@ void CEqConsoleInput::DrawListBox(const IVector2D& pos, int width, DkList<EqStri
 		for (int cnt = 0; cnt < linesToDraw; cnt++)
 		{
 			int itemIdx = cnt + startItem;
-			width = max(width, (int)m_font->GetStringWidth(items[itemIdx].c_str(), itemStyle));
+			width = max(width, (int)m_font->GetStringWidth(items[itemIdx].ToCString(), itemStyle));
 		}
 
 		width += m_font->GetStringWidth(" ", itemStyle);
@@ -404,7 +404,7 @@ void CEqConsoleInput::DrawListBox(const IVector2D& pos, int width, DkList<EqStri
 			g_pShaderAPI->Apply();
 		}
 
-		m_font->RenderText(item.c_str(), rect.GetLeftTop() + Vector2D(5, 4 + textYPos), (selection == itemIdx) ? selectedItemStyle : itemStyle);
+		m_font->RenderText(item.ToCString(), rect.GetLeftTop() + Vector2D(5, 4 + textYPos), (selection == itemIdx) ? selectedItemStyle : itemStyle);
 	}
 }
 
@@ -597,14 +597,14 @@ void CEqConsoleInput::OnTextUpdate()
 	GetCurrentInputText(inputText);
 
 	// update command variants
-	UpdateCommandAutocompletionList( inputText.c_str() );
+	UpdateCommandAutocompletionList( inputText.ToCString() );
 
 	// update argument variants
 	int spaceIdx = inputText.Find(" ");
 	if(spaceIdx != -1)
 	{
 		EqString firstArguemnt( inputText.Left(spaceIdx) );
-		m_fastfind_cmdbase = (ConCommandBase*)g_consoleCommands->FindBase( firstArguemnt.c_str() );
+		m_fastfind_cmdbase = (ConCommandBase*)g_consoleCommands->FindBase( firstArguemnt.ToCString() );
 
 		if(m_fastfind_cmdbase)
 		{
@@ -651,7 +651,7 @@ bool CEqConsoleInput::AutoCompleteSelectVariant()
 	{
 		// remove from this position
 		m_inputText.Remove(currentStatementStart, inputText.Length());
-		m_inputText.Append( (m_fastfind_cmdbase->GetName() + _Es(" \"") + m_variantList[m_variantSelection] + _Es("\"")).c_str() );
+		m_inputText.Append( (m_fastfind_cmdbase->GetName() + _Es(" \"") + m_variantList[m_variantSelection] + _Es("\"")).ToCString() );
 
 		m_cursorPos = m_startCursorPos = m_inputText.Length();
 		OnTextUpdate();
@@ -661,7 +661,7 @@ bool CEqConsoleInput::AutoCompleteSelectVariant()
 	{
 		// remove from this position
 		m_inputText.Remove(currentStatementStart, inputText.Length());
-		m_inputText.Append( (m_foundCmdList[m_cmdSelection]->GetName() + _Es(" ")).c_str() );
+		m_inputText.Append( (m_foundCmdList[m_cmdSelection]->GetName() + _Es(" ")).ToCString() );
 
 		m_cursorPos = m_startCursorPos = m_inputText.Length();
 		OnTextUpdate();
@@ -687,7 +687,7 @@ void CEqConsoleInput::AutoCompleteSuggestion()
 		{
 			// remove from this position
 			m_inputText.Remove(currentStatementStart, inputText.Length());
-			m_inputText.Append( (m_fastfind_cmdbase->GetName() + _Es(" ") + m_variantList[0]).c_str() );
+			m_inputText.Append( (m_fastfind_cmdbase->GetName() + _Es(" ") + m_variantList[0]).ToCString() );
 
 			m_cursorPos = m_startCursorPos = m_inputText.Length();
 			OnTextUpdate();
@@ -698,11 +698,11 @@ void CEqConsoleInput::AutoCompleteSuggestion()
 
 		int spaceIdx = inputText.Find(" ");
 		if(spaceIdx != -1)
-			queryStr = inputText.c_str() + spaceIdx + 1;
+			queryStr = inputText.ToCString() + spaceIdx + 1;
 
 		for(int i = 0; i < m_variantList.numElem(); i++)
 		{
-			char_index = m_variantList[i].Find(queryStr.c_str(), true);
+			char_index = m_variantList[i].Find(queryStr.ToCString(), true);
 
 			if(char_index != -1)
 			{
@@ -727,7 +727,7 @@ void CEqConsoleInput::AutoCompleteSuggestion()
 		if (max_match_chars > queryStr.Length() && queryStr.CompareCaseIns(matching_str))
 		{
 			m_inputText.Remove(spaceIdx+1, inputText.Length());
-			m_inputText.Append(matching_str.c_str());
+			m_inputText.Append(matching_str.ToCString());
 			m_cursorPos = m_startCursorPos = m_inputText.Length();
 
 			OnTextUpdate();
@@ -741,7 +741,7 @@ void CEqConsoleInput::AutoCompleteSuggestion()
 		{
 			EqString& variant = m_variantList[i];
 
-			char_index = variant.Find(queryStr.c_str());
+			char_index = variant.Find(queryStr.ToCString());
 
 			if (char_index == 0)
 			{
@@ -794,7 +794,7 @@ void CEqConsoleInput::AutoCompleteSuggestion()
 		// maximize text input
 		if (max_match_chars > m_inputText.Length() && m_inputText.CompareCaseIns(matching_str))
 		{
-			m_inputText.Assign(matching_str.c_str());
+			m_inputText.Assign(matching_str.ToCString());
 			m_cursorPos = m_startCursorPos = m_inputText.Length();
 			
 			OnTextUpdate();
@@ -809,7 +809,7 @@ void CEqConsoleInput::AutoCompleteSuggestion()
 			ConCommandBase* cmdBase = m_foundCmdList[i];
 
 			EqString conVarName(cmdBase->GetName());
-			char_index = conVarName.Find(inputText.c_str());
+			char_index = conVarName.Find(inputText.ToCString());
 
 			if (char_index == 0)
 			{
@@ -839,7 +839,7 @@ void CEqConsoleInput::ExecuteCurrentInput()
 
 	if( (execStatus == false || hasFailed) && m_alternateHandler != NULL)
 	{
-		hasFailed = !(*m_alternateHandler)(m_inputText.c_str());
+		hasFailed = !(*m_alternateHandler)(m_inputText.ToCString());
 		execStatus = true;
 	}
 
@@ -850,7 +850,7 @@ void CEqConsoleInput::ExecuteCurrentInput()
 	{
 		for(int i = 0; i < failedCmds.numElem(); i++)
 		{
-			MsgError( "Unknown command or variable: '%s'\n", failedCmds[i].c_str() );
+			MsgError( "Unknown command or variable: '%s'\n", failedCmds[i].ToCString() );
 		}
 	}
 
@@ -878,7 +878,7 @@ void CEqConsoleInput::UpdateCommandAutocompletionList(const EqString& queryStr)
 		EqString conVarName(cmdBase->GetName());
 
 		// find by input text
-		if(conVarName.Find(queryStr.c_str()) != -1)
+		if(conVarName.Find(queryStr.ToCString()) != -1)
 		{
 			if(cmdBase->GetFlags() & CV_INVISIBLE)
 				continue;
@@ -902,7 +902,7 @@ void CEqConsoleInput::UpdateVariantsList( const EqString& queryStr )
 	{
 		ConAutoCompletion_t* item = m_customAutocompletion[i];
 
-		if(stricmp(m_fastfind_cmdbase->GetName(), item->cmd_name.c_str()))
+		if(stricmp(m_fastfind_cmdbase->GetName(), item->cmd_name.ToCString()))
 			continue;
 
 		for(int j = 0; j < item->args.numElem(); j++)
@@ -912,12 +912,12 @@ void CEqConsoleInput::UpdateVariantsList( const EqString& queryStr )
 	}
 
 	if( m_fastfind_cmdbase->HasVariants() )
-		m_fastfind_cmdbase->GetVariants(allAutoCompletion, queryStr.c_str());
+		m_fastfind_cmdbase->GetVariants(allAutoCompletion, queryStr.ToCString());
 
 	// filter out the list
 	for(int i = 0; i < allAutoCompletion.numElem(); i++)
 	{
-		if(queryStr.Length() == 0 || allAutoCompletion[i].Find(queryStr.c_str()) != -1)
+		if(queryStr.Length() == 0 || allAutoCompletion[i].Find(queryStr.ToCString()) != -1)
 			m_variantList.append(allAutoCompletion[i]);
 	}
 }
@@ -1038,7 +1038,7 @@ void CEqConsoleInput::DrawSelf(int width,int height, float frameTime)
 		{
 			outputTextStyle.textColor = s_spewColors[s_spewMessages[i]->type];
 
-			m_font->RenderText(s_spewMessages[i]->text.c_str(), con_outputRectangle.vleftTop, outputTextStyle);
+			m_font->RenderText(s_spewMessages[i]->text.ToCString(), con_outputRectangle.vleftTop, outputTextStyle);
 
 			con_outputRectangle.vleftTop.y += m_font->GetLineHeight(fontStyle)*rectLayout.GetProducedLines();//cnumLines;
 
@@ -1064,15 +1064,15 @@ void CEqConsoleInput::DrawSelf(int width,int height, float frameTime)
 	Vector2D inputTextPos(inputTextEntryRect.vleftTop.x+4, inputTextEntryRect.vrightBottom.y-6);
 
 	// render input text
-	m_font->RenderText(conInputStr.c_str(), inputTextPos, inputTextStyle);
+	m_font->RenderText(conInputStr.ToCString(), inputTextPos, inputTextStyle);
 
 	float inputGfxOfs = m_font->GetStringWidth(CONSOLE_INPUT_STARTSTR, inputTextStyle);
-	float cursorPosition = inputGfxOfs + m_font->GetStringWidth(m_inputText.c_str(), inputTextStyle, m_cursorPos);
+	float cursorPosition = inputGfxOfs + m_font->GetStringWidth(m_inputText.ToCString(), inputTextStyle, m_cursorPos);
 
 	// render selection
 	if(m_startCursorPos != m_cursorPos)
 	{
-		float selStartPosition = inputGfxOfs + m_font->GetStringWidth(m_inputText.c_str(), inputTextStyle, m_startCursorPos);
+		float selStartPosition = inputGfxOfs + m_font->GetStringWidth(m_inputText.ToCString(), inputTextStyle, m_startCursorPos);
 
 		Vertex2D_t rect[] = { MAKETEXQUAD(	inputTextPos.x + selStartPosition,
 											inputTextPos.y - 10,
@@ -1295,7 +1295,7 @@ bool CEqConsoleInput::KeyPress(int key, bool pressed)
 						int selStart = min(m_startCursorPos, m_cursorPos);
 						int selEnd = max(m_startCursorPos, m_cursorPos);
 
-						SDL_SetClipboardText( m_inputText.Mid(selStart, selEnd - selStart).c_str() );
+						SDL_SetClipboardText( m_inputText.Mid(selStart, selEnd - selStart).ToCString() );
 					}
 				}
 				break;
@@ -1307,7 +1307,7 @@ bool CEqConsoleInput::KeyPress(int key, bool pressed)
 						int selStart = min(m_startCursorPos, m_cursorPos);
 						int selEnd = max(m_startCursorPos, m_cursorPos);
 
-						SDL_SetClipboardText( m_inputText.Mid(selStart, selEnd - selStart).c_str() );
+						SDL_SetClipboardText( m_inputText.Mid(selStart, selEnd - selStart).ToCString() );
 
 						consoleRemTextInRange(selStart, selEnd - selStart);
 
@@ -1352,7 +1352,7 @@ bool CEqConsoleInput::KeyPress(int key, bool pressed)
 				{
 					if(m_histIndex != -1 && m_commandHistory.numElem())
 					{
-						SetText(m_commandHistory[m_histIndex].c_str());
+						SetText(m_commandHistory[m_histIndex].ToCString());
 						m_histIndex = -1;
 						break;
 					}
@@ -1412,7 +1412,7 @@ bool CEqConsoleInput::KeyPress(int key, bool pressed)
 				m_histIndex = min(m_histIndex, m_commandHistory.numElem()-1);
 
 				if(m_commandHistory.numElem() > 0)
-					SetText(m_commandHistory[m_histIndex].c_str(), true);
+					SetText(m_commandHistory[m_histIndex].ToCString(), true);
 
 				break;
 			case KEY_UP:
@@ -1443,7 +1443,7 @@ bool CEqConsoleInput::KeyPress(int key, bool pressed)
 				m_histIndex = max(m_histIndex, 0);
 
 				if(m_commandHistory.numElem() > 0)
-					SetText(m_commandHistory[m_histIndex].c_str(), true);
+					SetText(m_commandHistory[m_histIndex].ToCString(), true);
 
 				break;
 

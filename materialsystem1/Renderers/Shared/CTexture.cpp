@@ -64,7 +64,7 @@ int CTexture::GetFlags() const
 void CTexture::SetName(const char* pszNewName)
 {
 	m_szTexName = pszNewName;
-	m_nameHash = StringToHash(m_szTexName.c_str(), true);
+	m_nameHash = StringToHash(m_szTexName.ToCString(), true);
 }
 
 // Animated texture props

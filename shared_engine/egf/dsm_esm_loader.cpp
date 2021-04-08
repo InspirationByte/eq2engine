@@ -441,9 +441,9 @@ int FindShapeKeyIndex( esmshapedata_t* data, const char* shapeKeyName )
 
 	for(int i = 0; i < data->shapes.numElem(); i++)
 	{
-		Msg("available shapekey: %s\n", data->shapes[i]->name.c_str());
+		Msg("available shapekey: %s\n", data->shapes[i]->name.ToCString());
 
-		if(!strcmp(data->shapes[i]->name.c_str(), shapeKeyName))
+		if(!strcmp(data->shapes[i]->name.ToCString(), shapeKeyName))
 			return i;
 	}
 

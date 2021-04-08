@@ -71,7 +71,7 @@ public:
 
 	// something like working directory
 	void						SetBasePath(const char* path);
-	const char*					GetBasePath() const				{return m_basePath.c_str();}
+	const char*					GetBasePath() const				{return m_basePath.ToCString();}
 
     // Returns current game path
     const char*					GetCurrentGameDirectory() const;

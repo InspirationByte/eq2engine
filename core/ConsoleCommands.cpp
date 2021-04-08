@@ -154,14 +154,14 @@ DECLARE_CONCOMMAND_FN(revertcvar)
 		return;
 	}
 
-	ConVar* cv = (ConVar*)g_consoleCommands->FindCvar(CMD_ARGV(0).c_str());
+	ConVar* cv = (ConVar*)g_consoleCommands->FindCvar(CMD_ARGV(0).ToCString());
 	if (cv)
 	{
 		cv->SetValue(cv->GetDefaultValue());
 		Msg("'%s' set to '%s'\n", cv->GetName(), cv->GetString());
 	}
 	else
-		MsgError("No such cvar '%s'\n", CMD_ARGV(0).c_str());
+		MsgError("No such cvar '%s'\n", CMD_ARGV(0).ToCString());
 }
 
 DECLARE_CONCOMMAND_FN(togglecvar)
@@ -172,11 +172,11 @@ DECLARE_CONCOMMAND_FN(togglecvar)
 		return;
 	}
 
-	ConVar *pConVar = (ConVar*)g_consoleCommands->FindCvar(CMD_ARGV(0).c_str());
+	ConVar *pConVar = (ConVar*)g_consoleCommands->FindCvar(CMD_ARGV(0).ToCString());
 
 	if (!pConVar)
 	{
-		MsgError("Unknown variable '%s'\n", CMD_ARGV(0).c_str());
+		MsgError("Unknown variable '%s'\n", CMD_ARGV(0).ToCString());
 		return;
 	}
 
@@ -197,7 +197,7 @@ DECLARE_CONCOMMAND_FN(exec)
 		return;
 	}
 
-	g_consoleCommands->ParseFileToCommandBuffer(CMD_ARGV(0).c_str());
+	g_consoleCommands->ParseFileToCommandBuffer(CMD_ARGV(0).ToCString());
 }
 
 DECLARE_CONCOMMAND_FN(set)
@@ -208,18 +208,18 @@ DECLARE_CONCOMMAND_FN(set)
 		return;
 	}
 
-	ConVar *pConVar = (ConVar*)g_consoleCommands->FindCvar(CMD_ARGV(0).c_str());
+	ConVar *pConVar = (ConVar*)g_consoleCommands->FindCvar(CMD_ARGV(0).ToCString());
 
 	if (!pConVar)
 	{
-		MsgError("Unknown variable '%s'\n", CMD_ARGV(0).c_str());
+		MsgError("Unknown variable '%s'\n", CMD_ARGV(0).ToCString());
 		return;
 	}
 
 	EqString joinArgs;
 
 	for (int i = 1; i < CMD_ARGC; i++)
-		joinArgs.Append(varargs(i < CMD_ARGC - 1 ? (char*) "%s " : (char*) "%s", CMD_ARGV(i).c_str()));
+		joinArgs.Append(varargs(i < CMD_ARGC - 1 ? (char*) "%s " : (char*) "%s", CMD_ARGV(i).ToCString()));
 
 	if (IsAllowedToExecute(pConVar))
 	{
@@ -236,18 +236,18 @@ DECLARE_CONCOMMAND_FN(seti)
 		return;
 	}
 
-	ConVar *pConVar = (ConVar*)g_consoleCommands->FindCvar(CMD_ARGV(0).c_str());
+	ConVar *pConVar = (ConVar*)g_consoleCommands->FindCvar(CMD_ARGV(0).ToCString());
 
 	if (!pConVar)
 	{
-		MsgError("Unknown variable '%s'\n", CMD_ARGV(0).c_str());
+		MsgError("Unknown variable '%s'\n", CMD_ARGV(0).ToCString());
 		return;
 	}
 
 	EqString joinArgs;
 
 	for (int i = 1; i < CMD_ARGC; i++)
-		joinArgs.Append(varargs(i < CMD_ARGC - 1 ? (char*) "%s " : (char*) "%s", CMD_ARGV(i).c_str()));
+		joinArgs.Append(varargs(i < CMD_ARGC - 1 ? (char*) "%s " : (char*) "%s", CMD_ARGV(i).ToCString()));
 
 	pConVar->SetValue(joinArgs.GetData());
 }
@@ -493,7 +493,7 @@ void CConsoleCommands::ParseAndAppend(char* str, int len, void* extra)
 		EqString cmdStr(tmpStr.TrimSpaces());
 
 		DkList<EqString> cmdArgs;
-		SplitCommandForValidArguments(cmdStr.c_str(), cmdArgs);
+		SplitCommandForValidArguments(cmdStr.ToCString(), cmdArgs);
 
 		// executing file must be put to the command buffer in proper order
 		if (cmdArgs.numElem() && !cmdArgs[0].CompareCaseIns("exec"))
@@ -503,7 +503,7 @@ void CConsoleCommands::ParseAndAppend(char* str, int len, void* extra)
 			return;
 		}
 
-		strcat(m_currentCommands, varargs("%s;", cmdStr.c_str()));
+		strcat(m_currentCommands, varargs("%s;", cmdStr.ToCString()));
 	}
 		
 }
@@ -513,18 +513,18 @@ void CConsoleCommands::ParseFileToCommandBuffer(const char* pszFilename)
 {
 	EqString cfgFileName(pszFilename);
 
-	if( cfgFileName.Path_Extract_Ext() != "cfg" && !g_fileSystem->FileExist(cfgFileName.c_str()) )
+	if( cfgFileName.Path_Extract_Ext() != "cfg" && !g_fileSystem->FileExist(cfgFileName.ToCString()) )
 	{
-		if(!g_fileSystem->FileExist(("cfg/" + cfgFileName).c_str()))
+		if(!g_fileSystem->FileExist(("cfg/" + cfgFileName).ToCString()))
 			cfgFileName = cfgFileName.Path_Strip_Ext() + ".cfg";
 		else
 			cfgFileName = "cfg/" + cfgFileName;
 	}
 
-	if(!g_fileSystem->FileExist(cfgFileName.c_str()))
+	if(!g_fileSystem->FileExist(cfgFileName.ToCString()))
 		cfgFileName = "cfg/" + cfgFileName;
 
-	char *buf = g_fileSystem->GetFileBuffer(cfgFileName.c_str(), NULL, -1);
+	char *buf = g_fileSystem->GetFileBuffer(cfgFileName.ToCString(), NULL, -1);
 
 	if(!buf)
 	{
@@ -589,7 +589,7 @@ void CConsoleCommands::SplitOnArgsAndExec(char* str, int len, void* extra)
 	DkList<EqString> cmdArgs;
 
 	// split it
-	SplitCommandForValidArguments(commandStr.c_str(), cmdArgs);
+	SplitCommandForValidArguments(commandStr.ToCString(), cmdArgs);
 
 	if(cmdArgs.numElem() == 0)
 		return;

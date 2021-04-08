@@ -45,7 +45,7 @@ public:
 	const wchar_t*	GetData() const;
 
 	// nice std thing :)
-	const wchar_t*	c_str() const {return GetData();}
+	const wchar_t*	ToCString() const {return GetData();}
 
 	// length of it
 	uint			Length() const;

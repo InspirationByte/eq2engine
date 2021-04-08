@@ -373,7 +373,7 @@ bool Studio_LoadPhysModel(const char* pszPath, studioPhysData_t* pModel)
 						studioPhysObject_t& objData = pModel->objects[i];
 
 						if(objectNames.numElem() > 0)
-							strcpy(objData.name, objectNames[i].c_str());
+							strcpy(objData.name, objectNames[i].ToCString());
 
 						// copy shape info
 						memcpy(&objData.object, &physObjDataLump[i], sizeof(physobject_t));

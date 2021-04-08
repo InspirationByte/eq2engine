@@ -45,7 +45,7 @@ public:
 							CGLShaderProgram();
 							~CGLShaderProgram();
 
-	const char*				GetName() {return m_szName.c_str();}
+	const char*				GetName() {return m_szName.ToCString();}
 	void					SetName(const char* pszName) {m_szName = pszName;}
 
 	int						GetConstantsNum() {return m_numConstants;}

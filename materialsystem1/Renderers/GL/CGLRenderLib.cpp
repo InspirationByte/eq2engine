@@ -181,7 +181,7 @@ void PrintGLExtensions()
 	int i;
 	for (i = 0; i < splExts.numElem();i++)
 	{
-		MsgInfo("%s\n",splExts[i].c_str());
+		MsgInfo("%s\n",splExts[i].ToCString());
 	}
 	MsgWarning("Total extensions supported: %i\n",i);
 }

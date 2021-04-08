@@ -85,11 +85,11 @@ void CLocalize::Init()
 	}
 
     m_language = KV_GetValueString(pRegional->FindKeyBase("DefaultLanguage"), 0, "English" );
-    Msg("Language '%s' set\n", m_language.c_str());
+    Msg("Language '%s' set\n", m_language.ToCString());
 
 	// add localized path
 	EqString localizedPath(g_fileSystem->GetCurrentGameDirectory() + _Es("_") + m_language);
-	g_fileSystem->AddSearchPath("$LOCALIZE$", localizedPath.c_str());
+	g_fileSystem->AddSearchPath("$LOCALIZE$", localizedPath.ToCString());
 
 	int langArg = g_cmdLine->FindArgument("-language");
 

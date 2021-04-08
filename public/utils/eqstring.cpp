@@ -35,29 +35,20 @@ EqString::EqString()
 {
 	m_nLength = 0;
 	m_nAllocated = 0;
-	m_pszString = m_baseBuffer;
-	m_baseBuffer[0] = 0;
+	m_pszString = nullptr;
 	Empty();
 }
 
 EqString::~EqString()
 {
-	if(m_pszString != m_baseBuffer)
-		delete [] m_pszString;
-
-	m_pszString = m_baseBuffer;
-	m_baseBuffer[0] = 0;
-
-	m_nLength = 0;
-	m_nAllocated = 0;
+	Clear();
 }
 
 EqString::EqString(const char c)
 {
 	m_nLength = 0;
 	m_nAllocated = 0;
-	m_pszString = m_baseBuffer;
-	m_baseBuffer[0] = 0;
+	m_pszString = nullptr;
 
 	Assign( &c, 1 );
 }
@@ -66,8 +57,7 @@ EqString::EqString(const char* pszString, int len)
 {
 	m_nLength = 0;
 	m_nAllocated = 0;
-	m_pszString = m_baseBuffer;
-	m_baseBuffer[0] = 0;
+	m_pszString = nullptr;
 
 	Assign( pszString, len );
 }
@@ -76,8 +66,7 @@ EqString::EqString(const EqString &str, int nStart, int len)
 {
 	m_nLength = 0;
 	m_nAllocated = 0;
-	m_pszString = m_baseBuffer;
-	m_baseBuffer[0] = 0;
+	m_pszString = nullptr;
 
 	Assign( str, nStart, len );
 }
@@ -86,8 +75,7 @@ EqString::EqString(const wchar_t* pszString, int len)
 {
 	m_nLength = 0;
 	m_nAllocated = 0;
-	m_pszString = m_baseBuffer;
-	m_baseBuffer[0] = 0;
+	m_pszString = nullptr;
 
 	Assign( pszString, len );
 }
@@ -96,8 +84,7 @@ EqString::EqString(const EqWString &str, int nStart, int len)
 {
 	m_nLength = 0;
 	m_nAllocated = 0;
-	m_pszString = m_baseBuffer;
-	m_baseBuffer[0] = 0;
+	m_pszString = nullptr;
 
 	Assign( str, nStart, len );
 }
@@ -132,11 +119,9 @@ uint EqString::GetSize() const
 // erases and deallocates data
 void EqString::Clear()
 {
-	if(m_pszString != m_baseBuffer)
-		delete [] m_pszString;
+	delete [] m_pszString;
 
-	m_pszString = m_baseBuffer;
-	m_baseBuffer[0] = 0;
+	m_pszString = nullptr;
 
 	m_nLength = 0;
 	m_nAllocated = 0;
@@ -145,6 +130,7 @@ void EqString::Clear()
 // empty the string, but do not deallocate
 void EqString::Empty()
 {
+	Resize(EQSTRING_BASE_BUFFER, false);
 	m_pszString[0] = 0;
 	m_nLength = 0;
 }
@@ -169,32 +155,26 @@ bool EqString::Resize(uint nSize, bool bCopy)
 	uint newSize = nSize;
 
 	// use base buffer we requesting size less than base buffer
-	char* pszNewBuffer = m_baseBuffer;
+	if(newSize < EQSTRING_BASE_BUFFER)
+		newSize = EQSTRING_BASE_BUFFER;
 
-	if(nSize > EQSTRING_BASE_BUFFER)
-	{
-		pszNewBuffer = new char[ newSize ]; // make new
-		pszNewBuffer[0] = 0;
-	}
-
-	bool isSameBaseBuffer = m_baseBuffer == pszNewBuffer && m_baseBuffer == m_pszString;
+	char* pszNewBuffer = new char[newSize]; // make new
+	pszNewBuffer[0] = 0;
 
 	if( m_pszString )
 	{
 		// copy contents to the new buffer
-		if(bCopy && m_nLength && !isSameBaseBuffer)
+		if(bCopy && m_nLength)
 		{
 			int minLength = min((uint16)(newSize-1), m_nLength);
 
-			strncpy( pszNewBuffer, m_pszString, minLength);
+			memcpy( pszNewBuffer, m_pszString, minLength);
 			pszNewBuffer[minLength] = 0;
 		}
 		else if(!bCopy)
 			pszNewBuffer[0] = 0;
 
-		if(m_baseBuffer != m_pszString)
-			delete [] m_pszString;
-
+		delete [] m_pszString;
 		m_pszString = NULL;
 	}
 
@@ -261,7 +241,7 @@ void EqString::Assign(const wchar_t* pszStr, int len)
 
 void EqString::Assign(const EqWString &str, int nStart, int len)
 {
-	EqStringConv::wchar_to_utf8 conv(*this, str.c_str()+nStart, len);
+	EqStringConv::wchar_to_utf8 conv(*this, str.ToCString()+nStart, len);
 }
 
 void EqString::Append(const char c)
@@ -484,28 +464,11 @@ int EqString::ReplaceSubstr(const char* find, const char* replaceTo, bool bCaseS
 // swaps two strings
 void EqString::Swap(EqString& otherStr)
 {
-	char tempBuffer[EQSTRING_BASE_BUFFER];
-
-	memcpy(tempBuffer, m_baseBuffer, EQSTRING_BASE_BUFFER);
-	memcpy(m_baseBuffer, otherStr.m_baseBuffer, EQSTRING_BASE_BUFFER);
-	memcpy(otherStr.m_baseBuffer, tempBuffer, EQSTRING_BASE_BUFFER);
-
 	// swap pointers if any of the strings are allocated
-	if(m_pszString != m_baseBuffer || 
-		otherStr.m_pszString != m_baseBuffer)
-	{
-		QuickSwap(m_pszString, otherStr.m_pszString);
-	}
+	QuickSwap(m_pszString, otherStr.m_pszString);
 
 	QuickSwap(m_nLength, otherStr.m_nLength);
 	QuickSwap(m_nAllocated, otherStr.m_nAllocated);
-
-	// restore pointers properly to base buffer
-	if(m_nLength < EQSTRING_BASE_BUFFER)
-		m_pszString = m_baseBuffer;
-
-	if (otherStr.m_nLength < EQSTRING_BASE_BUFFER)
-		otherStr.m_pszString = otherStr.m_baseBuffer;
 }
 
 // other

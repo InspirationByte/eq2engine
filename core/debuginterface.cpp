@@ -121,7 +121,7 @@ DECLARE_CONCOMMAND_FN(developer)
 		else if( !str.CompareCaseIns("game") )
 			newMode |= DEVMSG_GAME;
 		else
-			newMode = atoi( str.c_str() );
+			newMode = atoi( str.ToCString() );
 	}
 
 	if( newMode > 0 )
@@ -176,7 +176,7 @@ DECLARE_CONCOMMAND_FN(echo)
 	for(int i = 0; i < CMD_ARGC; i++)
 	{
 		char tmp_path[2048];
-		sprintf(tmp_path, "%s ",CMD_ARGV(i).c_str());
+		sprintf(tmp_path, "%s ",CMD_ARGV(i).ToCString());
 
 		outText.Append(tmp_path);
 	}

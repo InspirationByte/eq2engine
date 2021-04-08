@@ -99,7 +99,7 @@ void CombinePath(EqString& outPath, int num, ...)
 		{
 			newStr.Append(_Es(pathPart));
 
-			if(i != num-1 && *newStr.Right(1).c_str() != CORRECT_PATH_SEPARATOR )
+			if(i != num-1 && *newStr.Right(1).ToCString() != CORRECT_PATH_SEPARATOR )
 				newStr.Append(CORRECT_PATH_SEPARATOR);
 		}
     }

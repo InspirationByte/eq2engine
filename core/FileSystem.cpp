@@ -435,12 +435,12 @@ bool CFileSystem::FileExist(const char* filename, int searchFlags) const
     {
 		for(int i = 0; i < m_directories.numElem(); i++)
 		{
-			sprintf(tmp_path, "%s%s/%s", basePath.c_str(), m_directories[i].path.c_str(), pFilePath);
+			sprintf(tmp_path, "%s%s/%s", basePath.ToCString(), m_directories[i].path.ToCString(), pFilePath);
 			if (access(tmp_path, F_OK ) != -1)
 				return true;
 
 			// base path is not used when dealing with package files
-			sprintf(tmp_path, "%s/%s", m_directories[i].path.c_str(), pFilePath);
+			sprintf(tmp_path, "%s/%s", m_directories[i].path.ToCString(), pFilePath);
 
 			// If failed to load directly, load it from package, in backward order
 			for (int j = m_packages.numElem() - 1; j >= 0; j--)
@@ -456,12 +456,12 @@ bool CFileSystem::FileExist(const char* filename, int searchFlags) const
     //Then we checking data directory
     if (flags & SP_DATA)
     {
-		sprintf(tmp_path, "%s%s/%s", basePath.c_str(), m_dataDir.c_str(), pFilePath);
+		sprintf(tmp_path, "%s%s/%s", basePath.ToCString(), m_dataDir.ToCString(), pFilePath);
 		if (access(tmp_path, F_OK ) != -1)
 			return true;
 
 		// base path is not used when dealing with package files
-		sprintf(tmp_path, "%s/%s", m_dataDir.c_str(), pFilePath);
+		sprintf(tmp_path, "%s/%s", m_dataDir.ToCString(), pFilePath);
 
 		// If failed to load directly, load it from package, in backward order
 		for (int j = m_packages.numElem() - 1; j >= 0; j--)
@@ -477,7 +477,7 @@ bool CFileSystem::FileExist(const char* filename, int searchFlags) const
     // not adding basepath to this
     if (flags & SP_ROOT)
     {
-		sprintf(tmp_path, "%s%s", basePath.c_str(), pFilePath);
+		sprintf(tmp_path, "%s%s", basePath.ToCString(), pFilePath);
 		if (access(tmp_path, F_OK ) != -1)
 			return true;
 
@@ -549,16 +549,16 @@ void CFileSystem::MakeDir(const char* dirname, SearchPath_e search ) const
 	else
 		searchPath = dirname;
 
-	if(	!(searchPath.c_str()[searchPath.Length()-1] == CORRECT_PATH_SEPARATOR  ||
-		searchPath.c_str()[searchPath.Length()-1] == INCORRECT_PATH_SEPARATOR))
+	if(	!(searchPath.ToCString()[searchPath.Length()-1] == CORRECT_PATH_SEPARATOR  ||
+		searchPath.ToCString()[searchPath.Length()-1] == INCORRECT_PATH_SEPARATOR))
 		searchPath.Append( CORRECT_PATH_SEPARATOR );
 
 	searchPath.Path_FixSlashes();
 
 #ifdef _WIN32
-	_mkdir(searchPath.c_str());
+	_mkdir(searchPath.ToCString());
 #else
-    mkdir(searchPath.c_str(),S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+    mkdir(searchPath.ToCString(),S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
 #endif
 }
 
@@ -620,7 +620,7 @@ void CFileSystem::Rename(const char* oldNameOrPath, const char* newNameOrPath, S
 	EqString newName(oldName + _Es("/") + newNameOrPath);
 	oldName.Append(_Es("/") + oldNameOrPath);
 
-	rename(oldName.c_str(), newName.c_str());
+	rename(oldName.ToCString(), newName.ToCString());
 }
 
 //Filesystem's check and open file
@@ -651,7 +651,7 @@ IFile* CFileSystem::GetFileHandle(const char* filename,const char* options, int 
 			if (isWrite && !m_directories[i].mainWritePath)
 				continue;
 
-			sprintf(tmp_path, "%s%s/%s", basePath.c_str(), m_directories[i].path.c_str(), pFilePath);
+			sprintf(tmp_path, "%s%s/%s", basePath.ToCString(), m_directories[i].path.ToCString(), pFilePath);
 
 			FILE *tmpFile = fopen(tmp_path,options);
 			if (tmpFile)
@@ -668,7 +668,7 @@ IFile* CFileSystem::GetFileHandle(const char* filename,const char* options, int 
 			if (!isWrite)
 			{
 				// base path is not used when dealing with package files
-				sprintf(tmp_path, "%s/%s", m_directories[i].path.c_str(), pFilePath);
+				sprintf(tmp_path, "%s/%s", m_directories[i].path.ToCString(), pFilePath);
 
 				// If failed to load directly, load it from package, in backward order
 				for (int j = m_packages.numElem() - 1; j >= 0; j--)
@@ -696,7 +696,7 @@ IFile* CFileSystem::GetFileHandle(const char* filename,const char* options, int 
     //Then we checking data directory
     if (flags & SP_DATA)
     {
-		sprintf(tmp_path, "%s%s/%s", basePath.c_str(), m_dataDir.c_str(), pFilePath);
+		sprintf(tmp_path, "%s%s/%s", basePath.ToCString(), m_dataDir.ToCString(), pFilePath);
 
         FILE *tmpFile = fopen(tmp_path,options);
         if (tmpFile)
@@ -712,7 +712,7 @@ IFile* CFileSystem::GetFileHandle(const char* filename,const char* options, int 
 		if (!isWrite)
 		{
 			// base path is not used when dealing with package files
-			sprintf(tmp_path, "%s/%s", m_dataDir.c_str(), pFilePath);
+			sprintf(tmp_path, "%s/%s", m_dataDir.ToCString(), pFilePath);
 
 			// If failed to load directly, load it from package, in backward order
 			for (int j = m_packages.numElem() - 1; j >= 0; j--)
@@ -740,7 +740,7 @@ IFile* CFileSystem::GetFileHandle(const char* filename,const char* options, int 
     // not adding basepath to this
     if (flags & SP_ROOT)
     {
-		sprintf(tmp_path, "%s%s", basePath.c_str(), pFilePath);
+		sprintf(tmp_path, "%s%s", basePath.ToCString(), pFilePath);
 
         FILE *tmpFile = fopen(tmp_path,options);
 		if (tmpFile)
@@ -886,7 +886,7 @@ const char* CFileSystem::GetCurrentGameDirectory() const
 	for (int i = 0; i < m_directories.numElem(); i++)
 	{
 		if (m_directories[i].mainWritePath)
-			return m_directories[i].path.c_str();
+			return m_directories[i].path.ToCString();
 	}
 
     return m_dataDir.GetData();
@@ -917,25 +917,25 @@ const char* CFileSystem::FindFirst(const char* wildcard, DKFINDDATA** findData, 
 	newFind->wildcard.ReplaceSubstr("*.*", "*");
 #endif
 
-	EqString fsBaseDir = m_basePath.c_str();
+	EqString fsBaseDir = m_basePath.ToCString();
 
 	if(searchPath == SP_DATA)
 	{
-		CombinePath(fsBaseDir, 2, m_basePath.c_str(), m_dataDir.c_str());
+		CombinePath(fsBaseDir, 2, m_basePath.ToCString(), m_dataDir.ToCString());
 	}
 	else if(searchPath == SP_MOD)
 	{
 		newFind->searchPathId = 0;
-		CombinePath(fsBaseDir, 2, m_basePath.c_str(), m_directories[0].path.c_str());
+		CombinePath(fsBaseDir, 2, m_basePath.ToCString(), m_directories[0].path.ToCString());
 	}
 
 	EqString searchWildcard;
-	CombinePath(searchWildcard, 2, fsBaseDir.c_str(), newFind->wildcard.c_str());
+	CombinePath(searchWildcard, 2, fsBaseDir.ToCString(), newFind->wildcard.ToCString());
 
 	m_findDatas.append(newFind);
 
 #ifdef _WIN32
-	newFind->fileHandle = ::FindFirstFileA(searchWildcard.c_str(), &newFind->wfd);
+	newFind->fileHandle = ::FindFirstFileA(searchWildcard.ToCString(), &newFind->wfd);
 
 	if(newFind->fileHandle != INVALID_HANDLE_VALUE)
 		return newFind->wfd.cFileName;
@@ -943,7 +943,7 @@ const char* CFileSystem::FindFirst(const char* wildcard, DKFINDDATA** findData, 
 #else // POSIX
 	newFind->index = -1;
 
-	if (glob(searchWildcard.c_str(), 0, NULL, &newFind->gl) == 0 && newFind->gl.gl_pathc > 0)
+	if (glob(searchWildcard.ToCString(), 0, NULL, &newFind->gl) == 0 && newFind->gl.gl_pathc > 0)
 	{
 		newFind->pathlen = searchWildcard.Path_Extract_Path().Length();
 		newFind->index = 0;
@@ -958,16 +958,16 @@ const char* CFileSystem::FindFirst(const char* wildcard, DKFINDDATA** findData, 
 		// try reinitialize
 		while(newFind->searchPathId < m_directories.numElem())
 		{
-			CombinePath(fsBaseDir, 2, m_basePath.c_str(), m_directories[newFind->searchPathId].path.c_str());
-			CombinePath(searchWildcard, 2, fsBaseDir.c_str(), newFind->wildcard.c_str());
+			CombinePath(fsBaseDir, 2, m_basePath.ToCString(), m_directories[newFind->searchPathId].path.ToCString());
+			CombinePath(searchWildcard, 2, fsBaseDir.ToCString(), newFind->wildcard.ToCString());
 
 #ifdef _WIN32
-			newFind->fileHandle = ::FindFirstFileA(searchWildcard.c_str(), &newFind->wfd);
+			newFind->fileHandle = ::FindFirstFileA(searchWildcard.ToCString(), &newFind->wfd);
 
 			if(newFind->fileHandle != INVALID_HANDLE_VALUE)
 				return newFind->wfd.cFileName;
 #else // POSIX
-			if (glob(searchWildcard.c_str(), 0, NULL, &newFind->gl) == 0)
+			if (glob(searchWildcard.ToCString(), 0, NULL, &newFind->gl) == 0)
 			{
 				newFind->pathlen = searchWildcard.Path_Extract_Path().Length();
 				newFind->index = 0;
@@ -1011,15 +1011,15 @@ const char* CFileSystem::FindNext(DKFINDDATA* findData) const
 			EqString fsBaseDir;
 			EqString searchWildcard;
 			
-			CombinePath(fsBaseDir, 2, m_basePath.c_str(), m_directories[findData->searchPathId].path.c_str());		
-			CombinePath(searchWildcard, 2, fsBaseDir.c_str(), findData->wildcard.c_str());
+			CombinePath(fsBaseDir, 2, m_basePath.ToCString(), m_directories[findData->searchPathId].path.ToCString());		
+			CombinePath(searchWildcard, 2, fsBaseDir.ToCString(), findData->wildcard.ToCString());
 
 #ifdef _WIN32
 			// close existing find
 			::FindClose(findData->fileHandle);
 
 			// tre init new
-			findData->fileHandle = ::FindFirstFileA(searchWildcard.c_str(), &findData->wfd);
+			findData->fileHandle = ::FindFirstFileA(searchWildcard.ToCString(), &findData->wfd);
 
 			if(findData->fileHandle != INVALID_HANDLE_VALUE)
 				return findData->wfd.cFileName;
@@ -1027,7 +1027,7 @@ const char* CFileSystem::FindNext(DKFINDDATA* findData) const
 			globfree(&findData->gl);
 			findData->index = -1;
 
-			if (glob(searchWildcard.c_str(), 0, NULL, &findData->gl) == 0)
+			if (glob(searchWildcard.ToCString(), 0, NULL, &findData->gl) == 0)
 			{
 				findData->pathlen = searchWildcard.Path_Extract_Path().Length();
 				findData->index = 0;
@@ -1096,7 +1096,7 @@ DKMODULE* CFileSystem::LoadModule(const char* mod_name)
 	if(modExt.Length() == 0)
 		moduleFileName = moduleFileName + ".dll";
 
-	HMODULE mod = LoadLibraryA( moduleFileName.c_str() );
+	HMODULE mod = LoadLibraryA( moduleFileName.ToCString() );
 
 	DWORD lastErr = GetLastError();
 
@@ -1118,24 +1118,24 @@ DKMODULE* CFileSystem::LoadModule(const char* mod_name)
 	if(modExt.Length() == 0)
 		moduleFileName = moduleFileName + ".so";
 
-	HMODULE mod = dlopen( moduleFileName.c_str(), RTLD_LAZY | RTLD_LOCAL );
+	HMODULE mod = dlopen( moduleFileName.ToCString(), RTLD_LAZY | RTLD_LOCAL );
 
 	const char* err = dlerror();
 	int lastErr = 0;
 #endif // _WIN32 && MEMDLL
 
-	MsgInfo("Loading module '%s'\n", moduleFileName.c_str());
+	MsgInfo("Loading module '%s'\n", moduleFileName.ToCString());
 
 	if( !mod )
 	{
-        MsgInfo("Library '%s' loading error '%s', 0x%p\n", moduleFileName.c_str(), err, lastErr);
+        MsgInfo("Library '%s' loading error '%s', 0x%p\n", moduleFileName.ToCString(), err, lastErr);
 
-		ErrorMsg("CFileSystem::LoadModule Error: Failed to load %s\n - %s!", moduleFileName.c_str(), err);
+		ErrorMsg("CFileSystem::LoadModule Error: Failed to load %s\n - %s!", moduleFileName.ToCString(), err);
 		return NULL;
 	}
 
 	DKMODULE* pModule = new DKMODULE;
-	strcpy( pModule->name, moduleFileName.c_str() );
+	strcpy( pModule->name, moduleFileName.ToCString() );
 	pModule->module = (HMODULE)mod;
 
 	return pModule;

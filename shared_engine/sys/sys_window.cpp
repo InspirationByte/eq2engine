@@ -79,11 +79,11 @@ DECLARE_CMD(screenshot, "Save screenshot", 0)
 			g_fileSystem->MakeDir("screenshots", SP_ROOT);
 			EqString path(varargs("screenshots/screenshot_%04d.jpg", i));
 
-			if(g_fileSystem->FileExist(path.c_str(), SP_ROOT))
+			if(g_fileSystem->FileExist(path.ToCString(), SP_ROOT))
 				continue;
 
-			MsgInfo("Writing screenshot to '%s'\n", path.c_str());
-			img.SaveJPEG(path.c_str(), screenshotJpegQuality.GetInt());
+			MsgInfo("Writing screenshot to '%s'\n", path.ToCString());
+			img.SaveJPEG(path.ToCString(), screenshotJpegQuality.GetInt());
 			break;
 		}
 		while (i++ < 9999);
@@ -91,7 +91,7 @@ DECLARE_CMD(screenshot, "Save screenshot", 0)
 	else
 	{
 		EqString path(CMD_ARGV(0) + ".jpg");
-		img.SaveJPEG(path.c_str(), screenshotJpegQuality.GetInt());
+		img.SaveJPEG(path.ToCString(), screenshotJpegQuality.GetInt());
 	}
 }
 
@@ -235,7 +235,7 @@ bool Host_Init()
 
 		EqString cfgFileName(g_cmdLine->GetArgumentsOf(userCfgIdx));
 
-		user_cfg.SetValue(cfgFileName.TrimChar('\"').c_str());
+		user_cfg.SetValue(cfgFileName.TrimChar('\"').ToCString());
 	}
 
 	// execute configuration files and command line after all libraries are loaded.

@@ -53,11 +53,11 @@ bool UTIL_GetBindingKeyIndices(int outKeys[3], const char* pszKeyStr)
 		{
 			EqString modifier(keyStr, subStart - keyStr);
 
-			outKeys[i] = KeyStringToKeyIndex(modifier.c_str());
+			outKeys[i] = KeyStringToKeyIndex(modifier.ToCString());
 
 			if (outKeys[i] == -1)
 			{
-				MsgError("Unknown key/mapping '%s'\n", modifier.c_str());
+				MsgError("Unknown key/mapping '%s'\n", modifier.ToCString());
 				return false;
 			}
 
@@ -186,15 +186,15 @@ void CInputCommandBinder::InitTouchZones()
 		// resolve commands
 
 		// if we connecting libraries dynamically, that wouldn't properly execute
-		newZone.cmd_act = (ConCommand*)g_consoleCommands->FindCommand(varargs("+%s", newZone.commandString.c_str()));
-		newZone.cmd_deact = (ConCommand*)g_consoleCommands->FindCommand(varargs("-%s", newZone.commandString.c_str()));
+		newZone.cmd_act = (ConCommand*)g_consoleCommands->FindCommand(varargs("+%s", newZone.commandString.ToCString()));
+		newZone.cmd_deact = (ConCommand*)g_consoleCommands->FindCommand(varargs("-%s", newZone.commandString.ToCString()));
 
 		// if found only one command with plus or minus
 		if(!newZone.cmd_act || !newZone.cmd_deact)
-			newZone.cmd_act = (ConCommand*)g_consoleCommands->FindCommand( newZone.commandString.c_str() );
+			newZone.cmd_act = (ConCommand*)g_consoleCommands->FindCommand( newZone.commandString.ToCString() );
 
 		DevMsg(DEVMSG_CORE, "Touchzone: %s (%s) [x=%g,y=%g] [w=%g,h=%g]\n", 
-			newZone.name.c_str(), newZone.commandString.c_str(), 
+			newZone.name.ToCString(), newZone.commandString.ToCString(), 
 			newZone.position.x, newZone.position.y, 
 			newZone.size.x, newZone.size.y);
 
@@ -205,7 +205,7 @@ void CInputCommandBinder::InitTouchZones()
 		}
 		else
 		{
-			MsgError("touchzone %s: unknown command '%s'\n", newZone.name.c_str(), newZone.commandString.c_str());
+			MsgError("touchzone %s: unknown command '%s'\n", newZone.name.ToCString(), newZone.commandString.ToCString());
 		}
 	}
 }
@@ -296,18 +296,18 @@ bool CInputCommandBinder::ResolveCommandBinding(in_binding_t* binding)
 
 	// resolve axis first
 	if(isJoyAxis)
-		binding->boundAction = FindAxisAction( binding->commandString.c_str() );
+		binding->boundAction = FindAxisAction( binding->commandString.ToCString() );
 
 	// if no axis action is bound, try bind concommands
 	if(!binding->boundAction)
 	{
 		// if we connecting libraries dynamically, that wouldn't properly execute
-		binding->cmd_act = (ConCommand*)g_consoleCommands->FindCommand(varargs("+%s", binding->commandString.c_str()));
-		binding->cmd_deact = (ConCommand*)g_consoleCommands->FindCommand(varargs("-%s", binding->commandString.c_str()));
+		binding->cmd_act = (ConCommand*)g_consoleCommands->FindCommand(varargs("+%s", binding->commandString.ToCString()));
+		binding->cmd_deact = (ConCommand*)g_consoleCommands->FindCommand(varargs("-%s", binding->commandString.ToCString()));
 
 		// if found only one command with plus or minus
 		if(!binding->cmd_act || !binding->cmd_deact)
-			binding->cmd_act = (ConCommand*)g_consoleCommands->FindCommand( binding->commandString.c_str() );
+			binding->cmd_act = (ConCommand*)g_consoleCommands->FindCommand( binding->commandString.ToCString() );
 	}
 
 	// if anly command found
@@ -318,7 +318,7 @@ bool CInputCommandBinder::ResolveCommandBinding(in_binding_t* binding)
 	}
 	else
 	{
-		MsgError("Cannot bind command '%s' to key '%s'\n", binding->commandString.c_str(), s_keyMapList[binding->key_index].name);
+		MsgError("Cannot bind command '%s' to key '%s'\n", binding->commandString.ToCString(), s_keyMapList[binding->key_index].name);
 		return false;
 	}
 
@@ -609,7 +609,7 @@ void CInputCommandBinder::OnTouchEvent( const Vector2D& pos, int finger, bool do
 		else if( rect.IsInRectangle(pos) )
 		{
 			if (in_touchzones_debug.GetInt() == 2)
-				Msg("found zone %s\n", tz->name.c_str());
+				Msg("found zone %s\n", tz->name.ToCString());
 
 			tz->finger = finger;
 
@@ -664,7 +664,7 @@ void CInputCommandBinder::DebugDraw(const Vector2D& screenSize)
 
 		Rectangle_t rect((tz->position-tz->size*0.5f)*screenSize, (tz->position+tz->size*0.5f)*screenSize);
 
-		defaultFont->RenderText( tz->name.c_str() , rect.vleftTop, fontParams);
+		defaultFont->RenderText( tz->name.ToCString() , rect.vleftTop, fontParams);
 
 		Vertex2D_t touchQuad[] = { MAKETEXQUAD(rect.vleftTop.x, rect.vleftTop.y,rect.vrightBottom.x, rect.vrightBottom.y, 0) };
 		materials->DrawPrimitives2DFFP(PRIM_TRIANGLE_STRIP,touchQuad,elementsOf(touchQuad), nullptr, ColorRGBA(0.435,0.435,0.435, tz->finger >= 0 ? 0.25f : 0.35f  ), &blending);
@@ -748,7 +748,7 @@ void binding_key_list(const ConCommandBase* base, DkList<EqString>& list, const 
 			break;
 		}
 
-		list.append(keyNameString.c_str());
+		list.append(keyNameString.ToCString());
 	}
 }
 
@@ -759,9 +759,9 @@ DECLARE_CMD_VARIANTS(bind,"Binds action to key", con_key_list, 0)
 		EqString agrstr;
 
 		for(int i = 2; i < CMD_ARGC; i++)
-			agrstr.Append(varargs((i < CMD_ARGC-1) ? "%s " : "%s", CMD_ARGV(i).c_str()));
+			agrstr.Append(varargs((i < CMD_ARGC-1) ? "%s " : "%s", CMD_ARGV(i).ToCString()));
 
-		g_inputCommandBinder->BindKey(CMD_ARGV(0).c_str(), CMD_ARGV(1).c_str(),(char*)agrstr.GetData());
+		g_inputCommandBinder->BindKey(CMD_ARGV(0).ToCString(), CMD_ARGV(1).ToCString(),(char*)agrstr.GetData());
 	}
 	else
 		MsgInfo("Usage: bind <key> <command> [args,...]\n");
@@ -779,7 +779,7 @@ DECLARE_CMD(list_binding,"Shows bound keys",0)
 		EqString keyNameString;
 		UTIL_GetBindingKeyString(keyNameString, binding);
 
-		Msg("bind %s %s %s\n", keyNameString.c_str(), binding->commandString.c_str(), binding->argumentString.c_str() );
+		Msg("bind %s %s %s\n", keyNameString.ToCString(), binding->commandString.ToCString(), binding->argumentString.ToCString() );
 	}
 
 	MsgInfo("---- %d keys/commands bound ----\n", bindingList->numElem());
@@ -794,7 +794,7 @@ DECLARE_CMD(list_touchzones,"Shows bound keys",0)
 	{
 		in_touchzone_t* tz = &touchList->ptr()[i];
 
-		Msg("Touchzone %s (%s) [x=%g,y=%g] [w=%g,h=%g]\n", tz->name.c_str(), tz->commandString.c_str(), tz->position.x, tz->position.y, tz->size.x, tz->size.y);
+		Msg("Touchzone %s (%s) [x=%g,y=%g] [w=%g,h=%g]\n", tz->name.ToCString(), tz->commandString.ToCString(), tz->position.x, tz->position.y, tz->size.x, tz->size.y);
 	}
 
 	MsgInfo("---- %d touch zones ----\n", touchList->numElem());
@@ -809,7 +809,7 @@ DECLARE_CMD(list_axisActions,"Shows axis list can be bound",0)
 	{
 		axisAction_t* act = &axisActs->ptr()[i];
 
-		Msg("    %s\n", act->name.c_str());
+		Msg("    %s\n", act->name.ToCString());
 	}
 
 	MsgInfo("---- %d axes ----\n", axisActs->numElem());
@@ -820,7 +820,7 @@ DECLARE_CMD_VARIANTS(unbind,"Unbinds a key", binding_key_list, 0)
 {
 	if(CMD_ARGC > 0)
 	{
-		g_inputCommandBinder->UnbindKey(CMD_ARGV(0).c_str());
+		g_inputCommandBinder->UnbindKey(CMD_ARGV(0).ToCString());
 	}
 }
 

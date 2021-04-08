@@ -171,7 +171,7 @@ bool CZipFileReader::InitPackage(const char* filename, const char* mountPath/* =
 	unzFile zip = GetNewZipHandle();
 	if (!zip)
 	{
-		MsgError("Cannot open Zip package '%s'\n", m_packagePath.c_str());
+		MsgError("Cannot open Zip package '%s'\n", m_packagePath.ToCString());
 		return false;
 	}
 
@@ -188,7 +188,7 @@ bool CZipFileReader::InitPackage(const char* filename, const char* mountPath/* =
 		zfileinfo_t zf;
 		zf.filename = path;
 		zf.filename = zf.filename.LowerCase();
-		zf.hash = StringToHash(zf.filename.c_str());
+		zf.hash = StringToHash(zf.filename.ToCString());
 
 		unzGetFilePos(zip, &zf.pos);
 	
@@ -282,7 +282,7 @@ bool CZipFileReader::FileExists(const char* filename) const
 
 unzFile CZipFileReader::GetNewZipHandle() const
 {
-	return unzOpen(m_packagePath.c_str());
+	return unzOpen(m_packagePath.ToCString());
 }
 
 extern void DPK_FixSlashes(EqString& str);
@@ -295,7 +295,7 @@ unzFile	CZipFileReader::GetZippedFile(const char* filename) const
 
 	if (m_mountPath.Length())
 	{
-		int mountPathPos = fullFilename.Find(m_mountPath.c_str(), false, 0);
+		int mountPathPos = fullFilename.Find(m_mountPath.ToCString(), false, 0);
 
 		if (mountPathPos != 0)
 			return nullptr;
@@ -305,9 +305,9 @@ unzFile	CZipFileReader::GetZippedFile(const char* filename) const
 	EqString pkgFileName = fullFilename.Right(fullFilename.Length() - m_mountPath.Length() - 1);
 	DPK_FixSlashes(pkgFileName);
 
-	int strHash = StringToHash(pkgFileName.c_str(), true);
+	int strHash = StringToHash(pkgFileName.ToCString(), true);
 
-	//Msg("Request file '%s' %d\n", pkgFileName.c_str(), strHash);
+	//Msg("Request file '%s' %d\n", pkgFileName.ToCString(), strHash);
 
 	for (int i = 0; i < m_files.numElem(); i++)
 	{

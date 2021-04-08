@@ -43,7 +43,7 @@ public:
 
 	int						GetEntryCount() const		{return m_num;}
 
-	const char*				GetMaterialName() const		{return m_material.c_str();}
+	const char*				GetMaterialName() const		{return m_material.ToCString();}
 protected:
 
 	//char					m_name[64];

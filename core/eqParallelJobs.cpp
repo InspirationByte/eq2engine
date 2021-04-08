@@ -175,12 +175,14 @@ void CEqParallelJobThreads::CompleteJobCallbacks()
 	{
 		do
 		{
+			
 			eqParallelJob_t* job = m_completedJobs.getCurrent();
+			bool deleteJob = (job->flags & JOB_FLAG_DELETE) > 0;
 
 			job->onComplete(job);
 
 			// done with it
-			if (job->flags & JOB_FLAG_DELETE)
+			if (deleteJob)
 				delete job;
 
 		} while (m_completedJobs.goToNext());

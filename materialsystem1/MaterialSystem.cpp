@@ -225,7 +225,7 @@ bool CMaterialSystem::Init(const char* materialsDirectory, const char* szShaderA
 	m_materialsPath = materialsDirectory;
 	m_materialsPath.Path_FixSlashes();
 
-	if(m_materialsPath.c_str()[m_materialsPath.Length()-1] != CORRECT_PATH_SEPARATOR)
+	if(m_materialsPath.ToCString()[m_materialsPath.Length()-1] != CORRECT_PATH_SEPARATOR)
 		m_materialsPath.Append(CORRECT_PATH_SEPARATOR);
 
 	// render library initialization
@@ -434,7 +434,7 @@ matsystem_render_config_t& CMaterialSystem::GetConfiguration()
 // returns material path
 const char* CMaterialSystem::GetMaterialPath() const
 {
-	return m_materialsPath.c_str();
+	return m_materialsPath.ToCString();
 }
 
 void CMaterialSystem::SetResourceBeginEndLoadCallback(RESOURCELOADCALLBACK begin, RESOURCELOADCALLBACK end)

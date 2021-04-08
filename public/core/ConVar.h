@@ -51,15 +51,11 @@ public:
 
 	// Value returning
 	float			GetFloat() const	{return m_flValue;}
-	const char*		GetString() const	{return m_szValueString;}
+	const char*		GetString() const	{return m_szValueString.ToCString();}
 	int				GetInt() const		{return m_nValue;}
 	bool			GetBool() const		{return (m_nValue > 0);}
 
 	virtual void	LuaCleanup();
-
-	//operator float () {return GetFloat();}
-	//operator int () {return GetInt();}
-	//operator bool () {return GetBool();}
 
 private:
 
@@ -81,10 +77,7 @@ private:
 	CONVAR_CHANGE_CALLBACK	m_fnChangeCallback;
 
 	// Dynamically allocated value
-	char*					m_szValueString;
-
-	// String length
-	int						m_iStringLength;
+	EqString				m_szValueString;
 
 	// Other values
 	float					m_flValue;

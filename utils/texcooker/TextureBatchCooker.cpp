@@ -237,7 +237,7 @@ void LoadBatchConfig(kvkeybase_t* batchSec)
 	{
 		kvkeybase_t* sec = batchSec->keys[i];
 
-		if (!stricmp(sec->name, "compression") && !stricmp(KV_GetValueString(sec, 0, "INVALID"), g_targetProps.targetCompression.c_str()))
+		if (!stricmp(sec->name, "compression") && !stricmp(KV_GetValueString(sec, 0, "INVALID"), g_targetProps.targetCompression.ToCString()))
 		{
 			compressionSec = sec;
 			break;
@@ -246,7 +246,7 @@ void LoadBatchConfig(kvkeybase_t* batchSec)
 
 	if (!compressionSec)
 	{
-		MsgError("Unknown compression preset '%s', check your BatchConfig section\n", g_targetProps.targetCompression.c_str());
+		MsgError("Unknown compression preset '%s', check your BatchConfig section\n", g_targetProps.targetCompression.ToCString());
 		return;
 	}
 
@@ -317,11 +317,11 @@ void LoadMaterialImages(const char* materialFileName)
 				const char* imageName = KV_GetValueString(key, 0, "");
 
 				EqString filename;
-				CombinePath(filename, 2, g_batchConfig.sourceMaterialPath.c_str(), varargs("%s.%s", imageName, g_batchConfig.sourceImageExt.c_str()));
+				CombinePath(filename, 2, g_batchConfig.sourceMaterialPath.ToCString(), varargs("%s.%s", imageName, g_batchConfig.sourceImageExt.ToCString()));
 				
-				if (!g_fileSystem->FileExist(filename.c_str()))
+				if (!g_fileSystem->FileExist(filename.ToCString()))
 				{
-					MsgError("  - texture '%s' does not exists!\n", filename.c_str());
+					MsgError("  - texture '%s' does not exists!\n", filename.ToCString());
 					continue;
 				}
 
@@ -329,19 +329,19 @@ void LoadMaterialImages(const char* materialFileName)
 				{
 					// make path
 					EqString targetFilePath;
-					CombinePath(targetFilePath, 2, g_targetProps.targetFolder.c_str(), _Es(imageName).Path_Strip_Name().c_str());
+					CombinePath(targetFilePath, 2, g_targetProps.targetFolder.ToCString(), _Es(imageName).Path_Strip_Name().ToCString());
 					
-					MakePath(targetFilePath.c_str());
+					MakePath(targetFilePath.ToCString());
 
 					EqString materialFileName(targetFilePath.Path_Strip_Name() + _Es(materialFileName).Path_Strip_Path());
 
 					// save material file
-					kvs.SaveToFile(materialFileName.c_str(), SP_ROOT);
+					kvs.SaveToFile(materialFileName.ToCString(), SP_ROOT);
 
 					matFileSaved = true;
 				}
 
-				g_textureList.append(new TexInfo_t(imageName, imageUsage.c_str()));
+				g_textureList.append(new TexInfo_t(imageName, imageUsage.ToCString()));
 				textures++;
 			}
 		}
@@ -372,15 +372,15 @@ void SearchFolderForMaterialsAndGetTextures(const char* wildcard)
 			if (g_fileSystem->FindIsDirectory(findData) && stricmp(fileName, ".") && stricmp(fileName, ".."))
 			{
 				EqString searchTemplate;
-				CombinePath(searchTemplate, 3, searchFolder.c_str(), fileName, "*.*");
+				CombinePath(searchTemplate, 3, searchFolder.ToCString(), fileName, "*.*");
 
-				SearchFolderForMaterialsAndGetTextures(searchTemplate.c_str());
+				SearchFolderForMaterialsAndGetTextures(searchTemplate.ToCString());
 			}
 			else if (xstristr(fileName, ".mat"))
 			{
 				EqString fullMaterialPath;
-				CombinePath(fullMaterialPath, 2, searchFolder.c_str(), fileName);
-				LoadMaterialImages(fullMaterialPath.c_str());
+				CombinePath(fullMaterialPath, 2, searchFolder.ToCString(), fileName);
+				LoadMaterialImages(fullMaterialPath.ToCString());
 			}
 		}
 
@@ -405,45 +405,45 @@ void ProcessTexture(TexInfo_t* textureInfo)
 {
 	// before this, create folders...
 	EqString sourceFilename;
-	CombinePath(sourceFilename, 2, g_batchConfig.sourceMaterialPath.c_str(), varargs("%s.%s", textureInfo->sourcePath.c_str(), g_batchConfig.sourceImageExt.c_str()));
+	CombinePath(sourceFilename, 2, g_batchConfig.sourceMaterialPath.ToCString(), varargs("%s.%s", textureInfo->sourcePath.ToCString(), g_batchConfig.sourceImageExt.ToCString()));
 	
 	EqString targetFilename;
-	CombinePath(targetFilename, 2, g_targetProps.targetFolder.c_str(), textureInfo->sourcePath.Path_Strip_Ext() + ".dds");
+	CombinePath(targetFilename, 2, g_targetProps.targetFolder.ToCString(), textureInfo->sourcePath.Path_Strip_Ext() + ".dds");
 	
 	EqString targetFilePath;
-	CombinePath(targetFilePath, 2, g_targetProps.targetFolder.c_str(), textureInfo->sourcePath.Path_Strip_Name().c_str());
+	CombinePath(targetFilePath, 2, g_targetProps.targetFolder.ToCString(), textureInfo->sourcePath.Path_Strip_Name().ToCString());
 
 	targetFilePath = targetFilePath.TrimChar(CORRECT_PATH_SEPARATOR);
 
 	EqString arguments(g_batchConfig.applicationArgumentsTemplate);
-	arguments.ReplaceSubstr(s_argumentsTag.c_str(), textureInfo->usage->applicationArguments.c_str());
-	arguments.ReplaceSubstr(s_inputFileNameTag.c_str(), sourceFilename.c_str());
-	arguments.ReplaceSubstr(s_outputFilePathTag.c_str(), targetFilePath.c_str());
+	arguments.ReplaceSubstr(s_argumentsTag.ToCString(), textureInfo->usage->applicationArguments.ToCString());
+	arguments.ReplaceSubstr(s_inputFileNameTag.ToCString(), sourceFilename.ToCString());
+	arguments.ReplaceSubstr(s_outputFilePathTag.ToCString(), targetFilePath.ToCString());
 
 	// generate CRC from image file content and arguments it's going to be built
-	uint32 srcCRC = g_fileSystem->GetFileCRC32(sourceFilename.c_str(), SP_ROOT) + CRC32_BlockChecksum(arguments.c_str(), arguments.Length());
+	uint32 srcCRC = g_fileSystem->GetFileCRC32(sourceFilename.ToCString(), SP_ROOT) + CRC32_BlockChecksum(arguments.ToCString(), arguments.Length());
 
 	// store new CRC
-	g_batchConfig.newCRCSec.SetKey(varargs("%u", srcCRC), sourceFilename.c_str());
+	g_batchConfig.newCRCSec.SetKey(varargs("%u", srcCRC), sourceFilename.ToCString());
 
 	// now check CRC from loaded file
-	if (hasMatchingCRC(srcCRC) && g_fileSystem->FileExist(targetFilename.c_str(), SP_ROOT))
+	if (hasMatchingCRC(srcCRC) && g_fileSystem->FileExist(targetFilename.ToCString(), SP_ROOT))
 	{
-		MsgInfo("Skipping %s: %s...\n", textureInfo->usage->usageName.c_str(), textureInfo->sourcePath.c_str());
+		MsgInfo("Skipping %s: %s...\n", textureInfo->usage->usageName.ToCString(), textureInfo->sourcePath.ToCString());
 		textureInfo->status = SKIPPED;
 		return;
 	}
 
 	textureInfo->status = CONVERTED;
 
-	MsgInfo("Processing %s: %s...\n", textureInfo->usage->usageName.c_str(), textureInfo->sourcePath.c_str());
+	MsgInfo("Processing %s: %s...\n", textureInfo->usage->usageName.ToCString(), textureInfo->sourcePath.ToCString());
 
 	/*static const EqString s_argumentsTag("%ARGS%");
 	static const EqString s_inputFileNameTag("%INPUT_FILENAME%");
 	static const EqString s_outputFileNameTag("%OUTPUT_FILENAME%");
 	static const EqString s_outputFilePathTag("%OUTPUT_FILEPATH%");*/
 
-	EqString cmdLine(varargs("%s %s %s", g_batchConfig.applicationName.c_str(), g_batchConfig.compressionApplicationArguments.c_str(), arguments.c_str()));
+	EqString cmdLine(varargs("%s %s %s", g_batchConfig.applicationName.ToCString(), g_batchConfig.compressionApplicationArguments.ToCString(), arguments.ToCString()));
 
 	Msg("*RUN '%s'\n", cmdLine.GetData());
 	system(cmdLine.GetData());
@@ -512,19 +512,19 @@ void CookMaterialsToTarget(const char* pszTargetName)
 	// perform batch conversion
 	{
 		EqString searchTemplate;
-		CombinePath(searchTemplate, 2, g_batchConfig.sourceMaterialPath.c_str(), "*.*");
+		CombinePath(searchTemplate, 2, g_batchConfig.sourceMaterialPath.ToCString(), "*.*");
 
-		Msg("Material source path: '%s'\n", searchTemplate.c_str());
+		Msg("Material source path: '%s'\n", searchTemplate.ToCString());
 
 		// walk up material files
-		SearchFolderForMaterialsAndGetTextures( searchTemplate.c_str() );
+		SearchFolderForMaterialsAndGetTextures( searchTemplate.ToCString() );
 
 		Msg("Got %d textures\n", g_textureList.numElem());
 
-		EqString crcFileName(varargs("cook_%s_crc.txt", g_targetProps.targetCompression.c_str()));
+		EqString crcFileName(varargs("cook_%s_crc.txt", g_targetProps.targetCompression.ToCString()));
 
 		// load CRC list, check for existing DDS files, and skip if necessary
-		KV_LoadFromFile(crcFileName.c_str(), SP_ROOT, &g_batchConfig.crcSec);
+		KV_LoadFromFile(crcFileName.ToCString(), SP_ROOT, &g_batchConfig.crcSec);
 
 		// do conversion
 		for (int i = 0; i < g_textureList.numElem(); i++)
@@ -536,7 +536,7 @@ void CookMaterialsToTarget(const char* pszTargetName)
 		}
 
 		// save CRC list file
-		IFile* pStream = g_fileSystem->Open(crcFileName.c_str(), "wt", SP_ROOT);
+		IFile* pStream = g_fileSystem->Open(crcFileName.ToCString(), "wt", SP_ROOT);
 
 		if (pStream)
 		{

@@ -17,4 +17,5 @@ vs2019/*
 package/*
 build/*
 bin/*
-src_dependency/wx
+src_dependency/wxWidgets/*
+src_dependency/openal-soft/*

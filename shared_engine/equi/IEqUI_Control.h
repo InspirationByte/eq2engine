@@ -63,7 +63,7 @@ public:
 	virtual void				InitFromKeyValues( kvkeybase_t* sec, bool noClear = false );
 
 	// name and type
-	const char*					GetName() const						{return m_name.c_str();}
+	const char*					GetName() const						{return m_name.ToCString();}
 	void						SetName(const char* pszName)		{m_name = pszName;}
 
 	// label (UTF-8)

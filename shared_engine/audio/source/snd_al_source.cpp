@@ -99,7 +99,7 @@ soundFormat_t* CSoundSource_OpenALCache::GetFormat() const
 
 const char* CSoundSource_OpenALCache::GetFilename() const 
 {
-	return m_filename.c_str(); 
+	return m_filename.ToCString(); 
 }
 
 int CSoundSource_OpenALCache::GetSampleCount() const 

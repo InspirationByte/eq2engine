@@ -146,7 +146,7 @@ CFont::~CFont()
 
 const char*	CFont::GetName() const
 {
-	return m_name.c_str();
+	return m_name.ToCString();
 }
 
 float CFont::GetStringWidth( const char* str, const eqFontStyleParam_t& params, int charCount, int breakOnChar) const
@@ -770,7 +770,7 @@ bool CFont::LoadFont( const char* filenamePrefix )
 	}
 	else
 	{
-		MsgError("ERROR: Can't open font file '%s' (%s)\n", finalFileName.c_str(), filenamePrefix);
+		MsgError("ERROR: Can't open font file '%s' (%s)\n", finalFileName.ToCString(), filenamePrefix);
 	}
 
 	return false;

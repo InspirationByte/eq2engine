@@ -777,9 +777,9 @@ void CEGFViewFrame::ProcessAllMenuCommands(wxCommandEvent& event)
 			g_model.SetModel( NULL );
 			FlushCache();
 
-			int cache_index = g_studioModelCache->PrecacheModel( model_path.c_str() );
+			int cache_index = g_studioModelCache->PrecacheModel( model_path.ToCString() );
 			if(cache_index == CACHE_INVALID_MODEL)
-				wxMessageBox(varargs("Can't open %s\n", model_path.c_str()), "Error", wxOK | wxCENTRE | wxICON_EXCLAMATION, this);
+				wxMessageBox(varargs("Can't open %s\n", model_path.ToCString()), "Error", wxOK | wxCENTRE | wxICON_EXCLAMATION, this);
 
 			g_model.SetModel( g_studioModelCache->GetModel(cache_index) );
 		}
@@ -801,9 +801,9 @@ void CEGFViewFrame::ProcessAllMenuCommands(wxCommandEvent& event)
 		g_model.SetModel( NULL );
 		FlushCache();
 
-		int cache_index = g_studioModelCache->PrecacheModel( model_path.c_str() );
+		int cache_index = g_studioModelCache->PrecacheModel( model_path.ToCString() );
 		if(cache_index == CACHE_INVALID_MODEL)
-			wxMessageBox(varargs("Can't open %s\n", model_path.c_str()), "Error", wxOK | wxCENTRE | wxICON_EXCLAMATION, this);
+			wxMessageBox(varargs("Can't open %s\n", model_path.ToCString()), "Error", wxOK | wxCENTRE | wxICON_EXCLAMATION, this);
 
 		g_model.SetModel( g_studioModelCache->GetModel(cache_index) );
 	}
@@ -879,9 +879,9 @@ void CEGFViewFrame::ProcessAllMenuCommands(wxCommandEvent& event)
 						g_model.SetModel( NULL );
 						FlushCache();
 
-						int cache_index = g_studioModelCache->PrecacheModel( model_path.c_str() );
+						int cache_index = g_studioModelCache->PrecacheModel( model_path.ToCString() );
 						if(cache_index == CACHE_INVALID_MODEL)
-							wxMessageBox(varargs("Can't open %s\n", model_path.c_str()), "Error", wxOK | wxCENTRE | wxICON_EXCLAMATION, this);
+							wxMessageBox(varargs("Can't open %s\n", model_path.ToCString()), "Error", wxOK | wxCENTRE | wxICON_EXCLAMATION, this);
 
 						g_model.SetModel( g_studioModelCache->GetModel(cache_index) );
 

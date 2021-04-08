@@ -36,7 +36,7 @@ DECLARE_CMD(in_joy_addMapping, "Adds joystick mapping in SDL2 format", 0)
 		return;
 	}
 
-	int result = SDL_GameControllerAddMapping(CMD_ARGV(0).c_str());
+	int result = SDL_GameControllerAddMapping(CMD_ARGV(0).ToCString());
 
 	if (result <= 0)
 	{
@@ -54,7 +54,7 @@ DECLARE_CMD(in_joy_addMapping, "Adds joystick mapping in SDL2 format", 0)
 	if(!dbFile)
 		return;
 
-	dbFile->Print(CMD_ARGV(0).c_str());
+	dbFile->Print(CMD_ARGV(0).ToCString());
 	dbFile->Print("\n");
 
 	g_fileSystem->Close(dbFile);

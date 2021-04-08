@@ -180,7 +180,7 @@ void EqWString::Assign(const char* pszStr, int len)
 
 void EqWString::Assign(const EqString &str, int nStart, int len)
 {
-	EqStringConv::utf8_to_wchar conv((*this), str.c_str() + nStart);
+	EqStringConv::utf8_to_wchar conv((*this), str.ToCString() + nStart);
 }
 
 // string assignment (or setvalue)

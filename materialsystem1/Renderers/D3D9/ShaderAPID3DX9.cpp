@@ -2030,8 +2030,8 @@ bool ShaderAPID3DX9::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 
 		if(info.apiPrefs)
 		{
-			profile = KV_GetValueString(info.apiPrefs->FindKeyBase("vs_profile"), 0, profile.c_str());
-			entry = KV_GetValueString(info.apiPrefs->FindKeyBase("EntryPoint"), 0, entry.c_str());
+			profile = KV_GetValueString(info.apiPrefs->FindKeyBase("vs_profile"), 0, profile.ToCString());
+			entry = KV_GetValueString(info.apiPrefs->FindKeyBase("EntryPoint"), 0, entry.ToCString());
 
 			char minor = '0';
 
@@ -2039,7 +2039,7 @@ bool ShaderAPID3DX9::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 
 			if(vsVersion > maxVSVersion)
 			{
-				MsgWarning("%s: vs version %s not supported\n", pShaderOutput->GetName(), profile.c_str());
+				MsgWarning("%s: vs version %s not supported\n", pShaderOutput->GetName(), profile.ToCString());
 				vsVersion = maxVSVersion;
 			}
 		}
@@ -2052,7 +2052,7 @@ bool ShaderAPID3DX9::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 
 		HRESULT compileResult = D3DXCompileShader(shaderString.GetData(), shaderString.Length(),
 			NULL, NULL, 
-			entry.c_str(), profile.c_str(),
+			entry.ToCString(), profile.ToCString(),
 			D3DXSHADER_DEBUG | D3DXSHADER_PACKMATRIX_ROWMAJOR,
 			&shaderBuf, &errorsBuf, &pShader->m_pVSConstants);
 
@@ -2092,7 +2092,7 @@ bool ShaderAPID3DX9::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 			}
 				
 
-			MsgError("\n Profile: %s\n", profile.c_str());
+			MsgError("\n Profile: %s\n", profile.ToCString());
 		}
 	}
 
@@ -2114,8 +2114,8 @@ bool ShaderAPID3DX9::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 
 		if(info.apiPrefs)
 		{
-			profile = KV_GetValueString(info.apiPrefs->FindKeyBase("ps_profile"), 0, profile.c_str());
-			entry = KV_GetValueString(info.apiPrefs->FindKeyBase("EntryPoint"), 0, entry.c_str());
+			profile = KV_GetValueString(info.apiPrefs->FindKeyBase("ps_profile"), 0, profile.ToCString());
+			entry = KV_GetValueString(info.apiPrefs->FindKeyBase("EntryPoint"), 0, entry.ToCString());
 
 			char minor = '0';
 
@@ -2136,7 +2136,7 @@ bool ShaderAPID3DX9::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 
 		HRESULT compileResult = D3DXCompileShader(
 			shaderString.GetData(), shaderString.Length(),
-			NULL, NULL, entry.c_str(), profile.c_str(),
+			NULL, NULL, entry.ToCString(), profile.ToCString(),
 			D3DXSHADER_DEBUG | D3DXSHADER_PACKMATRIX_ROWMAJOR,
 			&shaderBuf, &errorsBuf,
 			&pShader->m_pPSConstants);
@@ -2176,7 +2176,7 @@ bool ShaderAPID3DX9::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 				errorsBuf->Release();
 			}
 
-			MsgError("\n Profile: %s\n",profile.c_str());
+			MsgError("\n Profile: %s\n",profile.ToCString());
 		}
 	}
 

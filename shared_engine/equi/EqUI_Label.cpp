@@ -46,7 +46,7 @@ void Label::DrawSelf( const IRectangle& rect )
 	IVector2D pos = rect.GetLeftTop() + IVector2D(0, GetFont()->GetLineHeight(style)*0.5f);
 
 	// draw label
-	GetFont()->RenderText(m_label.c_str(), pos, style);
+	GetFont()->RenderText(m_label.ToCString(), pos, style);
 }
 
 };

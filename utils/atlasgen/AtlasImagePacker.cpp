@@ -166,11 +166,11 @@ bool ParseImageDesc(const char* atlasPath, imageDesc_t& dest, kvkeybase_t* kv)
 		EqString imgName(atlas_dir + image_name);
 
 		CImage* pImg = new CImage();
-		bool isOk = pImg->LoadImage(imgName.c_str());
+		bool isOk = pImg->LoadImage(imgName.ToCString());
 
 		if(!isOk || pImg->Is1D() || pImg->IsCube())
 		{
-			Msg("Can't open image '%s'\n", imgName.c_str());
+			Msg("Can't open image '%s'\n", imgName.ToCString());
 
 			delete pImg;
 		}
@@ -199,17 +199,17 @@ bool ParseImageDesc(const char* atlasPath, imageDesc_t& dest, kvkeybase_t* kv)
 
 			EqString image_path = KV_GetValueString(kb,0,NULL);
 
-			bool hasImagePath = image_path.Length() > 0 && (isalpha(*image_path.c_str()) || *image_path.c_str() == '_');
+			bool hasImagePath = image_path.Length() > 0 && (isalpha(*image_path.ToCString()) || *image_path.ToCString() == '_');
 
 			if(hasImagePath)
 			{
 				EqString imgName(atlas_dir + image_path);
 				CImage* pImg = new CImage();
-				bool isOk = pImg->LoadImage(imgName.c_str());
+				bool isOk = pImg->LoadImage(imgName.ToCString());
 
 				if(!isOk || pImg->Is1D() || pImg->IsCube())
 				{
-					Msg("Can't open image '%s'\n", imgName.c_str());
+					Msg("Can't open image '%s'\n", imgName.ToCString());
 					delete pImg;
 				}
 				else
@@ -248,14 +248,14 @@ bool ParseImageDesc(const char* atlasPath, imageDesc_t& dest, kvkeybase_t* kv)
 
 		if(!imageIsOk)
 		{
-			MsgError("Failed to convert image '%s'\n", dest.name.c_str() );
+			MsgError("Failed to convert image '%s'\n", dest.name.ToCString() );
 			delete dest.layers[i].image;
 			dest.layers[i].image = NULL;
 		}
 
 		if(i == 0 && !dest.layers[i].image)
 		{
-			MsgError("Atlas '%s' image '%s' first entry must have image!\n", atlasPath, dest.name.c_str());
+			MsgError("Atlas '%s' image '%s' first entry must have image!\n", atlasPath, dest.name.ToCString());
 			return false;
 		}
 	}
@@ -403,7 +403,7 @@ bool CreateAtlasImage(const DkList<imageDesc_t*>& images_list,
 	{
 		CImage* pImg = images_list[i]->layers[0].image;
 
-		Msg("Adding image set '%s' (%d %d)\n", images_list[i]->name.c_str(), pImg->GetWidth(), pImg->GetHeight());
+		Msg("Adding image set '%s' (%d %d)\n", images_list[i]->name.ToCString(), pImg->GetWidth(), pImg->GetHeight());
 		packer.AddRectangle( pImg->GetWidth(), pImg->GetHeight(), images_list[i]);
 	}
 
@@ -461,8 +461,8 @@ bool CreateAtlasImage(const DkList<imageDesc_t*>& images_list,
 		if (!value.Length())
 			continue;
 
-		if (value.ReplaceSubstr(s_outputTag.c_str(), file_name.c_str()) != -1)
-			key->SetValueAt(value.c_str(), 0);
+		if (value.ReplaceSubstr(s_outputTag.ToCString(), file_name.ToCString()) != -1)
+			key->SetValueAt(value.ToCString(), 0);
 	}
 
 	Vector2D sizeTexels(1.0f / wide, 1.0f / tall);
@@ -483,7 +483,7 @@ bool CreateAtlasImage(const DkList<imageDesc_t*>& images_list,
 		rect.vrightBottom *= sizeTexels;
 
 		// add info to keyvalues
-		kvkeybase_t* rect_kv = pAtlasGroup->AddKeyBase(imgDesc->name.c_str());
+		kvkeybase_t* rect_kv = pAtlasGroup->AddKeyBase(imgDesc->name.ToCString());
 		rect_kv->AddValue(rect.vleftTop.x);
 		rect_kv->AddValue(rect.vleftTop.y);
 		rect_kv->AddValue(rect.vrightBottom.x);

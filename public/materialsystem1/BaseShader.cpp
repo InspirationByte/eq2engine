@@ -127,7 +127,7 @@ void CBaseShader::InitParams()
 
 	EqString baseTextureStr;
 	SHADER_PARAM_STRING(BaseTexture, baseTextureStr, "");
-	if (baseTextureStr.c_str()[0] == '$')
+	if (baseTextureStr.ToCString()[0] == '$')
 	{
 		if(!baseTextureStr.CompareCaseIns("$basetexture"))
 		{
@@ -142,7 +142,7 @@ void CBaseShader::InitParams()
 		SHADER_PARAM_STRING(Cubemap, cubemapStr, "");
 
 		// detect ENV_CUBEMAP
-		if (cubemapStr.c_str()[0] == '$')
+		if (cubemapStr.ToCString()[0] == '$')
 		{
 			if (!cubemapStr.CompareCaseIns("$env_cubemap"))
 				m_nFlags |= MATERIAL_FLAG_USE_ENVCUBEMAP;

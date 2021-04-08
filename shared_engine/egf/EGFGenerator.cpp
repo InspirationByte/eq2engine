@@ -143,7 +143,7 @@ egfcaModel_t CEGFGenerator::LoadModel(const char* pszFileName)
 	mod.model = new dsmmodel_t;
 
 	EqString modelPath;
-	CombinePath(modelPath, 2, m_refsPath.c_str(), pszFileName);
+	CombinePath(modelPath, 2, m_refsPath.ToCString(), pszFileName);
 
 	EqString ext(modelPath.Path_Extract_Ext());
 
@@ -152,12 +152,12 @@ egfcaModel_t CEGFGenerator::LoadModel(const char* pszFileName)
 	{
 		mod.shapeData = new esmshapedata_t;
 
-		Msg("Loading shape file '%s'\n", modelPath.c_str());
+		Msg("Loading shape file '%s'\n", modelPath.ToCString());
 
-		if( LoadESXShapes( mod.shapeData, modelPath.c_str() ))
+		if( LoadESXShapes( mod.shapeData, modelPath.ToCString() ))
 		{
 			// use referenced filename by the shape file
-			CombinePath(modelPath, 2, m_refsPath.c_str(), mod.shapeData->reference.c_str());
+			CombinePath(modelPath, 2, m_refsPath.ToCString(), mod.shapeData->reference.ToCString());
 		}
 		else
 		{
@@ -167,9 +167,9 @@ egfcaModel_t CEGFGenerator::LoadModel(const char* pszFileName)
 	}
 
 	// load DSM model
-	if(!LoadSharedModel(mod.model, modelPath.c_str()))
+	if(!LoadSharedModel(mod.model, modelPath.ToCString()))
 	{
-		MsgError("Reference model '%s' cannot be loaded!\n", modelPath.c_str());
+		MsgError("Reference model '%s' cannot be loaded!\n", modelPath.ToCString());
 		FreeModel(mod);
 		return mod;
 	}
@@ -178,7 +178,7 @@ egfcaModel_t CEGFGenerator::LoadModel(const char* pszFileName)
 
 	if((float)nVerts/3.0f != nVerts/3)
 	{
-		MsgError("Reference model '%s' has invalid triangles (tip: vertex count must be divisible by 3 without remainder)\n", modelPath.c_str());
+		MsgError("Reference model '%s' has invalid triangles (tip: vertex count must be divisible by 3 without remainder)\n", modelPath.ToCString());
 		
 		FreeModel(mod);
 		return mod;
@@ -290,14 +290,14 @@ dsmmodel_t* CEGFGenerator::ParseAndLoadModels(kvkeybase_t* pKeyBase)
 
 	for(int i = 0; i < modelfilenames.numElem(); i++)
 	{
-		Msg("Loading model '%s'\n", modelfilenames[i].c_str());
-		egfcaModel_t model = LoadModel( modelfilenames[i].c_str() );
+		Msg("Loading model '%s'\n", modelfilenames[i].ToCString());
+		egfcaModel_t model = LoadModel( modelfilenames[i].ToCString() );
 
 		if(!model.model)
 			continue;
 
 		// set shapeby
-		model.shapeBy = FindShapeKeyIndex(model.shapeData, shapeByModels[i].c_str());
+		model.shapeBy = FindShapeKeyIndex(model.shapeData, shapeByModels[i].ToCString());
 
 		// set model to as part name
 		strcpy(model.model->name, KV_GetValueString(pKeyBase, 0, "invalid_model_name"));
@@ -807,13 +807,13 @@ bool CEGFGenerator::LoadMaterialPaths(kvkeybase_t* pSection)
 
 			int sp_len = path.Length()-1;
 
-			if(path.c_str()[sp_len] != '/' || path.c_str()[sp_len] != '\\')
+			if(path.ToCString()[sp_len] != '/' || path.ToCString()[sp_len] != '\\')
 			{
-				strcpy(desc.searchPath, varargs("%s/", path.c_str()));
+				strcpy(desc.searchPath, varargs("%s/", path.ToCString()));
 			}
 			else
 			{
-				strcpy(desc.searchPath, path.c_str());
+				strcpy(desc.searchPath, path.ToCString());
 			}
 
 			Msg("   '%s'\n", desc.searchPath);
@@ -1070,7 +1070,7 @@ bool CEGFGenerator::GeneratePOD()
 	MsgWarning("\nWriting physics objects...\n");
 
 	EqString outputPOD(m_outputFilename.Path_Strip_Ext() + _Es(".pod"));
-	m_physModels.SaveToFile( outputPOD.c_str() );
+	m_physModels.SaveToFile( outputPOD.ToCString() );
 
 	return true;
 }
@@ -1111,7 +1111,7 @@ bool CEGFGenerator::InitFromKeyValues(const char* filename)
 
 	if(scriptFile.LoadFromFile(filename))
 	{
-		SetRefsPath( _Es(filename).Path_Strip_Name().c_str() );
+		SetRefsPath( _Es(filename).Path_Strip_Name().ToCString() );
 
 		// strip filename to set reference models path
 		MsgWarning("\nCompiling script \"%s\"\n", filename);
@@ -1199,7 +1199,7 @@ bool CEGFGenerator::InitFromKeyValues(kvkeybase_t* mainsection)
 	if(pSourcePath)
 	{
 		EqString path;
-		CombinePath(m_refsPath, 2, m_refsPath.c_str(), KV_GetValueString(pSourcePath, 0, ""));
+		CombinePath(m_refsPath, 2, m_refsPath.ToCString(), KV_GetValueString(pSourcePath, 0, ""));
 	}
 
 	// get new model filename

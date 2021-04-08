@@ -38,7 +38,7 @@ void Button::DrawSelf( const IRectangle& rect )
 	IVector2D pos = rect.GetLeftTop() + IVector2D(0,25);
 
 	// draw label
-	GetFont()->RenderText(m_label.c_str(), pos, style);
+	GetFont()->RenderText(m_label.ToCString(), pos, style);
 }
 
 // events

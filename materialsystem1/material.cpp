@@ -45,13 +45,13 @@ void CMaterial::Init(const char* materialPath)
 		m_szMaterialName = materialPath;
 		m_szMaterialName.Path_FixSlashes();
 
-		if( m_szMaterialName.c_str()[0] == CORRECT_PATH_SEPARATOR )
-			m_szMaterialName = m_szMaterialName.c_str()+1;
+		if( m_szMaterialName.ToCString()[0] == CORRECT_PATH_SEPARATOR )
+			m_szMaterialName = m_szMaterialName.ToCString()+1;
 	}
 
 	m_loadFromDisk = true;
 
-	DevMsg(DEVMSG_MATSYSTEM, "Loading material '%s'\n", m_szMaterialName.c_str());
+	DevMsg(DEVMSG_MATSYSTEM, "Loading material '%s'\n", m_szMaterialName.ToCString());
 
 	//
 	// loading a material description
@@ -61,7 +61,7 @@ void CMaterial::Init(const char* materialPath)
 
 	// load atlas file
 	kvkeybase_t root;
-	if (KV_LoadFromFile(atlasKVSFileName.c_str(), (SP_DATA | SP_MOD), &root))
+	if (KV_LoadFromFile(atlasKVSFileName.ToCString(), (SP_DATA | SP_MOD), &root))
 	{
 		kvkeybase_t* atlasSec = root.FindKeyBase("atlasgroup");
 
@@ -76,13 +76,13 @@ void CMaterial::Init(const char* materialPath)
 			materialKVSFilename = (materials->GetMaterialPath() + _Es(m_atlas->GetMaterialName()) + MATERIAL_FILE_EXTENSION);
 		}
 		else
-			MsgError("Invalid atlas file '%s'\n", atlasKVSFileName.c_str());
+			MsgError("Invalid atlas file '%s'\n", atlasKVSFileName.ToCString());
 	}
 
 	// load material file
-	if( !KV_LoadFromFile(materialKVSFilename.c_str(), (SP_DATA | SP_MOD), &root))
+	if( !KV_LoadFromFile(materialKVSFilename.ToCString(), (SP_DATA | SP_MOD), &root))
 	{
-		MsgError("Can't load material '%s'\n", m_szMaterialName.c_str());
+		MsgError("Can't load material '%s'\n", m_szMaterialName.ToCString());
 		m_szShaderName = "Error";
 
 		m_state = MATERIAL_LOAD_NEED_LOAD;
@@ -93,7 +93,7 @@ void CMaterial::Init(const char* materialPath)
 
 	if(!shader_root)
 	{
-		MsgError("Material '%s' does not have a shader root section!\n",m_szMaterialName.c_str());
+		MsgError("Material '%s' does not have a shader root section!\n",m_szMaterialName.ToCString());
 		m_state = MATERIAL_LOAD_ERROR;
 		return;
 	}
@@ -306,7 +306,7 @@ bool CMaterial::LoadShaderAndTextures()
 	else if(shader->IsError() )
 		m_state = MATERIAL_LOAD_ERROR;
 	else
-		ASSERTMSG(false, varargs("please check shader '%s' (%s) for initialization (not error, not initialized)", m_szShaderName.c_str(), m_shader->GetName()));
+		ASSERTMSG(false, varargs("please check shader '%s' (%s) for initialization (not error, not initialized)", m_szShaderName.ToCString(), m_shader->GetName()));
 
 	return true;
 }
@@ -371,7 +371,7 @@ int CMaterial::GetFlags() const
 const char*	CMaterial::GetShaderName() const
 {
 	if(!m_shader)
-		return m_szShaderName.c_str();
+		return m_szShaderName.ToCString();
 
 	return m_shader->GetName();
 }

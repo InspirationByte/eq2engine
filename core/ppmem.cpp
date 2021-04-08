@@ -99,7 +99,7 @@ DECLARE_CMD(crtdebug_break_alloc, "Sets allocation ID to catch allocation", CV_U
 	}
 
 	// don't print any message to console
-	_crtBreakAlloc = atoi(CMD_ARGV(0).c_str());
+	_crtBreakAlloc = atoi(CMD_ARGV(0).ToCString());
 }
 
 size_t _crtBreakAllocSize = -1;

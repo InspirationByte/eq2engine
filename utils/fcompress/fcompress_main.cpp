@@ -107,16 +107,16 @@ int _tmain(int argc, char **argv)
 			DkList<EqString> splitArgs;
 
 			EqString argsStr = g_cmdLine->GetArgumentsOf(i);
-			xstrsplit(argsStr.c_str(), " ", splitArgs);
+			xstrsplit(argsStr.ToCString(), " ", splitArgs);
 
 			for(int j = 0; j < splitArgs.numElem(); j++)
 			{
-				dpkWriter.AddIgnoreCompressionExtension( splitArgs[j].c_str() );
+				dpkWriter.AddIgnoreCompressionExtension( splitArgs[j].ToCString() );
 			}
 		}
 	}
 
-	dpkWriter.BuildAndSave( outFileName.c_str() );
+	dpkWriter.BuildAndSave( outFileName.ToCString() );
 
 	GetCore()->Shutdown();
 

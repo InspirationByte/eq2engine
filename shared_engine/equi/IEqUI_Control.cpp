@@ -48,7 +48,7 @@ IUIControl::~IUIControl()
 
 const char*	IUIControl::GetLabel() const
 {
-	return _Es(m_label).c_str();
+	return _Es(m_label).ToCString();
 }
 
 void IUIControl::SetLabel(const char* pszLabel)
@@ -544,7 +544,7 @@ void IUIControl::Render()
 		DebugDrawRectangle(clientRectRender, ColorRGBA(1, 1, 0, 0.15), ColorRGBA(1, 1, 1, 0.15));
 
 		eqFontStyleParam_t params;
-		debugoverlay->GetFont()->RenderText(varargs("%s x=%d y=%d w=%d h=%d (v=%d)", m_name.c_str(), m_position.x, m_position.y, m_size.x, m_size.y, m_visible), clientRectRender.GetLeftBottom(), params);
+		debugoverlay->GetFont()->RenderText(varargs("%s x=%d y=%d w=%d h=%d (v=%d)", m_name.ToCString(), m_position.x, m_position.y, m_size.x, m_size.y, m_visible), clientRectRender.GetLeftBottom(), params);
 	}
 
 	// render from last
@@ -661,13 +661,13 @@ void IUIControl::RemoveChild(IUIControl* pControl, bool destroy)
 bool IUIControl::ProcessMouseEvents(const IVector2D& mousePos, const IVector2D& mouseDelta, int nMouseButtons, int flags)
 {
 
-	///Msg("ProcessMouseEvents on %s\n", m_name.c_str());
+	///Msg("ProcessMouseEvents on %s\n", m_name.ToCString());
 	return true;
 }
 
 bool IUIControl::ProcessKeyboardEvents(int nKeyButtons, int flags)
 {
-	//Msg("ProcessKeyboardEvents on %s\n", m_name.c_str());
+	//Msg("ProcessKeyboardEvents on %s\n", m_name.ToCString());
 	return true;
 }
 
@@ -676,28 +676,28 @@ bool IUIControl::ProcessCommand(DkList<EqString>& args)
 	if(UICMD_ARGC == 0)
 		return true;
 
-	if(!stricmp("hideparent", UICMD_ARGV(0).c_str()))
+	if(!stricmp("hideparent", UICMD_ARGV(0).ToCString()))
 	{
 		if(m_parent)
 			m_parent->Hide();
 	}
-	else if(!stricmp("engine", UICMD_ARGV(0).c_str()))
+	else if(!stricmp("engine", UICMD_ARGV(0).ToCString()))
 	{
 		// execute console commands
-		g_consoleCommands->SetCommandBuffer(UICMD_ARGV(1).c_str());
+		g_consoleCommands->SetCommandBuffer(UICMD_ARGV(1).ToCString());
 		g_consoleCommands->ExecuteCommandBuffer();
 		g_consoleCommands->ClearCommandBuffer();
 	}
-	else if(!stricmp("showpanel", UICMD_ARGV(0).c_str()))
+	else if(!stricmp("showpanel", UICMD_ARGV(0).ToCString()))
 	{
 		// show panel
-		equi::Panel* panel = equi::Manager->FindPanel(UICMD_ARGV(1).c_str());
+		equi::Panel* panel = equi::Manager->FindPanel(UICMD_ARGV(1).ToCString());
 		panel->Show();
 	}
-	else if(!stricmp("hidepanel", UICMD_ARGV(0).c_str()))
+	else if(!stricmp("hidepanel", UICMD_ARGV(0).ToCString()))
 	{
 		// hide panel
-		equi::Panel* panel = equi::Manager->FindPanel(UICMD_ARGV(1).c_str());
+		equi::Panel* panel = equi::Manager->FindPanel(UICMD_ARGV(1).ToCString());
 		panel->Hide();
 	}
 

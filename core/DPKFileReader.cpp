@@ -42,7 +42,7 @@ void DPK_FixSlashes(EqString& str)
 	char* tempStr = (char*)stackalloc(str.Length() + 1);
 	memset(tempStr, 0, str.Length());
 
-	DPK_RebuildFilePath(str.c_str(), tempStr);
+	DPK_RebuildFilePath(str.ToCString(), tempStr);
 
 	char* ptr = tempStr;
 	while (*ptr)
@@ -371,7 +371,7 @@ int	CDPKFileReader::FindFileIndex(const char* filename) const
 	fullFilename = fullFilename.LowerCase();
 	fullFilename.Path_FixSlashes();
 
-	int mountPathPos = fullFilename.Find(m_mountPath.c_str(), false, 0);
+	int mountPathPos = fullFilename.Find(m_mountPath.ToCString(), false, 0);
 
 	if (mountPathPos != 0)
 		return -1;
@@ -382,7 +382,7 @@ int	CDPKFileReader::FindFileIndex(const char* filename) const
 	// convert to DPK filename
 	DPK_FixSlashes(pkgFileName);
 
-	int strHash = StringToHash(pkgFileName.c_str(), true);
+	int strHash = StringToHash(pkgFileName.ToCString(), true);
 
     for (int i = 0; i < m_header.numFiles; i++)
     {
@@ -407,12 +407,12 @@ bool CDPKFileReader::InitPackage(const char *filename, const char* mountPath /*=
 	else
 		m_packagePath = m_packageName;
 
-    FILE* dpkFile = fopen(m_packagePath.c_str(),"rb");
+    FILE* dpkFile = fopen(m_packagePath.ToCString(),"rb");
 
     // Now fill the header data and create object table
     if (!dpkFile)
     {
-		MsgError("Cannot open package '%s'\n", m_packagePath.c_str());
+		MsgError("Cannot open package '%s'\n", m_packagePath.ToCString());
 		return false;
 	}
 
@@ -420,7 +420,7 @@ bool CDPKFileReader::InitPackage(const char *filename, const char* mountPath /*=
 
     if (m_header.signature != DPK_SIGNATURE)
     {
-		MsgError("'%s' is not a package!!!\n", m_packageName.c_str());
+		MsgError("'%s' is not a package!!!\n", m_packageName.ToCString());
 
 		fclose(dpkFile);
         return false;
@@ -428,7 +428,7 @@ bool CDPKFileReader::InitPackage(const char *filename, const char* mountPath /*=
 
     if (m_header.version != DPK_VERSION)
     {
-		MsgError("package '%s' has wrong version!!!\n", m_packageName.c_str());
+		MsgError("package '%s' has wrong version!!!\n", m_packageName.ToCString());
 
 		fclose(dpkFile);
         return false;
@@ -446,7 +446,7 @@ bool CDPKFileReader::InitPackage(const char *filename, const char* mountPath /*=
 	
 	m_mountPath.Path_FixSlashes();
 
-	DevMsg(DEVMSG_FS, "Package '%s' loading OK\n", m_packageName.c_str());
+	DevMsg(DEVMSG_FS, "Package '%s' loading OK\n", m_packageName.ToCString());
 
     // Let set the file info data origin
     fseek(dpkFile, m_header.fileInfoOffset, SEEK_SET);
@@ -484,7 +484,7 @@ IVirtualStream* CDPKFileReader::Open(const char* filename, const char* mode)
 
 	dpkfileinfo_t& fileInfo = m_dpkFiles[dpkFileIndex];
 
-	FILE* file = fopen(m_packagePath.c_str(), mode);
+	FILE* file = fopen(m_packagePath.ToCString(), mode);
 
 	if (!file)
 	{
@@ -494,7 +494,7 @@ IVirtualStream* CDPKFileReader::Open(const char* filename, const char* mode)
 
 	CDPKFileStream* newStream = new CDPKFileStream(fileInfo, file);
 	newStream->m_host = this;
-	newStream->m_ice.set((unsigned char*)m_key.c_str());
+	newStream->m_ice.set((unsigned char*)m_key.ToCString());
 
 	{
 		Threading::CScopedMutex m(m_FSMutex);

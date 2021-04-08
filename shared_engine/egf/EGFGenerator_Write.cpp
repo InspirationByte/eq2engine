@@ -669,7 +669,7 @@ void CEGFGenerator::WriteMaterialDescs(CMemoryStream* stream)
 		EqString mat_no_ext(mat->materialname);
 
 		studiomaterialdesc_t* matDesc = header->pMaterial(i);
-		strcpy(matDesc->materialname, mat_no_ext.Path_Strip_Ext().c_str());
+		strcpy(matDesc->materialname, mat_no_ext.Path_Strip_Ext().ToCString());
 
 		WTYPE_ADVANCE(studiomaterialdesc_t);
 	}
@@ -697,7 +697,7 @@ void CEGFGenerator::WriteMaterialDescs(CMemoryStream* stream)
 			EqString mat_no_ext(mat.materialname);
 
 			studiomaterialdesc_t* matDesc = header->pMaterial(materialGroupStart + j);
-			strcpy(matDesc->materialname, mat_no_ext.Path_Strip_Ext().c_str());
+			strcpy(matDesc->materialname, mat_no_ext.Path_Strip_Ext().ToCString());
 
 			WTYPE_ADVANCE(studiomaterialdesc_t);
 		}
@@ -786,7 +786,7 @@ bool CEGFGenerator::GenerateEGF()
 	header.length = sizeof(studiohdr_t);
 
 	// set model name
-	strcpy( header.modelName, m_outputFilename.c_str() );
+	strcpy( header.modelName, m_outputFilename.ToCString() );
 
 	FixSlashes( header.modelName );
 
@@ -835,10 +835,10 @@ bool CEGFGenerator::GenerateEGF()
 	Msg("   Wrote %d bytes:\n", pHdr->length);
 
 	// open model file
-	IFile *file = g_fileSystem->Open(m_outputFilename.c_str(), "wb");
+	IFile *file = g_fileSystem->Open(m_outputFilename.ToCString(), "wb");
 	if(file)
 	{
-		MsgWarning("\nWriting EGF '%s'\n", m_outputFilename.c_str());
+		MsgWarning("\nWriting EGF '%s'\n", m_outputFilename.ToCString());
 
 		// write model
 		memStream.WriteToFileStream(file);

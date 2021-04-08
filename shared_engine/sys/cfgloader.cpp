@@ -49,7 +49,7 @@ DECLARE_CMD(writecfg,"Saves the confirugation file", 0)
 {
 	if(CMD_ARGC > 0)
 	{
-		WriteCfgFile(CMD_ARGV(0).c_str(),true);
+		WriteCfgFile(CMD_ARGV(0).ToCString(),true);
 	}
 	else
 		WriteCfgFile("user.cfg",true);

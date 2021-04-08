@@ -241,7 +241,7 @@ bool GLCheckError(const char* op)
         }
 
 		if(gl_report_errors.GetBool())
-			MsgError("*OGL* error occured while '%s' (%s)\n", op, errString.c_str());
+			MsgError("*OGL* error occured while '%s' (%s)\n", op, errString.ToCString());
 
 		return gl_bypass_errors.GetBool();
 	}
@@ -1900,7 +1900,7 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 		shaderString.Append(SHADER_HELPERS_STRING);
 		shaderString.Append(info.vs.text);
 
-		const GLchar* sStr[] = { shaderString.c_str() };
+		const GLchar* sStr[] = { shaderString.ToCString() };
 
 		result = glWorker.WaitForExecute([prog, pvsResult, sStr]() {
 
@@ -1945,7 +1945,7 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 		{
 			MsgInfo("Shader files dump:");
 			for (int i = 0; i < info.vs.includes.numElem(); i++)
-				MsgInfo("\t%d : %s\n", i + 1, info.vs.includes[i].c_str());
+				MsgInfo("\t%d : %s\n", i + 1, info.vs.includes[i].ToCString());
 
 			return false;
 		}
@@ -1970,7 +1970,7 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 		shaderString.Append(SHADER_HELPERS_STRING);
 		shaderString.Append(info.ps.text);
 
-		const GLchar* sStr[] = { shaderString.c_str() };
+		const GLchar* sStr[] = { shaderString.ToCString() };
 
 		GLint* pfsResult = &fsResult;
 
@@ -2008,7 +2008,7 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 		{
 			MsgInfo("Shader files dump:");
 			for (int i = 0; i < info.ps.includes.numElem(); i++)
-				MsgInfo("\t%d : %s\n", i + 1, info.ps.includes[i].c_str());
+				MsgInfo("\t%d : %s\n", i + 1, info.ps.includes[i].ToCString());
 
 			return false;
 		}

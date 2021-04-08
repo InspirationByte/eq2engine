@@ -1461,7 +1461,7 @@ kvkeybase_t* KV_LoadFromFile( const char* pszFileName, int nSearchFlags, kvkeyba
 
 	if(pBase)
 	{
-		pBase->SetName(_Es(pszFileName).Path_Strip_Path().c_str());
+		pBase->SetName(_Es(pszFileName).Path_Strip_Path().ToCString());
         pBase->unicode = isUTF8;
 	}
 
@@ -1850,7 +1850,7 @@ kvkeybase_t* KV_ParseSection( const char* pszBuffer, const char* pszFileName, kv
 			{
 				tempName.Assign( pFirstLetter, nLen );
 
-				pCurrentKeyBase->SetName(tempName.c_str());
+				pCurrentKeyBase->SetName(tempName.ToCString());
 			}
 			else
 			{

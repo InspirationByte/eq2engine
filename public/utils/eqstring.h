@@ -17,7 +17,7 @@ class EqWString;
 #include "eqwstring.h"
 #endif // __GNUG__
 
-#define EQSTRING_BASE_BUFFER	64
+#define EQSTRING_BASE_BUFFER	32
 #define _Es						EqString
 
 // TODO: implement safe copy-on-write
@@ -46,7 +46,7 @@ public:
 	const char* GetData() const;
 
 	// nice std thing :)
-	const char*	c_str() const {return GetData();}
+	const char*	ToCString() const {return GetData();}
 
 	// length of it
 	uint		Length() const;
@@ -210,7 +210,6 @@ public:
 
 protected:
 	char*		m_pszString;
-	char		m_baseBuffer[EQSTRING_BASE_BUFFER];
 
 	uint16		m_nLength;			// length of string
 	uint16		m_nAllocated;		// allocation size

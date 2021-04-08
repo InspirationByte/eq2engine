@@ -109,7 +109,7 @@ void CCommandLine::ExecuteCommandLine(unsigned int CmdFilterFlags/* = -1*/) cons
 
 	for (int i = 0; i < GetArgumentCount(); i++ )
 	{
-		const char* cmdOrCvarStr = m_args[i].c_str();
+		const char* cmdOrCvarStr = m_args[i].ToCString();
 
 		if (*cmdOrCvarStr != '+')
 			continue;
@@ -121,7 +121,7 @@ void CCommandLine::ExecuteCommandLine(unsigned int CmdFilterFlags/* = -1*/) cons
 		cmdStr.Append(' ');
 		cmdStr.Append(argumentValueStr);
 
-		g_consoleCommands->SetCommandBuffer(cmdStr.c_str());
+		g_consoleCommands->SetCommandBuffer(cmdStr.ToCString());
 		g_consoleCommands->ExecuteCommandBuffer(CmdFilterFlags);
 	}
 
@@ -133,7 +133,7 @@ const char* CCommandLine::GetArgumentString(int index) const
 	if(!m_args.inRange(index))
 		return nullptr;
 
-	return m_args[index].c_str();
+	return m_args[index].ToCString();
 }
 
 int CCommandLine::FindArgument(const char* arg, int startfrom /* = 0 */) const
@@ -161,7 +161,7 @@ const char* CCommandLine::GetArgumentsOf(int paramIndex) const
 
 	for (int i = paramIndex+1; i < m_args.numElem(); i++ )
 	{
-		const char* argStr = m_args[i].c_str();
+		const char* argStr = m_args[i].ToCString();
 
 		if (*argStr == '+' || *argStr == '-')
 			break;
@@ -176,5 +176,5 @@ const char* CCommandLine::GetArgumentsOf(int paramIndex) const
 			_tmpArguments.Append(argStr);
 	}
 
-	return _tmpArguments.c_str();
+	return _tmpArguments.ToCString();
 }

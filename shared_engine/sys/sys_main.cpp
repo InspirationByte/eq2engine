@@ -224,7 +224,7 @@ bool Android_InitCore(int argc, char** argv)
 	EqString storageObbPath(storageBase + obbPath);
 
 	// first we let eqconfig to be found
-	g_fileSystem->SetBasePath(storagePath.c_str());
+	g_fileSystem->SetBasePath(storagePath.ToCString());
 
 	g_jni.obbPath = storageObbPath;
 
@@ -232,11 +232,11 @@ bool Android_InitCore(int argc, char** argv)
 	bool result = GetCore()->Init("Game", argc, argv);
 
 	Msg("bestStoragePath: %s\n", bestStoragePath);
-	Msg("dataPath: %s\n", dataPath.c_str());
-	Msg("obbPath: %s\n", obbPath.c_str());
+	Msg("dataPath: %s\n", dataPath.ToCString());
+	Msg("obbPath: %s\n", obbPath.ToCString());
 
-	Msg("storagePath: %s\n", storagePath.c_str());
-	Msg("storageObbPath: %s\n", storageObbPath.c_str());
+	Msg("storagePath: %s\n", storagePath.ToCString());
+	Msg("storageObbPath: %s\n", storageObbPath.ToCString());
 
 	return result;
 }
@@ -256,8 +256,8 @@ void Android_MountFileSystem()
 	if (obbPackageName)
 	{
 		EqString packageFullPath;
-		CombinePath(packageFullPath, 2, g_jni.obbPath.c_str(), KV_GetValueString(obbPackageName));
-		g_fileSystem->AddPackage(packageFullPath.c_str(), SP_MOD);
+		CombinePath(packageFullPath, 2, g_jni.obbPath.ToCString(), KV_GetValueString(obbPackageName));
+		g_fileSystem->AddPackage(packageFullPath.ToCString(), SP_MOD);
 	}
 }
 

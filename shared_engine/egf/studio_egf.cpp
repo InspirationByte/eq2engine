@@ -225,7 +225,7 @@ bool CEngineStudioEGF::PrepareForSkinning(Matrix4x4* jointMatrices)
 
 void CEngineStudioEGF::DestroyModel()
 {
-	DevMsg(DEVMSG_CORE, "DestroyModel: '%s'\n", m_szPath.c_str());
+	DevMsg(DEVMSG_CORE, "DestroyModel: '%s'\n", m_szPath.ToCString());
 
 	m_readyState = MODEL_LOAD_ERROR;
 
@@ -260,26 +260,30 @@ void CEngineStudioEGF::DestroyModel()
 
 	if (m_hwdata)
 	{
-		for (int i = 0; i < MAX_MOTIONPACKAGES; i++)
+		if (m_hwdata->studio)
 		{
-			if (!m_hwdata->motiondata[i])
-				continue;
+			for (int i = 0; i < MAX_MOTIONPACKAGES; i++)
+			{
+				if (!m_hwdata->motiondata[i])
+					continue;
 
-			Studio_FreeMotionData(m_hwdata->motiondata[i], m_hwdata->studio->numBones);
-			PPFree(m_hwdata->motiondata[i]);
+				Studio_FreeMotionData(m_hwdata->motiondata[i], m_hwdata->studio->numBones);
+				PPFree(m_hwdata->motiondata[i]);
+			}
+
+			g_pStudioShapeCache->DestroyStudioCache(&m_hwdata->physModel);
+			Studio_FreePhysModel(&m_hwdata->physModel);
+
+			auto lodRefs = m_hwdata->modelrefs;
+
+			for (int i = 0; i < m_hwdata->studio->numModels; i++)
+				delete[] lodRefs[i].groupDescs;
+
+			delete[] m_hwdata->modelrefs;
+			delete[] m_hwdata->joints;
+
+			delete m_hwdata->studio;
 		}
-
-		g_pStudioShapeCache->DestroyStudioCache(&m_hwdata->physModel);
-		Studio_FreePhysModel(&m_hwdata->physModel);
-
-		auto lodRefs = m_hwdata->modelrefs;
-
-		for (int i = 0; i < m_hwdata->studio->numModels; i++)
-			delete[] lodRefs[i].groupDescs;
-
-		delete[] m_hwdata->modelrefs;
-		delete[] m_hwdata->joints;
-		delete m_hwdata->studio;
 
 		delete m_hwdata;
 		m_hwdata = NULL;
@@ -446,7 +450,7 @@ bool CEngineStudioEGF::LoadModel(const char* pszPath, bool useJob)
 
 bool CEngineStudioEGF::LoadFromFile()
 {
-	studiohdr_t* pHdr = Studio_LoadModel(m_szPath.c_str());
+	studiohdr_t* pHdr = Studio_LoadModel(m_szPath.ToCString());
 
 	if (!pHdr)
 		return false; // get out, nothing to load
@@ -585,7 +589,7 @@ void CEngineStudioEGF::LoadMotionPackages()
 {
 	studiohdr_t* pHdr = m_hwdata->studio;
 
-	DevMsg(DEVMSG_CORE, "Loading animations for '%s'\n", m_szPath.c_str());
+	DevMsg(DEVMSG_CORE, "Loading animations for '%s'\n", m_szPath.ToCString());
 
 	// Try load default motion file
 	m_hwdata->motiondata[m_hwdata->numMotionPackages] = Studio_LoadMotionData((m_szPath.Path_Strip_Ext() + ".mop").GetData(), pHdr->numBones);
@@ -602,7 +606,7 @@ void CEngineStudioEGF::LoadMotionPackages()
 
 		EqString mopPath(m_szPath.Path_Strip_Name() + pHdr->pPackage(i)->packageName + ".mop");
 
-		m_hwdata->motiondata[nPackages] = Studio_LoadMotionData(mopPath.c_str(), pHdr->numBones);
+		m_hwdata->motiondata[nPackages] = Studio_LoadMotionData(mopPath.ToCString(), pHdr->numBones);
 
 		if (m_hwdata->motiondata[nPackages])
 			m_hwdata->numMotionPackages++;
@@ -614,12 +618,12 @@ void CEngineStudioEGF::LoadMotionPackages()
 	for (int i = 0; i < m_additionalMotionPackages.numElem(); i++)
 	{
 		// Try load default motion file
-		m_hwdata->motiondata[m_hwdata->numMotionPackages] = Studio_LoadMotionData(m_additionalMotionPackages[i].c_str(), pHdr->numBones);
+		m_hwdata->motiondata[m_hwdata->numMotionPackages] = Studio_LoadMotionData(m_additionalMotionPackages[i].ToCString(), pHdr->numBones);
 
 		if (m_hwdata->motiondata[m_hwdata->numMotionPackages])
 			m_hwdata->numMotionPackages++;
 		else
-			MsgError("Can't open motion data package '%s'!\n", m_additionalMotionPackages[i].c_str());
+			MsgError("Can't open motion data package '%s'!\n", m_additionalMotionPackages[i].ToCString());
 	}
 	m_additionalMotionPackages.clear();
 }
@@ -666,8 +670,8 @@ void CEngineStudioEGF::LoadMaterials()
 		EqString fpath(pHdr->pMaterial(i)->materialname);
 		fpath.Path_FixSlashes();
 
-		if (fpath.c_str()[0] == CORRECT_PATH_SEPARATOR)
-			fpath = EqString(fpath.c_str(), fpath.Length() - 1);
+		if (fpath.ToCString()[0] == CORRECT_PATH_SEPARATOR)
+			fpath = EqString(fpath.ToCString(), fpath.Length() - 1);
 
 		for (int j = 0; j < pHdr->numMaterialSearchPaths; j++)
 		{
@@ -676,7 +680,7 @@ void CEngineStudioEGF::LoadMaterials()
 				EqString spath(pHdr->pMaterialSearchPath(j)->searchPath);
 				spath.Path_FixSlashes();
 
-				if (spath.c_str()[spath.Length() - 1] == CORRECT_PATH_SEPARATOR)
+				if (spath.ToCString()[spath.Length() - 1] == CORRECT_PATH_SEPARATOR)
 					spath = spath.Left(spath.Length() - 1);
 
 				EqString extend_path = spath + CORRECT_PATH_SEPARATOR + fpath;
@@ -686,7 +690,7 @@ void CEngineStudioEGF::LoadMaterials()
 					m_materials[i] = materials->GetMaterial(extend_path.GetData());
 
 					if (!m_materials[i]->IsError() && !(m_materials[i]->GetFlags() & MATERIAL_FLAG_SKINNED))
-						MsgWarning("Warning! Material '%s' shader '%s' for model '%s' is invalid\n", m_materials[i]->GetName(), m_materials[i]->GetShaderName(), m_szPath.c_str());
+						MsgWarning("Warning! Material '%s' shader '%s' for model '%s' is invalid\n", m_materials[i]->GetName(), m_materials[i]->GetShaderName(), m_szPath.ToCString());
 
 					m_materials[i]->Ref_Grab();
 				}
@@ -701,7 +705,7 @@ void CEngineStudioEGF::LoadMaterials()
 	{
 		if (!m_materials[i])
 		{
-			MsgError("Couldn't load model material '%s'\n", pHdr->pMaterial(i)->materialname, m_szPath.c_str());
+			MsgError("Couldn't load model material '%s'\n", pHdr->pMaterial(i)->materialname, m_szPath.ToCString());
 			bError = true;
 
 			m_materials[i] = materials->GetMaterial("error");
@@ -856,7 +860,7 @@ const BoundingBox& CEngineStudioEGF::GetAABB() const
 
 const char* CEngineStudioEGF::GetName() const
 {
-	return m_szPath.c_str();
+	return m_szPath.ToCString();
 }
 
 int	CEngineStudioEGF::GetLoadingState() const

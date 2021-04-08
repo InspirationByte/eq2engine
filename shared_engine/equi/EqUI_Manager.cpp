@@ -23,12 +23,12 @@ DECLARE_CMD(ui_showpanel, NULL, CV_CHEAT)
 	if(CMD_ARGC == 0)
 		return;
 
-	equi::Panel* pPanel = equi::Manager->FindPanel( CMD_ARGV(0).c_str() );
+	equi::Panel* pPanel = equi::Manager->FindPanel( CMD_ARGV(0).ToCString() );
 
 	if( pPanel )
 		pPanel->Show();
 	else
-		MsgWarning("No such panel '%s'\n", CMD_ARGV(0).c_str());
+		MsgWarning("No such panel '%s'\n", CMD_ARGV(0).ToCString());
 }
 
 DECLARE_CMD(ui_hidepanel, NULL, CV_CHEAT)
@@ -36,12 +36,12 @@ DECLARE_CMD(ui_hidepanel, NULL, CV_CHEAT)
 	if(CMD_ARGC == 0)
 		return;
 
-	equi::Panel* pPanel = equi::Manager->FindPanel( CMD_ARGV(0).c_str() );
+	equi::Panel* pPanel = equi::Manager->FindPanel( CMD_ARGV(0).ToCString() );
 
 	if( pPanel )
 		pPanel->Hide();
 	else
-		MsgWarning("No such panel '%s'\n", CMD_ARGV(0).c_str());
+		MsgWarning("No such panel '%s'\n", CMD_ARGV(0).ToCString());
 }
 
 DECLARE_CMD(ui_listpanels, NULL, CV_CHEAT)

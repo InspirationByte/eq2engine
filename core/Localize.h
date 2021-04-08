@@ -24,8 +24,8 @@ public:
 					CLocToken(const char* tok, const wchar_t* text);
 					CLocToken(const char* tok, const char* text);
 
-	const char*		GetToken() const	{return m_token.c_str();}
-	const wchar_t*	GetText() const		{return m_text.c_str();}
+	const char*		GetToken() const	{return m_token.ToCString();}
+	const wchar_t*	GetText() const		{return m_text.ToCString();}
 
 private:
 	EqString		m_token;

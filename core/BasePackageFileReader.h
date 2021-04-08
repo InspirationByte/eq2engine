@@ -38,7 +38,7 @@ public:
 	virtual void					Close(IVirtualStream* fp) = 0;
 	virtual bool					FileExists(const char* filename) const = 0;
 
-	const char*						GetPackageFilename() const { return m_packageName.c_str(); }
+	const char*						GetPackageFilename() const { return m_packageName.ToCString(); }
 	int								GetSearchPath() const { return m_searchPath; };
 	virtual void					SetSearchPath(int search) { m_searchPath = search; };
 

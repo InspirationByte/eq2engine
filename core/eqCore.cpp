@@ -186,7 +186,7 @@ bool CDkCore::Init(const char* pszApplicationName, const char* pszCommandLine)
 		{
 			for(int i = 0; i < pForceLogged->values.numElem();i++)
 			{
-				if(!stricmp(KV_GetValueString(pForceLogged, i), m_szApplicationName.c_str()))
+				if(!stricmp(KV_GetValueString(pForceLogged, i), m_szApplicationName.ToCString()))
 				{
 					logEnabled = true;
 					break;

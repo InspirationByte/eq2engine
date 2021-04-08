@@ -933,7 +933,7 @@ void CDebugOverlay::Draw(int winWide, int winTall)
 		{
 			DebugFadingTextNode_t& current = m_RightTextFadeArray[i];
 
-			float textLen = m_pDebugFont->GetStringWidth( current.pszText.c_str(), textStl );
+			float textLen = m_pDebugFont->GetStringWidth( current.pszText.ToCString(), textStl );
 
 			if(current.initialLifetime > 0.05f)
 				current.color.w = clamp(current.lifetime, 0.0f, 1.0f);

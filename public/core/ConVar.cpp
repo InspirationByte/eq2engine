@@ -19,8 +19,6 @@
 // Default constructor
 ConVar::ConVar() : ConCommandBase()
 {
-	m_szValueString = NULL;
-	m_iStringLength = 0;
 	m_nValue = 0;
 	m_bClamp = false;
 	m_fnChangeCallback = NULL;
@@ -28,17 +26,10 @@ ConVar::ConVar() : ConCommandBase()
 
 ConVar::~ConVar()
 {
-	if (m_szValueString)
-	{
-		delete[] m_szValueString; // Sometimes errors
-		m_szValueString = NULL;
-	}
 }
 
 ConVar::ConVar(char const *name,char const *pszDefaultValue,char const *desc, int flags /* = 0 */) : ConCommandBase()
 {
-	m_szValueString = NULL;
-	m_iStringLength = 0;
 	m_nValue = 0;
 	m_bClamp = false;
 	m_fnChangeCallback = NULL;
@@ -48,8 +39,6 @@ ConVar::ConVar(char const *name,char const *pszDefaultValue,char const *desc, in
 
 ConVar::ConVar(char const *name,char const *pszDefaultValue,CONVAR_CHANGE_CALLBACK callback,char const *desc, int flags/* = 0*/) : ConCommandBase()
 {
-	m_szValueString = NULL;
-	m_iStringLength = 0;
 	m_nValue = 0;
 	m_bClamp = false;
 	m_fnChangeCallback = NULL;
@@ -61,8 +50,6 @@ ConVar::ConVar(char const *name,char const *pszDefaultValue,CONVAR_CHANGE_CALLBA
 
 ConVar::ConVar(char const *name,char const *pszDefaultValue, CMDBASE_VARIANTS_CALLBACK variantsList, char const *desc, int flags)
 {
-	m_szValueString = NULL;
-	m_iStringLength = 0;
 	m_nValue = 0;
 	m_bClamp = false;
 	m_fnChangeCallback = NULL;
@@ -74,8 +61,6 @@ ConVar::ConVar(char const *name,char const *pszDefaultValue, CMDBASE_VARIANTS_CA
 
 ConVar::ConVar(char const *name,char const *pszDefaultValue, CONVAR_CHANGE_CALLBACK callback, CMDBASE_VARIANTS_CALLBACK variantsList, char const *desc, int flags)
 {
-	m_szValueString = NULL;
-	m_iStringLength = 0;
 	m_nValue = 0;
 	m_bClamp = false;
 	m_fnChangeCallback = NULL;
@@ -88,8 +73,6 @@ ConVar::ConVar(char const *name,char const *pszDefaultValue, CONVAR_CHANGE_CALLB
 
 ConVar::ConVar(char const *name,char const *pszDefaultValue,float clampmin,float clampmax,char const *desc /*= 0*/, int flags /*= 0*/) : ConCommandBase()
 {
-	m_szValueString = NULL;
-	m_iStringLength = 0;
 	m_nValue = 0;
 	m_bClamp = false;
 	m_fnChangeCallback = NULL;
@@ -99,8 +82,6 @@ ConVar::ConVar(char const *name,char const *pszDefaultValue,float clampmin,float
 
 ConVar::ConVar(char const *name,char const *pszDefaultValue,float clampmin,float clampmax,CONVAR_CHANGE_CALLBACK callback,char const *desc /*= 0*/, int flags /*= 0*/) : ConCommandBase()
 {
-	m_szValueString = NULL;
-	m_iStringLength = 0;
 	m_nValue = 0;
 	m_bClamp = false;
 	m_fnChangeCallback = NULL;
@@ -164,7 +145,7 @@ void ConVar::RevertToDefaultValue()
 const char*	ConVar::GetDefaultValue() const
 {
 	static const char* empty_string = "";
-	return m_szDefaultValueString ? m_szDefaultValueString : empty_string;;
+	return m_szDefaultValueString ? m_szDefaultValueString : empty_string;
 }
 
 void ConVar::SetValue(const char* newvalue)
@@ -220,34 +201,21 @@ bool ConVar::ClampValue( float& value )
 void ConVar::InternalSetString(char const *value)
 {
 	int len = strlen(value) + 1;
-
-	char* pszOldValue = (char*)stackalloc( m_iStringLength+1 );
+	
+	char* pszOldValue = (char*)stackalloc(m_szValueString.Length()+1 );
 	pszOldValue[0] = '\0';
 
-	if (m_fnChangeCallback && m_szValueString)
+	if (m_fnChangeCallback)
 	{
-		strncpy(pszOldValue, m_szValueString, m_iStringLength + 1);
-		pszOldValue[m_iStringLength] = '\0';
+		strncpy(pszOldValue, m_szValueString.ToCString(), m_szValueString.Length() + 1);
+		pszOldValue[m_szValueString.Length()] = '\0';
 	}
 
-
-	if (len > m_iStringLength)
-	{
-		if (m_szValueString)
-			delete [] m_szValueString; // Sometimes errors
-
-		// min is 16
-		m_iStringLength = len > 16 ? len : 16;
-		m_szValueString = new char[m_iStringLength];
-
-	}
-
-	if (m_szValueString)
-		memcpy( m_szValueString, value, len );
+	m_szValueString = value;
 
 	if ( m_fnChangeCallback )
 	{
-		(m_fnChangeCallback)(this,pszOldValue);
+		(m_fnChangeCallback)(this, pszOldValue);
 	}
 
 	stackfree( pszOldValue );

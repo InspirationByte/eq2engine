@@ -42,14 +42,14 @@ float CMatVar::GetFloat() const
 
 const char* CMatVar::GetName() const
 {
-	return m_name.c_str();
+	return m_name.ToCString();
 }
 
 // sets new name
 void CMatVar::SetName(const char* szNewName)
 {
 	m_name = szNewName;
-	m_nameHash = StringToHash(m_name.c_str(), true);
+	m_nameHash = StringToHash(m_name.ToCString(), true);
 }
 
 // gives string
@@ -86,7 +86,7 @@ void CMatVar::SetString(const char* szValue)
 {
 	m_pszValue = szValue;
 	
-	char* vchar = (char*)m_pszValue.c_str();
+	char* vchar = (char*)m_pszValue.ToCString();
 
 	m_vector = 0.0f;
 
@@ -127,8 +127,8 @@ void CMatVar::SetString(const char* szValue)
 	}
 	else
 	{
-		m_nValue  = (int)atoi(m_pszValue.c_str());
-		m_vector.x = (float)atof(m_pszValue.c_str());
+		m_nValue  = (int)atoi(m_pszValue.ToCString());
+		m_vector.x = (float)atof(m_pszValue.ToCString());
 	}
 
 	m_isDirtyString = 0;
