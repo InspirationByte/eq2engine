@@ -116,5 +116,4 @@ BEGIN_SHADER_CLASS(BaseParticle)
 	SHADER_DECLARE_FOGPASS(Particle);
 
 	ITexture*			m_pBaseTexture;
-	IMatVar*			m_pBaseTextureFrame;
 END_SHADER_CLASS

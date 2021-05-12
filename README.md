@@ -26,3 +26,4 @@ Build system used: [Xmake](https://xmake.io/)
 - Model rendering interfaces for best running on *MaterialSys2* pipeline
 - Improve *Equilibrium Graphics File* format (caching-side, move attachments to EGF from Motion packages)
 - Port *The Driver Syndicate* back on it?
+- FBX support with *OpenFBX* - for EGF compiling, cutscene support etc.

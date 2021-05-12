@@ -550,6 +550,6 @@ enum ER_ShaderAPIType
 #define SHADERS_DEFAULT_PATH			"shaders/"
 #define TEXTURE_DEFAULT_EXTENSION		".dds"
 #define TEXTURE_SECONDARY_EXTENSION		".tga"
-#define TEXTURE_ANIMATED_EXTENSION		".ati"
+#define TEXTURE_ANIMATED_EXTENSION		".ati"			// ATI - Animated Texture Index file
 
 #endif // RENDERER_CONSTANTS_H
