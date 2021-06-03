@@ -116,6 +116,7 @@ function setup_runtime_config(crtDebug)
         end]]
     else 
         set_runtimes("MD")
+		set_optimize("fastest")
     end
 end
 
