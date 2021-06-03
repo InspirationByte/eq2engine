@@ -412,6 +412,7 @@ void CMaterialSystem::InitDefaultMaterial()
 		overdrawParams.SetName("BaseUnlit"); // set shader 'BaseUnlit'
 		overdrawParams.SetKey("BaseTexture", "_matsys_white");
 		overdrawParams.SetKey("Color", "[0.045 0.02 0.02 1.0]");
+		overdrawParams.SetKey("Additive", "1");
 
 		CMaterial* pMaterial = (CMaterial*)CreateMaterial("_overdraw", &overdrawParams);
 		pMaterial->Ref_Grab();
@@ -893,6 +894,10 @@ bool CMaterialSystem::BindMaterial(IMaterial* pMaterial, int flags)
 
 	// set the current material
 	IMaterial* setMaterial = pMaterial;
+
+	// try overriding material
+	if (m_preApplyCallback)
+		setMaterial = m_preApplyCallback->OnPreBindMaterial(setMaterial);
 	
 	EMaterialRenderSubroutine subRoutineId = MATERIAL_SUBROUTINE_NORMAL;
 
@@ -910,11 +915,12 @@ bool CMaterialSystem::BindMaterial(IMaterial* pMaterial, int flags)
 		subRoutineId = MATERIAL_SUBROUTINE_NORMAL;
 	}
 
-	bool success = false;
+	bool success;
 
 	if( m_config.overdrawMode )
 	{
-		materials->SetAmbientColor(ColorRGBA(0.045f, 0.02f, 0.02f, 1.0f));
+		InitDefaultMaterial();
+		materials->SetAmbientColor(ColorRGBA(1.0f, 1.0f, 1.0f, 1.0f));
 		success = (*materialstate_callbacks[subRoutineId])(m_overdrawMaterial, 0xFFFFFFFF);
 	}
 	else
@@ -942,6 +948,7 @@ void CMaterialSystem::Apply()
 		return;
 	}
 
+	// callback before applying
 	if(m_preApplyCallback)
 		m_preApplyCallback->OnPreApplyMaterial(setMaterial);
 
