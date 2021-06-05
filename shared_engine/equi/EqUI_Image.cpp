@@ -87,9 +87,9 @@ void Image::SetColor(const ColorRGBA &color)
 	m_color = color;
 }
 
-void Image::GetColor(ColorRGBA &color) const
+const ColorRGBA& Image::GetColor() const
 {
-	color = m_color;
+	return m_color;
 }
 
 void Image::DrawSelf( const IRectangle& rect )
