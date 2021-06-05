@@ -73,20 +73,21 @@ public:
 	bool						IsIKChainEnabled(int chain_id);								// returns status if ik chain
 	int							FindIKChain(char* pszName);									// searches for ik chain
 
-protected:
 	// advances frame (and computes interpolation between all blended animations)
 	void						AdvanceFrame(float fDt);
-	void						RecalcBoneTransforms(bool storeTransitionFrames = false);
-
-	void						RaiseSequenceEvents(sequencetimer_t& timer);
-
 	void						UpdateIK(float fDt, const Matrix4x4& worldTransform);
 
-	void						UpdateIkChain(gikchain_t* pIkChain, float fDt);
+	void						RecalcBoneTransforms(bool storeTransitionFrames = false);
+
 	void						DebugRender(const Matrix4x4& worldTransform);
+protected:
+
+	void						RaiseSequenceEvents(sequencetimer_t& timer);
+	void						UpdateIkChain(gikchain_t* pIkChain, float fDt);
+	
 
 	virtual Activity			TranslateActivity(Activity act, int slotindex = 0) const;			// translates activity
-	virtual void				HandleAnimatingEvent(AnimationEvent nEvent, char* options) = 0;
+	virtual void				HandleAnimatingEvent(AnimationEvent nEvent, char* options);
 
 	virtual void				AddMotions(studioHwData_t::motionData_t* motionData);
 

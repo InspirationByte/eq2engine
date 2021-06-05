@@ -349,6 +349,11 @@ Activity CAnimatingEGF::TranslateActivity(Activity act, int slot) const
 	return act;
 }
 
+void CAnimatingEGF::HandleAnimatingEvent(AnimationEvent nEvent, char* options)
+{
+	// do nothing
+}
+
 // sets activity
 void CAnimatingEGF::SetActivity(Activity act, int slot)
 {
