@@ -5,11 +5,10 @@
 // Description: Equilibrium scene renderer renderable
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef CBASERENDERABLE_H
-#define CBASERENDERABLE_H
+#ifndef BASERENDERABLEOBJECT_H
+#define BASERENDERABLEOBJECT_H
 
 #include "math/DkMath.h"
-#include "core/dktypes.h"		// ubyte
 
 //------------------------------------------------
 // A new inheritable renderable object
@@ -34,6 +33,7 @@ enum RenderableFlags_e
 // renderable object
 class CBaseRenderableObject
 {
+	friend class CRenderList;
 public:
 //------------------------------------------------------------
 // basic methods and helpers
@@ -46,40 +46,23 @@ public:
 
 	virtual ~CBaseRenderableObject() {}
 
-	// draws transformed bbox for occlusion system
-	//virtual void			RenderOcclusionTest(int nViewRenderFlags);
-
 	// renders this object with current transformations
 	virtual void			Render(int nViewRenderFlags) = 0;
 
-	virtual Matrix4x4		GetRenderWorldTransform();
+	// min bbox dimensions
+	virtual void			GetBoundingBox(BoundingBox& outBox) = 0;
 
 	// adds a render flags
-	virtual void			AddRenderFlags(int nFlags);
-
-	// removes render flags
-	virtual void			RemoveRenderFlags(int nFlags);
+	virtual void			SetRenderFlags(int nFlags);
 
 	// returns render flags
 	virtual int				GetRenderFlags();
 
-	// min bbox dimensions
-	virtual Vector3D		GetBBoxMins() = 0;
-
-	// max bbox dimensions
-	virtual Vector3D		GetBBoxMaxs() = 0;
-
-	// resets visibility status
-	//virtual void			ResetVisibilityState();
+protected:
 
 	// view distance (for sorting)
 	float					m_fViewDistance;
-
-protected:
-
 	int						m_nRenderFlags;
-
-	//ubyte					m_nVisibilityStatus;				// object visibility status
 };
 
-#endif //CBASERENDERABLE_H
+#endif // BASERENDERABLEOBJECT_H

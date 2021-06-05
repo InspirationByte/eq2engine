@@ -13,35 +13,32 @@
 
 #include <stdlib.h> // for qsort
 
-#define MIN_OBJECT_RENDERLIST_MEMSIZE 128
+#define MIN_OBJECT_RENDERLIST_MEMSIZE 48
 
-void CBasicRenderList::AddRenderable(CBaseRenderableObject* pObject)
+void CRenderList::AddRenderable(CBaseRenderableObject* pObject)
 {
 	m_ObjectList.append(pObject);
 }
 
-int CBasicRenderList::GetRenderableCount()
+int CRenderList::GetRenderableCount()
 {
 	return m_ObjectList.numElem();
 }
 
-CBaseRenderableObject* CBasicRenderList::GetRenderable(int id)
+CBaseRenderableObject* CRenderList::GetRenderable(int id)
 {
 	return m_ObjectList[id];
 }
 
-void CBasicRenderList::CopyFromList(IRenderList* pAnotherList)
+void CRenderList::Append(CRenderList* pAnotherList)
 {
-	for(int i = 0; i < pAnotherList->GetRenderableCount(); i++)
+	int num = pAnotherList->GetRenderableCount();
+
+	for(int i = 0; i < num; i++)
 		m_ObjectList.append(pAnotherList->GetRenderable(i));
 }
 
-void CBasicRenderList::Update(int nViewRenderFlags, void* userdata)
-{
-	// do nothing in this context
-}
-
-void CBasicRenderList::Render(int nViewRenderFlags, void* userdata)
+void CRenderList::Render(int nViewRenderFlags, void* userdata)
 {
 	for(int i = 0; i < m_ObjectList.numElem(); i++)
 	{
@@ -49,12 +46,12 @@ void CBasicRenderList::Render(int nViewRenderFlags, void* userdata)
 	}
 }
 
-void CBasicRenderList::Remove(int id)
+void CRenderList::Remove(int id)
 {
 	m_ObjectList.removeIndex(id);
 }
 
-void CBasicRenderList::Clear()
+void CRenderList::Clear()
 {
 	m_ObjectList.clear();
 	m_ObjectList.resize(MIN_OBJECT_RENDERLIST_MEMSIZE);
@@ -71,33 +68,30 @@ inline int DistComparator(float f1, float f2)
 	return 0;
 }
 
-static int DistanceCompare(const void* obj1, const void* obj2)
+int CRenderList::DistanceCompare(CBaseRenderableObject* const & a, CBaseRenderableObject* const& b)
 {
-	CBaseRenderableObject* pObjectA = *(CBaseRenderableObject**)obj1;
-	CBaseRenderableObject* pObjectB = *(CBaseRenderableObject**)obj2;
-
-	return -DistComparator(pObjectA->m_fViewDistance, pObjectB->m_fViewDistance);
+	return -DistComparator(a->m_fViewDistance, b->m_fViewDistance);
 }
 
-void CBasicRenderList::SortByDistanceFrom(const Vector3D& origin)
+void CRenderList::SortByDistanceFrom(const Vector3D& origin)
 {
-	//Msg("num objc: %d\n", m_ObjectList.numElem());
-
-	for(int i = 0; i < m_ObjectList.numElem(); i++)
+	// compute object distances
+	int num = m_ObjectList.numElem();
+	for(int i = 0; i < num; i++)
 	{
-		BoundingBox bbox(m_ObjectList[i]->GetBBoxMins(), m_ObjectList[i]->GetBBoxMaxs());
+		BoundingBox bbox;
+		m_ObjectList[i]->GetBoundingBox(bbox);
 
 		float dist_to_camera;
 
 		// clamp point in bbox
 		if(!bbox.Contains(origin))
-			dist_to_camera = lengthSqr(bbox.ClampPoint(origin) - origin);
+			dist_to_camera = lengthSqr(origin - bbox.ClampPoint(origin));
 		else
 			dist_to_camera = lengthSqr(origin - bbox.GetCenter());
 
 		m_ObjectList[i]->m_fViewDistance = dist_to_camera;
 	}
 
-	// sort list
-	qsort(m_ObjectList.ptr(), m_ObjectList.numElem(), sizeof(CBaseRenderableObject*), DistanceCompare);
+	m_ObjectList.sort(DistanceCompare);
 }
