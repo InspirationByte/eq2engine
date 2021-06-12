@@ -81,7 +81,7 @@ public:
 	void				GetBoundingBox(BoundingBox& outBox) {}
 
 	// renders this buffer
-	void				Render(int nViewRenderFlags);
+	void				Render(int nViewRenderFlags, void* userdata);
 
 	void				SetCustomProjectionMatrix(const Matrix4x4& mat);
 

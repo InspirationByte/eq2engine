@@ -15,6 +15,16 @@
 
 #define MIN_OBJECT_RENDERLIST_MEMSIZE 48
 
+CRenderList::CRenderList() : m_ObjectList(MIN_OBJECT_RENDERLIST_MEMSIZE)
+{
+
+}
+
+CRenderList::~CRenderList()
+{
+	
+}
+
 void CRenderList::AddRenderable(CBaseRenderableObject* pObject)
 {
 	m_ObjectList.append(pObject);
@@ -42,7 +52,7 @@ void CRenderList::Render(int nViewRenderFlags, void* userdata)
 {
 	for(int i = 0; i < m_ObjectList.numElem(); i++)
 	{
-		m_ObjectList[i]->Render(nViewRenderFlags);
+		m_ObjectList[i]->Render(nViewRenderFlags, userdata);
 	}
 }
 
@@ -53,8 +63,7 @@ void CRenderList::Remove(int id)
 
 void CRenderList::Clear()
 {
-	m_ObjectList.clear();
-	m_ObjectList.resize(MIN_OBJECT_RENDERLIST_MEMSIZE);
+	m_ObjectList.clear(false);
 }
 
 // compares floats (for array sort)
@@ -79,6 +88,7 @@ void CRenderList::SortByDistanceFrom(const Vector3D& origin)
 	int num = m_ObjectList.numElem();
 	for(int i = 0; i < num; i++)
 	{
+		// FIXME: cache?
 		BoundingBox bbox;
 		m_ObjectList[i]->GetBoundingBox(bbox);
 

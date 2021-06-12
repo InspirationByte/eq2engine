@@ -17,6 +17,8 @@
 class CRenderList
 {
 public:
+	CRenderList();
+	virtual ~CRenderList();
 
 	void								AddRenderable(CBaseRenderableObject* pObject);		// adds a single object
 

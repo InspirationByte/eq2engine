@@ -47,7 +47,7 @@ public:
 	virtual ~CBaseRenderableObject() {}
 
 	// renders this object with current transformations
-	virtual void			Render(int nViewRenderFlags) = 0;
+	virtual void			Render(int nViewRenderFlags, void* userdata) = 0;
 
 	// min bbox dimensions
 	virtual void			GetBoundingBox(BoundingBox& outBox) = 0;
