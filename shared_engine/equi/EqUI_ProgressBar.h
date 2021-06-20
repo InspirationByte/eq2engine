@@ -5,21 +5,21 @@
 // Description: EqUI percentage bar
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef EQUI_PERCENTAGEBAR_H
-#define EQUI_PERCENTAGEBAR_H
+#ifndef EQUI_PROGRESSBAR_H
+#define EQUI_PROGRESSBAR_H
 
 #include "EqUI/equi_defs.h"
 #include "EqUI/IEqUI_Control.h"
 
 namespace equi
 {
-	class PercentageBar : public IUIControl
+	class ProgressBar : public IUIControl
 	{
 	public:
-		EQUI_CLASS(PercentageBar, IUIControl)
+		EQUI_CLASS(ProgressBar, IUIControl)
 
-		PercentageBar();
-		~PercentageBar() {}
+		ProgressBar();
+		~ProgressBar() {}
 
 		void				InitFromKeyValues(kvkeybase_t* sec, bool noClear);
 

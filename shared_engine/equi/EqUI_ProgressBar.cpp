@@ -2,10 +2,10 @@
 // Copyright © Inspiration Byte
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
-// Description: EqUI timer
+// Description: EqUI progress bar
 //////////////////////////////////////////////////////////////////////////////////
 
-#include "EqUI_PercentageBar.h"
+#include "EqUI_ProgressBar.h"
 
 #include "EqUI/EqUI_Manager.h"
 
@@ -21,21 +21,21 @@
 namespace equi
 {
 
-PercentageBar::PercentageBar()
+ProgressBar::ProgressBar()
 	: IUIControl() 
 {
 	m_value = 0.5f;
 	m_color = color4_white;
 }
 
-void PercentageBar::InitFromKeyValues(kvkeybase_t* sec, bool noClear)
+void ProgressBar::InitFromKeyValues(kvkeybase_t* sec, bool noClear)
 {
 	BaseClass::InitFromKeyValues(sec, noClear);
 
 	m_color = KV_GetVector4D(sec->FindKeyBase("color"), 0, m_color);
 }
 
-void PercentageBar::DrawSelf(const IRectangle& _rect)
+void ProgressBar::DrawSelf(const IRectangle& _rect)
 {
 	// setup default material and translucent blending
 	BlendStateParam_t blending;
@@ -76,4 +76,4 @@ void PercentageBar::DrawSelf(const IRectangle& _rect)
 
 }
 
-DECLARE_EQUI_CONTROL(percentagebar, PercentageBar)
+DECLARE_EQUI_CONTROL(progressBar, ProgressBar)

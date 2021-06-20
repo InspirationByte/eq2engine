@@ -284,6 +284,13 @@ bool CD3DRenderLib::InitAPI( shaderAPIParams_t &params )
 		caps.renderTargetFormatsSupported[i] = (m_d3dFactory->CheckDeviceFormat(D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, m_d3dMode.Format, D3DUSAGE_RENDERTARGET, D3DRTYPE_SURFACE, formats[i]) == D3D_OK);
 	}
 
+#define FOURCC_INTZ ((D3DFORMAT)(MAKEFOURCC('I','N','T','Z')))
+
+	// Determine if INTZ is supported
+	hr = m_d3dFactory->CheckDeviceFormat(D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, m_d3dMode.Format,D3DUSAGE_DEPTHSTENCIL, D3DRTYPE_TEXTURE,FOURCC_INTZ);
+
+	caps.INTZSupported = (hr == D3D_OK);
+
 	return true;
 }
 
