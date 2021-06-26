@@ -61,7 +61,7 @@ struct ppallocinfo_t
 #endif // PPMEM_EXTRA_DEBUGINFO
 
 	uint		id;
-	uint		size;
+	size_t		size;
 
 	uint		checkMark;
 };
@@ -255,7 +255,7 @@ ppallocinfo_t* FindAllocation( void* ptr, bool& isValidInputPtr )
 }
 
 // allocated debuggable memory block
-void* PPDAlloc(uint size, const char* pszFileName, int nLine, const char* debugTAG)
+void* PPDAlloc(size_t size, const char* pszFileName, int nLine, const char* debugTAG)
 {
 #ifdef PPMEM_DISABLE
 	return pp_internal_malloc(size);
@@ -302,7 +302,7 @@ void* PPDAlloc(uint size, const char* pszFileName, int nLine, const char* debugT
 }
 
 // reallocates memory block
-void* PPDReAlloc( void* ptr, uint size, const char* pszFileName, int nLine, const char* debugTAG )
+void* PPDReAlloc( void* ptr, size_t size, const char* pszFileName, int nLine, const char* debugTAG )
 {
 #ifdef PPMEM_DISABLE
 	return realloc(ptr, size);

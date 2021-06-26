@@ -31,8 +31,8 @@
 
 IEXPORTS void	PPMemInfo( bool fullStats = true );
 
-IEXPORTS void*	PPDAlloc( uint size, const char* pszFileName, int nLine, const char* debugTAG = nullptr );
-IEXPORTS void*	PPDReAlloc( void* ptr, uint size, const char* pszFileName, int nLine, const char* debugTAG = nullptr );
+IEXPORTS void*	PPDAlloc( size_t size, const char* pszFileName, int nLine, const char* debugTAG = nullptr );
+IEXPORTS void*	PPDReAlloc( void* ptr, size_t size, const char* pszFileName, int nLine, const char* debugTAG = nullptr );
 
 IEXPORTS void	PPFree( void* ptr );
 

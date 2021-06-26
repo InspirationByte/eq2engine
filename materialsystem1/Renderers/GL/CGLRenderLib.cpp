@@ -400,7 +400,7 @@ bool CGLRenderLib::InitAPI(shaderAPIParams_t& params)
 	EnumDisplayMonitors(NULL, NULL, MonitorEnumProc, (LPARAM) &monitorCounter);
 
 	device.cb = sizeof(device);
-	EnumDisplayDevices(NULL, r_screen->GetInt(), &device, 0);
+	EnumDisplayDevicesA(NULL, r_screen->GetInt(), &device, 0);
 
 	// get window parameters
 
@@ -439,7 +439,7 @@ bool CGLRenderLib::InitAPI(shaderAPIParams_t& params)
 	// change display settings
 	if (!params.windowedMode)
 	{
-		int dispChangeStatus = ChangeDisplaySettings(&dm, CDS_FULLSCREEN);
+		int dispChangeStatus = ChangeDisplaySettingsA(&dm, CDS_FULLSCREEN);
 
 		if (dispChangeStatus != DISP_CHANGE_SUCCESSFUL)
 		{
@@ -451,7 +451,7 @@ bool CGLRenderLib::InitAPI(shaderAPIParams_t& params)
 
 			if(lastErr != 0)
 			{
-				FormatMessage(	FORMAT_MESSAGE_FROM_SYSTEM,
+				FormatMessageA(	FORMAT_MESSAGE_FROM_SYSTEM,
 								NULL,
 								lastErr,
 								MAKELANGID(LANG_NEUTRAL,SUBLANG_DEFAULT),
@@ -828,7 +828,7 @@ void CGLRenderLib::ExitAPI()
 	if (!g_shaderApi.m_params->windowedMode)
 	{
 		// Reset display mode to default
-		ChangeDisplaySettingsEx((const char *) device.DeviceName, NULL, NULL, 0, NULL);
+		ChangeDisplaySettingsExA((const char *) device.DeviceName, NULL, NULL, 0, NULL);
 	}
 #endif // USE_GLES2
 
@@ -934,7 +934,7 @@ void CGLRenderLib::SetBackbufferSize(const int w, const int h)
 		dm.dmPelsWidth = m_width;
 		dm.dmPelsHeight = m_height;
 
-		if (ChangeDisplaySettingsEx((const char *) device.DeviceName, &dm, NULL, CDS_FULLSCREEN, NULL) == DISP_CHANGE_FAILED)
+		if (ChangeDisplaySettingsExA((const char *) device.DeviceName, &dm, NULL, CDS_FULLSCREEN, NULL) == DISP_CHANGE_FAILED)
 		{
 			MsgError("Couldn't set fullscreen mode\n");
 			WarningMsg("Couldn't set fullscreen mode");

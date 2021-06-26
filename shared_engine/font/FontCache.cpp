@@ -264,7 +264,7 @@ IEqFont* CEqFontCache::GetFont(const char* name, int bestSize, int styleFlags, b
 	if(!family)
 	{
 		if(defaultIfNotFound)
-			return GetFont("default", bestSize, styleFlags);
+			return GetFont("default", bestSize, styleFlags, false);
 		else
 			return NULL;
 	}

@@ -167,7 +167,7 @@ void CEqConsoleInput::SpewFunc(SpewType_t type, const char* pMsg)
 
 #ifdef _WIN32
 	// debug print only for Windows
-	OutputDebugString(pMsg);
+	OutputDebugStringA(pMsg);
 #endif // _WIN32
 
 	char* pc = (char*)pMsg;

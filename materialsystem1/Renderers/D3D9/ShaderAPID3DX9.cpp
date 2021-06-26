@@ -1390,9 +1390,9 @@ void ShaderAPID3DX9::SaveRenderTarget(ITexture* pTargetTexture, const char* pFil
 		CD3D9Texture* pTexture = (CD3D9Texture*)pTargetTexture;
 
 		if(pTexture->GetFlags() & TEXFLAG_CUBEMAP)
-			D3DXSaveTextureToFile(pFileName, D3DXIFF_DDS, pTexture->textures[0], NULL);
+			D3DXSaveTextureToFileA(pFileName, D3DXIFF_DDS, pTexture->textures[0], NULL);
 		else
-			D3DXSaveSurfaceToFile(pFileName, D3DXIFF_DDS, pTexture->surfaces[0], NULL,NULL);
+			D3DXSaveSurfaceToFileA(pFileName, D3DXIFF_DDS, pTexture->surfaces[0], NULL,NULL);
 	}
 }
 

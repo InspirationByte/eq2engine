@@ -56,6 +56,7 @@ ISoundSource* ISoundSource::CreateSound( const char* szFilename )
 		{
 			MsgError( "Cannot load sound '%s'\n", szFilename );
 			delete pSource;
+			pSource = nullptr;
 		}
 
 		return pSource;

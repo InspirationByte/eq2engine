@@ -54,7 +54,7 @@ char* KV_ReadProcessString( const char* pszStr )
 	const char* ptr = pszStr;
 	// convert some symbols to special ones
 
-	int sLen = strlen( pszStr );
+	size_t sLen = strlen( pszStr );
 
 	char* temp = (char*)malloc( sLen+10 ); // FIXME: extra symbols needs to be counted!!!
 	char* ptrTemp = temp;
@@ -185,7 +185,7 @@ void kvpairvalue_t::SetStringValue( const char* pszValue )
 		value = NULL;
 	}
 
-	int len = strlen(pszValue);
+	size_t len = strlen(pszValue);
 	value = (char*)PPAlloc(len+1);
 
 	strcpy(value, pszValue);
@@ -2048,8 +2048,6 @@ int KV_CountSpecialSymbols(char* pszStr)
 void KV_PreProcessStringValue( char* out, char* pszStr )
 {
 	char* ptr = pszStr;
-	int sLen = strlen( pszStr );
-
 	char* temp = out;
 
 	do

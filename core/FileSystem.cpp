@@ -142,10 +142,9 @@ struct DKFINDDATA
 
 extern bool g_bPrintLeaksOnShutdown;
 
-CFileSystem::CFileSystem() : m_isInit(false), m_editorMode(false)
+CFileSystem::CFileSystem() :
+	m_isInit(false), m_editorMode(false)
 {
-	// required by mobile port
-	GetCore()->RegisterInterface( FILESYSTEM_INTERFACE_VERSION, this);
 }
 
 CFileSystem::~CFileSystem()

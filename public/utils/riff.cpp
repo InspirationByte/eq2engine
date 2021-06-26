@@ -12,10 +12,10 @@ CRIFF_Parser::CRIFF_Parser(const char* szFilename)
 {
 	m_pos = 0;
 
-	m_riff = g_fileSystem->Open(szFilename, "rb" );
+	m_riff = g_fileSystem->Open(szFilename, "rb");
 	m_riffData = NULL;
 
-	if ( !m_riff )
+	if (!m_riff)
 	{
 		m_curChunk.Id = 0;
 		m_curChunk.Size = 0;
@@ -23,9 +23,9 @@ CRIFF_Parser::CRIFF_Parser(const char* szFilename)
 	}
 
 	RIFFhdr_t header;
-	ReadData((ubyte*)&header, sizeof(header));
+	ReadData(&header, sizeof(header));
 
-	if ( header.Id != RIFF_ID )
+	if (header.Id != RIFF_ID)
 	{
 		MsgError("LoadRIFF: '%s' not valid RIFF file\n", szFilename);
 
@@ -35,7 +35,7 @@ CRIFF_Parser::CRIFF_Parser(const char* szFilename)
 	}
 	else
 	{
-		if ( header.Type != WAVE_ID )
+		if (header.Type != WAVE_ID)
 		{
 			MsgError("LoadRIFF: '%s' not valid WAVE file\n", szFilename);
 
@@ -54,7 +54,7 @@ CRIFF_Parser::CRIFF_Parser(ubyte* pChunkData, int nChunkSize)
 	m_riff = NULL;
 	m_riffData = pChunkData;
 
-	if ( !m_riffData )
+	if (!m_riffData)
 	{
 		m_curChunk.Id = 0;
 		m_curChunk.Size = 0;
@@ -62,9 +62,9 @@ CRIFF_Parser::CRIFF_Parser(ubyte* pChunkData, int nChunkSize)
 	}
 
 	RIFFhdr_t header;
-	ReadData((ubyte*)&header, sizeof(header));
+	ReadData(&header, sizeof(header));
 
-	if ( header.Id != RIFF_ID )
+	if (header.Id != RIFF_ID)
 	{
 		header.Id = 0;
 		header.Size = 0;
@@ -72,7 +72,7 @@ CRIFF_Parser::CRIFF_Parser(ubyte* pChunkData, int nChunkSize)
 	}
 	else
 	{
-		if ( header.Type != WAVE_ID )
+		if (header.Type != WAVE_ID)
 		{
 			header.Id = 0;
 			header.Size = 0;
@@ -82,45 +82,49 @@ CRIFF_Parser::CRIFF_Parser(ubyte* pChunkData, int nChunkSize)
 	ChunkSet();
 }
 
-void CRIFF_Parser::ChunkClose ()
+void CRIFF_Parser::ChunkClose()
 {
-	if( m_riff )
+	if (m_riff)
 	{
-		g_fileSystem->Close( m_riff );
+		g_fileSystem->Close(m_riff);
 		m_riff = NULL;
 	}
 }
 
-int CRIFF_Parser::ReadChunk( void* pOutput, int maxLen )
+int CRIFF_Parser::ReadChunk(void* pOutput, int maxLen)
 {
 	int numToRead = m_curChunk.Size;
 
 	if (maxLen != -1)
 		numToRead = maxLen;
 
-	int readCount = ReadData( pOutput, numToRead);
+	int readCount = ReadData(pOutput, numToRead);
+	/*
+	numToRead -= readCount;
 
 	if (numToRead < m_curChunk.Size)
 	{
 		m_pos += m_curChunk.Size - numToRead;
+
 		if (m_riff)
-			m_riff->Seek(m_curChunk.Size - numToRead, VS_SEEK_CUR);
-	}
+			fseek(m_riff, m_curChunk.Size - numToRead, SEEK_CUR);
+	}*/
 
 	return readCount;
 }
 
 int CRIFF_Parser::ReadData(void* dest, int len)
 {
-	if( m_riff )
+	if (m_riff)
 	{
-		int read = m_riff->Read( dest, len, 1 );
+		int read = m_riff->Read(dest, 1, len);
+
 		m_pos += read;
 		return read;
 	}
-	else if( m_riffData )
+	else if (m_riffData)
 	{
-		memcpy( dest, m_riffData + m_pos, len );
+		memcpy(dest, m_riffData + m_pos, len);
 		m_pos += len;
 		return len;
 	}
@@ -131,7 +135,7 @@ int CRIFF_Parser::ReadData(void* dest, int len)
 int CRIFF_Parser::ReadInt()
 {
 	int i;
-	ReadData( &i, sizeof(i) );
+	ReadData(&i, sizeof(i));
 	return i;
 }
 
@@ -144,8 +148,8 @@ int CRIFF_Parser::SetPos(int pos)
 {
 	m_pos = pos;
 
-	if ( m_riff )
-		m_riff->Seek(pos, VS_SEEK_SET );
+	if (m_riff)
+		m_riff->Seek(pos, VS_SEEK_SET);
 
 	return m_pos;
 }
@@ -164,8 +168,8 @@ int CRIFF_Parser::GetSize()
 bool CRIFF_Parser::ChunkNext()
 {
 	bool result = ChunkSet();
-	
-	if(!result)
+
+	if (!result)
 	{
 		m_curChunk.Id = 0;
 		m_curChunk.Size = 0;
@@ -178,6 +182,6 @@ bool CRIFF_Parser::ChunkNext()
 
 bool CRIFF_Parser::ChunkSet()
 {
-	int n = ReadData((ubyte*)&m_curChunk, sizeof(m_curChunk));
+	int n = ReadData(&m_curChunk, sizeof(m_curChunk));
 	return n > 0;
 }

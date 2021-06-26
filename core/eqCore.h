@@ -33,17 +33,17 @@ public:
 
 	void					Shutdown();	// Shutdowns core
 
-	char*					GetApplicationName();
-
-	bool					IsInitialized() {return m_bInitialized;}
+	char*					GetApplicationName()  const;
 
 	// now configuration is global for all applications
-	KeyValues*				GetConfig();
+	KeyValues*				GetConfig()  const;
+
+	bool					IsInitialized()  const;
 
 // Interface management for engine
 
-	void					RegisterInterface(const char* pszName, IEqCoreModule* iface);	// registers interface for faster access
-	IEqCoreModule*	GetInterface(const char* pszName);										// returns registered interface
+	void					RegisterInterface(const char* pszName, IEqCoreModule* iface);			// registers interface for faster access
+	IEqCoreModule*			GetInterface(const char* pszName) const;								// returns registered interface
 	void					UnregisterInterface(const char* pszName);								// unregisters interface
 
 private:

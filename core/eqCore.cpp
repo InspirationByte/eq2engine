@@ -59,13 +59,22 @@ EXPORTED_INTERFACE_FUNCTION(IDkCore, CDkCore, GetCore)
 IEXPORTS void*	_GetDkCoreInterface(const char* pszName)
 {
 	// GetCore() потому-что может быть вызвано раньше
-	return GetCore()->GetInterface(pszName);
+	IDkCore* core = GetCore();
+
+	// Filesystem is required by mobile port
+	if(!strcmp(pszName, FILESYSTEM_INTERFACE_VERSION))
+	{
+		if (!core->GetInterface(FILESYSTEM_INTERFACE_VERSION))
+			core->RegisterInterface(FILESYSTEM_INTERFACE_VERSION, g_fileSystem);
+	}
+
+	return core->GetInterface(pszName);
 }
 
 // callback при выходе (Разгрузке DLL)
 void DkCore_onExit( void )
 {
-	g_pIDkCore->Shutdown();
+	GetCore()->Shutdown();
 }
 
 ConVar *c_SupressAccessorMessages = NULL;
@@ -293,7 +302,7 @@ void CDkCore::InitSubInterfaces()
 	RegisterInterface( CPUSERVICES_INTERFACE_VERSION , GetCEqCPUCaps());
 }
 
-KeyValues* CDkCore::GetConfig()
+KeyValues* CDkCore::GetConfig() const
 {
 	return m_coreConfiguration;
 }
@@ -362,7 +371,7 @@ void CDkCore::Shutdown()
 	Log_Close();
 }
 
-char* CDkCore::GetApplicationName()
+char* CDkCore::GetApplicationName() const
 {
     return (char*)m_szApplicationName.GetData();
 }
@@ -386,11 +395,11 @@ void CDkCore::RegisterInterface(const char* pszName, IEqCoreModule* ifPtr)
 	m_interfaces.append(iface);
 }
 
-IEqCoreModule* CDkCore::GetInterface(const char* pszName)
+IEqCoreModule* CDkCore::GetInterface(const char* pszName) const
 {
 	for(int i = 0; i < m_interfaces.numElem(); i++)
 	{
-		if(!stricmp(m_interfaces[i].name, pszName))
+		if(!strcmp(m_interfaces[i].name, pszName))
 			return m_interfaces[i].ptr;
 	}
 
@@ -401,10 +410,15 @@ void CDkCore::UnregisterInterface(const char* pszName)
 {
 	for(int i = 0; i < m_interfaces.numElem(); i++)
 	{
-		if(!stricmp(m_interfaces[i].name, pszName))
+		if(!strcmp(m_interfaces[i].name, pszName))
 		{
 			m_interfaces.fastRemoveIndex(i);
 			return;
 		}
 	}
+}
+
+bool CDkCore::IsInitialized() const
+{
+	return m_bInitialized;
 }

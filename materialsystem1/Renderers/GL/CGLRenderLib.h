@@ -96,8 +96,8 @@ protected:
 #endif // ANDROID
 
 #elif defined(_WIN32)
-	DISPLAY_DEVICE			device;
-	DEVMODE					dm;
+	DISPLAY_DEVICEA			device;
+	DEVMODEA				dm;
 
 	HDC						hdc;
 	

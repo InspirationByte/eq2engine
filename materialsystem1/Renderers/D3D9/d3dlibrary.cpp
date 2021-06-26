@@ -224,7 +224,7 @@ bool CD3DRenderLib::InitAPI( shaderAPIParams_t &params )
 			} 
 			else 
 			{
-				MessageBox(hwnd, "Couldn't create Direct3D9 device interface!\n\nCheck your system configuration and/or install latest video drivers!", "Error", MB_OK | MB_ICONWARNING);
+				MessageBoxA(hwnd, "Couldn't create Direct3D9 device interface!\n\nCheck your system configuration and/or install latest video drivers!", "Error", MB_OK | MB_ICONWARNING);
 
 				return false;
 			}

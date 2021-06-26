@@ -572,7 +572,7 @@ void CEqAudioSourceAL::UpdateParams(params_t params, int mask)
 	int numQueued;
 	bool isStreaming;
 
-	isStreaming = m_sample->IsStreaming();
+	isStreaming = m_sample ? m_sample->IsStreaming() : false;
 
 	if (mask & UPDATE_POSITION)
 		alSourcefv(thisSource, AL_POSITION, params.position);
@@ -676,7 +676,7 @@ void CEqAudioSourceAL::GetParams(params_t& params)
 
 	params.id = m_chanType;
 
-	bool isStreaming = m_sample->IsStreaming();
+	bool isStreaming = m_sample ? m_sample->IsStreaming() : false;
 
 	// get current state of alSource
 	alGetSourcefv(thisSource, AL_POSITION, params.position);
@@ -841,6 +841,9 @@ void CEqAudioSourceAL::SetupSample(ISoundSource* sample)
 	m_sample = sample;
 	m_streamPos = 0;
 	m_releaseOnStop = (m_callback == nullptr);
+
+	if (sample == nullptr)
+		return;
 
 	if (!sample->IsStreaming())
 	{

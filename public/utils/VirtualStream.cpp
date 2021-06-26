@@ -78,7 +78,7 @@ size_t CMemoryStream::Read(void *dest, size_t count, size_t size)
 	if(!(m_nUsageFlags & VS_OPEN_READ) || m_nAllocatedSize == 0)
 		return 0;
 
-	long nReadBytes = size*count;
+	size_t nReadBytes = size*count;
 
 	long nCurPos = Tell();
 
