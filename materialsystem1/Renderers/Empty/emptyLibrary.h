@@ -36,6 +36,12 @@ public:
 	// reports focus state
 	void			SetFocused(bool inFocus) {}
 
+	// changes fullscreen mode
+	bool			SetWindowed(bool enabled);
+
+	// speaks for itself
+	bool			IsWindowed() const;
+
 	// captures screenshot, outputs image to 'img'
 	bool			CaptureScreenshot(CImage &img);
 

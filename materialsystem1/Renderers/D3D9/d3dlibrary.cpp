@@ -134,8 +134,6 @@ bool CD3DRenderLib::InitAPI( shaderAPIParams_t &params )
 	//int fullScreenRefresh = 60;
 	//int targetHz = params.screenRefreshRateHZ;
 
-	int nModes = m_d3dFactory->GetAdapterModeCount(D3DADAPTER_DEFAULT, m_d3dpp.BackBufferFormat);
-
 	m_d3dpp.BackBufferWidth = m_width;
 	m_d3dpp.BackBufferHeight = m_height;
 	m_d3dpp.BackBufferCount  = 1;
@@ -145,25 +143,15 @@ bool CD3DRenderLib::InitAPI( shaderAPIParams_t &params )
 	if(params.verticalSyncEnabled)
 		m_d3dpp.PresentationInterval = D3DPRESENT_INTERVAL_ONE;
 	else
-		m_d3dpp.PresentationInterval	= D3DPRESENT_INTERVAL_IMMEDIATE;
+		m_d3dpp.PresentationInterval = D3DPRESENT_INTERVAL_IMMEDIATE;
 
 	// get
-	D3DDISPLAYMODE d3ddm;
-	HRESULT hr = m_d3dFactory->GetAdapterDisplayMode(D3DADAPTER_DEFAULT, &d3ddm);
+	HRESULT hr = m_d3dFactory->GetAdapterDisplayMode(D3DADAPTER_DEFAULT, &m_d3dMode);
 	if (FAILED(hr))
 	{
 		ErrorMsg("D3D error: Could not get Adapter Display mode.");
 		return false;
 	}
-
-	// setup windowed parameters
-	if(params.windowedMode)
-	{
-		m_d3dpp.BackBufferFormat	= d3ddm.Format;
-		m_d3dpp.SwapEffect			= params.multiSamplingMode > 0 ? D3DSWAPEFFECT_DISCARD : D3DSWAPEFFECT_COPY;
-	}
-	else
-		m_d3dpp.SwapEffect			= D3DSWAPEFFECT_DISCARD;
 
 	m_d3dpp.hDeviceWindow	= hwnd;
 
@@ -200,34 +188,30 @@ bool CD3DRenderLib::InitAPI( shaderAPIParams_t &params )
 	{
 		m_d3dpp.MultiSampleType = (D3DMULTISAMPLE_TYPE) multiSample;
 
+		SetupSwapEffect(params);
+	
 #ifdef USE_D3DEX
 		uint result = m_d3dFactory->CreateDeviceEx(r_screen->GetInt(), devtype, hwnd, deviceFlags, &m_d3dpp, &m_d3dMode, &m_rhi);
 #else
 		uint result = m_d3dFactory->CreateDevice(r_screen->GetInt(), devtype, hwnd, deviceFlags, &m_d3dpp, &m_rhi);
 
-		// get d3d mode
-		m_d3dFactory->GetAdapterDisplayMode(D3DADAPTER_DEFAULT, &m_d3dMode);
 #endif
 
 		if (result == D3D_OK)
 		{
-			
-			m_d3dpp.SwapEffect = D3DSWAPEFFECT_DISCARD;
 			break;
-		} 
-		else 
-		{
-			if (multiSample > 0)
-			{
-				
-				multiSample -= 2;
-			} 
-			else 
-			{
-				MessageBoxA(hwnd, "Couldn't create Direct3D9 device interface!\n\nCheck your system configuration and/or install latest video drivers!", "Error", MB_OK | MB_ICONWARNING);
+		}
 
-				return false;
-			}
+		
+		if (multiSample > 0)
+		{
+			multiSample -= 2;
+		}
+		else
+		{
+			MessageBoxA(hwnd, "Couldn't create Direct3D9 device interface!\n\nCheck your system configuration and/or install latest video drivers!", "Error", MB_OK | MB_ICONWARNING);
+
+			return false;
 		}
 	}
 
@@ -321,31 +305,36 @@ void CD3DRenderLib::ExitAPI()
 	//DestroyWindow(hwnd);
 }
 
-void CD3DRenderLib::BeginFrame()
+void CD3DRenderLib::CheckResetDevice()
 {
-	if (!s_shaderApi.IsDeviceActive())
+	if (s_shaderApi.IsDeviceActive())
+		return;
+
+	if (!m_bResized)
 	{
-		if(!m_bResized)
+		HRESULT hr;
+
+		if (FAILED(hr = m_rhi->TestCooperativeLevel()))
 		{
-			HRESULT hr;
-
-			if(FAILED(hr = m_rhi->TestCooperativeLevel()))
-			{
-				if (hr == D3DERR_DEVICELOST)
-					return;
-
-				if (hr == D3DERR_DEVICENOTRESET)
-					s_shaderApi.ResetDevice(m_d3dpp);
-
+			if (hr == D3DERR_DEVICELOST)
 				return;
-			}
-		}
-		else
-		{
-			s_shaderApi.ResetDevice(m_d3dpp);
-			m_bResized = false;
+
+			if (hr == D3DERR_DEVICENOTRESET)
+				s_shaderApi.ResetDevice(m_d3dpp);
+
+			return;
 		}
 	}
+	else
+	{
+		s_shaderApi.ResetDevice(m_d3dpp);
+		m_bResized = false;
+	}
+}
+
+void CD3DRenderLib::BeginFrame()
+{
+	CheckResetDevice();
 
 	m_rhi->BeginScene();
 }
@@ -399,6 +388,8 @@ void CD3DRenderLib::SetBackbufferSize(const int w, const int h)
 	m_d3dpp.BackBufferHeight = h;
 	m_d3dpp.EnableAutoDepthStencil = TRUE;
 
+	SetupSwapEffect(*s_shaderApi.m_params);
+	
 	m_bResized = true;
 	s_shaderApi.m_bDeviceIsLost = true;
 }
@@ -407,6 +398,52 @@ void CD3DRenderLib::SetBackbufferSize(const int w, const int h)
 void CD3DRenderLib::SetFocused(bool inFocus)
 {
 
+}
+
+void CD3DRenderLib::SetupSwapEffect(const shaderAPIParams_t& params)
+{
+	if (m_d3dpp.Windowed)
+	{
+		m_d3dpp.BackBufferFormat = m_d3dMode.Format;
+		m_d3dpp.SwapEffect = (m_d3dpp.MultiSampleType > D3DMULTISAMPLE_NONE) ? D3DSWAPEFFECT_DISCARD : D3DSWAPEFFECT_COPY;
+	}
+	else
+	{
+		m_d3dpp.BackBufferFormat = formats[params.screenFormat];
+		m_d3dpp.SwapEffect = D3DSWAPEFFECT_DISCARD;
+	}
+}
+
+
+// changes fullscreen mode
+bool CD3DRenderLib::SetWindowed(bool enabled)
+{
+	bool old = m_d3dpp.Windowed;
+
+	m_d3dpp.BackBufferWidth = m_width;
+	m_d3dpp.BackBufferHeight = m_height;
+	m_d3dpp.BackBufferCount = 1;
+
+	m_d3dpp.Windowed = enabled;
+
+	SetupSwapEffect(*s_shaderApi.m_params);
+	
+	m_bResized = false;
+
+	if (!s_shaderApi.ResetDevice(m_d3dpp))
+	{
+		MsgError("SetWindowed(%d) - failed to reset device!\n", enabled);
+		m_d3dpp.Windowed = old;
+		return false;
+	}
+
+	return true;
+}
+
+// speaks for itself
+bool CD3DRenderLib::IsWindowed() const
+{
+	return m_d3dpp.Windowed;
 }
 
 bool CD3DRenderLib::CaptureScreenshot(CImage& img)

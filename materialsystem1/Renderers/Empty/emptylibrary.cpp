@@ -68,6 +68,18 @@ void CEmptyRenderLib::SetBackbufferSize(const int w, const int h)
 
 }
 
+// changes fullscreen mode
+bool CEmptyRenderLib::SetWindowed(bool enabled)
+{
+	return true;
+}
+
+// speaks for itself
+bool CEmptyRenderLib::IsWindowed() const
+{
+	return ((ShaderAPIEmpty*)m_Renderer)->m_params->windowedMode;
+}
+
 bool CEmptyRenderLib::CaptureScreenshot(CImage &img)
 {
 	return false;

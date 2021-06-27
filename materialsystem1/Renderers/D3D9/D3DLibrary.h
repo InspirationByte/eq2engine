@@ -41,6 +41,12 @@ public:
 	// reports focus state
 	void					SetFocused(bool inFocus);
 
+	// changes windowed/fullscreen mode; returns false if failed
+	bool					SetWindowed(bool enabled);
+
+	// speaks for itself
+	bool					IsWindowed() const;
+
 	// captures screenshot, outputs image to 'img'
 	bool					CaptureScreenshot(CImage &img);
 
@@ -54,6 +60,9 @@ public:
 	IEqSwapChain*			GetDefaultSwapchain();
 
 protected:
+
+	void					CheckResetDevice();
+	void					SetupSwapEffect(const shaderAPIParams_t& params);
 
 	DkList<IEqSwapChain*>	m_swapChains;
 

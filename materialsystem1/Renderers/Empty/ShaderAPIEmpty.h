@@ -120,9 +120,11 @@ protected:
 
 class ShaderAPIEmpty : public ShaderAPI_Base
 {
+	friend class CEmptyRenderLib;
+	friend class CEmptyTexture;
 public:
 
-	friend class				CEmptyTexture;
+	
 
 								ShaderAPIEmpty() {}
 								~ShaderAPIEmpty() {}

@@ -428,6 +428,10 @@ public:
 	virtual IEqSwapChain*					CreateSwapChain(void* windowHandle) = 0;
 	virtual void							DestroySwapChain(IEqSwapChain* chain) = 0;
 
+	// window/fullscreen mode changing; returns false if fails
+	virtual bool							SetWindowed(bool enable) = 0;
+	virtual bool							IsWindowed() const = 0;
+	
 	// captures screenshot to CImage data
 	virtual bool							CaptureScreenshot( CImage &img ) = 0;
 

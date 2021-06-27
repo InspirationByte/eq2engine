@@ -279,6 +279,10 @@ public:
 
 	void							DestroySwapChain(IEqSwapChain* chain);
 
+	// window/fullscreen mode changing; returns false if fails
+	bool							SetWindowed(bool enable);
+	bool							IsWindowed() const;
+	
 	// captures screenshot to CImage data
 	bool							CaptureScreenshot( CImage &img );
 

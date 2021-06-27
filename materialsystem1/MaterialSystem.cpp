@@ -58,6 +58,11 @@ ConVar				r_noffp("r_noffp","0","No FFP emulated primitives", CV_CHEAT);
 ConVar				r_depthBias("r_depthBias", "-0.000001", NULL, CV_CHEAT);
 ConVar				r_slopeDepthBias("r_slopeDepthBias", "-1.5", NULL, CV_CHEAT);
 
+DECLARE_CMD(mat_toggle_fullscreen, "Debug command to toggle fullscreen mode", 0)
+{
+	materials->SetWindowed(!materials->IsWindowed());
+}
+
 DECLARE_CMD(mat_reload, "Reloads all materials",0)
 {
 	MsgInfo("Reloading materials...\n\n");
@@ -1115,6 +1120,29 @@ void CMaterialSystem::DestroySwapChain(IEqSwapChain* swapChain)
 {
 	if(m_renderLibrary)
 		m_renderLibrary->DestroySwapChain(swapChain);
+}
+
+// fullscreen mode changing
+bool CMaterialSystem::SetWindowed(bool enable)
+{
+	bool old = m_config.shaderapi_params.windowedMode;
+	m_config.shaderapi_params.windowedMode = enable;
+	
+	if (m_renderLibrary)
+	{
+		if (!m_renderLibrary->SetWindowed(enable))
+		{
+			m_config.shaderapi_params.windowedMode = old;
+			return false;
+		}
+	}
+
+	return true;
+}
+
+bool CMaterialSystem::IsWindowed() const
+{
+	return m_config.shaderapi_params.windowedMode;
 }
 
 // returns RHI device interface

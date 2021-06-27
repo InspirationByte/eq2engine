@@ -437,33 +437,7 @@ bool CGLRenderLib::InitAPI(shaderAPIParams_t& params)
 	//dm.dmDisplayFrequency = 60;
 
 	// change display settings
-	if (!params.windowedMode)
-	{
-		int dispChangeStatus = ChangeDisplaySettingsA(&dm, CDS_FULLSCREEN);
-
-		if (dispChangeStatus != DISP_CHANGE_SUCCESSFUL)
-		{
-			MsgError("ChangeDisplaySettingsEx - couldn't set fullscreen mode %dx%d on %s (%d)\n", m_width, m_height, device.DeviceName, dispChangeStatus);
-
-			DWORD lastErr = GetLastError();
-
-			char err[256] = {'\0'};
-
-			if(lastErr != 0)
-			{
-				FormatMessageA(	FORMAT_MESSAGE_FROM_SYSTEM,
-								NULL,
-								lastErr,
-								MAKELANGID(LANG_NEUTRAL,SUBLANG_DEFAULT),
-								err,
-								255,
-								NULL);
-
-				MsgError("Couldn't set fullscreen mode:\n\n%s (0x%p)", err, lastErr);
-			}
-
-		}
-	}
+	SetWindowed(params.windowedMode);
 
 	// choose the best format
 	PIXELFORMATDESCRIPTOR pfd;
@@ -920,6 +894,73 @@ void CGLRenderLib::EndFrame(IEqSwapChain* schain)
 #endif // PLAT_WIN
 }
 
+// changes fullscreen mode
+bool CGLRenderLib::SetWindowed(bool enabled)
+{
+	if (!enabled)
+	{
+#if defined(PLAT_LINUX)
+		ASSERTMSG(false, "CGLRenderLib::SetWindowed - Not implemented for Linux");
+		/*
+		if (foundMode >= 0 && XF86VidModeSwitchToMode(display, m_screen, dmodes[foundMode]))
+		{
+			XF86VidModeSetViewPort(display, m_screen, 0, 0);
+		}
+		else
+		{
+			MsgError("Couldn't set fullscreen at %dx%d.", m_width, m_height);
+			params.windowedMode = true;
+		}*/
+#elif defined(PLAT_WIN)
+		// FIXME: it doesn't work second time!
+		dm.dmPelsWidth = m_width;
+		dm.dmPelsHeight = m_height;
+
+		LONG dispChangeStatus = ChangeDisplaySettingsExA((const char*)device.DeviceName, &dm, NULL, CDS_FULLSCREEN, NULL);
+		if (dispChangeStatus != DISP_CHANGE_SUCCESSFUL)
+		{
+			MsgError("ChangeDisplaySettingsEx - couldn't set fullscreen mode %dx%d on %s (%d)\n", m_width, m_height, device.DeviceName, dispChangeStatus);
+
+			DWORD lastErr = GetLastError();
+
+			char err[256] = { '\0' };
+
+			if (lastErr != 0)
+			{
+				FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM,
+					NULL,
+					lastErr,
+					MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+					err,
+					255,
+					NULL);
+
+				MsgError("Couldn't set fullscreen mode:\n\n%s (0x%p)", err, lastErr);
+			}
+			
+			return false;
+		}
+#endif
+	}
+	else
+	{
+#if defined(PLAT_LINUX)
+		if (XF86VidModeSwitchToMode(display, m_screen, dmodes[0]))
+			XF86VidModeSetViewPort(display, m_screen, 0, 0);
+#elif defined(PLAT_WIN)
+		ChangeDisplaySettingsExA((const char*)device.DeviceName, NULL, NULL, 0, NULL);
+#endif
+	}
+	
+	return true;
+}
+
+// speaks for itself
+bool CGLRenderLib::IsWindowed() const
+{
+	return g_shaderApi.m_params->windowedMode;
+}
+
 void CGLRenderLib::SetBackbufferSize(const int w, const int h)
 {
 	if(m_width == w && m_height == h)
@@ -929,17 +970,7 @@ void CGLRenderLib::SetBackbufferSize(const int w, const int h)
 	m_height = h;
 
 #if defined(PLAT_WIN) && !defined(USE_GLES2)
-	if(!g_shaderApi.m_params->windowedMode)
-	{
-		dm.dmPelsWidth = m_width;
-		dm.dmPelsHeight = m_height;
-
-		if (ChangeDisplaySettingsExA((const char *) device.DeviceName, &dm, NULL, CDS_FULLSCREEN, NULL) == DISP_CHANGE_FAILED)
-		{
-			MsgError("Couldn't set fullscreen mode\n");
-			WarningMsg("Couldn't set fullscreen mode");
-		}
-	}
+	SetWindowed(g_shaderApi.m_params->windowedMode);
 #endif // PLAT_WIN && !USE_GLES2
 
 	if (glContext != NULL)

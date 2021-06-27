@@ -13,7 +13,7 @@
 
 #include "core/InterfaceManager.h"
 
-#define RENDERER_INTERFACE_VERSION	"DkRenderer_010"
+#define RENDERER_INTERFACE_VERSION	"DkRenderer_011"
 
 class IRenderLibrary : public IEqCoreModule
 {
@@ -36,6 +36,12 @@ public:
 
 	// reports focus state
 	virtual void			SetFocused(bool inFocus) = 0;
+
+	// changes windowed/fullscreen mode; returns false if failed
+	virtual bool			SetWindowed(bool enabled) = 0;
+
+	// speaks for itself
+	virtual bool			IsWindowed() const = 0;
 
 	// captures screenshot, outputs image to 'img'
 	virtual	bool			CaptureScreenshot(CImage &img) = 0;
