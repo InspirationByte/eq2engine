@@ -5,7 +5,7 @@ A continuation of game engine/framework in form of next generation game engine/f
 
 **Work in progress**
 
-Build system used: [Xmake](https://xmake.io/)
+Build system used: [Premake](https://premake.github.io/)
 
 #### Currently implemented
 - Equilibrium Graphics Files - full-featured 3D model format with animation support
