@@ -576,7 +576,7 @@ void CConsoleCommands::ResetCounter()
 
 struct execOptions_t
 {
-	int filterFlags;
+	cmdFilterFn_t filterFn;
 	bool quiet;
 };
 
@@ -605,9 +605,9 @@ void CConsoleCommands::SplitOnArgsAndExec(char* str, int len, void* extra)
 		return;
 	}
 
-	if(options->filterFlags != -1)
+	if(options->filterFn)
 	{
-		if(!(pBase->GetFlags() & options->filterFlags))
+		if(!(options->filterFn)(pBase, cmdArgs))
 			return;
 	}
 
@@ -642,7 +642,7 @@ void CConsoleCommands::SplitOnArgsAndExec(char* str, int len, void* extra)
 }
 
 // Executes command buffer
-bool CConsoleCommands::ExecuteCommandBuffer(unsigned int CmdFilterFlags/* = -1*/, bool quiet /*= false*/)
+bool CConsoleCommands::ExecuteCommandBuffer(cmdFilterFn_t filterFn /*= nullptr*/, bool quiet /*= false*/)
 {
 	SortCommands();
 
@@ -664,7 +664,7 @@ bool CConsoleCommands::ExecuteCommandBuffer(unsigned int CmdFilterFlags/* = -1*/
 		return false;
 
 	execOptions_t options;
-	options.filterFlags = CmdFilterFlags;
+	options.filterFn = filterFn;
 	options.quiet = quiet;
 
 	ForEachSeparated(m_currentCommands, CON_SEPARATOR, &CConsoleCommands::SplitOnArgsAndExec,  &options);

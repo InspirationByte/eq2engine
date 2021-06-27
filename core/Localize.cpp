@@ -6,6 +6,7 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "Localize.h"
+#include <stdio.h>
 
 #include "core/DebugInterface.h"
 #include "core/IDkCore.h"

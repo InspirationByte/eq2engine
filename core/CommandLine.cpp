@@ -100,7 +100,7 @@ int	CCommandLine::GetArgumentCount() const
 	return m_args.numElem();
 }
 
-void CCommandLine::ExecuteCommandLine(unsigned int CmdFilterFlags/* = -1*/) const
+void CCommandLine::ExecuteCommandLine(cmdLineFilterFn_t filterFn /*= nullptr*/) const
 {
 	if(!m_args.numElem())
 		return;
@@ -122,7 +122,7 @@ void CCommandLine::ExecuteCommandLine(unsigned int CmdFilterFlags/* = -1*/) cons
 		cmdStr.Append(argumentValueStr);
 
 		g_consoleCommands->SetCommandBuffer(cmdStr.ToCString());
-		g_consoleCommands->ExecuteCommandBuffer(CmdFilterFlags);
+		g_consoleCommands->ExecuteCommandBuffer(filterFn);
 	}
 
 	//g_consoleCommands->ExecuteCommandBuffer(CmdFilterFlags);

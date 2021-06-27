@@ -16,7 +16,9 @@
 #include "ConCommandBase.h"
 #include "InterfaceManager.h"
 
-#define CONSOLE_INTERFACE_VERSION		"CORE_ConsoleCommands_003"
+typedef bool (*cmdFilterFn_t)(ConCommandBase* pCmd, DkList<EqString>& args);
+
+#define CONSOLE_INTERFACE_VERSION		"CORE_ConsoleCommands_004"
 
 class IConsoleCommands : public IEqCoreModule
 {
@@ -48,7 +50,7 @@ public:
     virtual void								ResetCounter() = 0;
 
     // Executes command buffer
-    virtual bool								ExecuteCommandBuffer(unsigned int CmdFilterFlags = 0xFFFFFFFF, bool quiet = false) = 0;	
+    virtual bool								ExecuteCommandBuffer(cmdFilterFn_t filterFn = nullptr, bool quiet = false) = 0;
 
 	// returns failed commands
 	virtual DkList<EqString>&					GetFailedCommands() = 0;	

@@ -8,11 +8,16 @@
 #ifndef ICMDLINEPARSER_H
 #define ICMDLINEPARSER_H
 
-#include <stdio.h>
-
 #include "InterfaceManager.h"
 
-#define CMDLINE_INTERFACE_VERSION		"CORE_CommandLine_001"
+#include "utils/DkList.h"
+#include "utils/eqstring.h"
+
+// WARNING: this function declaration is compatible with cmdFilterFn_t
+class ConCommandBase;
+typedef bool (*cmdLineFilterFn_t)(ConCommandBase* pCmd, DkList<EqString>& args);
+
+#define CMDLINE_INTERFACE_VERSION		"CORE_CommandLine_002"
 
 class ICommandLine : public IEqCoreModule
 {
@@ -20,7 +25,7 @@ public:
 	virtual void			Init(const char* pszCommandLine) = 0;
 	virtual void			DeInit() = 0;
 
-	virtual void			ExecuteCommandLine(unsigned int CmdFilterFlags = 0xFFFFFFFF) const = 0;
+	virtual void			ExecuteCommandLine(cmdLineFilterFn_t func = nullptr) const = 0;
 
 	virtual int				FindArgument(const char* arg, int startfrom = 0) const = 0;
 

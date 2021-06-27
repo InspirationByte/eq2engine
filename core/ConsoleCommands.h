@@ -67,7 +67,7 @@ public:
 	void								ResetCounter();
 
 	// Executes command buffer
-	bool								ExecuteCommandBuffer(unsigned int CmdFilterFlags = 0xFFFFFFFF, bool quiet = false);
+	bool								ExecuteCommandBuffer(cmdFilterFn_t filterFn = nullptr, bool quiet = false);
 
 	// returns failed commands
 	DkList<EqString>&					GetFailedCommands();

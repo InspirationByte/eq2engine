@@ -831,7 +831,7 @@ void CEqConsoleInput::ExecuteCurrentInput()
 	g_consoleCommands->ResetCounter();
 	g_consoleCommands->SetCommandBuffer(m_inputText.GetData());
 
-	bool execStatus = g_consoleCommands->ExecuteCommandBuffer(0xFFFFFFFF, m_alternateHandler != NULL);
+	bool execStatus = g_consoleCommands->ExecuteCommandBuffer(nullptr, m_alternateHandler != NULL);
 
 	DkList<EqString>& failedCmds = g_consoleCommands->GetFailedCommands();
 

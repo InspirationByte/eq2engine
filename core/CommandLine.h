@@ -22,7 +22,7 @@ public:
 	void				Init(const char* pszCommandLine);
 	void				DeInit();
 
-	void				ExecuteCommandLine(unsigned int CmdFilterFlags = 0xFFFFFFFF) const;
+	void				ExecuteCommandLine(cmdLineFilterFn_t func = nullptr) const;
 
 	const char*			GetArgumentString(int index) const;
 	int					FindArgument(const char* arg, int startfrom = 0)  const;
