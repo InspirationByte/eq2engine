@@ -69,6 +69,7 @@ workspace "Equilibrium2"
         defines {
             "NDEBUG",
         }
+		optimize "Speed"
 
 	filter "system:Windows or system:Linux or system:Android"
 		defines { "PLAT_SDL=1" }
