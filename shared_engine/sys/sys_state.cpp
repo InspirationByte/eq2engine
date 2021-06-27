@@ -112,6 +112,8 @@ bool UpdateStates( float fDt )
 		return false;
 	}
 
+	PreUpdateState(fDt);
+
 	if( !g_currentState->Update(fDt) )
 	{
 		bool forced;

@@ -82,6 +82,7 @@ namespace EqStateMgr
 	void					ScheduleNextStateType(int stateType);
 
 	// updates and manages the states
+	void					PreUpdateState(float fDt);
 	bool					UpdateStates(float fDt);
 	void					GetStateMouseCursorProperties(bool& visible, bool& centered);
 
