@@ -263,8 +263,8 @@ IEXPORTS_LAUNCHER void _InternalAssert(const char *file, int line, const char *s
         }
 
 #endif //_DKLAUNCHER_
-        //if (IsDebuggerPresent())
-        //{
+        if (IsDebuggerPresent())
+        {
             strcat(str, "Debug?");
             int res = MessageBoxA(NULL, str, "Assertion failed", MB_YESNOCANCEL);
             if ( res == IDYES )
@@ -280,7 +280,6 @@ IEXPORTS_LAUNCHER void _InternalAssert(const char *file, int line, const char *s
                 debug = false;
                 exit(0); //Exit if we have an assert and we
             }
-			/*
         }
         else
         {
@@ -288,9 +287,9 @@ IEXPORTS_LAUNCHER void _InternalAssert(const char *file, int line, const char *s
             if (MessageBoxA(NULL, str, "Assertion failed", MB_YESNO | MB_DEFBUTTON2) != IDYES)
             {
                 debug = false;
-                exit(0); //Exit if we have no more asserts
+                //exit(0); //Exit if we have no more asserts
             }
-        }*/
+        }
     }
 }
 
