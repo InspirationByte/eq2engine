@@ -63,7 +63,7 @@ public:
 	}
 
 	// serializes data
-	void Save(IVirtualStream* stream)
+	void Save(IVirtualStream* stream) const
 	{
 		// write header
 		FileHeader hdr;
