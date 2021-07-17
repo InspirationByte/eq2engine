@@ -81,7 +81,7 @@ typedef std::unordered_map<void*,ppallocinfo_t*>::iterator allocIterator_t;
 // allocation map
 static std::unordered_map<void*,ppallocinfo_t*>	s_allocPointerMap;
 static uint								s_allocIdCounter = 0;
-CEqMutex*			g_allocMemMutex = NULL;
+CEqMutex			g_allocMemMutex;
 
 bool g_enablePPMem = false;
 
@@ -121,8 +121,6 @@ void PPMemInit()
 
 	if(g_enablePPMem)
 	{
-		g_allocMemMutex = new CEqMutex();
-
 		g_consoleCommands->RegisterCommand(&ppmem_stats);
 		g_consoleCommands->RegisterCommand(&ppmem_break_on_alloc);
 	}
@@ -141,9 +139,6 @@ void PPMemShutdown()
 	if(!g_enablePPMem)
 		return;
 
-	delete g_allocMemMutex;
-	g_allocMemMutex = NULL;
-
     g_consoleCommands->UnregisterCommand(&ppmem_stats);
     g_consoleCommands->UnregisterCommand(&ppmem_break_on_alloc);
 
@@ -158,7 +153,7 @@ void PPMemInfo( bool fullStats )
 	if(!g_enablePPMem)
 		return;
 
-	CScopedMutex m(*g_allocMemMutex);
+	CScopedMutex m(g_allocMemMutex);
 
 	uint totalUsage = 0;
 	uint numErrors = 0;
@@ -226,7 +221,7 @@ ppallocinfo_t* FindAllocation( void* ptr, bool& isValidInputPtr )
 		return NULL;
 	}
 
-	CScopedMutex m(*g_allocMemMutex);
+	CScopedMutex m(g_allocMemMutex);
 
 	if(s_allocPointerMap.count(ptr) > 0)
 	{
@@ -290,9 +285,9 @@ void* PPDAlloc(size_t size, const char* pszFileName, int nLine, const char* debu
 	alloc->checkMark = PPMEM_CHECKMARK;
 	*checkMark = PPMEM_CHECKMARK;
 
-	g_allocMemMutex->Lock();
+	g_allocMemMutex.Lock();
 	s_allocPointerMap[actualPtr] = alloc;	// store pointer in global map
-	g_allocMemMutex->Unlock();
+	g_allocMemMutex.Unlock();
 
 	if( ppmem_break_on_alloc.GetInt() != -1)
 		ASSERTMSG(alloc->id == (uint)ppmem_break_on_alloc.GetInt(), varargs("PPDAlloc: Break on allocation id=%d", alloc->id));
@@ -320,9 +315,9 @@ void* PPDReAlloc( void* ptr, size_t size, const char* pszFileName, int nLine, co
 
 		void* oldPtr = ((ubyte*)alloc) + sizeof(ppallocinfo_t);
 
-		g_allocMemMutex->Lock();
+		g_allocMemMutex.Lock();
 		s_allocPointerMap.erase(oldPtr);
-		g_allocMemMutex->Unlock();
+		g_allocMemMutex.Unlock();
 
 		alloc = (ppallocinfo_t*)realloc(alloc, sizeof(ppallocinfo_t) + size + sizeof(uint));
 
@@ -340,9 +335,9 @@ void* PPDReAlloc( void* ptr, size_t size, const char* pszFileName, int nLine, co
 		uint* checkMark = (uint*)((ubyte*)actualPtr + size);
 
 		// store pointer in global map
-		g_allocMemMutex->Lock();
+		g_allocMemMutex.Lock();
 		s_allocPointerMap[actualPtr] = alloc;
-		g_allocMemMutex->Unlock();
+		g_allocMemMutex.Unlock();
 
 		// reset end mark for checking
 		*checkMark = PPMEM_CHECKMARK;
@@ -388,9 +383,9 @@ void PPFree(void* ptr)
 
 		free(alloc);
 
-		g_allocMemMutex->Lock();
+		g_allocMemMutex.Lock();
 		s_allocPointerMap.erase(actualPtr);
-		g_allocMemMutex->Unlock();
+		g_allocMemMutex.Unlock();
 	}
 #endif // PPMEM_DISABLE
 }
