@@ -91,19 +91,26 @@ EqString::EqString(const EqWString &str, int nStart, int len)
 
 EqString EqString::Format(const char* pszFormat, ...)
 {
+	EqString newString;
+	newString.Resize(512, false);
+
 	va_list argptr;
 	va_start(argptr, pszFormat);
-	int length = vsnprintf(nullptr, 0, pszFormat, argptr);
+	int length = vsnprintf(newString.m_pszString, newString.m_nAllocated, pszFormat, argptr);
 	va_end(argptr);
 
-	EqString newString;
-	newString.Resize(length+1, false);
+	if (length < newString.m_nAllocated)
+	{
+		newString.m_nLength = length;
+		return newString;
+	}
+
+	newString.Resize(length + 1, false);
 
 	va_start(argptr, pszFormat);
-	vsnprintf(newString.m_pszString, length+1, pszFormat, argptr);
+	vsnprintf(newString.m_pszString, newString.m_nAllocated, pszFormat, argptr);
 	newString.m_nLength = length;
 	va_end(argptr);
-	
 
 	return newString;
 }
