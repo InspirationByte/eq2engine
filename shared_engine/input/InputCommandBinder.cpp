@@ -186,8 +186,8 @@ void CInputCommandBinder::InitTouchZones()
 		// resolve commands
 
 		// if we connecting libraries dynamically, that wouldn't properly execute
-		newZone.cmd_act = (ConCommand*)g_consoleCommands->FindCommand(varargs("+%s", newZone.commandString.ToCString()));
-		newZone.cmd_deact = (ConCommand*)g_consoleCommands->FindCommand(varargs("-%s", newZone.commandString.ToCString()));
+		newZone.cmd_act = (ConCommand*)g_consoleCommands->FindCommand(EqString::Format("+%s", newZone.commandString.ToCString()).ToCString());
+		newZone.cmd_deact = (ConCommand*)g_consoleCommands->FindCommand(EqString::Format("-%s", newZone.commandString.ToCString()).ToCString());
 
 		// if found only one command with plus or minus
 		if(!newZone.cmd_act || !newZone.cmd_deact)
@@ -302,8 +302,8 @@ bool CInputCommandBinder::ResolveCommandBinding(in_binding_t* binding)
 	if(!binding->boundAction)
 	{
 		// if we connecting libraries dynamically, that wouldn't properly execute
-		binding->cmd_act = (ConCommand*)g_consoleCommands->FindCommand(varargs("+%s", binding->commandString.ToCString()));
-		binding->cmd_deact = (ConCommand*)g_consoleCommands->FindCommand(varargs("-%s", binding->commandString.ToCString()));
+		binding->cmd_act = (ConCommand*)g_consoleCommands->FindCommand(EqString::Format("+%s", binding->commandString.ToCString()).ToCString());
+		binding->cmd_deact = (ConCommand*)g_consoleCommands->FindCommand(EqString::Format("-%s", binding->commandString.ToCString()).ToCString());
 
 		// if found only one command with plus or minus
 		if(!binding->cmd_act || !binding->cmd_deact)
@@ -759,7 +759,7 @@ DECLARE_CMD_VARIANTS(bind,"Binds action to key", con_key_list, 0)
 		EqString agrstr;
 
 		for(int i = 2; i < CMD_ARGC; i++)
-			agrstr.Append(varargs((i < CMD_ARGC-1) ? "%s " : "%s", CMD_ARGV(i).ToCString()));
+			agrstr.Append(EqString::Format((i < CMD_ARGC-1) ? "%s " : "%s", CMD_ARGV(i).ToCString()));
 
 		g_inputCommandBinder->BindKey(CMD_ARGV(0).ToCString(), CMD_ARGV(1).ToCString(),(char*)agrstr.GetData());
 	}

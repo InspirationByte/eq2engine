@@ -60,10 +60,10 @@ const char* CMatVar::GetString()
 		switch(m_isDirtyString)
 		{
 			case 1:	// float
-				m_pszValue = varargs("%f",m_vector.x);
+				m_pszValue = EqString::Format("%f",m_vector.x);
 				break;
 			case 2:	// int
-				m_pszValue = varargs("%i",m_nValue);
+				m_pszValue = EqString::Format("%i",m_nValue);
 				break;
 			case 3:	// TODO: vector2D
 				break;

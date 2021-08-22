@@ -602,7 +602,7 @@ bool CGameHost::Frame()
 		else if(fps < 60)
 			params.textColor = ColorRGBA(1,0.8f,0,1);
 
-		m_pDefaultFont->RenderText(varargs("SYS/GAME FPS: %d/%d", min(fps, 1000), gamefps), Vector2D(15), params);
+		m_pDefaultFont->RenderText(EqString::Format("SYS/GAME FPS: %d/%d", min(fps, 1000), gamefps).ToCString(), Vector2D(15), params);
 	}
 
 	g_inputCommandBinder->DebugDraw(m_winSize);

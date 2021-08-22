@@ -41,6 +41,8 @@ public:
 	EqWString(const wchar_t* pszString, int len = -1);
 	EqWString(const EqWString &str, int nStart = 0, int len = -1);
 
+	static EqWString Format(const wchar_t* pszFormat, ...);
+
 	// data for printing
 	const wchar_t*	GetData() const;
 

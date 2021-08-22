@@ -317,7 +317,7 @@ void LoadMaterialImages(const char* materialFileName)
 				const char* imageName = KV_GetValueString(key, 0, "");
 
 				EqString filename;
-				CombinePath(filename, 2, g_batchConfig.sourceMaterialPath.ToCString(), varargs("%s.%s", imageName, g_batchConfig.sourceImageExt.ToCString()));
+				CombinePath(filename, 2, g_batchConfig.sourceMaterialPath.ToCString(), EqString::Format("%s.%s", imageName, g_batchConfig.sourceImageExt.ToCString()));
 				
 				if (!g_fileSystem->FileExist(filename.ToCString()))
 				{
@@ -405,7 +405,7 @@ void ProcessTexture(TexInfo_t* textureInfo)
 {
 	// before this, create folders...
 	EqString sourceFilename;
-	CombinePath(sourceFilename, 2, g_batchConfig.sourceMaterialPath.ToCString(), varargs("%s.%s", textureInfo->sourcePath.ToCString(), g_batchConfig.sourceImageExt.ToCString()));
+	CombinePath(sourceFilename, 2, g_batchConfig.sourceMaterialPath.ToCString(), EqString::Format("%s.%s", textureInfo->sourcePath.ToCString(), g_batchConfig.sourceImageExt.ToCString()));
 	
 	EqString targetFilename;
 	CombinePath(targetFilename, 2, g_targetProps.targetFolder.ToCString(), textureInfo->sourcePath.Path_Strip_Ext() + ".dds");
@@ -424,7 +424,7 @@ void ProcessTexture(TexInfo_t* textureInfo)
 	uint32 srcCRC = g_fileSystem->GetFileCRC32(sourceFilename.ToCString(), SP_ROOT) + CRC32_BlockChecksum(arguments.ToCString(), arguments.Length());
 
 	// store new CRC
-	g_batchConfig.newCRCSec.SetKey(varargs("%u", srcCRC), sourceFilename.ToCString());
+	g_batchConfig.newCRCSec.SetKey(EqString::Format("%u", srcCRC).ToCString(), sourceFilename.ToCString());
 
 	// now check CRC from loaded file
 	if (hasMatchingCRC(srcCRC) && g_fileSystem->FileExist(targetFilename.ToCString(), SP_ROOT))
@@ -443,7 +443,7 @@ void ProcessTexture(TexInfo_t* textureInfo)
 	static const EqString s_outputFileNameTag("%OUTPUT_FILENAME%");
 	static const EqString s_outputFilePathTag("%OUTPUT_FILEPATH%");*/
 
-	EqString cmdLine(varargs("%s %s %s", g_batchConfig.applicationName.ToCString(), g_batchConfig.compressionApplicationArguments.ToCString(), arguments.ToCString()));
+	EqString cmdLine(EqString::Format("%s %s %s", g_batchConfig.applicationName.ToCString(), g_batchConfig.compressionApplicationArguments.ToCString(), arguments.ToCString()));
 
 	Msg("*RUN '%s'\n", cmdLine.GetData());
 	system(cmdLine.GetData());
@@ -521,7 +521,7 @@ void CookMaterialsToTarget(const char* pszTargetName)
 
 		Msg("Got %d textures\n", g_textureList.numElem());
 
-		EqString crcFileName(varargs("cook_%s_crc.txt", g_targetProps.targetCompression.ToCString()));
+		EqString crcFileName(EqString::Format("cook_%s_crc.txt", g_targetProps.targetCompression.ToCString()));
 
 		// load CRC list, check for existing DDS files, and skip if necessary
 		KV_LoadFromFile(crcFileName.ToCString(), SP_ROOT, &g_batchConfig.crcSec);

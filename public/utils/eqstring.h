@@ -39,6 +39,8 @@ public:
 	EqString(const wchar_t* pszString, int len = -1);
 	EqString(const EqWString &str, int nStart = 0, int len = -1);
 
+	static EqString Format(const char* pszFormat, ...);
+
 	// checks the data is non overflowing
 	bool		IsValid() const;
 

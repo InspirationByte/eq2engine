@@ -208,7 +208,7 @@ bool GLCheckError(const char* op)
 	{
 		ASSERT(!gl_break_on_error.GetBool());
 
-        EqString errString = varargs("code %x", lastError);
+        EqString errString = EqString::Format("code %x", lastError);
 
         switch(lastError)
         {
@@ -419,7 +419,7 @@ void ShaderAPIGL::Init( shaderAPIParams_t &params)
 	for(int i = 0; i < CONSTANT_TYPE_COUNT; i++)
 	{
 		if(s_uniformFuncs[i] == NULL)
-			ASSERTMSG(false, varargs("Uniform function for '%d' is not ok, pls check extensions\n", i));
+			ASSERTMSG(false, EqString::Format("Uniform function for '%d' is not ok, pls check extensions\n", i).ToCString());
 	}
 
 	// init worker thread
@@ -942,7 +942,7 @@ ITexture* ShaderAPIGL::CreateRenderTarget(	int width, int height,
 											ER_CompareFunc comparison,
 											int nFlags)
 {
-	return CreateNamedRenderTarget(varargs("_sapi_rt_%d", m_TextureList.numElem()), width, height, nRTFormat, textureFilterType,textureAddress,comparison,nFlags);
+	return CreateNamedRenderTarget(EqString::Format("_sapi_rt_%d", m_TextureList.numElem()).ToCString(), width, height, nRTFormat, textureFilterType,textureAddress,comparison,nFlags);
 }
 
 // It will add new rendertarget

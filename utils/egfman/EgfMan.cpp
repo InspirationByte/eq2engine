@@ -765,7 +765,7 @@ void CEGFViewFrame::ProcessAllMenuCommands(wxCommandEvent& event)
 	if(event.GetId() == Event_File_OpenModel)
 	{
 		wxFileDialog* file = new wxFileDialog(NULL, "Open EGF model", 
-													varargs("%s/models", g_fileSystem->GetCurrentGameDirectory()), 
+													wxString::Format("%s/models", g_fileSystem->GetCurrentGameDirectory()), 
 													"*.egf", 
 													"Equilibrium Graphics File (*.egf)|*.egf;", 
 													wxFD_FILE_MUST_EXIST | wxFD_OPEN);
@@ -779,7 +779,7 @@ void CEGFViewFrame::ProcessAllMenuCommands(wxCommandEvent& event)
 
 			int cache_index = g_studioModelCache->PrecacheModel( model_path.ToCString() );
 			if(cache_index == CACHE_INVALID_MODEL)
-				wxMessageBox(varargs("Can't open %s\n", model_path.ToCString()), "Error", wxOK | wxCENTRE | wxICON_EXCLAMATION, this);
+				wxMessageBox(wxString::Format("Can't open %s\n", model_path.ToCString()), "Error", wxOK | wxCENTRE | wxICON_EXCLAMATION, this);
 
 			g_model.SetModel( g_studioModelCache->GetModel(cache_index) );
 		}
@@ -803,7 +803,7 @@ void CEGFViewFrame::ProcessAllMenuCommands(wxCommandEvent& event)
 
 		int cache_index = g_studioModelCache->PrecacheModel( model_path.ToCString() );
 		if(cache_index == CACHE_INVALID_MODEL)
-			wxMessageBox(varargs("Can't open %s\n", model_path.ToCString()), "Error", wxOK | wxCENTRE | wxICON_EXCLAMATION, this);
+			wxMessageBox(wxString::Format("Can't open %s\n", model_path.ToCString()), "Error", wxOK | wxCENTRE | wxICON_EXCLAMATION, this);
 
 		g_model.SetModel( g_studioModelCache->GetModel(cache_index) );
 	}
@@ -831,7 +831,7 @@ void CEGFViewFrame::ProcessAllMenuCommands(wxCommandEvent& event)
 
 				if(!stricmp(ext.GetData(), "asc"))
 				{
-					EqString cmdLine(varargs("animca.exe +filename \"%s\"", fname.GetData()));
+					EqString cmdLine(EqString::Format("animca.exe +filename \"%s\"", fname.GetData()));
 
 					if( g_fileSystem->FileExist("bin32\\egfca.exe") )
 					{
@@ -857,7 +857,7 @@ void CEGFViewFrame::ProcessAllMenuCommands(wxCommandEvent& event)
 								model_path = KV_GetValueString(pPair);
 								Msg("***Starting egfca for %s\n", fname.GetData());
 
-								EqString cmdLine(varargs("egfca.exe +filename \"%s\"", fname.GetData()));
+								EqString cmdLine(EqString::Format("egfca.exe +filename \"%s\"", fname.GetData()));
 
 								if( g_fileSystem->FileExist("bin32\\egfca.exe") )
 								{
@@ -881,7 +881,7 @@ void CEGFViewFrame::ProcessAllMenuCommands(wxCommandEvent& event)
 
 						int cache_index = g_studioModelCache->PrecacheModel( model_path.ToCString() );
 						if(cache_index == CACHE_INVALID_MODEL)
-							wxMessageBox(varargs("Can't open %s\n", model_path.ToCString()), "Error", wxOK | wxCENTRE | wxICON_EXCLAMATION, this);
+							wxMessageBox(wxString::Format("Can't open %s\n", model_path.ToCString()), "Error", wxOK | wxCENTRE | wxICON_EXCLAMATION, this);
 
 						g_model.SetModel( g_studioModelCache->GetModel(cache_index) );
 
@@ -1347,7 +1347,7 @@ void CEGFViewFrame::OnComboboxChanged(wxCommandEvent& event)
 			g_model.PlaySequence(0);
 
 			const gsequence_t& seq = g_model.GetSequence(nSeq);
-			m_pAnimFramerate->SetValue( varargs("%g", seq.s->framerate) );
+			m_pAnimFramerate->SetValue(EqString::Format("%g", seq.s->framerate).ToCString() );
 
 			int maxFrames = g_model.GetCurrentAnimationDurationInFrames();
 

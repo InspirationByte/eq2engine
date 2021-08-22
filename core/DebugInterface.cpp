@@ -18,7 +18,7 @@
 
 #ifdef ANDROID
 #include <android/log.h>
-#define EQENGINE_LOG_TAG(v) varargs("%s %s", GetCore()->GetApplicationName(), v)
+#define EQENGINE_LOG_TAG(v) EqString::Format("%s %s", GetCore()->GetApplicationName(), v).ToCString()
 #endif // ANDROID
 
 static const char* s_spewTypeStr[] = {

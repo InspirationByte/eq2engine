@@ -244,7 +244,7 @@ void CGLRenderLib::InitSharedContexts()
 		ASSERTMSG(false, "Failed to create context for share!");
 
 	if (wglShareLists(context, glContext) == FALSE)
-		ASSERTMSG(false, varargs("wglShareLists - Failed to share (err=%d, ctx=%d)!", GetLastError(), context));
+		ASSERTMSG(false, EqString::Format("wglShareLists - Failed to share (err=%d, ctx=%d)!", GetLastError(), context).ToCString());
 
 #elif PLAT_LINUX
 	GLXContext context = glXCreateContext(display, vi, glContext, True);

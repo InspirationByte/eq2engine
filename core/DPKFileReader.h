@@ -47,7 +47,7 @@ public:
 	void Print(const char* fmt, ...);
 
 	// returns current pointer position
-	long Tell();
+	long Tell() const;
 
 	// returns memory allocated for this stream
 	long GetSize();
@@ -56,7 +56,7 @@ public:
 	int	Flush();
 
 	// returns stream type
-	VirtStreamType_e GetType();
+	VirtStreamType_e GetType() const { return VS_TYPE_FILE_PACKAGE; }
 
 	// returns CRC32 checksum of stream
 	uint32 GetCRC32();

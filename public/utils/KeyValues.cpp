@@ -428,7 +428,7 @@ void kvkeybase_t::AddValue(kvkeybase_t* keybase)
 	kvpairvalue_t* val = CreateValue();
 
 	val->section = keybase;
-	val->section->SetName(varargs("%d", numVal));
+	val->section->SetName(EqString::Format("%d", numVal).ToCString());
 }
 
 void kvkeybase_t::AddValue(kvpairvalue_t* value)

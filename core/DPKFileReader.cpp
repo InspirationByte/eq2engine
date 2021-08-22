@@ -163,7 +163,7 @@ void CDPKFileStream::DecodeBlock(int blockIdx)
 
 				if (status != Z_OK)
 				{
-					ASSERTMSG(false, varargs("Cannot decompress file block - %d!\n", status));
+					ASSERTMSG(false, EqString::Format("Cannot decompress file block - %d!\n", status).ToCString());
 				}
 				else
 				{
@@ -278,7 +278,7 @@ int	CDPKFileStream::Seek(long nOffset, VirtStreamSeek_e seekType)
 	if (newOfs < 0)
 		return -1;
 
-	ASSERTMSG(newOfs >= 0 && newOfs <= m_info.size, varargs("CDPKFileStream::Seek - %u illegal seek => %d while file max is %d\n", m_info.filenameHash, newOfs, m_info.size));
+	ASSERTMSG(newOfs >= 0 && newOfs <= m_info.size, EqString::Format("CDPKFileStream::Seek - %u illegal seek => %d while file max is %d\n", m_info.filenameHash, newOfs, m_info.size).ToCString());
 
 	// set the virtual offset
 	m_curPos = newOfs;
@@ -295,7 +295,7 @@ void CDPKFileStream::Print(const char* fmt, ...)
 }
 
 // returns current pointer position
-long CDPKFileStream::Tell()
+long CDPKFileStream::Tell() const
 {
 	return m_curPos;
 }
@@ -311,12 +311,6 @@ int	CDPKFileStream::Flush()
 {
 	// do nothing...
 	return 0;
-}
-
-// returns stream type
-VirtStreamType_e CDPKFileStream::GetType()
-{
-	return VS_TYPE_FILE_PACKAGE;
 }
 
 // returns CRC32 checksum of stream

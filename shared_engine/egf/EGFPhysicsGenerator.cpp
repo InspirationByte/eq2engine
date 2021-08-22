@@ -669,7 +669,7 @@ bool CEGFPhysicsGenerator::CreateCompoundOrSeparateObjects( DkList<dsmvertex_t>&
 
 		physNamedObject_t obj;
 		memset(obj.name, 0, sizeof(obj.name));
-		strcpy_s(obj.name, KV_GetValueString(m_physicsParams, 0, varargs("obj_%d", m_objects.numElem())));
+		strcpy_s(obj.name, KV_GetValueString(m_physicsParams, 0, EqString::Format("obj_%d", m_objects.numElem()).ToCString()));
 
 		obj.object = object;
 
@@ -711,9 +711,9 @@ bool CEGFPhysicsGenerator::CreateCompoundOrSeparateObjects( DkList<dsmvertex_t>&
 			memset(obj.name, 0, sizeof(obj.name));
 
 			if(m_physicsParams->values.numElem() > 0)
-				strcpy_s(obj.name, varargs("%s_part%d", KV_GetValueString(m_physicsParams), i));
+				strcpy_s(obj.name, EqString::Format("%s_part%d", KV_GetValueString(m_physicsParams), i).ToCString());
 			else
-				strcpy_s(obj.name,varargs("obj_%d", m_objects.numElem()));
+				strcpy_s(obj.name, EqString::Format("obj_%d", m_objects.numElem()).ToCString());
 
 			m_objects.append(obj);
 		}
@@ -759,7 +759,7 @@ bool CEGFPhysicsGenerator::CreateSingleObject( DkList<dsmvertex_t>& vertices, Dk
 
 	physNamedObject_t obj;
 	memset(obj.name, 0, sizeof(obj.name));
-	strcpy_s(obj.name, KV_GetValueString(m_physicsParams, 0, varargs("obj_%d", m_objects.numElem())));
+	strcpy_s(obj.name, KV_GetValueString(m_physicsParams, 0, EqString::Format("obj_%d", m_objects.numElem()).ToCString()));
 
 	obj.object = object;
 

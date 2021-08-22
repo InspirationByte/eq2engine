@@ -233,7 +233,7 @@ void CMaterial::InitShader()
 void CMaterial::InitVars(kvkeybase_t* shader_root)
 {
 	// Get an API preferences
-	kvkeybase_t* apiPrefs = shader_root->FindKeyBase(varargs("API_%s", g_pShaderAPI->GetRendererName()), KV_FLAG_SECTION);
+	kvkeybase_t* apiPrefs = shader_root->FindKeyBase(EqString::Format("API_%s", g_pShaderAPI->GetRendererName()).ToCString(), KV_FLAG_SECTION);
 
 	// init root material vars
 	InitMaterialVars( shader_root );
@@ -306,7 +306,7 @@ bool CMaterial::LoadShaderAndTextures()
 	else if(shader->IsError() )
 		m_state = MATERIAL_LOAD_ERROR;
 	else
-		ASSERTMSG(false, varargs("please check shader '%s' (%s) for initialization (not error, not initialized)", m_szShaderName.ToCString(), m_shader->GetName()));
+		ASSERTMSG(false, EqString::Format("please check shader '%s' (%s) for initialization (not error, not initialized)", m_szShaderName.ToCString(), m_shader->GetName()).ToCString());
 
 	return true;
 }

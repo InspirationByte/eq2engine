@@ -15,7 +15,7 @@
 
 #include "network/c_udp.h"
 #include "network/NetInterfaces.h"
-#include "network/NetMessageBuffer.h"
+#include "network/Buffer.h"
 #include "network/NetEvent.h"
 
 namespace Networking
@@ -35,7 +35,7 @@ enum EventFilterResult_e
 #define NETTHREAD_EVENTS_LUA_START		100
 
 // event filter callback definition
-typedef EventFilterResult_e (*pfnEventFilterCallback)( CNetworkThread* pNetThread, CNetMessageBuffer* pMsg, int nEventType );
+typedef EventFilterResult_e (*pfnEventFilterCallback)( CNetworkThread* pNetThread, Buffer* pMsg, int nEventType );
 
 // event filter callback definition
 typedef void (*pfnUpdateCycleCallback)( CNetworkThread* pNetThread, double fDt);
@@ -53,7 +53,7 @@ struct sendEvent_t
 	int					flags;
 
 	CNetEvent*			pEvent;
-	CNetMessageBuffer*	pStream;
+	Buffer*	pStream;
 };
 
 enum EEventMessageStatus
@@ -110,7 +110,7 @@ public:
 
 	// send data
 	///< nMsgEventID - data query caller
-	bool						SendData(CNetMessageBuffer* pData, int nMsgEventID, int client_id = -1, int flags = 0);
+	bool						SendData(Buffer* pData, int nMsgEventID, int client_id = -1, int flags = 0);
 
 	///< sends event, returns event ID
 	int							SendEvent( CNetEvent* pEvent, int nEventType, int client_id = -1, int flags = CDPSEND_IMMEDIATE);
@@ -119,7 +119,7 @@ public:
 	///< you should not call it inside another event.
 	///< returns false if no data has been recieved (you will assume that event does not support output)
 	///< this messages are always must be guaranteed
-	bool						SendWaitDataEvent(CNetEvent* pEvent, int nEventType, CNetMessageBuffer* pOutputData, int client_id = -1);
+	bool						SendWaitDataEvent(CNetEvent* pEvent, int nEventType, Buffer* pOutputData, int client_id = -1);
 
 	//-----------------------------------------------------
 
@@ -140,9 +140,9 @@ private:
 	int							DispatchEvents();
 	EEventMessageStatus			DispatchEvent( sendEvent_t& evt );
 
-	CNetEvent*					CreateEvent( CNetMessageBuffer *pMsg, int eventIdentifier );
+	CNetEvent*					CreateEvent( Buffer *pMsg, int eventIdentifier );
 
-	bool						ProcessMessage( rcvdMessage_t* pMsg, CNetMessageBuffer* pOutput = NULL, int nWaitEventID = -1 );
+	bool						ProcessMessage( rcvdMessage_t* pMsg, Buffer* pOutput = NULL, int nWaitEventID = -1 );
 
 	///< simply adds message
 	void						AddMessage(rcvdMessage_t* pMessage, rcvdMessage_t* pAddTo);

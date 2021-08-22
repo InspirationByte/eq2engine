@@ -176,12 +176,12 @@
 	}
 
 #define SHADER_ADD_FLOAT_DEFINITION(def, num)		\
-	defines.Append(varargs("#define " def " %g\n", num));\
-	findQuery.Append(varargs("_" def "%g", num));
+	defines.Append(EqString::Format("#define " def " %g\n", num));\
+	findQuery.Append(EqString::Format("_" def "%g", num));
 
 #define SHADER_ADD_INT_DEFINITION(def, num)		\
-	defines.Append(varargs("#define " def " %d\n", num));\
-	findQuery.Append(varargs("_" def "%d", num));
+	defines.Append(EqString::Format("#define " def " %d\n", num));\
+	findQuery.Append(EqString::Format("_" def "%d", num));
 
 #define SHADER_END_DEFINITION				\
 	}

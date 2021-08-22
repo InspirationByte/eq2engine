@@ -224,22 +224,22 @@ void ConVar::InternalSetString(char const *value)
 
 void ConVar::SetFloat(const float newvalue)
 {
-	SetValue(varargs("%f",newvalue));
+	SetValue(EqString::Format("%f",newvalue).ToCString());
 }
 
 void ConVar::SetInt(const int newvalue)
 {
-	SetValue(varargs("%i",newvalue));
+	SetValue(EqString::Format("%i",newvalue).ToCString());
 }
 
 void ConVar::SetBool(const bool newvalue)
 {
-	SetValue(varargs("%i",(int)newvalue));
+	SetValue(EqString::Format("%i",(int)newvalue).ToCString());
 }
 
 bool ConVar::CheckCommandLine(int startAt/* = 0 */)
 {
-	int indx = g_cmdLine->FindArgument(varargs("+%s",GetName()),startAt);
+	int indx = g_cmdLine->FindArgument(EqString::Format("+%s",GetName()).ToCString(),startAt);
 	if(indx != -1)
 		return true;
 	else

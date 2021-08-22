@@ -89,6 +89,25 @@ EqString::EqString(const EqWString &str, int nStart, int len)
 	Assign( str, nStart, len );
 }
 
+EqString EqString::Format(const char* pszFormat, ...)
+{
+	va_list argptr;
+	va_start(argptr, pszFormat);
+	int length = vsnprintf(nullptr, 0, pszFormat, argptr);
+	va_end(argptr);
+
+	EqString newString;
+	newString.Resize(length+1, false);
+
+	va_start(argptr, pszFormat);
+	vsnprintf(newString.m_pszString, length+1, pszFormat, argptr);
+	newString.m_nLength = length;
+	va_end(argptr);
+	
+
+	return newString;
+}
+
 // data for printing
 const char* EqString::GetData() const
 {

@@ -24,55 +24,16 @@ struct kvkeybase_t;
 namespace Networking
 {
 
-// ------------------------------------------
-// Network message stuff
-// ------------------------------------------
-
-#define MAX_SUBMESSAGE_LENGTH UDP_CDP_MAX_MESSAGEPAYLOAD
-
-struct submsg_t
-{
-	submsg_t()
-	{
-		len = 0;
-		pos = 0;
-		confirmed = false;
-		msgId = -1;
-	}
-
-	int		len;
-	int		pos;
-	ubyte	data[MAX_SUBMESSAGE_LENGTH];
-
-	// sent
-	short	msgId;
-	bool	confirmed;
-};
-
-// ------------------------------------------
-// Network message, for fast send/receive
-// and read data
-// ------------------------------------------
-class CNetMessageBuffer
+class Buffer
 {
 public:
-						CNetMessageBuffer();
-						CNetMessageBuffer(INetworkInterface* pInterfaceToReceive);
+						Buffer();
 
-						~CNetMessageBuffer();
+						~Buffer();
 
 	void				ResetPos();
 
-	void				DebugWriteToFile(const char* fileprefix);
 	void				WriteToStream(IVirtualStream* stream);
-
-	bool				Send( int nFlags = 0 );
-	int					GetOverallStatus() const;
-	void				SetMessageStatus(short msgId, int status);
-
-	int					GetClientID() const;
-	void				GetClientInfo(sockaddr_in& addr, int& clientId) const;
-	void				SetClientInfo(const sockaddr_in& addr, int clientID);
 
 	int					GetMessageLength() const;
 
@@ -121,27 +82,9 @@ public:
 	void				WriteData(const void* pData, int nBytes);
 	void				ReadData(void* pDst, int nBytes);
 
-	void				WriteNetBuffer(CNetMessageBuffer* pMsg, bool fromCurPos = false, int nLength = -1);
 protected:
-	
 
-	void				TryExtendSubMsg();
-
-	bool				WriteToCurrentSubMsg(ubyte* pData, int nBytes);
-
-	bool				ReadCurrentSubMsg(ubyte* pDst, int nBytes);
-
-	int					m_nMsgLen;
-	int					m_nMsgPos;
-	int					m_nSubMessageId;
-
-	DkList<submsg_t*>	m_pMessage;
-
-	INetworkInterface*	m_pInterface;
-
-	// client ID is now necessary for server
-	int					m_nClientID;
-	sockaddr_in			m_address;
+	CMemoryStream		m_data;
 };
 
 }; // namespace Networking

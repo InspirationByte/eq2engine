@@ -63,7 +63,7 @@ struct rcvdMessage_t
 
 	double				recvTime;
 
-	CNetMessageBuffer*	data;
+	Buffer*	data;
 };
 
 struct netFragMsg_t
@@ -177,7 +177,7 @@ void CNetworkThread::OnUCDPRecieved(ubyte* data, int size, const sockaddr_in& fr
 		rcvdMessage_t* pMsg = new rcvdMessage_t;
 		pMsg->type = type;
 
-		pMsg->data = new CNetMessageBuffer( m_netInterface );
+		pMsg->data = new Buffer( m_netInterface );
 		pMsg->data->SetClientInfo( from, rcvdMsg.header.clientid );
 		pMsg->addr = from;
 		pMsg->messageid = rcvdMsg.header.messageid;
@@ -399,7 +399,7 @@ void CNetworkThread::DispatchFragmentedMessage( netFragMsg_t* pMsg )
 	// copy message
 	rcvdMessage_t* rcvdMsg = new rcvdMessage_t;
 
-	CNetMessageBuffer* finalBuffer = new CNetMessageBuffer( m_netInterface );
+	Buffer* finalBuffer = new Buffer( m_netInterface );
 	finalBuffer->SetClientInfo(pMsg->addr, pMsg->client_id);
 
 	rcvdMsg->data = finalBuffer;
@@ -530,13 +530,13 @@ EEventMessageStatus CNetworkThread::DispatchEvent( sendEvent_t& evt )
 	return sendStatus == DELIVERY_SUCCESS ? EVTMSGSTATUS_OK : EVTMSGSTATUS_ERROR;
 }
 
-bool CNetworkThread::ProcessMessage( rcvdMessage_t* pMsg, CNetMessageBuffer* pOutput, int nWaitEventID)
+bool CNetworkThread::ProcessMessage( rcvdMessage_t* pMsg, Buffer* pOutput, int nWaitEventID)
 {
 	// already processed message? (NEVER HAPPENS)
 	if( pMsg->flags & MSGFLAG_PROCESSED )
 		return true;
 
-	CNetMessageBuffer* pMessage = pMsg->data;
+	Buffer* pMessage = pMsg->data;
 
 	// always do it
 	pMessage->ResetPos();
@@ -647,7 +647,7 @@ int CNetworkThread::SendEvent( CNetEvent* pEvent, int nEventType, int client_id 
 	}
 
 	evt.pEvent = pEvent;
-	evt.pStream = new CNetMessageBuffer(m_netInterface);
+	evt.pStream = new Buffer(m_netInterface);
 
 	if(evt.client_id == NM_SENDTOLAST)
 		evt.client_id = m_lastClientID; // doesn't matter for server
@@ -685,7 +685,7 @@ int CNetworkThread::SendEvent( CNetEvent* pEvent, int nEventType, int client_id 
 }
 
 // sends event and waits for it
-bool CNetworkThread::SendWaitDataEvent(CNetEvent* pEvent, int nEventType, CNetMessageBuffer* pOutputData, int client_id)
+bool CNetworkThread::SendWaitDataEvent(CNetEvent* pEvent, int nEventType, Buffer* pOutputData, int client_id)
 {
 	ASSERT(pOutputData);
 
@@ -794,7 +794,7 @@ bool CNetworkThread::IsMessageInPool(int nEventID)
 	return false;
 }
 
-bool CNetworkThread::SendData(CNetMessageBuffer* pData, int nMsgEventID, int client_id, int nFlags)
+bool CNetworkThread::SendData(Buffer* pData, int nMsgEventID, int client_id, int nFlags)
 {
 	ASSERT(pData);
 
@@ -810,7 +810,7 @@ bool CNetworkThread::SendData(CNetMessageBuffer* pData, int nMsgEventID, int cli
 	evt.flags = nFlags;
 
 	evt.pEvent = NULL;		// no event, data only
-	evt.pStream = new CNetMessageBuffer(m_netInterface);
+	evt.pStream = new Buffer(m_netInterface);
 
 	if(evt.client_id == NM_SENDTOLAST)
 		evt.client_id = m_lastClientID; // doesn't matter for server
@@ -888,7 +888,7 @@ void CNetworkThread::UnregisterEvent( int eventIdentifier )
 	}
 }
 
-CNetEvent* CNetworkThread::CreateEvent( CNetMessageBuffer *pMsg, int eventIdentifier )
+CNetEvent* CNetworkThread::CreateEvent( Buffer *pMsg, int eventIdentifier )
 {
 	ASSERT(m_netEventFactory.numElem() > 0);
 

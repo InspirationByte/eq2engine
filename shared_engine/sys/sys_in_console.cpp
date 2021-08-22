@@ -27,9 +27,9 @@
 #include <SDL_clipboard.h>
 
 #ifdef _DEBUG
-#define CONSOLE_ENGINEVERSION_STR varargs(ENGINE_NAME " Engine " ENGINE_VERSION " DEBUG build %d (" COMPILE_DATE ")", BUILD_NUMBER_ENGINE)
+#define CONSOLE_ENGINEVERSION_STR EqString::Format(ENGINE_NAME " Engine " ENGINE_VERSION " DEBUG build %d (" COMPILE_DATE ")", BUILD_NUMBER_ENGINE).ToCString()
 #else
-#define CONSOLE_ENGINEVERSION_STR varargs(ENGINE_NAME " Engine " ENGINE_VERSION " build %d (" COMPILE_DATE ")", BUILD_NUMBER_ENGINE)
+#define CONSOLE_ENGINEVERSION_STR EqString::Format(ENGINE_NAME " Engine " ENGINE_VERSION " build %d (" COMPILE_DATE ")", BUILD_NUMBER_ENGINE).ToCString()
 #endif // _DEBUG
 
 #define CONSOLE_INPUT_STARTSTR ("> ")
@@ -455,7 +455,7 @@ void CEqConsoleInput::DrawFastFind(float x, float y, float w)
 				ConVar* pVar = (ConVar*)m_fastfind_cmdbase;
 				if(pVar->HasClamp())
 				{
-					string_to_draw.Append(varargs(" \n\nValue in range [%g..%g]\n", pVar->GetMinClamp(), pVar->GetMaxClamp()));
+					string_to_draw.Append(EqString::Format(" \n\nValue in range [%g..%g]\n", pVar->GetMinClamp(), pVar->GetMaxClamp()));
 
 					numLines += 2;
 				}
@@ -477,8 +477,7 @@ void CEqConsoleInput::DrawFastFind(float x, float y, float w)
 			DrawAlphaFilledRectangle(rect, s_conBackFastFind, s_conBorderColor);
 
 			// Set color
-			char* str = varargs("%d commands found (too many to show here)", m_foundCmdList.numElem());
-			m_font->RenderText(str, rect.GetLeftTop() + Vector2D(5,4), helpTextParams);
+			m_font->RenderText(EqString::Format("%d commands found (too many to show here)", m_foundCmdList.numElem()).ToCString(), rect.GetLeftTop() + Vector2D(5,4), helpTextParams);
 		}
 		else if(m_foundCmdList.numElem() > 0)
 		{
@@ -538,26 +537,26 @@ void CEqConsoleInput::DrawFastFind(float x, float y, float w)
 				Vector4D selTextColor = bSelected ? Vector4D(0.1f,0.1f,0,1) : text_color;
 				variantsTextParams.textColor = selTextColor;
 
-				char* str = NULL;
+				EqString str;
 
 				if(cmdBase->IsConVar())
 				{
 					ConVar *cv = (ConVar*)cmdBase;
 
 					if(bHasAutocompletion)
-						str = varargs("%s [%s] ->", cv->GetName(), cv->GetString());
+						str = EqString::Format("%s [%s] ->", cv->GetName(), cv->GetString());
 					else
-						str = varargs("%s [%s]", cv->GetName(), cv->GetString());
+						str = EqString::Format("%s [%s]", cv->GetName(), cv->GetString());
 				}
 				else
 				{
 					if(bHasAutocompletion)
-						str = varargs("%s () ->",cmdBase->GetName());
+						str = EqString::Format("%s () ->",cmdBase->GetName());
 					else
-						str = varargs("%s ()",cmdBase->GetName());
+						str = EqString::Format("%s ()",cmdBase->GetName());
 				}
 
-				m_font->RenderText( str, Vector2D(x+5, textYPos),variantsTextParams);
+				m_font->RenderText( str.ToCString(), Vector2D(x+5, textYPos),variantsTextParams);
 
 				const char* cstr = xstristr(cmdBase->GetName(), m_inputText.GetData());
 
@@ -761,7 +760,7 @@ void CEqConsoleInput::AutoCompleteSuggestion()
 		{
 			// remove from this position
 			m_inputText.Remove(currentStatementStart, inputText.Length());
-			m_inputText.Append(varargs("%s ", m_foundCmdList[0]->GetName()));
+			m_inputText.Append(EqString::Format("%s ", m_foundCmdList[0]->GetName()));
 
 			m_cursorPos = m_startCursorPos = m_inputText.Length();
 			OnTextUpdate();

@@ -385,7 +385,7 @@ void CDkCore::RegisterInterface(const char* pszName, IEqCoreModule* ifPtr)
 	for(int i = 0; i < m_interfaces.numElem(); i++)
 	{
 		if(!strcmp(m_interfaces[i].name, pszName))
-			ASSERTMSG(false, varargs("Core interface module \"%s\" is already registered.", pszName));
+			ASSERTMSG(false, EqString::Format("Core interface module \"%s\" is already registered.", pszName).ToCString());
 	}
 
 	coreInterface_t iface;

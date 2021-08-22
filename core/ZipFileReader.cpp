@@ -94,7 +94,7 @@ void CZipFileStream::Print(const char* fmt, ...)
 }
 
 // returns current pointer position
-long CZipFileStream::Tell()
+long CZipFileStream::Tell() const
 {
 	return unztell(m_zipHandle);
 }
@@ -112,12 +112,6 @@ long CZipFileStream::GetSize()
 int	CZipFileStream::Flush()
 {
 	return 0;
-}
-
-// returns stream type
-VirtStreamType_e CZipFileStream::GetType()
-{
-	return VS_TYPE_FILE_PACKAGE;
 }
 
 // returns CRC32 checksum of stream

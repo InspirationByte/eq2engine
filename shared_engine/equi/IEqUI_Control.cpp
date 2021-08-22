@@ -544,7 +544,9 @@ void IUIControl::Render()
 		DebugDrawRectangle(clientRectRender, ColorRGBA(1, 1, 0, 0.15), ColorRGBA(1, 1, 1, 0.15));
 
 		eqFontStyleParam_t params;
-		debugoverlay->GetFont()->RenderText(varargs("%s x=%d y=%d w=%d h=%d (v=%d)", m_name.ToCString(), m_position.x, m_position.y, m_size.x, m_size.y, m_visible), clientRectRender.GetLeftBottom(), params);
+		debugoverlay->GetFont()->RenderText(
+			EqString::Format("%s x=%d y=%d w=%d h=%d (v=%d)", m_name.ToCString(), m_position.x, m_position.y, m_size.x, m_size.y, m_visible).ToCString(), 
+			clientRectRender.GetLeftBottom(), params);
 	}
 
 	// render from last

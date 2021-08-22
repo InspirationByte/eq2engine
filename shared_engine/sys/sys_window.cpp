@@ -77,7 +77,7 @@ DECLARE_CMD(screenshot, "Save screenshot", 0)
 		do
 		{
 			g_fileSystem->MakeDir("screenshots", SP_ROOT);
-			EqString path(varargs("screenshots/screenshot_%04d.jpg", i));
+			EqString path(EqString::Format("screenshots/screenshot_%04d.jpg", i));
 
 			if(g_fileSystem->FileExist(path.ToCString(), SP_ROOT))
 				continue;

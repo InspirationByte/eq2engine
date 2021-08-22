@@ -5,7 +5,7 @@ namespace Networking
 {
 
 class CNetworkThread;
-class CNetMessageBuffer;
+class Buffer;
 
 //-----------------------------------------------------
 // Network events
@@ -19,8 +19,8 @@ public:
 
 	virtual void	Process( CNetworkThread* pNetThread ) = 0;
 
-	virtual void	Unpack( CNetworkThread* pNetThread, CNetMessageBuffer* pStream ) = 0;
-	virtual void	Pack( CNetworkThread* pNetThread, CNetMessageBuffer* pStream ) = 0;
+	virtual void	Unpack( CNetworkThread* pNetThread, Buffer* pStream ) = 0;
+	virtual void	Pack( CNetworkThread* pNetThread, Buffer* pStream ) = 0;
 
 	// standard message handlers
 
@@ -39,7 +39,7 @@ protected:
 
 // event factory
 // 22-04-14: added eventID to pass on a lua function
-typedef CNetEvent* (*pfnNetEventFactory)(CNetworkThread* pNetThread, CNetMessageBuffer* msg);
+typedef CNetEvent* (*pfnNetEventFactory)(CNetworkThread* pNetThread, Buffer* msg);
 
 struct neteventfactory_t
 {
@@ -63,7 +63,7 @@ struct neteventfactory_t
 	public:																		\
 		typedef C##classname##_Registrator	this_class;							\
 		C##classname##_Registrator() {m_eventType = eventtype; Register();}		\
-		static CNetEvent* Factory(CNetworkThread*, CNetMessageBuffer*)			\
+		static CNetEvent* Factory(CNetworkThread*, Buffer*)			\
 		{ return (CNetEvent*)new classname(); }									\
 		void Register();														\
 		int m_eventType;														\

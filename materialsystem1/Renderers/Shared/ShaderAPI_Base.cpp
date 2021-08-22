@@ -981,7 +981,7 @@ void ProcessShaderFileIncludes(char** buffer, const char* pszFileName, shaderPro
 	bool isOpenGL = g_pShaderAPI->GetShaderAPIClass() == SHADERAPI_OPENGL;
 
 	if (isOpenGL)
-		newSrc = varargs("\r\n#line 1 %d\r\n", textData.includes.numElem());		// I hate, hate and hate GLSL for not supporting source file names, only file numbers.
+		newSrc = EqString::Format("\r\n#line 1 %d\r\n", textData.includes.numElem());		// I hate, hate and hate GLSL for not supporting source file names, only file numbers.
 	else
 		newSrc = "\r\n#line 1 \"" + _Es(pszFileName) + "\"\r\n";
 
@@ -1041,9 +1041,9 @@ void ProcessShaderFileIncludes(char** buffer, const char* pszFileName, shaderPro
 		if (afterSkipLine)
 		{
 			if (isOpenGL)
-				newSrc = newSrc + varargs("#line %d %d\r\n", nLine, textData.includes.numElem());
+				newSrc = newSrc + EqString::Format("#line %d %d\r\n", nLine, textData.includes.numElem());
 			else
-				newSrc = newSrc + varargs("#line %d \"", nLine) + _Es(pszFileName) + "\"\r\n";
+				newSrc = newSrc + EqString::Format("#line %d \"", nLine) + _Es(pszFileName) + "\"\r\n";
 
 			afterSkipLine = false;
 		}
@@ -1063,9 +1063,9 @@ bool ShaderAPI_Base::LoadShadersFromFile(IShaderProgram* pShaderOutput, const ch
 
 	bool bResult = false;
 
-	EqString fileNameVS(varargs(SHADERS_DEFAULT_PATH "%s/%s.vs", GetRendererName(), pszFilePrefix));
-	EqString fileNamePS(varargs(SHADERS_DEFAULT_PATH "%s/%s.ps", GetRendererName(), pszFilePrefix));
-	EqString fileNameGS(varargs(SHADERS_DEFAULT_PATH "%s/%s.gs", GetRendererName(), pszFilePrefix));
+	EqString fileNameVS = (EqString::Format(SHADERS_DEFAULT_PATH "%s/%s.vs", GetRendererName(), pszFilePrefix));
+	EqString fileNamePS = (EqString::Format(SHADERS_DEFAULT_PATH "%s/%s.ps", GetRendererName(), pszFilePrefix));
+	EqString fileNameGS = (EqString::Format(SHADERS_DEFAULT_PATH "%s/%s.gs", GetRendererName(), pszFilePrefix));
 
 	bool vsRequiried = true;	// vertex shader is always required
 	bool psRequiried = false;
@@ -1096,9 +1096,9 @@ bool ShaderAPI_Base::LoadShadersFromFile(IShaderProgram* pShaderOutput, const ch
 		const char* pixelProgNameStr = KV_GetValueString(pixelProgramName, 0, pszFilePrefix);
 		const char* geomProgNameStr = KV_GetValueString(geometryProgramName, 0, pszFilePrefix);
 
-		fileNameVS = varargs(SHADERS_DEFAULT_PATH "%s/%s.vs", GetRendererName(), vertexProgNameStr);
-		fileNamePS = varargs(SHADERS_DEFAULT_PATH "%s/%s.ps", GetRendererName(), pixelProgNameStr);
-		fileNameGS = varargs(SHADERS_DEFAULT_PATH "%s/%s.gs", GetRendererName(), geomProgNameStr);
+		fileNameVS = EqString::Format(SHADERS_DEFAULT_PATH "%s/%s.vs", GetRendererName(), vertexProgNameStr);
+		fileNamePS = EqString::Format(SHADERS_DEFAULT_PATH "%s/%s.ps", GetRendererName(), pixelProgNameStr);
+		fileNameGS = EqString::Format(SHADERS_DEFAULT_PATH "%s/%s.gs", GetRendererName(), geomProgNameStr);
 
 		// API section
 		// find corresponding API

@@ -1338,7 +1338,7 @@ ITexture* ShaderAPID3DX9::CreateRenderTarget(int width, int height, ETextureForm
 	pTexture->usage = D3DUSAGE_RENDERTARGET;
 
 	pTexture->SetFlags(nFlags | TEXFLAG_RENDERTARGET);
-	pTexture->SetName(varargs("_sapi_rt_%d", m_TextureList.numElem()));
+	pTexture->SetName(EqString::Format("_sapi_rt_%d", m_TextureList.numElem()).ToCString());
 
 	SamplerStateParam_t texSamplerParams = MakeSamplerState(textureFilterType,textureAddress,textureAddress,textureAddress);
 
@@ -1945,7 +1945,7 @@ bool ShaderAPID3DX9::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 
 	g_fileSystem->MakeDir("ShaderCache_DX9", SP_MOD);
 
-	EqString cache_file_name(varargs("ShaderCache_DX9/%s.scache", pShaderOutput->GetName()));
+	EqString cache_file_name(EqString::Format("ShaderCache_DX9/%s.scache", pShaderOutput->GetName()));
 
 	IFile* pStream = NULL;
 
@@ -2057,9 +2057,9 @@ bool ShaderAPID3DX9::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 		}
 		// else default to maximum
 
-		shaderString.Append(varargs("#define COMPILE_VS_%d_0\n", vsVersion));
+		shaderString.Append(EqString::Format("#define COMPILE_VS_%d_0\n", vsVersion));
 
-		//shaderString.Append(varargs("#line %d\n", params.vsLine + 1));
+		//shaderString.Append(EqString::Format("#line %d\n", params.vsLine + 1));
 		shaderString.Append(info.vs.text);
 
 		HRESULT compileResult = D3DXCompileShader(shaderString.GetData(), shaderString.Length(),
@@ -2141,9 +2141,9 @@ bool ShaderAPID3DX9::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 		}
 		// else default to maximum
 
-		shaderString.Append(varargs("#define COMPILE_PS_%d_0\n", psVersion));
+		shaderString.Append(EqString::Format("#define COMPILE_PS_%d_0\n", psVersion));
 
-		//shaderString.Append(varargs("#line %d\n", params.psLine + 1));
+		//shaderString.Append(EqString::Format("#line %d\n", params.psLine + 1));
 		shaderString.Append(info.ps.text);
 
 		HRESULT compileResult = D3DXCompileShader(

@@ -271,7 +271,7 @@ void* PPDAlloc(size_t size, const char* pszFileName, int nLine, const char* debu
 #ifdef PPMEM_DEBUG_TAGS
 	// extra visibility via CRT debug output
 	if(!debugTAG)
-		strncpy(alloc->tag, varargs("ppalloc_%d", s_allocIdCounter), PPMEM_DEBUG_TAG_MAX);
+		strncpy(alloc->tag, EqString::Format("ppalloc_%d", s_allocIdCounter).ToCString(), PPMEM_DEBUG_TAG_MAX);
 	else
 		strncpy(alloc->tag, debugTAG, PPMEM_DEBUG_TAG_MAX);
 #endif // PPMEM_DEBUG_TAGS
@@ -290,7 +290,7 @@ void* PPDAlloc(size_t size, const char* pszFileName, int nLine, const char* debu
 	g_allocMemMutex.Unlock();
 
 	if( ppmem_break_on_alloc.GetInt() != -1)
-		ASSERTMSG(alloc->id == (uint)ppmem_break_on_alloc.GetInt(), varargs("PPDAlloc: Break on allocation id=%d", alloc->id));
+		ASSERTMSG(alloc->id == (uint)ppmem_break_on_alloc.GetInt(), EqString::Format("PPDAlloc: Break on allocation id=%d", alloc->id).ToCString());
 
 	return actualPtr;
 #endif // PPMEM_DISABLE
@@ -311,7 +311,7 @@ void* PPDReAlloc( void* ptr, size_t size, const char* pszFileName, int nLine, co
 	if(alloc)
 	{
 		int ptrDiff = (ubyte*)ptr - ((ubyte*)alloc);
-		ASSERTMSG(isValid, varargs("PPDReAlloc: Given pointer is invalid but allocation was found in the range.\nOffset is %d bytes.", ptrDiff));
+		ASSERTMSG(isValid, EqString::Format("PPDReAlloc: Given pointer is invalid but allocation was found in the range.\nOffset is %d bytes.", ptrDiff).ToCString());
 
 		void* oldPtr = ((ubyte*)alloc) + sizeof(ppallocinfo_t);
 
@@ -372,7 +372,7 @@ void PPFree(void* ptr)
 	if(alloc)
 	{
 		int ptrDiff = (ubyte*)ptr - ((ubyte*)alloc);
-		ASSERTMSG(isValid, varargs("PPFree: Given pointer is invalid but allocation was found in the range.\nOffset is %d bytes.", ptrDiff));
+		ASSERTMSG(isValid, EqString::Format("PPFree: Given pointer is invalid but allocation was found in the range.\nOffset is %d bytes.", ptrDiff).ToCString());
 
 		// actual pointer address
 		void* actualPtr = ((ubyte*)alloc) + sizeof(ppallocinfo_t);

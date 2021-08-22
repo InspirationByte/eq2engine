@@ -216,7 +216,7 @@ void CDPKFileWriter::AddDirectory(const char* filename_to_add, bool bRecurse)
 					continue;
 
 				if(bRecurse)
-					AddDirectory( varargs("%s/%s",dir_name.ToCString(),wfd.cFileName), true );
+					AddDirectory(EqString::Format("%s/%s",dir_name.ToCString(),wfd.cFileName).ToCString(), true );
 			}
 			else
 			{

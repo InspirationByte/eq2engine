@@ -290,48 +290,6 @@ bool xisspace(int c)
 	return (c == 0x20) || (c >= 0x09 && c <= 0x0d);
 }
 
-//------------------------------------------
-// does varargs fast. Not thread-safe
-//------------------------------------------
-
-char* varargs(const char* fmt,...)
-{
-	va_list		argptr;
-
-	static int index = 0;
-	static char	string[4][4096];
-
-	char* buf = string[index];
-	index = (index + 1) & 3;
-
-	memset(buf, 0, 4096);
-
-	va_start (argptr,fmt);
-	vsnprintf(buf, 4096, fmt,argptr);
-	va_end (argptr);
-
-	return buf;
-}
-
-wchar_t* varargs_w(const wchar_t *fmt,...)
-{
-	va_list		argptr;
-
-	static int index = 0;
-	static wchar_t	string[4][4096];
-
-	wchar_t* buf = string[index];
-	index = (index + 1) & 3;
-
-	memset(buf, 0, sizeof(wchar_t)*4096);
-
-	va_start (argptr,fmt);
-	_vsnwprintf(buf, 4096, fmt, argptr);
-	va_end (argptr);
-
-	return buf;
-}
-
 char* xstrstr(  const char* s1, const char* search )
 {
 	AssertValidStringPtr( s1 );

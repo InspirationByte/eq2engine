@@ -89,12 +89,6 @@ void		ExtractFileBase(const char* path, char* dest);
 // generates string hash
 int			StringToHash( const char *str, bool caseIns = false );
 
-// Do formatted arguments for string
-char*		varargs(const char* fmt,...);
-
-// Do formatted arguments for string (widechar)
-wchar_t*	varargs_w(const wchar_t *fmt,...);
-
 // Split string by multiple separators
 void		xstrsplit2( const char* pString, const char* *pSeparators, int nSeparators, DkList<EqString> &outStrings );
 

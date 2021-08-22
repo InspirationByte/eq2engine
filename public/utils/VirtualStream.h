@@ -35,7 +35,7 @@ public:
 	int					Seek(long nOffset, VirtStreamSeek_e seekType);
 
 	// returns current pointer position
-	long				Tell();
+	long				Tell() const;
 
 	// returns memory allocated for this stream
 	long				GetSize();
@@ -54,7 +54,7 @@ public:
 	// returns CRC32 checksum
 	uint32				GetCRC32();
 
-	VirtStreamType_e	GetType() { return VS_TYPE_MEMORY; }
+	VirtStreamType_e	GetType() const { return VS_TYPE_MEMORY; }
 
 	// reads file to this stream
 	bool				ReadFromFileStream(IVirtualStream* pFile );

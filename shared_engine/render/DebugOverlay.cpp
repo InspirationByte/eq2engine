@@ -461,7 +461,7 @@ void DrawGraph(debugGraphBucket_t* graph, int position, IEqFont* pFont, float fr
 	pFont->RenderText(graph->pszName, Vector2D(x_pos + 5, y_pos - GRAPH_HEIGHT - 16), textStl);
 
 	pFont->RenderText("0", Vector2D(x_pos + 5, y_pos), textStl);
-	pFont->RenderText(varargs("%.2f", graph->maxValue), Vector2D(x_pos + 5, y_pos - GRAPH_HEIGHT), textStl);
+	pFont->RenderText(EqString::Format("%.2f", graph->maxValue).ToCString(), Vector2D(x_pos + 5, y_pos - GRAPH_HEIGHT), textStl);
 
 	BlendStateParam_t blending;
 	blending.srcFactor = BLENDFACTOR_SRC_ALPHA;
@@ -469,9 +469,9 @@ void DrawGraph(debugGraphBucket_t* graph, int position, IEqFont* pFont, float fr
 
 	materials->DrawPrimitives2DFFP(PRIM_LINES,lines,elementsOf(lines), NULL, color4_white, &blending);
 
-	pFont->RenderText(varargs("%.2f", (graph->maxValue*0.75f)), Vector2D(x_pos + 5, y_pos - GRAPH_HEIGHT *0.75f), textStl);
-	pFont->RenderText(varargs("%.2f", (graph->maxValue*0.50f)), Vector2D(x_pos + 5, y_pos - GRAPH_HEIGHT *0.50f), textStl);
-	pFont->RenderText(varargs("%.2f", (graph->maxValue*0.25f)), Vector2D(x_pos + 5, y_pos - GRAPH_HEIGHT *0.25f), textStl);
+	pFont->RenderText(EqString::Format("%.2f", (graph->maxValue*0.75f)).ToCString(), Vector2D(x_pos + 5, y_pos - GRAPH_HEIGHT *0.75f), textStl);
+	pFont->RenderText(EqString::Format("%.2f", (graph->maxValue*0.50f)).ToCString(), Vector2D(x_pos + 5, y_pos - GRAPH_HEIGHT *0.50f), textStl);
+	pFont->RenderText(EqString::Format("%.2f", (graph->maxValue*0.25f)).ToCString(), Vector2D(x_pos + 5, y_pos - GRAPH_HEIGHT *0.25f), textStl);
 
 	int value_id = 0;
 

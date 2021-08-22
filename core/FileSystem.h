@@ -30,7 +30,7 @@ public:
 						}
 
     int					Seek( long pos, VirtStreamSeek_e seekType );
-    long				Tell();
+    long				Tell() const;
     size_t				Read( void *dest, size_t count, size_t size);
     size_t				Write( const void *src, size_t count, size_t size);
     int					Error();
@@ -42,7 +42,7 @@ public:
 
 	long				GetSize();
 
-	VirtStreamType_e	GetType() {return VS_TYPE_FILE;}
+	VirtStreamType_e	GetType() const {return VS_TYPE_FILE;}
 
 protected:
 	FILE*				m_pFilePtr;

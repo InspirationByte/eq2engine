@@ -103,7 +103,7 @@ bool CEqParallelJobThreads::Init(int numJobTypes, eqJobThreadDesc_t* jobTypes)
 		for (int j = 0; j < jobTypes[i].numThreads; j++)
 		{
 			m_jobThreads.append(new CEqJobThread(this, jobTypes[i].jobTypeId));
-			m_jobThreads[i]->StartWorkerThread(varargs("jobThread_%d_%d", jobTypes[i].jobTypeId, j));
+			m_jobThreads[i]->StartWorkerThread(EqString::Format("jobThread_%d_%d", jobTypes[i].jobTypeId, j).ToCString());
 			numThreadsSpawned++;
 		}
 	}

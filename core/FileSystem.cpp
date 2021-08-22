@@ -50,7 +50,7 @@ int	CFile::Seek( long pos, VirtStreamSeek_e seekType )
 	return fseek( m_pFilePtr, pos, seekType );
 }
 
-long CFile::Tell()
+long CFile::Tell() const
 {
 	return ftell( m_pFilePtr );
 }

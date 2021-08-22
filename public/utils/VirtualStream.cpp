@@ -141,7 +141,7 @@ int CMemoryStream::Seek(long nOffset, VirtStreamSeek_e seekType)
 }
 
 // returns current pointer position
-long CMemoryStream::Tell()
+long CMemoryStream::Tell() const
 {
 	return m_pCurrent - m_pStart;
 }

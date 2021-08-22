@@ -62,7 +62,7 @@ public:
 	virtual	void				Print(const char* fmt, ...);
 
 	// returns current pointer position
-	virtual long				Tell() = 0;
+	virtual long				Tell() const = 0;
 
 	// returns memory allocated for this stream
 	virtual long				GetSize() = 0;
@@ -71,7 +71,7 @@ public:
 	virtual int					Flush() = 0;
 
 	// returns stream type
-	virtual VirtStreamType_e	GetType() = 0;
+	virtual VirtStreamType_e	GetType() const = 0;
 
 	// returns CRC32 checksum of stream
 	virtual uint32				GetCRC32() = 0;

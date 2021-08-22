@@ -809,7 +809,7 @@ bool CEGFGenerator::LoadMaterialPaths(kvkeybase_t* pSection)
 
 			if(path.ToCString()[sp_len] != '/' || path.ToCString()[sp_len] != '\\')
 			{
-				strcpy(desc.searchPath, varargs("%s/", path.ToCString()));
+				strcpy(desc.searchPath, EqString::Format("%s/", path.ToCString()).ToCString());
 			}
 			else
 			{

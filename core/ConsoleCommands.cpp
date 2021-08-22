@@ -219,7 +219,7 @@ DECLARE_CONCOMMAND_FN(set)
 	EqString joinArgs;
 
 	for (int i = 1; i < CMD_ARGC; i++)
-		joinArgs.Append(varargs(i < CMD_ARGC - 1 ? (char*) "%s " : (char*) "%s", CMD_ARGV(i).ToCString()));
+		joinArgs.Append(EqString::Format(i < CMD_ARGC - 1 ? (char*) "%s " : (char*) "%s", CMD_ARGV(i).ToCString()));
 
 	if (IsAllowedToExecute(pConVar))
 	{
@@ -247,7 +247,7 @@ DECLARE_CONCOMMAND_FN(seti)
 	EqString joinArgs;
 
 	for (int i = 1; i < CMD_ARGC; i++)
-		joinArgs.Append(varargs(i < CMD_ARGC - 1 ? (char*) "%s " : (char*) "%s", CMD_ARGV(i).ToCString()));
+		joinArgs.Append(EqString::Format(i < CMD_ARGC - 1 ? (char*) "%s " : (char*) "%s", CMD_ARGV(i).ToCString()));
 
 	pConVar->SetValue(joinArgs.GetData());
 }
@@ -407,7 +407,7 @@ void CConsoleCommands::RegisterCommand(ConCommandBase *pCmd)
 	_RegisterOrDie();
 
 	ASSERT(pCmd != NULL);
-	ASSERTMSG(FindBase(pCmd->GetName()) == NULL, varargs("ConCmd/CVar %s already registered", pCmd->GetName()));
+	ASSERTMSG(FindBase(pCmd->GetName()) == NULL, EqString::Format("ConCmd/CVar %s already registered", pCmd->GetName()).ToCString());
 
 	ASSERTMSG(isCvarChar(*pCmd->GetName()), "RegisterCommand - command name has invalid start character!");
 
@@ -503,7 +503,7 @@ void CConsoleCommands::ParseAndAppend(char* str, int len, void* extra)
 			return;
 		}
 
-		strcat(m_currentCommands, varargs("%s;", cmdStr.ToCString()));
+		strcat(m_currentCommands, EqString::Format("%s;", cmdStr.ToCString()).ToCString());
 	}
 		
 }
