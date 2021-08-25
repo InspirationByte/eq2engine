@@ -107,3 +107,21 @@ project "soundsystem_test"
         files {
 			"soundsystem_test/**.rc"
 		}
+		
+-- tree generator for DrvSyn
+project "treegen"
+    kind "WindowedApp"
+    uses {
+		"corelib", "frameworkLib",
+		"e2Core", 
+		"fontLib", "dkPhysicsLib", "wxWidgets"
+	}
+	defines { "TREEGEN" }
+    files {
+		"treegen/*.cpp",
+		"treegen/*.h"
+	}
+    filter "system:Windows"
+        files {
+			"treegen/**.rc"
+		}

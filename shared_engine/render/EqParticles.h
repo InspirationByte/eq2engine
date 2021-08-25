@@ -94,6 +94,8 @@ public:
 	void				AddParticleStrip(PFXVertex_t* verts, int nVertices);
 
 	void				SetCullInverted(bool invert) {m_invertCull = invert;}
+
+	IMaterial*			GetMaterial() const {return m_pMaterial;}
 protected:
 
 	IMaterial*			m_pMaterial;
