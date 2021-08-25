@@ -23,7 +23,7 @@ void IVirtualStream::Print(const char* pFmt, ...)
 	va_list	argptr;
 
 	va_start (argptr,pFmt);
-	str = EqString::Format(pFmt, argptr);
+	str = EqString::FormatVa(pFmt, argptr);
 	va_end (argptr);
 
 	Write(str.GetData(), 1, str.Length());

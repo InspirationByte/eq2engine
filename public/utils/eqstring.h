@@ -40,7 +40,7 @@ public:
 	EqString(const EqWString &str, int nStart = 0, int len = -1);
 
 	static EqString Format(const char* pszFormat, ...);
-	static EqString Format(const char* pszFormat, va_list argptr);
+	static EqString FormatVa(const char* pszFormat, va_list argptr);
 
 	// checks the data is non overflowing
 	bool		IsValid() const;

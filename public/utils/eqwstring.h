@@ -42,7 +42,7 @@ public:
 	EqWString(const EqWString &str, int nStart = 0, int len = -1);
 
 	static EqWString Format(const wchar_t* pszFormat, ...);
-	static EqWString Format(const wchar_t* pszFormat, va_list args);
+	static EqWString FormatVa(const wchar_t* pszFormat, va_list args);
 
 	// data for printing
 	const wchar_t*	GetData() const;

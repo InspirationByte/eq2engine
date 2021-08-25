@@ -95,13 +95,13 @@ EqString EqString::Format(const char* pszFormat, ...)
 	va_list argptr;
 
 	va_start(argptr, pszFormat);
-	newString = EqString::Format(pszFormat, argptr);
+	newString = EqString::FormatVa(pszFormat, argptr);
 	va_end(argptr);
 
 	return newString;
 }
 
-EqString EqString::Format(const char* pszFormat, va_list argptr)
+EqString EqString::FormatVa(const char* pszFormat, va_list argptr)
 {
 	EqString newString;
 	newString.Resize(512, false);

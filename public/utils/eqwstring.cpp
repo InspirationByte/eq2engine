@@ -86,13 +86,13 @@ EqWString EqWString::Format(const wchar_t* pszFormat, ...)
 	va_list argptr;
 
 	va_start(argptr, pszFormat);
-	newString = EqWString::Format(pszFormat, argptr);
+	newString = EqWString::FormatVa(pszFormat, argptr);
 	va_end(argptr);
 
 	return newString;
 }
 
-EqWString EqWString::Format(const wchar_t* pszFormat, va_list argptr)
+EqWString EqWString::FormatVa(const wchar_t* pszFormat, va_list argptr)
 {
 	EqWString newString;
 	newString.Resize(512, false);
