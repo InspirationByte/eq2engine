@@ -363,7 +363,7 @@ void CEqAudioSystemAL::StopAllSounds(int chanType /*= -1*/, void* callbackObject
 
 void CEqAudioSystemAL::PauseAllSounds(int chanType /*= -1*/, void* callbackObject /*= nullptr*/)
 {
-	IEqAudioSource::params_t param;
+	IEqAudioSource::Params param;
 	param.state = IEqAudioSource::PAUSED;
 
 	// suspend all sources
@@ -377,7 +377,7 @@ void CEqAudioSystemAL::PauseAllSounds(int chanType /*= -1*/, void* callbackObjec
 
 void CEqAudioSystemAL::ResumeAllSounds(int chanType /*= -1*/, void* callbackObject /*= nullptr*/)
 {
-	IEqAudioSource::params_t param;
+	IEqAudioSource::Params param;
 	param.state = IEqAudioSource::PLAYING;
 
 	// suspend all sources
@@ -556,7 +556,7 @@ void CEqAudioSourceAL::Ref_DeleteObject()
 }
 
 // Updates channel with user parameters
-void CEqAudioSourceAL::UpdateParams(params_t params, int mask)
+void CEqAudioSourceAL::UpdateParams(Params params, int mask)
 {
 	if (mask == 0)
 		return;
@@ -664,7 +664,7 @@ void CEqAudioSourceAL::UpdateParams(params_t params, int mask)
 	}
 }
 
-void CEqAudioSourceAL::GetParams(params_t& params)
+void CEqAudioSourceAL::GetParams(Params& params)
 {
 	const ALuint thisSource = m_source;
 
@@ -769,7 +769,7 @@ bool CEqAudioSourceAL::DoUpdate()
 	// process user callback
 	if (m_callback)
 	{
-		params_t params;
+		Params params;
 		GetParams(params);
 
 		int mask = m_callback(m_callbackObject, params);

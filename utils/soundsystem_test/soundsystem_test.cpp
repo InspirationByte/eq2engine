@@ -67,7 +67,7 @@ ISoundSource* g_staticSound;
 
 IEqAudioSource* g_musicChan;
 
-int musicUpdateCb(void* obj, IEqAudioSource::params_t& params)
+int musicUpdateCb(void* obj, IEqAudioSource::Params& params)
 {
 	if (params.state != IEqAudioSource::PLAYING)
 	{
@@ -78,7 +78,7 @@ int musicUpdateCb(void* obj, IEqAudioSource::params_t& params)
 	return 0;
 }
 
-int dummyUpdateCb(void* obj, IEqAudioSource::params_t& params)
+int dummyUpdateCb(void* obj, IEqAudioSource::Params& params)
 {
 	debugoverlay->Text(color4_white, "chan id=%d", params.id);
 	return 0;
@@ -103,7 +103,7 @@ void InitSoundSystem( EQWNDHANDLE wnd )
 	g_musicChan = g_audioSystem->CreateSource();
 	g_musicChan->Setup(0, g_loopingSound[0], musicUpdateCb, nullptr);
 
-	IEqAudioSource::params_t params;
+	IEqAudioSource::Params params;
 	params.state = IEqAudioSource::PLAYING;
 	params.looping = false;
 	params.pitch = 4.0;
@@ -367,7 +367,7 @@ void CMainWindow::ProcessAllMenuCommands(wxCommandEvent& event)
 			g_musicChan->Release();
 			g_musicChan->Setup(0, g_loopingSound[soundId], musicUpdateCb, nullptr);
 
-			IEqAudioSource::params_t params;
+			IEqAudioSource::Params params;
 			params.state = IEqAudioSource::PLAYING;
 			params.looping = true;
 			params.pitch = RandomFloat(0.5f, 2.0f);
@@ -525,7 +525,7 @@ void CMainWindow::ProcessKeyboardUpEvents(wxKeyEvent& event)
 		IEqAudioSource* newSource = g_audioSystem->CreateSource();
 		newSource->Setup(1, g_staticSound, dummyUpdateCb, nullptr);
 
-		IEqAudioSource::params_t params;
+		IEqAudioSource::Params params;
 		params.position = randomPos;
 		params.state = IEqAudioSource::PLAYING;
 		params.releaseOnStop = true;

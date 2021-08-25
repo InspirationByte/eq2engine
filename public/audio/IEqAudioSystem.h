@@ -49,7 +49,7 @@ public:
 		PAUSED
 	};
 
-	struct params_t
+	struct Params
 	{
 		Vector3D			position;
 		Vector3D			velocity;
@@ -66,7 +66,7 @@ public:
 		int					id;						// read-only
 	};
 
-	typedef int				(*UpdateCallback)(void* obj, params_t& params);		// returns EVoiceUpdateFlags
+	typedef int				(*UpdateCallback)(void* obj, Params& params);		// returns EVoiceUpdateFlags
 
 	virtual ~IEqAudioSource() {}
 
@@ -74,8 +74,8 @@ public:
 	virtual void			Release() = 0;
 
 	// full scale
-	virtual void			GetParams(params_t& params) = 0;
-	virtual void			UpdateParams(params_t params, int mask) = 0;
+	virtual void			GetParams(Params& params) = 0;
+	virtual void			UpdateParams(Params params, int mask) = 0;
 
 	// atomic
 	virtual ESourceState	GetState() const = 0;

@@ -113,8 +113,8 @@ public:
 	void					Release();
 
 	// full scale
-	void					GetParams(params_t& params);
-	void					UpdateParams(params_t params, int mask);
+	void					GetParams(Params& params);
+	void					UpdateParams(Params params, int mask);
 
 	// atomic
 	ESourceState			GetState() const { return m_state; }
