@@ -2,7 +2,7 @@
 // Copyright © Inspiration Byte
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
-// Description: Smart scoped pointer is a great way to control deallocation of memory 
+// Description: RAII / Smart scoped pointer is a great way to control deallocation of memory 
 //				whithin the scope (epilog)
 //////////////////////////////////////////////////////////////////////////////////
 
@@ -81,10 +81,9 @@ void CScopedPointer<TYPE>::Free()
 	m_pTypedObject = NULL;
 }
 
-// parody on RAiI
-#define S_MALLOC(name, size)		CScopedPointer<char> name((char*)malloc(size), SPTR_MALLOC)
-#define S_PPALLOC(name, size)		CScopedPointer<char> name((char*)PPAlloc(size), SPTR_PPALLOC)
+#define S_MALLOC(name, size)		CScopedPointer<char> name((char*)malloc((size)), SPTR_MALLOC)
+#define S_PPALLOC(name, size)		CScopedPointer<char> name((char*)PPAlloc((size)), SPTR_PPALLOC)
 #define S_NEW(name, type)			CScopedPointer<type> name(new type, SPTR_NEW)
-#define S_NEWA(name, type, count)	CScopedPointer<type> name(new type[count], SPTR_NEW_ARRAY)
+#define S_NEWA(name, type, count)	CScopedPointer<type> name(new type[(count)], SPTR_NEW_ARRAY)
 
 #endif // SCOPEDPTR_H

@@ -8,41 +8,25 @@
 #include "VirtualStream.h"
 #include "core/IFileSystem.h"
 #include "core/platform/MessageBox.h"
-#include "utils/CRC32.h"
+#include "CRC32.h"
+#include "eqstring.h"
 
 #include <stdarg.h> // va_*
 #include <stdio.h>
 
-#define VSTREAM_GRANULARITY 1024	// 1kb
-
-// Opens memory stream, when creating new stream use nBufferSize parameter as base buffer
-IVirtualStream* OpenMemoryStream(int nOpenFlags, int nBufferSize, ubyte* pBufferData)
-{
-	CMemoryStream* pMemoryStream = new CMemoryStream;
-
-	if(pMemoryStream->Open(pBufferData, nOpenFlags, 0))
-	{
-		return pMemoryStream;
-	}
-	else
-	{
-		delete pMemoryStream;
-		return NULL;
-	}
-}
+#define VSTREAM_GRANULARITY 1024 * 4	// 4kb
 
 // prints string to stream
 void IVirtualStream::Print(const char* pFmt, ...)
 {
-	va_list		argptr;
-
-	static char	string[4096];
+	EqString str;
+	va_list	argptr;
 
 	va_start (argptr,pFmt);
-	int wcount = vsprintf(string, pFmt, argptr);
+	str = EqString::Format(pFmt, argptr);
 	va_end (argptr);
 
-	Write(string, 1, wcount);
+	Write(str.GetData(), 1, str.Length());
 }
 
 //--------------------------

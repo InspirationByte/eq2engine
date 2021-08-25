@@ -82,6 +82,5 @@ private:
 	long				m_nUsageFlags;
 };
 
-IVirtualStream* OpenMemoryStream(int nOpenFlags, int nBufferSize, ubyte* pBufferData = NULL);
 
 #endif // VIRTUALSTREAM_H

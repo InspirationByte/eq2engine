@@ -83,12 +83,21 @@ EqWString::EqWString(const EqWString &str, int nStart, int len)
 EqWString EqWString::Format(const wchar_t* pszFormat, ...)
 {
 	EqWString newString;
+	va_list argptr;
+
+	va_start(argptr, pszFormat);
+	newString = EqWString::Format(pszFormat, argptr);
+	va_end(argptr);
+
+	return newString;
+}
+
+EqWString EqWString::Format(const wchar_t* pszFormat, va_list argptr)
+{
+	EqWString newString;
 	newString.Resize(512, false);
 
-	va_list argptr;
-	va_start(argptr, pszFormat);
 	int length = _vsnwprintf(newString.m_pszString, newString.m_nAllocated, pszFormat, argptr);
-	va_end(argptr);
 
 	if (length < newString.m_nAllocated)
 	{
@@ -98,10 +107,8 @@ EqWString EqWString::Format(const wchar_t* pszFormat, ...)
 
 	newString.Resize(length + 1, false);
 
-	va_start(argptr, pszFormat);
 	_vsnwprintf(newString.m_pszString, newString.m_nAllocated, pszFormat, argptr);
 	newString.m_nLength = length;
-	va_end(argptr);
 
 	return newString;
 }

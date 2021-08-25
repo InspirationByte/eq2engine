@@ -11,6 +11,7 @@
 #include "resource.h"
 #include "utils/eqthread.h"
 #include <stdarg.h>
+#include "utils/SmartPtr.h"
 
 #ifdef _WIN32
 #include <direct.h>
@@ -211,46 +212,57 @@ void Log_WriteBOM(const char* fileName)
 
 #define DEBUGMESSAGE_BUFFER_SIZE 2048
 
-void SpewMessageToOutput(SpewType_t spewtype,char const* pMsgFormat, va_list args)
+void SpewMessage(SpewType_t spewtype, char const* msg)
 {
-	Threading::CScopedMutex m(g_debugOutputMutex);
-
-	char pTempBuffer[DEBUGMESSAGE_BUFFER_SIZE];
-	int len = 0;
-
-	/* Create the message.... */
-	len += vsnprintf( &pTempBuffer[len], DEBUGMESSAGE_BUFFER_SIZE, pMsgFormat, args );
-	pTempBuffer[DEBUGMESSAGE_BUFFER_SIZE - 1] = 0;
-
-	ASSERT( len < 2048 );
-	ASSERT( g_fnConSpewFunc );
-
 #ifdef ANDROID
 	const char* logTag = EQENGINE_LOG_TAG(s_spewTypeStr[spewtype]);
 
 	// force log into android debug output
-	__android_log_print(ANDROID_LOG_DEBUG, logTag, "%s", pTempBuffer);
+	__android_log_print(ANDROID_LOG_DEBUG, logTag, "%s", msgBuffer);
 #else
 
 #endif // ANDROID
 
-	if(!g_bLoggingInitialized)
 	{
-		printf( "%s", pTempBuffer );
+		Threading::CScopedMutex m(g_debugOutputMutex);
+
+		if (!g_bLoggingInitialized)
+		{
+			printf("%s", msg);
+		}
+
+		// print to log file if enabled
+		if (g_logFile)
+		{
+			fprintf(g_logFile, "%s", msg);
+
+			if (g_logForceFlush)
+				Log_Flush();
+		}
+
+		ASSERT(g_fnConSpewFunc);
+		(g_fnConSpewFunc)(spewtype, msg);
 	}
-
-	// print to log file if enabled
-	if(g_logFile)
-	{
-		fprintf(g_logFile, "%s", pTempBuffer);
-
-		if(g_logForceFlush)
-			Log_Flush();
-	}
-
-	(g_fnConSpewFunc)(spewtype,pTempBuffer);
 }
 
+void SpewMessageToOutput(SpewType_t spewtype,char const* pMsgFormat, va_list args)
+{
+	char pTempBuffer[DEBUGMESSAGE_BUFFER_SIZE];
+
+	int len = vsnprintf(pTempBuffer, DEBUGMESSAGE_BUFFER_SIZE, pMsgFormat, args );
+
+	if (len >= 2048)
+	{
+		S_NEWA(tempBufferExt, char, len + 1);
+		len = vsnprintf(tempBufferExt, len + 1, pMsgFormat, args);
+
+		SpewMessage(spewtype, tempBufferExt);
+	}
+	else
+	{
+		SpewMessage(spewtype, pTempBuffer);
+	}
+}
 
 // Simple messages
 IEXPORTS void Msg(const char *fmt,...)
