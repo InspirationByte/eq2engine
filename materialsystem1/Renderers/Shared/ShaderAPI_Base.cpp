@@ -451,15 +451,11 @@ DepthStencilStateParams_t ShaderAPI_Base::MakeDepthState(bool bDoDepthTest, bool
 // Textures
 //-------------------------------------------------------------
 
-// Load texture from file (DDS or TGA only)
-ITexture* ShaderAPI_Base::LoadTexture( const char* pszFileName, ER_TextureFilterMode textureFilterType, ER_TextureAddressMode textureAddress/* = TEXADDRESS_WRAP*/, int nFlags/* = 0*/ )
+void ShaderAPI_Base::GetImagesForTextureName(DkList<EqString>& textureNames, const char* pszFileName, int nFlags)
 {
-	// first search for existing texture
-	ITexture* pFoundTexture = FindTexture(pszFileName);
-
 	EqString texturePath;
 
-	if(!(nFlags & TEXFLAG_REALFILEPATH))
+	if (!(nFlags & TEXFLAG_REALFILEPATH))
 		texturePath = EqString(m_params->texturePath) + pszFileName;
 	else
 		texturePath = pszFileName;
@@ -473,120 +469,113 @@ ITexture* ShaderAPI_Base::LoadTexture( const char* pszFileName, ER_TextureFilter
 	texturePathExt.Path_FixSlashes();
 	textureAnimPathExt.Path_FixSlashes();
 
-	if(!pFoundTexture)
-		pFoundTexture = FindTexture(texturePathExt.GetData());
+	// has pattern for animated texture?
+	int animCountStart = texturePath.Find("[");
+	int animCountEnd = -1;
 
-	if(!pFoundTexture)
-		pFoundTexture = FindTexture(textureAnimPathExt.GetData());
-
-	// found?
-	if(pFoundTexture != NULL)
-		return pFoundTexture;
-
-	// Don't load textures starting with special symbols
-	if(pszFileName[0] == '$')
-		return NULL;
-
-	// create sampler state
-	SamplerStateParam_t texSamplerParams = MakeSamplerState(textureFilterType,textureAddress,textureAddress,textureAddress);
-
-	// try reading animation buffer
-	char* animScriptBuffer = g_fileSystem->GetFileBuffer(textureAnimPathExt.GetData());
-
-	DkList<CImage*> pImages;
-
-	if(animScriptBuffer)
+	if (animCountStart != -1 &&
+		(animCountEnd = texturePath.Find("]", false, animCountStart)) != -1)
 	{
-		if(rs_echo_texture_loading.GetBool())
-			Msg("Loading animated textures from %s\n", textureAnimPathExt.GetData());
+		// trying to load animated texture
+		EqString textureWildcard = texturePath.Left(animCountStart);
+		EqString textureFrameCount = texturePath.Mid(animCountStart + 1, (animCountEnd - animCountStart) - 1);
+		int numFrames = atoi(textureFrameCount.ToCString());
 
-		DkList<EqString> cmds;
-		xstrsplit(animScriptBuffer, "\n", cmds);
+		if (rs_echo_texture_loading.GetBool())
+			Msg("Loading animated %d animated textures (%s)\n", numFrames, textureWildcard.ToCString());
 
-		bool success = true;
-
-		EqString texturePathA;
-		EqString texturePathExtA;
-
-		// generate file names
-		// and load image files for further uploading to GPU
-		for(int i = 0; i < cmds.numElem(); i++)
+		for (int i = 0; i < numFrames; i++)
 		{
-			cmds[i] = cmds[i].Left(cmds[i].Length()-1);
-
-			if(!(nFlags & TEXFLAG_REALFILEPATH))
-				texturePathA = EqString(m_params->texturePath) + cmds[i];
-			else
-				texturePathA = cmds[i];
-
-			texturePathExtA = texturePathA + EqString(TEXTURE_DEFAULT_EXTENSION);
-
-			texturePathExtA.Path_FixSlashes();
-
-			CImage* pImg = new CImage();
-
-			success = pImg->LoadDDS(texturePathExtA.GetData(), 0);
-
-			if(success)
-			{
-				if(rs_echo_texture_loading.GetBool())
-					MsgInfo("Animated Texture loaded: '%s'\n", cmds[i].GetData());
-			}
-
-			pImg->SetName( textureAnimPathExt.GetData() );
-
-			if(!success)
-			{
-				delete pImg;
-
-				MsgError("Can't load texture '%s' for animations\n", cmds[i].GetData());
-				break;
-			}
-
-			// add image
-			pImages.append(pImg);
+			EqString textureNameFrame = EqString::Format(textureWildcard.ToCString(), i);
+			textureNames.append(textureNameFrame);
 		}
-
-		// failt
-		if(!success)
-		{
-			for(int i = 0; i < pImages.numElem();i++)
-				delete pImages[i];
-
-			PPFree(animScriptBuffer);
-
-			return m_pErrorTexture;
-		}
-
-		PPFree(animScriptBuffer);
 	}
 	else
 	{
-		CImage *pImage = new CImage();
+		// try loading older Animated Texture Index file
+		EqString textureAnimPathExt = texturePath + EqString(TEXTURE_ANIMATED_EXTENSION);
+		textureAnimPathExt.Path_FixSlashes();
 
-		bool stateLoad = pImage->LoadDDS(texturePathExt.GetData(),0);
-
-		if(!stateLoad)
+		char* animScriptBuffer = g_fileSystem->GetFileBuffer(textureAnimPathExt.GetData());
+		if (animScriptBuffer)
 		{
-			texturePathExt = texturePath + EqString(TEXTURE_SECONDARY_EXTENSION);
-			texturePathExt.Path_FixSlashes();
-			stateLoad = pImage->LoadTGA(texturePathExt.GetData());
-			pImage->SetName((texturePath + EqString(TEXTURE_DEFAULT_EXTENSION)).GetData());
-		}
+			DkList<EqString> frameFilenames;
+			xstrsplit(animScriptBuffer, "\n", frameFilenames);
+			for (int i = 0; i < frameFilenames.numElem(); i++)
+			{
+				// delete carriage return character if any
+				EqString animFrameFilename = frameFilenames[i].TrimChar('\r', true, true);
 
-		if(stateLoad)
-		{
-			pImages.append(pImage);
+				if (!(nFlags & TEXFLAG_REALFILEPATH))
+					animFrameFilename = EqString(m_params->texturePath) + animFrameFilename;
+				else
+					animFrameFilename = animFrameFilename;
 
-			if(rs_echo_texture_loading.GetBool())
-				MsgInfo("Texture loaded: %s\n",pszFileName);
+				textureNames.append(animFrameFilename);
+			}
+
+			PPFree(animScriptBuffer);
 		}
 		else
 		{
-			MsgError("Can't open texture \"%s\"\n",pszFileName);
-			delete pImage;
+			textureNames.append(texturePath);
 		}
 	}
+}
+
+// Load texture from file (DDS or TGA only)
+ITexture* ShaderAPI_Base::LoadTexture( const char* pszFileName, 
+	ER_TextureFilterMode textureFilterType, ER_TextureAddressMode textureAddress/* = TEXADDRESS_WRAP*/, 
+	int nFlags/* = 0*/ )
+{
+	// first search for existing texture
+	ITexture* pFoundTexture = FindTexture(pszFileName);
+
+	if (pFoundTexture != NULL)
+		return pFoundTexture;
+
+	// Don't load textures starting with special symbols
+	if (pszFileName[0] == '$')
+		return nullptr;
+
+	DkList<EqString> textureNames;
+	GetImagesForTextureName(textureNames, pszFileName, nFlags);
+
+	DkList<CImage*> pImages;
+
+	// load frames
+	for (int i = 0; i < textureNames.numElem(); i++)
+	{
+		EqString texturePathExt = textureNames[i] + EqString(TEXTURE_DEFAULT_EXTENSION);
+
+		CImage* img = new CImage();
+
+		bool stateLoad = img->LoadDDS(texturePathExt.GetData(), 0);
+
+		if (!stateLoad)
+		{
+			texturePathExt = textureNames[i] + EqString(TEXTURE_SECONDARY_EXTENSION);
+
+			stateLoad = img->LoadTGA(texturePathExt.GetData());
+			img->SetName((textureNames[i] + EqString(TEXTURE_DEFAULT_EXTENSION)).GetData());
+		}
+
+		if (stateLoad)
+		{
+			pImages.append(img);
+
+			if (rs_echo_texture_loading.GetBool())
+				MsgInfo("Texture loaded: %s\n", texturePathExt.ToCString());
+		}
+		else
+		{
+			MsgError("Can't open texture \"%s\"\n", texturePathExt.ToCString());
+			delete img;
+		}
+	}
+
+	// create sampler state
+	SamplerStateParam_t texSamplerParams = MakeSamplerState(textureFilterType, textureAddress, textureAddress, textureAddress);
 
 	// Now create the texture
 	pFoundTexture = CreateTexture(pImages, texSamplerParams, nFlags);
@@ -668,82 +657,40 @@ ITexture* ShaderAPI_Base::CreateProceduralTexture(const char* pszName,
 
 bool ShaderAPI_Base::RestoreTextureInternal(ITexture* pTexture)
 {
-	char* animScriptBuffer = g_fileSystem->GetFileBuffer(pTexture->GetName());
+	DkList<EqString> textureNames;
+	GetImagesForTextureName(textureNames, pTexture->GetName(), pTexture->GetFlags());
 
 	DkList<CImage*> pImages;
 
-	if(animScriptBuffer)
+	// load frames
+	for (int i = 0; i < textureNames.numElem(); i++)
 	{
-		if(rs_echo_texture_loading.GetBool())
-			Msg("Loading animated textures from %s\n", pTexture->GetName());
+		EqString texturePathExt = textureNames[i] + EqString(TEXTURE_DEFAULT_EXTENSION);
 
-		DkList<EqString> cmds;
-		xstrsplit(animScriptBuffer, "\n", cmds);
+		CImage* img = new CImage();
 
-		bool success = true;
+		bool stateLoad = img->LoadDDS(texturePathExt.GetData(), 0);
 
-		EqString texturePathA;
-		EqString texturePathExtA;
-
-		for(int i = 0; i < cmds.numElem(); i++)
+		if (!stateLoad)
 		{
-			cmds[i] = cmds[i].Left(cmds[i].Length()-1);
+			texturePathExt = textureNames[i] + EqString(TEXTURE_SECONDARY_EXTENSION);
 
-			texturePathA = EqString(m_params->texturePath) + cmds[i];
-			texturePathExtA = texturePathA + EqString(TEXTURE_DEFAULT_EXTENSION);
-
-			CImage* pImage = new CImage();
-
-			success = pImages[i]->LoadDDS(texturePathExtA.GetData(), 0);
-
-			if(success)
-			{
-				if(rs_echo_texture_loading.GetBool())
-					MsgInfo("Animated Texture loaded: %s\n", cmds[i].GetData());
-			}
-
-			pImages[i]->SetName(pTexture->GetName());
-
-			if(!success)
-			{
-				delete pImage;
-
-				MsgError("Can't load texture %s for animations\n", cmds[i].GetData());
-				break;
-			}
-
-			pImages.append(pImage);
+			stateLoad = img->LoadTGA(texturePathExt.GetData());
+			img->SetName((textureNames[i] + EqString(TEXTURE_DEFAULT_EXTENSION)).GetData());
 		}
 
-		// failt
-		if(!success)
+		if (stateLoad)
 		{
-			for(int i = 0; i < pImages.numElem();i++)
-				delete pImages[i];
+			pImages.append(img);
 
-			PPFree(animScriptBuffer);
-
-			return false;
+			if (rs_echo_texture_loading.GetBool())
+				MsgInfo("Texture loaded: %s\n", texturePathExt.ToCString());
 		}
-
-		PPFree(animScriptBuffer);
-	}
-
-	CImage* pImage = new CImage();
-
-	bool stateLoad = pImage->LoadImage(pTexture->GetName(),0);
-
-	if(stateLoad)
-	{
-		if(rs_echo_texture_loading.GetBool())
-			MsgInfo("Texture loaded: %s\n", pTexture->GetName());
-
-		pImages.append(pImage);
-	}
-	else
-	{
-		MsgError("Can't open texture \"%s\"\n", pTexture->GetName());
-		delete pImage;
+		else
+		{
+			MsgError("Can't open texture \"%s\"\n", texturePathExt.ToCString());
+			delete img;
+		}
 	}
 
 	CreateTextureInternal(&pTexture, pImages, pTexture->GetSamplerState(),pTexture->GetFlags());

@@ -186,7 +186,7 @@ public:
 
 protected:
 
-
+	void								GetImagesForTextureName(DkList<EqString>& textureNames, const char* pszFileName, int nFlags);
 	
 	bool								RestoreTextureInternal(ITexture* pTexture);
 
