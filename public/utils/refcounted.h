@@ -1,8 +1,8 @@
 //////////////////////////////////////////////////////////////////////////////////
 // Copyright © Inspiration Byte
-// 2014
+// 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
-// Description: Reference counted object.
+// Description: EqEngine mutex storage
 //////////////////////////////////////////////////////////////////////////////////
 
 #ifndef REFCOUNTED_H
@@ -67,8 +67,8 @@ private:
 
 	virtual void Ref_DeleteObject() = 0;
 
-protected:
-	int		m_numRefs;
+private:
+	mutable int	m_numRefs;
 };
 
 inline bool	RefCountedObject::Ref_Drop()
@@ -127,7 +127,7 @@ inline CRefPointer<TYPE>::CRefPointer( TYPE pObject ) : m_ptrObj(nullptr)
 template< class TYPE >
 inline CRefPointer<TYPE>::CRefPointer( const CRefPointer<TYPE>& refptr ) : m_ptrObj(nullptr)
 {
-	Assign(refptr->m_ptrObj);
+	Assign(refptr.m_ptrObj);
 }
 
 template< class TYPE >
