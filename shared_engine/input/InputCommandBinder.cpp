@@ -126,13 +126,7 @@ void CInputCommandBinder::Init()
 	// resolve bindings
 	for(int i = 0; i < m_bindings.numElem(); i++)
 	{
-		if(!ResolveCommandBinding( m_bindings[i] ))
-		{
-			delete m_bindings[i];
-
-			m_bindings.removeIndex(i);
-			i--;
-		}
+		ResolveCommandBinding( m_bindings[i] );
 	}
 
 	m_init = true;
@@ -675,6 +669,7 @@ void CInputCommandBinder::DebugDraw(const Vector2D& screenSize)
 // executes binding with selected state
 void CInputCommandBinder::ExecuteBinding( in_binding_t* pBinding, bool bState )
 {
+	ResolveCommandBinding(pBinding);
 	ExecuteBoundCommands(pBinding, bState);
 }
 
