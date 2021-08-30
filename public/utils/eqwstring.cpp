@@ -451,7 +451,7 @@ int	EqWString::Find(const wchar_t* pszSub, bool bCaseSensetive, int nStart)
 
 	int nFound = -1;
 
-	wchar_t* strStart = m_pszString+min((uint16)nStart,m_nLength);
+	wchar_t* strStart = m_pszString + min((uint16)nStart, m_nLength);
 
 	wchar_t* st = NULL;
 
@@ -461,7 +461,7 @@ int	EqWString::Find(const wchar_t* pszSub, bool bCaseSensetive, int nStart)
 		st = xwcsistr(strStart, pszSub);
 	 
 	if(st)
-		nFound = st-m_pszString;
+		nFound = (st - m_pszString);
 
 	return nFound;
 }

@@ -468,7 +468,7 @@ int	EqString::Find(const char* pszSub, bool bCaseSensetive, int nStart) const
 
 	int nFound = -1;
 
-	char* strStart = m_pszString+min((uint16)nStart,m_nLength);
+	char* strStart = m_pszString + min((uint16)nStart, m_nLength);
 
 	char *st = NULL;
 
@@ -478,7 +478,7 @@ int	EqString::Find(const char* pszSub, bool bCaseSensetive, int nStart) const
 		st = xstristr(strStart, pszSub);
 
 	if(st)
-		nFound = st - m_pszString;
+		nFound = (st - m_pszString);
 
 	return nFound;
 }

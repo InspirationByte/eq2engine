@@ -150,7 +150,7 @@ ConCommand c_developer("developer",CONCOMMAND_FN(developer),"Sets developer mode
 // Default spew
 void DefaultSpewFunc(SpewType_t type,const char* pMsg)
 {
-	printf( "%s", pMsg );
+	puts( pMsg );
 }
 
 //Spew callback
@@ -228,13 +228,13 @@ void SpewMessage(SpewType_t spewtype, char const* msg)
 
 		if (!g_bLoggingInitialized)
 		{
-			printf("%s", msg);
+			puts(msg);
 		}
 
 		// print to log file if enabled
 		if (g_logFile)
 		{
-			fprintf(g_logFile, "%s", msg);
+			fputs(msg, g_logFile);
 
 			if (g_logForceFlush)
 				Log_Flush();

@@ -289,7 +289,7 @@ unzFile	CZipFileReader::GetZippedFile(const char* filename) const
 
 	if (m_mountPath.Length())
 	{
-		int mountPathPos = fullFilename.Find(m_mountPath.ToCString(), false, 0);
+		int mountPathPos = fullFilename.Find(m_mountPath.ToCString());
 
 		if (mountPathPos != 0)
 			return nullptr;
