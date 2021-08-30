@@ -10,17 +10,17 @@
 
 #include "core/dktypes.h"
 
-typedef struct soundFormat_s
-{
-	int format;
-	int channels;
-	int bitwidth;
-	int frequency;
-} soundFormat_t;
-
 class ISoundSource
 {
 public:
+	struct Format
+	{
+		int dataFormat;
+		int channels;
+		int bitwidth;
+		int frequency;
+	};
+
 	virtual ~ISoundSource() {}
 
 	static ISoundSource*	CreateSound(const char *szFilename);
@@ -31,7 +31,7 @@ public:
 	virtual int             GetSamples(ubyte *pOutput, int nSamples, int nOffset, bool bLooping) = 0;
 	virtual ubyte*			GetDataPtr(int& dataSize) const = 0;
 
-	virtual soundFormat_t*	GetFormat() const = 0;
+	virtual Format*	GetFormat() const = 0;
 	virtual const char*		GetFilename() const = 0;
 	virtual int				GetSampleCount() const = 0;
 

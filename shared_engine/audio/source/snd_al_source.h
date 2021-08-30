@@ -27,7 +27,7 @@ public:
 	virtual int             GetSamples(ubyte* pOutput, int nSamples, int nOffset, bool bLooping);
 	virtual ubyte*			GetDataPtr(int& dataSize) const;
 
-	virtual soundFormat_t*	GetFormat() const;
+	virtual Format*	GetFormat() const;
 	virtual const char*		GetFilename() const;
 	virtual int				GetSampleCount() const;
 
@@ -43,7 +43,7 @@ private:
 	virtual void			Unload();
 
 	ALuint					m_alBuffer;
-	soundFormat_t			m_format;
+	Format			m_format;
 	EqString				m_filename;
 };
 

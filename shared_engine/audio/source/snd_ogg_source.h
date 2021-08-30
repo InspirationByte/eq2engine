@@ -25,7 +25,7 @@ namespace eqVorbisFile
 class CSoundSource_Ogg : public ISoundSource
 {
 public:
-	virtual soundFormat_t*	GetFormat() const					{ return (soundFormat_t*)&m_format; }
+	virtual Format*	GetFormat() const					{ return (Format*)&m_format; }
 	virtual const char*		GetFilename() const					{ return m_filename.ToCString(); }
 	virtual float			GetLoopPosition(float flPosition) const;
 	virtual int				GetSampleCount() const				{ return m_numSamples; }
@@ -34,7 +34,7 @@ protected:
 	void					ParseFormat(vorbis_info& info);
 	virtual void			ParseData(OggVorbis_File* file) = 0;
 
-	soundFormat_t			m_format;
+	Format			m_format;
 	EqString				m_filename;
 
 	int						m_numSamples;

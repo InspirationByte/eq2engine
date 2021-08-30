@@ -20,7 +20,7 @@ class CSoundSource_Wave : public ISoundSource
 public:
 	CSoundSource_Wave();
 
-	virtual soundFormat_t*	GetFormat() const				{ return (soundFormat_t*)&m_format; }
+	virtual Format*	GetFormat() const				{ return (Format*)&m_format; }
 	virtual const char*		GetFilename() const				{ return m_filename.ToCString(); }
 	virtual float			GetLoopPosition(float flPosition) const;
 	virtual int				GetSampleCount() const			{ return m_numSamples; }
@@ -33,7 +33,7 @@ protected:
 	virtual void			ParseSample(CRIFF_Parser &chunk);
 	virtual void			ParseData(CRIFF_Parser &chunk) = 0;
 
-	soundFormat_t			m_format;
+	Format			m_format;
 	EqString				m_filename;
 
 	int						m_numSamples;

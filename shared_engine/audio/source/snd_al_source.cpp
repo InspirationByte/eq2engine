@@ -92,9 +92,9 @@ ubyte* CSoundSource_OpenALCache::GetDataPtr(int& dataSize) const
 	return 0; 
 }
 
-soundFormat_t* CSoundSource_OpenALCache::GetFormat() const
+ISoundSource::Format* CSoundSource_OpenALCache::GetFormat() const
 {
-	return (soundFormat_t*)&m_format;
+	return (Format*)&m_format;
 }
 
 const char* CSoundSource_OpenALCache::GetFilename() const 

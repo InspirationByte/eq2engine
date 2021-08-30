@@ -48,7 +48,7 @@ void CSoundSource_Wave::ParseFormat(CRIFF_Parser &chunk)
     wavfmthdr_t wfx;
     chunk.ReadChunk( (ubyte*)&wfx, sizeof(wavfmthdr_t) );
 
-    m_format.format = wfx.Format;
+    m_format.dataFormat = wfx.Format;
     m_format.channels = wfx.Channels;
     m_format.bitwidth = wfx.BitsPerSample;
     m_format.frequency = wfx.SamplesPerSec;

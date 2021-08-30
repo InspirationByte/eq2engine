@@ -396,9 +396,9 @@ ISoundSource* CEqAudioSystemAL::LoadSample(const char* filename)
 
 	if (sampleSource)
 	{
-		soundFormat_t* fmt = sampleSource->GetFormat();
+		ISoundSource::Format* fmt = sampleSource->GetFormat();
 
-		if (fmt->format != 1 || fmt->bitwidth > 16)	// not PCM or 32 bit
+		if (fmt->dataFormat != 1 || fmt->bitwidth > 16)	// not PCM or 32 bit
 		{
 			MsgWarning("Sound '%s' has unsupported format!\n", filename);
 			ISoundSource::DestroySound(sampleSource);
@@ -420,7 +420,11 @@ ISoundSource* CEqAudioSystemAL::LoadSample(const char* filename)
 			sampleSource = alCacheSource;
 		}
 
-		m_samples.append(sampleSource);
+		{
+			Threading::CScopedMutex m(GetGlobalMutex(MUTEXPURPOSE_AUDIO));
+			m_samples.append(sampleSource);
+		}
+		
 	}
 
 	return sampleSource;
@@ -433,6 +437,7 @@ void CEqAudioSystemAL::FreeSample(ISoundSource* sampleSource)
 
 	// free
 	ISoundSource::DestroySound(sampleSource);
+	Threading::CScopedMutex m(GetGlobalMutex(MUTEXPURPOSE_AUDIO));
 	m_samples.fastRemove(sampleSource);
 }
 
@@ -860,7 +865,7 @@ bool CEqAudioSourceAL::QueueStreamChannel(ALuint buffer)
 
 	ISoundSource* sample = m_sample;
 
-	soundFormat_t* formatInfo = sample->GetFormat();
+	ISoundSource::Format* formatInfo = sample->GetFormat();
 	ALenum alFormat;
 
 	int sampleSize = formatInfo->bitwidth / 8 * formatInfo->channels;

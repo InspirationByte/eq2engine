@@ -59,7 +59,7 @@ void CSoundSource_Ogg::ParseFormat(vorbis_info& info)
 {
 	m_format.channels = info.channels;
 	m_format.frequency = info.rate;
-	m_format.format = 1;	// PCM
+	m_format.dataFormat = 1;	// PCM
 	m_format.bitwidth = 16; // Ogg Vorbis is always 16 bit
 }
 
