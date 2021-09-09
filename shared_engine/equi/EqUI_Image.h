@@ -2,11 +2,11 @@
 // Copyright © Inspiration Byte
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
-// Description: EGUI label
+// Description: EGUI image
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef EQUI_LABEL_H
-#define EQUI_LABEL_H
+#ifndef EQUI_IMAGE_H
+#define EQUI_IMAGE_H
 
 #include "equi_defs.h"
 #include "IEqUI_Control.h"
@@ -57,4 +57,4 @@ public:
 };
 
 
-#endif // EQUI_LABEL_H
+#endif // EQUI_IMAGE_H

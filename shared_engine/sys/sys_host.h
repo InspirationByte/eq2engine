@@ -100,31 +100,31 @@ protected:
 
 	bool				FilterTime( double fDt );
 
-	debugGraphBucket_t m_fpsGraph;
+	debugGraphBucket_t	m_fpsGraph;
 
-	IVector2D	m_winSize;
-	IVector2D	m_mousePos;
-	IVector2D	m_prevMousePos;
-	Vector2D	m_mouseDelta;
+	IVector2D			m_winSize;
+	IVector2D			m_mousePos;
+	IVector2D			m_prevMousePos;
+	Vector2D			m_mouseDelta;
 
-	CEqTimer	m_timer;
+	CEqTimer			m_timer;
 
-	EQWNDHANDLE	m_pWindow;
+	EQWNDHANDLE			m_pWindow;
 
-	IEqFont*	m_pDefaultFont;
+	IEqFont*			m_pDefaultFont;
 
-	int			m_nQuitState;
+	int					m_nQuitState;
 
-	bool		m_bTrapMode;
-	bool		m_bDoneTrapping;
-	bool		m_skipMouseMove;
+	bool				m_bTrapMode;
+	bool				m_bDoneTrapping;
+	bool				m_skipMouseMove;
 
-	int			m_nTrapKey;
-	int			m_nTrapButtons;
+	int					m_nTrapKey;
+	int					m_nTrapButtons;
 
-	bool		m_cursorCentered;
+	bool				m_cursorCentered;
 
-	double		m_accumTime;
+	double				m_accumTime;
 };
 
 extern CGameHost* g_pHost;

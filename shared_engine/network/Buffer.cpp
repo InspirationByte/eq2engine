@@ -34,7 +34,7 @@ void Buffer::ResetPos()
 
 void Buffer::WriteToStream(IVirtualStream* stream)
 {
-	stream->Write(m_data.GetBasePointer(), m_data.Tell(), 1);
+	stream->Write(m_data.GetBasePointer(), GetMessageLength(), 1);
 }
 
 int Buffer::GetMessageLength() const
