@@ -128,31 +128,6 @@ protected:
 
 //--------------------------------------------------------------------------------------------------------
 
-// Internal macros used in definitions of network vars.
-#define NETWORK_VAR_START( type, name ) \
-	class NetworkVar_##name; \
-	friend class NetworkVar_##name; \
-	typedef ThisClass MakeANetworkVar_##name; \
-	class NetworkVar_##name \
-	{ \
-	public:
-
-#define NETWORK_VAR_END( type, name, base, stateChangedFn ) \
-	public: \
-		static inline void OnNetworkStateChanged( void* ptr ) \
-		{ \
-			((ThisClass*)(((char*)ptr) - offsetOf(ThisClass,name)))->stateChangedFn( ptr ); \
-		} \
-	}; \
-	base< type, NetworkVar_##name > name;
-
-#define CNetworkVar( type, name ) \
-	NETWORK_VAR_START( type, name ) \
-	NETWORK_VAR_END( type, name, CNetworkVarBase, OnNetworkStateChanged )
-
-#define DECLARE_EMBEDDED_NETWORKVAR() \
-	virtual void OnNetworkStateChanged() {} virtual void OnNetworkStateChanged( void* ptr ) {}
-
 // Use this macro when you want to embed a structure inside your entity and have CNetworkVars in it.
 template< class T >
 static inline void DispatchNetworkStateChanged(T* pObj)
@@ -165,28 +140,43 @@ static inline void DispatchNetworkStateChanged(T* pObj, void *pVar)
 	pObj->OnNetworkStateChanged(pVar);
 }
 
-#define CNetworkVarEmbedded( type, name ) \
-	class NetworkVar_##name; \
+// Internal macros used in definitions of network vars.
+#define NETWORK_VAR_DECL( type, name, base ) \
 	friend class NetworkVar_##name; \
-	typedef ThisClass ThisClass_##name; \
-	static inline int GetOffset_##name() { return offsetOf(ThisClass,name); } \
-	class NetworkVar_##name : public type \
-	{ \
+	typedef ThisClass NetworkVar_##name##Cntr; \
+	class NetworkVar_##name { \
+	public: \
+		static inline void OnNetworkStateChanged( void* ptr ) { \
+			DispatchNetworkStateChanged((NetworkVar_##name##Cntr*)(((uintptr_t)ptr) - offsetOf(NetworkVar_##name##Cntr,name)), (void*)(uintptr_t)offsetOf(NetworkVar_##name##Cntr,name)); \
+		} \
+	}; \
+	base< type, NetworkVar_##name > name;
+
+#define CNetworkVar( type, name )	\
+	NETWORK_VAR_DECL( type, name, CNetworkVarBase )
+
+#define DECLARE_EMBEDDED_NETWORKVAR() \
+	void OnNetworkStateChanged() {} \
+	void OnNetworkStateChanged( void* ptr ) {}
+
+#define CNetworkVarEmbedded( type, name ) \
+	friend class NetworkVar_##name; \
+	typedef ThisClass NetworkVar_##name##Cntr; \
+	class NetworkVar_##name : public type { \
 		template< class T > NetworkVar_##name& operator=( const T &val ) { *((type*)this) = val; return *this; } \
 	public: \
 		void CopyFrom( const type &src ) { *((type *)this) = src; OnNetworkStateChanged(this); } \
-		virtual void OnNetworkStateChanged() \
-		{ \
-			DispatchNetworkStateChanged(((ThisClass_##name*)(((char*)this) - GetOffset_##name()))); \
+		void OnNetworkStateChanged() { \
+			DispatchNetworkStateChanged(((NetworkVar_##name##Cntr*)(((char*)this) - offsetOf(NetworkVar_##name##Cntr,name)))); \
 		} \
-		virtual void OnNetworkStateChanged( void* ptr ) \
-		{ \
-			DispatchNetworkStateChanged(((ThisClass_##name*)(((char*)this) - GetOffset_##name())), ptr); \
+		void OnNetworkStateChanged( void* ptr ) { \
+			DispatchNetworkStateChanged(((NetworkVar_##name##Cntr*)(((char*)this) - offsetOf(NetworkVar_##name##Cntr,name))), (void*)(uintptr_t)offsetOf(NetworkVar_##name##Cntr,name)); \
 		} \
 	}; \
 	NetworkVar_##name name; 
 
 //--------------------------------------------------------------------------------------------------------
+// Data map declaration
 
 enum ENetPropFlags
 {
@@ -302,9 +292,13 @@ struct netvariablemap_t
 	DECLARE_SIMPLE_NETWORK_TABLE() \
 	virtual netvariablemap_t* GetNetworkTableMap( void ) = 0;
 
+#define	DECLARE_NETWORK_TABLE_NOVIRTUAL() \
+	DECLARE_SIMPLE_NETWORK_TABLE() \
+	netvariablemap_t* GetNetworkTableMap( void );
+
 #define NETWORK_CHANGELIST(name) m_changeList_##name
 
-#define DECLARE_NETWORK_CHANGELIST(name)	DkList<int>	NETWORK_CHANGELIST(name);
+#define DECLARE_NETWORK_CHANGELIST(name)	DkList<uint>	NETWORK_CHANGELIST(name);
 
 //------------------------------------------------------------------------------------
 
