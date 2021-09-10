@@ -65,7 +65,7 @@ private:
 	//		assignedRemover->Free(this);
 	// }
 
-	virtual void Ref_DeleteObject() = 0;
+	virtual void Ref_DeleteObject() {}
 
 private:
 	mutable int	m_numRefs;

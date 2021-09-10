@@ -68,8 +68,6 @@ private:
 	void					InitMaterialVars(kvkeybase_t* kvs);
 	void					InitMaterialProxy(kvkeybase_t* kvs);
 
-	virtual void			Ref_DeleteObject(); // empty for now
-
 protected:
 	IMaterialSystemShader*	m_shader;
 	int						m_state;	// FIXME: may be interlocked?

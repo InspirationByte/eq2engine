@@ -87,9 +87,3 @@ void CTexture::SetAnimatedTextureFrame(int frame)
 
 	m_nAnimatedTextureFrame = frame;
 }
-
-void CTexture::Ref_DeleteObject()
-{
-	// don't use before refactoring
-	//g_pShaderAPI->FreeTexture(this);
-}

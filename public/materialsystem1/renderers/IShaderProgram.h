@@ -25,9 +25,6 @@ public:
 
 	// Get sampler count
 	virtual int				GetSamplersNum() = 0;
-
-private:
-	virtual void			Ref_DeleteObject() {} // empty for now
 };
 
 #endif //ISHADERPROGRAM_H

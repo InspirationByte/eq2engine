@@ -40,10 +40,6 @@ public:
 	void						SetSamplerState(const SamplerStateParam_t& newSamplerState) {m_samplerState = newSamplerState;}
 	void						SetAnimatedTextureFrame(int frame);		// sets current animated texture frames
 
-private:
-	// refcounted
-	void					Ref_DeleteObject();
-
 protected:
 	EqString				m_szTexName;
 	int						m_nameHash;

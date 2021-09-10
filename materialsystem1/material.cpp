@@ -411,10 +411,6 @@ void CMaterial::RemoveMaterialVar(IMatVar* pVar)
 		delete pVar;
 }
 
-void CMaterial::Ref_DeleteObject()
-{
-}
-
 void CMaterial::Cleanup(bool dropVars, bool dropShader)
 {
 	WaitForLoading();
