@@ -508,11 +508,13 @@ void IUIControl::Render()
 	Matrix4x4 prevTransform;
 	materials->GetMatrix(MATRIXMODE_WORLD, prevTransform);
 
+	Vector2D scale = CalcScaling();
+
 	Matrix4x4 clientPosMat = translate((float)clientRectRender.GetCenter().x, (float)clientRectRender.GetCenter().y, 0.0f);
 	Matrix4x4 rotationScale = clientPosMat * scale4(m_transform.scale.x, m_transform.scale.y, 1.0f) * rotateZ4(DEG2RAD(m_transform.rotation));
 	rotationScale = rotationScale * !clientPosMat;
 
-	Matrix4x4 localTransform = rotationScale * translate(m_transform.translation.x, m_transform.translation.y, 0.0f);
+	Matrix4x4 localTransform = rotationScale * translate(m_transform.translation.x * scale.x, m_transform.translation.y * scale.y, 0.0f);
 
 	Matrix4x4 newTransform = (prevTransform * localTransform);
 
@@ -524,10 +526,16 @@ void IUIControl::Render()
 		// set scissor rect before childs are rendered
 		// only if no transformation applied
 		if (newTransform.rows[0].x != 1.0f)
+		{
 			rasterState.scissor = false;
-
-		IRectangle scissorRect = GetClientScissorRectangle();
-		g_pShaderAPI->SetScissorRectangle(scissorRect);
+		}
+		else
+		{
+			IRectangle scissorRect = GetClientScissorRectangle();
+			scissorRect.vleftTop += m_transform.translation * scale;
+			scissorRect.vrightBottom += m_transform.translation * scale;
+			g_pShaderAPI->SetScissorRectangle(scissorRect);
+		}
 
 		// force rasterizer state
 		// other states are pretty useless

@@ -177,7 +177,7 @@ void kvpairvalue_t::SetValueFrom(kvpairvalue_t* from)
 }
 
 // sets string value
-void kvpairvalue_t::SetStringValue( const char* pszValue )
+void kvpairvalue_t::SetStringValue( const char* pszValue, int len)
 {
 	if(value)
 	{
@@ -185,10 +185,14 @@ void kvpairvalue_t::SetStringValue( const char* pszValue )
 		value = NULL;
 	}
 
-	size_t len = strlen(pszValue);
 	value = (char*)PPAlloc(len+1);
+	strncpy(value, pszValue, len);
+	value[len] = 0;
+}
 
-	strcpy(value, pszValue);
+void kvpairvalue_t::SetStringValue(const char* pszValue)
+{
+	SetStringValue(pszValue, strlen(pszValue));
 }
 
 void kvpairvalue_t::SetValueFromString( const char* pszValue )
@@ -241,9 +245,10 @@ bool KeyValues::LoadFromFile(const char* pszFileName, int nSearchFlags)
 	return KV_LoadFromFile(pszFileName, nSearchFlags, &m_pKeyBase) != NULL;
 }
 
+
 bool KeyValues::LoadFromStream(ubyte* pData)
 {
-	return KV_ParseSection( (const char*)pData, NULL, &m_pKeyBase, 0 ) != NULL;
+	return KV_ParseSection( (const char*)pData, 0, NULL, &m_pKeyBase, 0 ) != NULL;
 }
 
 void KV_WriteToStreamV3(IVirtualStream* outStream, kvkeybase_t* section, int nTabs, bool pretty);
@@ -988,6 +993,336 @@ int	kvkeybase_t::L_GetType() const
 
 #pragma todo("KV_ParseSectionV3 - MBCS isspace issues.")
 
+kvkeybase_t* KV_ParseSectionV2(const char* pszBuffer, int bufferSize, const char* pszFileName, kvkeybase_t* pParseTo, int nStartLine = 0);
+kvkeybase_t* KV_ParseSectionV3(const char* pszBuffer, int bufferSize, const char* pszFileName, kvkeybase_t* pParseTo, int nStartLine = 0);
+
+kvkeybase_t* KV_ParseSection(const char* pszBuffer, int bufferSize, const char* pszFileName, kvkeybase_t* pParseTo, int nStartLine)
+{
+	if (bufferSize <= 0)
+		bufferSize = strlen(pszBuffer);
+	
+	int version = 2;
+	kvkeybase_t* result = nullptr;
+	if(pszBuffer[0] == '$')
+	{
+		pszBuffer++;
+		const char* lineStart = pszBuffer;
+		while(!IsKVWhitespace(*pszBuffer))
+		{
+			pszBuffer++;
+		}
+
+		if(!strncmp("schema_kv3", lineStart, pszBuffer - lineStart))
+		{
+			version = 3;
+		}
+	}
+
+	if(version == 3)
+		result = KV_ParseSectionV3(pszBuffer, bufferSize, pszFileName, pParseTo, nStartLine);
+	else
+		result = KV_ParseSectionV2(pszBuffer, bufferSize, pszFileName, pParseTo, nStartLine);
+
+	return result;
+}
+
+//
+// Parses the KeyValues section string buffer to the 'pParseTo'
+//
+kvkeybase_t* KV_ParseSectionV2(const char* pszBuffer, int bufferSize, const char* pszFileName, kvkeybase_t* pParseTo, int nStartLine)
+{
+	enum CommentType
+	{
+		NOCOMMENT,
+		LINECOMMENT,
+		RANGECOMMENT,
+	};
+
+	
+	const char* pData = (char*)pszBuffer;
+	char c;
+
+	// set the first character of data
+	c = *pData;
+
+	const char *pFirstLetter = NULL;
+	const char*	pLast = pData;
+
+	int			nSectionLetterLine = 0;
+	int			nQuoteLetterLine = 0;
+
+	bool		bInQuotes = false;
+	bool		bInSection = false;
+
+	// Skip for sections
+	int nSectionRecursionSkip = 0;
+
+	kvkeybase_t* pKeyBase = pParseTo;
+
+	if(!pKeyBase)
+		pKeyBase = new kvkeybase_t;
+
+	kvkeybase_t* pCurrentKeyBase = NULL;
+	kvkeybase_t* pPrevKeyBase = NULL;
+
+	int bCommentaryMode = NOCOMMENT;
+
+	int nValueCounter = 0;
+
+	int nLine = nStartLine;
+
+	EqString tempName;
+
+	for ( ; (pData - pszBuffer) <= bufferSize; ++pData )
+	{
+		c = *pData;
+
+		if(c == '\0')
+			break;
+
+		pLast = pData;
+
+		if(c == KV_STRING_NEWLINE)
+			nLine++;
+
+		// check commentary mode
+		if ( c == KV_COMMENT_SYMBOL && !bInQuotes )
+		{
+			char commentend = *(pData+1);
+
+			// we got comment symbol again
+			if( commentend == KV_COMMENT_SYMBOL && bCommentaryMode != RANGECOMMENT )
+			{
+				bCommentaryMode = LINECOMMENT;
+				continue;
+			}
+			else if( commentend == KV_RANGECOMMENT_BEGIN_END && bCommentaryMode != LINECOMMENT )
+			{
+				bCommentaryMode = RANGECOMMENT;
+				continue;
+			}
+		}
+
+		// Stop cpp commentary mode after newline
+		if ( c == KV_STRING_NEWLINE && bCommentaryMode == 1 )
+		{
+			bCommentaryMode = NOCOMMENT;
+			continue;
+		}
+
+		if ( c == KV_RANGECOMMENT_BEGIN_END && bCommentaryMode == 2 )
+		{
+			char commentend = *(pData+1);
+			if(commentend == KV_COMMENT_SYMBOL)
+			{
+				bCommentaryMode = NOCOMMENT;
+				pData++; // little hack
+				continue;
+			}
+		}
+
+		// skip commented text
+		if(bCommentaryMode)
+			continue;
+
+		// TODO: replace/skip special characters in here
+
+		// if we found section opening character and there is a key base
+		if( c == KV_SECTION_BEGIN && !bInQuotes)
+		{
+			// keybase must be created
+			if(!pCurrentKeyBase)
+			{
+				MsgError("'%s' (%d): section has no keybase\n", pszFileName ? pszFileName : "buffer", nLine+1);
+
+				if(pParseTo != pKeyBase)
+					delete pKeyBase;
+				return NULL;
+			}
+
+			// Do skip only if we have in another section
+			if(!pFirstLetter && (nSectionRecursionSkip == 0))
+			{
+				bInSection = true;
+				pFirstLetter = pData + 1;
+				nSectionLetterLine = nLine;
+			}
+
+			// Up recursion by one
+			nSectionRecursionSkip++;
+			continue;
+		}
+
+		if( pFirstLetter && bInSection ) // if we have parsing section
+		{
+			if( c == KV_SECTION_END )
+			{
+				if(nSectionRecursionSkip > 0)
+					nSectionRecursionSkip--;
+
+				// if we have reached this section ending, start parsing it's contents
+				if(nSectionRecursionSkip == 0)
+				{
+					int nLen = (int)(pLast - pFirstLetter);
+
+					char* endChar = (char*)pFirstLetter+nLen;
+
+					char oldChr = *endChar;
+					*endChar = '\0';
+
+					// recurse
+					kvkeybase_t* pBase = KV_ParseSectionV2( pFirstLetter, nLen, pszFileName, pCurrentKeyBase, nSectionLetterLine );
+
+					*endChar = oldChr;
+
+					// if it got all killed
+					if(!pBase)
+					{
+						//delete pKeyBase;
+						return NULL;
+					}
+
+					bInSection = false;
+					pFirstLetter = NULL;
+
+					// NOTE: we could emit code below to not use KV_BREAK character strictly after section
+					pCurrentKeyBase = NULL;
+					nValueCounter = 0;
+				}
+			}
+
+			continue; // don't parse the entire section until we got a section ending
+		}
+
+		// if not in quotes and found whitespace
+		// or if in quotes and there is closing character
+		// TODO: check \" inside quotes
+		if( pCurrentKeyBase && pFirstLetter &&
+			((!bInQuotes && (isspace((ubyte)c) || (c == KV_BREAK))) ||
+			(bInQuotes && (c == KV_STRING_BEGIN_END))))
+		{
+			char prevSymbol = *(pData-1);
+
+			if(bInQuotes && prevSymbol == '\\')
+			{
+				continue;
+			}
+
+			int nLen = (int)(pLast - pFirstLetter);
+
+			// close token
+			if(nValueCounter <= 0)
+			{
+				tempName.Assign( pFirstLetter, nLen );
+
+				pCurrentKeyBase->SetName(tempName.ToCString());
+			}
+			else
+			{
+				char* endChar = (char*)pFirstLetter+nLen;
+
+				char oldChr = *endChar;
+				*endChar = '\0';
+
+				char* processedValue = KV_ReadProcessString(pFirstLetter);
+
+				pCurrentKeyBase->AddValue(processedValue);
+
+				free(processedValue);
+
+				*endChar = oldChr;
+			}
+
+			pFirstLetter = NULL;
+			bInQuotes = false;
+
+			if(c == KV_BREAK)
+			{
+				pPrevKeyBase = pCurrentKeyBase;
+				pCurrentKeyBase = NULL;
+				nValueCounter = 0;
+			}
+
+			continue;
+		}
+
+		// end keybase if we got semicolon
+		if( !bInQuotes && (c == KV_BREAK) )
+		{
+			pCurrentKeyBase = NULL;
+			nValueCounter = 0;
+			continue;
+		}
+
+		// start token
+		if ( !pFirstLetter && (c != KV_BREAK) &&
+			(c != KV_SECTION_BEGIN) && (c != KV_SECTION_END))
+		{
+			// if we got quote character or this is not a space character
+			// begin new token
+
+			if((c == KV_STRING_BEGIN_END) || !isspace(c))
+			{
+				// create keybase or increment value counter
+				if( pCurrentKeyBase )
+				{
+					nValueCounter++;
+				}
+				else
+				{
+					pCurrentKeyBase = new kvkeybase_t;
+					pCurrentKeyBase->line = nLine;
+					pKeyBase->keys.append( pCurrentKeyBase );
+				}
+
+				if( c == KV_STRING_BEGIN_END )
+					bInQuotes = true;
+
+				nQuoteLetterLine = nLine;
+
+				pFirstLetter = pData + (bInQuotes ? 1 : 0);
+
+				continue;
+			}
+		}
+	}
+
+	if( bInQuotes )
+	{
+		MsgError("'%s' (%d): unexcepted end of file, you forgot to close quotes\n", pszFileName ? pszFileName : "buffer", nQuoteLetterLine+1);
+
+		if(pParseTo != pKeyBase)
+			delete pKeyBase;
+		pKeyBase = NULL;
+	}
+
+	if( pCurrentKeyBase )
+	{
+		MsgError("'%s' (%d): EOF passed, excepted ';'\n", pszFileName ? pszFileName : "buffer", pCurrentKeyBase->line+1);
+		if(pParseTo != pKeyBase)
+			delete pKeyBase;
+		pKeyBase = NULL;
+	}
+
+	if( bInSection )
+	{
+		MsgError("'%s' (%d): EOF passed, excepted '}'\n", pszFileName ? pszFileName : "buffer", nSectionLetterLine+1);
+		if(pParseTo != pKeyBase)
+			delete pKeyBase;
+		pKeyBase = NULL;
+	}
+
+	if( bCommentaryMode == 2 )
+	{
+		MsgError("'%s' (%d): EOF passed, excepted '*/', check whole text please\n", pszFileName ? pszFileName : "buffer", nLine+1);
+		if(pParseTo != pKeyBase)
+			delete pKeyBase;
+		pKeyBase = NULL;
+	}
+
+	return pKeyBase;
+}
+
 //
 // Parses the V3 format of KeyValues into pParseTo
 //
@@ -1142,7 +1477,7 @@ kvkeybase_t* KV_ParseSectionV3( const char* pszBuffer, int bufferSize, const cha
 
 				if(!typeIsOk)
 				{
-					MsgError("'%s':%d error KV6: type mismatch, expected 'section'\n", pszFileName, nModeStartLine);
+					MsgError("'%s':%d error: type mismatch, expected 'section'\n", pszFileName, nModeStartLine);
 					break;
 				}
 
@@ -1309,7 +1644,22 @@ kvkeybase_t* KV_ParseSectionV3( const char* pszBuffer, int bufferSize, const cha
 					// read buffer
 					int nLen = (pLast - pFirstLetter);
 
-					if( valueArray )
+					if(key[0] == '%')
+					{
+						// force the pair value type to SECTION
+						curpair->type = KVPAIR_STRING;
+						
+						// make it parsed if the type is different
+						kvpairvalue_t* value = curpair->CreateValue();
+						value->SetStringValue(pFirstLetter, nLen);
+
+						curpair->SetName(key + 1);
+						pParseTo->keys.addUnique(curpair);
+
+						curpair = NULL; // i'ts finally done
+						*key = 0;
+					}
+					else if( valueArray )
 					{
 						kvkeybase_t* newsec = new kvkeybase_t();
 						bool success = KV_ParseSectionV3(pFirstLetter, nLen, pszFileName, newsec, nModeStartLine-1) != NULL;
@@ -1335,7 +1685,6 @@ kvkeybase_t* KV_ParseSectionV3( const char* pszBuffer, int bufferSize, const cha
 								break;
 							}
 						}
-
 					}
 					else
 					{
@@ -1431,6 +1780,7 @@ kvkeybase_t* KV_LoadFromFile( const char* pszFileName, int nSearchFlags, kvkeyba
 	{
 		// skip this three byte bom
 		_buffer += 3;
+		lSize -= 3;
 		isUTF8 = true;
 	}
 	else if(byteordermark == 0xfeff)
@@ -1457,7 +1807,7 @@ kvkeybase_t* KV_LoadFromFile( const char* pszFileName, int nSearchFlags, kvkeyba
 	if(isBinary)
 		pBase = KV_ParseBinary(_buffer, lSize, pParseTo);
 	else
-		pBase = KV_ParseSection(_buffer, pszFileName, pParseTo, 0);
+		pBase = KV_ParseSection(_buffer, lSize, pszFileName, pParseTo, 0);
 
 	if(pBase)
 	{
@@ -1661,302 +2011,6 @@ void KV_WriteToStreamBinary(IVirtualStream* outStream, kvkeybase_t* base)
 	{
 		KV_WriteToStreamBinary(outStream, base->keys[i]);
 	}
-}
-
-//-----------------------------------------------------------------------------------------------------
-
-#define NOCOMMENT		0
-#define LINECOMMENT		1
-#define RANGECOMMENT	2
-
-//
-// Parses the KeyValues section string buffer to the 'pParseTo'
-//
-kvkeybase_t* KV_ParseSection( const char* pszBuffer, const char* pszFileName, kvkeybase_t* pParseTo, int nStartLine )
-{
-	const char* pData = (char*)pszBuffer;
-	char c;
-
-	// set the first character of data
-	c = *pData;
-
-	const char *pFirstLetter = NULL;
-	const char*	pLast = pData;
-
-	int			nSectionLetterLine = 0;
-	int			nQuoteLetterLine = 0;
-
-	bool		bInQuotes = false;
-	bool		bInSection = false;
-
-	// Skip for sections
-	int nSectionRecursionSkip = 0;
-
-	kvkeybase_t* pKeyBase = pParseTo;
-
-	if(!pKeyBase)
-		pKeyBase = new kvkeybase_t;
-
-	kvkeybase_t* pCurrentKeyBase = NULL;
-	kvkeybase_t* pPrevKeyBase = NULL;
-
-	int bCommentaryMode = NOCOMMENT;
-
-	int nValueCounter = 0;
-
-	int nLine = nStartLine;
-
-	EqString tempName;
-
-	for ( ; ; ++pData )
-	{
-		c = *pData;
-
-		if(c == '\0')
-			break;
-
-		pLast = pData;
-
-		if(c == KV_STRING_NEWLINE)
-			nLine++;
-
-		// check commentary mode
-		if ( c == KV_COMMENT_SYMBOL && !bInQuotes )
-		{
-			char commentend = *(pData+1);
-
-			// we got comment symbol again
-			if( commentend == KV_COMMENT_SYMBOL && bCommentaryMode != RANGECOMMENT )
-			{
-				bCommentaryMode = LINECOMMENT;
-				continue;
-			}
-			else if( commentend == KV_RANGECOMMENT_BEGIN_END && bCommentaryMode != LINECOMMENT )
-			{
-				bCommentaryMode = RANGECOMMENT;
-				continue;
-			}
-		}
-
-		// Stop cpp commentary mode after newline
-		if ( c == KV_STRING_NEWLINE && bCommentaryMode == 1 )
-		{
-			bCommentaryMode = NOCOMMENT;
-			continue;
-		}
-
-		if ( c == KV_RANGECOMMENT_BEGIN_END && bCommentaryMode == 2 )
-		{
-			char commentend = *(pData+1);
-			if(commentend == KV_COMMENT_SYMBOL)
-			{
-				bCommentaryMode = NOCOMMENT;
-				pData++; // little hack
-				continue;
-			}
-		}
-
-		// skip commented text
-		if(bCommentaryMode)
-			continue;
-
-		// TODO: replace/skip special characters in here
-
-		// if we found section opening character and there is a key base
-		if( c == KV_SECTION_BEGIN && !bInQuotes)
-		{
-			// keybase must be created
-			if(!pCurrentKeyBase)
-			{
-				MsgError("'%s' (%d): section has no keybase\n", pszFileName ? pszFileName : "buffer", nLine+1);
-
-				if(pParseTo != pKeyBase)
-					delete pKeyBase;
-				return NULL;
-			}
-
-			// Do skip only if we have in another section
-			if(!pFirstLetter && (nSectionRecursionSkip == 0))
-			{
-				bInSection = true;
-				pFirstLetter = pData + 1;
-				nSectionLetterLine = nLine;
-			}
-
-			// Up recursion by one
-			nSectionRecursionSkip++;
-			continue;
-		}
-
-		if( pFirstLetter && bInSection ) // if we have parsing section
-		{
-			if( c == KV_SECTION_END )
-			{
-				if(nSectionRecursionSkip > 0)
-					nSectionRecursionSkip--;
-
-				// if we have reached this section ending, start parsing it's contents
-				if(nSectionRecursionSkip == 0)
-				{
-					int nLen = (int)(pLast - pFirstLetter);
-
-					char* endChar = (char*)pFirstLetter+nLen;
-
-					char oldChr = *endChar;
-					*endChar = '\0';
-
-					// recurse
-					kvkeybase_t* pBase = KV_ParseSection( pFirstLetter, pszFileName, pCurrentKeyBase, nSectionLetterLine );
-
-					*endChar = oldChr;
-
-					// if it got all killed
-					if(!pBase)
-					{
-						//delete pKeyBase;
-						return NULL;
-					}
-
-					bInSection = false;
-					pFirstLetter = NULL;
-
-					// NOTE: we could emit code below to not use KV_BREAK character strictly after section
-					pCurrentKeyBase = NULL;
-					nValueCounter = 0;
-				}
-			}
-
-			continue; // don't parse the entire section until we got a section ending
-		}
-
-		// if not in quotes and found whitespace
-		// or if in quotes and there is closing character
-		// TODO: check \" inside quotes
-		if( pCurrentKeyBase && pFirstLetter &&
-			((!bInQuotes && (isspace((ubyte)c) || (c == KV_BREAK))) ||
-			(bInQuotes && (c == KV_STRING_BEGIN_END))))
-		{
-			char prevSymbol = *(pData-1);
-
-			if(bInQuotes && prevSymbol == '\\')
-			{
-				continue;
-			}
-
-			int nLen = (int)(pLast - pFirstLetter);
-
-			// close token
-			if(nValueCounter <= 0)
-			{
-				tempName.Assign( pFirstLetter, nLen );
-
-				pCurrentKeyBase->SetName(tempName.ToCString());
-			}
-			else
-			{
-				char* endChar = (char*)pFirstLetter+nLen;
-
-				char oldChr = *endChar;
-				*endChar = '\0';
-
-				char* processedValue = KV_ReadProcessString(pFirstLetter);
-
-				pCurrentKeyBase->AddValue(processedValue);
-
-				free(processedValue);
-
-				*endChar = oldChr;
-			}
-
-			pFirstLetter = NULL;
-			bInQuotes = false;
-
-			if(c == KV_BREAK)
-			{
-				pPrevKeyBase = pCurrentKeyBase;
-				pCurrentKeyBase = NULL;
-				nValueCounter = 0;
-			}
-
-			continue;
-		}
-
-		// end keybase if we got semicolon
-		if( !bInQuotes && (c == KV_BREAK) )
-		{
-			pCurrentKeyBase = NULL;
-			nValueCounter = 0;
-			continue;
-		}
-
-		// start token
-		if ( !pFirstLetter && (c != KV_BREAK) &&
-			(c != KV_SECTION_BEGIN) && (c != KV_SECTION_END))
-		{
-			// if we got quote character or this is not a space character
-			// begin new token
-
-			if((c == KV_STRING_BEGIN_END) || !isspace(c))
-			{
-				// create keybase or increment value counter
-				if( pCurrentKeyBase )
-				{
-					nValueCounter++;
-				}
-				else
-				{
-					pCurrentKeyBase = new kvkeybase_t;
-					pCurrentKeyBase->line = nLine;
-					pKeyBase->keys.append( pCurrentKeyBase );
-				}
-
-				if( c == KV_STRING_BEGIN_END )
-					bInQuotes = true;
-
-				nQuoteLetterLine = nLine;
-
-				pFirstLetter = pData + (bInQuotes ? 1 : 0);
-
-				continue;
-			}
-		}
-	}
-
-	if( bInQuotes )
-	{
-		MsgError("'%s' (%d): unexcepted end of file, you forgot to close quotes\n", pszFileName ? pszFileName : "buffer", nQuoteLetterLine+1);
-
-
-		if(pParseTo != pKeyBase)
-			delete pKeyBase;
-		pKeyBase = NULL;
-	}
-
-	if( pCurrentKeyBase )
-	{
-		MsgError("'%s' (%d): EOF passed, excepted ';'\n", pszFileName ? pszFileName : "buffer", pCurrentKeyBase->line+1);
-		if(pParseTo != pKeyBase)
-			delete pKeyBase;
-		pKeyBase = NULL;
-	}
-
-	if( bInSection )
-	{
-		MsgError("'%s' (%d): EOF passed, excepted '}'\n", pszFileName ? pszFileName : "buffer", nSectionLetterLine+1);
-		if(pParseTo != pKeyBase)
-			delete pKeyBase;
-		pKeyBase = NULL;
-	}
-
-	if( bCommentaryMode == 2 )
-	{
-		MsgError("'%s' (%d): EOF passed, excepted '*/', check whole text please\n", pszFileName ? pszFileName : "buffer", nLine+1);
-		if(pParseTo != pKeyBase)
-			delete pKeyBase;
-		pKeyBase = NULL;
-	}
-
-	return pKeyBase;
 }
 
 //----------------------------------------------------------------------------------------------

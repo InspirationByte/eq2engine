@@ -92,7 +92,9 @@ struct kvpairvalue_t
 	void				SetValueFrom(kvpairvalue_t* from);
 
 	// sets string value
+	void				SetStringValue(const char* pszValue, int len);
 	void				SetStringValue( const char* pszValue );
+	
 	void				SetValueFromString( const char* pszValue );
 };
 
@@ -257,8 +259,7 @@ private:
 
 kvkeybase_t*		KV_LoadFromFile( const char* pszFileName, int nSearchFlags = -1, kvkeybase_t* pParseTo = NULL );
 
-kvkeybase_t*		KV_ParseSection( const char* pszBuffer, const char* pszFileName = NULL, kvkeybase_t* pParseTo = NULL, int nLine = 0 );
-kvkeybase_t*		KV_ParseSectionV3( const char* pszBuffer, int bufferSize, const char* pszFileName, kvkeybase_t* pParseTo, int nStartLine = 0 );
+kvkeybase_t*		KV_ParseSection(const char* pszBuffer, int bufferSize, const char* pszFileName = NULL, kvkeybase_t* pParseTo = NULL, int nStartLine = 0);
 kvkeybase_t*		KV_ReadBinaryBase(IVirtualStream* stream, kvkeybase_t* pParseTo = NULL);
 kvkeybase_t*		KV_ParseBinary(const char* pszBuffer, int bufferSize, kvkeybase_t* pParseTo = NULL);
 
