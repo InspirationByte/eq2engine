@@ -529,13 +529,11 @@ void IUIControl::Render()
 		{
 			rasterState.scissor = false;
 		}
-		else
-		{
-			IRectangle scissorRect = GetClientScissorRectangle();
-			scissorRect.vleftTop += m_transform.translation * scale;
-			scissorRect.vrightBottom += m_transform.translation * scale;
-			g_pShaderAPI->SetScissorRectangle(scissorRect);
-		}
+
+		IRectangle scissorRect = GetClientScissorRectangle();
+		scissorRect.vleftTop += m_transform.translation * scale;
+		scissorRect.vrightBottom += m_transform.translation * scale;
+		g_pShaderAPI->SetScissorRectangle(scissorRect);
 
 		// force rasterizer state
 		// other states are pretty useless
