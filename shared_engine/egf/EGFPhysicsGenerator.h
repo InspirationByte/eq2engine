@@ -35,7 +35,7 @@ public:
 
 	void		Cleanup();
 
-	bool		GenerateGeometry(dsmmodel_t* srcModel, kvkeybase_t* physInfo, bool forceGroupSubdivision);
+	bool		GenerateGeometry(SharedModel::dsmmodel_t* srcModel, kvkeybase_t* physInfo, bool forceGroupSubdivision);
 
 	void		SaveToFile(const char* filename);
 
@@ -47,16 +47,16 @@ protected:
 	int			FindJointIdx(char* name);
 	int			MakeBoneValidParent(int boneId);
 
-	int			AddShape(DkList<dsmvertex_t> &vertices, DkList<int> &indices, int shapeType = PHYSSHAPE_TYPE_CONVEX, bool assumedAsConvex = false);
+	int			AddShape(DkList<SharedModel::dsmvertex_t> &vertices, DkList<int> &indices, int shapeType = PHYSSHAPE_TYPE_CONVEX, bool assumedAsConvex = false);
 
-	void		SubdivideModelParts( DkList<dsmvertex_t>& vertices, DkList<int>& indices, DkList<indxgroup_t*>& groups );
+	void		SubdivideModelParts( DkList<SharedModel::dsmvertex_t>& vertices, DkList<int>& indices, DkList<indxgroup_t*>& groups );
 
-	bool		CreateRagdollObjects( DkList<dsmvertex_t>& vertices, DkList<int>& indices, DkList<indxgroup_t*>& indexGroups );
-	bool		CreateCompoundOrSeparateObjects( DkList<dsmvertex_t>& vertices, DkList<int>& indices, DkList<indxgroup_t*>& indexGroups, bool bCompound );
-	bool		CreateSingleObject( DkList<dsmvertex_t>& vertices, DkList<int>& indices );
+	bool		CreateRagdollObjects( DkList<SharedModel::dsmvertex_t>& vertices, DkList<int>& indices, DkList<indxgroup_t*>& indexGroups );
+	bool		CreateCompoundOrSeparateObjects( DkList<SharedModel::dsmvertex_t>& vertices, DkList<int>& indices, DkList<indxgroup_t*>& indexGroups, bool bCompound );
+	bool		CreateSingleObject( DkList<SharedModel::dsmvertex_t>& vertices, DkList<int>& indices );
 
 	// data
-	dsmmodel_t*					m_srcModel;
+	SharedModel::dsmmodel_t*	m_srcModel;
 	kvkeybase_t*				m_physicsParams;
 
 	DkList<Vector3D>			m_vertices;			// generated verts

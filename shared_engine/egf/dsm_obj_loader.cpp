@@ -15,9 +15,40 @@
 
 #include <stdio.h>
 
-#pragma fixme("Normal index bug after group change?")
+namespace SharedModel
+{
 
-extern int xstrsplitws(char* str, char **pointer_array);
+extern float readFloat(Tokenizer& tok);
+int xstrsplitws(char* str, char** pointer_array)
+{
+	char c = *str;
+
+	int num_indices = 0;
+
+	bool bAdd = true;
+
+	while (c != '\0')
+	{
+		c = *str;
+
+		if (bAdd)
+		{
+			pointer_array[num_indices] = str;
+			num_indices++;
+			bAdd = false;
+		}
+
+		if (isspace(c))
+		{
+			bAdd = true;
+			*str = '\0'; // make null-string
+		}
+
+		str++;
+	}
+
+	return num_indices;
+}
 
 int strchcount( char *str, char ch )
 {
@@ -36,13 +67,6 @@ bool isNotNewLine(const char ch)
 	return (ch != '\r' && ch != '\n');
 }
 
-bool isNumericAlpha(const char ch)
-{
-	return (ch == 'e' || ch == '-' || ch == '+' || ch == '.') || isNumeric(ch);
-}
-
-extern bool isNotWhiteSpace(const char ch);
-extern float readFloat(Tokenizer &tok);
 
 struct obj_material_t
 {
@@ -549,4 +573,6 @@ bool SaveOBJ(dsmmodel_t* model, const char* filename)
 	g_fileSystem->Close(pFile);
 
 	return true;
+}
+
 }

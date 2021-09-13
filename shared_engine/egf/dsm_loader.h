@@ -13,7 +13,8 @@
 #include "utils/eqstring.h"
 #include "core/ppmem.h"
 
-#define MAX_WEIGHTS 128	// this is a loader fix
+namespace SharedModel
+{
 
 struct dsmweight_t
 {
@@ -82,15 +83,16 @@ struct dsmmodel_t
 
 //------------------------------------------------------------------------------------
 
-bool LoadSharedModel(dsmmodel_t* model, const char* filename);
-bool SaveSharedModel(dsmmodel_t* model, const char* filename);
+int		SortAndBalanceBones(int nCount, int nMaxCount, int* bones, float* weights);
 
-bool LoadDSM(dsmmodel_t* model, const char* filename);
-bool SaveDSM(dsmmodel_t* model, const char* filename);
+bool	LoadSharedModel(dsmmodel_t* model, const char* filename);
+bool	SaveSharedModel(dsmmodel_t* model, const char* filename);
 
-void FreeDSM(dsmmodel_t* model);
-void FreeDSMBones(dsmmodel_t* model);
+void	FreeDSM(dsmmodel_t* model);
+void	FreeDSMBones(dsmmodel_t* model);
 
-int GetTotalVertsOfDSM(dsmmodel_t* model);
+int		GetTotalVertsOfDSM(dsmmodel_t* model);
+
+} // namespace
 
 #endif // DSM_LOADER_H

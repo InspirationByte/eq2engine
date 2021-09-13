@@ -12,6 +12,8 @@
 
 #include "dsm_esm_loader.h"
 
+using namespace SharedModel;
+
 //------------------------------------------------------------
 
 CEGFGenerator::CEGFGenerator() 
@@ -187,6 +189,7 @@ egfcaModel_t CEGFGenerator::LoadModel(const char* pszFileName)
 	// assign shape indexes
 	if( mod.shapeData )
 	{
+		Msg(" - AssignShapeKeyVertexIndexes -\n");
 		AssignShapeKeyVertexIndexes(mod.model, mod.shapeData);
 	}
 
@@ -298,6 +301,9 @@ dsmmodel_t* CEGFGenerator::ParseAndLoadModels(kvkeybase_t* pKeyBase)
 
 		// set shapeby
 		model.shapeBy = FindShapeKeyIndex(model.shapeData, shapeByModels[i].ToCString());
+
+		if(model.shapeBy != -1)
+			Msg("Shape key used: %s\n", shapeByModels[i].ToCString());
 
 		// set model to as part name
 		strcpy(model.model->name, KV_GetValueString(pKeyBase, 0, "invalid_model_name"));
@@ -418,7 +424,7 @@ bool CEGFGenerator::LoadModels(kvkeybase_t* pSection)
 	if(m_modelrefs.numElem() == 0)
 	{
 		MsgError("Error! Model must have at least one reference!\n");
-		MsgWarning("usage: model <part name> <*.esm or *.obj path>\n");
+		MsgWarning("usage: model <part name> <*.esm|*.fbx|*.obj| path>\n");
 		return false;
 	}
 
@@ -552,6 +558,7 @@ bool CEGFGenerator::LoadBodyGroups(kvkeybase_t* pSection)
 			}
 			else if(keyBase->IsSection())
 			{
+				MsgError("%s error - Multi-model body groups NOT YET SUPPORTED - tell a programmer!\n", bodygroup.name);
 #pragma todo("multi-model body groups")
 			}
 		}

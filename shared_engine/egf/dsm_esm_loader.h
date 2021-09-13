@@ -11,6 +11,9 @@
 #include "dsm_loader.h"
 #include "utils/Tokenizer.h"
 
+namespace SharedModel
+{
+
 struct esmshapevertex_t
 {
 	Vector3D	position;
@@ -33,17 +36,16 @@ struct esmshapedata_t
 	int						time;
 };
 
-bool ReadBones(Tokenizer& tok, dsmmodel_t* pModel);
-bool ReadFaces(Tokenizer& tok, dsmmodel_t* pModel);
 
-bool LoadESXShapes( esmshapedata_t* data, const char* filename );
-void FreeShapes( esmshapedata_t* data );
+bool	ReadBones(Tokenizer& tok, dsmmodel_t* pModel);
 
-int FindShapeKeyIndex( esmshapedata_t* data, const char* shapeKeyName );
+void	FreeShapes( esmshapedata_t* data );
+int		FindShapeKeyIndex( esmshapedata_t* data, const char* shapeKeyName );
+void	AssignShapeKeyVertexIndexes(dsmmodel_t* mod, esmshapedata_t* shapeData);
 
-void AssignShapeKeyVertexIndexes(dsmmodel_t* mod, esmshapedata_t* shapeData);
+bool	LoadESM(dsmmodel_t* model, const char* filename);
+bool	LoadESXShapes(esmshapedata_t* data, const char* filename);
 
-int readInt(Tokenizer &tok);
-float readFloat(Tokenizer &tok);
+} // namespace
 
 #endif // DSM_ESM_LOADER_H

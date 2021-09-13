@@ -19,6 +19,7 @@
 #include "math/coord.h"
 
 using namespace AdjacentTriangles;
+using namespace SharedModel;
 
 // physics
 #include <btBulletDynamicsCommon.h>

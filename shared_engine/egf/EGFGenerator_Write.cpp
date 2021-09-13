@@ -11,9 +11,8 @@
 #define USE_ACTC
 
 #ifdef USE_ACTC
-extern "C"
-{
-#	include "actc/tc.h"
+extern "C"{
+#include "actc/tc.h"
 }
 #endif // USE_ACTC
 
@@ -26,6 +25,8 @@ extern "C"
 #include "dsm_esm_loader.h"
 
 #include "math/Utility.h"
+
+using namespace SharedModel;
 
 const char* GetACTCErrorString(int result)
 {

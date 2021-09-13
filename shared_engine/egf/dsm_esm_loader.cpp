@@ -8,6 +8,9 @@
 #include "dsm_esm_loader.h"
 #include "core/DebugInterface.h"
 
+namespace SharedModel
+{
+
 bool isNotWhiteSpace(const char ch)
 {
 	return (ch != ' ' && ch != '\t' && ch != '\r' && ch != '\n');
@@ -32,86 +35,6 @@ int readInt(Tokenizer &tok)
 bool isQuotes(const char ch)
 {
 	return (ch != '\"');
-}
-
-char* debugReadToken(Tokenizer &tok, BOOLFUNC isAlpha = isAlphabetical)
-{
-	char* str = tok.next(isAlpha);
-	Msg("token: %s\n", str);
-	return str;
-}
-
-// sorts bones
-int SortAndBalanceBones( int nCount, int nMaxCount, int* bones, float* weights )
-{
-	// collapse duplicate bone weights
-	for (int i = 0; i < nCount-1; i++)
-	{
-		for (int j = i + 1; j < nCount; j++)
-		{
-			if (bones[i] == bones[j])
-			{
-				weights[i] += weights[j];
-				weights[j] = 0.0;
-			}
-		}
-	}
-
-	// sort in order
-	int bShouldSort;
-	do 
-	{
-		bShouldSort = false;
-		for (int i = 0; i < nCount-1; i++)
-		{
-			if (weights[i+1] > weights[i])
-			{
-				// swap
-				int j = bones[i+1]; 
-				bones[i+1] = bones[i]; 
-				bones[i] = j;
-
-				float w = weights[i+1];
-				weights[i+1] = weights[i]; 
-				weights[i] = w;
-
-				bShouldSort = true;
-			}
-		}
-	}while (bShouldSort);
-
-	// throw away all weights less than 1/20th
-	while (nCount > 1 && weights[nCount-1] < 0.05f)
-		nCount--;
-
-	// clip to the top iMaxCount bones
-	if (nCount > nMaxCount)
-		nCount = nMaxCount;
-
-	float t = 0.0f;
-
-	for (int i = 0; i < nCount; i++)
-		t += weights[i];
-
-	if (t <= 0.0f)
-	{
-		// missing weights?, go ahead and evenly share?
-		// FIXME: shouldn't this error out?
-		t = 1.0f / nCount;
-
-		for (int i = 0; i < nCount; i++)
-			weights[i] = t;
-	}
-	else
-	{
-		// scale to sum to 1.0
-		t = 1.0f / t;
-
-		for (int i = 0; i < nCount; i++)
-			weights[i] *= t;
-	}
-
-	return nCount;
 }
 
 bool ReadBones(Tokenizer& tok, dsmmodel_t* pModel)
@@ -292,40 +215,6 @@ bool ReadFaces(Tokenizer& tok, dsmmodel_t* pModel)
 	return false;
 }
 
-bool LoadESM( dsmmodel_t* model, const char* filename )
-{
-	ASSERT(model);
-
-	Tokenizer tok;
-
-	if (!tok.setFile(filename))
-	{
-		MsgError("Couldn't open ESM file '%s'", filename);
-		return false;
-	}
-
-	char *str;
-
-	// find faces section
-	while ((str = tok.next()) != NULL)
-	{
-		if(!stricmp(str, "bones"))
-		{
-			if(!ReadBones(tok, model))
-				return false;
-		}
-		else if(!stricmp(str, "faces"))
-		{
-			if(!ReadFaces(tok, model))
-				return false;
-		}
-			
-		tok.goToNextLine();
-	}
-
-	return true;
-}
-
 bool ReadShapes(Tokenizer& tok, esmshapedata_t* data)
 {
 	char *str;
@@ -392,6 +281,40 @@ bool ReadShapes(Tokenizer& tok, esmshapedata_t* data)
 	return false;
 }
 
+bool LoadESM(dsmmodel_t* model, const char* filename)
+{
+	ASSERT(model);
+
+	Tokenizer tok;
+
+	if (!tok.setFile(filename))
+	{
+		MsgError("Couldn't open ESM file '%s'", filename);
+		return false;
+	}
+
+	char* str;
+
+	// find faces section
+	while ((str = tok.next()) != NULL)
+	{
+		if (!stricmp(str, "bones"))
+		{
+			if (!ReadBones(tok, model))
+				return false;
+		}
+		else if (!stricmp(str, "faces"))
+		{
+			if (!ReadFaces(tok, model))
+				return false;
+		}
+
+		tok.goToNextLine();
+	}
+
+	return true;
+}
+
 bool LoadESXShapes( esmshapedata_t* data, const char* filename )
 {
 	ASSERT(data);
@@ -441,8 +364,6 @@ int FindShapeKeyIndex( esmshapedata_t* data, const char* shapeKeyName )
 
 	for(int i = 0; i < data->shapes.numElem(); i++)
 	{
-		Msg("available shapekey: %s\n", data->shapes[i]->name.ToCString());
-
 		if(!strcmp(data->shapes[i]->name.ToCString(), shapeKeyName))
 			return i;
 	}
@@ -452,8 +373,6 @@ int FindShapeKeyIndex( esmshapedata_t* data, const char* shapeKeyName )
 
 void AssignShapeKeyVertexIndexes(dsmmodel_t* mod, esmshapedata_t* shapeData)
 {
-	Msg(" - AssignShapeKeyVertexIndexes -\n");
-
 	esmshapekey_t* basis = shapeData->shapes[0];
 
 	for(int i = 0; i < mod->groups.numElem(); i++)
@@ -473,3 +392,5 @@ void AssignShapeKeyVertexIndexes(dsmmodel_t* mod, esmshapedata_t* shapeData)
 		}
 	}
 }
+
+} // namespace

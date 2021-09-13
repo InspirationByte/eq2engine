@@ -200,7 +200,7 @@ project "sysLib"
 project "equiLib"
 	kind "StaticLib"
 	uses { 
-		"corelib", "frameworkLib" 
+		"corelib", "frameworkLib"
 	}
     files {
 		Folders.shared_engine.. "equi/**.cpp",
@@ -220,6 +220,10 @@ project "networkLib"
     files {
 		Folders.shared_engine.. "network/**.cpp",
 		Folders.shared_engine.. "network/**.h"
+	}
+	-- this one is temporary. Once rewrite done it will be removed
+	excludes {
+		Folders.shared_engine.. "network/NETThread.cpp",
 	}
     includedirs {
 		Folders.shared_engine

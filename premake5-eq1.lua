@@ -43,7 +43,8 @@ project "egfLib"
     kind "StaticLib"
 	uses {
 		"corelib", "frameworkLib", "e2Core",
-		"renderUtilLib", "bullet2", "zlib"
+		"renderUtilLib", "bullet2", "zlib",
+		"openfbx"
 	}
     files {
 		Folders.shared_engine.. "egf/**.cpp",

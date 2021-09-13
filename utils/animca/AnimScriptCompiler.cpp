@@ -17,6 +17,8 @@
 
 #include <zlib.h>
 
+using namespace SharedModel;
+
 //************************************
 // Checks model ident
 //************************************
@@ -547,6 +549,19 @@ void SetupESABones(dsmmodel_t* pModel, animCaBoneFrames_t* bones)
 //************************************
 // Loads DSA frames
 //************************************
+
+bool isNotWhiteSpace(const char ch)
+{
+	return (ch != ' ' && ch != '\t' && ch != '\r' && ch != '\n');
+}
+
+float readFloat(Tokenizer& tok)
+{
+	char* str = tok.next(isNotWhiteSpace);
+	//Msg("readFloat: str=%s\n", str);
+
+	return (float)atof(str);
+}
 
 bool ReadFramesForBone(Tokenizer& tok, DkList<animCaBoneFrames_t>& bones)
 {

@@ -8,18 +8,27 @@
 #ifndef EGFGENERATOR_H
 #define EGFGENERATOR_H
 
-#include "dsm_loader.h"
-#include "dsm_obj_loader.h"
 #include "egf/model.h"
-
 #include "EGFPhysicsGenerator.h"
+
+namespace SharedModel
+{
+	struct dsmmodel_t;
+	struct dsmskelbone_t;
+	struct dsmgroup_t;
+	struct dsmvertex_t;
+	struct dsmweight_t;
+
+	struct esmshapedata_t;
+	struct esmshapekey_t;
+};
 
 struct cbone_t
 {
-	dsmskelbone_t*		referencebone;
+	SharedModel::dsmskelbone_t*	referencebone;
 
-	DkList<cbone_t*>	childs;
-	cbone_t*			parent;
+	DkList<cbone_t*>			childs;
+	cbone_t*					parent;
 };
 
 struct ciklink_t
@@ -41,11 +50,8 @@ struct ikchain_t
 
 struct clodmodel_t
 {
-	dsmmodel_t*			lodmodels[MAX_MODELLODS];
+	SharedModel::dsmmodel_t*	lodmodels[MAX_MODELLODS];
 };
-
-struct esmshapedata_t;
-struct esmshapekey_t;
 
 struct egfcaModel_t
 {
@@ -57,12 +63,12 @@ struct egfcaModel_t
 		used = 0;
 	}
 
-	dsmmodel_t*			model;
-	esmshapedata_t*		shapeData;
+	SharedModel::dsmmodel_t*		model;
+	SharedModel::esmshapedata_t*	shapeData;
 
-	int					shapeBy;	// shape index
+	int								shapeBy;	// shape index
 
-	int					used;
+	int								used;
 };
 
 struct egfcaMaterialDesc_t
@@ -104,55 +110,55 @@ public:
 	bool		GeneratePOD();
 
 protected:
-	egfcaModel_t		GetDummyModel();
+	egfcaModel_t			GetDummyModel();
 
 	// helper functions
-	cbone_t*			FindBoneByName(const char* pszName);
-	clodmodel_t*		FindModelLodGroupByName(const char* pszName);
-	egfcaModel_t*		FindModelByName(const char* pszName);
+	cbone_t*				FindBoneByName(const char* pszName);
+	clodmodel_t*			FindModelLodGroupByName(const char* pszName);
+	egfcaModel_t*			FindModelByName(const char* pszName);
 
-	int					FindModelLodIdGroupByName(const char* pszName);
-	int					GetMaterialIndex(const char* pszName);
-	int					GetReferenceIndex(dsmmodel_t* pRef);
+	int						FindModelLodIdGroupByName(const char* pszName);
+	int						GetMaterialIndex(const char* pszName);
+	int						GetReferenceIndex(SharedModel::dsmmodel_t* pRef);
 
 	// loader functions
-	egfcaModel_t		LoadModel(const char* pszFileName);
-	void				FreeModel( egfcaModel_t& mod );
+	egfcaModel_t			LoadModel(const char* pszFileName);
+	void					FreeModel( egfcaModel_t& mod );
 
-	dsmmodel_t*			ParseAndLoadModels(kvkeybase_t* pKeyBase);
-	bool				LoadModels(kvkeybase_t* pSection);
-	void				ParseLodData(kvkeybase_t* pSection, int lodIdx);
-	void				LoadLods(kvkeybase_t* pSection);
-	bool				LoadBodyGroups(kvkeybase_t* pSection);
-	bool				LoadMaterialGroups(kvkeybase_t* pSection);
-	bool				LoadMaterialPaths(kvkeybase_t* pSection);
-	bool				LoadMotionPackagePaths(kvkeybase_t* pSection);
+	SharedModel::dsmmodel_t*			ParseAndLoadModels(kvkeybase_t* pKeyBase);
+	bool					LoadModels(kvkeybase_t* pSection);
+	void					ParseLodData(kvkeybase_t* pSection, int lodIdx);
+	void					LoadLods(kvkeybase_t* pSection);
+	bool					LoadBodyGroups(kvkeybase_t* pSection);
+	bool					LoadMaterialGroups(kvkeybase_t* pSection);
+	bool					LoadMaterialPaths(kvkeybase_t* pSection);
+	bool					LoadMotionPackagePaths(kvkeybase_t* pSection);
 
-	void				AddModelLodUsageReference(int modelLodIndex);
+	void					AddModelLodUsageReference(int modelLodIndex);
 
-	void				ParseIKChain(kvkeybase_t* pSection);
-	void				LoadIKChains(kvkeybase_t* pSection);
-	void				LoadAttachments(kvkeybase_t* pSection);
+	void					ParseIKChain(kvkeybase_t* pSection);
+	void					LoadIKChains(kvkeybase_t* pSection);
+	void					LoadAttachments(kvkeybase_t* pSection);
 
-	void				LoadPhysModels(kvkeybase_t* pSection);
+	void					LoadPhysModels(kvkeybase_t* pSection);
 
 	// preprocessing
-	void				MergeBones();
-	void				BuildBoneChains();
+	void					MergeBones();
+	void					BuildBoneChains();
 
-	int					UsedMaterialIndex(const char* pszName);
+	int						UsedMaterialIndex(const char* pszName);
 
-	// writing to stream
-	void				WriteGroup(CMemoryStream* stream, dsmgroup_t* srcGroup, esmshapekey_t* modShapeKey, modelgroupdesc_t* dstGroup);
-	void				WriteModels(CMemoryStream* stream);
-	void				WriteLods(CMemoryStream* stream);
-	void				WriteBodyGroups(CMemoryStream* stream);
-	void				WriteAttachments(CMemoryStream* stream);
-	void				WriteIkChains(CMemoryStream* stream);
-	void				WriteMaterialDescs(CMemoryStream* stream);
-	void				WriteMaterialPaths(CMemoryStream* stream);
-	void				WriteMotionPackageList(CMemoryStream* stream);
-	void				WriteBones(CMemoryStream* stream);
+	// writing to stream	
+	void					WriteGroup(CMemoryStream* stream, SharedModel::dsmgroup_t* srcGroup, SharedModel::esmshapekey_t* modShapeKey, modelgroupdesc_t* dstGroup);
+	void					WriteModels(CMemoryStream* stream);
+	void					WriteLods(CMemoryStream* stream);
+	void					WriteBodyGroups(CMemoryStream* stream);
+	void					WriteAttachments(CMemoryStream* stream);
+	void					WriteIkChains(CMemoryStream* stream);
+	void					WriteMaterialDescs(CMemoryStream* stream);
+	void					WriteMaterialPaths(CMemoryStream* stream);
+	void					WriteMotionPackageList(CMemoryStream* stream);
+	void					WriteBones(CMemoryStream* stream);
 
 	// data
 	DkList<egfcaModel_t>			m_modelrefs;	// all loaded model references
