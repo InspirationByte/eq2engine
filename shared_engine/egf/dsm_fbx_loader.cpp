@@ -26,7 +26,12 @@ Vector3D FromFBXVector(const ofbx::Vec3& vec, Matrix3x3& orient)
 
 Vector2D FromFBXVector(const ofbx::Vec2& vec)
 {
-	return Vector2D(vec.x, vec.y);
+	return Vector2D(vec.x, 1.0f - vec.y);
+}
+
+int DecodeIndex(int idx)
+{
+	return (idx < 0) ? (-idx - 1) : idx;
 }
 
 void ConvertFBXToDSM(dsmmodel_t* model, ofbx::IScene* scene)
@@ -36,10 +41,17 @@ void ConvertFBXToDSM(dsmmodel_t* model, ofbx::IScene* scene)
 
 	const ofbx::GlobalSettings& settings = *scene->getGlobalSettings();
 
-	
+	bool invertFaces = true;
+
 	const float scaleFactor = settings.UnitScaleFactor;
 	// start off with this because Blender and 3DS max has same weird coordinate system
-	Matrix3x3 convertMatrix = scale3(scaleFactor, scaleFactor, -scaleFactor) * rotateX3(DEG2RAD(-90));
+	Matrix3x3 convertMatrix = scale3(-scaleFactor, scaleFactor, -scaleFactor) * rotateX3(DEG2RAD(-90));
+
+	if (settings.FrontAxisSign)
+		invertFaces ^= 1;
+
+	if (settings.UpAxisSign)
+		invertFaces ^= 1;
 
 	Matrix3x3 axisMatrix(Vector3D(0.0f), Vector3D(0.0f), Vector3D(0.0f));
 	axisMatrix.rows[1][settings.UpAxis] = float(settings.UpAxisSign);
@@ -70,28 +82,72 @@ void ConvertFBXToDSM(dsmmodel_t* model, ofbx::IScene* scene)
 
 		if (material)
 			strncpy(newGrp->texture, material->name, sizeof(newGrp->texture));
+#if 1
+		// triangulated
+		for (int j = 0; j < vertex_count; j += 3)
+		{
+			for(int k = 0; k < 3; k++)
+			{
+				int jj = j + (invertFaces ? 2-k : k);
+				dsmvertex_t vert;
+				vert.position = FromFBXVector(vertices[jj], convertMatrix);
+
+				if (normals)
+					vert.normal = FromFBXVector(normals[jj], convertMatrix);
+
+				if (uvs)
+					vert.texcoord = FromFBXVector(uvs[jj]);
+
+				vert.vertexId = -1;
+
+				newGrp->verts.append(vert);
+			}
+		}
+#else
+		// TODO: NON-triangulated version
 
 		// convert vertices
-		for (int i = 0; i < vertex_count; ++i)
+		for (int j = 0; j < vertex_count; j++)
 		{
 			dsmvertex_t vert;
-			vert.position = FromFBXVector(vertices[i], convertMatrix);
+			vert.position = FromFBXVector(vertices[j], convertMatrix);
 
 			if(normals)
-				vert.normal = FromFBXVector(normals[i], convertMatrix);
+				vert.normal = FromFBXVector(normals[j], convertMatrix);
 
 			if(uvs)
-				vert.texcoord = FromFBXVector(uvs[i]);
+				vert.texcoord = FromFBXVector(uvs[j]);
 
 			vert.vertexId = -1;
 
 			newGrp->verts.append(vert);
 		}
 
-		for (int i = 0; i < index_count; ++i)
+
+		int numPolyIndices = 0;
+		int polyIndices[24] = { -1 };
+
+		for (int j = 0; j < index_count; j++)
 		{
-			newGrp->indices.append(faceIndices[i]);
+			int index = faceIndices[j];
+			polyIndices[numPolyIndices++] = DecodeIndex(index);
+
+			Msg("index %d\n", index);
+
+			if (index < 0) // negative marks end - start over
+			{
+				// triangulate strip
+				for (int k = 0; k < numPolyIndices-2; k++)
+				{
+					newGrp->indices.append(polyIndices[k]);
+					newGrp->indices.append(polyIndices[k+1]);
+					newGrp->indices.append(polyIndices[k+2]);
+				}
+
+				numPolyIndices = 0;
+			}
 		}
+#endif
 	}
 }
 

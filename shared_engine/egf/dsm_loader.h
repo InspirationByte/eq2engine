@@ -46,14 +46,11 @@ struct dsmgroup_t
 	dsmgroup_t()
 	{
 		texture[0] = '\0';
-		usetriangleindices = false;
 	};
 
 	char					texture[256];
 	DkList<dsmvertex_t>		verts;
-
 	DkList<int>				indices;
-	bool					usetriangleindices;
 };
 
 struct dsmskelbone_t

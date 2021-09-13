@@ -291,11 +291,8 @@ bool LoadOBJ(dsmmodel_t* model, const char* filename)
 			if(!curgroup)
 			{
 				curgroup = new dsmgroup_t;
-				//curgroup->usetriangleindices = true;	// this DSM uses index buffer (OBJ and other model format, excluding DSM format)
-				model->groups.append(curgroup);
 
-				//curgroup->verts.resize( nVerts );
-				//curgroup->indices.resize( nFaces );
+				model->groups.append(curgroup);
 
 				if(bUseMTL)
 					strcpy(curgroup->texture, GetMTLTexture(material_name, material_list));
