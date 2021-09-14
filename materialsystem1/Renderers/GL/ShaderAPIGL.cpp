@@ -56,32 +56,34 @@ public:
 	}
 
 	// syncronous execution
-	int WaitForExecute(std::function<int()> f)
+	int WaitForExecute(const char* name, std::function<int()> f)
 	{
-		return AddWork(f, true);
+		return AddWork(name, f, true);
 	}
 
 	// asyncronous execution
-	void Execute(std::function<int()> f)
+	void Execute(const char* name, std::function<int()> f)
 	{
-		AddWork(f, false);
+		AddWork(name, f, false);
 	}
 
 protected:
 	int Run();
 
-	int AddWork(std::function<int()> f, bool blocking);
+	int AddWork(const char* name, std::function<int()> f, bool blocking);
 
 	struct work_t
 	{
-		work_t(std::function<int()> f, uint id, bool block)
+		work_t(const char* _name, std::function<int()> f, uint id, bool block)
 		{
+			name = _name;
 			func = f;
 			result = WORK_PENDING_MARKER;
 			workId = id;
 			blocking = block;
 		}
 
+		const char* name;
 		std::function<int()> func;
 		volatile int result;
 		uint workId;
@@ -107,13 +109,13 @@ int GLWorkerThread::WaitForResult(work_t* work)
 	// retrieve result and delete
 	int result = work->result;
 
-	delete work;
+	Msg("WaitForResult for %s (workId %d)\n", work->name, work->workId);
 
 	//return the result
 	return result;
 }
 
-int GLWorkerThread::AddWork(std::function<int()> f, bool blocking)
+int GLWorkerThread::AddWork(const char* name, std::function<int()> f, bool blocking)
 {
 	uintptr_t thisThreadId = Threading::GetCurrentThreadID();
 
@@ -125,7 +127,7 @@ int GLWorkerThread::AddWork(std::function<int()> f, bool blocking)
 	// set the new worker and signal to start...
 	{
 		CScopedMutex m(m_workMutex);
-		work = new work_t(f, m_workCounter++, blocking);
+		work = new work_t(name, f, m_workCounter++, blocking);
 		m_pendingWork.append(work);
 	}
 
@@ -169,16 +171,16 @@ int GLWorkerThread::Run()
 
 		if (currentWork)
 		{
+			Msg("BeginAsyncOperation for %s (workId %d)\n", currentWork->name, currentWork->workId);
 			g_shaderApi.BeginAsyncOperation(GetThreadID());
 
 			// run work
 			currentWork->result = currentWork->func();
 
+			Msg("EndAsyncOperation for %s (workId %d)\n", currentWork->name, currentWork->workId);
 			g_shaderApi.EndAsyncOperation();
 
-			if (!currentWork->blocking)
-				delete currentWork;
-
+			delete currentWork;
 			currentWork = nullptr;
 		}
 
@@ -230,14 +232,6 @@ bool GLCheckError(const char* op)
             case GL_OUT_OF_MEMORY:
                 errString = "GL_OUT_OF_MEMORY";
                 break;
-#ifndef USE_GLES2
-            case GL_STACK_UNDERFLOW:
-                errString = "GL_STACK_UNDERFLOW";
-                break;
-            case GL_STACK_OVERFLOW:
-                errString = "GL_STACK_OVERFLOW";
-                break;
-#endif // USE_GLES2
         }
 
 		if(gl_report_errors.GetBool())
@@ -474,16 +468,16 @@ void ShaderAPIGL::ApplyTextures()
 				{
 					// bind texture
 					glBindTexture(pSelectedTexture->glTarget, pSelectedTexture->GetCurrentTexture().glTexID);
-#ifndef USE_GLES2
+#if 0
 					glTexEnvf(GL_TEXTURE_FILTER_CONTROL, GL_TEXTURE_LOD_BIAS, pSelectedTexture->m_flLod);
-#endif // USE_GLES2
+#endif // OpenGL 2.1
 				}
 				else
 				{
-#ifndef USE_GLES2
+#if 0
 					if (pSelectedTexture->m_flLod != pCurrentTexture->m_flLod)
 						glTexEnvf(GL_TEXTURE_FILTER_CONTROL, GL_TEXTURE_LOD_BIAS, pSelectedTexture->m_flLod);
-#endif // USE_GLES2
+#endif // OpenGL 2.1
 
 					// bind our texture
 					glBindTexture(pSelectedTexture->glTarget, pSelectedTexture->GetCurrentTexture().glTexID);
@@ -1101,7 +1095,7 @@ GLTextureRef_t ShaderAPIGL::CreateGLTextureFromImage(CImage* pSrc, const Sampler
 
 	GLTextureRef_t* texturePtr = &texture;
 	
-	int result = glWorker.WaitForExecute([=]() {
+	int result = glWorker.WaitForExecute(__FUNCTION__,[=]() {
 		// Generate a texture
 		glGenTextures(1, &texturePtr->glTexID);
 
@@ -1250,11 +1244,7 @@ void ShaderAPIGL::SetupGLSamplerState(uint texTarget, const SamplerStateParam_t&
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, mipMapCount-1);
 	GLCheckError("smp mip");
 
-#ifdef USE_GLES2
 	glTexParameteri(texTarget, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
-#else
-	glTexParameteri(texTarget, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_R_TO_TEXTURE);
-#endif // USE_GLES2
 	GLCheckError("smp cmpmode");
 
 	glTexParameteri(texTarget, GL_TEXTURE_COMPARE_FUNC, depthConst[sampler.compareFunc]);
@@ -1262,9 +1252,9 @@ void ShaderAPIGL::SetupGLSamplerState(uint texTarget, const SamplerStateParam_t&
 
 #ifndef USE_GLES2
 	// Setup anisotropic filtering
-	if (sampler.aniso > 1 && GLAD_GL_EXT_texture_filter_anisotropic)
+	if (sampler.aniso > 1 && GLAD_GL_ARB_texture_filter_anisotropic)
 	{
-		glTexParameteri(texTarget, GL_TEXTURE_MAX_ANISOTROPY_EXT, sampler.aniso);
+		glTexParameteri(texTarget, GL_TEXTURE_MAX_ANISOTROPY, sampler.aniso);
 		GLCheckError("smp aniso");
 	}
 #endif // USE_GLES2
@@ -1562,9 +1552,9 @@ void ShaderAPIGL::ChangeRenderTargetToBackBuffer()
 // Matrix mode
 void ShaderAPIGL::SetMatrixMode(ER_MatrixMode nMatrixMode)
 {
-#ifndef USE_GLES2
+#if 0
 	glMatrixMode( matrixModeConst[nMatrixMode] );
-#endif // USE_GLES2
+#endif // OpenGL 2.1
 
 	m_nCurrentMatrixMode = nMatrixMode;
 }
@@ -1586,9 +1576,9 @@ void ShaderAPIGL::PopMatrix()
 // Load identity matrix
 void ShaderAPIGL::LoadIdentityMatrix()
 {
-#ifndef USE_GLES2
+#if 0
 	glLoadIdentity();
-#endif // USE_GLES2
+#endif // OpenGL 2.1
 
 	m_matrices[m_nCurrentMatrixMode] = identity4();
 }
@@ -1596,7 +1586,7 @@ void ShaderAPIGL::LoadIdentityMatrix()
 // Load custom matrix
 void ShaderAPIGL::LoadMatrix(const Matrix4x4 &matrix)
 {
-#ifndef USE_GLES2
+#if 0
 	if(m_nCurrentMatrixMode == MATRIXMODE_WORLD)
 	{
 		glMatrixMode( GL_MODELVIEW );
@@ -1604,7 +1594,7 @@ void ShaderAPIGL::LoadMatrix(const Matrix4x4 &matrix)
 	}
 	else
 		glLoadMatrixf( transpose(matrix) );
-#endif // USE_GLES2
+#endif // OpenGL 2.1
 
 	m_matrices[m_nCurrentMatrixMode] = matrix;
 }
@@ -1648,7 +1638,7 @@ void ShaderAPIGL::ChangeVertexFormat(IVertexFormat* pVertexFormat)
 				glDisableVertexAttribArray(i);
 				GLCheckError("disable vtx attrib");
 
-				glVertexAttribDivisorARB(i, 0);
+				glVertexAttribDivisor(i, 0);
 				GLCheckError("divisor");
 			}
 			/*else if(shouldEnable)
@@ -1677,7 +1667,7 @@ void ShaderAPIGL::ChangeVertexBuffer(IVertexBuffer* pVertexBuffer, int nStream, 
 #else
 	const GLsizei glTypes[] = {
 		GL_FLOAT,
-		GL_HALF_FLOAT_ARB,
+		GL_HALF_FLOAT,
 		GL_UNSIGNED_BYTE,
 	};
 #endif // USE_GLES2
@@ -1718,7 +1708,7 @@ void ShaderAPIGL::ChangeVertexBuffer(IVertexBuffer* pVertexBuffer, int nStream, 
 					// instance vertex attrib divisor
 					int selStreamParam = instanceBuffer ? 1 : 0;
 
-					glVertexAttribDivisorARB(i, selStreamParam);
+					glVertexAttribDivisor(i, selStreamParam);
 					GLCheckError("divisor");
 				}
 			}
@@ -1825,7 +1815,7 @@ void ShaderAPIGL::DestroyShaderProgram(IShaderProgram* pShaderProgram)
 	{
 		m_ShaderList.remove(pShader);
 
-		glWorker.Execute([pShader]() {
+		glWorker.Execute(__FUNCTION__, [pShader]() {
 			delete pShader;
 
 			return 0;
@@ -1890,7 +1880,7 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 		EqString shaderString;
 
 #ifndef USE_GLES2
-		shaderString.Append("#version 120\r\n");
+		shaderString.Append("#version 140\r\n");
 #endif // USE_GLES2
 
 		if (extra != NULL)
@@ -1902,7 +1892,7 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 
 		const GLchar* sStr[] = { shaderString.ToCString() };
 
-		result = glWorker.WaitForExecute([prog, pvsResult, sStr]() {
+		result = glWorker.WaitForExecute(__FUNCTION__, [prog, pvsResult, sStr]() {
 
 			// create GL program
 			prog->m_program = glCreateProgram();
@@ -1920,7 +1910,7 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 
 			GLCheckError("compile vert shader");
 
-			glGetShaderiv(prog->m_vertexShader, GL_OBJECT_COMPILE_STATUS_ARB, pvsResult);
+			glGetShaderiv(prog->m_vertexShader, GL_COMPILE_STATUS, pvsResult);
 
 			if (*pvsResult)
 			{
@@ -1974,7 +1964,7 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 
 		GLint* pfsResult = &fsResult;
 
-		result = glWorker.WaitForExecute([prog, pfsResult, sStr]() {
+		result = glWorker.WaitForExecute(__FUNCTION__, [prog, pfsResult, sStr]() {
 			prog->m_fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
 
 			if (!GLCheckError("create fragment shader"))
@@ -2027,7 +2017,7 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 
 		EGraphicsVendor vendor = m_vendor;
 
-		glWorker.WaitForExecute([prog, pInfo, plinkResult, vendor, currProgram]() {
+		glWorker.WaitForExecute(__FUNCTION__, [prog, pInfo, plinkResult, vendor, currProgram]() {
 			for (int i = 0; i < pInfo->apiPrefs->keys.numElem(); i++)
 			{
 				kvkeybase_t* kp = pInfo->apiPrefs->keys[i];
@@ -2060,7 +2050,7 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 			return 0;
 		});
 
-		result = glWorker.WaitForExecute([prog, pInfo, plinkResult, vendor, currProgram]() {
+		result = glWorker.WaitForExecute(__FUNCTION__, [prog, pInfo, plinkResult, vendor, currProgram]() {
 			// link program and go
 			glLinkProgram(prog->m_program);
 			glGetProgramiv(prog->m_program, GL_LINK_STATUS, plinkResult);
@@ -2080,7 +2070,7 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 			return 0;
 		});
 
-		result = glWorker.WaitForExecute([prog, pInfo, plinkResult, vendor, currProgram]() {
+		result = glWorker.WaitForExecute(__FUNCTION__, [prog, pInfo, plinkResult, vendor, currProgram]() {
 			// use freshly generated program to retirieve constants (uniforms) and samplers
 			glUseProgram(prog->m_program);
 
@@ -2094,8 +2084,8 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 			}
 
 			GLint uniformCount, maxLength;
-			glGetProgramiv(prog->m_program, GL_OBJECT_ACTIVE_UNIFORMS_ARB, &uniformCount);
-			glGetProgramiv(prog->m_program, GL_OBJECT_ACTIVE_UNIFORM_MAX_LENGTH_ARB, &maxLength);
+			glGetProgramiv(prog->m_program, GL_ACTIVE_UNIFORMS, &uniformCount);
+			glGetProgramiv(prog->m_program, GL_ACTIVE_UNIFORM_MAX_LENGTH, &maxLength);
 
 			if (maxLength == 0 && (uniformCount > 0 || uniformCount > 256))
 			{
@@ -2125,7 +2115,7 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 	#ifdef USE_GLES2
 				if (type >= GL_SAMPLER_2D && type <= GL_SAMPLER_CUBE_SHADOW)
 	#else
-				if (type >= GL_SAMPLER_1D && type <= GL_SAMPLER_2D_RECT_SHADOW_ARB)
+				if (type >= GL_SAMPLER_1D && type <= GL_SAMPLER_2D_RECT_SHADOW)
 	#endif // USE_GLES3
 				{
 					GLShaderSampler_t* sp = &samplers[nSamplers];
@@ -2304,7 +2294,7 @@ IVertexBuffer* ShaderAPIGL::CreateVertexBuffer(ER_BufferAccess nBufAccess, int n
 
 	const int numBuffers = (nBufAccess == BUFFER_DYNAMIC) ? MAX_VB_SWITCHING : 1;
 
-	int result = glWorker.WaitForExecute([pVB, numBuffers, nBufAccess, pData]() {
+	int result = glWorker.WaitForExecute(__FUNCTION__, [pVB, numBuffers, nBufAccess, pData]() {
 
 		glGenBuffers(numBuffers, pVB->m_nGL_VB_Index);
 
@@ -2352,7 +2342,7 @@ IIndexBuffer* ShaderAPIGL::CreateIndexBuffer(int nIndices, int nIndexSize, ER_Bu
 
 	const int numBuffers = (nBufAccess == BUFFER_DYNAMIC) ? MAX_IB_SWITCHING : 1;
 
-	int result = glWorker.WaitForExecute([pIB, numBuffers, nBufAccess, pData, size]() {
+	int result = glWorker.WaitForExecute(__FUNCTION__, [pIB, numBuffers, nBufAccess, pData, size]() {
 		glGenBuffers(numBuffers, pIB->m_nGL_IB_Index);
 
 		if (!GLCheckError("gen idx buffer"))
@@ -2411,7 +2401,7 @@ void ShaderAPIGL::DestroyVertexBuffer(IVertexBuffer* pVertexBuffer)
 
 	if(m_VBList.remove(pVertexBuffer))
 	{
-		glWorker.Execute([pVB]() {
+		glWorker.Execute(__FUNCTION__, [pVB]() {
 			const int numBuffers = (pVB->m_access == BUFFER_DYNAMIC) ? MAX_VB_SWITCHING : 1;
 
 			glDeleteBuffers(numBuffers, pVB->m_nGL_VB_Index);
@@ -2435,7 +2425,7 @@ void ShaderAPIGL::DestroyIndexBuffer(IIndexBuffer* pIndexBuffer)
 
 	if(m_IBList.remove(pIndexBuffer))
 	{
-		glWorker.Execute([pIB]() {
+		glWorker.Execute(__FUNCTION__, [pIB]() {
 			const int numBuffers = (pIB->m_access == BUFFER_DYNAMIC) ? MAX_IB_SWITCHING : 1;
 
 			glDeleteBuffers(numBuffers, pIB->m_nGL_IB_Index);
@@ -2485,7 +2475,7 @@ void ShaderAPIGL::DrawIndexedPrimitives(ER_PrimitiveType nType, int nFirstIndex,
 		numInstances = m_pCurrentVertexBuffers[m_boundInstanceStream]->GetVertexCount();
 
 	if(numInstances)
-		glDrawElementsInstancedARB(glPrimitiveType[nType], nIndices, indexSize == 2? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT, BUFFER_OFFSET(indexSize * nFirstIndex), numInstances);
+		glDrawElementsInstanced(glPrimitiveType[nType], nIndices, indexSize == 2? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT, BUFFER_OFFSET(indexSize * nFirstIndex), numInstances);
 	else
 		glDrawElements(glPrimitiveType[nType], nIndices, indexSize == 2? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT, BUFFER_OFFSET(indexSize * nFirstIndex));
 
@@ -2510,7 +2500,7 @@ void ShaderAPIGL::DrawNonIndexedPrimitives(ER_PrimitiveType nType, int nFirstVer
 		numInstances = m_pCurrentVertexBuffers[m_boundInstanceStream]->GetVertexCount();
 
 	if(numInstances)
-		glDrawArraysInstancedARB(glPrimitiveType[nType], nFirstVertex, nVertices, numInstances);
+		glDrawArraysInstanced(glPrimitiveType[nType], nFirstVertex, nVertices, numInstances);
 	else
 		glDrawArrays(glPrimitiveType[nType], nFirstVertex, nVertices);
 

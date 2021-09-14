@@ -15,8 +15,8 @@ static const GLuint internalFormats[FORMAT_COUNT] = {
 	0, //GL_INTENSITY8,
 	0, //GL_LUMINANCE8_ALPHA8,
 #else
-	GL_INTENSITY8,
-	GL_LUMINANCE8_ALPHA8,
+	GL_R8,
+	GL_RG8,
 #endif // USE_GLES2
 	GL_RGB8,
 	GL_RGBA8,
@@ -26,8 +26,8 @@ static const GLuint internalFormats[FORMAT_COUNT] = {
 	GL_RGB16I,
 	GL_RGBA16I,
 #else
-	GL_INTENSITY16,
-	GL_LUMINANCE16_ALPHA16,
+	GL_R16,
+	GL_RG16,
 	GL_RGB16,
 	GL_RGBA16,
 #endif // USE_GLES2
@@ -54,14 +54,14 @@ static const GLuint internalFormats[FORMAT_COUNT] = {
 	GL_RGBA32F,
 #else
 	// Float formats
-	GL_INTENSITY16F_ARB,
-	GL_LUMINANCE_ALPHA16F_ARB,
-	GL_RGB16F_ARB,
-	GL_RGBA16F_ARB,
-	GL_INTENSITY32F_ARB,
-	GL_LUMINANCE_ALPHA32F_ARB,
-	GL_RGB32F_ARB,
-	GL_RGBA32F_ARB,
+	GL_R16F,
+	GL_RG16F,
+	GL_RGB16F,
+	GL_RGBA16F,
+	GL_R32F,
+	GL_RG32F,
+	GL_RGB32F,
+	GL_RGBA32F,
 #endif // USE_GLES2
 
 	// Signed integer formats
@@ -131,7 +131,7 @@ static const GLuint internalFormats[FORMAT_COUNT] = {
 	GL_COMPRESSED_RGBA_S3TC_DXT3_EXT,
 	GL_COMPRESSED_RGBA_S3TC_DXT5_EXT,
 	0, // ATI1N not yet supported
-	GL_COMPRESSED_LUMINANCE_ALPHA,			//COMPRESSED_LUMINANCE_ALPHA_3DC_ATI,
+	GL_COMPRESSED_RG,			//COMPRESSED_LUMINANCE_ALPHA_3DC_ATI,
 
 	0, // GL_COMPRESSED_RGB8_ETC1
 	0, // GL_COMPRESSED_RGB8_ETC2,
@@ -153,7 +153,7 @@ static inline GLuint PickGLInternalFormat(ETextureFormat format)
 	return internalFormat;
 }
 
-static const GLuint chanCountTypes[] = { 0, GL_LUMINANCE, GL_LUMINANCE_ALPHA, GL_RGB, GL_RGBA };
+static const GLuint chanCountTypes[] = { 0, GL_RED, GL_RG, GL_RGB, GL_RGBA };
 
 static const GLuint chanTypePerFormat[] = {
 	0,
@@ -181,17 +181,10 @@ static const GLuint chanTypePerFormat[] = {
 	0,
 
 	// Float formats
-#ifdef USE_GLES2
 	GL_HALF_FLOAT,
 	GL_HALF_FLOAT,
 	GL_HALF_FLOAT,
 	GL_HALF_FLOAT,
-#else
-	GL_HALF_FLOAT_ARB,
-	GL_HALF_FLOAT_ARB,
-	GL_HALF_FLOAT_ARB,
-	GL_HALF_FLOAT_ARB,
-#endif // USE_GLES2
 
 	GL_FLOAT,
 	GL_FLOAT,
@@ -348,7 +341,7 @@ static const GLenum minFilters[] = {
 	GL_LINEAR_MIPMAP_LINEAR,
 };
 
-#ifndef USE_GLES2
+#if 0
 static const GLenum matrixModeConst[] = {
 	GL_MODELVIEW,
 	GL_PROJECTION,
@@ -356,7 +349,7 @@ static const GLenum matrixModeConst[] = {
 	GL_MODELVIEW,
 	GL_TEXTURE,
 };
-#endif // USE_GLES2
+#endif // OpenGL 2.1
 
 // for some speedup
 static const GLenum mbTypeConst[] = {
@@ -366,24 +359,15 @@ static const GLenum mbTypeConst[] = {
 	GL_TRIANGLE_STRIP,
 	GL_LINE_STRIP,
 	GL_LINE_LOOP,
-#ifdef USE_GLES2
 	0, // GL_POLYGON,
 	0, // GL_QUADS,
-#else
-	GL_POLYGON,
-	GL_QUADS,
-#endif // USE_GLES2
 };
 
 static const GLenum glPrimitiveType[] = {
 	GL_TRIANGLES,
 	GL_TRIANGLE_FAN,
 	GL_TRIANGLE_STRIP,
-#ifdef USE_GLES2
 	0, // GL_QUADS,
-#else
-	GL_QUADS,
-#endif // USE_GLES2
 	GL_LINES,
 	GL_LINE_STRIP,
 	GL_LINE_LOOP,

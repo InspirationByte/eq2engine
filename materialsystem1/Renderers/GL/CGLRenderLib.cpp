@@ -454,15 +454,18 @@ bool CGLRenderLib::InitAPI(shaderAPIParams_t& params)
 	hdc = GetDC(hwnd);
 
 	int iAttribs[] = {
-		wgl::DRAW_TO_WINDOW_ARB,	GL_TRUE,
-		wgl::ACCELERATION_ARB,		wgl::FULL_ACCELERATION_ARB,
-		wgl::DOUBLE_BUFFER_ARB,		GL_TRUE,
-		wgl::RED_BITS_ARB,			8,
-		wgl::GREEN_BITS_ARB,		8,
-		wgl::BLUE_BITS_ARB,			8,
-		wgl::ALPHA_BITS_ARB,		(dm.dmBitsPerPel > 24) ? 8 : 0,
-		wgl::DEPTH_BITS_ARB,		24,
-		wgl::STENCIL_BITS_ARB,		1,
+		wgl::DRAW_TO_WINDOW_ARB,			GL_TRUE,
+		wgl::ACCELERATION_ARB,				wgl::FULL_ACCELERATION_ARB,
+		wgl::DOUBLE_BUFFER_ARB,				GL_TRUE,
+		wgl::RED_BITS_ARB,					8,
+		wgl::GREEN_BITS_ARB,				8,
+		wgl::BLUE_BITS_ARB,					8,
+		wgl::ALPHA_BITS_ARB,				(dm.dmBitsPerPel > 24) ? 8 : 0,
+		wgl::DEPTH_BITS_ARB,				24,
+		wgl::STENCIL_BITS_ARB,				1,
+		wgl::CONTEXT_MAJOR_VERSION_ARB,		3,
+		wgl::CONTEXT_MINOR_VERSION_ARB,		3,
+		wgl::CONTEXT_PROFILE_MASK_ARB,		wgl::CONTEXT_CORE_PROFILE_BIT_ARB,
 		0
 	};
 
@@ -571,6 +574,8 @@ bool CGLRenderLib::InitAPI(shaderAPIParams_t& params)
 			GLX_STENCIL_SIZE,  stencilBits,
 			GLX_SAMPLE_BUFFERS, (params.multiSamplingMode > 0),
 			GLX_SAMPLES,         params.multiSamplingMode,
+			GLX_CONTEXT_MAJOR_VERSION_ARB,		3,
+			GLX_CONTEXT_MINOR_VERSION_ARB,		3,
 			None,
 		};
 
@@ -647,9 +652,9 @@ bool CGLRenderLib::InitAPI(shaderAPIParams_t& params)
 			return false;
 		}
 
-		if(verMajor == 2 && verMinor < 1)
+		if(verMajor == 3 && verMinor < 3)
 		{
-			ErrorMsg("OpenGL 2.x version must be at least 2.1!\n\nPlease update your drivers or hardware.");
+			ErrorMsg("OpenGL 3.x version must be at least 3.3!\n\nPlease update your drivers or hardware.");
 			return false;
 		}
 #else
@@ -670,8 +675,8 @@ bool CGLRenderLib::InitAPI(shaderAPIParams_t& params)
 	g_shaderApi.m_glContext = this->glContext;
 
 #ifndef USE_GLES2 // TEMPORARILY DISABLED
-	if (GLAD_GL_ARB_multisample && params.multiSamplingMode > 0)
-		glEnable(GL_MULTISAMPLE_ARB);
+	if (/*GLAD_GL_ARB_multisample &&*/ params.multiSamplingMode > 0)
+		glEnable(GL_MULTISAMPLE);
 #endif // USE_GLES2
 
 	//-------------------------------------------
@@ -683,16 +688,12 @@ bool CGLRenderLib::InitAPI(shaderAPIParams_t& params)
 
 	caps.maxTextureAnisotropicLevel = 1;
 
-#ifdef USE_GLES2
 	caps.isHardwareOcclusionQuerySupported = true;
 	caps.isInstancingSupported = true; // GL ES 3
-#else
-	caps.isInstancingSupported = GLAD_GL_ARB_instanced_arrays && GLAD_GL_ARB_draw_instanced;
-	caps.isHardwareOcclusionQuerySupported = GLAD_GL_ARB_occlusion_query;
 
-	if (GLAD_GL_EXT_texture_filter_anisotropic)
-		glGetIntegerv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &caps.maxTextureAnisotropicLevel);
-
+#ifndef USE_GLES2
+	if (GLAD_GL_ARB_texture_filter_anisotropic)
+		glGetIntegerv(GL_MAX_TEXTURE_MAX_ANISOTROPY, &caps.maxTextureAnisotropicLevel);
 #endif // USE_GLES2
 
 	glGetIntegerv(GL_MAX_TEXTURE_SIZE, &caps.maxTextureSize);
@@ -715,30 +716,14 @@ bool CGLRenderLib::InitAPI(shaderAPIParams_t& params)
 	// limit by the MAX_GL_GENERIC_ATTRIB defined by ShaderAPI
 	caps.maxVertexGenericAttributes = min(MAX_GL_GENERIC_ATTRIB, caps.maxVertexGenericAttributes);
 
-#ifdef USE_GLES2
-	// ES 2.0 supports shaders
 	caps.shadersSupportedFlags = SHADER_CAPS_VERTEX_SUPPORTED | SHADER_CAPS_PIXEL_SUPPORTED;
 	glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &caps.maxTextureUnits);
-#else
-	caps.shadersSupportedFlags = ((GLAD_GL_ARB_vertex_shader || GLAD_GL_ARB_shader_objects) ? SHADER_CAPS_VERTEX_SUPPORTED : 0)
-								 | ((GLAD_GL_ARB_fragment_shader || GLAD_GL_ARB_shader_objects) ? SHADER_CAPS_PIXEL_SUPPORTED : 0);
-
-	if (caps.shadersSupportedFlags & SHADER_CAPS_PIXEL_SUPPORTED)
-		glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &caps.maxTextureUnits);
-	else
-		glGetIntegerv(GL_MAX_TEXTURE_UNITS, &caps.maxTextureUnits);
-#endif // USE_GLES2
 
 	if(caps.maxTextureUnits > MAX_TEXTUREUNIT)
 		caps.maxTextureUnits = MAX_TEXTUREUNIT;
 
-#ifndef USE_GLES2
-	if (GLAD_GL_ARB_draw_buffers)
-#endif // USE_GLES2
-	{
-		caps.maxRenderTargets = 1;
-		glGetIntegerv(GL_MAX_DRAW_BUFFERS, &caps.maxRenderTargets);
-	}
+	caps.maxRenderTargets = 1;
+	glGetIntegerv(GL_MAX_DRAW_BUFFERS, &caps.maxRenderTargets);
 
 	if (caps.maxRenderTargets > MAX_MRTS)
 		caps.maxRenderTargets = MAX_MRTS;
