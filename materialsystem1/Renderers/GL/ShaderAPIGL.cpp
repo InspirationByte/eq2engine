@@ -960,8 +960,6 @@ ITexture* ShaderAPIGL::CreateNamedRenderTarget(	const char* pszName,
 
 	pTexture->SetSamplerState(texSamplerParams);
 
-	pTexture->textures.setNum(1);
-
 	m_Mutex.Lock();
 
 	if (nFlags & TEXFLAG_RENDERDEPTH)
@@ -973,14 +971,24 @@ ITexture* ShaderAPIGL::CreateNamedRenderTarget(	const char* pszName,
 		SetupGLSamplerState(GL_TEXTURE_2D, texSamplerParams);
 	}
 
-	glGenTextures(1, &pTexture->textures[0].glTexID);
+	// create texture
+	GLTextureRef_t texture;
+
+	if (nFlags & TEXFLAG_CUBEMAP)
+		texture.type = GLTEX_TYPE_CUBETEXTURE;
+	else
+		texture.type = GLTEX_TYPE_TEXTURE;
+
+	glGenTextures(1, &texture.glTexID);
 	GLCheckError("gen tex");
 
-	glBindTexture(pTexture->glTarget, pTexture->textures[0].glTexID);
+	glBindTexture(pTexture->glTarget, texture.glTexID);
 	SetupGLSamplerState(pTexture->glTarget, texSamplerParams);
 
+	pTexture->textures.append(texture);
+
 	// this generates the render target
-	ResizeRenderTarget(pTexture, width,height);
+	ResizeRenderTarget(pTexture, width, height);
 	
 	m_TextureList.append(pTexture);
 	m_Mutex.Unlock();
@@ -1000,6 +1008,7 @@ void ShaderAPIGL::ResizeRenderTarget(ITexture* pRT, int newWide, int newTall)
 		// Bind render buffer
 		glBindRenderbuffer(GL_RENDERBUFFER, pTex->glDepthID);
 		glRenderbufferStorage(GL_RENDERBUFFER, internalFormats[format], newWide, newTall);
+		GLCheckError("gen tex renderbuffer storage");
 
 		// Restore renderbuffer
 		glBindRenderbuffer(GL_RENDERBUFFER, 0);
@@ -1017,6 +1026,7 @@ void ShaderAPIGL::ResizeRenderTarget(ITexture* pRT, int newWide, int newTall)
 
 			glBindTexture(GL_TEXTURE_2D, pTex->glDepthID);
 			glTexImage2D(GL_TEXTURE_2D, 0, depthInternalFormat, newWide, newTall, 0, depthSrcFormat, depthSrcType, NULL);
+			GLCheckError("gen tex image depth");
 			glBindTexture(GL_TEXTURE_2D, 0);
 		}
 		
@@ -1039,10 +1049,12 @@ void ShaderAPIGL::ResizeRenderTarget(ITexture* pRT, int newWide, int newTall)
 		{
 			for (int i = 0; i < 6; i++)
 				glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, internalFormat, newWide, newTall, 0, srcFormat, srcType, NULL);
+			GLCheckError("gen tex image cube");
 		}
 		else
 		{
 			glTexImage2D(pTex->glTarget, 0, internalFormat, newWide, newTall, 0, srcFormat, srcType, NULL);
+			GLCheckError("gen tex image");
 		}
 
 		glBindTexture(pTex->glTarget, 0);
