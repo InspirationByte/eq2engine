@@ -16,6 +16,8 @@
 #include "platform/Platform.h"
 #include <malloc.h> // alloca
 
+#pragma warning(disable: 4267)
+
 // Default constructor
 ConVar::ConVar() : ConCommandBase()
 {

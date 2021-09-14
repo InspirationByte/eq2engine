@@ -17,8 +17,6 @@
 #include "strtools.h"
 #include "math/math_common.h"
 
-
-
 #ifdef PLAT_POSIX
 #include <string.h>
 #endif // PLAT_POSIX
@@ -30,6 +28,10 @@
 #else
 #define xstricmp strcasecmp
 #endif // _WIN32
+
+#ifdef _MSC_VER
+#pragma warning(disable: 4267)
+#endif
 
 EqString::EqString()
 {

@@ -14,6 +14,10 @@
 #include <stdarg.h> // va_*
 #include <stdio.h>
 
+#ifdef _MSC_VER
+#pragma warning(disable: 4267)
+#endif
+
 #define VSTREAM_GRANULARITY 1024 * 4	// 4kb
 
 // prints string to stream

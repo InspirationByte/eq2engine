@@ -24,6 +24,10 @@
 #include "utils/VirtualStream.h"
 #include "utils/strtools.h"
 
+#ifdef _MSC_VER
+#pragma warning(disable: 4267)
+#endif
+
 static const char* s_szkKVValueTypes[KVPAIR_TYPES] =
 {
 	"string",

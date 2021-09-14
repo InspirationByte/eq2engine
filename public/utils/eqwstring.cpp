@@ -18,6 +18,10 @@
 #include <wchar.h>
 #endif // PLAT_POSIX
 
+#ifdef _MSC_VER
+#pragma warning(disable: 4267)
+#endif
+
 #define BASE_BUFFER		32	// 32 characters initial buffer
 #define EXTEND_CHARS	32	// 32 characters for extending
 
