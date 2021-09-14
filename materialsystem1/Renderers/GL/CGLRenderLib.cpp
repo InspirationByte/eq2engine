@@ -105,11 +105,11 @@ LRESULT CALLBACK PFWinProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam
 
 bool CGLRenderLib::InitCaps()
 {
-#if 0
+#if PLAT_WIN
 	HINSTANCE modHandle = GetModuleHandle(NULL);
 
 	//Unregister PFrmt if
-	UnregisterClass("PFrmt", modHandle);
+	UnregisterClass(L"PFrmt", modHandle);
 
 	int depthBits = 24;
 	int stencilBits = 0;
@@ -125,7 +125,7 @@ bool CGLRenderLib::InitCaps()
 
 	WNDCLASS wincl;
 	wincl.hInstance = modHandle;
-	wincl.lpszClassName = "PFrmt";
+	wincl.lpszClassName = L"PFrmt";
 	wincl.lpfnWndProc = PFWinProc;
 	wincl.style = 0;
 	wincl.hIcon = NULL;
@@ -137,19 +137,18 @@ bool CGLRenderLib::InitCaps()
 
 	RegisterClass(&wincl);
 
-	HWND hPFwnd = CreateWindow("PFrmt", "PFormat", WS_POPUP | WS_CLIPCHILDREN | WS_CLIPSIBLINGS, 0, 0, 8, 8, HWND_DESKTOP, NULL, modHandle, NULL);
+	HWND hPFwnd = CreateWindow(L"PFrmt", L"PFormat", WS_POPUP | WS_CLIPCHILDREN | WS_CLIPSIBLINGS, 0, 0, 8, 8, HWND_DESKTOP, NULL, modHandle, NULL);
 	if(hPFwnd)
 	{
-		HDC hdc = GetDC(hwnd);
+		HDC hdc = GetDC(hPFwnd);
 
-		// Application Verifier will break here, this is AMD OpenGL driver issue and still not fixed over years.
 		int nPixelFormat = ChoosePixelFormat(hdc, &pfd);
 		SetPixelFormat(hdc, nPixelFormat, &pfd);
 
 		HGLRC hglrc = wglCreateContext(hdc);
 		wglMakeCurrent(hdc, hglrc);
 
-		gl::exts::LoadTest didLoad = gl::sys::LoadFunctions();
+		wgl::exts::LoadTest didLoad = wgl::sys::LoadFunctions(hdc);
 		if(!didLoad)
 			MsgError("OpenGL load errors: %i\n", didLoad.GetNumMissing());
 
@@ -238,13 +237,28 @@ void CGLRenderLib::InitSharedContexts()
 #else
 
 #ifdef PLAT_WIN
-	HGLRC context = wglCreateContext(hdc);
+	int iAttribs[] = {
+		wgl::CONTEXT_MAJOR_VERSION_ARB,		3,
+		wgl::CONTEXT_MINOR_VERSION_ARB,		3,
+		wgl::CONTEXT_PROFILE_MASK_ARB,		wgl::CONTEXT_FORWARD_COMPATIBLE_BIT_ARB,
+		0
+	};
 
-	if (context == NULL)
-		ASSERTMSG(false, "Failed to create context for share!");
+	HGLRC context = wgl::CreateContextAttribsARB(hdc, glContext, iAttribs);
+	DWORD error = GetLastError();
+	if (!context)
+	{
+		char* errorStr = "Unknown error";
+		if (error == wgl::ERROR_INVALID_PROFILE_ARB)
+			errorStr = "ERROR_INVALID_PROFILE_ARB";
+		else if (error == wgl::ERROR_INVALID_VERSION_ARB)
+			errorStr = "ERROR_INVALID_VERSION_ARB";
 
-	if (wglShareLists(context, glContext) == FALSE)
-		ASSERTMSG(false, EqString::Format("wglShareLists - Failed to share (err=%d, ctx=%d)!", GetLastError(), context).ToCString());
+		ErrorMsg("InitSharedContexts failed to initialize OpenGL context - %s (%x)\n", errorStr, error);
+	}
+
+	//if (wglShareLists(context, glContext) == FALSE)
+	//	ASSERTMSG(false, EqString::Format("wglShareLists - Failed to share (err=%d, ctx=%d)!", GetLastError(), context).ToCString());
 
 #elif PLAT_LINUX
 	GLXContext context = glXCreateContext(display, vi, glContext, True);
@@ -394,6 +408,7 @@ bool CGLRenderLib::InitAPI(shaderAPIParams_t& params)
 		r_screen->SetValue("0");
 
 	hwnd = (HWND)params.windowHandle;
+	hdc = GetDC(hwnd);
 
 	// Enumerate display devices
 	int monitorCounter = r_screen->GetInt();
@@ -401,7 +416,7 @@ bool CGLRenderLib::InitAPI(shaderAPIParams_t& params)
 
 	device.cb = sizeof(device);
 	EnumDisplayDevicesA(NULL, r_screen->GetInt(), &device, 0);
-
+	
 	// get window parameters
 
 	RECT windowRect;
@@ -451,9 +466,8 @@ bool CGLRenderLib::InitAPI(shaderAPIParams_t& params)
     pfd.cAccumBits = 0;
     pfd.cStencilBits = 0;
 
-	hdc = GetDC(hwnd);
+	int iPFDAttribs[] = {
 
-	int iAttribs[] = {
 		wgl::DRAW_TO_WINDOW_ARB,			GL_TRUE,
 		wgl::ACCELERATION_ARB,				wgl::FULL_ACCELERATION_ARB,
 		wgl::DOUBLE_BUFFER_ARB,				GL_TRUE,
@@ -463,9 +477,6 @@ bool CGLRenderLib::InitAPI(shaderAPIParams_t& params)
 		wgl::ALPHA_BITS_ARB,				(dm.dmBitsPerPel > 24) ? 8 : 0,
 		wgl::DEPTH_BITS_ARB,				24,
 		wgl::STENCIL_BITS_ARB,				1,
-		wgl::CONTEXT_MAJOR_VERSION_ARB,		3,
-		wgl::CONTEXT_MINOR_VERSION_ARB,		3,
-		wgl::CONTEXT_PROFILE_MASK_ARB,		wgl::CONTEXT_CORE_PROFILE_BIT_ARB,
 		0
 	};
 
@@ -474,7 +485,7 @@ bool CGLRenderLib::InitAPI(shaderAPIParams_t& params)
 	int bestSamples = 0;
 	uint nPFormats;
 
-	if (wgl::exts::var_ARB_pixel_format && wgl::ChoosePixelFormatARB(hdc, iAttribs, NULL, elementsOf(pixelFormats), pixelFormats, &nPFormats) && nPFormats > 0)
+	if (wgl::exts::var_ARB_pixel_format && wgl::ChoosePixelFormatARB(hdc, iPFDAttribs, NULL, elementsOf(pixelFormats), pixelFormats, &nPFormats) && nPFormats > 0)
 	{
 		int minDiff = 0x7FFFFFFF;
 		int attrib = wgl::SAMPLES_ARB;
@@ -502,7 +513,27 @@ bool CGLRenderLib::InitAPI(shaderAPIParams_t& params)
 
 	SetPixelFormat(hdc, pixelFormats[bestFormat], &pfd);
 
-	glContext = wglCreateContext(hdc);
+	int iAttribs[] = {
+		wgl::CONTEXT_MAJOR_VERSION_ARB,		3,
+		wgl::CONTEXT_MINOR_VERSION_ARB,		3,
+		wgl::CONTEXT_PROFILE_MASK_ARB,		wgl::CONTEXT_FORWARD_COMPATIBLE_BIT_ARB,
+		0
+	};
+
+	glContext = wgl::CreateContextAttribsARB(hdc, NULL, iAttribs);
+	DWORD error = GetLastError();
+	if(!glContext)
+	{
+		char* errorStr = "Unknown error";
+		if (error == wgl::ERROR_INVALID_PROFILE_ARB)
+			errorStr = "ERROR_INVALID_PROFILE_ARB";
+		else if (error == wgl::ERROR_INVALID_VERSION_ARB)
+			errorStr = "ERROR_INVALID_VERSION_ARB";
+
+		ErrorMsg("Cannot initialize OpenGL context - %s (%x)\n", errorStr, error);
+		return false;
+	}
+
 	InitSharedContexts();
 
 	wglMakeCurrent(hdc, glContext);
