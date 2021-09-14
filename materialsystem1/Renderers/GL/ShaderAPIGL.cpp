@@ -102,14 +102,14 @@ int GLWorkerThread::WaitForResult(work_t* work)
 {
 	ASSERT(work);
 
+	DevMsg(DEVMSG_SHADERAPI, "WaitForResult for %s (workId %d)\n", work->name, work->workId);
+
 	// wait
 	while (work->result == WORK_PENDING_MARKER)
 		Threading::Yield();
 
 	// retrieve result and delete
 	int result = work->result;
-
-	Msg("WaitForResult for %s (workId %d)\n", work->name, work->workId);
 
 	//return the result
 	return result;
@@ -171,13 +171,13 @@ int GLWorkerThread::Run()
 
 		if (currentWork)
 		{
-			Msg("BeginAsyncOperation for %s (workId %d)\n", currentWork->name, currentWork->workId);
+			DevMsg(DEVMSG_SHADERAPI,"BeginAsyncOperation for %s (workId %d)\n", currentWork->name, currentWork->workId);
 			g_shaderApi.BeginAsyncOperation(GetThreadID());
 
 			// run work
 			currentWork->result = currentWork->func();
 
-			Msg("EndAsyncOperation for %s (workId %d)\n", currentWork->name, currentWork->workId);
+			DevMsg(DEVMSG_SHADERAPI, "EndAsyncOperation for %s (workId %d)\n", currentWork->name, currentWork->workId);
 			g_shaderApi.EndAsyncOperation();
 
 			delete currentWork;
