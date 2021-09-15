@@ -101,31 +101,14 @@ protected:
 // text
 struct eqFontStyleParam_t
 {
-	eqFontStyleParam_t()
-	{
-		align = 0; // which is (TEXT_ALIGN_LEFT | TEXT_ALIGN_TOP)
-		styleFlag = 0;
-
-		shadowOffset = 1.0f;
-		shadowWidth = 0.01f;
-
-		layoutBuilder = NULL;
-
-		shadowColor = ColorRGB(0.0f);
-		shadowAlpha = 0.7f;
-
-		textColor = ColorRGBA(1.0f);
-
-		scale		= 1.0f;
-	}
-
+	eqFontStyleParam_t() = default;
 	eqFontStyleParam_t(const eqFontStyleParam_t& derived)
 	{
 		align = derived.align;
 		styleFlag = derived.styleFlag;
 
 		shadowOffset = derived.shadowOffset;
-		shadowWidth = derived.shadowWidth;
+		shadowWeight = derived.shadowWeight;
 
 		layoutBuilder = derived.layoutBuilder;
 
@@ -137,21 +120,22 @@ struct eqFontStyleParam_t
 		scale = derived.scale;
 	}
 
-	int					align;			// ETextAlignment
-	int					styleFlag;		// ETextStyleFlag
+	int					align{ 0 };			// ETextAlignment
+	int					styleFlag{ 0 };		// ETextStyleFlag
 
-	float				shadowOffset;
-	float				shadowWidth;
+	float				shadowOffset{ 1.0f };
+	float				shadowWeight{ 0.01f };
 
-	ITextLayoutBuilder*	layoutBuilder;
+	ITextLayoutBuilder* layoutBuilder{ nullptr };
 
-	ColorRGB			shadowColor;
-	float				shadowAlpha;
+	ColorRGB			shadowColor{ 0.0f };
+	float				shadowAlpha{ 0.7f };
 
-	ColorRGBA			textColor;
+	ColorRGBA			textColor{ 1.0f };
 
 	// SDF font size scaling
-	Vector2D			scale;
+	Vector2D			scale{ 1.0f };
+	float				textWeight{ 0.0f };
 };
 
 //-------------------------------------------------------------------------

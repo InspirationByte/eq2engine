@@ -14,7 +14,6 @@
 #include "core/IConsoleCommands.h"
 #include "core/ILocalize.h"
 
-#include "font/IFont.h"
 #include "font/IFontCache.h"
 
 #include "materialsystem1/IMaterialSystem.h"
@@ -30,9 +29,9 @@ namespace equi
 
 IUIControl::IUIControl()
 	: m_visible(true), m_selfVisible(true), m_enabled(true), m_parent(NULL), 
-	m_font(nullptr), m_fontScale(1.0f), m_textColor(1.0f), m_sizeDiff(0), m_sizeDiffPerc(1.0f),
+	m_sizeDiff(0), m_sizeDiffPerc(1.0f),
 	m_position(0),m_size(25),
-	m_scaling(UI_SCALING_NONE), m_anchors(0), m_alignment(UI_ALIGN_LEFT | UI_ALIGN_TOP),m_textAlignment(TEXT_ALIGN_LEFT | TEXT_ALIGN_TOP)
+	m_scaling(UI_SCALING_NONE), m_anchors(0), m_alignment(UI_ALIGN_LEFT | UI_ALIGN_TOP)
 {
 	m_label = "Control";
 
@@ -74,14 +73,14 @@ void IUIControl::InitFromKeyValues( kvkeybase_t* sec, bool noClear )
 	m_visible = KV_GetValueBool(sec->FindKeyBase("visible"), 0, m_visible);
 	m_selfVisible = KV_GetValueBool(sec->FindKeyBase("selfvisible"), 0, m_selfVisible);
 
-	m_font = nullptr;
+	
 	m_sizeDiff = 0;
 	m_sizeDiffPerc = 1.0f;
 	m_anchors = 0;
 	m_alignment = (UI_BORDER_LEFT | UI_BORDER_TOP);
 
+	m_font.font = nullptr;
 	kvkeybase_t* font = sec->FindKeyBase("font");
-
 	if(font)
 	{
 		int styleFlags = 0;
@@ -94,11 +93,19 @@ void IUIControl::InitFromKeyValues( kvkeybase_t* sec, bool noClear )
 				styleFlags |= TEXT_STYLE_ITALIC;
 		}
 
-		m_font = g_fontCache->GetFont(KV_GetValueString(font), KV_GetValueInt(font, 1, 20), styleFlags, false);
+		m_font.font = g_fontCache->GetFont(KV_GetValueString(font), KV_GetValueInt(font, 1, 20), styleFlags, false);
 	}
 
-	m_fontScale = KV_GetVector2D(sec->FindKeyBase("fontScale"), 0, m_parent ? m_parent->m_fontScale : m_fontScale);
-	m_textColor = KV_GetVector4D(sec->FindKeyBase("textColor"), 0, m_parent ? m_parent->m_textColor : m_textColor);
+	
+
+	m_font.fontScale = KV_GetVector2D(sec->FindKeyBase("fontScale"), 0, m_parent ? m_parent->m_font.fontScale : m_font.fontScale);
+	m_font.textColor = KV_GetVector4D(sec->FindKeyBase("textColor"), 0, m_parent ? m_parent->m_font.textColor : m_font.textColor);
+	m_font.monoSpace = KV_GetValueBool(sec->FindKeyBase("textMonospace"), 0, m_parent ? m_parent->m_font.monoSpace : m_font.monoSpace);
+	m_font.textWeight = KV_GetValueFloat(sec->FindKeyBase("textWeight"), 0, m_parent ? m_parent->m_font.textWeight : m_font.textWeight);
+
+	m_font.shadowColor = KV_GetVector4D(sec->FindKeyBase("textShadowColor"), 0, m_parent ? m_parent->m_font.shadowColor : m_font.shadowColor);
+	m_font.shadowOffset = KV_GetValueFloat(sec->FindKeyBase("textShadowOffset"), 0, m_parent ? m_parent->m_font.shadowOffset : m_font.shadowOffset);
+	m_font.shadowWeight = KV_GetValueFloat(sec->FindKeyBase("textShadowWeight"), 0, m_parent ? m_parent->m_font.shadowWeight : m_font.shadowWeight);
 
 	kvkeybase_t* command = sec->FindKeyBase("command");
 
@@ -179,26 +186,26 @@ void IUIControl::InitFromKeyValues( kvkeybase_t* sec, bool noClear )
 
 	if (textAlign)
 	{
-		m_textAlignment = 0;
+		m_font.textAlignment = 0;
 
 		for (int i = 0; i < textAlign->values.numElem(); i++)
 		{
 			const char* alignVal = KV_GetValueString(textAlign, i);
 
 			if (!stricmp("left", alignVal))
-				m_textAlignment |= TEXT_ALIGN_LEFT;
+				m_font.textAlignment |= TEXT_ALIGN_LEFT;
 			else if (!stricmp("top", alignVal))
-				m_textAlignment |= TEXT_ALIGN_TOP;
+				m_font.textAlignment |= TEXT_ALIGN_TOP;
 			else if (!stricmp("right", alignVal))
-				m_textAlignment |= TEXT_ALIGN_RIGHT;
+				m_font.textAlignment |= TEXT_ALIGN_RIGHT;
 			else if (!stricmp("bottom", alignVal))
-				m_textAlignment |= TEXT_ALIGN_BOTTOM;
+				m_font.textAlignment |= TEXT_ALIGN_BOTTOM;
 			else if (!stricmp("vcenter", alignVal))
-				m_textAlignment |= TEXT_ALIGN_VCENTER;
+				m_font.textAlignment |= TEXT_ALIGN_VCENTER;
 			else if (!stricmp("hcenter", alignVal))
-				m_textAlignment |= TEXT_ALIGN_HCENTER;
+				m_font.textAlignment |= TEXT_ALIGN_HCENTER;
 			else if (!stricmp("center", alignVal))
-				m_textAlignment |= TEXT_ALIGN_HCENTER | TEXT_ALIGN_VCENTER;
+				m_font.textAlignment |= TEXT_ALIGN_HCENTER | TEXT_ALIGN_VCENTER;
 		}
 	}
 
@@ -433,7 +440,7 @@ IRectangle IUIControl::GetClientRectangle() const
 
 IEqFont* IUIControl::GetFont() const
 {
-	if(m_font == NULL)
+	if(!m_font.font)
 	{
 		if( m_parent )
 			return m_parent->GetFont();
@@ -441,17 +448,25 @@ IEqFont* IUIControl::GetFont() const
 			return equi::Manager->GetDefaultFont();
 	}
 
-	return m_font;
+	return m_font.font;
 }
 
 void IUIControl::GetCalcFontStyle(eqFontStyleParam_t& style) const
 {
-	Vector2D scaling = CalcScaling();
-	style.styleFlag |= TEXT_STYLE_SHADOW | TEXT_STYLE_SCISSOR | TEXT_STYLE_USE_TAGS;
-	style.align = m_textAlignment;
-	style.scale = m_fontScale * scaling;
+	style.styleFlag |= TEXT_STYLE_SCISSOR | TEXT_STYLE_USE_TAGS | (m_font.monoSpace ? TEXT_STYLE_MONOSPACE : 0);
+	style.align = m_font.textAlignment;
+	style.scale = m_font.fontScale * CalcScaling();
+	style.textWeight = m_font.textWeight;
+	style.shadowOffset = m_font.shadowOffset;
+	style.shadowWeight = m_font.shadowWeight;
 
-	style.textColor = m_textColor;
+	style.shadowColor = m_font.shadowColor.xyz();
+	style.shadowAlpha = m_font.shadowColor.w;
+
+	if (style.shadowAlpha > 0.0f)
+		style.styleFlag |= TEXT_STYLE_SHADOW;
+
+	style.textColor = m_font.textColor;
 }
 
 inline void DebugDrawRectangle(const Rectangle_t &rect, const ColorRGBA &color1, const ColorRGBA &color2)

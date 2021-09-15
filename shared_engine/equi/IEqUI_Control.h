@@ -17,7 +17,9 @@
 #include "utils/TextureAtlas.h"
 
 #include "math/DkMath.h"
-#include "math/Rectangle.h"
+
+#include "font/IFont.h"
+#include "equi_defs.h"
 
 #ifdef GetParent
 #undef GetParent
@@ -48,6 +50,28 @@ struct eqUIEventCmd_t
 	typedef baseClassName BaseClass;							\
 	const char*	GetClassname() const { return ThisClass::Classname(); }		\
 	static const char* Classname() { return #className; }		\
+
+struct ui_transform
+{
+	float					rotation { 0.0f };
+	Vector2D				translation { 0.0f };
+	Vector2D				scale { 1.0f };
+};
+
+struct ui_fontprops
+{
+	IEqFont*				font { nullptr };
+	Vector2D				fontScale { 1 };
+	ColorRGBA				textColor { 1.0f };
+	float					textWeight { 0.0f };
+	int						textAlignment { TEXT_ALIGN_LEFT | TEXT_ALIGN_TOP };
+
+	ColorRGBA				shadowColor { 0.0f, 0.0f, 0.0f, 0.7f };
+	float					shadowOffset { 1.0f };
+	float					shadowWeight { 0.01f };
+
+	bool					monoSpace { false };
+};
 
 class IUIControl
 {
@@ -125,19 +149,19 @@ public:
 	IUIControl*					FindChild( const char* pszName );
 	void						ClearChilds( bool destroy = true );
 
-	IUIControl*					GetParent() const { return m_parent; }
+	IUIControl*					GetParent() const						{ return m_parent; }
 
 	virtual IEqFont*			GetFont() const;
 
-	virtual void				SetFontScale(const Vector2D& scale) { m_fontScale = scale; }
-	virtual const Vector2D&		GetFontScale() const { return m_fontScale; }
+	virtual void				SetFontScale(const Vector2D& scale)		{ m_font.fontScale = scale; }
+	virtual const Vector2D&		GetFontScale() const					{ return m_font.fontScale; }
 
 	// text properties
-	const ColorRGBA&			GetTextColor() const { return m_textColor; }
-	void						SetTextColor(const ColorRGBA& color) { m_textColor = color; }
+	const ColorRGBA&			GetTextColor() const					{ return m_font.textColor; }
+	void						SetTextColor(const ColorRGBA& color)	{ m_font.textColor = color; }
 
-	void						SetTextAlignment(int alignmentFlags) { m_textAlignment = alignmentFlags; }
-	int							GetTextAlignment() const { return m_textAlignment; }
+	void						SetTextAlignment(int alignmentFlags)	{ m_font.textAlignment = alignmentFlags; }
+	int							GetTextAlignment() const				{ return m_font.textAlignment; }
 
 	virtual	void				GetCalcFontStyle(eqFontStyleParam_t& style) const;
 
@@ -163,43 +187,33 @@ protected:
 	virtual bool				ProcessMouseEvents(const IVector2D& mousePos, const IVector2D& mouseDelta, int nMouseButtons, int flags);
 	virtual bool				ProcessKeyboardEvents(int nKeyButtons, int flags);
 
-	IUIControl*					m_parent;
+	IUIControl*					m_parent{ nullptr };
 
 	DkLinkedList<IUIControl*>	m_childs;		// child panels
 
 	eqUIEventCmd_t				m_commandEvent;
 
-	IVector2D					m_position;
-	IVector2D					m_size;
+	IVector2D					m_position { 0 };
+	IVector2D					m_size { 64 };
 
 	// for anchors
-	Vector2D					m_sizeDiff;	
-	Vector2D					m_sizeDiffPerc;
+	Vector2D					m_sizeDiff { 0.0f };
+	Vector2D					m_sizeDiffPerc { 1.0f };
 
-	bool						m_visible;
-	bool						m_enabled;
+	bool						m_visible { true };
+	bool						m_enabled { true };
 
-	bool						m_selfVisible;
+	bool						m_selfVisible { true };
 
-	int							m_alignment;
-	int							m_anchors;
-	int							m_scaling;
+	int							m_alignment { UI_ALIGN_LEFT | UI_ALIGN_TOP };
+	int							m_anchors { 0 };
+	int							m_scaling { UI_SCALING_NONE };
 
 	EqString					m_name;
 	EqWString					m_label;
 
-	IEqFont*					m_font;
-	Vector2D					m_fontScale;
-	ColorRGBA					m_textColor;
-	int							m_textAlignment;
-
-	struct ui_transform
-	{
-		float					rotation;
-		Vector2D				translation;
-		Vector2D				scale;
-	} m_transform;
-
+	ui_fontprops				m_font;
+	ui_transform				m_transform;
 };
 
 template <class T> 

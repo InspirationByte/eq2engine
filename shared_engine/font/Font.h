@@ -46,6 +46,8 @@ public:
 
 protected:
 
+	void					DrawTextMeshBuffer(IDynamicMesh* mesh, const eqFontStyleParam_t& params);
+
 	// returns the character data
 	const eqFontChar_t&		GetFontCharById( const int chrId ) const;
 

@@ -22,7 +22,6 @@ Button::Button() : m_state(false)
 
 void Button::DrawSelf( const IRectangle& rect )
 {
-	eqFontStyleParam_t style;
 	ColorRGBA btnColor(0.8,0.8,0.8,0.8);
 
 	if(m_state && equi::Manager->GetMouseOver() == this)
@@ -30,10 +29,8 @@ void Button::DrawSelf( const IRectangle& rect )
 
 	DrawWindowRectangle(rect, btnColor, ColorRGBA(0.5,0.5,0.5,0.5));
 
-	// TODO: GetFontStyle
-
-	style.styleFlag |= TEXT_STYLE_SHADOW | TEXT_STYLE_SCISSOR;
-	style.scale = m_fontScale;
+	eqFontStyleParam_t style;
+	GetCalcFontStyle(style);
 
 	IVector2D pos = rect.GetLeftTop() + IVector2D(0,25);
 
