@@ -313,6 +313,7 @@ ShaderAPIGL::ShaderAPIGL() : ShaderAPI_Base()
 
 	m_boundInstanceStream = -1;
 	memset(m_currentGLVB, 0, sizeof(m_currentGLVB));
+	memset(m_currentGLTextures, 0, sizeof(m_currentGLTextures));
 	m_currentGLIB = 0;
 
 	m_asyncOperationActive = false;
@@ -448,9 +449,10 @@ void ShaderAPIGL::ApplyTextures()
 	for (i = 0; i < m_caps.maxTextureUnits; i++)
 	{
 		CGLTexture* pSelectedTexture = (CGLTexture*)m_pSelectedTextures[i];
-		CGLTexture* pCurrentTexture = (CGLTexture*)m_pCurrentTextures[i];
+		ITexture* pCurrentTexture = m_pCurrentTextures[i];
+		GLTextureRef_t& currentGLTexture = m_currentGLTextures[i];
 		
-		if(pSelectedTexture != pCurrentTexture)
+		if(pSelectedTexture != m_pCurrentTextures[i])
 		{
 			// Set the active texture unit and bind the selected texture to target
 			glActiveTexture(GL_TEXTURE0 + i);
@@ -458,36 +460,20 @@ void ShaderAPIGL::ApplyTextures()
 			if (pSelectedTexture == NULL)
 			{
 				if(pCurrentTexture != NULL)
-				{
-					glBindTexture(pCurrentTexture->glTarget, 0);
-				}
+					glBindTexture(glTexTargetType[currentGLTexture.type], 0);
 			}
 			else
 			{
-				if (pCurrentTexture == NULL)
-				{
-					// bind texture
-					glBindTexture(pSelectedTexture->glTarget, pSelectedTexture->GetCurrentTexture().glTexID);
-#if 0
-					glTexEnvf(GL_TEXTURE_FILTER_CONTROL, GL_TEXTURE_LOD_BIAS, pSelectedTexture->m_flLod);
-#endif // OpenGL 2.1
-				}
-				else
-				{
-#if 0
-					if (pSelectedTexture->m_flLod != pCurrentTexture->m_flLod)
-						glTexEnvf(GL_TEXTURE_FILTER_CONTROL, GL_TEXTURE_LOD_BIAS, pSelectedTexture->m_flLod);
-#endif // OpenGL 2.1
-
-					// bind our texture
-					glBindTexture(pSelectedTexture->glTarget, pSelectedTexture->GetCurrentTexture().glTexID);
-				}
+				currentGLTexture = pSelectedTexture->GetCurrentTexture();
+				glBindTexture(pSelectedTexture->glTarget, currentGLTexture.glTexID);
 			}
 
 			m_pCurrentTextures[i] = pSelectedTexture;
+			
 		}
 	}
 
+#pragma todo(GL: vertex  textures)
 	for (i = 0; i < m_caps.maxVertexTextureUnits; i++)
 	{
 		CGLTexture* pTexture = (CGLTexture*)m_pSelectedVertexTextures[i];
@@ -639,7 +625,7 @@ void ShaderAPIGL::ApplyDepthState()
 				}
 			}
 
-			#pragma todo("GL: stencil func")
+			#pragma todo(GL: stencil tests)
 		}
 
 		m_pCurrentDepthState = pSelectedState;

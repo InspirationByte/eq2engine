@@ -370,6 +370,8 @@ private:
 	uint					m_currentGLVB[MAX_VERTEXSTREAM];
 	uint					m_currentGLIB;
 
+	GLTextureRef_t			m_currentGLTextures[MAX_TEXTUREUNIT];
+
 	int						m_nCurrentRenderTargets;
 
 	int						m_nCurrentFrontFace;
