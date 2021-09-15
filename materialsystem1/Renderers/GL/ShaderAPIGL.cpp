@@ -1877,15 +1877,15 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 
 		EqString shaderString;
 
-#ifndef USE_GLES2
-		shaderString.Append("#version 140\r\n");
+#if !defined(USE_GLES2)
+		shaderString.Append("#version 120\r\n");
+		// append useful HLSL replacements
+		shaderString.Append(SHADER_HELPERS_STRING);
 #endif // USE_GLES2
 
 		if (extra != NULL)
 			shaderString.Append(extra);
 
-		// append useful HLSL replacements
-		shaderString.Append(SHADER_HELPERS_STRING);
 		shaderString.Append(info.vs.text);
 
 		const GLchar* sStr[] = { shaderString.ToCString() };
@@ -1947,15 +1947,15 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 	{
 		EqString shaderString;
 
-#ifndef USE_GLES2
+#if !defined(USE_GLES2)
 		shaderString.Append("#version 120\r\n");
+		// append useful HLSL replacements
+		shaderString.Append(SHADER_HELPERS_STRING);
 #endif // USE_GLES2
 
 		if (extra != NULL)
 			shaderString.Append(extra);
 
-		// append useful HLSL replacements
-		shaderString.Append(SHADER_HELPERS_STRING);
 		shaderString.Append(info.ps.text);
 
 		const GLchar* sStr[] = { shaderString.ToCString() };

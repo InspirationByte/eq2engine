@@ -910,31 +910,44 @@ bool isShaderIncDef(const char ch)
 //-------------------------------------------------------------
 // Shaders and it's operations
 //-------------------------------------------------------------
-void ProcessShaderFileIncludes(char** buffer, const char* pszFileName, shaderProgramText_t& textData, bool bStart = false)
+void LoadShaderFiles(char** buffer, const char* pszFileName, const char* rootPath, shaderProgramText_t& textData, bool bStart, bool bIgnoreIfFailed)
 {
+	EqString shaderFilePath;
+	CombinePath(shaderFilePath, 2, rootPath, pszFileName);
+
+	// try loading file
+	*buffer = g_fileSystem->GetFileBuffer(shaderFilePath.ToCString());
+
 	if (!(*buffer))
+	{
+		if(!bIgnoreIfFailed)
+			MsgError("LoadShaderFiles: cannot open file '%s'!\n", shaderFilePath.ToCString());
+
 		return;
+	}
 
-	int nLine = 0;
+	// add include filename
+	textData.includes.append(shaderFilePath);
 
-	Tokenizer tok;
-	tok.setString(*buffer);
+	const bool isOpenGL = g_pShaderAPI->GetShaderAPIClass() == SHADERAPI_OPENGL;
 
-	Tokenizer lineParser;
+	const int thisIncludeNumber = textData.includes.numElem();
 
 	// set main source filename
 	EqString newSrc;
-
-	bool isOpenGL = g_pShaderAPI->GetShaderAPIClass() == SHADERAPI_OPENGL;
-
 	if (isOpenGL)
-		newSrc = EqString::Format("\r\n#line 1 %d\r\n", textData.includes.numElem());		// I hate, hate and hate GLSL for not supporting source file names, only file numbers.
+		newSrc = EqString::Format("#line 0 %d\r\n", thisIncludeNumber);
 	else
-		newSrc = "\r\n#line 1 \"" + _Es(pszFileName) + "\"\r\n";
+		newSrc = "#line 0 \"" + _Es(pszFileName) + "\"\r\n";
 
 	bool afterSkipLine = false;
+	int nLine = 0;
+
+	Tokenizer tok, lineParser;
+	tok.setString(*buffer);
 
 	char* str;
+
 	while((str = tok.nextLine()) != NULL)
 	{
 		lineParser.setString(str);
@@ -955,22 +968,14 @@ void ProcessShaderFileIncludes(char** buffer, const char* pszFileName, shaderPro
 
 				char* inc_text = lineParser.next(isShaderInc);
 
-				EqString inc_filename(EqString(SHADERS_DEFAULT_PATH) + g_pShaderAPI->GetRendererName() + "/" + EqString(inc_text));
-
-				// add include filename
-				textData.includes.append( inc_filename );
-
-				char* psBuffer = g_fileSystem->GetFileBuffer(inc_filename.GetData());
-
-				ProcessShaderFileIncludes(&psBuffer, inc_filename.GetData(), textData);
+				char* psBuffer = nullptr;
+				LoadShaderFiles(&psBuffer, inc_text, rootPath, textData, false, false);
 
 				if(psBuffer)
 				{
 					newSrc = newSrc + _Es("\r\n") + psBuffer + _Es("\r\n");
 					PPFree( psBuffer );
 				}
-				else
-					MsgError("'%s': cannot open file '%s' for include!\n", pszFileName, inc_filename.GetData());
 
 				skipLine = true;
 
@@ -988,7 +993,7 @@ void ProcessShaderFileIncludes(char** buffer, const char* pszFileName, shaderPro
 		if (afterSkipLine)
 		{
 			if (isOpenGL)
-				newSrc = newSrc + EqString::Format("#line %d %d\r\n", nLine, textData.includes.numElem());
+				newSrc = newSrc + EqString::Format("#line %d %d\r\n", nLine, thisIncludeNumber);
 			else
 				newSrc = newSrc + EqString::Format("#line %d \"", nLine) + _Es(pszFileName) + "\"\r\n";
 
@@ -1010,9 +1015,9 @@ bool ShaderAPI_Base::LoadShadersFromFile(IShaderProgram* pShaderOutput, const ch
 
 	bool bResult = false;
 
-	EqString fileNameVS = (EqString::Format(SHADERS_DEFAULT_PATH "%s/%s.vs", GetRendererName(), pszFilePrefix));
-	EqString fileNamePS = (EqString::Format(SHADERS_DEFAULT_PATH "%s/%s.ps", GetRendererName(), pszFilePrefix));
-	EqString fileNameGS = (EqString::Format(SHADERS_DEFAULT_PATH "%s/%s.gs", GetRendererName(), pszFilePrefix));
+	EqString fileNameVS = EqString::Format("%s.vs", pszFilePrefix);
+	EqString fileNamePS = EqString::Format("%s.ps", pszFilePrefix);
+	EqString fileNameGS = EqString::Format("%s.gs", pszFilePrefix);
 
 	bool vsRequiried = true;	// vertex shader is always required
 	bool psRequiried = false;
@@ -1043,9 +1048,9 @@ bool ShaderAPI_Base::LoadShadersFromFile(IShaderProgram* pShaderOutput, const ch
 		const char* pixelProgNameStr = KV_GetValueString(pixelProgramName, 0, pszFilePrefix);
 		const char* geomProgNameStr = KV_GetValueString(geometryProgramName, 0, pszFilePrefix);
 
-		fileNameVS = EqString::Format(SHADERS_DEFAULT_PATH "%s/%s.vs", GetRendererName(), vertexProgNameStr);
-		fileNamePS = EqString::Format(SHADERS_DEFAULT_PATH "%s/%s.ps", GetRendererName(), pixelProgNameStr);
-		fileNameGS = EqString::Format(SHADERS_DEFAULT_PATH "%s/%s.gs", GetRendererName(), geomProgNameStr);
+		fileNameVS = EqString::Format("%s.vs", vertexProgNameStr);
+		fileNamePS = EqString::Format("%s.ps", pixelProgNameStr);
+		fileNameGS = EqString::Format("%s.gs", geomProgNameStr);
 
 		// API section
 		// find corresponding API
@@ -1070,19 +1075,14 @@ bool ShaderAPI_Base::LoadShadersFromFile(IShaderProgram* pShaderOutput, const ch
 		}
 	}
 
-	// add first files as includes (index = 0)
-	info.vs.includes.append(fileNameVS);
-	info.ps.includes.append(fileNamePS);
-	info.gs.includes.append(fileNameGS);
+	EqString shaderRootPath = EqString::Format(SHADERS_DEFAULT_PATH "%s", GetRendererName());
 
-	// load them
-	info.vs.text = g_fileSystem->GetFileBuffer(fileNameVS.GetData());
-	info.ps.text = g_fileSystem->GetFileBuffer(fileNamePS.GetData());
-	info.gs.text = g_fileSystem->GetFileBuffer(fileNameGS.GetData());
+	LoadShaderFiles(&info.vs.text, fileNameVS.ToCString(), shaderRootPath.ToCString(), info.vs, true, !vsRequiried);
+	LoadShaderFiles(&info.ps.text, fileNamePS.ToCString(), shaderRootPath.ToCString(), info.ps, true, !psRequiried);
+	LoadShaderFiles(&info.gs.text, fileNameGS.ToCString(), shaderRootPath.ToCString(), info.gs, true, !gsRequiried);
 
 	if (!info.ps.text && psRequiried)
 	{
-		MsgError("Can't open pixel shader file '%s'!\n", fileNamePS.GetData());
 		PPFree(info.vs.text);
 		PPFree(info.ps.text);
 		PPFree(info.gs.text);
@@ -1091,7 +1091,6 @@ bool ShaderAPI_Base::LoadShadersFromFile(IShaderProgram* pShaderOutput, const ch
 
 	if(!info.vs.text && vsRequiried)
 	{
-		MsgError("Can't open vertex shader file '%s'!\n",fileNameVS.GetData());
 		PPFree(info.vs.text);
 		PPFree(info.ps.text);
 		PPFree(info.gs.text);
@@ -1100,16 +1099,11 @@ bool ShaderAPI_Base::LoadShadersFromFile(IShaderProgram* pShaderOutput, const ch
 
 	if (!info.gs.text && gsRequiried)
 	{
-		MsgError("Can't open geometry shader file '%s'!\n", fileNameVS.GetData());
 		PPFree(info.vs.text);
 		PPFree(info.ps.text);
 		PPFree(info.gs.text);
 		return false;
 	}
-
-	ProcessShaderFileIncludes(&info.vs.text, fileNameVS.GetData(), info.vs, true);
-	ProcessShaderFileIncludes(&info.ps.text, fileNamePS.GetData(), info.ps, true);
-	ProcessShaderFileIncludes(&info.gs.text, fileNameGS.GetData(), info.gs, true);
 
 	// checksum please
 	if(info.vs.text)
