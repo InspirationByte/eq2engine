@@ -188,10 +188,12 @@ float CFont::_GetStringWidth( const CHAR_T* str, const eqFontStyleParam_t& param
 
 	// parse
 	int charMode = CHARMODE_NORMAL;
-
+	int prevChar = 0;
+	int charIdx = 0;
     for(int i = 0; i < charCount; i++)
 	{
-		int charIdx = str[i];
+		prevChar = charIdx;
+		charIdx = str[i];
 
 		// skip fasttags
 		if( (params.styleFlag & TEXT_STYLE_USE_TAGS) &&
@@ -204,7 +206,7 @@ float CFont::_GetStringWidth( const CHAR_T* str, const eqFontStyleParam_t& param
 
 		if(charMode == CHARMODE_TAG)
 		{
-			if(charIdx == ';')
+			if(charIdx == ';' || prevChar == '&' && charIdx == '&')
 				charMode = CHARMODE_NORMAL;
 
 			continue;
@@ -253,12 +255,15 @@ void CFont::BuildCharVertexBuffer(CMeshBuilder& builder, const CHAR_T* str, cons
 
 	int charMode = CHARMODE_NORMAL;
 	int tagType = TEXT_TAG_NONE;
+	int prevChar = 0;
+	int charIdx = 0;
 
 	eqFontStyleParam_t parsedParams;
 
     while( *str )
 	{
-		int charIdx = *str;
+		prevChar = charIdx;
+		charIdx = *str;
 
 		states.goToLast();
 		const eqFontStyleParam_t& stateParams = states.getCurrent();
@@ -277,20 +282,25 @@ void CFont::BuildCharVertexBuffer(CMeshBuilder& builder, const CHAR_T* str, cons
 
 		if(charMode == CHARMODE_TAG)
 		{
-			if( charIdx == '#')
+			if (prevChar == '&' && charIdx == '&')
+			{
+				// escape
+				charMode = CHARMODE_NORMAL;
+			}
+			else if (charIdx == '#')
 			{
 				parsedParams = stateParams;
 				tagType = TEXT_TAG_COLOR;
 
 				str++;
-				parsedParams.textColor = ColorRGBA(hexToColor3(str),stateParams.textColor.w);
+				parsedParams.textColor = ColorRGBA(hexToColor3(str), stateParams.textColor.w);
 				str += 6;
 
 				continue;
 			}
-			else if( charIdx == ';')
+			else if (charIdx == ';')
 			{
-				if(tagType == TEXT_TAG_NONE)
+				if (tagType == TEXT_TAG_NONE)
 				{
 					states.goToLast();
 					states.removeCurrent();
@@ -303,10 +313,10 @@ void CFont::BuildCharVertexBuffer(CMeshBuilder& builder, const CHAR_T* str, cons
 
 				tagType = TEXT_TAG_NONE;
 				charMode = CHARMODE_NORMAL;
+				prevChar = charIdx;
 				str++;
-			}
-
-			continue;
+				continue;
+			}			
 		}
 
 		if(states.getCount() == 0)
@@ -540,9 +550,13 @@ int CFont::GetTextQuadsCount(const CHAR_T* str, const eqFontStyleParam_t& params
 	int n = 0;
 
 	int charMode = CHARMODE_NORMAL;
+	int prevChar = 0;
+	int charIdx = 0;
+
 	while (*str)
 	{
-		int charIdx = *str;
+		prevChar = charIdx;
+		charIdx = *str;
 
 		// skip fasttags
 		if( (params.styleFlag & TEXT_STYLE_USE_TAGS) &&
@@ -556,7 +570,7 @@ int CFont::GetTextQuadsCount(const CHAR_T* str, const eqFontStyleParam_t& params
 
 		if(charMode == CHARMODE_TAG)
 		{
-			if(charIdx == ';')
+			if(charIdx == ';' || prevChar == '&' && charIdx == '&')
 				charMode = CHARMODE_NORMAL;
 
 			str++;
