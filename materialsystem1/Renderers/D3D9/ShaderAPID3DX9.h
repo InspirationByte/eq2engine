@@ -313,7 +313,7 @@ protected:
 	int							GetSamplerUnit(IShaderProgram* pProgram,const char* pszSamplerName);
 
 private:
-	static bool					InternalCreateRenderTarget(LPDIRECT3DDEVICE9 dev, CD3D9Texture* tex, int nFlags);
+	static bool					InternalCreateRenderTarget(LPDIRECT3DDEVICE9 dev, CD3D9Texture* tex, int nFlags, const ShaderAPICaps_t& caps);
 	
 	// Sampler states is not binding same as OpenGL
 	SamplerStateParam_t*		m_pSelectedSamplerStates[MAX_SAMPLERSTATE];

@@ -269,11 +269,22 @@ bool CD3DRenderLib::InitAPI( shaderAPIParams_t &params )
 	}
 
 #define FOURCC_INTZ ((D3DFORMAT)(MAKEFOURCC('I','N','T','Z')))
+#define FOURCC_NULL ((D3DFORMAT)(MAKEFOURCC('N','U','L','L')))
 
 	// Determine if INTZ is supported
-	hr = m_d3dFactory->CheckDeviceFormat(D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, m_d3dMode.Format,D3DUSAGE_DEPTHSTENCIL, D3DRTYPE_TEXTURE,FOURCC_INTZ);
-
+	hr = m_d3dFactory->CheckDeviceFormat(D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, m_d3dMode.Format, D3DUSAGE_DEPTHSTENCIL, D3DRTYPE_TEXTURE,FOURCC_INTZ);
 	caps.INTZSupported = (hr == D3D_OK);
+
+	// Determine if NULL is supported
+	hr = m_d3dFactory->CheckDeviceFormat(D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, m_d3dMode.Format, D3DUSAGE_RENDERTARGET, D3DRTYPE_TEXTURE, FOURCC_NULL);
+	caps.NULLSupported = (hr == D3D_OK);
+
+	// allocate formats on caps and format Map as well
+	caps.INTZFormat = FORMAT_R32UI;
+	caps.NULLFormat = FORMAT_NONE;		// at actual NONE slot
+
+	formats[caps.INTZFormat] = FOURCC_INTZ;
+	formats[caps.NULLFormat] = FOURCC_NULL;
 
 	return true;
 }

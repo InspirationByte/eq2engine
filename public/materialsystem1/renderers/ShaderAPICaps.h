@@ -27,7 +27,12 @@ struct ShaderAPICaps_t
 {
 	bool				textureFormatsSupported[FORMAT_COUNT];
 	bool				renderTargetFormatsSupported[FORMAT_COUNT];
+
 	bool				INTZSupported;		// Direct3D9 INTZ (internal Z buffer) sampling as texture is supported
+	ETextureFormat		INTZFormat;
+
+	bool				NULLSupported;		// Direct3D9 NULL sampling as texture is supported
+	ETextureFormat		NULLFormat;
 
 	bool				isInstancingSupported;
 	bool				isHardwareOcclusionQuerySupported;

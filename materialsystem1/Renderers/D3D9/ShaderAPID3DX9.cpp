@@ -346,7 +346,7 @@ bool ShaderAPID3DX9::ResetDevice( D3DPRESENT_PARAMETERS &d3dpp )
 			else if (!is_managed && is_rendertarget)
 			{
 				DevMsg(DEVMSG_SHADERAPI, "Restoring rentertarget %s\n", pTex->GetName());
-				InternalCreateRenderTarget(m_pD3DDevice, pTex, pTex->GetFlags());
+				InternalCreateRenderTarget(m_pD3DDevice, pTex, pTex->GetFlags(), m_caps);
 			}
 		}
 
@@ -1243,9 +1243,32 @@ static LPDIRECT3DSURFACE9* CreateSurfaces(int num)
 	return new LPDIRECT3DSURFACE9[num];
 }
 
-bool ShaderAPID3DX9::InternalCreateRenderTarget(LPDIRECT3DDEVICE9 dev, CD3D9Texture *tex, int nFlags)
+bool ShaderAPID3DX9::InternalCreateRenderTarget(LPDIRECT3DDEVICE9 dev, CD3D9Texture *tex, int nFlags, const ShaderAPICaps_t& caps)
 {
-	if (IsDepthFormat(tex->GetFormat()))
+	if (caps.INTZSupported && caps.INTZFormat == tex->GetFormat())
+	{
+		LPDIRECT3DBASETEXTURE9 pTexture = NULL;
+
+		tex->usage = D3DUSAGE_DEPTHSTENCIL;
+		tex->m_pool = D3DPOOL_DEFAULT;
+
+		DevMsg(DEVMSG_SHADERAPI, "InternalCreateRenderTarget: creating INTZ render target single texture\n");
+		if (dev->CreateTexture(tex->GetWidth(), tex->GetHeight(), tex->GetMipCount(), tex->usage, formats[tex->GetFormat()], tex->m_pool, (LPDIRECT3DTEXTURE9*)&pTexture, NULL) != D3D_OK)
+		{
+			MsgError("!!! Couldn't create '%s' INTZ render target with size %d %d\n", tex->GetName(), tex->GetWidth(), tex->GetHeight());
+			ASSERT(!"Couldn't create INTZ render target");
+			return false;
+		}
+
+		tex->textures.append(pTexture);
+
+		LPDIRECT3DSURFACE9 pSurface = NULL;
+
+		HRESULT hr = ((LPDIRECT3DTEXTURE9)tex->textures[0])->GetSurfaceLevel(0, &pSurface);
+		if (!FAILED(hr))
+			tex->surfaces.append(pSurface);
+	}
+	else if (IsDepthFormat(tex->GetFormat()))
 	{
 		DevMsg(DEVMSG_SHADERAPI, "InternalCreateRenderTarget: creating depth/stencil surface\n");
 
@@ -1329,12 +1352,13 @@ bool ShaderAPID3DX9::InternalCreateRenderTarget(LPDIRECT3DDEVICE9 dev, CD3D9Text
 }
 
 // It will add new rendertarget
-ITexture* ShaderAPID3DX9::CreateRenderTarget(int width, int height, ETextureFormat nRTFormat,ER_TextureFilterMode textureFilterType, ER_TextureAddressMode textureAddress, ER_CompareFunc comparison, int nFlags)
+ITexture* ShaderAPID3DX9::CreateRenderTarget(int width, int height, ETextureFormat nRTFormat, ER_TextureFilterMode textureFilterType, ER_TextureAddressMode textureAddress, ER_CompareFunc comparison, int nFlags)
 {
 	CD3D9Texture *pTexture = new CD3D9Texture;
 
 	pTexture->SetDimensions(width,height);
 	pTexture->SetFormat(nRTFormat);
+
 	pTexture->usage = D3DUSAGE_RENDERTARGET;
 
 	pTexture->SetFlags(nFlags | TEXFLAG_RENDERTARGET);
@@ -1347,7 +1371,7 @@ ITexture* ShaderAPID3DX9::CreateRenderTarget(int width, int height, ETextureForm
 	// do spin wait (if in other thread)
 	DEVICE_SPIN_WAIT
 
-	if (InternalCreateRenderTarget(m_pD3DDevice, pTexture, nFlags))
+	if (InternalCreateRenderTarget(m_pD3DDevice, pTexture, nFlags, m_caps))
 	{
 		CScopedMutex scoped(m_Mutex);
 
@@ -1368,6 +1392,7 @@ ITexture* ShaderAPID3DX9::CreateNamedRenderTarget(const char* pszName,int width,
 
 	pTexture->SetDimensions(width,height);
 	pTexture->SetFormat(nRTFormat);
+
 	pTexture->usage = D3DUSAGE_RENDERTARGET;
 
 	pTexture->SetFlags(nFlags | TEXFLAG_RENDERTARGET);
@@ -1377,7 +1402,7 @@ ITexture* ShaderAPID3DX9::CreateNamedRenderTarget(const char* pszName,int width,
 
 	pTexture->SetSamplerState(texSamplerParams);
 
-	if (InternalCreateRenderTarget(m_pD3DDevice, pTexture, nFlags))
+	if (InternalCreateRenderTarget(m_pD3DDevice, pTexture, nFlags, m_caps))
 	{
 		CScopedMutex scoped(m_Mutex);
 		m_TextureList.append(pTexture);
@@ -1594,7 +1619,7 @@ void ShaderAPID3DX9::ResizeRenderTarget(ITexture* pRT, int newWide, int newTall)
 
 	pRenderTarget->SetDimensions(newWide, newTall);
 
-	InternalCreateRenderTarget(m_pD3DDevice, pRenderTarget, pRenderTarget->GetFlags());
+	InternalCreateRenderTarget(m_pD3DDevice, pRenderTarget, pRenderTarget->GetFlags(), m_caps);
 }
 
 

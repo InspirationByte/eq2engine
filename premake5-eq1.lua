@@ -176,6 +176,7 @@ project "eqGLRHI"
 		"corelib", "frameworkLib", "e2Core",
 		"eqRHIBaseLib"
 	}
+	--defines { "USE_HLSL2GLSL" }
     files {
 		Folders.matsystem1.. "renderers/GL/*.cpp",
 		Folders.matsystem1.. "renderers/GL/loaders/gl_loader.cpp",
