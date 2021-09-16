@@ -10,6 +10,7 @@
 #include "EqUI_Manager.h"
 #include "font/IFont.h"
 #include "font/FontLayoutBuilders.h"
+#include "materialsystem1/IMaterialSystem.h"
 
 namespace equi
 {
@@ -28,25 +29,24 @@ IRectangle Label::GetClientScissorRectangle() const
 	return rect;
 }
 
-void Label::DrawSelf( const IRectangle& rect )
+void Label::DrawSelf( const IRectangle& rect, bool scissorOn)
 {
 	CRectangleTextLayoutBuilder rectLayout;
 	rectLayout.SetRectangle(Rectangle_t(rect));
 
+	IEqFont* font = GetFont();
 	eqFontStyleParam_t style;
 	GetCalcFontStyle(style);
 
 	style.layoutBuilder = &rectLayout;
 
-	if(equi::Manager->GetFocus() == this)
-	{
-		style.textColor = ColorRGBA(1,1,0,1);	// TODO: selected text color
-	}
+	if(!scissorOn)
+		style.styleFlag &= ~TEXT_STYLE_SCISSOR;
 
-	IVector2D pos = rect.GetLeftTop() + IVector2D(0, GetFont()->GetLineHeight(style)*0.5f);
+	IVector2D pos = rect.GetLeftTop() + IVector2D(0, font->GetLineHeight(style)*0.5f);
 
 	// draw label
-	GetFont()->RenderText(m_label.ToCString(), pos, style);
+	font->RenderText(m_label.ToCString(), pos, style);
 }
 
 };

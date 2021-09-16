@@ -20,7 +20,7 @@ Button::Button() : m_state(false)
 
 }
 
-void Button::DrawSelf( const IRectangle& rect )
+void Button::DrawSelf( const IRectangle& rect, bool scissorOn)
 {
 	ColorRGBA btnColor(0.8,0.8,0.8,0.8);
 
@@ -53,7 +53,7 @@ bool Button::ProcessMouseEvents(const IVector2D& mousePos, const IVector2D& mous
 		else if(flags & UIEVENT_UP)
 		{
 			if(m_state)
-				ProcessCommand( m_commandEvent.args );
+				RaiseEvent( "click", nullptr ); // TODO: ButtonClickEventData
 
 			m_state = false;
 		}

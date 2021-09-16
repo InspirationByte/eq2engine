@@ -47,7 +47,7 @@ protected:
 
 	// rendering
 	virtual void			Render();
-	virtual void			DrawSelf(const IRectangle& rect);
+	virtual void			DrawSelf(const IRectangle& rect, bool scissorOn);
 
 	bool					ProcessMouseEvents(const IVector2D& mousePos, const IVector2D& mouseDelta, int nMouseButtons, int flags);
 

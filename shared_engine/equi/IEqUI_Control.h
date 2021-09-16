@@ -29,20 +29,8 @@ struct kvkeybase_t;
 class IEqFont;
 struct eqFontStyleParam_t;
 
-#define UICMD_ARGV(index)		args.ptr()[index]
-#define UICMD_ARGC				args.numElem()
-
-namespace equi
-{
-
-struct eqUIEventCmd_t
-{
-	DkList<EqString> args;
-};
-
-#ifdef DECLARE_CLASS
-#undef DECLARE_CLASS
-#endif
+#define UICMD_ARGV(index)		event.args.ptr()[index]
+#define UICMD_ARGC				event.args.numElem()
 
 // a helper macro for baseclass defintion
 #define EQUI_CLASS( className, baseClassName )					\
@@ -50,6 +38,28 @@ struct eqUIEventCmd_t
 	typedef baseClassName BaseClass;							\
 	const char*	GetClassname() const { return ThisClass::Classname(); }		\
 	static const char* Classname() { return #className; }		\
+
+namespace equi
+{
+
+struct ui_event;
+class IUIControl;
+typedef int (*uiEventCallback_t)(IUIControl* control, ui_event& event, void* userData);
+
+struct ui_event
+{
+	ui_event()
+	{}
+
+	ui_event(const char* pszName, uiEventCallback_t cb)
+		: uid(0), name(pszName), callback(cb)
+	{}
+
+	int					uid;
+	EqString			name;
+	uiEventCallback_t	callback { nullptr };
+	DkList<EqString>	args;
+};
 
 struct ui_transform
 {
@@ -73,6 +83,10 @@ struct ui_fontprops
 	bool					monoSpace { false };
 };
 
+//-------------------------------------------------------------
+// EqUI control interface
+// use equi::DynamicCast to convert type
+//-------------------------------------------------------------
 class IUIControl
 {
 	friend class CUIManager;
@@ -147,6 +161,7 @@ public:
 	void						AddChild(IUIControl* pControl);
 	void						RemoveChild(IUIControl* pControl, bool destroy = true);
 	IUIControl*					FindChild( const char* pszName );
+	IUIControl*					FindChildRecursive( const char* pszName );
 	void						ClearChilds( bool destroy = true );
 
 	IUIControl*					GetParent() const						{ return m_parent; }
@@ -171,15 +186,20 @@ public:
 	// rendering
 	virtual void				Render();
 
-	//void						Connect(IEqUIEventHandler* handler);
-	//void						Disconnect(IEqUIEventHandler* handler);
+	// Events
+	int							AddEventHandler(const char* pszName, uiEventCallback_t cb);
+	void						RemoveEventHandler(int handlerId);
+	void						RemoveEventHandlers(const char* name);
+
+	int							RaiseEvent(const char* name, void* userData);
+	int							RaiseEventUid(int uid, void* userData);
 
 protected:
 	
 	void						ResetSizeDiffs();
-	virtual void				DrawSelf(const IRectangle& rect) = 0;
+	virtual void				DrawSelf(const IRectangle& rect, bool scissorOn) = 0;
 
-	bool						ProcessCommand(DkList<EqString>& args);
+	static int					CommandCb(IUIControl* control, ui_event& event, void* userData);
 
 	virtual IUIControl*			HitTest(const IVector2D& point);
 
@@ -191,7 +211,7 @@ protected:
 
 	DkLinkedList<IUIControl*>	m_childs;		// child panels
 
-	eqUIEventCmd_t				m_commandEvent;
+	DkList<ui_event>			m_eventCallbacks;
 
 	IVector2D					m_position { 0 };
 	IVector2D					m_size { 64 };

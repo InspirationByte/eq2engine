@@ -92,7 +92,7 @@ const ColorRGBA& Image::GetColor() const
 	return m_color;
 }
 
-void Image::DrawSelf( const IRectangle& rect )
+void Image::DrawSelf( const IRectangle& rect, bool scissorOn)
 {
 	materials->SetAmbientColor(m_color);
 	materials->BindMaterial(m_material);

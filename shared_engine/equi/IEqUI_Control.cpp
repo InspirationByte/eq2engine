@@ -27,8 +27,8 @@
 namespace equi
 {
 
-IUIControl::IUIControl()
-	: m_visible(true), m_selfVisible(true), m_enabled(true), m_parent(NULL), 
+	IUIControl::IUIControl()
+		: m_visible(true), m_selfVisible(true), m_enabled(true), m_parent(nullptr),
 	m_sizeDiff(0), m_sizeDiffPerc(1.0f),
 	m_position(0),m_size(25),
 	m_scaling(UI_SCALING_NONE), m_anchors(0), m_alignment(UI_ALIGN_LEFT | UI_ALIGN_TOP)
@@ -111,10 +111,13 @@ void IUIControl::InitFromKeyValues( kvkeybase_t* sec, bool noClear )
 
 	if(command)
 	{
+		// NOTE: command event always have UID == 0
+		ui_event evt("command", CommandCb);
+
 		for(int i = 0; i < command->values.numElem(); i++)
-		{
-			m_commandEvent.args.append( KV_GetValueString(command, i) );
-		}
+			evt.args.append( KV_GetValueString(command, i) );
+
+		m_eventCallbacks.append(evt);
 	}
 
 	//------------------------------------------------------------------------------
@@ -210,21 +213,26 @@ void IUIControl::InitFromKeyValues( kvkeybase_t* sec, bool noClear )
 	}
 
 	//------------------------------------------------------------------------------
+
+
 	kvkeybase_t* scaling = sec->FindKeyBase("scaling");
-	const char* scalingValue = KV_GetValueString(scaling, 0, "none");
+	if (scaling)
+	{
+		m_scaling = UI_SCALING_NONE;
 
-	m_scaling = UI_SCALING_NONE;
+		const char* scalingValue = KV_GetValueString(scaling, 0, "none");
 
-	if(!stricmp("width", scalingValue))
-		m_scaling = UI_SCALING_WIDTH;
-	else if(!stricmp("height", scalingValue))
-		m_scaling = UI_SCALING_HEIGHT;
-	else if(!stricmp("aspectw", scalingValue))
-		m_scaling = UI_SCALING_ASPECT_W;
-	else if (!stricmp("aspecth", scalingValue) || !stricmp("uniform", scalingValue))
-		m_scaling = UI_SCALING_ASPECT_H;
-	else if(!stricmp("inherit", scalingValue))
-		m_scaling = UI_SCALING_INHERIT;
+		if (!stricmp("width", scalingValue))
+			m_scaling = UI_SCALING_WIDTH;
+		else if (!stricmp("height", scalingValue))
+			m_scaling = UI_SCALING_HEIGHT;
+		else if (!stricmp("aspectw", scalingValue))
+			m_scaling = UI_SCALING_ASPECT_W;
+		else if (!stricmp("aspecth", scalingValue) || !stricmp("uniform", scalingValue))
+			m_scaling = UI_SCALING_ASPECT_H;
+		else if (!stricmp("inherit", scalingValue))
+			m_scaling = UI_SCALING_INHERIT;
+	}
 
 	// walk for childs
 	for(int i = 0; i < sec->keys.numElem(); i++)
@@ -232,14 +240,7 @@ void IUIControl::InitFromKeyValues( kvkeybase_t* sec, bool noClear )
 		kvkeybase_t* csec = sec->keys[i];
 
 		if (!csec->IsSection())
-		{
-			/*
-			if (!stricmp(csec->GetName(), "loadatlas"))
-			{
-			}
-			*/
 			continue;
-		}
 	
 		// INIT CHILD CONTROLS
 		if(!stricmp(csec->GetName(), "child"))
@@ -475,7 +476,7 @@ inline void DebugDrawRectangle(const Rectangle_t &rect, const ColorRGBA &color1,
 	blending.srcFactor = BLENDFACTOR_SRC_ALPHA;
 	blending.dstFactor = BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
 
-	g_pShaderAPI->SetTexture(NULL, 0, 0);
+	g_pShaderAPI->SetTexture(nullptr, 0, 0);
 	materials->SetBlendingStates(blending);
 	materials->SetRasterizerStates(CULL_FRONT, FILL_SOLID);
 	materials->SetDepthStates(false, false);
@@ -521,7 +522,7 @@ void IUIControl::Render()
 
 	// calculate absolute transformation using previous matrix
 	Matrix4x4 prevTransform;
-	materials->GetMatrix(MATRIXMODE_WORLD, prevTransform);
+	materials->GetMatrix(MATRIXMODE_WORLD2, prevTransform);
 
 	Vector2D scale = CalcScaling();
 
@@ -534,7 +535,7 @@ void IUIControl::Render()
 	Matrix4x4 newTransform = (prevTransform * localTransform);
 
 	// load new absolulte transformation
-	materials->SetMatrix(MATRIXMODE_WORLD, newTransform);
+	materials->SetMatrix(MATRIXMODE_WORLD2, newTransform);
 
 	if( m_parent && m_selfVisible )
 	{
@@ -556,13 +557,13 @@ void IUIControl::Render()
 		materials->SetShaderParameterOverriden(SHADERPARAM_RASTERSETUP, true);
 
 		// paint control itself
-		DrawSelf( clientRectRender );
+		DrawSelf( clientRectRender, rasterState.scissor);
 	}
 
 	HOOK_TO_CVAR(equi_debug)
 	if (equi_debug->GetBool())
 	{
-		DebugDrawRectangle(clientRectRender, ColorRGBA(1, 1, 0, 0.15), ColorRGBA(1, 1, 1, 0.15));
+		DebugDrawRectangle(clientRectRender, ColorRGBA(1, 1, 0, 0.05), ColorRGBA(1, 0, 1, 0.8));
 
 		eqFontStyleParam_t params;
 		debugoverlay->GetFont()->RenderText(
@@ -576,7 +577,7 @@ void IUIControl::Render()
 		do
 		{
 			// load new absolulte transformation
-			materials->SetMatrix(MATRIXMODE_WORLD, newTransform);
+			materials->SetMatrix(MATRIXMODE_WORLD2, newTransform);
 
 			m_childs.getCurrent()->Render();
 		}
@@ -584,20 +585,20 @@ void IUIControl::Render()
 	}
 
 	// always reset previous absolute transformation
-	materials->SetMatrix(MATRIXMODE_WORLD, prevTransform);
+	materials->SetMatrix(MATRIXMODE_WORLD2, prevTransform);
 }
 
 IUIControl* IUIControl::HitTest(const IVector2D& point)
 {
 	if(!m_visible)
-		return NULL;
+		return nullptr;
 
 	IUIControl* bestControl = this;
 
 	IRectangle clientRect = GetClientRectangle();
 
 	if(!clientRect.IsInRectangle(point))
-		return NULL;
+		return nullptr;
 
 	if(m_childs.goToFirst())
 	{
@@ -632,7 +633,32 @@ IUIControl* IUIControl::FindChild(const char* pszName)
 		while(iter.goToNext());
 	}
 
-	return NULL;
+	return nullptr;
+}
+
+IUIControl* IUIControl::FindChildRecursive(const char* pszName)
+{
+	DkLinkedListIterator<IUIControl*> iter(m_childs);
+
+	if (iter.goToFirst())
+	{
+		do
+		{
+			// first compare this child
+			IUIControl* nextChild = iter.getCurrent();
+
+			if (!strcmp(iter.getCurrent()->GetName(), pszName))
+				return iter.getCurrent();
+
+			// try find child inside
+			IUIControl* foundChild = nextChild->FindChildRecursive(pszName);
+			if (foundChild)
+				return foundChild;
+		} 
+		while (iter.goToNext());
+	}
+
+	return nullptr;
 }
 
 void IUIControl::ClearChilds(bool destroy)
@@ -641,12 +667,12 @@ void IUIControl::ClearChilds(bool destroy)
 	{
 		do
 		{
-			m_childs.getCurrent()->m_parent = NULL;
+			m_childs.getCurrent()->m_parent = nullptr;
 
 			if(destroy)
 				delete m_childs.getCurrent();
 
-			m_childs.setCurrent(NULL);
+			m_childs.setCurrent(nullptr);
 		}
 		while(m_childs.goToNext());
 	}
@@ -668,7 +694,7 @@ void IUIControl::RemoveChild(IUIControl* pControl, bool destroy)
 		{
 			if(m_childs.getCurrent() == pControl)
 			{
-				pControl->m_parent = NULL;
+				pControl->m_parent = nullptr;
 
 				if(destroy)
 					delete pControl;
@@ -694,37 +720,103 @@ bool IUIControl::ProcessKeyboardEvents(int nKeyButtons, int flags)
 	return true;
 }
 
-bool IUIControl::ProcessCommand(DkList<EqString>& args)
+int IUIControl::CommandCb(IUIControl* control, ui_event& event, void* userData)
 {
-	if(UICMD_ARGC == 0)
-		return true;
+	if (UICMD_ARGC == 0)
+		return 1;
 
-	if(!stricmp("hideparent", UICMD_ARGV(0).ToCString()))
+	if (!stricmp("hideparent", UICMD_ARGV(0).ToCString()))
 	{
-		if(m_parent)
-			m_parent->Hide();
+		if (control->m_parent)
+			control->m_parent->Hide();
 	}
-	else if(!stricmp("engine", UICMD_ARGV(0).ToCString()))
+	else if (!stricmp("engine", UICMD_ARGV(0).ToCString()))
 	{
 		// execute console commands
 		g_consoleCommands->SetCommandBuffer(UICMD_ARGV(1).ToCString());
 		g_consoleCommands->ExecuteCommandBuffer();
 		g_consoleCommands->ClearCommandBuffer();
 	}
-	else if(!stricmp("showpanel", UICMD_ARGV(0).ToCString()))
+	else if (!stricmp("showpanel", UICMD_ARGV(0).ToCString()))
 	{
 		// show panel
 		equi::Panel* panel = equi::Manager->FindPanel(UICMD_ARGV(1).ToCString());
 		panel->Show();
 	}
-	else if(!stricmp("hidepanel", UICMD_ARGV(0).ToCString()))
+	else if (!stricmp("hidepanel", UICMD_ARGV(0).ToCString()))
 	{
 		// hide panel
 		equi::Panel* panel = equi::Manager->FindPanel(UICMD_ARGV(1).ToCString());
 		panel->Hide();
 	}
 
-	return true;
+	// TODO: findChild/hideChild etc
+
+	return 1;
+}
+
+static int s_uidCounter = 1;
+
+int	IUIControl::AddEventHandler(const char* pszName, uiEventCallback_t cb)
+{
+	ui_event evt(pszName, cb);
+	evt.uid = s_uidCounter++;
+
+	m_eventCallbacks.append(evt);
+	return evt.uid;
+}
+
+void IUIControl::RemoveEventHandler(int handlerId)
+{
+	for (int i = 0; i < m_eventCallbacks.numElem(); i++)
+	{
+		if (m_eventCallbacks[i].uid == handlerId)
+		{
+			m_eventCallbacks.fastRemoveIndex(i);
+			break;
+		}
+	}
+}
+
+void IUIControl::RemoveEventHandlers(const char* name)
+{
+	for (int i = 0; i < m_eventCallbacks.numElem(); i++)
+	{
+		if (!m_eventCallbacks[i].name.CompareCaseIns(name))
+		{
+			m_eventCallbacks.removeIndex(i--);
+		}
+	}
+}
+
+int IUIControl::RaiseEvent(const char* name, void* userData)
+{
+	int result = -1;
+	for (int i = 0; i < m_eventCallbacks.numElem(); i++)
+	{
+		if (!m_eventCallbacks[i].name.CompareCaseIns(name))
+		{
+			result = m_eventCallbacks[i].callback(this, m_eventCallbacks[i], userData);
+			break;
+		}
+	}
+
+	return result;
+}
+
+int IUIControl::RaiseEventUid(int uid, void* userData)
+{
+	int result = -1;
+	for (int i = 0; i < m_eventCallbacks.numElem(); i++)
+	{
+		if (!m_eventCallbacks[i].uid == uid)
+		{
+			result = m_eventCallbacks[i].callback(this, m_eventCallbacks[i], userData);
+			break;
+		}
+	}
+
+	return result;
 }
 
 };

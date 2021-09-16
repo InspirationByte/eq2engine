@@ -35,7 +35,7 @@ void ProgressBar::InitFromKeyValues(kvkeybase_t* sec, bool noClear)
 	m_color = KV_GetVector4D(sec->FindKeyBase("color"), 0, m_color);
 }
 
-void ProgressBar::DrawSelf(const IRectangle& _rect)
+void ProgressBar::DrawSelf(const IRectangle& _rect, bool scissorOn)
 {
 	// setup default material and translucent blending
 	BlendStateParam_t blending;

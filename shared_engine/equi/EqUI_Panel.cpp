@@ -182,7 +182,7 @@ void Panel::Render()
 	BaseClass::Render();
 }
 
-void Panel::DrawSelf(const IRectangle& rect)
+void Panel::DrawSelf(const IRectangle& rect, bool scissorOn)
 {
 	DrawWindowRectangle(rect, m_color, ColorRGBA(m_color.xyz()*0.25f, 1.0f) );
 }
@@ -217,7 +217,7 @@ public:
 	bool			ProcessMouseEvents(float x, float y, int nMouseButtons, int flags)	{return true;}
 	bool			ProcessKeyboardEvents(int nKeyButtons, int flags)					{return true;}
 
-	void			DrawSelf( const IRectangle& rect ) {}
+	void			DrawSelf( const IRectangle& rect, bool scissorOn) {}
 };
 
 };
