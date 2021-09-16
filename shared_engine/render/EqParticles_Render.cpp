@@ -99,20 +99,17 @@ void CParticleRenderGroup::Render(int nViewRenderFlags, void* userdata)
 	if(m_numVertices == 0 || (!m_triangleListMode && m_numIndices == 0))
 		return;
 
-	{
-		g_pShaderAPI->Reset(STATE_RESET_VBO);
-		g_pShaderAPI->ApplyBuffers();
+	g_pShaderAPI->Reset(STATE_RESET_VBO);
 
-		// copy buffers
-		if(!g_pPFXRenderer->MakeVBOFrom(this))
-			return;
+	// copy buffers
+	if(!g_pPFXRenderer->MakeVBOFrom(this))
+		return;
 
-		g_pShaderAPI->SetVertexFormat(g_pPFXRenderer->m_vertexFormat);
-		g_pShaderAPI->SetVertexBuffer(g_pPFXRenderer->m_vertexBuffer, 0);
+	g_pShaderAPI->SetVertexFormat(g_pPFXRenderer->m_vertexFormat);
+	g_pShaderAPI->SetVertexBuffer(g_pPFXRenderer->m_vertexBuffer, 0);
 
-		if(m_numIndices)
-			g_pShaderAPI->SetIndexBuffer(g_pPFXRenderer->m_indexBuffer);
-	}
+	if(m_numIndices)
+		g_pShaderAPI->SetIndexBuffer(g_pPFXRenderer->m_indexBuffer);
 
 	bool invertCull = m_invertCull || (nViewRenderFlags & EPRFLAG_INVERT_CULL);
 
@@ -123,16 +120,15 @@ void CParticleRenderGroup::Render(int nViewRenderFlags, void* userdata)
 
 	materials->SetMatrix(MATRIXMODE_WORLD, identity4());
 
-	materials->BindMaterial(m_pMaterial, 0);
-	materials->Apply();
+	materials->BindMaterial(m_pMaterial);
 
-	//ASSERTMSG(!m_triangleListMode, "Shadow rederer, %d verts");
+	int primMode = m_triangleListMode ? PRIM_TRIANGLES : PRIM_TRIANGLE_STRIP;
 
 	// draw
 	if(m_numIndices)
-		g_pShaderAPI->DrawIndexedPrimitives(m_triangleListMode ? PRIM_TRIANGLES : PRIM_TRIANGLE_STRIP, 0, m_numIndices, 0, m_numVertices);
+		g_pShaderAPI->DrawIndexedPrimitives((ER_PrimitiveType)primMode, 0, m_numIndices, 0, m_numVertices);
 	else
-		g_pShaderAPI->DrawNonIndexedPrimitives(m_triangleListMode ? PRIM_TRIANGLES : PRIM_TRIANGLE_STRIP, 0, m_numVertices);
+		g_pShaderAPI->DrawNonIndexedPrimitives((ER_PrimitiveType)primMode, 0, m_numVertices);
 
 	HOOK_TO_CVAR(r_wireframe)
 
@@ -149,9 +145,9 @@ void CParticleRenderGroup::Render(int nViewRenderFlags, void* userdata)
 		g_pShaderAPI->Apply();
 
 		if(m_numIndices)
-			g_pShaderAPI->DrawIndexedPrimitives(m_triangleListMode ? PRIM_TRIANGLES : PRIM_TRIANGLE_STRIP, 0, m_numIndices, 0, m_numVertices);
+			g_pShaderAPI->DrawIndexedPrimitives((ER_PrimitiveType)primMode, 0, m_numIndices, 0, m_numVertices);
 		else
-			g_pShaderAPI->DrawNonIndexedPrimitives(m_triangleListMode ? PRIM_TRIANGLES : PRIM_TRIANGLE_STRIP, 0, m_numVertices);
+			g_pShaderAPI->DrawNonIndexedPrimitives((ER_PrimitiveType)primMode, 0, m_numVertices);
 	}
 
 	if(!(nViewRenderFlags & EPRFLAG_DONT_FLUSHBUFFERS))
