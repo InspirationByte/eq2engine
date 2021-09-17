@@ -891,7 +891,9 @@ bool CMaterialSystem::BindMaterial(IMaterial* pMaterial, int flags)
 	CMaterial* pSetupMaterial = (CMaterial*)pMaterial;
 
 	// proxy update is dirty if material was not bound to this frame
-	pSetupMaterial->m_proxyIsDirty = (pSetupMaterial->m_frameBound != m_frame);
+	if(pSetupMaterial->m_frameBound != m_frame)
+		pSetupMaterial->m_proxyIsDirty = true;
+
 	pSetupMaterial->m_frameBound = m_frame;
 
 	// it's now a more critical section to the material
