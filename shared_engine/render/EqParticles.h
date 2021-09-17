@@ -134,7 +134,7 @@ public:
 class CParticleLowLevelRenderer
 {
 	friend class CParticleRenderGroup;
-	friend class CShadowRenderer;
+	friend class CShadowDecalRenderer;
 
 public:
 	CParticleLowLevelRenderer();
