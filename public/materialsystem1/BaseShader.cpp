@@ -102,10 +102,12 @@ void CBaseShader::InitParams()
 	SHADER_PARAM_BOOL_NEG(NoFog, m_fogenabled, false)
 	SHADER_PARAM_BOOL_NEG(NoMSAA, m_msaaEnabled, false)
 
+	IMaterial* assignedMaterial = GetAssignedMaterial();
+
 	// required
-	m_pBaseTextureTransformVar	= GetAssignedMaterial()->GetMaterialVar("BaseTextureTransform", "[0 0]");
-	m_pBaseTextureScaleVar		= GetAssignedMaterial()->GetMaterialVar("BaseTextureScale", "[1 1]");
-	m_pBaseTextureFrame			= GetAssignedMaterial()->GetMaterialVar("BaseTextureFrame", "0");
+	m_pBaseTextureTransformVar	= assignedMaterial->GetMaterialVar("BaseTextureTransform", "[0 0]");
+	m_pBaseTextureScaleVar		= assignedMaterial->GetMaterialVar("BaseTextureScale", "[1 1]");
+	m_pBaseTextureFrame			= assignedMaterial->GetMaterialVar("BaseTextureFrame", "0");
 
 	// resolve address type and filtering mode
 	if( addressMode ) m_nAddressMode = ResolveAddressType(addressMode->GetString());
@@ -287,16 +289,18 @@ void CBaseShader::ParamSetup_AlphaModel_Modulate()
 
 void CBaseShader::ParamSetup_RasterState()
 {
+	const matsystem_render_config_t& config = materials->GetConfiguration();
+
 	ER_CullMode cull_mode = materials->GetCurrentCullMode();
 
 	if(m_nFlags & MATERIAL_FLAG_NOCULL)
 		cull_mode = CULL_NONE;
 
 	// force no culling
-	if(materials->GetConfiguration().wireframeMode && materials->GetConfiguration().editormode)
+	if(config.wireframeMode && config.editormode)
 		cull_mode = CULL_NONE;
 
-	materials->SetRasterizerStates(cull_mode, (ER_FillMode)materials->GetConfiguration().wireframeMode, m_msaaEnabled, false, m_polyOffset);
+	materials->SetRasterizerStates(cull_mode, (ER_FillMode)config.wireframeMode, m_msaaEnabled, false, m_polyOffset);
 }
 
 
@@ -331,7 +335,7 @@ void CBaseShader::ParamSetup_Fog()
 	materials->GetFogInfo(fog);
 
 	// setup shader fog
-	float fogScale = 1.0 / (fog.fogfar - fog.fognear);
+	float fogScale = 1.0f / (fog.fogfar - fog.fognear);
 
 	Vector4D VectorFOGParams(fog.fognear,fog.fogfar, fogScale, 1.0f);
 

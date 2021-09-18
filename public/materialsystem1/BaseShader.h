@@ -34,10 +34,10 @@
 	type name;
 
 #define SHADER_DECLARE_PASS(shader) \
-	IShaderProgram*		m_pShader##shader
+	IShaderProgram*		m_pShader##shader{nullptr}
 
 #define SHADER_DECLARE_FOGPASS(shader) \
-	IShaderProgram*		m_pShader##shader##_fog
+	IShaderProgram*		m_pShader##shader##_fog{nullptr}
 
 #define SHADER_PASS(shader) m_pShader##shader
 #define SHADER_FOGPASS(shader) m_pShader##shader##_fog
