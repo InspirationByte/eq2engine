@@ -1534,8 +1534,8 @@ void CMaterialSystem::SetRasterizerStates(ER_CullMode nCullMode, ER_FillMode nFi
 // use this if you have objects that must be destroyed when device is lost
 void CMaterialSystem::AddDestroyLostCallbacks(DEVLICELOSTRESTORE destroy, DEVLICELOSTRESTORE restore)
 {
-	m_lostDeviceCb.append(destroy);
-	m_restoreDeviceCb.append(restore);
+	m_lostDeviceCb.addUnique(destroy);
+	m_restoreDeviceCb.addUnique(restore);
 }
 
 // prints loaded materials to console
