@@ -25,14 +25,16 @@ public:
 	struct Batch
 	{
 		Batch() 
-			: startVertex(0), startIndex(0), numVertices(0), numIndices(0), materialIndex(-1)
+			: startVertex(0), startIndex(0), numVertices(0), numIndices(0), materialIndex(-1), flags(0)
 		{}
 
 		INDEX_TYPE	startVertex;
 		INDEX_TYPE	startIndex;
 		INDEX_TYPE	numVertices;
 		INDEX_TYPE	numIndices;
-		int			materialIndex;
+
+		short		materialIndex;
+		ushort		flags;
 	};
 
 	struct FileHeader
@@ -62,8 +64,19 @@ public:
 		m_indices.clear();
 	}
 
+	template <typename DEST_VERTEX, typename SOURCE_VERTEX>
+	using VertexConvertFunc = DEST_VERTEX(*)(const SOURCE_VERTEX& from);
+
+	static VERTEX_TYPE DefaultConvertVertexFunc(const VERTEX_TYPE& from)
+	{
+		return from;
+	}
+
 	// serializes data
-	void Save(IVirtualStream* stream) const
+	template <class STORE_VERTEX_TYPE = VERTEX_TYPE>
+	void Save(
+		IVirtualStream* stream, 
+		VertexConvertFunc<STORE_VERTEX_TYPE, VERTEX_TYPE> convertVertexFunc = DefaultConvertVertexFunc) const
 	{
 		// write header
 		FileHeader hdr;
@@ -77,14 +90,20 @@ public:
 		stream->Write(m_batches.ptr(), m_batches.numElem(), sizeof(Batch));
 
 		// write vertices
-		stream->Write(m_vertices.ptr(), m_vertices.numElem(), sizeof(VERTEX_TYPE));
+		for (int i = 0; i < m_vertices.numElem(); i++)
+		{
+			STORE_VERTEX_TYPE vtx = convertVertexFunc(m_vertices[i]);
+			stream->Write(&vtx, 1, sizeof(STORE_VERTEX_TYPE));
+		}
 
 		// write indices
 		stream->Write(m_indices.ptr(), m_indices.numElem(), sizeof(INDEX_TYPE));
 	}
 
 	// loads all data
-	void Load(IVirtualStream* stream)
+	template <class STORE_VERTEX_TYPE = VERTEX_TYPE>
+	void Load(IVirtualStream* stream,
+		VertexConvertFunc<VERTEX_TYPE, STORE_VERTEX_TYPE> convertVertexFunc = DefaultConvertVertexFunc)
 	{
 		// read header
 		FileHeader hdr;
@@ -99,7 +118,13 @@ public:
 		stream->Read(m_batches.ptr(), hdr.numBatches, sizeof(Batch));
 
 		// read vertices
-		stream->Read(m_vertices.ptr(), hdr.numVertices, sizeof(VERTEX_TYPE));
+		for (int i = 0; i < hdr.numVertices; i++)
+		{
+			STORE_VERTEX_TYPE vert;
+			stream->Read(&vert, 1, sizeof(STORE_VERTEX_TYPE));
+
+			m_vertices[i] = convertVertexFunc(vert);
+		}
 
 		// read indices
 		stream->Read(m_indices.ptr(), hdr.numIndices, sizeof(INDEX_TYPE));

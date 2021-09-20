@@ -286,8 +286,6 @@ bool LoadOBJ(dsmmodel_t* model, const char* filename)
 		}
 		else if(!stricmp(str, "f"))
 		{
-			Msg("face!\n");
-
 			if(!curgroup)
 			{
 				curgroup = new dsmgroup_t;
