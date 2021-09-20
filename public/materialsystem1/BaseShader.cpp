@@ -306,14 +306,16 @@ void CBaseShader::ParamSetup_RasterState()
 
 void CBaseShader::ParamSetup_Transform()
 {
-	Matrix4x4 wvp_matrix = identity4();
+	Matrix4x4 wvp_matrix, world, view, proj;
 	materials->GetWorldViewProjection(wvp_matrix);
-
-	Matrix4x4 worldtransform = identity4();
-	materials->GetMatrix(MATRIXMODE_WORLD, worldtransform);
+	materials->GetMatrix(MATRIXMODE_WORLD, world);
+	materials->GetMatrix(MATRIXMODE_VIEW, view);
+	materials->GetMatrix(MATRIXMODE_PROJECTION, proj);
 
 	g_pShaderAPI->SetShaderConstantMatrix4("WVP", wvp_matrix);
-	g_pShaderAPI->SetShaderConstantMatrix4("World", worldtransform);
+	g_pShaderAPI->SetShaderConstantMatrix4("World", world);
+	g_pShaderAPI->SetShaderConstantMatrix4("View", view);
+	g_pShaderAPI->SetShaderConstantMatrix4("Proj", proj);
 
 	// setup texture transform
 	SetupVertexShaderTextureTransform(m_pBaseTextureTransformVar, m_pBaseTextureScaleVar, "BaseTextureTransform");
