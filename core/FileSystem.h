@@ -106,8 +106,13 @@ public:
     long						GetFileSize(const char* filename, int searchFlags = -1);
 	uint32						GetFileCRC32(const char* filename, int searchFlags = -1);
 
-    // Package tools
-    bool						AddPackage(const char* packageName, SearchPath_e type, const char* mountPath = nullptr);
+	//------------------------------------------------------------
+	// Packages
+	//------------------------------------------------------------
+
+	bool						SetAccessKey(const char* accessKey);
+
+	bool						AddPackage(const char* packageName, SearchPath_e type, const char* mountPath = nullptr);
 	void						RemovePackage(const char* packageName);
 
 	//------------------------------------------------------------
@@ -145,8 +150,8 @@ protected:
 private:
 
 	EqString					m_basePath;			// base prepended path
-
-    EqString					m_dataDir;		// Used to load engine data
+    EqString					m_dataDir;			// Used to load engine data
+	EqString					m_accessKey;
 
 	struct SearchPath_t
 	{

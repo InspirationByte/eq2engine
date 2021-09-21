@@ -36,9 +36,6 @@
 
 #endif
 
-
-const char archiveKey[] = { 'W','@','k','m','U','5','1','c', 0 };
-
 EXPORTED_INTERFACE(IFileSystem, CFileSystem);
 
 //------------------------------------------------------------------------------
@@ -781,6 +778,12 @@ IFile* CFileSystem::GetFileHandle(const char* filename,const char* options, int 
     return NULL;
 }
 
+bool CFileSystem::SetAccessKey(const char* accessKey)
+{
+	m_accessKey = accessKey;
+	return m_accessKey.Length() > 0;
+}
+
 bool CFileSystem::AddPackage(const char* packageName, SearchPath_e type, const char* mountPath /*= nullptr*/)
 {
 	for(int i = 0; i < m_packages.numElem();i++)
@@ -807,7 +810,7 @@ bool CFileSystem::AddPackage(const char* packageName, SearchPath_e type, const c
 			DevMsg(DEVMSG_FS, "Adding package file '%s'\n", packageName);
 
         pPackageReader->SetSearchPath(type);
-		pPackageReader->SetKey(archiveKey);
+		pPackageReader->SetKey(m_accessKey.ToCString());
 
         m_packages.append(pPackageReader);
         return true;

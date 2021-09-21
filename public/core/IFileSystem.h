@@ -14,7 +14,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#define FILESYSTEM_INTERFACE_VERSION		"CORE_Filesystem_005"
+#define FILESYSTEM_INTERFACE_VERSION		"CORE_Filesystem_006"
 
 // Linux-only definition
 #ifndef _WIN32
@@ -92,8 +92,13 @@ public:
     virtual long			GetFileSize(const char* filename, int searchFlags = -1) = 0;
 	virtual uint32			GetFileCRC32(const char* filename, int searchFlags = -1) = 0;
 
-    // Package tools
-    virtual bool			AddPackage(const char* packageName, SearchPath_e type, const char* mountPath = nullptr) = 0;
+	//------------------------------------------------------------
+	// Packages
+	//------------------------------------------------------------
+
+	virtual bool			SetAccessKey(const char* accessKey) = 0;
+
+	virtual bool			AddPackage(const char* packageName, SearchPath_e type, const char* mountPath = nullptr) = 0;
 	virtual void			RemovePackage(const char* packageName) = 0;
 
 	//------------------------------------------------------------
