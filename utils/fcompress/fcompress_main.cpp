@@ -38,7 +38,7 @@ void Usage()
 	Msg("-e / -encryption <key> - Sets encryption of the package\n");
 }
 
-int _tmain(int argc, char **argv)
+int main(int argc, char **argv)
 {
 	//Only set debug info when connecting dll
 #ifdef _DEBUG
@@ -81,6 +81,7 @@ int _tmain(int argc, char **argv)
 		if(!stricmp(arg, "-o") || !stricmp(arg, "-out"))
 		{
 			outFileName = g_cmdLine->GetArgumentsOf(i);
+			Msg("\t- Output file specified: %s\n", outFileName.ToCString());
 		}
 		else if(!stricmp(arg, "-f") || !stricmp(arg, "-file"))
 		{
@@ -88,7 +89,9 @@ int _tmain(int argc, char **argv)
 		}
 		else if (!stricmp(arg, "-e") || !stricmp(arg, "-encryption"))
 		{
-			dpkWriter.SetEncryption(1, g_cmdLine->GetArgumentsOf(i));
+			EqString key = g_cmdLine->GetArgumentsOf(i);
+			dpkWriter.SetEncryption(1, key.ToCString());
+			Msg("\t- Encryption is enabled\n");
 		}
 		else if(!stricmp(arg, "-d") || !stricmp(arg, "-dir"))
 		{
@@ -96,11 +99,15 @@ int _tmain(int argc, char **argv)
 		}
 		else if(!stricmp(arg, "-m") || !stricmp(arg, "-mount"))
 		{
-			dpkWriter.SetMountPath( g_cmdLine->GetArgumentsOf(i) );
+			EqString path = g_cmdLine->GetArgumentsOf(i);
+			dpkWriter.SetMountPath(path.ToCString());
+			Msg("\t- Mount path set to '%s'\n", path.ToCString());
 		}
 		else if(!stricmp(arg, "-c") || !stricmp(arg, "-compression"))
 		{
-			dpkWriter.SetCompression( atoi(g_cmdLine->GetArgumentsOf(i)) );
+			int level = atoi(g_cmdLine->GetArgumentsOf(i));
+			dpkWriter.SetCompression(level);
+			Msg("\t- Compression level is %d\n", level);
 		}
 		else if(!stricmp(arg, "-ignorecompressionext"))
 		{

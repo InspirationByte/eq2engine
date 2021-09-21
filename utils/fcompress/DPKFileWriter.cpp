@@ -131,7 +131,7 @@ bool CDPKFileWriter::BuildAndSave( const char* fileNamePrefix )
 
 	if( !dpkFile )
 	{
-		MsgError("Cannot create package file!\n");
+		MsgError("Cannot create '%s'!\n", fileName.ToCString());
 		return false;
 	}
 
