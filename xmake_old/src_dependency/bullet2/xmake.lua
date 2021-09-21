@@ -1,7 +1,0 @@
-target("bullet2")
-    set_group("dependency")
-    set_kind("static")
-    setup_runtime_config()
-    add_files("**.cpp")
-    add_headerfiles("**.h")
-    add_includedirs(".", { public = true })
