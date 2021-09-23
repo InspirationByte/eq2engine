@@ -33,6 +33,7 @@ void ProgressBar::InitFromKeyValues(kvkeybase_t* sec, bool noClear)
 	BaseClass::InitFromKeyValues(sec, noClear);
 
 	m_color = KV_GetVector4D(sec->FindKeyBase("color"), 0, m_color);
+	m_value = KV_GetValueFloat(sec->FindKeyBase("value"), 0, m_value);
 }
 
 void ProgressBar::DrawSelf(const IRectangle& _rect, bool scissorOn)
