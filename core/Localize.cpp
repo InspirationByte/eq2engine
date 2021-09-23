@@ -81,11 +81,11 @@ void CLocalize::Init()
 
 	if(!pRegional)
 	{
-		Msg("Core config missing RegionalSettings section... force English!\n");
+		Msg("Core config missing RegionalSettings section... force english!\n");
 		return;
 	}
 
-    m_language = KV_GetValueString(pRegional->FindKeyBase("DefaultLanguage"), 0, "English" );
+    m_language = KV_GetValueString(pRegional->FindKeyBase("DefaultLanguage"), 0, "english" );
     Msg("Language '%s' set\n", m_language.ToCString());
 
 	// add localized path
@@ -128,18 +128,17 @@ const char* CLocalize::GetLanguageName()
 void CLocalize::AddTokensFile(const char* pszFilePrefix)
 {
 	// TODO: check for already loaded token files!
-	char path[2048];
-	sprintf(path, "resources/%s_%s.txt", pszFilePrefix, GetLanguageName());
+	EqString path = EqString::Format("resources/text_%s/%s.txt", GetLanguageName(), pszFilePrefix);
 
 	kvkeybase_t kvSec;
-	if (!KV_LoadFromFile(path, -1, &kvSec))
+	if (!KV_LoadFromFile(path.ToCString(), -1, &kvSec))
 	{
-		MsgWarning("Cannot load language file 'resources/%s_%s.txt'\n", pszFilePrefix, GetLanguageName());
+		MsgWarning("Cannot load language file '%s'\n", path.ToCString());
 		return;
 	}
 
 	if(!kvSec.unicode)
-		MsgWarning("Localization warning (%s): file is not unicode\n", pszFilePrefix );
+		MsgWarning("Localization warning (%s): file is not unicode\n", path.ToCString());
 
 	for(int i = 0; i < kvSec.keys.numElem(); i++)
 	{
