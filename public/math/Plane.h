@@ -123,7 +123,7 @@ struct Plane_t
 		return true;
 	}
 
-	bool GetIntersectionWithRay(const TVec3D<T>& rayPos, const TVec3D<T>& rayDir, TVec3D<T>& outIntersection) const
+	bool GetIntersectionWithRay(const TVec3D<T>& rayPos, const TVec3D<T>& rayDir, TVec3D<T>& outIntersection, T& dist) const
 	{
 		// check direction for perpendicular
 		T t2 = dot(normal, rayDir);
@@ -136,6 +136,12 @@ struct Plane_t
 
 		return true;
 	}
+	bool GetIntersectionWithRay(const TVec3D<T>& rayPos, const TVec3D<T>& rayDir, TVec3D<T>& outIntersection) const
+	{
+		T dummy;
+		return GetIntersectionWithRay(rayPos, rayDir, outIntersection, dummy);
+	}
+
 
 	bool GetIntersectionLineFraction(const TVec3D<T>& lineStart, const TVec3D<T>& lineEnd, TVec3D<T>& outIntersection, T &fraction) const
 	{
