@@ -257,7 +257,7 @@ bool KeyValues::LoadFromStream(ubyte* pData)
 
 void KV_WriteToStreamV3(IVirtualStream* outStream, kvkeybase_t* section, int nTabs, bool pretty);
 
-void KeyValues::SaveToFile(const char* pszFileName, int nSearchFlags)
+bool KeyValues::SaveToFile(const char* pszFileName, int nSearchFlags)
 {
 	IFile* pStream = g_fileSystem->Open(pszFileName, "wt", nSearchFlags);
 
@@ -269,7 +269,9 @@ void KeyValues::SaveToFile(const char* pszFileName, int nSearchFlags)
 	else
 	{
 		MsgError("Cannot save keyvalues to file '%s'!\n", pszFileName);
+		return false;
 	}
+	return true;
 }
 
 //----------------------------------------------------------------------------------------------

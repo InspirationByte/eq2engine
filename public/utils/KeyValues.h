@@ -245,7 +245,7 @@ public:
 	bool			LoadFromFile(const char* pszFileName, int nSearchFlags = -1);
 	bool			LoadFromStream(ubyte* pData);
 
-	void			SaveToFile(const char* pszFileName, int nSearchFlags = -1);
+	bool			SaveToFile(const char* pszFileName, int nSearchFlags = -1);
 
 	kvkeybase_t*	GetRootSection() {return &m_pKeyBase;}
 
