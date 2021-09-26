@@ -6,6 +6,7 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "GLShaderProgram.h"
+#include "utils/strtools.h"
 
 extern bool GLCheckError(const char* op);
 
@@ -35,4 +36,25 @@ CGLShaderProgram::~CGLShaderProgram()
 		GLCheckError("delete shader program");
 	}
 		
+}
+
+const char* CGLShaderProgram::GetName() const
+{
+	return m_szName.GetData();
+}
+
+void CGLShaderProgram::SetName(const char* pszName)
+{
+	m_szName = pszName;
+	m_nameHash = StringToHash(pszName);
+}
+
+int	CGLShaderProgram::GetConstantsNum() const
+{
+	return m_numConstants;
+}
+
+int	CGLShaderProgram::GetSamplersNum() const
+{
+	return m_numSamplers;
 }

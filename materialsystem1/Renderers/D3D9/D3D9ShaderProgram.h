@@ -36,14 +36,16 @@ public:
 							CD3D9ShaderProgram();
 							~CD3D9ShaderProgram();
 
-	const char*				GetName();
+	const char*				GetName() const;
+	int						GetNameHash() const { return m_nameHash; }
 	void					SetName(const char* pszName);
 
-	int						GetConstantsNum();
-	int						GetSamplersNum();
+	int						GetConstantsNum() const;
+	int						GetSamplersNum() const;
 
 protected:
 	EqString				m_szName;
+	int						m_nameHash;
 
 	LPDIRECT3DVERTEXSHADER9 m_pVertexShader;
 	LPDIRECT3DPIXELSHADER9  m_pPixelShader;

@@ -468,7 +468,7 @@ struct shaderProgramText_t
 	{}
 
 	char*				text;
-	long				checksum;
+	uint32				checksum;
 	DkList<EqString>	includes;
 };
 

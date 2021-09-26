@@ -1763,7 +1763,7 @@ void ShaderAPIGL::ChangeIndexBuffer(IIndexBuffer *pIndexBuffer)
 // Creates shader class for needed ShaderAPI
 IShaderProgram* ShaderAPIGL::CreateNewShaderProgram(const char* pszName, const char* query)
 {
-	IShaderProgram* pNewProgram = new CGLShaderProgram;
+	CGLShaderProgram* pNewProgram = new CGLShaderProgram();
 	pNewProgram->SetName((_Es(pszName)+query).GetData());
 
 	CScopedMutex scoped(m_Mutex);
@@ -1771,29 +1771,6 @@ IShaderProgram* ShaderAPIGL::CreateNewShaderProgram(const char* pszName, const c
 	m_ShaderList.append(pNewProgram);
 
 	return pNewProgram;
-}
-
-// search for existing shader program
-IShaderProgram* ShaderAPIGL::FindShaderProgram(const char* pszName, const char* query)
-{
-	CScopedMutex m(m_Mutex);
-
-	for(int i = 0; i < m_ShaderList.numElem(); i++)
-	{
-		char findtext[1024];
-		findtext[0] = '\0';
-		strcpy(findtext, pszName);
-
-		if(query)
-			strcat(findtext, query);
-
-		if(!stricmp(m_ShaderList[i]->GetName(), findtext))
-		{
-			return m_ShaderList[i];
-		}
-	}
-
-	return NULL;
 }
 
 // Destroy all shader

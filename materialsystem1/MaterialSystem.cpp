@@ -520,15 +520,14 @@ IMaterial* CMaterialSystem::GetMaterial(const char* szMaterialName/* = true*/)
 	if( strlen(szMaterialName) == 0 )
 		return NULL;
 
-	// fix slashes first
-	EqString search_string;
+	EqString materialName = szMaterialName;
+	materialName = materialName.LowerCase();
+	materialName.Path_FixSlashes();
 
-	if( szMaterialName[0] == '/' || szMaterialName[0] == '\\' )
-		search_string = szMaterialName+1;
-	else
-		search_string = szMaterialName;
+	if (materialName.ToCString()[0] == CORRECT_PATH_SEPARATOR)
+		materialName = materialName.ToCString() + 1;
 
-	search_string.Path_FixSlashes();
+	int nameHash = StringToHash(materialName.ToCString());
 
 	// find the material with existing name
 	{
@@ -536,18 +535,16 @@ IMaterial* CMaterialSystem::GetMaterial(const char* szMaterialName/* = true*/)
 
 		for (int i = 0; i < m_loadedMaterials.numElem(); i++)
 		{
-			if (m_loadedMaterials[i] != NULL)
+			CMaterial* pMat = (CMaterial*)m_loadedMaterials[i];
+			if (pMat->m_nameHash == nameHash)
 			{
-				if (!search_string.CompareCaseIns(m_loadedMaterials[i]->GetName()))
-				{
-					g_pLoadEndCallback();
-					return m_loadedMaterials[i];
-				}
+				g_pLoadEndCallback();
+				return m_loadedMaterials[i];
 			}
 		}
 	}
 
-	return CreateMaterial(szMaterialName, nullptr);
+	return CreateMaterial(materialName.ToCString(), nullptr);
 }
 
 // If we have unliaded material, just load it

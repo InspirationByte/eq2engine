@@ -1872,33 +1872,11 @@ void ShaderAPID3DX9::DestroyIndexBuffer(IIndexBuffer* pIndexBuffer)
 // Shaders and it's operations
 //-------------------------------------------------------------
 
-// search for existing shader program
-IShaderProgram* ShaderAPID3DX9::FindShaderProgram(const char* pszName, const char* query)
-{
-	CScopedMutex m(m_Mutex);
-
-	for(int i = 0; i < m_ShaderList.numElem(); i++)
-	{
-		char findtext[1024];
-		findtext[0] = '\0';
-		strcpy(findtext, pszName);
-
-		if(query)
-			strcat(findtext, query);
-
-		if(!stricmp(m_ShaderList[i]->GetName(), findtext))
-		{
-			return m_ShaderList[i];
-		}
-	}
-
-	return NULL;
-}
 
 // Creates shader class for needed ShaderAPI
 IShaderProgram* ShaderAPID3DX9::CreateNewShaderProgram(const char* pszName, const char* query)
 {
-	IShaderProgram* pNewProgram = new CD3D9ShaderProgram;
+	CD3D9ShaderProgram* pNewProgram = new CD3D9ShaderProgram();
 	pNewProgram->SetName((_Es(pszName)+query).GetData());
 
 	CScopedMutex scoped(m_Mutex);

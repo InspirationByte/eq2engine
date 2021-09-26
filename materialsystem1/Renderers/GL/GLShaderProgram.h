@@ -45,14 +45,16 @@ public:
 							CGLShaderProgram();
 							~CGLShaderProgram();
 
-	const char*				GetName() {return m_szName.ToCString();}
-	void					SetName(const char* pszName) {m_szName = pszName;}
+	const char*				GetName() const;
+	int						GetNameHash() const { return m_nameHash; }
+	void					SetName(const char* pszName);
 
-	int						GetConstantsNum() {return m_numConstants;}
-	int						GetSamplersNum() {return m_numSamplers;}
+	int						GetConstantsNum() const;
+	int						GetSamplersNum() const;
 
 protected:
 	EqString				m_szName;
+	int						m_nameHash;
 
 	GLhandleARB				m_program;
 	GLhandleARB				m_vertexShader;

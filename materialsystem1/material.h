@@ -69,21 +69,20 @@ private:
 	void					InitMaterialProxy(kvkeybase_t* kvs);
 
 protected:
+	EqString				m_szMaterialName;
+	EqString				m_szShaderName;
+	DkList<CMatVar*>		m_variables;
+	DkList<IMaterialProxy*>	m_proxies;
+	CTextureAtlas*			m_atlas;
+	Threading::CEqMutex&	m_Mutex;
+
 	IMaterialSystemShader*	m_shader;
 	int						m_state;	// FIXME: may be interlocked?
+	int						m_nameHash;
 
 	uint					m_frameBound;
 	bool					m_proxyIsDirty;
 	bool					m_loadFromDisk;
-
-	DkList<CMatVar*>		m_variables;
-	DkList<IMaterialProxy*>	m_proxies;
-	CTextureAtlas*			m_atlas;
-
-	EqString				m_szMaterialName;
-	EqString				m_szShaderName;
-
-	Threading::CEqMutex&	m_Mutex;
 };
 
 

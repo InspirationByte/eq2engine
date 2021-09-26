@@ -304,9 +304,6 @@ public:
 // Shaders and it's operations
 //-------------------------------------------------------------
 
-	// search for existing shader program
-	IShaderProgram*		FindShaderProgram(const char* pszName, const char* query = NULL);
-
 	// Creates shader class for needed ShaderAPI
 	IShaderProgram*		CreateNewShaderProgram(const char* pszName, const char* query = NULL);
 

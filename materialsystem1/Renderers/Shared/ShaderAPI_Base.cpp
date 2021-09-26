@@ -307,8 +307,6 @@ ITexture* ShaderAPI_Base::GetErrorTexture()
 	return m_pErrorTexture;
 }
 
-
-
 void ShaderAPI_Base::GetConsoleTextureList(const ConCommandBase* base, DkList<EqString>& list, const char* query)
 {
 	ShaderAPI_Base* baseApi = ((ShaderAPI_Base*)g_pShaderAPI);
@@ -983,6 +981,13 @@ void LoadShaderFiles(char** buffer, const char* pszFileName, const char* rootPat
 			}
 		}
 
+		// don't parse more than 10 lines
+		if (nLine > 10)
+		{
+			newSrc = newSrc + str;
+			continue;
+		}
+
 		if(skipLine)
 		{
 			afterSkipLine = true;
@@ -1123,6 +1128,27 @@ bool ShaderAPI_Base::LoadShadersFromFile(IShaderProgram* pShaderOutput, const ch
 	PPFree(info.gs.text);
 
 	return bResult;
+}
+
+
+// search for existing shader program
+IShaderProgram* ShaderAPI_Base::FindShaderProgram(const char* pszName, const char* query)
+{
+	CScopedMutex m(m_Mutex);
+
+	EqString shaderName(pszName);
+	if(query)
+		shaderName.Append(query);
+
+	const int nameHash = StringToHash(shaderName.ToCString());
+
+	for (int i = 0; i < m_ShaderList.numElem(); i++)
+	{
+		if(m_ShaderList[i]->GetNameHash() == nameHash)
+			return m_ShaderList[i];
+	}
+
+	return NULL;
 }
 
 // Shader constants setup

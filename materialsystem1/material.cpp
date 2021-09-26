@@ -40,14 +40,9 @@ CMaterial::~CMaterial()
 //
 void CMaterial::Init(const char* materialPath)
 {
-	if(materialPath != NULL)
-	{
-		m_szMaterialName = materialPath;
-		m_szMaterialName.Path_FixSlashes();
+	m_szMaterialName = materialPath;
 
-		if( m_szMaterialName.ToCString()[0] == CORRECT_PATH_SEPARATOR )
-			m_szMaterialName = m_szMaterialName.ToCString()+1;
-	}
+	m_nameHash = StringToHash(m_szMaterialName.LowerCase().ToCString());
 
 	m_loadFromDisk = true;
 
@@ -111,6 +106,7 @@ void CMaterial::Init(const char* materialPath)
 void CMaterial::Init(const char* materialName, kvkeybase_t* shader_root)
 {
 	m_szMaterialName = materialName;
+	m_nameHash = StringToHash(m_szMaterialName.LowerCase().ToCString());
 
 	m_loadFromDisk = false;
 
