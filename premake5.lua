@@ -38,6 +38,7 @@ Folders = {
 -- Main workspace
 workspace "Equilibrium2"
     language "C++"
+	cppdialect "C++17"	-- required for sol2
     configurations { "Debug", "Release" }
 	linkgroups 'On'
 	platforms { "x64" }
@@ -78,31 +79,6 @@ group "Dependencies"
 		
 -- dependencies are in separate configuration
 include "src_dependency/premake5.lua"
-
---[[ Once i'll transition engine to libnstd.
--- NoSTD
-project "libnstd"
-    kind "StaticLib"
-	targetdir "bin/%{cfg.buildcfg}"
-	
-	filter "system:Windows"
-		defines { "_CRT_SECURE_NO_WARNINGS", "__PLACEMENT_NEW_INLINE" }
-    
-	includedirs {
-		"dependencies/libnstd/include"
-	}
-	
-    files {
-        "dependencies/libnstd/src/**.cpp",
-        "dependencies/libnstd/src/**.h",
-    }
-	
-usage "libnstd"
-	includedirs {
-		"dependencies/libnstd/include"
-	}
-	links "libnstd"
-]]
 
 group "Core"
 
