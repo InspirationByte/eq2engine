@@ -55,8 +55,8 @@ FReal FPmath::sqrt(const FReal& f)
 //Use where possible
 FReal FPmath::sqrt2(const FReal& f)
 {
-    register int op=f.raw;
-    register int res=0;
+    int op=f.raw;
+    int res=0;
 
     if (f < FPMATH_ONE)
 	{

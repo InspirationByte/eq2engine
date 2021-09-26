@@ -155,6 +155,14 @@ public:
 		return *this;
 	}
 
+	operator const char* () {
+		return this->ToCString();
+	}
+
+	operator char* () {
+		return (char*)this->ToCString();
+	}
+
 	friend EqString operator+( const EqString &a, const EqString &b )
 	{
 		EqString result(a);

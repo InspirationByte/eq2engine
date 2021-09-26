@@ -204,7 +204,7 @@ bool CEngineStudioEGF::PrepareForSkinning(Matrix4x4* jointMatrices)
 		if (m_pVB->Lock(0, m_numVertices, (void**)&bufferData, false))
 		{
 			// setup each bone's transformation
-			for (register int i = 0; i < m_numVertices; i++)
+			for (int i = 0; i < m_numVertices; i++)
 			{
 				EGFHwVertex_t vert = m_softwareVerts[i];
 
@@ -683,9 +683,10 @@ void CEngineStudioEGF::LoadMaterials()
 				if (spath.ToCString()[spath.Length() - 1] == CORRECT_PATH_SEPARATOR)
 					spath = spath.Left(spath.Length() - 1);
 
-				EqString extend_path = spath + CORRECT_PATH_SEPARATOR + fpath;
+				EqString extend_path;
+				CombinePath(extend_path, 2, spath.ToCString(), fpath.ToCString());
 
-				if (materials->IsMaterialExist(extend_path.GetData()))
+				if (materials->IsMaterialExist(extend_path))
 				{
 					m_materials[i] = materials->GetMaterial(extend_path.GetData());
 
