@@ -136,14 +136,14 @@ struct Plane_t
 
 		return true;
 	}
+
 	bool GetIntersectionWithRay(const TVec3D<T>& rayPos, const TVec3D<T>& rayDir, TVec3D<T>& outIntersection) const
 	{
 		T dummy;
 		return GetIntersectionWithRay(rayPos, rayDir, outIntersection, dummy);
 	}
 
-
-	bool GetIntersectionLineFraction(const TVec3D<T>& lineStart, const TVec3D<T>& lineEnd, TVec3D<T>& outIntersection, T &fraction) const
+	bool GetIntersectionWithLine(const TVec3D<T>& lineStart, const TVec3D<T>& lineEnd, TVec3D<T>& outIntersection, T &fraction) const
 	{
 		TVec3D<T> lineVec = lineEnd - lineStart;
 		T invLineLen = (T)rsqrtf(lengthSqr(lineVec));
@@ -170,6 +170,12 @@ struct Plane_t
 		}
 
 		return true;
+	}
+
+	bool GetIntersectionWithLine(const TVec3D<T>& lineStart, const TVec3D<T>& lineEnd, TVec3D<T>& outIntersection) const
+	{
+		T dummy;
+		return GetIntersectionWithLine(lineStart, lineEnd, outIntersection, dummy);
 	}
 
 	bool CompareEpsilon(const Plane_t<T>& other, T fDistEps, T fNormalEps) const

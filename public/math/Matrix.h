@@ -374,6 +374,9 @@ TMat4<T> _identity4();
 template <typename T>
 TVec3D<T> transform3(const TVec3D<T> &in, const TMat3<T>& mat);
 
+template <typename T>
+TVec3D<T> transform3Inv(const TVec3D<T>& in, const TMat3<T>& mat);
+
 // transforms point by matrix4
 template <typename T>
 TVec3D<T> transform3(const TVec3D<T> &in, const TMat4<T>& mat);
