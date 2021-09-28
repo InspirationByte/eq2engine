@@ -462,7 +462,7 @@ bool CreateAtlasImage(const DkList<imageDesc_t*>& images_list,
 			continue;
 
 		if (value.ReplaceSubstr(s_outputTag.ToCString(), file_name.ToCString()) != -1)
-			key->SetValueAt(value.ToCString(), 0);
+			key->SetValue(value.ToCString(), 0);
 	}
 
 	Vector2D sizeTexels(1.0f / wide, 1.0f / tall);

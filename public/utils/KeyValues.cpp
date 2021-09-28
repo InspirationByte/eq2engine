@@ -222,6 +222,124 @@ void kvpairvalue_t::SetValueFromString( const char* pszValue )
 	}
 }
 
+void kvpairvalue_t::SetValue(const char* value)
+{
+	SetStringValue(value);
+
+	// convert'n'set
+	if(type == KVPAIR_INT)
+		nValue = 0;
+	else if(type == KVPAIR_FLOAT)
+		fValue = 0;
+	else if(type == KVPAIR_BOOL)
+		bValue = 0;
+}
+
+void kvpairvalue_t::SetValue(int nValue)
+{
+	char tempbuf[64];
+
+	// copy value string
+	_snprintf(tempbuf, 64, "%d", nValue);
+
+	SetStringValue(tempbuf);
+
+	// convert'n'set
+	if (type == KVPAIR_INT)
+		nValue = (int)nValue;
+	else if (type == KVPAIR_FLOAT)
+		fValue = nValue;
+	else if (type == KVPAIR_BOOL)
+		bValue = nValue > 0;
+}
+
+void kvpairvalue_t::SetValue(float fValue)
+{
+	char tempbuf[64];
+
+	// copy value string
+	_snprintf(tempbuf, 64, "%g", fValue);
+
+	SetStringValue(tempbuf);
+
+	// convert'n'set
+	if (type == KVPAIR_INT)
+		nValue = (int)fValue;
+	else if (type == KVPAIR_FLOAT)
+		fValue = fValue;
+	else if (type == KVPAIR_BOOL)
+		bValue = fValue > 0;
+}
+
+void kvpairvalue_t::SetValue(bool bValue)
+{
+	char tempbuf[64];
+
+	// copy value string
+	_snprintf(tempbuf, 64, "%d", bValue ? 1 : 0);
+
+	SetStringValue(tempbuf);
+
+	// convert'n'set
+	if (type == KVPAIR_INT)
+		nValue = bValue ? 1 : 0;
+	else if (type == KVPAIR_FLOAT)
+		fValue = bValue ? 1.0f : 0.0f;
+	else if (type == KVPAIR_BOOL)
+		bValue = bValue;
+}
+
+const char* kvpairvalue_t::GetValueString() const
+{
+	return value;
+}
+
+int kvpairvalue_t::GetValueInt() const
+{
+	if (type == KVPAIR_INT)
+		return nValue;
+	else if (type == KVPAIR_FLOAT)
+		return fValue;
+	else if (type == KVPAIR_BOOL)
+		return bValue ? 1 : 0;
+
+	return atoi(value);
+}
+
+float kvpairvalue_t::GetValueFloat() const
+{
+	if (type == KVPAIR_FLOAT)
+		return fValue;
+	else if (type == KVPAIR_INT)
+		return nValue;
+	else if (type == KVPAIR_BOOL)
+		return bValue ? 1 : 0;
+
+	return atof(value);
+}
+
+bool kvpairvalue_t::GetValueBool() const
+{
+	if (type == KVPAIR_BOOL)
+		return bValue;
+	else if (type == KVPAIR_FLOAT)
+		return fValue > 0.0f;
+
+	return atoi(value) > 0;
+}
+
+kvkeybase_t* kvkeybase_t::operator[](const char* pszName)
+{
+	return FindKeyBase(pszName); 
+}
+
+kvpairvalue_t* kvkeybase_t::operator[](int index)
+{
+	return values[index]; 
+}
+
+
+
 //-----------------------------------------------------------------------------------------
 
 KeyValues::KeyValues()
@@ -234,25 +352,25 @@ KeyValues::~KeyValues()
 
 void KeyValues::Reset()
 {
-	m_pKeyBase.Cleanup();
+	m_root.Cleanup();
 }
 
 // searches for keybase
 kvkeybase_t* KeyValues::FindKeyBase(const char* pszName, int nFlags)
 {
-	return m_pKeyBase.FindKeyBase(pszName, nFlags);
+	return m_root.FindKeyBase(pszName, nFlags);
 }
 
 // loads from file
 bool KeyValues::LoadFromFile(const char* pszFileName, int nSearchFlags)
 {
-	return KV_LoadFromFile(pszFileName, nSearchFlags, &m_pKeyBase) != NULL;
+	return KV_LoadFromFile(pszFileName, nSearchFlags, &m_root) != NULL;
 }
 
 
 bool KeyValues::LoadFromStream(ubyte* pData)
 {
-	return KV_ParseSection( (const char*)pData, 0, NULL, &m_pKeyBase, 0 ) != NULL;
+	return KV_ParseSection( (const char*)pData, 0, NULL, &m_root, 0 ) != NULL;
 }
 
 void KV_WriteToStreamV3(IVirtualStream* outStream, kvkeybase_t* section, int nTabs, bool pretty);
@@ -263,7 +381,7 @@ bool KeyValues::SaveToFile(const char* pszFileName, int nSearchFlags)
 
 	if(pStream)
 	{
-		KV_WriteToStream(pStream, &m_pKeyBase, 0, true);
+		KV_WriteToStream(pStream, &m_root, 0, true);
 		g_fileSystem->Close(pStream);
 	}
 	else
@@ -272,6 +390,16 @@ bool KeyValues::SaveToFile(const char* pszFileName, int nSearchFlags)
 		return false;
 	}
 	return true;
+}
+
+kvkeybase_t* KeyValues::GetRootSection() 
+{
+	return &m_root; 
+}
+
+kvkeybase_t* KeyValues::operator[](const char* pszName)
+{
+	return FindKeyBase(pszName);
 }
 
 //----------------------------------------------------------------------------------------------
@@ -385,30 +513,26 @@ void kvkeybase_t::SetValueFrom(kvkeybase_t* pOther)
 // adds value to key
 void kvkeybase_t::AddValue(const char* value)
 {
-	CreateValue();
-
-	SetValueAt(value, values.numElem()-1);
+	kvpairvalue_t* val = CreateValue();
+	val->SetValue(value);
 }
 
 void kvkeybase_t::AddValue(int nValue)
 {
-	CreateValue();
-
-	SetValueAt(nValue, values.numElem()-1);
+	kvpairvalue_t* val = CreateValue();
+	val->SetValue(nValue);
 }
 
 void kvkeybase_t::AddValue(float fValue)
 {
-	CreateValue();
-
-	SetValueAt(fValue, values.numElem()-1);
+	kvpairvalue_t* val = CreateValue();
+	val->SetValue(fValue);
 }
 
 void kvkeybase_t::AddValue(bool bValue)
 {
-	CreateValue();
-
-	SetValueAt(bValue, values.numElem()-1);
+	kvpairvalue_t* val = CreateValue();
+	val->SetValue(bValue);
 }
 
 void kvkeybase_t::AddValue(const Vector2D& vecValue)
@@ -444,9 +568,9 @@ void kvkeybase_t::AddValue(kvkeybase_t* keybase)
 
 void kvkeybase_t::AddValue(kvpairvalue_t* value)
 {
-	CreateValue();
+	kvpairvalue_t* val = CreateValue();
 
-	SetValueAt(value, values.numElem()-1);
+	val->SetValueFrom(value);
 }
 
 //-------------------------
@@ -462,7 +586,7 @@ void kvkeybase_t::AddUniqueValue(const char* value)
 
 	CreateValue();
 
-	SetValueAt(value, values.numElem()-1);
+	SetValue(value, values.numElem()-1);
 }
 
 void kvkeybase_t::AddUniqueValue(int nValue)
@@ -475,7 +599,7 @@ void kvkeybase_t::AddUniqueValue(int nValue)
 
 	CreateValue();
 
-	SetValueAt(nValue, values.numElem()-1);
+	SetValue(nValue, values.numElem()-1);
 }
 
 void kvkeybase_t::AddUniqueValue(float fValue)
@@ -488,7 +612,7 @@ void kvkeybase_t::AddUniqueValue(float fValue)
 
 	CreateValue();
 
-	SetValueAt(fValue, values.numElem()-1);
+	SetValue(fValue, values.numElem()-1);
 }
 
 void kvkeybase_t::AddUniqueValue(bool bValue)
@@ -501,12 +625,12 @@ void kvkeybase_t::AddUniqueValue(bool bValue)
 
 	CreateValue();
 
-	SetValueAt(bValue, values.numElem()-1);
+	SetValue(bValue, values.numElem()-1);
 }
 
 //-----------------------------------------------------------------------------
 // sets value
-void kvkeybase_t::SetValueAt(const char* value, int idxAt)
+void kvkeybase_t::SetValue(const char* value, int idxAt)
 {
 	if(values.numElem() == 0)
 		CreateValue();
@@ -514,26 +638,10 @@ void kvkeybase_t::SetValueAt(const char* value, int idxAt)
 	if(!values.inRange(idxAt))
 		return;
 
-	kvpairvalue_t* pairValue = values[idxAt];
-
-	pairValue->SetStringValue(value);
-
-	// convert'n'set
-	if(type == KVPAIR_INT)
-	{
-		pairValue->nValue = 0;
-	}
-	else if(type == KVPAIR_FLOAT)
-	{
-		pairValue->fValue = 0;
-	}
-	else if(type == KVPAIR_BOOL)
-	{
-		pairValue->bValue = 0;
-	}
+	values[idxAt]->SetValue(value);
 }
 
-void kvkeybase_t::SetValueAt(int nValue, int idxAt)
+void kvkeybase_t::SetValue(int nValue, int idxAt)
 {
 	if(values.numElem() == 0)
 		CreateValue();
@@ -541,31 +649,10 @@ void kvkeybase_t::SetValueAt(int nValue, int idxAt)
 	if(!values.inRange(idxAt))
 		return;
 
-	kvpairvalue_t* pairValue = values[idxAt];
-
-	char tempbuf[64];
-
-	// copy value string
-	_snprintf(tempbuf, 64, "%d", nValue);
-
-	pairValue->SetStringValue( tempbuf );
-
-	// convert'n'set
-	if(type == KVPAIR_INT)
-	{
-		pairValue->nValue = (int)nValue;
-	}
-	else if(type == KVPAIR_FLOAT)
-	{
-		pairValue->fValue = nValue;
-	}
-	else if(type == KVPAIR_BOOL)
-	{
-		pairValue->bValue = nValue > 0;
-	}
+	values[idxAt]->SetValue(nValue);
 }
 
-void kvkeybase_t::SetValueAt(float fValue, int idxAt)
+void kvkeybase_t::SetValue(float fValue, int idxAt)
 {
 	if(values.numElem() == 0)
 		CreateValue();
@@ -573,31 +660,10 @@ void kvkeybase_t::SetValueAt(float fValue, int idxAt)
 	if(!values.inRange(idxAt))
 		return;
 
-	kvpairvalue_t* pairValue = values[idxAt];
-
-	char tempbuf[64];
-
-	// copy value string
-	_snprintf(tempbuf, 64, "%g", fValue);
-
-	pairValue->SetStringValue( tempbuf );
-
-	// convert'n'set
-	if(type == KVPAIR_INT)
-	{
-		pairValue->nValue = (int)fValue;
-	}
-	else if(type == KVPAIR_FLOAT)
-	{
-		pairValue->fValue = fValue;
-	}
-	else if(type == KVPAIR_BOOL)
-	{
-		pairValue->bValue = fValue > 0;
-	}
+	values[idxAt]->SetValue(fValue);
 }
 
-void kvkeybase_t::SetValueAt(bool bValue, int idxAt)
+void kvkeybase_t::SetValue(bool bValue, int idxAt)
 {
 	if(values.numElem() == 0)
 		CreateValue();
@@ -605,52 +671,31 @@ void kvkeybase_t::SetValueAt(bool bValue, int idxAt)
 	if(!values.inRange(idxAt))
 		return;
 
-	kvpairvalue_t* pairValue = values[idxAt];
-
-	char tempbuf[64];
-
-	// copy value string
-	_snprintf(tempbuf, 64, "%d", bValue ? 1 : 0);
-
-	pairValue->SetStringValue( tempbuf );
-
-	// convert'n'set
-	if(type == KVPAIR_INT)
-	{
-		pairValue->nValue = bValue ? 1 : 0;
-	}
-	else if(type == KVPAIR_FLOAT)
-	{
-		pairValue->fValue = bValue ? 1.0f : 0.0f;
-	}
-	else if(type == KVPAIR_BOOL)
-	{
-		pairValue->bValue = bValue;
-	}
+	values[idxAt]->SetValue(bValue);
 }
 
-void kvkeybase_t::SetValueAt(const Vector2D& value, int idxAt)
+void kvkeybase_t::SetValue(const Vector2D& value, int idxAt)
 {
-	SetValueAt(value.x, idxAt++);
-	SetValueAt(value.y, idxAt++);
+	SetValue(value.x, idxAt++);
+	SetValue(value.y, idxAt++);
 }
 
-void kvkeybase_t::SetValueAt(const Vector3D& value, int idxAt)
+void kvkeybase_t::SetValue(const Vector3D& value, int idxAt)
 {
-	SetValueAt(value.x, idxAt++);
-	SetValueAt(value.y, idxAt++);
-	SetValueAt(value.z, idxAt++);
+	SetValue(value.x, idxAt++);
+	SetValue(value.y, idxAt++);
+	SetValue(value.z, idxAt++);
 }
 
-void kvkeybase_t::SetValueAt(const Vector4D& value, int idxAt)
+void kvkeybase_t::SetValue(const Vector4D& value, int idxAt)
 {
-	SetValueAt(value.x, idxAt++);
-	SetValueAt(value.y, idxAt++);
-	SetValueAt(value.z, idxAt++);
-	SetValueAt(value.w, idxAt++);
+	SetValue(value.x, idxAt++);
+	SetValue(value.y, idxAt++);
+	SetValue(value.z, idxAt++);
+	SetValue(value.w, idxAt++);
 }
 
-void kvkeybase_t::SetValueAt(kvpairvalue_t* value, int idxAt)
+void kvkeybase_t::SetValue(kvpairvalue_t* value, int idxAt)
 {
 	if(values.numElem() == 0)
 		CreateValue();
@@ -983,12 +1028,12 @@ kvpairvalue_t* kvkeybase_t::ValueAt(int idx)  const
 	return values[idx];
 }
 
-void kvkeybase_t::L_SetType(int newType)
+void kvkeybase_t::SetType(int newType)
 {
 	type = (EKVPairType)newType;
 }
 
-int	kvkeybase_t::L_GetType() const
+int	kvkeybase_t::GetType() const
 {
 	return type;
 }
@@ -2369,7 +2414,7 @@ const char* KV_GetValueString( kvkeybase_t* pBase, int nIndex, const char* pszDe
 	if(!pBase || pBase && !pBase->values.inRange(nIndex))
 		return pszDefault;
 
-	return pBase->values[nIndex]->value;
+	return (*pBase)[nIndex]->GetValueString();
 }
 
 
@@ -2382,14 +2427,7 @@ int	KV_GetValueInt( kvkeybase_t* pBase, int nIndex, int nDefault )
 	if(!pBase || pBase && !pBase->values.inRange(nIndex))
 		return nDefault;
 
-	if(pBase->type == KVPAIR_INT)
-		return pBase->values[nIndex]->nValue;
-	else if(pBase->type == KVPAIR_FLOAT)
-		return pBase->values[nIndex]->fValue;
-	else if(pBase->type == KVPAIR_BOOL)
-		return pBase->values[nIndex]->bValue ? 1 : 0;
-
-	return atoi(pBase->values[nIndex]->value);
+	return (*pBase)[nIndex]->GetValueInt();
 }
 
 //
@@ -2401,14 +2439,7 @@ float KV_GetValueFloat( kvkeybase_t* pBase, int nIndex, float fDefault )
 	if(!pBase || pBase && !pBase->values.inRange(nIndex))
 		return fDefault;
 
-	if(pBase->type == KVPAIR_FLOAT)
-		return pBase->values[nIndex]->fValue;
-	else if(pBase->type == KVPAIR_INT)
-		return pBase->values[nIndex]->nValue;
-	else if(pBase->type == KVPAIR_BOOL)
-		return pBase->values[nIndex]->bValue ? 1 : 0;
-
-	return atof(pBase->values[nIndex]->value);
+	return (*pBase)[nIndex]->GetValueFloat();
 }
 
 //
@@ -2420,12 +2451,7 @@ bool KV_GetValueBool( kvkeybase_t* pBase, int nIndex, bool bDefault)
 	if(!pBase || pBase && !pBase->values.inRange(nIndex))
 		return bDefault;
 
-	if(pBase->type == KVPAIR_BOOL)
-		return pBase->values[nIndex]->bValue;
-	else if(pBase->type == KVPAIR_FLOAT)
-		return pBase->values[nIndex]->fValue > 0.0f;
-
-	return atoi(pBase->values[nIndex]->value) > 0;
+	return (*pBase)[nIndex]->GetValueBool();
 }
 
 //

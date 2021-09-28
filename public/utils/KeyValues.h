@@ -96,6 +96,17 @@ struct kvpairvalue_t
 	void				SetStringValue( const char* pszValue );
 	
 	void				SetValueFromString( const char* pszValue );
+
+	void				SetValue(const char* value);
+	void				SetValue(int nValue);
+	void				SetValue(float fValue);
+	void				SetValue(bool bValue);
+
+	const char*			GetValueString() const;
+	int					GetValueInt() const;
+	float				GetValueFloat() const;
+	bool				GetValueBool() const;
+	
 };
 
 //
@@ -186,14 +197,28 @@ struct kvkeybase_t
 	void					AddUniqueValue(bool bValue);
 
 	// sets value
-	void					SetValueAt(const char* value, int idxAt);
-	void					SetValueAt(int nValue, int idxAt);
-	void					SetValueAt(float fValue, int idxAt);
-	void					SetValueAt(bool bValue, int idxAt);
-	void					SetValueAt(const Vector2D& value, int idxAt);
-	void					SetValueAt(const Vector3D& value, int idxAt);
-	void					SetValueAt(const Vector4D& value, int idxAt);
-	void					SetValueAt(kvpairvalue_t* value, int idxAt);
+	void					SetValue(const char* value, int idxAt = 0);
+	void					SetValue(int nValue, int idxAt = 0);
+	void					SetValue(float fValue, int idxAt = 0);
+	void					SetValue(bool bValue, int idxAt = 0);
+	void					SetValue(const Vector2D& value, int idxAt = 0);
+	void					SetValue(const Vector3D& value, int idxAt = 0);
+	void					SetValue(const Vector4D& value, int idxAt = 0);
+	void					SetValue(kvpairvalue_t* value, int idxAt = 0);
+
+	const char*				GetValue( int nIndex = 0, const char* pszDefault = "" );
+	int						GetValue( int nIndex = 0, int nDefault = 0 );
+	float					GetValue( int nIndex = 0, float fDefault = 0.0f );
+	bool					GetValue( int nIndex = 0, bool bDefault = false );
+	Vector2D				GetValue( int nIndex = 0, const Vector2D& vDefault = vec2_zero);
+	IVector2D				GetValue( int nIndex = 0, const IVector2D& vDefault = 0);
+	Vector3D				GetValue( int nIndex = 0, const Vector3D& vDefault = vec3_zero);
+	Vector4D				GetValue( int nIndex = 0, const Vector4D& vDefault = vec4_zero);
+
+	kvkeybase_t*			operator[](const char* pszName);
+
+	kvpairvalue_t*			operator[](int index);
+
 
 	//----------------------------------------------
 
@@ -211,8 +236,8 @@ struct kvkeybase_t
 	int						ValueCount() const;
 	kvpairvalue_t*			ValueAt(int idx) const;
 
-	void					L_SetType(int newType);
-	int						L_GetType() const;
+	void					SetType(int newType);
+	int						GetType() const;
 
 	// the line that the key is on
 	int						line;
@@ -247,10 +272,12 @@ public:
 
 	bool			SaveToFile(const char* pszFileName, int nSearchFlags = -1);
 
-	kvkeybase_t*	GetRootSection() {return &m_pKeyBase;}
+	kvkeybase_t*	GetRootSection();
+
+	kvkeybase_t*	operator[](const char* pszName);
 
 private:
-	kvkeybase_t	m_pKeyBase;
+	kvkeybase_t	m_root;
 };
 
 //---------------------------------------------------------------------------------------------------------
@@ -274,15 +301,32 @@ void				KV_WriteToStreamBinary(IVirtualStream* outStream, kvkeybase_t* base);
 // KeyValues value helpers
 //-----------------------------------------------------------------------------------------------------
 
-const char*			KV_GetValueString( kvkeybase_t* pBase, int nIndex = 0, const char* pszDefault = "no key" );
+const char*			KV_GetValueString( kvkeybase_t* pBase, int nIndex = 0, const char* pszDefault = "" );
 int					KV_GetValueInt( kvkeybase_t* pBase, int nIndex = 0, int nDefault = 0 );
 float				KV_GetValueFloat( kvkeybase_t* pBase, int nIndex = 0, float fDefault = 0.0f );
 bool				KV_GetValueBool( kvkeybase_t* pBase, int nIndex = 0, bool bDefault = false );
-
 Vector2D			KV_GetVector2D( kvkeybase_t* pBase, int nIndex = 0, const Vector2D& vDefault = vec2_zero);
 IVector2D			KV_GetIVector2D( kvkeybase_t* pBase, int nIndex = 0, const IVector2D& vDefault = 0);
-
 Vector3D			KV_GetVector3D( kvkeybase_t* pBase, int nIndex = 0, const Vector3D& vDefault = vec3_zero);
 Vector4D			KV_GetVector4D( kvkeybase_t* pBase, int nIndex = 0, const Vector4D& vDefault = vec4_zero);
+
+// new
+inline const char*	KV_GetValue( kvkeybase_t* pBase, int nIndex = 0, const char* pszDefault = "" )				{return KV_GetValueString(pBase, nIndex, pszDefault);}
+inline int			KV_GetValue( kvkeybase_t* pBase, int nIndex = 0, int nDefault = 0 )							{return KV_GetValueInt(pBase, nIndex, nDefault);}
+inline float		KV_GetValue( kvkeybase_t* pBase, int nIndex = 0, float fDefault = 0.0f )					{return KV_GetValueFloat(pBase, nIndex, fDefault);}
+inline bool			KV_GetValue( kvkeybase_t* pBase, int nIndex = 0, bool bDefault = false )					{return KV_GetValueBool(pBase, nIndex, bDefault);}
+inline Vector2D		KV_GetValue( kvkeybase_t* pBase, int nIndex = 0, const Vector2D& vDefault = vec2_zero)		{return KV_GetVector2D(pBase, nIndex, vDefault);}
+inline IVector2D	KV_GetValue( kvkeybase_t* pBase, int nIndex = 0, const IVector2D& vDefault = 0)				{return KV_GetIVector2D(pBase, nIndex, vDefault);}
+inline Vector3D		KV_GetValue( kvkeybase_t* pBase, int nIndex = 0, const Vector3D& vDefault = vec3_zero)		{return KV_GetVector3D(pBase, nIndex, vDefault);}
+inline Vector4D		KV_GetValue( kvkeybase_t* pBase, int nIndex = 0, const Vector4D& vDefault = vec4_zero)		{return KV_GetVector4D(pBase, nIndex, vDefault);}
+
+inline const char*	kvkeybase_t::GetValue( int nIndex, const char* pszDefault )					{return KV_GetValueString(this, nIndex, pszDefault);}
+inline int			kvkeybase_t::GetValue( int nIndex, int nDefault )							{return KV_GetValueInt(this, nIndex, nDefault);}
+inline float		kvkeybase_t::GetValue( int nIndex, float fDefault )							{return KV_GetValueFloat(this, nIndex, fDefault);}
+inline bool			kvkeybase_t::GetValue( int nIndex, bool bDefault )							{return KV_GetValueBool(this, nIndex, bDefault);}
+inline Vector2D		kvkeybase_t::GetValue( int nIndex, const Vector2D& vDefault)				{return KV_GetVector2D(this, nIndex, vDefault);}
+inline IVector2D	kvkeybase_t::GetValue( int nIndex, const IVector2D& vDefault)				{return KV_GetIVector2D(this, nIndex, vDefault);}
+inline Vector3D		kvkeybase_t::GetValue( int nIndex, const Vector3D& vDefault)				{return KV_GetVector3D(this, nIndex, vDefault);}
+inline Vector4D		kvkeybase_t::GetValue( int nIndex, const Vector4D& vDefault )				{return KV_GetVector4D(this, nIndex, vDefault);}
 
 #endif //KEYVALUES_H
