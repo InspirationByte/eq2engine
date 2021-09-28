@@ -26,7 +26,7 @@
 #define ATLAS_FILE_EXTENSION		".atlas"
 
 CMaterial::CMaterial(Threading::CEqMutex& mutex) 
-	: m_state(MATERIAL_LOAD_ERROR), m_shader(nullptr), m_proxyIsDirty(true), m_loadFromDisk(true), m_frameBound(0), m_atlas(nullptr), m_Mutex(mutex)
+	: m_state(MATERIAL_LOAD_ERROR), m_shader(nullptr), m_proxyIsDirty(true), m_loadFromDisk(true), m_frameBound(0), m_atlas(nullptr), m_Mutex(mutex), m_nameHash(0)
 {
 }
 
@@ -40,9 +40,11 @@ CMaterial::~CMaterial()
 //
 void CMaterial::Init(const char* materialPath)
 {
-	m_szMaterialName = materialPath;
-
-	m_nameHash = StringToHash(m_szMaterialName.LowerCase().ToCString());
+	if (materialPath)
+	{
+		m_szMaterialName = materialPath;
+		m_nameHash = StringToHash(m_szMaterialName.LowerCase().ToCString());
+	}
 
 	m_loadFromDisk = true;
 
