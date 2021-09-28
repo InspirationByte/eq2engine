@@ -24,6 +24,8 @@
 #include "utils/CRC32.h"
 #include "utils/KeyValues.h"
 
+#include "core/IEqParallelJobs.h"
+
 static ConVar rs_echo_texture_loading("r_echo_texture_loading","0","Echo textrue loading");
 static ConVar r_nomip("r_nomip", "0");
 
@@ -1012,12 +1014,146 @@ void LoadShaderFiles(char** buffer, const char* pszFileName, const char* rootPat
 	strcpy(*buffer, newSrc.GetData());
 }
 
+struct shaderCompileJob_t
+{
+	eqParallelJob_t base;
+	shaderProgramCompileInfo_t info;
+	IShaderAPI* thisShaderAPI;
+	IShaderProgram* program;
+	EqString filePrefix;
+	EqString extra;
+};
+
 // Loads and compiles shaders from files
 bool ShaderAPI_Base::LoadShadersFromFile(IShaderProgram* pShaderOutput, const char* pszFilePrefix, const char *extra)
 {
 	if(pShaderOutput == NULL)
 		return false;
 
+	bool bResult = true;
+
+	shaderCompileJob_t* job = new shaderCompileJob_t();
+	job->filePrefix = pszFilePrefix;
+	job->extra = extra;
+	job->program = pShaderOutput;
+	job->thisShaderAPI = this;
+	job->base.arguments = job;
+	job->base.typeId = JOB_TYPE_RENDERER;
+
+	job->base.func = [](void* data, int i) {
+		shaderCompileJob_t* jobData = (shaderCompileJob_t*)data;
+
+		jobData->program->Ref_Grab();
+
+		EqString fileNameVS = EqString::Format("%s.vs", jobData->filePrefix.ToCString());
+		EqString fileNamePS = EqString::Format("%s.ps", jobData->filePrefix.ToCString());
+		EqString fileNameGS = EqString::Format("%s.gs", jobData->filePrefix.ToCString());
+
+		bool vsRequiried = true;	// vertex shader is always required
+		bool psRequiried = false;
+		bool gsRequiried = false;
+
+		shaderProgramCompileInfo_t info;
+
+		// Load KeyValues
+		KeyValues pKv;
+
+		EqString shaderDescFilename = (EqString(SHADERS_DEFAULT_PATH) + jobData->filePrefix + ".txt");
+
+		if( pKv.LoadFromFile(shaderDescFilename) )
+		{
+			kvkeybase_t* sec = pKv.GetRootSection();
+
+			kvkeybase_t* pixelProgramName = sec->FindKeyBase("PixelShaderProgram");
+			kvkeybase_t* vertexProgramName = sec->FindKeyBase("VertexShaderProgram");
+			kvkeybase_t* geometryProgramName = sec->FindKeyBase("GeometryShaderProgram");
+
+			info.disableCache = KV_GetValueBool(sec->FindKeyBase("DisableCache"));
+
+			if(pixelProgramName)
+				psRequiried = true;
+
+			if(geometryProgramName)
+				gsRequiried = true;
+
+			const char* vertexProgNameStr = KV_GetValueString(vertexProgramName, 0, jobData->filePrefix);
+			const char* pixelProgNameStr = KV_GetValueString(pixelProgramName, 0, jobData->filePrefix);
+			const char* geomProgNameStr = KV_GetValueString(geometryProgramName, 0, jobData->filePrefix);
+
+			fileNameVS = EqString::Format("%s.vs", vertexProgNameStr);
+			fileNamePS = EqString::Format("%s.ps", pixelProgNameStr);
+			fileNameGS = EqString::Format("%s.gs", geomProgNameStr);
+
+			// API section
+			// find corresponding API
+			for(int i = 0; i < sec->keys.numElem(); i++)
+			{
+				kvkeybase_t* apiKey = sec->keys[i];
+
+				if(!stricmp(apiKey->GetName(), "api"))
+				{
+					for(int j = 0; j < apiKey->values.numElem(); j++)
+					{
+						if(!stricmp(KV_GetValueString(apiKey, j), jobData->thisShaderAPI->GetRendererName()))
+						{
+							info.apiPrefs = apiKey;
+							break;
+						}
+					}
+
+					if(info.apiPrefs)
+						break;
+				}
+			}
+		}
+
+		EqString shaderRootPath = EqString::Format(SHADERS_DEFAULT_PATH "%s", jobData->thisShaderAPI->GetRendererName());
+
+		LoadShaderFiles(&info.vs.text, fileNameVS.ToCString(), shaderRootPath.ToCString(), info.vs, true, !vsRequiried);
+		LoadShaderFiles(&info.ps.text, fileNamePS.ToCString(), shaderRootPath.ToCString(), info.ps, true, !psRequiried);
+		LoadShaderFiles(&info.gs.text, fileNameGS.ToCString(), shaderRootPath.ToCString(), info.gs, true, !gsRequiried);
+
+		if (!info.ps.text && psRequiried)
+			return;
+
+		if(!info.vs.text && vsRequiried)
+			return;
+
+		if (!info.gs.text && gsRequiried)
+			return;
+
+		// checksum please
+		if(info.vs.text)
+			info.vs.checksum = CRC32_BlockChecksum(info.vs.text, strlen(info.vs.text));
+
+		if(info.ps.text)
+			info.ps.checksum = CRC32_BlockChecksum(info.ps.text, strlen(info.ps.text));
+
+		if(info.gs.text)
+			info.gs.checksum = CRC32_BlockChecksum(info.gs.text, strlen(info.gs.text));
+
+		// compile the shaders
+		jobData->thisShaderAPI->CompileShadersFromStream( jobData->program, info, jobData->extra );
+	};
+
+	job->base.onComplete = [](eqParallelJob_t* job)
+	{
+		shaderCompileJob_t* jobData = (shaderCompileJob_t*)job;
+		jobData->program->Ref_Drop();
+
+		PPFree(jobData->info.vs.text);
+		PPFree(jobData->info.ps.text);
+		PPFree(jobData->info.gs.text);
+
+		// required to delete job manually here
+		// becuase eqDecalPolygonJob_t would have destructors
+		delete jobData;
+	};
+
+	g_parallelJobs->AddJob((eqParallelJob_t*)job);
+	g_parallelJobs->Submit();
+
+#if 0
 	bool bResult = false;
 
 	EqString fileNameVS = EqString::Format("%s.vs", pszFilePrefix);
@@ -1033,7 +1169,9 @@ bool ShaderAPI_Base::LoadShadersFromFile(IShaderProgram* pShaderOutput, const ch
 	// Load KeyValues
 	KeyValues pKv;
 
-	if( pKv.LoadFromFile((EqString(SHADERS_DEFAULT_PATH) + pszFilePrefix + ".txt").GetData()) )
+	EqString shaderDescFilename = (EqString(SHADERS_DEFAULT_PATH) + pszFilePrefix + ".txt");
+
+	if( pKv.LoadFromFile(shaderDescFilename) )
 	{
 		kvkeybase_t* sec = pKv.GetRootSection();
 
@@ -1126,7 +1264,7 @@ bool ShaderAPI_Base::LoadShadersFromFile(IShaderProgram* pShaderOutput, const ch
 	PPFree(info.vs.text);
 	PPFree(info.ps.text);
 	PPFree(info.gs.text);
-
+#endif
 	return bResult;
 }
 
