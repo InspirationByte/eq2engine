@@ -9,6 +9,7 @@
 #include "core/IFileSystem.h"
 #include "core/ILocalize.h"
 #include "core/IConsoleCommands.h"
+#include "core/IEqParallelJobs.h"
 
 #include "utils/eqtimer.h"
 
@@ -30,10 +31,24 @@
 
 #include <wx/settings.h>
 
+
 #define APPLICATION_NAME		"SoundTest"
 #define LOCALIZED_FILE_PREFIX	"wxAppTest"
 
 #define TITLE_TOKEN				"Equilibrium Sound Engine Test"	// you can use hashtag # to use localization token
+
+static eqJobThreadDesc_t s_jobTypes[] = {
+	//{JOB_TYPE_ANY, 1},
+	{JOB_TYPE_AUDIO, 1},
+	//{JOB_TYPE_PHYSICS, 1},
+	{JOB_TYPE_RENDERER, 1},
+	{JOB_TYPE_PARTICLES, 1},
+	{JOB_TYPE_DECALS, 1},
+	{JOB_TYPE_SPOOL_AUDIO, 1},
+	{JOB_TYPE_SPOOL_EGF, 2},
+	{JOB_TYPE_SPOOL_WORLD, 1},
+	{JOB_TYPE_OBJECTS, 1},
+};
 
 
 DKMODULE*			g_matsysmodule = NULL;
@@ -286,7 +301,11 @@ CMainWindow::CMainWindow( wxWindow* parent, wxWindowID id, const wxString& title
 
 	InitMatSystem( (EQWNDHANDLE)m_renderPanel->GetHandle() );
 
-	g_fontCache->Init();
+	if (!g_parallelJobs->Init(elementsOf(s_jobTypes), s_jobTypes))
+		return;
+
+	if (!g_fontCache->Init())
+		return;
 
 	debugoverlay->Init(false);
 

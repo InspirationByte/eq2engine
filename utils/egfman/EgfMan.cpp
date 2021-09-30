@@ -17,6 +17,7 @@
 #include "core/IFileSystem.h"
 #include "core/ConVar.h"
 #include "core/ILocalize.h"
+#include "core/IEqParallelJobs.h"
 
 #include "utils/KeyValues.h"
 #include "utils/eqtimer.h"
@@ -39,6 +40,21 @@
 #include "EditorHeader.h"
 
 #include "grid.h"
+
+
+
+static eqJobThreadDesc_t s_jobTypes[] = {
+	//{JOB_TYPE_ANY, 1},
+	{JOB_TYPE_AUDIO, 1},
+	//{JOB_TYPE_PHYSICS, 1},
+	{JOB_TYPE_RENDERER, 1},
+	{JOB_TYPE_PARTICLES, 1},
+	{JOB_TYPE_DECALS, 1},
+	{JOB_TYPE_SPOOL_AUDIO, 1},
+	{JOB_TYPE_SPOOL_EGF, 2},
+	{JOB_TYPE_SPOOL_WORLD, 1},
+	{JOB_TYPE_OBJECTS, 1},
+};
 
 ConVar cheats("__cheats", "1");
 
@@ -290,6 +306,9 @@ void InitMatSystem(HWND window)
 	}
 
 	materials->LoadShaderLibrary("eqBaseShaders.dll");
+
+	if (!g_parallelJobs->Init(elementsOf(s_jobTypes), s_jobTypes))
+		return;
 
 	if (!g_fontCache->Init())
 	{
