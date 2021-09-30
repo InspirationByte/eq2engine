@@ -235,58 +235,58 @@ void kvpairvalue_t::SetValue(const char* value)
 		bValue = 0;
 }
 
-void kvpairvalue_t::SetValue(int nValue)
+void kvpairvalue_t::SetValue(int value)
 {
 	char tempbuf[64];
 
 	// copy value string
-	_snprintf(tempbuf, 64, "%d", nValue);
+	_snprintf(tempbuf, 64, "%d", value);
 
 	SetStringValue(tempbuf);
 
 	// convert'n'set
 	if (type == KVPAIR_INT)
-		nValue = (int)nValue;
+		nValue = (int)value;
 	else if (type == KVPAIR_FLOAT)
-		fValue = nValue;
+		fValue = value;
 	else if (type == KVPAIR_BOOL)
-		bValue = nValue > 0;
+		bValue = value > 0;
 }
 
-void kvpairvalue_t::SetValue(float fValue)
+void kvpairvalue_t::SetValue(float value)
 {
 	char tempbuf[64];
 
 	// copy value string
-	_snprintf(tempbuf, 64, "%g", fValue);
+	_snprintf(tempbuf, 64, "%g", value);
 
 	SetStringValue(tempbuf);
 
 	// convert'n'set
 	if (type == KVPAIR_INT)
-		nValue = (int)fValue;
+		nValue = (int)value;
 	else if (type == KVPAIR_FLOAT)
-		fValue = fValue;
+		fValue = value;
 	else if (type == KVPAIR_BOOL)
-		bValue = fValue > 0;
+		bValue = value > 0;
 }
 
-void kvpairvalue_t::SetValue(bool bValue)
+void kvpairvalue_t::SetValue(bool value)
 {
 	char tempbuf[64];
 
 	// copy value string
-	_snprintf(tempbuf, 64, "%d", bValue ? 1 : 0);
+	_snprintf(tempbuf, 64, "%d", value ? 1 : 0);
 
 	SetStringValue(tempbuf);
 
 	// convert'n'set
 	if (type == KVPAIR_INT)
-		nValue = bValue ? 1 : 0;
+		nValue = value ? 1 : 0;
 	else if (type == KVPAIR_FLOAT)
-		fValue = bValue ? 1.0f : 0.0f;
+		fValue = value ? 1.0f : 0.0f;
 	else if (type == KVPAIR_BOOL)
-		bValue = bValue;
+		bValue = value;
 }
 
 const char* kvpairvalue_t::GetValueString() const
