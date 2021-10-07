@@ -97,6 +97,7 @@ protected:
 private:
 
 	IEqFont*						m_font;
+	float							m_fontScale;
 
 	Vector2D						m_mousePosition;
 	bool							m_visible;

@@ -266,6 +266,7 @@ void CEqConsoleInput::Initialize()
 
 	m_font = g_fontCache->GetFont(consoleFontName, 16);
 	m_enabled = KV_GetValueBool(consoleSettings ? consoleSettings->FindKeyBase("Enable") : NULL);
+	m_fontScale = KV_GetValueFloat(consoleSettings ? consoleSettings->FindKeyBase("FontScale") : NULL);
 }
 
 void CEqConsoleInput::AddAutoCompletion(ConAutoCompletion_t* newItem)
@@ -340,6 +341,7 @@ void CEqConsoleInput::DrawListBox(const IVector2D& pos, int width, DkList<EqStri
 	eqFontStyleParam_t tooltipStyle;
 	tooltipStyle.textColor = s_conHelpTextColor;
 	tooltipStyle.styleFlag = TEXT_STYLE_FROM_CAP;
+	tooltipStyle.scale = m_fontScale;
 
 	eqFontStyleParam_t itemStyle(tooltipStyle);
 	itemStyle.textColor = s_conListItemColor;
@@ -417,6 +419,7 @@ void CEqConsoleInput::DrawFastFind(float x, float y, float w)
 	eqFontStyleParam_t helpTextParams;
 	helpTextParams.textColor = s_conHelpTextColor;
 	helpTextParams.styleFlag = TEXT_STYLE_FROM_CAP;
+	helpTextParams.scale = m_fontScale;
 
 	// draw history box
 	if(m_histIndex != -1 && m_commandHistory.numElem())
@@ -483,6 +486,7 @@ void CEqConsoleInput::DrawFastFind(float x, float y, float w)
 		{
 			eqFontStyleParam_t variantsTextParams;
 			variantsTextParams.styleFlag = TEXT_STYLE_FROM_CAP;
+			variantsTextParams.scale = m_fontScale;
 
 			int max_string_length = 35;
 
@@ -995,6 +999,7 @@ void CEqConsoleInput::DrawSelf(int width,int height, float frameTime)
 	blending.dstFactor = BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
 
 	eqFontStyleParam_t fontStyle;
+	fontStyle.scale = m_fontScale;
 
 	int drawstart = m_logScrollPosition;
 
@@ -1021,9 +1026,11 @@ void CEqConsoleInput::DrawSelf(int width,int height, float frameTime)
 		int numDrawn = 0;
 
 		eqFontStyleParam_t outputTextStyle;
+		outputTextStyle.scale = m_fontScale;
 
 		eqFontStyleParam_t hasLinesStyle;
 		hasLinesStyle.textColor = ColorRGBA(0.5f,0.5f,1.0f,1.0f);
+		hasLinesStyle.scale = m_fontScale;
 
 		con_outputRectangle.vleftTop.x += 5.0f;
 		con_outputRectangle.vleftTop.y += m_font->GetLineHeight(fontStyle);
@@ -1059,6 +1066,7 @@ void CEqConsoleInput::DrawSelf(int width,int height, float frameTime)
 
 	eqFontStyleParam_t inputTextStyle;
 	inputTextStyle.textColor = s_conInputTextColor;
+	inputTextStyle.scale = m_fontScale;
 
 	Vector2D inputTextPos(inputTextEntryRect.vleftTop.x+4, inputTextEntryRect.vrightBottom.y-6);
 
@@ -1099,9 +1107,11 @@ void CEqConsoleInput::DrawSelf(int width,int height, float frameTime)
 
 	eqFontStyleParam_t versionTextStl;
 	versionTextStl.styleFlag = TEXT_STYLE_SHADOW | TEXT_STYLE_FROM_CAP;
+	versionTextStl.align = TEXT_ALIGN_HCENTER;
 	versionTextStl.textColor = ColorRGBA(1,1,1,0.5f);
+	versionTextStl.scale = m_fontScale;
 
-	m_font->RenderText( CONSOLE_ENGINEVERSION_STR, Vector2D(5,5), versionTextStl);
+	m_font->RenderText( CONSOLE_ENGINEVERSION_STR, Vector2D(width/2,10), versionTextStl);
 }
 
 void CEqConsoleInput::MousePos(const Vector2D &pos)
