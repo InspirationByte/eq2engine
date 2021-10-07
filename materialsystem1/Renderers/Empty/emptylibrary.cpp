@@ -22,6 +22,7 @@ IShaderAPI* g_pShaderAPI = NULL;
 CEmptyRenderLib::CEmptyRenderLib()
 {
 	GetCore()->RegisterInterface(RENDERER_INTERFACE_VERSION, this);
+	m_windowed = true;
 }
 
 CEmptyRenderLib::~CEmptyRenderLib()
@@ -71,13 +72,14 @@ void CEmptyRenderLib::SetBackbufferSize(const int w, const int h)
 // changes fullscreen mode
 bool CEmptyRenderLib::SetWindowed(bool enabled)
 {
+	m_windowed = enabled;
 	return true;
 }
 
 // speaks for itself
 bool CEmptyRenderLib::IsWindowed() const
 {
-	return ((ShaderAPIEmpty*)m_Renderer)->m_params->windowedMode;
+	return m_windowed;
 }
 
 bool CEmptyRenderLib::CaptureScreenshot(CImage &img)

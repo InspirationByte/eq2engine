@@ -81,7 +81,6 @@ protected:
 	int						m_nameHash;
 
 	uint					m_frameBound;
-	bool					m_proxyIsDirty;
 	bool					m_loadFromDisk;
 };
 

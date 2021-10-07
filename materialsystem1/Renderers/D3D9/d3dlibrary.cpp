@@ -121,7 +121,8 @@ bool CD3DRenderLib::InitAPI( shaderAPIParams_t &params )
 	m_width = windowRect.right;
 	m_height = windowRect.bottom;
 
-	m_d3dpp.Windowed = params.windowedMode;
+	// always initialize in windowed mode
+	m_d3dpp.Windowed = true;
 
 	// set backbuffer bits
 	int depthBits = params.depthBits;
@@ -291,7 +292,7 @@ bool CD3DRenderLib::InitAPI( shaderAPIParams_t &params )
 
 void CD3DRenderLib::ExitAPI()
 {
-	if (!s_shaderApi.m_params->windowedMode)
+	if (!IsWindowed())
 	{
 		// Reset display mode to default
 		ChangeDisplaySettingsEx(m_dispDev.DeviceName, NULL, NULL, 0, NULL);
@@ -361,7 +362,7 @@ void CD3DRenderLib::EndFrame(IEqSwapChain* swapChain)
 	if(swapChain != NULL)
 		pHWND = (HWND)swapChain->GetWindow();
 
-	if(!s_shaderApi.m_params->windowedMode)
+	if(!IsWindowed())
 	{
 		// fullscreen present
 		hr = m_rhi->Present(NULL, NULL, pHWND, NULL);

@@ -58,11 +58,6 @@ ConVar				r_noffp("r_noffp","0","No FFP emulated primitives", CV_CHEAT);
 ConVar				r_depthBias("r_depthBias", "-0.000001", NULL, CV_CHEAT);
 ConVar				r_slopeDepthBias("r_slopeDepthBias", "-1.5", NULL, CV_CHEAT);
 
-DECLARE_CMD(mat_toggle_fullscreen, "Debug command to toggle fullscreen mode", 0)
-{
-	materials->SetWindowed(!materials->IsWindowed());
-}
-
 DECLARE_CMD(mat_reload, "Reloads all materials",0)
 {
 	MsgInfo("Reloading materials...\n\n");
@@ -179,6 +174,9 @@ CMaterialSystem::CMaterialSystem()
 	m_deviceActiveState = true;
 
 	m_preApplyCallback = NULL;
+
+	m_proxyDeltaTime = 0.0f;
+	m_proxyTimer.GetTime(true);
 
 	// register when the DLL is connected
 	GetCore()->RegisterInterface(MATSYSTEM_INTERFACE_VERSION, this);
@@ -877,6 +875,11 @@ void CMaterialSystem::SetShaderParameterOverriden(ShaderDefaultParams_e param, b
 		m_paramOverrideMask |= (1 << (uint)param);
 }
 
+void CMaterialSystem::SetProxyDeltaTime(float deltaTime)
+{
+	m_proxyDeltaTime = deltaTime;
+}
+
 bool CMaterialSystem::BindMaterial(IMaterial* pMaterial, int flags)
 {
 	if(!pMaterial)
@@ -888,8 +891,8 @@ bool CMaterialSystem::BindMaterial(IMaterial* pMaterial, int flags)
 	CMaterial* pSetupMaterial = (CMaterial*)pMaterial;
 
 	// proxy update is dirty if material was not bound to this frame
-	if(pSetupMaterial->m_frameBound != m_frame)
-		pSetupMaterial->m_proxyIsDirty = true;
+	if (pSetupMaterial->m_frameBound != m_frame)
+		pSetupMaterial->UpdateProxy(m_proxyDeltaTime);
 
 	pSetupMaterial->m_frameBound = m_frame;
 
@@ -1083,6 +1086,7 @@ bool CMaterialSystem::EndFrame(IEqSwapChain* swapChain)
 		m_renderLibrary->EndFrame(swapChain);
 
 	m_frame++;
+	m_proxyDeltaTime = m_proxyTimer.GetTime(true);
 
 	return true;
 }
@@ -1110,7 +1114,7 @@ void CMaterialSystem::SetDeviceFocused(bool inFocus)
 IEqSwapChain* CMaterialSystem::CreateSwapChain(void* windowHandle)
 {
 	if(m_renderLibrary)
-		return m_renderLibrary->CreateSwapChain(windowHandle, m_config.shaderapi_params.windowedMode);
+		return m_renderLibrary->CreateSwapChain(windowHandle);
 
 	return NULL;
 }
@@ -1124,16 +1128,9 @@ void CMaterialSystem::DestroySwapChain(IEqSwapChain* swapChain)
 // fullscreen mode changing
 bool CMaterialSystem::SetWindowed(bool enable)
 {
-	bool old = m_config.shaderapi_params.windowedMode;
-	m_config.shaderapi_params.windowedMode = enable;
-	
 	if (m_renderLibrary)
 	{
-		if (!m_renderLibrary->SetWindowed(enable))
-		{
-			m_config.shaderapi_params.windowedMode = old;
-			return false;
-		}
+		return m_renderLibrary->SetWindowed(enable);
 	}
 
 	return true;
@@ -1141,7 +1138,7 @@ bool CMaterialSystem::SetWindowed(bool enable)
 
 bool CMaterialSystem::IsWindowed() const
 {
-	return m_config.shaderapi_params.windowedMode;
+	return m_renderLibrary->IsWindowed();
 }
 
 // returns RHI device interface

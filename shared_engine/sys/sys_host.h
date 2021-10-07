@@ -44,6 +44,10 @@ public:
 	void				OnWindowResize(int width, int height);
 	void				OnFocusChanged(bool inFocus);
 
+	EQWNDHANDLE			GetWindowHandle() const { return m_pWindow; }
+	void				SetFullscreenMode();
+	void				SetWindowedMode();
+
 	//---------------------------------
 	// INPUT
 	//---------------------------------

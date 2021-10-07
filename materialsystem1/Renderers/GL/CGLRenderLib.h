@@ -123,5 +123,6 @@ protected:
 	int						m_height;
 
 	bool					m_bResized;
+	bool					m_windowed;
 };
 #endif //CGLRENDERLIB_H

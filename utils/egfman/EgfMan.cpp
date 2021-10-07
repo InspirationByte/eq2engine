@@ -284,7 +284,6 @@ void InitMatSystem(HWND window)
 
 		materials_config.lighting_model = MATERIAL_LIGHT_FORWARD;
 
-		materials_config.shaderapi_params.windowedMode = true;
 		materials_config.shaderapi_params.windowHandle = window;
 		materials_config.shaderapi_params.screenFormat = format;
 

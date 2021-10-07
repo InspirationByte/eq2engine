@@ -65,5 +65,6 @@ protected:
 	bool					m_bActive;
 
 	bool					m_bResized;
+	bool					m_windowed;
 };
 #endif //CGLRENDERLIB_H

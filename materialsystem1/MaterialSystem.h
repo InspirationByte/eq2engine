@@ -17,12 +17,14 @@
 #include "core/platform/Platform.h"
 #include "utils/eqthread.h"
 #include "utils/DkList.h"
+#include "utils/eqtimer.h"
 
 #include "materialsystem1/IMaterialSystem.h"
 #include "materialsystem1/scene_def.h"
 
 #include "DynamicMesh.h"
 #include "material.h"
+
 
 
 using namespace Threading;
@@ -225,6 +227,8 @@ public:
 	//------------------
 	// Materials or shader static states
 
+	void							SetProxyDeltaTime(float deltaTime);
+
 	IMaterial*						GetBoundMaterial();
 
 	void							SetShaderParameterOverriden(ShaderDefaultParams_e param, bool set = true);
@@ -318,20 +322,20 @@ private:
 
 	matsystem_render_config_t		m_config;
 
-	IRenderLibrary*					m_renderLibrary;					// render library.
-	DKMODULE*						m_rendermodule;					// render dll.
+	IRenderLibrary*					m_renderLibrary;			// render library.
+	DKMODULE*						m_rendermodule;				// render dll.
 
-	IShaderAPI*						m_shaderAPI;					// the main renderer interface
-	EqString						m_materialsPath;				// material path
+	IShaderAPI*						m_shaderAPI;				// the main renderer interface
+	EqString						m_materialsPath;			// material path
 
 	DkList<DKMODULE*>				m_shaderLibs;				// loaded shader libraries
 
-	DkList<shaderfactory_t>			m_shaderFactoryList;						// registered shaders
-	DkList<shaderoverride_t>		m_shaderOverrideList;			// shader override functors
+	DkList<shaderfactory_t>			m_shaderFactoryList;		// registered shaders
+	DkList<shaderoverride_t>		m_shaderOverrideList;		// shader override functors
 	DkList<proxyfactory_t>			m_proxyFactoryList;
 
-	DkList<IMaterial*>				m_loadedMaterials;				// loaded material list
-	ER_CullMode						m_cullMode;				// culling mode. For shaders. TODO: remove, and check matrix handedness.
+	DkList<IMaterial*>				m_loadedMaterials;			// loaded material list
+	ER_CullMode						m_cullMode;					// culling mode. For shaders. TODO: remove, and check matrix handedness.
 
 	CDynamicMesh					m_dynamicMesh;
 
@@ -343,15 +347,12 @@ private:
 
 	IMaterialRenderParamCallbacks*	m_preApplyCallback;
 
-	EMaterialLightingMode			m_curentLightingModel;	// dynamic-changeable lighting model. Used as state
-	bool							m_skinningEnabled;
-	bool							m_instancingEnabled;
+	EMaterialLightingMode			m_curentLightingModel;		// dynamic-changeable lighting model. Used as state
 
-	Matrix4x4						m_matrices[5];					// matrix modes
+	Matrix4x4						m_matrices[5];				// matrix modes
 
 	IMaterial*						m_setMaterial;				// currently binded material
-	uint							m_paramOverrideMask;			// parameter setup mask for overrides
-
+	uint							m_paramOverrideMask;		// parameter setup mask for overrides
 
 	IMaterial*						m_overdrawMaterial;
 
@@ -370,13 +371,18 @@ private:
 
 	dlight_t*						m_currentLight;
 
-	bool							m_deviceActiveState;
-
 	CEqMutex						m_ProxyMutex[4];
 	CEqMutex						m_Mutex;
 
-	bool							m_forcePreloadMaterials;
+	CEqTimer						m_proxyTimer;
+
 	uint							m_frame;
+	float							m_proxyDeltaTime;
+
+	bool							m_skinningEnabled;
+	bool							m_instancingEnabled;
+	bool							m_deviceActiveState;
+	bool							m_forcePreloadMaterials;
 };
 
 #endif //CMATERIALSYSTEM_H

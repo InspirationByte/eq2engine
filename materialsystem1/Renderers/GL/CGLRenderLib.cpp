@@ -70,6 +70,7 @@ CGLRenderLib::CGLRenderLib()
 {
 	GetCore()->RegisterInterface(RENDERER_INTERFACE_VERSION, this);
 	glSharedContext = 0;
+	m_windowed = true;
 }
 
 CGLRenderLib::~CGLRenderLib()
@@ -452,7 +453,7 @@ bool CGLRenderLib::InitAPI(shaderAPIParams_t& params)
 	//dm.dmDisplayFrequency = 60;
 
 	// change display settings
-	SetWindowed(params.windowedMode);
+	SetWindowed(true);
 
 	// choose the best format
 	PIXELFORMATDESCRIPTOR pfd;
@@ -815,7 +816,7 @@ void CGLRenderLib::ExitAPI()
 
 	ReleaseDC(hwnd, hdc);
 
-	if (!g_shaderApi.m_params->windowedMode)
+	if (!m_windowed)
 	{
 		// Reset display mode to default
 		ChangeDisplaySettingsExA((const char *) device.DeviceName, NULL, NULL, 0, NULL);
@@ -913,6 +914,8 @@ void CGLRenderLib::EndFrame(IEqSwapChain* schain)
 // changes fullscreen mode
 bool CGLRenderLib::SetWindowed(bool enabled)
 {
+	m_windowed = enabled;
+
 	if (!enabled)
 	{
 #if defined(PLAT_LINUX)
@@ -928,32 +931,14 @@ bool CGLRenderLib::SetWindowed(bool enabled)
 			params.windowedMode = true;
 		}*/
 #elif defined(PLAT_WIN)
-		// FIXME: it doesn't work second time!
+		dm.dmFields = DM_PELSWIDTH | DM_PELSHEIGHT;// | DM_DISPLAYFREQUENCY;
 		dm.dmPelsWidth = m_width;
 		dm.dmPelsHeight = m_height;
 
 		LONG dispChangeStatus = ChangeDisplaySettingsExA((const char*)device.DeviceName, &dm, NULL, CDS_FULLSCREEN, NULL);
 		if (dispChangeStatus != DISP_CHANGE_SUCCESSFUL)
 		{
-			MsgError("ChangeDisplaySettingsEx - couldn't set fullscreen mode %dx%d on %s (%d)\n", m_width, m_height, device.DeviceName, dispChangeStatus);
-
-			DWORD lastErr = GetLastError();
-
-			char err[256] = { '\0' };
-
-			if (lastErr != 0)
-			{
-				FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM,
-					NULL,
-					lastErr,
-					MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-					err,
-					255,
-					NULL);
-
-				MsgError("Couldn't set fullscreen mode:\n\n%s (0x%p)", err, lastErr);
-			}
-			
+			MsgError("ChangeDisplaySettingsEx - couldn't set fullscreen mode %dx%d on %s (%d)\n", m_width, m_height, device.DeviceName, dispChangeStatus);			
 			return false;
 		}
 #endif
@@ -974,7 +959,7 @@ bool CGLRenderLib::SetWindowed(bool enabled)
 // speaks for itself
 bool CGLRenderLib::IsWindowed() const
 {
-	return g_shaderApi.m_params->windowedMode;
+	return m_windowed;
 }
 
 void CGLRenderLib::SetBackbufferSize(const int w, const int h)
@@ -986,7 +971,7 @@ void CGLRenderLib::SetBackbufferSize(const int w, const int h)
 	m_height = h;
 
 #if defined(PLAT_WIN) && !defined(USE_GLES2)
-	SetWindowed(g_shaderApi.m_params->windowedMode);
+	SetWindowed(m_windowed);
 #endif // PLAT_WIN && !USE_GLES2
 
 	if (glContext != NULL)

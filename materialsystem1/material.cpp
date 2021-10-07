@@ -26,7 +26,13 @@
 #define ATLAS_FILE_EXTENSION		".atlas"
 
 CMaterial::CMaterial(Threading::CEqMutex& mutex) 
-	: m_state(MATERIAL_LOAD_ERROR), m_shader(nullptr), m_proxyIsDirty(true), m_loadFromDisk(true), m_frameBound(0), m_atlas(nullptr), m_Mutex(mutex), m_nameHash(0)
+	: m_state(MATERIAL_LOAD_ERROR),
+	m_shader(nullptr), 
+	m_loadFromDisk(true),
+	m_frameBound(0),
+	m_atlas(nullptr), 
+	m_Mutex(mutex),
+	m_nameHash(0)
 {
 }
 
@@ -434,23 +440,22 @@ void CMaterial::Cleanup(bool dropVars, bool dropShader)
 	}
 
 	// always drop proxies
-	for(int i = 0; i < m_proxies.numElem();i++)
-		delete m_proxies[i];
+	{
+		Threading::CScopedMutex m(m_Mutex);
+		for (int i = 0; i < m_proxies.numElem(); i++)
+			delete m_proxies[i];
 
-	m_proxies.clear();
+		m_proxies.clear();
+	}
 
 	m_state = MATERIAL_LOAD_NEED_LOAD;
 }
 
 void CMaterial::UpdateProxy(float fDt)
 {
-	if(!m_proxyIsDirty)
-		return;
-
+	Threading::CScopedMutex m(m_Mutex);
 	for(int i = 0; i < m_proxies.numElem(); i++)
 		m_proxies[i]->UpdateProxy( fDt );
-
-	m_proxyIsDirty = false;
 }
 
 void CMaterial::Setup(uint paramMask)

@@ -30,7 +30,6 @@
 #define DEFAULT_CONFIG_PATH			"cfg/config_default.cfg"
 
 // Renderer
-DECLARE_CVAR(r_mode,1024x768,"Screen Resoulution. Resolution string format: WIDTHxHEIGHT" ,CV_ARCHIVE);
 DECLARE_CVAR(r_bpp,32,"Screen bits per pixel",CV_ARCHIVE);
 DECLARE_CVAR(sys_sleep,0,"Sleep time for every frame",CV_ARCHIVE);
 
@@ -103,22 +102,16 @@ EQWNDHANDLE Sys_CreateWindow()
 {
 	Msg(" \n--------- CreateWindow --------- \n");
 
-	bool isWindowed = !r_fullscreen.GetBool();
-
-	const char *str = r_mode.GetString();
-	DkList<EqString> args;
-	xstrsplit(str, "x", args);
-
 	EQWNDHANDLE handle = NULL;
 
 #ifdef PLAT_SDL
 
 	int nAdjustedPosX = SDL_WINDOWPOS_CENTERED;
 	int nAdjustedPosY = SDL_WINDOWPOS_CENTERED;
-	int nAdjustedWide = atoi(args[0].GetData());
-	int nAdjustedTall = atoi(args[1].GetData());
+	int nAdjustedWide = 800;
+	int nAdjustedTall = 600;
 
-	int sdlFlags = SDL_WINDOW_SHOWN;
+	int sdlFlags = SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE;
 
 #ifdef ANDROID
 	nAdjustedPosX = nAdjustedPosY = SDL_WINDOWPOS_UNDEFINED;
@@ -133,16 +126,6 @@ EQWNDHANDLE Sys_CreateWindow()
 
 	// HACK: use SDL_WINDOW_VULKAN to ensure that SDL will not create EGL surface
 	sdlFlags |= SDL_WINDOW_FULLSCREEN;
-#else
-
-	if (isWindowed)
-	{
-		sdlFlags |= SDL_WINDOW_RESIZABLE;
-	}
-	else
-	{
-		sdlFlags |= SDL_WINDOW_FULLSCREEN | SDL_WINDOW_BORDERLESS;
-	}
 #endif // ANDROID
 	
 	handle = SDL_CreateWindow(DEFAULT_WINDOW_TITLE, nAdjustedPosX, nAdjustedPosY, nAdjustedWide, nAdjustedTall, sdlFlags);

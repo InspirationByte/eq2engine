@@ -18,6 +18,7 @@
 #include "sys_state.h"
 #include "sys_in_console.h"
 #include "sys_in_joystick.h"
+#include "sys_window.h"
 
 #include "input/InputCommandBinder.h"
 #include "font/IFontCache.h"
@@ -28,6 +29,7 @@
 
 #include <SDL.h>
 #include <SDL_syswm.h>
+
 
 #define DEFAULT_USERCONFIG_PATH		"cfg/user.cfg"
 
@@ -43,10 +45,23 @@ ConCommand cc_exit("exit",CGameHost::HostExitCmd,"Closes current instance of eng
 ConCommand cc_quit("quit",CGameHost::HostExitCmd,"Closes current instance of engine");
 ConCommand cc_quti("quti",CGameHost::HostExitCmd,"This made for keyboard writing errors");
 
+DECLARE_CVAR(r_mode, 1024x768, "Screen Resoulution. Resolution string format: WIDTHxHEIGHT", CV_ARCHIVE);
 DECLARE_CVAR(r_clear,0,"Clear the backbuffer",CV_ARCHIVE);
 DECLARE_CVAR(r_vSync,0,"Vertical syncronization",CV_ARCHIVE);
 DECLARE_CVAR(r_antialiasing,0,"Multisample antialiasing",CV_ARCHIVE);
 DECLARE_CVAR(r_fastShaders, 0, "Low shader quality mode", CV_ARCHIVE);
+
+
+DECLARE_CMD(sys_set_fullscreen, nullptr, 0)
+{
+	g_pHost->SetFullscreenMode();
+}
+
+
+DECLARE_CMD(sys_set_windowed, nullptr, 0)
+{
+	g_pHost->SetWindowedMode();
+}
 
 DECLARE_INTERNAL_SHADERS();
 
@@ -119,6 +134,47 @@ void CGameHost::SetWindowTitle(const char* windowTitle)
 	SDL_SetWindowTitle(m_pWindow, windowTitle);
 }
 
+void CGameHost::SetFullscreenMode()
+{
+	const char* str = r_mode.GetString();
+	DkList<EqString> args;
+	xstrsplit(str, "x", args);
+
+	int nAdjustedWide = atoi(args[0].GetData());
+	int nAdjustedTall = atoi(args[1].GetData());
+
+	OnWindowResize(nAdjustedWide, nAdjustedTall);
+	if (materials->SetWindowed(false))
+	{
+		Msg("Switched to Fullscreen\n");
+
+		SDL_SetWindowFullscreen(m_pWindow, SDL_WINDOW_FULLSCREEN);
+		SDL_SetWindowSize(m_pWindow, nAdjustedWide, nAdjustedTall);
+	}
+}
+
+void CGameHost::SetWindowedMode()
+{
+	const char* str = r_mode.GetString();
+	DkList<EqString> args;
+	xstrsplit(str, "x", args);
+
+	int nAdjustedPosX = SDL_WINDOWPOS_CENTERED;
+	int nAdjustedPosY = SDL_WINDOWPOS_CENTERED;
+	int nAdjustedWide = atoi(args[0].GetData());
+	int nAdjustedTall = atoi(args[1].GetData());
+
+	OnWindowResize(nAdjustedWide, nAdjustedTall);
+	if (materials->SetWindowed(true))
+	{
+		Msg("Switched to Windowed\n");
+
+		SDL_SetWindowFullscreen(m_pWindow, 0);
+		SDL_SetWindowSize(m_pWindow, nAdjustedWide, nAdjustedTall);
+		SDL_SetWindowPosition(m_pWindow, nAdjustedPosX, nAdjustedPosY);
+	}
+}
+
 #ifdef ANDROID
 void* CGameHost::GetEGLSurfaceFromSDL()
 {
@@ -172,7 +228,6 @@ bool CGameHost::InitSystems( EQWNDHANDLE pWindow, bool bWindowed )
 	materials_config.enableShadows = true;
 	materials_config.lowShaderQuality = r_fastShaders.GetBool();
 
-	materials_config.shaderapi_params.windowedMode = bWindowed;
 	materials_config.shaderapi_params.windowHandle = pWindow;
 	materials_config.shaderapi_params.multiSamplingMode = r_antialiasing.GetInt();
 
@@ -285,9 +340,10 @@ bool CGameHost::InitSystems( EQWNDHANDLE pWindow, bool bWindowed )
 
 	MsgInfo("--- EqEngine systems init successfully ---\n");
 
-	int wide, tall;
-	SDL_GetWindowSize(m_pWindow, &wide, &tall);
-	OnWindowResize(wide, tall);
+	if (bWindowed)
+		SetWindowedMode();
+	else
+		SetFullscreenMode();
 
 	return true;
 }

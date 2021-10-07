@@ -52,7 +52,6 @@ struct shaderAPIParams_t
 	shaderAPIParams_t()
 	{
 		windowHandle			= NULL;
-		windowedMode			= false;
 		screenFormat			= FORMAT_RGB8;
 		screenRefreshRateHZ		= 60;
 		multiSamplingMode		= 0;
@@ -64,8 +63,6 @@ struct shaderAPIParams_t
 
 	// basic parameters for shader API initialization
 	void*			windowHandle;			// OS window handle or externalWindowDisplayParams_t
-
-	bool			windowedMode;			// is windowed?
 	ETextureFormat	screenFormat;			// screen back buffer format
 
 	int				screenRefreshRateHZ;	// refresh rate in HZ

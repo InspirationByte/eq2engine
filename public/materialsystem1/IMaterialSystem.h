@@ -375,6 +375,8 @@ public:
 	//------------------
 	// Materials or shader static states
 
+	virtual void							SetProxyDeltaTime(float deltaTime) = 0;
+
 	virtual IMaterial*						GetBoundMaterial() = 0;
 
 	virtual void							SetShaderParameterOverriden(ShaderDefaultParams_e param, bool set = true) = 0;
