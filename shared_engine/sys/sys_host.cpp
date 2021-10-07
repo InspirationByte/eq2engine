@@ -45,12 +45,13 @@ ConCommand cc_exit("exit",CGameHost::HostExitCmd,"Closes current instance of eng
 ConCommand cc_quit("quit",CGameHost::HostExitCmd,"Closes current instance of engine");
 ConCommand cc_quti("quti",CGameHost::HostExitCmd,"This made for keyboard writing errors");
 
-DECLARE_CVAR(r_mode, 1024x768, "Screen Resoulution. Resolution string format: WIDTHxHEIGHT", CV_ARCHIVE);
 DECLARE_CVAR(r_clear,0,"Clear the backbuffer",CV_ARCHIVE);
 DECLARE_CVAR(r_vSync,0,"Vertical syncronization",CV_ARCHIVE);
 DECLARE_CVAR(r_antialiasing,0,"Multisample antialiasing",CV_ARCHIVE);
 DECLARE_CVAR(r_fastShaders, 0, "Low shader quality mode", CV_ARCHIVE);
 
+DECLARE_CVAR(sys_vmode, 1024x768, "Screen Resoulution. Resolution string format: WIDTHxHEIGHT", CV_ARCHIVE);
+DECLARE_CVAR(sys_fullscreen, 0, "Enable fullscreen mode on startup", CV_ARCHIVE);
 
 DECLARE_CMD(sys_set_fullscreen, nullptr, 0)
 {
@@ -61,6 +62,19 @@ DECLARE_CMD(sys_set_fullscreen, nullptr, 0)
 DECLARE_CMD(sys_set_windowed, nullptr, 0)
 {
 	g_pHost->SetWindowedMode();
+}
+
+DECLARE_CMD(sys_vmode_list, nullptr, 0)
+{
+	DkList<VideoMode_t> vmodes;
+	g_pHost->GetVideoModes(vmodes);
+
+	for(int i = 0; i < vmodes.numElem(); i++)
+	{
+		Msg("display: %d %d bpp %d x %d @ %dHz\n",
+			vmodes[i].displayId,
+			SDL_BITSPERPIXEL(vmodes[i].format), vmodes[i].w, vmodes[i].h, vmodes[i].refresh_rate);
+	}
 }
 
 DECLARE_INTERNAL_SHADERS();
@@ -136,7 +150,7 @@ void CGameHost::SetWindowTitle(const char* windowTitle)
 
 void CGameHost::SetFullscreenMode()
 {
-	const char* str = r_mode.GetString();
+	const char* str = sys_vmode.GetString();
 	DkList<EqString> args;
 	xstrsplit(str, "x", args);
 
@@ -155,7 +169,7 @@ void CGameHost::SetFullscreenMode()
 
 void CGameHost::SetWindowedMode()
 {
-	const char* str = r_mode.GetString();
+	const char* str = sys_vmode.GetString();
 	DkList<EqString> args;
 	xstrsplit(str, "x", args);
 
@@ -173,6 +187,24 @@ void CGameHost::SetWindowedMode()
 		SDL_SetWindowSize(m_pWindow, nAdjustedWide, nAdjustedTall);
 		SDL_SetWindowPosition(m_pWindow, nAdjustedPosX, nAdjustedPosY);
 	}
+}
+
+void CGameHost::GetVideoModes(DkList<VideoMode_t>& displayModes)
+{
+	int display_count = SDL_GetNumVideoDisplays();
+
+	for (int display_index = 0; display_index <= display_count; display_index++)
+	{
+		int modes_count = SDL_GetNumDisplayModes(display_index);
+
+		for (int mode_index = 0; mode_index <= modes_count; mode_index++)
+		{
+			SDL_DisplayMode mode = { SDL_PIXELFORMAT_UNKNOWN, 0, 0, 0, 0 };
+
+			if (SDL_GetDisplayMode(display_index, mode_index, &mode) == 0)
+				displayModes.append(VideoMode_t{display_index, mode.format, mode.w, mode.h, mode.refresh_rate});
+		}
+}
 }
 
 #ifdef ANDROID
@@ -199,7 +231,7 @@ void* Helper_GetEGLSurfaceFromSDL()
 
 #endif // ANDROID
 
-bool CGameHost::InitSystems( EQWNDHANDLE pWindow, bool bWindowed )
+bool CGameHost::InitSystems( EQWNDHANDLE pWindow )
 {
 	m_pWindow = pWindow;
 
@@ -340,10 +372,10 @@ bool CGameHost::InitSystems( EQWNDHANDLE pWindow, bool bWindowed )
 
 	MsgInfo("--- EqEngine systems init successfully ---\n");
 
-	if (bWindowed)
-		SetWindowedMode();
-	else
+	if (sys_fullscreen.GetBool())
 		SetFullscreenMode();
+	else
+		SetWindowedMode();
 
 	return true;
 }

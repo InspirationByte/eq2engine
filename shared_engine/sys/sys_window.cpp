@@ -30,35 +30,10 @@
 #define DEFAULT_CONFIG_PATH			"cfg/config_default.cfg"
 
 // Renderer
-DECLARE_CVAR(r_bpp,32,"Screen bits per pixel",CV_ARCHIVE);
-DECLARE_CVAR(sys_sleep,0,"Sleep time for every frame",CV_ARCHIVE);
+DECLARE_CVAR(r_bpp, 32,"Screen bits per pixel",CV_ARCHIVE);
+DECLARE_CVAR(sys_sleep, 0,"Sleep time for every frame",CV_ARCHIVE);
 
 DECLARE_CVAR(screenshotJpegQuality,100,"JPEG Quality",CV_ARCHIVE);
-
-#ifdef PLAT_SDL
-DECLARE_CMD(vid_listmodes, "Shows available video modes for your screen", 0)
-{
-	int display_count = SDL_GetNumVideoDisplays();
-	Msg("--- number of displays: %d ---", display_count);
-
-	for (int i = 0; i < display_count; i++)
-	{
-		Msg("* Display %d:", i);
-		int modes_count = SDL_GetNumDisplayModes(i);
-
-		for (int modeIdx = 0; modeIdx < modes_count; modeIdx++)
-		{
-			SDL_DisplayMode mode = { SDL_PIXELFORMAT_UNKNOWN, 0, 0, 0, 0 };
-
-			if (SDL_GetDisplayMode(i, modeIdx, &mode) == 0)
-			{
-				Msg("  %dx%d %dbpp @ %dHz",
-					mode.w, mode.h, SDL_BITSPERPIXEL(mode.format), mode.refresh_rate);
-			}
-		}
-	}
-}
-#endif // PLAT_SDL
 
 DECLARE_CMD(screenshot, "Save screenshot", 0)
 {
@@ -93,8 +68,6 @@ DECLARE_CMD(screenshot, "Save screenshot", 0)
 		img.SaveJPEG(path.ToCString(), screenshotJpegQuality.GetInt());
 	}
 }
-
-ConVar r_fullscreen("r_fullscreen", "0", "Fullscreen" ,CV_ARCHIVE);
 
 #define DEFAULT_WINDOW_TITLE "Initializing..."
 
@@ -228,7 +201,7 @@ bool Host_Init()
 
 	EQWNDHANDLE mainWindow = Sys_CreateWindow();
 
-	if(!g_pHost->InitSystems( mainWindow, !r_fullscreen.GetBool() ))
+	if(!g_pHost->InitSystems( mainWindow ))
 		return false;
 
 	CEqGameControllerSDL::Init();

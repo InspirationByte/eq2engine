@@ -10,15 +10,20 @@
 
 #include "core/ConCommand.h"
 #include "utils/eqtimer.h"
-
 #include "input/in_keys_ident.h"
-
 #include "render/IDebugOverlay.h"
-
 #include "materialsystem1/IMaterialSystem.h"
 
-
 class IEqFont;
+
+struct VideoMode_t
+{
+	int displayId;
+	uint format;	// SDL_PIXELFORMAT_***
+	int w;
+	int h;
+	int refresh_rate;
+};
 
 class CGameHost
 {
@@ -33,7 +38,7 @@ public:
 						CGameHost();
 
 	bool				LoadModules();
-	bool				InitSystems( EQWNDHANDLE pWindow, bool bWindowed );
+	bool				InitSystems( EQWNDHANDLE pWindow );
 	void				ShutdownSystems();
 
 	bool				Frame();
@@ -47,6 +52,7 @@ public:
 	EQWNDHANDLE			GetWindowHandle() const { return m_pWindow; }
 	void				SetFullscreenMode();
 	void				SetWindowedMode();
+	void				GetVideoModes(DkList<VideoMode_t>& displayModes);
 
 	//---------------------------------
 	// INPUT
