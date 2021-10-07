@@ -1128,12 +1128,29 @@ void CMaterialSystem::DestroySwapChain(IEqSwapChain* swapChain)
 // fullscreen mode changing
 bool CMaterialSystem::SetWindowed(bool enable)
 {
-	if (m_renderLibrary)
+	bool changeMode = (m_renderLibrary->IsWindowed() != enable);
+
+	if(!changeMode)
+		return true;
+
+	for (int i = 0; i < m_lostDeviceCb.numElem(); i++)
 	{
-		return m_renderLibrary->SetWindowed(enable);
+		if (!m_lostDeviceCb[i]())
+			return false;
 	}
 
-	return true;
+	bool result = true;
+
+	if (m_renderLibrary)
+		result = m_renderLibrary->SetWindowed(enable);
+
+	for (int i = 0; i < m_lostDeviceCb.numElem(); i++)
+	{
+		if (!m_restoreDeviceCb[i]())
+			return false;
+	}
+
+	return result;
 }
 
 bool CMaterialSystem::IsWindowed() const
