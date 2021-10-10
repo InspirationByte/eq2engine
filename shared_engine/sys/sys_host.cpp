@@ -73,7 +73,7 @@ DECLARE_CMD(sys_vmode_list, nullptr, 0)
 	{
 		Msg("display: %d %d bpp %d x %d @ %dHz\n",
 			vmodes[i].displayId,
-			SDL_BITSPERPIXEL(vmodes[i].format), vmodes[i].w, vmodes[i].h, vmodes[i].refresh_rate);
+			vmodes[i].bitsPerPixel, vmodes[i].width, vmodes[i].height, vmodes[i].refreshRate);
 	}
 }
 
@@ -160,7 +160,7 @@ void CGameHost::SetFullscreenMode()
 	OnWindowResize(nAdjustedWide, nAdjustedTall);
 	if (materials->SetWindowed(false))
 	{
-		Msg("Switched to Fullscreen\n");
+		Msg("Set %dx%d mode (fullscreen)\n", nAdjustedWide, nAdjustedTall);
 
 		SDL_SetWindowFullscreen(m_pWindow, SDL_WINDOW_FULLSCREEN);
 		SDL_SetWindowSize(m_pWindow, nAdjustedWide, nAdjustedTall);
@@ -181,12 +181,20 @@ void CGameHost::SetWindowedMode()
 	OnWindowResize(nAdjustedWide, nAdjustedTall);
 	if (materials->SetWindowed(true))
 	{
-		Msg("Switched to Windowed\n");
+		Msg("Set %dx%d mode (windowed)\n", nAdjustedWide, nAdjustedTall);
 
 		SDL_SetWindowFullscreen(m_pWindow, 0);
 		SDL_SetWindowSize(m_pWindow, nAdjustedWide, nAdjustedTall);
 		SDL_SetWindowPosition(m_pWindow, nAdjustedPosX, nAdjustedPosY);
 	}
+}
+
+void CGameHost::ApplyVideoMode()
+{
+	if(sys_fullscreen.GetBool())
+		SetFullscreenMode();
+	else
+		SetWindowedMode();
 }
 
 void CGameHost::GetVideoModes(DkList<VideoMode_t>& displayModes)
@@ -202,7 +210,7 @@ void CGameHost::GetVideoModes(DkList<VideoMode_t>& displayModes)
 			SDL_DisplayMode mode = { SDL_PIXELFORMAT_UNKNOWN, 0, 0, 0, 0 };
 
 			if (SDL_GetDisplayMode(display_index, mode_index, &mode) == 0)
-				displayModes.append(VideoMode_t{display_index, mode.format, mode.w, mode.h, mode.refresh_rate});
+				displayModes.append(VideoMode_t{display_index, SDL_BITSPERPIXEL(mode.format), mode.w, mode.h, mode.refresh_rate});
 		}
 }
 }

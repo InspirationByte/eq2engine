@@ -73,8 +73,6 @@ DECLARE_CMD(screenshot, "Save screenshot", 0)
 
 EQWNDHANDLE Sys_CreateWindow()
 {
-	Msg(" \n--------- CreateWindow --------- \n");
-
 	EQWNDHANDLE handle = NULL;
 
 #ifdef PLAT_SDL
@@ -108,8 +106,6 @@ EQWNDHANDLE Sys_CreateWindow()
 		ErrorMsg("Can't create window!\n%s\n",SDL_GetError());
 		return NULL;
 	}
-
-	Msg("Created render window, %dx%d\n", nAdjustedWide, nAdjustedTall);
 
 #endif // PLAT_SDL
 

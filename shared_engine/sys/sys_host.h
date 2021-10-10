@@ -19,10 +19,10 @@ class IEqFont;
 struct VideoMode_t
 {
 	int displayId;
-	uint format;	// SDL_PIXELFORMAT_***
-	int w;
-	int h;
-	int refresh_rate;
+	uint bitsPerPixel;
+	int width;
+	int height;
+	int refreshRate;
 };
 
 class CGameHost
@@ -52,6 +52,7 @@ public:
 	EQWNDHANDLE			GetWindowHandle() const { return m_pWindow; }
 	void				SetFullscreenMode();
 	void				SetWindowedMode();
+	void				ApplyVideoMode();
 	void				GetVideoModes(DkList<VideoMode_t>& displayModes);
 
 	//---------------------------------
