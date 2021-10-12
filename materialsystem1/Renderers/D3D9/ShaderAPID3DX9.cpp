@@ -1504,6 +1504,8 @@ void ShaderAPID3DX9::CopyRendertargetToTexture(ITexture* srcTarget, ITexture* de
 		dxDestRect.bottom = destRect->vrightBottom.y;
 	}
 
+	bool isCubemap = dest->GetFlags() & TEXFLAG_CUBEMAP;
+
 	for(int i = 0; i < numLevels; i++)
 	{
 		LPDIRECT3DSURFACE9 srcSurface = src->surfaces[i];
@@ -1511,7 +1513,7 @@ void ShaderAPID3DX9::CopyRendertargetToTexture(ITexture* srcTarget, ITexture* de
 		LPDIRECT3DSURFACE9 destSurface;
 		HRESULT hr;
 		
-		if (dest->GetFlags() & TEXFLAG_CUBEMAP)
+		if (isCubemap)
 			hr = ((LPDIRECT3DCUBETEXTURE9) destD3DTex)->GetCubeMapSurface((D3DCUBEMAP_FACES) i, 0, &destSurface);
 		else
 			hr = destD3DTex->GetSurfaceLevel( i, &destSurface );
@@ -2068,7 +2070,7 @@ bool ShaderAPID3DX9::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 		HRESULT compileResult = D3DXCompileShader(shaderString.GetData(), shaderString.Length(),
 			NULL, NULL, 
 			entry.ToCString(), profile.ToCString(),
-			D3DXSHADER_DEBUG | D3DXSHADER_PACKMATRIX_ROWMAJOR,
+			D3DXSHADER_DEBUG | D3DXSHADER_PACKMATRIX_ROWMAJOR | D3DXSHADER_PARTIALPRECISION,
 			&shaderBuf, &errorsBuf, &pShader->m_pVSConstants);
 
 		if (compileResult == D3D_OK)

@@ -16,12 +16,25 @@
 #define DEBUG_CHECK_LIST_BOUNDS
 
 template< class T >
+using PairCompareFunc = bool (*)(const T& a, const T& b);
+
+template< class T >
+using PairSortCompareFunc = int (*)(const T& a, const T& b);
+
+template< class T >
 class DkList
 {
 public:
+	typedef bool (*PairCompareFunc)(const T& a, const T& b);
+	typedef int (*PairSortCompareFunc)(const T& a, const T& b);
+
 	DkList( int newgranularity = 16 );
 
 	~DkList<T>();
+
+	const T &		operator[]( int index ) const;
+	T &				operator[]( int index );
+	DkList<T> &		operator=( const DkList<T> &other );
 
 	// cleans list
 	void			clear( bool deallocate = true );
@@ -41,10 +54,6 @@ public:
 
 	// get the current m_nGranularity
 	int				getGranularity( void ) const;
-
-	const T &		operator[]( int index ) const;
-	T &				operator[]( int index );
-	DkList<T> &		operator=( const DkList<T> &other );
 
 	// resizes the list
 	void			resize( int newsize );
@@ -79,13 +88,13 @@ public:
 	int				addUnique( const T & obj );
 
 	// adds unique element
-	int				addUnique( const T & obj, bool (* comparator )(const T &a, const T &b) );
+	int				addUnique( const T & obj, PairCompareFunc comparator);
 
 	// finds the index for the given element
 	int				findIndex( const T & obj ) const;
 
 	// finds the index for the given element
-	int				findIndex( const T & obj, bool (* comparator )(const T &a, const T &b) ) const;
+	int				findIndex( const T & obj, PairCompareFunc comparator) const;
 
 	// finds pointer to the given element
 	T *				find( T const & obj ) const;
@@ -126,10 +135,10 @@ public:
 	void			assureSize( int newSize, const T &initValue );
 
 	// sorts list using quick sort algorithm
-	void			sort(int ( * comparator ) ( const T &a, const T &b ));
+	void			sort(PairSortCompareFunc comparator);
 
-	void			shellSort(int (* comparator )(const T &a, const T &b), int i0, int i1);
-	void			quickSort(int (* comparator )(const T &a, const T &b), int p, int r);
+	void			shellSort(PairSortCompareFunc comparator, int i0, int i1);
+	void			quickSort(PairSortCompareFunc comparator, int p, int r);
 
 protected:
 
@@ -555,7 +564,7 @@ inline int DkList<T>::addUnique( T const & obj )
 // -----------------------------------------------------------------
 
 template< class T >
-inline int DkList<T>::addUnique( T const & obj, bool (* comparator )(const T &a, const T &b) )
+inline int DkList<T>::addUnique( T const & obj, PairCompareFunc comparator)
 {
 	int index;
 
@@ -593,7 +602,7 @@ inline int DkList<T>::findIndex( T const & obj ) const
 // -----------------------------------------------------------------
 
 template< class T >
-inline int DkList<T>::findIndex( T const & obj, bool (* comparator )(const T &a, const T &b) ) const
+inline int DkList<T>::findIndex( T const & obj, PairCompareFunc comparator ) const
 {
 	int i;
 
@@ -837,7 +846,7 @@ inline void DkList<T>::assureSize( int newSize, const T &initValue )
 // -----------------------------------------------------------------
 
 template< class T >
-inline void DkList<T>::sort(int ( * comparator ) ( const T &a, const T &b))
+inline void DkList<T>::sort(PairSortCompareFunc comparator)
 {
 #ifdef USE_QSORT
 	quickSort(comparator, 0, m_nNumElem - 1);
@@ -850,7 +859,7 @@ inline void DkList<T>::sort(int ( * comparator ) ( const T &a, const T &b))
 // Shell sort
 // -----------------------------------------------------------------
 template< class T >
-inline void DkList<T>::shellSort(int (* comparator )(const T &a, const T &b), int i0, int i1)
+inline void DkList<T>::shellSort(PairSortCompareFunc comparator, int i0, int i1)
 {
 	const int SHELLJMP = 3; //2 or 3
 
@@ -866,25 +875,20 @@ inline void DkList<T>::shellSort(int (* comparator )(const T &a, const T &b), in
 		{
 			for( int j = i; (j >= i0) && (comparator)(m_pListPtr[j], m_pListPtr[j + gap]); j -= gap )
 			{
-				// T t = a[j];
-
 				QuickSwap(m_pListPtr[j], m_pListPtr[j + gap]);
-
-				// a[j] = a[j + gap];
-				// a[j + gap] = t;
 			}
 		}
 	}
 }
 
 template< class T >
-inline int partition(T* list, int(*comparator)(const T &elem0, const T &elem1), int p, int r);
+inline int partition(T* list, PairSortCompareFunc<T> comparator, int p, int r);
 
 // -----------------------------------------------------------------
 // Partition exchange sort
 // -----------------------------------------------------------------
 template< class T >
-inline void DkList<T>::quickSort(int(*comparator)(const T &elem0, const T &elem1), int p, int r)
+inline void DkList<T>::quickSort(PairSortCompareFunc comparator, int p, int r)
 {
 	if (p < r)
 	{
@@ -899,9 +903,9 @@ inline void DkList<T>::quickSort(int(*comparator)(const T &elem0, const T &elem1
 // Partition exchange sort
 // -----------------------------------------------------------------
 template< class T >
-inline int partition(T* list, int (* comparator )(const T &elem0, const T &elem1), int p, int r)
+inline int partition(T* list, PairSortCompareFunc<T> comparator, int p, int r)
 {
-	T tmp, pivot = list[p];
+	T pivot = list[p];
 	int left = p;
 
 	for (int i = p + 1; i <= r; i++)
@@ -909,16 +913,12 @@ inline int partition(T* list, int (* comparator )(const T &elem0, const T &elem1
 		if (comparator(list[i], pivot) < 0)
 		{
 			left++;
-			tmp = list[i];
-			list[i] = list[left];
-			list[left] = tmp;
+
+			QuickSwap(list[i], list[left]);
 		}
 	}
 
-	tmp = list[p];
-	list[p] = list[left];
-	list[left] = tmp;
-
+	QuickSwap(list[p], list[left]);
 	return left;
 }
 
@@ -926,7 +926,7 @@ inline int partition(T* list, int (* comparator )(const T &elem0, const T &elem1
 // Partition exchange sort
 // -----------------------------------------------------------------
 template< class T >
-inline void quickSort(T* list, int(*comparator)(const T &elem0, const T &elem1), int p, int r)
+inline void quickSort(T* list, PairSortCompareFunc<T> comparator, int p, int r)
 {
 	if (p < r)
 	{
@@ -938,7 +938,7 @@ inline void quickSort(T* list, int(*comparator)(const T &elem0, const T &elem1),
 }
 
 template< class T >
-inline void shellSort(T* list, int numElems, int (* comparator )(const T &elem0, const T &elem1))
+inline void shellSort(T* list, int numElems, PairSortCompareFunc<T> comparator)
 {
 	const int SHELLJMP = 3; //2 or 3
 
@@ -957,12 +957,7 @@ inline void shellSort(T* list, int numElems, int (* comparator )(const T &elem0,
 		{
 			for( int j = i; (j >= i0) && (comparator)(list[j], list[j + gap]); j -= gap )
 			{
-				// T t = a[j];
-
 				QuickSwap(list[j], list[j + gap]);
-
-				// a[j] = a[j + gap];
-				// a[j + gap] = t;
 			}
 		}
 	}

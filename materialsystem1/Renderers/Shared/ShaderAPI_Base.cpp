@@ -585,7 +585,7 @@ ITexture* ShaderAPI_Base::LoadTexture( const char* pszFileName,
 		delete pImages[i];
 
 	// Generate the error
-	if(!pFoundTexture)
+	if(!pFoundTexture && !(nFlags & TEXFLAG_NULL_ON_ERROR))
 		pFoundTexture = m_pErrorTexture;
 
 	return pFoundTexture;
