@@ -1278,8 +1278,13 @@ void CStudioModelCache::ReleaseCache()
 {
 	for (int i = 0; i < m_cachedList.numElem(); i++)
 	{
+		
+		
 		if (m_cachedList[i])
 		{
+			// wait for loading completion
+			m_cachedList[i]->GetHWData();
+
 			delete m_cachedList[i];
 		}
 	}
