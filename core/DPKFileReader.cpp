@@ -505,11 +505,12 @@ void CDPKFileReader::Close(IVirtualStream* fp)
 
 	CDPKFileStream* fsp = (CDPKFileStream*)fp;
 
-	Threading::CScopedMutex m(m_FSMutex);
-
-    if(m_openFiles.fastRemove(fsp))
 	{
-		fclose(fsp->m_handle);
-		delete fsp;
+		Threading::CScopedMutex m(m_FSMutex);
+		if(!m_openFiles.fastRemove(fsp))
+			return;
 	}
+
+	fclose(fsp->m_handle);
+	delete fsp;
 }

@@ -255,14 +255,15 @@ void CZipFileReader::Close(IVirtualStream* fp)
 
 	CZipFileStream* fsp = (CZipFileStream*)fp;
 
-	Threading::CScopedMutex m(m_FSMutex);
-
-	if (m_openFiles.fastRemove(fsp))
 	{
-		unzCloseCurrentFile(fsp->m_zipHandle);
-		unzClose(fsp->m_zipHandle);
-		delete fsp;
+		Threading::CScopedMutex m(m_FSMutex);
+		if (!m_openFiles.fastRemove(fsp))
+			return;
 	}
+
+	unzCloseCurrentFile(fsp->m_zipHandle);
+	unzClose(fsp->m_zipHandle);
+	delete fsp;
 }
 
 bool CZipFileReader::FileExists(const char* filename) const

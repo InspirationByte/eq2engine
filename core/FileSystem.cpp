@@ -252,6 +252,12 @@ void CFileSystem::Close( IFile* fp )
 	if(!fp)
 		return;
 
+	{
+		CScopedMutex m(m_FSMutex);
+		if (!m_openFiles.fastRemove(fp))
+			return;
+	}
+
 	VirtStreamType_e vsType = fp->GetType();
 
 	if(vsType == VS_TYPE_FILE)
@@ -265,10 +271,6 @@ void CFileSystem::Close( IFile* fp )
 		CBasePackageFileStream* pFile = (CBasePackageFileStream*)fp;
 		pFile->GetHostPackage()->Close(pFile);
 	}
-
-	m_FSMutex.Lock();
-	m_openFiles.fastRemove( fp );
-	m_FSMutex.Unlock();
 }
 
 char* CFileSystem::GetFileBuffer(const char* filename,long *filesize/* = 0*/, int searchFlags/* = -1*/)
@@ -654,9 +656,10 @@ IFile* CFileSystem::GetFileHandle(const char* filename,const char* options, int 
 			{
 				CFile* pFileHandle = new CFile(tmpFile);
 
-				m_FSMutex.Lock();
-				m_openFiles.append(pFileHandle);
-				m_FSMutex.Unlock();
+				{
+					CScopedMutex m(m_FSMutex);
+					m_openFiles.append(pFileHandle);
+				}
 
 				return pFileHandle;
 			}
@@ -678,9 +681,10 @@ IFile* CFileSystem::GetFileHandle(const char* filename,const char* options, int 
 
 					if (pPackedFile)
 					{
-						m_FSMutex.Lock();
-						m_openFiles.append(pPackedFile);
-						m_FSMutex.Unlock();
+						{
+							CScopedMutex m(m_FSMutex);
+							m_openFiles.append(pPackedFile);
+						}
 
 						return pPackedFile;
 					}
@@ -722,9 +726,10 @@ IFile* CFileSystem::GetFileHandle(const char* filename,const char* options, int 
 
 				if (pPackedFile)
 				{
-					m_FSMutex.Lock();
-					m_openFiles.append(pPackedFile);
-					m_FSMutex.Unlock();
+					{
+						CScopedMutex m(m_FSMutex);
+						m_openFiles.append(pPackedFile);
+					}
 
 					return pPackedFile;
 				}
@@ -764,9 +769,10 @@ IFile* CFileSystem::GetFileHandle(const char* filename,const char* options, int 
 
 				if (pPackedFile)
 				{
-					m_FSMutex.Lock();
-					m_openFiles.append(pPackedFile);
-					m_FSMutex.Unlock();
+					{
+						CScopedMutex m(m_FSMutex);
+						m_openFiles.append(pPackedFile);
+					}
 
 					return pPackedFile;
 				}
