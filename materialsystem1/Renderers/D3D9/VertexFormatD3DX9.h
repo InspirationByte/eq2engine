@@ -18,20 +18,22 @@ class CVertexFormatD3DX9 : public IVertexFormat
 {
 	friend class		ShaderAPID3DX9;
 public:
-	CVertexFormatD3DX9(VertexFormatDesc_t* desc, int numAttribs);
+	CVertexFormatD3DX9(const char* name, VertexFormatDesc_t* desc, int numAttribs);
 	~CVertexFormatD3DX9();
 
-	int					GetVertexSize(int stream);
-	void				GetFormatDesc(VertexFormatDesc_t** desc, int& numAttribs);
+	const char*						GetName() const {return m_name.ToCString();}
+	int								GetVertexSize(int stream);
+	void							GetFormatDesc(VertexFormatDesc_t** desc, int& numAttribs);
 
 	//----------------------
 
-	void				GenVertexElement(D3DVERTEXELEMENT9* elems);
+	void							GenVertexElement(D3DVERTEXELEMENT9* elems);
 
 protected:
-	int					m_streamStride[MAX_VERTEXSTREAM];
-	VertexFormatDesc_t*	m_vertexDesc;
-	int					m_numAttribs;
+	int								m_streamStride[MAX_VERTEXSTREAM];
+	EqString						m_name;
+	VertexFormatDesc_t*				m_vertexDesc;
+	int								m_numAttribs;
 
 	IDirect3DVertexDeclaration9*	m_pVertexDecl;
 

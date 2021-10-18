@@ -71,14 +71,14 @@ public:
 	void								ResetCounters();
 
 //-------------------------------------------------------------
-// MT Synchronizatio
+// MT Synchronization
 //-------------------------------------------------------------
 
 	// prepares for async operation (required to be called in main thread)
-	virtual void					BeginAsyncOperation( uintptr_t threadId ) {}	// obsolete for D3D
+	virtual void						BeginAsyncOperation( uintptr_t threadId ) {}	// obsolete for D3D
 
 	// completes for async operation (must be called in worker thread)
-	virtual void					EndAsyncOperation() {}							// obsolete for D3D
+	virtual void						EndAsyncOperation() {}							// obsolete for D3D
 
 //-------------------------------------------------------------
 // Textures
@@ -150,6 +150,8 @@ public:
 	// Changes the index buffer
 	void								SetIndexBuffer(IIndexBuffer *pIndexBuffer);
 
+	// returns vertex format
+	IVertexFormat*						FindVertexFormat(const char* name) const;
 
 //-------------------------------------------------------------
 // Shaders and it's operations
@@ -197,7 +199,7 @@ protected:
 // Useful data
 //-------------------------------------------------------------
 
-	const shaderAPIParams_t*		m_params;
+	const shaderAPIParams_t*			m_params;
 	ShaderAPICaps_t						m_caps;
 
 	// Shader list

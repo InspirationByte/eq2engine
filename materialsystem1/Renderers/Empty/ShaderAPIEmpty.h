@@ -87,8 +87,9 @@ public:
 class CEmptyVertexFormat : public IVertexFormat
 {
 public:
-	CEmptyVertexFormat(VertexFormatDesc_s *desc, int nAttribs) : m_numAttribs(nAttribs)
+	CEmptyVertexFormat(const char* name, VertexFormatDesc_s *desc, int nAttribs) : m_numAttribs(nAttribs)
 	{
+		m_name = name;
 		m_vertexDesc = new VertexFormatDesc_t[m_numAttribs];
 		memset(m_streamStride, 0, sizeof(m_streamStride));
 
@@ -100,6 +101,8 @@ public:
 	{
 		delete [] m_vertexDesc;
 	}
+
+	const char* GetName() const {return m_name.ToCString();}
 
 	int	GetVertexSize(int stream)
 	{
@@ -114,6 +117,7 @@ public:
 
 protected:
 	int					m_streamStride[MAX_VERTEXSTREAM];
+	EqString			m_name;
 	VertexFormatDesc_t*	m_vertexDesc;
 	int					m_numAttribs;
 };
@@ -420,7 +424,12 @@ public:
 // Vertex buffer objects
 //-------------------------------------------------------------
 
-	IVertexFormat*				CreateVertexFormat(VertexFormatDesc_s *formatDesc, int nAttribs){return new CEmptyVertexFormat(formatDesc, nAttribs);}
+	IVertexFormat*				CreateVertexFormat(const char* name, VertexFormatDesc_s *formatDesc, int nAttribs)
+	{
+		IVertexFormat* pVF = new CEmptyVertexFormat(name, formatDesc, nAttribs);
+		m_VFList.append(pVF);
+		return pVF;
+	}
 	IVertexBuffer*				CreateVertexBuffer(ER_BufferAccess nBufAccess, int nNumVerts, int strideSize, void *pData = NULL){return new CEmptyVertexBuffer(strideSize);}
 	IIndexBuffer*				CreateIndexBuffer(int nIndices, int nIndexSize, ER_BufferAccess nBufAccess, void *pData = NULL){return new CEmptyIndexBuffer(nIndexSize);}
 

@@ -1616,7 +1616,7 @@ void ShaderAPIGL::SetDepthRange(float fZNear,float fZFar)
 // Changes the vertex format
 void ShaderAPIGL::ChangeVertexFormat(IVertexFormat* pVertexFormat)
 {
-	static CVertexFormatGL zero(nullptr, 0);
+	static CVertexFormatGL zero("", nullptr, 0);
 
 	CVertexFormatGL* pSelectedFormat = pVertexFormat ? (CVertexFormatGL*)pVertexFormat : &zero;
 	CVertexFormatGL* pCurrentFormat = m_pCurrentVertexFormat ? (CVertexFormatGL*)m_pCurrentVertexFormat : &zero;
@@ -2246,9 +2246,9 @@ int ShaderAPIGL::SetShaderConstantRaw(const char *pszName, const void *data, int
 // Vertex buffer objects
 //-------------------------------------------------------------
 
-IVertexFormat* ShaderAPIGL::CreateVertexFormat(VertexFormatDesc_s *formatDesc, int nAttribs)
+IVertexFormat* ShaderAPIGL::CreateVertexFormat(const char* name, VertexFormatDesc_s *formatDesc, int nAttribs)
 {
-	CVertexFormatGL *pVertexFormat = new CVertexFormatGL(formatDesc, nAttribs);
+	CVertexFormatGL *pVertexFormat = new CVertexFormatGL(name, formatDesc, nAttribs);
 
 	m_Mutex.Lock();
 	m_VFList.append(pVertexFormat);

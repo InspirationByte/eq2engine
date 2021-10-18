@@ -11,9 +11,10 @@
 #include "VertexFormatD3DX9.h"
 #include "d3dx9_def.h"
 
-CVertexFormatD3DX9::CVertexFormatD3DX9(VertexFormatDesc_t* desc, int numAttribs) 
-	: m_pVertexDecl(NULL), m_vertexDesc(NULL), m_numAttribs(numAttribs)
+CVertexFormatD3DX9::CVertexFormatD3DX9(const char* name, VertexFormatDesc_t* desc, int numAttribs)
+	: m_pVertexDecl(nullptr), m_vertexDesc(nullptr), m_numAttribs(numAttribs)
 {
+	m_name = name;
 	m_vertexDesc = new VertexFormatDesc_t[m_numAttribs];
 	memset(m_streamStride, 0, sizeof(m_streamStride));
 

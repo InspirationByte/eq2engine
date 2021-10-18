@@ -2533,9 +2533,9 @@ int ShaderAPID3DX9::SetShaderConstantRaw(const char *pszName, const void *data, 
 // Vertex buffer objects
 //-------------------------------------------------------------
 
-IVertexFormat* ShaderAPID3DX9::CreateVertexFormat(VertexFormatDesc_s* formatDesc, int nAttribs)
+IVertexFormat* ShaderAPID3DX9::CreateVertexFormat(const char* name, VertexFormatDesc_s* formatDesc, int nAttribs)
 {
-	CVertexFormatD3DX9* pFormat = new CVertexFormatD3DX9(formatDesc, nAttribs);
+	CVertexFormatD3DX9* pFormat = new CVertexFormatD3DX9(name, formatDesc, nAttribs);
 
 	D3DVERTEXELEMENT9* vertexElements = new D3DVERTEXELEMENT9[nAttribs + 1];
 	pFormat->GenVertexElement( vertexElements );

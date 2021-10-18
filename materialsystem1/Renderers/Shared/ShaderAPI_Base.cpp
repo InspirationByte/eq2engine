@@ -897,6 +897,17 @@ void ShaderAPI_Base::SetIndexBuffer(IIndexBuffer *pIndexBuffer)
 	m_pSelectedIndexBuffer = pIndexBuffer;
 }
 
+// returns vertex format
+IVertexFormat* ShaderAPI_Base::FindVertexFormat(const char* name) const
+{
+	for (int i = 0; i < m_VFList.numElem(); i++)
+	{
+		if(!strcmp(name, m_VFList[i]->GetName()))
+			return m_VFList[i];
+	}
+	return nullptr;
+}
+
 bool isShaderInc(const char ch)
 {
 	return ((ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || ch == '_' || ch == '/' || ch == '\\' || ch == '.');

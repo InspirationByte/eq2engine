@@ -7,9 +7,10 @@
 
 #include "VertexFormatGL.h"
 
-CVertexFormatGL::CVertexFormatGL(VertexFormatDesc_t* desc, int numAttribs) 
-	: m_vertexDesc(NULL), m_numAttribs(numAttribs)
+CVertexFormatGL::CVertexFormatGL(const char* name, VertexFormatDesc_t* desc, int numAttribs)
+	: m_vertexDesc(nullptr), m_numAttribs(numAttribs)
 {
+	m_name = name;
 	memset(m_genericAttribs,0,sizeof(m_genericAttribs));
 	memset(m_streamStride, 0, sizeof(m_streamStride));
 	

@@ -177,7 +177,7 @@ public:
 // Vertex buffer objects
 //-------------------------------------------------------------
 
-	IVertexFormat*				CreateVertexFormat(VertexFormatDesc_s *formatDesc, int nAttribs);
+	IVertexFormat*				CreateVertexFormat(const char* name, VertexFormatDesc_s *formatDesc, int nAttribs);
 	IVertexBuffer*				CreateVertexBuffer(ER_BufferAccess nBufAccess, int nNumVerts, int strideSize, void *pData = NULL);
 	IIndexBuffer*				CreateIndexBuffer(int nIndices, int nIndexSize, ER_BufferAccess nBufAccess, void *pData = NULL);
 

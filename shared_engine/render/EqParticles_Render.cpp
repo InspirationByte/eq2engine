@@ -273,7 +273,7 @@ bool CParticleLowLevelRenderer::InitBuffers()
 	m_indexBuffer = g_pShaderAPI->CreateIndexBuffer(m_vbMaxQuads * 6, sizeof(int16), BUFFER_DYNAMIC, nullptr);
 
 	if(!m_vertexFormat)
-		m_vertexFormat = g_pShaderAPI->CreateVertexFormat(g_PFXVertexFormatDesc, elementsOf(g_PFXVertexFormatDesc));
+		m_vertexFormat = g_pShaderAPI->CreateVertexFormat("PFXVertex", g_PFXVertexFormatDesc, elementsOf(g_PFXVertexFormatDesc));
 
 	if(m_vertexBuffer && m_indexBuffer && m_vertexFormat)
 		m_initialized = true;

@@ -35,14 +35,17 @@ class CVertexFormatGL : public IVertexFormat
 {
 	friend class		ShaderAPIGL;
 public:
-	CVertexFormatGL(VertexFormatDesc_t* desc, int numAttribs);
+	CVertexFormatGL(const char* name, VertexFormatDesc_t* desc, int numAttribs);
 	~CVertexFormatGL();
+
+	const char*			GetName() const {return m_name.ToCString(); }
 
 	int					GetVertexSize(int stream);
 	void				GetFormatDesc(VertexFormatDesc_t** desc, int& numAttribs);
 
 protected:
 	int					m_streamStride[MAX_VERTEXSTREAM];
+	EqString			m_name;
 	VertexFormatDesc_t*	m_vertexDesc;
 	int					m_numAttribs;
 

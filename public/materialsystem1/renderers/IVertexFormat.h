@@ -19,9 +19,10 @@ public:
 
 	virtual	~IVertexFormat() {}
 
+	virtual const char*		GetName() const = 0;
 
-	virtual int		GetVertexSize(int stream) = 0;
-	virtual void	GetFormatDesc(VertexFormatDesc_t** desc, int& numAttribs) = 0;
+	virtual int				GetVertexSize(int stream) = 0;
+	virtual void			GetFormatDesc(VertexFormatDesc_t** desc, int& numAttribs) = 0;
 };
 
 #endif // IVERTEXFORMAT_H

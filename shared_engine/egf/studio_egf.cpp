@@ -1184,7 +1184,7 @@ int CStudioModelCache::PrecacheModel(const char* modelName)
 		return CACHE_INVALID_MODEL;
 
 	if (m_egfFormat == NULL)
-		m_egfFormat = g_pShaderAPI->CreateVertexFormat(g_EGFHwVertexFormat, elementsOf(g_EGFHwVertexFormat));
+		m_egfFormat = g_pShaderAPI->CreateVertexFormat("EGFVertex", g_EGFHwVertexFormat, elementsOf(g_EGFHwVertexFormat));
 
 	int idx = GetModelIndex(modelName);
 
