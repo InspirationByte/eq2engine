@@ -168,7 +168,7 @@ void CEqParallelJobThreads::CompleteJobCallbacks()
 	if (Threading::GetCurrentThreadID() != m_mainThreadId)
 		return;
 
-	m_mutex.Lock();
+	m_completeMutex.Lock();
 	
 	// execute all job completion callbacks first
 	if (m_completedJobs.goToFirst())
@@ -189,7 +189,7 @@ void CEqParallelJobThreads::CompleteJobCallbacks()
 
 		m_completedJobs.clear();
 	}
-	m_mutex.Unlock();
+	m_completeMutex.Unlock();
 }
 
 bool CEqParallelJobThreads::AllJobsCompleted() const
@@ -248,9 +248,9 @@ bool CEqParallelJobThreads::AssignFreeJob( CEqJobThread* requestBy )
 
 void CEqParallelJobThreads::AddCompleted(eqParallelJob_t* job)
 {
-	m_mutex.Lock();
+	m_completeMutex.Lock();
 
 	m_completedJobs.addLast(job);
 
-	m_mutex.Unlock();
+	m_completeMutex.Unlock();
 }

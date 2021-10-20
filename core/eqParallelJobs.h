@@ -100,6 +100,7 @@ protected:
 	DkLinkedList<eqParallelJob_t*>	m_completedJobs;
 
 	Threading::CEqMutex				m_mutex;
+	Threading::CEqMutex				m_completeMutex;
 	uintptr_t						m_mainThreadId;
 };
 
