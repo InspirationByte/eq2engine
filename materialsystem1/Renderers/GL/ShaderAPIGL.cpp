@@ -965,16 +965,25 @@ ITexture* ShaderAPIGL::CreateNamedRenderTarget(	const char* pszName,
 	else
 		texture.type = GLTEX_TYPE_TEXTURE;
 
-	glGenTextures(1, &texture.glTexID);
-	GLCheckError("gen tex");
+	if(nRTFormat != FORMAT_NONE)
+	{
+		glGenTextures(1, &texture.glTexID);
+		GLCheckError("gen tex");
 
-	glBindTexture(pTexture->glTarget, texture.glTexID);
-	SetupGLSamplerState(pTexture->glTarget, texSamplerParams);
+		glBindTexture(pTexture->glTarget, texture.glTexID);
+		SetupGLSamplerState(pTexture->glTarget, texSamplerParams);
 
-	pTexture->textures.append(texture);
+		pTexture->textures.append(texture);
 
-	// this generates the render target
-	ResizeRenderTarget(pTexture, width, height);
+		// this generates the render target
+		ResizeRenderTarget(pTexture, width, height);
+	}
+	else
+	{
+		texture.glTexID = 0;
+		pTexture->textures.append(texture);
+	}
+
 	
 	m_TextureList.append(pTexture);
 	m_Mutex.Unlock();
@@ -988,6 +997,9 @@ void ShaderAPIGL::ResizeRenderTarget(ITexture* pRT, int newWide, int newTall)
 	ETextureFormat format = pTex->GetFormat();
 
 	pTex->SetDimensions(newWide,newTall);
+
+	if (format == FORMAT_NONE)
+		return;
 
 	if (pTex->glTarget == GL_RENDERBUFFER)
 	{
