@@ -314,11 +314,13 @@ private:
 	
 	// Sampler states is not binding same as OpenGL
 	SamplerStateParam_t*		m_pSelectedSamplerStates[MAX_SAMPLERSTATE];
-	SamplerStateParam_t*		m_pCurrentSamplerStates[MAX_SAMPLERSTATE];
+	SamplerStateParam_t			m_pCurrentSamplerStates[MAX_SAMPLERSTATE];
+	int							m_nCurrentSamplerStateDirty;
 
 	// Sampler states is not binding same as OpenGL
 	SamplerStateParam_t*		m_pSelectedVertexSamplerStates[MAX_SAMPLERSTATE];
-	SamplerStateParam_t*		m_pCurrentVertexSamplerStates[MAX_SAMPLERSTATE];
+	SamplerStateParam_t			m_pCurrentVertexSamplerStates[MAX_SAMPLERSTATE];
+	int							m_nCurrentVertexSamplerStateDirty;
 
 	UINT						m_nSelectedStreamParam[MAX_VERTEXSTREAM];
 

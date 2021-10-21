@@ -90,9 +90,8 @@ ShaderAPID3DX9::ShaderAPID3DX9() : ShaderAPI_Base()
 	m_nMaxPSDirty = -1;
 
 	memset(m_pSelectedSamplerStates,0,sizeof(m_pSelectedSamplerStates));
-	memset(m_pCurrentSamplerStates,0,sizeof(m_pCurrentSamplerStates));
 	memset(m_pSelectedVertexSamplerStates,0,sizeof(m_pSelectedVertexSamplerStates));
-	memset(m_pCurrentVertexSamplerStates,0,sizeof(m_pCurrentVertexSamplerStates));
+
 	
 	for(int i = 0; i < MAX_VERTEXSTREAM; i++)
 		m_nSelectedStreamParam[i] = 1;
@@ -107,6 +106,15 @@ ShaderAPID3DX9::ShaderAPID3DX9() : ShaderAPI_Base()
 	m_defaultSamplerState.wrapT = TEXADDRESS_WRAP;
 	m_defaultSamplerState.wrapR = TEXADDRESS_WRAP;
 	m_defaultSamplerState.aniso = 1;
+
+	for (int i = 0; i < MAX_SAMPLERSTATE; i++)
+		m_pCurrentSamplerStates[i] = m_defaultSamplerState;
+
+	for (int i = 0; i < MAX_SAMPLERSTATE; i++)
+		m_pCurrentVertexSamplerStates[i] = m_defaultSamplerState;
+
+	m_nCurrentSamplerStateDirty = 0xffffffff;
+	m_nCurrentVertexSamplerStateDirty = 0xffffffff;
 }
 
 // Only in D3DX9 Renderer
@@ -545,9 +553,7 @@ void ShaderAPID3DX9::Reset(int nResetType)
 
 void ShaderAPID3DX9::ApplyTextures()
 {
-	int i = 0;
-
-	for(i = 0; i < MAX_TEXTUREUNIT; i++)
+	for(int i = 0; i < MAX_TEXTUREUNIT; i++)
 	{
 		CD3D9Texture* pTexture = (CD3D9Texture*)m_pSelectedTextures[i];
 		if (pTexture != m_pCurrentTextures[i])
@@ -568,13 +574,16 @@ void ShaderAPID3DX9::ApplyTextures()
 
 				m_pD3DDevice->SetTexture(i, pTexture->GetCurrentTexture());
 				m_pSelectedSamplerStates[i] = (SamplerStateParam_t*)&pTexture->GetSamplerState();
+
+				// changed texture means changed sampler state
+				m_nCurrentSamplerStateDirty |= (1 << i);
 			}
 
 			m_pCurrentTextures[i] = pTexture;
 		}
 	}
 
-	for(i = 0; i < m_caps.maxVertexTextureUnits; i++)
+	for(int i = 0; i < m_caps.maxVertexTextureUnits; i++)
 	{
 		CD3D9Texture* pTexture = (CD3D9Texture*)m_pSelectedVertexTextures[i];
 		if (pTexture != m_pCurrentVertexTextures[i])
@@ -588,6 +597,9 @@ void ShaderAPID3DX9::ApplyTextures()
 			{
 				m_pD3DDevice->SetTexture(D3DVERTEXTEXTURESAMPLER0+i, pTexture->GetCurrentTexture());
 				m_pSelectedVertexSamplerStates[i] = (SamplerStateParam_t*)&pTexture->GetSamplerState();
+
+				// changed texture means changed sampler state
+				m_nCurrentVertexSamplerStateDirty |= (1 << i);
 			}
 
 			m_pCurrentVertexTextures[i] = pTexture;
@@ -600,63 +612,61 @@ void ShaderAPID3DX9::ApplySamplerState()
 	for (int i = 0; i < MAX_SAMPLERSTATE; i++)
 	{
 		SamplerStateParam_t* pSelectedSamplerState = m_pSelectedSamplerStates[i];
-		SamplerStateParam_t* pCurrentSamplerState = m_pCurrentSamplerStates[i];
 
-		if (pSelectedSamplerState != pCurrentSamplerState)
+		if (m_nCurrentSamplerStateDirty & (1 << i))
 		{
 			SamplerStateParam_t &ss = pSelectedSamplerState ? *pSelectedSamplerState : m_defaultSamplerState;
-			SamplerStateParam_t &css = pCurrentSamplerState ? *pCurrentSamplerState : m_defaultSamplerState;
+			SamplerStateParam_t &css = m_pCurrentSamplerStates[i];
 
 			if (ss.minFilter != css.minFilter)
-				m_pD3DDevice->SetSamplerState(i, D3DSAMP_MINFILTER, d3dFilterType[ss.minFilter]);
+				m_pD3DDevice->SetSamplerState(i, D3DSAMP_MINFILTER, d3dFilterType[css.minFilter = ss.minFilter]);
 
 			if (ss.magFilter != css.magFilter)
 			{
-				m_pD3DDevice->SetSamplerState(i, D3DSAMP_MAGFILTER, d3dFilterType[ss.magFilter]);
+				m_pD3DDevice->SetSamplerState(i, D3DSAMP_MAGFILTER, d3dFilterType[css.magFilter = ss.magFilter]);
 				m_pD3DDevice->SetSamplerState(i, D3DSAMP_MIPFILTER, d3dFilterType[ss.magFilter]);	// FIXME: separate selector for MIP?
 			}
 
-			if (ss.wrapS != css.wrapS) m_pD3DDevice->SetSamplerState(i, D3DSAMP_ADDRESSU, d3dAddressMode[ss.wrapS]);
-			if (ss.wrapT != css.wrapT) m_pD3DDevice->SetSamplerState(i, D3DSAMP_ADDRESSV, d3dAddressMode[ss.wrapT]);
-			if (ss.wrapR != css.wrapR) m_pD3DDevice->SetSamplerState(i, D3DSAMP_ADDRESSW, d3dAddressMode[ss.wrapR]);
+			if (ss.wrapS != css.wrapS) m_pD3DDevice->SetSamplerState(i, D3DSAMP_ADDRESSU, d3dAddressMode[css.wrapS = ss.wrapS]);
+			if (ss.wrapT != css.wrapT) m_pD3DDevice->SetSamplerState(i, D3DSAMP_ADDRESSV, d3dAddressMode[css.wrapT = ss.wrapT]);
+			if (ss.wrapR != css.wrapR) m_pD3DDevice->SetSamplerState(i, D3DSAMP_ADDRESSW, d3dAddressMode[css.wrapR = ss.wrapR]);
 
-			if (ss.aniso != css.aniso) m_pD3DDevice->SetSamplerState(i, D3DSAMP_MAXANISOTROPY, ss.aniso);
+			if (ss.aniso != css.aniso) m_pD3DDevice->SetSamplerState(i, D3DSAMP_MAXANISOTROPY, css.aniso = ss.aniso);
 
-			if (ss.lod != css.lod) m_pD3DDevice->SetSamplerState(i, D3DSAMP_MIPMAPLODBIAS, *(DWORD *) &ss.lod);
-
-			m_pCurrentSamplerStates[i] = pSelectedSamplerState;
+			if (ss.lod != css.lod) m_pD3DDevice->SetSamplerState(i, D3DSAMP_MIPMAPLODBIAS, *(DWORD *) &(css.lod = ss.lod));
 		}
 	}
+	m_nCurrentSamplerStateDirty = 0;
 
 	// Vertex texture samplers
 	for (int i = 0; i < MAX_VERTEXTEXTURES; i++)
 	{
 		SamplerStateParam_t* pSelectedSamplerState = m_pSelectedVertexSamplerStates[i];
-		SamplerStateParam_t* pCurrentSamplerState = m_pCurrentVertexSamplerStates[i];
 
-		if (pSelectedSamplerState != pCurrentSamplerState)
+		if (m_nCurrentVertexSamplerStateDirty & (1 << i))
 		{
 			SamplerStateParam_t &ss = pSelectedSamplerState ? *pSelectedSamplerState : m_defaultSamplerState;
-			SamplerStateParam_t &css = pCurrentSamplerState ? *pCurrentSamplerState : m_defaultSamplerState;
+			SamplerStateParam_t &css = m_pCurrentVertexSamplerStates[i];
 
-			if (ss.minFilter != css.minFilter) m_pD3DDevice->SetSamplerState(D3DVERTEXTEXTURESAMPLER0+i, D3DSAMP_MINFILTER, d3dFilterType[ss.minFilter]);
+			if (ss.minFilter != css.minFilter)
+				m_pD3DDevice->SetSamplerState(i, D3DSAMP_MINFILTER, d3dFilterType[css.minFilter = ss.minFilter]);
+
 			if (ss.magFilter != css.magFilter)
 			{
-				m_pD3DDevice->SetSamplerState(D3DVERTEXTEXTURESAMPLER0 + i, D3DSAMP_MAGFILTER, d3dFilterType[ss.magFilter]);
-				m_pD3DDevice->SetSamplerState(D3DVERTEXTEXTURESAMPLER0 + i, D3DSAMP_MIPFILTER, d3dFilterType[ss.magFilter]);
+				m_pD3DDevice->SetSamplerState(i, D3DSAMP_MAGFILTER, d3dFilterType[css.magFilter = ss.magFilter]);
+				m_pD3DDevice->SetSamplerState(i, D3DSAMP_MIPFILTER, d3dFilterType[ss.magFilter]);	// FIXME: separate selector for MIP?
 			}
 
-			if (ss.wrapS != css.wrapS) m_pD3DDevice->SetSamplerState(D3DVERTEXTEXTURESAMPLER0+i, D3DSAMP_ADDRESSU, d3dAddressMode[ss.wrapS]);
-			if (ss.wrapT != css.wrapT) m_pD3DDevice->SetSamplerState(D3DVERTEXTEXTURESAMPLER0+i, D3DSAMP_ADDRESSV, d3dAddressMode[ss.wrapT]);
-			if (ss.wrapR != css.wrapR) m_pD3DDevice->SetSamplerState(D3DVERTEXTEXTURESAMPLER0+i, D3DSAMP_ADDRESSW, d3dAddressMode[ss.wrapR]);
+			if (ss.wrapS != css.wrapS) m_pD3DDevice->SetSamplerState(i, D3DSAMP_ADDRESSU, d3dAddressMode[css.wrapS = ss.wrapS]);
+			if (ss.wrapT != css.wrapT) m_pD3DDevice->SetSamplerState(i, D3DSAMP_ADDRESSV, d3dAddressMode[css.wrapT = ss.wrapT]);
+			if (ss.wrapR != css.wrapR) m_pD3DDevice->SetSamplerState(i, D3DSAMP_ADDRESSW, d3dAddressMode[css.wrapR = ss.wrapR]);
 
-			if (ss.aniso != css.aniso) m_pD3DDevice->SetSamplerState(D3DVERTEXTEXTURESAMPLER0+i, D3DSAMP_MAXANISOTROPY, ss.aniso);
+			if (ss.aniso != css.aniso) m_pD3DDevice->SetSamplerState(i, D3DSAMP_MAXANISOTROPY, css.aniso = ss.aniso);
 
-			if (ss.lod != css.lod) m_pD3DDevice->SetSamplerState(D3DVERTEXTEXTURESAMPLER0+i, D3DSAMP_MIPMAPLODBIAS, *(DWORD *) &ss.lod);
-
-			m_pCurrentVertexSamplerStates[i] = pSelectedSamplerState;
+			if (ss.lod != css.lod) m_pD3DDevice->SetSamplerState(i, D3DSAMP_MIPMAPLODBIAS, *(DWORD*)&(css.lod = ss.lod));
 		}
 	}
+	m_nCurrentVertexSamplerStateDirty = 0;
 }
 
 void ShaderAPID3DX9::ApplyBlendState()
@@ -1574,6 +1584,9 @@ void ShaderAPID3DX9::ChangeRenderTargets(ITexture** pRenderTargets, int nNumRTs,
 
 		m_pCurrentDepthRenderTarget = pDepthRenderTarget;
 	}
+
+	if(!bestDepth)
+		bestDepth = m_pFBDepth;
 
 	if (m_pCurrentDepthSurface != bestDepth)
 	{
