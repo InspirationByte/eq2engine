@@ -7,7 +7,7 @@
 
 #include "BaseShader.h"
 
-BEGIN_SHADER_CLASS(BlurFilter)
+BEGIN_SHADER_CLASS(VHBlurFilter)
 
 	SHADER_INIT_PARAMS()
 	{
@@ -76,7 +76,7 @@ BEGIN_SHADER_CLASS(BlurFilter)
 		SHADER_DECLARE_SIMPLE_DEFINITION((m_blurModes & 0x8) > 0, "BLUR_Y_HIGH");
 
 		// compile without fog
-		SHADER_FIND_OR_COMPILE(Unlit, "BlurFilter");
+		SHADER_FIND_OR_COMPILE(Unlit, "VHBlurFilter");
 
 		m_depthtest = false;
 		m_depthwrite = false;
