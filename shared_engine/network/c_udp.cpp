@@ -381,7 +381,7 @@ int CEqRDPSocket::Send( char* data, int size, const sockaddr_in* to, short& msgI
 
 	cdp_queued_message_t* buffer = NULL;
 
-	bool continiousMessage = (flags & CDPSEND_GUARANTEED) > 0;
+	bool continiousMessage = (flags & CDPSEND_GUARANTEED);
 
 	if(continiousMessage)
 	{

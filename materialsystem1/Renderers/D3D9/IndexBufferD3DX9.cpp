@@ -119,7 +119,7 @@ void CIndexBufferD3DX9::Update(void* data, int size, int offset, bool discard /*
 	if (hr == D3DERR_DEVICELOST || hr == D3DERR_DEVICENOTRESET)
 		return;
 
-	bool dynamic = (m_nUsage & D3DUSAGE_DYNAMIC) > 0;
+	bool dynamic = (m_nUsage & D3DUSAGE_DYNAMIC);
 
 	if(m_bIsLocked)
 	{

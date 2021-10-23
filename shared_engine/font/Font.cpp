@@ -413,7 +413,7 @@ void CFont::RenderText(const wchar_t* pszText, const Vector2D& start, const eqFo
 	if (r_font_debug.GetBool())
 	{
 		RasterizerStateParams_t raster;
-		raster.scissor = (params.styleFlag & TEXT_STYLE_SCISSOR) > 0;
+		raster.scissor = (params.styleFlag & TEXT_STYLE_SCISSOR);
 		BlendStateParam_t blending;
 		blending.srcFactor = BLENDFACTOR_SRC_ALPHA;
 		blending.dstFactor = BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
@@ -469,7 +469,7 @@ void CFont::RenderText(const char* pszText, const Vector2D& start, const eqFontS
 void CFont::DrawTextMeshBuffer(IDynamicMesh* mesh, const eqFontStyleParam_t& params)
 {
 	RasterizerStateParams_t raster;
-	raster.scissor = (params.styleFlag & TEXT_STYLE_SCISSOR) > 0;
+	raster.scissor = (params.styleFlag & TEXT_STYLE_SCISSOR);
 	BlendStateParam_t blending;
 
 	blending.srcFactor = BLENDFACTOR_SRC_ALPHA;

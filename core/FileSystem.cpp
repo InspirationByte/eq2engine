@@ -1086,7 +1086,7 @@ bool CFileSystem::FindIsDirectory(DKFINDDATA* findData) const
 
 	if (stat(findData->gl.gl_pathv[findData->index], &st) == 0)
 	{
-		return (st.st_mode & S_IFDIR) > 0;
+		return (st.st_mode & S_IFDIR);
 	}
 
 	return false;

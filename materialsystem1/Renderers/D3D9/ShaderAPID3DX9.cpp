@@ -194,7 +194,7 @@ bool ShaderAPID3DX9::ResetDevice( D3DPRESENT_PARAMETERS &d3dpp )
 		{
 			CD3D9Texture* pTex = (CD3D9Texture*)(m_TextureList[i]);
 
-			bool is_managed = (pTex->GetFlags() & TEXFLAG_MANAGED) > 0;
+			bool is_managed = (pTex->GetFlags() & TEXFLAG_MANAGED);
 
 			// release unmanaged textures and rts
 			if (!is_managed)
@@ -342,8 +342,8 @@ bool ShaderAPID3DX9::ResetDevice( D3DPRESENT_PARAMETERS &d3dpp )
 		{
 			CD3D9Texture* pTex = (CD3D9Texture*)(m_TextureList[i]);
 
-			bool is_rendertarget = (pTex->GetFlags() & TEXFLAG_RENDERTARGET) > 0;
-			bool is_managed = (pTex->GetFlags() & TEXFLAG_MANAGED) > 0;
+			bool is_rendertarget = (pTex->GetFlags() & TEXFLAG_RENDERTARGET);
+			bool is_managed = (pTex->GetFlags() & TEXFLAG_MANAGED);
 
 			// restore unmanaged texture
 			if (!is_managed && !is_rendertarget)

@@ -61,7 +61,7 @@ void sequencetimer_t::SetTime(float time)
 	int numAnimationFrames = seq->animations[0]->bones[0].numFrames;
 	float maxSeqTime = float(numAnimationFrames - 1);
 
-	bool loop = (seqDesc->flags & SEQFLAG_LOOP) > 0;
+	bool loop = (seqDesc->flags & SEQFLAG_LOOP);
 
 	if (loop)
 	{

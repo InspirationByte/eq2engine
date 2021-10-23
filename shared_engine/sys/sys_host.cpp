@@ -584,7 +584,7 @@ void CGameHost::SetCursorPosition(int x, int y)
 
 void CGameHost::SetCursorShow(bool bShow)
 {
-	bool state = SDL_ShowCursor(-1) > 0;
+	bool state = SDL_ShowCursor(-1);
 
 	if(state == bShow)
 		return;
