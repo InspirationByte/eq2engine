@@ -57,7 +57,8 @@ struct DebugOriBoxNode_t
 {
 	Vector3D mins;
 	Vector3D maxs;
-	Matrix4x4 transform;
+	Quaternion rotation;
+	Vector3D position;
 	ColorRGBA color;
 	float lifetime;
 };
@@ -110,7 +111,7 @@ public:
 
 	void							Line3D(const Vector3D &start, const Vector3D &end, const ColorRGBA &color1, const ColorRGBA &color2, float fTime = 0.0f);
 	void							Box3D(const Vector3D &mins, const Vector3D &maxs, const ColorRGBA &color1, float fTime = 0.0f);
-	//void							OrientedBox3D(const Vector3D &mins, const Vector3D &maxs, Matrix4x4& transform, const ColorRGBA &color, float fTime = 0.0f);
+	void							OrientedBox3D(const Vector3D &mins, const Vector3D &maxs, const Vector3D& position, const Quaternion& rotation, const ColorRGBA &color, float fTime = 0.0f);
 	void							Sphere3D(const Vector3D& position, float radius, const ColorRGBA &color, float fTime = 0.0f);
 	void							Polygon3D(const Vector3D &v0, const Vector3D &v1,const Vector3D &v2, const Vector4D &color, float fTime = 0.0f);
 

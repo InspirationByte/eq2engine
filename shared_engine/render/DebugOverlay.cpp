@@ -89,6 +89,64 @@ void GUIDrawWindow(const Rectangle_t &rect, const ColorRGBA &color1)
 	meshBuilder.End();
 }
 
+#define BBOX_STRIP_VERTS(min, max) \
+	Vector3D(min.x, max.y, max.z),\
+	Vector3D(max.x, max.y, max.z),\
+	Vector3D(min.x, max.y, min.z),\
+	Vector3D(max.x, max.y, min.z),\
+	Vector3D(min.x, min.y, min.z),\
+	Vector3D(max.x, min.y, min.z),\
+	Vector3D(min.x, min.y, max.z),\
+	Vector3D(max.x, min.y, max.z),\
+	Vector3D(max.x, min.y, max.z),\
+	Vector3D(max.x, min.y, min.z),\
+	Vector3D(max.x, min.y, min.z),\
+	Vector3D(max.x, max.y, min.z),\
+	Vector3D(max.x, min.y, max.z),\
+	Vector3D(max.x, max.y, max.z),\
+	Vector3D(min.x, min.y, max.z),\
+	Vector3D(min.x, max.y, max.z),\
+	Vector3D(min.x, min.y, min.z),\
+	Vector3D(min.x, max.y, min.z)
+
+void DrawOrientedBox(const Vector3D& position, const Vector3D& mins, const Vector3D& maxs, const Quaternion& quat, const ColorRGBA& color, float fTime = 0.0f)
+{
+	Vector3D verts[18] = { BBOX_STRIP_VERTS(mins, maxs) };
+
+	// transform them
+	for (int i = 0; i < 18; i++)
+		verts[i] = position + rotateVector(verts[i], quat);
+
+	Vector3D r, u, f;
+	r = rotateVector(vec3_right, quat);
+	u = rotateVector(vec3_up, quat);
+	f = rotateVector(vec3_forward, quat);
+
+	debugoverlay->Line3D(position + r * mins.x, position + r * maxs.x, ColorRGBA(1, 0, 0, 1), ColorRGBA(1, 0, 0, 1));
+	debugoverlay->Line3D(position + u * mins.y, position + u * maxs.y, ColorRGBA(0, 1, 0, 1), ColorRGBA(0, 1, 0, 1));
+	debugoverlay->Line3D(position + f * mins.z, position + f * maxs.z, ColorRGBA(0, 0, 1, 1), ColorRGBA(0, 0, 1, 1));
+
+	ColorRGBA polyColor(color);
+	polyColor.w *= 0.65f;
+
+	debugoverlay->Polygon3D(verts[0], verts[1], verts[2], polyColor);
+	debugoverlay->Polygon3D(verts[2], verts[1], verts[3], polyColor);
+
+	debugoverlay->Polygon3D(verts[2], verts[3], verts[4], polyColor);
+	debugoverlay->Polygon3D(verts[4], verts[3], verts[5], polyColor);
+
+	debugoverlay->Polygon3D(verts[4], verts[5], verts[6], polyColor);
+	debugoverlay->Polygon3D(verts[6], verts[5], verts[7], polyColor);
+
+	debugoverlay->Polygon3D(verts[10], verts[11], verts[12], polyColor);
+	debugoverlay->Polygon3D(verts[12], verts[11], verts[13], polyColor);
+
+	debugoverlay->Polygon3D(verts[12], verts[13], verts[14], polyColor);
+	debugoverlay->Polygon3D(verts[14], verts[13], verts[15], polyColor);
+
+	debugoverlay->Polygon3D(verts[14], verts[15], verts[16], polyColor);
+	debugoverlay->Polygon3D(verts[16], verts[15], verts[17], polyColor);
+}
 
 CDebugOverlay::CDebugOverlay() :
 	m_TextArray(64),
@@ -123,6 +181,8 @@ void CDebugOverlay::Text(const ColorRGBA &color, char const *fmt,...)
 	if(!r_drawFrameStats.GetBool())
 		return;
 
+	Threading::CScopedMutex m(m_mutex);
+
 	DebugTextNode_t textNode;
 	textNode.color = color;
 
@@ -145,6 +205,8 @@ void CDebugOverlay::Text3D(const Vector3D &origin, float dist, const ColorRGBA &
 
 	if(!m_frustum.IsSphereInside(origin, 1.0f))
 		return;
+
+	Threading::CScopedMutex m(m_mutex);
 
 	va_list		argptr;
 	static char	string[1024];
@@ -174,6 +236,8 @@ void CDebugOverlay::TextFadeOut(int position, const ColorRGBA &color,float fFade
 			return;
 	}
 
+	Threading::CScopedMutex m(m_mutex);
+
 	DebugFadingTextNode_t textNode;
 	textNode.color = color;
 	textNode.lifetime = fFadeTime;
@@ -201,13 +265,13 @@ void CDebugOverlay::TextFadeOut(int position, const ColorRGBA &color,float fFade
 
 void CDebugOverlay::Box3D(const Vector3D &mins, const Vector3D &maxs, const ColorRGBA &color, float fTime)
 {
-	Threading::CScopedMutex m(m_mutex);
-
 	if(!r_debugdrawShapes.GetBool())
 		return;
 
 	if(!m_frustum.IsBoxInside(mins,maxs))
 		return;
+
+	Threading::CScopedMutex m(m_mutex);
 
 	DebugBoxNode_t box;
 	box.mins = mins;
@@ -223,13 +287,13 @@ void CDebugOverlay::Box3D(const Vector3D &mins, const Vector3D &maxs, const Colo
 
 void CDebugOverlay::Line3D(const Vector3D &start, const Vector3D &end, const ColorRGBA &color1, const ColorRGBA &color2, float fTime)
 {
-	Threading::CScopedMutex m(m_mutex);
-
 	if(!r_debugdrawLines.GetBool())
 		return;
 
 	if(!m_frustum.IsBoxInside(start,end))
 		return;
+
+	Threading::CScopedMutex m(m_mutex);
 
 	DebugLineNode_t line;
 	line.start = start;
@@ -243,39 +307,42 @@ void CDebugOverlay::Line3D(const Vector3D &start, const Vector3D &end, const Col
 	else
 		m_LineList.append(line);
 }
-/*
-void CDebugOverlay::OrientedBox3D(const Vector3D &mins, const Vector3D &maxs, Matrix4x4& transform, const ColorRGBA &color, float fTime)
-{
-	Threading::CScopedMutex m(m_mutex);
 
+void CDebugOverlay::OrientedBox3D(const Vector3D& mins, const Vector3D& maxs, const Vector3D& position, const Quaternion& rotation, const ColorRGBA& color, float fTime)
+{
 	if(!r_debugdrawShapes.GetBool())
 		return;
 
-	//if(!m_frustum.IsBoxInside(mins,maxs))
-	//	return;
+	if(!m_frustum.IsBoxInside(position+mins, position+maxs))
+		return;
 
-	DebugOriBoxNode_t box;
-	box.mins = mins;
-	box.maxs = maxs;
-	box.transform = transform;
-	box.color = color;
-	box.lifetime = fTime;
+	//Threading::CScopedMutex m(m_mutex);
 
-	if(fTime == 0.0f)
-		m_FastOrientedBoxList.append(box);
-	else
-		m_OrientedBoxList.append(box);
-}*/
+	//DebugOriBoxNode_t box;
+	//box.mins = mins;
+	//box.maxs = maxs;
+	//box.position = position;
+	//box.rotation = rotation;
+	//box.color = color;
+	//box.lifetime = fTime;
+
+	DrawOrientedBox(position, mins, maxs, rotation, color, fTime);
+
+	//if(fTime == 0.0f)
+	//	m_FastOrientedBoxList.append(box);
+	//else
+	//	m_OrientedBoxList.append(box);
+}
 
 void CDebugOverlay::Sphere3D(const Vector3D& position, float radius, const ColorRGBA &color, float fTime)
 {
-	Threading::CScopedMutex m(m_mutex);
-
 	if(!r_debugdrawShapes.GetBool())
 		return;
 
 	if(!m_frustum.IsSphereInside(position, radius))
 		return;
+
+	Threading::CScopedMutex m(m_mutex);
 
 	DebugSphereNode_t sphere;
 	sphere.origin = position;
@@ -291,10 +358,10 @@ void CDebugOverlay::Sphere3D(const Vector3D& position, float radius, const Color
 
 void CDebugOverlay::Polygon3D(const Vector3D &v0, const Vector3D &v1,const Vector3D &v2, const Vector4D &color, float fTime)
 {
-	Threading::CScopedMutex m(m_mutex);
-
 	if(!m_frustum.IsTriangleInside(v0,v1,v2))
 		return;
+
+	Threading::CScopedMutex m(m_mutex);
 
 	DebugPolyNode_t poly;
 	poly.v0 = v0;
@@ -350,6 +417,79 @@ void DrawLineArray(DkList<DebugLineNode_t>& lines, float frametime)
 
 			line.lifetime -= frametime;
 		}
+
+	meshBuilder.End();
+}
+
+void DrawOrientedBoxArray(DkList<DebugOriBoxNode_t>& boxes, float frametime)
+{
+	if (!boxes.numElem())
+		return;
+
+	g_pShaderAPI->SetTexture(NULL, NULL, 0);
+
+	materials->SetBlendingStates(BLENDFACTOR_SRC_ALPHA, BLENDFACTOR_ONE_MINUS_SRC_ALPHA, BLENDFUNC_ADD);
+	materials->SetRasterizerStates(CULL_NONE, FILL_SOLID);
+	materials->SetDepthStates(true, false);
+
+	materials->Apply();
+
+	// bind the default material as we're emulating an FFP
+	materials->BindMaterial(materials->GetDefaultMaterial());
+
+	CMeshBuilder meshBuilder(materials->GetDynamicMesh());
+	meshBuilder.Begin(PRIM_LINES);
+
+	for (int i = 0; i < boxes.numElem(); i++)
+	{
+		DebugOriBoxNode_t& node = boxes[i];
+
+		meshBuilder.Color4fv(node.color);
+
+		meshBuilder.Line3fv(Vector3D(node.mins.x, node.maxs.y, node.mins.z),
+			Vector3D(node.mins.x, node.maxs.y, node.maxs.z));
+
+		meshBuilder.Line3fv(Vector3D(node.maxs.x, node.maxs.y, node.maxs.z),
+			Vector3D(node.maxs.x, node.maxs.y, node.mins.z));
+
+		meshBuilder.Line3fv(Vector3D(node.maxs.x, node.mins.y, node.mins.z),
+			Vector3D(node.maxs.x, node.mins.y, node.maxs.z));
+
+		meshBuilder.Line3fv(Vector3D(node.mins.x, node.mins.y, node.maxs.z),
+			Vector3D(node.mins.x, node.mins.y, node.mins.z));
+
+		meshBuilder.Line3fv(Vector3D(node.mins.x, node.mins.y, node.maxs.z),
+			Vector3D(node.mins.x, node.maxs.y, node.maxs.z));
+
+		meshBuilder.Line3fv(Vector3D(node.maxs.x, node.mins.y, node.maxs.z),
+			Vector3D(node.maxs.x, node.maxs.y, node.maxs.z));
+
+		meshBuilder.Line3fv(Vector3D(node.mins.x, node.mins.y, node.mins.z),
+			Vector3D(node.mins.x, node.maxs.y, node.mins.z));
+
+		meshBuilder.Line3fv(Vector3D(node.maxs.x, node.mins.y, node.mins.z),
+			Vector3D(node.maxs.x, node.maxs.y, node.mins.z));
+
+		meshBuilder.Line3fv(Vector3D(node.mins.x, node.maxs.y, node.mins.z),
+			Vector3D(node.maxs.x, node.maxs.y, node.mins.z));
+
+		meshBuilder.Line3fv(Vector3D(node.mins.x, node.maxs.y, node.maxs.z),
+			Vector3D(node.maxs.x, node.maxs.y, node.maxs.z));
+
+		meshBuilder.Line3fv(Vector3D(node.mins.x, node.mins.y, node.mins.z),
+			Vector3D(node.maxs.x, node.mins.y, node.mins.z));
+
+		meshBuilder.Line3fv(Vector3D(node.mins.x, node.mins.y, node.maxs.z),
+			Vector3D(node.maxs.x, node.mins.y, node.maxs.z));
+
+		node.lifetime -= frametime;
+
+		if ((i % BOXES_DRAW_SUBDIV) == 0)
+		{
+			meshBuilder.End();
+			meshBuilder.Begin(PRIM_LINES);
+		}
+	}
 
 	meshBuilder.End();
 }
@@ -820,16 +960,30 @@ void CDebugOverlay::Draw(int winWide, int winTall)
 	// draw all of 3d stuff
 	{
 		Threading::CScopedMutex m(m_mutex);
-
 		DrawBoxArray(m_BoxList, m_frameTime);
 		DrawBoxArray(m_FastBoxList, m_frameTime);
+	}
 
+	/* {
+		Threading::CScopedMutex m(m_mutex);
+		DrawOrientedBoxArray(m_OrientedBoxList, m_frameTime);
+		DrawOrientedBoxArray(m_FastOrientedBoxList, m_frameTime);
+	}*/
+
+	{
+		Threading::CScopedMutex m(m_mutex);
 		DrawSphereArray(m_SphereList, m_frameTime);
 		DrawSphereArray(m_FastSphereList, m_frameTime);
+	}
 
+	{
+		Threading::CScopedMutex m(m_mutex);
 		DrawLineArray(m_LineList, m_frameTime);
 		DrawLineArray(m_FastLineList, m_frameTime);
+	}
 
+	{
+		Threading::CScopedMutex m(m_mutex);
 		DrawPolygons(m_polygons, m_frameTime);
 	}
 
@@ -846,82 +1000,89 @@ void CDebugOverlay::Draw(int winWide, int winTall)
 
 	int idx = 0;
 
-	if(m_LeftTextFadeArray.goToFirst())
 	{
 		Threading::CScopedMutex m(m_mutex);
 
-		do
+		if (m_LeftTextFadeArray.goToFirst())
 		{
-			DebugFadingTextNode_t& current = m_LeftTextFadeArray.getCurrentNode()->object;
-
-			if(current.lifetime < 0.0f)
+			do
 			{
-				m_LeftTextFadeArray.removeCurrent();
-				continue;
-			}
+				DebugFadingTextNode_t& current = m_LeftTextFadeArray.getCurrentNode()->object;
 
-			if(current.initialLifetime > 0.05f)
-				current.color.w = clamp(current.lifetime, 0.0f, 1.0f);
-			else
-				current.color.w = 1.0f;
+				if (current.lifetime < 0.0f)
+				{
+					m_LeftTextFadeArray.removeCurrent();
+					continue;
+				}
 
-			eqFontStyleParam_t textStl;
-			textStl.styleFlag = TEXT_STYLE_SHADOW | TEXT_STYLE_FROM_CAP;
-			textStl.textColor = current.color;
+				if (current.initialLifetime > 0.05f)
+					current.color.w = clamp(current.lifetime, 0.0f, 1.0f);
+				else
+					current.color.w = 1.0f;
 
-			Vector2D textPos = drawFadedTextBoxPosition + Vector2D( 0, (idx*m_pDebugFont->GetLineHeight(textStl)) );
+				eqFontStyleParam_t textStl;
+				textStl.styleFlag = TEXT_STYLE_SHADOW | TEXT_STYLE_FROM_CAP;
+				textStl.textColor = current.color;
 
-			m_pDebugFont->RenderText( current.pszText.GetData(), textPos, textStl);
+				Vector2D textPos = drawFadedTextBoxPosition + Vector2D(0, (idx * m_pDebugFont->GetLineHeight(textStl)));
 
-			idx++;
+				m_pDebugFont->RenderText(current.pszText.GetData(), textPos, textStl);
 
-			current.lifetime -= m_frameTime;
+				idx++;
 
-		}while(m_LeftTextFadeArray.goToNext());
+				current.lifetime -= m_frameTime;
+
+			} while (m_LeftTextFadeArray.goToNext());
+		}
 	}
 
 	if(r_drawFrameStats.GetBool())
 	{
-		Threading::CScopedMutex m(m_mutex);
-
 		eqFontStyleParam_t textStl;
 		textStl.styleFlag = TEXT_STYLE_SHADOW | TEXT_STYLE_FROM_CAP;
 
-		for (int i = 0;i < m_Text3DArray.numElem();i++)
 		{
-			DebugText3DNode_t& current = m_Text3DArray[i];
+			Threading::CScopedMutex m(m_mutex);
 
-			Vector3D screen(0);
-
-			bool beh = PointToScreen_Z(current.origin, screen, m_projMat * m_viewMat, Vector2D(winWide, winTall));
-
-			bool visible = true;
-
-			if(current.dist > 0)
-				visible = (screen.z < current.dist);
-
-			current.lifetime -= m_frameTime;
-
-			if(!beh && visible)
+			for (int i = 0; i < m_Text3DArray.numElem(); i++)
 			{
-				textStl.textColor = current.color;
-				m_pDebugFont->RenderText(current.pszText.GetData(), screen.xy(), textStl);
+				DebugText3DNode_t& current = m_Text3DArray[i];
+
+				Vector3D screen(0);
+
+				bool beh = PointToScreen_Z(current.origin, screen, m_projMat * m_viewMat, Vector2D(winWide, winTall));
+
+				bool visible = true;
+
+				if (current.dist > 0)
+					visible = (screen.z < current.dist);
+
+				current.lifetime -= m_frameTime;
+
+				if (!beh && visible)
+				{
+					textStl.textColor = current.color;
+					m_pDebugFont->RenderText(current.pszText.GetData(), screen.xy(), textStl);
+				}
 			}
 		}
 
-		if(m_TextArray.numElem())
 		{
-			GUIDrawWindow(Rectangle_t(drawTextBoxPosition.x,drawTextBoxPosition.y,drawTextBoxPosition.x+380,drawTextBoxPosition.y+(m_TextArray.numElem()*m_pDebugFont->GetLineHeight(textStl))),ColorRGBA(0.5f,0.5f,0.5f,0.5f));
-
-			for (int i = 0;i < m_TextArray.numElem();i++)
+			Threading::CScopedMutex m(m_mutex);
+			if (m_TextArray.numElem())
 			{
-				DebugTextNode_t& current = m_TextArray[i];
+				GUIDrawWindow(Rectangle_t(drawTextBoxPosition.x, drawTextBoxPosition.y, drawTextBoxPosition.x + 380, drawTextBoxPosition.y + (m_TextArray.numElem() * m_pDebugFont->GetLineHeight(textStl))), ColorRGBA(0.5f, 0.5f, 0.5f, 0.5f));
 
-				textStl.textColor = current.color;
+				for (int i = 0; i < m_TextArray.numElem(); i++)
+				{
+					DebugTextNode_t& current = m_TextArray[i];
 
-				Vector2D textPos(drawTextBoxPosition.x,drawTextBoxPosition.y+(i*m_pDebugFont->GetLineHeight(textStl)));
+					textStl.textColor = current.color;
 
-				m_pDebugFont->RenderText(current.pszText.GetData(), textPos, textStl);
+					Vector2D textPos(drawTextBoxPosition.x, drawTextBoxPosition.y + (i * m_pDebugFont->GetLineHeight(textStl)));
+
+					m_pDebugFont->RenderText(current.pszText.GetData(), textPos, textStl);
+				}
 			}
 		}
 
@@ -929,23 +1090,26 @@ void CDebugOverlay::Draw(int winWide, int winTall)
 		rTextFadeStyle.styleFlag = TEXT_STYLE_SHADOW | TEXT_STYLE_FROM_CAP;
 		rTextFadeStyle.align = TEXT_ALIGN_RIGHT;
 
-		for (int i = 0;i < m_RightTextFadeArray.numElem();i++)
 		{
-			DebugFadingTextNode_t& current = m_RightTextFadeArray[i];
+			Threading::CScopedMutex m(m_mutex);
+			for (int i = 0; i < m_RightTextFadeArray.numElem(); i++)
+			{
+				DebugFadingTextNode_t& current = m_RightTextFadeArray[i];
 
-			float textLen = m_pDebugFont->GetStringWidth( current.pszText.ToCString(), textStl );
+				float textLen = m_pDebugFont->GetStringWidth(current.pszText.ToCString(), textStl);
 
-			if(current.initialLifetime > 0.05f)
-				current.color.w = clamp(current.lifetime, 0.0f, 1.0f);
-			else
-				current.color.w = 1.0f;
+				if (current.initialLifetime > 0.05f)
+					current.color.w = clamp(current.lifetime, 0.0f, 1.0f);
+				else
+					current.color.w = 1.0f;
 
-			rTextFadeStyle.textColor = current.color;
-			Vector2D textPos(winWide - (textLen*m_pDebugFont->GetLineHeight(textStl)), 45+(i*m_pDebugFont->GetLineHeight(textStl)));
+				rTextFadeStyle.textColor = current.color;
+				Vector2D textPos(winWide - (textLen * m_pDebugFont->GetLineHeight(textStl)), 45 + (i * m_pDebugFont->GetLineHeight(textStl)));
 
-			m_pDebugFont->RenderText( current.pszText.GetData(), textPos, rTextFadeStyle);
+				m_pDebugFont->RenderText(current.pszText.GetData(), textPos, rTextFadeStyle);
 
-			current.lifetime -= m_frameTime;
+				current.lifetime -= m_frameTime;
+			}
 		}
 	}
 
@@ -985,9 +1149,11 @@ void CDebugOverlay::Draw(int winWide, int winTall)
 
 void CDebugOverlay::CleanOverlays()
 {
-	m_TextArray.clear();
+	Threading::CScopedMutex m(m_mutex);
 
-	for (int i = 0;i < m_Text3DArray.numElem();i++)
+	m_TextArray.clear();	
+
+	for (int i = 0; i < m_Text3DArray.numElem();i++)
 	{
 		if(m_Text3DArray[i].lifetime <= 0)
 		{
@@ -996,7 +1162,7 @@ void CDebugOverlay::CleanOverlays()
 		}
 	}
 
-	for (int i = 0;i < m_RightTextFadeArray.numElem();i++)
+	for (int i = 0; i < m_RightTextFadeArray.numElem();i++)
 	{
 		if(m_RightTextFadeArray[i].lifetime <= 0)
 		{
@@ -1005,7 +1171,7 @@ void CDebugOverlay::CleanOverlays()
 		}
 	}
 
-	for (int i = 0;i < m_LineList.numElem();i++)
+	for (int i = 0; i < m_LineList.numElem();i++)
 	{
 		if(m_LineList[i].lifetime <= 0)
 		{
@@ -1014,7 +1180,7 @@ void CDebugOverlay::CleanOverlays()
 		}
 	}
 
-	for (int i = 0;i < m_BoxList.numElem();i++)
+	for (int i = 0; i < m_BoxList.numElem();i++)
 	{
 		if(m_BoxList[i].lifetime <= 0)
 		{
@@ -1023,7 +1189,16 @@ void CDebugOverlay::CleanOverlays()
 		}
 	}
 
-	for (int i = 0;i < m_SphereList.numElem();i++)
+	/*for (int i = 0; i < m_OrientedBoxList.numElem(); i++)
+	{
+		if (m_OrientedBoxList[i].lifetime <= 0)
+		{
+			m_OrientedBoxList.fastRemoveIndex(i);
+			i--;
+		}
+	}*/
+
+	for (int i = 0; i < m_SphereList.numElem();i++)
 	{
 		if(m_SphereList[i].lifetime <= 0)
 		{
@@ -1032,7 +1207,7 @@ void CDebugOverlay::CleanOverlays()
 		}
 	}
 
-	for (int i = 0;i < m_polygons.numElem();i++)
+	for (int i = 0; i < m_polygons.numElem();i++)
 	{
 		if(m_polygons[i].lifetime <= 0)
 		{
@@ -1043,6 +1218,7 @@ void CDebugOverlay::CleanOverlays()
 
 	m_FastSphereList.clear();
 	m_FastBoxList.clear();
+	//m_FastOrientedBoxList.clear();
 	m_FastLineList.clear();
 }
 
@@ -1051,6 +1227,8 @@ void CDebugOverlay::Graph_DrawBucket(debugGraphBucket_t* pBucket)
 	if (!r_debugdrawGraphs.GetBool())
 		return;
 
+	Threading::CScopedMutex m(m_mutex);
+
 	m_graphbuckets.addUnique(pBucket);
 }
 
@@ -1058,6 +1236,8 @@ void CDebugOverlay::Graph_AddValue(debugGraphBucket_t* bucket, float value)
 {
 	if(!r_debugdrawGraphs.GetBool())
 		return;
+
+	Threading::CScopedMutex m(m_mutex);
 
 	if(bucket->remainingTime <= 0)
 	{
@@ -1077,55 +1257,3 @@ IEqFont* CDebugOverlay::GetFont()
 	return m_pDebugFont;
 }
 
-#define BBOX_STRIP_VERTS(min, max) \
-	Vector3D(min.x, max.y, max.z),\
-	Vector3D(max.x, max.y, max.z),\
-	Vector3D(min.x, max.y, min.z),\
-	Vector3D(max.x, max.y, min.z),\
-	Vector3D(min.x, min.y, min.z),\
-	Vector3D(max.x, min.y, min.z),\
-	Vector3D(min.x, min.y, max.z),\
-	Vector3D(max.x, min.y, max.z),\
-	Vector3D(max.x, min.y, max.z),\
-	Vector3D(max.x, min.y, min.z),\
-	Vector3D(max.x, min.y, min.z),\
-	Vector3D(max.x, max.y, min.z),\
-	Vector3D(max.x, min.y, max.z),\
-	Vector3D(max.x, max.y, max.z),\
-	Vector3D(min.x, min.y, max.z),\
-	Vector3D(min.x, max.y, max.z),\
-	Vector3D(min.x, min.y, min.z),\
-	Vector3D(min.x, max.y, min.z)
-
-void UTIL_DebugDrawOBB(const FVector3D& pos, const Vector3D& mins, const Vector3D& maxs, const Matrix4x4& matrix, const ColorRGBA& color)
-{
-	Matrix4x4 tmatrix = transpose(matrix);
-
-	Vector3D verts[18] = { BBOX_STRIP_VERTS(mins, maxs) };
-
-	// transform them
-	for (int i = 0; i < 18; i++)
-		verts[i] = Vector3D(pos + (matrix*Vector4D(verts[i], 1.0f)).xyz());
-
-	debugoverlay->Line3D(pos + tmatrix.rows[0].xyz()*mins.x, pos + tmatrix.rows[0].xyz()*maxs.x, ColorRGBA(1,0,0,1), ColorRGBA(1,0,0,1));
-	debugoverlay->Line3D(pos + tmatrix.rows[1].xyz()*mins.y, pos + tmatrix.rows[1].xyz()*maxs.y, ColorRGBA(0,1,0,1), ColorRGBA(0,1,0,1));
-	debugoverlay->Line3D(pos + tmatrix.rows[2].xyz()*mins.z, pos + tmatrix.rows[2].xyz()*maxs.z, ColorRGBA(0,0,1,1), ColorRGBA(0,0,1,1));
-
-	debugoverlay->Polygon3D(verts[0], verts[1], verts[2], color);
-	debugoverlay->Polygon3D(verts[2], verts[1], verts[3], color);
-
-	debugoverlay->Polygon3D(verts[2], verts[3], verts[4], color);
-	debugoverlay->Polygon3D(verts[4], verts[3], verts[5], color);
-
-	debugoverlay->Polygon3D(verts[4], verts[5], verts[6], color);
-	debugoverlay->Polygon3D(verts[6], verts[5], verts[7], color);
-
-	debugoverlay->Polygon3D(verts[10], verts[11], verts[12], color);
-	debugoverlay->Polygon3D(verts[12], verts[11], verts[13], color);
-
-	debugoverlay->Polygon3D(verts[12], verts[13], verts[14], color);
-	debugoverlay->Polygon3D(verts[14], verts[13], verts[15], color);
-
-	debugoverlay->Polygon3D(verts[14], verts[15], verts[16], color);
-	debugoverlay->Polygon3D(verts[16], verts[15], verts[17], color);
-}
