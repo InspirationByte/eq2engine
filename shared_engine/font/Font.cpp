@@ -488,6 +488,7 @@ void CFont::DrawTextMeshBuffer(IDynamicMesh* mesh, const eqFontStyleParam_t& par
 	IMatVar* sdfRange = fontCache->m_sdfRange;
 
 	// draw shadow
+	// TODO: shadow color should be separate from text vertices color!!!
 	if ((params.styleFlag & TEXT_STYLE_SHADOW) && params.shadowAlpha > 0.0f)
 	{
 		materials->SetMatrix(MATRIXMODE_WORLD, translate(params.shadowOffset,params.shadowOffset,0.0f));

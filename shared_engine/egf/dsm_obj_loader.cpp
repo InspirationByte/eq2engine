@@ -506,7 +506,7 @@ bool LoadOBJ(dsmmodel_t* model, const char* filename)
 
 bool SaveOBJ(dsmmodel_t* model, const char* filename)
 {
-	IFile* pFile = g_fileSystem->Open(filename, "wt");
+	IFile* pFile = g_fileSystem->Open(filename, "wt", SP_ROOT);
 	if(!pFile)
 	{
 		MsgError("Failed to open for write '%s'!\n", filename);
@@ -514,54 +514,47 @@ bool SaveOBJ(dsmmodel_t* model, const char* filename)
 		return false;
 	}
 
-	FILE* pFileHandle = *((FILE**)pFile);
-	fprintf(pFileHandle, "# DSM_OBJ_LOADER.CPP OBJ FILE\n\n");
+	pFile->Print("# DSM_OBJ_LOADER.CPP OBJ FILE\n\n");
 
 	for(int i = 0; i < model->groups.numElem(); i++)
 	{
-		fprintf(pFileHandle, "o %s\n", model->groups[i]->texture);
+		SharedModel::dsmgroup_t* group = model->groups[i];
+		
+		if (group->indices.numElem())
+			pFile->Print("o %s\n", group->texture);
 
-		for(int j = 0; j < model->groups[i]->verts.numElem(); j++)
+		for(int j = 0; j < group->verts.numElem(); j++)
 		{
-			Vector3D v = model->groups[i]->verts[j].position;
-			fprintf(pFileHandle, "v %g %g %g\n", v.x, v.y, v.z);
-			/*
-			Vector2D t = model->groups[i]->verts[j].texcoord;
+			Vector3D v = group->verts[j].position;
+			pFile->Print("v %g %g %g\n", v.x, v.y, v.z);
+		}
+
+		for(int j = 0; j < group->verts.numElem(); j++)
+		{
+			Vector2D t = group->verts[j].texcoord;
 			t.y = 1.0f - t.y;
-			fprintf(pFileHandle, "vt %g %g\n", t.x, t.y);
-
-			Vector3D n = model->groups[i]->verts[j].normal;
-			fprintf(pFileHandle, "vn %g %g %g\n", n.x, n.y, n.z);
-			*/
+			pFile->Print("vt %g %g\n", t.x, t.y);
 		}
 
-
-		for(int j = 0; j < model->groups[i]->verts.numElem(); j++)
+		for(int j = 0; j < group->verts.numElem(); j++)
 		{
-			Vector2D t = model->groups[i]->verts[j].texcoord;
-			t.y = 1.0f - t.y;
-			fprintf(pFileHandle, "vt %g %g\n", t.x, t.y);
+			Vector3D n = group->verts[j].normal;
+			pFile->Print("vn %g %g %g\n", n.x, n.y, n.z);
 		}
 
-		for(int j = 0; j < model->groups[i]->verts.numElem(); j++)
-		{
-			Vector3D n = model->groups[i]->verts[j].normal;
-			fprintf(pFileHandle, "vn %g %g %g\n", n.x, n.y, n.z);
-		}
+		if (group->indices.numElem())
+			pFile->Print("usemtl %s\n", group->texture);
 
-
-		fprintf(pFileHandle, "usemtl %s\n", model->groups[i]->texture);
-
-		for(int j = 0; j < model->groups[i]->indices.numElem(); j+=3)
+		for(int j = 0; j < group->indices.numElem(); j+=3)
 		{
 			int indices[3];
-			indices[0] = model->groups[i]->indices[j] + 1;
-			indices[1] = model->groups[i]->indices[j+1] + 1;
-			indices[2] = model->groups[i]->indices[j+2] + 1;
+			indices[0] = group->indices[j] + 1;
+			indices[1] = group->indices[j+1] + 1;
+			indices[2] = group->indices[j+2] + 1;
 
-			fprintf(pFileHandle, "f %d/%d/%d %d/%d/%d %d/%d/%d\n",	indices[0], indices[0], indices[0],
-																	indices[1], indices[1], indices[1],
-																	indices[2], indices[2], indices[2]);
+			pFile->Print("f %d/%d/%d %d/%d/%d %d/%d/%d\n",	indices[0], indices[0], indices[0],
+															indices[1], indices[1], indices[1],
+															indices[2], indices[2], indices[2]);
 		}
 	}
 
