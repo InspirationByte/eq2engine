@@ -317,7 +317,7 @@ void LoadMaterialImages(const char* materialFileName)
 				const char* imageName = KV_GetValueString(key, 0, "");
 
 				EqString filename;
-				CombinePath(filename, 2, g_batchConfig.sourceMaterialPath.ToCString(), EqString::Format("%s.%s", imageName, g_batchConfig.sourceImageExt.ToCString()));
+				CombinePath(filename, 2, g_batchConfig.sourceMaterialPath.ToCString(), EqString::Format("%s.%s", imageName, g_batchConfig.sourceImageExt.ToCString()).ToCString());
 				
 				if (!g_fileSystem->FileExist(filename.ToCString()))
 				{
@@ -405,10 +405,10 @@ void ProcessTexture(TexInfo_t* textureInfo)
 {
 	// before this, create folders...
 	EqString sourceFilename;
-	CombinePath(sourceFilename, 2, g_batchConfig.sourceMaterialPath.ToCString(), EqString::Format("%s.%s", textureInfo->sourcePath.ToCString(), g_batchConfig.sourceImageExt.ToCString()));
+	CombinePath(sourceFilename, 2, g_batchConfig.sourceMaterialPath.ToCString(), EqString::Format("%s.%s", textureInfo->sourcePath.ToCString(), g_batchConfig.sourceImageExt.ToCString()).ToCString());
 	
 	EqString targetFilename;
-	CombinePath(targetFilename, 2, g_targetProps.targetFolder.ToCString(), textureInfo->sourcePath.Path_Strip_Ext() + ".dds");
+	CombinePath(targetFilename, 2, g_targetProps.targetFolder.ToCString(), (textureInfo->sourcePath.Path_Strip_Ext() + ".dds").ToCString());
 	
 	EqString targetFilePath;
 	CombinePath(targetFilePath, 2, g_targetProps.targetFolder.ToCString(), textureInfo->sourcePath.Path_Strip_Name().ToCString());
@@ -427,11 +427,18 @@ void ProcessTexture(TexInfo_t* textureInfo)
 	g_batchConfig.newCRCSec.SetKey(EqString::Format("%u", srcCRC).ToCString(), sourceFilename.ToCString());
 
 	// now check CRC from loaded file
-	if (hasMatchingCRC(srcCRC) && g_fileSystem->FileExist(targetFilename.ToCString(), SP_ROOT))
+	if (hasMatchingCRC(srcCRC))
 	{
-		MsgInfo("Skipping %s: %s...\n", textureInfo->usage->usageName.ToCString(), textureInfo->sourcePath.ToCString());
-		textureInfo->status = SKIPPED;
-		return;
+		if (g_fileSystem->FileExist(targetFilename.ToCString(), SP_ROOT))
+		{
+			MsgInfo("Skipping %s: %s...\n", textureInfo->usage->usageName.ToCString(), textureInfo->sourcePath.ToCString());
+			textureInfo->status = SKIPPED;
+			return;
+		}
+		else
+		{
+			MsgInfo("Re-generating '%s'!\n", targetFilename.ToCString());
+		}
 	}
 
 	textureInfo->status = CONVERTED;
