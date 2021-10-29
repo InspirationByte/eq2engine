@@ -54,7 +54,7 @@ eqFontStyleInfo_t::~eqFontStyleInfo_t()
 CEqFontCache::CEqFontCache() : 
 	m_defaultFont(nullptr),
 	m_sdfMaterial(nullptr),
-	m_sdfRange(nullptr)
+	m_fontParams(nullptr)
 {
 	GetCore()->RegisterInterface(FONTCACHE_INTERFACE_VERSION, this);
 }
@@ -183,7 +183,7 @@ bool CEqFontCache::Init()
 	m_sdfMaterial = materials->CreateMaterial("_sdfRegular", &sdfFontParams);
 	m_sdfMaterial->Ref_Grab();
 
-	m_sdfRange = m_sdfMaterial->GetMaterialVar("range", "[0.94 0.06]");
+	m_fontParams = m_sdfMaterial->GetMaterialVar("FontParams", "[0.94 0.06, 0, 1]");
 
 	m_sdfMaterial->LoadShaderAndTextures();
 
@@ -207,7 +207,7 @@ void CEqFontCache::Shutdown()
 
 	materials->FreeMaterial( m_sdfMaterial );
 	m_sdfMaterial = nullptr;
-	m_sdfRange = nullptr;
+	m_fontParams = nullptr;
 }
 
 void CEqFontCache::ReloadFonts()

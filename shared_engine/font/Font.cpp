@@ -27,9 +27,7 @@ TODO:
 #include "Font.h"
 #include "FontCache.h"
 
-#include <stdexcept> 
-
-#pragma todo("Rework font system - Add generator, better rotation support, effects, and text alignment/bounding")
+#pragma todo("Rework font system - Add generator, better rotation support")
 
 #define FONT_DEFAULT_PATH "resources/fonts/"
 
@@ -483,9 +481,9 @@ void CFont::DrawTextMeshBuffer(IDynamicMesh* mesh, const eqFontStyleParam_t& par
 
 	CEqFontCache* fontCache = ((CEqFontCache*)g_fontCache);
 
-	IMaterial* fontMaterial = m_flags.sdf ? fontCache->m_sdfMaterial : materials->GetDefaultMaterial();
+	IMaterial* fontMaterial = fontCache->m_sdfMaterial;//m_flags.sdf ? fontCache->m_sdfMaterial : materials->GetDefaultMaterial();
 
-	IMatVar* sdfRange = fontCache->m_sdfRange;
+	IMatVar* sdfRange = fontCache->m_fontParams;
 
 	// draw shadow
 	// TODO: shadow color should be separate from text vertices color!!!
@@ -494,17 +492,27 @@ void CFont::DrawTextMeshBuffer(IDynamicMesh* mesh, const eqFontStyleParam_t& par
 		materials->SetMatrix(MATRIXMODE_WORLD, translate(params.shadowOffset,params.shadowOffset,0.0f));
 		materials->SetAmbientColor(ColorRGBA(params.shadowColor,params.shadowAlpha));
 
-		// shadow width
-		float sdfEndClamped = clamp(r_font_sdf_range.GetFloat()+params.shadowWeight, 0.0f, 1.0f - r_font_sdf_start.GetFloat());
-		sdfRange->SetVector2(Vector2D(r_font_sdf_start.GetFloat()-params.shadowWeight, sdfEndClamped));
+		if (m_flags.sdf)
+		{
+			// shadow width
+			float sdfEndClamped = clamp(r_font_sdf_range.GetFloat() + params.shadowWeight, 0.0f, 1.0f - r_font_sdf_start.GetFloat());
+			sdfRange->SetVector3(Vector3D(r_font_sdf_start.GetFloat() - params.shadowWeight, sdfEndClamped, 0.0f));
+		}
+		else
+			sdfRange->SetVector3(Vector3D(0.0f, 1.0f, 0.0f));
 
 		materials->BindMaterial(fontMaterial);
 
 		mesh->Render();
 	}
 
-	float sdfEndClamped = clamp(r_font_sdf_range.GetFloat() + params.textWeight, 0.0f, 1.0f - r_font_sdf_start.GetFloat());
-	sdfRange->SetVector2(Vector2D(r_font_sdf_start.GetFloat() - params.textWeight, sdfEndClamped));
+	if (m_flags.sdf)
+	{
+		float sdfEndClamped = clamp(r_font_sdf_range.GetFloat() + params.textWeight, 0.0f, 1.0f - r_font_sdf_start.GetFloat());
+		sdfRange->SetVector3(Vector3D(r_font_sdf_start.GetFloat() - params.textWeight, sdfEndClamped, 1.0f));
+	}
+	else
+		sdfRange->SetVector3(Vector3D(0.0f, 1.0f, 1.0f));
 
 	materials->SetAmbientColor(color4_white);
 	materials->SetMatrix(MATRIXMODE_WORLD, identity4());

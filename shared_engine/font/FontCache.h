@@ -53,7 +53,7 @@ public:
 	~CEqFontCache();
 
 	bool					IsInitialized() const {return true;}
-	const char*				GetInterfaceName() const { return ""; }
+	const char*				GetInterfaceName() const { return FONTCACHE_INTERFACE_VERSION; }
 
 	bool					Init();
 	void					Shutdown();
@@ -72,7 +72,7 @@ protected:
 	eqFontFamily_t*			m_defaultFont;
 
 	IMaterial*				m_sdfMaterial;
-	IMatVar*				m_sdfRange;
+	IMatVar*				m_fontParams;
 };
 
 #endif // FONTCACHE_H

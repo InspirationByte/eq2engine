@@ -10,7 +10,7 @@
 BEGIN_SHADER_CLASS(SDFFont)
 	SHADER_INIT_PARAMS()
 	{
-		m_rangeVar = GetAssignedMaterial()->GetMaterialVar("Range", "[0.94 0.95]");
+		m_fontParamsVar = GetAssignedMaterial()->GetMaterialVar("FontParams", "[0.94 0.95, 0, 1]");
 		SetParameterFunctor(SHADERPARAM_COLOR, &ThisShaderClass::SetColorModulation);
 
 		SHADER_PASS(Unlit) = NULL;
@@ -50,7 +50,7 @@ BEGIN_SHADER_CLASS(SDFFont)
 
 		SetupDefaultParameter(SHADERPARAM_COLOR);
 
-		g_pShaderAPI->SetShaderConstantVector2D("SDFRange", m_rangeVar->GetVector2());
+		g_pShaderAPI->SetShaderConstantVector4D("FontParams", m_fontParamsVar->GetVector4());
 	}
 
 	void SetColorModulation()
@@ -64,5 +64,5 @@ BEGIN_SHADER_CLASS(SDFFont)
 
 	SHADER_DECLARE_PASS(Unlit);
 
-	IMatVar*	m_rangeVar;
+	IMatVar*	m_fontParamsVar;
 END_SHADER_CLASS
