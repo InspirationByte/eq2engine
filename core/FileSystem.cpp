@@ -173,6 +173,8 @@ bool CFileSystem::Init(bool bEditorMode)
 		return false;
 	}
 
+	m_basePath = KV_GetValueString(pFilesystem->FindKeyBase("BasePath"), 0, "");
+
 	if(m_basePath.Length() > 0)
 		MsgInfo("* FS Init with basePath=%s\n", m_basePath.GetData());
 
@@ -418,11 +420,7 @@ bool CFileSystem::FileExist(const char* filename, int searchFlags) const
     if (flags == -1)
         flags |= SP_MOD | SP_DATA | SP_ROOT;
 
-    char pFilePath[ MAX_PATH ];
-    strcpy( pFilePath, filename );
-    FixSlashes(pFilePath);
-
-	char tmp_path[2048];
+	EqString tmp_path;
 
 	EqString basePath = m_basePath;
 	if(basePath.Length() > 0)
@@ -433,12 +431,15 @@ bool CFileSystem::FileExist(const char* filename, int searchFlags) const
     {
 		for(int i = 0; i < m_directories.numElem(); i++)
 		{
-			sprintf(tmp_path, "%s%s/%s", basePath.ToCString(), m_directories[i].path.ToCString(), pFilePath);
+			CombinePath(tmp_path, 3, basePath.ToCString(), m_directories[i].path.ToCString(), filename);
+			tmp_path.Path_FixSlashes();
+
 			if (access(tmp_path, F_OK ) != -1)
 				return true;
 
 			// base path is not used when dealing with package files
-			sprintf(tmp_path, "%s/%s", m_directories[i].path.ToCString(), pFilePath);
+			CombinePath(tmp_path, 2, m_directories[i].path.ToCString(), filename);
+			tmp_path.Path_FixSlashes();
 
 			// If failed to load directly, load it from package, in backward order
 			for (int j = m_packages.numElem() - 1; j >= 0; j--)
@@ -454,12 +455,15 @@ bool CFileSystem::FileExist(const char* filename, int searchFlags) const
     //Then we checking data directory
     if (flags & SP_DATA)
     {
-		sprintf(tmp_path, "%s%s/%s", basePath.ToCString(), m_dataDir.ToCString(), pFilePath);
+		CombinePath(tmp_path, 3, basePath.ToCString(), m_dataDir.ToCString(), filename);
+		tmp_path.Path_FixSlashes();
+
 		if (access(tmp_path, F_OK ) != -1)
 			return true;
 
 		// base path is not used when dealing with package files
-		sprintf(tmp_path, "%s/%s", m_dataDir.ToCString(), pFilePath);
+		CombinePath(tmp_path, 2, m_dataDir.ToCString(), filename);
+		tmp_path.Path_FixSlashes();
 
 		// If failed to load directly, load it from package, in backward order
 		for (int j = m_packages.numElem() - 1; j >= 0; j--)
@@ -475,12 +479,15 @@ bool CFileSystem::FileExist(const char* filename, int searchFlags) const
     // not adding basepath to this
     if (flags & SP_ROOT)
     {
-		sprintf(tmp_path, "%s%s", basePath.ToCString(), pFilePath);
+		CombinePath(tmp_path, 2, basePath.ToCString(), filename);
+		tmp_path.Path_FixSlashes();
+
 		if (access(tmp_path, F_OK ) != -1)
 			return true;
 
 		// base path is not used when dealing with package files
-		sprintf(tmp_path, "%s", pFilePath);
+		tmp_path = filename;
+		tmp_path.Path_FixSlashes();
 
 		// If failed to load directly, load it from package, in backward order
 		for (int j = m_packages.numElem() - 1; j >= 0; j--)
@@ -495,68 +502,56 @@ bool CFileSystem::FileExist(const char* filename, int searchFlags) const
 	return false;
 }
 
-void CFileSystem::FileRemove(const char* filename, SearchPath_e search ) const
+EqString CFileSystem::GetSearchPath(SearchPath_e search, int directoryId) const
 {
 	EqString searchPath;
 
-    switch (search)
-    {
+	EqString basePath = m_basePath;
+	if (basePath.Length() > 0)
+		basePath.Append(CORRECT_PATH_SEPARATOR);
+
+	switch (search)
+	{
 		case SP_DATA:
-			searchPath = m_dataDir;
+			CombinePath(searchPath, 2, basePath.ToCString(), m_dataDir.ToCString());
 			break;
 		case SP_MOD:
-			searchPath = GetCurrentGameDirectory(); // Temporary set to data
+			if(directoryId == -1) // default write path
+				CombinePath(searchPath, 2, basePath.ToCString(), GetCurrentGameDirectory());
+			else
+				CombinePath(searchPath, 2, basePath.ToCString(), m_directories[directoryId].path.ToCString());
 			break;
 		case SP_ROOT:
-			searchPath = ".";
+			searchPath = basePath.ToCString();
 			break;
 		default:
 			searchPath = ".";
 			break;
-    }
+	}
 
-    searchPath.Append(_Es("/") + filename);
+	return searchPath;
+}
 
-	// finally!
-	remove(searchPath.GetData());
+void CFileSystem::FileRemove(const char* filename, SearchPath_e search ) const
+{
+	EqString fullPath;
+	CombinePath(fullPath, 2, GetSearchPath(search).ToCString(), filename);
+	fullPath.Path_FixSlashes();
+
+	remove(fullPath.ToCString());
 }
 
 //Directory operations
 void CFileSystem::MakeDir(const char* dirname, SearchPath_e search ) const
 {
-    EqString searchPath;
-
-    switch (search)
-    {
-    case SP_DATA:
-        searchPath = m_dataDir;
-        break;
-    case SP_MOD:
-        searchPath = GetCurrentGameDirectory(); // Temporary set to data
-        break;
-    case SP_ROOT:
-        searchPath = ".";
-        break;
-    default:
-        searchPath = "";
-        break;
-    }
-
-	if(searchPath.Length() > 0)
-		searchPath.Append(_Es(CORRECT_PATH_SEPARATOR) + dirname);
-	else
-		searchPath = dirname;
-
-	if(	!(searchPath.ToCString()[searchPath.Length()-1] == CORRECT_PATH_SEPARATOR  ||
-		searchPath.ToCString()[searchPath.Length()-1] == INCORRECT_PATH_SEPARATOR))
-		searchPath.Append( CORRECT_PATH_SEPARATOR );
-
-	searchPath.Path_FixSlashes();
+	EqString fullPath;
+	CombinePath(fullPath, 2, GetSearchPath(search).ToCString(), dirname);
+	fullPath.Path_FixSlashes();
 
 #ifdef _WIN32
-	_mkdir(searchPath.ToCString());
+	_mkdir(fullPath.ToCString());
 #else
-    mkdir(searchPath.ToCString(),S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+    mkdir(fullPath.ToCString(),S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
 #endif
 }
 
@@ -572,57 +567,29 @@ int unlink_cb(const char *fpath, const struct stat *sb, int typeflag, struct FTW
 
 void CFileSystem::RemoveDir(const char* dirname, SearchPath_e search ) const
 {
-    EqString searchPath;
+	EqString fullPath;
+	CombinePath(fullPath, 2, GetSearchPath(search).ToCString(), dirname);
+	fullPath.Path_FixSlashes();
 
-    switch (search)
-    {
-		case SP_DATA:
-			searchPath = m_dataDir;
-			break;
-		case SP_MOD:
-			searchPath = GetCurrentGameDirectory(); // Temporary set to data
-			break;
-		case SP_ROOT:
-			searchPath = ".";
-			break;
-		default:
-			searchPath = ".";
-			break;
-    }
-
-    searchPath.Append(_Es("/") + dirname);
-
-    rmdir( searchPath.GetData() );
+    rmdir(fullPath.GetData() );
 }
 
 void CFileSystem::Rename(const char* oldNameOrPath, const char* newNameOrPath, SearchPath_e search) const
 {
-	EqString oldName;
+	EqString searchPath = GetSearchPath(search).ToCString();
+	EqString oldFullPath;
+	CombinePath(oldFullPath, 2, GetSearchPath(search).ToCString(), oldNameOrPath);
+	oldFullPath.Path_FixSlashes();
 
-	switch (search)
-	{
-		case SP_DATA:
-			oldName = m_dataDir;
-			break;
-		case SP_MOD:
-			oldName = GetCurrentGameDirectory(); // Temporary set to data
-			break;
-		case SP_ROOT:
-			oldName = ".";
-			break;
-		default:
-			oldName = ".";
-			break;
-	}
+	EqString newFullPath;
+	CombinePath(newFullPath, 2, GetSearchPath(search).ToCString(), newNameOrPath);
+	newFullPath.Path_FixSlashes();
 
-	EqString newName(oldName + _Es("/") + newNameOrPath);
-	oldName.Append(_Es("/") + oldNameOrPath);
-
-	rename(oldName.ToCString(), newName.ToCString());
+	rename(oldFullPath.ToCString(), newFullPath.ToCString());
 }
 
 //Filesystem's check and open file
-IFile* CFileSystem::GetFileHandle(const char* filename,const char* options, int searchFlags )
+IFile* CFileSystem::GetFileHandle(const char* filename, const char* options, int searchFlags )
 {
     int flags = searchFlags;
     if (flags == -1)
@@ -630,11 +597,7 @@ IFile* CFileSystem::GetFileHandle(const char* filename,const char* options, int 
 
 	bool isWrite = (strchr(options, 'w') || strchr(options, 'a') || strchr(options, '+'));
 
-    char pFilePath[ MAX_PATH ];
-    strcpy( pFilePath, filename );
-    FixSlashes(pFilePath);
-
-	char tmp_path[2048];
+	EqString tmp_path;
 
 	EqString basePath = m_basePath;
 	if(basePath.Length() > 0)
@@ -649,7 +612,8 @@ IFile* CFileSystem::GetFileHandle(const char* filename,const char* options, int 
 			if (isWrite && !m_directories[i].mainWritePath)
 				continue;
 
-			sprintf(tmp_path, "%s%s/%s", basePath.ToCString(), m_directories[i].path.ToCString(), pFilePath);
+			CombinePath(tmp_path, 3, basePath.ToCString(), m_directories[i].path.ToCString(), filename);
+			tmp_path.Path_FixSlashes();
 
 			FILE *tmpFile = fopen(tmp_path,options);
 			if (tmpFile)
@@ -667,7 +631,8 @@ IFile* CFileSystem::GetFileHandle(const char* filename,const char* options, int 
 			if (!isWrite)
 			{
 				// base path is not used when dealing with package files
-				sprintf(tmp_path, "%s/%s", m_directories[i].path.ToCString(), pFilePath);
+				CombinePath(tmp_path, 2, m_directories[i].path.ToCString(), filename);
+				tmp_path.Path_FixSlashes();
 
 				// If failed to load directly, load it from package, in backward order
 				for (int j = m_packages.numElem() - 1; j >= 0; j--)
@@ -696,7 +661,8 @@ IFile* CFileSystem::GetFileHandle(const char* filename,const char* options, int 
     //Then we checking data directory
     if (flags & SP_DATA)
     {
-		sprintf(tmp_path, "%s%s/%s", basePath.ToCString(), m_dataDir.ToCString(), pFilePath);
+		CombinePath(tmp_path, 3, basePath.ToCString(), m_dataDir.ToCString(), filename);
+		tmp_path.Path_FixSlashes();
 
         FILE *tmpFile = fopen(tmp_path,options);
         if (tmpFile)
@@ -712,7 +678,8 @@ IFile* CFileSystem::GetFileHandle(const char* filename,const char* options, int 
 		if (!isWrite)
 		{
 			// base path is not used when dealing with package files
-			sprintf(tmp_path, "%s/%s", m_dataDir.ToCString(), pFilePath);
+			CombinePath(tmp_path, 2, m_dataDir.ToCString(), filename);
+			tmp_path.Path_FixSlashes();
 
 			// If failed to load directly, load it from package, in backward order
 			for (int j = m_packages.numElem() - 1; j >= 0; j--)
@@ -741,7 +708,8 @@ IFile* CFileSystem::GetFileHandle(const char* filename,const char* options, int 
     // not adding basepath to this
     if (flags & SP_ROOT)
     {
-		sprintf(tmp_path, "%s%s", basePath.ToCString(), pFilePath);
+		CombinePath(tmp_path, 2, basePath.ToCString(), filename);
+		tmp_path.Path_FixSlashes();
 
         FILE *tmpFile = fopen(tmp_path,options);
 		if (tmpFile)
@@ -755,7 +723,8 @@ IFile* CFileSystem::GetFileHandle(const char* filename,const char* options, int 
 		if (!isWrite)
 		{
 			// base path is not used when dealing with package files
-			sprintf(tmp_path, "%s", pFilePath);
+			tmp_path = filename;
+			tmp_path.Path_FixSlashes();
 
 			// If failed to load directly, load it from package, in backward order
 			for (int j = m_packages.numElem() - 1; j >= 0; j--)

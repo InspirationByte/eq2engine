@@ -144,6 +144,8 @@ public:
 
 protected:
 
+	EqString					GetSearchPath(SearchPath_e search, int directoryId = -1) const;
+
 	// This actually opens file
     IFile*						GetFileHandle(const char* file_name_to_check,const char* options, int searchFlags );
 
