@@ -230,10 +230,17 @@ inline void CEGFInstancer<IT>::Draw( int renderFlags, IEqModel* model )
 			// render model groups that in this body group
 			for(int j = 0; j < modDesc->numGroups; j++)
 			{
+				int materialIndex = modDesc->pGroup(j)->materialIndex;
+				IMaterial* pMaterial = model->GetMaterial(materialIndex);
+
+				// sadly, instancer won't draw any transparent objects due to problems
+				if(pMaterial->GetFlags() & (MATERIAL_FLAG_TRANSPARENT | MATERIAL_FLAG_ADDITIVE | MATERIAL_FLAG_MODULATE))
+					continue;
+
 				//materials->SetSkinningEnabled(true);
 
-				int materialIndex = modDesc->pGroup(j)->materialIndex;
-				materials->BindMaterial( model->GetMaterial(materialIndex), 0);
+				
+				materials->BindMaterial(pMaterial, 0);
 
 				//m_pModel->PrepareForSkinning( m_boneTransforms );
 				model->SetupVBOStream(0);
