@@ -14,8 +14,11 @@ include("sol2/premake5.lua")
 include("bullet2/premake5.lua")
 include("OpenFBX/premake5.lua")
 
--- deprecated but still used
+include("lua54/premake5.lua")
+include("sol2/premake5.lua")
+----[[
 include("lua51/premake5.lua")
+
 usage "oolua"
     includedirs {
 		"./oolua/include"
@@ -31,5 +34,5 @@ usage "oolua"
         libdirs {
 			"./oolua/libs/x86"
 		}
-
+--]]
     

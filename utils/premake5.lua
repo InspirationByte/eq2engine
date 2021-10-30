@@ -107,4 +107,7 @@ project "soundsystem_test"
         files {
 			"soundsystem_test/**.rc"
 		}
+		linkoptions {
+			"/SAFESEH:NO", -- Image Has Safe Exception Handers: No. Because of openal-soft
+		}
 		

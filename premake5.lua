@@ -1,6 +1,7 @@
 -- premake5.lua
 
 require "premake_modules/usage"
+require "premake_modules/android_studio"
 
 -- you can redefine dependencies
 DependencyPath = {
@@ -41,10 +42,10 @@ workspace "Equilibrium2"
 	cppdialect "C++17"	-- required for sol2
     configurations { "Debug", "Release" }
 	linkgroups 'On'
-	platforms { "x64" }
+	platforms { "x86", "x64" }
 	--characterset "ASCII"
 	objdir "build/obj"
-	targetdir "bin/%{cfg.buildcfg}"
+	targetdir "bin%{cfg.platform}/%{cfg.buildcfg}"
 	location "project_%{_ACTION}"
 
     filter "system:linux"
