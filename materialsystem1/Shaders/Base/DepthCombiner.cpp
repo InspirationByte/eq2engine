@@ -39,7 +39,7 @@ BEGIN_SHADER_CLASS(DepthCombiner)
 		// compile without fog
 		SHADER_FIND_OR_COMPILE(Unlit, "DepthCombiner");
 
-		m_depthtest = true;
+		m_depthtest = false;
 		m_depthwrite = false;
 
 		return true;
