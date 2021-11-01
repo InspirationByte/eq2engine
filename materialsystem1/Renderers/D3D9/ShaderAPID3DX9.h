@@ -312,6 +312,9 @@ protected:
 private:
 	static bool					InternalCreateRenderTarget(LPDIRECT3DDEVICE9 dev, CD3D9Texture* tex, int nFlags, const ShaderAPICaps_t& caps);
 	
+	CD3D9Texture*				m_fbColorTexture;
+	CD3D9Texture*				m_fbDepthTexture;
+
 	// Sampler states is not binding same as OpenGL
 	SamplerStateParam_t*		m_pSelectedSamplerStates[MAX_SAMPLERSTATE];
 	SamplerStateParam_t			m_pCurrentSamplerStates[MAX_SAMPLERSTATE];
@@ -371,22 +374,14 @@ private:
 	int							m_nMinPSDirty;
 	int							m_nMaxPSDirty;
 
+	D3DTRANSFORMSTATETYPE		m_nCurrentMatrixMode;
+	D3DCAPS9					m_hCaps;
+	LPDIRECT3DQUERY9			m_pEventQuery;
+
 #ifdef USE_D3DEX
 	LPDIRECT3DDEVICE9EX			m_pD3DDevice;
-	LPDIRECT3DQUERY9			m_pEventQuery;
-	D3DTRANSFORMSTATETYPE		m_nCurrentMatrixMode;
-	LPDIRECT3DSURFACE9			m_pFBColor;
-	LPDIRECT3DSURFACE9			m_pFBDepth;
-	D3DCAPS9					m_hCaps;
 #else
 	LPDIRECT3DDEVICE9			m_pD3DDevice;
-	LPDIRECT3DQUERY9			m_pEventQuery;
-	D3DTRANSFORMSTATETYPE		m_nCurrentMatrixMode;
-
-	LPDIRECT3DSURFACE9			m_pFBColor;
-	LPDIRECT3DSURFACE9			m_pFBDepth;
-
-	D3DCAPS9					m_hCaps;
 #endif
 
 	// the main renderer

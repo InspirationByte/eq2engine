@@ -50,8 +50,8 @@ ShaderAPID3DX9::ShaderAPID3DX9() : ShaderAPI_Base()
 
 	m_pD3DDevice = NULL;
 
-	m_pFBColor = NULL;
-	m_pFBDepth = NULL;
+	m_fbColorTexture = NULL;
+	m_fbDepthTexture = NULL;
 
 	m_nCurrentSrcFactor = BLENDFACTOR_ONE;
 	m_nCurrentDstFactor = BLENDFACTOR_ZERO;
@@ -342,6 +342,9 @@ bool ShaderAPID3DX9::ResetDevice( D3DPRESENT_PARAMETERS &d3dpp )
 		{
 			CD3D9Texture* pTex = (CD3D9Texture*)(m_TextureList[i]);
 
+			if(pTex->GetFlags() & TEXFLAG_FOREIGN)
+				continue;
+
 			bool is_rendertarget = (pTex->GetFlags() & TEXFLAG_RENDERTARGET);
 			bool is_managed = (pTex->GetFlags() & TEXFLAG_MANAGED);
 
@@ -372,29 +375,55 @@ bool ShaderAPID3DX9::ResetDevice( D3DPRESENT_PARAMETERS &d3dpp )
 bool ShaderAPID3DX9::CreateD3DFrameBufferSurfaces()
 {
 	m_pCurrentDepthSurface = NULL;
-	
-	if(!m_pFBColor)
+
+	if(!m_fbColorTexture)
 	{
-		if (m_pD3DDevice->GetRenderTarget(0, &m_pFBColor) != D3D_OK)
-			return false;
+		m_fbColorTexture = new CD3D9Texture();
+		m_fbColorTexture->SetName("rhi_fb_color");
+		m_fbColorTexture->SetDimensions(0, 0);
+		m_fbColorTexture->SetFlags(TEXFLAG_RENDERTARGET | TEXFLAG_FOREIGN | TEXFLAG_NOQUALITYLOD);
+		m_fbColorTexture->Ref_Grab();
+
+		CScopedMutex m(m_Mutex);
+		m_TextureList.append(m_fbColorTexture);
 	}
 
-	if(!m_pFBDepth)
-		m_pD3DDevice->GetDepthStencilSurface(&m_pFBDepth);
+	if (!m_fbDepthTexture)
+	{
+		m_fbDepthTexture = new CD3D9Texture();
+		m_fbDepthTexture->SetName("rhi_fb_depth");
+		m_fbDepthTexture->SetDimensions(0, 0);
+		m_fbDepthTexture->SetFlags(TEXFLAG_RENDERDEPTH | TEXFLAG_FOREIGN | TEXFLAG_NOQUALITYLOD);
+		m_fbDepthTexture->Ref_Grab();
+
+		CScopedMutex m(m_Mutex);
+		m_TextureList.append(m_fbDepthTexture);
+	}
+
+	IDirect3DSurface9* fbColorSurface;
+	if (m_pD3DDevice->GetRenderTarget(0, &fbColorSurface) != D3D_OK)
+		return false;
+
+	m_fbColorTexture->surfaces.setNum(1);
+	m_fbColorTexture->surfaces[0] = fbColorSurface;
+
+	IDirect3DSurface9* fbDepthSurface;
+	if (m_pD3DDevice->GetDepthStencilSurface(&fbDepthSurface) != D3D_OK)
+		return false;
+
+	m_fbDepthTexture->surfaces.setNum(1);
+	m_fbDepthTexture->surfaces[0] = fbDepthSurface;
 
 	return true;
 }
 
 void ShaderAPID3DX9::ReleaseD3DFrameBufferSurfaces()
 {
-	if (m_pFBColor)
-		m_pFBColor->Release();
+	m_fbColorTexture->surfaces[0]->Release();
+	m_fbColorTexture->surfaces.clear();
 
-	if (m_pFBDepth)
-		m_pFBDepth->Release();
-
-	m_pFBColor = NULL;
-	m_pFBDepth = NULL;
+	m_fbDepthTexture->surfaces[0]->Release();
+	m_fbDepthTexture->surfaces.clear();
 }
 
 // Init + Shurdown
@@ -522,9 +551,8 @@ bool ShaderAPID3DX9::IsDeviceActive()
 
 void ShaderAPID3DX9::Shutdown()
 {
-	ShaderAPI_Base::Shutdown();
-
 	ReleaseD3DFrameBufferSurfaces();
+	ShaderAPI_Base::Shutdown();
 
 	if(m_pEventQuery)
 		m_pEventQuery->Release();
@@ -1579,14 +1607,14 @@ void ShaderAPID3DX9::ChangeRenderTargets(ITexture** pRenderTargets, int nNumRTs,
 	{
 		CD3D9Texture* pDepthRenderTarget = (CD3D9Texture*)(pDepthTarget);
 
-		if (pDepthTarget)
+		if (pDepthRenderTarget)
 			bestDepth = pDepthRenderTarget->surfaces[0 /*nDepthSlice ??? */];
 
 		m_pCurrentDepthRenderTarget = pDepthRenderTarget;
 	}
 
 	if(!bestDepth)
-		bestDepth = m_pFBDepth;
+		bestDepth = nullptr;
 
 	if (m_pCurrentDepthSurface != bestDepth)
 	{
@@ -1602,7 +1630,7 @@ void ShaderAPID3DX9::ChangeRenderTargetToBackBuffer()
 	
 	if (m_pCurrentColorRenderTargets[0] != NULL)
 	{
-		m_pD3DDevice->SetRenderTarget(0, m_pFBColor);
+		m_pD3DDevice->SetRenderTarget(0, m_fbColorTexture->surfaces[0]);
 		m_pCurrentColorRenderTargets[0] = NULL;
 	}
 
@@ -1617,7 +1645,7 @@ void ShaderAPID3DX9::ChangeRenderTargetToBackBuffer()
 
 	if (m_pCurrentDepthSurface != NULL)
 	{
-		m_pD3DDevice->SetDepthStencilSurface(m_pFBDepth);
+		m_pD3DDevice->SetDepthStencilSurface(m_fbDepthTexture->surfaces[0]);
 		m_pCurrentDepthSurface = NULL;
 	}
 }
