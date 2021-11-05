@@ -104,22 +104,22 @@ public:
 
 // dll import version
 #	define INTERFACE_SINGLETON(abstractclass, classname, interfacename, localname)			\
-		IEXPORTS void*		_GetDkCoreInterface(const char* pszName);\
-		class _##classname##Singleton : public CSingletonAbstract<abstractclass>	\
-		{	\
-		public:\
-            virtual	~_##classname##Singleton()  { Destroy(); }  \
-		protected:	\
-			void	Initialize()	\
-			{	\
-				if(!pInstance) pInstance = (abstractclass*)_GetDkCoreInterface(interfacename);	\
-			}	\
-			void	Destroy()	\
-			{	\
-				pInstance = NULL;	\
-			}	\
-		};	\
-		static _##classname##Singleton localname IFACE_PRIORITY_EXPORT2;
+		IEXPORTS void* _GetDkCoreInterface(const char* pszName);							\
+		class _##classname##SingletonInstantiator	\
+		{											\
+		public:										\
+			_##classname##SingletonInstantiator()	{ instance = (abstractclass*)_GetDkCoreInterface(interfacename); }	\
+			abstractclass* instance;				\
+		};											\
+		class CDkCoreInterface_##classname			\
+		{											\
+		public:										\
+			abstractclass*	GetInstancePtr()					{ static _##classname##SingletonInstantiator i; return i.instance; } \
+			abstractclass*	operator->()						{ return GetInstancePtr(); }			\
+			operator		abstractclass*()					{ return GetInstancePtr(); }			\
+		};																								\
+		static CDkCoreInterface_##classname localname IFACE_PRIORITY_EXPORT2;
+
 #endif // _DKLAUNCHER_
 
 #endif //INTERFACEMANAGER_H
