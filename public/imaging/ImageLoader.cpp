@@ -1009,7 +1009,8 @@ bool CImage::SaveJPEG(const char *fileName, const int quality)
 	jpeg_create_compress(&cinfo);
 
 	FILE *file;
-	if ((file = fopen(fileName, "wb")) == NULL) return false;
+	if ((file = fopen(fileName, "wb")) == NULL)
+		return false;
 
 	int nChannels = GetChannelCount(m_nFormat);
 

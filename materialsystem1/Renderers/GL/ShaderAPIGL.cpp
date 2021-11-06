@@ -472,27 +472,6 @@ void ShaderAPIGL::ApplyTextures()
 			
 		}
 	}
-
-#pragma todo(GL: vertex  textures)
-	for (i = 0; i < m_caps.maxVertexTextureUnits; i++)
-	{
-		CGLTexture* pTexture = (CGLTexture*)m_pSelectedVertexTextures[i];
-		if (pTexture != m_pCurrentVertexTextures[i])
-		{
-			if (pTexture == NULL)
-			{
-				//m_pD3DDevice->SetTexture(D3DVERTEXTEXTURESAMPLER0 + i, NULL);
-				//m_pSelectedVertexSamplerStates[i] = NULL;
-			}
-			else
-			{
-				//m_pD3DDevice->SetTexture(D3DVERTEXTEXTURESAMPLER0 + i, pTexture->GetCurrentTexture());
-				//m_pSelectedVertexSamplerStates[i] = (SamplerStateParam_t*)&pTexture->GetSamplerState();
-			}
-
-			m_pCurrentVertexTextures[i] = pTexture;
-		}
-	}
 }
 
 void ShaderAPIGL::ApplySamplerState()
@@ -1686,7 +1665,7 @@ void ShaderAPIGL::ChangeVertexBuffer(IVertexBuffer* pVertexBuffer, int nStream, 
 
 	// should be always rebound
 	// TODO: check if it is slow
-	if (pVB != m_pCurrentVertexBuffers[nStream] || offset != m_nCurrentOffsets[nStream] || m_currentGLVB[nStream] != vbo)
+	//if (pVB != m_pCurrentVertexBuffers[nStream] || offset != m_nCurrentOffsets[nStream] || m_currentGLVB[nStream] != vbo)
 	{
 		glBindBuffer(GL_ARRAY_BUFFER, m_currentGLVB[nStream] = vbo);
 		GLCheckError("bind array");
