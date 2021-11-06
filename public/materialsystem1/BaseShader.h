@@ -201,6 +201,8 @@
 	AddManagedShader(&m_pShader##shader);															\
 	}
 
+#define SHADER_FIND_OR_COMPILE_FOG(shader, sname)	SHADER_FIND_OR_COMPILE(shader##_fog, sname)
+
 class CBaseShader;
 
 // this is a special callback for shader parameter binding

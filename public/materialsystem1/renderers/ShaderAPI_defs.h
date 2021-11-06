@@ -291,9 +291,9 @@ enum ER_TextureFlags
 	TEXFLAG_MANAGED					= (1 << 8),		// managed by video driver. Internal.
 	TEXFLAG_RENDERTARGET			= (1 << 9),		// this is a rendertarget texture
 	TEXFLAG_RENDERDEPTH				= (1 << 10),	// rendertarget with depth texture
-	TEXFLAG_FOREIGN					= (1 << 10),	// texture is created not by ShaderAPI
+	TEXFLAG_FOREIGN					= (1 << 11),	// texture is created not by ShaderAPI
 
-	TEXFLAG_NULL_ON_ERROR			= (1 << 11),
+	TEXFLAG_NULL_ON_ERROR			= (1 << 12),
 };
 
 #define MAX_MRTS				8
@@ -477,11 +477,7 @@ struct shaderProgramCompileInfo_t
 	shaderProgramCompileInfo_t() : disableCache(false), apiPrefs(nullptr)
 	{}
 
-	shaderProgramText_t	vs;
-	shaderProgramText_t	ps;
-	shaderProgramText_t	gs;
-	shaderProgramText_t	hs;
-	shaderProgramText_t	ds;
+	shaderProgramText_t data;
 
 	// disables caching, always recompiled
 	bool				disableCache;

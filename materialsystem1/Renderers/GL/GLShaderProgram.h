@@ -23,11 +23,16 @@
 
 struct GLShaderConstant_t
 {
-	char name[MAX_CONSTANT_NAMELEN];
+	char			name[MAX_CONSTANT_NAMELEN];
+
 	ubyte*			data;
+	uint			size;
+	
 	uint			index;
+
 	ER_ConstantType	type;
 	int				nElements;
+
 	bool			dirty;
 };
 

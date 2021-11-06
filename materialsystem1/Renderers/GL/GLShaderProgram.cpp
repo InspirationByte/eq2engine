@@ -35,7 +35,6 @@ CGLShaderProgram::~CGLShaderProgram()
 		glDeleteProgram(m_program);
 		GLCheckError("delete shader program");
 	}
-		
 }
 
 const char* CGLShaderProgram::GetName() const

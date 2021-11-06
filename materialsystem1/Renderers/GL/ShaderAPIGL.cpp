@@ -1686,7 +1686,7 @@ void ShaderAPIGL::ChangeVertexBuffer(IVertexBuffer* pVertexBuffer, int nStream, 
 
 	// should be always rebound
 	// TODO: check if it is slow
-	//if (pVB != m_pCurrentVertexBuffers[nStream] || offset != m_nCurrentOffsets[nStream] || m_currentGLVB[nStream] != vbo)
+	if (pVB != m_pCurrentVertexBuffers[nStream] || offset != m_nCurrentOffsets[nStream] || m_currentGLVB[nStream] != vbo)
 	{
 		glBindBuffer(GL_ARRAY_BUFFER, m_currentGLVB[nStream] = vbo);
 		GLCheckError("bind array");
@@ -1726,23 +1726,23 @@ void ShaderAPIGL::ChangeVertexBuffer(IVertexBuffer* pVertexBuffer, int nStream, 
 
 		glBindBuffer(GL_ARRAY_BUFFER, 0);
 		GLCheckError("unbind array after vattrib");
-	}
 
-	if(pVertexBuffer)
-	{
-		if(!instanceBuffer && m_boundInstanceStream != -1)
-			m_boundInstanceStream = -1;
-		else if(instanceBuffer && m_boundInstanceStream == -1)
-			m_boundInstanceStream = nStream;
-		else if(instanceBuffer && m_boundInstanceStream != -1)
+		if (pVertexBuffer)
 		{
-			ASSERTMSG(false, "Already bound instancing stream at %d!!!");
+			if (!instanceBuffer && m_boundInstanceStream != -1)
+				m_boundInstanceStream = -1;
+			else if (instanceBuffer && m_boundInstanceStream == -1)
+				m_boundInstanceStream = nStream;
+			else if (instanceBuffer && m_boundInstanceStream != -1)
+			{
+				ASSERTMSG(false, "Already bound instancing stream at %d!!!");
+			}
 		}
-	}
 
-	m_pCurrentVertexBuffers[nStream] = pVertexBuffer;
-	m_nCurrentOffsets[nStream] = offset;
-	m_pActiveVertexFormat[nStream] = m_pCurrentVertexFormat;
+		m_pCurrentVertexBuffers[nStream] = pVertexBuffer;
+		m_nCurrentOffsets[nStream] = offset;
+		m_pActiveVertexFormat[nStream] = m_pCurrentVertexFormat;
+	}
 }
 
 // Changes the index buffer
@@ -1813,13 +1813,24 @@ void ShaderAPIGL::DestroyShaderProgram(IShaderProgram* pShaderProgram)
 #define SHADER_HELPERS_STRING \
 	"#define saturate(x) clamp(x,0.0,1.0)\r\n"	\
 	"#define lerp mix\r\n"						\
+	"#define mul(a,b) ((a)*(b))\r\n"			\
+	"#define frac fract\r\n"					\
 	"#define float2 vec2\r\n"					\
 	"#define float3 vec3\r\n"					\
 	"#define float4 vec4\r\n"					\
 	"#define float2x2 mat2\r\n"					\
 	"#define float3x3 mat3\r\n"					\
 	"#define float4x4 mat4\r\n"					\
-	"#define mul(a,b) a*b\r\n"
+	"#define tex2D texture2D\r\n"				\
+	"#define tex3D texture3D\r\n"				\
+	"#define texCUBE textureCube\r\n"			\
+	"#define samplerCUBE samplerCube\r\n"
+
+#define SHADER_HELPERS_STRING_VERTEX	\
+	"float clip(float x) {return 1.0;}\r\n"
+
+#define SHADER_HELPERS_STRING_FRAGMENT	\
+	"#define clip(x) if((x) < 0.0) discard\r\n"
 
 #define GLSL_VERTEX_ATTRIB_START 0	// this is compatibility only
 
@@ -1845,7 +1856,7 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 		return false;
 	}
 
-	if (info.vs.text == NULL && info.ps.text == NULL)
+	if (!info.data.text)
 		return false;
 
 	if(!info.apiPrefs)
@@ -1860,24 +1871,27 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 	int result;
 
 	// compile vertex
-	if(info.vs.text)
+	if(info.data.text)
 	{
 		GLint* pvsResult = &vsResult;
 
 		EqString shaderString;
 
 #if !defined(USE_GLES2)
-		shaderString.Append("#version 120\r\n");
+		shaderString.Append("#version 330\r\n");
+		shaderString.Append("#define VERTEX\r\n");
 		// append useful HLSL replacements
 		shaderString.Append(SHADER_HELPERS_STRING);
+		shaderString.Append(SHADER_HELPERS_STRING_VERTEX);
 #endif // USE_GLES2
 
 		if (extra != NULL)
 			shaderString.Append(extra);
 
-		shaderString.Append(info.vs.text);
-
-		const GLchar* sStr[] = { shaderString.ToCString() };
+		const GLchar* sStr[] = { 
+			shaderString.ToCString(),
+			info.data.text
+		};
 
 		result = glWorker.WaitForExecute(__FUNCTION__, [prog, pvsResult, sStr]() {
 
@@ -1892,7 +1906,7 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 			if (!GLCheckError("create vertex shader"))
 				return -1;
 
-			glShaderSource(prog->m_vertexShader, 1, (const GLchar**)sStr, NULL);
+			glShaderSource(prog->m_vertexShader, sizeof(sStr) / sizeof(sStr[0]), sStr, NULL);
 			glCompileShader(prog->m_vertexShader);
 
 			GLCheckError("compile vert shader");
@@ -1921,8 +1935,8 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 		if (result == -1)
 		{
 			MsgInfo("Shader files dump:");
-			for (int i = 0; i < info.vs.includes.numElem(); i++)
-				MsgInfo("\t%d : %s\n", i + 1, info.vs.includes[i].ToCString());
+			for (int i = 0; i < info.data.includes.numElem(); i++)
+				MsgInfo("\t%d : %s\n", i + 1, info.data.includes[i].ToCString());
 
 			return false;
 		}
@@ -1932,22 +1946,25 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 		return false; // vertex shader is required
 
 	// compile fragment
-	if(info.ps.text)
+	if(info.data.text)
 	{
 		EqString shaderString;
 
 #if !defined(USE_GLES2)
-		shaderString.Append("#version 120\r\n");
+		shaderString.Append("#version 330\r\n");
+		shaderString.Append("#define FRAGMENT\r\n");
 		// append useful HLSL replacements
 		shaderString.Append(SHADER_HELPERS_STRING);
+		shaderString.Append(SHADER_HELPERS_STRING_FRAGMENT);
 #endif // USE_GLES2
 
 		if (extra != NULL)
 			shaderString.Append(extra);
 
-		shaderString.Append(info.ps.text);
-
-		const GLchar* sStr[] = { shaderString.ToCString() };
+		const GLchar* sStr[] = { 
+			shaderString.ToCString(),
+			info.data.text
+		};
 
 		GLint* pfsResult = &fsResult;
 
@@ -1957,7 +1974,7 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 			if (!GLCheckError("create fragment shader"))
 				return -1;
 
-			glShaderSource(prog->m_fragmentShader, 1, (const GLchar**)sStr, NULL);
+			glShaderSource(prog->m_fragmentShader, sizeof(sStr) / sizeof(sStr[0]), sStr, NULL);
 			glCompileShader(prog->m_fragmentShader);
 			glGetShaderiv(prog->m_fragmentShader, GL_COMPILE_STATUS, pfsResult);
 
@@ -1984,8 +2001,8 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 		if (result == -1)
 		{
 			MsgInfo("Shader files dump:");
-			for (int i = 0; i < info.ps.includes.numElem(); i++)
-				MsgInfo("\t%d : %s\n", i + 1, info.ps.includes[i].ToCString());
+			for (int i = 0; i < info.data.includes.numElem(); i++)
+				MsgInfo("\t%d : %s\n", i + 1, info.data.includes[i].ToCString());
 
 			return false;
 		}
@@ -2033,7 +2050,7 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 					GLCheckError("bind attrib");
 				}
 			}
-
+			
 			return 0;
 		});
 
@@ -2182,10 +2199,11 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 
 			for (int i = 0; i < nUniforms; i++)
 			{
-				int constantSize = s_constantTypeSizes[uniforms[i].type] * uniforms[i].nElements;
-				uniforms[i].data = new ubyte[constantSize];
-				memset(uniforms[i].data, 0, constantSize);
-				uniforms[i].dirty = false;
+				GLShaderConstant_t& constant = uniforms[i];
+				constant.size = s_constantTypeSizes[constant.type] * constant.nElements;
+				constant.data = new ubyte[constant.size];
+				memset(constant.data, 0, constant.size);
+				constant.dirty = false;
 			}
 
 			// finally assign
@@ -2235,9 +2253,11 @@ int ShaderAPIGL::SetShaderConstantRaw(const char *pszName, const void *data, int
 		{
 			GLShaderConstant_t *uni = uniforms + currUniform;
 
-			if (memcmp(uni->data, data, nSize))
+			const int maxSize = min(nSize, uni->size);
+
+			if (memcmp(uni->data, data, maxSize))
 			{
-				memcpy(uni->data, data, nSize);
+				memcpy(uni->data, data, maxSize);
 				uni->dirty = true;
 			}
 

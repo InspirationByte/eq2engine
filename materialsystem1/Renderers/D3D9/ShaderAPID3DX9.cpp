@@ -1290,7 +1290,7 @@ bool ShaderAPID3DX9::InternalCreateRenderTarget(LPDIRECT3DDEVICE9 dev, CD3D9Text
 		tex->usage = D3DUSAGE_DEPTHSTENCIL;
 		tex->m_pool = D3DPOOL_DEFAULT;
 
-		DevMsg(DEVMSG_SHADERAPI, "InternalCreateRenderTarget: creating INTZ render target single texture\n");
+		DevMsg(DEVMSG_SHADERAPI, "InternalCreateRenderTarget: creating INTZ render target single texture for %s\n", tex->GetName());
 		if (dev->CreateTexture(tex->GetWidth(), tex->GetHeight(), tex->GetMipCount(), tex->usage, formats[tex->GetFormat()], tex->m_pool, (LPDIRECT3DTEXTURE9*)&pTexture, NULL) != D3D_OK)
 		{
 			MsgError("!!! Couldn't create '%s' INTZ render target with size %d %d\n", tex->GetName(), tex->GetWidth(), tex->GetHeight());
@@ -1308,7 +1308,7 @@ bool ShaderAPID3DX9::InternalCreateRenderTarget(LPDIRECT3DDEVICE9 dev, CD3D9Text
 	}
 	else if (IsDepthFormat(tex->GetFormat()))
 	{
-		DevMsg(DEVMSG_SHADERAPI, "InternalCreateRenderTarget: creating depth/stencil surface\n");
+		DevMsg(DEVMSG_SHADERAPI, "InternalCreateRenderTarget: creating depth/stencil surface for %s\n", tex->GetName());
 
 		LPDIRECT3DSURFACE9 pSurface = NULL;
 
@@ -1327,6 +1327,7 @@ bool ShaderAPID3DX9::InternalCreateRenderTarget(LPDIRECT3DDEVICE9 dev, CD3D9Text
 	{
 		if(nFlags & TEXFLAG_RENDERDEPTH)
 		{
+			DevMsg(DEVMSG_SHADERAPI, "InternalCreateRenderTarget: creating depth for %s\n", tex->GetName());
 			if (dev->CreateDepthStencilSurface(tex->GetWidth(), tex->GetHeight(), D3DFMT_D16,
 				D3DMULTISAMPLE_NONE, 0, TRUE, &tex->m_dummyDepth, NULL) != D3D_OK)
 			{
@@ -1342,7 +1343,7 @@ bool ShaderAPID3DX9::InternalCreateRenderTarget(LPDIRECT3DDEVICE9 dev, CD3D9Text
 
 			LPDIRECT3DBASETEXTURE9 pTexture = NULL;
 
-			DevMsg(DEVMSG_SHADERAPI, "InternalCreateRenderTarget: creating cubemap target\n");
+			DevMsg(DEVMSG_SHADERAPI, "InternalCreateRenderTarget: creating cubemap target for %s\n", tex->GetName());
 			if (dev->CreateCubeTexture(tex->GetWidth(), tex->GetMipCount(), tex->usage, formats[tex->GetFormat()], tex->m_pool, (LPDIRECT3DCUBETEXTURE9 *) &pTexture, NULL) != D3D_OK)
 			{
 				MsgError("!!! Couldn't create '%s' cubemap render target with size %d %d\n", tex->GetName(), tex->GetWidth(), tex->GetHeight());
@@ -1368,7 +1369,7 @@ bool ShaderAPID3DX9::InternalCreateRenderTarget(LPDIRECT3DDEVICE9 dev, CD3D9Text
 
 			tex->m_pool = D3DPOOL_DEFAULT;
 
-			DevMsg(DEVMSG_SHADERAPI, "InternalCreateRenderTarget: creating render target single texture\n");
+			DevMsg(DEVMSG_SHADERAPI, "InternalCreateRenderTarget: creating render target single texture for %s\n", tex->GetName());
 			if (dev->CreateTexture(tex->GetWidth(), tex->GetHeight(), tex->GetMipCount(), tex->usage, formats[tex->GetFormat()], tex->m_pool, (LPDIRECT3DTEXTURE9 *) &pTexture, NULL) != D3D_OK)
 			{
 				MsgError("!!! Couldn't create '%s' render target with size %d %d\n", tex->GetName(), tex->GetWidth(), tex->GetHeight());
@@ -1965,10 +1966,9 @@ ConVar r_skipShaderCache("r_skipShaderCache", "0", "Shader debugging purposes", 
 
 struct shaderCacheHdr_t
 {
-	int		ident;			// DX9S
+	int		ident;			// EQSC
 
-	long	psChecksum;	// file crc32
-	long	vsChecksum;	// file crc32
+	long	checksum;		// file crc32
 
 	int		psSize;
 	int		vsSize;
@@ -1977,7 +1977,7 @@ struct shaderCacheHdr_t
 	int		numSamplers;
 };
 
-#define SHADERCACHE_IDENT		MCHAR4('D','X','9','S')
+#define SHADERCACHE_IDENT		MCHAR4('E','Q','S','C')
 
 // Load any shader from stream
 bool ShaderAPID3DX9::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
@@ -1989,7 +1989,7 @@ bool ShaderAPID3DX9::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 	if(!pShader)
 		return false;
 
-	g_fileSystem->MakeDir("ShaderCache_DX9", SP_MOD);
+	g_fileSystem->MakeDir("ShaderCache_DX9", SP_ROOT);
 
 	EqString cache_file_name(EqString::Format("ShaderCache_DX9/%s.scache", pShaderOutput->GetName()));
 
@@ -1999,7 +1999,7 @@ bool ShaderAPID3DX9::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 
 	if(!(info.disableCache || r_skipShaderCache.GetBool()))
 	{
-		pStream = g_fileSystem->Open(cache_file_name.GetData(), "rb", -1);
+		pStream = g_fileSystem->Open(cache_file_name.GetData(), "rb", SP_ROOT);
 
 		if(pStream)
 		{
@@ -2008,8 +2008,7 @@ bool ShaderAPID3DX9::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 			pStream->Read(&scHdr, 1, sizeof(shaderCacheHdr_t));
 
 			if(	scHdr.ident == SHADERCACHE_IDENT &&
-				scHdr.psChecksum == info.ps.checksum &&
-				scHdr.vsChecksum == info.vs.checksum)
+				scHdr.checksum == info.data.checksum)
 			{
 				// read vertex shader
 				ubyte* pShaderMem = (ubyte*)malloc(scHdr.vsSize);
@@ -2050,9 +2049,9 @@ bool ShaderAPID3DX9::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 		}
 	}
 
-	if(needsCompile && info.vs.text != NULL)
+	if(needsCompile && info.data.text != NULL)
 	{
-		pStream = g_fileSystem->Open( cache_file_name.GetData(), "wb", SP_MOD );
+		pStream = g_fileSystem->Open( cache_file_name.GetData(), "wb", SP_ROOT);
 
 		if(!pStream)
 			MsgError("ERROR: Cannot create shader cache file for %s\n", pShaderOutput->GetName());
@@ -2070,7 +2069,7 @@ bool ShaderAPID3DX9::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 	if(pStream) // write empty header
 		pStream->Write(&scHdr, 1, sizeof(shaderCacheHdr_t));
 
-	if (info.vs.text != NULL)
+	if (info.data.text != NULL)
 	{
 		LPD3DXBUFFER shaderBuf = NULL;
 		LPD3DXBUFFER errorsBuf = NULL;
@@ -2106,7 +2105,7 @@ bool ShaderAPID3DX9::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 		shaderString.Append(EqString::Format("#define COMPILE_VS_%d_0\n", vsVersion));
 
 		//shaderString.Append(EqString::Format("#line %d\n", params.vsLine + 1));
-		shaderString.Append(info.vs.text);
+		shaderString.Append(info.data.text);
 
 		HRESULT compileResult = D3DXCompileShader(shaderString.GetData(), shaderString.Length(),
 			NULL, NULL, 
@@ -2154,7 +2153,7 @@ bool ShaderAPID3DX9::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 		}
 	}
 
-	if (info.ps.text != NULL)
+	if (info.data.text != NULL)
 	{
 		LPD3DXBUFFER shaderBuf = NULL;
 		LPD3DXBUFFER errorsBuf = NULL;
@@ -2190,7 +2189,7 @@ bool ShaderAPID3DX9::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 		shaderString.Append(EqString::Format("#define COMPILE_PS_%d_0\n", psVersion));
 
 		//shaderString.Append(EqString::Format("#line %d\n", params.psLine + 1));
-		shaderString.Append(info.ps.text);
+		shaderString.Append(info.data.text);
 
 		HRESULT compileResult = D3DXCompileShader(
 			shaderString.GetData(), shaderString.Length(),
@@ -2242,8 +2241,7 @@ bool ShaderAPID3DX9::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 	{
 		if(pStream)
 		{
-			scHdr.psChecksum = -1;
-			scHdr.vsChecksum = -1;
+			scHdr.checksum = -1;
 			scHdr.psSize = -1;
 			scHdr.vsSize = -1;
 
@@ -2259,8 +2257,7 @@ bool ShaderAPID3DX9::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 	{
 		if(pStream)
 		{
-			scHdr.psChecksum = -1;
-			scHdr.vsChecksum = -1;
+			scHdr.checksum = -1;
 			scHdr.psSize = -1;
 			scHdr.vsSize = -1;
 
@@ -2363,8 +2360,7 @@ bool ShaderAPID3DX9::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 	{
 		scHdr.numSamplers = nSamplers;
 		scHdr.numConstants = nConstants;
-		scHdr.psChecksum = info.ps.checksum;
-		scHdr.vsChecksum = info.vs.checksum;
+		scHdr.checksum = info.data.checksum;
 
 		pStream->Write(samplers, nSamplers, sizeof(Sampler_t));
 		pStream->Write(constants, nConstants, sizeof(DX9ShaderConstant));
