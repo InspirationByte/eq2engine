@@ -1304,7 +1304,9 @@ void ShaderAPIGL::CopyFramebufferToTexture(ITexture* pTargetTexture)
 // Copy render target to texture
 void ShaderAPIGL::CopyRendertargetToTexture(ITexture* srcTarget, ITexture* destTex, IRectangle* srcRect, IRectangle* destRect)
 {
-	// FIXME: use glCopyTexSubImage2D
+	// BUG BUG:
+	// this process is very bugged as fuck
+	// TODO: double-check main framebuffer attachments from de-attaching
 
 	// store the current rendertarget states
 	ITexture* currentRenderTarget[MAX_MRTS];
