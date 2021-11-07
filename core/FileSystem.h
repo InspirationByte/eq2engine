@@ -144,6 +144,8 @@ public:
 
 protected:
 
+	EqString					GetAbsolutePath(SearchPath_e search, const char* dirOrFileName) const;
+
 	EqString					GetSearchPath(SearchPath_e search, int directoryId = -1) const;
 
 	// This actually opens file

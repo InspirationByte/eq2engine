@@ -303,7 +303,6 @@ bool CGameHost::InitSystems( EQWNDHANDLE pWindow )
 
 	const char* rendererName = matSystemSettings ? KV_GetValueString(matSystemSettings->FindKeyBase("Renderer"), 0, NULL) : "eqD3D9RHI";
 	const char* materialsPath = matSystemSettings ? KV_GetValueString(matSystemSettings->FindKeyBase("MaterialsPath"), 0, NULL) : "materials/";
-	const char* texturePath = matSystemSettings ? KV_GetValueString(matSystemSettings->FindKeyBase("TexturePath"), 0, NULL) : "materials/";
 
 #ifdef _WIN32
 	materials_config.shaderapi_params.windowHandle = winfo.info.win.window;

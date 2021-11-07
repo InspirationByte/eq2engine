@@ -479,7 +479,12 @@ bool CFileSystem::FileExist(const char* filename, int searchFlags) const
     // not adding basepath to this
     if (flags & SP_ROOT)
     {
-		CombinePath(tmp_path, 2, basePath.ToCString(), filename);
+		// check
+		if(filename[0] != CORRECT_PATH_SEPARATOR && !(isalpha(filename[0]) && filename[1] == ':'))
+			CombinePath(tmp_path, 2, basePath.ToCString(), filename);
+		else
+			tmp_path = filename;
+
 		tmp_path.Path_FixSlashes();
 
 		if (access(tmp_path, F_OK ) != -1)
@@ -532,10 +537,23 @@ EqString CFileSystem::GetSearchPath(SearchPath_e search, int directoryId) const
 	return searchPath;
 }
 
-void CFileSystem::FileRemove(const char* filename, SearchPath_e search ) const
+EqString CFileSystem::GetAbsolutePath(SearchPath_e search, const char* dirOrFileName) const
 {
 	EqString fullPath;
-	CombinePath(fullPath, 2, GetSearchPath(search).ToCString(), filename);
+
+	bool isAbsolutePath = (search == SP_ROOT && (dirOrFileName[0] == CORRECT_PATH_SEPARATOR || isalpha(dirOrFileName[0]) && dirOrFileName[1] == ':'));
+
+	if (!isAbsolutePath)
+		CombinePath(fullPath, 2, GetSearchPath(search).ToCString(), dirOrFileName);
+	else
+		fullPath = dirOrFileName;
+
+	return fullPath;
+}
+
+void CFileSystem::FileRemove(const char* filename, SearchPath_e search ) const
+{
+	EqString fullPath = GetAbsolutePath(search, filename);
 	fullPath.Path_FixSlashes();
 
 	remove(fullPath.ToCString());
@@ -544,8 +562,7 @@ void CFileSystem::FileRemove(const char* filename, SearchPath_e search ) const
 //Directory operations
 void CFileSystem::MakeDir(const char* dirname, SearchPath_e search ) const
 {
-	EqString fullPath;
-	CombinePath(fullPath, 2, GetSearchPath(search).ToCString(), dirname);
+	EqString fullPath = GetAbsolutePath(search, dirname);
 	fullPath.Path_FixSlashes();
 
 #ifdef _WIN32
@@ -567,8 +584,9 @@ int unlink_cb(const char *fpath, const struct stat *sb, int typeflag, struct FTW
 
 void CFileSystem::RemoveDir(const char* dirname, SearchPath_e search ) const
 {
-	EqString fullPath;
-	CombinePath(fullPath, 2, GetSearchPath(search).ToCString(), dirname);
+	EqString fullPath = GetAbsolutePath(search, dirname);
+	fullPath.Path_FixSlashes();
+
 	fullPath.Path_FixSlashes();
 
     rmdir(fullPath.GetData() );
@@ -576,13 +594,10 @@ void CFileSystem::RemoveDir(const char* dirname, SearchPath_e search ) const
 
 void CFileSystem::Rename(const char* oldNameOrPath, const char* newNameOrPath, SearchPath_e search) const
 {
-	EqString searchPath = GetSearchPath(search).ToCString();
-	EqString oldFullPath;
-	CombinePath(oldFullPath, 2, GetSearchPath(search).ToCString(), oldNameOrPath);
+	EqString oldFullPath = GetAbsolutePath(search, oldNameOrPath);
 	oldFullPath.Path_FixSlashes();
 
-	EqString newFullPath;
-	CombinePath(newFullPath, 2, GetSearchPath(search).ToCString(), newNameOrPath);
+	EqString newFullPath = GetAbsolutePath(search, newNameOrPath);
 	newFullPath.Path_FixSlashes();
 
 	rename(oldFullPath.ToCString(), newFullPath.ToCString());
@@ -708,7 +723,11 @@ IFile* CFileSystem::GetFileHandle(const char* filename, const char* options, int
     // not adding basepath to this
     if (flags & SP_ROOT)
     {
-		CombinePath(tmp_path, 2, basePath.ToCString(), filename);
+		if (filename[0] != CORRECT_PATH_SEPARATOR && !(isalpha(filename[0]) && filename[1] == ':'))
+			CombinePath(tmp_path, 2, basePath.ToCString(), filename);
+		else
+			tmp_path = filename;
+
 		tmp_path.Path_FixSlashes();
 
         FILE *tmpFile = fopen(tmp_path,options);

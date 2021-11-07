@@ -287,7 +287,13 @@ void InitMatSystem(HWND window)
 		materials_config.shaderapi_params.windowHandle = window;
 		materials_config.shaderapi_params.screenFormat = format;
 
-		bool materialSystemStatus = materials->Init("materials/", "EqD3D9RHI", materials_config);
+		kvkeybase_t* matSystemSettings = GetCore()->GetConfig()->FindKeyBase("MaterialSystem");
+
+		const char* rendererName = matSystemSettings ? KV_GetValueString(matSystemSettings->FindKeyBase("Renderer"), 0, NULL) : "eqD3D9RHI";
+		const char* materialsPath = matSystemSettings ? KV_GetValueString(matSystemSettings->FindKeyBase("MaterialsPath"), 0, NULL) : "materials/";
+
+		bool materialSystemStatus = materials->Init(materialsPath, rendererName, materials_config);
+
 
 		FogInfo_t fog;
 		fog.enableFog = true;
