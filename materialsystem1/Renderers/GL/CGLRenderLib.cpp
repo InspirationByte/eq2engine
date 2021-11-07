@@ -6,6 +6,7 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "CGLRenderLib.h"
+#include "GLSwapChain.h"
 
 #include "core/IConsoleCommands.h"
 #include "core/IDkCore.h"
@@ -58,6 +59,7 @@ ARB_occlusion_query
 */
 
 #include "imaging/ImageLoader.h"
+
 
 HOOK_TO_CVAR(r_screen);
 
@@ -903,7 +905,16 @@ void CGLRenderLib::EndFrame(IEqSwapChain* schain)
 		wgl::SwapIntervalEXT(g_shaderApi.m_params->verticalSyncEnabled ? 1 : 0);
 	}
 
-	SwapBuffers(hdc);
+	HDC drawContext = hdc;
+
+	if(schain)
+	{
+		CGLSwapChain* glSwapChain = (CGLSwapChain*)schain;
+		drawContext = glSwapChain->m_windowDC;
+	}
+
+	//wglMakeCurrent(drawContext, glContext);
+	SwapBuffers(drawContext);
 
 #elif defined(PLAT_LINUX)
 
@@ -1029,19 +1040,33 @@ bool CGLRenderLib::CaptureScreenshot(CImage &img)
 
 void CGLRenderLib::ReleaseSwapChains()
 {
-
+	for (int i = 0; i < m_swapChains.numElem(); i++)
+	{
+		delete m_swapChains[i];
+	}
 }
 
 // creates swap chain
 IEqSwapChain* CGLRenderLib::CreateSwapChain(void* window, bool windowed)
 {
-	return NULL;
+	CGLSwapChain* pNewChain = new CGLSwapChain();
+
+	if (!pNewChain->Initialize((HWND)window, g_shaderApi.m_params->verticalSyncEnabled, windowed))
+	{
+		MsgError("ERROR: Can't create OpenGL swapchain!\n");
+		delete pNewChain;
+		return NULL;
+	}
+
+	m_swapChains.append(pNewChain);
+	return pNewChain;
 }
 
 // destroys a swapchain
 void  CGLRenderLib::DestroySwapChain(IEqSwapChain* swapChain)
 {
-
+	m_swapChains.remove(swapChain);
+	delete swapChain;
 }
 
 // returns default swap chain

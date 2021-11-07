@@ -1638,11 +1638,11 @@ void ShaderAPIGL::ChangeVertexFormat(IVertexFormat* pVertexFormat)
 				glVertexAttribDivisor(i, 0);
 				GLCheckError("divisor");
 			}
-			/*else if (shouldEnable)
+			else if (shouldEnable)
 			{
 				glEnableVertexAttribArray(i);
 				GLCheckError("enable vtx attrib");
-			}*/
+			}
 		}
 
 		m_pCurrentVertexFormat = pVertexFormat;
@@ -1654,68 +1654,53 @@ void ShaderAPIGL::ChangeVertexBuffer(IVertexBuffer* pVertexBuffer, int nStream, 
 {
 	CVertexBufferGL* pVB = (CVertexBufferGL*)pVertexBuffer;
 	GLuint vbo = pVB ? pVB->GetCurrentBuffer() : 0;
+	CVertexFormatGL* currentFormat = (CVertexFormatGL*)m_pCurrentVertexFormat;
 
-#ifdef USE_GLES2
 	const GLsizei glTypes[] = {
 		GL_FLOAT,
 		GL_HALF_FLOAT,
 		GL_UNSIGNED_BYTE,
 	};
-#else
-	const GLsizei glTypes[] = {
-		GL_FLOAT,
-		GL_HALF_FLOAT,
-		GL_UNSIGNED_BYTE,
-	};
-#endif // USE_GLES2
 
 	bool instanceBuffer = (nStream > 0) && pVB != nullptr && (pVB->GetFlags() & VERTBUFFER_FLAG_INSTANCEDATA);
+	bool vboChanged = m_currentGLVB[nStream] != vbo;
 
-	// should be always rebound
-	// TODO: check if it is slow
-	//if (pVB != m_pCurrentVertexBuffers[nStream] || offset != m_nCurrentOffsets[nStream] || m_currentGLVB[nStream] != vbo || instanceBuffer && m_boundInstanceStream != nStream)
+	bool instancingChanged = !instanceBuffer && m_boundInstanceStream == nStream ||
+							  instanceBuffer && m_boundInstanceStream != nStream;
+
+	if (vboChanged || offset != m_nCurrentOffsets[nStream] || m_pCurrentVertexFormat != m_pActiveVertexFormat[nStream] ||
+		instanceBuffer && m_boundInstanceStream != nStream)
 	{
 		glBindBuffer(GL_ARRAY_BUFFER, m_currentGLVB[nStream] = vbo);
 		GLCheckError("bind array");
 
-		CVertexFormatGL* currentFormat = (CVertexFormatGL*)m_pCurrentVertexFormat;
-
-		if (currentFormat != NULL)
+		if (currentFormat)
 		{
-			int vertexSize = currentFormat->m_streamStride[nStream];
+			const int vertexSize = currentFormat->m_streamStride[nStream];
 
-			char* base = (char*)(offset * vertexSize);
+			const char* base = (char*)(offset * vertexSize);
 
 			for (int i = 0; i < m_caps.maxVertexGenericAttributes; i++)
 			{
-				eqGLVertAttrDesc_t& attrib = currentFormat->m_genericAttribs[i];
+				const eqGLVertAttrDesc_t& attrib = currentFormat->m_genericAttribs[i];
 
-				if (attrib.streamId != nStream)
-					continue;
-
-				if (attrib.sizeInBytes)
+				if (attrib.streamId == nStream && attrib.sizeInBytes)
 				{
-					// enable this attribute first
-					glEnableVertexAttribArray(i);
-					GLCheckError("enable vtx attrib");
-
 					glVertexAttribPointer(i, attrib.sizeInBytes, glTypes[attrib.attribFormat], GL_FALSE, vertexSize, base + attrib.offsetInBytes);
 					GLCheckError("attribpointer");
 
-					// instance vertex attrib divisor
-					int selStreamParam = instanceBuffer ? 1 : 0;
-
-					glVertexAttribDivisor(i, selStreamParam);
+					glVertexAttribDivisor(i, instanceBuffer ? 1 : 0);
 					GLCheckError("divisor");
 				}
 			}
 		}
 
-		glBindBuffer(GL_ARRAY_BUFFER, 0);
-		GLCheckError("unbind array after vattrib");
+		m_pCurrentVertexBuffers[nStream] = pVertexBuffer;
+		m_nCurrentOffsets[nStream] = offset;
+		m_pActiveVertexFormat[nStream] = m_pCurrentVertexFormat;
 	}
 
-	if (pVertexBuffer)
+	if(pVertexBuffer)
 	{
 		if (!instanceBuffer && m_boundInstanceStream != -1)
 			m_boundInstanceStream = -1;
@@ -1723,13 +1708,9 @@ void ShaderAPIGL::ChangeVertexBuffer(IVertexBuffer* pVertexBuffer, int nStream, 
 			m_boundInstanceStream = nStream;
 		else if (instanceBuffer && m_boundInstanceStream != -1)
 		{
-			ASSERTMSG(false, "Already bound instancing stream at %d!!!");
+			ASSERTMSG(false, EqString::Format("Already bound instancing stream at %d!!!", m_boundInstanceStream));
 		}
 	}
-
-	m_pCurrentVertexBuffers[nStream] = pVertexBuffer;
-	m_nCurrentOffsets[nStream] = offset;
-	m_pActiveVertexFormat[nStream] = m_pCurrentVertexFormat;
 }
 
 // Changes the index buffer
