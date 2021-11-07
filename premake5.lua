@@ -44,8 +44,8 @@ workspace "Equilibrium2"
 	linkgroups 'On'
 	platforms { "x86", "x64" }
 	--characterset "ASCII"
-	objdir "build/obj"
-	targetdir "bin%{cfg.platform}/%{cfg.buildcfg}"
+	objdir "build"
+	targetdir "bin/%{cfg.platform}/%{cfg.buildcfg}"
 	location "project_%{_ACTION}"
 
     filter "system:linux"
