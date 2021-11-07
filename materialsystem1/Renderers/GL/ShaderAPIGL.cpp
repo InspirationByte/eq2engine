@@ -692,7 +692,7 @@ void ShaderAPIGL::ApplyRasterizerState()
 			{
 				if(m_fCurrentDepthBias != state.depthBias || m_fCurrentSlopeDepthBias != state.slopeDepthBias)
 				{
-					const float POLYGON_OFFSET_SCALE = 32.0f;	// FIXME: is a depth buffer bit depth?
+					const float POLYGON_OFFSET_SCALE = 320.0f;	// FIXME: is a depth buffer bit depth?
 
 					glEnable(GL_POLYGON_OFFSET_FILL);
 					glPolygonOffset((m_fCurrentDepthBias = state.depthBias) * POLYGON_OFFSET_SCALE, (m_fCurrentSlopeDepthBias = state.slopeDepthBias) * POLYGON_OFFSET_SCALE);
@@ -1791,16 +1791,20 @@ void ShaderAPIGL::DestroyShaderProgram(IShaderProgram* pShaderProgram)
 	"#define float2x2 mat2\r\n"					\
 	"#define float3x3 mat3\r\n"					\
 	"#define float4x4 mat4\r\n"					\
-	"#define tex2D texture2D\r\n"				\
-	"#define tex3D texture3D\r\n"				\
-	"#define texCUBE textureCube\r\n"			\
+	"#define tex2D texture\r\n"					\
+	"#define tex3D texture\r\n"					\
+	"#define texCUBE texture\r\n"				\
 	"#define samplerCUBE samplerCube\r\n"
 
 #define SHADER_HELPERS_STRING_VERTEX	\
-	"float clip(float x) {return 1.0;}\r\n"
+	"float clip(float x) {return 1.0;}\r\n" \
+	"#define ddx(x) (x)\r\n"				\
+	"#define ddy(x) (x)\r\n"
 
 #define SHADER_HELPERS_STRING_FRAGMENT	\
-	"#define clip(x) if((x) < 0.0) discard\r\n"
+	"#define clip(x) if((x) < 0.0) discard\r\n" \
+	"#define ddx dFdx\r\n"						\
+	"#define ddy dFdy\r\n"
 
 #define GLSL_VERTEX_ATTRIB_START 0	// this is compatibility only
 
