@@ -2457,6 +2457,9 @@ void ShaderAPIGL::DrawIndexedPrimitives(ER_PrimitiveType nType, int nFirstIndex,
 {
 	ASSERT(nVertices > 0);
 
+	if(nIndices <= 2)
+		return;
+
 	if (!m_pCurrentIndexBuffer)
 		return;
 
@@ -2485,6 +2488,9 @@ void ShaderAPIGL::DrawIndexedPrimitives(ER_PrimitiveType nType, int nFirstIndex,
 void ShaderAPIGL::DrawNonIndexedPrimitives(ER_PrimitiveType nType, int nFirstVertex, int nVertices)
 {
 	if(m_pCurrentVertexFormat == NULL)
+		return;
+
+	if (nVertices <= 2)
 		return;
 
 	int nTris = g_pGLPrimCounterCallbacks[nType](nVertices);
