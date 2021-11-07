@@ -182,7 +182,7 @@ bool CEngineStudioEGF::PrepareForSkinning(Matrix4x4* jointMatrices)
 		}
 
 		//g_pShaderAPI->SetVertexShaderConstantVector4DArray(100, (Vector4D*)&bquats[0].quat, m_hwdata->studio->numBones*2);
-		g_pShaderAPI->SetShaderConstantArrayVector4D("Bones", (Vector4D*)&bquats[0].quat, m_hwdata->studio->numBones * 2);
+		g_pShaderAPI->SetShaderConstantArrayVector4D("Bones", (Vector4D*)&bquats[0].quat, numBones * 2);
 
 		return true;
 	}

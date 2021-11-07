@@ -459,13 +459,13 @@ void ShaderAPIGL::ApplyTextures()
 
 			if (pSelectedTexture == NULL)
 			{
-				if(pCurrentTexture != NULL)
-					glBindTexture(glTexTargetType[currentGLTexture.type], 0);
+				//if(pCurrentTexture != NULL)
+				glBindTexture(glTexTargetType[currentGLTexture.type], 0);
 			}
 			else
 			{
 				currentGLTexture = pSelectedTexture->GetCurrentTexture();
-				glBindTexture(pSelectedTexture->glTarget, currentGLTexture.glTexID);
+				glBindTexture(glTexTargetType[currentGLTexture.type], currentGLTexture.glTexID);
 			}
 
 			m_pCurrentTextures[i] = pSelectedTexture;
@@ -1630,7 +1630,7 @@ void ShaderAPIGL::ChangeVertexFormat(IVertexFormat* pVertexFormat)
 				glVertexAttribDivisor(i, 0);
 				GLCheckError("divisor");
 			}
-			/*else if(shouldEnable)
+			/*else if (shouldEnable)
 			{
 				glEnableVertexAttribArray(i);
 				GLCheckError("enable vtx attrib");
@@ -1665,7 +1665,7 @@ void ShaderAPIGL::ChangeVertexBuffer(IVertexBuffer* pVertexBuffer, int nStream, 
 
 	// should be always rebound
 	// TODO: check if it is slow
-	//if (pVB != m_pCurrentVertexBuffers[nStream] || offset != m_nCurrentOffsets[nStream] || m_currentGLVB[nStream] != vbo)
+	//if (pVB != m_pCurrentVertexBuffers[nStream] || offset != m_nCurrentOffsets[nStream] || m_currentGLVB[nStream] != vbo || instanceBuffer && m_boundInstanceStream != nStream)
 	{
 		glBindBuffer(GL_ARRAY_BUFFER, m_currentGLVB[nStream] = vbo);
 		GLCheckError("bind array");
@@ -1676,7 +1676,7 @@ void ShaderAPIGL::ChangeVertexBuffer(IVertexBuffer* pVertexBuffer, int nStream, 
 		{
 			int vertexSize = currentFormat->m_streamStride[nStream];
 
-			char* base = (char *)(offset * vertexSize);			
+			char* base = (char*)(offset * vertexSize);
 
 			for (int i = 0; i < m_caps.maxVertexGenericAttributes; i++)
 			{
@@ -1685,14 +1685,14 @@ void ShaderAPIGL::ChangeVertexBuffer(IVertexBuffer* pVertexBuffer, int nStream, 
 				if (attrib.streamId != nStream)
 					continue;
 
-				if(attrib.sizeInBytes)
+				if (attrib.sizeInBytes)
 				{
 					// enable this attribute first
 					glEnableVertexAttribArray(i);
 					GLCheckError("enable vtx attrib");
 
 					glVertexAttribPointer(i, attrib.sizeInBytes, glTypes[attrib.attribFormat], GL_FALSE, vertexSize, base + attrib.offsetInBytes);
-					GLCheckError("attribpointer"); 
+					GLCheckError("attribpointer");
 
 					// instance vertex attrib divisor
 					int selStreamParam = instanceBuffer ? 1 : 0;
@@ -1705,23 +1705,23 @@ void ShaderAPIGL::ChangeVertexBuffer(IVertexBuffer* pVertexBuffer, int nStream, 
 
 		glBindBuffer(GL_ARRAY_BUFFER, 0);
 		GLCheckError("unbind array after vattrib");
-
-		if (pVertexBuffer)
-		{
-			if (!instanceBuffer && m_boundInstanceStream != -1)
-				m_boundInstanceStream = -1;
-			else if (instanceBuffer && m_boundInstanceStream == -1)
-				m_boundInstanceStream = nStream;
-			else if (instanceBuffer && m_boundInstanceStream != -1)
-			{
-				ASSERTMSG(false, "Already bound instancing stream at %d!!!");
-			}
-		}
-
-		m_pCurrentVertexBuffers[nStream] = pVertexBuffer;
-		m_nCurrentOffsets[nStream] = offset;
-		m_pActiveVertexFormat[nStream] = m_pCurrentVertexFormat;
 	}
+
+	if (pVertexBuffer)
+	{
+		if (!instanceBuffer && m_boundInstanceStream != -1)
+			m_boundInstanceStream = -1;
+		else if (instanceBuffer && m_boundInstanceStream == -1)
+			m_boundInstanceStream = nStream;
+		else if (instanceBuffer && m_boundInstanceStream != -1)
+		{
+			ASSERTMSG(false, "Already bound instancing stream at %d!!!");
+		}
+	}
+
+	m_pCurrentVertexBuffers[nStream] = pVertexBuffer;
+	m_nCurrentOffsets[nStream] = offset;
+	m_pActiveVertexFormat[nStream] = m_pCurrentVertexFormat;
 }
 
 // Changes the index buffer
@@ -2101,18 +2101,15 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 				if (type >= GL_SAMPLER_1D && type <= GL_SAMPLER_2D_RECT_SHADOW)
 	#endif // USE_GLES3
 				{
-					GLShaderSampler_t* sp = &samplers[nSamplers];
-					ASSERTMSG(sp, "WHAT?");
-
 					// Assign samplers to image units
 					GLint location = glGetUniformLocation(prog->m_program, tmpName);
 					glUniform1i(location, nSamplers);
 
 					DevMsg(DEVMSG_SHADERAPI, "[DEBUG] retrieving sampler '%s' at %d (location = %d)\n", tmpName, nSamplers, location);
 
-					sp->index = nSamplers;
-					strcpy(sp->name, tmpName);
-					nSamplers++;
+					GLShaderSampler_t& sp = samplers[nSamplers];
+					sp.index = nSamplers++;
+					strcpy(sp.name, tmpName);
 				}
 				else
 				{
@@ -2121,36 +2118,53 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 					{
 						DevMsg(DEVMSG_SHADERAPI, "[DEBUG] retrieving uniform '%s' at %d\n", tmpName, nUniforms);
 
-						char *bracket = strchr(tmpName, '[');
+						// also cut off name at the bracket
+						char* bracket = strchr(tmpName, '[');
 						if (bracket == NULL || (bracket[1] == '0' && bracket[2] == ']'))
 						{
 							if (bracket)
-							{
-								*bracket = '\0';
-								length = (GLint) (bracket - tmpName);
-							}
+								length = (GLint)(bracket - tmpName);
 
-							uniforms[nUniforms].index = glGetUniformLocation(prog->m_program, tmpName);
-							uniforms[nUniforms].type = GetConstantType(type);
-							uniforms[nUniforms].nElements = size;
-							strcpy(uniforms[nUniforms].name, tmpName);
-							nUniforms++;
-						}
-						else if (bracket != NULL && bracket[1] > '0')
-						{
-							*bracket = '\0';
-							for (int j = nUniforms - 1; j >= 0; j--)
+							GLShaderConstant_t& uni = uniforms[nUniforms++];
+
+							EqString uniformName(tmpName, length);
+
+							strcpy(uni.name, uniformName);
+							uni.index = glGetUniformLocation(prog->m_program, tmpName);
+							uni.type = GetConstantType(type);
+							
+							int totalElements = 1;
+
+							// detect the array size by getting next valid uniforms
+							if (bracket)
 							{
-								if (strcmp(uniforms[i].name, tmpName) == 0)
+								for (int j = i + 1; j < uniformCount; j++)
 								{
-									int index = atoi(bracket + 1) + 1;
-									if (index > uniforms[j].nElements)
+									GLint tmpLength, tmpSize;
+									GLenum tmpType;
+									glGetActiveUniform(prog->m_program, j, maxLength, &tmpLength, &tmpSize, &tmpType, tmpName);
+
+									// we only expect arrays
+									bracket = strchr(tmpName, '[');
+									if(bracket)
 									{
-										uniforms[j].nElements = index;
+										*bracket = '\0';
+										if(!uniformName.Compare(tmpName))
+											totalElements++;
+										else
+											break;
+									}
+									else
+									{
+										break;
 									}
 								}
-							}
-						} // bracket
+
+								i += totalElements-1;
+							} // bracket
+
+							uni.nElements = size * totalElements;
+						}
 					} // cmp != "gl_"
 				}// Sampler types?
 			}
@@ -2759,10 +2773,11 @@ int ShaderAPIGL::GetSamplerUnit(CGLShaderProgram* prog, const char* samplerName)
 void ShaderAPIGL::SetTexture( ITexture* pTexture, const char* pszName, int index )
 {
 	int unit = GetSamplerUnit((CGLShaderProgram*)m_pSelectedShader, pszName);
+
 	if (unit >= 0)
-		SetTextureOnIndex(pTexture, unit);
-	else
-		SetTextureOnIndex(pTexture, index);
+		index = unit;
+
+	SetTextureOnIndex(pTexture, index);
 }
 
 //----------------------------------------------------------------------------------------
