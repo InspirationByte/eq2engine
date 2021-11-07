@@ -1284,6 +1284,10 @@ void ShaderAPIGL::CopyFramebufferToTexture(ITexture* pTargetTexture)
 	glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_frameBuffer);
 
+	// FIXME: this could lead to regression problem, so states must be revisited
+	glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, GL_NONE);
+	glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_TEXTURE_2D, GL_NONE);
+
 	glBlitFramebuffer(0, 0, m_nViewportWidth, m_nViewportHeight, 0, 0, pTargetTexture->GetWidth(), pTargetTexture->GetHeight(), GL_COLOR_BUFFER_BIT, GL_NEAREST);
 
 	glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
@@ -1341,6 +1345,10 @@ void ShaderAPIGL::CopyRendertargetToTexture(ITexture* srcTarget, ITexture* destT
 		_destRect = *destRect;
 
 	glBindFramebuffer(GL_FRAMEBUFFER, m_frameBuffer);
+
+	// FIXME: this could lead to regression problem, so states must be revisited
+	glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, GL_NONE);
+	glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_TEXTURE_2D, GL_NONE);
 
 	// setup read from texture
 	glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, srcTexture->textures[0].glTexID, 0);
