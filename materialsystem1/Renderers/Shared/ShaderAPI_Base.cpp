@@ -1062,7 +1062,7 @@ bool ShaderAPI_Base::LoadShadersFromFile(IShaderProgram* pShaderOutput, const ch
 		bool psRequiried = false;
 		bool gsRequiried = false;
 
-		shaderProgramCompileInfo_t info;
+		shaderProgramCompileInfo_t& info = jobData->info;
 
 		// Load KeyValues
 		KeyValues pKv;
@@ -1129,12 +1129,17 @@ bool ShaderAPI_Base::LoadShadersFromFile(IShaderProgram* pShaderOutput, const ch
 			info.data.checksum = CRC32_BlockChecksum(info.data.text, strlen(info.data.text));
 
 		// compile the shaders
-		jobData->thisShaderAPI->CompileShadersFromStream( jobData->program, info, jobData->extra );
+		jobData->thisShaderAPI->CompileShadersFromStream(jobData->program, jobData->info, jobData->extra);
+
 	};
 
 	job->base.onComplete = [](eqParallelJob_t* job)
 	{
 		shaderCompileJob_t* jobData = (shaderCompileJob_t*)job;
+
+		// compile the shaders
+		//jobData->thisShaderAPI->CompileShadersFromStream(jobData->program, jobData->info, jobData->extra);
+
 		jobData->program->Ref_Drop();
 
 		PPFree(jobData->info.data.text);

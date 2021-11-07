@@ -721,7 +721,9 @@ void ShaderAPIGL::ApplyShaderProgram()
 
 	if (selectedShader != m_pCurrentShader)
 	{
-		glUseProgram(selectedShader ? selectedShader->m_program : 0);
+		GLhandleARB program = selectedShader ? selectedShader->m_program : 0;
+
+		glUseProgram(program);
 		m_pCurrentShader = selectedShader;
 	}
 }
@@ -1833,12 +1835,6 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 	if (!info.data.text)
 		return false;
 
-	if(!info.apiPrefs)
-	{
-		MsgError("Shader %s error: missing %s api preferences\n", pShaderOutput->GetName(), GetRendererName());
-		return false;
-	}
-
 	CGLShaderProgram* prog = (CGLShaderProgram*)pShaderOutput;
 	GLint vsResult, fsResult, linkResult;
 
@@ -1995,39 +1991,6 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 
 		EGraphicsVendor vendor = m_vendor;
 
-		glWorker.WaitForExecute(__FUNCTION__, [prog, pInfo, plinkResult, vendor, currProgram]() {
-			for (int i = 0; i < pInfo->apiPrefs->keys.numElem(); i++)
-			{
-				kvkeybase_t* kp = pInfo->apiPrefs->keys[i];
-
-				if (!stricmp(kp->name, "attribute"))
-				{
-					const char* nameStr = KV_GetValueString(kp, 0, "INVALID");
-					const char* locationStr = KV_GetValueString(kp, 1, "TYPE_TEXCOORD");
-
-					int attribIndex = 0;	// all generic starts here
-
-					// if starts with digit - this is an index
-					if (isdigit(*locationStr))
-					{
-						attribIndex = atoi(locationStr) + GLSL_VERTEX_ATTRIB_START;
-					}
-					else
-					{
-						// TODO: find corresponding attribute index for string types:
-						// VERTEX0-VERTEX3	(4 parallel vertex buffers)
-						// TEXCOORD0 - 7
-					}
-
-					// bind attribute
-					glBindAttribLocation(prog->m_program, attribIndex, nameStr);
-					GLCheckError("bind attrib");
-				}
-			}
-			
-			return 0;
-		});
-
 		result = glWorker.WaitForExecute(__FUNCTION__, [prog, pInfo, plinkResult, vendor, currProgram]() {
 			// link program and go
 			glLinkProgram(prog->m_program);
@@ -2045,10 +2008,6 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 				return -1;
 			}
 
-			return 0;
-		});
-
-		result = glWorker.WaitForExecute(__FUNCTION__, [prog, pInfo, plinkResult, vendor, currProgram]() {
 			// use freshly generated program to retirieve constants (uniforms) and samplers
 			glUseProgram(prog->m_program);
 

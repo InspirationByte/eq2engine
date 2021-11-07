@@ -423,6 +423,8 @@ void CMaterialSystem::InitDefaultMaterial()
 
 		m_overdrawMaterial = pMaterial;
 	}
+
+	Platform_Sleep(250);
 }
 
 bool CMaterialSystem::IsInStubMode()
