@@ -144,6 +144,8 @@ int GLWorkerThread::AddWork(const char* name, std::function<int()> f, bool block
 	if (blocking && thisThreadId == g_shaderApi.m_mainThreadId) // not required for main thread
 		return (f)();
 
+	ASSERT(f);
+
 	work_t* work = new work_t(name, f, m_workCounter++, blocking);
 
 	// chain link
@@ -180,9 +182,9 @@ int GLWorkerThread::Run()
 			}
 		}
 
-		if (currentWork)
+		if (currentWork && currentWork->func) // is that a bug?
 		{
-			DevMsg(DEVMSG_SHADERAPI,"BeginAsyncOperation for %s (workId %d)\n", currentWork->name, currentWork->workId);
+			DevMsg(DEVMSG_SHADERAPI, "BeginAsyncOperation for %s (workId %d)\n", currentWork->name, currentWork->workId);
 			g_shaderApi.BeginAsyncOperation(GetThreadID());
 
 			// run work
