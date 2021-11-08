@@ -21,10 +21,9 @@ ConVar r_debug_showbone("r_debug_showbone", "-1", "Shows the bone", CV_CHEAT);
 
 ConVar r_ik_iterations("r_ik_iterations", "100", "IK link iterations per update", CV_ARCHIVE);
 
-inline Matrix4x4 CalculateLocalBonematrix(const animframe_t &frame)
+inline Matrix4x4 CalculateLocalBonematrix(const qanimframe_t &frame)
 {
-	Matrix4x4 bonetransform(Quaternion(frame.angBoneAngles.x, frame.angBoneAngles.y, frame.angBoneAngles.z));
-	//bonetransform.setRotation();
+	Matrix4x4 bonetransform(frame.angBoneAngles);
 	bonetransform.setTranslation(frame.vecBonePosition);
 
 	return bonetransform;
@@ -64,41 +63,37 @@ inline void ComputeAnimationBlend(int numWeights, float blendrange[2], float ble
 }
 
 // interpolates frame transform
-inline void InterpolateFrameTransform(const animframe_t &frame1, const animframe_t &frame2, float value, animframe_t &out)
+inline void InterpolateFrameTransform(const qanimframe_t&frame1, const qanimframe_t&frame2, float value, qanimframe_t&out)
 {
-	Quaternion q1(frame1.angBoneAngles.x, frame1.angBoneAngles.y, frame1.angBoneAngles.z);
-	Quaternion q2(frame2.angBoneAngles.x, frame2.angBoneAngles.y, frame2.angBoneAngles.z);
+	Quaternion q1(frame1.angBoneAngles);
+	Quaternion q2(frame2.angBoneAngles);
 
-	Quaternion finQuat = slerp(q1, q2, value);
-
-	out.angBoneAngles = eulersXYZ(finQuat);
+	out.angBoneAngles = slerp(q1, q2, value);
 	out.vecBonePosition = lerp(frame1.vecBonePosition, frame2.vecBonePosition, value);
 }
 
 // adds transform TODO: Quaternion rotation
-inline void AddFrameTransform(const animframe_t &frame1, const animframe_t &frame2, animframe_t &out)
+inline void AddFrameTransform(const qanimframe_t&frame1, const qanimframe_t&frame2, qanimframe_t&out)
 {
-	out.angBoneAngles = frame1.angBoneAngles + frame2.angBoneAngles;
+	out.angBoneAngles = frame1.angBoneAngles * frame2.angBoneAngles;
 	out.vecBonePosition = frame1.vecBonePosition + frame2.vecBonePosition;
 }
 
 // adds and multiplies transform
-inline void AddMultiplyFrameTransform(const animframe_t &frame1, const animframe_t &frame2, animframe_t &out)
+inline void AddMultiplyFrameTransform(const qanimframe_t&frame1, const qanimframe_t&frame2, qanimframe_t&out)
 {
-	Quaternion q1(frame1.angBoneAngles.x, frame1.angBoneAngles.y, frame1.angBoneAngles.z);
-	Quaternion q2(frame2.angBoneAngles.x, frame2.angBoneAngles.y, frame2.angBoneAngles.z);
+	Quaternion q1(frame1.angBoneAngles);
+	Quaternion q2(frame2.angBoneAngles);
 
-	Quaternion finQuat = q1 * q2;
-
-	out.angBoneAngles = eulersXYZ(finQuat);
+	out.angBoneAngles = q1 * q2;
 
 	out.vecBonePosition = frame1.vecBonePosition + frame2.vecBonePosition;
 }
 
 // zero frame
-inline void ZeroFrameTransform(animframe_t &frame)
+inline void ZeroFrameTransform(qanimframe_t&frame)
 {
-	frame.angBoneAngles = vec3_zero;
+	frame.angBoneAngles = identity();
 	frame.vecBonePosition = vec3_zero;
 }
 
@@ -117,12 +112,6 @@ void CAnimatingEGF::DestroyAnimating()
 {
 	m_seqList.clear();
 	m_poseControllers.clear();
-
-	for (int i = 0; i < m_ikChains.numElem(); i++)
-	{
-		PPFree(m_ikChains[i]->links);
-		delete m_ikChains[i];
-	}
 
 	m_ikChains.clear();
 
@@ -159,11 +148,11 @@ void CAnimatingEGF::InitAnimating(IEqModel* model)
 	for (int i = 0; i < m_numBones; i++)
 		m_boneTransforms[i] = m_joints[i].absTrans;
 
-	m_transitionFrames = PPAllocStructArray(animframe_t, m_numBones);
-	memset(m_transitionFrames, 0, sizeof(animframe_t)*m_numBones);
+	m_transitionFrames = PPAllocStructArray(qanimframe_t, m_numBones);
+	memset(m_transitionFrames, 0, sizeof(qanimframe_t)*m_numBones);
 
-	//m_velocityFrames = PPAllocStructArray(animframe_t, m_numBones);
-	//memset(m_velocityFrames, 0, sizeof(animframe_t)*m_numBones);
+	//m_velocityFrames = PPAllocStructArray(qanimframe_t, m_numBones);
+	//memset(m_velocityFrames, 0, sizeof(qanimframe_t)*m_numBones);
 
 	int numIkChains = studio->numIKChains;
 
@@ -172,16 +161,17 @@ void CAnimatingEGF::InitAnimating(IEqModel* model)
 	{
 		studioikchain_t* pStudioChain = studio->pIkChain(i);
 
-		gikchain_t* chain = new gikchain_t;
+		int idx = m_ikChains.append(gikchain_t{});
+		gikchain_t& chain = m_ikChains[idx];
 
-		strcpy(chain->name, pStudioChain->name);
-		chain->numLinks = pStudioChain->numLinks;
-		chain->local_target = Vector3D(0, 0, 10);
-		chain->enable = false;
+		strcpy(chain.name, pStudioChain->name);
+		chain.numLinks = pStudioChain->numLinks;
+		chain.local_target = Vector3D(0, 0, 10);
+		chain.enable = false;
 
-		chain->links = PPAllocStructArray(giklink_t, chain->numLinks);
+		chain.links = new giklink_t[chain.numLinks];
 
-		for (int j = 0; j < chain->numLinks; j++)
+		for (int j = 0; j < chain.numLinks; j++)
 		{
 			giklink_t link;
 			link.l = pStudioChain->pLink(j);
@@ -203,30 +193,28 @@ void CAnimatingEGF::InitAnimating(IEqModel* model)
 			int parentLinkId = j - 1;
 
 			if (parentLinkId >= 0)
-				link.parent = &chain->links[j - 1];
+				link.parent = &chain.links[j - 1];
 			else
 				link.parent = nullptr;
 
-			chain->links[j] = link;
+			chain.links[j] = link;
 
-			link.chain = chain;
+			link.chain = &chain;
 
 			// set link for fast access, can be used for multiple instances of base animating entities with single model
 			joint.link_id = j;
 			joint.chain_id = i;
 		}
 
-		for (int j = 0; j < chain->numLinks; j++)
+		for (int j = 0; j < chain.numLinks; j++)
 		{
-			giklink_t& link = chain->links[j];
+			giklink_t& link = chain.links[j];
 
 			if (link.parent)
 				link.absTrans = link.localTrans * link.parent->absTrans;
 			else
 				link.absTrans = link.localTrans;
 		}
-
-		m_ikChains.append(chain);
 	}
 
 	int numMotionPackages = model->GetHWData()->numMotionPackages;
@@ -601,7 +589,7 @@ void CAnimatingEGF::SetPoseControllerValue(int nPoseCtrl, float value)
 	m_poseControllers[nPoseCtrl].value = value;
 }
 
-void GetInterpolatedBoneFrame(studioAnimation_t* pAnim, int nBone, int firstframe, int lastframe, float interp, animframe_t &out)
+void GetInterpolatedBoneFrame(studioAnimation_t* pAnim, int nBone, int firstframe, int lastframe, float interp, qanimframe_t &out)
 {
 	studioBoneFrame_t& frame = pAnim->bones[nBone];
 
@@ -611,21 +599,21 @@ void GetInterpolatedBoneFrame(studioAnimation_t* pAnim, int nBone, int firstfram
 void GetInterpolatedBoneFrameBetweenTwoAnimations(
 	studioAnimation_t* pAnim1,
 	studioAnimation_t* pAnim2,
-	int nBone, int firstframe, int lastframe, float interp, float animTransition, animframe_t &out)
+	int nBone, int firstframe, int lastframe, float interp, float animTransition, qanimframe_t &out)
 {
 	// compute frame 1
-	animframe_t anim1transform;
+	qanimframe_t anim1transform;
 	GetInterpolatedBoneFrame(pAnim1, nBone, firstframe, lastframe, interp, anim1transform);
 
 	// compute frame 2
-	animframe_t anim2transform;
+	qanimframe_t anim2transform;
 	GetInterpolatedBoneFrame(pAnim2, nBone, firstframe, lastframe, interp, anim2transform);
 
 	// resultative interpolation
 	InterpolateFrameTransform(anim1transform, anim2transform, animTransition, out);
 }
 
-void GetSequenceLayerBoneFrame(gsequence_t* pSequence, int nBone, animframe_t &out)
+void GetSequenceLayerBoneFrame(gsequence_t* pSequence, int nBone, qanimframe_t &out)
 {
 	float blendWeight = 0;
 	int blendAnimation1 = 0;
@@ -658,7 +646,7 @@ void CAnimatingEGF::RecalcBoneTransforms(bool storeTransitionFrames /*= false*/)
 {
 	m_sequenceTimers[0].blendWeight = 1.0f;
 
-	animframe_t finalBoneFrame;
+	qanimframe_t finalBoneFrame;
 
 	// setup each bone's transformation
 	for (int boneId = 0; boneId < m_numBones; boneId++)
@@ -687,7 +675,7 @@ void CAnimatingEGF::RecalcBoneTransforms(bool storeTransitionFrames /*= false*/)
 				continue;
 
 			// the computed frame
-			animframe_t cTimedFrame;
+			qanimframe_t cTimedFrame;
 			ZeroFrameTransform(cTimedFrame);
 
 			float frame_interp = timer.seq_time - timer.currFrame;
@@ -732,7 +720,7 @@ void CAnimatingEGF::RecalcBoneTransforms(bool storeTransitionFrames /*= false*/)
 				GetInterpolatedBoneFrame(curanim, boneId, timer.currFrame, timer.nextFrame, frame_interp, cTimedFrame);
 			}
 
-			animframe_t cAddFrame;
+			qanimframe_t cAddFrame;
 			ZeroFrameTransform(cAddFrame);
 
 			int seqBlends = seqDesc->numSequenceBlends;
@@ -742,7 +730,7 @@ void CAnimatingEGF::RecalcBoneTransforms(bool storeTransitionFrames /*= false*/)
 			{
 				gsequence_t* pSequence = seq->blends[blend_seq];
 
-				animframe_t frame;
+				qanimframe_t frame;
 
 				// get bone frame of layer
 				GetSequenceLayerBoneFrame(pSequence, boneId, frame);
@@ -837,19 +825,19 @@ void CAnimatingEGF::DebugRender(const Matrix4x4& worldTransform)
 	{
 		for (int i = 0; i < m_ikChains.numElem(); i++)
 		{
-			gikchain_t* chain = m_ikChains[i];
+			const gikchain_t& chain = m_ikChains[i];
 
-			if (!chain->enable)
+			if (!chain.enable)
 				continue;
 
-			Vector3D target_pos = chain->local_target;
+			Vector3D target_pos = chain.local_target;
 			target_pos = (worldTransform*Vector4D(target_pos, 1.0f)).xyz();
 
 			debugoverlay->Box3D(target_pos - Vector3D(1), target_pos + Vector3D(1), ColorRGBA(0, 1, 0, 1));
 
-			for (int j = 0; j < chain->numLinks; j++)
+			for (int j = 0; j < chain.numLinks; j++)
 			{
-				giklink_t& link = chain->links[j];
+				const giklink_t& link = chain.links[j];
 
 				const Vector3D& bone_pos = link.absTrans.rows[3].xyz();
 				Vector3D parent_pos = link.parent->absTrans.rows[3].xyz();
@@ -966,13 +954,13 @@ void CAnimatingEGF::UpdateIK(float fDt, const Matrix4x4& worldTransform)
 		int chain_id = m_joints[boneId].chain_id;
 		int link_id = m_joints[boneId].link_id;
 
-		if (link_id != -1 && chain_id != -1 && m_ikChains[chain_id]->enable)
+		if (link_id != -1 && chain_id != -1 && m_ikChains[chain_id].enable)
 		{
-			gikchain_t* chain = m_ikChains[chain_id];
+			const gikchain_t& chain = m_ikChains[chain_id];
 
-			for (int i = 0; i < chain->numLinks; i++)
+			for (int i = 0; i < chain.numLinks; i++)
 			{
-				if (chain->links[i].l->bone == boneId)
+				if (chain.links[i].l->bone == boneId)
 				{
 					ik_enabled_bones[boneId] = true;
 					break;
@@ -984,28 +972,28 @@ void CAnimatingEGF::UpdateIK(float fDt, const Matrix4x4& worldTransform)
 	// solve ik links or copy frames to disabled links
 	for (int i = 0; i < m_ikChains.numElem(); i++)
 	{
-		gikchain_t* chain = m_ikChains[i];
+		gikchain_t& chain = m_ikChains[i];
 
-		if (chain->enable)
+		if (chain.enable)
 		{
 			// display target
 			if (r_debug_ik.GetBool())
 			{
-				Vector3D target_pos = chain->local_target;
+				Vector3D target_pos = chain.local_target;
 				target_pos = (worldTransform*Vector4D(target_pos, 1.0f)).xyz();
 
 				debugoverlay->Box3D(target_pos - Vector3D(1), target_pos + Vector3D(1), ColorRGBA(0, 1, 0, 1));
 			}
 
 			// update chain
-			UpdateIkChain(m_ikChains[i], fDt);
+			UpdateIkChain(&chain, fDt);
 		}
 		else
 		{
 			// copy last frames to all links
-			for (int j = 0; j < chain->numLinks; j++)
+			for (int j = 0; j < chain.numLinks; j++)
 			{
-				giklink_t& link = chain->links[j];
+				giklink_t& link = chain.links[j];
 
 				int bone_id = link.l->bone;
 				studioJoint_t& joint = m_joints[link.l->bone];
@@ -1088,7 +1076,7 @@ void CAnimatingEGF::SetIKLocalTarget(int chain_id, const Vector3D &local_positio
 	if (chain_id == -1)
 		return;
 
-	m_ikChains[chain_id]->local_target = local_position;
+	m_ikChains[chain_id].local_target = local_position;
 }
 
 void CAnimatingEGF::SetIKChainEnabled(int chain_id, bool enabled)
@@ -1096,7 +1084,7 @@ void CAnimatingEGF::SetIKChainEnabled(int chain_id, bool enabled)
 	if (chain_id == -1)
 		return;
 
-	m_ikChains[chain_id]->enable = enabled;
+	m_ikChains[chain_id].enable = enabled;
 }
 
 bool CAnimatingEGF::IsIKChainEnabled(int chain_id)
@@ -1104,14 +1092,14 @@ bool CAnimatingEGF::IsIKChainEnabled(int chain_id)
 	if (chain_id == -1)
 		return false;
 
-	return m_ikChains[chain_id]->enable;
+	return m_ikChains[chain_id].enable;
 }
 
 int CAnimatingEGF::FindIKChain(char* pszName)
 {
 	for (int i = 0; i < m_ikChains.numElem(); i++)
 	{
-		if (!stricmp(m_ikChains[i]->name, pszName))
+		if (!stricmp(m_ikChains[i].name, pszName))
 			return i;
 	}
 

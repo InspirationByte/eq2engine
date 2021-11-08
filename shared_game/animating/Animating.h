@@ -94,8 +94,8 @@ protected:
 	// transition time from previous
 	float						m_transitionTime;
 	float						m_transitionRemTime;
-	animframe_t*				m_transitionFrames;
-	animframe_t*				m_velocityFrames;
+	qanimframe_t*				m_transitionFrames;
+	qanimframe_t*				m_velocityFrames;
 
 	// computed ready-to-use matrices
 	Matrix4x4*					m_boneTransforms;
@@ -108,7 +108,7 @@ protected:
 	// different motion packages has different sequience list
 	DkList<gsequence_t>			m_seqList; // loaded sequences
 	DkList<gposecontroller_t>	m_poseControllers; // pose controllers
-	DkList<gikchain_t*>			m_ikChains;
+	DkList<gikchain_t>			m_ikChains;
 
 	// sequence timers. first timer is main, and transitional is last
 	sequencetimer_t				m_sequenceTimers[MAX_SEQUENCE_TIMERS];

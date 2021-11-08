@@ -17,6 +17,26 @@
 #include "entity/DataMap.h"
 #endif // #if !EDITOR && !NO_ENGINE
 
+struct qanimframe_t
+{
+	qanimframe_t()
+	{
+		angBoneAngles = identity();
+		vecBonePosition = vec3_zero;
+		pad = 0.0f;
+	}
+	qanimframe_t(animframe_t& frame)
+	{
+		angBoneAngles = Quaternion(frame.angBoneAngles.x, frame.angBoneAngles.y, frame.angBoneAngles.z);
+		vecBonePosition = frame.vecBonePosition;
+		pad = 0.0f;
+	}
+
+	Quaternion	angBoneAngles;
+	Vector3D	vecBonePosition;
+	float		pad;
+};
+
 struct gikchain_t;
 
 struct giklink_t
@@ -38,12 +58,17 @@ struct giklink_t
 // used by baseanimating
 struct gikchain_t
 {
+	~gikchain_t() 
+	{
+		delete[] links;
+	}
+
 	char				name[64];
 	bool				enable; // if false then it will be updated from FK
 
 	Vector3D			local_target; // local target position
 
-	giklink_t*			links;
+	giklink_t*			links { nullptr };
 	int					numLinks;
 };
 
