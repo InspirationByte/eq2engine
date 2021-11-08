@@ -888,21 +888,28 @@ void ShaderAPIGL::FreeTexture(ITexture* pTexture)
 	if(pTex == NULL)
 		return;
 
-	CScopedMutex scoped(m_Mutex);
-
-	if(pTex->Ref_Count() == 0)
-		MsgWarning("texture %s refcount==0\n",pTex->GetName());
-
-	//ASSERT(pTex->numReferences > 0);
-
-	pTex->Ref_Drop();
-
-	if(pTex->Ref_Count() <= 0)
+	bool deleted = false;
 	{
-		DevMsg(DEVMSG_SHADERAPI,"Texture unloaded: %s\n",pTex->GetName());
+		CScopedMutex scoped(m_Mutex);
 
-		m_TextureList.remove(pTexture);
-		delete pTex;
+		if (pTex->Ref_Count() == 0)
+			MsgWarning("texture %s refcount==0\n", pTexture->GetName());
+
+		//ASSERT(pTex->numReferences > 0);
+
+		pTex->Ref_Drop();
+
+		if (pTex->Ref_Count() <= 0)
+			deleted = m_TextureList.remove(pTexture);
+	}
+
+	if(deleted)
+	{
+		glWorker.Execute(__FUNCTION__, [pTex]() {
+			delete pTex;
+
+			return 0;
+		});
 	}
 }
 
@@ -1778,15 +1785,19 @@ void ShaderAPIGL::DestroyShaderProgram(IShaderProgram* pShaderProgram)
 	if(!pShader)
 		return;
 
-	CScopedMutex scoped(m_Mutex);
+	bool deleted = false;
+	{
+		CScopedMutex m(m_Mutex);
+		pShader->Ref_Drop(); // decrease references to this shader
 
-	pShader->Ref_Drop(); // decrease references to this shader
+		// remove it if reference is zero
+		if (pShader->Ref_Count() <= 0)
+			deleted = m_ShaderList.remove(pShader);
+	}
 
 	// remove it if reference is zero
-	if(pShader->Ref_Count() <= 0)
+	if(deleted)
 	{
-		m_ShaderList.remove(pShader);
-
 		glWorker.Execute(__FUNCTION__, [pShader]() {
 			delete pShader;
 
@@ -2349,11 +2360,16 @@ void ShaderAPIGL::DestroyVertexFormat(IVertexFormat* pFormat)
 	if (!pVF)
 		return;
 
-	CScopedMutex m(m_Mutex);
-
-	if(m_VFList.remove(pFormat))
+	bool deleted = false;
 	{
-		delete pVF;	
+		CScopedMutex m(m_Mutex);
+		deleted = m_VFList.remove(pVF);
+	}
+
+	if(deleted)
+	{
+		DevMsg(DEVMSG_SHADERAPI, "Destroying vertex format\n");
+		delete pVF;
 	}
 }
 
@@ -2364,9 +2380,13 @@ void ShaderAPIGL::DestroyVertexBuffer(IVertexBuffer* pVertexBuffer)
 	if (!pVB)
 		return;
 
-	CScopedMutex m(m_Mutex);
+	bool deleted = false;
+	{
+		CScopedMutex m(m_Mutex);
+		deleted = m_VBList.remove(pVB);
+	}
 
-	if(m_VBList.remove(pVertexBuffer))
+	if(deleted)
 	{
 		const int numBuffers = (pVB->m_access == BUFFER_DYNAMIC) ? MAX_VB_SWITCHING : 1;
 		uint* tempArray = new uint[numBuffers];
@@ -2394,9 +2414,13 @@ void ShaderAPIGL::DestroyIndexBuffer(IIndexBuffer* pIndexBuffer)
 	if (!pIB)
 		return;
 
-	CScopedMutex m(m_Mutex);
+	bool deleted = false;
+	{
+		CScopedMutex m(m_Mutex);
+		deleted = m_IBList.remove(pIB);
+	}
 
-	if(m_IBList.remove(pIndexBuffer))
+	if(deleted)
 	{
 		const int numBuffers = (pIB->m_access == BUFFER_DYNAMIC) ? MAX_IB_SWITCHING : 1;
 		uint* tempArray = new uint[numBuffers];
