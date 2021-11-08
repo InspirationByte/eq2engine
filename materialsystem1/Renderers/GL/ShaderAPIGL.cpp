@@ -54,6 +54,16 @@ public:
 		m_started = false;
 		SignalWork();
 		StopThread();
+
+		// delete work
+		work_t* work = m_pendingWork;
+		while(work)
+		{
+			work_t* nextWork = work->next;
+			delete work;
+			work = nextWork;
+		}
+		m_pendingWork = nullptr;
 	}
 
 	// syncronous execution
@@ -112,13 +122,19 @@ int GLWorkerThread::WaitForResult(work_t* work)
 	do
 	{
 		if (work->result != WORK_PENDING_MARKER)
-			break;
+			return  work->result;
+
+		// HACK: weird hack to make this unfreeze itself
+		if(IsWorkDone() && !m_pendingWork)
+		{
+			m_pendingWork = work;
+			SignalWork();
+		}
 
 		Platform_Sleep(1);
 	} while (true);
 
-	//return the result
-	return work->result;
+	return 0;
 }
 
 int GLWorkerThread::AddWork(const char* name, std::function<int()> f, bool blocking)
@@ -137,11 +153,7 @@ int GLWorkerThread::AddWork(const char* name, std::function<int()> f, bool block
 	SignalWork();
 
 	if (blocking)
-	{
-		int result = WaitForResult(work);
-		delete work;
-		return result;
-	}
+		return WaitForResult(work);
 
 	return 0;
 }
@@ -159,6 +171,7 @@ int GLWorkerThread::Run()
 			if(currentWork)
 			{
 				m_pendingWork = currentWork->next.load();
+				currentWork->next = nullptr;
 			}
 			else
 			{
@@ -178,9 +191,7 @@ int GLWorkerThread::Run()
 			DevMsg(DEVMSG_SHADERAPI, "EndAsyncOperation for %s (workId %d)\n", currentWork->name, currentWork->workId);
 			g_shaderApi.EndAsyncOperation();
 
-			if(!currentWork->blocking)
-				delete currentWork;
-
+			delete currentWork;
 			currentWork = nullptr;
 		}
 
