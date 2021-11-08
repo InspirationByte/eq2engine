@@ -27,6 +27,7 @@
 #include "utils/eqthread.h"
 
 #include <functional>
+#include <atomic>
 
 extern ShaderAPIGL g_shaderApi;
 
@@ -83,19 +84,22 @@ protected:
 			blocking = block;
 		}
 
-		const char* name;
-		std::function<int()> func;
-		volatile int result;
-		uint workId;
-		bool blocking;
+		std::atomic<work_t*>	next{ nullptr };
+		std::function<int()>	func;
+
+		const char*				name;
+		
+		volatile int			result;
+		uint					workId;
+		bool					blocking;
 	};
 
 	int WaitForResult(work_t* work);
 
-	DkList<work_t*> m_pendingWork;
-	CEqMutex		m_workMutex;
-	uint			m_workCounter;
-	bool			m_started;
+	std::atomic<work_t*>	m_pendingWork;
+
+	uint					m_workCounter;
+	bool					m_started;
 };
 
 int GLWorkerThread::WaitForResult(work_t* work)
@@ -126,9 +130,11 @@ int GLWorkerThread::AddWork(const char* name, std::function<int()> f, bool block
 
 	// set the new worker and signal to start...
 	{
-		CScopedMutex m(m_workMutex);
 		work = new work_t(name, f, m_workCounter++, blocking);
-		m_pendingWork.append(work);
+
+		// chain link
+		work->next = m_pendingWork.load();
+		m_pendingWork = work;
 	}
 
 	SignalWork();
@@ -148,25 +154,16 @@ int GLWorkerThread::Run()
 	{
 		// search for work
 		{
-			CScopedMutex m(m_workMutex);
-
-			for (int i = 0; i < m_pendingWork.numElem(); i++)
+			currentWork = m_pendingWork.load();
+			if(currentWork)
 			{
-				work_t* work = m_pendingWork[i];
-
-				if (work->result == WORK_PENDING_MARKER)
-				{
-					// remove from list
-					m_pendingWork.removeIndex(i);
-
-					currentWork = work;
-					break;
-				}
+				m_pendingWork = currentWork->next.load();
 			}
-
-			// no work and haven't picked one?
-			if (m_pendingWork.numElem() == 0 && !currentWork)
+			else
+			{
+				m_pendingWork = nullptr;
 				break;
+			}
 		}
 
 		if (currentWork)
