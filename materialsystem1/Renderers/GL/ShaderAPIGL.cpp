@@ -109,38 +109,39 @@ int GLWorkerThread::WaitForResult(work_t* work)
 	DevMsg(DEVMSG_SHADERAPI, "WaitForResult for %s (workId %d)\n", work->name, work->workId);
 
 	// wait
-	while (work->result == WORK_PENDING_MARKER)
-		Threading::Yield();
+	do
+	{
+		if (work->result != WORK_PENDING_MARKER)
+			break;
 
-	// retrieve result and delete
-	int result = work->result;
+		Platform_Sleep(1);
+	} while (true);
 
 	//return the result
-	return result;
+	return work->result;
 }
 
 int GLWorkerThread::AddWork(const char* name, std::function<int()> f, bool blocking)
 {
 	uintptr_t thisThreadId = Threading::GetCurrentThreadID();
 
-	if (thisThreadId == g_shaderApi.m_mainThreadId) // not required for main thread
+	if (blocking && thisThreadId == g_shaderApi.m_mainThreadId) // not required for main thread
 		return (f)();
 
-	work_t* work;
+	work_t* work = new work_t(name, f, m_workCounter++, blocking);
 
-	// set the new worker and signal to start...
-	{
-		work = new work_t(name, f, m_workCounter++, blocking);
-
-		// chain link
-		work->next = m_pendingWork.load();
-		m_pendingWork = work;
-	}
+	// chain link
+	work->next = m_pendingWork.load();
+	m_pendingWork = work;
 
 	SignalWork();
 
-	if(blocking)
-		return WaitForResult(work);
+	if (blocking)
+	{
+		int result = WaitForResult(work);
+		delete work;
+		return result;
+	}
 
 	return 0;
 }
@@ -177,7 +178,9 @@ int GLWorkerThread::Run()
 			DevMsg(DEVMSG_SHADERAPI, "EndAsyncOperation for %s (workId %d)\n", currentWork->name, currentWork->workId);
 			g_shaderApi.EndAsyncOperation();
 
-			delete currentWork;
+			if(!currentWork->blocking)
+				delete currentWork;
+
 			currentWork = nullptr;
 		}
 
@@ -354,8 +357,6 @@ void ShaderAPIGL::Init( shaderAPIParams_t &params)
 
 	DevMsg(DEVMSG_SHADERAPI, "[DEBUG] ShaderAPIGL vendor: %d\n", m_vendor);
 
-	m_mainThreadId = Threading::GetCurrentThreadID();
-
 	// Set some of my preferred defaults
 	glEnable(GL_DEPTH_TEST);
 	GLCheckError("def param GL_DEPTH_TEST");
@@ -376,6 +377,11 @@ void ShaderAPIGL::Init( shaderAPIParams_t &params)
 		m_drawBuffers[i] = GL_COLOR_ATTACHMENT0 + i;
 
 	m_currentGLDepth = GL_NONE;
+
+	m_mainThreadId = Threading::GetCurrentThreadID();
+
+	// init worker thread
+	glWorker.Init();
 
 	// Init the base shader API
 	ShaderAPI_Base::Init(params);
@@ -413,9 +419,6 @@ void ShaderAPIGL::Init( shaderAPIParams_t &params)
 		if(s_uniformFuncs[i] == NULL)
 			ASSERTMSG(false, EqString::Format("Uniform function for '%d' is not ok, pls check extensions\n", i).ToCString());
 	}
-
-	// init worker thread
-	glWorker.Init();
 }
 
 void ShaderAPIGL::Shutdown()
@@ -1037,6 +1040,8 @@ void ShaderAPIGL::ResizeRenderTarget(ITexture* pRT, int newWide, int newTall)
 	}
 }
 
+static ConVar gl_skipTextures("gl_skipTextures", "0", nullptr, CV_CHEAT);
+
 GLTextureRef_t ShaderAPIGL::CreateGLTextureFromImage(CImage* pSrc, const SamplerStateParam_t& sampler, int& wide, int& tall, int nFlags)
 {
 	GLTextureRef_t noTexture = { 0, GLTEX_TYPE_ERROR };
@@ -1083,6 +1088,9 @@ GLTextureRef_t ShaderAPIGL::CreateGLTextureFromImage(CImage* pSrc, const Sampler
 
 	GLTextureRef_t* texturePtr = &texture;
 	
+	if(gl_skipTextures.GetBool())
+		return noTexture;
+
 	int result = glWorker.WaitForExecute(__FUNCTION__,[=]() {
 		// Generate a texture
 		glGenTextures(1, &texturePtr->glTexID);
@@ -1109,9 +1117,6 @@ GLTextureRef_t ShaderAPIGL::CreateGLTextureFromImage(CImage* pSrc, const Sampler
 
 		return 0;
 	});
-
-	if (result == -1)
-		return noTexture;
 
 	if (result == -1)
 		return noTexture;
@@ -2352,15 +2357,21 @@ void ShaderAPIGL::DestroyVertexBuffer(IVertexBuffer* pVertexBuffer)
 
 	if(m_VBList.remove(pVertexBuffer))
 	{
-		glWorker.Execute(__FUNCTION__, [pVB]() {
-			const int numBuffers = (pVB->m_access == BUFFER_DYNAMIC) ? MAX_VB_SWITCHING : 1;
-
-			glDeleteBuffers(numBuffers, pVB->m_nGL_VB_Index);
-			GLCheckError("delete vertex buffer");
-			return 0;
-		});
+		const int numBuffers = (pVB->m_access == BUFFER_DYNAMIC) ? MAX_VB_SWITCHING : 1;
+		uint* tempArray = new uint[numBuffers];
+		memcpy(tempArray, pVB->m_nGL_VB_Index, numBuffers * sizeof(uint));
 
 		delete pVB;
+
+		glWorker.Execute(__FUNCTION__, [numBuffers, tempArray]() {
+
+			glDeleteBuffers(numBuffers, tempArray);
+			GLCheckError("delete vertex buffer");
+
+			delete [] tempArray;
+
+			return 0;
+		});
 	}
 }
 
@@ -2376,16 +2387,21 @@ void ShaderAPIGL::DestroyIndexBuffer(IIndexBuffer* pIndexBuffer)
 
 	if(m_IBList.remove(pIndexBuffer))
 	{
-		glWorker.Execute(__FUNCTION__, [pIB]() {
-			const int numBuffers = (pIB->m_access == BUFFER_DYNAMIC) ? MAX_IB_SWITCHING : 1;
-
-			glDeleteBuffers(numBuffers, pIB->m_nGL_IB_Index);
-			GLCheckError("delete index buffer");
-
-			return 0;
-		});
+		const int numBuffers = (pIB->m_access == BUFFER_DYNAMIC) ? MAX_IB_SWITCHING : 1;
+		uint* tempArray = new uint[numBuffers];
+		memcpy(tempArray, pIB->m_nGL_IB_Index, numBuffers * sizeof(uint));
 
 		delete pIndexBuffer;
+
+		glWorker.Execute(__FUNCTION__, [numBuffers, tempArray]() {
+			
+			glDeleteBuffers(numBuffers, tempArray);
+			GLCheckError("delete index buffer");
+
+			delete [] tempArray;
+
+			return 0;
+		});		
 	}
 }
 

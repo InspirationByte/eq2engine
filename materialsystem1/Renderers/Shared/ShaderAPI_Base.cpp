@@ -26,8 +26,9 @@
 
 #include "core/IEqParallelJobs.h"
 
-static ConVar rs_echo_texture_loading("r_echo_texture_loading","0","Echo textrue loading");
-static ConVar r_nomip("r_nomip", "0");
+static ConVar rs_echo_texture_loading("r_echo_texture_loading", "0", "Echo textrue loading");
+static ConVar r_nomip("r_nomip", "0", nullptr, CV_CHEAT);
+static ConVar r_skipTextures("r_skipTextures", "0", nullptr, CV_CHEAT);
 
 ShaderAPI_Base::ShaderAPI_Base()
 {
@@ -537,6 +538,15 @@ ITexture* ShaderAPI_Base::LoadTexture( const char* pszFileName,
 	// Don't load textures starting with special symbols
 	if (pszFileName[0] == '$')
 		return nullptr;
+
+	if (r_skipTextures.GetBool())
+	{
+		// Generate the error
+		if (!pFoundTexture && !(nFlags & TEXFLAG_NULL_ON_ERROR))
+			pFoundTexture = m_pErrorTexture;
+
+		return pFoundTexture;
+	}
 
 	DkList<EqString> textureNames;
 	GetImagesForTextureName(textureNames, pszFileName, nFlags);
@@ -1151,6 +1161,8 @@ bool ShaderAPI_Base::LoadShadersFromFile(IShaderProgram* pShaderOutput, const ch
 
 	g_parallelJobs->AddJob((eqParallelJob_t*)job);
 	g_parallelJobs->Submit();
+
+	g_parallelJobs->WaitForJob((eqParallelJob_t*)job);
 
 	return bResult;
 }

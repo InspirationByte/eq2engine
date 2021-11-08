@@ -424,6 +424,7 @@ void CMaterialSystem::InitDefaultMaterial()
 		m_overdrawMaterial = pMaterial;
 	}
 
+	// HACK: wait for shader compilation
 	Platform_Sleep(250);
 }
 
