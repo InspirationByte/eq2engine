@@ -215,7 +215,7 @@ project "eqGLRHI"
 			"GLESv2", "EGL"
 		}
 
-if os.host() == "windows" and os.target() == "windows" then 
+if not IS_ANDROID then
     -- Direct3D9 renderer
     project "eqD3D9RHI"
         kind "SharedLib"

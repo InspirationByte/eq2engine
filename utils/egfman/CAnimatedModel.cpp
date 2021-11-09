@@ -513,8 +513,8 @@ void CAnimatedModel::AttachIKChain(int chain, int attach_type)
 	if (chain == -1)
 		return;
 
-	int effector_id = m_ikChains[chain]->numLinks - 1;
-	giklink_t& link = m_ikChains[chain]->links[effector_id];
+	int effector_id = m_ikChains[chain].numLinks - 1;
+	giklink_t& link = m_ikChains[chain].links[effector_id];
 
 	switch (attach_type)
 	{

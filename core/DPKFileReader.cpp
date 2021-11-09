@@ -1,5 +1,5 @@
 ///////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright ï¿½ Inspiration Byte
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
 // Description: Data package file (dpk)
@@ -13,6 +13,7 @@
 #include <malloc.h>
 #include <zlib.h>
 
+#include "utils/minmax.h"
 #include "utils/strtools.h"
 #include "utils/CRC32.h"
 

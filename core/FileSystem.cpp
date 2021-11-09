@@ -32,7 +32,12 @@
 #include <unistd.h> // rmdir(), access()
 #include <stdarg.h> // va_*
 #include <dlfcn.h>
-#include <glob.h>     // glob(), globfree()
+
+#ifdef ANDROID
+#include "android_libc/glob.h"		// glob(), globfree()
+#else
+#include <glob.h>					// glob(), globfree()
+#endif
 
 #endif
 

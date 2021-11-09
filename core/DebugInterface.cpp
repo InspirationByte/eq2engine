@@ -218,7 +218,7 @@ void SpewMessage(SpewType_t spewtype, char const* msg)
 	const char* logTag = EQENGINE_LOG_TAG(s_spewTypeStr[spewtype]);
 
 	// force log into android debug output
-	__android_log_print(ANDROID_LOG_DEBUG, logTag, "%s", msgBuffer);
+	__android_log_print(ANDROID_LOG_DEBUG, logTag, "%s", msg);
 #else
 
 #endif // ANDROID

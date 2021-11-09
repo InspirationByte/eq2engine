@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright ï¿½ Inspiration Byte
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
 // Description: Provides all shared definitions of engine
@@ -7,6 +7,9 @@
 
 #include "core/platform/Platform.h"
 #include "core/platform/MessageBox.h"
+
+#include <time.h>
+#include <errno.h>
 
 // sleeps the execution thread and let other processes to run for a specified amount of time.
 IEXPORTS void Platform_Sleep(uint32 nMilliseconds)
@@ -17,7 +20,7 @@ IEXPORTS void Platform_Sleep(uint32 nMilliseconds)
 
 #else
 
-	struct timespec ts;
+	timespec ts;
 	ts.tv_sec = (time_t) (nMilliseconds / 1000);
 	ts.tv_nsec = (long) (nMilliseconds % 1000) * 1000000;
 

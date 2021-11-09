@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright ï¿½ Inspiration Byte
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
 // Description: Equilibrium multithreaded parallel jobs
@@ -28,6 +28,8 @@ This is the diferrent conception of jobs
 #include "utils/eqthread.h"
 #include "utils/DkList.h"
 #include "utils/DkLinkedList.h"
+
+class CEqParallelJobThreads;
 
 //
 // The job execution thread

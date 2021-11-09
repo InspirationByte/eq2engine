@@ -13,7 +13,7 @@
 #include "core/DebugInterface.h"
 
 
-
+#include <ctype.h>
 #include <wchar.h>
 #include <wctype.h>
 #include <stdarg.h>

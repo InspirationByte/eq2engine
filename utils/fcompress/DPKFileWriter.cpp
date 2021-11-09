@@ -9,6 +9,7 @@
 #include <math.h>
 #include <malloc.h>
 
+#include "utils/minmax.h"
 #include "utils/strtools.h"
 #include "core/DebugInterface.h"
 #include "core/cmd_pacifier.h"
@@ -338,7 +339,7 @@ void CDPKFileWriter::ProcessFile(FILE* output, dpkfilewinfo_t* info)
 
 			// if size is greater than remaining, we know that this is last block
 			if (blockInfo.size > _fileSize - srcOffset)
-				blockInfo.size = min(blockInfo.size, _fileSize - srcOffset);
+				blockInfo.size = min<uint32>(blockInfo.size, _fileSize - srcOffset);
 
 			int status = Z_DATA_ERROR;
 

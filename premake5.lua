@@ -13,7 +13,8 @@ DependencyPath = {
 	["libvorbis"] = os.getenv("VORBIS_DIR") or "src_dependency/libvorbis", 
 	["libsdl"] = os.getenv("SDL2_DIR") or "src_dependency/SDL2",
 	["openal"] = os.getenv("OPENAL_DIR") or "src_dependency/openal-soft",
-	["AndroidNDK"] = os.getenv("ANDROID_NDK_PATH") or "F:\\Dev\\AndroidSDK\\ndk\\22.0.7026061",
+	["AndroidSDK"] = os.getenv("ANDROID_HOME") or "F:/Dev/AndroidSDK",
+	["AndroidNDK"] = os.getenv("ANDROID_NDK_PATH") or "F:/Dev/android-ndk-r17c",
 }
 
 -- default configuration capabilities
@@ -45,25 +46,76 @@ workspace "Equilibrium2"
 	cppdialect "C++17"	-- required for sol2
     configurations { "Debug", "Release" }
 	linkgroups 'On'
-	platforms { "x86", "x64" }
+	
 	--characterset "ASCII"
 	objdir "build"
 	targetdir "bin/%{cfg.platform}/%{cfg.buildcfg}"
 	location "project_%{_ACTION}"
 	
+	if not IS_ANDROID then
+		platforms { "x86", "x64" }
+	end
+	
 	if IS_ANDROID then
-		androidabis { 
-			"armeabi", "armeabi-v7a", "arm64-v8a" --"x86", "x86_64" 
+
+		-- global define
+		defines { "ANDROID" }
+		
+		disablewarnings {
+			-- disable warnings which are emitted by my stupid code
+			"c++11-narrowing",
+			"writable-strings",
+			"logical-op-parentheses",
+			"parentheses",
+			"register",
+			"unused-local-typedef",
 		}
-		--gradlewrapper {
-		--	"distributionUrl=https://services.gradle.org/distributions/gradle-4.10.2-all.zip"
-		--}
+		
+		buildoptions {
+			"-fpermissive",
+			
+			"-fexceptions",
+			"-pthread",
+			
+			"-mfloat-abi=softfp",	-- force NEON to be used
+			"-mfpu=neon"
+		}
+		
+		linkoptions {
+			"-fexceptions",
+			"-pthread",
+			
+			"-mfloat-abi=softfp",	-- force NEON to be used
+			"-mfpu=neon"
+		}
+	
+		androidabis { 
+			"armeabi-v7a", "arm64-v8a" --"x86", "x86_64" 
+		}
+		
+		androiddependencies
+		{
+			--"com.android.support:support-v4:27.1.0",
+		}
+		
+		androidrepositories
+		{
+			"jcenter()",
+			"google()",
+			"mavenCentral()"
+		}
+		
+		gradlewrapper {
+			"distributionUrl=https://services.gradle.org/distributions/gradle-4.10.2-all.zip"
+		}
+		
 		gradleversion "com.android.tools.build:gradle:3.2.0"
+		--gradleversion "com.android.tools.build:gradle:7.0.0"
 		androidsdkversion "26"
 		androidminsdkversion "16"
-		androidndkpath "%{DependencyPath.AndroidNDK}"
+		--androidndkpath(DependencyPath.AndroidNDK)
 	end
-
+	
     filter "system:linux"
         buildoptions {
             "-Wno-narrowing",
@@ -75,7 +127,10 @@ workspace "Equilibrium2"
 
 	filter "system:Windows"
 		disablewarnings { "4996", "4554", "4244", "4101", "4838", "4309" }
-		defines { "_CRT_SECURE_NO_WARNINGS", "_CRT_SECURE_NO_DEPRECATE" }
+		defines { 
+			"NOMINMAX", 
+			"_CRT_SECURE_NO_WARNINGS", "_CRT_SECURE_NO_DEPRECATE"
+		}
 
     filter "configurations:Debug"
         defines { 
@@ -90,7 +145,9 @@ workspace "Equilibrium2"
 		optimize "Speed"
 
 	filter "system:Windows or system:Linux or system:Android"
-		defines { "PLAT_SDL=1" }
+		defines { 
+			"PLAT_SDL=1"
+		}
 		
 group "Dependencies"
 		
