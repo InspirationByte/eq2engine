@@ -57,9 +57,13 @@ workspace "Equilibrium2"
 	end
 	
 	if IS_ANDROID then
+	
+		system "linux"
 
 		-- global define
 		defines { "ANDROID" }
+		
+		flags { "NoImportLib" }
 		
 		disablewarnings {
 			-- disable warnings which are emitted by my stupid code
@@ -191,7 +195,8 @@ project "frameworkLib"
 
 usage "frameworkLib"
     includedirs { Folders.public }
-    links { "User32" }
+	filter "system:Windows"
+		links { "User32" }
 	
 ----------------------------------------------
 -- e2Core
