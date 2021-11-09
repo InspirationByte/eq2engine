@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright ï¿½ Inspiration Byte
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
 // Description: ESM model loader
@@ -7,6 +7,7 @@
 
 #include "dsm_esm_loader.h"
 #include "core/DebugInterface.h"
+#include "utils/strtools.h"
 
 namespace SharedModel
 {

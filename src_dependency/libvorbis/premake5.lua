@@ -5,6 +5,7 @@ project "libvorbis"
 	includedirs
 	{
 		"include",
+		"lib",
 		"../libogg/include"
 	}
 
@@ -25,6 +26,13 @@ project "libvorbis"
 		"LIBOGG_EXPORTS"
 	}
 	
+	filter "system:android"
+		excludes
+		{
+			"lib/misc.c",
+			"lib/psytune.c"
+		}
+		
 	filter "system:windows"
 		systemversion "latest"
 

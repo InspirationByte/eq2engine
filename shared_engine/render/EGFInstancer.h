@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright ï¿½ Inspiration Byte
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
 // Description: EGF model instancer
@@ -82,7 +82,7 @@ inline void CEGFInstancer<IT>::Init( VertexFormatDesc_t* instVertexFormat, int n
 {
 	Cleanup();
 
-	m_vertFormat = g_pShaderAPI->CreateVertexFormat(instVertexFormat, numAttrib);
+	m_vertFormat = g_pShaderAPI->CreateVertexFormat("instancerFmt", instVertexFormat, numAttrib);
 	m_instanceBuf = g_pShaderAPI->CreateVertexBuffer(BUFFER_DYNAMIC, MAX_EGF_INSTANCES, sizeof(IT));
 	m_instanceBuf->SetFlags( VERTBUFFER_FLAG_INSTANCEDATA );
 

@@ -321,7 +321,6 @@ bool CGameHost::InitSystems( EQWNDHANDLE pWindow )
 	winParams.numParams = 1;
 
 	materials_config.shaderapi_params.windowHandle = &winParams;
-	materials_config.shaderapi_params.windowedMode = false;
 	format = FORMAT_RGB565;
 
 #endif

@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright ï¿½ Inspiration Byte
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
 // Description: Equilibrium Geometry Formats
@@ -11,6 +11,7 @@
 #include "core/dktypes.h"
 #include "core/ppmem.h"
 #include "utils/DkList.h"
+#include "utils/strtools.h"
 
 #include "math/DkMath.h"
 

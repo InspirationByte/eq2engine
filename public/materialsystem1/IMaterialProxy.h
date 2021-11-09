@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright ï¿½ Inspiration Byte
 // 2009-2015
 //////////////////////////////////////////////////////////////////////////////////
 // Material system realtime parameter proxy
@@ -9,6 +9,7 @@
 #define IMATERIALPROXY_H
 
 #include "core/DebugInterface.h"
+#include "utils/strtools.h"
 
 #include "IMaterial.h"
 #include "IMaterialVar.h"

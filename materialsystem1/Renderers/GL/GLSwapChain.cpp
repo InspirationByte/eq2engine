@@ -11,8 +11,10 @@
 
 CGLSwapChain::~CGLSwapChain()
 {
+#ifdef PLAT_WIN
 	if(m_window)
 		ReleaseDC(m_window, m_windowDC);
+#endif
 }
 
 CGLSwapChain::CGLSwapChain()
@@ -20,10 +22,11 @@ CGLSwapChain::CGLSwapChain()
 	//m_backbuffer = NULL;
 }
 
-bool CGLSwapChain::Initialize( HWND window, bool vSync, bool windowed)
+bool CGLSwapChain::Initialize(void* window, bool vSync, bool windowed)
 {
 	// init basic
-	m_window = window;
+#ifdef PLAT_WIN
+	m_window = (HWND)window;
 	m_vSyncEnabled = vSync;
 
 	m_width = 0;
@@ -42,8 +45,17 @@ bool CGLSwapChain::Initialize( HWND window, bool vSync, bool windowed)
 	m_height = windowRect.bottom;
 
 	m_windowDC = GetDC(m_window);
-
+#endif
 	return true;
+}
+
+void* CGLSwapChain::GetWindow()
+{
+#ifdef PLAT_WIN
+	return m_window;
+#else
+	return nullptr;
+#endif
 }
 
 // retrieves backbuffer size for this swap chain

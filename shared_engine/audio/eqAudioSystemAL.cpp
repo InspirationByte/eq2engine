@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright ï¿½ Inspiration Byte
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
 // Description: Equilibrium Engine Audio system
@@ -18,6 +18,7 @@
 
 #include "utils/KeyValues.h"
 #include "utils/global_mutex.h"
+#include "utils/strtools.h"
 
 #include "source/snd_al_source.h"
 

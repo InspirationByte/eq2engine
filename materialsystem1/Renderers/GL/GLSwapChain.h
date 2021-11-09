@@ -17,11 +17,11 @@ public:
 	CGLSwapChain();
 	~CGLSwapChain();
 
-	bool			Initialize(	HWND window,
+	bool			Initialize(	void* window,
 								bool vSync, 
 								bool windowed);
 
-	void*			GetWindow() {return m_window;}
+	void*			GetWindow();
 	int				GetMSAASamples() {return 1;}
 
 	ITexture*		GetBackbuffer() {return NULL;}
@@ -37,8 +37,10 @@ public:
 
 
 protected:
+#ifdef PLAT_WIN
 	HWND			m_window;
 	HDC				m_windowDC;
+#endif
 
 	bool			m_vSyncEnabled;
 	int				m_width;

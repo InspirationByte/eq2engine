@@ -13,8 +13,11 @@ DependencyPath = {
 	["libvorbis"] = os.getenv("VORBIS_DIR") or "src_dependency/libvorbis", 
 	["libsdl"] = os.getenv("SDL2_DIR") or "src_dependency/SDL2",
 	["openal"] = os.getenv("OPENAL_DIR") or "src_dependency/openal-soft",
+	
 	["AndroidSDK"] = os.getenv("ANDROID_HOME") or "F:/Dev/AndroidSDK",
 	["AndroidNDK"] = os.getenv("ANDROID_NDK_PATH") or "F:/Dev/android-ndk-r17c",
+	["Android_libsdl"] = os.getenv("SDL2_DIR") or "src_dependency_android/SDL2",
+	["Android_openal"] = os.getenv("OPENAL_DIR") or "src_dependency_android/openal-soft",
 }
 
 -- default configuration capabilities
@@ -58,7 +61,7 @@ workspace "Equilibrium2"
 	
 	if IS_ANDROID then
 	
-		system "linux"
+		system "android"
 
 		-- global define
 		defines { "ANDROID" }
@@ -157,6 +160,7 @@ group "Dependencies"
 		
 -- dependencies are in separate configuration
 include "src_dependency/premake5.lua"
+include "src_dependency_android/premake5.lua"
 
 group "Core"
 
@@ -195,6 +199,10 @@ project "frameworkLib"
 
 usage "frameworkLib"
     includedirs { Folders.public }
+
+	filter "system:Android"
+		links { "log" }
+	
 	filter "system:Windows"
 		links { "User32" }
 	

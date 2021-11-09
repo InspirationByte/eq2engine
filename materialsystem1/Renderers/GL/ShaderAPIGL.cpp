@@ -1902,7 +1902,7 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 			if (!GLCheckError("create vertex shader"))
 				return -1;
 
-			glShaderSource(prog->m_vertexShader, sizeof(sStr) / sizeof(sStr[0]), sStr, NULL);
+			glShaderSource(prog->m_vertexShader, sizeof(sStr) / sizeof(sStr[0]), (const GLchar **)sStr, NULL);
 			glCompileShader(prog->m_vertexShader);
 
 			GLCheckError("compile vert shader");
@@ -1970,7 +1970,7 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 			if (!GLCheckError("create fragment shader"))
 				return -1;
 
-			glShaderSource(prog->m_fragmentShader, sizeof(sStr) / sizeof(sStr[0]), sStr, NULL);
+			glShaderSource(prog->m_fragmentShader, sizeof(sStr) / sizeof(sStr[0]), (const GLchar**)sStr, NULL);
 			glCompileShader(prog->m_fragmentShader);
 			glGetShaderiv(prog->m_fragmentShader, GL_COMPILE_STATUS, pfsResult);
 

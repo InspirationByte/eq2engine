@@ -4,12 +4,12 @@ usage "SDL2"
 		"SDL2",
 	}
 	
-	filter "system:linux"
+	filter "system:Linux"
 		includedirs {
             "/usr/include/SDL2"
         }
 
-	filter "system:windows"
+	filter "system:Windows"
 		includedirs {
 			"./include"
 		}

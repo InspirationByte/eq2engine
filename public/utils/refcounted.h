@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright ï¿½ Inspiration Byte
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
 // Description: EqEngine mutex storage
@@ -90,36 +90,36 @@ inline bool	RefCountedObject::Ref_Drop()
 
 //-----------------------------------------------------------------------------
 
-template< class PTRTYPE >
+template< class TYPE >
 class CRefPointer
 {
 public:
 						CRefPointer() : m_ptrObj(nullptr) {}
 
-						CRefPointer( PTRTYPE pObject );
-						CRefPointer( const CRefPointer<PTRTYPE>& refptr );
+						CRefPointer( const TYPE& pObject );
+						CRefPointer( const CRefPointer<TYPE>& refptr );
 	virtual				~CRefPointer();
 
 	// frees object (before scope, if you econom-guy)
 	void				Free();
-	void				Assign( const PTRTYPE obj );
+	void				Assign( const TYPE& obj );
 	void				Unassign(bool deref = true);
 
-	operator const		PTRTYPE& () const			{ return (PTRTYPE)m_ptrObj; }
-	operator			PTRTYPE& ()					{ return (PTRTYPE)m_ptrObj; }
-	PTRTYPE				p() const					{ return (PTRTYPE)m_ptrObj; }
-	PTRTYPE				operator->() const			{ return (PTRTYPE)m_ptrObj; }
-	void				operator=( const PTRTYPE obj );
-	void				operator=( const CRefPointer<PTRTYPE>& refptr );
+	operator const		TYPE& () const				{ return m_ptrObj; }
+	operator			TYPE& ()					{ return m_ptrObj; }
+	TYPE				p() const					{ return m_ptrObj; }
+	TYPE				operator->() const			{ return m_ptrObj; }
+	void				operator=( const TYPE& obj );
+	void				operator=( const CRefPointer<TYPE>& refptr );
 
 protected:
-	PTRTYPE				m_ptrObj;
+	TYPE				m_ptrObj;
 };
 
 //------------------------------------------------------------
 
 template< class TYPE >
-inline CRefPointer<TYPE>::CRefPointer( TYPE pObject ) : m_ptrObj(nullptr)
+inline CRefPointer<TYPE>::CRefPointer( const TYPE& pObject ) : m_ptrObj(nullptr)
 {
 	Assign(pObject);
 }
@@ -142,11 +142,11 @@ inline void CRefPointer<TYPE>::Free()
 {
 	if(m_ptrObj &&
 		((RefCountedObject*)m_ptrObj)->Ref_Drop())
-		m_ptrObj = nullptr;
+	m_ptrObj = nullptr;
 }
 
 template< class TYPE >
-inline void CRefPointer<TYPE>::Assign( const TYPE obj )
+inline void CRefPointer<TYPE>::Assign( const TYPE& obj )
 {
 	if(m_ptrObj == obj)
 		return;
@@ -174,7 +174,7 @@ inline void CRefPointer<TYPE>::Unassign(bool deref)
 }
 
 template< class TYPE >
-inline void CRefPointer<TYPE>::operator=( const TYPE obj )
+inline void CRefPointer<TYPE>::operator=( const TYPE& obj )
 {
 	Assign( obj );
 }

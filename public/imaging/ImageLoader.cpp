@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright ï¿½ Inspiration Byte
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
 // Description: Image loader
@@ -10,12 +10,12 @@
 #include "core/IFileSystem.h"
 
 #include "math/math_common.h"
+#include "math/Vector.h"
+#include "utils/strtools.h"
 
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
-
-#include "math/Vector.h"
 
 #ifndef NO_JPEG
 

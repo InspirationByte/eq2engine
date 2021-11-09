@@ -23,6 +23,7 @@
 #include "core/IFileSystem.h"
 
 #include "utils/DkLinkedList.h"
+#include "utils/KeyValues.h"
 
 #include "sys_in_console.h"
 #include "sys_window.h"
@@ -40,7 +41,9 @@ extern "C"
 
 DECLARE_CVAR_NONSTATIC(__cheats,1,"Wireframe",CV_INVISIBLE);
 
-#if defined(ANDROID) && defined(EQ_USE_SDL)
+#if defined(ANDROID)
+#include "SDL_messagebox.h"
+#include "SDL_system.h"
 
 void EQSDLMessageBoxCallback(const char* messageStr, EMessageBoxType type )
 {
@@ -61,7 +64,7 @@ void EQSDLMessageBoxCallback(const char* messageStr, EMessageBoxType type )
 	}
 }
 
-#endif // ANDROID && EQ_USE_SDL
+#endif // ANDROID
 
 #ifdef _WIN32
 int WINAPI WinMain(HINSTANCE hThisInst, HINSTANCE hLastInst, LPSTR lpszCmdLine, int nCmdShow)

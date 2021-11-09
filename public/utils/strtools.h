@@ -38,9 +38,13 @@ static const char INCORRECT_PATH_SEPARATOR_STR[2] = {INCORRECT_PATH_SEPARATOR, '
 #define _vsnwprintf vswprintf
 #define _snprintf snprintf
 
+#define stricmp(a, b)			strcasecmp(a, b)
+
 #endif // LINUX
 
 #ifdef ANDROID
+
+#define stricmp(a, b)			strcasecmp(a, b)
 
 typedef __builtin_va_list	va_list;
 #ifndef va_start

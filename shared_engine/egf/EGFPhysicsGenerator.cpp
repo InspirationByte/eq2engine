@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright ï¿½ Inspiration Byte
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
 // Description: Equilibrium physics object generator
@@ -513,11 +513,11 @@ bool CEGFPhysicsGenerator::CreateRagdollObjects( DkList<dsmvertex_t>& vertices, 
 		physjoint_t joint;
 
 		memset(joint.name, 0, sizeof(joint.name));
-		strcpy_s(joint.name, m_srcModel->bones[i]->name);
+		strcpy(joint.name, m_srcModel->bones[i]->name);
 
 		physNamedObject_t obj;
 		memset(obj.name, 0, sizeof(obj.name));
-		strcpy_s(obj.name, m_srcModel->bones[i]->name);
+		strcpy(obj.name, m_srcModel->bones[i]->name);
 		obj.object = object;
 
 		// add object after building
@@ -670,7 +670,7 @@ bool CEGFPhysicsGenerator::CreateCompoundOrSeparateObjects( DkList<dsmvertex_t>&
 
 		physNamedObject_t obj;
 		memset(obj.name, 0, sizeof(obj.name));
-		strcpy_s(obj.name, KV_GetValueString(m_physicsParams, 0, EqString::Format("obj_%d", m_objects.numElem()).ToCString()));
+		strcpy(obj.name, KV_GetValueString(m_physicsParams, 0, EqString::Format("obj_%d", m_objects.numElem()).ToCString()));
 
 		obj.object = object;
 
@@ -712,9 +712,9 @@ bool CEGFPhysicsGenerator::CreateCompoundOrSeparateObjects( DkList<dsmvertex_t>&
 			memset(obj.name, 0, sizeof(obj.name));
 
 			if(m_physicsParams->values.numElem() > 0)
-				strcpy_s(obj.name, EqString::Format("%s_part%d", KV_GetValueString(m_physicsParams), i).ToCString());
+				strcpy(obj.name, EqString::Format("%s_part%d", KV_GetValueString(m_physicsParams), i).ToCString());
 			else
-				strcpy_s(obj.name, EqString::Format("obj_%d", m_objects.numElem()).ToCString());
+				strcpy(obj.name, EqString::Format("obj_%d", m_objects.numElem()).ToCString());
 
 			m_objects.append(obj);
 		}
@@ -760,7 +760,7 @@ bool CEGFPhysicsGenerator::CreateSingleObject( DkList<dsmvertex_t>& vertices, Dk
 
 	physNamedObject_t obj;
 	memset(obj.name, 0, sizeof(obj.name));
-	strcpy_s(obj.name, KV_GetValueString(m_physicsParams, 0, EqString::Format("obj_%d", m_objects.numElem()).ToCString()));
+	strcpy(obj.name, KV_GetValueString(m_physicsParams, 0, EqString::Format("obj_%d", m_objects.numElem()).ToCString()));
 
 	obj.object = object;
 

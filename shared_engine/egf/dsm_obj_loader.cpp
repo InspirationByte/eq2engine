@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright ï¿½ Inspiration Byte
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
 // Description: Equilibrium Shared Model loader, obj support
@@ -10,6 +10,7 @@
 #include "core/DebugInterface.h"
 #include "core/IFileSystem.h"
 #include "utils/Tokenizer.h"
+#include "utils/strtools.h"
 
 #include "math/Utility.h"
 

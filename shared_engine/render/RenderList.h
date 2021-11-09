@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright ï¿½ Inspiration Byte
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
 // Description: DakrTech scene renderer renderable
@@ -35,7 +35,7 @@ public:
 	void								Clear();										// clear it
 protected:
 
-	static int CRenderList::DistanceCompare(CBaseRenderableObject* const& a, CBaseRenderableObject* const& b);
+	static int DistanceCompare(CBaseRenderableObject* const& a, CBaseRenderableObject* const& b);
 
 	DkList<CBaseRenderableObject*>		m_ObjectList;
 };

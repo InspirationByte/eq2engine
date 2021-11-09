@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright ï¿½ Inspiration Byte
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
 // Description: Equilibrium Shared Model loader
@@ -12,6 +12,7 @@
 
 #include "core/DebugInterface.h"
 #include "utils/KeyValues.h"
+#include "utils/strtools.h"
 
 #include <stdio.h>
 

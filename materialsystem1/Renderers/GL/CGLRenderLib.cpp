@@ -1051,12 +1051,14 @@ IEqSwapChain* CGLRenderLib::CreateSwapChain(void* window, bool windowed)
 {
 	CGLSwapChain* pNewChain = new CGLSwapChain();
 
+#ifdef PLAT_WIN
 	if (!pNewChain->Initialize((HWND)window, g_shaderApi.m_params->verticalSyncEnabled, windowed))
 	{
 		MsgError("ERROR: Can't create OpenGL swapchain!\n");
 		delete pNewChain;
 		return NULL;
 	}
+#endif
 
 	m_swapChains.append(pNewChain);
 	return pNewChain;

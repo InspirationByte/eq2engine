@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright ï¿½ Inspiration Byte
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
 // Description: Keys
@@ -11,6 +11,7 @@
 //#define MOU_MOVE   0x0080
 
 #include "core/platform/Platform.h"
+#include "utils/strtools.h"
 
 #ifdef PLAT_SDL
 #include <SDL_keycode.h>

@@ -25,6 +25,7 @@
 #include "sys/sys_version.h"
 
 #include <SDL_clipboard.h>
+#include <SDL_keyboard.h>
 
 #ifdef _DEBUG
 #define CONSOLE_ENGINEVERSION_STR EqString::Format(ENGINE_NAME " Engine " ENGINE_VERSION " DEBUG build %d (" COMPILE_DATE ")", BUILD_NUMBER_ENGINE).ToCString()
