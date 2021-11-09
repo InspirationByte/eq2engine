@@ -1,0 +1,2 @@
+premake5 android-studio
+pause

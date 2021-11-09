@@ -1,7 +1,9 @@
 -- premake5.lua
 
-require "premake_modules/usage"
-require "premake_modules/android_studio"
+require ".premake_modules/usage"
+require ".premake_modules/android_studio"
+
+IS_ANDROID = (_ACTION == "android-studio")
 
 -- you can redefine dependencies
 DependencyPath = {
@@ -10,7 +12,8 @@ DependencyPath = {
 	["libogg"] = os.getenv("OGG_DIR") or "src_dependency/libogg", 
 	["libvorbis"] = os.getenv("VORBIS_DIR") or "src_dependency/libvorbis", 
 	["libsdl"] = os.getenv("SDL2_DIR") or "src_dependency/SDL2",
-	["openal"] = os.getenv("OPENAL_DIR") or "src_dependency/openal-soft"
+	["openal"] = os.getenv("OPENAL_DIR") or "src_dependency/openal-soft",
+	["AndroidNDK"] = os.getenv("ANDROID_NDK_PATH") or "F:\\Dev\\AndroidSDK\\ndk\\22.0.7026061",
 }
 
 -- default configuration capabilities
@@ -47,6 +50,19 @@ workspace "Equilibrium2"
 	objdir "build"
 	targetdir "bin/%{cfg.platform}/%{cfg.buildcfg}"
 	location "project_%{_ACTION}"
+	
+	if IS_ANDROID then
+		androidabis { 
+			"armeabi", "armeabi-v7a", "arm64-v8a" --"x86", "x86_64" 
+		}
+		--gradlewrapper {
+		--	"distributionUrl=https://services.gradle.org/distributions/gradle-4.10.2-all.zip"
+		--}
+		gradleversion "com.android.tools.build:gradle:3.2.0"
+		androidsdkversion "26"
+		androidminsdkversion "16"
+		androidndkpath "%{DependencyPath.AndroidNDK}"
+	end
 
     filter "system:linux"
         buildoptions {
@@ -243,6 +259,6 @@ include "premake5-eq1.lua"
 include "game/DriverSyndicate/premake5.lua"
 
 -- only build tools for big machines
-if os.host() == "windows" or os.host() == "linux" then
+if (os.target() == "windows" or os.target() == "linux") and not IS_ANDROID then
     include "utils/premake5.lua"
 end
