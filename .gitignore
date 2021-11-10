@@ -35,3 +35,8 @@ src_dependency/lua51/*
 !src_dependency/SDL2/premake5.lua
 !src_dependency/zlib/premake5.lua
 !src_dependency/lua51/premake5.lua
+
+src_dependency_android/SDL2/*
+!src_dependency_android/SDL2/premake5.lua
+src_dependency_android/openal-soft/*
+!src_dependency_android/openal-soft/premake5.lua
