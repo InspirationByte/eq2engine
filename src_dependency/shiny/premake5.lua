@@ -12,6 +12,10 @@ project "shinyProfiler"
 		"**.h",
 		"**.c"
 	}
+	
+	defines {
+		"SHINY_STATIC_LINK=TRUE"
+	}
 
 	filter "configurations:Debug"
 		runtime "Debug"

@@ -1,27 +1,34 @@
--- FIXME: if NOT using OpenAL from sources but precompiled it needs to be removed
---[[project "openal-soft"
+project "openal_soft"
 	kind "StaticLib"
 	language "C++"
-	cppdialect "C++14"
+	cppdialect "C++17"
 
 	includedirs
 	{
-		"src",
-		"src/alc",
-		"src/common",
-		"include",
-		"include/AL"
+		"./",
+		"./include",
+		"./al",
+		"./alc",
+		"./common",	
+		"./core",
+		"./build-android"
 	}
 
 	files
 	{
-		"src/**.h",
-		"src/**.cpp"
-	}
-
-	excludes
-	{
-		"src/alc/mixer/mixer_neon.cpp"
+		"./common/**.h",
+		"./common/**.cpp",
+		"./core/**.h",
+		"./core/**.cpp",
+		"./al/**.h",
+		"./al/**.cpp",
+		"./alc/*.h",
+		"./alc/*.cpp",
+		"./alc/effects/*.h",
+		"./alc/effects/*.cpp",
+		"./alc/backends/base.cpp",
+		"./alc/backends/loopback.cpp",
+		"./alc/backends/null.cpp"
 	}
 
 	defines
@@ -29,26 +36,24 @@
 		"AL_LIBTYPE_STATIC"
 	}
 	
-	filter "system:windows"
-		systemversion "latest"
-
+	filter "system:android"
+		-- TODO: detect abi
+		removefiles {
+			"./core/mixer/mixer_sse.cpp",
+			"./core/mixer/mixer_sse2.cpp",
+			"./core/mixer/mixer_sse41.cpp"
+		}
+		
+		files {
+			"./alc/backends/opensl.cpp",
+		}
+		
 		defines
 		{
-			"WIN32",
-			"_WINDOWS",
-			"AL_BUILD_LIBRARY",
-			"AL_ALEXT_PROTOTYPES",
-			"_WIN32",
-			"_WIN32_WINNT=0x0502",
-			"_CRT_SECURE_NO_WARNINGS",
+			"ALSOFT_REQUIRE_OPENSL",
+			"RESTRICT=__restrict",
 			"NOMINMAX",
-			"CMAKE_INTDIR=\"Debug\"",
-			"OpenAL_EXPORTS"
-		}
-
-		links
-		{
-			"winmm"
+			"AL_ALEXT_PROTOTYPES"
 		}
 
 	filter "configurations:Debug"
@@ -58,21 +63,11 @@
 	filter "configurations:Release"
 		runtime "Release"
 		optimize "on"
-]]
+
 usage "openal-soft"
 	includedirs {
 		"include",
 		"include/AL"
 	}
 
-	links "OpenAL32"
-	
-	filter "platforms:x64"
-		libdirs {
-			"./libs/Win64"
-		}
-		
-	filter "platforms:x86"
-		libdirs {
-			"./libs/Win32"
-		}
+	links "openal_soft"

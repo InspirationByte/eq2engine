@@ -268,7 +268,7 @@ extern "C" { /* end of c++ */
 class ShinyEndNodeOnDestruction {
 public:
 
-	SHINY_INLINE ~ShinyEndNodeOnDestruction() {
+	inline ~ShinyEndNodeOnDestruction() {
 		ShinyManager_endCurNode(&Shiny_instance);
 	}
 };

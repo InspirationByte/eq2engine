@@ -7,7 +7,6 @@ include(DependencyPath.libvorbis.."/premake5.lua")
 if not IS_ANDROID then
 include(DependencyPath.openal.."/premake5.lua")
 include(DependencyPath.libsdl.."/premake5.lua")
-
 end
 
 include("wxWidgets/premake5.lua")

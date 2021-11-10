@@ -62,7 +62,7 @@ workspace "Equilibrium2"
 	if IS_ANDROID then
 	
 		system "android"
-
+	
 		-- global define
 		defines { "ANDROID" }
 		
@@ -76,10 +76,16 @@ workspace "Equilibrium2"
 			"parentheses",
 			"register",
 			"unused-local-typedef",
+			
 		}
 		
+		--filter "files:**.c"
+		--	buildoptions { "-fgnu89-inline" }
+		
 		buildoptions {
+			
 			"-fpermissive",
+			"-fpic",
 			
 			"-fexceptions",
 			"-pthread",
@@ -89,6 +95,7 @@ workspace "Equilibrium2"
 		}
 		
 		linkoptions {
+			"--no-undefined",
 			"-fexceptions",
 			"-pthread",
 			
@@ -144,12 +151,13 @@ workspace "Equilibrium2"
             "DEBUG"
         }
         symbols "On"
+		optimize "On"
 
     filter "configurations:Release"
         defines {
             "NDEBUG",
         }
-		optimize "Speed"
+		optimize "On"
 
 	filter "system:Windows or system:Linux or system:Android"
 		defines { 
@@ -180,6 +188,7 @@ usage "corelib"
     includedirs {
 		Folders.public
 	}
+	links {"coreLib"}
 	
 -- little framework
 project "frameworkLib"
@@ -199,6 +208,8 @@ project "frameworkLib"
 
 usage "frameworkLib"
     includedirs { Folders.public }
+	
+	links { "frameworkLib" }
 
 	filter "system:Android"
 		links { "log" }
