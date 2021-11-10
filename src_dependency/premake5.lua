@@ -23,25 +23,5 @@ include("lua54/premake5.lua")
 include("sol2/premake5.lua")
 ----[[
 include("lua51/premake5.lua")
-
---if not IS_ANDROID then
-
-usage "oolua"
-    includedirs {
-		"./oolua/include"
-	}
-	links "oolua"
-	
-    filter "platforms:x64"
-        libdirs {
-			"./oolua/libs/x64"
-		}
-		
-	filter "platforms:x86"
-        libdirs {
-			"./oolua/libs/x86"
-		}
-
---end
+include("oolua_premake5.lua")
 --]]
-    
