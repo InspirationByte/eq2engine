@@ -63,9 +63,6 @@ workspace "Equilibrium2"
 	
 		system "android"
 	
-		-- global define
-		defines { "ANDROID" }
-		
 		flags { "NoImportLib" }
 		
 		disablewarnings {
@@ -85,13 +82,9 @@ workspace "Equilibrium2"
 		buildoptions {
 			
 			"-fpermissive",
-			"-fpic",
-			
+
 			"-fexceptions",
 			"-pthread",
-			
-			"-mfloat-abi=softfp",	-- force NEON to be used
-			"-mfpu=neon"
 		}
 		
 		linkoptions {
@@ -161,7 +154,7 @@ workspace "Equilibrium2"
 
 	filter "system:Windows or system:Linux or system:Android"
 		defines { 
-			"PLAT_SDL=1"
+			"EQ_USE_SDL"
 		}
 		
 group "Dependencies"

@@ -1,9 +1,54 @@
-project "SDL2"
+project "hidapi"
 	kind "StaticLib"
+	cppdialect "C++11"
+	includedirs
+	{
+		"./include",
+	}
+	
+	files {
+		"./src/hidapi/android/hid.cpp" 
+	}
+
+project "SDL2"
+	kind "SharedLib"
 	
 	includedirs
 	{
 		"./include",
+	}
+	
+	disablewarnings {
+		"unused-parameter",
+		"sign-compare"
+	}
+
+	links {
+		-- TODO: hidapi
+		"dl", "GLESv1_CM", "GLESv2", "OpenSLES", "log", "android",
+		"hidapi", "cpufeatures"
+	}
+
+	buildoptions {
+		"-Wall",
+		"-Wextra",
+		"-Wdocumentation",
+		"-Wdocumentation-unknown-command",
+		"-Wmissing-prototypes",
+		"-Wunreachable-code-break",
+		"-Wunneeded-internal-declaration",
+		"-Wmissing-variable-declarations",
+		"-Wfloat-conversion",
+		"-Wshorten-64-to-32",
+		"-Wunreachable-code-return",
+		"-Wshift-sign-overflow",
+		"-Wstrict-prototypes",
+		"-Wkeyword-macro",
+	}
+
+	defines
+	{
+		"GL_GLEXT_PROTOTYPES"
 	}
 
 	files
@@ -12,9 +57,10 @@ project "SDL2"
 		"./src/audio/*.c",
 		"./src/audio/android/*.c",
 		"./src/audio/dummy/*.c",
+		"./src/audio/aaudio/*.c",
 		"./src/audio/openslES/*.c",
-		"./src/atomic/SDL_atomic.c.arm",
-		"./src/atomic/SDL_spinlock.c.arm",
+		"./src/atomic/SDL_atomic.c",
+		"./src/atomic/SDL_spinlock.c",
 		"./src/core/android/*.c",
 		"./src/cpuinfo/*.c",
 		"./src/dynapi/*.c",
@@ -25,7 +71,12 @@ project "SDL2"
 		"./src/joystick/*.c",
 		"./src/joystick/android/*.c",
 		"./src/joystick/hidapi/*.c",
+		"./src/joystick/virtual/*.c",
 		"./src/loadso/dlopen/*.c",
+		"./src/locale/*.c",
+		"./src/locale/android/*.c",
+		"./src/misc/*.c",
+		"./src/misc/android/*.c",
 		"./src/power/*.c",
 		"./src/power/android/*.c",
 		"./src/filesystem/android/*.c",
@@ -41,37 +92,7 @@ project "SDL2"
 		"./src/video/*.c",
 		"./src/video/android/*.c",
 		"./src/video/yuv2rgb/*.c",
-		"./src/test/*.c",
-		"./src/hidapi/android/hid.cpp"
-	}
-
-	disablewarnings {
-		"unused-parameter",
-		"no-sign-compare"
-	}
-
-	links {
-		-- TODO: hidapi
-		"dl", "GLESv1_CM", "GLESv2", "OpenSLES", "log", "android"
-	}
-
-	buildoptions {
-		"-Wall",
-		"-Wextra",
-		"-Wdocumentation",
-		"-Wdocumentation-unknown-command",
-		"-Wmissing-prototypes",
-		"-Wunreachable-code-break",
-		"-Wunneeded-internal-declaration",
-		"-Wmissing-variable-declarations",
-		"-Wfloat-conversion",
-		"-Wshorten-64-to-32",
-		"-Wunreachable-code-return",
-	}
-
-	defines
-	{
-		"GL_GLEXT_PROTOTYPES",
+		"./src/test/*.c"
 	}
 
 	filter "configurations:Debug"
@@ -81,11 +102,33 @@ project "SDL2"
 	filter "configurations:Release"
 		runtime "Release"
 		optimize "on"
+		
+project "cpufeatures"
+	kind "StaticLib"
+	includedirs
+	{
+		"${ANDROID_NDK}/sources/android/cpufeatures",
+	}
+	
+	files {
+		"${ANDROID_NDK}/sources/android/cpufeatures/cpu-features.c" 
+	}
+	
+project "SDL2_main"
+	kind "StaticLib"
+	includedirs
+	{
+		"./include",
+	}
+	
+	files {
+		"./src/main/android/SDL_android_main.c" 
+	}
 
 -- SDL2 as a usage
 usage "SDL2"
 	links {
-		"SDL2",
+		"SDL2", "SDL2_main"
 	}
 	
 	filter "system:Linux"
