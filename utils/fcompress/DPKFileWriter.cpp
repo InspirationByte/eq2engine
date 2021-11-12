@@ -58,7 +58,7 @@ void DPK_FixSlashes(EqString& str)
 	str.Assign(tempStr);
 }
 
-#ifndef ANDROID
+#ifndef PLAT_ANDROID
 
 CDPKFileWriter::CDPKFileWriter() 
 	: m_ice(0)
@@ -477,4 +477,4 @@ bool CDPKFileWriter::SavePackage()
 	return true;
 }
 
-#endif // !ANDROID
+#endif // !PLAT_ANDROID

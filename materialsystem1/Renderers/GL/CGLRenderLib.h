@@ -97,9 +97,9 @@ protected:
     EGLSurface				eglSurface;
 	EGLConfig				eglConfig;
 
-#ifdef ANDROID
+#ifdef PLAT_ANDROID
 	bool					lostSurface;
-#endif // ANDROID
+#endif // PLAT_ANDROID
 
 #elif defined(_WIN32)
 	DISPLAY_DEVICEA			device;

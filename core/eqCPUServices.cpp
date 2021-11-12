@@ -46,7 +46,7 @@ void cpuidAsm(uint32 op, uint32 reg[4]);
 
 #define cpuid(func, a, b, c, d) { uint32 res[4]; cpuidAsm(func, res); a = res[0]; b = res[1]; c = res[2]; d = res[3]; }
 
-#elif defined(LINUX) || defined(ANDROID)
+#elif defined(LINUX) || defined(PLAT_ANDROID)
 
 #if defined(__arm__)
 
@@ -232,7 +232,7 @@ void CEqCPUCaps::Init()
 	GetSystemInfo(&sysInfo);
 	m_cpuCount = sysInfo.dwNumberOfProcessors;
 
-#elif defined(LINUX) || defined(ANDROID)
+#elif defined(PLAT_LINUX) || defined(PLAT_ANDROID)
 	//m_cpuCount = sysconf(_SC_NPROCESSORS_CONF);
 	m_cpuCount = sysconf(_SC_NPROCESSORS_ONLN);
 
@@ -249,7 +249,7 @@ void CEqCPUCaps::Init()
 	if (m_cpuCount < 1)
 		m_cpuCount = 1;
 
-#ifndef ANDROID
+#ifndef PLAT_ANDROID
 	uint32 maxi, maxei, a, b, c, d;
 
 	m_cpuVendor[12]   = '\0';
@@ -316,7 +316,7 @@ void CEqCPUCaps::Init()
 			m_cpuSSE41 ? "SSE4.1 " : "",
 			m_cpuSSE42 ? "SSE 4.2 " : "");
 	}
-#endif // ANDROID
+#endif // PLAT_ANDROID
 }
 
 // CPU frequency in Hz

@@ -33,7 +33,7 @@
 #include <stdarg.h> // va_*
 #include <dlfcn.h>
 
-#ifdef ANDROID
+#ifdef PLAT_ANDROID
 #include "android_libc/glob.h"		// glob(), globfree()
 #else
 #include <glob.h>					// glob(), globfree()

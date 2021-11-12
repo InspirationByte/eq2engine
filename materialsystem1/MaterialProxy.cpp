@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright ï¿½ Inspiration Byte
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
 // Standard proxy arithmetics - add, multiply, subtract, divide
@@ -9,6 +9,7 @@
 #include "MaterialProxy.h"
 
 #include "utils/KeyValues.h"
+#include "utils/strtools.h"
 
 #include "materialsystem1/IMaterialSystem.h"
 

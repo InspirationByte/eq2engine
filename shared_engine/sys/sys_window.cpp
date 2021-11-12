@@ -86,7 +86,7 @@ EQWNDHANDLE Sys_CreateWindow()
 
 	int sdlFlags = SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE;
 
-#ifdef ANDROID
+#ifdef PLAT_ANDROID
 	nAdjustedPosX = nAdjustedPosY = SDL_WINDOWPOS_UNDEFINED;
 
 	//Get device display mode
@@ -99,7 +99,7 @@ EQWNDHANDLE Sys_CreateWindow()
 
 	// HACK: use SDL_WINDOW_VULKAN to ensure that SDL will not create EGL surface
 	sdlFlags |= SDL_WINDOW_FULLSCREEN;
-#endif // ANDROID
+#endif // PLAT_ANDROID
 	
 	handle = SDL_CreateWindow(DEFAULT_WINDOW_TITLE, nAdjustedPosX, nAdjustedPosY, nAdjustedWide, nAdjustedTall, sdlFlags);
 

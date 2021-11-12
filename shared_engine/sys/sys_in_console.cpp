@@ -48,7 +48,7 @@ DECLARE_CMD(con_show, "Show console", 0)
 	g_consoleInput->SetVisible(true);
 	g_consoleInput->SetLogVisible(false);
 
-#if defined(PLAT_SDL) && defined(ANDROID)
+#if defined(PLAT_SDL) && defined(PLAT_ANDROID)
 	SDL_StartTextInput();
 #endif
 }
@@ -66,7 +66,7 @@ DECLARE_CMD(con_hide, "Hides console", 0)
 	g_consoleInput->SetVisible(false);
 	g_consoleInput->SetLogVisible(false);
 
-#if defined(PLAT_SDL) && defined(ANDROID)
+#if defined(PLAT_SDL) && defined(PLAT_ANDROID)
 	SDL_StopTextInput();
 #endif
 }

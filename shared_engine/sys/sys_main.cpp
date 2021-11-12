@@ -41,7 +41,7 @@ extern "C"
 
 DECLARE_CVAR_NONSTATIC(__cheats,1,"Wireframe",CV_INVISIBLE);
 
-#if defined(ANDROID)
+#if defined(PLAT_ANDROID)
 #include "SDL_messagebox.h"
 #include "SDL_system.h"
 
@@ -64,9 +64,9 @@ void EQSDLMessageBoxCallback(const char* messageStr, EMessageBoxType type )
 	}
 }
 
-#endif // ANDROID
+#endif // PLAT_ANDROID
 
-#ifdef _WIN32
+#ifdef PLAT_WIN
 int WINAPI WinMain(HINSTANCE hThisInst, HINSTANCE hLastInst, LPSTR lpszCmdLine, int nCmdShow)
 {
 #if defined(CRT_DEBUG_ENABLED)
@@ -89,7 +89,7 @@ int WINAPI WinMain(HINSTANCE hThisInst, HINSTANCE hLastInst, LPSTR lpszCmdLine, 
 
 #include <vector>
 
-#ifdef ANDROID
+#ifdef PLAT_ANDROID
 
 #include <android/asset_manager.h>
 #include <android/asset_manager_jni.h>
@@ -269,7 +269,7 @@ void Android_MountFileSystem()
 // posix apps
 int main(int argc, char** argv)
 {
-#ifdef ANDROID
+#ifdef PLAT_ANDROID
     Android_InitJNI(); // initialize JNI
 
 	if (!Android_InitCore(argc, argv))
@@ -281,7 +281,7 @@ int main(int argc, char** argv)
 	// init core
 	if (!GetCore()->Init("Game", argc, argv))
 		return -1;
-#endif // ANDROID
+#endif // PLAT_ANDROID
 
 #endif
 

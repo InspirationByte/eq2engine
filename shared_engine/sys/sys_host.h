@@ -97,9 +97,9 @@ public:
 	static void			HostQuitToDesktop();
 	static void 		HostExitCmd(CONCOMMAND_ARGUMENTS);
 
-#ifdef ANDROID
+#ifdef PLAT_ANDROID
 	void*				GetEGLSurfaceFromSDL();
-#endif // ANDROID
+#endif // PLAT_ANDROID
 
 protected:
 

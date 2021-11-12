@@ -283,7 +283,7 @@ bool CGLRenderLib::InitAPI(shaderAPIParams_t& params)
 	eglSurface = EGL_NO_SURFACE;
 
 
-#ifdef ANDROID
+#ifdef PLAT_ANDROID
 	lostSurface = false;
 	externalWindowDisplayParams_t* winParams = (externalWindowDisplayParams_t*)params.windowHandle;
 
@@ -293,18 +293,18 @@ bool CGLRenderLib::InitAPI(shaderAPIParams_t& params)
 #else
 	// other EGL
 	hwnd = (EGLNativeWindowType)params.windowHandle;
-#endif // ANDROID
+#endif // PLAT_ANDROID
 
 	Msg("Initializing EGL context...\n");
 
 	EGLBoolean bsuccess;
 
 	// create native window
-#ifdef ANDROID
+#ifdef PLAT_ANDROID
 	EGLNativeDisplayType nativeDisplay = EGL_DEFAULT_DISPLAY;
 #else
 	EGLNativeDisplayType nativeDisplay = (EGLNativeDisplayType)GetDC((HWND)hwnd);
-#endif // #ifdef ANDROID
+#endif // PLAT_ANDROID
 
 	// get egl display handle
 	eglDisplay = eglGetDisplay(nativeDisplay);
@@ -315,7 +315,7 @@ bool CGLRenderLib::InitAPI(shaderAPIParams_t& params)
 		return false;
 	}
 
-#ifndef ANDROID
+#ifndef PLAT_ANDROID
 	// Initialize the display
 	EGLint major = 0;
 	EGLint minor = 0;
@@ -334,7 +334,7 @@ bool CGLRenderLib::InitAPI(shaderAPIParams_t& params)
 		ErrorMsg("OpenGL ES init error: System does not support at least EGL 1.0");
 		return false;
 	}
-#endif // ANDROID
+#endif // PLAT_ANDROID
 
 	eglBindAPI(EGL_OPENGL_ES_API);
 
@@ -859,7 +859,7 @@ void CGLRenderLib::ExitAPI()
 
 void CGLRenderLib::BeginFrame()
 {
-#ifdef ANDROID
+#ifdef PLAT_ANDROID
 	if (lostSurface && glContext != NULL)
 	{
 		MsgInfo("Creating surface...\n");
@@ -881,7 +881,7 @@ void CGLRenderLib::BeginFrame()
 
 		lostSurface = false;
 	}
-#endif // ANDROID
+#endif // PLAT_ANDROID
 
 	// ShaderAPIGL uses m_nViewportWidth/Height as backbuffer size
 	g_shaderApi.m_nViewportWidth = m_width;
@@ -1007,7 +1007,7 @@ void CGLRenderLib::SetFocused(bool inFocus)
 
 void CGLRenderLib::ReleaseSurface()
 {
-#ifdef ANDROID
+#ifdef PLAT_ANDROID
 	MsgInfo("Detaching surface...\n");
 	eglMakeCurrent(eglDisplay, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
 
@@ -1019,7 +1019,7 @@ void CGLRenderLib::ReleaseSurface()
 	}
 
 	lostSurface = true;
-#endif 
+#endif // PLAT_ANDROID
 }
 
 bool CGLRenderLib::CaptureScreenshot(CImage &img)

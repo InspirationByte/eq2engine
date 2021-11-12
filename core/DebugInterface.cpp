@@ -17,10 +17,10 @@
 #include <direct.h>
 #endif
 
-#ifdef ANDROID
+#ifdef PLAT_ANDROID
 #include <android/log.h>
 #define EQENGINE_LOG_TAG(v) EqString::Format("%s %s", GetCore()->GetApplicationName(), v).ToCString()
-#endif // ANDROID
+#endif // PLAT_ANDROID
 
 static const char* s_spewTypeStr[] = {
 	"",
@@ -214,14 +214,14 @@ void Log_WriteBOM(const char* fileName)
 
 void SpewMessage(SpewType_t spewtype, char const* msg)
 {
-#ifdef ANDROID
+#ifdef PLAT_ANDROID
 	const char* logTag = EQENGINE_LOG_TAG(s_spewTypeStr[spewtype]);
 
 	// force log into android debug output
 	__android_log_print(ANDROID_LOG_DEBUG, logTag, "%s", msg);
 #else
 
-#endif // ANDROID
+#endif // PLAT_ANDROID
 
 	{
 		Threading::CScopedMutex m(g_debugOutputMutex);

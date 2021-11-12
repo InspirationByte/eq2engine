@@ -215,7 +215,7 @@ void CGameHost::GetVideoModes(DkList<VideoMode_t>& displayModes)
 }
 }
 
-#ifdef ANDROID
+#ifdef PLAT_ANDROID
 void* CGameHost::GetEGLSurfaceFromSDL()
 {
     // set window info
@@ -237,7 +237,7 @@ void* Helper_GetEGLSurfaceFromSDL()
 	return g_pHost->GetEGLSurfaceFromSDL();
 }
 
-#endif // ANDROID
+#endif // PLAT_ANDROID
 
 bool CGameHost::InitSystems( EQWNDHANDLE pWindow )
 {
@@ -304,13 +304,13 @@ bool CGameHost::InitSystems( EQWNDHANDLE pWindow )
 	const char* rendererName = matSystemSettings ? KV_GetValueString(matSystemSettings->FindKeyBase("Renderer"), 0, NULL) : "eqD3D9RHI";
 	const char* materialsPath = matSystemSettings ? KV_GetValueString(matSystemSettings->FindKeyBase("MaterialsPath"), 0, NULL) : "materials/";
 
-#ifdef _WIN32
+#ifdef PLAT_WIN
 	materials_config.shaderapi_params.windowHandle = winfo.info.win.window;
-#elif LINUX
+#elif PLAT_LINUX
 	materials_config.shaderapi_params.windowHandle = (void*)winfo.info.x11.window;
 #elif APPLE
 	materials_config.shaderapi_params.windowHandle = (void*)winfo.info.cocoa.window;
-#elif ANDROID
+#elif PLAT_ANDROID
 
     externalWindowDisplayParams_t winParams;
     winParams.window = (void*)winfo.info.android.window;
@@ -330,7 +330,7 @@ bool CGameHost::InitSystems( EQWNDHANDLE pWindow )
 
     bool materialSystemStatus = false;
 
-#ifndef _WIN32
+#ifndef PLAT_WIN
 	rendererName = "libeqGLRHI";
 #endif // _WIN32
 

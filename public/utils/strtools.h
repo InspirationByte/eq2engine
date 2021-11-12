@@ -10,8 +10,9 @@
 
 #define ASCIILINESZ         (1024)
 
-#include "utils/DkList.h"
+#include "core/platform/PlatformDef.h"
 
+#include "utils/DkList.h"
 #include "utils/eqstring.h"
 #include "utils/eqwstring.h"
 
@@ -42,9 +43,7 @@ static const char INCORRECT_PATH_SEPARATOR_STR[2] = {INCORRECT_PATH_SEPARATOR, '
 
 #endif // LINUX
 
-#ifdef ANDROID
-
-#define stricmp(a, b)			strcasecmp(a, b)
+#ifdef PLAT_ANDROID
 
 typedef __builtin_va_list	va_list;
 #ifndef va_start
