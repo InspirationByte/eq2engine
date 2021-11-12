@@ -53,7 +53,7 @@ project "SDL2"
 
 	files
 	{
-		"./src/*.c",
+		--[["./src/*.c",
 		"./src/audio/*.c",
 		"./src/audio/android/*.c",
 		"./src/audio/dummy/*.c",
@@ -92,7 +92,41 @@ project "SDL2"
 		"./src/video/*.c",
 		"./src/video/android/*.c",
 		"./src/video/yuv2rgb/*.c",
-		"./src/test/*.c"
+		"./src/test/*.c"]]
+		
+		"./src/*.c",
+		"./src/audio/*.c",
+		"./src/audio/android/*.c",
+		"./src/audio/dummy/*.c",
+		"./src/audio/openslES/*.c",
+		"./src/atomic/*.c",
+		"./src/core/android/*.c",
+		"./src/cpuinfo/*.c",
+		"./src/dynapi/*.c",
+		"./src/events/*.c",
+		"./src/file/*.c",
+		"./src/haptic/*.c",
+		"./src/haptic/android/*.c",
+		"./src/joystick/*.c",
+		"./src/joystick/android/*.c",
+		"./src/joystick/hidapi/*.c",
+		"./src/loadso/dlopen/*.c",
+		"./src/power/*.c",
+		"./src/power/android/*.c",
+		"./src/filesystem/android/*.c",
+		"./src/sensor/*.c",
+		"./src/sensor/android/*.c",
+		"./src/render/*.c",
+		"./src/render/*/*.c",
+		"./src/stdlib/*.c",
+		"./src/thread/*.c",
+		"./src/thread/pthread/*.c",
+		"./src/timer/*.c",
+		"./src/timer/unix/*.c",
+		"./src/video/*.c",
+		"./src/video/android/*.c",
+		"./src/video/yuv2rgb/*.c",
+		"./src/test/*.c",
 	}
 
 	filter "configurations:Debug"
