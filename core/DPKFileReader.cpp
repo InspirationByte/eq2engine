@@ -7,7 +7,8 @@
 
 #include "DPKFileReader.h"
 
-#include "core/IFileSystem.h"		// for base path
+#include "FileSystem.h"
+
 #include "core/DebugInterface.h"
 
 #include <malloc.h>
@@ -396,11 +397,7 @@ bool CDPKFileReader::InitPackage(const char *filename, const char* mountPath /*=
 	m_dpkFiles = nullptr;
 
     m_packageName = filename;
-
-	if (filename[0] != CORRECT_PATH_SEPARATOR)
-		CombinePath(m_packagePath, 2, g_fileSystem->GetBasePath(), filename);
-	else
-		m_packagePath = m_packageName;
+	m_packagePath = ((CFileSystem*)g_fileSystem)->GetAbsolutePath(SP_ROOT, filename);
 
     FILE* dpkFile = fopen(m_packagePath.ToCString(),"rb");
 

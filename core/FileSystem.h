@@ -57,6 +57,8 @@ class CBasePackageFileReader;
 class CFileSystem : public IFileSystem
 {
 	friend class CFile;
+	friend class CDPKFileReader;
+	friend class CZipFileReader;
 public:
 								 CFileSystem();
 								~CFileSystem();
