@@ -28,8 +28,6 @@
 #include "utils/strtools.h"
 #include "utils/KeyValues.h"
 
-HOOK_TO_CVAR(r_loadmiplevel);
-
 bool InternalCreateRenderTarget(LPDIRECT3DDEVICE9 dev, CD3D9Texture *tex, int nFlags);
 
 // only needed for unmanaged textures
@@ -2720,6 +2718,7 @@ IDirect3DBaseTexture9* ShaderAPID3DX9::CreateD3DTextureFromImage(CImage* pSrc, i
 	if(!pSrc)
 		return NULL;
 
+	HOOK_TO_CVAR(r_loadmiplevel);
 	int nQuality = r_loadmiplevel->GetInt();
 
 	// force quality to best
@@ -2809,6 +2808,8 @@ void ShaderAPID3DX9::CreateTextureInternal(ITexture** pTex, const DkList<CImage*
 {
 	if(!pImages.numElem())
 		return;
+
+	HOOK_TO_CVAR(r_loadmiplevel);
 
 	CD3D9Texture* pTexture = NULL;
 

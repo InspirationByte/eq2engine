@@ -62,6 +62,8 @@ workspace "Equilibrium2"
 	if IS_ANDROID then
 	
 		system "android"
+		
+		--aaroutputpath "android_bin/"
 	
 		flags { "NoImportLib" }
 		
@@ -75,9 +77,6 @@ workspace "Equilibrium2"
 			"unused-local-typedef",
 			
 		}
-		
-		--filter "files:**.c"
-		--	buildoptions { "-fgnu89-inline" }
 		
 		buildoptions {
 			
@@ -99,12 +98,7 @@ workspace "Equilibrium2"
 		androidabis { 
 			"armeabi-v7a", "arm64-v8a" --"x86", "x86_64" 
 		}
-		
-		androiddependencies
-		{
-			--"com.android.support:support-v4:27.1.0",
-		}
-		
+				
 		androidrepositories
 		{
 			"jcenter()",
@@ -113,11 +107,12 @@ workspace "Equilibrium2"
 		}
 		
 		gradlewrapper {
-			"distributionUrl=https://services.gradle.org/distributions/gradle-4.10.2-all.zip"
+			--"distributionUrl=https://services.gradle.org/distributions/gradle-4.10.2-all.zip"
+			"distributionUrl=https://services.gradle.org/distributions/gradle-7.0.2-all.zip"
 		}
 		
-		gradleversion "com.android.tools.build:gradle:3.2.0"
-		--gradleversion "com.android.tools.build:gradle:7.0.0"
+		--gradleversion "com.android.tools.build:gradle:3.2.0"
+		gradleversion "com.android.tools.build:gradle:7.0.0"
 		androidsdkversion "26"
 		androidminsdkversion "16"
 		--androidndkpath(DependencyPath.AndroidNDK)
@@ -144,7 +139,6 @@ workspace "Equilibrium2"
             "DEBUG"
         }
         symbols "On"
-		optimize "On"
 
     filter "configurations:Release"
         defines {

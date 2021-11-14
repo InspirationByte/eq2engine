@@ -744,7 +744,6 @@ bool CGLRenderLib::InitAPI(shaderAPIParams_t& params)
 	glGetIntegerv(GL_MAX_VERTEX_TEXTURE_IMAGE_UNITS, &caps.maxVertexTextureUnits);
 	caps.maxVertexTextureUnits = min(caps.maxVertexTextureUnits, MAX_VERTEXTEXTURES);
 
-
 	glGetIntegerv(GL_MAX_VERTEX_ATTRIBS, &caps.maxVertexGenericAttributes);
 
 	// limit by the MAX_GL_GENERIC_ATTRIB defined by ShaderAPI

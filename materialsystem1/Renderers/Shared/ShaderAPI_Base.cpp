@@ -93,6 +93,8 @@ void ShaderAPI_Base::Init( shaderAPIParams_t &params )
 
 	// Do master reset for all things
 	Reset();
+	
+	DevMsg(DEVMSG_SHADERAPI, "[DEBUG] Generate error texture...\n");
 
 	m_pErrorTexture = GenerateErrorTexture();
 	m_pErrorTexture->Ref_Grab();
@@ -366,8 +368,6 @@ ITexture* ShaderAPI_Base::FindTexture(const char* pszName)
 
 SamplerStateParam_t ShaderAPI_Base::MakeSamplerState(ER_TextureFilterMode textureFilterType,ER_TextureAddressMode addressS, ER_TextureAddressMode addressT, ER_TextureAddressMode addressR)
 {
-	HOOK_TO_CVAR(r_anisotropic);
-
 	/*
 	for(int i = 0; i < m_SamplerStates.numElem();i++)
 	{
@@ -393,6 +393,8 @@ SamplerStateParam_t ShaderAPI_Base::MakeSamplerState(ER_TextureFilterMode textur
 	newParam.compareFunc = COMP_LESS;
 
 	newParam.lod = 0.0f;
+
+	HOOK_TO_CVAR(r_anisotropic);
 
 	newParam.aniso = (int)clamp(m_caps.maxTextureAnisotropicLevel,0, r_anisotropic->GetInt());
 

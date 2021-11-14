@@ -206,8 +206,6 @@ int GLWorkerThread::Run()
 
 GLWorkerThread glWorker;
 
-HOOK_TO_CVAR(r_loadmiplevel);
-
 #ifdef PLAT_LINUX
 #include "glx_caps.hpp"
 #endif // PLAT_LINUX
@@ -1077,6 +1075,7 @@ GLTextureRef_t ShaderAPIGL::CreateGLTextureFromImage(CImage* pSrc, const Sampler
 		return noTexture;
 	}
 
+	HOOK_TO_CVAR(r_loadmiplevel);
 	int nQuality = r_loadmiplevel->GetInt();
 
 	// force quality to best
@@ -1159,6 +1158,8 @@ void ShaderAPIGL::CreateTextureInternal(ITexture** pTex, const DkList<CImage*>& 
 
 	int wide = 0, tall = 0;
 	int mipCount = 0;
+
+	HOOK_TO_CVAR(r_loadmiplevel);
 
 	for(int i = 0; i < pImages.numElem(); i++)
 	{
