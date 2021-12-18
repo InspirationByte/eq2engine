@@ -9,8 +9,8 @@ include(DependencyPath.openal.."/premake5.lua")
 include(DependencyPath.libsdl.."/premake5.lua")
 
 -- before we fix NDK 21...
-include("lua54/premake5.lua")
-include("sol2/premake5.lua")
+--include("lua54/premake5.lua")
+--include("sol2/premake5.lua")
 end
 
 include("wxWidgets/premake5.lua")
