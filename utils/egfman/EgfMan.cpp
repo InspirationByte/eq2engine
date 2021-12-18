@@ -41,7 +41,7 @@
 
 #include "grid.h"
 
-
+#include <wx/settings.h>
 
 static eqJobThreadDesc_t s_jobTypes[] = {
 	//{JOB_TYPE_ANY, 1},
@@ -1439,9 +1439,7 @@ void CEGFViewFrame::OnButtons(wxCommandEvent& event)
 	
 }
 
-#undef IMPLEMENT_WXWIN_MAIN
-
-bool InitCore(HINSTANCE hInstance, char *pCmdLine)
+bool InitCore(char *pCmdLine)
 {
 	// initialize core
 	GetCore()->Init("EGFMan", pCmdLine);
@@ -1454,37 +1452,29 @@ bool InitCore(HINSTANCE hInstance, char *pCmdLine)
 	return true;
 }
 
-#undef wxIMPLEMENT_WXWIN_MAIN
-
-#define wxIMPLEMENT_WXWIN_MAIN                                              \
-    extern "C" int WINAPI WinMain(HINSTANCE hInstance,                      \
-                                  HINSTANCE hPrevInstance,                  \
-                                  wxCmdLineArgType lpCmdLine,     \
-                                  int nCmdShow)                             \
-    {                                                                       \
-        wxDISABLE_DEBUG_SUPPORT();                                          \
-                                                                            \
-        /* NB: We pass NULL in place of lpCmdLine to behave the same as  */ \
-        /*     Borland-specific wWinMain() above. If it becomes needed   */ \
-        /*     to pass lpCmdLine to wxEntry() here, you'll have to fix   */ \
-        /*     wWinMain() above too.                                     */ \
-		if(!InitCore(hInstance,lpCmdLine)) return -1;						\
-        return wxEntry(hInstance, hPrevInstance, NULL, 0);           \
-    }                                                                       \
-    wxIMPLEMENT_WXWIN_MAIN_BORLAND_NONSTANDARD
-
-
 IMPLEMENT_APP(CEGFViewApp)
-
-typedef int (*winmain_wx_cb)(HINSTANCE hInstance, HINSTANCE hPrevInstance, char *pCmdLine, int nCmdShow);
-
-winmain_wx_cb g_wxEntryCallback = wxEntry;
 
 CEGFViewFrame *g_pMainFrame = NULL;
 
 bool CEGFViewApp::OnInit()
 {
-	setlocale(LC_ALL,"C");
+#ifdef _DEBUG
+	int flag = _CrtSetDbgFlag(_CRTDBG_REPORT_FLAG); // Get current flag
+	flag |= _CRTDBG_LEAK_CHECK_DF; // Turn on leak-checking bit
+	//flag |= _CRTDBG_CHECK_ALWAYS_DF; // Turn on CrtCheckMemory
+	flag |= _CRTDBG_ALLOC_MEM_DF;
+	_CrtSetDbgFlag(flag); // Set flag to the new value
+	_CrtSetReportMode(_CRT_ERROR, _CRTDBG_MODE_DEBUG);
+	_CrtSetReportMode(_CRT_ASSERT, _CRTDBG_MODE_WNDW);
+#endif
+
+#ifdef _WIN32
+	InitCore(GetCommandLineA());
+#elif __WXGTK__
+	InitCore("");
+#endif
+
+	setlocale(LC_ALL, "C");
 
 	// first, load matsystem module
 	g_matsysmodule = g_fileSystem->LoadModule("EqMatSystem.dll");

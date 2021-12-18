@@ -760,7 +760,6 @@ void CMainWindow::OnButtons(wxCommandEvent& event)
 
 }
 
-//#undef IMPLEMENT_WXWIN_MAIN
 
 bool InitCore(const char *pCmdLine)
 {
@@ -774,10 +773,6 @@ bool InitCore(const char *pCmdLine)
 }
 
 IMPLEMENT_APP(CWXTemplateApplication)
-
-//typedef int (*winmain_wx_cb)(HINSTANCE hInstance, HINSTANCE hPrevInstance, char *pCmdLine, int nCmdShow);
-
-//winmain_wx_cb g_wxEntryCallback = wxEntry;
 
 CMainWindow *g_pMainFrame = NULL;
 
