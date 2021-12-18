@@ -1437,7 +1437,9 @@ void CMaterialSystem::SetBlendingStates(ER_BlendFactor nSrcFactor, ER_BlendFacto
 
 	IRenderState* state = nullptr;
 
-	if( !m_blendStates.count(stateIndex) )
+	auto blendState = m_blendStates.find(stateIndex);
+
+	if(blendState == m_blendStates.end())
 	{
 		BlendStateParam_t desc;
 		// no sense to enable blending when no visual effects...
@@ -1451,7 +1453,7 @@ void CMaterialSystem::SetBlendingStates(ER_BlendFactor nSrcFactor, ER_BlendFacto
 		m_blendStates[stateIndex] = state;
 	}
 	else
-		state = m_blendStates[stateIndex];
+		state = blendState->second;
 
 	g_pShaderAPI->SetBlendingState( state );
 }
@@ -1479,7 +1481,9 @@ void CMaterialSystem::SetDepthStates(bool bDoDepthTest, bool bDoDepthWrite, ER_C
 
 	IRenderState* state = nullptr;
 
-	if( !m_depthStates.count(stateIndex) )
+	auto depthState = m_depthStates.find(stateIndex);
+
+	if(depthState == m_depthStates.end())
 	{
 		DepthStencilStateParams_t desc;
 		desc.depthWrite = bDoDepthWrite;
@@ -1491,7 +1495,7 @@ void CMaterialSystem::SetDepthStates(bool bDoDepthTest, bool bDoDepthWrite, ER_C
 		m_depthStates[stateIndex] = state;
 	}
 	else
-		state = m_depthStates[stateIndex];
+		state = depthState->second;
 
 	g_pShaderAPI->SetDepthStencilState( state );
 }
@@ -1521,7 +1525,9 @@ void CMaterialSystem::SetRasterizerStates(ER_CullMode nCullMode, ER_FillMode nFi
 
 	IRenderState* state = nullptr;
 
-	if( !m_rasterStates.count(stateIndex) )
+	auto rasterState = m_rasterStates.find(stateIndex);
+
+	if(rasterState == m_rasterStates.end())
 	{
 		RasterizerStateParams_t desc;
 		desc.cullMode = nCullMode;
@@ -1540,7 +1546,7 @@ void CMaterialSystem::SetRasterizerStates(ER_CullMode nCullMode, ER_FillMode nFi
 		m_rasterStates[stateIndex] = state;
 	}
 	else
-		state = m_rasterStates[stateIndex];
+		state = rasterState->second;
 
 	g_pShaderAPI->SetRasterizerState( state );
 }
