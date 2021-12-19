@@ -256,7 +256,7 @@ project "sysLib"
     includedirs {
 		Folders.shared_engine
 	}
-    
+	links { "Shcore.lib" }
 
 project "equiLib"
 	kind "StaticLib"
