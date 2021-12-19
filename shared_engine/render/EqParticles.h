@@ -195,19 +195,19 @@ enum EffectFlags_e
 
 struct PFXBillboard_t
 {
-	CPFXAtlasGroup*		group;		// atlas
-	TexAtlasEntry_t*	tex;	// texture name in atlas
+	CPFXAtlasGroup*		group { nullptr };		// atlas
+	TexAtlasEntry_t*	tex {nullptr};			// texture name in atlas
 
 	Vector4D			vColor;
 	Vector3D			vOrigin;
 	Vector3D			vLockDir;
 
-	float				fWide;
-	float				fTall;
+	float				fWide { 1.0f };
+	float				fTall { 1.0f };
 
-	float				fZAngle;
+	float				fZAngle { 1.0f };
 
-	int					nFlags;
+	int					nFlags { 0 };
 };
 
 // draws particle
