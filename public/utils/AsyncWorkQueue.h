@@ -10,9 +10,9 @@
 #ifndef ASYNCWORKQUEUE_H
 #define ASYNCWORKQUEUE_H
 
-#include <functional>
 #include "utils/eqthread.h"
 #include "utils/DkList.h"
+#include "utils/function.h"
 
 class CAsyncWorkQueue
 {
@@ -21,7 +21,7 @@ public:
 	{
 	}
 
-	int		Push(std::function<int()> f);
+	int		Push(EqFunction<int()> f);
 	int		RunAll();
 	void	RemoveAll();
 

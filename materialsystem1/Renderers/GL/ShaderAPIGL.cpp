@@ -25,8 +25,8 @@
 #include "utils/strtools.h"
 #include "utils/KeyValues.h"
 #include "utils/eqthread.h"
+#include "utils/function.h"
 
-#include <functional>
 #include <atomic>
 
 extern ShaderAPIGL g_shaderApi;
@@ -67,13 +67,13 @@ public:
 	}
 
 	// syncronous execution
-	int WaitForExecute(const char* name, std::function<int()> f)
+	int WaitForExecute(const char* name, EqFunction<int()> f)
 	{
 		return AddWork(name, f, true);
 	}
 
 	// asyncronous execution
-	void Execute(const char* name, std::function<int()> f)
+	void Execute(const char* name, EqFunction<int()> f)
 	{
 		AddWork(name, f, false);
 	}
@@ -81,11 +81,11 @@ public:
 protected:
 	int Run();
 
-	int AddWork(const char* name, std::function<int()> f, bool blocking);
+	int AddWork(const char* name, EqFunction<int()> f, bool blocking);
 
 	struct work_t
 	{
-		work_t(const char* _name, std::function<int()> f, uint id, bool block)
+		work_t(const char* _name, EqFunction<int()> f, uint id, bool block)
 		{
 			name = _name;
 			func = f;
@@ -95,7 +95,7 @@ protected:
 		}
 
 		std::atomic<work_t*>	next{ nullptr };
-		std::function<int()>	func;
+		EqFunction<int()>	func;
 
 		const char*				name;
 		
@@ -137,7 +137,7 @@ int GLWorkerThread::WaitForResult(work_t* work)
 	return 0;
 }
 
-int GLWorkerThread::AddWork(const char* name, std::function<int()> f, bool blocking)
+int GLWorkerThread::AddWork(const char* name, EqFunction<int()> f, bool blocking)
 {
 	uintptr_t thisThreadId = Threading::GetCurrentThreadID();
 
@@ -2227,7 +2227,7 @@ int ShaderAPIGL::SetShaderConstantRaw(const char *pszName, const void *data, int
 		{
 			GLShaderConstant_t *uni = uniforms + currUniform;
 
-			const int maxSize = min(nSize, uni->size);
+			const int maxSize = min(nSize, (int)uni->size);
 
 			if (memcmp(uni->data, data, maxSize))
 			{
