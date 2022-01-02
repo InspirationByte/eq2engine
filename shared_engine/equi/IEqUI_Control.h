@@ -10,10 +10,10 @@
 
 #include "core/ppmem.h"
 
-#include "utils/DkList.h"
-#include "utils/DkLinkedList.h"
-#include "utils/eqstring.h"
-#include "utils/eqwstring.h"
+#include "ds/DkList.h"
+#include "ds/DkLinkedList.h"
+#include "ds/eqstring.h"
+#include "ds/eqwstring.h"
 #include "utils/TextureAtlas.h"
 
 #include "math/DkMath.h"

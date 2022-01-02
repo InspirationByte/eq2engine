@@ -13,7 +13,7 @@
 
 // Platform definitions
 #include "core/dktypes.h"
-#include "utils/DkList.h"
+#include "ds/DkList.h"
 #include <stdint.h>
 
 // Various declarations

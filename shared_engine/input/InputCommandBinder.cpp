@@ -13,8 +13,7 @@
 
 #include "utils/strtools.h"
 #include "utils/KeyValues.h"
-#include "utils/strtools.h"
-#include "utils/IVirtualStream.h"
+#include "ds/IVirtualStream.h"
 
 #include "materialsystem1/IMaterialSystem.h"
 

@@ -8,8 +8,8 @@
 #ifndef BASEPACKAGEFILEREADER_H
 #define BASEPACKAGEFILEREADER_H
 
-#include "utils/IVirtualStream.h"
-#include "utils/eqstring.h"
+#include "ds/IVirtualStream.h"
+#include "ds/eqstring.h"
 #include "utils/eqthread.h"
 
 class CBasePackageFileReader;

@@ -25,7 +25,7 @@
 #include "utils/strtools.h"
 #include "utils/KeyValues.h"
 #include "utils/eqthread.h"
-#include "utils/function.h"
+#include "ds/function.h"
 
 #include <atomic>
 

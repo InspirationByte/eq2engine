@@ -16,10 +16,11 @@ TODO:
 
 #include "math/Rectangle.h"
 
+#include "ds/DkList.h"
+#include "ds/DkLinkedList.h"
+
 #include "utils/KeyValues.h"
-#include "utils/DkList.h"
 #include "utils/strtools.h"
-#include "utils/DkLinkedList.h"
 
 #include "materialsystem1/IMaterialSystem.h"
 #include "materialsystem1/MeshBuilder.h"

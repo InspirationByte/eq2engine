@@ -8,7 +8,7 @@
 #ifndef NETPROPVAR_H
 #define NETPROPVAR_H
 
-#include "utils/DkList.h"
+#include "ds/DkList.h"
 #include "utils/strtools.h"
 
 template <class TYPE, class CHANGER>

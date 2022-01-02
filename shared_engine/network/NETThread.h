@@ -10,7 +10,7 @@
 #define NETTHREAD_H
 
 #include "utils/eqthread.h"
-#include "utils/DkList.h"
+#include "ds/DkList.h"
 #include "utils/eqtimer.h"
 
 #include "network/c_udp.h"

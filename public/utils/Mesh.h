@@ -8,8 +8,8 @@
 #ifndef MESH_H
 #define MESH_H
 
-#include "DkList.h"
-#include "IVirtualStream.h"
+#include "ds/DkList.h"
+#include "ds/IVirtualStream.h"
 
 // generic indexed mesh. File-friendly
 template <typename VERTEX_TYPE, typename INDEX_TYPE>

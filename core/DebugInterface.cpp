@@ -11,7 +11,7 @@
 #include "resource.h"
 #include "utils/eqthread.h"
 #include <stdarg.h>
-#include "utils/SmartPtr.h"
+#include "ds/SmartPtr.h"
 
 #ifdef _WIN32
 #include <direct.h>

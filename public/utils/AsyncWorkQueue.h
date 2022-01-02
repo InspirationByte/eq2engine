@@ -11,8 +11,8 @@
 #define ASYNCWORKQUEUE_H
 
 #include "utils/eqthread.h"
-#include "utils/DkList.h"
-#include "utils/function.h"
+#include "ds/DkList.h"
+#include "ds/function.h"
 
 class CAsyncWorkQueue
 {

@@ -7,8 +7,8 @@
 
 #include "core/IDkCore.h"
 #include "core/DebugInterface.h"
-#include "utils/DkList.h"
-#include "utils/EqString.h"
+#include "ds/DkList.h"
+#include "ds/EqString.h"
 #include "utils/KeyValues.h"
 
 #include "materialsystem1/IMaterialSystem.h"

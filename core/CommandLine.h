@@ -10,8 +10,8 @@
 
 #include <stdio.h>
 #include "core/ICommandLine.h"
-#include "utils/DkList.h"
-#include "utils/eqstring.h"
+#include "ds/DkList.h"
+#include "ds/eqstring.h"
 
 class CCommandLine : public ICommandLine
 {

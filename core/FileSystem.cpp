@@ -11,7 +11,7 @@
 #include "core/ILocalize.h"
 #include "core/DebugInterface.h"
 
-#include "utils/SmartPtr.h"
+#include "ds/SmartPtr.h"
 #include "utils/KeyValues.h"
 #include "utils/strtools.h"
 #include "utils/CRC32.h"

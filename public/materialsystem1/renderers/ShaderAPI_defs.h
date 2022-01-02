@@ -12,8 +12,8 @@
 
 #include "math/Vector.h"
 #include "math/Matrix.h"
-#include "utils/DkList.h"
-#include "utils/eqstring.h"
+#include "ds/DkList.h"
+#include "ds/eqstring.h"
 
 //---------------------------------------
 //        HIGH LEVEL CONSTANTS

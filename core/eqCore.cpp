@@ -26,7 +26,7 @@
 #include "ExceptionHandler.h"
 #include "ConsoleCommands.h"
 
-#include "utils/eqstring.h"
+#include "ds/eqstring.h"
 
 #ifdef PLAT_POSIX
 #include <time.h>

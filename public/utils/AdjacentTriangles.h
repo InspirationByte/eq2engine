@@ -8,7 +8,7 @@
 #ifndef ADJACENT_TRIANGLES_H
 #define ADJACENT_TRIANGLES_H
 
-#include "utils/DkList.h"
+#include "ds/DkList.h"
 
 namespace AdjacentTriangles
 {

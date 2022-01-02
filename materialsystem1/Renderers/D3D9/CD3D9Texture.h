@@ -11,7 +11,7 @@
 
 #include "../Shared/CTexture.h"
 
-#include "utils/DkList.h"
+#include "ds/DkList.h"
 
 #include <d3d9.h>
 

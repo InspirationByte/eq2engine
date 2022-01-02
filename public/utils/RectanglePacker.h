@@ -9,7 +9,7 @@
 #define RECTANGLEPACKER_H
 
 #include "core/dktypes.h"
-#include "utils/DkList.h"
+#include "ds/DkList.h"
 #include "math/Rectangle.h"
 
 #ifdef _MSC_VER

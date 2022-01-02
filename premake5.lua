@@ -184,9 +184,11 @@ project "frameworkLib"
 	uses { "corelib", "libjpeg" }
 
     files {
+		Folders.public.. "/ds/*.cpp",
         Folders.public.. "/utils/*.cpp",
         Folders.public.. "/math/*.cpp",
         Folders.public.. "/imaging/*.cpp",
+		Folders.public.. "/ds/*.h",
 		Folders.public.. "/utils/*.h",
         Folders.public.. "/math/*.h", 
 		Folders.public.. "/math/*.inl",

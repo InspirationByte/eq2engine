@@ -22,7 +22,7 @@
 #include "core/ILocalize.h"
 #include "core/IFileSystem.h"
 
-#include "utils/DkLinkedList.h"
+#include "ds/DkLinkedList.h"
 #include "utils/KeyValues.h"
 
 #include "sys_in_console.h"

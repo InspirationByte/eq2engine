@@ -9,7 +9,7 @@
 #define DPK_DEFS_H
 
 #include "dktypes.h"
-#include "utils/eqstring.h"
+#include "ds/eqstring.h"
 
 #define DPK_VERSION					6
 #define DPK_SIGNATURE				MCHAR4('E','Q','P','K')

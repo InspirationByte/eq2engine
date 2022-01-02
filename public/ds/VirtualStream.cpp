@@ -8,7 +8,7 @@
 #include "VirtualStream.h"
 #include "core/IFileSystem.h"
 #include "core/platform/MessageBox.h"
-#include "CRC32.h"
+#include "utils/CRC32.h"
 #include "eqstring.h"
 
 #include <stdarg.h> // va_*

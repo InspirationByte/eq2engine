@@ -10,7 +10,7 @@
 #include "core/IFileSystem.h"
 #include "core/DebugInterface.h"
 
-#include "utils/eqstring.h"
+#include "ds/eqstring.h"
 
 #include "snd_wav_cache.h"
 #include "snd_wav_stream.h"

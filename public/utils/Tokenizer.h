@@ -9,7 +9,7 @@
 #define TOKENIZER_H
 
 #include "core/platform/Platform.h"
-#include "DkList.h"
+#include "ds/DkList.h"
 
 typedef bool (*BOOLFUNC)(const char ch);
 

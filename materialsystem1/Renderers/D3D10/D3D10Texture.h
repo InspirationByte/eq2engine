@@ -9,7 +9,7 @@
 #define D3D10TEXTURE_H
 
 #include "../Shared/CTexture.h"
-#include "utils/DkList.h"
+#include "ds/DkList.h"
 
 #include <d3d10.h>
 #include <d3dx10.h>

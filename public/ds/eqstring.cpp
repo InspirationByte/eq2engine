@@ -14,7 +14,7 @@
 
 #include "core/platform/Platform.h"
 
-#include "strtools.h"
+#include "utils/strtools.h"
 #include "math/math_common.h"
 
 #ifdef PLAT_POSIX

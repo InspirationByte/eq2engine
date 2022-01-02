@@ -10,12 +10,12 @@
 #ifndef C_UDP_H
 #define C_UDP_H
 
-#include "utils/DkList.h"
+#include "ds/DkList.h"
+#include "ds/VirtualStream.h"
+
 #include "utils/eqthread.h"
 
 #include "core/platform/Platform.h"
-#include "utils/VirtualStream.h"
-
 #include "net_defs.h"
 
 #include <map>

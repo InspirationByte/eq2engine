@@ -10,7 +10,7 @@
 
 #include "ShaderAPI_defs.h"
 
-#include "utils/refcounted.h"
+#include "ds/refcounted.h"
 #include "math/Rectangle.h"
 #include "core/ppmem.h"
 

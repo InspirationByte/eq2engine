@@ -17,7 +17,7 @@
 #include "math/Vector.h"
 #include "math/Matrix.h"
 
-#include "utils/DkList.h"
+#include "ds/DkList.h"
 #include "utils/strtools.h"
 
 #include "egf/IEqModel.h"

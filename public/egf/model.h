@@ -10,7 +10,7 @@
 
 #include "core/dktypes.h"
 #include "core/ppmem.h"
-#include "utils/DkList.h"
+#include "ds/DkList.h"
 #include "utils/strtools.h"
 
 #include "math/DkMath.h"

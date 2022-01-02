@@ -9,8 +9,8 @@
 #define DSM_LOADER_H
 
 #include "math/Vector.h"
-#include "utils/DkList.h"
-#include "utils/eqstring.h"
+#include "ds/DkList.h"
+#include "ds/eqstring.h"
 #include "core/ppmem.h"
 
 namespace SharedModel

@@ -11,8 +11,8 @@
 #include <stdio.h>
 #include "core/DebugInterface.h"
 
-#include "utils/eqstring.h"
-#include "utils/DkList.h"
+#include "ds/eqstring.h"
+#include "ds/DkList.h"
 
 #include "font/IFont.h"
 

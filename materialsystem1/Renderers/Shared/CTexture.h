@@ -9,7 +9,7 @@
 #define CTEXTURE_H
 
 #include "renderers/ITexture.h"
-#include "utils/eqstring.h"
+#include "ds/eqstring.h"
 
 class CTexture : public ITexture
 {

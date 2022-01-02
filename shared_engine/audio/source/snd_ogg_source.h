@@ -9,7 +9,7 @@
 #define SND_OGG_SOURCE_H
 
 #include "snd_source.h"
-#include "utils/eqstring.h"
+#include "ds/eqstring.h"
 #include <vorbis/vorbisfile.h>
 
 namespace eqVorbisFile

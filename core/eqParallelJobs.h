@@ -26,8 +26,8 @@ This is the diferrent conception of jobs
 
 #include "core/IEqParallelJobs.h"
 #include "utils/eqthread.h"
-#include "utils/DkList.h"
-#include "utils/DkLinkedList.h"
+#include "ds/DkList.h"
+#include "ds/DkLinkedList.h"
 
 class CEqParallelJobThreads;
 

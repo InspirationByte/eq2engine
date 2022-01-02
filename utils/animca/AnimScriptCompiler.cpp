@@ -11,7 +11,7 @@
 #include "utils/KeyValues.h"
 
 #include "math/DkMath.h"
-#include "utils/align.h"
+#include "ds/align.h"
 #include "egf/dsm_esm_loader.h"
 #include "egf/model.h"
 

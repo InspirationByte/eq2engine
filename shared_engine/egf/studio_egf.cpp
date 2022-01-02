@@ -12,7 +12,7 @@
 #include "core/ConVar.h"
 
 
-#include "utils/SmartPtr.h"
+#include "ds/SmartPtr.h"
 #include "utils/strtools.h"
 
 #include "physics/IStudioShapeCache.h"

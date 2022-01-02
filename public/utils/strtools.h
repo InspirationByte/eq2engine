@@ -12,9 +12,9 @@
 
 #include "core/platform/PlatformDef.h"
 
-#include "utils/DkList.h"
-#include "utils/eqstring.h"
-#include "utils/eqwstring.h"
+#include "ds/DkList.h"
+#include "ds/eqstring.h"
+#include "ds/eqwstring.h"
 
 #ifdef _WIN32
 

@@ -10,7 +10,7 @@
 
 #include "math/DkMath.h"
 #include "math/Rectangle.h"
-#include "utils/eqstring.h"
+#include "ds/eqstring.h"
 
 // atlas element
 struct TexAtlasEntry_t

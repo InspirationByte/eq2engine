@@ -8,8 +8,8 @@
 #ifndef DEBUG_TEXT
 #define DEBUG_TEXT
 
-#include "utils/DkList.h"
-#include "utils/eqstring.h"
+#include "ds/DkList.h"
+#include "ds/eqstring.h"
 #include "utils/eqthread.h"
 #include "utils/eqtimer.h"
 

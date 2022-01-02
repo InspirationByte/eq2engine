@@ -24,7 +24,7 @@
 
 #include "imaging/ImageLoader.h"
 
-#include "utils/VirtualStream.h"
+#include "ds/VirtualStream.h"
 #include "utils/strtools.h"
 #include "utils/KeyValues.h"
 

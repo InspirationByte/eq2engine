@@ -19,7 +19,7 @@ extern "C"{
 #include "core/DebugInterface.h"
 #include "core/IFileSystem.h"
 
-#include "utils/VirtualStream.h"
+#include "ds/VirtualStream.h"
 #include "utils/strtools.h"
 
 #include "dsm_esm_loader.h"

@@ -9,7 +9,7 @@
 #define IFILESYSTEM_H
 
 #include "InterfaceManager.h"
-#include "utils/IVirtualStream.h"
+#include "ds/IVirtualStream.h"
 
 #include <sys/types.h>
 #include <sys/stat.h>

@@ -11,8 +11,8 @@
 //#include "DebugInterface.h"
 #include "materialsystem1/IMaterial.h"
 #include "materialvar.h"
-#include "utils/DkList.h"
-#include "utils/eqstring.h"
+#include "ds/DkList.h"
+#include "ds/eqstring.h"
 #include "utils/eqthread.h"
 
 struct kvkeybase_t;

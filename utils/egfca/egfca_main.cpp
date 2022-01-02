@@ -15,7 +15,7 @@
 #include "core/IConsoleCommands.h"
 #include "core/IFileSystem.h"
 
-#include "utils/align.h"
+#include "ds/align.h"
 #include "utils/strtools.h"
 
 #include <iostream>

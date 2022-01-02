@@ -15,8 +15,8 @@
 #include <unordered_map>
 
 #include "core/platform/Platform.h"
+#include "ds/DkList.h"
 #include "utils/eqthread.h"
-#include "utils/DkList.h"
 #include "utils/eqtimer.h"
 
 #include "materialsystem1/IMaterialSystem.h"

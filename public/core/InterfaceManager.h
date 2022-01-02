@@ -8,7 +8,7 @@
 #ifndef INTERFACEMANAGER_H
 #define INTERFACEMANAGER_H
 
-#include "utils/singleton.h"
+#include "ds/singleton.h"
 
 //--------------------------------------------------------------
 // The base core interface to be queried

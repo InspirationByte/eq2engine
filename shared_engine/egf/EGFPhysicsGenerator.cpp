@@ -12,8 +12,8 @@
 #include "core/DebugInterface.h"
 #include "core/IFileSystem.h"
 #include "utils/AdjacentTriangles.h"
-#include "utils/SmartPtr.h"
-#include "utils/VirtualStream.h"
+#include "ds/SmartPtr.h"
+#include "ds/VirtualStream.h"
 #include "utils/strtools.h"
 
 #include "math/coord.h"

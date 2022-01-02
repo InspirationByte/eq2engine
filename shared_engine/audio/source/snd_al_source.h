@@ -10,7 +10,7 @@
 #define SND_AL_SOURCE_H
 
 #include "snd_source.h"
-#include "utils/eqstring.h"
+#include "ds/eqstring.h"
 
 #include <AL/al.h>
 

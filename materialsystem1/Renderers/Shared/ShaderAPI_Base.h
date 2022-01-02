@@ -12,7 +12,7 @@
 #define SHADERAPI_BASE_H
 
 #include "renderers/IShaderAPI.h"
-#include "utils/DkList.h"
+#include "ds/DkList.h"
 #include "utils/eqthread.h"
 
 using namespace Threading;

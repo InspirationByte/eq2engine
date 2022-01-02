@@ -10,7 +10,7 @@
 
 #include "snd_source.h"
 
-#include "utils/eqstring.h"
+#include "ds/eqstring.h"
 #include "utils/riff.h"
 
 //---------------------------------------------------------------------

@@ -14,7 +14,7 @@
 #include "core/DebugInterface.h"
 #include "math/Vector.h"
 
-#include "utils/VirtualStream.h"
+#include "ds/VirtualStream.h"
 
 #include <string.h>
 #include <time.h>

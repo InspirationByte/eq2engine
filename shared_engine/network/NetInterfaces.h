@@ -10,8 +10,8 @@
 
 #include "c_udp.h"
 #include "core/dktypes.h"
-#include "utils/DkList.h"
-#include "utils/eqstring.h"
+#include "ds/DkList.h"
+#include "ds/eqstring.h"
 
 namespace Networking
 {

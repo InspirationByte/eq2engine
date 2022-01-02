@@ -11,7 +11,7 @@
 #include "core/cmdlib.h"
 #include "core/ConCommand.h"
 
-#include "utils/IVirtualStream.h"
+#include "ds/IVirtualStream.h"
 #include "utils/KeyValues.h"
 
 

@@ -9,7 +9,7 @@
 #define RENDERLIST_H
 
 #include "BaseRenderableObject.h"
-#include "utils/DkList.h"
+#include "ds/DkList.h"
 
 //----------------------------------------------------
 // Base render list interface.

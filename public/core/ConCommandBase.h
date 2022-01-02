@@ -9,8 +9,8 @@
 #ifndef CONCOMMANDBASE_H
 #define CONCOMMANDBASE_H
 
-#include "utils/DkList.h"
-#include "utils/eqstring.h"
+#include "ds/DkList.h"
+#include "ds/eqstring.h"
 
 enum CommandBaseFlags_e
 {

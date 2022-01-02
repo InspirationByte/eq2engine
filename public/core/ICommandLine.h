@@ -10,8 +10,8 @@
 
 #include "InterfaceManager.h"
 
-#include "utils/DkList.h"
-#include "utils/eqstring.h"
+#include "ds/DkList.h"
+#include "ds/eqstring.h"
 
 // WARNING: this function declaration is compatible with cmdFilterFn_t
 class ConCommandBase;

@@ -9,9 +9,9 @@
 #define CLOCALIZE
 
 #include "core/ILocalize.h"
-#include "utils/DkList.h"
-#include "utils/eqstring.h"
-#include "utils/eqwstring.h"
+#include "ds/DkList.h"
+#include "ds/eqstring.h"
+#include "ds/eqwstring.h"
 
 //--------------------------------------------------------------
 // Localize token

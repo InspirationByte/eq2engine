@@ -21,7 +21,7 @@
 
 #include "KeyValues.h"
 
-#include "utils/VirtualStream.h"
+#include "ds/VirtualStream.h"
 #include "utils/strtools.h"
 
 #ifdef _MSC_VER

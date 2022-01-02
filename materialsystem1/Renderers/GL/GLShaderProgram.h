@@ -11,7 +11,7 @@
 #include "renderers/IShaderProgram.h"
 #include "renderers/ShaderAPI_defs.h"
 
-#include "utils/eqstring.h"
+#include "ds/eqstring.h"
 
 #ifdef USE_GLES2
 #include <glad_es3.h>

@@ -12,7 +12,7 @@
 #include <stdio.h>
 #include <malloc.h>
 #include "core/platform/Platform.h"
-#include "strtools.h"
+#include "utils/strtools.h"
 
 #ifdef PLAT_POSIX
 #include <wchar.h>

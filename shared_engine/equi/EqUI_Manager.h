@@ -11,8 +11,8 @@
 #include "equi_defs.h"
 
 #include "math/Rectangle.h"
-#include "utils/DkList.h"
-#include "utils/EqString.h"
+#include "ds/DkList.h"
+#include "ds/eqstring.h"
 
 class IEqFont;
 class IMaterial;

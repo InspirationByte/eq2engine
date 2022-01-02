@@ -9,7 +9,7 @@
 #define CGLTEXTURE_H
 
 #include "../Shared/CTexture.h"
-#include "utils/DkList.h"
+#include "ds/DkList.h"
 
 #include "ShaderAPIGL.h"
 

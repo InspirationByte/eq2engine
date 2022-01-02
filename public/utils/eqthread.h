@@ -21,7 +21,7 @@
 
 #endif // PLAT_POSIX
 
-#include "eqstring.h"
+#include "ds/eqstring.h"
 
 namespace Threading
 {

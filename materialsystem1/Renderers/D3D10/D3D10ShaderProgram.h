@@ -9,7 +9,7 @@
 #define D3D9SHADERPROGRAM_H
 
 #include "IShaderProgram.h"
-#include "Utils/EqString.h"
+#include "ds/eqstring.h"
 
 typedef struct DX10ShaderConstant 
 {

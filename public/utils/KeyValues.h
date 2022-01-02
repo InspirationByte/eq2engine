@@ -34,7 +34,7 @@ class IVirtualStream;
 #include "core/platform/Platform.h"
 #include "core/ppmem.h"
 
-#include "utils/DkList.h"
+#include "ds/DkList.h"
 #include "math/DkMath.h"
 
 //
