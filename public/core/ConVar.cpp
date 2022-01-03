@@ -247,9 +247,3 @@ bool ConVar::CheckCommandLine(int startAt/* = 0 */)
 	else
 		return false;
 }
-
-void ConVar::LuaCleanup()
-{
-	delete [] m_szDefaultValueString;
-	ConCommandBase::LuaCleanup();
-}

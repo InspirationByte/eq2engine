@@ -77,11 +77,3 @@ void ConCommandBase::Unregister( ConCommandBase* pBase )
 {
 	GetCConsoleCommands()->UnregisterCommand(pBase);
 }
-
-void ConCommandBase::LuaCleanup()
-{
-	delete [] m_szName;
-
-	if(m_szDesc != defaultDescString)
-		delete [] m_szDesc;
-}

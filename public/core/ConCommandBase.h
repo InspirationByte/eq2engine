@@ -55,8 +55,6 @@ public:
 
 	void			SetVariantsCallback(CMDBASE_VARIANTS_CALLBACK fnVariants) {m_fnVariantsList = fnVariants;}
 
-	virtual void	LuaCleanup();
-
 protected:
 	void		Init(char const *name,char const *desc, int flags = 0,bool bIsConVar = false);
 

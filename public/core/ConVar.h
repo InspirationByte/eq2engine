@@ -55,8 +55,6 @@ public:
 	int				GetInt() const		{return m_nValue;}
 	bool			GetBool() const		{return (m_nValue > 0);}
 
-	virtual void	LuaCleanup();
-
 private:
 
 	bool			CheckCommandLine(int startAt = 0 );
