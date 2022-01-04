@@ -857,11 +857,6 @@ void CEGFViewFrame::ProcessAllMenuCommands(wxCommandEvent& event)
 				{
 					EqString cmdLine(EqString::Format("animca.exe +filename \"%s\"", fname.GetData()));
 
-					if( g_fileSystem->FileExist("bin32\\egfca.exe") )
-					{
-						cmdLine = "bin32\\" + cmdLine;
-					}
-
 					Msg("***Command line: %s\n", cmdLine.GetData());
 
 					system( cmdLine.GetData() );
@@ -882,11 +877,6 @@ void CEGFViewFrame::ProcessAllMenuCommands(wxCommandEvent& event)
 								Msg("***Starting egfca for %s\n", fname.GetData());
 
 								EqString cmdLine(EqString::Format("egfca.exe +filename \"%s\"", fname.GetData()));
-
-								if( g_fileSystem->FileExist("bin32\\egfca.exe") )
-								{
-									cmdLine = "bin32\\" + cmdLine;
-								}
 
 								Msg("***Command line: %s\n", cmdLine.GetData());
 								system( cmdLine.GetData() );
