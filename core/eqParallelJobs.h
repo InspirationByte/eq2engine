@@ -71,7 +71,7 @@ public:
 	void							Shutdown();
 
 	// adds the job
-	eqParallelJob_t*				AddJob( int jobTypeId, jobFunction_t func, void* args, int count = 1, jobComplete_t completeFn = nullptr);	// and puts JOB_FLAG_DELETE flag for this job
+	eqParallelJob_t*				AddJob( int jobTypeId, EQ_JOB_FUNC func, void* args, int count = 1, EQ_JOB_COMPLETE_FUNC completeFn = nullptr);	// and puts JOB_FLAG_DELETE flag for this job
 	void							AddJob( eqParallelJob_t* job );
 
 	// this submits jobs to the CEqJobThreads

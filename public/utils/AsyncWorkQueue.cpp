@@ -18,7 +18,7 @@ struct work_t
 	{
 	}
 
-	const CAsyncWorkQueue::FUNC_TYPE& func;
+	const CAsyncWorkQueue::FUNC_TYPE func;
 	uint workId;
 };
 

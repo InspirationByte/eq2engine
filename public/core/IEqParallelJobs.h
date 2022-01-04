@@ -3,12 +3,16 @@
 
 #include "utils/eqthread.h"
 #include "ds/DkList.h"
+#include "ds/function.h"
 #include "core/InterfaceManager.h"
 
 #define PARALLELJOBS_INTERFACE_VERSION		"CORE_ParallelJobs_002"
 
-typedef void(*jobFunction_t)(void*, int i);
-typedef void(*jobComplete_t)(struct eqParallelJob_t*);
+//typedef void(*jobFunction_t)(void*, int i);
+//typedef void(*jobComplete_t)(struct eqParallelJob_t*);
+
+using EQ_JOB_FUNC = EqFunction<void(void*, int i)>;
+using EQ_JOB_COMPLETE_FUNC = EqFunction<void(struct eqParallelJob_t*)>;
 
 enum EJobTypes
 {
@@ -42,18 +46,18 @@ struct eqParallelJob_t
 		: flags(0), typeId(-1), func(nullptr), arguments(nullptr), numIter(1), threadId(0), onComplete(nullptr)
 	{}
 
-	eqParallelJob_t(int jobTypeId, jobFunction_t fn, void* args = nullptr, int count = 1, jobComplete_t completeFn = nullptr)
+	eqParallelJob_t(int jobTypeId, EQ_JOB_FUNC fn, void* args = nullptr, int count = 1, EQ_JOB_COMPLETE_FUNC completeFn = nullptr)
 		: flags(0), typeId(jobTypeId), func(fn), arguments(args), numIter(count), threadId(0), onComplete(completeFn)
 	{
 	}
 
-	jobFunction_t	func;				// job function. This is a parallel work
-	jobComplete_t	onComplete;			// job completion callback after all numIter is complete. Always executed before Submit() called on job manager
-	void*			arguments;			// job argument object passed to job function
-	volatile int	flags;				// EJobFlags
-	uintptr_t		threadId;			// selected thread
-	int				numIter;
-	int				typeId;				// the job type that specific thread will take
+	EQ_JOB_FUNC				func;				// job function. This is a parallel work
+	EQ_JOB_COMPLETE_FUNC	onComplete;			// job completion callback after all numIter is complete. Always executed before Submit() called on job manager
+	void*					arguments;			// job argument object passed to job function
+	volatile int			flags;				// EJobFlags
+	uintptr_t				threadId;			// selected thread
+	int						numIter;
+	int						typeId;				// the job type that specific thread will take
 };
 
 // structure for initialization
@@ -72,7 +76,7 @@ public:
 	virtual void							Shutdown() = 0;
 
 	// adds the job
-	virtual eqParallelJob_t*				AddJob(int jobTypeId, jobFunction_t jobFn, void* args = nullptr, int count = 1, jobComplete_t completeFn = nullptr) = 0;	// and puts JOB_FLAG_DELETE flag for this job
+	virtual eqParallelJob_t*				AddJob(int jobTypeId, EQ_JOB_FUNC jobFn, void* args = nullptr, int count = 1, EQ_JOB_COMPLETE_FUNC completeFn = nullptr) = 0;	// and puts JOB_FLAG_DELETE flag for this job
 	virtual void							AddJob(eqParallelJob_t* job) = 0;
 
 	// this submits jobs to the CEqJobThreads

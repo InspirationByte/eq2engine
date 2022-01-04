@@ -22,7 +22,10 @@ public:
 
     EqFunction(std::nullptr_t) noexcept : ptr(nullptr), isSmall(false) {};
 
-    EqFunction(EqFunction const& other) {
+    EqFunction(EqFunction const& other) : ptr(nullptr), isSmall(false) {
+        if (!other) {
+            return;
+        }
         if (other.isSmall) {
             isSmall = true;
             auto c = reinterpret_cast<Concept const*>(&other.buffer);
@@ -34,7 +37,10 @@ public:
         }
     };
 
-    EqFunction(EqFunction&& other) noexcept {
+    EqFunction(EqFunction&& other) noexcept : ptr(nullptr), isSmall(false) {
+        if (!other) {
+            return;
+        }
         MoveFunction(std::move(other));
     }
 
@@ -73,10 +79,10 @@ public:
     }
 
     explicit operator bool() const noexcept {
-        return isSmall || (ptr != nullptr);
+        return isSmall || ptr != nullptr;
     }
 
-    R operator()(Args&& ... a) const {
+    R operator()(Args ... a) const {
         if (isSmall) {
             auto c = reinterpret_cast<Concept const*>(&buffer);
             return c->Invoke(std::forward<Args>(a)...);

@@ -33,7 +33,8 @@ int CEqJobThread::Run()
 		int iter = 0;
 		while(job->numIter-- > 0)
 		{
-			(job->func)(job->arguments, iter++ );
+			job->func(job->arguments, iter );
+			iter++;
 		}
 
 		job->flags |= JOB_FLAG_EXECUTED;
@@ -126,7 +127,7 @@ void CEqParallelJobThreads::Shutdown()
 }
 
 // adds the job
-eqParallelJob_t* CEqParallelJobThreads::AddJob(int jobTypeId, jobFunction_t func, void* args, int count /*= 1*/, jobComplete_t completeFn /*= nullptr*/)
+eqParallelJob_t* CEqParallelJobThreads::AddJob(int jobTypeId, EQ_JOB_FUNC func, void* args, int count /*= 1*/, EQ_JOB_COMPLETE_FUNC completeFn /*= nullptr*/)
 {
 	eqParallelJob_t* job = new eqParallelJob_t(jobTypeId, func, args, count, completeFn);
 	job->flags = JOB_FLAG_DELETE;
