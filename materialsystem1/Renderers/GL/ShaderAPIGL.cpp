@@ -38,6 +38,8 @@ class GLWorkerThread : CEqThread
 	friend class ShaderAPIGL;
 
 public:
+	using FUNC_TYPE = EqFunction<int()>;
+
 	GLWorkerThread()
 	{
 		m_started = false;
@@ -67,13 +69,13 @@ public:
 	}
 
 	// syncronous execution
-	int WaitForExecute(const char* name, EqFunction<int()> f)
+	int WaitForExecute(const char* name, FUNC_TYPE f)
 	{
 		return AddWork(name, f, true);
 	}
 
 	// asyncronous execution
-	void Execute(const char* name, EqFunction<int()> f)
+	void Execute(const char* name, FUNC_TYPE f)
 	{
 		AddWork(name, f, false);
 	}
@@ -81,21 +83,21 @@ public:
 protected:
 	int Run();
 
-	int AddWork(const char* name, EqFunction<int()> f, bool blocking);
+	int AddWork(const char* name, FUNC_TYPE f, bool blocking);
 
 	struct work_t
 	{
-		work_t(const char* _name, EqFunction<int()> f, uint id, bool block)
+		work_t(const char* _name, FUNC_TYPE f, uint id, bool block) :
+			func(f)
 		{
 			name = _name;
-			func = f;
 			result = WORK_PENDING_MARKER;
 			workId = id;
 			blocking = block;
 		}
 
 		std::atomic<work_t*>	next{ nullptr };
-		EqFunction<int()>	func;
+		FUNC_TYPE				func;
 
 		const char*				name;
 		
@@ -137,14 +139,12 @@ int GLWorkerThread::WaitForResult(work_t* work)
 	return 0;
 }
 
-int GLWorkerThread::AddWork(const char* name, EqFunction<int()> f, bool blocking)
+int GLWorkerThread::AddWork(const char* name, FUNC_TYPE f, bool blocking)
 {
 	uintptr_t thisThreadId = Threading::GetCurrentThreadID();
 
 	if (blocking && thisThreadId == g_shaderApi.m_mainThreadId) // not required for main thread
-		return (f)();
-
-	ASSERT(f);
+		return f();
 
 	work_t* work = new work_t(name, f, m_workCounter++, blocking);
 
@@ -182,7 +182,7 @@ int GLWorkerThread::Run()
 			}
 		}
 
-		if (currentWork && currentWork->func) // is that a bug?
+		if (currentWork && currentWork->func)
 		{
 			DevMsg(DEVMSG_SHADERAPI, "BeginAsyncOperation for %s (workId %d)\n", currentWork->name, currentWork->workId);
 			g_shaderApi.BeginAsyncOperation(GetThreadID());
@@ -1099,7 +1099,6 @@ GLTextureRef_t ShaderAPIGL::CreateGLTextureFromImage(CImage* pSrc, const Sampler
 	else
 		texture.type = GLTEX_TYPE_TEXTURE;
 
-	const GLenum glTarget = glTexTargetType[texture.type];
 
 	// set our referenced params
 	wide = pSrc->GetWidth();
@@ -1117,6 +1116,8 @@ GLTextureRef_t ShaderAPIGL::CreateGLTextureFromImage(CImage* pSrc, const Sampler
 		if (!GLCheckError("gen tex"))
 			return -1;
 
+		const GLenum glTarget = glTexTargetType[texturePtr->type];
+
 		glBindTexture(glTarget, texturePtr->glTexID);
 		GLCheckError("bind tex");
 
@@ -1128,7 +1129,7 @@ GLTextureRef_t ShaderAPIGL::CreateGLTextureFromImage(CImage* pSrc, const Sampler
 			glBindTexture(glTarget, 0);
 			GLCheckError("tex unbind");
 
-			glDeleteTextures(1, &texture.glTexID);
+			glDeleteTextures(1, &texturePtr->glTexID);
 			GLCheckError("del tex");
 
 			return -1;

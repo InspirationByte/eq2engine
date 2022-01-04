@@ -17,21 +17,21 @@
 class CAsyncWorkQueue
 {
 public:
-	CAsyncWorkQueue()
-	{
-	}
+	using FUNC_TYPE = EqFunction<int()>;
 
-	int		Push(EqFunction<int()> f);
+	CAsyncWorkQueue() = default;
+
+	int		Push(const FUNC_TYPE& f);
 	int		RunAll();
 	void	RemoveAll();
 
 protected:
 
-	int WaitForResult(uint32_t workId);
+	int WaitForResult(uint workId);
 
-	uint32_t m_workCounter;
-	DkList<struct work_t*> m_pendingWork;
-	Threading::CEqMutex m_mutex;
+	uint					m_workCounter{ 0 };
+	DkList<struct work_t*>	m_pendingWork;
+	Threading::CEqMutex		m_mutex;
 };
 
 #endif // ASYNCWORKQUEUE_H

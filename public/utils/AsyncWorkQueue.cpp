@@ -13,14 +13,13 @@
 
 struct work_t
 {
-	work_t(EqFunction<int()> f, uint32_t id)
+	work_t(const CAsyncWorkQueue::FUNC_TYPE& fn, uint id) 
+		: func(fn), workId(id)
 	{
-		func = f;
-		workId = id;
 	}
 
-	EqFunction<int()> func;
-	uint32_t workId;
+	const CAsyncWorkQueue::FUNC_TYPE& func;
+	uint workId;
 };
 
 void CAsyncWorkQueue::RemoveAll()
@@ -33,7 +32,7 @@ void CAsyncWorkQueue::RemoveAll()
 	m_pendingWork.clear();
 }
 
-int CAsyncWorkQueue::Push(EqFunction<int()> f)
+int CAsyncWorkQueue::Push(const FUNC_TYPE& f)
 {
 	// set the new worker and signal to start...
 	Threading::CScopedMutex m(m_mutex);
