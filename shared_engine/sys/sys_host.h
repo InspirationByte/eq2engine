@@ -63,11 +63,11 @@ public:
 	void				ReleaseTextInput();
 	bool				IsTextInputShown() const;
 
-	void				ProcessKeyChar( int chr );
+	void				ProcessKeyChar( const char* utfChar );
 	void				TrapKey_Event( int key, bool down );
 	void				TrapMouse_Event( float x, float y, int buttons, bool down );
 	void				TrapMouseMove_Event( int x, int y );
-	void				TrapMouseWheel_Event(int x, int y, int scroll);
+	void				TrapMouseWheel_Event(int x, int y, int hscroll, int vscroll);
 
 	void				TrapJoyAxis_Event( short axis, short value );
 	void				TrapJoyButton_Event( short button, bool down);

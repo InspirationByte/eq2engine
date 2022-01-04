@@ -254,18 +254,23 @@ void CDynamicMesh::Unlock()
 // uploads buffers and renders the mesh. Note that you has been set material and adjusted RTs
 void CDynamicMesh::Render()
 {
-	if(m_numVertices == 0)
+	Render(0, m_numIndices);
+}
+
+void CDynamicMesh::Render(int firstIndex, int numIndices)
+{
+	if (m_numVertices == 0)
 		return;
 
 	ASSERT(m_vboAqquired != 0);
 
 	bool drawIndexed = m_numIndices > 0;
 
-	if(m_vboDirty == 0)
+	if (m_vboDirty == 0)
 	{
 		m_vertexBuffer->Update(m_vertices, m_numVertices, 0, true);
 
-		if(drawIndexed)
+		if (drawIndexed)
 			m_indexBuffer->Update(m_indices, m_numIndices, 0, true);
 
 		m_vboDirty = -1;
@@ -283,8 +288,8 @@ void CDynamicMesh::Render()
 
 	g_pShaderAPI->ApplyBuffers();
 
-	if(drawIndexed)
-		g_pShaderAPI->DrawIndexedPrimitives(m_primType, 0, m_numIndices, 0, m_numVertices);
+	if (drawIndexed)
+		g_pShaderAPI->DrawIndexedPrimitives(m_primType, firstIndex, numIndices, 0, m_numVertices);
 	else
 		g_pShaderAPI->DrawNonIndexedPrimitives(m_primType, 0, m_numVertices);
 }

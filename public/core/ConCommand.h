@@ -48,15 +48,16 @@ public:
 	ConCommand(char const *name,CON_COMMAND_CALLBACK callback,char const *desc = 0, int flags = 0);
 	ConCommand(char const *name,CON_COMMAND_CALLBACK callback, CMDBASE_VARIANTS_CALLBACK variantsList,char const *desc = 0, int flags = 0);
 
-	//Command execution
+	// Command execution
 	void DispatchFunc(DkList<EqString>& args);
-
-	void LuaCleanup();
 
 private:
 	void Create(char const *pszName,CON_COMMAND_CALLBACK callback, CMDBASE_VARIANTS_CALLBACK variantsList,char const *pszHelpString, int nFlags);
 
 	CON_COMMAND_CALLBACK m_fnCallback;
 };
+
+#define HOOK_TO_CMD(name)		\
+	static ConCommand *name = (ConCommand*)g_consoleCommands->FindCommand(#name);
 
 #endif //CONCOMMAND_H

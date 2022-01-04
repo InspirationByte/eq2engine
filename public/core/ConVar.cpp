@@ -226,17 +226,21 @@ void ConVar::InternalSetString(char const *value)
 
 void ConVar::SetFloat(const float newvalue)
 {
-	SetValue(EqString::Format("%f",newvalue).ToCString());
+	if(m_flValue != newvalue)
+		SetValue(EqString::Format("%f",newvalue).ToCString());
 }
 
 void ConVar::SetInt(const int newvalue)
 {
-	SetValue(EqString::Format("%i",newvalue).ToCString());
+	if (m_nValue != newvalue)
+		SetValue(EqString::Format("%i",newvalue).ToCString());
 }
 
 void ConVar::SetBool(const bool newvalue)
 {
-	SetValue(EqString::Format("%i",(int)newvalue).ToCString());
+	int newnValue = (int)newvalue;
+	if(m_nValue != newnValue)
+		SetValue(EqString::Format("%i",(int)newvalue).ToCString());
 }
 
 bool ConVar::CheckCommandLine(int startAt/* = 0 */)

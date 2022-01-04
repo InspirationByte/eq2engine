@@ -10,6 +10,7 @@
 
 #include <stdio.h>
 #include "core/DebugInterface.h"
+#include "core/platform/Platform.h"
 
 #include "ds/eqstring.h"
 #include "ds/DkList.h"
@@ -40,12 +41,14 @@ public:
 
 					CEqConsoleInput();
 
-	void			Initialize();
+	void			Initialize(EQWNDHANDLE window);
+	void			Shutdown();
 
 	// useful for scripts
 	void			SetAlternateHandler( CONSOLE_ALTERNATE_HANDLER handler ) {m_alternateHandler = handler;}
 
-	void			DrawSelf(int width, int height, float frameTime);
+	void			BeginFrame();
+	void			EndFrame(int width, int height, float frameTime);
 
 	void			SetLastLine();
 	void			AddToLinePos(int num);
@@ -57,21 +60,19 @@ public:
 	void			SetLogVisible(bool bVisible);
 	bool			IsLogVisible() const			{ return m_logVisible; }
 
-	bool			IsShiftPressed() const			{return m_shiftModifier;}
-	bool			IsCtrlPressed() const			{return m_ctrlModifier;}
-
 	// events
 	bool			KeyPress(int key, bool pressed);
-	bool			KeyChar(int ch);
+	bool			KeyChar(const char* utfChar);
 	bool			MouseEvent(const Vector2D &pos, int Button,bool pressed);
+	bool			MouseWheel(int hscroll, int vscroll);
+
 	void			MousePos(const Vector2D &pos);
 
 	void			AddAutoCompletion(ConAutoCompletion_t* item);
 
-
-
 protected:
 
+	void			DrawSelf(int width, int height, float frameTime);
 	void			DrawListBox(const IVector2D& pos, int width, DkList<EqString>& items, const char* tooltipText, int maxItems, int startItem, int& selection);
 
 	void			DrawFastFind(float x, float y, float w);
@@ -85,6 +86,9 @@ protected:
 	void			OnTextUpdate();
 
 	void			ResetLogScroll();
+
+	bool			IsShiftPressed() const { return m_shiftModifier; }
+	bool			IsCtrlPressed() const { return m_ctrlModifier; }
 
 	// returns current statement start and current input text
 	int				GetCurrentInputText(EqString& str);
@@ -102,6 +106,8 @@ private:
 	Vector2D						m_mousePosition;
 	bool							m_visible;
 	bool							m_logVisible;
+
+	bool							m_showConsole;
 
 	bool							m_cursorVisible;
 	float							m_cursorTime;

@@ -30,7 +30,6 @@
 #include <SDL.h>
 #include <SDL_syswm.h>
 
-
 #define DEFAULT_USERCONFIG_PATH		"cfg/user.cfg"
 
 ConVar user_cfg("user_cfg", DEFAULT_USERCONFIG_PATH, "User configuration file location", CV_INITONLY);
@@ -374,7 +373,7 @@ bool CGameHost::InitSystems( EQWNDHANDLE pWindow )
 	g_inputCommandBinder->Init();
 
 	// init console
-	g_consoleInput->Initialize();
+	g_consoleInput->Initialize(pWindow);
 
 	MsgInfo("--- EqEngine systems init successfully ---\n");
 
@@ -412,11 +411,12 @@ void InputCommands_SDL(SDL_Event* event)
 				nKey = SDL_SCANCODE_ESCAPE;
 
 			g_pHost->TrapKey_Event( nKey, (event->type == SDL_KEYUP) ? false : true );
+			break;
 		}
 		case SDL_TEXTINPUT:
 		{
 			// FIXME: is it good?
-			g_pHost->ProcessKeyChar( event->text.text[0] );
+			g_pHost->ProcessKeyChar( event->text.text );
 			break;
 		}
 		case SDL_MOUSEMOTION:
@@ -473,7 +473,7 @@ void InputCommands_SDL(SDL_Event* event)
 			x = event->wheel.x;
 			y = event->wheel.y;
 
-			g_pHost->TrapMouseWheel_Event(lastX, lastY, y);
+			g_pHost->TrapMouseWheel_Event(lastX, lastY, x, y);
 
 			break;
 		}
@@ -514,6 +514,8 @@ void CGameHost::ShutdownSystems()
 	g_inputCommandBinder->Shutdown();
 
 	EqStateMgr::ShutdownStates();
+
+	g_consoleInput->Shutdown();
 
 	materials->Shutdown();
 	g_fileSystem->FreeModule( g_matsysmodule );
@@ -629,6 +631,7 @@ bool CGameHost::Frame()
 	//--------------------------------------------
 
 	BeginScene();
+	g_consoleInput->BeginFrame();
 
 	if (r_showFPSGraph.GetBool())
 	{
@@ -681,6 +684,10 @@ bool CGameHost::Frame()
 	debugoverlay->Text(Vector4D(1), "DPS/DIPS: %i/%i", g_pShaderAPI->GetDrawCallsCount(), g_pShaderAPI->GetDrawIndexedPrimitiveCallsCount());
 	debugoverlay->Text(Vector4D(1), "primitives: %i", g_pShaderAPI->GetTrianglesCount());
 
+	// EqUI, console and debug stuff should be drawn as normal in overdraw mode
+	// this also resets matsystem from overdraw
+	materials->GetConfiguration().overdrawMode = false;
+
 	debugoverlay->Draw(m_winSize.x, m_winSize.y);
 
 	materials->Setup2D(m_winSize.x, m_winSize.y);
@@ -699,14 +706,11 @@ bool CGameHost::Frame()
 		m_pDefaultFont->RenderText(EqString::Format("SYS/GAME FPS: %d/%d", min(fps, 1000), gamefps).ToCString(), Vector2D(15), params);
 	}
 
-	g_inputCommandBinder->DebugDraw(m_winSize);
-
 	equi::Manager->SetViewFrame(IRectangle(0,0,m_winSize.x,m_winSize.y));
 	equi::Manager->Render();
 
-	// console should be drawn as normal in overdraw mode
-	materials->GetConfiguration().overdrawMode = false;
-	g_consoleInput->DrawSelf(m_winSize.x, m_winSize.y, gameFrameTime);
+	g_inputCommandBinder->DebugDraw(m_winSize);
+	g_consoleInput->EndFrame(m_winSize.x, m_winSize.y, gameFrameTime);
 
 	// End frame from render lib
 	EndScene();
@@ -861,10 +865,13 @@ void CGameHost::TrapMouseMove_Event( int x, int y )
 		SetCursorPosition(m_winSize.x/2, m_winSize.y/2);
 }
 
-void CGameHost::TrapMouseWheel_Event(int x, int y, int scroll)
+void CGameHost::TrapMouseWheel_Event(int x, int y, int hscroll, int vscroll)
 {
+	if (g_consoleInput->MouseWheel(hscroll, vscroll))
+		return;
+
 	if(EqStateMgr::GetCurrentState())
-		EqStateMgr::GetCurrentState()->HandleMouseWheel(x,y,scroll);
+		EqStateMgr::GetCurrentState()->HandleMouseWheel(x, y, vscroll);
 }
 
 void CGameHost::TrapJoyAxis_Event( short axis, short value )
@@ -893,10 +900,12 @@ void CGameHost::Touch_Event( float x, float y, int finger, bool down )
 	g_inputCommandBinder->OnTouchEvent( Vector2D(x,y), finger, down );
 }
 
-void CGameHost::ProcessKeyChar( int chr )
+void CGameHost::ProcessKeyChar(const char* utfChar)
 {
-	if(g_consoleInput->KeyChar( chr ))
+	if(g_consoleInput->KeyChar(utfChar))
 		return;
+
+	// TODO: EqUI text input processing
 }
 
 void CGameHost::StartTrapMode()

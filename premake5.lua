@@ -247,7 +247,7 @@ project "sysLib"
 	kind "StaticLib"
 	uses { 
 		"corelib", "frameworkLib",
-		"SDL2"	
+		"SDL2", "imgui"
 	}
     files {
 		Folders.shared_engine.. "sys/**.cpp",

@@ -33,6 +33,7 @@ public:
 
 	// uploads buffers and renders the mesh. Note that you has been set material and adjusted RTs
 	void			Render();
+	void			Render(int firstIndex, int numIndices);
 
 	// resets the dynamic mesh
 	void			Reset();

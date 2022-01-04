@@ -24,6 +24,10 @@
 
 #include "sys/sys_version.h"
 
+#include "imgui_backend/imgui_impl_matsystem.h"
+#include "imgui_backend/imgui_impl_sys.h"
+#include <imgui.h>
+
 #include <SDL_clipboard.h>
 #include <SDL_keyboard.h>
 
@@ -229,8 +233,9 @@ CEqConsoleInput::CEqConsoleInput()
 {
 	// release build needs false
 	m_visible = false;
-
 	m_logVisible = false;
+
+	m_showConsole = false;
 
 	m_cursorTime = 0.0f;
 	m_maxLines = 10;
@@ -259,8 +264,23 @@ CEqConsoleInput::CEqConsoleInput()
 	m_alternateHandler = NULL;
 }
 
-void CEqConsoleInput::Initialize()
+void CEqConsoleInput::Initialize(EQWNDHANDLE window)
 {
+	// ImGui
+	IMGUI_CHECKVERSION();
+	ImGui::CreateContext();
+
+	//io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
+	//io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
+
+	// Setup Dear ImGui style
+	ImGui::StyleColorsDark();
+
+	// Setup Platform/Renderer backends
+	ImGui_ImplEq_InitForSDL(window);
+	ImGui_ImplMatSystem_Init();
+
+	// TODO: ImGui networked console port (for Android)
 	kvkeybase_t* consoleSettings = GetCore()->GetConfig()->FindKeyBase("Console");
 
 	const char* consoleFontName = KV_GetValueString(consoleSettings ? consoleSettings->FindKeyBase("Font") : NULL, 0, "console");
@@ -268,6 +288,109 @@ void CEqConsoleInput::Initialize()
 	m_font = g_fontCache->GetFont(consoleFontName, 16);
 	m_enabled = KV_GetValueBool(consoleSettings ? consoleSettings->FindKeyBase("Enable") : NULL);
 	m_fontScale = KV_GetValueFloat(consoleSettings ? consoleSettings->FindKeyBase("FontScale") : NULL);
+}
+
+void CEqConsoleInput::Shutdown()
+{
+	ImGui_ImplMatSystem_Shutdown();
+	ImGui_ImplEq_Shutdown();
+	ImGui::DestroyContext();
+}
+
+void CEqConsoleInput::BeginFrame()
+{
+	if (!m_visible)
+		return;
+
+	// Start the Dear ImGui frame
+	ImGui_ImplMatSystem_NewFrame();
+	ImGui_ImplEq_NewFrame();
+	ImGui::NewFrame();
+
+#define IMGUI_CONVAR_BOOL(label, name) { \
+		HOOK_TO_CVAR(name); \
+		bool value = name->GetBool(); \
+		ImGui::MenuItem(label, "", &value); \
+		name->SetBool(value); \
+	}
+
+	DkList<EqString> noArgs;
+#define IMGUI_CONCMD(label, name, args) { \
+		HOOK_TO_CMD(name); \
+		if(ImGui::MenuItem(label)) \
+			name->DispatchFunc(args); \
+	}
+
+	if (ImGui::BeginMainMenuBar())
+	{
+		if (ImGui::BeginMenu("CONSOLE"))
+		{
+			ImGui::MenuItem("Display", "", &m_showConsole);
+			ImGui::EndMenu();
+		}
+		if (ImGui::BeginMenu("ENGINE"))
+		{
+			ImGui::EndMenu();
+		}
+		if (ImGui::BeginMenu("EQUI"))
+		{
+			IMGUI_CONVAR_BOOL("DEBUG FRAMES", equi_debug);
+			ImGui::EndMenu();
+		}
+		if (ImGui::BeginMenu("SOUND"))
+		{
+			ImGui::EndMenu();
+		}
+		if (ImGui::BeginMenu("MATSYSTEM"))
+		{
+			IMGUI_CONVAR_BOOL("OVERDRAW MODE", r_overdraw);
+			IMGUI_CONVAR_BOOL("WIREFRAME MODE", r_wireframe);
+			ImGui::Separator();
+			IMGUI_CONCMD("RELOAD MATERIALS", mat_reload, noArgs);
+			ImGui::EndMenu();
+		}
+		if (ImGui::BeginMenu("DEBUG OVERLAYS"))
+		{
+			IMGUI_CONVAR_BOOL("FRAME STATS", r_frameStats);
+			IMGUI_CONVAR_BOOL("GRAPHS", r_debugDrawGraphs);
+			IMGUI_CONVAR_BOOL("SHAPES", r_debugDrawShapes);
+			IMGUI_CONVAR_BOOL("LINES", r_debugDrawLines);
+
+			ImGui::EndMenu();
+		}
+		ImGui::EndMainMenuBar();
+	}
+
+#undef IMGUI_CONVAR_BOOL
+}
+
+void CEqConsoleInput::EndFrame(int width, int height, float frameTime)
+{
+	if (!m_visible)
+		return;
+
+	if(m_showConsole)
+		DrawSelf(width, height, frameTime);
+
+	ImGuiIO& io = ImGui::GetIO(); (void)io;
+	io.DisplaySize = ImVec2((float)width, (float)height);
+
+	//static bool show_demo_window = true;
+	//ImGui::ShowDemoWindow(&show_demo_window);
+
+	// Rendering
+	ImGui::EndFrame();
+
+	ImGui::Render();
+	ImGui_ImplMatSystem_RenderDrawData(ImGui::GetDrawData());
+
+	eqFontStyleParam_t versionTextStl;
+	versionTextStl.styleFlag = TEXT_STYLE_SHADOW | TEXT_STYLE_FROM_CAP;
+	versionTextStl.align = TEXT_ALIGN_HCENTER;
+	versionTextStl.textColor = ColorRGBA(1, 1, 1, 0.5f);
+	versionTextStl.scale = m_fontScale;
+
+	m_font->RenderText(CONSOLE_ENGINEVERSION_STR, Vector2D(width / 2, height - m_fontScale - 25.0f), versionTextStl);
 }
 
 void CEqConsoleInput::AddAutoCompletion(ConAutoCompletion_t* newItem)
@@ -1004,9 +1127,6 @@ void CEqConsoleInput::DrawSelf(int width,int height, float frameTime)
 
 	int drawstart = m_logScrollPosition;
 
-	if(!m_visible)
-		return;
-
 	m_maxLines = floor(height / m_font->GetLineHeight(fontStyle)) - 2;
 
 	if(m_maxLines < -4)
@@ -1105,14 +1225,6 @@ void CEqConsoleInput::DrawSelf(int width,int height, float frameTime)
 
 		materials->DrawPrimitives2DFFP(PRIM_TRIANGLE_STRIP,rect,elementsOf(rect), NULL, ColorRGBA(1.0f), &blending);
 	}
-
-	eqFontStyleParam_t versionTextStl;
-	versionTextStl.styleFlag = TEXT_STYLE_SHADOW | TEXT_STYLE_FROM_CAP;
-	versionTextStl.align = TEXT_ALIGN_HCENTER;
-	versionTextStl.textColor = ColorRGBA(1,1,1,0.5f);
-	versionTextStl.scale = m_fontScale;
-
-	m_font->RenderText( CONSOLE_ENGINEVERSION_STR, Vector2D(width/2,10), versionTextStl);
 }
 
 void CEqConsoleInput::MousePos(const Vector2D &pos)
@@ -1120,10 +1232,17 @@ void CEqConsoleInput::MousePos(const Vector2D &pos)
 	m_mousePosition = pos;
 }
 
-bool CEqConsoleInput::KeyChar(int ch)
+bool CEqConsoleInput::KeyChar(const char* utfChar)
 {
 	if(!m_visible)
 		return false;
+
+	ImGui_ImplEq_InputText(utfChar);
+
+	if (!m_showConsole)
+		return true;
+
+	int ch = utfChar[0];
 
 	// Font is not loaded, skip
 	if(m_font == NULL)
@@ -1154,6 +1273,11 @@ bool CEqConsoleInput::MouseEvent(const Vector2D &pos, int Button,bool pressed)
 	if(!m_visible)
 		return false;
 
+	ImGui_ImplEq_InputMousePress(Button, pressed);
+
+	if (!m_showConsole)
+		return true;
+
 	if (pressed)
 	{
 		if (Button == MOU_B1)
@@ -1161,6 +1285,16 @@ bool CEqConsoleInput::MouseEvent(const Vector2D &pos, int Button,bool pressed)
 			AutoCompleteSelectVariant();
 		}
 	}
+
+	return true;
+}
+
+bool CEqConsoleInput::MouseWheel(int hscroll, int vscroll)
+{
+	if (!m_visible)
+		return false;
+
+	ImGui_ImplEq_InputMouseWheel(hscroll, vscroll);
 
 	return true;
 }
@@ -1210,6 +1344,11 @@ bool CEqConsoleInput::KeyPress(int key, bool pressed)
 
 	if(!m_visible)
 		return false;
+
+	ImGui_ImplEq_InputKeyPress(key, pressed);
+
+	if (!m_showConsole)
+		return true;
 
 	if(pressed)
 	{
