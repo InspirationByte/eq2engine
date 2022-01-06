@@ -1426,7 +1426,7 @@ void ShaderAPIGL::ChangeRenderTargets(ITexture** pRenderTargets, int nNumRTs, in
 	{
 		CGLTexture* colorRT = (CGLTexture*)pRenderTargets[i];
 
-		int &nCubeFace = nCubemapFaces[i];
+		const int nCubeFace = nCubemapFaces ? nCubemapFaces[i] : 0;
 
 		if (colorRT->GetFlags() & TEXFLAG_CUBEMAP)
 		{

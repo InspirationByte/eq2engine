@@ -1580,7 +1580,7 @@ void ShaderAPID3DX9::ChangeRenderTargets(ITexture** pRenderTargets, int nNumRTs,
 	{
 		CD3D9Texture* pRenderTarget = (CD3D9Texture*)pRenderTargets[i];
 
-		int &nCubeFace = nCubemapFaces[i];
+		const int nCubeFace = nCubemapFaces ? nCubemapFaces[i] : 0;
 
 		if (pRenderTarget != m_pCurrentColorRenderTargets[i] || nCubeFace != m_nCurrentCRTSlice[i])
 		{
