@@ -77,12 +77,12 @@ BEGIN_SHADER_CLASS(GaussianBlur)
 		g_pShaderAPI->SetTexture(m_blurSource->GetTexture(), "BaseTexture", 0);
 	}
 
-	ITexture*	GetBaseTexture(int stage)
+	ITexture*	GetBaseTexture(int stage) const
 	{
 		return NULL;
 	}
 
-	ITexture*	GetBumpTexture(int stage)
+	ITexture*	GetBumpTexture(int stage) const
 	{
 		return NULL;
 	}

@@ -67,8 +67,8 @@ BEGIN_SHADER_CLASS(Error)
 		g_pShaderAPI->SetTexture(pSetupTexture, "BaseTextureSampler", 0);
 	}
 
-	ITexture*	GetBaseTexture(int stage) {return m_pBaseTexture;}
-	ITexture*	GetBumpTexture(int stage) {return NULL;}
+	ITexture*	GetBaseTexture(int stage)  const {return m_pBaseTexture;}
+	ITexture*	GetBumpTexture(int stage)  const {return NULL;}
 
 	ITexture*			m_pBaseTexture;
 

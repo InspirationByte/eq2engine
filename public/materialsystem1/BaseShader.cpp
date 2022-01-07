@@ -74,9 +74,9 @@ CBaseShader::CBaseShader()
 
 	m_polyOffset		= false;
 
-	m_pBaseTextureTransformVar = NULL;
-	m_pBaseTextureScaleVar = NULL;
-	m_pBaseTextureFrame = NULL;
+	m_pBaseTextureTransformVar = nullptr;
+	m_pBaseTextureScaleVar = nullptr;
+	m_pBaseTextureFrame = nullptr;
 
 	m_nAddressMode = TEXADDRESS_WRAP;
 	m_nTextureFilter = TEXFILTER_TRILINEAR_ANISO;
@@ -202,14 +202,6 @@ void CBaseShader::Unload()
 		*m_UsedPrograms[i] = NULL;
 	}
 	m_UsedPrograms.clear();
-
-	for(int i = 0; i < m_UsedRenderStates.numElem(); i++)
-	{
-		g_pShaderAPI->DestroyRenderState(*m_UsedRenderStates[i]);
-		*m_UsedRenderStates[i] = NULL;
-	}
-
-	m_UsedRenderStates.clear();
 
 	for(int i = 0; i < m_UsedTextures.numElem(); i++)
 	{
@@ -348,7 +340,7 @@ void CBaseShader::ParamSetup_Fog()
 }
 
 // get texture transformation from vars
-Vector4D CBaseShader::GetTextureTransform(IMatVar* pTransformVar, IMatVar* pScaleVar)
+Vector4D CBaseShader::GetTextureTransform(IMatVar* pTransformVar, IMatVar* pScaleVar) const
 {
 	if(pTransformVar && pScaleVar)
 		return Vector4D(pScaleVar->GetVector2(), pTransformVar->GetVector2());
@@ -364,23 +356,23 @@ void CBaseShader::SetupVertexShaderTextureTransform(IMatVar* pTransformVar, IMat
 	g_pShaderAPI->SetShaderConstantVector4D(pszConstName, trans);
 }
 
-IMaterial* CBaseShader::GetAssignedMaterial()
+IMaterial* CBaseShader::GetAssignedMaterial() const
 {
 	return m_pAssignedMaterial;
 }
 
-bool CBaseShader::IsError()
+bool CBaseShader::IsError() const
 {
 	return m_bIsError;
 }
 
-bool CBaseShader::IsInitialized()
+bool CBaseShader::IsInitialized() const
 {
 	return m_bInitialized;
 }
 
 // get flags
-int CBaseShader::GetFlags()
+int CBaseShader::GetFlags() const
 {
 	return m_nFlags;
 }

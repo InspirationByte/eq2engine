@@ -73,31 +73,31 @@ public:
 	virtual void			Unload() = 0;
 
 	// returns real shader name
-	virtual const char*		GetName() = 0;
+	virtual const char*		GetName() const = 0;
 
 	// is error?
-	virtual bool			IsError() = 0;
+	virtual bool			IsError() const = 0;
 
 	// initialization status
-	virtual bool			IsInitialized() = 0;
+	virtual bool			IsInitialized() const = 0;
 
 	// returns material assigned to this shader
-	virtual IMaterial*		GetAssignedMaterial() = 0;
+	virtual IMaterial*		GetAssignedMaterial() const = 0;
 
 	// returns material flags
-	virtual int				GetFlags() = 0;
+	virtual int				GetFlags() const = 0;
 
 	// returns base texture from shader
-	virtual ITexture*		GetBaseTexture(int stage = 0) = 0;
+	virtual ITexture*		GetBaseTexture(int stage = 0) const = 0;
 
 	// returns base stage count
-	virtual int				GetBaseTextureStageCount() = 0;
+	virtual int				GetBaseTextureStageCount() const = 0;
 
 	// returns bump texture from shader
-	virtual ITexture*		GetBumpTexture(int stage = 0) = 0;
+	virtual ITexture*		GetBumpTexture(int stage = 0) const = 0;
 
 	// returns bump stage count
-	virtual int				GetBumpStageCount() = 0;
+	virtual int				GetBumpStageCount() const = 0;
 };
 
 #endif // ISHADER_H

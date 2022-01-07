@@ -37,8 +37,8 @@ BEGIN_SHADER_CLASS(Skybox)
 		return true;
 	}
 
-	ITexture* GetBaseTexture(int stage) {return m_nBaseTexture;}
-	ITexture* GetBumpTexture(int stage) {return NULL;}
+	ITexture* GetBaseTexture(int stage) const {return m_nBaseTexture;}
+	ITexture* GetBumpTexture(int stage) const {return NULL;}
 
 	SHADER_SETUP_STAGE()
 	{
