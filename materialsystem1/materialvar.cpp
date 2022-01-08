@@ -12,13 +12,15 @@
 
 #include "materialsystem1/renderers/IShaderAPI.h"
 
-CMatVar::CMatVar() : m_nameHash(0), m_nValue(0), m_vector(0.0f), m_pAssignedTexture(NULL), m_isDirtyString(0)
+CMatVar::CMatVar() 
+	: m_nameHash(0), m_nValue(0), m_vector(0.0f), m_isDirtyString(0),
+	m_pAssignedTexture(nullptr)
 {
 }
 
 CMatVar::~CMatVar()
 {
-	AssignTexture(NULL);
+	AssignTexture(nullptr);
 }
 
 // initializes the material var
@@ -198,11 +200,12 @@ ITexture* CMatVar::GetTexture() const
 // assigns texture
 void CMatVar::AssignTexture(ITexture* pTexture)
 {
-	if(m_pAssignedTexture)
-		g_pShaderAPI->FreeTexture(m_pAssignedTexture);
+	ITexture* oldTexture = m_pAssignedTexture;
+	if(oldTexture)
+		g_pShaderAPI->FreeTexture(oldTexture);
+
+	if(pTexture)
+		pTexture->Ref_Grab();
 
 	m_pAssignedTexture = pTexture;
-
-	if(m_pAssignedTexture)
-		m_pAssignedTexture->Ref_Grab();
 }

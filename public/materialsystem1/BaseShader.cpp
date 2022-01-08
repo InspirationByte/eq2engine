@@ -199,7 +199,7 @@ void CBaseShader::Unload()
 	for(int i = 0; i < m_UsedPrograms.numElem(); i++)
 	{
 		g_pShaderAPI->DestroyShaderProgram(*m_UsedPrograms[i]);
-		*m_UsedPrograms[i] = NULL;
+		*m_UsedPrograms[i] = nullptr;
 	}
 	m_UsedPrograms.clear();
 
@@ -207,10 +207,11 @@ void CBaseShader::Unload()
 	{
 		// unassign texture from a material var
 		// will also ref_drop
-		m_UsedTextures[i].var->AssignTexture(NULL);
+		m_UsedTextures[i].var->AssignTexture(nullptr);
 
 		ITexture** texPtr = m_UsedTextures[i].texture;
- 		*texPtr = g_pShaderAPI->GetErrorTexture();
+		if(texPtr)
+ 			*texPtr = g_pShaderAPI->GetErrorTexture();
 	}
 
 	m_UsedTextures.clear();
