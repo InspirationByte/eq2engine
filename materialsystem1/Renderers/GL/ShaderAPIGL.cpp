@@ -59,13 +59,13 @@ public:
 
 		// delete work
 		work_t* work = m_pendingWork;
+		m_pendingWork = nullptr;
 		while(work)
 		{
 			work_t* nextWork = work->next;
 			delete work;
 			work = nextWork;
 		}
-		m_pendingWork = nullptr;
 	}
 
 	// syncronous execution

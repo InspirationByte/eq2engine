@@ -32,7 +32,7 @@ FReal FPmath::ceil(const FReal& f)
 
 FReal FPmath::sqrt(const FReal& f)
 {
-    register FReal s,r;
+    FReal s,r;
 
     if (f < FPMATH_ONE)
 	{

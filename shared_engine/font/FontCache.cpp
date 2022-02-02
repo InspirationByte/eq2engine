@@ -227,7 +227,6 @@ IEqFont* eqFontFamily_t::FindBestSize( int bestSize, int styleFlags )
 			bestSizeStyleInfo = styleInfo;
 
 		// find the best size-fitting style of the font
-#pragma fixme("better size picking handling???")
 		if(bestSize >= styleInfo->size)
 			bestSizeStyleInfo = styleInfo;
 	}

@@ -440,9 +440,6 @@ bool CEngineStudioEGF::LoadModel(const char* pszPath, bool useJob)
 	LoadMotionPackages();
 	LoadPhysicsData();
 	
-
-	materials->Wait();
-
 	m_readyState = MODEL_LOAD_OK;
 
 	return true;
@@ -1051,8 +1048,8 @@ tempdecal_t* CEngineStudioEGF::MakeTempDecal(const decalmakeinfo_t& info, Matrix
 			g_verts.resize(pGroup->numIndices);
 			g_indices.resize(pGroup->numIndices);
 
-			int numIndices = (pGroup->primitiveType == EGFPRIM_TRI_STRIP) ? pGroup->numIndices - 2 : pGroup->numIndices;
-			int indexStep = (pGroup->primitiveType == EGFPRIM_TRI_STRIP) ? 1 : 3;
+			uint numIndices = (pGroup->primitiveType == EGFPRIM_TRI_STRIP) ? pGroup->numIndices - 2 : pGroup->numIndices;
+			uint indexStep = (pGroup->primitiveType == EGFPRIM_TRI_STRIP) ? 1 : 3;
 
 			for (uint32 k = 0; k < numIndices; k += indexStep)
 			{

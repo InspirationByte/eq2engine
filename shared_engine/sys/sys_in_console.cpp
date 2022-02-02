@@ -235,7 +235,7 @@ CEqConsoleInput::CEqConsoleInput()
 	m_visible = false;
 	m_logVisible = false;
 
-	m_showConsole = false;
+	m_showConsole = true;
 
 	m_cursorTime = 0.0f;
 	m_maxLines = 10;
@@ -805,7 +805,7 @@ void CEqConsoleInput::AutoCompleteSuggestion()
 
 	int char_index = 0;
 
-	int max_match_chars = -1;
+	uint max_match_chars = -1;
 	EqString matching_str;
 
 	if(m_fastfind_cmdbase != NULL)
