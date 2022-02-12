@@ -65,7 +65,9 @@ void IUIControl::InitFromKeyValues( kvkeybase_t* sec, bool noClear )
 	else
 		SetName(KV_GetValueString(sec, 0, ""));
 
-	SetLabel(KV_GetValueString(sec->FindKeyBase("label"), 0, GetLabel()));
+	kvkeybase_t* label = sec->FindKeyBase("label");
+	if (label)
+		SetLabel(KV_GetValueString(sec->FindKeyBase("label")));
 
 	m_position = KV_GetIVector2D(sec->FindKeyBase("position"), 0, m_position);
 	m_size = KV_GetIVector2D(sec->FindKeyBase("size"), 0, m_size);

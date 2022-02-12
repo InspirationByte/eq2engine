@@ -67,7 +67,7 @@ void Image::InitFromKeyValues( kvkeybase_t* sec, bool noClear )
 			}
 		}
 		else
-			MsgError("EqUI error: image '%s' missing 'path' or 'atlas' property", m_name.ToCString());
+			MsgError("EqUI error: image '%s' missing 'path' or 'atlas' property\n", m_name.ToCString());
 	}
 }
 
