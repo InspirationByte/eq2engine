@@ -499,10 +499,8 @@ namespace EqStringConv
 	{
 		m_utf8 = (ubyte*)val;
 
-		int length = GetLength();
-
 		if (len == -1)
-			len = length;
+			len = maxLength;
 
 		if (len > maxLength)
 			len = maxLength;
@@ -515,7 +513,7 @@ namespace EqStringConv
 				break;
 
 			*outStr++ = wch;
-		} while (length--);
+		} while (len--);
 
 		*outStr = '\0';
 	}
