@@ -10,8 +10,9 @@
 #include "core/platform/Platform.h"
 #include "core/platform/MessageBox.h"
 #include "core/ppmem.h"
-#include "core/IDkCore.h"
 #include "core/DebugInterface.h"
+
+#include "eqCore.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -161,14 +162,19 @@ static LONG WINAPI _exceptionCB(EXCEPTION_POINTERS *ExceptionInfo)
 	const char *pName, *pDescription;
 	GetExceptionStrings( pRecord->ExceptionCode, &pName, &pDescription );
 
-	char tmp_path[2048];
-	sprintf(tmp_path, "\nUnhandled Exception !!!\nException code: %s (0x%x)\nAddress: %p\n\n\nSee application log for details.",pName, pRecord->ExceptionCode, pRecord->ExceptionAddress);
+	EqString fmtStr = EqString::Format(
+		"Unhandled Exception\n"
+		"Exception code: %s (0x%x)\n"
+		"Address: %p\n\n\n"
+		"See application log for details.", pName, pRecord->ExceptionCode, pRecord->ExceptionAddress);
 
-	_InternalAssert(NULL, NULL, tmp_path);
+	CrashMsg(fmtStr.ToCString());
 
-	CrashMsg(tmp_path);
-
-	MsgError("\nUnhandled Exception !!!\nException code: %s (%p)\nAddress: %p\n\n",pName, pRecord->ExceptionCode,pRecord->ExceptionAddress);
+	const DkList<CoreExceptionCallback>& handlerCallbacks = ((CDkCore*)GetCore())->GetExceptionHandlers();
+	for (int i = 0; i < handlerCallbacks.numElem(); i++)
+	{
+		handlerCallbacks[i]();
+	}
 
 	if (pRecord->ExceptionCode == EXCEPTION_ACCESS_VIOLATION)
 	{
@@ -184,7 +190,7 @@ static LONG WINAPI _exceptionCB(EXCEPTION_POINTERS *ExceptionInfo)
 		}
 	}
 
-	MsgError("Description: %s\n", pDescription);
+	MsgError("\nDescription: %s\n", pDescription);
 	MsgError("\nModules listing:\n");
 
 	// show modules list

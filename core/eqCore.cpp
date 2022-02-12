@@ -254,7 +254,9 @@ bool CDkCore::Init(const char* pszApplicationName, const char* pszCommandLine)
 
 	// Install exception handler
 	if (g_cmdLine->FindArgument("-nocrashdump") == -1)
+	{
 		InstallExceptionHandler();
+	}
 
 	if(logEnabled)
 		MsgAccept("\nCore: Logging console output to file is enabled.\n");
@@ -393,6 +395,16 @@ void CDkCore::RegisterInterface(const char* pszName, IEqCoreModule* ifPtr)
 	iface.ptr = ifPtr;
 
 	m_interfaces.append(iface);
+}
+
+void CDkCore::AddExceptionCallback(CoreExceptionCallback callback)
+{
+	m_exceptionCb.append(callback);
+}
+
+void CDkCore::RemoveExceptionCallback(CoreExceptionCallback callback)
+{
+	m_exceptionCb.fastRemove(callback);
 }
 
 IEqCoreModule* CDkCore::GetInterface(const char* pszName) const

@@ -10,6 +10,7 @@
 
 #include "core/IDkCore.h"
 #include "ds/eqstring.h"
+#include "ds/function.h"
 #include "utils/KeyValues.h"
 
 // interface pointer keeper
@@ -40,6 +41,10 @@ public:
 
 	bool					IsInitialized()  const;
 
+	void					AddExceptionCallback(CoreExceptionCallback callback);
+	void					RemoveExceptionCallback(CoreExceptionCallback callback);
+
+	const DkList<CoreExceptionCallback>&	GetExceptionHandlers() const { return m_exceptionCb; }
 // Interface management for engine
 
 	void					RegisterInterface(const char* pszName, IEqCoreModule* iface);			// registers interface for faster access
@@ -47,13 +52,14 @@ public:
 	void					UnregisterInterface(const char* pszName);								// unregisters interface
 
 private:
-	EqString				m_szApplicationName;
-	EqString				m_szCurrentSessionUserName;
-	bool					m_bInitialized;
+	EqString						m_szApplicationName;
+	EqString						m_szCurrentSessionUserName;
+	bool							m_bInitialized;
 
-	KeyValues*				m_coreConfiguration;
+	KeyValues*						m_coreConfiguration;
 
-	DkList<coreInterface_t> m_interfaces;
+	DkList<coreInterface_t>			m_interfaces;
+	DkList<CoreExceptionCallback>	m_exceptionCb;
 };
 
 #endif //CDKCORE

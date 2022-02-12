@@ -13,6 +13,8 @@
 class KeyValues;
 class ICommandLine;
 
+using CoreExceptionCallback = void(*)();
+
 // DarkTech core interface
 class IDkCore
 {
@@ -28,6 +30,9 @@ public:
 	virtual char*					GetApplicationName() const = 0; // returns current application name string
 
 	virtual bool					IsInitialized() const = 0;	// Return status of initialization
+
+	virtual void					AddExceptionCallback(CoreExceptionCallback callback) = 0;
+	virtual void					RemoveExceptionCallback(CoreExceptionCallback callback) = 0;
 
 	// now configuration is global for all applications
 	virtual KeyValues*				GetConfig() const = 0;
