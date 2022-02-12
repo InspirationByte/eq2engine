@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
+	<Type Name="DkList&lt;*&gt;">
+		<DisplayString Condition="m_pListPtr == 0">unallocated</DisplayString>
+		<Expand>
+			<Synthetic Name="Items">
+				<DisplayString Condition="m_pListPtr == 0">unallocated</DisplayString>
+				<DisplayString>count: { m_nNumElem }</DisplayString>
+				<Expand>
+					<ArrayItems>
+						<Size>m_nNumElem</Size>
+						<ValuePointer>m_pListPtr</ValuePointer>
+					</ArrayItems>
+				</Expand>
+			</Synthetic>
+
+			<Item Name = "Allocated">
+				m_nSize
+			</Item>
+			<Item Name = "Granularity">
+				m_nGranularity
+			</Item>
+		</Expand>
+	</Type>
+	<Type Name="DkLinkedList&lt;*&gt;">
+		<DisplayString Condition="count == 0">empty</DisplayString>
+		<DisplayString>items: { count }</DisplayString>
+		<Expand>
+			<Synthetic Name="Items">
+				<DisplayString>count: { count }</DisplayString>
+				<Expand>
+					<LinkedListItems>
+						<HeadPointer>first</HeadPointer>
+						<NextPointer>next</NextPointer>
+						<ValueNode>object</ValueNode>
+					</LinkedListItems>
+				</Expand>
+			</Synthetic>
+			<Item Name="First">first</Item>
+			<Item Name="Last">last</Item>
+			<Item Name="Current">curr</Item>
+		</Expand>
+	</Type>
+	<Type Name="EqString">
+		<DisplayString Condition="m_nLength == 0">String: empty</DisplayString>
+		<DisplayString>String: { m_pszString }</DisplayString>
+		<Expand>
+			<Item Name = "Value">
+				m_pszString
+			</Item>
+			<Item Name = "Length">
+				m_nLength
+			</Item>
+			<Item Name = "Allocated">
+				m_nAllocated
+			</Item>
+		</Expand>
+	</Type>
+	<Type Name="EqWString">
+		<DisplayString Condition="m_nLength == 0">WString: empty</DisplayString>
+		<DisplayString>WString: { m_pszString }</DisplayString>
+		<Expand>
+			<Item Name = "Value">
+				m_pszString
+			</Item>
+			<Item Name = "Length">
+				m_nLength
+			</Item>
+			<Item Name = "Allocated">
+				m_nAllocated
+			</Item>
+		</Expand>
+	</Type>
+	<Type Name="kvkeybase_t">
+		<DisplayString>Key: { name } Values: { values }</DisplayString>
+		<Expand>
+			<Item Name = "Name">name</Item>
+			<Synthetic Name="Values">
+				<DisplayString>{ values }</DisplayString>
+				<Expand>
+					<ArrayItems>
+						<Size>values.m_nNumElem</Size>
+						<ValuePointer>values.m_pListPtr</ValuePointer>
+					</ArrayItems>
+				</Expand>
+			</Synthetic>
+			<Synthetic Name="Nested Keys">
+				<DisplayString>{ keys }</DisplayString>
+				<Expand>
+					<ArrayItems>
+						<Size>keys.m_nNumElem</Size>
+						<ValuePointer>keys.m_pListPtr</ValuePointer>
+					</ArrayItems>
+				</Expand>
+			</Synthetic>
+		</Expand>
+	</Type>
+	<Type Name="kvpairvalue_t">
+		<DisplayString Condition="type == KVPAIR_STRING">{ value }</DisplayString>
+		<DisplayString Condition="type == KVPAIR_INT">{ nValue }</DisplayString>
+		<DisplayString Condition="type == KVPAIR_FLOAT">{ fValue }</DisplayString>
+		<DisplayString Condition="type == KVPAIR_BOOL">{ bValue }</DisplayString>
+		<DisplayString Condition="type == KVPAIR_SECTION">{ section }</DisplayString>
+	</Type>
+	
+</AutoVisualizer>

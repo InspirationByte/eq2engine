@@ -198,8 +198,10 @@ void CBaseShader::Unload()
 {
 	for(int i = 0; i < m_UsedPrograms.numElem(); i++)
 	{
-		g_pShaderAPI->DestroyShaderProgram(*m_UsedPrograms[i]);
+		IShaderProgram* program = *m_UsedPrograms[i];
 		*m_UsedPrograms[i] = nullptr;
+
+		g_pShaderAPI->DestroyShaderProgram(program);
 	}
 	m_UsedPrograms.clear();
 
