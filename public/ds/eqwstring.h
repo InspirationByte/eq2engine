@@ -153,10 +153,6 @@ public:
 		return this->ToCString();
 	}
 
-	operator wchar_t* () {
-		return (wchar_t*)this->ToCString();
-	}
-
 	// case sensitive comparators
 	friend bool	operator==( const EqWString &a, const EqWString &b )
 	{
