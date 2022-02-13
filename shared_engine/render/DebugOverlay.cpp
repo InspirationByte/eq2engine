@@ -374,12 +374,20 @@ void CDebugOverlay::Polygon3D(const Vector3D &v0, const Vector3D &v1,const Vecto
 	m_polygons.append(poly);
 }
 
+void CDebugOverlay::Draw2DFunc(OnDebugDrawFn func, void* args)
+{
+	Threading::CScopedMutex m(m_mutex);
+
+	DebugDrawFunc_t fn = { func, args };
+	m_draw2DFuncs.append(fn);
+}
+
 void CDebugOverlay::Draw3DFunc( OnDebugDrawFn func, void* args )
 {
 	Threading::CScopedMutex m(m_mutex);
 
 	DebugDrawFunc_t fn = {func, args};
-	m_drawFuncs.append(fn);
+	m_draw3DFuncs.append(fn);
 }
 
 void DrawLineArray(DkList<DebugLineNode_t>& lines, float frametime)
@@ -949,12 +957,10 @@ void CDebugOverlay::Draw(int winWide, int winTall)
 	{
 		Threading::CScopedMutex m(m_mutex);
 
-		for(int i = 0; i < m_drawFuncs.numElem(); i++)
-		{
-			m_drawFuncs[i].func(m_drawFuncs[i].arg);
-		}
+		for(int i = 0; i < m_draw3DFuncs.numElem(); i++)
+			m_draw3DFuncs[i].func(m_draw3DFuncs[i].arg);
 
-		m_drawFuncs.clear();
+		m_draw3DFuncs.clear();
 	}
 
 	// draw all of 3d stuff
@@ -1121,6 +1127,16 @@ void CDebugOverlay::Draw(int winWide, int winTall)
 			DrawGraph( m_graphbuckets[i], i, m_pDebugFont, m_frameTime);
 
 		m_graphbuckets.clear();
+	}
+
+	// draw custom stuff
+	{
+		Threading::CScopedMutex m(m_mutex);
+
+		for (int i = 0; i < m_draw2DFuncs.numElem(); i++)
+			m_draw2DFuncs[i].func(m_draw2DFuncs[i].arg);
+
+		m_draw2DFuncs.clear();
 	}
 
 	CleanOverlays();

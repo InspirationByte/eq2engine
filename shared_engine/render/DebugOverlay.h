@@ -115,7 +115,8 @@ public:
 	void							Sphere3D(const Vector3D& position, float radius, const ColorRGBA &color, float fTime = 0.0f);
 	void							Polygon3D(const Vector3D &v0, const Vector3D &v1,const Vector3D &v2, const Vector4D &color, float fTime = 0.0f);
 
-	void							Draw3DFunc( OnDebugDrawFn func, void* args );
+	void							Draw2DFunc(OnDebugDrawFn func, void* args);
+	void							Draw3DFunc(OnDebugDrawFn func, void* args );
 
 	void							Graph_DrawBucket(debugGraphBucket_t* pBucket);
 	void							Graph_AddValue( debugGraphBucket_t* pBucket, float value);
@@ -144,7 +145,8 @@ private:
 	DkList<debugGraphBucket_t*>		m_graphbuckets;
 	DkList<DebugPolyNode_t>			m_polygons;
 
-	DkList<DebugDrawFunc_t>			m_drawFuncs;
+	DkList<DebugDrawFunc_t>			m_draw2DFuncs;
+	DkList<DebugDrawFunc_t>			m_draw3DFuncs;
 
 	CEqTimer						m_timer;
 
