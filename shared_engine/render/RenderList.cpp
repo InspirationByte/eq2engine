@@ -88,19 +88,16 @@ void CRenderList::SortByDistanceFrom(const Vector3D& origin)
 	int num = m_ObjectList.numElem();
 	for(int i = 0; i < num; i++)
 	{
-		// FIXME: cache?
-		BoundingBox bbox;
-		m_ObjectList[i]->GetBoundingBox(bbox);
+		CBaseRenderableObject* pRenderable = m_ObjectList[i];
 
-		float dist_to_camera;
+		// FIXME: cache?
+		const BoundingBox& bbox = pRenderable->GetBoundingBox();
 
 		// clamp point in bbox
 		if(!bbox.Contains(origin))
-			dist_to_camera = lengthSqr(origin - bbox.ClampPoint(origin));
+			pRenderable->m_fViewDistance = lengthSqr(origin - bbox.ClampPoint(origin));
 		else
-			dist_to_camera = lengthSqr(origin - bbox.GetCenter());
-
-		m_ObjectList[i]->m_fViewDistance = dist_to_camera;
+			pRenderable->m_fViewDistance = lengthSqr(origin - bbox.GetCenter());
 	}
 
 	m_ObjectList.sort(DistanceCompare);

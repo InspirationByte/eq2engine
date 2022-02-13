@@ -41,22 +41,18 @@ public:
 	CBaseRenderableObject()
 	{
 		m_nRenderFlags = 0;
+		m_fViewDistance = 0.0f;
 		//m_nVisibilityStatus = VISIBILITY_NOT_TESTED;
 	}
 
 	virtual ~CBaseRenderableObject() {}
 
-	// renders this object with current transformations
-	virtual void			Render(int nViewRenderFlags, void* userdata) = 0;
+	virtual void				Render(int nViewRenderFlags, void* userdata) = 0;
 
-	// min bbox dimensions
-	virtual void			GetBoundingBox(BoundingBox& outBox) = 0;
+	virtual const BoundingBox&	GetBoundingBox() const = 0;
 
-	// adds a render flags
-	virtual void			SetRenderFlags(int nFlags);
-
-	// returns render flags
-	virtual int				GetRenderFlags();
+	virtual void				SetRenderFlags(int nFlags);
+	virtual int					GetRenderFlags() const;
 
 protected:
 

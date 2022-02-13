@@ -87,7 +87,7 @@ void CParticleRenderGroup::AddParticleStrip(PFXVertex_t* verts, int nVertices)
 }
 
 // prepares render buffers and sends renderables to ViewRenderer
-void CParticleRenderGroup::Render(int nViewRenderFlags, void* userdata)
+void CParticleRenderGroup::Render(int nViewRenderFlags)
 {
 	if(!m_initialized || !r_drawParticles.GetBool())
 	{
@@ -330,7 +330,7 @@ void CParticleLowLevelRenderer::Render(int nRenderFlags)
 {
 	for(int i = 0; i < m_renderGroups.numElem(); i++)
 	{
-		m_renderGroups[i]->Render( nRenderFlags, nullptr );
+		m_renderGroups[i]->Render( nRenderFlags );
 	}
 }
 

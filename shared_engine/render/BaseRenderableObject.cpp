@@ -21,7 +21,7 @@ void CBaseRenderableObject::SetRenderFlags(int nFlags)
 }
 
 // removes render flags
-int CBaseRenderableObject::GetRenderFlags()
+int CBaseRenderableObject::GetRenderFlags() const
 {
 	return m_nRenderFlags;
 }

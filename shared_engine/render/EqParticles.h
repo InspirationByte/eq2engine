@@ -58,11 +58,7 @@ static VertexFormatDesc_s g_PFXVertexFormatDesc[] = {
 // It's represented as renderable object
 //
 // You can derive it
-#ifndef NO_ENGINE
-class CParticleRenderGroup : public CSpriteBuilder<PFXVertex_t>, public CBaseRenderableObject
-#else
 class CParticleRenderGroup : public CSpriteBuilder<PFXVertex_t>
-#endif
 {
 	friend class CParticleLowLevelRenderer;
 
@@ -77,11 +73,8 @@ public:
 
 	//-------------------------------------------------------------------
 
-	// min bbox dimensions
-	void				GetBoundingBox(BoundingBox& outBox) {}
-
 	// renders this buffer
-	void				Render(int nViewRenderFlags, void* userdata);
+	void				Render(int nViewRenderFlags);
 
 	void				SetCustomProjectionMatrix(const Matrix4x4& mat);
 
