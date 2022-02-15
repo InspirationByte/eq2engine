@@ -42,18 +42,15 @@ public:
 
 	GLWorkerThread()
 	{
-		m_started = false;
 	}
 
 	void Init()
 	{
 		StartWorkerThread("GLWorker");
-		m_started = true;
 	}
 
 	void Shutdown()
 	{
-		m_started = false;
 		SignalWork();
 		StopThread();
 
@@ -111,7 +108,6 @@ protected:
 	std::atomic<work_t*>	m_pendingWork;
 
 	uint					m_workCounter;
-	bool					m_started;
 };
 
 int GLWorkerThread::WaitForResult(work_t* work)
@@ -123,8 +119,12 @@ int GLWorkerThread::WaitForResult(work_t* work)
 	// wait
 	do
 	{
-		if (work->result != WORK_PENDING_MARKER)
-			return  work->result;
+		const int result = work->result;
+		if (result != WORK_PENDING_MARKER)
+		{
+			delete work;
+			return result;
+		}
 
 		// HACK: weird hack to make this unfreeze itself
 		if(IsWorkDone() && !m_pendingWork)
@@ -162,44 +162,38 @@ int GLWorkerThread::AddWork(const char* name, FUNC_TYPE f, bool blocking)
 
 int GLWorkerThread::Run()
 {
-	work_t* currentWork = nullptr;
-
 	// find some work
-	while (!currentWork)
+	do
 	{
-		// search for work
-		{
-			currentWork = m_pendingWork.load();
-			if(currentWork)
-			{
-				m_pendingWork = currentWork->next.load();
-				currentWork->next = nullptr;
-			}
-			else
-			{
-				m_pendingWork = nullptr;
-				break;
-			}
-		}
-
-		if (currentWork && currentWork->func)
-		{
-			DevMsg(DEVMSG_SHADERAPI, "BeginAsyncOperation for %s (workId %d)\n", currentWork->name, currentWork->workId);
-			g_shaderApi.BeginAsyncOperation(GetThreadID());
-
-			// run work
-			currentWork->result = currentWork->func();
-
-			DevMsg(DEVMSG_SHADERAPI, "EndAsyncOperation for %s (workId %d)\n", currentWork->name, currentWork->workId);
-			g_shaderApi.EndAsyncOperation();
-
-			delete currentWork;
-			currentWork = nullptr;
-		}
-
-		if (!m_started)
+		work_t* currentWork = m_pendingWork.load();
+		
+		if (currentWork)
+			m_pendingWork = currentWork->next.load();
+		else
 			break;
-	}
+
+		FUNC_TYPE func = currentWork->func;
+
+		DevMsg(DEVMSG_SHADERAPI, "BeginAsyncOperation for %s (workId %d)\n", currentWork->name, currentWork->workId);
+		g_shaderApi.BeginAsyncOperation(GetThreadID());
+
+		// run work
+		if (currentWork->blocking)
+		{
+			currentWork->result = func();
+		}
+		else
+		{
+			func();
+			delete currentWork;
+		}
+
+		DevMsg(DEVMSG_SHADERAPI, "EndAsyncOperation for %s (workId %d)\n", currentWork->name, currentWork->workId);
+		g_shaderApi.EndAsyncOperation();
+
+		if (IsTerminating())
+			break;
+	} while (true);
 
 	return 0;
 }
