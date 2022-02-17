@@ -68,17 +68,36 @@ void encryptDecrypt(ubyte* buffer, int size, int hash)
 
 //-----------------------------------------------------------------------------------------------------------------------
 
-CDPKFileStream::CDPKFileStream(const dpkfileinfo_t& info, FILE* fp)
+CDPKFileStream::CDPKFileStream(const char* filename, const dpkfileinfo_t& info, FILE* fp)
 	: m_ice(0)
 {
+	//m_dbgFilename = filename;
 	m_handle = fp;
 	m_info = info;
 	m_curPos = 0;
 
-	m_curBlockOfs = m_info.offset;
 	m_curBlockIdx = -1;
 
-	memset(&m_blockInfo, 0, sizeof(m_blockInfo));
+	// read all block headers
+	fseek(m_handle, m_info.offset, SEEK_SET);
+	m_blockInfo.resize(m_info.numBlocks);
+	for (int i = 0; i < m_info.numBlocks; i++)
+	{
+		dpkblock_t hdr;
+		fread(&hdr, 1, sizeof(dpkblock_t), m_handle);
+		
+		dpkblock_info_t block;
+		block.flags = hdr.flags;
+		block.offset = ftell(m_handle);
+		block.compressedSize = hdr.compressedSize;
+		block.size = hdr.size;
+
+		// skip block contents
+		const int readSize = (block.flags & DPKFILE_FLAG_COMPRESSED) ? block.compressedSize : block.size;
+		fseek(m_handle, readSize, SEEK_CUR);
+
+		m_blockInfo.append(block);
+	}
 }
 
 
@@ -96,92 +115,60 @@ void CDPKFileStream::DecodeBlock(int blockIdx)
 	if (m_curBlockIdx == blockIdx)
 		return;
 
-	int startBlock = m_curBlockIdx;
+	m_curBlockIdx = blockIdx;
 
-	if (blockIdx > startBlock && startBlock != -1)
+	dpkblock_info_t& curBlock = m_blockInfo[blockIdx];
+			
+	fseek(m_handle, curBlock.offset, SEEK_SET);
+
+	const int readSize = (curBlock.flags & DPKFILE_FLAG_COMPRESSED) ? curBlock.compressedSize : curBlock.size;
+	ubyte* readMem = (curBlock.flags & DPKFILE_FLAG_COMPRESSED) ? (ubyte*)malloc(DPK_BLOCK_MAXSIZE + 128) : m_blockData;
+
+	//Msg("DecodeBlock %s %d size = %d\n", m_dbgFilename.ToCString(), blockIdx, readSize);
+
+	// read block data and decompress/decrypt if needed
+	fread(readMem, 1, readSize, m_handle);
+
+	// decrypt first as it was encrypted last
+	if (curBlock.flags & DPKFILE_FLAG_ENCRYPTED)
 	{
-		// find the block starting from current block
-		fseek(m_handle, m_curBlockOfs, SEEK_SET);
-	}
-	else
-	{
-		// find the block from the beginning
-		fseek(m_handle, m_info.offset, SEEK_SET);
-		startBlock = 0;
-	}
+		int iceBlockSize = m_ice.blockSize();
 
-	// seek to the block
-	for(int i = startBlock; i < m_info.numBlocks; i++)
-	{
-		// store block info
-		m_curBlockOfs = ftell(m_handle);
-		m_curBlockIdx = i;
+		ubyte* iceTempBlock = (ubyte*)stackalloc(iceBlockSize);
+		ubyte* tmpBlockPtr = readMem;
 
-		dpkblock_t blockHdr;
-		fread(&blockHdr, 1, sizeof(blockHdr), m_handle);
+		int bytesLeft = readSize;
 
-		int readSize = (blockHdr.flags & DPKFILE_FLAG_COMPRESSED) ? blockHdr.compressedSize : blockHdr.size;
-
-		if (i == blockIdx)
+		// encrypt block by block
+		while (bytesLeft > iceBlockSize)
 		{
-			//Msg("DecodeBlock %d size = %d\n", i, readSize);
+			m_ice.decrypt(tmpBlockPtr, iceTempBlock);
 
-			ubyte* tmpBlock = (ubyte*)malloc(DPK_BLOCK_MAXSIZE + 128);
-			ubyte* readMem = (blockHdr.flags & DPKFILE_FLAG_COMPRESSED) ? tmpBlock : m_blockData;
+			// copy encrypted block
+			memcpy(tmpBlockPtr, iceTempBlock, iceBlockSize);
 
-			// read block and decompress/decrypt
-			fread(readMem, 1, readSize, m_handle);
+			tmpBlockPtr += iceBlockSize;
+			bytesLeft -= iceBlockSize;
+		}
+	}
 
-			// decrypt first as it was encrypted last
-			if (blockHdr.flags & DPKFILE_FLAG_ENCRYPTED)
-			{
-				int iceBlockSize = m_ice.blockSize();
+	// then decompress
+	if (curBlock.flags & DPKFILE_FLAG_COMPRESSED)
+	{
+		// decompress readMem to 'm_blockData'
+		unsigned long destLen = curBlock.size;
+		const int status = uncompress(m_blockData, &destLen, readMem, curBlock.compressedSize);
 
-				ubyte* iceTempBlock = (ubyte*)stackalloc(iceBlockSize);
-				ubyte* tmpBlockPtr = readMem;
-
-				int bytesLeft = readSize;
-
-				// encrypt block by block
-				while (bytesLeft > iceBlockSize)
-				{
-					m_ice.decrypt(tmpBlockPtr, iceTempBlock);
-
-					// copy encrypted block
-					memcpy(tmpBlockPtr, iceTempBlock, iceBlockSize);
-
-					tmpBlockPtr += iceBlockSize;
-					bytesLeft -= iceBlockSize;
-				}
-			}
-
-			// then decompress
-			if (blockHdr.flags & DPKFILE_FLAG_COMPRESSED)
-			{
-				// so our readMem is already 'tmpBlock', so we only have to uncompress it to 'm_blockData'
-				
-				unsigned long destLen = blockHdr.size;
-				int status = uncompress(m_blockData, &destLen, tmpBlock, blockHdr.compressedSize);
-
-				if (status != Z_OK)
-				{
-					ASSERTMSG(false, EqString::Format("Cannot decompress file block - %d!\n", status).ToCString());
-				}
-				else
-				{
-					ASSERT(destLen == blockHdr.size);
-				}
-
-				free(tmpBlock);
-			}
-
-			// done. Keep block for further purposes
-			m_blockInfo = blockHdr;
-			return;
+		if (status != Z_OK)
+		{
+			ASSERTMSG(false, EqString::Format("Cannot decompress file block - %d!\n", status).ToCString());
+		}
+		else
+		{
+			ASSERT(destLen == curBlock.size);
 		}
 
-		// skip
-		fseek(m_handle, readSize, SEEK_CUR);
+		free(readMem);
 	}
 }
 
@@ -212,7 +199,7 @@ size_t CDPKFileStream::Read(void* dest, size_t count, size_t size)
 			const int curBlockIdx = curPos / DPK_BLOCK_MAXSIZE;
 			DecodeBlock(curBlockIdx);
 
-			const int blockRemainingBytes = m_blockInfo.size - blockOffset;
+			const int blockRemainingBytes = m_blockInfo[curBlockIdx].size - blockOffset;
 			const int blockBytesToRead = min(bytesToReadCnt, blockRemainingBytes);
 
 			//Msg("Block %d: read at %d (%d) - %d of %d\n", curBlockIdx, curPos, blockOffset, blockBytesToRead, m_blockInfo.size);
@@ -484,7 +471,7 @@ IVirtualStream* CDPKFileReader::Open(const char* filename, const char* mode)
 		return nullptr;
 	}
 
-	CDPKFileStream* newStream = new CDPKFileStream(fileInfo, file);
+	CDPKFileStream* newStream = new CDPKFileStream(filename, fileInfo, file);
 	newStream->m_host = this;
 	newStream->m_ice.set((unsigned char*)m_key.ToCString());
 

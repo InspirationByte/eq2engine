@@ -31,7 +31,7 @@ class CDPKFileStream : public CBasePackageFileStream
 	friend class CDPKFileReader;
 	friend class CFileSystem;
 public:
-	CDPKFileStream(const dpkfileinfo_t& info, FILE* fp);
+	CDPKFileStream(const char* fileName, const dpkfileinfo_t& info, FILE* fp);
 	~CDPKFileStream();
 
 	// reads data from virtual stream
@@ -66,18 +66,27 @@ public:
 protected:
 	void				DecodeBlock(int block);
 
-	ubyte				m_blockData[DPK_BLOCK_MAXSIZE];
-	dpkfileinfo_t		m_info;
-	IceKey				m_ice;
-	dpkblock_t			m_blockInfo;
+	struct dpkblock_info_t
+	{
+		uint32 offset;
+		uint32 size;
+		uint32 compressedSize;
+		short flags;
+	};
 
-	uint32				m_curBlockOfs;
-	int					m_curBlockIdx;
+	ubyte					m_blockData[DPK_BLOCK_MAXSIZE];
+	//EqString				m_dbgFilename;
 
-	FILE*				m_handle;
-	int					m_curPos;
+	dpkfileinfo_t			m_info;
+	IceKey					m_ice;
 
-	CDPKFileReader*		m_host;
+	DkList<dpkblock_info_t>	m_blockInfo;
+	int						m_curBlockIdx;
+
+	FILE*					m_handle;
+	int						m_curPos;
+
+	CDPKFileReader*			m_host;
 };
 
 //------------------------------------------------------------------------------------------
