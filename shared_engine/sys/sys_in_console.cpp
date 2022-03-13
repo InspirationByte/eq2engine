@@ -12,6 +12,8 @@
 
 #include "utils/KeyValues.h"
 #include "utils/strtools.h"
+#include "utils/eqthread.h"
+#include "utils/global_mutex.h"
 
 #include "render/IDebugOverlay.h"
 
@@ -30,6 +32,8 @@
 
 #include <SDL_clipboard.h>
 #include <SDL_keyboard.h>
+
+
 
 #ifdef _DEBUG
 #define CONSOLE_ENGINEVERSION_STR EqString::Format(ENGINE_NAME " Engine " ENGINE_VERSION " DEBUG build %d (" COMPILE_DATE ")", BUILD_NUMBER_ENGINE).ToCString()
@@ -155,10 +159,6 @@ bool IsInRectangle(int posX, int posY,int rectX,int rectY,int rectW,int rectH)
 
 struct conSpewText_t
 {
-	~conSpewText_t()
-	{
-	}
-
 	SpewType_t	type;
 	EqString	text;
 };
@@ -197,7 +197,10 @@ void CEqConsoleInput::SpewFunc(SpewType_t type, const char* pMsg)
 			if(con_minicon.GetBool() && debugoverlay != NULL)
 				debugoverlay->TextFadeOut(0, s_spewColors[type], CON_MINICON_TIME, currentSpewLine->text.ToCString());
 
-			s_spewMessages.append(currentSpewLine);
+			{
+				Threading::CScopedMutex m(GetGlobalMutex(MUTEXPURPOSE_LOG));
+				s_spewMessages.append(currentSpewLine);
+			}
 		}
 
 		// if not a zero, there is line start
@@ -210,6 +213,8 @@ void CEqConsoleInput::SpewFunc(SpewType_t type, const char* pMsg)
 
 void CEqConsoleInput::SpewClear()
 {
+	Threading::CScopedMutex m(GetGlobalMutex(MUTEXPURPOSE_LOG));
+
 	for(int i = 0; i < s_spewMessages.numElem(); i++)
 		delete s_spewMessages[i];
 
@@ -1067,6 +1072,7 @@ void CEqConsoleInput::DrawAutoCompletion(float x, float y, float w)
 
 void CEqConsoleInput::SetLastLine()
 {
+	Threading::CScopedMutex m(GetGlobalMutex(MUTEXPURPOSE_LOG));
 	int totalLines = s_spewMessages.numElem();
 
 	m_logScrollPosition = totalLines - m_maxLines;
@@ -1075,6 +1081,7 @@ void CEqConsoleInput::SetLastLine()
 
 void CEqConsoleInput::AddToLinePos(int num)
 {
+	Threading::CScopedMutex m(GetGlobalMutex(MUTEXPURPOSE_LOG));
 	int totalLines = s_spewMessages.numElem();
 	m_logScrollPosition += num;
 	m_logScrollPosition = min(totalLines,m_logScrollPosition);
@@ -1091,6 +1098,8 @@ void CEqConsoleInput::SetText( const char* text, bool quiet /*= false*/ )
 
 void CEqConsoleInput::DrawSelf(int width,int height, float frameTime)
 {
+	Threading::CScopedMutex m(GetGlobalMutex(MUTEXPURPOSE_LOG));
+
 	m_cursorTime -= frameTime;
 
 	if(m_cursorTime < 0.0f)

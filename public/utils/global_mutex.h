@@ -14,7 +14,7 @@
 enum EMutexPurpose
 {
 	MUTEXPURPOSE_JOBMANAGER = 0,	// global locking
-
+	MUTEXPURPOSE_LOG,
 	MUTEXPURPOSE_NET_THREAD,		// network thread uses
 	MUTEXPURPOSE_MODEL_LOADER,		// model loading
 	MUTEXPURPOSE_LEVEL_LOADER,		// level loading
