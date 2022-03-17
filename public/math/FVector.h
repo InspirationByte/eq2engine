@@ -8,7 +8,7 @@
 #ifndef FVECTOR_H
 #define FVECTOR_H
 
-struct FReal;
+#include "FixedMath.h"
 
 template<typename T> struct TVec2D;
 template<typename T> struct TVec3D;
