@@ -210,7 +210,7 @@ void VectorRotate( const Vector3D &in1, const Vector3D &angles, Vector3D *out, V
 
 Vector3D RotateXZBy(const Vector3D &vector,float degrees, Vector3D &center)
 {
-	degrees *= (float)(PI_F / 180.0f);
+	degrees *= (float)(M_PI_F / 180.0f);
 	float cs,sn;
 	SinCos(degrees,&sn,&cs);
 	Vector3D out = vector;
@@ -224,7 +224,7 @@ Vector3D RotateXZBy(const Vector3D &vector,float degrees, Vector3D &center)
 
 Vector3D RotateXYBy(const Vector3D &vector,float degrees, Vector3D &center)
 {
-	degrees *= (float)(PI_F / 180.0f);
+	degrees *= (float)(M_PI_F / 180.0f);
 	float cs,sn;
 	SinCos(degrees,&sn,&cs);
 	Vector3D out = vector;
@@ -238,7 +238,7 @@ Vector3D RotateXYBy(const Vector3D &vector,float degrees, Vector3D &center)
 
 Vector3D RotateYZBy(const Vector3D &vector,float degrees, Vector3D &center)
 {
-    degrees *= (float)(PI_F / 180.0f);
+    degrees *= (float)(M_PI_F / 180.0f);
 	float cs,sn;
 	SinCos(degrees,&sn,&cs);
 	Vector3D out = vector;

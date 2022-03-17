@@ -774,11 +774,13 @@ void DrawSphereWireframe(CMeshBuilder& meshBuilder, DebugSphereNode_t& sphere, i
 
 	sides = sides + (sides % 2);
 
+	const double oneBySides = 1.0 / sides;
+
 	{
 		for (int i = 0; i < sides; i++)
 		{
-			double ds = sin((i * 2 * PI) / sides);
-			double dc = cos((i * 2 * PI) / sides);
+			const double ds = sin((i * 2 * M_PI_D) * oneBySides);
+			const double dc = cos((i * 2 * M_PI_D) * oneBySides);
 
 			meshBuilder.Position3f(
 						static_cast<float>(sphere.origin.x + sphere.radius * dc),
@@ -793,8 +795,8 @@ void DrawSphereWireframe(CMeshBuilder& meshBuilder, DebugSphereNode_t& sphere, i
 	{
 		for (int i = 0; i < sides; i++)
 		{
-			double ds = sin((i * 2 * PI) / sides);
-			double dc = cos((i * 2 * PI) / sides);
+			const double ds = sin((i * 2 * M_PI_D) * oneBySides);
+			const double dc = cos((i * 2 * M_PI_D) * oneBySides);
 
 			meshBuilder.Position3f(
 						static_cast<float>(sphere.origin.x + sphere.radius * dc),
@@ -809,8 +811,8 @@ void DrawSphereWireframe(CMeshBuilder& meshBuilder, DebugSphereNode_t& sphere, i
 	{
 		for (int i = 0; i < sides; i++)
 		{
-			double ds = sin((i * 2 * PI) / sides);
-			double dc = cos((i * 2 * PI) / sides);
+			const double ds = sin((i * 2 * M_PI_D) * oneBySides);
+			const double dc = cos((i * 2 * M_PI_D) * oneBySides);
 
 			meshBuilder.Position3f(
 						sphere.origin.x,
@@ -829,8 +831,8 @@ void DrawSphereFilled(CMeshBuilder& meshBuilder, DebugSphereNode_t& sphere, int 
 	if (sphere.radius <= 0)
 		return;
 
-	float dt = PI*2.0f / float(sides);
-	float dp = PI / float(sides);
+	const float dt = M_PI_D *2.0f / float(sides);
+	const float dp = M_PI_D / float(sides);
 
 	meshBuilder.Color4fv(sphere.color);
 
@@ -839,7 +841,7 @@ void DrawSphereFilled(CMeshBuilder& meshBuilder, DebugSphereNode_t& sphere, int 
 		for (int j = 0; j <= sides - 2; j++)
 		{
 			const double t = i * dt;
-			const double p = (j * dp) - (PI * 0.5f);
+			const double p = (j * dp) - (M_PI_D * 0.5f);
 
 			{
 				Vector3D v(sphere.origin + (v3sphere(t, p) * sphere.radius));
@@ -880,7 +882,7 @@ void DrawSphereFilled(CMeshBuilder& meshBuilder, DebugSphereNode_t& sphere, int 
 	}
 
 	{
-		const double p = (sides - 1) * dp - (PI * 0.5f);
+		const double p = (sides - 1) * dp - (M_PI_D * 0.5f);
 		for (int i = 0; i <= sides - 1; i++)
 		{
 			const double t = i * dt;

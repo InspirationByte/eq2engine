@@ -5,6 +5,9 @@
 // Description: Base shader public code
 //////////////////////////////////////////////////////////////////////////////////
 
+#ifndef BASESHADER_H
+#define BASESHADER_H
+
 #include "materialsystem1/IMaterialSystem.h"
 #include "utils/strtools.h"
 #include "scene_def.h"
@@ -193,12 +196,6 @@ class CBaseShader;
 // this is a special callback for shader parameter binding
 typedef void (CBaseShader::*SHADERPARAMFUNC)(void);
 
-struct mvUseTexture_t
-{
-	ITexture**	texture;
-	IMatVar*	var;
-};
-
 // base shader class
 class CBaseShader : public IMaterialSystemShader
 {
@@ -231,6 +228,11 @@ public:
 	int							GetBumpStageCount() const			{return 0;}
 
 protected:
+	struct mvUseTexture_t
+	{
+		ITexture** texture;
+		IMatVar* var;
+	};
 
 	void						ParamSetup_CurrentAsBaseTexture();
 
@@ -286,3 +288,5 @@ protected:
 
 #define SetParameterFunctor( type, a) m_param_functors[type] = (static_cast <SHADERPARAMFUNC>(a))
 #define SetupDefaultParameter( type ) SetupParameter(paramMask, type)
+
+#endif // BASESHADER_H

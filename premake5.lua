@@ -2,6 +2,7 @@
 
 require ".premake_modules/usage"
 require ".premake_modules/android_studio"
+require ".premake_modules/unitybuild"
 
 IS_ANDROID = (_ACTION == "android-studio")
 
@@ -163,6 +164,7 @@ group "Core"
 project "corelib"
     kind "StaticLib"
 	
+	unitybuild "on"
     files {
 		Folders.public.. "/core/*.cpp",
 		Folders.public.. "/core/**.h"
@@ -181,6 +183,7 @@ usage "corelib"
 project "frameworkLib"
     kind "StaticLib"
 
+	unitybuild "on"
 	uses { "corelib", "libjpeg" }
 
     files {
@@ -192,7 +195,8 @@ project "frameworkLib"
 		Folders.public.. "/utils/*.h",
         Folders.public.. "/math/*.h", 
 		Folders.public.. "/math/*.inl",
-        Folders.public.. "/imaging/*.h"
+        Folders.public.. "/imaging/*.h",
+		Folders.public.. "/**.natvis"
 	}
 
 usage "frameworkLib"
@@ -212,6 +216,7 @@ usage "frameworkLib"
 project "e2Core"
     kind "SharedLib"
 	
+	unitybuild "on"
     files {
         "core/**.cpp",
         "core/minizip/**.c",
@@ -245,6 +250,7 @@ group "Components"
 
 project "sysLib"
 	kind "StaticLib"
+	unitybuild "on"
 	uses { 
 		"corelib", "frameworkLib",
 		"SDL2", "imgui"
@@ -258,10 +264,10 @@ project "sysLib"
     includedirs {
 		Folders.shared_engine
 	}
-	links { "Shcore.lib" }
 
 project "equiLib"
 	kind "StaticLib"
+	unitybuild "on"
 	uses { 
 		"corelib", "frameworkLib"
 	}
@@ -276,6 +282,7 @@ project "equiLib"
 
 project "networkLib"
 	kind "StaticLib"
+	unitybuild "on"
 	uses {
 		"corelib", "frameworkLib",
 		"zlib" 
@@ -297,6 +304,7 @@ project "networkLib"
 
 project "soundSystemLib"
 	kind "StaticLib"
+	unitybuild "on"
 	uses { 
 		"corelib", "frameworkLib",
 		"libvorbis", "libogg", "openal-soft"
@@ -312,6 +320,7 @@ project "soundSystemLib"
 
 project "physicsLib"
 	kind "StaticLib"
+	unitybuild "on"
 	uses { 
 		"corelib", "frameworkLib",
 		"bullet2"

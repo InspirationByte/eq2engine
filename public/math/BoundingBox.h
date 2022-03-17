@@ -9,31 +9,29 @@
 #define BOUNDINGBOX_H
 
 #include "Vector.h"
-#include "FixedMath.h"
-
-template<class T>
-T dist_check(const T pn, const T bmin, const T bmax )
-{
-	T out = 0;
-	T v = pn;
-
-	if ( v < bmin )
-	{
-		T val = (bmin - v);
-		out += val * val;
-	}
-	if ( v > bmax )
-	{
-		T val = (v - bmax);
-		out += val * val;
-	}
-
-	return out;
-};
 
 template<class T, int TMAX>
 struct TAABBox //BoundingBox
 {
+	static T dist_check(const T pn, const T bmin, const T bmax)
+	{
+		T out = 0;
+		T v = pn;
+
+		if (v < bmin)
+		{
+			T val = (bmin - v);
+			out += val * val;
+		}
+		if (v > bmax)
+		{
+			T val = (v - bmax);
+			out += val * val;
+		}
+
+		return out;
+	};
+
     TAABBox(const TVec3D<T>& v1, const TVec3D<T>& v2)
     {
         if ( v1.x < v2.x )
@@ -281,7 +279,6 @@ struct TAABBox //BoundingBox
 	TVec3D<T>	maxPoint;
 };
 
-typedef TAABBox<float, (int)V_MAX_COORD> BoundingBox;
-typedef TAABBox<FReal, 32767>		FBoundingBox;
+typedef TAABBox<float, (int)V_MAX_COORD>	BoundingBox;
 
 #endif //BOUNDINGBOX_H

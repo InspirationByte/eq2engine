@@ -288,13 +288,9 @@ Quaternion operator ! (const Quaternion &q)
 	return Quaternion(q.w, -q.x, -q.y, -q.z);
 }
 
-#ifdef _WIN32
-#define isnan _isnan
-#endif
-
 bool Quaternion::isNan() const
 {
-	return (isnan(x) || isnan(y) || isnan(z) || isnan(w) );
+	return (IsNaN(x) || IsNaN(y) || IsNaN(z) || IsNaN(w) );
 }
 
 Quaternion operator + (const Quaternion &u, const Quaternion &v)
@@ -485,7 +481,7 @@ Vector3D eulersXYZ(const Quaternion &q)
 		// bank = rotation about x-axis
 		euler.x = 0;
 		// attitude = rotation about y-axis
-		euler.y = (float) (PI/2.0);
+		euler.y = (float) (M_PI_D/2.0);
 	}
 	else if (dsimilar(test, -1.0, 0.000001))
 	{
@@ -494,7 +490,7 @@ Vector3D eulersXYZ(const Quaternion &q)
 		// bank = rotation about x-axis
 		euler.x = 0;
 		// attitude = rotation about y-axis
-		euler.y = (float) (PI/-2.0);
+		euler.y = (float) (M_PI_D/-2.0);
 	}
 	else
 	{

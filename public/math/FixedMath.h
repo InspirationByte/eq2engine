@@ -236,7 +236,7 @@ inline FReal max(FReal x, FReal y) {return (x > y)? x : y;}
 
 namespace FPmath
 {
-const static FReal PI = 3.141592654f;
+static const FReal PI = 3.141592654f;
 
 FReal abs(const FReal& f);
 FReal sign(const FReal& f);

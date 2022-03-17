@@ -6,7 +6,6 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "FixedMath.h"
-#include "Vector.h"
 
 #ifndef FLOAT_AS_FREAL
 
@@ -89,7 +88,7 @@ FReal FPmath::sqrt2(const FReal& f)
 // Since we are using fixed-point the accuracy is more around 5e-6
 FReal FPmath::sin(const FReal& rad)
 {
-    FReal x = (rad * 2 ) / FPmath::PI;
+    FReal x = (rad * 2 ) / PI;
 
     //These improve accuracy
     while (x >  1) {x-=2;}

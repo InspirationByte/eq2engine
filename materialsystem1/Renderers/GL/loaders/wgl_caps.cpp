@@ -3,88 +3,7 @@
 #include <string.h>
 #include <stddef.h>
 #include "wgl_caps.hpp"
-
-#if defined(__APPLE__)
-#include <dlfcn.h>
-
-static void* AppleGLGetProcAddress (const char *name)
-{
-	static void* image = NULL;
-	
-	if (NULL == image)
-		image = dlopen("/System/Library/Frameworks/OpenGL.framework/Versions/Current/OpenGL", RTLD_LAZY);
-
-	return (image ? dlsym(image, name) : NULL);
-}
-#endif /* __APPLE__ */
-
-#if defined(__sgi) || defined (__sun)
-#include <dlfcn.h>
-#include <stdio.h>
-
-static void* SunGetProcAddress (const GLubyte* name)
-{
-  static void* h = NULL;
-  static void* gpa;
-
-  if (h == NULL)
-  {
-    if ((h = dlopen(NULL, RTLD_LAZY | RTLD_LOCAL)) == NULL) return NULL;
-    gpa = dlsym(h, "glXGetProcAddress");
-  }
-
-  if (gpa != NULL)
-    return ((void*(*)(const GLubyte*))gpa)(name);
-  else
-    return dlsym(h, (const char*)name);
-}
-#endif /* __sgi || __sun */
-
-#if defined(_WIN32)
-
-#ifdef _MSC_VER
-#pragma warning(disable: 4055)
-#pragma warning(disable: 4054)
-#pragma warning(disable: 4996)
-#endif
-
-static int TestPointer(const PROC pTest)
-{
-	ptrdiff_t iTest;
-	if(!pTest) return 0;
-	iTest = (ptrdiff_t)pTest;
-	
-	if(iTest == 1 || iTest == 2 || iTest == 3 || iTest == -1) return 0;
-	
-	return 1;
-}
-
-static PROC WinGetProcAddress(const char *name)
-{
-	HMODULE glMod = NULL;
-	PROC pFunc = wglGetProcAddress((LPCSTR)name);
-	if(TestPointer(pFunc))
-	{
-		return pFunc;
-	}
-	glMod = GetModuleHandleA("OpenGL32.dll");
-	return (PROC)GetProcAddress(glMod, (LPCSTR)name);
-}
-	
-#define IntGetProcAddress(name) WinGetProcAddress(name)
-#else
-	#if defined(__APPLE__)
-		#define IntGetProcAddress(name) AppleGLGetProcAddress(name)
-	#else
-		#if defined(__sgi) || defined(__sun)
-			#define IntGetProcAddress(name) SunGetProcAddress(name)
-		#else /* GLX */
-		    #include <GL/glx.h>
-
-			#define IntGetProcAddress(name) (*glXGetProcAddressARB)((const GLubyte*)name)
-		#endif
-	#endif
-#endif
+#include "gl_loader.h"
 
 namespace wgl
 {
@@ -114,7 +33,7 @@ namespace wgl
 		static int Load_ARB_extensions_string()
 		{
 			int numFailed = 0;
-			GetExtensionsStringARB = reinterpret_cast<PFNGETEXTENSIONSSTRINGARB>(IntGetProcAddress("wglGetExtensionsStringARB"));
+			GetExtensionsStringARB = reinterpret_cast<PFNGETEXTENSIONSSTRINGARB>(gladHelperLoaderFunction("wglGetExtensionsStringARB"));
 			if(!GetExtensionsStringARB) ++numFailed;
 			return numFailed;
 		}
@@ -129,11 +48,11 @@ namespace wgl
 		static int Load_ARB_pixel_format()
 		{
 			int numFailed = 0;
-			ChoosePixelFormatARB = reinterpret_cast<PFNCHOOSEPIXELFORMATARB>(IntGetProcAddress("wglChoosePixelFormatARB"));
+			ChoosePixelFormatARB = reinterpret_cast<PFNCHOOSEPIXELFORMATARB>(gladHelperLoaderFunction("wglChoosePixelFormatARB"));
 			if(!ChoosePixelFormatARB) ++numFailed;
-			GetPixelFormatAttribfvARB = reinterpret_cast<PFNGETPIXELFORMATATTRIBFVARB>(IntGetProcAddress("wglGetPixelFormatAttribfvARB"));
+			GetPixelFormatAttribfvARB = reinterpret_cast<PFNGETPIXELFORMATATTRIBFVARB>(gladHelperLoaderFunction("wglGetPixelFormatAttribfvARB"));
 			if(!GetPixelFormatAttribfvARB) ++numFailed;
-			GetPixelFormatAttribivARB = reinterpret_cast<PFNGETPIXELFORMATATTRIBIVARB>(IntGetProcAddress("wglGetPixelFormatAttribivARB"));
+			GetPixelFormatAttribivARB = reinterpret_cast<PFNGETPIXELFORMATATTRIBIVARB>(gladHelperLoaderFunction("wglGetPixelFormatAttribivARB"));
 			if(!GetPixelFormatAttribivARB) ++numFailed;
 			return numFailed;
 		}
@@ -144,7 +63,7 @@ namespace wgl
 		static int Load_ARB_create_context()
 		{
 			int numFailed = 0;
-			CreateContextAttribsARB = reinterpret_cast<PFNCREATECONTEXTATTRIBSARB>(IntGetProcAddress("wglCreateContextAttribsARB"));
+			CreateContextAttribsARB = reinterpret_cast<PFNCREATECONTEXTATTRIBSARB>(gladHelperLoaderFunction("wglCreateContextAttribsARB"));
 			if(!CreateContextAttribsARB) ++numFailed;
 			return numFailed;
 		}
@@ -157,9 +76,9 @@ namespace wgl
 		static int Load_EXT_swap_control()
 		{
 			int numFailed = 0;
-			GetSwapIntervalEXT = reinterpret_cast<PFNGETSWAPINTERVALEXT>(IntGetProcAddress("wglGetSwapIntervalEXT"));
+			GetSwapIntervalEXT = reinterpret_cast<PFNGETSWAPINTERVALEXT>(gladHelperLoaderFunction("wglGetSwapIntervalEXT"));
 			if(!GetSwapIntervalEXT) ++numFailed;
-			SwapIntervalEXT = reinterpret_cast<PFNSWAPINTERVALEXT>(IntGetProcAddress("wglSwapIntervalEXT"));
+			SwapIntervalEXT = reinterpret_cast<PFNSWAPINTERVALEXT>(gladHelperLoaderFunction("wglSwapIntervalEXT"));
 			if(!SwapIntervalEXT) ++numFailed;
 			return numFailed;
 		}
@@ -180,17 +99,17 @@ namespace wgl
 		static int Load_NV_swap_group()
 		{
 			int numFailed = 0;
-			BindSwapBarrierNV = reinterpret_cast<PFNBINDSWAPBARRIERNV>(IntGetProcAddress("wglBindSwapBarrierNV"));
+			BindSwapBarrierNV = reinterpret_cast<PFNBINDSWAPBARRIERNV>(gladHelperLoaderFunction("wglBindSwapBarrierNV"));
 			if(!BindSwapBarrierNV) ++numFailed;
-			JoinSwapGroupNV = reinterpret_cast<PFNJOINSWAPGROUPNV>(IntGetProcAddress("wglJoinSwapGroupNV"));
+			JoinSwapGroupNV = reinterpret_cast<PFNJOINSWAPGROUPNV>(gladHelperLoaderFunction("wglJoinSwapGroupNV"));
 			if(!JoinSwapGroupNV) ++numFailed;
-			QueryFrameCountNV = reinterpret_cast<PFNQUERYFRAMECOUNTNV>(IntGetProcAddress("wglQueryFrameCountNV"));
+			QueryFrameCountNV = reinterpret_cast<PFNQUERYFRAMECOUNTNV>(gladHelperLoaderFunction("wglQueryFrameCountNV"));
 			if(!QueryFrameCountNV) ++numFailed;
-			QueryMaxSwapGroupsNV = reinterpret_cast<PFNQUERYMAXSWAPGROUPSNV>(IntGetProcAddress("wglQueryMaxSwapGroupsNV"));
+			QueryMaxSwapGroupsNV = reinterpret_cast<PFNQUERYMAXSWAPGROUPSNV>(gladHelperLoaderFunction("wglQueryMaxSwapGroupsNV"));
 			if(!QueryMaxSwapGroupsNV) ++numFailed;
-			QuerySwapGroupNV = reinterpret_cast<PFNQUERYSWAPGROUPNV>(IntGetProcAddress("wglQuerySwapGroupNV"));
+			QuerySwapGroupNV = reinterpret_cast<PFNQUERYSWAPGROUPNV>(gladHelperLoaderFunction("wglQuerySwapGroupNV"));
 			if(!QuerySwapGroupNV) ++numFailed;
-			ResetFrameCountNV = reinterpret_cast<PFNRESETFRAMECOUNTNV>(IntGetProcAddress("wglResetFrameCountNV"));
+			ResetFrameCountNV = reinterpret_cast<PFNRESETFRAMECOUNTNV>(gladHelperLoaderFunction("wglResetFrameCountNV"));
 			if(!ResetFrameCountNV) ++numFailed;
 			return numFailed;
 		}
@@ -322,7 +241,7 @@ namespace wgl
 			std::vector<MapEntry> table;
 			InitializeMappingTable(table);
 			
-			_detail::GetExtensionsStringARB = reinterpret_cast<_detail::PFNGETEXTENSIONSSTRINGARB>(IntGetProcAddress("wglGetExtensionsStringARB"));
+			_detail::GetExtensionsStringARB = reinterpret_cast<_detail::PFNGETEXTENSIONSSTRINGARB>(gladHelperLoaderFunction("wglGetExtensionsStringARB"));
 			if(!_detail::GetExtensionsStringARB) return exts::LoadTest();
 			
 			ProcExtsFromExtString((const char *)wgl::_detail::GetExtensionsStringARB(hdc), table);

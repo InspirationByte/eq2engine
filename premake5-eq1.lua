@@ -3,6 +3,7 @@ group "Equilibrium 1/Components"
 -- fonts
 project "fontLib"
     kind "StaticLib"
+	unitybuild "on"
 	uses {
 		"corelib", "frameworkLib", "e2Core"
 	}
@@ -22,6 +23,7 @@ usage "fontLib"
 -- render utility
 project "renderUtilLib"
     kind "StaticLib"
+	unitybuild "on"
 	uses {
 		"corelib", "frameworkLib", "e2Core"
 	}
@@ -41,6 +43,7 @@ usage "renderUtilLib"
 -- EGF
 project "egfLib"
     kind "StaticLib"
+	unitybuild "on"
 	uses {
 		"corelib", "frameworkLib", "e2Core",
 		"renderUtilLib", "bullet2", "zlib",
@@ -64,6 +67,7 @@ usage "egfLib"
 -- Animating game library
 project "animatingLib"
     kind "StaticLib"
+	unitybuild "on"
 	uses {
 		"corelib", "frameworkLib", "e2Core",
 		"egfLib", "bullet2"
@@ -84,6 +88,7 @@ usage "animatingLib"
 -- Equilibrium 1 Darktech Physics
 project "dkPhysicsLib"
     kind "StaticLib"
+	unitybuild "on"
 	uses {
 		"corelib", "frameworkLib", "e2Core",
 		"egfLib", "animatingLib", "bullet2"
@@ -109,6 +114,7 @@ group "Equilibrium 1/MatSystem"
 
 project "eqMatSystem"
     kind "SharedLib"
+	unitybuild "on"
 	uses {
 		"corelib", "frameworkLib", "e2Core"
 	}
@@ -127,6 +133,7 @@ usage "BaseShader"
 -- base shader library
 project "eqBaseShaders"
     kind "SharedLib"
+	unitybuild "on"
 	uses {
 		"corelib", "frameworkLib", "e2Core",
 		"BaseShader"
@@ -159,6 +166,7 @@ usage "eqRHIBaseLib"
 -- empty renderer
 project "eqNullRHI"
     kind "SharedLib"
+	unitybuild "on"
 	uses {
 		"corelib", "frameworkLib", "e2Core",
 		"eqRHIBaseLib"
@@ -172,6 +180,7 @@ project "eqNullRHI"
 -- OpenGL renderer
 project "eqGLRHI"
     kind "SharedLib"
+	unitybuild "on"
 	uses {
 		"corelib", "frameworkLib", "e2Core",
 		"eqRHIBaseLib"
@@ -219,6 +228,7 @@ if not IS_ANDROID then
     -- Direct3D9 renderer
     project "eqD3D9RHI"
         kind "SharedLib"
+		unitybuild "on"
 		uses {
 			"corelib", "frameworkLib", "e2Core",
 			"eqRHIBaseLib"
