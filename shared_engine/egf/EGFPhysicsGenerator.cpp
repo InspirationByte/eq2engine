@@ -856,22 +856,6 @@ bool CEGFPhysicsGenerator::GenerateGeometry(dsmmodel_t* srcModel, kvkeybase_t* p
 ubyte* pData = NULL;
 ubyte* pStart = NULL;
 
-ubyte* CopyLumpToFile(ubyte* data, int lump_type, ubyte* toCopy, int toCopySize)
-{
-	ubyte* ldata = data;
-
-	physmodellump_t *lumpdata = (physmodellump_t*)ldata;
-	lumpdata->size = toCopySize;
-	lumpdata->type = lump_type;
-
-	ldata = ldata + sizeof(physmodellump_t);
-
-	memcpy(ldata, toCopy, toCopySize);
-
-	ldata = ldata + toCopySize;
-
-	return ldata;
-}
 
 void WriteLumpToStream(IVirtualStream* stream, int lump_type, ubyte* data, uint dataSize)
 {

@@ -11,22 +11,13 @@
 #include "core/IEqParallelJobs.h"
 #include "core/ConVar.h"
 
-
 #include "ds/SmartPtr.h"
 #include "utils/strtools.h"
 
 #include "physics/IStudioShapeCache.h"
-
 #include "math/Utility.h"
-
 #include "materialsystem1/IMaterialSystem.h"
 
-#ifdef NOPHYSICS
-
-static CEmptyStudioShapeCache s_EmptyShapeCache;
-IStudioShapeCache* g_pStudioShapeCache = (IStudioShapeCache*)&s_EmptyShapeCache;
-
-#endif
 
 ConVar r_lodtest("r_lodtest", "-1", -1.0f, MAX_MODELLODS, "Studio LOD test", CV_CHEAT);
 ConVar r_lodscale("r_lodscale", "1.0", "Studio model LOD scale", CV_ARCHIVE);

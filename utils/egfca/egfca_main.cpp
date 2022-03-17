@@ -23,15 +23,9 @@
 
 #include "egf/EGFGenerator.h"
 
-#ifdef _WIN32
-#include <tchar.h>
-#ifdef CRT_DEBUG_ENABLED
-#include <crtdbg.h>
-#endif
-#else
-#include <unistd.h>
-#endif
-
+class IStudioShapeCache* g_pStudioShapeCache = nullptr;
+class IShaderAPI* g_pShaderAPI = nullptr;
+class IMaterialSystem* materials = nullptr;
 
 ConVar cv_cheats("__cheats","1","Enable cheats",CV_INITONLY | CV_INVISIBLE);
 

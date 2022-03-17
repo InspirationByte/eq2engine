@@ -14,71 +14,11 @@
 #include "ds/align.h"
 #include "egf/dsm_esm_loader.h"
 #include "egf/model.h"
+#include "egf/modelloader_shared.h"
 
 #include <zlib.h>
 
 using namespace SharedModel;
-
-//************************************
-// Checks model ident
-//************************************
-bool IsValidModelIdentifier(int id)
-{
-	switch(id)
-	{
-		case EQUILIBRIUM_MODEL_SIGNATURE:
-			return true;
-	}
-	return false;
-}
-
-void ConvertHeaderToLatestVersion(basemodelheader_t* pHdr)
-{
-	// initial, not used
-}
-
-// loads all supported Equilibrium model formats
-studiohdr_t* Studio_LoadModel(const char* pszPath)
-{
-	long len = 0;
-	char* _buffer = g_fileSystem->GetFileBuffer(pszPath,&len);
-
-	if(!_buffer)
-	{
-		MsgError("Can't open '%s'",pszPath);
-		return NULL;
-	}
-
-	basemodelheader_t* pBaseHdr = (basemodelheader_t*)_buffer;
-	if(!IsValidModelIdentifier(pBaseHdr->ident))
-	{
-		delete [] _buffer;
-		MsgError("Invalid model file '%s'\n",pszPath);
-		return NULL;
-	}
-
-	ConvertHeaderToLatestVersion(pBaseHdr);
-
-	// TODO: Double data protection!!!
-
-	studiohdr_t* pHdr = (studiohdr_t*)pBaseHdr;
-
-	if(pHdr->version != EQUILIBRIUM_MODEL_VERSION)
-	{
-		MsgError("Wrong model model version, should be %i, excepted %i\n",EQUILIBRIUM_MODEL_VERSION,pBaseHdr->version);
-		delete [] _buffer;
-		return NULL;
-	}
-
-	if(len != pHdr->length)
-	{
-		MsgError("Model size is not valid (%d versus %d in header)!\n",len, pBaseHdr->size);
-		delete [] _buffer;
-		return NULL;
-	}
-
-	return pHdr;
-}
 
 studiohdr_t*				g_model = NULL;
 int							g_numbones = 0;
@@ -1316,14 +1256,12 @@ ubyte* CopyLumpToFile(ubyte* data, int lump_type, ubyte* toCopy, int toCopySize)
 
 #define MAX_MOTIONPACKAGE_SIZE 16*1024*1024
 
-ubyte* pStart = NULL;
-ubyte* pData = NULL;
+
 
 void WriteAnimationPackage()
 {
-	pStart = (ubyte*)PPAlloc(MAX_MOTIONPACKAGE_SIZE);
-
-	pData = pStart;
+	ubyte* pStart = (ubyte*)PPAlloc(MAX_MOTIONPACKAGE_SIZE);
+	ubyte* pData = pStart;
 
 	animpackagehdr_t* pHdr = (animpackagehdr_t*)pData;
 	pHdr->ident = ANIMCA_IDENT;
