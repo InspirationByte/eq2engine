@@ -178,7 +178,7 @@ bool CFileSystem::Init(bool bEditorMode)
 		return false;
 	}
 
-	m_basePath = KV_GetValueString(pFilesystem->FindKeyBase("BasePath"), 0, "");
+	m_basePath = KV_GetValueString(pFilesystem->FindKeyBase("BasePath"), 0, m_basePath.ToCString());
 
 	if(m_basePath.Length() > 0)
 		MsgInfo("* FS Init with basePath=%s\n", m_basePath.GetData());

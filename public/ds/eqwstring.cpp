@@ -237,6 +237,14 @@ void EqWString::Assign(const wchar_t* pszStr, int len)
 	if(len != -1)
 		nLen = len;
 
+	// don't copy.
+	if (m_pszString == pszStr && len != m_nLength)
+	{
+		m_pszString[nLen] = 0;
+		m_nLength = nLen;
+		return;
+	}
+
 	if( ExtendAlloc( nLen ) )
 	{
 		wcsncpy( m_pszString, pszStr, nLen );

@@ -235,11 +235,18 @@ void EqString::Assign(const char* pszStr, int len)
 	}
 
 	int nLen = strlen( pszStr );
-
 	ASSERT(len <= nLen);
 
 	if(len != -1)
 		nLen = len;
+
+	// don't copy.
+	if (m_pszString == pszStr && len != m_nLength)
+	{
+		m_pszString[nLen] = 0;
+		m_nLength = nLen;
+		return;
+	}
 
 	if( ExtendAlloc( nLen+1, false ) )
 	{
