@@ -810,7 +810,7 @@ void CEqConsoleInput::AutoCompleteSuggestion()
 
 	int char_index = 0;
 
-	uint max_match_chars = -1;
+	int max_match_chars = -1;
 	EqString matching_str;
 
 	if(m_fastfind_cmdbase != NULL)

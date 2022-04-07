@@ -5,45 +5,63 @@
 // Description: Entry points for various platforms
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifdef _WIN32
-
-#include <io.h>
-#include <fcntl.h>
-
-#ifdef CRT_DEBUG_ENABLED
-#include <crtdbg.h>
-#endif
-
-#endif // _WIN32
-
 #include "core/platform/MessageBox.h"
 #include "core/IDkCore.h"
 #include "core/ConVar.h"
 #include "core/ILocalize.h"
 #include "core/IFileSystem.h"
 
-#include "ds/DkLinkedList.h"
 #include "utils/KeyValues.h"
 
 #include "sys_in_console.h"
 #include "sys_window.h"
 #include "sys_version.h"
 
-
-#ifdef _WIN32
-#include <windows.h>
-extern "C"
-{
-	__declspec(dllexport) DWORD NvOptimusEnablement = 0x00000001;
-	__declspec(dllexport) int AmdPowerXpressRequestHighPerformance = 1;
-}
-#endif // _WIN32
-
 DECLARE_CVAR_NONSTATIC(__cheats,1,"Wireframe",CV_INVISIBLE);
 
+// engine entry point after Core init
+int Sys_Main()
+{
+	// init file system
+	if (!g_fileSystem->Init(false))
+	{
+		GetCore()->Shutdown();
+		return -2;
+	}
+
+	// add the copyright
+	g_localizer->AddToken("GAME_VERSION", EqWString::Format(L"Build %d %s %s", BUILD_NUMBER_ENGINE, L"" COMPILE_DATE, L"" COMPILE_TIME).ToCString());
+	g_localizer->AddTokensFile("game");
+
+	if (!Host_Init())
+	{
+		// shutdown
+		g_fileSystem->Shutdown();
+		GetCore()->Shutdown();
+		return -3;
+	}
+
+	Host_GameLoop();
+
+	CEqConsoleInput::SpewClear();
+
+	Host_Terminate();
+
+	// shutdown
+	g_fileSystem->Shutdown();
+	GetCore()->Shutdown();
+
+	return 0;
+}
+
 #if defined(PLAT_ANDROID)
+#include <android/asset_manager.h>
+#include <android/asset_manager_jni.h>
+#include <vector>
+
 #include "SDL_messagebox.h"
 #include "SDL_system.h"
+
 
 void EQSDLMessageBoxCallback(const char* messageStr, EMessageBoxType type )
 {
@@ -64,36 +82,6 @@ void EQSDLMessageBoxCallback(const char* messageStr, EMessageBoxType type )
 	}
 }
 
-#endif // PLAT_ANDROID
-
-#ifdef PLAT_WIN
-int WINAPI WinMain(HINSTANCE hThisInst, HINSTANCE hLastInst, LPSTR lpszCmdLine, int nCmdShow)
-{
-#if defined(CRT_DEBUG_ENABLED)
-	int flag = _CrtSetDbgFlag(_CRTDBG_REPORT_FLAG); // Get current flag
-	flag |= _CRTDBG_LEAK_CHECK_DF; // Turn on leak-checking bit
-	//flag |= _CRTDBG_CHECK_ALWAYS_DF; // Turn on CrtCheckMemory
-	flag |= _CRTDBG_ALLOC_MEM_DF;
-	_CrtSetDbgFlag(flag); // Set flag to the new value
-	_CrtSetReportMode( _CRT_ERROR, _CRTDBG_MODE_DEBUG );
-	_CrtSetReportMode( _CRT_ASSERT, _CRTDBG_MODE_WNDW );
-#endif
-
-	CEqConsoleInput::SpewInit();
-
-	// init core
-	if(!GetCore()->Init("Game", lpszCmdLine))
-		return -1;
-
-#else
-
-#include <vector>
-
-#ifdef PLAT_ANDROID
-
-#include <android/asset_manager.h>
-#include <android/asset_manager_jni.h>
-
 struct JNI_t
 {
 	JNIEnv* env;
@@ -103,14 +91,14 @@ struct JNI_t
 } g_jni;
 
 // init Java Native Interface glue parts required to do some operations
-void Android_InitJNI()
+void Sys_Android_InitJNI()
 {
 	SetMessageBoxCallback(EQSDLMessageBoxCallback);
 
-    JNIEnv* env = (JNIEnv*)SDL_AndroidGetJNIEnv();
+	JNIEnv* env = (JNIEnv*)SDL_AndroidGetJNIEnv();
 	g_jni.env = env;
-    jclass class_activity       = env->FindClass("android/app/Activity");
-    jclass class_resources      = env->FindClass("android/content/res/Resources");
+	jclass class_activity = env->FindClass("android/app/Activity");
+	jclass class_resources = env->FindClass("android/content/res/Resources");
 	jmethodID method_get_resources = env->GetMethodID(class_activity, "getResources", "()Landroid/content/res/Resources;");
 	jmethodID method_get_assets = env->GetMethodID(class_resources, "getAssets", "()Landroid/content/res/AssetManager;");
 
@@ -119,7 +107,6 @@ void Android_InitJNI()
 	jobject raw_asset_manager = env->CallObjectMethod(raw_resources, method_get_assets);
 
 	g_jni.assetManager = AAssetManager_fromJava(env, raw_asset_manager);
-
 
 	{
 		jmethodID jMethod_id_pn = env->GetMethodID(class_activity, "getPackageName", "()Ljava/lang/String;");
@@ -132,7 +119,7 @@ void Android_InitJNI()
 }
 
 // init base path to extract
-bool Android_InitCore(int argc, char** argv)
+bool Sys_Android_InitCore(int argc, char** argv)
 {
 	// 1. Extract EQ.CONFIG file
 	// preconfigure game base path
@@ -157,7 +144,7 @@ bool Android_InitCore(int argc, char** argv)
 
 	const char* filename;
 	std::vector<char> buffer;
-	char filenameBuffer[2048] = {0};
+	char filenameBuffer[2048] = { 0 };
 
 	while ((filename = AAssetDir_getNextFileName(assetDir)) != NULL)
 	{
@@ -165,7 +152,7 @@ bool Android_InitCore(int argc, char** argv)
 		if (!stricmp(filename, "EQ.CONFIG") ||
 			!stricmp(filename, "eqBase.epk"))
 		{
-			AAsset *asset = AAssetManager_open(g_jni.assetManager, filename, AASSET_MODE_STREAMING);
+			AAsset* asset = AAssetManager_open(g_jni.assetManager, filename, AASSET_MODE_STREAMING);
 
 			//holds size of searched file
 			off64_t length = AAsset_getLength64(asset);
@@ -200,20 +187,20 @@ bool Android_InitCore(int argc, char** argv)
 		// if we have file to extraxt in buffer
 		if (buffer.size() > 0)
 		{
-            strcpy(filenameBuffer, bestStoragePath);
-            strcat(filenameBuffer, "/");
-            strcat(filenameBuffer, filename);
+			strcpy(filenameBuffer, bestStoragePath);
+			strcat(filenameBuffer, "/");
+			strcat(filenameBuffer, filename);
 
-		    FILE* fp = fopen(filenameBuffer, "wb");
-            if(fp)
-            {
-                fwrite(buffer.data(), 1, buffer.size(), fp);
-                fclose(fp);
+			FILE* fp = fopen(filenameBuffer, "wb");
+			if (fp)
+			{
+				fwrite(buffer.data(), 1, buffer.size(), fp);
+				fclose(fp);
 
-                MsgInfo("Extracted: %s\n", filenameBuffer);
-            }
+				MsgInfo("Extracted: %s\n", filenameBuffer);
+			}
 
-            filenameBuffer[0] = '\0';
+			filenameBuffer[0] = '\0';
 			buffer.clear();
 		}
 	}
@@ -244,7 +231,7 @@ bool Android_InitCore(int argc, char** argv)
 	return result;
 }
 
-void Android_MountFileSystem()
+void Sys_Android_MountFileSystem()
 {
 	// current game directory needs to be created
 	g_fileSystem->MakeDir(g_fileSystem->GetCurrentGameDirectory(), SP_ROOT);
@@ -264,56 +251,69 @@ void Android_MountFileSystem()
 	}
 }
 
+#endif // PLAT_ANDROID
+
+#if defined(PLAT_WIN)
+
+#include <io.h>
+#include <fcntl.h>
+#include <windows.h>
+
+#ifdef CRT_DEBUG_ENABLED
+#include <crtdbg.h>
 #endif
 
-// posix apps
+extern "C"
+{
+	__declspec(dllexport) DWORD NvOptimusEnablement = 0x00000001;
+	__declspec(dllexport) int AmdPowerXpressRequestHighPerformance = 1;
+}
+
+int WINAPI WinMain(HINSTANCE hThisInst, HINSTANCE hLastInst, LPSTR lpszCmdLine, int nCmdShow)
+{
+#if defined(CRT_DEBUG_ENABLED)
+	int flag = _CrtSetDbgFlag(_CRTDBG_REPORT_FLAG); // Get current flag
+	flag |= _CRTDBG_LEAK_CHECK_DF; // Turn on leak-checking bit
+	//flag |= _CRTDBG_CHECK_ALWAYS_DF; // Turn on CrtCheckMemory
+	flag |= _CRTDBG_ALLOC_MEM_DF;
+	_CrtSetDbgFlag(flag); // Set flag to the new value
+	_CrtSetReportMode( _CRT_ERROR, _CRTDBG_MODE_DEBUG );
+	_CrtSetReportMode( _CRT_ASSERT, _CRTDBG_MODE_WNDW );
+#endif
+
+	CEqConsoleInput::SpewInit();
+
+	g_fileSystem->SetBasePath("..");
+
+	// init core
+	if(!GetCore()->Init("Game", lpszCmdLine))
+		return -1;
+
+	return Sys_Main();
+}
+
+#else
+
+// posix main (Android, Linux, Apple)
 int main(int argc, char** argv)
 {
-#ifdef PLAT_ANDROID
-    Android_InitJNI(); // initialize JNI
+	CEqConsoleInput::SpewInit();
 
-	if (!Android_InitCore(argc, argv))
+#if defined(PLAT_ANDROID)
+	Sys_Android_InitJNI(); // initialize JNI
+
+	if (!Sys_Android_InitCore(argc, argv))
 		return -1;
 
 	// mount OBB filesystem
-	Android_MountFileSystem();
+	Sys_Android_MountFileSystem();
 #else
 	// init core
 	if (!GetCore()->Init("Game", argc, argv))
 		return -1;
 #endif // PLAT_ANDROID
 
-#endif
-
-	// init file system
-	if (!g_fileSystem->Init(false))
-	{
-		GetCore()->Shutdown();
-		return -2;
-	}
-
-	// add the copyright
-	g_localizer->AddToken("GAME_VERSION", EqWString::Format(L"Build %d %s %s", BUILD_NUMBER_ENGINE, L"" COMPILE_DATE, L"" COMPILE_TIME).ToCString());
-	g_localizer->AddTokensFile("game");
-
-	if (!Host_Init())
-	{
-		// shutdown
-		g_fileSystem->Shutdown();
-		GetCore()->Shutdown();
-
-		return -3;
-	}
-
-	Host_GameLoop();
-
-	CEqConsoleInput::SpewClear();
-
-	Host_Terminate();
-
-	// shutdown
-	g_fileSystem->Shutdown();
-	GetCore()->Shutdown();
-
-	return 0;
+	return Sys_Main();
 }
+
+#endif
