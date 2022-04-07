@@ -38,7 +38,7 @@ static const char* s_szkKVValueTypes[KVPAIR_TYPES] =
 };
 
 
-EKVPairType KV_ResolvePairType( const char* string )
+static EKVPairType KV_ResolvePairType( const char* string )
 {
 	char* typeName = (char*)string;
 
@@ -53,7 +53,7 @@ EKVPairType KV_ResolvePairType( const char* string )
 	return KVPAIR_STRING;
 }
 
-char* KV_ReadProcessString( const char* pszStr )
+static char* KV_ReadProcessString( const char* pszStr )
 {
 	const char* ptr = pszStr;
 	// convert some symbols to special ones
@@ -115,12 +115,13 @@ char* KV_ReadProcessString( const char* pszStr )
 #define KV_RANGECOMMENT_BEGIN_END	'*'
 
 #define KV_TYPE_VALUESYMBOL			':'
-
 #define KV_BREAK					';'
 
-#define IsKVBufferEOF()			((pData - pszBuffer) > bufferSize-1)
+#define KV_IDENT_BINARY				MCHAR4('B','K','V','S')
+
+#define IsKVBufferEOF()				((pData - pszBuffer) > bufferSize-1)
 #define IsKVArrayEndOrSeparator(c)	(c == KV_ARRAY_SEPARATOR || c == KV_ARRAY_END)
-#define IsKVWhitespace(c)		(isspace(c) || c == '\0' || c == KV_STRING_NEWLINE || c == KV_STRING_CARRIAGERETURN)
+#define IsKVWhitespace(c)			(isspace(c) || c == '\0' || c == KV_STRING_NEWLINE || c == KV_STRING_CARRIAGERETURN)
 
 //-----------------------------------------------------------------------------------------
 
@@ -154,7 +155,7 @@ kvpairvalue_t::~kvpairvalue_t()
 	delete section;
 }
 
-void kvpairvalue_t::SetValueFrom(kvpairvalue_t* from)
+void kvpairvalue_t::SetFrom(kvpairvalue_t* from)
 {
 	ASSERT(from != NULL);
 
@@ -181,7 +182,7 @@ void kvpairvalue_t::SetValueFrom(kvpairvalue_t* from)
 }
 
 // sets string value
-void kvpairvalue_t::SetStringValue( const char* pszValue, int len)
+void kvpairvalue_t::SetStringValue( const char* pszValue, int len /* = -1*/)
 {
 	if(value)
 	{
@@ -189,17 +190,15 @@ void kvpairvalue_t::SetStringValue( const char* pszValue, int len)
 		value = NULL;
 	}
 
+	if (len < 0)
+		len = strlen(pszValue);
+
 	value = (char*)PPAlloc(len+1);
 	strncpy(value, pszValue, len);
 	value[len] = 0;
 }
 
-void kvpairvalue_t::SetStringValue(const char* pszValue)
-{
-	SetStringValue(pszValue, strlen(pszValue));
-}
-
-void kvpairvalue_t::SetValueFromString( const char* pszValue )
+void kvpairvalue_t::SetFromString( const char* pszValue )
 {
 	ASSERT(pszValue != NULL);
 
@@ -222,7 +221,7 @@ void kvpairvalue_t::SetValueFromString( const char* pszValue )
 	}
 }
 
-void kvpairvalue_t::SetValue(const char* value)
+void kvpairvalue_t::SetString(const char* value)
 {
 	SetStringValue(value);
 
@@ -235,7 +234,7 @@ void kvpairvalue_t::SetValue(const char* value)
 		bValue = 0;
 }
 
-void kvpairvalue_t::SetValue(int value)
+void kvpairvalue_t::SetInt(int value)
 {
 	char tempbuf[64];
 
@@ -253,7 +252,7 @@ void kvpairvalue_t::SetValue(int value)
 		bValue = value > 0;
 }
 
-void kvpairvalue_t::SetValue(float value)
+void kvpairvalue_t::SetFloat(float value)
 {
 	char tempbuf[64];
 
@@ -271,7 +270,7 @@ void kvpairvalue_t::SetValue(float value)
 		bValue = value > 0;
 }
 
-void kvpairvalue_t::SetValue(bool value)
+void kvpairvalue_t::SetBool(bool value)
 {
 	char tempbuf[64];
 
@@ -289,12 +288,12 @@ void kvpairvalue_t::SetValue(bool value)
 		bValue = value;
 }
 
-const char* kvpairvalue_t::GetValueString() const
+const char* kvpairvalue_t::GetString() const
 {
 	return value;
 }
 
-int kvpairvalue_t::GetValueInt() const
+int kvpairvalue_t::GetInt() const
 {
 	if (type == KVPAIR_INT)
 		return nValue;
@@ -306,7 +305,7 @@ int kvpairvalue_t::GetValueInt() const
 	return atoi(value);
 }
 
-float kvpairvalue_t::GetValueFloat() const
+float kvpairvalue_t::GetFloat() const
 {
 	if (type == KVPAIR_FLOAT)
 		return fValue;
@@ -318,7 +317,7 @@ float kvpairvalue_t::GetValueFloat() const
 	return atof(value);
 }
 
-bool kvpairvalue_t::GetValueBool() const
+bool kvpairvalue_t::GetBool() const
 {
 	if (type == KVPAIR_BOOL)
 		return bValue;
@@ -367,13 +366,10 @@ bool KeyValues::LoadFromFile(const char* pszFileName, int nSearchFlags)
 	return KV_LoadFromFile(pszFileName, nSearchFlags, &m_root) != NULL;
 }
 
-
 bool KeyValues::LoadFromStream(ubyte* pData)
 {
 	return KV_ParseSection( (const char*)pData, 0, NULL, &m_root, 0 ) != NULL;
 }
-
-void KV_WriteToStreamV3(IVirtualStream* outStream, kvkeybase_t* section, int nTabs, bool pretty);
 
 bool KeyValues::SaveToFile(const char* pszFileName, int nSearchFlags)
 {
@@ -514,25 +510,25 @@ void kvkeybase_t::SetValueFrom(kvkeybase_t* pOther)
 void kvkeybase_t::AddValue(const char* value)
 {
 	kvpairvalue_t* val = CreateValue();
-	val->SetValue(value);
+	val->SetString(value);
 }
 
 void kvkeybase_t::AddValue(int nValue)
 {
 	kvpairvalue_t* val = CreateValue();
-	val->SetValue(nValue);
+	val->SetInt(nValue);
 }
 
 void kvkeybase_t::AddValue(float fValue)
 {
 	kvpairvalue_t* val = CreateValue();
-	val->SetValue(fValue);
+	val->SetFloat(fValue);
 }
 
 void kvkeybase_t::AddValue(bool bValue)
 {
 	kvpairvalue_t* val = CreateValue();
-	val->SetValue(bValue);
+	val->SetBool(bValue);
 }
 
 void kvkeybase_t::AddValue(const Vector2D& vecValue)
@@ -569,8 +565,7 @@ void kvkeybase_t::AddValue(kvkeybase_t* keybase)
 void kvkeybase_t::AddValue(kvpairvalue_t* value)
 {
 	kvpairvalue_t* val = CreateValue();
-
-	val->SetValueFrom(value);
+	val->SetFrom(value);
 }
 
 //-------------------------
@@ -638,7 +633,7 @@ void kvkeybase_t::SetValue(const char* value, int idxAt)
 	if(!values.inRange(idxAt))
 		return;
 
-	values[idxAt]->SetValue(value);
+	values[idxAt]->SetString(value);
 }
 
 void kvkeybase_t::SetValue(int nValue, int idxAt)
@@ -649,7 +644,7 @@ void kvkeybase_t::SetValue(int nValue, int idxAt)
 	if(!values.inRange(idxAt))
 		return;
 
-	values[idxAt]->SetValue(nValue);
+	values[idxAt]->SetInt(nValue);
 }
 
 void kvkeybase_t::SetValue(float fValue, int idxAt)
@@ -660,7 +655,7 @@ void kvkeybase_t::SetValue(float fValue, int idxAt)
 	if(!values.inRange(idxAt))
 		return;
 
-	values[idxAt]->SetValue(fValue);
+	values[idxAt]->SetFloat(fValue);
 }
 
 void kvkeybase_t::SetValue(bool bValue, int idxAt)
@@ -671,7 +666,7 @@ void kvkeybase_t::SetValue(bool bValue, int idxAt)
 	if(!values.inRange(idxAt))
 		return;
 
-	values[idxAt]->SetValue(bValue);
+	values[idxAt]->SetBool(bValue);
 }
 
 void kvkeybase_t::SetValue(const Vector2D& value, int idxAt)
@@ -703,7 +698,7 @@ void kvkeybase_t::SetValue(kvpairvalue_t* value, int idxAt)
 	if(!values.inRange(idxAt))
 		return;
 
-	values[idxAt]->SetValueFrom(value);
+	values[idxAt]->SetFrom(value);
 }
 
 kvkeybase_t& kvkeybase_t::SetKey(const char* name, const char* value)
@@ -1564,13 +1559,13 @@ kvkeybase_t* KV_ParseSectionV3( const char* pszBuffer, int bufferSize, const cha
 						{
 							// make it parsed if the type is different
 							kvpairvalue_t* value = curpair->CreateValue();
-							value->SetValueFromString(valueString);
+							value->SetFromString(valueString);
 						}
 						else
 						{
 							// set or create a single value
 							kvpairvalue_t* value = curpair->values.numElem() ? curpair->values[0] : curpair->CreateValue();
-							value->SetValueFromString(valueString);
+							value->SetFromString(valueString);
 						}
 
 						// free processed string
@@ -1804,8 +1799,6 @@ kvkeybase_t* KV_ParseSectionV3( const char* pszBuffer, int bufferSize, const cha
 
 	return pKeyBase;
 }
-
-#define KV_IDENT_BINARY				MCHAR4('B','K','V','S')
 
 //
 // Loads file and parses it as KeyValues into the 'pParseTo'
@@ -2110,7 +2103,7 @@ bool UTIL_StringNeedsQuotes( const char* pszString )
 //
 // If string does need quotes it will be written with them
 //
-void KV_WriteSelectQuotedString(IVirtualStream* out, const char* pszString)
+static void KV_WriteSelectQuotedString(IVirtualStream* out, const char* pszString)
 {
 	if( UTIL_StringNeedsQuotes( pszString ) )
 		out->Print("\"%s\"", pszString);
@@ -2122,7 +2115,7 @@ void KV_WriteSelectQuotedString(IVirtualStream* out, const char* pszString)
 // counts the special characters
 // used for KV_PreProcessStringValue to detect extra length of buffer
 //
-int KV_CountSpecialSymbols(char* pszStr)
+static int KV_CountSpecialSymbols(char* pszStr)
 {
 	char* ptr = pszStr;
 
@@ -2150,7 +2143,7 @@ int KV_CountSpecialSymbols(char* pszStr)
 //
 // converts some symbols to special ones
 //
-void KV_PreProcessStringValue( char* out, char* pszStr )
+static void KV_PreProcessStringValue( char* out, char* pszStr )
 {
 	char* ptr = pszStr;
 	char* temp = out;
@@ -2182,6 +2175,8 @@ void KV_PreProcessStringValue( char* out, char* pszStr )
 }
 
 //-----------------------------------------------------------------------------------------------------
+
+void KV_WriteToStreamV3(IVirtualStream* outStream, kvkeybase_t* section, int nTabs, bool pretty);
 
 //
 // Writes the pair value
@@ -2414,7 +2409,7 @@ const char* KV_GetValueString( kvkeybase_t* pBase, int nIndex, const char* pszDe
 	if(!pBase || pBase && !pBase->values.inRange(nIndex))
 		return pszDefault;
 
-	return (*pBase)[nIndex]->GetValueString();
+	return (*pBase)[nIndex]->GetString();
 }
 
 
@@ -2427,7 +2422,7 @@ int	KV_GetValueInt( kvkeybase_t* pBase, int nIndex, int nDefault )
 	if(!pBase || pBase && !pBase->values.inRange(nIndex))
 		return nDefault;
 
-	return (*pBase)[nIndex]->GetValueInt();
+	return (*pBase)[nIndex]->GetInt();
 }
 
 //
@@ -2439,7 +2434,7 @@ float KV_GetValueFloat( kvkeybase_t* pBase, int nIndex, float fDefault )
 	if(!pBase || pBase && !pBase->values.inRange(nIndex))
 		return fDefault;
 
-	return (*pBase)[nIndex]->GetValueFloat();
+	return (*pBase)[nIndex]->GetFloat();
 }
 
 //
@@ -2451,7 +2446,7 @@ bool KV_GetValueBool( kvkeybase_t* pBase, int nIndex, bool bDefault)
 	if(!pBase || pBase && !pBase->values.inRange(nIndex))
 		return bDefault;
 
-	return (*pBase)[nIndex]->GetValueBool();
+	return (*pBase)[nIndex]->GetBool();
 }
 
 //

@@ -89,24 +89,21 @@ struct kvpairvalue_t
 
 	char*				value;
 
-	void				SetValueFrom(kvpairvalue_t* from);
-
 	// sets string value
-	void				SetStringValue(const char* pszValue, int len);
-	void				SetStringValue( const char* pszValue );
-	
-	void				SetValueFromString( const char* pszValue );
+	void				SetStringValue(const char* pszValue, int len = -1);
+	void				SetFromString(const char* pszValue);
+	void				SetFrom(kvpairvalue_t* from);
 
-	void				SetValue(const char* value);
-	void				SetValue(int nValue);
-	void				SetValue(float fValue);
-	void				SetValue(bool bValue);
+	// get/set
+	const char*			GetString() const;
+	int					GetInt() const;
+	float				GetFloat() const;
+	bool				GetBool() const;
 
-	const char*			GetValueString() const;
-	int					GetValueInt() const;
-	float				GetValueFloat() const;
-	bool				GetValueBool() const;
-	
+	void				SetString(const char* value);
+	void				SetInt(int nValue);
+	void				SetFloat(float fValue);
+	void				SetBool(bool bValue);	
 };
 
 //
