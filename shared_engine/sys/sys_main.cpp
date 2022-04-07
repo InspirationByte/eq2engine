@@ -283,8 +283,6 @@ int WINAPI WinMain(HINSTANCE hThisInst, HINSTANCE hLastInst, LPSTR lpszCmdLine, 
 
 	CEqConsoleInput::SpewInit();
 
-	g_fileSystem->SetBasePath("..");
-
 	// init core
 	if(!GetCore()->Init("Game", lpszCmdLine))
 		return -1;

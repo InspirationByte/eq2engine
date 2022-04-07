@@ -290,7 +290,7 @@ bool LoadESM(dsmmodel_t* model, const char* filename)
 
 	if (!tok.setFile(filename))
 	{
-		MsgError("Couldn't open ESM file '%s'", filename);
+		MsgError("Couldn't open ESM file '%s'\n", filename);
 		return false;
 	}
 
@@ -324,7 +324,7 @@ bool LoadESXShapes( esmshapedata_t* data, const char* filename )
 
 	if (!tok.setFile(filename))
 	{
-		MsgError("Couldn't open ESM file '%s'", filename);
+		MsgError("Couldn't open ESX file '%s'\n", filename);
 		return false;
 	}
 

@@ -77,6 +77,7 @@ void Tokenizer::setString(const char *string)
 
 bool Tokenizer::setFile(const char *fileName)
 {
+	// TODO: eq filesystem bind
 	delete [] str;
 
 	FILE *file = fopen(fileName, "rb");

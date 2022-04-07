@@ -166,16 +166,26 @@ SearchPath_e GetSearchPathByName(const char* str)
 
 bool CFileSystem::Init(bool bEditorMode)
 {
-    Msg("\n-------- Filesystem Init --------\n\n");
+	Msg("\n-------- Filesystem Init --------\n\n");
 
-    m_editorMode = bEditorMode;
+	m_editorMode = bEditorMode;
 
 	kvkeybase_t* pFilesystem = GetCore()->GetConfig()->FindKeyBase("FileSystem", KV_FLAG_SECTION);
 
-	if(!pFilesystem)
+	if (!pFilesystem)
 	{
 		Msg("EQ.CONFIG missing FileSystemDirectories section!\n");
 		return false;
+	}
+
+	const char* workDir = KV_GetValueString(pFilesystem->FindKeyBase("WorkDir"), 0, nullptr);
+	if (workDir)
+	{
+#ifdef _WIN32
+		SetCurrentDirectoryA(workDir);
+#else
+		chdir(workDir);
+#endif // _WIN32
 	}
 
 	m_basePath = KV_GetValueString(pFilesystem->FindKeyBase("BasePath"), 0, m_basePath.ToCString());
@@ -187,20 +197,31 @@ bool CFileSystem::Init(bool bEditorMode)
 
 	MsgInfo("* Engine Data directory: %s\n", m_dataDir.GetData());
 
-	// Change mod path?
-    int iModPathArg = g_cmdLine->FindArgument("-game");
-
 	if(!m_editorMode)
 	{
-		if (iModPathArg == -1)
-			AddSearchPath("$GAME$", (const char*)KV_GetValueString(pFilesystem->FindKeyBase("DefaultGameDir"), 0, "DefaultGameDir_MISSING" ));
+		const int iGamePathArg = g_cmdLine->FindArgument("-game");
+		const char* gamePath = g_cmdLine->GetArgumentsOf(iGamePathArg);
+
+		// set or change game path
+		if (gamePath)
+			AddSearchPath("$GAME$", gamePath);
 		else
-			AddSearchPath("$GAME$",  g_cmdLine->GetArgumentString(iModPathArg+1) );
+			AddSearchPath("$GAME$", (const char*)KV_GetValueString(pFilesystem->FindKeyBase("DefaultGameDir"), 0, "DefaultGameDir_MISSING"));
 
 		 MsgInfo("* Game Data directory: %s\n", GetCurrentGameDirectory());
+
+		 // FS dev addon for game tools
+		 const int iDevAddonPathArg = g_cmdLine->FindArgument("-devAddon");
+		 const char* devAddonPath = g_cmdLine->GetArgumentsOf(iDevAddonPathArg);
+		 if (devAddonPath)
+		 {
+			 AddSearchPath("$MOD$_$WRITE$", devAddonPath);
+			 MsgInfo("* Dev addon path: %s\n", devAddonPath);
+		 }
+		 
 	}
 
-	for(int i = 0;i < pFilesystem->keys.numElem(); i++)
+	for(int i = 0; i < pFilesystem->keys.numElem(); i++)
 	{
 		if(!stricmp(pFilesystem->keys[i]->name, "AddPackage" ))
 		{
@@ -564,27 +585,57 @@ void CFileSystem::FileRemove(const char* filename, SearchPath_e search ) const
 	remove(fullPath.ToCString());
 }
 
+bool mkdirRecursive(const char* path, bool includeDotPath)
+{
+	char folder[265];
+	const char* end, * curend;
+
+	end = path;
+
+	do
+	{
+		int result;
+
+		// skip any separators in the beginning
+		while (*end == CORRECT_PATH_SEPARATOR)
+			end++;
+
+		// get next string part
+		curend = (char*)strchr(end, CORRECT_PATH_SEPARATOR);
+
+		if (curend)
+			end = curend;
+		else
+			end = path + strlen(path);
+
+		strncpy(folder, path, end - path);
+		folder[end - path] = 0;
+
+		// stop on file extension if needed
+		if (!includeDotPath && strchr(folder, '.'))
+			break;
+
+#ifdef _WIN32
+		result = _mkdir(folder);
+#else
+		result = mkdir(folder, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+#endif
+
+		if (result > 0 && result != EEXIST)
+			return false;
+
+	} while (curend);
+
+	return true;
+}
+
 //Directory operations
 void CFileSystem::MakeDir(const char* dirname, SearchPath_e search ) const
 {
 	EqString fullPath = GetAbsolutePath(search, dirname);
 	fullPath.Path_FixSlashes();
 
-#ifdef _WIN32
-	_mkdir(fullPath.ToCString());
-#else
-    mkdir(fullPath.ToCString(),S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
-#endif
-}
-
-int unlink_cb(const char *fpath, const struct stat *sb, int typeflag, struct FTW *ftwbuf)
-{
-	int rv = remove(fpath);
-
-	if (rv)
-		perror(fpath);
-
-	return rv;
+	mkdirRecursive(fullPath.ToCString(), true);
 }
 
 void CFileSystem::RemoveDir(const char* dirname, SearchPath_e search ) const
@@ -594,7 +645,7 @@ void CFileSystem::RemoveDir(const char* dirname, SearchPath_e search ) const
 
 	fullPath.Path_FixSlashes();
 
-    rmdir(fullPath.GetData() );
+    rmdir(fullPath.GetData());
 }
 
 void CFileSystem::Rename(const char* oldNameOrPath, const char* newNameOrPath, SearchPath_e search) const

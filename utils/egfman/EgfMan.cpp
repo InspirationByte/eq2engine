@@ -844,6 +844,8 @@ void CEGFViewFrame::ProcessAllMenuCommands(wxCommandEvent& event)
 			wxArrayString paths;
 			file->GetPaths(paths);
 
+			const char* devAddonDir = g_fileSystem->GetCurrentGameDirectory();
+
 			for(size_t i = 0; i < paths.size(); i++)
 			{
 				EqString model_path;
@@ -855,11 +857,13 @@ void CEGFViewFrame::ProcessAllMenuCommands(wxCommandEvent& event)
 
 				if(!stricmp(ext.GetData(), "asc"))
 				{
-					EqString cmdLine(EqString::Format("animca.exe +filename \"%s\"", fname.GetData()));
+					EqString cmdLine(EqString::Format("animca.exe -devAddon \"%s\" +filename \"%s\"", devAddonDir, fname.GetData()));
 
-					Msg("***Command line: %s\n", cmdLine.GetData());
-
-					system( cmdLine.GetData() );
+					Msg("***Starting egfCa: %s\n", cmdLine.ToCString());
+					if (system(cmdLine.ToCString()) != 0)
+					{
+						wxMessageBox(wxString::Format("Failed to run command '%s'", cmdLine.ToCString()), "Error", wxOK | wxCENTRE | wxICON_EXCLAMATION, this);
+					}
 				}
 				else
 				{
@@ -874,12 +878,13 @@ void CEGFViewFrame::ProcessAllMenuCommands(wxCommandEvent& event)
 							if(pPair)
 							{
 								model_path = KV_GetValueString(pPair);
-								Msg("***Starting egfca for %s\n", fname.GetData());
+								EqString cmdLine = EqString::Format("egfca.exe -devAddon \"%s\" +filename \"%s\"", devAddonDir, fname.GetData());
 
-								EqString cmdLine(EqString::Format("egfca.exe +filename \"%s\"", fname.GetData()));
-
-								Msg("***Command line: %s\n", cmdLine.GetData());
-								system( cmdLine.GetData() );
+								Msg("***Starting egfCa: '%s'\n", cmdLine.ToCString());
+								if (system(cmdLine.ToCString()) != 0)
+								{
+									wxMessageBox(wxString::Format("Failed to run command %s", cmdLine.ToCString()), "Error", wxOK | wxCENTRE | wxICON_EXCLAMATION, this);
+								}
 							}
 							else
 							{

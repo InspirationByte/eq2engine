@@ -118,6 +118,60 @@ CDkCore::CDkCore()
 	m_coreConfiguration = NULL;
 }
 
+//-----------------------------------------------------------------------------
+// Returns the directory where this .exe is running from
+//-----------------------------------------------------------------------------
+static char* GetBaseDir(const char* pszBuffer)
+{
+	static char	basedir[MAX_PATH];
+	char szBuffer[MAX_PATH];
+	int j;
+	char* pBuffer = NULL;
+
+	strcpy(szBuffer, pszBuffer);
+
+	pBuffer = strrchr(szBuffer, '\\');
+	if (pBuffer)
+	{
+		*(pBuffer + 1) = '\0';
+	}
+
+	strcpy(basedir, szBuffer);
+
+	j = strlen(basedir);
+	if (j > 0)
+	{
+		if ((basedir[j - 1] == '\\') ||
+			(basedir[j - 1] == '/'))
+		{
+			basedir[j - 1] = 0;
+		}
+	}
+
+	return basedir;
+}
+
+static void SetupBinPath()
+{
+	const char* pPath = getenv("PATH");
+
+	char szBuffer[4096];
+	memset(szBuffer, 0, sizeof(szBuffer));
+
+	char moduleName[MAX_PATH];
+#ifdef _WIN32
+	if (!GetModuleFileNameA(NULL, moduleName, MAX_PATH))
+		return;
+#else
+	// TODO: POSIX implementation
+	static_assert(false);
+#endif
+	// Get the root directory the .exe is in
+	char* pRootDir = GetBaseDir(moduleName);
+	sprintf(szBuffer, "PATH=%s;%s", pRootDir, pPath);
+	_putenv(szBuffer);
+}
+
 // Definition that we can't see or change throught console
 bool CDkCore::Init(const char* pszApplicationName, const char* pszCommandLine)
 {
@@ -125,6 +179,8 @@ bool CDkCore::Init(const char* pszApplicationName, const char* pszCommandLine)
 	setlocale(LC_ALL,"C");
 	InitMessageBoxPlatform();
 #endif // _WIN32
+
+	SetupBinPath();
 
 	// Командная строка
     if (pszCommandLine && strlen(pszCommandLine) > 0)
@@ -134,16 +190,15 @@ bool CDkCore::Init(const char* pszApplicationName, const char* pszCommandLine)
 
     ASSERT(strlen(pszApplicationName) > 0);
 
-	int nWorkdirIndex = g_cmdLine->FindArgument("-workdir");
-
-	if(nWorkdirIndex != -1)
+	const int nWorkdirIndex = g_cmdLine->FindArgument("-workdir");
+	const char* newWorkDir = g_cmdLine->GetArgumentsOf(nWorkdirIndex);
+	if(newWorkDir)
 	{
-		Msg("Setting working directory to %s\n", g_cmdLine->GetArgumentsOf(nWorkdirIndex));
+		Msg("Setting working directory to %s\n", newWorkDir);
 #ifdef _WIN32
-
-		SetCurrentDirectoryA( g_cmdLine->GetArgumentsOf(nWorkdirIndex) );
+		SetCurrentDirectoryA(newWorkDir);
 #else
-
+		chdir(newWorkDir);
 #endif // _WIN32
 	}
 
@@ -152,7 +207,12 @@ bool CDkCore::Init(const char* pszApplicationName, const char* pszCommandLine)
 	m_coreConfiguration = new KeyValues();
 	kvkeybase_t* coreConfigRoot = m_coreConfiguration->GetRootSection();
 
-	if(!m_coreConfiguration->LoadFromFile("EQ.CONFIG", SP_ROOT))
+	// try different locations of EQ.CONFIG
+	bool found = m_coreConfiguration->LoadFromFile("EQ.CONFIG", SP_ROOT);
+	if (!found)
+		found = m_coreConfiguration->LoadFromFile("../EQ.CONFIG", SP_ROOT);
+
+	if(!found)
 	{
 		// try create default settings
 		kvkeybase_t* appDebug = coreConfigRoot->AddKeyBase("ApplicationDebug");

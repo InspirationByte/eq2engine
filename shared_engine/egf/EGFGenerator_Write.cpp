@@ -835,8 +835,10 @@ bool CEGFGenerator::GenerateEGF()
 	Msg(" search paths: %d\n", pHdr->numMaterialSearchPaths);
 	Msg("   Wrote %d bytes:\n", pHdr->length);
 
-	// open model file
-	IFile *file = g_fileSystem->Open(m_outputFilename.ToCString(), "wb");
+	g_fileSystem->MakeDir(m_outputFilename.Path_Extract_Path().ToCString(), SP_MOD);
+
+	// open output model file
+	IFile *file = g_fileSystem->Open(m_outputFilename.ToCString(), "wb", -1);
 	if(file)
 	{
 		MsgWarning("\nWriting EGF '%s'\n", m_outputFilename.ToCString());
