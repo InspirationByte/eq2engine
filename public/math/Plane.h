@@ -19,10 +19,10 @@ enum ClassifyPlane_e
 };
 
 template <class T>
-struct Plane_t
+struct TPlane
 {
-	Plane_t() {}
-	Plane_t(const T x, const T y, const T z, const T o)
+	TPlane() {}
+	TPlane(const T x, const T y, const T z, const T o)
 	{
 		normal = TVec3D<T>(x, y, z);
 		T invLen = (T)rsqrtf(lengthSqr(normal));
@@ -31,7 +31,7 @@ struct Plane_t
 	}
 
 	// precision constructor
-	Plane_t(const T x, const T y, const T z, const T o, bool _PRECISION)
+	TPlane(const T x, const T y, const T z, const T o, bool _PRECISION)
 	{
 		normal = TVec3D<T>(x, y, z);
 		T invLen = (T)1.0 / length(normal);
@@ -39,7 +39,7 @@ struct Plane_t
 		offset = o * invLen;
 	}
 
-	Plane_t(const TVec3D<T>& n, const T o)
+	TPlane(const TVec3D<T>& n, const T o)
 	{
 		normal = n;
 
@@ -50,7 +50,7 @@ struct Plane_t
 	}
 
 	// precision constructor
-	Plane_t(const TVec3D<T>& n, const T o, bool _PRECISION)
+	TPlane(const TVec3D<T>& n, const T o, bool _PRECISION)
 	{
 		normal = n;
 
@@ -60,7 +60,7 @@ struct Plane_t
 		offset = o * invLen;
 	}
 
-	Plane_t(const TVec3D<T>& v0, const TVec3D<T>& v1, const TVec3D<T>& v2)
+	TPlane(const TVec3D<T>& v0, const TVec3D<T>& v1, const TVec3D<T>& v2)
 	{
 		normal = fastNormalize(cross(v2 - v1, v0 - v1));
 
@@ -68,7 +68,7 @@ struct Plane_t
 	}
 
 	// precision constructor
-	Plane_t(const TVec3D<T>& v0, const TVec3D<T>& v1, const TVec3D<T>& v2, bool _PRECISION)
+	TPlane(const TVec3D<T>& v0, const TVec3D<T>& v1, const TVec3D<T>& v2, bool _PRECISION)
 	{
 		normal = normalize(cross(v2 - v1, v0 - v1));
 		offset = -dot(normal, v0);
@@ -79,7 +79,7 @@ struct Plane_t
 		return dot(normal, pos) + offset;
 	}
 
-	ClassifyPlane_e ClassifyPoint(const TVec3D<T> &pos, const T eps = 0.0001f) const
+	ClassifyPlane_e ClassifyPoint(const TVec3D<T> &pos, const T eps = F_EPS) const
 	{
 		T fDist = Distance(pos);
 
@@ -91,7 +91,7 @@ struct Plane_t
 		return CP_ONPLANE;
 	}
 
-	bool GetIntersectionWithPlane(const Plane_t<T>& plane, TVec3D<T>& p, TVec3D<T>& dir, const T eps = 0.0f) const
+	bool GetIntersectionWithPlane(const TPlane<T>& plane, TVec3D<T>& p, TVec3D<T>& dir, const T eps = 0.0f) const
 	{
 		const TVec3D<T> axis = cross(normal, plane.normal);
 		const T det = lengthSqr(axis);
@@ -109,11 +109,11 @@ struct Plane_t
 		return false;
 	}
 
-	bool GetIntersectionWithPlanes(const Plane_t<T>& o1, const Plane_t<T>& o2, TVec3D<T>& outPoint) const
+	bool GetIntersectionWithPlanes(const TPlane<T>& o1, const TPlane<T>& o2, TVec3D<T>& outPoint) const
 	{
 		T	fDenom = dot(normal, cross(o1.normal, o2.normal));
 
-		if (fabs(fDenom) < 0.0001f)
+		if (fabs(fDenom) < F_EPS)
 		{
 			return false;
 		}
@@ -178,7 +178,7 @@ struct Plane_t
 		return GetIntersectionWithLine(lineStart, lineEnd, outIntersection, dummy);
 	}
 
-	bool CompareEpsilon(const Plane_t<T>& other, T fDistEps, T fNormalEps) const
+	bool CompareEpsilon(const TPlane<T>& other, T fDistEps, T fNormalEps) const
 	{
 		if (abs(offset - other.offset) > fDistEps)
 			return false;
@@ -200,7 +200,7 @@ struct Plane_t
 };
 
 template <typename T>
-inline Plane_t<T> operator * (const TMat4<T> &m, const Plane_t<T> &v)
+inline TPlane<T> operator * (const TMat4<T> &m, const TPlane<T> &v)
 {
 	TVec4D<T> o(v.normal * v.offset, 1.0);
 	TVec3D<T> n(v.normal);
@@ -208,9 +208,9 @@ inline Plane_t<T> operator * (const TMat4<T> &m, const Plane_t<T> &v)
 	o = m * o;
 	n = m * n;
 
-	return Plane_t<T>(n, dot(o.xyz(), n));
+	return TPlane<T>(n, dot(o.xyz(), n));
 }
 
-typedef Plane_t<float> Plane;
+typedef TPlane<float> Plane;
 
 #endif // PLANE_H

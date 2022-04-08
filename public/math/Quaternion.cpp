@@ -348,7 +348,7 @@ Quaternion slerp(const Quaternion &q0, const Quaternion &q1, const float t)
 {
 	double cosTheta = q0.w * q1.w + q0.x * q1.x + q0.y * q1.y + q0.z * q1.z;
 
-	if (fabs(1 - cosTheta) < 0.001f)
+	if (fabs(1 - cosTheta) < F_EPS)
 	{
 		return q0 * (1 - t) + q1 * t;
 	}

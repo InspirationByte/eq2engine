@@ -665,7 +665,7 @@ static const TVec2D<float> vec2_zero = TVec2D<float>(0.0f);
 static const TVec3D<float> vec3_zero = TVec3D<float>(0.0f);
 static const TVec4D<float> vec4_zero = TVec4D<float>(0.0f);
 static const TVec4D<float> vec4_undef = TVec4D<float>(88888.888f);
-static const TVec4D<float> vec4_infinity = TVec4D<float>(9000000.0f);
+static const TVec4D<float> vec4_infinity = TVec4D<float>(F_INFINITY);
 
 static const TVec3D<float> vec3_right = TVec3D<float>(1.0f, 0.0f, 0.0f);
 static const TVec3D<float> vec3_up = TVec3D<float>(0.0f, 1.0f, 0.0f);
@@ -674,6 +674,22 @@ static const TVec3D<float> vec3_forward = TVec3D<float>(0.0f, 0.0f, 1.0f);
 // white (default) colors
 static const ColorRGB color3_white = ColorRGB(1.0f);
 static const ColorRGBA color4_white = ColorRGBA(color3_white, 1.0f);
+
+#ifndef RAD2DEG
+#	define RAD2DEG( x  )	( (float)(x) * (float)(180.f / M_PI_F) )
+#endif
+
+#ifndef DEG2RAD
+#	define DEG2RAD( x  )	( (float)(x) * (float)(M_PI_F / 180.f) )
+#endif
+
+#ifndef VDEG2RAD
+#	define VDEG2RAD( v )	Vector3D(DEG2RAD(v.x),DEG2RAD(v.y),DEG2RAD(v.z))
+#endif
+
+#ifndef VRAD2DEG
+#	define VRAD2DEG( v )	Vector3D(RAD2DEG(v.x),RAD2DEG(v.y),RAD2DEG(v.z))
+#endif
 
 #include "Vector.inl"
 

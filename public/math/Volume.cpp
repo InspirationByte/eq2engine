@@ -127,7 +127,7 @@ bool Volume::IsIntersectsRay(const Vector3D &start,const Vector3D &dir, Vector3D
 	bool isinstersects = false;
 
 	Vector3D outintersection;
-	float best_dist = V_MAX_COORD;
+	float best_dist = F_INFINITY;
 
 	for (int i = 0; i < 6; i++)
 	{

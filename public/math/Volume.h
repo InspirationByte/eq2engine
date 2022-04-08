@@ -10,7 +10,6 @@
 #define VOLUME_H
 
 #include "Plane.h"
-
 #include "math_common.h"
 
 enum EVolumePlane

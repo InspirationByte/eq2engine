@@ -1202,7 +1202,7 @@ bool CImage::CreateMipMaps(const int mipMaps)
 	if (IsCompressedFormat(m_nFormat))
 		return false;
 
-	if (!IsPowerOf2(m_nWidth) || !IsPowerOf2(m_nHeight) || !IsPowerOf2(m_nDepth))
+	if (!isPowerOf2(m_nWidth) || !isPowerOf2(m_nHeight) || !isPowerOf2(m_nDepth))
 		return false;
 
 	int actualMipMaps = min(mipMaps, GetMipMapCountFromDimesions());

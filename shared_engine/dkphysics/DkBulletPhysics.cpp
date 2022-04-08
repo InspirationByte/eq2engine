@@ -544,8 +544,6 @@ bool DkPhysics::IsSupportsHardwareAcceleration()
 	return false;
 }
 
-#define RAYCAST_NORMAL_EPSILON 0.001f;
-
 // Generic traceLine for physics
 void DkPhysics::InternalTraceLine(const Vector3D &tracestart, const Vector3D &traceend, int groupmask, internaltrace_t *trace, IPhysicsObject** pIgnoreList, int numIgnored)
 {
@@ -579,7 +577,7 @@ void DkPhysics::InternalTraceLine(const Vector3D &tracestart, const Vector3D &tr
 		ConvertBulletToDKVectors(trace->normal, rayCallback.m_hitNormalWorld);
 		trace->hitMaterial = ((CPhysicsObject*)trace->hitObj)->m_pRMaterial;
 
-		trace->traceEnd += trace->normal * RAYCAST_NORMAL_EPSILON;
+		trace->traceEnd += trace->normal * F_EPS;
 	}
 }
 

@@ -11,27 +11,39 @@
 #include <math.h>
 #include <float.h>
 
-#define FLOATSIGNBITSET(f)		((*(const unsigned long *)&(f)) >> 31)
-#define FLOATSIGNBITNOTSET(f)	((~(*(const unsigned long *)&(f))) >> 31)
-#define FLOATNOTZERO(f)			((*(const unsigned long *)&(f)) & ~(1<<31) )
-#define INTSIGNBITSET(i)		(((const unsigned long)(i)) >> 31)
-#define INTSIGNBITNOTSET(i)		((~((const unsigned long)(i))) >> 31)
-
-#ifndef NULL
-#define NULL 0
-#endif
-
-#define F_EPS			0.0001f
-#define V_MAX_COORD		393216.0f		// common maximum in the Equilibrium engine
-
-//#define roundf(x) floorf((x) + 0.5f)
-
 #if defined(_INC_MINMAX)
 #error Please remove minmax from includes
 #endif
 
 #undef min
 #undef max
+
+enum CubeDir
+{
+	POSITIVE_X,
+	NEGATIVE_X,
+	POSITIVE_Y,
+	NEGATIVE_Y,
+	POSITIVE_Z,
+	NEGATIVE_Z,
+};
+
+#ifndef IsNaN
+#	define IsNaN(x)				((x) != (x))
+#endif
+
+#define FLOATSIGNBITSET(f)		((*(const unsigned long *)&(f)) >> 31)
+#define FLOATSIGNBITNOTSET(f)	((~(*(const unsigned long *)&(f))) >> 31)
+#define FLOATNOTZERO(f)			((*(const unsigned long *)&(f)) & ~(1<<31) )
+#define INTSIGNBITSET(i)		(((const unsigned long)(i)) >> 31)
+#define INTSIGNBITNOTSET(i)		((~((const unsigned long)(i))) >> 31)
+
+constexpr float F_EPS			= 0.00001f;
+constexpr float F_INFINITY		= 1900000.0f;
+
+const double M_PI_D				= 3.14159265358979323846264338327950288;
+const float M_PI_F				= float(M_PI_D);
+const float M_PI_OVER_TWO_F		= M_PI_F * 0.5f;
 
 template <class T, class T2 = T, class TR = T>
 inline TR min(T x, T2 y) {return (TR)((x < y)? x : y);}
@@ -73,7 +85,7 @@ inline void SinCos( float radians, float *sine, float *cosine )
 }
 
 // Math routines done in optimized assembly math package routines
-inline void SinCos( float radians, double *sine, double *cosine )
+inline void SinCos( double radians, double *sine, double *cosine )
 {
 	// GCC handles better...
 
@@ -121,7 +133,7 @@ inline float sqrf( const float x )
 
 inline float sincf( const float x )
 {
-	return (x == 0)? 1 : sinf(x) / x;
+	return (x == 0.0f) ? 1.0f : sinf(x) / x;
 }
 
 inline float intAdjustf(const float x, const float diff = 0.01f)
@@ -156,19 +168,6 @@ inline unsigned int getLowerPowerOfTwo(const unsigned int x)
 	return i >> 1;
 }
 
-/*
-#if !defined(_MSC_VER) || _MSC_VER < 1800
-inline int round(float x)
-{
-	if (x > 0){
-		return int(x + 0.5f);
-	} else {
-		return int(x - 0.5f);
-	}
-}
-#endif // _MSC_VER
-*/
-
 inline bool fsimilar( float a, float b, float cmp = F_EPS )
 {
 	return fabs(a-b) < cmp;
@@ -180,7 +179,7 @@ inline bool dsimilar( double a, double b, double cmp = F_EPS )
 }
 
 // Note: returns true for 0
-inline bool IsPowerOf2(const int x)
+inline bool isPowerOf2(const int x)
 {
 	return (x & (x - 1)) == 0;
 }
@@ -200,12 +199,5 @@ inline void swap(T& a, T& b)
 
 #define RemapValClamp( val, A, B, C, D) \
 	clamp(C + (D - C) * (val - A) / (B - A), C, D)
-
-#define POSITIVE_X 0
-#define NEGATIVE_X 1
-#define POSITIVE_Y 2
-#define NEGATIVE_Y 3
-#define POSITIVE_Z 4
-#define NEGATIVE_Z 5
 
 #endif // MATH_COMMON_H

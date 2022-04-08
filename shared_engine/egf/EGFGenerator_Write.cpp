@@ -68,22 +68,20 @@ const char* GetACTCErrorString(int result)
 
 //---------------------------------------------------------------------------------------
 
-#define COMPARISION_EPSILON (0.0001f)
-
 // from exporter - compares two verts
 bool CompareVertex(const studiovertexdesc_t &v0, const studiovertexdesc_t &v1)
 {
-	if(	compare_epsilon(v0.point, v1.point, COMPARISION_EPSILON) &&
-		compare_epsilon(v0.normal, v1.normal, COMPARISION_EPSILON) &&
-		compare_epsilon(v0.texCoord, v1.texCoord, COMPARISION_EPSILON) &&
+	if(	compare_epsilon(v0.point, v1.point, F_EPS) &&
+		compare_epsilon(v0.normal, v1.normal, F_EPS) &&
+		compare_epsilon(v0.texCoord, v1.texCoord, F_EPS) &&
 		v0.boneweights.bones[0] == v1.boneweights.bones[0] &&
 		v0.boneweights.bones[1] == v1.boneweights.bones[1] &&
 		v0.boneweights.bones[2] == v1.boneweights.bones[2] &&
 		v0.boneweights.bones[3] == v1.boneweights.bones[3] &&
-		fsimilar(v0.boneweights.weight[0],v1.boneweights.weight[0], COMPARISION_EPSILON) &&
-		fsimilar(v0.boneweights.weight[1],v1.boneweights.weight[1], COMPARISION_EPSILON) &&
-		fsimilar(v0.boneweights.weight[2],v1.boneweights.weight[2], COMPARISION_EPSILON) &&
-		fsimilar(v0.boneweights.weight[3],v1.boneweights.weight[3], COMPARISION_EPSILON)
+		fsimilar(v0.boneweights.weight[0],v1.boneweights.weight[0], F_EPS) &&
+		fsimilar(v0.boneweights.weight[1],v1.boneweights.weight[1], F_EPS) &&
+		fsimilar(v0.boneweights.weight[2],v1.boneweights.weight[2], F_EPS) &&
+		fsimilar(v0.boneweights.weight[3],v1.boneweights.weight[3], F_EPS)
 		)
 		return true;
 
@@ -109,15 +107,15 @@ int FindVertexInList(const DkList<studiovertexdesc_t>& verts, const studiovertex
 // from exporter - compares two verts
 bool CompareVertexNoPosition(const studiovertexdesc_t &v0, const studiovertexdesc_t &v1)
 {
-	if(	compare_epsilon(v0.texCoord, v1.texCoord, COMPARISION_EPSILON) &&
+	if(	compare_epsilon(v0.texCoord, v1.texCoord, F_EPS) &&
 		v0.boneweights.bones[0] == v1.boneweights.bones[0] &&
 		v0.boneweights.bones[1] == v1.boneweights.bones[1] &&
 		v0.boneweights.bones[2] == v1.boneweights.bones[2] &&
 		v0.boneweights.bones[3] == v1.boneweights.bones[3] &&
-		fsimilar(v0.boneweights.weight[0],v1.boneweights.weight[0], COMPARISION_EPSILON) &&
-		fsimilar(v0.boneweights.weight[1],v1.boneweights.weight[1], COMPARISION_EPSILON) &&
-		fsimilar(v0.boneweights.weight[2],v1.boneweights.weight[2], COMPARISION_EPSILON) &&
-		fsimilar(v0.boneweights.weight[3],v1.boneweights.weight[3], COMPARISION_EPSILON)
+		fsimilar(v0.boneweights.weight[0],v1.boneweights.weight[0], F_EPS) &&
+		fsimilar(v0.boneweights.weight[1],v1.boneweights.weight[1], F_EPS) &&
+		fsimilar(v0.boneweights.weight[2],v1.boneweights.weight[2], F_EPS) &&
+		fsimilar(v0.boneweights.weight[3],v1.boneweights.weight[3], F_EPS)
 		)
 		return true;
 

@@ -10,7 +10,7 @@
 
 #include "Vector.h"
 
-template <class T, uint32 TMAX>
+template <class T>
 struct TRectangle
 {
 	TVec2D<T> vleftTop, vrightBottom;
@@ -20,8 +20,8 @@ struct TRectangle
 		Reset();
 	}
 
-	template <class T2, uint32 TMAX2>
-	TRectangle( const TRectangle<T2,TMAX2>& rect)
+	template <class T2>
+	TRectangle( const TRectangle<T2>& rect)
 	{
 		vleftTop.x = (T)rect.vleftTop.x;
 		vleftTop.y = (T)rect.vleftTop.y;
@@ -62,8 +62,8 @@ struct TRectangle
 
 	void Reset()
 	{
-		vleftTop		= TVec2D<T>((T)TMAX);
-		vrightBottom	= TVec2D<T>(-(T)TMAX);
+		vleftTop		= TVec2D<T>((T)F_INFINITY);
+		vrightBottom	= TVec2D<T>(-(T)F_INFINITY);
 	}
 
 	void Fix()
@@ -102,24 +102,24 @@ struct TRectangle
 		return (vleftTop + vrightBottom)*0.5f;
 	}
 
-	TRectangle<T, TMAX> GetTopVertical(float sizePercent) const
+	TRectangle<T> GetTopVertical(float sizePercent) const
 	{
-		return TRectangle<T, TMAX>(vleftTop, lerp(vleftTop, vrightBottom, TVec2D<T>(1.0f, sizePercent)));
+		return TRectangle<T>(vleftTop, lerp(vleftTop, vrightBottom, TVec2D<T>(1.0f, sizePercent)));
 	}
 
-	TRectangle<T, TMAX> GetBottomVertical(float sizePercent) const
+	TRectangle<T> GetBottomVertical(float sizePercent) const
 	{
-		return TRectangle<T, TMAX>(lerp(vrightBottom, vleftTop, TVec2D<T>(1.0f, sizePercent), vrightBottom));
+		return TRectangle<T>(lerp(vrightBottom, vleftTop, TVec2D<T>(1.0f, sizePercent), vrightBottom));
 	}
 
-	TRectangle<T, TMAX> GetLeftHorizontal(float sizePercent) const
+	TRectangle<T> GetLeftHorizontal(float sizePercent) const
 	{
-		return TRectangle<T, TMAX>(vleftTop, lerp(vleftTop, vrightBottom, TVec2D<T>(sizePercent, 1.0f)));
+		return TRectangle<T>(vleftTop, lerp(vleftTop, vrightBottom, TVec2D<T>(sizePercent, 1.0f)));
 	}
 
-	TRectangle<T, TMAX> GetRightHorizontal(float sizePercent) const
+	TRectangle<T> GetRightHorizontal(float sizePercent) const
 	{
-		return TRectangle<T, TMAX>(lerp(vrightBottom, vleftTop, TVec2D<T>(sizePercent, 1.0f), vrightBottom));
+		return TRectangle<T>(lerp(vrightBottom, vleftTop, TVec2D<T>(sizePercent, 1.0f), vrightBottom));
 	}
 
 	bool IsInRectangle(const TVec2D<T> &point) const
@@ -132,7 +132,7 @@ struct TRectangle
 		return clamp(point, vleftTop, vrightBottom);
 	}
 
-	TRectangle<T, TMAX> GetRectangleIntersectionDiff(const TRectangle<T, TMAX> &anotherRect) const
+	TRectangle<T> GetRectangleIntersectionDiff(const TRectangle<T> &anotherRect) const
 	{
 		Vector2D tempLT = ClampPointInRectangle(Vector2D(anotherRect.vleftTop.x,anotherRect.vleftTop.y));
 		Vector2D tempRB = ClampPointInRectangle(Vector2D(anotherRect.vrightBottom.x,anotherRect.vrightBottom.y));
@@ -142,7 +142,7 @@ struct TRectangle
 		return pRect;
 	}
 
-	bool IsIntersectsRectangle(const TRectangle<T, TMAX> &anotherRect) const
+	bool IsIntersectsRectangle(const TRectangle<T> &anotherRect) const
 	{
 		if(( vrightBottom.x < anotherRect.vleftTop.x) || (vleftTop.x > anotherRect.vrightBottom.x ) )
 			return false;
@@ -153,7 +153,7 @@ struct TRectangle
 		return true;
 	}
 
-	bool IsFullyInside(const TRectangle<T, TMAX> &anotherRect) const
+	bool IsFullyInside(const TRectangle<T> &anotherRect) const
 	{
 		if(	anotherRect.vleftTop >= vleftTop && anotherRect.vleftTop <= vrightBottom &&
 			anotherRect.vrightBottom <= vrightBottom && anotherRect.vrightBottom >= vleftTop)
@@ -185,8 +185,8 @@ struct TRectangle
 	}
 };
 
-typedef TRectangle<float, (int)V_MAX_COORD>	Rectangle_t;
-typedef TRectangle<int, (int)V_MAX_COORD>	IRectangle;
-typedef TRectangle<int, 32767>			FRectangle;
+typedef TRectangle<float>	Rectangle_t;
+typedef TRectangle<int>		IRectangle;
+typedef TRectangle<int>		FRectangle;
 
 #endif // RECTANGLE_H

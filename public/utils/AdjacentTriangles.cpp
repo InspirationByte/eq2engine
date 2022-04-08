@@ -261,7 +261,7 @@ void CAdjacentTriangleGraph::BuildTriangleAdjacencyConnectionsByVerts(mtriangle_
 				float dist = length(vertexJ-vertexK);
 
 				// if we have same index, or same position, make it as neighbour
-				if(pTri->indices[j] == pCheckTriangle->indices[k] || (dist < 0.0001f))
+				if(pTri->indices[j] == pCheckTriangle->indices[k] || (dist < F_EPS))
 				{
 					// add it as unique
 					pTri->index_connections.addUnique( pCheckTriangle );

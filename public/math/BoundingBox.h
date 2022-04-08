@@ -10,7 +10,7 @@
 
 #include "Vector.h"
 
-template<class T, int TMAX>
+template<class T>
 struct TAABBox //BoundingBox
 {
 	static T dist_check(const T pn, const T bmin, const T bmax)
@@ -143,7 +143,7 @@ struct TAABBox //BoundingBox
 		return squaredDistance <= (radius * radius);
 	}
 
-	bool Intersects ( const TAABBox<T, TMAX>& bbox, T tolerance = 0) const
+	bool Intersects ( const TAABBox<T>& bbox, T tolerance = 0) const
 	{
 		bool overlap = true;
 		overlap = (minPoint.x-tolerance > bbox.maxPoint.x || maxPoint.x+tolerance < bbox.minPoint.x) ? false : overlap;
@@ -154,7 +154,7 @@ struct TAABBox //BoundingBox
 	}
 
 	// warning, this is a size-dependent!
-	bool FullyInside ( const TAABBox<T, TMAX>& box, T tolerance = 0) const
+	bool FullyInside ( const TAABBox<T>& box, T tolerance = 0) const
 	{
 		if(	box.minPoint >= minPoint-tolerance && box.minPoint <= maxPoint+tolerance &&
 			box.maxPoint <= maxPoint+tolerance && box.maxPoint >= minPoint-tolerance)
@@ -166,8 +166,8 @@ struct TAABBox //BoundingBox
 	bool IntersectsRay(const TVec3D<T>& rayStart, const TVec3D<T>& rayDir, T& tnear, T& tfar) const
 	{
 		TVec3D<T> T_1, T_2; // vectors to hold the T-values for every direction
-		T t_near	= (T)-TMAX;
-		T t_far		= (T)TMAX;
+		T t_near	= (T)-F_INFINITY;
+		T t_far		= (T)F_INFINITY;
 
 		for (int i = 0; i < 3; i++)
 		{
@@ -205,8 +205,8 @@ struct TAABBox //BoundingBox
 
     void Reset()
     {
-        minPoint = TVec3D<T>((T)TMAX);
-		maxPoint = TVec3D<T>(-(T)TMAX);
+        minPoint = TVec3D<T>((T)F_INFINITY);
+		maxPoint = TVec3D<T>(-(T)F_INFINITY);
     }
 
 	const TVec3D<T>& GetMinPoint() const
@@ -242,7 +242,7 @@ struct TAABBox //BoundingBox
 	}
 
 	// adds other bbox to this box
-    void Merge( const TAABBox<T, TMAX>& box )
+    void Merge( const TAABBox<T>& box )
     {
         if ( box.minPoint.x < minPoint.x )
            minPoint.x = box.minPoint.x;
@@ -279,6 +279,6 @@ struct TAABBox //BoundingBox
 	TVec3D<T>	maxPoint;
 };
 
-typedef TAABBox<float, (int)V_MAX_COORD>	BoundingBox;
+typedef TAABBox<float>	BoundingBox;
 
 #endif //BOUNDINGBOX_H
