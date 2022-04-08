@@ -95,7 +95,6 @@ project "dkPhysicsLib"
 	}
     files {
 		Folders.shared_engine.. "dkphysics/**.cpp",
-        Folders.shared_engine.. "physics/**.cpp"			
 	}
 	includedirs {
 		Folders.shared_engine

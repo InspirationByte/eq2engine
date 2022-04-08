@@ -79,7 +79,7 @@ project "egfman"
     uses {
 		"corelib", "frameworkLib",
 		"e2Core", 
-		"fontLib", "dkPhysicsLib", "wxWidgets"
+		"fontLib", "physicsLib", "dkPhysicsLib", "wxWidgets"
 	}
     files {
 		"egfman/*.cpp",
