@@ -183,6 +183,7 @@ bool CDPKFileWriter::AddFile( const char* fileName )
 		//Msg("adding file: '%s'\n", newInfo->fileName.ToCString());
 
 		newInfo->pkinfo.filenameHash = StringToHash(newInfo->fileName.ToCString(), true );
+
 		//Msg("DPK: %s = %u\n", newInfo->fileName.ToCString(), newInfo->pkinfo.filenameHash);
 	}
 
@@ -278,7 +279,6 @@ bool CDPKFileWriter::WriteFiles()
 			bytes_to_read = filesize - cur_pos;
 
 		fread( tmpBlockData, bytes_to_read, 1, dpkTempDataFile );
-
 		fwrite( tmpBlockData, bytes_to_read, 1, m_file );
 
 		cur_pos += bytes_to_read;
@@ -296,7 +296,7 @@ bool CDPKFileWriter::WriteFiles()
 
 void CDPKFileWriter::ProcessFile(FILE* output, dpkfilewinfo_t* info)
 {
-	dpkfileinfo_t* pkInfo = &info->pkinfo;
+	dpkfileinfo_t& fInfo = info->pkinfo;
 
 	bool compressionEnabled = (m_compressionLevel > 0) && !CheckCompressionIgnored(info->fileName.Path_Extract_Ext().ToCString());
 
@@ -310,8 +310,14 @@ void CDPKFileWriter::ProcessFile(FILE* output, dpkfilewinfo_t* info)
 	}
 
 	// set the size and offset in the file bigfile
-	pkInfo->size = _fileSize;
-	pkInfo->offset = m_header.fileInfoOffset;
+	fInfo.size = _fileSize;
+	fInfo.offset = m_header.fileInfoOffset;
+
+	// compute CRC
+	{
+		uLong crc = crc32(0L, Z_NULL, 0);
+		fInfo.crc = crc32(crc, _filedata, _fileSize);
+	}
 
 	// compressed and encrypted files has to be put into blocks
 	// uncompressed files are bypassing blocks
@@ -407,7 +413,7 @@ void CDPKFileWriter::ProcessFile(FILE* output, dpkfilewinfo_t* info)
 		}
 
 		// set the number of blocks
-		pkInfo->numBlocks = numBlocks;
+		fInfo.numBlocks = numBlocks;
 	}
 	else
 	{

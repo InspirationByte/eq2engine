@@ -11,7 +11,7 @@
 #include "dktypes.h"
 #include "ds/eqstring.h"
 
-#define DPK_VERSION					6
+#define DPK_VERSION					7
 #define DPK_SIGNATURE				MCHAR4('E','Q','P','K')
 
 #define DPK_BLOCK_MAXSIZE			(8*1024)
@@ -56,9 +56,9 @@ struct dpkfileinfo_s
 
 	uint64	offset;
 	uint32	size;				// The real file size
+	uint32	crc;
 
 	short	numBlocks;			// number of blocks
-
 	short	flags;
 };
 ALIGNED_TYPE(dpkfileinfo_s, 2) dpkfileinfo_t;

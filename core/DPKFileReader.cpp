@@ -305,20 +305,7 @@ int	CDPKFileStream::Flush()
 // returns CRC32 checksum of stream
 uint32 CDPKFileStream::GetCRC32()
 {
-	long pos = Tell();
-	long fSize = GetSize();
-
-	ubyte* pFileData = (ubyte*)malloc(fSize + 16);
-
-	Read(pFileData, 1, fSize);
-
-	Seek(pos, VS_SEEK_SET);
-
-	uint32 nCRC = CRC32_BlockChecksum(pFileData, fSize);
-
-	free(pFileData);
-
-	return nCRC;
+	return m_info.crc;
 }
 
 //-----------------------------------------------------------------------------------------------------------------------
