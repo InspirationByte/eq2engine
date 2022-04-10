@@ -131,7 +131,7 @@ CZipFileReader::~CZipFileReader()
 {
 	for (int i = 0; i < m_openFiles.numElem(); i++)
 	{
-		Close(m_openFiles[0]);
+		Close(m_openFiles[i]);
 	}
 }
 
