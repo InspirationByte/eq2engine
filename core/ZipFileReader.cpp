@@ -16,6 +16,7 @@
 
 CZipFileStream::CZipFileStream(unzFile zip) : m_zipHandle(zip)
 {
+	unzGetCurrentFileInfo(m_zipHandle, &m_finfo, NULL, 0, NULL, 0, NULL, 0);
 }
 
 CZipFileStream::~CZipFileStream()
@@ -102,10 +103,7 @@ long CZipFileStream::Tell() const
 // returns memory allocated for this stream
 long CZipFileStream::GetSize()
 {
-	unz_file_info finfo;
-	unzGetCurrentFileInfo(m_zipHandle, &finfo, NULL, 0, NULL, 0, NULL, 0);
-
-	return finfo.uncompressed_size;
+	return m_finfo.uncompressed_size;
 }
 
 // flushes stream from memory
@@ -117,20 +115,7 @@ int	CZipFileStream::Flush()
 // returns CRC32 checksum of stream
 uint32 CZipFileStream::GetCRC32()
 {
-	long pos = Tell();
-	long fSize = GetSize();
-
-	ubyte* pFileData = (ubyte*)malloc(fSize + 16);
-
-	Read(pFileData, 1, fSize);
-
-	Seek(pos, VS_SEEK_SET);
-
-	uint32 nCRC = CRC32_BlockChecksum(pFileData, fSize);
-
-	free(pFileData);
-
-	return nCRC;
+	return m_finfo.crc;
 }
 
 //-----------------------------------------------------------------------------------------------------------------------

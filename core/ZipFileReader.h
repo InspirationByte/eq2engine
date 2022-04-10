@@ -55,6 +55,7 @@ public:
 protected:
 
 	unzFile				m_zipHandle;
+	unz_file_info		m_finfo;
 
 	CZipFileReader*		m_host;
 };
