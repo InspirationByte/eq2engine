@@ -11,7 +11,7 @@
 #define ASYNCWORKQUEUE_H
 
 #include "utils/eqthread.h"
-#include "ds/DkList.h"
+#include "ds/Array.h"
 #include "ds/function.h"
 
 class CAsyncWorkQueue
@@ -30,7 +30,7 @@ protected:
 	int WaitForResult(uint workId);
 
 	uint					m_workCounter{ 0 };
-	DkList<struct work_t*>	m_pendingWork;
+	Array<struct work_t*>	m_pendingWork;
 	Threading::CEqMutex		m_mutex;
 };
 

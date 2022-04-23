@@ -10,7 +10,7 @@
 #define NETTHREAD_H
 
 #include "utils/eqthread.h"
-#include "ds/DkList.h"
+#include "ds/Array.h"
 #include "utils/eqtimer.h"
 
 #include "network/c_udp.h"
@@ -98,7 +98,7 @@ public:
 	void						SetCycleCallback(pfnUpdateCycleCallback fnCallback);
 
 	///< registers event factory
-	void						RegisterEventList( const DkList<neteventfactory_t>& list, bool bUnregisterOld = false );
+	void						RegisterEventList( const Array<neteventfactory_t>& list, bool bUnregisterOld = false );
 
 	void						RegisterEvent( pfnNetEventFactory fnFactoryFunc, int eventIdentifier );
 	void						UnregisterEvent( int eventIdentifier );
@@ -156,23 +156,23 @@ private:
 protected:
 
 	// event factory
-	DkList<neteventfactory_t>	m_netEventFactory;
+	Array<neteventfactory_t>	m_netEventFactory;
 
 	// network interface this thread using
 	INetworkInterface*			m_netInterface;
 
 	// delayed messages, for testing network only
-	DkList<rcvdMessage_t*>		m_lateMessages;
+	Array<rcvdMessage_t*>		m_lateMessages;
 
 	// all undispatched fragmented messages
-	DkList<netFragMsg_t*>		m_fragmented_messages;
+	Array<netFragMsg_t*>		m_fragmented_messages;
 
 	// message queue
 	rcvdMessage_t*				m_firstMessage;
 	rcvdMessage_t*				m_lastMessage;
 
 	// events
-	DkList<sendEvent_t>			m_queuedEvents;
+	Array<sendEvent_t>			m_queuedEvents;
 
 	// callbacks
 	pfnEventFilterCallback		m_fnEventFilter;		// event filter callback

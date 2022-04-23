@@ -18,6 +18,7 @@
 #include "core/ConVar.h"
 #include "core/ILocalize.h"
 #include "core/IEqParallelJobs.h"
+#include "core/platform/MessageBox.h"
 
 #include "utils/KeyValues.h"
 #include "utils/eqtimer.h"

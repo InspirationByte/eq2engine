@@ -12,7 +12,7 @@
 
 #include "core/platform/Platform.h"
 
-#include "ds/DkList.h"
+#include "ds/Array.h"
 
 #include "source/snd_source.h"
 
@@ -83,9 +83,9 @@ private:
 	void			DestroyContext();
 	void			DestroyEffects();
 
-	DkList<CRefPointer<IEqAudioSource*>>	m_sources;	// tracked sources
-	DkList<ISoundSource*>					m_samples;
-	DkList<sndEffect_t>						m_effects;
+	Array<CRefPointer<IEqAudioSource*>>	m_sources;	// tracked sources
+	Array<ISoundSource*>					m_samples;
+	Array<sndEffect_t>						m_effects;
 
 	ALCcontext*								m_ctx;
 	ALCdevice*								m_dev;

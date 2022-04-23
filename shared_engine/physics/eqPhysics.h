@@ -34,7 +34,7 @@ TODO:
 #include "math/FVector.h"
 #include "math/Quaternion.h"
 #include "math/BoundingBox.h"
-#include "ds/DkList.h"
+#include "ds/Array.h"
 #include "utils/eqthread.h"
 
 #include <btBulletCollisionCommon.h>
@@ -389,17 +389,17 @@ protected:
 
 protected:
 
-	DkList<eqPhysSurfParam_t*>		m_physSurfaceParams;
+	Array<eqPhysSurfParam_t*>		m_physSurfaceParams;
 
-	DkList<CEqRigidBody*>			m_moveable;
+	Array<CEqRigidBody*>			m_moveable;
 
-	DkList<CEqRigidBody*>			m_dynObjects;
-	DkList<CEqCollisionObject*>		m_staticObjects;
+	Array<CEqRigidBody*>			m_dynObjects;
+	Array<CEqCollisionObject*>		m_staticObjects;
 
-	DkList<CEqCollisionObject*>		m_ghostObjects;
+	Array<CEqCollisionObject*>		m_ghostObjects;
 
-	DkList<IEqPhysicsConstraint*>	m_constraints;
-	DkList<IEqPhysicsController*>	m_controllers;
+	Array<IEqPhysicsConstraint*>	m_constraints;
+	Array<IEqPhysicsController*>	m_controllers;
 
 	btDispatcherInfo				m_dispatchInfo;
 	btCollisionWorld*				m_collisionWorld;

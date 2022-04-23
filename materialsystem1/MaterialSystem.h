@@ -12,10 +12,9 @@
 #ifndef CMATERIALSYSTEM_H
 #define CMATERIALSYSTEM_H
 
-#include <unordered_map>
-
 #include "core/platform/Platform.h"
-#include "ds/DkList.h"
+#include "ds/Array.h"
+#include "ds/Map.h"
 #include "utils/eqthread.h"
 #include "utils/eqtimer.h"
 
@@ -42,11 +41,6 @@ struct shaderoverride_t
 };
 
 class IRenderLibrary;
-
-typedef std::unordered_map<ushort,IRenderState*> blendStateMap_t;
-typedef std::unordered_map<ubyte,IRenderState*> depthStateMap_t;
-typedef std::unordered_map<ubyte,IRenderState*> rasterStateMap_t;
-
 struct DKMODULE;
 
 class CMaterialSystem : public IMaterialSystem
@@ -328,22 +322,22 @@ private:
 	IShaderAPI*						m_shaderAPI;				// the main renderer interface
 	EqString						m_materialsPath;			// material path
 
-	DkList<DKMODULE*>				m_shaderLibs;				// loaded shader libraries
+	Array<DKMODULE*>				m_shaderLibs;				// loaded shader libraries
 
-	DkList<shaderfactory_t>			m_shaderFactoryList;		// registered shaders
-	DkList<shaderoverride_t>		m_shaderOverrideList;		// shader override functors
-	DkList<proxyfactory_t>			m_proxyFactoryList;
+	Array<shaderfactory_t>			m_shaderFactoryList;		// registered shaders
+	Array<shaderoverride_t>		m_shaderOverrideList;		// shader override functors
+	Array<proxyfactory_t>			m_proxyFactoryList;
 
-	DkList<IMaterial*>				m_loadedMaterials;			// loaded material list
+	Array<IMaterial*>				m_loadedMaterials;			// loaded material list
 	ER_CullMode						m_cullMode;					// culling mode. For shaders. TODO: remove, and check matrix handedness.
 
 	CDynamicMesh					m_dynamicMesh;
 
 	//-------------------------------------------------------------------------
 
-	blendStateMap_t					m_blendStates;
-	depthStateMap_t					m_depthStates;
-	rasterStateMap_t				m_rasterStates;
+	Map<ushort, IRenderState*>		m_blendStates;
+	Map<ushort, IRenderState*>		m_depthStates;
+	Map<ushort, IRenderState*>		m_rasterStates;
 
 	IMaterialRenderParamCallbacks*	m_preApplyCallback;
 
@@ -358,8 +352,8 @@ private:
 
 	ITexture*						m_currentEnvmapTexture;
 
-	DkList<DEVLICELOSTRESTORE>		m_lostDeviceCb;
-	DkList<DEVLICELOSTRESTORE>		m_restoreDeviceCb;
+	Array<DEVLICELOSTRESTORE>		m_lostDeviceCb;
+	Array<DEVLICELOSTRESTORE>		m_restoreDeviceCb;
 
 	ITexture*						m_whiteTexture;
 	ITexture*						m_luxelTestTexture;

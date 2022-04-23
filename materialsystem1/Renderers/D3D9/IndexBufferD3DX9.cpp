@@ -11,11 +11,9 @@
 #include "IndexBufferD3DX9.h"
 
 #include "core/DebugInterface.h"
+#include "core/platform/MessageBox.h"
 
 #include "ShaderAPID3DX9.h"
-
-
-
 
 extern ShaderAPID3DX9 s_shaderApi;
 

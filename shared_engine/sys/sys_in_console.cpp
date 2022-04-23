@@ -163,7 +163,7 @@ struct conSpewText_t
 	EqString	text;
 };
 
-static DkList<conSpewText_t*> s_spewMessages;
+static Array<conSpewText_t*> s_spewMessages;
 
 void CEqConsoleInput::SpewFunc(SpewType_t type, const char* pMsg)
 {
@@ -319,7 +319,7 @@ void CEqConsoleInput::BeginFrame()
 		name->SetBool(value); \
 	}
 
-	DkList<EqString> noArgs;
+	Array<EqString> noArgs;
 #define IMGUI_CONCMD(label, name, args) { \
 		HOOK_TO_CMD(name); \
 		if(ImGui::MenuItem(label)) \
@@ -461,7 +461,7 @@ void DrawAlphaFilledRectangle(const Rectangle_t &rect, const ColorRGBA &color1, 
 	meshBuilder.End();
 }
 
-void CEqConsoleInput::DrawListBox(const IVector2D& pos, int width, DkList<EqString>& items, const char* tooltipText, int maxItems, int startItem, int& selection)
+void CEqConsoleInput::DrawListBox(const IVector2D& pos, int width, Array<EqString>& items, const char* tooltipText, int maxItems, int startItem, int& selection)
 {
 	BlendStateParam_t blending;
 	blending.srcFactor = BLENDFACTOR_SRC_ALPHA;
@@ -965,7 +965,7 @@ void CEqConsoleInput::ExecuteCurrentInput()
 
 	bool execStatus = g_consoleCommands->ExecuteCommandBuffer(nullptr, m_alternateHandler != NULL);
 
-	DkList<EqString>& failedCmds = g_consoleCommands->GetFailedCommands();
+	Array<EqString>& failedCmds = g_consoleCommands->GetFailedCommands();
 
 	bool hasFailed = failedCmds.numElem() > 0;
 
@@ -1001,7 +1001,7 @@ void CEqConsoleInput::UpdateCommandAutocompletionList(const EqString& queryStr)
 	m_foundCmdList.clear();
 	m_cmdSelection = -1;
 
-	const DkList<ConCommandBase*>* baseList = g_consoleCommands->GetAllCommands();
+	const Array<ConCommandBase*>* baseList = g_consoleCommands->GetAllCommands();
 
 	for(int i = 0; i < baseList->numElem();i++)
 	{
@@ -1028,7 +1028,7 @@ void CEqConsoleInput::UpdateVariantsList( const EqString& queryStr )
 	m_variantSelection = -1;
 	m_variantList.clear(false);
 
-	DkList<EqString> allAutoCompletion;
+	Array<EqString> allAutoCompletion;
 
 	for(int i = 0; i < m_customAutocompletion.numElem(); i++)
 	{

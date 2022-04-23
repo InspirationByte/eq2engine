@@ -9,7 +9,7 @@
 #ifndef CONCOMMANDBASE_H
 #define CONCOMMANDBASE_H
 
-#include "ds/DkList.h"
+#include "ds/Array.h"
 #include "ds/eqstring.h"
 
 enum CommandBaseFlags_e
@@ -26,7 +26,7 @@ enum CommandBaseFlags_e
 };
 
 class ConCommandBase;
-typedef void (*CMDBASE_VARIANTS_CALLBACK)(const ConCommandBase* base, DkList<EqString>&, const char* query);
+typedef void (*CMDBASE_VARIANTS_CALLBACK)(const ConCommandBase* base, Array<EqString>&, const char* query);
 
 class ConCommandBase
 {
@@ -51,7 +51,7 @@ public:
 	static void		Unregister( ConCommandBase* pBase );
 
 	bool			HasVariants() const;
-	void			GetVariants(DkList<EqString>& list, const char* query) const;
+	void			GetVariants(Array<EqString>& list, const char* query) const;
 
 	void			SetVariantsCallback(CMDBASE_VARIANTS_CALLBACK fnVariants) {m_fnVariantsList = fnVariants;}
 

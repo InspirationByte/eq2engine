@@ -16,7 +16,7 @@
 
 #include "math/Vector.h"
 #include "math/Matrix.h"
-#include "ds/DkLinkedList.h"
+#include "ds/List.h"
 
 #define DBGOVERLAY_INTERFACE_VERSION "DebugOverlay_001"
 
@@ -64,7 +64,7 @@ struct debugGraphBucket_t
 
 	bool									dynamic;
 
-	DkFixedLinkedList<graphPoint_t, 100>	points;
+	FixedList<graphPoint_t, 100>	points;
 };
 
 typedef void (*OnDebugDrawFn)( void* );

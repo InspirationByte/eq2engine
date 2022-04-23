@@ -9,7 +9,7 @@
 #define TOKENIZER_H
 
 #include "core/platform/Platform.h"
-#include "ds/DkList.h"
+#include "ds/Array.h"
 
 typedef bool (*BOOLFUNC)(const char ch);
 
@@ -48,7 +48,7 @@ private:
 	//uint	curline;
 
 	int currentBuffer;
-	DkList <TokBuffer> buffers;
+	Array <TokBuffer> buffers;
 
 	char *getBuffer(unsigned int size);
 };

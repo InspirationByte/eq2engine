@@ -11,7 +11,7 @@
 //#include "DebugInterface.h"
 #include "materialsystem1/IMaterial.h"
 #include "materialvar.h"
-#include "ds/DkList.h"
+#include "ds/Array.h"
 #include "ds/eqstring.h"
 #include "utils/eqthread.h"
 
@@ -71,8 +71,8 @@ private:
 protected:
 	EqString				m_szMaterialName;
 	EqString				m_szShaderName;
-	DkList<CMatVar*>		m_variables;
-	DkList<IMaterialProxy*>	m_proxies;
+	Array<CMatVar*>		m_variables;
+	Array<IMaterialProxy*>	m_proxies;
 	CTextureAtlas*			m_atlas;
 	Threading::CEqMutex&	m_Mutex;
 

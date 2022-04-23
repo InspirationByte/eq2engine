@@ -95,7 +95,7 @@ private:
 
 	// array of material index for each group
 	IMaterial*			m_materials[MAX_STUDIOMATERIALS];
-	DkList<EqString>	m_additionalMotionPackages;
+	Array<EqString>	m_additionalMotionPackages;
 	BoundingBox			m_aabb;
 	EqString			m_szPath;
 
@@ -155,7 +155,7 @@ public:
 
 private:
 
-	DkList<IEqModel*>		m_cachedList;
+	Array<IEqModel*>		m_cachedList;
 	IVertexFormat*			m_egfFormat;	// vertex format for streams
 };
 

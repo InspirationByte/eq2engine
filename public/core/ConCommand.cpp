@@ -27,7 +27,7 @@ void ConCommand::Create(char const *pszName,CON_COMMAND_CALLBACK callback, CMDBA
 	Init(pszName,pszHelpString,nFlags,false);
 }
 
-void ConCommand::DispatchFunc(DkList<EqString>& args)
+void ConCommand::DispatchFunc(Array<EqString>& args)
 {
 	if((GetFlags() & CV_CHEAT))
 	{

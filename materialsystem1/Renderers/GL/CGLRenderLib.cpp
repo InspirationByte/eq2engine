@@ -11,6 +11,7 @@
 #include "core/IConsoleCommands.h"
 #include "core/IDkCore.h"
 #include "core/DebugInterface.h"
+#include "core/platform/MessageBox.h"
 
 #include "utils/strtools.h"
 
@@ -176,7 +177,7 @@ void PrintGLExtensions()
 	Msg("OpenGL version: %s\n \n",ver);
 	const char *exts = (const char *) glGetString(GL_EXTENSIONS);
 
-	DkList<EqString> splExts;
+	Array<EqString> splExts;
 	xstrsplit(exts," ",splExts);
 
 	MsgWarning("Supported OpenGL extensions:\n");
@@ -550,7 +551,7 @@ bool CGLRenderLib::InitAPI(shaderAPIParams_t& params)
 	int nModes;
     XF86VidModeGetAllModeLines(display, m_screen, &nModes, &dmodes);
 
-	DkList<DispRes> modes;
+	Array<DispRes> modes;
 
 	char str[64];
 	int foundMode = -1;

@@ -8,7 +8,7 @@
 #ifndef ADJACENT_TRIANGLES_H
 #define ADJACENT_TRIANGLES_H
 
-#include "ds/DkList.h"
+#include "ds/Array.h"
 
 namespace AdjacentTriangles
 {
@@ -152,7 +152,7 @@ struct mtriangle_t
 	medge_t					edges[3];
 	mtriangle_t*			edge_connections[3];	// adjacent triangles
 
-	DkList<mtriangle_t*>	index_connections;
+	Array<mtriangle_t*>	index_connections;
 };
 
 //-------------------------------------------------------------------------
@@ -164,7 +164,7 @@ class CAdjacentTriangleGraph
 public:
 							CAdjacentTriangleGraph() {}
 
-							CAdjacentTriangleGraph( const DkList<int>& indices );
+							CAdjacentTriangleGraph( const Array<int>& indices );
 							CAdjacentTriangleGraph( const int* indices, int num_indices );
 
 							CAdjacentTriangleGraph(	const ubyte* input_verts,
@@ -191,10 +191,10 @@ public:
 
 	int						FindTriangle(int v1, int v2, int v3, bool ignore_order) const;
 
-	void					GenOptimizedTriangleList( DkList<int>& output );
-	void					GenOptimizedStrips( DkList<int>& output, bool usePrimRestart = false );
+	void					GenOptimizedTriangleList( Array<int>& output );
+	void					GenOptimizedStrips( Array<int>& output, bool usePrimRestart = false );
 
-	DkList<mtriangle_t>*	GetTriangles() {return &m_triangleList;}
+	Array<mtriangle_t>*	GetTriangles() {return &m_triangleList;}
 
 protected:
 
@@ -207,7 +207,7 @@ protected:
 																		int vert_stride, 
 																		int vert_ofs);
 
-	DkList<mtriangle_t>		m_triangleList;
+	Array<mtriangle_t>		m_triangleList;
 };
 
 }; // namespace AdjacentTriangles

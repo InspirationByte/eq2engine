@@ -34,7 +34,7 @@ class IVirtualStream;
 #include "core/platform/Platform.h"
 #include "core/ppmem.h"
 
-#include "ds/DkList.h"
+#include "ds/Array.h"
 #include "math/DkMath.h"
 
 //
@@ -242,11 +242,11 @@ struct kvkeybase_t
 	char					name[KV_MAX_NAME_LENGTH];
 	int						nameHash;
 
-	DkList<kvpairvalue_t*>	values;
+	Array<kvpairvalue_t*>	values;
 	EKVPairType				type;		// default type of values
 
 	// the nested keys
-	DkList<kvkeybase_t*>	keys;
+	Array<kvkeybase_t*>	keys;
 	bool					unicode;
 };
 

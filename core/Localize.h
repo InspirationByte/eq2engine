@@ -9,7 +9,7 @@
 #define CLOCALIZE
 
 #include "core/ILocalize.h"
-#include "ds/DkList.h"
+#include "ds/Array.h"
 #include "ds/eqstring.h"
 #include "ds/eqwstring.h"
 
@@ -61,7 +61,7 @@ public:
 private:
 	ILocToken*			_FindToken( const char* pszToken ) const;
 
-	DkList<CLocToken*>	m_tokens;
+	Array<CLocToken*>	m_tokens;
 	EqString			m_language;
 };
 

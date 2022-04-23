@@ -8,7 +8,7 @@
 #ifndef DEBUG_TEXT
 #define DEBUG_TEXT
 
-#include "ds/DkList.h"
+#include "ds/Array.h"
 #include "ds/eqstring.h"
 #include "utils/eqthread.h"
 #include "utils/eqtimer.h"
@@ -126,27 +126,27 @@ public:
 private:
 	void							CleanOverlays();
 
-	DkList<DebugTextNode_t>			m_TextArray;
-	DkList<DebugText3DNode_t>		m_Text3DArray;
+	Array<DebugTextNode_t>			m_TextArray;
+	Array<DebugText3DNode_t>		m_Text3DArray;
 
-	DkLinkedList<DebugFadingTextNode_t>	m_LeftTextFadeArray;
-	DkList<DebugFadingTextNode_t>	m_RightTextFadeArray;
+	List<DebugFadingTextNode_t>	m_LeftTextFadeArray;
+	Array<DebugFadingTextNode_t>	m_RightTextFadeArray;
 
-	DkList<DebugBoxNode_t>			m_BoxList;
-	//DkList<DebugOriBoxNode_t>		m_OrientedBoxList;
-	DkList<DebugSphereNode_t>		m_SphereList;
-	DkList<DebugLineNode_t>			m_LineList;
+	Array<DebugBoxNode_t>			m_BoxList;
+	//Array<DebugOriBoxNode_t>		m_OrientedBoxList;
+	Array<DebugSphereNode_t>		m_SphereList;
+	Array<DebugLineNode_t>			m_LineList;
 
-	DkList<DebugBoxNode_t>			m_FastBoxList;
-	//DkList<DebugOriBoxNode_t>		m_FastOrientedBoxList;
-	DkList<DebugSphereNode_t>		m_FastSphereList;
-	DkList<DebugLineNode_t>			m_FastLineList;
+	Array<DebugBoxNode_t>			m_FastBoxList;
+	//Array<DebugOriBoxNode_t>		m_FastOrientedBoxList;
+	Array<DebugSphereNode_t>		m_FastSphereList;
+	Array<DebugLineNode_t>			m_FastLineList;
 
-	DkList<debugGraphBucket_t*>		m_graphbuckets;
-	DkList<DebugPolyNode_t>			m_polygons;
+	Array<debugGraphBucket_t*>		m_graphbuckets;
+	Array<DebugPolyNode_t>			m_polygons;
 
-	DkList<DebugDrawFunc_t>			m_draw2DFuncs;
-	DkList<DebugDrawFunc_t>			m_draw3DFuncs;
+	Array<DebugDrawFunc_t>			m_draw2DFuncs;
+	Array<DebugDrawFunc_t>			m_draw3DFuncs;
 
 	CEqTimer						m_timer;
 

@@ -11,7 +11,7 @@
 namespace AdjacentTriangles
 {
 
-CAdjacentTriangleGraph::CAdjacentTriangleGraph(const DkList<int>& indices)
+CAdjacentTriangleGraph::CAdjacentTriangleGraph(const Array<int>& indices)
 {
 	Build(indices.ptr(), indices.numElem());
 }
@@ -68,7 +68,7 @@ struct itriangle
 	int idxs[3];
 };
 
-typedef DkList<itriangle> indxgroup_t;
+typedef Array<itriangle> indxgroup_t;
 
 // compares triangle indices
 bool triangle_compare(itriangle &tri1, itriangle &tri2)
@@ -79,7 +79,7 @@ bool triangle_compare(itriangle &tri1, itriangle &tri2)
 }
 
 // searches trinanle, returns index
-int find_triangle(DkList<itriangle> *tris, itriangle &tofind)
+int find_triangle(Array<itriangle> *tris, itriangle &tofind)
 {
 	for(int i = 0; i < tris->numElem(); i++)
 	{
@@ -120,10 +120,10 @@ void AddTriangleWithAllNeighbours_r(indxgroup_t *group, mtriangle_t* triangle)
 	}
 }
 
-void CAdjacentTriangleGraph::GenOptimizedTriangleList( DkList<int>& output )
+void CAdjacentTriangleGraph::GenOptimizedTriangleList( Array<int>& output )
 {
 	// sort triangles to new groups
-	DkList<indxgroup_t*> allgroups;
+	Array<indxgroup_t*> allgroups;
 
 	indxgroup_t *main_group = new indxgroup_t;
 	allgroups.append(main_group);
@@ -177,7 +177,7 @@ void CAdjacentTriangleGraph::GenOptimizedTriangleList( DkList<int>& output )
 	// done
 }
 
-void CAdjacentTriangleGraph::GenOptimizedStrips( DkList<int>& output, bool usePrimRestart )
+void CAdjacentTriangleGraph::GenOptimizedStrips( Array<int>& output, bool usePrimRestart )
 {
 	ASSERTMSG(false, "CAdjacentTriangleGraph::GenOptimizedStrips not implemented");
 }

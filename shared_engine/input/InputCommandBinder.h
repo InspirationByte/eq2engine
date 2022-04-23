@@ -12,7 +12,7 @@
 
 #include "core/ConCommand.h"
 
-#include "ds/DkList.h"
+#include "ds/Array.h"
 
 #include "input/in_keys_ident.h"
 #include "math/Vector.h"
@@ -118,9 +118,9 @@ public:
 	void					RegisterJoyAxisAction( const char* name, JOYAXISFUNC axisFunc );
 
 	// binding list
-	DkList<in_binding_t*>*	GetBindingList() {return &m_bindings;}
-	DkList<in_touchzone_t>*	GetTouchZoneList() {return &m_touchZones;}
-	DkList<axisAction_t>*	GetAxisActionList() {return &m_axisActs;}
+	Array<in_binding_t*>*	GetBindingList() {return &m_bindings;}
+	Array<in_touchzone_t>*	GetTouchZoneList() {return &m_touchZones;}
+	Array<axisAction_t>*	GetAxisActionList() {return &m_axisActs;}
 
 	// debug render
 	void					DebugDraw(const Vector2D& screenSize);
@@ -152,12 +152,12 @@ protected:
 
 	axisAction_t*			FindAxisAction(const char* name);
 
-	DkList<int>						m_currentButtons;	// current keyboard buttons
+	Array<int>						m_currentButtons;	// current keyboard buttons
 
-	DkList<in_binding_t*>			m_bindings;
+	Array<in_binding_t*>			m_bindings;
 
-	DkList<in_touchzone_t>			m_touchZones;
-	DkList<axisAction_t>			m_axisActs;
+	Array<in_touchzone_t>			m_touchZones;
+	Array<axisAction_t>			m_axisActs;
 
 	bool							m_init;
 };

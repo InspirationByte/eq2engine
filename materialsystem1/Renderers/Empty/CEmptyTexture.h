@@ -9,7 +9,7 @@
 #define CEMPTYTEXTURE_H
 
 #include "CTexture.h"
-#include "ds/DkList.h"
+#include "ds/Array.h"
 
 class CEmptyTexture : public CTexture
 {

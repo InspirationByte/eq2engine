@@ -8,7 +8,7 @@
 #ifndef NETPROPVAR_H
 #define NETPROPVAR_H
 
-#include "ds/DkList.h"
+#include "ds/Array.h"
 #include "utils/strtools.h"
 
 template <class TYPE, class CHANGER>
@@ -298,7 +298,7 @@ struct netvariablemap_t
 
 #define NETWORK_CHANGELIST(name) m_changeList_##name
 
-#define DECLARE_NETWORK_CHANGELIST(name)	DkList<uint>	NETWORK_CHANGELIST(name);
+#define DECLARE_NETWORK_CHANGELIST(name)	Array<uint>	NETWORK_CHANGELIST(name);
 
 //------------------------------------------------------------------------------------
 

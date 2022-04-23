@@ -259,8 +259,8 @@ protected:
 
 	void						EmptyFunctor() {}
 
-	DkList<mvUseTexture_t>		m_UsedTextures;
-	DkList<IShaderProgram**>	m_UsedPrograms;
+	Array<mvUseTexture_t>		m_UsedTextures;
+	Array<IShaderProgram**>	m_UsedPrograms;
 	SHADERPARAMFUNC				m_param_functors[SHADERPARAM_COUNT];
 
 	IMatVar*					m_pBaseTextureTransformVar;

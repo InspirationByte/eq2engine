@@ -88,7 +88,7 @@ struct BatchConfig_t
 	EqString compressionApplicationArguments;
 
 	UsageProperties_t defaultUsage{ "default" };
-	DkList<UsageProperties_t> usageList;
+	Array<UsageProperties_t> usageList;
 
 	kvkeybase_t crcSec;			// crc list loaded from disk
 	kvkeybase_t newCRCSec;		// crc list that will be saved
@@ -146,7 +146,7 @@ struct TexInfo_t
 	ETexConvStatus		status;
 };
 
-DkList<TexInfo_t*> g_textureList;
+Array<TexInfo_t*> g_textureList;
 
 //-----------------------------------------------------------------------
 

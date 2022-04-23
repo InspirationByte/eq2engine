@@ -335,7 +335,7 @@ public:
 	ID3D10RenderTargetView*		TexResource_CreateShaderRenderTargetView(ID3D10Resource *resource, DXGI_FORMAT format = DXGI_FORMAT_UNKNOWN, int firstSlice = -1, int sliceCount = -1);
 	ID3D10DepthStencilView*		TexResource_CreateShaderDepthStencilView(ID3D10Resource *resource, DXGI_FORMAT format = DXGI_FORMAT_UNKNOWN, int firstSlice = -1, int sliceCount = -1);
 
-	void						CreateTextureInternal(ITexture** pTex, const DkList<CImage*>& pImages, const SamplerStateParam_t& sSamplingParams,int nFlags = 0);
+	void						CreateTextureInternal(ITexture** pTex, const Array<CImage*>& pImages, const SamplerStateParam_t& sSamplingParams,int nFlags = 0);
 
 protected:
 

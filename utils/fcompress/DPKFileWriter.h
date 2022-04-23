@@ -15,7 +15,7 @@
 
 #include "core/platform/Platform.h"
 #include "core/dpk_defs.h"
-#include "ds/DkList.h"
+#include "ds/Array.h"
 #include "ds/eqstring.h"
 #include "utils/IceKey.h"
 
@@ -58,8 +58,8 @@ protected:
 
 	char					m_mountPath[DPK_STRING_SIZE];
 
-	DkList<dpkfilewinfo_t*>	m_files;
-	DkList<EqString>		m_ignoreCompressionExt;
+	Array<dpkfilewinfo_t*>	m_files;
+	Array<EqString>		m_ignoreCompressionExt;
 
 	int						m_compressionLevel;
 	int						m_encryption;

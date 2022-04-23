@@ -10,6 +10,7 @@
 #include "core/IEqCPUServices.h"
 #include "core/IEqParallelJobs.h"
 #include "core/IFileSystem.h"
+#include "core/platform/MessageBox.h"
 
 #include "utils/strtools.h"
 
@@ -65,7 +66,7 @@ DECLARE_CMD(sys_set_windowed, nullptr, 0)
 
 DECLARE_CMD(sys_vmode_list, nullptr, 0)
 {
-	DkList<VideoMode_t> vmodes;
+	Array<VideoMode_t> vmodes;
 	g_pHost->GetVideoModes(vmodes);
 
 	for(int i = 0; i < vmodes.numElem(); i++)
@@ -150,7 +151,7 @@ void CGameHost::SetWindowTitle(const char* windowTitle)
 void CGameHost::SetFullscreenMode()
 {
 	const char* str = sys_vmode.GetString();
-	DkList<EqString> args;
+	Array<EqString> args;
 	xstrsplit(str, "x", args);
 
 	int nAdjustedWide = atoi(args[0].GetData());
@@ -169,7 +170,7 @@ void CGameHost::SetFullscreenMode()
 void CGameHost::SetWindowedMode()
 {
 	const char* str = sys_vmode.GetString();
-	DkList<EqString> args;
+	Array<EqString> args;
 	xstrsplit(str, "x", args);
 
 	int nAdjustedPosX = SDL_WINDOWPOS_CENTERED;
@@ -196,7 +197,7 @@ void CGameHost::ApplyVideoMode()
 		SetWindowedMode();
 }
 
-void CGameHost::GetVideoModes(DkList<VideoMode_t>& displayModes)
+void CGameHost::GetVideoModes(Array<VideoMode_t>& displayModes)
 {
 	int display_count = SDL_GetNumVideoDisplays();
 

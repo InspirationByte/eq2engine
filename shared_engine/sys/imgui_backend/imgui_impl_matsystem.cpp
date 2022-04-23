@@ -1,5 +1,7 @@
 // dear imgui: Renderer Backend for Equilibrium Engine
 
+#include "core/platform/assert.h"
+
 #include "imgui.h"
 #include "imgui_impl_matsystem.h"
 
@@ -178,7 +180,7 @@ static bool ImGui_ImplMatSystem_CreateFontsTexture()
 	ubyte* pImage = image.Create(FORMAT_RGBA8, width, height, 1, 1);
 	memcpy(pImage, pixels, GetBytesPerPixel(FORMAT_RGBA8) * width * height);
 
-	DkList<CImage*> imgs;
+	Array<CImage*> imgs;
 	imgs.append(&image);
 	
 	SamplerStateParam_t params = g_pShaderAPI->MakeSamplerState(TEXFILTER_NEAREST, TEXADDRESS_CLAMP, TEXADDRESS_CLAMP, TEXADDRESS_CLAMP);

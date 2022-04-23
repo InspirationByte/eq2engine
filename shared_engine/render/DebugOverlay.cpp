@@ -390,7 +390,7 @@ void CDebugOverlay::Draw3DFunc( OnDebugDrawFn func, void* args )
 	m_draw3DFuncs.append(fn);
 }
 
-void DrawLineArray(DkList<DebugLineNode_t>& lines, float frametime)
+void DrawLineArray(Array<DebugLineNode_t>& lines, float frametime)
 {
 	if(!lines.numElem())
 		return;
@@ -429,7 +429,7 @@ void DrawLineArray(DkList<DebugLineNode_t>& lines, float frametime)
 	meshBuilder.End();
 }
 
-void DrawOrientedBoxArray(DkList<DebugOriBoxNode_t>& boxes, float frametime)
+void DrawOrientedBoxArray(Array<DebugOriBoxNode_t>& boxes, float frametime)
 {
 	if (!boxes.numElem())
 		return;
@@ -502,7 +502,7 @@ void DrawOrientedBoxArray(DkList<DebugOriBoxNode_t>& boxes, float frametime)
 	meshBuilder.End();
 }
 
-void DrawBoxArray(DkList<DebugBoxNode_t>& boxes, float frametime)
+void DrawBoxArray(Array<DebugBoxNode_t>& boxes, float frametime)
 {
 	if(!boxes.numElem())
 		return;
@@ -683,7 +683,7 @@ void DrawGraph(debugGraphBucket_t* graph, int position, IEqFont* pFont, float fr
 
 }
 
-void DrawPolygons(DkList<DebugPolyNode_t>& polygons, float frameTime)
+void DrawPolygons(Array<DebugPolyNode_t>& polygons, float frameTime)
 {
 	if(!polygons.numElem())
 		return;
@@ -908,7 +908,7 @@ void DrawSphereFilled(CMeshBuilder& meshBuilder, DebugSphereNode_t& sphere, int 
 	}
 }
 
-void DrawSphereArray(DkList<DebugSphereNode_t>& spheres, float frameTime)
+void DrawSphereArray(Array<DebugSphereNode_t>& spheres, float frameTime)
 {
 	if(!spheres.numElem())
 		return;

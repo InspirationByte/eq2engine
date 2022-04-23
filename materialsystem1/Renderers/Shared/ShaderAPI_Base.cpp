@@ -312,13 +312,13 @@ ITexture* ShaderAPI_Base::GetErrorTexture()
 	return m_pErrorTexture;
 }
 
-void ShaderAPI_Base::GetConsoleTextureList(const ConCommandBase* base, DkList<EqString>& list, const char* query)
+void ShaderAPI_Base::GetConsoleTextureList(const ConCommandBase* base, Array<EqString>& list, const char* query)
 {
 	ShaderAPI_Base* baseApi = ((ShaderAPI_Base*)g_pShaderAPI);
 
 	CScopedMutex m(baseApi->m_Mutex);
 
-	DkList<ITexture*>& texList = ((ShaderAPI_Base*)g_pShaderAPI)->m_TextureList;
+	Array<ITexture*>& texList = ((ShaderAPI_Base*)g_pShaderAPI)->m_TextureList;
 
 	const int LIST_LIMIT = 50;
 
@@ -454,7 +454,7 @@ DepthStencilStateParams_t ShaderAPI_Base::MakeDepthState(bool bDoDepthTest, bool
 // Textures
 //-------------------------------------------------------------
 
-void ShaderAPI_Base::GetImagesForTextureName(DkList<EqString>& textureNames, const char* pszFileName, int nFlags)
+void ShaderAPI_Base::GetImagesForTextureName(Array<EqString>& textureNames, const char* pszFileName, int nFlags)
 {
 	EqString texturePath;
 
@@ -502,7 +502,7 @@ void ShaderAPI_Base::GetImagesForTextureName(DkList<EqString>& textureNames, con
 		char* animScriptBuffer = g_fileSystem->GetFileBuffer(textureAnimPathExt.GetData());
 		if (animScriptBuffer)
 		{
-			DkList<EqString> frameFilenames;
+			Array<EqString> frameFilenames;
 			xstrsplit(animScriptBuffer, "\n", frameFilenames);
 			for (int i = 0; i < frameFilenames.numElem(); i++)
 			{
@@ -550,10 +550,10 @@ ITexture* ShaderAPI_Base::LoadTexture( const char* pszFileName,
 		return pFoundTexture;
 	}
 
-	DkList<EqString> textureNames;
+	Array<EqString> textureNames;
 	GetImagesForTextureName(textureNames, pszFileName, nFlags);
 
-	DkList<CImage*> pImages;
+	Array<CImage*> pImages;
 
 	// load frames
 	for (int i = 0; i < textureNames.numElem(); i++)
@@ -603,7 +603,7 @@ ITexture* ShaderAPI_Base::LoadTexture( const char* pszFileName,
 	return pFoundTexture;
 }
 
-ITexture* ShaderAPI_Base::CreateTexture(const DkList<CImage*>& pImages, const SamplerStateParam_t& sampler, int nFlags)
+ITexture* ShaderAPI_Base::CreateTexture(const Array<CImage*>& pImages, const SamplerStateParam_t& sampler, int nFlags)
 {
 	if(!pImages.numElem())
 		return NULL;
@@ -660,7 +660,7 @@ ITexture* ShaderAPI_Base::CreateProceduralTexture(const char* pszName,
 		return NULL;	// don't generate error
 	}
 
-	DkList<CImage*> imgs;
+	Array<CImage*> imgs;
 	imgs.append(&genTex);
 
 	SamplerStateParam_t sampler = g_pShaderAPI->MakeSamplerState(texFilter,textureAddress,textureAddress,textureAddress);
@@ -669,10 +669,10 @@ ITexture* ShaderAPI_Base::CreateProceduralTexture(const char* pszName,
 
 bool ShaderAPI_Base::RestoreTextureInternal(ITexture* pTexture)
 {
-	DkList<EqString> textureNames;
+	Array<EqString> textureNames;
 	GetImagesForTextureName(textureNames, pTexture->GetName(), pTexture->GetFlags());
 
-	DkList<CImage*> pImages;
+	Array<CImage*> pImages;
 
 	// load frames
 	for (int i = 0; i < textureNames.numElem(); i++)
@@ -768,7 +768,7 @@ ITexture* ShaderAPI_Base::GenerateErrorTexture(int nFlags/* = 0*/)
 
 	image.CreateMipMaps();
 
-	DkList<CImage*> images;
+	Array<CImage*> images;
 	images.append(&image);
 
 	ITexture* pOutTexture = CreateTexture(images, texSamplerParams, nFlags);

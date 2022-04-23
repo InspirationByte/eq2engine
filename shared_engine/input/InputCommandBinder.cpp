@@ -506,8 +506,8 @@ void CInputCommandBinder::OnKeyEvent(int keyIdent, bool bPressed)
 	else
 		m_currentButtons.fastRemove(keyIdent);
 
-	DkList<in_binding_t*> complexExecuteList;
-	DkList<in_binding_t*> executeList;
+	Array<in_binding_t*> complexExecuteList;
+	Array<in_binding_t*> executeList;
 
 	for(int i = 0; i < m_bindings.numElem();i++)
 	{
@@ -680,7 +680,7 @@ void CInputCommandBinder::ExecuteTouchZone( in_touchzone_t* zone, bool bState )
 template <typename T>
 void CInputCommandBinder::ExecuteBoundCommands(T* zone, bool bState)
 {
-	DkList<EqString> args;
+	Array<EqString> args;
 
 	xstrsplit( zone->argumentString.GetData(), " ", args);
 
@@ -698,7 +698,7 @@ void CInputCommandBinder::ExecuteBoundCommands(T* zone, bool bState)
 
 #ifndef DLL_EXPORT
 
-void con_key_list(const ConCommandBase* base, DkList<EqString>& list, const char* query)
+void con_key_list(const ConCommandBase* base, Array<EqString>& list, const char* query)
 {
 	const int LIST_LIMIT = 50;
 
@@ -723,11 +723,11 @@ void con_key_list(const ConCommandBase* base, DkList<EqString>& list, const char
 	}while(names++);
 }
 
-void binding_key_list(const ConCommandBase* base, DkList<EqString>& list, const char* query)
+void binding_key_list(const ConCommandBase* base, Array<EqString>& list, const char* query)
 {
 	const int LIST_LIMIT = 50;
 
-	DkList<in_binding_t*> *bindingList = g_inputCommandBinder->GetBindingList();
+	Array<in_binding_t*> *bindingList = g_inputCommandBinder->GetBindingList();
 
 	for (int i = 0; i < bindingList->numElem(); i++)
 	{
@@ -764,7 +764,7 @@ DECLARE_CMD_VARIANTS(bind,"Binds action to key", con_key_list, 0)
 DECLARE_CMD(list_binding,"Shows bound keys",0)
 {
 	MsgInfo("---- List of bound keys to commands ----\n");
-	DkList<in_binding_t*> *bindingList = g_inputCommandBinder->GetBindingList();
+	Array<in_binding_t*> *bindingList = g_inputCommandBinder->GetBindingList();
 
 	for(int i = 0; i < bindingList->numElem();i++)
 	{
@@ -782,7 +782,7 @@ DECLARE_CMD(list_binding,"Shows bound keys",0)
 DECLARE_CMD(list_touchzones,"Shows bound keys",0)
 {
 	MsgInfo("---- List of bound touchzones to commands ----\n");
-	DkList<in_touchzone_t> *touchList = g_inputCommandBinder->GetTouchZoneList();
+	Array<in_touchzone_t> *touchList = g_inputCommandBinder->GetTouchZoneList();
 
 	for(int i = 0; i < touchList->numElem();i++)
 	{
@@ -797,7 +797,7 @@ DECLARE_CMD(list_touchzones,"Shows bound keys",0)
 DECLARE_CMD(list_axisActions,"Shows axis list can be bound",0)
 {
 	MsgInfo("---- List of axese ----\n");
-	DkList<axisAction_t>* axisActs = g_inputCommandBinder->GetAxisActionList();
+	Array<axisAction_t>* axisActs = g_inputCommandBinder->GetAxisActionList();
 
 	for(int i = 0; i < axisActs->numElem();i++)
 	{

@@ -8,7 +8,7 @@
 #ifndef MESH_H
 #define MESH_H
 
-#include "ds/DkList.h"
+#include "ds/Array.h"
 #include "ds/IVirtualStream.h"
 
 // generic indexed mesh. File-friendly
@@ -130,9 +130,9 @@ public:
 		stream->Read(m_indices.ptr(), hdr.numIndices, sizeof(INDEX_TYPE));
 	}
 
-	DkList<Batch>			m_batches;
-	DkList<VERTEX_TYPE>		m_vertices;
-	DkList<INDEX_TYPE>		m_indices;
+	Array<Batch>			m_batches;
+	Array<VERTEX_TYPE>		m_vertices;
+	Array<INDEX_TYPE>		m_indices;
 };
 
 #endif // MESH_H

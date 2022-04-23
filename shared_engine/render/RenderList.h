@@ -9,7 +9,7 @@
 #define RENDERLIST_H
 
 #include "BaseRenderableObject.h"
-#include "ds/DkList.h"
+#include "ds/Array.h"
 
 //----------------------------------------------------
 // Base render list interface.
@@ -37,7 +37,7 @@ protected:
 
 	static int DistanceCompare(CBaseRenderableObject* const& a, CBaseRenderableObject* const& b);
 
-	DkList<CBaseRenderableObject*>		m_ObjectList;
+	Array<CBaseRenderableObject*>		m_ObjectList;
 };
 
 

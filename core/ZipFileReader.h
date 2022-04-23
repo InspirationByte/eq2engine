@@ -9,7 +9,7 @@
 #define ZIPFILEREADER_H
 
 #include "BasePackageFileReader.h"
-#include "ds/DkList.h"
+#include "ds/Array.h"
 
 #include "minizip/unzip.h"
 
@@ -85,8 +85,8 @@ protected:
 		unz_file_pos pos;
 	};
 
-	DkList<CZipFileStream*>	m_openFiles;
-	DkList<zfileinfo_t>		m_files;
+	Array<CZipFileStream*>	m_openFiles;
+	Array<zfileinfo_t>		m_files;
 };
 
 #endif // ZIPFILEREADER_H

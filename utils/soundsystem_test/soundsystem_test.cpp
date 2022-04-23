@@ -10,6 +10,7 @@
 #include "core/ILocalize.h"
 #include "core/IConsoleCommands.h"
 #include "core/IEqParallelJobs.h"
+#include "core/platform/MessageBox.h"
 
 #include "utils/eqtimer.h"
 
@@ -178,7 +179,7 @@ BEGIN_EVENT_TABLE(CMainWindow, wxFrame)
 	*/
 END_EVENT_TABLE()
 
-DkList<shaderfactory_t> pShaderRegistrators;
+Array<shaderfactory_t> pShaderRegistrators;
 
 void InitMatSystem(EQWNDHANDLE window)
 {

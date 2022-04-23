@@ -8,6 +8,7 @@
 #include "core/DebugInterface.h"
 #include "core/ConVar.h"
 #include "core/IFileSystem.h"
+#include "core/platform/MessageBox.h"
 
 #include "utils/KeyValues.h"
 
@@ -912,7 +913,7 @@ btRigidBody* DkPhysics::LocalCreateRigidBody(float mass, const Vector3D &mass_ce
 	return body;
 }
 
-btCollisionShape* InternalGenerateMesh(physmodelcreateinfo_t *info, DkList <btTriangleIndexVertexArray*> *triangleMeshes)
+btCollisionShape* InternalGenerateMesh(physmodelcreateinfo_t *info, Array <btTriangleIndexVertexArray*> *triangleMeshes)
 {
 	if(!info->genConvex)
 	{
@@ -1119,7 +1120,7 @@ IPhysicsObject* DkPhysics::CreateStaticObject(physmodelcreateinfo_t *info, int n
 
 	btCollisionShape* shape = NULL;
 
-	DkList<btTriangleIndexVertexArray*> triangle_mesges;
+	Array<btTriangleIndexVertexArray*> triangle_mesges;
 
 	shape = InternalGenerateMesh(info, &m_triangleMeshes);
 

@@ -170,7 +170,7 @@ static LONG WINAPI _exceptionCB(EXCEPTION_POINTERS *ExceptionInfo)
 
 	CrashMsg(fmtStr.ToCString());
 
-	const DkList<CoreExceptionCallback>& handlerCallbacks = ((CDkCore*)GetCore())->GetExceptionHandlers();
+	const Array<CoreExceptionCallback>& handlerCallbacks = ((CDkCore*)GetCore())->GetExceptionHandlers();
 	for (int i = 0; i < handlerCallbacks.numElem(); i++)
 	{
 		handlerCallbacks[i]();

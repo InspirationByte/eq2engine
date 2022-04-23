@@ -185,7 +185,7 @@ private:
 
 	btRigidBody*			m_pPhyObjectPointer;
 
-	DkList<IPhysicsObject*>	m_IgnoreCollisionList;
+	Array<IPhysicsObject*>	m_IgnoreCollisionList;
 
 	phySurfaceMaterial_t*	m_pPhysMaterial;
 

@@ -9,7 +9,7 @@
 #define D3D10TEXTURE_H
 
 #include "../Shared/CTexture.h"
-#include "ds/DkList.h"
+#include "ds/Array.h"
 
 #include <d3d10.h>
 #include <d3dx10.h>
@@ -36,11 +36,11 @@ public:
 
 // protected:
 
-	DkList<ID3D10ShaderResourceView*>	srv;
-	DkList<ID3D10RenderTargetView*>		rtv;
-	DkList<ID3D10DepthStencilView*>		dsv;
+	Array<ID3D10ShaderResourceView*>	srv;
+	Array<ID3D10RenderTargetView*>		rtv;
+	Array<ID3D10DepthStencilView*>		dsv;
 
-	DkList<ID3D10Resource*>				textures;
+	Array<ID3D10Resource*>				textures;
 
 	IRenderState*						m_pD3D10SamplerState;
 

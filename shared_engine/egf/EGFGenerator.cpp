@@ -257,8 +257,8 @@ void CEGFGenerator::FreeModel( egfcaModel_t& mod )
 //************************************
 dsmmodel_t* CEGFGenerator::ParseAndLoadModels(kvkeybase_t* pKeyBase)
 {
-	DkList<EqString> modelfilenames;
-	DkList<EqString> shapeByModels;
+	Array<EqString> modelfilenames;
+	Array<EqString> shapeByModels;
 
 	if(pKeyBase->values.numElem() > 1)
 	{
@@ -289,7 +289,7 @@ dsmmodel_t* CEGFGenerator::ParseAndLoadModels(kvkeybase_t* pKeyBase)
 	}
 
 	// load the models
-	DkList<egfcaModel_t> models;
+	Array<egfcaModel_t> models;
 
 	for(int i = 0; i < modelfilenames.numElem(); i++)
 	{
@@ -628,7 +628,7 @@ bool CEGFGenerator::LoadMaterialGroups(kvkeybase_t* pSection)
 //************************************
 // Checks bone for availablity in list
 //************************************
-bool BoneListCheckForBone(char* pszName, DkList<dsmskelbone_t*> &pBones)
+bool BoneListCheckForBone(char* pszName, Array<dsmskelbone_t*> &pBones)
 {
 	for(int i = 0; i < pBones.numElem(); i++)
 	{
@@ -642,7 +642,7 @@ bool BoneListCheckForBone(char* pszName, DkList<dsmskelbone_t*> &pBones)
 //************************************
 // returns bone index for availablity in list
 //************************************
-int BoneListGetBoneIndex(char* pszName, DkList<dsmskelbone_t*> &pBones)
+int BoneListGetBoneIndex(char* pszName, Array<dsmskelbone_t*> &pBones)
 {
 	for(int i = 0; i < pBones.numElem(); i++)
 	{
@@ -657,7 +657,7 @@ int BoneListGetBoneIndex(char* pszName, DkList<dsmskelbone_t*> &pBones)
 //************************************
 // Remaps vertex bone indices new_bones
 //************************************
-void BoneRemapDSMGroup(dsmgroup_t* pGroup, DkList<dsmskelbone_t*> &old_bones, DkList<dsmskelbone_t*> &new_bones)
+void BoneRemapDSMGroup(dsmgroup_t* pGroup, Array<dsmskelbone_t*> &old_bones, Array<dsmskelbone_t*> &new_bones)
 {
 	for(int i = 0; i < pGroup->verts.numElem(); i++)
 	{
@@ -677,7 +677,7 @@ void BoneRemapDSMGroup(dsmgroup_t* pGroup, DkList<dsmskelbone_t*> &old_bones, Dk
 //************************************
 // Remaps vertex bone indices and merges skeleton
 //************************************
-void BoneMergeRemapDSM(dsmmodel_t* pDSM, DkList<dsmskelbone_t*> &new_bones)
+void BoneMergeRemapDSM(dsmmodel_t* pDSM, Array<dsmskelbone_t*> &new_bones)
 {
 	// remap groups
 	for(int i = 0; i < pDSM->groups.numElem(); i++)
@@ -711,7 +711,7 @@ void CEGFGenerator::MergeBones()
 	MsgWarning("\nMerging bones\n");
 
 	// first, load all bones into the single list, as unique
-	DkList<dsmskelbone_t*> allBones;
+	Array<dsmskelbone_t*> allBones;
 
 	for(int i = 0; i < m_modelrefs.numElem(); i++)
 	{

@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright � Inspiration Byte
-// 2009-2015
+// Copyright (C) Inspiration Byte
+// 2009-2022
 //////////////////////////////////////////////////////////////////////////////////
 // Description: Provides all shared definitions of engine
 //////////////////////////////////////////////////////////////////////////////////
@@ -109,24 +109,6 @@
 #endif
 
 #endif // PLAT_WIN
-
-//------------------------------------------------------------------------------------------------
-
-#ifdef PLAT_WIN
-// Alloca defined for this platform
-#define  stackalloc( _size ) _alloca( _size )
-#define  stackfree( _p )   0
-
-#if _MSC_VER < 1900
-#define vsnprintf _vsnprintf
-#define snprintf _snprintf
-#endif // vsnprintf
-
-#elif PLAT_POSIX
-// Alloca defined for this platform
-#define  stackalloc( _size ) alloca( _size )
-#define  stackfree( _p )   0
-#endif
 
 //------------------------------------------------------------------------------------------------
 

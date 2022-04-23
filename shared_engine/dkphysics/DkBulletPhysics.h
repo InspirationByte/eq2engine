@@ -92,7 +92,7 @@ public:
 	phySurfaceMaterial_t*						FindMaterial(const char* pszName);
 
 	// returns pointer to material list
-	DkList<phySurfaceMaterial_t*>*				GetMaterialList() {return &m_physicsMaterialDesc;}
+	Array<phySurfaceMaterial_t*>*				GetMaterialList() {return &m_physicsMaterialDesc;}
 
 	// Update funciton
 	void										Simulate(float dt, int substeps = 0);
@@ -155,13 +155,13 @@ private:
 
 	btSoftBodyRigidBodyCollisionConfiguration*	m_collisionConfiguration;
 
-	DkList <IPhysicsObject*>					m_pPhysicsObjectList;
-	DkList <IPhysicsJoint*>						m_pJointList;
-	DkList <IPhysicsRope*>						m_pRopeList;
+	Array <IPhysicsObject*>					m_pPhysicsObjectList;
+	Array <IPhysicsJoint*>						m_pJointList;
+	Array <IPhysicsRope*>						m_pRopeList;
 
-	DkList <btCollisionShape*>					m_collisionShapes;
-	DkList <phySurfaceMaterial_t*>				m_physicsMaterialDesc;
-	DkList <btTriangleIndexVertexArray*>		m_triangleMeshes;
+	Array <btCollisionShape*>					m_collisionShapes;
+	Array <phySurfaceMaterial_t*>				m_physicsMaterialDesc;
+	Array <btTriangleIndexVertexArray*>		m_triangleMeshes;
 
 	int											m_nSceneSize;
 

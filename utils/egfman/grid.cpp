@@ -9,7 +9,7 @@
 
 #include "grid.h"
 
-#include "ds/DkList.h"
+#include "ds/Array.h"
 
 #include "materialsystem1/IMaterialSystem.h"
 #include "materialsystem1/MeshBuilder.h"
@@ -18,7 +18,7 @@
 #include "math/coord.h"
 
 
-inline void ListLine(const Vector3D &from, const Vector3D &to, DkList<Vertex3D_t> &verts)
+inline void ListLine(const Vector3D &from, const Vector3D &to, Array<Vertex3D_t> &verts)
 {
 	verts.append(Vertex3D_t(from, vec2_zero));
 	verts.append(Vertex3D_t(to, vec2_zero));
@@ -26,7 +26,7 @@ inline void ListLine(const Vector3D &from, const Vector3D &to, DkList<Vertex3D_t
 
 void DrawWorldCenter()
 {
-	DkList<Vertex3D_t> grid_vertices;
+	Array<Vertex3D_t> grid_vertices;
 
 	ListLine(Vector3D(-MAX_COORD_UNITS,0,0),Vector3D(MAX_COORD_UNITS,0,0), grid_vertices);
 	ListLine(Vector3D(0,-MAX_COORD_UNITS,0),Vector3D(0,MAX_COORD_UNITS,0), grid_vertices);

@@ -10,7 +10,7 @@
 
 #include <stdio.h>
 #include "core/ICommandLine.h"
-#include "ds/DkList.h"
+#include "ds/Array.h"
 #include "ds/eqstring.h"
 
 class CCommandLine : public ICommandLine
@@ -39,7 +39,7 @@ protected:
 	void				AddArgument(const char* pFirst, const char* pLast);
 
 
-	DkList<EqString>	m_args;
+	Array<EqString>		m_args;
 };
 
 #endif

@@ -10,6 +10,7 @@
 #include "FileSystem.h"
 
 #include "core/DebugInterface.h"
+#include "core/platform/stackalloc.h"
 
 #include <malloc.h>
 #include <zlib.h>

@@ -11,7 +11,7 @@
 #include "equi_defs.h"
 
 #include "math/Rectangle.h"
-#include "ds/DkList.h"
+#include "ds/Array.h"
 #include "ds/eqstring.h"
 
 class IEqFont;
@@ -31,7 +31,7 @@ struct ctrlFactory_t
 	EQUICONTROLFACTORYFN factory;
 };
 
-typedef bool (*EQUICOMMANDPROCESSOR)(DkList<EqString>& args);
+typedef bool (*EQUICOMMANDPROCESSOR)(Array<EqString>& args);
 
 struct commandProcFn_t
 {
@@ -93,14 +93,14 @@ private:
 
 	IVector2D				m_mousePos;
 
-	DkList<equi::Panel*>	m_panels;
+	Array<equi::Panel*>	m_panels;
 
 	IRectangle				m_viewFrameRect;
 	IMaterial*				m_material;
 
 	IEqFont*				m_defaultFont;
 
-	DkList<ctrlFactory_t>	m_controlFactory;
+	Array<ctrlFactory_t>	m_controlFactory;
 };
 
 extern CUIManager* Manager;

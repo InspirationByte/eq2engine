@@ -16,8 +16,8 @@ TODO:
 
 #include "math/Rectangle.h"
 
-#include "ds/DkList.h"
-#include "ds/DkLinkedList.h"
+#include "ds/Array.h"
+#include "ds/List.h"
 
 #include "utils/KeyValues.h"
 #include "utils/strtools.h"
@@ -249,7 +249,7 @@ void CFont::BuildCharVertexBuffer(CMeshBuilder& builder, const CHAR_T* str, cons
 	bool hasNewLine = true;
 	int lineNumber = 0;
 
-	DkLinkedList<eqFontStyleParam_t> states;
+	List<eqFontStyleParam_t> states;
 	states.addLast( params );	// push this param
 
 	int charMode = CHARMODE_NORMAL;

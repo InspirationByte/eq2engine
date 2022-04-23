@@ -89,7 +89,7 @@ bool CompareVertex(const studiovertexdesc_t &v0, const studiovertexdesc_t &v1)
 }
 
 // finds vertex index
-int FindVertexInList(const DkList<studiovertexdesc_t>& verts, const studiovertexdesc_t &vertex)
+int FindVertexInList(const Array<studiovertexdesc_t>& verts, const studiovertexdesc_t &vertex)
 {
 	for( int i = 0; i < verts.numElem(); i++ )
 	{
@@ -123,7 +123,7 @@ bool CompareVertexNoPosition(const studiovertexdesc_t &v0, const studiovertexdes
 }
 
 // finds vertex index
-int FindVertexInListNoPosition(const DkList<studiovertexdesc_t>& verts, const studiovertexdesc_t &vertex)
+int FindVertexInListNoPosition(const Array<studiovertexdesc_t>& verts, const studiovertexdesc_t &vertex)
 {
 	for( int i = 0; i < verts.numElem(); i++ )
 	{
@@ -220,10 +220,10 @@ void CEGFGenerator::WriteGroup(CMemoryStream* stream, dsmgroup_t* srcGroup, esms
 	dstGroup->numIndices = 0;
 	dstGroup->numVertices = srcGroup->verts.numElem();
 
-	DkList<studiovertexdesc_t>	gVertexList;
-	DkList<studiovertexdesc_t>	gVertexList2;
+	Array<studiovertexdesc_t>	gVertexList;
+	Array<studiovertexdesc_t>	gVertexList2;
 
-	DkList<int32>				gIndexList;
+	Array<int32>				gIndexList;
 
 	gVertexList.resize(gVertexList.numElem() + dstGroup->numVertices);
 	gIndexList.resize(gVertexList.numElem() + dstGroup->numVertices);
@@ -257,7 +257,7 @@ void CEGFGenerator::WriteGroup(CMemoryStream* stream, dsmgroup_t* srcGroup, esms
 		gIndexList.append(nIndex);
 	}
 
-	DkList<studiovertexdesc_t>& usedVertList = gVertexList;
+	Array<studiovertexdesc_t>& usedVertList = gVertexList;
 
 	if( modShapeKey )
 		usedVertList = gVertexList2;
@@ -311,7 +311,7 @@ void CEGFGenerator::WriteGroup(CMemoryStream* stream, dsmgroup_t* srcGroup, esms
 #ifdef USE_ACTC
 	{
 		// optimize model using ACTC
-		DkList<int32>	gOptIndexList;
+		Array<int32>	gOptIndexList;
 
 		ACTCData* tc;
 

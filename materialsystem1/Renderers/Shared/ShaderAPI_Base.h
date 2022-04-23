@@ -12,7 +12,7 @@
 #define SHADERAPI_BASE_H
 
 #include "renderers/IShaderAPI.h"
-#include "ds/DkList.h"
+#include "ds/Array.h"
 #include "utils/eqthread.h"
 
 using namespace Threading;
@@ -39,7 +39,7 @@ public:
 	// default error texture pointer
 	ITexture*							GetErrorTexture();
 
-	static void							GetConsoleTextureList(const ConCommandBase* base, DkList<EqString>&, const char* query);
+	static void							GetConsoleTextureList(const ConCommandBase* base, Array<EqString>&, const char* query);
 
 //-------------------------------------------------------------
 // Apply/Reset functions
@@ -88,7 +88,7 @@ public:
 	ITexture*							LoadTexture(const char* pszFileName, ER_TextureFilterMode textureFilterType, ER_TextureAddressMode textureAddress = TEXADDRESS_WRAP, int nFlags = 0);
 
 	// creates texture from image array, used in LoadTexture, common use only
-	ITexture*							CreateTexture(const DkList<CImage*>& pImages, const SamplerStateParam_t& sampler, int nFlags = 0);
+	ITexture*							CreateTexture(const Array<CImage*>& pImages, const SamplerStateParam_t& sampler, int nFlags = 0);
 
 	// creates procedural (lockable) texture
 	ITexture*							CreateProceduralTexture(const char* pszName,
@@ -189,11 +189,11 @@ public:
 
 protected:
 
-	void								GetImagesForTextureName(DkList<EqString>& textureNames, const char* pszFileName, int nFlags);
+	void								GetImagesForTextureName(Array<EqString>& textureNames, const char* pszFileName, int nFlags);
 	
 	bool								RestoreTextureInternal(ITexture* pTexture);
 
-	virtual void						CreateTextureInternal(ITexture** pTex, const DkList<CImage*>& pImages, const SamplerStateParam_t& sSamplingParams,int nFlags = 0) = 0;
+	virtual void						CreateTextureInternal(ITexture** pTex, const Array<CImage*>& pImages, const SamplerStateParam_t& sSamplingParams,int nFlags = 0) = 0;
 
 //-------------------------------------------------------------
 // Useful data
@@ -203,34 +203,34 @@ protected:
 	ShaderAPICaps_t						m_caps;
 
 	// Shader list
-	DkList<IShaderProgram*>				m_ShaderList;
+	Array<IShaderProgram*>				m_ShaderList;
 
 	// List of dynamically added sampler states
-	DkList<IRenderState*>				m_SamplerStates;
+	Array<IRenderState*>				m_SamplerStates;
 
 	// List of dynamically added blending states
-	DkList<IRenderState*>				m_BlendStates;
+	Array<IRenderState*>				m_BlendStates;
 
 	// List of dynamically added depth states
-	DkList<IRenderState*>				m_DepthStates;
+	Array<IRenderState*>				m_DepthStates;
 
 	// List of dynamically added rasterizer states
-	DkList<IRenderState*>				m_RasterizerStates;
+	Array<IRenderState*>				m_RasterizerStates;
 
 	// Loaded textures list
-	DkList<ITexture*>					m_TextureList;
+	Array<ITexture*>					m_TextureList;
 
 	// occlusion queries
-	DkList<IOcclusionQuery*>			m_OcclusionQueryList;
+	Array<IOcclusionQuery*>			m_OcclusionQueryList;
 
 	// Aviable vertex formats
-	DkList<IVertexFormat*>				m_VFList;
+	Array<IVertexFormat*>				m_VFList;
 
 	// Aviable vertex buffers
-	DkList<IVertexBuffer*>				m_VBList;
+	Array<IVertexBuffer*>				m_VBList;
 
 	// Aviable index buffers
-	DkList<IIndexBuffer*>				m_IBList;
+	Array<IIndexBuffer*>				m_IBList;
 
 	// Current shader
 	IShaderProgram*						m_pCurrentShader;

@@ -27,7 +27,7 @@ struct cbone_t
 {
 	SharedModel::dsmskelbone_t*	referencebone;
 
-	DkList<cbone_t*>			childs;
+	Array<cbone_t*>			childs;
 	cbone_t*					parent;
 };
 
@@ -45,7 +45,7 @@ struct ikchain_t
 {
 	char name[44];
 
-	DkList<ciklink_t> link_list;
+	Array<ciklink_t> link_list;
 };
 
 struct clodmodel_t
@@ -84,7 +84,7 @@ struct egfcaMaterialDesc_t
 
 struct egfcaMaterialGroup_t
 {
-	DkList<egfcaMaterialDesc_t> materials;
+	Array<egfcaMaterialDesc_t> materials;
 };
 
 class CMemoryStream;
@@ -161,20 +161,20 @@ protected:
 	void					WriteBones(CMemoryStream* stream);
 
 	// data
-	DkList<egfcaModel_t>			m_modelrefs;	// all loaded model references
+	Array<egfcaModel_t>			m_modelrefs;	// all loaded model references
 
-	DkList<clodmodel_t>				m_modellodrefs;	// all LOD reference models including main LOD
-	DkList<studiolodparams_t>		m_lodparams;	// lod parameters
-	DkList<motionpackagedesc_t>		m_motionpacks;	// motion packages
-	DkList<materialpathdesc_t>		m_matpathes;	// material paths
-	DkList<ikchain_t>				m_ikchains;		// ik chain list
-	DkList<cbone_t>					m_bones;		// bone list
-	DkList<studioattachment_t>		m_attachments;	// attachment list
-	DkList<studiobodygroup_t>		m_bodygroups;	// body group list
+	Array<clodmodel_t>				m_modellodrefs;	// all LOD reference models including main LOD
+	Array<studiolodparams_t>		m_lodparams;	// lod parameters
+	Array<motionpackagedesc_t>		m_motionpacks;	// motion packages
+	Array<materialpathdesc_t>		m_matpathes;	// material paths
+	Array<ikchain_t>				m_ikchains;		// ik chain list
+	Array<cbone_t>					m_bones;		// bone list
+	Array<studioattachment_t>		m_attachments;	// attachment list
+	Array<studiobodygroup_t>		m_bodygroups;	// body group list
 
-	DkList<egfcaMaterialDesc_t>		m_materials;	// materials that referenced by models
-	DkList<egfcaMaterialDesc_t*>	m_usedMaterials;// materials that used by models referenced by body groups
-	DkList<egfcaMaterialGroup_t*>	m_matGroups;	// material groups
+	Array<egfcaMaterialDesc_t>		m_materials;	// materials that referenced by models
+	Array<egfcaMaterialDesc_t*>	m_usedMaterials;// materials that used by models referenced by body groups
+	Array<egfcaMaterialGroup_t*>	m_matGroups;	// material groups
 
 	Vector3D						m_modelScale;
 	Vector3D						m_modelOffset;

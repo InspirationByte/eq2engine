@@ -13,7 +13,7 @@
 
 // Platform definitions
 #include "core/dktypes.h"
-#include "ds/DkList.h"
+#include "ds/Array.h"
 #include <stdint.h>
 
 // Various declarations
@@ -215,7 +215,7 @@ public:
 	virtual void				FreeTexture(ITexture* pTexture) = 0;
 
 	// creates texture from image array, used in LoadTexture, common use only
-	virtual	ITexture*			CreateTexture(const DkList<CImage*>& pImages, const SamplerStateParam_t& sampler, int nFlags = 0) = 0;
+	virtual	ITexture*			CreateTexture(const Array<CImage*>& pImages, const SamplerStateParam_t& sampler, int nFlags = 0) = 0;
 
 
 	// BEGIN CUT HERE

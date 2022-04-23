@@ -109,7 +109,7 @@ bool CEqAudioSystemAL::InitContext()
 	Msg(" \n--------- EqAudioSystem InitContext --------- \n");
 
 	// Init openAL
-	DkList<char*> tempListChars;
+	Array<char*> tempListChars;
 
 	// check devices list
 	char* devices = (char*)alcGetString(nullptr, ALC_DEVICE_SPECIFIER);

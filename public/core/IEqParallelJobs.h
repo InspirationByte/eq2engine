@@ -2,7 +2,7 @@
 #define IEQPARALLELJOBS_H
 
 #include "utils/eqthread.h"
-#include "ds/DkList.h"
+#include "ds/Array.h"
 #include "ds/function.h"
 #include "core/InterfaceManager.h"
 

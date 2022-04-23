@@ -302,7 +302,7 @@ public:
 	// RAW Constant (Used for structure types, etc.)
 	int							SetShaderConstantRaw(const char *pszName, const void *data, int nSize, int nConstId);
 
-	void						CreateTextureInternal(ITexture** pTex, const DkList<CImage*>& pImages, const SamplerStateParam_t& sSamplingParams,int nFlags = 0);
+	void						CreateTextureInternal(ITexture** pTex, const Array<CImage*>& pImages, const SamplerStateParam_t& sSamplingParams,int nFlags = 0);
 protected:
 
 	IDirect3DBaseTexture9*		CreateD3DTextureFromImage(CImage* pSrc, int& wide, int& tall, int nFlags = 0);

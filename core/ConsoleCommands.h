@@ -49,7 +49,7 @@ public:
 	const ConCommandBase*				FindBase(const char* name);
 
 	// Returns all bases array
-	const DkList<ConCommandBase*>*		GetAllCommands() const { return &m_registeredCommands; }
+	const Array<ConCommandBase*>*		GetAllCommands() const { return &m_registeredCommands; }
 
 	// Executes file
 	void								ParseFileToCommandBuffer(const char* pszFilename);
@@ -70,7 +70,7 @@ public:
 	bool								ExecuteCommandBuffer(cmdFilterFn_t filterFn = nullptr, bool quiet = false);
 
 	// returns failed commands
-	DkList<EqString>&					GetFailedCommands();
+	Array<EqString>&					GetFailedCommands();
 
 	//-------------------------
 	bool								IsInitialized() const		{return true;}
@@ -83,9 +83,9 @@ private:
 
 	void								SortCommands();
 
-	DkList<ConCommandBase*>	m_registeredCommands;
+	Array<ConCommandBase*>	m_registeredCommands;
 
-	DkList<EqString>		m_failedCommands;
+	Array<EqString>		m_failedCommands;
 
 	char					m_currentCommands[COMMANDBUFFER_SIZE];
 	char					m_lastExecutedCommands[COMMANDBUFFER_SIZE];

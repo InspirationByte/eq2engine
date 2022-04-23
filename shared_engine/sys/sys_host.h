@@ -53,7 +53,7 @@ public:
 	void				SetFullscreenMode();
 	void				SetWindowedMode();
 	void				ApplyVideoMode();
-	void				GetVideoModes(DkList<VideoMode_t>& displayModes);
+	void				GetVideoModes(Array<VideoMode_t>& displayModes);
 
 	//---------------------------------
 	// INPUT

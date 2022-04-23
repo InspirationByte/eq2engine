@@ -217,7 +217,7 @@ skipwhite:
 // Splits string into array
 //------------------------------------------
 
-void xstrsplit2( const char* pString, const char* *pSeparators, int nSeparators, DkList<EqString> &outStrings )
+void xstrsplit2( const char* pString, const char* *pSeparators, int nSeparators, Array<EqString> &outStrings )
 {
 	outStrings.clear();
 	const char* pCurPos = pString;
@@ -258,7 +258,7 @@ void xstrsplit2( const char* pString, const char* *pSeparators, int nSeparators,
 	}
 }
 
-void xstrsplit( const char* pString, const char* pSeparator, DkList<EqString> &outStrings )
+void xstrsplit( const char* pString, const char* pSeparator, Array<EqString> &outStrings )
 {
 	xstrsplit2( pString, &pSeparator, 1, outStrings );
 }

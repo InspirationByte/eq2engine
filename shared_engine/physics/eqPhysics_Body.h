@@ -17,7 +17,7 @@ TODO:
 #define EQRIGIDBODY_H
 
 #include "math/DkMath.h"
-#include "ds/DkList.h"
+#include "ds/Array.h"
 
 #include "eqCollision_Object.h"
 
@@ -186,8 +186,8 @@ protected:
 	void					UpdateInertiaTensor();		///< updates inertia tensor
 	void					AccumulateForces(float time);	///< accumulates forces
 
-	DkList<ContactPair_t>			m_contactPairs; // contact pair list in single frame
-	DkList<IEqPhysicsConstraint*>	m_constraints;
+	Array<ContactPair_t>			m_contactPairs; // contact pair list in single frame
+	Array<IEqPhysicsConstraint*>	m_constraints;
 
 	Matrix3x3						m_invInertiaTensor;
 

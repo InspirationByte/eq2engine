@@ -35,7 +35,7 @@ protected:
 	Threading::CEqMutex&		m_mutex;
 
 	// cached shapes
-	DkList<btCollisionShape*>	m_collisionShapes;
+	Array<btCollisionShape*>	m_collisionShapes;
 };
 
 #endif

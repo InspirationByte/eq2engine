@@ -111,7 +111,7 @@ int main(int argc, char **argv)
 		}
 		else if(!stricmp(arg, "-ignorecompressionext"))
 		{
-			DkList<EqString> splitArgs;
+			Array<EqString> splitArgs;
 
 			EqString argsStr = g_cmdLine->GetArgumentsOf(i);
 			xstrsplit(argsStr.ToCString(), " ", splitArgs);

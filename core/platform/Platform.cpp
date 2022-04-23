@@ -62,22 +62,3 @@ IEXPORTS void AssertValidReadWritePtr( void* ptr, int count/* = 1*/ )
     ASSERT(!( IsBadWritePtr(ptr, count) || IsBadReadPtr(ptr,count)));
 #endif
 }
-
-#include <stdio.h>
-
-#ifdef _WIN32
-
-IEXPORTS void outputDebugString(const char *str)
-{
-    OutputDebugStringA(str);
-    OutputDebugStringA("\n");
-}
-
-#else
-
-IEXPORTS void outputDebugString(const char *str)
-{
-    printf("%s\n", str);
-}
-
-#endif // _WIN32

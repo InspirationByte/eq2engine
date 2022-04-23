@@ -10,6 +10,7 @@
 #include "core/DebugInterface.h"
 #include "core/IDkCore.h"
 #include "core/IConsoleCommands.h"
+#include "core/platform/MessageBox.h"
 
 #include "imaging/ImageLoader.h"
 #include "utils/strtools.h"

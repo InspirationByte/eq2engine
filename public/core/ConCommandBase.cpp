@@ -60,7 +60,7 @@ bool ConCommandBase::HasVariants() const
 	return m_fnVariantsList != NULL;
 }
 
-void ConCommandBase::GetVariants(DkList<EqString>& list, const char* query) const
+void ConCommandBase::GetVariants(Array<EqString>& list, const char* query) const
 {
 	if(m_fnVariantsList != NULL)
 		( *m_fnVariantsList )(this, list, query);

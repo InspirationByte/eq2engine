@@ -10,7 +10,7 @@
 
 #include "core/IFileSystem.h"
 #include "utils/eqthread.h"
-#include "ds/DkList.h"
+#include "ds/Array.h"
 
 #include <stdio.h>
 
@@ -166,13 +166,13 @@ private:
 		bool mainWritePath;
 	};
 
-	DkList<SearchPath_t>				m_directories;		// mod data, for fall back
+	Array<SearchPath_t>				m_directories;		// mod data, for fall back
 
     // Packages currently loaded
-    DkList<CBasePackageFileReader*>		m_packages;
-    DkList<IFile*>						m_openFiles;
-	DkList<DKFINDDATA*>					m_findDatas;
-	DkList<DKMODULE*>					m_modules;
+    Array<CBasePackageFileReader*>		m_packages;
+    Array<IFile*>						m_openFiles;
+	Array<DKFINDDATA*>					m_findDatas;
+	Array<DKMODULE*>					m_modules;
 
     bool								m_editorMode;
 	bool								m_isInit;

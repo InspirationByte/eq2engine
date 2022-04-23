@@ -26,8 +26,8 @@ This is the diferrent conception of jobs
 
 #include "core/IEqParallelJobs.h"
 #include "utils/eqthread.h"
-#include "ds/DkList.h"
-#include "ds/DkLinkedList.h"
+#include "ds/Array.h"
+#include "ds/List.h"
 
 class CEqParallelJobThreads;
 
@@ -96,10 +96,10 @@ protected:
 	void							AddCompleted(eqParallelJob_t* job);
 
 
-	DkList<CEqJobThread*>			m_jobThreads;
+	Array<CEqJobThread*>			m_jobThreads;
 
-	DkLinkedList<eqParallelJob_t*>	m_workQueue;
-	DkLinkedList<eqParallelJob_t*>	m_completedJobs;
+	List<eqParallelJob_t*>	m_workQueue;
+	List<eqParallelJob_t*>	m_completedJobs;
 
 	Threading::CEqMutex				m_mutex;
 	Threading::CEqMutex				m_completeMutex;

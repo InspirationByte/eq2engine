@@ -2,17 +2,16 @@
 // Copyright © Inspiration Byte
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
-// Description: Dynamic list
+// Description: Dynamic array (vector) of elements
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef DKLIST_H
-#define DKLIST_H
+#ifndef ARRAY_H
+#define ARRAY_H
 
-#include "core/platform/MessageBox.h"
+#include "core/platform/assert.h"
 #include "core/dktypes.h"
 
 #define USE_QSORT
-
 #define DEBUG_CHECK_LIST_BOUNDS
 
 template< class T >
@@ -22,19 +21,19 @@ template< class T >
 using PairSortCompareFunc = int (*)(const T& a, const T& b);
 
 template< class T >
-class DkList
+class Array
 {
 public:
 	typedef bool (*PairCompareFunc)(const T& a, const T& b);
 	typedef int (*PairSortCompareFunc)(const T& a, const T& b);
 
-	DkList( int newgranularity = 16 );
+	Array( int newgranularity = 16 );
 
-	~DkList<T>();
+	~Array<T>();
 
 	const T &		operator[]( int index ) const;
 	T &				operator[]( int index );
-	DkList<T> &		operator=( const DkList<T> &other );
+	Array<T> &		operator=( const Array<T> &other );
 
 	// cleans list
 	void			clear( bool deallocate = true );
@@ -70,8 +69,11 @@ public:
 	// appends element
 	int				append( const T & obj );
 
+	// append a empty element to be filled
+	T& append();
+
 	// appends another list
-	int				append( const DkList<T> &other );
+	int				append( const Array<T> &other );
 
 	// appends another array
 	int				append( const T *other, int count );
@@ -79,7 +81,7 @@ public:
 	// appends another list with transformation
 	// return false to not add the element
 	template< class T2, typename TRANSFORMFUNC >
-	int				append( const DkList<T2> &other, TRANSFORMFUNC transform );
+	int				append( const Array<T2> &other, TRANSFORMFUNC transform );
 
 	// inserts the element at the given index
 	int				insert( const T & obj, int index = 0 );
@@ -123,7 +125,7 @@ public:
 	bool			inRange( int index ) const;
 
 	// swap the contents of the lists
-	void			swap( DkList<T> &other );
+	void			swap( Array<T> &other );
 
 	// swap the contents of the lists - raw
 	void			swap(T*& other, int& otherNumElem);
@@ -150,18 +152,18 @@ protected:
 };
 
 template< class T >
-inline DkList<T>::DkList( int newgranularity )
+inline Array<T>::Array( int newgranularity )
 {
 	ASSERT( newgranularity > 0 );
 
 	m_nNumElem		= 0;
 	m_nSize			= 0;
-	m_pListPtr		= NULL;
+	m_pListPtr		= nullptr;
 	m_nGranularity	= newgranularity;
 }
 
 template< class T >
-inline DkList<T>::~DkList()
+inline Array<T>::~Array()
 {
 	delete [] m_pListPtr;
 }
@@ -170,12 +172,12 @@ inline DkList<T>::~DkList()
 // Frees up the memory allocated by the list.  Assumes that T automatically handles freeing up memory.
 // -----------------------------------------------------------------
 template< class T >
-inline void DkList<T>::clear(bool deallocate)
+inline void Array<T>::clear(bool deallocate)
 {
 	if ( deallocate )
 	{
 		delete [] m_pListPtr;
-		m_pListPtr	= NULL;
+		m_pListPtr	= nullptr;
 		m_nSize		= 0;
 	}
 
@@ -187,7 +189,7 @@ inline void DkList<T>::clear(bool deallocate)
 // Note that this is NOT an indication of the memory allocated.
 // -----------------------------------------------------------------
 template< class T >
-inline int DkList<T>::numElem( void ) const
+inline int Array<T>::numElem( void ) const
 {
 	return m_nNumElem;
 }
@@ -197,7 +199,7 @@ inline int DkList<T>::numElem( void ) const
 // -----------------------------------------------------------------
 template< class T >
 template< typename COMPAREFUNC >
-inline int DkList<T>::numElem( COMPAREFUNC comparator ) const
+inline int Array<T>::numElem( COMPAREFUNC comparator ) const
 {
 	int theCount = 0;
 
@@ -214,7 +216,7 @@ inline int DkList<T>::numElem( COMPAREFUNC comparator ) const
 // Returns the number of elements currently allocated for.
 // -----------------------------------------------------------------
 template< class T >
-inline int DkList<T>::numAllocated( void ) const
+inline int Array<T>::numAllocated( void ) const
 {
 	return m_nSize;
 }
@@ -223,7 +225,7 @@ inline int DkList<T>::numAllocated( void ) const
 // Sets the base size of the array and resizes the array to match.
 // -----------------------------------------------------------------
 template< class T >
-inline void DkList<T>::setGranularity( int newgranularity )
+inline void Array<T>::setGranularity( int newgranularity )
 {
 	int newsize;
 
@@ -248,7 +250,7 @@ inline void DkList<T>::setGranularity( int newgranularity )
 // Returns the current granularity.
 // -----------------------------------------------------------------
 template< class T >
-inline int DkList<T>::getGranularity( void ) const
+inline int Array<T>::getGranularity( void ) const
 {
 	return m_nGranularity;
 }
@@ -258,7 +260,7 @@ inline int DkList<T>::getGranularity( void ) const
 // Release builds do no range checking.
 // -----------------------------------------------------------------
 template< class T >
-inline const T &DkList<T>::operator[]( int index ) const
+inline const T &Array<T>::operator[]( int index ) const
 {
 #ifdef DEBUG_CHECK_LIST_BOUNDS
 	ASSERT( index >= 0 );
@@ -273,7 +275,7 @@ inline const T &DkList<T>::operator[]( int index ) const
 // Release builds do no range checking.
 // -----------------------------------------------------------------
 template< class T >
-inline T &DkList<T>::operator[]( int index )
+inline T &Array<T>::operator[]( int index )
 {
 #ifdef DEBUG_CHECK_LIST_BOUNDS
 	ASSERT( index >= 0 );
@@ -287,7 +289,7 @@ inline T &DkList<T>::operator[]( int index )
 // Copies the contents and size attributes of another list.
 // -----------------------------------------------------------------
 template< class T >
-inline DkList<T> &DkList<T>::operator=( const DkList<T> &other )
+inline Array<T> &Array<T>::operator=( const Array<T> &other )
 {
 	m_nGranularity	= other.m_nGranularity;
 
@@ -311,7 +313,7 @@ inline DkList<T> &DkList<T>::operator=( const DkList<T> &other )
 // Contents are copied using their = operator so that data is correnctly instantiated.
 // -----------------------------------------------------------------
 template< class T >
-inline void DkList<T>::resize( int newsize )
+inline void Array<T>::resize( int newsize )
 {
 	T	*temp;
 	int		i;
@@ -352,7 +354,7 @@ inline void DkList<T>::resize( int newsize )
 // Resize to the exact size specified irregardless of granularity
 // -----------------------------------------------------------------
 template< class T >
-inline void DkList<T>::setNum( int newnum, bool bResize )
+inline void Array<T>::setNum( int newnum, bool bResize )
 {
 	ASSERT( newnum >= 0 );
 
@@ -368,7 +370,7 @@ inline void DkList<T>::setNum( int newnum, bool bResize )
 // -----------------------------------------------------------------
 
 template< class T >
-inline T *DkList<T>::ptr( void )
+inline T *Array<T>::ptr( void )
 {
 	return m_pListPtr;
 }
@@ -378,7 +380,7 @@ inline T *DkList<T>::ptr( void )
 // Note: may return NULL if the list is empty.
 // -----------------------------------------------------------------
 template< class T >
-inline const T *DkList<T>::ptr( void ) const
+inline const T *Array<T>::ptr( void ) const
 {
 	return m_pListPtr;
 }
@@ -388,7 +390,7 @@ inline const T *DkList<T>::ptr( void ) const
 // Returns the index of the new element.
 // -----------------------------------------------------------------
 template< class T >
-inline int DkList<T>::append( T const & obj )
+inline int Array<T>::append( T const & obj )
 {
 	if ( !m_pListPtr )
 		resize(m_nGranularity);
@@ -411,12 +413,35 @@ inline int DkList<T>::append( T const & obj )
 }
 
 // -----------------------------------------------------------------
+// append a new empty element to be filled
+// -----------------------------------------------------------------
+template< class T >
+inline T& Array<T>::append()
+{
+	if (!m_pListPtr)
+		resize(m_nGranularity);
+
+	if (m_nNumElem == m_nSize)
+	{
+		int newsize;
+
+		if (m_nGranularity == 0)	// this is a hack to fix our memset classes
+			m_nGranularity = 16;
+
+		newsize = m_nSize + m_nGranularity;
+		resize(newsize - newsize % m_nGranularity);
+	}
+
+	return m_pListPtr[m_nNumElem++];
+}
+
+// -----------------------------------------------------------------
 // adds the other list to this one
 // Returns the size of the new combined list
 // -----------------------------------------------------------------
 
 template< class T >
-inline int DkList<T>::append( const DkList<T> &other )
+inline int Array<T>::append( const Array<T> &other )
 {
 	int nOtherElems = other.numElem();
 
@@ -453,7 +478,7 @@ inline int DkList<T>::append( const DkList<T> &other )
 // Returns the size of the new combined list
 // -----------------------------------------------------------------
 template< class T >
-inline int DkList<T>::append( const T *other, int count )
+inline int Array<T>::append( const T *other, int count )
 {
 	if ( !m_pListPtr )
 	{
@@ -484,12 +509,11 @@ inline int DkList<T>::append( const T *other, int count )
 }
 
 // -----------------------------------------------------------------
-// appends another list with transformation
-// return false to not add the element
+// appends other list with transformation
 // -----------------------------------------------------------------
 template< class T >
 template< class T2, typename TRANSFORMFUNC >
-inline int DkList<T>::append( const DkList<T2> &other, TRANSFORMFUNC transform )
+inline int Array<T>::append( const Array<T2> &other, TRANSFORMFUNC transform )
 {
 	int nOtherElems = other.numElem();
 
@@ -507,12 +531,13 @@ inline int DkList<T>::append( const DkList<T2> &other, TRANSFORMFUNC transform )
 	return numElem();
 }
 
+
 // -----------------------------------------------------------------
 // Increases the elemCount of the list by at leat one element if necessary
 // and inserts the supplied data into it.
 // -----------------------------------------------------------------
 template< class T >
-inline int DkList<T>::insert( T const & obj, int index )
+inline int Array<T>::insert( T const & obj, int index )
 {
 	if ( !m_pListPtr )
 		resize( m_nGranularity );
@@ -546,7 +571,7 @@ inline int DkList<T>::insert( T const & obj, int index )
 // -----------------------------------------------------------------
 
 template< class T >
-inline int DkList<T>::addUnique( T const & obj )
+inline int Array<T>::addUnique( T const & obj )
 {
 	int index;
 
@@ -564,7 +589,7 @@ inline int DkList<T>::addUnique( T const & obj )
 // -----------------------------------------------------------------
 
 template< class T >
-inline int DkList<T>::addUnique( T const & obj, PairCompareFunc comparator)
+inline int Array<T>::addUnique( T const & obj, PairCompareFunc comparator)
 {
 	int index;
 
@@ -582,7 +607,7 @@ inline int DkList<T>::addUnique( T const & obj, PairCompareFunc comparator)
 // -----------------------------------------------------------------
 
 template< class T >
-inline int DkList<T>::findIndex( T const & obj ) const
+inline int Array<T>::findIndex( T const & obj ) const
 {
 	int i;
 
@@ -602,7 +627,7 @@ inline int DkList<T>::findIndex( T const & obj ) const
 // -----------------------------------------------------------------
 
 template< class T >
-inline int DkList<T>::findIndex( T const & obj, PairCompareFunc comparator ) const
+inline int Array<T>::findIndex( T const & obj, PairCompareFunc comparator ) const
 {
 	int i;
 
@@ -622,7 +647,7 @@ inline int DkList<T>::findIndex( T const & obj, PairCompareFunc comparator ) con
 // -----------------------------------------------------------------
 
 template< class T >
-inline T *DkList<T>::find( T const & obj ) const
+inline T *Array<T>::find( T const & obj ) const
 {
 	int i;
 
@@ -631,7 +656,7 @@ inline T *DkList<T>::find( T const & obj ) const
 	if ( i >= 0 )
 		return &m_pListPtr[ i ];
 
-	return NULL;
+	return nullptr;
 }
 
 // -----------------------------------------------------------------
@@ -640,7 +665,7 @@ inline T *DkList<T>::find( T const & obj ) const
 // -----------------------------------------------------------------
 template< class T >
 template< typename COMPAREFUNC >
-inline T *DkList<T>::findFirst( COMPAREFUNC comparator  ) const
+inline T *Array<T>::findFirst( COMPAREFUNC comparator  ) const
 {
 	for( int i = 0; i < m_nNumElem; i++ )
 	{
@@ -648,7 +673,7 @@ inline T *DkList<T>::findFirst( COMPAREFUNC comparator  ) const
 			return &m_pListPtr[i];
 	}
 
-	return NULL;
+	return nullptr;
 }
 
 // -----------------------------------------------------------------
@@ -657,7 +682,7 @@ inline T *DkList<T>::findFirst( COMPAREFUNC comparator  ) const
 // -----------------------------------------------------------------
 template< class T >
 template< typename COMPAREFUNC >
-inline T *DkList<T>::findLast( COMPAREFUNC comparator ) const
+inline T *Array<T>::findLast( COMPAREFUNC comparator ) const
 {
 	for( int i = m_nNumElem-1; i >= 0; i-- )
 	{
@@ -665,7 +690,7 @@ inline T *DkList<T>::findLast( COMPAREFUNC comparator ) const
 			return &m_pListPtr[i];
 	}
 
-	return NULL;
+	return nullptr;
 }
 
 // -----------------------------------------------------------------
@@ -674,12 +699,12 @@ inline T *DkList<T>::findLast( COMPAREFUNC comparator ) const
 // Note that the element is not destroyed, so any memory used by it may not be freed until the destruction of the m_pListPtr.
 // -----------------------------------------------------------------
 template< class T >
-inline bool DkList<T>::removeIndex( int index )
+inline bool Array<T>::removeIndex( int index )
 {
 	int i;
 
 #ifdef DEBUG_CHECK_LIST_BOUNDS
-	ASSERT( m_pListPtr != NULL );
+	ASSERT( m_pListPtr != nullptr);
 	ASSERT( index >= 0 );
 	ASSERT( index < m_nNumElem );
 #endif // DEBUG_CHECK_LIST_BOUNDS
@@ -701,10 +726,10 @@ inline bool DkList<T>::removeIndex( int index )
 // Note that the element is not destroyed, so any memory used by it may not be freed until the destruction of the m_pListPtr.
 // -----------------------------------------------------------------
 template< class T >
-inline bool DkList<T>::fastRemoveIndex( int index )
+inline bool Array<T>::fastRemoveIndex( int index )
 {
 #ifdef DEBUG_CHECK_LIST_BOUNDS
-	ASSERT( m_pListPtr != NULL );
+	ASSERT( m_pListPtr != nullptr);
 	ASSERT( index >= 0 );
 	ASSERT( index < m_nNumElem );
 #endif // DEBUG_CHECK_LIST_BOUNDS
@@ -727,7 +752,7 @@ inline bool DkList<T>::fastRemoveIndex( int index )
 // the element is not destroyed, so any memory used by it may not be freed until the destruction of the m_pListPtr.
 // -----------------------------------------------------------------
 template< class T >
-inline bool DkList<T>::remove( T const & obj )
+inline bool Array<T>::remove( T const & obj )
 {
 	int index;
 
@@ -746,7 +771,7 @@ inline bool DkList<T>::remove( T const & obj )
 // the element is not destroyed, so any memory used by it may not be freed until the destruction of the m_pListPtr.
 // -----------------------------------------------------------------
 template< class T >
-inline bool DkList<T>::fastRemove( T const & obj )
+inline bool Array<T>::fastRemove( T const & obj )
 {
 	int index;
 
@@ -762,7 +787,7 @@ inline bool DkList<T>::fastRemove( T const & obj )
 // Returns true if index is in array range
 // -----------------------------------------------------------------
 template< class T >
-inline bool DkList<T>::inRange( int index ) const
+inline bool Array<T>::inRange( int index ) const
 {
 	return index >= 0 && index < m_nNumElem;
 }
@@ -771,7 +796,7 @@ inline bool DkList<T>::inRange( int index ) const
 // Swaps the contents of two lists
 // -----------------------------------------------------------------
 template< class T >
-inline void DkList<T>::swap( DkList<T> &other )
+inline void Array<T>::swap( Array<T> &other )
 {
 	QuickSwap( m_nNumElem, other.m_nNumElem );
 	QuickSwap( m_nSize, other.m_nSize );
@@ -783,7 +808,7 @@ inline void DkList<T>::swap( DkList<T> &other )
 // swap the contents of the lists - raw
 // -----------------------------------------------------------------
 template< class T >
-inline void DkList<T>::swap(T*& other, int& otherNumElem)
+inline void Array<T>::swap(T*& other, int& otherNumElem)
 {
 	QuickSwap(m_nNumElem, otherNumElem);
 	QuickSwap(m_pListPtr, other);
@@ -796,7 +821,7 @@ inline void DkList<T>::swap(T*& other, int& otherNumElem)
 // -----------------------------------------------------------------
 
 template< class T >
-inline void DkList<T>::assureSize( int newSize )
+inline void Array<T>::assureSize( int newSize )
 {
 	int newNum = newSize;
 
@@ -818,7 +843,7 @@ inline void DkList<T>::assureSize( int newSize )
 // Makes sure the m_pListPtr has at least the given number of elements and initialize any elements not yet initialized.
 // -----------------------------------------------------------------
 template< class T >
-inline void DkList<T>::assureSize( int newSize, const T &initValue )
+inline void Array<T>::assureSize( int newSize, const T &initValue )
 {
 	int newNum = newSize;
 
@@ -846,7 +871,7 @@ inline void DkList<T>::assureSize( int newSize, const T &initValue )
 // -----------------------------------------------------------------
 
 template< class T >
-inline void DkList<T>::sort(PairSortCompareFunc comparator)
+inline void Array<T>::sort(PairSortCompareFunc comparator)
 {
 #ifdef USE_QSORT
 	quickSort(comparator, 0, m_nNumElem - 1);
@@ -859,7 +884,7 @@ inline void DkList<T>::sort(PairSortCompareFunc comparator)
 // Shell sort
 // -----------------------------------------------------------------
 template< class T >
-inline void DkList<T>::shellSort(PairSortCompareFunc comparator, int i0, int i1)
+inline void Array<T>::shellSort(PairSortCompareFunc comparator, int i0, int i1)
 {
 	const int SHELLJMP = 3; //2 or 3
 
@@ -888,7 +913,7 @@ inline int partition(T* list, PairSortCompareFunc<T> comparator, int p, int r);
 // Partition exchange sort
 // -----------------------------------------------------------------
 template< class T >
-inline void DkList<T>::quickSort(PairSortCompareFunc comparator, int p, int r)
+inline void Array<T>::quickSort(PairSortCompareFunc comparator, int p, int r)
 {
 	if (p < r)
 	{
@@ -963,4 +988,4 @@ inline void shellSort(T* list, int numElems, PairSortCompareFunc<T> comparator)
 	}
 }
 
-#endif //DKLIST_H
+#endif // ARRAY_H

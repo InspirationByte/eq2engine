@@ -10,13 +10,13 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include "ds/DkList.h"
+#include "ds/Array.h"
 #include "ConVar.h"
 #include "ConCommand.h"
 #include "ConCommandBase.h"
 #include "InterfaceManager.h"
 
-typedef bool (*cmdFilterFn_t)(ConCommandBase* pCmd, DkList<EqString>& args);
+typedef bool (*cmdFilterFn_t)(ConCommandBase* pCmd, Array<EqString>& args);
 
 #define CONSOLE_INTERFACE_VERSION		"CORE_ConsoleCommands_004"
 
@@ -32,7 +32,7 @@ public:
     virtual const	ConCommand*					FindCommand(const char* name) = 0;
     virtual const	ConCommandBase*				FindBase(const char* name) = 0;
 
-    virtual	const	DkList<ConCommandBase*>*	GetAllCommands() const = 0;
+    virtual	const	Array<ConCommandBase*>*	GetAllCommands() const = 0;
 
     // Executes file
     virtual void								ParseFileToCommandBuffer(const char* pszFilename) = 0;
@@ -53,7 +53,7 @@ public:
     virtual bool								ExecuteCommandBuffer(cmdFilterFn_t filterFn = nullptr, bool quiet = false) = 0;
 
 	// returns failed commands
-	virtual DkList<EqString>&					GetFailedCommands() = 0;	
+	virtual Array<EqString>&					GetFailedCommands() = 0;	
 };
 
 INTERFACE_SINGLETON( IConsoleCommands, CConsoleCommands, CONSOLE_INTERFACE_VERSION, g_consoleCommands)

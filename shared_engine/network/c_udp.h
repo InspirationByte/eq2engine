@@ -10,7 +10,7 @@
 #ifndef C_UDP_H
 #define C_UDP_H
 
-#include "ds/DkList.h"
+#include "ds/Array.h"
 #include "ds/VirtualStream.h"
 
 #include "utils/eqthread.h"
@@ -105,8 +105,8 @@ private:
 	};
 
 	// messages are not limited, but they are splitted
-	DkList<cdp_queued_message_t*> 	m_pMessageQueue;
-	DkList<cdp_receive_msgid_t>		m_receivedIds;
+	Array<cdp_queued_message_t*> 	m_pMessageQueue;
+	Array<cdp_receive_msgid_t>		m_receivedIds;
 
 	int								m_nMessageIDInc;
 

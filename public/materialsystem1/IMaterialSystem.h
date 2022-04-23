@@ -460,7 +460,7 @@ public:
 	virtual void							PrintLoadedMaterials() = 0;
 };
 
-typedef DkList<shaderfactory_t> FactoryList;
+typedef Array<shaderfactory_t> FactoryList;
 
 extern IMaterialSystem* materials;
 

@@ -10,10 +10,10 @@
 #include "ICommandLine.h"
 #include "DebugInterface.h"
 
-#include "ds/DkList.h"
+#include "ds/Array.h"
 #include "utils/strtools.h"
 
-#include "platform/Platform.h"
+#include "platform/stackalloc.h"
 #include <malloc.h> // alloca
 
 #pragma warning(disable: 4267)

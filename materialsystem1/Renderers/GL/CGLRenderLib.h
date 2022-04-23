@@ -85,7 +85,7 @@ protected:
 	void					InitSharedContexts();
 	void					DestroySharedContexts();
 
-	DkList<IEqSwapChain*>	m_swapChains;
+	Array<IEqSwapChain*>	m_swapChains;
 
 	GL_CONTEXT				glContext;
 	GL_CONTEXT				glSharedContext;

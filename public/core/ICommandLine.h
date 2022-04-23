@@ -10,12 +10,12 @@
 
 #include "InterfaceManager.h"
 
-#include "ds/DkList.h"
+#include "ds/Array.h"
 #include "ds/eqstring.h"
 
 // WARNING: this function declaration is compatible with cmdFilterFn_t
 class ConCommandBase;
-typedef bool (*cmdLineFilterFn_t)(ConCommandBase* pCmd, DkList<EqString>& args);
+typedef bool (*cmdLineFilterFn_t)(ConCommandBase* pCmd, Array<EqString>& args);
 
 #define CMDLINE_INTERFACE_VERSION		"CORE_CommandLine_002"
 

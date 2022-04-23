@@ -51,7 +51,7 @@ struct neteventfactory_t
 
 #define NETEVENT_LIST(name) g_netevents_##name##list
 
-#define DECLARE_NETEVENT_LIST(name) DkList<neteventfactory_t> NETEVENT_LIST(name)
+#define DECLARE_NETEVENT_LIST(name) Array<neteventfactory_t> NETEVENT_LIST(name)
 #define EXTERN_NETEVENT_LIST(name) extern DECLARE_NETEVENT_LIST(name)
 
 //-------------------------------------------------------------------------------------

@@ -13,14 +13,14 @@
 #include "core/platform/Platform.h"
 
 #include "ds/eqstring.h"
-#include "ds/DkList.h"
+#include "ds/Array.h"
 
 #include "font/IFont.h"
 
 struct ConAutoCompletion_t
 {
 	EqString cmd_name;
-	DkList<EqString> args;
+	Array<EqString> args;
 };
 
 typedef bool (*CONSOLE_ALTERNATE_HANDLER)(const char* commandText);
@@ -73,7 +73,7 @@ public:
 protected:
 
 	void			DrawSelf(int width, int height, float frameTime);
-	void			DrawListBox(const IVector2D& pos, int width, DkList<EqString>& items, const char* tooltipText, int maxItems, int startItem, int& selection);
+	void			DrawListBox(const IVector2D& pos, int width, Array<EqString>& items, const char* tooltipText, int maxItems, int startItem, int& selection);
 
 	void			DrawFastFind(float x, float y, float w);
 	void			DrawAutoCompletion(float x, float y, float w);
@@ -133,14 +133,14 @@ private:
 	float							m_logScrollNextTime;
 
 	// Input history
-	DkList<EqString>				m_commandHistory;
+	Array<EqString>				m_commandHistory;
 	int								m_histIndex;
 
-	DkList<ConCommandBase*>			m_foundCmdList;
+	Array<ConCommandBase*>			m_foundCmdList;
 	int								m_cmdSelection;
 
 	ConCommandBase*					m_fastfind_cmdbase;
-	DkList<EqString>				m_variantList;
+	Array<EqString>				m_variantList;
 	int								m_variantSelection;
 
 	CONSOLE_ALTERNATE_HANDLER		m_alternateHandler;
@@ -149,7 +149,7 @@ private:
 	EqString						m_inputText;
 
 	// custom autocompletion
-	DkList<ConAutoCompletion_t*>	m_customAutocompletion;
+	Array<ConAutoCompletion_t*>	m_customAutocompletion;
 };
 
 extern CEqConsoleInput* g_consoleInput;

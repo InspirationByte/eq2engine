@@ -12,7 +12,7 @@
 
 #include "core/platform/PlatformDef.h"
 
-#include "ds/DkList.h"
+#include "ds/Array.h"
 #include "ds/eqstring.h"
 #include "ds/eqwstring.h"
 
@@ -93,10 +93,10 @@ void		ExtractFileBase(const char* path, char* dest);
 int			StringToHash( const char *str, bool caseIns = false );
 
 // Split string by multiple separators
-void		xstrsplit2( const char* pString, const char* *pSeparators, int nSeparators, DkList<EqString> &outStrings );
+void		xstrsplit2( const char* pString, const char* *pSeparators, int nSeparators, Array<EqString> &outStrings );
 
 // Split string by one separator
-void		xstrsplit( const char* pString, const char* pSeparator, DkList<EqString> &outStrings );
+void		xstrsplit( const char* pString, const char* pSeparator, Array<EqString> &outStrings );
 
 char const* xstristr( char const* pStr, char const* pSearch );
 char*		xstristr( char* pStr, char const* pSearch );

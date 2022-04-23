@@ -17,7 +17,7 @@ struct itriangle
 	int idxs[3];
 };
 
-typedef DkList<itriangle> indxgroup_t;
+typedef Array<itriangle> indxgroup_t;
 
 struct ragdolljoint_t;
 
@@ -47,23 +47,23 @@ protected:
 	int			FindJointIdx(char* name);
 	int			MakeBoneValidParent(int boneId);
 
-	int			AddShape(DkList<SharedModel::dsmvertex_t> &vertices, DkList<int> &indices, int shapeType = PHYSSHAPE_TYPE_CONVEX, bool assumedAsConvex = false);
+	int			AddShape(Array<SharedModel::dsmvertex_t> &vertices, Array<int> &indices, int shapeType = PHYSSHAPE_TYPE_CONVEX, bool assumedAsConvex = false);
 
-	void		SubdivideModelParts( DkList<SharedModel::dsmvertex_t>& vertices, DkList<int>& indices, DkList<indxgroup_t*>& groups );
+	void		SubdivideModelParts( Array<SharedModel::dsmvertex_t>& vertices, Array<int>& indices, Array<indxgroup_t*>& groups );
 
-	bool		CreateRagdollObjects( DkList<SharedModel::dsmvertex_t>& vertices, DkList<int>& indices, DkList<indxgroup_t*>& indexGroups );
-	bool		CreateCompoundOrSeparateObjects( DkList<SharedModel::dsmvertex_t>& vertices, DkList<int>& indices, DkList<indxgroup_t*>& indexGroups, bool bCompound );
-	bool		CreateSingleObject( DkList<SharedModel::dsmvertex_t>& vertices, DkList<int>& indices );
+	bool		CreateRagdollObjects( Array<SharedModel::dsmvertex_t>& vertices, Array<int>& indices, Array<indxgroup_t*>& indexGroups );
+	bool		CreateCompoundOrSeparateObjects( Array<SharedModel::dsmvertex_t>& vertices, Array<int>& indices, Array<indxgroup_t*>& indexGroups, bool bCompound );
+	bool		CreateSingleObject( Array<SharedModel::dsmvertex_t>& vertices, Array<int>& indices );
 
 	// data
 	SharedModel::dsmmodel_t*	m_srcModel;
 	kvkeybase_t*				m_physicsParams;
 
-	DkList<Vector3D>			m_vertices;			// generated verts
-	DkList<int>					m_indices;			// generated indices
-	DkList<physgeominfo_t>		m_shapes;			// shapes
-	DkList<physNamedObject_t>	m_objects;			// objects that use shapes
-	DkList<physjoint_t>			m_joints;			// joints which uses objects
+	Array<Vector3D>			m_vertices;			// generated verts
+	Array<int>					m_indices;			// generated indices
+	Array<physgeominfo_t>		m_shapes;			// shapes
+	Array<physNamedObject_t>	m_objects;			// objects that use shapes
+	Array<physjoint_t>			m_joints;			// joints which uses objects
 
 	BoundingBox					m_bbox;
 

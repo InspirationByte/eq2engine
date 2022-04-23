@@ -17,7 +17,7 @@
 #include "math/Vector.h"
 #include "math/Matrix.h"
 
-#include "ds/DkList.h"
+#include "ds/Array.h"
 #include "utils/strtools.h"
 
 #include "egf/IEqModel.h"
@@ -228,7 +228,7 @@ public:
 
 	virtual phySurfaceMaterial_t*				FindMaterial(const char* pszName) = 0;			// finds surface material parameters by it's name
 
-	virtual DkList<phySurfaceMaterial_t*>*		GetMaterialList() = 0;				// returns pointer to material list
+	virtual Array<phySurfaceMaterial_t*>*		GetMaterialList() = 0;				// returns pointer to material list
 
 	virtual void								DoForEachObject(EACHOBJECTFUNCTION procedure, void *data = NULL) = 0;	// special command that enumerates every physics object and calls EACHOBJECTFUNCTION procedure for it (such as explosion, etc.)
 

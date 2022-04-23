@@ -75,7 +75,7 @@ struct obj_material_t
 	char texture[1024];
 };
 
-bool LoadMTL(const char* filename, DkList<obj_material_t> &material_list)
+bool LoadMTL(const char* filename, Array<obj_material_t> &material_list)
 {
 	Tokenizer tok;
 
@@ -118,7 +118,7 @@ bool LoadMTL(const char* filename, DkList<obj_material_t> &material_list)
 	return true;
 }
 
-char* GetMTLTexture(char* pszMaterial, DkList<obj_material_t> &material_list)
+char* GetMTLTexture(char* pszMaterial, Array<obj_material_t> &material_list)
 {
 	//Msg("search for: %s\n", pszMaterial);
 	for(int i = 0; i < material_list.numElem(); i++)
@@ -133,7 +133,7 @@ char* GetMTLTexture(char* pszMaterial, DkList<obj_material_t> &material_list)
 
 bool LoadOBJ(dsmmodel_t* model, const char* filename)
 {
-	DkList<obj_material_t> material_list;
+	Array<obj_material_t> material_list;
 
 	Tokenizer tok;
 
@@ -201,9 +201,9 @@ bool LoadOBJ(dsmmodel_t* model, const char* filename)
 	char material_name[1024];
 	strcpy(material_name, "error");
 
-	DkList<Vector3D> vertices;
-	DkList<Vector2D> texcoords;
-	DkList<Vector3D> normals;
+	Array<Vector3D> vertices;
+	Array<Vector2D> texcoords;
+	Array<Vector3D> normals;
 
 	vertices.resize(nVerts);
 	texcoords.resize(nTexCoords);
@@ -387,7 +387,7 @@ bool LoadOBJ(dsmmodel_t* model, const char* filename)
 
 					if (!vertices.inRange(vindices[v]))
 					{
-						ErrorMsg("FIX YOUR OBJ! %d, max is %d\n", vindices[v], vertices.numElem());
+						ASSERT_FAIL("FIX YOUR OBJ! %d, max is %d\n", vindices[v], vertices.numElem());
 						continue;
 					}
 

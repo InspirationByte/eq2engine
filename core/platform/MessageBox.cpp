@@ -127,17 +127,17 @@ void DefaultPlatformMessageBoxCallback(const char* messageStr, EMessageBoxType t
 PREERRORMESSAGECALLBACK g_preerror_callback = emptycallback;
 MESSAGECB g_msgBoxCallback = DefaultPlatformMessageBoxCallback;
 
-IEXPORTS_LAUNCHER void SetPreErrorCallback(PREERRORMESSAGECALLBACK callback)
+IEXPORTS void SetPreErrorCallback(PREERRORMESSAGECALLBACK callback)
 {
 	g_preerror_callback = callback;
 }
 
-IEXPORTS_LAUNCHER void SetMessageBoxCallback(MESSAGECB callback)
+IEXPORTS void SetMessageBoxCallback(MESSAGECB callback)
 {
 	g_msgBoxCallback = callback;
 }
 
-IEXPORTS_LAUNCHER void ErrorMsg(const char* fmt, ...)
+IEXPORTS void ErrorMsg(const char* fmt, ...)
 {
 	g_preerror_callback();
 
@@ -158,7 +158,7 @@ IEXPORTS_LAUNCHER void ErrorMsg(const char* fmt, ...)
 #endif // _DKLAUNCHER_
 }
 
-IEXPORTS_LAUNCHER void CrashMsg(const char* fmt, ...)
+IEXPORTS void CrashMsg(const char* fmt, ...)
 {
 	g_preerror_callback();
 
@@ -179,7 +179,7 @@ IEXPORTS_LAUNCHER void CrashMsg(const char* fmt, ...)
 #endif // _DKLAUNCHER_
 }
 
-IEXPORTS_LAUNCHER void WarningMsg(const char* fmt, ...)
+IEXPORTS void WarningMsg(const char* fmt, ...)
 {
 	va_list		argptr;
 
@@ -198,7 +198,7 @@ IEXPORTS_LAUNCHER void WarningMsg(const char* fmt, ...)
 #endif // _DKLAUNCHER_
 }
 
-IEXPORTS_LAUNCHER void InfoMsg(const char* fmt, ...)
+IEXPORTS void InfoMsg(const char* fmt, ...)
 {
 	va_list		argptr;
 
@@ -242,7 +242,7 @@ void AssertLogMsg(const char *fmt,...)
     }
 }
 
-IEXPORTS_LAUNCHER void _InternalAssert(const char *file, int line, const char *statement)
+IEXPORTS void _InternalAssertMsg(const char *file, int line, const char *statement, ...)
 {
     static bool debug = true;
 
@@ -297,7 +297,7 @@ IEXPORTS_LAUNCHER void _InternalAssert(const char *file, int line, const char *s
 
 #include <signal.h>
 
-IEXPORTS_LAUNCHER void _InternalAssert(const char *file, int line, const char *statement)
+IEXPORTS void _InternalAssertMsg(const char *file, int line, const char *statement)
 {
 	MsgError("\n*Assertion failed, file \"%s\", line %d\n*Expression \"%s\"", file, line, statement);
 
@@ -334,15 +334,3 @@ void InitMessageBoxPlatform()
 	gtk_init_check(NULL, NULL);
 #endif // !_WIN32 && USE_GTK
 }
-
-#ifndef _DKLAUNCHER_
-DECLARE_CMD(test_error, "Test error messagebox", 0)
-{
-    ErrorMsg("Test error messagebox!");
-}
-
-DECLARE_CMD(test_assert, "Test assert messagebox", 0)
-{
-    ASSERTMSG(false, "Test ASSERT messagebox!");
-}
-#endif //_DKLAUNCHER_

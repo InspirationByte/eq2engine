@@ -140,7 +140,7 @@ struct imageDesc_t
 			delete layers[i].image;
 	}
 
-	DkList<imgLayer_t> layers;
+	Array<imgLayer_t> layers;
 	EqString name;
 };
 
@@ -374,7 +374,7 @@ inline int AtlasPackComparison(PackerRectangle *const &elem0, PackerRectangle *c
 	return (elem1->width + elem1->height) - (elem0->width + elem0->height);
 }
 
-bool CreateAtlasImage(const DkList<imageDesc_t*>& images_list, 
+bool CreateAtlasImage(const Array<imageDesc_t*>& images_list, 
 						const char* pszOutputImageName, 
 						kvkeybase_t* pParams)
 {
@@ -511,7 +511,7 @@ bool CreateAtlasImage(const DkList<imageDesc_t*>& images_list,
 
 void ProcessNewAtlas(const char* atlasPath, const char* pszOutputName)
 {
-	DkList<imageDesc_t*> imageList;
+	Array<imageDesc_t*> imageList;
 
 	KeyValues kvs;
 	if( kvs.LoadFromFile(atlasPath) )

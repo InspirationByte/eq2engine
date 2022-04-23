@@ -13,6 +13,8 @@
 #include "utils/strtools.h"
 #include "core/DebugInterface.h"
 #include "core/cmd_pacifier.h"
+#include "core/platform/assert.h"
+#include "core/platform/stackalloc.h"
 
 #include <zlib.h>
 

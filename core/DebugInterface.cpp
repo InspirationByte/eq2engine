@@ -245,7 +245,7 @@ void SpewMessage(SpewType_t spewtype, char const* msg)
 	}
 }
 
-void SpewMessageToOutput(SpewType_t spewtype,char const* pMsgFormat, va_list args)
+IEXPORTS void LogMsgV(SpewType_t spewtype, char const* pMsgFormat, va_list args)
 {
 	char pTempBuffer[DEBUGMESSAGE_BUFFER_SIZE];
 
@@ -264,75 +264,40 @@ void SpewMessageToOutput(SpewType_t spewtype,char const* pMsgFormat, va_list arg
 	}
 }
 
-// Simple messages
-IEXPORTS void Msg(const char *fmt,...)
+IEXPORTS void LogMsg(SpewType_t spewtype, char const* fmt, ...)
 {
-	va_list		argptr;
+	va_list	argptr;
 
-	va_start (argptr,fmt);
-	SpewMessageToOutput(SPEW_NORM,fmt,argptr);
-	va_end (argptr);
-}
-
-// Error messages
-IEXPORTS void MsgError(const char *fmt,...)
-{
-	va_list		argptr;
-
-	va_start (argptr,fmt);
-	SpewMessageToOutput(SPEW_ERROR,fmt,argptr);
-	va_end (argptr);
-}
-
-// Info messages
-IEXPORTS void MsgInfo(const char *fmt,...)
-{
-	va_list		argptr;
-
-	va_start (argptr,fmt);
-	SpewMessageToOutput(SPEW_INFO,fmt,argptr);
-	va_end (argptr);
-}
-
-//Warning messages
-IEXPORTS void MsgWarning(const char *fmt,...)
-{
-	va_list		argptr;
-
-	va_start (argptr,fmt);
-	SpewMessageToOutput(SPEW_WARNING,fmt,argptr);
-	va_end (argptr);
-}
-
-// Good messages
-IEXPORTS void MsgAccept(const char *fmt,...)
-{
-	va_list		argptr;
-
-	va_start (argptr,fmt);
-	SpewMessageToOutput(SPEW_SUCCESS,fmt,argptr);
-	va_end (argptr);
+	va_start(argptr, fmt);
+	LogMsgV(spewtype, fmt, argptr);
+	va_end(argptr);
 }
 
 // Developer messages
-IEXPORTS void DevMsg(int level, const char *fmt,...)
+IEXPORTS void DevMsgV(int level, char const* pMsgFormat, va_list args)
 {
 	// Don't print messages that lower than developer level
 	if( !(level & g_developerMode) )
 		return;
 
-	va_list argptr;
-
-	va_start (argptr,fmt);
-	SpewMessageToOutput(SPEW_WARNING,fmt,argptr);
-	va_end (argptr);
+	LogMsgV(SPEW_WARNING, pMsgFormat, args);
 }
+
+IEXPORTS void DevMsg(int level, const char* fmt, ...)
+{
+	va_list	argptr;
+
+	va_start(argptr, fmt);
+	DevMsgV(level, fmt, argptr);
+	va_end(argptr);
+}
+
 #else
 
-IEXPORTS void Msg(char *fmt,...) {}
-IEXPORTS void MsgInfo(char *fmt,...) {}
-IEXPORTS void MsgWarning(char *fmt,...) {}
-IEXPORTS void MsgError(char *fmt,...) {}
-IEXPORTS void MsgAccept(char *fmt,...) {}
+IEXPORTS void	LogMsgV(SpewType_t spewtype, char const* pMsgFormat, va_list args){}
+IEXPORTS void	LogMsg(SpewType_t spewtype, char const* fmt, ...) {}
+
+IEXPORTS void	DevMsgV(int level, char const* pMsgFormat, va_list args){}
+IEXPORTS void	DevMsg(int level, const char* fmt, ...){}
 
 #endif

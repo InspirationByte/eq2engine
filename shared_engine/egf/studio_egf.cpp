@@ -463,10 +463,10 @@ bool CEngineStudioEGF::LoadGenerateVertexBuffer()
 	// TODO: this should be optimized by the compiler
 	{
 		// load all group vertices and indices
-		//DkList<EGFHwVertex_t>	loadedvertices;
+		//Array<EGFHwVertex_t>	loadedvertices;
 
-		//DkList<uint32>			loadedindices;
-		//DkList<uint16>			loadedindices_short;
+		//Array<uint32>			loadedindices;
+		//Array<uint16>			loadedindices_short;
 
 		// use index size
 		int nIndexSize = INDEX_SIZE_SHORT;
@@ -885,7 +885,7 @@ bool egf_vertex_comp(const EGFHwVertex_t& a, const EGFHwVertex_t& b)
 	return (a.pos == b.pos) && (a.texcoord == b.texcoord);
 }
 
-void MakeDecalTexCoord(DkList<EGFHwVertex_t>& verts, DkList<int>& indices, const decalmakeinfo_t& info)
+void MakeDecalTexCoord(Array<EGFHwVertex_t>& verts, Array<int>& indices, const decalmakeinfo_t& info)
 {
 	Vector3D fSize = info.size * 2.0f;
 
@@ -994,8 +994,8 @@ tempdecal_t* CEngineStudioEGF::MakeTempDecal(const decalmakeinfo_t& info, Matrix
 	studiohdr_t* pHdr = m_hwdata->studio;
 	int nLod = 0;	// do from LOD 0
 
-	DkList<EGFHwVertex_t>	verts;
-	DkList<int>				indices;
+	Array<EGFHwVertex_t>	verts;
+	Array<int>				indices;
 
 	Matrix4x4* tempMatrixArray = PPAllocStructArray(Matrix4x4, m_hwdata->studio->numBones);
 
@@ -1032,9 +1032,9 @@ tempdecal_t* CEngineStudioEGF::MakeTempDecal(const decalmakeinfo_t& info, Matrix
 
 			uint32* pIndices = pGroup->pVertexIdx(0);
 
-			DkList<EGFHwVertex_t>	g_verts;
-			DkList<int>				g_indices;
-			DkList<int>				g_orig_indices;
+			Array<EGFHwVertex_t>	g_verts;
+			Array<int>				g_indices;
+			Array<int>				g_orig_indices;
 
 			g_verts.resize(pGroup->numIndices);
 			g_indices.resize(pGroup->numIndices);

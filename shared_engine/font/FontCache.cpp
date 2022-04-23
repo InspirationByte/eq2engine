@@ -7,7 +7,7 @@
 
 #include "core/IDkCore.h"
 #include "core/DebugInterface.h"
-#include "ds/DkList.h"
+#include "ds/Array.h"
 #include "ds/EqString.h"
 #include "utils/KeyValues.h"
 

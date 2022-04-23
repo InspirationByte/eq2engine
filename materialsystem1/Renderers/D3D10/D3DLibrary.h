@@ -65,7 +65,7 @@ protected:
 #endif
 
 	IEqSwapChain*			m_swapChain;
-	DkList<IEqSwapChain*>	m_swapChains;
+	Array<IEqSwapChain*>	m_swapChains;
 
 	DXGI_RATIONAL	m_fullScreenRefresh;
 

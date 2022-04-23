@@ -15,7 +15,7 @@
 #include "core/ConCommand.h"
 #include "core/DebugInterface.h"
 #include "core/IDkCore.h"
-
+#include "core/platform/assert.h"
 #include "utils/strtools.h"
 
 EXPORTED_INTERFACE(IConsoleCommands, CConsoleCommands);
@@ -71,7 +71,7 @@ DECLARE_CONCOMMAND_FN(cvarlist)
 	int iCVCount = 0;
 	// Loop through cvars...
 
-	const DkList<ConCommandBase*> *pCommandBases = g_consoleCommands->GetAllCommands();
+	const Array<ConCommandBase*> *pCommandBases = g_consoleCommands->GetAllCommands();
 
 	for (int i = 0; i < pCommandBases->numElem(); i++)
 	{
@@ -99,7 +99,7 @@ DECLARE_CONCOMMAND_FN(cmdlist)
 	int iCVCount = 0;
 
 	// Loop through cvars...
-	const DkList<ConCommandBase*>* pCommandBases = g_consoleCommands->GetAllCommands();
+	const Array<ConCommandBase*>* pCommandBases = g_consoleCommands->GetAllCommands();
 
 	for (int i = 0; i < pCommandBases->numElem(); i++)
 	{
@@ -118,10 +118,10 @@ DECLARE_CONCOMMAND_FN(cmdlist)
 	MsgWarning("********Command list ends*********\n");
 }
 
-void cvar_list_collect(const ConCommandBase* cmd, DkList<EqString>& list, const char* query)
+void cvar_list_collect(const ConCommandBase* cmd, Array<EqString>& list, const char* query)
 {
 	const ConCommandBase* pBase;
-	const DkList<ConCommandBase*>* pCommandBases = g_consoleCommands->GetAllCommands();
+	const Array<ConCommandBase*>* pCommandBases = g_consoleCommands->GetAllCommands();
 
 	const int LIST_LIMIT = 50;
 
@@ -252,7 +252,7 @@ DECLARE_CONCOMMAND_FN(seti)
 	pConVar->SetValue(joinArgs.GetData());
 }
 
-void fncfgfiles_variants(const ConCommandBase* cmd, DkList<EqString>& list, const char* query)
+void fncfgfiles_variants(const ConCommandBase* cmd, Array<EqString>& list, const char* query)
 {
 	DKFINDDATA* findData = nullptr;
 	char* fileName = (char*)g_fileSystem->FindFirst("cfg/*.cfg", &findData, SP_MOD);
@@ -282,7 +282,7 @@ ConCommand seta("seti", CONCOMMAND_FN(seti), cvar_list_collect, "Sets cvar value
 ConCommand revert("revert", CONCOMMAND_FN(revertcvar), cvar_list_collect, "Reverts cvar to it's default value", CV_UNREGISTERED);
 
 
-void SplitCommandForValidArguments(const char* command, DkList<EqString>& commands)
+void SplitCommandForValidArguments(const char* command, Array<EqString>& commands)
 {
 	const char *pChar = command;
 	while (*pChar && isspace(static_cast<unsigned char>(*pChar)))
@@ -492,7 +492,7 @@ void CConsoleCommands::ParseAndAppend(char* str, int len, void* extra)
 	{
 		EqString cmdStr(tmpStr.TrimSpaces());
 
-		DkList<EqString> cmdArgs;
+		Array<EqString> cmdArgs;
 		SplitCommandForValidArguments(cmdStr.ToCString(), cmdArgs);
 
 		// executing file must be put to the command buffer in proper order
@@ -586,7 +586,7 @@ void CConsoleCommands::SplitOnArgsAndExec(char* str, int len, void* extra)
 
 	EqString commandStr(str,len);
 
-	DkList<EqString> cmdArgs;
+	Array<EqString> cmdArgs;
 
 	// split it
 	SplitCommandForValidArguments(commandStr.ToCString(), cmdArgs);
@@ -673,7 +673,7 @@ bool CConsoleCommands::ExecuteCommandBuffer(cmdFilterFn_t filterFn /*= nullptr*/
 }
 
 // returns failed commands
-DkList<EqString>& CConsoleCommands::GetFailedCommands()
+Array<EqString>& CConsoleCommands::GetFailedCommands()
 {
 	return m_failedCommands;
 }

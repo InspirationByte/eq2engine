@@ -10,7 +10,7 @@
 
 #include "core/dktypes.h"
 #include "core/ppmem.h"
-#include "ds/DkList.h"
+#include "ds/Array.h"
 #include "utils/strtools.h"
 
 #include "math/DkMath.h"
@@ -244,7 +244,7 @@ struct studioHwData_t
 		Vector3D			position; // bone initial position
 		Vector3D			rotation; // bone initial rotation
 
-		DkList<int>			childs; // child bones
+		Array<int>			childs; // child bones
 
 		int					chain_id;
 		int					link_id;

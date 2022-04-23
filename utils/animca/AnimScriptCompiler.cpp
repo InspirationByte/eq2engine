@@ -24,16 +24,16 @@ studiohdr_t*				g_model = NULL;
 int							g_numbones = 0;
 
 // animations
-DkList<studioAnimation_t>	g_animations;
+Array<studioAnimation_t>	g_animations;
 
 // sequences
-DkList<sequencedesc_t>		g_sequences;
+Array<sequencedesc_t>		g_sequences;
 
 // events
-DkList<sequenceevent_t>		g_events;
+Array<sequenceevent_t>		g_events;
 
 // pose controllers
-DkList<posecontroller_t>	g_posecontrollers;
+Array<posecontroller_t>	g_posecontrollers;
 
 kvkeybase_t*				g_model_usage = NULL;
 kvkeybase_t*				g_outputfilename = NULL;
@@ -442,7 +442,7 @@ void RemapAnimationLength(studioAnimation_t* pAnim, int newLength)
 
 struct animCaBoneFrames_t
 {
-	DkList<animframe_t> frames;
+	Array<animframe_t> frames;
 	Matrix4x4 bonematrix;
 	int nParentBone;
 };
@@ -503,7 +503,7 @@ float readFloat(Tokenizer& tok)
 	return (float)atof(str);
 }
 
-bool ReadFramesForBone(Tokenizer& tok, DkList<animCaBoneFrames_t>& bones)
+bool ReadFramesForBone(Tokenizer& tok, Array<animCaBoneFrames_t>& bones)
 {
 	char *str;
 
@@ -565,7 +565,7 @@ bool ReadFrames(Tokenizer& tok, dsmmodel_t* pModel, studioAnimation_t* pAnim)
 
 	int nFrameIndex = 0;
 
-	DkList<animCaBoneFrames_t> bones;
+	Array<animCaBoneFrames_t> bones;
 	bones.setNum( pModel->bones.numElem() );
 
 	// FIXME: do it after ReadBones, not here
@@ -1108,8 +1108,8 @@ void ParseSequences(kvkeybase_t* section)
 	}
 }
 
-DkList<animationdesc_t>		g_animationdescs;
-DkList<animframe_t>			g_animframes;
+Array<animationdesc_t>		g_animationdescs;
+Array<animframe_t>			g_animframes;
 
 //************************************
 // Converts animations to writible format

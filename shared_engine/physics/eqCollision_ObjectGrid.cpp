@@ -239,7 +239,7 @@ void CEqCollisionBroadphaseGrid::FreeCellAt( int x, int y )
 
 	if(cell)
 	{
-		DkList<CEqCollisionObject*>& dynamicObjs = cell->m_dynamicObjs;
+		Array<CEqCollisionObject*>& dynamicObjs = cell->m_dynamicObjs;
 		int count = dynamicObjs.numElem();
 
 		for(int i = 0; i < count; i++)

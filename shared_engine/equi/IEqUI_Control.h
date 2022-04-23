@@ -10,8 +10,8 @@
 
 #include "core/ppmem.h"
 
-#include "ds/DkList.h"
-#include "ds/DkLinkedList.h"
+#include "ds/Array.h"
+#include "ds/List.h"
 #include "ds/eqstring.h"
 #include "ds/eqwstring.h"
 #include "utils/TextureAtlas.h"
@@ -58,7 +58,7 @@ struct ui_event
 	int					uid;
 	EqString			name;
 	uiEventCallback_t	callback { nullptr };
-	DkList<EqString>	args;
+	Array<EqString>	args;
 };
 
 struct ui_transform
@@ -209,9 +209,9 @@ protected:
 
 	IUIControl*					m_parent{ nullptr };
 
-	DkLinkedList<IUIControl*>	m_childs;		// child panels
+	List<IUIControl*>	m_childs;		// child panels
 
-	DkList<ui_event>			m_eventCallbacks;
+	Array<ui_event>			m_eventCallbacks;
 
 	IVector2D					m_position { 0 };
 	IVector2D					m_size { 64 };

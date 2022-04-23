@@ -623,7 +623,7 @@ IUIControl* IUIControl::HitTest(const IVector2D& point)
 // returns child control
 IUIControl* IUIControl::FindChild(const char* pszName)
 {
-	DkLinkedListIterator<IUIControl*> iter(m_childs);
+	ListIterator<IUIControl*> iter(m_childs);
 
 	if(iter.goToFirst())
 	{
@@ -640,7 +640,7 @@ IUIControl* IUIControl::FindChild(const char* pszName)
 
 IUIControl* IUIControl::FindChildRecursive(const char* pszName)
 {
-	DkLinkedListIterator<IUIControl*> iter(m_childs);
+	ListIterator<IUIControl*> iter(m_childs);
 
 	if (iter.goToFirst())
 	{

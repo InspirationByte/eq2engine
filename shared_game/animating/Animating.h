@@ -106,9 +106,9 @@ protected:
 	int							m_numBones;
 
 	// different motion packages has different sequience list
-	DkList<gsequence_t>			m_seqList; // loaded sequences
-	DkList<gposecontroller_t>	m_poseControllers; // pose controllers
-	DkList<gikchain_t>			m_ikChains;
+	Array<gsequence_t>			m_seqList; // loaded sequences
+	Array<gposecontroller_t>	m_poseControllers; // pose controllers
+	Array<gikchain_t>			m_ikChains;
 
 	// sequence timers. first timer is main, and transitional is last
 	sequencetimer_t				m_sequenceTimers[MAX_SEQUENCE_TIMERS];

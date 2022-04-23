@@ -13,7 +13,7 @@
 #include <stdlib.h>
 #include "ConCommandBase.h"
 
-#define CONCOMMAND_ARGUMENTS ConCommand* cmd, DkList<EqString>& args
+#define CONCOMMAND_ARGUMENTS ConCommand* cmd, Array<EqString>& args
 
 #define CONCOMMAND_FN(name) CC_##name##_f
 
@@ -49,7 +49,7 @@ public:
 	ConCommand(char const *name,CON_COMMAND_CALLBACK callback, CMDBASE_VARIANTS_CALLBACK variantsList,char const *desc = 0, int flags = 0);
 
 	// Command execution
-	void DispatchFunc(DkList<EqString>& args);
+	void DispatchFunc(Array<EqString>& args);
 
 private:
 	void Create(char const *pszName,CON_COMMAND_CALLBACK callback, CMDBASE_VARIANTS_CALLBACK variantsList,char const *pszHelpString, int nFlags);

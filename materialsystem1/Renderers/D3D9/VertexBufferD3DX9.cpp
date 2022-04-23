@@ -11,6 +11,7 @@
 #include "VertexBufferD3DX9.h"
 
 #include "core/DebugInterface.h"
+#include "core/platform/MessageBox.h"
 
 #include "ShaderAPID3DX9.h"
 

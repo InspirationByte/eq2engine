@@ -10,7 +10,7 @@
 
 #include "c_udp.h"
 #include "core/dktypes.h"
-#include "ds/DkList.h"
+#include "ds/Array.h"
 #include "ds/eqstring.h"
 
 namespace Networking
@@ -117,7 +117,7 @@ public:
 private:
 	netPeer_t			m_lastclient;
 
-	DkList<netPeer_t*>	m_clients;
+	Array<netPeer_t*>	m_clients;
 };
 
 //-------------------------------------------------------------------------------------------------------

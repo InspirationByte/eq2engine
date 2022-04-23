@@ -9,7 +9,7 @@
 #define CGLTEXTURE_H
 
 #include "../Shared/CTexture.h"
-#include "ds/DkList.h"
+#include "ds/Array.h"
 
 #include "ShaderAPIGL.h"
 
@@ -32,7 +32,7 @@ public:
 	// unlocks texture for modifications, etc
 	void					Unlock();
 
-	DkList<GLTextureRef_t>	textures;
+	Array<GLTextureRef_t>	textures;
 
 	float					m_flLod;
 	GLuint					glTarget;

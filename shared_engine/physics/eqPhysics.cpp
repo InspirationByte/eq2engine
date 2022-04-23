@@ -276,7 +276,7 @@ struct CEqManifoldResult : public btManifoldResult
 		return true;
 	}
 
-	DkList<CollisionData_t> m_collisions;
+	Array<CollisionData_t> m_collisions;
 	Vector3D				m_center;
 	bool					m_singleSided;
 };
@@ -293,7 +293,7 @@ CEqPhysics::~CEqPhysics()
 
 }
 
-void InitSurfaceParams( DkList<eqPhysSurfParam_t*>& list )
+void InitSurfaceParams( Array<eqPhysSurfParam_t*>& list )
 {
 	// parse physics file
 	KeyValues kvs;
@@ -717,7 +717,7 @@ void CEqPhysics::DetectBodyCollisions(CEqRigidBody* bodyA, CEqRigidBody* bodyB, 
 	// check the contact pairs of bodyB (because it has been already processed by the order)
 	// if we had any contact pair with bodyA we should discard this collision
 	{
-		DkList<ContactPair_t>& pairsB = bodyB->m_contactPairs;
+		Array<ContactPair_t>& pairsB = bodyB->m_contactPairs;
 
 		// don't process collisions again
 		for (int i = 0; i < pairsB.numElem(); i++)
@@ -1114,8 +1114,8 @@ void CEqPhysics::DetectCollisionsSingle(CEqRigidBody* body)
 			if(!ncell)
 				continue;
 
-			const DkList<CEqCollisionObject*>& gridObjects = ncell->m_gridObjects;
-			const DkList<CEqCollisionObject*>& dynamicObjects = ncell->m_dynamicObjs;
+			const Array<CEqCollisionObject*>& gridObjects = ncell->m_gridObjects;
+			const Array<CEqCollisionObject*>& dynamicObjects = ncell->m_dynamicObjs;
 			
 			// iterate over static objects in cell
 			for (int i = 0; i < gridObjects.numElem(); i++)
@@ -1255,7 +1255,7 @@ void CEqPhysics::ProcessContactPair(ContactPair_t& pair)
 	//-----------------------------------------------
 	// OBJECT A
 	{
-		DkList<CollisionPairData_t>& pairs = pair.bodyA->m_collisionList;
+		Array<CollisionPairData_t>& pairs = pair.bodyA->m_collisionList;
 
 		collData.bodyA = pair.bodyA;
 		collData.bodyB = pair.bodyB;
@@ -1282,7 +1282,7 @@ void CEqPhysics::ProcessContactPair(ContactPair_t& pair)
 	//-----------------------------------------------
 	// OBJECT B
 	{
-		DkList<CollisionPairData_t>& pairs = pair.bodyB->m_collisionList;
+		Array<CollisionPairData_t>& pairs = pair.bodyB->m_collisionList;
 
 		collData.bodyA = pair.bodyB;
 		collData.bodyB = pair.bodyA;
@@ -1392,7 +1392,7 @@ void CEqPhysics::SimulateStep(float deltaTime, int iteration, FNSIMULATECALLBACK
 	{
 		CEqRigidBody* body = m_moveable[i];
 
-		DkList<ContactPair_t>& pairs = body->m_contactPairs;
+		Array<ContactPair_t>& pairs = body->m_contactPairs;
 		int numContactPairs = pairs.numElem();
 
 		for (int j = 0; j < numContactPairs; j++)
@@ -1507,8 +1507,8 @@ bool CEqPhysics::TestLineCollisionOnCell(int y, int x,
 			debugoverlay->Box3D(cellMin, cellMax, ColorRGBA(1,0,0,0.25f));
 	}
 
-	const DkList<CEqCollisionObject*>& gridObjects = cell->m_gridObjects;
-	const DkList<CEqCollisionObject*>& dynamicObjects = cell->m_dynamicObjs;
+	const Array<CEqCollisionObject*>& gridObjects = cell->m_gridObjects;
+	const Array<CEqCollisionObject*>& dynamicObjects = cell->m_dynamicObjs;
 	
 	// static objects are not checked if line is not in Y bound
 	if(staticInBoundTest && (objectTypeTesting & 0x1))

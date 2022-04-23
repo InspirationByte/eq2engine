@@ -11,7 +11,7 @@
 
 #include "../Shared/CTexture.h"
 
-#include "ds/DkList.h"
+#include "ds/Array.h"
 
 #include <d3d9.h>
 
@@ -37,8 +37,8 @@ public:
 	// unlocks texture for modifications, etc
 	void					Unlock();
 
-	DkList<LPDIRECT3DBASETEXTURE9>	textures;
-	DkList<LPDIRECT3DSURFACE9>		surfaces;
+	Array<LPDIRECT3DBASETEXTURE9>	textures;
+	Array<LPDIRECT3DSURFACE9>		surfaces;
 	LPDIRECT3DSURFACE9		m_dummyDepth;
 
 	D3DPOOL					m_pool;

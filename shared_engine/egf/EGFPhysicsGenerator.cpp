@@ -39,7 +39,7 @@ bool triangle_compare(itriangle &tri1, itriangle &tri2)
 	return (tri1.idxs[0] == tri2.idxs[0]) && (tri1.idxs[1] == tri2.idxs[1]) && (tri1.idxs[2] == tri2.idxs[2]);
 }
 
-int find_triangle(DkList<itriangle> *tris, itriangle &tofind)
+int find_triangle(Array<itriangle> *tris, itriangle &tofind)
 {
 	for(int i = 0; i < tris->numElem(); i++)
 	{
@@ -55,7 +55,7 @@ bool vertex_compare(dsmvertex_t &v1, dsmvertex_t &v2)
 	return v1.position == v2.position;
 }
 
-int find_vertex(DkList<dsmvertex_t> &verts, dsmvertex_t &tofind)
+int find_vertex(Array<dsmvertex_t> &verts, dsmvertex_t &tofind)
 {
 	for(int i = 0; i < verts.numElem(); i++)
 	{
@@ -143,7 +143,7 @@ void CEGFPhysicsGenerator::SetupRagdollJoints(ragdolljoint_t* boneArray)
 }
 
 // adds shape to datas
-int CEGFPhysicsGenerator::AddShape(DkList<dsmvertex_t> &vertices, DkList<int> &indices, int shapeType, bool assumedAsConvex)
+int CEGFPhysicsGenerator::AddShape(Array<dsmvertex_t> &vertices, Array<int> &indices, int shapeType, bool assumedAsConvex)
 {
 	physgeominfo_t geom_info;
 	geom_info.type = shapeType;
@@ -229,7 +229,7 @@ int CEGFPhysicsGenerator::AddShape(DkList<dsmvertex_t> &vertices, DkList<int> &i
 	{
 		// just make trimesh
 
-		DkList<Vector3D> shapeVerts;
+		Array<Vector3D> shapeVerts;
 
 		int start_vertex = m_vertices.numElem();
 
@@ -298,7 +298,7 @@ int CEGFPhysicsGenerator::MakeBoneValidParent(int boneId)
 
 // this procedure useful for ragdolls
 // it collects information about neighbour surfaces and joins triangles into subparts
-void CEGFPhysicsGenerator::SubdivideModelParts( DkList<dsmvertex_t>& vertices, DkList<int>& indices, DkList<indxgroup_t*>& groups )
+void CEGFPhysicsGenerator::SubdivideModelParts( Array<dsmvertex_t>& vertices, Array<int>& indices, Array<indxgroup_t*>& groups )
 {
 	for(int i = 0 ; i < m_srcModel->groups.numElem(); i++)
 	{
@@ -376,7 +376,7 @@ void CEGFPhysicsGenerator::SubdivideModelParts( DkList<dsmvertex_t>& vertices, D
 	MsgInfo("Detected groups: %d\n", groups.numElem());
 }
 
-bool CEGFPhysicsGenerator::CreateRagdollObjects( DkList<dsmvertex_t>& vertices, DkList<int>& indices, DkList<indxgroup_t*>& indexGroups )
+bool CEGFPhysicsGenerator::CreateRagdollObjects( Array<dsmvertex_t>& vertices, Array<int>& indices, Array<indxgroup_t*>& indexGroups )
 {
 	// setup pose bones
 	S_NEWA(ragJoints, ragdolljoint_t, m_srcModel->bones.numElem());
@@ -398,7 +398,7 @@ bool CEGFPhysicsGenerator::CreateRagdollObjects( DkList<dsmvertex_t>& vertices, 
 
 	Msg("Assigning bones to groups...\n");
 
-	DkList<int> bone_group_indices;
+	Array<int> bone_group_indices;
 
 	for(int i = 0; i < indexGroups.numElem(); i++)
 	{
@@ -438,7 +438,7 @@ bool CEGFPhysicsGenerator::CreateRagdollObjects( DkList<dsmvertex_t>& vertices, 
 
 	for(int i = 0; i < m_srcModel->bones.numElem(); i++)
 	{
-		DkList<int> bone_geom_indices;
+		Array<int> bone_geom_indices;
 
 		Vector3D bboxMins(MAX_COORD_UNITS);
 		Vector3D bboxMaxs(-MAX_COORD_UNITS);
@@ -469,7 +469,7 @@ bool CEGFPhysicsGenerator::CreateRagdollObjects( DkList<dsmvertex_t>& vertices, 
 		Vector3D object_center = (bboxMins+bboxMaxs)*0.5f;
 				
 		// transform objects to origin
-		DkList<int> processed_index;
+		Array<int> processed_index;
 		for(int j = 0; j < bone_geom_indices.numElem(); j++)
 		{
 			if( processed_index.findIndex(bone_geom_indices[j]) == -1 )
@@ -599,7 +599,7 @@ bool CEGFPhysicsGenerator::CreateRagdollObjects( DkList<dsmvertex_t>& vertices, 
 	return true;
 }
 
-bool CEGFPhysicsGenerator::CreateCompoundOrSeparateObjects( DkList<dsmvertex_t>& vertices, DkList<int>& indices, DkList<indxgroup_t*>& indexGroups, bool bCompound )
+bool CEGFPhysicsGenerator::CreateCompoundOrSeparateObjects( Array<dsmvertex_t>& vertices, Array<int>& indices, Array<indxgroup_t*>& indexGroups, bool bCompound )
 {
 	m_props.model_usage = PHYSMODEL_USAGE_RIGID_COMP;
 
@@ -625,11 +625,11 @@ bool CEGFPhysicsGenerator::CreateCompoundOrSeparateObjects( DkList<dsmvertex_t>&
 	// do compoound
 	if( bCompound )
 	{
-		DkList<int> shape_ids;
+		Array<int> shape_ids;
 
 		for(int i = 0; i < indexGroups.numElem(); i++)
 		{
-			DkList<int> tmpIndices;
+			Array<int> tmpIndices;
 
 			for(int j = 0; j < indexGroups[i]->numElem(); j++)
 			{
@@ -688,7 +688,7 @@ bool CEGFPhysicsGenerator::CreateCompoundOrSeparateObjects( DkList<dsmvertex_t>&
 
 		for(int i = 0; i < indexGroups.numElem(); i++)
 		{
-			DkList<int> tmpIndices;
+			Array<int> tmpIndices;
 
 			for(int j = 0; j < indexGroups[i]->numElem(); j++)
 			{
@@ -723,7 +723,7 @@ bool CEGFPhysicsGenerator::CreateCompoundOrSeparateObjects( DkList<dsmvertex_t>&
 	return true;
 }
 
-bool CEGFPhysicsGenerator::CreateSingleObject( DkList<dsmvertex_t>& vertices, DkList<int>& indices )
+bool CEGFPhysicsGenerator::CreateSingleObject( Array<dsmvertex_t>& vertices, Array<int>& indices )
 {
 	// shape types ignored on compound
 	bool isConcave = KV_GetValueBool( m_physicsParams->FindKeyBase("concave"), 0, false );
@@ -797,14 +797,14 @@ bool CEGFPhysicsGenerator::GenerateGeometry(dsmmodel_t* srcModel, kvkeybase_t* p
 	memset(m_props.comment_string, 0, sizeof(m_props.comment_string));
 	strcpy(m_props.comment_string, KV_GetValueString(m_physicsParams->FindKeyBase("comments"), 0, ""));
 
-	DkList<dsmvertex_t>		vertices;
-	DkList<int>				indices;
+	Array<dsmvertex_t>		vertices;
+	Array<int>				indices;
 
 	// if we've got ragdoll
 	if( m_forceGroupSubdivision || (m_srcModel->bones.numElem() > 1)  )
 	{
 		// generate index groups
-		DkList<indxgroup_t*> indexGroups;
+		Array<indxgroup_t*> indexGroups;
 		SubdivideModelParts(vertices, indices, indexGroups);
 
 		// generate ragdoll

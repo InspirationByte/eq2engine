@@ -295,7 +295,7 @@ bool Studio_LoadPhysModel(const char* pszPath, studioPhysData_t* pModel)
 			return false;
 		}
 
-		DkList<EqString> objectNames;
+		Array<EqString> objectNames;
 
 		pData += sizeof(physmodelhdr_t);
 

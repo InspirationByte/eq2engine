@@ -10,7 +10,7 @@
 
 #include "BasePackageFileReader.h"
 
-#include "ds/DkList.h"
+#include "ds/Array.h"
 #include "utils/IceKey.h"
 
 #include "core/dpk_defs.h"
@@ -80,7 +80,7 @@ protected:
 	dpkfileinfo_t			m_info;
 	IceKey					m_ice;
 
-	DkList<dpkblock_info_t>	m_blockInfo;
+	Array<dpkblock_info_t>	m_blockInfo;
 	int						m_curBlockIdx;
 
 	FILE*					m_handle;
@@ -110,7 +110,7 @@ protected:
 	dpkheader_t				m_header;
 	dpkfileinfo_t*			m_dpkFiles;
 
-	DkList<CDPKFileStream*>	m_openFiles;
+	Array<CDPKFileStream*>	m_openFiles;
 };
 
 #endif //DPK_FILE_READER_H

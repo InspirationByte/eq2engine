@@ -9,7 +9,7 @@
 #define EQBULLETINDEXEDMESH_H
 
 #include "core/platform/Platform.h"
-#include "ds/DkList.h"
+#include "ds/Array.h"
 
 #include <BulletCollision/CollisionShapes/btStridingMeshInterface.h>
 #include "math/DkMath.h"
@@ -67,7 +67,7 @@ protected:
 
 	PHY_ScalarType					m_indexType;
 
-	DkList<eqBulletMeshSubpart_t>	m_subparts; // or batches
+	Array<eqBulletMeshSubpart_t>	m_subparts; // or batches
 };
 
 #endif // EQBULLETINDEXEDMESH_H

@@ -12,7 +12,7 @@
 
 #include "math/Vector.h"
 #include "math/Matrix.h"
-#include "ds/DkList.h"
+#include "ds/Array.h"
 #include "ds/eqstring.h"
 
 //---------------------------------------
@@ -469,7 +469,7 @@ struct shaderProgramText_t
 
 	char*				text;
 	uint32				checksum;
-	DkList<EqString>	includes;
+	Array<EqString>	includes;
 };
 
 struct shaderProgramCompileInfo_t

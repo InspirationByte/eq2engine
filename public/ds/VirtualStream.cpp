@@ -7,7 +7,7 @@
 
 #include "VirtualStream.h"
 #include "core/IFileSystem.h"
-#include "core/platform/MessageBox.h"
+#include "core/platform/assert.h"
 #include "utils/CRC32.h"
 #include "eqstring.h"
 

@@ -9,7 +9,7 @@
 #define RECTANGLEPACKER_H
 
 #include "core/dktypes.h"
-#include "ds/DkList.h"
+#include "ds/Array.h"
 #include "math/Rectangle.h"
 
 #ifdef _MSC_VER
@@ -94,7 +94,7 @@ public:
 	void						Cleanup();
 
 protected:
-	DkList<PackerRectangle *>	m_pRectangles;
+	Array<PackerRectangle *>	m_pRectangles;
 	float						m_padding;
 };
 

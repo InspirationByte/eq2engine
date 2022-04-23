@@ -24,14 +24,14 @@ struct esmshapevertex_t
 
 struct esmshapekey_t
 {
-	DkList<esmshapevertex_t>	verts;
+	Array<esmshapevertex_t>	verts;
 	EqString					name;
 	int							time;
 };
 
 struct esmshapedata_t
 {
-	DkList<esmshapekey_t*>	shapes;
+	Array<esmshapekey_t*>	shapes;
 	EqString				reference;
 	int						time;
 };

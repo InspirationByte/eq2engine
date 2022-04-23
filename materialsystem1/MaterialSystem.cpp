@@ -12,6 +12,7 @@
 #include "MaterialSystem.h"
 
 #include "core/platform/Platform.h"
+#include "core/platform/MessageBox.h"
 #include "core/ConVar.h"
 #include "core/ConCommand.h"
 #include "core/IFileSystem.h"
@@ -129,7 +130,7 @@ public:
 	}
 
 protected:
-	DkList<IMaterial*>	m_newMaterials;
+	Array<IMaterial*>	m_newMaterials;
 
 	CEqMutex			m_Mutex;
 };
@@ -346,7 +347,7 @@ void CMaterialSystem::CreateWhiteTexture()
 
 	SamplerStateParam_t texSamplerParams = g_pShaderAPI->MakeSamplerState(TEXFILTER_TRILINEAR_ANISO,TEXADDRESS_CLAMP,TEXADDRESS_CLAMP,TEXADDRESS_CLAMP);
 
-	DkList<CImage*> images;
+	Array<CImage*> images;
 	images.append(img);
 
 	m_whiteTexture = g_pShaderAPI->CreateTexture(images, texSamplerParams, TEXFLAG_NOQUALITYLOD);
@@ -619,7 +620,7 @@ void CMaterialSystem::ReloadAllMaterials()
 
 	g_pLoadBeginCallback();
 
-	DkList<IMaterial*> loadingList;
+	Array<IMaterial*> loadingList;
 
 	for(int i = 0; i < m_loadedMaterials.numElem(); i++)
 	{
@@ -675,16 +676,16 @@ void CMaterialSystem::FreeMaterials()
 
 void CMaterialSystem::ClearRenderStates()
 {
-	for (blendStateMap_t::iterator i = m_blendStates.begin(); i != m_blendStates.end(); ++i)
-		g_pShaderAPI->DestroyRenderState(i->second);
+	for (auto i = m_blendStates.begin(); i != m_blendStates.end(); ++i)
+		g_pShaderAPI->DestroyRenderState(*i);
 	m_blendStates.clear();
 
-	for (depthStateMap_t::iterator i = m_depthStates.begin(); i != m_depthStates.end(); ++i)
-		g_pShaderAPI->DestroyRenderState(i->second);
+	for (auto i = m_depthStates.begin(); i != m_depthStates.end(); ++i)
+		g_pShaderAPI->DestroyRenderState(*i);
 	m_depthStates.clear();
 
-	for (rasterStateMap_t::iterator i = m_rasterStates.begin(); i != m_rasterStates.end(); ++i)
-		g_pShaderAPI->DestroyRenderState(i->second);
+	for (auto i = m_rasterStates.begin(); i != m_rasterStates.end(); ++i)
+		g_pShaderAPI->DestroyRenderState(*i);
 	m_rasterStates.clear();
 }
 
@@ -1447,10 +1448,10 @@ void CMaterialSystem::SetBlendingStates(ER_BlendFactor nSrcFactor, ER_BlendFacto
 		desc.mask = colormask;
 
 		state = g_pShaderAPI->CreateBlendingState(desc);
-		m_blendStates[stateIndex] = state;
+		m_blendStates.insert(stateIndex, state);
 	}
 	else
-		state = blendState->second;
+		state = *blendState;
 
 	g_pShaderAPI->SetBlendingState( state );
 }
@@ -1474,7 +1475,7 @@ assert_sizeof(depthStateIndex_t,1);
 void CMaterialSystem::SetDepthStates(bool bDoDepthTest, bool bDoDepthWrite, ER_CompareFunc depthCompFunc)
 {
 	depthStateIndex_t idx(bDoDepthTest, bDoDepthWrite, depthCompFunc);
-	ubyte stateIndex = *(ushort*)&idx;
+	ushort stateIndex = *(ushort*)&idx;
 
 	IRenderState* state = nullptr;
 
@@ -1489,10 +1490,10 @@ void CMaterialSystem::SetDepthStates(bool bDoDepthTest, bool bDoDepthWrite, ER_C
 		desc.doStencilTest = false;
 
 		state = g_pShaderAPI->CreateDepthStencilState(desc);
-		m_depthStates[stateIndex] = state;
+		*m_depthStates.insert(stateIndex) = state;
 	}
 	else
-		state = depthState->second;
+		state = *depthState;
 
 	g_pShaderAPI->SetDepthStencilState( state );
 }
@@ -1518,7 +1519,7 @@ assert_sizeof(rasterStateIndex_t,1);
 void CMaterialSystem::SetRasterizerStates(ER_CullMode nCullMode, ER_FillMode nFillMode,bool bMultiSample,bool bScissor,bool bPolyOffset)
 {
 	rasterStateIndex_t idx(nCullMode, nFillMode, bMultiSample, bScissor,bPolyOffset);
-	ubyte stateIndex = *(ushort*)&idx;
+	ushort stateIndex = *(ushort*)&idx;
 
 	IRenderState* state = nullptr;
 
@@ -1540,10 +1541,10 @@ void CMaterialSystem::SetRasterizerStates(ER_CullMode nCullMode, ER_FillMode nFi
 		}
 
 		state = g_pShaderAPI->CreateRasterizerState(desc);
-		m_rasterStates[stateIndex] = state;
+		//m_rasterStates.insert(stateIndex, state);
 	}
 	else
-		state = rasterState->second;
+		state = *rasterState;
 
 	g_pShaderAPI->SetRasterizerState( state );
 }

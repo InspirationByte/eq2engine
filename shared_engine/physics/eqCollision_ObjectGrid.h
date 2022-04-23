@@ -9,7 +9,7 @@
 #define EQCOLLISION_OBJECTGRID_H
 
 #include "math/BoundingBox.h"
-#include "ds/DkList.h"
+#include "ds/Array.h"
 #include "core/ppmem.h"
 
 class CEqCollisionObject;
@@ -23,8 +23,8 @@ struct collgridcell_t
 	short	x,y;
 	float	cellBoundUsed;	// unsigned z of usage by static objects
 
-	DkList<CEqCollisionObject*>		m_gridObjects;
-	DkList<CEqCollisionObject*>		m_dynamicObjs;
+	Array<CEqCollisionObject*>		m_gridObjects;
+	Array<CEqCollisionObject*>		m_dynamicObjs;
 };
 
 class CEqCollisionBroadphaseGrid

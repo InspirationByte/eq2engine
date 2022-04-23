@@ -238,7 +238,7 @@ bool CDkCore::Init(const char* pszApplicationName, const char* pszCommandLine)
 		if(pAppDebug->FindKeyBase("PrintLeaksOnExit", KV_FLAG_NOVALUE))
 			g_bPrintLeaksOnShutdown = true;
 
-		DkList<EqString> devModeList;
+		Array<EqString> devModeList;
 
 		kvkeybase_t* devModesKv = pAppDebug->FindKeyBase("DeveloperMode");
 		if(devModesKv)
