@@ -144,21 +144,17 @@ public:
 
 protected:
 
-	int				m_nNumElem;
-	int				m_nSize;
+	int				m_nNumElem{ 0 };
+	int				m_nSize{ 0 };
 
-	int				m_nGranularity;
-	T *				m_pListPtr;
+	int				m_nGranularity{ 16 };
+	T*				m_pListPtr{ nullptr };
 };
 
 template< class T >
 inline Array<T>::Array( int newgranularity )
 {
 	ASSERT( newgranularity > 0 );
-
-	m_nNumElem		= 0;
-	m_nSize			= 0;
-	m_pListPtr		= nullptr;
 	m_nGranularity	= newgranularity;
 }
 

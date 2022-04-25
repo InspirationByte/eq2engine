@@ -132,6 +132,15 @@ public:
 		return find(key) != m_end; 
 	}
 
+	V& operator[](const K& key)
+	{
+		Iterator it = find(key);
+
+		if (it != m_end)
+			return *it;
+		return *insert(key);
+	}
+
 	Iterator insert(const Iterator& position, const K& key)
 	{
 		Item* insertPos = position.item;
@@ -382,8 +391,8 @@ private:
 
 		void set(Item* _parent, const K& _key)
 		{
+			new(this) Item(); // quite interesting but this is the only case where it works!!!
 			key = _key;
-			value = V();
 			parent = _parent;
 			left = nullptr;
 			right = nullptr;

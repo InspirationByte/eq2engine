@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
-	<Type Name="DkList&lt;*&gt;">
+	<Type Name="Array&lt;*&gt;">
 		<DisplayString Condition="m_pListPtr == 0">unallocated</DisplayString>
 		<Expand>
 			<Synthetic Name="Items">
@@ -22,7 +22,7 @@
 			</Item>
 		</Expand>
 	</Type>
-	<Type Name="DkLinkedList&lt;*&gt;">
+	<Type Name="List&lt;*&gt;">
 		<DisplayString Condition="count == 0">empty</DisplayString>
 		<DisplayString>items: { count }</DisplayString>
 		<Expand>
@@ -41,6 +41,25 @@
 			<Item Name="Current">curr</Item>
 		</Expand>
 	</Type>
+	<Type Name="Map&lt;*&gt;">
+		<DisplayString Condition="m_size == 0">empty</DisplayString>
+		<DisplayString>items: { m_size }</DisplayString>
+		<Expand>
+			<Synthetic Name="Items">
+				<DisplayString>count: { m_size }</DisplayString>
+				<Expand>
+					<TreeItems>
+						<Size>m_size</Size>
+						<HeadPointer>m_root</HeadPointer>
+						<LeftPointer>left</LeftPointer>
+						<RightPointer>right</RightPointer>
+						<ValueNode Name="[{key}]">value</ValueNode>
+					</TreeItems>
+				</Expand>
+			</Synthetic>
+		</Expand>
+	</Type>
+
 	<Type Name="EqString">
 		<DisplayString Condition="m_nLength == 0">String: empty</DisplayString>
 		<DisplayString>String: { m_pszString }</DisplayString>
