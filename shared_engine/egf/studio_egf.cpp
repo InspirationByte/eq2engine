@@ -499,7 +499,7 @@ bool CEngineStudioEGF::LoadGenerateVertexBuffer()
 		for (int i = 0; i < pHdr->numModels; i++)
 		{
 			studiomodeldesc_t* pModelDesc = pHdr->pModelDesc(i);
-			auto groupDescs = new studioModelRefGroupDesc_t[pModelDesc->numGroups];
+			studioModelRefGroupDesc_t* groupDescs = new studioModelRefGroupDesc_t[pModelDesc->numGroups];
 			lodModels[i].groupDescs = groupDescs;
 
 			for (int j = 0; j < pModelDesc->numGroups; j++)

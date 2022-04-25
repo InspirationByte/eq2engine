@@ -7,6 +7,7 @@
 
 #include "dsm_obj_loader.h"
 
+#include "ds/Map.h"
 #include "core/DebugInterface.h"
 #include "core/IFileSystem.h"
 #include "utils/Tokenizer.h"
@@ -15,6 +16,8 @@
 #include "math/Utility.h"
 
 #include <stdio.h>
+
+#define MAX_VERTS_PER_POLYGON 16
 
 namespace SharedModel
 {
@@ -209,8 +212,12 @@ bool LoadOBJ(dsmmodel_t* model, const char* filename)
 	texcoords.resize(nTexCoords);
 	normals.resize(nNormals);
 
+	dsmvertex_t verts[MAX_VERTS_PER_POLYGON];
+	int vindices[MAX_VERTS_PER_POLYGON];
+	int tindices[MAX_VERTS_PER_POLYGON];
+	int nindices[MAX_VERTS_PER_POLYGON];
+
 	dsmgroup_t* curgroup = NULL;
-	//int*		group_remap = new int[nVerts];
 
 	bool gl_to_eq = true;
 	bool blend_to_eq = false;
@@ -299,10 +306,6 @@ bool LoadOBJ(dsmmodel_t* model, const char* filename)
 					strcpy(curgroup->texture, material_name);
 			}
 
-			int vindices[32];
-			int tindices[32];
-			int nindices[32];
-
 			int slashcount = 0;
 			bool doubleslash = false;
 
@@ -315,13 +318,13 @@ bool LoadOBJ(dsmmodel_t* model, const char* filename)
 
 			strcpy(string, tok.nextLine()+1);
 
-			char* str_idxs[32] = {NULL};
+			char* str_idxs[MAX_VERTS_PER_POLYGON] = {NULL};
 
 			xstrsplitws(string, str_idxs);
 
 			int i = 0;
 
-			for(i = 0; i < 32; i++)
+			for(i = 0; i < MAX_VERTS_PER_POLYGON; i++)
 			{
 				char* pstr = str_idxs[i];
 
@@ -376,93 +379,61 @@ bool LoadOBJ(dsmmodel_t* model, const char* filename)
 				}
 			}
 
-			if(i > 2)
+			if (i <= 2)
+				continue;
+			
+			// Map<int, dsmvertex_t> verts;
+			// Array<int> indexList;
+			
+
+			// triangle fan
+			for(int v = 0; v < i; v++)
 			{
-				dsmvertex_t verts[32];
+				dsmvertex_t vert;
 
-				// triangle fan
-				for(int v = 0; v < i; v++)
+				if (!vertices.inRange(vindices[v]))
 				{
-					dsmvertex_t vert;
-
-					if (!vertices.inRange(vindices[v]))
-					{
-						ASSERT_FAIL("FIX YOUR OBJ! %d, max is %d\n", vindices[v], vertices.numElem());
-						continue;
-					}
-
-					verts[v].position = vertices[vindices[v]];
-
-					if(has_vt)
-						verts[v].texcoord = texcoords[tindices[v]];
-					if(has_vn)
-						verts[v].normal = normals[nindices[v]];
+					ASSERT_FAIL("FIX YOUR OBJ! %d, max is %d\n", vindices[v], vertices.numElem());
+					continue;
 				}
 
-				if(blend_to_eq)
+				verts[v].position = vertices[vindices[v]];
+
+				if(has_vt)
+					verts[v].texcoord = texcoords[tindices[v]];
+				if(has_vn)
+					verts[v].normal = normals[nindices[v]];
+			}
+
+			for(int v = 0; v < i-2; v++)
+			{
+				Vector3D cnormal;
+				ComputeTriangleNormal(verts[0].position, verts[v + 1].position, verts[v + 2].position, cnormal);
+
+				if(dot(cnormal, verts[0].normal) < 0.0f)
 				{
-					for(int v = 0; v < i-2; v++)
-					{
-						Vector3D cnormal;
-						ComputeTriangleNormal(verts[0].position, verts[v + 2].position, verts[v + 1].position, cnormal);
-
-						if(dot(cnormal, verts[0].normal) < 0.0f)
-						{
-							reverseNormals = true;
-						}
-					}
-
-					dsmvertex_t v0,v1,v2;
-					for(int v = 0; v < i-2; v++)
-					{
-						v0 = verts[0];
-						v1 = verts[v+2];
-						v2 = verts[v+1];
-
-						if(reverseNormals)
-						{
-							v0.normal *= -1.0f;
-							v1.normal *= -1.0f;
-							v2.normal *= -1.0f;
-						}
-
-						curgroup->verts.append(v0);
-						curgroup->verts.append(v1);
-						curgroup->verts.append(v2);
-					}
+					reverseNormals = true;
+					break;
 				}
-				else
+			}
+
+			dsmvertex_t v0,v1,v2;
+			for(int v = 0; v < i-2; v++)
+			{
+				v0 = verts[0];
+				v1 = verts[v+1];
+				v2 = verts[v+2];
+
+				if(reverseNormals)
 				{
-					for(int v = 0; v < i-2; v++)
-					{
-						Vector3D cnormal;
-						ComputeTriangleNormal(verts[0].position, verts[v + 1].position, verts[v + 2].position, cnormal);
-
-						if(dot(cnormal, verts[0].normal) < 0.0f)
-						{
-							reverseNormals = true;
-						}
-					}
-
-					dsmvertex_t v0,v1,v2;
-					for(int v = 0; v < i-2; v++)
-					{
-						v0 = verts[0];
-						v1 = verts[v+1];
-						v2 = verts[v+2];
-
-						if(reverseNormals)
-						{
-							v0.normal *= -1.0f;
-							v1.normal *= -1.0f;
-							v2.normal *= -1.0f;
-						}
-
-						curgroup->verts.append(v0);
-						curgroup->verts.append(v1);
-						curgroup->verts.append(v2);
-					}
+					v0.normal *= -1.0f;
+					v1.normal *= -1.0f;
+					v2.normal *= -1.0f;
 				}
+
+				curgroup->verts.append(v0);
+				curgroup->verts.append(v1);
+				curgroup->verts.append(v2);
 			}
 
 			// skip 'goToNextLine' as we already called 'nextLine'
@@ -490,7 +461,6 @@ bool LoadOBJ(dsmmodel_t* model, const char* filename)
 		tok.goToNextLine();
 	}
 
-	//delete [] group_remap;
 
 	if(normals.numElem() == 0)
 	{
