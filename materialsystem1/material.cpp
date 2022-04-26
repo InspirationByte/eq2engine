@@ -49,7 +49,7 @@ void CMaterial::Init(const char* materialPath)
 	if (materialPath)
 	{
 		m_szMaterialName = materialPath;
-		m_nameHash = StringToHash(m_szMaterialName.LowerCase().ToCString());
+		m_nameHash = StringToHash(materialPath, true);
 	}
 
 	m_loadFromDisk = true;
@@ -120,7 +120,7 @@ void CMaterial::Init(const char* materialPath)
 void CMaterial::Init(const char* materialName, kvkeybase_t* shader_root)
 {
 	m_szMaterialName = materialName;
-	m_nameHash = StringToHash(m_szMaterialName.LowerCase().ToCString());
+	m_nameHash = StringToHash(materialName, true);
 
 	m_loadFromDisk = false;
 
@@ -289,20 +289,27 @@ void CMaterial::InitVars(kvkeybase_t* shader_root)
 	InitMaterialProxy( proxy_sec );
 }
 
-
 bool CMaterial::LoadShaderAndTextures()
+{
+	if (m_state != MATERIAL_LOAD_NEED_LOAD)
+		return false;
+
+	return DoLoadShaderAndTextures();
+}
+
+bool CMaterial::DoLoadShaderAndTextures()
 {
 	InitShader();
 
 	IMaterialSystemShader* shader = m_shader;
 
-	if(m_state != MATERIAL_LOAD_NEED_LOAD)
-		return false;
-
 	if(!shader)
 		return true;
 
-	m_state = MATERIAL_LOAD_INQUEUE;
+	{
+		Threading::CScopedMutex m(m_Mutex);
+		m_state = MATERIAL_LOAD_INQUEUE;
+	}
 
 	// try init
 	if(!shader->IsInitialized() && !shader->IsError())
@@ -336,7 +343,7 @@ IMatVar *CMaterial::GetMaterialVar(const char* pszVarName, const char* defaultpa
 
 IMatVar *CMaterial::FindMaterialVar(const char* pszVarName) const
 {
-	int nameHash = StringToHash(pszVarName, true);
+	const int nameHash = StringToHash(pszVarName, true);
 
 	{
 		Threading::CScopedMutex m(m_Mutex);

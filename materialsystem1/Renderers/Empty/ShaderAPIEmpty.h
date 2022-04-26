@@ -9,6 +9,7 @@
 #define SHADERAPIEMPTY_H
 
 #include "../Shared/ShaderAPI_Base.h"
+#include "core/DebugInterface.h"
 
 #include "CEmptyTexture.h"
 #include "imaging/ImageLoader.h"
@@ -232,39 +233,47 @@ public:
 
 		if(pTex->Ref_Count() <= 0)
 		{
-			DevMsg(DEVMSG_SHADERAPI,"Texture unloaded: %s\n",pTexture->GetName());
-
-			m_TextureList.remove(pTexture);
-			delete pTex;
+			CScopedMutex scoped(m_Mutex);
+			auto it = m_TextureList.find(pTex->m_nameHash);
+			if (it != m_TextureList.end())
+			{
+				m_TextureList.remove(it);
+				DevMsg(DEVMSG_SHADERAPI, "Texture unloaded: %s\n", pTexture->GetName());
+				delete pTex;
+			}
 		}
 	}
 
 	// It will add new rendertarget
 	ITexture*					CreateRenderTarget(int width, int height,ETextureFormat nRTFormat,ER_TextureFilterMode textureFilterType = TEXFILTER_LINEAR, ER_TextureAddressMode textureAddress = TEXADDRESS_WRAP, ER_CompareFunc comparison = COMP_NEVER, int nFlags = 0)
 	{
-		CEmptyTexture* pTex = new CEmptyTexture();
-		pTex->SetName("_rt_001");
+		CEmptyTexture* pTexture = new CEmptyTexture();
+		pTexture->SetName(EqString::Format("_rt_%d", m_TextureList.size()));
 
-		pTex->SetDimensions(width, height);
-		pTex->SetFormat(nRTFormat);
+		pTexture->SetDimensions(width, height);
+		pTexture->SetFormat(nRTFormat);
 
-		m_TextureList.append(pTex);
+		CScopedMutex scoped(m_Mutex);
+		ASSERTMSG(m_TextureList.find(pTexture->m_nameHash) == m_TextureList.end(), "Texture %s was already added", pTexture->GetName());
+		m_TextureList.insert(pTexture->m_nameHash, pTexture);
 
-		return pTex;
+		return pTexture;
 	}
 
 	// It will add new rendertarget
 	ITexture*					CreateNamedRenderTarget(const char* pszName,int width, int height, ETextureFormat nRTFormat, ER_TextureFilterMode textureFilterType = TEXFILTER_LINEAR, ER_TextureAddressMode textureAddress = TEXADDRESS_WRAP, ER_CompareFunc comparison = COMP_NEVER, int nFlags = 0)
 	{
-		CEmptyTexture* pTex = new CEmptyTexture();
-		pTex->SetName(pszName);
+		CEmptyTexture* pTexture = new CEmptyTexture();
+		pTexture->SetName(pszName);
 
-		m_TextureList.append(pTex);
+		CScopedMutex scoped(m_Mutex);
+		ASSERTMSG(m_TextureList.find(pTexture->m_nameHash) == m_TextureList.end(), "Texture %s was already added", pTexture->GetName());
+		m_TextureList.insert(pTexture->m_nameHash, pTexture);
 
-		pTex->SetDimensions(width, height);
-		pTex->SetFormat(nRTFormat);
+		pTexture->SetDimensions(width, height);
+		pTexture->SetFormat(nRTFormat);
 
-		return pTex;
+		return pTexture;
 	}
 
 //-------------------------------------------------------------
@@ -470,8 +479,11 @@ protected:
 		pTexture->SetName( pImages[0]->GetName() );
 
 		// if this is a new texture, add
-		if(!(*pTex))
-			m_TextureList.append(pTexture);
+		if (!(*pTex))
+		{
+			ASSERTMSG(m_TextureList.find(pTexture->m_nameHash) == m_TextureList.end(), "Texture %s was already added", pTexture->GetName());
+			m_TextureList.insert(pTexture->m_nameHash, pTexture);
+		}
 
 		// set for output
 		*pTex = pTexture;

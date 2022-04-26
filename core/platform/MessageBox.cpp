@@ -242,24 +242,30 @@ void AssertLogMsg(const char *fmt,...)
     }
 }
 
-IEXPORTS void _InternalAssertMsg(const char *file, int line, const char *statement, ...)
+IEXPORTS void _InternalAssertMsg(const char *file, int line, const char *fmt, ...)
 {
     static bool debug = true;
+
+	va_list argptr;
+
+	va_start(argptr, fmt);
+	EqString formattedStr = EqString::FormatVa(fmt, argptr);
+	va_end(argptr);
 
     if (debug)
     {
         char str[1024];
 
-        sprintf(str, "%s\n\nFile: %s\nLine: %d\n\n", statement, file, line);
+        sprintf(str, "%s\n\nFile: %s\nLine: %d\n\n", formattedStr.ToCString(), file, line);
 
 #ifndef _DKLAUNCHER_
         if (GetCore()->IsInitialized())
         {
-			MsgError("\n*Assertion failed, file \"%s\", line %d\n*Expression \"%s\"", file, line, statement);
+			MsgError("\n*Assertion failed, file \"%s\", line %d\n*Expression \"%s\"", file, line, formattedStr.ToCString());
         }
         else
         {
-			AssertLogMsg("\n*Assertion failed, file \"%s\", line %d\n*Expression \"%s\"", file, line, statement);
+			AssertLogMsg("\n*Assertion failed, file \"%s\", line %d\n*Expression \"%s\"", file, line, formattedStr.ToCString());
         }
 
 #endif //_DKLAUNCHER_

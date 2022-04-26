@@ -13,6 +13,7 @@
 
 #include "renderers/IShaderAPI.h"
 #include "ds/Array.h"
+#include "ds/Map.h"
 #include "utils/eqthread.h"
 
 using namespace Threading;
@@ -203,7 +204,10 @@ protected:
 	ShaderAPICaps_t						m_caps;
 
 	// Shader list
-	Array<IShaderProgram*>				m_ShaderList;
+	Map<int, IShaderProgram*>			m_ShaderList;
+
+	// Loaded textures list
+	Map<int, ITexture*>					m_TextureList;
 
 	// List of dynamically added sampler states
 	Array<IRenderState*>				m_SamplerStates;
@@ -217,11 +221,8 @@ protected:
 	// List of dynamically added rasterizer states
 	Array<IRenderState*>				m_RasterizerStates;
 
-	// Loaded textures list
-	Array<ITexture*>					m_TextureList;
-
 	// occlusion queries
-	Array<IOcclusionQuery*>			m_OcclusionQueryList;
+	Array<IOcclusionQuery*>				m_OcclusionQueryList;
 
 	// Aviable vertex formats
 	Array<IVertexFormat*>				m_VFList;

@@ -63,6 +63,7 @@ int CTexture::GetFlags() const
 
 void CTexture::SetName(const char* pszNewName)
 {
+	ASSERTMSG(*pszNewName != 0, "Empty texture names are not allowed");
 	m_szTexName = pszNewName;
 	m_nameHash = StringToHash(m_szTexName.ToCString(), true);
 }

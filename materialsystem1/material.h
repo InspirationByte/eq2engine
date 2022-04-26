@@ -23,6 +23,7 @@ class CMaterial : public IMaterial
 public:
 	friend class			CBaseShader;
 	friend class			CMaterialSystem;
+	friend class			CEqMatSystemThreadedLoader;
 
 							// constructor, destructor
 							CMaterial(Threading::CEqMutex& mutex);
@@ -69,10 +70,14 @@ private:
 	void					InitMaterialProxy(kvkeybase_t* kvs);
 
 protected:
+	bool					DoLoadShaderAndTextures();
+
 	EqString				m_szMaterialName;
 	EqString				m_szShaderName;
-	Array<CMatVar*>		m_variables;
+
+	Array<CMatVar*>			m_variables;
 	Array<IMaterialProxy*>	m_proxies;
+
 	CTextureAtlas*			m_atlas;
 	Threading::CEqMutex&	m_Mutex;
 

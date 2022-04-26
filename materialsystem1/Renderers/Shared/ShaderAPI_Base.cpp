@@ -132,17 +132,15 @@ void ShaderAPI_Base::Shutdown()
 	FreeTexture(m_pErrorTexture);
 	m_pErrorTexture = nullptr;
 
-	for(int i = 0; i < m_TextureList.numElem();i++)
+	for(auto it = m_TextureList.begin(); it != m_TextureList.end(); ++it)
 	{
-		FreeTexture(m_TextureList[i]);
-		i--;
+		FreeTexture(*it);
 	}
 	m_TextureList.clear();
 
-	for(int i = 0; i < m_ShaderList.numElem();i++)
+	for (auto it = m_ShaderList.begin(); it != m_ShaderList.end(); ++it)
 	{
-		DestroyShaderProgram(m_ShaderList[i]);
-		i--;
+		DestroyShaderProgram(*it);
 	}
 	m_ShaderList.clear();
 
@@ -318,20 +316,22 @@ void ShaderAPI_Base::GetConsoleTextureList(const ConCommandBase* base, Array<EqS
 
 	CScopedMutex m(baseApi->m_Mutex);
 
-	Array<ITexture*>& texList = ((ShaderAPI_Base*)g_pShaderAPI)->m_TextureList;
+	Map<int, ITexture*>& texList = ((ShaderAPI_Base*)g_pShaderAPI)->m_TextureList;
 
 	const int LIST_LIMIT = 50;
 
-	for ( int i = 0; i < texList.numElem(); i++ )
+	for (auto it = texList.begin(); it != texList.end(); ++it)
 	{
+		ITexture* texture = *it;
+
 		if(list.numElem() == LIST_LIMIT)
 		{
 			list.append("...");
 			break;
 		}
 
-		if(*query == 0 || xstristr(texList[i]->GetName(), query))
-			list.append(texList[i]->GetName());
+		if(*query == 0 || xstristr(texture->GetName(), query))
+			list.append(texture->GetName());
 	}
 }
 
@@ -353,13 +353,13 @@ ITexture* ShaderAPI_Base::FindTexture(const char* pszName)
 	EqString searchStr(pszName);
 	searchStr.Path_FixSlashes();
 
-	int nameHash = StringToHash(pszName, true);
+	const int nameHash = StringToHash(searchStr.ToCString(), true);
 
 	CScopedMutex m(m_Mutex);
-	for(int i = 0; i < m_TextureList.numElem();i++)
+	auto it = m_TextureList.find(nameHash);
+	if (it != m_TextureList.end())
 	{
-		if(((CTexture*)m_TextureList[i])->m_nameHash == nameHash)
-			return m_TextureList[i];
+		return *it;
 	}
 
 	return NULL;
@@ -550,6 +550,9 @@ ITexture* ShaderAPI_Base::LoadTexture( const char* pszFileName,
 		return pFoundTexture;
 	}
 
+	EqString texNameStr(pszFileName);
+	texNameStr.Path_FixSlashes();
+
 	Array<EqString> textureNames;
 	GetImagesForTextureName(textureNames, pszFileName, nFlags);
 
@@ -569,8 +572,9 @@ ITexture* ShaderAPI_Base::LoadTexture( const char* pszFileName,
 			texturePathExt = textureNames[i] + EqString(TEXTURE_SECONDARY_EXTENSION);
 
 			stateLoad = img->LoadTGA(texturePathExt.GetData());
-			img->SetName((textureNames[i] + EqString(TEXTURE_DEFAULT_EXTENSION)).GetData());
 		}
+
+		img->SetName(texNameStr.ToCString());
 
 		if (stateLoad)
 		{
@@ -1143,10 +1147,10 @@ IShaderProgram* ShaderAPI_Base::FindShaderProgram(const char* pszName, const cha
 
 	const int nameHash = StringToHash(shaderName.ToCString());
 
-	for (int i = 0; i < m_ShaderList.numElem(); i++)
+	auto it = m_ShaderList.find(nameHash);
+	if (it != m_ShaderList.end())
 	{
-		if(m_ShaderList[i]->GetNameHash() == nameHash)
-			return m_ShaderList[i];
+		return *it;
 	}
 
 	return NULL;

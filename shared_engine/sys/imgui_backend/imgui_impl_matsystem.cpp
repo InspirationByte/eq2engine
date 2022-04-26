@@ -177,6 +177,7 @@ static bool ImGui_ImplMatSystem_CreateFontsTexture()
 	io.Fonts->GetTexDataAsRGBA32(&pixels, &width, &height, &bytes_per_pixel);
 
 	CImage image;
+	image.SetName("_imfont");
 	ubyte* pImage = image.Create(FORMAT_RGBA8, width, height, 1, 1);
 	memcpy(pImage, pixels, GetBytesPerPixel(FORMAT_RGBA8) * width * height);
 

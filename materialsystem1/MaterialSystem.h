@@ -12,21 +12,26 @@
 #ifndef CMATERIALSYSTEM_H
 #define CMATERIALSYSTEM_H
 
-#include "core/platform/Platform.h"
 #include "ds/Array.h"
 #include "ds/Map.h"
-#include "utils/eqthread.h"
-#include "utils/eqtimer.h"
 
 #include "materialsystem1/IMaterialSystem.h"
 #include "materialsystem1/scene_def.h"
 
-#include "DynamicMesh.h"
+
+/*
+#include "core/platform/Platform.h"
+
+#include "utils/eqthread.h"
+#include "utils/eqtimer.h"
+
+
+#include "materialsystem1/scene_def.h"
+
+
 #include "material.h"
 
-
-
-using namespace Threading;
+*/
 
 struct proxyfactory_t
 {
@@ -41,6 +46,7 @@ struct shaderoverride_t
 };
 
 class IRenderLibrary;
+class IRenderState;
 struct DKMODULE;
 
 class CMaterialSystem : public IMaterialSystem
@@ -311,6 +317,7 @@ public:
 
 private:
 
+	IMaterial*						CreateMaterialInternal(const char* szMaterialName, int nameHash, kvkeybase_t* params);
 	void							CreateWhiteTexture();
 	void							InitDefaultMaterial();
 
@@ -325,10 +332,10 @@ private:
 	Array<DKMODULE*>				m_shaderLibs;				// loaded shader libraries
 
 	Array<shaderfactory_t>			m_shaderFactoryList;		// registered shaders
-	Array<shaderoverride_t>		m_shaderOverrideList;		// shader override functors
+	Array<shaderoverride_t>			m_shaderOverrideList;		// shader override functors
 	Array<proxyfactory_t>			m_proxyFactoryList;
 
-	Array<IMaterial*>				m_loadedMaterials;			// loaded material list
+	Map<int, IMaterial*>			m_loadedMaterials;			// loaded material list
 	ER_CullMode						m_cullMode;					// culling mode. For shaders. TODO: remove, and check matrix handedness.
 
 	CDynamicMesh					m_dynamicMesh;
@@ -365,8 +372,8 @@ private:
 
 	dlight_t*						m_currentLight;
 
-	CEqMutex						m_ProxyMutex[4];
-	CEqMutex						m_Mutex;
+	Threading::CEqMutex				m_ProxyMutex[4];
+	Threading::CEqMutex				m_Mutex;
 
 	CEqTimer						m_proxyTimer;
 

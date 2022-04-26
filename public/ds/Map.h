@@ -8,6 +8,7 @@
 #ifndef MAP_H
 #define MAP_H
 
+#include <new>
 #include "core/dktypes.h"
 #include "core/platform/assert.h"
 

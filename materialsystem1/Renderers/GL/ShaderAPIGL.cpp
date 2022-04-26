@@ -338,9 +338,9 @@ void ShaderAPIGL::PrintAPIInfo()
 	MsgInfo("------ Loaded textures ------\n");
 
 	CScopedMutex scoped(m_Mutex);
-	for(int i = 0; i < m_TextureList.numElem(); i++)
+	for (auto it = m_TextureList.begin(); it != m_TextureList.end(); ++it)
 	{
-		CGLTexture* pTexture = (CGLTexture*)m_TextureList[i];
+		CGLTexture* pTexture = (CGLTexture*)*it;
 
 		MsgInfo("     %s (%d) - %dx%d\n", pTexture->GetName(), pTexture->Ref_Count(), pTexture->GetWidth(),pTexture->GetHeight());
 	}
@@ -894,7 +894,14 @@ void ShaderAPIGL::FreeTexture(ITexture* pTexture)
 		pTex->Ref_Drop();
 
 		if (pTex->Ref_Count() <= 0)
-			deleted = m_TextureList.remove(pTexture);
+		{
+			auto it = m_TextureList.find(pTex->m_nameHash);
+			if (it != m_TextureList.end())
+			{
+				deleted = true;
+				m_TextureList.remove(it);
+			}
+		}
 	}
 
 	if(deleted)
@@ -915,7 +922,7 @@ ITexture* ShaderAPIGL::CreateRenderTarget(	int width, int height,
 											ER_CompareFunc comparison,
 											int nFlags)
 {
-	return CreateNamedRenderTarget(EqString::Format("_sapi_rt_%d", m_TextureList.numElem()).ToCString(), width, height, nRTFormat, textureFilterType,textureAddress,comparison,nFlags);
+	return CreateNamedRenderTarget(EqString::Format("_sapi_rt_%d", m_TextureList.size()).ToCString(), width, height, nRTFormat, textureFilterType,textureAddress,comparison,nFlags);
 }
 
 // It will add new rendertarget
@@ -978,7 +985,8 @@ ITexture* ShaderAPIGL::CreateNamedRenderTarget(	const char* pszName,
 	}
 
 	
-	m_TextureList.append(pTexture);
+	ASSERTMSG(m_TextureList.find(pTexture->m_nameHash) == m_TextureList.end(), "Texture %s was already added", pTexture->GetName());
+	m_TextureList.insert(pTexture->m_nameHash, pTexture);
 	m_Mutex.Unlock();
 
 	return pTexture;
@@ -1217,7 +1225,8 @@ void ShaderAPIGL::CreateTextureInternal(ITexture** pTex, const Array<CImage*>& p
 	if(!(*pTex))
 	{
 		m_Mutex.Lock();
-		m_TextureList.append(pTexture);
+		ASSERTMSG(m_TextureList.find(pTexture->m_nameHash) == m_TextureList.end(), "Texture %s was already added", pTexture->GetName());
+		m_TextureList.insert(pTexture->m_nameHash, pTexture);
 		m_Mutex.Unlock();
 	}
 
@@ -1770,7 +1779,8 @@ IShaderProgram* ShaderAPIGL::CreateNewShaderProgram(const char* pszName, const c
 
 	CScopedMutex scoped(m_Mutex);
 
-	m_ShaderList.append(pNewProgram);
+	ASSERTMSG(m_ShaderList.find(pNewProgram->m_nameHash) == m_ShaderList.end(), "Shader %s was already added", pNewProgram->GetName());
+	m_ShaderList.insert(pNewProgram->m_nameHash, pNewProgram);
 
 	return pNewProgram;
 }
@@ -1790,7 +1800,14 @@ void ShaderAPIGL::DestroyShaderProgram(IShaderProgram* pShaderProgram)
 
 		// remove it if reference is zero
 		if (pShader->Ref_Count() <= 0)
-			deleted = m_ShaderList.remove(pShader);
+		{
+			auto it = m_ShaderList.find(pShader->m_nameHash);
+			if (it != m_ShaderList.end())
+			{
+				deleted = true;
+				m_ShaderList.remove(it);
+			}
+		}
 	}
 
 	// remove it if reference is zero

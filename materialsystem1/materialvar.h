@@ -55,16 +55,15 @@ public:
 
 private:
 	EqString		m_name;
-	int				m_nameHash;
+	int				m_nameHash{ 0 };
 
 	EqString		m_pszValue;
+	Vector4D		m_vector{ 0 };
 
-	Vector4D		m_vector;
+	int				m_nValue{ 0 };
+	int				m_isDirtyString{ false };
 
-	int				m_nValue;
-	int				m_isDirtyString;
-
-	ITexture*		m_pAssignedTexture;
+	ITexture*		m_pAssignedTexture{ nullptr };
 };
 
 #endif //CMATVAR_H
