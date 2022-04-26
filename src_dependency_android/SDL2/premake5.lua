@@ -1,6 +1,5 @@
 project "hidapi"
 	kind "StaticLib"
-	cppdialect "C++11"
 	includedirs
 	{
 		"./include",
@@ -128,6 +127,10 @@ project "SDL2"
 		"./src/video/yuv2rgb/*.c",
 		"./src/test/*.c",
 	}
+	includedirs
+	{
+		"$(NDK_ROOT)/sources/android/cpufeatures"
+	}
 
 	filter "configurations:Debug"
 		runtime "Debug"
@@ -141,11 +144,11 @@ project "cpufeatures"
 	kind "StaticLib"
 	includedirs
 	{
-		"${ANDROID_NDK}/sources/android/cpufeatures",
+		"$(NDK_ROOT)/sources/android/cpufeatures",
 	}
 	
 	files {
-		"${ANDROID_NDK}/sources/android/cpufeatures/cpu-features.c" 
+		"$(NDK_ROOT)/sources/android/cpufeatures/cpu-features.c" 
 	}
 	
 project "SDL2_main"

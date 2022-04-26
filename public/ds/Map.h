@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright ï¿½ Inspiration Byte
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
 // Description: RB-tree map
@@ -51,7 +51,7 @@ public:
 		m_endItem.next = nullptr;
 	}
 
-	Map(const Map& other) : m_end(&m_endItem), m_begin(&m_endItem), m_root(nullptr), m_size(nullptr), m_freeItem(nullptr), m_blocks(nullptr)
+	Map(const Map& other) : m_end(&m_endItem), m_begin(&m_endItem), m_root(nullptr), m_size(0), m_freeItem(nullptr), m_blocks(nullptr)
 	{
 		m_endItem.parent = nullptr;
 		m_endItem.prev = nullptr;

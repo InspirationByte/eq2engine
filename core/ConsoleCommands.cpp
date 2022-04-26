@@ -387,7 +387,7 @@ const ConCommandBase* CConsoleCommands::FindBase(const char* name)
 {
 	SortCommands();
 
-	for ( int i = 0; i < m_registeredCommands.numElem(); i++ )
+	for (int i = 0; i < m_registeredCommands.numElem(); i++ )
 	{
 		if ( !stricmp( name, m_registeredCommands[i]->GetName() ) )
 			return m_registeredCommands[i];

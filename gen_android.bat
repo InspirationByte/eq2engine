@@ -1,2 +1,2 @@
-premake5 android-studio
+premake5 androidndk
 pause

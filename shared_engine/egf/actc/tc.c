@@ -346,7 +346,7 @@ static void dumpTriangles(ACTCEdge *e, FILE *fp)
     int c;
     char v[12];
 
-    c = fprintf(fp, "      %d triangles: ");
+    c = fprintf(fp, "      %d triangles: ", e->TriangleCount);
     for(i = 0; i < e->TriangleCount; i++) {
 	if(c + 1 + sprintf(v, "%u", e->Triangles[i].FinalVert) > 78) {
 	    fputs("\n", fp);

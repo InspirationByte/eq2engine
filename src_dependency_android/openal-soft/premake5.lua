@@ -56,6 +56,10 @@ project "openal_soft"
 			"AL_ALEXT_PROTOTYPES"
 		}
 
+		links {
+			"OpenSLES"
+		}
+
 	filter "configurations:Debug"
 		runtime "Debug"
 		symbols "on"

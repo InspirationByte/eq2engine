@@ -19,6 +19,10 @@ package/*
 build/*
 bin*
 project_*/*
+android-project/app/build/
+android-project/build/
+android-project/.gradle/
+android-project/.idea
 src_dependency/wxWidgets/*
 src_dependency/openal-soft/*
 src_dependency/SDL2/*
@@ -30,3 +34,6 @@ src_dependency_android/SDL2/*
 !src_dependency_android/SDL2/premake5.lua
 src_dependency_android/openal-soft/*
 !src_dependency_android/openal-soft/premake5.lua
+!src_dependency_android/openal-soft/config.h
+!src_dependency_android/openal-soft/hrtf_default.h
+!src_dependency_android/openal-soft/version.h

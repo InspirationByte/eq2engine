@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright ï¿½ Inspiration Byte
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
 // Description: Equilibrium Filesystem
@@ -10,6 +10,7 @@
 #include "core/IDkCore.h"
 #include "core/ILocalize.h"
 #include "core/DebugInterface.h"
+#include "core/platform/MessageBox.h"
 
 #include "ds/SmartPtr.h"
 #include "utils/KeyValues.h"

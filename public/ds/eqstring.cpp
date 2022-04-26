@@ -12,16 +12,13 @@
 #include <stdio.h>
 #include <malloc.h>
 #include <stdarg.h>
-#ifdef PLAT_POSIX
 #include <string.h>
-#endif // PLAT_POSIX
 
 #include "core/platform/assert.h"
 #include "core/platform/stackalloc.h"
 
 #include "utils/strtools.h"
 #include "math/math_common.h"
-
 
 
 #define EXTEND_CHARS	32	// 32 characters for extending

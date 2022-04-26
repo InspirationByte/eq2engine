@@ -162,14 +162,18 @@ static void SetupBinPath()
 #ifdef _WIN32
 	if (!GetModuleFileNameA(NULL, moduleName, MAX_PATH))
 		return;
-#else
-	// TODO: POSIX implementation
-	static_assert(false);
-#endif
+
 	// Get the root directory the .exe is in
 	char* pRootDir = GetBaseDir(moduleName);
 	sprintf(szBuffer, "PATH=%s;%s", pRootDir, pPath);
 	_putenv(szBuffer);
+#elif defined(__ANDROID__)
+	// do nothing? TODO...
+#else
+	// TODO: POSIX implementation
+	static_assert(false);
+#endif
+
 }
 
 // Definition that we can't see or change throught console
@@ -197,6 +201,8 @@ bool CDkCore::Init(const char* pszApplicationName, const char* pszCommandLine)
 		Msg("Setting working directory to %s\n", newWorkDir);
 #ifdef _WIN32
 		SetCurrentDirectoryA(newWorkDir);
+#elif defined(__ANDROID__)
+		// do nothing? TODO...
 #else
 		chdir(newWorkDir);
 #endif // _WIN32

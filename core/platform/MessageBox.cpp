@@ -303,15 +303,21 @@ IEXPORTS void _InternalAssertMsg(const char *file, int line, const char *fmt, ..
 
 #include <signal.h>
 
-IEXPORTS void _InternalAssertMsg(const char *file, int line, const char *statement)
+IEXPORTS void _InternalAssertMsg(const char* file, int line, const char* fmt, ...)
 {
-	MsgError("\n*Assertion failed, file \"%s\", line %d\n*Expression \"%s\"", file, line, statement);
+	va_list argptr;
+
+	va_start(argptr, fmt);
+	EqString formattedStr = EqString::FormatVa(fmt, argptr);
+	va_end(argptr);
+
+	MsgError("\n*Assertion failed, file \"%s\", line %d\n*Expression \"%s\"", file, line, formattedStr.ToCString());
 
 #ifndef USE_GTK
-	ErrorMsg("\n*Assertion failed, file \"%s\", line %d\n*Expression \"%s\"", file, line, statement);
+	ErrorMsg("\n*Assertion failed, file \"%s\", line %d\n*Expression \"%s\"", file, line, formattedStr.ToCString());
 #else
     char str[1024];
-    sprintf(str, "%s\n\nFile: %s\nLine: %d\n\nBreak on this error?", statement, file, line);
+    sprintf(str, "%s\n\nFile: %s\nLine: %d\n\nBreak on this error?", formattedStr.ToCString(), file, line);
 
     InitMessageBoxPlatform();
 

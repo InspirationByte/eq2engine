@@ -1,10 +1,10 @@
 -- premake5.lua
 
 require ".premake_modules/usage"
-require ".premake_modules/android_studio"
+require ".premake_modules/androidndk"
 require ".premake_modules/unitybuild"
 
-IS_ANDROID = (_ACTION == "android-studio")
+IS_ANDROID = (_ACTION == "androidndk")
 
 -- you can redefine dependencies
 DependencyPath = {
@@ -15,8 +15,6 @@ DependencyPath = {
 	["libsdl"] = os.getenv("SDL2_DIR") or "src_dependency/SDL2",
 	["openal"] = os.getenv("OPENAL_DIR") or "src_dependency/openal-soft",
 	
-	["AndroidSDK"] = os.getenv("ANDROID_HOME") or "F:/Dev/AndroidSDK",
-	["AndroidNDK"] = os.getenv("ANDROID_NDK_PATH") or "F:/Dev/android-ndk-r17c",
 	["Android_libsdl"] = os.getenv("SDL2_DIR") or "src_dependency_android/SDL2",
 	["Android_openal"] = os.getenv("OPENAL_DIR") or "src_dependency_android/openal-soft",
 }
@@ -63,10 +61,11 @@ workspace "Equilibrium2"
 	if IS_ANDROID then
 	
 		system "android"
+		shortcommands "On"
 		
 		--aaroutputpath "android_bin/"
 	
-		flags { "NoImportLib" }
+		--flags { "NoImportLib" }
 		
 		disablewarnings {
 			-- disable warnings which are emitted by my stupid code
@@ -76,13 +75,11 @@ workspace "Equilibrium2"
 			"parentheses",
 			"register",
 			"unused-local-typedef",
-			
+			"nonportable-include-path",
 		}
 		
 		buildoptions {
-			
 			"-fpermissive",
-
 			"-fexceptions",
 			"-pthread",
 		}
@@ -96,27 +93,10 @@ workspace "Equilibrium2"
 			"-mfpu=neon"
 		}
 	
-		androidabis { 
-			"armeabi-v7a", "arm64-v8a" --"x86", "x86_64" 
-		}
-				
-		androidrepositories
-		{
-			"jcenter()",
-			"google()",
-			"mavenCentral()"
+		platforms {
+			 "android-arm", "android-arm64" --"x86", "x86_64" 
 		}
 		
-		gradlewrapper {
-			--"distributionUrl=https://services.gradle.org/distributions/gradle-4.10.2-all.zip"
-			"distributionUrl=https://services.gradle.org/distributions/gradle-7.0.2-all.zip"
-		}
-		
-		--gradleversion "com.android.tools.build:gradle:3.2.0"
-		gradleversion "com.android.tools.build:gradle:7.0.0"
-		androidsdkversion "26"
-		androidminsdkversion "16"
-		--androidndkpath(DependencyPath.AndroidNDK)
 	end
 	
     filter "system:linux"

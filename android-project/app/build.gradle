@@ -1,0 +1,73 @@
+def buildAsLibrary = project.hasProperty('BUILD_AS_LIBRARY');
+def buildAsApplication = !buildAsLibrary
+if (buildAsApplication) {
+    apply plugin: 'com.android.application'
+}
+else {
+    apply plugin: 'com.android.library'
+}
+
+def eqEnginePath = file('../../').absolutePath
+def applicationMkPath = eqEnginePath + '/project_androidndk/Equilibrium2.Application.mk'
+def androidMkPath = eqEnginePath + '/project_androidndk/Equilibrium2.wks.Android.mk';
+
+android {
+    ndkVersion '21.4.7075529'
+
+    compileSdkVersion 26
+    defaultConfig {
+        if (buildAsApplication) {
+            applicationId "com.insbyte.driversyndicate"
+        }
+        minSdkVersion 16
+        externalNativeBuild {
+            ndkBuild {
+                arguments 'NDK_APPLICATION_MK:='+applicationMkPath,
+                    "APP_STL := c++_static"
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            debuggable false
+            externalNativeBuild {
+                ndkBuild {
+                    // Premake configurations to build for - see the section about configuration and platform selection below.
+                    arguments 'PREMAKE_ANDROIDNDK_CONFIGURATIONS:=Release'
+                }
+            }
+        }
+
+        debug {
+            debuggable true
+            externalNativeBuild {
+                ndkBuild {
+                    // Premake configurations to build for - see the section about configuration and platform selection below.
+                    arguments 'PREMAKE_ANDROIDNDK_CONFIGURATIONS:=Debug'
+                }
+            }
+        }
+    }
+    applicationVariants.all { variant ->
+        tasks["merge${variant.name.capitalize()}Assets"]
+                .dependsOn("externalNativeBuild${variant.name.capitalize()}")
+    }
+    if (!project.hasProperty('EXCLUDE_NATIVE_LIBS')) {
+        sourceSets.main {
+            jniLibs.srcDir 'libs'
+        }
+        externalNativeBuild {
+            ndkBuild {
+                path androidMkPath
+            }
+        }
+    }
+    lintOptions {
+        abortOnError false
+    }
+}
+
+dependencies {
+    implementation fileTree(include: ['*.jar'], dir: 'libs')
+}

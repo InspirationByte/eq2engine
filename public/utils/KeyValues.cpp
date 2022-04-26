@@ -16,6 +16,7 @@
 #include <malloc.h>
 #endif
 
+#include "core/platform/stackalloc.h"
 #include "core/DebugInterface.h"
 #include "core/IFileSystem.h"
 

@@ -793,8 +793,6 @@ void CEqPhysics::DetectBodyCollisions(CEqRigidBody* bodyA, CEqRigidBody* bodyB, 
 		const int numShapesB = bodyB->m_numShapes;
 		const btCollisionShape* shapeA[] = { bodyA->m_shape };
 		const btCollisionShape* shapeB[] = { bodyB->m_shape };
-		const btCollisionShape** shapesA = numShapesA > 1 ? bodyA->m_shapeList : shapeA;
-		const btCollisionShape** shapesB = numShapesB > 1 ? bodyB->m_shapeList : shapeB;
 
 		// FIXME:
 		// Due to btCompoundShape producing unreliable results, there is a really slow checks appear...
@@ -802,8 +800,8 @@ void CEqPhysics::DetectBodyCollisions(CEqRigidBody* bodyA, CEqRigidBody* bodyB, 
 		{
 			for (int j = 0; j < numShapesA; j++)
 			{
-				btCollisionObjectWrapper obA(nullptr, shapesA[j], objA, transA, -1, -1);
-				btCollisionObjectWrapper obB(nullptr, shapesB[i], objB, transB, -1, -1);
+				btCollisionObjectWrapper obA(nullptr, numShapesA > 1 ? bodyA->m_shapeList[j] : shapeA[j], objA, transA, -1, -1);
+				btCollisionObjectWrapper obB(nullptr, numShapesB > 1 ? bodyB->m_shapeList[i] : shapeB[i], objB, transB, -1, -1);
 
 				if(!algorithm)
 					algorithm = m_collDispatcher->findAlgorithm(&obA, &obB, 0, BT_CONTACT_POINT_ALGORITHMS);

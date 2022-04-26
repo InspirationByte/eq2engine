@@ -1,7 +1,6 @@
 project "libjpeg"
     kind "StaticLib"
     language "C"
-    targetdir "lib/%{cfg.platform}/%{cfg.buildcfg}"
 
     files { 
 		"./jaricom.c",

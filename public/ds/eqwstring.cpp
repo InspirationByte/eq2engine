@@ -1,22 +1,25 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright Â© Inspiration Byte
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
 // Description: Equilibrium Engine string base
 //
-//				Some things was lovely hardcoded (like m_nLength)//////////////////////////////////////////////////////////////////////////////////
+//				Some things was lovely hardcoded (like m_nLength)
+//////////////////////////////////////////////////////////////////////////////////
 
 #include "eqwstring.h"
 #include "math/math_common.h"		// min/max
 
 #include <stdio.h>
 #include <malloc.h>
-#include "core/platform/Platform.h"
-#include "utils/strtools.h"
-
-#ifdef PLAT_POSIX
+#include <stdarg.h>
+#include <string.h>
 #include <wchar.h>
-#endif // PLAT_POSIX
+
+#include "core/platform/assert.h"
+#include "core/platform/stackalloc.h"
+
+#include "utils/strtools.h"
 
 #ifdef _MSC_VER
 #pragma warning(disable: 4267)
