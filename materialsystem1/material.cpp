@@ -363,7 +363,7 @@ ITexture* CMaterial::GetBaseTexture(int stage)
 	if(m_shader != NULL && !IsError())
 	{
 		// try load
-		LoadShaderAndTextures();
+		DoLoadShaderAndTextures();
 
 		// wait if it was loading in another thread
 		WaitForLoading();
