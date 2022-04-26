@@ -36,18 +36,18 @@ public:
 class ILocalize : public IEqCoreModule
 {
 public:
-							~ILocalize() {}
-	virtual void			Init() = 0;
-	virtual void			Shutdown() = 0;
+								~ILocalize() {}
+	virtual void				Init() = 0;
+	virtual void				Shutdown() = 0;
 
-	virtual const char*		GetLanguageName() = 0;
+	virtual const char*			GetLanguageName() = 0;
 
-	virtual void			AddTokensFile(const char* pszFilePrefix) = 0;
-	virtual void			AddToken(const char* token, const wchar_t* pszTokenString) = 0;
-	virtual void			AddToken(const char* token, const char* pszTokenString) = 0;
+	virtual void				AddTokensFile(const char* pszFilePrefix) = 0;
+	virtual void				AddToken(const char* token, const wchar_t* pszTokenString) = 0;
+	virtual void				AddToken(const char* token, const char* pszTokenString) = 0;
 
-	virtual const wchar_t*	GetTokenString(const char* pszToken, const wchar_t* pszDefaultToken = 0) const = 0;
-	virtual ILocToken*		GetToken( const char* pszToken ) const = 0;
+	virtual const wchar_t*		GetTokenString(const char* pszToken, const wchar_t* pszDefaultToken = 0) const = 0;
+	virtual const ILocToken*	GetToken( const char* pszToken ) const = 0;
 
 
 };

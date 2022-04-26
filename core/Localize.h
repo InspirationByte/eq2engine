@@ -9,7 +9,7 @@
 #define CLOCALIZE
 
 #include "core/ILocalize.h"
-#include "ds/Array.h"
+#include "ds/Map.h"
 #include "ds/eqstring.h"
 #include "ds/eqwstring.h"
 
@@ -21,8 +21,9 @@ class CLocToken : public ILocToken
 	friend class CLocalize;
 
 public:
-					CLocToken(const char* tok, const wchar_t* text);
-					CLocToken(const char* tok, const char* text);
+	CLocToken() = default;
+	CLocToken(const char* tok, const wchar_t* text);
+	CLocToken(const char* tok, const char* text);
 
 	const char*		GetToken() const	{return m_token.ToCString();}
 	const wchar_t*	GetText() const		{return m_text.ToCString();}
@@ -30,8 +31,6 @@ public:
 private:
 	EqString		m_token;
 	EqWString		m_text;
-
-	int				m_tokHash;
 };
 
 //--------------------------------------------------------------
@@ -53,15 +52,15 @@ public:
 	void				AddToken(const char* token, const char* pszTokenString);
 
 	const wchar_t*		GetTokenString(const char* pszToken, const wchar_t* pszDefaultToken = 0) const;
-	ILocToken*			GetToken( const char* pszToken ) const;
+	const ILocToken*	GetToken( const char* pszToken ) const;
 
 	bool				IsInitialized() const {return m_language.Length() > 0;}
 	const char*			GetInterfaceName() const {return LOCALIZER_INTERFACE_VERSION;}
 
 private:
-	ILocToken*			_FindToken( const char* pszToken ) const;
+	const ILocToken*	_FindToken( const char* pszToken ) const;
 
-	Array<CLocToken*>	m_tokens;
+	Map<int,CLocToken>	m_tokens;
 	EqString			m_language;
 };
 

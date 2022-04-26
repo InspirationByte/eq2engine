@@ -61,16 +61,12 @@ CLocToken::CLocToken(const char* tok, const wchar_t* text)
 {
 	m_token = tok;
 	m_text = text;
-
-	m_tokHash = StringToHash(tok, true);
 }
 
 CLocToken::CLocToken(const char* tok, const char* text)
 {
 	m_token = tok;
 	m_text = text;
-
-	m_tokHash = StringToHash(tok, true);
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -112,11 +108,6 @@ void CLocalize::Init()
 
 void CLocalize::Shutdown()
 {
-	for(int i = 0; i < m_tokens.numElem(); i++)
-	{
-		delete m_tokens[i];
-	}
-
 	m_tokens.clear();
 }
 
@@ -151,7 +142,7 @@ void CLocalize::AddTokensFile(const char* pszFilePrefix)
 		}
 
 		// Cannot add same one
-		if(_FindToken(key->name ) != NULL)
+		if(_FindToken( key->name ))
 		{
 			MsgWarning("Localization warning (%s): Token '%s' already registered\n", pszFilePrefix, key->name );
 			continue;
@@ -168,9 +159,8 @@ void CLocalize::AddToken(const char* token, const wchar_t* pszTokenString)
 
 	xstr_loc_convert_special_symbols( (char*)pszTokenString, true );
 
-	CLocToken* pToken = new CLocToken(token, pszTokenString);
-
-	m_tokens.append(pToken);
+	const int hash = StringToHash(token, true);
+	m_tokens.insert(hash, CLocToken(token, pszTokenString));
 }
 
 void CLocalize::AddToken(const char* token, const char* pszTokenString)
@@ -180,37 +170,35 @@ void CLocalize::AddToken(const char* token, const char* pszTokenString)
 
 	xstr_loc_convert_special_symbols( (char*)pszTokenString, true );
 
-	CLocToken* pToken = new CLocToken(token, pszTokenString);
-
-	m_tokens.append(pToken);
+	const int hash = StringToHash(token, true);
+	new(&m_tokens[hash]) CLocToken(token, pszTokenString);
 }
 
 const wchar_t* CLocalize::GetTokenString(const char* pszToken, const wchar_t* pszDefaultToken) const
 {
-	ILocToken* foundTok = GetToken(pszToken);
+	const ILocToken* foundTok = GetToken(pszToken);
 
 	return foundTok ? foundTok->GetText() : pszDefaultToken;
 }
 
-ILocToken* CLocalize::GetToken( const char* pszToken ) const
+const ILocToken* CLocalize::GetToken( const char* pszToken ) const
 {
-	ILocToken* foundTok = _FindToken(pszToken);
+	const ILocToken* foundTok = _FindToken(pszToken);
 
 	if(!foundTok)
-		DevMsg(DEVMSG_LOCALE, "LOCALIZER: Token %s not found\n", pszToken);
+		DevMsg(DEVMSG_LOCALE, "LOCALIZER: Token '%s' not found\n", pszToken);
 
 	return foundTok;
 }
 
-ILocToken* CLocalize::_FindToken( const char* pszToken ) const
+const ILocToken* CLocalize::_FindToken( const char* pszToken ) const
 {
-	int tokHash = StringToHash(pszToken, true);
+	const int tokHash = StringToHash(pszToken, true);
 
-	for(int i = 0; i < m_tokens.numElem();i++)
-	{
-		if(m_tokens[i]->m_tokHash == tokHash)
-			return m_tokens[i];
-	}
+	auto it = m_tokens.find(tokHash);
 
-	return NULL;
+	if (it != m_tokens.end())
+		return &it.value();
+
+	return nullptr;
 }
