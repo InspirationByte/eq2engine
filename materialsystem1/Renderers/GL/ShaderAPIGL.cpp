@@ -906,7 +906,7 @@ void ShaderAPIGL::FreeTexture(ITexture* pTexture)
 
 	if(deleted)
 	{
-		glWorker.Execute(__FUNCTION__, [pTex]() {
+		glWorker.WaitForExecute(__FUNCTION__, [pTex]() {
 			delete pTex;
 
 			return 0;
@@ -1813,7 +1813,7 @@ void ShaderAPIGL::DestroyShaderProgram(IShaderProgram* pShaderProgram)
 	// remove it if reference is zero
 	if(deleted)
 	{
-		glWorker.Execute(__FUNCTION__, [pShader]() {
+		glWorker.WaitForExecute(__FUNCTION__, [pShader]() {
 			delete pShader;
 
 			return 0;
@@ -2409,7 +2409,7 @@ void ShaderAPIGL::DestroyVertexBuffer(IVertexBuffer* pVertexBuffer)
 
 		delete pVB;
 
-		glWorker.Execute(__FUNCTION__, [numBuffers, tempArray]() {
+		glWorker.WaitForExecute(__FUNCTION__, [numBuffers, tempArray]() {
 
 			glDeleteBuffers(numBuffers, tempArray);
 			GLCheckError("delete vertex buffer");
@@ -2443,7 +2443,7 @@ void ShaderAPIGL::DestroyIndexBuffer(IIndexBuffer* pIndexBuffer)
 
 		delete pIndexBuffer;
 
-		glWorker.Execute(__FUNCTION__, [numBuffers, tempArray]() {
+		glWorker.WaitForExecute(__FUNCTION__, [numBuffers, tempArray]() {
 			
 			glDeleteBuffers(numBuffers, tempArray);
 			GLCheckError("delete index buffer");
