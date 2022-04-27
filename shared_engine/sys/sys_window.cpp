@@ -96,7 +96,8 @@ EQWNDHANDLE Sys_CreateWindow()
 	}
 
 	// HACK: use SDL_WINDOW_VULKAN to ensure that SDL will not create EGL surface
-	sdlFlags |= SDL_WINDOW_FULLSCREEN;
+	sdlFlags |= SDL_WINDOW_FULLSCREEN | SDL_WINDOW_VULKAN;
+
 #endif // PLAT_ANDROID
 	
 	handle = SDL_CreateWindow(DEFAULT_WINDOW_TITLE, nAdjustedPosX, nAdjustedPosY, nAdjustedWide, nAdjustedTall, sdlFlags);

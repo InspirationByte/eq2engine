@@ -820,11 +820,7 @@ const char* ShaderAPIGL::GetDeviceNameString() const
 // Renderer string (ex: OpenGL, D3D9)
 const char* ShaderAPIGL::GetRendererName() const
 {
-#ifdef USE_GLES2
-	return "OpenGLES";
-#else
 	return "OpenGL";
-#endif // USE_GLES2
 }
 
 //-------------------------------------------------------------
@@ -1886,13 +1882,17 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 
 		EqString shaderString;
 
-#if !defined(USE_GLES2)
+#ifdef USE_GLES2
+		shaderString.Append("#version 300 es\r\n");
+		shaderString.Append("precision highp float;\r\n"); // TODO: precision in key-value file
+		shaderString.Append("precision mediump int;\r\n");
+#else
 		shaderString.Append("#version 330\r\n");
+#endif // USE_GLES2
 		shaderString.Append("#define VERTEX\r\n");
 		// append useful HLSL replacements
 		shaderString.Append(SHADER_HELPERS_STRING);
 		shaderString.Append(SHADER_HELPERS_STRING_VERTEX);
-#endif // USE_GLES2
 
 		if (extra != NULL)
 			shaderString.Append(extra);
@@ -1959,13 +1959,17 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 	{
 		EqString shaderString;
 
-#if !defined(USE_GLES2)
+#ifdef USE_GLES2
+		shaderString.Append("#version 300 es\r\n");
+		shaderString.Append("precision highp float;\r\n"); // TODO: precision in key-value file
+		shaderString.Append("precision mediump int;\r\n");
+#else
 		shaderString.Append("#version 330\r\n");
+#endif // USE_GLES2
 		shaderString.Append("#define FRAGMENT\r\n");
 		// append useful HLSL replacements
 		shaderString.Append(SHADER_HELPERS_STRING);
 		shaderString.Append(SHADER_HELPERS_STRING_FRAGMENT);
-#endif // USE_GLES2
 
 		if (extra != NULL)
 			shaderString.Append(extra);

@@ -199,6 +199,9 @@ void CGameHost::ApplyVideoMode()
 
 void CGameHost::GetVideoModes(Array<VideoMode_t>& displayModes)
 {
+#ifdef PLAT_ANDROID
+	displayModes.append(VideoMode_t{ 0, 16, 1024, 768, 60 });
+#else
 	int display_count = SDL_GetNumVideoDisplays();
 
 	for (int display_index = 0; display_index <= display_count; display_index++)
@@ -212,7 +215,8 @@ void CGameHost::GetVideoModes(Array<VideoMode_t>& displayModes)
 			if (SDL_GetDisplayMode(display_index, mode_index, &mode) == 0)
 				displayModes.append(VideoMode_t{display_index, SDL_BITSPERPIXEL(mode.format), mode.w, mode.h, mode.refresh_rate});
 		}
-}
+	}
+#endif
 }
 
 #ifdef PLAT_ANDROID
@@ -378,10 +382,12 @@ bool CGameHost::InitSystems( EQWNDHANDLE pWindow )
 
 	MsgInfo("--- EqEngine systems init successfully ---\n");
 
+#ifndef PLAT_ANDROID
 	if (sys_fullscreen.GetBool())
 		SetFullscreenMode();
 	else
 		SetWindowedMode();
+#endif
 
 	return true;
 }

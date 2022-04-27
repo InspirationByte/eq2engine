@@ -698,9 +698,8 @@ bool CGLRenderLib::InitAPI(shaderAPIParams_t& params)
 	}
 
 #ifdef USE_GLES2
-	g_shaderApi.m_display = this->eglDisplay;
-	//g_shaderApi.m_eglSurface = this->eglSurface;
-	g_shaderApi.m_hdc = this->hdc;
+	g_shaderApi.m_display = eglDisplay;
+	g_shaderApi.m_hdc = hdc;
 #elif PLAT_WIN
 	g_shaderApi.m_hdc = this->hdc;
 #elif PLAT_LINUX
@@ -808,14 +807,12 @@ bool CGLRenderLib::InitAPI(shaderAPIParams_t& params)
 
 void CGLRenderLib::ExitAPI()
 {
-#ifdef PLAT_WIN
-
 #ifdef USE_GLES2
 	eglMakeCurrent(EGL_NO_DISPLAY, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
 	eglDestroyContext(eglDisplay, glContext);
 	eglDestroySurface(eglDisplay, eglSurface);
 	eglTerminate(eglDisplay);
-#else
+#elif defined(PLAT_WIN)
 	wglMakeCurrent(NULL, NULL);
 
 	DestroySharedContexts();
@@ -829,11 +826,7 @@ void CGLRenderLib::ExitAPI()
 		// Reset display mode to default
 		ChangeDisplaySettingsExA((const char *) device.DeviceName, NULL, NULL, 0, NULL);
 	}
-#endif // USE_GLES2
-
-#else
-
-#ifdef PLAT_LINUX
+#elif defined(PLAT_LINUX)
 
     glXMakeCurrent(display, None, NULL);
     glXDestroyContext(display, glContext);
@@ -850,10 +843,7 @@ void CGLRenderLib::ExitAPI()
 	XSync(display, False);
 
     XCloseDisplay(display);
-#endif // PLAT_LIUX
-
-#endif // PLAT_WIN
-
+#endif
 }
 
 
@@ -899,7 +889,7 @@ void CGLRenderLib::EndFrame(IEqSwapChain* schain)
 	eglSwapBuffers(eglDisplay, eglSurface);
 	GLCheckError("swap buffers");
 
-#elif PLAT_WIN
+#elif defined(PLAT_WIN)
 	if (wgl::exts::var_EXT_swap_control)
 	{
 		wgl::SwapIntervalEXT(g_shaderApi.m_params->verticalSyncEnabled ? 1 : 0);

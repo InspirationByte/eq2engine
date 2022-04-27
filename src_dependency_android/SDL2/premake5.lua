@@ -40,14 +40,13 @@ project "SDL2"
 
 	files
 	{
-		--[["./src/*.c",
+		"./src/*.c",
 		"./src/audio/*.c",
 		"./src/audio/android/*.c",
 		"./src/audio/dummy/*.c",
 		"./src/audio/aaudio/*.c",
 		"./src/audio/openslES/*.c",
-		"./src/atomic/SDL_atomic.c",
-		"./src/atomic/SDL_spinlock.c",
+		"./src/atomic/*.c",
 		"./src/core/android/*.c",
 		"./src/cpuinfo/*.c",
 		"./src/dynapi/*.c",
@@ -55,6 +54,8 @@ project "SDL2"
 		"./src/file/*.c",
 		"./src/haptic/*.c",
 		"./src/haptic/android/*.c",
+		"./src/hidapi/*.c",
+		"./src/hidapi/android/*.cpp",
 		"./src/joystick/*.c",
 		"./src/joystick/android/*.c",
 		"./src/joystick/hidapi/*.c",
@@ -79,8 +80,8 @@ project "SDL2"
 		"./src/video/*.c",
 		"./src/video/android/*.c",
 		"./src/video/yuv2rgb/*.c",
-		"./src/test/*.c"]]
-		
+		"./src/test/*.c"
+		--[[
 		"./src/*.c",
 		"./src/audio/*.c",
 		"./src/audio/android/*.c",
@@ -114,7 +115,7 @@ project "SDL2"
 		"./src/video/*.c",
 		"./src/video/android/*.c",
 		"./src/video/yuv2rgb/*.c",
-		"./src/test/*.c",
+		"./src/test/*.c",]]
 	}
 	includedirs
 	{
@@ -154,7 +155,7 @@ project "SDL2_main"
 -- SDL2 as a usage
 usage "SDL2"
 	links {
-		"SDL2", "SDL2_main"
+		"SDL2_main", "SDL2"
 	}
 	
 	filter "system:Linux"
