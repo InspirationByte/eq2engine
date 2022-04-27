@@ -11,6 +11,8 @@
 #include "BasePackageFileReader.h"
 
 #include "ds/Array.h"
+#include "ds/Map.h"
+
 #include "utils/IceKey.h"
 
 #include "core/dpk_defs.h"
@@ -109,6 +111,7 @@ protected:
 
 	dpkheader_t				m_header;
 	dpkfileinfo_t*			m_dpkFiles;
+	Map<int, int>			m_fileIndices;
 
 	Array<CDPKFileStream*>	m_openFiles;
 };

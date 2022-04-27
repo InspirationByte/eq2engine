@@ -353,15 +353,13 @@ int	CDPKFileReader::FindFileIndex(const char* filename) const
 	// convert to DPK filename
 	DPK_FixSlashes(pkgFileName);
 
-	int strHash = StringToHash(pkgFileName.ToCString(), true);
+	const int nameHash = StringToHash(pkgFileName.ToCString(), true);
 
-    for (int i = 0; i < m_header.numFiles; i++)
-    {
-		const dpkfileinfo_t& file = m_dpkFiles[i];
-
-		if (file.filenameHash == strHash)
-			return i;
-    }
+	auto it = m_fileIndices.find(nameHash);
+	if (it != m_fileIndices.end())
+	{
+		return it.value();
+	}
 
     return -1;
 }
@@ -420,6 +418,11 @@ bool CDPKFileReader::InitPackage(const char *filename, const char* mountPath /*=
 
 	m_dpkFiles = new dpkfileinfo_t[m_header.numFiles];
 	fread( m_dpkFiles, sizeof(dpkfileinfo_t), m_header.numFiles, dpkFile );
+
+	for (int i = 0; i < m_header.numFiles; i++)
+	{
+		m_fileIndices.insert(m_dpkFiles[i].filenameHash, i);
+	}
 
     fclose(dpkFile);
 

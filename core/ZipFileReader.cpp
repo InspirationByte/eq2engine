@@ -14,6 +14,8 @@
 #include "utils/strtools.h"
 #include "utils/CRC32.h"
 
+extern void DPK_FixSlashes(EqString& str);
+
 CZipFileStream::CZipFileStream(unzFile zip) : m_zipHandle(zip)
 {
 	unzGetCurrentFileInfo(m_zipHandle, &m_finfo, NULL, 0, NULL, 0, NULL, 0);
@@ -163,12 +165,11 @@ bool CZipFileReader::InitPackage(const char* filename, const char* mountPath/* =
 
 		zfileinfo_t zf;
 		zf.filename = path;
-		zf.filename = zf.filename.LowerCase();
-		zf.hash = StringToHash(zf.filename.ToCString());
-
+		DPK_FixSlashes(zf.filename);
 		unzGetFilePos(zip, &zf.pos);
 	
-		m_files.append(zf);
+		const int nameHash = StringToHash(zf.filename.ToCString(), true);
+		m_files.insert(nameHash, zf);
 
 		unzGoToNextFile(zip);
 	}
@@ -262,8 +263,6 @@ unzFile CZipFileReader::GetNewZipHandle() const
 	return unzOpen(m_packagePath.ToCString());
 }
 
-extern void DPK_FixSlashes(EqString& str);
-
 unzFile	CZipFileReader::GetZippedFile(const char* filename) const
 {
 	EqString fullFilename(filename);
@@ -282,26 +281,23 @@ unzFile	CZipFileReader::GetZippedFile(const char* filename) const
 	EqString pkgFileName = fullFilename.Right(fullFilename.Length() - m_mountPath.Length() - 1);
 	DPK_FixSlashes(pkgFileName);
 
-	int strHash = StringToHash(pkgFileName.ToCString(), true);
+	const int nameHash = StringToHash(pkgFileName.ToCString(), true);
 
 	//Msg("Request file '%s' %d\n", pkgFileName.ToCString(), strHash);
 
-	for (int i = 0; i < m_files.numElem(); i++)
+	auto it = m_files.find(nameHash);
+	if (it != m_files.end())
 	{
-		const zfileinfo_t& file = m_files[i];
+		const zfileinfo_t& file = *it;
+		unzFile zipFile = GetNewZipHandle();
 
-		if (file.hash == strHash)
+		if (unzGoToFilePos(zipFile, (unz_file_pos*)&file.pos) != UNZ_OK)
 		{
-			unzFile zipFile = GetNewZipHandle();
-			
-			if (unzGoToFilePos(zipFile, (unz_file_pos*)&file.pos) != UNZ_OK)
-			{
-				unzClose(zipFile);
-				continue;
-			}
-
-			return zipFile;
+			unzClose(zipFile);
+			return nullptr;
 		}
+
+		return zipFile;
 	}
 
 	return nullptr;

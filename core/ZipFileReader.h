@@ -10,6 +10,7 @@
 
 #include "BasePackageFileReader.h"
 #include "ds/Array.h"
+#include "ds/Map.h"
 
 #include "minizip/unzip.h"
 
@@ -81,12 +82,11 @@ protected:
 	struct zfileinfo_t
 	{
 		EqString filename;
-		int hash;
 		unz_file_pos pos;
 	};
 
 	Array<CZipFileStream*>	m_openFiles;
-	Array<zfileinfo_t>		m_files;
+	Map<int, zfileinfo_t>	m_files;
 };
 
 #endif // ZIPFILEREADER_H
