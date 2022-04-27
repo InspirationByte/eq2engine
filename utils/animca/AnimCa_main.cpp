@@ -22,7 +22,6 @@
 #include <malloc.h>
 #include "egf/model.h"
 
-class IStudioShapeCache* g_pStudioShapeCache = nullptr;
 class IShaderAPI* g_pShaderAPI = nullptr;
 class IMaterialSystem* materials = nullptr;
 

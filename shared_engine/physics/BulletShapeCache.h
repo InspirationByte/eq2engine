@@ -18,7 +18,10 @@ class btCollisionShape;
 class CBulletStudioShapeCache : public IStudioShapeCache
 {
 public:
-								CBulletStudioShapeCache();
+	CBulletStudioShapeCache();
+
+	bool						IsInitialized() const;
+	const char*					GetInterfaceName() const;
 
 	// checks the shape is initialized for the cache
 	bool						IsShapeCachePresent( studioPhysShapeCache_t* shapeInfo );

@@ -23,7 +23,6 @@
 
 #include "egf/EGFGenerator.h"
 
-class IStudioShapeCache* g_pStudioShapeCache = nullptr;
 class IShaderAPI* g_pShaderAPI = nullptr;
 class IMaterialSystem* materials = nullptr;
 

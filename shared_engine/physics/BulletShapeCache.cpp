@@ -17,9 +17,11 @@
 
 #include "utils/global_mutex.h"
 
+#define CORE_INTERFACE_EXPORT
+#include "core/InterfaceManager.h"
+
 using namespace EqBulletUtils;
 using namespace Threading;
-
 
 ConVar ph_studioShapeMargin("ph_studioShapeMargin", "0.05", "Studio model shape marginal", CV_CHEAT);
 
@@ -82,7 +84,17 @@ btCollisionShape* InternalGenerateShape(int numVertices, Vector3D* vertices, int
 
 CBulletStudioShapeCache::CBulletStudioShapeCache() : m_mutex(GetGlobalMutex(MUTEXPURPOSE_PHYSICS))
 {
+	GetCore()->RegisterInterface(SHAPECACHE_INTERFACE_VERSION, this);
+}
 
+bool CBulletStudioShapeCache::IsInitialized() const 
+{
+	return true; 
+}
+
+const char* CBulletStudioShapeCache::GetInterfaceName() const 
+{
+	return SHAPECACHE_INTERFACE_VERSION; 
 }
 
 // checks the shape is initialized for the cache
@@ -166,6 +178,5 @@ void CBulletStudioShapeCache::Cleanup_Invalidate()
 	m_collisionShapes.clear();
 }
 
-// expose interface
+// instantiate
 static CBulletStudioShapeCache s_BulletShapeCache;
-IStudioShapeCache* g_pStudioShapeCache = (IStudioShapeCache*)&s_BulletShapeCache;

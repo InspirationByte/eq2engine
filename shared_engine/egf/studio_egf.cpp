@@ -262,7 +262,7 @@ void CEngineStudioEGF::DestroyModel()
 				PPFree(m_hwdata->motiondata[i]);
 			}
 
-			g_pStudioShapeCache->DestroyStudioCache(&m_hwdata->physModel);
+			g_studioShapeCache->DestroyStudioCache(&m_hwdata->physModel);
 			Studio_FreePhysModel(&m_hwdata->physModel);
 
 			auto lodRefs = m_hwdata->modelrefs;
@@ -287,7 +287,7 @@ void CEngineStudioEGF::LoadPhysicsData()
 	podFileName.Append(".pod");
 
 	if (Studio_LoadPhysModel(podFileName.GetData(), &m_hwdata->physModel))
-		g_pStudioShapeCache->InitStudioCache(&m_hwdata->physModel);
+		g_studioShapeCache->InitStudioCache(&m_hwdata->physModel);
 }
 
 extern ConVar r_detaillevel;

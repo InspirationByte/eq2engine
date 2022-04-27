@@ -9,8 +9,12 @@
 #define ISTUDIOSHAPECACHE_H
 
 #include "egf/model.h"
+#include "core/InterfaceManager.h"
+#include "core/IDkCore.h"
 
-class IStudioShapeCache
+#define SHAPECACHE_INTERFACE_VERSION		"Physics_StudioShapeCache_001"
+
+class IStudioShapeCache : public IEqCoreModule
 {
 public:
 	virtual ~IStudioShapeCache() {}
@@ -26,22 +30,28 @@ public:
 	virtual void	Cleanup_Invalidate() = 0;
 };
 
-extern IStudioShapeCache* g_pStudioShapeCache;
-
 
 // empty cache
 class CEmptyStudioShapeCache : public IStudioShapeCache
 {
 public:
-	// checks the shape is initialized for the cache
-	bool	IsShapeCachePresent( studioPhysShapeCache_t* shapeInfo ) {return false;}
+	CEmptyStudioShapeCache()
+	{
+		GetCore()->RegisterInterface(SHAPECACHE_INTERFACE_VERSION, this);
+	}
 
-	// initializes whole studio shape model with all objects
-	void	InitStudioCache( studioPhysData_t* studioData )  {}
-	void	DestroyStudioCache( studioPhysData_t* studioData )  {}
+	bool			IsInitialized() const { return true; }
+	const char*		GetInterfaceName() const { return SHAPECACHE_INTERFACE_VERSION; }
 
-	// does all shape cleanup
-	void	Cleanup_Invalidate() {}
+	bool			IsShapeCachePresent( studioPhysShapeCache_t* shapeInfo ) {return false;}
+
+	void			InitStudioCache( studioPhysData_t* studioData )  {}
+	void			DestroyStudioCache( studioPhysData_t* studioData )  {}
+
+	void			Cleanup_Invalidate() {}
 };
+
+INTERFACE_SINGLETON(IStudioShapeCache, NONE, SHAPECACHE_INTERFACE_VERSION, g_studioShapeCache)
+
 
 #endif // ISTUDIOSHAPECACHE_H
