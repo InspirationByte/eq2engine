@@ -15,7 +15,7 @@ public class EqEngineActivity extends org.libsdl.app.SDLActivity{
         requestPermission();
         return new String[] {
                 "SDL2",
-                "Game"
+                "DriversGame"
         };
     }
 

@@ -1,14 +1,3 @@
-project "hidapi"
-	kind "StaticLib"
-	includedirs
-	{
-		"./include",
-	}
-	
-	files {
-		"./src/hidapi/android/hid.cpp" 
-	}
-
 project "SDL2"
 	kind "SharedLib"
 	
@@ -23,9 +12,8 @@ project "SDL2"
 	}
 
 	links {
-		-- TODO: hidapi
 		"dl", "GLESv1_CM", "GLESv2", "OpenSLES", "log", "android",
-		"hidapi", "cpufeatures"
+		"cpufeatures"
 	}
 
 	buildoptions {
@@ -109,6 +97,7 @@ project "SDL2"
 		"./src/joystick/*.c",
 		"./src/joystick/android/*.c",
 		"./src/joystick/hidapi/*.c",
+		"./src/hidapi/android/*.cpp",
 		"./src/loadso/dlopen/*.c",
 		"./src/power/*.c",
 		"./src/power/android/*.c",
