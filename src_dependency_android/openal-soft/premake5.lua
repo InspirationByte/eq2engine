@@ -35,15 +35,21 @@ project "openal_soft"
 	{
 		"AL_LIBTYPE_STATIC"
 	}
-	
-	filter "system:android"
-		-- TODO: detect abi
-		removefiles {
+
+	filter "architecture:arm or arm64"
+  		removefiles {
 			"./core/mixer/mixer_sse.cpp",
 			"./core/mixer/mixer_sse2.cpp",
+			"./core/mixer/mixer_sse3.cpp",
 			"./core/mixer/mixer_sse41.cpp"
 		}
-		
+
+	filter "architecture:x86 or x86_64"
+		removefiles {
+			"./core/mixer/mixer_neon.cpp"
+		}
+	
+	filter "system:android"		
 		files {
 			"./alc/backends/opensl.cpp",
 		}

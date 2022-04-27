@@ -55,17 +55,18 @@ workspace "Equilibrium2"
 	location "project_%{_ACTION}"
 	
 	if not IS_ANDROID then
-		platforms { "x86", "x64" }
+		platforms { 
+			"x86", "x64"
+		}
 	end
 	
-	if IS_ANDROID then
-	
+	if IS_ANDROID then		
 		system "android"
 		shortcommands "On"
 		
-		--aaroutputpath "android_bin/"
-	
-		--flags { "NoImportLib" }
+		platforms {
+			 "android-arm", "android-arm64"
+		}
 		
 		disablewarnings {
 			-- disable warnings which are emitted by my stupid code
@@ -92,13 +93,22 @@ workspace "Equilibrium2"
 			"-mfloat-abi=softfp",	-- force NEON to be used
 			"-mfpu=neon"
 		}
-	
-		platforms {
-			 "android-arm", "android-arm64" --"x86", "x86_64" 
-		}
-		
+
+		filter "platforms:*-x86"
+			architecture "x86"
+
+		filter "platforms:*-x86_64"
+			architecture "x86_64"
+
+		filter "platforms:*-arm"
+			architecture "arm"
+
+		filter "platforms:*-arm64"
+			architecture "arm64"
 	end
-	
+
+
+
     filter "system:linux"
         buildoptions {
             "-Wno-narrowing",
