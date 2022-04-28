@@ -313,6 +313,8 @@ protected:
 	GLTextureRef_t		CreateGLTextureFromImage(CImage* pSrc, const SamplerStateParam_t& sampler, int& wide, int& tall, int nFlags);
 
 private:
+	void					ApplyBuffers() override;
+
 	//OpenGL - Specific
 	void					SetupGLSamplerState(uint texTarget, const SamplerStateParam_t& sSamplingParams, int mipMapCount = 1);
 	void					InternalChangeFrontFace(int nCullFaceMode);
@@ -323,6 +325,8 @@ private:
 	GLuint					m_currentGLDepth;
 	
 	GLenum					m_drawBuffers[MAX_MRTS];
+
+	GLuint					m_drawVAO;
 
 	int						m_boundInstanceStream;
 	uint					m_currentGLVB[MAX_VERTEXSTREAM];
@@ -352,8 +356,6 @@ private:
 
 	int						m_nCurrentMask;
 	bool					m_bCurrentBlendEnable;
-
-	uint					m_nCurrentVBO;
 
 	IRectangle				m_viewPort;
 

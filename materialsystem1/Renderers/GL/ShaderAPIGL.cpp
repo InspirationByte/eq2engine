@@ -205,6 +205,9 @@ void ShaderAPIGL::Init( shaderAPIParams_t &params)
 	for (int i = 0; i < m_caps.maxRenderTargets; i++)
 		m_drawBuffers[i] = GL_COLOR_ATTACHMENT0 + i;
 
+	glGenVertexArrays(1, &m_drawVAO);
+	GLCheckError("gen VAO");
+
 	m_currentGLDepth = GL_NONE;
 
 	// init worker thread
@@ -1461,6 +1464,23 @@ void ShaderAPIGL::SetDepthRange(float fZNear,float fZFar)
 
 }
 
+void ShaderAPIGL::ApplyBuffers()
+{
+	// HACK: use VAO to separate drawing
+	glBindVertexArray(m_drawVAO);
+	GLCheckError("bind VAO");
+
+	// First change the vertex format
+	ChangeVertexFormat(m_pSelectedVertexFormat);
+
+	for (int i = 0; i < MAX_VERTEXSTREAM; i++)
+		ChangeVertexBuffer(m_pSelectedVertexBuffers[i], i, m_nSelectedOffsets[i]);
+
+	ChangeIndexBuffer(m_pSelectedIndexBuffer);
+
+	glBindVertexArray(0);
+}
+
 // Changes the vertex format
 void ShaderAPIGL::ChangeVertexFormat(IVertexFormat* pVertexFormat)
 {
@@ -1489,7 +1509,7 @@ void ShaderAPIGL::ChangeVertexFormat(IVertexFormat* pVertexFormat)
 			}
 		}
 
-		m_pCurrentVertexFormat = pSelectedFormat;
+		m_pCurrentVertexFormat = pVertexFormat;
 	}
 }
 
@@ -1515,32 +1535,47 @@ void ShaderAPIGL::ChangeVertexBuffer(IVertexBuffer* pVertexBuffer, int nStream, 
 	if (vboChanged || offset != m_nCurrentOffsets[nStream] || m_pCurrentVertexFormat != m_pActiveVertexFormat[nStream] ||
 		instanceBuffer && m_boundInstanceStream != nStream)
 	{
-		glBindBuffer(GL_ARRAY_BUFFER, m_currentGLVB[nStream] = vbo);
-		GLCheckError("bind array");
+		bool anyEnabled = false;
 
-		const int vertexSize = currentFormat->m_streamStride[nStream];
-		const char* base = (char*)(offset * vertexSize);
-
-		for (int i = 0; i < m_caps.maxVertexGenericAttributes; i++)
+		if (currentFormat)
 		{
-			const eqGLVertAttrDesc_t& attrib = currentFormat->m_genericAttribs[i];
-
-			if (attrib.streamId == nStream && attrib.sizeInBytes)
+			for (int i = 0; i < m_caps.maxVertexGenericAttributes; i++)
 			{
-				glEnableVertexAttribArray(i);
-				GLCheckError("enable vtx attrib");
-
-				glVertexAttribPointer(i, attrib.sizeInBytes, glTypes[attrib.attribFormat], GL_FALSE, vertexSize, base + attrib.offsetInBytes);
-				GLCheckError("attribpointer");
-
-				glVertexAttribDivisor(i, instanceBuffer ? 1 : 0);
-				GLCheckError("divisor");
+				const eqGLVertAttrDesc_t& attrib = currentFormat->m_genericAttribs[i];
+				if (attrib.streamId == nStream && attrib.sizeInBytes)
+					anyEnabled = true;
 			}
 		}
 
+		if (anyEnabled)
+		{
+			const int vertexSize = currentFormat->m_streamStride[nStream];
+			const char* base = (char*)(offset * vertexSize);
+
+			glBindBuffer(GL_ARRAY_BUFFER, m_currentGLVB[nStream] = vbo);
+			GLCheckError("bind array");
+
+			for (int i = 0; i < m_caps.maxVertexGenericAttributes; i++)
+			{
+				const eqGLVertAttrDesc_t& attrib = currentFormat->m_genericAttribs[i];
+
+				if (attrib.streamId == nStream && attrib.sizeInBytes && vbo != 0)
+				{
+					glEnableVertexAttribArray(i);
+					GLCheckError("enable vtx attrib");
+
+					glVertexAttribPointer(i, attrib.sizeInBytes, glTypes[attrib.attribFormat], GL_FALSE, vertexSize, base + attrib.offsetInBytes);
+					GLCheckError("attribpointer");
+
+					glVertexAttribDivisor(i, instanceBuffer ? 1 : 0);
+					GLCheckError("divisor");
+				}
+			}
+		}
+
+		m_pActiveVertexFormat[nStream] = m_pCurrentVertexFormat;
 		m_pCurrentVertexBuffers[nStream] = pVertexBuffer;
 		m_nCurrentOffsets[nStream] = offset;
-		m_pActiveVertexFormat[nStream] = m_pCurrentVertexFormat;
 	}
 
 	if(pVertexBuffer)
@@ -2314,12 +2349,16 @@ void ShaderAPIGL::DrawIndexedPrimitives(ER_PrimitiveType nType, int nFirstIndex,
 	if(m_boundInstanceStream != -1 && m_pCurrentVertexBuffers[m_boundInstanceStream])
 		numInstances = m_pCurrentVertexBuffers[m_boundInstanceStream]->GetVertexCount();
 
+	glBindVertexArray(m_drawVAO);
+	GLCheckError("bind VAO");
+
 	if(numInstances)
 		glDrawElementsInstanced(glPrimitiveType[nType], nIndices, indexSize == 2? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT, BUFFER_OFFSET(indexSize * nFirstIndex), numInstances);
 	else
 		glDrawElements(glPrimitiveType[nType], nIndices, indexSize == 2? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT, BUFFER_OFFSET(indexSize * nFirstIndex));
-
 	GLCheckError("draw elements");
+
+	glBindVertexArray(0);
 
 	m_nDrawIndexedPrimitiveCalls++;
 	m_nDrawCalls++;
@@ -2342,12 +2381,16 @@ void ShaderAPIGL::DrawNonIndexedPrimitives(ER_PrimitiveType nType, int nFirstVer
 	if(m_boundInstanceStream != -1 && m_pCurrentVertexBuffers[m_boundInstanceStream])
 		numInstances = m_pCurrentVertexBuffers[m_boundInstanceStream]->GetVertexCount();
 
+	glBindVertexArray(m_drawVAO);
+	GLCheckError("bind VAO");
+
 	if(numInstances)
 		glDrawArraysInstanced(glPrimitiveType[nType], nFirstVertex, nVertices, numInstances);
 	else
 		glDrawArrays(glPrimitiveType[nType], nFirstVertex, nVertices);
-
 	GLCheckError("draw arrays");
+
+	glBindVertexArray(0);
 
 	m_nDrawIndexedPrimitiveCalls++;
 	m_nDrawCalls++;

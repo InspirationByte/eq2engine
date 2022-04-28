@@ -50,7 +50,7 @@ public:
 
 	void								Apply();
 
-	void								ApplyBuffers();
+	virtual void						ApplyBuffers();
 
 //-------------------------------------------------------------
 // Renderer information

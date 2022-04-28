@@ -295,8 +295,6 @@ void ShaderAPI_Base::Apply()
 
 void ShaderAPI_Base::ApplyBuffers()
 {
-	// TODO: OpenGL group all into VAO
-
 	// First change the vertex format
 	ChangeVertexFormat( m_pSelectedVertexFormat );
 
