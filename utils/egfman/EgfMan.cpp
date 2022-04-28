@@ -32,6 +32,7 @@
 
 #include "dkphysics/DkBulletPhysics.h"
 #include "physics/PhysicsCollisionGroup.h"
+#include "physics/BulletShapeCache.h"
 
 #include "materialsystem1/MeshBuilder.h"
 
@@ -61,6 +62,8 @@ ConVar cheats("__cheats", "1");
 
 static DkPhysics s_physics;
 IPhysics* physics = &s_physics;
+
+CBulletStudioShapeCache	s_shapeCache;
 
 DKMODULE*			g_matsysmodule = NULL;
 IShaderAPI*			g_pShaderAPI = NULL;
@@ -1442,6 +1445,8 @@ bool InitCore(char *pCmdLine)
 
 	if(!g_fileSystem->Init(false))
 		return false;
+
+	GetCore()->RegisterInterface(SHAPECACHE_INTERFACE_VERSION, &s_shapeCache);
 
 	g_cmdLine->ExecuteCommandLine();
 

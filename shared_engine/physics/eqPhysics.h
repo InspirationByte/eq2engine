@@ -31,15 +31,17 @@ TODO:
 #ifndef EQPHYSICS_H
 #define EQPHYSICS_H
 
+#include <btBulletCollisionCommon.h>
+
 #include "math/FVector.h"
 #include "math/Quaternion.h"
 #include "math/BoundingBox.h"
 #include "ds/Array.h"
 #include "utils/eqthread.h"
-
-#include <btBulletCollisionCommon.h>
+#include "BulletShapeCache.h"
 
 #include "eqCollision_ObjectGrid.h"
+
 
 // max world size is +/-32768
 #define EQPHYS_MAX_WORLDSIZE	32767.0f

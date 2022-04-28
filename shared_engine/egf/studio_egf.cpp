@@ -287,7 +287,10 @@ void CEngineStudioEGF::LoadPhysicsData()
 	podFileName.Append(".pod");
 
 	if (Studio_LoadPhysModel(podFileName.GetData(), &m_hwdata->physModel))
+	{
+		ASSERTMSG(g_studioShapeCache, "studio shape cache is not initialized!\n");
 		g_studioShapeCache->InitStudioCache(&m_hwdata->physModel);
+	}
 }
 
 extern ConVar r_detaillevel;

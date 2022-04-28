@@ -17,9 +17,6 @@
 
 #include "utils/global_mutex.h"
 
-#define CORE_INTERFACE_EXPORT
-#include "core/InterfaceManager.h"
-
 using namespace EqBulletUtils;
 using namespace Threading;
 
@@ -84,7 +81,6 @@ btCollisionShape* InternalGenerateShape(int numVertices, Vector3D* vertices, int
 
 CBulletStudioShapeCache::CBulletStudioShapeCache() : m_mutex(GetGlobalMutex(MUTEXPURPOSE_PHYSICS))
 {
-	GetCore()->RegisterInterface(SHAPECACHE_INTERFACE_VERSION, this);
 }
 
 bool CBulletStudioShapeCache::IsInitialized() const 
@@ -177,6 +173,3 @@ void CBulletStudioShapeCache::Cleanup_Invalidate()
 
 	m_collisionShapes.clear();
 }
-
-// instantiate
-static CBulletStudioShapeCache s_BulletShapeCache;

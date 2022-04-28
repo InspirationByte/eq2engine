@@ -51,7 +51,7 @@ public:
 	void			Cleanup_Invalidate() {}
 };
 
-INTERFACE_SINGLETON(IStudioShapeCache, NONE, SHAPECACHE_INTERFACE_VERSION, g_studioShapeCache)
+INTERFACE_SINGLETON(IStudioShapeCache, StudioShapeCache, SHAPECACHE_INTERFACE_VERSION, g_studioShapeCache)
 
 
 #endif // ISTUDIOSHAPECACHE_H
