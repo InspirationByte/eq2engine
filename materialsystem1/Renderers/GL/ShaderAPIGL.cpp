@@ -14,6 +14,7 @@
 #include "GLShaderProgram.h"
 #include "GLRenderState.h"
 #include "GLOcclusionQuery.h"
+#include "GLWorker.h"
 
 #include "shaderapigl_def.h"
 
@@ -24,181 +25,6 @@
 
 #include "utils/strtools.h"
 #include "utils/KeyValues.h"
-#include "utils/eqthread.h"
-#include "ds/function.h"
-
-#include <atomic>
-
-extern ShaderAPIGL g_shaderApi;
-
-#define WORK_PENDING_MARKER 0x1d1d0001
-
-class GLWorkerThread : CEqThread
-{
-	friend class ShaderAPIGL;
-
-public:
-	using FUNC_TYPE = EqFunction<int()>;
-
-	GLWorkerThread()
-	{
-	}
-
-	void Init()
-	{
-		StartWorkerThread("GLWorker");
-	}
-
-	void Shutdown()
-	{
-		SignalWork();
-		StopThread();
-
-		// delete work
-		work_t* work = m_pendingWork;
-		m_pendingWork = nullptr;
-		while(work)
-		{
-			work_t* nextWork = work->next;
-			delete work;
-			work = nextWork;
-		}
-	}
-
-	// syncronous execution
-	int WaitForExecute(const char* name, FUNC_TYPE f)
-	{
-		return AddWork(name, f, true);
-	}
-
-	// asyncronous execution
-	void Execute(const char* name, FUNC_TYPE f)
-	{
-		AddWork(name, f, false);
-	}
-
-protected:
-	int Run();
-
-	int AddWork(const char* name, FUNC_TYPE f, bool blocking);
-
-	struct work_t
-	{
-		work_t(const char* _name, FUNC_TYPE f, uint id, bool block) :
-			func(f)
-		{
-			name = _name;
-			result = WORK_PENDING_MARKER;
-			workId = id;
-			blocking = block;
-		}
-
-		std::atomic<work_t*>	next{ nullptr };
-		FUNC_TYPE				func;
-
-		const char*				name;
-		
-		volatile int			result;
-		uint					workId;
-		bool					blocking;
-	};
-
-	int WaitForResult(work_t* work);
-
-	std::atomic<work_t*>	m_pendingWork;
-
-	uint					m_workCounter;
-};
-
-int GLWorkerThread::WaitForResult(work_t* work)
-{
-	ASSERT(work);
-
-	DevMsg(DEVMSG_SHADERAPI, "WaitForResult for %s (workId %d)\n", work->name, work->workId);
-
-	// wait
-	do
-	{
-		const int result = work->result;
-		if (result != WORK_PENDING_MARKER)
-		{
-			delete work;
-			return result;
-		}
-
-		// HACK: weird hack to make this unfreeze itself
-		if(IsWorkDone() && !m_pendingWork)
-		{
-			m_pendingWork = work;
-			SignalWork();
-		}
-
-		Platform_Sleep(1);
-	} while (true);
-
-	return 0;
-}
-
-int GLWorkerThread::AddWork(const char* name, FUNC_TYPE f, bool blocking)
-{
-	uintptr_t thisThreadId = Threading::GetCurrentThreadID();
-
-	if (blocking && thisThreadId == g_shaderApi.m_mainThreadId) // not required for main thread
-		return f();
-
-	work_t* work = new work_t(name, f, m_workCounter++, blocking);
-
-	// chain link
-	work->next = m_pendingWork.load();
-	m_pendingWork = work;
-
-	SignalWork();
-
-	if (blocking)
-		return WaitForResult(work);
-
-	return 0;
-}
-
-int GLWorkerThread::Run()
-{
-	// find some work
-	do
-	{
-		work_t* currentWork = m_pendingWork.load();
-		
-		if (currentWork)
-			m_pendingWork = currentWork->next.load();
-		else
-			break;
-
-		FUNC_TYPE func = currentWork->func;
-
-		DevMsg(DEVMSG_SHADERAPI, "BeginAsyncOperation for %s (workId %d)\n", currentWork->name, currentWork->workId);
-		g_shaderApi.BeginAsyncOperation(GetThreadID());
-
-		// run work
-		if (currentWork->blocking)
-		{
-			currentWork->result = func();
-		}
-		else
-		{
-			func();
-			delete currentWork;
-		}
-
-		DevMsg(DEVMSG_SHADERAPI, "EndAsyncOperation for %s (workId %d)\n", currentWork->name, currentWork->workId);
-		g_shaderApi.EndAsyncOperation();
-
-		if (IsTerminating())
-			break;
-	} while (true);
-
-	return 0;
-}
-
-GLWorkerThread glWorker;
 
 #ifdef PLAT_LINUX
 #include "glx_caps.hpp"
@@ -320,8 +146,6 @@ ShaderAPIGL::ShaderAPIGL() : ShaderAPI_Base()
 	memset(m_currentGLVB, 0, sizeof(m_currentGLVB));
 	memset(m_currentGLTextures, 0, sizeof(m_currentGLTextures));
 	m_currentGLIB = 0;
-
-	m_asyncOperationActive = false;
 }
 
 void ShaderAPIGL::PrintAPIInfo()
@@ -383,10 +207,8 @@ void ShaderAPIGL::Init( shaderAPIParams_t &params)
 
 	m_currentGLDepth = GL_NONE;
 
-	m_mainThreadId = Threading::GetCurrentThreadID();
-
 	// init worker thread
-	glWorker.Init();
+	g_glWorker.Init();
 
 	// Init the base shader API
 	ShaderAPI_Base::Init(params);
@@ -432,7 +254,7 @@ void ShaderAPIGL::Shutdown()
 	m_frameBuffer = 0;
 
 	// shutdown worker and detach context
-	glWorker.Shutdown();
+	g_glWorker.Shutdown();
 	ShaderAPI_Base::Shutdown();
 }
 
@@ -902,7 +724,7 @@ void ShaderAPIGL::FreeTexture(ITexture* pTexture)
 
 	if(deleted)
 	{
-		glWorker.WaitForExecute(__FUNCTION__, [pTex]() {
+		g_glWorker.WaitForExecute(__FUNCTION__, [pTex]() {
 			delete pTex;
 
 			return 0;
@@ -1107,7 +929,7 @@ GLTextureRef_t ShaderAPIGL::CreateGLTextureFromImage(CImage* pSrc, const Sampler
 	if(gl_skipTextures.GetBool())
 		return noTexture;
 
-	int result = glWorker.WaitForExecute(__FUNCTION__,[=]() {
+	int result = g_glWorker.WaitForExecute(__FUNCTION__,[=]() {
 		// Generate a texture
 		glGenTextures(1, &texturePtr->glTexID);
 
@@ -1651,11 +1473,11 @@ void ShaderAPIGL::ChangeVertexFormat(IVertexFormat* pVertexFormat)
 	{
 		for (int i = 0; i < m_caps.maxVertexGenericAttributes; i++)
 		{
-			eqGLVertAttrDesc_t& selDesc = pSelectedFormat->m_genericAttribs[i];
-			eqGLVertAttrDesc_t& curDesc = pCurrentFormat->m_genericAttribs[i];
+			const eqGLVertAttrDesc_t& selDesc = pSelectedFormat->m_genericAttribs[i];
+			const eqGLVertAttrDesc_t& curDesc = pCurrentFormat->m_genericAttribs[i];
 
-			bool shouldDisable = !selDesc.sizeInBytes && curDesc.sizeInBytes;
-			bool shouldEnable = selDesc.sizeInBytes && !curDesc.sizeInBytes;
+			const bool shouldDisable = !selDesc.sizeInBytes && curDesc.sizeInBytes;
+			const bool shouldEnable = selDesc.sizeInBytes && !curDesc.sizeInBytes;
 
 			if (shouldDisable)
 			{
@@ -1665,14 +1487,9 @@ void ShaderAPIGL::ChangeVertexFormat(IVertexFormat* pVertexFormat)
 				glVertexAttribDivisor(i, 0);
 				GLCheckError("divisor");
 			}
-			else if (shouldEnable)
-			{
-				glEnableVertexAttribArray(i);
-				GLCheckError("enable vtx attrib");
-			}
 		}
 
-		m_pCurrentVertexFormat = pVertexFormat;
+		m_pCurrentVertexFormat = pSelectedFormat;
 	}
 }
 
@@ -1689,11 +1506,11 @@ void ShaderAPIGL::ChangeVertexBuffer(IVertexBuffer* pVertexBuffer, int nStream, 
 		GL_UNSIGNED_BYTE,
 	};
 
-	bool instanceBuffer = (nStream > 0) && pVB != nullptr && (pVB->GetFlags() & VERTBUFFER_FLAG_INSTANCEDATA);
-	bool vboChanged = m_currentGLVB[nStream] != vbo;
+	const bool instanceBuffer = (nStream > 0) && pVB != nullptr && (pVB->GetFlags() & VERTBUFFER_FLAG_INSTANCEDATA);
+	const bool vboChanged = m_currentGLVB[nStream] != vbo;
 
-	bool instancingChanged = !instanceBuffer && m_boundInstanceStream == nStream ||
-							  instanceBuffer && m_boundInstanceStream != nStream;
+	const bool instancingChanged = !instanceBuffer && m_boundInstanceStream == nStream ||
+									instanceBuffer && m_boundInstanceStream != nStream;
 
 	if (vboChanged || offset != m_nCurrentOffsets[nStream] || m_pCurrentVertexFormat != m_pActiveVertexFormat[nStream] ||
 		instanceBuffer && m_boundInstanceStream != nStream)
@@ -1701,24 +1518,23 @@ void ShaderAPIGL::ChangeVertexBuffer(IVertexBuffer* pVertexBuffer, int nStream, 
 		glBindBuffer(GL_ARRAY_BUFFER, m_currentGLVB[nStream] = vbo);
 		GLCheckError("bind array");
 
-		if (currentFormat)
+		const int vertexSize = currentFormat->m_streamStride[nStream];
+		const char* base = (char*)(offset * vertexSize);
+
+		for (int i = 0; i < m_caps.maxVertexGenericAttributes; i++)
 		{
-			const int vertexSize = currentFormat->m_streamStride[nStream];
+			const eqGLVertAttrDesc_t& attrib = currentFormat->m_genericAttribs[i];
 
-			const char* base = (char*)(offset * vertexSize);
-
-			for (int i = 0; i < m_caps.maxVertexGenericAttributes; i++)
+			if (attrib.streamId == nStream && attrib.sizeInBytes)
 			{
-				const eqGLVertAttrDesc_t& attrib = currentFormat->m_genericAttribs[i];
+				glEnableVertexAttribArray(i);
+				GLCheckError("enable vtx attrib");
 
-				if (attrib.streamId == nStream && attrib.sizeInBytes)
-				{
-					glVertexAttribPointer(i, attrib.sizeInBytes, glTypes[attrib.attribFormat], GL_FALSE, vertexSize, base + attrib.offsetInBytes);
-					GLCheckError("attribpointer");
+				glVertexAttribPointer(i, attrib.sizeInBytes, glTypes[attrib.attribFormat], GL_FALSE, vertexSize, base + attrib.offsetInBytes);
+				GLCheckError("attribpointer");
 
-					glVertexAttribDivisor(i, instanceBuffer ? 1 : 0);
-					GLCheckError("divisor");
-				}
+				glVertexAttribDivisor(i, instanceBuffer ? 1 : 0);
+				GLCheckError("divisor");
 			}
 		}
 
@@ -1809,7 +1625,7 @@ void ShaderAPIGL::DestroyShaderProgram(IShaderProgram* pShaderProgram)
 	// remove it if reference is zero
 	if(deleted)
 	{
-		glWorker.WaitForExecute(__FUNCTION__, [pShader]() {
+		g_glWorker.WaitForExecute(__FUNCTION__, [pShader]() {
 			delete pShader;
 
 			return 0;
@@ -1902,7 +1718,7 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 			info.data.text
 		};
 
-		result = glWorker.WaitForExecute(__FUNCTION__, [prog, pvsResult, sStr]() {
+		result = g_glWorker.WaitForExecute(__FUNCTION__, [prog, pvsResult, sStr]() {
 
 			// create GL program
 			prog->m_program = glCreateProgram();
@@ -1981,7 +1797,7 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 
 		GLint* pfsResult = &fsResult;
 
-		result = glWorker.WaitForExecute(__FUNCTION__, [prog, pfsResult, sStr]() {
+		result = g_glWorker.WaitForExecute(__FUNCTION__, [prog, pfsResult, sStr]() {
 			prog->m_fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
 
 			if (!GLCheckError("create fragment shader"))
@@ -2034,7 +1850,7 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 
 		EGraphicsVendor vendor = m_vendor;
 
-		result = glWorker.WaitForExecute(__FUNCTION__, [prog, pInfo, plinkResult, vendor, currProgram]() {
+		result = g_glWorker.WaitForExecute(__FUNCTION__, [prog, pInfo, plinkResult, vendor, currProgram]() {
 			// link program and go
 			glLinkProgram(prog->m_program);
 			glGetProgramiv(prog->m_program, GL_LINK_STATUS, plinkResult);
@@ -2291,7 +2107,7 @@ IVertexBuffer* ShaderAPIGL::CreateVertexBuffer(ER_BufferAccess nBufAccess, int n
 
 	const int numBuffers = (nBufAccess == BUFFER_DYNAMIC) ? MAX_VB_SWITCHING : 1;
 
-	int result = glWorker.WaitForExecute(__FUNCTION__, [pVB, numBuffers, nBufAccess, pData]() {
+	int result = g_glWorker.WaitForExecute(__FUNCTION__, [pVB, numBuffers, nBufAccess, pData]() {
 
 		glGenBuffers(numBuffers, pVB->m_nGL_VB_Index);
 
@@ -2339,7 +2155,7 @@ IIndexBuffer* ShaderAPIGL::CreateIndexBuffer(int nIndices, int nIndexSize, ER_Bu
 
 	const int numBuffers = (nBufAccess == BUFFER_DYNAMIC) ? MAX_IB_SWITCHING : 1;
 
-	int result = glWorker.WaitForExecute(__FUNCTION__, [pIB, numBuffers, nBufAccess, pData, size]() {
+	int result = g_glWorker.WaitForExecute(__FUNCTION__, [pIB, numBuffers, nBufAccess, pData, size]() {
 		glGenBuffers(numBuffers, pIB->m_nGL_IB_Index);
 
 		if (!GLCheckError("gen idx buffer"))
@@ -2413,7 +2229,7 @@ void ShaderAPIGL::DestroyVertexBuffer(IVertexBuffer* pVertexBuffer)
 
 		delete pVB;
 
-		glWorker.WaitForExecute(__FUNCTION__, [numBuffers, tempArray]() {
+		g_glWorker.WaitForExecute(__FUNCTION__, [numBuffers, tempArray]() {
 
 			glDeleteBuffers(numBuffers, tempArray);
 			GLCheckError("delete vertex buffer");
@@ -2447,7 +2263,7 @@ void ShaderAPIGL::DestroyIndexBuffer(IIndexBuffer* pIndexBuffer)
 
 		delete pIndexBuffer;
 
-		glWorker.WaitForExecute(__FUNCTION__, [numBuffers, tempArray]() {
+		g_glWorker.WaitForExecute(__FUNCTION__, [numBuffers, tempArray]() {
 			
 			glDeleteBuffers(numBuffers, tempArray);
 			GLCheckError("delete index buffer");
@@ -2805,65 +2621,4 @@ void ShaderAPIGL::SetTexture( ITexture* pTexture, const char* pszName, int index
 		index = unit;
 
 	SetTextureOnIndex(pTexture, index);
-}
-
-//----------------------------------------------------------------------------------------
-// OpenGL multithreaded context switching
-//----------------------------------------------------------------------------------------
-
-
-extern CGLRenderLib g_library;
-#include "CGLRenderLib.h"
-
-// prepares for async operation (required to be called in main thread)
-void ShaderAPIGL::BeginAsyncOperation( uintptr_t threadId )
-{
-	uintptr_t thisThreadId = Threading::GetCurrentThreadID();
-
-	if (thisThreadId == m_mainThreadId) // not required for main thread
-		return;
-
-	ASSERT(m_asyncOperationActive == false);
-	
-	GL_CONTEXT sharedContext = g_library.GetSharedContext();
-
-#ifdef USE_GLES2
-	eglMakeCurrent(m_display, EGL_NO_SURFACE, EGL_NO_SURFACE, sharedContext);
-#elif _WIN32
-	wglMakeCurrent(m_hdc, sharedContext);
-#elif LINUX
-	glXMakeCurrent(m_display, (Window)m_params->windowHandle, sharedContext);
-#elif __APPLE__
-
-#endif
-
-	m_asyncOperationActive = true;
-}
-
-// completes for async operation (must be called in worker thread)
-void  ShaderAPIGL::EndAsyncOperation()
-{
-	uintptr_t thisThreadId = Threading::GetCurrentThreadID();
-
-	if(thisThreadId == m_mainThreadId) // not required for main thread
-	{
-		ASSERTMSG(false, "EndAsyncOperation() cannot be called from main thread!");
-		return;
-	}
-
-	ASSERT(m_asyncOperationActive == true);
-
-	//glFinish();
-
-#ifdef USE_GLES2
-	eglMakeCurrent(EGL_NO_DISPLAY, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
-#elif _WIN32
-	wglMakeCurrent(NULL, NULL);
-#elif LINUX
-	glXMakeCurrent(m_display, None, NULL);
-#elif __APPLE__
-
-#endif
-
-	m_asyncOperationActive = false;
 }

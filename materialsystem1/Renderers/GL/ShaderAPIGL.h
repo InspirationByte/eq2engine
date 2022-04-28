@@ -11,51 +11,18 @@
 #include "../Shared/ShaderAPI_Base.h"
 
 #ifdef USE_GLES2
+
 #include <glad_es3.h>
+#ifdef PLAT_ANDROID // direct link
 #include <EGL/egl.h>
+#else
+#include <glad_egl.h>
+#endif // PLAT_ANDROID
+
 #else
 #include <glad.h>
 #endif
 
-#ifdef LINUX
-#include <X11/Xlib.h>
-#include <X11/Xutil.h>
-#include <X11/Xmd.h>
-#include <X11/extensions/xf86vmode.h>
-
-typedef XID GLXContextID;
-typedef XID GLXPixmap;
-typedef XID GLXDrawable;
-typedef XID GLXPbuffer;
-typedef XID GLXWindow;
-typedef XID GLXFBConfigID;
-typedef struct __GLXcontextRec *GLXContext;
-typedef struct __GLXFBConfigRec *GLXFBConfig;
-#endif
-
-#include "VertexFormatGL.h"
-
-struct activeWorker_t
-{
-	activeWorker_t() : numWorks(0), active(false)
-	{
-	}
-
-	uintptr_t			threadId;
-
-#ifdef USE_GLES2
-	EGLContext			context;
-#elif _WIN32
-	HGLRC				context;
-#elif defined(LINUX)
-	GLXContext			context;
-#elif defined(__APPLE__)
-	GLXContext			context;
-#endif // _WIN32
-
-	int					numWorks;
-	bool				active;
-};
 
 enum EGraphicsVendor
 {
@@ -345,12 +312,6 @@ protected:
 	void				CreateTextureInternal(ITexture** pTex, const Array<CImage*>& pImages, const SamplerStateParam_t& sampler,int nFlags = 0);
 	GLTextureRef_t		CreateGLTextureFromImage(CImage* pSrc, const SamplerStateParam_t& sampler, int& wide, int& tall, int nFlags);
 
-	// prepares for async operation (required to be called in main thread)
-	void				BeginAsyncOperation(uintptr_t threadId);
-
-	// completes for async operation (must be called in worker thread)
-	void				EndAsyncOperation();
-
 private:
 	//OpenGL - Specific
 	void					SetupGLSamplerState(uint texTarget, const SamplerStateParam_t& sSamplingParams, int mipMapCount = 1);
@@ -398,25 +359,6 @@ private:
 
 	int						m_nCurrentMatrixMode;
 	Matrix4x4				m_matrices[4];
-
-#ifdef USE_GLES2
-    EGLNativeDisplayType	m_hdc;
-    EGLDisplay				m_display;
-    EGLContext				m_glContext;
-#elif _WIN32
-	HDC						m_hdc;
-	HGLRC					m_glContext;
-#elif defined(LINUX)
-	GLXContext				m_glContext;
-	Display*				 m_display;
-#elif defined(__APPLE__)
-	AGLContext				m_glContext;
-#endif // _WIN32
-
-	bool					m_asyncOperationActive;
-
-	uintptr_t				m_mainThreadId;
-
 	EGraphicsVendor			m_vendor;
 };
 

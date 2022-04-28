@@ -20,6 +20,22 @@ class ShaderAPIGL;
 
 typedef void* (*PFNGetEGLSurfaceFromSDL)();
 
+#ifdef PLAT_LINUX
+#include <X11/Xlib.h>
+#include <X11/Xutil.h>
+#include <X11/Xmd.h>
+#include <X11/extensions/xf86vmode.h>
+
+typedef XID GLXContextID;
+typedef XID GLXPixmap;
+typedef XID GLXDrawable;
+typedef XID GLXPbuffer;
+typedef XID GLXWindow;
+typedef XID GLXFBConfigID;
+typedef struct __GLXcontextRec* GLXContext;
+typedef struct __GLXFBConfigRec* GLXFBConfig;
+#endif
+
 #ifdef USE_GLES2
 #define GL_CONTEXT EGLContext
 #elif _WIN32
@@ -79,44 +95,49 @@ public:
 	// returns default swap chain
 	IEqSwapChain*			GetDefaultSwapchain();
 
-	GL_CONTEXT				GetSharedContext();
+	// start capturing GL commands from specific thread id
+	void					BeginAsyncOperation(uintptr_t threadId);
+	void					EndAsyncOperation();
+	bool					IsMainThread(uintptr_t threadId) const;
 protected:
 
 	void					InitSharedContexts();
 	void					DestroySharedContexts();
 
 	Array<IEqSwapChain*>	m_swapChains;
+	uintptr_t				m_mainThreadId;
+	bool					m_asyncOperationActive;
 
-	GL_CONTEXT				glContext;
-	GL_CONTEXT				glSharedContext;
+	GL_CONTEXT				m_glContext;
+	GL_CONTEXT				m_glSharedContext;
 
 #ifdef USE_GLES2
-    EGLNativeDisplayType	hdc;
-    EGLNativeWindowType		hwnd;
-    EGLDisplay				eglDisplay;
-    EGLSurface				eglSurface;
-	EGLConfig				eglConfig;
+    EGLNativeDisplayType	m_hdc;
+    EGLNativeWindowType		m_hwnd;
+    EGLDisplay				m_eglDisplay;
+    EGLSurface				m_eglSurface;
+	EGLConfig				m_eglConfig;
 
 #ifdef PLAT_ANDROID
-	bool					lostSurface;
+	bool					m_lostSurface;
 #endif // PLAT_ANDROID
 
 #elif defined(_WIN32)
-	DISPLAY_DEVICEA			device;
-	DEVMODEA				dm;
+	DISPLAY_DEVICEA			m_dispDevice;
+	DEVMODEA				m_devMode;
 
-	HDC						hdc;
+	HDC						m_hdc;
 	
-	HWND					hwnd;
+	HWND					m_hwnd;
 
 #elif defined(LINUX)
-    XF86VidModeModeInfo**	dmodes;
-    Display*				display;
-    XVisualInfo*            vi;
+    XF86VidModeModeInfo**	m_dmodes;
+    Display*				m_display;
+    XVisualInfo*            m_xvi;
     int						m_screen;
 #elif defined(__APPLE__)
-	CFArrayRef				dmodes;
-	CFDictionaryRef			initialMode;
+	CFArrayRef				m_dmodes;
+	CFDictionaryRef			m_initialMode;
 #endif // _WIN32
 
 	int						m_width;

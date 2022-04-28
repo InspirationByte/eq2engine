@@ -12,8 +12,9 @@
 #include "core/IDkCore.h"
 #include "core/DebugInterface.h"
 #include "core/platform/MessageBox.h"
-
 #include "utils/strtools.h"
+#include "imaging/ImageLoader.h"
+#include "VertexFormatGL.h"
 
 #include "gl_loader.h"
 
@@ -59,8 +60,6 @@ ARB_occlusion_query
 
 */
 
-#include "imaging/ImageLoader.h"
-
 
 HOOK_TO_CVAR(r_screen);
 
@@ -72,8 +71,11 @@ CGLRenderLib g_library;
 CGLRenderLib::CGLRenderLib()
 {
 	GetCore()->RegisterInterface(RENDERER_INTERFACE_VERSION, this);
-	glSharedContext = 0;
+
+	m_glSharedContext = 0;
 	m_windowed = true;
+	m_mainThreadId = Threading::GetCurrentThreadID();
+	m_asyncOperationActive = false;
 }
 
 CGLRenderLib::~CGLRenderLib()
@@ -109,7 +111,15 @@ LRESULT CALLBACK PFWinProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam
 
 bool CGLRenderLib::InitCaps()
 {
-#if PLAT_WIN
+#if defined(USE_GLES2) && !defined(PLAT_ANDROID)
+	if (!gladLoaderLoadEGL(EGL_DEFAULT_DISPLAY))
+	{
+		ErrorMsg("EGL loading failed!");
+		return false;
+	}
+#endif // PLAT_ANDROID
+
+#if defined(PLAT_WIN) && !defined(USE_GLES2)
 	HINSTANCE modHandle = GetModuleHandle(NULL);
 
 	//Unregister PFrmt if
@@ -158,7 +168,7 @@ bool CGLRenderLib::InitCaps()
 
 		wglMakeCurrent(NULL, NULL);
 		wglDeleteContext(hglrc);
-		ReleaseDC(hwnd, hdc);
+		ReleaseDC(m_hwnd, hdc);
 
 		SendMessage(hPFwnd, WM_CLOSE, 0, 0);
 	}
@@ -213,13 +223,13 @@ int dComp(const DispRes &d0, const DispRes &d1){
 void CGLRenderLib::DestroySharedContexts()
 {
 #ifdef USE_GLES2
-	eglDestroyContext(eglDisplay, glSharedContext);
+	eglDestroyContext(m_eglDisplay, m_glSharedContext);
 #else
 
 #ifdef PLAT_WIN
-	wglDeleteContext(glSharedContext);
+	wglDeleteContext(m_glSharedContext);
 #elif PLAT_LINUX
-	glXDestroyContext(display, glSharedContext);
+	glXDestroyContext(m_display, m_glSharedContext);
 #endif // PLAT_WIN || PLAT_LINUX
 
 #endif // USE_GLES2
@@ -235,7 +245,7 @@ void CGLRenderLib::InitSharedContexts()
 		EGL_NONE
 	};
 
-	EGLContext context = eglCreateContext(eglDisplay, eglConfig, glContext, contextAttr);
+	EGLContext context = eglCreateContext(m_eglDisplay, m_eglConfig, m_glContext, contextAttr);
 	if (context == EGL_NO_CONTEXT)
 		ASSERTMSG(false, "Failed to create context for share!");
 #else
@@ -248,7 +258,7 @@ void CGLRenderLib::InitSharedContexts()
 		0
 	};
 
-	HGLRC context = wgl::CreateContextAttribsARB(hdc, glContext, iAttribs);
+	HGLRC context = wgl::CreateContextAttribsARB(m_hdc, m_glContext, iAttribs);
 	DWORD error = GetLastError();
 	if (!context)
 	{
@@ -265,62 +275,50 @@ void CGLRenderLib::InitSharedContexts()
 	//	ASSERTMSG(false, EqString::Format("wglShareLists - Failed to share (err=%d, ctx=%d)!", GetLastError(), context).ToCString());
 
 #elif PLAT_LINUX
-	GLXContext context = glXCreateContext(display, vi, glContext, True);
+	GLXContext context = glXCreateContext(m_display, m_xvi, m_glContext, True);
 #endif // PLAT_WIN || PLAT_LINUX
 
 #endif // USE_GLES2
 
-	glSharedContext = context;
-}
-
-GL_CONTEXT CGLRenderLib::GetSharedContext()
-{
-	return glSharedContext;
+	m_glSharedContext = context;
 }
 
 bool CGLRenderLib::InitAPI(shaderAPIParams_t& params)
 {
-#ifdef USE_GLES2
-	eglSurface = EGL_NO_SURFACE;
 
+
+#ifdef USE_GLES2
+	m_eglSurface = EGL_NO_SURFACE;
 
 #ifdef PLAT_ANDROID
-	lostSurface = false;
+	m_lostSurface = false;
 	externalWindowDisplayParams_t* winParams = (externalWindowDisplayParams_t*)params.windowHandle;
 
 	ASSERT(winParams != NULL);
 
-	hwnd = (EGLNativeWindowType)winParams->window;
+	m_hwnd = (EGLNativeWindowType)winParams->window;
+	EGLNativeDisplayType nativeDisplay = EGL_DEFAULT_DISPLAY;
 #else
 	// other EGL
-	hwnd = (EGLNativeWindowType)params.windowHandle;
+	m_hwnd = (EGLNativeWindowType)params.windowHandle;
+	EGLNativeDisplayType nativeDisplay = (EGLNativeDisplayType)GetDC((HWND)m_hwnd);
 #endif // PLAT_ANDROID
 
 	Msg("Initializing EGL context...\n");
 
-	EGLBoolean bsuccess;
-
-	// create native window
-#ifdef PLAT_ANDROID
-	EGLNativeDisplayType nativeDisplay = EGL_DEFAULT_DISPLAY;
-#else
-	EGLNativeDisplayType nativeDisplay = (EGLNativeDisplayType)GetDC((HWND)hwnd);
-#endif // PLAT_ANDROID
-
 	// get egl display handle
-	eglDisplay = eglGetDisplay(nativeDisplay);
+	m_eglDisplay = eglGetDisplay(nativeDisplay);
 
-	if (eglDisplay == EGL_NO_DISPLAY)
+	if (m_eglDisplay == EGL_NO_DISPLAY)
 	{
-		ErrorMsg("OpenGL ES init error: Could not get EGL display (%d)", eglDisplay);
+		ErrorMsg("OpenGL ES init error: Could not get EGL display (%d)", m_eglDisplay);
 		return false;
 	}
 
-#ifndef PLAT_ANDROID
 	// Initialize the display
 	EGLint major = 0;
 	EGLint minor = 0;
-	bsuccess = eglInitialize(eglDisplay, &major, &minor);
+	EGLBoolean bsuccess = eglInitialize(m_eglDisplay, &major, &minor);
 	if (!bsuccess)
 	{
 		ErrorMsg("OpenGL ES init error: Could not initialize EGL display!");
@@ -335,26 +333,28 @@ bool CGLRenderLib::InitAPI(shaderAPIParams_t& params)
 		ErrorMsg("OpenGL ES init error: System does not support at least EGL 1.0");
 		return false;
 	}
-#endif // PLAT_ANDROID
 
-	eglBindAPI(EGL_OPENGL_ES_API);
+	//eglBindAPI(EGL_OPENGL_ES_API);
 
 	// Obtain the first configuration with a depth buffer
 	EGLint attrs[] = {
 		EGL_RENDERABLE_TYPE, EGL_OPENGL_ES3_BIT,
-		EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
+		EGL_BUFFER_SIZE,24,
 
-		EGL_DEPTH_SIZE, 16,
+		EGL_RED_SIZE,8,
+		EGL_GREEN_SIZE,8,
+		EGL_BLUE_SIZE,8,
 
-		EGL_RED_SIZE, 5,
-		EGL_GREEN_SIZE, 6,
-		EGL_BLUE_SIZE, 5,
-
+		EGL_ALPHA_SIZE,0,
+		EGL_DEPTH_SIZE,24,
+		EGL_STENCIL_SIZE,1,
+		//EGL_SAMPLE_BUFFERS,1,
+		//EGL_SAMPLES,4,
 		EGL_NONE
 	};
 
 	EGLint numConfig = 0;
-	bsuccess = eglChooseConfig(eglDisplay, attrs, &eglConfig, 1, &numConfig);
+	bsuccess = eglChooseConfig(m_eglDisplay, attrs, &m_eglConfig, 1, &numConfig);
 	if (!bsuccess)
 	{
 		ErrorMsg("OpenGL ES init error: Could not find valid EGL config");
@@ -363,17 +363,17 @@ bool CGLRenderLib::InitAPI(shaderAPIParams_t& params)
 
 	// Get the native visual id
 	int nativeVid;
-	if (!eglGetConfigAttrib(eglDisplay, eglConfig, EGL_NATIVE_VISUAL_ID, &nativeVid))
+	if (!eglGetConfigAttrib(m_eglDisplay, m_eglConfig, EGL_NATIVE_VISUAL_ID, &nativeVid))
 	{
 		ErrorMsg("OpenGL ES init error: Could not get native visual id");
 		return false;
 	}
 
 	// Create a surface for the main window
-	if (eglSurface == EGL_NO_SURFACE)
-		eglSurface = eglCreateWindowSurface(eglDisplay, eglConfig, hwnd, NULL);
+	if (m_eglSurface == EGL_NO_SURFACE)
+		m_eglSurface = eglCreateWindowSurface(m_eglDisplay, m_eglConfig, m_hwnd, NULL);
 
-	if (eglSurface == EGL_NO_SURFACE)
+	if (m_eglSurface == EGL_NO_SURFACE)
 	{
 		ErrorMsg("OpenGL ES init error: Could not create EGL surface\n");
 		return false;
@@ -388,19 +388,17 @@ bool CGLRenderLib::InitAPI(shaderAPIParams_t& params)
 	MsgInfo("eglCreateContext...\n");
 
 	// Create two OpenGL ES contexts
-	glContext = eglCreateContext(eglDisplay, eglConfig, EGL_NO_CONTEXT, contextAttr);
-	if (glContext == EGL_NO_CONTEXT)
+	m_glContext = eglCreateContext(m_eglDisplay, m_eglConfig, EGL_NO_CONTEXT, contextAttr);
+	if (m_glContext == EGL_NO_CONTEXT)
 	{
 		CrashMsg("Could not create EGL context\n");
 		return false;
 	}
 
-	//bool result = eglQueryContext();
-
 	InitSharedContexts();
 
 	// assign to this thread
-	if (!eglMakeCurrent(eglDisplay, eglSurface, eglSurface, glContext))
+	if (!eglMakeCurrent(m_eglDisplay, m_eglSurface, m_eglSurface, m_glContext))
 	{
 		CrashMsg("eglMakeCurrent - error\n");
 		return false;
@@ -411,48 +409,48 @@ bool CGLRenderLib::InitAPI(shaderAPIParams_t& params)
 	if (r_screen->GetInt() >= GetSystemMetrics(SM_CMONITORS))
 		r_screen->SetValue("0");
 
-	hwnd = (HWND)params.windowHandle;
-	hdc = GetDC(hwnd);
+	m_hwnd = (HWND)params.windowHandle;
+	m_hdc = GetDC(m_hwnd);
 
 	// Enumerate display devices
 	int monitorCounter = r_screen->GetInt();
 	EnumDisplayMonitors(NULL, NULL, MonitorEnumProc, (LPARAM) &monitorCounter);
 
-	device.cb = sizeof(device);
-	EnumDisplayDevicesA(NULL, r_screen->GetInt(), &device, 0);
+	m_dispDevice.cb = sizeof(m_dispDevice);
+	EnumDisplayDevicesA(NULL, r_screen->GetInt(), &m_dispDevice, 0);
 	
 	// get window parameters
 
 	RECT windowRect;
-	GetClientRect(hwnd, &windowRect);
+	GetClientRect(m_hwnd, &windowRect);
 
 	m_width = windowRect.right;
 	m_height = windowRect.bottom;
 
-	ZeroMemory(&dm,sizeof(dm));
-	dm.dmSize = sizeof(dm);
+	ZeroMemory(&m_devMode,sizeof(m_devMode));
+	m_devMode.dmSize = sizeof(m_devMode);
 
 	// Figure display format to use
 	if(params.screenFormat == FORMAT_RGBA8)
 	{
-		dm.dmBitsPerPel = 32;
+		m_devMode.dmBitsPerPel = 32;
 	}
 	else if(params.screenFormat == FORMAT_RGB8)
 	{
-		dm.dmBitsPerPel = 24;
+		m_devMode.dmBitsPerPel = 24;
 	}
 	else if(params.screenFormat == FORMAT_RGB565)
 	{
-		dm.dmBitsPerPel = 16;
+		m_devMode.dmBitsPerPel = 16;
 	}
 	else
 	{
-		dm.dmBitsPerPel = 24;
+		m_devMode.dmBitsPerPel = 24;
 	}
 
-	dm.dmFields = DM_BITSPERPEL | DM_PELSWIDTH | DM_PELSHEIGHT;// | DM_DISPLAYFREQUENCY;
-	dm.dmPelsWidth = m_width;
-	dm.dmPelsHeight = m_height;
+	m_devMode.dmFields = DM_BITSPERPEL | DM_PELSWIDTH | DM_PELSHEIGHT;// | DM_DISPLAYFREQUENCY;
+	m_devMode.dmPelsWidth = m_width;
+	m_devMode.dmPelsHeight = m_height;
 	//dm.dmDisplayFrequency = 60;
 
 	// change display settings
@@ -465,7 +463,7 @@ bool CGLRenderLib::InitAPI(shaderAPIParams_t& params)
     pfd.dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;
     pfd.dwLayerMask = PFD_MAIN_PLANE;
     pfd.iPixelType = PFD_TYPE_RGBA;
-    pfd.cColorBits = dm.dmBitsPerPel;
+    pfd.cColorBits = m_devMode.dmBitsPerPel;
     pfd.cDepthBits = 24;
     pfd.cAccumBits = 0;
     pfd.cStencilBits = 0;
@@ -478,7 +476,7 @@ bool CGLRenderLib::InitAPI(shaderAPIParams_t& params)
 		wgl::RED_BITS_ARB,					8,
 		wgl::GREEN_BITS_ARB,				8,
 		wgl::BLUE_BITS_ARB,					8,
-		wgl::ALPHA_BITS_ARB,				(dm.dmBitsPerPel > 24) ? 8 : 0,
+		wgl::ALPHA_BITS_ARB,				(m_devMode.dmBitsPerPel > 24) ? 8 : 0,
 		wgl::DEPTH_BITS_ARB,				24,
 		wgl::STENCIL_BITS_ARB,				1,
 		0
@@ -489,7 +487,7 @@ bool CGLRenderLib::InitAPI(shaderAPIParams_t& params)
 	int bestSamples = 0;
 	uint nPFormats;
 
-	if (wgl::exts::var_ARB_pixel_format && wgl::ChoosePixelFormatARB(hdc, iPFDAttribs, NULL, elementsOf(pixelFormats), pixelFormats, &nPFormats) && nPFormats > 0)
+	if (wgl::exts::var_ARB_pixel_format && wgl::ChoosePixelFormatARB(m_hdc, iPFDAttribs, NULL, elementsOf(pixelFormats), pixelFormats, &nPFormats) && nPFormats > 0)
 	{
 		int minDiff = 0x7FFFFFFF;
 		int attrib = wgl::SAMPLES_ARB;
@@ -498,7 +496,7 @@ bool CGLRenderLib::InitAPI(shaderAPIParams_t& params)
 		// Find a multisample format as close as possible to the requested
 		for (uint i = 0; i < nPFormats; i++)
 		{
-			wgl::GetPixelFormatAttribivARB(hdc, pixelFormats[i], 0, 1, &attrib, &samples);
+			wgl::GetPixelFormatAttribivARB(m_hdc, pixelFormats[i], 0, 1, &attrib, &samples);
 			int diff = abs(params.multiSamplingMode - samples);
 			if (diff < minDiff)
 			{
@@ -512,10 +510,10 @@ bool CGLRenderLib::InitAPI(shaderAPIParams_t& params)
 	}
 	else
 	{
-		pixelFormats[0] = ChoosePixelFormat(hdc, &pfd);
+		pixelFormats[0] = ChoosePixelFormat(m_hdc, &pfd);
 	}
 
-	SetPixelFormat(hdc, pixelFormats[bestFormat], &pfd);
+	SetPixelFormat(m_hdc, pixelFormats[bestFormat], &pfd);
 
 	int iAttribs[] = {
 		wgl::CONTEXT_MAJOR_VERSION_ARB,		3,
@@ -524,9 +522,9 @@ bool CGLRenderLib::InitAPI(shaderAPIParams_t& params)
 		0
 	};
 
-	glContext = wgl::CreateContextAttribsARB(hdc, NULL, iAttribs);
+	m_glContext = wgl::CreateContextAttribsARB(m_hdc, NULL, iAttribs);
 	DWORD error = GetLastError();
-	if(!glContext)
+	if(!m_glContext)
 	{
 		char* errorStr = "Unknown error";
 		if (error == wgl::ERROR_INVALID_PROFILE_ARB)
@@ -540,16 +538,16 @@ bool CGLRenderLib::InitAPI(shaderAPIParams_t& params)
 
 	InitSharedContexts();
 
-	wglMakeCurrent(hdc, glContext);
+	wglMakeCurrent(m_hdc, m_glContext);
 
 #elif PLAT_LINUX
 
-    display = XOpenDisplay(0);
+    m_display = XOpenDisplay(0);
 
-	m_screen = DefaultScreen( display );
+	m_screen = DefaultScreen( m_display );
 
 	int nModes;
-    XF86VidModeGetAllModeLines(display, m_screen, &nModes, &dmodes);
+    XF86VidModeGetAllModeLines(m_display, m_screen, &nModes, &m_dmodes);
 
 	Array<DispRes> modes;
 
@@ -557,11 +555,11 @@ bool CGLRenderLib::InitAPI(shaderAPIParams_t& params)
 	int foundMode = -1;
 	for (int i = 0; i < nModes; i++)
 	{
-		if (dmodes[i]->hdisplay >= 640 && dmodes[i]->vdisplay >= 480)
+		if (m_dmodes[i]->hdisplay >= 640 && m_dmodes[i]->vdisplay >= 480)
 		{
-			modes.append(newRes(dmodes[i]->hdisplay, dmodes[i]->vdisplay, i));
+			modes.append(newRes(m_dmodes[i]->hdisplay, m_dmodes[i]->vdisplay, i));
 
-			if (dmodes[i]->hdisplay == m_width && dmodes[i]->vdisplay == m_width)
+			if (m_dmodes[i]->hdisplay == m_width && m_dmodes[i]->vdisplay == m_width)
 				foundMode = i;
 		}
 	}
@@ -569,7 +567,7 @@ bool CGLRenderLib::InitAPI(shaderAPIParams_t& params)
     Window xwin = (Window)params.windowHandle;
 
     XWindowAttributes winAttrib;
-    XGetWindowAttributes(display,xwin,&winAttrib);
+    XGetWindowAttributes(m_display,xwin,&winAttrib);
 
 	m_width = winAttrib.width;
 	m_height = winAttrib.height;
@@ -614,8 +612,8 @@ bool CGLRenderLib::InitAPI(shaderAPIParams_t& params)
 			None,
 		};
 
-		vi = glXChooseVisual(display, m_screen, attribs);
-		if (vi != NULL) break;
+		m_xvi = glXChooseVisual(m_display, m_screen, attribs);
+		if (m_xvi != NULL) break;
 
 		params.multiSamplingMode -= 2;
 		if (params.multiSamplingMode < 0){
@@ -628,9 +626,9 @@ bool CGLRenderLib::InitAPI(shaderAPIParams_t& params)
 
     if (!params.windowedMode)
     {
-		if (foundMode >= 0 && XF86VidModeSwitchToMode(display, m_screen, dmodes[foundMode]))
+		if (foundMode >= 0 && XF86VidModeSwitchToMode(m_display, m_screen, m_dmodes[foundMode]))
 		{
-			XF86VidModeSetViewPort(display, m_screen, 0, 0);
+			XF86VidModeSetViewPort(m_display, m_screen, 0, 0);
 		}
 		else
 		{
@@ -639,10 +637,11 @@ bool CGLRenderLib::InitAPI(shaderAPIParams_t& params)
 		}
 	}
 
-	glContext = glXCreateContext(display, vi, None, True);
+	m_glContext = glXCreateContext(m_display, m_xvi, None, True);
+
 	InitSharedContexts();
 
-	glXMakeCurrent(display, (GLXDrawable)params.windowHandle, glContext);
+	glXMakeCurrent(m_display, (GLXDrawable)params.windowHandle, m_glContext);
 #endif //PLAT_WIN
 
 	Msg("Initializing GL extensions...\n");
@@ -696,17 +695,6 @@ bool CGLRenderLib::InitAPI(shaderAPIParams_t& params)
 		// TODO: VERSION CHECK
 #endif // USE_GLES2
 	}
-
-#ifdef USE_GLES2
-	g_shaderApi.m_display = eglDisplay;
-	g_shaderApi.m_hdc = hdc;
-#elif PLAT_WIN
-	g_shaderApi.m_hdc = this->hdc;
-#elif PLAT_LINUX
-	g_shaderApi.m_display = this->display;
-#endif //PLAT_WIN
-
-	g_shaderApi.m_glContext = this->glContext;
 
 #ifndef USE_GLES2 // TEMPORARILY DISABLED
 	if (/*GLAD_GL_ARB_multisample &&*/ params.multiSamplingMode > 0)
@@ -809,40 +797,40 @@ void CGLRenderLib::ExitAPI()
 {
 #ifdef USE_GLES2
 	eglMakeCurrent(EGL_NO_DISPLAY, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
-	eglDestroyContext(eglDisplay, glContext);
-	eglDestroySurface(eglDisplay, eglSurface);
-	eglTerminate(eglDisplay);
+	eglDestroyContext(m_eglDisplay, m_glContext);
+	eglDestroySurface(m_eglDisplay, m_eglSurface);
+	eglTerminate(m_eglDisplay);
 #elif defined(PLAT_WIN)
 	wglMakeCurrent(NULL, NULL);
 
 	DestroySharedContexts();
 
-	wglDeleteContext(glContext);
+	wglDeleteContext(m_glContext);
 
-	ReleaseDC(hwnd, hdc);
+	ReleaseDC(m_hwnd, m_hdc);
 
 	if (!m_windowed)
 	{
 		// Reset display mode to default
-		ChangeDisplaySettingsExA((const char *) device.DeviceName, NULL, NULL, 0, NULL);
+		ChangeDisplaySettingsExA((const char *) m_dispDevice.DeviceName, NULL, NULL, 0, NULL);
 	}
 #elif defined(PLAT_LINUX)
 
-    glXMakeCurrent(display, None, NULL);
-    glXDestroyContext(display, glContext);
+    glXMakeCurrent(m_display, None, NULL);
+    glXDestroyContext(m_display, m_glContext);
 
 	if(!g_shaderApi.m_params->windowedMode)
 	{
-		if (XF86VidModeSwitchToMode(display, m_screen, dmodes[0]))
-			XF86VidModeSetViewPort(display, m_screen, 0, 0);
+		if (XF86VidModeSwitchToMode(m_display, m_screen, m_dmodes[0]))
+			XF86VidModeSetViewPort(m_display, m_screen, 0, 0);
 	}
 
-    XFree(dmodes);
+    XFree(m_dmodes);
 	//XFreeCursor(display, blankCursor);
 
-	XSync(display, False);
+	XSync(m_display, False);
 
-    XCloseDisplay(display);
+    XCloseDisplay(m_display);
 #endif
 }
 
@@ -850,26 +838,26 @@ void CGLRenderLib::ExitAPI()
 void CGLRenderLib::BeginFrame()
 {
 #ifdef PLAT_ANDROID
-	if (lostSurface && glContext != NULL)
+	if (m_lostSurface && m_glContext != NULL)
 	{
 		MsgInfo("Creating surface...\n");
-		eglSurface = EGL_NO_SURFACE;
-		eglSurface = eglCreateWindowSurface(eglDisplay, eglConfig, hwnd, NULL);
+		m_eglSurface = EGL_NO_SURFACE;
+		m_eglSurface = eglCreateWindowSurface(m_eglDisplay, m_eglConfig, hwnd, NULL);
 
-		if (eglSurface == EGL_NO_SURFACE)
+		if (m_eglSurface == EGL_NO_SURFACE)
 		{
 			ErrorMsg("Could not create EGL surface\n");
 			return;
 		}
 
 		MsgInfo("Attaching surface...\n");
-		if (!eglMakeCurrent(eglDisplay, eglSurface, eglSurface, glContext))
+		if (!eglMakeCurrent(m_eglDisplay, m_eglSurface, m_eglSurface, m_glContext))
 		{
 			CrashMsg("eglMakeCurrent - error\n");
 			return;
 		}
 
-		lostSurface = false;
+		m_lostSurface = false;
 	}
 #endif // PLAT_ANDROID
 
@@ -884,9 +872,9 @@ void CGLRenderLib::EndFrame(IEqSwapChain* schain)
 {
 #ifdef USE_GLES2
 
-	eglSwapInterval(eglDisplay, g_shaderApi.m_params->verticalSyncEnabled ? 1 : 0);
+	//eglSwapInterval(m_eglDisplay, g_shaderApi.m_params->verticalSyncEnabled ? 1 : 0);
 
-	eglSwapBuffers(eglDisplay, eglSurface);
+	eglSwapBuffers(m_eglDisplay, m_eglSurface);
 	GLCheckError("swap buffers");
 
 #elif defined(PLAT_WIN)
@@ -895,7 +883,7 @@ void CGLRenderLib::EndFrame(IEqSwapChain* schain)
 		wgl::SwapIntervalEXT(g_shaderApi.m_params->verticalSyncEnabled ? 1 : 0);
 	}
 
-	HDC drawContext = hdc;
+	HDC drawContext = m_hdc;
 
 	if(schain)
 	{
@@ -910,10 +898,10 @@ void CGLRenderLib::EndFrame(IEqSwapChain* schain)
 
 	if (glX::exts::var_EXT_swap_control)
 	{
-		glX::SwapIntervalEXT(display, (Window)g_shaderApi.m_params->windowHandle, g_shaderApi.m_params->verticalSyncEnabled ? 1 : 0);
+		glX::SwapIntervalEXT(m_display, (Window)g_shaderApi.m_params->windowHandle, g_shaderApi.m_params->verticalSyncEnabled ? 1 : 0);
 	}
 
-	glXSwapBuffers(display, (Window)g_shaderApi.m_params->windowHandle);
+	glXSwapBuffers(m_display, (Window)g_shaderApi.m_params->windowHandle);
 
 #endif // PLAT_WIN
 }
@@ -923,12 +911,14 @@ bool CGLRenderLib::SetWindowed(bool enabled)
 {
 	m_windowed = enabled;
 
+#ifndef USE_GLES2
+
 	if (!enabled)
 	{
 #if defined(PLAT_LINUX)
 		ASSERTMSG(false, "CGLRenderLib::SetWindowed - Not implemented for Linux");
 		/*
-		if (foundMode >= 0 && XF86VidModeSwitchToMode(display, m_screen, dmodes[foundMode]))
+		if (foundMode >= 0 && XF86VidModeSwitchToMode(display, m_screen, m_dmodes[foundMode]))
 		{
 			XF86VidModeSetViewPort(display, m_screen, 0, 0);
 		}
@@ -938,14 +928,14 @@ bool CGLRenderLib::SetWindowed(bool enabled)
 			params.windowedMode = true;
 		}*/
 #elif defined(PLAT_WIN)
-		dm.dmFields = DM_PELSWIDTH | DM_PELSHEIGHT;// | DM_DISPLAYFREQUENCY;
-		dm.dmPelsWidth = m_width;
-		dm.dmPelsHeight = m_height;
+		m_devMode.dmFields = DM_PELSWIDTH | DM_PELSHEIGHT;// | DM_DISPLAYFREQUENCY;
+		m_devMode.dmPelsWidth = m_width;
+		m_devMode.dmPelsHeight = m_height;
 
-		LONG dispChangeStatus = ChangeDisplaySettingsExA((const char*)device.DeviceName, &dm, NULL, CDS_FULLSCREEN, NULL);
+		LONG dispChangeStatus = ChangeDisplaySettingsExA((const char*)m_dispDevice.DeviceName, &m_devMode, NULL, CDS_FULLSCREEN, NULL);
 		if (dispChangeStatus != DISP_CHANGE_SUCCESSFUL)
 		{
-			MsgError("ChangeDisplaySettingsEx - couldn't set fullscreen mode %dx%d on %s (%d)\n", m_width, m_height, device.DeviceName, dispChangeStatus);			
+			MsgError("ChangeDisplaySettingsEx - couldn't set fullscreen mode %dx%d on %s (%d)\n", m_width, m_height, m_dispDevice.DeviceName, dispChangeStatus);			
 			return false;
 		}
 #endif
@@ -953,12 +943,13 @@ bool CGLRenderLib::SetWindowed(bool enabled)
 	else
 	{
 #if defined(PLAT_LINUX)
-		if (XF86VidModeSwitchToMode(display, m_screen, dmodes[0]))
-			XF86VidModeSetViewPort(display, m_screen, 0, 0);
+		if (XF86VidModeSwitchToMode(m_display, m_screen, m_dmodes[0]))
+			XF86VidModeSetViewPort(m_display, m_screen, 0, 0);
 #elif defined(PLAT_WIN)
-		ChangeDisplaySettingsExA((const char*)device.DeviceName, NULL, NULL, 0, NULL);
+		ChangeDisplaySettingsExA((const char*)m_dispDevice.DeviceName, NULL, NULL, 0, NULL);
 #endif
 	}
+#endif // USE_GLES2
 	
 	return true;
 }
@@ -981,7 +972,7 @@ void CGLRenderLib::SetBackbufferSize(const int w, const int h)
 	SetWindowed(m_windowed);
 #endif // PLAT_WIN && !USE_GLES2
 
-	if (glContext != NULL)
+	if (m_glContext != NULL)
 	{
 		glViewport(0, 0, m_width, m_height);
 		GLCheckError("set viewport");
@@ -999,16 +990,16 @@ void CGLRenderLib::ReleaseSurface()
 {
 #ifdef PLAT_ANDROID
 	MsgInfo("Detaching surface...\n");
-	eglMakeCurrent(eglDisplay, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+	eglMakeCurrent(m_eglDisplay, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
 
-	if (eglSurface != EGL_NO_SURFACE)
+	if (m_eglSurface != EGL_NO_SURFACE)
 	{
 		MsgInfo("Destroying surface...\n");
-		eglDestroySurface(eglDisplay, eglSurface);
-		eglSurface = EGL_NO_SURFACE;
+		eglDestroySurface(m_eglDisplay, m_eglSurface);
+		m_eglSurface = EGL_NO_SURFACE;
 	}
 
-	lostSurface = true;
+	m_lostSurface = true;
 #endif // PLAT_ANDROID
 }
 
@@ -1065,6 +1056,61 @@ void  CGLRenderLib::DestroySwapChain(IEqSwapChain* swapChain)
 IEqSwapChain*  CGLRenderLib::GetDefaultSwapchain()
 {
 	return NULL;
+}
+
+//----------------------------------------------------------------------------------------
+// OpenGL multithreaded context switching
+//----------------------------------------------------------------------------------------
+
+// prepares async operation
+void CGLRenderLib::BeginAsyncOperation(uintptr_t threadId)
+{
+	uintptr_t thisThreadId = Threading::GetCurrentThreadID();
+
+	if (thisThreadId == m_mainThreadId) // not required for main thread
+		return;
+
+	ASSERT(m_asyncOperationActive == false);
+
+#ifdef USE_GLES2
+	eglMakeCurrent(m_eglDisplay, EGL_NO_SURFACE, EGL_NO_SURFACE, m_glSharedContext);
+#elif _WIN32
+	wglMakeCurrent(m_hdc, m_glSharedContext);
+#elif LINUX
+	glXMakeCurrent(m_display, (Window)m_params->windowHandle, m_glSharedContext);
+#elif __APPLE__
+
+#endif
+
+	m_asyncOperationActive = true;
+}
+
+// completes async operation
+void CGLRenderLib::EndAsyncOperation()
+{
+	uintptr_t thisThreadId = Threading::GetCurrentThreadID();
+
+	ASSERTMSG(IsMainThread(thisThreadId) == false , "EndAsyncOperation() cannot be called from main thread!");
+	ASSERT(m_asyncOperationActive == true);
+
+	//glFinish();
+
+#ifdef USE_GLES2
+	eglMakeCurrent(EGL_NO_DISPLAY, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+#elif _WIN32
+	wglMakeCurrent(NULL, NULL);
+#elif LINUX
+	glXMakeCurrent(m_display, None, NULL);
+#elif __APPLE__
+
+#endif
+
+	m_asyncOperationActive = false;
+}
+
+bool CGLRenderLib::IsMainThread(uintptr_t threadId) const
+{
+	return threadId == m_mainThreadId;
 }
 
 

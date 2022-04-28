@@ -113,11 +113,11 @@ bool CD3DRenderLib::InitAPI( shaderAPIParams_t &params )
 	memset(&m_d3dpp, 0, sizeof(m_d3dpp));
 
 	// set window
-	hwnd = (HWND)params.windowHandle;
+	m_hwnd = (HWND)params.windowHandle;
 
 	// get window parameters
 	RECT windowRect;
-	GetClientRect(hwnd, &windowRect);
+	GetClientRect(m_hwnd, &windowRect);
 
 	m_width = windowRect.right;
 	m_height = windowRect.bottom;
@@ -155,7 +155,7 @@ bool CD3DRenderLib::InitAPI( shaderAPIParams_t &params )
 		return false;
 	}
 
-	m_d3dpp.hDeviceWindow	= hwnd;
+	m_d3dpp.hDeviceWindow	= m_hwnd;
 
 	m_d3dpp.MultiSampleQuality = 0;
 	m_d3dpp.EnableAutoDepthStencil = TRUE;// (depthBits > 0);
@@ -195,7 +195,7 @@ bool CD3DRenderLib::InitAPI( shaderAPIParams_t &params )
 #ifdef USE_D3DEX
 		uint result = m_d3dFactory->CreateDeviceEx(r_screen->GetInt(), devtype, hwnd, deviceFlags, &m_d3dpp, &m_d3dMode, &m_rhi);
 #else
-		uint result = m_d3dFactory->CreateDevice(r_screen->GetInt(), devtype, hwnd, deviceFlags, &m_d3dpp, &m_rhi);
+		uint result = m_d3dFactory->CreateDevice(r_screen->GetInt(), devtype, m_hwnd, deviceFlags, &m_d3dpp, &m_rhi);
 
 #endif
 
@@ -211,7 +211,7 @@ bool CD3DRenderLib::InitAPI( shaderAPIParams_t &params )
 		}
 		else
 		{
-			MessageBoxA(hwnd, "Couldn't create Direct3D9 device interface!\n\nCheck your system configuration and/or install latest video drivers!", "Error", MB_OK | MB_ICONWARNING);
+			MessageBoxA(m_hwnd, "Couldn't create Direct3D9 device interface!\n\nCheck your system configuration and/or install latest video drivers!", "Error", MB_OK | MB_ICONWARNING);
 
 			return false;
 		}
@@ -358,7 +358,7 @@ void CD3DRenderLib::EndFrame(IEqSwapChain* swapChain)
 
 	HRESULT hr;
 
-	HWND pHWND = hwnd;
+	HWND pHWND = m_hwnd;
 
 	if(swapChain != NULL)
 		pHWND = (HWND)swapChain->GetWindow();
@@ -469,7 +469,7 @@ bool CD3DRenderLib::CaptureScreenshot(CImage& img)
 	}*/
 
 	POINT topLeft = { 0, 0 };
-	ClientToScreen(hwnd, &topLeft);
+	ClientToScreen(m_hwnd, &topLeft);
 
 	bool result = false;
 

@@ -335,7 +335,7 @@ bool CGameHost::InitSystems( EQWNDHANDLE pWindow )
     bool materialSystemStatus = false;
 
 #ifndef PLAT_WIN
-	rendererName = "libeqGLRHI";
+	rendererName = "libeqGLESRHI";
 #endif // _WIN32
 
 	if (g_cmdLine->FindArgument("-norender") != -1)

@@ -55,7 +55,7 @@ protected:
 
 	IShaderAPI*		m_Renderer;
 
-	HWND			hwnd;
+	HWND			m_hwnd;
 	IDXGIFactory*	m_dxgiFactory;
 
 #ifdef COMPILE_D3D_10_1

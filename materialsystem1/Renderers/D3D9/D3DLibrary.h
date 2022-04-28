@@ -66,7 +66,7 @@ protected:
 
 	Array<IEqSwapChain*>	m_swapChains;
 
-	HWND					hwnd;
+	HWND					m_hwnd;
 	DISPLAY_DEVICE			m_dispDev;
 	D3DCAPS9				m_d3dCaps;
 	D3DPRESENT_PARAMETERS	m_d3dpp;

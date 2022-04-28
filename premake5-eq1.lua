@@ -175,55 +175,80 @@ project "eqNullRHI"
 		Folders.matsystem1.."renderers/Empty/**.h"
 	}
 
-
--- OpenGL renderer
-project "eqGLRHI"
+-- OpenGL ES renderer
+project "eqGLESRHI"
     kind "SharedLib"
 	unitybuild "on"
 	uses {
 		"corelib", "frameworkLib", "e2Core",
 		"eqRHIBaseLib"
 	}
-	--defines { "USE_HLSL2GLSL" }
+
+	defines	{
+		"USE_GLES2"
+	}
+	
     files {
 		Folders.matsystem1.. "renderers/GL/*.cpp",
 		Folders.matsystem1.. "renderers/GL/loaders/gl_loader.cpp",
+		Folders.matsystem1.. "renderers/GL/loaders/glad_es3.c",
 		Folders.matsystem1.."renderers/GL/**.h"
 	}
 	
     includedirs {
 		Folders.matsystem1.. "renderers/GL/loaders"
 	}
-	
-	filter "system:Windows"
-		links {
-			"OpenGL32", "Gdi32"
-		}
-		
-		files {
-			Folders.matsystem1.. "renderers/GL/loaders/wgl_caps.cpp",
-			Folders.matsystem1.. "renderers/GL/loaders/glad.c"
-		}
 
-	filter "system:Linux"
-        files {
-            Folders.matsystem1.. "renderers/GL/loaders/glx_caps.cpp",
-			Folders.matsystem1.. "renderers/GL/loaders/glad.c"
-		}
+	filter "system:Android"
 		links {
-			"gl",	-- is that needed?
-		}
-		
-    filter "system:Android"
-        files(Folders.matsystem1.. "renderers/GL/loaders/glad_es3.c")
-        defines	{
-			"USE_GLES2"
-		}
-        links {
 			"GLESv2", "EGL"
 		}
 
+	filter "system:Windows"
+		files {
+			Folders.matsystem1.. "renderers/GL/loaders/glad_egl.c",
+		}
+
 if not IS_ANDROID then
+	-- Windows/Linux version of OpenGL renderer
+	project "eqGLRHI"
+		kind "SharedLib"
+		unitybuild "on"
+		uses {
+			"corelib", "frameworkLib", "e2Core",
+			"eqRHIBaseLib"
+		}
+		
+		files {
+			Folders.matsystem1.. "renderers/GL/*.cpp",
+			Folders.matsystem1.. "renderers/GL/loaders/gl_loader.cpp",
+			Folders.matsystem1.."renderers/GL/**.h"
+		}
+		
+		includedirs {
+			Folders.matsystem1.. "renderers/GL/loaders"
+		}
+		
+		filter "system:Windows"
+			links {
+				"OpenGL32", "Gdi32"
+			}
+			
+			files {
+				Folders.matsystem1.. "renderers/GL/loaders/wgl_caps.cpp",
+				Folders.matsystem1.. "renderers/GL/loaders/glad.c"
+			}
+
+		filter "system:Linux"
+			files {
+				Folders.matsystem1.. "renderers/GL/loaders/glx_caps.cpp",
+				Folders.matsystem1.. "renderers/GL/loaders/glad.c"
+			}
+			links {
+				"gl",	-- is that needed?
+			}
+
+
     -- Direct3D9 renderer
     project "eqD3D9RHI"
         kind "SharedLib"
