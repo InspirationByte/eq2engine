@@ -79,7 +79,7 @@ inline int DistComparator(float f1, float f2)
 
 int CRenderList::DistanceCompare(CBaseRenderableObject* const & a, CBaseRenderableObject* const& b)
 {
-	return -DistComparator(a->m_fViewDistance, b->m_fViewDistance);
+	return DistComparator(a->m_fViewDistance, b->m_fViewDistance);
 }
 
 void CRenderList::SortByDistanceFrom(const Vector3D& origin)
