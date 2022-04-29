@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright ï¿½ Inspiration Byte
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
 // Description: Network message for Equilibrium Engine
@@ -8,10 +8,7 @@
 #include "Buffer.h"
 #include "utils/strtools.h"
 #include "utils/KeyValues.h"
-
-#ifdef LINUX
 #include <wchar.h>
-#endif // LINUX
 
 #define MAX_SUBMESSAGE_LENGTH UDP_CDP_MAX_MESSAGEPAYLOAD
 
