@@ -11,18 +11,17 @@
 #include "../Shared/ShaderAPI_Base.h"
 
 #ifdef USE_GLES2
-
 #include <glad_es3.h>
-#ifdef PLAT_ANDROID // direct link
-#include <EGL/egl.h>
-#else
-#include <glad_egl.h>
-#endif // PLAT_ANDROID
+
+#	ifdef PLAT_ANDROID // direct link
+#	include <EGL/egl.h>
+#	else
+#	include <glad_egl.h>
+#	endif // PLAT_ANDROID
 
 #else
-#include <glad.h>
+#	include <glad.h>
 #endif
-
 
 enum EGraphicsVendor
 {
@@ -47,22 +46,29 @@ struct GLTextureRef_t
 	EGLTextureType type;
 };
 
+class		CGLRenderLib;
+class		CGLRenderLib_ES;
+class		CGLRenderLib_SDL;
+
 class 		CVertexFormatGL;
 class 		CVertexBufferGL;
 class 		CIndexBufferGL;
 class		CGLTexture;
-class		CGLRenderLib;
 class		CGLShaderProgram;
+class		CGLOcclusionQuery;
+class		GLWorkerThread;
 
 class ShaderAPIGL : public ShaderAPI_Base
 {
 public:
+	friend class		CGLRenderLib;
+	friend class		CGLRenderLib_ES;
+	friend class		CGLRenderLib_SDL;
 
 	friend class 		CVertexFormatGL;
 	friend class 		CVertexBufferGL;
 	friend class 		CIndexBufferGL;
 	friend class		CGLTexture;
-	friend class		CGLRenderLib;
 	friend class		CGLShaderProgram;
 	friend class		CGLOcclusionQuery;
 
@@ -363,5 +369,7 @@ private:
 	Matrix4x4				m_matrices[4];
 	EGraphicsVendor			m_vendor;
 };
+
+void PrintGLExtensions();
 
 #endif // SHADERAPIGL_H

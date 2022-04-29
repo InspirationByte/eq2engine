@@ -1,52 +1,31 @@
 //////////////////////////////////////////////////////////////////////////////////
 // Copyright © Inspiration Byte
-// 2009-2020
+// 2009-2022
 //////////////////////////////////////////////////////////////////////////////////
-// Description: Equilibrium OpenGL ShaderAPI
+// Description: Equilibrium OpenGL ShaderAPI through SDL
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef CGLRENDERLIB_H
-#define CGLRENDERLIB_H
+#ifndef CGLRENDERLIB_SDL_H
+#define CGLRENDERLIB_SDL_H
 
 #include "../Shared/IRenderLibrary.h"
 #include "ShaderAPIGL.h"
+#include <SDL.h>
 
 class ShaderAPIGL;
 
-#ifdef PLAT_LINUX
-#include <X11/Xlib.h>
-#include <X11/Xutil.h>
-#include <X11/Xmd.h>
-#include <X11/extensions/xf86vmode.h>
-
-typedef XID GLXContextID;
-typedef XID GLXPixmap;
-typedef XID GLXDrawable;
-typedef XID GLXPbuffer;
-typedef XID GLXWindow;
-typedef XID GLXFBConfigID;
-typedef struct __GLXcontextRec* GLXContext;
-typedef struct __GLXFBConfigRec* GLXFBConfig;
-#endif
-
-#ifdef PLAT_WIN
-#define GL_CONTEXT HGLRC
-#elif defined(PLAT_LINUX)
-#define GL_CONTEXT GLXContext
-#elif defined(PLAT_OSX)
-#define GL_CONTEXT GLXContext
-#endif // _WIN32
+#define GL_CONTEXT SDL_GLContext
 
 #define MAX_SHARED_CONTEXTS 1 // thank you, OpenGL, REALLY FUCKED ME with having multiple context, works perfect btw it crashes
 
-class CGLRenderLib : public IRenderLibrary
+class CGLRenderLib_SDL : public IRenderLibrary
 {
 	friend class			ShaderAPIGL;
 
 public:
 
-							CGLRenderLib();
-							~CGLRenderLib();
+	CGLRenderLib_SDL();
+	~CGLRenderLib_SDL();
 
 	bool					InitCaps();
 
@@ -100,24 +79,7 @@ protected:
 
 	GL_CONTEXT				m_glContext;
 	GL_CONTEXT				m_glSharedContext;
-
-#ifdef PLAT_WIN
-	DISPLAY_DEVICEA			m_dispDevice;
-	DEVMODEA				m_devMode;
-
-	HDC						m_hdc;
-	
-	HWND					m_hwnd;
-
-#elif defined(PLAT_LINUX)
-    XF86VidModeModeInfo**	m_dmodes;
-    Display*				m_display;
-    XVisualInfo*            m_xvi;
-    int						m_screen;
-#elif defined(PLAT_OSX)
-	CFArrayRef				m_dmodes;
-	CFDictionaryRef			m_initialMode;
-#endif // _WIN32
+	SDL_Window*				m_window;
 
 	int						m_width;
 	int						m_height;

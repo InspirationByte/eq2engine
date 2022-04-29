@@ -30,6 +30,29 @@
 #include "glx_caps.hpp"
 #endif // PLAT_LINUX
 
+void PrintGLExtensions()
+{
+	const char* ver = (const char*)glGetString(GL_VERSION);
+	Msg("OpenGL version: %s\n \n", ver);
+	const char* exts = (const char*)glGetString(GL_EXTENSIONS);
+
+	Array<EqString> splExts;
+	xstrsplit(exts, " ", splExts);
+
+	MsgWarning("Supported OpenGL extensions:\n");
+	int i;
+	for (i = 0; i < splExts.numElem(); i++)
+	{
+		MsgInfo("%s\n", splExts[i].ToCString());
+	}
+	MsgWarning("Total extensions supported: %i\n", i);
+}
+
+DECLARE_CMD(gl_extensions, "Print supported OpenGL extensions", 0)
+{
+	PrintGLExtensions();
+}
+
 ConVar gl_report_errors("gl_report_errors", "0");
 ConVar gl_break_on_error("gl_break_on_error", "0");
 ConVar gl_bypass_errors("gl_bypass_errors", "0");
@@ -1064,8 +1087,10 @@ void ShaderAPIGL::SetupGLSamplerState(uint texTarget, const SamplerStateParam_t&
 #ifndef USE_GLES2
 	if (texTarget != GL_TEXTURE_1D)
 #endif // USE_GLES2
+	{
 		glTexParameteri(texTarget, GL_TEXTURE_WRAP_T, addressModes[sampler.wrapT]);
 		GLCheckError("smp w t");
+	}
 
 	if (texTarget == GL_TEXTURE_3D)
 	{
@@ -1080,7 +1105,7 @@ void ShaderAPIGL::SetupGLSamplerState(uint texTarget, const SamplerStateParam_t&
 	glTexParameteri(texTarget, GL_TEXTURE_MIN_FILTER, minFilters[sampler.minFilter]);
 	GLCheckError("smp min");
 
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, mipMapCount-1);
+	glTexParameteri(texTarget, GL_TEXTURE_MAX_LEVEL, max(mipMapCount-1, 0));
 	GLCheckError("smp mip");
 
 	glTexParameteri(texTarget, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
@@ -1586,7 +1611,7 @@ void ShaderAPIGL::ChangeVertexBuffer(IVertexBuffer* pVertexBuffer, int nStream, 
 			m_boundInstanceStream = nStream;
 		else if (instanceBuffer && m_boundInstanceStream != -1)
 		{
-			ASSERTMSG(false, EqString::Format("Already bound instancing stream at %d!!!", m_boundInstanceStream));
+			ASSERTMSG(false, "Already bound instancing stream at %d!!!", m_boundInstanceStream);
 		}
 	}
 }

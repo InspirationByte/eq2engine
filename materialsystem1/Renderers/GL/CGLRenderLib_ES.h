@@ -1,58 +1,37 @@
 //////////////////////////////////////////////////////////////////////////////////
 // Copyright © Inspiration Byte
-// 2009-2020
+// 2009-2022
 //////////////////////////////////////////////////////////////////////////////////
-// Description: Equilibrium OpenGL ShaderAPI
+// Description: Equilibrium OpenGL ES ShaderAPI
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef CGLRENDERLIB_H
-#define CGLRENDERLIB_H
+#ifndef CGLRENDERLIB_ES_H
+#define CGLRENDERLIB_ES_H
 
 #include "../Shared/IRenderLibrary.h"
 #include "ShaderAPIGL.h"
+#include <EGL/egl.h>
 
 class ShaderAPIGL;
 
-#ifdef PLAT_LINUX
-#include <X11/Xlib.h>
-#include <X11/Xutil.h>
-#include <X11/Xmd.h>
-#include <X11/extensions/xf86vmode.h>
-
-typedef XID GLXContextID;
-typedef XID GLXPixmap;
-typedef XID GLXDrawable;
-typedef XID GLXPbuffer;
-typedef XID GLXWindow;
-typedef XID GLXFBConfigID;
-typedef struct __GLXcontextRec* GLXContext;
-typedef struct __GLXFBConfigRec* GLXFBConfig;
-#endif
-
-#ifdef PLAT_WIN
-#define GL_CONTEXT HGLRC
-#elif defined(PLAT_LINUX)
-#define GL_CONTEXT GLXContext
-#elif defined(PLAT_OSX)
-#define GL_CONTEXT GLXContext
-#endif // _WIN32
-
+#define GL_CONTEXT EGLContext
 #define MAX_SHARED_CONTEXTS 1 // thank you, OpenGL, REALLY FUCKED ME with having multiple context, works perfect btw it crashes
 
-class CGLRenderLib : public IRenderLibrary
+class CGLRenderLib_ES : public IRenderLibrary
 {
 	friend class			ShaderAPIGL;
 
 public:
 
-							CGLRenderLib();
-							~CGLRenderLib();
+	CGLRenderLib_ES();
+	~CGLRenderLib_ES();
 
 	bool					InitCaps();
 
 	bool					InitAPI( shaderAPIParams_t &params );
 	void					ExitAPI();
 	void					ReleaseSwapChains();
+	void					ReleaseSurface();
 
 	// frame begin/end
 	void					BeginFrame();
@@ -101,23 +80,15 @@ protected:
 	GL_CONTEXT				m_glContext;
 	GL_CONTEXT				m_glSharedContext;
 
-#ifdef PLAT_WIN
-	DISPLAY_DEVICEA			m_dispDevice;
-	DEVMODEA				m_devMode;
+    EGLNativeDisplayType	m_hdc;
+    EGLNativeWindowType		m_hwnd;
+    EGLDisplay				m_eglDisplay;
+    EGLSurface				m_eglSurface;
+	EGLConfig				m_eglConfig;
 
-	HDC						m_hdc;
-	
-	HWND					m_hwnd;
-
-#elif defined(PLAT_LINUX)
-    XF86VidModeModeInfo**	m_dmodes;
-    Display*				m_display;
-    XVisualInfo*            m_xvi;
-    int						m_screen;
-#elif defined(PLAT_OSX)
-	CFArrayRef				m_dmodes;
-	CFDictionaryRef			m_initialMode;
-#endif // _WIN32
+#ifdef PLAT_ANDROID
+	bool					m_lostSurface;
+#endif // PLAT_ANDROID
 
 	int						m_width;
 	int						m_height;

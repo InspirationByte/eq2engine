@@ -6,12 +6,20 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "GLWorker.h"
-#include "CGLRenderLib.h"
 
 #include "core/DebugInterface.h"
 #include "core/platform/assert.h"
 
+#ifdef USE_SDL2
+#include "CGLRenderLib_SDL.h"
+extern CGLRenderLib_SDL g_library;
+#elif defined(USE_GLES2)
+#include "CGLRenderLib_ES.h"
+extern CGLRenderLib_ES g_library;
+#else
+#include "CGLRenderLib.h"
 extern CGLRenderLib g_library;
+#endif
 
 GLWorkerThread g_glWorker;
 
@@ -23,6 +31,16 @@ GLWorkerThread::work_t::work_t(const char* _name, FUNC_TYPE f, uint id, bool blo
 	result = WORK_PENDING_MARKER;
 	workId = id;
 	blocking = block;
+}
+
+int GLWorkerThread::WaitForExecute(const char* name, FUNC_TYPE f)
+{
+	uintptr_t thisThreadId = Threading::GetCurrentThreadID();
+
+	if (g_library.IsMainThread(thisThreadId)) // not required for main thread
+		return f();
+
+	return AddWork(name, f, true);
 }
 
 int GLWorkerThread::WaitForResult(work_t* work)
@@ -56,11 +74,6 @@ int GLWorkerThread::WaitForResult(work_t* work)
 
 int GLWorkerThread::AddWork(const char* name, FUNC_TYPE f, bool blocking)
 {
-	uintptr_t thisThreadId = Threading::GetCurrentThreadID();
-
-	if (blocking && g_library.IsMainThread(thisThreadId)) // not required for main thread
-		return f();
-
 	work_t* work = new work_t(name, f, m_workCounter++, blocking);
 
 	// chain link

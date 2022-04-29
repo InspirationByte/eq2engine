@@ -194,18 +194,32 @@ project "eqGLESRHI"
 		Folders.matsystem1.. "renderers/GL/loaders/glad_es3.c",
 		Folders.matsystem1.."renderers/GL/**.h"
 	}
+
+	removefiles {
+		Folders.matsystem1.. "renderers/GL/CGLRenderLib*",
+	}
 	
     includedirs {
 		Folders.matsystem1.. "renderers/GL/loaders"
 	}
 
 	filter "system:Android"
+		uses {
+			"SDL2"
+		}
+		defines {
+			"USE_SDL2"
+		}
 		links {
-			"GLESv2", "EGL"
+			"GLESv2", "EGL", "android" 
+		}
+		files {
+			Folders.matsystem1.. "renderers/GL/CGLRenderLib_SDL.cpp"
 		}
 
 	filter "system:Windows"
 		files {
+			Folders.matsystem1.. "renderers/GL/CGLRenderLib_ES.cpp",
 			Folders.matsystem1.. "renderers/GL/loaders/glad_egl.c",
 		}
 
@@ -223,6 +237,10 @@ if not IS_ANDROID then
 			Folders.matsystem1.. "renderers/GL/*.cpp",
 			Folders.matsystem1.. "renderers/GL/loaders/gl_loader.cpp",
 			Folders.matsystem1.."renderers/GL/**.h"
+		}
+
+		removefiles {
+			Folders.matsystem1.. "renderers/GL/CGLRenderLib_*",
 		}
 		
 		includedirs {

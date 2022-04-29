@@ -61,11 +61,6 @@ bool CD3DRenderLib::InitCaps()
 	return true;
 }
 
-DECLARE_CMD(r_info, "Prints renderer info", 0)
-{
-	s_shaderApi.PrintAPIInfo();
-}
-
 DWORD ComputeDeviceFlags( const D3DCAPS9& caps, bool bSoftwareVertexProcessing )
 {
 	// Find out what type of device to make

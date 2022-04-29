@@ -200,9 +200,10 @@ bool UpdateGLTextureFromImage(GLTextureRef_t texture, CImage* image, int startMi
 	int mipMapLevel = startMipLevel;
 	while ((src = image->GetPixels(mipMapLevel)) != NULL)
 	{
-		int size = image->GetMipMappedSize(mipMapLevel, 1);
-
-		int lockBoxLevel = mipMapLevel - startMipLevel;
+		const int size = image->GetMipMappedSize(mipMapLevel, 1);
+		const int lockBoxLevel = mipMapLevel - startMipLevel;
+		const int width = image->GetWidth(mipMapLevel);
+		const int height = image->GetHeight(mipMapLevel);
 
 		if (texture.type == GLTEX_TYPE_VOLUMETEXTURE)
 		{
@@ -211,9 +212,9 @@ bool UpdateGLTextureFromImage(GLTextureRef_t texture, CImage* image, int startMi
 				glCompressedTexImage3D(glTarget,
 					lockBoxLevel,
 					internalFormat,
-					image->GetWidth(mipMapLevel), image->GetHeight(mipMapLevel), image->GetDepth(mipMapLevel),
+					width, height, image->GetDepth(mipMapLevel),
 					0,
-					image->GetMipMappedSize(mipMapLevel, 1),
+					size,
 					src);
 			}
 			else
@@ -221,7 +222,7 @@ bool UpdateGLTextureFromImage(GLTextureRef_t texture, CImage* image, int startMi
 				glTexImage3D(glTarget,
 					lockBoxLevel,
 					internalFormat,
-					image->GetWidth(mipMapLevel), image->GetHeight(mipMapLevel), image->GetDepth(mipMapLevel),
+					width, height, image->GetDepth(mipMapLevel),
 					0,
 					srcFormat,
 					srcType,
@@ -232,7 +233,7 @@ bool UpdateGLTextureFromImage(GLTextureRef_t texture, CImage* image, int startMi
 		}
 		else if (texture.type == GLTEX_TYPE_CUBETEXTURE)
 		{
-			size /= 6;
+			const int cubeFaceSize = size / 6;
 
 			for (uint i = 0; i < 6; i++)
 			{
@@ -241,21 +242,21 @@ bool UpdateGLTextureFromImage(GLTextureRef_t texture, CImage* image, int startMi
 					glCompressedTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
 						lockBoxLevel,
 						internalFormat,
-						image->GetWidth(mipMapLevel), image->GetHeight(mipMapLevel),
+						width, height,
 						0,
-						size,
-						src + i * size);
+						cubeFaceSize,
+						src + i * cubeFaceSize);
 				}
 				else
 				{
 					glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
 						lockBoxLevel,
 						internalFormat,
-						image->GetWidth(mipMapLevel), image->GetHeight(mipMapLevel),
+						width, height,
 						0,
 						srcFormat,
 						srcType,
-						src + i * size);
+						src + i * cubeFaceSize);
 				}
 				GLCheckError("tex upload cube");
 			}
@@ -267,7 +268,7 @@ bool UpdateGLTextureFromImage(GLTextureRef_t texture, CImage* image, int startMi
 				glCompressedTexImage2D(glTarget,
 					lockBoxLevel,
 					internalFormat,
-					image->GetWidth(mipMapLevel), image->GetHeight(mipMapLevel),
+					width, image->GetHeight(mipMapLevel),
 					0,
 					size,
 					src);
@@ -277,7 +278,7 @@ bool UpdateGLTextureFromImage(GLTextureRef_t texture, CImage* image, int startMi
 				glTexImage2D(glTarget,
 					lockBoxLevel,
 					internalFormat,
-					image->GetWidth(mipMapLevel), image->GetHeight(mipMapLevel),
+					width, image->GetHeight(mipMapLevel),
 					0,
 					srcFormat,
 					srcType,

@@ -30,6 +30,11 @@ static ConVar rs_echo_texture_loading("r_echo_texture_loading", "0", "Echo textr
 static ConVar r_nomip("r_nomip", "0", nullptr, CV_CHEAT);
 static ConVar r_skipTextures("r_skipTextures", "0", nullptr, CV_CHEAT);
 
+DECLARE_CMD(r_info, "Prints renderer info", 0)
+{
+	g_pShaderAPI->PrintAPIInfo();
+}
+
 ShaderAPI_Base::ShaderAPI_Base()
 {
 	m_nViewportWidth			= 800;

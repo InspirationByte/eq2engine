@@ -46,10 +46,7 @@ public:
 	}
 
 	// syncronous execution
-	int WaitForExecute(const char* name, FUNC_TYPE f)
-	{
-		return AddWork(name, f, true);
-	}
+	int WaitForExecute(const char* name, FUNC_TYPE f);
 
 	// asyncronous execution
 	void Execute(const char* name, FUNC_TYPE f)

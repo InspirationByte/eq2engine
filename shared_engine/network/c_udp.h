@@ -18,8 +18,6 @@
 #include "core/platform/Platform.h"
 #include "net_defs.h"
 
-#include <map>
-
 #define CUDP_MESSAGE_ID_IMMEDIATE			(-3)
 #define CUDP_MESSAGE_ID_ERROR				(-2)
 #define UDP_CDP_MAX_MESSAGEPAYLOAD			MAX_MESSAGE_LENGTH		// maximum payload for this protocol type; Tweak this if you have issues

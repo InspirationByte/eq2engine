@@ -95,8 +95,7 @@ EQWNDHANDLE Sys_CreateWindow()
 		nAdjustedTall = displayRect.h;
 	}
 
-	// HACK: use SDL_WINDOW_VULKAN to ensure that SDL will not create EGL surface
-	sdlFlags |= SDL_WINDOW_FULLSCREEN | SDL_WINDOW_VULKAN;
+	sdlFlags |= SDL_WINDOW_FULLSCREEN | SDL_WINDOW_OPENGL;
 
 #endif // PLAT_ANDROID
 	
