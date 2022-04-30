@@ -240,17 +240,6 @@ void ShaderAPIGL::Init( shaderAPIParams_t &params)
 	ShaderAPI_Base::Init(params);
 
 	// all shaders supported, nothing to report
-
-	kvkeybase_t baseMeshBufferParams;
-	kvkeybase_t* attr = baseMeshBufferParams.AddKeyBase("attribute", "input_vPos");
-	attr->AddValue(0);
-
-	attr = baseMeshBufferParams.AddKeyBase("attribute", "input_texCoord");
-	attr->AddValue(1);
-
-	attr = baseMeshBufferParams.AddKeyBase("attribute", "input_color");
-	attr->AddValue(3);
-
 	s_uniformFuncs[CONSTANT_FLOAT]		= (void *) glUniform1fv;
 	s_uniformFuncs[CONSTANT_VECTOR2D]	= (void *) glUniform2fv;
 	s_uniformFuncs[CONSTANT_VECTOR3D]	= (void *) glUniform3fv;
@@ -1562,7 +1551,7 @@ void ShaderAPIGL::ChangeVertexBuffer(IVertexBuffer* pVertexBuffer, int nStream, 
 	{
 		bool anyEnabled = false;
 
-		if (currentFormat)
+		if (currentFormat && vbo != 0)
 		{
 			for (int i = 0; i < m_caps.maxVertexGenericAttributes; i++)
 			{
@@ -1584,7 +1573,7 @@ void ShaderAPIGL::ChangeVertexBuffer(IVertexBuffer* pVertexBuffer, int nStream, 
 			{
 				const eqGLVertAttrDesc_t& attrib = currentFormat->m_genericAttribs[i];
 
-				if (attrib.streamId == nStream && attrib.sizeInBytes && vbo != 0)
+				if (attrib.streamId == nStream && attrib.sizeInBytes)
 				{
 					glEnableVertexAttribArray(i);
 					GLCheckError("enable vtx attrib");
