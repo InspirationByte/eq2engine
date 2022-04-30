@@ -70,9 +70,6 @@ public:
 	bool					IsMainThread(uintptr_t threadId) const;
 protected:
 
-	void					InitSharedContexts();
-	void					DestroySharedContexts();
-
 	Array<IEqSwapChain*>	m_swapChains;
 	uintptr_t				m_mainThreadId;
 	bool					m_asyncOperationActive;

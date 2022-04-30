@@ -87,23 +87,6 @@ bool CGLRenderLib_SDL::InitCaps()
 	return true;
 }
 
-void CGLRenderLib_SDL::DestroySharedContexts()
-{
-	SDL_GL_DeleteContext(m_glSharedContext);
-}
-
-
-void CGLRenderLib_SDL::InitSharedContexts()
-{
-	SDL_GLContext context = SDL_GL_CreateContext(m_window);
-
-	if (context == nullptr)
-		ASSERTMSG(false, "Failed to create context for share!");
-
-	m_glSharedContext = context;
-}
-
-
 
 bool CGLRenderLib_SDL::InitAPI(shaderAPIParams_t& params)
 {
@@ -112,7 +95,7 @@ bool CGLRenderLib_SDL::InitAPI(shaderAPIParams_t& params)
 
 	Msg("Initializing SDL GL context...\n");
 
-	SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 1);
+	SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 1); 
 
 #ifdef USE_GLES2
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
@@ -125,16 +108,24 @@ bool CGLRenderLib_SDL::InitAPI(shaderAPIParams_t& params)
 #endif // USE_GLES2
 
 	SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
+	SDL_GL_SetAttribute(SDL_GL_SHARE_WITH_CURRENT_CONTEXT, 1);
 
 	m_glContext = SDL_GL_CreateContext(m_window);
-
 	if (m_glContext == nullptr)
 	{
 		CrashMsg("Could not create SDL GL context\n");
 		return false;
 	}
 
-	InitSharedContexts();
+	m_glSharedContext = SDL_GL_CreateContext(m_window);
+	if (m_glSharedContext == nullptr)
+	{
+		CrashMsg("Could not create SDL GL shared context\n");
+		return false;
+	}
+
+	// seems like SDL kees current context
+	SDL_GL_MakeCurrent(m_window, m_glContext);
 
 	Msg("Initializing GL extensions...\n");
 
@@ -430,7 +421,7 @@ void CGLRenderLib_SDL::EndAsyncOperation()
 
 	//glFinish();
 
-	SDL_GL_MakeCurrent(m_window, m_glContext); // could be invalid
+	SDL_GL_MakeCurrent(m_window, nullptr); // could be invalid
 
 	m_asyncOperationActive = false;
 }

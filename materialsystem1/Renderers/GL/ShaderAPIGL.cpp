@@ -1598,7 +1598,7 @@ void ShaderAPIGL::ChangeVertexBuffer(IVertexBuffer* pVertexBuffer, int nStream, 
 			m_boundInstanceStream = -1;
 		else if (instanceBuffer && m_boundInstanceStream == -1)
 			m_boundInstanceStream = nStream;
-		else if (instanceBuffer && m_boundInstanceStream != -1)
+		else if (instanceBuffer && m_boundInstanceStream != -1 && nStream != m_boundInstanceStream)
 		{
 			ASSERTMSG(false, "Already bound instancing stream at %d!!!", m_boundInstanceStream);
 		}
