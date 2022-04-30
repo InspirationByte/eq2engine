@@ -204,17 +204,18 @@ project "eqGLESRHI"
 	}
 
 	filter "system:Android"
-		uses {
-			"SDL2"
-		}
-		defines {
-			"USE_SDL2"
-		}
+		--uses {
+		--	"SDL2"
+		--}
+		--defines {
+		--	"USE_SDL2"
+		--}
 		links {
 			"GLESv2", "EGL", "android" 
 		}
 		files {
-			Folders.matsystem1.. "renderers/GL/CGLRenderLib_SDL.cpp"
+			Folders.matsystem1.. "renderers/GL/CGLRenderLib_ES.cpp",
+			--Folders.matsystem1.. "renderers/GL/CGLRenderLib_SDL.cpp" -- SDL2 doesn't work properly with context switching :C
 		}
 
 	filter "system:Windows"

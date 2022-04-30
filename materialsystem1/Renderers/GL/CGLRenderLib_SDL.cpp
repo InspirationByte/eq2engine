@@ -95,20 +95,23 @@ bool CGLRenderLib_SDL::InitAPI(shaderAPIParams_t& params)
 
 	Msg("Initializing SDL GL context...\n");
 
-	SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 1); 
+// #ifdef USE_GLES2
+// 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
+// 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
+// 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
+// #else
+// 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
+// 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
+// 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_COMPATIBILITY);
+// #endif // USE_GLES2
 
-#ifdef USE_GLES2
-	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
-	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
-	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
-#else
-	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
-	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
-	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_COMPATIBILITY);
-#endif // USE_GLES2
 
-	SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
-	SDL_GL_SetAttribute(SDL_GL_SHARE_WITH_CURRENT_CONTEXT, 1);
+	m_glSharedContext = SDL_GL_CreateContext(m_window);
+	if (m_glSharedContext == nullptr)
+	{
+		CrashMsg("Could not create SDL GL shared context (attributes missing?)\n");
+		return false;
+	}
 
 	m_glContext = SDL_GL_CreateContext(m_window);
 	if (m_glContext == nullptr)
@@ -116,16 +119,6 @@ bool CGLRenderLib_SDL::InitAPI(shaderAPIParams_t& params)
 		CrashMsg("Could not create SDL GL context\n");
 		return false;
 	}
-
-	m_glSharedContext = SDL_GL_CreateContext(m_window);
-	if (m_glSharedContext == nullptr)
-	{
-		CrashMsg("Could not create SDL GL shared context\n");
-		return false;
-	}
-
-	// seems like SDL kees current context
-	SDL_GL_MakeCurrent(m_window, m_glContext);
 
 	Msg("Initializing GL extensions...\n");
 
@@ -401,10 +394,10 @@ void CGLRenderLib_SDL::BeginAsyncOperation(uintptr_t threadId)
 {
 	uintptr_t thisThreadId = Threading::GetCurrentThreadID();
 
-	if (thisThreadId == m_mainThreadId) // not required for main thread
-		return;
-
+	ASSERTMSG(IsMainThread(thisThreadId) == false, "BeginAsyncOperation() cannot be called from main thread!");
 	ASSERT(m_asyncOperationActive == false);
+
+	Msg("BeginAsyncOperation\n");
 
 	SDL_GL_MakeCurrent(m_window, m_glSharedContext); // could be invalid
 
@@ -420,6 +413,8 @@ void CGLRenderLib_SDL::EndAsyncOperation()
 	ASSERT(m_asyncOperationActive == true);
 
 	//glFinish();
+
+	Msg("EndAsyncOperation\n");
 
 	SDL_GL_MakeCurrent(m_window, nullptr); // could be invalid
 

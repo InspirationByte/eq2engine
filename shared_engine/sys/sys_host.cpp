@@ -316,18 +316,18 @@ bool CGameHost::InitSystems( EQWNDHANDLE pWindow )
 	materials_config.shaderapi_params.windowHandle = (void*)winfo.info.cocoa.window;
 #elif PLAT_ANDROID
 
-#if 1
+#if 0
 	materials_config.shaderapi_params.windowHandle = m_pWindow;	// passing SDL window
 #else
     externalWindowDisplayParams_t winParams;
     winParams.window = (void*)winfo.info.android.window;
 
-    void* paramArray[] = { (void*)Helper_GetEGLSurfaceFromSDL };
+    //void* paramArray[] = { (void*)Helper_GetEGLSurfaceFromSDL };
+	//
+	//winParams.paramArray = paramArray;
+	//winParams.numParams = 1;
 
-	winParams.paramArray = paramArray;
-	winParams.numParams = 1;
-
-	materials_config.shaderapi_params.windowHandle = m_pWindow;
+	materials_config.shaderapi_params.windowHandle = &winParams;
 	format = FORMAT_RGB565;
 #endif
 

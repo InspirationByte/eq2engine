@@ -41,9 +41,9 @@ struct kvkeybase_t;
 // designed to be sent as windowHandle param
 struct externalWindowDisplayParams_t
 {
-	void*			window;
-	void**			paramArray;
-	int				numParams;
+	void*			window{ nullptr };
+	void**			paramArray{ nullptr };
+	int				numParams{ 0 };
 };
 
 // shader api initializer
