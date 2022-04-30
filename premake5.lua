@@ -3,6 +3,7 @@
 require ".premake_modules/usage"
 require ".premake_modules/androidndk"
 require ".premake_modules/unitybuild"
+require ".premake_modules/asan"
 
 IS_ANDROID = (_ACTION == "androidndk")
 
@@ -136,6 +137,7 @@ workspace "Equilibrium2"
             "NDEBUG",
         }
 		optimize "On"
+		--enableASAN "On"
 
 	filter "system:Windows or system:Linux or system:Android"
 		defines { 

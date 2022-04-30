@@ -16,6 +16,7 @@
 class IEqCoreModule
 {
 public:
+	virtual ~IEqCoreModule() = default;
 	virtual bool		IsInitialized() const = 0;
 	virtual const char*	GetInterfaceName() const = 0;
 };

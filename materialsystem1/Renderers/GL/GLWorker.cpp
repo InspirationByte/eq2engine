@@ -33,6 +33,21 @@ GLWorkerThread::work_t::work_t(const char* _name, FUNC_TYPE f, uint id, bool blo
 	blocking = block;
 }
 
+void GLWorkerThread::Init()
+{
+	StartWorkerThread("GLWorker");
+}
+
+void GLWorkerThread::Shutdown()
+{
+	SignalWork();
+	StopThread();
+
+	// delete work
+	delete m_pendingWork;
+	m_pendingWork = nullptr;
+}
+
 int GLWorkerThread::WaitForExecute(const char* name, FUNC_TYPE f)
 {
 	uintptr_t thisThreadId = Threading::GetCurrentThreadID();
@@ -46,80 +61,58 @@ int GLWorkerThread::WaitForExecute(const char* name, FUNC_TYPE f)
 int GLWorkerThread::WaitForResult(work_t* work)
 {
 	ASSERT(work);
-
 	DevMsg(DEVMSG_SHADERAPI, "WaitForResult for %s (workId %d)\n", work->name, work->workId);
 
-	// wait
-	do
-	{
-		const int result = work->result;
-		if (result != WORK_PENDING_MARKER)
-		{
-			delete work;
-			return result;
-		}
+	WaitForThread();
 
-		// HACK: weird hack to make this unfreeze itself
-		if (IsWorkDone() && !m_pendingWork)
-		{
-			m_pendingWork = work;
-			SignalWork();
-		}
+	ASSERT(m_pendingWork == work);
+	m_pendingWork = nullptr;
 
-		Platform_Sleep(1);
-	} while (true);
+	const int result = work->result;
 
-	return 0;
+	delete work;
+
+	return result;
 }
 
 int GLWorkerThread::AddWork(const char* name, FUNC_TYPE f, bool blocking)
 {
-	work_t* work = new work_t(name, f, m_workCounter++, blocking);
+	CScopedMutex m(m_mutex);
 
-	// chain link
-	work->next = m_pendingWork.load();
-	m_pendingWork = work;
+	// wait before worker gets done
+	WaitForThread();
+
+	m_pendingWork = new work_t(name, f, m_workCounter++, blocking);
 
 	SignalWork();
 
 	if (blocking)
-		return WaitForResult(work);
+		return WaitForResult(m_pendingWork);
 
 	return 0;
 }
 
 int GLWorkerThread::Run()
 {
+	ASSERTMSG(m_pendingWork, "worker triggered but no work");
+
 	g_library.BeginAsyncOperation(GetThreadID());
 
-	// find some work
-	do
+	FUNC_TYPE func = m_pendingWork->func;
+
+	// run work
+	//DevMsg(DEVMSG_SHADERAPI, "BeginAsyncOperation for %s (workId %d)\n", currentWork->name, currentWork->workId);
+	if (m_pendingWork->blocking)
 	{
-		work_t* currentWork = m_pendingWork.load();
-
-		if (currentWork)
-			m_pendingWork = currentWork->next.load();
-		else
-			break;
-
-		FUNC_TYPE func = currentWork->func;
-
-		// run work
-		//DevMsg(DEVMSG_SHADERAPI, "BeginAsyncOperation for %s (workId %d)\n", currentWork->name, currentWork->workId);
-		if (currentWork->blocking)
-		{
-			currentWork->result = func();
-		}
-		else
-		{
-			func();
-			delete currentWork;
-		}
-		//DevMsg(DEVMSG_SHADERAPI, "EndAsyncOperation for %s (workId %d)\n", currentWork->name, currentWork->workId);
-
-		if (IsTerminating())
-			break;
-	} while (true);
+		m_pendingWork->result = func();
+	}
+	else
+	{
+		func();
+		delete m_pendingWork;
+		m_pendingWork = nullptr;
+	}
+	//DevMsg(DEVMSG_SHADERAPI, "EndAsyncOperation for %s (workId %d)\n", currentWork->name, currentWork->workId);
 
 	g_library.EndAsyncOperation();
 

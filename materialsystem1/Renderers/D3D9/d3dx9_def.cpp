@@ -80,4 +80,12 @@ D3DFORMAT formats[] = {
 	(D3DFORMAT)'2ITA', // 3Dc 2 channels
 
 	// other compressed formats are unsupported
+	D3DFMT_UNKNOWN,
+	D3DFMT_UNKNOWN,
+	D3DFMT_UNKNOWN,
+	D3DFMT_UNKNOWN,
+	D3DFMT_UNKNOWN,
+	D3DFMT_UNKNOWN,
+	D3DFMT_UNKNOWN,
+	D3DFMT_UNKNOWN
 };

@@ -24,26 +24,9 @@ public:
 	{
 	}
 
-	void Init()
-	{
-		StartWorkerThread("GLWorker");
-	}
+	void Init();
 
-	void Shutdown()
-	{
-		SignalWork();
-		StopThread();
-
-		// delete work
-		work_t* work = m_pendingWork;
-		m_pendingWork = nullptr;
-		while (work)
-		{
-			work_t* nextWork = work->next;
-			delete work;
-			work = nextWork;
-		}
-	}
+	void Shutdown();
 
 	// syncronous execution
 	int WaitForExecute(const char* name, FUNC_TYPE f);
@@ -62,8 +45,6 @@ protected:
 	struct work_t
 	{
 		work_t(const char* _name, FUNC_TYPE f, uint id, bool block);
-
-		std::atomic<work_t*>	next{ nullptr };
 		FUNC_TYPE				func;
 
 		const char* name;
@@ -75,7 +56,8 @@ protected:
 
 	int WaitForResult(work_t* work);
 
-	std::atomic<work_t*>	m_pendingWork;
+	Threading::CEqMutex		m_mutex;
+	work_t*					m_pendingWork;
 
 	uint					m_workCounter;
 };

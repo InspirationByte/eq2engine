@@ -83,7 +83,10 @@ void ImGui_ImplEq_InputMousePress(int Button, bool pressed)
 {
     ImGui_ImplEq_Data* bd = ImGui_ImplEq_GetBackendData();
 
-    bd->MousePressed[Button] = pressed;
+    if (Button <= MOU_B3)
+    {
+        bd->MousePressed[Button - MOU_B1] = pressed;
+    }
 }
 
 void ImGui_ImplEq_InputMouseWheel(int h, bool v)
