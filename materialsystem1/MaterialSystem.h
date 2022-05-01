@@ -109,12 +109,6 @@ public:
 	// Loads textures, compiles shaders. Called after level loading
 	void							PreloadNewMaterials();
 
-	// begins preloading zone of materials when GetMaterial calls
-	void							BeginPreloadMarker();
-
-	// ends preloading zone of materials when GetMaterial calls
-	void							EndPreloadMarker();
-
 	// waits for material loader thread is finished
 	void							Wait();
 
@@ -303,9 +297,6 @@ public:
 	void							RegisterShader(const char* pszShaderName,DISPATCH_CREATE_SHADER dispatcher_creation);
 	void							RegisterShaderOverrideFunction(const char* shaderName, DISPATCH_OVERRIDE_SHADER check_function);
 
-	// use this if you want to reduce "frametime jumps" when matsystem loads textures
-	void							SetResourceBeginEndLoadCallback(RESOURCELOADCALLBACK begin, RESOURCELOADCALLBACK end);
-
 	// device lost/restore callbacks
 	void							AddDestroyLostCallbacks(DEVLICELOSTRESTORE destroy, DEVLICELOSTRESTORE restore);
 	void							RemoveLostRestoreCallbacks(DEVLICELOSTRESTORE destroy, DEVLICELOSTRESTORE restore);
@@ -383,7 +374,6 @@ private:
 	bool							m_skinningEnabled;
 	bool							m_instancingEnabled;
 	bool							m_deviceActiveState;
-	bool							m_forcePreloadMaterials;
 };
 
 #endif //CMATERIALSYSTEM_H

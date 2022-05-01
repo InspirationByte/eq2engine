@@ -89,6 +89,12 @@ public:
 	// manually invokes job callbacks on completed jobs
 	void							CompleteJobCallbacks();
 
+	int								GetActiveJobThreadsCount();
+	int								GetJobThreadsCount();
+
+	int								GetActiveJobsCount(int type = -1);
+	int								GetPendingJobCount(int type = -1);
+
 protected:
 
 	// called from worker thread

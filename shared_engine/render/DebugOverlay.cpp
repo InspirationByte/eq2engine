@@ -606,7 +606,7 @@ void DrawGraph(debugGraphBucket_t* graph, int position, IEqFont* pFont, float fr
 	eqFontStyleParam_t textStl;
 	textStl.styleFlag = TEXT_STYLE_SHADOW | TEXT_STYLE_FROM_CAP;
 
-	pFont->RenderText(graph->pszName, Vector2D(x_pos + 5, y_pos - GRAPH_HEIGHT - 16), textStl);
+	pFont->RenderText(graph->name, Vector2D(x_pos + 5, y_pos - GRAPH_HEIGHT - 16), textStl);
 
 	pFont->RenderText("0", Vector2D(x_pos + 5, y_pos), textStl);
 	pFont->RenderText(EqString::Format("%.2f", graph->maxValue).ToCString(), Vector2D(x_pos + 5, y_pos - GRAPH_HEIGHT), textStl);

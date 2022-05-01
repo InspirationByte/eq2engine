@@ -42,12 +42,6 @@ IShaderAPI*				g_pShaderAPI = NULL;
 static CMaterialSystem s_matsystem;
 IMaterialSystem* materials = &s_matsystem;
 
-// this is an engine functions.
-void null_func() {}
-
-RESOURCELOADCALLBACK g_pLoadBeginCallback = null_func;
-RESOURCELOADCALLBACK g_pLoadEndCallback = null_func;
-
 ConVar				r_showlightmaps("r_showlightmaps", "0", "Disable diffuse textures to show lighting", CV_CHEAT);
 ConVar				r_screen("r_screen", "0", "Screen count", CV_ARCHIVE);
 ConVar				r_loadmiplevel("r_loadmiplevel", "0", 0, 3, "Mipmap level to load, needs texture reloading", CV_ARCHIVE );
@@ -148,8 +142,6 @@ CMaterialSystem::CMaterialSystem()
 {
 	m_cullMode = CULL_BACK;
 	m_shaderAPI = NULL;
-
-	m_forcePreloadMaterials = false;
 
 	m_setMaterial = NULL;
 	m_overdrawMaterial = NULL;
@@ -450,12 +442,6 @@ const char* CMaterialSystem::GetMaterialPath() const
 	return m_materialsPath.ToCString();
 }
 
-void CMaterialSystem::SetResourceBeginEndLoadCallback(RESOURCELOADCALLBACK begin, RESOURCELOADCALLBACK end)
-{
-	g_pLoadBeginCallback = begin;
-	g_pLoadEndCallback = end;
-}
-
 // Adds new shader library
 bool CMaterialSystem::LoadShaderLibrary(const char* libname)
 {
@@ -502,16 +488,14 @@ IMaterial* CMaterialSystem::CreateMaterial(const char* szMaterialName, kvkeybase
 // creates new material with defined parameters
 IMaterial* CMaterialSystem::CreateMaterialInternal(const char* szMaterialName, int nameHash, kvkeybase_t* params)
 {
+	CScopedMutex m(m_Mutex);
+
 	// create new material
 	CMaterial* pMaterial = new CMaterial(m_ProxyMutex[m_loadedMaterials.size() % 4]);
 
 	// add to list
-	{
-		CScopedMutex m(m_Mutex);
-
-		ASSERTMSG(m_loadedMaterials.find(nameHash) == m_loadedMaterials.end(), "Material %s was already created under that name", szMaterialName);
-		m_loadedMaterials.insert(nameHash, pMaterial);
-	}
+	ASSERTMSG(m_loadedMaterials.find(nameHash) == m_loadedMaterials.end(), "Material %s was already created under that name", szMaterialName);
+	m_loadedMaterials.insert(nameHash, pMaterial);
 
 	// if no params, we can load it a usual way
 	if(params)
@@ -519,17 +503,10 @@ IMaterial* CMaterialSystem::CreateMaterialInternal(const char* szMaterialName, i
 	else
 		pMaterial->Init(szMaterialName);
 
-	g_pLoadBeginCallback();
-
-	if (m_forcePreloadMaterials)
-		PutMaterialToLoadingQueue(pMaterial);
-	
-	g_pLoadEndCallback();
-
 	return pMaterial;
 }
 
-IMaterial* CMaterialSystem::GetMaterial(const char* szMaterialName/* = true*/)
+IMaterial* CMaterialSystem::GetMaterial(const char* szMaterialName)
 {
 	// Don't load null materials
 	if( strlen(szMaterialName) == 0 )
@@ -545,16 +522,11 @@ IMaterial* CMaterialSystem::GetMaterial(const char* szMaterialName/* = true*/)
 	const int nameHash = StringToHash(materialName.ToCString(), true);
 
 	// find the material with existing name
-	{
-		CScopedMutex m(m_Mutex);
+	CScopedMutex m(m_Mutex);
 
-		auto it = m_loadedMaterials.find(nameHash);
-		if (it != m_loadedMaterials.end())
-		{
-			g_pLoadEndCallback();
-			return *it;
-		}
-	}
+	auto it = m_loadedMaterials.find(nameHash);
+	if (it != m_loadedMaterials.end())
+		return *it;
 
 	return CreateMaterialInternal(materialName.ToCString(), nameHash, nullptr);
 }
@@ -564,8 +536,6 @@ void CMaterialSystem::PreloadNewMaterials()
 {
 	if(m_config.stubMode)
 		return;
-
-	g_pLoadBeginCallback();
 
 	{
 		CScopedMutex m(m_Mutex);
@@ -577,28 +547,6 @@ void CMaterialSystem::PreloadNewMaterials()
 
 			PutMaterialToLoadingQueue(it.value());
 		}
-	}
-
-	g_pLoadEndCallback();
-}
-
-// begins preloading zone of materials when GetMaterial calls
-void CMaterialSystem::BeginPreloadMarker()
-{
-	if(!m_forcePreloadMaterials)
-	{
-		g_pLoadBeginCallback();
-		m_forcePreloadMaterials = true;
-	}
-}
-
-// ends preloading zone of materials when GetMaterial calls
-void CMaterialSystem::EndPreloadMarker()
-{
-	if(m_forcePreloadMaterials)
-	{
-		g_pLoadEndCallback();
-		m_forcePreloadMaterials = false;
 	}
 }
 
@@ -628,8 +576,6 @@ void CMaterialSystem::ReloadAllMaterials()
 {
 	CScopedMutex m(m_Mutex);
 
-	g_pLoadBeginCallback();
-
 	Array<IMaterial*> loadingList;
 
 	for (auto it = m_loadedMaterials.begin(); it != m_loadedMaterials.end(); ++it)
@@ -652,7 +598,7 @@ void CMaterialSystem::ReloadAllMaterials()
 
 		material->Init( NULL );
 
-		int framesDiff = (material->m_frameBound - m_frame);
+		const int framesDiff = (material->m_frameBound - m_frame);
 
 		// preload material if it was ever used before
 		if(framesDiff >= -1)
@@ -663,8 +609,6 @@ void CMaterialSystem::ReloadAllMaterials()
 	// - this is a guarantee to shader recompilation
 	for(int i = 0; i < loadingList.numElem(); i++)
 		PutMaterialToLoadingQueue( loadingList[i] );
-
-	g_pLoadEndCallback();
 }
 
 // frees all materials
@@ -675,7 +619,7 @@ void CMaterialSystem::FreeMaterials()
 	for (auto it = m_loadedMaterials.begin(); it != m_loadedMaterials.end(); ++it)
 	{
 		CMaterial* pMaterial = (CMaterial*)*it;
-		DevMsg(DEVMSG_MATSYSTEM, "freeing %s\n", pMaterial->GetName());
+		DevMsg(DEVMSG_MATSYSTEM, "freeing material %s\n", pMaterial->GetName());
 		pMaterial->Cleanup();
 		delete pMaterial;
 	}
@@ -685,17 +629,17 @@ void CMaterialSystem::FreeMaterials()
 
 void CMaterialSystem::ClearRenderStates()
 {
-	//for (auto i = m_blendStates.begin(); i != m_blendStates.end(); ++i)
-	//	g_pShaderAPI->DestroyRenderState(*i);
-	//m_blendStates.clear();
-	//
-	//for (auto i = m_depthStates.begin(); i != m_depthStates.end(); ++i)
-	//	g_pShaderAPI->DestroyRenderState(*i);
-	//m_depthStates.clear();
-	//
-	//for (auto i = m_rasterStates.begin(); i != m_rasterStates.end(); ++i)
-	//	g_pShaderAPI->DestroyRenderState(*i);
-	//m_rasterStates.clear();
+	for (auto i = m_blendStates.begin(); i != m_blendStates.end(); ++i)
+		g_pShaderAPI->DestroyRenderState(*i);
+	m_blendStates.clear();
+	
+	for (auto i = m_depthStates.begin(); i != m_depthStates.end(); ++i)
+		g_pShaderAPI->DestroyRenderState(*i);
+	m_depthStates.clear();
+	
+	for (auto i = m_rasterStates.begin(); i != m_rasterStates.end(); ++i)
+		g_pShaderAPI->DestroyRenderState(*i);
+	m_rasterStates.clear();
 }
 
 // frees single material

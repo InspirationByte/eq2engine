@@ -27,8 +27,10 @@ public class EqEngineActivity extends org.libsdl.app.SDLActivity{
 
     protected String[] getArguments() {
         return new String[]{
-               // "-norender",
-                //"+r_drawHeightFields 0"
+                "+gl_report_errors 1",
+                "+r_shadows 2",
+                "+r_skipPostProcess 1"
+                // "-norender",
         };
     }
 }

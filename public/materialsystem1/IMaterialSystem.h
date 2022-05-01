@@ -261,12 +261,6 @@ public:
 	// Loads textures, compiles shaders. Called after level loading
 	virtual void							PreloadNewMaterials() = 0;
 
-	// begins preloading zone of materials when GetMaterial calls
-	virtual void							BeginPreloadMarker() = 0;
-
-	// ends preloading zone of materials when GetMaterial calls
-	virtual void							EndPreloadMarker() = 0;
-
 	// waits for material loader thread is finished
 	virtual void							Wait() = 0;
 
@@ -449,9 +443,6 @@ public:
 
 	virtual void							RegisterShader(const char* pszShaderName,DISPATCH_CREATE_SHADER dispatcher_creation) = 0;
 	virtual void							RegisterShaderOverrideFunction(const char* shaderName, DISPATCH_OVERRIDE_SHADER check_function) = 0;
-
-	// use this if you want to reduce "frametime jumps" when matsystem loads textures
-	virtual void							SetResourceBeginEndLoadCallback(RESOURCELOADCALLBACK begin, RESOURCELOADCALLBACK end) = 0;
 
 	// device lost/restore callbacks
 	virtual void							AddDestroyLostCallbacks(DEVLICELOSTRESTORE destroy, DEVLICELOSTRESTORE restore) = 0;

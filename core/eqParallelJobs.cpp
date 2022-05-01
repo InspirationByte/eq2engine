@@ -255,3 +255,62 @@ void CEqParallelJobThreads::AddCompleted(eqParallelJob_t* job)
 
 	m_completeMutex.Unlock();
 }
+
+int	CEqParallelJobThreads::GetActiveJobThreadsCount()
+{
+	Threading::CScopedMutex m(m_mutex);
+	int cnt = 0;
+	for (int i = 0; i < m_jobThreads.numElem(); i++)
+		cnt += (m_jobThreads[i]->IsWorkDone() == false) ? 1 : 0;
+
+	return cnt;
+}
+
+int	CEqParallelJobThreads::GetJobThreadsCount()
+{
+	return m_jobThreads.numElem();
+}
+
+int	CEqParallelJobThreads::GetActiveJobsCount(int type /*= -1*/)
+{
+	Threading::CScopedMutex m(m_mutex);
+	ListIterator<eqParallelJob_t*> it(m_workQueue);
+
+	int cnt = 0;
+	if (it.goToFirst())
+	{
+		do
+		{
+			const eqParallelJob_t* job = it.getCurrent();
+			if (job->typeId == type && job->threadId != 0)
+			{
+				cnt++;
+			}
+
+		} while (it.goToNext());
+	}
+
+	return cnt;
+}
+
+int	CEqParallelJobThreads::GetPendingJobCount(int type /*= -1*/)
+{
+	Threading::CScopedMutex m(m_mutex);
+	ListIterator<eqParallelJob_t*> it(m_workQueue);
+
+	int cnt = 0;
+	if (it.goToFirst())
+	{
+		do
+		{
+			const eqParallelJob_t* job = it.getCurrent();
+			if (job->typeId == type && job->threadId == 0)
+			{
+				cnt++;
+			}
+
+		} while (it.goToNext());
+	}
+
+	return cnt;
+}

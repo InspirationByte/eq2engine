@@ -94,6 +94,12 @@ public:
 	// manually invokes job callbacks on completed jobs
 	// should be called in main loop thread or in critical places
 	virtual void							CompleteJobCallbacks() = 0;
+
+	// job thread counter
+	virtual int								GetActiveJobThreadsCount() = 0;
+	virtual int								GetJobThreadsCount() = 0;
+	virtual int								GetActiveJobsCount(int type = -1) = 0;
+	virtual int								GetPendingJobCount(int type = -1) = 0;
 };
 
 INTERFACE_SINGLETON(IEqParallelJobThreads, CEqParallelJobThreads, PARALLELJOBS_INTERFACE_VERSION, g_parallelJobs)

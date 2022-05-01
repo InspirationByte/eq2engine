@@ -112,6 +112,7 @@ protected:
 	bool				FilterTime( double fDt );
 
 	debugGraphBucket_t	m_fpsGraph;
+	debugGraphBucket_t	m_jobThreads;
 
 	IVector2D			m_winSize;
 	IVector2D			m_mousePos;

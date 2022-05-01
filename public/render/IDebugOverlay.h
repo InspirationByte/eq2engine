@@ -17,6 +17,7 @@
 #include "math/Vector.h"
 #include "math/Matrix.h"
 #include "ds/List.h"
+#include "ds/eqstring.h"
 
 #define DBGOVERLAY_INTERFACE_VERSION "DebugOverlay_001"
 
@@ -41,28 +42,19 @@ struct debugGraphBucket_t
 		remainingTime = 0.0f;
 	}
 
-	debugGraphBucket_t(const char* name, const ColorRGB &_color, float _maxValue, float _updateTime = 0.0f, bool dynamicScaling = false)
+	debugGraphBucket_t(const char* name, const ColorRGB &color, float maxValue, float updateTime = 0.0f, bool dynamicScaling = false)
+		: name(name), color(color), maxValue(maxValue), updateTime(updateTime), dynamic(dynamicScaling)
 	{
-		Init(name, _color, _maxValue, _updateTime, dynamicScaling);
 	}
 
-	void Init(const char* name, const ColorRGB &_color, float _maxValue, float _updateTime = 0.0f, bool dynamicScaling = false)
-	{
-		strcpy(pszName, name);
-		color = _color;
-		maxValue = _maxValue;
-		updateTime = _updateTime;
-		dynamic = dynamicScaling;
-	}
+	EqString								name;
+	ColorRGB								color{ 0.25f };
+	float									maxValue{ 1.0f };
 
-	char									pszName[256];
-	ColorRGB								color;
-	float									maxValue;
+	float									updateTime{ 0.0f };
+	float									remainingTime{ 0.0f };
 
-	float									updateTime;
-	float									remainingTime;
-
-	bool									dynamic;
+	bool									dynamic{ false };
 
 	FixedList<graphPoint_t, 100>	points;
 };
@@ -72,6 +64,7 @@ typedef void (*OnDebugDrawFn)( void* );
 class IDebugOverlay
 {
 public:
+	virtual ~IDebugOverlay() = default;
 	virtual IEqFont*			GetFont() = 0;
 
 	virtual void				Init(bool hidden = true) = 0;

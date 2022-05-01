@@ -331,6 +331,8 @@ bool CGameHost::InitSystems( EQWNDHANDLE pWindow )
 	format = FORMAT_RGB565;
 #endif
 
+	r_clear.SetBool(true);
+
 #endif
 
 	materials_config.shaderapi_params.screenFormat = format;
@@ -498,11 +500,12 @@ void InputCommands_SDL(SDL_Event* event)
 CGameHost::CGameHost() :
 	m_winSize(0), m_prevMousePos(0), m_mousePos(0), m_pWindow(NULL), m_nQuitState(QUIT_NOTQUITTING),
 	m_bTrapMode(false), m_skipMouseMove(false), m_bDoneTrapping(false), m_nTrapKey(0), m_nTrapButtons(0), m_cursorCentered(false),
-	m_pDefaultFont(NULL)
+	m_pDefaultFont(NULL),
+	m_fpsGraph("Frames per sec", ColorRGB(1, 1, 0), 80.0f),
+	m_jobThreads("Active job threads", ColorRGB(1, 1, 0), 80.0f),
+	m_accumTime(0.0)
 {
-	m_accumTime = 0.0;
 
-	m_fpsGraph.Init("Frames per sec", ColorRGB(1,1,0), 80.0f);
 }
 
 void CGameHost::ShutdownSystems()
@@ -649,9 +652,12 @@ bool CGameHost::Frame()
 		debugoverlay->Graph_DrawBucket(&m_fpsGraph);
 	}
 
+	debugoverlay->Graph_DrawBucket(&m_jobThreads);
+
 	// always reset scissor rectangle before we start rendering
 	g_pShaderAPI->SetScissorRectangle( IRectangle(0,0,m_winSize.x, m_winSize.y) );
 	g_pShaderAPI->Clear(r_clear.GetBool(),true,false, ColorRGBA(0.1f,0.1f,0.1f,1.0f));
+
 
 	double timescale = (EqStateMgr::GetCurrentState() ? EqStateMgr::GetCurrentState()->GetTimescale() : 1.0f);
 
@@ -660,6 +666,11 @@ bool CGameHost::Frame()
 		m_nQuitState = CGameHost::QUIT_TODESKTOP;
 		return false;
 	}
+
+	debugoverlay->Text(Vector4D(1, 1, 0, 1), "-----ENGINE STATISTICS-----");
+
+	const bool allJobsDone = g_parallelJobs->AllJobsCompleted();
+	debugoverlay->Text(allJobsDone ? Vector4D(1) : Vector4D(1, 1, 0, 1), "job threads: %i/%i (%d jobs)", g_parallelJobs->GetActiveJobThreadsCount(), g_parallelJobs->GetJobThreadsCount(), g_parallelJobs->GetActiveJobsCount());
 
 	// EqUI, console and debug stuff should be drawn as normal in overdraw mode
 	// this also resets matsystem from overdraw
@@ -693,11 +704,13 @@ bool CGameHost::Frame()
 		debugoverlay->Graph_AddValue(&m_fpsGraph, gamefps);
 	}
 
-	debugoverlay->Text(Vector4D(1,1,0,1), "-----ENGINE STATISTICS-----");
+	debugoverlay->Graph_AddValue(&m_jobThreads, gamefps);
+
 	debugoverlay->Text(Vector4D(1), "System framerate: %i", fps);
 	debugoverlay->Text(Vector4D(1), "Game framerate: %i (ft=%g)", gamefps, gameFrameTime);
 	debugoverlay->Text(Vector4D(1), "DPS/DIPS: %i/%i", g_pShaderAPI->GetDrawCallsCount(), g_pShaderAPI->GetDrawIndexedPrimitiveCallsCount());
 	debugoverlay->Text(Vector4D(1), "primitives: %i", g_pShaderAPI->GetTrianglesCount());
+	
 
 	debugoverlay->Draw(m_winSize.x, m_winSize.y);
 
