@@ -43,10 +43,9 @@ BEGIN_SHADER_CLASS(BaseParticle)
 
 		SHADERDEFINES_BEGIN
 
-		// full scene shadow mapping
+		// full scene shadow mapping TODO: remove from here
 		SHADER_BEGIN_DEFINITION(materials->GetConfiguration().enableShadows, "SHADOWMAP");
-			// TODO: shadowmap quality variable
-			SHADER_DECLARE_SIMPLE_DEFINITION(true, "SHADOWMAP_HQ");
+			SHADER_DECLARE_SIMPLE_DEFINITION(false, "SHADOWMAP_HQ");
 		SHADER_END_DEFINITION;
 
 		SHADER_DECLARE_SIMPLE_DEFINITION((m_nFlags & MATERIAL_FLAG_ADDITIVE), "ADDITIVE")

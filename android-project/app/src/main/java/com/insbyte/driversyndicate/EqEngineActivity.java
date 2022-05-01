@@ -29,7 +29,10 @@ public class EqEngineActivity extends org.libsdl.app.SDLActivity{
         return new String[]{
                 "+gl_report_errors 1",
                 "+r_shadows 2",
-                "+r_skipPostProcess 1"
+                "+r_shadowQuality 0",
+                "+r_skipPostProcess 1",
+                "+in_touchzones_debug 1",
+                "+in_mouse_to_touch 0"
                 // "-norender",
         };
     }

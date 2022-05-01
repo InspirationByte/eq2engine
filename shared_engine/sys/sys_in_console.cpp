@@ -50,6 +50,21 @@ DECLARE_CMD(toggleconsole, NULL, CV_INVISIBLE)	// dummy console command
 {
 }
 
+
+DECLARE_CONCOMMAND_FN(con_toggle)
+{
+	g_consoleInput->SetVisible(!g_consoleInput->IsVisible());
+
+#if defined(PLAT_SDL) && defined(PLAT_ANDROID)
+	if (g_consoleInput->IsVisible())
+		SDL_StartTextInput();
+	else
+		SDL_StopTextInput();
+#endif
+}
+ConCommand con_toggle_p("+con_toggle", CONCOMMAND_FN(con_toggle), nullptr, CV_INVISIBLE);
+ConCommand con_toggle_m("-con_toggle", nullptr, nullptr, CV_INVISIBLE);
+
 // shows console
 DECLARE_CMD(con_show, "Show console", 0)
 {
