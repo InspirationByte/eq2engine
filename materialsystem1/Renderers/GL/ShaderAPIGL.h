@@ -319,7 +319,7 @@ protected:
 	GLTextureRef_t		CreateGLTextureFromImage(CImage* pSrc, const SamplerStateParam_t& sampler, int& wide, int& tall, int nFlags);
 
 private:
-	void					ApplyBuffers() override;
+	void					ApplyBuffers();
 
 	//OpenGL - Specific
 	void					SetupGLSamplerState(uint texTarget, const SamplerStateParam_t& sSamplingParams, int mipMapCount = 1);

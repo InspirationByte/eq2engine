@@ -192,37 +192,30 @@ enum ER_BufferAccess
 
 typedef struct VertexFormatDesc_s
 {
-	int					streamId;
-	int					elemCount;
+	int					streamId{ 0 };
+	int					elemCount{ 0 };
 
-	ER_VertexAttribType	attribType;
-	ER_AttributeFormat	attribFormat;
+	ER_VertexAttribType	attribType{ VERTEXATTRIB_UNUSED };
+	ER_AttributeFormat	attribFormat{ ATTRIBUTEFORMAT_FLOAT };
 
-	const char*			name;
+	const char*			name{ nullptr };
 
 }VertexFormatDesc_t;
 
 typedef struct SamplerStateParam_s
 {
-	SamplerStateParam_s()
-	{
-		userData = NULL;
-		compareFunc = COMP_LESS;
-	}
+	ER_TextureFilterMode		minFilter{ TEXFILTER_NEAREST };
+	ER_TextureFilterMode		magFilter{ TEXFILTER_NEAREST };
 
-	ER_TextureFilterMode		minFilter;
-	ER_TextureFilterMode		magFilter;
+	ER_CompareFunc				compareFunc{ COMP_LESS };
 
-	ER_CompareFunc				compareFunc;
+	ER_TextureAddressMode		wrapS{ TEXADDRESS_WRAP };
+	ER_TextureAddressMode		wrapT{ TEXADDRESS_WRAP };
+	ER_TextureAddressMode		wrapR{ TEXADDRESS_WRAP };
 
-	ER_TextureAddressMode		wrapS;
-	ER_TextureAddressMode		wrapT;
-	ER_TextureAddressMode		wrapR;
-	int				aniso;
-
-	float			lod;
-
-	void*			userData;		// user data to store API-specific pointers
+	int							aniso{ 4 };
+	float						lod{ 1.0f };
+	void*						userData{ nullptr };
 }SamplerStateParam_t;
 
 //---------------------------------------
@@ -340,80 +333,44 @@ enum ER_CullMode
 
 typedef struct BlendStateParam_s
 {
-	BlendStateParam_s()
-	{
-		srcFactor = BLENDFACTOR_ONE;
-		dstFactor = BLENDFACTOR_ZERO;
-		blendFunc = BLENDFUNC_ADD;
+	ER_BlendFactor		srcFactor{ BLENDFACTOR_ONE };
+	ER_BlendFactor		dstFactor{ BLENDFACTOR_ZERO };
+	ER_BlendFunction	blendFunc{ BLENDFUNC_ADD };
 
-		mask = COLORMASK_ALL;
-		blendEnable = false;
-		alphaTest = false;
-		alphaTestRef = 0.9f;
-	}
+	int mask{ COLORMASK_ALL };
 
-	ER_BlendFactor	srcFactor;
-	ER_BlendFactor	dstFactor;
-	ER_BlendFunction	blendFunc;
+	bool blendEnable { false };
+	bool alphaTest{ false };
 
-	int mask;
-
-	bool blendEnable;
-	bool alphaTest;
-
-	float alphaTestRef;
+	float alphaTestRef{ 0.9f };
 }BlendStateParam_t;
 
 typedef struct DepthStencilStateParams_s
 {
-	DepthStencilStateParams_s()
-	{
-		depthFunc = COMP_LEQUAL;
-		doStencilTest = false;
-		nStencilMask = 0xFF;
-		nStencilWriteMask = 0xFF;
-		nStencilRef = 0xFF;
-		nStencilFunc = COMP_ALWAYS,
-		nStencilFail = STENCILFUNC_KEEP;
-		nDepthFail = STENCILFUNC_KEEP;
-		nStencilPass = STENCILFUNC_KEEP;
-	}
+	bool					depthTest{ true };
+	bool					depthWrite{ false };
+	ER_CompareFunc			depthFunc{ COMP_LEQUAL };
 
-	bool					depthTest;
-	bool					depthWrite;
-	ER_CompareFunc			depthFunc;
-
-	bool					doStencilTest;
-	uint8					nStencilMask;
-	uint8					nStencilWriteMask;
-	uint8					nStencilRef;
-	ER_CompareFunc			nStencilFunc;
-	ER_StencilFunction		nStencilFail;
-	ER_StencilFunction		nDepthFail;
-	ER_StencilFunction		nStencilPass;
+	bool					doStencilTest{ false };
+	uint8					nStencilMask{ 0xFF };
+	uint8					nStencilWriteMask{ 0xFF };
+	uint8					nStencilRef{ 0xFF };
+	ER_CompareFunc			nStencilFunc{ COMP_ALWAYS };
+	ER_StencilFunction		nStencilFail{ STENCILFUNC_KEEP };
+	ER_StencilFunction		nDepthFail{ STENCILFUNC_KEEP };
+	ER_StencilFunction		nStencilPass{ STENCILFUNC_KEEP };
 
 }DepthStencilStateParams_t;
 
 typedef struct RasterizerStateParams_s
 {
-	RasterizerStateParams_s()
-	{
-		cullMode = CULL_NONE;
-		fillMode = FILL_SOLID;
-		multiSample = false;
-		scissor = false;
-		useDepthBias = false;
-		depthBias = 0.0f;
-		slopeDepthBias = 0.0f;
-	}
-
-	ER_CullMode				cullMode;
-	ER_FillMode				fillMode;
-	bool					useDepthBias;
-	float					depthBias;
-	float					slopeDepthBias;
-	bool					multiSample;
-	bool					scissor;
+	ER_CullMode				cullMode{ CULL_NONE };
+	ER_FillMode				fillMode{ FILL_SOLID };
+	bool					useDepthBias{ false };
+	float					depthBias{ 0.0f };
+	float					slopeDepthBias{ 0.0f };
+	bool					multiSample{ false };
+	bool					scissor{ false };
 }RasterizerStateParams_t;
 
 
@@ -453,37 +410,31 @@ enum ER_StateResetFlags
 
 typedef struct Sampler_s
 {
-	char	name[64];
+	char	name[64]{ 0 };
 
-	uint	index;
-	uint	gsIndex;
-	uint	vsIndex;
+	uint	index{ 0 };
+	uint	gsIndex{ 0 };
+	uint	vsIndex{ 0 };
 }Sampler_t;
 
 struct kvkeybase_t;
 
 struct shaderProgramText_t
 {
-	shaderProgramText_t() : text(nullptr), checksum(-1)
-	{}
-
-	char*				text;
-	uint32				checksum;
-	Array<EqString>	includes;
+	char*				text{ nullptr };
+	uint32				checksum{ 0 };
+	Array<EqString>		includes;
 };
 
 struct shaderProgramCompileInfo_t
 {
-	shaderProgramCompileInfo_t() : disableCache(false), apiPrefs(nullptr)
-	{}
-
 	shaderProgramText_t data;
 
 	// disables caching, always recompiled
-	bool				disableCache;
+	bool				disableCache{ false };
 
 	// apiprefs now contains all needed attributes
-	kvkeybase_t*		apiPrefs;
+	kvkeybase_t*		apiPrefs{ nullptr };
 };
 
 // shader API class for shader developers.

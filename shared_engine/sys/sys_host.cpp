@@ -661,6 +661,10 @@ bool CGameHost::Frame()
 		return false;
 	}
 
+	// EqUI, console and debug stuff should be drawn as normal in overdraw mode
+	// this also resets matsystem from overdraw
+	materials->GetConfiguration().overdrawMode = false;
+
 	// Engine frames status
 	static float gameAccTime = 0.1f;
 	static int gamefps = 0;
@@ -694,10 +698,6 @@ bool CGameHost::Frame()
 	debugoverlay->Text(Vector4D(1), "Game framerate: %i (ft=%g)", gamefps, gameFrameTime);
 	debugoverlay->Text(Vector4D(1), "DPS/DIPS: %i/%i", g_pShaderAPI->GetDrawCallsCount(), g_pShaderAPI->GetDrawIndexedPrimitiveCallsCount());
 	debugoverlay->Text(Vector4D(1), "primitives: %i", g_pShaderAPI->GetTrianglesCount());
-
-	// EqUI, console and debug stuff should be drawn as normal in overdraw mode
-	// this also resets matsystem from overdraw
-	materials->GetConfiguration().overdrawMode = false;
 
 	debugoverlay->Draw(m_winSize.x, m_winSize.y);
 

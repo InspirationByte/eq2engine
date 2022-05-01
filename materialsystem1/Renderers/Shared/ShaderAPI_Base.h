@@ -6,7 +6,8 @@
 //				For high level look for the material system (Engine)
 //				Contains FFP functions and Shader (FFP overriding programs)
 //
-//				The renderer may do anti-wallhacking functions//////////////////////////////////////////////////////////////////////////////////
+//				The renderer may do anti-wallhacking functions
+//////////////////////////////////////////////////////////////////////////////////
 
 #ifndef SHADERAPI_BASE_H
 #define SHADERAPI_BASE_H

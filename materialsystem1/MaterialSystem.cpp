@@ -422,6 +422,9 @@ void CMaterialSystem::InitDefaultMaterial()
 		overdrawParams.SetKey("BaseTexture", "_matsys_white");
 		overdrawParams.SetKey("Color", "[0.045 0.02 0.02 1.0]");
 		overdrawParams.SetKey("Additive", "1");
+		overdrawParams.SetKey("ztest", "0");
+		overdrawParams.SetKey("zwrite", "0");
+		
 
 		CMaterial* pMaterial = (CMaterial*)CreateMaterial("_overdraw", &overdrawParams);
 		pMaterial->Ref_Grab();
@@ -1317,10 +1320,8 @@ void CMaterialSystem::DrawPrimitivesFFP(ER_PrimitiveType type, Vertex3D_t *pVert
 	if(r_noffp.GetBool())
 		return;
 
-	g_pShaderAPI->SetTexture(pTexture, NULL, 0);
-
 	if(!blendParams)
-		SetBlendingStates(BLENDFACTOR_SRC_ALPHA, BLENDFACTOR_ONE_MINUS_SRC_ALPHA,BLENDFUNC_ADD, COLORMASK_ALL);
+		SetBlendingStates(BLENDFACTOR_SRC_ALPHA, BLENDFACTOR_ONE_MINUS_SRC_ALPHA, BLENDFUNC_ADD);
 	else
 		SetBlendingStates(*blendParams);
 
@@ -1334,6 +1335,7 @@ void CMaterialSystem::DrawPrimitivesFFP(ER_PrimitiveType type, Vertex3D_t *pVert
 	else
 		SetDepthStates(*depthParams);
 
+	g_pShaderAPI->SetTexture(pTexture, NULL, 0);
 	BindMaterial(GetDefaultMaterial());
 
 	CMeshBuilder meshBuilder(&m_dynamicMesh);
@@ -1350,10 +1352,6 @@ void CMaterialSystem::DrawPrimitivesFFP(ER_PrimitiveType type, Vertex3D_t *pVert
 	}
 
 	meshBuilder.End();
-
-	g_pShaderAPI->SetBlendingState(NULL);
-	g_pShaderAPI->SetRasterizerState(NULL);
-	g_pShaderAPI->SetDepthStencilState(NULL);
 }
 
 void CMaterialSystem::DrawPrimitives2DFFP(	ER_PrimitiveType type, Vertex2D_t *pVerts, int nVerts,
@@ -1364,10 +1362,8 @@ void CMaterialSystem::DrawPrimitives2DFFP(	ER_PrimitiveType type, Vertex2D_t *pV
 	if(r_noffp.GetBool())
 		return;
 
-	g_pShaderAPI->SetTexture(pTexture, NULL, 0);
-
 	if(!blendParams)
-		SetBlendingStates(BLENDFACTOR_ONE, BLENDFACTOR_ZERO,BLENDFUNC_ADD);
+		SetBlendingStates(BLENDFACTOR_ONE, BLENDFACTOR_ZERO, BLENDFUNC_ADD);
 	else
 		SetBlendingStates(*blendParams);
 
@@ -1381,6 +1377,7 @@ void CMaterialSystem::DrawPrimitives2DFFP(	ER_PrimitiveType type, Vertex2D_t *pV
 	else
 		SetDepthStates(*depthParams);
 
+	g_pShaderAPI->SetTexture(pTexture, NULL, 0);
 	BindMaterial(GetDefaultMaterial());
 
 	CMeshBuilder meshBuilder(&m_dynamicMesh);
@@ -1397,10 +1394,6 @@ void CMaterialSystem::DrawPrimitives2DFFP(	ER_PrimitiveType type, Vertex2D_t *pV
 	}
 
 	meshBuilder.End();
-
-	g_pShaderAPI->SetBlendingState(NULL);
-	g_pShaderAPI->SetRasterizerState(NULL);
-	g_pShaderAPI->SetDepthStencilState(NULL);
 }
 
 

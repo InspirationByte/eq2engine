@@ -16,10 +16,12 @@
 #include "ds/IVirtualStream.h"
 
 #include "materialsystem1/IMaterialSystem.h"
+#include "materialsystem1/MeshBuilder.h"
 
 #include "font/IFontCache.h"
 
 #include <SDL.h>
+
 
 static CInputCommandBinder s_inputCommandBinder;
 CInputCommandBinder* g_inputCommandBinder = &s_inputCommandBinder;
@@ -651,18 +653,44 @@ void CInputCommandBinder::DebugDraw(const Vector2D& screenSize)
 
 	static IEqFont* defaultFont = g_fontCache->GetFont("default", 30);
 
-	for(int i = 0; i < m_touchZones.numElem(); i++)
+	g_pShaderAPI->SetTexture(nullptr);
+	materials->SetBlendingStates(blending);
+	materials->SetRasterizerStates(CULL_FRONT);
+	materials->SetDepthStates(false, false);
+	materials->BindMaterial(materials->GetDefaultMaterial());
+
+	Array<Rectangle_t> rects;
+	rects.resize(m_touchZones.numElem());
+
+	CMeshBuilder meshBuilder(materials->GetDynamicMesh());
+
+	meshBuilder.Begin(PRIM_TRIANGLE_STRIP);
+
+	for (int i = 0; i < m_touchZones.numElem(); i++)
 	{
-		in_touchzone_t* tz = &m_touchZones[i];
+		const in_touchzone_t* tz = &m_touchZones[i];
+		Rectangle_t rect((tz->position - tz->size * 0.5f) * screenSize, (tz->position + tz->size * 0.5f) * screenSize);
 
-		Rectangle_t rect((tz->position-tz->size*0.5f)*screenSize, (tz->position+tz->size*0.5f)*screenSize);
+		rects.append(rect);
+		const Vertex2D_t touchQuad[] = { MAKETEXQUAD(rect.vleftTop.x, rect.vleftTop.y,rect.vrightBottom.x, rect.vrightBottom.y, 0) };
 
-		defaultFont->RenderText( tz->name.ToCString() , rect.vleftTop, fontParams);
+		const float touchColor = tz->finger >= 0 ? 0.25f : 0.85f;
 
-		Vertex2D_t touchQuad[] = { MAKETEXQUAD(rect.vleftTop.x, rect.vleftTop.y,rect.vrightBottom.x, rect.vrightBottom.y, 0) };
-		materials->DrawPrimitives2DFFP(PRIM_TRIANGLE_STRIP,touchQuad,elementsOf(touchQuad), nullptr, ColorRGBA(0.435,0.435,0.435, tz->finger >= 0 ? 0.25f : 0.35f  ), &blending);
+		meshBuilder.Color4f(touchColor, touchColor, touchColor, 0.25f);
+		meshBuilder.TexturedQuad2(
+			touchQuad[0].position, touchQuad[1].position, touchQuad[2].position, touchQuad[3].position,
+			touchQuad[0].texCoord, touchQuad[1].texCoord, touchQuad[2].texCoord, touchQuad[3].texCoord);
 	}
 
+	meshBuilder.End();
+
+	for (int i = 0; i < m_touchZones.numElem(); i++)
+	{
+		const in_touchzone_t* tz = &m_touchZones[i];
+		const Rectangle_t& rect = rects[i];
+
+		defaultFont->RenderText(tz->name.ToCString(), rect.vleftTop, fontParams);
+	}
 }
 
 // executes binding with selected state
