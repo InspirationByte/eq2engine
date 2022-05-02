@@ -133,6 +133,20 @@ wchar_t* xwcsistr( wchar_t* pStr, wchar_t const* pSearch );
 // finds substring in string case insensetive
 wchar_t const* xwcsistr( wchar_t const* pStr, wchar_t const* pSearch );
 
+//
+// StringToHash constexpr version
+//
+template<int idx>
+constexpr int _StringToHashConst(const char* str, int hash)
+{
+	return _StringToHashConst<idx-1>(str+1, (((hash << 5) | (hash >> 19)) + int(*str)) & 0xFFFFFF);
+}
+
+template<>
+constexpr int _StringToHashConst<-1>(const char* str, int hash) { return hash; }	// terminator
+
+#define StringToHashConst(x) (_StringToHashConst<sizeof(x) - 2>(x, sizeof(x) - 1))
+
 //------------------------------------------------------
 // string conversion
 //------------------------------------------------------

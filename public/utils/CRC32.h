@@ -88,24 +88,15 @@ void CRC32_FinishChecksum( uint32 &crcvalue );
 uint32 CRC32_BlockChecksum( const void *data, int length );
 
 template<size_t idx>
-constexpr uint32 CRC32_String(const char* str)
+constexpr uint32 _CRC32_String(const char* str)
 {
-    return (CRC32_String<idx - 1>(str) >> 8) ^ crc32_detail::crctable[(CRC32_String<idx - 1>(str) ^ str[idx]) & 0xff];
+    return (_CRC32_String<idx - 1>(str) >> 8) ^ crc32_detail::crctable[(_CRC32_String<idx - 1>(str) ^ str[idx]) & 0xff];
 }
 
-// This is the stop-recursion function
 template<>
-constexpr uint32 CRC32_String<size_t(-1)>(const char* str)
-{
-    return 0xFFFFFFFF; // CRC32_XOR_VALUE
-}
+constexpr uint32 _CRC32_String<size_t(-1)>(const char* str) { return 0xFFFFFFFF; } // CRC32_XOR_VALUE - terminator
 
 // This doesn't take into account the nul char
-#define COMPILE_TIME_CRC32_STR(x) (CRC32_String<sizeof(x) - 2>(x) ^ 0xFFFFFFFF)
-
-enum TestEnum
-{
-    CrcVal01 = COMPILE_TIME_CRC32_STR("stack-overflow"),
-};
+#define CRC32_StringConst(x) (_CRC32_String<sizeof(x) - 2>(x) ^ 0xFFFFFFFF)
 
 #endif // CRC32_H

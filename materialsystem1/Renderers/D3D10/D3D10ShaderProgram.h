@@ -64,8 +64,8 @@ protected:
 	uint					m_nPSCBuffers;
 
 	DX10ShaderConstant*		m_pConstants;
-	Sampler_t*				m_pSamplers;
-	Sampler_t*				m_pTextures;
+	DX10Sampler_t*			m_pSamplers;
+	DX10Sampler_t*			m_pTextures;
 
 	int						m_numConstants;
 	int						m_numSamplers;

@@ -168,6 +168,7 @@ int StringToHash( const char *str, bool caseIns )
 	return hash;
 }
 
+
 char* xstreatwhite(char* str)
 {
 	char c = 0;

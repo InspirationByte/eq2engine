@@ -24,7 +24,7 @@ protected:
 
 #define DECLARE_COMPONENT(name) \
 	static constexpr const char* GetName() { return name; } \
-	static constexpr int NameHash{ COMPILE_TIME_CRC32_STR(name) };
+	static constexpr int NameHash{ CRC32_StringConst(name) };
 
 // hard-linked component instantiator
 #define	ADD_COMPONENT_GETTER(type)	Type* Get<Type>() const { return &m_inst##Type; }

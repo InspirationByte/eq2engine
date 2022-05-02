@@ -408,15 +408,6 @@ enum ER_StateResetFlags
 #define BUFFER_OFFSET(i) ((char *) NULL + (i))
 #endif
 
-typedef struct Sampler_s
-{
-	char	name[64]{ 0 };
-
-	uint	index{ 0 };
-	uint	gsIndex{ 0 };
-	uint	vsIndex{ 0 };
-}Sampler_t;
-
 struct kvkeybase_t;
 
 struct shaderProgramText_t

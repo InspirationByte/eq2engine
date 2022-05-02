@@ -1971,7 +1971,7 @@ void ShaderAPID3DX9::DestroyShaderProgram(IShaderProgram* pShaderProgram)
 
 int SamplerComp(const void *s0, const void *s1)
 {
-	return strcmp(((Sampler_t *) s0)->name, ((Sampler_t *) s1)->name);
+	return strcmp(((DX9Sampler_t*) s0)->name, ((DX9Sampler_t*) s1)->name);
 }
 
 int ConstantComp(const void *s0, const void *s1)
@@ -2043,10 +2043,10 @@ bool ShaderAPID3DX9::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 
 				// read samplers and constants
 
-				Sampler_t*			samplers = (Sampler_t  *) malloc(scHdr.numSamplers * sizeof(Sampler_t));
-				DX9ShaderConstant*	constants = (DX9ShaderConstant *) malloc(scHdr.numConstants * sizeof(DX9ShaderConstant));
+				DX9Sampler_t*		samplers = (DX9Sampler_t*) malloc(scHdr.numSamplers * sizeof(DX9Sampler_t));
+				DX9ShaderConstant*	constants = (DX9ShaderConstant*) malloc(scHdr.numConstants * sizeof(DX9ShaderConstant));
 
-				pStream->Read(samplers, scHdr.numSamplers, sizeof(Sampler_t));
+				pStream->Read(samplers, scHdr.numSamplers, sizeof(DX9Sampler_t));
 				pStream->Read(constants, scHdr.numConstants, sizeof(DX9ShaderConstant));
 
 				// assign them
@@ -2292,8 +2292,8 @@ bool ShaderAPID3DX9::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 
 	uint count = vsDesc.Constants + psDesc.Constants;
 
-	Sampler_t  *samplers			= (Sampler_t  *) malloc(count * sizeof(Sampler_t));
-	DX9ShaderConstant *constants	= (DX9ShaderConstant *) malloc(count * sizeof(DX9ShaderConstant));
+	DX9Sampler_t* samplers			= (DX9Sampler_t*) malloc(count * sizeof(DX9Sampler_t));
+	DX9ShaderConstant* constants	= (DX9ShaderConstant *) malloc(count * sizeof(DX9ShaderConstant));
 
 	uint nSamplers  = 0;
 	uint nConstants = 0;
@@ -2368,9 +2368,9 @@ bool ShaderAPID3DX9::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 	}
 
 	// Shorten arrays to actual count
-	samplers  = (Sampler_t  *) realloc(samplers,  nSamplers  * sizeof(Sampler_t));
+	samplers  = (DX9Sampler_t*) realloc(samplers,  nSamplers  * sizeof(DX9Sampler_t));
 	constants = (DX9ShaderConstant *) realloc(constants, nConstants * sizeof(DX9ShaderConstant));
-	qsort(samplers,  nSamplers,  sizeof(Sampler_t),  SamplerComp);
+	qsort(samplers,  nSamplers,  sizeof(DX9Sampler_t),  SamplerComp);
 	qsort(constants, nConstants, sizeof(DX9ShaderConstant), ConstantComp);
 
 	if(pStream)
@@ -2379,7 +2379,7 @@ bool ShaderAPID3DX9::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 		scHdr.numConstants = nConstants;
 		scHdr.checksum = info.data.checksum;
 
-		pStream->Write(samplers, nSamplers, sizeof(Sampler_t));
+		pStream->Write(samplers, nSamplers, sizeof(DX9Sampler_t));
 		pStream->Write(constants, nConstants, sizeof(DX9ShaderConstant));
 
 		pStream->Seek(0,VS_SEEK_SET);
@@ -2416,7 +2416,7 @@ int	ShaderAPID3DX9::GetSamplerUnit(IShaderProgram* pProgram,const char* pszSampl
 	if(!pShader)
 		return -1;
 
-	Sampler_t *samplers = pShader->m_pSamplers;
+	DX9Sampler_t* samplers = pShader->m_pSamplers;
 	int minSampler = 0;
 	int maxSampler = pShader->m_numSamplers - 1;
 

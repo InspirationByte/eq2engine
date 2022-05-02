@@ -26,6 +26,15 @@ typedef struct DX9ShaderConstant
 	int		constFlags;
 }DX9ShaderConstant_t;
 
+typedef struct DX9Sampler_s
+{
+	char	name[64]{ 0 };
+
+	uint	index{ 0 };
+	uint	gsIndex{ 0 };
+	uint	vsIndex{ 0 };
+}DX9Sampler_t;
+
 struct ID3DXConstantTable;
 
 class CD3D9ShaderProgram : public IShaderProgram
@@ -53,7 +62,7 @@ protected:
 	ID3DXConstantTable*		m_pPSConstants;
 
 	DX9ShaderConstant_t*	m_pConstants;
-	Sampler_t*				m_pSamplers;
+	DX9Sampler_t*			m_pSamplers;
 
 	int						m_numConstants;
 	int						m_numSamplers;
