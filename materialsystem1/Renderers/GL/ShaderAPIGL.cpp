@@ -1791,6 +1791,9 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 			{
 				glAttachShader(cdata.prog->m_program, cdata.vertexShader);
 				GLCheckError("attach vert shader");
+
+				glDeleteShader(cdata.vertexShader);
+				GLCheckError("delete shaders");
 			}
 			else
 			{
@@ -1860,6 +1863,9 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 			{
 				glAttachShader(cdata.prog->m_program, cdata.fragmentShader);
 				GLCheckError("attach frag shader");
+
+				glDeleteShader(cdata.fragmentShader);
+				GLCheckError("delete shaders");
 			}
 			else
 			{
@@ -1903,13 +1909,6 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 
 			glGetProgramiv(cdata.prog->m_program, GL_LINK_STATUS, &cdata.linkResult);
 
-			// delete intermediates
-			glDeleteShader(cdata.fragmentShader);
-			GLCheckError("delete shaders");
-
-			glDeleteShader(cdata.vertexShader);
-			GLCheckError("delete shaders");
-
 			if (!cdata.linkResult)
 			{
 				char infoLog[2048];
@@ -1922,7 +1921,6 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 
 			// use freshly generated program to retirieve constants (uniforms) and samplers
 			glUseProgram(cdata.prog->m_program);
-
 			GLCheckError("test use program");
 
 			// intel buggygl fix
