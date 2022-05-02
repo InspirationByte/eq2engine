@@ -1951,6 +1951,8 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 
 			char* tmpName = new char[maxLength+1];
 
+			DevMsg(DEVMSG_SHADERAPI, "[DEBUG] getting UNIFORMS from '%s'\n", prog->GetName());
+
 			for (int i = 0; i < uniformCount; i++)
 			{
 				GLenum type;
@@ -1997,7 +1999,7 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 						GLShaderConstant_t& uni = uniforms.append();
 
 						strncpy(uni.name, tmpName, length);
-						uni.name[length - 1] = 0;
+						uni.name[length] = 0;
 
 						uni.index = glGetUniformLocation(prog->m_program, tmpName);
 						uni.type = GetConstantType(type);
@@ -2652,8 +2654,8 @@ void ShaderAPIGL::SetTexture( ITexture* pTexture, const char* pszName, int index
 
 	const int unitIndex = GetSamplerUnit((CGLShaderProgram*)m_pSelectedShader, pszName);
 
-	if (unitIndex != -1)
-		index = unitIndex;
+	if (unitIndex == -1)
+		return;
 
-	SetTextureOnIndex(pTexture, index);
+	SetTextureOnIndex(pTexture, unitIndex);
 }

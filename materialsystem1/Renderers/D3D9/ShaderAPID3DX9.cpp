@@ -2442,10 +2442,10 @@ void ShaderAPID3DX9::SetTexture( ITexture* pTexture, const char* pszName, int in
 
 	const int unitIndex = GetSamplerUnit(m_pSelectedShader, pszName);
 
-	if (unitIndex != -1)
-		index = unitIndex;
+	if (unitIndex == -1)
+		return;
 
-	SetTextureOnIndex(pTexture, index);
+	SetTextureOnIndex(pTexture, unitIndex);
 }
 
 // RAW Constant (Used for structure types, etc.)
