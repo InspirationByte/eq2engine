@@ -336,8 +336,6 @@ public:
 	///< Simulates physics
 	void							SimulateStep( float deltaTime, int iteration, FNSIMULATECALLBACK preIntegrFunc);	///< simulates physics
 
-	static void						PerformCollisionDetectionJob(void* thisPhys, int i);
-
 	//------------------------------------------------------
 
 	//------------------------------------------------------

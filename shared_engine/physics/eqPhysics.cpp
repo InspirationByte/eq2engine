@@ -1347,6 +1347,9 @@ void CEqPhysics::SimulateStep(float deltaTime, int iteration, FNSIMULATECALLBACK
 			contr->Update( m_fDt );
 	}
 	
+	Array<CEqRigidBody*> movingMoveables;
+	movingMoveables.resize(m_moveable.numElem());
+
 	// move all bodies
 	for (int i = 0; i < m_moveable.numElem(); i++)
 	{
@@ -1363,6 +1366,9 @@ void CEqPhysics::SimulateStep(float deltaTime, int iteration, FNSIMULATECALLBACK
 
 		// apply velocities
 		IntegrateSingle(body);
+
+		if (!body->IsFrozen())
+			movingMoveables.append(body);
 	}
 
 	m_fDt = deltaTime;
@@ -1371,24 +1377,24 @@ void CEqPhysics::SimulateStep(float deltaTime, int iteration, FNSIMULATECALLBACK
 		preIntegrFunc(m_fDt, iteration);
 
 	// calculate collisions
-	for (int i = 0; i < m_moveable.numElem(); i++)
+	for (int i = 0; i < movingMoveables.numElem(); i++)
 	{
-		DetectCollisionsSingle(m_moveable[i]);
+		DetectCollisionsSingle(movingMoveables[i]);
 	}
 
 	// TODO: job barrier
 
 	// solve positions
-	for (int i = 0; i < m_moveable.numElem(); i++)
+	for (int i = 0; i < movingMoveables.numElem(); i++)
 	{
-		CEqRigidBody* body = m_moveable[i];
+		CEqRigidBody* body = movingMoveables[i];
 		body->Update(m_fDt);
 	}
 	
 	// process generated contact pairs
-	for (int i = 0; i < m_moveable.numElem(); i++)
+	for (int i = 0; i < movingMoveables.numElem(); i++)
 	{
-		CEqRigidBody* body = m_moveable[i];
+		CEqRigidBody* body = movingMoveables[i];
 
 		Array<ContactPair_t>& pairs = body->m_contactPairs;
 		int numContactPairs = pairs.numElem();
@@ -1412,12 +1418,6 @@ void CEqPhysics::SimulateStep(float deltaTime, int iteration, FNSIMULATECALLBACK
 	}
 
 	m_numRayQueries = 0;
-}
-
-void CEqPhysics::PerformCollisionDetectionJob(void* thisPhys, int i)
-{
-	CEqPhysics* thisPhysics = (CEqPhysics*)thisPhys;
-	thisPhysics->DetectCollisionsSingle(thisPhysics->m_moveable[i]);
 }
 
 //----------------------------------------------------------------------------------------------------

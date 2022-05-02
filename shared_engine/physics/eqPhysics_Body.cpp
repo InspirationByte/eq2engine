@@ -175,7 +175,7 @@ void CEqRigidBody::Freeze()
 bool CEqRigidBody::IsFrozen()
 {
 	int flags = m_flags;
-	return ((flags & BODY_FROZEN) || (flags & BODY_FORCE_FREEZE));
+	return flags & (BODY_FROZEN | BODY_FORCE_FREEZE);
 }
 
 bool CEqRigidBody::IsCanIntegrate(bool checkIgnore)
