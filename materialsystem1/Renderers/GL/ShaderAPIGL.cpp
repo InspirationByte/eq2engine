@@ -1729,22 +1729,25 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 	if (!info.data.text)
 		return false;
 
-	CGLShaderProgram* prog = (CGLShaderProgram*)pShaderOutput;
-	GLint vsResult, fsResult, linkResult;
+	struct compileData
+	{
+		CGLShaderProgram* prog;
+		GLint vsResult, fsResult, linkResult;
 
-	// intermediates
-	GLhandleARB	vertexShader;
-	GLhandleARB	fragmentShader;
-	// GLhandleARB geomShader;
-	// GLhandleARB hullShader;
+		// intermediates
+		GLhandleARB	vertexShader;
+		GLhandleARB	fragmentShader;
+		// GLhandleARB geomShader;
+		// GLhandleARB hullShader;
+	} cdata;
+
+	cdata.prog = (CGLShaderProgram*)pShaderOutput;
 
 	int result;
 
 	// compile vertex
 	if(info.data.text)
 	{
-		GLint* pvsResult = &vsResult;
-
 		EqString shaderString;
 
 #ifdef USE_GLES2
@@ -1767,26 +1770,26 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 			info.data.text
 		};
 
-		result = g_glWorker.WaitForExecute(__FUNCTION__, [prog, pvsResult, sStr, &vertexShader]() {
+		result = g_glWorker.WaitForExecute(__FUNCTION__, [&cdata, sStr]() {
 
 			// create GL program
-			prog->m_program = glCreateProgram();
+			cdata.prog->m_program = glCreateProgram();
 			if (!GLCheckError("create program"))
 				return -1;
 
-			vertexShader = glCreateShader(GL_VERTEX_SHADER);
+			cdata.vertexShader = glCreateShader(GL_VERTEX_SHADER);
 			if (!GLCheckError("create vertex shader"))
 				return -1;
 
-			glShaderSource(vertexShader, sizeof(sStr) / sizeof(sStr[0]), (const GLchar **)sStr, NULL);
-			glCompileShader(vertexShader);
+			glShaderSource(cdata.vertexShader, sizeof(sStr) / sizeof(sStr[0]), (const GLchar **)sStr, NULL);
+			glCompileShader(cdata.vertexShader);
 			GLCheckError("compile vert shader");
 
-			glGetShaderiv(vertexShader, GL_COMPILE_STATUS, pvsResult);
+			glGetShaderiv(cdata.vertexShader, GL_COMPILE_STATUS, &cdata.vsResult);
 
-			if (*pvsResult)
+			if (cdata.vsResult)
 			{
-				glAttachShader(prog->m_program, vertexShader);
+				glAttachShader(cdata.prog->m_program, cdata.vertexShader);
 				GLCheckError("attach vert shader");
 			}
 			else
@@ -1794,8 +1797,8 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 				char infoLog[2048];
 				GLint len;
 
-				glGetShaderInfoLog(vertexShader, sizeof(infoLog), &len, infoLog);
-				MsgError("Vertex shader %s error:\n%s\n", prog->GetName(), infoLog);
+				glGetShaderInfoLog(cdata.vertexShader, sizeof(infoLog), &len, infoLog);
+				MsgError("Vertex shader %s error:\n%s\n", cdata.prog->GetName(), infoLog);
 
 				return -1;
 			}
@@ -1841,23 +1844,21 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 			info.data.text
 		};
 
-		GLint* pfsResult = &fsResult;
+		result = g_glWorker.WaitForExecute(__FUNCTION__, [&cdata, sStr]() {
 
-		result = g_glWorker.WaitForExecute(__FUNCTION__, [prog, pfsResult, sStr, &fragmentShader]() {
-
-			fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+			cdata.fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
 			if (!GLCheckError("create fragment shader"))
 				return -1;
 
-			glShaderSource(fragmentShader, sizeof(sStr) / sizeof(sStr[0]), (const GLchar**)sStr, NULL);
-			glCompileShader(fragmentShader);
+			glShaderSource(cdata.fragmentShader, sizeof(sStr) / sizeof(sStr[0]), (const GLchar**)sStr, NULL);
+			glCompileShader(cdata.fragmentShader);
 			GLCheckError("compile frag shader");
 
-			glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, pfsResult);
+			glGetShaderiv(cdata.fragmentShader, GL_COMPILE_STATUS, &cdata.fsResult);
 
-			if (*pfsResult)
+			if (cdata.fsResult)
 			{
-				glAttachShader(prog->m_program, fragmentShader);
+				glAttachShader(cdata.prog->m_program, cdata.fragmentShader);
 				GLCheckError("attach frag shader");
 			}
 			else
@@ -1865,8 +1866,8 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 				char infoLog[2048];
 				GLint len;
 
-				glGetShaderInfoLog(fragmentShader, sizeof(infoLog), &len, infoLog);
-				MsgError("Pixel shader %s error:\n%s\n", prog->GetName(), infoLog);
+				glGetShaderInfoLog(cdata.fragmentShader, sizeof(infoLog), &len, infoLog);
+				MsgError("Pixel shader %s error:\n%s\n", cdata.prog->GetName(), infoLog);
 				return -1;
 			}
 
@@ -1884,11 +1885,10 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 
 	}
 	else
-		fsResult = GL_TRUE;
+		cdata.fsResult = GL_TRUE;
 
-	if(fsResult && vsResult)
+	if(cdata.fsResult && cdata.vsResult)
 	{
-		GLint* plinkResult = &linkResult;
 		const shaderProgramCompileInfo_t* pInfo = &info;
 
 		EGraphicsVendor vendor = m_vendor;
@@ -1896,32 +1896,32 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 		Array<GLShaderSampler_t> samplers;
 		Array<GLShaderConstant_t> uniforms;
 
-		result = g_glWorker.WaitForExecute(__FUNCTION__, [prog, pInfo, plinkResult, vendor, &vertexShader, &fragmentShader, &samplers, &uniforms]() {
+		result = g_glWorker.WaitForExecute(__FUNCTION__, [&cdata, &samplers, &uniforms, &vendor]() {
 			// link program and go
-			glLinkProgram(prog->m_program);
+			glLinkProgram(cdata.prog->m_program);
 			GLCheckError("link program");
 
-			glGetProgramiv(prog->m_program, GL_LINK_STATUS, plinkResult);
+			glGetProgramiv(cdata.prog->m_program, GL_LINK_STATUS, &cdata.linkResult);
 
 			// delete intermediates
-			glDeleteShader(fragmentShader);
+			glDeleteShader(cdata.fragmentShader);
 			GLCheckError("delete shaders");
 
-			glDeleteShader(vertexShader);
+			glDeleteShader(cdata.vertexShader);
 			GLCheckError("delete shaders");
 
-			if (!(*plinkResult))
+			if (!cdata.linkResult)
 			{
 				char infoLog[2048];
 				GLint len;
 
-				glGetProgramInfoLog(prog->m_program, sizeof(infoLog), &len, infoLog);
-				MsgError("Shader '%s' link error: %s\n", prog->GetName(), infoLog);
+				glGetProgramInfoLog(cdata.prog->m_program, sizeof(infoLog), &len, infoLog);
+				MsgError("Shader '%s' link error: %s\n", cdata.prog->GetName(), infoLog);
 				return -1;
 			}
 
 			// use freshly generated program to retirieve constants (uniforms) and samplers
-			glUseProgram(prog->m_program);
+			glUseProgram(cdata.prog->m_program);
 
 			GLCheckError("test use program");
 
@@ -1929,12 +1929,12 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 			if (vendor == VENDOR_INTEL)
 			{
 				glUseProgram(0);
-				glUseProgram(prog->m_program);
+				glUseProgram(cdata.prog->m_program);
 			}
 
 			GLint uniformCount, maxLength;
-			glGetProgramiv(prog->m_program, GL_ACTIVE_UNIFORMS, &uniformCount);
-			glGetProgramiv(prog->m_program, GL_ACTIVE_UNIFORM_MAX_LENGTH, &maxLength);
+			glGetProgramiv(cdata.prog->m_program, GL_ACTIVE_UNIFORMS, &uniformCount);
+			glGetProgramiv(cdata.prog->m_program, GL_ACTIVE_UNIFORM_MAX_LENGTH, &maxLength);
 
 			if (maxLength == 0 && (uniformCount > 0 || uniformCount > 256))
 			{
@@ -1951,14 +1951,14 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 
 			char* tmpName = new char[maxLength+1];
 
-			DevMsg(DEVMSG_SHADERAPI, "[DEBUG] getting UNIFORMS from '%s'\n", prog->GetName());
+			DevMsg(DEVMSG_SHADERAPI, "[DEBUG] getting UNIFORMS from '%s'\n", cdata.prog->GetName());
 
 			for (int i = 0; i < uniformCount; i++)
 			{
 				GLenum type;
 				GLint length, size;
 
-				glGetActiveUniform(prog->m_program, i, maxLength, &length, &size, &type, tmpName);
+				glGetActiveUniform(cdata.prog->m_program, i, maxLength, &length, &size, &type, tmpName);
 
 	#ifdef USE_GLES2
 				if (type >= GL_SAMPLER_2D && type <= GL_SAMPLER_CUBE_SHADOW)
@@ -1969,7 +1969,7 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 					const int samplerNum = samplers.numElem();
 
 					// Assign samplers to image units
-					const GLint location = glGetUniformLocation(prog->m_program, tmpName);
+					const GLint location = glGetUniformLocation(cdata.prog->m_program, tmpName);
 					glUniform1i(location, samplerNum);
 
 					DevMsg(DEVMSG_SHADERAPI, "[DEBUG] retrieving sampler '%s' at %d (location = %d)\n", tmpName, samplerNum, location);
@@ -2001,7 +2001,7 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 						strncpy(uni.name, tmpName, length);
 						uni.name[length] = 0;
 
-						uni.index = glGetUniformLocation(prog->m_program, tmpName);
+						uni.index = glGetUniformLocation(cdata.prog->m_program, tmpName);
 						uni.type = GetConstantType(type);
 							
 						int totalElements = 1;
@@ -2013,7 +2013,7 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 							{
 								GLint tmpLength, tmpSize;
 								GLenum tmpType;
-								glGetActiveUniform(prog->m_program, j, maxLength, &tmpLength, &tmpSize, &tmpType, tmpName);
+								glGetActiveUniform(cdata.prog->m_program, j, maxLength, &tmpLength, &tmpSize, &tmpType, tmpName);
 
 								// we only expect arrays
 								bracket = strchr(tmpName, '[');
@@ -2047,8 +2047,8 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 		if (result == -1)
 			return false;
 
-		Map<int, GLShaderSampler_t>& samplerMap = prog->m_samplers;
-		Map<int, GLShaderConstant_t>& constantMap = prog->m_constants;
+		Map<int, GLShaderSampler_t>& samplerMap = cdata.prog->m_samplers;
+		Map<int, GLShaderConstant_t>& constantMap = cdata.prog->m_constants;
 
 		// build a map
 		for (int i = 0; i < samplers.numElem(); ++i)
