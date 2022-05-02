@@ -428,20 +428,20 @@ public:
 	virtual void				SetShader(IShaderProgram* pShader) = 0;
 
 	// Shader constants setup
-	virtual int					SetShaderConstantInt(const char *pszName, const int constant, int const_id = -1) = 0;
-	virtual int					SetShaderConstantFloat(const char *pszName, const float constant, int const_id = -1) = 0;
-	virtual int					SetShaderConstantVector2D(const char *pszName, const Vector2D &constant, int const_id = -1) = 0;
-	virtual int					SetShaderConstantVector3D(const char *pszName, const Vector3D &constant, int const_id = -1) = 0;
-	virtual int					SetShaderConstantVector4D(const char *pszName, const Vector4D &constant, int const_id = -1) = 0;
-	virtual int					SetShaderConstantMatrix4(const char *pszName, const Matrix4x4 &constant, int const_id = -1) = 0;
-	virtual int					SetShaderConstantArrayFloat(const char *pszName, const float *constant, int count, int const_id = -1) = 0;
-	virtual int					SetShaderConstantArrayVector2D(const char *pszName, const Vector2D *constant, int count, int const_id = -1) = 0;
-	virtual int					SetShaderConstantArrayVector3D(const char *pszName, const Vector3D *constant, int count, int const_id = -1) = 0;
-	virtual int					SetShaderConstantArrayVector4D(const char *pszName, const Vector4D *constant, int count, int const_id = -1) = 0;
-	virtual int					SetShaderConstantArrayMatrix4(const char *pszName, const Matrix4x4 *constant, int count, int const_id = -1) = 0;
+	virtual void				SetShaderConstantInt(const char *pszName, const int constant) = 0;
+	virtual void				SetShaderConstantFloat(const char *pszName, const float constant) = 0;
+	virtual void				SetShaderConstantVector2D(const char *pszName, const Vector2D &constant) = 0;
+	virtual void				SetShaderConstantVector3D(const char *pszName, const Vector3D &constant) = 0;
+	virtual void				SetShaderConstantVector4D(const char *pszName, const Vector4D &constant) = 0;
+	virtual void				SetShaderConstantMatrix4(const char *pszName, const Matrix4x4 &constant) = 0;
+	virtual void				SetShaderConstantArrayFloat(const char *pszName, const float *constant, int count) = 0;
+	virtual void				SetShaderConstantArrayVector2D(const char *pszName, const Vector2D *constant, int count) = 0;
+	virtual void				SetShaderConstantArrayVector3D(const char *pszName, const Vector3D *constant, int count) = 0;
+	virtual void				SetShaderConstantArrayVector4D(const char *pszName, const Vector4D *constant, int count) = 0;
+	virtual void				SetShaderConstantArrayMatrix4(const char *pszName, const Matrix4x4 *constant, int count) = 0;
 
 	// Shader constants setup (RAW mode, use for different structures)
-    virtual int					SetShaderConstantRaw(const char *pszName, const void *data, int nSize, int const_id = -1) = 0;
+    virtual void				SetShaderConstantRaw(const char *pszName, const void *data, int nSize) = 0;
 
 
 //-------------------------------------------------------------

@@ -580,19 +580,20 @@ void ShaderAPIGL::ApplyConstants()
 	if (!currentShader)
 		return;
 
-	for (int i = 0; i < currentShader->m_numConstants; i++)
-	{
-		GLShaderConstant_t& uni = currentShader->m_constants[i];
+	Map<int, GLShaderConstant_t>& constants = currentShader->m_constants;
 
+	for (auto it = constants.begin(); it != constants.end(); ++it)
+	{
+		GLShaderConstant_t& uni = *it;
 		if (!uni.dirty)
 			continue;
 
 		uni.dirty = false;
 
 		if (uni.type >= CONSTANT_MATRIX2x2)
-			((UNIFORM_MAT_FUNC) s_uniformFuncs[uni.type])(uni.index, uni.nElements, GL_TRUE, (float *) uni.data);
+			((UNIFORM_MAT_FUNC)s_uniformFuncs[uni.type])(uni.index, uni.nElements, GL_TRUE, (float*)uni.data);
 		else
-			((UNIFORM_FUNC) s_uniformFuncs[uni.type])(uni.index, uni.nElements, (float *) uni.data);
+			((UNIFORM_FUNC)s_uniformFuncs[uni.type])(uni.index, uni.nElements, (float*)uni.data);
 	}
 }
 
@@ -1713,16 +1714,6 @@ void ShaderAPIGL::DestroyShaderProgram(IShaderProgram* pShaderProgram)
 
 #define GLSL_VERTEX_ATTRIB_START 0	// this is compatibility only
 
-int constantComparator(const void *s0, const void *s1)
-{
-	return strcmp(((GLShaderConstant_t *) s0)->name, ((GLShaderConstant_t *) s1)->name);
-}
-
-int samplerComparator(const void *sampler0, const void *sampler1)
-{
-	return strcmp(((GLShaderSampler_t *) sampler0)->name, ((GLShaderSampler_t *) sampler1)->name);
-}
-
 // Load any shader from stream
 bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const shaderProgramCompileInfo_t& info, const char* extra)
 {
@@ -1740,6 +1731,12 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 
 	CGLShaderProgram* prog = (CGLShaderProgram*)pShaderOutput;
 	GLint vsResult, fsResult, linkResult;
+
+	// intermediates
+	GLhandleARB	vertexShader;
+	GLhandleARB	fragmentShader;
+	// GLhandleARB geomShader;
+	// GLhandleARB hullShader;
 
 	int result;
 
@@ -1770,29 +1767,26 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 			info.data.text
 		};
 
-		result = g_glWorker.WaitForExecute(__FUNCTION__, [prog, pvsResult, sStr]() {
+		result = g_glWorker.WaitForExecute(__FUNCTION__, [prog, pvsResult, sStr, &vertexShader]() {
 
 			// create GL program
 			prog->m_program = glCreateProgram();
-
 			if (!GLCheckError("create program"))
 				return -1;
 
-			prog->m_vertexShader = glCreateShader(GL_VERTEX_SHADER);
-
+			vertexShader = glCreateShader(GL_VERTEX_SHADER);
 			if (!GLCheckError("create vertex shader"))
 				return -1;
 
-			glShaderSource(prog->m_vertexShader, sizeof(sStr) / sizeof(sStr[0]), (const GLchar **)sStr, NULL);
-			glCompileShader(prog->m_vertexShader);
-
+			glShaderSource(vertexShader, sizeof(sStr) / sizeof(sStr[0]), (const GLchar **)sStr, NULL);
+			glCompileShader(vertexShader);
 			GLCheckError("compile vert shader");
 
-			glGetShaderiv(prog->m_vertexShader, GL_COMPILE_STATUS, pvsResult);
+			glGetShaderiv(vertexShader, GL_COMPILE_STATUS, pvsResult);
 
 			if (*pvsResult)
 			{
-				glAttachShader(prog->m_program, prog->m_vertexShader);
+				glAttachShader(prog->m_program, vertexShader);
 				GLCheckError("attach vert shader");
 			}
 			else
@@ -1800,7 +1794,7 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 				char infoLog[2048];
 				GLint len;
 
-				glGetShaderInfoLog(prog->m_vertexShader, sizeof(infoLog), &len, infoLog);
+				glGetShaderInfoLog(vertexShader, sizeof(infoLog), &len, infoLog);
 				MsgError("Vertex shader %s error:\n%s\n", prog->GetName(), infoLog);
 
 				return -1;
@@ -1849,21 +1843,21 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 
 		GLint* pfsResult = &fsResult;
 
-		result = g_glWorker.WaitForExecute(__FUNCTION__, [prog, pfsResult, sStr]() {
-			prog->m_fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+		result = g_glWorker.WaitForExecute(__FUNCTION__, [prog, pfsResult, sStr, &fragmentShader]() {
 
+			fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
 			if (!GLCheckError("create fragment shader"))
 				return -1;
 
-			glShaderSource(prog->m_fragmentShader, sizeof(sStr) / sizeof(sStr[0]), (const GLchar**)sStr, NULL);
-			glCompileShader(prog->m_fragmentShader);
-			glGetShaderiv(prog->m_fragmentShader, GL_COMPILE_STATUS, pfsResult);
-
+			glShaderSource(fragmentShader, sizeof(sStr) / sizeof(sStr[0]), (const GLchar**)sStr, NULL);
+			glCompileShader(fragmentShader);
 			GLCheckError("compile frag shader");
+
+			glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, pfsResult);
 
 			if (*pfsResult)
 			{
-				glAttachShader(prog->m_program, prog->m_fragmentShader);
+				glAttachShader(prog->m_program, fragmentShader);
 				GLCheckError("attach frag shader");
 			}
 			else
@@ -1871,7 +1865,7 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 				char infoLog[2048];
 				GLint len;
 
-				glGetShaderInfoLog(prog->m_fragmentShader, sizeof(infoLog), &len, infoLog);
+				glGetShaderInfoLog(fragmentShader, sizeof(infoLog), &len, infoLog);
 				MsgError("Pixel shader %s error:\n%s\n", prog->GetName(), infoLog);
 				return -1;
 			}
@@ -1897,17 +1891,24 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 		GLint* plinkResult = &linkResult;
 		const shaderProgramCompileInfo_t* pInfo = &info;
 
-		// get current set program
-		GLuint currProgram = (m_pCurrentShader == NULL) ? 0 : ((CGLShaderProgram*)m_pCurrentShader)->m_program;
-
 		EGraphicsVendor vendor = m_vendor;
 
-		result = g_glWorker.WaitForExecute(__FUNCTION__, [prog, pInfo, plinkResult, vendor, currProgram]() {
+		Array<GLShaderSampler_t> samplers;
+		Array<GLShaderConstant_t> uniforms;
+
+		result = g_glWorker.WaitForExecute(__FUNCTION__, [prog, pInfo, plinkResult, vendor, &vertexShader, &fragmentShader, &samplers, &uniforms]() {
 			// link program and go
 			glLinkProgram(prog->m_program);
+			GLCheckError("link program");
+
 			glGetProgramiv(prog->m_program, GL_LINK_STATUS, plinkResult);
 
-			GLCheckError("link program");
+			// delete intermediates
+			glDeleteShader(fragmentShader);
+			GLCheckError("delete shaders");
+
+			glDeleteShader(vertexShader);
+			GLCheckError("delete shaders");
 
 			if (!(*plinkResult))
 			{
@@ -1945,11 +1946,8 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 				uniformCount = 0;
 			}
 
-			GLShaderSampler_t*	samplers = (GLShaderSampler_t  *)malloc(uniformCount * sizeof(GLShaderSampler_t));
-			GLShaderConstant_t*	uniforms = (GLShaderConstant_t *)malloc(uniformCount * sizeof(GLShaderConstant_t));
-
-			int nSamplers = 0;
-			int nUniforms = 0;
+			samplers.resize(uniformCount);
+			uniforms.resize(uniformCount);
 
 			char* tmpName = new char[maxLength+1];
 
@@ -1966,116 +1964,110 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 				if (type >= GL_SAMPLER_1D && type <= GL_SAMPLER_2D_RECT_SHADOW)
 	#endif // USE_GLES3
 				{
+					const int samplerNum = samplers.numElem();
+
 					// Assign samplers to image units
-					GLint location = glGetUniformLocation(prog->m_program, tmpName);
-					glUniform1i(location, nSamplers);
+					const GLint location = glGetUniformLocation(prog->m_program, tmpName);
+					glUniform1i(location, samplerNum);
 
-					DevMsg(DEVMSG_SHADERAPI, "[DEBUG] retrieving sampler '%s' at %d (location = %d)\n", tmpName, nSamplers, location);
+					DevMsg(DEVMSG_SHADERAPI, "[DEBUG] retrieving sampler '%s' at %d (location = %d)\n", tmpName, samplerNum, location);
 
-					GLShaderSampler_t& sp = samplers[nSamplers];
-					sp.index = nSamplers++;
+					GLShaderSampler_t& sp = samplers.append();
+					sp.index = samplerNum;
+					sp.uniformLoc = location;
 					strcpy(sp.name, tmpName);
 				}
 				else
 				{
 					// Store all non-gl uniforms
-					if (strncmp(tmpName, "gl_", 3) != 0)
+					if (!strncmp(tmpName, "gl_", 3))
+						continue;
+
+					const int uniformNum = uniforms.numElem();
+
+					DevMsg(DEVMSG_SHADERAPI, "[DEBUG] retrieving uniform '%s' at %d\n", tmpName, uniformNum);
+
+					// also cut off name at the bracket
+					char* bracket = strchr(tmpName, '[');
+					if (!bracket || (bracket[1] == '0' && bracket[2] == ']'))
 					{
-						DevMsg(DEVMSG_SHADERAPI, "[DEBUG] retrieving uniform '%s' at %d\n", tmpName, nUniforms);
+						if (bracket)
+							length = (GLint)(bracket - tmpName);
 
-						// also cut off name at the bracket
-						char* bracket = strchr(tmpName, '[');
-						if (bracket == NULL || (bracket[1] == '0' && bracket[2] == ']'))
-						{
-							if (bracket)
-								length = (GLint)(bracket - tmpName);
+						GLShaderConstant_t& uni = uniforms.append();
 
-							GLShaderConstant_t& uni = uniforms[nUniforms++];
+						strncpy(uni.name, tmpName, length);
+						uni.name[length - 1] = 0;
 
-							EqString uniformName(tmpName, length);
-
-							strcpy(uni.name, uniformName);
-							uni.index = glGetUniformLocation(prog->m_program, tmpName);
-							uni.type = GetConstantType(type);
+						uni.index = glGetUniformLocation(prog->m_program, tmpName);
+						uni.type = GetConstantType(type);
 							
-							int totalElements = 1;
+						int totalElements = 1;
 
-							// detect the array size by getting next valid uniforms
-							if (bracket)
+						// detect the array size by getting next valid uniforms
+						if (bracket)
+						{
+							for (int j = i + 1; j < uniformCount; j++)
 							{
-								for (int j = i + 1; j < uniformCount; j++)
+								GLint tmpLength, tmpSize;
+								GLenum tmpType;
+								glGetActiveUniform(prog->m_program, j, maxLength, &tmpLength, &tmpSize, &tmpType, tmpName);
+
+								// we only expect arrays
+								bracket = strchr(tmpName, '[');
+								if(bracket)
 								{
-									GLint tmpLength, tmpSize;
-									GLenum tmpType;
-									glGetActiveUniform(prog->m_program, j, maxLength, &tmpLength, &tmpSize, &tmpType, tmpName);
-
-									// we only expect arrays
-									bracket = strchr(tmpName, '[');
-									if(bracket)
-									{
-										*bracket = '\0';
-										if(!uniformName.Compare(tmpName))
-											totalElements++;
-										else
-											break;
-									}
+									*bracket = '\0';
+									if(!stricmp(uni.name, tmpName))
+										totalElements++;
 									else
-									{
 										break;
-									}
 								}
+								else
+								{
+									break;
+								}
+							}
 
-								i += totalElements-1;
-							} // bracket
+							i += totalElements-1;
+						} // bracket
 
-							uni.nElements = size * totalElements;
-						}
-					} // cmp != "gl_"
+						uni.nElements = size * totalElements;
+					}
 				}// Sampler types?
 			}
 
 			delete [] tmpName;
-
-			// restore current program we previously stored
-			glUseProgram(currProgram);
-
-			GLCheckError("restore use program");
-
-			glDeleteShader(prog->m_fragmentShader);
-			glDeleteShader(prog->m_vertexShader);
-
-			GLCheckError("delete shaders");
-
-			prog->m_fragmentShader = 0;
-			prog->m_vertexShader = 0;
-
-			// Shorten arrays to actual count
-			samplers = (GLShaderSampler_t  *) realloc(samplers, nSamplers * sizeof(GLShaderSampler_t));
-			uniforms = (GLShaderConstant_t *) realloc(uniforms, nUniforms * sizeof(GLShaderConstant_t));
-			qsort(samplers, nSamplers, sizeof(GLShaderSampler_t),  samplerComparator);
-			qsort(uniforms, nUniforms, sizeof(GLShaderConstant_t), constantComparator);
-
-			for (int i = 0; i < nUniforms; i++)
-			{
-				GLShaderConstant_t& constant = uniforms[i];
-				constant.size = s_constantTypeSizes[constant.type] * constant.nElements;
-				constant.data = new ubyte[constant.size];
-				memset(constant.data, 0, constant.size);
-				constant.dirty = false;
-			}
-
-			// finally assign
-			prog->m_samplers = samplers;
-			prog->m_constants = uniforms;
-
-			prog->m_numSamplers = nSamplers;
-			prog->m_numConstants = nUniforms;
 
 			return 0;
 		});
 
 		if (result == -1)
 			return false;
+
+		Map<int, GLShaderSampler_t>& samplerMap = prog->m_samplers;
+		Map<int, GLShaderConstant_t>& constantMap = prog->m_constants;
+
+		// build a map
+		for (int i = 0; i < samplers.numElem(); ++i)
+		{
+			samplers[i].nameHash = StringToHash(samplers[i].name);
+			samplerMap.insert(samplers[i].nameHash, samplers[i]);
+		}
+
+		for (int i = 0; i < uniforms.numElem(); ++i)
+		{
+			GLShaderConstant_t& uni = uniforms[i];
+			uni.nameHash = StringToHash(uniforms[i].name);
+
+			// init uniform data
+			uni.size = s_constantTypeSizes[uni.type] * uni.nElements;
+			uni.data = new ubyte[uni.size];
+			memset(uni.data, 0, uni.size);
+			uni.dirty = false;
+
+			constantMap.insert(uniforms[i].nameHash, uniforms[i]);
+		}
 	}
 	else
 		return false;
@@ -2090,46 +2082,34 @@ void ShaderAPIGL::SetShader(IShaderProgram* pShader)
 }
 
 // RAW Constant (Used for structure types, etc.)
-int ShaderAPIGL::SetShaderConstantRaw(const char *pszName, const void *data, int nSize, int nConstId)
+void ShaderAPIGL::SetShaderConstantRaw(const char *pszName, const void *data, int nSize)
 {
-	if(!m_pSelectedShader)
-		return -1;
+	if (data == nullptr || nSize == 0)
+		return;
 
 	CGLShaderProgram* prog = (CGLShaderProgram*)m_pSelectedShader;
 
-	int minUniform = 0;
-	int maxUniform = prog->m_numConstants - 1;
-	GLShaderConstant_t* uniforms = prog->m_constants;
+	if (!prog)
+		return;
 
-	// Do a quick lookup in the sorted table with a binary search
-	while (minUniform <= maxUniform)
+	const int hash = StringToHash(pszName);
+
+	const Map<int, GLShaderConstant_t>& constantsMap = prog->m_constants;
+	auto it = constantsMap.find(hash);
+	if (it == constantsMap.end())
+		return;
+
+	GLShaderConstant_t& uni = *it;
+
+	const uint maxSize = min((uint)nSize, uni.size);
+
+	if (memcmp(uni.data, data, maxSize))
 	{
-		int currUniform = (minUniform + maxUniform) >> 1;
-		int res = strcmp(pszName, uniforms[currUniform].name);
-
-		if (res == 0)
-		{
-			GLShaderConstant_t *uni = uniforms + currUniform;
-
-			const int maxSize = min(nSize, (int)uni->size);
-
-			if (memcmp(uni->data, data, maxSize))
-			{
-				memcpy(uni->data, data, maxSize);
-				uni->dirty = true;
-			}
-
-			return currUniform;
-		}
-		else if (res > 0)
-			minUniform = currUniform + 1;
-		else
-			maxUniform = currUniform - 1;
+		memcpy(uni.data, data, maxSize);
+		uni.dirty = true;
 	}
 
 	//MsgError("[SHADER] error: constant '%s' not found\n", pszName);
-
-	return -1;
 }
 
 //-------------------------------------------------------------
@@ -2646,31 +2626,16 @@ void ShaderAPIGL::SetScissorRectangle( const IRectangle &rect )
 
 int ShaderAPIGL::GetSamplerUnit(CGLShaderProgram* prog, const char* samplerName)
 {
-	if(!prog || !samplerName)
+	if (!prog || !samplerName)
 		return -1;
 
-	GLShaderSampler_t* samplers = prog->m_samplers;
-	int minSampler = 0;
-	int maxSampler = prog->m_numSamplers - 1;
+	const int hash = StringToHash(samplerName);
 
-	// Do a quick lookup in the sorted table with a binary search
-	while (minSampler <= maxSampler)
-	{
-		int currSampler = (minSampler + maxSampler) >> 1;
-        int res = strcmp(samplerName, samplers[currSampler].name);
-		if (res == 0)
-		{
-			return samplers[currSampler].index;
-		}
-		else if(res > 0)
-		{
-            minSampler = currSampler + 1;
-		}
-		else
-		{
-            maxSampler = currSampler - 1;
-		}
-	}
+	const Map<int, GLShaderSampler_t>& samplerMap = prog->m_samplers;
+
+	auto it = samplerMap.find(hash);
+	if (it != samplerMap.end())
+		return it.value().index;
 
 	return -1;
 }
@@ -2679,10 +2644,16 @@ int ShaderAPIGL::GetSamplerUnit(CGLShaderProgram* prog, const char* samplerName)
 // Also you need to specify texture name. If you don't, use registers (not fine with DX10, 11)
 void ShaderAPIGL::SetTexture( ITexture* pTexture, const char* pszName, int index )
 {
-	int unit = GetSamplerUnit((CGLShaderProgram*)m_pSelectedShader, pszName);
+	if (!pszName)
+	{
+		SetTextureOnIndex(pTexture, index);
+		return;
+	}
 
-	if (unit >= 0)
-		index = unit;
+	const int unitIndex = GetSamplerUnit((CGLShaderProgram*)m_pSelectedShader, pszName);
+
+	if (unitIndex != -1)
+		index = unitIndex;
 
 	SetTextureOnIndex(pTexture, index);
 }

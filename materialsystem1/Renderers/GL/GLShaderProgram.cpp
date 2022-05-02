@@ -12,23 +12,13 @@ extern bool GLCheckError(const char* op);
 
 CGLShaderProgram::CGLShaderProgram()
 {
-	m_samplers = NULL;
-	m_constants = NULL;
-
-	m_vertexShader = 0;
-	m_fragmentShader = 0;
 	m_program = 0;
-	m_numSamplers = 0;
-	m_numConstants = 0;
 }
 
 CGLShaderProgram::~CGLShaderProgram()
 {
-	for (int j = 0; j < m_numConstants; j++)
-		delete m_constants[j].data;
-
-	free(m_samplers);
-	free(m_constants);
+	for (auto it = m_constants.begin(); it != m_constants.end(); ++it)
+		delete [] it.value().data;
 
 	if (m_program)
 	{
@@ -50,10 +40,10 @@ void CGLShaderProgram::SetName(const char* pszName)
 
 int	CGLShaderProgram::GetConstantsNum() const
 {
-	return m_numConstants;
+	return m_constants.size();
 }
 
 int	CGLShaderProgram::GetSamplersNum() const
 {
-	return m_numSamplers;
+	return m_samplers.size();
 }

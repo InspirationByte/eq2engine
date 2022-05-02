@@ -8,31 +8,33 @@
 #ifndef D3D9SHADERPROGRAM_H
 #define D3D9SHADERPROGRAM_H
 
+#include "ds/eqstring.h"
+#include "ds/Map.h"
+
 #include "renderers/IShaderProgram.h"
 #include "renderers/ShaderAPI_defs.h"
-#include "ds/eqstring.h"
+
 #include <d3d9.h>
+
 
 #define MAX_CONSTANT_NAMELEN 64
 
 typedef struct DX9ShaderConstant 
 {
-	char	name[MAX_CONSTANT_NAMELEN];
-	int64	hash;
-
-	int		vsReg;
-	int		psReg;
-
-	int		constFlags;
+	char	name[MAX_CONSTANT_NAMELEN]{ 0 };
+	int		nameHash{ 0 };
+	int		vsReg{ -1 };
+	int		psReg{ -1 };
+	int		constFlags{ 0 };
 }DX9ShaderConstant_t;
 
 typedef struct DX9Sampler_s
 {
-	char	name[64]{ 0 };
-
-	uint	index{ 0 };
-	uint	gsIndex{ 0 };
-	uint	vsIndex{ 0 };
+	char	name[MAX_CONSTANT_NAMELEN]{ 0 };
+	int		nameHash{ 0 };
+	int		index{ -1 };
+	int		gsIndex{ -1 };
+	int		vsIndex{ -1 };
 }DX9Sampler_t;
 
 struct ID3DXConstantTable;
@@ -53,19 +55,16 @@ public:
 	int						GetSamplersNum() const;
 
 protected:
-	EqString				m_szName;
-	int						m_nameHash;
+	EqString					m_szName;
+	int							m_nameHash;
 
-	LPDIRECT3DVERTEXSHADER9 m_pVertexShader;
-	LPDIRECT3DPIXELSHADER9  m_pPixelShader;
-	ID3DXConstantTable*		m_pVSConstants;
-	ID3DXConstantTable*		m_pPSConstants;
+	LPDIRECT3DVERTEXSHADER9		m_pVertexShader;
+	LPDIRECT3DPIXELSHADER9		m_pPixelShader;
+	ID3DXConstantTable*			m_pVSConstants;
+	ID3DXConstantTable*			m_pPSConstants;
 
-	DX9ShaderConstant_t*	m_pConstants;
-	DX9Sampler_t*			m_pSamplers;
-
-	int						m_numConstants;
-	int						m_numSamplers;
+	Map<int, DX9ShaderConstant_t>	m_constants;
+	Map<int, DX9Sampler_t>			m_samplers;
 };
 
 #endif //D3D9SHADERPROGRAM_H

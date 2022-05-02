@@ -15,16 +15,10 @@
 
 CD3D9ShaderProgram::CD3D9ShaderProgram()
 {
-	m_pVertexShader = NULL;
-	m_pPixelShader = NULL;
-	m_pVSConstants = NULL;
-	m_pPSConstants = NULL;
-
-	m_pConstants = NULL;
-	m_pSamplers = NULL;
-
-	m_numConstants = 0;
-	m_numSamplers = 0;
+	m_pVertexShader = nullptr;
+	m_pPixelShader = nullptr;
+	m_pVSConstants = nullptr;
+	m_pPSConstants = nullptr;
 }
 
 CD3D9ShaderProgram::~CD3D9ShaderProgram()
@@ -40,12 +34,6 @@ CD3D9ShaderProgram::~CD3D9ShaderProgram()
 
 	if(m_pVSConstants)
 		m_pVSConstants->Release();
-
-	if(m_pConstants)
-		free(m_pConstants);
-
-	if(m_pSamplers)
-		free(m_pSamplers);
 }
 
 const char*	CD3D9ShaderProgram::GetName() const
@@ -61,10 +49,10 @@ void CD3D9ShaderProgram::SetName(const char* pszName)
 
 int	CD3D9ShaderProgram::GetConstantsNum() const
 {
-	return m_numConstants;
+	return m_constants.size();
 }
 
 int	CD3D9ShaderProgram::GetSamplersNum() const
 {
-	return m_numSamplers;
+	return m_samplers.size();
 }

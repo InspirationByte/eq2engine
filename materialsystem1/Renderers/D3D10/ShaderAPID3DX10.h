@@ -250,7 +250,7 @@ public:
 	void						SetShaderTexture(const char* pszName, ITexture* pTexture);
 
 	// RAW Constant (Used for structure types, etc.)
-	int							SetShaderConstantRaw(const char *pszName, const void *data, int nSize, int nConstID);
+	void						SetShaderConstantRaw(const char *pszName, const void *data, int nSize);
 
 
 	//-----------------------------------------------------

@@ -1162,57 +1162,57 @@ IShaderProgram* ShaderAPI_Base::FindShaderProgram(const char* pszName, const cha
 }
 
 // Shader constants setup
-int ShaderAPI_Base::SetShaderConstantInt(const char *pszName, const int constant, int const_id)
+void ShaderAPI_Base::SetShaderConstantInt(const char *pszName, const int constant)
 {
-	return SetShaderConstantRaw(pszName, &constant, sizeof(constant), const_id);
+	SetShaderConstantRaw(pszName, &constant, sizeof(constant));
 }
 
-int ShaderAPI_Base::SetShaderConstantFloat(const char *pszName, const float constant, int const_id)
+void ShaderAPI_Base::SetShaderConstantFloat(const char *pszName, const float constant)
 {
-	return SetShaderConstantRaw(pszName, &constant, sizeof(constant), const_id);
+	SetShaderConstantRaw(pszName, &constant, sizeof(constant));
 }
 
-int ShaderAPI_Base::SetShaderConstantVector2D(const char *pszName, const Vector2D &constant, int const_id)
+void ShaderAPI_Base::SetShaderConstantVector2D(const char *pszName, const Vector2D &constant)
 {
-	return SetShaderConstantRaw(pszName, &constant, sizeof(constant), const_id);
+	SetShaderConstantRaw(pszName, &constant, sizeof(constant));
 }
 
-int ShaderAPI_Base::SetShaderConstantVector3D(const char *pszName, const Vector3D &constant, int const_id)
+void ShaderAPI_Base::SetShaderConstantVector3D(const char *pszName, const Vector3D &constant)
 {
-	return SetShaderConstantRaw(pszName, &constant, sizeof(constant), const_id);
+	SetShaderConstantRaw(pszName, &constant, sizeof(constant));
 }
 
-int ShaderAPI_Base::SetShaderConstantVector4D(const char *pszName, const Vector4D &constant, int const_id)
+void ShaderAPI_Base::SetShaderConstantVector4D(const char *pszName, const Vector4D &constant)
 {
-	return SetShaderConstantRaw(pszName, &constant, sizeof(constant), const_id);
+	SetShaderConstantRaw(pszName, &constant, sizeof(constant));
 }
 
-int ShaderAPI_Base::SetShaderConstantMatrix4(const char *pszName, const Matrix4x4 &constant, int const_id)
+void ShaderAPI_Base::SetShaderConstantMatrix4(const char *pszName, const Matrix4x4 &constant)
 {
-	return SetShaderConstantRaw(pszName, &constant, sizeof(constant), const_id);
+	SetShaderConstantRaw(pszName, &constant, sizeof(constant));
 }
 
-int ShaderAPI_Base::SetShaderConstantArrayFloat(const char *pszName, const float *constant, int count, int const_id)
+void ShaderAPI_Base::SetShaderConstantArrayFloat(const char *pszName, const float *constant, int count)
 {
-	return SetShaderConstantRaw(pszName, constant, count * sizeof(float), const_id);
+	SetShaderConstantRaw(pszName, constant, count * sizeof(float));
 }
 
-int ShaderAPI_Base::SetShaderConstantArrayVector2D(const char *pszName, const Vector2D *constant, int count, int const_id)
+void ShaderAPI_Base::SetShaderConstantArrayVector2D(const char *pszName, const Vector2D *constant, int count)
 {
-	return SetShaderConstantRaw(pszName, constant, count * sizeof(Vector2D), const_id);
+	SetShaderConstantRaw(pszName, constant, count * sizeof(Vector2D));
 }
 
-int ShaderAPI_Base::SetShaderConstantArrayVector3D(const char *pszName, const Vector3D *constant, int count, int const_id)
+void ShaderAPI_Base::SetShaderConstantArrayVector3D(const char *pszName, const Vector3D *constant, int count)
 {
-	return SetShaderConstantRaw(pszName, constant, count * sizeof(Vector3D), const_id);
+	SetShaderConstantRaw(pszName, constant, count * sizeof(Vector3D));
 }
 
-int ShaderAPI_Base::SetShaderConstantArrayVector4D(const char *pszName, const Vector4D *constant, int count, int const_id)
+void ShaderAPI_Base::SetShaderConstantArrayVector4D(const char *pszName, const Vector4D *constant, int count)
 {
-	return SetShaderConstantRaw(pszName, constant, count * sizeof(Vector4D), const_id);
+	SetShaderConstantRaw(pszName, constant, count * sizeof(Vector4D));
 }
 
-int ShaderAPI_Base::SetShaderConstantArrayMatrix4(const char *pszName, const Matrix4x4 *constant, int count, int const_id)
+void ShaderAPI_Base::SetShaderConstantArrayMatrix4(const char *pszName, const Matrix4x4 *constant, int count)
 {
-	return SetShaderConstantRaw(pszName, constant, count * sizeof(Matrix4x4), const_id);
+	SetShaderConstantRaw(pszName, constant, count * sizeof(Matrix4x4));
 }

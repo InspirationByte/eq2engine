@@ -164,17 +164,17 @@ public:
 	IShaderProgram*						FindShaderProgram(const char* pszName, const char* query);
 
 	// Shader constants setup
-	int									SetShaderConstantInt(const char *pszName, const int constant, int const_id = -1);
-	int									SetShaderConstantFloat(const char *pszName, const float constant, int const_id = -1);
-	int									SetShaderConstantVector2D(const char *pszName, const Vector2D &constant, int const_id = -1);
-	int									SetShaderConstantVector3D(const char *pszName, const Vector3D &constant, int const_id = -1);
-	int									SetShaderConstantVector4D(const char *pszName, const Vector4D &constant, int const_id = -1);
-	int									SetShaderConstantMatrix4(const char *pszName, const Matrix4x4 &constant, int const_id = -1);
-	int									SetShaderConstantArrayFloat(const char *pszName, const float *constant, int count, int const_id = -1);
-	int									SetShaderConstantArrayVector2D(const char *pszName, const Vector2D *constant, int count, int const_id = -1);
-	int									SetShaderConstantArrayVector3D(const char *pszName, const Vector3D *constant, int count, int const_id = -1);
-	int									SetShaderConstantArrayVector4D(const char *pszName, const Vector4D *constant, int count, int const_id = -1);
-	int									SetShaderConstantArrayMatrix4(const char *pszName, const Matrix4x4 *constant, int count, int const_id = -1);
+	void								SetShaderConstantInt(const char *pszName, const int constant);
+	void								SetShaderConstantFloat(const char *pszName, const float constant);
+	void								SetShaderConstantVector2D(const char *pszName, const Vector2D &constant);
+	void								SetShaderConstantVector3D(const char *pszName, const Vector3D &constant);
+	void								SetShaderConstantVector4D(const char *pszName, const Vector4D &constant);
+	void								SetShaderConstantMatrix4(const char *pszName, const Matrix4x4 &constant);
+	void								SetShaderConstantArrayFloat(const char *pszName, const float *constant, int count);
+	void								SetShaderConstantArrayVector2D(const char *pszName, const Vector2D *constant, int count);
+	void								SetShaderConstantArrayVector3D(const char *pszName, const Vector3D *constant, int count);
+	void								SetShaderConstantArrayVector4D(const char *pszName, const Vector4D *constant, int count);
+	void								SetShaderConstantArrayMatrix4(const char *pszName, const Matrix4x4 *constant, int count);
 
 //-------------------------------------------------------------
 // Other operations (Now it's unused)

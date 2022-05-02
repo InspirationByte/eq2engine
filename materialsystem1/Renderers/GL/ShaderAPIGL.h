@@ -293,7 +293,7 @@ public:
 	void				SetShader(IShaderProgram* pShader);
 
 	// RAW Constant (Used for structure types, etc.)
-	int					SetShaderConstantRaw(const char *pszName, const void *data, int nSize, int nConstId);
+	void				SetShaderConstantRaw(const char *pszName, const void *data, int nSize);
 
 //-------------------------------------------------------------
 // Vertex buffer objects

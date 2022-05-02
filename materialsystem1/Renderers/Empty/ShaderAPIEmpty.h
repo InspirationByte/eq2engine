@@ -392,7 +392,7 @@ public:
 	void						SetTexture(ITexture* pTexture, const char* pszName, int index){}
 
 	// RAW Constant (Used for structure types, etc.)
-	int							SetShaderConstantRaw(const char *pszName, const void *data, int nSize, int nConstID){ return nConstID;}
+	void						SetShaderConstantRaw(const char *pszName, const void *data, int nSize){}
 
 
 	//-----------------------------------------------------

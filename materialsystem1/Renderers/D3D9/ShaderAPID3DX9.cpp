@@ -967,8 +967,8 @@ void ShaderAPID3DX9::ApplyShaderProgram()
 void ShaderAPID3DX9::ApplyConstants()
 {
 	{
-		int minVSDirty = m_nMinVSDirty;
-		int maxVSDirty = m_nMaxVSDirty;
+		const int minVSDirty = m_nMinVSDirty;
+		const int maxVSDirty = m_nMaxVSDirty;
 
 		// Apply vertex shader constants
 		if (minVSDirty < maxVSDirty)
@@ -981,8 +981,8 @@ void ShaderAPID3DX9::ApplyConstants()
 	}
 
 	{
-		int minPSDirty = m_nMinPSDirty;
-		int maxPSDirty = m_nMaxPSDirty;
+		const int minPSDirty = m_nMinPSDirty;
+		const int maxPSDirty = m_nMaxPSDirty;
 
 		// apply pixel shader constants
 		if (minPSDirty < maxPSDirty)
@@ -1969,21 +1969,11 @@ void ShaderAPID3DX9::DestroyShaderProgram(IShaderProgram* pShaderProgram)
 		delete pShader;
 }
 
-int SamplerComp(const void *s0, const void *s1)
-{
-	return strcmp(((DX9Sampler_t*) s0)->name, ((DX9Sampler_t*) s1)->name);
-}
-
-int ConstantComp(const void *s0, const void *s1)
-{
-	return strcmp(((DX9ShaderConstant *) s0)->name, ((DX9ShaderConstant *) s1)->name);
-}
-
 ConVar r_skipShaderCache("r_skipShaderCache", "0", "Shader debugging purposes", 0);
 
 struct shaderCacheHdr_t
 {
-	int		ident;			// EQSC
+	int		ident;
 
 	long	checksum;		// file crc32
 
@@ -1994,7 +1984,7 @@ struct shaderCacheHdr_t
 	int		numSamplers;
 };
 
-#define SHADERCACHE_IDENT		MCHAR4('E','Q','S','C')
+#define SHADERCACHE_IDENT		MCHAR4('S','P','C','0')
 
 // Load any shader from stream
 bool ShaderAPID3DX9::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
@@ -2042,18 +2032,23 @@ bool ShaderAPID3DX9::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 				free(pShaderMem);
 
 				// read samplers and constants
+				Array<DX9Sampler_t> samplers;
+				Array<DX9ShaderConstant_t> constants;
+				samplers.setNum(scHdr.numSamplers);
+				constants.setNum(scHdr.numConstants);
 
-				DX9Sampler_t*		samplers = (DX9Sampler_t*) malloc(scHdr.numSamplers * sizeof(DX9Sampler_t));
-				DX9ShaderConstant*	constants = (DX9ShaderConstant*) malloc(scHdr.numConstants * sizeof(DX9ShaderConstant));
+				pStream->Read(samplers.ptr(), scHdr.numSamplers, sizeof(DX9Sampler_t));
+				pStream->Read(constants.ptr(), scHdr.numConstants, sizeof(DX9ShaderConstant_t));
 
-				pStream->Read(samplers, scHdr.numSamplers, sizeof(DX9Sampler_t));
-				pStream->Read(constants, scHdr.numConstants, sizeof(DX9ShaderConstant));
+				Map<int, DX9Sampler_t>& samplerMap = pShader->m_samplers;
+				Map<int, DX9ShaderConstant_t>& constantMap = pShader->m_constants;
 
-				// assign them
-				pShader->m_pConstants  = constants;
-				pShader->m_pSamplers   = samplers;
-				pShader->m_numSamplers  = scHdr.numSamplers;
-				pShader->m_numConstants = scHdr.numConstants;
+				// assign
+				for (int i = 0; i < samplers.numElem(); ++i)
+					samplerMap.insert(samplers[i].nameHash, samplers[i]);
+
+				for (int i = 0; i < constants.numElem(); ++i)
+					constantMap.insert(constants[i].nameHash, constants[i]);
 
 				needsCompile = false;
 			}
@@ -2270,15 +2265,19 @@ bool ShaderAPID3DX9::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 		return false; // Don't do anything
 	}
 
-	if(pShader->m_pVSConstants == NULL || pShader->m_pPSConstants == NULL)
+	ID3DXConstantTable* d3dVSConstants = pShader->m_pVSConstants;
+	ID3DXConstantTable* d3dPSConstants = pShader->m_pPSConstants;
+
+	if(d3dVSConstants == NULL || d3dPSConstants == NULL)
 	{
+		// write empty cache file so it won't fuck up
 		if(pStream)
 		{
 			scHdr.checksum = -1;
 			scHdr.psSize = -1;
 			scHdr.vsSize = -1;
 
-			pStream->Seek(0,VS_SEEK_SET);
+			pStream->Seek(0,VS_SEEK_SET); 
 			pStream->Write(&scHdr, 1, sizeof(shaderCacheHdr_t));
 			g_fileSystem->Close(pStream);
 		}
@@ -2287,22 +2286,22 @@ bool ShaderAPID3DX9::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 	}
 
 	D3DXCONSTANTTABLE_DESC vsDesc, psDesc;
-	pShader->m_pVSConstants->GetDesc(&vsDesc);
-	pShader->m_pPSConstants->GetDesc(&psDesc);
+	d3dVSConstants->GetDesc(&vsDesc);
+	d3dPSConstants->GetDesc(&psDesc);
 
-	uint count = vsDesc.Constants + psDesc.Constants;
+	const uint count = vsDesc.Constants + psDesc.Constants;
 
-	DX9Sampler_t* samplers			= (DX9Sampler_t*) malloc(count * sizeof(DX9Sampler_t));
-	DX9ShaderConstant* constants	= (DX9ShaderConstant *) malloc(count * sizeof(DX9ShaderConstant));
+	Array<DX9Sampler_t> samplers;
+	Array<DX9ShaderConstant_t> constants;
+	samplers.resize(count);
+	constants.resize(count);
 
-	uint nSamplers  = 0;
-	uint nConstants = 0;
-
+	// collect VS shader constants
 	D3DXCONSTANT_DESC cDesc;
 	for (uint i = 0; i < vsDesc.Constants; i++)
 	{
 		UINT cnt = 1;
-		pShader->m_pVSConstants->GetConstantDesc(pShader->m_pVSConstants->GetConstant(NULL, i), &cDesc, &cnt);
+		d3dVSConstants->GetConstantDesc(d3dVSConstants->GetConstant(NULL, i), &cDesc, &cnt);
 
 		//size_t length = strlen(cDesc.Name);
 		if (cDesc.Type >= D3DXPT_SAMPLER && cDesc.Type <= D3DXPT_SAMPLERCUBE)
@@ -2311,33 +2310,33 @@ bool ShaderAPID3DX9::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 		} 
 		else 
 		{
-			//constants[nConstants].name = new char[length + 1];
-			strcpy(constants[nConstants].name, cDesc.Name);
-			constants[nConstants].hash = -1;
-			constants[nConstants].vsReg = cDesc.RegisterIndex;
-			constants[nConstants].psReg = -1;
-			constants[nConstants].constFlags = SCONST_VERTEX;
-			//constants[nConstants].nElements = cDesc.RegisterCount;
-			nConstants++;
+			DX9ShaderConstant_t& constant = constants.append();
+
+			strcpy(constant.name, cDesc.Name);
+			constant.vsReg = cDesc.RegisterIndex;
+			//constant.nElements = cDesc.RegisterCount;
+			constant.psReg = -1;
+			constant.constFlags = SCONST_VERTEX;
 		}
 	}
 
-	uint nVSConsts = nConstants;
+	const uint nVSConsts = constants.numElem();
 	for (uint i = 0; i < psDesc.Constants; i++)
 	{
 		UINT cnt = 1;
-		pShader->m_pPSConstants->GetConstantDesc(pShader->m_pPSConstants->GetConstant(NULL, i), &cDesc, &cnt);
+		d3dPSConstants->GetConstantDesc(d3dPSConstants->GetConstant(NULL, i), &cDesc, &cnt);
 
 		//size_t length = strlen(cDesc.Name);
 		if (cDesc.Type >= D3DXPT_SAMPLER && cDesc.Type <= D3DXPT_SAMPLERCUBE)
 		{
-			//samplers[nSamplers].name = new char[length + 1];
-			samplers[nSamplers].index = cDesc.RegisterIndex;
-			strcpy(samplers[nSamplers].name, cDesc.Name);
-			nSamplers++;
+			DX9Sampler_t& sampler = samplers.append();
+
+			sampler.index = cDesc.RegisterIndex;
+			strcpy(sampler.name, cDesc.Name);
 		} 
 		else 
 		{
+			// check for merging with VS constant
 			int merge = -1;
 			for (uint j = 0; j < nVSConsts; j++)
 			{
@@ -2350,47 +2349,52 @@ bool ShaderAPID3DX9::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 
 			if (merge < 0)
 			{
-				//constants[nConstants].name = new char[length + 1];
-				strcpy(constants[nConstants].name, cDesc.Name);
-				constants[nConstants].hash = -1;
-				constants[nConstants].vsReg = -1;
-				constants[nConstants].psReg = cDesc.RegisterIndex;
-				//constants[nConstants].nElements = cDesc.RegisterCount;
-				constants[nConstants].constFlags = SCONST_PIXEL;
+				DX9ShaderConstant_t& constant = constants.append();
+
+				strcpy(constant.name, cDesc.Name);
+				constant.vsReg = -1;
+				constant.psReg = cDesc.RegisterIndex;
+				//constant.nElements = cDesc.RegisterCount;
+				constant.constFlags = SCONST_PIXEL;
 			} 
 			else 
 			{
 				constants[merge].psReg = cDesc.RegisterIndex;
 				constants[merge].constFlags |= SCONST_PIXEL; // add flags
 			}
-			nConstants++;
 		}
 	}
 
-	// Shorten arrays to actual count
-	samplers  = (DX9Sampler_t*) realloc(samplers,  nSamplers  * sizeof(DX9Sampler_t));
-	constants = (DX9ShaderConstant *) realloc(constants, nConstants * sizeof(DX9ShaderConstant));
-	qsort(samplers,  nSamplers,  sizeof(DX9Sampler_t),  SamplerComp);
-	qsort(constants, nConstants, sizeof(DX9ShaderConstant), ConstantComp);
+	Map<int, DX9Sampler_t>& samplerMap = pShader->m_samplers;
+	Map<int, DX9ShaderConstant_t>& constantMap = pShader->m_constants;
 
+	// build a map
+	for (int i = 0; i < samplers.numElem(); ++i)
+	{
+		samplers[i].nameHash = StringToHash(samplers[i].name);
+		samplerMap.insert(samplers[i].nameHash, samplers[i]);
+	}
+
+	for (int i = 0; i < constants.numElem(); ++i)
+	{
+		constants[i].nameHash = StringToHash(constants[i].name);
+		constantMap.insert(constants[i].nameHash, constants[i]);
+	}
+
+	// store the shader cache data
 	if(pStream)
 	{
-		scHdr.numSamplers = nSamplers;
-		scHdr.numConstants = nConstants;
+		scHdr.numSamplers = samplers.numElem();
+		scHdr.numConstants = constants.numElem();
 		scHdr.checksum = info.data.checksum;
 
-		pStream->Write(samplers, nSamplers, sizeof(DX9Sampler_t));
-		pStream->Write(constants, nConstants, sizeof(DX9ShaderConstant));
+		pStream->Write(samplers.ptr(), samplers.numElem(), sizeof(DX9Sampler_t));
+		pStream->Write(constants.ptr(), constants.numElem(), sizeof(DX9ShaderConstant_t));
 
 		pStream->Seek(0,VS_SEEK_SET);
 		pStream->Write(&scHdr, 1, sizeof(shaderCacheHdr_t));
 		g_fileSystem->Close(pStream);
 	}
-
-	pShader->m_pConstants  = constants;
-	pShader->m_pSamplers   = samplers;
-	pShader->m_numConstants = nConstants;
-	pShader->m_numSamplers  = nSamplers;
 
 	return true;
 }
@@ -2410,177 +2414,87 @@ void ShaderAPID3DX9::SetShader(IShaderProgram* pShader)
 	*/
 }
 
-int	ShaderAPID3DX9::GetSamplerUnit(IShaderProgram* pProgram,const char* pszSamplerName)
+int	ShaderAPID3DX9::GetSamplerUnit(IShaderProgram* pProgram, const char* pszSamplerName)
 {
-	CD3D9ShaderProgram* pShader = (CD3D9ShaderProgram*)(pProgram);
-	if(!pShader)
+	if(!pProgram || !pszSamplerName)
 		return -1;
 
-	DX9Sampler_t* samplers = pShader->m_pSamplers;
-	int minSampler = 0;
-	int maxSampler = pShader->m_numSamplers - 1;
+	CD3D9ShaderProgram* pShader = (CD3D9ShaderProgram*)(pProgram);
 
-	// Do a quick lookup in the sorted table with a binary search
-	while (minSampler <= maxSampler)
-	{
-		int currSampler = (minSampler + maxSampler) >> 1;
-        int res = strcmp(pszSamplerName, samplers[currSampler].name);
+	const int hash = StringToHash(pszSamplerName);
 
-		if (res == 0)
-		{
-			return samplers[currSampler].index;
-		} 
-		else if (res > 0)
-		{
-            minSampler = currSampler + 1;
-		} 
-		else 
-		{
-            maxSampler = currSampler - 1;
-		}
-	}
+	const Map<int, DX9Sampler_t>& samplerMap = pShader->m_samplers;
+
+	auto it = samplerMap.find(hash);
+	if (it != samplerMap.end())
+		return it.value().index;
 
 	return -1;
 }
 
 void ShaderAPID3DX9::SetTexture( ITexture* pTexture, const char* pszName, int index )
 {
-	SetTextureOnIndex(pTexture, index);
-
-	/*
-	if(pszName == NULL)
+	if (!pszName)
 	{
 		SetTextureOnIndex(pTexture, index);
+		return;
 	}
-	else
-	{
-		int unit = GetSamplerUnit( m_pSelectedShader, pszName );
 
-		if(unit == -1)
-			SetTextureOnIndex(pTexture, index);
-		else
-			SetTextureOnIndex(pTexture, unit);
-	}
-	*/
+	const int unitIndex = GetSamplerUnit(m_pSelectedShader, pszName);
+
+	if (unitIndex != -1)
+		index = unitIndex;
+
+	SetTextureOnIndex(pTexture, index);
 }
 
 // RAW Constant (Used for structure types, etc.)
-int ShaderAPID3DX9::SetShaderConstantRaw(const char *pszName, const void *data, int nSize, int nConstId)
+void ShaderAPID3DX9::SetShaderConstantRaw(const char *pszName, const void *data, int nSize)
 {
-	if(data == NULL || nSize == NULL)
-		return nConstId;
+	if (data == nullptr || nSize == 0)
+		return;
 
 	CD3D9ShaderProgram* pShader = (CD3D9ShaderProgram*)(m_pSelectedShader);
 
 	if(!pShader)
-		return -1;
+		return;
 
-	DX9ShaderConstant *constants = pShader->m_pConstants;
-	/*
-	if(nConstId != -1)
+	const int hash = StringToHash(pszName);
+
+	const Map<int, DX9ShaderConstant_t>& constantsMap = pShader->m_constants;
+	auto it = constantsMap.find(hash);
+	if (it == constantsMap.end())
+		return;
+
+	const DX9ShaderConstant_t& constant = *it;
+
+	if (constant.vsReg >= 0 && memcmp(m_vsRegs + constant.vsReg, data, nSize))
 	{
-		DX9ShaderConstant* c = constants + nConstId;
+		memcpy(m_vsRegs + constant.vsReg, data, nSize);
 
-		if (c->vsReg >= 0)
-		{
-			if (memcmp(m_vsRegs + c->vsReg, data, nSize))
-			{
-				memcpy(m_vsRegs + c->vsReg, data, nSize);
-					
-				int r0 = c->vsReg;
-				int r1 = c->vsReg + ((nSize + 15) >> 4);
+		const int r0 = constant.vsReg;
+		const int r1 = constant.vsReg + ((nSize + 15) >> 4);
 
-				if (r0 < m_nMinVSDirty)
-					m_nMinVSDirty = r0;
+		if (r0 < m_nMinVSDirty)
+			m_nMinVSDirty = r0;
 
-				if (r1 > m_nMaxVSDirty)
-					m_nMaxVSDirty = r1;
-			}
-		}
-
-		if (c->psReg >= 0)
-		{
-			if (memcmp(m_psRegs + c->psReg, data, nSize))
-			{
-				memcpy(m_psRegs + c->psReg, data, nSize);
-					
-				int r0 = c->psReg;
-				int r1 = c->psReg + ((nSize + 15) >> 4);
-
-				if (r0 < m_nMinPSDirty)
-					m_nMinPSDirty = r0;
-
-				if (r1 > m_nMaxPSDirty)
-					m_nMaxPSDirty = r1;
-			}
-		}
-
-		return nConstId;
-	}*/
-
-	int minConstant = 0;
-	int maxConstant = pShader->m_numConstants - 1;
-
-	// TODO: fix it up and do better
-	
-	// Do a quick lookup in the sorted table with a binary search
-	while (minConstant <= maxConstant)
-	{
-		int currConstant = (minConstant + maxConstant) >> 1;
-
-		int res = strcmp(pszName, constants[currConstant].name);
-
-		if (res == 0)
-		{
-			DX9ShaderConstant *c = constants + currConstant;
-
-			if (c->vsReg >= 0)
-			{
-				if (memcmp(m_vsRegs + c->vsReg, data, nSize))
-				{
-					memcpy(m_vsRegs + c->vsReg, data, nSize);
-
-					int r0 = c->vsReg;
-					int r1 = c->vsReg + ((nSize + 15) >> 4);
-
-					if (r0 < m_nMinVSDirty)
-						m_nMinVSDirty = r0;
-
-					if (r1 > m_nMaxVSDirty)
-						m_nMaxVSDirty = r1;
-				}
-			}
-
-			if (c->psReg >= 0)
-			{
-				if (memcmp(m_psRegs + c->psReg, data, nSize))
-				{
-					memcpy(m_psRegs + c->psReg, data, nSize);
-					
-					int r0 = c->psReg;
-					int r1 = c->psReg + ((nSize + 15) >> 4);
-
-					if (r0 < m_nMinPSDirty)
-						m_nMinPSDirty = r0;
-
-					if (r1 > m_nMaxPSDirty)
-						m_nMaxPSDirty = r1;
-				}
-			}
-
-			return currConstant;
-		} 
-		else if (res > 0)
-		{
-			minConstant = currConstant + 1;
-		}
-		else 
-		{
-			maxConstant = currConstant - 1;
-		}
+		if (r1 > m_nMaxVSDirty)
+			m_nMaxVSDirty = r1;
 	}
 
-	return -1;
+	if (constant.psReg >= 0 && memcmp(m_psRegs + constant.psReg, data, nSize))
+	{
+		memcpy(m_psRegs + constant.psReg, data, nSize);
+
+		const int r0 = constant.psReg;
+		const int r1 = constant.psReg + ((nSize + 15) >> 4);
+
+		if (r0 < m_nMinPSDirty)
+			m_nMinPSDirty = r0;
+
+		if (r1 > m_nMaxPSDirty)
+			m_nMaxPSDirty = r1;
+	}
 }
 
 //-------------------------------------------------------------
