@@ -861,30 +861,36 @@ void ShaderAPI_Base::SetRasterizerState( IRenderState* pState )
 // Set Texture for Fixed-Function Pipeline
 void ShaderAPI_Base::SetTextureOnIndex(ITexture* pTexture,int level /* = 0*/)
 {
-	// Setup for FFP
-	if(m_caps.maxTextureUnits <= 1 && level > 0)
-		return; // If multitexturing is not supported
+	if(level > 0 && m_caps.maxTextureUnits <= 1)
+		return;
 
-	if(level < 0)
+	// exclusive for D3D api
+	if(level & 0x8000)
 	{
-		int vLevel = level+(MAX_VERTEXTEXTURES+1);
-		m_pSelectedVertexTextures[vLevel] = pTexture;
+		level &= ~0x8000;
+		if (level > m_caps.maxVertexTextureUnits)
+			return;
+		m_pSelectedVertexTextures[level] = pTexture;
+		return;
 	}
-	else
+
+	if(level < m_caps.maxTextureUnits)
 		m_pSelectedTextures[level] = pTexture;
 }
 
 // returns the currently set textre at level
 ITexture* ShaderAPI_Base::GetTextureAt( int level ) const
 {
-	// Setup for FFP
-	if(m_caps.maxTextureUnits <= 1 && level > 0)
-		return NULL; // If multitexturing is not supported
+	if (level > 0 && m_caps.maxTextureUnits <= 1)
+		return nullptr;
 
-	if(level < 0)
+	// exclusive for D3D api
+	if (level & 0x8000)
 	{
-		int vLevel = level+(MAX_VERTEXTEXTURES+1);
-		return m_pSelectedVertexTextures[vLevel];
+		level &= ~0x8000;
+		if (level > m_caps.maxVertexTextureUnits)
+			return nullptr;
+		return m_pSelectedVertexTextures[level];
 	}
 
 	return m_pSelectedTextures[level];

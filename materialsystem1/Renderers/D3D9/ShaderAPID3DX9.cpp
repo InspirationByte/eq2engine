@@ -90,7 +90,6 @@ ShaderAPID3DX9::ShaderAPID3DX9() : ShaderAPI_Base()
 	memset(m_pSelectedSamplerStates,0,sizeof(m_pSelectedSamplerStates));
 	memset(m_pSelectedVertexSamplerStates,0,sizeof(m_pSelectedVertexSamplerStates));
 
-	
 	for(int i = 0; i < MAX_VERTEXSTREAM; i++)
 		m_nSelectedStreamParam[i] = 1;
 
@@ -637,7 +636,7 @@ void ShaderAPID3DX9::ApplyTextures()
 
 void ShaderAPID3DX9::ApplySamplerState()
 {
-	for (int i = 0; i < MAX_SAMPLERSTATE; i++)
+	for (int i = 0; i < m_caps.maxTextureUnits; i++)
 	{
 		SamplerStateParam_t* pSelectedSamplerState = m_pSelectedSamplerStates[i];
 
@@ -667,7 +666,7 @@ void ShaderAPID3DX9::ApplySamplerState()
 	m_nCurrentSamplerStateDirty = 0;
 
 	// Vertex texture samplers
-	for (int i = 0; i < MAX_VERTEXTEXTURES; i++)
+	for (int i = 0; i < m_caps.maxVertexTextureUnits; i++)
 	{
 		SamplerStateParam_t* pSelectedSamplerState = m_pSelectedVertexSamplerStates[i];
 
@@ -2306,7 +2305,10 @@ bool ShaderAPID3DX9::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 		//size_t length = strlen(cDesc.Name);
 		if (cDesc.Type >= D3DXPT_SAMPLER && cDesc.Type <= D3DXPT_SAMPLERCUBE)
 		{
-			// TODO: Vertex samplers not yet supported ...
+			DX9Sampler_t& sampler = samplers.append();
+
+			sampler.vsIndex = cDesc.RegisterIndex;
+			strcpy(sampler.name, cDesc.Name);
 		} 
 		else 
 		{
@@ -2321,6 +2323,8 @@ bool ShaderAPID3DX9::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 	}
 
 	const uint nVSConsts = constants.numElem();
+	const uint nVSSamplers = samplers.numElem();
+
 	for (uint i = 0; i < psDesc.Constants; i++)
 	{
 		UINT cnt = 1;
@@ -2329,10 +2333,28 @@ bool ShaderAPID3DX9::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 		//size_t length = strlen(cDesc.Name);
 		if (cDesc.Type >= D3DXPT_SAMPLER && cDesc.Type <= D3DXPT_SAMPLERCUBE)
 		{
-			DX9Sampler_t& sampler = samplers.append();
+			// check for merging with VS sampler
+			int merge = -1;
+			for (uint j = 0; j < nVSSamplers; j++)
+			{
+				if (strcmp(samplers[j].name, cDesc.Name) == 0)
+				{
+					merge = j;
+					break;
+				}
+			}
 
-			sampler.index = cDesc.RegisterIndex;
-			strcpy(sampler.name, cDesc.Name);
+			if (merge < 0)
+			{
+				DX9Sampler_t& sampler = samplers.append();
+
+				sampler.index = cDesc.RegisterIndex;
+				strcpy(sampler.name, cDesc.Name);
+			}
+			else
+			{
+				samplers[merge].index = cDesc.RegisterIndex;
+			}
 		} 
 		else 
 		{
@@ -2414,10 +2436,10 @@ void ShaderAPID3DX9::SetShader(IShaderProgram* pShader)
 	*/
 }
 
-int	ShaderAPID3DX9::GetSamplerUnit(IShaderProgram* pProgram, const char* pszSamplerName)
+bool ShaderAPID3DX9::GetSamplerUnit(CD3D9ShaderProgram* pProgram, const char* pszSamplerName, const DX9Sampler_t** outSampler)
 {
 	if(!pProgram || !pszSamplerName)
-		return -1;
+		return false;
 
 	CD3D9ShaderProgram* pShader = (CD3D9ShaderProgram*)(pProgram);
 
@@ -2427,11 +2449,14 @@ int	ShaderAPID3DX9::GetSamplerUnit(IShaderProgram* pProgram, const char* pszSamp
 
 	auto it = samplerMap.find(hash);
 	if (it != samplerMap.end())
-		return it.value().index;
+	{
+		*outSampler = &it.value();
+		return true;
+	}
 
-	return -1;
+	return false;
 }
-
+#pragma optimize("", off)
 void ShaderAPID3DX9::SetTexture( ITexture* pTexture, const char* pszName, int index )
 {
 	if (!pszName)
@@ -2440,12 +2465,16 @@ void ShaderAPID3DX9::SetTexture( ITexture* pTexture, const char* pszName, int in
 		return;
 	}
 
-	const int unitIndex = GetSamplerUnit(m_pSelectedShader, pszName);
-
-	if (unitIndex == -1)
+	const DX9Sampler_t* sampler;
+	if (!GetSamplerUnit((CD3D9ShaderProgram*)m_pSelectedShader, pszName, &sampler))
 		return;
 
-	SetTextureOnIndex(pTexture, unitIndex);
+	if(sampler->index != -1)
+		SetTextureOnIndex(pTexture, sampler->index);
+
+	// NOTE: vertex shader index should be passed as negative
+	if(sampler->vsIndex != -1)
+		SetTextureOnIndex(pTexture, sampler->vsIndex | 0x8000);
 }
 
 // RAW Constant (Used for structure types, etc.)

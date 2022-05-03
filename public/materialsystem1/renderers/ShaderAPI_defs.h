@@ -298,9 +298,6 @@ enum ER_TextureFlags
 #define MAX_GENERIC_ATTRIB		8
 #define MAX_TEXCOORD_ATTRIB		8
 
-// vertex texture index access helper
-#define VERTEX_TEXTURE_INDEX(idx)	((-MAX_VERTEXTEXTURES - 1)+idx)
-
 // Stencil-test function constants for SetStencilStateEx()
 enum ER_StencilFunction
 {

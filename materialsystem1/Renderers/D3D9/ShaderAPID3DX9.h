@@ -21,6 +21,8 @@ enum EGraphicsVendor
 	VENDOR_OTHER,
 };
 
+struct DX9Sampler_t;
+
 class ShaderAPID3DX9 : public ShaderAPI_Base
 {
 public:
@@ -307,7 +309,7 @@ protected:
 
 	IDirect3DBaseTexture9*		CreateD3DTextureFromImage(CImage* pSrc, int& wide, int& tall, int nFlags = 0);
 
-	int							GetSamplerUnit(IShaderProgram* pProgram,const char* pszSamplerName);
+	bool						GetSamplerUnit(CD3D9ShaderProgram* pProgram, const char* pszSamplerName, const DX9Sampler_t** sampler);
 
 private:
 	static bool					InternalCreateRenderTarget(LPDIRECT3DDEVICE9 dev, CD3D9Texture* tex, int nFlags, const ShaderAPICaps_t& caps);
