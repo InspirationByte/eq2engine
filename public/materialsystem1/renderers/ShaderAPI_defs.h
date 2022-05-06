@@ -344,7 +344,7 @@ typedef struct BlendStateParam_s
 
 typedef struct DepthStencilStateParams_s
 {
-	bool					depthTest{ true };
+	bool					depthTest{ false };
 	bool					depthWrite{ false };
 	ER_CompareFunc			depthFunc{ COMP_LEQUAL };
 

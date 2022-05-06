@@ -351,10 +351,6 @@ private:
 	float					m_fCurrentDepthBias;
 	float					m_fCurrentSlopeDepthBias;
 
-	int						m_nCurrentDepthFunc;
-	bool					m_bCurrentDepthTestEnable;
-	bool					m_bCurrentDepthWriteEnable;
-
 	bool					m_bCurrentMultiSampleEnable;
 	bool					m_bCurrentScissorEnable;
 	int						m_nCurrentCullMode;

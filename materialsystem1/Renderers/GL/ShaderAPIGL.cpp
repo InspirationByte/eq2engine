@@ -154,10 +154,6 @@ ShaderAPIGL::ShaderAPIGL() : ShaderAPI_Base()
 	m_nCurrentDstFactor = BLENDFACTOR_ZERO;
 	m_nCurrentBlendFunc = BLENDFUNC_ADD;
 
-	m_nCurrentDepthFunc = COMP_LEQUAL;
-	m_bCurrentDepthTestEnable = false;
-	m_bCurrentDepthWriteEnable = false;
-
 	m_bCurrentMultiSampleEnable = false;
 	m_bCurrentScissorEnable = false;
 	m_nCurrentCullMode = CULL_BACK;
@@ -219,8 +215,11 @@ void ShaderAPIGL::Init( shaderAPIParams_t &params)
 	DevMsg(DEVMSG_SHADERAPI, "[DEBUG] ShaderAPIGL vendor: %d\n", m_vendor);
 
 	// Set some of my preferred defaults
-	glEnable(GL_DEPTH_TEST);
+	glDisable(GL_DEPTH_TEST);
 	GLCheckError("def param GL_DEPTH_TEST");
+
+	glDepthMask(0);
+	GLCheckError("def param glDepthMask");
 
 	glDepthFunc(GL_LEQUAL);
 	GLCheckError("def param GL_LEQUAL");
@@ -407,59 +406,34 @@ void ShaderAPIGL::ApplyBlendState()
 void ShaderAPIGL::ApplyDepthState()
 {
 	// stencilRef currently not used
-	CGLDepthStencilState* pSelectedState = (CGLDepthStencilState*)m_pSelectedDepthState;
+	static CGLDepthStencilState defaultState;
+	CGLDepthStencilState* pSelectedState = m_pSelectedDepthState ? (CGLDepthStencilState*)m_pSelectedDepthState : &defaultState;
+	CGLDepthStencilState* pCurrentState = m_pCurrentDepthState ? (CGLDepthStencilState*)m_pCurrentDepthState : &defaultState;
 
 	if (pSelectedState != m_pCurrentDepthState)
 	{
-		if (pSelectedState == NULL)
-		{
-			if (!m_bCurrentDepthTestEnable)
-			{
-				glEnable(GL_DEPTH_TEST);
-				m_bCurrentDepthTestEnable = true;
-			}
-
-			if (!m_bCurrentDepthWriteEnable)
-			{
-				glDepthMask(GL_TRUE);
-				m_bCurrentDepthWriteEnable = true;
-			}
-
-			if (m_nCurrentDepthFunc != COMP_LEQUAL)
-				glDepthFunc(depthConst[m_nCurrentDepthFunc = COMP_LEQUAL]);
-		}
-		else
-		{
-			DepthStencilStateParams_t& state = pSelectedState->m_params;
+		const DepthStencilStateParams_t& newState = pSelectedState->m_params;
+		const DepthStencilStateParams_t& prevState = pCurrentState->m_params;
 		
-			if (state.depthTest)
-			{
-				if (!m_bCurrentDepthTestEnable)
-				{
-					glEnable(GL_DEPTH_TEST);
-					m_bCurrentDepthTestEnable = true;
-				}
-
-				if (state.depthWrite != m_bCurrentDepthWriteEnable)
-				{
-					glDepthMask((state.depthWrite)? GL_TRUE : GL_FALSE);
-					m_bCurrentDepthWriteEnable = state.depthWrite;
-				}
-
-				if (state.depthFunc != m_nCurrentDepthFunc)
-					glDepthFunc(depthConst[m_nCurrentDepthFunc = state.depthFunc]);
-			}
+		if (newState.depthTest != prevState.depthTest)
+		{
+			if(newState.depthTest)
+				glEnable(GL_DEPTH_TEST);
 			else
-			{
-				if (m_bCurrentDepthTestEnable)
-				{
-					glDisable(GL_DEPTH_TEST);
-					m_bCurrentDepthTestEnable = false;
-				}
-			}
+				glDisable(GL_DEPTH_TEST);
 
-			#pragma todo(GL: stencil tests)
+			// BUG? for some reason after switching GL_DEPTH_TEST we have update the depth mask again, otherwise it won't work as expected
+			glDepthMask((newState.depthWrite) ? GL_TRUE : GL_FALSE);
 		}
+		else if (newState.depthWrite != prevState.depthWrite)
+		{
+			glDepthMask((newState.depthWrite) ? GL_TRUE : GL_FALSE);
+		}
+
+		if (newState.depthFunc != prevState.depthFunc)
+			glDepthFunc(depthConst[newState.depthFunc]);
+
+		#pragma todo(GL: stencil tests)
 
 		m_pCurrentDepthState = pSelectedState;
 	}
