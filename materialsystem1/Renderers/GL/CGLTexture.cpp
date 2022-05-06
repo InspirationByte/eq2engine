@@ -19,7 +19,7 @@
 
 extern ShaderAPIGL g_shaderApi;
 
-extern bool GLCheckError(const char* op);
+extern bool GLCheckError(const char* op, ...);
 
 CGLTexture::CGLTexture()
 {
@@ -228,8 +228,8 @@ bool UpdateGLTextureFromImage(GLTextureRef_t texture, CImage* image, int startMi
 					srcType,
 					src);
 			}
-
-			GLCheckError("tex upload 3d");
+			if (!GLCheckError("tex upload 3d (mip %d)", mipMapLevel))
+				break;
 		}
 		else if (texture.type == GLTEX_TYPE_CUBETEXTURE)
 		{
@@ -258,7 +258,8 @@ bool UpdateGLTextureFromImage(GLTextureRef_t texture, CImage* image, int startMi
 						srcType,
 						src + i * cubeFaceSize);
 				}
-				GLCheckError("tex upload cube");
+				if (!GLCheckError("tex upload cube (mip %d)", mipMapLevel))
+					break;
 			}
 		}
 		else if (texture.type == GLTEX_TYPE_TEXTURE)
@@ -268,7 +269,7 @@ bool UpdateGLTextureFromImage(GLTextureRef_t texture, CImage* image, int startMi
 				glCompressedTexImage2D(glTarget,
 					lockBoxLevel,
 					internalFormat,
-					width, image->GetHeight(mipMapLevel),
+					width, height,
 					0,
 					size,
 					src);
@@ -278,14 +279,15 @@ bool UpdateGLTextureFromImage(GLTextureRef_t texture, CImage* image, int startMi
 				glTexImage2D(glTarget,
 					lockBoxLevel,
 					internalFormat,
-					width, image->GetHeight(mipMapLevel),
+					width, height,
 					0,
 					srcFormat,
 					srcType,
 					src);
 			}
 
-			GLCheckError("tex upload 2d");
+			if (!GLCheckError("tex upload 2d (mip %d)", mipMapLevel))
+				break;
 		}
 
 		mipMapLevel++;

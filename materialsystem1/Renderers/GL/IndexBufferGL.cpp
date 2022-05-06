@@ -22,7 +22,7 @@
 
 extern ShaderAPIGL g_shaderApi;
 
-extern bool GLCheckError(const char* op);
+extern bool GLCheckError(const char* op, ...);
 
 CIndexBufferGL::CIndexBufferGL()
 {

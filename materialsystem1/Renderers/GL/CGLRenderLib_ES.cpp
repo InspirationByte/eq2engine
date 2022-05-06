@@ -30,7 +30,7 @@ static_assert(false, "this file should NOT BE included when non-GLES version is 
 #		include <android/native_window.h>
 #	endif // PLAT_ANDROID
 
-extern bool GLCheckError(const char* op);
+extern bool GLCheckError(const char* op, ...);
 
 /*
 
@@ -397,9 +397,13 @@ void CGLRenderLib_ES::BeginFrame()
 
 void CGLRenderLib_ES::EndFrame(IEqSwapChain* schain)
 {
-	//eglSwapInterval(m_eglDisplay, g_shaderApi.m_params->verticalSyncEnabled ? 1 : 0);
+#ifdef PLAT_ANDROID
+	eglSwapInterval(m_eglDisplay, g_shaderApi.m_params->verticalSyncEnabled ? 1 : 0);
+
 	const GLenum attachments[] = { GL_DEPTH_ATTACHMENT, GL_STENCIL_ATTACHMENT };
 	glInvalidateFramebuffer(GL_FRAMEBUFFER, 2, attachments);
+	GLCheckError("invalidate buffer");
+#endif
 
 	eglSwapBuffers(m_eglDisplay, m_eglSurface);
 	GLCheckError("swap buffers");

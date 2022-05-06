@@ -57,7 +57,7 @@ ConVar gl_report_errors("gl_report_errors", "0");
 ConVar gl_break_on_error("gl_break_on_error", "0");
 ConVar gl_bypass_errors("gl_bypass_errors", "0");
 
-bool GLCheckError(const char* op)
+bool GLCheckError(const char* op, ...)
 {
 	GLenum lastError = glGetError();
 	if(lastError != GL_NO_ERROR)
@@ -88,8 +88,17 @@ bool GLCheckError(const char* op)
                 break;
         }
 
-		if(gl_report_errors.GetBool())
-			MsgError("*OGL* error occured while '%s' (%s)\n", op, errString.ToCString());
+		if (gl_report_errors.GetBool())
+		{
+			va_list argptr;
+			va_start(argptr, op);
+
+			EqString str = EqString::FormatVa(op, argptr);
+
+			va_end(argptr);
+
+			MsgError("*OGL* error occured while '%s' (%s)\n", str.ToCString(), errString.ToCString());
+		}
 
 		return gl_bypass_errors.GetBool();
 	}

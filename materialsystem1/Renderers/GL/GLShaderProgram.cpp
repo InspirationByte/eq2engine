@@ -8,7 +8,7 @@
 #include "GLShaderProgram.h"
 #include "utils/strtools.h"
 
-extern bool GLCheckError(const char* op);
+extern bool GLCheckError(const char* op, ...);
 
 CGLShaderProgram::CGLShaderProgram()
 {

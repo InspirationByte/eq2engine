@@ -30,7 +30,7 @@ static_assert(false, "this file should NOT BE included when GLES version is buil
 #	include "agl_caps.hpp"
 #endif
 
-extern bool GLCheckError(const char* op);
+extern bool GLCheckError(const char* op, ...);
 
 /*
 
