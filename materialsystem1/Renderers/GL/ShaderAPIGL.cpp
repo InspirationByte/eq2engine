@@ -1712,8 +1712,6 @@ void ShaderAPIGL::DestroyShaderProgram(IShaderProgram* pShaderProgram)
 	"#define ddx dFdx\r\n"						\
 	"#define ddy dFdy\r\n"
 
-#define GLSL_VERTEX_ATTRIB_START 0	// this is compatibility only
-
 // Load any shader from stream
 bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const shaderProgramCompileInfo_t& info, const char* extra)
 {
@@ -1728,6 +1726,12 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 
 	if (!info.data.text)
 		return false;
+
+	EqString precision = "mediump";
+	if (info.apiPrefs) 
+	{
+		precision = KV_GetValueString(info.apiPrefs->FindKeyBase("precision"), 0, "mediump");
+	}
 
 	struct compileData
 	{
@@ -1752,7 +1756,7 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 
 #ifdef USE_GLES2
 		shaderString.Append("#version 300 es\r\n");
-		shaderString.Append("precision highp float;\r\n"); // TODO: precision in key-value file
+		shaderString.Append("precision " + precision + " float;\r\n");
 		shaderString.Append("precision mediump int;\r\n");
 #else
 		shaderString.Append("#version 330\r\n");
@@ -1829,7 +1833,7 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 
 #ifdef USE_GLES2
 		shaderString.Append("#version 300 es\r\n");
-		shaderString.Append("precision highp float;\r\n"); // TODO: precision in key-value file
+		shaderString.Append("precision " + precision + " float;\r\n");
 		shaderString.Append("precision mediump int;\r\n");
 #else
 		shaderString.Append("#version 330\r\n");

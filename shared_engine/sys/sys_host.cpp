@@ -330,9 +330,6 @@ bool CGameHost::InitSystems( EQWNDHANDLE pWindow )
 	materials_config.shaderapi_params.windowHandle = &winParams;
 	format = FORMAT_RGB565;
 #endif
-
-	r_clear.SetBool(true);
-
 #endif
 
 	materials_config.shaderapi_params.screenFormat = format;
@@ -656,7 +653,11 @@ bool CGameHost::Frame()
 
 	// always reset scissor rectangle before we start rendering
 	g_pShaderAPI->SetScissorRectangle( IRectangle(0,0,m_winSize.x, m_winSize.y) );
-	g_pShaderAPI->Clear(r_clear.GetBool(),true,false, ColorRGBA(0.1f,0.1f,0.1f,1.0f));
+#ifdef PLAT_ANDROID
+	g_pShaderAPI->Clear(true, true, true);
+#else
+	g_pShaderAPI->Clear(r_clear.GetBool(), true, false, ColorRGBA(0.1f,0.1f,0.1f,1.0f));
+#endif
 
 
 	double timescale = (EqStateMgr::GetCurrentState() ? EqStateMgr::GetCurrentState()->GetTimescale() : 1.0f);

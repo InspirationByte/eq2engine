@@ -2456,7 +2456,7 @@ bool ShaderAPID3DX9::GetSamplerUnit(CD3D9ShaderProgram* pProgram, const char* ps
 
 	return false;
 }
-#pragma optimize("", off)
+
 void ShaderAPID3DX9::SetTexture( ITexture* pTexture, const char* pszName, int index )
 {
 	if (!pszName)

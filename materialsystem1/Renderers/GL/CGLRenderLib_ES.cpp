@@ -398,6 +398,8 @@ void CGLRenderLib_ES::BeginFrame()
 void CGLRenderLib_ES::EndFrame(IEqSwapChain* schain)
 {
 	//eglSwapInterval(m_eglDisplay, g_shaderApi.m_params->verticalSyncEnabled ? 1 : 0);
+	const GLenum attachments[] = { GL_DEPTH_ATTACHMENT, GL_STENCIL_ATTACHMENT };
+	glInvalidateFramebuffer(GL_FRAMEBUFFER, 2, attachments);
 
 	eglSwapBuffers(m_eglDisplay, m_eglSurface);
 	GLCheckError("swap buffers");
