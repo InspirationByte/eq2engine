@@ -111,7 +111,7 @@ BEGIN_SHADER_CLASS(VHBlurFilter)
 	void SetupBaseTexture0()
 	{
 		ITexture* pSetupTexture = materials->GetConfiguration().wireframeMode ? materials->GetWhiteTexture() : m_pBaseTexture;
-		g_pShaderAPI->SetTexture(pSetupTexture, "BaseTextureSampler", 0);
+		g_pShaderAPI->SetTexture(pSetupTexture, "BaseTexture", 0);
 	}
 
 	ITexture*	GetBaseTexture(int stage) const {return m_pBaseTexture;}
