@@ -12,7 +12,7 @@
 #include "core/dktypes.h"
 #include "core/platform/assert.h"
 
-template<typename K, typename V>
+template<typename K, typename V, bool MULTIMAP = false>
 class Map
 {
 private:
@@ -44,14 +44,16 @@ public:
 	};
 
 public:
-	Map() : m_end(&m_endItem), m_begin(&m_endItem), m_root(nullptr), m_size(0), m_freeItem(nullptr), m_blocks(nullptr)
+	Map() 
+		: m_end(&m_endItem), m_begin(&m_endItem), m_root(nullptr), m_size(0), m_freeItem(nullptr), m_blocks(nullptr)
 	{
 		m_endItem.parent = nullptr;
 		m_endItem.prev = nullptr;
 		m_endItem.next = nullptr;
 	}
 
-	Map(const Map& other) : m_end(&m_endItem), m_begin(&m_endItem), m_root(nullptr), m_size(0), m_freeItem(nullptr), m_blocks(nullptr)
+	Map(const Map& other) 
+		: m_end(&m_endItem), m_begin(&m_endItem), m_root(nullptr), m_size(0), m_freeItem(nullptr), m_blocks(nullptr)
 	{
 		m_endItem.parent = nullptr;
 		m_endItem.prev = nullptr;
@@ -133,6 +135,17 @@ public:
 		return find(key) != m_end; 
 	}
 
+	int count(const K& key) const
+	{
+		Iterator it = find(key);
+		if (it == m_end)
+			return 0;
+		int count = 1;
+		for (Item* item = it.item->next; item && item->key == key; item = item->next)
+			++count;
+		return count;
+	}
+
 	V& operator[](const K& key)
 	{
 		Iterator it = find(key);
@@ -153,21 +166,39 @@ public:
 		}
 		else
 		{
-			if (key < insertPos->key)
+			if (MULTIMAP)
 			{
-				Item* prev = insertPos->prev;
-				if (!prev || key > prev->key)
-					return insert(&insertPos->left, insertPos, key);
-			}
-			else if (key > insertPos->key)
-			{
-				Item* next = insertPos->next;
-				if (next == &m_endItem || key < next->key)
-					return insert(&insertPos->right, insertPos, key);
+				if (key < insertPos->key)
+				{
+					Item* prev = insertPos->prev;
+					if (!prev || key >= prev->key)
+						return insert(&insertPos->left, insertPos, key);
+				}
+				else
+				{
+					Item* next = insertPos->next;
+					if (next == &m_endItem || key <= next->key)
+						return insert(&insertPos->right, insertPos, key);
+				}
 			}
 			else
 			{
-				return insertPos;
+				if (key < insertPos->key)
+				{
+					Item* prev = insertPos->prev;
+					if (!prev || key > prev->key)
+						return insert(&insertPos->left, insertPos, key);
+				}
+				else if (key > insertPos->key)
+				{
+					Item* next = insertPos->next;
+					if (next == &m_endItem || key < next->key)
+						return insert(&insertPos->right, insertPos, key);
+				}
+				else
+				{
+					return insertPos;
+				}
 			}
 		}
 		return insert(&m_root, nullptr, key);
@@ -175,7 +206,7 @@ public:
 
 	Iterator insert(const K& key, const V& value)
 	{
-		Iterator it = insert(&m_root, nullptr, key);
+		Iterator it = insert(key);
 		it.item->value = value;
 		return it;
 	}
@@ -379,27 +410,19 @@ private:
 		K key;
 		V value;
 		Item* parent;
-		Item* left;
-		Item* right;
-		Item* next;
-		Item* prev;
-		int height;
-		int slope;
+		Item* left{ nullptr };
+		Item* right{ nullptr };
+		Item* next{ nullptr };
+		Item* prev{ nullptr };
+		int height{ 1 };
+		int slope{ 0 };
 
 		Item()
 			: key(), value()
 		{}
 
-		void set(Item* _parent, const K& _key)
-		{
-			new(this) Item(); // quite interesting but this is the only case where it works!!!
-			key = _key;
-			parent = _parent;
-			left = nullptr;
-			right = nullptr;
-			height = 1;
-			slope = 0;
-		}
+		Item(Item* parent, const K& key) : parent(parent), key(key)
+		{}
 
 		void updateHeightAndSlope()
 		{
@@ -446,10 +469,10 @@ private:
 				}
 				m_freeItem = item;
 			}
-
-			item->set(parent, key);
+			new (item) Item(parent, key);
 			m_freeItem = item->prev;
 
+			// FIXME: multi-map is bugged, first item becomes unreachable
 			*cell = item;
 			++m_size;
 			if (!parent)
@@ -488,23 +511,52 @@ private:
 		}
 		else
 		{
-			if (key > position->key)
-			{
-				cell = &position->right;
-				parent = position;
-				goto begin;
-			}
-			else if (key < position->key)
-			{
-				cell = &position->left;
-				parent = position;
-				goto begin;
-			}
-			else
+			if (nextCell<MULTIMAP>(key, position, &cell, &parent))
 			{
 				return position;
 			}
+			goto begin;
 		}
+	}
+
+	template<bool MULTI>
+	bool nextCell(const K& key, Item* position, Item*** cell, Item** parent);
+
+	// multi-map
+	template<>
+	bool nextCell<true>(const K& key, Item* position, Item*** cell, Item** parent)
+	{
+		if (key < position->key)
+		{
+			*cell = &position->left;
+			*parent = position;
+		}
+		else
+		{
+			*cell = &position->right;
+			*parent = position;
+		}
+		return false;
+	}
+
+	// map
+	template<>
+	bool nextCell<false>(const K& key, Item* position, Item*** cell, Item** parent)
+	{
+		if (key > position->key)
+		{
+			*cell = &position->right;
+			*parent = position;
+			return false;
+		}
+		else if (key < position->key)
+		{
+			*cell = &position->left;
+			*parent = position;
+			return false;
+		}
+
+		return true;
 	}
 
 	Item* rebal(Item* item)
@@ -581,7 +633,10 @@ private:
 
 using _EMPTY_VALUE = struct {};
 
-template<typename T>
-using Set = Map<T, _EMPTY_VALUE>;
+template<typename K>
+using Set = Map<K, _EMPTY_VALUE>;
+
+//template<typename K, typename V>
+//using MultiMap = Map<K, V, true>;
 
 #endif // MAP_H
