@@ -58,7 +58,7 @@ struct shaderAPIParams_t
 	ETextureFormat	screenFormat{ FORMAT_RGB8 };		// screen back buffer format
 
 	int				screenRefreshRateHZ{ 60 };			// refresh rate in HZ
-	int				multiSamplingMode;					// multisampling
+	int				multiSamplingMode{ 0 };				// multisampling
 
 	// extended parameters
 	int				depthBits{ 24 };					// bit depth for depth/stencil

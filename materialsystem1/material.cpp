@@ -14,13 +14,14 @@
 
 #include "core/DebugInterface.h"
 #include "core/IFileSystem.h"
+#include "core/ConVar.h"
 
 #include "utils/strtools.h"
 #include "utils/eqthread.h"
 #include "utils/TextureAtlas.h"
 #include "utils/KeyValues.h"
 
-//#include "materialsystem1/BaseShader.h"
+ConVar r_allowSourceTextures("r_allowSourceTextures", "0", "enable materials and textures loading from source paths", 0);
 
 #define MATERIAL_FILE_EXTENSION		".mat"
 #define ATLAS_FILE_EXTENSION		".atlas"
@@ -68,7 +69,11 @@ void CMaterial::Init(const char* materialPath)
 	bool success = false;
 	kvkeybase_t root;
 
-	for (int i = 0; i < 2 && !success; ++i)
+	int doMaterialPaths = materials->GetConfiguration().editormode;
+
+	const int numSteps = r_allowSourceTextures.GetBool() ? 2 : 1;
+
+	for (int i = 0; i < numSteps && !success; ++i)
 	{
 		//
 		// loading a material description

@@ -29,6 +29,7 @@
 static ConVar rs_echo_texture_loading("r_echo_texture_loading", "0", "Echo textrue loading");
 static ConVar r_nomip("r_nomip", "0", nullptr, CV_CHEAT);
 static ConVar r_skipTextures("r_skipTextures", "0", nullptr, CV_CHEAT);
+HOOK_TO_CVAR(r_allowSourceTextures);
 
 DECLARE_CMD(r_info, "Prints renderer info", 0)
 {
@@ -551,6 +552,8 @@ ITexture* ShaderAPI_Base::LoadTexture( const char* pszFileName,
 
 	Array<CImage*> pImages;
 
+	const EqString& textureAuxPath = r_allowSourceTextures->GetBool() ? m_params.textureSRCPath : m_params.texturePath;
+
 	// load frames
 	for (int i = 0; i < textureNames.numElem(); i++)
 	{
@@ -562,7 +565,7 @@ ITexture* ShaderAPI_Base::LoadTexture( const char* pszFileName,
 
 		if (!stateLoad)
 		{
-			CombinePath(texturePathExt, 2, m_params.textureSRCPath.ToCString(), textureNames[i].ToCString());
+			CombinePath(texturePathExt, 2, textureAuxPath.ToCString(), textureNames[i].ToCString());
 			stateLoad = img->LoadTGA(texturePathExt + TEXTURE_SECONDARY_EXTENSION);
 		}
 
@@ -670,6 +673,8 @@ bool ShaderAPI_Base::RestoreTextureInternal(ITexture* pTexture)
 
 	Array<CImage*> pImages;
 
+	const EqString& textureAuxPath = r_allowSourceTextures->GetBool() ? m_params.textureSRCPath : m_params.texturePath;
+
 	// load frames
 	for (int i = 0; i < textureNames.numElem(); i++)
 	{
@@ -681,7 +686,7 @@ bool ShaderAPI_Base::RestoreTextureInternal(ITexture* pTexture)
 
 		if (!stateLoad)
 		{
-			CombinePath(texturePathExt, 2, m_params.textureSRCPath.ToCString(), textureNames[i].ToCString());
+			CombinePath(texturePathExt, 2, textureAuxPath.ToCString(), textureNames[i].ToCString());
 			stateLoad = img->LoadTGA(texturePathExt + TEXTURE_SECONDARY_EXTENSION);
 		}
 

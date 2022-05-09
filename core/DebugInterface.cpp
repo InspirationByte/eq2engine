@@ -224,20 +224,22 @@ void SpewMessage(SpewType_t spewtype, char const* msg)
 #endif // PLAT_ANDROID
 
 	{
-		Threading::CScopedMutex m(g_debugOutputMutex);
-
 		if (!g_bLoggingInitialized)
 		{
 			puts(msg);
 		}
 
 		// print to log file if enabled
-		if (g_logFile)
 		{
-			fputs(msg, g_logFile);
+			Threading::CScopedMutex m(g_debugOutputMutex);
 
-			if (g_logForceFlush)
-				Log_Flush();
+			if (g_logFile)
+			{
+				fputs(msg, g_logFile);
+
+				if (g_logForceFlush)
+					Log_Flush();
+			}
 		}
 
 		ASSERT(g_fnConSpewFunc);
