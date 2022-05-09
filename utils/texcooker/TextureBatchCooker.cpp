@@ -150,41 +150,6 @@ Array<TexInfo_t*> g_textureList;
 
 //-----------------------------------------------------------------------
 
-int MakePath(const char *path)
-{
-	/* Adapted from http://stackoverflow.com/a/2336245/119527 */
-	const size_t len = strlen(path);
-	char _path[MAX_PATH];
-	char *p;
-
-	errno = 0;
-
-	/* Copy string so its mutable */
-	if (len > sizeof(_path) - 1) {
-		return -1;
-	}
-
-	strcpy(_path, path);
-
-	/* Iterate the string */
-	for (p = _path + 1; *p; p++) {
-		if (*p == CORRECT_PATH_SEPARATOR) {
-			/* Temporarily truncate */
-			*p = '\0';
-
-			g_fileSystem->MakeDir(_path, SP_ROOT);
-
-			*p = CORRECT_PATH_SEPARATOR;
-		}
-	}
-
-	g_fileSystem->MakeDir(_path, SP_ROOT);
-
-	return 0;
-}
-
-//-----------------------------------------------------------------------
-
 void LoadBatchConfig(kvkeybase_t* batchSec)
 {
 	// retrieve application name and arguments
@@ -327,18 +292,26 @@ void LoadMaterialImages(const char* materialFileName)
 
 				if (!matFileSaved)
 				{
+					const bool isPath = strchr(imageName, CORRECT_PATH_SEPARATOR) || strchr(imageName, INCORRECT_PATH_SEPARATOR);
+
 					// make path
 					EqString targetFilePath;
-					CombinePath(targetFilePath, 2, g_targetProps.targetFolder.ToCString(), _Es(imageName).Path_Strip_Name().ToCString());
-					
-					MakePath(targetFilePath.ToCString());
+					if (isPath)
+						CombinePath(targetFilePath, 2, g_targetProps.targetFolder.ToCString(), _Es(imageName).Path_Strip_Name().ToCString());
+					else
+						targetFilePath = g_targetProps.targetFolder;
 
-					EqString materialFileName(targetFilePath.Path_Strip_Name() + _Es(materialFileName).Path_Strip_Path());
+					EqString targetMaterialFileName;
+					CombinePath(targetMaterialFileName, 2, targetFilePath.ToCString(), _Es(materialFileName).Path_Strip_Path().ToCString());
 
-					// save material file
-					kvs.SaveToFile(materialFileName.ToCString(), SP_ROOT);
+					if (!g_fileSystem->FileExist(targetMaterialFileName.ToCString(), SP_ROOT))
+					{
+						g_fileSystem->MakeDir(targetFilePath.ToCString(), SP_ROOT);
 
-					matFileSaved = true;
+						// save material file
+						kvs.SaveToFile(targetMaterialFileName.ToCString(), SP_ROOT);
+						matFileSaved = true;
+					}
 				}
 
 				g_textureList.append(new TexInfo_t(imageName, imageUsage.ToCString()));
@@ -421,7 +394,8 @@ void ProcessTexture(TexInfo_t* textureInfo)
 	arguments.ReplaceSubstr(s_outputFilePathTag.ToCString(), targetFilePath.ToCString());
 
 	// generate CRC from image file content and arguments it's going to be built
-	uint32 srcCRC = g_fileSystem->GetFileCRC32(sourceFilename.ToCString(), SP_ROOT) + CRC32_BlockChecksum(arguments.ToCString(), arguments.Length());
+	uint32 srcCRC = g_fileSystem->GetFileCRC32(sourceFilename.ToCString(), SP_ROOT);
+	CRC32_UpdateChecksum(srcCRC, arguments.ToCString(), arguments.Length());
 
 	// store new CRC
 	g_batchConfig.newCRCSec.SetKey(EqString::Format("%u", srcCRC).ToCString(), sourceFilename.ToCString());
@@ -437,22 +411,17 @@ void ProcessTexture(TexInfo_t* textureInfo)
 		}
 		else
 		{
-			MsgInfo("Re-generating '%s'!\n", targetFilename.ToCString());
+			MsgInfo("Re-generating '%s'\n", targetFilename.ToCString());
 		}
 	}
 
 	textureInfo->status = CONVERTED;
 
-	MsgInfo("Processing %s: %s...\n", textureInfo->usage->usageName.ToCString(), textureInfo->sourcePath.ToCString());
-
-	/*static const EqString s_argumentsTag("%ARGS%");
-	static const EqString s_inputFileNameTag("%INPUT_FILENAME%");
-	static const EqString s_outputFileNameTag("%OUTPUT_FILENAME%");
-	static const EqString s_outputFilePathTag("%OUTPUT_FILEPATH%");*/
+	MsgInfo("Processing %s: %s\n", textureInfo->usage->usageName.ToCString(), textureInfo->sourcePath.ToCString());
 
 	EqString cmdLine(EqString::Format("%s %s %s", g_batchConfig.applicationName.ToCString(), g_batchConfig.compressionApplicationArguments.ToCString(), arguments.ToCString()));
 
-	Msg("*RUN '%s'\n", cmdLine.GetData());
+	DevMsg(DEVMSG_CORE, "*RUN '%s'\n", cmdLine.GetData());
 	system(cmdLine.GetData());
 }
 
@@ -537,6 +506,7 @@ void CookMaterialsToTarget(const char* pszTargetName)
 		for (int i = 0; i < g_textureList.numElem(); i++)
 		{
 			TexInfo_t* tex = g_textureList[i];
+			Msg("%d / %d...\n", i+1, g_textureList.numElem());
 			ProcessTexture(tex);
 
 			delete tex;
