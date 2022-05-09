@@ -108,7 +108,7 @@ bool TransformEGFVertex(EGFHwVertex_t& vert, Matrix4x4* pMatrices)
 
 		bAffected = true;
 
-		vPos += transform4(vert.pos, pMatrices[index]) * weight;
+		vPos += transform4(Vector3D(vert.pos.xyz()), pMatrices[index]) * weight;
 		vNormal += transform3(Vector3D(vert.normal), pMatrices[index]) * weight;
 		vTangent += transform3(Vector3D(vert.tangent), pMatrices[index]) * weight;
 		vBinormal += transform3(Vector3D(vert.binormal), pMatrices[index]) * weight;
@@ -116,7 +116,7 @@ bool TransformEGFVertex(EGFHwVertex_t& vert, Matrix4x4* pMatrices)
 
 	if (bAffected)
 	{
-		vert.pos = vPos;
+		vert.pos = Vector4D(vPos, 1.0f);
 		vert.normal = vNormal;
 		vert.tangent = vTangent;
 		vert.binormal = vBinormal;
@@ -302,7 +302,7 @@ int CopyGroupVertexDataToHWList(EGFHwVertex_t* hwVtxList, int currentVertexCount
 		studiovertexdesc_t* pVertex = pGroup->pVertex(i);
 
 		hwVtxList[currentVertexCount] = EGFHwVertex_t(*pVertex);
-		aabb.AddVertex(hwVtxList[currentVertexCount++].pos);
+		aabb.AddVertex(hwVtxList[currentVertexCount++].pos.xyz());
 	}
 
 	return pGroup->numVertices;
@@ -930,8 +930,8 @@ void MakeDecalTexCoord(Array<EGFHwVertex_t>& verts, Array<int>& indices, const d
 
 			float U, V;
 
-			U = dot(uaxis, info.origin - verts[i].pos) * one_over_w + 0.5f;
-			V = dot(vaxis, info.origin - verts[i].pos) * one_over_h - 0.5f;
+			U = dot(uaxis, info.origin - verts[i].pos.xyz()) * one_over_w + 0.5f;
+			V = dot(vaxis, info.origin - verts[i].pos.xyz()) * one_over_h - 0.5f;
 
 			verts[i].texcoord.x = U;
 			verts[i].texcoord.y = -V;
@@ -953,8 +953,8 @@ void MakeDecalTexCoord(Array<EGFHwVertex_t>& verts, Array<int>& indices, const d
 			t = Vector3D(verts[i].tangent);
 			b = Vector3D(verts[i].binormal);
 
-			verts[i].texcoord.x = fabs(dot(info.origin - verts[i].pos, t * sign(t)) * one_over_w + 0.5f);
-			verts[i].texcoord.y = fabs(dot(info.origin - verts[i].pos, b * sign(b)) * one_over_h + 0.5f);
+			verts[i].texcoord.x = fabs(dot(info.origin - verts[i].pos.xyz(), t * sign(t)) * one_over_w + 0.5f);
+			verts[i].texcoord.y = fabs(dot(info.origin - verts[i].pos.xyz(), b * sign(b)) * one_over_h + 0.5f);
 		}
 	}
 
@@ -965,9 +965,10 @@ void MakeDecalTexCoord(Array<EGFHwVertex_t>& verts, Array<int>& indices, const d
 
 		Vector3D t, b, n;
 
-		ComputeTriangleTBN(verts[idxs[0]].pos,
-			verts[idxs[1]].pos,
-			verts[idxs[2]].pos,
+		ComputeTriangleTBN(
+			Vector3D(verts[idxs[0]].pos.xyz()),
+			Vector3D(verts[idxs[1]].pos.xyz()),
+			Vector3D(verts[idxs[2]].pos.xyz()),
 			verts[idxs[0]].texcoord,
 			verts[idxs[1]].texcoord,
 			verts[idxs[2]].texcoord,
@@ -1080,9 +1081,9 @@ tempdecal_t* CEngineStudioEGF::MakeTempDecal(const decalmakeinfo_t& info, Matrix
 				}
 
 				BoundingBox vbox;
-				vbox.AddVertex(v0.pos);
-				vbox.AddVertex(v1.pos);
-				vbox.AddVertex(v2.pos);
+				vbox.AddVertex(v0.pos.xyz());
+				vbox.AddVertex(v1.pos.xyz());
+				vbox.AddVertex(v2.pos.xyz());
 
 				// make and check surface normal
 				Vector3D normal = (v0.normal + v1.normal + v2.normal) / 3.0f;
@@ -1109,7 +1110,7 @@ tempdecal_t* CEngineStudioEGF::MakeTempDecal(const decalmakeinfo_t& info, Matrix
 			// restore
 			for (int k = 0; k < g_indices.numElem(); k++)
 			{
-				g_verts[g_indices[k]].pos = pGroup->pVertex(g_orig_indices[k])->point;
+				g_verts[g_indices[k]].pos = Vector4D(pGroup->pVertex(g_orig_indices[k])->point, 1.0f);
 				indices.append(nStart + g_indices[k]);
 			}
 

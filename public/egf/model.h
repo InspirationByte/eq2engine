@@ -89,7 +89,7 @@ typedef struct EGFHwVertex_s
 
 	EGFHwVertex_s(studiovertexdesc_t& initFrom)
 	{
-		pos = initFrom.point;
+		pos = Vector4D(initFrom.point, 1.0f);
 		texcoord = initFrom.texCoord;
 
 		tangent = initFrom.tangent;
@@ -108,7 +108,7 @@ typedef struct EGFHwVertex_s
 		}
 	}
 
-	Vector3D		pos;
+	TVec4D<half>	pos;
 	TVec2D<half>	texcoord;
 
 	TVec3D<half>	tangent;
@@ -126,7 +126,7 @@ typedef struct EGFHwVertex_s
 
 // Declare the EGF vertex format
 static VertexFormatDesc_t g_EGFHwVertexFormat[] = {
-	{ 0, 3, VERTEXATTRIB_POSITION, ATTRIBUTEFORMAT_FLOAT, "position" },		// position
+	{ 0, 4, VERTEXATTRIB_POSITION, ATTRIBUTEFORMAT_HALF, "position" },		// position
 	{ 0, 2, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_HALF, "texcoord" },		// texcoord 0
 
 	{ 0, 4, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_HALF, "tangent" },		// Tangent (TC1)
