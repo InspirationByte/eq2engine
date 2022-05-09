@@ -278,26 +278,22 @@ void InitMatSystem(HWND window)
 			format = FORMAT_RGB565;
 		}
 
-		matsystem_render_config_t materials_config;
+		matsystem_init_config_t materials_config;
+		matsystem_render_config_t& render_config = materials_config.renderConfig;
 
-		materials_config.enableBumpmapping = false;
-		materials_config.enableSpecular = true; // specular for cubemaps
-		materials_config.enableShadows = false;
-		materials_config.wireframeMode = false;
-		materials_config.editormode = true;
+		render_config.enableBumpmapping = false;
+		render_config.enableSpecular = true; // specular for cubemaps
+		render_config.enableShadows = false;
+		render_config.wireframeMode = false;
+		render_config.editormode = true;
 
-		materials_config.lighting_model = MATERIAL_LIGHT_FORWARD;
+		render_config.lightingModel = MATERIAL_LIGHT_FORWARD;
 
-		materials_config.shaderapi_params.windowHandle = window;
-		materials_config.shaderapi_params.screenFormat = format;
+		materials_config.shaderApiParams.windowHandle = window;
+		materials_config.shaderApiParams.screenFormat = format;
 
-		kvkeybase_t* matSystemSettings = GetCore()->GetConfig()->FindKeyBase("MaterialSystem");
-
-		const char* rendererName = matSystemSettings ? KV_GetValueString(matSystemSettings->FindKeyBase("Renderer"), 0, NULL) : "eqD3D9RHI";
-		const char* materialsPath = matSystemSettings ? KV_GetValueString(matSystemSettings->FindKeyBase("MaterialsPath"), 0, NULL) : "materials/";
-
-		bool materialSystemStatus = materials->Init(materialsPath, rendererName, materials_config);
-
+		if (!materials->Init(materials_config))
+			exit(0);
 
 		FogInfo_t fog;
 		fog.enableFog = true;
@@ -309,9 +305,6 @@ void InitMatSystem(HWND window)
 		materials->SetFogInfo(fog);
 
 		g_pShaderAPI = materials->GetShaderAPI();
-
-		if(!materialSystemStatus)
-			exit(0);
 	}
 
 	materials->LoadShaderLibrary("eqBaseShaders.dll");

@@ -58,13 +58,9 @@ public:
 	~CMaterialSystem();
 
 	// Initialize material system
-	// materialsDirectory - you can determine a full path on hard disk
 	// szShaderAPI - shader API that will be used. On NULL will set to default Shader API (DX9)
 	// config - material system configuration. Must be fully filled
-	bool							Init(	const char* materialsDirectory,
-													const char* szShaderAPI,
-													matsystem_render_config_t &config
-													);
+	bool							Init(const matsystem_init_config_t& config);
 
 	// shutdowns material system, unloading all.
 	void							Shutdown();
@@ -80,6 +76,7 @@ public:
 
 	// returns material path
 	const char*						GetMaterialPath() const;
+	const char*						GetMaterialSRCPath() const;
 
 	//-----------------------------
 	// Resource operations
@@ -319,6 +316,7 @@ private:
 
 	IShaderAPI*						m_shaderAPI;				// the main renderer interface
 	EqString						m_materialsPath;			// material path
+	EqString						m_materialsSRCPath;			// material sources path
 
 	Array<DKMODULE*>				m_shaderLibs;				// loaded shader libraries
 

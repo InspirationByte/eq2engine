@@ -199,7 +199,7 @@ void ShaderAPIGL::PrintAPIInfo()
 }
 
 // Init + Shurdown
-void ShaderAPIGL::Init( shaderAPIParams_t &params)
+void ShaderAPIGL::Init( const shaderAPIParams_t &params)
 {
 	const char* vendorStr = (const char *) glGetString(GL_VENDOR);
 

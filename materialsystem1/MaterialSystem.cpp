@@ -188,53 +188,80 @@ CMaterialSystem::~CMaterialSystem()
 }
 
 // Initializes material system
-bool CMaterialSystem::Init(const char* materialsDirectory, const char* szShaderAPI, matsystem_render_config_t &config)
+bool CMaterialSystem::Init(const matsystem_init_config_t& config)
 {
 	Msg(" \n--------- MaterialSystem Init --------- \n");
+
+	kvkeybase_t* matSystemSettings = GetCore()->GetConfig()->FindKeyBase("MaterialSystem");
 
 	ASSERT(g_pShaderAPI == NULL);
 
 	// store the configuration
-	m_config = config;
+	m_config = config.renderConfig;
 
-	const char* pszShaderAPILibName = szShaderAPI;
+#ifdef PLAT_ANDROID
+	EqString rendererName = "libeqGLESRHI";
+#else
+	EqString rendererName = config.rendererName;
 
-	if(!pszShaderAPILibName)
-		pszShaderAPILibName = "EqD3D9RHI";
+	if (!rendererName.Length())
+	{
+		// try using default from Eq config
+		rendererName = matSystemSettings ? KV_GetValueString(matSystemSettings->FindKeyBase("Renderer"), 0, NULL) : "eqGLRHI";
+	}
+#endif // _WIN329
+
+	if (g_cmdLine->FindArgument("-norender") != -1)
+	{
+		rendererName = "eqNullRHI";
+	}
 
 	// Load Shader API from here...
-	m_rendermodule = g_fileSystem->LoadModule(pszShaderAPILibName);
+	m_rendermodule = g_fileSystem->LoadModule(rendererName);
 	if(m_rendermodule)
 	{
 		m_renderLibrary = (IRenderLibrary*)GetCore()->GetInterface( RENDERER_INTERFACE_VERSION );
 		if(!m_renderLibrary)
 		{
-			ErrorMsg("MatSystem Error: Failed to initialize rendering library!!!");
+			ErrorMsg("MatSystem Error: Failed to initialize rendering library using %s!!!", rendererName.ToCString());
 			g_fileSystem->FreeModule(m_rendermodule);
 			return false;
 		}
 	}
 	else
 	{
-		ErrorMsg("MatSystem Error: Cannot load library '%s'!!!", pszShaderAPILibName);
+		ErrorMsg("MatSystem Error: Cannot load library '%s'!!!", rendererName.ToCString());
 		return false;
 	}
 
-	// initialize debug overlay interface
-	//debugoverlay = (IDebugOverlay*)GetCore()->GetInterface(DBGOVERLAY_INTERFACE_VERSION);
+	{
+		// regular materials
+		m_materialsPath = config.materialsPath;
+		if(!m_materialsPath.Length())
+			m_materialsPath = matSystemSettings ? KV_GetValueString(matSystemSettings->FindKeyBase("MaterialsPath"), 0, NULL) : "materials/";
 
-	m_materialsPath = materialsDirectory;
-	m_materialsPath.Path_FixSlashes();
+		m_materialsPath.Path_FixSlashes();
 
-	if(m_materialsPath.ToCString()[m_materialsPath.Length()-1] != CORRECT_PATH_SEPARATOR)
-		m_materialsPath.Append(CORRECT_PATH_SEPARATOR);
+		if (m_materialsPath.ToCString()[m_materialsPath.Length() - 1] != CORRECT_PATH_SEPARATOR)
+			m_materialsPath.Append(CORRECT_PATH_SEPARATOR);
+
+		// sources
+		m_materialsSRCPath = config.materialsSRCPath;
+		if(!m_materialsSRCPath.Length())
+			m_materialsSRCPath = matSystemSettings ? KV_GetValueString(matSystemSettings->FindKeyBase("MaterialsSRCPath"), 0, NULL) : "materialsSRC/";
+
+		m_materialsSRCPath.Path_FixSlashes();
+
+		if (m_materialsSRCPath.ToCString()[m_materialsSRCPath.Length() - 1] != CORRECT_PATH_SEPARATOR)
+			m_materialsSRCPath.Append(CORRECT_PATH_SEPARATOR);
+	}
 
 	// render library initialization
 	// collect all needed data for use in shaderapi initialization
 
 	if( m_renderLibrary->InitCaps() )
 	{
-		if(!m_renderLibrary->InitAPI( m_config.shaderapi_params ))
+		if(!m_renderLibrary->InitAPI(config.shaderApiParams))
 			return false;
 
 		// we created all we've need
@@ -247,11 +274,15 @@ bool CMaterialSystem::Init(const char* materialsDirectory, const char* szShaderA
 		}
 
 		// copy default path
-		if(m_config.shaderapi_params.texturePath[0] == 0)
-			strcpy(m_config.shaderapi_params.texturePath, m_materialsPath.GetData());
+		shaderAPIParams_t sapiParams = config.shaderApiParams;
+		if (sapiParams.texturePath[0] == 0)
+			sapiParams.texturePath = m_materialsPath.GetData();
+
+		if (sapiParams.textureSRCPath[0] == 0)
+			sapiParams.textureSRCPath = m_materialsSRCPath.GetData();
 
 		// init new created shader api with this parameters
-		m_shaderAPI->Init( m_config.shaderapi_params );
+		m_shaderAPI->Init(sapiParams);
 
         // test to be sure that it was initialized correctly
 		m_renderLibrary->BeginFrame();
@@ -440,6 +471,11 @@ matsystem_render_config_t& CMaterialSystem::GetConfiguration()
 const char* CMaterialSystem::GetMaterialPath() const
 {
 	return m_materialsPath.ToCString();
+}
+
+const char* CMaterialSystem::GetMaterialSRCPath() const
+{
+	return m_materialsSRCPath.ToCString();
 }
 
 // Adds new shader library
@@ -871,7 +907,7 @@ bool CMaterialSystem::BindMaterial(IMaterial* pMaterial, int flags)
 	
 	EMaterialRenderSubroutine subRoutineId = MATERIAL_SUBROUTINE_NORMAL;
 
-	if(m_config.ffp_mode)
+	if(m_config.ffpMode)
 		subRoutineId = MATERIAL_SUBROUTINE_FFPMATERIAL;
 
 	if( pMaterial->GetState() == MATERIAL_LOAD_ERROR || pMaterial->GetState() == MATERIAL_LOAD_NEED_LOAD )

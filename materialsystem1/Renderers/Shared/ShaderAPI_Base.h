@@ -27,7 +27,7 @@ public:
 										ShaderAPI_Base();
 
 	// Init + Shurdown
-	virtual void						Init( shaderAPIParams_t &params );
+	virtual void						Init( const shaderAPIParams_t &params );
 	virtual void						Shutdown();
 
 	void								ThreadLock();
@@ -191,7 +191,7 @@ public:
 
 protected:
 
-	void								GetImagesForTextureName(Array<EqString>& textureNames, const char* pszFileName, int nFlags);
+	void								GetImagesForTextureName(Array<EqString>& textureNames, const char* pszFileName);
 	
 	bool								RestoreTextureInternal(ITexture* pTexture);
 
@@ -201,7 +201,7 @@ protected:
 // Useful data
 //-------------------------------------------------------------
 
-	const shaderAPIParams_t*			m_params;
+	shaderAPIParams_t					m_params;
 	ShaderAPICaps_t						m_caps;
 
 	// Shader list

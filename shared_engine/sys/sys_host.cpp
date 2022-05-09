@@ -265,15 +265,13 @@ bool CGameHost::InitSystems( EQWNDHANDLE pWindow )
 		format = FORMAT_RGB565;
 	}
 
-	matsystem_render_config_t materials_config;
+	matsystem_init_config_t materials_config;
+	matsystem_render_config_t& render_config = materials_config.renderConfig;
 
-	materials_config.enableBumpmapping = true;
-	materials_config.enableSpecular = true;
-	materials_config.enableShadows = true;
-	materials_config.lowShaderQuality = r_fastShaders.GetBool();
+	render_config.lowShaderQuality = r_fastShaders.GetBool();
 
-	materials_config.shaderapi_params.windowHandle = pWindow;
-	materials_config.shaderapi_params.multiSamplingMode = r_antialiasing.GetInt();
+	materials_config.shaderApiParams.windowHandle = pWindow;
+	materials_config.shaderApiParams.multiSamplingMode = r_antialiasing.GetInt();
 
 	// set window info
 	SDL_SysWMinfo winfo;
@@ -303,17 +301,12 @@ bool CGameHost::InitSystems( EQWNDHANDLE pWindow )
 	// Set default cursor
 	SDL_SetCursor(s_defaultCursor[dc_arrow]);
 
-	kvkeybase_t* matSystemSettings = GetCore()->GetConfig()->FindKeyBase("MaterialSystem");
-
-	const char* rendererName = matSystemSettings ? KV_GetValueString(matSystemSettings->FindKeyBase("Renderer"), 0, NULL) : "eqD3D9RHI";
-	const char* materialsPath = matSystemSettings ? KV_GetValueString(matSystemSettings->FindKeyBase("MaterialsPath"), 0, NULL) : "materials/";
-
 #ifdef PLAT_WIN
-	materials_config.shaderapi_params.windowHandle = winfo.info.win.window;
+	materials_config.shaderApiParams.windowHandle = winfo.info.win.window;
 #elif PLAT_LINUX
-	materials_config.shaderapi_params.windowHandle = (void*)winfo.info.x11.window;
+	materials_config.shaderApiParams.windowHandle = (void*)winfo.info.x11.window;
 #elif APPLE
-	materials_config.shaderapi_params.windowHandle = (void*)winfo.info.cocoa.window;
+	materials_config.shaderApiParams.windowHandle = (void*)winfo.info.cocoa.window;
 #elif PLAT_ANDROID
 
 #if 0
@@ -332,21 +325,10 @@ bool CGameHost::InitSystems( EQWNDHANDLE pWindow )
 #endif
 #endif
 
-	materials_config.shaderapi_params.screenFormat = format;
-	materials_config.shaderapi_params.verticalSyncEnabled = r_vSync.GetBool();
+	materials_config.shaderApiParams.screenFormat = format;
+	materials_config.shaderApiParams.verticalSyncEnabled = r_vSync.GetBool();
 
-    bool materialSystemStatus = false;
-
-#ifndef PLAT_WIN
-	rendererName = "libeqGLESRHI";
-#endif // _WIN32
-
-	if (g_cmdLine->FindArgument("-norender") != -1)
-		rendererName = "eqNullRHI";
-
-	materialSystemStatus = materials->Init(materialsPath, rendererName, materials_config);
-
-	if(!materialSystemStatus)
+	if(!materials->Init(materials_config))
 		return false;
 
 	g_pShaderAPI = materials->GetShaderAPI();
@@ -359,8 +341,6 @@ bool CGameHost::InitSystems( EQWNDHANDLE pWindow )
 
 	// register all shaders
 	REGISTER_INTERNAL_SHADERS();
-
-	materials_config.threadedloader = true;
 
 	// init game states and proceed
 	if (!EqStateMgr::InitRegisterStates())

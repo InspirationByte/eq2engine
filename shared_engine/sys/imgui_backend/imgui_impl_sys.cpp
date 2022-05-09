@@ -89,14 +89,14 @@ void ImGui_ImplEq_InputMousePress(int Button, bool pressed)
     }
 }
 
-void ImGui_ImplEq_InputMouseWheel(int h, bool v)
+void ImGui_ImplEq_InputMouseWheel(int h, int v)
 {
     ImGuiIO& io = ImGui::GetIO();
 
-    if (h > 0) io.MouseWheelH += 1;
-    if (h < 0) io.MouseWheelH -= 1;
-    if (v > 0) io.MouseWheel += 1;
-    if (v < 0) io.MouseWheel -= 1;
+    if (h > 0) io.MouseWheelH += 1.0f;
+    if (h < 0) io.MouseWheelH -= 1.0f;
+    if (v > 0) io.MouseWheel += 1.0f;
+    if (v < 0) io.MouseWheel -= 1.0f;
 }
 
 void ImGui_ImplEq_InputFocus(bool focused)

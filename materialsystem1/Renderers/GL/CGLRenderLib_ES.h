@@ -28,7 +28,7 @@ public:
 
 	bool					InitCaps();
 
-	bool					InitAPI( shaderAPIParams_t &params );
+	bool					InitAPI(const shaderAPIParams_t &params);
 	void					ExitAPI();
 	void					ReleaseSwapChains();
 	void					ReleaseSurface();

@@ -116,7 +116,7 @@ void CGLRenderLib_ES::InitSharedContexts()
 	m_glSharedContext = context;
 }
 
-bool CGLRenderLib_ES::InitAPI(shaderAPIParams_t& params)
+bool CGLRenderLib_ES::InitAPI(const shaderAPIParams_t& params)
 {
 	EGLNativeDisplayType nativeDisplay = EGL_DEFAULT_DISPLAY;
 
@@ -496,7 +496,7 @@ IEqSwapChain* CGLRenderLib_ES::CreateSwapChain(void* window, bool windowed)
 	CGLSwapChain* pNewChain = new CGLSwapChain();
 
 #ifdef PLAT_WIN
-	if (!pNewChain->Initialize((HWND)window, g_shaderApi.m_params->verticalSyncEnabled, windowed))
+	if (!pNewChain->Initialize((HWND)window, g_shaderApi.m_params.verticalSyncEnabled, windowed))
 	{
 		MsgError("ERROR: Can't create OpenGL swapchain!\n");
 		delete pNewChain;

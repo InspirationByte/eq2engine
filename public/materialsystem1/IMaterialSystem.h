@@ -32,7 +32,7 @@ struct dlight_t;
 class CViewParams;
 
 // interface version for Shaders_*** dlls
-#define MATSYSTEM_INTERFACE_VERSION "MaterialSystem_008"
+#define MATSYSTEM_INTERFACE_VERSION "MaterialSystem_009"
 
 // begin/end resource loading for timer purposes
 typedef void (*RESOURCELOADCALLBACK)( void );
@@ -139,48 +139,33 @@ typedef struct Vertex3D
 
 struct matsystem_render_config_t
 {
-	matsystem_render_config_t()
-	{
-		lighting_model = MATERIAL_LIGHT_UNLIT;
-		ffp_mode = false;
-		stubMode = false;
-		lowShaderQuality = false;
-		editormode = false;
-		threadedloader = true;
-		flushThresh = 1000;
-		enableShadows = true;
-		enableSpecular = true;
-		enableBumpmapping = true;
+	EMaterialLightingMode	lightingModel{ MATERIAL_LIGHT_UNLIT };
 
-		wireframeMode = false;
-		overdrawMode = false;
-	}
+	bool	ffpMode{ false };			// use FFP if possible (don't apply any shaders, DEBUG only)
+	bool	stubMode{ false };			// run matsystem in stub mode (don't render anything)
 
-	// rendering api parameters
-	shaderAPIParams_t shaderapi_params;
+	bool	lowShaderQuality{ false };
+	bool	editormode{ false };		// enable editor mode
+	bool	threadedloader{ true };
+	int		flushThresh{ 1000 };		// flush (unload) threshold in frames
 
-	// the basic parameters that materials system can handle
+	bool	enableShadows{ true };		// enable shadows?
+	bool	enableSpecular{ true };		// enable specular lighting reflections?
+	bool	enableBumpmapping{ true };	// enable bump maps?
 
-	// preset lighting model
-	EMaterialLightingMode	lighting_model;
+	bool	wireframeMode{ false };		// matsystem wireframe mode
+	bool	overdrawMode{ false };		// matsystem overdraw mode
+};
 
-	// enable fixed-function mode
-	bool	ffp_mode;					// use FFP if possible (don't apply any shaders, DEBUG only)
+struct matsystem_init_config_t
+{
+	shaderAPIParams_t			shaderApiParams;
 
-	bool	stubMode;					// run matsystem in stub mode (don't render anything)
+	EqString					rendererName;		// shaderAPI library filename
+	EqString					materialsPath;		// regular (retail) materials file paths
+	EqString					materialsSRCPath;	// DEV materials file source paths
 
-	bool	lowShaderQuality;
-	bool	editormode;					// enable editor mode
-	bool	threadedloader;
-	int		flushThresh;				// flush (unload) threshold in frames
-
-	// options that can be changed in real time
-	bool	enableShadows;				// enable shadows?
-	bool	enableSpecular;				// enable specular lighting reflections?
-	bool	enableBumpmapping;			// enable bump maps?
-
-	bool	wireframeMode;				// matsystem wireframe mode
-	bool	overdrawMode;				// matsystem overdraw mode
+	matsystem_render_config_t	renderConfig;
 };
 
 //------------------------------------------------------------------------
@@ -210,13 +195,9 @@ class IMaterialSystem : public IEqCoreModule
 public:
 
 	// Initialize material system
-	// materialsDirectory - you can determine a full path on hard disk
 	// szShaderAPI - shader API that will be used. On NULL will set to default Shader API (DX9)
 	// config - material system configuration. Must be fully filled
-	virtual bool							Init(	const char* materialsDirectory,
-													const char* szShaderAPI,
-													matsystem_render_config_t &config
-													) = 0;
+	virtual bool							Init( const matsystem_init_config_t& config ) = 0;
 
 	// shutdowns material system, unloading all.
 	virtual void							Shutdown() = 0;
@@ -232,6 +213,7 @@ public:
 
 	// returns material path
 	virtual const char*						GetMaterialPath() const = 0;
+	virtual const char*						GetMaterialSRCPath() const = 0;
 
 	//-----------------------------
 	// Resource operations

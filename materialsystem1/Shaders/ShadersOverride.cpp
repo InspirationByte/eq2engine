@@ -9,7 +9,7 @@
 
 const char* OverrideShader_Base()
 {
-	switch(materials->GetConfiguration().lighting_model)
+	switch(materials->GetConfiguration().lightingModel)
 	{
 		case MATERIAL_LIGHT_UNLIT:
 			return "BaseUnlit";
@@ -24,7 +24,7 @@ const char* OverrideShader_Base()
 
 const char* OverrideShader_BaseSkinned()
 {
-	switch(materials->GetConfiguration().lighting_model)
+	switch(materials->GetConfiguration().lightingModel)
 	{
 		case MATERIAL_LIGHT_UNLIT:
 			return "BaseSkinned";
@@ -51,7 +51,7 @@ const char* OverrideShader_BaseParticle()
 
 const char* OverrideShader_Error()
 {
-	switch(materials->GetConfiguration().lighting_model)
+	switch(materials->GetConfiguration().lightingModel)
 	{
 		case MATERIAL_LIGHT_UNLIT:
 			return "Error";

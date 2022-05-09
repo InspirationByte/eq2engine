@@ -276,17 +276,16 @@ enum ER_TextureFlags
 
 	TEXFLAG_GENMIPMAPS				= (1 << 4),		// generate mipmaps (could be used on rendertargets)
 	TEXFLAG_NOQUALITYLOD			= (1 << 5),		// not affected by texture quality Cvar, always load all mip levels
-	TEXFLAG_REALFILEPATH			= (1 << 6),		// real file patch instead of loading from 'textures/'
 
-	TEXFLAG_USE_SRGB				= (1 << 7),
+	TEXFLAG_USE_SRGB				= (1 << 6),
 
 	// texture identification flags
-	TEXFLAG_MANAGED					= (1 << 8),		// managed by video driver. Internal.
-	TEXFLAG_RENDERTARGET			= (1 << 9),		// this is a rendertarget texture
-	TEXFLAG_RENDERDEPTH				= (1 << 10),	// rendertarget with depth texture
-	TEXFLAG_FOREIGN					= (1 << 11),	// texture is created not by ShaderAPI
+	TEXFLAG_MANAGED					= (1 << 7),		// managed by video driver. Internal.
+	TEXFLAG_RENDERTARGET			= (1 << 8),		// this is a rendertarget texture
+	TEXFLAG_RENDERDEPTH				= (1 << 9),	// rendertarget with depth texture
+	TEXFLAG_FOREIGN					= (1 << 10),	// texture is created not by ShaderAPI
 
-	TEXFLAG_NULL_ON_ERROR			= (1 << 12),
+	TEXFLAG_NULL_ON_ERROR			= (1 << 11),
 };
 
 #define MAX_MRTS				8

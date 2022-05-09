@@ -90,9 +90,9 @@ ShaderAPI_Base::ShaderAPI_Base()
 }
 
 // Init + Shurdown
-void ShaderAPI_Base::Init( shaderAPIParams_t &params )
+void ShaderAPI_Base::Init( const shaderAPIParams_t &params )
 {
-	m_params = &params;
+	m_params = params;
 
 	m_nScreenFormat = params.screenFormat;
 
@@ -459,15 +459,9 @@ DepthStencilStateParams_t ShaderAPI_Base::MakeDepthState(bool bDoDepthTest, bool
 // Textures
 //-------------------------------------------------------------
 
-void ShaderAPI_Base::GetImagesForTextureName(Array<EqString>& textureNames, const char* pszFileName, int nFlags)
+void ShaderAPI_Base::GetImagesForTextureName(Array<EqString>& textureNames, const char* pszFileName)
 {
-	EqString texturePath;
-
-	if (!(nFlags & TEXFLAG_REALFILEPATH))
-		texturePath = EqString(m_params->texturePath) + pszFileName;
-	else
-		texturePath = pszFileName;
-
+	EqString texturePath(pszFileName);
 	texturePath.Path_FixSlashes();
 
 	// build valid texture paths
@@ -504,7 +498,7 @@ void ShaderAPI_Base::GetImagesForTextureName(Array<EqString>& textureNames, cons
 		EqString textureAnimPathExt = texturePath + EqString(TEXTURE_ANIMATED_EXTENSION);
 		textureAnimPathExt.Path_FixSlashes();
 
-		char* animScriptBuffer = g_fileSystem->GetFileBuffer(textureAnimPathExt.GetData());
+		char* animScriptBuffer = g_fileSystem->GetFileBuffer(textureAnimPathExt);
 		if (animScriptBuffer)
 		{
 			Array<EqString> frameFilenames;
@@ -513,12 +507,6 @@ void ShaderAPI_Base::GetImagesForTextureName(Array<EqString>& textureNames, cons
 			{
 				// delete carriage return character if any
 				EqString animFrameFilename = frameFilenames[i].TrimChar('\r', true, true);
-
-				if (!(nFlags & TEXFLAG_REALFILEPATH))
-					animFrameFilename = EqString(m_params->texturePath) + animFrameFilename;
-				else
-					animFrameFilename = animFrameFilename;
-
 				textureNames.append(animFrameFilename);
 			}
 
@@ -559,24 +547,23 @@ ITexture* ShaderAPI_Base::LoadTexture( const char* pszFileName,
 	texNameStr.Path_FixSlashes();
 
 	Array<EqString> textureNames;
-	GetImagesForTextureName(textureNames, pszFileName, nFlags);
+	GetImagesForTextureName(textureNames, pszFileName);
 
 	Array<CImage*> pImages;
 
 	// load frames
 	for (int i = 0; i < textureNames.numElem(); i++)
 	{
-		EqString texturePathExt = textureNames[i] + EqString(TEXTURE_DEFAULT_EXTENSION);
-
 		CImage* img = new CImage();
 
-		bool stateLoad = img->LoadDDS(texturePathExt.GetData(), 0);
+		EqString texturePathExt;
+		CombinePath(texturePathExt, 2, m_params.texturePath.ToCString(), textureNames[i].ToCString());
+		bool stateLoad = img->LoadDDS(texturePathExt + TEXTURE_DEFAULT_EXTENSION, 0);
 
 		if (!stateLoad)
 		{
-			texturePathExt = textureNames[i] + EqString(TEXTURE_SECONDARY_EXTENSION);
-
-			stateLoad = img->LoadTGA(texturePathExt.GetData());
+			CombinePath(texturePathExt, 2, m_params.textureSRCPath.ToCString(), textureNames[i].ToCString());
+			stateLoad = img->LoadTGA(texturePathExt + TEXTURE_SECONDARY_EXTENSION);
 		}
 
 		img->SetName(texNameStr.ToCString());
@@ -679,25 +666,23 @@ ITexture* ShaderAPI_Base::CreateProceduralTexture(const char* pszName,
 bool ShaderAPI_Base::RestoreTextureInternal(ITexture* pTexture)
 {
 	Array<EqString> textureNames;
-	GetImagesForTextureName(textureNames, pTexture->GetName(), pTexture->GetFlags());
+	GetImagesForTextureName(textureNames, pTexture->GetName());
 
 	Array<CImage*> pImages;
 
 	// load frames
 	for (int i = 0; i < textureNames.numElem(); i++)
 	{
-		EqString texturePathExt = textureNames[i] + EqString(TEXTURE_DEFAULT_EXTENSION);
-
 		CImage* img = new CImage();
 
-		bool stateLoad = img->LoadDDS(texturePathExt.GetData(), 0);
+		EqString texturePathExt;
+		CombinePath(texturePathExt, 2, m_params.texturePath.ToCString(), textureNames[i].ToCString());
+		bool stateLoad = img->LoadDDS(texturePathExt + TEXTURE_DEFAULT_EXTENSION, 0);
 
 		if (!stateLoad)
 		{
-			texturePathExt = textureNames[i] + EqString(TEXTURE_SECONDARY_EXTENSION);
-
-			stateLoad = img->LoadTGA(texturePathExt.GetData());
-			img->SetName((textureNames[i] + EqString(TEXTURE_DEFAULT_EXTENSION)).GetData());
+			CombinePath(texturePathExt, 2, m_params.textureSRCPath.ToCString(), textureNames[i].ToCString());
+			stateLoad = img->LoadTGA(texturePathExt + TEXTURE_SECONDARY_EXTENSION);
 		}
 
 		if (stateLoad)

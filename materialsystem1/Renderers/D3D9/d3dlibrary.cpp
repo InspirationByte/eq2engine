@@ -84,8 +84,10 @@ DWORD ComputeDeviceFlags( const D3DCAPS9& caps, bool bSoftwareVertexProcessing )
 	return nDeviceCreationFlags;
 }
 
-bool CD3DRenderLib::InitAPI( shaderAPIParams_t &params )
+bool CD3DRenderLib::InitAPI( const shaderAPIParams_t &params )
 {
+	int multiSamplingMode = params.multiSamplingMode;
+
 	EGraphicsVendor vendor;
 	
 	// get device information
@@ -212,10 +214,10 @@ bool CD3DRenderLib::InitAPI( shaderAPIParams_t &params )
 		}
 	}
 
-	if(params.multiSamplingMode != multiSample)
+	if(multiSamplingMode != multiSample)
 		MsgWarning("MSAA fallback from %d to %d\n", params.multiSamplingMode, multiSample);
 
-	params.multiSamplingMode = multiSample;
+	multiSamplingMode = multiSample;
 
 	s_shaderApi.SetD3DDevice(m_rhi, m_d3dCaps);
 	s_shaderApi.m_vendor = vendor;
@@ -396,7 +398,7 @@ void CD3DRenderLib::SetBackbufferSize(const int w, const int h)
 	m_d3dpp.BackBufferHeight = h;
 	m_d3dpp.EnableAutoDepthStencil = TRUE;
 
-	SetupSwapEffect(*s_shaderApi.m_params);
+	SetupSwapEffect(s_shaderApi.m_params);
 	
 	m_bResized = true;
 	s_shaderApi.m_bDeviceIsLost = true;
@@ -434,7 +436,7 @@ bool CD3DRenderLib::SetWindowed(bool enabled)
 
 	m_d3dpp.Windowed = enabled;
 
-	SetupSwapEffect(*s_shaderApi.m_params);
+	SetupSwapEffect(s_shaderApi.m_params);
 	
 	m_bResized = false;
 
@@ -509,7 +511,7 @@ IEqSwapChain* CD3DRenderLib::CreateSwapChain(void* window, bool windowed)
 {
 	CD3D9SwapChain* pNewChain = new CD3D9SwapChain();
 	
-	if(!pNewChain->Initialize((HWND)window, s_shaderApi.m_params->verticalSyncEnabled, windowed))
+	if(!pNewChain->Initialize((HWND)window, s_shaderApi.m_params.verticalSyncEnabled, windowed))
 	{
 		MsgError("ERROR: Can't create D3D9 swapchain!\n");
 		delete pNewChain;

@@ -56,40 +56,57 @@ void CMaterial::Init(const char* materialPath)
 
 	DevMsg(DEVMSG_MATSYSTEM, "Loading material '%s'\n", m_szMaterialName.ToCString());
 
-	//
-	// loading a material description
-	//
-	EqString atlasKVSFileName(materials->GetMaterialPath() + m_szMaterialName + ATLAS_FILE_EXTENSION);
-	EqString materialKVSFilename(materials->GetMaterialPath() + m_szMaterialName + MATERIAL_FILE_EXTENSION);
+	const char* materialsPath = materials->GetMaterialPath();
+	const char* materialsSRCPath = materials->GetMaterialSRCPath();
 
-	// load atlas file
-	
-	if (g_fileSystem->FileExist(atlasKVSFileName, (SP_DATA | SP_MOD)))
+	const int materialSearchPath = (SP_DATA | SP_MOD);
+
+	const char* materialsPaths[2] = {
+		materialsPath, materialsSRCPath
+	};
+
+	bool success = false;
+	kvkeybase_t root;
+
+	for (int i = 0; i < 2 && !success; ++i)
 	{
-		kvkeybase_t root;
-		if (KV_LoadFromFile(atlasKVSFileName, (SP_DATA | SP_MOD), &root))
+		//
+		// loading a material description
+		//
+		EqString atlasKVSFileName(materialsPaths[i] + m_szMaterialName + ATLAS_FILE_EXTENSION);
+		EqString materialKVSFilename(materialsPaths[i] + m_szMaterialName + MATERIAL_FILE_EXTENSION);
+
+		// load atlas file
+		if (g_fileSystem->FileExist(atlasKVSFileName, materialSearchPath))
 		{
-			kvkeybase_t* atlasSec = root.FindKeyBase("atlasgroup");
-
-			if (atlasSec)
+			kvkeybase_t root;
+			if (KV_LoadFromFile(atlasKVSFileName, materialSearchPath, &root))
 			{
-				if (!m_atlas)
-					m_atlas = new CTextureAtlas(atlasSec);
+				kvkeybase_t* atlasSec = root.FindKeyBase("atlasgroup");
 
-				root.Cleanup();
+				if (atlasSec)
+				{
+					if (!m_atlas)
+						m_atlas = new CTextureAtlas(atlasSec);
 
-				// atlas can override material name
-				materialKVSFilename = (materials->GetMaterialPath() + _Es(m_atlas->GetMaterialName()) + MATERIAL_FILE_EXTENSION);
+					root.Cleanup();
+
+					// atlas can override material name
+					materialKVSFilename = (materialsPaths[i] + _Es(m_atlas->GetMaterialName()) + MATERIAL_FILE_EXTENSION);
+				}
+				else
+					MsgError("Invalid atlas file '%s'\n", atlasKVSFileName.ToCString());
 			}
-			else
-				MsgError("Invalid atlas file '%s'\n", atlasKVSFileName.ToCString());
+		}
+
+		// load material file
+		if( KV_LoadFromFile(materialKVSFilename.ToCString(), materialSearchPath, &root))
+		{
+			success = true;
 		}
 	}
 
-	// load material file
-	kvkeybase_t root;
-
-	if( !KV_LoadFromFile(materialKVSFilename.ToCString(), (SP_DATA | SP_MOD), &root))
+	if (!success)
 	{
 		MsgError("Can't load material '%s'\n", m_szMaterialName.ToCString());
 		m_szShaderName = "Error";

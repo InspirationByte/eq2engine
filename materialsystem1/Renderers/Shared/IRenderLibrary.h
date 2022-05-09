@@ -13,14 +13,14 @@
 
 #include "core/InterfaceManager.h"
 
-#define RENDERER_INTERFACE_VERSION	"DkRenderer_011"
+#define RENDERER_INTERFACE_VERSION	"EqRenderer_012"
 
 class IRenderLibrary : public IEqCoreModule
 {
 public:
 	virtual bool			InitCaps() = 0;
 
-	virtual bool			InitAPI( shaderAPIParams_t &params ) = 0;
+	virtual bool			InitAPI(const shaderAPIParams_t &params ) = 0;
 	virtual void			ExitAPI() = 0;
 	virtual void			ReleaseSwapChains() = 0;
 

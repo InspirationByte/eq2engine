@@ -26,7 +26,7 @@ public:
 	void					ExitAPI();
 	void					ReleaseSwapChains();
 
-	bool					InitAPI( shaderAPIParams_t &params );
+	bool					InitAPI( const shaderAPIParams_t &params );
 
 	// frame begin/end
 	void					BeginFrame();

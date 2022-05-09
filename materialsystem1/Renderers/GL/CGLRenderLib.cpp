@@ -230,8 +230,10 @@ void CGLRenderLib::InitSharedContexts()
 	m_glSharedContext = context;
 }
 
-bool CGLRenderLib::InitAPI(shaderAPIParams_t& params)
+bool CGLRenderLib::InitAPI(const shaderAPIParams_t& params)
 {
+	int multiSamplingMode = params.multiSamplingMode;
+
 #ifdef PLAT_WIN
 	if (r_screen->GetInt() >= GetSystemMetrics(SM_CMONITORS))
 		r_screen->SetValue("0");
@@ -324,7 +326,7 @@ bool CGLRenderLib::InitAPI(shaderAPIParams_t& params)
 		for (uint i = 0; i < nPFormats; i++)
 		{
 			wgl::GetPixelFormatAttribivARB(m_hdc, pixelFormats[i], 0, 1, &attrib, &samples);
-			int diff = abs(params.multiSamplingMode - samples);
+			int diff = abs(multiSamplingMode - samples);
 			if (diff < minDiff)
 			{
 				minDiff = diff;
@@ -333,7 +335,7 @@ bool CGLRenderLib::InitAPI(shaderAPIParams_t& params)
 			}
 		}
 
-		params.multiSamplingMode = bestSamples;
+		multiSamplingMode = bestSamples;
 	}
 	else
 	{
@@ -432,8 +434,8 @@ bool CGLRenderLib::InitAPI(shaderAPIParams_t& params)
 			GLX_ALPHA_SIZE,    (colorBits > 24)? 8 : 0,
 			GLX_DEPTH_SIZE,    depthBits,
 			GLX_STENCIL_SIZE,  stencilBits,
-			GLX_SAMPLE_BUFFERS, (params.multiSamplingMode > 0),
-			GLX_SAMPLES,         params.multiSamplingMode,
+			GLX_SAMPLE_BUFFERS, (multiSamplingMode > 0),
+			GLX_SAMPLES,         multiSamplingMode,
 			GLX_CONTEXT_MAJOR_VERSION_ARB,		3,
 			GLX_CONTEXT_MINOR_VERSION_ARB,		3,
 			None,
@@ -442,8 +444,8 @@ bool CGLRenderLib::InitAPI(shaderAPIParams_t& params)
 		m_xvi = glXChooseVisual(m_display, m_screen, attribs);
 		if (m_xvi != NULL) break;
 
-		params.multiSamplingMode -= 2;
-		if (params.multiSamplingMode < 0){
+		multiSamplingMode -= 2;
+		if (multiSamplingMode < 0){
 			char str[256];
 			sprintf(str, "No Visual matching colorBits=%d, depthBits=%d and stencilBits=%d", colorBits, depthBits, stencilBits);
 			ErrorMsg(str);
@@ -510,7 +512,7 @@ bool CGLRenderLib::InitAPI(shaderAPIParams_t& params)
 		}
 	}
 
-	if (/*GLAD_GL_ARB_multisample &&*/ params.multiSamplingMode > 0)
+	if (/*GLAD_GL_ARB_multisample &&*/ multiSamplingMode > 0)
 		glEnable(GL_MULTISAMPLE);
 
 	//-------------------------------------------
@@ -647,7 +649,7 @@ void CGLRenderLib::EndFrame(IEqSwapChain* schain)
 #ifdef PLAT_WIN
 	if (wgl::exts::var_EXT_swap_control)
 	{
-		wgl::SwapIntervalEXT(g_shaderApi.m_params->verticalSyncEnabled ? 1 : 0);
+		wgl::SwapIntervalEXT(g_shaderApi.m_params.verticalSyncEnabled ? 1 : 0);
 	}
 
 	HDC drawContext = m_hdc;
@@ -777,7 +779,7 @@ IEqSwapChain* CGLRenderLib::CreateSwapChain(void* window, bool windowed)
 	CGLSwapChain* pNewChain = new CGLSwapChain();
 
 #ifdef PLAT_WIN
-	if (!pNewChain->Initialize((HWND)window, g_shaderApi.m_params->verticalSyncEnabled, windowed))
+	if (!pNewChain->Initialize((HWND)window, g_shaderApi.m_params.verticalSyncEnabled, windowed))
 	{
 		MsgError("ERROR: Can't create OpenGL swapchain!\n");
 		delete pNewChain;

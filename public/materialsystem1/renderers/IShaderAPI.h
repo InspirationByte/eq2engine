@@ -49,31 +49,21 @@ struct externalWindowDisplayParams_t
 // shader api initializer
 struct shaderAPIParams_t
 {
-	shaderAPIParams_t()
-	{
-		windowHandle			= NULL;
-		screenFormat			= FORMAT_RGB8;
-		screenRefreshRateHZ		= 60;
-		multiSamplingMode		= 0;
-		depthBits				= 24;
-		verticalSyncEnabled		= false;
-
-		memset(texturePath, 0, sizeof(texturePath));
-	}
+	EqString		texturePath;			// texture path (.DDS only)
+	EqString		textureSRCPath;			// texture sources path (.TGA only)
 
 	// basic parameters for shader API initialization
-	void*			windowHandle;			// OS window handle or externalWindowDisplayParams_t
-	ETextureFormat	screenFormat;			// screen back buffer format
 
-	int				screenRefreshRateHZ;	// refresh rate in HZ
-	int				multiSamplingMode;		// multisampling
+	void*			windowHandle{ nullptr };			// OS window handle or externalWindowDisplayParams_t
+	ETextureFormat	screenFormat{ FORMAT_RGB8 };		// screen back buffer format
+
+	int				screenRefreshRateHZ{ 60 };			// refresh rate in HZ
+	int				multiSamplingMode;					// multisampling
 
 	// extended parameters
-	int				depthBits;				// bit depth for depth/stencil
+	int				depthBits{ 24 };					// bit depth for depth/stencil
 
-	bool			verticalSyncEnabled;	// vertical syncronization
-
-	char			texturePath[64];		// texture path
+	bool			verticalSyncEnabled{ false };		// vertical syncronization
 };
 
 class CImage;
@@ -88,7 +78,7 @@ public:
 
 	// initializes shader api.
 	// Don't use this, this already called by materials->Init()
-	virtual void				Init( shaderAPIParams_t &params ) = 0;
+	virtual void				Init( const shaderAPIParams_t &params ) = 0;
 
 	// shutdowns shader api. Don't use this, this already called by materials->Shutdown()
 	virtual void				Shutdown() = 0;

@@ -418,11 +418,17 @@ bool ShaderAPID3DX9::CreateD3DFrameBufferSurfaces()
 
 void ShaderAPID3DX9::ReleaseD3DFrameBufferSurfaces()
 {
-	m_fbColorTexture->surfaces[0]->Release();
-	m_fbColorTexture->surfaces.clear();
+	if (m_fbColorTexture)
+	{
+		m_fbColorTexture->surfaces[0]->Release();
+		m_fbColorTexture->surfaces.clear();
+	}
 
-	m_fbDepthTexture->surfaces[0]->Release();
-	m_fbDepthTexture->surfaces.clear();
+	if (m_fbDepthTexture)
+	{
+		m_fbDepthTexture->surfaces[0]->Release();
+		m_fbDepthTexture->surfaces.clear();
+	}
 }
 
 // Init + Shurdown
