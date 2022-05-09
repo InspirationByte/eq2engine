@@ -147,11 +147,10 @@ public:
 
 protected:
 
+	T*				m_pListPtr{ nullptr };
 	int				m_nNumElem{ 0 };
 	int				m_nSize{ 0 };
-
 	int				m_nGranularity{ 16 };
-	T*				m_pListPtr{ nullptr };
 };
 
 template< typename T >
@@ -398,8 +397,7 @@ inline int Array<T>::append( T const & obj )
 	{
 		int newsize;
 
-		if ( m_nGranularity == 0 )	// this is a hack to fix our memset classes
-			m_nGranularity = 16;
+		ASSERT(m_nGranularity > 0);
 
 		newsize = m_nSize + m_nGranularity;
 		resize( newsize - newsize % m_nGranularity );
@@ -424,8 +422,7 @@ inline T& Array<T>::append()
 	{
 		int newsize;
 
-		if (m_nGranularity == 0)	// this is a hack to fix our memset classes
-			m_nGranularity = 16;
+		ASSERT(m_nGranularity > 0);
 
 		newsize = m_nSize + m_nGranularity;
 		resize(newsize - newsize % m_nGranularity);
@@ -446,8 +443,7 @@ inline int Array<T>::append( const Array<T> &other )
 
 	if ( !m_pListPtr )
 	{
-		if ( m_nGranularity == 0 )	// this is a hack to fix our memset classes
-			m_nGranularity = 16;
+		ASSERT(m_nGranularity > 0);
 
 		// pre-allocate for a bigger list to do less memory resize access
 		int newSize = nOtherElems+m_nGranularity;
@@ -481,8 +477,7 @@ inline int Array<T>::append( const T *other, int count )
 {
 	if ( !m_pListPtr )
 	{
-		if ( m_nGranularity == 0 )	// this is a hack to fix our memset classes
-			m_nGranularity = 16;
+		ASSERT(m_nGranularity > 0);
 
 		// pre-allocate for a bigger list to do less memory resize access
 		int newSize = count+m_nGranularity;
@@ -545,8 +540,7 @@ inline int Array<T>::insert( T const & obj, int index )
 	{
 		int newsize;
 
-		if ( m_nGranularity == 0 )	// this is a hack to fix our memset classes
-			m_nGranularity = 16;
+		ASSERT(m_nGranularity > 0);
 
 		newsize = m_nSize + m_nGranularity;
 		resize( newsize - newsize % m_nGranularity );
@@ -828,8 +822,7 @@ inline void Array<T>::assureSize( int newSize )
 
 	if ( newSize > m_nSize )
 	{
-		if ( m_nGranularity == 0 )	// this is a hack to fix our memset classes
-			m_nGranularity = 16;
+		ASSERT(m_nGranularity > 0);
 
 		newSize += m_nGranularity - 1;
 		newSize -= newSize % m_nGranularity;
@@ -850,8 +843,7 @@ inline void Array<T>::assureSize( int newSize, const T &initValue )
 
 	if ( newSize > m_nSize )
 	{
-		if ( m_nGranularity == 0 )	// this is a hack to fix our memset classes
-			m_nGranularity = 16;
+		ASSERT(m_nGranularity > 0);
 
 		newSize += m_nGranularity - 1;
 		newSize -= newSize % m_nGranularity;
