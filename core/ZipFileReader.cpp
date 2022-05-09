@@ -157,11 +157,19 @@ bool CZipFileReader::InitPackage(const char* filename, const char* mountPath/* =
 	unz_global_info ugi;
 	unzGetGlobalInfo(zip, &ugi);
 
+	const float COMPRESSION_RATIO_WARNING_THRESHOLD = 0.75f;
+	const int COMPRESSED_FILE_BIG_FILE_SIZE_THRESHOLD = 8 * 1024 * 1024;
+	bool warnAboutCompression = false;
+
 	// hash all file names and positions
 	for (int i = 0; i < ugi.number_entry; i++)
 	{
 		unz_file_info ufi;
 		unzGetCurrentFileInfo(zip, &ufi, path, sizeof(path), NULL, 0, NULL, 0);
+		if (ufi.uncompressed_size > COMPRESSED_FILE_BIG_FILE_SIZE_THRESHOLD && float(ufi.compressed_size) / float(ufi.uncompressed_size) < COMPRESSION_RATIO_WARNING_THRESHOLD)
+		{
+			warnAboutCompression = true;
+		}
 
 		zfileinfo_t zf;
 		zf.filename = path;
@@ -173,6 +181,9 @@ bool CZipFileReader::InitPackage(const char* filename, const char* mountPath/* =
 
 		unzGoToNextFile(zip);
 	}
+
+	if(warnAboutCompression)
+		MsgWarning("WARNING: Highly compressed ZIP archive (%s) may reduce performance and loading speeds\n", filename);
 
 	// if custom mount path provided, use it
 	if (mountPath)
