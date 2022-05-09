@@ -65,10 +65,9 @@ typedef ptrdiff_t intptr;
 
 #endif
 
-#define ERROR_BUFFER_LENGTH 2048
-
 class CEqException
 {
+	static const int ERROR_BUFFER_LENGTH = 2048;
 public:
 	CEqException( const char* text = "" )
 	{

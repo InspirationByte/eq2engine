@@ -14,19 +14,16 @@
 #define USE_QSORT
 #define DEBUG_CHECK_LIST_BOUNDS
 
-template< class T >
+template< typename T >
 using PairCompareFunc = bool (*)(const T& a, const T& b);
 
-template< class T >
+template< typename T >
 using PairSortCompareFunc = int (*)(const T& a, const T& b);
 
-template< class T >
+template< typename T >
 class Array
 {
 public:
-	typedef bool (*PairCompareFunc)(const T& a, const T& b);
-	typedef int (*PairSortCompareFunc)(const T& a, const T& b);
-
 	Array( int newgranularity = 16 );
 
 	~Array<T>();
@@ -70,7 +67,7 @@ public:
 	int				append( const T & obj );
 
 	// append a empty element to be filled
-	T& append();
+	T&				append();
 
 	// appends another list
 	int				append( const Array<T> &other );
@@ -80,7 +77,7 @@ public:
 
 	// appends another list with transformation
 	// return false to not add the element
-	template< class T2, typename TRANSFORMFUNC >
+	template< typename T2, typename TRANSFORMFUNC >
 	int				append( const Array<T2> &other, TRANSFORMFUNC transform );
 
 	// inserts the element at the given index
@@ -90,13 +87,15 @@ public:
 	int				addUnique( const T & obj );
 
 	// adds unique element
-	int				addUnique( const T & obj, PairCompareFunc comparator);
+	template< typename PAIRCOMPAREFUNC = PairCompareFunc<T> >
+	int				addUnique( const T & obj, PAIRCOMPAREFUNC comparator);
 
 	// finds the index for the given element
 	int				findIndex( const T & obj ) const;
 
 	// finds the index for the given element
-	int				findIndex( const T & obj, PairCompareFunc comparator) const;
+	template< typename PAIRCOMPAREFUNC = PairCompareFunc<T> >
+	int				findIndex( const T & obj, PAIRCOMPAREFUNC comparator) const;
 
 	// finds pointer to the given element
 	T *				find( T const & obj ) const;
@@ -137,10 +136,14 @@ public:
 	void			assureSize( int newSize, const T &initValue );
 
 	// sorts list using quick sort algorithm
-	void			sort(PairSortCompareFunc comparator);
+	template< typename SORTPAIRCOMPAREFUNC = PairSortCompareFunc<T> >
+	void			sort(SORTPAIRCOMPAREFUNC comparator);
 
-	void			shellSort(PairSortCompareFunc comparator, int i0, int i1);
-	void			quickSort(PairSortCompareFunc comparator, int p, int r);
+	template< typename SORTPAIRCOMPAREFUNC = PairSortCompareFunc<T> >
+	void			shellSort(SORTPAIRCOMPAREFUNC comparator, int i0, int i1);
+
+	template< typename SORTPAIRCOMPAREFUNC = PairSortCompareFunc<T> >
+	void			quickSort(SORTPAIRCOMPAREFUNC comparator, int p, int r);
 
 protected:
 
@@ -151,14 +154,14 @@ protected:
 	T*				m_pListPtr{ nullptr };
 };
 
-template< class T >
+template< typename T >
 inline Array<T>::Array( int newgranularity )
 {
 	ASSERT( newgranularity > 0 );
 	m_nGranularity	= newgranularity;
 }
 
-template< class T >
+template< typename T >
 inline Array<T>::~Array()
 {
 	delete [] m_pListPtr;
@@ -167,7 +170,7 @@ inline Array<T>::~Array()
 // -----------------------------------------------------------------
 // Frees up the memory allocated by the list.  Assumes that T automatically handles freeing up memory.
 // -----------------------------------------------------------------
-template< class T >
+template< typename T >
 inline void Array<T>::clear(bool deallocate)
 {
 	if ( deallocate )
@@ -184,7 +187,7 @@ inline void Array<T>::clear(bool deallocate)
 // Returns the number of elements currently contained in the list.
 // Note that this is NOT an indication of the memory allocated.
 // -----------------------------------------------------------------
-template< class T >
+template< typename T >
 inline int Array<T>::numElem( void ) const
 {
 	return m_nNumElem;
@@ -193,7 +196,7 @@ inline int Array<T>::numElem( void ) const
 // -----------------------------------------------------------------
 // returns number elements which satisfies to the condition
 // -----------------------------------------------------------------
-template< class T >
+template< typename T >
 template< typename COMPAREFUNC >
 inline int Array<T>::numElem( COMPAREFUNC comparator ) const
 {
@@ -211,7 +214,7 @@ inline int Array<T>::numElem( COMPAREFUNC comparator ) const
 // -----------------------------------------------------------------
 // Returns the number of elements currently allocated for.
 // -----------------------------------------------------------------
-template< class T >
+template< typename T >
 inline int Array<T>::numAllocated( void ) const
 {
 	return m_nSize;
@@ -220,7 +223,7 @@ inline int Array<T>::numAllocated( void ) const
 // -----------------------------------------------------------------
 // Sets the base size of the array and resizes the array to match.
 // -----------------------------------------------------------------
-template< class T >
+template< typename T >
 inline void Array<T>::setGranularity( int newgranularity )
 {
 	int newsize;
@@ -245,7 +248,7 @@ inline void Array<T>::setGranularity( int newgranularity )
 // -----------------------------------------------------------------
 // Returns the current granularity.
 // -----------------------------------------------------------------
-template< class T >
+template< typename T >
 inline int Array<T>::getGranularity( void ) const
 {
 	return m_nGranularity;
@@ -255,7 +258,7 @@ inline int Array<T>::getGranularity( void ) const
 // Access operator.  Index must be within range or an assert will be issued in debug builds.
 // Release builds do no range checking.
 // -----------------------------------------------------------------
-template< class T >
+template< typename T >
 inline const T &Array<T>::operator[]( int index ) const
 {
 #ifdef DEBUG_CHECK_LIST_BOUNDS
@@ -270,7 +273,7 @@ inline const T &Array<T>::operator[]( int index ) const
 // Access operator.  Index must be within range or an assert will be issued in debug builds.
 // Release builds do no range checking.
 // -----------------------------------------------------------------
-template< class T >
+template< typename T >
 inline T &Array<T>::operator[]( int index )
 {
 #ifdef DEBUG_CHECK_LIST_BOUNDS
@@ -284,7 +287,7 @@ inline T &Array<T>::operator[]( int index )
 // -----------------------------------------------------------------
 // Copies the contents and size attributes of another list.
 // -----------------------------------------------------------------
-template< class T >
+template< typename T >
 inline Array<T> &Array<T>::operator=( const Array<T> &other )
 {
 	m_nGranularity	= other.m_nGranularity;
@@ -308,7 +311,7 @@ inline Array<T> &Array<T>::operator=( const Array<T> &other )
 // Allocates memory for the amount of elements requested while keeping the contents intact.
 // Contents are copied using their = operator so that data is correnctly instantiated.
 // -----------------------------------------------------------------
-template< class T >
+template< typename T >
 inline void Array<T>::resize( int newsize )
 {
 	T	*temp;
@@ -349,7 +352,7 @@ inline void Array<T>::resize( int newsize )
 // -----------------------------------------------------------------
 // Resize to the exact size specified irregardless of granularity
 // -----------------------------------------------------------------
-template< class T >
+template< typename T >
 inline void Array<T>::setNum( int newnum, bool bResize )
 {
 	ASSERT( newnum >= 0 );
@@ -365,7 +368,7 @@ inline void Array<T>::setNum( int newnum, bool bResize )
 // Note: may return NULL if the list is empty.
 // -----------------------------------------------------------------
 
-template< class T >
+template< typename T >
 inline T *Array<T>::ptr( void )
 {
 	return m_pListPtr;
@@ -375,7 +378,7 @@ inline T *Array<T>::ptr( void )
 // Returns a pointer to the begining of the array.  Useful for iterating through the list in loops.
 // Note: may return NULL if the list is empty.
 // -----------------------------------------------------------------
-template< class T >
+template< typename T >
 inline const T *Array<T>::ptr( void ) const
 {
 	return m_pListPtr;
@@ -385,7 +388,7 @@ inline const T *Array<T>::ptr( void ) const
 // Increases the size of the list by one element and copies the supplied data into it.
 // Returns the index of the new element.
 // -----------------------------------------------------------------
-template< class T >
+template< typename T >
 inline int Array<T>::append( T const & obj )
 {
 	if ( !m_pListPtr )
@@ -411,7 +414,7 @@ inline int Array<T>::append( T const & obj )
 // -----------------------------------------------------------------
 // append a new empty element to be filled
 // -----------------------------------------------------------------
-template< class T >
+template< typename T >
 inline T& Array<T>::append()
 {
 	if (!m_pListPtr)
@@ -436,7 +439,7 @@ inline T& Array<T>::append()
 // Returns the size of the new combined list
 // -----------------------------------------------------------------
 
-template< class T >
+template< typename T >
 inline int Array<T>::append( const Array<T> &other )
 {
 	int nOtherElems = other.numElem();
@@ -473,7 +476,7 @@ inline int Array<T>::append( const Array<T> &other )
 // adds the other list to this one
 // Returns the size of the new combined list
 // -----------------------------------------------------------------
-template< class T >
+template< typename T >
 inline int Array<T>::append( const T *other, int count )
 {
 	if ( !m_pListPtr )
@@ -507,8 +510,8 @@ inline int Array<T>::append( const T *other, int count )
 // -----------------------------------------------------------------
 // appends other list with transformation
 // -----------------------------------------------------------------
-template< class T >
-template< class T2, typename TRANSFORMFUNC >
+template< typename T >
+template< typename T2, typename TRANSFORMFUNC >
 inline int Array<T>::append( const Array<T2> &other, TRANSFORMFUNC transform )
 {
 	int nOtherElems = other.numElem();
@@ -532,7 +535,7 @@ inline int Array<T>::append( const Array<T2> &other, TRANSFORMFUNC transform )
 // Increases the elemCount of the list by at leat one element if necessary
 // and inserts the supplied data into it.
 // -----------------------------------------------------------------
-template< class T >
+template< typename T >
 inline int Array<T>::insert( T const & obj, int index )
 {
 	if ( !m_pListPtr )
@@ -566,7 +569,7 @@ inline int Array<T>::insert( T const & obj, int index )
 // Adds the data to the m_pListPtr if it doesn't already exist.  Returns the index of the data in the m_pListPtr.
 // -----------------------------------------------------------------
 
-template< class T >
+template< typename T >
 inline int Array<T>::addUnique( T const & obj )
 {
 	int index;
@@ -584,8 +587,9 @@ inline int Array<T>::addUnique( T const & obj )
 // Adds the data to the m_pListPtr if it doesn't already exist.  Returns the index of the data in the m_pListPtr.
 // -----------------------------------------------------------------
 
-template< class T >
-inline int Array<T>::addUnique( T const & obj, PairCompareFunc comparator)
+template< typename T >
+template< typename PAIRCOMPAREFUNC >
+inline int Array<T>::addUnique( T const & obj, PAIRCOMPAREFUNC comparator)
 {
 	int index;
 
@@ -602,7 +606,7 @@ inline int Array<T>::addUnique( T const & obj, PairCompareFunc comparator)
 // Returns -1 if the data is not found.
 // -----------------------------------------------------------------
 
-template< class T >
+template< typename T >
 inline int Array<T>::findIndex( T const & obj ) const
 {
 	int i;
@@ -622,8 +626,9 @@ inline int Array<T>::findIndex( T const & obj ) const
 // Returns -1 if the data is not found.
 // -----------------------------------------------------------------
 
-template< class T >
-inline int Array<T>::findIndex( T const & obj, PairCompareFunc comparator ) const
+template< typename T >
+template< typename PAIRCOMPAREFUNC >
+inline int Array<T>::findIndex( T const & obj, PAIRCOMPAREFUNC comparator ) const
 {
 	int i;
 
@@ -642,7 +647,7 @@ inline int Array<T>::findIndex( T const & obj, PairCompareFunc comparator ) cons
 // Returns NULL if the data is not found.
 // -----------------------------------------------------------------
 
-template< class T >
+template< typename T >
 inline T *Array<T>::find( T const & obj ) const
 {
 	int i;
@@ -659,7 +664,7 @@ inline T *Array<T>::find( T const & obj ) const
 // returns first element which satisfies to the condition
 // Returns NULL if the data is not found.
 // -----------------------------------------------------------------
-template< class T >
+template< typename T >
 template< typename COMPAREFUNC >
 inline T *Array<T>::findFirst( COMPAREFUNC comparator  ) const
 {
@@ -676,7 +681,7 @@ inline T *Array<T>::findFirst( COMPAREFUNC comparator  ) const
 // returns last element which satisfies to the condition
 // Returns NULL if the data is not found.
 // -----------------------------------------------------------------
-template< class T >
+template< typename T >
 template< typename COMPAREFUNC >
 inline T *Array<T>::findLast( COMPAREFUNC comparator ) const
 {
@@ -694,7 +699,7 @@ inline T *Array<T>::findLast( COMPAREFUNC comparator ) const
 // The number of elements in the m_pListPtr is reduced by one.  Returns false if the index is outside the bounds of the m_pListPtr.
 // Note that the element is not destroyed, so any memory used by it may not be freed until the destruction of the m_pListPtr.
 // -----------------------------------------------------------------
-template< class T >
+template< typename T >
 inline bool Array<T>::removeIndex( int index )
 {
 	int i;
@@ -721,7 +726,7 @@ inline bool Array<T>::removeIndex( int index )
 // The number of elements in the m_pListPtr is reduced by one.  Returns false if the index is outside the bounds of the m_pListPtr.
 // Note that the element is not destroyed, so any memory used by it may not be freed until the destruction of the m_pListPtr.
 // -----------------------------------------------------------------
-template< class T >
+template< typename T >
 inline bool Array<T>::fastRemoveIndex( int index )
 {
 #ifdef DEBUG_CHECK_LIST_BOUNDS
@@ -747,7 +752,7 @@ inline bool Array<T>::fastRemoveIndex( int index )
 // The number of elements in the m_pListPtr is reduced by one.  Returns false if the data is not found in the m_pListPtr.  Note that
 // the element is not destroyed, so any memory used by it may not be freed until the destruction of the m_pListPtr.
 // -----------------------------------------------------------------
-template< class T >
+template< typename T >
 inline bool Array<T>::remove( T const & obj )
 {
 	int index;
@@ -766,7 +771,7 @@ inline bool Array<T>::remove( T const & obj )
 // The number of elements in the m_pListPtr is reduced by one.  Returns false if the data is not found in the m_pListPtr.  Note that
 // the element is not destroyed, so any memory used by it may not be freed until the destruction of the m_pListPtr.
 // -----------------------------------------------------------------
-template< class T >
+template< typename T >
 inline bool Array<T>::fastRemove( T const & obj )
 {
 	int index;
@@ -782,7 +787,7 @@ inline bool Array<T>::fastRemove( T const & obj )
 // -----------------------------------------------------------------
 // Returns true if index is in array range
 // -----------------------------------------------------------------
-template< class T >
+template< typename T >
 inline bool Array<T>::inRange( int index ) const
 {
 	return index >= 0 && index < m_nNumElem;
@@ -791,7 +796,7 @@ inline bool Array<T>::inRange( int index ) const
 // -----------------------------------------------------------------
 // Swaps the contents of two lists
 // -----------------------------------------------------------------
-template< class T >
+template< typename T >
 inline void Array<T>::swap( Array<T> &other )
 {
 	QuickSwap( m_nNumElem, other.m_nNumElem );
@@ -803,7 +808,7 @@ inline void Array<T>::swap( Array<T> &other )
 // -----------------------------------------------------------------
 // swap the contents of the lists - raw
 // -----------------------------------------------------------------
-template< class T >
+template< typename T >
 inline void Array<T>::swap(T*& other, int& otherNumElem)
 {
 	QuickSwap(m_nNumElem, otherNumElem);
@@ -816,7 +821,7 @@ inline void Array<T>::swap(T*& other, int& otherNumElem)
 // Makes sure the list has at least the given number of elements.
 // -----------------------------------------------------------------
 
-template< class T >
+template< typename T >
 inline void Array<T>::assureSize( int newSize )
 {
 	int newNum = newSize;
@@ -838,7 +843,7 @@ inline void Array<T>::assureSize( int newSize )
 // -----------------------------------------------------------------
 // Makes sure the m_pListPtr has at least the given number of elements and initialize any elements not yet initialized.
 // -----------------------------------------------------------------
-template< class T >
+template< typename T >
 inline void Array<T>::assureSize( int newSize, const T &initValue )
 {
 	int newNum = newSize;
@@ -866,8 +871,9 @@ inline void Array<T>::assureSize( int newSize, const T &initValue )
 // Sorts array of the elements by the comparator
 // -----------------------------------------------------------------
 
-template< class T >
-inline void Array<T>::sort(PairSortCompareFunc comparator)
+template< typename T >
+template< typename SORTPAIRCOMPAREFUNC >
+inline void Array<T>::sort(SORTPAIRCOMPAREFUNC comparator)
 {
 #ifdef USE_QSORT
 	quickSort(comparator, 0, m_nNumElem - 1);
@@ -879,8 +885,9 @@ inline void Array<T>::sort(PairSortCompareFunc comparator)
 // -----------------------------------------------------------------
 // Shell sort
 // -----------------------------------------------------------------
-template< class T >
-inline void Array<T>::shellSort(PairSortCompareFunc comparator, int i0, int i1)
+template< typename T >
+template< typename SORTPAIRCOMPAREFUNC >
+inline void Array<T>::shellSort(SORTPAIRCOMPAREFUNC comparator, int i0, int i1)
 {
 	const int SHELLJMP = 3; //2 or 3
 
@@ -902,29 +909,11 @@ inline void Array<T>::shellSort(PairSortCompareFunc comparator, int i0, int i1)
 	}
 }
 
-template< class T >
-inline int partition(T* list, PairSortCompareFunc<T> comparator, int p, int r);
-
 // -----------------------------------------------------------------
 // Partition exchange sort
 // -----------------------------------------------------------------
-template< class T >
-inline void Array<T>::quickSort(PairSortCompareFunc comparator, int p, int r)
-{
-	if (p < r)
-	{
-		int q = partition(m_pListPtr, comparator, p, r);
-
-		quickSort(comparator, p, q - 1);
-		quickSort(comparator, q + 1, r);
-	}
-}
-
-// -----------------------------------------------------------------
-// Partition exchange sort
-// -----------------------------------------------------------------
-template< class T >
-inline int partition(T* list, PairSortCompareFunc<T> comparator, int p, int r)
+template< typename T, typename SORTPAIRCOMPAREFUNC = PairSortCompareFunc<T> >
+inline int partition(T* list, SORTPAIRCOMPAREFUNC comparator, int p, int r)
 {
 	T pivot = list[p];
 	int left = p;
@@ -946,8 +935,24 @@ inline int partition(T* list, PairSortCompareFunc<T> comparator, int p, int r)
 // -----------------------------------------------------------------
 // Partition exchange sort
 // -----------------------------------------------------------------
-template< class T >
-inline void quickSort(T* list, PairSortCompareFunc<T> comparator, int p, int r)
+template< typename T >
+template< typename SORTPAIRCOMPAREFUNC >
+inline void Array<T>::quickSort(SORTPAIRCOMPAREFUNC comparator, int p, int r)
+{
+	if (p < r)
+	{
+		int q = partition(m_pListPtr, comparator, p, r);
+
+		quickSort(comparator, p, q - 1);
+		quickSort(comparator, q + 1, r);
+	}
+}
+
+// -----------------------------------------------------------------
+// Partition exchange sort
+// -----------------------------------------------------------------
+template< typename T, typename SORTPAIRCOMPAREFUNC = PairSortCompareFunc<T> >
+inline void quickSort(T* list, SORTPAIRCOMPAREFUNC comparator, int p, int r)
 {
 	if (p < r)
 	{
@@ -958,8 +963,8 @@ inline void quickSort(T* list, PairSortCompareFunc<T> comparator, int p, int r)
 	}
 }
 
-template< class T >
-inline void shellSort(T* list, int numElems, PairSortCompareFunc<T> comparator)
+template< typename T, typename SORTPAIRCOMPAREFUNC = PairSortCompareFunc<T> >
+inline void shellSort(T* list, int numElems, SORTPAIRCOMPAREFUNC comparator)
 {
 	const int SHELLJMP = 3; //2 or 3
 
