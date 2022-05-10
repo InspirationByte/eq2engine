@@ -26,8 +26,8 @@
 
 #include "core/IEqParallelJobs.h"
 
-static ConVar rs_echo_texture_loading("r_echo_texture_loading", "0", "Echo textrue loading");
-static ConVar r_nomip("r_nomip", "0", nullptr, CV_CHEAT);
+static ConVar r_reportTextureLoading("r_reportTextureLoading", "0", "Echo textrue loading");
+static ConVar r_noMip("r_noMip", "0", nullptr, CV_CHEAT);
 static ConVar r_skipTextures("r_skipTextures", "0", nullptr, CV_CHEAT);
 HOOK_TO_CVAR(r_allowSourceTextures);
 
@@ -484,7 +484,7 @@ void ShaderAPI_Base::GetImagesForTextureName(Array<EqString>& textureNames, cons
 		EqString textureFrameCount = texturePath.Mid(animCountStart + 1, (animCountEnd - animCountStart) - 1);
 		int numFrames = atoi(textureFrameCount.ToCString());
 
-		if (rs_echo_texture_loading.GetBool())
+		if (r_reportTextureLoading.GetBool())
 			Msg("Loading animated %d animated textures (%s)\n", numFrames, textureWildcard.ToCString());
 
 		for (int i = 0; i < numFrames; i++)
@@ -575,7 +575,7 @@ ITexture* ShaderAPI_Base::LoadTexture( const char* pszFileName,
 		{
 			pImages.append(img);
 
-			if (rs_echo_texture_loading.GetBool())
+			if (r_reportTextureLoading.GetBool())
 				MsgInfo("Texture loaded: %s\n", texturePathExt.ToCString());
 		}
 		else
@@ -608,7 +608,7 @@ ITexture* ShaderAPI_Base::CreateTexture(const Array<CImage*>& pImages, const Sam
 		return NULL;
 
 	
-	if(r_nomip.GetBool())
+	if(r_noMip.GetBool())
 	{
 		for(int i = 0; i < pImages.numElem(); i++)
 			pImages[i]->RemoveMipMaps(0,1);
@@ -694,7 +694,7 @@ bool ShaderAPI_Base::RestoreTextureInternal(ITexture* pTexture)
 		{
 			pImages.append(img);
 
-			if (rs_echo_texture_loading.GetBool())
+			if (r_reportTextureLoading.GetBool())
 				MsgInfo("Texture loaded: %s\n", texturePathExt.ToCString());
 		}
 		else
