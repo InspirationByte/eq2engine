@@ -177,42 +177,63 @@ void CPFXAtlasGroup::Shutdown()
 
 TexAtlasEntry_t* CPFXAtlasGroup::GetEntry(int idx)
 {
-	if (!m_pMaterial->GetAtlas())
+	CTextureAtlas* atlas = m_pMaterial->GetAtlas();
+	if (!atlas)
+	{
+		ASSERT_FAIL("No atlas loaded for material %s", m_pMaterial->GetName());
 		return nullptr;
+	}
 
-	return m_pMaterial->GetAtlas()->GetEntry(idx);
+	return atlas->GetEntry(idx);
 }
 
 int	CPFXAtlasGroup::GetEntryIndex(TexAtlasEntry_t* entry) const
 {
-	if (!m_pMaterial->GetAtlas())
+	CTextureAtlas* atlas = m_pMaterial->GetAtlas();
+	if (!atlas)
+	{
+		ASSERT_FAIL("No atlas loaded for material %s", m_pMaterial->GetName());
 		return -1;
+	}
 
-	return m_pMaterial->GetAtlas()->GetEntryIndex(entry);
+	return atlas->GetEntryIndex(entry);
 }
 
 TexAtlasEntry_t* CPFXAtlasGroup::FindEntry(const char* pszName) const
 {
-	if (!m_pMaterial->GetAtlas())
+	CTextureAtlas* atlas = m_pMaterial->GetAtlas();
+	if (!atlas)
+	{
+		ASSERT_FAIL("No atlas loaded for material %s", m_pMaterial->GetName());
 		return nullptr;
+	}
 
-	return m_pMaterial->GetAtlas()->FindEntry(pszName);
+	TexAtlasEntry_t* atlEntry = atlas->FindEntry(pszName);
+	ASSERTMSG(atlEntry, "Atlas entry '%s' not found in %s", pszName, m_pMaterial->GetName());
+	return atlEntry;
 }
 
 int CPFXAtlasGroup::FindEntryIndex(const char* pszName) const
 {
-	if (!m_pMaterial->GetAtlas())
+	CTextureAtlas* atlas = m_pMaterial->GetAtlas();
+	if (!atlas)
+	{
+		ASSERT_FAIL("No atlas loaded for material %s", m_pMaterial->GetName());
 		return -1;
+	}
 
-	return m_pMaterial->GetAtlas()->FindEntryIndex(pszName);
+	const int atlEntryIdx = atlas->FindEntryIndex(pszName);
+	ASSERTMSG(atlEntryIdx != -1, "Atlas entry '%s' not found in %s", pszName, m_pMaterial->GetName());
+	return atlEntryIdx;
 }
 
 int CPFXAtlasGroup::GetEntryCount() const
 {
-	if (!m_pMaterial->GetAtlas())
+	CTextureAtlas* atlas = m_pMaterial->GetAtlas();
+	if (!atlas)
 		return 0;
 
-	return m_pMaterial->GetAtlas()->GetEntryCount();
+	return atlas->GetEntryCount();
 }
 
 //----------------------------------------------------------------------------------------------------------
