@@ -31,6 +31,7 @@ public class EqEngineActivity extends org.libsdl.app.SDLActivity{
                 "+r_shadows 2",
                 "+r_shadowQuality 0",
                 "+r_skipPostProcess 1",
+                "+r_carPerPixelLights 0",
                 "+in_touchzones_debug 1",
                 "+in_mouse_to_touch 0",
                 // "-norender",

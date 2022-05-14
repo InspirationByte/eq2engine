@@ -310,7 +310,7 @@ bool CGameHost::InitSystems( EQWNDHANDLE pWindow )
 #elif PLAT_ANDROID
 
 #if 0
-	materials_config.shaderapi_params.windowHandle = m_pWindow;	// passing SDL window
+	materials_config.shaderApiParams.windowHandle = m_pWindow;	// passing SDL window
 #else
     externalWindowDisplayParams_t winParams;
     winParams.window = (void*)winfo.info.android.window;
@@ -320,7 +320,7 @@ bool CGameHost::InitSystems( EQWNDHANDLE pWindow )
 	//winParams.paramArray = paramArray;
 	//winParams.numParams = 1;
 
-	materials_config.shaderapi_params.windowHandle = &winParams;
+	materials_config.shaderApiParams.windowHandle = &winParams;
 	format = FORMAT_RGB565;
 #endif
 #endif
