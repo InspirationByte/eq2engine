@@ -16,7 +16,7 @@
 #include "imaging/ImageLoader.h"
 #include "imaging/PixWriter.h"
 #include "math/DkMath.h"
-
+#pragma optimize("", off)
 /*
 
 // Configuration structure
@@ -37,6 +37,7 @@ BatchConfig
 
 	compression "<CompressionName>"
 	{
+		application "otherConverter.exe";
 		arguments "-etcpack";	//-pvrtex;
 
 		usage default
@@ -74,6 +75,8 @@ static const char* s_textureValueIdentifier = "usage:";
 struct UsageProperties_t
 {
 	EqString usageName;
+
+	EqString applicationName;
 	EqString applicationArguments;
 };
 
@@ -82,7 +85,7 @@ struct BatchConfig_t
 	EqString sourceMaterialPath;
 	EqString sourceImageExt;
 
-	EqString applicationName;
+	EqString applicationName; // can be overridden by UsageProperties_t::applicationName
 	EqString applicationArgumentsTemplate;
 
 	EqString compressionApplicationArguments;
@@ -123,11 +126,7 @@ enum ETexConvStatus
 // CRC pairs
 struct TexInfo_t
 {
-	TexInfo_t()
-	{
-		status = INIT_STATE;
-		crc32 = 0;
-	}
+	TexInfo_t() = default;
 
 	TexInfo_t(const char* filename, const char* usageName)
 	{
@@ -141,9 +140,9 @@ struct TexInfo_t
 	}
 
 	EqString			sourcePath;
-	UsageProperties_t*	usage;
-	uint32				crc32;
-	ETexConvStatus		status;
+	UsageProperties_t* usage{ nullptr };
+	uint32				crc32{ 0 };
+	ETexConvStatus		status{ INIT_STATE };
 };
 
 Array<TexInfo_t*> g_textureList;
@@ -155,20 +154,7 @@ void LoadBatchConfig(kvkeybase_t* batchSec)
 	// retrieve application name and arguments
 	{
 		const char* appName = KV_GetValueString(batchSec->FindKeyBase("application"), 0, nullptr);
-
-		if (!appName)
-		{
-			MsgError("BatchConfig 'application' is not specified!\n");
-			return;
-		}
-
 		const char* appArguments = KV_GetValueString(batchSec->FindKeyBase("arguments"), 0, nullptr);
-
-		if (!appArguments)
-		{
-			MsgError("BatchConfig 'arguments' is not specified (application arguments)!\n");
-			return;
-		}
 
 		g_batchConfig.applicationName = appName;
 		g_batchConfig.applicationArgumentsTemplate = appArguments;
@@ -215,6 +201,7 @@ void LoadBatchConfig(kvkeybase_t* batchSec)
 		return;
 	}
 
+	g_batchConfig.applicationName = KV_GetValueString(compressionSec->FindKeyBase("application"), 0, g_batchConfig.applicationName.ToCString());
 	g_batchConfig.compressionApplicationArguments = KV_GetValueString(compressionSec->FindKeyBase("arguments"), 0, "");
 
 	// load usages
@@ -235,6 +222,7 @@ void LoadBatchConfig(kvkeybase_t* batchSec)
 
 		UsageProperties_t usage;
 		usage.usageName = usageName;
+		usage.applicationName = KV_GetValueString(usageKey->FindKeyBase("application"), 0, g_batchConfig.applicationName.ToCString());
 		usage.applicationArguments = KV_GetValueString(usageKey->FindKeyBase("arguments"), 0, "");
 
 		if (!stricmp(usageName, "default"))
@@ -244,11 +232,28 @@ void LoadBatchConfig(kvkeybase_t* batchSec)
 	}
 }
 
+bool AddTexture(const EqString& texturePath, const EqString& imageUsage)
+{
+	EqString filename;
+	CombinePath(filename, 2, g_batchConfig.sourceMaterialPath.ToCString(), EqString::Format("%s.%s", texturePath.ToCString(), g_batchConfig.sourceImageExt.ToCString()).ToCString());
+
+	if (!g_fileSystem->FileExist(filename.ToCString()))
+	{
+		MsgError("  - texture '%s' does not exists!\n", filename.ToCString());
+		return false;
+	}
+
+	g_textureList.append(new TexInfo_t(texturePath.ToCString(), imageUsage.ToCString()));
+	return true;
+}
+
 void LoadMaterialImages(const char* materialFileName)
 {
 	KeyValues kvs;
 	if (!kvs.LoadFromFile(materialFileName, SP_ROOT))
 		return;
+
+	EqString atlasFileName = _Es(materialFileName).Path_Strip_Ext() + ".atlas";
 
 	if (kvs.GetRootSection()->KeyCount() == 0)
 	{
@@ -266,63 +271,100 @@ void LoadMaterialImages(const char* materialFileName)
 	MsgInfo("Material: '%s'\n", materialFileName);
 
 	int textures = 0;
-
 	bool matFileSaved = false;
 
 	for (int i = 0; i < kvMaterial->keys.numElem(); i++)
 	{
+		bool keyHasUsage = false;
 		kvkeybase_t* key = kvMaterial->keys[i];
 		for (int j = 1; j < key->ValueCount(); j++)
 		{
 			EqString imageUsage(KV_GetValueString(key, j, ""));
-			int usageIdx = imageUsage.ReplaceSubstr("usage:", "");
+			const int usageIdx = imageUsage.ReplaceSubstr(s_textureValueIdentifier, "");
 
-			if (usageIdx != -1)
+			if (usageIdx == -1)
 			{
-				const char* imageName = KV_GetValueString(key, 0, "");
+				continue;
+			}
 
-				EqString filename;
-				CombinePath(filename, 2, g_batchConfig.sourceMaterialPath.ToCString(), EqString::Format("%s.%s", imageName, g_batchConfig.sourceImageExt.ToCString()).ToCString());
-				
-				if (!g_fileSystem->FileExist(filename.ToCString()))
+			if (keyHasUsage)
+			{
+				MsgWarning("  - material %s texture '%s' has multiple usages! Only one is supported", materialFileName, key->GetName());
+				continue;
+			}
+
+			keyHasUsage = true;
+
+			EqString texturePath = KV_GetValueString(key, 0, "");
+
+			// has pattern for animated texture?
+			int animCountStart = texturePath.Find("[");
+			int animCountEnd = -1;
+
+			if (animCountStart != -1 &&
+				(animCountEnd = texturePath.Find("]", false, animCountStart)) != -1)
+			{
+				// trying to load animated texture
+				EqString textureWildcard = texturePath.Left(animCountStart);
+				EqString textureFrameCount = texturePath.Mid(animCountStart + 1, (animCountEnd - animCountStart) - 1);
+				int numFrames = atoi(textureFrameCount.ToCString());
+
+				for (int i = 0; i < numFrames; i++)
 				{
-					MsgError("  - texture '%s' does not exists!\n", filename.ToCString());
-					continue;
+					EqString textureNameFrame = EqString::Format(textureWildcard.ToCString(), i);
+					if(AddTexture(textureNameFrame, imageUsage))
+						textures++;
+				}
+			}
+			else
+			{
+				if(AddTexture(texturePath, imageUsage))
+					textures++;
+			}
+
+			if (textures && !matFileSaved)
+			{
+				const bool isPath = strchr(texturePath, CORRECT_PATH_SEPARATOR) || strchr(texturePath, INCORRECT_PATH_SEPARATOR);
+
+				// make path
+				EqString targetFilePath;
+				if (isPath)
+					CombinePath(targetFilePath, 2, g_targetProps.targetFolder.ToCString(), texturePath.Path_Strip_Name().ToCString());
+				else
+					targetFilePath = g_targetProps.targetFolder;
+
+				EqString targetMaterialFileName;
+				CombinePath(targetMaterialFileName, 2, targetFilePath.ToCString(), _Es(materialFileName).Path_Strip_Path().ToCString());
+
+				// store material file
+				if (!g_fileSystem->FileExist(targetMaterialFileName, SP_ROOT))
+				{
+					g_fileSystem->MakeDir(targetFilePath.ToCString(), SP_ROOT);
+
+					// save material file
+					kvs.SaveToFile(targetMaterialFileName.ToCString(), SP_ROOT);
+
+					matFileSaved = true;
 				}
 
-				if (!matFileSaved)
+				// also copy atlas file
+				EqString targetAtlasFileName;
+				CombinePath(targetAtlasFileName, 2, targetFilePath.ToCString(), (_Es(materialFileName).Path_Strip_Ext() + ".atlas").Path_Strip_Path().ToCString());
+				if (!g_fileSystem->FileExist(targetAtlasFileName, SP_ROOT) && 
+					g_fileSystem->FileExist(atlasFileName, SP_ROOT))
 				{
-					const bool isPath = strchr(imageName, CORRECT_PATH_SEPARATOR) || strchr(imageName, INCORRECT_PATH_SEPARATOR);
-
-					// make path
-					EqString targetFilePath;
-					if (isPath)
-						CombinePath(targetFilePath, 2, g_targetProps.targetFolder.ToCString(), _Es(imageName).Path_Strip_Name().ToCString());
-					else
-						targetFilePath = g_targetProps.targetFolder;
-
-					EqString targetMaterialFileName;
-					CombinePath(targetMaterialFileName, 2, targetFilePath.ToCString(), _Es(materialFileName).Path_Strip_Path().ToCString());
-
-					if (!g_fileSystem->FileExist(targetMaterialFileName.ToCString(), SP_ROOT))
+					if (!g_fileSystem->FileCopy(atlasFileName, targetAtlasFileName, true, SP_ROOT))
 					{
-						g_fileSystem->MakeDir(targetFilePath.ToCString(), SP_ROOT);
-
-						// save material file
-						kvs.SaveToFile(targetMaterialFileName.ToCString(), SP_ROOT);
-						matFileSaved = true;
+						MsgWarning("  - cannot copy atlas file!\n");
 					}
 				}
-
-				g_textureList.append(new TexInfo_t(imageName, imageUsage.ToCString()));
-				textures++;
 			}
 		}
 	}
 
 	if (!textures)
 	{
-		MsgWarning("  - no usage for textures specified - no textures added!\n");
+		MsgWarning("  - no textures added!\n");
 		return;
 	}
 		
@@ -389,7 +431,7 @@ void ProcessTexture(TexInfo_t* textureInfo)
 	targetFilePath = targetFilePath.TrimChar(CORRECT_PATH_SEPARATOR);
 
 	EqString arguments(g_batchConfig.applicationArgumentsTemplate);
-	arguments.ReplaceSubstr(s_argumentsTag.ToCString(), textureInfo->usage->applicationArguments.ToCString());
+	arguments.ReplaceSubstr(s_argumentsTag.ToCString(), (g_batchConfig.compressionApplicationArguments + " " + textureInfo->usage->applicationArguments).ToCString());
 	arguments.ReplaceSubstr(s_inputFileNameTag.ToCString(), sourceFilename.ToCString());
 	arguments.ReplaceSubstr(s_outputFilePathTag.ToCString(), targetFilePath.ToCString());
 
@@ -419,7 +461,7 @@ void ProcessTexture(TexInfo_t* textureInfo)
 
 	MsgInfo("Processing %s: %s\n", textureInfo->usage->usageName.ToCString(), textureInfo->sourcePath.ToCString());
 
-	EqString cmdLine(EqString::Format("%s %s %s", g_batchConfig.applicationName.ToCString(), g_batchConfig.compressionApplicationArguments.ToCString(), arguments.ToCString()));
+	EqString cmdLine(EqString::Format("%s %s", g_batchConfig.applicationName.ToCString(), arguments.ToCString()));
 
 	DevMsg(DEVMSG_CORE, "*RUN '%s'\n", cmdLine.GetData());
 	system(cmdLine.GetData());
@@ -483,6 +525,12 @@ void CookMaterialsToTarget(const char* pszTargetName)
 		}
 
 		LoadBatchConfig(batchConfig);
+
+		if (!g_batchConfig.applicationName.Length()) 
+		{
+			MsgError("No application specified in either batch config or compression setting!\n");
+			return;
+		}
 	}
 
 	// perform batch conversion

@@ -364,76 +364,44 @@ uint32 CFileSystem::GetFileCRC32(const char* filename, int searchFlags)
     return checkSum;
 }
 
-#if 0
-int CopyFileSlow(const char *to, const char *from)
-{
-    int fd_to, fd_from;
-    char buf[4096];
-    ssize_t nread;
-    int saved_errno;
-
-    fd_from = open(from, O_RDONLY);
-    if (fd_from < 0)
-        return -1;
-
-    fd_to = open(to, O_WRONLY | O_CREAT | O_EXCL, 0666);
-    if (fd_to < 0)
-        goto out_error;
-
-    while (nread = read(fd_from, buf, sizeof buf), nread > 0)
-    {
-        char *out_ptr = buf;
-        ssize_t nwritten;
-
-        do {
-            nwritten = write(fd_to, out_ptr, nread);
-
-            if (nwritten >= 0)
-            {
-                nread -= nwritten;
-                out_ptr += nwritten;
-            }
-            else if (errno != EINTR)
-            {
-                goto out_error;
-            }
-        } while (nread > 0);
-    }
-
-    if (nread == 0)
-    {
-        if (close(fd_to) < 0)
-        {
-            fd_to = -1;
-            goto out_error;
-        }
-        close(fd_from);
-
-        /* Success! */
-        return 0;
-    }
-
-  out_error:
-    saved_errno = errno;
-
-    close(fd_from);
-    if (fd_to >= 0)
-        close(fd_to);
-
-    errno = saved_errno;
-    return -1;
-}
-#endif
 
 bool CFileSystem::FileCopy(const char* filename, const char* dest_file, bool overWrite, SearchPath_e search)
 {
-	if( FileExist(filename, search) )
+	char buf[4096];
+
+	if( FileExist(filename, search) && (overWrite || FileExist(dest_file, search) == false))
 	{
-#ifdef WIN32
-		CopyFileA(filename, dest_file, (BOOL)overWrite);
-#else
-		ASSERTMSG(false, "CFileSystem::FileCopy for LINUX is undone!");
-#endif
+		IFile* fp_write = Open(dest_file, "wb", search);
+		IFile* fp_read = Open(filename, "rb", search);
+
+		if (!fp_read || !fp_write)
+		{
+			Close(fp_read);
+			Close(fp_write);
+			return false;
+		}
+
+		int nread;
+		while (nread = fp_read->Read(buf, sizeof(buf), 1), nread > 0)
+		{
+			char* out_ptr = buf;
+			size_t nwritten;
+
+			do {
+				nwritten = fp_write->Write(out_ptr, nread, 1);
+
+				if (nwritten >= 0)
+				{
+					nread -= nwritten;
+					out_ptr += nwritten;
+				}
+			} while (nread > 0);
+		}
+
+		ASSERT(nread == 0);
+
+		Close(fp_read);
+		Close(fp_write);
 	}
 	else
 		return false;
