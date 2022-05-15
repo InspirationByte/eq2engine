@@ -29,42 +29,48 @@
 #include "platform/Platform.h"
 #include "InterfaceManager.h"
 
+struct PPSourceLine;
+
 IEXPORTS void	PPMemInfo( bool fullStats = true );
 
-IEXPORTS void*	PPDAlloc( size_t size, const char* pszFileName, int nLine, const char* debugTAG = nullptr );
-IEXPORTS void*	PPDReAlloc( void* ptr, size_t size, const char* pszFileName, int nLine, const char* debugTAG = nullptr );
+IEXPORTS void*	PPDAlloc( size_t size, const PPSourceLine& sl, const char* debugTAG = nullptr );
+IEXPORTS void*	PPDReAlloc( void* ptr, size_t size, const PPSourceLine& sl, const char* debugTAG = nullptr );
 
 IEXPORTS void	PPFree( void* ptr );
 
-#define			PPAlloc(size)						PPDAlloc(size, __FILE__, __LINE__)
-#define			PPAllocStructArray(type, count)		(type*)	PPDAlloc(count*sizeof(type), __FILE__, __LINE__)
-#define			PPReAlloc(ptr, size)				PPDReAlloc(ptr, size, __FILE__, __LINE__)
+constexpr int PPSL_ADDR_BITS = 48;		// 64 bit arch only use 48 bits of pointers
 
-#define			PPAllocTAG(size, tagSTR)						PPDAlloc(size, __FILE__, __LINE__, tagSTR)
-#define			PPAllocStructArrayTAG(type, count, tagSTR)		(type*)	PPDAlloc(count*sizeof(type), __FILE__, __LINE__, tagSTR)
-#define			PPReAllocTAG(ptr, size, tagSTR)					PPDReAlloc(ptr, size, __FILE__, __LINE__, tagSTR)
+// source-line contailer
+struct PPSourceLine
+{
+	uint64 data;
 
-// special macro to control your class allocations
-// or if you want fast allocator
-
-#define PPMEM_MANAGED_OBJECT_TAG( tagStr )		\
-	static void* operator new (size_t size)		\
-	{											\
-		return PPAllocTAG( size, tagStr );		\
-	}											\
-	static void* operator new [] (size_t size)	\
-	{											\
-		return PPAllocTAG( size, tagStr );		\
-	}											\
-	void operator delete (void *p)				\
-	{											\
-		PPFree(p);								\
-	}											\
-	void operator delete[] (void *p)			\
-	{											\
-		PPFree(p);								\
+	static PPSourceLine Make(const char* filename, int line)
+	{
+		return { (uint64(filename) | uint64(line) << PPSL_ADDR_BITS) };
 	}
 
-#define PPMEM_MANAGED_OBJECT()	PPMEM_MANAGED_OBJECT_TAG(nullptr)
+	const char* GetFileName() const { return (const char*)(data & ((1ULL << PPSL_ADDR_BITS) - 1)); }
+	int			GetLine() const { return int((data >> PPSL_ADDR_BITS) & 15); }
+};
+
+#define PP_SL	PPSourceLine::Make(__FILE__, __LINE__)
+#define			PPNew	new(PP_SL)
+
+#define			PPAlloc(size)									PPDAlloc(size, PP_SL)
+#define			PPAllocStructArray(type, count)					(type*)	PPDAlloc(count*sizeof(type), PP_SL)
+#define			PPReAlloc(ptr, size)							PPDReAlloc(ptr, size, PP_SL)
+
+#define			PPAllocTAG(size, tagSTR)						PPDAlloc(size, PP_SL, tagSTR)
+#define			PPAllocStructArrayTAG(type, count, tagSTR)		(type*)	PPDAlloc(count*sizeof(type), PP_SL, tagSTR)
+#define			PPReAllocTAG(ptr, size, tagSTR)					PPDReAlloc(ptr, size, PP_SL, tagSTR)
+
+void* operator new(size_t size, PPSourceLine sl);
+
+void* operator new[](size_t size, PPSourceLine sl);
+
+void operator delete(void* ptr, PPSourceLine sl);
+
+void operator delete[](void* ptr, PPSourceLine sl);
 
 #endif // PPMEM_H

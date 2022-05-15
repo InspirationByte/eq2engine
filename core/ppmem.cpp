@@ -46,24 +46,19 @@ using namespace Threading;
 
 struct ppallocinfo_t
 {
-	ppallocinfo_t()
-	{
-	}
-
 #ifdef PPMEM_DEBUG_TAGS
 	// extra visibility via CRT debug output
-	char		tag[PPMEM_DEBUG_TAG_MAX];
+	char			tag[PPMEM_DEBUG_TAG_MAX];
 #endif // PPMEM_DEBUG_TAGS
 
 #ifdef PPMEM_EXTRA_DEBUGINFO
-	const char*	src;
-	int			line;
+	PPSourceLine	sl;
 #endif // PPMEM_EXTRA_DEBUGINFO
 
-	uint		id;
-	size_t		size;
+	uint			id;
+	size_t			size;
 
-	uint		checkMark;
+	uint			checkMark;
 };
 
 DECLARE_CONCOMMAND_FN(ppmemstats)
@@ -155,8 +150,8 @@ void PPMemInfo( bool fullStats )
 
 	CScopedMutex m(g_allocMemMutex);
 
-	uint totalUsage = 0;
-	uint numErrors = 0;
+	size_t totalUsage = 0;
+	size_t numErrors = 0;
 
 	for(allocIterator_t iterator = s_allocPointerMap.begin(); iterator != s_allocPointerMap.end(); iterator++)
 	{
@@ -179,7 +174,7 @@ void PPMemInfo( bool fullStats )
 #else
 
 #	ifdef PPMEM_EXTRA_DEBUGINFO
-			MsgInfo("alloc id=%d, src='%s' (%d), ptr=%p, size=%d\n", alloc->id, alloc->src, alloc->line, curPtr, alloc->size);
+			MsgInfo("alloc id=%d, src='%s' (%d), ptr=%p, size=%d\n", alloc->id, alloc->sl.GetFileName(), alloc->sl.GetLine(), curPtr, alloc->size);
 #	else
 			MsgInfo("alloc id=%d, ptr=%p, size=%d\n", alloc->id, curPtr, alloc->size);
 #	endif
@@ -250,21 +245,26 @@ ppallocinfo_t* FindAllocation( void* ptr, bool& isValidInputPtr )
 }
 
 // allocated debuggable memory block
-void* PPDAlloc(size_t size, const char* pszFileName, int nLine, const char* debugTAG)
+void* PPDAlloc(size_t size, const PPSourceLine& sl, const char* debugTAG)
 {
 #ifdef PPMEM_DISABLE
-	return pp_internal_malloc(size);
+	void* mem = pp_internal_malloc(size);
+	ASSERTMSG(mem, "No mem left");
+	return mem;
 #else
 
-	if(!g_enablePPMem)
-		return pp_internal_malloc(size);
+	if (!g_enablePPMem)
+	{
+		void* mem = pp_internal_malloc(size);
+		ASSERTMSG(mem, "No mem left");
+		return mem;
+	}
 
 	// allocate more to store extra information of this
 	ppallocinfo_t* alloc = (ppallocinfo_t*)pp_internal_malloc(sizeof(ppallocinfo_t) + size + sizeof(uint));
+	ASSERTMSG(alloc, "No mem left");
 
-	alloc->src = pszFileName;
-	alloc->line = nLine;
-
+	alloc->sl = sl;
 	alloc->size = size;
 	alloc->id = s_allocIdCounter++;
 
@@ -297,7 +297,7 @@ void* PPDAlloc(size_t size, const char* pszFileName, int nLine, const char* debu
 }
 
 // reallocates memory block
-void* PPDReAlloc( void* ptr, size_t size, const char* pszFileName, int nLine, const char* debugTAG )
+void* PPDReAlloc( void* ptr, size_t size, const PPSourceLine& sl, const char* debugTAG )
 {
 #ifdef PPMEM_DISABLE
 	return realloc(ptr, size);
@@ -325,9 +325,7 @@ void* PPDReAlloc( void* ptr, size_t size, const char* pszFileName, int nLine, co
 
 		// set new size
 		alloc->size = size;
-
-		alloc->src = pszFileName;
-		alloc->line = nLine;
+		alloc->sl = sl;
 
 		// actual pointer address
 		void* actualPtr = ((ubyte*)alloc) + sizeof(ppallocinfo_t);
@@ -345,7 +343,7 @@ void* PPDReAlloc( void* ptr, size_t size, const char* pszFileName, int nLine, co
 		return actualPtr;
 	}
 	else
-		return PPDAlloc(size, pszFileName, nLine, debugTAG);
+		return PPDAlloc(size, sl, debugTAG);
 #endif // PPMEM_DISABLE
 }
 
@@ -388,4 +386,24 @@ void PPFree(void* ptr)
 		g_allocMemMutex.Unlock();
 	}
 #endif // PPMEM_DISABLE
+}
+
+void* operator new(size_t size, PPSourceLine sl)
+{
+	return PPAlloc(size);
+}
+
+void* operator new[](size_t size, PPSourceLine sl)
+{
+	return PPAlloc(size);
+}
+
+void operator delete(void* ptr, PPSourceLine sl)
+{
+	PPFree(ptr);
+}
+
+void operator delete[](void* ptr, PPSourceLine sl)
+{
+	PPFree(ptr);
 }
