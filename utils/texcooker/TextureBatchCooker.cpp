@@ -146,6 +146,7 @@ struct TexInfo_t
 };
 
 Array<TexInfo_t*> g_textureList;
+Array<EqString> g_materialList;
 
 //-----------------------------------------------------------------------
 
@@ -253,25 +254,26 @@ void LoadMaterialImages(const char* materialFileName)
 	if (!kvs.LoadFromFile(materialFileName, SP_ROOT))
 		return;
 
-	EqString atlasFileName = _Es(materialFileName).Path_Strip_Ext() + ".atlas";
+	EqString localMaterialFileName = materialFileName + g_batchConfig.sourceMaterialPath.Length();
+	localMaterialFileName = localMaterialFileName.TrimChar(CORRECT_PATH_SEPARATOR).TrimChar(INCORRECT_PATH_SEPARATOR);
 
 	if (kvs.GetRootSection()->KeyCount() == 0)
 	{
-		MsgError("'%s' is not valid material file\n", materialFileName);
+		MsgError("'%s' is not valid material file\n", localMaterialFileName.ToCString());
 		return;
 	}
 
 	kvkeybase_t* kvMaterial = kvs.GetRootSection()->keys[0];
 	if (!kvMaterial->IsSection())
 	{
-		MsgError("'%s' is not valid material file\n", materialFileName);
+		MsgError("'%s' is not valid material file\n", localMaterialFileName.ToCString());
 		return;
 	}
 
-	MsgInfo("Material: '%s'\n", materialFileName);
+	MsgInfo("Material: '%s'\n", localMaterialFileName.ToCString());
+	g_materialList.append(localMaterialFileName);
 
 	int textures = 0;
-	bool matFileSaved = false;
 
 	for (int i = 0; i < kvMaterial->keys.numElem(); i++)
 	{
@@ -289,7 +291,7 @@ void LoadMaterialImages(const char* materialFileName)
 
 			if (keyHasUsage)
 			{
-				MsgWarning("  - material %s texture '%s' has multiple usages! Only one is supported", materialFileName, key->GetName());
+				MsgWarning("  - material %s texture '%s' has multiple usages! Only one is supported", localMaterialFileName.ToCString(), key->GetName());
 				continue;
 			}
 
@@ -320,44 +322,6 @@ void LoadMaterialImages(const char* materialFileName)
 			{
 				if(AddTexture(texturePath, imageUsage))
 					textures++;
-			}
-
-			if (textures && !matFileSaved)
-			{
-				const bool isPath = strchr(texturePath, CORRECT_PATH_SEPARATOR) || strchr(texturePath, INCORRECT_PATH_SEPARATOR);
-
-				// make path
-				EqString targetFilePath;
-				if (isPath)
-					CombinePath(targetFilePath, 2, g_targetProps.targetFolder.ToCString(), texturePath.Path_Strip_Name().ToCString());
-				else
-					targetFilePath = g_targetProps.targetFolder;
-
-				EqString targetMaterialFileName;
-				CombinePath(targetMaterialFileName, 2, targetFilePath.ToCString(), _Es(materialFileName).Path_Strip_Path().ToCString());
-
-				// store material file
-				if (!g_fileSystem->FileExist(targetMaterialFileName, SP_ROOT))
-				{
-					g_fileSystem->MakeDir(targetFilePath.ToCString(), SP_ROOT);
-
-					// save material file
-					kvs.SaveToFile(targetMaterialFileName.ToCString(), SP_ROOT);
-
-					matFileSaved = true;
-				}
-
-				// also copy atlas file
-				EqString targetAtlasFileName;
-				CombinePath(targetAtlasFileName, 2, targetFilePath.ToCString(), (_Es(materialFileName).Path_Strip_Ext() + ".atlas").Path_Strip_Path().ToCString());
-				if (!g_fileSystem->FileExist(targetAtlasFileName, SP_ROOT) && 
-					g_fileSystem->FileExist(atlasFileName, SP_ROOT))
-				{
-					if (!g_fileSystem->FileCopy(atlasFileName, targetAtlasFileName, true, SP_ROOT))
-					{
-						MsgWarning("  - cannot copy atlas file!\n");
-					}
-				}
 			}
 		}
 	}
@@ -416,6 +380,46 @@ bool hasMatchingCRC(uint32 crc)
 	return false;
 }
 
+void ProcessMaterial(const EqString& materialFileName)
+{
+	const EqString atlasFileName = _Es(materialFileName).Path_Strip_Ext() + ".atlas";
+
+	EqString sourceMaterialFileName;
+	CombinePath(sourceMaterialFileName, 2, g_batchConfig.sourceMaterialPath.ToCString(), materialFileName.ToCString());
+
+	EqString sourceAtlasFileName;
+	CombinePath(sourceAtlasFileName, 2, g_batchConfig.sourceMaterialPath.ToCString(), atlasFileName.ToCString());
+
+	EqString targetMaterialFileName;
+	CombinePath(targetMaterialFileName, 2, g_targetProps.targetFolder.ToCString(), materialFileName.ToCString());
+
+	EqString targetAtlasFileName;
+	CombinePath(targetAtlasFileName, 2, g_targetProps.targetFolder.ToCString(), atlasFileName.ToCString());
+
+	// make target material file path
+	g_fileSystem->MakeDir(targetMaterialFileName.Path_Strip_Name(), SP_ROOT);
+
+	// copy material file
+	if (!g_fileSystem->FileExist(targetMaterialFileName, SP_ROOT))
+	{
+		// save material file
+		if (!g_fileSystem->FileCopy(sourceMaterialFileName, targetMaterialFileName, true, SP_ROOT))
+		{
+			MsgWarning("  - cannot copy material file!\n");
+		}
+	}
+
+	// also copy atlas file
+	if (!g_fileSystem->FileExist(targetAtlasFileName, SP_ROOT) &&
+		g_fileSystem->FileExist(sourceAtlasFileName, SP_ROOT))
+	{
+		if (!g_fileSystem->FileCopy(sourceAtlasFileName, targetAtlasFileName, true, SP_ROOT))
+		{
+			MsgWarning("  - cannot copy atlas file!\n");
+		}
+	}
+}
+
 void ProcessTexture(TexInfo_t* textureInfo)
 {
 	// before this, create folders...
@@ -425,10 +429,10 @@ void ProcessTexture(TexInfo_t* textureInfo)
 	EqString targetFilename;
 	CombinePath(targetFilename, 2, g_targetProps.targetFolder.ToCString(), (textureInfo->sourcePath.Path_Strip_Ext() + ".dds").ToCString());
 	
-	EqString targetFilePath;
-	CombinePath(targetFilePath, 2, g_targetProps.targetFolder.ToCString(), textureInfo->sourcePath.Path_Strip_Name().ToCString());
+	CONST EqString targetFilePath = targetFilename.Path_Strip_Name().TrimChar(CORRECT_PATH_SEPARATOR);
 
-	targetFilePath = targetFilePath.TrimChar(CORRECT_PATH_SEPARATOR);
+	// make image folder
+	g_fileSystem->MakeDir(targetFilePath.ToCString(), SP_ROOT);
 
 	EqString arguments(g_batchConfig.applicationArgumentsTemplate);
 	arguments.ReplaceSubstr(s_argumentsTag.ToCString(), (g_batchConfig.compressionApplicationArguments + " " + textureInfo->usage->applicationArguments).ToCString());
@@ -535,10 +539,10 @@ void CookMaterialsToTarget(const char* pszTargetName)
 
 	// perform batch conversion
 	{
+		Msg("Material source path: '%s'\n", g_batchConfig.sourceMaterialPath.ToCString());
+
 		EqString searchTemplate;
 		CombinePath(searchTemplate, 2, g_batchConfig.sourceMaterialPath.ToCString(), "*.*");
-
-		Msg("Material source path: '%s'\n", searchTemplate.ToCString());
 
 		// walk up material files
 		SearchFolderForMaterialsAndGetTextures( searchTemplate.ToCString() );
@@ -549,6 +553,13 @@ void CookMaterialsToTarget(const char* pszTargetName)
 
 		// load CRC list, check for existing DDS files, and skip if necessary
 		KV_LoadFromFile(crcFileName.ToCString(), SP_ROOT, &g_batchConfig.crcSec);
+
+		// process material files
+		// this makes target folders and copies materials
+		for(int i = 0; i < g_materialList.numElem(); i++)
+		{
+			ProcessMaterial(g_materialList[i]);
+		}
 
 		// do conversion
 		for (int i = 0; i < g_textureList.numElem(); i++)
