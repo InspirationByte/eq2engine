@@ -45,8 +45,6 @@ enum VirtStreamOpenFlags_e
 class IVirtualStream
 {
 public:
-	PPMEM_MANAGED_OBJECT();
-
 	virtual ~IVirtualStream() {}
 
 	// reads data from virtual stream

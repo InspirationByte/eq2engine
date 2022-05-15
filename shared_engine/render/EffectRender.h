@@ -20,8 +20,6 @@ class CPFXAtlasGroup;
 class IEffect
 {
 public:
-	PPMEM_MANAGED_OBJECT_TAG("ParticleEffect")
-
 					IEffect();
 	virtual			~IEffect() {}
 

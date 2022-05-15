@@ -37,8 +37,6 @@ class IPhysicsObject
 {
 public:
 
-	PPMEM_MANAGED_OBJECT();
-
 	//-----------------------------
 	// Object properties
 	//-----------------------------

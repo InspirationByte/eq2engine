@@ -15,8 +15,6 @@
 class IVertexFormat
 {
 public:
-	PPMEM_MANAGED_OBJECT();
-
 	virtual	~IVertexFormat() {}
 
 	virtual const char*		GetName() const = 0;

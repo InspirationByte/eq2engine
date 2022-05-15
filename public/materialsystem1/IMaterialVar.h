@@ -15,8 +15,6 @@ class ITexture;
 class IMatVar
 {
 public:
-	PPMEM_MANAGED_OBJECT();
-
 	virtual ~IMatVar() {}
 
 	// get material var name

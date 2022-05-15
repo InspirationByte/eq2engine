@@ -93,8 +93,6 @@ class IUIControl
 	//friend class IEqUIEventHandler;
 
 public:
-	PPMEM_MANAGED_OBJECT();
-
 	IUIControl();
 	virtual ~IUIControl();
 

@@ -63,8 +63,6 @@ class CTextureAtlas;
 class IMaterial : public RefCountedObject
 {
 public:
-	PPMEM_MANAGED_OBJECT();
-
 	// returns full material path
 	virtual const char*				GetName() const = 0;
 	virtual const char*				GetShaderName() const = 0;

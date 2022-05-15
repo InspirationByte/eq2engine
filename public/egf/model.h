@@ -146,8 +146,6 @@ struct studioPhysShapeCache_t
 
 struct studioPhysObject_t
 {
-	PPMEM_MANAGED_OBJECT();
-
 	char			name[32];
 	physobject_t	object;
 	void*			shapeCache[MAX_GEOM_PER_OBJECT];		// indexes of geomdata
@@ -156,8 +154,6 @@ struct studioPhysObject_t
 // physics model data from POD
 struct studioPhysData_t
 {
-	PPMEM_MANAGED_OBJECT();
-
 	studioPhysData_t()
 	{
 		modeltype = 0;
@@ -199,8 +195,6 @@ struct studioPhysData_t
 // hardware data for the MOD_STUDIO
 struct studioHwData_t
 {
-	PPMEM_MANAGED_OBJECT();
-
 	studioHwData_t()
 	{
 		studio = nullptr;

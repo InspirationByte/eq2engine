@@ -63,10 +63,8 @@ class CParticleRenderGroup : public CSpriteBuilder<PFXVertex_t>
 	friend class CParticleLowLevelRenderer;
 
 public:
-	PPMEM_MANAGED_OBJECT();
-
-						CParticleRenderGroup();
-			virtual		~CParticleRenderGroup();
+	CParticleRenderGroup();
+	virtual		~CParticleRenderGroup();
 
 	virtual void		Init( const char* pszMaterialName, bool bCreateOwnVBO = false, int maxQuads = 16384 );
 	virtual void		Shutdown();

@@ -180,8 +180,6 @@ ALIGNED_TYPE(bonedesc_s, 4) bonedesc_t;
 // Model
 struct modelheader_s
 {
-	PPMEM_MANAGED_OBJECT();
-
 	int					ident;					// main header
 	uint8				version;
 

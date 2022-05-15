@@ -50,8 +50,6 @@ enum ShaderDefaultParams_e
 class IMaterialSystemShader
 {
 public:
-	PPMEM_MANAGED_OBJECT();
-
 	virtual ~IMaterialSystemShader() {}
 
 	// Initializes parameters

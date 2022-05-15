@@ -51,8 +51,6 @@ enum DecalFlags_e
 //-------------------------------------------------------
 struct tempdecal_t
 {
-	PPMEM_MANAGED_OBJECT();
-
 	tempdecal_t() : verts(nullptr), indices(nullptr), numVerts(0), numIndices(0), material(nullptr)
 	{
 	}

@@ -17,8 +17,6 @@ class IIndexBuffer
 public:
 	virtual ~IIndexBuffer() {}
 
-	PPMEM_MANAGED_OBJECT();
-
 	// returns index size
 	virtual int8			GetIndexSize() = 0;
 

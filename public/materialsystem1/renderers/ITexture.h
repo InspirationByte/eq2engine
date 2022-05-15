@@ -23,8 +23,6 @@ struct texlockdata_t
 class ITexture : public RefCountedObject
 {
 public:
-	PPMEM_MANAGED_OBJECT();
-
 	// Name of texture
 	virtual const char*					GetName() const = 0;
 	virtual void						SetName(const char* pszNewName) = 0;

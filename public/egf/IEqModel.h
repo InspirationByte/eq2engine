@@ -48,9 +48,7 @@ class IEqModel;
 class IEqModelInstancer
 {
 public:
-	PPMEM_MANAGED_OBJECT();
-
-				virtual	~IEqModelInstancer() {}
+	virtual	~IEqModelInstancer() {}
 
 	virtual void		ValidateAssert() = 0;
 
@@ -69,9 +67,7 @@ class IEqModel // : public RefCountedObject
 {
 public:
 
-	PPMEM_MANAGED_OBJECT();
-
-						virtual ~IEqModel() {}
+	virtual ~IEqModel() {}
 						
 	void						Ref_DeleteObject() {}
 

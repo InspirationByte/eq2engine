@@ -14,8 +14,6 @@
 class IOcclusionQuery
 {
 public:
-	PPMEM_MANAGED_OBJECT();
-
 	virtual ~IOcclusionQuery() {}
 
 	// begins the occlusion query issue

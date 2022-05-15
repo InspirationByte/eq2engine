@@ -24,9 +24,6 @@ enum RenderStateType_e
 class IRenderState
 {
 public:
-
-	PPMEM_MANAGED_OBJECT()
-
 	IRenderState()
 	{
 		m_numReferences = 0;

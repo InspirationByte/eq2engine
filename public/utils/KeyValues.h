@@ -65,8 +65,6 @@ enum KVSearchFlags_e
 //
 struct kvpairvalue_t
 {
-	PPMEM_MANAGED_OBJECT()
-
 	kvpairvalue_t()
 	{
 		value = NULL;
@@ -111,8 +109,6 @@ struct kvpairvalue_t
 //
 struct kvkeybase_t
 {
-	PPMEM_MANAGED_OBJECT()
-
 	kvkeybase_t();
 	~kvkeybase_t();
 

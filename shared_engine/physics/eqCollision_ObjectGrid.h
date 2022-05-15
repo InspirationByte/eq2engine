@@ -18,8 +18,6 @@ class CEqPhysics;
 
 struct collgridcell_t
 {
-	PPMEM_MANAGED_OBJECT_TAG("physGridCell")
-
 	short	x,y;
 	float	cellBoundUsed;	// unsigned z of usage by static objects
 

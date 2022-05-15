@@ -16,8 +16,6 @@
 
 struct ragdoll_t
 {
-	PPMEM_MANAGED_OBJECT();
-
 	void Init()
 	{
 		m_numBones = 0;

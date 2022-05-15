@@ -23,8 +23,6 @@ class IVertexBuffer
 public:
 	virtual ~IVertexBuffer() {}
 
-	PPMEM_MANAGED_OBJECT();
-
 	// returns size in bytes
 	virtual long		GetSizeInBytes() = 0;
 

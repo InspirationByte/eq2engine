@@ -74,8 +74,6 @@ class CEqCollisionObject //: public RefCountedObject
 	friend class CEqPhysics;
 
 public:
-	PPMEM_MANAGED_OBJECT()
-
 	CEqCollisionObject();
 	virtual ~CEqCollisionObject();
 
