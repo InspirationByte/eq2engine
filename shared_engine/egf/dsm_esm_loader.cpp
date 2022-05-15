@@ -59,7 +59,7 @@ bool ReadBones(Tokenizer& tok, dsmmodel_t* pModel)
 		else if(bCouldRead)
 		{
 			// read bone definition
-			pBone = new dsmskelbone_t;
+			pBone = PPNew dsmskelbone_t;
 
 			char* str2 = tok.next(isQuotes);
 
@@ -130,7 +130,7 @@ bool ReadFaces(Tokenizer& tok, dsmmodel_t* pModel)
 
 				if(!pCurrentGroup)
 				{
-					pCurrentGroup = new dsmgroup_t;
+					pCurrentGroup = PPNew dsmgroup_t;
 
 					strcpy(pCurrentGroup->texture, material_name);
 					pCurrentGroup->verts.resize(1024);
@@ -166,8 +166,8 @@ bool ReadFaces(Tokenizer& tok, dsmmodel_t* pModel)
 
 				if(numWeights)
 				{
-					float* tempWeights = new float[numWeights];
-					int* tempWeightBones = new int[numWeights];
+					float* tempWeights = PPNew float[numWeights];
+					int* tempWeightBones = PPNew int[numWeights];
 					
 					for(int i = 0; i < numWeights; i++)
 					{
@@ -240,7 +240,7 @@ bool ReadShapes(Tokenizer& tok, esmshapedata_t* data)
 		{
 			if(!stricmp(str, "key"))
 			{
-				curShapeKey = new esmshapekey_t;
+				curShapeKey = PPNew esmshapekey_t;
 
 				curShapeKey->time = readInt(tok);
 

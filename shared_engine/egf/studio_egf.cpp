@@ -402,7 +402,7 @@ bool CEngineStudioEGF::LoadModel(const char* pszPath, bool useJob)
 	m_readyState = MODEL_LOAD_IN_PROGRESS;
 
 	// allocate hardware data
-	m_hwdata = new studioHwData_t;
+	m_hwdata = PPNew studioHwData_t;
 	memset(m_hwdata, 0, sizeof(studioHwData_t));
 
 	if (useJob)
@@ -458,7 +458,7 @@ bool CEngineStudioEGF::LoadGenerateVertexBuffer()
 
 	studiohdr_t* pHdr = m_hwdata->studio;
 
-	auto lodModels = new studioModelRef_t[pHdr->numModels];
+	auto lodModels = PPNew studioModelRef_t[pHdr->numModels];
 	m_hwdata->modelrefs = lodModels;
 
 	int maxMaterialIdx = -1;
@@ -493,8 +493,8 @@ bool CEngineStudioEGF::LoadGenerateVertexBuffer()
 		if (numVertices > int(USHRT_MAX))
 			nIndexSize = INDEX_SIZE_INT;
 
-		EGFHwVertex_t* allVerts = new EGFHwVertex_t[numVertices];
-		ubyte* allIndices = new ubyte[nIndexSize * numIndices];
+		EGFHwVertex_t* allVerts = PPNew EGFHwVertex_t[numVertices];
+		ubyte* allIndices = PPNew ubyte[nIndexSize * numIndices];
 
 		numVertices = 0;
 		numIndices = 0;
@@ -502,7 +502,7 @@ bool CEngineStudioEGF::LoadGenerateVertexBuffer()
 		for (int i = 0; i < pHdr->numModels; i++)
 		{
 			studiomodeldesc_t* pModelDesc = pHdr->pModelDesc(i);
-			studioModelRefGroupDesc_t* groupDescs = new studioModelRefGroupDesc_t[pModelDesc->numGroups];
+			studioModelRefGroupDesc_t* groupDescs = PPNew studioModelRefGroupDesc_t[pModelDesc->numGroups];
 			lodModels[i].groupDescs = groupDescs;
 
 			for (int j = 0; j < pModelDesc->numGroups; j++)
@@ -724,7 +724,7 @@ void CEngineStudioEGF::LoadSetupBones()
 	studiohdr_t* pHdr = m_hwdata->studio;
 
 	// Initialize HW data joints
-	m_hwdata->joints = new studioJoint_t[pHdr->numBones];
+	m_hwdata->joints = PPNew studioJoint_t[pHdr->numBones];
 
 	// parse bones
 	for (int i = 0; i < pHdr->numBones; i++)
@@ -1122,7 +1122,7 @@ tempdecal_t* CEngineStudioEGF::MakeTempDecal(const decalmakeinfo_t& info, Matrix
 
 	if (verts.numElem() && indices.numElem())
 	{
-		tempdecal_t* pDecal = new tempdecal_t;
+		tempdecal_t* pDecal = PPNew tempdecal_t;
 
 		pDecal->material = info.material;
 
@@ -1184,7 +1184,7 @@ int CStudioModelCache::PrecacheModel(const char* modelName)
 	{
 		DevMsg(DEVMSG_CORE, "Loading model '%s'\n", modelName);
 
-		CEngineStudioEGF* pModel = new CEngineStudioEGF;
+		CEngineStudioEGF* pModel = PPNew CEngineStudioEGF;
 		pModel->m_cacheIdx = m_cachedList.append(pModel);
 
 		if (!pModel->LoadModel(modelName, job_modelLoader.GetBool()))

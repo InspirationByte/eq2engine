@@ -92,7 +92,7 @@ void CMaterial::Init(const char* materialPath)
 				if (atlasSec)
 				{
 					if (!m_atlas)
-						m_atlas = new CTextureAtlas(atlasSec);
+						m_atlas = PPNew CTextureAtlas(atlasSec);
 
 					root.Cleanup();
 
@@ -206,7 +206,7 @@ void CMaterial::InitMaterialVars(kvkeybase_t* kvs)
 
 		if (!pMatVar)
 		{
-			CMatVar* pVar = new CMatVar();
+			CMatVar* pVar = PPNew CMatVar();
 			pVar->Init(materialVar->GetName(), KV_GetValueString(materialVar));
 
 			{
@@ -427,7 +427,7 @@ IMatVar* CMaterial::CreateMaterialVar(const char* pszVarName, const char* defaul
 
 	if(!pMatVar)
 	{
-		CMatVar *pVar = new CMatVar();
+		CMatVar *pVar = PPNew CMatVar();
 		pVar->Init(pszVarName, defaultParam);
 
 		{

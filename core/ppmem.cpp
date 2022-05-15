@@ -166,7 +166,7 @@ void PPMemInfo( bool fullStats )
 #ifdef PPMEM_DEBUG_TAGS
 
 #	ifdef PPMEM_EXTRA_DEBUGINFO
-			MsgInfo("alloc '%s' id=%d, src='%s' (%d), ptr=%p, size=%d\n", alloc->tag, alloc->id, alloc->src, alloc->line, curPtr, alloc->size);
+			MsgInfo("alloc '%s' id=%d, src='%s:%d', ptr=%p, size=%d\n", alloc->tag, alloc->id, alloc->src, alloc->line, curPtr, alloc->size);
 #	else
 			MsgInfo("alloc '%s' id=%d, ptr=%p, size=%d\n", alloc->tag, alloc->id, curPtr, alloc->size);
 #	endif
@@ -174,7 +174,7 @@ void PPMemInfo( bool fullStats )
 #else
 
 #	ifdef PPMEM_EXTRA_DEBUGINFO
-			MsgInfo("alloc id=%d, src='%s' (%d), ptr=%p, size=%d\n", alloc->id, alloc->sl.GetFileName(), alloc->sl.GetLine(), curPtr, alloc->size);
+			MsgInfo("alloc id=%d, src='%s:%d', ptr=%p, size=%d\n", alloc->id, alloc->sl.GetFileName(), alloc->sl.GetLine(), curPtr, alloc->size);
 #	else
 			MsgInfo("alloc id=%d, ptr=%p, size=%d\n", alloc->id, curPtr, alloc->size);
 #	endif
@@ -390,12 +390,12 @@ void PPFree(void* ptr)
 
 void* operator new(size_t size, PPSourceLine sl)
 {
-	return PPAlloc(size);
+	return PPDAlloc(size, sl);
 }
 
 void* operator new[](size_t size, PPSourceLine sl)
 {
-	return PPAlloc(size);
+	return PPDAlloc(size, sl);
 }
 
 void operator delete(void* ptr, PPSourceLine sl)

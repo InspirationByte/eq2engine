@@ -148,7 +148,7 @@ DECLARE_CMD(con_addAutoCompletion,"Adds autocompletion variants", CV_INVISIBLE)
 		return;
 	}
 
-	ConAutoCompletion_t* newItem = new ConAutoCompletion_t;
+	ConAutoCompletion_t* newItem = PPNew ConAutoCompletion_t;
 	newItem->cmd_name = CMD_ARGV(0);
 
 	xstrsplit(CMD_ARGV(1).ToCString(),",",newItem->args);
@@ -204,7 +204,7 @@ void CEqConsoleInput::SpewFunc(SpewType_t type, const char* pMsg)
 
 		if(length > 0 || *pc == '\n')	// print non empty text and newlines
 		{
-			currentSpewLine = new conSpewText_t;
+			currentSpewLine = PPNew conSpewText_t;
 			currentSpewLine->type = type;
 			currentSpewLine->text.Assign(lineStart, length);
 

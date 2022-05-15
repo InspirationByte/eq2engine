@@ -332,7 +332,7 @@ void CEGFPhysicsGenerator::SubdivideModelParts( Array<dsmvertex_t>& vertices, Ar
 
 	Msg("Num. triangles parsed: %d\n", triangleGraph.GetTriangles()->numElem());
 
-	indxgroup_t* main_group = new indxgroup_t;
+	indxgroup_t* main_group = PPNew indxgroup_t;
 	groups.append(main_group);
 
 	Msg("Building groups...\n");
@@ -363,7 +363,7 @@ void CEGFPhysicsGenerator::SubdivideModelParts( Array<dsmvertex_t>& vertices, Ar
 		// if not found, create new group and add triangle with all of it's neighbours
 		if(!found)
 		{
-			indxgroup_t *new_group = new indxgroup_t;
+			indxgroup_t *new_group = PPNew indxgroup_t;
 			groups.append(new_group);
 
 			// add tri with all of it's neighbour's herarchy

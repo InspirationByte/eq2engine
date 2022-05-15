@@ -7,6 +7,7 @@
 
 #include "RectanglePacker.h"
 #include "core/DebugInterface.h"
+#include "core/ppmem.h"
 
 struct PackerNode 
 {
@@ -14,7 +15,7 @@ struct PackerNode
 	{
 		left = right = NULL;
 
-		rect = new PackerRectangle;
+		rect = PPNew PackerRectangle;
 		rect->x = x;
 		rect->y = y;
 		rect->width = w;
@@ -59,8 +60,8 @@ bool PackerNode::AssignRectangle_r(PackerRectangle *newRect)
 			newRect->x = rx;
 			newRect->y = ry;
 
-			left  = new PackerNode(rx, ry + newRect->height, newRect->width, rect->height - newRect->height, newRect->userdata);
-			right = new PackerNode(rx + newRect->width, ry, rect->width - newRect->width, rect->height, newRect->userdata);
+			left = PPNew PackerNode(rx, ry + newRect->height, newRect->width, rect->height - newRect->height, newRect->userdata);
+			right = PPNew PackerNode(rx + newRect->width, ry, rect->width - newRect->width, rect->height, newRect->userdata);
 
 			delete rect;
 			rect = NULL;
@@ -89,7 +90,7 @@ CRectanglePacker::~CRectanglePacker()
 
 int CRectanglePacker::AddRectangle(float width, float height, void* pUserData)
 {
-	PackerRectangle* rect = new PackerRectangle;
+	PackerRectangle* rect = PPNew PackerRectangle;
 
 	rect->width  = width+m_padding*2.0f;
 	rect->height = height+m_padding*2.0f;
@@ -107,7 +108,7 @@ bool CRectanglePacker::AssignCoords(float& width, float& height, COMPRECTFUNC co
 
 	sortedRects.sort(compRectFunc);
 
-	PackerNode* top = new PackerNode(0, 0, width, height, NULL);
+	PackerNode* top = PPNew PackerNode(0, 0, width, height, NULL);
 
 	width  = 0;
 	height = 0;

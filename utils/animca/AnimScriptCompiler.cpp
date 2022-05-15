@@ -113,7 +113,7 @@ int	GetPoseControllerIndex(const char* name)
 //************************************
 void ShiftAnimationFrames(studioBoneFrame_t* bone, int new_start_frame)
 {
-	animframe_t* frames_copy = new animframe_t[bone->numFrames];
+	animframe_t* frames_copy  = PPNew animframe_t[bone->numFrames];
 
 	for(int i = 0; i < new_start_frame; i++)
 	{
@@ -291,7 +291,7 @@ void CropAnimationBoneFrames(studioBoneFrame_t* pBone, int newStart, int newFram
 		return;
 	}
 
-	animframe_t* new_frames = new animframe_t[newFrames];
+	animframe_t* new_frames = PPNew animframe_t[newFrames];
 
 	for(int i = 0; i < newFrames; i++)
 	{
@@ -318,7 +318,7 @@ void CropAnimationDimensions(studioAnimation_t* pAnim, int newStart, int newFram
 //************************************
 void ReverseAnimationBoneFrames(studioBoneFrame_t* pBone)
 {
-	animframe_t* new_frames = new animframe_t[pBone->numFrames];
+	animframe_t* new_frames = PPNew animframe_t[pBone->numFrames];
 
 	for(int i = 0; i < pBone->numFrames; i++)
 	{
@@ -372,8 +372,8 @@ void GetCurrAndNextFrameFromTime(float time, int max, int *curr, int *next)
 //************************************
 void RemapBoneFrames(studioBoneFrame_t* pBone, int newLength)
 {
-	animframe_t*	newFrames = new animframe_t[newLength];
-	bool*			bSetFrames = new bool[newLength];
+	animframe_t*	newFrames = PPNew animframe_t[newLength];
+	bool*			bSetFrames = PPNew bool[newLength];
 
 	memset(bSetFrames, 0, sizeof(bool) * newLength);
 
@@ -603,7 +603,7 @@ bool ReadFrames(Tokenizer& tok, dsmmodel_t* pModel, studioAnimation_t* pAnim)
 	{
 		int numFrames = bones[i].frames.numElem();
 		pAnim->bones[i].numFrames = numFrames;
-		pAnim->bones[i].keyFrames = new animframe_t[numFrames];
+		pAnim->bones[i].keyFrames = PPNew animframe_t[numFrames];
 
 		// copy frames
 		memcpy(pAnim->bones[i].keyFrames, bones[i].frames.ptr(), numFrames * sizeof(animframe_t));
@@ -672,7 +672,7 @@ int LoadAnimationFromESA(const char* filename)
 				return -1;
 			}
 
-			modelAnim.bones = new studioBoneFrame_t[g_numbones];
+			modelAnim.bones = PPNew studioBoneFrame_t[g_numbones];
 
 			if(!ReadFrames(tok, &tempDSM, &modelAnim))
 			{
@@ -1156,12 +1156,12 @@ void MakeDefaultPoseAnimation()
 
 	g_numbones = g_model->numBones;
 
-	modelAnim.bones = new studioBoneFrame_t[g_numbones];
+	modelAnim.bones = PPNew studioBoneFrame_t[g_numbones];
 	for(int i = 0; i < g_numbones; i++)
 	{
 
 		modelAnim.bones[i].numFrames = 1;
-		modelAnim.bones[i].keyFrames = new animframe_t[1];
+		modelAnim.bones[i].keyFrames = PPNew animframe_t[1];
 		modelAnim.bones[i].keyFrames[0].angBoneAngles = vec3_zero;
 		modelAnim.bones[i].keyFrames[0].vecBonePosition = vec3_zero;
 	}

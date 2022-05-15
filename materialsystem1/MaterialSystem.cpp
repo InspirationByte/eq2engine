@@ -352,7 +352,7 @@ void CMaterialSystem::Shutdown()
 void CMaterialSystem::CreateWhiteTexture()
 {
 	// don't worry, it will be removed
-	CImage* img = new CImage();
+	CImage* img = PPNew CImage();
 
 	img->SetName("_matsys_white");
 
@@ -388,7 +388,7 @@ void CMaterialSystem::CreateWhiteTexture()
 	//--------------------------------------------------------------------
 	/*
 	// don't worry, it will be removed
-	img = new CImage();
+	img = PPNew CImage();
 
 	img->SetName("_matsys_luxeltest");
 
@@ -527,7 +527,7 @@ IMaterial* CMaterialSystem::CreateMaterialInternal(const char* szMaterialName, i
 	CScopedMutex m(m_Mutex);
 
 	// create new material
-	CMaterial* pMaterial = new CMaterial(m_ProxyMutex[m_loadedMaterials.size() % 4]);
+	CMaterial* pMaterial = PPNew CMaterial(m_ProxyMutex[m_loadedMaterials.size() % 4]);
 
 	// add to list
 	ASSERTMSG(m_loadedMaterials.find(nameHash) == m_loadedMaterials.end(), "Material %s was already created under that name", szMaterialName);

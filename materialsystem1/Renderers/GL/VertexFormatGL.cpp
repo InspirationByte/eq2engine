@@ -16,7 +16,7 @@ CVertexFormatGL::CVertexFormatGL(const char* name, VertexFormatDesc_t* desc, int
 	
 	if(m_numAttribs)
 	{
-		m_vertexDesc = new VertexFormatDesc_t[m_numAttribs];
+		m_vertexDesc = PPNew VertexFormatDesc_t[m_numAttribs];
 
 		for(int i = 0; i < m_numAttribs; i++)
 			m_vertexDesc[i] = desc[i];

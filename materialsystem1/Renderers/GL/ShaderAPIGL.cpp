@@ -672,7 +672,7 @@ IOcclusionQuery* ShaderAPIGL::CreateOcclusionQuery()
 	if(!m_caps.isHardwareOcclusionQuerySupported)
 		return NULL;
 
-	CGLOcclusionQuery* occQuery = new CGLOcclusionQuery();
+	CGLOcclusionQuery* occQuery = PPNew CGLOcclusionQuery();
 
 	m_Mutex.Lock();
 	m_OcclusionQueryList.append( occQuery );
@@ -753,7 +753,7 @@ ITexture* ShaderAPIGL::CreateNamedRenderTarget(	const char* pszName,
 												ER_CompareFunc comparison,
 												int nFlags)
 {
-	CGLTexture *pTexture = new CGLTexture;
+	CGLTexture *pTexture = PPNew CGLTexture;
 
 	pTexture->SetDimensions(width,height);
 	pTexture->SetFormat(nRTFormat);
@@ -977,7 +977,7 @@ void ShaderAPIGL::CreateTextureInternal(ITexture** pTex, const Array<CImage*>& p
 	if(*pTex)
 		pTexture = (CGLTexture*)*pTex;
 	else
-		pTexture = new CGLTexture();
+		pTexture = PPNew CGLTexture();
 
 	int wide = 0, tall = 0;
 	int mipCount = 0;
@@ -1622,7 +1622,7 @@ void ShaderAPIGL::ChangeIndexBuffer(IIndexBuffer *pIndexBuffer)
 // Creates shader class for needed ShaderAPI
 IShaderProgram* ShaderAPIGL::CreateNewShaderProgram(const char* pszName, const char* query)
 {
-	CGLShaderProgram* pNewProgram = new CGLShaderProgram();
+	CGLShaderProgram* pNewProgram = PPNew CGLShaderProgram();
 	pNewProgram->SetName((_Es(pszName)+query).GetData());
 
 	CScopedMutex scoped(m_Mutex);
@@ -1934,7 +1934,7 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 			samplers.resize(uniformCount);
 			uniforms.resize(uniformCount);
 
-			char* tmpName = new char[maxLength+1];
+			char* tmpName = PPNew char[maxLength+1];
 
 			DevMsg(DEVMSG_SHADERAPI, "[DEBUG] getting UNIFORMS from '%s'\n", cdata.prog->GetName());
 
@@ -2049,7 +2049,7 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 
 			// init uniform data
 			uni.size = s_constantTypeSizes[uni.type] * uni.nElements;
-			uni.data = new ubyte[uni.size];
+			uni.data = PPNew ubyte[uni.size];
 			memset(uni.data, 0, uni.size);
 			uni.dirty = false;
 
@@ -2105,7 +2105,7 @@ void ShaderAPIGL::SetShaderConstantRaw(const char *pszName, const void *data, in
 
 IVertexFormat* ShaderAPIGL::CreateVertexFormat(const char* name, VertexFormatDesc_s *formatDesc, int nAttribs)
 {
-	CVertexFormatGL *pVertexFormat = new CVertexFormatGL(name, formatDesc, nAttribs);
+	CVertexFormatGL *pVertexFormat = PPNew CVertexFormatGL(name, formatDesc, nAttribs);
 
 	m_Mutex.Lock();
 	m_VFList.append(pVertexFormat);
@@ -2116,7 +2116,7 @@ IVertexFormat* ShaderAPIGL::CreateVertexFormat(const char* name, VertexFormatDes
 
 IVertexBuffer* ShaderAPIGL::CreateVertexBuffer(ER_BufferAccess nBufAccess, int nNumVerts, int strideSize, void *pData )
 {
-	CVertexBufferGL* pVB = new CVertexBufferGL();
+	CVertexBufferGL* pVB = PPNew CVertexBufferGL();
 
 	pVB->m_numVerts = nNumVerts;
 	pVB->m_strideSize = strideSize;
@@ -2163,7 +2163,7 @@ IVertexBuffer* ShaderAPIGL::CreateVertexBuffer(ER_BufferAccess nBufAccess, int n
 
 IIndexBuffer* ShaderAPIGL::CreateIndexBuffer(int nIndices, int nIndexSize, ER_BufferAccess nBufAccess, void *pData )
 {
-	CIndexBufferGL* pIB = new CIndexBufferGL();
+	CIndexBufferGL* pIB = PPNew CIndexBufferGL();
 
 	pIB->m_nIndices = nIndices;
 	pIB->m_nIndexSize = nIndexSize;
@@ -2247,7 +2247,7 @@ void ShaderAPIGL::DestroyVertexBuffer(IVertexBuffer* pVertexBuffer)
 	if(deleted)
 	{
 		const int numBuffers = (pVB->m_access == BUFFER_DYNAMIC) ? MAX_VB_SWITCHING : 1;
-		uint* tempArray = new uint[numBuffers];
+		uint* tempArray = PPNew uint[numBuffers];
 		memcpy(tempArray, pVB->m_nGL_VB_Index, numBuffers * sizeof(uint));
 
 		delete pVB;
@@ -2281,7 +2281,7 @@ void ShaderAPIGL::DestroyIndexBuffer(IIndexBuffer* pIndexBuffer)
 	if(deleted)
 	{
 		const int numBuffers = (pIB->m_access == BUFFER_DYNAMIC) ? MAX_IB_SWITCHING : 1;
-		uint* tempArray = new uint[numBuffers];
+		uint* tempArray = PPNew uint[numBuffers];
 		memcpy(tempArray, pIB->m_nGL_IB_Index, numBuffers * sizeof(uint));
 
 		delete pIndexBuffer;
@@ -2442,7 +2442,7 @@ IRenderState* ShaderAPIGL::CreateBlendingState( const BlendStateParam_t &blendDe
 		}
 	}
 
-	pState = new CGLBlendingState;
+	pState = PPNew CGLBlendingState;
 	pState->m_params = blendDesc;
 
 	m_BlendStates.append(pState);
@@ -2489,7 +2489,7 @@ IRenderState* ShaderAPIGL::CreateDepthStencilState( const DepthStencilStateParam
 		}
 	}
 
-	pState = new CGLDepthStencilState;
+	pState = PPNew CGLDepthStencilState;
 	pState->m_params = depthDesc;
 
 	m_DepthStates.append(pState);
@@ -2519,7 +2519,7 @@ IRenderState* ShaderAPIGL::CreateRasterizerState( const RasterizerStateParams_t 
 		}
 	}
 
-	pState = new CGLRasterizerState();
+	pState = PPNew CGLRasterizerState();
 	pState->m_params = rasterDesc;
 
 	pState->AddReference();

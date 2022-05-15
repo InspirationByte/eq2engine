@@ -127,7 +127,7 @@ void CEGFGenerator::AddModelLodUsageReference(int lodModelIndex)
 egfcaModel_t CEGFGenerator::GetDummyModel()
 {
 	egfcaModel_t mod;
-	mod.model = new dsmmodel_t;
+	mod.model = PPNew dsmmodel_t;
 	strcpy(mod.model->name, "_dummy");
 
 	return mod;
@@ -142,7 +142,7 @@ egfcaModel_t CEGFGenerator::LoadModel(const char* pszFileName)
 		return GetDummyModel();
 
 	egfcaModel_t mod;
-	mod.model = new dsmmodel_t;
+	mod.model = PPNew dsmmodel_t;
 
 	EqString modelPath;
 	CombinePath(modelPath, 2, m_refsPath.ToCString(), pszFileName);
@@ -152,7 +152,7 @@ egfcaModel_t CEGFGenerator::LoadModel(const char* pszFileName)
 	// load shape keys
 	if( !ext.CompareCaseIns("esx") )
 	{
-		mod.shapeData = new esmshapedata_t;
+		mod.shapeData = PPNew esmshapedata_t;
 
 		Msg("Loading shape file '%s'\n", modelPath.ToCString());
 
@@ -333,7 +333,7 @@ dsmmodel_t* CEGFGenerator::ParseAndLoadModels(kvkeybase_t* pKeyBase)
 	// merge the models
 	if(models.numElem() > 1)
 	{
-		dsmmodel_t* merged = new dsmmodel_t;
+		dsmmodel_t* merged = PPNew dsmmodel_t;
 
 		// set model to as part name
 		strcpy(merged->name, KV_GetValueString(pKeyBase, 0, "invalid_model_name"));
@@ -602,7 +602,7 @@ bool CEGFGenerator::LoadMaterialGroups(kvkeybase_t* pSection)
 				return false;
 			}
 
-			egfcaMaterialGroup_t* group = new egfcaMaterialGroup_t();
+			egfcaMaterialGroup_t* group = PPNew egfcaMaterialGroup_t();
 			m_matGroups.append(group);
 
 			MsgInfo("Added materialGroup: ");
@@ -692,7 +692,7 @@ void BoneMergeRemapDSM(dsmmodel_t* pDSM, Array<dsmskelbone_t*> &new_bones)
 	for(int i = 0; i < new_bones.numElem(); i++)
 	{
 		// copy bone
-		dsmskelbone_t* pBone = new dsmskelbone_t;
+		dsmskelbone_t* pBone = PPNew dsmskelbone_t;
 		memcpy(pBone, new_bones[i], sizeof(dsmskelbone_t));
 
 		// add
@@ -723,7 +723,7 @@ void CEGFGenerator::MergeBones()
 			if(!BoneListCheckForBone(model->bones[j]->name, allBones))
 			{
 				// copy bone
-				dsmskelbone_t* pBone = new dsmskelbone_t;
+				dsmskelbone_t* pBone = PPNew dsmskelbone_t;
 				memcpy(pBone, model->bones[j], sizeof(dsmskelbone_t));
 
 				// set new bone id

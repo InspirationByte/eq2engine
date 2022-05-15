@@ -82,7 +82,7 @@ int GLWorkerThread::AddWork(const char* name, FUNC_TYPE f, bool blocking)
 	// wait before worker gets done
 	WaitForThread();
 
-	m_pendingWork = new work_t(name, f, m_workCounter++, blocking);
+	m_pendingWork = PPNew work_t(name, f, m_workCounter++, blocking);
 
 	SignalWork();
 

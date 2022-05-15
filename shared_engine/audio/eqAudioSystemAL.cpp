@@ -415,7 +415,7 @@ ISoundSource* CEqAudioSystemAL::LoadSample(const char* filename)
 		if (!sampleSource->IsStreaming())
 		{
 			// Set memory to OpenAL and destroy original source (as it's not needed anymore)
-			CSoundSource_OpenALCache* alCacheSource = new CSoundSource_OpenALCache(sampleSource);
+			CSoundSource_OpenALCache* alCacheSource = PPNew CSoundSource_OpenALCache(sampleSource);
 			ISoundSource::DestroySound(sampleSource);
 
 			sampleSource = alCacheSource;

@@ -42,7 +42,7 @@ void CEqCollisionBroadphaseGrid::Init(CEqPhysics* physics, int gridsize, const V
 	m_gridWide = ceilf(size.x * m_invGridSize);
 	m_gridTall = ceilf(size.z * m_invGridSize);
 
-	m_gridMap = new collgridcell_t*[m_gridWide*m_gridTall];
+	m_gridMap = PPNew collgridcell_t*[m_gridWide*m_gridTall];
 
 	for(int y = 0; y < m_gridWide; y++)
 	{
@@ -207,7 +207,7 @@ collgridcell_t*	CEqCollisionBroadphaseGrid::GetAllocCellAt(int x, int y)
 
 	if(!m_gridMap[cellIdx])
 	{
-		collgridcell_t* newCell = new collgridcell_t();
+		collgridcell_t* newCell = PPNew collgridcell_t();
 
 		newCell->x = x;
 		newCell->y = y;

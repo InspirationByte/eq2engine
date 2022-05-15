@@ -189,7 +189,7 @@ void ApplyShapeKeyOnVertex( esmshapekey_t* modShapeKey, const dsmvertex_t& vert,
 
 void ReverseStrip(int* indices, int len)
 {
-	int* original = new int[len];
+	int* original = PPNew int[len];
 	memcpy(original, indices, len*sizeof(int));
 
 	for (int i = 0; i != len; ++i)

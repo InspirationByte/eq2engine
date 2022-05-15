@@ -78,7 +78,7 @@ void Buffer::ReadKeyValues(kvkeybase_t* kbase)
 {
 	int len = ReadInt();
 
-	char* data = new char[len];
+	char* data = PPNew char[len];
 	ReadData(data, len);
 
 	KV_ParseBinary(data, len, kbase);
@@ -104,7 +104,7 @@ char* Buffer::ReadString(int& length)
 
 	if(length)
 	{
-		char* pData = new char[length];
+		char* pData = PPNew char[length];
 
 		ReadData((ubyte*)pData, length);
 
@@ -118,7 +118,7 @@ EqString Buffer::ReadString()
 {
 	uint16 length = ReadInt16();
 
-	char* temp = new char[length];
+	char* temp = PPNew char[length];
 
 	// not so safe
 	ReadData((ubyte*)temp, length);
@@ -136,7 +136,7 @@ wchar_t* Buffer::ReadWString(int& length)
 
 	if(length)
 	{
-		wchar_t* pData = new wchar_t[length];
+		wchar_t* pData = PPNew wchar_t[length];
 
 		ReadData((ubyte*)pData, length*sizeof(wchar_t));
 

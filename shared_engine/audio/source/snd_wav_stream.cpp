@@ -12,7 +12,7 @@
 bool CSoundSource_WaveStream::Load(const char *szFilename)
 {
 	m_filename = szFilename;
-	m_reader = new CRIFF_Parser( szFilename );
+	m_reader = PPNew CRIFF_Parser( szFilename );
 
 	while ( m_reader->GetName( ) )
 	{

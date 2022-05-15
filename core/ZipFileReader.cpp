@@ -231,7 +231,7 @@ IVirtualStream* CZipFileReader::Open(const char* filename, const char* mode)
 		return nullptr;
 	}
 
-	CZipFileStream* newStream = new CZipFileStream(zipFileHandle);
+	CZipFileStream* newStream = PPNew CZipFileStream(zipFileHandle);
 	newStream->m_host = this;
 
 	{

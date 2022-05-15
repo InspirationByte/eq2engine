@@ -210,7 +210,7 @@ bool CDkCore::Init(const char* pszApplicationName, const char* pszCommandLine)
 
 	m_szApplicationName = pszApplicationName;
 
-	m_coreConfiguration = new KeyValues();
+	m_coreConfiguration = PPNew KeyValues();
 	kvkeybase_t* coreConfigRoot = m_coreConfiguration->GetRootSection();
 
 	// try different locations of EQ.CONFIG
@@ -312,11 +312,11 @@ bool CDkCore::Init(const char* pszApplicationName, const char* pszCommandLine)
 	// Регистрация некоторых комманд.
 	((CConsoleCommands*)g_consoleCommands)->RegisterCommands();
 
-	c_log_enable = new ConCommand("log_enable",CONCOMMAND_FN(log_enable));
-	c_log_disable = new ConCommand("log_disable",CONCOMMAND_FN(log_disable));
-	c_log_flush = new ConCommand("log_flush",CONCOMMAND_FN(log_flush));
+	c_log_enable = PPNew ConCommand("log_enable",CONCOMMAND_FN(log_enable));
+	c_log_disable = PPNew ConCommand("log_disable",CONCOMMAND_FN(log_disable));
+	c_log_flush = PPNew ConCommand("log_flush",CONCOMMAND_FN(log_flush));
 
-	c_SupressAccessorMessages = new ConVar("c_SupressAccessorMessages","1","Supress command/variable accessing. Dispays errors only",CV_ARCHIVE);
+	c_SupressAccessorMessages = PPNew ConVar("c_SupressAccessorMessages","1","Supress command/variable accessing. Dispays errors only",CV_ARCHIVE);
 
 	// Install exception handler
 	if (g_cmdLine->FindArgument("-nocrashdump") == -1)

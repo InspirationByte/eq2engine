@@ -45,7 +45,7 @@ void CIndexBufferD3DX9::ReleaseForRestoration()
 	// dynamic VBO's uses a D3DPOOL_DEFAULT
 	if(dynamic)
 	{
-		m_pRestore = new iborestoredata_t;
+		m_pRestore = PPNew iborestoredata_t;
 
 		int lock_size = m_nIndices*m_nIndexSize;
 		m_pRestore->size = lock_size;

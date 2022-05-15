@@ -91,7 +91,7 @@ public:
 	CEmptyVertexFormat(const char* name, VertexFormatDesc_s *desc, int nAttribs) : m_numAttribs(nAttribs)
 	{
 		m_name = name;
-		m_vertexDesc = new VertexFormatDesc_t[m_numAttribs];
+		m_vertexDesc = PPNew VertexFormatDesc_t[m_numAttribs];
 		memset(m_streamStride, 0, sizeof(m_streamStride));
 
 		for(int i = 0; i < m_numAttribs; i++)
@@ -247,7 +247,7 @@ public:
 	// It will add new rendertarget
 	ITexture*					CreateRenderTarget(int width, int height,ETextureFormat nRTFormat,ER_TextureFilterMode textureFilterType = TEXFILTER_LINEAR, ER_TextureAddressMode textureAddress = TEXADDRESS_WRAP, ER_CompareFunc comparison = COMP_NEVER, int nFlags = 0)
 	{
-		CEmptyTexture* pTexture = new CEmptyTexture();
+		CEmptyTexture* pTexture = PPNew CEmptyTexture();
 		pTexture->SetName(EqString::Format("_rt_%d", m_TextureList.size()));
 
 		pTexture->SetDimensions(width, height);
@@ -263,7 +263,7 @@ public:
 	// It will add new rendertarget
 	ITexture*					CreateNamedRenderTarget(const char* pszName,int width, int height, ETextureFormat nRTFormat, ER_TextureFilterMode textureFilterType = TEXFILTER_LINEAR, ER_TextureAddressMode textureAddress = TEXADDRESS_WRAP, ER_CompareFunc comparison = COMP_NEVER, int nFlags = 0)
 	{
-		CEmptyTexture* pTexture = new CEmptyTexture();
+		CEmptyTexture* pTexture = PPNew CEmptyTexture();
 		pTexture->SetName(pszName);
 
 		CScopedMutex scoped(m_Mutex);
@@ -435,7 +435,7 @@ public:
 
 	IVertexFormat*				CreateVertexFormat(const char* name, VertexFormatDesc_s *formatDesc, int nAttribs)
 	{
-		IVertexFormat* pVF = new CEmptyVertexFormat(name, formatDesc, nAttribs);
+		IVertexFormat* pVF = PPNew CEmptyVertexFormat(name, formatDesc, nAttribs);
 		m_VFList.append(pVF);
 		return pVF;
 	}
@@ -465,7 +465,7 @@ protected:
 		if(*pTex)
 			pTexture = (CEmptyTexture*)*pTex;
 		else
-			pTexture = new CEmptyTexture();
+			pTexture = PPNew CEmptyTexture();
 
 		// FIXME: hold images?
 

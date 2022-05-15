@@ -8,6 +8,7 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "AsyncWorkQueue.h"
+#include "core/ppmem.h"
 
 #define WORK_PENDING_MARKER 0xbeefea1e
 
@@ -37,7 +38,7 @@ int CAsyncWorkQueue::Push(const FUNC_TYPE& f)
 	// set the new worker and signal to start...
 	Threading::CScopedMutex m(m_mutex);
 
-	work_t* work = new work_t(f, m_workCounter++);
+	work_t* work = PPNew work_t(f, m_workCounter++);
 	m_pendingWork.append(work);
 
 	return 0;

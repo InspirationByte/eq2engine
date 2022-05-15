@@ -222,13 +222,13 @@ CImage::CImage(const CImage &img)
 	m_nFormat = img.m_nFormat;
 
 	int size = GetMipMappedSize(0, m_nMipMaps) * m_nArraySize;
-	m_pPixels = new ubyte[size];
+	m_pPixels = PPNew ubyte[size];
 	memcpy(m_pPixels, img.m_pPixels, size);
 
 	m_nExtraDataSize = img.m_nExtraDataSize;
 	if(m_nExtraDataSize)
 	{
-		m_pExtraData = new ubyte[m_nExtraDataSize];
+		m_pExtraData = PPNew ubyte[m_nExtraDataSize];
 		memcpy(m_pExtraData, img.m_pExtraData, m_nExtraDataSize);
 	}
 	else
@@ -249,7 +249,7 @@ ubyte* CImage::Create(const ETextureFormat fmt, const int w, const int h, const 
 	m_nMipMaps = mipMapCount;
 	m_nArraySize = arraysize;
 
-	return (m_pPixels = new ubyte[GetMipMappedSize(0, m_nMipMaps) * m_nArraySize]);
+	return (m_pPixels = PPNew ubyte[GetMipMappedSize(0, m_nMipMaps) * m_nArraySize]);
 }
 
 void CImage::Free()
@@ -546,7 +546,7 @@ bool CImage::LoadDDSfromHandle(IFile *fileHandle, uint flags)
 	}
 
 	int size = GetMipMappedSize(0, m_nMipMaps);
-	m_pPixels = new ubyte[size];
+	m_pPixels = PPNew ubyte[size];
 	if (IsCube())
 	{
 		for (int face = 0; face < 6; face++)
@@ -614,7 +614,7 @@ bool CImage::LoadJPEGfromHandle(IFile *fileHandle)
 	m_nMipMaps = 1;
 	m_nArraySize = 1;
 
-	m_pPixels = new ubyte[m_nWidth * m_nHeight * cinfo.num_components];
+	m_pPixels = PPNew ubyte[m_nWidth * m_nHeight * cinfo.num_components];
 
 	for( ubyte *curr_scanline = m_pPixels ; cinfo.output_scanline < cinfo.output_height; curr_scanline += m_nWidth * cinfo.num_components)
 		jpeg_read_scanlines(&cinfo, &curr_scanline, 1);
@@ -667,13 +667,13 @@ bool CImage::LoadTGAfromHandle(IFile *fileHandle)
 		file->Read(palette, sizeof(palette), 1);
 
 	// Read the file data
-	fBuffer = new ubyte[size - sizeof(header) - palLength];
+	fBuffer = PPNew ubyte[size - sizeof(header) - palLength];
 	file->Read(fBuffer, size - sizeof(header) - palLength, 1);
 	g_fileSystem->Close(file);
 
 	size = m_nWidth * m_nHeight * pixelSize;
 
-	tempBuffer = new ubyte[size];
+	tempBuffer = PPNew ubyte[size];
 
 
 	// Decode if rle compressed. Bit 3 of .imagetype tells if the file is compressed
@@ -727,7 +727,7 @@ bool CImage::LoadTGAfromHandle(IFile *fileHandle)
 		if (palLength > 0)
 		{
 			m_nFormat = FORMAT_RGB8;
-			dest = m_pPixels = new ubyte[m_nWidth * m_nHeight * 3];
+			dest = m_pPixels = PPNew ubyte[m_nWidth * m_nHeight * 3];
 			for (y = 0; y < m_nHeight; y++)
 			{
 				for (x = 0; x < m_nWidth; x++)
@@ -743,7 +743,7 @@ bool CImage::LoadTGAfromHandle(IFile *fileHandle)
 		else
 		{
 			m_nFormat = FORMAT_I8;
-			dest = m_pPixels = new ubyte[m_nWidth * m_nHeight];
+			dest = m_pPixels = PPNew ubyte[m_nWidth * m_nHeight];
 			for (y = 0; y < m_nHeight; y++)
 			{
 				memcpy(dest, src, m_nWidth);
@@ -754,7 +754,7 @@ bool CImage::LoadTGAfromHandle(IFile *fileHandle)
 		break;
 	case 16:
 		m_nFormat = FORMAT_RGBA8;
-		dest = m_pPixels = new ubyte[m_nWidth * m_nHeight * 4];
+		dest = m_pPixels = PPNew ubyte[m_nWidth * m_nHeight * 4];
 		for (y = 0; y < m_nHeight; y++)
 		{
 			for (x = 0; x < m_nWidth; x++)
@@ -773,7 +773,7 @@ bool CImage::LoadTGAfromHandle(IFile *fileHandle)
 		break;
 	case 24:
 		m_nFormat = FORMAT_RGB8;
-		dest = m_pPixels = new ubyte[m_nWidth * m_nHeight * 3];
+		dest = m_pPixels = PPNew ubyte[m_nWidth * m_nHeight * 3];
 
 		for (y = 0; y < m_nHeight; y++)
 		{
@@ -789,7 +789,7 @@ bool CImage::LoadTGAfromHandle(IFile *fileHandle)
 		break;
 	case 32:
 		m_nFormat = FORMAT_RGBA8;
-		dest = m_pPixels = new ubyte[m_nWidth * m_nHeight * 4];
+		dest = m_pPixels = PPNew ubyte[m_nWidth * m_nHeight * 4];
 		for (y = 0; y < m_nHeight; y++)
 		{
 			for (x = 0; x < m_nWidth; x++)
@@ -1101,7 +1101,7 @@ bool CImage::SaveTGA(const char *fileName)
 		bool useAlpha = (nChannels == 4);
 		int lineLength = m_nWidth * (useAlpha? 4 : 3);
 
-		buffer = new ubyte[m_nHeight * lineLength];
+		buffer = PPNew ubyte[m_nHeight * lineLength];
 		int len;
 
 		for (int y = 0; y < m_nHeight; y++){
@@ -1169,7 +1169,7 @@ void CImage::LoadFromMemory(void *mem, const ETextureFormat frmt, const int w, c
 	else
 	{
 		int size = GetMipMappedSize(0, m_nMipMaps);
-		m_pPixels = new unsigned char[size];
+		m_pPixels = PPNew unsigned char[size];
 		memcpy(m_pPixels, mem, size);
 	}
 }
@@ -1212,7 +1212,7 @@ bool CImage::CreateMipMaps(const int mipMaps)
 		int size = GetMipMappedSize(0, actualMipMaps);
 		if (m_nArraySize > 1)
 		{
-			ubyte *newPixels = new ubyte[size * m_nArraySize];
+			ubyte *newPixels = PPNew ubyte[size * m_nArraySize];
 
 			// Copy top mipmap of all array slices to new location
 			int firstMipSize = GetMipMappedSize(0, 1);
@@ -1229,7 +1229,7 @@ bool CImage::CreateMipMaps(const int mipMaps)
 		else
 		{
 			/*
-			unsigned char* newpels = new unsigned char[size/sizeof(ubyte)];
+			unsigned char* newpels  = PPNew unsigned char[size/sizeof(ubyte)];
 			memcpy(newpels,pixels,sizeof(newpels));
 			delete pixels;
 			*/
@@ -1294,7 +1294,7 @@ bool CImage::RemoveMipMaps(const int firstMipMap, int mipMapsToSave)
 	int newMipCount = min(firstMipMap + mipMapsToSave, m_nMipMaps) - firstMipMap;
 
 	int size = GetMipMappedSize(firstMipMap, newMipCount);
-	ubyte* newPixels = new ubyte[size];
+	ubyte* newPixels = PPNew ubyte[size];
 
 	memcpy(newPixels, GetPixels(firstMipMap), size);
 	int newWidth = GetWidth(firstMipMap);
@@ -1318,7 +1318,7 @@ bool CImage::Convert(const ETextureFormat newFormat)
 
 	if (m_nFormat == FORMAT_RGBE8 && (newFormat == FORMAT_RGB32F || newFormat == FORMAT_RGBA32F))
 	{
-		newPixels = new ubyte[GetMipMappedSize(0, m_nMipMaps, newFormat) * m_nArraySize];
+		newPixels = PPNew ubyte[GetMipMappedSize(0, m_nMipMaps, newFormat) * m_nArraySize];
 		float *dest = (float *) newPixels;
 
 		bool writeAlpha = (newFormat == FORMAT_RGBA32F);
@@ -1349,7 +1349,7 @@ bool CImage::Convert(const ETextureFormat newFormat)
 			return true;
 
 		ubyte *src = m_pPixels;
-		ubyte *dest = newPixels = new ubyte[GetMipMappedSize(0, m_nMipMaps, newFormat) * m_nArraySize];
+		ubyte *dest = newPixels = PPNew ubyte[GetMipMappedSize(0, m_nMipMaps, newFormat) * m_nArraySize];
 
 		if (m_nFormat == FORMAT_RGB8 && newFormat == FORMAT_RGBA8)
 		{

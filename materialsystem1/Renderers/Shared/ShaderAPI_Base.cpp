@@ -557,7 +557,7 @@ ITexture* ShaderAPI_Base::LoadTexture( const char* pszFileName,
 	// load frames
 	for (int i = 0; i < textureNames.numElem(); i++)
 	{
-		CImage* img = new CImage();
+		CImage* img = PPNew CImage();
 
 		EqString texturePathExt;
 		CombinePath(texturePathExt, 2, m_params.texturePath.ToCString(), textureNames[i].ToCString());
@@ -678,7 +678,7 @@ bool ShaderAPI_Base::RestoreTextureInternal(ITexture* pTexture)
 	// load frames
 	for (int i = 0; i < textureNames.numElem(); i++)
 	{
-		CImage* img = new CImage();
+		CImage* img = PPNew CImage();
 
 		EqString texturePathExt;
 		CombinePath(texturePathExt, 2, m_params.texturePath.ToCString(), textureNames[i].ToCString());

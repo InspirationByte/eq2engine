@@ -85,7 +85,7 @@ void CTextureAtlas::InitAtlas( kvkeybase_t* kvs )
 
 	m_num = kvs->keys.numElem();
 
-	m_entries = new TexAtlasEntry_t[m_num];
+	m_entries = PPNew TexAtlasEntry_t[m_num];
 
 	for(int i = 0; i < kvs->keys.numElem(); i++)
 	{

@@ -310,7 +310,7 @@ void InitSurfaceParams( Array<eqPhysSurfParam_t*>& list )
 		if (!stricmp(pSec->name, "#include"))
 			continue;
 
-		eqPhysSurfParam_t* pMaterial = new eqPhysSurfParam_t;
+		eqPhysSurfParam_t* pMaterial = PPNew eqPhysSurfParam_t;
 		int mat_idx = list.append(pMaterial);
 
 		pMaterial->id = mat_idx;

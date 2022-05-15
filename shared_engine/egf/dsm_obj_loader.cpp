@@ -296,7 +296,7 @@ bool LoadOBJ(dsmmodel_t* model, const char* filename)
 		{
 			if(!curgroup)
 			{
-				curgroup = new dsmgroup_t;
+				curgroup = PPNew dsmgroup_t;
 
 				model->groups.append(curgroup);
 

@@ -15,7 +15,7 @@ CVertexFormatD3DX9::CVertexFormatD3DX9(const char* name, VertexFormatDesc_t* des
 	: m_pVertexDecl(nullptr), m_vertexDesc(nullptr), m_numAttribs(numAttribs)
 {
 	m_name = name;
-	m_vertexDesc = new VertexFormatDesc_t[m_numAttribs];
+	m_vertexDesc = PPNew VertexFormatDesc_t[m_numAttribs];
 	memset(m_streamStride, 0, sizeof(m_streamStride));
 
 	for(int i = 0; i < m_numAttribs; i++)

@@ -452,7 +452,7 @@ const char*	kvkeybase_t::GetName() const
 
 kvpairvalue_t* kvkeybase_t::CreateValue()
 {
-	kvpairvalue_t* val = new kvpairvalue_t();
+	kvpairvalue_t* val = PPNew kvpairvalue_t();
 
 	val->type = type;
 
@@ -466,19 +466,19 @@ kvkeybase_t* kvkeybase_t::CreateSectionValue()
 	if(type != KVPAIR_SECTION)
 		return NULL;
 
-	kvpairvalue_t* val = new kvpairvalue_t();
+	kvpairvalue_t* val = PPNew kvpairvalue_t();
 
 	val->type = type;
 
 	values.append(val);
 
-	val->section = new kvkeybase_t();
+	val->section = PPNew kvkeybase_t();
 	return val->section;
 }
 
 kvkeybase_t* kvkeybase_t::Clone() const
 {
-	kvkeybase_t* newKey = new kvkeybase_t();
+	kvkeybase_t* newKey = PPNew kvkeybase_t();
 
 	CopyTo(newKey);
 
@@ -912,7 +912,7 @@ kvkeybase_t* kvkeybase_t::FindKeyBase(const char* pszName, int nFlags) const
 // adds new keybase
 kvkeybase_t* kvkeybase_t::AddKeyBase( const char* pszName, const char* pszValue, EKVPairType pairType)
 {
-	kvkeybase_t* pKeyBase = new kvkeybase_t;
+	kvkeybase_t* pKeyBase = PPNew kvkeybase_t;
 	pKeyBase->SetName(pszName);
 	pKeyBase->type = pairType;
 
@@ -1107,7 +1107,7 @@ kvkeybase_t* KV_ParseSectionV2(const char* pszBuffer, int bufferSize, const char
 	kvkeybase_t* pKeyBase = pParseTo;
 
 	if(!pKeyBase)
-		pKeyBase = new kvkeybase_t;
+		pKeyBase = PPNew kvkeybase_t;
 
 	kvkeybase_t* pCurrentKeyBase = NULL;
 	kvkeybase_t* pPrevKeyBase = NULL;
@@ -1317,7 +1317,7 @@ kvkeybase_t* KV_ParseSectionV2(const char* pszBuffer, int bufferSize, const char
 				}
 				else
 				{
-					pCurrentKeyBase = new kvkeybase_t;
+					pCurrentKeyBase = PPNew kvkeybase_t;
 					pCurrentKeyBase->line = nLine;
 					pKeyBase->keys.append( pCurrentKeyBase );
 				}
@@ -1378,7 +1378,7 @@ kvkeybase_t* KV_ParseSectionV3( const char* pszBuffer, int bufferSize, const cha
 	kvkeybase_t* pKeyBase = pParseTo;
 
 	if(!pKeyBase)
-		pKeyBase = new kvkeybase_t;
+		pKeyBase = PPNew kvkeybase_t;
 
 	const char* pData = (char*)pszBuffer;
 	const char* pLast = pData;
@@ -1663,7 +1663,7 @@ kvkeybase_t* KV_ParseSectionV3( const char* pszBuffer, int bufferSize, const cha
 
 				if(nValCounter == 0)
 				{
-					curpair = new kvkeybase_t();
+					curpair = PPNew kvkeybase_t();
 					curpair->line = nModeStartLine;
 					parserMode = PM_KEY;
 				}
@@ -1708,7 +1708,7 @@ kvkeybase_t* KV_ParseSectionV3( const char* pszBuffer, int bufferSize, const cha
 					}
 					else if( valueArray )
 					{
-						kvkeybase_t* newsec = new kvkeybase_t();
+						kvkeybase_t* newsec = PPNew kvkeybase_t();
 						bool success = KV_ParseSectionV3(pFirstLetter, nLen, pszFileName, newsec, nModeStartLine-1) != NULL;
 
 						bool typeIsOk = ((curpair->values.numElem() == 0) || curpair->type == KVPAIR_SECTION);
@@ -1959,7 +1959,7 @@ kvkeybase_t* KV_ReadBinaryBase(IVirtualStream* stream, kvkeybase_t* pParseTo)
 	}
 
 	if(!pParseTo)
-		pParseTo = new kvkeybase_t();
+		pParseTo = PPNew kvkeybase_t();
 
 	// read name after keybase header
 	char* nameTemp = (char*)stackalloc(binBase.nameLen+1);

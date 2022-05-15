@@ -29,7 +29,7 @@ IEqFontCache* g_fontCache = &s_fontCache;
 #define FONT_LOADSTYLE(v, name)		\
 	if(name != NULL)				\
 	{								\
-		CFont* lfont = new CFont();	\
+		CFont* lfont = PPNew CFont();	\
 		if( lfont->LoadFont( name ) )\
 			v = lfont;				\
 		else						\
@@ -98,7 +98,7 @@ bool CEqFontCache::LoadFontDescriptionFile( const char* filename )
 
 		char* fontName = fontSec->name;
 
-		eqFontFamily_t* familyEntry = new eqFontFamily_t;
+		eqFontFamily_t* familyEntry = PPNew eqFontFamily_t;
 		familyEntry->name = fontName;
 
 		int styleErrorCounter = 0;
@@ -116,7 +116,7 @@ bool CEqFontCache::LoadFontDescriptionFile( const char* filename )
 			kvkeybase_t* bolditalic = styleTable->FindKeyBase("b+i");
 			
 			// first we loading a regular font
-			CFont* regFont = new CFont();
+			CFont* regFont = PPNew CFont();
 
 			if( !regFont->LoadFont( KV_GetValueString(regular, 0, "") ) )
 			{
@@ -128,7 +128,7 @@ bool CEqFontCache::LoadFontDescriptionFile( const char* filename )
 			}
 
 			// now alloc
-			eqFontStyleInfo_t* fontStyleInfo = new eqFontStyleInfo_t;
+			eqFontStyleInfo_t* fontStyleInfo = PPNew eqFontStyleInfo_t;
 			fontStyleInfo->size = entrySize;
 
 			

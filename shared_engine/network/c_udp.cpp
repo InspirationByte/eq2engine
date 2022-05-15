@@ -143,13 +143,13 @@ void FreeMessage(cdp_queued_message_t* pMessage)
 // allocates message
 cdp_queued_message_t* AllocMessage()
 {
-	cdp_queued_message_t* pMessage = new cdp_queued_message_t;
+	cdp_queued_message_t* pMessage = PPNew cdp_queued_message_t;
 
 	memset(pMessage, 0, sizeof(cdp_queued_message_t));
 
 	if(!pMessage->bytestream)
 	{
-		pMessage->bytestream = new CMemoryStream();
+		pMessage->bytestream = PPNew CMemoryStream();
 
 		if( !pMessage->bytestream->Open( NULL, VS_OPEN_WRITE, UDP_CDP_MIN_MESSAGESIZE ))
 		{

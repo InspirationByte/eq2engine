@@ -7,6 +7,7 @@
 
 #include "AdjacentTriangles.h"
 #include "math/Vector.h"
+#include "core/ppmem.h"
 
 namespace AdjacentTriangles
 {
@@ -125,7 +126,7 @@ void CAdjacentTriangleGraph::GenOptimizedTriangleList( Array<int>& output )
 	// sort triangles to new groups
 	Array<indxgroup_t*> allgroups;
 
-	indxgroup_t *main_group = new indxgroup_t;
+	indxgroup_t *main_group = PPNew indxgroup_t;
 	allgroups.append(main_group);
 
 	// then using newly generated neighbour triangles divide on parts
@@ -151,7 +152,7 @@ void CAdjacentTriangleGraph::GenOptimizedTriangleList( Array<int>& output )
 		// if not found, create new group and add triangle with all of it's neighbours
 		if(!found)
 		{
-			indxgroup_t *new_group = new indxgroup_t;
+			indxgroup_t *new_group = PPNew indxgroup_t;
 			allgroups.append(new_group);
 
 			// add tri with all of it's neighbour's herarchy

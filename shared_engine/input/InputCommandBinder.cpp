@@ -269,7 +269,7 @@ in_binding_t* CInputCommandBinder::AddBinding( const char* pszKeyStr, const char
 		return nullptr;
 
 	// create new binding
-	in_binding_t* newBind = new in_binding_t;
+	in_binding_t* newBind = PPNew in_binding_t;
 
 	newBind->mod_index[0] = bindingKeyIndices[0];
 	newBind->mod_index[1] = bindingKeyIndices[1];

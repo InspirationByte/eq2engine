@@ -658,7 +658,7 @@ IFile* CFileSystem::GetFileHandle(const char* filename, const char* options, int
 			FILE *tmpFile = fopen(tmp_path,options);
 			if (tmpFile)
 			{
-				CFile* pFileHandle = new CFile(tmpFile);
+				CFile* pFileHandle = PPNew CFile(tmpFile);
 
 				{
 					CScopedMutex m(m_FSMutex);
@@ -707,7 +707,7 @@ IFile* CFileSystem::GetFileHandle(const char* filename, const char* options, int
         FILE *tmpFile = fopen(tmp_path,options);
         if (tmpFile)
         {
-			CFile* pFileHandle = new CFile(tmpFile);
+			CFile* pFileHandle = PPNew CFile(tmpFile);
 			m_FSMutex.Lock();
 			m_openFiles.append(pFileHandle);
 			m_FSMutex.Unlock();
@@ -758,7 +758,7 @@ IFile* CFileSystem::GetFileHandle(const char* filename, const char* options, int
         FILE *tmpFile = fopen(tmp_path,options);
 		if (tmpFile)
 		{
-			CFile* pFileHandle = new CFile(tmpFile);
+			CFile* pFileHandle = PPNew CFile(tmpFile);
 			m_openFiles.append(pFileHandle);
 
 			return pFileHandle;
@@ -817,9 +817,9 @@ bool CFileSystem::AddPackage(const char* packageName, SearchPath_e type, const c
 
 	// allow zip files to be loaded
 	if (!fileExt.CompareCaseIns("zip") || !fileExt.CompareCaseIns("obb"))
-		pPackageReader = new CZipFileReader(m_FSMutex);
+		pPackageReader = PPNew CZipFileReader(m_FSMutex);
 	else
-		pPackageReader = new CDPKFileReader(m_FSMutex);
+		pPackageReader = PPNew CDPKFileReader(m_FSMutex);
 
     if (pPackageReader->InitPackage( packageName, mountPath))
     {
@@ -927,7 +927,7 @@ const char* CFileSystem::FindFirst(const char* wildcard, DKFINDDATA** findData, 
 	if(findData == nullptr)
 		return nullptr;
 
-	DKFINDDATA* newFind = new DKFINDDATA;
+	DKFINDDATA* newFind = PPNew DKFINDDATA;
 	*findData = newFind;
 
 	newFind->searchPathId = -1;
@@ -1155,7 +1155,7 @@ DKMODULE* CFileSystem::LoadModule(const char* mod_name)
 		return NULL;
 	}
 
-	DKMODULE* pModule = new DKMODULE;
+	DKMODULE* pModule = PPNew DKMODULE;
 	strcpy( pModule->name, moduleFileName.ToCString() );
 	pModule->module = (HMODULE)mod;
 

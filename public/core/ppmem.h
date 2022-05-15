@@ -51,7 +51,7 @@ struct PPSourceLine
 	}
 
 	const char* GetFileName() const { return (const char*)(data & ((1ULL << PPSL_ADDR_BITS) - 1)); }
-	int			GetLine() const { return int((data >> PPSL_ADDR_BITS) & 15); }
+	int			GetLine() const { return int((data >> PPSL_ADDR_BITS) & ((1 << 16)-1)); }
 };
 
 #define PP_SL	PPSourceLine::Make(__FILE__, __LINE__)
@@ -65,12 +65,12 @@ struct PPSourceLine
 #define			PPAllocStructArrayTAG(type, count, tagSTR)		(type*)	PPDAlloc(count*sizeof(type), PP_SL, tagSTR)
 #define			PPReAllocTAG(ptr, size, tagSTR)					PPDReAlloc(ptr, size, PP_SL, tagSTR)
 
-void* operator new(size_t size, PPSourceLine sl);
+IEXPORTS void* operator new(size_t size, PPSourceLine sl);
 
-void* operator new[](size_t size, PPSourceLine sl);
+IEXPORTS void* operator new[](size_t size, PPSourceLine sl);
 
-void operator delete(void* ptr, PPSourceLine sl);
+IEXPORTS void operator delete(void* ptr, PPSourceLine sl);
 
-void operator delete[](void* ptr, PPSourceLine sl);
+IEXPORTS void operator delete[](void* ptr, PPSourceLine sl);
 
 #endif // PPMEM_H

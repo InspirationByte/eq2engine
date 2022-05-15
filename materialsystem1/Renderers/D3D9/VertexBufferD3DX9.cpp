@@ -47,7 +47,7 @@ void CVertexBufferD3DX9::ReleaseForRestoration()
 	// dynamic VBO's uses a D3DPOOL_DEFAULT
 	if(dynamic)
 	{
-		m_pRestore = new vborestoredata_t;
+		m_pRestore = PPNew vborestoredata_t;
 
 		int lock_size = m_nStrideSize*m_nNumVertices;
 		m_pRestore->size = lock_size;

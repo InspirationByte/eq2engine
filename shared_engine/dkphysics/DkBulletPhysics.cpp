@@ -240,7 +240,7 @@ bool DkPhysics::Init(int nSceneSize)
 
 		if(stricmp(pSec->name, "#include"))
 		{
-			phySurfaceMaterial_t* pMaterial = new phySurfaceMaterial_t;
+			phySurfaceMaterial_t* pMaterial = PPNew phySurfaceMaterial_t;
 
 			DefaultMaterialParams(pMaterial);
 
@@ -422,10 +422,10 @@ bool DkPhysics::CreateScene()
 	m_fPhysicsNextTime = 0.0f;
 
 	// collision configuration contains default setup for memory, collision setup
-	m_collisionConfiguration = new btSoftBodyRigidBodyCollisionConfiguration;
+	m_collisionConfiguration = PPNew btSoftBodyRigidBodyCollisionConfiguration;
 
 	// use the default collision dispatcher. For parallel processing you can use a diffent dispatcher (see Extras/BulletMultiThreaded)
-	m_dispatcher = new btCollisionDispatcher(m_collisionConfiguration);
+	m_dispatcher = PPNew btCollisionDispatcher(m_collisionConfiguration);
 
 	m_dispatcher->setNearCallback(EQNearCallback);
 
@@ -1144,7 +1144,7 @@ IPhysicsObject* DkPhysics::CreateStaticObject(physmodelcreateinfo_t *info, int n
 	btTransform startTransform;
 	startTransform.setIdentity();
 
-	CPhysicsObject* pPhysicsObject = new CPhysicsObject;
+	CPhysicsObject* pPhysicsObject = PPNew CPhysicsObject;
 
 	CScopedMutex m(m_Mutex);
 
@@ -1211,7 +1211,7 @@ IPhysicsJoint* DkPhysics::CreateJoint(IPhysicsObject* pObjectA,IPhysicsObject* p
 
 	CScopedMutex m(m_Mutex);
 
-	DkPhysicsJoint* pNewJoint = new DkPhysicsJoint;
+	DkPhysicsJoint* pNewJoint = PPNew DkPhysicsJoint;
 
 	m_pJointList.append(pNewJoint);
 
@@ -1258,7 +1258,7 @@ IPhysicsRope* DkPhysics::CreateRope(const Vector3D &pointA, const Vector3D &poin
 	ConvertPositionToBullet(pA, pointA);
 	ConvertPositionToBullet(pB, pointB);
 
-	DkPhysicsRope* pRope = new DkPhysicsRope;
+	DkPhysicsRope* pRope = PPNew DkPhysicsRope;
 
 	pRope->m_pRopeBody = btSoftBodyHelpers::CreateRope(m_softBodyWorldInfo, pA, pB, numSegments, 0);
 
@@ -1345,7 +1345,7 @@ IPhysicsObject* DkPhysics::CreateObject( studioPhysData_t* data, int nObject )
 	btRigidBody* pBody = new CEqRigidBody(constructInfo);
 
 	// create physics object
-	CPhysicsObject* pPhysicsObject = new CPhysicsObject;
+	CPhysicsObject* pPhysicsObject = PPNew CPhysicsObject;
 	
 	// set body of it
 	pPhysicsObject->m_pPhyObjectPointer = pBody;
@@ -1451,7 +1451,7 @@ IPhysicsObject* DkPhysics::CreateObjectCustom(int numShapes, int* shapeIdxs, con
 	btRigidBody* pBody = new CEqRigidBody(constructInfo);
 
 	// create physics object
-	CPhysicsObject* pPhysicsObject = new CPhysicsObject;
+	CPhysicsObject* pPhysicsObject = PPNew CPhysicsObject;
 	
 	// set body of it
 	pPhysicsObject->m_pPhyObjectPointer = pBody;

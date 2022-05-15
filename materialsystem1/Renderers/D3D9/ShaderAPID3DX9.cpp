@@ -375,7 +375,7 @@ bool ShaderAPID3DX9::CreateD3DFrameBufferSurfaces()
 
 	if(!m_fbColorTexture)
 	{
-		m_fbColorTexture = new CD3D9Texture();
+		m_fbColorTexture = PPNew CD3D9Texture();
 		m_fbColorTexture->SetName("rhi_fb_color");
 		m_fbColorTexture->SetDimensions(0, 0);
 		m_fbColorTexture->SetFlags(TEXFLAG_RENDERTARGET | TEXFLAG_FOREIGN | TEXFLAG_NOQUALITYLOD);
@@ -388,7 +388,7 @@ bool ShaderAPID3DX9::CreateD3DFrameBufferSurfaces()
 
 	if (!m_fbDepthTexture)
 	{
-		m_fbDepthTexture = new CD3D9Texture();
+		m_fbDepthTexture = PPNew CD3D9Texture();
 		m_fbDepthTexture->SetName("rhi_fb_depth");
 		m_fbDepthTexture->SetDimensions(0, 0);
 		m_fbDepthTexture->SetFlags(TEXFLAG_RENDERDEPTH | TEXFLAG_FOREIGN | TEXFLAG_NOQUALITYLOD);
@@ -1061,7 +1061,7 @@ void ShaderAPID3DX9::Finish()
 // creates occlusion query object
 IOcclusionQuery* ShaderAPID3DX9::CreateOcclusionQuery()
 {
-	CD3D9OcclusionQuery* occQuery = new CD3D9OcclusionQuery(m_pD3DDevice);
+	CD3D9OcclusionQuery* occQuery = PPNew CD3D9OcclusionQuery(m_pD3DDevice);
 
 	m_Mutex.Lock();
 	m_OcclusionQueryList.append( occQuery );
@@ -1128,7 +1128,7 @@ IRenderState* ShaderAPID3DX9::CreateBlendingState( const BlendStateParam_t &blen
 		}
 	}
 
-	pState = new CD3D9BlendingState;
+	pState = PPNew CD3D9BlendingState;
 	pState->m_params = blendDesc;
 
 	m_BlendStates.append(pState);
@@ -1175,7 +1175,7 @@ IRenderState* ShaderAPID3DX9::CreateDepthStencilState( const DepthStencilStatePa
 		}
 	}
 	
-	pState = new CD3D9DepthStencilState;
+	pState = PPNew CD3D9DepthStencilState;
 	pState->m_params = depthDesc;
 
 	m_DepthStates.append(pState);
@@ -1205,7 +1205,7 @@ IRenderState* ShaderAPID3DX9::CreateRasterizerState( const RasterizerStateParams
 		}
 	}
 
-	pState = new CD3D9RasterizerState;
+	pState = PPNew CD3D9RasterizerState;
 	pState->m_params = rasterDesc;
 
 	pState->AddReference();
@@ -1405,7 +1405,7 @@ bool ShaderAPID3DX9::InternalCreateRenderTarget(LPDIRECT3DDEVICE9 dev, CD3D9Text
 // It will add new rendertarget
 ITexture* ShaderAPID3DX9::CreateRenderTarget(int width, int height, ETextureFormat nRTFormat, ER_TextureFilterMode textureFilterType, ER_TextureAddressMode textureAddress, ER_CompareFunc comparison, int nFlags)
 {
-	CD3D9Texture *pTexture = new CD3D9Texture;
+	CD3D9Texture *pTexture = PPNew CD3D9Texture;
 
 	pTexture->SetDimensions(width,height);
 	pTexture->SetFormat(nRTFormat);
@@ -1440,7 +1440,7 @@ ITexture* ShaderAPID3DX9::CreateRenderTarget(int width, int height, ETextureForm
 // It will add new rendertarget
 ITexture* ShaderAPID3DX9::CreateNamedRenderTarget(const char* pszName,int width, int height,ETextureFormat nRTFormat, ER_TextureFilterMode textureFilterType, ER_TextureAddressMode textureAddress, ER_CompareFunc comparison, int nFlags)
 {
-	CD3D9Texture *pTexture = new CD3D9Texture;
+	CD3D9Texture *pTexture = PPNew CD3D9Texture;
 
 	pTexture->SetDimensions(width,height);
 	pTexture->SetFormat(nRTFormat);
@@ -1934,7 +1934,7 @@ void ShaderAPID3DX9::DestroyIndexBuffer(IIndexBuffer* pIndexBuffer)
 // Creates shader class for needed ShaderAPI
 IShaderProgram* ShaderAPID3DX9::CreateNewShaderProgram(const char* pszName, const char* query)
 {
-	CD3D9ShaderProgram* pNewProgram = new CD3D9ShaderProgram();
+	CD3D9ShaderProgram* pNewProgram = PPNew CD3D9ShaderProgram();
 	pNewProgram->SetName((_Es(pszName)+query).GetData());
 
 	CScopedMutex scoped(m_Mutex);
@@ -2538,9 +2538,9 @@ void ShaderAPID3DX9::SetShaderConstantRaw(const char *pszName, const void *data,
 
 IVertexFormat* ShaderAPID3DX9::CreateVertexFormat(const char* name, VertexFormatDesc_s* formatDesc, int nAttribs)
 {
-	CVertexFormatD3DX9* pFormat = new CVertexFormatD3DX9(name, formatDesc, nAttribs);
+	CVertexFormatD3DX9* pFormat = PPNew CVertexFormatD3DX9(name, formatDesc, nAttribs);
 
-	D3DVERTEXELEMENT9* vertexElements = new D3DVERTEXELEMENT9[nAttribs + 1];
+	D3DVERTEXELEMENT9* vertexElements = PPNew D3DVERTEXELEMENT9[nAttribs + 1];
 	pFormat->GenVertexElement( vertexElements );
 
 	HRESULT hr = m_pD3DDevice->CreateVertexDeclaration(vertexElements, &pFormat->m_pVertexDecl);
@@ -2563,7 +2563,7 @@ IVertexFormat* ShaderAPID3DX9::CreateVertexFormat(const char* name, VertexFormat
 
 IVertexBuffer* ShaderAPID3DX9::CreateVertexBuffer(ER_BufferAccess nBufAccess, int nNumVerts, int strideSize, void *pData)
 {
-	CVertexBufferD3DX9* pBuffer = new CVertexBufferD3DX9();
+	CVertexBufferD3DX9* pBuffer = PPNew CVertexBufferD3DX9();
 	pBuffer->m_nSize = nNumVerts*strideSize;
 	pBuffer->m_nUsage = d3dbufferusages[nBufAccess];
 	pBuffer->m_nNumVertices = nNumVerts;
@@ -2609,7 +2609,7 @@ IIndexBuffer* ShaderAPID3DX9::CreateIndexBuffer(int nIndices, int nIndexSize, ER
 	ASSERT(nIndexSize >= 2);
 	ASSERT(nIndexSize <= 4);
 
-	CIndexBufferD3DX9* pBuffer = new CIndexBufferD3DX9();
+	CIndexBufferD3DX9* pBuffer = PPNew CIndexBufferD3DX9();
 	pBuffer->m_nIndices = nIndices;
 	pBuffer->m_nIndexSize = nIndexSize;
 	pBuffer->m_nInitialSize = nIndices*nIndexSize;
@@ -2785,7 +2785,7 @@ void ShaderAPID3DX9::CreateTextureInternal(ITexture** pTex, const Array<CImage*>
 	if(*pTex)
 		pTexture = (CD3D9Texture*)*pTex;
 	else
-		pTexture = new CD3D9Texture();
+		pTexture = PPNew CD3D9Texture();
 
 	int wide = 0, tall = 0;
 	int numMips = 0;

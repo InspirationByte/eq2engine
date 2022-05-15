@@ -6,6 +6,7 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "Tokenizer.h"
+#include "core/ppmem.h"
 #include <stdio.h>
 
 bool isWhiteSpace(const char ch)
@@ -65,7 +66,7 @@ void Tokenizer::setString(const char *string)
 		delete [] str;
 
 		capacity = length + 1;
-		str = new char[capacity];
+		str = PPNew char[capacity];
 	}
 
 	currentBuffer = 0;
@@ -87,7 +88,7 @@ bool Tokenizer::setFile(const char *fileName)
 		length = ftell(file);
 		fseek(file, 0, SEEK_SET);
 
-		str = new char[(length + 1) * sizeof(char)];
+		str = PPNew char[(length + 1) * sizeof(char)];
 		fread(str, length, 1, file);
 		str[length] = '\0';
 
@@ -202,7 +203,7 @@ char *Tokenizer::getBuffer(unsigned int size)
 	if (size > buffers[currentBuffer].bufferSize)
 	{
 		delete buffers[currentBuffer].buffer;
-		buffers[currentBuffer].buffer = new char[buffers[currentBuffer].bufferSize = size];
+		buffers[currentBuffer].buffer = PPNew char[buffers[currentBuffer].bufferSize = size];
 	}
 
 	return buffers[currentBuffer].buffer;

@@ -51,7 +51,7 @@ ragdoll_t* CreateRagdoll(IEqModel* pModel)
 
 	if(type == PHYSMODEL_USAGE_RAGDOLL)
 	{
-		ragdoll_t *newRagdoll = new ragdoll_t;
+		ragdoll_t *newRagdoll = PPNew ragdoll_t;
 		newRagdoll->Init();
 
 		newRagdoll->m_pReferenceModel = pModel;

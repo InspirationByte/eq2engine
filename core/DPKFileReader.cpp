@@ -416,7 +416,7 @@ bool CDPKFileReader::InitPackage(const char *filename, const char* mountPath /*=
     // Let set the file info data origin
     fseek(dpkFile, m_header.fileInfoOffset, SEEK_SET);
 
-	m_dpkFiles = new dpkfileinfo_t[m_header.numFiles];
+	m_dpkFiles = PPNew dpkfileinfo_t[m_header.numFiles];
 	fread( m_dpkFiles, sizeof(dpkfileinfo_t), m_header.numFiles, dpkFile );
 
 	for (int i = 0; i < m_header.numFiles; i++)
@@ -462,7 +462,7 @@ IVirtualStream* CDPKFileReader::Open(const char* filename, const char* mode)
 		return nullptr;
 	}
 
-	CDPKFileStream* newStream = new CDPKFileStream(filename, fileInfo, file);
+	CDPKFileStream* newStream = PPNew CDPKFileStream(filename, fileInfo, file);
 	newStream->m_host = this;
 	newStream->m_ice.set((unsigned char*)m_key.ToCString());
 

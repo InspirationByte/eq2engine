@@ -6,22 +6,23 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "QuadTree.h"
+#include "core/ppmem.h"
 
 // Default constructor for quadtree -- build tree, too!
 QuadTree::QuadTree(float* inp_data, int N)
 {
     // Compute mean, width, and height of current map (boundaries of quadtree)
-    float* mean_Y = new float[QT_NO_DIMS];
+    float* mean_Y = PPNew float[QT_NO_DIMS];
 
 	for(int d = 0; d < QT_NO_DIMS; d++)
 		mean_Y[d] = .0;
 
-    float*  min_Y = new float[QT_NO_DIMS];
+    float*  min_Y = PPNew float[QT_NO_DIMS];
 
 	for(int d = 0; d < QT_NO_DIMS; d++)
 		min_Y[d] =  FLT_MAX;
 
-    float*  max_Y = new float[QT_NO_DIMS];
+    float*  max_Y = PPNew float[QT_NO_DIMS];
 
 	for(int d = 0; d < QT_NO_DIMS; d++)
 		max_Y[d] = -FLT_MAX;
@@ -194,10 +195,10 @@ bool QuadTree::Insert(int new_index)
 void QuadTree::Subdivide()
 {
     // Create four children
-    northWest = new QuadTree(this, data, boundary.x - 0.5f * boundary.hw, boundary.y - 0.5f * boundary.hh, 0.5f * boundary.hw, 0.5f * boundary.hh);
-    northEast = new QuadTree(this, data, boundary.x + 0.5f * boundary.hw, boundary.y - 0.5f * boundary.hh, 0.5f * boundary.hw, 0.5f * boundary.hh);
-    southWest = new QuadTree(this, data, boundary.x - 0.5f * boundary.hw, boundary.y + 0.5f * boundary.hh, 0.5f * boundary.hw, 0.5f * boundary.hh);
-    southEast = new QuadTree(this, data, boundary.x + 0.5f * boundary.hw, boundary.y + 0.5f * boundary.hh, 0.5f * boundary.hw, 0.5f * boundary.hh);
+    northWest = PPNew QuadTree(this, data, boundary.x - 0.5f * boundary.hw, boundary.y - 0.5f * boundary.hh, 0.5f * boundary.hw, 0.5f * boundary.hh);
+    northEast = PPNew QuadTree(this, data, boundary.x + 0.5f * boundary.hw, boundary.y - 0.5f * boundary.hh, 0.5f * boundary.hw, 0.5f * boundary.hh);
+    southWest = PPNew QuadTree(this, data, boundary.x - 0.5f * boundary.hw, boundary.y + 0.5f * boundary.hh, 0.5f * boundary.hw, 0.5f * boundary.hh);
+    southEast = PPNew QuadTree(this, data, boundary.x + 0.5f * boundary.hw, boundary.y + 0.5f * boundary.hh, 0.5f * boundary.hw, 0.5f * boundary.hh);
     
     // Move existing points to correct children
     for(int i = 0; i < size; i++)

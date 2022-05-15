@@ -107,7 +107,7 @@ CNetworkServer::~CNetworkServer()
 
 bool CNetworkServer::Init( int portNumber )
 {
-	m_pSocket = new CEqRDPSocket();
+	m_pSocket = PPNew CEqRDPSocket();
 
 	if(!m_pSocket->Init( portNumber ))
 	{
@@ -330,7 +330,7 @@ CNetworkClient::~CNetworkClient()
 
 bool CNetworkClient::Connect( const char* pszAddress, int portNumber, int clientPort )
 {
-	m_pSocket = new CEqRDPSocket();
+	m_pSocket = PPNew CEqRDPSocket();
 
 	bool bState = false;
 

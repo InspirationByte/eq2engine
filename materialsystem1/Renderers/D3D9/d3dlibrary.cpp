@@ -509,7 +509,7 @@ bool CD3DRenderLib::CaptureScreenshot(CImage& img)
 // creates swap chain
 IEqSwapChain* CD3DRenderLib::CreateSwapChain(void* window, bool windowed)
 {
-	CD3D9SwapChain* pNewChain = new CD3D9SwapChain();
+	CD3D9SwapChain* pNewChain = PPNew CD3D9SwapChain();
 	
 	if(!pNewChain->Initialize((HWND)window, s_shaderApi.m_params.verticalSyncEnabled, windowed))
 	{

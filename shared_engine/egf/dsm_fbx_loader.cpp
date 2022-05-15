@@ -77,7 +77,7 @@ void ConvertFBXToDSM(dsmmodel_t* model, ofbx::IScene* scene)
 
 		const ofbx::Material* material = mesh.getMaterialCount() > 0 ? mesh.getMaterial(0) : nullptr;
 
-		dsmgroup_t* newGrp = new dsmgroup_t();
+		dsmgroup_t* newGrp = PPNew dsmgroup_t();
 		model->groups.append(newGrp);
 
 		if (material)

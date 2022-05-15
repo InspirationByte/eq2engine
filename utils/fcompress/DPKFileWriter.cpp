@@ -11,6 +11,7 @@
 
 #include "utils/minmax.h"
 #include "utils/strtools.h"
+#include "core/ppmem.h"
 #include "core/DebugInterface.h"
 #include "core/cmd_pacifier.h"
 #include "core/platform/assert.h"
@@ -174,7 +175,7 @@ bool CDPKFileWriter::AddFile( const char* fileName )
 		return false;
 	}
 
-	dpkfilewinfo_t* newInfo = new dpkfilewinfo_t;
+	dpkfilewinfo_t* newInfo  = PPNew dpkfilewinfo_t;
 	memset(newInfo,0,sizeof(dpkfilewinfo_t));
 
 	{

@@ -169,7 +169,7 @@ void CAnimatingEGF::InitAnimating(IEqModel* model)
 		chain.local_target = Vector3D(0, 0, 10);
 		chain.enable = false;
 
-		chain.links = new giklink_t[chain.numLinks];
+		chain.links = PPNew giklink_t[chain.numLinks];
 
 		for (int j = 0; j < chain.numLinks; j++)
 		{

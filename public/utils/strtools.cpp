@@ -274,7 +274,7 @@ char* xstrdup(const char*  s)
 	char*  t;
 	int len = strlen(s)+1;
 
-    t = new char[len];//(char*)malloc(xstrlen(s)+1);
+    t = PPNew char[len];//(char*)malloc(xstrlen(s)+1);
 
     if (t)
 	{

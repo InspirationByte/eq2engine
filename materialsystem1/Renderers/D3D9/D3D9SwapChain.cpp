@@ -53,7 +53,7 @@ bool CD3D9SwapChain::CreateOrUpdateBackbuffer()
 
 	if(!m_backbuffer)
 	{
-		m_backbuffer = new CD3D10Texture;
+		m_backbuffer = PPNew CD3D10Texture;
 		m_backbuffer->SetName("_rt_backbuffer");
 		m_backbuffer->SetDimensions(m_width, m_height);
 		m_backbuffer->SetFlags(TEXFLAG_RENDERTARGET | TEXFLAG_FOREIGN | TEXFLAG_NOQUALITYLOD);

@@ -471,7 +471,7 @@ bool CGLRenderLib_ES::CaptureScreenshot(CImage &img)
 	glFinish();
 
 	ubyte *pixels = img.Create(FORMAT_RGB8, m_width, m_height, 1, 1);
-	ubyte *flipped = new ubyte[m_width * m_height * 3];
+	ubyte *flipped = PPNew ubyte[m_width * m_height * 3];
 
 	glReadPixels(0, 0, m_width, m_height, GL_RGB, GL_UNSIGNED_BYTE, flipped);
 	for (int y = 0; y < m_height; y++)
@@ -493,7 +493,7 @@ void CGLRenderLib_ES::ReleaseSwapChains()
 // creates swap chain
 IEqSwapChain* CGLRenderLib_ES::CreateSwapChain(void* window, bool windowed)
 {
-	CGLSwapChain* pNewChain = new CGLSwapChain();
+	CGLSwapChain* pNewChain = PPNew CGLSwapChain();
 
 #ifdef PLAT_WIN
 	if (!pNewChain->Initialize((HWND)window, g_shaderApi.m_params.verticalSyncEnabled, windowed))

@@ -165,7 +165,7 @@ bool ParseImageDesc(const char* atlasPath, imageDesc_t& dest, kvkeybase_t* kv)
 	{
 		EqString imgName(atlas_dir + image_name);
 
-		CImage* pImg = new CImage();
+		CImage* pImg = PPNew CImage();
 		bool isOk = pImg->LoadImage(imgName.ToCString());
 
 		if(!isOk || pImg->Is1D() || pImg->IsCube())
@@ -204,7 +204,7 @@ bool ParseImageDesc(const char* atlasPath, imageDesc_t& dest, kvkeybase_t* kv)
 			if(hasImagePath)
 			{
 				EqString imgName(atlas_dir + image_path);
-				CImage* pImg = new CImage();
+				CImage* pImg = PPNew CImage();
 				bool isOk = pImg->LoadImage(imgName.ToCString());
 
 				if(!isOk || pImg->Is1D() || pImg->IsCube())
@@ -523,7 +523,7 @@ void ProcessNewAtlas(const char* atlasPath, const char* pszOutputName)
 			{
 				kvkeybase_t* kb = kvs.GetRootSection()->keys[i];
 
-				imageDesc_t* imgDesc = new imageDesc_t();
+				imageDesc_t* imgDesc = PPNew imageDesc_t();
 
 				if(ParseImageDesc(atlasPath, *imgDesc, kb))
 					imageList.append(imgDesc);
