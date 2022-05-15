@@ -1234,7 +1234,7 @@ bool CImage::CreateMipMaps(const int mipMaps)
 			delete pixels;
 			*/
 
-			m_pPixels = (ubyte *) realloc(m_pPixels, size);
+			m_pPixels = (ubyte *)PPReAlloc(m_pPixels, size);
 		}
 
 		m_nMipMaps = actualMipMaps;

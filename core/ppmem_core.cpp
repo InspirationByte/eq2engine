@@ -27,6 +27,7 @@
 #include <malloc.h>
 #include <unordered_map>
 
+
 #if defined(CRT_DEBUG_ENABLED) && defined(_WIN32)
 #define pp_internal_malloc(s)	_malloc_dbg(s, _NORMAL_BLOCK, pszFileName, nLine)
 #else
@@ -51,13 +52,13 @@ struct ppallocinfo_t
 	char			tag[PPMEM_DEBUG_TAG_MAX];
 #endif // PPMEM_DEBUG_TAGS
 
+	size_t			size;
+
 #ifdef PPMEM_EXTRA_DEBUGINFO
 	PPSourceLine	sl;
 #endif // PPMEM_EXTRA_DEBUGINFO
 
 	uint			id;
-	size_t			size;
-
 	uint			checkMark;
 };
 
@@ -75,10 +76,10 @@ typedef std::unordered_map<void*,ppallocinfo_t*>::iterator allocIterator_t;
 
 // allocation map
 static std::unordered_map<void*,ppallocinfo_t*>	s_allocPointerMap;
-static uint								s_allocIdCounter = 0;
-CEqMutex			g_allocMemMutex;
+static uint										s_allocIdCounter = 0;
+static CEqMutex									g_allocMemMutex;
 
-bool g_enablePPMem = false;
+static bool g_enablePPMem = false;
 
 static ConCommand	ppmem_stats("ppmem_stats",CONCOMMAND_FN(ppmemstats), "Memory info",CV_UNREGISTERED);
 static ConVar		ppmem_break_on_alloc("ppmem_break_on_alloc", "-1", "Helps to catch allocation id at stack trace",CV_UNREGISTERED);
@@ -367,8 +368,6 @@ void PPFree(void* ptr)
 	bool isValid = false;
 	ppallocinfo_t* alloc = FindAllocation(ptr, isValid);
 
-	ASSERT_MSG(alloc != nullptr, "PPFree ERROR: pointer is not valid or it's been already freed!");
-
 	if(alloc)
 	{
 		int ptrDiff = (ubyte*)ptr - ((ubyte*)alloc);
@@ -387,25 +386,9 @@ void PPFree(void* ptr)
 		s_allocPointerMap.erase(actualPtr);
 		g_allocMemMutex.Unlock();
 	}
+	else
+	{
+		free(ptr);
+	}
 #endif // PPMEM_DISABLE
-}
-
-void* operator new(size_t size, PPSourceLine sl)
-{
-	return PPDAlloc(size, sl);
-}
-
-void* operator new[](size_t size, PPSourceLine sl)
-{
-	return PPDAlloc(size, sl);
-}
-
-void operator delete(void* ptr, PPSourceLine sl)
-{
-	PPFree(ptr);
-}
-
-void operator delete[](void* ptr, PPSourceLine sl)
-{
-	PPFree(ptr);
 }

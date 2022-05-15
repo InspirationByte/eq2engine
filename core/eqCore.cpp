@@ -403,7 +403,7 @@ void CDkCore::Shutdown()
 #ifndef CORE_FINAL_RELEASE
 
 	if(g_bPrintLeaksOnShutdown)
-		PPMemInfo();
+		PPMemInfo(false);
 
 #endif
 

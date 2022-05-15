@@ -38,20 +38,15 @@ IEXPORTS void*	PPDReAlloc( void* ptr, size_t size, const PPSourceLine& sl, const
 
 IEXPORTS void	PPFree( void* ptr );
 
-constexpr int PPSL_ADDR_BITS = 48;		// 64 bit arch only use 48 bits of pointers
-
 // source-line contailer
 struct PPSourceLine
 {
 	uint64 data;
 
-	static PPSourceLine Make(const char* filename, int line)
-	{
-		return { (uint64(filename) | uint64(line) << PPSL_ADDR_BITS) };
-	}
+	static PPSourceLine Make(const char* filename, int line);
 
-	const char* GetFileName() const { return (const char*)(data & ((1ULL << PPSL_ADDR_BITS) - 1)); }
-	int			GetLine() const { return int((data >> PPSL_ADDR_BITS) & ((1 << 16)-1)); }
+	const char* GetFileName() const;
+	int			GetLine() const;
 };
 
 #define PP_SL	PPSourceLine::Make(__FILE__, __LINE__)
@@ -65,12 +60,18 @@ struct PPSourceLine
 #define			PPAllocStructArrayTAG(type, count, tagSTR)		(type*)	PPDAlloc(count*sizeof(type), PP_SL, tagSTR)
 #define			PPReAllocTAG(ptr, size, tagSTR)					PPDReAlloc(ptr, size, PP_SL, tagSTR)
 
-IEXPORTS void* operator new(size_t size, PPSourceLine sl);
+void* operator new(size_t size);
+void* operator new(size_t size, size_t alignment);
+void* operator new[](size_t size);
 
-IEXPORTS void* operator new[](size_t size, PPSourceLine sl);
+void operator delete(void* ptr);
+void operator delete(void* ptr, size_t alignment);
+void operator delete[](void* ptr);
 
-IEXPORTS void operator delete(void* ptr, PPSourceLine sl);
+void* operator new(size_t size, PPSourceLine sl);
+void* operator new[](size_t size, PPSourceLine sl);
 
-IEXPORTS void operator delete[](void* ptr, PPSourceLine sl);
+void operator delete(void* ptr, PPSourceLine sl);
+void operator delete[](void* ptr, PPSourceLine sl);
 
 #endif // PPMEM_H
