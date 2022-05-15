@@ -237,14 +237,14 @@ uintptr_t ThreadCreate( threadfunc_t fnThread, void* pThreadParams, ThreadPriori
 
 	if( pthread_attr_setdetachstate( &attr, PTHREAD_CREATE_JOINABLE ) != 0 )
 	{
-		ASSERTMSG( "ERROR: pthread_attr_setdetachstate %s failed\n", pszThreadName );
+		ASSERT_MSG( "ERROR: pthread_attr_setdetachstate %s failed\n", pszThreadName );
 		return ( uintptr_t )0;
 	}
 
 	pthread_t handle;
 	if( pthread_create( ( pthread_t* )&handle, &attr, ( pthread_function_t )fnThread, pThreadParams ) != 0 )
 	{
-		ASSERTMSG( "ERROR: pthread_create %s failed\n", pszThreadName );
+		ASSERT_MSG( "ERROR: pthread_create %s failed\n", pszThreadName );
 		return ( uintptr_t )0;
 	}
 
@@ -280,13 +280,13 @@ void ThreadDestroy( uintptr_t threadHandle )
 #if 0 //!defined(__ANDROID__)
 	if( pthread_cancel( ( pthread_t )threadHandle ) != 0 )
 	{
-		ASSERTMSG( "ERROR: pthread_cancel %s failed\n", name );
+		ASSERT_MSG( "ERROR: pthread_cancel %s failed\n", name );
 	}
 #endif
 
 	if( pthread_join( ( pthread_t )threadHandle, NULL ) != 0 )
 	{
-		ASSERTMSG( "ERROR: pthread_join %s failed\n", name );
+		ASSERT_MSG( "ERROR: pthread_join %s failed\n", name );
 	}
 }
 

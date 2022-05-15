@@ -39,7 +39,7 @@ size_t CZipFileStream::Read(void *dest, size_t count, size_t size)
 // writes data to virtual stream
 size_t CZipFileStream::Write(const void *src, size_t count, size_t size)
 {
-	ASSERTMSG(false, "CZipFileStream does not support WRITE OPS");
+	ASSERT_MSG(false, "CZipFileStream does not support WRITE OPS");
 	return 0;
 }
 
@@ -93,7 +93,7 @@ int	CZipFileStream::Seek(long nOffset, VirtStreamSeek_e seekType)
 // fprintf analog
 void CZipFileStream::Print(const char* fmt, ...)
 {
-	ASSERTMSG(false, "CZipFileStream does not support WRITE OPS");
+	ASSERT_MSG(false, "CZipFileStream does not support WRITE OPS");
 }
 
 // returns current pointer position

@@ -94,7 +94,7 @@ int GLWorkerThread::AddWork(const char* name, FUNC_TYPE f, bool blocking)
 
 int GLWorkerThread::Run()
 {
-	ASSERTMSG(m_pendingWork, "worker triggered but no work");
+	ASSERT_MSG(m_pendingWork, "worker triggered but no work");
 
 	g_library.BeginAsyncOperation(GetThreadID());
 

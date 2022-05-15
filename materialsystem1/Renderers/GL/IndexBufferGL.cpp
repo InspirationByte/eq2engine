@@ -153,7 +153,7 @@ bool CIndexBufferGL::Lock(int lockOfs, int sizeToLock, void** outdata, bool read
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, currIB ? currIB->GetCurrentBuffer() : 0);
 
 	if(m_lockPtr == NULL)
-		ASSERTMSG(false, "Failed to map index buffer!");
+		ASSERT_MSG(false, "Failed to map index buffer!");
 #else
 	int nLockByteCount = m_nIndexSize*sizeToLock;
 

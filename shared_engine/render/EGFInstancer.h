@@ -74,7 +74,7 @@ inline CEGFInstancer<IT>::~CEGFInstancer()
 template <class IT>
 inline void CEGFInstancer<IT>::ValidateAssert()
 {
-	ASSERTMSG(m_vertFormat != NULL && m_instanceBuf != NULL, "Instancer is not valid - did you forgot to initialize it???");
+	ASSERT_MSG(m_vertFormat != NULL && m_instanceBuf != NULL, "Instancer is not valid - did you forgot to initialize it???");
 }
 
 template <class IT>
@@ -186,7 +186,7 @@ inline void CEGFInstancer<IT>::Draw( int renderFlags, IEqModel* model )
 
 	studiohdr_t* pHdr = model->GetHWData()->studio;
 
-	ASSERTMSG(pHdr->numBodyGroups <= MAX_INSTANCE_BODYGROUPS, "Model got too many body groups! Tell it to programmer or reduce body group count.");
+	ASSERT_MSG(pHdr->numBodyGroups <= MAX_INSTANCE_BODYGROUPS, "Model got too many body groups! Tell it to programmer or reduce body group count.");
 
 	// proceed to render
 	materials->SetInstancingEnabled(true);

@@ -158,7 +158,7 @@ bool CVertexBufferGL::Lock(int lockOfs, int sizeToLock, void** outdata, bool rea
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 
 	if(m_lockPtr == NULL)
-		ASSERTMSG(false, "Failed to map vertex buffer!");
+		ASSERT_MSG(false, "Failed to map vertex buffer!");
 #else
 
 	int nLockByteCount = m_strideSize*sizeToLock;

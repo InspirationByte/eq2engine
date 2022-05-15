@@ -104,7 +104,7 @@ void CUIManager::RegisterFactory(const char* name, EQUICONTROLFACTORYFN factory)
 	{
 		if(!stricmp(m_controlFactory[i].name, name))
 		{
-			ASSERTMSG(false, EqString::Format("UI factory '%s' was already registered!", name).ToCString());
+			ASSERT_MSG(false, EqString::Format("UI factory '%s' was already registered!", name).ToCString());
 			return;
 		}
 	}

@@ -96,7 +96,7 @@ CEqParallelJobThreads::~CEqParallelJobThreads()
 // creates new job thread
 bool CEqParallelJobThreads::Init(int numJobTypes, eqJobThreadDesc_t* jobTypes)
 {
-	ASSERTMSG(numJobTypes > 0 && jobTypes != nullptr, "EqParallelJobThreads ERROR: Invalid parameters passed to Init!!!");
+	ASSERT_MSG(numJobTypes > 0 && jobTypes != nullptr, "EqParallelJobThreads ERROR: Invalid parameters passed to Init!!!");
 
 	int numThreadsSpawned = 0;
 

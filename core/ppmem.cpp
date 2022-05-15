@@ -218,10 +218,12 @@ ppallocinfo_t* FindAllocation( void* ptr, bool& isValidInputPtr )
 
 	CScopedMutex m(g_allocMemMutex);
 
-	if(s_allocPointerMap.count(ptr) > 0)
+	allocIterator_t it = s_allocPointerMap.find(ptr);
+
+	if(it != s_allocPointerMap.end())
 	{
 		isValidInputPtr = true;
-		return s_allocPointerMap[ptr];
+		return it->second;
 	}
 	else // try find the valid allocation in range
 	{
@@ -249,20 +251,20 @@ void* PPDAlloc(size_t size, const PPSourceLine& sl, const char* debugTAG)
 {
 #ifdef PPMEM_DISABLE
 	void* mem = pp_internal_malloc(size);
-	ASSERTMSG(mem, "No mem left");
+	ASSERT_MSG(mem, "No mem left");
 	return mem;
 #else
 
 	if (!g_enablePPMem)
 	{
 		void* mem = pp_internal_malloc(size);
-		ASSERTMSG(mem, "No mem left");
+		ASSERT_MSG(mem, "No mem left");
 		return mem;
 	}
 
 	// allocate more to store extra information of this
 	ppallocinfo_t* alloc = (ppallocinfo_t*)pp_internal_malloc(sizeof(ppallocinfo_t) + size + sizeof(uint));
-	ASSERTMSG(alloc, "No mem left");
+	ASSERT_MSG(alloc, "No mem left");
 
 	alloc->sl = sl;
 	alloc->size = size;
@@ -290,7 +292,7 @@ void* PPDAlloc(size_t size, const PPSourceLine& sl, const char* debugTAG)
 	g_allocMemMutex.Unlock();
 
 	if( ppmem_break_on_alloc.GetInt() != -1)
-		ASSERTMSG(alloc->id == (uint)ppmem_break_on_alloc.GetInt(), EqString::Format("PPDAlloc: Break on allocation id=%d", alloc->id).ToCString());
+		ASSERT_MSG(alloc->id == (uint)ppmem_break_on_alloc.GetInt(), EqString::Format("PPDAlloc: Break on allocation id=%d", alloc->id).ToCString());
 
 	return actualPtr;
 #endif // PPMEM_DISABLE
@@ -311,7 +313,7 @@ void* PPDReAlloc( void* ptr, size_t size, const PPSourceLine& sl, const char* de
 	if(alloc)
 	{
 		int ptrDiff = (ubyte*)ptr - ((ubyte*)alloc);
-		ASSERTMSG(isValid, EqString::Format("PPDReAlloc: Given pointer is invalid but allocation was found in the range.\nOffset is %d bytes.", ptrDiff).ToCString());
+		ASSERT_MSG(isValid, EqString::Format("PPDReAlloc: Given pointer is invalid but allocation was found in the range.\nOffset is %d bytes.", ptrDiff).ToCString());
 
 		void* oldPtr = ((ubyte*)alloc) + sizeof(ppallocinfo_t);
 
@@ -321,7 +323,7 @@ void* PPDReAlloc( void* ptr, size_t size, const PPSourceLine& sl, const char* de
 
 		alloc = (ppallocinfo_t*)realloc(alloc, sizeof(ppallocinfo_t) + size + sizeof(uint));
 
-		ASSERTMSG(alloc != nullptr, "PPDReAlloc: NULL pointer after realloc!");
+		ASSERT_MSG(alloc != nullptr, "PPDReAlloc: NULL pointer after realloc!");
 
 		// set new size
 		alloc->size = size;
@@ -365,19 +367,19 @@ void PPFree(void* ptr)
 	bool isValid = false;
 	ppallocinfo_t* alloc = FindAllocation(ptr, isValid);
 
-	ASSERTMSG(alloc != nullptr, "PPFree ERROR: pointer is not valid or it's been already freed!");
+	ASSERT_MSG(alloc != nullptr, "PPFree ERROR: pointer is not valid or it's been already freed!");
 
 	if(alloc)
 	{
 		int ptrDiff = (ubyte*)ptr - ((ubyte*)alloc);
-		ASSERTMSG(isValid, EqString::Format("PPFree: Given pointer is invalid but allocation was found in the range.\nOffset is %d bytes.", ptrDiff).ToCString());
+		ASSERT_MSG(isValid, EqString::Format("PPFree: Given pointer is invalid but allocation was found in the range.\nOffset is %d bytes.", ptrDiff).ToCString());
 
 		// actual pointer address
 		void* actualPtr = ((ubyte*)alloc) + sizeof(ppallocinfo_t);
 		uint* checkMark = (uint*)((ubyte*)actualPtr + alloc->size);
 
-		ASSERTMSG(alloc->checkMark == PPMEM_CHECKMARK, "PPCheck: memory is invalid (was outranged before)");
-		ASSERTMSG(*checkMark == PPMEM_CHECKMARK, "PPCheck: memory is invalid (was outranged after)");
+		ASSERT_MSG(alloc->checkMark == PPMEM_CHECKMARK, "PPCheck: memory is invalid (was outranged before)");
+		ASSERT_MSG(*checkMark == PPMEM_CHECKMARK, "PPCheck: memory is invalid (was outranged after)");
 
 		free(alloc);
 

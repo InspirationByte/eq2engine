@@ -530,7 +530,7 @@ IMaterial* CMaterialSystem::CreateMaterialInternal(const char* szMaterialName, i
 	CMaterial* pMaterial = PPNew CMaterial(m_ProxyMutex[m_loadedMaterials.size() % 4]);
 
 	// add to list
-	ASSERTMSG(m_loadedMaterials.find(nameHash) == m_loadedMaterials.end(), "Material %s was already created under that name", szMaterialName);
+	ASSERT_MSG(m_loadedMaterials.find(nameHash) == m_loadedMaterials.end(), "Material %s was already created under that name", szMaterialName);
 	m_loadedMaterials.insert(nameHash, pMaterial);
 
 	// if no params, we can load it a usual way

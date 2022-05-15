@@ -21,7 +21,7 @@ DECLARE_CVAR_CLAMP(net_compress_level, 1, 1, 9, "Compression ratio", CV_ARCHIVE)
 
 void INetworkInterface::Update( int timeMs, CDPRecvPipe_fn func, void* recvObj )
 {
-	ASSERTMSG(m_pSocket != NULL, "INetworkInterface - not initialized.");
+	ASSERT_MSG(m_pSocket != NULL, "INetworkInterface - not initialized.");
 
 	m_pSocket->UpdateSendQueue( timeMs, func, recvObj);
 	m_pSocket->UpdateRecieve( timeMs, func, recvObj);

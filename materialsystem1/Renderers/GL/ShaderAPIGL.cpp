@@ -267,7 +267,7 @@ void ShaderAPIGL::Init( const shaderAPIParams_t &params)
 	for(int i = 0; i < CONSTANT_TYPE_COUNT; i++)
 	{
 		if(s_uniformFuncs[i] == NULL)
-			ASSERTMSG(false, EqString::Format("Uniform function for '%d' is not ok, pls check extensions\n", i).ToCString());
+			ASSERT_MSG(false, EqString::Format("Uniform function for '%d' is not ok, pls check extensions\n", i).ToCString());
 	}
 }
 
@@ -805,7 +805,7 @@ ITexture* ShaderAPIGL::CreateNamedRenderTarget(	const char* pszName,
 	}
 
 	
-	ASSERTMSG(m_TextureList.find(pTexture->m_nameHash) == m_TextureList.end(), "Texture %s was already added", pTexture->GetName());
+	ASSERT_MSG(m_TextureList.find(pTexture->m_nameHash) == m_TextureList.end(), "Texture %s was already added", pTexture->GetName());
 	m_TextureList.insert(pTexture->m_nameHash, pTexture);
 	m_Mutex.Unlock();
 
@@ -1045,7 +1045,7 @@ void ShaderAPIGL::CreateTextureInternal(ITexture** pTex, const Array<CImage*>& p
 	if(!(*pTex))
 	{
 		m_Mutex.Lock();
-		ASSERTMSG(m_TextureList.find(pTexture->m_nameHash) == m_TextureList.end(), "Texture %s was already added", pTexture->GetName());
+		ASSERT_MSG(m_TextureList.find(pTexture->m_nameHash) == m_TextureList.end(), "Texture %s was already added", pTexture->GetName());
 		m_TextureList.insert(pTexture->m_nameHash, pTexture);
 		m_Mutex.Unlock();
 	}
@@ -1587,7 +1587,7 @@ void ShaderAPIGL::ChangeVertexBuffer(IVertexBuffer* pVertexBuffer, int nStream, 
 			m_boundInstanceStream = nStream;
 		else if (instanceBuffer && m_boundInstanceStream != -1 && nStream != m_boundInstanceStream)
 		{
-			ASSERTMSG(false, "Already bound instancing stream at %d!!!", m_boundInstanceStream);
+			ASSERT_MSG(false, "Already bound instancing stream at %d!!!", m_boundInstanceStream);
 		}
 	}
 }
@@ -1627,7 +1627,7 @@ IShaderProgram* ShaderAPIGL::CreateNewShaderProgram(const char* pszName, const c
 
 	CScopedMutex scoped(m_Mutex);
 
-	ASSERTMSG(m_ShaderList.find(pNewProgram->m_nameHash) == m_ShaderList.end(), "Shader %s was already added", pNewProgram->GetName());
+	ASSERT_MSG(m_ShaderList.find(pNewProgram->m_nameHash) == m_ShaderList.end(), "Shader %s was already added", pNewProgram->GetName());
 	m_ShaderList.insert(pNewProgram->m_nameHash, pNewProgram);
 
 	return pNewProgram;
@@ -2133,7 +2133,7 @@ IVertexBuffer* ShaderAPIGL::CreateVertexBuffer(ER_BufferAccess nBufAccess, int n
 
 		for (int i = 0; i < numBuffers; i++)
 		{
-			ASSERTMSG(pVB->m_nGL_VB_Index[i] != 0, "Vertex buffer %d is not generated, requested count: %d", i, numBuffers);
+			ASSERT_MSG(pVB->m_nGL_VB_Index[i] != 0, "Vertex buffer %d is not generated, requested count: %d", i, numBuffers);
 
 			glBindBuffer(GL_ARRAY_BUFFER, pVB->m_nGL_VB_Index[i]);
 			GLCheckError("bind buffer");
@@ -2183,7 +2183,7 @@ IIndexBuffer* ShaderAPIGL::CreateIndexBuffer(int nIndices, int nIndexSize, ER_Bu
 
 		for (int i = 0; i < numBuffers; i++)
 		{
-			ASSERTMSG(pIB->m_nGL_IB_Index[i] != 0, "Index buffer %d is not generated, requested count: %d", i, numBuffers);
+			ASSERT_MSG(pIB->m_nGL_IB_Index[i] != 0, "Index buffer %d is not generated, requested count: %d", i, numBuffers);
 
 			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, pIB->m_nGL_IB_Index[i]);
 			GLCheckError("bind buff");

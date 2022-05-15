@@ -209,7 +209,7 @@ TexAtlasEntry_t* CPFXAtlasGroup::FindEntry(const char* pszName) const
 	}
 
 	TexAtlasEntry_t* atlEntry = atlas->FindEntry(pszName);
-	ASSERTMSG(atlEntry, "Atlas entry '%s' not found in %s", pszName, m_pMaterial->GetName());
+	ASSERT_MSG(atlEntry, "Atlas entry '%s' not found in %s", pszName, m_pMaterial->GetName());
 	return atlEntry;
 }
 
@@ -223,7 +223,7 @@ int CPFXAtlasGroup::FindEntryIndex(const char* pszName) const
 	}
 
 	const int atlEntryIdx = atlas->FindEntryIndex(pszName);
-	ASSERTMSG(atlEntryIdx != -1, "Atlas entry '%s' not found in %s", pszName, m_pMaterial->GetName());
+	ASSERT_MSG(atlEntryIdx != -1, "Atlas entry '%s' not found in %s", pszName, m_pMaterial->GetName());
 	return atlEntryIdx;
 }
 

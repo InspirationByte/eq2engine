@@ -60,7 +60,7 @@ void CEffectRenderer::RegisterEffectForRender(IEffect* pEffect)
 	Threading::CEqMutex& mutex = GetGlobalMutex(MUTEXPURPOSE_PARTICLES);
 	Threading::CScopedMutex m(mutex);
 
-	ASSERTMSG(pEffect != NULL, "RegisterEffectForRender - inserting NULL effect");
+	ASSERT_MSG(pEffect != NULL, "RegisterEffectForRender - inserting NULL effect");
 
 	if(m_numEffects.GetValue() >= MAX_VISIBLE_EFFECTS)
 	{

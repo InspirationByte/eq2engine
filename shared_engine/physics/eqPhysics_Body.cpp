@@ -111,7 +111,7 @@ void CEqRigidBody::SetConstraintsUnsatisfied()
 
 void CEqRigidBody::ComputeInertia(float scale)
 {
-	ASSERTMSG(m_shape != NULL, "CEqRigidBody(CEqCollisionObject) - did you forgot to call Initialize()?");
+	ASSERT_MSG(m_shape != NULL, "CEqRigidBody(CEqCollisionObject) - did you forgot to call Initialize()?");
 
 	btVector3 inertia;
 	m_shape->calculateLocalInertia(m_mass*scale, inertia);

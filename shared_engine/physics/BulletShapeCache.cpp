@@ -43,7 +43,7 @@ btCollisionShape* InternalGenerateShape(int numVertices, Vector3D* vertices, int
 
 			if(type == PHYSSHAPE_TYPE_MOVABLECONCAVE)
 			{
-				ASSERTMSG(false, "InternalGenerateShape: cannot create PHYSSHAPE_TYPE_MOVABLECONCAVE shape because unsupported for now\n");
+				ASSERT_MSG(false, "InternalGenerateShape: cannot create PHYSSHAPE_TYPE_MOVABLECONCAVE shape because unsupported for now\n");
 				//shape = new btGImpactMeshShape(pTriMesh);
 				delete pTriMesh;
 				return NULL;

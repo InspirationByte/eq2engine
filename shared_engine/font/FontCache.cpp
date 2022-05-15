@@ -212,7 +212,7 @@ void CEqFontCache::Shutdown()
 
 void CEqFontCache::ReloadFonts()
 {
-	ASSERTMSG(false, "Please implement CEqFontCache::ReloadFonts() !!!");
+	ASSERT_MSG(false, "Please implement CEqFontCache::ReloadFonts() !!!");
 }
 
 IEqFont* eqFontFamily_t::FindBestSize( int bestSize, int styleFlags )

@@ -254,7 +254,7 @@ public:
 		pTexture->SetFormat(nRTFormat);
 
 		CScopedMutex scoped(m_Mutex);
-		ASSERTMSG(m_TextureList.find(pTexture->m_nameHash) == m_TextureList.end(), "Texture %s was already added", pTexture->GetName());
+		ASSERT_MSG(m_TextureList.find(pTexture->m_nameHash) == m_TextureList.end(), "Texture %s was already added", pTexture->GetName());
 		m_TextureList.insert(pTexture->m_nameHash, pTexture);
 
 		return pTexture;
@@ -267,7 +267,7 @@ public:
 		pTexture->SetName(pszName);
 
 		CScopedMutex scoped(m_Mutex);
-		ASSERTMSG(m_TextureList.find(pTexture->m_nameHash) == m_TextureList.end(), "Texture %s was already added", pTexture->GetName());
+		ASSERT_MSG(m_TextureList.find(pTexture->m_nameHash) == m_TextureList.end(), "Texture %s was already added", pTexture->GetName());
 		m_TextureList.insert(pTexture->m_nameHash, pTexture);
 
 		pTexture->SetDimensions(width, height);
@@ -481,7 +481,7 @@ protected:
 		// if this is a new texture, add
 		if (!(*pTex))
 		{
-			ASSERTMSG(m_TextureList.find(pTexture->m_nameHash) == m_TextureList.end(), "Texture %s was already added", pTexture->GetName());
+			ASSERT_MSG(m_TextureList.find(pTexture->m_nameHash) == m_TextureList.end(), "Texture %s was already added", pTexture->GetName());
 			m_TextureList.insert(pTexture->m_nameHash, pTexture);
 		}
 

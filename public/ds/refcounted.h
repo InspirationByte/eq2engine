@@ -82,7 +82,7 @@ inline bool	RefCountedObject::Ref_Drop()
 	}
 	else if(m_numRefs < 0)
 	{
-		//ASSERTMSG(false, varargs("Ref_Drop NOT VALID (RefCount=%d)!!!", m_numRefs));
+		//ASSERT_MSG(false, varargs("Ref_Drop NOT VALID (RefCount=%d)!!!", m_numRefs));
 	}
 
 	return false;

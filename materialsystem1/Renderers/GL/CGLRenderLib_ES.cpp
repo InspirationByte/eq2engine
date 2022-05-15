@@ -111,7 +111,7 @@ void CGLRenderLib_ES::InitSharedContexts()
 
 	EGLContext context = eglCreateContext(m_eglDisplay, m_eglConfig, m_glContext, contextAttr);
 	if (context == EGL_NO_CONTEXT)
-		ASSERTMSG(false, "Failed to create context for share!");
+		ASSERT_MSG(false, "Failed to create context for share!");
 
 	m_glSharedContext = context;
 }
@@ -120,7 +120,7 @@ bool CGLRenderLib_ES::InitAPI(const shaderAPIParams_t& params)
 {
 	EGLNativeDisplayType nativeDisplay = EGL_DEFAULT_DISPLAY;
 
-	ASSERTMSG(params.windowHandle != NULL, "you must specify window handle!");
+	ASSERT_MSG(params.windowHandle != NULL, "you must specify window handle!");
 #ifdef PLAT_ANDROID
 	m_lostSurface = false;
 	externalWindowDisplayParams_t* winParams = (externalWindowDisplayParams_t*)params.windowHandle;
@@ -544,7 +544,7 @@ void CGLRenderLib_ES::EndAsyncOperation()
 {
 	uintptr_t thisThreadId = Threading::GetCurrentThreadID();
 
-	ASSERTMSG(IsMainThread(thisThreadId) == false , "EndAsyncOperation() cannot be called from main thread!");
+	ASSERT_MSG(IsMainThread(thisThreadId) == false , "EndAsyncOperation() cannot be called from main thread!");
 	ASSERT(m_asyncOperationActive == true);
 
 	//glFinish();

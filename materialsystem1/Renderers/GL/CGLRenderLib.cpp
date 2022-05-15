@@ -221,7 +221,7 @@ void CGLRenderLib::InitSharedContexts()
 	}
 
 	//if (wglShareLists(context, glContext) == FALSE)
-	//	ASSERTMSG(false, EqString::Format("wglShareLists - Failed to share (err=%d, ctx=%d)!", GetLastError(), context).ToCString());
+	//	ASSERT_MSG(false, EqString::Format("wglShareLists - Failed to share (err=%d, ctx=%d)!", GetLastError(), context).ToCString());
 
 #elif defined(PLAT_LINUX)
 	GLXContext context = glXCreateContext(m_display, m_xvi, m_glContext, True);
@@ -683,7 +683,7 @@ bool CGLRenderLib::SetWindowed(bool enabled)
 	if (!enabled)
 	{
 #if defined(PLAT_LINUX)
-		ASSERTMSG(false, "CGLRenderLib::SetWindowed - Not implemented for Linux");
+		ASSERT_MSG(false, "CGLRenderLib::SetWindowed - Not implemented for Linux");
 		/*
 		if (foundMode >= 0 && XF86VidModeSwitchToMode(display, m_screen, m_dmodes[foundMode]))
 		{
@@ -834,7 +834,7 @@ void CGLRenderLib::EndAsyncOperation()
 {
 	uintptr_t thisThreadId = Threading::GetCurrentThreadID();
 
-	ASSERTMSG(IsMainThread(thisThreadId) == false , "EndAsyncOperation() cannot be called from main thread!");
+	ASSERT_MSG(IsMainThread(thisThreadId) == false , "EndAsyncOperation() cannot be called from main thread!");
 	ASSERT(m_asyncOperationActive == true);
 
 	//glFinish();

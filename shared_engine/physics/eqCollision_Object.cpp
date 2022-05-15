@@ -121,7 +121,7 @@ bool CEqCollisionObject::Initialize( studioPhysData_t* data, int nObject )
 	ASSERT(!m_shape);
 
 	// TODO: make it
-	ASSERTMSG(nObject >= 0 && (nObject < data->numObjects), "CEqCollisionObject::Initializet - nObject is out of numObjects");
+	ASSERT_MSG(nObject >= 0 && (nObject < data->numObjects), "CEqCollisionObject::Initializet - nObject is out of numObjects");
 
 	const studioPhysObject_t& physObject = data->objects[nObject];
 
@@ -150,7 +150,7 @@ bool CEqCollisionObject::Initialize( studioPhysData_t* data, int nObject )
 		m_studioShape = true; // do not delete!
 	}
 
-	ASSERTMSG(m_shape, "No valid shape!");
+	ASSERT_MSG(m_shape, "No valid shape!");
 
 	m_shape->setMargin(ph_margin.GetFloat());
 

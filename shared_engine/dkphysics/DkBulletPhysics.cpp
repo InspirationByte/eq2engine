@@ -1286,7 +1286,7 @@ IPhysicsObject* DkPhysics::CreateObject( studioPhysData_t* data, int nObject )
 {
 	CScopedMutex m(m_Mutex);
 
-	ASSERTMSG((nObject < data->numObjects), "DkPhysics::CreateObject - nObject is out of numObjects");
+	ASSERT_MSG((nObject < data->numObjects), "DkPhysics::CreateObject - nObject is out of numObjects");
 
 	DevMsg(DEVMSG_CORE, "Creating physics object\n");
 	DevMsg(DEVMSG_CORE, "mass = %f (%f)\n", data->objects[nObject].object.mass, data->objects[nObject].object.mass * METERS_PER_UNIT_INV);
@@ -1395,7 +1395,7 @@ IPhysicsObject* DkPhysics::CreateObject( studioPhysData_t* data, int nObject )
 
 IPhysicsObject* DkPhysics::CreateObjectCustom(int numShapes, int* shapeIdxs, const char* surfaceProps, float mass)
 {
-	ASSERTMSG(numShapes > 0, "IDkPhysics::CreateObjectCustom - no shapes");
+	ASSERT_MSG(numShapes > 0, "IDkPhysics::CreateObjectCustom - no shapes");
 
 	CScopedMutex m(m_Mutex);
 

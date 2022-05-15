@@ -180,7 +180,7 @@ void CAdjacentTriangleGraph::GenOptimizedTriangleList( Array<int>& output )
 
 void CAdjacentTriangleGraph::GenOptimizedStrips( Array<int>& output, bool usePrimRestart )
 {
-	ASSERTMSG(false, "CAdjacentTriangleGraph::GenOptimizedStrips not implemented");
+	ASSERT_MSG(false, "CAdjacentTriangleGraph::GenOptimizedStrips not implemented");
 }
 
 // builds neigbourhood table for specified triangle, also using a vertex information

@@ -13,9 +13,9 @@
 
 IEXPORTS void	_InternalAssertMsg(const char* file, int line, const char* statement, ...);
 
-#define	ASSERTMSG(x, msgFmt, ...) if (!(x)) _InternalAssertMsg(__FILE__, __LINE__, msgFmt, ##__VA_ARGS__)
-#define	ASSERT(x) ASSERTMSG(x, #x)
-#define ASSERT_FAIL(msgFmt, ...) ASSERTMSG(false, msgFmt, ##__VA_ARGS__)
+#define	ASSERT_MSG(x, msgFmt, ...) if (!(x)) _InternalAssertMsg(__FILE__, __LINE__, msgFmt, ##__VA_ARGS__)
+#define	ASSERT(x) ASSERT_MSG(x, #x)
+#define ASSERT_FAIL(msgFmt, ...) ASSERT_MSG(false, msgFmt, ##__VA_ARGS__)
 
 IEXPORTS void	AssertValidReadPtr( void* ptr, int count = 1 );
 IEXPORTS void	AssertValidWritePtr( void* ptr, int count = 1 );

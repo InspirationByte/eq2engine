@@ -103,7 +103,7 @@ EQWNDHANDLE Sys_CreateWindow()
 
 	if(handle == NULL)
 	{
-		ASSERTMSG("Can't create window!\n%s\n",SDL_GetError());
+		ASSERT_MSG("Can't create window!\n%s\n",SDL_GetError());
 		return NULL;
 	}
 
@@ -172,7 +172,7 @@ bool Host_Init()
 {
 	if( SDL_Init(SDL_INIT_EVENTS | SDL_INIT_JOYSTICK | SDL_INIT_GAMECONTROLLER | SDL_INIT_HAPTIC) != 0)
 	{
-		ASSERTMSG( "Failed to init SDL system: %s\n", SDL_GetError());
+		ASSERT_MSG( "Failed to init SDL system: %s\n", SDL_GetError());
 		return false;
 	}
 

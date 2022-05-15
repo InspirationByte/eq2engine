@@ -407,9 +407,9 @@ void CConsoleCommands::RegisterCommand(ConCommandBase *pCmd)
 	_RegisterOrDie();
 
 	ASSERT(pCmd != NULL);
-	ASSERTMSG(FindBase(pCmd->GetName()) == NULL, EqString::Format("ConCmd/CVar %s already registered", pCmd->GetName()).ToCString());
+	ASSERT_MSG(FindBase(pCmd->GetName()) == NULL, EqString::Format("ConCmd/CVar %s already registered", pCmd->GetName()).ToCString());
 
-	ASSERTMSG(isCvarChar(*pCmd->GetName()), "RegisterCommand - command name has invalid start character!");
+	ASSERT_MSG(isCvarChar(*pCmd->GetName()), "RegisterCommand - command name has invalid start character!");
 
 	// Already registered
 	if ( pCmd->IsRegistered() )

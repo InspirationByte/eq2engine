@@ -382,7 +382,7 @@ bool ShaderAPID3DX9::CreateD3DFrameBufferSurfaces()
 		m_fbColorTexture->Ref_Grab();
 
 		CScopedMutex m(m_Mutex);
-		ASSERTMSG(m_TextureList.find(m_fbColorTexture->m_nameHash) == m_TextureList.end(), "Texture %s was already added", m_fbColorTexture->GetName());
+		ASSERT_MSG(m_TextureList.find(m_fbColorTexture->m_nameHash) == m_TextureList.end(), "Texture %s was already added", m_fbColorTexture->GetName());
 		m_TextureList.insert(m_fbColorTexture->m_nameHash, m_fbColorTexture);
 	}
 
@@ -395,7 +395,7 @@ bool ShaderAPID3DX9::CreateD3DFrameBufferSurfaces()
 		m_fbDepthTexture->Ref_Grab();
 
 		CScopedMutex m(m_Mutex);
-		ASSERTMSG(m_TextureList.find(m_fbDepthTexture->m_nameHash) == m_TextureList.end(), "Texture %s was already added", m_fbDepthTexture->GetName());
+		ASSERT_MSG(m_TextureList.find(m_fbDepthTexture->m_nameHash) == m_TextureList.end(), "Texture %s was already added", m_fbDepthTexture->GetName());
 		m_TextureList.insert(m_fbDepthTexture->m_nameHash, m_fbDepthTexture);
 	}
 
@@ -601,7 +601,7 @@ void ShaderAPID3DX9::ApplyTextures()
 #ifdef EQ_DEBUG
 				if (pTexture->textures.numElem() == 0)
 				{
-					ASSERTMSG(false, "D3D9 renderer error: texture has no surfaces\n");
+					ASSERT_MSG(false, "D3D9 renderer error: texture has no surfaces\n");
 				}
 #endif
 
@@ -1426,7 +1426,7 @@ ITexture* ShaderAPID3DX9::CreateRenderTarget(int width, int height, ETextureForm
 	{
 		CScopedMutex scoped(m_Mutex);
 
-		ASSERTMSG(m_TextureList.find(pTexture->m_nameHash) == m_TextureList.end(), "Texture %s was already added", pTexture->GetName());
+		ASSERT_MSG(m_TextureList.find(pTexture->m_nameHash) == m_TextureList.end(), "Texture %s was already added", pTexture->GetName());
 		m_TextureList.insert(pTexture->m_nameHash, pTexture);
 		return pTexture;
 	} 
@@ -1457,7 +1457,7 @@ ITexture* ShaderAPID3DX9::CreateNamedRenderTarget(const char* pszName,int width,
 	if (InternalCreateRenderTarget(m_pD3DDevice, pTexture, nFlags, m_caps))
 	{
 		CScopedMutex scoped(m_Mutex);
-		ASSERTMSG(m_TextureList.find(pTexture->m_nameHash) == m_TextureList.end(), "Texture %s was already added", pTexture->GetName());
+		ASSERT_MSG(m_TextureList.find(pTexture->m_nameHash) == m_TextureList.end(), "Texture %s was already added", pTexture->GetName());
 		m_TextureList.insert(pTexture->m_nameHash, pTexture);
 		return pTexture;
 	} 
@@ -1939,7 +1939,7 @@ IShaderProgram* ShaderAPID3DX9::CreateNewShaderProgram(const char* pszName, cons
 
 	CScopedMutex scoped(m_Mutex);
 
-	ASSERTMSG(m_ShaderList.find(pNewProgram->m_nameHash) == m_ShaderList.end(), "Shader %s was already added", pNewProgram->GetName());
+	ASSERT_MSG(m_ShaderList.find(pNewProgram->m_nameHash) == m_ShaderList.end(), "Shader %s was already added", pNewProgram->GetName());
 	m_ShaderList.insert(pNewProgram->m_nameHash, pNewProgram);
 
 	return pNewProgram;
@@ -2837,7 +2837,7 @@ void ShaderAPID3DX9::CreateTextureInternal(ITexture** pTex, const Array<CImage*>
 	if(!(*pTex))
 	{
 		m_Mutex.Lock();
-		ASSERTMSG(m_TextureList.find(pTexture->m_nameHash) == m_TextureList.end(), "Texture %s was already added", pTexture->GetName());
+		ASSERT_MSG(m_TextureList.find(pTexture->m_nameHash) == m_TextureList.end(), "Texture %s was already added", pTexture->GetName());
 		m_TextureList.insert(pTexture->m_nameHash, pTexture);
 		m_Mutex.Unlock();
 	}

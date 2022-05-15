@@ -81,7 +81,7 @@ bool CDynamicMesh::Init( VertexFormatDesc_t* desc, int numAttribs )
 	if(m_vertexBuffer != nullptr && m_indexBuffer != nullptr && m_vertexFormat != nullptr)
 		return true;
 
-	ASSERTMSG(numAttribs > 0, "CDynamicMesh::Init - numAttribs is ZERO!\n");
+	ASSERT_MSG(numAttribs > 0, "CDynamicMesh::Init - numAttribs is ZERO!\n");
 
 	int vertexSize = 0;
 
@@ -90,7 +90,7 @@ bool CDynamicMesh::Init( VertexFormatDesc_t* desc, int numAttribs )
 		int stream = desc[i].streamId;
 		int vecCount = desc[i].elemCount;
 
-		ASSERTMSG(stream == 0, "Error - you should pass STREAM 0 only to CDynamicMesh::Init!\n");
+		ASSERT_MSG(stream == 0, "Error - you should pass STREAM 0 only to CDynamicMesh::Init!\n");
 
 		vertexSize += vecCount * s_attributeSize[desc[i].attribFormat];
 	}

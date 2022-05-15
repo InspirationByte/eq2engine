@@ -118,7 +118,7 @@ inline void CVertexFormatBuilder::SetComponentEnabled(int streamIdx, const char*
 		}
 	}
 
-	ASSERTMSG(descIdx != -1, "EnableComponent: not found");
+	ASSERT_MSG(descIdx != -1, "EnableComponent: not found");
 
 	int compIdx = streamIdx * MAX_VERTEXSTREAM + descIdx;
 	m_enabledComponents[compIdx] = enable;

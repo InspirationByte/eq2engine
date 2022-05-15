@@ -439,7 +439,7 @@ eqPhysSurfParam_t* CEqPhysics::GetSurfaceParamByID(int id)
 }
 
 #ifdef DEBUG
-#define CHECK_ALREADY_IN_LIST(list, obj) ASSERTMSG(list.findIndex(obj) == -1, "Object already added")
+#define CHECK_ALREADY_IN_LIST(list, obj) ASSERT_MSG(list.findIndex(obj) == -1, "Object already added")
 #else
 #define CHECK_ALREADY_IN_LIST(list, obj)
 #endif
@@ -1919,7 +1919,7 @@ bool CEqPhysics::TestConvexSweepSingleObject(	CEqCollisionObject* object,
 
 	if(	shapeType > CONCAVE_SHAPES_START_HERE)
 	{
-		ASSERTMSG(false, "Only convex shapes are supported as concave shapes!");
+		ASSERT_MSG(false, "Only convex shapes are supported as concave shapes!");
 		return false;
 	}
 
