@@ -692,29 +692,34 @@ bool CGameHost::Frame()
 	debugoverlay->Text(Vector4D(1), "DPS/DIPS: %i/%i", g_pShaderAPI->GetDrawCallsCount(), g_pShaderAPI->GetDrawIndexedPrimitiveCallsCount());
 	debugoverlay->Text(Vector4D(1), "primitives: %i", g_pShaderAPI->GetTrianglesCount());
 	
-
 	debugoverlay->Draw(m_winSize.x, m_winSize.y);
 
 	materials->Setup2D(m_winSize.x, m_winSize.y);
 
-	if(r_showFPS.GetBool())
+	equi::Manager->SetViewFrame(IRectangle(0,0,m_winSize.x,m_winSize.y));
+	equi::Manager->Render();
+
+	if (r_showFPS.GetBool())
 	{
 		eqFontStyleParam_t params;
 		params.styleFlag = TEXT_STYLE_SHADOW | TEXT_STYLE_FROM_CAP;
-		params.textColor = ColorRGBA(1,1,1,1);
+		params.textColor = ColorRGBA(1, 1, 1, 1);
 
-		if(fps < 30)
-			params.textColor = ColorRGBA(1,0,0,1);
-		else if(fps < 60)
-			params.textColor = ColorRGBA(1,0.8f,0,1);
+		if (fps < 30)
+			params.textColor = ColorRGBA(1, 0, 0, 1);
+		else if (fps < 60)
+			params.textColor = ColorRGBA(1, 0.8f, 0, 1);
 
 		m_pDefaultFont->RenderText(EqString::Format("SYS/GAME FPS: %d/%d", min(fps, 1000), gamefps).ToCString(), Vector2D(15), params);
-		m_pDefaultFont->RenderText(EqString::Format("MEM: %.2f", (PPMemGetUsage() / 1024.0f) / 1024.0f).ToCString(), Vector2D(15, 35), params);
-		
-	}
 
-	equi::Manager->SetViewFrame(IRectangle(0,0,m_winSize.x,m_winSize.y));
-	equi::Manager->Render();
+		size_t totalMem = PPMemGetUsage();
+		if (totalMem)
+		{
+			eqFontStyleParam_t memParams;
+			memParams.styleFlag = TEXT_STYLE_SHADOW | TEXT_STYLE_FROM_CAP;
+			m_pDefaultFont->RenderText(EqString::Format("MEM: %.2f", (totalMem / 1024.0f) / 1024.0f).ToCString(), Vector2D(15, 35), memParams);
+		}
+	}
 
 	g_inputCommandBinder->DebugDraw(m_winSize);
 	g_consoleInput->EndFrame(m_winSize.x, m_winSize.y, gameFrameTime);

@@ -888,7 +888,7 @@ kvkeybase_t& kvkeybase_t::AddKey(const char* name, kvkeybase_t* pair)
 // searches for keybase
 kvkeybase_t* kvkeybase_t::FindKeyBase(const char* pszName, int nFlags) const
 {
-	int hash = StringToHash(pszName);
+	const int hash = StringToHash(pszName, true);
 
 	for(int i = 0; i < keys.numElem(); i++)
 	{
@@ -901,8 +901,8 @@ kvkeybase_t* kvkeybase_t::FindKeyBase(const char* pszName, int nFlags) const
 		if((nFlags & KV_FLAG_ARRAY) && keys[i]->values.numElem() <= 1)
 			continue;
 
-		//if(keys[i]->nameHash == hash)
-		if(!stricmp(keys[i]->name, pszName))
+		if(keys[i]->nameHash == hash)
+		//if(!stricmp(keys[i]->name, pszName))
 			return keys[i];
 	}
 
@@ -937,12 +937,12 @@ void kvkeybase_t::AddExistingKeyBase(kvkeybase_t* keyBase)
 // removes key base by name
 void kvkeybase_t::RemoveKeyBaseByName( const char* name, bool removeAll )
 {
-	//int strHash = StringToHash(name, true);
+	const int strHash = StringToHash(name, true);
 
 	for(int i = 0; i < keys.numElem(); i++)
 	{
-		//if(keys[i]->nameHash == strHash)
-		if(!stricmp(keys[i]->name, name))
+		if(keys[i]->nameHash == strHash)
+		//if(!stricmp(keys[i]->name, name))
 		{
 			delete keys[i];
 			keys.removeIndex(i);
