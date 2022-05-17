@@ -27,8 +27,8 @@ struct cbone_t
 {
 	SharedModel::dsmskelbone_t*	referencebone;
 
-	Array<cbone_t*>			childs;
-	cbone_t*					parent;
+	Array<cbone_t*>		childs{ PP_SL };
+	cbone_t*			parent;
 };
 
 struct ciklink_t
@@ -45,7 +45,7 @@ struct ikchain_t
 {
 	char name[44];
 
-	Array<ciklink_t> link_list;
+	Array<ciklink_t> link_list{ PP_SL };
 };
 
 struct clodmodel_t
@@ -84,7 +84,7 @@ struct egfcaMaterialDesc_t
 
 struct egfcaMaterialGroup_t
 {
-	Array<egfcaMaterialDesc_t> materials;
+	Array<egfcaMaterialDesc_t> materials{ PP_SL };
 };
 
 class CMemoryStream;
@@ -161,20 +161,20 @@ protected:
 	void					WriteBones(CMemoryStream* stream);
 
 	// data
-	Array<egfcaModel_t>			m_modelrefs;	// all loaded model references
+	Array<egfcaModel_t>				m_modelrefs{ PP_SL };	// all loaded model references
 
-	Array<clodmodel_t>				m_modellodrefs;	// all LOD reference models including main LOD
-	Array<studiolodparams_t>		m_lodparams;	// lod parameters
-	Array<motionpackagedesc_t>		m_motionpacks;	// motion packages
-	Array<materialpathdesc_t>		m_matpathes;	// material paths
-	Array<ikchain_t>				m_ikchains;		// ik chain list
-	Array<cbone_t>					m_bones;		// bone list
-	Array<studioattachment_t>		m_attachments;	// attachment list
-	Array<studiobodygroup_t>		m_bodygroups;	// body group list
+	Array<clodmodel_t>				m_modellodrefs{ PP_SL };	// all LOD reference models including main LOD
+	Array<studiolodparams_t>		m_lodparams{ PP_SL };	// lod parameters
+	Array<motionpackagedesc_t>		m_motionpacks{ PP_SL };	// motion packages
+	Array<materialpathdesc_t>		m_matpathes{ PP_SL };	// material paths
+	Array<ikchain_t>				m_ikchains{ PP_SL };	// ik chain list
+	Array<cbone_t>					m_bones{ PP_SL };		// bone list
+	Array<studioattachment_t>		m_attachments{ PP_SL };	// attachment list
+	Array<studiobodygroup_t>		m_bodygroups{ PP_SL };	// body group list
 
-	Array<egfcaMaterialDesc_t>		m_materials;	// materials that referenced by models
-	Array<egfcaMaterialDesc_t*>	m_usedMaterials;// materials that used by models referenced by body groups
-	Array<egfcaMaterialGroup_t*>	m_matGroups;	// material groups
+	Array<egfcaMaterialDesc_t>		m_materials{ PP_SL };	// materials that referenced by models
+	Array<egfcaMaterialDesc_t*>		m_usedMaterials{ PP_SL };	// materials that used by models referenced by body groups
+	Array<egfcaMaterialGroup_t*>	m_matGroups{ PP_SL };	// material groups
 
 	Vector3D						m_modelScale;
 	Vector3D						m_modelOffset;

@@ -244,7 +244,7 @@ bool DkPhysics::Init(int nSceneSize)
 
 			DefaultMaterialParams(pMaterial);
 
-			pMaterial->name = xstrdup( pSec->name );
+			pMaterial->name = pSec->name;
 
 			kvkeybase_t* pBaseNamePair = pSec->FindKeyBase("base");
 			if(pBaseNamePair)
@@ -267,35 +267,35 @@ bool DkPhysics::Init(int nSceneSize)
 			if(pPair)
 			{
 				delete [] pMaterial->footStepSound;
-				pMaterial->footStepSound = xstrdup(KV_GetValueString(pPair));
+				pMaterial->footStepSound = KV_GetValueString(pPair);
 			}
 
 			pPair = pSec->FindKeyBase("bulletimpact");
 			if(pPair)
 			{
 				delete [] pMaterial->bulletImpactSound;
-				pMaterial->bulletImpactSound = xstrdup(KV_GetValueString(pPair));
+				pMaterial->bulletImpactSound = KV_GetValueString(pPair);
 			}
 
 			pPair = pSec->FindKeyBase("scrape");
 			if(pPair)
 			{
 				delete [] pMaterial->scrapeSound;
-				pMaterial->scrapeSound = xstrdup(KV_GetValueString(pPair));
+				pMaterial->scrapeSound = KV_GetValueString(pPair);
 			}
 
 			pPair = pSec->FindKeyBase("impactlight");
 			if(pPair)
 			{
 				delete [] pMaterial->lightImpactSound;
-				pMaterial->lightImpactSound = xstrdup(KV_GetValueString(pPair));
+				pMaterial->lightImpactSound = KV_GetValueString(pPair);
 			}
 
 			pPair = pSec->FindKeyBase("impactheavy");
 			if(pPair)
 			{
 				delete [] pMaterial->heavyImpactSound;
-				pMaterial->heavyImpactSound = xstrdup(KV_GetValueString(pPair));
+				pMaterial->heavyImpactSound = KV_GetValueString(pPair);
 			}
 
 			m_physicsMaterialDesc.append(pMaterial);
@@ -1120,7 +1120,7 @@ IPhysicsObject* DkPhysics::CreateStaticObject(physmodelcreateinfo_t *info, int n
 
 	btCollisionShape* shape = NULL;
 
-	Array<btTriangleIndexVertexArray*> triangle_mesges;
+	Array<btTriangleIndexVertexArray*> triangle_mesges{ PP_SL };
 
 	shape = InternalGenerateMesh(info, &m_triangleMeshes);
 

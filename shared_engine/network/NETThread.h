@@ -156,23 +156,23 @@ private:
 protected:
 
 	// event factory
-	Array<neteventfactory_t>	m_netEventFactory;
+	Array<neteventfactory_t>	m_netEventFactory{ PP_SL };
 
 	// network interface this thread using
 	INetworkInterface*			m_netInterface;
 
 	// delayed messages, for testing network only
-	Array<rcvdMessage_t*>		m_lateMessages;
+	Array<rcvdMessage_t*>		m_lateMessages{ PP_SL };
 
 	// all undispatched fragmented messages
-	Array<netFragMsg_t*>		m_fragmented_messages;
+	Array<netFragMsg_t*>		m_fragmented_messages{ PP_SL };
 
 	// message queue
 	rcvdMessage_t*				m_firstMessage;
 	rcvdMessage_t*				m_lastMessage;
 
 	// events
-	Array<sendEvent_t>			m_queuedEvents;
+	Array<sendEvent_t>			m_queuedEvents{ PP_SL };
 
 	// callbacks
 	pfnEventFilterCallback		m_fnEventFilter;		// event filter callback

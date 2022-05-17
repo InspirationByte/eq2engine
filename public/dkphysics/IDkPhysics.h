@@ -71,13 +71,13 @@ struct phySurfaceMaterial_t // engine has array of this materials
 
 	ubyte surfaceword;
 
-	char* name;
+	EqString name;
 
-	char* footStepSound;
-	char* lightImpactSound;
-	char* heavyImpactSound;
-	char* bulletImpactSound;
-	char* scrapeSound;
+	EqString footStepSound;
+	EqString lightImpactSound;
+	EqString heavyImpactSound;
+	EqString bulletImpactSound;
+	EqString scrapeSound;
 
 	int nFlags; // SURFACE_FLAG_* flags
 };

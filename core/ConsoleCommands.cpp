@@ -492,7 +492,7 @@ void CConsoleCommands::ParseAndAppend(char* str, int len, void* extra)
 	{
 		EqString cmdStr(tmpStr.TrimSpaces());
 
-		Array<EqString> cmdArgs;
+		Array<EqString> cmdArgs{ PP_SL };
 		SplitCommandForValidArguments(cmdStr.ToCString(), cmdArgs);
 
 		// executing file must be put to the command buffer in proper order
@@ -586,7 +586,7 @@ void CConsoleCommands::SplitOnArgsAndExec(char* str, int len, void* extra)
 
 	EqString commandStr(str,len);
 
-	Array<EqString> cmdArgs;
+	Array<EqString> cmdArgs{ PP_SL };
 
 	// split it
 	SplitCommandForValidArguments(commandStr.ToCString(), cmdArgs);

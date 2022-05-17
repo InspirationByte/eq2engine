@@ -238,11 +238,11 @@ struct kvkeybase_t
 	char					name[KV_MAX_NAME_LENGTH];
 	int						nameHash;
 
-	Array<kvpairvalue_t*>	values;
+	Array<kvpairvalue_t*>	values{ PP_SL };
 	EKVPairType				type;		// default type of values
 
 	// the nested keys
-	Array<kvkeybase_t*>	keys;
+	Array<kvkeybase_t*>		keys{ PP_SL };
 	bool					unicode;
 };
 

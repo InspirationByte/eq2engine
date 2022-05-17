@@ -20,7 +20,7 @@
 struct ConAutoCompletion_t
 {
 	EqString cmd_name;
-	Array<EqString> args;
+	Array<EqString> args{ PP_SL };
 };
 
 typedef bool (*CONSOLE_ALTERNATE_HANDLER)(const char* commandText);
@@ -133,14 +133,14 @@ private:
 	float							m_logScrollNextTime;
 
 	// Input history
-	Array<EqString>				m_commandHistory;
+	Array<EqString>					m_commandHistory{ PP_SL };
 	int								m_histIndex;
 
-	Array<ConCommandBase*>			m_foundCmdList;
+	Array<ConCommandBase*>			m_foundCmdList{ PP_SL };
 	int								m_cmdSelection;
 
 	ConCommandBase*					m_fastfind_cmdbase;
-	Array<EqString>				m_variantList;
+	Array<EqString>					m_variantList{ PP_SL };
 	int								m_variantSelection;
 
 	CONSOLE_ALTERNATE_HANDLER		m_alternateHandler;
@@ -149,7 +149,7 @@ private:
 	EqString						m_inputText;
 
 	// custom autocompletion
-	Array<ConAutoCompletion_t*>	m_customAutocompletion;
+	Array<ConAutoCompletion_t*>		m_customAutocompletion{ PP_SL };
 };
 
 extern CEqConsoleInput* g_consoleInput;

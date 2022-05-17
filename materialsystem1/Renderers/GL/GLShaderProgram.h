@@ -68,8 +68,8 @@ protected:
 
 	GLhandleARB				m_program;
 
-	Map<int, GLShaderConstant_t>	m_constants;
-	Map<int, GLShaderSampler_t>		m_samplers;
+	Map<int, GLShaderConstant_t>	m_constants{ PP_SL };
+	Map<int, GLShaderSampler_t>		m_samplers{ PP_SL };
 };
 
 #endif //GLSHADERPROGRAM_H

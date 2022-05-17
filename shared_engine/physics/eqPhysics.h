@@ -389,17 +389,17 @@ protected:
 
 protected:
 
-	Array<eqPhysSurfParam_t*>		m_physSurfaceParams;
+	Array<eqPhysSurfParam_t*>		m_physSurfaceParams{ PP_SL };
 
-	Array<CEqRigidBody*>			m_moveable;
+	Array<CEqRigidBody*>			m_moveable{ PP_SL };
 
-	Array<CEqRigidBody*>			m_dynObjects;
-	Array<CEqCollisionObject*>		m_staticObjects;
+	Array<CEqRigidBody*>			m_dynObjects{ PP_SL };
+	Array<CEqCollisionObject*>		m_staticObjects{ PP_SL };
 
-	Array<CEqCollisionObject*>		m_ghostObjects;
+	Array<CEqCollisionObject*>		m_ghostObjects{ PP_SL };
 
-	Array<IEqPhysicsConstraint*>	m_constraints;
-	Array<IEqPhysicsController*>	m_controllers;
+	Array<IEqPhysicsConstraint*>	m_constraints{ PP_SL };
+	Array<IEqPhysicsController*>	m_controllers{ PP_SL };
 
 	btDispatcherInfo				m_dispatchInfo;
 	btCollisionWorld*				m_collisionWorld;

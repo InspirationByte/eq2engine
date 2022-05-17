@@ -102,10 +102,10 @@ protected:
 	void							AddCompleted(eqParallelJob_t* job);
 
 
-	Array<CEqJobThread*>			m_jobThreads;
+	Array<CEqJobThread*>			m_jobThreads{ PP_SL };
 
-	List<eqParallelJob_t*>	m_workQueue;
-	List<eqParallelJob_t*>	m_completedJobs;
+	List<eqParallelJob_t*>			m_workQueue;
+	List<eqParallelJob_t*>			m_completedJobs;
 
 	Threading::CEqMutex				m_mutex;
 	Threading::CEqMutex				m_completeMutex;

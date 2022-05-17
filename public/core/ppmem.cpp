@@ -1,9 +1,8 @@
 //////////////////////////////////////////////////////////////////////////////////
 // Copyright © Inspiration Byte
-// 2009-2020
+// 2009-2022
 //////////////////////////////////////////////////////////////////////////////////
-// Description: PPMem (Pee-Pee Memory) - a C++ memory allocation debugger
-//				designed to detect memory leaks and allocation errors
+// Description: PPMem (Pee-Pee Memory) -  memory allocation tracker
 //
 //				See ppmem_core.cpp for main implementation
 //////////////////////////////////////////////////////////////////////////////////
@@ -12,6 +11,11 @@
 #include <malloc.h>
 
 constexpr int PPSL_ADDR_BITS = 48;		// 64 bit arch only use 48 bits of pointers
+
+PPSourceLine PPSourceLine::Empty()
+{
+	return {};
+}
 
 PPSourceLine PPSourceLine::Make(const char* filename, int line)
 {

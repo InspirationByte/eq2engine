@@ -124,9 +124,9 @@ void AddTriangleWithAllNeighbours_r(indxgroup_t *group, mtriangle_t* triangle)
 void CAdjacentTriangleGraph::GenOptimizedTriangleList( Array<int>& output )
 {
 	// sort triangles to new groups
-	Array<indxgroup_t*> allgroups;
+	Array<indxgroup_t*> allgroups{ PP_SL };
 
-	indxgroup_t *main_group = PPNew indxgroup_t;
+	indxgroup_t *main_group = PPNew indxgroup_t{ PP_SL };
 	allgroups.append(main_group);
 
 	// then using newly generated neighbour triangles divide on parts
@@ -152,7 +152,7 @@ void CAdjacentTriangleGraph::GenOptimizedTriangleList( Array<int>& output )
 		// if not found, create new group and add triangle with all of it's neighbours
 		if(!found)
 		{
-			indxgroup_t *new_group = PPNew indxgroup_t;
+			indxgroup_t *new_group = PPNew indxgroup_t{ PP_SL };
 			allgroups.append(new_group);
 
 			// add tri with all of it's neighbour's herarchy

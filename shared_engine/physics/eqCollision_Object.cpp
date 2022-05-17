@@ -37,7 +37,7 @@ IEqPhysCallback::~IEqPhysCallback()
 		m_object->m_callbacks = nullptr;
 }
 
-CEqCollisionObject::CEqCollisionObject() : m_collisionList(PHYSICS_COLLISION_LIST_MAX)
+CEqCollisionObject::CEqCollisionObject() : m_collisionList(PP_SL, PHYSICS_COLLISION_LIST_MAX)
 {
 	m_collObject = nullptr;
 	m_shape = nullptr;

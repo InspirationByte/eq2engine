@@ -140,7 +140,7 @@ public:
 
 	//--------------------
 
-	Array<CollisionPairData_t>	m_collisionList;
+	Array<CollisionPairData_t>	m_collisionList{ PP_SL };
 
 	BoundingBox					m_aabb;																///< bounding box
 	BoundingBox					m_aabb_transformed;													///< transformed bounding box, does not updated in dynamic objects

@@ -93,14 +93,14 @@ private:
 
 	IVector2D				m_mousePos;
 
-	Array<equi::Panel*>	m_panels;
+	Array<equi::Panel*>		m_panels{ PP_SL };
 
 	IRectangle				m_viewFrameRect;
 	IMaterial*				m_material;
 
 	IEqFont*				m_defaultFont;
 
-	Array<ctrlFactory_t>	m_controlFactory;
+	Array<ctrlFactory_t>	m_controlFactory{ PP_SL };
 };
 
 extern CUIManager* Manager;

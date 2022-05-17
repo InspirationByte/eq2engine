@@ -48,7 +48,7 @@ private:
 	//uint	curline;
 
 	int currentBuffer;
-	Array <TokBuffer> buffers;
+	Array <TokBuffer> buffers{ PP_SL };
 
 	char *getBuffer(unsigned int size);
 };

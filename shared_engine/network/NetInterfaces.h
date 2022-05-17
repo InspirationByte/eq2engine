@@ -117,7 +117,7 @@ public:
 private:
 	netPeer_t			m_lastclient;
 
-	Array<netPeer_t*>	m_clients;
+	Array<netPeer_t*>	m_clients{ PP_SL };
 };
 
 //-------------------------------------------------------------------------------------------------------

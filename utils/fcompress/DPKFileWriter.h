@@ -58,8 +58,8 @@ protected:
 
 	char					m_mountPath[DPK_STRING_SIZE];
 
-	Array<dpkfilewinfo_t*>	m_files;
-	Array<EqString>		m_ignoreCompressionExt;
+	Array<dpkfilewinfo_t*>	m_files{ PP_SL };
+	Array<EqString>			m_ignoreCompressionExt{ PP_SL };
 
 	int						m_compressionLevel;
 	int						m_encryption;

@@ -67,7 +67,7 @@ protected:
 
 	PHY_ScalarType					m_indexType;
 
-	Array<eqBulletMeshSubpart_t>	m_subparts; // or batches
+	Array<eqBulletMeshSubpart_t>	m_subparts{ PP_SL }; // or batches
 };
 
 #endif // EQBULLETINDEXEDMESH_H

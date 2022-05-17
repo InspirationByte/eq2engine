@@ -439,7 +439,7 @@ extern IMaterialSystem* materials;
 
 #define DECLARE_INTERNAL_SHADERS()       \
 	FactoryList* s_internalShaderReg = NULL;                            \
-	FactoryList& _InternalShaderList() { if(!s_internalShaderReg) s_internalShaderReg = new FactoryList(); return *s_internalShaderReg; }
+	FactoryList& _InternalShaderList() { if(!s_internalShaderReg) s_internalShaderReg = new FactoryList(PP_SL); return *s_internalShaderReg; }
 
 #define REGISTER_INTERNAL_SHADERS()								\
 	for(int i = 0; i < _InternalShaderList().numElem(); i++)	\

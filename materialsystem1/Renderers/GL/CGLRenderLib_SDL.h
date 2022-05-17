@@ -70,7 +70,7 @@ public:
 	bool					IsMainThread(uintptr_t threadId) const;
 protected:
 
-	Array<IEqSwapChain*>	m_swapChains;
+	Array<IEqSwapChain*>	m_swapChains{ PP_SL };
 	uintptr_t				m_mainThreadId;
 	bool					m_asyncOperationActive;
 

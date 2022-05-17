@@ -186,8 +186,8 @@ protected:
 	void					UpdateInertiaTensor();		///< updates inertia tensor
 	void					AccumulateForces(float time);	///< accumulates forces
 
-	Array<ContactPair_t>			m_contactPairs; // contact pair list in single frame
-	Array<IEqPhysicsConstraint*>	m_constraints;
+	Array<ContactPair_t>			m_contactPairs{ PP_SL }; // contact pair list in single frame
+	Array<IEqPhysicsConstraint*>	m_constraints{ PP_SL };
 
 	Matrix3x3						m_invInertiaTensor;
 

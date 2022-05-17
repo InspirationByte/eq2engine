@@ -502,7 +502,7 @@ void ShaderAPI_Base::GetImagesForTextureName(Array<EqString>& textureNames, cons
 		char* animScriptBuffer = g_fileSystem->GetFileBuffer(textureAnimPathExt);
 		if (animScriptBuffer)
 		{
-			Array<EqString> frameFilenames;
+			Array<EqString> frameFilenames{ PP_SL };
 			xstrsplit(animScriptBuffer, "\n", frameFilenames);
 			for (int i = 0; i < frameFilenames.numElem(); i++)
 			{
@@ -547,10 +547,10 @@ ITexture* ShaderAPI_Base::LoadTexture( const char* pszFileName,
 	EqString texNameStr(pszFileName);
 	texNameStr.Path_FixSlashes();
 
-	Array<EqString> textureNames;
+	Array<EqString> textureNames{ PP_SL };
 	GetImagesForTextureName(textureNames, pszFileName);
 
-	Array<CImage*> pImages;
+	Array<CImage*> pImages{ PP_SL };
 
 	const EqString& textureAuxPath = r_allowSourceTextures->GetBool() ? m_params.textureSRCPath : m_params.texturePath;
 
@@ -659,7 +659,7 @@ ITexture* ShaderAPI_Base::CreateProceduralTexture(const char* pszName,
 		return NULL;	// don't generate error
 	}
 
-	Array<CImage*> imgs;
+	Array<CImage*> imgs{ PP_SL };
 	imgs.append(&genTex);
 
 	SamplerStateParam_t sampler = g_pShaderAPI->MakeSamplerState(texFilter,textureAddress,textureAddress,textureAddress);
@@ -668,10 +668,10 @@ ITexture* ShaderAPI_Base::CreateProceduralTexture(const char* pszName,
 
 bool ShaderAPI_Base::RestoreTextureInternal(ITexture* pTexture)
 {
-	Array<EqString> textureNames;
+	Array<EqString> textureNames{ PP_SL };
 	GetImagesForTextureName(textureNames, pTexture->GetName());
 
-	Array<CImage*> pImages;
+	Array<CImage*> pImages{ PP_SL };
 
 	const EqString& textureAuxPath = r_allowSourceTextures->GetBool() ? m_params.textureSRCPath : m_params.texturePath;
 
@@ -767,7 +767,7 @@ ITexture* ShaderAPI_Base::GenerateErrorTexture(int nFlags/* = 0*/)
 
 	image.CreateMipMaps();
 
-	Array<CImage*> images;
+	Array<CImage*> images{ PP_SL };
 	images.append(&image);
 
 	ITexture* pOutTexture = CreateTexture(images, texSamplerParams, nFlags);

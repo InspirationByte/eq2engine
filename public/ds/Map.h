@@ -9,6 +9,7 @@
 #define MAP_H
 
 #include <new>
+#include "core/ppmem.h"
 #include "core/dktypes.h"
 #include "core/platform/assert.h"
 
@@ -44,22 +45,17 @@ public:
 	};
 
 public:
-	Map() 
-		: m_end(&m_endItem), m_begin(&m_endItem), m_root(nullptr), m_size(0), m_freeItem(nullptr), m_blocks(nullptr)
+	Map(const PPSourceLine& sl)
+		: m_sl(sl), m_end(&m_endItem), m_begin(&m_endItem)
 	{
 		m_endItem.parent = nullptr;
 		m_endItem.prev = nullptr;
 		m_endItem.next = nullptr;
 	}
 
-	Map(const Map& other) 
-		: m_end(&m_endItem), m_begin(&m_endItem), m_root(nullptr), m_size(0), m_freeItem(nullptr), m_blocks(nullptr)
+	Map(const Map& other)
 	{
-		m_endItem.parent = nullptr;
-		m_endItem.prev = nullptr;
-		m_endItem.next = nullptr;
-		for (const Item* i = other.m_begin.item, *end = &other.m_endItem; i != end; i = i->next)
-			insert(i->key, i->value);
+		ASSERT_FAIL("Copy constructor not allowed, use default one and use operator=");
 	}
 
 	~Map()
@@ -69,7 +65,7 @@ public:
 		for (ItemBlock* i = m_blocks, *next; i; i = next)
 		{
 			next = i->next;
-			free(i);
+			PPFree(i);
 		}
 	}
 
@@ -408,7 +404,7 @@ private:
 	struct Item
 	{
 		K key;
-		V value;
+		V& value;
 		Item* parent;
 		Item* left{ nullptr };
 		Item* right{ nullptr };
@@ -418,10 +414,10 @@ private:
 		int slope{ 0 };
 
 		Item()
-			: key(), value()
+			: key(), _value(PPSourceLine::Empty()), value(_value.x)
 		{}
 
-		Item(Item* parent, const K& key) : parent(parent), key(key)
+		Item(const PPSourceLine& sl, Item* parent, const K& key) : parent(parent), key(key), _value(sl), value(_value.x)
 		{}
 
 		void updateHeightAndSlope()
@@ -432,6 +428,8 @@ private:
 			slope = leftHeight - rightHeight;
 			height = (leftHeight > rightHeight ? leftHeight : rightHeight) + 1;
 		}
+	private:
+		PPSLValueCtor<V> _value;
 	};
 	struct ItemBlock
 	{
@@ -439,13 +437,14 @@ private:
 	};
 
 private:
+	const PPSourceLine m_sl;
 	Iterator m_end;
 	Iterator m_begin;
 	Item m_endItem;
-	Item* m_root;
-	Item* m_freeItem;
-	ItemBlock* m_blocks;
-	int m_size;
+	Item* m_root{ nullptr };
+	Item* m_freeItem{ nullptr };
+	ItemBlock* m_blocks{ nullptr };
+	int m_size{ 0 };
 
 private:
 	Iterator insert(Item** cell, Item* parent, const K& key)
@@ -459,7 +458,7 @@ private:
 			if (!item)
 			{
 				const int allocatedSize = sizeof(ItemBlock) + sizeof(Item);
-				ItemBlock* itemBlock = (ItemBlock*)malloc(allocatedSize);
+				ItemBlock* itemBlock = (ItemBlock*)PPDAlloc(allocatedSize, m_sl);
 				itemBlock->next = m_blocks;
 				m_blocks = itemBlock;
 				for (Item* i = (Item*)(itemBlock + 1), *end = i + (allocatedSize - sizeof(ItemBlock)) / sizeof(Item); i < end; ++i)
@@ -469,8 +468,8 @@ private:
 				}
 				m_freeItem = item;
 			}
-			new (item) Item(parent, key);
 			m_freeItem = item->prev;
+			new (item) Item(m_sl, parent, key);
 
 			// FIXME: multi-map is bugged, first item becomes unreachable
 			*cell = item;

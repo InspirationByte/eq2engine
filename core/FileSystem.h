@@ -166,13 +166,13 @@ private:
 		bool mainWritePath;
 	};
 
-	Array<SearchPath_t>				m_directories;		// mod data, for fall back
+	Array<SearchPath_t>				m_directories{ PP_SL };		// mod data, for fall back
 
     // Packages currently loaded
-    Array<CBasePackageFileReader*>		m_packages;
-    Array<IFile*>						m_openFiles;
-	Array<DKFINDDATA*>					m_findDatas;
-	Array<DKMODULE*>					m_modules;
+    Array<CBasePackageFileReader*>		m_packages{ PP_SL };
+    Array<IFile*>						m_openFiles{ PP_SL };
+	Array<DKFINDDATA*>					m_findDatas{ PP_SL };
+	Array<DKMODULE*>					m_modules{ PP_SL };
 
     bool								m_editorMode;
 	bool								m_isInit;

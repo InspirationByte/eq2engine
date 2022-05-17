@@ -238,7 +238,7 @@ struct studioHwData_t
 		Vector3D			position; // bone initial position
 		Vector3D			rotation; // bone initial rotation
 
-		Array<int>			childs; // child bones
+		Array<int>			childs{ PP_SL }; // child bones
 
 		int					chain_id;
 		int					link_id;

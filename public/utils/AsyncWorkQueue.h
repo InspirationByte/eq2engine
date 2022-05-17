@@ -30,7 +30,7 @@ protected:
 	int WaitForResult(uint workId);
 
 	uint					m_workCounter{ 0 };
-	Array<struct work_t*>	m_pendingWork;
+	Array<struct work_t*>	m_pendingWork{ PP_SL };
 	Threading::CEqMutex		m_mutex;
 };
 

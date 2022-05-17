@@ -10,6 +10,7 @@
 
 #include "core/platform/assert.h"
 #include "core/dktypes.h"
+#include "core/ppmem.h"
 
 #define USE_QSORT
 #define DEBUG_CHECK_LIST_BOUNDS
@@ -24,7 +25,7 @@ template< typename T >
 class Array
 {
 public:
-	Array( int newgranularity = 16 );
+	Array(const PPSourceLine& sl, int newgranularity = 16 );
 
 	~Array<T>();
 
@@ -146,18 +147,17 @@ public:
 	void			quickSort(SORTPAIRCOMPAREFUNC comparator, int p, int r);
 
 protected:
-
 	T*				m_pListPtr{ nullptr };
 	int				m_nNumElem{ 0 };
 	int				m_nSize{ 0 };
 	int				m_nGranularity{ 16 };
+	const PPSourceLine m_sl;
 };
 
 template< typename T >
-inline Array<T>::Array( int newgranularity )
+inline Array<T>::Array(const PPSourceLine& sl, int newgranularity ) 
+	: m_sl(sl), m_nGranularity(newgranularity)
 {
-	ASSERT( newgranularity > 0 );
-	m_nGranularity	= newgranularity;
 }
 
 template< typename T >
@@ -336,7 +336,7 @@ inline void Array<T>::resize( int newsize )
 		m_nNumElem = m_nSize;
 
 	// copy the old m_pListPtr into our new one
-	m_pListPtr = new T[ m_nSize ];
+	m_pListPtr = PPNewSL(m_sl) T[ m_nSize ];
 
 	if(temp)
 	{
@@ -980,5 +980,15 @@ inline void shellSort(T* list, int numElems, SORTPAIRCOMPAREFUNC comparator)
 		}
 	}
 }
+
+//-------------------------------------------
+
+// nesting Source-line constructor helper
+template<typename ITEM>
+struct PPSLValueCtor<Array<ITEM>>
+{
+	Array<ITEM> x;
+	PPSLValueCtor<Array<ITEM>>(const PPSourceLine& sl) : x(sl) {}
+};
 
 #endif // ARRAY_H

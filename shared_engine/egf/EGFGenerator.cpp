@@ -257,8 +257,8 @@ void CEGFGenerator::FreeModel( egfcaModel_t& mod )
 //************************************
 dsmmodel_t* CEGFGenerator::ParseAndLoadModels(kvkeybase_t* pKeyBase)
 {
-	Array<EqString> modelfilenames;
-	Array<EqString> shapeByModels;
+	Array<EqString> modelfilenames{ PP_SL };
+	Array<EqString> shapeByModels{ PP_SL };
 
 	if(pKeyBase->values.numElem() > 1)
 	{
@@ -289,7 +289,7 @@ dsmmodel_t* CEGFGenerator::ParseAndLoadModels(kvkeybase_t* pKeyBase)
 	}
 
 	// load the models
-	Array<egfcaModel_t> models;
+	Array<egfcaModel_t> models{ PP_SL };
 
 	for(int i = 0; i < modelfilenames.numElem(); i++)
 	{
@@ -711,7 +711,7 @@ void CEGFGenerator::MergeBones()
 	MsgWarning("\nMerging bones\n");
 
 	// first, load all bones into the single list, as unique
-	Array<dsmskelbone_t*> allBones;
+	Array<dsmskelbone_t*> allBones{ PP_SL };
 
 	for(int i = 0; i < m_modelrefs.numElem(); i++)
 	{

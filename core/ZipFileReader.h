@@ -85,8 +85,8 @@ protected:
 		unz_file_pos pos;
 	};
 
-	Array<CZipFileStream*>	m_openFiles;
-	Map<int, zfileinfo_t>	m_files;
+	Array<CZipFileStream*>	m_openFiles{ PP_SL };
+	Map<int, zfileinfo_t>	m_files{ PP_SL };
 };
 
 #endif // ZIPFILEREADER_H

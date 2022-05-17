@@ -410,7 +410,7 @@ struct shaderProgramText_t
 {
 	char*				text{ nullptr };
 	uint32				checksum{ 0 };
-	Array<EqString>		includes;
+	Array<EqString>		includes{ PP_SL };
 };
 
 struct shaderProgramCompileInfo_t

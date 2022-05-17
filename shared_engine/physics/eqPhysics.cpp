@@ -276,7 +276,7 @@ struct CEqManifoldResult : public btManifoldResult
 		return true;
 	}
 
-	Array<CollisionData_t> m_collisions;
+	Array<CollisionData_t>	m_collisions{ PP_SL };
 	Vector3D				m_center;
 	bool					m_singleSided;
 };
@@ -1347,7 +1347,7 @@ void CEqPhysics::SimulateStep(float deltaTime, int iteration, FNSIMULATECALLBACK
 			contr->Update( m_fDt );
 	}
 	
-	Array<CEqRigidBody*> movingMoveables;
+	Array<CEqRigidBody*> movingMoveables{ PP_SL };
 	movingMoveables.resize(m_moveable.numElem());
 
 	// move all bodies

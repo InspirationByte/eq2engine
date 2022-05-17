@@ -58,7 +58,7 @@ struct ui_event
 	int					uid;
 	EqString			name;
 	uiEventCallback_t	callback { nullptr };
-	Array<EqString>	args;
+	Array<EqString>		args{ PP_SL };
 };
 
 struct ui_transform
@@ -207,9 +207,9 @@ protected:
 
 	IUIControl*					m_parent{ nullptr };
 
-	List<IUIControl*>	m_childs;		// child panels
+	List<IUIControl*>			m_childs;		// child panels
 
-	Array<ui_event>			m_eventCallbacks;
+	Array<ui_event>				m_eventCallbacks{ PP_SL };
 
 	IVector2D					m_position { 0 };
 	IVector2D					m_size { 64 };

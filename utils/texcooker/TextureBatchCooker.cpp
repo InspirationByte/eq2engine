@@ -16,7 +16,6 @@
 #include "imaging/ImageLoader.h"
 #include "imaging/PixWriter.h"
 #include "math/DkMath.h"
-#pragma optimize("", off)
 /*
 
 // Configuration structure
@@ -91,7 +90,7 @@ struct BatchConfig_t
 	EqString compressionApplicationArguments;
 
 	UsageProperties_t defaultUsage{ "default" };
-	Array<UsageProperties_t> usageList;
+	Array<UsageProperties_t> usageList{ PP_SL };
 
 	kvkeybase_t crcSec;			// crc list loaded from disk
 	kvkeybase_t newCRCSec;		// crc list that will be saved
@@ -145,8 +144,8 @@ struct TexInfo_t
 	ETexConvStatus		status{ INIT_STATE };
 };
 
-Array<TexInfo_t*> g_textureList;
-Array<EqString> g_materialList;
+Array<TexInfo_t*> g_textureList{ PP_SL };
+Array<EqString> g_materialList{ PP_SL };
 
 //-----------------------------------------------------------------------
 

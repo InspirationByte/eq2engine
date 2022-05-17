@@ -94,7 +94,7 @@ public:
 	void						Cleanup();
 
 protected:
-	Array<PackerRectangle *>	m_pRectangles;
+	Array<PackerRectangle *>	m_pRectangles{ PP_SL };
 	float						m_padding;
 };
 

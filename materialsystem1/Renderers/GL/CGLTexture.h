@@ -32,7 +32,7 @@ public:
 	// unlocks texture for modifications, etc
 	void					Unlock();
 
-	Array<GLTextureRef_t>	textures;
+	Array<GLTextureRef_t>	textures{ PP_SL };
 
 	float					m_flLod;
 	GLuint					glTarget;

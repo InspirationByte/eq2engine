@@ -140,7 +140,7 @@ struct imageDesc_t
 			delete layers[i].image;
 	}
 
-	Array<imgLayer_t> layers;
+	Array<imgLayer_t> layers{ PP_SL };
 	EqString name;
 };
 
@@ -511,7 +511,7 @@ bool CreateAtlasImage(const Array<imageDesc_t*>& images_list,
 
 void ProcessNewAtlas(const char* atlasPath, const char* pszOutputName)
 {
-	Array<imageDesc_t*> imageList;
+	Array<imageDesc_t*> imageList{ PP_SL };
 
 	KeyValues kvs;
 	if( kvs.LoadFromFile(atlasPath) )

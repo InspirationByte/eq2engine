@@ -95,7 +95,7 @@ private:
 
 	// array of material index for each group
 	IMaterial*			m_materials[MAX_STUDIOMATERIALS];
-	Array<EqString>	m_additionalMotionPackages;
+	Array<EqString>		m_additionalMotionPackages{ PP_SL };
 	BoundingBox			m_aabb;
 	EqString			m_szPath;
 
@@ -155,7 +155,7 @@ public:
 
 private:
 
-	Array<IEqModel*>		m_cachedList;
+	Array<IEqModel*>		m_cachedList{ PP_SL };
 	IVertexFormat*			m_egfFormat;	// vertex format for streams
 };
 

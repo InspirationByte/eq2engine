@@ -130,9 +130,9 @@ public:
 		stream->Read(m_indices.ptr(), hdr.numIndices, sizeof(INDEX_TYPE));
 	}
 
-	Array<Batch>			m_batches;
-	Array<VERTEX_TYPE>		m_vertices;
-	Array<INDEX_TYPE>		m_indices;
+	Array<Batch>			m_batches{ PP_SL };
+	Array<VERTEX_TYPE>		m_vertices{ PP_SL };
+	Array<INDEX_TYPE>		m_indices{ PP_SL };
 };
 
 #endif // MESH_H

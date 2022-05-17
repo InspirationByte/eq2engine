@@ -37,8 +37,8 @@ public:
 	// unlocks texture for modifications, etc
 	void					Unlock();
 
-	Array<LPDIRECT3DBASETEXTURE9>	textures;
-	Array<LPDIRECT3DSURFACE9>		surfaces;
+	Array<LPDIRECT3DBASETEXTURE9>	textures{ PP_SL };
+	Array<LPDIRECT3DSURFACE9>		surfaces{ PP_SL };
 	LPDIRECT3DSURFACE9		m_dummyDepth;
 
 	D3DPOOL					m_pool;

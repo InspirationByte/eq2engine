@@ -466,10 +466,10 @@ bool CEngineStudioEGF::LoadGenerateVertexBuffer()
 	// TODO: this should be optimized by the compiler
 	{
 		// load all group vertices and indices
-		//Array<EGFHwVertex_t>	loadedvertices;
+		//Array<EGFHwVertex_t>	loadedvertices{ PP_SL };
 
-		//Array<uint32>			loadedindices;
-		//Array<uint16>			loadedindices_short;
+		//Array<uint32>			loadedindices{ PP_SL };
+		//Array<uint16>			loadedindices_short{ PP_SL };
 
 		// use index size
 		int nIndexSize = INDEX_SIZE_SHORT;
@@ -998,8 +998,8 @@ tempdecal_t* CEngineStudioEGF::MakeTempDecal(const decalmakeinfo_t& info, Matrix
 	studiohdr_t* pHdr = m_hwdata->studio;
 	int nLod = 0;	// do from LOD 0
 
-	Array<EGFHwVertex_t>	verts;
-	Array<int>				indices;
+	Array<EGFHwVertex_t>	verts{ PP_SL };
+	Array<int>				indices{ PP_SL };
 
 	Matrix4x4* tempMatrixArray = PPAllocStructArray(Matrix4x4, m_hwdata->studio->numBones);
 
@@ -1036,9 +1036,9 @@ tempdecal_t* CEngineStudioEGF::MakeTempDecal(const decalmakeinfo_t& info, Matrix
 
 			uint32* pIndices = pGroup->pVertexIdx(0);
 
-			Array<EGFHwVertex_t>	g_verts;
-			Array<int>				g_indices;
-			Array<int>				g_orig_indices;
+			Array<EGFHwVertex_t>	g_verts{ PP_SL };
+			Array<int>				g_indices{ PP_SL };
+			Array<int>				g_orig_indices{ PP_SL };
 
 			g_verts.resize(pGroup->numIndices);
 			g_indices.resize(pGroup->numIndices);

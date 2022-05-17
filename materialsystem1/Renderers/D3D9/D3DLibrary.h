@@ -64,7 +64,7 @@ protected:
 	void					CheckResetDevice();
 	void					SetupSwapEffect(const shaderAPIParams_t& params);
 
-	Array<IEqSwapChain*>	m_swapChains;
+	Array<IEqSwapChain*>	m_swapChains{ PP_SL };
 
 	HWND					m_hwnd;
 	DISPLAY_DEVICE			m_dispDev;

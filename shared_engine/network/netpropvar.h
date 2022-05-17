@@ -298,7 +298,7 @@ struct netvariablemap_t
 
 #define NETWORK_CHANGELIST(name) m_changeList_##name
 
-#define DECLARE_NETWORK_CHANGELIST(name)	Array<uint>	NETWORK_CHANGELIST(name);
+#define DECLARE_NETWORK_CHANGELIST(name)	Array<uint>	NETWORK_CHANGELIST(name){ PP_SL }
 
 //------------------------------------------------------------------------------------
 

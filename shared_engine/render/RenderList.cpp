@@ -15,7 +15,7 @@
 
 #define MIN_OBJECT_RENDERLIST_MEMSIZE 48
 
-CRenderList::CRenderList() : m_ObjectList(MIN_OBJECT_RENDERLIST_MEMSIZE)
+CRenderList::CRenderList() : m_ObjectList(PP_SL, MIN_OBJECT_RENDERLIST_MEMSIZE)
 {
 
 }

@@ -220,10 +220,10 @@ void CEGFGenerator::WriteGroup(CMemoryStream* stream, dsmgroup_t* srcGroup, esms
 	dstGroup->numIndices = 0;
 	dstGroup->numVertices = srcGroup->verts.numElem();
 
-	Array<studiovertexdesc_t>	gVertexList;
-	Array<studiovertexdesc_t>	gVertexList2;
+	Array<studiovertexdesc_t>	gVertexList{ PP_SL };
+	Array<studiovertexdesc_t>	gVertexList2{ PP_SL };
 
-	Array<int32>				gIndexList;
+	Array<int32>				gIndexList{ PP_SL };
 
 	gVertexList.resize(gVertexList.numElem() + dstGroup->numVertices);
 	gIndexList.resize(gVertexList.numElem() + dstGroup->numVertices);
@@ -311,7 +311,7 @@ void CEGFGenerator::WriteGroup(CMemoryStream* stream, dsmgroup_t* srcGroup, esms
 #ifdef USE_ACTC
 	{
 		// optimize model using ACTC
-		Array<int32>	gOptIndexList;
+		Array<int32>	gOptIndexList{ PP_SL };
 
 		ACTCData* tc;
 

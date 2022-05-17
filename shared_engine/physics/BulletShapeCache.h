@@ -38,7 +38,7 @@ protected:
 	Threading::CEqMutex&		m_mutex;
 
 	// cached shapes
-	Array<btCollisionShape*>	m_collisionShapes;
+	Array<btCollisionShape*>	m_collisionShapes{ PP_SL };
 };
 
 #endif

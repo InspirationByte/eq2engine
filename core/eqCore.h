@@ -58,8 +58,8 @@ private:
 
 	KeyValues*						m_coreConfiguration;
 
-	Array<coreInterface_t>			m_interfaces;
-	Array<CoreExceptionCallback>	m_exceptionCb;
+	Array<coreInterface_t>			m_interfaces{ PP_SL };
+	Array<CoreExceptionCallback>	m_exceptionCb{ PP_SL };
 };
 
 #endif //CDKCORE

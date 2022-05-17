@@ -39,7 +39,7 @@ protected:
 	void				AddArgument(const char* pFirst, const char* pLast);
 
 
-	Array<EqString>		m_args;
+	Array<EqString>		m_args{ PP_SL };
 };
 
 #endif

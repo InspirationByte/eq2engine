@@ -59,11 +59,11 @@ protected:
 	SharedModel::dsmmodel_t*	m_srcModel;
 	kvkeybase_t*				m_physicsParams;
 
-	Array<Vector3D>			m_vertices;			// generated verts
-	Array<int>					m_indices;			// generated indices
-	Array<physgeominfo_t>		m_shapes;			// shapes
-	Array<physNamedObject_t>	m_objects;			// objects that use shapes
-	Array<physjoint_t>			m_joints;			// joints which uses objects
+	Array<Vector3D>				m_vertices{ PP_SL };		// generated verts
+	Array<int>					m_indices{ PP_SL };			// generated indices
+	Array<physgeominfo_t>		m_shapes{ PP_SL };			// shapes
+	Array<physNamedObject_t>	m_objects{ PP_SL };			// objects that use shapes
+	Array<physjoint_t>			m_joints{ PP_SL };			// joints which uses objects
 
 	BoundingBox					m_bbox;
 

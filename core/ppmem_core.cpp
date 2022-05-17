@@ -27,7 +27,6 @@
 #include <malloc.h>
 #include <unordered_map>
 
-
 #if defined(CRT_DEBUG_ENABLED) && defined(_WIN32)
 #define pp_internal_malloc(s)	_malloc_dbg(s, _NORMAL_BLOCK, pszFileName, nLine)
 #else
@@ -72,14 +71,23 @@ DECLARE_CONCOMMAND_FN(ppmemstats)
 	PPMemInfo( fullStats );
 }
 
-typedef std::unordered_map<void*,ppallocinfo_t*>::iterator allocIterator_t;
-
 // allocation map
-static std::unordered_map<void*,ppallocinfo_t*>	s_allocPointerMap;
-static uint										s_allocIdCounter = 0;
-static CEqMutex									g_allocMemMutex;
+using pointer_map = std::unordered_map<const void*, ppallocinfo_t*>;
+using source_map = std::unordered_map<const char*, const char*>;
 
-static bool g_enablePPMem = false;
+struct ppmem_state_t
+{
+	source_map sourceFileNameMap;
+	pointer_map allocPointerMap;
+	uint allocIdCounter = 0;
+	CEqMutex allocMemMutex;
+};
+
+ppmem_state_t& PPGetState()
+{
+	static ppmem_state_t st;
+	return st;
+}
 
 static ConCommand	ppmem_stats("ppmem_stats",CONCOMMAND_FN(ppmemstats), "Memory info",CV_UNREGISTERED);
 static ConVar		ppmem_break_on_alloc("ppmem_break_on_alloc", "-1", "Helps to catch allocation id at stack trace",CV_UNREGISTERED);
@@ -111,15 +119,8 @@ int EqAllocHook( int allocType, void *userData, size_t size, int blockType, long
 
 void PPMemInit()
 {
-	int idxEnablePpmem = g_cmdLine->FindArgument("-memdebug");
-
-	g_enablePPMem = (idxEnablePpmem != -1);
-
-	if(g_enablePPMem)
-	{
-		g_consoleCommands->RegisterCommand(&ppmem_stats);
-		g_consoleCommands->RegisterCommand(&ppmem_break_on_alloc);
-	}
+	g_consoleCommands->RegisterCommand(&ppmem_stats);
+	g_consoleCommands->RegisterCommand(&ppmem_break_on_alloc);
 
 #if defined(CRT_DEBUG_ENABLED) && defined(_WIN32)
 	g_consoleCommands->RegisterCommand(&cmd_crtdebug_break_alloc);
@@ -132,9 +133,6 @@ void PPMemInit()
 
 void PPMemShutdown()
 {
-	if(!g_enablePPMem)
-		return;
-
     g_consoleCommands->UnregisterCommand(&ppmem_stats);
     g_consoleCommands->UnregisterCommand(&ppmem_break_on_alloc);
 
@@ -146,24 +144,24 @@ void PPMemShutdown()
 // Printing the statistics and tracked memory usage
 void PPMemInfo( bool fullStats )
 {
-	if(!g_enablePPMem)
-		return;
+	ppmem_state_t& st = PPGetState();
 
-	CScopedMutex m(g_allocMemMutex);
+	CScopedMutex m(st.allocMemMutex);
 
 	size_t totalUsage = 0;
 	size_t numErrors = 0;
 
-	for(allocIterator_t iterator = s_allocPointerMap.begin(); iterator != s_allocPointerMap.end(); iterator++)
+	std::unordered_map<uint64, int> allocCounter;
+
+	for(auto it = st.allocPointerMap.begin(); it != st.allocPointerMap.end(); ++it)
 	{
-		ppallocinfo_t* alloc = iterator->second;
-		void* curPtr = iterator->first;
+		ppallocinfo_t* alloc = it->second;
+		const void* curPtr = it->first;
 
 		totalUsage += alloc->size;
 	
 		if(fullStats)
 		{
-
 #ifdef PPMEM_DEBUG_TAGS
 
 #	ifdef PPMEM_EXTRA_DEBUGINFO
@@ -175,14 +173,12 @@ void PPMemInfo( bool fullStats )
 #else
 
 #	ifdef PPMEM_EXTRA_DEBUGINFO
-			MsgInfo("alloc id=%d, src='%s:%d', ptr=%p, size=%d\n", alloc->id, alloc->sl.GetFileName(), alloc->sl.GetLine(), curPtr, alloc->size);
+			MsgInfo("alloc id=%d, src='%s:%d', ptr=%p, size=%d\n", alloc->id, st.sourceFileNameMap[alloc->sl.GetFileName()], alloc->sl.GetLine(), curPtr, alloc->size);
 #	else
 			MsgInfo("alloc id=%d, ptr=%p, size=%d\n", alloc->id, curPtr, alloc->size);
 #	endif
 
 #endif // PPMEM_DEBUG_TAGS
-
-
 
 			uint* checkMark = (uint*)((ubyte*)curPtr + alloc->size);
 
@@ -199,9 +195,23 @@ void PPMemInfo( bool fullStats )
 			if(alloc->checkMark != PPMEM_CHECKMARK || *checkMark != PPMEM_CHECKMARK)
 				numErrors++;
 		}
+
+#ifdef PPMEM_EXTRA_DEBUGINFO
+		if (!allocCounter.count(alloc->sl.data))
+			allocCounter[alloc->sl.data] = 0;
+		allocCounter[alloc->sl.data]++;
+#endif // PPMEM_EXTRA_DEBUGINFO
 	}
 
-	uint allocCount = s_allocPointerMap.size();
+#ifdef PPMEM_EXTRA_DEBUGINFO
+	for (auto it = allocCounter.begin(); it != allocCounter.end(); it++)
+	{
+		const PPSourceLine sl = *(PPSourceLine*)&it->first;
+		MsgInfo("'%s:%d' count: %d\n", st.sourceFileNameMap[sl.GetFileName()], sl.GetLine(), it->second);
+	}
+#endif // PPMEM_EXTRA_DEBUGINFO
+
+	uint allocCount = st.allocPointerMap.size();
 
 	MsgInfo("--- of %u allocactions, total usage: %.2f MB\n", allocCount, (totalUsage / 1024.0f) / 1024.0f);
 
@@ -216,34 +226,38 @@ ppallocinfo_t* FindAllocation( void* ptr, bool& isValidInputPtr )
 		isValidInputPtr = false;
 		return NULL;
 	}
+	ppmem_state_t& st = PPGetState();
+	CScopedMutex m(st.allocMemMutex);
 
-	CScopedMutex m(g_allocMemMutex);
+	auto it = st.allocPointerMap.find(ptr);
 
-	allocIterator_t it = s_allocPointerMap.find(ptr);
-
-	if(it != s_allocPointerMap.end())
+	if(it != st.allocPointerMap.end())
 	{
 		isValidInputPtr = true;
 		return it->second;
 	}
+#if 0
 	else // try find the valid allocation in range
 	{
 		isValidInputPtr = false;
-
-		for(allocIterator_t iterator = s_allocPointerMap.begin(); iterator != s_allocPointerMap.end(); iterator++)
+		int n = 0;
+		for(auto it = s_allocPointerMap.begin(); it != s_allocPointerMap.end(); ++it)
 		{
-			if(iterator->second == NULL)
-				continue;
-
-			ppallocinfo_t* curAlloc = iterator->second;
-			void* curPtr = iterator->first;
+			ppallocinfo_t* curAlloc = it->second;
+			const void* curPtr = it->first;
 
 			// if it's in range
-			if(ptr >= curPtr && ptr <= (ubyte*)curPtr + curAlloc->size )
+			if (ptr >= curAlloc && ptr <= (ubyte*)curPtr + curAlloc->size)
+			{
+				const intptr_t ptrDiff = abs((ubyte*)ptr - (ubyte*)curPtr);
+				ASSERT_FAIL("PPFree: Given pointer is invalid but alloc was found.\n%x vs %x, diff %d", ptr, curPtr, ptrDiff);
+
 				return curAlloc; // return this allocation
+			}
+			n++;
 		}
 	}
-
+#endif
 	return nullptr;
 }
 
@@ -255,42 +269,38 @@ void* PPDAlloc(size_t size, const PPSourceLine& sl, const char* debugTAG)
 	ASSERT_MSG(mem, "No mem left");
 	return mem;
 #else
-
-	if (!g_enablePPMem)
-	{
-		void* mem = pp_internal_malloc(size);
-		ASSERT_MSG(mem, "No mem left");
-		return mem;
-	}
-
+	ppmem_state_t& st = PPGetState();
 	// allocate more to store extra information of this
 	ppallocinfo_t* alloc = (ppallocinfo_t*)pp_internal_malloc(sizeof(ppallocinfo_t) + size + sizeof(uint));
-	ASSERT_MSG(alloc, "No mem left");
-
-	alloc->sl = sl;
-	alloc->size = size;
-	alloc->id = s_allocIdCounter++;
-
-#ifdef PPMEM_DEBUG_TAGS
-	// extra visibility via CRT debug output
-	if(!debugTAG)
-		strncpy(alloc->tag, EqString::Format("ppalloc_%d", s_allocIdCounter).ToCString(), PPMEM_DEBUG_TAG_MAX);
-	else
-		strncpy(alloc->tag, debugTAG, PPMEM_DEBUG_TAG_MAX);
-#endif // PPMEM_DEBUG_TAGS
+	ASSERT_MSG(alloc, "alloc: no mem left");
 
 	// actual pointer address
 	void* actualPtr = ((ubyte*)alloc) + sizeof(ppallocinfo_t);
-
 	uint* checkMark = (uint*)((ubyte*)actualPtr + size);
 
-	// begin and end mark for checking
-	alloc->checkMark = PPMEM_CHECKMARK;
-	*checkMark = PPMEM_CHECKMARK;
+	{
+		alloc->sl = sl;
+		alloc->size = size;
+		alloc->id = st.allocIdCounter++;
 
-	g_allocMemMutex.Lock();
-	s_allocPointerMap[actualPtr] = alloc;	// store pointer in global map
-	g_allocMemMutex.Unlock();
+		alloc->checkMark = PPMEM_CHECKMARK;
+		*checkMark = PPMEM_CHECKMARK;
+
+#ifdef PPMEM_DEBUG_TAGS
+		// extra visibility via CRT debug output
+		if (!debugTAG)
+			strncpy(alloc->tag, EqString::Format("ppalloc_%d", s_allocIdCounter).ToCString(), PPMEM_DEBUG_TAG_MAX);
+		else
+			strncpy(alloc->tag, debugTAG, PPMEM_DEBUG_TAG_MAX);
+#endif // PPMEM_DEBUG_TAGS
+	}
+
+	if(!st.sourceFileNameMap.count(sl.GetFileName()))
+		st.sourceFileNameMap[sl.GetFileName()] = strdup(sl.GetFileName());
+
+	st.allocMemMutex.Lock();
+	st.allocPointerMap[actualPtr] = alloc;	// store pointer in global map
+	st.allocMemMutex.Unlock();
 
 	if( ppmem_break_on_alloc.GetInt() != -1)
 		ASSERT_MSG(alloc->id == (uint)ppmem_break_on_alloc.GetInt(), EqString::Format("PPDAlloc: Break on allocation id=%d", alloc->id).ToCString());
@@ -305,48 +315,50 @@ void* PPDReAlloc( void* ptr, size_t size, const PPSourceLine& sl, const char* de
 #ifdef PPMEM_DISABLE
 	return realloc(ptr, size);
 #else
-	if(!g_enablePPMem)
-		return realloc(ptr, size);
+	void* retPtr = nullptr;
 
-	bool isValid = false;
-	ppallocinfo_t* alloc = FindAllocation(ptr, isValid);
-
-	if(alloc)
 	{
-		int ptrDiff = (ubyte*)ptr - ((ubyte*)alloc);
-		ASSERT_MSG(isValid, EqString::Format("PPDReAlloc: Given pointer is invalid but allocation was found in the range.\nOffset is %d bytes.", ptrDiff).ToCString());
+		ppmem_state_t& st = PPGetState();
+		CScopedMutex m(st.allocMemMutex);
 
-		void* oldPtr = ((ubyte*)alloc) + sizeof(ppallocinfo_t);
+		const auto it = st.allocPointerMap.find(ptr);
 
-		g_allocMemMutex.Lock();
-		s_allocPointerMap.erase(oldPtr);
-		g_allocMemMutex.Unlock();
+		if (it == st.allocPointerMap.end())
+		{
+			return PPDAlloc(size, sl, debugTAG);
+		}
 
-		alloc = (ppallocinfo_t*)realloc(alloc, sizeof(ppallocinfo_t) + size + sizeof(uint));
-
-		ASSERT_MSG(alloc != nullptr, "PPDReAlloc: NULL pointer after realloc!");
-
-		// set new size
-		alloc->size = size;
-		alloc->sl = sl;
+		ppallocinfo_t* alloc = (ppallocinfo_t*)realloc(it->second, sizeof(ppallocinfo_t) + size + sizeof(uint));
+		ASSERT_MSG(alloc, "realloc: no mem left!");
 
 		// actual pointer address
-		void* actualPtr = ((ubyte*)alloc) + sizeof(ppallocinfo_t);
+		retPtr = ((ubyte*)alloc) + sizeof(ppallocinfo_t);
+		uint* checkMark = (uint*)((ubyte*)retPtr + size);
 
-		uint* checkMark = (uint*)((ubyte*)actualPtr + size);
+		st.allocPointerMap[retPtr] = alloc;
+		if(retPtr != ptr)
+			st.allocPointerMap.erase(it);
 
-		// store pointer in global map
-		g_allocMemMutex.Lock();
-		s_allocPointerMap[actualPtr] = alloc;
-		g_allocMemMutex.Unlock();
+		{
+			alloc->sl = sl;
+			alloc->size = size;
+			alloc->id = st.allocIdCounter++;
 
-		// reset end mark for checking
-		*checkMark = PPMEM_CHECKMARK;
+			alloc->checkMark = PPMEM_CHECKMARK;
+			*checkMark = PPMEM_CHECKMARK;
 
-		return actualPtr;
+#ifdef PPMEM_DEBUG_TAGS
+			// extra visibility via CRT debug output
+			if (!debugTAG)
+				strncpy(alloc->tag, EqString::Format("ppalloc_%d", s_allocIdCounter).ToCString(), PPMEM_DEBUG_TAG_MAX);
+			else
+				strncpy(alloc->tag, debugTAG, PPMEM_DEBUG_TAG_MAX);
+#endif // PPMEM_DEBUG_TAGS
+		}
 	}
-	else
-		return PPDAlloc(size, sl, debugTAG);
+
+
+	return retPtr;
 #endif // PPMEM_DISABLE
 }
 
@@ -355,40 +367,33 @@ void PPFree(void* ptr)
 #ifdef PPMEM_DISABLE
 	free(ptr);
 #else
-	if (!g_enablePPMem)
-	{
-		free(ptr);
-		return;
-	}
-		
 
 	if(ptr == nullptr)
 		return;
 
-	bool isValid = false;
-	ppallocinfo_t* alloc = FindAllocation(ptr, isValid);
-
-	if(alloc)
 	{
-		int ptrDiff = (ubyte*)ptr - ((ubyte*)alloc);
-		ASSERT_MSG(isValid, EqString::Format("PPFree: Given pointer is invalid but allocation was found in the range.\nOffset is %d bytes.", ptrDiff).ToCString());
+		ppmem_state_t& st = PPGetState();
+		CScopedMutex m(st.allocMemMutex);
+
+		const auto it = st.allocPointerMap.find(ptr);
+
+		if (it == st.allocPointerMap.end())
+		{
+			free(ptr);
+			return;
+		}
+
+		ppallocinfo_t* alloc = it->second;
 
 		// actual pointer address
-		void* actualPtr = ((ubyte*)alloc) + sizeof(ppallocinfo_t);
-		uint* checkMark = (uint*)((ubyte*)actualPtr + alloc->size);
+		const void* actualPtr = ((ubyte*)alloc) + sizeof(ppallocinfo_t);
+		const uint* checkMark = (uint*)((ubyte*)actualPtr + alloc->size);
 
 		ASSERT_MSG(alloc->checkMark == PPMEM_CHECKMARK, "PPCheck: memory is invalid (was outranged before)");
 		ASSERT_MSG(*checkMark == PPMEM_CHECKMARK, "PPCheck: memory is invalid (was outranged after)");
 
 		free(alloc);
-
-		g_allocMemMutex.Lock();
-		s_allocPointerMap.erase(actualPtr);
-		g_allocMemMutex.Unlock();
-	}
-	else
-	{
-		free(ptr);
+		st.allocPointerMap.erase(it);
 	}
 #endif // PPMEM_DISABLE
 }

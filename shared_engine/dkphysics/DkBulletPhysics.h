@@ -155,13 +155,13 @@ private:
 
 	btSoftBodyRigidBodyCollisionConfiguration*	m_collisionConfiguration;
 
-	Array <IPhysicsObject*>					m_pPhysicsObjectList;
-	Array <IPhysicsJoint*>						m_pJointList;
-	Array <IPhysicsRope*>						m_pRopeList;
+	Array <IPhysicsObject*>						m_pPhysicsObjectList{ PP_SL };
+	Array <IPhysicsJoint*>						m_pJointList{ PP_SL };
+	Array <IPhysicsRope*>						m_pRopeList{ PP_SL };
 
-	Array <btCollisionShape*>					m_collisionShapes;
-	Array <phySurfaceMaterial_t*>				m_physicsMaterialDesc;
-	Array <btTriangleIndexVertexArray*>		m_triangleMeshes;
+	Array <btCollisionShape*>					m_collisionShapes{ PP_SL };
+	Array <phySurfaceMaterial_t*>				m_physicsMaterialDesc{ PP_SL };
+	Array <btTriangleIndexVertexArray*>			m_triangleMeshes{ PP_SL };
 
 	int											m_nSceneSize;
 

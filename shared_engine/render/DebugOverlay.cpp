@@ -149,15 +149,19 @@ void DrawOrientedBox(const Vector3D& position, const Vector3D& mins, const Vecto
 }
 
 CDebugOverlay::CDebugOverlay() :
-	m_TextArray(64),
-	m_Text3DArray(32),
-	m_RightTextFadeArray(32),
-	m_BoxList(32),
-	m_LineList(32),
-	m_FastBoxList(128),
-	m_FastLineList(128),
-	m_graphbuckets(4),
-	m_polygons(128),
+	m_TextArray(PP_SL, 64),
+	m_Text3DArray(PP_SL, 32),
+	m_RightTextFadeArray(PP_SL, 32),
+	m_BoxList(PP_SL, 32),
+	m_LineList(PP_SL, 32),
+	m_SphereList(PP_SL, 32),
+	m_FastBoxList(PP_SL, 128),
+	m_FastLineList(PP_SL, 128),
+	m_FastSphereList(PP_SL, 32),
+	m_graphbuckets(PP_SL, 4),
+	m_polygons(PP_SL, 128),
+	m_draw2DFuncs(PP_SL),
+	m_draw3DFuncs(PP_SL),
 	m_frameTime(0.0f)
 {
 	m_pDebugFont = NULL;

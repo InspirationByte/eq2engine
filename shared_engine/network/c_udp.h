@@ -103,8 +103,8 @@ private:
 	};
 
 	// messages are not limited, but they are splitted
-	Array<cdp_queued_message_t*> 	m_pMessageQueue;
-	Array<cdp_receive_msgid_t>		m_receivedIds;
+	Array<cdp_queued_message_t*> 	m_pMessageQueue{ PP_SL };
+	Array<cdp_receive_msgid_t>		m_receivedIds{ PP_SL };
 
 	int								m_nMessageIDInc;
 

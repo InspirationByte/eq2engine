@@ -129,7 +129,7 @@ private:
 	Array<DebugTextNode_t>			m_TextArray;
 	Array<DebugText3DNode_t>		m_Text3DArray;
 
-	List<DebugFadingTextNode_t>	m_LeftTextFadeArray;
+	List<DebugFadingTextNode_t>		m_LeftTextFadeArray;
 	Array<DebugFadingTextNode_t>	m_RightTextFadeArray;
 
 	Array<DebugBoxNode_t>			m_BoxList;

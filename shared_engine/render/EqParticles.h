@@ -157,7 +157,7 @@ protected:
 
 	Threading::CEqMutex&			m_mutex;
 
-	Array<CParticleRenderGroup*>	m_renderGroups;
+	Array<CParticleRenderGroup*>	m_renderGroups{ PP_SL };
 
 	IVertexBuffer*					m_vertexBuffer;
 	IIndexBuffer*					m_indexBuffer;

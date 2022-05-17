@@ -378,7 +378,7 @@ bool CGLRenderLib::InitAPI(const shaderAPIParams_t& params)
 	int nModes;
     XF86VidModeGetAllModeLines(m_display, m_screen, &nModes, &m_dmodes);
 
-	Array<DispRes> modes;
+	Array<DispRes> modes{ PP_SL };
 
 	char str[64];
 	int foundMode = -1;

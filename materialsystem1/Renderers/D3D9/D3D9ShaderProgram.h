@@ -62,8 +62,8 @@ protected:
 	ID3DXConstantTable*			m_pVSConstants;
 	ID3DXConstantTable*			m_pPSConstants;
 
-	Map<int, DX9ShaderConstant_t>	m_constants;
-	Map<int, DX9Sampler_t>			m_samplers;
+	Map<int, DX9ShaderConstant_t>	m_constants{ PP_SL };
+	Map<int, DX9Sampler_t>			m_samplers{ PP_SL };
 };
 
 #endif //D3D9SHADERPROGRAM_H

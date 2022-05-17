@@ -83,9 +83,9 @@ private:
 
 	void								SortCommands();
 
-	Array<ConCommandBase*>	m_registeredCommands;
+	Array<ConCommandBase*>	m_registeredCommands{ PP_SL };
 
-	Array<EqString>		m_failedCommands;
+	Array<EqString>			m_failedCommands{ PP_SL };
 
 	char					m_currentCommands[COMMANDBUFFER_SIZE];
 	char					m_lastExecutedCommands[COMMANDBUFFER_SIZE];

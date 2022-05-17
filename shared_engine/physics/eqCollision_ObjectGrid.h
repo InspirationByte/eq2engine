@@ -21,8 +21,8 @@ struct collgridcell_t
 	short	x,y;
 	float	cellBoundUsed;	// unsigned z of usage by static objects
 
-	Array<CEqCollisionObject*>		m_gridObjects;
-	Array<CEqCollisionObject*>		m_dynamicObjs;
+	Array<CEqCollisionObject*>		m_gridObjects{ PP_SL };
+	Array<CEqCollisionObject*>		m_dynamicObjs{ PP_SL };
 };
 
 class CEqCollisionBroadphaseGrid

@@ -205,34 +205,34 @@ protected:
 	ShaderAPICaps_t						m_caps;
 
 	// Shader list
-	Map<int, IShaderProgram*>			m_ShaderList;
+	Map<int, IShaderProgram*>			m_ShaderList{ PP_SL };
 
 	// Loaded textures list
-	Map<int, ITexture*>					m_TextureList;
+	Map<int, ITexture*>					m_TextureList{ PP_SL };
 
 	// List of dynamically added sampler states
-	Array<IRenderState*>				m_SamplerStates;
+	Array<IRenderState*>				m_SamplerStates{ PP_SL };
 
 	// List of dynamically added blending states
-	Array<IRenderState*>				m_BlendStates;
+	Array<IRenderState*>				m_BlendStates{ PP_SL };
 
 	// List of dynamically added depth states
-	Array<IRenderState*>				m_DepthStates;
+	Array<IRenderState*>				m_DepthStates{ PP_SL };
 
 	// List of dynamically added rasterizer states
-	Array<IRenderState*>				m_RasterizerStates;
+	Array<IRenderState*>				m_RasterizerStates{ PP_SL };
 
 	// occlusion queries
-	Array<IOcclusionQuery*>				m_OcclusionQueryList;
+	Array<IOcclusionQuery*>				m_OcclusionQueryList{ PP_SL };
 
 	// Aviable vertex formats
-	Array<IVertexFormat*>				m_VFList;
+	Array<IVertexFormat*>				m_VFList{ PP_SL };
 
 	// Aviable vertex buffers
-	Array<IVertexBuffer*>				m_VBList;
+	Array<IVertexBuffer*>				m_VBList{ PP_SL };
 
 	// Aviable index buffers
-	Array<IIndexBuffer*>				m_IBList;
+	Array<IIndexBuffer*>				m_IBList{ PP_SL };
 
 	// Current shader
 	IShaderProgram*						m_pCurrentShader;

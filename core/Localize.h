@@ -39,8 +39,7 @@ private:
 class CLocalize : public ILocalize
 {
 public:
-						CLocalize() {}
-						~CLocalize() {}
+	CLocalize() = default;
 
 	void				Init();
 	void				Shutdown();
@@ -60,7 +59,7 @@ public:
 private:
 	const ILocToken*	_FindToken( const char* pszToken ) const;
 
-	Map<int,CLocToken>	m_tokens;
+	Map<int,CLocToken>	m_tokens{ PP_SL };
 	EqString			m_language;
 };
 

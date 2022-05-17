@@ -38,7 +38,7 @@ struct eqFontStyleInfo_t
 struct eqFontFamily_t
 {
 	EqString										name;		// TODO: use string hashes
-	Array<eqFontsInternal::eqFontStyleInfo_t*>		sizeTable;
+	Array<eqFontsInternal::eqFontStyleInfo_t*>		sizeTable{ PP_SL };
 
 	IEqFont*	FindBestSize(int bestSize, int styleFlags = TEXT_STYLE_REGULAR);
 };
@@ -68,7 +68,7 @@ protected:
 
 	bool					LoadFontDescriptionFile( const char* filename );
 
-	Array<eqFontFamily_t*>	m_fonts;
+	Array<eqFontFamily_t*>	m_fonts{ PP_SL };
 	eqFontFamily_t*			m_defaultFont;
 
 	IMaterial*				m_sdfMaterial;

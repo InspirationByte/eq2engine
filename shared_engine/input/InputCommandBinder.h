@@ -152,14 +152,14 @@ protected:
 
 	axisAction_t*			FindAxisAction(const char* name);
 
-	Array<int>						m_currentButtons;	// current keyboard buttons
+	Array<int>				m_currentButtons{ PP_SL };	// current keyboard buttons
 
-	Array<in_binding_t*>			m_bindings;
+	Array<in_binding_t*>	m_bindings{ PP_SL };
 
-	Array<in_touchzone_t>			m_touchZones;
-	Array<axisAction_t>			m_axisActs;
+	Array<in_touchzone_t>	m_touchZones{ PP_SL };
+	Array<axisAction_t>		m_axisActs{ PP_SL };
 
-	bool							m_init;
+	bool					m_init;
 };
 
 bool UTIL_GetBindingKeyIndices(int outKeys[3], const char* pszKeyStr);

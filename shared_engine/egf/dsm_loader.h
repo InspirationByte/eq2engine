@@ -36,7 +36,7 @@ struct dsmvertex_t
 	Vector2D			texcoord;
 
 	//int				numWeights; // 0 means no bone connected
-	Array<dsmweight_t>	weights;
+	Array<dsmweight_t>	weights{ PP_SL };
 
 	int					vertexId;
 };
@@ -49,8 +49,8 @@ struct dsmgroup_t
 	};
 
 	char					texture[256];
-	Array<dsmvertex_t>		verts;
-	Array<int>				indices;
+	Array<dsmvertex_t>		verts{ PP_SL };
+	Array<int>				indices{ PP_SL };
 };
 
 struct dsmskelbone_t
@@ -69,9 +69,9 @@ struct dsmmodel_t
 {
 	char					name[64];
 
-	Array<dsmgroup_t*>		groups;
+	Array<dsmgroup_t*>		groups{ PP_SL };
 
-	Array<dsmskelbone_t*>	bones;
+	Array<dsmskelbone_t*>	bones{ PP_SL };
 
 	dsmskelbone_t*			FindBone(const char* pszName);
 

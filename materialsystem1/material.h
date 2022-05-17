@@ -75,8 +75,8 @@ protected:
 	EqString				m_szMaterialName;
 	EqString				m_szShaderName;
 
-	Array<CMatVar*>			m_variables;
-	Array<IMaterialProxy*>	m_proxies;
+	Array<CMatVar*>			m_variables{ PP_SL };
+	Array<IMaterialProxy*>	m_proxies{ PP_SL };
 
 	CTextureAtlas*			m_atlas;
 	Threading::CEqMutex&	m_Mutex;

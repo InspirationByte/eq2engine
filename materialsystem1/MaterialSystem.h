@@ -35,13 +35,13 @@
 
 struct proxyfactory_t
 {
-	char* name;
+	EqString name;
 	PROXY_DISPATCHER disp;
 };
 
 struct shaderoverride_t
 {
-	char* shadername;
+	EqString shadername;
 	DISPATCH_OVERRIDE_SHADER	function;
 };
 
@@ -318,22 +318,22 @@ private:
 	EqString						m_materialsPath;			// material path
 	EqString						m_materialsSRCPath;			// material sources path
 
-	Array<DKMODULE*>				m_shaderLibs;				// loaded shader libraries
+	Array<DKMODULE*>				m_shaderLibs{ PP_SL };				// loaded shader libraries
 
-	Array<shaderfactory_t>			m_shaderFactoryList;		// registered shaders
-	Array<shaderoverride_t>			m_shaderOverrideList;		// shader override functors
-	Array<proxyfactory_t>			m_proxyFactoryList;
+	Array<shaderfactory_t>			m_shaderFactoryList{ PP_SL };		// registered shaders
+	Array<shaderoverride_t>			m_shaderOverrideList{ PP_SL };		// shader override functors
+	Array<proxyfactory_t>			m_proxyFactoryList{ PP_SL };
 
-	Map<int, IMaterial*>			m_loadedMaterials;			// loaded material list
+	Map<int, IMaterial*>			m_loadedMaterials{ PP_SL };			// loaded material list
 	ER_CullMode						m_cullMode;					// culling mode. For shaders. TODO: remove, and check matrix handedness.
 
 	CDynamicMesh					m_dynamicMesh;
 
 	//-------------------------------------------------------------------------
 
-	Map<ushort, IRenderState*>		m_blendStates;
-	Map<ushort, IRenderState*>		m_depthStates;
-	Map<ushort, IRenderState*>		m_rasterStates;
+	Map<ushort, IRenderState*>		m_blendStates{ PP_SL };
+	Map<ushort, IRenderState*>		m_depthStates{ PP_SL };
+	Map<ushort, IRenderState*>		m_rasterStates{ PP_SL };
 
 	IMaterialRenderParamCallbacks*	m_preApplyCallback;
 
@@ -348,8 +348,8 @@ private:
 
 	ITexture*						m_currentEnvmapTexture;
 
-	Array<DEVLICELOSTRESTORE>		m_lostDeviceCb;
-	Array<DEVLICELOSTRESTORE>		m_restoreDeviceCb;
+	Array<DEVLICELOSTRESTORE>		m_lostDeviceCb{ PP_SL };
+	Array<DEVLICELOSTRESTORE>		m_restoreDeviceCb{ PP_SL };
 
 	ITexture*						m_whiteTexture;
 	ITexture*						m_luxelTestTexture;

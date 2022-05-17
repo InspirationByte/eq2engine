@@ -184,7 +184,7 @@ bool CGLRenderLib_ES::InitAPI(const shaderAPIParams_t& params)
 			return false;
 		}
 
-		Array<EGLConfig> configList;
+		Array<EGLConfig> configList{ PP_SL };
 		configList.setNum(numOfConfigs);
 
 		EGLint configNumber = 0;

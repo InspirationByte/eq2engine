@@ -36,11 +36,11 @@ public:
 
 // protected:
 
-	Array<ID3D10ShaderResourceView*>	srv;
-	Array<ID3D10RenderTargetView*>		rtv;
-	Array<ID3D10DepthStencilView*>		dsv;
+	Array<ID3D10ShaderResourceView*>	srv{ PP_SL };
+	Array<ID3D10RenderTargetView*>		rtv{ PP_SL };
+	Array<ID3D10DepthStencilView*>		dsv{ PP_SL };
 
-	Array<ID3D10Resource*>				textures;
+	Array<ID3D10Resource*>				textures{ PP_SL };
 
 	IRenderState*						m_pD3D10SamplerState;
 

@@ -129,7 +129,7 @@ public:
 	}
 
 protected:
-	Array<IMaterial*>	m_newMaterials;
+	Array<IMaterial*>	m_newMaterials{ PP_SL };
 
 	CEqMutex			m_Mutex;
 };
@@ -375,7 +375,7 @@ void CMaterialSystem::CreateWhiteTexture()
 
 	SamplerStateParam_t texSamplerParams = g_pShaderAPI->MakeSamplerState(TEXFILTER_TRILINEAR_ANISO,TEXADDRESS_CLAMP,TEXADDRESS_CLAMP,TEXADDRESS_CLAMP);
 
-	Array<CImage*> images;
+	Array<CImage*> images{ PP_SL };
 	images.append(img);
 
 	m_whiteTexture = g_pShaderAPI->CreateTexture(images, texSamplerParams, TEXFLAG_NOQUALITYLOD);
@@ -612,7 +612,7 @@ void CMaterialSystem::ReloadAllMaterials()
 {
 	CScopedMutex m(m_Mutex);
 
-	Array<IMaterial*> loadingList;
+	Array<IMaterial*> loadingList{ PP_SL };
 
 	for (auto it = m_loadedMaterials.begin(); it != m_loadedMaterials.end(); ++it)
 	{
@@ -707,7 +707,7 @@ void CMaterialSystem::FreeMaterial(IMaterial *pMaterial)
 void CMaterialSystem::RegisterProxy(PROXY_DISPATCHER dispfunc, const char* pszName)
 {
 	proxyfactory_t factory;
-	factory.name = xstrdup(pszName);
+	factory.name = pszName;
 	factory.disp = dispfunc;
 
 	m_proxyFactoryList.append(factory);
@@ -751,7 +751,7 @@ void CMaterialSystem::RegisterShader(const char* pszShaderName, DISPATCH_CREATE_
 void CMaterialSystem::RegisterShaderOverrideFunction(const char* shaderName, DISPATCH_OVERRIDE_SHADER check_function)
 {
 	shaderoverride_t new_override;
-	new_override.shadername = xstrdup(shaderName);
+	new_override.shadername = shaderName;
 	new_override.function = check_function;
 
 	// this is a higher priority

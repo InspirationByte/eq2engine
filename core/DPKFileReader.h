@@ -82,7 +82,7 @@ protected:
 	dpkfileinfo_t			m_info;
 	IceKey					m_ice;
 
-	Array<dpkblock_info_t>	m_blockInfo;
+	Array<dpkblock_info_t>	m_blockInfo{ PP_SL };
 	int						m_curBlockIdx;
 
 	FILE*					m_handle;
@@ -111,9 +111,9 @@ protected:
 
 	dpkheader_t				m_header;
 	dpkfileinfo_t*			m_dpkFiles;
-	Map<int, int>			m_fileIndices;
+	Map<int, int>			m_fileIndices{ PP_SL };
 
-	Array<CDPKFileStream*>	m_openFiles;
+	Array<CDPKFileStream*>	m_openFiles{ PP_SL };
 };
 
 #endif //DPK_FILE_READER_H

@@ -152,7 +152,7 @@ struct mtriangle_t
 	medge_t					edges[3];
 	mtriangle_t*			edge_connections[3];	// adjacent triangles
 
-	Array<mtriangle_t*>	index_connections;
+	Array<mtriangle_t*>	index_connections{ PP_SL };
 };
 
 //-------------------------------------------------------------------------
@@ -207,7 +207,7 @@ protected:
 																		int vert_stride, 
 																		int vert_ofs);
 
-	Array<mtriangle_t>		m_triangleList;
+	Array<mtriangle_t>		m_triangleList{ PP_SL };
 };
 
 }; // namespace AdjacentTriangles
