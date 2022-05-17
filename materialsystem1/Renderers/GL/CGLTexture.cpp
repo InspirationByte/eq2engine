@@ -122,7 +122,7 @@ void CGLTexture::Lock(texlockdata_t* pLockData, Rectangle_t* pRect, bool bDiscar
 	int nLockByteCount = GetBytesPerPixel(m_iFormat) * sizeToLock;
 
 	// allocate memory for lock data
-	m_lockPtr = (ubyte*)malloc(nLockByteCount);
+	m_lockPtr = (ubyte*)PPAlloc(nLockByteCount);
 
 	pLockData->pData = m_lockPtr;
 	pLockData->nPitch = lock_rect.GetSize().y;
@@ -173,7 +173,7 @@ void CGLTexture::Unlock()
 			glBindTexture(glTarget, 0);
 		}
 
-		free(m_lockPtr);
+		PPFree(m_lockPtr);
 		m_lockPtr = NULL;
 	}
 	else

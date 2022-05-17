@@ -26,12 +26,12 @@ public:
 		nComponents = nComp;
 		count = 0;
 
-		curr = mem = (unsigned char *) malloc(capasity * (sizeof(KdNode <TYPE>) + nComp * sizeof(TYPE)));
+		curr = mem = (unsigned char *) PPAlloc(capasity * (sizeof(KdNode <TYPE>) + nComp * sizeof(TYPE)));
 	}
 
 	~KdTree()
 	{
-		free(mem);
+		PPFree(mem);
 	}
 
 	unsigned int addUnique(const TYPE *point)

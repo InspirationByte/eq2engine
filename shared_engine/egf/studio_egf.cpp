@@ -1232,7 +1232,7 @@ const char* CStudioModelCache::GetModelFilename(IEqModel* pModel) const
 
 int CStudioModelCache::GetModelIndex(const char* modelName) const
 {
-	S_MALLOC(str, strlen(modelName) + 10);
+	S_PPALLOC(str, strlen(modelName) + 10);
 
 	strcpy(str, modelName);
 	FixSlashes(str);

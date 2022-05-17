@@ -101,7 +101,7 @@ uint32 CFile::GetCRC32()
 	long pos = Tell();
 	long fSize = GetSize();
 
-	ubyte* pFileData = (ubyte*)malloc(fSize+16);
+	ubyte* pFileData = (ubyte*)PPAlloc(fSize+16);
 
 	Read(pFileData, 1, fSize);
 
@@ -109,7 +109,7 @@ uint32 CFile::GetCRC32()
 
 	uint32 nCRC = CRC32_BlockChecksum( pFileData, fSize );
 
-	free(pFileData);
+	PPFree(pFileData);
 
 	return nCRC;
 }

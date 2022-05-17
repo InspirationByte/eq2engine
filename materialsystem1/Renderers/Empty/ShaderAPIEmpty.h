@@ -36,12 +36,12 @@ public:
 	// locks vertex buffer and gives to programmer buffer data
 	bool		Lock(int lockOfs, int sizeToLock, void** outdata, bool readOnly)
 	{
-		*outdata = malloc(sizeToLock*m_stride);
+		*outdata = PPAlloc(sizeToLock*m_stride);
 		return true;
 	}
 
 	// unlocks buffer
-	void		Unlock() {free(m_lockData); m_lockData = NULL;}
+	void		Unlock() {PPFree(m_lockData); m_lockData = NULL;}
 
 	// sets vertex buffer flags
 	void		SetFlags( int flags ) {}

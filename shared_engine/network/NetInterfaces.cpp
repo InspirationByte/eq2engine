@@ -41,14 +41,14 @@ bool INetworkInterface::PreProcessRecievedMessage( ubyte* data, int size, netMes
 	if( msg->header.compressed_size > 0 )
 	{
 		uLongf decompSize = msg->header.message_size;
-		Bytef* decompData = (Bytef*)malloc( decompSize );
+		Bytef* decompData = (Bytef*)PPAlloc( decompSize );
 
 		int z_result = uncompress(decompData, &decompSize, msg->data, msg->header.compressed_size );
 
 		if(z_result == Z_OK)
 			memcpy(out.data, decompData, decompSize);
 
-		free( decompData );
+		PPFree( decompData );
 
 		if(z_result != Z_OK)
 			return false;
@@ -68,7 +68,7 @@ bool INetworkInterface::Send( netMessage_t* msg, int msg_size, short& msg_id, in
 	if(net_compress.GetBool())
 	{
 		uLongf compSize = (msg->header.message_size * 1.1) + 12;
-		Bytef* compData = (Bytef*)malloc( compSize );
+		Bytef* compData = (Bytef*)PPAlloc( compSize );
 
 		int z_result = compress2(compData,&compSize,(ubyte*)msg->data, msg->header.message_size, net_compress_level.GetInt());
 
@@ -80,11 +80,11 @@ bool INetworkInterface::Send( netMessage_t* msg, int msg_size, short& msg_id, in
 		}
 		else
 		{
-			free( compData );
+			PPFree( compData );
 			return false;
 		}
 
-		free( compData );
+		PPFree( compData );
 	}
 
 	return InternalSend(msg, msg_size, msg_id, flags);

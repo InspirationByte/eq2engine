@@ -61,7 +61,7 @@ static char* KV_ReadProcessString( const char* pszStr )
 
 	size_t sLen = strlen( pszStr );
 
-	char* temp = (char*)malloc( sLen+10 ); // FIXME: extra symbols needs to be counted!!!
+	char* temp = (char*)PPAlloc( sLen+10 ); // FIXME: extra symbols needs to be counted!!!
 	char* ptrTemp = temp;
 
 	do
@@ -1275,7 +1275,7 @@ kvkeybase_t* KV_ParseSectionV2(const char* pszBuffer, int bufferSize, const char
 
 				pCurrentKeyBase->AddValue(processedValue);
 
-				free(processedValue);
+				PPFree(processedValue);
 
 				*endChar = oldChr;
 			}
@@ -1570,7 +1570,7 @@ kvkeybase_t* KV_ParseSectionV3( const char* pszBuffer, int bufferSize, const cha
 						}
 
 						// free processed string
-						free(valueString);
+						PPFree(valueString);
 
 						curpair->SetName(key);
 						pParseTo->keys.addUnique(curpair);
@@ -1918,7 +1918,7 @@ void KV_ReadBinaryValue(IVirtualStream* stream, kvkeybase_t* addTo)
 	if(binValue.type == KVPAIR_STRING)
 	{
 		 // int value as string length
-		char* strVal = (char*)malloc(binValue.nValue+1);
+		char* strVal = (char*)PPAlloc(binValue.nValue+1);
 
 		stream->Read(strVal, 1, binValue.nValue);
 		strVal[binValue.nValue] = '\0';
@@ -2195,11 +2195,11 @@ void KV_WritePairValue(IVirtualStream* out, kvpairvalue_t* val, int depth)
 
 		int numSpecial = KV_CountSpecialSymbols(val->value);
 
-		char* outValueString = (char*)malloc(strlen(val->value) + numSpecial + 1);
+		char* outValueString = (char*)PPAlloc(strlen(val->value) + numSpecial + 1);
 		KV_PreProcessStringValue( outValueString, val->value );
 		out->Print("\"%s\"", outValueString);
 
-		free( outValueString );
+		PPFree( outValueString );
 	}
 	else if(val->type == KVPAIR_INT)
 	{

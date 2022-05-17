@@ -2023,18 +2023,18 @@ bool ShaderAPID3DX9::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 				scHdr.checksum == info.data.checksum)
 			{
 				// read vertex shader
-				ubyte* pShaderMem = (ubyte*)malloc(scHdr.vsSize);
+				ubyte* pShaderMem = (ubyte*)PPAlloc(scHdr.vsSize);
 				pStream->Read(pShaderMem, 1, scHdr.vsSize);
 		
 				m_pD3DDevice->CreateVertexShader((DWORD *) pShaderMem, &pShader->m_pVertexShader);
-				free(pShaderMem);
+				PPFree(pShaderMem);
 
 				// read pixel shader
-				pShaderMem = (ubyte*)malloc(scHdr.psSize);
+				pShaderMem = (ubyte*)PPAlloc(scHdr.psSize);
 				pStream->Read(pShaderMem, 1, scHdr.psSize);
 		
 				m_pD3DDevice->CreatePixelShader((DWORD *) pShaderMem, &pShader->m_pPixelShader);
-				free(pShaderMem);
+				PPFree(pShaderMem);
 
 				// read samplers and constants
 				Array<DX9Sampler_t> samplers{ PP_SL };

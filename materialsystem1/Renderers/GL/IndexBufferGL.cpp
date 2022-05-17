@@ -157,7 +157,7 @@ bool CIndexBufferGL::Lock(int lockOfs, int sizeToLock, void** outdata, bool read
 #else
 	int nLockByteCount = m_nIndexSize*sizeToLock;
 
-	m_lockPtr = (ubyte*)malloc(nLockByteCount);
+	m_lockPtr = (ubyte*)PPAlloc(nLockByteCount);
 	(*outdata) = m_lockPtr;
 
 	// read data into the buffer if we're not discarding
@@ -215,7 +215,7 @@ void CIndexBufferGL::Unlock()
 		}
 
 #ifndef USE_GLES2 // don't do dis...
-		free(m_lockPtr);
+		PPFree(m_lockPtr);
 #endif // USE_GLES2
 		m_lockPtr = NULL;
 	}

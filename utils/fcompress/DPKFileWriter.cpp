@@ -98,7 +98,7 @@ ubyte* LoadFileBuffer(const char* filename, long* fileSize)
 	fseek(file, 0, SEEK_SET);
 
 	// allocate file in the hunk
-	ubyte* fileBuf = (ubyte*)malloc(filelen);
+	ubyte* fileBuf = (ubyte*)PPAlloc(filelen);
 
 	fread(fileBuf, 1, filelen, file);
 	fclose(file);
@@ -269,7 +269,7 @@ bool CDPKFileWriter::WriteFiles()
 	long filesize = ftell( dpkTempDataFile );
 	fseek(dpkTempDataFile, 0, SEEK_SET);
 
-	ubyte* tmpBlockData = (ubyte*)malloc( DPK_WRITE_BLOCK );
+	ubyte* tmpBlockData = (ubyte*)PPAlloc( DPK_WRITE_BLOCK );
 
 	long cur_pos = 0;
 	while(cur_pos < filesize)
@@ -291,7 +291,7 @@ bool CDPKFileWriter::WriteFiles()
 
 	Msg("OK\n");
 
-	free(tmpBlockData);
+	PPFree(tmpBlockData);
 	fclose(dpkTempDataFile);
 
 	return true;
@@ -425,7 +425,7 @@ void CDPKFileWriter::ProcessFile(FILE* output, dpkfilewinfo_t* info)
 	}
 
 	// we're done with this file
-	free(_filedata);
+	PPFree(_filedata);
 }
 
 bool CDPKFileWriter::SavePackage()

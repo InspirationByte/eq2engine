@@ -587,7 +587,7 @@ bool CImage::LoadJPEGfromHandle(IFile *fileHandle)
 	jpeg_create_decompress(&cinfo);
 
 	long fileSize = fileHandle->GetSize();
-	ubyte* jpegFileBuff = (ubyte*)malloc(fileSize);
+	ubyte* jpegFileBuff = (ubyte*)PPAlloc(fileSize);
 	fileHandle->Read(jpegFileBuff, 1, fileSize);
 	g_fileSystem->Close(fileHandle);
 
@@ -631,7 +631,7 @@ bool CImage::LoadJPEGfromHandle(IFile *fileHandle)
 	jpeg_finish_decompress(&cinfo);
 	jpeg_destroy_decompress(&cinfo);
 
-	free(jpegFileBuff);
+	PPFree(jpegFileBuff);
 
 	return true;
 }

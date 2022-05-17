@@ -81,7 +81,6 @@ void CScopedPointer<TYPE>::Free()
 	m_pTypedObject = NULL;
 }
 
-#define S_MALLOC(name, size)		CScopedPointer<char> name((char*)malloc((size)), SPTR_MALLOC)
 #define S_PPALLOC(name, size)		CScopedPointer<char> name((char*)PPAlloc((size)), SPTR_PPALLOC)
 #define S_NEW(name, type)			CScopedPointer<type> name(new type, SPTR_NEW)
 #define S_NEWA(name, type, count)	CScopedPointer<type> name(new type[(count)], SPTR_NEW_ARRAY)
