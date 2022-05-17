@@ -15,19 +15,23 @@
 //
 //////////////////////////////////////////////////////////////////////////////////
 
+#define NO_PPMEM_OP
 #include "core/ppmem.h"
+
+#include "ds/Map.h"
 
 #include "core/DebugInterface.h"
 #include "core/IConsoleCommands.h"
-#include "core/ICommandLine.h"
-#include "utils/strtools.h"
+
 #include "utils/eqthread.h"
 
-#include <stdio.h>
 #include <malloc.h>
-#include <unordered_map>
 
-//#define PPMEM_DISABLE
+#define PPMEM_DISABLE
+
+#ifdef _RETAIL
+#define PPMEM_DISABLE
+#endif
 
 #if defined(CRT_DEBUG_ENABLED) && defined(_WIN32)
 #define pp_internal_malloc(s)	_malloc_dbg(s, _NORMAL_BLOCK, pszFileName, nLine)
@@ -73,13 +77,13 @@ DECLARE_CONCOMMAND_FN(ppmemstats)
 }
 
 // allocation map
-using pointer_map = std::unordered_map<const void*, ppallocinfo_t*>;
-using source_map = std::unordered_map<const char*, const char*>;
+using pointer_map = Map<const void*, ppallocinfo_t*>;
+using source_map = Map<const char*, const char*>;
 
 struct ppmem_state_t
 {
-	source_map sourceFileNameMap;
-	pointer_map allocPointerMap;
+	source_map sourceFileNameMap{PPSourceLine::Empty()};
+	pointer_map allocPointerMap{ PPSourceLine::Empty() };
 	uint allocIdCounter = 0;
 	CEqMutex allocMemMutex;
 };
@@ -152,12 +156,12 @@ void PPMemInfo( bool fullStats )
 	size_t totalUsage = 0;
 	size_t numErrors = 0;
 
-	std::unordered_map<uint64, int> allocCounter;
+	Map<uint64, int> allocCounter{ PPSourceLine::Empty() };
 
 	for(auto it = st.allocPointerMap.begin(); it != st.allocPointerMap.end(); ++it)
 	{
-		ppallocinfo_t* alloc = it->second;
-		const void* curPtr = it->first;
+		ppallocinfo_t* alloc = it.value();
+		const void* curPtr = it.key();
 
 		totalUsage += alloc->size;
 	
@@ -205,10 +209,10 @@ void PPMemInfo( bool fullStats )
 	}
 
 #ifdef PPMEM_EXTRA_DEBUGINFO
-	for (auto it = allocCounter.begin(); it != allocCounter.end(); it++)
+	for (auto it = allocCounter.begin(); it != allocCounter.end(); ++it)
 	{
-		const PPSourceLine sl = *(PPSourceLine*)&it->first;
-		MsgInfo("'%s:%d' count: %d\n", st.sourceFileNameMap[sl.GetFileName()], sl.GetLine(), it->second);
+		const PPSourceLine sl = *(PPSourceLine*)&it.key();
+		MsgInfo("'%s:%d' count: %d\n", st.sourceFileNameMap[sl.GetFileName()], sl.GetLine(), it.value());
 	}
 #endif // PPMEM_EXTRA_DEBUGINFO
 
@@ -230,11 +234,11 @@ IEXPORTS size_t	PPMemGetUsage()
 
 	size_t totalUsage = 0;
 
-	std::unordered_map<uint64, int> allocCounter;
+	Map<uint64, int> allocCounter{ PPSourceLine::Empty() };
 
 	for (auto it = st.allocPointerMap.begin(); it != st.allocPointerMap.end(); ++it)
 	{
-		const ppallocinfo_t* alloc = it->second;
+		const ppallocinfo_t* alloc = it.value();
 		totalUsage += alloc->size;
 	}
 	return totalUsage;
@@ -249,6 +253,14 @@ void* PPDAlloc(size_t size, const PPSourceLine& sl, const char* debugTAG)
 	ASSERT_MSG(mem, "No mem left");
 	return mem;
 #else
+
+	if (sl.data == 0) 
+	{
+		void* mem = pp_internal_malloc(size);
+		ASSERT_MSG(mem, "No mem left");
+		return mem;
+	}
+
 	ppmem_state_t& st = PPGetState();
 	// allocate more to store extra information of this
 	ppallocinfo_t* alloc = (ppallocinfo_t*)pp_internal_malloc(sizeof(ppallocinfo_t) + size + sizeof(uint));
@@ -308,7 +320,7 @@ void* PPDReAlloc( void* ptr, size_t size, const PPSourceLine& sl, const char* de
 			return PPDAlloc(size, sl, debugTAG);
 		}
 
-		ppallocinfo_t* alloc = (ppallocinfo_t*)realloc(it->second, sizeof(ppallocinfo_t) + size + sizeof(uint));
+		ppallocinfo_t* alloc = (ppallocinfo_t*)realloc(it.value(), sizeof(ppallocinfo_t) + size + sizeof(uint));
 		ASSERT_MSG(alloc, "realloc: no mem left!");
 
 		// actual pointer address
@@ -317,7 +329,7 @@ void* PPDReAlloc( void* ptr, size_t size, const PPSourceLine& sl, const char* de
 
 		st.allocPointerMap[retPtr] = alloc;
 		if(retPtr != ptr)
-			st.allocPointerMap.erase(it);
+			st.allocPointerMap.remove(it);
 
 		{
 			alloc->sl = sl;
@@ -363,7 +375,7 @@ void PPFree(void* ptr)
 			return;
 		}
 
-		ppallocinfo_t* alloc = it->second;
+		const ppallocinfo_t* alloc = it.value();
 
 		// actual pointer address
 		const void* actualPtr = ((ubyte*)alloc) + sizeof(ppallocinfo_t);
@@ -372,8 +384,8 @@ void PPFree(void* ptr)
 		ASSERT_MSG(alloc->checkMark == PPMEM_CHECKMARK, "PPCheck: memory is invalid (was outranged before)");
 		ASSERT_MSG(*checkMark == PPMEM_CHECKMARK, "PPCheck: memory is invalid (was outranged after)");
 
-		free(alloc);
-		st.allocPointerMap.erase(it);
+		free((void*)alloc);
+		st.allocPointerMap.remove(it);
 	}
 #endif // PPMEM_DISABLE
 }

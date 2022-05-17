@@ -35,6 +35,14 @@ struct PPSourceLine
 	int			GetLine() const;
 };
 
+// Source-line value constructor helper
+template<typename T>
+struct PPSLValueCtor
+{
+	T x;
+	PPSLValueCtor<T>(const PPSourceLine& sl) : x() {}
+};
+
 #define PP_SL			PPSourceLine::Make(__FILE__, __LINE__)
 #define	PPNew			new(PP_SL)
 #define	PPNewSL(sl)		new(sl)
@@ -47,26 +55,28 @@ struct PPSourceLine
 #define	PPAllocStructArrayTAG(type, count, tagSTR)		(type*)	PPDAlloc(count*sizeof(type), PP_SL, tagSTR)
 #define	PPReAllocTAG(ptr, size, tagSTR)					PPDReAlloc(ptr, size, PP_SL, tagSTR)
 
+#ifdef __clang__
+#define PPNOEXCEPT noexcept
+#else
+#define PPNOEXCEPT
+#endif
+
+#ifndef NO_PPMEM_OP
+
 void* operator new(size_t size);
 void* operator new(size_t size, size_t alignment);
 void* operator new[](size_t size);
 
-void operator delete(void* ptr);
-void operator delete(void* ptr, size_t alignment);
-void operator delete[](void* ptr);
+void operator delete(void* ptr) PPNOEXCEPT;
+void operator delete(void* ptr, size_t alignment) PPNOEXCEPT;
+void operator delete[](void* ptr) PPNOEXCEPT;
 
 void* operator new(size_t size, PPSourceLine sl);
 void* operator new[](size_t size, PPSourceLine sl);
 
-void operator delete(void* ptr, PPSourceLine sl);
-void operator delete[](void* ptr, PPSourceLine sl);
+void operator delete(void* ptr, PPSourceLine sl) PPNOEXCEPT;
+void operator delete[](void* ptr, PPSourceLine sl) PPNOEXCEPT;
 
-// Source-line value constructor helper
-template<typename T>
-struct PPSLValueCtor
-{
-	T x;
-	PPSLValueCtor<T>(const PPSourceLine& sl) : x() {}
-};
+#endif
 
 #endif // PPMEM_H
