@@ -27,6 +27,8 @@
 #include <malloc.h>
 #include <unordered_map>
 
+//#define PPMEM_DISABLE
+
 #if defined(CRT_DEBUG_ENABLED) && defined(_WIN32)
 #define pp_internal_malloc(s)	_malloc_dbg(s, _NORMAL_BLOCK, pszFileName, nLine)
 #else
@@ -35,7 +37,6 @@
 
 using namespace Threading;
 
-//#define PPMEM_DISABLE
 #define PPMEM_EXTRA_DEBUGINFO
 #define PPMEM_CHECKMARK			(0x1df001ed)	// i'd fooled :D
 #define PPMEM_DEBUG_TAG_MAX		32
@@ -219,46 +220,25 @@ void PPMemInfo( bool fullStats )
 		MsgWarning("%d allocations has overflow/underflow happened in runtime. Please print full stats to console\n", numErrors);
 }
 
-ppallocinfo_t* FindAllocation( void* ptr, bool& isValidInputPtr )
+IEXPORTS size_t	PPMemGetUsage()
 {
-	if(ptr == nullptr)
-	{
-		isValidInputPtr = false;
-		return NULL;
-	}
+#ifdef PPMEM_DISABLE
+	return 0;
+#else
 	ppmem_state_t& st = PPGetState();
 	CScopedMutex m(st.allocMemMutex);
 
-	auto it = st.allocPointerMap.find(ptr);
+	size_t totalUsage = 0;
 
-	if(it != st.allocPointerMap.end())
+	std::unordered_map<uint64, int> allocCounter;
+
+	for (auto it = st.allocPointerMap.begin(); it != st.allocPointerMap.end(); ++it)
 	{
-		isValidInputPtr = true;
-		return it->second;
+		const ppallocinfo_t* alloc = it->second;
+		totalUsage += alloc->size;
 	}
-#if 0
-	else // try find the valid allocation in range
-	{
-		isValidInputPtr = false;
-		int n = 0;
-		for(auto it = s_allocPointerMap.begin(); it != s_allocPointerMap.end(); ++it)
-		{
-			ppallocinfo_t* curAlloc = it->second;
-			const void* curPtr = it->first;
-
-			// if it's in range
-			if (ptr >= curAlloc && ptr <= (ubyte*)curPtr + curAlloc->size)
-			{
-				const intptr_t ptrDiff = abs((ubyte*)ptr - (ubyte*)curPtr);
-				ASSERT_FAIL("PPFree: Given pointer is invalid but alloc was found.\n%x vs %x, diff %d", ptr, curPtr, ptrDiff);
-
-				return curAlloc; // return this allocation
-			}
-			n++;
-		}
-	}
+	return totalUsage;
 #endif
-	return nullptr;
 }
 
 // allocated debuggable memory block

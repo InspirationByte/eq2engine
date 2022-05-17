@@ -330,14 +330,7 @@ void CMaterialSystem::Shutdown()
 		if(m_luxelTestTexture)
 			g_pShaderAPI->FreeTexture(m_luxelTestTexture);
 
-		for(int i = 0; i < m_shaderOverrideList.numElem(); i++)
-			delete [] m_shaderOverrideList[i].shadername;
-
 		m_shaderOverrideList.clear();
-
-		for(int i = 0; i < m_proxyFactoryList.numElem(); i++)
-			delete [] m_proxyFactoryList[i].name;
-
 		m_proxyFactoryList.clear();
 
 		m_renderLibrary->ReleaseSwapChains();

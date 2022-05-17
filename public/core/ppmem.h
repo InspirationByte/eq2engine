@@ -16,6 +16,7 @@
 struct PPSourceLine;
 
 IEXPORTS void	PPMemInfo( bool fullStats = true );
+IEXPORTS size_t	PPMemGetUsage();
 
 IEXPORTS void*	PPDAlloc( size_t size, const PPSourceLine& sl, const char* debugTAG = nullptr );
 IEXPORTS void*	PPDReAlloc( void* ptr, size_t size, const PPSourceLine& sl, const char* debugTAG = nullptr );

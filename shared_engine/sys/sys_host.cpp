@@ -709,6 +709,8 @@ bool CGameHost::Frame()
 			params.textColor = ColorRGBA(1,0.8f,0,1);
 
 		m_pDefaultFont->RenderText(EqString::Format("SYS/GAME FPS: %d/%d", min(fps, 1000), gamefps).ToCString(), Vector2D(15), params);
+		m_pDefaultFont->RenderText(EqString::Format("MEM: %.2f", (PPMemGetUsage() / 1024.0f) / 1024.0f).ToCString(), Vector2D(15, 35), params);
+		
 	}
 
 	equi::Manager->SetViewFrame(IRectangle(0,0,m_winSize.x,m_winSize.y));
