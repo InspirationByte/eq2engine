@@ -58,15 +58,23 @@ void xstr_loc_convert_special_symbols(char* str, bool doNewline)
 //-------------------------------------------------------------------------------------------------
 
 CLocToken::CLocToken(const char* tok, const wchar_t* text)
+	: m_token(tok), m_text(text)
 {
-	m_token = tok;
-	m_text = text;
-}
+	int found = 0;
+	do
+	{
+		found = m_text.ReplaceSubstr(L"%s", L"%ls", false, found);
+	} while (found != -1);
+};
 
 CLocToken::CLocToken(const char* tok, const char* text)
+	: m_token(tok), m_text(text)
 {
-	m_token = tok;
-	m_text = text;
+	int found = 0;
+	do
+	{
+		found = m_text.ReplaceSubstr(L"%s", L"%ls", false, found);
+	} while (found != -1);
 }
 
 //-------------------------------------------------------------------------------------------------
