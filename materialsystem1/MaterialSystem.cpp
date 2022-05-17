@@ -1448,9 +1448,10 @@ struct depthStateIndex_t
 	ubyte doDepthTest : 1;
 	ubyte doDepthWrite : 1;
 	ubyte compFunc : 3;
+	ubyte pad{ 0 };
 };
 
-assert_sizeof(depthStateIndex_t,1);
+assert_sizeof(depthStateIndex_t,2);
 
 // sets depth stencil state
 void CMaterialSystem::SetDepthStates(bool bDoDepthTest, bool bDoDepthWrite, ER_CompareFunc depthCompFunc)
@@ -1492,9 +1493,10 @@ struct rasterStateIndex_t
 	ubyte multisample : 1;
 	ubyte scissor : 1;
 	ubyte polyoffset: 1;
+	ubyte pad{ 0 };
 };
 
-assert_sizeof(rasterStateIndex_t,1);
+assert_sizeof(rasterStateIndex_t,2);
 
 // sets rasterizer extended mode
 void CMaterialSystem::SetRasterizerStates(ER_CullMode nCullMode, ER_FillMode nFillMode,bool bMultiSample,bool bScissor,bool bPolyOffset)
