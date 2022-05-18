@@ -27,9 +27,9 @@
 
 #include <malloc.h>
 
-#define PPMEM_DISABLE
+//#define PPMEM_DISABLE
 
-#ifdef _RETAIL
+#if defined(_RETAIL) || defined(PLAT_ANDROID)
 #define PPMEM_DISABLE
 #endif
 

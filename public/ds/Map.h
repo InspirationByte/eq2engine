@@ -92,6 +92,21 @@ public:
 	int size() const { return m_size; }
 	bool isEmpty() const { return !m_root; }
 
+	void swap(Map& other)
+	{
+		Map tmp{PPSourceLine::Empty()};
+		for (const Item* i = other.m_begin.item, *end = &other.m_endItem; i != end; i = i->next)
+			tmp.insert(i->key, i->value);
+
+		other.clear();
+		for (const Item* i = m_begin.item, *end = &m_endItem; i != end; i = i->next)
+			other.insert(i->key, i->value);
+
+		clear();
+		for (const Item* i = tmp.m_begin.item, *end = &tmp.m_endItem; i != end; i = i->next)
+			insert(i->key, i->value);
+	}
+
 	void clear()
 	{
 		for (Item* i = m_begin.item, *end = &m_endItem; i != end; i = i->next)
@@ -418,6 +433,11 @@ private:
 		{}
 
 		Item(const PPSourceLine& sl, Item* parent, const K& key) : parent(parent), key(key), _value(sl), value(_value.x)
+		{}
+
+		Item(const Item& other) : key(other.key), _value(other._value), value(_value.x), 
+			parent(other.parent), left(other.left), right(other.right), next(other.next), prev(other.prev), 
+			height(other.height), slope(other.slope)
 		{}
 
 		void updateHeightAndSlope()
