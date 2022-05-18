@@ -8,6 +8,7 @@
 #ifndef CENGINEMODEL_H
 #define CENGINEMODEL_H
 
+#include "ds/Map.h"
 #include "egf/IEqModel.h"
 #include "modelloader_shared.h"
 #include "utils/eqthread.h"
@@ -154,8 +155,10 @@ public:
 	void					PrintLoadedModels() const;
 
 private:
-
+	Map<int, int>			m_cacheIndex{ PP_SL };
 	Array<IEqModel*>		m_cachedList{ PP_SL };
+	// TODO: add freeIndex if support egf streaming
+
 	IVertexFormat*			m_egfFormat;	// vertex format for streams
 };
 

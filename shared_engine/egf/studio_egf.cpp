@@ -28,16 +28,16 @@ ConVar r_notempdecals("r_notempdecals", "0", "Disables temp decals", CV_CHEAT);
 
 CEngineStudioEGF::CEngineStudioEGF()
 {
-	m_instancer = NULL;
+	m_instancer = nullptr;
 	m_readyState = MODEL_LOAD_ERROR;
 
 	m_forceSoftwareSkinning = false;
 	m_skinningDirty = false;
 
-	m_pVB = NULL;
-	m_pIB = NULL;
+	m_pVB = nullptr;
+	m_pIB = nullptr;
 
-	m_softwareVerts = NULL;
+	m_softwareVerts = nullptr;
 
 	m_numVertices = 0;
 	m_numIndices = 0;
@@ -45,7 +45,7 @@ CEngineStudioEGF::CEngineStudioEGF()
 	memset(m_materials, 0, sizeof(m_materials));
 	m_numMaterials = 0;
 
-	m_hwdata = NULL;
+	m_hwdata = nullptr;
 
 	m_cacheIdx = -1;
 }
@@ -146,7 +146,7 @@ bool CEngineStudioEGF::PrepareForSkinning(Matrix4x4* jointMatrices)
 	{
 		if (m_skinningDirty)
 		{
-			EGFHwVertex_t* bufferData = NULL;
+			EGFHwVertex_t* bufferData = nullptr;
 
 			if (m_pVB->Lock(0, m_numVertices, (void**)&bufferData, false))
 			{
@@ -190,7 +190,7 @@ bool CEngineStudioEGF::PrepareForSkinning(Matrix4x4* jointMatrices)
 			tempMatrixArray[i] = (!m_hwdata->joints[i].absTrans * jointMatrices[i]);
 		}
 
-		EGFHwVertex_t* bufferData = NULL;
+		EGFHwVertex_t* bufferData = nullptr;
 
 		if (m_pVB->Lock(0, m_numVertices, (void**)&bufferData, false))
 		{
@@ -221,10 +221,10 @@ void CEngineStudioEGF::DestroyModel()
 	m_readyState = MODEL_LOAD_ERROR;
 
 	// instancer is removed here if set
-	if (m_instancer != NULL)
+	if (m_instancer != nullptr)
 		delete m_instancer;
 
-	m_instancer = NULL;
+	m_instancer = nullptr;
 
 	g_pShaderAPI->Reset(STATE_RESET_VBO);
 	g_pShaderAPI->ApplyBuffers();
@@ -242,7 +242,7 @@ void CEngineStudioEGF::DestroyModel()
 	if (m_forceSoftwareSkinning)
 	{
 		PPFree(m_softwareVerts);
-		m_softwareVerts = NULL;
+		m_softwareVerts = nullptr;
 	}
 
 	m_numIndices = 0;
@@ -277,7 +277,7 @@ void CEngineStudioEGF::DestroyModel()
 		}
 
 		delete m_hwdata;
-		m_hwdata = NULL;
+		m_hwdata = nullptr;
 	}
 }
 
@@ -909,7 +909,7 @@ void MakeDecalTexCoord(Array<EGFHwVertex_t>& verts, Array<int>& indices, const d
 		Vector3D vaxis;
 
 		Vector3D axisAngles = VectorAngles(info.normal);
-		AngleVectors(axisAngles, NULL, &uaxis, &vaxis);
+		AngleVectors(axisAngles, nullptr, &uaxis, &vaxis);
 
 		vaxis *= -1;
 
@@ -989,7 +989,7 @@ void MakeDecalTexCoord(Array<EGFHwVertex_t>& verts, Array<int>& indices, const d
 tempdecal_t* CEngineStudioEGF::MakeTempDecal(const decalmakeinfo_t& info, Matrix4x4* jointMatrices)
 {
 	if (r_notempdecals.GetBool())
-		return NULL;
+		return nullptr;
 
 	Vector3D decal_origin = info.origin;
 	Vector3D decal_normal = info.normal;
@@ -1143,7 +1143,7 @@ tempdecal_t* CEngineStudioEGF::MakeTempDecal(const decalmakeinfo_t& info, Matrix
 		return pDecal;
 	}
 
-	return NULL;
+	return nullptr;
 }
 
 //-------------------------------------------------------
@@ -1157,13 +1157,11 @@ IStudioModelCache* g_studioModelCache = &s_ModelCache;
 
 CStudioModelCache::CStudioModelCache()
 {
-	m_egfFormat = NULL;
+	m_egfFormat = nullptr;
 }
 
 void CStudioModelCache::ReloadModels()
 {
-	g_pShaderAPI->Reset(STATE_RESET_VBO);
-	g_pShaderAPI->Apply();
 
 }
 
@@ -1175,30 +1173,37 @@ int CStudioModelCache::PrecacheModel(const char* modelName)
 	if (strlen(modelName) <= 0)
 		return CACHE_INVALID_MODEL;
 
-	if (m_egfFormat == NULL)
+	if (m_egfFormat == nullptr)
 		m_egfFormat = g_pShaderAPI->CreateVertexFormat("EGFVertex", g_EGFHwVertexFormat, elementsOf(g_EGFHwVertexFormat));
 
 	int idx = GetModelIndex(modelName);
 
 	if (idx == CACHE_INVALID_MODEL)
 	{
-		DevMsg(DEVMSG_CORE, "Loading model '%s'\n", modelName);
+		EqString str(modelName);
+		str.Path_FixSlashes();
+		const int nameHash = StringToHash(str, true);
+		
+		DevMsg(DEVMSG_CORE, "Loading model '%s'\n", str.ToCString());
 
-		CEngineStudioEGF* pModel = PPNew CEngineStudioEGF;
-		pModel->m_cacheIdx = m_cachedList.append(pModel);
+		const int cacheIdx = m_cachedList.numElem();
 
-		if (!pModel->LoadModel(modelName, job_modelLoader.GetBool()))
+		CEngineStudioEGF* pModel = PPNew CEngineStudioEGF();
+		if (pModel->LoadModel(str, job_modelLoader.GetBool()))
 		{
-			m_cachedList[pModel->m_cacheIdx] = NULL;
+			int newIdx = m_cachedList.append(pModel);
+			ASSERT(newIdx == cacheIdx);
 
+			pModel->m_cacheIdx = cacheIdx;
+			m_cacheIndex.insert(nameHash, cacheIdx);
+		}
+		else
+		{
 			delete pModel;
-			pModel = NULL;
+			pModel = nullptr;
 		}
 
-		if (!pModel)
-			return 0; // return error model index
-
-		return pModel->m_cacheIdx;
+		return pModel ? cacheIdx : 0;
 	}
 
 	return idx;
@@ -1212,9 +1217,9 @@ int	CStudioModelCache::GetCachedModelCount() const
 
 IEqModel* CStudioModelCache::GetModel(int index) const
 {
-	IEqModel* model = NULL;
+	IEqModel* model = nullptr;
 
-	if (index == CACHE_INVALID_MODEL)
+	if (index <= CACHE_INVALID_MODEL)
 		model = m_cachedList[0];
 	else
 		model = m_cachedList[index];
@@ -1232,18 +1237,14 @@ const char* CStudioModelCache::GetModelFilename(IEqModel* pModel) const
 
 int CStudioModelCache::GetModelIndex(const char* modelName) const
 {
-	S_PPALLOC(str, strlen(modelName) + 10);
+	EqString str(modelName);
+	str.Path_FixSlashes();
 
-	strcpy(str, modelName);
-	FixSlashes(str);
-
-	for (int i = 0; i < m_cachedList.numElem(); i++)
+	const int hash = StringToHash(str, true);
+	auto found = m_cacheIndex.find(hash);
+	if (found != m_cacheIndex.end())
 	{
-		if (m_cachedList[i] == NULL)
-			continue;
-
-		if (!stricmp(m_cachedList[i]->GetName(), str))
-			return i;
+		return *found;
 	}
 
 	return CACHE_INVALID_MODEL;
@@ -1270,21 +1271,19 @@ void CStudioModelCache::ReleaseCache()
 {
 	for (int i = 0; i < m_cachedList.numElem(); i++)
 	{
-		
-		
 		if (m_cachedList[i])
 		{
 			// wait for loading completion
 			m_cachedList[i]->GetHWData();
-
 			delete m_cachedList[i];
 		}
 	}
 
 	m_cachedList.clear();
+	m_cacheIndex.clear();
 
 	g_pShaderAPI->DestroyVertexFormat(m_egfFormat);
-	m_egfFormat = NULL;
+	m_egfFormat = nullptr;
 }
 
 IVertexFormat* CStudioModelCache::GetEGFVertexFormat() const
