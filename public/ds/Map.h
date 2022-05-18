@@ -107,7 +107,7 @@ public:
 			insert(i->key, i->value);
 	}
 
-	void clear()
+	void clear(bool deallocate = true)
 	{
 		for (Item* i = m_begin.item, *end = &m_endItem; i != end; i = i->next)
 		{
@@ -115,6 +115,18 @@ public:
 			i->prev = m_freeItem;
 			m_freeItem = i;
 		}
+
+		if (deallocate)
+		{
+			for (ItemBlock* i = m_blocks, *next; i; i = next)
+			{
+				next = i->next;
+				PPFree(i);
+			}
+			m_blocks = nullptr;
+			m_freeItem = nullptr;
+		}
+
 		m_begin.item = &m_endItem;
 		m_endItem.prev = nullptr;
 		m_size = 0;
