@@ -48,12 +48,24 @@ public:
 	// also will fill start vertex and start index
 	Batch& New_Batch() 
 	{
-		Batch newBatch;
+		Batch& newBatch = m_batches.append();
+
 		newBatch.startVertex = m_vertices.numElem();
 		newBatch.startIndex = m_indices.numElem();
+		return newBatch;
+	}
 
-		int idx = m_batches.append(newBatch);
-		return m_batches[idx];
+	Batch& FindOrAdd_Batch(short materialIndex)
+	{
+		for (int i = 0; i < m_batches.numElem(); ++i)
+		{
+			if (m_batches[i].materialIndex == materialIndex) 
+				return m_batches[i];
+		}
+
+		Batch& newBatch = New_Batch();
+		newBatch.materialIndex = i;
+		return newBatch;
 	}
 
 	// deletes all data
