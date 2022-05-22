@@ -1180,7 +1180,7 @@ kvkeybase_t* KV_ParseSectionV2(const char* pszBuffer, int bufferSize, const char
 			// keybase must be created
 			if(!pCurrentKeyBase)
 			{
-				MsgError("'%s' (%d): section has no keybase\n", pszFileName ? pszFileName : "buffer", nLine+1);
+				ASSERT_FAIL("'%s' (%d): section has no keybase\n", pszFileName ? pszFileName : "buffer", nLine+1);
 
 				if(pParseTo != pKeyBase)
 					delete pKeyBase;
@@ -1336,7 +1336,7 @@ kvkeybase_t* KV_ParseSectionV2(const char* pszBuffer, int bufferSize, const char
 
 	if( bInQuotes )
 	{
-		MsgError("'%s' (%d): unexcepted end of file, you forgot to close quotes\n", pszFileName ? pszFileName : "buffer", nQuoteLetterLine+1);
+		ASSERT_FAIL("'%s' (%d): unexcepted end of file, you forgot to close quotes\n", pszFileName ? pszFileName : "buffer", nQuoteLetterLine+1);
 
 		if(pParseTo != pKeyBase)
 			delete pKeyBase;
@@ -1345,7 +1345,7 @@ kvkeybase_t* KV_ParseSectionV2(const char* pszBuffer, int bufferSize, const char
 
 	if( pCurrentKeyBase )
 	{
-		MsgError("'%s' (%d): EOF passed, excepted ';'\n", pszFileName ? pszFileName : "buffer", pCurrentKeyBase->line+1);
+		ASSERT_FAIL("'%s' (%d): EOF passed, excepted ';'\n", pszFileName ? pszFileName : "buffer", pCurrentKeyBase->line+1);
 		if(pParseTo != pKeyBase)
 			delete pKeyBase;
 		pKeyBase = NULL;
@@ -1353,7 +1353,7 @@ kvkeybase_t* KV_ParseSectionV2(const char* pszBuffer, int bufferSize, const char
 
 	if( bInSection )
 	{
-		MsgError("'%s' (%d): EOF passed, excepted '}'\n", pszFileName ? pszFileName : "buffer", nSectionLetterLine+1);
+		ASSERT_FAIL("'%s' (%d): EOF passed, excepted '}'\n", pszFileName ? pszFileName : "buffer", nSectionLetterLine+1);
 		if(pParseTo != pKeyBase)
 			delete pKeyBase;
 		pKeyBase = NULL;
@@ -1361,7 +1361,7 @@ kvkeybase_t* KV_ParseSectionV2(const char* pszBuffer, int bufferSize, const char
 
 	if( bCommentaryMode == 2 )
 	{
-		MsgError("'%s' (%d): EOF passed, excepted '*/', check whole text please\n", pszFileName ? pszFileName : "buffer", nLine+1);
+		ASSERT_FAIL("'%s' (%d): EOF passed, excepted '*/', check whole text please\n", pszFileName ? pszFileName : "buffer", nLine+1);
 		if(pParseTo != pKeyBase)
 			delete pKeyBase;
 		pKeyBase = NULL;
@@ -1477,7 +1477,7 @@ kvkeybase_t* KV_ParseSectionV3( const char* pszBuffer, int bufferSize, const cha
 			{
 				if( nValCounter == 0 )
 				{
-					MsgError("'%s':%d error - unexpected type definition\n", pszFileName, nModeStartLine);
+					ASSERT_FAIL("'%s':%d error - unexpected type definition\n", pszFileName, nModeStartLine);
 					break;
 				}
 
@@ -1524,7 +1524,7 @@ kvkeybase_t* KV_ParseSectionV3( const char* pszBuffer, int bufferSize, const cha
 
 				if(!typeIsOk)
 				{
-					MsgError("'%s':%d error: type mismatch, expected 'section'\n", pszFileName, nModeStartLine);
+					ASSERT_FAIL("'%s':%d error: type mismatch, expected 'section'\n", pszFileName, nModeStartLine);
 					break;
 				}
 
@@ -1539,7 +1539,7 @@ kvkeybase_t* KV_ParseSectionV3( const char* pszBuffer, int bufferSize, const cha
 
 						if(c == KV_BREAK)
 						{
-							MsgError("'%s':%d error - unexpected break\n", pszFileName, nModeStartLine);
+							ASSERT_FAIL("'%s':%d error - unexpected break\n", pszFileName, nModeStartLine);
 							
 							break;
 						}
@@ -1603,7 +1603,7 @@ kvkeybase_t* KV_ParseSectionV3( const char* pszBuffer, int bufferSize, const cha
 				//Msg("start section\n");
 				if(curpair == NULL)
 				{
-					MsgError("'%s':%d error - unexpected anonymous section\n", pszFileName, nModeStartLine);
+					ASSERT_FAIL("'%s':%d error - unexpected anonymous section\n", pszFileName, nModeStartLine);
 					break;
 				}
 
@@ -1621,7 +1621,7 @@ kvkeybase_t* KV_ParseSectionV3( const char* pszBuffer, int bufferSize, const cha
 			{
 				if (nValCounter == 0 || valueArray)
 				{
-					MsgError("'%s':%d error - unexpected '['\n", pszFileName, nModeStartLine);
+					ASSERT_FAIL("'%s':%d error - unexpected '['\n", pszFileName, nModeStartLine);
 					break;
 				}
 
@@ -1728,7 +1728,7 @@ kvkeybase_t* KV_ParseSectionV3( const char* pszBuffer, int bufferSize, const cha
 
 							if(!typeIsOk)
 							{
-								MsgError("'%s':%d error - type mismatch, expected 'section'\n", pszFileName, nModeStartLine);
+								ASSERT_FAIL("'%s':%d error - type mismatch, expected 'section'\n", pszFileName, nModeStartLine);
 								break;
 							}
 						}
@@ -1770,24 +1770,24 @@ kvkeybase_t* KV_ParseSectionV3( const char* pszBuffer, int bufferSize, const cha
 	{
 		if(quoteMode == QM_COMMENT_RANGE)
 		{
-			MsgError("'%s':%d error - unexpected EOF, did you forgot '*/'?\n", pszFileName, nModeStartLine);
+			ASSERT_FAIL("'%s':%d error - unexpected EOF, did you forgot '*/'?\n", pszFileName, nModeStartLine);
 			isError = true;
 		}
 		else if(quoteMode == QM_SECTION)
 		{
-			MsgError("'%s':%d error - missing '}'\n", pszFileName, nModeStartLine);
+			ASSERT_FAIL("'%s':%d error - missing '}'\n", pszFileName, nModeStartLine);
 			isError = true;
 		}
 		else if(quoteMode == QM_STRING_QUOTED)
 		{
-			MsgError("'%s':%d error - missing '\"'\n", pszFileName, nModeStartLine);
+			ASSERT_FAIL("'%s':%d error - missing '\"'\n", pszFileName, nModeStartLine);
 			isError = true;
 		}
 	}
 
 	if(valueArray)
 	{
-		MsgError("'%s':%d error - missing ']'\n", pszFileName, valueArrayStartLine);
+		ASSERT_FAIL("'%s':%d error - missing ']'\n", pszFileName, valueArrayStartLine);
 		isError = true;
 	}
 
