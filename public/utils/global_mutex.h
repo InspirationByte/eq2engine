@@ -18,6 +18,7 @@ enum EMutexPurpose
 	MUTEXPURPOSE_NET_THREAD,		// network thread uses
 	MUTEXPURPOSE_MODEL_LOADER,		// model loading
 	MUTEXPURPOSE_LEVEL_LOADER,		// level loading
+	MUTEXPURPOSE_AI_NAVIGATION,		// AI navigation
 	MUTEXPURPOSE_PHYSICS,			// physics engine
 	MUTEXPURPOSE_RENDERER,			// rendering
 	MUTEXPURPOSE_PARTICLES,			// particle system
