@@ -25,7 +25,6 @@
 #pragma warning(disable: 4267)
 #endif
 
-#define BASE_BUFFER		32	// 32 characters initial buffer
 #define EXTEND_CHARS	32	// 32 characters for extending
 
 EqWString::EqWString()
@@ -153,7 +152,7 @@ void EqWString::Clear()
 // empty the string, but do not deallocate
 void EqWString::Empty()
 {
-	Resize(BASE_BUFFER, false);
+	Resize(EQSTRING_BASE_BUFFER, false);
 }
 
 // an internal operation of allocation/extend

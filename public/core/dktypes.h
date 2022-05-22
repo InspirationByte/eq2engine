@@ -10,17 +10,17 @@
 
 #include <stddef.h>
 #include <string.h>
+#include "ds/align.h"
 
 // disable stupid deprecate warning
 #pragma warning(disable : 4996)
 
-#define INLINE		__inline
+#define INLINE			__inline
+#define FORCEINLINE		__forceinline
 
 #ifdef __GNUC__
 #define __forceinline __attribute__((always_inline))
 #endif // __GNUC__
-
-#define FORCEINLINE __forceinline
 
 // classname of the main application window
 #define Equilibrium_WINDOW_CLASSNAME "Equilibrium_9826C328_598D_4C2E_85D4_0FF8E0310366"
@@ -42,27 +42,11 @@ typedef unsigned int	uint;
 typedef ptrdiff_t intptr;
 
 #ifdef _WIN32
-	typedef   signed __int64  int64;
-	typedef unsigned __int64 uint64;
+typedef   signed __int64  int64;
+typedef unsigned __int64 uint64;
 #else
-	typedef   signed long long  int64;
-	typedef unsigned long long uint64;
-#endif
-
-#ifdef _MSC_VER // maybe GCC?
-
-#define forceinline __forceinline
-#define _ALIGNED(x) __declspec(align(x))
-
-#define ALIGNED_TYPE(s, a) typedef s _ALIGNED(a)
-
-#else
-
-#define forceinline inline
-#define _ALIGNED(x) __attribute__ ((aligned(x)))
-
-#define ALIGNED_TYPE(s, a) typedef struct s _ALIGNED(a)
-
+typedef   signed long long  int64;
+typedef unsigned long long uint64;
 #endif
 
 class CEqException

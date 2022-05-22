@@ -20,9 +20,6 @@
 #include "utils/strtools.h"
 #include "math/math_common.h"
 
-
-#define EXTEND_CHARS	32	// 32 characters for extending
-
 #ifdef _WIN32
 #define xstricmp stricmp
 #else
@@ -32,6 +29,8 @@
 #ifdef _MSC_VER
 #pragma warning(disable: 4267)
 #endif
+
+#define EXTEND_CHARS	32	// 32 characters for extending
 
 EqString::EqString()
 {
