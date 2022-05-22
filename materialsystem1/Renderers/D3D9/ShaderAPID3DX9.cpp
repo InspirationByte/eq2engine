@@ -601,7 +601,7 @@ void ShaderAPID3DX9::ApplyTextures()
 #ifdef EQ_DEBUG
 				if (pTexture->textures.numElem() == 0)
 				{
-					ASSERT_MSG(false, "D3D9 renderer error: texture has no surfaces\n");
+					ASSERT_FAIL("D3D9 renderer error: texture has no surfaces\n");
 				}
 #endif
 

@@ -162,7 +162,7 @@ void CDPKFileStream::DecodeBlock(int blockIdx)
 
 		if (status != Z_OK)
 		{
-			ASSERT_MSG(false, EqString::Format("Cannot decompress file block - %d!\n", status).ToCString());
+			ASSERT_FAIL("Cannot decompress file block - %d!\n", status);
 		}
 		else
 		{
@@ -236,7 +236,7 @@ size_t CDPKFileStream::Read(void* dest, size_t count, size_t size)
 // writes data to virtual stream
 size_t CDPKFileStream::Write(const void *src, size_t count, size_t size)
 {
-	ASSERT_MSG(false, "CDPKFileStream does not support WRITE OPS");
+	ASSERT_FAIL("CDPKFileStream does not support WRITE OPS");
 	return 0;
 }
 
@@ -268,7 +268,7 @@ int	CDPKFileStream::Seek(long nOffset, VirtStreamSeek_e seekType)
 	if (newOfs < 0)
 		return -1;
 
-	ASSERT_MSG(newOfs >= 0 && newOfs <= m_info.size, EqString::Format("CDPKFileStream::Seek - %u illegal seek => %d while file max is %d\n", m_info.filenameHash, newOfs, m_info.size).ToCString());
+	ASSERT_MSG(newOfs >= 0 && newOfs <= m_info.size, "CDPKFileStream::Seek - %u illegal seek => %d while file max is %d\n", m_info.filenameHash, newOfs, m_info.size);
 
 	// set the virtual offset
 	m_curPos = newOfs;
@@ -281,7 +281,7 @@ int	CDPKFileStream::Seek(long nOffset, VirtStreamSeek_e seekType)
 // fprintf analog
 void CDPKFileStream::Print(const char* fmt, ...)
 {
-	ASSERT_MSG(false, "CDPKFileStream does not support WRITE OPS");
+	ASSERT_FAIL("CDPKFileStream does not support WRITE OPS");
 }
 
 // returns current pointer position
@@ -458,7 +458,7 @@ IVirtualStream* CDPKFileReader::Open(const char* filename, const char* mode)
 
 	if (!file)
 	{
-		ASSERT_MSG(false, "CDPKFileReader::Open FATAL ERROR - failed to open package file");
+		ASSERT_FAIL("CDPKFileReader::Open FATAL ERROR - failed to open package file");
 		return nullptr;
 	}
 

@@ -263,7 +263,7 @@ static _purecall_handler oldPureCall = NULL;
 
 void eqPureCallhandler(void)
 {
-	ASSERT_MSG(false, "Pure virtual function call");
+	ASSERT_FAIL("Pure virtual function call");
 }
 
 void InstallExceptionHandler()

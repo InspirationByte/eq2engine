@@ -111,7 +111,7 @@ void CGLRenderLib_ES::InitSharedContexts()
 
 	EGLContext context = eglCreateContext(m_eglDisplay, m_eglConfig, m_glContext, contextAttr);
 	if (context == EGL_NO_CONTEXT)
-		ASSERT_MSG(false, "Failed to create context for share!");
+		ASSERT_FAIL("Failed to create context for share!");
 
 	m_glSharedContext = context;
 }

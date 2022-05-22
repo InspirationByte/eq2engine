@@ -295,7 +295,7 @@ void* PPDAlloc(size_t size, const PPSourceLine& sl, const char* debugTAG)
 	st.allocMemMutex.Unlock();
 
 	if( ppmem_break_on_alloc.GetInt() != -1)
-		ASSERT_MSG(alloc->id == (uint)ppmem_break_on_alloc.GetInt(), EqString::Format("PPDAlloc: Break on allocation id=%d", alloc->id).ToCString());
+		ASSERT_MSG(alloc->id == (uint)ppmem_break_on_alloc.GetInt(), "PPDAlloc: Break on allocation id=%d", alloc->id);
 
 	return actualPtr;
 #endif // PPMEM_DISABLE

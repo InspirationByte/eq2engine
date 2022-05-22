@@ -267,7 +267,7 @@ void ShaderAPIGL::Init( const shaderAPIParams_t &params)
 	for(int i = 0; i < CONSTANT_TYPE_COUNT; i++)
 	{
 		if(s_uniformFuncs[i] == NULL)
-			ASSERT_MSG(false, EqString::Format("Uniform function for '%d' is not ok, pls check extensions\n", i).ToCString());
+			ASSERT_FAIL("Uniform function for '%d' is not ok, pls check extensions\n", i);
 	}
 }
 
@@ -1587,7 +1587,7 @@ void ShaderAPIGL::ChangeVertexBuffer(IVertexBuffer* pVertexBuffer, int nStream, 
 			m_boundInstanceStream = nStream;
 		else if (instanceBuffer && m_boundInstanceStream != -1 && nStream != m_boundInstanceStream)
 		{
-			ASSERT_MSG(false, "Already bound instancing stream at %d!!!", m_boundInstanceStream);
+			ASSERT_FAIL("Already bound instancing stream at %d!!!", m_boundInstanceStream);
 		}
 	}
 }

@@ -345,7 +345,7 @@ bool CMaterial::DoLoadShaderAndTextures()
 	else if(shader->IsError() )
 		m_state = MATERIAL_LOAD_ERROR;
 	else
-		ASSERT_MSG(false, EqString::Format("please check shader '%s' (%s) for initialization (not error, not initialized)", m_szShaderName.ToCString(), m_shader->GetName()).ToCString());
+		ASSERT_FAIL("please check shader '%s' (%s) for initialization (not error, not initialized)", m_szShaderName.ToCString(), m_shader->GetName());
 
 	return true;
 }

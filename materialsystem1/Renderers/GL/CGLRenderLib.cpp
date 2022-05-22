@@ -221,7 +221,7 @@ void CGLRenderLib::InitSharedContexts()
 	}
 
 	//if (wglShareLists(context, glContext) == FALSE)
-	//	ASSERT_MSG(false, EqString::Format("wglShareLists - Failed to share (err=%d, ctx=%d)!", GetLastError(), context).ToCString());
+	//	ASSERT_FAIL("wglShareLists - Failed to share (err=%d, ctx=%d)!", GetLastError(), context);
 
 #elif defined(PLAT_LINUX)
 	GLXContext context = glXCreateContext(m_display, m_xvi, m_glContext, True);
@@ -683,7 +683,7 @@ bool CGLRenderLib::SetWindowed(bool enabled)
 	if (!enabled)
 	{
 #if defined(PLAT_LINUX)
-		ASSERT_MSG(false, "CGLRenderLib::SetWindowed - Not implemented for Linux");
+		ASSERT_FAIL("CGLRenderLib::SetWindowed - Not implemented for Linux");
 		/*
 		if (foundMode >= 0 && XF86VidModeSwitchToMode(display, m_screen, m_dmodes[foundMode]))
 		{

@@ -1919,7 +1919,7 @@ bool CEqPhysics::TestConvexSweepSingleObject(	CEqCollisionObject* object,
 
 	if(	shapeType > CONCAVE_SHAPES_START_HERE)
 	{
-		ASSERT_MSG(false, "Only convex shapes are supported as concave shapes!");
+		ASSERT_FAIL("Only convex shapes are supported as concave shapes!");
 		return false;
 	}
 
