@@ -238,7 +238,7 @@ bool CMaterialSystem::Init(const matsystem_init_config_t& config)
 		// regular materials
 		m_materialsPath = config.materialsPath;
 		if(!m_materialsPath.Length())
-			m_materialsPath = matSystemSettings ? KV_GetValueString(matSystemSettings->FindKeyBase("MaterialsPath"), 0, NULL) : "materials/";
+			m_materialsPath = KV_GetValueString(matSystemSettings ? matSystemSettings->FindKeyBase("MaterialsPath") : nullptr, 0, "materials/");
 
 		m_materialsPath.Path_FixSlashes();
 
@@ -248,7 +248,7 @@ bool CMaterialSystem::Init(const matsystem_init_config_t& config)
 		// sources
 		m_materialsSRCPath = config.materialsSRCPath;
 		if(!m_materialsSRCPath.Length())
-			m_materialsSRCPath = matSystemSettings ? KV_GetValueString(matSystemSettings->FindKeyBase("MaterialsSRCPath"), 0, NULL) : "materialsSRC/";
+			m_materialsSRCPath = KV_GetValueString(matSystemSettings ? matSystemSettings->FindKeyBase("MaterialsSRCPath") : nullptr, 0, "materialsSRC/");
 
 		m_materialsSRCPath.Path_FixSlashes();
 
