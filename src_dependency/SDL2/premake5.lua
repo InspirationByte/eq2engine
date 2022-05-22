@@ -16,3 +16,8 @@ usage "SDL2"
 		libdirs { 
 			"./lib/%{cfg.platform}",
 		}
+
+usage "SDL2_main"
+	links {
+		"SDL2main"
+	}
