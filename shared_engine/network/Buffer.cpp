@@ -10,23 +10,26 @@
 #include "utils/KeyValues.h"
 #include <wchar.h>
 
-#define MAX_SUBMESSAGE_LENGTH UDP_CDP_MAX_MESSAGEPAYLOAD
-
 namespace Networking
 {
 
-Buffer::Buffer()
+Buffer::Buffer() 
+	: m_data(m_intData)
 {
 	m_data.Open(nullptr, VS_OPEN_READ | VS_OPEN_WRITE, 128);
 }
 
-Buffer::~Buffer()
+Buffer::Buffer(CMemoryStream& stream, long startOfs /*= -1*/) 
+	: m_data(stream)
 {
+	m_startOfs = startOfs == -1 ? m_data.Tell() : startOfs;
+	if (startOfs != -1)
+		m_data.Seek(startOfs, VS_SEEK_SET);
 }
 
 void Buffer::ResetPos()
 {
-	m_data.Seek(0, VS_SEEK_SET);
+	m_data.Seek(m_startOfs, VS_SEEK_SET);
 }
 
 void Buffer::WriteToStream(IVirtualStream* stream)
@@ -36,7 +39,7 @@ void Buffer::WriteToStream(IVirtualStream* stream)
 
 int Buffer::GetMessageLength() const
 {
-	return m_data.Tell();
+	return m_data.Tell() - m_startOfs;
 }
 
 void Buffer::WriteString(const char* pszStr)

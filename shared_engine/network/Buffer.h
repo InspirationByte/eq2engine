@@ -28,8 +28,8 @@ class Buffer
 {
 public:
 						Buffer();
-
-						~Buffer();
+						Buffer(CMemoryStream& stream, long startOfs = -1);
+						virtual ~Buffer() = default;
 
 	void				ResetPos();
 
@@ -84,7 +84,9 @@ public:
 
 protected:
 
-	CMemoryStream		m_data;
+	CMemoryStream		m_intData;
+	CMemoryStream&		m_data;
+	long				m_startOfs{ 0 };
 };
 
 }; // namespace Networking
