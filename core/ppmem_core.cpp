@@ -43,19 +43,9 @@ using namespace Threading;
 
 #define PPMEM_EXTRA_DEBUGINFO
 #define PPMEM_CHECKMARK			(0x1df001ed)	// i'd fooled :D
-#define PPMEM_DEBUG_TAG_MAX		32
-
-#ifdef EQ_DEBUG
-#define PPMEM_DEBUG_TAGS
-#endif // EQ_DEBUG
 
 struct ppallocinfo_t
 {
-#ifdef PPMEM_DEBUG_TAGS
-	// extra visibility via CRT debug output
-	char			tag[PPMEM_DEBUG_TAG_MAX];
-#endif // PPMEM_DEBUG_TAGS
-
 	size_t			size;
 
 #ifdef PPMEM_EXTRA_DEBUGINFO
@@ -147,7 +137,7 @@ void PPMemShutdown()
 }
 
 // Printing the statistics and tracked memory usage
-void PPMemInfo( bool fullStats )
+void PPMemInfo(bool fullStats)
 {
 	ppmem_state_t& st = PPGetState();
 
@@ -156,7 +146,13 @@ void PPMemInfo( bool fullStats )
 	size_t totalUsage = 0;
 	size_t numErrors = 0;
 
-	Map<uint64, int> allocCounter{ PPSourceLine::Empty() };
+	struct SLStat_t
+	{
+		uint totalMem{ 0 };
+		uint numAlloc{ 0 };
+	};
+
+	Map<uint64, SLStat_t> allocCounter{ PPSourceLine::Empty() };
 
 	for(auto it = st.allocPointerMap.begin(); it != st.allocPointerMap.end(); ++it)
 	{
@@ -167,23 +163,11 @@ void PPMemInfo( bool fullStats )
 	
 		if(fullStats)
 		{
-#ifdef PPMEM_DEBUG_TAGS
-
-#	ifdef PPMEM_EXTRA_DEBUGINFO
-			MsgInfo("alloc '%s' id=%d, src='%s:%d', ptr=%p, size=%d\n", alloc->tag, alloc->id, alloc->src, alloc->line, curPtr, alloc->size);
-#	else
-			MsgInfo("alloc '%s' id=%d, ptr=%p, size=%d\n", alloc->tag, alloc->id, curPtr, alloc->size);
-#	endif
-
-#else
-
-#	ifdef PPMEM_EXTRA_DEBUGINFO
+#ifdef PPMEM_EXTRA_DEBUGINFO
 			MsgInfo("alloc id=%d, src='%s:%d', ptr=%p, size=%d\n", alloc->id, st.sourceFileNameMap[alloc->sl.GetFileName()], alloc->sl.GetLine(), curPtr, alloc->size);
-#	else
+#else
 			MsgInfo("alloc id=%d, ptr=%p, size=%d\n", alloc->id, curPtr, alloc->size);
-#	endif
-
-#endif // PPMEM_DEBUG_TAGS
+#endif
 
 			uint* checkMark = (uint*)((ubyte*)curPtr + alloc->size);
 
@@ -202,9 +186,9 @@ void PPMemInfo( bool fullStats )
 		}
 
 #ifdef PPMEM_EXTRA_DEBUGINFO
-		if (!allocCounter.count(alloc->sl.data))
-			allocCounter[alloc->sl.data] = 0;
-		allocCounter[alloc->sl.data]++;
+		SLStat_t& slStat = allocCounter[alloc->sl.data];
+		slStat.totalMem += alloc->size;
+		slStat.numAlloc++;
 #endif // PPMEM_EXTRA_DEBUGINFO
 	}
 
@@ -212,7 +196,7 @@ void PPMemInfo( bool fullStats )
 	for (auto it = allocCounter.begin(); it != allocCounter.end(); ++it)
 	{
 		const PPSourceLine sl = *(PPSourceLine*)&it.key();
-		MsgInfo("'%s:%d' count: %d\n", st.sourceFileNameMap[sl.GetFileName()], sl.GetLine(), it.value());
+		MsgInfo("'%s:%d' count: %d, size: %.2f KB\n", st.sourceFileNameMap[sl.GetFileName()], sl.GetLine(), it.value().numAlloc, (it.value().totalMem / 1024.0f));
 	}
 #endif // PPMEM_EXTRA_DEBUGINFO
 
@@ -246,7 +230,7 @@ IEXPORTS size_t	PPMemGetUsage()
 }
 
 // allocated debuggable memory block
-void* PPDAlloc(size_t size, const PPSourceLine& sl, const char* debugTAG)
+void* PPDAlloc(size_t size, const PPSourceLine& sl)
 {
 #ifdef PPMEM_DISABLE
 	void* mem = pp_internal_malloc(size);
@@ -277,14 +261,6 @@ void* PPDAlloc(size_t size, const PPSourceLine& sl, const char* debugTAG)
 
 		alloc->checkMark = PPMEM_CHECKMARK;
 		*checkMark = PPMEM_CHECKMARK;
-
-#ifdef PPMEM_DEBUG_TAGS
-		// extra visibility via CRT debug output
-		if (!debugTAG)
-			strncpy(alloc->tag, EqString::Format("ppalloc_%d", s_allocIdCounter).ToCString(), PPMEM_DEBUG_TAG_MAX);
-		else
-			strncpy(alloc->tag, debugTAG, PPMEM_DEBUG_TAG_MAX);
-#endif // PPMEM_DEBUG_TAGS
 	}
 
 	if(!st.sourceFileNameMap.count(sl.GetFileName()))
@@ -302,7 +278,7 @@ void* PPDAlloc(size_t size, const PPSourceLine& sl, const char* debugTAG)
 }
 
 // reallocates memory block
-void* PPDReAlloc( void* ptr, size_t size, const PPSourceLine& sl, const char* debugTAG )
+void* PPDReAlloc( void* ptr, size_t size, const PPSourceLine& sl )
 {
 #ifdef PPMEM_DISABLE
 	return realloc(ptr, size);
@@ -317,7 +293,7 @@ void* PPDReAlloc( void* ptr, size_t size, const PPSourceLine& sl, const char* de
 
 		if (it == st.allocPointerMap.end())
 		{
-			return PPDAlloc(size, sl, debugTAG);
+			return PPDAlloc(size, sl);
 		}
 
 		ppallocinfo_t* alloc = (ppallocinfo_t*)realloc(it.value(), sizeof(ppallocinfo_t) + size + sizeof(uint));
@@ -338,14 +314,6 @@ void* PPDReAlloc( void* ptr, size_t size, const PPSourceLine& sl, const char* de
 
 			alloc->checkMark = PPMEM_CHECKMARK;
 			*checkMark = PPMEM_CHECKMARK;
-
-#ifdef PPMEM_DEBUG_TAGS
-			// extra visibility via CRT debug output
-			if (!debugTAG)
-				strncpy(alloc->tag, EqString::Format("ppalloc_%d", s_allocIdCounter).ToCString(), PPMEM_DEBUG_TAG_MAX);
-			else
-				strncpy(alloc->tag, debugTAG, PPMEM_DEBUG_TAG_MAX);
-#endif // PPMEM_DEBUG_TAGS
 		}
 	}
 

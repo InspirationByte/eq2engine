@@ -18,8 +18,8 @@ struct PPSourceLine;
 IEXPORTS void	PPMemInfo( bool fullStats = true );
 IEXPORTS size_t	PPMemGetUsage();
 
-IEXPORTS void*	PPDAlloc( size_t size, const PPSourceLine& sl, const char* debugTAG = nullptr );
-IEXPORTS void*	PPDReAlloc( void* ptr, size_t size, const PPSourceLine& sl, const char* debugTAG = nullptr );
+IEXPORTS void*	PPDAlloc( size_t size, const PPSourceLine& sl );
+IEXPORTS void*	PPDReAlloc( void* ptr, size_t size, const PPSourceLine& sl );
 
 IEXPORTS void	PPFree( void* ptr );
 
@@ -50,10 +50,6 @@ struct PPSLValueCtor
 #define	PPAlloc(size)									PPDAlloc(size, PP_SL)
 #define	PPAllocStructArray(type, count)					(type*)	PPDAlloc(count*sizeof(type), PP_SL)
 #define	PPReAlloc(ptr, size)							PPDReAlloc(ptr, size, PP_SL)
-
-#define	PPAllocTAG(size, tagSTR)						PPDAlloc(size, PP_SL, tagSTR)
-#define	PPAllocStructArrayTAG(type, count, tagSTR)		(type*)	PPDAlloc(count*sizeof(type), PP_SL, tagSTR)
-#define	PPReAllocTAG(ptr, size, tagSTR)					PPDReAlloc(ptr, size, PP_SL, tagSTR)
 
 #ifdef __clang__
 #define PPNOEXCEPT noexcept
