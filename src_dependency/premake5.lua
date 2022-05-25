@@ -12,6 +12,7 @@ end
 include("wxWidgets/premake5.lua")
 include("shiny/premake5.lua")
 include("imgui/premake5.lua")
+include("fastlz/premake5.lua")
 include("recast/premake5.lua")
 
 include("bullet2/premake5.lua")

@@ -89,7 +89,7 @@ if not IS_ANDROID then
 project "RecastDemo"
 	language "C++"
 	kind "WindowedApp"
-	uses { "SDL2", "SDL2_main" }
+	uses { "SDL2", "SDL2_main", "fastlz" }
 	includedirs { 
 		"RecastDemo/Include",
 		"RecastDemo/Contrib",
