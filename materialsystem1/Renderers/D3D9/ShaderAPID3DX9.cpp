@@ -1290,7 +1290,7 @@ void ShaderAPID3DX9::FreeTexture(ITexture* pTexture)
 
 static LPDIRECT3DSURFACE9* CreateSurfaces(int num)
 {
-	return new LPDIRECT3DSURFACE9[num];
+	return PPNew LPDIRECT3DSURFACE9[num];
 }
 
 bool ShaderAPID3DX9::InternalCreateRenderTarget(LPDIRECT3DDEVICE9 dev, CD3D9Texture *tex, int nFlags, const ShaderAPICaps_t& caps)

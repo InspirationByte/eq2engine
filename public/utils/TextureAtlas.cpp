@@ -26,7 +26,7 @@ CTextureAtlas* TexAtlas_LoadAtlas(const char* pszFileName, bool quiet)
 		}
 
 		// create
-		return new CTextureAtlas(pAtlasSec);
+		return PPNew CTextureAtlas(pAtlasSec);
 	}
 	else if(!quiet)
 		MsgError("Couldn't load atlas '%s'\n", pszFileName);

@@ -118,7 +118,7 @@ extern CUIManager* Manager;
 #	define EQUI_CONTROL_DECLARATION(name)
 
 #	define DECLARE_EQUI_CONTROL(name, classname) \
-		equi::IUIControl* s_equi_##name##_f() {return new equi::classname();}
+		equi::IUIControl* s_equi_##name##_f() {return PPNew equi::classname();}
 
 #	define EQUI_REGISTER_CONTROL2(name) EQUI_REGISTER_CONTROL(name)
 
@@ -130,7 +130,7 @@ extern CUIManager* Manager;
 
 #	define DECLARE_EQUI_CONTROL(name, classname) \
 		namespace equi{\
-			equi::IUIControl* s_equi_##name##_f() {return new equi::classname();} \
+			equi::IUIControl* s_equi_##name##_f() {return PPNew equi::classname();} \
 		}
 
 #	define EQUI_REGISTER_CONTROL2(name) \
