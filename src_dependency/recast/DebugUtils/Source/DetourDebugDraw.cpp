@@ -117,7 +117,7 @@ static void drawPolyBoundaries(duDebugDraw* dd, const dtMeshTile* tile,
 	dd->end();
 }
 
-static void drawMeshTile(duDebugDraw* dd, const dtNavMesh& mesh, const dtNavMeshQuery* query,
+void duDebugDrawMeshTile(duDebugDraw* dd, const dtNavMesh& mesh, const dtNavMeshQuery* query,
 						 const dtMeshTile* tile, unsigned char flags)
 {
 	dtPolyRef base = mesh.getPolyRefBase(tile);
@@ -242,7 +242,7 @@ void duDebugDrawNavMesh(duDebugDraw* dd, const dtNavMesh& mesh, unsigned char fl
 	{
 		const dtMeshTile* tile = mesh.getTile(i);
 		if (!tile->header) continue;
-		drawMeshTile(dd, mesh, 0, tile, flags);
+		duDebugDrawMeshTile(dd, mesh, 0, tile, flags);
 	}
 }
 
@@ -256,7 +256,7 @@ void duDebugDrawNavMeshWithClosedList(struct duDebugDraw* dd, const dtNavMesh& m
 	{
 		const dtMeshTile* tile = mesh.getTile(i);
 		if (!tile->header) continue;
-		drawMeshTile(dd, mesh, q, tile, flags);
+		duDebugDrawMeshTile(dd, mesh, q, tile, flags);
 	}
 }
 
