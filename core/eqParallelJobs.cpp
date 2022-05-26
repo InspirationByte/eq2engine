@@ -130,6 +130,8 @@ void CEqParallelJobThreads::Shutdown()
 // adds the job
 eqParallelJob_t* CEqParallelJobThreads::AddJob(int jobTypeId, EQ_JOB_FUNC func, void* args, int count /*= 1*/, EQ_JOB_COMPLETE_FUNC completeFn /*= nullptr*/)
 {
+	ASSERT(count > 0);
+
 	eqParallelJob_t* job = PPNew eqParallelJob_t(jobTypeId, func, args, count, completeFn);
 	job->flags = JOB_FLAG_DELETE;
 
