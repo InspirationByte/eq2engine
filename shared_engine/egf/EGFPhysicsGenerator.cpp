@@ -869,12 +869,7 @@ void WriteLumpToStream(IVirtualStream* stream, int lump_type, ubyte* data, uint 
 
 void CEGFPhysicsGenerator::SaveToFile(const char* filename)
 {
-	CMemoryStream lumpsStream;
-	if(!lumpsStream.Open(NULL, VS_OPEN_WRITE, MAX_PHYSICSFILE_SIZE))
-	{
-		MsgError("Failed to allocate memory stream!\n");
-		return;
-	}
+	CMemoryStream lumpsStream(NULL, VS_OPEN_WRITE, MAX_PHYSICSFILE_SIZE);
 
 	WriteLumpToStream(&lumpsStream, PHYSLUMP_PROPERTIES, (ubyte*)&m_props, sizeof(physmodelprops_t));
 	WriteLumpToStream(&lumpsStream, PHYSLUMP_GEOMETRYINFO, (ubyte*)m_shapes.ptr(), sizeof(physgeominfo_t) * m_shapes.numElem());
@@ -882,8 +877,7 @@ void CEGFPhysicsGenerator::SaveToFile(const char* filename)
 	// write names lump before objects lump
 	// PHYSLUMP_OBJECTNAMES
 	{
-		CMemoryStream objNamesLump;
-		objNamesLump.Open(NULL, VS_OPEN_WRITE, 2048);
+		CMemoryStream objNamesLump(nullptr, VS_OPEN_WRITE, 2048);
 
 		for(int i = 0; i < m_objects.numElem(); i++)
 			objNamesLump.Write(m_objects[i].name, 1, strlen(m_objects[i].name)+1);
@@ -892,22 +886,17 @@ void CEGFPhysicsGenerator::SaveToFile(const char* filename)
 		objNamesLump.Write(&nullChar, 1, 1);
 
 		WriteLumpToStream(&lumpsStream, PHYSLUMP_OBJECTNAMES,		(ubyte*)objNamesLump.GetBasePointer(), objNamesLump.Tell());
-
-		objNamesLump.Close();
 	}
 
 
 	// PHYSLUMP_OBJECTS
 	{
-		CMemoryStream objDataLump;
-		objDataLump.Open(NULL, VS_OPEN_WRITE, 2048);
+		CMemoryStream objDataLump(nullptr, VS_OPEN_WRITE, 2048);
 
 		for(int i = 0; i < m_objects.numElem(); i++)
 			objDataLump.Write(&m_objects[i].object, 1, sizeof(m_objects[i].object));
 
 		WriteLumpToStream(&lumpsStream, PHYSLUMP_OBJECTS,		(ubyte*)objDataLump.GetBasePointer(), objDataLump.Tell());
-
-		objDataLump.Close();
 	}
 
 	WriteLumpToStream(&lumpsStream, PHYSLUMP_INDEXDATA,	(ubyte*)m_indices.ptr(), sizeof(int) * m_indices.numElem());

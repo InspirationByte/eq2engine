@@ -64,7 +64,7 @@ const char* GetACTCErrorString(int result)
 #define WTYPE_ADVANCE_NUM(type, num)	stream->Seek(sizeof(type)*num, VS_SEEK_CUR)
 
 #define WRITE_OFS						stream->Tell()		// write offset over header
-#define OBJ_WRITE_OFS(obj)				(stream->Tell() - ((ubyte*)obj - stream->GetBasePointer()))	// write offset over object
+#define OBJ_WRITE_OFS(obj)				(stream->Tell() - ((ubyte*)obj - (ubyte*)header))	// write offset over object
 
 //---------------------------------------------------------------------------------------
 
@@ -209,7 +209,7 @@ int CEGFGenerator::UsedMaterialIndex(const char* pszName)
 }
 
 // writes group
-void CEGFGenerator::WriteGroup(CMemoryStream* stream, dsmgroup_t* srcGroup, esmshapekey_t* modShapeKey, modelgroupdesc_t* dstGroup)
+void CEGFGenerator::WriteGroup(studiohdr_t* header, IVirtualStream* stream, dsmgroup_t* srcGroup, esmshapekey_t* modShapeKey, modelgroupdesc_t* dstGroup)
 {
 	// DSM groups to be generated indices and optimized here
 	dstGroup->materialIndex = m_notextures ? -1 : UsedMaterialIndex(srcGroup->texture);
@@ -467,7 +467,7 @@ skipOptimize:
 //************************************
 // Writes models
 //************************************
-void CEGFGenerator::WriteModels(CMemoryStream* stream)
+void CEGFGenerator::WriteModels(studiohdr_t* header, IVirtualStream* stream)
 {
 	/*
 	Structure:
@@ -479,8 +479,6 @@ void CEGFGenerator::WriteModels(CMemoryStream* stream)
 		uint32					indices[sumIndicesOfGroups]
 		
 	*/
-
-	studiohdr_t* header = (studiohdr_t*)stream->GetBasePointer();
 
 	// Write models
 	header->modelsOffset = WRITE_OFS;
@@ -524,7 +522,7 @@ void CEGFGenerator::WriteModels(CMemoryStream* stream)
 			// shape key modifier (if available)
 			esmshapekey_t* key = (modelRef.shapeBy != -1) ? modelRef.shapeData->shapes[modelRef.shapeBy] : NULL;
 
-			WriteGroup(stream, modelRef.model->groups[j], key, groupDesc);
+			WriteGroup(header, stream, modelRef.model->groups[j], key, groupDesc);
 
 			if(groupDesc->materialIndex != -1)
 				Msg("Group %s:%d material used: %s\n", modelRef.model->name, j, m_usedMaterials[groupDesc->materialIndex]->materialname);
@@ -535,10 +533,8 @@ void CEGFGenerator::WriteModels(CMemoryStream* stream)
 //************************************
 // Writes LODs
 //************************************
-void CEGFGenerator::WriteLods(CMemoryStream* stream)
+void CEGFGenerator::WriteLods(studiohdr_t* header, IVirtualStream* stream)
 {
-	studiohdr_t* header = (studiohdr_t*)stream->GetBasePointer();
-
 	header->lodsOffset = WRITE_OFS;
 	header->numLods = m_modellodrefs.numElem();
 
@@ -572,10 +568,8 @@ void CEGFGenerator::WriteLods(CMemoryStream* stream)
 //************************************
 // Writes body groups
 //************************************
-void CEGFGenerator::WriteBodyGroups(CMemoryStream* stream)
+void CEGFGenerator::WriteBodyGroups(studiohdr_t* header, IVirtualStream* stream)
 {
-	studiohdr_t* header = (studiohdr_t*)stream->GetBasePointer();
-
 	header->bodyGroupsOffset = WRITE_OFS;
 	header->numBodyGroups = m_bodygroups.numElem();
 
@@ -589,10 +583,8 @@ void CEGFGenerator::WriteBodyGroups(CMemoryStream* stream)
 //************************************
 // Writes attachments
 //************************************
-void CEGFGenerator::WriteAttachments(CMemoryStream* stream)
+void CEGFGenerator::WriteAttachments(studiohdr_t* header, IVirtualStream* stream)
 {
-	studiohdr_t* header = (studiohdr_t*)stream->GetBasePointer();
-
 	header->attachmentsOffset = WRITE_OFS;
 	header->numAttachments = m_attachments.numElem();
 
@@ -606,10 +598,8 @@ void CEGFGenerator::WriteAttachments(CMemoryStream* stream)
 //************************************
 // Writes IK chainns
 //************************************
-void CEGFGenerator::WriteIkChains(CMemoryStream* stream)
+void CEGFGenerator::WriteIkChains(studiohdr_t* header, IVirtualStream* stream)
 {
-	studiohdr_t* header = (studiohdr_t*)stream->GetBasePointer();
-
 	header->ikChainsOffset = WRITE_OFS;
 	header->numIKChains = m_ikchains.numElem();
 
@@ -643,17 +633,14 @@ void CEGFGenerator::WriteIkChains(CMemoryStream* stream)
 
 			WTYPE_ADVANCE(studioiklink_t);
 		}
-	
 	}
 }
 
 //************************************
 // Writes material descs
 //************************************
-void CEGFGenerator::WriteMaterialDescs(CMemoryStream* stream)
+void CEGFGenerator::WriteMaterialDescs(studiohdr_t* header, IVirtualStream* stream)
 {
-	studiohdr_t* header = (studiohdr_t*)stream->GetBasePointer();
-
 	header->materialsOffset = WRITE_OFS;
 	header->numMaterials = 0;
 	//header->numMaterialGroups = 0;
@@ -706,10 +693,8 @@ void CEGFGenerator::WriteMaterialDescs(CMemoryStream* stream)
 //************************************
 // Writes material change-dirs
 //************************************
-void CEGFGenerator::WriteMaterialPaths(CMemoryStream* stream)
+void CEGFGenerator::WriteMaterialPaths(studiohdr_t* header, IVirtualStream* stream)
 {
-	studiohdr_t* header = (studiohdr_t*)stream->GetBasePointer();
-
 	header->materialSearchPathsOffset = WRITE_OFS;
 	header->numMaterialSearchPaths = m_matpathes.numElem();
 
@@ -723,10 +708,8 @@ void CEGFGenerator::WriteMaterialPaths(CMemoryStream* stream)
 //************************************
 // Writes Motion package paths
 //************************************
-void CEGFGenerator::WriteMotionPackageList(CMemoryStream* stream)
+void CEGFGenerator::WriteMotionPackageList(studiohdr_t* header, IVirtualStream* stream)
 {
-	studiohdr_t* header = (studiohdr_t*)stream->GetBasePointer();
-
 	header->packagesOffset = WRITE_OFS;
 	header->numMotionPackages = m_motionpacks.numElem();
 
@@ -740,10 +723,8 @@ void CEGFGenerator::WriteMotionPackageList(CMemoryStream* stream)
 //************************************
 // Writes bones
 //************************************
-void CEGFGenerator::WriteBones(CMemoryStream* stream)
+void CEGFGenerator::WriteBones(studiohdr_t* header, IVirtualStream* stream)
 {
-	studiohdr_t* header = (studiohdr_t*)stream->GetBasePointer();
-
 	header->bonesOffset = WRITE_OFS;
 	header->numBones = m_bones.numElem();
 
@@ -767,71 +748,69 @@ void CEGFGenerator::WriteBones(CMemoryStream* stream)
 //************************************
 bool CEGFGenerator::GenerateEGF()
 {
-	CMemoryStream memStream;
-	if(!memStream.Open(NULL, VS_OPEN_WRITE, FILEBUFFER_EQGF))
-	{
-		MsgError("Failed to allocate memory stream!\n");
-		return false;
-	}
+	CMemoryStream memStream(nullptr, VS_OPEN_WRITE, FILEBUFFER_EQGF);
 
 	// Make header
-	studiohdr_t header;
-	memset(&header, 0, sizeof(studiohdr_t));
+	studiohdr_t* header = (studiohdr_t*)memStream.GetBasePointer();
+	memset(header, 0, sizeof(studiohdr_t));
 
 	// Basic header data
-	header.ident = EQUILIBRIUM_MODEL_SIGNATURE;
-	header.version = EQUILIBRIUM_MODEL_VERSION;
-	header.flags = 0;
-	header.length = sizeof(studiohdr_t);
+	header->ident = EQUILIBRIUM_MODEL_SIGNATURE;
+	header->version = EQUILIBRIUM_MODEL_VERSION;
+	header->flags = 0;
+	header->length = sizeof(studiohdr_t);
 
 	// set model name
-	strcpy( header.modelName, m_outputFilename.ToCString() );
+	strcpy( header->modelName, m_outputFilename.ToCString() );
 
-	FixSlashes( header.modelName );
+	FixSlashes( header->modelName );
 
-	memStream.Write(&header, 1, sizeof(header));
-
-	studiohdr_t* pHdr = (studiohdr_t*)memStream.GetBasePointer();
+	memStream.Write(header, 1, sizeof(studiohdr_t));
 
 	// write models
-	WriteModels(&memStream);
+	WriteModels(header, &memStream);
 	
 	// write lod info and data
-	WriteLods(&memStream);
+	WriteLods(header, &memStream);
 	
 	// write body groups
-	WriteBodyGroups(&memStream);
+	WriteBodyGroups(header, &memStream);
 
 	// write attachments
-	WriteAttachments(&memStream);
+	WriteAttachments(header, &memStream);
 
 	// write ik chains
-	WriteIkChains(&memStream);
+	WriteIkChains(header, &memStream);
 	
 	if(m_notextures == false)
 	{
 		// write material descs and paths
-		WriteMaterialDescs(&memStream);
-		WriteMaterialPaths(&memStream);
+		WriteMaterialDescs(header, &memStream);
+		WriteMaterialPaths(header, &memStream);
 	}
 
 	// write motion packages
-	WriteMotionPackageList(&memStream);
+	WriteMotionPackageList(header, &memStream);
 
 	// write bones
-	WriteBones(&memStream);
+	WriteBones(header, &memStream);
 
 	// set the size of file (size with header), for validation purposes
-	pHdr->length = memStream.Tell();
+	header->length = memStream.Tell();
 
-	Msg(" models: %d\n", pHdr->numModels);
-	Msg(" body groups: %d\n", pHdr->numBodyGroups);
-	Msg(" bones: %d\n", pHdr->numBones);
-	Msg(" lods: %d\n", pHdr->numLods);
-	Msg(" materials: %d\n", pHdr->numMaterials);
-	Msg(" ik chains: %d\n", pHdr->numIKChains);
-	Msg(" search paths: %d\n", pHdr->numMaterialSearchPaths);
-	Msg("   Wrote %d bytes:\n", pHdr->length);
+	memStream.Seek(0, VS_SEEK_SET);
+	memStream.Write(header, 1, sizeof(studiohdr_t));
+
+	memStream.Seek(header->length, VS_SEEK_SET);
+
+	Msg(" models: %d\n", header->numModels);
+	Msg(" body groups: %d\n", header->numBodyGroups);
+	Msg(" bones: %d\n", header->numBones);
+	Msg(" lods: %d\n", header->numLods);
+	Msg(" materials: %d\n", header->numMaterials);
+	Msg(" ik chains: %d\n", header->numIKChains);
+	Msg(" search paths: %d\n", header->numMaterialSearchPaths);
+	Msg("   Wrote %d bytes:\n", header->length);
 
 	g_fileSystem->MakeDir(m_outputFilename.Path_Extract_Path().ToCString(), SP_MOD);
 

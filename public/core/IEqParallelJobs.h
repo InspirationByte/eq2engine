@@ -77,7 +77,7 @@ public:
 	virtual void							Shutdown() = 0;
 
 	// adds the job
-	virtual eqParallelJob_t*				AddJob(int jobTypeId, EQ_JOB_FUNC jobFn, void* args = nullptr, int count = 1, EQ_JOB_COMPLETE_FUNC completeFn = nullptr) = 0;	// and puts JOB_FLAG_DELETE flag for this job
+	virtual eqParallelJob_t*				AddJob(int jobTypeId, const EQ_JOB_FUNC& jobFn, void* args = nullptr, int count = 1, const EQ_JOB_COMPLETE_FUNC& completeFn = nullptr) = 0;	// and puts JOB_FLAG_DELETE flag for this job
 	virtual void							AddJob(eqParallelJob_t* job) = 0;
 
 	// this submits jobs to the CEqJobThreads

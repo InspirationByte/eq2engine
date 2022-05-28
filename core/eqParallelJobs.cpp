@@ -128,7 +128,7 @@ void CEqParallelJobThreads::Shutdown()
 }
 
 // adds the job
-eqParallelJob_t* CEqParallelJobThreads::AddJob(int jobTypeId, EQ_JOB_FUNC func, void* args, int count /*= 1*/, EQ_JOB_COMPLETE_FUNC completeFn /*= nullptr*/)
+eqParallelJob_t* CEqParallelJobThreads::AddJob(int jobTypeId, const EQ_JOB_FUNC& func, void* args, int count /*= 1*/, const EQ_JOB_COMPLETE_FUNC& completeFn /*= nullptr*/)
 {
 	ASSERT(count > 0);
 

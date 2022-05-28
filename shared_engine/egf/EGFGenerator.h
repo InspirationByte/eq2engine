@@ -87,7 +87,7 @@ struct egfcaMaterialGroup_t
 	Array<egfcaMaterialDesc_t> materials{ PP_SL };
 };
 
-class CMemoryStream;
+class IVirtualStream;
 
 //
 // EGF model generator (EDITOR-friendly)
@@ -149,16 +149,17 @@ protected:
 	int						UsedMaterialIndex(const char* pszName);
 
 	// writing to stream	
-	void					WriteGroup(CMemoryStream* stream, SharedModel::dsmgroup_t* srcGroup, SharedModel::esmshapekey_t* modShapeKey, modelgroupdesc_t* dstGroup);
-	void					WriteModels(CMemoryStream* stream);
-	void					WriteLods(CMemoryStream* stream);
-	void					WriteBodyGroups(CMemoryStream* stream);
-	void					WriteAttachments(CMemoryStream* stream);
-	void					WriteIkChains(CMemoryStream* stream);
-	void					WriteMaterialDescs(CMemoryStream* stream);
-	void					WriteMaterialPaths(CMemoryStream* stream);
-	void					WriteMotionPackageList(CMemoryStream* stream);
-	void					WriteBones(CMemoryStream* stream);
+	void					WriteGroup(studiohdr_t* header, IVirtualStream* stream, SharedModel::dsmgroup_t* srcGroup, SharedModel::esmshapekey_t* modShapeKey, modelgroupdesc_t* dstGroup);
+
+	void					WriteModels(studiohdr_t* header, IVirtualStream* stream);
+	void					WriteLods(studiohdr_t* header, IVirtualStream* stream);
+	void					WriteBodyGroups(studiohdr_t* header, IVirtualStream* stream);
+	void					WriteAttachments(studiohdr_t* header, IVirtualStream* stream);
+	void					WriteIkChains(studiohdr_t* header, IVirtualStream* stream);
+	void					WriteMaterialDescs(studiohdr_t* header, IVirtualStream* stream);
+	void					WriteMaterialPaths(studiohdr_t* header, IVirtualStream* stream);
+	void					WriteMotionPackageList(studiohdr_t* header, IVirtualStream* stream);
+	void					WriteBones(studiohdr_t* header, IVirtualStream* stream);
 
 	// data
 	Array<egfcaModel_t>				m_modelrefs{ PP_SL };	// all loaded model references

@@ -24,21 +24,15 @@ struct dsmweight_t
 
 struct dsmvertex_t
 {
-	dsmvertex_t()
-	{
-		normal = Vector3D(0,1,0);
-		texcoord = vec2_zero;
-	}
+	Vector3D			position{ 0.0f };
+	Vector3D			normal{ 0.5f };
 
-	Vector3D			position;
-	Vector3D			normal;
-
-	Vector2D			texcoord;
+	Vector2D			texcoord{ 0.0f };
 
 	//int				numWeights; // 0 means no bone connected
 	Array<dsmweight_t>	weights{ PP_SL };
 
-	int					vertexId;
+	int					vertexId{ 0 };
 };
 
 struct dsmgroup_t

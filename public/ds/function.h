@@ -157,7 +157,7 @@ private:
         F f;
     };
 
-    static const size_t BUFFER_SIZE = 64;
+    static const size_t BUFFER_SIZE = 128;
 
     union {
         mutable std::aligned_storage_t<BUFFER_SIZE, alignof(size_t)> buffer;

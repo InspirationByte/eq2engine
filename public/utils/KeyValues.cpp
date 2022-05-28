@@ -1904,9 +1904,7 @@ struct kvbinbase_s
 
 kvkeybase_t* KV_ParseBinary(const char* pszBuffer, int bufferSize, kvkeybase_t* pParseTo)
 {
-	CMemoryStream memstr;
-	memstr.Open((ubyte*)pszBuffer, VS_OPEN_READ | VS_OPEN_MEMORY_FROM_EXISTING, bufferSize);
-
+	CMemoryStream memstr((ubyte*)pszBuffer, VS_OPEN_READ, bufferSize);
 	return KV_ReadBinaryBase(&memstr, pParseTo);
 }
 
@@ -2387,9 +2385,7 @@ void KV_WriteToStreamV3(IVirtualStream* outStream, kvkeybase_t* section, int nTa
 //
 void KV_PrintSection(kvkeybase_t* base)
 {
-	CMemoryStream stream;
-	stream.Open(NULL, VS_OPEN_WRITE, 2048);
-
+	CMemoryStream stream(nullptr, VS_OPEN_WRITE, 2048);
 	KV_WriteToStream(&stream, base, 0, true);
 
 	char nullChar = '\0';

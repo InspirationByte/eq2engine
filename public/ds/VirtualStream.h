@@ -14,16 +14,18 @@
 // CMemoryStream - File stream
 //--------------------------
 
-enum MemStreamOpenFlags_e
-{
-	VS_OPEN_MEMORY_FROM_EXISTING = (1 << 4),	// use existing allocated buffer
-};
-
 class CMemoryStream : public IVirtualStream
 {
 public:
 						CMemoryStream();
+						CMemoryStream(ubyte* data, int nOpenFlags, int nDataSize);
+
 						~CMemoryStream();
+
+	// opens stream, if this is a file, data is filename
+	bool				Open(ubyte* data, int nOpenFlags, int nDataSize);
+	// closes stream
+	void				Close();
 
 	// reads data from virtual stream
 	size_t				Read(void *dest, size_t count, size_t size);
@@ -39,12 +41,6 @@ public:
 
 	// returns memory allocated for this stream
 	long				GetSize();
-
-	// opens stream, if this is a file, data is filename
-	bool				Open(ubyte* data, int nOpenFlags, int nDataSize);
-
-	// closes stream
-	void				Close();
 
 	// flushes stream, doesn't affects on memory stream
 	int					Flush();
@@ -75,11 +71,12 @@ protected:
 
 private:
 
-	ubyte*				m_pStart;
-	ubyte*				m_pCurrent;
+	ubyte*				m_start{ nullptr };
+	ubyte*				m_currentPtr{ nullptr };
 
-	long				m_nAllocatedSize;
-	long				m_nUsageFlags;
+	long				m_allocatedSize{ 0 };
+	long				m_openFlags{ 0 };
+	bool				m_ownBuffer{ false };
 };
 
 

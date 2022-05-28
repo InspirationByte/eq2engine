@@ -149,7 +149,6 @@ bool ReadFaces(Tokenizer& tok, dsmmodel_t* pModel)
 				}
 
 				dsmvertex_t newvertex;
-				memset(&newvertex, 0, sizeof(dsmvertex_t));
 
 				newvertex.position.x = readFloat(tok);
 				newvertex.position.y = readFloat(tok);

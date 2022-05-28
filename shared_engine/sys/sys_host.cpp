@@ -479,7 +479,7 @@ CGameHost::CGameHost() :
 	m_bTrapMode(false), m_skipMouseMove(false), m_bDoneTrapping(false), m_nTrapKey(0), m_nTrapButtons(0), m_cursorCentered(false),
 	m_pDefaultFont(NULL),
 	m_fpsGraph("Frames per sec", ColorRGB(1, 1, 0), 80.0f),
-	m_jobThreads("Active job threads", ColorRGB(1, 1, 0), 80.0f),
+	m_jobThreads("Active job threads", ColorRGB(1, 1, 0), 16.0f),
 	m_accumTime(0.0)
 {
 
@@ -629,7 +629,7 @@ bool CGameHost::Frame()
 		debugoverlay->Graph_DrawBucket(&m_fpsGraph);
 	}
 
-	debugoverlay->Graph_DrawBucket(&m_jobThreads);
+	//debugoverlay->Graph_DrawBucket(&m_jobThreads);
 
 	// always reset scissor rectangle before we start rendering
 	g_pShaderAPI->SetScissorRectangle( IRectangle(0,0,m_winSize.x, m_winSize.y) );
@@ -682,10 +682,12 @@ bool CGameHost::Frame()
 		else
 			m_fpsGraph.color = ColorRGB(1, 0, 0);
 
+		m_fpsGraph.maxValue = sys_maxfps.GetFloat();
+
 		debugoverlay->Graph_AddValue(&m_fpsGraph, gamefps);
 	}
 
-	debugoverlay->Graph_AddValue(&m_jobThreads, gamefps);
+	debugoverlay->Graph_AddValue(&m_jobThreads, g_parallelJobs->GetActiveJobsCount());
 
 	debugoverlay->Text(Vector4D(1), "System framerate: %i", fps);
 	debugoverlay->Text(Vector4D(1), "Game framerate: %i (ft=%g)", gamefps, gameFrameTime);
