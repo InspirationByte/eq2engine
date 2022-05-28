@@ -13,6 +13,10 @@
 
 class ShaderAPIGL;
 
+#ifdef PLAT_WIN
+#include <Windows.h>
+#endif
+
 #ifdef PLAT_LINUX
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>

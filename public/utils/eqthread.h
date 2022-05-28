@@ -15,9 +15,7 @@
 #include <sched.h>
 #include <pthread.h>
 #include <errno.h>
-
 #include <stdint.h>
-#define INFINITE 0xFFFFFFFF
 
 #endif // PLAT_POSIX
 
@@ -35,15 +33,12 @@ enum ThreadPriority_e
 	TP_HIGHEST
 };
 
-// for now win32 only
-//#ifdef _WIN32
-
 typedef unsigned int (*threadfunc_t)(void *);
 
 #ifdef _WIN32
 typedef HANDLE				SignalHandle_t;
 typedef CRITICAL_SECTION	MutexHandle_t;
-typedef LONG				InterlockedInt_t;
+typedef long				InterlockedInt_t;
 #else
 struct SignalHandle_t
 {
@@ -57,10 +52,10 @@ struct SignalHandle_t
 };
 typedef pthread_mutex_t		MutexHandle_t;
 typedef int					InterlockedInt_t;
-const int WAIT_INFINITE 	= -1;
 #endif // _WIN32
 
-#define DEFAULT_THREAD_STACK_SIZE ( 256 * 1024 )
+static constexpr const int WAIT_INFINITE = -1;
+static constexpr const int DEFAULT_THREAD_STACK_SIZE = 256 * 1024;
 
 #ifdef Yield
 #	undef Yield
@@ -89,7 +84,7 @@ void				SignalCreate( SignalHandle_t& handle, bool bManualReset );
 void				SignalDestroy( SignalHandle_t& handle );
 void				SignalRaise( SignalHandle_t& handle );
 void				SignalClear( SignalHandle_t& handle );
-bool				SignalWait( SignalHandle_t& handle, int nTimeout = INFINITE );
+bool				SignalWait( SignalHandle_t& handle, int nTimeout = WAIT_INFINITE);
 
 //
 // Mutex creation/destroying and locking/unlocking

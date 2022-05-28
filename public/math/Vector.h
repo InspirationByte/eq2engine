@@ -664,8 +664,9 @@ uint		rgbToRGB9E5(const ColorRGB &rgb);
 static const TVec2D<float> vec2_zero = TVec2D<float>(0.0f);
 static const TVec3D<float> vec3_zero = TVec3D<float>(0.0f);
 static const TVec4D<float> vec4_zero = TVec4D<float>(0.0f);
-static const TVec4D<float> vec4_undef = TVec4D<float>(88888.888f);
-static const TVec4D<float> vec4_infinity = TVec4D<float>(F_INFINITY);
+
+static const TVec3D<float> vec3_undef = TVec3D<float>(888.888f);
+static const TVec3D<float> vec3_infinity = TVec3D<float>(F_INFINITY);
 
 static const TVec3D<float> vec3_right = TVec3D<float>(1.0f, 0.0f, 0.0f);
 static const TVec3D<float> vec3_up = TVec3D<float>(0.0f, 1.0f, 0.0f);

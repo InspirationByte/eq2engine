@@ -13,6 +13,7 @@
 #include <malloc.h>
 #include <stdarg.h>
 #include <string.h>
+#include <ctype.h>
 
 #include "core/platform/assert.h"
 #include "core/platform/stackalloc.h"

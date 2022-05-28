@@ -137,7 +137,7 @@ workspace "Equilibrium2"
             "NDEBUG",
         }
 		optimize "On"
-		--enableASAN "On"
+		-- enableASAN "On"
 
 	filter "system:Windows or system:Linux or system:Android"
 		defines { 

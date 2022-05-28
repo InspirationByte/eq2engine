@@ -33,16 +33,11 @@
 #   define WIN32_LEAN_AND_MEAN
 #	undef _WIN32_WINNT
 #	undef _WIN32_WINDOWS
-//#	define _WIN32_WINNT 0x0500
 #	define _WIN32_WINDOWS 0x0500
 #  ifndef WINVER
 #     define WINVER 0x0500
 #  endif
-#  include <windows.h>
-
-#if defined(CRT_DEBUG_ENABLED)
-#	include <crtdbg.h>
-#endif
+#include <Windows.h>
 
 #elif defined(PLAT_LINUX) || defined(PLAT_ANDROID)
 #  include <stdio.h>

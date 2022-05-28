@@ -10,6 +10,7 @@
 #ifdef _WIN32
 
 #include "platform/Platform.h"
+#include <Windows.h>
 #include <sys/stat.h>
 #include "DebugInterface.h"
 

@@ -428,7 +428,7 @@ void ProcessTexture(TexInfo_t* textureInfo)
 	EqString targetFilename;
 	CombinePath(targetFilename, 2, g_targetProps.targetFolder.ToCString(), (textureInfo->sourcePath.Path_Strip_Ext() + ".dds").ToCString());
 	
-	CONST EqString targetFilePath = targetFilename.Path_Strip_Name().TrimChar(CORRECT_PATH_SEPARATOR);
+	const EqString targetFilePath = targetFilename.Path_Strip_Name().TrimChar(CORRECT_PATH_SEPARATOR);
 
 	// make image folder
 	g_fileSystem->MakeDir(targetFilePath.ToCString(), SP_ROOT);

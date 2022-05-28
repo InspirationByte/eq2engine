@@ -64,7 +64,7 @@ public:
 		}
 
 		Batch& newBatch = New_Batch();
-		newBatch.materialIndex = i;
+		newBatch.materialIndex = materialIndex;
 		return newBatch;
 	}
 

@@ -14,7 +14,8 @@ struct SpiralIterator
 {
 	static int GetIterations(int radius);
 
-	SpiralIterator(const IVector2D& cell, int numIter) : cell(cell), numIter(numIter) {}
+	SpiralIterator(const IVector2D& cell, int numIter) 
+		: cell(cell), numIter(numIter) {}
 	bool IsDone() const;
 
 	void operator++();

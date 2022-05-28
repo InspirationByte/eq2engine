@@ -8,6 +8,11 @@
 #include "DPKFileWriter.h"
 #include <math.h>
 #include <malloc.h>
+#include <zlib.h>
+
+#ifdef _WIN32
+#include <Windows.h>
+#endif
 
 #include "utils/minmax.h"
 #include "utils/strtools.h"
@@ -17,7 +22,7 @@
 #include "core/platform/assert.h"
 #include "core/platform/stackalloc.h"
 
-#include <zlib.h>
+
 
 #define DPK_WRITE_BLOCK (8*1024*1024)
 

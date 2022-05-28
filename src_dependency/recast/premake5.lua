@@ -54,6 +54,10 @@ project "RecastDetourTileCache"
 		"DetourTileCache/Include/*.h",
 		"DetourTileCache/Source/*.cpp"
 	}
+	links {
+		"RecastDebugUtils",
+		"RecastDetour"
+	}
 
 project "Recast"
 	language "C++"
@@ -64,6 +68,12 @@ project "Recast"
 	files { 
 		"Recast/Include/*.h",
 		"Recast/Source/*.cpp" 
+	}
+	links {
+		"RecastDebugUtils",
+		"RecastDetour",
+		"RecastDetourCrowd",
+		"RecastDetourTileCache"
 	}
 
 usage "Recast"
@@ -76,10 +86,6 @@ usage "Recast"
 		"Recast/Source"
 	}
 	links { 
-		"RecastDebugUtils",
-		"RecastDetour",
-		"RecastDetourCrowd",
-		"RecastDetourTileCache",
 		"Recast"
 	}
 

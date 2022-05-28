@@ -11,6 +11,7 @@
 #include "utils/strtools.h"
 
 #include "materialsystem1/renderers/IShaderAPI.h"
+#include <ctype.h>
 
 CMatVar::CMatVar()
 {

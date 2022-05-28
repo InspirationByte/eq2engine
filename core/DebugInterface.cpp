@@ -13,7 +13,7 @@
 #include <stdarg.h>
 #include "ds/SmartPtr.h"
 
-#ifdef _WIN32
+#ifdef PLAT_WIN
 #include <direct.h>
 #endif
 

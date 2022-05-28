@@ -17,9 +17,7 @@
 #define FILESYSTEM_INTERFACE_VERSION		"CORE_Filesystem_006"
 
 // Linux-only definition
-#ifndef _WIN32
-#   define MAX_PATH 260
-#else
+#ifdef _WIN32
 #undef FreeModule
 #endif
 

@@ -14,6 +14,7 @@
 #include "imaging/ImageLoader.h"
 #include "imaging/PixWriter.h"
 #include "math/DkMath.h"
+#include <ctype.h>
 
 static const EqString s_outputTag("%OUTPUT%");
 

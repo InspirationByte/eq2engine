@@ -217,34 +217,28 @@ IEXPORTS void InfoMsg(const char* fmt, ...)
 #endif // _DKLAUNCHER_
 }
 
-#ifdef _WIN32
-
-//Developer message to special log
-void AssertLogMsg(const char *fmt,...)
+static void AssertLogMsg(SpewType_t _dummy, const char* fmt, ...)
 {
-    va_list		argptr;
-    static char	string[2048];
+	va_list	argptr;
+	va_start(argptr, fmt);
+	EqString formattedStr = EqString::FormatVa(fmt, argptr);
+	va_end(argptr);
 
-    va_start (argptr,fmt);
-    vsnprintf(string,sizeof(string), fmt,argptr);
-    va_end (argptr);
+	fprintf(stdout, "%s\n", formattedStr.ToCString());
 
-    char time[10];
-    _strtime(time);
-
-    fprintf(stdout,"%s: %s\n",time,string);
-
-    FILE* g_logFile = fopen("logs/Assert.log", "a");
-    if (g_logFile)
-    {
-        fprintf(g_logFile,"%s: %s\n",time,string);
-        fclose(g_logFile);
-    }
+	FILE* assetFile = fopen("logs/Assert.log", "a");
+	if (assetFile)
+	{
+		fprintf(assetFile, "%s: %s\n", time, formattedStr.ToCString());
+		fclose(assetFile);
+	}
 }
+
+#ifdef _WIN32
 
 IEXPORTS void _InternalAssertMsg(const char *file, int line, const char *fmt, ...)
 {
-    static bool debug = true;
+	static bool debug = true;
 
 	va_list argptr;
 
@@ -252,51 +246,40 @@ IEXPORTS void _InternalAssertMsg(const char *file, int line, const char *fmt, ..
 	EqString formattedStr = EqString::FormatVa(fmt, argptr);
 	va_end(argptr);
 
-    if (debug)
-    {
-        char str[1024];
-
-        sprintf(str, "%s\n\nFile: %s\nLine: %d\n\n", formattedStr.ToCString(), file, line);
-
 #ifndef _DKLAUNCHER_
-        if (GetCore()->IsInitialized())
-        {
-			MsgError("\n*Assertion failed, file \"%s\", line %d\n*Expression \"%s\"", file, line, formattedStr.ToCString());
-        }
-        else
-        {
-			AssertLogMsg("\n*Assertion failed, file \"%s\", line %d\n*Expression \"%s\"", file, line, formattedStr.ToCString());
-        }
-
+	const bool eqCoreInit = GetCore()->IsInitialized();
+	(eqCoreInit ? LogMsg : AssertLogMsg)(SPEW_ERROR, "\n*Assertion failed, file \"%s\", line %d\n*Expression \"%s\"", file, line, formattedStr.ToCString());
 #endif //_DKLAUNCHER_
-        if (IsDebuggerPresent())
-        {
-            strcat(str, "Debug?");
-            int res = MessageBoxA(NULL, str, "Assertion failed", MB_YESNOCANCEL);
-            if ( res == IDYES )
-            {
+
+	if (debug)
+	{
+		EqString messageStr = EqString::Format("%s\n\nFile: %s\nLine: %d\n\n", formattedStr.ToCString(), file, line);
+
+		if (IsDebuggerPresent())
+		{
+			int res = MessageBoxA(NULL, messageStr + " - Debug?", "Assertion failed", MB_YESNOCANCEL);
+			if (res == IDYES)
+			{
 #if _MSC_VER >= 1400
-                __debugbreak();
+				__debugbreak();
 #else
-                _asm int 0x03;
+				_asm int 0x03;
 #endif
-            }
-            else if (res == IDCANCEL)
-            {
-                debug = false;
-                exit(0); //Exit if we have an assert and we
-            }
-        }
-        else
-        {
-            strcat(str, "Display more asserts?");
-            if (MessageBoxA(NULL, str, "Assertion failed", MB_YESNO | MB_DEFBUTTON2) != IDYES)
-            {
-                debug = false;
-                //exit(0); //Exit if we have no more asserts
-            }
-        }
-    }
+			}
+			else if (res == IDCANCEL)
+			{
+				debug = false;
+				exit(0); //Exit if we have an assert and we
+			}
+			}
+		else
+		{
+			if (MessageBoxA(NULL, messageStr + " - Display more asserts?", "Assertion failed", MB_YESNO | MB_DEFBUTTON2) != IDYES)
+			{
+				debug = false;
+			}
+		}
+	}
 }
 
 #else
@@ -311,17 +294,20 @@ IEXPORTS void _InternalAssertMsg(const char* file, int line, const char* fmt, ..
 	EqString formattedStr = EqString::FormatVa(fmt, argptr);
 	va_end(argptr);
 
-	MsgError("\n*Assertion failed, file \"%s\", line %d\n*Expression \"%s\"", file, line, formattedStr.ToCString());
+#ifndef _DKLAUNCHER_
+	const bool eqCoreInit = GetCore()->IsInitialized();
+	(eqCoreInit ? LogMsg : AssertLogMsg)(SPEW_ERROR, "\n*Assertion failed, file \"%s\", line %d\n*Expression \"%s\"", file, line, formattedStr.ToCString());
+#endif //_DKLAUNCHER_
 
 #ifndef USE_GTK
 	ErrorMsg("\n*Assertion failed, file \"%s\", line %d\n*Expression \"%s\"", file, line, formattedStr.ToCString());
 #else
-    char str[1024];
-    sprintf(str, "%s\n\nFile: %s\nLine: %d\n\nBreak on this error?", formattedStr.ToCString(), file, line);
+
+	EqString messageStr = EqString::Format("%s\n\nFile: %s\nLine: %d\n\nDebug?", formattedStr.ToCString(), file, line);
 
     InitMessageBoxPlatform();
 
-    GtkWidget *dialog = gtk_message_dialog_new(NULL, GTK_DIALOG_DESTROY_WITH_PARENT, GTK_MESSAGE_ERROR, GTK_BUTTONS_YES_NO, str);
+    GtkWidget *dialog = gtk_message_dialog_new(NULL, GTK_DIALOG_DESTROY_WITH_PARENT, GTK_MESSAGE_ERROR, GTK_BUTTONS_YES_NO, messageStr.ToCString());
     gint result = gtk_dialog_run(GTK_DIALOG(dialog));
 
     bool debug = (result == GTK_RESPONSE_YES);
