@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright ï¿½ Inspiration Byte
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
 // Description: Virtual Stream
@@ -61,7 +61,7 @@ size_t CMemoryStream::Read(void *dest, size_t count, size_t size)
 	ASSERT(m_openFlags & VS_OPEN_READ);
 
 	const long curPos = Tell();
-	const size_t readBytes = min(curPos + size * count, static_cast<size_t>(m_allocatedSize)) - curPos;
+	const size_t readBytes = min(static_cast<size_t>(curPos + size * count), static_cast<size_t>(m_allocatedSize)) - curPos;
 
 	memcpy(dest, m_currentPtr, readBytes);
 	m_currentPtr += readBytes;
