@@ -1259,30 +1259,22 @@ void ShaderAPID3DX9::FreeTexture(ITexture* pTexture)
 	if(pTex == NULL)
 		return;
 
-	bool deleted = false;
 	{
 		CScopedMutex scoped(m_Mutex);
+
+		auto it = m_TextureList.find(pTex->m_nameHash);
+		if (it == m_TextureList.end())
+			return;
 
 		if (pTex->Ref_Count() == 0)
 			MsgWarning("texture %s refcount==0\n", pTexture->GetName());
 
-		//ASSERT(pTex->numReferences > 0);
-
 		pTex->Ref_Drop();
+		if (pTex->Ref_Count() > 0)
+			return;
 
-		if (pTex->Ref_Count() <= 0)
-		{
-			auto it = m_TextureList.find(pTex->m_nameHash);
-			if (it != m_TextureList.end())
-			{
-				deleted = true;
-				m_TextureList.remove(it);
-			}
-		}
-	}
+		m_TextureList.remove(it);
 
-	if (deleted)
-	{
 		DevMsg(DEVMSG_SHADERAPI, "Texture unloaded: %s\n", pTexture->GetName());
 		delete pTex;
 	}
@@ -1953,25 +1945,21 @@ void ShaderAPID3DX9::DestroyShaderProgram(IShaderProgram* pShaderProgram)
 	if(!pShader)
 		return;
 
-	bool deleted = false;
 	{
 		CScopedMutex m(m_Mutex);
+		auto it = m_ShaderList.find(pShader->m_nameHash);
+		if (it == m_ShaderList.end())
+			return;
+
 		pShader->Ref_Drop(); // decrease references to this shader
 
 		// remove it if reference is zero
-		if (pShader->Ref_Count() <= 0)
-		{
-			auto it = m_ShaderList.find(pShader->m_nameHash);
-			if (it != m_ShaderList.end())
-			{
-				deleted = true;
-				m_ShaderList.remove(it);
-			}
-		}
-	}
+		if (pShader->Ref_Count() > 0)
+			return;
 
-	if (deleted)
+		m_ShaderList.remove(it);
 		delete pShader;
+	}
 }
 
 ConVar r_skipShaderCache("r_skipShaderCache", "0", "Shader debugging purposes", 0);
