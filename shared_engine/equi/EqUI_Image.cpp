@@ -79,7 +79,6 @@ void Image::SetMaterial(const char* materialName)
 	m_material->Ref_Grab();
 
 	m_material->LoadShaderAndTextures();
-	//materials->PutMaterialToLoadingQueue(m_material);
 }
 
 void Image::SetColor(const ColorRGBA &color)

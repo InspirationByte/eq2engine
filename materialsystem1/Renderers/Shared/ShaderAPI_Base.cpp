@@ -41,26 +41,26 @@ ShaderAPI_Base::ShaderAPI_Base()
 	m_nViewportWidth			= 800;
 	m_nViewportHeight			= 600;
 
-	m_pCurrentShader			= NULL;
-	m_pSelectedShader			= NULL;
+	m_pCurrentShader			= nullptr;
+	m_pSelectedShader			= nullptr;
 
-	m_pCurrentBlendstate		= NULL;
-	m_pCurrentDepthState		= NULL;
-	m_pCurrentRasterizerState	= NULL;
+	m_pCurrentBlendstate		= nullptr;
+	m_pCurrentDepthState		= nullptr;
+	m_pCurrentRasterizerState	= nullptr;
 
-	m_pSelectedBlendstate		= NULL;
-	m_pSelectedDepthState		= NULL;
-	m_pSelectedRasterizerState	= NULL;
+	m_pSelectedBlendstate		= nullptr;
+	m_pSelectedDepthState		= nullptr;
+	m_pSelectedRasterizerState	= nullptr;
 
-	m_pErrorTexture				= NULL;
+	m_pErrorTexture				= nullptr;
 
 	// VF selectoin
-	m_pSelectedVertexFormat		= NULL;
-	m_pCurrentVertexFormat		= NULL;
+	m_pSelectedVertexFormat		= nullptr;
+	m_pCurrentVertexFormat		= nullptr;
 
 	// Index buffer
-	m_pSelectedIndexBuffer		= NULL;
-	m_pCurrentIndexBuffer		= NULL;
+	m_pSelectedIndexBuffer		= nullptr;
+	m_pCurrentIndexBuffer		= nullptr;
 
 	// Vertex buffer
 	memset(m_pSelectedVertexBuffers, 0, sizeof(m_pSelectedVertexBuffers));
@@ -72,8 +72,8 @@ ShaderAPI_Base::ShaderAPI_Base()
 	memset(m_nSelectedOffsets, 0, sizeof(m_nSelectedOffsets));
 
 	// Index buffer
-	m_pSelectedIndexBuffer		= NULL;
-	m_pCurrentIndexBuffer		= NULL;
+	m_pSelectedIndexBuffer		= nullptr;
+	m_pCurrentIndexBuffer		= nullptr;
 
 	memset(m_pSelectedTextures,0,sizeof(m_pSelectedTextures));
 	memset(m_pCurrentTextures,0,sizeof(m_pCurrentTextures));
@@ -84,7 +84,7 @@ ShaderAPI_Base::ShaderAPI_Base()
 	memset(m_pCurrentColorRenderTargets,0,sizeof(m_pCurrentColorRenderTargets));
 	memset(m_nCurrentCRTSlice,0,sizeof(m_nCurrentCRTSlice));
 
-	m_pCurrentDepthRenderTarget = NULL;
+	m_pCurrentDepthRenderTarget = nullptr;
 
 	m_nDrawCalls				= 0;
 	m_nTrianglesCount			= 0;
@@ -240,22 +240,22 @@ void ShaderAPI_Base::ResetCounters()
 void ShaderAPI_Base::Reset(int nResetTypeFlags)
 {
 	if (nResetTypeFlags & STATE_RESET_SHADER)
-		m_pSelectedShader = NULL;
+		m_pSelectedShader = nullptr;
 
 	if (nResetTypeFlags & STATE_RESET_BS)
-		m_pSelectedBlendstate = NULL;
+		m_pSelectedBlendstate = nullptr;
 
 	if (nResetTypeFlags & STATE_RESET_DS)
-		m_pSelectedDepthState = NULL;
+		m_pSelectedDepthState = nullptr;
 
 	if (nResetTypeFlags & STATE_RESET_RS)
-		m_pSelectedRasterizerState = NULL;
+		m_pSelectedRasterizerState = nullptr;
 
 	if (nResetTypeFlags & STATE_RESET_VF)
-		m_pSelectedVertexFormat = NULL;
+		m_pSelectedVertexFormat = nullptr;
 
 	if (nResetTypeFlags & STATE_RESET_IB)
-		m_pSelectedIndexBuffer = NULL;
+		m_pSelectedIndexBuffer = nullptr;
 
 	if (nResetTypeFlags & STATE_RESET_VB)
 	{
@@ -368,7 +368,7 @@ ITexture* ShaderAPI_Base::FindTexture(const char* pszName)
 		return *it;
 	}
 
-	return NULL;
+	return nullptr;
 }
 
 
@@ -528,7 +528,7 @@ ITexture* ShaderAPI_Base::LoadTexture( const char* pszFileName,
 	// first search for existing texture
 	ITexture* pFoundTexture = FindTexture(pszFileName);
 
-	if (pFoundTexture != NULL)
+	if (pFoundTexture != nullptr)
 		return pFoundTexture;
 
 	// Don't load textures starting with special symbols
@@ -605,7 +605,7 @@ ITexture* ShaderAPI_Base::LoadTexture( const char* pszFileName,
 ITexture* ShaderAPI_Base::CreateTexture(const Array<CImage*>& pImages, const SamplerStateParam_t& sampler, int nFlags)
 {
 	if(!pImages.numElem())
-		return NULL;
+		return nullptr;
 
 	
 	if(r_noMip.GetBool())
@@ -615,7 +615,7 @@ ITexture* ShaderAPI_Base::CreateTexture(const Array<CImage*>& pImages, const Sam
 	}
 
 	// create texture
-	ITexture* pTexture = NULL;
+	ITexture* pTexture = nullptr;
 	CreateTextureInternal(&pTexture, pImages, sampler, nFlags);
 
 	// the created texture is automatically added to list
@@ -656,7 +656,7 @@ ITexture* ShaderAPI_Base::CreateProceduralTexture(const char* pszName,
 	else
 	{
 		MsgError("ERROR -  Cannot create procedural texture '%s', probably bad format\n", pszName);
-		return NULL;	// don't generate error
+		return nullptr;	// don't generate error
 	}
 
 	Array<CImage*> imgs{ PP_SL };
@@ -720,7 +720,7 @@ bool ShaderAPI_Base::RestoreTextureInternal(ITexture* pTexture)
 ITexture* ShaderAPI_Base::GenerateErrorTexture(int nFlags/* = 0*/)
 {
 	if(nFlags & TEXFLAG_NULL_ON_ERROR)
-		return NULL;
+		return nullptr;
 
 	SamplerStateParam_t texSamplerParams = MakeSamplerState(TEXFILTER_TRILINEAR_ANISO,TEXADDRESS_WRAP,TEXADDRESS_WRAP,TEXADDRESS_WRAP);
 
@@ -804,7 +804,7 @@ void ShaderAPI_Base::SetBlendingState( IRenderState* pBlending )
 	}
 	else
 	{
-		m_pSelectedBlendstate = NULL;
+		m_pSelectedBlendstate = nullptr;
 	}
 }
 
@@ -823,7 +823,7 @@ void ShaderAPI_Base::SetDepthStencilState( IRenderState *pDepthStencilState )
 	}
 	else
 	{
-		m_pSelectedDepthState = NULL;
+		m_pSelectedDepthState = nullptr;
 	}
 }
 
@@ -844,7 +844,7 @@ void ShaderAPI_Base::SetRasterizerState( IRenderState* pState )
 	}
 	else
 	{
-		m_pSelectedRasterizerState = NULL;
+		m_pSelectedRasterizerState = nullptr;
 	}
 }
 
@@ -904,7 +904,7 @@ void ShaderAPI_Base::SetVertexBuffer(IVertexBuffer* pVertexBuffer,int nStream, c
 // Sets the vertex buffer
 void ShaderAPI_Base::SetVertexBuffer(int nStream, const void* base)
 {
-	m_pSelectedVertexBuffers[nStream] = NULL;
+	m_pSelectedVertexBuffers[nStream] = nullptr;
 	m_nSelectedOffsets[nStream] = (intptr) base;
 }
 
@@ -976,14 +976,14 @@ void LoadShaderFiles(char** buffer, const char* pszFileName, const char* rootPat
 
 	char* str;
 
-	while((str = tok.nextLine()) != NULL)
+	while((str = tok.nextLine()) != nullptr)
 	{
 		lineParser.setString(str);
 
 		bool skipLine = false;
 
 		char* str2;
-		while((str2 = lineParser.next(isShaderIncDef)) != NULL)
+		while((str2 = lineParser.next(isShaderIncDef)) != nullptr)
 		{
 			nLine++;
 
@@ -1055,7 +1055,7 @@ struct shaderCompileJob_t
 // Loads and compiles shaders from files
 bool ShaderAPI_Base::LoadShadersFromFile(IShaderProgram* pShaderOutput, const char* pszFilePrefix, const char *extra)
 {
-	if(pShaderOutput == NULL)
+	if(pShaderOutput == nullptr)
 		return false;
 
 	bool bResult = true;
@@ -1154,7 +1154,7 @@ IShaderProgram* ShaderAPI_Base::FindShaderProgram(const char* pszName, const cha
 		return *it;
 	}
 
-	return NULL;
+	return nullptr;
 }
 
 // Shader constants setup

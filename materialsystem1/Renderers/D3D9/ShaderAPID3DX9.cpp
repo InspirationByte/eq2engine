@@ -44,12 +44,12 @@ ShaderAPID3DX9::ShaderAPID3DX9() : ShaderAPI_Base()
 {
 	Msg("Initializing Direct3D9 Shader API...\n");
 
-	m_pEventQuery = NULL;
+	m_pEventQuery = nullptr;
 
-	m_pD3DDevice = NULL;
+	m_pD3DDevice = nullptr;
 
-	m_fbColorTexture = NULL;
-	m_fbDepthTexture = NULL;
+	m_fbColorTexture = nullptr;
+	m_fbDepthTexture = nullptr;
 
 	m_nCurrentSrcFactor = BLENDFACTOR_ONE;
 	m_nCurrentDstFactor = BLENDFACTOR_ZERO;
@@ -158,7 +158,7 @@ bool ShaderAPID3DX9::ResetDevice( D3DPRESENT_PARAMETERS &d3dpp )
 		if (m_pEventQuery)
 			m_pEventQuery->Release();
 
-		m_pEventQuery = NULL;
+		m_pEventQuery = nullptr;
 
 		Reset();
 		Apply();
@@ -229,25 +229,25 @@ bool ShaderAPID3DX9::ResetDevice( D3DPRESENT_PARAMETERS &d3dpp )
 
 		m_bDeviceIsLost = false;
 
-		m_pCurrentShader = NULL;
-		m_pCurrentBlendstate = NULL;
-		m_pCurrentDepthState = NULL;
-		m_pCurrentRasterizerState = NULL;
+		m_pCurrentShader = nullptr;
+		m_pCurrentBlendstate = nullptr;
+		m_pCurrentDepthState = nullptr;
+		m_pCurrentRasterizerState = nullptr;
 
-		m_pCurrentShader = NULL;
-		m_pSelectedShader = NULL;
+		m_pCurrentShader = nullptr;
+		m_pSelectedShader = nullptr;
 
-		m_pSelectedBlendstate = NULL;
-		m_pSelectedDepthState = NULL;
-		m_pSelectedRasterizerState = NULL;
+		m_pSelectedBlendstate = nullptr;
+		m_pSelectedDepthState = nullptr;
+		m_pSelectedRasterizerState = nullptr;
 
 		// VF selectoin
-		m_pSelectedVertexFormat = NULL;
-		m_pCurrentVertexFormat = NULL;
+		m_pSelectedVertexFormat = nullptr;
+		m_pCurrentVertexFormat = nullptr;
 
 		// Index buffer
-		m_pSelectedIndexBuffer = NULL;
-		m_pCurrentIndexBuffer = NULL;
+		m_pSelectedIndexBuffer = nullptr;
+		m_pCurrentIndexBuffer = nullptr;
 
 		// Vertex buffer
 		memset(m_pSelectedVertexBuffers, 0, sizeof(m_pSelectedVertexBuffers));
@@ -259,8 +259,8 @@ bool ShaderAPID3DX9::ResetDevice( D3DPRESENT_PARAMETERS &d3dpp )
 		memset(m_nSelectedOffsets, 0, sizeof(m_nSelectedOffsets));
 
 		// Index buffer
-		m_pSelectedIndexBuffer = NULL;
-		m_pCurrentIndexBuffer = NULL;
+		m_pSelectedIndexBuffer = nullptr;
+		m_pCurrentIndexBuffer = nullptr;
 
 		memset(m_pSelectedTextures, 0, sizeof(m_pSelectedTextures));
 		memset(m_pCurrentTextures, 0, sizeof(m_pCurrentTextures));
@@ -301,7 +301,7 @@ bool ShaderAPID3DX9::ResetDevice( D3DPRESENT_PARAMETERS &d3dpp )
 		memset(m_pSelectedTextures, 0, sizeof(m_pSelectedTextures));
 		memset(m_pCurrentTextures, 0, sizeof(m_pCurrentTextures));
 
-		memset(m_pCurrentColorRenderTargets, NULL, sizeof(m_pCurrentColorRenderTargets));
+		memset(m_pCurrentColorRenderTargets, 0, sizeof(m_pCurrentColorRenderTargets));
 		memset(m_nCurrentCRTSlice, 0, sizeof(m_nCurrentCRTSlice));
 
 		Reset();
@@ -371,7 +371,7 @@ bool ShaderAPID3DX9::ResetDevice( D3DPRESENT_PARAMETERS &d3dpp )
 
 bool ShaderAPID3DX9::CreateD3DFrameBufferSurfaces()
 {
-	m_pCurrentDepthSurface = NULL;
+	m_pCurrentDepthSurface = nullptr;
 
 	if(!m_fbColorTexture)
 	{
@@ -562,7 +562,7 @@ void ShaderAPID3DX9::Shutdown()
 	if(m_pEventQuery)
 		m_pEventQuery->Release();
 
-	m_pEventQuery = NULL;
+	m_pEventQuery = nullptr;
 }
 
 //-------------------------------------------------------------
@@ -591,10 +591,10 @@ void ShaderAPID3DX9::ApplyTextures()
 		CD3D9Texture* pTexture = (CD3D9Texture*)m_pSelectedTextures[i];
 		if (pTexture != m_pCurrentTextures[i])
 		{
-			if (pTexture == NULL)
+			if (pTexture == nullptr)
 			{
-				m_pD3DDevice->SetTexture(i, NULL);
-				m_pSelectedSamplerStates[i] = NULL;
+				m_pD3DDevice->SetTexture(i, nullptr);
+				m_pSelectedSamplerStates[i] = nullptr;
 			} 
 			else 
 			{
@@ -621,10 +621,10 @@ void ShaderAPID3DX9::ApplyTextures()
 		CD3D9Texture* pTexture = (CD3D9Texture*)m_pSelectedVertexTextures[i];
 		if (pTexture != m_pCurrentVertexTextures[i])
 		{
-			if (pTexture == NULL)
+			if (pTexture == nullptr)
 			{
-				m_pD3DDevice->SetTexture(D3DVERTEXTEXTURESAMPLER0+i, NULL);
-				m_pSelectedVertexSamplerStates[i] = NULL;
+				m_pD3DDevice->SetTexture(D3DVERTEXTEXTURESAMPLER0+i, nullptr);
+				m_pSelectedVertexSamplerStates[i] = nullptr;
 			} 
 			else 
 			{
@@ -707,7 +707,7 @@ void ShaderAPID3DX9::ApplyBlendState()
 	CD3D9BlendingState* pSelectedState = (CD3D9BlendingState*)m_pSelectedBlendstate;
 
 	int mask = COLORMASK_ALL;
-	bool blendingEnabled = pSelectedState != NULL && pSelectedState->m_params.blendEnable;
+	bool blendingEnabled = pSelectedState != nullptr && pSelectedState->m_params.blendEnable;
 
 	// switch the blending on/off
 	if (m_bCurrentBlendEnable != blendingEnabled)
@@ -716,7 +716,7 @@ void ShaderAPID3DX9::ApplyBlendState()
 		m_bCurrentBlendEnable = blendingEnabled;
 	}
 
-	if(pSelectedState != NULL)
+	if(pSelectedState != nullptr)
 	{
 		BlendStateParam_t& state = pSelectedState->m_params;
 
@@ -791,7 +791,7 @@ void ShaderAPID3DX9::ApplyDepthState()
 {
 	CD3D9DepthStencilState* pSelectedState = (CD3D9DepthStencilState*)m_pSelectedDepthState;
 
-	if (pSelectedState == NULL)
+	if (pSelectedState == nullptr)
 	{
 		if (!m_bCurrentDepthTestEnable)
 		{
@@ -876,7 +876,7 @@ void ShaderAPID3DX9::ApplyRasterizerState()
 {
 	CD3D9RasterizerState* pSelectedState = (CD3D9RasterizerState*)m_pSelectedRasterizerState;
 
-	if (pSelectedState == NULL)
+	if (pSelectedState == nullptr)
 	{
 		if (m_nCurrentCullMode != CULL_BACK)
 			m_pD3DDevice->SetRenderState(D3DRS_CULLMODE, cullConst[m_nCurrentCullMode = CULL_BACK]);
@@ -955,10 +955,10 @@ void ShaderAPID3DX9::ApplyShaderProgram()
 
 	if (pShader != m_pCurrentShader)
 	{
-		if (pShader == NULL)
+		if (pShader == nullptr)
 		{
-			m_pD3DDevice->SetVertexShader(NULL);
-			m_pD3DDevice->SetPixelShader(NULL);
+			m_pD3DDevice->SetVertexShader(nullptr);
+			m_pD3DDevice->SetPixelShader(nullptr);
 		} 
 		else 
 		{
@@ -1003,7 +1003,7 @@ void ShaderAPID3DX9::ApplyConstants()
 void ShaderAPID3DX9::Clear(bool bClearColor, bool bClearDepth, bool bClearStencil, const ColorRGBA &fillColor,float fDepth, int nStencil)
 {
 	// clear the back buffer
-	m_pD3DDevice->Clear(0, NULL, (bClearColor ? D3DCLEAR_TARGET : 0) | (bClearDepth ? D3DCLEAR_ZBUFFER : 0) | (bClearStencil ? D3DCLEAR_STENCIL : 0),
+	m_pD3DDevice->Clear(0, nullptr, (bClearColor ? D3DCLEAR_TARGET : 0) | (bClearDepth ? D3DCLEAR_ZBUFFER : 0) | (bClearStencil ? D3DCLEAR_STENCIL : 0),
 		D3DCOLOR_ARGB((int)(fillColor.w*255), (int)(fillColor.x*255),(int)(fillColor.y*255),(int)(fillColor.z*255)), fDepth, nStencil);
 }
 
@@ -1036,7 +1036,7 @@ void ShaderAPID3DX9::Flush()
 		return;
 
 	query->Issue(D3DISSUE_END);
-	query->GetData(NULL, 0, D3DGETDATA_FLUSH);
+	query->GetData(nullptr, 0, D3DGETDATA_FLUSH);
 }
 
 void ShaderAPID3DX9::Finish()
@@ -1048,7 +1048,7 @@ void ShaderAPID3DX9::Finish()
 
 	query->Issue(D3DISSUE_END);
 
-	while (query->GetData(NULL, 0, D3DGETDATA_FLUSH) == S_FALSE)
+	while (query->GetData(nullptr, 0, D3DGETDATA_FLUSH) == S_FALSE)
 	{
 		// Spin-wait
 	}
@@ -1088,7 +1088,7 @@ void ShaderAPID3DX9::DestroyOcclusionQuery(IOcclusionQuery* pQuery)
 // creates blending state
 IRenderState* ShaderAPID3DX9::CreateBlendingState( const BlendStateParam_t &blendDesc )
 {
-	CD3D9BlendingState* pState = NULL;
+	CD3D9BlendingState* pState = nullptr;
 
 	for(int i = 0; i < m_BlendStates.numElem(); i++)
 	{
@@ -1141,7 +1141,7 @@ IRenderState* ShaderAPID3DX9::CreateBlendingState( const BlendStateParam_t &blen
 // creates depth/stencil state
 IRenderState* ShaderAPID3DX9::CreateDepthStencilState( const DepthStencilStateParams_t &depthDesc )
 {
-	CD3D9DepthStencilState* pState = NULL;
+	CD3D9DepthStencilState* pState = nullptr;
 	
 	for(int i = 0; i < m_DepthStates.numElem(); i++)
 	{
@@ -1188,7 +1188,7 @@ IRenderState* ShaderAPID3DX9::CreateDepthStencilState( const DepthStencilStatePa
 // creates rasterizer state
 IRenderState* ShaderAPID3DX9::CreateRasterizerState( const RasterizerStateParams_t &rasterDesc )
 {
-	CD3D9RasterizerState* pState = NULL;
+	CD3D9RasterizerState* pState = nullptr;
 
 	for(int i = 0; i < m_RasterizerStates.numElem(); i++)
 	{
@@ -1256,7 +1256,7 @@ void ShaderAPID3DX9::FreeTexture(ITexture* pTexture)
 {
 	CD3D9Texture* pTex = (CD3D9Texture*)(pTexture);
 
-	if(pTex == NULL)
+	if(pTex == nullptr)
 		return;
 
 	{
@@ -1289,13 +1289,13 @@ bool ShaderAPID3DX9::InternalCreateRenderTarget(LPDIRECT3DDEVICE9 dev, CD3D9Text
 {
 	if (caps.INTZSupported && caps.INTZFormat == tex->GetFormat())
 	{
-		LPDIRECT3DBASETEXTURE9 pTexture = NULL;
+		LPDIRECT3DBASETEXTURE9 pTexture = nullptr;
 
 		tex->usage = D3DUSAGE_DEPTHSTENCIL;
 		tex->m_pool = D3DPOOL_DEFAULT;
 
 		DevMsg(DEVMSG_SHADERAPI, "InternalCreateRenderTarget: creating INTZ render target single texture for %s\n", tex->GetName());
-		if (dev->CreateTexture(tex->GetWidth(), tex->GetHeight(), tex->GetMipCount(), tex->usage, formats[tex->GetFormat()], tex->m_pool, (LPDIRECT3DTEXTURE9*)&pTexture, NULL) != D3D_OK)
+		if (dev->CreateTexture(tex->GetWidth(), tex->GetHeight(), tex->GetMipCount(), tex->usage, formats[tex->GetFormat()], tex->m_pool, (LPDIRECT3DTEXTURE9*)&pTexture, nullptr) != D3D_OK)
 		{
 			MsgError("!!! Couldn't create '%s' INTZ render target with size %d %d\n", tex->GetName(), tex->GetWidth(), tex->GetHeight());
 			ASSERT(!"Couldn't create INTZ render target");
@@ -1304,7 +1304,7 @@ bool ShaderAPID3DX9::InternalCreateRenderTarget(LPDIRECT3DDEVICE9 dev, CD3D9Text
 
 		tex->textures.append(pTexture);
 
-		LPDIRECT3DSURFACE9 pSurface = NULL;
+		LPDIRECT3DSURFACE9 pSurface = nullptr;
 
 		HRESULT hr = ((LPDIRECT3DTEXTURE9)tex->textures[0])->GetSurfaceLevel(0, &pSurface);
 		if (!FAILED(hr))
@@ -1314,11 +1314,11 @@ bool ShaderAPID3DX9::InternalCreateRenderTarget(LPDIRECT3DDEVICE9 dev, CD3D9Text
 	{
 		DevMsg(DEVMSG_SHADERAPI, "InternalCreateRenderTarget: creating depth/stencil surface for %s\n", tex->GetName());
 
-		LPDIRECT3DSURFACE9 pSurface = NULL;
+		LPDIRECT3DSURFACE9 pSurface = nullptr;
 
 		tex->m_pool = D3DPOOL_DEFAULT;
 
-		if (dev->CreateDepthStencilSurface( tex->GetWidth(), tex->GetHeight(), formats[tex->GetFormat()], D3DMULTISAMPLE_NONE, 0, FALSE, &pSurface, NULL) != D3D_OK )
+		if (dev->CreateDepthStencilSurface( tex->GetWidth(), tex->GetHeight(), formats[tex->GetFormat()], D3DMULTISAMPLE_NONE, 0, FALSE, &pSurface, nullptr) != D3D_OK )
 		{
 			MsgError("!!! Couldn't create create '%s' depth surface with size %d %d\n", tex->GetName(), tex->GetWidth(), tex->GetHeight());
 			ASSERT(!"Couldn't create depth surface");
@@ -1333,7 +1333,7 @@ bool ShaderAPID3DX9::InternalCreateRenderTarget(LPDIRECT3DDEVICE9 dev, CD3D9Text
 		{
 			DevMsg(DEVMSG_SHADERAPI, "InternalCreateRenderTarget: creating depth for %s\n", tex->GetName());
 			if (dev->CreateDepthStencilSurface(tex->GetWidth(), tex->GetHeight(), D3DFMT_D16,
-				D3DMULTISAMPLE_NONE, 0, TRUE, &tex->m_dummyDepth, NULL) != D3D_OK)
+				D3DMULTISAMPLE_NONE, 0, TRUE, &tex->m_dummyDepth, nullptr) != D3D_OK)
 			{
 				MsgError("!!! Couldn't create '%s' depth surface for RT with size %d %d\n", tex->GetName(), tex->GetWidth(), tex->GetHeight());
 				ASSERT(!"Couldn't create depth surface for RT");
@@ -1345,10 +1345,10 @@ bool ShaderAPID3DX9::InternalCreateRenderTarget(LPDIRECT3DDEVICE9 dev, CD3D9Text
 		{
 			tex->m_pool = D3DPOOL_DEFAULT;
 
-			LPDIRECT3DBASETEXTURE9 pTexture = NULL;
+			LPDIRECT3DBASETEXTURE9 pTexture = nullptr;
 
 			DevMsg(DEVMSG_SHADERAPI, "InternalCreateRenderTarget: creating cubemap target for %s\n", tex->GetName());
-			if (dev->CreateCubeTexture(tex->GetWidth(), tex->GetMipCount(), tex->usage, formats[tex->GetFormat()], tex->m_pool, (LPDIRECT3DCUBETEXTURE9 *) &pTexture, NULL) != D3D_OK)
+			if (dev->CreateCubeTexture(tex->GetWidth(), tex->GetMipCount(), tex->usage, formats[tex->GetFormat()], tex->m_pool, (LPDIRECT3DCUBETEXTURE9 *) &pTexture, nullptr) != D3D_OK)
 			{
 				MsgError("!!! Couldn't create '%s' cubemap render target with size %d %d\n", tex->GetName(), tex->GetWidth(), tex->GetHeight());
 				ASSERT(!"Couldn't create cubemap render target");
@@ -1359,7 +1359,7 @@ bool ShaderAPID3DX9::InternalCreateRenderTarget(LPDIRECT3DDEVICE9 dev, CD3D9Text
 
 			for (uint i = 0; i < 6; i++)
 			{
-				LPDIRECT3DSURFACE9 pSurface = NULL;
+				LPDIRECT3DSURFACE9 pSurface = nullptr;
 
 				HRESULT hr = ((LPDIRECT3DCUBETEXTURE9) tex->textures[0])->GetCubeMapSurface((D3DCUBEMAP_FACES) i, 0, &pSurface);
 
@@ -1369,12 +1369,12 @@ bool ShaderAPID3DX9::InternalCreateRenderTarget(LPDIRECT3DDEVICE9 dev, CD3D9Text
 		}
 		else 
 		{
-			LPDIRECT3DBASETEXTURE9 pTexture = NULL;
+			LPDIRECT3DBASETEXTURE9 pTexture = nullptr;
 
 			tex->m_pool = D3DPOOL_DEFAULT;
 
 			DevMsg(DEVMSG_SHADERAPI, "InternalCreateRenderTarget: creating render target single texture for %s\n", tex->GetName());
-			if (dev->CreateTexture(tex->GetWidth(), tex->GetHeight(), tex->GetMipCount(), tex->usage, formats[tex->GetFormat()], tex->m_pool, (LPDIRECT3DTEXTURE9 *) &pTexture, NULL) != D3D_OK)
+			if (dev->CreateTexture(tex->GetWidth(), tex->GetHeight(), tex->GetMipCount(), tex->usage, formats[tex->GetFormat()], tex->m_pool, (LPDIRECT3DTEXTURE9 *) &pTexture, nullptr) != D3D_OK)
 			{
 				MsgError("!!! Couldn't create '%s' render target with size %d %d\n", tex->GetName(), tex->GetWidth(), tex->GetHeight());
 				ASSERT(!"Couldn't create render target");
@@ -1383,7 +1383,7 @@ bool ShaderAPID3DX9::InternalCreateRenderTarget(LPDIRECT3DDEVICE9 dev, CD3D9Text
 
 			tex->textures.append(pTexture);
 
-			LPDIRECT3DSURFACE9 pSurface = NULL;
+			LPDIRECT3DSURFACE9 pSurface = nullptr;
 
 			HRESULT hr = ((LPDIRECT3DTEXTURE9) tex->textures[0])->GetSurfaceLevel(0, &pSurface);
 			if(!FAILED(hr))
@@ -1425,7 +1425,7 @@ ITexture* ShaderAPID3DX9::CreateRenderTarget(int width, int height, ETextureForm
 	else 
 	{
 		delete pTexture;
-		return NULL;
+		return nullptr;
 	}
 }
 
@@ -1456,7 +1456,7 @@ ITexture* ShaderAPID3DX9::CreateNamedRenderTarget(const char* pszName,int width,
 	else 
 	{
 		delete pTexture;
-		return NULL;
+		return nullptr;
 	}
 }
 
@@ -1472,9 +1472,9 @@ void ShaderAPID3DX9::SaveRenderTarget(ITexture* pTargetTexture, const char* pFil
 		CD3D9Texture* pTexture = (CD3D9Texture*)pTargetTexture;
 
 		if(pTexture->GetFlags() & TEXFLAG_CUBEMAP)
-			D3DXSaveTextureToFileA(pFileName, D3DXIFF_DDS, pTexture->textures[0], NULL);
+			D3DXSaveTextureToFileA(pFileName, D3DXIFF_DDS, pTexture->textures[0], nullptr);
 		else
-			D3DXSaveSurfaceToFileA(pFileName, D3DXIFF_DDS, pTexture->surfaces[0], NULL,NULL);
+			D3DXSaveSurfaceToFileA(pFileName, D3DXIFF_DDS, pTexture->surfaces[0], nullptr, nullptr);
 	}
 }
 
@@ -1505,7 +1505,7 @@ void ShaderAPID3DX9::CopyFramebufferToTexture(ITexture* pTargetTexture)
 	if( FAILED( hr ) )
 		return;
 
-	hr = m_pD3DDevice->StretchRect( srcSurface, NULL, destSurface, NULL, D3DTEXF_NONE );
+	hr = m_pD3DDevice->StretchRect( srcSurface, nullptr, destSurface, nullptr, D3DTEXF_NONE );
 	ASSERT( !FAILED( hr ) );
 
 	destSurface->Release();
@@ -1571,7 +1571,7 @@ void ShaderAPID3DX9::CopyRendertargetToTexture(ITexture* srcTarget, ITexture* de
 
 		ASSERT(destSurface);
 
-		hr = m_pD3DDevice->StretchRect( srcSurface, srcRect ? &dxSrcRect : NULL, destSurface, destRect ? &dxDestRect : NULL, D3DTEXF_NONE );
+		hr = m_pD3DDevice->StretchRect( srcSurface, srcRect ? &dxSrcRect : nullptr, destSurface, destRect ? &dxDestRect : nullptr, D3DTEXF_NONE );
 		//ASSERT( !FAILED( hr ) );
 
 		//if(FAILED( hr ))
@@ -1601,14 +1601,14 @@ void ShaderAPID3DX9::ChangeRenderTargets(ITexture** pRenderTargets, int nNumRTs,
 
 	for (int i = nNumRTs; i < m_caps.maxRenderTargets; i++)
 	{
-		if (m_pCurrentColorRenderTargets[i] != NULL)
+		if (m_pCurrentColorRenderTargets[i] != nullptr)
 		{
-			m_pD3DDevice->SetRenderTarget(i, NULL);
-			m_pCurrentColorRenderTargets[i] = NULL;
+			m_pD3DDevice->SetRenderTarget(i, nullptr);
+			m_pCurrentColorRenderTargets[i] = nullptr;
 		}
 	}
 
-	LPDIRECT3DSURFACE9 bestDepth = nNumRTs ? ((CD3D9Texture*)pRenderTargets[0])->m_dummyDepth : NULL;
+	LPDIRECT3DSURFACE9 bestDepth = nNumRTs ? ((CD3D9Texture*)pRenderTargets[0])->m_dummyDepth : nullptr;
 
 	if (pDepthTarget != m_pCurrentDepthRenderTarget)
 	{
@@ -1635,25 +1635,25 @@ void ShaderAPID3DX9::ChangeRenderTargetToBackBuffer()
 {
 	// we can do it simplier, but there is a lack in depth, so keep an old this method...
 	
-	if (m_pCurrentColorRenderTargets[0] != NULL)
+	if (m_pCurrentColorRenderTargets[0] != nullptr)
 	{
 		m_pD3DDevice->SetRenderTarget(0, m_fbColorTexture->surfaces[0]);
-		m_pCurrentColorRenderTargets[0] = NULL;
+		m_pCurrentColorRenderTargets[0] = nullptr;
 	}
 
 	for (int i = 1; i < m_caps.maxRenderTargets; i++)
 	{
-		if (m_pCurrentColorRenderTargets[i] != NULL)
+		if (m_pCurrentColorRenderTargets[i] != nullptr)
 		{
-			m_pD3DDevice->SetRenderTarget(i, NULL);
-			m_pCurrentColorRenderTargets[i] = NULL;
+			m_pD3DDevice->SetRenderTarget(i, nullptr);
+			m_pCurrentColorRenderTargets[i] = nullptr;
 		}
 	}
 
-	if (m_pCurrentDepthSurface != NULL)
+	if (m_pCurrentDepthSurface != nullptr)
 	{
 		m_pD3DDevice->SetDepthStencilSurface(m_fbDepthTexture->surfaces[0]);
-		m_pCurrentDepthSurface = NULL;
+		m_pCurrentDepthSurface = nullptr;
 	}
 }
 
@@ -1689,7 +1689,7 @@ void ShaderAPID3DX9::GetCurrentRenderTargets(ITexture* pRenderTargets[MAX_MRTS],
 			if(cubeNumbers)
 				cubeNumbers[i] = m_nCurrentCRTSlice[i];
 
-			if(m_pCurrentColorRenderTargets[i] == NULL)
+			if(m_pCurrentColorRenderTargets[i] == nullptr)
 				break;
 		}
 	}
@@ -1781,17 +1781,17 @@ void ShaderAPID3DX9::ChangeVertexFormat(IVertexFormat* pVertexFormat)
 
 	if (pFormat != m_pCurrentVertexFormat)
 	{
-		if (pFormat != NULL)
+		if (pFormat != nullptr)
 		{
 			m_pD3DDevice->SetVertexDeclaration(pFormat->m_pVertexDecl);
 
 			CVertexFormatD3DX9* pCurrentFormat = (CVertexFormatD3DX9*)m_pCurrentVertexFormat;
-			if (pCurrentFormat != NULL)
+			if (pCurrentFormat != nullptr)
 			{
 				for (int i = 0; i < MAX_VERTEXSTREAM; i++)
 				{
 					if (pFormat->m_streamStride[i] != pCurrentFormat->m_streamStride[i])
-						m_pCurrentVertexBuffers[i] = NULL;
+						m_pCurrentVertexBuffers[i] = nullptr;
 				}
 			}
 		}
@@ -1830,8 +1830,8 @@ void ShaderAPID3DX9::ChangeVertexBuffer(IVertexBuffer* pVertexBuffer,int nStream
 
 	if (pVB != m_pCurrentVertexBuffers[nStream] || m_nCurrentOffsets[nStream] != offset)
 	{
-		if (pVB == NULL)
-			m_pD3DDevice->SetStreamSource(nStream, NULL, 0, 0 );
+		if (pVB == nullptr)
+			m_pD3DDevice->SetStreamSource(nStream, nullptr, 0, 0 );
 		else 
 			m_pD3DDevice->SetStreamSource(nStream, pVB->m_pVertexBuffer, (UINT)offset*pVB->GetStrideSize(), pVB->GetStrideSize());
 
@@ -1847,8 +1847,8 @@ void ShaderAPID3DX9::ChangeIndexBuffer(IIndexBuffer* pIndexBuffer)
 	{
 		CIndexBufferD3DX9* pIB = (CIndexBufferD3DX9*)(pIndexBuffer);
 
-		if (pIB == NULL)
-			m_pD3DDevice->SetIndices(NULL);
+		if (pIB == nullptr)
+			m_pD3DDevice->SetIndices(nullptr);
 		else
 			m_pD3DDevice->SetIndices(pIB->m_pIndexBuffer);
 
@@ -1993,7 +1993,7 @@ bool ShaderAPID3DX9::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 
 	EqString cache_file_name(EqString::Format("ShaderCache_DX9/%s.scache", pShaderOutput->GetName()));
 
-	IFile* pStream = NULL;
+	IFile* pStream = nullptr;
 
 	bool needsCompile = true;
 
@@ -2054,7 +2054,7 @@ bool ShaderAPID3DX9::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 		}
 	}
 
-	if(needsCompile && info.data.text != NULL)
+	if(needsCompile && info.data.text != nullptr)
 	{
 		pStream = g_fileSystem->Open( cache_file_name.GetData(), "wb", SP_ROOT);
 
@@ -2074,14 +2074,14 @@ bool ShaderAPID3DX9::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 	if(pStream) // write empty header
 		pStream->Write(&scHdr, 1, sizeof(shaderCacheHdr_t));
 
-	if (info.data.text != NULL)
+	if (info.data.text != nullptr)
 	{
-		LPD3DXBUFFER shaderBuf = NULL;
-		LPD3DXBUFFER errorsBuf = NULL;
+		LPD3DXBUFFER shaderBuf = nullptr;
+		LPD3DXBUFFER errorsBuf = nullptr;
 
 		EqString shaderString;
 
-		if (extra  != NULL)
+		if (extra  != nullptr)
 			shaderString.Append(extra);
 
 		int maxVSVersion = D3DSHADER_VERSION_MAJOR(m_hCaps.VertexShaderVersion);
@@ -2113,7 +2113,7 @@ bool ShaderAPID3DX9::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 		shaderString.Append(info.data.text);
 
 		HRESULT compileResult = D3DXCompileShader(shaderString.GetData(), shaderString.Length(),
-			NULL, NULL, 
+			nullptr, nullptr,
 			entry.ToCString(), profile.ToCString(),
 			D3DXSHADER_DEBUG | D3DXSHADER_PACKMATRIX_ROWMAJOR | D3DXSHADER_PARTIALPRECISION,
 			&shaderBuf, &errorsBuf, &pShader->m_pVSConstants);
@@ -2158,14 +2158,14 @@ bool ShaderAPID3DX9::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 		}
 	}
 
-	if (info.data.text != NULL)
+	if (info.data.text != nullptr)
 	{
-		LPD3DXBUFFER shaderBuf = NULL;
-		LPD3DXBUFFER errorsBuf = NULL;
+		LPD3DXBUFFER shaderBuf = nullptr;
+		LPD3DXBUFFER errorsBuf = nullptr;
 
 		EqString shaderString;
 
-		if (extra  != NULL)
+		if (extra  != nullptr)
 			shaderString.Append(extra);
 
 		int maxPSVersion = D3DSHADER_VERSION_MAJOR(m_hCaps.PixelShaderVersion);
@@ -2198,7 +2198,7 @@ bool ShaderAPID3DX9::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 
 		HRESULT compileResult = D3DXCompileShader(
 			shaderString.GetData(), shaderString.Length(),
-			NULL, NULL, entry.ToCString(), profile.ToCString(),
+			nullptr, nullptr, entry.ToCString(), profile.ToCString(),
 			D3DXSHADER_DEBUG | D3DXSHADER_PACKMATRIX_ROWMAJOR,
 			&shaderBuf, &errorsBuf,
 			&pShader->m_pPSConstants);
@@ -2242,7 +2242,7 @@ bool ShaderAPID3DX9::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 		}
 	}
 
-	if (pShader->m_pPixelShader == NULL || pShader->m_pVertexShader == NULL)
+	if (pShader->m_pPixelShader == nullptr || pShader->m_pVertexShader == nullptr)
 	{
 		if(pStream)
 		{
@@ -2261,7 +2261,7 @@ bool ShaderAPID3DX9::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 	ID3DXConstantTable* d3dVSConstants = pShader->m_pVSConstants;
 	ID3DXConstantTable* d3dPSConstants = pShader->m_pPSConstants;
 
-	if(d3dVSConstants == NULL || d3dPSConstants == NULL)
+	if(d3dVSConstants == nullptr || d3dPSConstants == nullptr)
 	{
 		// write empty cache file so it won't fuck up
 		if(pStream)
@@ -2294,7 +2294,7 @@ bool ShaderAPID3DX9::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 	for (uint i = 0; i < vsDesc.Constants; i++)
 	{
 		UINT cnt = 1;
-		d3dVSConstants->GetConstantDesc(d3dVSConstants->GetConstant(NULL, i), &cDesc, &cnt);
+		d3dVSConstants->GetConstantDesc(d3dVSConstants->GetConstant(nullptr, i), &cDesc, &cnt);
 
 		//size_t length = strlen(cDesc.Name);
 		if (cDesc.Type >= D3DXPT_SAMPLER && cDesc.Type <= D3DXPT_SAMPLERCUBE)
@@ -2539,7 +2539,7 @@ IVertexFormat* ShaderAPID3DX9::CreateVertexFormat(const char* name, VertexFormat
 		delete pFormat;
 		MsgError("Couldn't create vertex declaration");
 		ASSERT(!"Couldn't create vertex declaration");
-		return NULL;
+		return nullptr;
 	}
 
 	m_Mutex.Lock();
@@ -2570,11 +2570,11 @@ IVertexBuffer* ShaderAPID3DX9::CreateVertexBuffer(ER_BufferAccess nBufAccess, in
 
 	bool dynamic = (pBuffer->m_nUsage & D3DUSAGE_DYNAMIC) != 0;
 
-	if (m_pD3DDevice->CreateVertexBuffer(pBuffer->m_nInitialSize, pBuffer->m_nUsage, 0, dynamic ? D3DPOOL_DEFAULT : D3DPOOL_MANAGED, &pBuffer->m_pVertexBuffer, NULL) != D3D_OK)
+	if (m_pD3DDevice->CreateVertexBuffer(pBuffer->m_nInitialSize, pBuffer->m_nUsage, 0, dynamic ? D3DPOOL_DEFAULT : D3DPOOL_MANAGED, &pBuffer->m_pVertexBuffer, nullptr) != D3D_OK)
 	{
 		MsgError("Direct3D Error: Couldn't create vertex buffer with size %d\n", pBuffer->m_nSize);
         ASSERT(!"Direct3D Error: Couldn't create vertex buffer");
-		return NULL;
+		return nullptr;
 	}
 
 	// make first transfer operation
@@ -2615,11 +2615,11 @@ IIndexBuffer* ShaderAPID3DX9::CreateIndexBuffer(int nIndices, int nIndexSize, ER
 		hr = m_pD3DDevice->TestCooperativeLevel();
 	}
 
-	if (m_pD3DDevice->CreateIndexBuffer(pBuffer->m_nInitialSize, pBuffer->m_nUsage, nIndexSize == 2? D3DFMT_INDEX16 : D3DFMT_INDEX32, dynamic ? D3DPOOL_DEFAULT : D3DPOOL_MANAGED, &pBuffer->m_pIndexBuffer, NULL) != D3D_OK)
+	if (m_pD3DDevice->CreateIndexBuffer(pBuffer->m_nInitialSize, pBuffer->m_nUsage, nIndexSize == 2? D3DFMT_INDEX16 : D3DFMT_INDEX32, dynamic ? D3DPOOL_DEFAULT : D3DPOOL_MANAGED, &pBuffer->m_pIndexBuffer, nullptr) != D3D_OK)
 	{
 		MsgError("Direct3D Error: Couldn't create index buffer with size %d\n", pBuffer->m_nInitialSize);
 		ASSERT(!"Direct3D Error: Couldn't create index buffer\n");
-		return NULL;
+		return nullptr;
 	}
 
 	// make first transfer operation
@@ -2672,7 +2672,7 @@ void ShaderAPID3DX9::DrawNonIndexedPrimitives(ER_PrimitiveType nType, int nFirst
 IDirect3DBaseTexture9* ShaderAPID3DX9::CreateD3DTextureFromImage(CImage* pSrc, int& wide, int& tall, int nFlags)
 {
 	if(!pSrc)
-		return NULL;
+		return nullptr;
 
 	HOOK_TO_CVAR(r_loadmiplevel);
 	int nQuality = r_loadmiplevel->GetInt();
@@ -2693,7 +2693,7 @@ IDirect3DBaseTexture9* ShaderAPID3DX9::CreateD3DTextureFromImage(CImage* pSrc, i
 	const D3DPOOL			nPool = D3DPOOL_MANAGED;
 	const ETextureFormat	nFormat = pSrc->GetFormat();
 
-	IDirect3DBaseTexture9* pTexture = NULL;
+	IDirect3DBaseTexture9* pTexture = nullptr;
 
 	if (pSrc->IsCube())
 	{
@@ -2703,7 +2703,7 @@ IDirect3DBaseTexture9* ShaderAPID3DX9::CreateD3DTextureFromImage(CImage* pSrc, i
 											formats[nFormat],
 											nPool,
 											(LPDIRECT3DCUBETEXTURE9 *)&pTexture, 
-											NULL) != D3D_OK)
+											nullptr) != D3D_OK)
 		{
 			MsgError("D3D9 ERROR: Couldn't create cubemap texture '%s'\n", pSrc->GetName());
 
@@ -2722,7 +2722,7 @@ IDirect3DBaseTexture9* ShaderAPID3DX9::CreateD3DTextureFromImage(CImage* pSrc, i
 												formats[nFormat],
 												nPool,
 												(LPDIRECT3DVOLUMETEXTURE9 *)&pTexture, 
-												NULL) != D3D_OK)
+												nullptr) != D3D_OK)
 		{
 			MsgError("D3D9 ERROR: Couldn't create volumetric texture '%s'\n", pSrc->GetName());
 
@@ -2738,7 +2738,7 @@ IDirect3DBaseTexture9* ShaderAPID3DX9::CreateD3DTextureFromImage(CImage* pSrc, i
 										formats[nFormat], 
 										nPool, 
 										(LPDIRECT3DTEXTURE9 *)&pTexture, 
-										NULL)!= D3D_OK)
+										nullptr)!= D3D_OK)
 		{
 			MsgError("D3D9 ERROR: Couldn't create texture %s\n", pSrc->GetName());
 
@@ -2765,9 +2765,12 @@ void ShaderAPID3DX9::CreateTextureInternal(ITexture** pTex, const Array<CImage*>
 	if(!pImages.numElem())
 		return;
 
+	// reserve texture slot
+	const int nameHash = StringToHash(pImages[0]->GetName(), true);
+
 	HOOK_TO_CVAR(r_loadmiplevel);
 
-	CD3D9Texture* pTexture = NULL;
+	CD3D9Texture* pTexture = nullptr;
 
 	// get or create
 	if(*pTex)
@@ -2824,10 +2827,9 @@ void ShaderAPID3DX9::CreateTextureInternal(ITexture** pTex, const Array<CImage*>
 	// if this is a new texture, add
 	if(!(*pTex))
 	{
-		m_Mutex.Lock();
+		CScopedMutex m(m_Mutex);
 		ASSERT_MSG(m_TextureList.find(pTexture->m_nameHash) == m_TextureList.end(), "Texture %s was already added", pTexture->GetName());
 		m_TextureList.insert(pTexture->m_nameHash, pTexture);
-		m_Mutex.Unlock();
 	}
 
 	// set for output

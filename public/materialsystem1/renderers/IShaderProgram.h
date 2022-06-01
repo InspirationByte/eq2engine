@@ -11,7 +11,7 @@
 #include "core/ppmem.h"
 #include "ds/refcounted.h"
 
-class IShaderProgram : public RefCountedObject
+class IShaderProgram : public RefCountedObject<IShaderProgram>
 {
 public:
 	// Get shader name

@@ -190,34 +190,34 @@ void MutexUnlock( MutexHandle_t& handle )
 	LeaveCriticalSection( &handle );
 }
 
-InterlockedInt_t IncrementInterlocked( InterlockedInt_t& value )
+int IncrementInterlocked(int& value )
 {
-	return InterlockedIncrementAcquire( &value );
+	return InterlockedIncrementAcquire((LPLONG)&value);
 }
 
-InterlockedInt_t DecrementInterlocked( InterlockedInt_t& value )
+int DecrementInterlocked(int& value )
 {
-	return InterlockedDecrementAcquire( &value );
+	return InterlockedDecrementAcquire((LPLONG)&value);
 }
 
-InterlockedInt_t AddInterlocked( InterlockedInt_t& value, InterlockedInt_t i )
+int AddInterlocked(int& value, int i )
 {
-	return InterlockedExchangeAdd( &value, i ) + i;
+	return InterlockedExchangeAdd((LPLONG)&value, i) + i;
 }
 
-InterlockedInt_t SubtractInterlocked( InterlockedInt_t& value, InterlockedInt_t i )
+int SubtractInterlocked(int& value, int i )
 {
-	return InterlockedExchangeAdd( &value, - i ) - i;
+	return InterlockedExchangeAdd((LPLONG)&value, - i) - i;
 }
 
-InterlockedInt_t ExchangeInterlocked( InterlockedInt_t& value, InterlockedInt_t exchange )
+int ExchangeInterlocked(int& value, int exchange )
 {
-	return InterlockedExchange( &value, exchange );
+	return InterlockedExchange((LPLONG)&value, exchange);
 }
 
-InterlockedInt_t CompareExchangeInterlocked( InterlockedInt_t& value, InterlockedInt_t comparand, InterlockedInt_t exchange )
+int CompareExchangeInterlocked(int& value, int comparand, int exchange )
 {
-	return InterlockedCompareExchange( &value, exchange, comparand );
+	return InterlockedCompareExchange((LPLONG)&value, exchange, comparand);
 }
 
 #else
@@ -458,32 +458,32 @@ void MutexUnlock( MutexHandle_t& handle )
 	pthread_mutex_unlock( & handle );
 }
 
-InterlockedInt_t IncrementInterlocked( InterlockedInt_t& value )
+int IncrementInterlocked(int& value )
 {
 	return __sync_add_and_fetch( &value, 1 );
 }
 
-InterlockedInt_t DecrementInterlocked( InterlockedInt_t& value )
+int DecrementInterlocked(int& value )
 {
 	return __sync_sub_and_fetch( &value, 1 );
 }
 
-InterlockedInt_t AddInterlocked( InterlockedInt_t& value, InterlockedInt_t i )
+int AddInterlocked(int& value, int i )
 {
 	return __sync_add_and_fetch( &value, i );
 }
 
-InterlockedInt_t SubtractInterlocked( InterlockedInt_t& value, InterlockedInt_t i )
+int SubtractInterlocked(int& value, int i )
 {
 	return __sync_sub_and_fetch( &value, - i );
 }
 
-InterlockedInt_t ExchangeInterlocked( InterlockedInt_t& value, InterlockedInt_t exchange )
+int ExchangeInterlocked(int& value, int exchange )
 {
 	return __sync_val_compare_and_swap( &value, value, exchange );
 }
 
-InterlockedInt_t CompareExchangeInterlocked( InterlockedInt_t& value, InterlockedInt_t comparand, InterlockedInt_t exchange )
+int CompareExchangeInterlocked(int& value, int comparand, int exchange )
 {
 	return __sync_val_compare_and_swap( &value, comparand, exchange );
 }

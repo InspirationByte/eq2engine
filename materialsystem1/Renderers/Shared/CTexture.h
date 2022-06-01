@@ -42,17 +42,17 @@ public:
 
 protected:
 	EqString				m_szTexName;
-	int						m_nameHash;
+	int						m_nameHash{ 0 };
 
-	ushort					m_iFlags;
-	ushort					m_iWidth;
-	ushort					m_iHeight;
-	ushort					m_mipCount;
+	ushort					m_iFlags{ 0 };
+	ushort					m_iWidth{ 0 };
+	ushort					m_iHeight{ 0 };
+	ushort					m_mipCount{ 1 };
 
-	ushort					m_nAnimatedTextureFrame;
-	ushort					m_numAnimatedTextureFrames;
+	ushort					m_nAnimatedTextureFrame{ 0 };
+	ushort					m_numAnimatedTextureFrames{ 1 };
 
-	ETextureFormat			m_iFormat;
+	ETextureFormat			m_iFormat{ FORMAT_NONE };
 
 	SamplerStateParam_t		m_samplerState;
 };

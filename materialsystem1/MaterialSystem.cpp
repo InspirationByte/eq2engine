@@ -15,6 +15,7 @@
 #include "core/ConVar.h"
 #include "core/ConCommand.h"
 #include "core/IFileSystem.h"
+#include "core/IEqParallelJobs.h"
 
 #include "utils/strtools.h"
 #include "utils/KeyValues.h"
@@ -89,47 +90,69 @@ class CEqMatSystemThreadedLoader : public CEqThread
 public:
 	virtual int Run()
 	{
-		int counter = 0;
-
-		while(true)
+		IMaterial* nextMaterial = nullptr;
 		{
-			m_Mutex.Lock();
-				// out of bounds
-				if(counter >= m_newMaterials.numElem())
-				{
-					m_newMaterials.setNum(0);
-					m_Mutex.Unlock();
-					break;
-				}
-
-				IMaterial* material = m_newMaterials[counter];
-				counter++;
-			m_Mutex.Unlock();
-
-			if (material)
+			CScopedMutex m(m_Mutex);
+			auto it = m_newMaterials.begin();
+			if (it != m_newMaterials.end())
 			{
-				// load this material
-				((CMaterial*)material)->DoLoadShaderAndTextures();
+				nextMaterial = it.key();
+				m_newMaterials.remove(it);
 			}
 		}
+			
+		// load this material
+		((CMaterial*)nextMaterial)->DoLoadShaderAndTextures();
 
-		// run thread code here
+		{
+			CScopedMutex m(m_Mutex);
+			if (m_newMaterials.size())
+				SignalWork();
+		}
+
 		return 0;
 	}
 
 	void AddMaterial(IMaterial* pMaterial)
 	{
-		CScopedMutex m(m_Mutex);
-		m_newMaterials.addUnique( pMaterial );
+		if (!pMaterial)
+			return;
+
+		{
+			CScopedMutex m(m_Mutex);
+			if (m_newMaterials.find(pMaterial) != m_newMaterials.end())
+				return;
+
+			m_newMaterials.insert(pMaterial);
+		}
+
+		if (false) // g_parallelJobs->IsInitialized())
+		{
+			g_parallelJobs->AddJob(JOB_TYPE_ANY, [pMaterial, this](void*, int) {
+				((CMaterial*)pMaterial)->DoLoadShaderAndTextures();
+				{
+					CScopedMutex m(m_Mutex);
+					m_newMaterials.remove(pMaterial);
+				}
+			});
+
+			g_parallelJobs->Submit();
+			return;
+		}
+
+		if (!IsRunning())
+			StartWorkerThread("matSystemLoader");
+
+		SignalWork();
 	}
 
 	int GetCount() const
 	{
-		return m_newMaterials.numElem();
+		return m_newMaterials.size();
 	}
 
 protected:
-	Array<IMaterial*>	m_newMaterials{ PP_SL };
+	Set<IMaterial*>		m_newMaterials{ PP_SL };
 
 	CEqMutex			m_Mutex;
 };
@@ -844,9 +867,6 @@ void CMaterialSystem::PutMaterialToLoadingQueue(IMaterial* pMaterial)
 	if( m_config.threadedloader )
 	{
 		g_threadedMaterialLoader.AddMaterial(pMaterial);
-
-		if(!g_threadedMaterialLoader.IsRunning())
-			g_threadedMaterialLoader.StartWorkerThread("matSystemLoader");
 	}
 	else
 	{

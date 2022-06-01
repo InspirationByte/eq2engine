@@ -54,7 +54,7 @@ void CEqCollisionBroadphaseGrid::Init(CEqPhysics* physics, int gridsize, const V
 		}
 	}
 
-	float grid_size = (float(sizeof(collgridcell_t)*m_gridWide*m_gridTall) / 1024.0f) / 1024.0f;
+	float grid_size = (float(sizeof(collgridcell_t*)*m_gridWide*m_gridTall) / 1024.0f) / 1024.0f;
 
 	DevMsg(DEVMSG_CORE, "CELL PTR MAP INIT = %d x %d (cellsize = %d). SIZE=%.2f MB\n", m_gridWide, m_gridTall, m_gridSize, grid_size);
 }

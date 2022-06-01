@@ -152,7 +152,7 @@ bool CIndexBufferGL::Lock(int lockOfs, int sizeToLock, void** outdata, bool read
 	// index buffer should be restored
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, currIB ? currIB->GetCurrentBuffer() : 0);
 
-	if(m_lockPtr == NULL)
+	if(m_lockPtr == nullptr)
 		ASSERT_FAIL("Failed to map index buffer!");
 #else
 	int nLockByteCount = m_nIndexSize*sizeToLock;
@@ -217,7 +217,7 @@ void CIndexBufferGL::Unlock()
 #ifndef USE_GLES2 // don't do dis...
 		PPFree(m_lockPtr);
 #endif // USE_GLES2
-		m_lockPtr = NULL;
+		m_lockPtr = nullptr;
 	}
 	else
 		ASSERT(!"Vertex buffer is not locked!");

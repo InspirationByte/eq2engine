@@ -12,23 +12,10 @@
 
 CTexture::CTexture()
 {
-	m_iFormat = FORMAT_NONE;
-	m_iFlags = 0;
-	m_iWidth = 0;
-	m_iHeight = 0;
-	m_mipCount = 1;
-	m_nameHash = 0;
-
-	// default frame is zero
-	m_nAnimatedTextureFrame = 0;
-
-	// can be one
-	m_numAnimatedTextureFrames = 1;
 }
 
 CTexture::~CTexture()
 {
-
 }
 
 const char* CTexture::GetName() const

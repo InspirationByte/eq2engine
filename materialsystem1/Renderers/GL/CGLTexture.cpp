@@ -93,7 +93,7 @@ void CGLTexture::Lock(texlockdata_t* pLockData, Rectangle_t* pRect, bool bDiscar
 
 	if( IsCompressedFormat(m_iFormat) )
 	{
-		pLockData->pData = NULL;
+		pLockData->pData = nullptr;
 		pLockData->nPitch = 0;
 		return;
 	}
@@ -174,7 +174,7 @@ void CGLTexture::Unlock()
 		}
 
 		PPFree(m_lockPtr);
-		m_lockPtr = NULL;
+		m_lockPtr = nullptr;
 	}
 	else
 		ASSERT(!"Texture is not locked!");
@@ -198,7 +198,7 @@ bool UpdateGLTextureFromImage(GLTextureRef_t texture, CImage* image, int startMi
 	// Upload it all
 	ubyte *src;
 	int mipMapLevel = startMipLevel;
-	while ((src = image->GetPixels(mipMapLevel)) != NULL)
+	while ((src = image->GetPixels(mipMapLevel)) != nullptr)
 	{
 		const int size = image->GetMipMappedSize(mipMapLevel, 1);
 		const int lockBoxLevel = mipMapLevel - startMipLevel;

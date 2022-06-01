@@ -20,7 +20,7 @@ struct texlockdata_t
 	int		nPitch;
 };
 
-class ITexture : public RefCountedObject
+class ITexture : public RefCountedObject<ITexture>
 {
 public:
 	// Name of texture

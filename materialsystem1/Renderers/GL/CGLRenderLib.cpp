@@ -126,7 +126,7 @@ LRESULT CALLBACK PFWinProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam
 bool CGLRenderLib::InitCaps()
 {
 #if defined(PLAT_WIN)
-	HINSTANCE modHandle = GetModuleHandle(NULL);
+	HINSTANCE modHandle = GetModuleHandle(nullptr);
 
 	//Unregister PFrmt if
 	UnregisterClass(L"PFrmt", modHandle);
@@ -148,16 +148,16 @@ bool CGLRenderLib::InitCaps()
 	wincl.lpszClassName = L"PFrmt";
 	wincl.lpfnWndProc = PFWinProc;
 	wincl.style = 0;
-	wincl.hIcon = NULL;
-	wincl.hCursor = NULL;
-	wincl.lpszMenuName = NULL;
+	wincl.hIcon = nullptr;
+	wincl.hCursor = nullptr;
+	wincl.lpszMenuName = nullptr;
 	wincl.cbClsExtra = 0;
 	wincl.cbWndExtra = 0;
-	wincl.hbrBackground = NULL;
+	wincl.hbrBackground = nullptr;
 
 	RegisterClass(&wincl);
 
-	HWND hPFwnd = CreateWindow(L"PFrmt", L"PFormat", WS_POPUP | WS_CLIPCHILDREN | WS_CLIPSIBLINGS, 0, 0, 8, 8, HWND_DESKTOP, NULL, modHandle, NULL);
+	HWND hPFwnd = CreateWindow(L"PFrmt", L"PFormat", WS_POPUP | WS_CLIPCHILDREN | WS_CLIPSIBLINGS, 0, 0, 8, 8, HWND_DESKTOP, nullptr, modHandle, nullptr);
 	if(hPFwnd)
 	{
 		HDC hdc = GetDC(hPFwnd);
@@ -172,7 +172,7 @@ bool CGLRenderLib::InitCaps()
 		if(!didLoad)
 			MsgError("OpenGL load errors: %i\n", didLoad.GetNumMissing());
 
-		wglMakeCurrent(NULL, NULL);
+		wglMakeCurrent(nullptr, nullptr);
 		wglDeleteContext(hglrc);
 		ReleaseDC(m_hwnd, hdc);
 
@@ -243,10 +243,10 @@ bool CGLRenderLib::InitAPI(const shaderAPIParams_t& params)
 
 	// Enumerate display devices
 	int monitorCounter = r_screen->GetInt();
-	EnumDisplayMonitors(NULL, NULL, MonitorEnumProc, (LPARAM) &monitorCounter);
+	EnumDisplayMonitors(nullptr, nullptr, MonitorEnumProc, (LPARAM) &monitorCounter);
 
 	m_dispDevice.cb = sizeof(m_dispDevice);
-	EnumDisplayDevicesA(NULL, r_screen->GetInt(), &m_dispDevice, 0);
+	EnumDisplayDevicesA(nullptr, r_screen->GetInt(), &m_dispDevice, 0);
 	
 	// get window parameters
 
@@ -316,7 +316,7 @@ bool CGLRenderLib::InitAPI(const shaderAPIParams_t& params)
 	int bestSamples = 0;
 	uint nPFormats;
 
-	if (wgl::exts::var_ARB_pixel_format && wgl::ChoosePixelFormatARB(m_hdc, iPFDAttribs, NULL, elementsOf(pixelFormats), pixelFormats, &nPFormats) && nPFormats > 0)
+	if (wgl::exts::var_ARB_pixel_format && wgl::ChoosePixelFormatARB(m_hdc, iPFDAttribs, nullptr, elementsOf(pixelFormats), pixelFormats, &nPFormats) && nPFormats > 0)
 	{
 		int minDiff = 0x7FFFFFFF;
 		int attrib = wgl::SAMPLES_ARB;
@@ -351,7 +351,7 @@ bool CGLRenderLib::InitAPI(const shaderAPIParams_t& params)
 		0
 	};
 
-	m_glContext = wgl::CreateContextAttribsARB(m_hdc, NULL, iAttribs);
+	m_glContext = wgl::CreateContextAttribsARB(m_hdc, nullptr, iAttribs);
 	DWORD error = GetLastError();
 	if(!m_glContext)
 	{
@@ -442,7 +442,7 @@ bool CGLRenderLib::InitAPI(const shaderAPIParams_t& params)
 		};
 
 		m_xvi = glXChooseVisual(m_display, m_screen, attribs);
-		if (m_xvi != NULL) break;
+		if (m_xvi != nullptr) break;
 
 		multiSamplingMode -= 2;
 		if (multiSamplingMode < 0){
@@ -601,7 +601,7 @@ bool CGLRenderLib::InitAPI(const shaderAPIParams_t& params)
 void CGLRenderLib::ExitAPI()
 {
 #ifdef PLAT_WIN
-	wglMakeCurrent(NULL, NULL);
+	wglMakeCurrent(nullptr, nullptr);
 
 	DestroySharedContexts();
 
@@ -612,11 +612,11 @@ void CGLRenderLib::ExitAPI()
 	if (!m_windowed)
 	{
 		// Reset display mode to default
-		ChangeDisplaySettingsExA((const char *) m_dispDevice.DeviceName, NULL, NULL, 0, NULL);
+		ChangeDisplaySettingsExA((const char *) m_dispDevice.DeviceName, nullptr, nullptr, 0, nullptr);
 	}
 #elif defined(PLAT_LINUX)
 
-    glXMakeCurrent(m_display, None, NULL);
+    glXMakeCurrent(m_display, None, nullptr);
     glXDestroyContext(m_display, m_glContext);
 
 	if(!g_shaderApi.m_params->windowedMode)
@@ -699,7 +699,7 @@ bool CGLRenderLib::SetWindowed(bool enabled)
 		m_devMode.dmPelsWidth = m_width;
 		m_devMode.dmPelsHeight = m_height;
 
-		LONG dispChangeStatus = ChangeDisplaySettingsExA((const char*)m_dispDevice.DeviceName, &m_devMode, NULL, CDS_FULLSCREEN, NULL);
+		LONG dispChangeStatus = ChangeDisplaySettingsExA((const char*)m_dispDevice.DeviceName, &m_devMode, nullptr, CDS_FULLSCREEN, nullptr);
 		if (dispChangeStatus != DISP_CHANGE_SUCCESSFUL)
 		{
 			MsgError("ChangeDisplaySettingsEx - couldn't set fullscreen mode %dx%d on %s (%d)\n", m_width, m_height, m_dispDevice.DeviceName, dispChangeStatus);			
@@ -713,7 +713,7 @@ bool CGLRenderLib::SetWindowed(bool enabled)
 		if (XF86VidModeSwitchToMode(m_display, m_screen, m_dmodes[0]))
 			XF86VidModeSetViewPort(m_display, m_screen, 0, 0);
 #elif defined(PLAT_WIN)
-		ChangeDisplaySettingsExA((const char*)m_dispDevice.DeviceName, NULL, NULL, 0, NULL);
+		ChangeDisplaySettingsExA((const char*)m_dispDevice.DeviceName, nullptr, nullptr, 0, nullptr);
 #endif
 	}
 	
@@ -736,7 +736,7 @@ void CGLRenderLib::SetBackbufferSize(const int w, const int h)
 
 	SetWindowed(m_windowed);
 
-	if (m_glContext != NULL)
+	if (m_glContext != nullptr)
 	{
 		glViewport(0, 0, m_width, m_height);
 		GLCheckError("set viewport");
@@ -783,7 +783,7 @@ IEqSwapChain* CGLRenderLib::CreateSwapChain(void* window, bool windowed)
 	{
 		MsgError("ERROR: Can't create OpenGL swapchain!\n");
 		delete pNewChain;
-		return NULL;
+		return nullptr;
 	}
 #endif
 
@@ -801,7 +801,7 @@ void  CGLRenderLib::DestroySwapChain(IEqSwapChain* swapChain)
 // returns default swap chain
 IEqSwapChain*  CGLRenderLib::GetDefaultSwapchain()
 {
-	return NULL;
+	return nullptr;
 }
 
 //----------------------------------------------------------------------------------------
@@ -840,9 +840,9 @@ void CGLRenderLib::EndAsyncOperation()
 	//glFinish();
 
 #ifdef PLAT_WIN
-	wglMakeCurrent(NULL, NULL);
+	wglMakeCurrent(nullptr, nullptr);
 #elif defined(PLAT_LINUX)
-	glXMakeCurrent(m_display, None, NULL);
+	glXMakeCurrent(m_display, None, nullptr);
 #elif defined(PLAT_OSX)
 	// aglMakeCurrent TODO
 #endif

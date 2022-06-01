@@ -103,8 +103,6 @@ studioMotionData_t* Studio_LoadMotionData(const char* pszPath, int boneCount)
 		return NULL;
 	}
 
-	DevMsg(DEVMSG_CORE,"Loading %s motion package\n", pszPath);
-
 	animpackagehdr_t* pHDR = (animpackagehdr_t*)pData;
 
 	if(pHDR->ident != ANIMCA_IDENT)
@@ -146,19 +144,12 @@ studioMotionData_t* Studio_LoadMotionData(const char* pszPath, int boneCount)
 			{
 				numAnimDescs = pLump->size / sizeof(animationdesc_t);
 				animationdescs = (animationdesc_t*)pData;
-
-				//	Msg("Num anim descs: %d\n", numAnimDescs);
-				DevMsg(DEVMSG_CORE,"all animations: %d\n", numAnimDescs);
-
 				break;
 			}
 			case ANIMCA_ANIMATIONFRAMES:
 			{
 				numAnimFrames = pLump->size / sizeof(animframe_t);
 				animframes = (animframe_t*)pData;
-
-				DevMsg(DEVMSG_CORE,"all animframes: %d\n", numAnimFrames);
-
 				anim_frames_decompressed = false;
 
 				break;
@@ -179,8 +170,6 @@ studioMotionData_t* Studio_LoadMotionData(const char* pszPath, int boneCount)
 				if (status == Z_OK)
 				{
 					numAnimFrames = realSize / sizeof(animframe_t);
-					DevMsg(DEVMSG_CORE,"all animframes: %d\n", numAnimFrames);
-
 					anim_frames_decompressed = true;
 				}
 				else
@@ -194,9 +183,6 @@ studioMotionData_t* Studio_LoadMotionData(const char* pszPath, int boneCount)
 
 				pMotion->sequences = (sequencedesc_t*)PPAlloc(pLump->size);
 				memcpy(pMotion->sequences, pData, pLump->size);
-
-				DevMsg(DEVMSG_CORE,"sequence descs: %d\n", pMotion->numsequences);
-
 				break;
 			}
 			case ANIMCA_EVENTS:
@@ -205,9 +191,6 @@ studioMotionData_t* Studio_LoadMotionData(const char* pszPath, int boneCount)
 
 				pMotion->events = (sequenceevent_t*)PPAlloc(pLump->size);
 				memcpy(pMotion->events, pData, pLump->size);
-
-				DevMsg(DEVMSG_CORE,"events: %d\n", pMotion->numEvents);
-
 				break;
 			}
 			case ANIMCA_POSECONTROLLERS:
@@ -216,9 +199,6 @@ studioMotionData_t* Studio_LoadMotionData(const char* pszPath, int boneCount)
 
 				pMotion->poseControllers = (posecontroller_t*)PPAlloc(pLump->size);
 				memcpy(pMotion->poseControllers, pData, pLump->size);
-
-				DevMsg(DEVMSG_CORE,"pose controllers: %d\n", pMotion->numPoseControllers);
-
 				break;
 			}
 		}
@@ -268,184 +248,156 @@ bool Studio_LoadPhysModel(const char* pszPath, studioPhysData_t* pModel)
 {
 	memset(pModel, 0, sizeof(studioPhysData_t));
 
-	if(g_fileSystem->FileExist( pszPath ))
+	if (!g_fileSystem->FileExist(pszPath))
+		return false;
+
+	ubyte* pData = (ubyte*)g_fileSystem->GetFileBuffer( pszPath );
+
+	ubyte* pStart = pData;
+
+	if(!pData)
+		return false;
+
+	physmodelhdr_t *pHdr = (physmodelhdr_t*)pData;
+
+	if(pHdr->ident != PHYSMODEL_ID)
 	{
-		ubyte* pData = (ubyte*)g_fileSystem->GetFileBuffer( pszPath );
-
-		ubyte* pStart = pData;
-
-		if(!pData)
-			return false;
-
-		DevMsg(DEVMSG_CORE, "Loading POD '%s'\n", pszPath);
-
-		physmodelhdr_t *pHdr = (physmodelhdr_t*)pData;
-
-		if(pHdr->ident != PHYSMODEL_ID)
-		{
-			MsgError("'%s' is not a POD physics model\n", pszPath);
-			PPFree(pData);
-			return false;
-		}
-
-		if(pHdr->version != PHYSMODEL_VERSION)
-		{
-			MsgError("POD-File '%s' has physics model version\n", pszPath);
-			PPFree(pData);
-			return false;
-		}
-
-		Array<EqString> objectNames{ PP_SL };
-
-		pData += sizeof(physmodelhdr_t);
-
-		int nLumps = pHdr->num_lumps;
-		for(int lump = 0; lump < nLumps; lump++)
-		{
-			physmodellump_t* pLump = (physmodellump_t*)pData;
-			pData += sizeof(physmodellump_t);
-
-			switch(pLump->type)
-			{
-				case PHYSLUMP_PROPERTIES:
-				{
-					physmodelprops_t* props = (physmodelprops_t*)pData;
-					pModel->modeltype = props->model_usage;
-
-					DevMsg(DEVMSG_CORE, "PHYSLUMP_PROPERTIES\n");
-
-					break;
-				}
-				case PHYSLUMP_GEOMETRYINFO:
-				{
-					int numGeomInfos = pLump->size / sizeof(physgeominfo_t);
-
-					physgeominfo_t* pGeomInfos = (physgeominfo_t*)pData;
-
-					pModel->numShapes = numGeomInfos;
-					pModel->shapes = (studioPhysShapeCache_t*)PPAlloc(numGeomInfos*sizeof(studioPhysShapeCache_t));
-
-					for(int i = 0; i < numGeomInfos; i++)
-					{
-						pModel->shapes[i].cachedata = NULL;
-
-						// copy shape info
-						memcpy(&pModel->shapes[i].shape_info, &pGeomInfos[i], sizeof(physgeominfo_t));
-					}
-
-					DevMsg(DEVMSG_CORE, "PHYSLUMP_GEOMETRYINFO size = %d (cnt = %d)\n", pLump->size, numGeomInfos);
-
-					break;
-				}
-				case PHYSLUMP_OBJECTNAMES:
-				{
-					char* name = (char*)pData;
-
-					int len = strlen(name);
-					int sz = 0;
-
-					do
-					{
-						char* str = name+sz;
-
-						len = strlen(str);
-
-						if(len > 0)
-							objectNames.append(str);
-
-						sz += len + 1;
-					}while(sz < pLump->size);
-
-					DevMsg(DEVMSG_CORE, "PHYSLUMP_OBJECTNAMES size = %d (cnt = %d)\n", pLump->size, objectNames.numElem());
-
-					break;
-				}
-				case PHYSLUMP_OBJECTS:
-				{
-					int numObjInfos = pLump->size / sizeof(physobject_t);
-					physobject_t* physObjDataLump = (physobject_t*)pData;
-
-					pModel->numObjects = numObjInfos;
-					pModel->objects = (studioPhysObject_t*)PPAlloc(numObjInfos*sizeof(studioPhysObject_t));
-
-					for(int i = 0; i < numObjInfos; i++)
-					{
-						studioPhysObject_t& objData = pModel->objects[i];
-
-						if(objectNames.numElem() > 0)
-							strcpy(objData.name, objectNames[i].ToCString());
-
-						// copy shape info
-						memcpy(&objData.object, &physObjDataLump[i], sizeof(physobject_t));
-
-						for(int j = 0; j < MAX_GEOM_PER_OBJECT; j++)
-							objData.shapeCache[j] = nullptr;
-					}
-
-					DevMsg(DEVMSG_CORE, "PHYSLUMP_OBJECTS size = %d (cnt = %d)\n", pLump->size, numObjInfos);
-
-					break;
-				}
-				case PHYSLUMP_JOINTDATA:
-				{
-					int numJointInfos = pLump->size / sizeof(physjoint_t);
-					physjoint_t* pJointData = (physjoint_t*)pData;
-
-					pModel->numJoints = numJointInfos;
-
-					if(pModel->numJoints)
-					{
-						pModel->joints = (physjoint_t*)PPAlloc(pLump->size);
-						memcpy(pModel->joints, pJointData, pLump->size );
-					}
-
-					DevMsg(DEVMSG_CORE, "PHYSLUMP_JOINTDATA\n");
-
-					break;
-				}
-				case PHYSLUMP_VERTEXDATA:
-				{
-					int numVerts = pLump->size / sizeof(Vector3D);
-					Vector3D* pVertexData = (Vector3D*)pData;
-
-					pModel->numVertices = numVerts;
-					pModel->vertices = (Vector3D*)PPAlloc(pLump->size);
-					memcpy(pModel->vertices, pVertexData, pLump->size );
-
-					DevMsg(DEVMSG_CORE, "PHYSLUMP_VERTEXDATA\n");
-
-					break;
-				}
-				case PHYSLUMP_INDEXDATA:
-				{
-					int numIndices = pLump->size / sizeof(int);
-					int* pIndexData = (int*)pData;
-
-					pModel->numIndices = numIndices;
-					pModel->indices = (int*)PPAlloc(pLump->size);
-					memcpy(pModel->indices, pIndexData, pLump->size );
-
-					DevMsg(DEVMSG_CORE, "PHYSLUMP_INDEXDATA\n");
-
-					break;
-				}
-				default:
-				{
-					MsgWarning("*WARNING* Invalid POD-file '%s' lump type '%d'.\n", pszPath, pLump->type);
-					break;
-				}
-			}
-
-			pData += pLump->size;
-		}
-
-		PPFree(pStart);
-	}
-	else
-	{
+		MsgError("'%s' is not a POD physics model\n", pszPath);
+		PPFree(pData);
 		return false;
 	}
 
+	if(pHdr->version != PHYSMODEL_VERSION)
+	{
+		MsgError("POD-File '%s' has physics model version\n", pszPath);
+		PPFree(pData);
+		return false;
+	}
+
+	Array<EqString> objectNames{ PP_SL };
+
+	pData += sizeof(physmodelhdr_t);
+
+	int nLumps = pHdr->num_lumps;
+	for(int lump = 0; lump < nLumps; lump++)
+	{
+		physmodellump_t* pLump = (physmodellump_t*)pData;
+		pData += sizeof(physmodellump_t);
+
+		switch(pLump->type)
+		{
+			case PHYSLUMP_PROPERTIES:
+			{
+				physmodelprops_t* props = (physmodelprops_t*)pData;
+				pModel->modeltype = props->model_usage;
+				break;
+			}
+			case PHYSLUMP_GEOMETRYINFO:
+			{
+				int numGeomInfos = pLump->size / sizeof(physgeominfo_t);
+
+				physgeominfo_t* pGeomInfos = (physgeominfo_t*)pData;
+
+				pModel->numShapes = numGeomInfos;
+				pModel->shapes = (studioPhysShapeCache_t*)PPAlloc(numGeomInfos*sizeof(studioPhysShapeCache_t));
+
+				for(int i = 0; i < numGeomInfos; i++)
+				{
+					pModel->shapes[i].cachedata = NULL;
+
+					// copy shape info
+					memcpy(&pModel->shapes[i].shape_info, &pGeomInfos[i], sizeof(physgeominfo_t));
+				}
+				break;
+			}
+			case PHYSLUMP_OBJECTNAMES:
+			{
+				char* name = (char*)pData;
+
+				int len = strlen(name);
+				int sz = 0;
+
+				do
+				{
+					char* str = name+sz;
+
+					len = strlen(str);
+
+					if(len > 0)
+						objectNames.append(str);
+
+					sz += len + 1;
+				}while(sz < pLump->size);
+				break;
+			}
+			case PHYSLUMP_OBJECTS:
+			{
+				int numObjInfos = pLump->size / sizeof(physobject_t);
+				physobject_t* physObjDataLump = (physobject_t*)pData;
+
+				pModel->numObjects = numObjInfos;
+				pModel->objects = (studioPhysObject_t*)PPAlloc(numObjInfos*sizeof(studioPhysObject_t));
+
+				for(int i = 0; i < numObjInfos; i++)
+				{
+					studioPhysObject_t& objData = pModel->objects[i];
+
+					if(objectNames.numElem() > 0)
+						strcpy(objData.name, objectNames[i].ToCString());
+
+					// copy shape info
+					memcpy(&objData.object, &physObjDataLump[i], sizeof(physobject_t));
+
+					for(int j = 0; j < MAX_GEOM_PER_OBJECT; j++)
+						objData.shapeCache[j] = nullptr;
+				}
+				break;
+			}
+			case PHYSLUMP_JOINTDATA:
+			{
+				int numJointInfos = pLump->size / sizeof(physjoint_t);
+				physjoint_t* pJointData = (physjoint_t*)pData;
+
+				pModel->numJoints = numJointInfos;
+
+				if(pModel->numJoints)
+				{
+					pModel->joints = (physjoint_t*)PPAlloc(pLump->size);
+					memcpy(pModel->joints, pJointData, pLump->size );
+				}
+				break;
+			}
+			case PHYSLUMP_VERTEXDATA:
+			{
+				int numVerts = pLump->size / sizeof(Vector3D);
+				Vector3D* pVertexData = (Vector3D*)pData;
+
+				pModel->numVertices = numVerts;
+				pModel->vertices = (Vector3D*)PPAlloc(pLump->size);
+				memcpy(pModel->vertices, pVertexData, pLump->size );
+				break;
+			}
+			case PHYSLUMP_INDEXDATA:
+			{
+				int numIndices = pLump->size / sizeof(int);
+				int* pIndexData = (int*)pData;
+
+				pModel->numIndices = numIndices;
+				pModel->indices = (int*)PPAlloc(pLump->size);
+				memcpy(pModel->indices, pIndexData, pLump->size );
+				break;
+			}
+			default:
+			{
+				MsgWarning("*WARNING* Invalid POD-file '%s' lump type '%d'.\n", pszPath, pLump->type);
+				break;
+			}
+		}
+
+		pData += pLump->size;
+	}
+
+	PPFree(pStart);
 	return true;
 }
 

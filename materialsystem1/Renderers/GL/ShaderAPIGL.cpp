@@ -266,7 +266,7 @@ void ShaderAPIGL::Init( const shaderAPIParams_t &params)
 
 	for(int i = 0; i < CONSTANT_TYPE_COUNT; i++)
 	{
-		if(s_uniformFuncs[i] == NULL)
+		if(s_uniformFuncs[i] == nullptr)
 			ASSERT_FAIL("Uniform function for '%d' is not ok, pls check extensions\n", i);
 	}
 }
@@ -310,9 +310,9 @@ void ShaderAPIGL::ApplyTextures()
 			// Set the active texture unit and bind the selected texture to target
 			glActiveTexture(GL_TEXTURE0 + i);
 
-			if (pSelectedTexture == NULL)
+			if (pSelectedTexture == nullptr)
 			{
-				//if(pCurrentTexture != NULL)
+				//if(pCurrentTexture != nullptr)
 				glBindTexture(glTexTargetType[currentGLTexture.type], 0);
 			}
 			else
@@ -340,7 +340,7 @@ void ShaderAPIGL::ApplyBlendState()
 	{
 		int mask = COLORMASK_ALL;
 	
-		if (pSelectedState == NULL)
+		if (pSelectedState == nullptr)
 		{
 			if (m_bCurrentBlendEnable)
 			{
@@ -445,7 +445,7 @@ void ShaderAPIGL::ApplyRasterizerState()
 
 	if (m_pCurrentRasterizerState != pSelectedState)
 	{
-		if (pSelectedState == NULL)
+		if (pSelectedState == nullptr)
 		{
 			if (CULL_BACK != m_nCurrentCullMode)
 			{
@@ -670,7 +670,7 @@ void ShaderAPIGL::Finish()
 IOcclusionQuery* ShaderAPIGL::CreateOcclusionQuery()
 {
 	if(!m_caps.isHardwareOcclusionQuerySupported)
-		return NULL;
+		return nullptr;
 
 	CGLOcclusionQuery* occQuery = PPNew CGLOcclusionQuery();
 
@@ -699,7 +699,7 @@ void ShaderAPIGL::FreeTexture(ITexture* pTexture)
 {
 	CGLTexture* pTex = (CGLTexture*)pTexture;
 
-	if(pTex == NULL)
+	if(pTex == nullptr)
 		return;
 
 	{
@@ -836,7 +836,7 @@ void ShaderAPIGL::ResizeRenderTarget(ITexture* pRT, int newWide, int newTall)
 			GLenum depthSrcType = chanTypePerFormat[depthFmt];
 
 			glBindTexture(GL_TEXTURE_2D, pTex->glDepthID);
-			glTexImage2D(GL_TEXTURE_2D, 0, depthInternalFormat, newWide, newTall, 0, depthSrcFormat, depthSrcType, NULL);
+			glTexImage2D(GL_TEXTURE_2D, 0, depthInternalFormat, newWide, newTall, 0, depthSrcFormat, depthSrcType, nullptr);
 			GLCheckError("gen tex image depth");
 			glBindTexture(GL_TEXTURE_2D, 0);
 		}
@@ -859,12 +859,12 @@ void ShaderAPIGL::ResizeRenderTarget(ITexture* pRT, int newWide, int newTall)
 		if (pTex->GetFlags() & TEXFLAG_CUBEMAP)
 		{
 			for (int i = 0; i < 6; i++)
-				glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, internalFormat, newWide, newTall, 0, srcFormat, srcType, NULL);
+				glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, internalFormat, newWide, newTall, 0, srcFormat, srcType, nullptr);
 			GLCheckError("gen tex image cube");
 		}
 		else
 		{
-			glTexImage2D(pTex->glTarget, 0, internalFormat, newWide, newTall, 0, srcFormat, srcType, NULL);
+			glTexImage2D(pTex->glTarget, 0, internalFormat, newWide, newTall, 0, srcFormat, srcType, nullptr);
 			GLCheckError("gen tex image");
 		}
 
@@ -963,7 +963,7 @@ void ShaderAPIGL::CreateTextureInternal(ITexture** pTex, const Array<CImage*>& p
 	if(!pImages.numElem())
 		return;
 
-	CGLTexture* pTexture = NULL;
+	CGLTexture* pTexture = nullptr;
 
 	// get or create
 	if(*pTex)
@@ -1103,7 +1103,7 @@ void ShaderAPIGL::CopyFramebufferToTexture(ITexture* pTargetTexture)
 	ITexture* currentRenderTarget[MAX_MRTS];
 	int	currentCRTSlice[MAX_MRTS];
 	ITexture* currentDepthTarget = m_pCurrentDepthRenderTarget;
-	m_pCurrentDepthRenderTarget = NULL;
+	m_pCurrentDepthRenderTarget = nullptr;
 
 	int currentNumRTs = 0;
 	for(; currentNumRTs < MAX_MRTS;)
@@ -1116,7 +1116,7 @@ void ShaderAPIGL::CopyFramebufferToTexture(ITexture* pTargetTexture)
 		currentRenderTarget[currentNumRTs] = rt;
 		currentCRTSlice[currentNumRTs] = m_nCurrentCRTSlice[currentNumRTs];
 
-		m_pCurrentColorRenderTargets[currentNumRTs] = NULL;
+		m_pCurrentColorRenderTargets[currentNumRTs] = nullptr;
 		m_nCurrentCRTSlice[currentNumRTs] = 0;
 
 		currentNumRTs++;
@@ -1155,7 +1155,7 @@ void ShaderAPIGL::CopyRendertargetToTexture(ITexture* srcTarget, ITexture* destT
 	ITexture* currentRenderTarget[MAX_MRTS];
 	int	currentCRTSlice[MAX_MRTS];
 	ITexture* currentDepthTarget = m_pCurrentDepthRenderTarget;
-	m_pCurrentDepthRenderTarget = NULL;
+	m_pCurrentDepthRenderTarget = nullptr;
 
 	int currentNumRTs = 0;
 	for(; currentNumRTs < MAX_MRTS;)
@@ -1168,7 +1168,7 @@ void ShaderAPIGL::CopyRendertargetToTexture(ITexture* srcTarget, ITexture* destT
 		currentRenderTarget[currentNumRTs] = rt;
 		currentCRTSlice[currentNumRTs] = m_nCurrentCRTSlice[currentNumRTs];
 
-		m_pCurrentColorRenderTargets[currentNumRTs] = NULL;
+		m_pCurrentColorRenderTargets[currentNumRTs] = nullptr;
 		m_nCurrentCRTSlice[currentNumRTs] = 0;
 
 		currentNumRTs++;
@@ -1271,13 +1271,13 @@ void ShaderAPIGL::ChangeRenderTargets(ITexture** pRenderTargets, int nNumRTs, in
 		for (int i = nNumRTs; i < m_nCurrentRenderTargets; i++)
 		{
 			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, 0, 0);
-			m_pCurrentColorRenderTargets[i] = NULL;
+			m_pCurrentColorRenderTargets[i] = nullptr;
 			m_nCurrentCRTSlice[i] = -1;
 		}
 
 		if (nNumRTs == 0)
 		{
-			glDrawBuffers(0, NULL);
+			glDrawBuffers(0, nullptr);
 			glReadBuffer(GL_NONE);
 		}
 		else
@@ -1326,11 +1326,11 @@ void ShaderAPIGL::ChangeRenderTargets(ITexture** pRenderTargets, int nNumRTs, in
 	}
 
 	// like in D3D, set the viewport as texture size by default
-	if (m_nCurrentRenderTargets > 0 && m_pCurrentColorRenderTargets[0] != NULL)
+	if (m_nCurrentRenderTargets > 0 && m_pCurrentColorRenderTargets[0] != nullptr)
 	{
 		SetViewport(0, 0, m_pCurrentColorRenderTargets[0]->GetWidth(), m_pCurrentColorRenderTargets[0]->GetHeight());
 	}
-	else if(m_pCurrentDepthRenderTarget != NULL)
+	else if(m_pCurrentDepthRenderTarget != nullptr)
 	{
 		SetViewport(0, 0, m_pCurrentDepthRenderTarget->GetWidth(), m_pCurrentDepthRenderTarget->GetHeight());
 	}
@@ -1381,9 +1381,9 @@ void ShaderAPIGL::ChangeRenderTargetToBackBuffer()
 	int numRTs = m_nCurrentRenderTargets;
 
 	for (int i = 0; i < numRTs; i++)
-		m_pCurrentColorRenderTargets[i] = NULL;
+		m_pCurrentColorRenderTargets[i] = nullptr;
 
-	m_pCurrentDepthRenderTarget = NULL;
+	m_pCurrentDepthRenderTarget = nullptr;
 	m_currentGLDepth = GL_NONE;
 }
 
@@ -1592,7 +1592,7 @@ void ShaderAPIGL::ChangeIndexBuffer(IIndexBuffer *pIndexBuffer)
 
 	if (pIndexBuffer != m_pCurrentIndexBuffer || (ibo != m_currentGLIB))
 	{
-		if (pIndexBuffer == NULL)
+		if (pIndexBuffer == nullptr)
 		{
 			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 			GLCheckError("bind elem array 0");
@@ -1733,7 +1733,7 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 		shaderString.Append(SHADER_HELPERS_STRING);
 		shaderString.Append(SHADER_HELPERS_STRING_VERTEX);
 
-		if (extra != NULL)
+		if (extra != nullptr)
 			shaderString.Append(extra);
 
 		const GLchar* sStr[] = { 
@@ -1752,7 +1752,7 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 			if (!GLCheckError("create vertex shader"))
 				return -1;
 
-			glShaderSource(cdata.vertexShader, sizeof(sStr) / sizeof(sStr[0]), (const GLchar **)sStr, NULL);
+			glShaderSource(cdata.vertexShader, sizeof(sStr) / sizeof(sStr[0]), (const GLchar **)sStr, nullptr);
 			glCompileShader(cdata.vertexShader);
 			GLCheckError("compile vert shader");
 
@@ -1810,7 +1810,7 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 		shaderString.Append(SHADER_HELPERS_STRING);
 		shaderString.Append(SHADER_HELPERS_STRING_FRAGMENT);
 
-		if (extra != NULL)
+		if (extra != nullptr)
 			shaderString.Append(extra);
 
 		const GLchar* sStr[] = { 
@@ -1824,7 +1824,7 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 			if (!GLCheckError("create fragment shader"))
 				return -1;
 
-			glShaderSource(cdata.fragmentShader, sizeof(sStr) / sizeof(sStr[0]), (const GLchar**)sStr, NULL);
+			glShaderSource(cdata.fragmentShader, sizeof(sStr) / sizeof(sStr[0]), (const GLchar**)sStr, nullptr);
 			glCompileShader(cdata.fragmentShader);
 			GLCheckError("compile frag shader");
 
@@ -2286,7 +2286,7 @@ void ShaderAPIGL::DestroyIndexBuffer(IIndexBuffer* pIndexBuffer)
 // Primitive drawing
 //-------------------------------------------------------------
 
-IVertexFormat* pPlainFormat = NULL;
+IVertexFormat* pPlainFormat = nullptr;
 
 PRIMCOUNTER g_pGLPrimCounterCallbacks[] =
 {
@@ -2340,7 +2340,7 @@ void ShaderAPIGL::DrawIndexedPrimitives(ER_PrimitiveType nType, int nFirstIndex,
 // Draw elements
 void ShaderAPIGL::DrawNonIndexedPrimitives(ER_PrimitiveType nType, int nFirstVertex, int nVertices)
 {
-	if(m_pCurrentVertexFormat == NULL)
+	if(m_pCurrentVertexFormat == nullptr)
 		return;
 
 	if (nVertices <= 2)
@@ -2386,7 +2386,7 @@ void ShaderAPIGL::SaveRenderTarget(ITexture* pTargetTexture, const char* pFileNa
 // creates blending state
 IRenderState* ShaderAPIGL::CreateBlendingState( const BlendStateParam_t &blendDesc )
 {
-	CGLBlendingState* pState = NULL;
+	CGLBlendingState* pState = nullptr;
 
 	for(int i = 0; i < m_BlendStates.numElem(); i++)
 	{
@@ -2439,7 +2439,7 @@ IRenderState* ShaderAPIGL::CreateBlendingState( const BlendStateParam_t &blendDe
 // creates depth/stencil state
 IRenderState* ShaderAPIGL::CreateDepthStencilState( const DepthStencilStateParams_t &depthDesc )
 {
-	CGLDepthStencilState* pState = NULL;
+	CGLDepthStencilState* pState = nullptr;
 
 	for(int i = 0; i < m_DepthStates.numElem(); i++)
 	{
@@ -2486,7 +2486,7 @@ IRenderState* ShaderAPIGL::CreateDepthStencilState( const DepthStencilStateParam
 // creates rasterizer state
 IRenderState* ShaderAPIGL::CreateRasterizerState( const RasterizerStateParams_t &rasterDesc )
 {
-	CGLRasterizerState* pState = NULL;
+	CGLRasterizerState* pState = nullptr;
 
 	for(int i = 0; i < m_RasterizerStates.numElem(); i++)
 	{

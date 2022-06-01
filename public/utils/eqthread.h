@@ -38,7 +38,6 @@ typedef unsigned int (*threadfunc_t)(void *);
 #ifdef _WIN32
 typedef HANDLE				SignalHandle_t;
 typedef CRITICAL_SECTION	MutexHandle_t;
-typedef long				InterlockedInt_t;
 #else
 struct SignalHandle_t
 {
@@ -51,7 +50,6 @@ struct SignalHandle_t
 	bool 	signaled; // is it signaled right now?
 };
 typedef pthread_mutex_t		MutexHandle_t;
-typedef int					InterlockedInt_t;
 #endif // _WIN32
 
 static constexpr const int WAIT_INFINITE = -1;
@@ -99,14 +97,14 @@ void				MutexUnlock( MutexHandle_t& handle );
 // Atomic pointers and integers
 //
 
-InterlockedInt_t	IncrementInterlocked( InterlockedInt_t & value );
-InterlockedInt_t	DecrementInterlocked( InterlockedInt_t & value );
+int					IncrementInterlocked(int& value );
+int					DecrementInterlocked(int& value );
 
-InterlockedInt_t	AddInterlocked( InterlockedInt_t& value, InterlockedInt_t i );
-InterlockedInt_t	SubtractInterlocked( InterlockedInt_t& value, InterlockedInt_t i );
+int					AddInterlocked(int& value, int i );
+int					SubtractInterlocked(int& value, int i );
 
-InterlockedInt_t	ExchangeInterlocked( InterlockedInt_t& value, InterlockedInt_t exchange );
-InterlockedInt_t	CompareExchangeInterlocked( InterlockedInt_t& value, InterlockedInt_t comparand, InterlockedInt_t exchange );
+int					ExchangeInterlocked( int& value, int exchange );
+int					CompareExchangeInterlocked(int& value, int comparand, int exchange );
 /*
 void*				InterlockedExchangePointer( void * & ptr, void * exchange );
 void*				InterlockedCompareExchangePointer( void * & ptr, void* comparand, void* exchange );
@@ -197,19 +195,19 @@ public:
 	int					Decrement() { return DecrementInterlocked( m_nValue ); }
 
 	// atomically adds a value to the integer and returns the new value
-	int					Add( int v ) { return AddInterlocked( m_nValue, (InterlockedInt_t) v ); }
+	int					Add( int v ) { return AddInterlocked( m_nValue, v); }
 
 	// atomically subtracts a value from the integer and returns the new value
-	int					Sub( int v ) { return SubtractInterlocked( m_nValue, (InterlockedInt_t) v ); }
+	int					Sub( int v ) { return SubtractInterlocked( m_nValue, v); }
 
 	// returns the current value of the integer
 	int					GetValue() const { return m_nValue; }
 
 	// sets a new value, Note: this operation is not atomic
-	void				SetValue( int v ) { m_nValue = (InterlockedInt_t)v; }
+	void				SetValue( int v ) { m_nValue = v; }
 
 private:
-	InterlockedInt_t	m_nValue;
+	int					m_nValue;
 };
 
 /*----------------------------------------------------------------------------------------

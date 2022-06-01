@@ -8,13 +8,15 @@
 #ifndef REFCOUNTED_H
 #define REFCOUNTED_H
 
+#include "utils/eqthread.h"
+
 /*
 	usage:
 
 	1. Inherit it in your class
 	------------------------------------------------------------------------------
 
-	class CBlaBlaObject : public RefCountedObject
+	class CBlaBlaObject : public RefCountedObject<CBlaBlaObject>
 
 	2. Make it's removal function
 	------------------------------------------------------------------------------
@@ -37,24 +39,29 @@
 	Don't do Ref_Drop inside assignedFactory->Free();
 */
 
+template< class TYPE >
+class CRefPtr;
 
+template< class TYPE >
 class RefCountedObject
 {
 public:
-			RefCountedObject()	: m_numRefs(0) {}
+	using PTR_T = CRefPtr<TYPE>;
+
+	RefCountedObject() = default;
 	virtual ~RefCountedObject() {}
 
-	void	Ref_Grab()			{m_numRefs++;}
+	void	Ref_Grab();
 	bool	Ref_Drop();
 
-	int		Ref_Count() const	{return m_numRefs;}
+	int		Ref_Count() const { return m_numRefs; }
 
 private:
 	void	Ref_CheckRemove()
 	{
 		// ASSERT(m_numRefs < 0);
 
-		if(m_numRefs <= 0)
+		if (m_numRefs <= 0)
 			Ref_DeleteObject();
 	}
 
@@ -68,121 +75,119 @@ private:
 	virtual void Ref_DeleteObject() {}
 
 private:
-	mutable int	m_numRefs;
+	mutable int	m_numRefs{ 0 };
 };
 
-inline bool	RefCountedObject::Ref_Drop()
+template< class TYPE >
+inline void	RefCountedObject<TYPE>::Ref_Grab()
 {
-	m_numRefs--;
+	Threading::IncrementInterlocked(m_numRefs);
+}
 
-	if(m_numRefs == 0)
+template< class TYPE >
+inline bool	RefCountedObject<TYPE>::Ref_Drop()
+{
+	int refCount = Threading::DecrementInterlocked(m_numRefs);
+	if (refCount <= 0)
 	{
 		Ref_DeleteObject();
 		return true;
-	}
-	else if(m_numRefs < 0)
-	{
-		//ASSERT_FAIL("Ref_Drop NOT VALID (RefCount=%d)!!!", m_numRefs);
 	}
 
 	return false;
 }
 
+
 //-----------------------------------------------------------------------------
+// smart pointer for ref counted
 
 template< class TYPE >
-class CRefPointer
+class CRefPtr
 {
 public:
-						CRefPointer() : m_ptrObj(nullptr) {}
+	using PTR_TYPE = TYPE*;
+	using REF_TYPE = RefCountedObject<TYPE>;
 
-						CRefPointer( const TYPE& pObject );
-						CRefPointer( const CRefPointer<TYPE>& refptr );
-	virtual				~CRefPointer();
+	CRefPtr() = default;
+	CRefPtr( PTR_TYPE pObject );
+	CRefPtr( const CRefPtr<TYPE>& refptr );
+	virtual ~CRefPtr();
 
 	// frees object (before scope, if you econom-guy)
-	void				Free();
-	void				Assign( const TYPE& obj );
-	void				Unassign(bool deref = true);
+	void				Assign( PTR_TYPE obj);
+	void				Release(bool deref = true);
 
-	operator const		TYPE& () const				{ return m_ptrObj; }
-	operator			TYPE& ()					{ return m_ptrObj; }
-	TYPE				p() const					{ return m_ptrObj; }
-	TYPE				operator->() const			{ return m_ptrObj; }
-	void				operator=( const TYPE& obj );
-	void				operator=( const CRefPointer<TYPE>& refptr );
+	operator const		PTR_TYPE() const	{ return m_ptrObj; }
+	operator			PTR_TYPE ()			{ return m_ptrObj; }
+	PTR_TYPE			p() const			{ return m_ptrObj; }
+	PTR_TYPE			operator->() const	{ return m_ptrObj; }
+
+	void				operator=( const PTR_TYPE obj );
+	void				operator=( const CRefPtr<TYPE>& refptr );
 
 protected:
-	TYPE				m_ptrObj;
+	PTR_TYPE			m_ptrObj{ nullptr };
 };
 
 //------------------------------------------------------------
 
 template< class TYPE >
-inline CRefPointer<TYPE>::CRefPointer( const TYPE& pObject ) : m_ptrObj(nullptr)
+inline CRefPtr<TYPE>::CRefPtr( PTR_TYPE pObject ) : m_ptrObj(pObject)
 {
-	Assign(pObject);
+	if (pObject)
+		pObject->Ref_Grab();
 }
 
 template< class TYPE >
-inline CRefPointer<TYPE>::CRefPointer( const CRefPointer<TYPE>& refptr ) : m_ptrObj(nullptr)
+inline CRefPtr<TYPE>::CRefPtr( const CRefPtr<TYPE>& refptr ) : m_ptrObj(refptr.p())
 {
-	Assign(refptr.m_ptrObj);
+	if (m_ptrObj)
+		m_ptrObj->Ref_Grab();
 }
 
 template< class TYPE >
-inline CRefPointer<TYPE>::~CRefPointer()
+inline CRefPtr<TYPE>::~CRefPtr()
 {
-	Free();
-}
-
-// frees object (before scope, if you econom-guy)
-template< class TYPE >
-inline void CRefPointer<TYPE>::Free()
-{
-	if(m_ptrObj &&
-		((RefCountedObject*)m_ptrObj)->Ref_Drop())
-	m_ptrObj = nullptr;
+	Release();
 }
 
 template< class TYPE >
-inline void CRefPointer<TYPE>::Assign( const TYPE& obj )
+inline void CRefPtr<TYPE>::Assign( PTR_TYPE obj)
 {
 	if(m_ptrObj == obj)
 		return;
 
 	// del old ref
-	RefCountedObject* oldObj = (RefCountedObject*)m_ptrObj;
+	REF_TYPE* oldObj = (REF_TYPE*)m_ptrObj;
 	
 	if(m_ptrObj = obj)
-		((RefCountedObject*)obj)->Ref_Grab();
+		((REF_TYPE*)obj)->Ref_Grab();
 
 	if(oldObj != nullptr)
 		oldObj->Ref_Drop();
 }
 
 template< class TYPE >
-inline void CRefPointer<TYPE>::Unassign(bool deref)
+inline void CRefPtr<TYPE>::Release(bool deref)
 {
 	// del old ref
-	RefCountedObject* oldObj = (RefCountedObject*)m_ptrObj;
-	
-	m_ptrObj = NULL;
-
+	REF_TYPE* oldObj = (REF_TYPE*)m_ptrObj;
+	m_ptrObj = nullptr;
 	if(oldObj != nullptr && deref)
 		oldObj->Ref_Drop();
 }
 
 template< class TYPE >
-inline void CRefPointer<TYPE>::operator=( const TYPE& obj )
+inline void CRefPtr<TYPE>::operator=( const PTR_TYPE obj )
 {
 	Assign( obj );
 }
 
 template< class TYPE >
-inline void CRefPointer<TYPE>::operator=( const CRefPointer<TYPE>& refptr )
+inline void CRefPtr<TYPE>::operator=( const CRefPtr<TYPE>& refptr )
 {
-	Assign( refptr.m_ptrObj);
+	Assign( refptr.m_ptrObj );
 }
+
 
 #endif // REFCOUNTED_H

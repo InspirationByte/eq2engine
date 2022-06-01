@@ -83,7 +83,7 @@ private:
 	void			DestroyContext();
 	void			DestroyEffects();
 
-	Array<CRefPointer<IEqAudioSource*>>		m_sources{ PP_SL };	// tracked sources
+	Array<CRefPtr<IEqAudioSource>>			m_sources{ PP_SL };	// tracked sources
 	Array<ISoundSource*>					m_samples{ PP_SL };
 	Array<sndEffect_t>						m_effects{ PP_SL };
 

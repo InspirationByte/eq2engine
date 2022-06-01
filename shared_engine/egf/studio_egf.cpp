@@ -286,8 +286,10 @@ void CEngineStudioEGF::LoadPhysicsData()
 	EqString podFileName = m_szPath.Path_Strip_Ext();
 	podFileName.Append(".pod");
 
-	if (Studio_LoadPhysModel(podFileName.GetData(), &m_hwdata->physModel))
+	if (Studio_LoadPhysModel(podFileName, &m_hwdata->physModel))
 	{
+		DevMsg(DEVMSG_CORE, "Loaded physics object data '%s'\n", podFileName.ToCString());
+
 		ASSERT_MSG(g_studioShapeCache, "studio shape cache is not initialized!\n");
 		g_studioShapeCache->InitStudioCache(&m_hwdata->physModel);
 	}
@@ -389,8 +391,11 @@ void CEngineStudioEGF::OnLoadingJobComplete(struct eqParallelJob_t* job)
 	if (model->m_readyState == MODEL_LOAD_ERROR)
 		return;
 	
-	if(model->m_loading.Decrement() <= 0)
+	if (model->m_loading.Decrement() <= 0)
+	{
 		model->m_readyState = MODEL_LOAD_OK;
+		//DevMsg(DEVMSG_CORE, "EGF loading completed\n");
+	}
 }
 
 bool CEngineStudioEGF::LoadModel(const char* pszPath, bool useJob)
@@ -580,22 +585,19 @@ void CEngineStudioEGF::LoadMotionPackages()
 {
 	studiohdr_t* pHdr = m_hwdata->studio;
 
-	DevMsg(DEVMSG_CORE, "Loading animations for '%s'\n", m_szPath.ToCString());
-
 	// Try load default motion file
 	m_hwdata->motiondata[m_hwdata->numMotionPackages] = Studio_LoadMotionData((m_szPath.Path_Strip_Ext() + ".mop").GetData(), pHdr->numBones);
 
 	if (m_hwdata->motiondata[m_hwdata->numMotionPackages])
 		m_hwdata->numMotionPackages++;
-	else
-		DevMsg(DEVMSG_CORE, "Can't open motion data package, skipped\n");
 
 	// load external motion packages if available
 	for (int i = 0; i < pHdr->numMotionPackages; i++)
 	{
-		int nPackages = m_hwdata->numMotionPackages;
-
+		const int nPackages = m_hwdata->numMotionPackages;
 		EqString mopPath(m_szPath.Path_Strip_Name() + pHdr->pPackage(i)->packageName + ".mop");
+
+		DevMsg(DEVMSG_CORE, "Loading motion package for '%s'\n", mopPath.ToCString());
 
 		m_hwdata->motiondata[nPackages] = Studio_LoadMotionData(mopPath.ToCString(), pHdr->numBones);
 

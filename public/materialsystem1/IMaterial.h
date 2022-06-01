@@ -60,7 +60,7 @@ class IMaterialSystemShader;
 class ITexture;
 class CTextureAtlas;
 
-class IMaterial : public RefCountedObject
+class IMaterial : public RefCountedObject<IMaterial>
 {
 public:
 	// returns full material path
