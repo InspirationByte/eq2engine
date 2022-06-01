@@ -104,8 +104,8 @@ protected:
 
 	Array<CEqJobThread*>			m_jobThreads{ PP_SL };
 
-	List<eqParallelJob_t*>			m_workQueue;
-	List<eqParallelJob_t*>			m_completedJobs;
+	Array<eqParallelJob_t*>			m_workQueue{ PP_SL };
+	Array<eqParallelJob_t*>			m_completedJobs{ PP_SL };
 
 	Threading::CEqMutex				m_mutex;
 	Threading::CEqMutex				m_completeMutex;
