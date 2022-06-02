@@ -9,6 +9,7 @@
 #define VERTEXFORMATGL_H
 
 #include "renderers/IVertexFormat.h"
+#include "renderers/ShaderAPI_defs.h"
 
 #define MAX_GL_GENERIC_ATTRIB 24
 
@@ -40,8 +41,8 @@ public:
 
 	const char*			GetName() const {return m_name.ToCString(); }
 
-	int					GetVertexSize(int stream);
-	void				GetFormatDesc(VertexFormatDesc_t** desc, int& numAttribs);
+	int					GetVertexSize(int stream) const;
+	void				GetFormatDesc(VertexFormatDesc_t** desc, int& numAttribs) const;
 
 protected:
 	int					m_streamStride[MAX_VERTEXSTREAM];

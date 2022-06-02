@@ -9,9 +9,6 @@
 #ifndef IVERTEXBUFFER_H
 #define IVERTEXBUFFER_H
 
-#include "ShaderAPI_defs.h"
-#include "core/ppmem.h"
-
 enum EVertexBufferFlags
 {
 	VERTBUFFER_FLAG_INSTANCEDATA = (1 << 0),	// GetVertexCount becomes Instance Count
@@ -21,16 +18,16 @@ enum EVertexBufferFlags
 class IVertexBuffer
 {
 public:
-	virtual ~IVertexBuffer() {}
+	virtual ~IVertexBuffer() = default;
 
 	// returns size in bytes
-	virtual long		GetSizeInBytes() = 0;
+	virtual long		GetSizeInBytes() const = 0;
 
 	// returns vertex count
-	virtual int			GetVertexCount() = 0;
+	virtual int			GetVertexCount() const = 0;
 
 	// retuns stride size
-	virtual int			GetStrideSize() = 0;
+	virtual int			GetStrideSize() const = 0;
 
 	// updates buffer without map/unmap operations which are slower
 	virtual void		Update(void* data, int size, int offset, bool discard = true) = 0;
@@ -43,7 +40,7 @@ public:
 
 	// sets vertex buffer flags
 	virtual void		SetFlags( int flags ) = 0;
-	virtual int			GetFlags() = 0;
+	virtual int			GetFlags() const = 0;
 };
 
 #endif // IVERTEXBUFFER_H

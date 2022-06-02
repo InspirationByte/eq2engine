@@ -34,12 +34,17 @@ CIndexBufferGL::CIndexBufferGL()
 	m_bufferIdx = 0;
 }
 
-int8 CIndexBufferGL::GetIndexSize()
+long CIndexBufferGL::GetSizeInBytes() const
+{
+	return m_nIndexSize * m_nIndices;
+}
+
+int CIndexBufferGL::GetIndexSize() const
 {
 	return m_nIndexSize;
 }
 
-int CIndexBufferGL::GetIndicesCount()
+int CIndexBufferGL::GetIndicesCount() const
 {
 	return m_nIndices;
 }

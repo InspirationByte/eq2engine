@@ -16,7 +16,6 @@
 
 #include <d3d9.h>
 
-
 #define MAX_CONSTANT_NAMELEN 64
 
 struct DX9ShaderConstant_t
@@ -41,26 +40,22 @@ struct ID3DXConstantTable;
 class CD3D9ShaderProgram : public IShaderProgram
 {
 public:
-	friend class			ShaderAPID3DX9;
+	friend class ShaderAPID3DX9;
 
-							CD3D9ShaderProgram();
-							~CD3D9ShaderProgram();
+	CD3D9ShaderProgram() = default;
+	~CD3D9ShaderProgram();
 
-	const char*				GetName() const;
-	int						GetNameHash() const { return m_nameHash; }
-	void					SetName(const char* pszName);
-
-	int						GetConstantsNum() const;
-	int						GetSamplersNum() const;
+	const char*						GetName() const { return m_szName.ToCString(); }
+	void							SetName(const char* pszName);
 
 protected:
-	EqString					m_szName;
-	int							m_nameHash;
+	EqString						m_szName;
+	int								m_nameHash{ 0 };
 
-	LPDIRECT3DVERTEXSHADER9		m_pVertexShader;
-	LPDIRECT3DPIXELSHADER9		m_pPixelShader;
-	ID3DXConstantTable*			m_pVSConstants;
-	ID3DXConstantTable*			m_pPSConstants;
+	IDirect3DVertexShader9*			m_pVertexShader{ nullptr };
+	IDirect3DPixelShader9*			m_pPixelShader{ nullptr };
+	ID3DXConstantTable*				m_pVSConstants{ nullptr };
+	ID3DXConstantTable*				m_pPSConstants{ nullptr };
 
 	Map<int, DX9ShaderConstant_t>	m_constants{ PP_SL };
 	Map<int, DX9Sampler_t>			m_samplers{ PP_SL };

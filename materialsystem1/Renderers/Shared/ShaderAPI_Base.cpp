@@ -668,8 +668,10 @@ ITexture* ShaderAPI_Base::CreateProceduralTexture(const char* pszName,
 
 bool ShaderAPI_Base::RestoreTextureInternal(ITexture* pTexture)
 {
+	CTexture* texture = static_cast<CTexture*>(pTexture);
+
 	Array<EqString> textureNames{ PP_SL };
-	GetImagesForTextureName(textureNames, pTexture->GetName());
+	GetImagesForTextureName(textureNames, texture->GetName());
 
 	Array<CImage*> pImages{ PP_SL };
 
@@ -704,7 +706,7 @@ bool ShaderAPI_Base::RestoreTextureInternal(ITexture* pTexture)
 		}
 	}
 
-	CreateTextureInternal(&pTexture, pImages, pTexture->GetSamplerState(),pTexture->GetFlags());
+	CreateTextureInternal(&pTexture, pImages, texture->GetSamplerState(), texture->GetFlags());
 
 	for(int i = 0;i < pImages.numElem();i++)
 		delete pImages[i];

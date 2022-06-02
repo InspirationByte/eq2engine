@@ -25,8 +25,9 @@ public:
 							CIndexBufferD3DX9();
 							~CIndexBufferD3DX9();
 
-	int8					GetIndexSize();
-	int						GetIndicesCount();
+	long					GetSizeInBytes() const;
+	int						GetIndexSize() const;
+	int						GetIndicesCount() const;
 
 	// updates buffer without map/unmap operations which are slower
 	void					Update(void* data, int size, int offset, bool discard /*= true*/);
@@ -43,8 +44,8 @@ public:
 protected:
 	LPDIRECT3DINDEXBUFFER9	m_pIndexBuffer;
 
-	uint					m_nIndices;
-	int8					m_nIndexSize;
+	int						m_nIndices;
+	int						m_nIndexSize;
 
 	long					m_nInitialSize;
 

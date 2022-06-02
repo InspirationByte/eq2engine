@@ -20,11 +20,13 @@ public:
 
 					CIndexBufferGL();
 
+	long			GetSizeInBytes() const;
+
 	// returns index size
-	int8			GetIndexSize();
+	int				GetIndexSize() const;
 
 	// returns index count
-	int				GetIndicesCount();
+	int				GetIndicesCount() const;
 
 	// updates buffer without map/unmap operations which are slower
 	void			Update(void* data, int size, int offset, bool discard /*= true*/);
@@ -43,13 +45,15 @@ protected:
 	uint			m_nGL_IB_Index[MAX_IB_SWITCHING];
 	int				m_bufferIdx;
 
-	uint			m_nIndices;
+	int				m_nIndices;
+	int				m_nIndexSize;
+
 	ER_BufferAccess	m_access;
 
 	ubyte*			m_lockPtr;
 	int				m_lockOffs;
 	int				m_lockSize;
-	int8			m_nIndexSize;
+
 	bool			m_lockDiscard;
 	bool			m_lockReadOnly;
 	bool			m_bIsLocked;

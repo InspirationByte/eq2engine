@@ -25,9 +25,9 @@ public:
 								CVertexBufferD3DX9();
 								~CVertexBufferD3DX9();
 
-	long						GetSizeInBytes();
-	int							GetVertexCount();
-	int							GetStrideSize();
+	long						GetSizeInBytes() const;
+	int							GetVertexCount() const;
+	int							GetStrideSize() const;
 
 	// updates buffer without map/unmap operations which are slower
 	void						Update(void* data, int size, int offset, bool discard /*= true*/);
@@ -42,8 +42,8 @@ public:
 	void						Restore();
 
 	// sets vertex buffer flags
-	void						SetFlags( int flags ) {m_flags = flags;}
-	int							GetFlags() {return m_flags;}
+	void						SetFlags( int flags ) { m_flags = flags; }
+	int							GetFlags() const { return m_flags; }
 
 protected:
 	int							m_flags;

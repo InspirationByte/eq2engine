@@ -30,12 +30,12 @@ CVertexFormatD3DX9::~CVertexFormatD3DX9()
 	delete [] m_vertexDesc;
 }
 
-int CVertexFormatD3DX9::GetVertexSize(int nStream)
+int CVertexFormatD3DX9::GetVertexSize(int nStream) const
 {
 	return m_streamStride[nStream];
 }
 
-void CVertexFormatD3DX9::GetFormatDesc(VertexFormatDesc_t** desc, int& numAttribs)
+void CVertexFormatD3DX9::GetFormatDesc(VertexFormatDesc_t** desc, int& numAttribs) const
 {
 	*desc = m_vertexDesc;
 	numAttribs = m_numAttribs;

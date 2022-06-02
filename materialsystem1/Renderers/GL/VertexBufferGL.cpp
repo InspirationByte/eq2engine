@@ -40,19 +40,19 @@ CVertexBufferGL::CVertexBufferGL()
 }
 
 // returns size in bytes
-long CVertexBufferGL::GetSizeInBytes()
+long CVertexBufferGL::GetSizeInBytes() const
 {
 	return m_strideSize*m_numVerts;
 }
 
 // returns vertex count
-int CVertexBufferGL::GetVertexCount()
+int CVertexBufferGL::GetVertexCount() const
 {
 	return m_numVerts;
 }
 
 // retuns stride size
-int CVertexBufferGL::GetStrideSize()
+int CVertexBufferGL::GetStrideSize() const
 {
 	return m_strideSize;
 }

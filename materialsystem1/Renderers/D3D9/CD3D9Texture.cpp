@@ -62,7 +62,7 @@ LPDIRECT3DBASETEXTURE9 CD3D9Texture::GetCurrentTexture()
 }
 
 // locks texture for modifications, etc
-void CD3D9Texture::Lock(texlockdata_t* pLockData, Rectangle_t* pRect, bool bDiscard, bool bReadOnly, int nLevel, int nCubeFaceId)
+void CD3D9Texture::Lock(LockData* pLockData, Rectangle_t* pRect, bool bDiscard, bool bReadOnly, int nLevel, int nCubeFaceId)
 {
 	ASSERT_MSG(!m_bIsLocked, "CD3D9Texture: already locked");
 	

@@ -20,13 +20,13 @@ public:
 					CVertexBufferGL();
 
 	// returns size in bytes
-	long			GetSizeInBytes();
+	long			GetSizeInBytes() const;
 
 	// returns vertex count
-	int				GetVertexCount();
+	int				GetVertexCount() const;
 
 	// retuns stride size
-	int				GetStrideSize();
+	int				GetStrideSize() const;
 
 	// updates buffer without map/unmap operations which are slower
 	void			Update(void* data, int size, int offset, bool discard = true);
@@ -39,7 +39,7 @@ public:
 
 	// sets vertex buffer flags
 	void			SetFlags( int flags ) {m_flags = flags;}
-	int				GetFlags() {return m_flags;}
+	int				GetFlags() const {return m_flags;}
 
 	uint			GetCurrentBuffer() const { return m_nGL_VB_Index[m_bufferIdx]; }
 

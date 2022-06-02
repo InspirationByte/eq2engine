@@ -16,30 +16,27 @@ class CTexture : public ITexture
 	friend class ShaderAPI_Base;
 
 public:
+	const char*					GetName() const { return m_szTexName.ToCString(); }
+	ETextureFormat				GetFormat() const { return m_iFormat; }
 
-								CTexture();
-								~CTexture();
+	int							GetWidth() const { return m_iWidth; }
+	int							GetHeight() const { return m_iHeight; }
+	int							GetMipCount() const { return m_mipCount; }
 
-	const char*					GetName() const;
-	ETextureFormat				GetFormat() const;
-
-	int							GetWidth() const;
-	int							GetHeight() const;
-	int							GetMipCount() const;
-
-	int							GetFlags() const;
+	int							GetFlags() const { return m_iFlags; }
 	const SamplerStateParam_t&	GetSamplerState() const {return m_samplerState;}
-	int							GetAnimatedTextureFrames() const;
-	int							GetCurrentAnimatedTextureFrame() const;
+
+	int							GetAnimationFrameCount() const { return m_numAnimatedTextureFrames; }
+	int							GetAnimationFrame() const { return m_nAnimatedTextureFrame; }
+
+	void						SetFlags(int iFlags) { m_iFlags = iFlags; }
+	void						SetDimensions(int width,int height) { m_iWidth = width; m_iHeight = height; }
+	void						SetMipCount(int count) { m_mipCount = count; }
+	void						SetFormat(ETextureFormat newformat) { m_iFormat = newformat; }
+	void						SetSamplerState(const SamplerStateParam_t& newSamplerState) { m_samplerState = newSamplerState; }
 
 	void						SetName(const char* pszNewName);
-	void						SetFlags(int iFlags) {m_iFlags = iFlags;}
-	void						SetDimensions(int width,int height) {m_iWidth = width; m_iHeight = height;}
-	void						SetMipCount(int count) {m_mipCount = count;}
-	void						SetFormat(ETextureFormat newformat) {m_iFormat = newformat;}
-	void						SetSamplerState(const SamplerStateParam_t& newSamplerState) {m_samplerState = newSamplerState;}
-	void						SetAnimatedTextureFrame(int frame);		// sets current animated texture frames
-
+	void						SetAnimationFrame(int frame);
 protected:
 	EqString				m_szTexName;
 	int						m_nameHash{ 0 };

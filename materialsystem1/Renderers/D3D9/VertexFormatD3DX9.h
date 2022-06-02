@@ -9,6 +9,7 @@
 #define VERTEXFORMATD3DX9_H
 
 #include "renderers/IVertexFormat.h"
+#include "renderers/ShaderAPI_defs.h"
 
 //**************************************
 // Vertex format
@@ -22,8 +23,8 @@ public:
 	~CVertexFormatD3DX9();
 
 	const char*						GetName() const {return m_name.ToCString();}
-	int								GetVertexSize(int stream);
-	void							GetFormatDesc(VertexFormatDesc_t** desc, int& numAttribs);
+	int								GetVertexSize(int stream) const;
+	void							GetFormatDesc(VertexFormatDesc_t** desc, int& numAttribs) const;
 
 	//----------------------
 

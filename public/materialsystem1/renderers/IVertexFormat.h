@@ -9,18 +9,17 @@
 #ifndef IVERTEXFORMAT_H
 #define IVERTEXFORMAT_H
 
-#include "ShaderAPI_defs.h"
-#include "core/ppmem.h"
+typedef struct VertexFormatDesc_s VertexFormatDesc_t;
 
 class IVertexFormat
 {
 public:
-	virtual	~IVertexFormat() {}
+	virtual	~IVertexFormat() = default;
 
 	virtual const char*		GetName() const = 0;
 
-	virtual int				GetVertexSize(int stream) = 0;
-	virtual void			GetFormatDesc(VertexFormatDesc_t** desc, int& numAttribs) = 0;
+	virtual int				GetVertexSize(int stream) const = 0;
+	virtual void			GetFormatDesc(VertexFormatDesc_t** desc, int& numAttribs) const = 0;
 };
 
 #endif // IVERTEXFORMAT_H

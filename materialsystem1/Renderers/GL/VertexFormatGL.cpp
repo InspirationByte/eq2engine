@@ -55,12 +55,12 @@ CVertexFormatGL::~CVertexFormatGL()
 	delete [] m_vertexDesc;
 }
 
-int CVertexFormatGL::GetVertexSize(int nStream)
+int CVertexFormatGL::GetVertexSize(int nStream) const
 {
 	return m_streamStride[nStream];
 }
 
-void CVertexFormatGL::GetFormatDesc(VertexFormatDesc_t** desc, int& numAttribs)
+void CVertexFormatGL::GetFormatDesc(VertexFormatDesc_t** desc, int& numAttribs) const
 {
 	*desc = m_vertexDesc;
 	numAttribs = m_numAttribs;

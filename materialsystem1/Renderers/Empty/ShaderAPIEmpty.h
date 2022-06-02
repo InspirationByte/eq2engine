@@ -20,13 +20,13 @@ public:
 				CEmptyVertexBuffer(int stride) : m_lockData(NULL), m_stride(stride) {}
 
 	// returns size in bytes
-	long		GetSizeInBytes() {return 0;}
+	long		GetSizeInBytes() const {return 0;}
 
 	// returns vertex count
-	int			GetVertexCount() {return 0;}
+	int			GetVertexCount() const {return 0;}
 
 	// retuns stride size
-	int			GetStrideSize() {return m_stride;}
+	int			GetStrideSize() const {return m_stride;}
 
 	// updates buffer without map/unmap operations which are slower
 	void		Update(void* data, int size, int offset, bool discard = true)
@@ -45,7 +45,7 @@ public:
 
 	// sets vertex buffer flags
 	void		SetFlags( int flags ) {}
-	int			GetFlags() {return 0;}
+	int			GetFlags() const {return 0;}
 
 	void*		m_lockData;
 	int			m_stride;
@@ -56,11 +56,13 @@ class CEmptyIndexBuffer : public IIndexBuffer
 public:
 				CEmptyIndexBuffer(int stride) : m_lockData(NULL), m_stride(stride) {}
 
+	long		GetSizeInBytes() const { return 0; }
+
 	// returns index size
-	int8		GetIndexSize() {return m_stride;}
+	int			GetIndexSize() const {return m_stride;}
 
 	// returns index count
-	int			GetIndicesCount() {return 0;}
+	int			GetIndicesCount()  const {return 0;}
 
 	// updates buffer without map/unmap operations which are slower
 	void		Update(void* data, int size, int offset, bool discard = true)
@@ -79,7 +81,7 @@ public:
 
 	// sets vertex buffer flags
 	void		SetFlags( int flags ) {}
-	int			GetFlags() {return 0;}
+	int			GetFlags() const {return 0;}
 
 	void*		m_lockData;
 	int			m_stride;
@@ -105,12 +107,12 @@ public:
 
 	const char* GetName() const {return m_name.ToCString();}
 
-	int	GetVertexSize(int stream)
+	int	GetVertexSize(int stream) const
 	{
 		return 0;
 	}
 
-	void GetFormatDesc(VertexFormatDesc_t** desc, int& numAttribs)
+	void GetFormatDesc(VertexFormatDesc_t** desc, int& numAttribs) const
 	{
 		*desc = m_vertexDesc;
 		numAttribs = m_numAttribs;

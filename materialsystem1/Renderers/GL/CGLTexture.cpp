@@ -80,7 +80,7 @@ GLTextureRef_t& CGLTexture::GetCurrentTexture()
 }
 
 // locks texture for modifications, etc
-void CGLTexture::Lock(texlockdata_t* pLockData, Rectangle_t* pRect, bool bDiscard, bool bReadOnly, int nLevel, int nCubeFaceId)
+void CGLTexture::Lock(LockData* pLockData, Rectangle_t* pRect, bool bDiscard, bool bReadOnly, int nLevel, int nCubeFaceId)
 {
 	if(textures.numElem() > 1)
 		ASSERT(!"Couldn't handle locking of animated texture! Please tell to programmer!");

@@ -27,7 +27,7 @@ public:
 	~CD3D10Texture();
 
 	// locks texture for modifications, etc
-	void								Lock(texlockdata_t* pLockData, Rectangle_t* pRect = NULL, bool bDiscard = false, bool bReadOnly = false, int nLevel = 0, int nCubeFaceId = 0);
+	void								Lock(LockData* pLockData, Rectangle_t* pRect = NULL, bool bDiscard = false, bool bReadOnly = false, int nLevel = 0, int nCubeFaceId = 0);
 	
 	// unlocks texture for modifications, etc
 	void								Unlock();

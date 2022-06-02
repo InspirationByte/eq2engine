@@ -9,19 +9,18 @@
 #ifndef IINDEXBUFFER_H
 #define IINDEXBUFFER_H
 
-#include "ShaderAPI_defs.h"
-#include "core/ppmem.h"
-
 class IIndexBuffer
 {
 public:
-	virtual ~IIndexBuffer() {}
+	virtual ~IIndexBuffer() = default;
+
+	virtual long			GetSizeInBytes() const = 0;
 
 	// returns index size
-	virtual int8			GetIndexSize() = 0;
+	virtual int				GetIndexSize() const = 0;
 
 	// returns index count
-	virtual int				GetIndicesCount() = 0;
+	virtual int				GetIndicesCount() const = 0;
 
 	// updates buffer without map/unmap operations which are slower
 	virtual void			Update(void* data, int size, int offset, bool discard = true) = 0;

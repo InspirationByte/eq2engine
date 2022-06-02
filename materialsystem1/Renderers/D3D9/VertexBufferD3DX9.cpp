@@ -101,17 +101,17 @@ void CVertexBufferD3DX9::Restore()
 	m_pRestore = NULL;
 }
 
-long CVertexBufferD3DX9::GetSizeInBytes()
+long CVertexBufferD3DX9::GetSizeInBytes() const
 {
 	return m_nSize;
 }
 
-int CVertexBufferD3DX9::GetVertexCount()
+int CVertexBufferD3DX9::GetVertexCount() const
 {
 	return m_nNumVertices;
 }
 
-int CVertexBufferD3DX9::GetStrideSize()
+int CVertexBufferD3DX9::GetStrideSize() const
 {
 	return m_nStrideSize;
 }

@@ -99,12 +99,17 @@ void CIndexBufferD3DX9::Restore()
 	delete m_pRestore;
 }
 
-int8 CIndexBufferD3DX9::GetIndexSize()
+long CIndexBufferD3DX9::GetSizeInBytes() const
+{
+	return m_nIndexSize * m_nIndices;
+}
+
+int CIndexBufferD3DX9::GetIndexSize() const
 {
 	return m_nIndexSize;
 }
 
-int CIndexBufferD3DX9::GetIndicesCount()
+int CIndexBufferD3DX9::GetIndicesCount() const
 {
 	return m_nIndices;
 }
