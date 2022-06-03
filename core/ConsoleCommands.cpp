@@ -5,17 +5,15 @@
 // Description: Variables factory
 //////////////////////////////////////////////////////////////////////////////////
 
-#include "ConsoleCommands.h"
-
-#include <stdio.h>
-#include <stdlib.h>
-
-#include "core/IFileSystem.h"
+#include <ctype.h>
+#include "ds/eqstring.h"
 #include "core/ConVar.h"
 #include "core/ConCommand.h"
 #include "core/DebugInterface.h"
+#include "core/IFileSystem.h"
 #include "core/IDkCore.h"
-#include "core/platform/assert.h"
+#include "ConsoleCommands.h"
+
 #include "utils/strtools.h"
 
 EXPORTED_INTERFACE(IConsoleCommands, CConsoleCommands);
@@ -554,7 +552,7 @@ void CConsoleCommands::SetCommandBuffer(const char* pszBuffer)
 // Appends to command buffer
 void CConsoleCommands::AppendToCommandBuffer(const char* pszBuffer)
 {
-	int new_len = strlen(pszBuffer) + strlen(m_currentCommands);
+	const size_t new_len = strlen(pszBuffer) + strlen(m_currentCommands);
 
 	ASSERT(new_len < COMMANDBUFFER_SIZE);
 	ForEachSeparated((char*)pszBuffer, CON_SEPARATOR, &CConsoleCommands::ParseAndAppend, NULL);

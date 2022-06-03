@@ -9,12 +9,11 @@
 #define ICMDLINEPARSER_H
 
 #include "InterfaceManager.h"
-
 #include "ds/Array.h"
-#include "ds/eqstring.h"
 
 // WARNING: this function declaration is compatible with cmdFilterFn_t
 class ConCommandBase;
+class EqString;
 typedef bool (*cmdLineFilterFn_t)(ConCommandBase* pCmd, Array<EqString>& args);
 
 #define CMDLINE_INTERFACE_VERSION		"CORE_CommandLine_002"

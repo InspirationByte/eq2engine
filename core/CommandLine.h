@@ -8,10 +8,7 @@
 #ifndef CMDLINEPARSER_H
 #define CMDLINEPARSER_H
 
-#include <stdio.h>
 #include "core/ICommandLine.h"
-#include "ds/Array.h"
-#include "ds/eqstring.h"
 
 class CCommandLine : public ICommandLine
 {
@@ -37,7 +34,6 @@ public:
 protected:
 	void				Parse(const char* pszCommandLine);
 	void				AddArgument(const char* pFirst, const char* pLast);
-
 
 	Array<EqString>		m_args{ PP_SL };
 };

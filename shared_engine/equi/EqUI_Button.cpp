@@ -22,12 +22,12 @@ Button::Button() : m_state(false)
 
 void Button::DrawSelf( const IRectangle& rect, bool scissorOn)
 {
-	ColorRGBA btnColor(0.8,0.8,0.8,0.8);
+	ColorRGBA btnColor(0.8f);
 
 	if(m_state && equi::Manager->GetMouseOver() == this)
-		btnColor = ColorRGBA(0.6,0.6,0.6,0.8);
+		btnColor = ColorRGBA(0.6f,0.6f,0.6f,0.8f);
 
-	DrawWindowRectangle(rect, btnColor, ColorRGBA(0.5,0.5,0.5,0.5));
+	DrawWindowRectangle(rect, btnColor, ColorRGBA(0.5f));
 
 	eqFontStyleParam_t style;
 	GetCalcFontStyle(style);

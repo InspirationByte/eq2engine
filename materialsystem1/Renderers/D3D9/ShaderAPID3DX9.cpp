@@ -6,8 +6,10 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include <d3dx9.h>
+#include <stdio.h>
 
 #include "core/DebugInterface.h"
+#include "core/ConVar.h"
 #include "core/IConsoleCommands.h"
 #include "core/IFileSystem.h"
 
@@ -27,6 +29,7 @@
 #include "ds/VirtualStream.h"
 #include "utils/strtools.h"
 #include "utils/KeyValues.h"
+
 
 bool InternalCreateRenderTarget(LPDIRECT3DDEVICE9 dev, CD3D9Texture *tex, int nFlags);
 
@@ -1295,7 +1298,7 @@ bool ShaderAPID3DX9::InternalCreateRenderTarget(LPDIRECT3DDEVICE9 dev, CD3D9Text
 		tex->m_pool = D3DPOOL_DEFAULT;
 
 		DevMsg(DEVMSG_SHADERAPI, "InternalCreateRenderTarget: creating INTZ render target single texture for %s\n", tex->GetName());
-		if (dev->CreateTexture(tex->GetWidth(), tex->GetHeight(), tex->GetMipCount(), tex->usage, formats[tex->GetFormat()], tex->m_pool, (LPDIRECT3DTEXTURE9*)&pTexture, nullptr) != D3D_OK)
+		if (dev->CreateTexture(tex->GetWidth(), tex->GetHeight(), tex->GetMipCount(), tex->usage, formats[tex->GetFormat()], (D3DPOOL)tex->m_pool, (LPDIRECT3DTEXTURE9*)&pTexture, nullptr) != D3D_OK)
 		{
 			MsgError("!!! Couldn't create '%s' INTZ render target with size %d %d\n", tex->GetName(), tex->GetWidth(), tex->GetHeight());
 			ASSERT(!"Couldn't create INTZ render target");
@@ -1348,7 +1351,7 @@ bool ShaderAPID3DX9::InternalCreateRenderTarget(LPDIRECT3DDEVICE9 dev, CD3D9Text
 			LPDIRECT3DBASETEXTURE9 pTexture = nullptr;
 
 			DevMsg(DEVMSG_SHADERAPI, "InternalCreateRenderTarget: creating cubemap target for %s\n", tex->GetName());
-			if (dev->CreateCubeTexture(tex->GetWidth(), tex->GetMipCount(), tex->usage, formats[tex->GetFormat()], tex->m_pool, (LPDIRECT3DCUBETEXTURE9 *) &pTexture, nullptr) != D3D_OK)
+			if (dev->CreateCubeTexture(tex->GetWidth(), tex->GetMipCount(), tex->usage, formats[tex->GetFormat()], (D3DPOOL)tex->m_pool, (LPDIRECT3DCUBETEXTURE9 *) &pTexture, nullptr) != D3D_OK)
 			{
 				MsgError("!!! Couldn't create '%s' cubemap render target with size %d %d\n", tex->GetName(), tex->GetWidth(), tex->GetHeight());
 				ASSERT(!"Couldn't create cubemap render target");
@@ -1374,7 +1377,7 @@ bool ShaderAPID3DX9::InternalCreateRenderTarget(LPDIRECT3DDEVICE9 dev, CD3D9Text
 			tex->m_pool = D3DPOOL_DEFAULT;
 
 			DevMsg(DEVMSG_SHADERAPI, "InternalCreateRenderTarget: creating render target single texture for %s\n", tex->GetName());
-			if (dev->CreateTexture(tex->GetWidth(), tex->GetHeight(), tex->GetMipCount(), tex->usage, formats[tex->GetFormat()], tex->m_pool, (LPDIRECT3DTEXTURE9 *) &pTexture, nullptr) != D3D_OK)
+			if (dev->CreateTexture(tex->GetWidth(), tex->GetHeight(), tex->GetMipCount(), tex->usage, formats[tex->GetFormat()], (D3DPOOL)tex->m_pool, (LPDIRECT3DTEXTURE9 *) &pTexture, nullptr) != D3D_OK)
 			{
 				MsgError("!!! Couldn't create '%s' render target with size %d %d\n", tex->GetName(), tex->GetWidth(), tex->GetHeight());
 				ASSERT(!"Couldn't create render target");

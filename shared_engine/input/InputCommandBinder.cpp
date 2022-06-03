@@ -8,6 +8,7 @@
 #include "InputCommandBinder.h"
 
 #include "core/IConsoleCommands.h"
+#include "core/ConVar.h"
 #include "core/DebugInterface.h"
 #include "core/InterfaceManager.h"
 

@@ -7,8 +7,9 @@
 
 #include "NetInterfaces.h"
 #include "core/DebugInterface.h"
-#include "core/IConsoleCommands.h"
+#include "core/ConVar.h"
 
+#include <stdio.h>
 #include <zlib.h>
 
 namespace Networking

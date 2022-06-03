@@ -13,6 +13,7 @@ static_assert(false, "this file should NOT BE included when GLES version is buil
 #include "GLSwapChain.h"
 
 #include "core/IConsoleCommands.h"
+#include "core/ConVar.h"
 #include "core/IDkCore.h"
 #include "core/DebugInterface.h"
 #include "core/platform/MessageBox.h"

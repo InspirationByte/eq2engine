@@ -336,6 +336,20 @@ private:
 	void			operator = ( const CEqThread& s ) {}
 };
 
+class CEqException
+{
+	static const int ERROR_BUFFER_LENGTH = 2048;
+public:
+	CEqException(const char* text = "");
+	const char* GetErrorString() const { return s_szError; }
+
+protected:
+	int	GetErrorBufferSize() const { return ERROR_BUFFER_LENGTH; }
+
+private:
+	char s_szError[ERROR_BUFFER_LENGTH];
+};
+
 };
 
 #endif // EQTHREAD_H

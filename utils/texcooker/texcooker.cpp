@@ -9,6 +9,7 @@
 #include "core/IFileSystem.h"
 #include "core/DebugInterface.h"
 #include "core/cmdlib.h"
+#include "utils/strtools.h"
 
 void Usage()
 {

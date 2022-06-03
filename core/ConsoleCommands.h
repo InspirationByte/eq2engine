@@ -9,10 +9,6 @@
 #ifndef CONCOMMANDFACTORY_H
 #define CONCOMMANDFACTORY_H
 
-#include <stdio.h>
-#include <stdlib.h>
-#include "core/ConVar.h"
-#include "core/ConCommand.h"
 #include "core/IConsoleCommands.h"
 
 //	Console variable factory
@@ -24,12 +20,13 @@
 #define	MAX_ARGS 80
 
 class CConsoleCommands;
-
-typedef void (CConsoleCommands::*FUNC)(char* str, int len, void* extra);
+typedef void (CConsoleCommands::* FUNC)(char* str, int len, void* extra);
 
 class CConsoleCommands : public IConsoleCommands
 {
 public:
+
+
 	CConsoleCommands();
 
 	void								RegisterCommands();

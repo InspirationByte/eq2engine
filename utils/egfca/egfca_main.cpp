@@ -12,7 +12,7 @@
 #include "core/IDkCore.h"
 #include "core/DebugInterface.h"
 #include "core/cmdlib.h"
-#include "core/IConsoleCommands.h"
+#include "core/ConVar.h"
 #include "core/IFileSystem.h"
 
 #include "ds/align.h"

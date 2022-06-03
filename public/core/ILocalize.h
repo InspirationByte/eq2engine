@@ -8,7 +8,6 @@
 #ifndef ILOCALIZE
 #define ILOCALIZE
 
-#include "platform/Platform.h"
 #include "InterfaceManager.h"
 #include "utils/strtools.h"
 
@@ -48,8 +47,6 @@ public:
 
 	virtual const wchar_t*		GetTokenString(const char* pszToken, const wchar_t* pszDefaultToken = 0) const = 0;
 	virtual const ILocToken*	GetToken( const char* pszToken ) const = 0;
-
-
 };
 
 //--------------------------------------------------------------

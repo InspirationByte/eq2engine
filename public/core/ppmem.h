@@ -8,10 +8,8 @@
 #ifndef PPMEM_H
 #define PPMEM_H
 
-#include <string.h>
-
-#include "platform/Platform.h"
 #include "InterfaceManager.h"
+#include "dktypes.h"
 
 struct PPSourceLine;
 

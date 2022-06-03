@@ -11,8 +11,7 @@
 #include "core/DebugInterface.h"
 #include "core/cmdlib.h"
 #include "core/IDkCore.h"
-#include "core/platform/Platform.h"
-#include "core/IConsoleCommands.h"
+#include "core/ConVar.h"
 #include "core/IFileSystem.h"
 
 #include "utils/strtools.h"

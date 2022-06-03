@@ -8,13 +8,14 @@
 #ifndef _ICONCOMMANDFACTORY_H_
 #define _ICONCOMMANDFACTORY_H_
 
-#include <stdio.h>
-#include <stdlib.h>
 #include "ds/Array.h"
-#include "ConVar.h"
-#include "ConCommand.h"
-#include "ConCommandBase.h"
 #include "InterfaceManager.h"
+
+class EqString;
+
+class ConVar;
+class ConCommand;
+class ConCommandBase;
 
 typedef bool (*cmdFilterFn_t)(ConCommandBase* pCmd, Array<EqString>& args);
 

@@ -8,8 +8,7 @@
 #ifndef DKTYPES_H
 #define DKTYPES_H
 
-#include <stddef.h>
-#include <string.h>
+#include <stddef.h>		// intptr & ptrdiff
 #include "ds/align.h"
 
 // disable stupid deprecate warning
@@ -48,32 +47,6 @@ typedef unsigned __int64 uint64;
 typedef   signed long long  int64;
 typedef unsigned long long uint64;
 #endif
-
-class CEqException
-{
-	static const int ERROR_BUFFER_LENGTH = 2048;
-public:
-	CEqException( const char* text = "" )
-	{
-		strncpy( s_szError, text, ERROR_BUFFER_LENGTH );
-		s_szError[ERROR_BUFFER_LENGTH-1] = 0;
-	}
-
-	const char*	GetErrorString() const
-	{
-		return s_szError;
-	}
-
-protected:
-
-	int	GetErrorBufferSize()
-	{
-		return ERROR_BUFFER_LENGTH;
-	}
-
-private:
-	char s_szError[ERROR_BUFFER_LENGTH];
-};
 
 // quick swap function
 template< class T >

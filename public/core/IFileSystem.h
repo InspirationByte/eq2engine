@@ -16,11 +16,6 @@
 
 #define FILESYSTEM_INTERFACE_VERSION		"CORE_Filesystem_006"
 
-// Linux-only definition
-#ifdef _WIN32
-#undef FreeModule
-#endif
-
 //------------------------------------------------------------------------------
 // Definitions
 //------------------------------------------------------------------------------

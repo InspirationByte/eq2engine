@@ -8,6 +8,7 @@
 #include "VirtualStream.h"
 #include "core/IFileSystem.h"
 #include "core/platform/assert.h"
+#include "core/ppmem.h"
 #include "utils/CRC32.h"
 #include "utils/minmax.h"
 #include "eqstring.h"

@@ -13,7 +13,8 @@
 #include "CTexture.h"
 
 #include "core/DebugInterface.h"
-#include "core/IConsoleCommands.h"
+#include "core/ConVar.h"
+#include "core/ConCommand.h"
 #include "core/IFileSystem.h"
 
 #include "imaging/PixWriter.h"

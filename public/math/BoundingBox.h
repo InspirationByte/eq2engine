@@ -274,6 +274,12 @@ struct TAABBox //BoundingBox
 		AddVertex(mins);
 		AddVertex(maxs);
 	}
+	
+	void Expand(float value)
+	{
+		maxPoint += value;
+		minPoint -= value;
+	}
 
 	TVec3D<T>	minPoint;
 	TVec3D<T>	maxPoint;

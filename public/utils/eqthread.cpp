@@ -686,4 +686,10 @@ int CEqThread::Run()
 	return 0;
 }
 
+CEqException::CEqException(const char* text /*= ""*/)
+{
+	strncpy(s_szError, text, ERROR_BUFFER_LENGTH);
+	s_szError[ERROR_BUFFER_LENGTH - 1] = 0;
+}
+
 };

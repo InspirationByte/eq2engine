@@ -9,8 +9,6 @@
 #ifndef CONCOMMAND_H
 #define CONCOMMAND_H
 
-#include <stdio.h>
-#include <stdlib.h>
 #include "ConCommandBase.h"
 
 #define CONCOMMAND_ARGUMENTS ConCommand* cmd, Array<EqString>& args

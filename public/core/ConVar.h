@@ -9,8 +9,6 @@
 #ifndef CONVAR_H
 #define CONVAR_H
 
-#include <stdio.h>
-#include <stdlib.h>
 #include "ConCommandBase.h"
 
 // The Microsoft C++ Compiler fixes the typedef problem

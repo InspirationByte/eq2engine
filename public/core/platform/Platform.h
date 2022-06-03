@@ -38,6 +38,12 @@
 #     define WINVER 0x0500
 #  endif
 #include <Windows.h>
+#ifdef FreeModule
+#undef FreeModule
+#endif
+#ifdef FreeModule
+#undef FreeModule
+#endif
 
 #elif defined(PLAT_LINUX) || defined(PLAT_ANDROID)
 #  include <stdio.h>

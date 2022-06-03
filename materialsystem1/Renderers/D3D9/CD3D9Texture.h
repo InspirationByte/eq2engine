@@ -10,12 +10,11 @@
 #define D3D9TEXTURE_H
 
 #include "../Shared/CTexture.h"
-
 #include "ds/Array.h"
 
-#include <d3d9.h>
-
 class CImage;
+struct IDirect3DBaseTexture9;
+struct IDirect3DSurface9;
 
 class CD3D9Texture : public CTexture
 {
@@ -29,7 +28,7 @@ public:
 	void					ReleaseTextures();
 	void					ReleaseSurfaces();
 
-	LPDIRECT3DBASETEXTURE9	GetCurrentTexture();
+	IDirect3DBaseTexture9*	GetCurrentTexture();
 
 	// locks texture for modifications, etc
 	void					Lock(LockData* pLockData, Rectangle_t* pRect = NULL, bool bDiscard = false, bool bReadOnly = false, int nLevel = 0, int nCubeFaceId = 0);
@@ -37,18 +36,18 @@ public:
 	// unlocks texture for modifications, etc
 	void					Unlock();
 
-	Array<LPDIRECT3DBASETEXTURE9>	textures{ PP_SL };
-	Array<LPDIRECT3DSURFACE9>		surfaces{ PP_SL };
-	LPDIRECT3DSURFACE9		m_dummyDepth;
+	Array<IDirect3DBaseTexture9*>	textures{ PP_SL };
+	Array<IDirect3DSurface9*>		surfaces{ PP_SL };
+	IDirect3DSurface9*		m_dummyDepth;
 
-	D3DPOOL					m_pool;
-	DWORD					usage;
+	uint					m_pool;
+	uint					usage;
 	int						m_texSize;
 
 	bool					m_bIsLocked;
 	ushort					m_nLockLevel;
 	ushort					m_nLockCube;
-	LPDIRECT3DSURFACE9		m_pLockSurface;
+	IDirect3DSurface9*		m_pLockSurface;
 };
 
 bool UpdateD3DTextureFromImage(IDirect3DBaseTexture9* texture, CImage* image, int startMipLevel, bool convert);

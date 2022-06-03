@@ -5,16 +5,13 @@
 // Description: Console variable system
 //////////////////////////////////////////////////////////////////////////////////
 
+#include <stdio.h>
+
 #include "ConVar.h"
-#include "IConsoleCommands.h"
-#include "ICommandLine.h"
-#include "DebugInterface.h"
 
-#include "ds/Array.h"
-#include "utils/strtools.h"
-
-#include "platform/stackalloc.h"
 #include <malloc.h> // alloca
+#include "platform/stackalloc.h"
+#include "ICommandLine.h"
 
 #pragma warning(disable: 4267)
 

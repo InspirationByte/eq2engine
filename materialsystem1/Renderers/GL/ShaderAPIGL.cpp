@@ -21,8 +21,9 @@
 #include "imaging/ImageLoader.h"
 
 #include "core/DebugInterface.h"
+#include "core/ConVar.h"
+#include "core/ConCommand.h"
 #include "core/IConsoleCommands.h"
-
 #include "utils/strtools.h"
 #include "utils/KeyValues.h"
 

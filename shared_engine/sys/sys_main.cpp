@@ -255,10 +255,6 @@ void Sys_Android_MountFileSystem()
 
 #if defined(PLAT_WIN)
 
-#include <io.h>
-#include <fcntl.h>
-#include <windows.h>
-
 #ifdef CRT_DEBUG_ENABLED
 #include <crtdbg.h>
 #endif
