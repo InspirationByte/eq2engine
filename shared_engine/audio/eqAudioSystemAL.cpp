@@ -219,9 +219,9 @@ void CEqAudioSystemAL::InitEffects()
 	//
 	// Load effect presets from file
 	//
-	kvkeybase_t* soundSettings = GetCore()->GetConfig()->FindKeyBase("Sound");
+	KVSection* soundSettings = GetCore()->GetConfig()->FindSection("Sound");
 
-	const char* effectFilePath = soundSettings ? KV_GetValueString(soundSettings->FindKeyBase("EFXScript"), 0, nullptr) : nullptr;
+	const char* effectFilePath = soundSettings ? KV_GetValueString(soundSettings->FindSection("EFXScript"), 0, nullptr) : nullptr;
 
 	if (effectFilePath == nullptr)
 	{
@@ -238,12 +238,12 @@ void CEqAudioSystemAL::InitEffects()
 
 	for (int i = 0; i < kv.GetRootSection()->keys.numElem(); i++)
 	{
-		kvkeybase_t* pEffectSection = kv.GetRootSection()->keys[i];
+		KVSection* pEffectSection = kv.GetRootSection()->keys[i];
 
 		sndEffect_t effect;
 		strcpy(effect.name, pEffectSection->name);
 
-		kvkeybase_t* pPair = pEffectSection->FindKeyBase("type");
+		KVSection* pPair = pEffectSection->FindSection("type");
 
 		if (pPair)
 		{
@@ -265,7 +265,7 @@ void CEqAudioSystemAL::InitEffects()
 	}
 }
 
-bool CEqAudioSystemAL::CreateALEffect(const char* pszName, kvkeybase_t* pSection, sndEffect_t& effect)
+bool CEqAudioSystemAL::CreateALEffect(const char* pszName, KVSection* pSection, sndEffect_t& effect)
 {
 	if (!stricmp(pszName, "reverb"))
 	{
@@ -273,16 +273,16 @@ bool CEqAudioSystemAL::CreateALEffect(const char* pszName, kvkeybase_t* pSection
 
 		_alEffecti(effect.nAlEffect, AL_EFFECT_TYPE, AL_EFFECT_REVERB);
 
-		_alEffectf(effect.nAlEffect, AL_REVERB_GAIN, KV_GetValueFloat(pSection->FindKeyBase("gain"), 0, 0.5f));
-		_alEffectf(effect.nAlEffect, AL_REVERB_GAINHF, KV_GetValueFloat(pSection->FindKeyBase("gain_hf"), 0, 0.5f));
+		_alEffectf(effect.nAlEffect, AL_REVERB_GAIN, KV_GetValueFloat(pSection->FindSection("gain"), 0, 0.5f));
+		_alEffectf(effect.nAlEffect, AL_REVERB_GAINHF, KV_GetValueFloat(pSection->FindSection("gain_hf"), 0, 0.5f));
 
-		_alEffectf(effect.nAlEffect, AL_REVERB_DECAY_TIME, KV_GetValueFloat(pSection->FindKeyBase("decay_time"), 0, 10.0f));
-		_alEffectf(effect.nAlEffect, AL_REVERB_DECAY_HFRATIO, KV_GetValueFloat(pSection->FindKeyBase("decay_hf"), 0, 0.5f));
-		_alEffectf(effect.nAlEffect, AL_REVERB_REFLECTIONS_DELAY, KV_GetValueFloat(pSection->FindKeyBase("reflection_delay"), 0, 0.0f));
-		_alEffectf(effect.nAlEffect, AL_REVERB_REFLECTIONS_GAIN, KV_GetValueFloat(pSection->FindKeyBase("reflection_gain"), 0, 0.5f));
-		_alEffectf(effect.nAlEffect, AL_REVERB_DIFFUSION, KV_GetValueFloat(pSection->FindKeyBase("diffusion"), 0, 0.5f));
-		_alEffectf(effect.nAlEffect, AL_REVERB_DENSITY, KV_GetValueFloat(pSection->FindKeyBase("density"), 0, 0.5f));
-		_alEffectf(effect.nAlEffect, AL_REVERB_AIR_ABSORPTION_GAINHF, KV_GetValueFloat(pSection->FindKeyBase("airabsorption_gain"), 0, 0.5f));
+		_alEffectf(effect.nAlEffect, AL_REVERB_DECAY_TIME, KV_GetValueFloat(pSection->FindSection("decay_time"), 0, 10.0f));
+		_alEffectf(effect.nAlEffect, AL_REVERB_DECAY_HFRATIO, KV_GetValueFloat(pSection->FindSection("decay_hf"), 0, 0.5f));
+		_alEffectf(effect.nAlEffect, AL_REVERB_REFLECTIONS_DELAY, KV_GetValueFloat(pSection->FindSection("reflection_delay"), 0, 0.0f));
+		_alEffectf(effect.nAlEffect, AL_REVERB_REFLECTIONS_GAIN, KV_GetValueFloat(pSection->FindSection("reflection_gain"), 0, 0.5f));
+		_alEffectf(effect.nAlEffect, AL_REVERB_DIFFUSION, KV_GetValueFloat(pSection->FindSection("diffusion"), 0, 0.5f));
+		_alEffectf(effect.nAlEffect, AL_REVERB_DENSITY, KV_GetValueFloat(pSection->FindSection("density"), 0, 0.5f));
+		_alEffectf(effect.nAlEffect, AL_REVERB_AIR_ABSORPTION_GAINHF, KV_GetValueFloat(pSection->FindSection("airabsorption_gain"), 0, 0.5f));
 
 		return true;
 	}

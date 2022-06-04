@@ -20,17 +20,17 @@ struct TexAtlasEntry_t
 	Rectangle_t rect;
 };
 
-struct kvkeybase_t;
+struct KVSection;
 
 // atlas structure
 class CTextureAtlas
 {
 public:
 	CTextureAtlas();
-	CTextureAtlas( kvkeybase_t* kvs );
+	CTextureAtlas( KVSection* kvs );
 	virtual ~CTextureAtlas();
 
-	void					InitAtlas( kvkeybase_t* kvs );
+	void					InitAtlas( KVSection* kvs );
 	void					Cleanup();
 
 	bool					Load( const char* pszFileName );

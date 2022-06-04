@@ -229,7 +229,7 @@ public:
 	virtual	ITexture*						GetLuxelTestTexture() const = 0;
 
 	// creates new material with defined parameters
-	virtual IMaterial*						CreateMaterial(const char* szMaterialName, kvkeybase_t* params) = 0;
+	virtual IMaterial*						CreateMaterial(const char* szMaterialName, KVSection* params) = 0;
 
 	// Finds or loads material (if findExisting is false then it will be loaded as new material instance)
 	virtual IMaterial*						GetMaterial(const char* szMaterialName) = 0;

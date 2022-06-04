@@ -301,13 +301,13 @@ void CEqConsoleInput::Initialize(EQWNDHANDLE window)
 	ImGui_ImplMatSystem_Init();
 
 	// TODO: ImGui networked console port (for Android)
-	kvkeybase_t* consoleSettings = GetCore()->GetConfig()->FindKeyBase("Console");
+	KVSection* consoleSettings = GetCore()->GetConfig()->FindSection("Console");
 
-	const char* consoleFontName = KV_GetValueString(consoleSettings ? consoleSettings->FindKeyBase("Font") : NULL, 0, "console");
+	const char* consoleFontName = KV_GetValueString(consoleSettings ? consoleSettings->FindSection("Font") : NULL, 0, "console");
 
 	m_font = g_fontCache->GetFont(consoleFontName, 16);
-	m_enabled = KV_GetValueBool(consoleSettings ? consoleSettings->FindKeyBase("Enable") : NULL);
-	m_fontScale = KV_GetValueFloat(consoleSettings ? consoleSettings->FindKeyBase("FontScale") : NULL);
+	m_enabled = KV_GetValueBool(consoleSettings ? consoleSettings->FindSection("Enable") : NULL);
+	m_fontScale = KV_GetValueFloat(consoleSettings ? consoleSettings->FindSection("FontScale") : NULL);
 }
 
 void CEqConsoleInput::Shutdown()

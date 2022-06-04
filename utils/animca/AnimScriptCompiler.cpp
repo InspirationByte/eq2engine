@@ -35,8 +35,8 @@ Array<sequenceevent_t>		g_events{ PP_SL };
 // pose controllers
 Array<posecontroller_t>		g_posecontrollers{ PP_SL };
 
-kvkeybase_t*				g_model_usage = NULL;
-kvkeybase_t*				g_outputfilename = NULL;
+KVSection*				g_model_usage = NULL;
+KVSection*				g_outputfilename = NULL;
 
 EqString					animPath("./");
 
@@ -694,9 +694,9 @@ int LoadAnimationFromESA(const char* filename)
 // Loads animation from key-values parameters
 // and applies.
 //************************************
-void LoadAnimation(kvkeybase_t* section)
+void LoadAnimation(KVSection* section)
 {
-	kvkeybase_t* pNameKey = section->FindKeyBase("name");
+	KVSection* pNameKey = section->FindSection("name");
 
 	if(!pNameKey)
 	{
@@ -706,7 +706,7 @@ void LoadAnimation(kvkeybase_t* section)
 
 	EqString filename(KV_GetValueString(pNameKey));
 
-	kvkeybase_t* externalpath = section->FindKeyBase("externalfile");
+	KVSection* externalpath = section->FindSection("externalfile");
 
 	if(externalpath)
 		filename = KV_GetValueString(externalpath);
@@ -716,11 +716,11 @@ void LoadAnimation(kvkeybase_t* section)
 	Vector3D anim_offset(0);
 	Vector3D anim_movevelocity(0);
 
-	kvkeybase_t* offsetPos = section->FindKeyBase("offset");
+	KVSection* offsetPos = section->FindSection("offset");
 
 	anim_offset = KV_GetVector3D(offsetPos, 0, vec3_zero);
 
-	kvkeybase_t* velocity = section->FindKeyBase("movevelocity");
+	KVSection* velocity = section->FindSection("movevelocity");
 	if(velocity)
 	{
 		float frame_rate = 1;
@@ -731,7 +731,7 @@ void LoadAnimation(kvkeybase_t* section)
 		anim_movevelocity /= frame_rate;
 	}
 
-	kvkeybase_t* cust_length_key = section->FindKeyBase("customlength");
+	KVSection* cust_length_key = section->FindSection("customlength");
 	int custom_length = -1;
 
 	custom_length = KV_GetValueInt(cust_length_key, 0, 1);
@@ -741,7 +741,7 @@ void LoadAnimation(kvkeybase_t* section)
 	int cut_start = 0;
 	int cut_end = -1;
 
-	kvkeybase_t* cut_anim_key = section->FindKeyBase("crop");
+	KVSection* cut_anim_key = section->FindSection("crop");
 	if(cut_anim_key)
 	{
 		cut_start = KV_GetValueInt(cut_anim_key, 0, -1);
@@ -756,7 +756,7 @@ void LoadAnimation(kvkeybase_t* section)
 			enable_cutting = true;
 	}
 
-	kvkeybase_t* rev_key = section->FindKeyBase("reverse");
+	KVSection* rev_key = section->FindSection("reverse");
 
 	reverse = KV_GetValueBool(rev_key, 0, false);
 
@@ -785,7 +785,7 @@ void LoadAnimation(kvkeybase_t* section)
 		}
 	}
 
-	kvkeybase_t* subtract_key = section->FindKeyBase("subtract");
+	KVSection* subtract_key = section->FindSection("subtract");
 
 	if(subtract_key)
 	{
@@ -826,7 +826,7 @@ void LoadAnimation(kvkeybase_t* section)
 //************************************
 // Parses animation list from script
 //************************************
-bool ParseAnimations(kvkeybase_t* section)
+bool ParseAnimations(KVSection* section)
 {
 	for(int i = 0; i < section->keys.numElem(); i++)
 	{
@@ -842,11 +842,11 @@ bool ParseAnimations(kvkeybase_t* section)
 //************************************
 // Parses pose parameters from script
 //************************************
-void ParsePoseparameters(kvkeybase_t* section)
+void ParsePoseparameters(KVSection* section)
 {
 	for(int i = 0; i < section->keys.numElem(); i++)
 	{
-		kvkeybase_t* poseParamKey = section->keys[i];
+		KVSection* poseParamKey = section->keys[i];
 
 		if(!stricmp(poseParamKey->name, "poseparameter"))
 		{
@@ -870,7 +870,7 @@ void ParsePoseparameters(kvkeybase_t* section)
 //************************************
 // Loads sequence parameters
 //************************************
-void LoadSequence(kvkeybase_t* section, const char* seq_name)
+void LoadSequence(KVSection* section, const char* seq_name)
 {
 	sequencedesc_t desc;
 	memset(&desc,0,sizeof(sequencedesc_t));
@@ -899,7 +899,7 @@ void LoadSequence(kvkeybase_t* section, const char* seq_name)
 	}
 
 	// length alignment, for differrent animation lengths, takes the first animation as etalon
-	kvkeybase_t* pAlignLengthKey = section->FindKeyBase("alignlengths");
+	KVSection* pAlignLengthKey = section->FindSection("alignlengths");
 
 	bAlignAnimationLengths = KV_GetValueBool(pAlignLengthKey);
 
@@ -910,14 +910,14 @@ void LoadSequence(kvkeybase_t* section, const char* seq_name)
 	}
 
 	// parse default parameters
-	kvkeybase_t* pFramerateKey = section->FindKeyBase("framerate");
+	KVSection* pFramerateKey = section->FindSection("framerate");
 
 	if(!pFramerateKey)
 		desc.framerate = 30;
 	else
 		desc.framerate = KV_GetValueFloat(pFramerateKey);
 
-	kvkeybase_t* anim_list = section->FindKeyBase("weights");
+	KVSection* anim_list = section->FindSection("weights");
 	if(anim_list)
 	{
 		desc.numAnimations = anim_list->keys.numElem();
@@ -993,7 +993,7 @@ void LoadSequence(kvkeybase_t* section, const char* seq_name)
 	{
 		desc.numAnimations = 1;
 
-		kvkeybase_t* pKey = section->FindKeyBase("animation");
+		KVSection* pKey = section->FindSection("animation");
 		if(!pKey)
 		{
 			MsgError("No 'animation' key.\n");
@@ -1024,33 +1024,33 @@ void LoadSequence(kvkeybase_t* section, const char* seq_name)
 	}
 
 	// parse default parameters
-	strcpy(desc.activity, KV_GetValueString(section->FindKeyBase("activity"), 0, "ACT_INVALID"));
+	strcpy(desc.activity, KV_GetValueString(section->FindSection("activity"), 0, "ACT_INVALID"));
 
 	// parse loop flag
-	kvkeybase_t* pLoopKey = section->FindKeyBase("loop");
+	KVSection* pLoopKey = section->FindSection("loop");
 	desc.flags |= KV_GetValueBool(pLoopKey) ? SEQFLAG_LOOP : 0;
 
 	// parse blend between slots flag
-	kvkeybase_t* pSlotBlend = section->FindKeyBase("slotblend");
+	KVSection* pSlotBlend = section->FindSection("slotblend");
 	desc.flags |= KV_GetValueBool(pSlotBlend) ? SEQFLAG_SLOTBLEND : 0;
 
 	// parse notransition flag
-	kvkeybase_t* pNoTransitionKey = section->FindKeyBase("notransition");
+	KVSection* pNoTransitionKey = section->FindSection("notransition");
 	desc.flags |= KV_GetValueBool(pNoTransitionKey) ? SEQFLAG_NOTRANSITION : 0;
 
 	// parse autoplay flag
-	kvkeybase_t* pAutoplayKey = section->FindKeyBase("autoplay");
+	KVSection* pAutoplayKey = section->FindSection("autoplay");
 	desc.flags |= KV_GetValueBool(pAutoplayKey) ? SEQFLAG_AUTOPLAY : 0;
 
 	// parse transitiontime value
-	kvkeybase_t* pTransitionTimekey = section->FindKeyBase("transitiontime");
+	KVSection* pTransitionTimekey = section->FindSection("transitiontime");
 	if(pTransitionTimekey)
 		desc.transitiontime = KV_GetValueFloat(pTransitionTimekey);
 	else
 		desc.transitiontime = DEFAULT_TRANSITION_TIME;
 
 	// parse events
-	kvkeybase_t* event_list = section->FindKeyBase("events");
+	KVSection* event_list = section->FindSection("events");
 
 	if(event_list)
 	{
@@ -1058,8 +1058,8 @@ void LoadSequence(kvkeybase_t* section, const char* seq_name)
 		{
 			float ev_frame = (float)atof(event_list->keys[i]->name);
 
-			kvkeybase_t* pEventCommand = event_list->keys[i]->FindKeyBase("command");
-			kvkeybase_t* pEventOptions = event_list->keys[i]->FindKeyBase("options");
+			KVSection* pEventCommand = event_list->keys[i]->FindSection("command");
+			KVSection* pEventOptions = event_list->keys[i]->FindSection("options");
 
 			if(pEventCommand && pEventOptions)
 			{
@@ -1078,7 +1078,7 @@ void LoadSequence(kvkeybase_t* section, const char* seq_name)
 		}
 	}
 
-	kvkeybase_t* pPoseParamKey = section->FindKeyBase("poseparameter");
+	KVSection* pPoseParamKey = section->FindSection("poseparameter");
 
 	if(pPoseParamKey)
 	{
@@ -1094,11 +1094,11 @@ void LoadSequence(kvkeybase_t* section, const char* seq_name)
 //************************************
 // Parses sequence list
 //************************************
-void ParseSequences(kvkeybase_t* section)
+void ParseSequences(KVSection* section)
 {
 	for(int i = 0; i < section->keys.numElem(); i++)
 	{
-		kvkeybase_t* seqSec = section->keys[i];
+		KVSection* seqSec = section->keys[i];
 
 		if(!stricmp(seqSec->GetName(), "sequence"))
 		{
@@ -1182,9 +1182,9 @@ bool CompileScript(const char* filename)
 		return false;
 	}
 
-	kvkeybase_t* sec = kvs.GetRootSection();
+	KVSection* sec = kvs.GetRootSection();
 
-	g_outputfilename = sec->FindKeyBase("OutputPackage");
+	g_outputfilename = sec->FindSection("OutputPackage");
 
 	if(!g_outputfilename)
 	{
@@ -1192,7 +1192,7 @@ bool CompileScript(const char* filename)
 		return false;
 	}
 
-	g_model_usage = sec->FindKeyBase("CheckModel");
+	g_model_usage = sec->FindSection("CheckModel");
 
 	if (!g_model_usage)
 	{

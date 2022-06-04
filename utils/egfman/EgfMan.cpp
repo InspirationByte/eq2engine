@@ -867,10 +867,10 @@ void CEGFViewFrame::ProcessAllMenuCommands(wxCommandEvent& event)
 					if(script.LoadFromFile(fname.GetData()))
 					{
 						// load all script data
-						kvkeybase_t* mainsection = script.GetRootSection();
+						KVSection* mainsection = script.GetRootSection();
 						if(mainsection)
 						{
-							kvkeybase_t* pPair = mainsection->FindKeyBase("modelfilename");
+							KVSection* pPair = mainsection->FindSection("modelfilename");
 
 							if(pPair)
 							{

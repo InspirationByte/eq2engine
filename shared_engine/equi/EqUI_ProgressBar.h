@@ -21,7 +21,7 @@ namespace equi
 		ProgressBar();
 		~ProgressBar() {}
 
-		void				InitFromKeyValues(kvkeybase_t* sec, bool noClear);
+		void				InitFromKeyValues(KVSection* sec, bool noClear);
 
 		// events
 		bool				ProcessMouseEvents(float x, float y, int nMouseButtons, int flags) { return true; }

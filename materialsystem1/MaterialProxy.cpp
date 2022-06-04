@@ -19,7 +19,7 @@
 class CAddProxy : public CBaseMaterialProxy
 {
 public:
-	void InitProxy(IMaterial* pAssignedMaterial, kvkeybase_t* pKeyBase)
+	void InitProxy(IMaterial* pAssignedMaterial, KVSection* pKeyBase)
 	{
 		m_pMaterial = pAssignedMaterial;
 
@@ -69,7 +69,7 @@ DECLARE_PROXY(add, CAddProxy)
 class CSubProxy : public CBaseMaterialProxy
 {
 public:
-	void InitProxy(IMaterial* pAssignedMaterial, kvkeybase_t* pKeyBase)
+	void InitProxy(IMaterial* pAssignedMaterial, KVSection* pKeyBase)
 	{
 		m_pMaterial = pAssignedMaterial;
 
@@ -119,7 +119,7 @@ DECLARE_PROXY(subtract, CSubProxy)
 class CMulProxy : public CBaseMaterialProxy
 {
 public:
-	void InitProxy(IMaterial* pAssignedMaterial, kvkeybase_t* pKeyBase)
+	void InitProxy(IMaterial* pAssignedMaterial, KVSection* pKeyBase)
 	{
 		m_pMaterial = pAssignedMaterial;
 
@@ -170,7 +170,7 @@ DECLARE_PROXY(multiply, CMulProxy)
 class CDivProxy : public CBaseMaterialProxy
 {
 public:
-	void InitProxy(IMaterial* pAssignedMaterial, kvkeybase_t* pKeyBase)
+	void InitProxy(IMaterial* pAssignedMaterial, KVSection* pKeyBase)
 	{
 		m_pMaterial = pAssignedMaterial;
 
@@ -220,7 +220,7 @@ DECLARE_PROXY(divide, CDivProxy)
 class CSinProxy : public CBaseMaterialProxy
 {
 public:
-	void InitProxy(IMaterial* pAssignedMaterial, kvkeybase_t* pKeyBase)
+	void InitProxy(IMaterial* pAssignedMaterial, KVSection* pKeyBase)
 	{
 		m_pMaterial = pAssignedMaterial;
 		if(pKeyBase->values.numElem() < 2)
@@ -253,7 +253,7 @@ DECLARE_PROXY(sin, CSinProxy)
 class CAbsProxy : public CBaseMaterialProxy
 {
 public:
-	void InitProxy(IMaterial* pAssignedMaterial, kvkeybase_t* pKeyBase)
+	void InitProxy(IMaterial* pAssignedMaterial, KVSection* pKeyBase)
 	{
 		m_pMaterial = pAssignedMaterial;
 		if(pKeyBase->values.numElem() < 2)
@@ -286,18 +286,18 @@ DECLARE_PROXY(abs, CAbsProxy)
 class CAnimatedTextureProxy : public CBaseMaterialProxy
 {
 public:
-	void InitProxy(IMaterial* pAssignedMaterial, kvkeybase_t* pKeyBase)
+	void InitProxy(IMaterial* pAssignedMaterial, KVSection* pKeyBase)
 	{
 		m_pMaterial = pAssignedMaterial;
-		kvkeybase_t* pair = NULL;
+		KVSection* pair = NULL;
 
 		// frame count is the only static variable, frame rate is dynamic
 		frameCount = KV_GetValueInt(pKeyBase);
 
-		pair = pKeyBase->FindKeyBase("framerate");
+		pair = pKeyBase->FindSection("framerate");
 		ParseVariable(frameRate, (char*)KV_GetValueString(pair));
 
-		pair = pKeyBase->FindKeyBase("frameVar");
+		pair = pKeyBase->FindSection("frameVar");
 		ParseVariable(out,(char*)KV_GetValueString(pair));
 
 		time = 0.0f;

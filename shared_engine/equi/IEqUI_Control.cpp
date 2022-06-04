@@ -55,7 +55,7 @@ void IUIControl::SetLabel(const char* pszLabel)
 	m_label = LocalizedString(pszLabel);
 }
 
-void IUIControl::InitFromKeyValues( kvkeybase_t* sec, bool noClear )
+void IUIControl::InitFromKeyValues( KVSection* sec, bool noClear )
 {
 	if (!noClear)
 		ClearChilds(true);
@@ -65,15 +65,15 @@ void IUIControl::InitFromKeyValues( kvkeybase_t* sec, bool noClear )
 	else
 		SetName(KV_GetValueString(sec, 0, ""));
 
-	kvkeybase_t* label = sec->FindKeyBase("label");
+	KVSection* label = sec->FindSection("label");
 	if (label)
-		SetLabel(KV_GetValueString(sec->FindKeyBase("label")));
+		SetLabel(KV_GetValueString(sec->FindSection("label")));
 
-	m_position = KV_GetIVector2D(sec->FindKeyBase("position"), 0, m_position);
-	m_size = KV_GetIVector2D(sec->FindKeyBase("size"), 0, m_size);
+	m_position = KV_GetIVector2D(sec->FindSection("position"), 0, m_position);
+	m_size = KV_GetIVector2D(sec->FindSection("size"), 0, m_size);
 
-	m_visible = KV_GetValueBool(sec->FindKeyBase("visible"), 0, m_visible);
-	m_selfVisible = KV_GetValueBool(sec->FindKeyBase("selfvisible"), 0, m_selfVisible);
+	m_visible = KV_GetValueBool(sec->FindSection("visible"), 0, m_visible);
+	m_selfVisible = KV_GetValueBool(sec->FindSection("selfvisible"), 0, m_selfVisible);
 
 	
 	m_sizeDiff = 0;
@@ -82,7 +82,7 @@ void IUIControl::InitFromKeyValues( kvkeybase_t* sec, bool noClear )
 	m_alignment = (UI_BORDER_LEFT | UI_BORDER_TOP);
 
 	m_font.font = nullptr;
-	kvkeybase_t* font = sec->FindKeyBase("font");
+	KVSection* font = sec->FindSection("font");
 	if(font)
 	{
 		int styleFlags = 0;
@@ -100,16 +100,16 @@ void IUIControl::InitFromKeyValues( kvkeybase_t* sec, bool noClear )
 
 	
 
-	m_font.fontScale = KV_GetVector2D(sec->FindKeyBase("fontScale"), 0, m_parent ? m_parent->m_font.fontScale : m_font.fontScale);
-	m_font.textColor = KV_GetVector4D(sec->FindKeyBase("textColor"), 0, m_parent ? m_parent->m_font.textColor : m_font.textColor);
-	m_font.monoSpace = KV_GetValueBool(sec->FindKeyBase("textMonospace"), 0, m_parent ? m_parent->m_font.monoSpace : m_font.monoSpace);
-	m_font.textWeight = KV_GetValueFloat(sec->FindKeyBase("textWeight"), 0, m_parent ? m_parent->m_font.textWeight : m_font.textWeight);
+	m_font.fontScale = KV_GetVector2D(sec->FindSection("fontScale"), 0, m_parent ? m_parent->m_font.fontScale : m_font.fontScale);
+	m_font.textColor = KV_GetVector4D(sec->FindSection("textColor"), 0, m_parent ? m_parent->m_font.textColor : m_font.textColor);
+	m_font.monoSpace = KV_GetValueBool(sec->FindSection("textMonospace"), 0, m_parent ? m_parent->m_font.monoSpace : m_font.monoSpace);
+	m_font.textWeight = KV_GetValueFloat(sec->FindSection("textWeight"), 0, m_parent ? m_parent->m_font.textWeight : m_font.textWeight);
 
-	m_font.shadowColor = KV_GetVector4D(sec->FindKeyBase("textShadowColor"), 0, m_parent ? m_parent->m_font.shadowColor : m_font.shadowColor);
-	m_font.shadowOffset = KV_GetValueFloat(sec->FindKeyBase("textShadowOffset"), 0, m_parent ? m_parent->m_font.shadowOffset : m_font.shadowOffset);
-	m_font.shadowWeight = KV_GetValueFloat(sec->FindKeyBase("textShadowWeight"), 0, m_parent ? m_parent->m_font.shadowWeight : m_font.shadowWeight);
+	m_font.shadowColor = KV_GetVector4D(sec->FindSection("textShadowColor"), 0, m_parent ? m_parent->m_font.shadowColor : m_font.shadowColor);
+	m_font.shadowOffset = KV_GetValueFloat(sec->FindSection("textShadowOffset"), 0, m_parent ? m_parent->m_font.shadowOffset : m_font.shadowOffset);
+	m_font.shadowWeight = KV_GetValueFloat(sec->FindSection("textShadowWeight"), 0, m_parent ? m_parent->m_font.shadowWeight : m_font.shadowWeight);
 
-	kvkeybase_t* command = sec->FindKeyBase("command");
+	KVSection* command = sec->FindSection("command");
 
 	if(command)
 	{
@@ -123,7 +123,7 @@ void IUIControl::InitFromKeyValues( kvkeybase_t* sec, bool noClear )
 	}
 
 	//------------------------------------------------------------------------------
-	kvkeybase_t* anchors = sec->FindKeyBase("anchors");
+	KVSection* anchors = sec->FindSection("anchors");
 
 	if(anchors)
 	{
@@ -147,7 +147,7 @@ void IUIControl::InitFromKeyValues( kvkeybase_t* sec, bool noClear )
 	}
 
 	//------------------------------------------------------------------------------
-	kvkeybase_t* align = sec->FindKeyBase("align");
+	KVSection* align = sec->FindSection("align");
 
 	if(align)
 	{
@@ -173,21 +173,21 @@ void IUIControl::InitFromKeyValues( kvkeybase_t* sec, bool noClear )
 	}
 
 	//------------------------------------------------------------------------------
-	kvkeybase_t* transform = sec->FindKeyBase("transform");
+	KVSection* transform = sec->FindSection("transform");
 
 	if (transform)
 	{
-		float rotateVal = KV_GetValueFloat(transform->FindKeyBase("rotate"), 0.0f);
+		float rotateVal = KV_GetValueFloat(transform->FindSection("rotate"), 0.0f);
 		rotateVal = rotateVal;
 
-		Vector2D scaleVal = KV_GetVector2D(transform->FindKeyBase("scale"), 0, 1.0f);
-		Vector2D translate = KV_GetVector2D(transform->FindKeyBase("translate"), 0, 0.0f);
+		Vector2D scaleVal = KV_GetVector2D(transform->FindSection("scale"), 0, 1.0f);
+		Vector2D translate = KV_GetVector2D(transform->FindSection("translate"), 0, 0.0f);
 
 		SetTransform(translate, scaleVal, rotateVal);
 	}
 
 	//------------------------------------------------------------------------------
-	kvkeybase_t* textAlign = sec->FindKeyBase("textAlign");
+	KVSection* textAlign = sec->FindSection("textAlign");
 
 	if (textAlign)
 	{
@@ -217,7 +217,7 @@ void IUIControl::InitFromKeyValues( kvkeybase_t* sec, bool noClear )
 	//------------------------------------------------------------------------------
 
 
-	kvkeybase_t* scaling = sec->FindKeyBase("scaling");
+	KVSection* scaling = sec->FindSection("scaling");
 	if (scaling)
 	{
 		m_scaling = UI_SCALING_NONE;
@@ -239,7 +239,7 @@ void IUIControl::InitFromKeyValues( kvkeybase_t* sec, bool noClear )
 	// walk for childs
 	for(int i = 0; i < sec->keys.numElem(); i++)
 	{
-		kvkeybase_t* csec = sec->keys[i];
+		KVSection* csec = sec->keys[i];
 
 		if (!csec->IsSection())
 			continue;

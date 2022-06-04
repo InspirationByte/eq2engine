@@ -81,7 +81,7 @@ CLocToken::CLocToken(const char* tok, const char* text)
 
 void CLocalize::Init()
 {
-	kvkeybase_t* pRegional = GetCore()->GetConfig()->FindKeyBase("RegionalSettings", KV_FLAG_SECTION);
+	KVSection* pRegional = GetCore()->GetConfig()->FindSection("RegionalSettings", KV_FLAG_SECTION);
 
 	if(!pRegional)
 	{
@@ -89,7 +89,7 @@ void CLocalize::Init()
 		return;
 	}
 
-    m_language = KV_GetValueString(pRegional->FindKeyBase("DefaultLanguage"), 0, "english" );
+    m_language = KV_GetValueString(pRegional->FindSection("DefaultLanguage"), 0, "english" );
     Msg("Language '%s' set\n", m_language.ToCString());
 
 	// add localized path
@@ -129,7 +129,7 @@ void CLocalize::AddTokensFile(const char* pszFilePrefix)
 	// TODO: check for already loaded token files!
 	EqString path = EqString::Format("resources/text_%s/%s.txt", GetLanguageName(), pszFilePrefix);
 
-	kvkeybase_t kvSec;
+	KVSection kvSec;
 	if (!KV_LoadFromFile(path.ToCString(), -1, &kvSec))
 	{
 		MsgWarning("Cannot load language file '%s'\n", path.ToCString());
@@ -141,7 +141,7 @@ void CLocalize::AddTokensFile(const char* pszFilePrefix)
 
 	for(int i = 0; i < kvSec.keys.numElem(); i++)
 	{
-		kvkeybase_t* key = kvSec.keys[i];
+		KVSection* key = kvSec.keys[i];
 
 		if(!stricmp(key->name, "#include" ))
 		{

@@ -404,7 +404,7 @@ enum ER_StateResetFlags
 #define BUFFER_OFFSET(i) ((char *) NULL + (i))
 #endif
 
-struct kvkeybase_t;
+struct KVSection;
 
 struct shaderProgramText_t
 {
@@ -421,7 +421,7 @@ struct shaderProgramCompileInfo_t
 	bool				disableCache{ false };
 
 	// apiprefs now contains all needed attributes
-	kvkeybase_t*		apiPrefs{ nullptr };
+	KVSection*		apiPrefs{ nullptr };
 };
 
 // shader API class for shader developers.

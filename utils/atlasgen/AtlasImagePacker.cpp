@@ -148,7 +148,7 @@ struct imageDesc_t
 //
 // Parses image description keybase
 //
-bool ParseImageDesc(const char* atlasPath, imageDesc_t& dest, kvkeybase_t* kv)
+bool ParseImageDesc(const char* atlasPath, imageDesc_t& dest, KVSection* kv)
 {
 	EqString atlas_dir = _Es(atlasPath).Path_Strip_Name();
 	EqString image_name = KV_GetValueString(kv, 0, NULL);
@@ -192,7 +192,7 @@ bool ParseImageDesc(const char* atlasPath, imageDesc_t& dest, kvkeybase_t* kv)
 
 		for(int i = 0; i < kv->keys.numElem(); i++)
 		{
-			kvkeybase_t* kb = kv->keys[i];
+			KVSection* kb = kv->keys[i];
 
 			imgLayer_t layer;
 			layer.blendMode = GetBlendmodeByStr( kb->name );
@@ -377,12 +377,12 @@ inline int AtlasPackComparison(PackerRectangle *const &elem0, PackerRectangle *c
 
 bool CreateAtlasImage(const Array<imageDesc_t*>& images_list, 
 						const char* pszOutputImageName, 
-						kvkeybase_t* pParams)
+						KVSection* pParams)
 {
-	int padding = KV_GetValueInt(pParams->FindKeyBase("padding"), 0, 0);
+	int padding = KV_GetValueInt(pParams->FindSection("padding"), 0, 0);
 	EPaddingMode padMode = PAD_NONE;
 
-	const char* padModeStr = KV_GetValueString(pParams->FindKeyBase("padding"), 1, "none");
+	const char* padModeStr = KV_GetValueString(pParams->FindSection("padding"), 1, "none");
 	if(!stricmp(padModeStr, "clamp"))
 	{
 		padMode = PAD_CLAMP;
@@ -413,7 +413,7 @@ bool CreateAtlasImage(const Array<imageDesc_t*>& images_list,
 
 	EqString shaderName = "Base";
 
-	kvkeybase_t* pSizeKey = pParams->FindKeyBase("size");
+	KVSection* pSizeKey = pParams->FindSection("size");
 
 	if(pSizeKey)
 	{
@@ -421,7 +421,7 @@ bool CreateAtlasImage(const Array<imageDesc_t*>& images_list,
 		tall = KV_GetValueInt(pSizeKey, 1, 512);
 	}
 
-	kvkeybase_t* shaderBase = pParams->FindKeyBase("shader");
+	KVSection* shaderBase = pParams->FindSection("shader");
 	shaderName = KV_GetValueString(shaderBase, 0, "Base");
 
 	// pack
@@ -447,16 +447,16 @@ bool CreateAtlasImage(const Array<imageDesc_t*>& images_list,
 
 	// save atlas info
 	KeyValues kvs;
-	kvkeybase_t* pAtlasGroup = kvs.GetRootSection()->AddKeyBase("atlasgroup", file_name.GetData());
+	KVSection* pAtlasGroup = kvs.GetRootSection()->CreateSection("atlasgroup", file_name.GetData());
 
 	KeyValues kv_material;
-	kvkeybase_t* pShaderEntry = kv_material.GetRootSection()->AddKeyBase(shaderName.GetData());
+	KVSection* pShaderEntry = kv_material.GetRootSection()->CreateSection(shaderName.GetData());
 	pShaderEntry->MergeFrom(shaderBase, true);
 
 	// process setting up
 	for (int i = 0; i < pShaderEntry->keys.numElem(); i++)
 	{
-		kvkeybase_t* key = pShaderEntry->keys[i];
+		KVSection* key = pShaderEntry->keys[i];
 
 		EqString value = KV_GetValueString(key, 0, "");
 		if (!value.Length())
@@ -484,7 +484,7 @@ bool CreateAtlasImage(const Array<imageDesc_t*>& images_list,
 		rect.vrightBottom *= sizeTexels;
 
 		// add info to keyvalues
-		kvkeybase_t* rect_kv = pAtlasGroup->AddKeyBase(imgDesc->name.ToCString());
+		KVSection* rect_kv = pAtlasGroup->CreateSection(imgDesc->name.ToCString());
 		rect_kv->AddValue(rect.vleftTop.x);
 		rect_kv->AddValue(rect.vleftTop.y);
 		rect_kv->AddValue(rect.vrightBottom.x);
@@ -522,7 +522,7 @@ void ProcessNewAtlas(const char* atlasPath, const char* pszOutputName)
 		{
 			if(!stricmp(kvs.GetRootSection()->keys[i]->name, "image"))
 			{
-				kvkeybase_t* kb = kvs.GetRootSection()->keys[i];
+				KVSection* kb = kvs.GetRootSection()->keys[i];
 
 				imageDesc_t* imgDesc = PPNew imageDesc_t();
 

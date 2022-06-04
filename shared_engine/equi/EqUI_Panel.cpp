@@ -40,37 +40,37 @@ Panel::~Panel()
 
 }
 
-void Panel::InitFromKeyValues( kvkeybase_t* sec, bool noClear )
+void Panel::InitFromKeyValues( KVSection* sec, bool noClear )
 {
 	// initialize from scheme
-	kvkeybase_t* mainSec = sec->FindKeyBase("panel");
+	KVSection* mainSec = sec->FindSection("panel");
 
 	if (mainSec == nullptr)
-		mainSec = sec->FindKeyBase("child");
+		mainSec = sec->FindSection("child");
 
 	if (mainSec == nullptr)
 		mainSec = sec;
 
 	BaseClass::InitFromKeyValues(mainSec, noClear);
 
-	m_windowControls = KV_GetValueBool(mainSec->FindKeyBase("window"), 0, m_windowControls);
+	m_windowControls = KV_GetValueBool(mainSec->FindSection("window"), 0, m_windowControls);
 	m_visible = !m_windowControls;
-	m_visible = KV_GetValueBool(mainSec->FindKeyBase("visible"), 0, m_visible);
-	m_screenOverlay = KV_GetValueBool(mainSec->FindKeyBase("screenoverlay"), 0, m_screenOverlay);
-	m_color = KV_GetVector4D(mainSec->FindKeyBase("color"), 0, m_color);
+	m_visible = KV_GetValueBool(mainSec->FindSection("visible"), 0, m_visible);
+	m_screenOverlay = KV_GetValueBool(mainSec->FindSection("screenoverlay"), 0, m_screenOverlay);
+	m_color = KV_GetVector4D(mainSec->FindSection("color"), 0, m_color);
 	m_grabbed = false;
 	m_closeButton = nullptr;
 	m_labelCtrl = nullptr;
 
 	if(m_windowControls)
 	{
-		kvkeybase_t winRes;
+		KVSection winRes;
 		KV_LoadFromFile("resources/WindowControls.res", -1, &winRes);
 
 		// create additional controls
 		for(int i = 0; i < winRes.keys.numElem(); i++)
 		{
-			kvkeybase_t* csec = winRes.keys[i];
+			KVSection* csec = winRes.keys[i];
 			if(!csec->IsSection())
 				continue;
 

@@ -171,7 +171,7 @@ bool CFileSystem::Init(bool bEditorMode)
 
 	m_editorMode = bEditorMode;
 
-	kvkeybase_t* pFilesystem = GetCore()->GetConfig()->FindKeyBase("FileSystem", KV_FLAG_SECTION);
+	KVSection* pFilesystem = GetCore()->GetConfig()->FindSection("FileSystem", KV_FLAG_SECTION);
 
 	if (!pFilesystem)
 	{
@@ -179,7 +179,7 @@ bool CFileSystem::Init(bool bEditorMode)
 		return false;
 	}
 
-	const char* workDir = KV_GetValueString(pFilesystem->FindKeyBase("WorkDir"), 0, nullptr);
+	const char* workDir = KV_GetValueString(pFilesystem->FindSection("WorkDir"), 0, nullptr);
 	if (workDir)
 	{
 #ifdef _WIN32
@@ -189,12 +189,12 @@ bool CFileSystem::Init(bool bEditorMode)
 #endif // _WIN32
 	}
 
-	m_basePath = KV_GetValueString(pFilesystem->FindKeyBase("BasePath"), 0, m_basePath.ToCString());
+	m_basePath = KV_GetValueString(pFilesystem->FindSection("BasePath"), 0, m_basePath.ToCString());
 
 	if(m_basePath.Length() > 0)
 		MsgInfo("* FS Init with basePath=%s\n", m_basePath.GetData());
 
-	m_dataDir = KV_GetValueString(pFilesystem->FindKeyBase("EngineDataDir"), 0, "EngineBase" );
+	m_dataDir = KV_GetValueString(pFilesystem->FindSection("EngineDataDir"), 0, "EngineBase" );
 
 	MsgInfo("* Engine Data directory: %s\n", m_dataDir.GetData());
 
@@ -207,7 +207,7 @@ bool CFileSystem::Init(bool bEditorMode)
 		if (gamePath)
 			AddSearchPath("$GAME$", gamePath);
 		else
-			AddSearchPath("$GAME$", (const char*)KV_GetValueString(pFilesystem->FindKeyBase("DefaultGameDir"), 0, "DefaultGameDir_MISSING"));
+			AddSearchPath("$GAME$", (const char*)KV_GetValueString(pFilesystem->FindSection("DefaultGameDir"), 0, "DefaultGameDir_MISSING"));
 
 		 MsgInfo("* Game Data directory: %s\n", GetCurrentGameDirectory());
 

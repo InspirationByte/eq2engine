@@ -215,7 +215,7 @@ bool CMaterialSystem::Init(const matsystem_init_config_t& config)
 {
 	Msg(" \n--------- MaterialSystem Init --------- \n");
 
-	kvkeybase_t* matSystemSettings = GetCore()->GetConfig()->FindKeyBase("MaterialSystem");
+	KVSection* matSystemSettings = GetCore()->GetConfig()->FindSection("MaterialSystem");
 
 	ASSERT(g_pShaderAPI == NULL);
 
@@ -230,7 +230,7 @@ bool CMaterialSystem::Init(const matsystem_init_config_t& config)
 	if (!rendererName.Length())
 	{
 		// try using default from Eq config
-		rendererName = matSystemSettings ? KV_GetValueString(matSystemSettings->FindKeyBase("Renderer"), 0, NULL) : "eqGLRHI";
+		rendererName = matSystemSettings ? KV_GetValueString(matSystemSettings->FindSection("Renderer"), 0, NULL) : "eqGLRHI";
 	}
 #endif // _WIN329
 
@@ -261,7 +261,7 @@ bool CMaterialSystem::Init(const matsystem_init_config_t& config)
 		// regular materials
 		m_materialsPath = config.materialsPath;
 		if(!m_materialsPath.Length())
-			m_materialsPath = KV_GetValueString(matSystemSettings ? matSystemSettings->FindKeyBase("MaterialsPath") : nullptr, 0, "materials/");
+			m_materialsPath = KV_GetValueString(matSystemSettings ? matSystemSettings->FindSection("MaterialsPath") : nullptr, 0, "materials/");
 
 		m_materialsPath.Path_FixSlashes();
 
@@ -271,7 +271,7 @@ bool CMaterialSystem::Init(const matsystem_init_config_t& config)
 		// sources
 		m_materialsSRCPath = config.materialsSRCPath;
 		if(!m_materialsSRCPath.Length())
-			m_materialsSRCPath = KV_GetValueString(matSystemSettings ? matSystemSettings->FindKeyBase("MaterialsSRCPath") : nullptr, 0, "materialsSRC/");
+			m_materialsSRCPath = KV_GetValueString(matSystemSettings ? matSystemSettings->FindSection("MaterialsSRCPath") : nullptr, 0, "materialsSRC/");
 
 		m_materialsSRCPath.Path_FixSlashes();
 
@@ -443,7 +443,7 @@ void CMaterialSystem::InitDefaultMaterial()
 {
 	if(!m_pDefaultMaterial)
 	{
-		kvkeybase_t defaultParams;
+		KVSection defaultParams;
 		defaultParams.SetName("Default"); // set shader 'Default'
 		defaultParams.SetKey("BaseTexture", "$basetexture");
 
@@ -456,7 +456,7 @@ void CMaterialSystem::InitDefaultMaterial()
 
 	if(!m_overdrawMaterial)
 	{
-		kvkeybase_t overdrawParams;
+		KVSection overdrawParams;
 		overdrawParams.SetName("BaseUnlit"); // set shader 'BaseUnlit'
 		overdrawParams.SetKey("BaseTexture", "_matsys_white");
 		overdrawParams.SetKey("Color", "[0.045 0.02 0.02 1.0]");
@@ -528,7 +528,7 @@ bool CMaterialSystem::IsMaterialExist(const char* szMaterialName)
 	return g_fileSystem->FileExist(mat_path.GetData());
 }
 
-IMaterial* CMaterialSystem::CreateMaterial(const char* szMaterialName, kvkeybase_t* params)
+IMaterial* CMaterialSystem::CreateMaterial(const char* szMaterialName, KVSection* params)
 {
 	// must have names
 	ASSERT(strlen(szMaterialName) > 0);
@@ -538,7 +538,7 @@ IMaterial* CMaterialSystem::CreateMaterial(const char* szMaterialName, kvkeybase
 }
 
 // creates new material with defined parameters
-IMaterial* CMaterialSystem::CreateMaterialInternal(const char* szMaterialName, int nameHash, kvkeybase_t* params)
+IMaterial* CMaterialSystem::CreateMaterialInternal(const char* szMaterialName, int nameHash, KVSection* params)
 {
 	CScopedMutex m(m_Mutex);
 

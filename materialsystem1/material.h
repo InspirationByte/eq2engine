@@ -15,7 +15,7 @@
 #include "ds/eqstring.h"
 #include "utils/eqthread.h"
 
-struct kvkeybase_t;
+struct KVSection;
 class IMaterialProxy;
 
 class CMaterial : public IMaterial
@@ -43,7 +43,7 @@ public:
 	void					Init(const char* matFileName);
 	
 	// initializes material from keyvalues
-	void					Init(const char* materialName, kvkeybase_t* shader_root);
+	void					Init(const char* materialName, KVSection* shader_root);
 
 	void					Cleanup(bool dropVars = true, bool dropShader = true);
 
@@ -63,11 +63,11 @@ public:
 	void					Setup(uint paramMask);
 private:
 
-	void					InitVars(kvkeybase_t* kvs);
+	void					InitVars(KVSection* kvs);
 
 	void					InitShader();
-	void					InitMaterialVars(kvkeybase_t* kvs);
-	void					InitMaterialProxy(kvkeybase_t* kvs);
+	void					InitMaterialVars(KVSection* kvs);
+	void					InitMaterialProxy(KVSection* kvs);
 
 protected:
 	bool					DoLoadShaderAndTextures();

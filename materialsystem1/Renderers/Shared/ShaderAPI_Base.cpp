@@ -1077,11 +1077,11 @@ bool ShaderAPI_Base::LoadShadersFromFile(IShaderProgram* pShaderOutput, const ch
 
 	if( pKv.LoadFromFile(shaderDescFilename) )
 	{
-		kvkeybase_t* sec = pKv.GetRootSection();
+		KVSection* sec = pKv.GetRootSection();
 
-		info.disableCache = KV_GetValueBool(sec->FindKeyBase("DisableCache"));
+		info.disableCache = KV_GetValueBool(sec->FindSection("DisableCache"));
 
-		kvkeybase_t* programName = sec->FindKeyBase("ShaderProgram");
+		KVSection* programName = sec->FindSection("ShaderProgram");
 		if (programName)
 		{
 			const char* programNameStr = KV_GetValueString(programName, 0, pszFilePrefix);
@@ -1105,7 +1105,7 @@ bool ShaderAPI_Base::LoadShadersFromFile(IShaderProgram* pShaderOutput, const ch
 		// find corresponding API
 		for(int i = 0; i < sec->keys.numElem(); i++)
 		{
-			kvkeybase_t* apiKey = sec->keys[i];
+			KVSection* apiKey = sec->keys[i];
 
 			if(!stricmp(apiKey->GetName(), "api"))
 			{

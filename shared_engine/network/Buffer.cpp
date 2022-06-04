@@ -64,7 +64,7 @@ void Buffer::WriteWString(const wchar_t* pszStr)
 	WriteData((ubyte*)pszStr, len*sizeof(wchar_t));
 }
 
-void Buffer::WriteKeyValues(kvkeybase_t* kbase)
+void Buffer::WriteKeyValues(KVSection* kbase)
 {
 	CMemoryStream stream(nullptr, VS_OPEN_WRITE, 8192);
 	KV_WriteToStreamBinary(&stream, kbase);
@@ -76,7 +76,7 @@ void Buffer::WriteKeyValues(kvkeybase_t* kbase)
 	WriteData(stream.GetBasePointer(), stream.Tell()+1);
 }
 
-void Buffer::ReadKeyValues(kvkeybase_t* kbase)
+void Buffer::ReadKeyValues(KVSection* kbase)
 {
 	int len = ReadInt();
 

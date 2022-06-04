@@ -255,7 +255,7 @@ void CEGFGenerator::FreeModel( egfcaModel_t& mod )
 //************************************
 // Loads reference
 //************************************
-dsmmodel_t* CEGFGenerator::ParseAndLoadModels(kvkeybase_t* pKeyBase)
+dsmmodel_t* CEGFGenerator::ParseAndLoadModels(KVSection* pKeyBase)
 {
 	Array<EqString> modelfilenames{ PP_SL };
 	Array<EqString> shapeByModels{ PP_SL };
@@ -381,13 +381,13 @@ dsmmodel_t* CEGFGenerator::ParseAndLoadModels(kvkeybase_t* pKeyBase)
 //************************************
 // Loads reference models
 //************************************
-bool CEGFGenerator::LoadModels(kvkeybase_t* pSection)
+bool CEGFGenerator::LoadModels(KVSection* pSection)
 {
 	MsgWarning("\nLoading models\n");
 
 	for(int i = 0; i < pSection->keys.numElem(); i++)
 	{
-		kvkeybase_t* keyBase = pSection->keys[i];
+		KVSection* keyBase = pSection->keys[i];
 
 		if(!stricmp(keyBase->name, "global_scale"))
 		{
@@ -436,7 +436,7 @@ bool CEGFGenerator::LoadModels(kvkeybase_t* pSection)
 //************************************
 // Parses LOD data
 //************************************
-void CEGFGenerator::ParseLodData(kvkeybase_t* pSection, int lodIdx)
+void CEGFGenerator::ParseLodData(KVSection* pSection, int lodIdx)
 {
 	for(int i = 0; i < pSection->keys.numElem(); i++)
 	{
@@ -467,7 +467,7 @@ void CEGFGenerator::ParseLodData(kvkeybase_t* pSection, int lodIdx)
 //************************************
 // Parses LODs
 //************************************
-void CEGFGenerator::LoadLods(kvkeybase_t* pSection)
+void CEGFGenerator::LoadLods(KVSection* pSection)
 {
 	MsgWarning("\nLoading LODs\n");
 
@@ -481,7 +481,7 @@ void CEGFGenerator::LoadLods(kvkeybase_t* pSection)
 
 	for(int i = 0; i < pSection->keys.numElem(); i++)
 	{
-		kvkeybase_t* lodKey = pSection->keys[i];
+		KVSection* lodKey = pSection->keys[i];
 
 		if(!lodKey->IsSection())
 			continue;
@@ -514,11 +514,11 @@ void CEGFGenerator::LoadLods(kvkeybase_t* pSection)
 //************************************
 // Load body groups
 //************************************
-bool CEGFGenerator::LoadBodyGroups(kvkeybase_t* pSection)
+bool CEGFGenerator::LoadBodyGroups(KVSection* pSection)
 {
 	for(int i = 0; i < pSection->keys.numElem(); i++)
 	{
-		kvkeybase_t* keyBase = pSection->keys[i];
+		KVSection* keyBase = pSection->keys[i];
 
 		if(!stricmp(keyBase->name, "bodygroup"))
 		{
@@ -575,7 +575,7 @@ bool CEGFGenerator::LoadBodyGroups(kvkeybase_t* pSection)
 //************************************
 // Load material groups
 //************************************
-bool CEGFGenerator::LoadMaterialGroups(kvkeybase_t* pSection)
+bool CEGFGenerator::LoadMaterialGroups(KVSection* pSection)
 {
 	MsgInfo("* Default materialGroup:\n\t");
 	for (int i = 0; i < m_materials.numElem(); i++)
@@ -584,7 +584,7 @@ bool CEGFGenerator::LoadMaterialGroups(kvkeybase_t* pSection)
 
 	for (int i = 0; i < pSection->keys.numElem(); i++)
 	{
-		kvkeybase_t* keyBase = pSection->keys[i];
+		KVSection* keyBase = pSection->keys[i];
 
 		if (!stricmp(keyBase->name, "materialGroup"))
 		{
@@ -798,13 +798,13 @@ void CEGFGenerator::BuildBoneChains()
 //************************************
 // Loads material pathes to use in engine
 //************************************
-bool CEGFGenerator::LoadMaterialPaths(kvkeybase_t* pSection)
+bool CEGFGenerator::LoadMaterialPaths(KVSection* pSection)
 {
 	MsgWarning("\nAdding material paths\n");
 
 	for(int i = 0; i < pSection->keys.numElem(); i++)
 	{
-		kvkeybase_t* keyBase = pSection->keys[i];
+		KVSection* keyBase = pSection->keys[i];
 
 		if(!stricmp(keyBase->name, "materialpath"))
 		{
@@ -850,11 +850,11 @@ bool CEGFGenerator::LoadMaterialPaths(kvkeybase_t* pSection)
 //************************************
 // Loads material pathes to use in engine
 //************************************
-bool CEGFGenerator::LoadMotionPackagePaths(kvkeybase_t* pSection)
+bool CEGFGenerator::LoadMotionPackagePaths(KVSection* pSection)
 {
 	for(int i = 0; i < pSection->keys.numElem(); i++)
 	{
-		kvkeybase_t* keyBase = pSection->keys[i];
+		KVSection* keyBase = pSection->keys[i];
 
 		if(!stricmp(keyBase->name, "addmotionpackage"))
 		{
@@ -881,7 +881,7 @@ bool CEGFGenerator::LoadMotionPackagePaths(kvkeybase_t* pSection)
 //************************************
 // Parses ik chain info from section
 //************************************
-void CEGFGenerator::ParseIKChain(kvkeybase_t* pSection)
+void CEGFGenerator::ParseIKChain(KVSection* pSection)
 {
 	if(pSection->values.numElem() < 2)
 	{
@@ -928,7 +928,7 @@ void CEGFGenerator::ParseIKChain(kvkeybase_t* pSection)
 
 	for(int i = 0; i < pSection->keys.numElem(); i++)
 	{
-		kvkeybase_t* sec = pSection->keys[i];
+		KVSection* sec = pSection->keys[i];
 
 		if(!stricmp(sec->name, "damping"))
 		{
@@ -998,13 +998,13 @@ void CEGFGenerator::ParseIKChain(kvkeybase_t* pSection)
 //************************************
 // Loads ik chains if available
 //************************************
-void CEGFGenerator::LoadIKChains(kvkeybase_t* pSection)
+void CEGFGenerator::LoadIKChains(KVSection* pSection)
 {
 	MsgWarning("\nLoading IK chains\n");
 
 	for(int i = 0; i < pSection->keys.numElem(); i++)
 	{
-		kvkeybase_t* chainSec = pSection->keys[i];
+		KVSection* chainSec = pSection->keys[i];
 
 		if(chainSec->IsSection() && !stricmp(chainSec->name, "ikchain"))
 		{
@@ -1019,13 +1019,13 @@ void CEGFGenerator::LoadIKChains(kvkeybase_t* pSection)
 //************************************
 // Loads attachments if available
 //************************************
-void CEGFGenerator::LoadAttachments(kvkeybase_t* pSection)
+void CEGFGenerator::LoadAttachments(KVSection* pSection)
 {
 	MsgWarning("\nLoading attachments\n");
 
 	for(int i = 0; i < pSection->keys.numElem(); i++)
 	{
-		kvkeybase_t* attachSec = pSection->keys[i];
+		KVSection* attachSec = pSection->keys[i];
 
 		if(!stricmp(attachSec->name, "attachment"))
 		{
@@ -1133,11 +1133,11 @@ bool CEGFGenerator::InitFromKeyValues(const char* filename)
 	}
 }
 
-void CEGFGenerator::LoadPhysModels(kvkeybase_t* mainsection)
+void CEGFGenerator::LoadPhysModels(KVSection* mainsection)
 {
 	for(int i = 0; i < mainsection->keys.numElem(); i++)
 	{
-		kvkeybase_t* physObjectSec = mainsection->keys[i];
+		KVSection* physObjectSec = mainsection->keys[i];
 
 		if(stricmp(physObjectSec->name, "physics"))
 			continue;
@@ -1150,7 +1150,7 @@ void CEGFGenerator::LoadPhysModels(kvkeybase_t* mainsection)
 
 		dsmmodel_t* physModel = nullptr;
 
-		kvkeybase_t* modelNamePair = physObjectSec->FindKeyBase("model");
+		KVSection* modelNamePair = physObjectSec->FindSection("model");
 		if(modelNamePair)
 		{
 			egfcaModel_t* foundRef = FindModelByName( KV_GetValueString(modelNamePair) );
@@ -1198,9 +1198,9 @@ void CEGFGenerator::LoadPhysModels(kvkeybase_t* mainsection)
 //************************************
 // main function of script compilation
 //************************************
-bool CEGFGenerator::InitFromKeyValues(kvkeybase_t* mainsection)
+bool CEGFGenerator::InitFromKeyValues(KVSection* mainsection)
 {
-	kvkeybase_t* pSourcePath = mainsection->FindKeyBase("source_path");
+	KVSection* pSourcePath = mainsection->FindSection("source_path");
 
 	// set source path if defined by script
 	if(pSourcePath)
@@ -1210,7 +1210,7 @@ bool CEGFGenerator::InitFromKeyValues(kvkeybase_t* mainsection)
 	}
 
 	// get new model filename
-	kvkeybase_t* outputModelFilenameKey = mainsection->FindKeyBase("modelfilename");
+	KVSection* outputModelFilenameKey = mainsection->FindSection("modelfilename");
 	if(outputModelFilenameKey)
 		SetOutputFilename( KV_GetValueString(outputModelFilenameKey) );
 

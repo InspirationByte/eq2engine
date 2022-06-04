@@ -1698,7 +1698,7 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 	EqString precision = "mediump";
 	if (info.apiPrefs) 
 	{
-		precision = KV_GetValueString(info.apiPrefs->FindKeyBase("precision"), 0, "mediump");
+		precision = KV_GetValueString(info.apiPrefs->FindSection("precision"), 0, "mediump");
 	}
 
 	struct compileData

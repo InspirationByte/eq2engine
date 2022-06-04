@@ -30,18 +30,18 @@ Image::~Image()
 	materials->FreeMaterial(m_material);
 }
 
-void Image::InitFromKeyValues( kvkeybase_t* sec, bool noClear )
+void Image::InitFromKeyValues( KVSection* sec, bool noClear )
 {
 	BaseClass::InitFromKeyValues(sec, noClear);
 
-	m_color = KV_GetVector4D(sec->FindKeyBase("color"), 0, m_color);
+	m_color = KV_GetVector4D(sec->FindSection("color"), 0, m_color);
 
-	bool flipX = KV_GetValueBool(sec->FindKeyBase("flipx"), 0, (m_imageFlags & FLIP_X) > 0);
-	bool flipY = KV_GetValueBool(sec->FindKeyBase("flipy"), 0, (m_imageFlags & FLIP_Y) > 0);
+	bool flipX = KV_GetValueBool(sec->FindSection("flipx"), 0, (m_imageFlags & FLIP_X) > 0);
+	bool flipY = KV_GetValueBool(sec->FindSection("flipy"), 0, (m_imageFlags & FLIP_Y) > 0);
 
 	m_imageFlags = (flipX ? FLIP_X : 0) | (flipY ? FLIP_Y : 0);
 
-	kvkeybase_t* pathBase = sec->FindKeyBase("path");
+	KVSection* pathBase = sec->FindSection("path");
 	if (pathBase != nullptr)
 	{
 		const char* materialPath = KV_GetValueString(pathBase, 0, "ui/default");
@@ -51,7 +51,7 @@ void Image::InitFromKeyValues( kvkeybase_t* sec, bool noClear )
 	}
 	else
 	{
-		pathBase = sec->FindKeyBase("atlas");
+		pathBase = sec->FindSection("atlas");
 
 		if (pathBase)
 		{

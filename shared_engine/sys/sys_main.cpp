@@ -240,8 +240,8 @@ void Sys_Android_MountFileSystem()
 	g_fileSystem->MakeDir("cfg", SP_MOD);
 
 	// mount OBB file if available in config
-	kvkeybase_t* filesystemKvs = GetCore()->GetConfig()->FindKeyBase("Filesystem");
-	kvkeybase_t* obbPackageName = filesystemKvs->FindKeyBase("OBBPackage");
+	KVSection* filesystemKvs = GetCore()->GetConfig()->FindSection("Filesystem");
+	KVSection* obbPackageName = filesystemKvs->FindSection("OBBPackage");
 
 	if (obbPackageName)
 	{

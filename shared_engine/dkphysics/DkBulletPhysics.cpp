@@ -236,7 +236,7 @@ bool DkPhysics::Init(int nSceneSize)
 
 	for(int i = 0; i < pMaterials.GetRootSection()->keys.numElem(); i++)
 	{
-		kvkeybase_t* pSec = pMaterials.GetRootSection()->keys[i];
+		KVSection* pSec = pMaterials.GetRootSection()->keys[i];
 
 		if(stricmp(pSec->name, "#include"))
 		{
@@ -246,7 +246,7 @@ bool DkPhysics::Init(int nSceneSize)
 
 			pMaterial->name = pSec->name;
 
-			kvkeybase_t* pBaseNamePair = pSec->FindKeyBase("base");
+			KVSection* pBaseNamePair = pSec->FindSection("base");
 			if(pBaseNamePair)
 			{
 				phySurfaceMaterial_t* param = FindMaterial( KV_GetValueString(pBaseNamePair));
@@ -258,40 +258,40 @@ bool DkPhysics::Init(int nSceneSize)
 					DevMsg(DEVMSG_CORE, "script error: physics surface properties '%s' doesn't exist\n", KV_GetValueString(pBaseNamePair) );
 			}
 
-			pMaterial->friction = KV_GetValueFloat(pSec->FindKeyBase("friction"), 0, 1.0f);
-			pMaterial->dampening = KV_GetValueFloat(pSec->FindKeyBase("damping"), 0, 1.0f);
-			pMaterial->density = KV_GetValueFloat(pSec->FindKeyBase("density"), 0, 100.0f);
-			pMaterial->surfaceword = KV_GetValueString(pSec->FindKeyBase("surfaceword"), 0, "C")[0];
+			pMaterial->friction = KV_GetValueFloat(pSec->FindSection("friction"), 0, 1.0f);
+			pMaterial->dampening = KV_GetValueFloat(pSec->FindSection("damping"), 0, 1.0f);
+			pMaterial->density = KV_GetValueFloat(pSec->FindSection("density"), 0, 100.0f);
+			pMaterial->surfaceword = KV_GetValueString(pSec->FindSection("surfaceword"), 0, "C")[0];
 
-			kvkeybase_t* pPair = pSec->FindKeyBase("footsteps");
+			KVSection* pPair = pSec->FindSection("footsteps");
 			if(pPair)
 			{
 				delete [] pMaterial->footStepSound;
 				pMaterial->footStepSound = KV_GetValueString(pPair);
 			}
 
-			pPair = pSec->FindKeyBase("bulletimpact");
+			pPair = pSec->FindSection("bulletimpact");
 			if(pPair)
 			{
 				delete [] pMaterial->bulletImpactSound;
 				pMaterial->bulletImpactSound = KV_GetValueString(pPair);
 			}
 
-			pPair = pSec->FindKeyBase("scrape");
+			pPair = pSec->FindSection("scrape");
 			if(pPair)
 			{
 				delete [] pMaterial->scrapeSound;
 				pMaterial->scrapeSound = KV_GetValueString(pPair);
 			}
 
-			pPair = pSec->FindKeyBase("impactlight");
+			pPair = pSec->FindSection("impactlight");
 			if(pPair)
 			{
 				delete [] pMaterial->lightImpactSound;
 				pMaterial->lightImpactSound = KV_GetValueString(pPair);
 			}
 
-			pPair = pSec->FindKeyBase("impactheavy");
+			pPair = pSec->FindSection("impactheavy");
 			if(pPair)
 			{
 				delete [] pMaterial->heavyImpactSound;

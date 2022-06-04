@@ -25,7 +25,7 @@
 #undef GetParent
 #endif //GetParent
 
-struct kvkeybase_t;
+struct KVSection;
 class IEqFont;
 struct eqFontStyleParam_t;
 
@@ -96,7 +96,7 @@ public:
 	IUIControl();
 	virtual ~IUIControl();
 
-	virtual void				InitFromKeyValues( kvkeybase_t* sec, bool noClear = false );
+	virtual void				InitFromKeyValues( KVSection* sec, bool noClear = false );
 
 	// name and type
 	const char*					GetName() const						{return m_name.ToCString();}

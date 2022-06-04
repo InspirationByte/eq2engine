@@ -305,7 +305,7 @@ void InitSurfaceParams( Array<eqPhysSurfParam_t*>& list )
 
 	for (int i = 0; i < kvs.GetRootSection()->keys.numElem(); i++)
 	{
-		kvkeybase_t* pSec = kvs.GetRootSection()->keys[i];
+		KVSection* pSec = kvs.GetRootSection()->keys[i];
 
 		if (!stricmp(pSec->name, "#include"))
 			continue;
@@ -315,11 +315,11 @@ void InitSurfaceParams( Array<eqPhysSurfParam_t*>& list )
 
 		pMaterial->id = mat_idx;
 		pMaterial->name = pSec->name;
-		pMaterial->friction = KV_GetValueFloat(pSec->FindKeyBase("friction"), 0, PHYSICS_DEFAULT_FRICTION);
-		pMaterial->restitution = KV_GetValueFloat(pSec->FindKeyBase("restitution"), 0, PHYSICS_DEFAULT_RESTITUTION);
-		pMaterial->tirefriction = KV_GetValueFloat(pSec->FindKeyBase("tirefriction"), 0, PHYSICS_DEFAULT_TIRE_FRICTION);
-		pMaterial->tirefriction_traction = KV_GetValueFloat(pSec->FindKeyBase("tirefriction_traction"), 0, PHYSICS_DEFAULT_TIRE_TRACTION);
-		pMaterial->word = KV_GetValueString(pSec->FindKeyBase("surfaceword"), NULL, "C")[0];
+		pMaterial->friction = KV_GetValueFloat(pSec->FindSection("friction"), 0, PHYSICS_DEFAULT_FRICTION);
+		pMaterial->restitution = KV_GetValueFloat(pSec->FindSection("restitution"), 0, PHYSICS_DEFAULT_RESTITUTION);
+		pMaterial->tirefriction = KV_GetValueFloat(pSec->FindSection("tirefriction"), 0, PHYSICS_DEFAULT_TIRE_FRICTION);
+		pMaterial->tirefriction_traction = KV_GetValueFloat(pSec->FindSection("tirefriction_traction"), 0, PHYSICS_DEFAULT_TIRE_TRACTION);
+		pMaterial->word = KV_GetValueString(pSec->FindSection("surfaceword"), NULL, "C")[0];
 	}
 }
 

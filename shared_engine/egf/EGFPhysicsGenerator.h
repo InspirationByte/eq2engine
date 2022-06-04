@@ -35,7 +35,7 @@ public:
 
 	void		Cleanup();
 
-	bool		GenerateGeometry(SharedModel::dsmmodel_t* srcModel, kvkeybase_t* physInfo, bool forceGroupSubdivision);
+	bool		GenerateGeometry(SharedModel::dsmmodel_t* srcModel, KVSection* physInfo, bool forceGroupSubdivision);
 
 	void		SaveToFile(const char* filename);
 
@@ -57,7 +57,7 @@ protected:
 
 	// data
 	SharedModel::dsmmodel_t*	m_srcModel;
-	kvkeybase_t*				m_physicsParams;
+	KVSection*				m_physicsParams;
 
 	Array<Vector3D>				m_vertices{ PP_SL };		// generated verts
 	Array<int>					m_indices{ PP_SL };			// generated indices

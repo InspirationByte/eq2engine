@@ -382,8 +382,8 @@ bool CEGFPhysicsGenerator::CreateRagdollObjects( Array<dsmvertex_t>& vertices, A
 	S_NEWA(ragJoints, ragdolljoint_t, m_srcModel->bones.numElem());
 	SetupRagdollJoints(ragJoints);
 
-	kvkeybase_t* bonesSect = m_physicsParams->FindKeyBase("Bones", KV_FLAG_SECTION);
-	kvkeybase_t* isDynamicProp = m_physicsParams->FindKeyBase("IsDynamic");
+	KVSection* bonesSect = m_physicsParams->FindSection("Bones", KV_FLAG_SECTION);
+	KVSection* isDynamicProp = m_physicsParams->FindSection("IsDynamic");
 
 	if(KV_GetValueBool(isDynamicProp))
 	{
@@ -434,7 +434,7 @@ bool CEGFPhysicsGenerator::CreateRagdollObjects( Array<dsmvertex_t>& vertices, A
 		}
 	}
 
-	kvkeybase_t* pDefaultSurfaceProps = m_physicsParams->FindKeyBase("SurfaceProps");
+	KVSection* pDefaultSurfaceProps = m_physicsParams->FindSection("SurfaceProps");
 
 	for(int i = 0; i < m_srcModel->bones.numElem(); i++)
 	{
@@ -487,7 +487,7 @@ bool CEGFPhysicsGenerator::CreateRagdollObjects( Array<dsmvertex_t>& vertices, A
 
 		memset(object.shape_indexes, -1, sizeof(object.shape_indexes));
 
-		kvkeybase_t* thisBoneSec = bonesSect->FindKeyBase(m_srcModel->bones[i]->name, KV_FLAG_SECTION);
+		KVSection* thisBoneSec = bonesSect->FindSection(m_srcModel->bones[i]->name, KV_FLAG_SECTION);
 
 		object.body_part = 0;
 		object.numShapes = 1;
@@ -500,10 +500,10 @@ bool CEGFPhysicsGenerator::CreateRagdollObjects( Array<dsmvertex_t>& vertices, A
 
 		if( thisBoneSec )
 		{
-			object.mass = KV_GetValueFloat( thisBoneSec->FindKeyBase("Mass"), 0, DEFAULT_MASS );
-			object.body_part = KV_GetValueInt(thisBoneSec->FindKeyBase("bodypart"), 0, 0);
+			object.mass = KV_GetValueFloat( thisBoneSec->FindSection("Mass"), 0, DEFAULT_MASS );
+			object.body_part = KV_GetValueInt(thisBoneSec->FindSection("bodypart"), 0, 0);
 
-			kvkeybase_t* surfPropsPair = thisBoneSec->FindKeyBase("SurfaceProps");
+			KVSection* surfPropsPair = thisBoneSec->FindSection("SurfaceProps");
 
 			if(surfPropsPair)
 				strcpy(object.surfaceprops, KV_GetValueString(surfPropsPair));
@@ -557,7 +557,7 @@ bool CEGFPhysicsGenerator::CreateRagdollObjects( Array<dsmvertex_t>& vertices, A
 			{
 				int axis_idx = -1;
 
-				kvkeybase_t* pKey = thisBoneSec->keys[i];
+				KVSection* pKey = thisBoneSec->keys[i];
 
 				if( !stricmp(pKey->name, "x_axis") )
 					axis_idx = 0;
@@ -609,8 +609,8 @@ bool CEGFPhysicsGenerator::CreateCompoundOrSeparateObjects( Array<dsmvertex_t>& 
 		Msg("  Model is compound\n");
 
 	// shape types ignored on compound
-	bool isConcave = KV_GetValueBool( m_physicsParams->FindKeyBase("concave"), 0, false );
-	bool isStatic = KV_GetValueBool( m_physicsParams->FindKeyBase("static"), 0, false );
+	bool isConcave = KV_GetValueBool( m_physicsParams->FindSection("concave"), 0, false );
+	bool isStatic = KV_GetValueBool( m_physicsParams->FindSection("static"), 0, false );
 
 	int nShapeType = PHYSSHAPE_TYPE_CONVEX;
 
@@ -645,12 +645,12 @@ bool CEGFPhysicsGenerator::CreateCompoundOrSeparateObjects( Array<dsmvertex_t>& 
 		physobject_t object;
 		object.body_part = 0;
 
-		kvkeybase_t* surfPropsPair = m_physicsParams->FindKeyBase("SurfaceProps");
+		KVSection* surfPropsPair = m_physicsParams->FindSection("SurfaceProps");
 				
 		memset(object.surfaceprops, 0, 0);
 		strcpy(object.surfaceprops, KV_GetValueString(surfPropsPair, 0, "default"));
 
-		object.mass = KV_GetValueFloat(m_physicsParams->FindKeyBase("Mass"), 0, DEFAULT_MASS);
+		object.mass = KV_GetValueFloat(m_physicsParams->FindSection("Mass"), 0, DEFAULT_MASS);
 
 		object.numShapes = shape_ids.numElem();
 
@@ -666,7 +666,7 @@ bool CEGFPhysicsGenerator::CreateCompoundOrSeparateObjects( Array<dsmvertex_t>& 
 			object.shape_indexes[i] = shape_ids[i];
 
 		object.offset = vec3_zero;
-		object.mass_center = KV_GetVector3D( m_physicsParams->FindKeyBase("MassCenter"), 0, m_bbox.GetCenter() );
+		object.mass_center = KV_GetVector3D( m_physicsParams->FindSection("MassCenter"), 0, m_bbox.GetCenter() );
 
 		physNamedObject_t obj;
 		memset(obj.name, 0, sizeof(obj.name));
@@ -682,9 +682,9 @@ bool CEGFPhysicsGenerator::CreateCompoundOrSeparateObjects( Array<dsmvertex_t>& 
 		object.body_part = 0;
 
 		memset(object.surfaceprops, 0, 0);
-		strcpy(object.surfaceprops, KV_GetValueString(m_physicsParams->FindKeyBase("SurfaceProps"), 0, "default"));
+		strcpy(object.surfaceprops, KV_GetValueString(m_physicsParams->FindSection("SurfaceProps"), 0, "default"));
 
-		object.mass = KV_GetValueFloat(m_physicsParams->FindKeyBase("Mass"), 0, DEFAULT_MASS);
+		object.mass = KV_GetValueFloat(m_physicsParams->FindSection("Mass"), 0, DEFAULT_MASS);
 
 		for(int i = 0; i < indexGroups.numElem(); i++)
 		{
@@ -726,9 +726,9 @@ bool CEGFPhysicsGenerator::CreateCompoundOrSeparateObjects( Array<dsmvertex_t>& 
 bool CEGFPhysicsGenerator::CreateSingleObject( Array<dsmvertex_t>& vertices, Array<int>& indices )
 {
 	// shape types ignored on compound
-	bool isConcave = KV_GetValueBool( m_physicsParams->FindKeyBase("concave"), 0, false );
-	bool isStatic = KV_GetValueBool( m_physicsParams->FindKeyBase("static"), 0, false );
-	bool isAssumedAsConvex = KV_GetValueBool( m_physicsParams->FindKeyBase("dont_simplify"), 0, false );
+	bool isConcave = KV_GetValueBool( m_physicsParams->FindSection("concave"), 0, false );
+	bool isStatic = KV_GetValueBool( m_physicsParams->FindSection("static"), 0, false );
+	bool isAssumedAsConvex = KV_GetValueBool( m_physicsParams->FindSection("dont_simplify"), 0, false );
 
 	int nShapeType = PHYSSHAPE_TYPE_CONVEX;
 
@@ -748,10 +748,10 @@ bool CEGFPhysicsGenerator::CreateSingleObject( Array<dsmvertex_t>& vertices, Arr
 	object.body_part = 0;
 
 	memset(object.surfaceprops, 0, sizeof(object.surfaceprops));
-	strcpy(object.surfaceprops, KV_GetValueString(m_physicsParams->FindKeyBase("SurfaceProps"), 0, "default"));
+	strcpy(object.surfaceprops, KV_GetValueString(m_physicsParams->FindSection("SurfaceProps"), 0, "default"));
 
-	object.mass = KV_GetValueFloat(m_physicsParams->FindKeyBase("Mass"), 0, DEFAULT_MASS);
-	object.mass_center = KV_GetVector3D(m_physicsParams->FindKeyBase("MassCenter"), 0, m_bbox.GetCenter());
+	object.mass = KV_GetValueFloat(m_physicsParams->FindSection("Mass"), 0, DEFAULT_MASS);
+	object.mass_center = KV_GetVector3D(m_physicsParams->FindSection("MassCenter"), 0, m_bbox.GetCenter());
 
 	object.numShapes = 1;
 	memset(object.shape_indexes, -1, sizeof(object.shape_indexes));
@@ -769,7 +769,7 @@ bool CEGFPhysicsGenerator::CreateSingleObject( Array<dsmvertex_t>& vertices, Arr
 	return true;
 }
 
-bool CEGFPhysicsGenerator::GenerateGeometry(dsmmodel_t* srcModel, kvkeybase_t* physInfo, bool forceGroupSubdivision)
+bool CEGFPhysicsGenerator::GenerateGeometry(dsmmodel_t* srcModel, KVSection* physInfo, bool forceGroupSubdivision)
 {
 	m_srcModel = srcModel;
 	m_physicsParams = physInfo;
@@ -785,9 +785,9 @@ bool CEGFPhysicsGenerator::GenerateGeometry(dsmmodel_t* srcModel, kvkeybase_t* p
 	if(m_srcModel->bones.numElem() > 0)
 		m_forceGroupSubdivision = true;
 
-	m_forceGroupSubdivision = KV_GetValueBool(m_physicsParams->FindKeyBase("groupdivision"), 0, m_forceGroupSubdivision);
+	m_forceGroupSubdivision = KV_GetValueBool(m_physicsParams->FindSection("groupdivision"), 0, m_forceGroupSubdivision);
 
-	kvkeybase_t* compoundkey = m_physicsParams->FindKeyBase("compound");
+	KVSection* compoundkey = m_physicsParams->FindSection("compound");
 	if(compoundkey)
 	{
 		bCompound = KV_GetValueBool(compoundkey);
@@ -795,7 +795,7 @@ bool CEGFPhysicsGenerator::GenerateGeometry(dsmmodel_t* srcModel, kvkeybase_t* p
 	}
 
 	memset(m_props.comment_string, 0, sizeof(m_props.comment_string));
-	strcpy(m_props.comment_string, KV_GetValueString(m_physicsParams->FindKeyBase("comments"), 0, ""));
+	strcpy(m_props.comment_string, KV_GetValueString(m_physicsParams->FindSection("comments"), 0, ""));
 
 	Array<dsmvertex_t>		vertices{ PP_SL };
 	Array<int>				indices{ PP_SL };

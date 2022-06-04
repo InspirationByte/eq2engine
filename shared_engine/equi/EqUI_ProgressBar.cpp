@@ -28,12 +28,12 @@ ProgressBar::ProgressBar()
 	m_color = color4_white;
 }
 
-void ProgressBar::InitFromKeyValues(kvkeybase_t* sec, bool noClear)
+void ProgressBar::InitFromKeyValues(KVSection* sec, bool noClear)
 {
 	BaseClass::InitFromKeyValues(sec, noClear);
 
-	m_color = KV_GetVector4D(sec->FindKeyBase("color"), 0, m_color);
-	m_value = KV_GetValueFloat(sec->FindKeyBase("value"), 0, m_value);
+	m_color = KV_GetVector4D(sec->FindSection("color"), 0, m_color);
+	m_value = KV_GetValueFloat(sec->FindSection("value"), 0, m_value);
 }
 
 void ProgressBar::DrawSelf(const IRectangle& _rect, bool scissorOn)

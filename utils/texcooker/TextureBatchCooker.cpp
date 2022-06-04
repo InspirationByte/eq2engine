@@ -92,8 +92,8 @@ struct BatchConfig_t
 	UsageProperties_t defaultUsage{ "default" };
 	Array<UsageProperties_t> usageList{ PP_SL };
 
-	kvkeybase_t crcSec;			// crc list loaded from disk
-	kvkeybase_t newCRCSec;		// crc list that will be saved
+	KVSection crcSec;			// crc list loaded from disk
+	KVSection newCRCSec;		// crc list that will be saved
 } g_batchConfig;
 
 UsageProperties_t* FindUsage(const char* usageName)
@@ -149,12 +149,12 @@ Array<EqString> g_materialList{ PP_SL };
 
 //-----------------------------------------------------------------------
 
-void LoadBatchConfig(kvkeybase_t* batchSec)
+void LoadBatchConfig(KVSection* batchSec)
 {
 	// retrieve application name and arguments
 	{
-		const char* appName = KV_GetValueString(batchSec->FindKeyBase("application"), 0, nullptr);
-		const char* appArguments = KV_GetValueString(batchSec->FindKeyBase("arguments"), 0, nullptr);
+		const char* appName = KV_GetValueString(batchSec->FindSection("application"), 0, nullptr);
+		const char* appArguments = KV_GetValueString(batchSec->FindSection("arguments"), 0, nullptr);
 
 		g_batchConfig.applicationName = appName;
 		g_batchConfig.applicationArgumentsTemplate = appArguments;
@@ -162,7 +162,7 @@ void LoadBatchConfig(kvkeybase_t* batchSec)
 
 	// source materials settings
 	{
-		const char* materialsSrc = KV_GetValueString(batchSec->FindKeyBase("source_materials"), 0, nullptr);
+		const char* materialsSrc = KV_GetValueString(batchSec->FindSection("source_materials"), 0, nullptr);
 
 		if (!materialsSrc)
 		{
@@ -170,7 +170,7 @@ void LoadBatchConfig(kvkeybase_t* batchSec)
 			return;
 		}
 
-		const char* sourceImageExt = KV_GetValueString(batchSec->FindKeyBase("source_image_ext"), 0, nullptr);
+		const char* sourceImageExt = KV_GetValueString(batchSec->FindSection("source_image_ext"), 0, nullptr);
 
 		if (!sourceImageExt)
 		{
@@ -182,11 +182,11 @@ void LoadBatchConfig(kvkeybase_t* batchSec)
 		g_batchConfig.sourceImageExt = _Es(sourceImageExt).TrimChar('.');
 	}
 
-	kvkeybase_t* compressionSec = nullptr;
+	KVSection* compressionSec = nullptr;
 
 	for (int i = 0; i < batchSec->keys.numElem(); i++)
 	{
-		kvkeybase_t* sec = batchSec->keys[i];
+		KVSection* sec = batchSec->keys[i];
 
 		if (!stricmp(sec->name, "compression") && !stricmp(KV_GetValueString(sec, 0, "INVALID"), g_targetProps.targetCompression.ToCString()))
 		{
@@ -201,13 +201,13 @@ void LoadBatchConfig(kvkeybase_t* batchSec)
 		return;
 	}
 
-	g_batchConfig.applicationName = KV_GetValueString(compressionSec->FindKeyBase("application"), 0, g_batchConfig.applicationName.ToCString());
-	g_batchConfig.compressionApplicationArguments = KV_GetValueString(compressionSec->FindKeyBase("arguments"), 0, "");
+	g_batchConfig.applicationName = KV_GetValueString(compressionSec->FindSection("application"), 0, g_batchConfig.applicationName.ToCString());
+	g_batchConfig.compressionApplicationArguments = KV_GetValueString(compressionSec->FindSection("arguments"), 0, "");
 
 	// load usages
 	for (int i = 0; i < compressionSec->keys.numElem(); i++)
 	{
-		kvkeybase_t* usageKey = compressionSec->keys[i];
+		KVSection* usageKey = compressionSec->keys[i];
 
 		if (stricmp(usageKey->name, "usage"))
 			continue;
@@ -222,8 +222,8 @@ void LoadBatchConfig(kvkeybase_t* batchSec)
 
 		UsageProperties_t usage;
 		usage.usageName = usageName;
-		usage.applicationName = KV_GetValueString(usageKey->FindKeyBase("application"), 0, g_batchConfig.applicationName.ToCString());
-		usage.applicationArguments = KV_GetValueString(usageKey->FindKeyBase("arguments"), 0, "");
+		usage.applicationName = KV_GetValueString(usageKey->FindSection("application"), 0, g_batchConfig.applicationName.ToCString());
+		usage.applicationArguments = KV_GetValueString(usageKey->FindSection("arguments"), 0, "");
 
 		if (!stricmp(usageName, "default"))
 			g_batchConfig.defaultUsage = usage;
@@ -262,7 +262,7 @@ void LoadMaterialImages(const char* materialFileName)
 		return;
 	}
 
-	kvkeybase_t* kvMaterial = kvs.GetRootSection()->keys[0];
+	KVSection* kvMaterial = kvs.GetRootSection()->keys[0];
 	if (!kvMaterial->IsSection())
 	{
 		MsgError("'%s' is not valid material file\n", localMaterialFileName.ToCString());
@@ -277,7 +277,7 @@ void LoadMaterialImages(const char* materialFileName)
 	for (int i = 0; i < kvMaterial->keys.numElem(); i++)
 	{
 		bool keyHasUsage = false;
-		kvkeybase_t* key = kvMaterial->keys[i];
+		KVSection* key = kvMaterial->keys[i];
 		for (int j = 1; j < key->ValueCount(); j++)
 		{
 			EqString imageUsage(KV_GetValueString(key, j, ""));
@@ -484,14 +484,14 @@ void CookMaterialsToTarget(const char* pszTargetName)
 	// get the target properties
 	{
 		// load target info
-		kvkeybase_t* targets = kvs.FindKeyBase("Targets");
+		KVSection* targets = kvs.FindSection("Targets");
 		if (!targets)
 		{
 			MsgError("Missing 'Targets' section in 'TextureCooker.CONFIG'\n");
 			return;
 		}
 
-		kvkeybase_t* currentTarget = targets->FindKeyBase(pszTargetName);
+		KVSection* currentTarget = targets->FindSection(pszTargetName);
 
 		if (!currentTarget)
 		{
@@ -499,8 +499,8 @@ void CookMaterialsToTarget(const char* pszTargetName)
 			return;
 		}
 
-		const char* targetCompression = KV_GetValueString(currentTarget->FindKeyBase("compression"), 0, nullptr);
-		const char* targetFolder = KV_GetValueString(currentTarget->FindKeyBase("output"), 0, nullptr);
+		const char* targetCompression = KV_GetValueString(currentTarget->FindSection("compression"), 0, nullptr);
+		const char* targetFolder = KV_GetValueString(currentTarget->FindSection("output"), 0, nullptr);
 
 		if (!targetCompression)
 		{
@@ -520,7 +520,7 @@ void CookMaterialsToTarget(const char* pszTargetName)
 
 	// load batch configuration
 	{
-		kvkeybase_t* batchConfig = kvs.FindKeyBase("BatchConfig");
+		KVSection* batchConfig = kvs.FindSection("BatchConfig");
 		if (!batchConfig)
 		{
 			MsgError("Missing 'BatchConfig' section in 'TextureCooker.CONFIG'\n");

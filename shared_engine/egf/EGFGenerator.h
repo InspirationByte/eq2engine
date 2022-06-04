@@ -100,7 +100,7 @@ public:
 	virtual ~CEGFGenerator();
 
 	bool		InitFromKeyValues(const char* filename);
-	bool		InitFromKeyValues(kvkeybase_t* kvs);
+	bool		InitFromKeyValues(KVSection* kvs);
 	void		Cleanup();
 
 	void		SetRefsPath(const char* path);
@@ -125,22 +125,22 @@ protected:
 	egfcaModel_t			LoadModel(const char* pszFileName);
 	void					FreeModel( egfcaModel_t& mod );
 
-	SharedModel::dsmmodel_t*			ParseAndLoadModels(kvkeybase_t* pKeyBase);
-	bool					LoadModels(kvkeybase_t* pSection);
-	void					ParseLodData(kvkeybase_t* pSection, int lodIdx);
-	void					LoadLods(kvkeybase_t* pSection);
-	bool					LoadBodyGroups(kvkeybase_t* pSection);
-	bool					LoadMaterialGroups(kvkeybase_t* pSection);
-	bool					LoadMaterialPaths(kvkeybase_t* pSection);
-	bool					LoadMotionPackagePaths(kvkeybase_t* pSection);
+	SharedModel::dsmmodel_t*			ParseAndLoadModels(KVSection* pKeyBase);
+	bool					LoadModels(KVSection* pSection);
+	void					ParseLodData(KVSection* pSection, int lodIdx);
+	void					LoadLods(KVSection* pSection);
+	bool					LoadBodyGroups(KVSection* pSection);
+	bool					LoadMaterialGroups(KVSection* pSection);
+	bool					LoadMaterialPaths(KVSection* pSection);
+	bool					LoadMotionPackagePaths(KVSection* pSection);
 
 	void					AddModelLodUsageReference(int modelLodIndex);
 
-	void					ParseIKChain(kvkeybase_t* pSection);
-	void					LoadIKChains(kvkeybase_t* pSection);
-	void					LoadAttachments(kvkeybase_t* pSection);
+	void					ParseIKChain(KVSection* pSection);
+	void					LoadIKChains(KVSection* pSection);
+	void					LoadAttachments(KVSection* pSection);
 
-	void					LoadPhysModels(kvkeybase_t* pSection);
+	void					LoadPhysModels(KVSection* pSection);
 
 	// preprocessing
 	void					MergeBones();

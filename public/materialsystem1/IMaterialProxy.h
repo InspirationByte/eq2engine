@@ -14,14 +14,14 @@
 #include "IMaterial.h"
 #include "IMaterialVar.h"
 
-struct kvkeybase_t;
+struct KVSection;
 
 class IMaterialProxy
 {
 public:
 	virtual ~IMaterialProxy() {}
 
-	virtual void InitProxy(IMaterial* pAssignedMaterial, kvkeybase_t* pKeyBase) = 0;
+	virtual void InitProxy(IMaterial* pAssignedMaterial, KVSection* pKeyBase) = 0;
 	virtual void UpdateProxy(float dt) = 0;
 };
 

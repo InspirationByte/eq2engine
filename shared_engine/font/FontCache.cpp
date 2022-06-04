@@ -74,12 +74,12 @@ bool CEqFontCache::LoadFontDescriptionFile( const char* filename )
 		return false;
 	}
 
-	kvkeybase_t* sec = kvs.GetRootSection();
+	KVSection* sec = kvs.GetRootSection();
 
 	// enum font names
 	for(int i = 0; i < sec->keys.numElem(); i++)
 	{
-		kvkeybase_t* fontSec = sec->keys[i];
+		KVSection* fontSec = sec->keys[i];
 
 		if( !fontSec->IsSection() )
 		{
@@ -106,14 +106,14 @@ bool CEqFontCache::LoadFontDescriptionFile( const char* filename )
 		// enum font sizes
 		for(int j = 0; j < fontSec->keys.numElem(); j++)
 		{
-			kvkeybase_t* styleTable = fontSec->keys[j];
+			KVSection* styleTable = fontSec->keys[j];
 			int entrySize = atoi(styleTable->name);
 
 			// find a styles, reg, bld, itl, or bolditalic
-			kvkeybase_t* regular = styleTable->FindKeyBase("reg");
-			kvkeybase_t* bold = styleTable->FindKeyBase("bld");
-			kvkeybase_t* italic = styleTable->FindKeyBase("itl");
-			kvkeybase_t* bolditalic = styleTable->FindKeyBase("b+i");
+			KVSection* regular = styleTable->FindSection("reg");
+			KVSection* bold = styleTable->FindSection("bld");
+			KVSection* italic = styleTable->FindSection("itl");
+			KVSection* bolditalic = styleTable->FindSection("b+i");
 			
 			// first we loading a regular font
 			CFont* regFont = PPNew CFont();
@@ -176,7 +176,7 @@ bool CEqFontCache::Init()
 	if(!m_defaultFont)
 		MsgError("ERROR: No default font specified in '%s'!\n", FONT_DEFAULT_LIST_FILENAME);
 
-	kvkeybase_t sdfFontParams;
+	KVSection sdfFontParams;
 	sdfFontParams.SetName("SDFFont");
 	sdfFontParams.SetKey("basetexture", "$basetexture");
 

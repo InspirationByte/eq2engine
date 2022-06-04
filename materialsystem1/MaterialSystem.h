@@ -92,7 +92,7 @@ public:
 	ITexture*						GetLuxelTestTexture() const;
 
 	// creates new material with defined parameters
-	IMaterial*						CreateMaterial(const char* szMaterialName, kvkeybase_t* params);
+	IMaterial*						CreateMaterial(const char* szMaterialName, KVSection* params);
 
 	// Finds or loads material (if findExisting is false then it will be loaded as new material instance)
 	IMaterial*						GetMaterial(const char* szMaterialName);
@@ -305,7 +305,7 @@ public:
 
 private:
 
-	IMaterial*						CreateMaterialInternal(const char* szMaterialName, int nameHash, kvkeybase_t* params);
+	IMaterial*						CreateMaterialInternal(const char* szMaterialName, int nameHash, KVSection* params);
 	void							CreateWhiteTexture();
 	void							InitDefaultMaterial();
 

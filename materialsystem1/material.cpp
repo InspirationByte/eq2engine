@@ -67,7 +67,7 @@ void CMaterial::Init(const char* materialPath)
 	};
 
 	bool success = false;
-	kvkeybase_t root;
+	KVSection root;
 
 	int doMaterialPaths = materials->GetConfiguration().editormode;
 
@@ -84,10 +84,10 @@ void CMaterial::Init(const char* materialPath)
 		// load atlas file
 		if (g_fileSystem->FileExist(atlasKVSFileName, materialSearchPath))
 		{
-			kvkeybase_t root;
+			KVSection root;
 			if (KV_LoadFromFile(atlasKVSFileName, materialSearchPath, &root))
 			{
-				kvkeybase_t* atlasSec = root.FindKeyBase("atlasgroup");
+				KVSection* atlasSec = root.FindSection("atlasgroup");
 
 				if (atlasSec)
 				{
@@ -120,7 +120,7 @@ void CMaterial::Init(const char* materialPath)
 		return;
 	}
 
-	kvkeybase_t* shader_root = root.keys.numElem() ? root.keys[0] : NULL;
+	KVSection* shader_root = root.keys.numElem() ? root.keys[0] : NULL;
 
 	if(!shader_root)
 	{
@@ -139,7 +139,7 @@ void CMaterial::Init(const char* materialPath)
 }
 
 // initializes material from keyvalues
-void CMaterial::Init(const char* materialName, kvkeybase_t* shader_root)
+void CMaterial::Init(const char* materialName, KVSection* shader_root)
 {
 	m_szMaterialName = materialName;
 	m_nameHash = StringToHash(materialName, true);
@@ -158,7 +158,7 @@ void CMaterial::Init(const char* materialName, kvkeybase_t* shader_root)
 //
 // Initializes the proxy data from section
 //
-void CMaterial::InitMaterialProxy(kvkeybase_t* proxySec)
+void CMaterial::InitMaterialProxy(KVSection* proxySec)
 {
 	if(!proxySec)
 		return;
@@ -186,7 +186,7 @@ void CMaterial::InitMaterialProxy(kvkeybase_t* proxySec)
 //
 // Initializes the material vars from the keyvalues section
 //
-void CMaterial::InitMaterialVars(kvkeybase_t* kvs)
+void CMaterial::InitMaterialVars(KVSection* kvs)
 {
 	// init material vars
 	for(int i = 0; i < kvs->keys.numElem();i++)
@@ -199,7 +199,7 @@ void CMaterial::InitMaterialVars(kvkeybase_t* kvs)
 		if( !stricmp(kvs->keys[i]->GetName(), "Shader") )
 			continue;
 
-		kvkeybase_t* materialVar = kvs->keys[i];
+		KVSection* materialVar = kvs->keys[i];
 
 		// initialize material var by this
 		IMatVar* pMatVar = FindMaterialVar(materialVar->GetName());
@@ -262,10 +262,10 @@ void CMaterial::InitShader()
 //
 // Initializes material vars and shader name
 //
-void CMaterial::InitVars(kvkeybase_t* shader_root)
+void CMaterial::InitVars(KVSection* shader_root)
 {
 	// Get an API preferences
-	kvkeybase_t* apiPrefs = shader_root->FindKeyBase(EqString::Format("API_%s", g_pShaderAPI->GetRendererName()).ToCString(), KV_FLAG_SECTION);
+	KVSection* apiPrefs = shader_root->FindSection(EqString::Format("API_%s", g_pShaderAPI->GetRendererName()).ToCString(), KV_FLAG_SECTION);
 
 	// init root material vars
 	InitMaterialVars( shader_root );
@@ -275,7 +275,7 @@ void CMaterial::InitVars(kvkeybase_t* shader_root)
 	//
 	if(apiPrefs)
 	{
-		kvkeybase_t* pPair = apiPrefs->FindKeyBase("Shader");
+		KVSection* pPair = apiPrefs->FindSection("Shader");
 
 		// Set shader name from API prefs if available
 		if(pPair)
@@ -290,12 +290,12 @@ void CMaterial::InitVars(kvkeybase_t* shader_root)
 	//
 	if(materials->GetConfiguration().editormode)
 	{
-		kvkeybase_t* editorPrefs = shader_root->FindKeyBase("editor", KV_FLAG_SECTION);
+		KVSection* editorPrefs = shader_root->FindSection("editor", KV_FLAG_SECTION);
 
 		// API preference lookup
 		if(editorPrefs)
 		{
-			kvkeybase_t* pPair = editorPrefs->FindKeyBase("Shader");
+			KVSection* pPair = editorPrefs->FindSection("Shader");
 
 			// Set shader name from API prefs if available
 			if(pPair)
@@ -307,7 +307,7 @@ void CMaterial::InitVars(kvkeybase_t* shader_root)
 	}
 
 	// init material proxies
-	kvkeybase_t* proxy_sec = shader_root->FindKeyBase("MaterialProxy", KV_FLAG_SECTION);
+	KVSection* proxy_sec = shader_root->FindSection("MaterialProxy", KV_FLAG_SECTION);
 	InitMaterialProxy( proxy_sec );
 }
 

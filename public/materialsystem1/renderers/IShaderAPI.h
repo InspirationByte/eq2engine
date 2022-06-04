@@ -36,7 +36,7 @@
 // render states
 #include "IRenderState.h"
 
-struct kvkeybase_t;
+struct KVSection;
 
 // designed to be sent as windowHandle param
 struct externalWindowDisplayParams_t

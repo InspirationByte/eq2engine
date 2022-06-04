@@ -215,7 +215,7 @@ bool CDkCore::Init(const char* pszApplicationName, const char* pszCommandLine)
 	m_szApplicationName = pszApplicationName;
 
 	m_coreConfiguration = PPNew KeyValues();
-	kvkeybase_t* coreConfigRoot = m_coreConfiguration->GetRootSection();
+	KVSection* coreConfigRoot = m_coreConfiguration->GetRootSection();
 
 	// try different locations of EQ.CONFIG
 	bool found = m_coreConfiguration->LoadFromFile("EQ.CONFIG", SP_ROOT);
@@ -225,32 +225,32 @@ bool CDkCore::Init(const char* pszApplicationName, const char* pszCommandLine)
 	if(!found)
 	{
 		// try create default settings
-		kvkeybase_t* appDebug = coreConfigRoot->AddKeyBase("ApplicationDebug");
+		KVSection* appDebug = coreConfigRoot->CreateSection("ApplicationDebug");
 		appDebug->SetKey("ForceLogApplications", pszApplicationName);
 
-		kvkeybase_t* fsSection = coreConfigRoot->AddKeyBase("FileSystem");
+		KVSection* fsSection = coreConfigRoot->CreateSection("FileSystem");
 
 		fsSection->SetKey("EngineDataDir", "EqBase");
 		fsSection->SetKey("DefaultGameDir", "GameData");
 
-		kvkeybase_t* regionalConfig = coreConfigRoot->AddKeyBase("RegionalSettings");
+		KVSection* regionalConfig = coreConfigRoot->CreateSection("RegionalSettings");
 		regionalConfig->SetKey("DefaultLanguage", "English");
 	}
 
 	bool logEnabled = false;
 
-	kvkeybase_t* pAppDebug = coreConfigRoot->FindKeyBase("ApplicationDebug", KV_FLAG_SECTION);
+	KVSection* pAppDebug = coreConfigRoot->FindSection("ApplicationDebug", KV_FLAG_SECTION);
 	if(pAppDebug)
 	{
-		if(pAppDebug->FindKeyBase("ForceEnableLog", KV_FLAG_NOVALUE))
+		if(pAppDebug->FindSection("ForceEnableLog", KV_FLAG_NOVALUE))
 			logEnabled = true;
 
-		if(pAppDebug->FindKeyBase("PrintLeaksOnExit", KV_FLAG_NOVALUE))
+		if(pAppDebug->FindSection("PrintLeaksOnExit", KV_FLAG_NOVALUE))
 			g_bPrintLeaksOnShutdown = true;
 
 		Array<EqString> devModeList{ PP_SL };
 
-		kvkeybase_t* devModesKv = pAppDebug->FindKeyBase("DeveloperMode");
+		KVSection* devModesKv = pAppDebug->FindSection("DeveloperMode");
 		if(devModesKv)
 		{
 			for(int i = 0; i < devModesKv->values.numElem();i++)
@@ -260,7 +260,7 @@ bool CDkCore::Init(const char* pszApplicationName, const char* pszCommandLine)
 				CONCOMMAND_FN(developer)( nullptr, devModeList );
 		}
 
-		kvkeybase_t* pForceLogged = pAppDebug->FindKeyBase("ForceLogApplications");
+		KVSection* pForceLogged = pAppDebug->FindSection("ForceLogApplications");
 		if(pForceLogged)
 		{
 			for(int i = 0; i < pForceLogged->values.numElem();i++)

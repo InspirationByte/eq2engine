@@ -2095,8 +2095,8 @@ bool ShaderAPID3DX9::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 
 		if(info.apiPrefs)
 		{
-			profile = KV_GetValueString(info.apiPrefs->FindKeyBase("vs_profile"), 0, profile.ToCString());
-			entry = KV_GetValueString(info.apiPrefs->FindKeyBase("EntryPoint"), 0, entry.ToCString());
+			profile = KV_GetValueString(info.apiPrefs->FindSection("vs_profile"), 0, profile.ToCString());
+			entry = KV_GetValueString(info.apiPrefs->FindSection("EntryPoint"), 0, entry.ToCString());
 
 			char minor = '0';
 
@@ -2179,8 +2179,8 @@ bool ShaderAPID3DX9::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 
 		if(info.apiPrefs)
 		{
-			profile = KV_GetValueString(info.apiPrefs->FindKeyBase("ps_profile"), 0, profile.ToCString());
-			entry = KV_GetValueString(info.apiPrefs->FindKeyBase("EntryPoint"), 0, entry.ToCString());
+			profile = KV_GetValueString(info.apiPrefs->FindSection("ps_profile"), 0, profile.ToCString());
+			entry = KV_GetValueString(info.apiPrefs->FindSection("EntryPoint"), 0, entry.ToCString());
 
 			char minor = '0';
 

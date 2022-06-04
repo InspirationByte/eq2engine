@@ -161,22 +161,22 @@ void CInputCommandBinder::InitTouchZones()
 	if(!kvs.LoadFromFile("resources/in_touchzones.res"))
 		return;
 
-	kvkeybase_t* zones = kvs.GetRootSection()->FindKeyBase("zones");
+	KVSection* zones = kvs.GetRootSection()->FindSection("zones");
 
 	for(int i = 0; i < zones->keys.numElem(); i++)
 	{
-		kvkeybase_t* zoneDef = zones->keys[i];
+		KVSection* zoneDef = zones->keys[i];
 
 		in_touchzone_t newZone;
 		newZone.name = zoneDef->name;
 
-		kvkeybase_t* zoneCmd = zoneDef->FindKeyBase("bind");
+		KVSection* zoneCmd = zoneDef->FindSection("bind");
 
 		newZone.commandString = KV_GetValueString(zoneCmd, 0, "zone_no_bind");
 		newZone.argumentString = KV_GetValueString(zoneCmd, 1, "");
 
-		newZone.position = KV_GetVector2D(zoneDef->FindKeyBase("position"));
-		newZone.size = KV_GetVector2D(zoneDef->FindKeyBase("size"));
+		newZone.position = KV_GetVector2D(zoneDef->FindSection("position"));
+		newZone.size = KV_GetVector2D(zoneDef->FindSection("size"));
 
 		// resolve commands
 

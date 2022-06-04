@@ -24,7 +24,7 @@
 
 //-----------------------------------------------------------------
 
-struct kvkeybase_t;
+struct KVSection;
 
 // Audio system, controls voices
 class CEqAudioSystemAL : public IEqAudioSystem
@@ -74,7 +74,7 @@ private:
 		ALuint		nAlEffect;
 	};
 
-	bool			CreateALEffect(const char* pszName, kvkeybase_t* pSection, sndEffect_t& effect);
+	bool			CreateALEffect(const char* pszName, KVSection* pSection, sndEffect_t& effect);
 	void			SuspendSourcesWithSample(ISoundSource* sample);
 
 	bool			InitContext();

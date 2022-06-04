@@ -17,7 +17,7 @@ CTextureAtlas* TexAtlas_LoadAtlas(const char* pszFileName, bool quiet)
 	KeyValues kvs;
 	if(kvs.LoadFromFile(pszFileName, SP_MOD))
 	{
-		kvkeybase_t* pAtlasSec = kvs.GetRootSection()->FindKeyBase("atlasgroup");
+		KVSection* pAtlasSec = kvs.GetRootSection()->FindSection("atlasgroup");
 
 		if(!pAtlasSec)
 		{
@@ -42,7 +42,7 @@ CTextureAtlas::CTextureAtlas()
 	m_num = 0;
 }
 
-CTextureAtlas::CTextureAtlas( kvkeybase_t* kvs )
+CTextureAtlas::CTextureAtlas( KVSection* kvs )
 {
 	InitAtlas(kvs);
 }
@@ -64,7 +64,7 @@ bool CTextureAtlas::Load( const char* pszFileName )
 	KeyValues kvs;
 	if(kvs.LoadFromFile(pszFileName, SP_MOD))
 	{
-		kvkeybase_t* pAtlasSec = kvs.GetRootSection()->FindKeyBase("atlasgroup");
+		KVSection* pAtlasSec = kvs.GetRootSection()->FindSection("atlasgroup");
 
 		if(!pAtlasSec)
 		{
@@ -79,7 +79,7 @@ bool CTextureAtlas::Load( const char* pszFileName )
 	return false;
 }
 
-void CTextureAtlas::InitAtlas( kvkeybase_t* kvs )
+void CTextureAtlas::InitAtlas( KVSection* kvs )
 {
 	m_material = KV_GetValueString(kvs, 0, "");
 
@@ -89,7 +89,7 @@ void CTextureAtlas::InitAtlas( kvkeybase_t* kvs )
 
 	for(int i = 0; i < kvs->keys.numElem(); i++)
 	{
-		kvkeybase_t* entrySec = kvs->keys[i];
+		KVSection* entrySec = kvs->keys[i];
 
 		strcpy(m_entries[i].name, kvs->keys[i]->name);
 		m_entries[i].nameHash = StringToHash(m_entries[i].name, true);
