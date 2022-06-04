@@ -9,7 +9,7 @@
 #define COMPONENTS_H
 
 #include "core/dktypes.h"
-#include "utils/CRC32.h"
+#include "utils/strtools.h"
 
 template <typename HOST>
 class ComponentBase
@@ -24,7 +24,7 @@ protected:
 
 #define DECLARE_COMPONENT(name) \
 	static constexpr const char* GetName() { return name; } \
-	static constexpr int NameHash{ CRC32_StringConst(name) };
+	static constexpr int NameHash{ StringToHashConst(name) };
 
 // hard-linked component instantiator
 #define	ADD_COMPONENT_GETTER(type)	Type* Get<Type>() const { return &m_inst##Type; }
