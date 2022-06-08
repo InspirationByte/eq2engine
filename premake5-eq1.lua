@@ -8,7 +8,8 @@ project "fontLib"
 		"corelib", "frameworkLib", "e2Core"
 	}
     files {
-		Folders.shared_engine.. "font/**.cpp"
+		Folders.shared_engine.. "font/**.cpp",
+		Folders.public.. "font/**.h"
 	}
     includedirs {
 		Folders.shared_engine
@@ -28,7 +29,8 @@ project "renderUtilLib"
 		"corelib", "frameworkLib", "e2Core"
 	}
     files {
-		Folders.shared_engine.. "render/**.cpp"
+		Folders.shared_engine.. "render/**.cpp",
+		Folders.public.. "render/**.h"
 	}
     includedirs {
 		Folders.shared_engine
@@ -52,7 +54,8 @@ project "egfLib"
     files {
 		Folders.shared_engine.. "egf/**.cpp",
 		Folders.shared_engine.. "egf/**.c",
-		Folders.shared_engine.. "egf/**.h"
+		Folders.shared_engine.. "egf/**.h",
+		Folders.public.. "egf/**.h"
 	}
     includedirs {
 		Folders.shared_engine
@@ -95,6 +98,7 @@ project "dkPhysicsLib"
 	}
     files {
 		Folders.shared_engine.. "dkphysics/**.cpp",
+		Folders.public.. "dkphysics/**.h"
 	}
 	includedirs {
 		Folders.shared_engine
@@ -119,8 +123,8 @@ project "eqMatSystem"
 	}
     files {
         Folders.matsystem1.. "*.cpp",
-        Folders.public.."materialsystem1/**.cpp",
 		Folders.matsystem1.."**.h",
+        Folders.public.."materialsystem1/**.cpp",
 		Folders.public.."materialsystem1/**.h"
 	}
 
@@ -139,9 +143,9 @@ project "eqBaseShaders"
 	}
     files {
         Folders.matsystem1.."Shaders/*.cpp",
+		Folders.matsystem1.."Shaders/**.h",
         Folders.matsystem1.."Shaders/Base/**.cpp",
         Folders.public.."materialsystem1/**.cpp",
-		Folders.matsystem1.."/Shaders/**.h"
 	}
     includedirs {
 		Folders.public.."materialsystem1"

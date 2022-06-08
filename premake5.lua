@@ -179,16 +179,16 @@ project "frameworkLib"
 	uses { "corelib", "libjpeg" }
 
     files {
-		Folders.public.. "/ds/*.cpp",
-        Folders.public.. "/utils/*.cpp",
-        Folders.public.. "/math/*.cpp",
-        Folders.public.. "/imaging/*.cpp",
-		Folders.public.. "/ds/*.h",
-		Folders.public.. "/utils/*.h",
-        Folders.public.. "/math/*.h", 
-		Folders.public.. "/math/*.inl",
-        Folders.public.. "/imaging/*.h",
-		Folders.public.. "/**.natvis"
+		Folders.public.. "ds/*.cpp",
+        Folders.public.. "utils/*.cpp",
+        Folders.public.. "math/*.cpp",
+        Folders.public.. "imaging/*.cpp",
+		Folders.public.. "ds/*.h",
+		Folders.public.. "utils/*.h",
+        Folders.public.. "math/*.h", 
+		Folders.public.. "math/*.inl",
+        Folders.public.. "imaging/*.h",
+		Folders.public.. "**.natvis"
 	}
 
 usage "frameworkLib"
@@ -251,7 +251,8 @@ project "sysLib"
 		Folders.shared_engine.. "sys/**.cpp",
 		Folders.shared_engine.. "sys/**.h",
 		Folders.shared_engine.. "input/**.cpp",
-		Folders.shared_engine.. "input/**.h"
+		Folders.shared_engine.. "input/**.h",
+		Folders.public.. "input/**.h"
 	}
     includedirs {
 		Folders.shared_engine
@@ -318,7 +319,8 @@ project "physicsLib"
 		"bullet2"
 	}
     files {
-		Folders.shared_engine.. "physics/**.cpp"
+		Folders.shared_engine.. "physics/**.cpp",
+		Folders.public.. "physics/**.h"
 	}
     includedirs {
 		Folders.shared_engine

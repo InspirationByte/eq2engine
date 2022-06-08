@@ -12,6 +12,8 @@
 #include "math/Matrix.h"
 #include "math/DkMath.h"
 
+#include "ds/Map.h"
+
 #include <ofbx.h>
 
 namespace SharedModel
@@ -61,31 +63,47 @@ void ConvertFBXToDSM(dsmmodel_t* model, ofbx::IScene* scene)
 
 	convertMatrix = axisMatrix * convertMatrix;
 
+	Map<int, dsmgroup_t*> materialGroups{ PP_SL };
+
 	for (int i = 0; i < mesh_count; ++i)
 	{
 		const ofbx::Mesh& mesh = *scene->getMesh(i);
 		const ofbx::Geometry& geom = *mesh.getGeometry();
 
 		const int vertex_count = geom.getVertexCount();
-		const int count = geom.getIndexCount();
-		const int index_count = geom.getIndexCount();
+		//const int count = geom.getIndexCount();
+		//const int index_count = geom.getIndexCount();
 
 		const ofbx::Vec3* vertices = geom.getVertices();
 		const ofbx::Vec3* normals = geom.getNormals(); 
 		const ofbx::Vec2* uvs = geom.getUVs();
-		const int* faceIndices = geom.getFaceIndices();
-
-		const ofbx::Material* material = mesh.getMaterialCount() > 0 ? mesh.getMaterial(0) : nullptr;
-
-		dsmgroup_t* newGrp = PPNew dsmgroup_t();
-		model->groups.append(newGrp);
-
-		if (material)
-			strncpy(newGrp->texture, material->name, sizeof(newGrp->texture));
+		// const int* faceIndices = geom.getFaceIndices();
+		const int* vertMaterials = geom.getMaterials();
 #if 1
 		// triangulated
-		for (int j = 0; j < vertex_count; j += 3)
+		int triNum = 0;
+		for (int j = 0; j < vertex_count; j += 3, triNum++)
 		{
+			dsmgroup_t* dsmGrp = nullptr;
+
+			const int materialIdx = vertMaterials[triNum];
+			auto found = materialGroups.find(materialIdx);
+			if (found == materialGroups.end())
+			{
+				dsmGrp = PPNew dsmgroup_t();
+
+				const ofbx::Material* material = mesh.getMaterialCount() > 0 ? mesh.getMaterial(materialIdx) : nullptr;
+				if (material)
+					strncpy(dsmGrp->texture, material->name, sizeof(dsmGrp->texture));
+
+				materialGroups.insert(materialIdx, dsmGrp);
+				model->groups.append(dsmGrp);
+			}
+			else
+			{
+				dsmGrp = *found;
+			}
+
 			for(int k = 0; k < 3; k++)
 			{
 				int jj = j + (invertFaces ? 2-k : k);
@@ -100,7 +118,7 @@ void ConvertFBXToDSM(dsmmodel_t* model, ofbx::IScene* scene)
 
 				vert.vertexId = -1;
 
-				newGrp->verts.append(vert);
+				dsmGrp->verts.append(vert);
 			}
 		}
 #else
@@ -120,7 +138,7 @@ void ConvertFBXToDSM(dsmmodel_t* model, ofbx::IScene* scene)
 
 			vert.vertexId = -1;
 
-			newGrp->verts.append(vert);
+			dsmGrp->verts.append(vert);
 		}
 
 
@@ -139,9 +157,9 @@ void ConvertFBXToDSM(dsmmodel_t* model, ofbx::IScene* scene)
 				// triangulate strip
 				for (int k = 0; k < numPolyIndices-2; k++)
 				{
-					newGrp->indices.append(polyIndices[k]);
-					newGrp->indices.append(polyIndices[k+1]);
-					newGrp->indices.append(polyIndices[k+2]);
+					dsmGrp->indices.append(polyIndices[k]);
+					dsmGrp->indices.append(polyIndices[k+1]);
+					dsmGrp->indices.append(polyIndices[k+2]);
 				}
 
 				numPolyIndices = 0;

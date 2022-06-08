@@ -8,10 +8,15 @@
 #ifndef PHYSMODEL_H
 #define PHYSMODEL_H
 
-#include "core/platform/Platform.h"
+#include "ds/align.h"
+#include "math/Vector.h"
 
 #define PHYSMODEL_VERSION					2
 #define PHYSMODEL_ID						(('I'<<24)+('D'<<16)+('O'<<8)+'P') // PODI
+
+#define MAX_GEOM_PER_OBJECT					32			// maximum shapes allowed to be in one physics object
+#define DEFAULT_MASS						(5.0f)
+#define STATIC_MASS							(0.0f)
 
 enum EPODModelUsage
 {
@@ -20,8 +25,6 @@ enum EPODModelUsage
 	PHYSMODEL_USAGE_RAGDOLL,		// ragdoll model
 	PHYSMODEL_USAGE_DYNAMIC,		// dynamic model, that use joints, but for animation such as non-standard doors, etc.
 };
-
-#define MAX_GEOM_PER_OBJECT					32	// maximum shapes allowed to be in one physics object
 
 enum EPODLumpTypes
 {
@@ -44,27 +47,10 @@ enum EPODShapeType
 	PHYSSHAPE_TYPE_CONVEX,
 };
 
-
-#define DEFAULT_MASS						(5.0f)
-#define STATIC_MASS							(0)
-
-// TODO: define in the game!
-enum EBodyPart
-{
-	BODYPART_PELVIS		= 0,
-	BODYPART_CHEST,		// 1
-	BODYPART_ARM_L,		// 2
-	BODYPART_ARM_R,		// 3
-	BODYPART_LEG_L,		// 4
-	BODYPART_LEG_R,		// 5
-	BODYPART_HEAD,		// 6
-	//BODYPART_SHIELD,	// 7
-};
-
 struct physmodellump_s
 {
-	int type; // PHYSLUMP_* type
-	int	size; // size excluding this structure
+	int type;	// PHYSLUMP_* type
+	int	size;	// size excluding this structure
 };
 
 ALIGNED_TYPE(physmodellump_s, 4) physmodellump_t;
@@ -122,7 +108,7 @@ struct physobject_s
 
 	Vector3D	offset;									// object initial offset
 	Vector3D	mass_center;							// mass center of object
-	int			body_part;								// BodyPart_e
+	int			body_part;								// body part index set in script
 };
 
 ALIGNED_TYPE(physobject_s, 4) physobject_t;

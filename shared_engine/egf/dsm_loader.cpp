@@ -22,6 +22,9 @@ namespace SharedModel
 // sorts bones
 int SortAndBalanceBones( int nCount, int nMaxCount, int* bones, float* weights )
 {
+	if (!nCount)
+		return 0;
+
 	// collapse duplicate bone weights
 	for (int i = 0; i < nCount-1; i++)
 	{
@@ -44,14 +47,8 @@ int SortAndBalanceBones( int nCount, int nMaxCount, int* bones, float* weights )
 		{
 			if (weights[i+1] > weights[i])
 			{
-				// swap
-				int j = bones[i+1]; 
-				bones[i+1] = bones[i]; 
-				bones[i] = j;
-
-				float w = weights[i+1];
-				weights[i+1] = weights[i]; 
-				weights[i] = w;
+				QuickSwap(bones[i + 1], bones[i]);
+				QuickSwap(weights[i + 1], weights[i]);
 
 				bShouldSort = true;
 			}

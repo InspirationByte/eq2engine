@@ -17,16 +17,12 @@
 
 #ifdef _MSC_VER
 
-#define forceinline			__forceinline
 #define _ALIGNED(x)			__declspec(align(x))
-
 #define ALIGNED_TYPE(s, a)	typedef s _ALIGNED(a)
 
 #else
 
-#define forceinline			inline
 #define _ALIGNED(x)			__attribute__ ((aligned(x)))
-
 #define ALIGNED_TYPE(s, a)	typedef struct s _ALIGNED(a)
 
 #endif

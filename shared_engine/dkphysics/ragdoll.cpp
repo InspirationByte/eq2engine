@@ -109,7 +109,7 @@ ragdoll_t* CreateRagdoll(IEqModel* pModel)
 			newRagdoll->m_pParts[i]->SetDamping(0.01f,0.05f);
 			newRagdoll->m_pParts[i]->SetActivationState(PS_ACTIVE);
 
-			newRagdoll->m_nBodyParts[i] = (EBodyPart)physModel.objects[i].object.body_part;
+			newRagdoll->m_nBodyParts[i] = physModel.objects[i].object.body_part;
 
 			newRagdoll->m_pParts[i]->SetUserData((void*)newRagdoll->m_nBodyParts[i]);
 		}
@@ -156,29 +156,28 @@ ragdoll_t* CreateRagdoll(IEqModel* pModel)
 	return NULL;
 }
 
-void ragdoll_t::GetBoundingBox(Vector3D &mins, Vector3D &maxs)
+void ragdoll_t::GetBoundingBox(Vector3D &mins, Vector3D &maxs) const
 {
 	BoundingBox aabb;
 
 	for(int i = 0; i < m_numParts; i++)
 	{
-		if(m_pParts[i])
-		{
-			Vector3D partAABBMins;
-			Vector3D partAABBMaxs;
+		if (!m_pParts[i])
+			continue;
+		Vector3D partAABBMins;
+		Vector3D partAABBMaxs;
 
-			m_pParts[i]->GetAABB(partAABBMins, partAABBMaxs);
+		m_pParts[i]->GetAABB(partAABBMins, partAABBMaxs);
 
-			aabb.AddVertex(partAABBMins);
-			aabb.AddVertex(partAABBMaxs);
-		}
+		aabb.AddVertex(partAABBMins);
+		aabb.AddVertex(partAABBMaxs);
 	}
 
 	mins = aabb.minPoint;
 	maxs = aabb.maxPoint;
 }
 
-Vector3D ragdoll_t::GetPosition()
+Vector3D ragdoll_t::GetPosition() const
 {
 	Vector3D ragdoll_bboxmin;
 	Vector3D ragdoll_bboxmax;
@@ -188,7 +187,7 @@ Vector3D ragdoll_t::GetPosition()
 	return (ragdoll_bboxmin+ragdoll_bboxmax)*0.5f;
 }
 
-void ragdoll_t::GetVisualBonesTransforms(Matrix4x4 *bones)
+void ragdoll_t::GetVisualBonesTransforms(Matrix4x4 *bones) const
 {
 	Matrix4x4 offsetTranslate = identity4();
 	offsetTranslate.setTranslation(-GetPosition());

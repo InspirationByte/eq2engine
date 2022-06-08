@@ -34,10 +34,10 @@ struct ragdoll_t
 	}
 
 	// get bones transformation for rendering (NOTE: before this operation, reset input bone transform to identity)
-	void			GetVisualBonesTransforms(Matrix4x4 *bones);
+	void			GetVisualBonesTransforms(Matrix4x4 *bones) const;
 
-	void			GetBoundingBox(Vector3D &mins, Vector3D &maxs);
-	Vector3D		GetPosition();
+	void			GetBoundingBox(Vector3D& mins, Vector3D& maxs) const;
+	Vector3D		GetPosition() const;
 
 	// sets bone tranformations (useful for animated death, etc)
 	// you can setup from here a global transform by multipling all matrices on model transform
@@ -57,7 +57,7 @@ struct ragdoll_t
 	IPhysicsObject*	m_pParts[MAX_RAGDOLL_PARTS];
 	IPhysicsJoint*	m_pJoints[MAX_RAGDOLL_PARTS];
 
-	EBodyPart		m_nBodyParts[MAX_RAGDOLL_PARTS];
+	int				m_nBodyParts[MAX_RAGDOLL_PARTS];
 	int				m_pBoneToVisualIndices[MAX_RAGDOLL_PARTS];
 	int				m_pBoneToRagdollIndices[128];
 
