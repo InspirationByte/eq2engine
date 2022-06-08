@@ -700,23 +700,27 @@ void CMaterialSystem::FreeMaterial(IMaterial *pMaterial)
 	if(pMaterial == NULL)
 		return;
 
-	CScopedMutex m(m_Mutex);
+	CMaterial* material = (CMaterial*)pMaterial;
 
-	pMaterial->Ref_Drop();
+	bool deleted = false;
 
-	if(pMaterial->Ref_Count() <= 0)
 	{
-		CMaterial* material = (CMaterial*)pMaterial;
-
+		CScopedMutex m(m_Mutex);
 		auto it = m_loadedMaterials.find(material->m_nameHash);
-		if(it != m_loadedMaterials.end())
+		if (it == m_loadedMaterials.end())
+			return;
+		if (pMaterial->Ref_Drop())
 		{
-			DevMsg(DEVMSG_MATSYSTEM,"freeing %s\n", material->GetName());
-			material->Cleanup();
-			delete material;
-
 			m_loadedMaterials.remove(it);
+			deleted = true;
 		}
+	}
+
+	if (deleted)
+	{
+		DevMsg(DEVMSG_MATSYSTEM, "freeing %s\n", material->GetName());
+		material->Cleanup();
+		delete material;
 	}
 }
 
