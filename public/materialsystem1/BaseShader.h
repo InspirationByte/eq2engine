@@ -8,9 +8,12 @@
 #ifndef BASESHADER_H
 #define BASESHADER_H
 
-#include "materialsystem1/IMaterialSystem.h"
-#include "utils/strtools.h"
-#include "scene_def.h"
+#include "ds/eqstring.h"
+#include "IMatSysShader.h"
+#include "renderers/ShaderAPI_defs.h"
+
+class IMatVar;
+class IShaderProgram;
 
 #define BEGIN_SHADER_CLASS(name)								\
 	namespace C##name##ShaderLocalNamespace						\

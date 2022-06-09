@@ -6,6 +6,8 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "BaseShader.h"
+#include "materialsystem1/IMaterialSystem.h"
+#include "scene_def.h"
 
 struct FilterTypeString_s
 {

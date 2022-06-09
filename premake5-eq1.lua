@@ -128,10 +128,17 @@ project "eqMatSystem"
 		Folders.public.."materialsystem1/**.h"
 	}
 
-usage "BaseShader"
-	files {
+project "BaseShader"
+    kind "StaticLib"
+	uses {
+		"corelib", "frameworkLib"
+	}
+    files {
 		Folders.public.."materialsystem1/*.cpp"
 	}
+
+usage "BaseShader"
+	links "BaseShader"
 
 -- base shader library
 project "eqBaseShaders"

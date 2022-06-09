@@ -6,6 +6,8 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "BaseShader.h"
+#include "IMaterialSystem.h"
+#include "scene_def.h"
 
 //--------------------------------------
 // Basic cubemap skybox shader

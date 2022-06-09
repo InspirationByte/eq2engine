@@ -7,6 +7,7 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "materialsystem1/BaseShader.h"
+#include "materialsystem1/IMaterialSystem.h"
 
 BEGIN_SHADER_CLASS(Default)
 
