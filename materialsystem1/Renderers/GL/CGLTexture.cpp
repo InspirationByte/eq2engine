@@ -209,24 +209,13 @@ bool UpdateGLTextureFromImage(GLTextureRef_t texture, CImage* image, int startMi
 		{
 			if (IsCompressedFormat(format))
 			{
-				glCompressedTexImage3D(glTarget,
-					lockBoxLevel,
-					internalFormat,
-					width, height, image->GetDepth(mipMapLevel),
-					0,
-					size,
-					src);
+				glCompressedTexImage3D(glTarget, lockBoxLevel, internalFormat,
+					width, height, image->GetDepth(mipMapLevel), 0, size, src);
 			}
 			else
 			{
-				glTexImage3D(glTarget,
-					lockBoxLevel,
-					internalFormat,
-					width, height, image->GetDepth(mipMapLevel),
-					0,
-					srcFormat,
-					srcType,
-					src);
+				glTexImage3D(glTarget,lockBoxLevel, internalFormat,
+					width, height, image->GetDepth(mipMapLevel), 0, srcFormat, srcType, src);
 			}
 			if (!GLCheckError("tex upload 3d (mip %d)", mipMapLevel))
 				break;
@@ -239,24 +228,13 @@ bool UpdateGLTextureFromImage(GLTextureRef_t texture, CImage* image, int startMi
 			{
 				if (IsCompressedFormat(format))
 				{
-					glCompressedTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
-						lockBoxLevel,
-						internalFormat,
-						width, height,
-						0,
-						cubeFaceSize,
-						src + i * cubeFaceSize);
+					glCompressedTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, lockBoxLevel, internalFormat,
+						width, height, 0, cubeFaceSize, src + i * cubeFaceSize);
 				}
 				else
 				{
-					glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
-						lockBoxLevel,
-						internalFormat,
-						width, height,
-						0,
-						srcFormat,
-						srcType,
-						src + i * cubeFaceSize);
+					glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, lockBoxLevel, internalFormat,
+						width, height, 0, srcFormat, srcType, src + i * cubeFaceSize);
 				}
 				if (!GLCheckError("tex upload cube (mip %d)", mipMapLevel))
 					break;
@@ -266,24 +244,13 @@ bool UpdateGLTextureFromImage(GLTextureRef_t texture, CImage* image, int startMi
 		{
 			if (IsCompressedFormat(format))
 			{
-				glCompressedTexImage2D(glTarget,
-					lockBoxLevel,
-					internalFormat,
-					width, height,
-					0,
-					size,
-					src);
+				glCompressedTexImage2D(glTarget, lockBoxLevel, internalFormat,
+					width, height, 0, size, src);
 			}
 			else
 			{
-				glTexImage2D(glTarget,
-					lockBoxLevel,
-					internalFormat,
-					width, height,
-					0,
-					srcFormat,
-					srcType,
-					src);
+				glTexImage2D(glTarget, lockBoxLevel, internalFormat,
+					width, height, 0, srcFormat, srcType, src);
 			}
 
 			if (!GLCheckError("tex upload 2d (mip %d)", mipMapLevel))

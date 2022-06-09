@@ -18,9 +18,9 @@ CD3D9Texture::CD3D9Texture() : CTexture()
 {
 	m_nLockLevel = 0;
 	m_bIsLocked = false;
-	m_pLockSurface = NULL;
+	m_pLockSurface = nullptr;
 	m_texSize = 0;
-	m_dummyDepth = NULL;
+	m_dummyDepth = nullptr;
 }
 
 CD3D9Texture::~CD3D9Texture()
@@ -56,7 +56,7 @@ void CD3D9Texture::ReleaseSurfaces()
 LPDIRECT3DBASETEXTURE9 CD3D9Texture::GetCurrentTexture()
 {
 	if(m_nAnimatedTextureFrame > textures.numElem()-1)
-		return NULL;
+		return nullptr;
 
 	return textures[m_nAnimatedTextureFrame];
 }
@@ -103,7 +103,7 @@ void CD3D9Texture::Lock(LockData* pLockData, Rectangle_t* pRect, bool bDiscard, 
 
 		if(m_pool != D3DPOOL_DEFAULT)
 		{
-			HRESULT r = ((LPDIRECT3DSURFACE9) surfaces[nCubeFaceId])->LockRect(&rect, (pRect ? &lock_rect : NULL), lock_flags);
+			HRESULT r = ((LPDIRECT3DSURFACE9) surfaces[nCubeFaceId])->LockRect(&rect, (pRect ? &lock_rect : nullptr), lock_flags);
 
 			if(r == D3D_OK)
 			{
@@ -120,14 +120,14 @@ void CD3D9Texture::Lock(LockData* pLockData, Rectangle_t* pRect, bool bDiscard, 
 		{
 			LPDIRECT3DDEVICE9 pDev = s_shaderApi.m_pD3DDevice;
 
-			if (pDev->CreateOffscreenPlainSurface(m_iWidth, m_iHeight, formats[m_iFormat], D3DPOOL_SYSTEMMEM, &m_pLockSurface, NULL) == D3D_OK)
+			if (pDev->CreateOffscreenPlainSurface(m_iWidth, m_iHeight, formats[m_iFormat], D3DPOOL_SYSTEMMEM, &m_pLockSurface, nullptr) == D3D_OK)
 			{
 				HRESULT r = s_shaderApi.m_pD3DDevice->GetRenderTargetData(((LPDIRECT3DSURFACE9) surfaces[nCubeFaceId]), m_pLockSurface);
 
 				if(r != D3D_OK)
 					ASSERT(!"Couldn't lock surface: failed to copy surface to m_pLockSurface!");
 
-				r = m_pLockSurface->LockRect(&rect, (pRect ? &lock_rect : NULL), lock_flags);
+				r = m_pLockSurface->LockRect(&rect, (pRect ? &lock_rect : nullptr), lock_flags);
 
 				if(r == D3D_OK)
 				{
@@ -139,7 +139,7 @@ void CD3D9Texture::Lock(LockData* pLockData, Rectangle_t* pRect, bool bDiscard, 
 				{
 					ASSERT(!"Couldn't lock surface for texture!");
 					m_pLockSurface->Release();
-					m_pLockSurface = NULL;
+					m_pLockSurface = nullptr;
 				}
 			}
 			else
@@ -154,11 +154,11 @@ void CD3D9Texture::Lock(LockData* pLockData, Rectangle_t* pRect, bool bDiscard, 
 
 		if(m_iFlags & TEXFLAG_CUBEMAP)
 		{
-			r = ((LPDIRECT3DCUBETEXTURE9) textures[0])->LockRect((D3DCUBEMAP_FACES)m_nLockCube, 0, &rect, (pRect ? &lock_rect : NULL), lock_flags);
+			r = ((LPDIRECT3DCUBETEXTURE9) textures[0])->LockRect((D3DCUBEMAP_FACES)m_nLockCube, 0, &rect, (pRect ? &lock_rect : nullptr), lock_flags);
 		}
 		else
 		{
-			r = ((LPDIRECT3DTEXTURE9) textures[0])->LockRect(nLevel, &rect, (pRect ? &lock_rect : NULL), lock_flags);
+			r = ((LPDIRECT3DTEXTURE9) textures[0])->LockRect(nLevel, &rect, (pRect ? &lock_rect : nullptr), lock_flags);
 		}
 
 		if(r == D3D_OK)
@@ -195,7 +195,7 @@ void CD3D9Texture::Unlock()
 		{
 			m_pLockSurface->UnlockRect();
 			m_pLockSurface->Release();
-			m_pLockSurface = NULL;
+			m_pLockSurface = nullptr;
 		}
 	}
 	else
@@ -222,30 +222,32 @@ bool UpdateD3DTextureFromImage(IDirect3DBaseTexture9* texture, CImage* image, in
 	if (!isAcceptableImageType)
 		return false;
 
-	const ETextureFormat	nFormat = image->GetFormat();
+	const ETextureFormat nFormat = image->GetFormat();
 
 	if (convert)
 	{
 		if (nFormat == FORMAT_RGB8 || nFormat == FORMAT_RGBA8)
-			image->SwapChannels(0, 2);
+			image->SwapChannels(0, 2); // convert to BGR
 
 		// Convert if needed and upload datas
-		if (nFormat == FORMAT_RGB8)			// as the D3DFMT_X8R8G8B8 used
+		if (nFormat == FORMAT_RGB8) // as the D3DFMT_X8R8G8B8 used
 			image->Convert(FORMAT_RGBA8);
 	}
 	
 	int mipMapLevel = startMipLevel;
 
+	const DWORD lockFlags = D3DLOCK_DISCARD | D3DLOCK_NOSYSLOCK;
+
 	ubyte *src;
-	while ((src = image->GetPixels(mipMapLevel)) != NULL)
+	while ((src = image->GetPixels(mipMapLevel)) != nullptr)
 	{
-		int size = image->GetMipMappedSize(mipMapLevel, 1);
-		int lockBoxLevel = mipMapLevel - startMipLevel;
+		const int size = image->GetMipMappedSize(mipMapLevel, 1);
+		const int lockBoxLevel = mipMapLevel - startMipLevel;
 
 		if (texture->GetType() == D3DRTYPE_VOLUMETEXTURE)
 		{
 			D3DLOCKED_BOX box;
-			if (((LPDIRECT3DVOLUMETEXTURE9)texture)->LockBox(lockBoxLevel, &box, NULL, 0) == D3D_OK)
+			if (((LPDIRECT3DVOLUMETEXTURE9)texture)->LockBox(lockBoxLevel, &box, nullptr, lockFlags) == D3D_OK)
 			{
 				memcpy(box.pBits, src, size);
 				((LPDIRECT3DVOLUMETEXTURE9)texture)->UnlockBox(lockBoxLevel);
@@ -253,24 +255,24 @@ bool UpdateD3DTextureFromImage(IDirect3DBaseTexture9* texture, CImage* image, in
 		}
 		else if (texture->GetType() == D3DRTYPE_CUBETEXTURE)
 		{
-			size /= 6;
+			const int cubeFaceSize = size / 6;
 
 			D3DLOCKED_RECT rect;
 			for (int i = 0; i < 6; i++)
 			{
-				if (((LPDIRECT3DCUBETEXTURE9)texture)->LockRect((D3DCUBEMAP_FACES)i, lockBoxLevel, &rect, NULL, 0) == D3D_OK)
+				if (((LPDIRECT3DCUBETEXTURE9)texture)->LockRect((D3DCUBEMAP_FACES)i, lockBoxLevel, &rect, nullptr, lockFlags) == D3D_OK)
 				{
-					memcpy(rect.pBits, src, size);
+					memcpy(rect.pBits, src, cubeFaceSize);
 					((LPDIRECT3DCUBETEXTURE9)texture)->UnlockRect((D3DCUBEMAP_FACES)i, lockBoxLevel);
 				}
-				src += size;
+				src += cubeFaceSize;
 			}
 		}
 		else
 		{
 			D3DLOCKED_RECT rect;
 
-			if (((LPDIRECT3DTEXTURE9)texture)->LockRect(lockBoxLevel, &rect, NULL, 0) == D3D_OK)
+			if (((LPDIRECT3DTEXTURE9)texture)->LockRect(lockBoxLevel, &rect, nullptr, lockFlags) == D3D_OK)
 			{
 				memcpy(rect.pBits, src, size);
 				((LPDIRECT3DTEXTURE9)texture)->UnlockRect(lockBoxLevel);
