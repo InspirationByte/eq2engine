@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright ï¿½ Inspiration Byte
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
 // Description: Equilibrium Middle-Level rendering API (ShaderAPI)
@@ -15,6 +15,7 @@
 #include "core/DebugInterface.h"
 #include "core/ConVar.h"
 #include "core/ConCommand.h"
+#include "core/IConsoleCommands.h"
 #include "core/IFileSystem.h"
 
 #include "imaging/PixWriter.h"
@@ -526,9 +527,10 @@ ITexture* ShaderAPI_Base::LoadTexture( const char* pszFileName,
 	ER_TextureFilterMode textureFilterType, ER_TextureAddressMode textureAddress/* = TEXADDRESS_WRAP*/, 
 	int nFlags/* = 0*/ )
 {
+	CScopedMutex m(m_Mutex);
+
 	// first search for existing texture
 	ITexture* pFoundTexture = FindTexture(pszFileName);
-
 	if (pFoundTexture != nullptr)
 		return pFoundTexture;
 
@@ -545,14 +547,13 @@ ITexture* ShaderAPI_Base::LoadTexture( const char* pszFileName,
 		return pFoundTexture;
 	}
 
-	EqString texNameStr(pszFileName);
-	texNameStr.Path_FixSlashes();
-
 	Array<EqString> textureNames{ PP_SL };
 	GetImagesForTextureName(textureNames, pszFileName);
 
-	Array<CImage*> pImages{ PP_SL };
+	EqString texNameStr(pszFileName);
+	texNameStr.Path_FixSlashes();
 
+	Array<CImage*> pImages{ PP_SL };
 	const EqString& textureAuxPath = r_allowSourceTextures->GetBool() ? m_params.textureSRCPath : m_params.texturePath;
 
 	// load frames

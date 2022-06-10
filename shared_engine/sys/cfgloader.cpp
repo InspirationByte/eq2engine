@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright ï¿½ Inspiration Byte
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
 // Description: Configuration file loader
@@ -9,7 +9,7 @@
 #include "core/ConCommandBase.h"
 #include "core/IConsoleCommands.h"
 #include "core/IFileSystem.h"
-
+#include "core/ConVar.h"
 #include "utils/strtools.h"
 
 #include "input/InputCommandBinder.h"

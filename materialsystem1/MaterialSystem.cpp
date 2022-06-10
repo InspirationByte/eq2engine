@@ -126,7 +126,7 @@ public:
 			m_newMaterials.insert(pMaterial);
 		}
 
-		if (false) // g_parallelJobs->IsInitialized())
+		if (g_parallelJobs->IsInitialized())
 		{
 			g_parallelJobs->AddJob(JOB_TYPE_ANY, [pMaterial, this](void*, int) {
 				((CMaterial*)pMaterial)->DoLoadShaderAndTextures();

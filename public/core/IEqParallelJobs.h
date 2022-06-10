@@ -1,15 +1,11 @@
 #ifndef IEQPARALLELJOBS_H
 #define IEQPARALLELJOBS_H
 
-#include "utils/eqthread.h"
 #include "ds/Array.h"
 #include "ds/function.h"
 #include "core/InterfaceManager.h"
 
 #define PARALLELJOBS_INTERFACE_VERSION		"CORE_ParallelJobs_002"
-
-//typedef void(*jobFunction_t)(void*, int i);
-//typedef void(*jobComplete_t)(struct eqParallelJob_t*);
 
 using EQ_JOB_FUNC = EqFunction<void(void*, int i)>;
 using EQ_JOB_COMPLETE_FUNC = EqFunction<void(struct eqParallelJob_t*)>;
@@ -69,7 +65,7 @@ struct eqJobThreadDesc_t
 };
 
 // job arranger thread
-abstract_class IEqParallelJobThreads : public IEqCoreModule
+class IEqParallelJobThreads : public IEqCoreModule
 {
 public:
 	// creates new job thread

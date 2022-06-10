@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright ï¿½ Inspiration Byte
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
 // Description: Equilibrium Empty ShaderAPI for some applications using matsystem
@@ -8,6 +8,7 @@
 #ifndef SHADERAPIEMPTY_H
 #define SHADERAPIEMPTY_H
 
+#include <string.h>
 #include "../Shared/ShaderAPI_Base.h"
 #include "core/DebugInterface.h"
 

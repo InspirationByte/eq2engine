@@ -8,6 +8,7 @@
 #include "core/DebugInterface.h"
 #include "core/platform/Platform.h"
 #include "core/core_base_header.h"
+#include "core/ConCommand.h"
 #include "resource.h"
 #include "utils/eqthread.h"
 #include <stdarg.h>

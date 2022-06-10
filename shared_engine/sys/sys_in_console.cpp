@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright ï¿½ Inspiration Byte
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
 // Description: Provides base console interface
@@ -7,8 +7,10 @@
 
 #include "sys_in_console.h"
 
-#include "core/IDkCOre.h"
+#include "core/IDkCore.h"
 #include "core/IConsoleCommands.h"
+#include "core/ConVar.h"
+#include "core/ConCommand.h"
 
 #include "utils/KeyValues.h"
 #include "utils/strtools.h"

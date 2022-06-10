@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright ï¿½ Inspiration Byte
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
 // Description: Equilibrium Engine string base
@@ -9,16 +9,12 @@
 #define EQSTRING_H
 
 #include <stdlib.h>
-#include <string.h>
 #include "core/dktypes.h"
-
-#ifdef __GNUG__
-class EqWString;
-#include "eqwstring.h"
-#endif // __GNUG__
 
 #define EQSTRING_BASE_BUFFER	32
 #define _Es						EqString
+
+class EqWString;
 
 // TODO: implement safe copy-on-write
 
@@ -155,7 +151,8 @@ public:
 		return *this;
 	}
 
-	operator const char* () {
+	operator const char* () 
+	{
 		return this->ToCString();
 	}
 
@@ -184,37 +181,35 @@ public:
 	}
 
 	// case sensitive comparators
-	friend bool	operator==( const EqString &a, const EqString &b )
+	friend bool operator==(const EqString& a, const EqString& b)
 	{
-		return !strcmp(a.GetData(), b.GetData());
+		return !a.Compare(b);
 	}
 
-	friend bool	operator==( const EqString &a, const char *b )
+	friend bool operator==(const EqString& a, const char* b)
 	{
-		return !strcmp(a.GetData(), b);
+		return !a.Compare(b);
 	}
 
-	friend bool	operator==( const char *a, const EqString &b )
+	friend bool operator==(const char* a, const EqString& b)
 	{
-		return !strcmp(a, b.GetData());
+		return !b.Compare(a);
 	}
 
-	friend bool	operator!=( const EqString &a, const EqString &b )
-	{
-		return !(a == b);
-	}
-
-	friend bool	operator!=( const EqString &a, const char *b )
+	friend bool operator!=(const EqString& a, const EqString& b)
 	{
 		return !(a == b);
 	}
 
-	friend bool	operator!=( const char *a, const EqString &b )
+	friend bool operator!=(const EqString& a, const char* b)
 	{
 		return !(a == b);
 	}
 
-
+	friend bool operator!=(const char* a, const EqString& b)
+	{
+		return !(a == b);
+	}
 protected:
 	char*		m_pszString;
 

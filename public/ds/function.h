@@ -8,7 +8,7 @@
 #ifndef FUNCTION_H
 #define FUNCTION_H
 
-#include <stddef.h>
+
 #include <memory>
 
 template <typename>

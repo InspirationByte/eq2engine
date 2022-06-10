@@ -9,8 +9,6 @@
 #define EQWSTRING_H
 
 #include <stdlib.h>
-#include <string.h>
-
 #include "core/dktypes.h"
 
 #ifdef __GNUG__
@@ -92,23 +90,23 @@ public:
 	void			Replace( wchar_t whichChar, wchar_t to );
 
 	// rightmost\leftmost string extractors
-	EqWString		Left(int nCount);
-	EqWString		Right(int nCount);
-	EqWString		Mid(int nStart, int nCount);
+	EqWString		Left(int nCount) const;
+	EqWString		Right(int nCount) const;
+	EqWString		Mid(int nStart, int nCount) const;
 
 	// converters
-	EqWString		LowerCase();
-	EqWString		UpperCase();
+	EqWString		LowerCase() const;
+	EqWString		UpperCase() const;
 
 	// comparators
-	int				Compare(const wchar_t* pszStr);
-	int				Compare(const EqWString &str);
+	int				Compare(const wchar_t* pszStr) const;
+	int				Compare(const EqWString &str) const;
 
-	int				CompareCaseIns(const wchar_t* pszStr);
-	int				CompareCaseIns(const EqWString &str);
+	int				CompareCaseIns(const wchar_t* pszStr) const;
+	int				CompareCaseIns(const EqWString &str) const;
 
 	// search, returns char index
-	int				Find(const wchar_t* pszSub, bool bCaseSensetive = false, int nStart = 0);
+	int				Find(const wchar_t* pszSub, bool bCaseSensetive = false, int nStart = 0) const;
 
 	// searches for substring and replaces it
 	int				ReplaceSubstr(const wchar_t* find, const wchar_t* replaceTo, bool bCaseSensetive = false, int nStart = 0);
@@ -149,41 +147,41 @@ public:
 		return result;
 	}
 
-	operator const wchar_t* () {
+	operator const wchar_t* () 
+	{
 		return this->ToCString();
 	}
 
 	// case sensitive comparators
-	friend bool	operator==( const EqWString &a, const EqWString &b )
+	friend bool operator==(const EqWString& a, const EqWString& b)
 	{
-		return !xwcscmp(a.GetData(), b.GetData());
+		return !a.Compare(b);
 	}
 
-	friend bool	operator==( const EqWString &a, const wchar_t* b )
+	friend bool operator==(const EqWString& a, const wchar_t* b)
 	{
-		return !xwcscmp(a.GetData(), b);
+		return !a.Compare(b);
 	}
 
-	friend bool	operator==( const wchar_t *a, const EqWString &b )
+	friend bool operator==(const wchar_t* a, const EqWString& b)
 	{
-		return !xwcscmp(a, b.GetData());
+		return !b.Compare(a);
 	}
 
-	friend bool	operator!=( const EqWString &a, const EqWString &b )
-	{
-		return !(a == b);
-	}
-
-	friend bool	operator!=( const EqWString &a, const wchar_t *b )
+	friend bool operator!=(const EqWString& a, const EqWString& b)
 	{
 		return !(a == b);
 	}
 
-	friend bool	operator!=( const wchar_t *a, const EqWString &b )
+	friend bool operator!=(const EqWString& a, const wchar_t* b)
 	{
 		return !(a == b);
 	}
 
+	friend bool operator!=(const wchar_t* a, const EqWString& b)
+	{
+		return !(a == b);
+	}
 
 protected:
 	wchar_t*	m_pszString;

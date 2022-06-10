@@ -5,10 +5,11 @@
 // Description: Cached WAVe data
 //////////////////////////////////////////////////////////////////////////////////
 
-
+#include <string.h>
 #include "snd_wav_cache.h"
 
 #include "core/DebugInterface.h"
+#include "core/ppmem.h"
 
 bool CSoundSource_WaveCache::Load(const char* szFilename)
 {

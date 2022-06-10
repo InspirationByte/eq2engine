@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright пїЅ Inspiration Byte
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
 // NOTENOTE: Linux does not showing russian language that was written in VC
@@ -21,6 +21,8 @@
 #include "core/InterfaceManager.h"
 #include "core/ILocalize.h"
 #include "core/DebugInterface.h"
+#include "core/ConCommand.h"
+#include "core/ConVar.h"
 #include "eqCPUServices.h"
 
 #include "ExceptionHandler.h"
@@ -53,12 +55,11 @@ BOOL WINAPI DllMain(HINSTANCE module_handle, DWORD reason_for_call, LPVOID reser
 
 static bool g_bPrintLeaksOnShutdown = false;
 
-// Экспорт интерфейса ядра
 EXPORTED_INTERFACE_FUNCTION(IDkCore, CDkCore, GetCore)
 
 IEXPORTS void*	_GetDkCoreInterface(const char* pszName)
 {
-	// GetCore() потому-что может быть вызвано раньше
+	// GetCore() пїЅпїЅпїЅпїЅпїЅпїЅ-пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
 	IDkCore* core = GetCore();
 
 	// Filesystem is required by mobile port
@@ -71,7 +72,6 @@ IEXPORTS void*	_GetDkCoreInterface(const char* pszName)
 	return core->GetInterface(pszName);
 }
 
-// callback при выходе (Разгрузке DLL)
 void DkCore_onExit( void )
 {
 	GetCore()->Shutdown();
@@ -190,7 +190,7 @@ bool CDkCore::Init(const char* pszApplicationName, const char* pszCommandLine)
 
 	SetupBinPath();
 
-	// Командная строка
+	// пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
     if (pszCommandLine && strlen(pszCommandLine) > 0)
         g_cmdLine->Init(pszCommandLine);
 
@@ -305,15 +305,15 @@ bool CDkCore::Init(const char* pszApplicationName, const char* pszCommandLine)
 	// Show core message
 	MsgAccept("Equilibrium 2 - %s %s\n", __DATE__, __TIME__);
 
-	// Инициализировать CPU
+	// пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ CPU
 	CEqCPUCaps* cpuCaps = (CEqCPUCaps*)g_cpuCaps;
 	cpuCaps->Init();
 
-	// Регистрация некоторых комманд.
+	// пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ.
 	g_consoleCommands->RegisterCommand(&c_developer);
 	g_consoleCommands->RegisterCommand(&c_echo);
 
-	// Регистрация некоторых комманд.
+	// пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ.
 	((CConsoleCommands*)g_consoleCommands)->RegisterCommands();
 
 	c_log_enable = PPNew ConCommand("log_enable",CONCOMMAND_FN(log_enable));
@@ -333,7 +333,7 @@ bool CDkCore::Init(const char* pszApplicationName, const char* pszCommandLine)
 	else
 		MsgError("\nCore: Logging console output to file is disabled.\n");
 
-	// Установка статуса
+	// пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 	m_bInitialized = true;
 
 	Msg("\n");
@@ -397,7 +397,7 @@ void CDkCore::Shutdown()
 
 	m_interfaces.clear();
 
-    // Никакого spew'а
+    // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ spew'пїЅ
     SetSpewFunction(nullspew);
 
     ((CConsoleCommands*)g_consoleCommands)->DeInit();

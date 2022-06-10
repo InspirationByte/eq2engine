@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright ï¿½ Inspiration Byte
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
 // Description: EGUI panel
@@ -13,7 +13,8 @@
 #include "core/IFileSystem.h"
 #include "core/IConsoleCommands.h"
 #include "core/ILocalize.h"
-
+#include "core/ConVar.h"
+#include "core/ConCommand.h"
 #include "font/IFontCache.h"
 
 #include "materialsystem1/IMaterialSystem.h"

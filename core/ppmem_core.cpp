@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright ï¿½ Inspiration Byte
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
 // Description: PPMem (Pee-Pee Memory) - a C++ memory allocation debugger
@@ -20,6 +20,8 @@
 
 #include "ds/Map.h"
 
+#include "core/ConVar.h"
+#include "core/ConCommand.h"
 #include "core/DebugInterface.h"
 #include "core/IConsoleCommands.h"
 

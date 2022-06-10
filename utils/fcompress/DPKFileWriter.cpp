@@ -9,6 +9,7 @@
 #include <math.h>
 #include <malloc.h>
 #include <zlib.h>
+#include <stdlib.h>
 
 #ifdef _WIN32
 #include <Windows.h>

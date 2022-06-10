@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright ï¿½ Inspiration Byte
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
 // Description: Drivers window handler
@@ -8,7 +8,8 @@
 #include "core/IFileSystem.h"
 #include "core/DebugInterface.h"
 #include "core/IConsoleCommands.h"
-
+#include "core/ConVar.h"
+#include "core/ConCommand.h"
 #include "utils/strtools.h"
 #include "utils/eqthread.h"
 

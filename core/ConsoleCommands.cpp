@@ -6,6 +6,8 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include <ctype.h>
+#include <stdlib.h>
+#include <string.h>
 #include "ds/eqstring.h"
 #include "core/ConVar.h"
 #include "core/ConCommand.h"

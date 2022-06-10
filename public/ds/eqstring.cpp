@@ -14,10 +14,7 @@
 #include <stdarg.h>
 #include <string.h>
 #include <ctype.h>
-
-#include "core/platform/assert.h"
 #include "core/platform/stackalloc.h"
-
 #include "utils/strtools.h"
 #include "math/math_common.h"
 

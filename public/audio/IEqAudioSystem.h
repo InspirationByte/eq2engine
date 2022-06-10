@@ -22,7 +22,7 @@ typedef uint effectId_t;
 //-----------------------------------------------------------------
 // Audio source interface
 
-abstract_class IEqAudioSource : public RefCountedObject<IEqAudioSource>
+class IEqAudioSource : public RefCountedObject<IEqAudioSource>
 {
 public:
 	enum ESoundSourceUpdate
@@ -87,7 +87,7 @@ public:
 // Audio system interface
 
 // Audio system, controls voices
-abstract_class IEqAudioSystem
+class IEqAudioSystem
 {
 public:
 	virtual ~IEqAudioSystem() {}

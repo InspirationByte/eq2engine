@@ -9,6 +9,8 @@
 #define INDEXBUFFERGL_H
 
 #include "renderers/IIndexBuffer.h"
+#include "renderers/ShaderAPI_defs.h"
+#include "core/dktypes.h"
 
 #define MAX_IB_SWITCHING 8
 

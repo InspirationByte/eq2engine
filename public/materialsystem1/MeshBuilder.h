@@ -9,6 +9,7 @@
 #define MESHBUILDER_H
 
 #include "IDynamicMesh.h"
+#include <string.h>
 
 class CMeshBuilder
 {

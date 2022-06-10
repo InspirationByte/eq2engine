@@ -410,12 +410,12 @@ void EqWString::Replace( wchar_t whichChar, wchar_t to )
 }
 
 // string extractors
-EqWString EqWString::Left(int nCount)
+EqWString EqWString::Left(int nCount) const
 {
 	return Mid(0, nCount);
 }
 
-EqWString EqWString::Right(int nCount)
+EqWString EqWString::Right(int nCount) const
 {
 	if ( (uint)nCount >= m_nLength )
 		return (*this);
@@ -423,7 +423,7 @@ EqWString EqWString::Right(int nCount)
 	return Mid( m_nLength - nCount, nCount );
 }
 
-EqWString EqWString::Mid(int nStart, int nCount)
+EqWString EqWString::Mid(int nStart, int nCount) const
 {
 	int n;
 	EqWString result;
@@ -441,7 +441,7 @@ EqWString EqWString::Mid(int nStart, int nCount)
 }
 
 // convert to lower case
-EqWString EqWString::LowerCase()
+EqWString EqWString::LowerCase() const
 {
 	EqWString str(*this);
 	xwcslwr(str.m_pszString);
@@ -450,7 +450,7 @@ EqWString EqWString::LowerCase()
 }
 
 // convert to upper case
-EqWString EqWString::UpperCase()
+EqWString EqWString::UpperCase() const
 {
 	EqWString str(*this);
 	xwcsupr(str.m_pszString);
@@ -459,7 +459,7 @@ EqWString EqWString::UpperCase()
 }
 
 // search, returns char index
-int	EqWString::Find(const wchar_t* pszSub, bool bCaseSensetive, int nStart)
+int	EqWString::Find(const wchar_t* pszSub, bool bCaseSensetive, int nStart) const
 {
 	if (!m_pszString)
 		return -1;
@@ -536,22 +536,22 @@ EqWString EqWString::ExtractFileExtension()
 }*/
 
 // comparators
-int	EqWString::Compare(const wchar_t* pszStr)
+int	EqWString::Compare(const wchar_t* pszStr) const
 {
 	return xwcscmp(m_pszString, pszStr);
 }
 
-int	EqWString::Compare(const EqWString &str)
+int	EqWString::Compare(const EqWString &str) const
 {
 	return xwcscmp(m_pszString, str.GetData());
 }
 
-int	EqWString::CompareCaseIns(const wchar_t* pszStr)
+int	EqWString::CompareCaseIns(const wchar_t* pszStr) const
 {
 	return xwcsicmp(m_pszString, pszStr);
 }
 
-int	EqWString::CompareCaseIns(const EqWString &str)
+int	EqWString::CompareCaseIns(const EqWString &str) const
 {
 	return xwcsicmp(m_pszString, str.GetData());
 }

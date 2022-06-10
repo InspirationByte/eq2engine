@@ -10,6 +10,8 @@
 #include "core/IEqCPUServices.h"
 #include "core/IEqParallelJobs.h"
 #include "core/IFileSystem.h"
+#include "core/ConVar.h"
+#include "core/ConCommand.h"
 #include "core/platform/MessageBox.h"
 
 #include "utils/strtools.h"

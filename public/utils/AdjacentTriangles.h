@@ -67,11 +67,6 @@ inline bool operator ==(const medge_t& a,const medge_t& b)
 // triangle
 struct mtriangle_t
 {
-	mtriangle_t()
-	{
-		memset(edge_connections, 0, sizeof(edge_connections));
-	}
-
 	int indices[3];
 	int tri_id;
 	
@@ -150,7 +145,7 @@ struct mtriangle_t
 	}
 
 	medge_t					edges[3];
-	mtriangle_t*			edge_connections[3];	// adjacent triangles
+	mtriangle_t*			edge_connections[3]{ nullptr };	// adjacent triangles
 
 	Array<mtriangle_t*>	index_connections{ PP_SL };
 };

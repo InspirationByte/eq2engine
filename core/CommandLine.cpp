@@ -6,9 +6,10 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include <ctype.h>
+#include <string.h>
+
 #include "ConsoleCommands.h"
 #include "utils/strtools.h"
-
 #include "CommandLine.h"
 
 EXPORTED_INTERFACE(ICommandLine, CCommandLine);

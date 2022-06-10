@@ -36,9 +36,9 @@ int main(int argc, char* argv[])
 
 	for (int i = 0; i < g_cmdLine->GetArgumentCount(); i++)
 	{
-		const char* argStr = g_cmdLine->GetArgumentString(i);
+		EqString argStr = g_cmdLine->GetArgumentString(i);
 
-		if (!stricmp(argStr, "-target"))
+		if (!argStr.CompareCaseIns("-target"))
 		{
 			CookMaterialsToTarget(g_cmdLine->GetArgumentsOf(i));
 		}

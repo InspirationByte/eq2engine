@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright ï¿½ Inspiration Byte
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
 // Description: Particle system
@@ -8,6 +8,8 @@
 #include "EqParticles.h"
 
 #include "core/IConsoleCommands.h"
+#include "core/ConCommand.h"
+#include "core/ConVar.h"
 #include "utils/global_mutex.h"
 
 #include "ViewParams.h"

@@ -92,9 +92,6 @@
 #define offsetOf(structure,member)		(uintptr_t)&(((structure *)0)->member)
 #define elementSizeOf(structure,member)	sizeof(((structure *)0)->member)
 
-// Abstract class identifier
-#define abstract_class class
-
 //------------------------------------------------------------------------------------------------
 
 #ifdef PLAT_WIN

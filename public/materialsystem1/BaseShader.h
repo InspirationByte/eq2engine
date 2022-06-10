@@ -177,19 +177,18 @@ class IShaderProgram;
 #define SHADER_END_DEFINITION \
 	}
 
-#define SHADER_FIND_OR_COMPILE(shader, sname)												\
-	{																									\
-	m_pShader##shader = g_pShaderAPI->FindShaderProgram(sname, (findQuery).GetData());					\
-	if(!m_pShader##shader)																				\
-	{																									\
-		m_pShader##shader = g_pShaderAPI->CreateNewShaderProgram(sname, findQuery.GetData());			\
-		bool status	= g_pShaderAPI->LoadShadersFromFile(m_pShader##shader, sname, defines.GetData());	\
-		if(!status){																					\
-			g_pShaderAPI->DestroyShaderProgram(m_pShader##shader);										\
-			return false;																				\
-		}																								\
-	}																									\
-	AddManagedShader(&m_pShader##shader);															\
+#define SHADER_FIND_OR_COMPILE(shader, sname)													\
+	{																							\
+	m_pShader##shader = g_pShaderAPI->FindShaderProgram(sname, (findQuery).GetData());			\
+	if(!m_pShader##shader)																		\
+	{																							\
+		m_pShader##shader = g_pShaderAPI->CreateNewShaderProgram(sname, findQuery.GetData());	\
+		if(!g_pShaderAPI->LoadShadersFromFile(m_pShader##shader, sname, defines.GetData())){	\
+			g_pShaderAPI->DestroyShaderProgram(m_pShader##shader);								\
+			return false;																		\
+		}																						\
+	}																							\
+	AddManagedShader(&m_pShader##shader);														\
 	}
 
 #define SHADER_FIND_OR_COMPILE_FOG(shader, sname)	SHADER_FIND_OR_COMPILE(shader##_fog, sname)

@@ -10,6 +10,8 @@
 #include "ConVar.h"
 
 #include <malloc.h> // alloca
+#include <string.h>
+#include <stdlib.h>
 #include "platform/stackalloc.h"
 #include "ICommandLine.h"
 

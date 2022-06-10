@@ -9,6 +9,8 @@
 #define VERTEXBUFFERGL_H
 
 #include "renderers/IVertexBuffer.h"
+#include "renderers/ShaderAPI_defs.h"
+#include "core/dktypes.h"
 
 #define MAX_VB_SWITCHING 8
 
