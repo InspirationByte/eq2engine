@@ -1541,7 +1541,7 @@ void DkPhysics::DestroyPhysicsObject(IPhysicsObject *pObject)
 
 		m_pPhysicsObjectList.remove(pPhysObj);
 
-		delete pPhysObj->m_pPhyObjectPointer;
+		//delete pPhysObj->m_pPhyObjectPointer;
 		delete pPhysObj;
 	}
 }

@@ -9,7 +9,6 @@
 
 #include "core/core_common.h"
 #include "eqstring.h"
-#include "utils/strtools.h"
 
 #define EQSTRING_BASE_BUFFER	32
 

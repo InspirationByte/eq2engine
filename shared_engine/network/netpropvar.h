@@ -5,11 +5,7 @@
 // Description: Network property variable
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef NETPROPVAR_H
-#define NETPROPVAR_H
-
-#include "ds/Array.h"
-#include "utils/strtools.h"
+#pragma once
 
 template <class TYPE, class CHANGER>
 class CNetworkVarBase
@@ -326,5 +322,3 @@ namespace Networking
 {
 
 };*/
-
-#endif // NETPROPVAR_H

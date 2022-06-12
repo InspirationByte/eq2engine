@@ -12,6 +12,8 @@ class IPhysicsObject;
 class IPhysicsJoint
 {
 public:
+	virtual ~IPhysicsJoint() = default;
+
 	virtual IPhysicsObject* GetPhysicsObjectA() = 0; // returns pointer to first physics object
 	virtual IPhysicsObject* GetPhysicsObjectB() = 0; // returns pointer to second physics object
 

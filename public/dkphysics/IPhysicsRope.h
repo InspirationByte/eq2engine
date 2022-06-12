@@ -12,6 +12,8 @@ class IPhysicsObject;
 class IPhysicsRope
 {
 public:
+	virtual ~IPhysicsRope() = default;
+
 	virtual void				AttachObject(IPhysicsObject* pObject, int node_index, bool disable_self_collision = false) = 0;
 	virtual int					GetNodeCount() = 0;
 

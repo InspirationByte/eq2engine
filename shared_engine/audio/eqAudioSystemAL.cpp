@@ -15,7 +15,6 @@
 #include "core/IDkCore.h"
 #include "utils/KeyValues.h"
 #include "utils/global_mutex.h"
-#include "utils/strtools.h"
 
 #include "eqAudioSystemAL.h"
 #include "source/snd_al_source.h"

@@ -51,6 +51,7 @@ struct physicsContactEvent_t
 class IPhysicsObject
 {
 public:
+	virtual ~IPhysicsObject() = default;
 
 	//-----------------------------
 	// Object properties

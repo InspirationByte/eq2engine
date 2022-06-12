@@ -9,7 +9,6 @@
 
 #include "core/core_common.h"
 #include "eqwstring.h"
-#include "utils/strtools.h"
 
 #ifdef _MSC_VER
 #pragma warning(disable: 4267)

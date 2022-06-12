@@ -5,6 +5,7 @@ group "Tools"
 
 project "fcompress"
     kind "ConsoleApp"
+	unitybuild "on"
     uses {
 		"corelib", "frameworkLib",
 		"e2Core" 
@@ -20,6 +21,7 @@ project "fcompress"
 
 project "egfca"
     kind "ConsoleApp"
+	unitybuild "on"
     uses {
 		"corelib", "frameworkLib",
 		"e2Core",
@@ -35,6 +37,7 @@ project "egfca"
 
 project "animca"
     kind "ConsoleApp"
+	unitybuild "on"
     uses {
 		"corelib", "frameworkLib",
 		"e2Core", "egflib"
@@ -49,6 +52,7 @@ project "animca"
 
 project "atlasgen"
     kind "ConsoleApp"
+	unitybuild "on"
     uses {
 		"corelib", "frameworkLib",
 		"e2Core"
@@ -64,6 +68,7 @@ project "atlasgen"
 
 project "texcooker"
     kind "ConsoleApp"
+	unitybuild "on"
     uses {
 		"corelib", "frameworkLib",
 		"e2Core" 
@@ -76,6 +81,7 @@ project "texcooker"
 -- Equilibrium Graphics File manager (EGFMan)
 project "egfman"
     kind "WindowedApp"
+	unitybuild "on"
     uses {
 		"corelib", "frameworkLib",
 		"e2Core", 
@@ -94,6 +100,7 @@ project "egfman"
 -- Equilibrium sound system test
 project "soundsystem_test"
     kind "WindowedApp"
+	unitybuild "on"
     uses {
 		"corelib", "frameworkLib",
 		"e2Core", 
