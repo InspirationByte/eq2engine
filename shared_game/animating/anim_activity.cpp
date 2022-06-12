@@ -5,8 +5,8 @@
 // Description: Activities for animations and AI
 //////////////////////////////////////////////////////////////////////////////////
 
+#include "core/core_common.h"
 #include "anim_activity.h"
-#include "utils/strtools.h"
 
 struct actnamegroup_t
 {
@@ -74,7 +74,7 @@ actnamegroup_t anim_activities[ACT_COUNT] =
 #endif // STDGAME
 
 	// don't loose this
-	{NULL, ACT_INVALID}
+	{nullptr, ACT_INVALID}
 };
 
 Activity GetActivityByName(const char* name)
@@ -84,7 +84,7 @@ Activity GetActivityByName(const char* name)
 
 	for(int i = 0; i < ACT_COUNT; i++)
 	{
-		if(anim_activities[i].name == NULL)
+		if(anim_activities[i].name == nullptr)
 			break;
 
 		if(!stricmp(anim_activities[i].name, name))

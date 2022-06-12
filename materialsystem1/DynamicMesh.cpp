@@ -5,9 +5,9 @@
 // Description: MaterialSystem dynamic mesh
 //////////////////////////////////////////////////////////////////////////////////
 
-#include <string.h>
+#include "core/core_common.h"
+#include "materialsystem1/renderers/IShaderAPI.h"
 #include "DynamicMesh.h"
-#include "core/DebugInterface.h"
 
 // pack vertex format description to uint16
 struct vertexFormatId_t
@@ -77,7 +77,7 @@ CDynamicMesh::~CDynamicMesh()
 {
 }
 
-bool CDynamicMesh::Init( VertexFormatDesc_t* desc, int numAttribs )
+bool CDynamicMesh::Init(const VertexFormatDesc_t* desc, int numAttribs )
 {
 	if(m_vertexBuffer != nullptr && m_indexBuffer != nullptr && m_vertexFormat != nullptr)
 		return true;
@@ -135,7 +135,7 @@ void CDynamicMesh::Destroy()
 }
 
 // returns a pointer to vertex format description
-void CDynamicMesh::GetVertexFormatDesc(VertexFormatDesc_t** desc, int& numAttribs)
+void CDynamicMesh::GetVertexFormatDesc(const VertexFormatDesc_t** desc, int& numAttribs)
 {
 	if(m_vertexFormat)
 		m_vertexFormat->GetFormatDesc(desc, numAttribs);

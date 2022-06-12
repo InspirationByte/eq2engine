@@ -5,12 +5,12 @@
 // Description: Entry points for various platforms
 //////////////////////////////////////////////////////////////////////////////////
 
-#include "core/platform/MessageBox.h"
+#include "core/core_common.h"
 #include "core/IDkCore.h"
-#include "core/ConVar.h"
 #include "core/ILocalize.h"
 #include "core/IFileSystem.h"
-
+#include "core/ConVar.h"
+#include "core/ConCommand.h"
 #include "utils/KeyValues.h"
 
 #include "sys_in_console.h"

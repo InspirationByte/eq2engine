@@ -5,10 +5,7 @@
 // Description: Equilibrium Graphics File script compler and generator
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef EGFGENERATOR_H
-#define EGFGENERATOR_H
-
-#include "egf/model.h"
+#pragma once
 #include "EGFPhysicsGenerator.h"
 
 namespace SharedModel
@@ -50,7 +47,7 @@ struct ikchain_t
 
 struct clodmodel_t
 {
-	SharedModel::dsmmodel_t*	lodmodels[MAX_MODELLODS];
+	SharedModel::dsmmodel_t*	lodmodels[MAX_MODEL_LODS];
 };
 
 struct egfcaModel_t
@@ -186,5 +183,3 @@ protected:
 
 	CEGFPhysicsGenerator			m_physModels;
 };
-
-#endif // EGFGENERATOR_H

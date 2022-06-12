@@ -7,34 +7,20 @@
 //				Contains FFP functions and Shader (FFP overriding programs)
 //////////////////////////////////////////////////////////////////////////////////
 
+#pragma once
 
-#ifndef SHADERAPI_INTERFACE_H
-#define SHADERAPI_INTERFACE_H
+#include "imaging/textureformats.h"
 
-// Platform definitions
-#include "core/dktypes.h"
-#include "ds/Array.h"
-#include <stdint.h>
-
-// Various declarations
 #include "ShaderAPICaps.h"
+#include "ShaderAPI_defs.h"
 
-// Shader
-#include "IShaderProgram.h"
-
-// VBO
 #include "IVertexBuffer.h"
 #include "IVertexFormat.h"
 #include "IIndexBuffer.h"
-
-// Textures
 #include "ITexture.h"
-
-// occ query objects
 #include "IOcclusionQuery.h"
-
-// render states
 #include "IRenderState.h"
+#include "IShaderProgram.h"
 
 struct KVSection;
 
@@ -439,7 +425,7 @@ public:
 //-------------------------------------------------------------
 
 	// create new vertex declaration
-	virtual IVertexFormat*		CreateVertexFormat( const char* name, VertexFormatDesc_s *formatDesc, int nAttribs ) = 0;
+	virtual IVertexFormat*		CreateVertexFormat( const char* name, const VertexFormatDesc_t *formatDesc, int nAttribs ) = 0;
 	virtual IVertexFormat*		FindVertexFormat( const char* name ) const = 0;
 
 	// NOTENOTE: when you set nSize you must add the vertex structure size!
@@ -481,5 +467,3 @@ public:
 
 // it always external, declare new one in your app...
 extern IShaderAPI*				g_pShaderAPI;
-
-#endif // SHADERAPI_INTERFACE_H

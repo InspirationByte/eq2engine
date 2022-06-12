@@ -8,14 +8,14 @@
 //						raw socket support
 //////////////////////////////////////////////////////////////////////////////////
 
+#include "core/core_common.h"
+#include "core/ConVar.h"
+#include "utils/KeyValues.h"
+#include "math/Random.h"
+
 #include "c_udp.h"
 
-#include "core/DebugInterface.h"
-#include "core/ConVar.h"
-
-#include "utils/strtools.h"
-#include "utils/CRC32.h"
-#include "utils/KeyValues.h"
+using namespace Threading;
 
 ConVar net_fakelag("net_fakelag", "0", "Simulate lagging packets\n", CV_CHEAT);
 
@@ -58,30 +58,22 @@ struct cdp_queued_message_t
 {
 	cdp_queued_message_t()
 	{
-		bytestream = NULL;
+		bytestream = nullptr;
 		flags = 0;
-		sendTimes.SetValue(0);
-		sentTimeout.SetValue(0);
-		removeTimeout.SetValue(0);
 		sendTime = 0;
 	}
 
-	CEqInterlockedInteger	sendTimes;		// send times
-	CEqInterlockedInteger	sentTimeout;	// timeout to send
-	CEqInterlockedInteger	removeTimeout;	// timeout to remove
-
-	uint32					sendTime;
-
-	short					flags;
-
 	sockaddr_in				addr;			// address of sender or receiver
+	CMemoryStream*			bytestream{ nullptr };
+	mutable int				sendTimes{ 0 };		// send times
+	mutable int				sentTimeout{ 0 };	// timeout to send
+	mutable int				removeTimeout{ 0 };	// timeout to remove
 
-	CMemoryStream*			bytestream;
+	uint32					sendTime{ 0 };
+	short					flags{ 0 };
 
 	bool Write( void* pData, int nSize );
-
 	void WriteReset();
-
 	void ReadReset();
 };
 
@@ -126,7 +118,7 @@ bool cdp_queued_message_t::Write( void* pData, int nSize )
 void cdp_queued_message_t::WriteReset()
 {
 	delete bytestream;
-	bytestream = NULL;
+	bytestream = nullptr;
 }
 
 void cdp_queued_message_t::ReadReset()
@@ -174,9 +166,9 @@ int udp_select_messages( SOCKET sock )
 	FD_SET(sock, &stReadFDS);
 
 #ifdef _WIN32
-	return select( sock+1, &stReadFDS, NULL, NULL, &stTimeOut);
+	return select( sock+1, &stReadFDS, nullptr, nullptr, &stTimeOut);
 #else
-    int cnt = select( sock+1, &stReadFDS, NULL, NULL, &stTimeOut);
+    int cnt = select( sock+1, &stReadFDS, nullptr, nullptr, &stTimeOut);
 
     if (FD_ISSET(sock, &stReadFDS))
     {
@@ -246,7 +238,7 @@ bool CEqRDPSocket::Init( int port )
 	gethostname(host_name, sizeof(host_name));
 	hostinfo = gethostbyname(host_name);
 
-	if (hostinfo == NULL)
+	if (hostinfo == nullptr)
 	{
 		closesocket( sock );
 
@@ -373,7 +365,7 @@ int CEqRDPSocket::Send( char* data, int size, const sockaddr_in* to, short& msgI
 		return -1;
 	}
 
-	cdp_queued_message_t* buffer = NULL;
+	cdp_queued_message_t* buffer = nullptr;
 
 	bool continiousMessage = (flags & CDPSEND_GUARANTEED);
 
@@ -422,7 +414,7 @@ int CEqRDPSocket::Send( char* data, int size, const sockaddr_in* to, short& msgI
 	// if buffer now have filled for over 80 percent, we force to send message fast
 	if( float(buffer->bytestream->Tell()) / float(UDP_CDP_MAX_MESSAGEPAYLOAD) >= UDP_CDP_FORCESEND_FILLPERCENTAGE || (flags & CDPSEND_IMMEDIATE))
 	{
-		buffer->sentTimeout.SetValue( m_nSendTimeout );
+		buffer->sentTimeout = m_nSendTimeout;
 	}
 
 	if( continiousMessage )
@@ -621,7 +613,7 @@ void CEqRDPSocket::UpdateRecieve( int dtMs, CDPRecvPipe_fn recvFunc, void* recvO
 				//if( statehdr->status == 0x1 )
 				{
 					// make sender happy
-					(recvFunc)(recvObj, NULL, DELIVERY_SUCCESS, fromaddr, hdr->message_id, RECV_MSG_STATUS );
+					(recvFunc)(recvObj, nullptr, DELIVERY_SUCCESS, fromaddr, hdr->message_id, RECV_MSG_STATUS );
 
 					m_Mutex.Lock();
 					RemoveMessageFromSendPool( statehdr->message_id );
@@ -661,18 +653,18 @@ void CEqRDPSocket::UpdateSendQueue( int timeMs, CDPRecvPipe_fn recvFunc, void* r
 
 		// after 5 retries of sending that should be removed
 		// TODO: tweak
-		if( buffer->sendTimes.GetValue() >= 5 )
+		if( buffer->sendTimes >= 5 )
 		{
-			buffer->removeTimeout.Add(timeMs);
+			AddInterlocked(buffer->removeTimeout, i);
 
 			// Expired message
-			if( buffer->removeTimeout.GetValue() >= m_nUnconfirmedRemoveTimeout )
+			if( buffer->removeTimeout >= m_nUnconfirmedRemoveTimeout )
 			{
 				// add pending message ids
 				udp_cdp_hdr_t* pMsgHdr = (udp_cdp_hdr_t*)buffer->bytestream->GetBasePointer();
 
 				// make sender happy
-				(recvFunc)(recvObj, NULL, DELIVERY_FAILED, buffer->addr, pMsgHdr->message_id, RECV_MSG_STATUS );
+				(recvFunc)(recvObj, nullptr, DELIVERY_FAILED, buffer->addr, pMsgHdr->message_id, RECV_MSG_STATUS );
 
 				m_Mutex.Lock();
 
@@ -691,13 +683,13 @@ void CEqRDPSocket::UpdateSendQueue( int timeMs, CDPRecvPipe_fn recvFunc, void* r
 			}
 		}
 
-		buffer->sentTimeout.Add(timeMs);
+		AddInterlocked(buffer->sentTimeout, timeMs);
 
 		int nSendTimeoutQueueMod = m_nSendTimeout;
 
-		if(buffer->sentTimeout.GetValue() >= nSendTimeoutQueueMod)
+		if(buffer->sentTimeout >= nSendTimeoutQueueMod)
 		{
-			buffer->sendTimes.Increment();
+			IncrementInterlocked(buffer->sendTimes);
 
 			// set the send time
 			buffer->sendTime = m_time;
@@ -747,7 +739,7 @@ void CEqRDPSocket::UpdateSendQueue( int timeMs, CDPRecvPipe_fn recvFunc, void* r
 				continue;
 			}
 
-			buffer->sentTimeout.SetValue(0);
+			buffer->sentTimeout = 0;
 
 			// DEBUG
 			/*
@@ -813,7 +805,7 @@ cdp_queued_message_t* CEqRDPSocket::GetFreeBuffer( int freeSpaceRequired, const 
 
 			if( nCurPos < UDP_CDP_MIN_SEND_BUFFER &&						// check for reaching minimal send size (THIS IS UGLY)
 				nFreeSpace > freeSpaceRequired &&							// check for overflow
-				(m_pMessageQueue[i]->sendTimes.GetValue() == 0) &&			// don't use already sent buffers
+				(m_pMessageQueue[i]->sendTimes == 0) &&			// don't use already sent buffers
 				(m_pMessageQueue[i]->flags == nFlags) &&					// check it's usage
 				NETCompareAdr( m_pMessageQueue[i]->addr, *to ) )			// and only deliver to needed address
 			{
@@ -835,7 +827,7 @@ cdp_queued_message_t* CEqRDPSocket::GetFreeBuffer( int freeSpaceRequired, const 
 
 		for(int i = 0; i < m_pMessageQueue.numElem(); i++)
 		{
-			m_pMessageQueue[i]->sentTimeout.SetValue(m_nSendTimeout);
+			m_pMessageQueue[i]->sentTimeout = m_nSendTimeout;
 		}
 
 		m_Mutex.Unlock();
@@ -895,7 +887,7 @@ void CEqRDPSocket::CheckMessageForResend( short message_id )
 		cdp_queued_message_t* pMsg = m_pMessageQueue[i];
 
 		// this could not be happened, but i'll keep it there
-		if( pMsg->sendTimes.GetValue() == 0 )
+		if( pMsg->sendTimes == 0 )
 			continue;
 
 		// get message header
@@ -906,8 +898,8 @@ void CEqRDPSocket::CheckMessageForResend( short message_id )
 			Threading::CScopedMutex m( m_Mutex );
 
 			// repeat
-			m_pMessageQueue[i]->sendTimes.SetValue(0);
-			m_pMessageQueue[i]->sentTimeout.SetValue(0);
+			m_pMessageQueue[i]->sendTimes = 0;
+			m_pMessageQueue[i]->sentTimeout = 0;
 
 			return;
 		}

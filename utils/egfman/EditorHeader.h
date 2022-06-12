@@ -5,12 +5,7 @@
 // Description: Equilibrium Engine Editor main cycle
 //////////////////////////////////////////////////////////////////////////////////
 
-
-#ifndef EDITORHDR_H
-#define EDITORHDR_H
-
-#include "core/DebugInterface.h"
-#include "materialsystem1/IMaterialSystem.h"
+#pragma once
 
 #pragma warning(disable: 4003)
 
@@ -55,6 +50,3 @@
 #include "wx/fontdlg.h"
 #include "wx/textdlg.h"
 #include "wx/statline.h"
-
-
-#endif // EDITORHDR_H

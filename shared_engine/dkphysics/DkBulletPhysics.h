@@ -5,25 +5,14 @@
 // Description: Equilibrium physics powered by Bullet
 ///////////////////////////////////////////////////////////////////////////////////
 
-#ifndef DKPHYSICS_IS_DEFINED
-#define DKPHYSICS_IS_DEFINED
-
-#include "core/platform/Platform.h"
-#include "core/DebugInterface.h"
-
-#include "utils/eqthread.h"
-
+#pragma once
 #include "dkphysics/IDkPhysics.h"
-#include "physics/BulletConvert.h"
 
-#include "DKBulletObject.h"
-#include "DkPhysicsJoint.h"
-#include "DkPhysicsRope.h"
+class CPhysicsObject;
+class CCharacterController;
+class DkPhysicsJoint;
+class DkPhysicsRope;
 
-
-
-using namespace Threading;
-using namespace EqBulletUtils;
 
 #define __BT_SKIP_UINT64_H	// SDL2 support
 
@@ -168,8 +157,6 @@ private:
 	float										m_fPhysicsNextTime;
 	float										m_fPhysicsCurTimestep;
 
-	CEqMutex									m_Mutex;
-	CEqSignal									m_WorkDoneSignal;
+	Threading::CEqMutex							m_Mutex;
+	Threading::CEqSignal						m_WorkDoneSignal;
 };
-
-#endif // DKPHYSICS_IS_DEFINED

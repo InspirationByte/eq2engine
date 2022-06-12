@@ -5,10 +5,8 @@
 // Description: CPU detection
 //////////////////////////////////////////////////////////////////////////////////
 
+#include "core/core_common.h"
 #include "eqCPUServices.h"
-#include "ConsoleCommands.h"
-
-#include "core/DebugInterface.h"
 
 EXPORTED_INTERFACE(IEqCPUCaps, CEqCPUCaps);
 

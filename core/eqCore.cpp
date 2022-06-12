@@ -5,9 +5,7 @@
 // NOTENOTE: Linux does not showing russian language that was written in VC
 //////////////////////////////////////////////////////////////////////////////////
 
-
 #include <ctime>
-
 #ifdef _WIN32
 #include <locale.h>
 #ifdef CRT_DEBUG_ENABLED
@@ -15,25 +13,23 @@
 #endif
 #endif
 
-#include "eqCore.h"
+#include "core/core_common.h"
 
 #include "core/IFileSystem.h"
 #include "core/InterfaceManager.h"
 #include "core/ILocalize.h"
-#include "core/DebugInterface.h"
+#include "core/ICommandLine.h"
 #include "core/ConCommand.h"
 #include "core/ConVar.h"
-#include "eqCPUServices.h"
+#include "utils/KeyValues.h"
 
+#include "eqCore.h"
+#include "eqCPUServices.h"
 #include "ExceptionHandler.h"
 #include "ConsoleCommands.h"
 
-#include "ds/eqstring.h"
 
-#ifdef PLAT_POSIX
-#include <time.h>
-#else
-
+#ifdef PLAT_WIN
 BOOL WINAPI DllMain(HINSTANCE module_handle, DWORD reason_for_call, LPVOID reserved)
 {
     //Only set debug info when connecting dll

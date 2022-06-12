@@ -5,34 +5,30 @@
 // Description: Drivers window handler
 //////////////////////////////////////////////////////////////////////////////////
 
+#include <SDL.h>
+
+#include "core/core_common.h"
 #include "core/IFileSystem.h"
-#include "core/DebugInterface.h"
 #include "core/IConsoleCommands.h"
+#include "core/ICommandLine.h"
 #include "core/ConVar.h"
 #include "core/ConCommand.h"
-#include "utils/strtools.h"
-#include "utils/eqthread.h"
+#include "imaging/ImageLoader.h"
 
 #include "sys_version.h"
 #include "sys_host.h"
 #include "sys_in_console.h"
 #include "sys_in_joystick.h"
 
-#include "imaging/ImageLoader.h"
+#include "materialsystem1/IMaterialSystem.h"
 
-#include <SDL.h>
-
-#ifdef _WIN32
-#include "shellscalingapi.h"
-#endif
-
-#define DEFAULT_CONFIG_PATH			"cfg/config_default.cfg"
+#define DEFAULT_CONFIG_PATH		"cfg/config_default.cfg"
 
 // Renderer
-DECLARE_CVAR(r_bpp, 32,"Screen bits per pixel",CV_ARCHIVE);
-DECLARE_CVAR(sys_sleep, 0,"Sleep time for every frame",CV_ARCHIVE);
+DECLARE_CVAR(r_bpp, 32, "Screen bits per pixel",CV_ARCHIVE);
+DECLARE_CVAR(sys_sleep, 0, "Sleep time for every frame",CV_ARCHIVE);
 
-DECLARE_CVAR(screenshotJpegQuality,100,"JPEG Quality",CV_ARCHIVE);
+DECLARE_CVAR(screenshotJpegQuality, 100, "JPEG Quality",CV_ARCHIVE);
 
 DECLARE_CMD(screenshot, "Save screenshot", 0)
 {

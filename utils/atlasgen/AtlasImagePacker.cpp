@@ -5,16 +5,11 @@
 // Description: Atlas packer - main code
 //////////////////////////////////////////////////////////////////////////////////
 
-#include "core/DebugInterface.h"
-
-#include "utils/strtools.h"
+#include "core/core_common.h"
 #include "utils/KeyValues.h"
 #include "utils/RectanglePacker.h"
-
 #include "imaging/ImageLoader.h"
 #include "imaging/PixWriter.h"
-#include "math/DkMath.h"
-#include <ctype.h>
 
 static const EqString s_outputTag("%OUTPUT%");
 

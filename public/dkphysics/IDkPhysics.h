@@ -8,20 +8,7 @@
 //			simplify usage
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef IPHYSICS_H
-#define IPHYSICS_H
-
-#include "core/DebugInterface.h"
-
-#include "math/coord.h"
-#include "math/Vector.h"
-#include "math/Matrix.h"
-
-#include "ds/Array.h"
-#include "utils/strtools.h"
-
-#include "egf/IEqModel.h"
-
+#pragma once
 #include "dkphysics/IPhysicsObject.h"
 #include "dkphysics/IPhysicsJoint.h"
 #include "dkphysics/IPhysicsRope.h"
@@ -43,6 +30,9 @@
 #define PHYSPRIM_BOX				0
 #define PHYSPRIM_SPHERE				1
 #define PHYSPRIM_CAPSULE			2
+
+class IMaterial;
+struct studioPhysData_t;
 
 typedef void (*EACHOBJECTFUNCTION)( IPhysicsObject* pObject, void *data);
 
@@ -80,25 +70,6 @@ struct phySurfaceMaterial_t // engine has array of this materials
 	EqString scrapeSound;
 
 	int nFlags; // SURFACE_FLAG_* flags
-};
-
-struct physicsContactEvent_t
-{
-	IPhysicsObject *pHitB;
-
-	float			fImpulse;
-	float			fImpulseLateral_1;
-	float			fImpulseLateral_2;
-
-	Vector3D		vWorldHitOriginA;
-	Vector3D		vWorldHitOriginB;
-
-	Vector3D		vWorldHitNormal;
-
-	float			fCombinedFriction;
-	float			fCombinedRest;
-
-	float			fDistance;
 };
 
 inline void CopyMaterialParams(phySurfaceMaterial_t* pFrom, phySurfaceMaterial_t* pTo)
@@ -256,5 +227,3 @@ public:
 };
 
 extern IPhysics* physics;
-
-#endif //IPHYSICS_H

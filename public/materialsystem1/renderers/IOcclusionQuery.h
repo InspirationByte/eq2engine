@@ -5,11 +5,7 @@
 // Description: Occlusion query object
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef IOCCLUSIONQUERY_H
-#define IOCCLUSIONQUERY_H
-
-#include "core/dktypes.h"
-#include "core/ppmem.h"
+#pragma once
 
 class IOcclusionQuery
 {
@@ -28,5 +24,3 @@ public:
 	// after End() and IsReady() == true it does matter
 	virtual uint32			GetVisiblePixels() = 0;
 };
-
-#endif // IOCCLUSIONQUERY_H

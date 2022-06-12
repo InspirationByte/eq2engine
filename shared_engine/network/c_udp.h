@@ -7,52 +7,18 @@
 //				TODO:	buffer overflow protection
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef C_UDP_H
-#define C_UDP_H
-
-#include "ds/Array.h"
-#include "ds/VirtualStream.h"
-
-#include "utils/eqthread.h"
-
-#include "core/platform/Platform.h"
+#pragma once
 #include "net_defs.h"
 
 #define CUDP_MESSAGE_ID_IMMEDIATE			(-3)
 #define CUDP_MESSAGE_ID_ERROR				(-2)
 #define UDP_CDP_MAX_MESSAGEPAYLOAD			MAX_MESSAGE_LENGTH		// maximum payload for this protocol type; Tweak this if you have issues
 
-using namespace Threading;
+struct sockaddr_in;
 
 namespace Networking
 {
-
-enum ECDPSendFlags
-{
-	CDPSEND_GUARANTEED		= (1 << 0),		// just simply send UDP message
-	CDPSEND_IMMEDIATE		= (1 << 1),		// send message immediately as it comes to buffer. It kills order preserving
-	CDPSEND_IS_RESPONSE		= (1 << 2),		// contains response header
-};
-
-enum EDeliveryStatus
-{
-	DELIVERY_IN_PROGRESS = -1,
-	DELIVERY_SUCCESS = 0,
-	DELIVERY_FAILED,
-};
-
-enum ERecvMessageKind
-{
-	RECV_MSG_DATA = 0,
-	RECV_MSG_RESPONSE_DATA,
-	RECV_MSG_STATUS,
-};
-
 struct cdp_queued_message_t;
-
-// recv callback
-// when it's @type is RECV_MSG_STATUS, @size is EDeliveryStatus
-typedef void (*CDPRecvPipe_fn)(void* thisptr, ubyte* data, int size, const sockaddr_in& from, short msgId, ERecvMessageKind type);
 
 class CEqRDPSocket
 {
@@ -114,10 +80,9 @@ private:
 
 	uint32							m_time;
 
-	CEqMutex						m_Mutex;
-	CEqSignal						m_SendSignal;
+	Threading::CEqMutex				m_Mutex;
+	Threading::CEqSignal			m_SendSignal;
 };
 
 }; // namespace CUDP
 
-#endif // C_UDP_H

@@ -5,10 +5,10 @@
 // Description: Ogg Vorbis source cache
 //////////////////////////////////////////////////////////////////////////////////
 
-#include <string.h>
+#include <vorbis/vorbisfile.h>
+
+#include "core/core_common.h"
 #include "core/IFileSystem.h"
-#include "core/DebugInterface.h"
-#include "core/ppmem.h"
 #include "snd_ogg_cache.h"
 
 bool CSoundSource_OggCache::Load(const char* filename)

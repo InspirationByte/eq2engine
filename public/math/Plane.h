@@ -5,11 +5,7 @@
 // Description: Plane
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef PLANE_H
-#define PLANE_H
-
-#include "Matrix.h"
-#include "Vector.h"
+#pragma once
 
 enum ClassifyPlane_e
 {
@@ -212,5 +208,3 @@ inline TPlane<T> operator * (const TMat4<T> &m, const TPlane<T> &v)
 }
 
 typedef TPlane<float> Plane;
-
-#endif // PLANE_H

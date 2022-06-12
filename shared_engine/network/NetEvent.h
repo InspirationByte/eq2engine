@@ -1,5 +1,4 @@
-#ifndef NETEVENT_H
-#define NETEVENT_H
+#pragma once
 
 namespace Networking
 {
@@ -82,5 +81,3 @@ struct neteventfactory_t
 	END_NETEVENT(classname)
 
 }; // namespace Networking
-
-#endif // NETEVENT_H

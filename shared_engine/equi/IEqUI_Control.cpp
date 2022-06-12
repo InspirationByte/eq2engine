@@ -5,24 +5,19 @@
 // Description: EGUI panel
 //////////////////////////////////////////////////////////////////////////////////
 
-#include "IEqUI_Control.h"
-
-#include "EqUI_Manager.h"
-#include "EqUI_Panel.h"
-
-#include "core/IFileSystem.h"
-#include "core/IConsoleCommands.h"
+#include "core/core_common.h"
 #include "core/ILocalize.h"
+#include "core/IConsoleCommands.h"
 #include "core/ConVar.h"
-#include "core/ConCommand.h"
-#include "font/IFontCache.h"
+#include "utils/KeyValues.h"
+#include "IEqUI_Control.h"
 
 #include "materialsystem1/IMaterialSystem.h"
 #include "materialsystem1/MeshBuilder.h"
-#include "materialsystem1/renderers/IShaderAPI.h"
-#include "materialsystem1/scene_def.h"	// fog info
-
 #include "render/IDebugOverlay.h"
+#include "font/IFontCache.h"
+#include "EqUI_Manager.h"
+#include "EqUI_Panel.h"
 
 
 namespace equi
@@ -520,7 +515,7 @@ void IUIControl::Render()
 
 	IRectangle clientRectRender = GetClientRectangle();
 
-	materials->SetAmbientColor(color4_white);	// max color mode
+	materials->SetAmbientColor(color_white);	// max color mode
 	materials->SetFogInfo(FogInfo_t());			// disable fog
 
 	// calculate absolute transformation using previous matrix

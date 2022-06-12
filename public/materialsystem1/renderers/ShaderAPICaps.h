@@ -5,12 +5,7 @@
 // Description: ShaderAPI capabilities
 //////////////////////////////////////////////////////////////////////////////////
 
-
-#ifndef SHADERAPICAPS_H
-#define SHADERAPICAPS_H
-
-#include "imaging/textureformats.h"
-#include "ShaderAPI_defs.h"
+#pragma once
 
 enum EShaderSupportFlags
 {
@@ -55,5 +50,3 @@ struct ShaderAPICaps_t
 
 	int					shaderVersions[4];
 };
-
-#endif // SHADERAPICAPS_H

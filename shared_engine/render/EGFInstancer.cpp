@@ -5,6 +5,7 @@
 // Description: EGF model instancer
 //////////////////////////////////////////////////////////////////////////////////
 
+#include "core/core_common.h"
 #include "EGFInstancer.h"
 
 // this is the truth about templates and inline...

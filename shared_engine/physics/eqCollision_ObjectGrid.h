@@ -5,15 +5,9 @@
 // Description: Physics object grid
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef EQCOLLISION_OBJECTGRID_H
-#define EQCOLLISION_OBJECTGRID_H
-
-#include "math/BoundingBox.h"
-#include "ds/Array.h"
-#include "core/ppmem.h"
+#pragma once
 
 class CEqCollisionObject;
-class CEqRigidBody;
 class CEqPhysics;
 
 struct collgridcell_t
@@ -28,13 +22,8 @@ struct collgridcell_t
 class CEqCollisionBroadphaseGrid
 {
 public:
-	CEqCollisionBroadphaseGrid();
+	CEqCollisionBroadphaseGrid(CEqPhysics* physics, int gridsize, const Vector3D& worldmins, const Vector3D& worldmaxs);
 	~CEqCollisionBroadphaseGrid();
-
-	void				Init(CEqPhysics* physics, int gridsize, const Vector3D& worldmins, const Vector3D& worldmaxs);
-	void				Destroy();
-
-	bool				IsInit() const;
 
 	collgridcell_t*		GetPreallocatedCellAtPos(const Vector3D& origin);
 
@@ -59,9 +48,9 @@ protected:
 	collgridcell_t*		GetAllocCellAt(int x, int y);
 	void				FreeCellAt( int x, int y );
 
-	collgridcell_t**	m_gridMap;
+	collgridcell_t**	m_gridMap{ nullptr };
 
-	CEqPhysics*			m_physics;
+	CEqPhysics*			m_physics{ nullptr };
 
 	int					m_gridSize;
 	float				m_invGridSize;
@@ -69,5 +58,3 @@ protected:
 	int					m_gridWide;
 	int					m_gridTall;
 };
-
-#endif // EQCOLLISION_OBJECTGRID_H

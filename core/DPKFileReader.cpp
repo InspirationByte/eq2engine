@@ -5,19 +5,10 @@
 // Description: Data package file (dpk)
 //////////////////////////////////////////////////////////////////////////////////
 
-#include "DPKFileReader.h"
-
-#include "FileSystem.h"
-
-#include "core/DebugInterface.h"
-#include "core/platform/stackalloc.h"
-
-#include <malloc.h>
 #include <zlib.h>
-
-#include "utils/minmax.h"
-#include "utils/strtools.h"
-#include "utils/CRC32.h"
+#include "core/core_common.h"
+#include "FileSystem.h"
+#include "DPKFileReader.h"
 
 // Fixes slashes in the directory name
 void DPK_RebuildFilePath(const char* str, char* newstr)

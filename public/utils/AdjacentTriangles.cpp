@@ -5,9 +5,8 @@
 // Description: The triangle adjacency generator
 //////////////////////////////////////////////////////////////////////////////////
 
+#include "core/core_common.h"
 #include "AdjacentTriangles.h"
-#include "math/Vector.h"
-#include "core/ppmem.h"
 
 namespace AdjacentTriangles
 {

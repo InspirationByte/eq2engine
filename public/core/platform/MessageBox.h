@@ -5,10 +5,7 @@
 // Description: System messageboxes
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef MESSAGEBOX_H
-#define MESSAGEBOX_H
-
-#include "core/InterfaceManager.h"
+#pragma once
 
 enum EMessageBoxType
 {
@@ -28,5 +25,3 @@ IEXPORTS void	CrashMsg(const char* fmt, ...);
 IEXPORTS void	ErrorMsg(const char* fmt, ...);
 IEXPORTS void	WarningMsg(const char* fmt, ...);
 IEXPORTS void	InfoMsg(const char* fmt, ...);
-
-#endif // MESSAGEBOX_H

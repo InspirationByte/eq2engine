@@ -5,23 +5,15 @@
 // Description: Debug text drawer system
 //////////////////////////////////////////////////////////////////////////////////
 
-
+#include "core/core_common.h"
+#include "core/ConVar.h"
+#include "math/Utility.h"
 #include "DebugOverlay.h"
 
-#include "core/DebugInterface.h"
-#include "core/ConVar.h"
-
-#include "utils/strtools.h"
-
-#include "math/Utility.h"
 #include "font/IFontCache.h"
 
 #include "materialsystem1/IMaterialSystem.h"
 #include "materialsystem1/MeshBuilder.h"
-
-#ifndef _WIN32
-#include <stdarg.h>
-#endif
 
 #define BOXES_DRAW_SUBDIV (64)
 #define LINES_DRAW_SUBDIV (128)
@@ -619,7 +611,7 @@ void DrawGraph(debugGraphBucket_t* graph, int position, IEqFont* pFont, float fr
 	blending.srcFactor = BLENDFACTOR_SRC_ALPHA;
 	blending.dstFactor = BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
 
-	materials->DrawPrimitives2DFFP(PRIM_LINES,lines,elementsOf(lines), NULL, color4_white, &blending);
+	materials->DrawPrimitives2DFFP(PRIM_LINES,lines,elementsOf(lines), NULL, color_white, &blending);
 
 	pFont->RenderText(EqString::Format("%.2f", (graph->maxValue*0.75f)).ToCString(), Vector2D(x_pos + 5, y_pos - GRAPH_HEIGHT *0.75f), textStl);
 	pFont->RenderText(EqString::Format("%.2f", (graph->maxValue*0.50f)).ToCString(), Vector2D(x_pos + 5, y_pos - GRAPH_HEIGHT *0.50f), textStl);
@@ -639,7 +631,7 @@ void DrawGraph(debugGraphBucket_t* graph, int position, IEqFont* pFont, float fr
 			//if(graph->points.getCurrent() > graph->fMaxValue)
 			//	graph->fMaxValue = graph->points.getCurrent();
 
-			graphPoint_t& graphVal = graph->points.getCurrent();
+			debugGraphBucket_t::graphPoint_t& graphVal = graph->points.getCurrent();
 
 			// get a value of it.
 			float value = clamp(graphVal.value, 0.0f, graph->maxValue);
@@ -678,7 +670,7 @@ void DrawGraph(debugGraphBucket_t* graph, int position, IEqFont* pFont, float fr
 	if(graph->dynamic)
 		graph->maxValue = graph_max_value;
 
-	materials->DrawPrimitives2DFFP(PRIM_LINES,graph_line_verts,num_line_verts, NULL, color4_white);
+	materials->DrawPrimitives2DFFP(PRIM_LINES,graph_line_verts,num_line_verts, NULL, color_white);
 
 	graph->remainingTime -= frame_time;
 
@@ -1270,7 +1262,7 @@ void CDebugOverlay::Graph_AddValue(debugGraphBucket_t* bucket, float value)
 		}
 
 		bucket->remainingTime = bucket->updateTime;
-		bucket->points.addFirst(graphPoint_t{value, bucket->color});
+		bucket->points.addFirst(debugGraphBucket_t::graphPoint_t{value, bucket->color});
 	}
 }
 

@@ -5,12 +5,7 @@
 // Description: Physics point constraint
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef EQPHYSICS_POINTCONSTRAINT_H
-#define EQPHYSICS_POINTCONSTRAINT_H
-
-#include "math/FVector.h"
-#include "math/BoundingBox.h"
-
+#pragma once
 #include "eqPhysics_Contstraint.h"
 
 class CEqRigidBody;
@@ -49,5 +44,3 @@ protected:
 	Vector3D	m_R1;
 	Vector3D	m_VrExtra;	///< extra vel for restoring deviation
 };
-
-#endif // EQPHYSICS_POINTCONSTRAINT_H

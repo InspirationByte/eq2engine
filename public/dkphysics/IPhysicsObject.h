@@ -5,12 +5,7 @@
 // Description: Equilibrium physics objects public header
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef IPHYSICSOBJECT_H
-#define IPHYSICSOBJECT_H
-
-#include "core/ppmem.h"
-#include "math/matrix.h"
-#include "math/vector.h"
+#pragma once
 
 // flags
 enum PhysObjectFlags_e
@@ -29,9 +24,29 @@ enum phys_freeze_state_e
 };
 
 struct phySurfaceMaterial_t;
-struct physicsContactEvent_t;
 struct dkCollideData_t;
 struct pritimiveinfo_t;
+
+class IPhysicsObject;
+
+struct physicsContactEvent_t
+{
+	IPhysicsObject* pHitB;
+
+	float			fImpulse;
+	float			fImpulseLateral_1;
+	float			fImpulseLateral_2;
+
+	Vector3D		vWorldHitOriginA;
+	Vector3D		vWorldHitOriginB;
+
+	Vector3D		vWorldHitNormal;
+
+	float			fCombinedFriction;
+	float			fCombinedRest;
+
+	float			fDistance;
+};
 
 class IPhysicsObject
 {
@@ -56,10 +71,10 @@ public:
 	virtual void					SetActivationState(phys_freeze_state_e nState) = 0;	// freeze states
 	virtual phys_freeze_state_e		GetActivationState() = 0;							// freeze states
 
-	virtual void					SetAngularFactor(Vector3D &factor) = 0;			// Sets angular factor (may help with up-right vector)
+	virtual void					SetAngularFactor(const Vector3D &factor) = 0;			// Sets angular factor (may help with up-right vector)
 	virtual Vector3D				GetAngularFactor() = 0;							// Sets angular factor (may help with up-right vector)
 
-	virtual void					SetLinearFactor(Vector3D &factor) = 0;			// Sets linear factor
+	virtual void					SetLinearFactor(const Vector3D &factor) = 0;			// Sets linear factor
 	virtual Vector3D				GetLinearFactor() = 0;							// Gets linear factor
 
 	virtual void					SetRestitution(float rest) = 0;					// Sets restitution
@@ -125,7 +140,7 @@ public:
 	virtual Matrix4x4				GetOrientationMatrix() = 0;
 
 	// set transformation of object
-	virtual void					SetTransformFromMatrix(Matrix4x4 &matrix) = 0;
+	virtual void					SetTransformFromMatrix(const Matrix4x4 &matrix) = 0;
 
 	// Get position, angles and other stuff
 	virtual Vector3D				GetPosition() = 0;
@@ -133,13 +148,13 @@ public:
 	virtual Vector3D				GetVelocity() = 0;
 	virtual Vector3D				GetAngularVelocity() = 0;
 
-	virtual Vector3D				GetVelocityAtPoint(Vector3D &point) = 0;
+	virtual Vector3D				GetVelocityAtPoint(const Vector3D &point) = 0;
 
 	// returns child shapes count
 	virtual int						GetChildShapeCount() = 0;
 
 	// setup child transform
-	virtual void					SetChildShapeTransform(int shapeNum, Vector3D &localOrigin, Vector3D &localAngles) = 0;
+	virtual void					SetChildShapeTransform(int shapeNum, const Vector3D &localOrigin, const Vector3D &localAngles) = 0;
 
 // SAVE - RESTORE functions
 
@@ -148,5 +163,3 @@ public:
 
 	virtual bool					ShouldCollideWith(IPhysicsObject* pObject) = 0;
 };
-
-#endif //IPHYSICSOBJECT_H

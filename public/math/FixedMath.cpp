@@ -5,6 +5,7 @@
 // Description: Equilibrium fixed point math
 //////////////////////////////////////////////////////////////////////////////////
 
+#include "math_common.h"
 #include "FixedMath.h"
 
 #ifndef FLOAT_AS_FREAL

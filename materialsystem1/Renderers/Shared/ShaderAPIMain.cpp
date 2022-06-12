@@ -7,9 +7,7 @@
 
 #ifdef CRT_DEBUG_ENABLED
 
-#include "core/platform/Platform.h"
-#include "core/DebugInterface.h"
-
+#include "core/core_common.h"
 #include <crtdbg.h>
 
 BOOL WINAPI DllMain(HINSTANCE module_handle, DWORD reason_for_call, LPVOID reserved)

@@ -5,11 +5,11 @@
 // Description: D3D Rendering library interface
 //////////////////////////////////////////////////////////////////////////////////
 
-#include "core/DebugInterface.h"
+#include "core/core_common.h"
+#include "core/IConsoleCommands.h"
 #include "core/IDkCore.h"
 #include "core/ConVar.h"
-#include "core/IConsoleCommands.h"
-
+#include "core/ConCommand.h"
 #include "emptyLibrary.h"
 #include "ShaderAPIEmpty.h"
 
@@ -17,8 +17,8 @@ HOOK_TO_CVAR(r_screen);
 
 // make library
 CEmptyRenderLib g_library;
-
-IShaderAPI* g_pShaderAPI = NULL;
+ShaderAPIEmpty s_shaderAPI;
+IShaderAPI* g_pShaderAPI = &s_shaderAPI;
 
 CEmptyRenderLib::CEmptyRenderLib()
 {
@@ -36,23 +36,19 @@ bool CEmptyRenderLib::InitCaps()
 	return true;
 }
 
+IShaderAPI* CEmptyRenderLib::GetRenderer() const
+{
+	return g_pShaderAPI;
+}
+
 bool CEmptyRenderLib::InitAPI( const shaderAPIParams_t &params)
 {
-	m_Renderer = PPNew ShaderAPIEmpty();
-	m_Renderer->Init(params);
-
-	g_pShaderAPI = m_Renderer;
-
+	s_shaderAPI.Init(params);
 	return true;
 }
 
 void CEmptyRenderLib::ExitAPI()
 {
-	if(!m_Renderer)
-		return;
-
-	delete m_Renderer;
-	m_Renderer = NULL;
 }
 
 void CEmptyRenderLib::BeginFrame()

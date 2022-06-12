@@ -5,13 +5,7 @@
 // Description: Keys
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef IN_KEYS_IDENT_H
-#define IN_KEYS_IDENT_H
-
-//#define MOU_MOVE   0x0080
-
-#include "core/platform/Platform.h"
-#include "utils/strtools.h"
+#pragma once
 
 #ifdef PLAT_SDL
 #include <SDL_keycode.h>
@@ -648,6 +642,3 @@ static const char* KeyIndexToHumanReadableString(int key)
 
 	return "UNKNOWN";
 }
-
-
-#endif // IN_KEYS_IDENT_H

@@ -9,42 +9,30 @@
 //			 - Shader management
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef IMATERIALSYSTEM_H
-#define IMATERIALSYSTEM_H
-
-#include "core/DebugInterface.h"
-#include "core/IDkCore.h"
-
+#pragma once
 #include "renderers/IShaderAPI.h"
+#include "renderers/IEqSwapChain.h"
+#include "scene_def.h"
 
 #include "IMaterial.h"
 #include "IMatSysShader.h"
 #include "IMaterialVar.h"
 #include "IMaterialProxy.h"
 
-#include "IDynamicMesh.h"
+#define MATSYSTEM_INTERFACE_VERSION			"MaterialSystem_009"
 
-class CImage;
-class IEqSwapChain;
-class IShaderAPI;
 struct FogInfo_t;
 struct dlight_t;
+
+class CImage;
 class CViewParams;
+class IDynamicMesh;
 
-// interface version for Shaders_*** dlls
-#define MATSYSTEM_INTERFACE_VERSION "MaterialSystem_009"
-
-// begin/end resource loading for timer purposes
-typedef void (*RESOURCELOADCALLBACK)( void );
-
-// shader registrator's dispatcher
-typedef IMaterialSystemShader* (*DISPATCH_CREATE_SHADER)( void );
-
-// shader override registrator's dispatcher
-typedef const char* (*DISPATCH_OVERRIDE_SHADER)( void );
-
-// device lost/restore callback
-typedef bool (*DEVLICELOSTRESTORE)( void );
+typedef void					(*RESOURCELOADCALLBACK)( void );
+typedef IMaterialSystemShader*	(*DISPATCH_CREATE_SHADER)( void );
+typedef const char*				(*DISPATCH_OVERRIDE_SHADER)( void );
+typedef bool					(*DEVLICELOSTRESTORE)( void );
+typedef IMaterialProxy*			(*PROXY_DISPATCHER)(void);
 
 // Lighting model for material system
 enum EMaterialLightingMode
@@ -66,20 +54,21 @@ struct shaderfactory_t
 	DISPATCH_CREATE_SHADER dispatcher;
 	const char *shader_name;
 };
+typedef Array<shaderfactory_t> FactoryList;
 
 typedef struct Vertex2D
 {
 	Vertex2D()
 	{
 		texCoord = vec2_zero;
-		color = color4_white;
+		color = color_white;
 	}
 
     Vertex2D(const Vector2D& p, const Vector2D& t)
     {
         position = p;
         texCoord = t;
-		color = color4_white;
+		color = color_white;
     }
 
 	Vertex2D(const Vector2D& p, const Vector2D& t,const Vector4D& c)
@@ -103,7 +92,7 @@ typedef struct Vertex2D
 
     Vector2D		position;
     Vector2D		texCoord;
-	Vector4D		color;
+	ColorRGBA		color;
 }Vertex2D_t;
 
 typedef struct Vertex3D
@@ -112,14 +101,14 @@ typedef struct Vertex3D
 	{
 		position = vec3_zero;
 		texCoord = vec2_zero;
-		color = color4_white;
+		color = color_white;
 	}
 
     Vertex3D(const Vector3D& p, const Vector2D& t)
     {
         position = p;
         texCoord = t;
-		color = color4_white;
+		color = color_white;
     }
 
 	Vertex3D(const Vector3D& p, const Vector2D& t,const Vector4D& c)
@@ -130,7 +119,7 @@ typedef struct Vertex3D
 	}
     Vector3D		position;
     Vector2D		texCoord;
-	Vector4D		color;
+	ColorRGBA		color;
 }Vertex3D_t;
 
 //-----------------------------------------------------
@@ -272,13 +261,13 @@ public:
 
 	// draws primitives
 	virtual void							DrawPrimitivesFFP(	ER_PrimitiveType type, Vertex3D_t *pVerts, int nVerts,
-																ITexture* pTexture = NULL, const ColorRGBA &color = color4_white,
+																ITexture* pTexture = NULL, const ColorRGBA &color = color_white,
 																BlendStateParam_t* blendParams = NULL, DepthStencilStateParams_t* depthParams = NULL,
 																RasterizerStateParams_t* rasterParams = NULL) = 0;
 
 	// draws primitives for 2D
 	virtual void							DrawPrimitives2DFFP(	ER_PrimitiveType type, Vertex2D_t *pVerts, int nVerts,
-																	ITexture* pTexture = NULL, const ColorRGBA &color = color4_white,
+																	ITexture* pTexture = NULL, const ColorRGBA &color = color_white,
 																	BlendStateParam_t* blendParams = NULL, DepthStencilStateParams_t* depthParams = NULL,
 																	RasterizerStateParams_t* rasterParams = NULL) = 0;
 
@@ -355,7 +344,7 @@ public:
 
 	virtual IMaterial*						GetBoundMaterial() = 0;
 
-	virtual void							SetShaderParameterOverriden(ShaderDefaultParams_e param, bool set = true) = 0;
+	virtual void							SetShaderParameterOverriden(int /*ShaderDefaultParams_e*/ param, bool set = true) = 0;
 
 	virtual bool							BindMaterial( IMaterial *pMaterial, int flags = MATERIAL_BIND_PREAPPLY ) = 0;
 	virtual void							Apply() = 0;
@@ -433,8 +422,6 @@ public:
 	virtual void							PrintLoadedMaterials() = 0;
 };
 
-typedef Array<shaderfactory_t> FactoryList;
-
 extern IMaterialSystem* materials;
 
 #define DECLARE_INTERNAL_SHADERS()       \
@@ -465,6 +452,3 @@ extern FactoryList& _InternalShaderList();
 		}																			\
 	};																				\
 	static C_ShaderClassFactoryFoo g_CShaderClassFactoryFoo;
-
-
-#endif //IMATERIALSYSTEM_H

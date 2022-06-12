@@ -5,10 +5,7 @@
 // Description: Console variable system
 //////////////////////////////////////////////////////////////////////////////////
 
-
-#ifndef CONCOMMAND_H
-#define CONCOMMAND_H
-
+#pragma once
 #include "ConCommandBase.h"
 
 #define CONCOMMAND_ARGUMENTS ConCommand* cmd, Array<EqString>& args
@@ -57,5 +54,3 @@ private:
 
 #define HOOK_TO_CMD(name)		\
 	static ConCommand *name = (ConCommand*)g_consoleCommands->FindCommand(#name);
-
-#endif //CONCOMMAND_H

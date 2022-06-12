@@ -5,8 +5,9 @@
 // Description: Bloom range compression shader
 //////////////////////////////////////////////////////////////////////////////////
 
-#include "materialsystem1/BaseShader.h"
-#include "materialsystem1/IMaterialSystem.h"
+#include "core/core_common.h"
+#include "IMaterialSystem.h"
+#include "BaseShader.h"
 
 BEGIN_SHADER_CLASS(BloomRange)
 

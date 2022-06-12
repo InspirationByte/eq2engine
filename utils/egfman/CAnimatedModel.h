@@ -5,10 +5,14 @@
 // Description: Animated model for EGFMan - supports physics
 //////////////////////////////////////////////////////////////////////////////////
 
-
-#include "egf/studio_egf.h"
+#pragma once
 #include "animating/Animating.h"
-#include "dkphysics/ragdoll.h"
+
+struct gsequence_t;
+struct gposecontroller_t;
+struct ragdoll_t;
+class IEqModel;
+class IPhysicsObject;
 
 enum ViewerRenderFlags
 {

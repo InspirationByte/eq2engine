@@ -5,14 +5,8 @@
 // Description: Texture class interface
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef ITEXTURE_H
-#define ITEXTURE_H
-
-#include "ShaderAPI_defs.h"
-
-#include "ds/refcounted.h"
-#include "math/Rectangle.h"
-#include "core/ppmem.h"
+#pragma once
+#include "imaging/textureformats.h"
 
 class ITexture : public RefCountedObject<ITexture>
 {
@@ -42,5 +36,3 @@ public:
 	virtual void			Lock(LockData* pLockData, Rectangle_t* pRect = nullptr, bool bDiscard = false, bool bReadOnly = false, int nLevel = 0, int nCubeFaceId = 0) = 0;
 	virtual void			Unlock() = 0;
 };
-
-#endif

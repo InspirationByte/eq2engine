@@ -5,21 +5,10 @@
 // Description: Rigid body
 //////////////////////////////////////////////////////////////////////////////////
 
-/*
-DONE:
-		- body dynamics
-TODO:
-		- shapes
-		- collision info
-*/
-
-#ifndef EQRIGIDBODY_H
-#define EQRIGIDBODY_H
-
-#include "math/DkMath.h"
-#include "ds/Array.h"
-
+#pragma once
 #include "eqCollision_Object.h"
+
+class IEqPhysicsConstraint;
 
 #define BODY_DISABLE_RESPONSE	COLLOBJ_DISABLE_RESPONSE
 #define BODY_COLLISIONLIST		COLLOBJ_COLLISIONLIST
@@ -89,8 +78,6 @@ inline FMatrix4x4 RigidBodyInverse( const FMatrix4x4 & matrix )
 }
 
 //-----------------------------------------------------------------------------------------------------------------------------
-
-class IEqPhysicsConstraint;
 
 ///
 /// Eq Rigid body
@@ -226,5 +213,3 @@ protected:
 	float				m_mass;
 	float				m_invMass;
 };
-
-#endif // EQRIGIDBODY_H

@@ -5,12 +5,7 @@
 // Description: Image loader
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef IMAGE_H
-#define IMAGE_H
-
-#include "core/platform/Platform.h"
-#include "ds/eqstring.h"
-
+#pragma once
 #include "textureformats.h"
 
 class IVirtualStream;
@@ -134,5 +129,3 @@ protected:
 	int				m_nExtraDataSize;
 	ubyte*			m_pExtraData;
 };
-
-#endif // IMAGE_H

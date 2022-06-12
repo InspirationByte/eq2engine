@@ -5,11 +5,10 @@
 // Description: Atlas loader
 //////////////////////////////////////////////////////////////////////////////////
 
-#include "TextureAtlas.h"
-#include "KeyValues.h"
+#include "core/core_common.h"
+#include "utils/KeyValues.h"
 #include "core/IFileSystem.h"
-#include "core/DebugInterface.h"
-#include "strtools.h"
+#include "TextureAtlas.h"
 
 // parses .atlas file
 CTextureAtlas* TexAtlas_LoadAtlas(const char* pszFileName, bool quiet)

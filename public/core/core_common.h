@@ -1,0 +1,57 @@
+//////////////////////////////////////////////////////////////////////////////////
+// Copyright © Inspiration Byte
+// 2009-2014
+//////////////////////////////////////////////////////////////////////////////////
+// Description: Common core definitions
+//////////////////////////////////////////////////////////////////////////////////
+
+#pragma once
+#define CORE_COMMON_H
+
+#include <stdlib.h>
+#include <stdio.h>
+#include <stdarg.h>
+#include <string.h>
+#include <ctype.h>
+#include <wctype.h>
+#include <wchar.h>
+#include <limits.h>
+#include <malloc.h>
+#include <new>
+#include <memory>
+
+#if defined(_INC_MINMAX)
+#error Please remove minmax from includes
+#endif
+
+#include "common_types.h"
+
+#include "InterfaceManager.h"
+#include "Logger.h"
+#include "ppmem.h"
+#include "cmdlib.h"
+
+#include "platform/platform.h"
+#include "platform/assert.h"
+#include "platform/messagebox.h"
+#include "platform/stackalloc.h"
+
+#include "ds/eqstring.h"
+#include "ds/eqwstring.h"
+
+#include "platform/eqtimer.h"
+#include "platform/eqthread.h"
+
+#include "ds/Array.h"
+#include "ds/Map.h"
+#include "ds/function.h"
+#include "ds/List.h"
+#include "ds/refcounted.h"
+#include "ds/SmartPtr.h"
+#include "ds/IVirtualStream.h"
+#include "ds/MemoryStream.h"
+
+#include "utils/strtools.h"
+#include "utils/CRC32.h"
+
+#include "math/math_common.h"

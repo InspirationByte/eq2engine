@@ -5,24 +5,7 @@
 // Description: Quaternion math class
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef QUATERNION_H
-#define QUATERNION_H
-
-#ifndef FORWARD_DECLARED
-template<class T>
-struct TMat4;
-
-template<class T>
-struct TMat3;
-
-template<class T>
-struct TVec3D;
-
-template<class T>
-struct TVec4D;
-#else
-#include "Matrix.h"
-#endif // FORWARD_DECLARED
+#pragma once
 
 //--------------------------------------------------------
 // Note: 
@@ -117,5 +100,3 @@ TVec3D<float>	rotateVector( const TVec3D<float>& p, const Quaternion& q );
 
 // quaternion identity
 Quaternion		identity();
-
-#endif // QUATERNION_H

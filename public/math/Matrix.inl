@@ -5,8 +5,7 @@
 // Description: Matrix classes (m2x2,m3x3,m4x4)
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef MATRIX_INLINE_H
-#define MATRIX_INLINE_H
+#pragma once
 
 /* --------------------------------------------------------------------------------- */
 
@@ -922,5 +921,3 @@ inline TMat4<T> inverse(const TMat4<T> &m)
 {
 	return !m;
 }
-
-#endif // MATRIX_INLINE_H

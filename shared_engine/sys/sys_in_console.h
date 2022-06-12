@@ -5,17 +5,10 @@
 // Description: Provides base console interface
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef CONSOLE_H
-#define CONSOLE_H
+#pragma once
 
-#include <stdio.h>
-#include "core/DebugInterface.h"
-#include "core/platform/Platform.h"
-
-#include "ds/eqstring.h"
-#include "ds/Array.h"
-
-#include "font/IFont.h"
+class IEqFont;
+class ConCommandBase;
 
 struct ConAutoCompletion_t
 {
@@ -24,8 +17,6 @@ struct ConAutoCompletion_t
 };
 
 typedef bool (*CONSOLE_ALTERNATE_HANDLER)(const char* commandText);
-
-class ConCommandBase;
 
 class CEqConsoleInput
 {
@@ -153,5 +144,3 @@ private:
 };
 
 extern CEqConsoleInput* g_consoleInput;
-
-#endif //CONSOLE_H

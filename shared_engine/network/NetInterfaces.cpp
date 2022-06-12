@@ -5,13 +5,12 @@
 // Description: Network components for Equilibrium Engine
 //////////////////////////////////////////////////////////////////////////////////
 
-#include <stdio.h>
-#include <string.h>
 #include <zlib.h>
 
-#include "NetInterfaces.h"
-#include "core/DebugInterface.h"
+#include "core/core_common.h"
 #include "core/ConVar.h"
+#include "NetInterfaces.h"
+#include "c_udp.h"
 
 namespace Networking
 {
@@ -27,6 +26,16 @@ void INetworkInterface::Update( int timeMs, CDPRecvPipe_fn func, void* recvObj )
 
 	m_pSocket->UpdateSendQueue( timeMs, func, recvObj);
 	m_pSocket->UpdateRecieve( timeMs, func, recvObj);
+}
+
+CEqRDPSocket* INetworkInterface::GetSocket() const 
+{
+	return m_pSocket; 
+}
+
+sockaddr_in	INetworkInterface::GetAddress() const 
+{
+	return m_pSocket->GetAddress();
 }
 
 //

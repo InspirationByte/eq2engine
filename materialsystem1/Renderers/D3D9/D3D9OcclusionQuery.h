@@ -5,16 +5,13 @@
 // Description: D3D9 Occlusion query object
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef D3D9OCCLUSIONQUERY_H
-#define D3D9OCCLUSIONQUERY_H
-
+#pragma once
 #include "renderers/IOcclusionQuery.h"
-#include <d3d9.h>
 
 class CD3D9OcclusionQuery : public IOcclusionQuery
 {
 public:
-						CD3D9OcclusionQuery( LPDIRECT3DDEVICE9 dev );
+						CD3D9OcclusionQuery(IDirect3DDevice9* dev);
 						~CD3D9OcclusionQuery();
 
 	void				Init();
@@ -34,10 +31,8 @@ public:
 
 protected:
 
-	LPDIRECT3DQUERY9		m_query;
+	IDirect3DQuery9*		m_query;
+	IDirect3DDevice9*		m_dev;
 	DWORD					m_pixelsVisible;
 	bool					m_ready;
-	LPDIRECT3DDEVICE9		m_dev;
 };
-
-#endif // D3D9OCCLUSIONQUERY_H

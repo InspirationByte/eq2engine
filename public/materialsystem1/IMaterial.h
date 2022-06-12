@@ -6,11 +6,10 @@
 //
 //********************************************************************************
 
-#ifndef IMATERIAL_H
-#define IMATERIAL_H
+#pragma once
+#include "IMaterialVar.h"
 
-#include "core/ppmem.h"
-#include "ds/refcounted.h"
+class CTextureAtlas;
 
 // WARNING: modifying this you must recompile all engine!
 enum MaterialFlags_e
@@ -55,11 +54,6 @@ enum EMaterialLoadingState
 
 //---------------------------------------------------------------------------------
 
-class IMatVar;
-class IMaterialSystemShader;
-class ITexture;
-class CTextureAtlas;
-
 class IMaterial : public RefCountedObject<IMaterial>
 {
 public:
@@ -101,5 +95,3 @@ public:
 	// retrieves the base texture on specified stage
 	virtual ITexture*				GetBaseTexture(int stage = 0) = 0;
 };
-
-#endif //IMATERIAL_H

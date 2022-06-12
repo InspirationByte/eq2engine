@@ -7,16 +7,11 @@
 //				Some things was lovely hardcoded (like m_nLength)
 //////////////////////////////////////////////////////////////////////////////////
 
+#include "core/core_common.h"
 #include "eqstring.h"
-
-#include <stdio.h>
-#include <malloc.h>
-#include <stdarg.h>
-#include <string.h>
-#include <ctype.h>
-#include "core/platform/stackalloc.h"
 #include "utils/strtools.h"
-#include "math/math_common.h"
+
+#define EQSTRING_BASE_BUFFER	32
 
 #ifdef _WIN32
 #define xstricmp stricmp

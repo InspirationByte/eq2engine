@@ -5,10 +5,7 @@
 // Description: Equilibrium scene renderer renderable
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef BASERENDERABLEOBJECT_H
-#define BASERENDERABLEOBJECT_H
-
-#include "math/DkMath.h"
+#pragma once
 
 //------------------------------------------------
 // A new inheritable renderable object
@@ -60,5 +57,3 @@ protected:
 	float					m_fViewDistance;
 	int						m_nRenderFlags;
 };
-
-#endif // BASERENDERABLEOBJECT_H

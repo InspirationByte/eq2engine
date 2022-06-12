@@ -13,25 +13,25 @@
 //
 //////////////////////////////////////////////////////////////////////////////////
 
-#include "core/ConVar.h"
-#include "core/DebugInterface.h"
-#include "core/IEqParallelJobs.h"
+#include <btBulletCollisionCommon.h>
+#include <BulletCollision/CollisionShapes/btTriangleShape.h>
+#include <BulletCollision/CollisionDispatch/btInternalEdgeUtility.h>
+#include <BulletCollision/CollisionDispatch/btCollisionDispatcherMt.h>
+#include <BulletCollision/NarrowPhaseCollision/btRaycastCallback.h>
 
+#include "core/core_common.h"
+#include "core/ConVar.h"
+#include "core/IEqParallelJobs.h"
 #include "utils/KeyValues.h"
 #include "utils/global_mutex.h"
 
 #include "render/IDebugOverlay.h"
 
 #include "eqPhysics.h"
+#include "eqCollision_ObjectGrid.h"
 #include "eqPhysics_Body.h"
 #include "eqPhysics_Contstraint.h"
 #include "eqPhysics_Controller.h"
-
-#include <BulletCollision/CollisionShapes/btTriangleShape.h>
-#include <BulletCollision/CollisionDispatch/btInternalEdgeUtility.h>
-#include <BulletCollision/CollisionDispatch/btCollisionDispatcherMt.h>
-#include <BulletCollision/NarrowPhaseCollision/btRaycastCallback.h>
-
 #include "eqBulletIndexedMesh.h"
 
 // #define PROFILE			// this has to be disabled when GamePhysics using worker thread
@@ -51,11 +51,11 @@ using namespace Threading;
 
 extern ConVar ph_margin;
 
-ConVar ph_showcontacts("ph_showcontacts", "0", NULL, CV_CHEAT);
+ConVar ph_showcontacts("ph_showcontacts", "0", nullptr, CV_CHEAT);
 ConVar ph_erp("ph_erp", "0.15", "Collision correction", CV_CHEAT);
 
 // cvar value mostly depends on velocity
-ConVar ph_grid_tolerance("ph_grid_tolerance", "0.1", NULL, CV_CHEAT);
+ConVar ph_grid_tolerance("ph_grid_tolerance", "0.1", nullptr, CV_CHEAT);
 
 const float PHYSICS_DEFAULT_FRICTION = 0.5f;
 const float PHYSICS_DEFAULT_RESTITUTION = 0.25f;
@@ -319,7 +319,7 @@ void InitSurfaceParams( Array<eqPhysSurfParam_t*>& list )
 		pMaterial->restitution = KV_GetValueFloat(pSec->FindSection("restitution"), 0, PHYSICS_DEFAULT_RESTITUTION);
 		pMaterial->tirefriction = KV_GetValueFloat(pSec->FindSection("tirefriction"), 0, PHYSICS_DEFAULT_TIRE_FRICTION);
 		pMaterial->tirefriction_traction = KV_GetValueFloat(pSec->FindSection("tirefriction_traction"), 0, PHYSICS_DEFAULT_TIRE_TRACTION);
-		pMaterial->word = KV_GetValueString(pSec->FindSection("surfaceword"), NULL, "C")[0];
+		pMaterial->word = KV_GetValueString(pSec->FindSection("surfaceword"), 0, "C")[0];
 	}
 }
 
@@ -332,21 +332,22 @@ void CEqPhysics::InitWorld()
 	m_collDispatcher = new btCollisionDispatcher( m_collConfig );
 
 	// still required for raycasts
-	m_collisionWorld = new btCollisionWorld(m_collDispatcher, NULL, m_collConfig);
+	m_collisionWorld = new btCollisionWorld(m_collDispatcher, nullptr, m_collConfig);
 
-	m_dispatchInfo.m_enableSatConvex = true;
-	m_dispatchInfo.m_useContinuous = true;
-	m_dispatchInfo.m_stepCount = 1;
-	//m_dispatchInfo.m_enableSPU = false;
-	//m_dispatchInfo.m_useEpa = false;
-	//m_dispatchInfo.m_useConvexConservativeDistanceUtil = false;
+	m_dispatchInfo = new btDispatcherInfo();
+	m_dispatchInfo->m_enableSatConvex = true;
+	m_dispatchInfo->m_useContinuous = true;
+	m_dispatchInfo->m_stepCount = 1;
+	//m_dispatchInfo->m_enableSPU = false;
+	//m_dispatchInfo->m_useEpa = false;
+	//m_dispatchInfo->m_useConvexConservativeDistanceUtil = false;
 
 	InitSurfaceParams( m_physSurfaceParams );
 }
 
 void CEqPhysics::InitGrid()
 {
-	m_grid.Init(this, PHYSGRID_WORLD_SIZE, Vector3D(-EQPHYS_MAX_WORLDSIZE), Vector3D(EQPHYS_MAX_WORLDSIZE));
+	m_grid = new CEqCollisionBroadphaseGrid(this, PHYSGRID_WORLD_SIZE, Vector3D(-EQPHYS_MAX_WORLDSIZE), Vector3D(EQPHYS_MAX_WORLDSIZE));
 
 	// add all objects to the grid
 	for(int i = 0; i < m_dynObjects.numElem(); i++)
@@ -356,7 +357,7 @@ void CEqPhysics::InitGrid()
 
 	for(int i = 0; i < m_staticObjects.numElem(); i++)
 	{
-		m_grid.AddStaticObjectToGrid(m_staticObjects[i]);
+		m_grid->AddStaticObjectToGrid(m_staticObjects[i]);
 	}
 
 	for(int i = 0; i < m_ghostObjects.numElem(); i++)
@@ -402,20 +403,21 @@ void CEqPhysics::DestroyWorld()
 
 	if (m_collisionWorld)
 		delete m_collisionWorld;
-	m_collisionWorld = NULL;
+	m_collisionWorld = nullptr;
 
 	if(m_collDispatcher)
 		delete m_collDispatcher;
-	m_collDispatcher = NULL;
+	m_collDispatcher = nullptr;
 
 	if(m_collConfig)
 		delete m_collConfig;
-	m_collConfig = NULL;
+	m_collConfig = nullptr;
 }
 
 void CEqPhysics::DestroyGrid()
 {
-	m_grid.Destroy();
+	delete m_grid;
+	m_grid = nullptr;
 }
 
 eqPhysSurfParam_t* CEqPhysics::FindSurfaceParam(const char* name)
@@ -427,13 +429,13 @@ eqPhysSurfParam_t* CEqPhysics::FindSurfaceParam(const char* name)
 			return m_physSurfaceParams[i];
 	}
 
-	return NULL;
+	return nullptr;
 }
 
 eqPhysSurfParam_t* CEqPhysics::GetSurfaceParamByID(int id)
 {
 	if (id == -1)
-		return NULL;
+		return nullptr;
 
 	return m_physSurfaceParams[id];
 }
@@ -530,11 +532,11 @@ void CEqPhysics::AddGhostObject( CEqCollisionObject* object )
 
 	m_ghostObjects.append(object);
 
-	if(m_grid.IsInit())
+	if(m_grid)
 	{
-		if(object->GetMesh() != NULL)
+		if(object->GetMesh() != nullptr)
 		{
-			m_grid.AddStaticObjectToGrid( object );
+			m_grid->AddStaticObjectToGrid( object );
 		}
 		else
 			SetupBodyOnCell( object );
@@ -548,11 +550,11 @@ void CEqPhysics::DestroyGhostObject( CEqCollisionObject* object )
 
 	//Threading::CScopedMutex m(m_mutex);
 
-	if(m_grid.IsInit())
+	if(m_grid)
 	{
-		if(object->GetMesh() != NULL)
+		if(object->GetMesh() != nullptr)
 		{
-			m_grid.RemoveStaticObjectFromGrid(object);
+			m_grid->RemoveStaticObjectFromGrid(object);
 		}
 		else
 		{
@@ -579,8 +581,8 @@ void CEqPhysics::AddStaticObject( CEqCollisionObject* object )
 
 	m_staticObjects.append(object);
 
-	if(m_grid.IsInit())
-		m_grid.AddStaticObjectToGrid( object );
+	if(m_grid)
+		m_grid->AddStaticObjectToGrid( object );
 }
 
 void CEqPhysics::RemoveStaticObject( CEqCollisionObject* object )
@@ -590,8 +592,8 @@ void CEqPhysics::RemoveStaticObject( CEqCollisionObject* object )
 
 	if (m_staticObjects.fastRemove(object))
 	{
-		if (m_grid.IsInit())
-			m_grid.RemoveStaticObjectFromGrid(object);
+		if (m_grid)
+			m_grid->RemoveStaticObjectFromGrid(object);
 	}
 	else
 		MsgError("CEqPhysics::RemoveStaticObject - INVALID\n");
@@ -606,8 +608,8 @@ void CEqPhysics::DestroyStaticObject( CEqCollisionObject* object )
 
 	if (m_staticObjects.fastRemove(object))
 	{
-		if (m_grid.IsInit())
-			m_grid.RemoveStaticObjectFromGrid(object);
+		if (m_grid)
+			m_grid->RemoveStaticObjectFromGrid(object);
 
 		delete object;
 	}
@@ -806,7 +808,7 @@ void CEqPhysics::DetectBodyCollisions(CEqRigidBody* bodyA, CEqRigidBody* bodyB, 
 				if(!algorithm)
 					algorithm = m_collDispatcher->findAlgorithm(&obA, &obB, 0, BT_CONTACT_POINT_ALGORITHMS);
 
-				algorithm->processCollision(&obA, &obB, m_dispatchInfo, &cbResult);
+				algorithm->processCollision(&obA, &obB, *m_dispatchInfo, &cbResult);
 			}
 		}
 
@@ -862,7 +864,7 @@ void CEqPhysics::DetectStaticVsBodyCollision(CEqCollisionObject* staticObj, CEqR
 	PROFILE_FUNC();
 #endif
 
-	if(staticObj == NULL || bodyB == NULL)
+	if(staticObj == nullptr || bodyB == nullptr)
 		return;
 
 	if(!staticObj->CheckCanCollideWith(bodyB))
@@ -951,12 +953,12 @@ void CEqPhysics::DetectStaticVsBodyCollision(CEqCollisionObject* staticObj, CEqR
 			if(!algorithm)
 				algorithm = m_collDispatcher->findAlgorithm(&obA, &obB, 0, BT_CONTACT_POINT_ALGORITHMS);
 
-			algorithm->processCollision(&obA, &obB, m_dispatchInfo, &cbResult);
+			algorithm->processCollision(&obA, &obB, *m_dispatchInfo, &cbResult);
 		}
 #else
 		btCollisionAlgorithm* algorithm = m_collDispatcher->findAlgorithm(&obA, &obB, 0, BT_CONTACT_POINT_ALGORITHMS);
 
-		algorithm->processCollision(&obA, &obB, m_dispatchInfo, &cbResult);
+		algorithm->processCollision(&obA, &obB, *m_dispatchInfo, &cbResult);
 #endif
 
 		algorithm->~btCollisionAlgorithm();
@@ -1023,13 +1025,13 @@ void CEqPhysics::DetectStaticVsBodyCollision(CEqCollisionObject* staticObj, CEqR
 void CEqPhysics::SetupBodyOnCell( CEqCollisionObject* body )
 {
 	// check body is in the world
-	if(!m_grid.IsInit())
+	if(!m_grid)
 		return;
 
 	collgridcell_t* oldCell = body->GetCell();
 
 	// get new cell
-	collgridcell_t* newCell = m_grid.GetPreallocatedCellAtPos( body->GetPosition() );
+	collgridcell_t* newCell = m_grid->GetPreallocatedCellAtPos( body->GetPosition() );
 
 	// move object in grid
 	if (newCell != oldCell)
@@ -1062,7 +1064,7 @@ void CEqPhysics::IntegrateSingle(CEqRigidBody* body)
 	if(!bodyFrozen && body->IsCanIntegrate(true) || forceSetCell)
 	{
 		// get new cell
-		collgridcell_t* newCell = m_grid.GetCellAtPos( body->GetPosition() );
+		collgridcell_t* newCell = m_grid->GetCellAtPos( body->GetPosition() );
 
 		// move object in grid if it's a really new cell
 		if (newCell != oldCell)
@@ -1099,7 +1101,7 @@ void CEqPhysics::DetectCollisionsSingle(CEqRigidBody* body)
 
 	// get the grid box range for searching collision objects
 	IVector2D crMin, crMax;
-	m_grid.FindBoxRange(aabb, crMin, crMax, ph_grid_tolerance.GetFloat() );
+	m_grid->FindBoxRange(aabb, crMin, crMax, ph_grid_tolerance.GetFloat() );
 
 	// in this range do all collision checks
 	// might be slow
@@ -1107,7 +1109,7 @@ void CEqPhysics::DetectCollisionsSingle(CEqRigidBody* body)
 	{
 		for(int x = crMin.x; x < crMax.x+1; x++)
 		{
-			collgridcell_t* ncell = m_grid.GetCellAt( x, y );
+			collgridcell_t* ncell = m_grid->GetCellAt( x, y );
 
 			if(!ncell)
 				continue;
@@ -1317,7 +1319,7 @@ void CEqPhysics::ProcessContactPair(ContactPair_t& pair)
 void CEqPhysics::SimulateStep(float deltaTime, int iteration, FNSIMULATECALLBACK preIntegrFunc)
 {
 	// don't let the physics simulate something is not init
-	if(!m_grid.IsInit())
+	if(!m_grid)
 		return;
 
 	// save delta
@@ -1479,7 +1481,7 @@ bool CEqPhysics::TestLineCollisionOnCell(int y, int x,
 	F func,
 	void* args)
 {
-	collgridcell_t* cell = m_grid.GetCellAt(x,y);
+	collgridcell_t* cell = m_grid->GetCellAt(x,y);
 
 	if (!cell)
 		return false;
@@ -1501,7 +1503,7 @@ bool CEqPhysics::TestLineCollisionOnCell(int y, int x,
 	{
 		Vector3D cellMin, cellMax;
 
-		if(m_grid.GetCellBounds(x, y, cellMin, cellMax))
+		if(m_grid->GetCellBounds(x, y, cellMin, cellMax))
 			debugoverlay->Box3D(cellMin, cellMax, ColorRGBA(1,0,0,0.25f));
 	}
 
@@ -1567,8 +1569,8 @@ bool CEqPhysics::TestLineCollision(	const FVector3D& start,
 
 	//Threading::CScopedMutex m(m_mutex);
 
-	m_grid.GetPointAt(start, startCell.x, startCell.y);
-	m_grid.GetPointAt(end, endCell.x, endCell.y);
+	m_grid->GetPointAt(start, startCell.x, startCell.y);
+	m_grid->GetPointAt(end, endCell.x, endCell.y);
 
 	coll.position = end;
 	coll.fract = 32768.0f;
@@ -1584,7 +1586,7 @@ bool CEqPhysics::TestLineCollision(	const FVector3D& start,
 									coll,
 									rayMask,
 									filterParams,
-									static_cast<fnSingleObjectLineCollisionCheck>(&CEqPhysics::TestLineSingleObject), NULL);
+									&CEqPhysics::TestLineSingleObject, nullptr);
 
 	if (coll.fract > 1.0f)
 		coll.fract = 1.0f;
@@ -1640,11 +1642,11 @@ bool CEqPhysics::TestConvexSweepCollision(	btCollisionShape* shape,
 
 	Vector3D lineDir = fastNormalize(Vector3D(end-start));
 
-	//m_grid.GetPointAt(start - sBoxSize*lineDir, startCell.x, startCell.y);
-	//m_grid.GetPointAt(end + sBoxSize*lineDir, endCell.x, endCell.y);
+	//m_grid->GetPointAt(start - sBoxSize*lineDir, startCell.x, startCell.y);
+	//m_grid->GetPointAt(end + sBoxSize*lineDir, endCell.x, endCell.y);
 
-	m_grid.GetPointAt(start, startCell.x, startCell.y);
-	m_grid.GetPointAt(end , endCell.x, endCell.y);
+	m_grid->GetPointAt(start, startCell.x, startCell.y);
+	m_grid->GetPointAt(end , endCell.x, endCell.y);
 
 	InternalTestLineCollisionCells(	startCell.y, startCell.x,
 									endCell.y, endCell.x,
@@ -1653,7 +1655,7 @@ bool CEqPhysics::TestConvexSweepCollision(	btCollisionShape* shape,
 									coll,
 									rayMask,
 									filterParams,
-									static_cast<fnSingleObjectLineCollisionCheck>(&CEqPhysics::TestConvexSweepSingleObject), &params);
+									&CEqPhysics::TestConvexSweepSingleObject, &params);
 
 	if (coll.fract > 1.0f)
 		coll.fract = 1.0f;
@@ -1783,9 +1785,9 @@ bool CEqPhysics::TestLineSingleObject(
 	btTransform endTrans(btident3, endt);
 
 #if BT_BULLET_VERSION >= 283 // new bullet
-	btCollisionObjectWrapper objWrap(NULL, object->m_shape, object->m_collObject, transIdent, 0, 0);
+	btCollisionObjectWrapper objWrap(nullptr, object->m_shape, object->m_collObject, transIdent, 0, 0);
 #else
-    btCollisionObjectWrapper objWrap(NULL, object->m_shape, object->m_collObject, transIdent);
+    btCollisionObjectWrapper objWrap(nullptr, object->m_shape, object->m_collObject, transIdent);
 #endif
 
 	CEqRayTestCallback rayCallback(strt, endt);
@@ -1975,7 +1977,7 @@ void CEqPhysics::DebugDrawBodies(int mode)
 		}
 
 		if (mode >= 2)
-			m_grid.DebugRender();
+			m_grid->DebugRender();
 
 		if (mode >= 3)
 		{
@@ -1990,7 +1992,7 @@ void CEqPhysics::DebugDrawBodies(int mode)
 	}
 	else if (mode == 5)	// only grid
 	{
-		m_grid.DebugRender();
+		m_grid->DebugRender();
 	}
 	else
 	{

@@ -5,11 +5,6 @@
 // Material system realtime parameter proxy
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef MATERIALPROXY_H
-#define MATERIALPROXY_H
-
-#include "materialsystem1/IMaterialProxy.h"
+#pragma once
 
 void InitStandardMaterialProxies();
-
-#endif // MATERIALPROXY_H

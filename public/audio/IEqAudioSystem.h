@@ -5,12 +5,7 @@
 // Description: Equilibrium Engine Audio system
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef IEQAUDIOSYSTEM_H
-#define IEQAUDIOSYSTEM_H
-
-#include "core/platform/Platform.h"
-#include "math/Vector.h"
-#include "ds/refcounted.h"
+#pragma once
 
 class ISoundSource;
 
@@ -127,5 +122,3 @@ public:
 };
 
 extern IEqAudioSystem* g_audioSystem;
-
-#endif // IEQAUDIOSYSTEM_H

@@ -1,4 +1,3 @@
-
 //////////////////////////////////////////////////////////////////////////////////
 // Copyright © Inspiration Byte
 // 2009-2020
@@ -6,11 +5,8 @@
 // Description: Equilibrium materialvar
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef CMATVAR_H
-#define CMATVAR_H
-
+#pragma once
 #include "materialsystem1/IMaterialVar.h"
-#include "ds/eqstring.h"
 
 class CMatVar : public IMatVar
 {
@@ -65,5 +61,3 @@ private:
 
 	ITexture*		m_pAssignedTexture{ nullptr };
 };
-
-#endif //CMATVAR_H

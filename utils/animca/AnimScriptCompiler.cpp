@@ -5,18 +5,18 @@
 // Description:
 //////////////////////////////////////////////////////////////////////////////////
 
+#include <zlib.h>
+
+#include "core/core_common.h"
 #include "core/IFileSystem.h"
-#include "core/DebugInterface.h"
 #include "core/ICommandLine.h"
 #include "utils/KeyValues.h"
+#include "utils/Tokenizer.h"
 
-#include "math/DkMath.h"
-#include "ds/align.h"
+#include "egf/dsm_loader.h"
 #include "egf/dsm_esm_loader.h"
 #include "egf/model.h"
 #include "egf/modelloader_shared.h"
-
-#include <zlib.h>
 
 using namespace SharedModel;
 
@@ -1036,7 +1036,7 @@ void LoadSequence(KVSection* section, const char* seq_name)
 
 	// parse notransition flag
 	KVSection* pNoTransitionKey = section->FindSection("notransition");
-	desc.flags |= KV_GetValueBool(pNoTransitionKey) ? SEQFLAG_NOTRANSITION : 0;
+	desc.flags |= KV_GetValueBool(pNoTransitionKey) ? SEQFLAG_NO_TRANSITION : 0;
 
 	// parse autoplay flag
 	KVSection* pAutoplayKey = section->FindSection("autoplay");
@@ -1047,7 +1047,7 @@ void LoadSequence(KVSection* section, const char* seq_name)
 	if(pTransitionTimekey)
 		desc.transitiontime = KV_GetValueFloat(pTransitionTimekey);
 	else
-		desc.transitiontime = DEFAULT_TRANSITION_TIME;
+		desc.transitiontime = SEQ_DEFAULT_TRANSITION_TIME;
 
 	// parse events
 	KVSection* event_list = section->FindSection("events");
@@ -1264,8 +1264,8 @@ void WriteAnimationPackage()
 	ubyte* pData = pStart;
 
 	animpackagehdr_t* pHdr = (animpackagehdr_t*)pData;
-	pHdr->ident = ANIMCA_IDENT;
-	pHdr->version = ANIMCA_VERSION;
+	pHdr->ident = ANIMFILE_IDENT;
+	pHdr->version = ANIMFILE_VERSION;
 	pHdr->numLumps = 0;
 
 	pData += sizeof(animpackagehdr_t);
@@ -1273,7 +1273,7 @@ void WriteAnimationPackage()
 	// separate g_animations on g_animationdescs and g_animframes
 	ConvertAnimationsToWrite();
 
-	pData = CopyLumpToFile(pData, ANIMCA_ANIMATIONS, (ubyte*)g_animationdescs.ptr(), g_animationdescs.numElem() * sizeof(animationdesc_t));
+	pData = CopyLumpToFile(pData, ANIMFILE_ANIMATIONS, (ubyte*)g_animationdescs.ptr(), g_animationdescs.numElem() * sizeof(animationdesc_t));
 	pHdr->numLumps++;
 
 	// try to compress frame data
@@ -1295,11 +1295,11 @@ void WriteAnimationPackage()
 		MsgWarning("Successfully compressed frame data from %d to %d bytes\n", nFramesSize, nCompressedFramesSize);
 
 		// write decompression data size
-		pData = CopyLumpToFile(pData, ANIMCA_UNCOMPRESSEDFRAMESIZE, (ubyte*)&nFramesSize, sizeof(int));
+		pData = CopyLumpToFile(pData, ANIMFILE_UNCOMPRESSEDFRAMESIZE, (ubyte*)&nFramesSize, sizeof(int));
 		pHdr->numLumps++;
 
 		// write compressed frame data (decompress when loading MOP file)
-		pData = CopyLumpToFile(pData, ANIMCA_COMPRESSEDFRAMES, pCompressedFrames, nCompressedFramesSize);
+		pData = CopyLumpToFile(pData, ANIMFILE_COMPRESSEDFRAMES, pCompressedFrames, nCompressedFramesSize);
 		pHdr->numLumps++;
 
 		free(pCompressedFrames);
@@ -1307,12 +1307,12 @@ void WriteAnimationPackage()
 	else
 	{
 		// write uncompressed frame data
-		pData = CopyLumpToFile(pData, ANIMCA_ANIMATIONFRAMES, (ubyte*)g_animframes.ptr(), g_animframes.numElem() * sizeof(animframe_t));
+		pData = CopyLumpToFile(pData, ANIMFILE_ANIMATIONFRAMES, (ubyte*)g_animframes.ptr(), g_animframes.numElem() * sizeof(animframe_t));
 	}
 
-	pData = CopyLumpToFile(pData, ANIMCA_SEQUENCES, (ubyte*)g_sequences.ptr(), g_sequences.numElem() * sizeof(sequencedesc_t));
-	pData = CopyLumpToFile(pData, ANIMCA_EVENTS, (ubyte*)g_events.ptr(), g_events.numElem() * sizeof(sequenceevent_t));
-	pData = CopyLumpToFile(pData, ANIMCA_POSECONTROLLERS, (ubyte*)g_posecontrollers.ptr(), g_posecontrollers.numElem() * sizeof(posecontroller_t));
+	pData = CopyLumpToFile(pData, ANIMFILE_SEQUENCES, (ubyte*)g_sequences.ptr(), g_sequences.numElem() * sizeof(sequencedesc_t));
+	pData = CopyLumpToFile(pData, ANIMFILE_EVENTS, (ubyte*)g_events.ptr(), g_events.numElem() * sizeof(sequenceevent_t));
+	pData = CopyLumpToFile(pData, ANIMFILE_POSECONTROLLERS, (ubyte*)g_posecontrollers.ptr(), g_posecontrollers.numElem() * sizeof(posecontroller_t));
 
 	pHdr->numLumps += 3;
 

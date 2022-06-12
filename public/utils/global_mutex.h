@@ -5,11 +5,7 @@
 // Description: EqEngine mutex storage
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef EQGLOBALMUTEX_H
-#define EQGLOBALMUTEX_H
-
-#include "utils/eqthread.h"
-
+#pragma once
 
 enum EMutexPurpose
 {
@@ -31,5 +27,3 @@ enum EMutexPurpose
 // TODO: interface
 
 Threading::CEqMutex& GetGlobalMutex( EMutexPurpose purpose );
-
-#endif // EQGLOBALMUTEX_H

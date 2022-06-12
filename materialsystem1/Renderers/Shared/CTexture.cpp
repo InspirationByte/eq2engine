@@ -5,10 +5,9 @@
 // Description: Base texture class
 //////////////////////////////////////////////////////////////////////////////////
 
+#include "core/core_common.h"
+#include "renderers/ShaderAPI_defs.h"
 #include "CTexture.h"
-
-#include "core/DebugInterface.h"
-#include "utils/strtools.h"
 
 void CTexture::SetName(const char* pszNewName)
 {

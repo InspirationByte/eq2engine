@@ -5,22 +5,9 @@
 // Description: Equilibrium Engine wide string base
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef EQWSTRING_H
-#define EQWSTRING_H
-
-#include <stdlib.h>
-#include "core/dktypes.h"
-
-#ifdef __GNUG__
-class EqString;
-#include "eqstring.h"
-#endif // __GNUG__
-
-// TODO: implement safe copy-on-write
+#pragma once
 
 #define _EWs EqWString
-
-int xwcscmp ( const wchar_t *s1, const wchar_t *s2);
 
 class EqWString
 {
@@ -189,5 +176,3 @@ protected:
 	uint16		m_nLength;			// length of string
 	uint16		m_nAllocated;		// allocation size
 };
-
-#endif // EQWSTRING_H

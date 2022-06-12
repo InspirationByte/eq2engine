@@ -5,17 +5,13 @@
 // Description: Provides all shared definitions of engine
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef PLATFORM_H
-#define PLATFORM_H
-
-#include "core/dktypes.h"
-#include "core/InterfaceManager.h"
+#pragma once
 
 //---------------------------------------------
 // Platform definitions
 //---------------------------------------------
 
-#include "PlatformDef.h"
+#include "platformdefs.h"
 
 #if _MSC_VER >= 1400
 // To make MSVC 2005 happy
@@ -81,19 +77,6 @@
 
 //------------------------------------------------------------------------------------------------
 
-// Define some useful macros
-#define MCHAR2(a, b) (a | (b << 8))
-#define MCHAR4(a, b, c, d) (a | (b << 8) | (c << 16) | (d << 24))
-
-#define _STR_(x) #x
-#define DEFINE_STR(x) "#define " #x " " _STR_(x) "\n"
-
-#define elementsOf(x)					(sizeof(x) / sizeof(x[0]))
-#define offsetOf(structure,member)		(uintptr_t)&(((structure *)0)->member)
-#define elementSizeOf(structure,member)	sizeof(((structure *)0)->member)
-
-//------------------------------------------------------------------------------------------------
-
 #ifdef PLAT_WIN
 
 #ifdef _MSC_VER
@@ -126,5 +109,3 @@ typedef void*			EQCURSOR;
 #endif // PLAT_SDL
 
 IEXPORTS void Platform_Sleep(uint32 nMilliseconds);
-
-#endif // PLATFORM_H

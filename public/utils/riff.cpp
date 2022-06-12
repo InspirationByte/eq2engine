@@ -5,9 +5,8 @@
 // Description: RIFF reader utility class
 //////////////////////////////////////////////////////////////////////////////////
 
-#include <string.h>
-#include "core/platform/Platform.h"
-#include "core/DebugInterface.h"
+#include "core/core_common.h"
+#include "core/IFileSystem.h"
 #include "riff.h"
 
 CRIFF_Parser::CRIFF_Parser(const char* szFilename)
@@ -15,7 +14,7 @@ CRIFF_Parser::CRIFF_Parser(const char* szFilename)
 	m_pos = 0;
 
 	m_riff = g_fileSystem->Open(szFilename, "rb");
-	m_riffData = NULL;
+	m_riffData = nullptr;
 
 	if (!m_riff)
 	{
@@ -53,7 +52,7 @@ CRIFF_Parser::CRIFF_Parser(ubyte* pChunkData, int nChunkSize)
 {
 	m_pos = 0;
 
-	m_riff = NULL;
+	m_riff = nullptr;
 	m_riffData = pChunkData;
 
 	if (!m_riffData)
@@ -89,7 +88,7 @@ void CRIFF_Parser::ChunkClose()
 	if (m_riff)
 	{
 		g_fileSystem->Close(m_riff);
-		m_riff = NULL;
+		m_riff = nullptr;
 	}
 }
 

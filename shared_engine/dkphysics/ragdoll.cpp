@@ -5,12 +5,14 @@
 // Description: Ragdoll utilites, etc
 //////////////////////////////////////////////////////////////////////////////////
 
+#include "core/core_common.h"
 #include "ragdoll.h"
-
+#include "egf/IEqModel.h"
 
 #include "render/IDebugOverlay.h"
 #include "animating/BoneSetup.h"
 #include "physics/PhysicsCollisionGroup.h"
+#include "dkphysics/IDkPhysics.h"
 
 #define RAGDOLL_LINEAR_LIMIT (0.25)
 
@@ -219,7 +221,7 @@ void ragdoll_t::GetVisualBonesTransforms(Matrix4x4 *bones) const
 
 // sets bone tranformations (useful for animated death, etc)
 // you can setup from here a global transform
-void ragdoll_t::SetBoneTransform(Matrix4x4 *bones, Matrix4x4& translation)
+void ragdoll_t::SetBoneTransform(Matrix4x4 *bones, const Matrix4x4& translation)
 {
 	// set part transform
 	for(int i = 0; i < m_numParts; i++)
@@ -231,7 +233,7 @@ void ragdoll_t::SetBoneTransform(Matrix4x4 *bones, Matrix4x4& translation)
 	RefreshRagdollVisuals();
 }
 
-void ragdoll_t::Translate(Vector3D &move)
+void ragdoll_t::Translate(const Vector3D &move)
 {
 	for(int i = 0; i < m_numParts; i++)
 	{

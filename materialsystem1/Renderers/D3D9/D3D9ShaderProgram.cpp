@@ -5,9 +5,9 @@
 // Description: DX9 Shader program for ShaderAPID3DX9
 //////////////////////////////////////////////////////////////////////////////////
 
+#include "core/core_common.h"
+#include "shaderapid3d9_def.h"
 #include "D3D9ShaderProgram.h"
-#include "utils/strtools.h"
-#include <d3dx9.h>
 
 CD3D9ShaderProgram::~CD3D9ShaderProgram()
 {

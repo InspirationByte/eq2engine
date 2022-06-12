@@ -2,13 +2,10 @@
 // Copyright © Inspiration Byte
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
-// Description: Font container
-//				Uses engine to load, draw fonts//////////////////////////////////////////////////////////////////////////////////
+// Description: Rectangle util
+//////////////////////////////////////////////////////////////////////////////////
 
-#ifndef RECTANGLE_H
-#define RECTANGLE_H
-
-#include "Vector.h"
+#pragma once
 
 template <class T>
 struct TRectangle
@@ -188,5 +185,3 @@ struct TRectangle
 typedef TRectangle<float>	Rectangle_t;
 typedef TRectangle<int>		IRectangle;
 typedef TRectangle<int>		FRectangle;
-
-#endif // RECTANGLE_H

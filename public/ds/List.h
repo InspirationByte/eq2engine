@@ -8,8 +8,6 @@
 #ifndef LIST_H
 #define LIST_H
 
-#include "core/dktypes.h"
-
 template <class TYPE>
 struct ListNode
 {

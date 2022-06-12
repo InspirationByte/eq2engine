@@ -5,10 +5,7 @@
 // Description: RIFF reader utility class
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef SPIRALITERATOR_H
-#define SPIRALITERATOR_H
-
-#include "math/Vector.h"
+#pragma once
 
 struct SpiralIterator
 {
@@ -59,5 +56,3 @@ inline void SpiralIterator::operator++()
 	else
 		dir = (p == --q) ? 0 : dir;
 }
-
-#endif // SPIRALITERATOR_H

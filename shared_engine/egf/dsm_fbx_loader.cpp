@@ -5,17 +5,12 @@
 // Description: ESM model loader
 //////////////////////////////////////////////////////////////////////////////////
 
-#include <string.h>
-#include "dsm_esm_loader.h"
-#include "core/DebugInterface.h"
-#include "core/IFileSystem.h"
-
-#include "math/Matrix.h"
-#include "math/DkMath.h"
-
-#include "ds/Map.h"
-
 #include <ofbx.h>
+
+#include "core/core_common.h"
+#include "core/IFileSystem.h"
+#include "utils/Tokenizer.h"
+#include "dsm_loader.h"
 
 namespace SharedModel
 {

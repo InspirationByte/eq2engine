@@ -5,13 +5,11 @@
 // Description: Eq UI manager
 //////////////////////////////////////////////////////////////////////////////////
 
-#include "EqUI_Manager.h"
-#include "core/DebugInterface.h"
+#include "core/core_common.h"
 #include "core/ConCommand.h"
 #include "core/ConVar.h"
 
-#include "utils/strtools.h"
-
+#include "EqUI_Manager.h"
 #include "font/IFontCache.h"
 
 //-----

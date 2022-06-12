@@ -5,8 +5,7 @@
 // Description: Physics controllers
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef EQPHYSICS_CONTROLLER_H
-#define EQPHYSICS_CONTROLLER_H
+#pragma once
 
 class CEqPhysics;
 
@@ -28,5 +27,3 @@ protected:
 
 	bool			m_enabled;
 };
-
-#endif // EQPHYSICS_CONTROLLER_H

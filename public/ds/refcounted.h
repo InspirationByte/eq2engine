@@ -8,8 +8,6 @@
 #ifndef REFCOUNTED_H
 #define REFCOUNTED_H
 
-#include "utils/eqthread.h"
-
 template< class TYPE >
 class CRefPtr;
 

@@ -6,8 +6,7 @@
 //				Vertex Format interface declaration
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef IVERTEXFORMAT_H
-#define IVERTEXFORMAT_H
+#pragma once
 
 typedef struct VertexFormatDesc_s VertexFormatDesc_t;
 
@@ -19,7 +18,5 @@ public:
 	virtual const char*		GetName() const = 0;
 
 	virtual int				GetVertexSize(int stream) const = 0;
-	virtual void			GetFormatDesc(VertexFormatDesc_t** desc, int& numAttribs) const = 0;
+	virtual void			GetFormatDesc(const VertexFormatDesc_t** desc, int& numAttribs) const = 0;
 };
-
-#endif // IVERTEXFORMAT_H

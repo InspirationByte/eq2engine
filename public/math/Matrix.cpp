@@ -5,11 +5,10 @@
 // Description: Matrix (m2x2,m3x3,m4x4)
 //////////////////////////////////////////////////////////////////////////////////
 
+#include "math_common.h"
 #include "Matrix.h"
 
 /* --------------------------------------------------------------------------------- */
-
-
 
 Matrix4x4 perspectiveMatrix(const float fov, const float zNear, const float zFar)
 {

@@ -5,13 +5,8 @@
 // Description: Equilibrium model loader
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef CENGINEMODEL_H
-#define CENGINEMODEL_H
-
-#include "ds/Map.h"
+#pragma once
 #include "egf/IEqModel.h"
-#include "modelloader_shared.h"
-#include "utils/eqthread.h"
 
 class IVertexBuffer;
 class IIndexBuffer;
@@ -161,5 +156,3 @@ private:
 
 	IVertexFormat*			m_egfFormat;	// vertex format for streams
 };
-
-#endif // CENGINEMODEL_H

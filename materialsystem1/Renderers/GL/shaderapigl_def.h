@@ -5,8 +5,22 @@
 // Description: Equilibrium OpenGL ShaderAPI
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef GLRENDERER_CONSTANTS_H
-#define GLRENDERER_CONSTANTS_H
+#pragma once
+#include "imaging/textureformats.h"
+#include "renderers/ShaderAPI_defs.h"
+
+#ifdef USE_GLES2
+#include <glad_es3.h>
+
+#	ifdef PLAT_ANDROID // direct link
+#	include <EGL/egl.h>
+#	else
+#	include <glad_egl.h>
+#	endif // PLAT_ANDROID
+
+#else
+#	include <glad.h>
+#endif
 
 static const GLuint internalFormats[FORMAT_COUNT] = {
 	0,
@@ -396,4 +410,19 @@ static const GLenum glTexTargetType[] = {
 
 #endif // USE_GLES2
 
-#endif //GLRENDERER_CONSTANTS_H
+enum EGLTextureType
+{
+	GLTEX_TYPE_ERROR = -1,
+
+	GLTEX_TYPE_TEXTURE = 0,
+	GLTEX_TYPE_CUBETEXTURE,
+	GLTEX_TYPE_VOLUMETEXTURE,
+};
+
+struct GLTextureRef_t
+{
+	GLuint glTexID;
+	EGLTextureType type;
+};
+
+#define MAX_GL_GENERIC_ATTRIB 16

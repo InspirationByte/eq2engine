@@ -5,10 +5,10 @@
 // Description: EGUI button
 //////////////////////////////////////////////////////////////////////////////////
 
+#include "core/core_common.h"
 #include "EqUI_Button.h"
 
 #include "EqUI_Manager.h"
-#include "font/IFont.h"
 
 namespace equi
 {

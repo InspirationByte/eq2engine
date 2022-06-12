@@ -5,11 +5,7 @@
 // Description: Console variable factory/registrator
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef _ICONCOMMANDFACTORY_H_
-#define _ICONCOMMANDFACTORY_H_
-
-#include "ds/Array.h"
-#include "InterfaceManager.h"
+#pragma once
 
 class EqString;
 
@@ -58,5 +54,3 @@ public:
 };
 
 INTERFACE_SINGLETON( IConsoleCommands, CConsoleCommands, CONSOLE_INTERFACE_VERSION, g_consoleCommands)
-
-#endif //_ICONCOMMANDFACTORY_H_

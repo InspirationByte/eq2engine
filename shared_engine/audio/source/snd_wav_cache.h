@@ -5,9 +5,7 @@
 // Description: Cached WAVe data
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef SND_WAV_CACHE_H
-#define SND_WAV_CACHE_H
-
+#pragma once
 #include "snd_wav_source.h"
 
 class CSoundSource_WaveCache : public CSoundSource_Wave
@@ -28,5 +26,3 @@ protected:
 	ubyte*			m_dataCache;   // data chunk
 	int				m_cacheSize;    // in bytes
 };
-
-#endif // SND_WAV_CACHE_H

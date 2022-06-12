@@ -5,19 +5,17 @@
 // Description: Rigid body
 //////////////////////////////////////////////////////////////////////////////////
 
-#include "eqPhysics_Body.h"
+#include <btBulletCollisionCommon.h>
 
+#include "core/core_common.h"
 #include "core/ConVar.h"
-#include "core/DebugInterface.h"
+#include "eqPhysics_Body.h"
+#include "eqPhysics_Contstraint.h"
 
 #include "render/IDebugOverlay.h"
 
 #include "physics/BulletConvert.h"
 using namespace EqBulletUtils;
-
-#include "eqPhysics_Contstraint.h"
-
-
 
 //-----------------------------------------------------------------------------------------
 

@@ -5,11 +5,8 @@
 // Description: a mesh builder designed for dynamic meshes (material system)
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef MESHBUILDER_H
-#define MESHBUILDER_H
-
+#pragma once
 #include "IDynamicMesh.h"
-#include <string.h>
 
 class CMeshBuilder
 {
@@ -88,8 +85,8 @@ public:
 
 protected:
 
-	IDynamicMesh*		m_mesh;
-	VertexFormatDesc_t* m_formatDesc;
+	IDynamicMesh*				m_mesh;
+	const VertexFormatDesc_t*	m_formatDesc;
 
 	void*				m_curVertex;
 	int					m_stride;
@@ -123,9 +120,9 @@ protected:
 //----------------------------------------------------------
 
 inline CMeshBuilder::CMeshBuilder(IDynamicMesh* mesh) :
-	m_mesh(NULL),
-	m_curVertex(NULL),
-	m_formatDesc(NULL),
+	m_mesh(nullptr),
+	m_curVertex(nullptr),
+	m_formatDesc(nullptr),
 	m_stride(0),
 	m_begun(false)
 {
@@ -189,9 +186,9 @@ inline void CMeshBuilder::Begin(ER_PrimitiveType type)
 	m_position.value = Vector4D(0,0,0,1.0f);
 	m_texcoord.value = vec4_zero;
 	m_normal.value = Vector4D(0,1,0,0);
-	m_color.value = color4_white;
+	m_color.value = color_white;
 
-	m_curVertex = NULL;
+	m_curVertex = nullptr;
 
 	m_begun = true;
 	m_pushedVert = false;
@@ -286,7 +283,7 @@ inline void CMeshBuilder::Color3f( float r, float g, float b )
 
 inline void CMeshBuilder::Color3fv( const ColorRGB& rgb )
 {
-	Color3f(rgb[0], rgb[1], rgb[2]);
+	Color3f(rgb.x, rgb.y, rgb.z);
 }
 
 inline void CMeshBuilder::Color4f( float r, float g, float b, float a )
@@ -299,7 +296,7 @@ inline void CMeshBuilder::Color4f( float r, float g, float b, float a )
 
 inline void CMeshBuilder::Color4fv( const ColorRGBA& rgba )
 {
-	Color4f(rgba[0], rgba[1], rgba[2], rgba[3]);
+	Color4f(rgba.x, rgba.y, rgba.z, rgba.w);
 }
 
 
@@ -314,7 +311,7 @@ inline void CMeshBuilder::AdvanceVertex()
 
 	m_pushedVert = false;
 
-	if(m_mesh->AllocateGeom(1, 0, &m_curVertex, NULL, false) == -1)
+	if(m_mesh->AllocateGeom(1, 0, &m_curVertex, nullptr, false) == -1)
 		return;
 
 	CopyVertData(m_position);
@@ -424,7 +421,7 @@ inline void CMeshBuilder::Line3fv(const Vector3D& v1, const Vector3D& v2)
 inline void CMeshBuilder::Triangle2( const Vector2D& v1, const Vector2D& v2, const Vector2D& v3 )
 {
 	//ER_PrimitiveType primType = m_mesh->GetPrimitiveType();
-	uint16* indices = NULL;
+	uint16* indices = nullptr;
 
 	int startIndex = m_mesh->AllocateGeom(3, 3, &m_curVertex, &indices);
 
@@ -450,7 +447,7 @@ inline void CMeshBuilder::Triangle2( const Vector2D& v1, const Vector2D& v2, con
 inline void CMeshBuilder::Quad2(const Vector2D& v_tl, const Vector2D& v_tr, const Vector2D& v_bl, const Vector2D& v_br)
 {
 	ER_PrimitiveType primType = m_mesh->GetPrimitiveType();
-	uint16* indices = NULL;
+	uint16* indices = nullptr;
 
 	int quadIndices = (primType == PRIM_TRIANGLES) ? 6 : 4;
 
@@ -501,7 +498,7 @@ inline void CMeshBuilder::TexturedQuad2(const Vector2D& v_tl, const Vector2D& v_
 										const Vector2D& t_tl, const Vector2D& t_tr, const Vector2D& t_bl,const Vector2D& t_br)
 {
 	ER_PrimitiveType primType = m_mesh->GetPrimitiveType();
-	uint16* indices = NULL;
+	uint16* indices = nullptr;
 
 	int quadIndices = (primType == PRIM_TRIANGLES) ? 6 : 4;
 
@@ -555,7 +552,7 @@ inline void CMeshBuilder::TexturedQuad2(const Vector2D& v_tl, const Vector2D& v_
 inline void CMeshBuilder::Quad3(const Vector3D& v1, const Vector3D& v2, const Vector3D& v3, const Vector3D& v4)
 {
 	ER_PrimitiveType primType = m_mesh->GetPrimitiveType();
-	uint16* indices = NULL;
+	uint16* indices = nullptr;
 
 	int quadIndices = (primType == PRIM_TRIANGLES) ? 6 : 4;
 
@@ -606,7 +603,7 @@ inline void CMeshBuilder::TexturedQuad3(const Vector3D& v1, const Vector3D& v2, 
 										const Vector2D& t1, const Vector2D& t2, const Vector2D& t3,const Vector2D& t4)
 {
 	ER_PrimitiveType primType = m_mesh->GetPrimitiveType();
-	uint16* indices = NULL;
+	uint16* indices = nullptr;
 
 	int quadIndices = (primType == PRIM_TRIANGLES) ? 6 : 4;
 
@@ -679,12 +676,10 @@ inline void CMeshBuilder::CopyVertData(vertdata_t& vert, bool isNormal)
 		}
 		case ATTRIBUTEFORMAT_UBYTE:
 		{
-			TVec4D<ubyte> val((isNormal ? (vert.value * 0.5f + 0.5f) : vert.value) / 255.0f);
+			TVec4D<ubyte> val((isNormal ? (vert.value * 0.5f + 0.5f) : vert.value) * 255);
 			memcpy(dest, &val, size);
 
 			break;
 		}
 	}
 }
-
-#endif // MESHBUILDER_H

@@ -5,12 +5,8 @@
 // Description: Ogg Vorbis source base class
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef SND_OGG_SOURCE_H
-#define SND_OGG_SOURCE_H
-
+#pragma once
 #include "snd_source.h"
-#include "ds/eqstring.h"
-#include <vorbis/vorbisfile.h>
 
 namespace eqVorbisFile
 {
@@ -25,7 +21,7 @@ namespace eqVorbisFile
 class CSoundSource_Ogg : public ISoundSource
 {
 public:
-	virtual Format*	GetFormat() const					{ return (Format*)&m_format; }
+	virtual Format*			GetFormat() const					{ return (Format*)&m_format; }
 	virtual const char*		GetFilename() const					{ return m_filename.ToCString(); }
 	virtual float			GetLoopPosition(float flPosition) const;
 	virtual int				GetSampleCount() const				{ return m_numSamples; }
@@ -34,10 +30,8 @@ protected:
 	void					ParseFormat(vorbis_info& info);
 	virtual void			ParseData(OggVorbis_File* file) = 0;
 
-	Format			m_format;
+	Format					m_format;
 	EqString				m_filename;
 
 	int						m_numSamples;
 };
-
-#endif // SND_OGG_SOURCE_H

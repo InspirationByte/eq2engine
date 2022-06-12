@@ -5,8 +5,7 @@
 // Description: Network definitions for Equilibrium Engine
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef NET_DEFS_H
-#define NET_DEFS_H
+#pragma once
 
 #ifdef _WIN32
 
@@ -47,6 +46,31 @@ const int	DEFAULT_SERVERPORT					= 12500;
 const int	MAX_MESSAGE_LENGTH					= (16*1024);
 const int	EQUILIBRIUM_NETPROTOCOL_VERSION		= 4;
 
+enum ECDPSendFlags
+{
+	CDPSEND_GUARANTEED = (1 << 0),		// just simply send UDP message
+	CDPSEND_IMMEDIATE = (1 << 1),		// send message immediately as it comes to buffer. It kills order preserving
+	CDPSEND_IS_RESPONSE = (1 << 2),		// contains response header
+};
+
+enum EDeliveryStatus
+{
+	DELIVERY_IN_PROGRESS = -1,
+	DELIVERY_SUCCESS = 0,
+	DELIVERY_FAILED,
+};
+
+enum ERecvMessageKind
+{
+	RECV_MSG_DATA = 0,
+	RECV_MSG_RESPONSE_DATA,
+	RECV_MSG_STATUS,
+};
+
+// recv callback
+// when it's @type is RECV_MSG_STATUS, @size is EDeliveryStatus
+typedef void (*CDPRecvPipe_fn)(void* thisptr, ubyte* data, int size, const sockaddr_in& from, short msgId, ERecvMessageKind type);
+
 // returns text associated with error code
 const char*	NETErrorString(int code);
 
@@ -59,5 +83,3 @@ bool		InitNetworking();
 void		ShutdownNetworking();
 
 }; // namespace Networking
-
-#endif // NET_DEFS_H

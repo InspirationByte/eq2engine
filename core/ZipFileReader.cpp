@@ -5,14 +5,9 @@
 // Description: Zip package file (zip)
 //////////////////////////////////////////////////////////////////////////////////
 
-
+#include "core/core_common.h"
 #include "ZipFileReader.h"
 #include "FileSystem.h"
-
-#include "core/DebugInterface.h"
-
-#include "utils/strtools.h"
-#include "utils/CRC32.h"
 
 extern void DPK_FixSlashes(EqString& str);
 

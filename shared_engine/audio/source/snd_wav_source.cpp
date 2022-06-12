@@ -5,10 +5,9 @@
 // Description: WAVe source base class
 //////////////////////////////////////////////////////////////////////////////////
 
-#include <string.h>
+#include "core/core_common.h"
 #include "snd_wav_source.h"
-#include "core/platform/assert.h"
-#include "core/platform/Platform.h"
+#include "utils/riff.h"
 
 //---------------------------------------------------------------------
 

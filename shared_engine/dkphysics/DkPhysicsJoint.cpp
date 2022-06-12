@@ -5,6 +5,10 @@
 // Description: Equilibrium physics joints system
 //////////////////////////////////////////////////////////////////////////////////
 
+#define __BT_SKIP_UINT64_H	// for SDL2
+#include <btBulletDynamicsCommon.h>
+
+#include "core/core_common.h"
 #include "DkPhysicsJoint.h"
 #include "physics/BulletConvert.h"
 

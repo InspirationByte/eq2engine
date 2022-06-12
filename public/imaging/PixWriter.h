@@ -5,11 +5,8 @@
 // Description: Color writing class
  //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef PIXWRITER_H
-#define PIXWRITER_H
-
+#pragma once
 #include "textureformats.h"
-#include "core/DebugInterface.h"
 
 class PixelWriter
 {
@@ -167,5 +164,3 @@ inline void PixelWriter::WritePixelNoAdvance( int r, int g, int b, int a )
 	}
 
 }
-
-#endif // PIXWRITER_H

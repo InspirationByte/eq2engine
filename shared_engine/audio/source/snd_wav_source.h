@@ -5,13 +5,10 @@
 // Description: WAVe source base class
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef SND_WAV_SOURCE_H
-#define SND_WAV_SOURCE_H
-
+#pragma once
 #include "snd_source.h"
 
-#include "ds/eqstring.h"
-#include "utils/riff.h"
+class CRIFF_Parser;
 
 //---------------------------------------------------------------------
 
@@ -33,12 +30,10 @@ protected:
 	virtual void			ParseSample(CRIFF_Parser &chunk);
 	virtual void			ParseData(CRIFF_Parser &chunk) = 0;
 
-	Format			m_format;
+	Format					m_format;
 	EqString				m_filename;
 
 	int						m_numSamples;
 	int						m_loopStart;
 	int						m_loopEnd;
 };
-
-#endif // SND_WAV_SOURCE_H

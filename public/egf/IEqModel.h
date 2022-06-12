@@ -5,17 +5,16 @@
 // Description: Equilibrium engine model
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef IEQMODEL_H
-#define IEQMODEL_H
-
+#pragma once
 #include "egf/model.h"
-#include "core/ppmem.h"
-#include "render/Decals.h"
 
 class IMaterial;
 class IMaterialSystem;
 class IVertexFormat;
 class IEqModelInstancer;
+
+struct decalmakeinfo_t;
+struct tempdecal_t;
 
 enum EModelType
 {
@@ -23,7 +22,6 @@ enum EModelType
 
 	MODEL_TYPE_WORLD_LEVEL,		// big level model
 	MODEL_TYPE_WORLD_SOLID,		// world solid
-
 	MODEL_TYPE_STUDIO,			// EGF studio model
 };
 
@@ -63,7 +61,7 @@ public:
 //
 //-------------------------------------------------------
 
-class IEqModel // : public RefCountedObject
+class IEqModel
 {
 public:
 
@@ -178,5 +176,3 @@ public:
 
 // model cache manager
 extern IStudioModelCache* g_studioModelCache;
-
-#endif // IEQMODEL_H

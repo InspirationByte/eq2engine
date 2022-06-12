@@ -5,18 +5,13 @@
 // Description:
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef DSM_FBX_LOADER_H
-#define DSM_FBX_LOADER_H
-
-#include "dsm_loader.h"
-#include "utils/Tokenizer.h"
+#pragma once
 
 namespace SharedModel
 {
+struct dsmmodel_t;
 
 // Loads FBX model, as DSM
 bool LoadFBX(dsmmodel_t* model, const char* filename);
 
 } // namespace
-
-#endif // DSM_FBX_LOADER_H

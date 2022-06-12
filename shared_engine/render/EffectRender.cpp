@@ -5,22 +5,16 @@
 // Description: Effect renderer
 //////////////////////////////////////////////////////////////////////////////////
 
-#include "EffectRender.h"
-
-#include "core/DebugInterface.h"
-#include "core/ConVar.h"
+#include "core/core_common.h"
 #include "core/IEqParallelJobs.h"
-
+#include "core/ConVar.h"
 #include "utils/global_mutex.h"
+#include "utils/TextureAtlas.h"
+#include "EffectRender.h"
 
 #include "render/IDebugOverlay.h"
 
-
-
-#pragma todo("non-indexed material group - use CPFXRenderGroup")
-
 ConVar r_sorteffects("r_sorteffects", "1", "Sorts effects. If you disable it, effects will not be sorted.", CV_ARCHIVE);
-
 
 int _SortParticles(IEffect* const &elem0, IEffect* const &elem1)
 {

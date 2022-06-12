@@ -6,9 +6,12 @@
 //				No streaming support for this type, it just holds alBuffer
 //////////////////////////////////////////////////////////////////////////////////
 
-#include "snd_al_source.h"
+#include <AL/al.h>
 #include <AL/alext.h>
+#include <vorbis/vorbisfile.h>
 
+#include "core/core_common.h"
+#include "snd_al_source.h"
 #include "snd_ogg_cache.h"
 #include "snd_wav_cache.h"
 

@@ -5,9 +5,7 @@
 // Description: ShaderAPIDX9 render state
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef D3D9RENDERSTATE_H
-#define D3D9RENDERSTATE_H
-
+#pragma once
 #include "renderers/IRenderState.h"
 
 // it's just a simple holder, no more...
@@ -63,5 +61,3 @@ public:
 
 	BlendStateParam_t	m_params;
 };
-
-#endif // D3D9RENDERSTATE_H

@@ -5,8 +5,16 @@
 // Description: Equilibrium physics rope class
 //////////////////////////////////////////////////////////////////////////////////
 
+#define __BT_SKIP_UINT64_H	// for SDL2
+#include <btBulletDynamicsCommon.h>
+#include <BulletSoftBody/btSoftBodyHelpers.h>
+
+#include "core/core_common.h"
 #include "DkPhysicsRope.h"
 #include "DkBulletObject.h"
+#include "physics/BulletConvert.h"
+
+using namespace EqBulletUtils;
 
 void DkPhysicsRope::AttachObject(IPhysicsObject* pObject, int node_index, bool disable_self_collision)
 {

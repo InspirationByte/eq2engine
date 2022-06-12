@@ -5,13 +5,9 @@
 // Description: Equilibrium materialvar
 //////////////////////////////////////////////////////////////////////////////////
 
-#include "materialvar.h"
-
-#include "core/DebugInterface.h"
-#include "utils/strtools.h"
-
+#include "core/core_common.h"
 #include "materialsystem1/renderers/IShaderAPI.h"
-#include <ctype.h>
+#include "materialvar.h"
 
 CMatVar::CMatVar()
 {
@@ -27,7 +23,7 @@ void CMatVar::Init(const char* pszName, const char* pszValue)
 {
 	SetName(pszName);
 
-	if(pszValue != NULL)
+	if(pszValue)
 		SetString( pszValue );
 }
 
@@ -109,7 +105,7 @@ void CMatVar::SetString(const char* szValue)
 			{
 				if(vec_count == 4)
 				{
-					start = NULL;
+					start = nullptr;
 					continue; // too many elements
 				}
 
@@ -119,7 +115,7 @@ void CMatVar::SetString(const char* szValue)
 				m_vector[vec_count] = (float)atof(start);
 				vec_count++;
 
-				start = NULL;
+				start = nullptr;
 			}
 		}
 		while(vchar++);

@@ -5,18 +5,14 @@
 // Description: Random number generator
 //////////////////////////////////////////////////////////////////////////////////
 
-#include <stdlib.h>
-#include <string.h>
-#include <math.h>
-#include "core/dktypes.h"
+#include "core/core_common.h"
 #include "Random.h"
-
 
 #define IA 16807
 #define IM 2147483647
 #define IQ 127773
 #define IR 2836
-#define NDIV (1+(IM-1)/NTAB)
+#define NDIV (1+(IM-1)/RANDOM_NTAB)
 #define MAX_RANDOM_RANGE 0x7FFFFFFFUL
 
 // return a random floating-point number on the interval [0,1)
@@ -66,14 +62,14 @@ int CUniformRandomStream::GenerateRandomNumber()
 			m_ndum = -(m_ndum);
 
 		
-		for ( j = NTAB+7; j >= 0; j--)
+		for ( j = RANDOM_NTAB+7; j >= 0; j--)
 		{
 			k = (m_ndum)/IQ;
 			m_ndum = IA*(m_ndum-k*IQ)-IR*k;
 
 			if (m_ndum < 0) 
 				m_ndum += IM;
-			if (j < NTAB)
+			if (j < RANDOM_NTAB)
 				m_nv[j] = m_ndum;
 		}
 		m_ny = m_nv[0];

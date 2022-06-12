@@ -158,7 +158,7 @@ project "corelib"
 	
 	unitybuild "on"
     files {
-		Folders.public.. "/core/*.cpp",
+		Folders.public.. "/core/**.cpp",
 		Folders.public.. "/core/**.h"
 	}
 	includedirs {
@@ -320,6 +320,7 @@ project "physicsLib"
 	}
     files {
 		Folders.shared_engine.. "physics/**.cpp",
+		Folders.shared_engine.. "physics/**.h",
 		Folders.public.. "physics/**.h"
 	}
     includedirs {

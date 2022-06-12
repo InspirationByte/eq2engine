@@ -5,12 +5,7 @@
 // Description: Atlas loader. Uses material system
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef TEXTUREATLAS_H
-#define TEXTUREATLAS_H
-
-#include "math/DkMath.h"
-#include "math/Rectangle.h"
-#include "ds/eqstring.h"
+#pragma once
 
 // atlas element
 struct TexAtlasEntry_t
@@ -54,5 +49,3 @@ protected:
 };
 
 CTextureAtlas*				TexAtlas_LoadAtlas(const char* pszFileName, bool quiet);
-
-#endif // TEXTUREATLAS_H

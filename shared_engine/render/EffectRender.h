@@ -5,17 +5,10 @@
 // Description: Effect renderer
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef EFFECTRENDER_H
-#define EFFECTRENDER_H
-
-#include "core/ppmem.h"
-
-#include "utils/TextureAtlas.h"
-#include "utils/eqthread.h"
-
-#include "math/DkMath.h"
+#pragma once
 
 class CPFXAtlasGroup;
+struct TexAtlasEntry_t;
 
 class IEffect
 {
@@ -96,5 +89,3 @@ private:
 };
 
 extern CEffectRenderer* effectrenderer;
-
-#endif // EFFECTRENDER_H

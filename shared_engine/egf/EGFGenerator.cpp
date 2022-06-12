@@ -5,12 +5,12 @@
 // Description: Equilibrium Graphics File script compler and generator
 //////////////////////////////////////////////////////////////////////////////////
 
+#include "core/core_common.h"
+#include "utils/KeyValues.h"
 #include "EGFGenerator.h"
 
-#include "core/DebugInterface.h"
-#include "utils/strtools.h"
-
 #include "dsm_esm_loader.h"
+#include "dsm_loader.h"
 
 using namespace SharedModel;
 
@@ -114,7 +114,7 @@ void CEGFGenerator::AddModelLodUsageReference(int lodModelIndex)
 {
 	clodmodel_t& lod = m_modellodrefs[lodModelIndex];
 
-	for(int i = 0; i < MAX_MODELLODS; i++)
+	for(int i = 0; i < MAX_MODEL_LODS; i++)
 	{
 		int refIdx = GetReferenceIndex(lod.lodmodels[i]);
 		if(refIdx == -1)
@@ -494,9 +494,9 @@ void CEGFGenerator::LoadLods(KVSection* pSection)
 			newlod.distance = lod_dist;
 			newlod.flags = 0;
 
-			if(m_lodparams.numElem()-1 == MAX_MODELLODS)
+			if(m_lodparams.numElem()-1 == MAX_MODEL_LODS)
 			{
-				MsgError("Exceeded lod count (MAX_MODELLODS = %d)!", MAX_MODELLODS);
+				MsgError("Exceeded lod count (MAX_MODEL_LODS = %d)!", MAX_MODEL_LODS);
 				return;
 			}
 

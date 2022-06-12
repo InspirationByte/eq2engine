@@ -5,11 +5,8 @@
 // Description: Equilibrium engine font cache
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef IFONTCACHE_H
-#define IFONTCACHE_H
-
+#pragma once
 #include "IFont.h"
-#include "core/InterfaceManager.h"
 
 #define FONTCACHE_INTERFACE_VERSION		"ENGINE_FontCache_002"
 
@@ -35,5 +32,3 @@ public:
 };
 
 extern IEqFontCache* g_fontCache;
-
-#endif // IFONTCACHE_H

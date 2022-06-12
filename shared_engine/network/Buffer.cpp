@@ -5,10 +5,9 @@
 // Description: Network message for Equilibrium Engine
 //////////////////////////////////////////////////////////////////////////////////
 
-#include "Buffer.h"
-#include "utils/strtools.h"
+#include "core/core_common.h"
 #include "utils/KeyValues.h"
-#include <wchar.h>
+#include "Buffer.h"
 
 namespace Networking
 {

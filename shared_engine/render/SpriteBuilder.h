@@ -5,10 +5,7 @@
 // Description: Universal sprite builder
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef SPRITEBUILDER_H
-#define SPRITEBUILDER_H
-
-#include "materialsystem1/IMaterialSystem.h"
+#pragma once
 
 #define SVBO_MAX_SIZE(s, T)	((size_t)s*sizeof(T)*4)
 #define SIBO_MAX_SIZE(s)	((size_t)s*(sizeof(uint16)*6))
@@ -276,5 +273,3 @@ void CSpriteBuilder<VTX_TYPE>::ClearBuffers()
 	m_numIndices = 0;
 	m_numVertices = 0;
 }
-
-#endif // SPRITEBUILDER_H

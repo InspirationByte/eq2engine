@@ -5,8 +5,8 @@
 // Description: Quaternion math class
 //////////////////////////////////////////////////////////////////////////////////
 
-#include "DkMath.h"
-#include "Matrix.h"
+#include "math_common.h"
+#include "Quaternion.h"
 
 #pragma warning(push)
 #pragma warning(disable:4244)

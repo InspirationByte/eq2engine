@@ -5,10 +5,8 @@
 // Description: Font layout builders
 //////////////////////////////////////////////////////////////////////////////////
 
+#include "core/core_common.h"
 #include "FontLayoutBuilders.h"
-
-#include <ctype.h>		// isspace
-#include <wctype.h>		// iswspace
 
 void CRectangleTextLayoutBuilder::OnNewLine(const eqFontStyleParam_t& params,
 										void* strCurPos, bool isWideChar,

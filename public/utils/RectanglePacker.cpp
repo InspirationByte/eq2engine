@@ -5,9 +5,8 @@
 // Description: Rectangle packer, for atlases
 //////////////////////////////////////////////////////////////////////////////////
 
+#include "core/core_common.h"
 #include "RectanglePacker.h"
-#include "core/DebugInterface.h"
-#include "core/ppmem.h"
 
 struct PackerNode 
 {

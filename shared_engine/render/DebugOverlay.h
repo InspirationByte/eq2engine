@@ -5,17 +5,7 @@
 // Description: Debug text drawer system
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef DEBUG_TEXT
-#define DEBUG_TEXT
-
-#include "ds/Array.h"
-#include "ds/eqstring.h"
-#include "utils/eqthread.h"
-#include "utils/eqtimer.h"
-
-#include "math/Vector.h"
-#include "math/Volume.h"
-
+#pragma once
 #include "render/IDebugOverlay.h"
 
 struct DebugTextNode_t
@@ -159,5 +149,3 @@ private:
 	Volume							m_frustum;
 	float							m_frameTime;
 };
-
-#endif //DEBUG_TEXT

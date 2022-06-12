@@ -5,13 +5,8 @@
 // Description: EGUI panel
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef EGUI_PANEL_H
-#define EGUI_PANEL_H
-
-#include "equi_defs.h"
+#pragma once
 #include "IEqUI_Control.h"
-
-#include "utils/KeyValues.h"
 
 namespace equi
 {
@@ -63,5 +58,3 @@ protected:
 };
 
 };
-
-#endif // EGUI_PANEL_H

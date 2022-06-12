@@ -6,8 +6,7 @@
 //				Vertex Buffer interface declaration
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef IVERTEXBUFFER_H
-#define IVERTEXBUFFER_H
+#pragma once
 
 enum EVertexBufferFlags
 {
@@ -42,5 +41,3 @@ public:
 	virtual void		SetFlags( int flags ) = 0;
 	virtual int			GetFlags() const = 0;
 };
-
-#endif // IVERTEXBUFFER_H

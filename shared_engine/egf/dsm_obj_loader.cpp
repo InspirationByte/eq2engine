@@ -5,17 +5,12 @@
 // Description: Equilibrium Shared Model loader, obj support
 //////////////////////////////////////////////////////////////////////////////////
 
-#include "dsm_obj_loader.h"
-
-#include "ds/Map.h"
-#include "core/DebugInterface.h"
+#include "core/core_common.h"
 #include "core/IFileSystem.h"
 #include "utils/Tokenizer.h"
-#include "utils/strtools.h"
-
 #include "math/Utility.h"
-
-#include <stdio.h>
+#include "dsm_obj_loader.h"
+#include "dsm_loader.h"
 
 #define MAX_VERTS_PER_POLYGON 16
 

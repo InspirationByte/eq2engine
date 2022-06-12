@@ -5,11 +5,11 @@
 // Description: Ogg Vorbis source stream
 //////////////////////////////////////////////////////////////////////////////////
 
-#include "snd_ogg_stream.h"
+#include <vorbis/vorbisfile.h>
 
+#include "core/core_common.h"
 #include "core/IFileSystem.h"
-#include "core/DebugInterface.h"
-
+#include "snd_ogg_stream.h"
 
 bool CSoundSource_OggStream::Load(const char* filename)
 {

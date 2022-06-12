@@ -5,11 +5,7 @@
 // Description: Network message for Equilibrium Engine
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef NET_BUFFER_H
-#define NET_BUFFER_H
-
-#include "ds/VirtualStream.h"
-#include "math/Vector.h"
+#pragma once
 
 struct KVSection;
 class EqString;
@@ -83,5 +79,3 @@ protected:
 };
 
 }; // namespace Networking
-
-#endif // NET_BUFFER_H

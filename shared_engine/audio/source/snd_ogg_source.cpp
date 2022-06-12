@@ -5,8 +5,11 @@
 // Description: Ogg Vorbis source base class
 //////////////////////////////////////////////////////////////////////////////////
 
-#include "snd_ogg_source.h"
+#include <vorbis/vorbisfile.h>
+
+#include "core/core_common.h"
 #include "core/IFileSystem.h"
+#include "snd_ogg_source.h"
 
 namespace eqVorbisFile
 {

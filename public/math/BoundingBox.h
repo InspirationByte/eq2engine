@@ -5,13 +5,10 @@
 // Description: Axis-aligned bounding box
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef BOUNDINGBOX_H
-#define BOUNDINGBOX_H
-
-#include "Vector.h"
+#pragma once
 
 template<class T>
-struct TAABBox //BoundingBox
+struct TAABBox
 {
 	static T dist_check(const T pn, const T bmin, const T bmax)
 	{
@@ -286,5 +283,3 @@ struct TAABBox //BoundingBox
 };
 
 typedef TAABBox<float>	BoundingBox;
-
-#endif //BOUNDINGBOX_H

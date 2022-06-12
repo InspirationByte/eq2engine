@@ -9,24 +9,21 @@
 //				The renderer may do anti-wallhacking functions
 //////////////////////////////////////////////////////////////////////////////////
 
-#include "ShaderAPI_Base.h"
-#include "CTexture.h"
-
-#include "core/DebugInterface.h"
-#include "core/ConVar.h"
-#include "core/ConCommand.h"
+#include "core/core_common.h"
 #include "core/IConsoleCommands.h"
 #include "core/IFileSystem.h"
-
-#include "imaging/PixWriter.h"
-#include "imaging/ImageLoader.h"
-
-#include "utils/strtools.h"
-#include "utils/Tokenizer.h"
-#include "utils/CRC32.h"
-#include "utils/KeyValues.h"
-
 #include "core/IEqParallelJobs.h"
+#include "core/ConVar.h"
+#include "core/ConCommand.h"
+#include "imaging/ImageLoader.h"
+#include "imaging/PixWriter.h"
+#include "utils/Tokenizer.h"
+#include "utils/KeyValues.h"
+#include "ShaderAPI_Base.h"
+
+#include "CTexture.h"
+
+using namespace Threading;
 
 static ConVar r_reportTextureLoading("r_reportTextureLoading", "0", "Echo textrue loading");
 static ConVar r_noMip("r_noMip", "0", nullptr, CV_CHEAT);

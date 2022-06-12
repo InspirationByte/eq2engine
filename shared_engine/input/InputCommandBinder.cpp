@@ -5,23 +5,17 @@
 // Description: KeyBinding list
 //////////////////////////////////////////////////////////////////////////////////
 
-#include "InputCommandBinder.h"
+#include <SDL.h>
 
+#include "core/core_common.h"
 #include "core/IConsoleCommands.h"
 #include "core/ConVar.h"
-#include "core/DebugInterface.h"
-#include "core/InterfaceManager.h"
-
-#include "utils/strtools.h"
+#include "core/ConCommand.h"
 #include "utils/KeyValues.h"
-#include "ds/IVirtualStream.h"
-
+#include "InputCommandBinder.h"
 #include "materialsystem1/IMaterialSystem.h"
 #include "materialsystem1/MeshBuilder.h"
-
 #include "font/IFontCache.h"
-
-#include <SDL.h>
 
 
 static CInputCommandBinder s_inputCommandBinder;
@@ -645,7 +639,7 @@ void CInputCommandBinder::DebugDraw(const Vector2D& screenSize)
 
 	eqFontStyleParam_t fontParams;
 	fontParams.styleFlag |= TEXT_STYLE_SHADOW;
-	fontParams.textColor = color4_white;
+	fontParams.textColor = color_white;
 
 	BlendStateParam_t blending;
 	blending.srcFactor = BLENDFACTOR_SRC_ALPHA;

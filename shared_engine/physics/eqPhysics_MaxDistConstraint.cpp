@@ -5,12 +5,9 @@
 // Description: Physics point constraint
 //////////////////////////////////////////////////////////////////////////////////
 
+#include "core/core_common.h"
 #include "eqPhysics_MaxDistConstraint.h"
 #include "eqPhysics_Body.h"
-
-#include "core/DebugInterface.h"
-
-
 
 CEqPhysicsMaxDistConstraint::CEqPhysicsMaxDistConstraint() : m_body0(nullptr), m_body1(nullptr)
 {

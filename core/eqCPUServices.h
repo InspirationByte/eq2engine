@@ -5,11 +5,8 @@
 // Description: CPU macros and detector
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef EQCPUSERVICES_H
-#define EQCPUSERVICES_H
-
+#pragma once
 #include "core/IEqCPUServices.h"
-#include "core/platform/Platform.h"
 
 class CEqCPUCaps : public IEqCPUCaps
 {
@@ -73,5 +70,3 @@ protected:
 	bool m_cpuSSE41;
 	bool m_cpuSSE42;
 };
-
-#endif // EQCPUSERVICES_H

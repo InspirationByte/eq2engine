@@ -5,26 +5,12 @@
 // Description: Equilibrium Geometry Formats
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef MODEL_H
-#define MODEL_H
+#pragma once
+#include "materialsystem1/renderers/ShaderAPI_defs.h"	// ER_PrimitiveType
 
-#include "core/dktypes.h"
-#include "core/ppmem.h"
-#include "ds/Array.h"
-#include "utils/strtools.h"
-
-#include "math/DkMath.h"
-
-// for ER_PrimitiveType
-#include "materialsystem1/renderers/ShaderAPI_defs.h"
-
-#include "motionpackage.h"
-
+#include "studiomodel.h"
 #include "physmodel.h"
-
-
-
-// some definitions
+#include "motionpackage.h"
 
 enum EEGFPrimType
 {
@@ -34,16 +20,9 @@ enum EEGFPrimType
 	EGFPRIM_TRI_STRIP		= PRIM_TRIANGLE_STRIP,
 };
 
-// index sizes for vertex buffers
-#define INDEX_SIZE_SHORT	2
-#define INDEX_SIZE_INT		4
-
 // LIMITS for all model formats
-
 enum EEGFLimits
 {
-	MAX_IKCHAIN_BONES	=	32,		// tweak this if your "tail" longer than 32 bones
-	MAX_MODELLODS		=	8,		// maximum lods per model
 	MAX_MOTIONPACKAGES	=	8,		// maximum allowed motion packages to be used in model
 	MAX_STUDIOMATERIALS	=	32,		// maximum allowed materials in model
 };
@@ -51,43 +30,20 @@ enum EEGFLimits
 // Base model header
 struct basemodelheader_s
 {
-	int					ident;
-	uint8				version;
-
-	int					flags;	// Model flags
-
-	int					size;	// Size of model
+	int		ident;
+	uint8	version;
+	int		flags;
+	int		size;
 };
-
 ALIGNED_TYPE(basemodelheader_s, 4) basemodelheader_t;
-
-// Base model material search path descriptor
-struct materialpathdesc_s
-{
-	char				searchPath[128];
-};
-
-ALIGNED_TYPE(materialpathdesc_s, 4) materialpathdesc_t;
-
-// material descriptor
-struct motionpackagedesc_s
-{
-	char				packageName[128]; //only this?
-};
-
-ALIGNED_TYPE(motionpackagedesc_s, 4) motionpackagedesc_t;
 
 //----------------------------------------------------------------------------------------------
 
-// equilibrium model format
-#include "model_eq.h"
-
 // egf model hardware vertex
-typedef struct EGFHwVertex_s
+struct EGFHwVertex_t
 {
-	EGFHwVertex_s() {}
-
-	EGFHwVertex_s(studiovertexdesc_t& initFrom)
+	EGFHwVertex_t() = default;
+	EGFHwVertex_t(const studiovertexdesc_t& initFrom)
 	{
 		pos = Vector4D(initFrom.point, 1.0f);
 		texcoord = initFrom.texCoord;
@@ -122,7 +78,7 @@ typedef struct EGFHwVertex_s
 
 	half			boneIndices[4];
 	half			boneWeights[4];
-} EGFHwVertex_t;
+};
 
 // Declare the EGF vertex format
 static VertexFormatDesc_t g_EGFHwVertexFormat[] = {
@@ -154,64 +110,33 @@ struct studioPhysObject_t
 // physics model data from POD
 struct studioPhysData_t
 {
-	studioPhysData_t()
-	{
-		modeltype = 0;
+	int						modeltype{ 0 };
 
-		objects = nullptr;
-		numObjects = 0;
+	studioPhysObject_t*		objects{ nullptr };
+	int						numObjects{ 0 };
 
-		joints = nullptr;
-		numJoints = 0;
+	physjoint_t*			joints{ nullptr };
+	int						numJoints{ 0 };
 
-		shapes = nullptr;
-		numShapes = 0;
+	studioPhysShapeCache_t* shapes{ nullptr };
+	int						numShapes{ 0 };
 
-		vertices = nullptr;
-		numVertices = 0;
+	Vector3D*				vertices{ nullptr };
+	int						numVertices{ 0 };
 
-		indices = nullptr;
-		numIndices = 0;
-	}
-
-	int modeltype;
-
-	studioPhysObject_t* objects;	// array, because it may be dynamic or ragdoll.
-	int numObjects;
-
-	physjoint_t* joints;
-	int numJoints;				// because it may be merged
-
-	studioPhysShapeCache_t* shapes;
-	int numShapes;
-
-	Vector3D*	vertices;
-	int			numVertices;
-
-	int*		indices;
-	int			numIndices;
+	int*					indices{ nullptr };
+	int						numIndices{ 0 };
 };
 
 // hardware data for the MOD_STUDIO
 struct studioHwData_t
 {
-	studioHwData_t()
-	{
-		studio = nullptr;
-		modelrefs = nullptr;
-		joints = nullptr;
-		numMotionPackages = 0;
-		numMaterialGroups = 0;
-	}
+	studiohdr_t*		studio{ nullptr };
 
-	// loaded/cached studio model
-	studiohdr_t*		studio;
+	int					numUsedMaterials{ 0 };
+	int					numMaterialGroups{ 0 };
 
-	int					numUsedMaterials;
-	int					numMaterialGroups;
-
-	// POD data
-	studioPhysData_t		physModel;
+	studioPhysData_t	physModel;
 
 	// lod models
 	struct modelRef_t
@@ -222,7 +147,7 @@ struct studioHwData_t
 			int	firstindex;
 			int indexcount;
 		} *groupDescs;
-	} *modelrefs;
+	} *modelrefs{ nullptr };
 
 	// joints, for
 	struct joint_t
@@ -242,7 +167,7 @@ struct studioHwData_t
 
 		int					chain_id;
 		int					link_id;
-	}*	joints;
+	}*	joints{ nullptr };
 
 	// model motion package loaded and expanded data
 	struct motionData_t
@@ -275,9 +200,9 @@ struct studioHwData_t
 		posecontroller_t*	poseControllers;
 
 		animframe_t*		frames;
-	}*	motiondata[MAX_MOTIONPACKAGES]; // shared cacheable motion data, this may be used for different models
+	}*	motiondata[MAX_MOTIONPACKAGES];
 
-	int					numMotionPackages;
+	int					numMotionPackages{ 0 };
 };
 
 typedef studioHwData_t::modelRef_t								studioModelRef_t;
@@ -299,5 +224,3 @@ inline int PhysModel_FindObjectId(studioPhysData_t* model, const char* name)
 
 	return -1;
 }
-
-#endif //MODEL_H

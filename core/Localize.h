@@ -5,13 +5,8 @@
 // Description: Equilibrium localization
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef CLOCALIZE
-#define CLOCALIZE
-
+#pragma once
 #include "core/ILocalize.h"
-#include "ds/Map.h"
-#include "ds/eqstring.h"
-#include "ds/eqwstring.h"
 
 //--------------------------------------------------------------
 // Localize token
@@ -62,5 +57,3 @@ private:
 	Map<int,CLocToken>	m_tokens{ PP_SL };
 	EqString			m_language;
 };
-
-#endif //CLOCALIZE

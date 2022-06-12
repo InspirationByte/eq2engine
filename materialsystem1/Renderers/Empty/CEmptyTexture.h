@@ -5,11 +5,8 @@
 // Description: Empty texture class
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef CEMPTYTEXTURE_H
-#define CEMPTYTEXTURE_H
-
+#pragma once
 #include "CTexture.h"
-#include "ds/Array.h"
 
 class CEmptyTexture : public CTexture
 {
@@ -31,5 +28,3 @@ public:
 
 	void*	m_lockData;
 };
-
-#endif // CEMPTYTEXTURE_H

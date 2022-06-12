@@ -5,17 +5,12 @@
 // Description: State handlers
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef SYS_STATE_H
-#define SYS_STATE_H
-
-#include "utils/KeyValues.h"
-
-#include "font/IFont.h"
-#include "materialsystem1/IMaterialSystem.h"
+#pragma once
 
 #define GAME_STATE_NONE 0
 
 // forward and extern
+class IEqFont;
 class CBaseStateHandler;
 extern CBaseStateHandler*	g_states[];
 
@@ -96,5 +91,3 @@ namespace EqStateMgr
 };
 
 //---------------------------------------------------------------------------------
-
-#endif // SYS_STATE_H

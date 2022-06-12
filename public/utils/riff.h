@@ -5,11 +5,7 @@
 // Description: RIFF reader utility class
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef SND_RIFF_H
-#define SND_RIFF_H
-
-#include "core/IFileSystem.h"
-#include "core/dktypes.h"
+#pragma once
 
 #define RIFF_ID				MCHAR4('R','I','F','F')
 #define WAVE_ID				MCHAR4('W','A','V','E')
@@ -102,8 +98,6 @@ private:
 
 	RIFFchunk_t		m_curChunk;
 
-	IFile*			m_riff;
+	IVirtualStream*	m_riff;
 	ubyte*			m_riffData;
 };
-
-#endif // SND_RIFF_H

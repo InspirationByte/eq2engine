@@ -5,8 +5,13 @@
 // Description: Eq Geometry Format Writer
 //////////////////////////////////////////////////////////////////////////////////
 
-
+#include "core/core_common.h"
+#include "core/IFileSystem.h"
+#include "math/Utility.h"
 #include "EGFGenerator.h"
+
+#include "dsm_loader.h"
+#include "dsm_esm_loader.h"
 
 #define USE_ACTC
 
@@ -15,16 +20,6 @@ extern "C"{
 #include "actc/tc.h"
 }
 #endif // USE_ACTC
-
-#include "core/DebugInterface.h"
-#include "core/IFileSystem.h"
-
-#include "ds/VirtualStream.h"
-#include "utils/strtools.h"
-
-#include "dsm_esm_loader.h"
-
-#include "math/Utility.h"
 
 using namespace SharedModel;
 
@@ -540,7 +535,7 @@ void CEGFGenerator::WriteLods(studiohdr_t* header, IVirtualStream* stream)
 
 	for(int i = 0; i < m_modellodrefs.numElem(); i++)
 	{
-		for(int j = 0; j < MAX_MODELLODS; j++)
+		for(int j = 0; j < MAX_MODEL_LODS; j++)
 		{
 			int refId = GetReferenceIndex( m_modellodrefs[i].lodmodels[j] );
 

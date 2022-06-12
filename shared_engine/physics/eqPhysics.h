@@ -21,117 +21,31 @@ DONE:
 		- Static object optimization
 		- Dynamic objects optimization
 		- Line test for dynamic objects
+		- Swept test
+		- Constraints (car doors, hoods, other)
 TODO:
 		- Multithreaded integration, collision detection and collision response
 		- Multithreaded line test (test bunch of lines)
-		- Sweep test
-		- Constraints (car doors, hoods, other)
 */
 
-#ifndef EQPHYSICS_H
-#define EQPHYSICS_H
+#pragma once
 
-#include <btBulletCollisionCommon.h>
-
-#include "math/FVector.h"
-#include "math/Quaternion.h"
-#include "math/BoundingBox.h"
-#include "ds/Array.h"
-#include "utils/eqthread.h"
-#include "BulletShapeCache.h"
-
-#include "eqCollision_ObjectGrid.h"
-
-
-// max world size is +/-32768
+// max world size is +/-32768, limited by FReal
 #define EQPHYS_MAX_WORLDSIZE	32767.0f
 
-class CEqRigidBody;
+struct btDispatcherInfo;
+class btCollisionWorld;
+class btCollisionConfiguration;
+class btCollisionDispatcher;
+
+
+struct CollisionData_t;
+struct ContactPair_t;
 class CEqCollisionObject;
-
-enum ECollPairFlag
-{
-	COLLPAIRFLAG_NO_SOUND				= (1 << 0),
-	COLLPAIRFLAG_OBJECTA_STATIC			= (1 << 1),
-
-	COLLPAIRFLAG_OBJECTA_NO_RESPONSE	= (1 << 2),
-	COLLPAIRFLAG_OBJECTB_NO_RESPONSE	= (1 << 3),
-
-	COLLPAIRFLAG_NO_RESPONSE = (COLLPAIRFLAG_OBJECTA_NO_RESPONSE | COLLPAIRFLAG_OBJECTB_NO_RESPONSE),
-
-	COLLPAIRFLAG_CONCAVE				= (1 << 4),
-
-	// other flags
-	COLLPAIRFLAG_USER_PROCESSED			= (1 << 16),		// special flag for user needs
-	COLLPAIRFLAG_USER_PROCESSED2		= (1 << 17),		// special flag for user needs
-	COLLPAIRFLAG_USER_PROCESSED3		= (1 << 18),		// special flag for user needs
-	COLLPAIRFLAG_USER_PROCESSED4		= (1 << 19),		// special flag for user needs
-};
-
-#define COLLISION_MASK_ALL 0xFFFFFFFF
-
-struct CollisionData_t
-{
-	CollisionData_t()
-	{
-		fract = 1.0f;
-		hitobject = NULL;
-		materialIndex = -1;
-		pad = 0;
-	}
-
-	FVector3D			position;			// position in world
-	Vector3D			normal;
-
-	CEqCollisionObject*	hitobject;
-
-	float				fract;				// collision depth (if RayTest or SweepTest - factor between start[Transform] and end[Transform])
-	int					materialIndex;
-	int					pad;
-};
-
-struct ContactPair_t
-{
-	CEqCollisionObject* GetOppositeTo(CEqCollisionObject* obj) const;
-
-	Vector3D			normal;
-	FVector3D			position;
-
-	CEqCollisionObject*	bodyA;
-	CEqCollisionObject*	bodyB;
-
-	float				restitutionA;
-	float				restitutionB;
-
-	float				frictionA;
-	float				frictionB;
-
-	float				dt;
-	float				depth;
-
-	int					flags;
-};
-
-struct CollisionPairData_t
-{
-	CollisionPairData_t()
-	{
-		flags = 0;
-	}
-
-	CEqCollisionObject* GetOppositeTo(CEqCollisionObject* obj) const;
-
-	FVector3D			position;			// position in world
-	Vector3D			normal;
-
-	CEqCollisionObject*	bodyA;
-	CEqCollisionObject*	bodyB;
-
-	float				fract;				// collision depth (if RayTest or SweepTest - factor between start[Transform] and end[Transform])
-	float				appliedImpulse;
-	float				impactVelocity;
-	int					flags;
-};
+class CEqRigidBody;
+class CEqCollisionBroadphaseGrid;
+class IEqPhysicsConstraint;
+class IEqPhysicsController;
 
 //---------------------------------------------------------------------------------
 // Equilibrium physics step
@@ -154,6 +68,8 @@ enum EPhysFilterFlags
 
 	EQPHYS_FILTER_FLAG_FORCE_RAYCAST	= (1 << 5), // for raycasting - ignores COLLOBJ_NO_RAYCAST flags
 };
+
+static constexpr const int COLLISION_MASK_ALL = 0xFFFFFFFF;
 
 //----------------------------------------------
 
@@ -232,22 +148,7 @@ struct eqPhysCollisionFilter
 
 //--------------------------------------------------------------------------------------------------------------
 
-typedef bool (CEqPhysics::*fnSingleObjectLineCollisionCheck)(	CEqCollisionObject* object,
-																const FVector3D& start,
-																const FVector3D& end,
-																const BoundingBox& raybox,
-																CollisionData_t& coll,
-																int rayMask,
-																eqPhysCollisionFilter* filterParams,
-																void* args);
-
-
-//--------------------------------------------------------------------------------------------------------------
-
 typedef void (*FNSIMULATECALLBACK)(float fDt, int iterNum);
-
-class IEqPhysicsConstraint;
-class IEqPhysicsController;
 
 class CEqPhysics
 {
@@ -299,7 +200,7 @@ public:
 	bool							TestLineCollision(	const FVector3D& start,
 														const FVector3D& end,
 														CollisionData_t& coll,
-														int rayMask = COLLISION_MASK_ALL, eqPhysCollisionFilter* filterParams = NULL);
+														int rayMask = COLLISION_MASK_ALL, eqPhysCollisionFilter* filterParams = nullptr);
 
 	///< Pushes convex in the world for closest collision
 	bool							TestConvexSweepCollision(	btCollisionShape* shape,
@@ -307,7 +208,7 @@ public:
 																const FVector3D& start,
 																const FVector3D& end,
 																CollisionData_t& coll,
-																int rayMask = COLLISION_MASK_ALL, eqPhysCollisionFilter* filterParams = NULL);
+																int rayMask = COLLISION_MASK_ALL, eqPhysCollisionFilter* filterParams = nullptr);
 	///< Performs a line test for a single object.
 	///< start, end are world coordinates
 	bool							TestLineSingleObject(	CEqCollisionObject* object,
@@ -317,7 +218,7 @@ public:
 															CollisionData_t& coll,
 															int rayMask,
 															eqPhysCollisionFilter* filterParams,
-															void* args = NULL);
+															void* args = nullptr);
 
 	// Pushes a convex sweep for closest collision for a single object.
 	///< start, end are world coordinates
@@ -328,7 +229,7 @@ public:
 																CollisionData_t& coll,
 																int rayMask,
 																eqPhysCollisionFilter* filterParams,
-																void* args = NULL);
+																void* args = nullptr);
 
 	///< draws physics bounding boxes
 	void							DebugDrawBodies(int mode);
@@ -361,6 +262,15 @@ public:
 
 protected:
 
+	typedef bool (fnSingleObjectLineCollisionCheck)(CEqCollisionObject* object,
+		const FVector3D& start,
+		const FVector3D& end,
+		const BoundingBox& raybox,
+		CollisionData_t& coll,
+		int rayMask,
+		eqPhysCollisionFilter* filterParams,
+		void* args);
+
 	///< tests line versus some objects
 	template <typename F>
 	bool							TestLineCollisionOnCell(int y, int x,
@@ -371,7 +281,7 @@ protected:
 															int rayMask,
 															eqPhysCollisionFilter* filterParams,
 															F func,
-															void* args = NULL);
+															void* args = nullptr);
 
 	///< Performs collision tests in broadphase grid
 	template <typename F>
@@ -383,9 +293,9 @@ protected:
 																	int rayMask,
 																	eqPhysCollisionFilter* filterParams,
 																	F func,
-																	void* args = NULL);
+																	void* args = nullptr);
 
-	CEqCollisionBroadphaseGrid		m_grid;
+	CEqCollisionBroadphaseGrid*		m_grid{ nullptr };
 
 protected:
 
@@ -401,10 +311,10 @@ protected:
 	Array<IEqPhysicsConstraint*>	m_constraints{ PP_SL };
 	Array<IEqPhysicsController*>	m_controllers{ PP_SL };
 
-	btDispatcherInfo				m_dispatchInfo;
-	btCollisionWorld*				m_collisionWorld;
-	btCollisionConfiguration*		m_collConfig;
-	btCollisionDispatcher*			m_collDispatcher;
+	btDispatcherInfo*				m_dispatchInfo{ nullptr };
+	btCollisionWorld*				m_collisionWorld{ nullptr };
+	btCollisionConfiguration*		m_collConfig{ nullptr };
+	btCollisionDispatcher*			m_collDispatcher{ nullptr };
 
 	Threading::CEqMutex&			m_mutex;
 
@@ -414,5 +324,3 @@ protected:
 
 	bool							m_debugRaycast;
 };
-
-#endif // EQPHYSICS_H

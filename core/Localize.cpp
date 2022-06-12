@@ -5,15 +5,12 @@
 // Description: Equilibrium localization
 //////////////////////////////////////////////////////////////////////////////////
 
-#include "Localize.h"
-#include <stdio.h>
-
-#include "core/DebugInterface.h"
+#include "core/core_common.h"
 #include "core/IDkCore.h"
+#include "core/ICommandLine.h"
 #include "core/IFileSystem.h"
-
-#include "utils/strtools.h"
 #include "utils/KeyValues.h"
+#include "Localize.h"
 
 EXPORTED_INTERFACE(ILocalize, CLocalize);
 

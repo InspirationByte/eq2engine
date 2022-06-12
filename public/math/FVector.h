@@ -5,8 +5,7 @@
 // Description: Equilibrium fixed vector math part
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef FVECTOR_H
-#define FVECTOR_H
+#pragma once
 
 #include "FixedMath.h"
 
@@ -33,7 +32,3 @@ typedef TPlane<FReal>	FPlane;
 typedef TAABBox<FReal>	FBoundingBox;
 
 // define some functions that only can be used correctly on fixed point variables
-
-
-
-#endif // FVECTOR_H

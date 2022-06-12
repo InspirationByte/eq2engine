@@ -5,10 +5,7 @@
 // Description: Eq UI
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef EQUI_H
-#define EQUI_H
-
-#include "core/dktypes.h"
+#pragma once
 
 namespace equi
 {
@@ -68,5 +65,3 @@ public:
 };
 
 };
-
-#endif // EQUI_H

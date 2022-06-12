@@ -5,33 +5,33 @@
 // Description: System and module loader
 //////////////////////////////////////////////////////////////////////////////////
 
+#include <SDL.h>
+#include <SDL_syswm.h>
 
+#include "core/core_common.h"
+#include "core/IDkCore.h"
 #include "core/IConsoleCommands.h"
+#include "core/ICommandLine.h"
 #include "core/IEqCPUServices.h"
 #include "core/IEqParallelJobs.h"
 #include "core/IFileSystem.h"
-#include "core/ConVar.h"
 #include "core/ConCommand.h"
-#include "core/platform/MessageBox.h"
+#include "core/ConVar.h"
 
-#include "utils/strtools.h"
+#include "render/IDebugOverlay.h"
 
-#include "sys/cfgloader.h"
 #include "sys_host.h"
 #include "sys_state.h"
 #include "sys_in_console.h"
 #include "sys_in_joystick.h"
 #include "sys_window.h"
+#include "cfgloader.h"
 
-#include "input/InputCommandBinder.h"
 #include "font/IFontCache.h"
-
-#include "render/IDebugOverlay.h"
-
 #include "equi/EqUI_Manager.h"
+#include "input/InputCommandBinder.h"
 
-#include <SDL.h>
-#include <SDL_syswm.h>
+#include "materialsystem1/IMaterialSystem.h"
 
 #define DEFAULT_USERCONFIG_PATH		"cfg/user.cfg"
 
@@ -103,10 +103,10 @@ enum CursorCode
 	dc_last,
 };
 
-DKMODULE*			g_matsysmodule = NULL;
+DKMODULE*			g_matsysmodule = nullptr;
 
-IMaterialSystem*	materials = NULL;
-IShaderAPI*			g_pShaderAPI = NULL;
+IMaterialSystem*	materials = nullptr;
+IShaderAPI*			g_pShaderAPI = nullptr;
 
 DECLARE_CVAR(m_invert,0,"Mouse inversion enabled?", CV_ARCHIVE);
 
@@ -286,7 +286,7 @@ bool CGameHost::InitSystems( EQWNDHANDLE pWindow )
 		return false;
 	}
 
-	s_defaultCursor[dc_none] = NULL;
+	s_defaultCursor[dc_none] = nullptr;
 	s_defaultCursor[dc_arrow] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_ARROW);
 	s_defaultCursor[dc_ibeam] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_IBEAM);
 	s_defaultCursor[dc_hourglass] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_WAIT);
@@ -476,12 +476,13 @@ void InputCommands_SDL(SDL_Event* event)
 	}
 }
 
+static debugGraphBucket_t s_fpsGraph("Frames per sec", ColorRGB(1, 1, 0), 80.0f);
+static debugGraphBucket_t s_jobThreads("Active job threads", ColorRGB(1, 1, 0), 16.0f);
+
 CGameHost::CGameHost() :
-	m_winSize(0), m_prevMousePos(0), m_mousePos(0), m_pWindow(NULL), m_nQuitState(QUIT_NOTQUITTING),
+	m_winSize(0), m_prevMousePos(0), m_mousePos(0), m_pWindow(nullptr), m_nQuitState(QUIT_NOTQUITTING),
 	m_bTrapMode(false), m_skipMouseMove(false), m_bDoneTrapping(false), m_nTrapKey(0), m_nTrapButtons(0), m_cursorCentered(false),
-	m_pDefaultFont(NULL),
-	m_fpsGraph("Frames per sec", ColorRGB(1, 1, 0), 80.0f),
-	m_jobThreads("Active job threads", ColorRGB(1, 1, 0), 16.0f),
+	m_pDefaultFont(nullptr),
 	m_accumTime(0.0)
 {
 
@@ -492,7 +493,7 @@ void CGameHost::ShutdownSystems()
 	Msg("---------  ShutdownSystems ---------\n");
 
 	// calls OnLeave and unloads state
-	EqStateMgr::ChangeState( NULL );
+	EqStateMgr::ChangeState(nullptr);
 
 	g_parallelJobs->Wait();
 
@@ -628,7 +629,7 @@ bool CGameHost::Frame()
 
 	if (r_showFPSGraph.GetBool())
 	{
-		debugoverlay->Graph_DrawBucket(&m_fpsGraph);
+		debugoverlay->Graph_DrawBucket(&s_fpsGraph);
 	}
 
 	//debugoverlay->Graph_DrawBucket(&m_jobThreads);
@@ -678,18 +679,18 @@ bool CGameHost::Frame()
 	if (r_showFPSGraph.GetBool())
 	{
 		if (gamefps > 40)
-			m_fpsGraph.color = ColorRGB(0, 1, 0);
+			s_fpsGraph.color = ColorRGB(0, 1, 0);
 		else if (gamefps > 25)
-			m_fpsGraph.color = ColorRGB(1, 1, 0);
+			s_fpsGraph.color = ColorRGB(1, 1, 0);
 		else
-			m_fpsGraph.color = ColorRGB(1, 0, 0);
+			s_fpsGraph.color = ColorRGB(1, 0, 0);
 
-		m_fpsGraph.maxValue = sys_maxfps.GetFloat();
+		s_fpsGraph.maxValue = sys_maxfps.GetFloat();
 
-		debugoverlay->Graph_AddValue(&m_fpsGraph, gamefps);
+		debugoverlay->Graph_AddValue(&s_fpsGraph, gamefps);
 	}
 
-	debugoverlay->Graph_AddValue(&m_jobThreads, g_parallelJobs->GetActiveJobsCount());
+	debugoverlay->Graph_AddValue(&s_jobThreads, g_parallelJobs->GetActiveJobsCount());
 
 	debugoverlay->Text(Vector4D(1), "System framerate: %i", fps);
 	debugoverlay->Text(Vector4D(1), "Game framerate: %i (ft=%g)", gamefps, gameFrameTime);
@@ -787,7 +788,7 @@ void CGameHost::EndScene()
 	g_pShaderAPI->Flush();
 
 	// End frame from render lib
-	materials->EndFrame(NULL);
+	materials->EndFrame(nullptr);
 }
 
 void CGameHost::RequestTextInput()

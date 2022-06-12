@@ -5,9 +5,10 @@
 // Description: ESM model loader
 //////////////////////////////////////////////////////////////////////////////////
 
+#include "core/core_common.h"
+#include "utils/Tokenizer.h"
 #include "dsm_esm_loader.h"
-#include "core/DebugInterface.h"
-#include "utils/strtools.h"
+#include "dsm_loader.h"
 
 namespace SharedModel
 {

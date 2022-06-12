@@ -1,21 +1,15 @@
-//******************* Copyright (C) Illusion Way, L.L.C 2010 *********************
-//
-// Description: DarkTech abstract shader class
-//
-//****************************************************************************
+//////////////////////////////////////////////////////////////////////////////////
+// Copyright © Inspiration Byte
+// 2009-2020
+//////////////////////////////////////////////////////////////////////////////////
+// Description: MatSystem abstraction of shader
+//////////////////////////////////////////////////////////////////////////////////
 
-#ifndef ISHADER_H
-#define ISHADER_H
-
-#include "IMaterial.h"
-#include "math/DkMath.h"
+#pragma once
 
 class IShaderProgram;
 class ITexture;
 class IMaterial;
-
-#define SHADERCONST_WORLDVIEWPROJ		90
-#define SHADERCONST_WORLDTRANSFORM		94
 
 enum ShaderDefaultParams_e
 {
@@ -97,5 +91,3 @@ public:
 	// returns bump stage count
 	virtual int				GetBumpStageCount() const = 0;
 };
-
-#endif // ISHADER_H

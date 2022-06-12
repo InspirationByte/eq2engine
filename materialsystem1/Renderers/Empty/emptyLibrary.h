@@ -5,10 +5,7 @@
 // Description: D3D Rendering library interface
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef CGLRENDERLIB_H
-#define CGLRENDERLIB_H
-
-#include "renderers/IShaderAPI.h"
+#pragma once
 #include "IRenderLibrary.h"
 
 class CEmptyRenderLib : public IRenderLibrary
@@ -28,7 +25,7 @@ public:
 	void			EndFrame(IEqSwapChain* swapChain = NULL);
 
 	// renderer interface
-	IShaderAPI*		GetRenderer() const {return (IShaderAPI*)m_Renderer;}
+	IShaderAPI*		GetRenderer() const;
 
 	// sets backbuffer size for default swap chain
 	void			SetBackbufferSize(int w, int h);
@@ -55,9 +52,6 @@ public:
 	IEqSwapChain*	GetDefaultSwapchain() {return NULL;}
 
 protected:
-
-	IShaderAPI*				m_Renderer;
-
 	EQWNDHANDLE				hwnd;
 
 	int						width, height;
@@ -67,4 +61,4 @@ protected:
 	bool					m_bResized;
 	bool					m_windowed;
 };
-#endif //CGLRENDERLIB_H
+

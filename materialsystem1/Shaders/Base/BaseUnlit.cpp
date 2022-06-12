@@ -5,9 +5,9 @@
 // Description: Unlit Shader with fog support
 //////////////////////////////////////////////////////////////////////////////////
 
-#include "BaseShader.h"
+#include "core/core_common.h"
 #include "IMaterialSystem.h"
-#include "scene_def.h"
+#include "BaseShader.h"
 
 BEGIN_SHADER_CLASS(BaseUnlit)
 

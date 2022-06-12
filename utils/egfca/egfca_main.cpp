@@ -5,21 +5,12 @@
 // Description:
 //////////////////////////////////////////////////////////////////////////////////
 
-
-#include <stdio.h>
-
-#include "core/platform/Platform.h"
+#include "core/core_common.h"
 #include "core/IDkCore.h"
-#include "core/DebugInterface.h"
-#include "core/cmdlib.h"
+#include "core/ICommandLine.h"
+#include "core/ConCommand.h"
 #include "core/ConVar.h"
 #include "core/IFileSystem.h"
-
-#include "ds/align.h"
-#include "utils/strtools.h"
-
-#include <iostream>
-#include <malloc.h>
 
 #include "egf/EGFGenerator.h"
 

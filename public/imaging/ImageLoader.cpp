@@ -5,17 +5,11 @@
 // Description: Image loader
 //////////////////////////////////////////////////////////////////////////////////
 
-#include "ImageLoader.h"
-#include "core/DebugInterface.h"
+#include "core/core_common.h"
 #include "core/IFileSystem.h"
-
-#include "math/math_common.h"
 #include "math/Vector.h"
-#include "utils/strtools.h"
 
-#include <string.h>
-#include <stdlib.h>
-#include <stdio.h>
+#include "ImageLoader.h"
 
 #ifndef NO_JPEG
 
@@ -1325,7 +1319,7 @@ bool CImage::Convert(const ETextureFormat newFormat)
 		ubyte *src = m_pPixels;
 		do
 		{
-			*((Vector3D *) dest) = rgbeToRGB(src);
+			*((Vector3D *) dest) = rgbeToRGB(src).rgb();
 			if (writeAlpha)
 			{
 				dest[3] = 1.0f;
@@ -1429,11 +1423,11 @@ bool CImage::Convert(const ETextureFormat newFormat)
 					{
 						if (newFormat == FORMAT_RGBE8)
 						{
-							*(uint32 *) dest = rgbToRGBE8(Vector3D(rgba[0], rgba[1], rgba[2]));
+							*(uint32 *) dest = rgbToRGBE8(MColor(rgba[0], rgba[1], rgba[2]));
 						}
 						else
 						{
-							*(uint32 *) dest = rgbToRGB9E5(Vector3D(rgba[0], rgba[1], rgba[2]));
+							*(uint32 *) dest = rgbToRGB9E5(MColor(rgba[0], rgba[1], rgba[2]));
 						}
 					}
 				}

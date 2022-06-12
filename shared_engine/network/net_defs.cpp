@@ -5,9 +5,8 @@
 // Description: Network definitions for Equilibrium Engine
 //////////////////////////////////////////////////////////////////////////////////
 
+#include "core/core_common.h"
 #include "net_defs.h"
-#include "core/DebugInterface.h"
-#include "core/dktypes.h"
 
 namespace Networking
 {

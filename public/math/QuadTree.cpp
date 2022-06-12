@@ -5,8 +5,8 @@
 // Description: Quadtree
 //////////////////////////////////////////////////////////////////////////////////
 
+#include "core/core_common.h"
 #include "QuadTree.h"
-#include "core/ppmem.h"
 
 // Default constructor for quadtree -- build tree, too!
 QuadTree::QuadTree(float* inp_data, int N)

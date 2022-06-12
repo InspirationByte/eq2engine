@@ -5,10 +5,7 @@
 // Description: Perlin noise
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef PERLIN_H
-#define PERLIN_H
+#pragma once
 
 float noise2d(float x, float y);
 float perlin2d(float x, float y, float freq, int depth);
-
-#endif // PERLIN_H

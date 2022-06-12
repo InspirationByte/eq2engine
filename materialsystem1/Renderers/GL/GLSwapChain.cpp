@@ -5,9 +5,8 @@
 // Description: OpenGL Renderer FAKE swapchain for using to draw in multiple windows
 //////////////////////////////////////////////////////////////////////////////////
 
+#include "core/core_common.h"
 #include "GLSwapChain.h"
-
-#include "core/DebugInterface.h"
 
 CGLSwapChain::~CGLSwapChain()
 {

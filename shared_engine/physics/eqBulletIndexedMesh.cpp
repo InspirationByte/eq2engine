@@ -5,6 +5,7 @@
 // Description: eqPhysics bullet indexed mesh
 //////////////////////////////////////////////////////////////////////////////////
 
+#include "core/core_common.h"
 #include "eqBulletIndexedMesh.h"
 
 CEqBulletIndexedMesh::CEqBulletIndexedMesh(ubyte* vertexBase, int vertexStride, ubyte* indexBase, int indexStride, int numVerts, int numIndices)
@@ -18,7 +19,7 @@ CEqBulletIndexedMesh::CEqBulletIndexedMesh(ubyte* vertexBase, int vertexStride, 
 	m_numVerts = numVerts;
 	m_numIndices = numIndices;
 
-	m_indexType = m_indexStride == 2 ? PHY_SHORT : PHY_INTEGER;
+	m_indexType = m_indexStride == sizeof(short) ? PHY_SHORT : PHY_INTEGER;
 }
 
 void CEqBulletIndexedMesh::AddSubpart(int firstIndex, int numIndices, int firstVertex, int numVerts, int materialId)

@@ -2,14 +2,10 @@
 // Copyright © Inspiration Byte
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
-// Description: View parameters.
-// Used by GameDLL and Engine to determine renderable camera position, rotation and FOV//////////////////////////////////////////////////////////////////////////////////
+// Description: Camera settings
+//////////////////////////////////////////////////////////////////////////////////
 
-#ifndef VIEWPARAMS_H
-#define VIEWPARAMS_H
-
-#include "math/DkMath.h"
-#include "math/Rectangle.h"
+#pragma once
 
 class CViewParams
 {
@@ -40,5 +36,3 @@ protected:
 	Vector3D		m_vecAngles;
 	float			m_fFOV;
 };
-
-#endif //VIEWPARAMS_H

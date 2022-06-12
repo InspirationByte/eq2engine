@@ -16,18 +16,12 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #define NO_PPMEM_OP
+
+#include "core/core_common.h"
 #include "core/ppmem.h"
-
-#include "ds/Map.h"
-
 #include "core/ConVar.h"
 #include "core/ConCommand.h"
-#include "core/DebugInterface.h"
 #include "core/IConsoleCommands.h"
-
-#include "utils/eqthread.h"
-
-#include <malloc.h>
 
 //#define PPMEM_DISABLE
 
@@ -150,7 +144,7 @@ void PPMemInfo(bool fullStats)
 
 	struct SLStat_t
 	{
-		uint totalMem{ 0 };
+		size_t totalMem{ 0 };
 		uint numAlloc{ 0 };
 	};
 

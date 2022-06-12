@@ -4,16 +4,15 @@
 //////////////////////////////////////////////////////////////////////////////////
 // Description: Physics model cache for bullet physics
 //				Generates real shapes for Bullet Collision
-//
 ///////////////////////////////////////////////////////////////////////////////////
 
 #include <btBulletCollisionCommon.h>
 
+#include "core/core_common.h"
+#include "core/ConVar.h"
+
 #include "BulletShapeCache.h"
 #include "BulletConvert.h"
-
-#include "core/ConVar.h"
-#include "core/DebugInterface.h"
 
 #include "utils/global_mutex.h"
 
@@ -23,7 +22,7 @@ using namespace Threading;
 ConVar ph_studioShapeMargin("ph_studioShapeMargin", "0.05", "Studio model shape marginal", CV_CHEAT);
 
 // makes and caches shape. IsConvex defines that it was convex or not (also for internal use)
-btCollisionShape* InternalGenerateShape(int numVertices, Vector3D* vertices, int *indices, int numIndices, EPODShapeType type, float margin)
+btCollisionShape* InternalGenerateShape(int numVertices, Vector3D* vertices, int *indices, int numIndices, EPhysShapeType type, float margin)
 {
 	switch(type)
 	{
@@ -122,7 +121,7 @@ void CBulletStudioShapeCache::InitStudioCache( studioPhysData_t* studioData )
 									studioData->vertices,
 									studioData->indices + studioData->shapes[nShape].shape_info.startIndices,
 									studioData->shapes[nShape].shape_info.numIndices,
-									(EPODShapeType)studioData->shapes[nShape].shape_info.type, ph_studioShapeMargin.GetFloat());
+									(EPhysShapeType)studioData->shapes[nShape].shape_info.type, ph_studioShapeMargin.GetFloat());
 
 			// cast physics POD index to index in physics engine
 			studioData->objects[i].shapeCache[j] = shape;

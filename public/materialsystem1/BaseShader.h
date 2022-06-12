@@ -5,13 +5,9 @@
 // Description: Base shader public code
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef BASESHADER_H
-#define BASESHADER_H
+#pragma once
 
-#include "ds/eqstring.h"
-#include "IMatSysShader.h"
-#include "renderers/ShaderAPI_defs.h"
-
+class IMaterial;
 class IMatVar;
 class IShaderProgram;
 
@@ -290,5 +286,3 @@ protected:
 
 #define SetParameterFunctor( type, a) m_param_functors[type] = (static_cast <SHADERPARAMFUNC>(a))
 #define SetupDefaultParameter( type ) SetupParameter(paramMask, type)
-
-#endif // BASESHADER_H

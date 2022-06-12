@@ -5,23 +5,22 @@
 // Description: EGUI label
 //////////////////////////////////////////////////////////////////////////////////
 
+#include "core/core_common.h"
+#include "utils/KeyValues.h"
+#include "utils/TextureAtlas.h"
 #include "EqUI_Image.h"
 
 #include "EqUI_Manager.h"
-#include "font/IFont.h"
-
-#include "utils/KeyValues.h"
 
 #include "materialsystem1/IMaterialSystem.h"
 #include "materialsystem1/MeshBuilder.h"
-#include "materialsystem1/renderers/IShaderAPI.h"
 
 namespace equi
 {
 
 Image::Image() : IUIControl(), m_material(nullptr)
 {
-	m_color = color4_white;
+	m_color = color_white;
 	m_imageFlags = 0;
 }
 

@@ -5,16 +5,8 @@
 // Description: Equilibrium Filesystem
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef CFILESYSTEM_H
-#define CFILESYSTEM_H
-
+#pragma once
 #include "core/IFileSystem.h"
-#include "utils/eqthread.h"
-#include "ds/Array.h"
-
-#include <stdio.h>
-
-using namespace Threading;
 
 //------------------------------------------------------------------------------
 // File stream
@@ -177,7 +169,6 @@ private:
     bool								m_editorMode;
 	bool								m_isInit;
 
-	CEqMutex							m_FSMutex;
+	Threading::CEqMutex					m_FSMutex;
 };
 
-#endif // CFILESYSTEM_H

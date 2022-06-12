@@ -5,10 +5,7 @@
 // Description: Math additional utilites
 //////////////////////////////////////////////////////////////////////////////////
 
-#include "Matrix.h"
-#include "Vector.h"
-#include "Volume.h"
-
+#include "math_common.h"
 #include "Utility.h"
 
 bool PointToScreen(const Vector3D& point, Vector2D& screen, const Matrix4x4 &mvp, const Vector2D &screenDims)

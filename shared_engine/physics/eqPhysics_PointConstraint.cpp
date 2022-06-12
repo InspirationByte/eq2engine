@@ -5,6 +5,7 @@
 // Description: Physics point constraint
 //////////////////////////////////////////////////////////////////////////////////
 
+#include "core/core_common.h"
 #include "eqPhysics_PointConstraint.h"
 #include "eqPhysics_Body.h"
 

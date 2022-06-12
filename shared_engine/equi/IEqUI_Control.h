@@ -5,28 +5,15 @@
 // Description: EGUI control base
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef IEQUICONTROL_H
-#define IEQUICONTROL_H
-
-#include "core/ppmem.h"
-
-#include "ds/Array.h"
-#include "ds/List.h"
-#include "ds/eqstring.h"
-#include "ds/eqwstring.h"
-#include "utils/TextureAtlas.h"
-
-#include "math/DkMath.h"
-
-#include "font/IFont.h"
+#pragma once
 #include "equi_defs.h"
+#include "font/IFont.h"
 
 #ifdef GetParent
 #undef GetParent
 #endif //GetParent
 
 struct KVSection;
-class IEqFont;
 struct eqFontStyleParam_t;
 
 #define UICMD_ARGV(index)		event.args.ptr()[index]
@@ -247,5 +234,3 @@ T* DynamicCast(IUIControl* control)
 }
 
 };
-
-#endif // IEQUICONTROL_H

@@ -7,8 +7,7 @@
 //				See ppmem_core.cpp for main implementation
 //////////////////////////////////////////////////////////////////////////////////
 
-#include "core/ppmem.h"
-#include <malloc.h>
+#include "core_common.h"
 
 constexpr int PPSL_ADDR_BITS = 48;		// 64 bit arch only use 48 bits of pointers
 

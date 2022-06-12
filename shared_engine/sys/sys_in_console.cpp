@@ -5,16 +5,16 @@
 // Description: Provides base console interface
 //////////////////////////////////////////////////////////////////////////////////
 
-#include "sys_in_console.h"
+#include <imgui.h>
+#include <SDL_clipboard.h>
+#include <SDL_keyboard.h>
 
+#include "core/core_common.h"
 #include "core/IDkCore.h"
 #include "core/IConsoleCommands.h"
 #include "core/ConVar.h"
 #include "core/ConCommand.h"
-
 #include "utils/KeyValues.h"
-#include "utils/strtools.h"
-#include "utils/eqthread.h"
 #include "utils/global_mutex.h"
 
 #include "render/IDebugOverlay.h"
@@ -22,19 +22,15 @@
 #include "font/FontLayoutBuilders.h"
 #include "font/FontCache.h"
 
-#include "materialsystem1/MeshBuilder.h"
 #include "materialsystem1/IMaterialSystem.h"
+#include "materialsystem1/MeshBuilder.h"
 #include "input/InputCommandBinder.h"
 
-#include "sys/sys_version.h"
+#include "sys_version.h"
+#include "sys_in_console.h"
 
 #include "imgui_backend/imgui_impl_matsystem.h"
 #include "imgui_backend/imgui_impl_sys.h"
-#include <imgui.h>
-
-#include <SDL_clipboard.h>
-#include <SDL_keyboard.h>
-
 
 
 #ifdef _DEBUG

@@ -5,18 +5,10 @@
 // Description: Common math and logics
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef MATH_COMMON_H
-#define MATH_COMMON_H
-
+#pragma once
+#include "core/common_types.h"
 #include <math.h>
 #include <float.h>
-
-#if defined(_INC_MINMAX)
-#error Please remove minmax from includes
-#endif
-
-#undef min
-#undef max
 
 enum CubeDir
 {
@@ -40,16 +32,14 @@ enum CubeDir
 
 constexpr float F_EPS			= 0.00001f;
 constexpr float F_INFINITY		= 1900000.0f;
+constexpr float F_UNDEF			= 888.888f;
 
 const double M_PI_D				= 3.14159265358979323846264338327950288;
 const float M_PI_F				= float(M_PI_D);
 const float M_PI_OVER_TWO_F		= M_PI_F * 0.5f;
 
-template <class T, class T2 = T, class TR = T>
-inline TR min(T x, T2 y) {return (TR)((x < y)? x : y);}
-
-template <class T, class T2 = T, class TR = T>
-inline TR max(T x, T2 y) {return (TR)((x > y)? x : y);}
+#define RAD2DEG( x )			( (float)(x) * (float)(180.f / M_PI_F) )
+#define DEG2RAD( x )			( (float)(x) * (float)(M_PI_F / 180.f) )
 
 // Math routines done in optimized assembly math package routines
 inline void SinCos( float radians, float *sine, float *cosine )
@@ -184,15 +174,6 @@ inline bool isPowerOf2(const int x)
 	return (x & (x - 1)) == 0;
 }
 
-template<typename T>
-inline void swap(T& a, T& b)
-{
-	T tmp = a;
-
-	a = b;
-	b = tmp;
-}
-
 // Remap a value in the range [A,B] to [C,D].
 #define RemapVal( val, A, B, C, D) \
 	(C + (D - C) * (val - A) / (B - A))
@@ -200,4 +181,12 @@ inline void swap(T& a, T& b)
 #define RemapValClamp( val, A, B, C, D) \
 	clamp(C + (D - C) * (val - A) / (B - A), C, D)
 
-#endif // MATH_COMMON_H
+#include "Vector.h"
+#include "FVector.h"
+#include "Matrix.h"
+#include "BoundingBox.h"
+#include "Quaternion.h"
+#include "Plane.h"
+#include "Volume.h"
+
+#include "Rectangle.h"

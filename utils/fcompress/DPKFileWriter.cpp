@@ -5,25 +5,11 @@
 // Description: Data package file (dpk)
 //////////////////////////////////////////////////////////////////////////////////
 
-#include "DPKFileWriter.h"
-#include <math.h>
-#include <malloc.h>
 #include <zlib.h>
-#include <stdlib.h>
 
-#ifdef _WIN32
-#include <Windows.h>
-#endif
-
-#include "utils/minmax.h"
-#include "utils/strtools.h"
-#include "core/ppmem.h"
-#include "core/DebugInterface.h"
+#include "core/core_common.h"
 #include "core/cmd_pacifier.h"
-#include "core/platform/assert.h"
-#include "core/platform/stackalloc.h"
-
-
+#include "DPKFileWriter.h"
 
 #define DPK_WRITE_BLOCK (8*1024*1024)
 
@@ -354,7 +340,7 @@ void CDPKFileWriter::ProcessFile(FILE* output, dpkfilewinfo_t* info)
 
 			// if size is greater than remaining, we know that this is last block
 			if (blockInfo.size > _fileSize - srcOffset)
-				blockInfo.size = min<uint32>(blockInfo.size, _fileSize - srcOffset);
+				blockInfo.size = min<uint32>(blockInfo.size, (uint32)(_fileSize - srcOffset));
 
 			int status = Z_DATA_ERROR;
 

@@ -5,15 +5,9 @@
 // Material system realtime parameter proxy
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef IMATERIALPROXY_H
-#define IMATERIALPROXY_H
+#pragma once
 
-#include "core/DebugInterface.h"
-#include "utils/strtools.h"
-
-#include "IMaterial.h"
-#include "IMaterialVar.h"
-
+class IMaterial;
 struct KVSection;
 
 class IMaterialProxy
@@ -232,8 +226,6 @@ inline void CBaseMaterialProxy::mvSetValueInt(proxyvar_t& var, int value)
 
 //-----------------------------------------------------------------------------------
 
-typedef IMaterialProxy* (*PROXY_DISPATCHER)( void );
-
 #define DECLARE_PROXY(localName, className)											\
 	static IMaterialProxy *C##className##Factory( void )							\
 	{																				\
@@ -243,5 +235,3 @@ typedef IMaterialProxy* (*PROXY_DISPATCHER)( void );
 
 #define REGISTER_PROXY(localName, className)	\
 	materials->RegisterProxy( &C##className##Factory, #localName );	\
-
-#endif // IMATERIALPROXY_H

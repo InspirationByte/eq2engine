@@ -13,17 +13,19 @@
 //
 //////////////////////////////////////////////////////////////////////////////////
 
-#include "core/DebugInterface.h"
+#include <wx/settings.h>
+
+#include "core/core_common.h"
+#include "core/ICommandLine.h"
+#include "core/IDkCore.h"
 #include "core/IFileSystem.h"
 #include "core/ConVar.h"
 #include "core/ILocalize.h"
 #include "core/IEqParallelJobs.h"
-#include "core/platform/MessageBox.h"
-
 #include "utils/KeyValues.h"
-#include "utils/eqtimer.h"
 
 #include "font/IFontCache.h"
+#include "egf/IEqModel.h"
 
 #include "render/IDebugOverlay.h"
 #include "CAnimatedModel.h"
@@ -34,16 +36,13 @@
 #include "physics/PhysicsCollisionGroup.h"
 #include "physics/BulletShapeCache.h"
 
+#include "materialsystem1/IMaterialSystem.h"
 #include "materialsystem1/MeshBuilder.h"
-
-#include "materialsystem1/scene_def.h"
 #include "render/ViewParams.h"
 
 #include "EditorHeader.h"
-
 #include "grid.h"
 
-#include <wx/settings.h>
 
 static eqJobThreadDesc_t s_jobTypes[] = {
 	//{JOB_TYPE_ANY, 1},
@@ -652,7 +651,7 @@ uint		g_physPlaneIndices[PHY_PLANE_IDXCOUNT];
 
 void InitPhysicsScene()
 {
-	physics->Init( MAX_COORD_UNITS );
+	physics->Init(F_INFINITY);
 
 	// create physics scene and add infinite plane
 	physics->CreateScene();
@@ -1081,7 +1080,7 @@ void CEGFViewFrame::ProcessMouseEvents(wxMouseEvent& event)
 		ShowCursor(FALSE);
 	}
 
-	cam_pos = clamp(cam_pos, Vector3D(-MAX_COORD_UNITS), Vector3D(MAX_COORD_UNITS));
+	cam_pos = clamp(cam_pos, Vector3D(-F_INFINITY), Vector3D(F_INFINITY));
 
 	g_camera_rotation = cam_angles;
 	g_camera_target = cam_pos;
@@ -1282,7 +1281,7 @@ void CEGFViewFrame::ReDraw()
 		// Now we can draw our model
 		g_model.Render(renderFlags, g_fCamDistance, m_lodSpin->GetValue(), m_lodOverride->GetValue(), g_frametime);
 
-		debugoverlay->Text(color4_white, "polygon count: %d\n", g_pShaderAPI->GetTrianglesCount());
+		debugoverlay->Text(color_white, "polygon count: %d\n", g_pShaderAPI->GetTrianglesCount());
 
 		// reset some values
 		materials->SetMatrix(MATRIXMODE_WORLD, identity4());

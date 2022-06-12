@@ -5,8 +5,9 @@
 // Description: Streamed WAVe source
 //////////////////////////////////////////////////////////////////////////////////
 
-#include "core/ppmem.h"
+#include "core/core_common.h"
 #include "snd_wav_stream.h"
+#include "utils/riff.h"
 
 //--------------------------------------------------------
 

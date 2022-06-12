@@ -5,20 +5,14 @@
 // Description: Bone setup
 //////////////////////////////////////////////////////////////////////////////////
 
+#include "core/core_common.h"
 #include "BoneSetup.h"
-#include "egf/model.h"
 
-sequencetimer_t::sequencetimer_t()
+qanimframe_t::qanimframe_t(animframe_t& frame)
 {
-	active = false;
-	seq = nullptr;
-	seq_idx = -1;
-	seq_time = 0.0f;
-	currFrame = 0;
-	nextFrame = 0;
-	eventCounter = 0;
-	playbackSpeedScale = 1.0f;
-	blendWeight = 0.0f;
+	angBoneAngles = Quaternion(frame.angBoneAngles.x, frame.angBoneAngles.y, frame.angBoneAngles.z);
+	vecBonePosition = frame.vecBonePosition;
+	pad = 0.0f;
 }
 
 template <typename T>

@@ -5,17 +5,15 @@
 // Description: Equilibrium Filesystem
 //////////////////////////////////////////////////////////////////////////////////
 
-#include "FileSystem.h"
+#include <sys/types.h>
+#include <sys/stat.h>
 
+#include "core/core_common.h"
 #include "core/IDkCore.h"
+#include "core/ICommandLine.h"
 #include "core/ILocalize.h"
-#include "core/DebugInterface.h"
-#include "core/platform/MessageBox.h"
-
-#include "ds/SmartPtr.h"
 #include "utils/KeyValues.h"
-#include "utils/strtools.h"
-#include "utils/CRC32.h"
+#include "FileSystem.h"
 
 #include "DPKFileReader.h"
 #include "ZipFileReader.h"
@@ -41,6 +39,8 @@
 #endif
 
 #endif
+
+using namespace Threading;
 
 EXPORTED_INTERFACE(IFileSystem, CFileSystem);
 

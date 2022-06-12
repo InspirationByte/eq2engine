@@ -5,11 +5,8 @@
 // Description: Base texture class
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef CTEXTURE_H
-#define CTEXTURE_H
-
+#pragma once
 #include "renderers/ITexture.h"
-#include "ds/eqstring.h"
 
 class CTexture : public ITexture
 {
@@ -53,5 +50,3 @@ protected:
 
 	SamplerStateParam_t		m_samplerState;
 };
-
-#endif //CTEXTURE_H

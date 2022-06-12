@@ -5,8 +5,7 @@
 // Description: Constant types for DarkTech renderer
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef TEXTUREFORMATS_H
-#define TEXTUREFORMATS_H
+#pragma once
 
 // TODO: RENAME ENUMS TO TEXTURE_FORMAT_***
 
@@ -224,6 +223,3 @@ inline int GetBytesPerBlock(const ETextureFormat format)
 			(format >= FORMAT_PVRTC_2BPP && format <= FORMAT_PVRTC_A_4BPP))
 		? 8 : 16;
 }
-
-
-#endif // TEXTUREFORMATS_H

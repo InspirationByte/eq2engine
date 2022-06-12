@@ -1,15 +1,15 @@
-// dear imgui: Platform Backend for Equilibrium based on SDL2
-
-#include "imgui.h"
-#include "imgui_impl_sys.h"
-#include "input/in_keys_ident.h"
-
 // SDL
 #include <SDL.h>
 #include <SDL_syswm.h>
 #if defined(__APPLE__)
 #include <TargetConditionals.h>
 #endif
+
+// dear imgui: Platform Backend for Equilibrium based on SDL2
+#include "core/core_common.h"
+#include "imgui_impl_sys.h"
+
+#include "input/in_keys_ident.h"
 
 #if SDL_VERSION_ATLEAST(2,0,4) && !defined(__EMSCRIPTEN__) && !defined(__ANDROID__) && !(defined(__APPLE__) && TARGET_OS_IOS)
 #define SDL_HAS_CAPTURE_AND_GLOBAL_MOUSE    1

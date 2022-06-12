@@ -5,10 +5,7 @@
 // Description: EGUI label
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef EQUI_LABEL_H
-#define EQUI_LABEL_H
-
-#include "equi_defs.h"
+#pragma once
 #include "IEqUI_Control.h"
 
 namespace equi
@@ -34,6 +31,3 @@ public:
 };
 
 };
-
-
-#endif // EQUI_LABEL_H

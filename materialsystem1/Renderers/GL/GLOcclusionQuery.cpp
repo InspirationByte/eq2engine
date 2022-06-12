@@ -5,14 +5,9 @@
 // Description: OpenGL Occlusion query
 //////////////////////////////////////////////////////////////////////////////////
 
+#include "core/core_common.h"
+#include "shaderapigl_def.h"
 #include "GLOcclusionQuery.h"
-#include "ShaderAPIGL.h"
-
-#ifdef USE_GLES2
-#include <glad_es3.h>
-#else
-#include <glad.h>
-#endif
 
 CGLOcclusionQuery::CGLOcclusionQuery()
 {

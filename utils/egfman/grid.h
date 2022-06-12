@@ -5,12 +5,7 @@
 // Description: Grid tools
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef GRID_H
-#define GRID_H
-
-#include "math/Vector.h"
+#pragma once
 
 void DrawGrid(float size, int count, const Vector3D& pos, const ColorRGBA& color, bool depthTest);
 void DrawWorldCenter();
-
-#endif // GRID_H

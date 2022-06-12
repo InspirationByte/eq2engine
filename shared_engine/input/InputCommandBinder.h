@@ -5,24 +5,14 @@
 // Description: Input command binder and host
 //////////////////////////////////////////////////////////////////////////////////
 
-
-#ifndef INPUTCOMMANDBINDER_H
-#define INPUTCOMMANDBINDER_H
-
-
-#include "core/ConCommand.h"
-
-#include "ds/Array.h"
-
+#pragma once
 #include "input/in_keys_ident.h"
-#include "math/Vector.h"
-
-#include <stdio.h>
-#include <stdlib.h>
-
-// binding
 
 struct axisAction_t;
+class IVirtualStream;
+class ConCommand;
+class ConCommandBase;
+typedef void (*JOYAXISFUNC)(short value);
 
 class in_binding_t
 {
@@ -72,16 +62,11 @@ struct in_touchzone_t
 	int			finger;
 };
 
-typedef void (*JOYAXISFUNC)( short value );
-
 struct axisAction_t
 {
 	EqString		name;
 	JOYAXISFUNC		func;
 };
-
-
-class IVirtualStream;
 
 class CInputCommandBinder
 {
@@ -165,7 +150,4 @@ protected:
 bool UTIL_GetBindingKeyIndices(int outKeys[3], const char* pszKeyStr);
 void UTIL_GetBindingKeyString(EqString& outStr, in_binding_t* binding, bool humanReadable = false);
 
-
 extern CInputCommandBinder* g_inputCommandBinder;
-
-#endif //INPUTCOMMANDBINDER_H

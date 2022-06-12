@@ -5,9 +5,7 @@
 // Description: Font layout builders
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef FONTLAYOUTBUILDERS_H
-#define FONTLAYOUTBUILDERS_H
-
+#pragma once
 #include "font/IFont.h"
 
 class CRectangleTextLayoutBuilder : public ITextLayoutBuilder
@@ -43,6 +41,3 @@ protected:
 	bool			m_wrappedWord;
 	bool			m_wordWrapMode;
 };
-
-
-#endif // FONTLAYOUTBUILDERS_H

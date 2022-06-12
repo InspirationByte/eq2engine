@@ -5,7 +5,4 @@
 // Description: Eq UI visual scheme
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef EQUI_SCHEME_H
-#define EQUI_SCHEME_H
-
-#endif // EQUI_SCHEME_H
+#pragma once

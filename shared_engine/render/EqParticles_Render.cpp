@@ -5,20 +5,27 @@
 // Description: Particle system
 //////////////////////////////////////////////////////////////////////////////////
 
-#include "EqParticles.h"
-
+#include "core/core_common.h"
 #include "core/IConsoleCommands.h"
-#include "core/ConCommand.h"
 #include "core/ConVar.h"
 #include "utils/global_mutex.h"
-
+#include "utils/TextureAtlas.h"
+#include "EqParticles.h"
 #include "ViewParams.h"
+
+#include "materialsystem1/IMaterialSystem.h"
+
+static VertexFormatDesc_t g_PFXVertexFormatDesc[] = {
+	{ 0, 3, VERTEXATTRIB_POSITION, ATTRIBUTEFORMAT_FLOAT, "position" },		// position
+	{ 0, 2, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_FLOAT, "texcoord" },		// texture coord
+	{ 0, 4, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_FLOAT, "color" },		// color
+	//{ 0, 4, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_HALF, "normal" },		// normal; unused
+};
 
 using namespace Threading;
 
 static CParticleLowLevelRenderer s_pfxRenderer;
-
-CParticleLowLevelRenderer*	g_pPFXRenderer = &s_pfxRenderer;
+CParticleLowLevelRenderer* g_pPFXRenderer = &s_pfxRenderer;
 
 //----------------------------------------------------------------------------------------------------
 

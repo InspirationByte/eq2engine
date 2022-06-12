@@ -5,8 +5,9 @@
 // Description: Signed Distance Field font
 //////////////////////////////////////////////////////////////////////////////////
 
+#include "core/core_common.h"
+#include "IMaterialSystem.h"
 #include "BaseShader.h"
-#include "materialsystem1/IMaterialSystem.h"
 
 BEGIN_SHADER_CLASS(SDFFont)
 	SHADER_INIT_PARAMS()

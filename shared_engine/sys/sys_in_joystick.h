@@ -5,12 +5,7 @@
 // Description: Equilibrium joystick support brought by SDL
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef SYS_IN_JOYSTICK_H
-#define SYS_IN_JOYSTICK_H
-
-#include "core/platform/Platform.h"
-
-#include <unordered_map>
+#pragma once
 
 #define MAX_CONTROLLERS 4
 
@@ -39,17 +34,15 @@ public:
 
 private:
 
-	SDL_GameController*			m_gameCont;
-	_SDL_Haptic*					m_haptic;
-	SDL_JoystickID				m_instanceId;
-	bool						m_connected;
+	SDL_GameController*	m_gameCont;
+	_SDL_Haptic*		m_haptic;
+	SDL_JoystickID		m_instanceId;
+	bool				m_connected;
 
-	std::unordered_map<short, float>	m_pressed;
+	Map<short, float>	m_pressed{ PP_SL };
 
-	static int GetControllerIndex(SDL_JoystickID instance);
+	static int			GetControllerIndex(SDL_JoystickID instance);
 
-	void Open(int device);
-	void Close();
+	void				Open(int device);
+	void				Close();
 };
-
-#endif // SYS_IN_JOYSTICK_H

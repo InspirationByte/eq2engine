@@ -5,9 +5,7 @@
 // Description: Ogg Vorbis source stream
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef SND_OGG_STREAM_H
-#define SND_OGG_STREAM_H
-
+#pragma once
 #include "snd_ogg_cache.h"
 
 class IVirtualStream;
@@ -33,5 +31,3 @@ protected:
 
 	int				m_dataSize;     // in bytes
 };
-
-#endif // SND_OGG_STREAM_H

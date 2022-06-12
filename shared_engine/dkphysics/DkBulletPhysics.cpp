@@ -5,11 +5,15 @@
 // Description: Equilibrium physics powered by Bullet
 //////////////////////////////////////////////////////////////////////////////////
 
-#include "core/DebugInterface.h"
+#include <BulletCollision/CollisionDispatch/btInternalEdgeUtility.h>
+#include <BulletCollision/CollisionShapes/btShapeHull.h>
+#include <BulletCollision/Gimpact/btGImpactShape.h>
+#include <BulletCollision/Gimpact/btGImpactCollisionAlgorithm.h>
+#include <BulletSoftBody/btSoftBodyHelpers.cpp>
+
+#include "core/core_common.h"
 #include "core/ConVar.h"
 #include "core/IFileSystem.h"
-#include "core/platform/MessageBox.h"
-
 #include "utils/KeyValues.h"
 
 #include "DkBulletPhysics.h"
@@ -17,16 +21,20 @@
 #include "materialsystem1/IMaterialVar.h"
 
 #include "render/IDebugOverlay.h"
-#include "egf/model.h"
-
-//#include "BulletMultiThreaded/btParallelConstraintSolver.h"
-#include <BulletCollision/CollisionDispatch/btInternalEdgeUtility.h>
-#include <BulletCollision/CollisionShapes/btShapeHull.h>
-#include <BulletCollision/Gimpact/btGImpactShape.h>
-#include <BulletCollision/Gimpact/btGImpactCollisionAlgorithm.h>
 
 #include "physics/IStudioShapeCache.h"
 #include "physics/PhysicsCollisionGroup.h"
+
+#include "DKBulletObject.h"
+#include "DkPhysicsJoint.h"
+#include "DkPhysicsRope.h"
+#include "dkphysics/physcoord.h"
+
+#include "physics/BulletConvert.h"
+
+
+using namespace Threading;
+using namespace EqBulletUtils;
 
 static ConVar ph_gravity("ph_gravity","800","World gravity",CV_CHEAT);
 static ConVar ph_iterations("ph_iterations","10","Physics iterations",CV_CHEAT);
@@ -360,7 +368,7 @@ class DkPhysicsDebugDrawer : public btIDebugDraw
 #ifndef EQLC
 		Vector3D pos;
 		ConvertPositionToEq(pos, position);
-		debugoverlay->Text3D(pos,-1, color4_white, 0.0f, "%s", text);
+		debugoverlay->Text3D(pos,-1, color_white, 0.0f, "%s", text);
 #endif
 	}
 
@@ -429,8 +437,8 @@ bool DkPhysics::CreateScene()
 
 	m_dispatcher->setNearCallback(EQNearCallback);
 
-	btVector3 worldMin(-MAX_COORD_UNITS,-MAX_COORD_UNITS,-MAX_COORD_UNITS);
-	btVector3 worldMax(MAX_COORD_UNITS,MAX_COORD_UNITS,MAX_COORD_UNITS);
+	btVector3 worldMin(-F_INFINITY,-F_INFINITY,-F_INFINITY);
+	btVector3 worldMax(F_INFINITY, F_INFINITY, F_INFINITY);
 
 	bt32BitAxisSweep3* sweepBP = new bt32BitAxisSweep3(worldMin,worldMax);
 	m_broadphase = sweepBP;

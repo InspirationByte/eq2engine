@@ -5,39 +5,28 @@
 // Description: Bone setup
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef BONESETUP_H
-#define BONESETUP_H
-
-#include "Math/Vector.h"
-#include "Math/Matrix.h"
+#pragma once
 #include "egf/model.h"
-#include "anim_activity.h"
 
-#if 0
-#include "entity/DataMap.h"
-#endif // #if !EDITOR && !NO_ENGINE
+enum Activity;
+typedef struct modelheader_s studiohdr_t;
+typedef struct animframe_s animframe_t;
+typedef struct sequencedesc_s sequencedesc_t;
+typedef struct sequenceevent_s sequenceevent_t;;
+typedef struct posecontroller_s posecontroller_t;
 
 struct qanimframe_t
 {
-	qanimframe_t()
-	{
-		angBoneAngles = identity();
-		vecBonePosition = vec3_zero;
-		pad = 0.0f;
-	}
-	qanimframe_t(animframe_t& frame)
-	{
-		angBoneAngles = Quaternion(frame.angBoneAngles.x, frame.angBoneAngles.y, frame.angBoneAngles.z);
-		vecBonePosition = frame.vecBonePosition;
-		pad = 0.0f;
-	}
+	qanimframe_t() = default;
+	qanimframe_t(animframe_t& frame);
 
-	Quaternion	angBoneAngles;
-	Vector3D	vecBonePosition;
-	float		pad;
+	Quaternion	angBoneAngles{ identity() };
+	Vector3D	vecBonePosition{ vec3_zero };
+	float		pad{ 0.0f };
 };
 
 struct gikchain_t;
+typedef struct studioiklink_s studioiklink_t;
 
 struct giklink_t
 {
@@ -96,34 +85,25 @@ struct gsequence_t
 // sequence timer with events
 struct sequencetimer_t
 {
-	gsequence_t*				seq;
-	int							seq_idx;
-	float						seq_time;
+	gsequence_t* seq{ nullptr };
+	int			 seq_idx{ -1 };
+	float		 seq_time{ 0.0f };
+				 
+	int			 nextFrame{ 0 };
+	int			 currFrame{ 0 };
+	int			 eventCounter{ 0 };
 
-	int							nextFrame;
-	int							currFrame;
-
-	float						playbackSpeedScale;
-
-	bool						active;
-
-	int							eventCounter;
-
-	float						blendWeight;
-
-	sequencetimer_t();
+	float		 playbackSpeedScale{ 1.0f };
+	float		 blendWeight{ 0.0f };
+	bool		 active{ false };
 
 	void Reset();
+	void ResetPlayback();
 
 	void AdvanceFrame(float fDt);
-
 	void SetTime(float time);
-
-	void ResetPlayback();
 
 #ifdef DECLARE_DATAMAP
 	DECLARE_DATAMAP();
 #endif // NOENGINE
 };
-
-#endif // BONESETUP_H

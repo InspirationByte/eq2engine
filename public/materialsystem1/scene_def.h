@@ -5,10 +5,7 @@
 // Description: Shared scene parameter definitions
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef SCENE_DEF_H
-#define SCENE_DEF_H
-
-#include "core/dktypes.h"
+#pragma once
 
 // fog parameters
 struct FogInfo_t
@@ -253,5 +250,3 @@ struct WaterMaterialInfo_t
 
 	bool		bCheapReflections;
 };
-
-#endif // SCENE_DEF_H

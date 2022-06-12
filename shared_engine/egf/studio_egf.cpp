@@ -5,23 +5,21 @@
 // Description: Equilibrium Generic
 //////////////////////////////////////////////////////////////////////////////////
 
-#include "studio_egf.h"
-
-#include "core/DebugInterface.h"
+#include "core/core_common.h"
 #include "core/IEqParallelJobs.h"
 #include "core/ConVar.h"
-
-#include "ds/SmartPtr.h"
-#include "utils/strtools.h"
+#include "math/Utility.h"
+#include "studio_egf.h"
+#include "modelloader_shared.h"
 
 #include "physics/IStudioShapeCache.h"
-#include "math/Utility.h"
+#include "render/Decals.h"
 #include "materialsystem1/IMaterialSystem.h"
 
 
-ConVar r_lodtest("r_lodtest", "-1", -1.0f, MAX_MODELLODS, "Studio LOD test", CV_CHEAT);
+ConVar r_lodtest("r_lodtest", "-1", -1.0f, MAX_MODEL_LODS, "Studio LOD test", CV_CHEAT);
 ConVar r_lodscale("r_lodscale", "1.0", "Studio model LOD scale", CV_ARCHIVE);
-ConVar r_lodstart("r_lodstart", "0", 0, MAX_MODELLODS, "Studio LOD start index", CV_ARCHIVE);
+ConVar r_lodstart("r_lodstart", "0", 0, MAX_MODEL_LODS, "Studio LOD start index", CV_ARCHIVE);
 
 ConVar r_notempdecals("r_notempdecals", "0", "Disables temp decals", CV_CHEAT);
 //ConVar r_force_softwareskinning("r_force_softwareskinning", "0", "Forces software skinning", CV_ARCHIVE);
@@ -317,12 +315,12 @@ int CopyGroupIndexDataToHWList(void* indexData, int indexSize, int currentIndexC
 		// always add offset to index (usually it's a current loadedvertices size)
 		int index = (*pGroup->pVertexIdx(i)) + vertex_add_offset;
 
-		if (indexSize == INDEX_SIZE_INT)
+		if (indexSize == sizeof(int))
 		{
 			uint32* indices = (uint32*)indexData;
 			indices[currentIndexCount++] = index;
 		}
-		else if (indexSize == INDEX_SIZE_SHORT)
+		else if (indexSize == sizeof(short))
 		{
 			uint16* indices = (uint16*)indexData;
 			indices[currentIndexCount++] = index;
@@ -477,7 +475,7 @@ bool CEngineStudioEGF::LoadGenerateVertexBuffer()
 		//Array<uint16>			loadedindices_short{ PP_SL };
 
 		// use index size
-		int nIndexSize = INDEX_SIZE_SHORT;
+		int nIndexSize = sizeof(short);
 		int numVertices = 0;
 		int numIndices = 0;
 
@@ -496,7 +494,7 @@ bool CEngineStudioEGF::LoadGenerateVertexBuffer()
 		}
 
 		if (numVertices > int(USHRT_MAX))
-			nIndexSize = INDEX_SIZE_INT;
+			nIndexSize = sizeof(int);
 
 		EGFHwVertex_t* allVerts = PPNew EGFHwVertex_t[numVertices];
 		ubyte* allIndices = PPNew ubyte[nIndexSize * numIndices];

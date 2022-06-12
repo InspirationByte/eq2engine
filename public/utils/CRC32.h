@@ -1,12 +1,9 @@
-#ifndef CRC32_H
-#define CRC32_H
+#pragma once
 
 /*
 	Calculates a checksum for a block of data
 	using the CRC-32.
 */
-
-#include "core/dktypes.h"
 
 namespace crc32_detail {
 	// CRC32 Table (zlib polynomial)
@@ -98,5 +95,3 @@ constexpr uint32 _CRC32_String<size_t(-1)>(const char* str) { return 0xFFFFFFFF;
 
 // This doesn't take into account the nul char
 #define CRC32_StringConst(x) (_CRC32_String<sizeof(x) - 2>(x) ^ 0xFFFFFFFF)
-
-#endif // CRC32_H

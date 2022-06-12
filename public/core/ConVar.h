@@ -5,10 +5,7 @@
 // Description: Console variable system
 //////////////////////////////////////////////////////////////////////////////////
 
-
-#ifndef CONVAR_H
-#define CONVAR_H
-
+#pragma once
 #include "ConCommandBase.h"
 
 // The Microsoft C++ Compiler fixes the typedef problem
@@ -104,5 +101,3 @@ private:
 
 #define HOOK_TO_CVAR(name)		\
 	static ConVar *name = (ConVar*)g_consoleCommands->FindCvar(#name);
-
-#endif //_CONVARSYSTEM_H_

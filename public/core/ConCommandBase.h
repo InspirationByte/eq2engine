@@ -5,12 +5,7 @@
 // Description: Console variable - base class
 //////////////////////////////////////////////////////////////////////////////////
 
-
-#ifndef CONCOMMANDBASE_H
-#define CONCOMMANDBASE_H
-
-#include "ds/Array.h"
-#include "ds/eqstring.h"
+#pragma once
 
 enum CommandBaseFlags_e
 {
@@ -68,5 +63,3 @@ protected:
 
 	CMDBASE_VARIANTS_CALLBACK m_fnVariantsList;
 };
-
-#endif //CONCOMMANDBASE_H

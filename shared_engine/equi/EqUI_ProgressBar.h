@@ -5,10 +5,7 @@
 // Description: EqUI percentage bar
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef EQUI_PROGRESSBAR_H
-#define EQUI_PROGRESSBAR_H
-
-#include "EqUI/equi_defs.h"
+#pragma once
 #include "EqUI/IEqUI_Control.h"
 
 namespace equi
@@ -38,5 +35,3 @@ namespace equi
 		float				m_value;
 	};
 };
-
-#endif // EQUI_PERCENTAGEBAR_H

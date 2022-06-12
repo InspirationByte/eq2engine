@@ -5,18 +5,8 @@
 // Description: Special String tools to do lesser memory errors
 //////////////////////////////////////////////////////////////////////////////////
 
+#include "core/core_common.h"
 #include "strtools.h"
-
-#include <stdarg.h>
-#include <stdio.h>
-#include "core/platform/Platform.h"
-#include "core/DebugInterface.h"
-
-
-#include <ctype.h>
-#include <wchar.h>
-#include <wctype.h>
-#include <stdarg.h>
 
 char* xstrupr(char* str)
 {

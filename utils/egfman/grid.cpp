@@ -3,19 +3,14 @@
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
 // Description: Grid tools
-//
-// TODO: diagonal (45 degree) grid for fast rotational
 //////////////////////////////////////////////////////////////////////////////////
 
+#include "core/core_common.h"
 #include "grid.h"
-
-#include "ds/Array.h"
 
 #include "materialsystem1/IMaterialSystem.h"
 #include "materialsystem1/MeshBuilder.h"
-
 #include "render/IDebugOverlay.h"
-#include "math/coord.h"
 
 
 inline void ListLine(const Vector3D &from, const Vector3D &to, Array<Vertex3D_t> &verts)
@@ -28,9 +23,9 @@ void DrawWorldCenter()
 {
 	Array<Vertex3D_t> grid_vertices{ PP_SL };
 
-	ListLine(Vector3D(-MAX_COORD_UNITS,0,0),Vector3D(MAX_COORD_UNITS,0,0), grid_vertices);
-	ListLine(Vector3D(0,-MAX_COORD_UNITS,0),Vector3D(0,MAX_COORD_UNITS,0), grid_vertices);
-	ListLine(Vector3D(0,0,-MAX_COORD_UNITS),Vector3D(0,0,MAX_COORD_UNITS), grid_vertices);
+	ListLine(Vector3D(-F_INFINITY,0,0),Vector3D(F_INFINITY,0,0), grid_vertices);
+	ListLine(Vector3D(0,-F_INFINITY,0),Vector3D(0, F_INFINITY,0), grid_vertices);
+	ListLine(Vector3D(0,0,-F_INFINITY),Vector3D(0,0, F_INFINITY), grid_vertices);
 
 	DepthStencilStateParams_t depth;
 

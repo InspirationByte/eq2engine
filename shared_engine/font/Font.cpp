@@ -11,24 +11,14 @@ TODO:
 		- Text rendering shaders and effects
 */
 
-#include "core/DebugInterface.h"
+#include "core/core_common.h"
 #include "core/ConVar.h"
-
-#include "math/Rectangle.h"
-
-#include "ds/Array.h"
-#include "ds/List.h"
-
 #include "utils/KeyValues.h"
-#include "utils/strtools.h"
-
-#include "materialsystem1/IMaterialSystem.h"
-#include "materialsystem1/MeshBuilder.h"
-
 #include "Font.h"
 #include "FontCache.h"
 
-#pragma todo("Rework font system - Add generator, better rotation support")
+#include "materialsystem1/IMaterialSystem.h"
+#include "materialsystem1/MeshBuilder.h"
 
 #define FONT_DEFAULT_PATH "resources/fonts/"
 
@@ -127,7 +117,7 @@ CFont::CFont()
 	//m_vertexBuffer = NULL;
 	//m_numVerts = 0;
 
-	m_textColor = color4_white;
+	m_textColor = color_white;
 	m_spacing = 0.0f;
 	m_scale = 1.0f;
 
@@ -421,7 +411,7 @@ void CFont::RenderText(const wchar_t* pszText, const Vector2D& start, const eqFo
 		materials->SetBlendingStates(blending);
 		materials->SetRasterizerStates(raster);
 
-		materials->SetAmbientColor(color4_white);
+		materials->SetAmbientColor(color_white);
 		materials->SetMatrix(MATRIXMODE_WORLD, identity4());
 
 		g_pShaderAPI->SetTexture(nullptr, nullptr, 0);
@@ -515,7 +505,7 @@ void CFont::DrawTextMeshBuffer(IDynamicMesh* mesh, const eqFontStyleParam_t& par
 	else
 		sdfRange->SetVector3(Vector3D(0.0f, 1.0f, 1.0f));
 
-	materials->SetAmbientColor(color4_white);
+	materials->SetAmbientColor(color_white);
 	materials->SetMatrix(MATRIXMODE_WORLD, identity4());
 
 	materials->BindMaterial(fontMaterial);
@@ -530,10 +520,12 @@ const eqFontChar_t&	CFont::GetFontCharById( const int chrId ) const
 {
 	static eqFontChar_t null_default;
 
-	if(!m_charMap.count(chrId))
+	auto it = m_charMap.find(chrId);
+
+	if(it == m_charMap.end())
 		return null_default;
 	
-	return m_charMap.at(chrId);
+	return *it;
 }
 
 //
@@ -648,9 +640,9 @@ bool CFont::LoadFont( const char* filenamePrefix )
 				if(k->values.numElem() < 7)
 					continue;
 
-				int charIdx = atoi(k->name);
+				const int charIdx = atoi(k->name);
 
-				eqFontChar_t fontChar;
+				eqFontChar_t& fontChar = m_charMap[charIdx];
 
 				// x y w h ox oy advanceX
 				// 0 1 2 3 4  5  6
@@ -673,8 +665,6 @@ bool CFont::LoadFont( const char* filenamePrefix )
 					fontChar.x1 = fontChar.x1 - 0.5f;
 					fontChar.y1 = fontChar.y1 - 0.5f;
 				}
-
-				m_charMap[charIdx] = fontChar;
 			}
 		}
 		else
@@ -725,8 +715,6 @@ bool CFont::LoadFont( const char* filenamePrefix )
 						line++;
 						lChars = 0;
 					}
-
-					m_charMap[i] = eqFontChar_t();
 
 					eqFontChar_t& chr = m_charMap[i];
 

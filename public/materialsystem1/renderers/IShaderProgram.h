@@ -5,11 +5,7 @@
 // Description: Shader program for ShaderAPI
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef ISHADERPROGRAM_H
-#define ISHADERPROGRAM_H
-
-#include "core/ppmem.h"
-#include "ds/refcounted.h"
+#pragma once
 
 class IShaderProgram : public RefCountedObject<IShaderProgram>
 {
@@ -17,5 +13,3 @@ public:
 	// Get shader name
 	virtual const char*	GetName() const = 0;
 };
-
-#endif //ISHADERPROGRAM_H

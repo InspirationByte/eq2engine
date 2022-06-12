@@ -5,16 +5,14 @@
 // Description: WAVe source
 //////////////////////////////////////////////////////////////////////////////////
 
-#include "snd_source.h"
+#include <vorbis/vorbisfile.h>
 
+#include "core/core_common.h"
 #include "core/IFileSystem.h"
-#include "core/DebugInterface.h"
-
-#include "ds/eqstring.h"
+#include "snd_source.h"
 
 #include "snd_wav_cache.h"
 #include "snd_wav_stream.h"
-
 #include "snd_ogg_cache.h"
 #include "snd_ogg_stream.h"
 

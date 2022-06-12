@@ -5,23 +5,8 @@
 // Description: Equilibrium OpenGL ShaderAPI
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef SHADERAPIGL_H
-#define SHADERAPIGL_H
-
+#pragma once
 #include "../Shared/ShaderAPI_Base.h"
-
-#ifdef USE_GLES2
-#include <glad_es3.h>
-
-#	ifdef PLAT_ANDROID // direct link
-#	include <EGL/egl.h>
-#	else
-#	include <glad_egl.h>
-#	endif // PLAT_ANDROID
-
-#else
-#	include <glad.h>
-#endif
 
 enum EGraphicsVendor
 {
@@ -31,32 +16,16 @@ enum EGraphicsVendor
 	VENDOR_OTHER,
 };
 
-enum EGLTextureType
-{
-	GLTEX_TYPE_ERROR = -1,
-
-	GLTEX_TYPE_TEXTURE = 0,
-	GLTEX_TYPE_CUBETEXTURE,
-	GLTEX_TYPE_VOLUMETEXTURE,
-};
-
-struct GLTextureRef_t
-{
-	GLuint glTexID;
-	EGLTextureType type;
-};
-
-class		CGLRenderLib;
-class		CGLRenderLib_ES;
-class		CGLRenderLib_SDL;
-
-class 		CVertexFormatGL;
-class 		CVertexBufferGL;
-class 		CIndexBufferGL;
-class		CGLTexture;
-class		CGLShaderProgram;
-class		CGLOcclusionQuery;
-class		GLWorkerThread;
+class CGLRenderLib;
+class CGLRenderLib_ES;
+class CGLRenderLib_SDL;
+class CVertexFormatGL;
+class CVertexBufferGL;
+class CIndexBufferGL;
+class CGLTexture;
+class CGLShaderProgram;
+class CGLOcclusionQuery;
+class GLWorkerThread;
 
 class ShaderAPIGL : public ShaderAPI_Base
 {
@@ -64,14 +33,12 @@ public:
 	friend class		CGLRenderLib;
 	friend class		CGLRenderLib_ES;
 	friend class		CGLRenderLib_SDL;
-
 	friend class 		CVertexFormatGL;
 	friend class 		CVertexBufferGL;
 	friend class 		CIndexBufferGL;
 	friend class		CGLTexture;
 	friend class		CGLShaderProgram;
 	friend class		CGLOcclusionQuery;
-
 	friend class		GLWorkerThread;
 
 						~ShaderAPIGL();
@@ -299,7 +266,7 @@ public:
 // Vertex buffer objects
 //-------------------------------------------------------------
 
-	IVertexFormat*		CreateVertexFormat(const char* name, VertexFormatDesc_s *formatDesc, int nAttribs);
+	IVertexFormat*		CreateVertexFormat(const char* name, const VertexFormatDesc_t *formatDesc, int nAttribs);
 	IVertexBuffer*		CreateVertexBuffer(ER_BufferAccess nBufAccess, int nNumVerts, int strideSize, void *pData = NULL);
 	IIndexBuffer*		CreateIndexBuffer(int nIndices, int nIndexSize, ER_BufferAccess nBufAccess, void *pData = NULL);
 
@@ -367,5 +334,3 @@ private:
 };
 
 void PrintGLExtensions();
-
-#endif // SHADERAPIGL_H

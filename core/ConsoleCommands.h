@@ -5,10 +5,7 @@
 // Description: Console variable - base class
 //////////////////////////////////////////////////////////////////////////////////
 
-
-#ifndef CONCOMMANDFACTORY_H
-#define CONCOMMANDFACTORY_H
-
+#pragma once
 #include "core/IConsoleCommands.h"
 
 //	Console variable factory
@@ -90,5 +87,3 @@ private:
 	int						m_sameCommandsExecuted;
 	bool					m_commandListDirty;
 };
-
-#endif //CONCOMMANDFACTORY_H

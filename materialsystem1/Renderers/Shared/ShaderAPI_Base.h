@@ -9,15 +9,8 @@
 //				The renderer may do anti-wallhacking functions
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef SHADERAPI_BASE_H
-#define SHADERAPI_BASE_H
-
+#pragma once
 #include "renderers/IShaderAPI.h"
-#include "ds/Array.h"
-#include "ds/Map.h"
-#include "utils/eqthread.h"
-
-using namespace Threading;
 
 class ConCommandBase;
 
@@ -315,7 +308,5 @@ protected:
 
 	ETextureFormat						m_nScreenFormat;
 
-	CEqMutex							m_Mutex;
+	Threading::CEqMutex					m_Mutex;
 };
-
-#endif // SHADERAPI_BASE_H

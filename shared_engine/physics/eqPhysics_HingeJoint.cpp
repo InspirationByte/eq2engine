@@ -5,8 +5,10 @@
 // Description: Physics hinge joint
 //////////////////////////////////////////////////////////////////////////////////
 
+#include "core/core_common.h"
 #include "eqPhysics_HingeJoint.h"
 #include "eqPhysics_Body.h"
+#include "eqPhysics.h"
 
 enum EHingeFlags
 {

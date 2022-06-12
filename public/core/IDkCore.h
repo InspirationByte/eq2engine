@@ -5,10 +5,7 @@
 // Description: MuscleCore interface
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef IDKCORE
-#define IDKCORE
-
-#include "ICommandLine.h"
+#pragma once
 
 class KeyValues;
 class ICommandLine;
@@ -47,5 +44,3 @@ public:
 #ifndef _DKLAUNCHER_
 IEXPORTS IDkCore*	GetCore();
 #endif
-
-#endif //IDKCORE

@@ -5,11 +5,7 @@
 // Description: PPMem (Pee-Pee Memory) -  memory allocation tracker
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef PPMEM_H
-#define PPMEM_H
-
-#include "InterfaceManager.h"
-#include "dktypes.h"
+#pragma once
 
 struct PPSourceLine;
 
@@ -72,5 +68,3 @@ void operator delete(void* ptr, PPSourceLine sl) PPNOEXCEPT;
 void operator delete[](void* ptr, PPSourceLine sl) PPNOEXCEPT;
 
 #endif
-
-#endif // PPMEM_H

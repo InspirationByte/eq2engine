@@ -5,9 +5,6 @@
 // Description: Base debug interface for console programs handler
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef CMDLIB_H
-#define CMDLIB_H
+#pragma once
 
 void Install_SpewFunction();
-
-#endif //CMDLIB_H

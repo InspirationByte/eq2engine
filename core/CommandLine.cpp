@@ -5,12 +5,9 @@
 // Description: Command line parser
 //////////////////////////////////////////////////////////////////////////////////
 
-#include <ctype.h>
-#include <string.h>
-
-#include "ConsoleCommands.h"
-#include "utils/strtools.h"
+#include "core/core_common.h"
 #include "CommandLine.h"
+#include "ConsoleCommands.h"
 
 EXPORTED_INTERFACE(ICommandLine, CCommandLine);
 

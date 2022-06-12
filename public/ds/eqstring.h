@@ -5,13 +5,8 @@
 // Description: Equilibrium Engine string base
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef EQSTRING_H
-#define EQSTRING_H
+#pragma once
 
-#include <stdlib.h>
-#include "core/dktypes.h"
-
-#define EQSTRING_BASE_BUFFER	32
 #define _Es						EqString
 
 class EqWString;
@@ -216,5 +211,3 @@ protected:
 	uint16		m_nLength;			// length of string
 	uint16		m_nAllocated;		// allocation size
 };
-
-#endif // EQSTRING_H

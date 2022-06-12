@@ -5,13 +5,12 @@
 // Description: Rendering library base interface
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef IRENDERLIB_H
-#define IRENDERLIB_H
+#pragma once
 
-#include "materialsystem1/renderers/IShaderAPI.h"
-#include "materialsystem1/renderers/IEqSwapChain.h"
-
-#include "core/InterfaceManager.h"
+struct shaderAPIParams_t;
+class IEqSwapChain;
+class IShaderAPI;
+class CImage;
 
 #define RENDERER_INTERFACE_VERSION	"EqRenderer_012"
 
@@ -58,5 +57,3 @@ public:
 	bool					IsInitialized() const {return true;};
 	const char*				GetInterfaceName() const {return RENDERER_INTERFACE_VERSION;}
 };
-
-#endif //IRENDERLIB_H

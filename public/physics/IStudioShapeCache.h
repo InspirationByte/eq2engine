@@ -5,20 +5,14 @@
 // Description: Physics model shape cache interface
 ///////////////////////////////////////////////////////////////////////////////////
 
-#ifndef ISTUDIOSHAPECACHE_H
-#define ISTUDIOSHAPECACHE_H
-
+#pragma once
 #include "egf/model.h"
-#include "core/InterfaceManager.h"
-#include "core/IDkCore.h"
 
 #define SHAPECACHE_INTERFACE_VERSION		"Physics_StudioShapeCache_001"
 
 class IStudioShapeCache : public IEqCoreModule
 {
 public:
-	virtual ~IStudioShapeCache() {}
-
 	// checks the shape is initialized for the cache
 	virtual bool	IsShapeCachePresent( studioPhysShapeCache_t* shapeInfo ) = 0;
 
@@ -35,11 +29,6 @@ public:
 class CEmptyStudioShapeCache : public IStudioShapeCache
 {
 public:
-	CEmptyStudioShapeCache()
-	{
-		GetCore()->RegisterInterface(SHAPECACHE_INTERFACE_VERSION, this);
-	}
-
 	bool			IsInitialized() const { return true; }
 	const char*		GetInterfaceName() const { return SHAPECACHE_INTERFACE_VERSION; }
 
@@ -52,6 +41,3 @@ public:
 };
 
 INTERFACE_SINGLETON(IStudioShapeCache, StudioShapeCache, SHAPECACHE_INTERFACE_VERSION, g_studioShapeCache)
-
-
-#endif // ISTUDIOSHAPECACHE_H

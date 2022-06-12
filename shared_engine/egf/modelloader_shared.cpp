@@ -5,12 +5,11 @@
 // Description: Equilibrium Graphics File loader
 //////////////////////////////////////////////////////////////////////////////////
 
-#include "modelloader_shared.h"
-
-#include "core/DebugInterface.h"
-#include "core/IFileSystem.h"
-
 #include <zlib.h>
+
+#include "core/core_common.h"
+#include "core/IFileSystem.h"
+#include "modelloader_shared.h"
 
 bool IsValidModelIdentifier(int id)
 {
@@ -105,14 +104,14 @@ studioMotionData_t* Studio_LoadMotionData(const char* pszPath, int boneCount)
 
 	animpackagehdr_t* pHDR = (animpackagehdr_t*)pData;
 
-	if(pHDR->ident != ANIMCA_IDENT)
+	if(pHDR->ident != ANIMFILE_IDENT)
 	{
 		MsgError("%s: not a motion package file\n", pszPath);
 		PPFree(pData);
 		return NULL;
 	}
 
-	if(pHDR->version != ANIMCA_VERSION)
+	if(pHDR->version != ANIMFILE_VERSION)
 	{
 		MsgError("Bad motion package version, please update or reinstall the game.\n", pszPath);
 		PPFree(pData);
@@ -140,13 +139,13 @@ studioMotionData_t* Studio_LoadMotionData(const char* pszPath, int boneCount)
 
 		switch(pLump->type)
 		{
-			case ANIMCA_ANIMATIONS:
+			case ANIMFILE_ANIMATIONS:
 			{
 				numAnimDescs = pLump->size / sizeof(animationdesc_t);
 				animationdescs = (animationdesc_t*)pData;
 				break;
 			}
-			case ANIMCA_ANIMATIONFRAMES:
+			case ANIMFILE_ANIMATIONFRAMES:
 			{
 				numAnimFrames = pLump->size / sizeof(animframe_t);
 				animframes = (animframe_t*)pData;
@@ -154,12 +153,12 @@ studioMotionData_t* Studio_LoadMotionData(const char* pszPath, int boneCount)
 
 				break;
 			}
-			case ANIMCA_UNCOMPRESSEDFRAMESIZE:
+			case ANIMFILE_UNCOMPRESSEDFRAMESIZE:
 			{
 				nUncompressedFramesSize = *(int*)pData;
 				break;
 			}
-			case ANIMCA_COMPRESSEDFRAMES:
+			case ANIMFILE_COMPRESSEDFRAMES:
 			{
 				animframes = (animframe_t*)PPAlloc(nUncompressedFramesSize + 150);
 
@@ -177,7 +176,7 @@ studioMotionData_t* Studio_LoadMotionData(const char* pszPath, int boneCount)
 
 				break;
 			}
-			case ANIMCA_SEQUENCES:
+			case ANIMFILE_SEQUENCES:
 			{
 				pMotion->numsequences = pLump->size / sizeof(sequencedesc_t);
 
@@ -185,7 +184,7 @@ studioMotionData_t* Studio_LoadMotionData(const char* pszPath, int boneCount)
 				memcpy(pMotion->sequences, pData, pLump->size);
 				break;
 			}
-			case ANIMCA_EVENTS:
+			case ANIMFILE_EVENTS:
 			{
 				pMotion->numEvents = pLump->size / sizeof(sequenceevent_t);
 
@@ -193,7 +192,7 @@ studioMotionData_t* Studio_LoadMotionData(const char* pszPath, int boneCount)
 				memcpy(pMotion->events, pData, pLump->size);
 				break;
 			}
-			case ANIMCA_POSECONTROLLERS:
+			case ANIMFILE_POSECONTROLLERS:
 			{
 				pMotion->numPoseControllers = pLump->size / sizeof(posecontroller_t);
 
@@ -260,14 +259,14 @@ bool Studio_LoadPhysModel(const char* pszPath, studioPhysData_t* pModel)
 
 	physmodelhdr_t *pHdr = (physmodelhdr_t*)pData;
 
-	if(pHdr->ident != PHYSMODEL_ID)
+	if(pHdr->ident != PHYSFILE_ID)
 	{
 		MsgError("'%s' is not a POD physics model\n", pszPath);
 		PPFree(pData);
 		return false;
 	}
 
-	if(pHdr->version != PHYSMODEL_VERSION)
+	if(pHdr->version != PHYSFILE_VERSION)
 	{
 		MsgError("POD-File '%s' has physics model version\n", pszPath);
 		PPFree(pData);
@@ -286,13 +285,13 @@ bool Studio_LoadPhysModel(const char* pszPath, studioPhysData_t* pModel)
 
 		switch(pLump->type)
 		{
-			case PHYSLUMP_PROPERTIES:
+			case PHYSFILE_PROPERTIES:
 			{
 				physmodelprops_t* props = (physmodelprops_t*)pData;
 				pModel->modeltype = props->model_usage;
 				break;
 			}
-			case PHYSLUMP_GEOMETRYINFO:
+			case PHYSFILE_GEOMETRYINFO:
 			{
 				int numGeomInfos = pLump->size / sizeof(physgeominfo_t);
 
@@ -310,7 +309,7 @@ bool Studio_LoadPhysModel(const char* pszPath, studioPhysData_t* pModel)
 				}
 				break;
 			}
-			case PHYSLUMP_OBJECTNAMES:
+			case PHYSFILE_OBJECTNAMES:
 			{
 				char* name = (char*)pData;
 
@@ -330,7 +329,7 @@ bool Studio_LoadPhysModel(const char* pszPath, studioPhysData_t* pModel)
 				}while(sz < pLump->size);
 				break;
 			}
-			case PHYSLUMP_OBJECTS:
+			case PHYSFILE_OBJECTS:
 			{
 				int numObjInfos = pLump->size / sizeof(physobject_t);
 				physobject_t* physObjDataLump = (physobject_t*)pData;
@@ -353,7 +352,7 @@ bool Studio_LoadPhysModel(const char* pszPath, studioPhysData_t* pModel)
 				}
 				break;
 			}
-			case PHYSLUMP_JOINTDATA:
+			case PHYSFILE_JOINTDATA:
 			{
 				int numJointInfos = pLump->size / sizeof(physjoint_t);
 				physjoint_t* pJointData = (physjoint_t*)pData;
@@ -367,7 +366,7 @@ bool Studio_LoadPhysModel(const char* pszPath, studioPhysData_t* pModel)
 				}
 				break;
 			}
-			case PHYSLUMP_VERTEXDATA:
+			case PHYSFILE_VERTEXDATA:
 			{
 				int numVerts = pLump->size / sizeof(Vector3D);
 				Vector3D* pVertexData = (Vector3D*)pData;
@@ -377,7 +376,7 @@ bool Studio_LoadPhysModel(const char* pszPath, studioPhysData_t* pModel)
 				memcpy(pModel->vertices, pVertexData, pLump->size );
 				break;
 			}
-			case PHYSLUMP_INDEXDATA:
+			case PHYSFILE_INDEXDATA:
 			{
 				int numIndices = pLump->size / sizeof(int);
 				int* pIndexData = (int*)pData;
@@ -404,12 +403,7 @@ bool Studio_LoadPhysModel(const char* pszPath, studioPhysData_t* pModel)
 void Studio_FreeMotionData(studioMotionData_t* data, int numBones)
 {
 	for(int i = 0; i < data->numAnimations; i++)
-	{
-		//for(int j = 0; j < numBones; j++)
-			//PPFree(pData->animations[i].bones[j].keyFrames);
-
 		PPFree(data->animations[i].bones);
-	}
 
 	PPFree(data->frames);
 	PPFree(data->sequences);

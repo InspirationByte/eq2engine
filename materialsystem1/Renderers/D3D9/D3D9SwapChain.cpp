@@ -2,14 +2,12 @@
 // Copyright © Inspiration Byte
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
-// Description: D3D8 Renderer FAKE swapchain for using to draw in multiple windows
+// Description: D3D9 Renderer FAKE swapchain for using to draw in multiple windows
 //////////////////////////////////////////////////////////////////////////////////
 
+#include "core/core_common.h"
+#include "shaderapid3d9_def.h"
 #include "D3D9SwapChain.h"
-#include "ShaderAPID3DX9.h"
-#include "d3dx9_def.h"
-
-#include "core/DebugInterface.h"
 
 CD3D9SwapChain::~CD3D9SwapChain()
 {

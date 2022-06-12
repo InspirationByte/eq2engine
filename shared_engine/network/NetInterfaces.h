@@ -5,13 +5,8 @@
 // Description: Network components for Equilibrium Engine
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef NETINTERFACES_H
-#define NETINTERFACES_H
-
-#include "c_udp.h"
-#include "core/dktypes.h"
-#include "ds/Array.h"
-#include "ds/eqstring.h"
+#pragma once
+#include "net_defs.h"
 
 namespace Networking
 {
@@ -42,7 +37,6 @@ struct netMessage_s
 	// data
 	ubyte	data[MAX_MESSAGE_LENGTH];
 };
-
 ALIGNED_TYPE(netMessage_s,2) netMessage_t;
 
 #define NETMESSAGE_HDR	sizeof(netMessage_t::hdr_t)	// the network message header size
@@ -71,8 +65,8 @@ public:
 
 	void				Update( int timeMs, CDPRecvPipe_fn func, void* recvObj );
 
-	CEqRDPSocket*		GetSocket() const {return m_pSocket;}
-	sockaddr_in			GetAddress() const {return m_pSocket->GetAddress();}
+	CEqRDPSocket*		GetSocket() const;
+	sockaddr_in			GetAddress() const;
 
 	virtual bool		HasPeersToSend() const = 0;
 
@@ -151,5 +145,3 @@ private:
 //					TODO: CNetworkPeerClient
 
 }; // namespace Networking
-
-#endif // NETINTERFACES_H

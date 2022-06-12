@@ -5,17 +5,9 @@
 // Description: Crash report library connection
 //////////////////////////////////////////////////////////////////////////////////
 
+#include "core/core_common.h"
 #include "ExceptionHandler.h"
-
-#include "core/platform/Platform.h"
-#include "core/platform/MessageBox.h"
-#include "core/ppmem.h"
-#include "core/DebugInterface.h"
-
 #include "eqCore.h"
-
-#include <stdio.h>
-#include <stdlib.h>
 
 #ifdef _WIN32
 

@@ -5,14 +5,13 @@
 // Description: Ragdoll utilites, etc
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef RAGDOLL_H
-#define RAGDOLL_H
-
-#include "core/DebugInterface.h"
-#include "math/Dkmath.h"
-#include "dkphysics/IDkPhysics.h"
+#pragma once
 
 #define MAX_RAGDOLL_PARTS 32
+
+class IEqModel;
+class IPhysicsObject;
+class IPhysicsJoint;
 
 struct ragdoll_t
 {
@@ -41,7 +40,7 @@ struct ragdoll_t
 
 	// sets bone tranformations (useful for animated death, etc)
 	// you can setup from here a global transform by multipling all matrices on model transform
-	void			SetBoneTransform(Matrix4x4 *bones, Matrix4x4& translation);
+	void			SetBoneTransform(Matrix4x4 *bones, const Matrix4x4& translation);
 
 	// wakes ragdoll
 	void			Wake();
@@ -50,7 +49,7 @@ struct ragdoll_t
 	int				ComputeAndGetFarParentOf(int bone);
 
 	void			RefreshRagdollVisuals();
-	void			Translate(Vector3D &move);
+	void			Translate(const Vector3D &move);
 
 // members
 
@@ -72,5 +71,3 @@ struct ragdoll_t
 
 ragdoll_t*	CreateRagdoll(IEqModel* pModel);
 void		DestroyRagdoll(ragdoll_t* ragdoll);
-
-#endif // RAGDOLL_H

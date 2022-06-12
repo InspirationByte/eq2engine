@@ -5,18 +5,12 @@
 // Description: Equilibrium material
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef CMATERIAL_H
-#define CMATERIAL_H
-
-//#include "DebugInterface.h"
+#pragma once
 #include "materialsystem1/IMaterial.h"
-#include "materialvar.h"
-#include "ds/Array.h"
-#include "ds/eqstring.h"
-#include "utils/eqthread.h"
 
-struct KVSection;
+class CMatVar;
 class IMaterialProxy;
+struct KVSection;
 
 class CMaterial : public IMaterial
 {
@@ -88,6 +82,3 @@ protected:
 	uint					m_frameBound;
 	bool					m_loadFromDisk;
 };
-
-
-#endif //CMATERIAL_H

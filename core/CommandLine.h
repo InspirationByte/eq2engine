@@ -5,9 +5,7 @@
 // Description: Command line parser
 //////////////////////////////////////////////////////////////////////////////////-
 
-#ifndef CMDLINEPARSER_H
-#define CMDLINEPARSER_H
-
+#pragma once
 #include "core/ICommandLine.h"
 
 class CCommandLine : public ICommandLine
@@ -37,5 +35,3 @@ protected:
 
 	Array<EqString>		m_args{ PP_SL };
 };
-
-#endif

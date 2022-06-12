@@ -5,15 +5,11 @@
 // Description: Inline code for conversion of matrices and vectors
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef BULLET_CONVERT_H
-#define BULLET_CONVERT_H
+#pragma once
 
 // Bullet headers
 ///Math library & Utils
 #include <LinearMath/btTransform.h>
-
-#include "math/Vector.h"
-#include "math/Matrix.h"
 
 ///< converts Equilibrium units to Bullet units
 ///< input: any typed value with standard operators
@@ -73,5 +69,3 @@ inline void ConvertQuaternionToEq(Quaternion& out, const btQuaternion &quat)
 }
 
 }
-
-#endif // BULLET_CONVERT_H

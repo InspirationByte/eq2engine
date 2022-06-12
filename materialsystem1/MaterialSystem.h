@@ -9,29 +9,9 @@
 //			 - Shader management
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef CMATERIALSYSTEM_H
-#define CMATERIALSYSTEM_H
-
-#include "ds/Array.h"
-#include "ds/Map.h"
-
+#pragma once
 #include "materialsystem1/IMaterialSystem.h"
-#include "materialsystem1/scene_def.h"
-
-
-/*
-#include "core/platform/Platform.h"
-
-#include "utils/eqthread.h"
-#include "utils/eqtimer.h"
-
-
-#include "materialsystem1/scene_def.h"
-
-
-#include "material.h"
-
-*/
+#include "DynamicMesh.h"
 
 struct proxyfactory_t
 {
@@ -139,13 +119,13 @@ public:
 
 	// draws primitives
 	void							DrawPrimitivesFFP(	ER_PrimitiveType type, Vertex3D_t *pVerts, int nVerts,
-														ITexture* pTexture = NULL, const ColorRGBA &color = color4_white,
+														ITexture* pTexture = NULL, const ColorRGBA &color = color_white,
 														BlendStateParam_t* blendParams = NULL, DepthStencilStateParams_t* depthParams = NULL,
 														RasterizerStateParams_t* rasterParams = NULL);
 
 	// draws primitives for 2D
 	void							DrawPrimitives2DFFP(	ER_PrimitiveType type, Vertex2D_t *pVerts, int nVerts,
-															ITexture* pTexture = NULL, const ColorRGBA &color = color4_white,
+															ITexture* pTexture = NULL, const ColorRGBA &color = color_white,
 															BlendStateParam_t* blendParams = NULL, DepthStencilStateParams_t* depthParams = NULL,
 															RasterizerStateParams_t* rasterParams = NULL);
 
@@ -222,7 +202,7 @@ public:
 
 	IMaterial*						GetBoundMaterial();
 
-	void							SetShaderParameterOverriden(ShaderDefaultParams_e param, bool set = true);
+	void							SetShaderParameterOverriden(int param, bool set = true);
 
 	bool							BindMaterial( IMaterial* pMaterial, int flags = MATERIAL_BIND_PREAPPLY);
 	void							Apply();
@@ -373,5 +353,3 @@ private:
 	bool							m_instancingEnabled;
 	bool							m_deviceActiveState;
 };
-
-#endif //CMATERIALSYSTEM_H

@@ -5,5 +5,5 @@
 // Description: Equilibrium fixed vector math part
 //////////////////////////////////////////////////////////////////////////////////
 
+#include "math_common.h"
 #include "FVector.h"
-#include "DkMath.h"

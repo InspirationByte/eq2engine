@@ -5,12 +5,7 @@
 // Description: Rectangle packer, for atlases
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef RECTANGLEPACKER_H
-#define RECTANGLEPACKER_H
-
-#include "core/dktypes.h"
-#include "ds/Array.h"
-#include "math/Rectangle.h"
+#pragma once
 
 #ifdef _MSC_VER
 #pragma warning(disable:4244)
@@ -97,5 +92,3 @@ protected:
 	Array<PackerRectangle *>	m_pRectangles{ PP_SL };
 	float						m_padding;
 };
-
-#endif // RECTANGLEPACKER_H

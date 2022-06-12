@@ -5,10 +5,9 @@
 // Description: Activities for animations and AI
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef ANIM_ACTIVITY_H
-#define ANIM_ACTIVITY_H
+#pragma once
 
-typedef enum ACTIVITY_E
+enum Activity
 {
 	ACT_INVALID = -1,
 
@@ -81,11 +80,7 @@ typedef enum ACTIVITY_E
 #endif // STDGAME
 
 	ACT_COUNT,
-}Activity;
-
-
+};
 
 Activity GetActivityByName(const char* name);
 const char* GetActivityName(Activity act);
-
-#endif

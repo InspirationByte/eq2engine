@@ -5,18 +5,12 @@
 // Description: Variables factory
 //////////////////////////////////////////////////////////////////////////////////
 
-#include <ctype.h>
-#include <stdlib.h>
-#include <string.h>
-#include "ds/eqstring.h"
+#include "core/core_common.h"
 #include "core/ConVar.h"
 #include "core/ConCommand.h"
-#include "core/DebugInterface.h"
 #include "core/IFileSystem.h"
 #include "core/IDkCore.h"
 #include "ConsoleCommands.h"
-
-#include "utils/strtools.h"
 
 EXPORTED_INTERFACE(IConsoleCommands, CConsoleCommands);
 

@@ -7,8 +7,8 @@
 //				protected manner
 //////////////////////////////////////////////////////////////////////////////////
 
+#include "core/core_common.h"
 #include "AsyncWorkQueue.h"
-#include "core/ppmem.h"
 
 #define WORK_PENDING_MARKER 0xbeefea1e
 

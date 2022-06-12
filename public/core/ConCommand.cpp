@@ -5,10 +5,11 @@
 // Description: Console variable system
 //////////////////////////////////////////////////////////////////////////////////
 
+#include "core_common.h"
+
 #include "ConCommand.h"
 #include "ConVar.h"
 #include "IConsoleCommands.h"
-#include "DebugInterface.h"
 
 ConCommand::ConCommand(char const *name,CON_COMMAND_CALLBACK callback,char const *desc, int flags /*= 0*/) : ConCommandBase()
 {

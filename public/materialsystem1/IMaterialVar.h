@@ -4,11 +4,7 @@
 //
 //****************************************************************************
 
-#ifndef IMATERIALVAR_H
-#define IMATERIALVAR_H
-
-#include "math/Vector.h"
-#include "core/ppmem.h"
+#pragma once
 
 class ITexture;
 
@@ -52,4 +48,3 @@ public:
 	virtual void			SetVector4(const Vector4D& vector)	= 0;
 };
 
-#endif //IMATERIALVAR_H

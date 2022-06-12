@@ -6,13 +6,12 @@
 //				Uses engine to load, draw fonts
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef FONT_H
-#define FONT_H
-
+#pragma once
 #include "font/IFont.h"
-#include <map>
 
 class CMeshBuilder;
+class IDynamicMesh;
+class ITexture;
 
 class CFont : public IEqFont
 {
@@ -68,7 +67,7 @@ protected:
 	int						GetTextQuadsCount(const CHAR_T *str, const eqFontStyleParam_t& params) const;
 
 	// map of chars
-	std::map<ushort, eqFontChar_t>	m_charMap;
+	Map<ushort, eqFontChar_t>		m_charMap{ PP_SL };
 
 	float							m_spacing;
 	float							m_baseline;
@@ -88,7 +87,4 @@ protected:
 		bool	sdf		: 1;
 		bool	bold	: 2;
 	} m_flags;
-	
 };
-
-#endif //IFONT_H

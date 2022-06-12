@@ -5,18 +5,14 @@
 // Description: EqUI progress bar
 //////////////////////////////////////////////////////////////////////////////////
 
+#include "core/core_common.h"
+#include "utils/KeyValues.h"
 #include "EqUI_ProgressBar.h"
 
-#include "EqUI/EqUI_Manager.h"
+#include "EqUI_Manager.h"
 
-#include "font/IFont.h"
-#include "font/FontLayoutBuilders.h"
-
-#include "materialsystem1/MeshBuilder.h"
 #include "materialsystem1/IMaterialSystem.h"
-
-#include "utils/strtools.h"
-#include "utils/KeyValues.h"
+#include "materialsystem1/MeshBuilder.h"
 
 namespace equi
 {
@@ -25,7 +21,7 @@ ProgressBar::ProgressBar()
 	: IUIControl() 
 {
 	m_value = 0.5f;
-	m_color = color4_white;
+	m_color = color_white;
 }
 
 void ProgressBar::InitFromKeyValues(KVSection* sec, bool noClear)

@@ -5,20 +5,15 @@
 // Description: Equilibrium physics data Format
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef PHYSMODEL_H
-#define PHYSMODEL_H
+#pragma once
 
-#include "ds/align.h"
-#include "math/Vector.h"
-
-#define PHYSMODEL_VERSION					2
-#define PHYSMODEL_ID						(('I'<<24)+('D'<<16)+('O'<<8)+'P') // PODI
+#define PHYSFILE_VERSION					2
+#define PHYSFILE_ID						MCHAR4('P','O','D','I')
 
 #define MAX_GEOM_PER_OBJECT					32			// maximum shapes allowed to be in one physics object
-#define DEFAULT_MASS						(5.0f)
-#define STATIC_MASS							(0.0f)
+#define PHYS_DEFAULT_MASS					(5.0f)
 
-enum EPODModelUsage
+enum EPhysModelUsage
 {
 	PHYSMODEL_USAGE_INVALID	= 0,	// invalid usage
 	PHYSMODEL_USAGE_RIGID_COMP,		// standard rigid body with/without compoudness, static or non-static
@@ -26,21 +21,21 @@ enum EPODModelUsage
 	PHYSMODEL_USAGE_DYNAMIC,		// dynamic model, that use joints, but for animation such as non-standard doors, etc.
 };
 
-enum EPODLumpTypes
+enum EPhysLump
 {
-	PHYSLUMP_PROPERTIES	= 0,	// shared model property lump	// TODO: make the physobject_t embedded with this
-	PHYSLUMP_GEOMETRYINFO,		// geometrical info lump
-	PHYSLUMP_JOINTDATA,			// joint data
-	PHYSLUMP_OBJECTS,			// objects in this model
-	PHYSLUMP_VERTEXDATA,		// vertex data, Vector3D format
-	PHYSLUMP_INDEXDATA,			// vertex indices data, uint format
-	PHYSLUMP_OBJECTNAMES,		// object names lump
+	PHYSFILE_PROPERTIES	= 0,	// shared model property lump
+	PHYSFILE_GEOMETRYINFO,		// geometrical info lump
+	PHYSFILE_JOINTDATA,			// joint data
+	PHYSFILE_OBJECTS,			// objects in this model
+	PHYSFILE_VERTEXDATA,		// vertex data, Vector3D format
+	PHYSFILE_INDEXDATA,			// vertex indices data, uint format
+	PHYSFILE_OBJECTNAMES,		// object names lump
 
-	PHYSLUMP_LUMPS,
+	PHYSFILE_LUMPS,
 };
 
 // NOTE: When you change these constants, change them in engine
-enum EPODShapeType
+enum EPhysShapeType
 {
 	PHYSSHAPE_TYPE_CONCAVE = 0,
 	PHYSSHAPE_TYPE_MOVABLECONCAVE,
@@ -49,10 +44,9 @@ enum EPODShapeType
 
 struct physmodellump_s
 {
-	int type;	// PHYSLUMP_* type
+	int type;	// EPhysLump
 	int	size;	// size excluding this structure
 };
-
 ALIGNED_TYPE(physmodellump_s, 4) physmodellump_t;
 
 struct physmodelhdr_s
@@ -62,7 +56,6 @@ struct physmodelhdr_s
 
 	int num_lumps;
 };
-
 ALIGNED_TYPE(physmodelhdr_s, 4) physmodelhdr_t;
 
 struct physjoint_s
@@ -77,7 +70,6 @@ struct physjoint_s
 	Vector3D  minLimit;
 	Vector3D  maxLimit;
 };
-
 ALIGNED_TYPE(physjoint_s, 4) physjoint_t;
 
 struct physmodelprops_s
@@ -85,7 +77,6 @@ struct physmodelprops_s
 	int		model_usage;
 	char	comment_string[256];
 };
-
 ALIGNED_TYPE(physmodelprops_s, 4) physmodelprops_t;
 
 struct physgeominfo_s
@@ -95,7 +86,6 @@ struct physgeominfo_s
 
 	int		type;
 };
-
 ALIGNED_TYPE(physgeominfo_s, 4) physgeominfo_t;
 
 struct physobject_s
@@ -110,7 +100,4 @@ struct physobject_s
 	Vector3D	mass_center;							// mass center of object
 	int			body_part;								// body part index set in script
 };
-
 ALIGNED_TYPE(physobject_s, 4) physobject_t;
-
-#endif //PHYSMODEL_H

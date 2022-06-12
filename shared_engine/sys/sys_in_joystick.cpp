@@ -5,16 +5,16 @@
 // Description: Equilibrium joystick support brought by SDL
 //////////////////////////////////////////////////////////////////////////////////
 
-#include "core/DebugInterface.h"
+#include <SDL.h>
+
+#include "core/core_common.h"
 #include "core/IFileSystem.h"
 #include "core/ConVar.h"
-
+#include "core/ConCommand.h"
 #include "sys_host.h"
 #include "sys_in_joystick.h"
 
 #include "input/in_keys_ident.h"
-
-#include <SDL.h>
 
 ConVar in_joy_debug("in_joy_debug", "0", "Joystick debug messages", 0);
 
@@ -221,20 +221,19 @@ void CEqGameControllerSDL::RepeatEvents(float fDt)
 		if (!jc.m_connected)
 			continue;
 
-		for (const auto& button : jc.m_pressed) {
+		for (auto it = jc.m_pressed.begin(); it != jc.m_pressed.end(); ++it) {
 
-			float val = button.second - fDt;
+			float val = *it - fDt;
 			val -= fDt;
 
 			if (val > 0.0f)
 			{
-				jc.m_pressed[button.first] = val;
+				jc.m_pressed[it.key()] = val;
 				continue;
 			}
 
-			jc.m_pressed[button.first] = in_joy_repeatDelay.GetFloat();
-
-			g_pHost->TrapJoyButton_Event(button.first, true);
+			*it = in_joy_repeatDelay.GetFloat();
+			g_pHost->TrapJoyButton_Event(it.key(), true);
 
 			//SDL_HapticRumblePlay(jc.m_haptic, 1.0, 50);
 		}
@@ -327,7 +326,7 @@ void CEqGameControllerSDL::ProcessInputEvent(SDL_Event* event)
 					if (down)
 						jc.m_pressed[button] = in_joy_repeatDelayInit.GetFloat();
 					else
-						jc.m_pressed.erase(button);
+						jc.m_pressed.remove(button);
 
 					// handle button up/down
 					g_pHost->TrapJoyButton_Event((short)button, down);

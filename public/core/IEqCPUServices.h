@@ -5,12 +5,7 @@
 // Description: Eq Engine CPU services
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef IEQCPUSERVICES_H
-#define IEQCPUSERVICES_H
-
-#include "IDkCore.h"
-
-#include "dktypes.h"
+#pragma once
 #include "cpuInstrDefs.h"
 
 #define CPUSERVICES_INTERFACE_VERSION		"CORE_CPUCaps_001"
@@ -58,5 +53,3 @@ public:
 };
 
 INTERFACE_SINGLETON( IEqCPUCaps, CEqCPUCaps, CPUSERVICES_INTERFACE_VERSION, g_cpuCaps )
-
-#endif // IEQCPUSERVICES_H

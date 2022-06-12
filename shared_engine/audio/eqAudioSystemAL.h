@@ -5,17 +5,8 @@
 // Description: Equilibrium Engine Audio system
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef EQSOUNDSYSTEMAL_H
-#define EQSOUNDSYSTEMAL_H
-
+#pragma once
 #include "audio/IEqAudioSystem.h"
-
-#include "core/platform/Platform.h"
-
-#include "ds/Array.h"
-
-#include "source/snd_source.h"
-
 
 //-----------------------------------------------------------------
 
@@ -146,5 +137,3 @@ protected:
 	bool					m_forceStop;
 	bool					m_looping;
 };
-
-#endif // EQSOUNDSYSTEMAL_H

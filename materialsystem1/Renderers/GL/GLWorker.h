@@ -5,12 +5,7 @@
 // Description: OpenGL Worker
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef GLWORKER_H
-#define GLWORKER_H
-
-#include "utils/eqthread.h"
-#include "ds/function.h"
-
+#pragma once
 #include <atomic>
 
 class GLWorkerThread : Threading::CEqThread
@@ -63,5 +58,3 @@ protected:
 };
 
 extern GLWorkerThread g_glWorker;
-
-#endif // GLWORKER_H

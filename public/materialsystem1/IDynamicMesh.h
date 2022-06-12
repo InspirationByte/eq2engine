@@ -5,10 +5,7 @@
 // Description: dynamic mesh interface
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef IDYNAMICMESH_H
-#define IDYNAMICMESH_H
-
-#include "renderers/ShaderAPI_defs.h"
+#pragma once
 
 // standard vertex format used by the material system's dynamic mesh instance
 static VertexFormatDesc_t g_standardVertexFormatDesc[] = {
@@ -31,7 +28,7 @@ public:
 	virtual ER_PrimitiveType	GetPrimitiveType() const = 0;
 
 	// returns a pointer to vertex format description
-	virtual void			GetVertexFormatDesc(VertexFormatDesc_t** desc, int& numAttribs) = 0;
+	virtual void			GetVertexFormatDesc(const VertexFormatDesc_t** desc, int& numAttribs) = 0;
 
 	// allocates geometry chunk. Returns the start index. Will return -1 if failed
 	// addStripBreak is for PRIM_TRIANGLE_STRIP. Set it false to work with current strip
@@ -49,5 +46,3 @@ public:
 	// resets the dynamic mesh
 	virtual void			Reset() = 0;
 };
-
-#endif // IDYNAMICMESH_H

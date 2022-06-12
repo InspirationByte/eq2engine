@@ -6,17 +6,11 @@
 //				Provides event message sending
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef NETTHREAD_H
-#define NETTHREAD_H
-
-#include "utils/eqthread.h"
-#include "ds/Array.h"
-#include "utils/eqtimer.h"
-
-#include "network/c_udp.h"
-#include "network/NetInterfaces.h"
-#include "network/Buffer.h"
-#include "network/NetEvent.h"
+#pragma once
+#include "c_udp.h"
+#include "NetInterfaces.h"
+#include "Buffer.h"
+#include "NetEvent.h"
 
 namespace Networking
 {
@@ -193,8 +187,4 @@ protected:
 	int							m_eventCounter;
 };
 
-
-
 }; // namespace Networking
-
-#endif // NETTHREAD_H

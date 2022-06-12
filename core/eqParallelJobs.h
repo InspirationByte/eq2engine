@@ -5,6 +5,9 @@
 // Description: Equilibrium multithreaded parallel jobs
 //////////////////////////////////////////////////////////////////////////////////
 
+#pragma once
+#include "core/IEqParallelJobs.h"
+
 /*
 
 This is the diferrent conception of jobs
@@ -20,14 +23,6 @@ This is the diferrent conception of jobs
 	Threads are searching for their jobs by calling CEqParallelJobThreads::AssignFreeJob
 
 */
-
-#ifndef EQPARALLELJOBS_H
-#define EQPARALLELJOBS_H
-
-#include "core/IEqParallelJobs.h"
-#include "utils/eqthread.h"
-#include "ds/Array.h"
-#include "ds/List.h"
 
 class CEqParallelJobThreads;
 
@@ -111,5 +106,3 @@ protected:
 	Threading::CEqMutex				m_completeMutex;
 	uintptr_t						m_mainThreadId;
 };
-
-#endif // EQPARALLELJOBS_H

@@ -5,15 +5,7 @@
 // Description: Vector math base (2D,3D,4D)
 //////////////////////////////////////////////////////////////////////////////////
 
-
-#ifndef VECTOR_H
-#define VECTOR_H
-
-#include <limits.h>
-#include <float.h>
-
-#include "core/dktypes.h"
-#include "math_common.h"
+#pragma once
 
 struct half
 {
@@ -295,8 +287,11 @@ struct TVec4D
 
 	operator T *() const { return (T *) &x; }
 
-	const TVec3D<T>& xyz() const { return *(TVec3D<T>*)&x; }
-	const TVec3D<T>& yzw() const { return *(TVec3D<T>*)&y; }
+	TVec3D<T>& xyz() { return *(TVec3D<T>*)&x; }
+	TVec3D<T>& yzw() { return *(TVec3D<T>*)&y; }
+
+	const TVec3D<T>& xyz() const { return *(TVec3D<T>*) & x; }
+	const TVec3D<T>& yzw() const { return *(TVec3D<T>*) & y; }
 
 	const TVec2D<T>& xy() const { return *(TVec2D<T>*)&x; }
 	const TVec2D<T>& yz() const { return *(TVec2D<T>*)&y; }
@@ -374,14 +369,12 @@ template <typename T, typename T2>
 bool operator == (const TVec4D<T> &u, const TVec4D<T2> &v);
 
 // define common vector types
-
-typedef TVec2D<float>	Vector2D;
-typedef TVec3D<float>	Vector3D;
-typedef TVec4D<float>	Vector4D;
-
-typedef TVec2D<int>		IVector2D;
-typedef TVec3D<int>		IVector3D;
-typedef TVec4D<int>		IVector4D;
+using Vector2D  = TVec2D<float>;
+using Vector3D  = TVec3D<float>;
+using Vector4D  = TVec4D<float>;
+using IVector2D = TVec2D<int>;
+using IVector3D = TVec3D<int>;
+using IVector4D = TVec4D<int>;
 
 /* --------------------------------------------------------------------------------- */
 
@@ -585,7 +578,7 @@ template <typename T>
 TVec4D<T>	balance(const TVec4D<T> &v);
 
 // computes direction vectors from angles (degrees)
-void		AngleVectors(const Vector3D &angles,Vector3D *forward,Vector3D *right = NULL,Vector3D *up = NULL);
+void		AngleVectors(const Vector3D &angles,Vector3D *forward,Vector3D *right = nullptr,Vector3D *up = nullptr);
 
 // computes angles from direction vector
 Vector3D	VectorAngles(const Vector3D &forward);
@@ -639,50 +632,114 @@ T			lineProjection(const TVec3D<T> &start, const TVec3D<T> &end, const TVec3D<T>
 template <typename T>
 bool		fixNormal(TVec3D<T> &vec);
 
-// threat RGB color as TVec3D<T>
-typedef		TVec3D<float> ColorRGB;
-
-// threat RGBA color as TVec4D<T>
-typedef		TVec4D<float> ColorRGBA;
-
-// converts Ting-point colors to single UINT color (as in D3D)
-uint		toRGBA(const ColorRGBA &u);
-
-// converts Ting-point colors to single UINT color (as in D3D)
-uint		toBGRA(const ColorRGBA &u);
-
-template <typename CHAR_T>
-ColorRGB	hexToColor3(CHAR_T* rgb);
-
-template <typename CHAR_T>
-ColorRGBA	hexToColor4(CHAR_T* rgba);
-
-ColorRGB	rgbeToRGB(unsigned char *rgbe);
-uint		rgbToRGBE8(const ColorRGB &rgb);
-uint		rgbToRGB9E5(const ColorRGB &rgb);
-
 static const TVec2D<float> vec2_zero = TVec2D<float>(0.0f);
 static const TVec3D<float> vec3_zero = TVec3D<float>(0.0f);
 static const TVec4D<float> vec4_zero = TVec4D<float>(0.0f);
 
-static const TVec3D<float> vec3_undef = TVec3D<float>(888.888f);
+static const TVec3D<float> vec3_undef = TVec3D<float>(F_UNDEF);
 static const TVec3D<float> vec3_infinity = TVec3D<float>(F_INFINITY);
 
 static const TVec3D<float> vec3_right = TVec3D<float>(1.0f, 0.0f, 0.0f);
 static const TVec3D<float> vec3_up = TVec3D<float>(0.0f, 1.0f, 0.0f);
 static const TVec3D<float> vec3_forward = TVec3D<float>(0.0f, 0.0f, 1.0f);
 
-// white (default) colors
-static const ColorRGB color3_white = ColorRGB(1.0f);
-static const ColorRGBA color4_white = ColorRGBA(color3_white, 1.0f);
+//-------------------------------------------------------------------
 
-#ifndef RAD2DEG
-#	define RAD2DEG( x  )	( (float)(x) * (float)(180.f / M_PI_F) )
-#endif
+// FIXME: remove color vectors?
+using ColorRGB = TVec3D<float>;
+using ColorRGBA = TVec4D<float>;
 
-#ifndef DEG2RAD
-#	define DEG2RAD( x  )	( (float)(x) * (float)(M_PI_F / 180.f) )
-#endif
+struct MColor
+{
+	union {
+		TVec4D<float> v;
+		struct {
+			float r, g, b, a;
+		};
+	};
+
+	MColor() {}
+
+
+	MColor(uint u)
+		: r(float(u & 255) / 255.0f), g(float((u >> 8) & 255) / 255.0f), b(float((u >> 16) & 255) / 255.0f), a(float((u >> 24) & 255) / 255.0f) {}
+
+	MColor(uint u, bool _ARGB)
+		: b(float(u & 255) / 255.0f), g(float((u >> 8) & 255) / 255.0f), r(float((u >> 16) & 255) / 255.0f), a(float((u >> 24) & 255) / 255.0f) {}
+
+	MColor(float r, float g, float b)
+		: r(r), g(g), b(b), a(1.0f) {}
+
+	MColor(float r, float g, float b, float a)
+		: r(r), g(g), b(b), a(a) {}
+
+	MColor(const Vector3D& rgb)
+		: r(rgb.x), g(rgb.y), b(rgb.z), a(1.0f) {}
+
+	MColor(const Vector3D& rgb, float a)
+		: r(rgb.x), g(rgb.y), b(rgb.z), a(a) {}
+
+	MColor(const Vector4D& rgba)
+		: v(rgba) {}
+
+	MColor& operator=(uint u)
+	{
+		r = float(u & 255) / 255.0f;
+		g = float(u >> 8 & 255) / 255.0f;
+		b = float(u >> 16 & 255) / 255.0f;
+		a = float(u >> 16 & 255) / 255.0f;
+		return *this;
+	}
+
+	MColor& operator=(const Vector4D& rgba)
+	{ 
+		v = rgba;
+		return *this;
+	}
+
+	ColorRGB& rgb()						{ return *(Vector3D*)&r; }
+	const ColorRGB& rgb() const			{ return *(Vector3D*)&r; }
+
+	ColorRGBA& rgba()					{ return v; }
+	const ColorRGBA& rgba() const		{ return v; }
+
+	operator const ColorRGB&() const { return *(Vector3D*)&r; }
+	operator const ColorRGBA&() const { return v; }
+
+	uint pack() const 
+	{
+		return uint(r * 255.0f) | (uint(g * 255.0f) << 8) | (uint(b * 255.0f) << 16) | (uint(a * 255.0f) << 24);
+	}
+};
+
+// converts Ting-point colors to single UINT color (as in D3D)
+uint		toRGBA(const MColor& u);
+
+// converts Ting-point colors to single UINT color (as in D3D)
+uint		toBGRA(const MColor& u);
+
+template <typename CHAR_T>
+MColor		hexToColor3(CHAR_T* rgb);
+
+template <typename CHAR_T>
+MColor		hexToColor4(CHAR_T* rgba);
+
+MColor		rgbeToRGB(unsigned char* rgbe);
+uint		rgbToRGBE8(const MColor& rgb);
+uint		rgbToRGB9E5(const MColor& rgb);
+
+// pre-defined colors
+static const MColor color_white		= MColor(0xFFFFFFFF, true);
+static const MColor color_red		= MColor(0xFFFF0000, true);
+static const MColor color_orange	= MColor(0xFFFFA500, true);
+static const MColor color_yellow	= MColor(0xFFFFFF00, true);
+static const MColor color_magenta	= MColor(0xFFFF00FF, true);
+static const MColor color_purple	= MColor(0xFF800080, true);
+static const MColor color_blue		= MColor(0xFFFF0000, true);
+static const MColor color_green		= MColor(0xFF009000, true);
+static const MColor color_cyan		= MColor(0xFF00FFFF, true);
+static const MColor color_brown		= MColor(0xFFA52A2A, true);
+static const MColor color_gray		= MColor(0xFF808080, true);
 
 #ifndef VDEG2RAD
 #	define VDEG2RAD( v )	Vector3D(DEG2RAD(v.x),DEG2RAD(v.y),DEG2RAD(v.z))
@@ -693,5 +750,3 @@ static const ColorRGBA color4_white = ColorRGBA(color3_white, 1.0f);
 #endif
 
 #include "Vector.inl"
-
-#endif //VECTOR_H

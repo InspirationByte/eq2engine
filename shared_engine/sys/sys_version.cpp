@@ -5,14 +5,9 @@
 // Description: Engine version
 //////////////////////////////////////////////////////////////////////////////////
 
-#include "sys_version.h"
-
-#include "core/DebugInterface.h"
+#include "core/core_common.h"
 #include "core/ConCommand.h"
-
-#include "utils/strtools.h"
-
-#include <string.h>
+#include "sys_version.h"
 
 // date i've stated development - "Feb 28 2009"
 

@@ -5,15 +5,12 @@
 // Description: Equilibrium Empty ShaderAPI for some applications using matsystem
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef SHADERAPIEMPTY_H
-#define SHADERAPIEMPTY_H
-
-#include <string.h>
-#include "../Shared/ShaderAPI_Base.h"
-#include "core/DebugInterface.h"
-
+#pragma once
+#include "ShaderAPI_Base.h"
 #include "CEmptyTexture.h"
 #include "imaging/ImageLoader.h"
+
+using namespace Threading;
 
 class CEmptyVertexBuffer : public IVertexBuffer
 {
@@ -91,19 +88,14 @@ public:
 class CEmptyVertexFormat : public IVertexFormat
 {
 public:
-	CEmptyVertexFormat(const char* name, VertexFormatDesc_s *desc, int nAttribs) : m_numAttribs(nAttribs)
+	CEmptyVertexFormat(const char* name, const VertexFormatDesc_t *desc, int nAttribs)
 	{
 		m_name = name;
-		m_vertexDesc = PPNew VertexFormatDesc_t[m_numAttribs];
 		memset(m_streamStride, 0, sizeof(m_streamStride));
 
-		for(int i = 0; i < m_numAttribs; i++)
+		m_vertexDesc.setNum(nAttribs);
+		for(int i = 0; i < nAttribs; i++)
 			m_vertexDesc[i] = desc[i];
-	}
-
-	~CEmptyVertexFormat()
-	{
-		delete [] m_vertexDesc;
 	}
 
 	const char* GetName() const {return m_name.ToCString();}
@@ -113,17 +105,16 @@ public:
 		return 0;
 	}
 
-	void GetFormatDesc(VertexFormatDesc_t** desc, int& numAttribs) const
+	void GetFormatDesc(const VertexFormatDesc_t** desc, int& numAttribs) const
 	{
-		*desc = m_vertexDesc;
-		numAttribs = m_numAttribs;
+		*desc = m_vertexDesc.ptr();
+		numAttribs = m_vertexDesc.numElem();
 	}
 
 protected:
-	int					m_streamStride[MAX_VERTEXSTREAM];
-	EqString			m_name;
-	VertexFormatDesc_t*	m_vertexDesc;
-	int					m_numAttribs;
+	int							m_streamStride[MAX_VERTEXSTREAM];
+	EqString					m_name;
+	Array<VertexFormatDesc_t>	m_vertexDesc{ PP_SL };
 };
 
 class ShaderAPIEmpty : public ShaderAPI_Base
@@ -139,7 +130,11 @@ public:
 								
 
 	// Init + Shurdown
-	void						Init(shaderAPIParams_t &params) { memset(&m_caps, 0, sizeof(m_caps)); ShaderAPI_Base::Init(params);}
+	void						Init(const shaderAPIParams_t &params) 
+	{
+		memset(&m_caps, 0, sizeof(m_caps));
+		ShaderAPI_Base::Init(params);
+	}
 	//void						Shutdown() {}
 
 	void						PrintAPIInfo() {}
@@ -436,7 +431,7 @@ public:
 // Vertex buffer objects
 //-------------------------------------------------------------
 
-	IVertexFormat*				CreateVertexFormat(const char* name, VertexFormatDesc_s *formatDesc, int nAttribs)
+	IVertexFormat*				CreateVertexFormat(const char* name, const VertexFormatDesc_t *formatDesc, int nAttribs)
 	{
 		IVertexFormat* pVF = PPNew CEmptyVertexFormat(name, formatDesc, nAttribs);
 		m_VFList.append(pVF);
@@ -494,5 +489,3 @@ protected:
 
 	int							GetSamplerUnit(IShaderProgram* pProgram,const char* pszSamplerName) {return 0;}
 };
-
-#endif // SHADERAPIEMPTY_H

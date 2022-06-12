@@ -5,26 +5,18 @@
 // Description: Token parser
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef TOKENIZER_H
-#define TOKENIZER_H
-
-#include "core/platform/Platform.h"
-#include "ds/Array.h"
-
-typedef bool (*BOOLFUNC)(const char ch);
+#pragma once
 
 bool isWhiteSpace(const char ch);
 bool isNumeric(const char ch);
 bool isAlphabetical(const char ch);
 bool isNewLine(const char ch);
 
-struct TokBuffer {
-	char *buffer;
-	unsigned int bufferSize;
-};
-
-class Tokenizer {
+class Tokenizer 
+{
 public:
+	typedef bool (*BOOLFUNC)(const char ch);
+
 	Tokenizer(unsigned int nBuffers = 1);
 	~Tokenizer();
 
@@ -45,12 +37,15 @@ private:
 	uint	start, end;
 	uint	capacity;
 
-	//uint	curline;
-
 	int currentBuffer;
-	Array <TokBuffer> buffers{ PP_SL };
+
+	struct TokBuffer
+	{
+		char* buffer;
+		unsigned int bufferSize;
+	};
+
+	Array<TokBuffer> buffers{ PP_SL };
 
 	char *getBuffer(unsigned int size);
 };
-
-#endif // TOKENIZER_H

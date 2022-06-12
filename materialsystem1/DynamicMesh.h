@@ -5,11 +5,13 @@
 // Description: MaterialSystem dynamic mesh
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef DYNAMICMESH_H
-#define DYNAMICMESH_H
-
+#pragma once
 #include "materialsystem1/IDynamicMesh.h"
-#include "materialsystem1/renderers/IShaderAPI.h"
+
+typedef struct VertexFormatDesc_s VertexFormatDesc_t;
+class IVertexFormat;
+class IVertexBuffer;
+class IIndexBuffer;
 
 class CDynamicMesh : public IDynamicMesh
 {
@@ -17,15 +19,15 @@ public:
 	CDynamicMesh();
 	~CDynamicMesh();
 
-	bool			Init( VertexFormatDesc_t* desc, int numAttribs );
+	bool			Init(const VertexFormatDesc_t* desc, int numAttribs );
 	void			Destroy();
 
 	// sets the primitive type (chooses the way how to allocate geometry parts)
-	void			SetPrimitiveType( ER_PrimitiveType primType );
+	void				SetPrimitiveType( ER_PrimitiveType primType );
 	ER_PrimitiveType	GetPrimitiveType() const;
 
 	// returns a pointer to vertex format description
-	void			GetVertexFormatDesc(VertexFormatDesc_t** desc, int& numAttribs);
+	void			GetVertexFormatDesc(const VertexFormatDesc_t** desc, int& numAttribs);
 
 	// allocates geometry chunk. Returns the start index. Will return -1 if failed
 	// addStripBreak is for PRIM_TRIANGLE_STRIP. Set it false to work with current strip
@@ -65,5 +67,3 @@ protected:
 	int				m_vboAqquired;
 	int				m_vboDirty;
 };
-
-#endif // DYNAMICMESH_H

@@ -9,31 +9,11 @@
 //			add geometry drawer
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef IDEBUG_TEXT
-#define IDEBUG_TEXT
-
-#include "core/InterfaceManager.h"
-
-#include "math/Vector.h"
-#include "math/Matrix.h"
-#include "ds/List.h"
-#include "ds/eqstring.h"
+#pragma once
 
 #define DBGOVERLAY_INTERFACE_VERSION "DebugOverlay_001"
 
-#ifdef ENGINE_EXPORT
-#	define ENGINE_EXPORTS		extern "C" __declspec(dllexport)
-#else
-#	define ENGINE_EXPORTS		extern "C" __declspec(dllimport)
-#endif
-
 class IEqFont;
-
-struct graphPoint_t
-{
-	float value;
-	ColorRGB color;
-};
 
 struct debugGraphBucket_t
 {
@@ -46,6 +26,12 @@ struct debugGraphBucket_t
 		: name(name), color(color), maxValue(maxValue), updateTime(updateTime), dynamic(dynamicScaling)
 	{
 	}
+
+	struct graphPoint_t
+	{
+		float value;
+		ColorRGB color;
+	};
 
 	EqString								name;
 	ColorRGB								color{ 0.25f };
@@ -96,5 +82,3 @@ public:
 };
 
 extern IDebugOverlay *debugoverlay;
-
-#endif //IDEBUG_TEXT

@@ -5,15 +5,8 @@
 // Description: Constant types for Equilibrium renderer
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef RENDERER_CONSTANTS_H
-#define RENDERER_CONSTANTS_H
-
+#pragma once
 #include "imaging/textureformats.h"
-
-#include "math/Vector.h"
-#include "math/Matrix.h"
-#include "ds/Array.h"
-#include "ds/eqstring.h"
 
 //---------------------------------------
 //        HIGH LEVEL CONSTANTS
@@ -485,5 +478,3 @@ enum ER_ShaderAPIType
 #define TEXTURE_DEFAULT_EXTENSION		".dds"
 #define TEXTURE_SECONDARY_EXTENSION		".tga"
 #define TEXTURE_ANIMATED_EXTENSION		".ati"			// ATI - Animated Texture Index file
-
-#endif // RENDERER_CONSTANTS_H

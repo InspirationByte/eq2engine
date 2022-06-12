@@ -5,18 +5,14 @@
 // Description: Equilibrium Shared Model loader, obj support
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef DSM_OBJ_LOADER_H
-#define DSM_OBJ_LOADER_H
-
-#include "dsm_loader.h"
+#pragma once
 
 namespace SharedModel
 {
+struct dsmmodel_t;
 
 // Loads OBJ model, as DSM
 bool LoadOBJ(dsmmodel_t* model, const char* filename);
 bool SaveOBJ(dsmmodel_t* model, const char* filename);
 
 } // namespace
-
-#endif // DSM_OBJ_LOADER_H

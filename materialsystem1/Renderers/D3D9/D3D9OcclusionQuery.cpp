@@ -5,12 +5,14 @@
 // Description: D3D9 Occlusion query 
 //////////////////////////////////////////////////////////////////////////////////
 
+#include "core/core_common.h"
+#include "shaderapid3d9_def.h"
 #include "D3D9OcclusionQuery.h"
-#include "ShaderAPID3DX9.h"
 
+#include "ShaderAPID3D9.h"
 extern ShaderAPID3DX9 s_shaderApi;
 
-CD3D9OcclusionQuery::CD3D9OcclusionQuery( LPDIRECT3DDEVICE9 dev )
+CD3D9OcclusionQuery::CD3D9OcclusionQuery(IDirect3DDevice9* dev)
 {
 	m_ready = false;
 	m_pixelsVisible = 0;

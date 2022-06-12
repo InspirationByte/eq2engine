@@ -5,20 +5,11 @@
 // Description:
 //////////////////////////////////////////////////////////////////////////////////
 
-
-#include <stdio.h>
-
-#include "core/DebugInterface.h"
-#include "core/cmdlib.h"
+#include "core/core_common.h"
 #include "core/IDkCore.h"
-#include "core/ConVar.h"
 #include "core/IFileSystem.h"
-
-#include "utils/strtools.h"
-#include "ds/align.h"
-
-#include <iostream>
-#include <malloc.h>
+#include "core/ICommandLine.h"
+#include "core/ConVar.h"
 #include "egf/model.h"
 
 class IShaderAPI* g_pShaderAPI = nullptr;

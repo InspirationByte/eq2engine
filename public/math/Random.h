@@ -5,11 +5,9 @@
 // Description: Random number generator
 //////////////////////////////////////////////////////////////////////////////////
 
+#pragma once
 
-#ifndef RANDOM_H
-#define RANDOM_H
-
-#define NTAB 32
+#define RANDOM_NTAB 32
 
 class CUniformRandomStream
 {
@@ -28,11 +26,10 @@ private:
 
 	int m_ndum;
 	int m_ny;
-	int m_nv[NTAB];
+	int m_nv[RANDOM_NTAB];
 };
 
 void	RandomSeed( int nSeed );
 float	RandomFloat( float fMinVal = 0.0f, float fMaxVal = 1.0f );
 int		RandomInt( int nMinVal, int nMaxVal );
 
-#endif // RANDOM_H

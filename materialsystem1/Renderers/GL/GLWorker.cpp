@@ -5,19 +5,20 @@
 // Description: OpenGL Worker
 //////////////////////////////////////////////////////////////////////////////////
 
+#include "core/core_common.h"
+#include "shaderapigl_def.h"
 #include "GLWorker.h"
 
-#include "core/DebugInterface.h"
-#include "core/platform/assert.h"
+using namespace Threading;
 
 #ifdef USE_SDL2
-#include "CGLRenderLib_SDL.h"
+#include "GLRenderLibrary_SDL.h"
 extern CGLRenderLib_SDL g_library;
 #elif defined(USE_GLES2)
-#include "CGLRenderLib_ES.h"
+#include "GLRenderLibrary_ES.h"
 extern CGLRenderLib_ES g_library;
 #else
-#include "CGLRenderLib.h"
+#include "GLRenderLibrary.h"
 extern CGLRenderLib g_library;
 #endif
 

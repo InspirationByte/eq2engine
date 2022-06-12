@@ -5,11 +5,7 @@
 // Description: Command line parser
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef ICMDLINEPARSER_H
-#define ICMDLINEPARSER_H
-
-#include "InterfaceManager.h"
-#include "ds/Array.h"
+#pragma once
 
 // WARNING: this function declaration is compatible with cmdFilterFn_t
 class ConCommandBase;
@@ -35,5 +31,3 @@ public:
 };
 
 INTERFACE_SINGLETON(ICommandLine, CCommandLine, CMDLINE_INTERFACE_VERSION, g_cmdLine )
-
-#endif //ICMDLINEPARSER_H

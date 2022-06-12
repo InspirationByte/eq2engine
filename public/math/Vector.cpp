@@ -5,8 +5,8 @@
 // Description: Vector math base
 //////////////////////////////////////////////////////////////////////////////////
 
+#include "math_common.h"
 #include "Vector.h"
-#include "DkMath.h"
 
 half::half(const float x)
 {
@@ -250,30 +250,32 @@ Vector3D RotateYZBy(const Vector3D &vector,float degrees, Vector3D &center)
 	return out;
 }
 
-unsigned int toRGBA(const ColorRGBA &u)
+unsigned int toRGBA(const MColor& u)
 {
-	return (int(u.x * 255) | (int(u.y * 255) << 8) | (int(u.z * 255) << 16) | (int(u.w * 255) << 24));
+	return (int(u.r * 255.0f) | (int(u.g * 255.0f) << 8) | (int(u.b * 255.0f) << 16) | (int(u.a * 255.0f) << 24));
 }
 
-unsigned int toBGRA(const ColorRGBA &u)
+unsigned int toBGRA(const MColor& u)
 {
-	return (int(u.z * 255) | (int(u.y * 255) << 8) | (int(u.x * 255) << 16) | (int(u.w * 255) << 24));
+	return (int(u.b * 255) | (int(u.g * 255) << 8) | (int(u.r * 255) << 16) | (int(u.a * 255) << 24));
 }
 
-ColorRGB rgbeToRGB(unsigned char *rgbe)
+MColor rgbeToRGB(unsigned char *rgbe)
 {
 	if (rgbe[3])
 	{
-		return ColorRGB(rgbe[0], rgbe[1], rgbe[2]) * ldexpf(1.0f, rgbe[3] - (int) (128 + 8));
+		Vector3D clr(rgbe[0], rgbe[1], rgbe[2]);
+		clr *= ldexpf(1.0f, rgbe[3] - (int)(128 + 8));
+		return MColor(clr);
 	} 
 	else
-		return ColorRGB(0, 0, 0);
+		return MColor(0, 0, 0);
 }
 
-unsigned int rgbToRGBE8(const ColorRGB &rgb)
+unsigned int rgbToRGBE8(const MColor &rgb)
 {
-	float v = max(rgb.x, rgb.y);
-	v = max(v, rgb.z);
+	float v = max(rgb.r, rgb.g);
+	v = max(v, rgb.b);
 
 	if (v < 1e-32f)
 	{
@@ -284,19 +286,19 @@ unsigned int rgbToRGBE8(const ColorRGB &rgb)
 		int ex;
 		float m = frexpf(v, &ex) * 256.0f / v;
 
-		unsigned int r = (unsigned int) (m * rgb.x);
-		unsigned int g = (unsigned int) (m * rgb.y);
-		unsigned int b = (unsigned int) (m * rgb.z);
+		unsigned int r = (unsigned int) (m * rgb.r);
+		unsigned int g = (unsigned int) (m * rgb.g);
+		unsigned int b = (unsigned int) (m * rgb.b);
 		unsigned int e = (unsigned int) (ex + 128);
 
 		return r | (g << 8) | (b << 16) | (e << 24);
 	}
 }
 
-unsigned int rgbToRGB9E5(const ColorRGB &rgb)
+unsigned int rgbToRGB9E5(const MColor &rgb)
 {
-	float v = max(rgb.x, rgb.y);
-	v = max(v, rgb.z);
+	float v = max(rgb.r, rgb.g);
+	v = max(v, rgb.b);
 
 	if (v < 1.52587890625e-5f)
 	{
@@ -307,18 +309,18 @@ unsigned int rgbToRGB9E5(const ColorRGB &rgb)
 		int ex;
 		float m = frexpf(v, &ex) * 512.0f / v;
 
-		unsigned int r = (unsigned int) (m * rgb.x);
-		unsigned int g = (unsigned int) (m * rgb.y);
-		unsigned int b = (unsigned int) (m * rgb.z);
+		unsigned int r = (unsigned int) (m * rgb.r);
+		unsigned int g = (unsigned int) (m * rgb.g);
+		unsigned int b = (unsigned int) (m * rgb.b);
 		unsigned int e = (unsigned int) (ex + 15);
 
 		return r | (g << 9) | (b << 18) | (e << 27);
 	} 
 	else
 	{
-		unsigned int r = (rgb.x < 65536)? (unsigned int) (rgb.x * (1.0f / 128.0f)) : 0x1FF;
-		unsigned int g = (rgb.y < 65536)? (unsigned int) (rgb.y * (1.0f / 128.0f)) : 0x1FF;
-		unsigned int b = (rgb.z < 65536)? (unsigned int) (rgb.z * (1.0f / 128.0f)) : 0x1FF;
+		unsigned int r = (rgb.r < 65536)? (unsigned int) (rgb.r * (1.0f / 128.0f)) : 0x1FF;
+		unsigned int g = (rgb.g < 65536)? (unsigned int) (rgb.g * (1.0f / 128.0f)) : 0x1FF;
+		unsigned int b = (rgb.b < 65536)? (unsigned int) (rgb.b * (1.0f / 128.0f)) : 0x1FF;
 		unsigned int e = 31;
 
 		return r | (g << 9) | (b << 18) | (e << 27);

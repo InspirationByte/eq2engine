@@ -5,10 +5,8 @@
 // Description: Pacifier
 //////////////////////////////////////////////////////////////////////////////////
 
-#include <stdio.h>
+#include "core_common.h"
 #include "cmd_pacifier.h"
-#include "DebugInterface.h"
-
 
 static int g_LastPacifierDrawn = -1;
 

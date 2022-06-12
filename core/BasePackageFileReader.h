@@ -5,12 +5,7 @@
 // Description: Zip package file (zip)
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef BASEPACKAGEFILEREADER_H
-#define BASEPACKAGEFILEREADER_H
-
-#include "ds/IVirtualStream.h"
-#include "ds/eqstring.h"
-#include "utils/eqthread.h"
+#pragma once
 
 class CBasePackageFileReader;
 
@@ -55,5 +50,3 @@ protected:
 
 	Threading::CEqMutex&	m_FSMutex;
 };
-
-#endif // BASEPACKAGEFILEREADER_H

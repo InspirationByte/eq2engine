@@ -1094,7 +1094,7 @@ inline bool fixNormal(TVec3D<T> &vec)
 const float _oneBy255 = 1.0f / 255.0f;
 
 template <typename CHAR_T>
-inline ColorRGB hexToColor3(CHAR_T* rgb)
+inline MColor hexToColor3(CHAR_T* rgb)
 {
 	// parse color string
 	char hexcolor[6];
@@ -1116,7 +1116,7 @@ inline ColorRGB hexToColor3(CHAR_T* rgb)
 }
 
 template <typename CHAR_T>
-inline ColorRGBA hexToColor4(CHAR_T* rgba)
+inline MColor hexToColor4(CHAR_T* rgba)
 {
 	// parse color string
 	char hexcolor[8];

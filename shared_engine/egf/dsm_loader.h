@@ -5,13 +5,7 @@
 // Description: Equilibrium Shared Model loader
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef DSM_LOADER_H
-#define DSM_LOADER_H
-
-#include "math/Vector.h"
-#include "ds/Array.h"
-#include "ds/eqstring.h"
-#include "core/ppmem.h"
+#pragma once
 
 namespace SharedModel
 {
@@ -64,11 +58,9 @@ struct dsmmodel_t
 	char					name[64];
 
 	Array<dsmgroup_t*>		groups{ PP_SL };
-
 	Array<dsmskelbone_t*>	bones{ PP_SL };
 
 	dsmskelbone_t*			FindBone(const char* pszName);
-
 	dsmgroup_t*				FindGroupByName(const char* pszGroupname);
 };
 
@@ -85,5 +77,3 @@ void	FreeDSMBones(dsmmodel_t* model);
 int		GetTotalVertsOfDSM(dsmmodel_t* model);
 
 } // namespace
-
-#endif // DSM_LOADER_H

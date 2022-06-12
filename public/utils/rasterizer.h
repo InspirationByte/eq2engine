@@ -7,12 +7,7 @@
 //						(instead of using template)
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef RASTERIZER_H
-#define RASTERIZER_H
-
-#include "core/DebugInterface.h"
-#include "math/Utility.h"
-#include "math/Plane.h"
+#pragma once
 
 template< class T >
 struct REdge_t
@@ -473,6 +468,3 @@ inline void CRasterizer<T>::DrawLine(const T &color1, const Vector2D &p1, const 
 		}
 	}
 }
-
-
-#endif // RASTERIZER_H

@@ -4,14 +4,10 @@
 //////////////////////////////////////////////////////////////////////////////////
 // Description: Physics model cache for bullet physics
 //				Generates real shapes for Bullet Collision
-// 
 ///////////////////////////////////////////////////////////////////////////////////
 
-#ifndef BULLETSHAPECACHE_H
-#define BULLETSHAPECACHE_H
-
+#pragma once
 #include "physics/IStudioShapeCache.h"
-#include "utils/eqthread.h"
 
 class btCollisionShape;
 
@@ -40,5 +36,3 @@ protected:
 	// cached shapes
 	Array<btCollisionShape*>	m_collisionShapes{ PP_SL };
 };
-
-#endif

@@ -5,24 +5,8 @@
 // Description: eqPhysics bullet indexed mesh
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef EQBULLETINDEXEDMESH_H
-#define EQBULLETINDEXEDMESH_H
-
-#include "core/platform/Platform.h"
-#include "ds/Array.h"
-
+#pragma once
 #include <BulletCollision/CollisionShapes/btStridingMeshInterface.h>
-#include "math/DkMath.h"
-
-struct eqBulletMeshSubpart_t
-{
-	int firstIndex;
-	int firstVertex;
-	int numIndices;
-	int numVerts;
-
-	int materialId;
-};
 
 class CEqBulletIndexedMesh : public btStridingMeshInterface
 {
@@ -56,6 +40,16 @@ public:
 	void							preallocateIndices(int numindices) {};
 protected:
 
+	struct eqBulletMeshSubpart_t
+	{
+		int firstIndex;
+		int firstVertex;
+		int numIndices;
+		int numVerts;
+
+		int materialId;
+	};
+
 	ubyte*							m_vertexData;
 	int								m_vertexStride;
 
@@ -69,5 +63,3 @@ protected:
 
 	Array<eqBulletMeshSubpart_t>	m_subparts{ PP_SL }; // or batches
 };
-
-#endif // EQBULLETINDEXEDMESH_H

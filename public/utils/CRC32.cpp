@@ -3,7 +3,7 @@
    Copyright (C) 1995-1998 Mark Adler
 */
 
-
+#include "core/common_types.h"
 #include "CRC32.h"
 
 #define CRC32_INIT_VALUE	0xffffffffL

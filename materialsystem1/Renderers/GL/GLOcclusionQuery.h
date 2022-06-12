@@ -5,9 +5,7 @@
 // Description: OpenGL Occlusion query object
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef GLOCCLUSIONQUERY_H
-#define GLOCCLUSIONQUERY_H
-
+#pragma once
 #include "renderers/IOcclusionQuery.h"
 
 class CGLOcclusionQuery : public IOcclusionQuery
@@ -34,5 +32,3 @@ protected:
 	uint				m_pixelsVisible;
 	bool				m_ready;
 };
-
-#endif // GLOCCLUSIONQUERY_H

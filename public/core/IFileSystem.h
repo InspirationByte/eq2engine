@@ -5,14 +5,7 @@
 // Description: DarkTech Filesystem
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef IFILESYSTEM_H
-#define IFILESYSTEM_H
-
-#include "InterfaceManager.h"
-#include "ds/IVirtualStream.h"
-
-#include <sys/types.h>
-#include <sys/stat.h>
+#pragma once
 
 #define FILESYSTEM_INTERFACE_VERSION		"CORE_Filesystem_006"
 
@@ -186,5 +179,3 @@ inline bool CFileSystemFind::Next()
 
 	return (m_fd && m_curPath);
 }
-
-#endif // IFILESYSTEM_H

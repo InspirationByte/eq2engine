@@ -5,12 +5,15 @@
 // Description: EGUI label
 //////////////////////////////////////////////////////////////////////////////////
 
+#include "core/core_common.h"
+#include "utils/KeyValues.h"
 #include "EqUI_Label.h"
 
 #include "EqUI_Manager.h"
-#include "font/IFont.h"
 #include "font/FontLayoutBuilders.h"
+
 #include "materialsystem1/IMaterialSystem.h"
+#include "materialsystem1/MeshBuilder.h"
 
 namespace equi
 {

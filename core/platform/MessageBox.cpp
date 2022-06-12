@@ -5,23 +5,9 @@
 // Description: System messageboxes
 //////////////////////////////////////////////////////////////////////////////////
 
-#include "core/platform/MessageBox.h"
-#include <string.h>
-#include <stdarg.h>
-
-#ifndef _DKLAUNCHER_
-
-#include "core/DebugInterface.h"
+#include "core/core_common.h"
 #include "core/IDkCore.h"
-#include "core/ConCommand.h"
-
-#endif // _DKLAUNCHER_
-
-#include <time.h>
-
-#ifdef _WIN32
-#include <Windows.h>
-#endif // _WIN32
+#include "core/platform/MessageBox.h"
 
 #if !defined(_WIN32) && defined(USE_GTK)
 
@@ -229,7 +215,7 @@ static void AssertLogMsg(SpewType_t _dummy, const char* fmt, ...)
 	FILE* assetFile = fopen("logs/Assert.log", "a");
 	if (assetFile)
 	{
-		fprintf(assetFile, "%s: %s\n", time, formattedStr.ToCString());
+		fprintf(assetFile, "%s\n", formattedStr.ToCString());
 		fclose(assetFile);
 	}
 }

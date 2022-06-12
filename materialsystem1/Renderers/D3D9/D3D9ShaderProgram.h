@@ -5,16 +5,8 @@
 // Description: DX9 Shader program for ShaderAPID3DX9
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef D3D9SHADERPROGRAM_H
-#define D3D9SHADERPROGRAM_H
-
-#include "ds/eqstring.h"
-#include "ds/Map.h"
-
+#pragma once
 #include "renderers/IShaderProgram.h"
-#include "renderers/ShaderAPI_defs.h"
-
-#include <d3d9.h>
 
 #define MAX_CONSTANT_NAMELEN 64
 
@@ -36,6 +28,8 @@ struct DX9Sampler_t
 };
 
 struct ID3DXConstantTable;
+struct IDirect3DVertexShader9;
+struct IDirect3DPixelShader9;
 
 class CD3D9ShaderProgram : public IShaderProgram
 {
@@ -60,5 +54,3 @@ protected:
 	Map<int, DX9ShaderConstant_t>	m_constants{ PP_SL };
 	Map<int, DX9Sampler_t>			m_samplers{ PP_SL };
 };
-
-#endif //D3D9SHADERPROGRAM_H

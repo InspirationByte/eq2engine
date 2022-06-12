@@ -5,12 +5,7 @@
 // Description: Physics hinge joint
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef EQPHYSICS_MAXDISTCONSTRAINT_H
-#define EQPHYSICS_MAXDISTCONSTRAINT_H
-
-#include "math/FVector.h"
-#include "math/BoundingBox.h"
-
+#pragma once
 #include "eqPhysics_Contstraint.h"
 
 class CEqRigidBody;
@@ -47,6 +42,3 @@ protected:
 	FVector3D		m_worldPos;
 	Vector3D		m_currentRelPos0;
 };
-
-
-#endif // EQPHYSICS_MAXDISTCONSTRAINT_H

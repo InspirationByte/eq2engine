@@ -5,10 +5,9 @@
 // Description: Renderer swapchain for using to draw in multiple windows
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef IEQSWAPCHAIN_H
-#define IEQSWAPCHAIN_H
+#pragma once
 
-#include "ITexture.h"
+class ITexture;
 
 class IEqSwapChain
 {
@@ -30,4 +29,3 @@ public:
 	virtual bool			SwapBuffers() = 0;
 };
 
-#endif // IEQSWAPCHAIN_H

@@ -5,19 +5,18 @@
 // Description: Collision object with shape data
 //////////////////////////////////////////////////////////////////////////////////
 
-
-#include "eqCollision_Object.h"
-
-#include "core/ConVar.h"
-
+#include <btBulletCollisionCommon.h>
 #include <BulletCollision/CollisionDispatch/btInternalEdgeUtility.h>
 
-#include "eqBulletIndexedMesh.h"
+#include "core/core_common.h"
+#include "core/ConVar.h"
+#include "egf/model.h"
+#include "eqCollision_Object.h"
 
 #include "physics/BulletConvert.h"
+#include "eqBulletIndexedMesh.h"
+
 #include "materialsystem1/IMaterialSystem.h"
-
-
 
 using namespace EqBulletUtils;
 
@@ -58,8 +57,8 @@ CEqCollisionObject::CEqCollisionObject() : m_collisionList(PP_SL, PHYSICS_COLLIS
 
 	m_cellRange = IVector4D(0,0,0,0);
 
-	m_contents = COLLISION_MASK_ALL;
-	m_collMask = COLLISION_MASK_ALL;
+	m_contents = 0xffffffff;;
+	m_collMask = 0xffffffff;
 
 	m_flags = COLLOBJ_TRANSFORM_DIRTY;
 	m_studioShape = false;

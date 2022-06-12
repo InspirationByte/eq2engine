@@ -5,11 +5,7 @@
 // Description: Animating base
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef ANIMATING_H
-#define ANIMATING_H
-
-#include "anim_events.h"
-
+#pragma once
 #include "BoneSetup.h"
 
 #define MAX_SEQUENCE_TIMERS			5
@@ -17,6 +13,8 @@
 //--------------------------------------------------------------------------------------
 
 class IEqModel;
+enum Activity;
+enum AnimationEvent;
 
 class CAnimatingEGF
 {
@@ -113,5 +111,3 @@ protected:
 	// sequence timers. first timer is main, and transitional is last
 	sequencetimer_t				m_sequenceTimers[MAX_SEQUENCE_TIMERS];
 };
-
-#endif // ANIMATING_H

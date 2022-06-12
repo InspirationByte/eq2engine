@@ -5,21 +5,18 @@
 // Description: Animating base
 //////////////////////////////////////////////////////////////////////////////////
 
-#include "Animating.h"
-
-#include "core/DebugInterface.h"
+#include "core/core_common.h"
 #include "core/ConVar.h"
 #include "render/IDebugOverlay.h"
-
-#include "anim_activity.h"
+#include "Animating.h"
 #include "egf/IEqModel.h"
+#include "anim_activity.h"
+#include "anim_events.h"
 
-ConVar r_debug_ik("r_debug_ik", "0", "Draw debug information about Inverse Kinematics", CV_CHEAT);
-ConVar r_debug_skeleton("r_debug_skeleton", "0", "Draw debug information about bones", CV_CHEAT);
-
-ConVar r_debug_showbone("r_debug_showbone", "-1", "Shows the bone", CV_CHEAT);
-
-ConVar r_ik_iterations("r_ik_iterations", "100", "IK link iterations per update", CV_ARCHIVE);
+ConVar r_debugIK("r_debugIK", "0", "Draw debug information about Inverse Kinematics", CV_CHEAT);
+ConVar r_debugSkeleton("r_debugSkeleton", "0", "Draw debug information about bones", CV_CHEAT);
+ConVar r_debugShowBone("r_debugShowBone", "-1", "Shows the bone", CV_CHEAT);
+ConVar r_ikIterations("r_ik_iterations", "100", "IK link iterations per update", CV_ARCHIVE);
 
 inline Matrix4x4 CalculateLocalBonematrix(const qanimframe_t &frame)
 {
@@ -105,7 +102,7 @@ CAnimatingEGF::CAnimatingEGF()
 
 	m_transitionFrames = nullptr;
 
-	m_transitionTime = m_transitionRemTime = DEFAULT_TRANSITION_TIME;
+	m_transitionTime = m_transitionRemTime = SEQ_DEFAULT_TRANSITION_TIME;
 }
 
 void CAnimatingEGF::DestroyAnimating()
@@ -125,7 +122,7 @@ void CAnimatingEGF::DestroyAnimating()
 		PPFree(m_transitionFrames);
 	m_transitionFrames = nullptr;
 
-	m_transitionTime = m_transitionRemTime = DEFAULT_TRANSITION_TIME;
+	m_transitionTime = m_transitionRemTime = SEQ_DEFAULT_TRANSITION_TIME;
 
 	m_numBones = 0;
 }
@@ -325,7 +322,7 @@ void CAnimatingEGF::SetSequence(int seqIdx, int slot)
 	if (slot == 0)
 	{
 		if (!wasEmpty)
-			m_transitionTime = m_transitionRemTime = timer.seq ? timer.seq->s->transitiontime : DEFAULT_TRANSITION_TIME;
+			m_transitionTime = m_transitionRemTime = timer.seq ? timer.seq->s->transitiontime : SEQ_DEFAULT_TRANSITION_TIME;
 		else
 			m_transitionTime = m_transitionRemTime = 0.0f;	// if not were used, don't apply transition
 	}
@@ -785,19 +782,19 @@ void CAnimatingEGF::RecalcBoneTransforms(bool storeTransitionFrames /*= false*/)
 
 void CAnimatingEGF::DebugRender(const Matrix4x4& worldTransform)
 {
-	if (!r_debug_skeleton.GetBool())
+	if (!r_debugSkeleton.GetBool())
 		return;
 
 	// setup each bone's transformation
 	for (int i = 0; i < m_numBones; i++)
 	{
-		if (r_debug_showbone.GetInt() == i)
+		if (r_debugShowBone.GetInt() == i)
 		{
 			Matrix4x4& transform = m_boneTransforms[i];
 			const Vector3D& localPos = transform.rows[3].xyz();
 			Vector3D pos = (worldTransform*Vector4D(localPos, 1.0f)).xyz();
 
-			debugoverlay->Text3D(pos, 25, color4_white, 0.0f, "%s\npos: [%.2f %.2f %.2f]", m_joints[i].name, localPos.x, localPos.y, localPos.z);
+			debugoverlay->Text3D(pos, 25, color_white, 0.0f, "%s\npos: [%.2f %.2f %.2f]", m_joints[i].name, localPos.x, localPos.y, localPos.z);
 		}
 
 		if (m_joints[i].parentbone != -1)
@@ -812,7 +809,7 @@ void CAnimatingEGF::DebugRender(const Matrix4x4& worldTransform)
 			Vector3D dY = worldTransform.getRotationComponent()*transform.rows[1].xyz();
 			Vector3D dZ = worldTransform.getRotationComponent()*transform.rows[2].xyz();
 
-			debugoverlay->Line3D(pos, parent_pos, color4_white, color4_white);
+			debugoverlay->Line3D(pos, parent_pos, color_white, color_white);
 
 			// draw axis
 			debugoverlay->Line3D(pos, pos + dX, ColorRGBA(1, 0, 0, 1), ColorRGBA(1, 0, 0, 1));
@@ -821,7 +818,7 @@ void CAnimatingEGF::DebugRender(const Matrix4x4& worldTransform)
 		}
 	}
 
-	if (r_debug_ik.GetBool())
+	if (r_debugIK.GetBool())
 	{
 		for (int i = 0; i < m_ikChains.numElem(); i++)
 		{
@@ -850,7 +847,7 @@ void CAnimatingEGF::DebugRender(const Matrix4x4& worldTransform)
 
 				debugoverlay->Line3D(parent_pos, bone_pos, ColorRGBA(1, 1, 0, 1), ColorRGBA(1, 1, 0, 1));
 				debugoverlay->Box3D(bone_pos + Vector3D(1), bone_pos - Vector3D(1), ColorRGBA(1, 0, 0, 1));
-				debugoverlay->Text3D(bone_pos, 200.0f, color4_white, 0.0f, "%s", m_joints[link.l->bone].name);
+				debugoverlay->Text3D(bone_pos, 200.0f, color_white, 0.0f, "%s", m_joints[link.l->bone].name);
 
 				// draw axis
 				debugoverlay->Line3D(bone_pos, bone_pos + dX, ColorRGBA(1, 0, 0, 1), ColorRGBA(1, 0, 0, 1));
@@ -977,7 +974,7 @@ void CAnimatingEGF::UpdateIK(float fDt, const Matrix4x4& worldTransform)
 		if (chain.enable)
 		{
 			// display target
-			if (r_debug_ik.GetBool())
+			if (r_debugIK.GetBool())
 			{
 				Vector3D target_pos = chain.local_target;
 				target_pos = (worldTransform*Vector4D(target_pos, 1.0f)).xyz();
@@ -1052,7 +1049,7 @@ void CAnimatingEGF::UpdateIkChain(gikchain_t* pIkChain, float fDt)
 	int nEffector = pIkChain->numLinks - 1;
 
 	// solve link now
-	SolveIKLinks(pIkChain->links[nEffector], pIkChain->local_target, fDt, r_ik_iterations.GetInt());
+	SolveIKLinks(pIkChain->links[nEffector], pIkChain->local_target, fDt, r_ikIterations.GetInt());
 }
 
 // inverse kinematics

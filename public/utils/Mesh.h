@@ -5,11 +5,7 @@
 // Description: EqEngine mutex storage
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef MESH_H
-#define MESH_H
-
-#include "ds/Array.h"
-#include "ds/IVirtualStream.h"
+#pragma once
 
 // generic indexed mesh. File-friendly
 template <typename VERTEX_TYPE, typename INDEX_TYPE>
@@ -146,5 +142,3 @@ public:
 	Array<VERTEX_TYPE>		m_vertices{ PP_SL };
 	Array<INDEX_TYPE>		m_indices{ PP_SL };
 };
-
-#endif // MESH_H

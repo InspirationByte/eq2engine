@@ -5,31 +5,31 @@
 // Description: Equilibrium OpenGL ShaderAPI
 //////////////////////////////////////////////////////////////////////////////////
 
+#include "core/core_common.h"
+#include "core/ConVar.h"
+#include "core/ConCommand.h"
+#include "core/IConsoleCommands.h"
+#include "utils/KeyValues.h"
+#include "shaderapigl_def.h"
 #include "ShaderAPIGL.h"
 
-#include "CGLTexture.h"
-#include "VertexFormatGL.h"
-#include "VertexBufferGL.h"
-#include "IndexBufferGL.h"
+#include "GLTexture.h"
+#include "GLVertexFormat.h"
+#include "GLVertexBuffer.h"
+#include "GLIndexBuffer.h"
 #include "GLShaderProgram.h"
 #include "GLRenderState.h"
 #include "GLOcclusionQuery.h"
 #include "GLWorker.h"
 
-#include "shaderapigl_def.h"
-
 #include "imaging/ImageLoader.h"
 
-#include "core/DebugInterface.h"
-#include "core/ConVar.h"
-#include "core/ConCommand.h"
-#include "core/IConsoleCommands.h"
-#include "utils/strtools.h"
-#include "utils/KeyValues.h"
 
 #ifdef PLAT_LINUX
 #include "glx_caps.hpp"
 #endif // PLAT_LINUX
+
+using namespace Threading;
 
 void PrintGLExtensions()
 {
@@ -1487,8 +1487,8 @@ void ShaderAPIGL::ChangeVertexFormat(IVertexFormat* pVertexFormat)
 	{
 		for (int i = 0; i < m_caps.maxVertexGenericAttributes; i++)
 		{
-			const eqGLVertAttrDesc_t& selDesc = pSelectedFormat->m_genericAttribs[i];
-			const eqGLVertAttrDesc_t& curDesc = pCurrentFormat->m_genericAttribs[i];
+			const CVertexFormatGL::eqGLVertAttrDesc_t& selDesc = pSelectedFormat->m_genericAttribs[i];
+			const CVertexFormatGL::eqGLVertAttrDesc_t& curDesc = pCurrentFormat->m_genericAttribs[i];
 
 			const bool shouldDisable = !selDesc.sizeInBytes && curDesc.sizeInBytes;
 			const bool shouldEnable = selDesc.sizeInBytes && !curDesc.sizeInBytes;
@@ -1535,7 +1535,7 @@ void ShaderAPIGL::ChangeVertexBuffer(IVertexBuffer* pVertexBuffer, int nStream, 
 		{
 			for (int i = 0; i < m_caps.maxVertexGenericAttributes; i++)
 			{
-				const eqGLVertAttrDesc_t& attrib = currentFormat->m_genericAttribs[i];
+				const CVertexFormatGL::eqGLVertAttrDesc_t& attrib = currentFormat->m_genericAttribs[i];
 				if (attrib.streamId == nStream && attrib.sizeInBytes)
 					anyEnabled = true;
 			}
@@ -1551,7 +1551,7 @@ void ShaderAPIGL::ChangeVertexBuffer(IVertexBuffer* pVertexBuffer, int nStream, 
 
 			for (int i = 0; i < m_caps.maxVertexGenericAttributes; i++)
 			{
-				const eqGLVertAttrDesc_t& attrib = currentFormat->m_genericAttribs[i];
+				const CVertexFormatGL::eqGLVertAttrDesc_t& attrib = currentFormat->m_genericAttribs[i];
 
 				if (attrib.streamId == nStream && attrib.sizeInBytes)
 				{
@@ -2088,7 +2088,7 @@ void ShaderAPIGL::SetShaderConstantRaw(const char *pszName, const void *data, in
 // Vertex buffer objects
 //-------------------------------------------------------------
 
-IVertexFormat* ShaderAPIGL::CreateVertexFormat(const char* name, VertexFormatDesc_s *formatDesc, int nAttribs)
+IVertexFormat* ShaderAPIGL::CreateVertexFormat(const char* name, const VertexFormatDesc_t *formatDesc, int nAttribs)
 {
 	CVertexFormatGL *pVertexFormat = PPNew CVertexFormatGL(name, formatDesc, nAttribs);
 
@@ -2408,20 +2408,20 @@ IRenderState* ShaderAPIGL::CreateBlendingState( const BlendStateParam_t &blendDe
 					{
 						if(blendDesc.alphaTestRef == pState->m_params.alphaTestRef)
 						{
-							pState->AddReference();
+							pState->Ref_Grab();
 							return pState;
 						}
 					}
 					else
 					{
-						pState->AddReference();
+						pState->Ref_Grab();
 						return pState;
 					}
 				}
 			}
 			else
 			{
-				pState->AddReference();
+				pState->Ref_Grab();
 				return pState;
 			}
 		}
@@ -2432,7 +2432,7 @@ IRenderState* ShaderAPIGL::CreateBlendingState( const BlendStateParam_t &blendDe
 
 	m_BlendStates.append(pState);
 
-	pState->AddReference();
+	pState->Ref_Grab();
 
 	return pState;
 }
@@ -2462,13 +2462,13 @@ IRenderState* ShaderAPIGL::CreateDepthStencilState( const DepthStencilStateParam
 					depthDesc.nStencilMask == pState->m_params.nStencilRef &&
 					depthDesc.nStencilPass == pState->m_params.nStencilPass)
 				{
-					pState->AddReference();
+					pState->Ref_Grab();
 					return pState;
 				}
 			}
 			else
 			{
-				pState->AddReference();
+				pState->Ref_Grab();
 				return pState;
 			}
 		}
@@ -2479,7 +2479,7 @@ IRenderState* ShaderAPIGL::CreateDepthStencilState( const DepthStencilStateParam
 
 	m_DepthStates.append(pState);
 
-	pState->AddReference();
+	pState->Ref_Grab();
 
 	return pState;
 }
@@ -2499,7 +2499,7 @@ IRenderState* ShaderAPIGL::CreateRasterizerState( const RasterizerStateParams_t 
 			rasterDesc.scissor == pState->m_params.scissor &&
 			rasterDesc.useDepthBias == pState->m_params.useDepthBias)
 		{
-			pState->AddReference();
+			pState->Ref_Grab();
 			return pState;
 		}
 	}
@@ -2507,7 +2507,7 @@ IRenderState* ShaderAPIGL::CreateRasterizerState( const RasterizerStateParams_t 
 	pState = PPNew CGLRasterizerState();
 	pState->m_params = rasterDesc;
 
-	pState->AddReference();
+	pState->Ref_Grab();
 
 	m_RasterizerStates.append(pState);
 
@@ -2522,9 +2522,7 @@ void ShaderAPIGL::DestroyRenderState( IRenderState* pState, bool removeAllRefs )
 
 	CScopedMutex scoped(m_Mutex);
 
-	pState->RemoveReference();
-
-	if(pState->GetReferenceNum() > 0 && !removeAllRefs)
+	if(!pState->Ref_Drop() && !removeAllRefs)
 	{
 		return;
 	}

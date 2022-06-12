@@ -5,17 +5,12 @@
 // Description: Atlas packer - main code
 //////////////////////////////////////////////////////////////////////////////////
 
-#include "core/DebugInterface.h"
+#include "core/core_common.h"
 #include "core/IFileSystem.h"
-
-#include "utils/strtools.h"
-#include "utils/KeyValues.h"
-
-#include "utils/CRC32.h"
-
 #include "imaging/ImageLoader.h"
 #include "imaging/PixWriter.h"
-#include "math/DkMath.h"
+#include "utils/KeyValues.h"
+
 /*
 
 // Configuration structure

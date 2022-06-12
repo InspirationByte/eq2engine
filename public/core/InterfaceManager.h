@@ -22,27 +22,35 @@ public:
 //--------------------------------------------------------------
 
 #ifdef _MSC_VER
-#   define ONLY_EXPORTS	            extern "C" __declspec(dllexport)
-#   define ONLY_IMPORTS	            extern "C" __declspec(dllimport)
+#   define DLL_EXPORT	             __declspec(dllexport)
+#   define DLL_IMPORT	             __declspec(dllimport)
+#   define FUNC_EXPORTS	             extern "C" DLL_EXPORT
+#   define FUNC_IMPORTS	             extern "C" DLL_IMPORT
+#	define CLASS_EXPORTS             DLL_EXPORT
+#	define CLASS_IMPORTS             DLL_IMPORT
 
 #   define IFACE_PRIORITY_EXPORT1
 #   define IFACE_PRIORITY_EXPORT2
 
 #else // __GNUC__
-#   define ONLY_EXPORTS              __attribute__ ((visibility("default")))
-#   define ONLY_IMPORTS
+#   define DLL_EXPORT                __attribute__ ((visibility("default")))
+#   define DLL_IMPORT
+#   define FUNC_EXPORTS              DLL_EXPORT
+#   define FUNC_IMPORTS              DLL_IMPORT
+#	define CLASS_EXPORTS
+#	define CLASS_IMPORTS
 
 #   define IFACE_PRIORITY_EXPORT1    __attribute__ ((init_priority(110)))
 #   define IFACE_PRIORITY_EXPORT2    __attribute__ ((init_priority(120)))
 #endif // _MSC_VER
 
 #ifdef CROSSLINK_LIB
-#	define IEXPORTS			ONLY_IMPORTS
+#	define IEXPORTS			FUNC_IMPORTS
 #else
 #	ifdef COREDLL_EXPORT
-#		define IEXPORTS		ONLY_EXPORTS
+#		define IEXPORTS		FUNC_EXPORTS
 #	else
-#		define IEXPORTS		ONLY_IMPORTS
+#		define IEXPORTS		FUNC_IMPORTS
 #	endif
 #endif // CROSSLINK_LIB
 

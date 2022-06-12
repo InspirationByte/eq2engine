@@ -5,10 +5,5 @@
 // Description: Configuration file loader
 //////////////////////////////////////////////////////////////////////////////////
 
-
-#ifndef _CFGLOADER_H_
-#define _CFGLOADER_H_
-
+#pragma once
 void WriteCfgFile(const char *pszFilename, bool bWriteKeyConfiguration = true);
-
-#endif

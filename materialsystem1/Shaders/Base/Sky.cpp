@@ -5,8 +5,9 @@
 // Description: Skybox 2D shader
 //////////////////////////////////////////////////////////////////////////////////
 
+#include "core/core_common.h"
+#include "IMaterialSystem.h"
 #include "BaseShader.h"
-#include "materialsystem1/IMaterialSystem.h"
 
 //--------------------------------------
 // Basic cubemap skybox shader

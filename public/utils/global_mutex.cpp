@@ -5,8 +5,8 @@
 // Description: EqEngine mutex storage
 //////////////////////////////////////////////////////////////////////////////////
 
+#include "core/core_common.h"
 #include "global_mutex.h"
-#include "eqthread.h"
 
 static Threading::CEqMutex s_mutexPurposes[MUTEXPURPOSE_USED];
 

@@ -8,18 +8,14 @@
 //			serialize material file to memory buffer
 //////////////////////////////////////////////////////////////////////////////////
 
-#include "material.h"
-
-#include "materialsystem1/IMaterialSystem.h"
-
-#include "core/DebugInterface.h"
+#include "core/core_common.h"
 #include "core/IFileSystem.h"
 #include "core/ConVar.h"
-
-#include "utils/strtools.h"
-#include "utils/eqthread.h"
 #include "utils/TextureAtlas.h"
 #include "utils/KeyValues.h"
+#include "materialvar.h"
+#include "materialsystem1/IMaterialSystem.h"
+#include "material.h"
 
 ConVar r_allowSourceTextures("r_allowSourceTextures", "0", "enable materials and textures loading from source paths", 0);
 

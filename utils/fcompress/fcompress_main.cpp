@@ -5,24 +5,13 @@
 // Description: 
 //////////////////////////////////////////////////////////////////////////////////
 
-
-#include "core/platform/Platform.h"
-#include "core/DebugInterface.h"
-
+#include "core/core_common.h"
 #include "core/IDkCore.h"
 #include "core/IFileSystem.h"
-#include "core/cmdlib.h"
-
-#include "utils/eqtimer.h"
-#include "utils/strtools.h"
-
+#include "core/ICommandLine.h"
 #include "DPKFileWriter.h"
 
-
-#include <stdio.h>
-
-#ifdef _WIN32
-#include <tchar.h>
+#if defined(_WIN32) && defined(_DEBUG)
 #include <crtdbg.h>
 #endif
 

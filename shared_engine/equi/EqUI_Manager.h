@@ -5,14 +5,8 @@
 // Description: Eq UI manager
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef EQUI_MANAGER_H
-#define EQUI_MANAGER_H
-
+#pragma once
 #include "equi_defs.h"
-
-#include "math/Rectangle.h"
-#include "ds/Array.h"
-#include "ds/eqstring.h"
 
 class IEqFont;
 class IMaterial;
@@ -137,5 +131,3 @@ extern CUIManager* Manager;
 		equi::Manager->RegisterFactory(#name, equi::EQUI_FACTORY(name))
 
 #endif // _MSC_VER
-
-#endif // EQUI_MANAGER_H

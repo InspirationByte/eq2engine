@@ -5,10 +5,19 @@
 // Description: Equilibrium physics objects
 //////////////////////////////////////////////////////////////////////////////////
 
+#define __BT_SKIP_UINT64_H	// for SDL2
+#include <btBulletDynamicsCommon.h>
+
+#include "core/core_common.h"
 #include "DkBulletObject.h"
 
+#include "dkphysics/physcoord.h"
 #include "render/IDebugOverlay.h"
-#include "utils/strtools.h"
+
+#include "dkphysics/IDKPhysics.h"
+
+#include "physics/BulletConvert.h"
+using namespace EqBulletUtils;
 
 static int island_params_translate[3] =
 {
@@ -137,7 +146,7 @@ void CPhysicsObject::WakeUp()
 }
 
 // Sets angular factor (may help with up-right vector)
-void CPhysicsObject::SetAngularFactor(Vector3D &factor)
+void CPhysicsObject::SetAngularFactor(const Vector3D &factor)
 {
 	btVector3 vec;
 	ConvertDKToBulletVectors(vec, factor);
@@ -152,7 +161,7 @@ Vector3D CPhysicsObject::GetAngularFactor()
 }
 
 // Sets linear factor
-void CPhysicsObject::SetLinearFactor(Vector3D &factor)
+void CPhysicsObject::SetLinearFactor(const Vector3D &factor)
 {
 	btVector3 vec;
 	ConvertDKToBulletVectors(vec, factor);
@@ -393,7 +402,7 @@ Matrix4x4 CPhysicsObject::GetOrientationMatrix()
 }
 
 // set transformation of object
-void CPhysicsObject::SetTransformFromMatrix(Matrix4x4 &matrix)
+void CPhysicsObject::SetTransformFromMatrix(const Matrix4x4 &matrix)
 {
 	btTransform trans;
 	ConvertMatrix4ToBullet(trans, matrix);
@@ -431,7 +440,7 @@ Vector3D CPhysicsObject::GetAngularVelocity()
 	return out;
 }
 
-Vector3D CPhysicsObject::GetVelocityAtPoint(Vector3D &point)
+Vector3D CPhysicsObject::GetVelocityAtPoint(const Vector3D &point)
 {
 	btVector3 pt;
 	ConvertPositionToBullet(pt, point);
@@ -508,7 +517,7 @@ int CPhysicsObject::GetChildShapeCount()
 }
 
 // setup child transform
-void CPhysicsObject::SetChildShapeTransform(int shapeNum, Vector3D &localOrigin, Vector3D &localAngles)
+void CPhysicsObject::SetChildShapeTransform(int shapeNum, const Vector3D &localOrigin, const Vector3D &localAngles)
 {
 	if(m_pPhyObjectPointer->getCollisionShape()->getShapeType() == COMPOUND_SHAPE_PROXYTYPE)
 	{

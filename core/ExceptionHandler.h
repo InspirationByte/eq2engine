@@ -5,9 +5,10 @@
 // Description: Crash report library connection
 //////////////////////////////////////////////////////////////////////////////////
 
+#pragma once
+
 void InstallExceptionHandler();
 void UnInstallExceptionHandler();
-
 
 void LoadCrashRpt();
 void UnloadCrashRpt();

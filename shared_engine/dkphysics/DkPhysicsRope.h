@@ -5,15 +5,10 @@
 // Description: Equilibrium physics rope class
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef DKPHYSROPE_H
-#define DKPHYSROPE_H
-
+#pragma once
 #include "dkphysics/IPhysicsRope.h"
 
-#define __BT_SKIP_UINT64_H	// SDL2 support
-
-#include <btBulletDynamicsCommon.h>
-#include <BulletSoftBody/btSoftBodyHelpers.h>
+class btSoftBody;
 
 class DkPhysicsRope : public IPhysicsRope
 {
@@ -41,5 +36,3 @@ protected:
 
 	btSoftBody*			m_pRopeBody;
 };
-
-#endif // DKPHYSROPE_H

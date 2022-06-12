@@ -5,8 +5,8 @@
 // Description: Equilibrium main entry point
 //////////////////////////////////////////////////////////////////////////////////
 
-#include "core/DebugInterface.h"
-#include "renderers/IShaderAPI.h"
+#include "core/core_common.h"
+#include "core/IDkCore.h"
 #include "IMaterialSystem.h"
 
 IShaderAPI*			g_pShaderAPI	= (IShaderAPI*)GetCore()->GetInterface(MATSYSTEM_INTERFACE_VERSION);
@@ -45,7 +45,7 @@ extern "C"
 {
 #endif // __GNUC__
 
-ONLY_EXPORTS int InitShaderLibrary(IMaterialSystem* pMatSystem)
+FUNC_EXPORTS int InitShaderLibrary(IMaterialSystem* pMatSystem)
 {
 	g_pShaderAPI	= pMatSystem->GetShaderAPI();
 	materials		= pMatSystem;

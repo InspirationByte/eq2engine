@@ -5,8 +5,9 @@
 // Description: GL Shader program for ShaderAPIGL
 //////////////////////////////////////////////////////////////////////////////////
 
+#include "core/core_common.h"
+#include "shaderapigl_def.h"
 #include "GLShaderProgram.h"
-#include "utils/strtools.h"
 
 extern bool GLCheckError(const char* op, ...);
 

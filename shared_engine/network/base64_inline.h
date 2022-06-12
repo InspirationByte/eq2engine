@@ -1,7 +1,4 @@
-#ifndef BASE64_INLINE_H
-#define BASE64_INLINE_H
-
-#include "Platform.h"
+#pragma once
 
 static const unsigned char base64_table[] =
 	"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
@@ -136,5 +133,3 @@ inline unsigned char * base64_decode(const unsigned char *src, size_t len,
 	*out_len = pos - out;
 	return out;
 }
-
-#endif // BASE64_INLINE_H

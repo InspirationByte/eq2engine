@@ -6,12 +6,10 @@
 // Standard functions - sin, cos
 //////////////////////////////////////////////////////////////////////////////////
 
-#include "MaterialProxy.h"
-
+#include "core/core_common.h"
 #include "utils/KeyValues.h"
-#include "utils/strtools.h"
-
 #include "materialsystem1/IMaterialSystem.h"
+#include "MaterialProxy.h"
 
 //---------------------------------------------------------------------
 // ADD proxy

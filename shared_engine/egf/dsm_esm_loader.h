@@ -5,14 +5,13 @@
 // Description:
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef DSM_ESM_LOADER_H
-#define DSM_ESM_LOADER_H
-
-#include "dsm_loader.h"
-#include "utils/Tokenizer.h"
+#pragma once
+class Tokenizer;
 
 namespace SharedModel
 {
+
+struct dsmmodel_t;
 
 struct esmshapevertex_t
 {
@@ -47,5 +46,3 @@ bool	LoadESM(dsmmodel_t* model, const char* filename);
 bool	LoadESXShapes(esmshapedata_t* data, const char* filename);
 
 } // namespace
-
-#endif // DSM_ESM_LOADER_H

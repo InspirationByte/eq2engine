@@ -3,12 +3,10 @@
 // 2009-2015
 //////////////////////////////////////////////////////////////////////////////////
 // Description: Virtual Stream class
-//				For easy writing and reading, just like files//////////////////////////////////////////////////////////////////////////////////
+//				For easy writing and reading, just like files
+//////////////////////////////////////////////////////////////////////////////////
 
-#ifndef IVRITUALSTREAM_H
-#define IVRITUALSTREAM_H
-
-#include "core/dktypes.h"
+#pragma once
 
 enum VirtStreamType_e
 {
@@ -74,5 +72,3 @@ public:
 	// returns CRC32 checksum of stream
 	virtual uint32				GetCRC32() = 0;
 };
-
-#endif // IVRITUALSTREAM_H

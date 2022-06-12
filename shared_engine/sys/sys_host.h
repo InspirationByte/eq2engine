@@ -5,14 +5,7 @@
 // Description: Drivers system and modules
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef SYS_HOST_H
-#define SYS_HOST_H
-
-#include "core/ConCommand.h"
-#include "utils/eqtimer.h"
-#include "input/in_keys_ident.h"
-#include "render/IDebugOverlay.h"
-#include "materialsystem1/IMaterialSystem.h"
+#pragma once
 
 class IEqFont;
 
@@ -111,9 +104,6 @@ protected:
 
 	bool				FilterTime( double fDt );
 
-	debugGraphBucket_t	m_fpsGraph;
-	debugGraphBucket_t	m_jobThreads;
-
 	IVector2D			m_winSize;
 	IVector2D			m_mousePos;
 	IVector2D			m_prevMousePos;
@@ -140,5 +130,3 @@ protected:
 };
 
 extern CGameHost* g_pHost;
-
-#endif // SYSTEM_H

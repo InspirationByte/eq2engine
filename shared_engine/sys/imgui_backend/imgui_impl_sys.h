@@ -1,6 +1,6 @@
 // dear imgui:  Platform Backend for Equilibrium based on SDL2
 #pragma once
-#include "imgui.h"      // IMGUI_IMPL_API
+#include <imgui.h>      // IMGUI_IMPL_API
 
 struct SDL_Window;
 typedef union SDL_Event SDL_Event;

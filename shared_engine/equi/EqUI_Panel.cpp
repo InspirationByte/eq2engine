@@ -5,15 +5,16 @@
 // Description: EGUI panel
 //////////////////////////////////////////////////////////////////////////////////
 
+#include "core/core_common.h"
+#include "utils/KeyValues.h"
 #include "EqUI_Panel.h"
+
+#include "EqUI_Manager.h"
 #include "EqUI_Button.h"
 #include "EqUI_Label.h"
 
-#include "EqUI_Manager.h"
-
 #include "materialsystem1/IMaterialSystem.h"
 #include "materialsystem1/MeshBuilder.h"
-#include "materialsystem1/renderers/IShaderAPI.h"
 
 //-------------------------------------------------------------------
 // Base control

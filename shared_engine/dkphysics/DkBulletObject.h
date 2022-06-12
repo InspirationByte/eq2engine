@@ -5,23 +5,12 @@
 // Description: Equilibrium physics objects
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef CPHYSICSOBJECT_H
-#define CPHYSICSOBJECT_H
-
+#pragma once
 #include "dkphysics/IPhysicsObject.h"
 
-#include "physics/BulletConvert.h"
-
-using namespace EqBulletUtils;
-
-#include "dkphysics/IDKPhysics.h"
-
-#define __BT_SKIP_UINT64_H	// SDL2 support
-
-// Bullet headers
-#include <btBulletDynamicsCommon.h>
-
 #define MAX_CONTACT_EVENTS 4 // per single object
+
+class IMaterial;
 
 class CEqRigidBody : public btRigidBody
 {
@@ -84,10 +73,10 @@ public:
 	void					SetActivationState(phys_freeze_state_e nState);	// freeze states
 	phys_freeze_state_e		GetActivationState();							// freeze states
 
-	void					SetAngularFactor(Vector3D &factor);			// Sets angular factor (may help with up-right vector)
+	void					SetAngularFactor(const Vector3D &factor);			// Sets angular factor (may help with up-right vector)
 	Vector3D				GetAngularFactor();							// Sets angular factor (may help with up-right vector)
 
-	void					SetLinearFactor(Vector3D &factor);			// Sets linear factor
+	void					SetLinearFactor(const Vector3D &factor);			// Sets linear factor
 	Vector3D				GetLinearFactor();							// Gets linear factor
 
 	void					SetRestitution(float rest);					// Sets restitution
@@ -155,7 +144,7 @@ public:
 	Matrix4x4				GetOrientationMatrix();
 
 	// set transformation of object
-	void					SetTransformFromMatrix(Matrix4x4 &matrix);
+	void					SetTransformFromMatrix(const Matrix4x4 &matrix);
 
 	// Get position, angles and other stuff
 	Vector3D				GetPosition();
@@ -163,13 +152,13 @@ public:
 	Vector3D				GetVelocity();
 	Vector3D				GetAngularVelocity();
 
-	Vector3D				GetVelocityAtPoint(Vector3D &point);
+	Vector3D				GetVelocityAtPoint(const Vector3D &point);
 
 	// returns child shapes count
 	int						GetChildShapeCount();
 
 	// setup child transform
-	void					SetChildShapeTransform(int shapeNum, Vector3D &localOrigin, Vector3D &localAngles);
+	void					SetChildShapeTransform(int shapeNum, const Vector3D &localOrigin, const Vector3D &localAngles);
 
 	void					WakeUp();			// wakes object if status is PS_INACTIVE
 	//void					Freeze();			// freezes object if status is PS_ACTIVE
@@ -205,5 +194,3 @@ private:
 public:
 	int						m_nFlags;
 };
-
-#endif //CPHYSICSOBJECT_H

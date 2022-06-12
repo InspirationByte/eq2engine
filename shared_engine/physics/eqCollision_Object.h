@@ -3,23 +3,18 @@
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
 // Description: Collision object with shape data
-//
-//				TODO: Material index support
-//
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef EQCOLLISION_OBJECT_H
-#define EQCOLLISION_OBJECT_H
+#pragma once
+#include "eqCollision_Pair.h"
 
-#include "math/Quaternion.h"
-#include "eqPhysics.h"
-#include "egf/IEqModel.h"
-#include <btBulletCollisionCommon.h>
-#include "physics/IStudioShapeCache.h"
-
-#include "ds/eqstring.h"
-
+class btCollisionShape;
+class btCollisionObject;
+struct btTriangleInfoMap;
 class CEqBulletIndexedMesh;
+class CEqPhysics;
+class CEqCollisionObject;
+struct studioPhysData_t;
 struct collgridcell_t;
 
 const int PHYSICS_COLLISION_LIST_MAX = 8;
@@ -49,8 +44,6 @@ enum ECollisionObjectFlags
 	COLLOBJ_TRANSFORM_DIRTY			= (1 << 31),
 };
 
-class CEqCollisionObject;
-
 class IEqPhysCallback
 {
 public:
@@ -69,7 +62,7 @@ public:
 	CEqCollisionObject*	m_object;
 };
 
-class CEqCollisionObject //: public RefCountedObject
+class CEqCollisionObject
 {
 	friend class CEqPhysics;
 
@@ -189,5 +182,3 @@ protected:
 
 	bool						m_studioShape;
 };
-
-#endif // EQCOLLISION_OBJECT_H

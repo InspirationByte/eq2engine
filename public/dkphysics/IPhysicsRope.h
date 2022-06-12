@@ -5,13 +5,9 @@
 // Description: Equilibrium physics rope class
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef IPHYSROPE_H
-#define IPHYSROPE_H
+#pragma once
 
-#include "math/Vector.h"
-#include "math/Matrix.h"
-
-#include "IPhysicsObject.h"
+class IPhysicsObject;
 
 class IPhysicsRope
 {
@@ -33,5 +29,3 @@ public:
 	virtual void				SetLinearStiffness(float stiffness) = 0;
 	virtual void				SetIterations(int num) = 0; // position iterations
 };
-
-#endif // IPHYSROPE_H

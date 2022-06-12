@@ -5,10 +5,7 @@
 // Description: WAVe source
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef SND_SOURCE_H
-#define SND_SOURCE_H
-
-#include "core/dktypes.h"
+#pragma once
 
 class ISoundSource
 {
@@ -42,5 +39,3 @@ private:
 	virtual bool			Load(const char *szFilename) = 0;
 	virtual void			Unload () = 0;
 };
-
-#endif // SND_SOURCE_H

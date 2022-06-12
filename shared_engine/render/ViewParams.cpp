@@ -6,6 +6,7 @@
 // Used by GameDLL and Engine to determine renderable camera position, rotation and FOV
 //////////////////////////////////////////////////////////////////////////////////
 
+#include "math/math_common.h"
 #include "ViewParams.h"
 
 const float BASE_LOD_FOV	=	(1.0f / 39.0f);		// the good value

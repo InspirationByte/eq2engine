@@ -2,16 +2,10 @@
 // Copyright � Inspiration Byte
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
-// Description: RB-tree map
+// Description: Key-Value map
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef MAP_H
-#define MAP_H
-
-#include <new>
-#include "core/ppmem.h"
-#include "core/dktypes.h"
-#include "core/platform/assert.h"
+#pragma once
 
 template<typename K, typename V, bool MULTIMAP = false>
 class Map
@@ -669,5 +663,3 @@ using Set = Map<K, _EMPTY_VALUE>;
 
 //template<typename K, typename V>
 //using MultiMap = Map<K, V, true>;
-
-#endif // MAP_H

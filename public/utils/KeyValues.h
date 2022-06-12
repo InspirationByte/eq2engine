@@ -6,6 +6,10 @@
 //				Implements JSON-like, but lightweight notation
 //////////////////////////////////////////////////////////////////////////////////
 
+#pragma once
+
+class IVirtualStream;
+
 /*
 
 Example of key-values file contents:
@@ -25,17 +29,6 @@ key_section
 };
 
 */
-
-#ifndef KEYVALUES_H
-#define KEYVALUES_H
-
-class IVirtualStream;
-
-#include "core/platform/Platform.h"
-#include "core/ppmem.h"
-
-#include "ds/Array.h"
-#include "math/DkMath.h"
 
 //
 enum EKVPairType
@@ -321,4 +314,3 @@ inline IVector2D	KVSection::GetValue( int nIndex, const IVector2D& vDefault)				
 inline Vector3D		KVSection::GetValue( int nIndex, const Vector3D& vDefault)				{return KV_GetVector3D(this, nIndex, vDefault);}
 inline Vector4D		KVSection::GetValue( int nIndex, const Vector4D& vDefault )				{return KV_GetVector4D(this, nIndex, vDefault);}
 
-#endif //KEYVALUES_H

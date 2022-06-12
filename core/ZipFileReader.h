@@ -5,13 +5,9 @@
 // Description: Zip package file (zip)
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef ZIPFILEREADER_H
-#define ZIPFILEREADER_H
+#pragma once
 
 #include "BasePackageFileReader.h"
-#include "ds/Array.h"
-#include "ds/Map.h"
-
 #include "minizip/unzip.h"
 
 class CZipFileReader;
@@ -88,5 +84,3 @@ protected:
 	Array<CZipFileStream*>	m_openFiles{ PP_SL };
 	Map<int, zfileinfo_t>	m_files{ PP_SL };
 };
-
-#endif // ZIPFILEREADER_H

@@ -5,10 +5,7 @@
 // Description: The triangle adjacency generator
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef ADJACENT_TRIANGLES_H
-#define ADJACENT_TRIANGLES_H
-
-#include "ds/Array.h"
+#pragma once
 
 namespace AdjacentTriangles
 {
@@ -206,5 +203,3 @@ protected:
 };
 
 }; // namespace AdjacentTriangles
-
-#endif // ADJACENT_TRIANGLES_H

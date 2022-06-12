@@ -5,14 +5,15 @@
 // Description: Physics constraint
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef EQPHYSICS_CONSTRAINT_H
-#define EQPHYSICS_CONSTRAINT_H
+#pragma once
+
+class CEqRigidBody;
 
 enum EConstraintFlags
 {
-	CONSTRAINT_FLAG_BODYA_NOIMPULSE		= (1 << 0),
-	CONSTRAINT_FLAG_BODYB_NOIMPULSE		= (1 << 1),
-	CONSTRAINT_FLAG_SKIP_INTERCOLLISION = (1 << 2),
+    CONSTRAINT_FLAG_BODYA_NOIMPULSE = (1 << 0),
+    CONSTRAINT_FLAG_BODYB_NOIMPULSE = (1 << 1),
+    CONSTRAINT_FLAG_SKIP_INTERCOLLISION = (1 << 2),
 };
 
 class IEqPhysicsConstraint
@@ -20,8 +21,8 @@ class IEqPhysicsConstraint
 	friend class CEqRigidBody;
 
 public:
-					IEqPhysicsConstraint() : m_enabled(false), m_satisfied(true), m_flags(0) {}
-	virtual			~IEqPhysicsConstraint() {}
+					IEqPhysicsConstraint() = default;
+	virtual			~IEqPhysicsConstraint() = default;
 
 	void			SetEnabled(bool enable) { m_enabled = enable; }
 	bool			IsEnabled()	const		{ return m_enabled; }
@@ -42,9 +43,7 @@ public:
     virtual void	Destroy() = 0;
 
 protected:
-	bool			m_enabled;
-	bool			m_satisfied;
-	int				m_flags;
+    bool			m_enabled{ false };
+    bool			m_satisfied{ true };
+    int				m_flags{ 0 };
 };
-
-#endif // EQPHYSICS_CONSTRAINT_H

@@ -5,19 +5,10 @@
 // Description: Data package file (dpk)
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef DPKFILEREADER_H
-#define DPKFILEREADER_H
-
+#pragma once
 #include "BasePackageFileReader.h"
-
-#include "ds/Array.h"
-#include "ds/Map.h"
-
+#include "dpk/dpk_defs.h"
 #include "utils/IceKey.h"
-
-#include "core/dpk_defs.h"
-
-#include <stdio.h>
 
 typedef int dpkhandle_t;
 
@@ -115,5 +106,3 @@ protected:
 
 	Array<CDPKFileStream*>	m_openFiles{ PP_SL };
 };
-
-#endif //DPK_FILE_READER_H

@@ -7,23 +7,10 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 // Core interface helper
-#include <stdarg.h>
-#include <stdio.h>
-
-#ifdef LINUX
-#include <ctype.h>
-#else
-#include <malloc.h>
-#endif
-
-#include "core/platform/stackalloc.h"
-#include "core/DebugInterface.h"
+#include "core/core_common.h"
 #include "core/IFileSystem.h"
-
+#include "ds/MemoryStream.h"
 #include "KeyValues.h"
-
-#include "ds/VirtualStream.h"
-#include "utils/strtools.h"
 
 #ifdef _MSC_VER
 #pragma warning(disable: 4267)

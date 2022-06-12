@@ -5,18 +5,9 @@
 // Description: Equilibrium fixed point math
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef FIXEDMATH_H
-#define FIXEDMATH_H
-
-#include "core/dktypes.h"
+#pragma once
 
 #ifdef FLOAT_AS_FREAL
-#include <limits.h>
-#include <float.h>
-#include <math.h>
-
-#include "math/math_common.h"
-
 typedef float FReal;
 
 namespace FPmath
@@ -260,5 +251,3 @@ FReal atan2(const FReal& f1, const FReal& f2);
 };
 
 #endif
-
-#endif // FIXEDMATH_H

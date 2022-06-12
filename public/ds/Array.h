@@ -5,12 +5,7 @@
 // Description: Dynamic array (vector) of elements
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef ARRAY_H
-#define ARRAY_H
-
-#include "core/platform/assert.h"
-#include "core/dktypes.h"
-#include "core/ppmem.h"
+#pragma once
 
 #define USE_QSORT
 #define DEBUG_CHECK_LIST_BOUNDS
@@ -990,5 +985,3 @@ struct PPSLValueCtor<Array<ITEM>>
 	Array<ITEM> x;
 	PPSLValueCtor<Array<ITEM>>(const PPSourceLine& sl) : x(sl) {}
 };
-
-#endif // ARRAY_H

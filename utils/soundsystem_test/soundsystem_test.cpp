@@ -5,32 +5,26 @@
 // Description: MaterialSystem wxWidgets template application
 //////////////////////////////////////////////////////////////////////////////////
 
-#include "core/DebugInterface.h"
+#include <wx/settings.h>
+
+#include "core/core_common.h"
+#include "core/IDkCore.h"
 #include "core/IFileSystem.h"
 #include "core/ILocalize.h"
 #include "core/IConsoleCommands.h"
 #include "core/IEqParallelJobs.h"
-#include "core/platform/MessageBox.h"
 
-#include "utils/eqtimer.h"
+#include "soundsystem_test.h"
 
 #include "font/IFontCache.h"
-
-#include "math/coord.h"
 #include "math/Utility.h"
-#include "math/Vector.h"
+#include "math/Random.h"
 
 #include "materialsystem1/IMaterialSystem.h"
-#include "materialsystem1/renderers/IShaderAPI.h"
-#include "materialsystem1/scene_def.h"
 #include "render/ViewParams.h"
 #include "render/IDebugOverlay.h"
 
 #include "audio/IEqAudioSystem.h"
-
-#include "soundsystem_test.h"
-
-#include <wx/settings.h>
 
 
 #define APPLICATION_NAME		"SoundTest"
@@ -96,7 +90,7 @@ int musicUpdateCb(void* obj, IEqAudioSource::Params& params)
 
 int dummyUpdateCb(void* obj, IEqAudioSource::Params& params)
 {
-	debugoverlay->Text(color4_white, "chan id=%d", params.id);
+	debugoverlay->Text(color_white, "chan id=%d", params.id);
 	return 0;
 }
 
@@ -515,7 +509,7 @@ void CMainWindow::ProcessMouseEvents(wxMouseEvent& event)
 
 	g_fCamSpeed = fov;
 
-	cam_pos = clamp(cam_pos, Vector3D(-MAX_COORD_UNITS), Vector3D(MAX_COORD_UNITS));
+	cam_pos = clamp(cam_pos, Vector3D(-F_INFINITY), Vector3D(F_INFINITY));
 
 	g_camera_rotation = cam_angles;
 	g_camera_target = cam_pos;
@@ -680,7 +674,7 @@ void CMainWindow::ReDraw()
 		debugoverlay->Box3D(-1.0f, 1.0f, ColorRGBA(1,1,1,1), 1.0f);
 
 		ShowFPS();
-		debugoverlay->Text(color4_white, "Camera position: %g %g %g\n", g_camera_target.x,g_camera_target.y,g_camera_target.z);
+		debugoverlay->Text(color_white, "Camera position: %g %g %g\n", g_camera_target.x,g_camera_target.y,g_camera_target.z);
 
 		FogInfo_t fog;
 		materials->GetFogInfo(fog);

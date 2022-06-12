@@ -5,11 +5,7 @@
 // Description: Decal geometry
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef DECALS_H
-#define DECALS_H
-
-#include "core/ppmem.h"
-#include "math/BoundingBox.h"
+#pragma once
 
 enum MakeDecalFlags_e
 {
@@ -51,7 +47,8 @@ enum DecalFlags_e
 //-------------------------------------------------------
 struct tempdecal_t
 {
-	tempdecal_t() : verts(nullptr), indices(nullptr), numVerts(0), numIndices(0), material(nullptr)
+	tempdecal_t() 
+		: verts(nullptr), indices(nullptr), numVerts(0), numIndices(0), material(nullptr)
 	{
 	}
 
@@ -105,5 +102,3 @@ struct staticdecal_t
 	*/
 	int					flags; // DecalFlags_e
 };
-
-#endif // DECALS_H

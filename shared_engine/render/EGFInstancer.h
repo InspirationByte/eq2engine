@@ -5,15 +5,15 @@
 // Description: EGF model instancer
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef EGFINSTANCER_H
-#define EGFINSTANCER_H
-
+#pragma once
 #include "egf/IEqModel.h"
-#include "materialsystem1/IMaterialSystem.h"
 
 #define MAX_EGF_INSTANCES			256
 #define MAX_INSTANCE_BODYGROUPS		16		// only 4 groups can be instanced
 #define MAX_INSTANCE_LODS			4		// only 4 lods can be instanced
+
+class IVertexFormat;
+class IVertexBuffer;
 
 //---------------------------------------------------------------------
 
@@ -27,7 +27,7 @@ public:
 					CEGFInstancer();
 					~CEGFInstancer();
 
-	void			Init( VertexFormatDesc_t* instVertexFormat, int numAttrib );
+	void			Init( const VertexFormatDesc_t* instVertexFormat, int numAttrib );
 	void			Init( IVertexFormat* instVertexFormat, IVertexBuffer* instBuffer );
 	void			Cleanup();
 
@@ -78,7 +78,7 @@ inline void CEGFInstancer<IT>::ValidateAssert()
 }
 
 template <class IT>
-inline void CEGFInstancer<IT>::Init( VertexFormatDesc_t* instVertexFormat, int numAttrib )
+inline void CEGFInstancer<IT>::Init( const VertexFormatDesc_t* instVertexFormat, int numAttrib )
 {
 	Cleanup();
 
@@ -257,5 +257,3 @@ inline void CEGFInstancer<IT>::Draw( int renderFlags, IEqModel* model )
 	materials->SetInstancingEnabled(false);
 	m_hasInstances = false;
 }
-
-#endif // EGFINSTANCER_H

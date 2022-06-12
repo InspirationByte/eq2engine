@@ -5,14 +5,10 @@
 // Description: Equilibrium physics joints system
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef DKPHYSJOINT_H
-#define DKPHYSJOINT_H
-
+#pragma once
 #include "dkphysics/IPhysicsJoint.h"
 
-#define __BT_SKIP_UINT64_H	// SDL2 support
-
-#include "btBulletDynamicsCommon.h"
+class btGeneric6DofConstraint;
 
 class DkPhysicsJoint : public IPhysicsJoint
 {
@@ -46,11 +42,8 @@ public:
 	// getters
 
 	Vector3D		GetLinearLowerLimit(); // sets lower linear limit (in radians)
-
 	Vector3D		GetLinearUpperLimit(); // returns upper linear limit (in radians)
-
 	Vector3D		GetAngularLowerLimit(); // returns lower angular limit (in radians)
-
     Vector3D		GetAngularUpperLimit(); // returns upper angular limit (in radians)
 
 	void			UpdateTransform(); // updates transform of joints
@@ -61,5 +54,3 @@ protected:
 
 	btGeneric6DofConstraint*	m_pJointPointer;
 };
-
-#endif // DKPHYSJOINT_H

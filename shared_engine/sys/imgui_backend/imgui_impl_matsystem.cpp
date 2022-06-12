@@ -1,8 +1,6 @@
 // dear imgui: Renderer Backend for Equilibrium Engine
 
-#include "core/platform/assert.h"
-
-#include "imgui.h"
+#include "core/core_common.h"
 #include "imgui_impl_matsystem.h"
 
 #include "materialsystem1/IMaterialSystem.h"
@@ -45,7 +43,7 @@ static void ImGui_ImplMatSystem_SetupRenderState(ImDrawData* draw_data)
 	blending.srcFactor = BLENDFACTOR_SRC_ALPHA;
 	blending.dstFactor = BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
 
-	materials->SetAmbientColor(color4_white);
+	materials->SetAmbientColor(color_white);
 	materials->SetDepthStates(false, false);
 	materials->SetBlendingStates(blending);
 	materials->SetRasterizerStates(CULL_NONE, FILL_SOLID, true, true);
@@ -82,13 +80,7 @@ void ImGui_ImplMatSystem_RenderDrawData(ImDrawData* draw_data)
 		for (int i = 0; i < cmd_list->VtxBuffer.Size; i++)
 		{
 			const ImDrawVert& vtx_src = cmd_list->VtxBuffer.Data[i];
-
-			const float one_by_255 = 1.0f / 255.0f;
-			ColorRGBA color;
-			color.x = float((vtx_src.col >> IM_COL32_R_SHIFT) & 255) * one_by_255;
-			color.y = float((vtx_src.col >> IM_COL32_G_SHIFT) & 255) * one_by_255;
-			color.z = float((vtx_src.col >> IM_COL32_B_SHIFT) & 255) * one_by_255;
-			color.w = float((vtx_src.col >> IM_COL32_A_SHIFT) & 255)* one_by_255;
+			ColorRGBA color(vtx_src.col);
 
 			mb.Position2f(vtx_src.pos.x + halfPixelOfs, vtx_src.pos.y + halfPixelOfs);
 			mb.TexCoord2f(vtx_src.uv.x, vtx_src.uv.y);

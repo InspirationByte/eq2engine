@@ -6,13 +6,8 @@
 //				No streaming support for this type, it just holds alBuffer
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef SND_AL_SOURCE_H
-#define SND_AL_SOURCE_H
-
+#pragma once
 #include "snd_source.h"
-#include "ds/eqstring.h"
-
-#include <AL/al.h>
 
 class CSoundSource_WaveCache;
 class CSoundSource_OggCache;
@@ -42,9 +37,7 @@ private:
 	virtual bool			Load(const char* szFilename);
 	virtual void			Unload();
 
-	ALuint					m_alBuffer;
-	Format			m_format;
+	uint					m_alBuffer;
+	Format					m_format;
 	EqString				m_filename;
 };
-
-#endif // SND_AL_SOURCE_H

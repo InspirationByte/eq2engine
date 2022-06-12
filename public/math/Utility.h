@@ -5,10 +5,7 @@
 // Description: Math additional utilites
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef MATH_UTIL_H
-#define MATH_UTIL_H
-
-#include "Matrix.h"
+#pragma once
 
 bool				PointToScreen(const Vector3D& point, Vector2D& screen, const Matrix4x4 &mvp, const Vector2D &screenDims);
 bool				PointToScreen_Z(const Vector3D& point, Vector3D& screen, const Matrix4x4 &mvp, const Vector2D &screenDims);
@@ -112,6 +109,3 @@ inline void SpringFunction(T& value, T& velocity, float spring_const, float spri
 	springForceMagnitude = clamp(springForceMagnitude, 0.0f, 2.0f );
 	velocity -= value * springForceMagnitude;
 }
-
-
-#endif // MATH_UTIL_H

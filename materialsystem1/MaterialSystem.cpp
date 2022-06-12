@@ -9,29 +9,21 @@
 //			 - Shader management
 //////////////////////////////////////////////////////////////////////////////////
 
-#include "core/platform/Platform.h"
-
-#include "core/platform/MessageBox.h"
-#include "core/ConVar.h"
-#include "core/ConCommand.h"
+#include "core/core_common.h"
+#include "core/IDkCore.h"
 #include "core/IFileSystem.h"
 #include "core/IEqParallelJobs.h"
-
-#include "utils/strtools.h"
+#include "core/ICommandLine.h"
+#include "core/ConVar.h"
+#include "core/ConCommand.h"
 #include "utils/KeyValues.h"
-#include "utils/eqthread.h"
-#include "utils/eqtimer.h"
-
-#include "materialsystem1/MeshBuilder.h"
-#include "DynamicMesh.h"
-
 #include "MaterialSystem.h"
-#include "MaterialProxy.h"
-#include "material.h"
-
-#include "Renderers/Shared/IRenderLibrary.h"
 #include "imaging/ImageLoader.h"
 #include "imaging/PixWriter.h"
+#include "material.h"
+#include "MaterialProxy.h"
+#include "Renderers/Shared/IRenderLibrary.h"
+#include "materialsystem1/MeshBuilder.h"
 
 using namespace Threading;
 
@@ -43,42 +35,41 @@ IShaderAPI*				g_pShaderAPI = NULL;
 static CMaterialSystem s_matsystem;
 IMaterialSystem* materials = &s_matsystem;
 
-ConVar				r_showlightmaps("r_showlightmaps", "0", "Disable diffuse textures to show lighting", CV_CHEAT);
-ConVar				r_screen("r_screen", "0", "Screen count", CV_ARCHIVE);
-ConVar				r_loadmiplevel("r_loadmiplevel", "0", 0, 3, "Mipmap level to load, needs texture reloading", CV_ARCHIVE );
-ConVar				r_anisotropic("r_anisotropic", "4", 1, 16, "Mipmap anisotropic filtering quality, needs texture reloading", CV_ARCHIVE );
+ConVar	r_showlightmaps("r_showlightmaps", "0", "Disable diffuse textures to show lighting", CV_CHEAT);
+ConVar	r_screen("r_screen", "0", "Screen count", CV_ARCHIVE);
+ConVar	r_loadmiplevel("r_loadmiplevel", "0", 0, 3, "Mipmap level to load, needs texture reloading", CV_ARCHIVE );
+ConVar	r_anisotropic("r_anisotropic", "4", 1, 16, "Mipmap anisotropic filtering quality, needs texture reloading", CV_ARCHIVE );
 
-ConVar				r_lightscale("r_lightscale", "1.0f", "Global light scale", CV_ARCHIVE);
-ConVar				r_shaderCompilerShowLogs("r_shaderCompilerShowLogs", "0","Show warnings of shader compilation",CV_ARCHIVE);
+ConVar	r_lightscale("r_lightscale", "1.0f", "Global light scale", CV_ARCHIVE);
+ConVar	r_shaderCompilerShowLogs("r_shaderCompilerShowLogs", "0","Show warnings of shader compilation",CV_ARCHIVE);
 
-ConVar				r_overdraw("r_overdraw", "0", "Renders all materials in overdraw shader", CV_CHEAT);
-ConVar				r_wireframe("r_wireframe","0","Enables wireframe rendering", CV_CHEAT);
+ConVar	r_overdraw("r_overdraw", "0", "Renders all materials in overdraw shader", CV_CHEAT);
+ConVar	r_wireframe("r_wireframe","0","Enables wireframe rendering", CV_CHEAT);
 
-ConVar				r_noffp("r_noffp","0","No FFP emulated primitives", CV_CHEAT);
+ConVar	r_noffp("r_noffp","0","No FFP emulated primitives", CV_CHEAT);
 
-ConVar				r_depthBias("r_depthBias", "-0.000001", NULL, CV_CHEAT);
-ConVar				r_slopeDepthBias("r_slopeDepthBias", "-1.5", NULL, CV_CHEAT);
+ConVar	r_depthBias("r_depthBias", "-0.000001", NULL, CV_CHEAT);
+ConVar	r_slopeDepthBias("r_slopeDepthBias", "-1.5", NULL, CV_CHEAT);
 
 DECLARE_CMD(mat_reload, "Reloads all materials",0)
 {
-	MsgInfo("Reloading materials...\n\n");
-	materials->ReloadAllMaterials();
-	materials->Wait();
+	s_matsystem.ReloadAllMaterials();
+	s_matsystem.Wait();
 }
 
 DECLARE_CMD(mat_print, "Print MatSystem info and loaded material list",0)
 {
-	materials->PrintLoadedMaterials();
+	s_matsystem.PrintLoadedMaterials();
 }
 
 DECLARE_CMD(mat_releaseStates, "Releases all render states",0)
 {
-	((CMaterialSystem*)materials)->ClearRenderStates();
+	s_matsystem.ClearRenderStates();
 }
 
 DECLARE_CMD(mat_releaseUnused, "Releases unused materials",0)
 {
-	((CMaterialSystem*)materials)->ReleaseUnusedMaterials();
+	s_matsystem.ReleaseUnusedMaterials();
 }
 
 //
@@ -177,7 +168,7 @@ CMaterialSystem::CMaterialSystem()
 	m_renderLibrary = NULL;
 	m_rendermodule = NULL;
 
-	m_ambColor = color4_white;
+	m_ambColor = color_white;
 	memset(&m_fogInfo,0,sizeof(m_fogInfo));
 
 	m_skinningEnabled = false;
@@ -628,6 +619,7 @@ void CMaterialSystem::ReloadAllMaterials()
 {
 	CScopedMutex m(m_Mutex);
 
+	MsgInfo("Reloading all materials...\n");
 	Array<IMaterial*> loadingList{ PP_SL };
 
 	for (auto it = m_loadedMaterials.begin(); it != m_loadedMaterials.end(); ++it)
@@ -883,7 +875,7 @@ int CMaterialSystem::GetLoadingQueue() const
 	return g_threadedMaterialLoader.GetCount();
 }
 
-void CMaterialSystem::SetShaderParameterOverriden(ShaderDefaultParams_e param, bool set)
+void CMaterialSystem::SetShaderParameterOverriden(int param, bool set)
 {
 	if(set)
 		m_paramOverrideMask &= ~(1 << (uint)param);

@@ -5,11 +5,10 @@
 // Description: Atlas packer - core and control
 //////////////////////////////////////////////////////////////////////////////////
 
+#include "core/core_common.h"
 #include "core/IDkCore.h"
+#include "core/ICommandLine.h"
 #include "core/IFileSystem.h"
-#include "core/DebugInterface.h"
-#include "core/cmdlib.h"
-#include "utils/strtools.h"
 
 void Usage()
 {

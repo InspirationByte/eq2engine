@@ -5,18 +5,8 @@
 // Description: Data package file (dpk)
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef DPKFILEWRITER_H
-#define DPKFILEWRITER_H
-
-#include <stdio.h>
-#ifdef _WIN32
-#include <direct.h>
-#endif
-
-#include "core/platform/Platform.h"
-#include "core/dpk_defs.h"
-#include "ds/Array.h"
-#include "ds/eqstring.h"
+#pragma once
+#include "dpk/dpk_defs.h"
 #include "utils/IceKey.h"
 
 struct dpkfilewinfo_t
@@ -67,5 +57,3 @@ protected:
 	IceKey					m_ice;
 	
 };
-
-#endif // DPK_FILE_WRITER_H

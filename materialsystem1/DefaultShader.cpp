@@ -6,8 +6,9 @@
 //				free of states, textures. Just uses matrix and fog setup
 //////////////////////////////////////////////////////////////////////////////////
 
-#include "materialsystem1/BaseShader.h"
+#include "core/core_common.h"
 #include "materialsystem1/IMaterialSystem.h"
+#include "materialsystem1/BaseShader.h"
 
 BEGIN_SHADER_CLASS(Default)
 

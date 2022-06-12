@@ -5,16 +5,14 @@
 // Description: Equilibrium Shared Model loader
 //////////////////////////////////////////////////////////////////////////////////-
 
-#include "dsm_loader.h"
+#include "core/core_common.h"
+#include "utils/KeyValues.h"
+
 #include "dsm_esm_loader.h"
 #include "dsm_obj_loader.h"
 #include "dsm_fbx_loader.h"
 
-#include "core/DebugInterface.h"
-#include "utils/KeyValues.h"
-#include "utils/strtools.h"
-
-#include <stdio.h>
+#include "dsm_loader.h"
 
 namespace SharedModel
 {

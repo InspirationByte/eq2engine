@@ -5,12 +5,20 @@
 // Description: Animated model for EGFMan - supports physics
 //////////////////////////////////////////////////////////////////////////////////
 
+#include "core/core_common.h"
 #include "CAnimatedModel.h"
+
+#include "egf/studio_egf.h"
+#include "animating/anim_events.h"
+
+#include "dkphysics/ragdoll.h"
+#include "dkphysics/IDkPhysics.h"
+#include "physics/PhysicsCollisionGroup.h"
+
 #include "materialsystem1/IMaterialSystem.h"
 #include "materialsystem1/MeshBuilder.h"
 
 #include "render/IDebugOverlay.h"
-#include "physics/PhysicsCollisionGroup.h"
 
 #define INITIAL_TIME 0.0f
 
@@ -420,7 +428,7 @@ void CAnimatedModel::Render(int nViewRenderFlags, float fDist, int startLod, boo
 
 	*/
 
-	materials->SetAmbientColor( color4_white );
+	materials->SetAmbientColor( color_white );
 
 	int nStartLOD = m_pModel->SelectLod( fDist ); // lod distance check
 
@@ -494,7 +502,7 @@ void CAnimatedModel::VisualizeBones()
 		if(m_joints[i].parentbone != -1)
 		{
 			Vector3D parent_pos = (posMatrix*Vector4D(m_boneTransforms[m_joints[i].parentbone].rows[3].xyz(), 1.0f)).xyz();
-			debugoverlay->Line3D(pos,parent_pos, color4_white, color4_white);
+			debugoverlay->Line3D(pos,parent_pos, color_white, color_white);
 		}
 
 		Vector3D dX = posMatrix.getRotationComponent() * m_boneTransforms[i].rows[0].xyz();

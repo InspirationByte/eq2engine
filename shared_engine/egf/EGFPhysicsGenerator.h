@@ -5,12 +5,14 @@
 // Description: Equilibrium physics model processor
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef EGFPHYSICSGENERATOR_H
-#define EGFPHYSICSGENERATOR_H
-
-#include "utils/KeyValues.h"
-#include "dsm_loader.h"
+#pragma once
 #include "egf/model.h"
+
+namespace SharedModel
+{
+	struct dsmmodel_t;
+	struct dsmvertex_t;
+}
 
 struct itriangle
 {
@@ -18,7 +20,6 @@ struct itriangle
 };
 
 typedef Array<itriangle> indxgroup_t;
-
 struct ragdolljoint_t;
 
 struct physNamedObject_t
@@ -70,5 +71,3 @@ protected:
 	physmodelprops_t			m_props;					// model usage
 	bool						m_forceGroupSubdivision;
 };
-
-#endif // EGFPHYSICSGENERATOR_H

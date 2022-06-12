@@ -5,9 +5,7 @@
 // Description: Equilibrium engine font cache
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef FONTCACHE_H
-#define FONTCACHE_H
-
+#pragma once
 #include "font/IFontCache.h"
 
 class IMatVar;
@@ -74,5 +72,3 @@ protected:
 	IMaterial*				m_sdfMaterial;
 	IMatVar*				m_fontParams;
 };
-
-#endif // FONTCACHE_H

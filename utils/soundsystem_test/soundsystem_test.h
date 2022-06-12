@@ -5,11 +5,7 @@
 // Description: 'Drivers' level editor
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef EDITORMAIN_H
-#define EDITORMAIN_H
-
-#include "core/platform/Platform.h"
-
+#pragma once
 #include "wxui_header.h"
 
 class CMainWindow : public wxFrame 
@@ -67,5 +63,3 @@ protected:
 };
 
 extern CMainWindow *g_pMainFrame;
-
-#endif // EDITORMAIN_H

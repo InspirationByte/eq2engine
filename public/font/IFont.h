@@ -17,10 +17,7 @@
 //
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef IFONT_H
-#define IFONT_H
-
-#include "math/Rectangle.h"
+#pragma once
 
 // text styles
 enum ETextStyleFlag
@@ -174,5 +171,3 @@ public:
 											const Vector2D& start,
 											const eqFontStyleParam_t& params) = 0;
 };
-
-#endif //IFONT_H

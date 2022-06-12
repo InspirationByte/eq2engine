@@ -10,16 +10,14 @@
 #include <AL/alext.h>
 #include <AL/efx.h>
 
-#include "eqAudioSystemAL.h"
-
+#include "core/core_common.h"
 #include "core/ConVar.h"
-#include "core/DebugInterface.h"
 #include "core/IDkCore.h"
-
 #include "utils/KeyValues.h"
 #include "utils/global_mutex.h"
 #include "utils/strtools.h"
 
+#include "eqAudioSystemAL.h"
 #include "source/snd_al_source.h"
 
 
@@ -301,7 +299,7 @@ bool CEqAudioSystemAL::CreateALEffect(const char* pszName, KVSection* pSection, 
 void CEqAudioSystemAL::DestroyEffects()
 {
 	m_currEffectSlotIdx = 0;
-	m_currEffect = NULL;
+	m_currEffect = nullptr;
 
 	for (int i = 0; i < m_effects.numElem(); i++)
 		_alDeleteEffects(1, &m_effects[i].nAlEffect);

@@ -5,7 +5,7 @@
 // Description: Events for animations and AI
 //////////////////////////////////////////////////////////////////////////////////
 
-#include "utils/strtools.h"
+#include "core/core_common.h"
 #include "anim_events.h"
 
 #define REGISTER_EVENT(ev) {#ev, ev}
@@ -14,9 +14,9 @@ anim_event_t anim_event_register[EV_COUNT] =
 {
 	REGISTER_EVENT( EV_SOUND ),
 	REGISTER_EVENT( EV_MUZZLEFLASH ),
-	REGISTER_EVENT( EV_IK_WORLDATTACH),
-	REGISTER_EVENT (EV_IK_LOCALATTACH),
-	REGISTER_EVENT( EV_IK_GROUNDATTACH),
+	REGISTER_EVENT( EV_IK_WORLDATTACH ),
+	REGISTER_EVENT( EV_IK_LOCALATTACH ),
+	REGISTER_EVENT( EV_IK_GROUNDATTACH ),
 	REGISTER_EVENT( EV_IK_DETACH),
 };
 

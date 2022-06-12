@@ -5,14 +5,7 @@
 // Description: Equilibrium physics joints system
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef IPHYSJOINT_H
-#define IPHYSJOINT_H
-
-#include "core/ppmem.h"
-
-#include "math/coord.h"
-#include "math/Vector.h"
-#include "math/Matrix.h"
+#pragma once
 
 class IPhysicsObject;
 
@@ -31,24 +24,16 @@ public:
 	// setters
 
 	virtual void			SetLinearLowerLimit(const Vector3D& linearLower) = 0; // sets lower linear limit (in radians)
-
 	virtual void			SetLinearUpperLimit(const Vector3D& linearUpper) = 0; // sets upper linear limit (in radians)
-
     virtual void			SetAngularLowerLimit(const Vector3D& angularLower) = 0; // sets lower angular limit (in radians)
-
     virtual void			SetAngularUpperLimit(const Vector3D& angularUpper) = 0; // sets upper angular limit (in radians)
 
 	// getters
 
 	virtual Vector3D		GetLinearLowerLimit() = 0; // returns lower linear limit (in radians)
-
 	virtual Vector3D		GetLinearUpperLimit() = 0; // returns upper linear limit (in radians)
-
 	virtual Vector3D		GetAngularLowerLimit() = 0; // returns lower angular limit (in radians)
-
     virtual Vector3D		GetAngularUpperLimit() = 0; // returns upper angular limit (in radians)
 
 	virtual void			UpdateTransform() = 0; // updates transform of joints
 };
-
-#endif // IPHYSJOINT_H

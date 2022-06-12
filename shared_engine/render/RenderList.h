@@ -5,11 +5,8 @@
 // Description: DakrTech scene renderer renderable
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef RENDERLIST_H
-#define RENDERLIST_H
-
-#include "BaseRenderableObject.h"
-#include "ds/Array.h"
+#pragma once
+class CBaseRenderableObject;
 
 //----------------------------------------------------
 // Base render list interface.
@@ -39,6 +36,3 @@ protected:
 
 	Array<CBaseRenderableObject*>		m_ObjectList;
 };
-
-
-#endif // RENDERLIST_H

@@ -5,13 +5,8 @@
 // Description: Equilibrium interface
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef CDKCORE
-#define CDKCORE
-
+#pragma once
 #include "core/IDkCore.h"
-#include "ds/eqstring.h"
-#include "ds/function.h"
-#include "utils/KeyValues.h"
 
 // interface pointer keeper
 struct coreInterface_t
@@ -61,5 +56,3 @@ private:
 	Array<coreInterface_t>			m_interfaces{ PP_SL };
 	Array<CoreExceptionCallback>	m_exceptionCb{ PP_SL };
 };
-
-#endif //CDKCORE

@@ -6,16 +6,16 @@
 //				A part of particle system
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef EQPARTICLES_H
-#define EQPARTICLES_H
-
-#include "materialsystem1/IMaterialSystem.h"
-#include "BaseRenderableObject.h"
+#pragma once
 #include "SpriteBuilder.h"
 
-#include "EffectRender.h"
-
-#include "math/coord.h"
+class IMaterial;
+class IVertexBuffer;
+class IIndexBuffer;
+class IVertexFormat;
+class CViewParams;
+class Volume;
+struct TexAtlasEntry_t;
 
 enum EPartRenderFlags
 {
@@ -40,24 +40,11 @@ struct PFXVertex_t
 	Vector3D		point;
 	Vector2D		texcoord;
 	Vector4D		color;
-
-	//TVec3D<half>	normal;
-	//half			unused;
-};
-
-static VertexFormatDesc_s g_PFXVertexFormatDesc[] = {
-	{ 0, 3, VERTEXATTRIB_POSITION, ATTRIBUTEFORMAT_FLOAT, "position" },		// position
-	{ 0, 2, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_FLOAT, "texcoord" },		// texture coord
-	{ 0, 4, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_FLOAT, "color" },		// color
-	//{ 0, 4, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_HALF, "normal" },		// normal; unused
 };
 
 //
 // Particle renderer
 //
-// It's represented as renderable object
-//
-// You can derive it
 class CParticleRenderGroup : public CSpriteBuilder<PFXVertex_t>
 {
 	friend class CParticleLowLevelRenderer;
@@ -93,10 +80,6 @@ protected:
 
 	bool				m_useCustomProjMat;
 	Matrix4x4			m_customProjMat;
-
-	//IVertexBuffer*		m_vertexBuffer[PARTICLE_RENDER_BUFFERS];
-	//IIndexBuffer*		m_indexBuffer[PARTICLE_RENDER_BUFFERS];
-	//IVertexFormat*		m_vertexFormat;
 
 	bool				m_invertCull;
 };
@@ -209,4 +192,3 @@ void Effects_DrawBillboard(PFXBillboard_t* effect, const Matrix4x4& viewMatrix, 
 
 extern CParticleLowLevelRenderer*	g_pPFXRenderer;
 
-#endif // EQPARTICLES_H

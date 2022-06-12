@@ -5,15 +5,7 @@
 // Description: DarkTech localization
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef ILOCALIZE
-#define ILOCALIZE
-
-#include "InterfaceManager.h"
-#include "utils/strtools.h"
-
-#ifdef PLAT_POSIX
-#   include <wchar.h>
-#endif // PLAT_POSIX
+#pragma once
 
 #define LOCALIZER_INTERFACE_VERSION		"CORE_Localizer_002"
 
@@ -52,7 +44,6 @@ public:
 //--------------------------------------------------------------
 
 #ifndef _DKLAUNCHER_
-
 INTERFACE_SINGLETON( ILocalize, CLocalize, LOCALIZER_INTERFACE_VERSION, g_localizer )
 
 #define DKLOC_CONCAT(x) L ## x
@@ -78,8 +69,4 @@ inline const wchar_t* LocalizedString( const char* pszString )
 	}
 
 }
-
-
 #endif // _DKLAUNCHER_
-
-#endif //ILOCALIZE

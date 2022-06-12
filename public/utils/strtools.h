@@ -5,36 +5,20 @@
 // Description: Special String tools to do lesser memory errors
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef STRTOOLS_H
-#define STRTOOLS_H
-
-#define ASCIILINESZ         (1024)
-
-#include "core/platform/PlatformDef.h"
-
-#include "ds/Array.h"
-#include "ds/eqstring.h"
-#include "ds/eqwstring.h"
+#pragma once
 
 #ifdef _WIN32
-
-#define CORRECT_PATH_SEPARATOR '\\'
-#define INCORRECT_PATH_SEPARATOR '/'
-
+#	define CORRECT_PATH_SEPARATOR '\\'
+#	define INCORRECT_PATH_SEPARATOR '/'
 #else
-
-#define CORRECT_PATH_SEPARATOR '/'
-#define INCORRECT_PATH_SEPARATOR '\\'
-
+#	define CORRECT_PATH_SEPARATOR '/'
+#	define INCORRECT_PATH_SEPARATOR '\\'
 #endif // _WIN32
 
-static const char CORRECT_PATH_SEPARATOR_STR[2] = {CORRECT_PATH_SEPARATOR, '\0'};
-static const char INCORRECT_PATH_SEPARATOR_STR[2] = {INCORRECT_PATH_SEPARATOR, '\0'};
+static constexpr const char CORRECT_PATH_SEPARATOR_STR[2] = {CORRECT_PATH_SEPARATOR, '\0'};
+static constexpr const char INCORRECT_PATH_SEPARATOR_STR[2] = {INCORRECT_PATH_SEPARATOR, '\0'};
 
 #ifdef PLAT_POSIX
-
-#include <ctype.h>
-#include <string.h>
 
 #define _vsnwprintf vswprintf
 #define _snprintf snprintf
@@ -179,6 +163,3 @@ namespace EqStringConv
 		wchar_to_utf8(EqString& outStr, const wchar_t* val, int length = -1);
 	};
 };
-
-
-#endif

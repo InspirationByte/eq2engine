@@ -7,12 +7,7 @@
 //				protected manner
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef ASYNCWORKQUEUE_H
-#define ASYNCWORKQUEUE_H
-
-#include "utils/eqthread.h"
-#include "ds/Array.h"
-#include "ds/function.h"
+#pragma once
 
 class CAsyncWorkQueue
 {
@@ -33,6 +28,3 @@ protected:
 	Array<struct work_t*>	m_pendingWork{ PP_SL };
 	Threading::CEqMutex		m_mutex;
 };
-
-#endif // ASYNCWORKQUEUE_H
-

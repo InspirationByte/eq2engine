@@ -7,18 +7,8 @@
 //				Some things was lovely hardcoded (like m_nLength)
 //////////////////////////////////////////////////////////////////////////////////
 
+#include "core/core_common.h"
 #include "eqwstring.h"
-#include "math/math_common.h"		// min/max
-
-#include <stdio.h>
-#include <malloc.h>
-#include <stdarg.h>
-#include <string.h>
-#include <wchar.h>
-
-#include "core/platform/assert.h"
-#include "core/platform/stackalloc.h"
-
 #include "utils/strtools.h"
 
 #ifdef _MSC_VER

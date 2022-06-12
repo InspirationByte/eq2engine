@@ -5,9 +5,7 @@
 // Description: OpenGL Renderer swapchain for using to draw in multiple windows
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef GLSWAPCHAIN_H
-#define GLSWAPCHAIN_H
-
+#pragma once
 #include "renderers/IEqSwapChain.h"
 
 class CGLSwapChain : public IEqSwapChain
@@ -46,5 +44,3 @@ protected:
 	int				m_width;
 	int				m_height;
 };
-
-#endif // GLSWAPCHAIN_H

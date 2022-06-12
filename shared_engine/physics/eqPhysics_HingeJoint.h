@@ -5,15 +5,10 @@
 // Description: Physics hinge joint
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef EQPHYSICS_HINGEJOINT_H
-#define EQPHYSICS_HINGEJOINT_H
-
+#pragma once
 #include "eqPhysics_Controller.h"
-
 #include "eqPhysics_PointConstraint.h"
 #include "eqPhysics_MaxDistConstraint.h"
-
-#include "math/DkMath.h"
 
 class CEqRigidBody;
 
@@ -69,5 +64,3 @@ protected:
 	CEqPhysicsMaxDistConstraint		m_sidePointConstraints[2];
 	CEqPhysicsMaxDistConstraint		m_maxDistanceConstraint;
 };
-
-#endif // EQPHYSICS_HINGEJOINT_H

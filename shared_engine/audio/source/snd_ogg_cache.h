@@ -5,9 +5,7 @@
 // Description: Ogg Vorbis source cache
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef SND_OGG_CACHE_H
-#define SND_OGG_CACHE_H
-
+#pragma once
 #include "snd_ogg_source.h"
 
 class CSoundSource_OggCache : public CSoundSource_Ogg
@@ -28,6 +26,3 @@ protected:
 	ubyte*			m_dataCache;   // data chunk
 	int				m_cacheSize;    // in bytes
 };
-
-
-#endif // SND_OGG_CACHE_H

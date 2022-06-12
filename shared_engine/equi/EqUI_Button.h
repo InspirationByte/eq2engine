@@ -5,10 +5,7 @@
 // Description: EGUI button
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef EQUI_BUTTON_H
-#define EQUI_BUTTON_H
-
-#include "equi_defs.h"
+#pragma once
 #include "IEqUI_Control.h"
 
 namespace equi
@@ -34,5 +31,3 @@ protected:
 };
 
 };
-
-#endif // EQUI_BUTTON_H

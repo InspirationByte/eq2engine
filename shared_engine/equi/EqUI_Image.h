@@ -5,10 +5,7 @@
 // Description: EGUI image
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef EQUI_IMAGE_H
-#define EQUI_IMAGE_H
-
-#include "equi_defs.h"
+#pragma once
 #include "IEqUI_Control.h"
 
 class IMaterial;
@@ -55,6 +52,3 @@ public:
 };
 
 };
-
-
-#endif // EQUI_IMAGE_H

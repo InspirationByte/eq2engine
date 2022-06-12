@@ -5,11 +5,8 @@
 // Description: D3D9 Renderer swapchain for using to draw in multiple windows
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef D3D9SWAPCHAIN_H
-#define D3D9SWAPCHAIN_H
-
+#pragma once
 #include "renderers/IEqSwapChain.h"
-#include <d3d9.h>
 
 class CD3D9SwapChain : public IEqSwapChain
 {
@@ -27,7 +24,7 @@ public:
 	void*			GetWindow() {return m_window;}
 	int				GetMSAASamples() {return 1;}
 
-	ITexture*		GetBackbuffer() {return NULL;}
+	ITexture*		GetBackbuffer() {return nullptr;}
 
 	// retrieves backbuffer size for this swap chain
 	void			GetBackbufferSize(int& wide, int& tall);
@@ -48,5 +45,3 @@ protected:
 	int				m_width;
 	int				m_height;
 };
-
-#endif // D3D9SWAPCHAIN_H

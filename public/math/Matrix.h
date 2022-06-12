@@ -5,10 +5,7 @@
 // Description: Matrix classes (m2x2,m3x3,m4x4)
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef MATRIX_H
-#define MATRIX_H
-
-#include "Vector.h"
+#pragma once
 
 struct Quaternion;
 
@@ -447,11 +444,4 @@ typedef TMat4<float> float4x4;
 #define identity4() _identity4<float>()
 
 // include
-
-#define FORWARD_DECLARED
-#include "Quaternion.h"
-#undef FORWARD_DECLARED
-
 #include "Matrix.inl"
-
-#endif // MATRIX_H

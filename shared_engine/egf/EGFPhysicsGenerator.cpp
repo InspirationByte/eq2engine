@@ -7,16 +7,12 @@
 //				TODO: refactoring of code here
 //////////////////////////////////////////////////////////////////////////////////
 
-#include "EGFPhysicsGenerator.h"
-
-#include "core/DebugInterface.h"
+#include "core/core_common.h"
 #include "core/IFileSystem.h"
+#include "utils/KeyValues.h"
 #include "utils/AdjacentTriangles.h"
-#include "ds/SmartPtr.h"
-#include "ds/VirtualStream.h"
-#include "utils/strtools.h"
-
-#include "math/coord.h"
+#include "EGFPhysicsGenerator.h"
+#include "dsm_loader.h"
 
 using namespace AdjacentTriangles;
 using namespace SharedModel;
@@ -25,8 +21,6 @@ using namespace SharedModel;
 #include <btBulletDynamicsCommon.h>
 #include <BulletCollision/CollisionDispatch/btInternalEdgeUtility.h>
 #include <BulletCollision/CollisionShapes/btShapeHull.h>
-
-#include "egf/physmodel.h"
 
 struct ragdolljoint_t
 {
@@ -440,8 +434,8 @@ bool CEGFPhysicsGenerator::CreateRagdollObjects( Array<dsmvertex_t>& vertices, A
 	{
 		Array<int> bone_geom_indices{ PP_SL };
 
-		Vector3D bboxMins(MAX_COORD_UNITS);
-		Vector3D bboxMaxs(-MAX_COORD_UNITS);
+		Vector3D bboxMins(F_INFINITY);
+		Vector3D bboxMaxs(-F_INFINITY);
 
 		// add indices of attached groups and also build bounding box
 		for(int j = 0; j < indexGroups.numElem(); j++)
@@ -494,13 +488,13 @@ bool CEGFPhysicsGenerator::CreateRagdollObjects( Array<dsmvertex_t>& vertices, A
 		object.shape_indexes[0] = shapeID;
 		object.offset = object_center;
 		object.mass_center = vec3_zero;
-		object.mass = DEFAULT_MASS;
+		object.mass = PHYS_DEFAULT_MASS;
 
 		strcpy(object.surfaceprops, KV_GetValueString( pDefaultSurfaceProps, 0, "default" ));
 
 		if( thisBoneSec )
 		{
-			object.mass = KV_GetValueFloat( thisBoneSec->FindSection("Mass"), 0, DEFAULT_MASS );
+			object.mass = KV_GetValueFloat( thisBoneSec->FindSection("Mass"), 0, PHYS_DEFAULT_MASS );
 			object.body_part = KV_GetValueInt(thisBoneSec->FindSection("bodypart"), 0, 0);
 
 			KVSection* surfPropsPair = thisBoneSec->FindSection("SurfaceProps");
@@ -650,7 +644,7 @@ bool CEGFPhysicsGenerator::CreateCompoundOrSeparateObjects( Array<dsmvertex_t>& 
 		memset(object.surfaceprops, 0, 0);
 		strcpy(object.surfaceprops, KV_GetValueString(surfPropsPair, 0, "default"));
 
-		object.mass = KV_GetValueFloat(m_physicsParams->FindSection("Mass"), 0, DEFAULT_MASS);
+		object.mass = KV_GetValueFloat(m_physicsParams->FindSection("Mass"), 0, PHYS_DEFAULT_MASS);
 
 		object.numShapes = shape_ids.numElem();
 
@@ -684,7 +678,7 @@ bool CEGFPhysicsGenerator::CreateCompoundOrSeparateObjects( Array<dsmvertex_t>& 
 		memset(object.surfaceprops, 0, 0);
 		strcpy(object.surfaceprops, KV_GetValueString(m_physicsParams->FindSection("SurfaceProps"), 0, "default"));
 
-		object.mass = KV_GetValueFloat(m_physicsParams->FindSection("Mass"), 0, DEFAULT_MASS);
+		object.mass = KV_GetValueFloat(m_physicsParams->FindSection("Mass"), 0, PHYS_DEFAULT_MASS);
 
 		for(int i = 0; i < indexGroups.numElem(); i++)
 		{
@@ -750,7 +744,7 @@ bool CEGFPhysicsGenerator::CreateSingleObject( Array<dsmvertex_t>& vertices, Arr
 	memset(object.surfaceprops, 0, sizeof(object.surfaceprops));
 	strcpy(object.surfaceprops, KV_GetValueString(m_physicsParams->FindSection("SurfaceProps"), 0, "default"));
 
-	object.mass = KV_GetValueFloat(m_physicsParams->FindSection("Mass"), 0, DEFAULT_MASS);
+	object.mass = KV_GetValueFloat(m_physicsParams->FindSection("Mass"), 0, PHYS_DEFAULT_MASS);
 	object.mass_center = KV_GetVector3D(m_physicsParams->FindSection("MassCenter"), 0, m_bbox.GetCenter());
 
 	object.numShapes = 1;
@@ -871,8 +865,8 @@ void CEGFPhysicsGenerator::SaveToFile(const char* filename)
 {
 	CMemoryStream lumpsStream(NULL, VS_OPEN_WRITE, MAX_PHYSICSFILE_SIZE);
 
-	WriteLumpToStream(&lumpsStream, PHYSLUMP_PROPERTIES, (ubyte*)&m_props, sizeof(physmodelprops_t));
-	WriteLumpToStream(&lumpsStream, PHYSLUMP_GEOMETRYINFO, (ubyte*)m_shapes.ptr(), sizeof(physgeominfo_t) * m_shapes.numElem());
+	WriteLumpToStream(&lumpsStream, PHYSFILE_PROPERTIES, (ubyte*)&m_props, sizeof(physmodelprops_t));
+	WriteLumpToStream(&lumpsStream, PHYSFILE_GEOMETRYINFO, (ubyte*)m_shapes.ptr(), sizeof(physgeominfo_t) * m_shapes.numElem());
 
 	// write names lump before objects lump
 	// PHYSLUMP_OBJECTNAMES
@@ -885,7 +879,7 @@ void CEGFPhysicsGenerator::SaveToFile(const char* filename)
 		char nullChar = '\0';
 		objNamesLump.Write(&nullChar, 1, 1);
 
-		WriteLumpToStream(&lumpsStream, PHYSLUMP_OBJECTNAMES,		(ubyte*)objNamesLump.GetBasePointer(), objNamesLump.Tell());
+		WriteLumpToStream(&lumpsStream, PHYSFILE_OBJECTNAMES,		(ubyte*)objNamesLump.GetBasePointer(), objNamesLump.Tell());
 	}
 
 
@@ -896,12 +890,12 @@ void CEGFPhysicsGenerator::SaveToFile(const char* filename)
 		for(int i = 0; i < m_objects.numElem(); i++)
 			objDataLump.Write(&m_objects[i].object, 1, sizeof(m_objects[i].object));
 
-		WriteLumpToStream(&lumpsStream, PHYSLUMP_OBJECTS,		(ubyte*)objDataLump.GetBasePointer(), objDataLump.Tell());
+		WriteLumpToStream(&lumpsStream, PHYSFILE_OBJECTS,		(ubyte*)objDataLump.GetBasePointer(), objDataLump.Tell());
 	}
 
-	WriteLumpToStream(&lumpsStream, PHYSLUMP_INDEXDATA,	(ubyte*)m_indices.ptr(), sizeof(int) * m_indices.numElem());
-	WriteLumpToStream(&lumpsStream, PHYSLUMP_VERTEXDATA,	(ubyte*)m_vertices.ptr(), sizeof(Vector3D) * m_vertices.numElem());
-	WriteLumpToStream(&lumpsStream, PHYSLUMP_JOINTDATA,	(ubyte*)m_joints.ptr(), sizeof(physjoint_t) * m_joints.numElem());
+	WriteLumpToStream(&lumpsStream, PHYSFILE_INDEXDATA,	(ubyte*)m_indices.ptr(), sizeof(int) * m_indices.numElem());
+	WriteLumpToStream(&lumpsStream, PHYSFILE_VERTEXDATA, (ubyte*)m_vertices.ptr(), sizeof(Vector3D) * m_vertices.numElem());
+	WriteLumpToStream(&lumpsStream, PHYSFILE_JOINTDATA,	(ubyte*)m_joints.ptr(), sizeof(physjoint_t) * m_joints.numElem());
 
 	Msg("Total lumps size: %d\n", lumpsStream.GetSize());
 
@@ -921,9 +915,9 @@ void CEGFPhysicsGenerator::SaveToFile(const char* filename)
 	}
 
 	physmodelhdr_t header;
-	header.ident = PHYSMODEL_ID;
-	header.version = PHYSMODEL_VERSION;
-	header.num_lumps = PHYSLUMP_LUMPS;
+	header.ident = PHYSFILE_ID;
+	header.version = PHYSFILE_VERSION;
+	header.num_lumps = PHYSFILE_LUMPS;
 
 	outputFile->Write(&header, 1, sizeof(header));
 	lumpsStream.WriteToFileStream(outputFile);

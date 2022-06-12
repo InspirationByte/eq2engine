@@ -6,11 +6,7 @@
 //				Frustum volume
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef VOLUME_H
-#define VOLUME_H
-
-#include "Plane.h"
-#include "math_common.h"
+#pragma once
 
 enum EVolumePlane
 {
@@ -69,5 +65,3 @@ inline Volume operator * (const Matrix4x4 &m, const Volume &v)
 	}
 	return out;
 }
-
-#endif // VOLUME_H

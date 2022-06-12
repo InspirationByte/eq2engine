@@ -13,10 +13,10 @@
 //		- Lua state
 //
 
+#include "core/core_common.h"
 #include "sys_state.h"
 
 #include "input/InputCommandBinder.h"
-
 #include "render/IDebugOverlay.h"
 
 namespace EqStateMgr

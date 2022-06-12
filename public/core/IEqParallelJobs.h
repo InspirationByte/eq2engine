@@ -1,9 +1,4 @@
-#ifndef IEQPARALLELJOBS_H
-#define IEQPARALLELJOBS_H
-
-#include "ds/Array.h"
-#include "ds/function.h"
-#include "core/InterfaceManager.h"
+#pragma once
 
 #define PARALLELJOBS_INTERFACE_VERSION		"CORE_ParallelJobs_002"
 
@@ -100,5 +95,3 @@ public:
 };
 
 INTERFACE_SINGLETON(IEqParallelJobThreads, CEqParallelJobThreads, PARALLELJOBS_INTERFACE_VERSION, g_parallelJobs)
-
-#endif // IEQPARALLELJOBS_H

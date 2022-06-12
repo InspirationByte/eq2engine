@@ -5,10 +5,8 @@
 // Description: Token parser
 //////////////////////////////////////////////////////////////////////////////////
 
-#include <stdio.h>
-#include <string.h>
+#include "core/core_common.h"
 #include "Tokenizer.h"
-#include "core/ppmem.h"
 
 bool isWhiteSpace(const char ch)
 {

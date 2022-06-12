@@ -76,7 +76,8 @@ project "animatingLib"
 		"egfLib", "bullet2"
 	}
     files {
-		Folders.shared_game.. "animating/**.cpp"
+		Folders.shared_game.. "animating/**.cpp",
+		Folders.shared_game.. "animating/**.h"
 	}
     includedirs {
 		Folders.shared_game
@@ -98,6 +99,7 @@ project "dkPhysicsLib"
 	}
     files {
 		Folders.shared_engine.. "dkphysics/**.cpp",
+		Folders.shared_engine.. "dkphysics/**.h",
 		Folders.public.. "dkphysics/**.h"
 	}
 	includedirs {
@@ -207,7 +209,7 @@ project "eqGLESRHI"
 	}
 
 	removefiles {
-		Folders.matsystem1.. "renderers/GL/CGLRenderLib*",
+		Folders.matsystem1.. "renderers/GL/GLRenderLibrary*",
 	}
 	
     includedirs {
@@ -225,13 +227,13 @@ project "eqGLESRHI"
 			"GLESv2", "EGL", "android" 
 		}
 		files {
-			Folders.matsystem1.. "renderers/GL/CGLRenderLib_ES.cpp",
-			--Folders.matsystem1.. "renderers/GL/CGLRenderLib_SDL.cpp" -- SDL2 doesn't work properly with context switching :C
+			Folders.matsystem1.. "renderers/GL/GLRenderLibrary_ES.cpp",
+			--Folders.matsystem1.. "renderers/GL/GLRenderLibrary_SDL.cpp" -- SDL2 doesn't work properly with context switching :C
 		}
 
 	filter "system:Windows"
 		files {
-			Folders.matsystem1.. "renderers/GL/CGLRenderLib_ES.cpp",
+			Folders.matsystem1.. "renderers/GL/GLRenderLibrary_ES.cpp",
 			Folders.matsystem1.. "renderers/GL/loaders/glad_egl.c",
 		}
 
@@ -252,7 +254,7 @@ if not IS_ANDROID then
 		}
 
 		removefiles {
-			Folders.matsystem1.. "renderers/GL/CGLRenderLib_*",
+			Folders.matsystem1.. "renderers/GL/GLRenderLibrary_*",
 		}
 		
 		includedirs {
