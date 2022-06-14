@@ -5,6 +5,6 @@
 // Description: Component System
 //////////////////////////////////////////////////////////////////////////////////
 
+#include "core/core_common.h"
 #include "components.h"
-#include "utils/strtools.h"
 

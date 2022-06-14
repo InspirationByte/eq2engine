@@ -5,11 +5,7 @@
 // Description: Component System
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef COMPONENTS_H
-#define COMPONENTS_H
-
-#include "core/dktypes.h"
-#include "utils/strtools.h"
+#pragma once
 
 template <typename HOST>
 class ComponentBase
@@ -29,5 +25,3 @@ protected:
 // hard-linked component instantiator
 #define	ADD_COMPONENT_GETTER(type)	Type* Get<Type>() const { return &m_inst##Type; }
 #define	ADD_COMPONENT_INST(type)	Type m_inst##Type(this);
-
-#endif // COMPONENTS_H

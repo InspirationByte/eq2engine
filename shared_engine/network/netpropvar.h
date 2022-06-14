@@ -292,10 +292,6 @@ struct netvariablemap_t
 	DECLARE_SIMPLE_NETWORK_TABLE() \
 	netvariablemap_t* GetNetworkTableMap( void );
 
-#define NETWORK_CHANGELIST(name) m_changeList_##name
-
-#define DECLARE_NETWORK_CHANGELIST(name)	Array<uint>	NETWORK_CHANGELIST(name){ PP_SL }
-
 //------------------------------------------------------------------------------------
 
 #define memb(structure,member)			(((structure *)0)->member)

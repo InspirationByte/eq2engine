@@ -7,14 +7,6 @@
 
 #pragma once
 
-// standard vertex format used by the material system's dynamic mesh instance
-static VertexFormatDesc_t g_standardVertexFormatDesc[] = {
-	{0, 4, VERTEXATTRIB_POSITION,	ATTRIBUTEFORMAT_FLOAT, "position"},
-	{0, 4, VERTEXATTRIB_TEXCOORD,	ATTRIBUTEFORMAT_HALF, "texcoord"},
-	{0, 4, VERTEXATTRIB_NORMAL,		ATTRIBUTEFORMAT_HALF, "normal"},
-	{0, 4, VERTEXATTRIB_COLOR,		ATTRIBUTEFORMAT_HALF, "color"},
-};
-
 //
 // The dynamic mesh interface
 //

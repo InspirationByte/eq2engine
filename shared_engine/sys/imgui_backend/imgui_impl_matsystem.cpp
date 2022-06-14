@@ -15,14 +15,6 @@ struct ImGui_ImplMatSystem_Data
 	ImGui_ImplMatSystem_Data() { memset(this, 0, sizeof(*this)); }
 };
 
-struct MatSysDynamicMeshVertex // please refer to g_standardVertexFormatDesc
-{
-	Vector4D        pos;
-	TVec4D<half>    uv;
-	TVec4D<half>	norm;
-	TVec4D<half>	col;
-};
-
 // Backend data stored in io.BackendRendererUserData to allow support for multiple Dear ImGui contexts
 // It is STRONGLY preferred that you use docking branch with multi-viewports (== single Dear ImGui context + multiple windows) instead of multiple Dear ImGui contexts.
 static ImGui_ImplMatSystem_Data* ImGui_ImplMatSystem_GetBackendData()
@@ -30,7 +22,6 @@ static ImGui_ImplMatSystem_Data* ImGui_ImplMatSystem_GetBackendData()
 	return ImGui::GetCurrentContext() ? (ImGui_ImplMatSystem_Data*)ImGui::GetIO().BackendRendererUserData : NULL;
 }
 
-extern void DrawAlphaFilledRectangle(const Rectangle_t& rect, const ColorRGBA& color1, const ColorRGBA& color2);
 
 // Functions
 static void ImGui_ImplMatSystem_SetupRenderState(ImDrawData* draw_data)

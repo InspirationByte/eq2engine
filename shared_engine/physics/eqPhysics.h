@@ -29,6 +29,7 @@ TODO:
 */
 
 #pragma once
+#include "eqPhysics_Defs.h"
 
 // max world size is +/-32768, limited by FReal
 #define EQPHYS_MAX_WORLDSIZE	32767.0f
@@ -47,29 +48,7 @@ class CEqCollisionBroadphaseGrid;
 class IEqPhysicsConstraint;
 class IEqPhysicsController;
 
-//---------------------------------------------------------------------------------
-// Equilibrium physics step
-//---------------------------------------------------------------------------------
-
-enum EPhysFilterType
-{
-	EQPHYS_FILTER_TYPE_EXCLUDE = 0,		// excludes objects
-	EQPHYS_FILTER_TYPE_INCLUDE_ONLY,		// includes only objects
-};
-
-enum EPhysFilterFlags
-{
-	EQPHYS_FILTER_FLAG_STATICOBJECTS	= (1 << 0),	// filters only static objects
-	EQPHYS_FILTER_FLAG_DYNAMICOBJECTS	= (1 << 1), // filters only dynamic objects
-	EQPHYS_FILTER_FLAG_CHECKUSERDATA	= (1 << 2), // filter uses userdata comparison instead of objects
-
-	EQPHYS_FILTER_FLAG_DISALLOW_STATIC	= (1 << 3),
-	EQPHYS_FILTER_FLAG_DISALLOW_DYNAMIC	= (1 << 4),
-
-	EQPHYS_FILTER_FLAG_FORCE_RAYCAST	= (1 << 5), // for raycasting - ignores COLLOBJ_NO_RAYCAST flags
-};
-
-static constexpr const int COLLISION_MASK_ALL = 0xFFFFFFFF;
+typedef void (*FNSIMULATECALLBACK)(float fDt, int iterNum);
 
 //----------------------------------------------
 
@@ -88,67 +67,7 @@ struct eqPhysSurfParam_t
 	char		word;
 };
 
-//----------------------------------------------
-
-#define MAX_COLLISION_FILTER_OBJECTS 8
-
-struct eqPhysCollisionFilter
-{
-	eqPhysCollisionFilter()
-	{
-		type = EQPHYS_FILTER_TYPE_EXCLUDE;
-		flags = 0;
-		numObjects = 0;
-	}
-
-	eqPhysCollisionFilter(CEqRigidBody* obj)
-	{
-		objectPtrs[0] = obj;
-		numObjects = 1;
-
-		type = EQPHYS_FILTER_TYPE_EXCLUDE;
-		flags = EQPHYS_FILTER_FLAG_DYNAMICOBJECTS;
-	}
-
-	eqPhysCollisionFilter(CEqRigidBody** obj, int cnt)
-	{
-		int cpcnt = sizeof(CEqRigidBody*)*cnt;
-		cpcnt = min(cpcnt, MAX_COLLISION_FILTER_OBJECTS);
-
-		memcpy(objectPtrs, obj, cpcnt);
-		numObjects = cpcnt;
-
-		type = EQPHYS_FILTER_TYPE_EXCLUDE;
-		flags = EQPHYS_FILTER_FLAG_DYNAMICOBJECTS;
-	}
-
-	void AddObject(void* ptr)
-	{
-		if (ptr && numObjects < MAX_COLLISION_FILTER_OBJECTS)
-			objectPtrs[numObjects++] = ptr;
-	}
-
-	bool HasObject(void* ptr)
-	{
-		for (int i = 0; i < numObjects; i++)
-		{
-			if (objectPtrs[i] == ptr)
-				return true;
-		}
-
-		return false;
-	}
-
-	void*	objectPtrs[MAX_COLLISION_FILTER_OBJECTS];
-
-	int		type;
-	int		flags;
-	int		numObjects;
-};
-
 //--------------------------------------------------------------------------------------------------------------
-
-typedef void (*FNSIMULATECALLBACK)(float fDt, int iterNum);
 
 class CEqPhysics
 {

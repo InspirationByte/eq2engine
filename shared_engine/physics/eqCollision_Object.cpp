@@ -24,18 +24,6 @@ ConVar ph_margin("ph_margin", "0.0001", nullptr, CV_CHEAT | CV_UNREGISTERED);
 
 #define AABB_GROWVALUE	 (0.15f)
 
-IEqPhysCallback::IEqPhysCallback(CEqCollisionObject* object) : m_object(object)
-{
-	ASSERT(m_object);
-	m_object->m_callbacks = this;
-}
-
-IEqPhysCallback::~IEqPhysCallback()
-{
-	if(m_object)
-		m_object->m_callbacks = nullptr;
-}
-
 CEqCollisionObject::CEqCollisionObject() : m_collisionList(PP_SL, PHYSICS_COLLISION_LIST_MAX)
 {
 	m_collObject = nullptr;

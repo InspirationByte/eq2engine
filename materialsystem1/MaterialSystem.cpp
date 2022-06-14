@@ -29,11 +29,19 @@ using namespace Threading;
 
 DECLARE_INTERNAL_SHADERS()
 
-IShaderAPI*				g_pShaderAPI = NULL;
+IShaderAPI* g_pShaderAPI = NULL;
 
 // register material system
 static CMaterialSystem s_matsystem;
 IMaterialSystem* materials = &s_matsystem;
+
+// standard vertex format used by the material system's dynamic mesh instance
+static VertexFormatDesc_t g_dynMeshVertexFormatDesc[] = {
+	{0, 4, VERTEXATTRIB_POSITION,	ATTRIBUTEFORMAT_FLOAT, "position"},
+	{0, 4, VERTEXATTRIB_TEXCOORD,	ATTRIBUTEFORMAT_HALF, "texcoord"},
+	{0, 4, VERTEXATTRIB_NORMAL,		ATTRIBUTEFORMAT_HALF, "normal"},
+	{0, 4, VERTEXATTRIB_COLOR,		ATTRIBUTEFORMAT_UBYTE, "color"},
+};
 
 ConVar	r_showlightmaps("r_showlightmaps", "0", "Disable diffuse textures to show lighting", CV_CHEAT);
 ConVar	r_screen("r_screen", "0", "Screen count", CV_ARCHIVE);
@@ -308,7 +316,7 @@ bool CMaterialSystem::Init(const matsystem_init_config_t& config)
 
 	g_pShaderAPI = m_shaderAPI;
 
-	if(!m_dynamicMesh.Init( g_standardVertexFormatDesc, elementsOf(g_standardVertexFormatDesc)))
+	if(!m_dynamicMesh.Init(g_dynMeshVertexFormatDesc, elementsOf(g_dynMeshVertexFormatDesc)))
 	{
 		ErrorMsg("Couldn't init DynamicMesh!\n");
 		return false;

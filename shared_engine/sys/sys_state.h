@@ -9,10 +9,8 @@
 
 #define GAME_STATE_NONE 0
 
-// forward and extern
-class IEqFont;
 class CBaseStateHandler;
-extern CBaseStateHandler*	g_states[];
+extern CBaseStateHandler* g_states[];
 
 //--------------------------------------------------------------------------------
 // game state handler
@@ -21,8 +19,7 @@ extern CBaseStateHandler*	g_states[];
 class CBaseStateHandler
 {
 public:
-						CBaseStateHandler() : m_nextState(NULL), m_forceNextState(false) {}
-				virtual ~CBaseStateHandler(){}
+	virtual ~CBaseStateHandler() = default;
 
 	virtual int			GetType() const = 0;
 
@@ -48,11 +45,11 @@ public:
 	virtual float		GetTimescale() const { return 1.0f; }
 
 	void				SetNextState(CBaseStateHandler* state, bool force = false)	{m_nextState = state;m_forceNextState = force;}
-	CBaseStateHandler*	GetNextState(bool* force = NULL) const						{if(force)*force = m_forceNextState; return m_nextState;}
+	CBaseStateHandler*	GetNextState(bool* force = nullptr) const					{if(force)*force = m_forceNextState; return m_nextState;}
 
 private:
-	CBaseStateHandler*	m_nextState;
-	bool				m_forceNextState;
+	CBaseStateHandler*	m_nextState{ nullptr };
+	bool				m_forceNextState{ false };
 };
 
 //--------------------------------------------------------------------------------

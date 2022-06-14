@@ -127,7 +127,7 @@ public:
 		m_root = nullptr;
 	}
 
-	Iterator find(const K& key) const
+	Iterator find(const K& key) const // TODO: multi-map's findAll which returns MultiIterator
 	{
 		for (Item* item = m_root; item; )
 		{

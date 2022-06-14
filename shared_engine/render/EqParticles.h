@@ -34,12 +34,12 @@ struct PFXVertex_t
 	{
 		point = p;
 		texcoord = t;
-		color = c;
+		color = MColor(c).pack();
 	}
 
 	Vector3D		point;
-	Vector2D		texcoord;
-	Vector4D		color;
+	TVec2D<half>	texcoord;
+	uint			color;
 };
 
 //
@@ -172,7 +172,7 @@ struct PFXBillboard_t
 	CPFXAtlasGroup*		group { nullptr };		// atlas
 	TexAtlasEntry_t*	tex {nullptr};			// texture name in atlas
 
-	Vector4D			vColor;
+	MColor				vColor;
 	Vector3D			vOrigin;
 	Vector3D			vLockDir;
 

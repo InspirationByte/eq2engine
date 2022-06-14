@@ -14,6 +14,7 @@ struct btTriangleInfoMap;
 class CEqBulletIndexedMesh;
 class CEqPhysics;
 class CEqCollisionObject;
+class IEqPhysCallback;
 struct studioPhysData_t;
 struct collgridcell_t;
 
@@ -42,24 +43,6 @@ enum ECollisionObjectFlags
 
 	COLLOBJ_IS_PROCESSING			= (1 << 30),
 	COLLOBJ_TRANSFORM_DIRTY			= (1 << 31),
-};
-
-class IEqPhysCallback
-{
-public:
-	IEqPhysCallback(CEqCollisionObject* object);
-	virtual				~IEqPhysCallback();
-
-	virtual void		PreSimulate(float fDt) = 0;
-	virtual void		PostSimulate(float fDt) = 0;
-
-	// called before collision processed
-	virtual void		OnPreCollide(ContactPair_t& pair) = 0;
-
-	// called after collision processed and applied impulses
-	virtual void		OnCollide(const CollisionPairData_t& pair) = 0;
-
-	CEqCollisionObject*	m_object;
 };
 
 class CEqCollisionObject

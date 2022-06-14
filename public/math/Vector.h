@@ -287,11 +287,11 @@ struct TVec4D
 
 	operator T *() const { return (T *) &x; }
 
-	TVec3D<T>& xyz() { return *(TVec3D<T>*)&x; }
-	TVec3D<T>& yzw() { return *(TVec3D<T>*)&y; }
+	// TVec3D<T>& xyz() { return *(TVec3D<T>*)&x; }
+	// TVec3D<T>& yzw() { return *(TVec3D<T>*)&y; }
 
-	const TVec3D<T>& xyz() const { return *(TVec3D<T>*) & x; }
-	const TVec3D<T>& yzw() const { return *(TVec3D<T>*) & y; }
+	const TVec3D<T>& xyz() const { return *(TVec3D<T>*)&x; }
+	const TVec3D<T>& yzw() const { return *(TVec3D<T>*)&y; }
 
 	const TVec2D<T>& xy() const { return *(TVec2D<T>*)&x; }
 	const TVec2D<T>& yz() const { return *(TVec2D<T>*)&y; }
