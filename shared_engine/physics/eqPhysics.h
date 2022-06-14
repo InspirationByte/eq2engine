@@ -50,23 +50,6 @@ class IEqPhysicsController;
 
 typedef void (*FNSIMULATECALLBACK)(float fDt, int iterNum);
 
-//----------------------------------------------
-
-struct eqPhysSurfParam_t
-{
-	EqString	name;
-
-	int			id;
-
-	float		restitution;
-	float		friction;
-
-	float		tirefriction;
-	float		tirefriction_traction;
-
-	char		word;
-};
-
 //--------------------------------------------------------------------------------------------------------------
 
 class CEqPhysics

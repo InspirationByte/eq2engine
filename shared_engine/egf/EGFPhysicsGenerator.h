@@ -8,6 +8,8 @@
 #pragma once
 #include "egf/model.h"
 
+struct KVSection;
+
 namespace SharedModel
 {
 	struct dsmmodel_t;

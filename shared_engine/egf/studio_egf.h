@@ -11,7 +11,6 @@
 class IVertexBuffer;
 class IIndexBuffer;
 
-
 // streams in studio models used exclusively in interpolation
 class CEngineStudioEGF : public IEqModel
 {

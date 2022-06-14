@@ -10,6 +10,8 @@
 template<class T>
 struct TAABBox
 {
+	static constexpr const int VertexCount = 9;
+
 	static T dist_check(const T pn, const T bmin, const T bmax)
 	{
 		T out = 0;

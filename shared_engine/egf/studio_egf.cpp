@@ -16,6 +16,23 @@
 #include "render/Decals.h"
 #include "materialsystem1/IMaterialSystem.h"
 
+int EGFHwVertex_t::GetVertexFormatDesc(const VertexFormatDesc_t** desc)
+{
+	static const VertexFormatDesc_t g_EGFHwVertexFormat[] = {
+		{ 0, 4, VERTEXATTRIB_POSITION, ATTRIBUTEFORMAT_HALF, "position" },		// position
+		{ 0, 2, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_HALF, "texcoord" },		// texcoord 0
+
+		{ 0, 4, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_HALF, "tangent" },		// Tangent (TC1)
+		{ 0, 4, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_HALF, "binormal" },		// Binormal (TC2)
+		{ 0, 4, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_HALF, "normal" },		// Normal (TC3)
+
+		{ 0, 4, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_HALF, "boneid" },		// Bone indices (hw skinning), (TC4)
+		{ 0, 4, VERTEXATTRIB_TEXCOORD, ATTRIBUTEFORMAT_HALF, "bonew" }			// Bone weights (hw skinning), (TC5)
+	};
+
+	*desc = g_EGFHwVertexFormat;
+	return elementsOf(g_EGFHwVertexFormat);
+}
 
 ConVar r_lodtest("r_lodtest", "-1", -1.0f, MAX_MODEL_LODS, "Studio LOD test", CV_CHEAT);
 ConVar r_lodscale("r_lodscale", "1.0", "Studio model LOD scale", CV_ARCHIVE);
@@ -1174,7 +1191,12 @@ int CStudioModelCache::PrecacheModel(const char* modelName)
 		return CACHE_INVALID_MODEL;
 
 	if (m_egfFormat == nullptr)
-		m_egfFormat = g_pShaderAPI->CreateVertexFormat("EGFVertex", g_EGFHwVertexFormat, elementsOf(g_EGFHwVertexFormat));
+	{
+		const VertexFormatDesc_t* vertFormat;
+		const int numElem = EGFHwVertex_t::GetVertexFormatDesc(&vertFormat);
+		m_egfFormat = g_pShaderAPI->CreateVertexFormat("EGFVertex", vertFormat, numElem);
+	}
+	
 
 	int idx = GetModelIndex(modelName);
 

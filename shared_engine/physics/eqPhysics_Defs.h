@@ -46,3 +46,18 @@ struct eqPhysCollisionFilter
 	int		flags;
 	int		numObjects;
 };
+
+struct eqPhysSurfParam_t
+{
+	EqString	name;
+
+	int			id;
+
+	float		restitution;
+	float		friction;
+
+	float		tirefriction;
+	float		tirefriction_traction;
+
+	char		word;
+};
