@@ -1520,6 +1520,12 @@ void ShaderAPIGL::ChangeVertexBuffer(IVertexBuffer* pVertexBuffer, int nStream, 
 		GL_UNSIGNED_BYTE,
 	};
 
+	const GLboolean glNormTypes[] = {
+		GL_FALSE,
+		GL_FALSE,
+		GL_TRUE,
+	};
+
 	const bool instanceBuffer = (nStream > 0) && pVB != nullptr && (pVB->GetFlags() & VERTBUFFER_FLAG_INSTANCEDATA);
 	const bool vboChanged = m_currentGLVB[nStream] != vbo;
 
@@ -1558,7 +1564,7 @@ void ShaderAPIGL::ChangeVertexBuffer(IVertexBuffer* pVertexBuffer, int nStream, 
 					glEnableVertexAttribArray(i);
 					GLCheckError("enable vtx attrib");
 
-					glVertexAttribPointer(i, attrib.sizeInBytes, glTypes[attrib.attribFormat], GL_FALSE, vertexSize, base + attrib.offsetInBytes);
+					glVertexAttribPointer(i, attrib.sizeInBytes, glTypes[attrib.attribFormat], glNormTypes[attrib.attribFormat], vertexSize, base + attrib.offsetInBytes);
 					GLCheckError("attribpointer");
 
 					glVertexAttribDivisor(i, instanceBuffer ? 1 : 0);
