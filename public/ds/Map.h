@@ -18,11 +18,11 @@ public:
 	public:
 		Iterator() : item(nullptr) {}
 		const K& key() const { return item->key; }
-		const V& value() const { return item->value; }
-		const V& operator*() const { return item->value; }
-		V& operator*() { return item->value; }
-		const V* operator->() const { return &item->value; }
-		V* operator->() { return &item->value; }
+		const V& value() const { return *item->value; }
+		const V& operator*() const { return *item->value; }
+		V& operator*() { return *item->value; }
+		const V* operator->() const { return item->value; }
+		V* operator->() { return item->value; }
 		const Iterator& operator++() { item = item->next; return *this; }
 		const Iterator& operator--() { item = item->prev; return *this; }
 		Iterator operator++() const { return item->next; }
@@ -67,18 +67,18 @@ public:
 	{
 		clear();
 		for (const Item* i = other.m_begin.item, *end = &other.m_endItem; i != end; i = i->next)
-			insert(i->key, i->value);
+			insert(i->key, *i->value);
 		return *this;
 	}
 
 	const Iterator& begin() const { return m_begin; }
 	const Iterator& end() const { return m_end; }
 
-	const V& front() const { return m_begin.item->value; }
-	const V& back() const { return m_end.item->prev->value; }
+	const V& front() const { return *m_begin.item->value; }
+	const V& back() const { return *m_end.item->prev->value; }
 
-	V& front() { return m_begin.item->value; }
-	V& back() { return m_end.item->prev->value; }
+	V& front() { return *m_begin.item->value; }
+	V& back() { return *m_end.item->prev->value; }
 
 	Iterator removeFront() { return remove(m_begin); }
 	Iterator removeBack() { return remove(m_end.item->prev); }
@@ -90,15 +90,15 @@ public:
 	{
 		Map tmp{PPSourceLine::Empty()};
 		for (const Item* i = other.m_begin.item, *end = &other.m_endItem; i != end; i = i->next)
-			tmp.insert(i->key, i->value);
+			tmp.insert(i->key, *i->value);
 
 		other.clear();
 		for (const Item* i = m_begin.item, *end = &m_endItem; i != end; i = i->next)
-			other.insert(i->key, i->value);
+			other.insert(i->key, *i->value);
 
 		clear();
 		for (const Item* i = tmp.m_begin.item, *end = &tmp.m_endItem; i != end; i = i->next)
-			insert(i->key, i->value);
+			insert(i->key, *i->value);
 	}
 
 	void clear(bool deallocate = true)
@@ -224,7 +224,7 @@ public:
 	Iterator insert(const K& key, const V& value)
 	{
 		Iterator it = insert(key);
-		it.item->value = value;
+		*it.item->value = value;
 		return it;
 	}
 
@@ -238,9 +238,9 @@ public:
 		if (other.m_root)
 		{
 			Iterator i = other.m_begin;
-			Iterator it = insert(&m_root, nullptr, i.item->key, i.item->value);
+			Iterator it = insert(&m_root, nullptr, i.item->key, *i.item->value);
 			for (++i; i != other.m_end; ++i)
-				it = insert(it, i.item->key, i.item->value);
+				it = insert(it, i.item->key, *i.item->value);
 		}
 	}
 
@@ -425,7 +425,7 @@ private:
 	struct Item
 	{
 		K key;
-		V& value;
+		V* value{ nullptr };
 		Item* parent;
 		Item* left{ nullptr };
 		Item* right{ nullptr };
@@ -435,16 +435,17 @@ private:
 		int slope{ 0 };
 
 		Item()
-			: key(), _value(PPSourceLine::Empty()), value(_value.x)
+			: key()
 		{}
 
-		Item(const PPSourceLine& sl, Item* parent, const K& key) : parent(parent), key(key), _value(sl), value(_value.x)
+		Item(Item* parent, const K& key) 
+			: parent(parent), key(key), value((V*)(this + 1))
 		{}
 
-		Item(const Item& other) : key(other.key), _value(other._value), value(_value.x), 
-			parent(other.parent), left(other.left), right(other.right), next(other.next), prev(other.prev), 
-			height(other.height), slope(other.slope)
-		{}
+		~Item()
+		{
+			if (value) { value->~V(); }
+		}
 
 		void updateHeightAndSlope()
 		{
@@ -454,8 +455,6 @@ private:
 			slope = leftHeight - rightHeight;
 			height = (leftHeight > rightHeight ? leftHeight : rightHeight) + 1;
 		}
-	private:
-		PPSLValueCtor<V> _value;
 	};
 	struct ItemBlock
 	{
@@ -483,11 +482,11 @@ private:
 			Item* item = m_freeItem;
 			if (!item)
 			{
-				const int allocatedSize = sizeof(ItemBlock) + sizeof(Item);
+				const int allocatedSize = sizeof(ItemBlock) + sizeof(Item) + sizeof(PPSLValueCtor<V>);
 				ItemBlock* itemBlock = (ItemBlock*)PPDAlloc(allocatedSize, m_sl);
 				itemBlock->next = m_blocks;
 				m_blocks = itemBlock;
-				for (Item* i = (Item*)(itemBlock + 1), *end = i + (allocatedSize - sizeof(ItemBlock)) / sizeof(Item); i < end; ++i)
+				for (Item* i = (Item*)(itemBlock + 1), *end = i + (allocatedSize - sizeof(ItemBlock) - sizeof(PPSLValueCtor<V>)) / sizeof(Item); i < end; ++i)
 				{
 					i->prev = item;
 					item = i;
@@ -495,7 +494,9 @@ private:
 				m_freeItem = item;
 			}
 			m_freeItem = item->prev;
-			new (item) Item(m_sl, parent, key);
+			PPSLValueCtor<V>* value = (PPSLValueCtor<V>*)(item + 1);
+			new (value) PPSLValueCtor<V>(m_sl);
+			new (item) Item(parent, key);
 
 			// FIXME: multi-map is bugged, first item becomes unreachable
 			*cell = item;
