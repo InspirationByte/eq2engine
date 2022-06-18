@@ -38,7 +38,7 @@ struct btDispatcherInfo;
 class btCollisionWorld;
 class btCollisionConfiguration;
 class btCollisionDispatcher;
-
+class btCollisionShape;
 
 struct CollisionData_t;
 struct ContactPair_t;
@@ -47,6 +47,7 @@ class CEqRigidBody;
 class CEqCollisionBroadphaseGrid;
 class IEqPhysicsConstraint;
 class IEqPhysicsController;
+
 
 typedef void (*FNSIMULATECALLBACK)(float fDt, int iterNum);
 

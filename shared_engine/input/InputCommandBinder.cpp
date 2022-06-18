@@ -718,8 +718,6 @@ void CInputCommandBinder::ExecuteBoundCommands(T* zone, bool bState)
 	}
 }
 
-#ifndef DLL_EXPORT
-
 void con_key_list(const ConCommandBase* base, Array<EqString>& list, const char* query)
 {
 	const int LIST_LIMIT = 50;
@@ -849,6 +847,3 @@ DECLARE_CMD(unbindjoystick,"Unbinds joystick controls",0)
 {
 	g_inputCommandBinder->UnbindAll_Joystick();
 }
-
-
-#endif // DLL_EXPORT

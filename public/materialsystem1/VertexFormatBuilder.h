@@ -39,8 +39,8 @@ public:
 		memset(m_enabledComponents, 0xFFFFFFFF, sizeof(m_enabledComponents));
 	}
 
-	void SetStream(int streamIdx, VertexFormatDesc_t* fmtDesc, int elems, const char* debugName = nullptr);
-	int Build(VertexFormatDesc_t** outPointer);
+	void SetStream(int streamIdx, const VertexFormatDesc_t* fmtDesc, int elems, const char* debugName = nullptr);
+	int Build(const VertexFormatDesc_t** outPointer);
 
 	void EnableComponent(int streamIdx, const char* name) { SetComponentEnabled(streamIdx, name, true); }
 	void DisableComponent(int streamIdx, const char* name) { SetComponentEnabled(streamIdx, name, false); }
@@ -50,7 +50,7 @@ public:
 protected:
 	struct stream_t
 	{
-		VertexFormatDesc_t* srcFmt;
+		const VertexFormatDesc_t* srcFmt;
 		int srcFmtElems;
 		const char* debugName;
 	};
@@ -63,7 +63,7 @@ protected:
 
 // simple inline code
 
-inline void CVertexFormatBuilder::SetStream(int streamIdx, VertexFormatDesc_t* fmtDesc, int elems, const char* debugName)
+inline void CVertexFormatBuilder::SetStream(int streamIdx, const VertexFormatDesc_t* fmtDesc, int elems, const char* debugName)
 {
 	stream_t& stream = m_streams[streamIdx];
 	stream.debugName = debugName;
@@ -71,7 +71,7 @@ inline void CVertexFormatBuilder::SetStream(int streamIdx, VertexFormatDesc_t* f
 	stream.srcFmtElems = elems;
 }
 
-inline int CVertexFormatBuilder::Build(VertexFormatDesc_t** outPointer)
+inline int CVertexFormatBuilder::Build(const VertexFormatDesc_t** outPointer)
 {
 	ASSERT(outPointer);
 
@@ -84,7 +84,7 @@ inline int CVertexFormatBuilder::Build(VertexFormatDesc_t** outPointer)
 
 		for (int j = 0; j < stream.srcFmtElems; j++)
 		{
-			VertexFormatDesc_t& srcDesc = stream.srcFmt[j];
+			const VertexFormatDesc_t& srcDesc = stream.srcFmt[j];
 			VertexFormatDesc_t& destDesc = m_resultFormat[formatDescCount++];
 			memcpy(&destDesc, &srcDesc, sizeof(VertexFormatDesc_t));
 			
