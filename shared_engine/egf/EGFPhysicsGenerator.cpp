@@ -847,8 +847,8 @@ bool CEGFPhysicsGenerator::GenerateGeometry(dsmmodel_t* srcModel, KVSection* phy
 
 #define MAX_PHYSICSFILE_SIZE 16*1024*1024
 
-ubyte* pData = NULL;
-ubyte* pStart = NULL;
+ubyte* pData = nullptr;
+ubyte* pStart = nullptr;
 
 
 void WriteLumpToStream(IVirtualStream* stream, int lump_type, ubyte* data, uint dataSize)
@@ -863,7 +863,7 @@ void WriteLumpToStream(IVirtualStream* stream, int lump_type, ubyte* data, uint 
 
 void CEGFPhysicsGenerator::SaveToFile(const char* filename)
 {
-	CMemoryStream lumpsStream(NULL, VS_OPEN_WRITE, MAX_PHYSICSFILE_SIZE);
+	CMemoryStream lumpsStream(nullptr, VS_OPEN_WRITE, MAX_PHYSICSFILE_SIZE);
 
 	WriteLumpToStream(&lumpsStream, PHYSFILE_PROPERTIES, (ubyte*)&m_props, sizeof(physmodelprops_t));
 	WriteLumpToStream(&lumpsStream, PHYSFILE_GEOMETRYINFO, (ubyte*)m_shapes.ptr(), sizeof(physgeominfo_t) * m_shapes.numElem());

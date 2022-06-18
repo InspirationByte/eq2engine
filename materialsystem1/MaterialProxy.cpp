@@ -287,7 +287,7 @@ public:
 	void InitProxy(IMaterial* pAssignedMaterial, KVSection* pKeyBase)
 	{
 		m_pMaterial = pAssignedMaterial;
-		KVSection* pair = NULL;
+		KVSection* pair = nullptr;
 
 		// frame count is the only static variable, frame rate is dynamic
 		frameCount = KV_GetValueInt(pKeyBase);

@@ -18,10 +18,10 @@ extern btDynamicsWorld *g_pPhysicsWorld;
 
 DkPhysicsJoint::DkPhysicsJoint()
 {
-	m_pObjectA = NULL;
-	m_pObjectB = NULL;
+	m_pObjectA = nullptr;
+	m_pObjectB = nullptr;
 
-	m_pJointPointer = NULL;
+	m_pJointPointer = nullptr;
 }
 
 DkPhysicsJoint::~DkPhysicsJoint()

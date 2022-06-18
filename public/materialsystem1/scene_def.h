@@ -152,7 +152,7 @@ inline void BuildLightVolume(dlight_t* light)
 
 inline void SetLightDefaults(dlight_t* light)
 {
-	light->pMaskTexture = NULL;
+	light->pMaskTexture = nullptr;
 
 	light->nType = DLT_OMNIDIRECTIONAL;
 
@@ -167,7 +167,7 @@ inline void SetLightDefaults(dlight_t* light)
 	light->angles = vec3_zero;
 	light->nFlags = 0;
 	light->lightRotation = identity3();
-	light->extraData = NULL;
+	light->extraData = nullptr;
 }
 
 // Computes matrix for object

@@ -28,7 +28,7 @@ bool CSoundSource_WaveCache::Load(const char* szFilename)
 void CSoundSource_WaveCache::Unload()
 {
 	PPFree(m_dataCache);
-	m_dataCache = NULL;
+	m_dataCache = nullptr;
 	m_cacheSize = 0;
 	m_numSamples = 0;
 }

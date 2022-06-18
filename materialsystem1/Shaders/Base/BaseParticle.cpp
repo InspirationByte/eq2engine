@@ -16,10 +16,10 @@ BEGIN_SHADER_CLASS(BaseParticle)
 
 	SHADER_INIT_PARAMS()
 	{
-		SHADER_PASS(Particle) = NULL;
-		SHADER_FOGPASS(Particle) = NULL;
+		SHADER_PASS(Particle) = nullptr;
+		SHADER_FOGPASS(Particle) = nullptr;
 
-		m_pBaseTexture			= NULL;
+		m_pBaseTexture			= nullptr;
 		
 		SetParameterFunctor(SHADERPARAM_COLOR, &ThisShaderClass::SetColorModulation);
 	}
@@ -117,7 +117,7 @@ BEGIN_SHADER_CLASS(BaseParticle)
 	}
 
 	ITexture*	GetBaseTexture(int stage) const {return m_pBaseTexture;}
-	ITexture*	GetBumpTexture(int stage) const {return NULL;}
+	ITexture*	GetBumpTexture(int stage) const {return nullptr;}
 
 	SHADER_DECLARE_PASS(Particle);
 	SHADER_DECLARE_FOGPASS(Particle);

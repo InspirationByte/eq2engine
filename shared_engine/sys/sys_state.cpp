@@ -22,8 +22,8 @@
 namespace EqStateMgr
 {
 
-CBaseStateHandler* g_currentState = NULL;
-CBaseStateHandler* g_nextState = NULL;
+CBaseStateHandler* g_currentState = nullptr;
+CBaseStateHandler* g_nextState = nullptr;
 bool g_stateChanging = false;
 
 // forces the current state
@@ -98,10 +98,10 @@ bool UpdateStates( float fDt )
 	if(g_nextState)
 	{
 		ChangeState(g_nextState);
-		g_nextState = NULL;
+		g_nextState = nullptr;
 	}
 	else if(g_stateChanging)
-		g_currentState = NULL;
+		g_currentState = nullptr;
 
 	g_stateChanging = false;
 
@@ -118,7 +118,7 @@ bool UpdateStates( float fDt )
 	{
 		bool forced;
 		CBaseStateHandler* nextState = g_currentState->GetNextState( &forced );
-		g_currentState->SetNextState(NULL);
+		g_currentState->SetNextState(nullptr);
 
 		SetCurrentState( nextState, forced );
 	}

@@ -16,7 +16,7 @@ CD3D9OcclusionQuery::CD3D9OcclusionQuery(IDirect3DDevice9* dev)
 {
 	m_ready = false;
 	m_pixelsVisible = 0;
-	m_query = NULL;
+	m_query = nullptr;
 
 	m_dev = dev;
 	m_dev->AddRef();
@@ -41,7 +41,7 @@ void CD3D9OcclusionQuery::Destroy()
 	if(m_query)
 		m_query->Release();
 
-	m_query = NULL;
+	m_query = nullptr;
 }
 
 // begins the occlusion query issue

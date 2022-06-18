@@ -94,7 +94,7 @@ public:
 																ER_TextureFilterMode texFilter = TEXFILTER_NEAREST,
 																ER_TextureAddressMode textureAddress = TEXADDRESS_WRAP,
 																int nFlags = 0,
-																int nDataSize = 0, const unsigned char* pData = NULL
+																int nDataSize = 0, const unsigned char* pData = nullptr
 																);
 
 	// Finds texture by name
@@ -108,7 +108,7 @@ public:
 //-------------------------------------------------------------
 
 	// Changes render target (single RT)
-	void								ChangeRenderTarget(ITexture* pRenderTarget, int nCubemapFace = 0, ITexture* pDepthTarget = NULL, int nDepthSlice = 0);
+	void								ChangeRenderTarget(ITexture* pRenderTarget, int nCubemapFace = 0, ITexture* pDepthTarget = nullptr, int nDepthSlice = 0);
 
 //-------------------------------------------------------------
 // Various setup functions for drawing
@@ -153,7 +153,7 @@ public:
 //-------------------------------------------------------------
 
 	// Loads and compiles shaders from files
-	bool								LoadShadersFromFile(IShaderProgram* pShaderOutput, const char* pszFilePrefix, const char *extra = NULL);
+	bool								LoadShadersFromFile(IShaderProgram* pShaderOutput, const char* pszFilePrefix, const char *extra = nullptr);
 	IShaderProgram*						FindShaderProgram(const char* pszName, const char* query);
 
 	// Shader constants setup

@@ -45,7 +45,7 @@ bool CD3DRenderLib::InitCaps()
 #ifdef USE_D3DEX
 	if (FAILED(Direct3DCreate9Ex(D3D_SDK_VERSION,&d3d)))
 #else
-	if ((m_d3dFactory = Direct3DCreate9(D3D_SDK_VERSION)) == NULL)
+	if ((m_d3dFactory = Direct3DCreate9(D3D_SDK_VERSION)) == nullptr)
 #endif
 	{
 		const char* driver_upd = "Couldn't initialize Direct3D\nMake sure you have DirectX 9.0c or later version installed.";
@@ -287,23 +287,23 @@ void CD3DRenderLib::ExitAPI()
 	if (!IsWindowed())
 	{
 		// Reset display mode to default
-		ChangeDisplaySettingsEx(m_dispDev.DeviceName, NULL, NULL, 0, NULL);
+		ChangeDisplaySettingsEx(m_dispDev.DeviceName, nullptr, nullptr, 0, nullptr);
 	}
 
-    if (m_rhi != NULL)
+    if (m_rhi != nullptr)
 	{
 		ULONG numUnreleased = m_rhi->Release();
 
 		if(numUnreleased)
 			MsgWarning("D3D warning: unreleased objects: %d\n", numUnreleased);
 
-		m_rhi = NULL;
+		m_rhi = nullptr;
 	}
 
-    if (m_d3dFactory != NULL)
+    if (m_d3dFactory != nullptr)
 	{
 		m_d3dFactory->Release();
-		m_d3dFactory = NULL;
+		m_d3dFactory = nullptr;
 	}
 
 	//DestroyWindow(hwnd);
@@ -351,13 +351,13 @@ void CD3DRenderLib::EndFrame(IEqSwapChain* swapChain)
 
 	HWND pHWND = m_hwnd;
 
-	if(swapChain != NULL)
+	if(swapChain != nullptr)
 		pHWND = (HWND)swapChain->GetWindow();
 
 	if(!IsWindowed())
 	{
 		// fullscreen present
-		hr = m_rhi->Present(NULL, NULL, pHWND, NULL);
+		hr = m_rhi->Present(nullptr, nullptr, pHWND, nullptr);
 		s_shaderApi.CheckDeviceResetOrLost(hr);
 		return;
 	}
@@ -375,14 +375,14 @@ void CD3DRenderLib::EndFrame(IEqSwapChain* swapChain)
 	srcRect.top = y;
 	srcRect.bottom = y + h;
 
-	hr = m_rhi->Present(&srcRect, &destRect, pHWND, NULL);
+	hr = m_rhi->Present(&srcRect, &destRect, pHWND, nullptr);
 
 	s_shaderApi.CheckDeviceResetOrLost(hr);
 }
 
 void CD3DRenderLib::SetBackbufferSize(const int w, const int h)
 {
-	if (m_rhi == NULL || m_width == w && m_height == h)
+	if (m_rhi == nullptr || m_width == w && m_height == h)
 		return;
 
 	m_width = w;
@@ -465,13 +465,13 @@ bool CD3DRenderLib::CaptureScreenshot(CImage& img)
 	bool result = false;
 
 	LPDIRECT3DSURFACE9 surface;
-	if (m_rhi->CreateOffscreenPlainSurface(m_d3dMode.Width, m_d3dMode.Height, D3DFMT_A8R8G8B8, D3DPOOL_SCRATCH, &surface, NULL) == D3D_OK)
+	if (m_rhi->CreateOffscreenPlainSurface(m_d3dMode.Width, m_d3dMode.Height, D3DFMT_A8R8G8B8, D3DPOOL_SCRATCH, &surface, nullptr) == D3D_OK)
 	{
 		if (m_rhi->GetFrontBufferData(0, surface) == D3D_OK)
 		{
 			D3DLOCKED_RECT lockedRect;
 
-			if (surface->LockRect(&lockedRect, NULL, D3DLOCK_READONLY) == D3D_OK)
+			if (surface->LockRect(&lockedRect, nullptr, D3DLOCK_READONLY) == D3D_OK)
 			{
 				ubyte* dst = img.Create(FORMAT_RGB8, m_width, m_height, 1, 1);
 
@@ -509,7 +509,7 @@ IEqSwapChain* CD3DRenderLib::CreateSwapChain(void* window, bool windowed)
 	{
 		MsgError("ERROR: Can't create D3D9 swapchain!\n");
 		delete pNewChain;
-		return NULL;
+		return nullptr;
 	}
 
 	m_swapChains.append(pNewChain);
@@ -519,7 +519,7 @@ IEqSwapChain* CD3DRenderLib::CreateSwapChain(void* window, bool windowed)
 // returns default swap chain
 IEqSwapChain* CD3DRenderLib::GetDefaultSwapchain()
 {
-	return NULL;
+	return nullptr;
 }
 
 // destroys a swapchain

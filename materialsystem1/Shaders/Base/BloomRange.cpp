@@ -13,7 +13,7 @@ BEGIN_SHADER_CLASS(BloomRange)
 
 	SHADER_INIT_PARAMS()
 	{
-		SHADER_PASS(Unlit) = NULL;
+		SHADER_PASS(Unlit) = nullptr;
 
 		m_rangeProps = GetAssignedMaterial()->GetMaterialVar("RangeProps", "[0.6 40 100 100]");
 		m_bloomSource = GetAssignedMaterial()->GetMaterialVar("BloomSource", "");
@@ -67,12 +67,12 @@ BEGIN_SHADER_CLASS(BloomRange)
 
 	ITexture*	GetBaseTexture(int stage) const
 	{
-		return NULL;
+		return nullptr;
 	}
 
 	ITexture*	GetBumpTexture(int stage) const
 	{
-		return NULL;
+		return nullptr;
 	}
 
 private:

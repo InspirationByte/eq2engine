@@ -13,8 +13,8 @@ BEGIN_SHADER_CLASS(Error)
 
 	SHADER_INIT_PARAMS()
 	{
-		SHADER_PASS(Unlit) = NULL;
-		m_pBaseTexture = NULL;
+		SHADER_PASS(Unlit) = nullptr;
+		m_pBaseTexture = nullptr;
 	}
 
 	SHADER_INIT_TEXTURES()
@@ -70,7 +70,7 @@ BEGIN_SHADER_CLASS(Error)
 	}
 
 	ITexture*	GetBaseTexture(int stage)  const {return m_pBaseTexture;}
-	ITexture*	GetBumpTexture(int stage)  const {return NULL;}
+	ITexture*	GetBumpTexture(int stage)  const {return nullptr;}
 
 	ITexture*			m_pBaseTexture;
 

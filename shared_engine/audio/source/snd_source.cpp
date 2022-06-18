@@ -24,7 +24,7 @@ ISoundSource* ISoundSource::CreateSound( const char* szFilename )
 {
 	EqString fileExt = _Es(szFilename).Path_Extract_Ext();
 
-	ISoundSource* pSource = NULL;
+	ISoundSource* pSource = nullptr;
 
 	if ( !fileExt.CompareCaseIns("wav"))
 	{

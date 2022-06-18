@@ -22,7 +22,7 @@ DECLARE_CVAR_CLAMP(net_compress_level, 1, 1, 9, "Compression ratio", CV_ARCHIVE)
 
 void INetworkInterface::Update( int timeMs, CDPRecvPipe_fn func, void* recvObj )
 {
-	ASSERT_MSG(m_pSocket != NULL, "INetworkInterface - not initialized.");
+	ASSERT_MSG(m_pSocket != nullptr, "INetworkInterface - not initialized.");
 
 	m_pSocket->UpdateSendQueue( timeMs, func, recvObj);
 	m_pSocket->UpdateRecieve( timeMs, func, recvObj);
@@ -108,7 +108,7 @@ bool INetworkInterface::Send( netMessage_t* msg, int msg_size, short& msg_id, in
 CNetworkServer::CNetworkServer()
 {
 	m_lastclient.client_id = -1;
-	m_pSocket = NULL;
+	m_pSocket = nullptr;
 }
 
 CNetworkServer::~CNetworkServer()
@@ -134,7 +134,7 @@ void CNetworkServer::Shutdown()
 	if(m_pSocket)
 		delete m_pSocket;
 
-	m_pSocket = NULL;
+	m_pSocket = nullptr;
 }
 
 netPeer_t* CNetworkServer::GetLastClient()
@@ -153,7 +153,7 @@ netPeer_t* CNetworkServer::GetClientByAddr(sockaddr_in* addr)
 			return m_clients[i];
 	}
 
-	return NULL;
+	return nullptr;
 }
 
 netPeer_t* CNetworkServer::GetClientById(int id)
@@ -167,7 +167,7 @@ netPeer_t* CNetworkServer::GetClientById(int id)
 			return m_clients[i];
 	}
 
-	return NULL;
+	return nullptr;
 }
 
 void CNetworkServer::RemoveClientById(int id)
@@ -180,7 +180,7 @@ void CNetworkServer::RemoveClientById(int id)
 		if(m_clients[i]->client_id == id)
 		{
 			delete m_clients[i];
-			m_clients[i] = NULL;
+			m_clients[i] = nullptr;
 		}
 	}
 }
@@ -331,7 +331,7 @@ int CNetworkServer::GetClientCount()
 CNetworkClient::CNetworkClient()
 {
 	m_nClientID = -1;
-	m_pSocket = NULL;
+	m_pSocket = nullptr;
 }
 
 CNetworkClient::~CNetworkClient()
@@ -428,7 +428,7 @@ void CNetworkClient::Shutdown()
 	if(m_pSocket)
 		delete m_pSocket;
 
-	m_pSocket = NULL;
+	m_pSocket = nullptr;
 }
 
 bool CNetworkClient::OnRecieved( netMessage_t* msg, const sockaddr_in& from )

@@ -24,10 +24,10 @@ gboolean idle(gpointer data)
 
 void MessageBox(const char *string, const GtkMessageType msgType)
 {
-    GtkWidget *dialog = gtk_message_dialog_new(NULL, GTK_DIALOG_DESTROY_WITH_PARENT, msgType, GTK_BUTTONS_OK, string);
+    GtkWidget *dialog = gtk_message_dialog_new(nullptr, GTK_DIALOG_DESTROY_WITH_PARENT, msgType, GTK_BUTTONS_OK, string);
     gtk_dialog_run(GTK_DIALOG(dialog));
     gtk_widget_destroy(dialog);
-    g_idle_add(idle, NULL);
+    g_idle_add(idle, nullptr);
     gtk_main();
 }
 
@@ -79,16 +79,16 @@ void DefaultPlatformMessageBoxCallback(const char* messageStr, EMessageBoxType t
 	switch(type)
 	{
 		case MSGBOX_INFO:
-			StandardAlert(kAlertNoteAlert, msg, NULL, NULL, &ret);
+			StandardAlert(kAlertNoteAlert, msg, nullptr, nullptr, &ret);
 			break;
 		case MSGBOX_WARNING:
-			StandardAlert(kAlertCautionAlert, msg, NULL, NULL, &ret);
+			StandardAlert(kAlertCautionAlert, msg, nullptr, nullptr, &ret);
 			break;
 		case MSGBOX_ERROR:
-			StandardAlert(kAlertStopAlert, msg, NULL, NULL, &ret);
+			StandardAlert(kAlertStopAlert, msg, nullptr, nullptr, &ret);
 			break;
 		case MSGBOX_CRASH:
-			StandardAlert(kAlertStopAlert, msg, NULL, NULL, &ret);
+			StandardAlert(kAlertStopAlert, msg, nullptr, nullptr, &ret);
 			break;
 	}
 #else
@@ -243,7 +243,7 @@ IEXPORTS void _InternalAssertMsg(const char *file, int line, const char *fmt, ..
 
 		if (IsDebuggerPresent())
 		{
-			int res = MessageBoxA(NULL, messageStr + " - Debug?", "Assertion failed", MB_YESNOCANCEL);
+			int res = MessageBoxA(nullptr, messageStr + " - Debug?", "Assertion failed", MB_YESNOCANCEL);
 			if (res == IDYES)
 			{
 #if _MSC_VER >= 1400
@@ -260,7 +260,7 @@ IEXPORTS void _InternalAssertMsg(const char *file, int line, const char *fmt, ..
 			}
 		else
 		{
-			if (MessageBoxA(NULL, messageStr + " - Display more asserts?", "Assertion failed", MB_YESNO | MB_DEFBUTTON2) != IDYES)
+			if (MessageBoxA(nullptr, messageStr + " - Display more asserts?", "Assertion failed", MB_YESNO | MB_DEFBUTTON2) != IDYES)
 			{
 				debug = false;
 			}
@@ -293,13 +293,13 @@ IEXPORTS void _InternalAssertMsg(const char* file, int line, const char* fmt, ..
 
     InitMessageBoxPlatform();
 
-    GtkWidget *dialog = gtk_message_dialog_new(NULL, GTK_DIALOG_DESTROY_WITH_PARENT, GTK_MESSAGE_ERROR, GTK_BUTTONS_YES_NO, messageStr.ToCString());
+    GtkWidget *dialog = gtk_message_dialog_new(nullptr, GTK_DIALOG_DESTROY_WITH_PARENT, GTK_MESSAGE_ERROR, GTK_BUTTONS_YES_NO, messageStr.ToCString());
     gint result = gtk_dialog_run(GTK_DIALOG(dialog));
 
     bool debug = (result == GTK_RESPONSE_YES);
 
     gtk_widget_destroy(dialog);
-    g_idle_add(idle, NULL);
+    g_idle_add(idle, nullptr);
     gtk_main();
 
     if (debug)
@@ -315,6 +315,6 @@ IEXPORTS void _InternalAssertMsg(const char* file, int line, const char* fmt, ..
 void InitMessageBoxPlatform()
 {
 #if !defined(_WIN32) && defined(USE_GTK)
-	gtk_init_check(NULL, NULL);
+	gtk_init_check(nullptr, nullptr);
 #endif // !_WIN32 && USE_GTK
 }

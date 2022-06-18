@@ -21,7 +21,7 @@ CTextureAtlas* TexAtlas_LoadAtlas(const char* pszFileName, bool quiet)
 		if(!pAtlasSec)
 		{
 			MsgError("Invalid atlas file '%s'\n", pszFileName);
-			return NULL;
+			return nullptr;
 		}
 
 		// create
@@ -30,14 +30,14 @@ CTextureAtlas* TexAtlas_LoadAtlas(const char* pszFileName, bool quiet)
 	else if(!quiet)
 		MsgError("Couldn't load atlas '%s'\n", pszFileName);
 
-	return NULL;
+	return nullptr;
 }
 
 //------------------------------------------------
 
 CTextureAtlas::CTextureAtlas()
 {
-	m_entries = NULL;
+	m_entries = nullptr;
 	m_num = 0;
 }
 
@@ -54,7 +54,7 @@ CTextureAtlas::~CTextureAtlas()
 void CTextureAtlas::Cleanup()
 {
 	delete m_entries;
-	m_entries = NULL;
+	m_entries = nullptr;
 	m_num = 0;
 }
 
@@ -104,7 +104,7 @@ void CTextureAtlas::InitAtlas( KVSection* kvs )
 TexAtlasEntry_t* CTextureAtlas::GetEntry(int idx)
 {
 	if(idx < 0 || idx >= m_num)
-		return NULL;
+		return nullptr;
 
 	return &m_entries[idx];
 }
@@ -123,7 +123,7 @@ int CTextureAtlas::GetEntryIndex(TexAtlasEntry_t* entry) const
 TexAtlasEntry_t* CTextureAtlas::FindEntry(const char* pszName) const
 {
 	if(!m_entries)
-		return NULL;
+		return nullptr;
 
 	int nameHash = StringToHash(pszName, true);
 
@@ -133,7 +133,7 @@ TexAtlasEntry_t* CTextureAtlas::FindEntry(const char* pszName) const
 			return &m_entries[i];
 	}
 
-	return NULL;
+	return nullptr;
 }
 
 int CTextureAtlas::FindEntryIndex(const char* pszName) const

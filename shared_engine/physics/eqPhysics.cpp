@@ -1481,6 +1481,9 @@ bool CEqPhysics::TestLineCollisionOnCell(int y, int x,
 	F func,
 	void* args)
 {
+	if (!m_grid) {
+		return false;
+	}
 	collgridcell_t* cell = m_grid->GetCellAt(x,y);
 
 	if (!cell)
@@ -1565,10 +1568,13 @@ bool CEqPhysics::TestLineCollision(	const FVector3D& start,
 #ifdef PROFILE
 	//PROFILE_FUNC();
 #endif
+	if (!m_grid) {
+		return false;
+	}
+
 	IVector2D startCell, endCell;
 
 	//Threading::CScopedMutex m(m_mutex);
-
 	m_grid->GetPointAt(start, startCell.x, startCell.y);
 	m_grid->GetPointAt(end, endCell.x, endCell.y);
 
@@ -1610,6 +1616,9 @@ bool CEqPhysics::TestConvexSweepCollision(	btCollisionShape* shape,
 #ifdef PROFILE
 	//PROFILE_FUNC();
 #endif
+	if (!m_grid) {
+		return false;
+	}
 	//Threading::CScopedMutex m(m_mutex);
 
 	coll.position = end;

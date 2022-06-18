@@ -124,7 +124,7 @@ dsmgroup_t* dsmmodel_t::FindGroupByName(const char* pszGroupname)
 			return groups[i];
 	}
 
-	return NULL;
+	return nullptr;
 }
 
 dsmskelbone_t* dsmmodel_t::FindBone(const char* pszName)
@@ -135,7 +135,7 @@ dsmskelbone_t* dsmmodel_t::FindBone(const char* pszName)
 			return bones[i];
 	}
 
-	return NULL;
+	return nullptr;
 }
 
 void FreeDSMBones(dsmmodel_t* model)

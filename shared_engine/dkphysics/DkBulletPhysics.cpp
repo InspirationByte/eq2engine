@@ -107,8 +107,8 @@ void EQNearCallback(btBroadphasePair& collisionPair, btCollisionDispatcher& disp
 	btCollisionObject* colObj0 = (btCollisionObject*)collisionPair.m_pProxy0->m_clientObject;
 	btCollisionObject* colObj1 = (btCollisionObject*)collisionPair.m_pProxy1->m_clientObject;
 
-	btCollisionObjectWrapper w0(NULL, colObj0->getCollisionShape(), colObj0, colObj0->getWorldTransform(), 0,0);
-	btCollisionObjectWrapper w1(NULL, colObj1->getCollisionShape(), colObj1, colObj1->getWorldTransform(), 0,0);
+	btCollisionObjectWrapper w0(nullptr, colObj0->getCollisionShape(), colObj0, colObj0->getWorldTransform(), 0,0);
+	btCollisionObjectWrapper w1(nullptr, colObj1->getCollisionShape(), colObj1, colObj1->getWorldTransform(), 0,0);
 
 	if( EQCheckNeedsCollision( &w0, &w1 ) )
 		btCollisionDispatcher::defaultNearCallback(collisionPair, dispatcher, dispatchInfo);
@@ -213,11 +213,11 @@ DkPhysics::DkPhysics() : hBox(btVector3(1,1,1)), hSphere(1), m_WorkDoneSignal(tr
 	// 32, yet
 	m_nSceneSize = 32;
 
-	m_collisionConfiguration = NULL;
-	m_dispatcher = NULL;
-	m_broadphase = NULL;
-	m_solver = NULL;
-	m_dynamicsWorld = NULL;
+	m_collisionConfiguration = nullptr;
+	m_dispatcher = nullptr;
+	m_broadphase = nullptr;
+	m_solver = nullptr;
+	m_dynamicsWorld = nullptr;
 
 	m_fPhysicsNextTime = 0.0f;
 }
@@ -390,7 +390,7 @@ class DkPhysicsDebugDrawer : public btIDebugDraw
 
 static DkPhysicsDebugDrawer s_PhysicsDebugDrawer;
 
-btDynamicsWorld* g_pPhysicsWorld = NULL;
+btDynamicsWorld* g_pPhysicsWorld = nullptr;
 
 ConVar ph_contact_min_dist("ph_contact_min_dist", "-0.005f", "Minimum distance/intersection for contact", CV_CHEAT);
 
@@ -539,11 +539,11 @@ void DkPhysics::DestroyScene()
 	if(m_collisionConfiguration)
 		delete m_collisionConfiguration;
 
-	m_collisionConfiguration = NULL;
-	m_dispatcher = NULL;
-	m_broadphase = NULL;
-	m_solver = NULL;
-	m_dynamicsWorld = NULL;
+	m_collisionConfiguration = nullptr;
+	m_dispatcher = nullptr;
+	m_broadphase = nullptr;
+	m_solver = nullptr;
+	m_dynamicsWorld = nullptr;
 }
 
 // Returns true if hardware acceleration is available
@@ -566,8 +566,8 @@ void DkPhysics::InternalTraceLine(const Vector3D &tracestart, const Vector3D &tr
 	trace->normal = Vector3D(0);
 	trace->fraction = 1.0f;
 	trace->uv = Vector2D(0);
-	trace->hitObj = NULL;
-	trace->hitMaterial = NULL;
+	trace->hitObj = nullptr;
+	trace->hitMaterial = nullptr;
 
 	IWClosestRayResultCB rayCallback( strt, end, groupmask, pIgnoreList, numIgnored);
 	//rayCallback.m_collisionObject
@@ -603,7 +603,7 @@ void DkPhysics::InternalTraceBox(const Vector3D &tracestart, const Vector3D &tra
 	trace->normal = Vector3D(0);
 	trace->fraction = 1.0f;
 	trace->uv = Vector2D(0);
-	trace->hitObj = NULL;
+	trace->hitObj = nullptr;
 
 	IWClosestConvexSweepResultCB convexCallback( strt, end, groupmask, pIgnoreList, numIgnored);
 
@@ -658,7 +658,7 @@ void DkPhysics::InternalTraceSphere(const Vector3D &tracestart, const Vector3D &
 	trace->normal = Vector3D(0);
 	trace->fraction = 1.0f;
 	trace->uv = Vector2D(0);
-	trace->hitObj = NULL;
+	trace->hitObj = nullptr;
 
 	IWClosestConvexSweepResultCB convexCallback( strt, end, groupmask, pIgnoreList, numIgnored);
 
@@ -701,7 +701,7 @@ void DkPhysics::InternalTraceShape(const Vector3D &tracestart, const Vector3D &t
 	trace->normal = Vector3D(0);
 	trace->fraction = 1.0f;
 	trace->uv = Vector2D(0);
-	trace->hitObj = NULL;
+	trace->hitObj = nullptr;
 
 	IWClosestConvexSweepResultCB convexCallback( strt, end, groupmask, pIgnoreList, numIgnored);
 
@@ -763,7 +763,7 @@ phySurfaceMaterial_t* DkPhysics::FindMaterial(const char* pszName)
 
 	DevMsg(DEVMSG_CORE, "DkPhysics::FindMaterial: %s not found\n", pszName);
 
-	return NULL;
+	return nullptr;
 }
 
 ConVar ph_drawdebug("ph_drawdebug", "0", "performs wireframe rendering of convex objects", CV_CHEAT);
@@ -986,7 +986,7 @@ btCollisionShape* InternalGenerateMesh(physmodelcreateinfo_t *info, Array <btTri
 		}
 	}
 
-	return NULL;
+	return nullptr;
 }
 
 btCollisionShape* InternalPrimitiveCreate(pritimiveinfo_t *priminfo)
@@ -1014,16 +1014,16 @@ btCollisionShape* InternalPrimitiveCreate(pritimiveinfo_t *priminfo)
 		MsgError("Invalid primitive type (%d)\n", priminfo->primType);
 	}
 
-	return NULL;
+	return nullptr;
 }
 /*
 // creates compound object
 IPhysicsObject* DkPhysics::CreateCompoundObject(physmodelcreateinfo_t *info, pritimiveinfo_t **priminfos, int numObjects, int nCollisionGroupFlags)
 {
-	if(priminfos == NULL)
+	if(priminfos == nullptr)
 	{
 		MsgError("Can't create compound physics object without any shape!\n");
-		return NULL;
+		return nullptr;
 	}
 
 	btCompoundShape* compound_shape = DNew(btCompoundShape);
@@ -1091,7 +1091,7 @@ IPhysicsObject* DkPhysics::CreateStaticObject(physmodelcreateinfo_t *info, int n
 		IMatVar* mv_nocollide = info->data->pMaterial->FindMaterialVar("nocollide");
 
 		if(mv_nocollide && mv_nocollide->GetInt() > 0)
-			return NULL;
+			return nullptr;
 
 		IMatVar* mv_clip = info->data->pMaterial->FindMaterialVar("playerclip");
 		if(mv_clip && mv_clip->GetInt() > 0)
@@ -1126,7 +1126,7 @@ IPhysicsObject* DkPhysics::CreateStaticObject(physmodelcreateinfo_t *info, int n
 		}
 	}
 
-	btCollisionShape* shape = NULL;
+	btCollisionShape* shape = nullptr;
 
 	Array<btTriangleIndexVertexArray*> triangle_mesges{ PP_SL };
 
@@ -1142,7 +1142,7 @@ IPhysicsObject* DkPhysics::CreateStaticObject(physmodelcreateinfo_t *info, int n
 	if(!shape)
 	{
 		MsgError("Can't create physics object without shape!\n");
-		return NULL;
+		return nullptr;
 	}
 
 	//Msg("World geom margin: %g\n", shape->getMargin());
@@ -1164,7 +1164,7 @@ IPhysicsObject* DkPhysics::CreateStaticObject(physmodelcreateinfo_t *info, int n
 
 	if(info->data)
 	{
-		if(info->data->surfaceprops != NULL)
+		if(info->data->surfaceprops != nullptr)
 		{
 			materialName = info->data->surfaceprops;
 		}
@@ -1215,7 +1215,7 @@ IPhysicsObject* DkPhysics::CreateStaticObject(physmodelcreateinfo_t *info, int n
 IPhysicsJoint* DkPhysics::CreateJoint(IPhysicsObject* pObjectA,IPhysicsObject* pObjectB, const Matrix4x4 &transformA, const Matrix4x4 &transformB, bool bDisableCollisionBetweenBodies)
 {
 	if(!pObjectA || !pObjectB)
-		return NULL;
+		return nullptr;
 
 	CScopedMutex m(m_Mutex);
 
@@ -1301,7 +1301,7 @@ IPhysicsObject* DkPhysics::CreateObject( studioPhysData_t* data, int nObject )
 	DevMsg(DEVMSG_CORE, "surfaceprops = %s\n", data->objects[nObject].object.surfaceprops);
 	DevMsg(DEVMSG_CORE, "shapes = %d\n", data->objects[nObject].object.numShapes);
 
-	btCollisionShape* pShape = NULL;
+	btCollisionShape* pShape = nullptr;
 
 	// first determine shapes
 	if(data->objects[nObject].object.numShapes > 1)
@@ -1411,7 +1411,7 @@ IPhysicsObject* DkPhysics::CreateObjectCustom(int numShapes, int* shapeIdxs, con
 	DevMsg(DEVMSG_CORE, "mass = %f (%f)\n", mass, mass * METERS_PER_UNIT_INV);
 	DevMsg(DEVMSG_CORE, "surfaceprops = %s\n", surfaceProps);
 
-	btCollisionShape* pShape = NULL;
+	btCollisionShape* pShape = nullptr;
 
 	// first determine shapes
 	if(numShapes > 1)
@@ -1529,8 +1529,8 @@ void DkPhysics::DestroyPhysicsObject(IPhysicsObject *pObject)
 	if(pPhysObj)
 	{
 		// remove manually compound shapes because it doesn't uses a cache
-		if(	pPhysObj->m_pPhyObjectPointer != NULL && 
-			pPhysObj->m_pPhyObjectPointer->getCollisionShape() != NULL && 
+		if(	pPhysObj->m_pPhyObjectPointer != nullptr &&
+			pPhysObj->m_pPhyObjectPointer->getCollisionShape() != nullptr &&
 			pPhysObj->m_pPhyObjectPointer->getCollisionShape()->isCompound())
 		{
 			btCompoundShape* pCompShape = (btCompoundShape*)pPhysObj->m_pPhyObjectPointer->getCollisionShape();

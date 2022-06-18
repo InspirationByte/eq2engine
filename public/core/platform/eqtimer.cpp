@@ -15,7 +15,7 @@ CEqTimer::CEqTimer()
 #ifdef _WIN32
 	QueryPerformanceCounter((LARGE_INTEGER*)&m_clockStart);
 #else
-	gettimeofday(&m_timeStart, NULL);
+	gettimeofday(&m_timeStart, nullptr);
 #endif // _WIN32
 }
 
@@ -34,7 +34,7 @@ double CEqTimer::GetTime(bool reset /*= false*/)
 #else
     timeval curr;
 
-    gettimeofday(&curr, NULL);
+    gettimeofday(&curr, nullptr);
 
 	double value = (float(curr.tv_sec - m_timeStart.tv_sec) + 0.000001f * float(curr.tv_usec - m_timeStart.tv_usec));
 

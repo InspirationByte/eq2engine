@@ -31,7 +31,7 @@ public:
 
 	// frees object (before scope, if you econom-guy)
 	void				Free();
-	void				Disable() { m_pTypedObject = NULL; }
+	void				Disable() { m_pTypedObject = nullptr; }
 
 	TYPE*				p() const { return m_pTypedObject; }
 	operator TYPE		*() const { return m_pTypedObject; }
@@ -78,7 +78,7 @@ void CScopedPointer<TYPE>::Free()
 		PPFree( m_pTypedObject );
 	}
 
-	m_pTypedObject = NULL;
+	m_pTypedObject = nullptr;
 }
 
 #define S_PPALLOC(name, size)		CScopedPointer<char> name((char*)PPAlloc((size)), SPTR_PPALLOC)

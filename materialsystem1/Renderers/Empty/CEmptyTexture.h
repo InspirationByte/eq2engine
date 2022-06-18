@@ -13,18 +13,18 @@ class CEmptyTexture : public CTexture
 public:
 	friend class ShaderAPIEmpty;
 
-	CEmptyTexture() : m_lockData(NULL) {}
+	CEmptyTexture() : m_lockData(nullptr) {}
 
 	// dummy class
 	// locks texture for modifications, etc
-	void	Lock(LockData* pLockData, Rectangle_t* pRect = NULL, bool bDiscard = false, bool bReadOnly = false, int nLevel = 0, int nCubeFaceId = 0) 
+	void	Lock(LockData* pLockData, Rectangle_t* pRect = nullptr, bool bDiscard = false, bool bReadOnly = false, int nLevel = 0, int nCubeFaceId = 0)
 	{
 		m_lockData = PPAlloc(1024*1024);
 		pLockData->pData = (ubyte*)m_lockData;
 	}
 	
 	// unlocks texture for modifications, etc
-	void	Unlock() {PPFree(m_lockData); m_lockData = NULL;}
+	void	Unlock() {PPFree(m_lockData); m_lockData = nullptr;}
 
 	void*	m_lockData;
 };

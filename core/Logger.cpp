@@ -30,7 +30,7 @@ static const char* s_spewTypeStr[] = {
 
 Threading::CEqMutex g_debugOutputMutex;
 bool g_bLoggingInitialized = false;
-FILE* g_logFile = NULL;
+FILE* g_logFile = nullptr;
 
 bool g_logContinue = false;
 
@@ -83,7 +83,7 @@ void Log_Close()
 		return;
 
 	fclose(g_logFile);
-	g_logFile = NULL;
+	g_logFile = nullptr;
 }
 
 int g_developerMode = 0;

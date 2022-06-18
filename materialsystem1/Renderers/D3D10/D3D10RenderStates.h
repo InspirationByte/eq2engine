@@ -19,7 +19,7 @@ class CD3D10DepthStencilState : public IRenderState
 public:
 	CD3D10DepthStencilState()
 	{
-		m_dsState = NULL;
+		m_dsState = nullptr;
 	}
 
 	RenderStateType_e	GetType() {return RENDERSTATE_DEPTHSTENCIL;}
@@ -40,7 +40,7 @@ class CD3D10RasterizerState : public IRenderState
 public:
 	CD3D10RasterizerState()
 	{
-		m_rsState = NULL;
+		m_rsState = nullptr;
 	}
 
 	RenderStateType_e	GetType() {return RENDERSTATE_RASTERIZER;}

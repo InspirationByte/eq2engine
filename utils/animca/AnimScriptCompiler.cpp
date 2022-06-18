@@ -20,7 +20,7 @@
 
 using namespace SharedModel;
 
-studiohdr_t*				g_model = NULL;
+studiohdr_t*				g_model = nullptr;
 int							g_numbones = 0;
 
 // animations
@@ -35,8 +35,8 @@ Array<sequenceevent_t>		g_events{ PP_SL };
 // pose controllers
 Array<posecontroller_t>		g_posecontrollers{ PP_SL };
 
-KVSection*				g_model_usage = NULL;
-KVSection*				g_outputfilename = NULL;
+KVSection*				g_model_usage = nullptr;
+KVSection*				g_outputfilename = nullptr;
 
 EqString					animPath("./");
 
@@ -58,8 +58,8 @@ void Cleanup()
 	g_sequences.clear();
 	g_events.clear();
 	g_posecontrollers.clear();
-	g_model_usage = NULL;
-	g_outputfilename = NULL;
+	g_model_usage = nullptr;
+	g_outputfilename = nullptr;
 
 	animPath = "./";
 }
@@ -190,8 +190,8 @@ void InterpolateBoneAnimationFrames(studioBoneFrame_t* bone)
 	float lastKeyframeTime = 0;
 	float nextKeyframeTime = 0;
 
-	animframe_t *lastKeyFrame = NULL;
-	animframe_t *nextInterpKeyFrame = NULL;
+	animframe_t *lastKeyFrame = nullptr;
+	animframe_t *nextInterpKeyFrame = nullptr;
 
 	// TODO: interpolate bone at the missing animation frames
 	for(int i = 0; i < bone->numFrames; i++)
@@ -219,8 +219,8 @@ void InterpolateBoneAnimationFrames(studioBoneFrame_t* bone)
 			if(!IsEmptyKeyframe(&bone->keyFrames[i]))
 			{
 				//Msg("Interp ends\n");
-				lastKeyFrame = NULL;
-				nextInterpKeyFrame = NULL;
+				lastKeyFrame = nullptr;
+				nextInterpKeyFrame = nullptr;
 			}
 			else
 			{
@@ -509,7 +509,7 @@ bool ReadFramesForBone(Tokenizer& tok, Array<animCaBoneFrames_t>& bones)
 
 	bool bCouldRead = false;
 
-	while ((str = tok.next()) != NULL)
+	while ((str = tok.next()) != nullptr)
 	{
 		if(str[0] == '{')
 		{
@@ -571,7 +571,7 @@ bool ReadFrames(Tokenizer& tok, dsmmodel_t* pModel, studioAnimation_t* pAnim)
 	// FIXME: do it after ReadBones, not here
 	SetupESABones(pModel, bones.ptr());
 
-	while ((str = tok.next()) != NULL)
+	while ((str = tok.next()) != nullptr)
 	{
 		if(str[0] == '{')
 		{
@@ -653,7 +653,7 @@ int LoadAnimationFromESA(const char* filename)
 	Matrix4x4 matAbsoluteBones[256];
 
 	// find faces section
-	while ((str = tok.next()) != NULL)
+	while ((str = tok.next()) != nullptr)
 	{
 		if(!stricmp(str, "bones"))
 		{
@@ -1202,7 +1202,7 @@ bool CompileScript(const char* filename)
 			
 	g_model = Studio_LoadModel((_Es("models/") + KV_GetValueString(g_model_usage)).GetData());
 
-	if (g_model == NULL)
+	if (g_model == nullptr)
 	{
 		MsgError("Failed to load studio model '%s'\n", KV_GetValueString(g_model_usage));
 		return false;

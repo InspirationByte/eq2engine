@@ -305,12 +305,12 @@ void CFileSystem::Close( IFile* fp )
 char* CFileSystem::GetFileBuffer(const char* filename,long *filesize/* = 0*/, int searchFlags/* = -1*/)
 {
 	if(!FileExist(filename, searchFlags))
-		return NULL;
+		return nullptr;
 
 	IFile* pFile = Open(filename,"rb",searchFlags);
 
     if (!pFile)
-        return NULL;
+        return nullptr;
 
     long length = pFile->GetSize();
 
@@ -320,7 +320,7 @@ char* CFileSystem::GetFileBuffer(const char* filename,long *filesize/* = 0*/, in
     {
         fprintf(stderr,"Memory error!");
         Close(pFile);
-        return NULL;
+        return nullptr;
     }
 
 	memset(buffer, 0, length+1);
@@ -793,8 +793,7 @@ IFile* CFileSystem::GetFileHandle(const char* filename, const char* options, int
 		}
     }
 
-    //Return NULL filename if file not found
-    return NULL;
+    return nullptr;
 }
 
 bool CFileSystem::SetAccessKey(const char* accessKey)
@@ -964,7 +963,7 @@ const char* CFileSystem::FindFirst(const char* wildcard, DKFINDDATA** findData, 
 #else // POSIX
 	newFind->index = -1;
 
-	if (glob(searchWildcard.ToCString(), 0, NULL, &newFind->gl) == 0 && newFind->gl.gl_pathc > 0)
+	if (glob(searchWildcard.ToCString(), 0, nullptr, &newFind->gl) == 0 && newFind->gl.gl_pathc > 0)
 	{
 		newFind->pathlen = searchWildcard.Path_Extract_Path().Length();
 		newFind->index = 0;
@@ -988,7 +987,7 @@ const char* CFileSystem::FindFirst(const char* wildcard, DKFINDDATA** findData, 
 			if(newFind->fileHandle != INVALID_HANDLE_VALUE)
 				return newFind->wfd.cFileName;
 #else // POSIX
-			if (glob(searchWildcard.ToCString(), 0, NULL, &newFind->gl) == 0)
+			if (glob(searchWildcard.ToCString(), 0, nullptr, &newFind->gl) == 0)
 			{
 				newFind->pathlen = searchWildcard.Path_Extract_Path().Length();
 				newFind->index = 0;
@@ -1048,7 +1047,7 @@ const char* CFileSystem::FindNext(DKFINDDATA* findData) const
 			globfree(&findData->gl);
 			findData->index = -1;
 
-			if (glob(searchWildcard.ToCString(), 0, NULL, &findData->gl) == 0)
+			if (glob(searchWildcard.ToCString(), 0, nullptr, &findData->gl) == 0)
 			{
 				findData->pathlen = searchWildcard.Path_Extract_Path().Length();
 				findData->index = 0;
@@ -1126,12 +1125,12 @@ DKMODULE* CFileSystem::LoadModule(const char* mod_name)
 	if(lastErr != 0)
 	{
 		FormatMessageA(	FORMAT_MESSAGE_FROM_SYSTEM,
-						NULL,
+						nullptr,
 						lastErr,
 						MAKELANGID(LANG_NEUTRAL,SUBLANG_DEFAULT),
 						err,
 						255,
-						NULL);
+						nullptr);
 	}
 
 #else
@@ -1152,7 +1151,7 @@ DKMODULE* CFileSystem::LoadModule(const char* mod_name)
         MsgInfo("Library '%s' loading error '%s', 0x%p\n", moduleFileName.ToCString(), err, lastErr);
 
 		ErrorMsg("CFileSystem::LoadModule Error: Failed to load %s\n - %s!", moduleFileName.ToCString(), err);
-		return NULL;
+		return nullptr;
 	}
 
 	DKMODULE* pModule = PPNew DKMODULE;

@@ -45,7 +45,7 @@ QuadTree::QuadTree(float* inp_data, int N)
 		mean_Y[d] /= (float)N;
     
     // Construct quadtree
-    Init(NULL, inp_data, mean_Y[0], mean_Y[1], max(max_Y[0] - mean_Y[0], mean_Y[0] - min_Y[0]) + 1e-5f,
+    Init(nullptr, inp_data, mean_Y[0], mean_Y[1], max(max_Y[0] - mean_Y[0], mean_Y[0] - min_Y[0]) + 1e-5f,
                                                max(max_Y[1] - mean_Y[1], mean_Y[1] - min_Y[1]) + 1e-5f);
     Fill(N);
 
@@ -58,7 +58,7 @@ QuadTree::QuadTree(float* inp_data, int N)
 // Constructor for quadtree with particular size and parent -- build the tree, too!
 QuadTree::QuadTree(float* inp_data, int N, float inp_x, float inp_y, float inp_hw, float inp_hh)
 {
-    Init(NULL, inp_data, inp_x, inp_y, inp_hw, inp_hh);
+    Init(nullptr, inp_data, inp_x, inp_y, inp_hw, inp_hh);
     Fill(N);
 }
 
@@ -73,7 +73,7 @@ QuadTree::QuadTree(QuadTree* inp_parent, float* inp_data, int N, float inp_x, fl
 // Constructor for quadtree with particular size (do not fill the tree)
 QuadTree::QuadTree(float* inp_data, float inp_x, float inp_y, float inp_hw, float inp_hh)
 {
-    Init(NULL, inp_data, inp_x, inp_y, inp_hw, inp_hh);
+    Init(nullptr, inp_data, inp_x, inp_y, inp_hw, inp_hh);
 }
 
 
@@ -96,10 +96,10 @@ void QuadTree::Init(QuadTree* inp_parent, float* inp_data, float inp_x, float in
     boundary.y  = inp_y;
     boundary.hw = inp_hw;
     boundary.hh = inp_hh;
-    northWest = NULL;
-    northEast = NULL;
-    southWest = NULL;
-    southEast = NULL;
+    northWest = nullptr;
+    northEast = nullptr;
+    southWest = nullptr;
+    southEast = nullptr;
 
     for(int i = 0; i < QT_NO_DIMS; i++)
 		center_of_mass[i] = .0;
@@ -281,7 +281,7 @@ void QuadTree::RebuildTree()
 
                 node->cum_size--;
 
-                if(node->GetParent() == NULL)
+                if(node->GetParent() == nullptr)
 					done = true;
                 else
 					node = node->GetParent();

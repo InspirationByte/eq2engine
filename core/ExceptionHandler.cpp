@@ -115,9 +115,9 @@ void CreateMiniDump( EXCEPTION_POINTERS* pep )
 	char tmp_path[2048];
 	sprintf(tmp_path, "logs/CrashDump_%s.dmp", GetCore()->GetApplicationName());
 
-	HANDLE hFile = CreateFileA(tmp_path, GENERIC_READ | GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL );
+	HANDLE hFile = CreateFileA(tmp_path, GENERIC_READ | GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL );
 
-	if( ( hFile != NULL ) && ( hFile != INVALID_HANDLE_VALUE ) )
+	if( ( hFile != nullptr) && ( hFile != INVALID_HANDLE_VALUE ) )
 	{
 		// Create the minidump
 
@@ -248,10 +248,10 @@ static LONG WINAPI _exceptionCB(EXCEPTION_POINTERS *ExceptionInfo)
 }
 
 typedef LONG (WINAPI *EXCEPTHANDLER)(EXCEPTION_POINTERS *ExceptionInfo);
-static EXCEPTHANDLER oldHandler = NULL;
+static EXCEPTHANDLER oldHandler = nullptr;
 static int handler_installed = 0;
 
-static _purecall_handler oldPureCall = NULL;
+static _purecall_handler oldPureCall = nullptr;
 
 void eqPureCallhandler(void)
 {

@@ -38,7 +38,7 @@ struct ImGui_ImplEq_Data
 // FIXME: some shared resources (mouse cursor shape, gamepad) are mishandled when using multi-context.
 static ImGui_ImplEq_Data* ImGui_ImplEq_GetBackendData()
 {
-    return ImGui::GetCurrentContext() ? (ImGui_ImplEq_Data*)ImGui::GetIO().BackendPlatformUserData : NULL;
+    return ImGui::GetCurrentContext() ? (ImGui_ImplEq_Data*)ImGui::GetIO().BackendPlatformUserData : nullptr;
 }
 
 // Functions
@@ -108,7 +108,7 @@ void ImGui_ImplEq_InputFocus(bool focused)
 static bool ImGui_ImplEq_Init(SDL_Window* window)
 {
     ImGuiIO& io = ImGui::GetIO();
-    IM_ASSERT(io.BackendPlatformUserData == NULL && "Already initialized a platform backend!");
+    IM_ASSERT(io.BackendPlatformUserData == nullptr && "Already initialized a platform backend!");
 
     // Check and store if we are on a SDL backend that supports global mouse position
     // ("wayland" and "rpi" don't support it, but we chose to use a white-list instead of a black-list)
@@ -157,7 +157,7 @@ static bool ImGui_ImplEq_Init(SDL_Window* window)
 
     io.SetClipboardTextFn = ImGui_ImplEq_SetClipboardText;
     io.GetClipboardTextFn = ImGui_ImplEq_GetClipboardText;
-    io.ClipboardUserData = NULL;
+    io.ClipboardUserData = nullptr;
 
     // Load mouse cursors
     bd->MouseCursors[ImGuiMouseCursor_Arrow] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_ARROW);
@@ -199,7 +199,7 @@ bool ImGui_ImplEq_InitForSDL(SDL_Window* window)
 void ImGui_ImplEq_Shutdown()
 {
     ImGui_ImplEq_Data* bd = ImGui_ImplEq_GetBackendData();
-    IM_ASSERT(bd != NULL && "No platform backend to shutdown, or already shutdown?");
+    IM_ASSERT(bd != nullptr && "No platform backend to shutdown, or already shutdown?");
     ImGuiIO& io = ImGui::GetIO();
 
     if (bd->ClipboardTextData)
@@ -207,8 +207,8 @@ void ImGui_ImplEq_Shutdown()
     for (ImGuiMouseCursor cursor_n = 0; cursor_n < ImGuiMouseCursor_COUNT; cursor_n++)
         SDL_FreeCursor(bd->MouseCursors[cursor_n]);
 
-    io.BackendPlatformName = NULL;
-    io.BackendPlatformUserData = NULL;
+    io.BackendPlatformName = nullptr;
+    io.BackendPlatformUserData = nullptr;
     IM_DELETE(bd);
 }
 
@@ -231,8 +231,8 @@ static void ImGui_ImplEq_UpdateMousePosAndButtons()
     // Obtain focused and hovered window. We forward mouse input when focused or when hovered (and no other window is capturing)
 #if SDL_HAS_CAPTURE_AND_GLOBAL_MOUSE
     SDL_Window* focused_window = SDL_GetKeyboardFocus();
-    SDL_Window* hovered_window = SDL_HAS_MOUSE_FOCUS_CLICKTHROUGH ? SDL_GetMouseFocus() : NULL; // This is better but is only reliably useful with SDL 2.0.5+ and SDL_HINT_MOUSE_FOCUS_CLICKTHROUGH.
-    SDL_Window* mouse_window = NULL;
+    SDL_Window* hovered_window = SDL_HAS_MOUSE_FOCUS_CLICKTHROUGH ? SDL_GetMouseFocus() : nullptr; // This is better but is only reliably useful with SDL 2.0.5+ and SDL_HINT_MOUSE_FOCUS_CLICKTHROUGH.
+    SDL_Window* mouse_window = nullptr;
     if (hovered_window && bd->Window == hovered_window)
         mouse_window = hovered_window;
     else if (focused_window && bd->Window == focused_window)
@@ -242,10 +242,10 @@ static void ImGui_ImplEq_UpdateMousePosAndButtons()
     SDL_CaptureMouse(ImGui::IsAnyMouseDown() ? SDL_TRUE : SDL_FALSE);
 #else
     // SDL 2.0.3 and non-windowed systems: single-viewport only
-    SDL_Window* mouse_window = (SDL_GetWindowFlags(bd->Window) & SDL_WINDOW_INPUT_FOCUS) ? bd->Window : NULL;
+    SDL_Window* mouse_window = (SDL_GetWindowFlags(bd->Window) & SDL_WINDOW_INPUT_FOCUS) ? bd->Window : nullptr;
 #endif
 
-    if (mouse_window == NULL)
+    if (mouse_window == nullptr)
        return;
 
     // Set OS mouse position from Dear ImGui if requested (rarely used, only when ImGuiConfigFlags_NavEnableSetMousePos is enabled by user)
@@ -334,7 +334,7 @@ static void ImGui_ImplEq_UpdateGamepads()
 void ImGui_ImplEq_NewFrame()
 {
     ImGui_ImplEq_Data* bd = ImGui_ImplEq_GetBackendData();
-    IM_ASSERT(bd != NULL && "Did you call ImGui_ImplEq_Init()?");
+    IM_ASSERT(bd != nullptr && "Did you call ImGui_ImplEq_Init()?");
     ImGuiIO& io = ImGui::GetIO();
 
     // Setup display size (every frame to accommodate for window resizing)

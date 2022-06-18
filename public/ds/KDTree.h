@@ -22,7 +22,7 @@ class KdTree
 public:
 	KdTree(const unsigned int nComp, const unsigned int capasity)
 	{
-		top = NULL;
+		top = nullptr;
 		nComponents = nComp;
 		count = 0;
 
@@ -36,7 +36,7 @@ public:
 
 	unsigned int addUnique(const TYPE *point)
 	{
-		if (top != NULL){
+		if (top != nullptr){
 			return addUniqueToNode(top, point);
 		}
 		else 
@@ -50,7 +50,7 @@ public:
 	{
 		curr = mem;
 
-		top = NULL;
+		top = nullptr;
 		count = 0;
 	}
 
@@ -112,8 +112,8 @@ private:
 
 		memcpy(node->point, point, nComponents * sizeof(TYPE));
 
-		node->lower = NULL;
-		node->upper = NULL;
+		node->lower = nullptr;
+		node->upper = nullptr;
 		node->index = count++;
 		return node;
 	}

@@ -201,7 +201,7 @@ bool EqString::Resize(uint nSize, bool bCopy)
 			pszNewBuffer[0] = 0;
 
 		delete [] m_pszString;
-		m_pszString = NULL;
+		m_pszString = nullptr;
 	}
 
 	// assign
@@ -218,7 +218,7 @@ bool EqString::Resize(uint nSize, bool bCopy)
 // string assignment (or setvalue)
 void EqString::Assign(const char* pszStr, int len)
 {
-	if(pszStr == NULL)
+	if(pszStr == nullptr)
 	{
 		if(m_pszString)
 			m_pszString[0] = 0;
@@ -293,7 +293,7 @@ void EqString::Append(const char c)
 // appends another string
 void EqString::Append(const char* pszStr, int nCount)
 {
-	if(pszStr == NULL)
+	if(pszStr == nullptr)
 		return;
 
 	int nLen = strlen( pszStr );
@@ -328,7 +328,7 @@ void EqString::Append(const EqString &str)
 // inserts another string at position
 void EqString::Insert(const char* pszStr, int nInsertPos)
 {
-	if(pszStr == NULL)
+	if(pszStr == nullptr)
 		return;
 
 	int nInsertCount = strlen( pszStr );
@@ -471,7 +471,7 @@ int	EqString::Find(const char* pszSub, bool bCaseSensetive, int nStart) const
 
 	char* strStart = m_pszString + min((uint16)nStart, m_nLength);
 
-	char *st = NULL;
+	char *st = nullptr;
 
 	if(bCaseSensetive)
 		st = strstr(strStart, pszSub);

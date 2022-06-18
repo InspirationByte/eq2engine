@@ -25,7 +25,7 @@ public:
 
 	// frame begin/end
 	virtual void			BeginFrame() = 0;
-	virtual void			EndFrame(IEqSwapChain* swapChain = NULL) = 0;
+	virtual void			EndFrame(IEqSwapChain* swapChain = nullptr) = 0;
 
 	// renderer interface
 	virtual IShaderAPI*		GetRenderer() const = 0;

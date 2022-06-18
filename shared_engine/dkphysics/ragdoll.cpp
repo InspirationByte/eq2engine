@@ -43,7 +43,7 @@ int ragdoll_t::ComputeAndGetFarParentOf(int bone)
 ragdoll_t* CreateRagdoll(IEqModel* pModel)
 {
 	if(!pModel)
-		return NULL;
+		return nullptr;
 
 	studioHwData_t* hwdata = pModel->GetHWData();
 	studioPhysData_t& physModel = hwdata->physModel;
@@ -155,7 +155,7 @@ ragdoll_t* CreateRagdoll(IEqModel* pModel)
 		MsgError("Invalid physics model usage for %s (excepted PHYSMODEL_USAGE_RAGDOLL)\n", pModel->GetName());
 	}
 
-	return NULL;
+	return nullptr;
 }
 
 void ragdoll_t::GetBoundingBox(Vector3D &mins, Vector3D &maxs) const

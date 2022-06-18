@@ -285,7 +285,7 @@ void SplitCommandForValidArguments(const char* command, Array<EqString>& command
 	}
 
 	bool bInQuotes = false;
-	const char *pFirstLetter = NULL;
+	const char *pFirstLetter = nullptr;
 	for (; *pChar; ++pChar)
 	{
 		if (bInQuotes)
@@ -297,7 +297,7 @@ void SplitCommandForValidArguments(const char* command, Array<EqString>& command
 
 			commands.append(_Es(pFirstLetter, nLen));
 
-			pFirstLetter = NULL;
+			pFirstLetter = nullptr;
 			bInQuotes = false;
 			continue;
 		}
@@ -324,7 +324,7 @@ void SplitCommandForValidArguments(const char* command, Array<EqString>& command
 		{
 			int nLen = (int)(pChar - pFirstLetter);
 			commands.append(_Es(pFirstLetter, nLen));
-			pFirstLetter = NULL;
+			pFirstLetter = nullptr;
 		}
 	}
 
@@ -392,7 +392,7 @@ const ConCommandBase* CConsoleCommands::FindBase(const char* name)
 
 static void _RegisterOrDie()
 {
-	if(GetCore()->GetInterface(CONSOLE_INTERFACE_VERSION) == NULL)
+	if(GetCore()->GetInterface(CONSOLE_INTERFACE_VERSION) == nullptr)
 		GetCore()->RegisterInterface( CONSOLE_INTERFACE_VERSION, GetCConsoleCommands());
 }
 
@@ -400,8 +400,8 @@ void CConsoleCommands::RegisterCommand(ConCommandBase *pCmd)
 {
 	_RegisterOrDie();
 
-	ASSERT(pCmd != NULL);
-	ASSERT_MSG(FindBase(pCmd->GetName()) == NULL, "ConCmd/CVar %s already registered", pCmd->GetName());
+	ASSERT(pCmd != nullptr);
+	ASSERT_MSG(FindBase(pCmd->GetName()) == nullptr, "ConCmd/CVar %s already registered", pCmd->GetName());
 
 	ASSERT_MSG(isCvarChar(*pCmd->GetName()), "RegisterCommand - command name has invalid start character!");
 
@@ -450,7 +450,7 @@ void CConsoleCommands::ForEachSeparated(char* str, char separator, FUNC fn, void
 	char* iterator = str;
 
 	char* pFirst = str;
-	char* pLast = NULL;
+	char* pLast = nullptr;
 
 	while(c != 0)
 	{
@@ -518,7 +518,7 @@ void CConsoleCommands::ParseFileToCommandBuffer(const char* pszFilename)
 	if(!g_fileSystem->FileExist(cfgFileName.ToCString()))
 		cfgFileName = "cfg/" + cfgFileName;
 
-	char *buf = g_fileSystem->GetFileBuffer(cfgFileName.ToCString(), NULL, -1);
+	char *buf = g_fileSystem->GetFileBuffer(cfgFileName.ToCString(), nullptr, -1);
 
 	if(!buf)
 	{
@@ -532,7 +532,7 @@ void CConsoleCommands::ParseFileToCommandBuffer(const char* pszFilename)
 		return; //Don't parse me about empty file
 	}
 
-	ForEachSeparated(buf, '\n', &CConsoleCommands::ParseAndAppend, NULL);
+	ForEachSeparated(buf, '\n', &CConsoleCommands::ParseAndAppend, nullptr);
 	PPFree(buf);
 }
 
@@ -542,7 +542,7 @@ void CConsoleCommands::SetCommandBuffer(const char* pszBuffer)
 	ASSERT(strlen(pszBuffer) < COMMANDBUFFER_SIZE);
 	ClearCommandBuffer();
 
-	ForEachSeparated((char*)pszBuffer, CON_SEPARATOR, &CConsoleCommands::ParseAndAppend, NULL);
+	ForEachSeparated((char*)pszBuffer, CON_SEPARATOR, &CConsoleCommands::ParseAndAppend, nullptr);
 }
 
 // Appends to command buffer
@@ -551,7 +551,7 @@ void CConsoleCommands::AppendToCommandBuffer(const char* pszBuffer)
 	const size_t new_len = strlen(pszBuffer) + strlen(m_currentCommands);
 
 	ASSERT(new_len < COMMANDBUFFER_SIZE);
-	ForEachSeparated((char*)pszBuffer, CON_SEPARATOR, &CConsoleCommands::ParseAndAppend, NULL);
+	ForEachSeparated((char*)pszBuffer, CON_SEPARATOR, &CConsoleCommands::ParseAndAppend, nullptr);
 
 	//strcat(m_currentCommands, varargs("%s;",pszBuffer));
 }

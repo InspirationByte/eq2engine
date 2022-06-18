@@ -172,7 +172,7 @@ public:
 	virtual void		OnPreApplyMaterial( IMaterial* pMaterial ) = 0;
 
 	// parameters used by shaders, in user shaders
-	virtual void*		GetRenderUserParams()				{return NULL;}
+	virtual void*		GetRenderUserParams()				{return nullptr;}
 	virtual int			GetRenderUserParamsTypeSignature()	{return 0;}
 };
 
@@ -261,15 +261,15 @@ public:
 
 	// draws primitives
 	virtual void							DrawPrimitivesFFP(	ER_PrimitiveType type, Vertex3D_t *pVerts, int nVerts,
-																ITexture* pTexture = NULL, const ColorRGBA &color = color_white,
-																BlendStateParam_t* blendParams = NULL, DepthStencilStateParams_t* depthParams = NULL,
-																RasterizerStateParams_t* rasterParams = NULL) = 0;
+																ITexture* pTexture = nullptr, const ColorRGBA &color = color_white,
+																BlendStateParam_t* blendParams = nullptr, DepthStencilStateParams_t* depthParams = nullptr,
+																RasterizerStateParams_t* rasterParams = nullptr) = 0;
 
 	// draws primitives for 2D
 	virtual void							DrawPrimitives2DFFP(	ER_PrimitiveType type, Vertex2D_t *pVerts, int nVerts,
-																	ITexture* pTexture = NULL, const ColorRGBA &color = color_white,
-																	BlendStateParam_t* blendParams = NULL, DepthStencilStateParams_t* depthParams = NULL,
-																	RasterizerStateParams_t* rasterParams = NULL) = 0;
+																	ITexture* pTexture = nullptr, const ColorRGBA &color = color_white,
+																	BlendStateParam_t* blendParams = nullptr, DepthStencilStateParams_t* depthParams = nullptr,
+																	RasterizerStateParams_t* rasterParams = nullptr) = 0;
 
 	//-----------------------------
 	// Shader dynamic states
@@ -425,7 +425,7 @@ public:
 extern IMaterialSystem* materials;
 
 #define DECLARE_INTERNAL_SHADERS()       \
-	FactoryList* s_internalShaderReg = NULL;                            \
+	FactoryList* s_internalShaderReg = nullptr;                            \
 	FactoryList& _InternalShaderList() { if(!s_internalShaderReg) s_internalShaderReg = new FactoryList(PP_SL); return *s_internalShaderReg; }
 
 #define REGISTER_INTERNAL_SHADERS()								\

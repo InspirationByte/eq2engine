@@ -40,12 +40,12 @@ void CAnimatedModel::SetModel(IEqModel* pModel)
 	if(m_physObj)
 		physics->DestroyPhysicsObject(m_physObj);
 
-	m_physObj = NULL;
+	m_physObj = nullptr;
 
 	// do cleanup
 	DestroyAnimating();
 	DestroyRagdoll( m_pRagdoll );
-	m_pRagdoll = NULL;
+	m_pRagdoll = nullptr;
 
 	m_pModel =  pModel;
 
@@ -307,7 +307,7 @@ void CAnimatedModel::RenderPhysModel()
 	materials->SetDepthStates(true,false);
 	materials->SetRasterizerStates(CULL_BACK,FILL_WIREFRAME);
 	materials->SetBlendingStates(blending);
-	g_pShaderAPI->SetTexture(NULL, NULL, 0);
+	g_pShaderAPI->SetTexture(nullptr, nullptr, 0);
 
 	CMeshBuilder meshBuilder(materials->GetDynamicMesh());
 
@@ -329,7 +329,7 @@ void CAnimatedModel::RenderPhysModel()
 			int startIndex = phys_data.shapes[nShape].shape_info.startIndices;
 			int moveToIndex = startIndex + phys_data.shapes[nShape].shape_info.numIndices;
 
-			if(m_boneTransforms != NULL && m_pRagdoll)
+			if(m_boneTransforms != nullptr && m_pRagdoll)
 			{
 				int visualMatrixIdx = m_pRagdoll->m_pBoneToVisualIndices[i];
 				Matrix4x4 boneFrame = m_pRagdoll->m_pJoints[i]->GetFrameTransformA();

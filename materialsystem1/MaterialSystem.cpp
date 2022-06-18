@@ -29,7 +29,7 @@ using namespace Threading;
 
 DECLARE_INTERNAL_SHADERS()
 
-IShaderAPI* g_pShaderAPI = NULL;
+IShaderAPI* g_pShaderAPI = nullptr;
 
 // register material system
 static CMaterialSystem s_matsystem;
@@ -56,8 +56,8 @@ ConVar	r_wireframe("r_wireframe","0","Enables wireframe rendering", CV_CHEAT);
 
 ConVar	r_noffp("r_noffp","0","No FFP emulated primitives", CV_CHEAT);
 
-ConVar	r_depthBias("r_depthBias", "-0.000001", NULL, CV_CHEAT);
-ConVar	r_slopeDepthBias("r_slopeDepthBias", "-1.5", NULL, CV_CHEAT);
+ConVar	r_depthBias("r_depthBias", "-0.000001", nullptr, CV_CHEAT);
+ConVar	r_slopeDepthBias("r_slopeDepthBias", "-1.5", nullptr, CV_CHEAT);
 
 DECLARE_CMD(mat_reload, "Reloads all materials",0)
 {
@@ -125,7 +125,7 @@ public:
 			m_newMaterials.insert(pMaterial);
 		}
 
-		if (g_parallelJobs->IsInitialized())
+		if (false) // g_parallelJobs->IsInitialized())
 		{
 			g_parallelJobs->AddJob(JOB_TYPE_ANY, [pMaterial, this](void*, int) {
 				((CMaterial*)pMaterial)->DoLoadShaderAndTextures();
@@ -163,18 +163,18 @@ CEqMatSystemThreadedLoader g_threadedMaterialLoader;
 CMaterialSystem::CMaterialSystem()
 {
 	m_cullMode = CULL_BACK;
-	m_shaderAPI = NULL;
+	m_shaderAPI = nullptr;
 
-	m_setMaterial = NULL;
-	m_overdrawMaterial = NULL;
+	m_setMaterial = nullptr;
+	m_overdrawMaterial = nullptr;
 
 	m_frame = 0;
 	m_paramOverrideMask = 0xFFFFFFFF;
 
 	m_curentLightingModel = MATERIAL_LIGHT_UNLIT;
 
-	m_renderLibrary = NULL;
-	m_rendermodule = NULL;
+	m_renderLibrary = nullptr;
+	m_rendermodule = nullptr;
 
 	m_ambColor = color_white;
 	memset(&m_fogInfo,0,sizeof(m_fogInfo));
@@ -185,15 +185,15 @@ CMaterialSystem::CMaterialSystem()
 	for(int i = 0; i < 4; i++)
 		m_matrices[i] = identity4();
 
-	m_whiteTexture = NULL;
-	m_pDefaultMaterial = NULL;
-	m_currentEnvmapTexture = NULL;
+	m_whiteTexture = nullptr;
+	m_pDefaultMaterial = nullptr;
+	m_currentEnvmapTexture = nullptr;
 
-	m_currentLight = NULL;
+	m_currentLight = nullptr;
 
 	m_deviceActiveState = true;
 
-	m_preApplyCallback = NULL;
+	m_preApplyCallback = nullptr;
 
 	m_proxyDeltaTime = 0.0f;
 	m_proxyTimer.GetTime(true);
@@ -216,7 +216,7 @@ bool CMaterialSystem::Init(const matsystem_init_config_t& config)
 
 	KVSection* matSystemSettings = GetCore()->GetConfig()->FindSection("MaterialSystem");
 
-	ASSERT(g_pShaderAPI == NULL);
+	ASSERT(g_pShaderAPI == nullptr);
 
 	// store the configuration
 	m_config = config.renderConfig;
@@ -229,7 +229,7 @@ bool CMaterialSystem::Init(const matsystem_init_config_t& config)
 	if (!rendererName.Length())
 	{
 		// try using default from Eq config
-		rendererName = matSystemSettings ? KV_GetValueString(matSystemSettings->FindSection("Renderer"), 0, NULL) : "eqGLRHI";
+		rendererName = matSystemSettings ? KV_GetValueString(matSystemSettings->FindSection("Renderer"), 0, nullptr) : "eqGLRHI";
 	}
 #endif // _WIN329
 
@@ -561,7 +561,7 @@ IMaterial* CMaterialSystem::GetMaterial(const char* szMaterialName)
 {
 	// Don't load null materials
 	if( strlen(szMaterialName) == 0 )
-		return NULL;
+		return nullptr;
 
 	EqString materialName = szMaterialName;
 	materialName = materialName.LowerCase();
@@ -648,7 +648,7 @@ void CMaterialSystem::ReloadAllMaterials()
 			continue;
 		}
 
-		material->Init( NULL );
+		material->Init(nullptr);
 
 		const int framesDiff = (material->m_frameBound - m_frame);
 
@@ -697,7 +697,7 @@ void CMaterialSystem::ClearRenderStates()
 // frees single material
 void CMaterialSystem::FreeMaterial(IMaterial *pMaterial)
 {
-	if(pMaterial == NULL)
+	if(pMaterial == nullptr)
 		return;
 
 	CMaterial* material = (CMaterial*)pMaterial;
@@ -743,7 +743,7 @@ IMaterialProxy* CMaterialSystem::CreateProxyByName(const char* pszName)
 		}
 	}
 
-	return NULL;
+	return nullptr;
 }
 
 void CMaterialSystem::RegisterShader(const char* pszShaderName, DISPATCH_CREATE_SHADER dispatcher_creation)
@@ -801,7 +801,7 @@ IMaterialSystemShader* CMaterialSystem::CreateShaderInstance(const char* szShade
 			return (m_shaderFactoryList[i].dispatcher)();
 	}
 
-	return NULL;
+	return nullptr;
 }
 
 //------------------------------------------------------------------------------------------------
@@ -810,11 +810,11 @@ typedef bool (*PFNMATERIALBINDCALLBACK)(IMaterial* pMaterial, uint paramMask);
 
 void BindFFPMaterial(IMaterial* pMaterial, int paramMask)
 {
-	g_pShaderAPI->SetShader(NULL);
+	g_pShaderAPI->SetShader(nullptr);
 
-	g_pShaderAPI->SetBlendingState(NULL);
-	g_pShaderAPI->SetRasterizerState(NULL);
-	g_pShaderAPI->SetDepthStencilState(NULL);
+	g_pShaderAPI->SetBlendingState(nullptr);
+	g_pShaderAPI->SetRasterizerState(nullptr);
+	g_pShaderAPI->SetDepthStencilState(nullptr);
 }
 
 bool Callback_BindErrorTextureFFPMaterial(IMaterial* pMaterial, uint paramMask)
@@ -1132,7 +1132,7 @@ IEqSwapChain* CMaterialSystem::CreateSwapChain(void* windowHandle)
 	if(m_renderLibrary)
 		return m_renderLibrary->CreateSwapChain(windowHandle);
 
-	return NULL;
+	return nullptr;
 }
 
 void CMaterialSystem::DestroySwapChain(IEqSwapChain* swapChain)
@@ -1332,7 +1332,7 @@ void CMaterialSystem::DrawPrimitivesFFP(ER_PrimitiveType type, Vertex3D_t *pVert
 	else
 		SetDepthStates(*depthParams);
 
-	g_pShaderAPI->SetTexture(pTexture, NULL, 0);
+	g_pShaderAPI->SetTexture(pTexture, nullptr, 0);
 	BindMaterial(GetDefaultMaterial());
 
 	CMeshBuilder meshBuilder(&m_dynamicMesh);
@@ -1374,7 +1374,7 @@ void CMaterialSystem::DrawPrimitives2DFFP(	ER_PrimitiveType type, Vertex2D_t *pV
 	else
 		SetDepthStates(*depthParams);
 
-	g_pShaderAPI->SetTexture(pTexture, NULL, 0);
+	g_pShaderAPI->SetTexture(pTexture, nullptr, 0);
 	BindMaterial(GetDefaultMaterial());
 
 	CMeshBuilder meshBuilder(&m_dynamicMesh);

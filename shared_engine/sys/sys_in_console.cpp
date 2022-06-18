@@ -44,7 +44,7 @@
 const float CMDLIST_SYMBOL_SIZE = 15.0f;
 
 // dummy command
-DECLARE_CMD(toggleconsole, NULL, CV_INVISIBLE)	// dummy console command
+DECLARE_CMD(toggleconsole, nullptr, CV_INVISIBLE)	// dummy console command
 {
 }
 
@@ -93,7 +93,7 @@ DECLARE_CMD(con_hide, "Hides console", 0)
 }
 
 // spew function for console
-DECLARE_CMD(clear,NULL,0)
+DECLARE_CMD(clear, nullptr,0)
 {
 	CEqConsoleInput::SpewClear();
 }
@@ -107,9 +107,9 @@ const float LOG_SCROLL_DELAY_END	= 0.0f;
 const float LOG_SCROLL_DELAY_STEP	= 0.01f;
 const float LOG_SCROLL_POWER_INC	= 0.05f;
 
-ConVar con_suggest("con_suggest","1",NULL,CV_ARCHIVE);
+ConVar con_suggest("con_suggest","1", nullptr,CV_ARCHIVE);
 
-static ConVar con_minicon("con_minicon", "0", NULL, CV_ARCHIVE);
+static ConVar con_minicon("con_minicon", "0", nullptr, CV_ARCHIVE);
 
 static CEqConsoleInput s_SysConsole;
 CEqConsoleInput* g_consoleInput = &s_SysConsole;
@@ -191,7 +191,7 @@ void CEqConsoleInput::SpewFunc(SpewType_t type, const char* pMsg)
 	char* pc = (char*)pMsg;
 	char* lineStart = pc;
 
-	conSpewText_t* currentSpewLine = NULL;
+	conSpewText_t* currentSpewLine = nullptr;
 
 	for(;;pc++)
 	{
@@ -207,7 +207,7 @@ void CEqConsoleInput::SpewFunc(SpewType_t type, const char* pMsg)
 			currentSpewLine->text.Assign(lineStart, length);
 
 			// output to debugoverlay if enabled
-			if(con_minicon.GetBool() && debugoverlay != NULL)
+			if(con_minicon.GetBool() && debugoverlay != nullptr)
 				debugoverlay->TextFadeOut(0, s_spewColors[type], CON_MINICON_TIME, currentSpewLine->text.ToCString());
 
 			{
@@ -242,7 +242,7 @@ void CEqConsoleInput::SpewInit()
 void CEqConsoleInput::SpewUninstall()
 {
 	SpewClear();
-	SetSpewFunction(NULL);
+	SetSpewFunction(nullptr);
 }
 
 //-------------------------------------------------------------------------
@@ -258,7 +258,7 @@ CEqConsoleInput::CEqConsoleInput()
 	m_cursorTime = 0.0f;
 	m_maxLines = 10;
 
-	m_font = NULL;
+	m_font = nullptr;
 
 	m_shiftModifier = false;
 	m_ctrlModifier = false;
@@ -276,10 +276,10 @@ CEqConsoleInput::CEqConsoleInput()
 	m_logScrollPower = 1.0f;
 
 	m_histIndex = 0;
-	m_fastfind_cmdbase = NULL;
+	m_fastfind_cmdbase = nullptr;
 	m_variantSelection = -1;
 
-	m_alternateHandler = NULL;
+	m_alternateHandler = nullptr;
 }
 
 void CEqConsoleInput::Initialize(EQWNDHANDLE window)
@@ -301,11 +301,11 @@ void CEqConsoleInput::Initialize(EQWNDHANDLE window)
 	// TODO: ImGui networked console port (for Android)
 	KVSection* consoleSettings = GetCore()->GetConfig()->FindSection("Console");
 
-	const char* consoleFontName = KV_GetValueString(consoleSettings ? consoleSettings->FindSection("Font") : NULL, 0, "console");
+	const char* consoleFontName = KV_GetValueString(consoleSettings ? consoleSettings->FindSection("Font") : nullptr, 0, "console");
 
 	m_font = g_fontCache->GetFont(consoleFontName, 16);
-	m_enabled = KV_GetValueBool(consoleSettings ? consoleSettings->FindSection("Enable") : NULL);
-	m_fontScale = KV_GetValueFloat(consoleSettings ? consoleSettings->FindSection("FontScale") : NULL);
+	m_enabled = KV_GetValueBool(consoleSettings ? consoleSettings->FindSection("Enable") : nullptr);
+	m_fontScale = KV_GetValueFloat(consoleSettings ? consoleSettings->FindSection("FontScale") : nullptr);
 }
 
 void CEqConsoleInput::Shutdown()
@@ -446,7 +446,7 @@ void DrawAlphaFilledRectangle(const Rectangle_t &rect, const ColorRGBA &color1, 
 	blending.srcFactor = BLENDFACTOR_SRC_ALPHA;
 	blending.dstFactor = BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
 
-	g_pShaderAPI->SetTexture(NULL,0,0);
+	g_pShaderAPI->SetTexture(nullptr,0,0);
 	materials->SetBlendingStates(blending);
 	materials->SetRasterizerStates(CULL_FRONT, FILL_SOLID);
 	materials->SetDepthStates(false,false);
@@ -668,7 +668,7 @@ void CEqConsoleInput::DrawFastFind(float x, float y, float w)
 					g_pShaderAPI->Reset(STATE_RESET_TEX);
 					Vertex2D_t selrect[] = { MAKETEXQUAD(x, textYPos, x+max_string_length*CMDLIST_SYMBOL_SIZE, textYPos + 15 , 0) };
 
-					materials->DrawPrimitives2DFFP(PRIM_TRIANGLE_STRIP,selrect,elementsOf(selrect), NULL, ColorRGBA(1.0f, 1.0f, 1.0f, 0.8f), &blending);
+					materials->DrawPrimitives2DFFP(PRIM_TRIANGLE_STRIP,selrect,elementsOf(selrect), nullptr, ColorRGBA(1.0f, 1.0f, 1.0f, 0.8f), &blending);
 					g_pShaderAPI->Apply();
 
 					m_cmdSelection = i;
@@ -719,7 +719,7 @@ void CEqConsoleInput::DrawFastFind(float x, float y, float w)
 					// Cancel textures
 					g_pShaderAPI->Reset();
 
-					materials->DrawPrimitives2DFFP(PRIM_TRIANGLE_STRIP, rectVerts, elementsOf(rectVerts), NULL, ColorRGBA(1.0f, 1.0f, 1.0f, 0.3f), &blending);
+					materials->DrawPrimitives2DFFP(PRIM_TRIANGLE_STRIP, rectVerts, elementsOf(rectVerts), nullptr, ColorRGBA(1.0f, 1.0f, 1.0f, 0.3f), &blending);
 				}
 			}
 		}
@@ -764,7 +764,7 @@ void CEqConsoleInput::OnTextUpdate()
 	}
 	else
 	{
-		m_fastfind_cmdbase = NULL;
+		m_fastfind_cmdbase = nullptr;
 	}
 }
 
@@ -826,7 +826,7 @@ void CEqConsoleInput::AutoCompleteSuggestion()
 	int max_match_chars = -1;
 	EqString matching_str;
 
-	if(m_fastfind_cmdbase != NULL)
+	if(m_fastfind_cmdbase != nullptr)
 	{
 		if(m_variantList.numElem() == 1)
 		{
@@ -976,13 +976,13 @@ void CEqConsoleInput::ExecuteCurrentInput()
 	g_consoleCommands->ResetCounter();
 	g_consoleCommands->SetCommandBuffer(m_inputText.GetData());
 
-	bool execStatus = g_consoleCommands->ExecuteCommandBuffer(nullptr, m_alternateHandler != NULL);
+	bool execStatus = g_consoleCommands->ExecuteCommandBuffer(nullptr, m_alternateHandler != nullptr);
 
 	Array<EqString>& failedCmds = g_consoleCommands->GetFailedCommands();
 
 	bool hasFailed = failedCmds.numElem() > 0;
 
-	if( (execStatus == false || hasFailed) && m_alternateHandler != NULL)
+	if( (execStatus == false || hasFailed) && m_alternateHandler != nullptr)
 	{
 		hasFailed = !(*m_alternateHandler)(m_inputText.ToCString());
 		execStatus = true;
@@ -1231,7 +1231,7 @@ void CEqConsoleInput::DrawSelf(int width,int height, float frameTime)
 		// Cancel textures
 		g_pShaderAPI->Reset();
 
-		materials->DrawPrimitives2DFFP(PRIM_TRIANGLE_STRIP,rect,elementsOf(rect), NULL, ColorRGBA(1.0f, 1.0f, 1.0f, 0.3f), &blending);
+		materials->DrawPrimitives2DFFP(PRIM_TRIANGLE_STRIP,rect,elementsOf(rect), nullptr, ColorRGBA(1.0f, 1.0f, 1.0f, 0.3f), &blending);
 	}
 
 	// render cursor
@@ -1245,7 +1245,7 @@ void CEqConsoleInput::DrawSelf(int width,int height, float frameTime)
 		// Cancel textures
 		g_pShaderAPI->Reset();
 
-		materials->DrawPrimitives2DFFP(PRIM_TRIANGLE_STRIP,rect,elementsOf(rect), NULL, ColorRGBA(1.0f), &blending);
+		materials->DrawPrimitives2DFFP(PRIM_TRIANGLE_STRIP,rect,elementsOf(rect), nullptr, ColorRGBA(1.0f), &blending);
 	}
 }
 
@@ -1267,7 +1267,7 @@ bool CEqConsoleInput::KeyChar(const char* utfChar)
 	int ch = utfChar[0];
 
 	// Font is not loaded, skip
-	if(m_font == NULL)
+	if(m_font == nullptr)
 		return false;
 
 	if(ch < 32 || ch == '~' || ch == '`')

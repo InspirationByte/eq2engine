@@ -26,7 +26,7 @@ CIndexBufferD3DX9::CIndexBufferD3DX9()
 	m_bIsLocked = false;
 	m_bLockFail = false;
 
-	m_pRestore	= NULL;
+	m_pRestore	= nullptr;
 }
 
 CIndexBufferD3DX9::~CIndexBufferD3DX9()
@@ -49,7 +49,7 @@ void CIndexBufferD3DX9::ReleaseForRestoration()
 
 		m_pRestore->data = PPAlloc(lock_size);
 
-		void *src = NULL;
+		void *src = nullptr;
 
 		if(m_pIndexBuffer->Lock(0, lock_size, &src, D3DLOCK_READONLY | D3DLOCK_NOSYSLOCK ) == D3D_OK)
 		{
@@ -57,7 +57,7 @@ void CIndexBufferD3DX9::ReleaseForRestoration()
 			m_pIndexBuffer->Unlock();
 			m_pIndexBuffer->Release();
 
-			m_pIndexBuffer = NULL;
+			m_pIndexBuffer = nullptr;
 		}
 		else
 		{
@@ -78,13 +78,13 @@ void CIndexBufferD3DX9::Restore()
 	if (s_shaderApi.m_pD3DDevice->CreateIndexBuffer(
 		m_nInitialSize, m_nUsage, 
 		m_nIndexSize == 2? D3DFMT_INDEX16 : D3DFMT_INDEX32, 
-		dynamic? D3DPOOL_DEFAULT : D3DPOOL_MANAGED, &m_pIndexBuffer, NULL) != D3D_OK)
+		dynamic? D3DPOOL_DEFAULT : D3DPOOL_MANAGED, &m_pIndexBuffer, nullptr) != D3D_OK)
 	{
 		ErrorMsg("Index buffer restoration failed on creation\n");
 		exit(0);
 	}
 
-	void *dest = NULL;
+	void *dest = nullptr;
 
 	if(m_pIndexBuffer->Lock(0, m_nInitialSize, &dest, dynamic? D3DLOCK_DISCARD : 0 ) == D3D_OK)
 	{
@@ -135,7 +135,7 @@ void CIndexBufferD3DX9::Update(void* data, int size, int offset, bool discard /*
 
 	int nLockByteCount = size*m_nIndexSize;
 
-	void* outData = NULL;
+	void* outData = nullptr;
 
 	if(m_pIndexBuffer->Lock(offset*m_nIndexSize, nLockByteCount, &outData, (dynamic ? D3DLOCK_DISCARD : 0) | D3DLOCK_NOSYSLOCK ) == D3D_OK)
 	{

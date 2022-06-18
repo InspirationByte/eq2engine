@@ -15,7 +15,7 @@ BEGIN_SHADER_CLASS(SDFFont)
 		m_fontParamsVar = GetAssignedMaterial()->GetMaterialVar("FontParams", "[0.94 0.95, 0, 1]");
 		SetParameterFunctor(SHADERPARAM_COLOR, &ThisShaderClass::SetColorModulation);
 
-		SHADER_PASS(Unlit) = NULL;
+		SHADER_PASS(Unlit) = nullptr;
 	}
 
 	SHADER_INIT_TEXTURES()
@@ -61,8 +61,8 @@ BEGIN_SHADER_CLASS(SDFFont)
 		g_pShaderAPI->SetShaderConstantVector4D("AmbientColor", setColor);
 	}
 
-	ITexture*	GetBaseTexture(int stage) const {return NULL;}
-	ITexture*	GetBumpTexture(int stage) const {return NULL;}
+	ITexture*	GetBaseTexture(int stage) const {return nullptr;}
+	ITexture*	GetBumpTexture(int stage) const {return nullptr;}
 
 	SHADER_DECLARE_PASS(Unlit);
 

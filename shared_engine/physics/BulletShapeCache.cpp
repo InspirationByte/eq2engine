@@ -38,14 +38,14 @@ btCollisionShape* InternalGenerateShape(int numVertices, Vector3D* vertices, int
 				sizeof(Vector3D)
 				);
 
-			btCollisionShape* shape = NULL;
+			btCollisionShape* shape = nullptr;
 
 			if(type == PHYSSHAPE_TYPE_MOVABLECONCAVE)
 			{
 				ASSERT_FAIL("InternalGenerateShape: cannot create PHYSSHAPE_TYPE_MOVABLECONCAVE shape because unsupported for now\n");
 				//shape = new btGImpactMeshShape(pTriMesh);
 				delete pTriMesh;
-				return NULL;
+				return nullptr;
 			}
 			else
 				shape = new btBvhTriangleMeshShape(pTriMesh, true);
@@ -75,7 +75,7 @@ btCollisionShape* InternalGenerateShape(int numVertices, Vector3D* vertices, int
 
 	MsgError("InternalGenerateShape: Shape type %d is invalid!\n", type);
 
-	return NULL;
+	return nullptr;
 }
 
 CBulletStudioShapeCache::CBulletStudioShapeCache() : m_mutex(GetGlobalMutex(MUTEXPURPOSE_PHYSICS))

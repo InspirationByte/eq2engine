@@ -40,14 +40,14 @@ void DrawWorldCenter()
 	raster.multiSample = true;
 	raster.scissor = false;
 
-	materials->DrawPrimitivesFFP(PRIM_LINES, grid_vertices.ptr(), grid_vertices.numElem(), NULL, ColorRGBA(0,0.45f,0.45f,1), NULL, &depth, &raster);
+	materials->DrawPrimitivesFFP(PRIM_LINES, grid_vertices.ptr(), grid_vertices.numElem(), nullptr, ColorRGBA(0,0.45f,0.45f,1), nullptr, &depth, &raster);
 }
 
 void DrawGrid(float size, int count, const Vector3D& pos, const ColorRGBA& color, bool depthTest)
 {
 	int grid_lines = count;
 
-	g_pShaderAPI->SetTexture(NULL, NULL, 0);
+	g_pShaderAPI->SetTexture(nullptr, nullptr, 0);
 	materials->SetDepthStates(depthTest, false);
 	materials->SetRasterizerStates(CULL_BACK, FILL_SOLID, false, false, true);
 	materials->SetBlendingStates(BLENDFACTOR_SRC_ALPHA, BLENDFACTOR_ONE_MINUS_SRC_ALPHA);

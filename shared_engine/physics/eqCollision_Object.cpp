@@ -72,10 +72,10 @@ void CEqCollisionObject::Destroy()
 
 	delete m_trimap;
 
-	m_shape = NULL;
-	m_mesh = NULL;
-	m_collObject = NULL;
-	m_trimap = NULL;
+	m_shape = nullptr;
+	m_mesh = nullptr;
+	m_collObject = nullptr;
+	m_trimap = nullptr;
 }
 
 void CEqCollisionObject::ClearContacts()

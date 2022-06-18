@@ -14,12 +14,12 @@ static const char* defaultDescString = "No description";
 // Default constructor
 ConCommandBase::ConCommandBase()
 {
-	m_fnVariantsList = NULL;
+	m_fnVariantsList = nullptr;
 	m_bIsRegistered	= false;
 	m_nFlags = 0;
 
-	m_szName	= NULL;
-	m_szDesc	= NULL;
+	m_szName	= nullptr;
+	m_szDesc	= nullptr;
 }
 
 void ConCommandBase::Init(char const *name,char const *desc, int flags /*= 0*/,bool bIsConVar /* = false*/ )
@@ -57,12 +57,12 @@ IEXPORTS IConsoleCommands* GetCConsoleCommands( void );
 
 bool ConCommandBase::HasVariants() const
 {
-	return m_fnVariantsList != NULL;
+	return m_fnVariantsList != nullptr;
 }
 
 void ConCommandBase::GetVariants(Array<EqString>& list, const char* query) const
 {
-	if(m_fnVariantsList != NULL)
+	if(m_fnVariantsList != nullptr)
 		( *m_fnVariantsList )(this, list, query);
 }
 

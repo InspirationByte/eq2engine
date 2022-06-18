@@ -19,7 +19,7 @@ struct ImGui_ImplMatSystem_Data
 // It is STRONGLY preferred that you use docking branch with multi-viewports (== single Dear ImGui context + multiple windows) instead of multiple Dear ImGui contexts.
 static ImGui_ImplMatSystem_Data* ImGui_ImplMatSystem_GetBackendData()
 {
-	return ImGui::GetCurrentContext() ? (ImGui_ImplMatSystem_Data*)ImGui::GetIO().BackendRendererUserData : NULL;
+	return ImGui::GetCurrentContext() ? (ImGui_ImplMatSystem_Data*)ImGui::GetIO().BackendRendererUserData : nullptr;
 }
 
 
@@ -93,7 +93,7 @@ void ImGui_ImplMatSystem_RenderDrawData(ImDrawData* draw_data)
 		{
 			const ImDrawCmd* pcmd = &cmd_list->CmdBuffer[cmd_i];
 
-			if (pcmd->UserCallback != NULL)
+			if (pcmd->UserCallback != nullptr)
 			{
 				// User callback, registered via ImDrawList::AddCallback()
 				// (ImDrawCallback_ResetRenderState is a special callback value used by the user to request the renderer to reset render state.)
@@ -127,7 +127,7 @@ void ImGui_ImplMatSystem_RenderDrawData(ImDrawData* draw_data)
 bool ImGui_ImplMatSystem_Init()
 {
 	ImGuiIO& io = ImGui::GetIO();
-	IM_ASSERT(io.BackendRendererUserData == NULL && "Already initialized a renderer backend!");
+	IM_ASSERT(io.BackendRendererUserData == nullptr && "Already initialized a renderer backend!");
 
 	// Setup backend capabilities flags
 	ImGui_ImplMatSystem_Data* bd = IM_NEW(ImGui_ImplMatSystem_Data)();
@@ -141,12 +141,12 @@ bool ImGui_ImplMatSystem_Init()
 void ImGui_ImplMatSystem_Shutdown()
 {
 	ImGui_ImplMatSystem_Data* bd = ImGui_ImplMatSystem_GetBackendData();
-	IM_ASSERT(bd != NULL && "No renderer backend to shutdown, or already shutdown?");
+	IM_ASSERT(bd != nullptr && "No renderer backend to shutdown, or already shutdown?");
 	ImGuiIO& io = ImGui::GetIO();
 
 	ImGui_ImplMatSystem_InvalidateDeviceObjects();
-	io.BackendRendererName = NULL;
-	io.BackendRendererUserData = NULL;
+	io.BackendRendererName = nullptr;
+	io.BackendRendererUserData = nullptr;
 	IM_DELETE(bd);
 }
 
@@ -195,13 +195,13 @@ void ImGui_ImplMatSystem_InvalidateDeviceObjects()
 	ImGui_ImplMatSystem_Data* bd = ImGui_ImplMatSystem_GetBackendData();
 	if (!bd)
 		return;
-	if (bd->FontTexture) { g_pShaderAPI->FreeTexture(bd->FontTexture); bd->FontTexture = NULL; ImGui::GetIO().Fonts->SetTexID(NULL); } // We copied bd->pFontTextureView to io.Fonts->TexID so let's clear that as well.
+	if (bd->FontTexture) { g_pShaderAPI->FreeTexture(bd->FontTexture); bd->FontTexture = nullptr; ImGui::GetIO().Fonts->SetTexID(nullptr); } // We copied bd->pFontTextureView to io.Fonts->TexID so let's clear that as well.
 }
 
 void ImGui_ImplMatSystem_NewFrame()
 {
 	ImGui_ImplMatSystem_Data* bd = ImGui_ImplMatSystem_GetBackendData();
-	IM_ASSERT(bd != NULL && "Did you call ImGui_ImplMatSystem_Init()?");
+	IM_ASSERT(bd != nullptr && "Did you call ImGui_ImplMatSystem_Init()?");
 
 	if (!bd->FontTexture)
 		ImGui_ImplMatSystem_CreateDeviceObjects();

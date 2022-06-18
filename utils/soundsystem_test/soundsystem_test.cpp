@@ -46,9 +46,9 @@ static eqJobThreadDesc_t s_jobTypes[] = {
 };
 
 
-DKMODULE*			g_matsysmodule = NULL;
-IShaderAPI*			g_pShaderAPI = NULL;
-IMaterialSystem*	materials = NULL;
+DKMODULE*			g_matsysmodule = nullptr;
+IShaderAPI*			g_pShaderAPI = nullptr;
+IMaterialSystem*	materials = nullptr;
 
 CViewParams			g_pCameraParams(Vector3D(0,0,-100), vec3_zero, 70.0f);
 Matrix4x4			g_mProjMat, g_mViewMat;
@@ -69,8 +69,8 @@ float				g_frametime = 0.0f;
 //int g_loopingSound[MAX_LOOP_SOUNDS] = {-1};
 //int g_staticSound = -1;
 
-//ISoundEngine* g_soundEngine = NULL;
-//ISoundChannel* g_musicChan = NULL;
+//ISoundEngine* g_soundEngine = nullptr;
+//ISoundChannel* g_musicChan = nullptr;
 
 ISoundSource* g_loopingSound[MAX_LOOP_SOUNDS];
 ISoundSource* g_staticSound;
@@ -277,7 +277,7 @@ CMainWindow::CMainWindow( wxWindow* parent, wxWindowID id, const wxString& title
 
 	for(int i = 0; i < MAX_LOOP_SOUNDS; i++)
 	{
-		m_menu_sound->Append(Event_LoopSounds_Sound+i, wxString::Format("Loop sound %d", i), NULL);
+		m_menu_sound->Append(Event_LoopSounds_Sound+i, wxString::Format("Loop sound %d", i), nullptr);
 	}
 
 	m_menu_view = new wxMenu();
@@ -286,7 +286,7 @@ CMainWindow::CMainWindow( wxWindow* parent, wxWindowID id, const wxString& title
 	this->SetMenuBar( m_pMenu );
 	this->Centre( wxBOTH );
 
-	Connect(wxEVT_CLOSE_WINDOW, (wxObjectEventFunction)&CMainWindow::OnCloseCmd, NULL, this);
+	Connect(wxEVT_CLOSE_WINDOW, (wxObjectEventFunction)&CMainWindow::OnCloseCmd, nullptr, this);
 
 	InitMatSystem( (EQWNDHANDLE)m_renderPanel->GetHandle() );
 
@@ -298,24 +298,24 @@ CMainWindow::CMainWindow( wxWindow* parent, wxWindowID id, const wxString& title
 
 	debugoverlay->Init(false);
 
-	m_renderPanel->Connect(wxEVT_LEFT_DCLICK, wxMouseEventHandler(CMainWindow::ProcessMouseEvents), NULL, this);
-	m_renderPanel->Connect(wxEVT_LEFT_DOWN, wxMouseEventHandler(CMainWindow::ProcessMouseEvents), NULL, this);
-	m_renderPanel->Connect(wxEVT_LEFT_UP, wxMouseEventHandler(CMainWindow::ProcessMouseEvents), NULL, this);
+	m_renderPanel->Connect(wxEVT_LEFT_DCLICK, wxMouseEventHandler(CMainWindow::ProcessMouseEvents), nullptr, this);
+	m_renderPanel->Connect(wxEVT_LEFT_DOWN, wxMouseEventHandler(CMainWindow::ProcessMouseEvents), nullptr, this);
+	m_renderPanel->Connect(wxEVT_LEFT_UP, wxMouseEventHandler(CMainWindow::ProcessMouseEvents), nullptr, this);
 
-	m_renderPanel->Connect(wxEVT_MIDDLE_DCLICK, (wxObjectEventFunction)&CMainWindow::ProcessMouseEvents, NULL, this);
-	m_renderPanel->Connect(wxEVT_MIDDLE_DOWN, (wxObjectEventFunction)&CMainWindow::ProcessMouseEvents, NULL, this);
-	m_renderPanel->Connect(wxEVT_MIDDLE_UP, (wxObjectEventFunction)&CMainWindow::ProcessMouseEvents, NULL, this);
+	m_renderPanel->Connect(wxEVT_MIDDLE_DCLICK, (wxObjectEventFunction)&CMainWindow::ProcessMouseEvents, nullptr, this);
+	m_renderPanel->Connect(wxEVT_MIDDLE_DOWN, (wxObjectEventFunction)&CMainWindow::ProcessMouseEvents, nullptr, this);
+	m_renderPanel->Connect(wxEVT_MIDDLE_UP, (wxObjectEventFunction)&CMainWindow::ProcessMouseEvents, nullptr, this);
 
-	m_renderPanel->Connect(wxEVT_RIGHT_DCLICK, (wxObjectEventFunction)&CMainWindow::ProcessMouseEvents, NULL, this);
-	m_renderPanel->Connect(wxEVT_RIGHT_DOWN, (wxObjectEventFunction)&CMainWindow::ProcessMouseEvents, NULL, this);
-	m_renderPanel->Connect(wxEVT_RIGHT_UP, (wxObjectEventFunction)&CMainWindow::ProcessMouseEvents, NULL, this);
+	m_renderPanel->Connect(wxEVT_RIGHT_DCLICK, (wxObjectEventFunction)&CMainWindow::ProcessMouseEvents, nullptr, this);
+	m_renderPanel->Connect(wxEVT_RIGHT_DOWN, (wxObjectEventFunction)&CMainWindow::ProcessMouseEvents, nullptr, this);
+	m_renderPanel->Connect(wxEVT_RIGHT_UP, (wxObjectEventFunction)&CMainWindow::ProcessMouseEvents, nullptr, this);
 
 
-	m_renderPanel->Connect(wxEVT_MOTION, (wxObjectEventFunction)&CMainWindow::ProcessMouseEvents, NULL, this);
-	m_renderPanel->Connect(wxEVT_MOUSEWHEEL, (wxObjectEventFunction)&CMainWindow::ProcessMouseEvents, NULL, this);
+	m_renderPanel->Connect(wxEVT_MOTION, (wxObjectEventFunction)&CMainWindow::ProcessMouseEvents, nullptr, this);
+	m_renderPanel->Connect(wxEVT_MOUSEWHEEL, (wxObjectEventFunction)&CMainWindow::ProcessMouseEvents, nullptr, this);
 
-	m_renderPanel->Connect(wxEVT_KEY_DOWN, (wxObjectEventFunction)&CMainWindow::ProcessKeyboardDownEvents, NULL, this);
-	m_renderPanel->Connect(wxEVT_KEY_UP, (wxObjectEventFunction)&CMainWindow::ProcessKeyboardUpEvents, NULL, this);
+	m_renderPanel->Connect(wxEVT_KEY_DOWN, (wxObjectEventFunction)&CMainWindow::ProcessKeyboardDownEvents, nullptr, this);
+	m_renderPanel->Connect(wxEVT_KEY_UP, (wxObjectEventFunction)&CMainWindow::ProcessKeyboardUpEvents, nullptr, this);
 
 	m_bIsMoving = false;
 	m_bDoRefresh = false;
@@ -450,7 +450,7 @@ void CMainWindow::ProcessMouseEvents(wxMouseEvent& event)
 			if(event.Dragging())
 			{
 				Vector3D forward;
-				AngleVectors(cam_angles, &forward, NULL, NULL);
+				AngleVectors(cam_angles, &forward, nullptr, nullptr);
 
 				cam_pos -= forward*move_delta_y * camera_move_factor;
 
@@ -469,7 +469,7 @@ void CMainWindow::ProcessMouseEvents(wxMouseEvent& event)
 			if(event.Dragging())
 			{
 				Vector3D right, up;
-				AngleVectors(cam_angles, NULL, &right, &up);
+				AngleVectors(cam_angles, nullptr, &right, &up);
 
 				camera_move_factor *= -1;
 
@@ -706,7 +706,7 @@ void CMainWindow::ReDraw()
 		debugoverlay->Draw(g_mProjMat, g_mViewMat, w,h);
 
         // TODO: swap chain
-		materials->EndFrame( NULL );
+		materials->EndFrame(nullptr);
 		Platform_Sleep(1);
 	}
 
@@ -735,7 +735,7 @@ void CMainWindow::OnCloseCmd(wxCloseEvent& event)
 	// shutdown material system
 	materials->Shutdown();
 
-	materials = NULL;
+	materials = nullptr;
 
 	g_fileSystem->FreeModule(g_matsysmodule);
 
@@ -764,7 +764,7 @@ bool InitCore(const char *pCmdLine)
 
 IMPLEMENT_APP(CWXTemplateApplication)
 
-CMainWindow *g_pMainFrame = NULL;
+CMainWindow *g_pMainFrame = nullptr;
 
 bool CWXTemplateApplication::OnInit()
 {
@@ -801,7 +801,7 @@ bool CWXTemplateApplication::OnInit()
 
 	g_localizer->AddTokensFile(LOCALIZED_FILE_PREFIX);
 
-	g_pMainFrame = new CMainWindow( NULL, -1, LocalizedString( TITLE_TOKEN ));
+	g_pMainFrame = new CMainWindow(nullptr, -1, LocalizedString( TITLE_TOKEN ));
 	g_pMainFrame->Centre();
 	g_pMainFrame->Show(true);
 

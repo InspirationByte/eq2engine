@@ -116,7 +116,7 @@ void CMaterial::Init(const char* materialPath)
 		return;
 	}
 
-	KVSection* shader_root = root.keys.numElem() ? root.keys[0] : NULL;
+	KVSection* shader_root = root.keys.numElem() ? root.keys[0] : nullptr;
 
 	if(!shader_root)
 	{
@@ -222,7 +222,7 @@ void CMaterial::InitMaterialVars(KVSection* kvs)
 //
 void CMaterial::InitShader()
 {
-	if( m_shader != NULL )
+	if( m_shader != nullptr)
 		return;
 
 	// don't need to do anything if NODRAW
@@ -373,12 +373,12 @@ IMatVar *CMaterial::FindMaterialVar(const char* pszVarName) const
 		}
 	}
 
-	return NULL;
+	return nullptr;
 }
 
 ITexture* CMaterial::GetBaseTexture(int stage)
 {
-	if(m_shader != NULL && !IsError())
+	if(m_shader != nullptr && !IsError())
 	{
 		// try load
 		DoLoadShaderAndTextures();
@@ -456,7 +456,7 @@ void CMaterial::Cleanup(bool dropVars, bool dropShader)
 		m_shader->Unload();
 
 		delete m_shader;
-		m_shader = NULL;
+		m_shader = nullptr;
 	}
 
 	if(dropVars)

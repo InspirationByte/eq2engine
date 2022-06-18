@@ -45,9 +45,9 @@ bool ReadBones(Tokenizer& tok, dsmmodel_t* pModel)
 
 	bool bCouldRead = false;
 
-	dsmskelbone_t* pBone = NULL;
+	dsmskelbone_t* pBone = nullptr;
 
-	while ((str = tok.next()) != NULL)
+	while ((str = tok.next()) != nullptr)
 	{
 		if(str[0] == '{')
 		{
@@ -97,13 +97,13 @@ bool ReadFaces(Tokenizer& tok, dsmmodel_t* pModel)
 
 	bool bCouldRead = false;
 
-	dsmgroup_t* pCurrentGroup = NULL;
+	dsmgroup_t* pCurrentGroup = nullptr;
 	char material_name[256];
 	material_name[0] = '\0';
 
 	//int nVertexIdAccum = 0;
 
-	while ((str = tok.next()) != NULL)
+	while ((str = tok.next()) != nullptr)
 	{
 		if(str[0] == '{')
 		{
@@ -222,11 +222,11 @@ bool ReadShapes(Tokenizer& tok, esmshapedata_t* data)
 
 	bool bCouldRead = false;
 
-	esmshapekey_t* curShapeKey = NULL;
+	esmshapekey_t* curShapeKey = nullptr;
 	char key_name[256];
 	key_name[0] = '\0';
 
-	while ((str = tok.next()) != NULL)
+	while ((str = tok.next()) != nullptr)
 	{
 		if(str[0] == '{')
 		{
@@ -297,7 +297,7 @@ bool LoadESM(dsmmodel_t* model, const char* filename)
 	char* str;
 
 	// find faces section
-	while ((str = tok.next()) != NULL)
+	while ((str = tok.next()) != nullptr)
 	{
 		if (!stricmp(str, "bones"))
 		{
@@ -331,7 +331,7 @@ bool LoadESXShapes( esmshapedata_t* data, const char* filename )
 	char *str;
 
 	// find faces section
-	while ((str = tok.next()) != NULL)
+	while ((str = tok.next()) != nullptr)
 	{
 		if(!stricmp(str, "reference"))
 		{

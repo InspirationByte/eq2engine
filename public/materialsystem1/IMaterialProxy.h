@@ -45,7 +45,7 @@ struct proxyvar_t
 		value = 0.0f;
 		vec_idx = -1;
 		type = PV_CONSTANT;
-		mv = NULL;
+		mv = nullptr;
 	}
 
 	IMatVar*		mv;
@@ -79,7 +79,7 @@ protected:
 
 inline CBaseMaterialProxy::CBaseMaterialProxy()
 {
-	m_pMaterial = NULL;
+	m_pMaterial = nullptr;
 }
 
 inline void CBaseMaterialProxy::ParseVariable(proxyvar_t& var, const char* pszVal)
@@ -87,7 +87,7 @@ inline void CBaseMaterialProxy::ParseVariable(proxyvar_t& var, const char* pszVa
 	var.value = 0.0f;
 	var.vec_idx = -1;
 	var.type = PV_CONSTANT;
-	var.mv = NULL;
+	var.mv = nullptr;
 
 	if(!pszVal)
 		return;

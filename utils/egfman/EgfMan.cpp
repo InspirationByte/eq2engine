@@ -64,9 +64,9 @@ IPhysics* physics = &s_physics;
 
 CBulletStudioShapeCache	s_shapeCache;
 
-DKMODULE*			g_matsysmodule = NULL;
-IShaderAPI*			g_pShaderAPI = NULL;
-IMaterialSystem*	materials = NULL;
+DKMODULE*			g_matsysmodule = nullptr;
+IShaderAPI*			g_pShaderAPI = nullptr;
+IMaterialSystem*	materials = nullptr;
 
 CViewParams			g_pCameraParams(Vector3D(0,0,-100), vec3_zero, 70);
 Matrix4x4			g_mProjMat, g_mViewMat;
@@ -388,7 +388,7 @@ CEGFViewFrame::CEGFViewFrame( wxWindow* parent, wxWindowID id, const wxString& t
 	
 	fgSizer1->Add( new wxStaticText( m_pMotionPanel, wxID_ANY, wxT("Anim/Act:"), wxDefaultPosition, wxDefaultSize, 0 ), 0, wxALL, 5 );
 	
-	m_pMotionSelection = new wxComboBox( m_pMotionPanel, Event_Sequence_Changed, wxT("select animation..."), wxDefaultPosition, wxDefaultSize, 0, NULL, 0 ); 
+	m_pMotionSelection = new wxComboBox( m_pMotionPanel, Event_Sequence_Changed, wxT("select animation..."), wxDefaultPosition, wxDefaultSize, 0, nullptr, 0 );
 	fgSizer1->Add( m_pMotionSelection, 0, wxALL, 5 );
 	
 	fgSizer1->Add( new wxStaticText( m_pMotionPanel, wxID_ANY, wxT("FPS:"), wxDefaultPosition, wxDefaultSize, 0 ), 0, wxALL, 5 );
@@ -407,7 +407,7 @@ CEGFViewFrame::CEGFViewFrame( wxWindow* parent, wxWindowID id, const wxString& t
 	
 	fgSizer1->Add( new wxStaticText( m_pMotionPanel, wxID_ANY, wxT("Pose controller"), wxDefaultPosition, wxDefaultSize, 0 ), 0, wxALL, 5 );
 
-	m_pPoseController = new wxComboBox( m_pMotionPanel, Event_PoseCont_Changed, wxT("select controller..."), wxDefaultPosition, wxDefaultSize, 0, NULL, 0 ); 
+	m_pPoseController = new wxComboBox( m_pMotionPanel, Event_PoseCont_Changed, wxT("select controller..."), wxDefaultPosition, wxDefaultSize, 0, nullptr, 0 );
 	fgSizer1->Add( m_pPoseController, 0, wxALL, 5 );
 	
 	fgSizer1->Add( 0, 0, 1, wxEXPAND, 5 );
@@ -479,7 +479,7 @@ CEGFViewFrame::CEGFViewFrame( wxWindow* parent, wxWindowID id, const wxString& t
 	
 	fgSizer5->Add( new wxStaticText( m_pPhysicsPanel, wxID_ANY, wxT("Joint"), wxDefaultPosition, wxDefaultSize, 0 ), 0, wxALL, 5 );
 	
-	m_pPhysJoint = new wxComboBox( m_pPhysicsPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0, NULL, 0 ); 
+	m_pPhysJoint = new wxComboBox( m_pPhysicsPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0, nullptr, 0 );
 	fgSizer5->Add( m_pPhysJoint, 0, wxALL, 5 );
 	
 	
@@ -551,7 +551,7 @@ CEGFViewFrame::CEGFViewFrame( wxWindow* parent, wxWindowID id, const wxString& t
 	
 	fgSizer6->Add( new wxStaticText( m_pIKPanel, wxID_ANY, wxT("Link"), wxDefaultPosition, wxDefaultSize, 0 ), 0, wxALL, 5 );
 	
-	m_pIkLinkSel = new wxComboBox( m_pIKPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0, NULL, 0 ); 
+	m_pIkLinkSel = new wxComboBox( m_pIKPanel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0, nullptr, 0 );
 	fgSizer6->Add( m_pIkLinkSel, 0, wxALL, 5 );
 	
 	
@@ -608,27 +608,27 @@ CEGFViewFrame::CEGFViewFrame( wxWindow* parent, wxWindowID id, const wxString& t
 	debugoverlay->Init(false);
 
 	// Connect Events
-	m_pRenderPanel->Connect(wxEVT_LEFT_DOWN, (wxObjectEventFunction)&CEGFViewFrame::ProcessMouseEvents, NULL, this);
-	m_pRenderPanel->Connect(wxEVT_LEFT_UP, (wxObjectEventFunction)&CEGFViewFrame::ProcessMouseEvents, NULL, this);
-	m_pRenderPanel->Connect(wxEVT_LEFT_DCLICK, (wxObjectEventFunction)&CEGFViewFrame::ProcessMouseEvents, NULL, this);
-	m_pRenderPanel->Connect(wxEVT_MIDDLE_DOWN, (wxObjectEventFunction)&CEGFViewFrame::ProcessMouseEvents, NULL, this);
-	m_pRenderPanel->Connect(wxEVT_MIDDLE_UP, (wxObjectEventFunction)&CEGFViewFrame::ProcessMouseEvents, NULL, this);
-	m_pRenderPanel->Connect(wxEVT_MIDDLE_DCLICK, (wxObjectEventFunction)&CEGFViewFrame::ProcessMouseEvents, NULL, this);
-	m_pRenderPanel->Connect(wxEVT_RIGHT_DOWN, (wxObjectEventFunction)&CEGFViewFrame::ProcessMouseEvents, NULL, this);
-	m_pRenderPanel->Connect(wxEVT_RIGHT_UP, (wxObjectEventFunction)&CEGFViewFrame::ProcessMouseEvents, NULL, this);
-	m_pRenderPanel->Connect(wxEVT_RIGHT_DCLICK, (wxObjectEventFunction)&CEGFViewFrame::ProcessMouseEvents, NULL, this);
+	m_pRenderPanel->Connect(wxEVT_LEFT_DOWN, (wxObjectEventFunction)&CEGFViewFrame::ProcessMouseEvents, nullptr, this);
+	m_pRenderPanel->Connect(wxEVT_LEFT_UP, (wxObjectEventFunction)&CEGFViewFrame::ProcessMouseEvents, nullptr, this);
+	m_pRenderPanel->Connect(wxEVT_LEFT_DCLICK, (wxObjectEventFunction)&CEGFViewFrame::ProcessMouseEvents, nullptr, this);
+	m_pRenderPanel->Connect(wxEVT_MIDDLE_DOWN, (wxObjectEventFunction)&CEGFViewFrame::ProcessMouseEvents, nullptr, this);
+	m_pRenderPanel->Connect(wxEVT_MIDDLE_UP, (wxObjectEventFunction)&CEGFViewFrame::ProcessMouseEvents, nullptr, this);
+	m_pRenderPanel->Connect(wxEVT_MIDDLE_DCLICK, (wxObjectEventFunction)&CEGFViewFrame::ProcessMouseEvents, nullptr, this);
+	m_pRenderPanel->Connect(wxEVT_RIGHT_DOWN, (wxObjectEventFunction)&CEGFViewFrame::ProcessMouseEvents, nullptr, this);
+	m_pRenderPanel->Connect(wxEVT_RIGHT_UP, (wxObjectEventFunction)&CEGFViewFrame::ProcessMouseEvents, nullptr, this);
+	m_pRenderPanel->Connect(wxEVT_RIGHT_DCLICK, (wxObjectEventFunction)&CEGFViewFrame::ProcessMouseEvents, nullptr, this);
 
-	m_pRenderPanel->Connect(wxEVT_MOTION, (wxObjectEventFunction)&CEGFViewFrame::ProcessMouseEvents, NULL, this);
-	m_pRenderPanel->Connect(wxEVT_MOUSEWHEEL, (wxObjectEventFunction)&CEGFViewFrame::ProcessMouseEvents, NULL, this);
+	m_pRenderPanel->Connect(wxEVT_MOTION, (wxObjectEventFunction)&CEGFViewFrame::ProcessMouseEvents, nullptr, this);
+	m_pRenderPanel->Connect(wxEVT_MOUSEWHEEL, (wxObjectEventFunction)&CEGFViewFrame::ProcessMouseEvents, nullptr, this);
 
-	m_pRenderPanel->Connect(wxEVT_LEFT_DOWN, (wxObjectEventFunction)&CEGFViewFrame::ProcessMouseEnter, NULL, this);
-	m_pRenderPanel->Connect(wxEVT_LEFT_UP, (wxObjectEventFunction)&CEGFViewFrame::ProcessMouseLeave, NULL, this);
+	m_pRenderPanel->Connect(wxEVT_LEFT_DOWN, (wxObjectEventFunction)&CEGFViewFrame::ProcessMouseEnter, nullptr, this);
+	m_pRenderPanel->Connect(wxEVT_LEFT_UP, (wxObjectEventFunction)&CEGFViewFrame::ProcessMouseLeave, nullptr, this);
 
-	m_pRenderPanel->Connect(wxEVT_MIDDLE_DOWN, (wxObjectEventFunction)&CEGFViewFrame::ProcessMouseEnter, NULL, this);
-	m_pRenderPanel->Connect(wxEVT_MIDDLE_UP, (wxObjectEventFunction)&CEGFViewFrame::ProcessMouseLeave, NULL, this);
+	m_pRenderPanel->Connect(wxEVT_MIDDLE_DOWN, (wxObjectEventFunction)&CEGFViewFrame::ProcessMouseEnter, nullptr, this);
+	m_pRenderPanel->Connect(wxEVT_MIDDLE_UP, (wxObjectEventFunction)&CEGFViewFrame::ProcessMouseLeave, nullptr, this);
 
-	m_pRenderPanel->Connect(wxEVT_RIGHT_DOWN, (wxObjectEventFunction)&CEGFViewFrame::ProcessMouseEnter, NULL, this);
-	m_pRenderPanel->Connect(wxEVT_RIGHT_UP, (wxObjectEventFunction)&CEGFViewFrame::ProcessMouseLeave, NULL, this);
+	m_pRenderPanel->Connect(wxEVT_RIGHT_DOWN, (wxObjectEventFunction)&CEGFViewFrame::ProcessMouseEnter, nullptr, this);
+	m_pRenderPanel->Connect(wxEVT_RIGHT_UP, (wxObjectEventFunction)&CEGFViewFrame::ProcessMouseLeave, nullptr, this);
 
 	m_bIsMoving = false;
 	m_bDoRefresh = true;
@@ -679,7 +679,7 @@ void InitPhysicsScene()
 
 	dkCollideData_t collData;
 
-	collData.pMaterial = NULL; // null groups means default material
+	collData.pMaterial = nullptr; // null groups means default material
 	collData.surfaceprops = "default";
 
 	// create big plane
@@ -784,7 +784,7 @@ void CEGFViewFrame::ProcessAllMenuCommands(wxCommandEvent& event)
 {
 	if(event.GetId() == Event_File_OpenModel)
 	{
-		wxFileDialog* file = new wxFileDialog(NULL, "Open EGF model", 
+		wxFileDialog* file = new wxFileDialog(nullptr, "Open EGF model",
 													wxString::Format("%s/models", g_fileSystem->GetCurrentGameDirectory()), 
 													"*.egf", 
 													"Equilibrium Graphics File (*.egf)|*.egf;", 
@@ -794,7 +794,7 @@ void CEGFViewFrame::ProcessAllMenuCommands(wxCommandEvent& event)
 		{
 			EqString model_path(file->GetPath().wchar_str());
 
-			g_model.SetModel( NULL );
+			g_model.SetModel(nullptr);
 			FlushCache();
 
 			int cache_index = g_studioModelCache->PrecacheModel( model_path.ToCString() );
@@ -818,7 +818,7 @@ void CEGFViewFrame::ProcessAllMenuCommands(wxCommandEvent& event)
 
 		EqString model_path(model->GetName());
 
-		g_model.SetModel( NULL );
+		g_model.SetModel(nullptr);
 		FlushCache();
 
 		int cache_index = g_studioModelCache->PrecacheModel( model_path.ToCString() );
@@ -829,7 +829,7 @@ void CEGFViewFrame::ProcessAllMenuCommands(wxCommandEvent& event)
 	}
 	else if(event.GetId() == Event_File_CompileModel)
 	{
-		wxFileDialog* file = new wxFileDialog(NULL, "Select script files to compile", 
+		wxFileDialog* file = new wxFileDialog(nullptr, "Select script files to compile",
 													wxEmptyString, 
 													"*.esc;*.asc", 
 													"Script (*.esc;*.asc)|*.esc;*.asc", 
@@ -891,7 +891,7 @@ void CEGFViewFrame::ProcessAllMenuCommands(wxCommandEvent& event)
 
 					if(paths.size() == 1 && model_path.Length())
 					{
-						g_model.SetModel( NULL );
+						g_model.SetModel(nullptr);
 						FlushCache();
 
 						int cache_index = g_studioModelCache->PrecacheModel( model_path.ToCString() );
@@ -924,8 +924,8 @@ void CEGFViewFrame::ProcessAllMenuCommands(wxCommandEvent& event)
 }
 
 Vector2D		g_vLastMousePosition(0);
-IPhysicsObject* g_pDragable = NULL;
-Vector3D		g_vDragLocalPos = NULL;
+IPhysicsObject* g_pDragable = nullptr;
+Vector3D		g_vDragLocalPos(0);
 Vector3D		g_vOriginalObjectPosition(0);
 Vector3D		g_vDragTarget(0);
 
@@ -985,7 +985,7 @@ void CEGFViewFrame::ProcessMouseEvents(wxMouseEvent& event)
 			if(event.Dragging())
 			{
 				Vector3D forward;
-				AngleVectors(cam_angles, &forward, NULL, NULL);
+				AngleVectors(cam_angles, &forward, nullptr, nullptr);
 
 				g_fCamDistance += move_delta_y * 0.05f;
 
@@ -1007,7 +1007,7 @@ void CEGFViewFrame::ProcessMouseEvents(wxMouseEvent& event)
 			if(event.Dragging())
 			{
 				Vector3D right, up;
-				AngleVectors(cam_angles, NULL, &right, &up);
+				AngleVectors(cam_angles, nullptr, &right, &up);
 
 				camera_move_factor *= -1;
 
@@ -1035,7 +1035,7 @@ void CEGFViewFrame::ProcessMouseEvents(wxMouseEvent& event)
 			// we found ray, find object
 
 			
-			if(g_pDragable == NULL)
+			if(g_pDragable == nullptr)
 			{
 				internaltrace_t tr;
 				physics->InternalTraceLine(ray_start, ray_start+ray_dir, COLLISION_GROUP_ALL, &tr);
@@ -1065,7 +1065,7 @@ void CEGFViewFrame::ProcessMouseEvents(wxMouseEvent& event)
 			}
 		}
 		else if(!event.ButtonIsDown(wxMOUSE_BTN_LEFT))
-			g_pDragable = NULL;
+			g_pDragable = nullptr;
 	}
 
 	if(!bAnyMoveButton)
@@ -1151,7 +1151,7 @@ void RenderFloor()
 	materials->SetRasterizerStates(CULL_FRONT,FILL_SOLID);
 	materials->SetBlendingStates(blending);
 
-	g_pShaderAPI->SetTexture(NULL, NULL, 0);
+	g_pShaderAPI->SetTexture(nullptr, nullptr, 0);
 
 	materials->BindMaterial(materials->GetDefaultMaterial());
 
@@ -1297,7 +1297,7 @@ void CEGFViewFrame::ReDraw()
 
 		debugoverlay->Draw(g_mProjMat, g_mViewMat, w,h);
 
-		materials->EndFrame( NULL );
+		materials->EndFrame(nullptr);
 		Platform_Sleep(1);
 	}
 
@@ -1312,7 +1312,7 @@ void CEGFViewFrame::RefreshGUI()
 	g_model.m_bodyGroupFlags = 0xFFFFFFFF;
 
 	// populate all lists
-	if(g_model.m_pModel != NULL)
+	if(g_model.m_pModel != nullptr)
 	{
 		studiohdr_t* modelHdr = g_model.m_pModel->GetHWData()->studio;
 
@@ -1447,7 +1447,7 @@ bool InitCore(char *pCmdLine)
 
 IMPLEMENT_APP(CEGFViewApp)
 
-CEGFViewFrame *g_pMainFrame = NULL;
+CEGFViewFrame *g_pMainFrame = nullptr;
 
 bool CEGFViewApp::OnInit()
 {
@@ -1480,7 +1480,7 @@ bool CEGFViewApp::OnInit()
 
 	g_localizer->AddTokensFile("EGFMan");
 
-	g_pMainFrame = new CEGFViewFrame( NULL, -1, DKLOC("TOKEN_TITLE", "Equilibrium Graphics File viewer 1.0"));
+	g_pMainFrame = new CEGFViewFrame(nullptr, -1, DKLOC("TOKEN_TITLE", "Equilibrium Graphics File viewer 1.0"));
 	g_pMainFrame->Centre();
 	g_pMainFrame->Show(true);
 

@@ -14,7 +14,7 @@ BEGIN_SHADER_CLASS(DepthCombiner)
 	SHADER_INIT_PARAMS()
 	{
 		memset(m_pTextures, 0, sizeof(m_pTextures));
-		SHADER_PASS(Unlit) = NULL;
+		SHADER_PASS(Unlit) = nullptr;
 
 		// set texture setup
 		SetParameterFunctor(SHADERPARAM_BASETEXTURE, &ThisShaderClass::SetupBaseTexture0);
@@ -70,7 +70,7 @@ BEGIN_SHADER_CLASS(DepthCombiner)
 	}
 
 	ITexture*	GetBaseTexture(int stage)  const {return m_pTextures[stage & 1];}
-	ITexture*	GetBumpTexture(int stage)  const {return NULL;}
+	ITexture*	GetBumpTexture(int stage)  const {return nullptr;}
 
 	ITexture*	m_pTextures[2];
 

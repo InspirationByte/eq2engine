@@ -188,8 +188,8 @@ void CEqPhysicsHingeJoint::Restore()
 
 void CEqPhysicsHingeJoint::Update(float dt)
 {
-	ASSERT(m_body0 != NULL);
-	ASSERT(m_body1 != NULL);
+	ASSERT(m_body0 != nullptr);
+	ASSERT(m_body1 != nullptr);
 
 	if(m_damping > 0.0f)
 	{

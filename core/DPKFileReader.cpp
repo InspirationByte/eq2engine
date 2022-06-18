@@ -427,7 +427,7 @@ IVirtualStream* CDPKFileReader::Open(const char* filename, const char* mode)
 	if( m_header.numFiles == 0 )
 	{
 		MsgError("Package is not open!\n");
-		return NULL;
+		return nullptr;
 	}
 
 	// check for write access

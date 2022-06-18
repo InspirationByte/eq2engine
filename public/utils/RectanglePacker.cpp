@@ -12,7 +12,7 @@ struct PackerNode
 {
 	PackerNode(float x, float y, float w, float h, void* userdata)
 	{
-		left = right = NULL;
+		left = right = nullptr;
 
 		rect = PPNew PackerRectangle;
 		rect->x = x;
@@ -42,7 +42,7 @@ struct PackerNode
 
 bool PackerNode::AssignRectangle_r(PackerRectangle *newRect)
 {
-	if (rect == NULL)
+	if (rect == nullptr)
 	{
 		if (left->AssignRectangle_r(newRect))
 			return true;
@@ -63,7 +63,7 @@ bool PackerNode::AssignRectangle_r(PackerRectangle *newRect)
 			right = PPNew PackerNode(rx + newRect->width, ry, rect->width - newRect->width, rect->height, newRect->userdata);
 
 			delete rect;
-			rect = NULL;
+			rect = nullptr;
 
 			return true;
 		}
@@ -107,7 +107,7 @@ bool CRectanglePacker::AssignCoords(float& width, float& height, COMPRECTFUNC co
 
 	sortedRects.sort(compRectFunc);
 
-	PackerNode* top = PPNew PackerNode(0, 0, width, height, NULL);
+	PackerNode* top = PPNew PackerNode(0, 0, width, height, nullptr);
 
 	width  = 0;
 	height = 0;
@@ -145,7 +145,7 @@ void CRectanglePacker::GetRectangle(Rectangle_t& rect, void** userData, uint ind
 	rect.vleftTop = Vector2D(pc->x + m_padding, pc->y + m_padding);
 	rect.vrightBottom = rect.vleftTop + Vector2D(pc->width - m_padding*2.0f, pc->height - m_padding*2.0f);
 	
-	if(userData != NULL)
+	if(userData != nullptr)
 		*userData = pc->userdata;
 }
 

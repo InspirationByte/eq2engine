@@ -244,7 +244,7 @@ struct netvariablemap_t
 		typedef className classNameTypedef; \
 		static netprop_t netTableDesc[] = \
 		{ \
-			{ NULL, 0, 0, 0,  0, 0 },
+			{ nullptr, 0, 0, 0,  0, 0 },
 
 #define END_NETWORK_TABLE() \
 		}; \

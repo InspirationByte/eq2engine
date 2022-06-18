@@ -16,7 +16,7 @@ ConVar::ConVar() : ConCommandBase()
 {
 	m_nValue = 0;
 	m_bClamp = false;
-	m_fnChangeCallback = NULL;
+	m_fnChangeCallback = nullptr;
 }
 
 ConVar::~ConVar()
@@ -27,7 +27,7 @@ ConVar::ConVar(char const *name,char const *pszDefaultValue,char const *desc, in
 {
 	m_nValue = 0;
 	m_bClamp = false;
-	m_fnChangeCallback = NULL;
+	m_fnChangeCallback = nullptr;
 
 	Create(name,pszDefaultValue,desc,flags);
 }
@@ -36,7 +36,7 @@ ConVar::ConVar(char const *name,char const *pszDefaultValue,CONVAR_CHANGE_CALLBA
 {
 	m_nValue = 0;
 	m_bClamp = false;
-	m_fnChangeCallback = NULL;
+	m_fnChangeCallback = nullptr;
 
 	Create(name,pszDefaultValue,desc,flags);
 
@@ -47,7 +47,7 @@ ConVar::ConVar(char const *name,char const *pszDefaultValue, CMDBASE_VARIANTS_CA
 {
 	m_nValue = 0;
 	m_bClamp = false;
-	m_fnChangeCallback = NULL;
+	m_fnChangeCallback = nullptr;
 
 	Create(name,pszDefaultValue,desc,flags);
 
@@ -58,7 +58,7 @@ ConVar::ConVar(char const *name,char const *pszDefaultValue, CONVAR_CHANGE_CALLB
 {
 	m_nValue = 0;
 	m_bClamp = false;
-	m_fnChangeCallback = NULL;
+	m_fnChangeCallback = nullptr;
 
 	Create(name,pszDefaultValue,desc,flags);
 
@@ -70,7 +70,7 @@ ConVar::ConVar(char const *name,char const *pszDefaultValue,float clampmin,float
 {
 	m_nValue = 0;
 	m_bClamp = false;
-	m_fnChangeCallback = NULL;
+	m_fnChangeCallback = nullptr;
 
 	Create(name,pszDefaultValue,clampmin,clampmax,desc,flags);
 }
@@ -79,7 +79,7 @@ ConVar::ConVar(char const *name,char const *pszDefaultValue,float clampmin,float
 {
 	m_nValue = 0;
 	m_bClamp = false;
-	m_fnChangeCallback = NULL;
+	m_fnChangeCallback = nullptr;
 
 	Create(name,pszDefaultValue,clampmin,clampmax,desc,flags);
 
@@ -150,7 +150,7 @@ void ConVar::SetValue(const char* newvalue)
 
 void ConVar::InternalSetValue(char const *newvalue)
 {
-	if(newvalue == NULL)
+	if(newvalue == nullptr)
 		return;
 
 	float fNewValue;

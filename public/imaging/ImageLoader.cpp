@@ -166,7 +166,7 @@ const char* GetFormatString(const ETextureFormat format)
 	for (unsigned int i = 0; i < elementsOf(formatStrings); i++){
 		if (format == formatStrings[i].format) return formatStrings[i].string;
 	}
-	return NULL;
+	return nullptr;
 }
 
 ETextureFormat GetFormatFromString(const char *string)
@@ -194,7 +194,7 @@ inline void _SwapChannels(DATA_TYPE *pixels, int nPixels, const int channels, co
 
 CImage::CImage()
 {
-	m_pPixels = NULL;
+	m_pPixels = nullptr;
 	m_nWidth  = 0;
 	m_nHeight = 0;
 	m_nDepth  = 0;
@@ -203,7 +203,7 @@ CImage::CImage()
 	m_nFormat = FORMAT_NONE;
 
 	m_nExtraDataSize = 0;
-	m_pExtraData = NULL;
+	m_pExtraData = nullptr;
 }
 
 CImage::CImage(const CImage &img)
@@ -226,7 +226,7 @@ CImage::CImage(const CImage &img)
 		memcpy(m_pExtraData, img.m_pExtraData, m_nExtraDataSize);
 	}
 	else
-		m_pExtraData = NULL;
+		m_pExtraData = nullptr;
 }
 
 CImage::~CImage()
@@ -249,12 +249,12 @@ ubyte* CImage::Create(const ETextureFormat fmt, const int w, const int h, const 
 void CImage::Free()
 {
 	delete [] m_pPixels;
-	m_pPixels = NULL;
+	m_pPixels = nullptr;
 
 	if(m_pExtraData)
 		delete [] m_pExtraData;
 
-	m_pExtraData = NULL;
+	m_pExtraData = nullptr;
 }
 
 void CImage::Clear()
@@ -272,12 +272,12 @@ void CImage::Clear()
 
 ubyte* CImage::GetPixels(const int mipMapLevel) const
 {
-	return (mipMapLevel < m_nMipMaps)? m_pPixels + GetMipMappedSize(0, mipMapLevel) : NULL;
+	return (mipMapLevel < m_nMipMaps)? m_pPixels + GetMipMappedSize(0, mipMapLevel) : nullptr;
 }
 
 ubyte* CImage::GetPixels(const int mipMapLevel, const int arraySlice) const
 {
-	if (mipMapLevel >= m_nMipMaps || arraySlice >= m_nArraySize) return NULL;
+	if (mipMapLevel >= m_nMipMaps || arraySlice >= m_nArraySize) return nullptr;
 
 	return m_pPixels + GetMipMappedSize(0, m_nMipMaps) * arraySlice + GetMipMappedSize(0, mipMapLevel);
 }
@@ -397,7 +397,7 @@ int CImage::GetDepth(const int mipMapLevel) const
 bool CImage::LoadDDS(const char *fileName, uint flags)
 {
 	IFile *file;
-	if ((file = g_fileSystem->Open(fileName, "rb")) == NULL) return false;
+	if ((file = g_fileSystem->Open(fileName, "rb")) == nullptr) return false;
 
 	SetName(fileName);
 
@@ -408,7 +408,7 @@ bool CImage::LoadDDS(const char *fileName, uint flags)
 bool CImage::LoadJPEG(const char *fileName)
 {
 	IFile *file;
-	if ((file = g_fileSystem->Open(fileName, "rb")) == NULL) return false;
+	if ((file = g_fileSystem->Open(fileName, "rb")) == nullptr) return false;
 
 	SetName(fileName);
 
@@ -420,7 +420,7 @@ bool CImage::LoadJPEG(const char *fileName)
 bool CImage::LoadTGA(const char *fileName)
 {
 	IFile *file;
-	if ((file = g_fileSystem->Open(fileName, "rb")) == NULL) return false;
+	if ((file = g_fileSystem->Open(fileName, "rb")) == nullptr) return false;
 
 	SetName(fileName);
 
@@ -812,7 +812,7 @@ bool CImage::LoadImage(const char *fileName, uint flags)
 
 	Clear();
 
-	if (extension == NULL) return false;
+	if (extension == nullptr) return false;
 
 	if (stricmp(extension, ".dds") == 0)
 	{
@@ -843,7 +843,7 @@ bool CImage::LoadFromHandle(IFile *fileHandle,const char *fileName, uint flags)
 
 	Clear();
 
-	if (extension == NULL) return false;
+	if (extension == nullptr) return false;
 
 	if (stricmp(extension, ".dds") == 0)
 	{
@@ -955,7 +955,7 @@ bool CImage::SaveDDS(const char *fileName)
 	header.dwReserved2 = 0;
 
 	FILE *file;
-	if ((file = fopen(fileName, "wb")) == NULL) return false;
+	if ((file = fopen(fileName, "wb")) == nullptr) return false;
 
 	fwrite(&header, sizeof(header), 1, file);
 	if (headerDXT10.dxgiFormat) fwrite(&headerDXT10, sizeof(headerDXT10), 1, file);
@@ -1003,7 +1003,7 @@ bool CImage::SaveJPEG(const char *fileName, const int quality)
 	jpeg_create_compress(&cinfo);
 
 	FILE *file;
-	if ((file = fopen(fileName, "wb")) == NULL)
+	if ((file = fopen(fileName, "wb")) == nullptr)
 		return false;
 
 	int nChannels = GetChannelCount(m_nFormat);
@@ -1047,7 +1047,7 @@ bool CImage::SaveTGA(const char *fileName)
 		return false;
 
 	FILE *file;
-	if ((file = fopen(fileName, "wb")) == NULL) return false;
+	if ((file = fopen(fileName, "wb")) == nullptr) return false;
 
 	int nChannels = GetChannelCount(m_nFormat);
 
@@ -1128,7 +1128,7 @@ bool CImage::SaveImage(const char *fileName)
 {
 	const char *extension = strrchr(fileName, '.');
 
-	if (extension != NULL){
+	if (extension != nullptr){
 		if (stricmp(extension, ".dds") == 0){
 			return SaveDDS(fileName);
 		}

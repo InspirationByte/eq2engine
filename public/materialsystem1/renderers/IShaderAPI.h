@@ -212,7 +212,7 @@ public:
 														ER_TextureFilterMode texFilter = TEXFILTER_NEAREST,
 														ER_TextureAddressMode textureAddress = TEXADDRESS_WRAP,
 														int nFlags = 0,
-														int nDataSize = 0, const unsigned char* pData = NULL
+														int nDataSize = 0, const unsigned char* pData = nullptr
 														) = 0;
 
 	// creates render target texture
@@ -250,15 +250,15 @@ public:
 	virtual void				CopyFramebufferToTexture(ITexture* pTargetTexture) = 0;
 
 	// Copy render target to texture
-	virtual void				CopyRendertargetToTexture(ITexture* srcTarget, ITexture* destTex, IRectangle* srcRect = NULL, IRectangle* destRect = NULL) = 0;
+	virtual void				CopyRendertargetToTexture(ITexture* srcTarget, ITexture* destTex, IRectangle* srcRect = nullptr, IRectangle* destRect = nullptr) = 0;
 
 	// changes the rendertarget
-	virtual void				ChangeRenderTarget( ITexture* pRenderTarget, int nCubemapFace = 0, ITexture* pDepthTarget = NULL, int nDepthSlice = 0 ) = 0;
+	virtual void				ChangeRenderTarget( ITexture* pRenderTarget, int nCubemapFace = 0, ITexture* pDepthTarget = nullptr, int nDepthSlice = 0 ) = 0;
 
 	// changes render targets (also known as multiple-render-targetting)
 	virtual void				ChangeRenderTargets(	ITexture** pRenderTargets, int nNumRTs,
-														int* nCubemapFaces = NULL,
-														ITexture* pDepthTarget = NULL,
+														int* nCubemapFaces = nullptr,
+														ITexture* pDepthTarget = nullptr,
 														int nDepthSlice = 0) = 0;
 
 	// changes render target back to backbuffer
@@ -343,7 +343,7 @@ public:
 
 	// Set the texture. Animation is set from ITexture every frame (no affection on speed) before you do 'ApplyTextures'
 	// Also you need to specify texture name. If you don't, use registers (not fine with DX10, 11)
-	virtual void				SetTexture( ITexture* pTexture, const char* pszName = NULL, int index = 0) = 0;
+	virtual void				SetTexture( ITexture* pTexture, const char* pszName = nullptr, int index = 0) = 0;
 
 	// returns the currently set textre at level
 	virtual ITexture*			GetTextureAt( int level ) const = 0;
@@ -380,10 +380,10 @@ public:
 //-------------------------------------------------------------
 
 	// search for existing shader program
-	virtual IShaderProgram*		FindShaderProgram( const char* pszName, const char* query = NULL ) = 0;
+	virtual IShaderProgram*		FindShaderProgram( const char* pszName, const char* query = nullptr) = 0;
 
 	// creates empty shader program
-	virtual IShaderProgram*		CreateNewShaderProgram( const char* pszName, const char* query = NULL ) = 0;
+	virtual IShaderProgram*		CreateNewShaderProgram( const char* pszName, const char* query = nullptr) = 0;
 
 	// completely destroy shader
 	virtual void				DestroyShaderProgram( IShaderProgram* pShaderProgram ) = 0;
@@ -391,13 +391,13 @@ public:
 	// Loads and compiles shaders from files
 	virtual bool				LoadShadersFromFile(	IShaderProgram* pShaderOutput,
 														const char* pszFileNamePrefix,
-														const char* extra = NULL
+														const char* extra = nullptr
 														) = 0;
 
 	// Load any shader from stream
 	virtual bool				CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 															const shaderProgramCompileInfo_t& info,
-															const char* extra = NULL
+															const char* extra = nullptr
 															) = 0;
 
 	// Sets current shader for rendering
@@ -432,14 +432,14 @@ public:
 	virtual IVertexBuffer*		CreateVertexBuffer(	ER_BufferAccess nBufAccess,
 															int nNumVerts,
 															int strideSize,
-															void *pData = NULL
+															void *pData = nullptr
 															) = 0;
 
 	// create new index buffer
 	virtual IIndexBuffer*		CreateIndexBuffer(	int nIndices,
 															int nIndexSize,
 															ER_BufferAccess nBufAccess,
-															void *pData = NULL
+															void *pData = nullptr
 															) = 0;
 
 	// Destroy

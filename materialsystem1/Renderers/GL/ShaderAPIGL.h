@@ -160,10 +160,10 @@ public:
 	void				CopyFramebufferToTexture(ITexture* pTargetTexture);
 
 	// Copy render target to texture
-	void				CopyRendertargetToTexture(ITexture* srcTarget, ITexture* destTex, IRectangle* srcRect = NULL, IRectangle* destRect = NULL);
+	void				CopyRendertargetToTexture(ITexture* srcTarget, ITexture* destTex, IRectangle* srcRect = nullptr, IRectangle* destRect = nullptr);
 
 	// Changes render target (MRT)
-	void				ChangeRenderTargets(ITexture** pRenderTargets, int nNumRTs, int* nCubemapFaces = NULL, ITexture* pDepthTarget = NULL, int nDepthSlice = 0);
+	void				ChangeRenderTargets(ITexture** pRenderTargets, int nNumRTs, int* nCubemapFaces = nullptr, ITexture* pDepthTarget = nullptr, int nDepthSlice = 0);
 
 	// fills the current rendertarget buffers
 	void				GetCurrentRenderTargets(ITexture* pRenderTargets[MAX_MRTS], int *nNumRTs, ITexture** pDepthTarget, int cubeNumbers[MAX_MRTS]);
@@ -245,7 +245,7 @@ public:
 //-------------------------------------------------------------
 
 	// Creates shader class for needed ShaderAPI
-	IShaderProgram*		CreateNewShaderProgram(const char* pszName, const char* query = NULL);
+	IShaderProgram*		CreateNewShaderProgram(const char* pszName, const char* query = nullptr);
 
 	// Destroy all shader
 	void				DestroyShaderProgram(IShaderProgram* pShaderProgram);
@@ -253,7 +253,7 @@ public:
 	// Load any shader from stream
 	bool				CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 													const shaderProgramCompileInfo_t& info,
-													const char* extra = NULL
+													const char* extra = nullptr
 													);
 
 	// Set current shader for rendering
@@ -267,8 +267,8 @@ public:
 //-------------------------------------------------------------
 
 	IVertexFormat*		CreateVertexFormat(const char* name, const VertexFormatDesc_t *formatDesc, int nAttribs);
-	IVertexBuffer*		CreateVertexBuffer(ER_BufferAccess nBufAccess, int nNumVerts, int strideSize, void *pData = NULL);
-	IIndexBuffer*		CreateIndexBuffer(int nIndices, int nIndexSize, ER_BufferAccess nBufAccess, void *pData = NULL);
+	IVertexBuffer*		CreateVertexBuffer(ER_BufferAccess nBufAccess, int nNumVerts, int strideSize, void *pData = nullptr);
+	IIndexBuffer*		CreateIndexBuffer(int nIndices, int nIndexSize, ER_BufferAccess nBufAccess, void *pData = nullptr);
 
 //-------------------------------------------------------------
 // Primitive drawing (lower level than DrawPrimitives2D)

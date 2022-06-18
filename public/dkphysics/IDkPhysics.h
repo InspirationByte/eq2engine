@@ -191,17 +191,17 @@ public:
 
 	virtual void								UpdateEvents() = 0;								// updates events
 
-	virtual void 								InternalTraceLine(const Vector3D &tracestart, const Vector3D &traceend,int groupmask,internaltrace_t *trace, IPhysicsObject** pIgnoreList = NULL, int numIgnored = 0) = 0;	// internal trace line
-	virtual void 								InternalTraceBox(const Vector3D &tracestart, const Vector3D &traceend, const Vector3D& boxSize,int groupmask,internaltrace_t *trace, IPhysicsObject** pIgnoreList = NULL, int numIgnored = 0, Matrix4x4* transform = NULL) = 0;	// internal trace box
-	virtual void 								InternalTraceSphere(const Vector3D &tracestart, const Vector3D &traceend, float sphereRadius,int groupmask,internaltrace_t *trace, IPhysicsObject** pIgnoreList = NULL, int numIgnored = 0) = 0; // internal trace sphere
-	virtual void								InternalTraceShape(const Vector3D &tracestart, const Vector3D &traceend, int shapeId, int groupmask,internaltrace_t *trace, IPhysicsObject** pIgnoreList = NULL, int numIgnored = 0, Matrix4x4* transform = NULL) = 0;
+	virtual void 								InternalTraceLine(const Vector3D &tracestart, const Vector3D &traceend,int groupmask,internaltrace_t *trace, IPhysicsObject** pIgnoreList = nullptr, int numIgnored = 0) = 0;	// internal trace line
+	virtual void 								InternalTraceBox(const Vector3D &tracestart, const Vector3D &traceend, const Vector3D& boxSize,int groupmask,internaltrace_t *trace, IPhysicsObject** pIgnoreList = nullptr, int numIgnored = 0, Matrix4x4* transform = nullptr) = 0;	// internal trace box
+	virtual void 								InternalTraceSphere(const Vector3D &tracestart, const Vector3D &traceend, float sphereRadius,int groupmask,internaltrace_t *trace, IPhysicsObject** pIgnoreList = nullptr, int numIgnored = 0) = 0; // internal trace sphere
+	virtual void								InternalTraceShape(const Vector3D &tracestart, const Vector3D &traceend, int shapeId, int groupmask,internaltrace_t *trace, IPhysicsObject** pIgnoreList = nullptr, int numIgnored = 0, Matrix4x4* transform = nullptr) = 0;
 
 
 	virtual phySurfaceMaterial_t*				FindMaterial(const char* pszName) = 0;			// finds surface material parameters by it's name
 
 	virtual Array<phySurfaceMaterial_t*>*		GetMaterialList() = 0;				// returns pointer to material list
 
-	virtual void								DoForEachObject(EACHOBJECTFUNCTION procedure, void *data = NULL) = 0;	// special command that enumerates every physics object and calls EACHOBJECTFUNCTION procedure for it (such as explosion, etc.)
+	virtual void								DoForEachObject(EACHOBJECTFUNCTION procedure, void *data = nullptr) = 0;	// special command that enumerates every physics object and calls EACHOBJECTFUNCTION procedure for it (such as explosion, etc.)
 
 	//****** Creators ******
 

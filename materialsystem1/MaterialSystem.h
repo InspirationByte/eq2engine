@@ -119,15 +119,15 @@ public:
 
 	// draws primitives
 	void							DrawPrimitivesFFP(	ER_PrimitiveType type, Vertex3D_t *pVerts, int nVerts,
-														ITexture* pTexture = NULL, const ColorRGBA &color = color_white,
-														BlendStateParam_t* blendParams = NULL, DepthStencilStateParams_t* depthParams = NULL,
-														RasterizerStateParams_t* rasterParams = NULL);
+														ITexture* pTexture = nullptr, const ColorRGBA &color = color_white,
+														BlendStateParam_t* blendParams = nullptr, DepthStencilStateParams_t* depthParams = nullptr,
+														RasterizerStateParams_t* rasterParams = nullptr);
 
 	// draws primitives for 2D
 	void							DrawPrimitives2DFFP(	ER_PrimitiveType type, Vertex2D_t *pVerts, int nVerts,
-															ITexture* pTexture = NULL, const ColorRGBA &color = color_white,
-															BlendStateParam_t* blendParams = NULL, DepthStencilStateParams_t* depthParams = NULL,
-															RasterizerStateParams_t* rasterParams = NULL);
+															ITexture* pTexture = nullptr, const ColorRGBA &color = color_white,
+															BlendStateParam_t* blendParams = nullptr, DepthStencilStateParams_t* depthParams = nullptr,
+															RasterizerStateParams_t* rasterParams = nullptr);
 
 	//-----------------------------
 	// Shader dynamic states
@@ -280,7 +280,7 @@ public:
 
 	void							PrintLoadedMaterials();
 
-	bool							IsInitialized() const {return (m_renderLibrary != NULL);}
+	bool							IsInitialized() const {return (m_renderLibrary != nullptr);}
 	const char*						GetInterfaceName() const {return MATSYSTEM_INTERFACE_VERSION;}
 
 private:

@@ -24,7 +24,7 @@ IEqFontCache* g_fontCache = &s_fontCache;
 #define FONT_DEFAULT_LIST_FILENAME "resources/fonts.res"
 
 #define FONT_LOADSTYLE(v, name)		\
-	if(name != NULL)				\
+	if(name != nullptr)				\
 	{								\
 		CFont* lfont = PPNew CFont();	\
 		if( lfont->LoadFont( name ) )\
@@ -82,7 +82,7 @@ bool CEqFontCache::LoadFontDescriptionFile( const char* filename )
 		{
 			if(!strcmp(fontSec->name, "#include"))
 			{
-				const char* incFileName = KV_GetValueString(fontSec,0,NULL);
+				const char* incFileName = KV_GetValueString(fontSec,0, nullptr);
 
 				if(incFileName)
 					LoadFontDescriptionFile( incFileName );
@@ -131,9 +131,9 @@ bool CEqFontCache::LoadFontDescriptionFile( const char* filename )
 			
 			fontStyleInfo->regularFont = regFont;
 			
-			FONT_LOADSTYLE(fontStyleInfo->boldFont, KV_GetValueString(bold, 0, NULL));
-			FONT_LOADSTYLE(fontStyleInfo->italicFont, KV_GetValueString(italic, 0, NULL));
-			FONT_LOADSTYLE(fontStyleInfo->boldItalicFont, KV_GetValueString(bolditalic, 0, NULL));
+			FONT_LOADSTYLE(fontStyleInfo->boldFont, KV_GetValueString(bold, 0, nullptr));
+			FONT_LOADSTYLE(fontStyleInfo->italicFont, KV_GetValueString(italic, 0, nullptr));
+			FONT_LOADSTYLE(fontStyleInfo->boldItalicFont, KV_GetValueString(bolditalic, 0, nullptr));
 			
 			// add style/size entry to table
 			familyEntry->sizeTable.append( fontStyleInfo );
@@ -262,7 +262,7 @@ IEqFont* CEqFontCache::GetFont(const char* name, int bestSize, int styleFlags, b
 		if(defaultIfNotFound)
 			return GetFont("default", bestSize, styleFlags, false);
 		else
-			return NULL;
+			return nullptr;
 	}
 
 	return family->FindBestSize(bestSize, styleFlags);

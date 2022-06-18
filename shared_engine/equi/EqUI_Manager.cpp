@@ -16,7 +16,7 @@
 // include all needed elements here
 #include "EqUI_Panel.h"
 
-DECLARE_CMD(ui_showpanel, NULL, CV_CHEAT)
+DECLARE_CMD(ui_showpanel, nullptr, CV_CHEAT)
 {
 	if(CMD_ARGC == 0)
 		return;
@@ -29,7 +29,7 @@ DECLARE_CMD(ui_showpanel, NULL, CV_CHEAT)
 		MsgWarning("No such panel '%s'\n", CMD_ARGV(0).ToCString());
 }
 
-DECLARE_CMD(ui_hidepanel, NULL, CV_CHEAT)
+DECLARE_CMD(ui_hidepanel, nullptr, CV_CHEAT)
 {
 	if(CMD_ARGC == 0)
 		return;
@@ -42,7 +42,7 @@ DECLARE_CMD(ui_hidepanel, NULL, CV_CHEAT)
 		MsgWarning("No such panel '%s'\n", CMD_ARGV(0).ToCString());
 }
 
-DECLARE_CMD(ui_listpanels, NULL, CV_CHEAT)
+DECLARE_CMD(ui_listpanels, nullptr, CV_CHEAT)
 {
 	equi::Manager->DumpPanelsToConsole();
 }
@@ -52,7 +52,7 @@ ConVar equi_debug("equi_debug", "0");
 namespace equi
 {
 
-CUIManager::CUIManager() : m_keyboardFocus(NULL), m_rootPanel(NULL), m_defaultFont(NULL), m_mousePos(0)
+CUIManager::CUIManager() : m_keyboardFocus(nullptr), m_rootPanel(nullptr), m_defaultFont(nullptr), m_mousePos(0)
 {
 }
 
@@ -85,7 +85,7 @@ void CUIManager::Shutdown()
 {
 	// all childs will be cleaned up
 	delete m_rootPanel;
-	m_rootPanel = NULL;
+	m_rootPanel = nullptr;
 
 	m_panels.clear();
 }
@@ -125,7 +125,7 @@ IUIControl* CUIManager::CreateElement( const char* type )
 
 	MsgError("EqUI: unknown element type '%s'!!!\n", type);
 
-	return NULL;
+	return nullptr;
 }
 
 void CUIManager::AddPanel(Panel* panel)
@@ -156,7 +156,7 @@ Panel* CUIManager::FindPanel( const char* pszPanelName ) const
 		}
 	}
 
-	return NULL;
+	return nullptr;
 }
 
 void CUIManager::BringToTop( equi::Panel* panel )
@@ -180,7 +180,7 @@ equi::Panel* CUIManager::GetTopPanel() const
 	if(m_rootPanel->m_childs.goToFirst())
 		return (equi::Panel*)m_rootPanel->m_childs.getCurrent();
 
-	return NULL;
+	return nullptr;
 }
 
 void CUIManager::DumpPanelsToConsole()
@@ -304,7 +304,7 @@ bool CUIManager::ProcessMouseEvents(float x, float y, int nMouseButtons, int fla
 	if( changeFocus ) // focus only when mouse is not moved
 	{
 		if(m_mouseOver == m_rootPanel) // remove focus if we clicked on root panel
-			m_keyboardFocus = NULL;
+			m_keyboardFocus = nullptr;
 		else
 			m_keyboardFocus = m_mouseOver;
 	}

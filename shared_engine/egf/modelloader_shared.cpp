@@ -34,7 +34,7 @@ studiohdr_t* Studio_LoadModel(const char* pszPath)
 	if(!file)
 	{
 		MsgError("Can't open model file '%s'\n",pszPath);
-		return NULL;
+		return nullptr;
 	}
 
 	len = file->GetSize();
@@ -50,7 +50,7 @@ studiohdr_t* Studio_LoadModel(const char* pszPath)
 	{
 		PPFree(_buffer);
 		MsgError("Invalid model file '%s'\n",pszPath);
-		return NULL;
+		return nullptr;
 	}
 
 	ConvertHeaderToLatestVersion( pBaseHdr );
@@ -63,14 +63,14 @@ studiohdr_t* Studio_LoadModel(const char* pszPath)
 	{
 		MsgError("Wrong model '%s' version, excepted %i, but model version is %i\n",pszPath, EQUILIBRIUM_MODEL_VERSION,pBaseHdr->version);
 		PPFree(_buffer);
-		return NULL;
+		return nullptr;
 	}
 
 	if(len != pHdr->length)
 	{
 		MsgError("Model is not valid (%d versus %d in header)!\n",len,pBaseHdr->size);
 		PPFree(_buffer);
-		return NULL;
+		return nullptr;
 	}
 
 	/*
@@ -83,7 +83,7 @@ studiohdr_t* Studio_LoadModel(const char* pszPath)
 	{
 		MsgError("Model %s is not valid model, didn't you replaced model?\n", pszPath);
 		CacheFree(hunkHiMark);
-		return NULL;
+		return nullptr;
 	}
 #endif
 	*/
@@ -99,7 +99,7 @@ studioMotionData_t* Studio_LoadMotionData(const char* pszPath, int boneCount)
 
 	if(!pData)
 	{
-		return NULL;
+		return nullptr;
 	}
 
 	animpackagehdr_t* pHDR = (animpackagehdr_t*)pData;
@@ -108,14 +108,14 @@ studioMotionData_t* Studio_LoadMotionData(const char* pszPath, int boneCount)
 	{
 		MsgError("%s: not a motion package file\n", pszPath);
 		PPFree(pData);
-		return NULL;
+		return nullptr;
 	}
 
 	if(pHDR->version != ANIMFILE_VERSION)
 	{
 		MsgError("Bad motion package version, please update or reinstall the game.\n", pszPath);
 		PPFree(pData);
-		return NULL;
+		return nullptr;
 	}
 
 	pData += sizeof(animpackagehdr_t);
@@ -125,8 +125,8 @@ studioMotionData_t* Studio_LoadMotionData(const char* pszPath, int boneCount)
 	int numAnimDescs = 0;
 	int numAnimFrames = 0;
 
-	animationdesc_t*	animationdescs = NULL;
-	animframe_t*		animframes = NULL;
+	animationdesc_t*	animationdescs = nullptr;
+	animframe_t*		animframes = nullptr;
 
 	bool	anim_frames_decompressed	= false;
 	int		nUncompressedFramesSize		= 0;
@@ -302,7 +302,7 @@ bool Studio_LoadPhysModel(const char* pszPath, studioPhysData_t* pModel)
 
 				for(int i = 0; i < numGeomInfos; i++)
 				{
-					pModel->shapes[i].cachedata = NULL;
+					pModel->shapes[i].cachedata = nullptr;
 
 					// copy shape info
 					memcpy(&pModel->shapes[i].shape_info, &pGeomInfos[i], sizeof(physgeominfo_t));

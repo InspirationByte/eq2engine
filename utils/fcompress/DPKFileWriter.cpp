@@ -58,7 +58,7 @@ void DPK_FixSlashes(EqString& str)
 CDPKFileWriter::CDPKFileWriter() 
 	: m_ice(0)
 {
-	m_file = NULL;
+	m_file = nullptr;
 	memset(&m_header, 0, sizeof(m_header));
 	memset( m_mountPath, 0, sizeof(m_mountPath) );
 
@@ -82,7 +82,7 @@ ubyte* LoadFileBuffer(const char* filename, long* fileSize)
 	if(!file)
 	{
 		MsgError("Can't open file '%s'\n",filename);
-		return NULL;
+		return nullptr;
 	}
 
 	fseek(file, 0, SEEK_END);
@@ -200,7 +200,7 @@ void CDPKFileWriter::AddDirectory(const char* filename_to_add, bool bRecurse)
 	HANDLE hFile;
 
 	hFile = FindFirstFileA(dirname.ToCString(), &wfd);
-	if(hFile != NULL)
+	if(hFile != nullptr)
 	{
 		while(1)
 		{

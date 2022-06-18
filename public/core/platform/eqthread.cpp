@@ -61,7 +61,7 @@ uintptr_t ThreadCreate( threadfunc_t fnThread, void* pThreadParams, ThreadPriori
 	flags |= STACK_SIZE_PARAM_IS_A_RESERVATION;
 
 	DWORD threadId;
-	HANDLE handle = CreateThread(	NULL,	// LPSECURITY_ATTRIBUTES lpsa, //-V513
+	HANDLE handle = CreateThread(nullptr,	// LPSECURITY_ATTRIBUTES lpsa, //-V513
 									nStackSize,
 									(LPTHREAD_START_ROUTINE)fnThread,
 									pThreadParams,
@@ -131,7 +131,7 @@ void Yield()
 
 void SignalCreate( SignalHandle_t& handle, bool bManualReset )
 {
-	handle = CreateEvent( NULL, bManualReset, FALSE, NULL );
+	handle = CreateEvent(nullptr, bManualReset, FALSE, nullptr);
 }
 
 void SignalDestroy( SignalHandle_t& handle )
@@ -283,7 +283,7 @@ void ThreadDestroy( uintptr_t threadHandle )
 	}
 #endif
 
-	if( pthread_join( ( pthread_t )threadHandle, NULL ) != 0 )
+	if( pthread_join( ( pthread_t )threadHandle, nullptr) != 0 )
 	{
 		ASSERT_MSG( "ERROR: pthread_join %s failed\n", name );
 	}
@@ -317,9 +317,9 @@ void SignalCreate( SignalHandle_t& handle, bool bManualReset )
 	handle.signaled = false;
 	handle.waiting = 0;
 
-	pthread_mutex_init( &handle.mutex, NULL );
+	pthread_mutex_init( &handle.mutex, nullptr);
 
-	pthread_cond_init( &handle.cond, NULL );
+	pthread_cond_init( &handle.cond, nullptr);
 }
 
 void SignalDestroy( SignalHandle_t& handle )

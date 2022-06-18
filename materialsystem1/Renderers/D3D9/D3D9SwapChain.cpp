@@ -16,7 +16,7 @@ CD3D9SwapChain::~CD3D9SwapChain()
 
 CD3D9SwapChain::CD3D9SwapChain()
 {
-	//m_backbuffer = NULL;
+	//m_backbuffer = nullptr;
 }
 
 bool CD3D9SwapChain::Initialize( HWND window, bool vSync, bool windowed)
@@ -67,7 +67,7 @@ bool CD3D9SwapChain::CreateOrUpdateBackbuffer()
 	if (FAILED(m_RHIChain->GetBuffer(0, __uuidof(ID3D10Texture2D), (LPVOID *) &backbufferTex))) 
 		return false;
 
-	if (FAILED(m_rhi->CreateRenderTargetView(backbufferTex, NULL, &backbufferRTV)))
+	if (FAILED(m_rhi->CreateRenderTargetView(backbufferTex, nullptr, &backbufferRTV)))
 		return false;
 
 	m_backbuffer->textures.append( backbufferTex );

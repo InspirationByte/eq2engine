@@ -13,7 +13,7 @@ extern void DPK_FixSlashes(EqString& str);
 
 CZipFileStream::CZipFileStream(unzFile zip) : m_zipHandle(zip)
 {
-	unzGetCurrentFileInfo(m_zipHandle, &m_finfo, NULL, 0, NULL, 0, NULL, 0);
+	unzGetCurrentFileInfo(m_zipHandle, &m_finfo, nullptr, 0, nullptr, 0, nullptr, 0);
 }
 
 CZipFileStream::~CZipFileStream()
@@ -160,7 +160,7 @@ bool CZipFileReader::InitPackage(const char* filename, const char* mountPath/* =
 	for (int i = 0; i < ugi.number_entry; i++)
 	{
 		unz_file_info ufi;
-		unzGetCurrentFileInfo(zip, &ufi, path, sizeof(path), NULL, 0, NULL, 0);
+		unzGetCurrentFileInfo(zip, &ufi, path, sizeof(path), nullptr, 0, nullptr, 0);
 		if (ufi.uncompressed_size > COMPRESSED_FILE_BIG_FILE_SIZE_THRESHOLD && float(ufi.compressed_size) / float(ufi.uncompressed_size) < COMPRESSION_RATIO_WARNING_THRESHOLD)
 		{
 			warnAboutCompression = true;

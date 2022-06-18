@@ -116,7 +116,7 @@ struct imgLayer_t
 {
 	imgLayer_t()
 	{
-		image = NULL;
+		image = nullptr;
 		transparency = 1.0f;
 		color = ColorRGB(1.0f);
 		blendMode = BLEND_ADD;
@@ -146,7 +146,7 @@ struct imageDesc_t
 bool ParseImageDesc(const char* atlasPath, imageDesc_t& dest, KVSection* kv)
 {
 	EqString atlas_dir = _Es(atlasPath).Path_Strip_Name();
-	EqString image_name = KV_GetValueString(kv, 0, NULL);
+	EqString image_name = KV_GetValueString(kv, 0, nullptr);
 
 	if(image_name.Length() == 0)
 	{
@@ -191,9 +191,9 @@ bool ParseImageDesc(const char* atlasPath, imageDesc_t& dest, KVSection* kv)
 
 			imgLayer_t layer;
 			layer.blendMode = GetBlendmodeByStr( kb->name );
-			layer.image = NULL;
+			layer.image = nullptr;
 
-			EqString image_path = KV_GetValueString(kb,0,NULL);
+			EqString image_path = KV_GetValueString(kb,0, nullptr);
 
 			bool hasImagePath = image_path.Length() > 0 && (isalpha(*image_path.ToCString()) || *image_path.ToCString() == '_');
 
@@ -246,7 +246,7 @@ bool ParseImageDesc(const char* atlasPath, imageDesc_t& dest, KVSection* kv)
 		{
 			MsgError("Failed to convert image '%s'\n", dest.name.ToCString() );
 			delete dest.layers[i].image;
-			dest.layers[i].image = NULL;
+			dest.layers[i].image = nullptr;
 		}
 
 		if(i == 0 && !dest.layers[i].image)

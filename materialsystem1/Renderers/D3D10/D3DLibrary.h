@@ -31,7 +31,7 @@ public:
 
 	// frame begin/end
 	void			BeginFrame();
-	void			EndFrame(IEqSwapChain* swapChain = NULL);
+	void			EndFrame(IEqSwapChain* swapChain = nullptr);
 
 	// renderer interface
 	IShaderAPI*		GetRenderer() {return m_Renderer;}

@@ -394,7 +394,7 @@ enum ER_StateResetFlags
 };
 
 #ifndef BUFFER_OFFSET
-#define BUFFER_OFFSET(i) ((char *) NULL + (i))
+#define BUFFER_OFFSET(i) ((char *) nullptr + (i))
 #endif
 
 struct KVSection;

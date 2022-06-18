@@ -22,12 +22,12 @@
 static CDebugOverlay g_DebugOverlays;
 IDebugOverlay* debugoverlay = (IDebugOverlay*)&g_DebugOverlays;
 
-static ConVar r_drawFrameStats("r_frameStats", "0", NULL, CV_ARCHIVE);
-static ConVar r_debugdrawGraphs("r_debugDrawGraphs", "0", NULL, CV_ARCHIVE);
-static ConVar r_debugdrawShapes("r_debugDrawShapes", "0", NULL, CV_ARCHIVE);
-static ConVar r_debugdrawLines("r_debugDrawLines", "0", NULL, CV_ARCHIVE);
+static ConVar r_drawFrameStats("r_frameStats", "0", nullptr, CV_ARCHIVE);
+static ConVar r_debugdrawGraphs("r_debugDrawGraphs", "0", nullptr, CV_ARCHIVE);
+static ConVar r_debugdrawShapes("r_debugDrawShapes", "0", nullptr, CV_ARCHIVE);
+static ConVar r_debugdrawLines("r_debugDrawLines", "0", nullptr, CV_ARCHIVE);
 
-ITexture* g_pDebugTexture = NULL;
+ITexture* g_pDebugTexture = nullptr;
 
 void OnShowTextureChanged(ConVar* pVar,char const* pszOldValue)
 {
@@ -41,7 +41,7 @@ void OnShowTextureChanged(ConVar* pVar,char const* pszOldValue)
 }
 
 ConVar r_showTexture("r_debug_showTexture", "", OnShowTextureChanged, "input texture name to show texture. To hide view input anything else.", CV_CHEAT);
-ConVar r_showTextureScale("r_debug_textureScale", "1.0", NULL, CV_ARCHIVE);
+ConVar r_showTextureScale("r_debug_textureScale", "1.0", nullptr, CV_ARCHIVE);
 
 #include "math/Rectangle.h"
 
@@ -53,7 +53,7 @@ void GUIDrawWindow(const Rectangle_t &rect, const ColorRGBA &color1)
 	blending.srcFactor = BLENDFACTOR_SRC_ALPHA;
 	blending.dstFactor = BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
 
-	g_pShaderAPI->SetTexture(NULL,0,0);
+	g_pShaderAPI->SetTexture(nullptr,0,0);
 	materials->SetBlendingStates(blending);
 	materials->SetRasterizerStates(CULL_FRONT, FILL_SOLID);
 	materials->SetDepthStates(false,false);
@@ -156,7 +156,7 @@ CDebugOverlay::CDebugOverlay() :
 	m_draw3DFuncs(PP_SL),
 	m_frameTime(0.0f)
 {
-	m_pDebugFont = NULL;
+	m_pDebugFont = nullptr;
 }
 
 void CDebugOverlay::Init(bool hidden)
@@ -391,7 +391,7 @@ void DrawLineArray(Array<DebugLineNode_t>& lines, float frametime)
 	if(!lines.numElem())
 		return;
 
-	g_pShaderAPI->SetTexture(NULL,NULL, 0);
+	g_pShaderAPI->SetTexture(nullptr, nullptr, 0);
 
 	materials->SetBlendingStates(BLENDFACTOR_SRC_ALPHA, BLENDFACTOR_ONE_MINUS_SRC_ALPHA,BLENDFUNC_ADD);
 	materials->SetRasterizerStates(CULL_NONE,FILL_SOLID);
@@ -430,7 +430,7 @@ void DrawOrientedBoxArray(Array<DebugOriBoxNode_t>& boxes, float frametime)
 	if (!boxes.numElem())
 		return;
 
-	g_pShaderAPI->SetTexture(NULL, NULL, 0);
+	g_pShaderAPI->SetTexture(nullptr, nullptr, 0);
 
 	materials->SetBlendingStates(BLENDFACTOR_SRC_ALPHA, BLENDFACTOR_ONE_MINUS_SRC_ALPHA, BLENDFUNC_ADD);
 	materials->SetRasterizerStates(CULL_NONE, FILL_SOLID);
@@ -503,7 +503,7 @@ void DrawBoxArray(Array<DebugBoxNode_t>& boxes, float frametime)
 	if(!boxes.numElem())
 		return;
 
-	g_pShaderAPI->SetTexture(NULL,NULL, 0);
+	g_pShaderAPI->SetTexture(nullptr, nullptr, 0);
 
 	materials->SetBlendingStates(BLENDFACTOR_SRC_ALPHA, BLENDFACTOR_ONE_MINUS_SRC_ALPHA,BLENDFUNC_ADD);
 	materials->SetRasterizerStates(CULL_NONE,FILL_SOLID);
@@ -611,7 +611,7 @@ void DrawGraph(debugGraphBucket_t* graph, int position, IEqFont* pFont, float fr
 	blending.srcFactor = BLENDFACTOR_SRC_ALPHA;
 	blending.dstFactor = BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
 
-	materials->DrawPrimitives2DFFP(PRIM_LINES,lines,elementsOf(lines), NULL, color_white, &blending);
+	materials->DrawPrimitives2DFFP(PRIM_LINES,lines,elementsOf(lines), nullptr, color_white, &blending);
 
 	pFont->RenderText(EqString::Format("%.2f", (graph->maxValue*0.75f)).ToCString(), Vector2D(x_pos + 5, y_pos - GRAPH_HEIGHT *0.75f), textStl);
 	pFont->RenderText(EqString::Format("%.2f", (graph->maxValue*0.50f)).ToCString(), Vector2D(x_pos + 5, y_pos - GRAPH_HEIGHT *0.50f), textStl);
@@ -670,7 +670,7 @@ void DrawGraph(debugGraphBucket_t* graph, int position, IEqFont* pFont, float fr
 	if(graph->dynamic)
 		graph->maxValue = graph_max_value;
 
-	materials->DrawPrimitives2DFFP(PRIM_LINES,graph_line_verts,num_line_verts, NULL, color_white);
+	materials->DrawPrimitives2DFFP(PRIM_LINES,graph_line_verts,num_line_verts, nullptr, color_white);
 
 	graph->remainingTime -= frame_time;
 
@@ -684,7 +684,7 @@ void DrawPolygons(Array<DebugPolyNode_t>& polygons, float frameTime)
 	if(!polygons.numElem())
 		return;
 
-	g_pShaderAPI->SetTexture(NULL,NULL, 0);
+	g_pShaderAPI->SetTexture(nullptr, nullptr, 0);
 
 	materials->SetBlendingStates(BLENDFACTOR_SRC_ALPHA, BLENDFACTOR_ONE_MINUS_SRC_ALPHA,BLENDFUNC_ADD);
 	materials->SetRasterizerStates(CULL_BACK,FILL_SOLID);
@@ -909,7 +909,7 @@ void DrawSphereArray(Array<DebugSphereNode_t>& spheres, float frameTime)
 	if(!spheres.numElem())
 		return;
 
-	g_pShaderAPI->SetTexture(NULL,NULL, 0);
+	g_pShaderAPI->SetTexture(nullptr, nullptr, 0);
 
 	materials->SetBlendingStates(BLENDFACTOR_SRC_ALPHA, BLENDFACTOR_ONE_MINUS_SRC_ALPHA,BLENDFUNC_ADD);
 	materials->SetRasterizerStates(CULL_BACK,FILL_SOLID);

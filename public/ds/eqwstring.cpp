@@ -20,7 +20,7 @@ EqWString::EqWString()
 {
 	m_nLength = 0;
 	m_nAllocated = 0;
-	m_pszString = NULL;
+	m_pszString = nullptr;
 	Empty();
 }
 
@@ -33,7 +33,7 @@ EqWString::EqWString(const wchar_t c)
 {
 	m_nLength = 0;
 	m_nAllocated = 0;
-	m_pszString = NULL;
+	m_pszString = nullptr;
 
 	Assign( &c, 1 );
 }
@@ -43,7 +43,7 @@ EqWString::EqWString(const char* pszString, int len)
 {
 	m_nLength = 0;
 	m_nAllocated = 0;
-	m_pszString = NULL;
+	m_pszString = nullptr;
 
 	Assign( pszString, len );
 }
@@ -52,7 +52,7 @@ EqWString::EqWString(const EqString& str, int nStart, int len)
 {
 	m_nLength = 0;
 	m_nAllocated = 0;
-	m_pszString = NULL;
+	m_pszString = nullptr;
 
 	Assign( str, nStart, len );
 }
@@ -61,7 +61,7 @@ EqWString::EqWString(const wchar_t* pszString, int len)
 {
 	m_nLength = 0;
 	m_nAllocated = 0;
-	m_pszString = NULL;
+	m_pszString = nullptr;
 
 	Assign( pszString, len );
 }
@@ -70,7 +70,7 @@ EqWString::EqWString(const EqWString &str, int nStart, int len)
 {
 	m_nLength = 0;
 	m_nAllocated = 0;
-	m_pszString = NULL;
+	m_pszString = nullptr;
 
 	Assign( str, nStart, len );
 }
@@ -133,7 +133,7 @@ uint EqWString::GetSize() const
 void EqWString::Clear()
 {
 	delete [] m_pszString;
-	m_pszString = NULL;
+	m_pszString = nullptr;
 	m_nLength = 0;
 	m_nAllocated = 0;
 }
@@ -187,7 +187,7 @@ bool EqWString::Resize(uint nSize, bool bCopy)
 		// now it's not needed
 		delete [] m_pszString;
 
-		m_pszString = NULL;
+		m_pszString = nullptr;
 	}
 
 	// assign
@@ -214,7 +214,7 @@ void EqWString::Assign(const EqString &str, int nStart, int len)
 // string assignment (or setvalue)
 void EqWString::Assign(const wchar_t* pszStr, int len)
 {
-	if(pszStr == NULL)
+	if(pszStr == nullptr)
 	{
 		if (m_pszString)
 			m_pszString[0] = 0;
@@ -279,7 +279,7 @@ void EqWString::Append(const wchar_t c)
 // appends another string
 void EqWString::Append(const wchar_t* pszStr, int nCount)
 {
-	if(pszStr == NULL)
+	if(pszStr == nullptr)
 		return;
 
 	int nLen = wcslen( pszStr );
@@ -314,7 +314,7 @@ void EqWString::Append(const EqWString &str)
 // inserts another string at position
 void EqWString::Insert(const wchar_t* pszStr, int nInsertPos)
 {
-	if(pszStr == NULL)
+	if(pszStr == nullptr)
 		return;
 
 	int nInsertCount = wcslen( pszStr );
@@ -457,7 +457,7 @@ int	EqWString::Find(const wchar_t* pszSub, bool bCaseSensetive, int nStart) cons
 
 	wchar_t* strStart = m_pszString + min((uint16)nStart, m_nLength);
 
-	wchar_t* st = NULL;
+	wchar_t* st = nullptr;
 
 	if(bCaseSensetive)
 		st = wcsstr(strStart, pszSub);

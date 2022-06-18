@@ -98,8 +98,8 @@ bool CDynamicMesh::Init(const VertexFormatDesc_t* desc, int numAttribs )
 
 	m_vertexStride = vertexSize;
 
-	m_vertexBuffer = g_pShaderAPI->CreateVertexBuffer(BUFFER_DYNAMIC, MAX_DYNAMIC_VERTICES, m_vertexStride, NULL);
-	m_indexBuffer = g_pShaderAPI->CreateIndexBuffer(MAX_DYNAMIC_INDICES, sizeof(uint16), BUFFER_DYNAMIC, NULL);
+	m_vertexBuffer = g_pShaderAPI->CreateVertexBuffer(BUFFER_DYNAMIC, MAX_DYNAMIC_VERTICES, m_vertexStride, nullptr);
+	m_indexBuffer = g_pShaderAPI->CreateIndexBuffer(MAX_DYNAMIC_INDICES, sizeof(uint16), BUFFER_DYNAMIC, nullptr);
 
 	m_vertexFormat = g_pShaderAPI->CreateVertexFormat("DynMeshVertex", desc, numAttribs);
 

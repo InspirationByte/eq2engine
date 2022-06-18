@@ -14,7 +14,7 @@
 #include <d3d10.h>
 #include <d3dx10.h>
 
-#define SAFE_RELEASE(p) { if (p){ p->Release(); p = NULL; } }
+#define SAFE_RELEASE(p) { if (p){ p->Release(); p = nullptr; } }
 
 class IRenderState;
 

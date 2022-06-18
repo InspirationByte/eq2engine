@@ -10,7 +10,7 @@
 #include "IMaterialSystem.h"
 
 IShaderAPI*			g_pShaderAPI	= (IShaderAPI*)GetCore()->GetInterface(MATSYSTEM_INTERFACE_VERSION);
-IMaterialSystem*	materials		= NULL;
+IMaterialSystem*	materials		= nullptr;
 
 DECLARE_INTERNAL_SHADERS()
 

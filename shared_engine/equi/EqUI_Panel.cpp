@@ -27,7 +27,7 @@ namespace equi
 // Panels
 //-------------------------------------------------------------------
 
-Panel::Panel() : m_windowControls(false), m_labelCtrl(NULL), m_closeButton(NULL), m_grabbed(false), m_screenOverlay(false)
+Panel::Panel() : m_windowControls(false), m_labelCtrl(nullptr), m_closeButton(nullptr), m_grabbed(false), m_screenOverlay(false)
 {
 	m_position = IVector2D(0);
 	m_size = IVector2D(32,32);
@@ -100,7 +100,7 @@ void Panel::InitFromKeyValues( KVSection* sec, bool noClear )
 void Panel::Hide()
 {
 	if(equi::Manager->GetTopPanel() == this)
-		equi::Manager->SetFocus( NULL );
+		equi::Manager->SetFocus(nullptr);
 
 	BaseClass::Hide();
 }
@@ -142,7 +142,7 @@ void DrawWindowRectangle(const Rectangle_t &rect, const ColorRGBA &color1, const
 	blending.srcFactor = BLENDFACTOR_SRC_ALPHA;
 	blending.dstFactor = BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
 
-	g_pShaderAPI->SetTexture(NULL,0,0);
+	g_pShaderAPI->SetTexture(nullptr,0,0);
 	materials->SetBlendingStates(blending);
 	materials->SetRasterizerStates(CULL_FRONT, FILL_SOLID);
 	materials->SetDepthStates(false,false);

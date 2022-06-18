@@ -22,7 +22,7 @@ public:
 
 	// frame begin/end
 	void			BeginFrame();
-	void			EndFrame(IEqSwapChain* swapChain = NULL);
+	void			EndFrame(IEqSwapChain* swapChain = nullptr);
 
 	// renderer interface
 	IShaderAPI*		GetRenderer() const;
@@ -43,13 +43,13 @@ public:
 	bool			CaptureScreenshot(CImage &img);
 
 	// creates swap chain
-	IEqSwapChain*	CreateSwapChain(void* window, bool windowed = true) {return NULL;}
+	IEqSwapChain*	CreateSwapChain(void* window, bool windowed = true) {return nullptr;}
 
 	// destroys a swapchain
 	void			DestroySwapChain(IEqSwapChain* swapChain) {}
 
 	// returns default swap chain
-	IEqSwapChain*	GetDefaultSwapchain() {return NULL;}
+	IEqSwapChain*	GetDefaultSwapchain() {return nullptr;}
 
 protected:
 	EQWNDHANDLE				hwnd;

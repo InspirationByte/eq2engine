@@ -73,7 +73,7 @@ void DkCore_onExit( void )
 	GetCore()->Shutdown();
 }
 
-ConVar *c_SupressAccessorMessages = NULL;
+ConVar *c_SupressAccessorMessages = nullptr;
 
 extern ConCommand c_developer;
 extern ConCommand c_echo;
@@ -111,7 +111,7 @@ extern DECLARE_CONCOMMAND_FN(developer);
 
 CDkCore::CDkCore()
 {
-	m_coreConfiguration = NULL;
+	m_coreConfiguration = nullptr;
 }
 
 //-----------------------------------------------------------------------------
@@ -160,7 +160,7 @@ static void SetupBinPath()
 
 	char moduleName[MAX_BIN_DIR_PATH];
 #ifdef _WIN32
-	if (!GetModuleFileNameA(NULL, moduleName, MAX_BIN_DIR_PATH))
+	if (!GetModuleFileNameA(nullptr, moduleName, MAX_BIN_DIR_PATH))
 		return;
 
 	// Get the root directory the .exe is in
@@ -385,7 +385,7 @@ void CDkCore::Shutdown()
 	g_fileSystem->Shutdown();
 
 	delete m_coreConfiguration;
-	m_coreConfiguration = NULL;
+	m_coreConfiguration = nullptr;
 
 	// drop all modules
 	//for (int i = 0; i < m_interfaces.numElem(); i++)
@@ -481,7 +481,7 @@ IEqCoreModule* CDkCore::GetInterface(const char* pszName) const
 			return m_interfaces[i].ptr;
 	}
 
-	return NULL;
+	return nullptr;
 }
 
 void CDkCore::UnregisterInterface(const char* pszName)

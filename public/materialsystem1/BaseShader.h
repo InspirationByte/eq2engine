@@ -123,7 +123,7 @@ class IShaderProgram;
 
 #define SHADER_PARAM_TEXTURE_NOERROR(param, variable) \
 	{	\
-	IMatVar *mv_##param = NULL;variable = NULL;\
+	IMatVar *mv_##param = nullptr;variable = nullptr;\
 			\
 	if(materials->GetConfiguration().editormode)		\
 	{		\

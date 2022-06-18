@@ -39,7 +39,7 @@ void CCommandLine::Parse(const char* pszCommandLine)
 		++pChar;
 
 	bool bInQuotes = false;
-	const char *pFirstLetter = NULL;
+	const char *pFirstLetter = nullptr;
 
 	for ( ; *pChar; ++pChar )
 	{
@@ -50,7 +50,7 @@ void CCommandLine::Parse(const char* pszCommandLine)
 
 			AddArgument( pFirstLetter, pChar );
 
-			pFirstLetter = NULL;
+			pFirstLetter = nullptr;
 			bInQuotes = false;
 			continue;
 		}
@@ -76,7 +76,7 @@ void CCommandLine::Parse(const char* pszCommandLine)
 		if ( isspace( *pChar ) )
 		{
 			AddArgument( pFirstLetter, pChar );
-			pFirstLetter = NULL;
+			pFirstLetter = nullptr;
 		}
 	}
 

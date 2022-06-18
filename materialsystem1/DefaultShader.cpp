@@ -14,7 +14,7 @@ BEGIN_SHADER_CLASS(Default)
 
 	SHADER_INIT_PARAMS()
 	{
-		SHADER_PASS(Unlit) = NULL;
+		SHADER_PASS(Unlit) = nullptr;
 		SetParameterFunctor(SHADERPARAM_COLOR, &ThisShaderClass::SetColorModulation);
 	}
 
@@ -56,8 +56,8 @@ BEGIN_SHADER_CLASS(Default)
 		g_pShaderAPI->SetShaderConstantVector4D("AmbientColor", setColor);
 	}
 
-	ITexture*	GetBaseTexture(int stage) const {return NULL;}
-	ITexture*	GetBumpTexture(int stage) const {return NULL;}
+	ITexture*	GetBaseTexture(int stage) const {return nullptr;}
+	ITexture*	GetBumpTexture(int stage) const {return nullptr;}
 
 	SHADER_DECLARE_PASS(Unlit);
 

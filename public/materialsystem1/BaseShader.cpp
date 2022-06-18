@@ -236,7 +236,7 @@ void CBaseShader::ParamSetup_CurrentAsBaseTexture()
 {
 	ITexture* currentTexture = g_pShaderAPI->GetTextureAt(0);
 
-	if(currentTexture == NULL)
+	if(currentTexture == nullptr)
 		currentTexture = materials->GetWhiteTexture();
 
 	g_pShaderAPI->SetTexture(currentTexture, "BaseTextureSampler", 0);
@@ -399,10 +399,7 @@ void CBaseShader::AddManagedTexture(IMatVar* var, ITexture** tex)
 	var->AssignTexture(*tex);
 
 	// no ref_grab needed because already did in AssignTexture
-
-	mvUseTexture_t mvtex;
+	mvUseTexture_t& mvtex = m_UsedTextures.append();
 	mvtex.texture = tex;
 	mvtex.var = var; 
-
-	m_UsedTextures.append(mvtex);
 }

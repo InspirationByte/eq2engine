@@ -112,7 +112,7 @@ char* Buffer::ReadString(int& length)
 		return pData;
 	}
 
-	return NULL;
+	return nullptr;
 }
 
 EqString Buffer::ReadString()
@@ -144,7 +144,7 @@ wchar_t* Buffer::ReadWString(int& length)
 		return pData;
 	}
 
-	return NULL;
+	return nullptr;
 }
 
 void Buffer::WriteData(const void* pData, int nBytes)

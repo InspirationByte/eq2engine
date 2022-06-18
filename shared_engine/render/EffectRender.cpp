@@ -30,8 +30,8 @@ int _SortParticles(IEffect* const &elem0, IEffect* const &elem1)
 IEffect::IEffect() :	m_vOrigin(0.0f),
 						m_fStartLifeTime(0),
 						m_fLifeTime(0),
-						m_atlEntry(NULL),
-						m_atlGroup(NULL),
+						m_atlEntry(nullptr),
+						m_atlGroup(nullptr),
 						m_fDistanceToView(0.0f)
 {
 }
@@ -54,7 +54,7 @@ void CEffectRenderer::RegisterEffectForRender(IEffect* pEffect)
 	Threading::CEqMutex& mutex = GetGlobalMutex(MUTEXPURPOSE_PARTICLES);
 	Threading::CScopedMutex m(mutex);
 
-	ASSERT_MSG(pEffect != NULL, "RegisterEffectForRender - inserting NULL effect");
+	ASSERT_MSG(pEffect != nullptr, "RegisterEffectForRender - inserting NULL effect");
 
 	if(m_numEffects.GetValue() >= MAX_VISIBLE_EFFECTS)
 	{
@@ -126,7 +126,7 @@ void CEffectRenderer::RemoveEffect(int index)
 	if ( m_numEffects.GetValue() > 0 && index != m_numEffects.GetValue() )
 	{
 		m_pEffectList[index] = m_pEffectList[m_numEffects.GetValue()];
-		m_pEffectList[m_numEffects.GetValue()] = NULL;
+		m_pEffectList[m_numEffects.GetValue()] = nullptr;
 	}
 
 	if(effect)

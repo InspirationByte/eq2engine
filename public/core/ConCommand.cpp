@@ -13,7 +13,7 @@
 
 ConCommand::ConCommand(char const *name,CON_COMMAND_CALLBACK callback,char const *desc, int flags /*= 0*/) : ConCommandBase()
 {
-	Create(name,callback,NULL,desc,flags);
+	Create(name,callback, nullptr,desc,flags);
 }
 
 ConCommand::ConCommand(char const *name,CON_COMMAND_CALLBACK callback, CMDBASE_VARIANTS_CALLBACK variantsList,char const *desc, int flags)

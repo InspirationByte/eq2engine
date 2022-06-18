@@ -157,7 +157,7 @@ static const DXGI_FORMAT d3ddecltypes[][4] = {
 };
 /*
 static const char *semantics[] = {
-	NULL,
+	nullptr,
 	"Position",
 	"Texcoord",
 	"Normal",

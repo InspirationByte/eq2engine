@@ -311,7 +311,7 @@ void CEGFGenerator::WriteGroup(studiohdr_t* header, IVirtualStream* stream, dsmg
 		ACTCData* tc;
 
 		tc = actcNew();
-		if(tc == NULL)
+		if(tc == nullptr)
 		{
 			Msg("Model optimization disabled\n");
 			goto skipOptimize;
@@ -515,7 +515,7 @@ void CEGFGenerator::WriteModels(studiohdr_t* header, IVirtualStream* stream)
 			modelgroupdesc_t* groupDesc = header->pModelDesc(i)->pGroup(j);
 
 			// shape key modifier (if available)
-			esmshapekey_t* key = (modelRef.shapeBy != -1) ? modelRef.shapeData->shapes[modelRef.shapeBy] : NULL;
+			esmshapekey_t* key = (modelRef.shapeBy != -1) ? modelRef.shapeData->shapes[modelRef.shapeBy] : nullptr;
 
 			WriteGroup(header, stream, modelRef.model->groups[j], key, groupDesc);
 
@@ -820,7 +820,7 @@ bool CEGFGenerator::GenerateEGF()
 
 		g_fileSystem->Close(file);
 
-		file = NULL;
+		file = nullptr;
 	}
 	else
 	{

@@ -15,7 +15,7 @@ using namespace Threading;
 class CEmptyVertexBuffer : public IVertexBuffer
 {
 public:
-				CEmptyVertexBuffer(int stride) : m_lockData(NULL), m_stride(stride) {}
+				CEmptyVertexBuffer(int stride) : m_lockData(nullptr), m_stride(stride) {}
 
 	// returns size in bytes
 	long		GetSizeInBytes() const {return 0;}
@@ -39,7 +39,7 @@ public:
 	}
 
 	// unlocks buffer
-	void		Unlock() {PPFree(m_lockData); m_lockData = NULL;}
+	void		Unlock() {PPFree(m_lockData); m_lockData = nullptr;}
 
 	// sets vertex buffer flags
 	void		SetFlags( int flags ) {}
@@ -52,7 +52,7 @@ public:
 class CEmptyIndexBuffer : public IIndexBuffer
 {
 public:
-				CEmptyIndexBuffer(int stride) : m_lockData(NULL), m_stride(stride) {}
+				CEmptyIndexBuffer(int stride) : m_lockData(nullptr), m_stride(stride) {}
 
 	long		GetSizeInBytes() const { return 0; }
 
@@ -75,7 +75,7 @@ public:
 	}
 
 	// unlocks buffer
-	void		Unlock() {free(m_lockData); m_lockData = NULL;}
+	void		Unlock() {free(m_lockData); m_lockData = nullptr;}
 
 	// sets vertex buffer flags
 	void		SetFlags( int flags ) {}
@@ -165,7 +165,7 @@ public:
 	ER_ShaderAPIType			GetShaderAPIClass() {return SHADERAPI_EMPTY;}
 
 	// Device vendor and version
-	const char*					GetDeviceNameString() const {return "NULL device";}
+	const char*					GetDeviceNameString() const {return "nullptr device";}
 
 	// Renderer string (ex: OpenGL, D3D9)
 	const char*					GetRendererName() const {return "Empty";}
@@ -210,7 +210,7 @@ public:
 //-------------------------------------------------------------
 
 	// creates occlusion query object
-	IOcclusionQuery*	CreateOcclusionQuery() {return NULL;}
+	IOcclusionQuery*	CreateOcclusionQuery() {return nullptr;}
 
 	// removal of occlusion query object
 	void				DestroyOcclusionQuery(IOcclusionQuery* pQuery) {}
@@ -224,7 +224,7 @@ public:
 	{
 		CEmptyTexture* pTex = (CEmptyTexture*)(pTexture);
 
-		if(pTex == NULL)
+		if(pTex == nullptr)
 			return;
 
 		pTex->Ref_Drop();
@@ -285,10 +285,10 @@ public:
 	void						CopyFramebufferToTexture(ITexture* pTargetTexture){}
 
 	// Copy render target to texture
-	void						CopyRendertargetToTexture(ITexture* srcTarget, ITexture* destTex, IRectangle* srcRect = NULL, IRectangle* destRect = NULL) {}
+	void						CopyRendertargetToTexture(ITexture* srcTarget, ITexture* destTex, IRectangle* srcRect = nullptr, IRectangle* destRect = nullptr) {}
 
 	// Changes render target (MRT)
-	void						ChangeRenderTargets(ITexture** pRenderTargets, int nNumRTs, int* nCubemapFaces = NULL, ITexture* pDepthTarget = NULL, int nDepthSlice = 0){}
+	void						ChangeRenderTargets(ITexture** pRenderTargets, int nNumRTs, int* nCubemapFaces = nullptr, ITexture* pDepthTarget = nullptr, int nDepthSlice = 0){}
 
 	// fills the current rendertarget buffers
 	void						GetCurrentRenderTargets(ITexture* pRenderTargets[MAX_MRTS], int *nNumRTs, ITexture** pDepthTarget, int cubeNumbers[MAX_MRTS]){}
@@ -357,13 +357,13 @@ public:
 //-------------------------------------------------------------
 
 	// creates blending state
-	IRenderState*				CreateBlendingState( const BlendStateParam_t &blendDesc ) {return NULL;}
+	IRenderState*				CreateBlendingState( const BlendStateParam_t &blendDesc ) {return nullptr;}
 
 	// creates depth/stencil state
-	IRenderState*				CreateDepthStencilState( const DepthStencilStateParams_t &depthDesc ) {return NULL;}
+	IRenderState*				CreateDepthStencilState( const DepthStencilStateParams_t &depthDesc ) {return nullptr;}
 
 	// creates rasterizer state
-	IRenderState*				CreateRasterizerState( const RasterizerStateParams_t &rasterDesc ) {return NULL;}
+	IRenderState*				CreateRasterizerState( const RasterizerStateParams_t &rasterDesc ) {return nullptr;}
 
 	// completely destroys shader
 	void						DestroyRenderState( IRenderState* pShaderProgram, bool removeAllRefs = false) {}
@@ -373,7 +373,7 @@ public:
 //-------------------------------------------------------------
 
 	// Creates shader class for needed ShaderAPI
-	IShaderProgram*				CreateNewShaderProgram(const char* pszName, const char* query = NULL){return NULL;}
+	IShaderProgram*				CreateNewShaderProgram(const char* pszName, const char* query = nullptr){return nullptr;}
 
 	// Destroy all shader
 	void						DestroyShaderProgram(IShaderProgram* pShaderProgram){}
@@ -381,7 +381,7 @@ public:
 	// Load any shader from stream
 	bool						CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 															const shaderProgramCompileInfo_t& info,
-															const char* extra = NULL){return true;}
+															const char* extra = nullptr){return true;}
 
 	// Set current shader for rendering
 	void						SetShader(IShaderProgram* pShader){}
@@ -437,8 +437,8 @@ public:
 		m_VFList.append(pVF);
 		return pVF;
 	}
-	IVertexBuffer*				CreateVertexBuffer(ER_BufferAccess nBufAccess, int nNumVerts, int strideSize, void *pData = NULL){return new CEmptyVertexBuffer(strideSize);}
-	IIndexBuffer*				CreateIndexBuffer(int nIndices, int nIndexSize, ER_BufferAccess nBufAccess, void *pData = NULL){return new CEmptyIndexBuffer(nIndexSize);}
+	IVertexBuffer*				CreateVertexBuffer(ER_BufferAccess nBufAccess, int nNumVerts, int strideSize, void *pData = nullptr){return new CEmptyVertexBuffer(strideSize);}
+	IIndexBuffer*				CreateIndexBuffer(int nIndices, int nIndexSize, ER_BufferAccess nBufAccess, void *pData = nullptr){return new CEmptyIndexBuffer(nIndexSize);}
 
 //-------------------------------------------------------------
 // Primitive drawing (lower level than DrawPrimitives2D)
@@ -457,7 +457,7 @@ protected:
 		if(!pImages.numElem())
 			return;
 
-		CEmptyTexture* pTexture = NULL;
+		CEmptyTexture* pTexture = nullptr;
 
 		// get or create
 		if(*pTex)

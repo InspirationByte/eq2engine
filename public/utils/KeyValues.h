@@ -60,8 +60,8 @@ struct KVPairValue
 {
 	KVPairValue()
 	{
-		value = NULL;
-		section = NULL;
+		value = nullptr;
+		section = nullptr;
 		type = KVPAIR_STRING;
 	}
 
@@ -120,7 +120,7 @@ struct KVSection
 	KVSection*			FindSection(const char* pszName, int nFlags = 0) const;
 
 	// adds new section
-	KVSection*			CreateSection(const char* pszName, const char* pszValue = NULL, EKVPairType pairType = KVPAIR_STRING);
+	KVSection*			CreateSection(const char* pszName, const char* pszValue = nullptr, EKVPairType pairType = KVPAIR_STRING);
 
 	// adds existing section. You should set it's name manually. It should not be allocated by other section
 	void				AddSection(KVSection* keyBase);
@@ -269,11 +269,11 @@ private:
 // KEYVALUES API Functions
 //---------------------------------------------------------------------------------------------------------
 
-KVSection*		KV_LoadFromFile( const char* pszFileName, int nSearchFlags = -1, KVSection* pParseTo = NULL );
+KVSection*		KV_LoadFromFile( const char* pszFileName, int nSearchFlags = -1, KVSection* pParseTo = nullptr);
 
-KVSection*		KV_ParseSection(const char* pszBuffer, int bufferSize, const char* pszFileName = NULL, KVSection* pParseTo = NULL, int nStartLine = 0);
-KVSection*		KV_ReadBinaryBase(IVirtualStream* stream, KVSection* pParseTo = NULL);
-KVSection*		KV_ParseBinary(const char* pszBuffer, int bufferSize, KVSection* pParseTo = NULL);
+KVSection*		KV_ParseSection(const char* pszBuffer, int bufferSize, const char* pszFileName = nullptr, KVSection* pParseTo = nullptr, int nStartLine = 0);
+KVSection*		KV_ReadBinaryBase(IVirtualStream* stream, KVSection* pParseTo = nullptr);
+KVSection*		KV_ParseBinary(const char* pszBuffer, int bufferSize, KVSection* pParseTo = nullptr);
 
 void			KV_PrintSection(KVSection* base);
 

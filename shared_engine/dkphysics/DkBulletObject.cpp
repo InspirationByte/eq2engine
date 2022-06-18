@@ -39,17 +39,17 @@ static phys_freeze_state_e  back_to_freeze_state[6] =
 
 CPhysicsObject::CPhysicsObject()
 {
-	m_pPhyObjectPointer = NULL;
+	m_pPhyObjectPointer = nullptr;
 
-	m_pParentObject = NULL;
-	m_pUserData = NULL;
+	m_pParentObject = nullptr;
+	m_pUserData = nullptr;
 
 	m_nCollisionGroup = 0;
 	m_nCollidesWith = 0;
 
-	m_pRMaterial = NULL;
+	m_pRMaterial = nullptr;
 
-	m_pPhysMaterial = NULL;
+	m_pPhysMaterial = nullptr;
 
 	m_numEvents = 0;
 

@@ -32,7 +32,7 @@ DECLARE_CVAR(screenshotJpegQuality, 100, "JPEG Quality",CV_ARCHIVE);
 
 DECLARE_CMD(screenshot, "Save screenshot", 0)
 {
-	if(materials == NULL)
+	if(materials == nullptr)
 		return;
 
 	CImage img;
@@ -70,7 +70,7 @@ DECLARE_CMD(screenshot, "Save screenshot", 0)
 
 EQWNDHANDLE Sys_CreateWindow()
 {
-	EQWNDHANDLE handle = NULL;
+	EQWNDHANDLE handle = nullptr;
 
 #ifdef PLAT_SDL
 
@@ -98,10 +98,10 @@ EQWNDHANDLE Sys_CreateWindow()
 	
 	handle = SDL_CreateWindow(DEFAULT_WINDOW_TITLE, nAdjustedPosX, nAdjustedPosY, nAdjustedWide, nAdjustedTall, sdlFlags);
 
-	if(handle == NULL)
+	if(handle == nullptr)
 	{
 		ASSERT_MSG("Can't create window!\n%s\n",SDL_GetError());
-		return NULL;
+		return nullptr;
 	}
 
 #endif // PLAT_SDL

@@ -33,9 +33,9 @@ ConVar r_particleBufferSize("r_particleBufferSize", "16384", "particle buffer si
 ConVar r_drawParticles("r_drawParticles", "1", "Render particles", CV_CHEAT);
 
 CParticleRenderGroup::CParticleRenderGroup() :
-	m_pMaterial(NULL),
+	m_pMaterial(nullptr),
 	m_useCustomProjMat(false),
-	//m_vertexFormat(NULL),
+	//m_vertexFormat(nullptr),
 	m_invertCull(false)
 {
 	//memset(m_vertexBuffer, 0, sizeof(m_vertexBuffer));
@@ -66,7 +66,7 @@ void CParticleRenderGroup::Shutdown()
 	CSpriteBuilder::Shutdown();
 
 	materials->FreeMaterial(m_pMaterial);
-	m_pMaterial = NULL;
+	m_pMaterial = nullptr;
 }
 
 void CParticleRenderGroup::SetCustomProjectionMatrix(const Matrix4x4& mat)
@@ -419,7 +419,7 @@ void Effects_DrawBillboard(PFXBillboard_t* effect, CViewParams* view, Volume* fr
 	}
 
 	PFXVertex_t* verts;
-	if(effect->group->AllocateGeom(4,4,&verts, NULL, true) < 0)
+	if(effect->group->AllocateGeom(4,4,&verts, nullptr, true) < 0)
 		return;
 
 	Vector3D angles, vRight, vUp;
@@ -435,7 +435,7 @@ void Effects_DrawBillboard(PFXBillboard_t* effect, CViewParams* view, Volume* fr
 	if(effect->nFlags & EFFECT_FLAG_LOCK_Y)
 		angles.y = 0;
 
-	AngleVectors(angles, NULL, &vRight, &vUp);
+	AngleVectors(angles, nullptr, &vRight, &vUp);
 
 	Rectangle_t texCoords(0,0,1,1);
 
@@ -471,7 +471,7 @@ void Effects_DrawBillboard(PFXBillboard_t* effect, const Matrix4x4& viewMatrix, 
 
 
 	PFXVertex_t* verts;
-	if(effect->group->AllocateGeom(4,4,&verts, NULL, true) < 0)
+	if(effect->group->AllocateGeom(4,4,&verts, nullptr, true) < 0)
 		return;
 
 	Vector3D vRight, vUp;

@@ -25,7 +25,7 @@ bool CSoundSource_OggStream::Load(const char* filename)
 	cb.seek_func = eqVorbisFile::fseek;
 	cb.tell_func = eqVorbisFile::ftell;
 
-	int ovResult = ov_open_callbacks(m_oggFile, &m_oggStream, NULL, 0, cb);
+	int ovResult = ov_open_callbacks(m_oggFile, &m_oggStream, nullptr, 0, cb);
 
 	if(ovResult < 0)
 	{
@@ -100,7 +100,7 @@ int CSoundSource_OggStream::ReadData(ubyte* out, int nStart, int nBytes)
 	while(samplePos < nBytes)
 	{
 		char* dest = ((char *)out) + samplePos;
-		int readBytes = ov_read(&m_oggStream, dest, nBytes - samplePos, 0, 2, 1, NULL);
+		int readBytes = ov_read(&m_oggStream, dest, nBytes - samplePos, 0, 2, 1, nullptr);
 
 		if (readBytes <= 0)
 			break;

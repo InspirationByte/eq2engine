@@ -68,16 +68,16 @@ void EQSDLMessageBoxCallback(const char* messageStr, EMessageBoxType type )
 	switch(type)
 	{
 		case MSGBOX_INFO:
-			SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION, "INFO", messageStr, NULL);
+			SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION, "INFO", messageStr, nullptr);
 			break;
 		case MSGBOX_WARNING:
-			SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_WARNING, "WARNING", messageStr, NULL);
+			SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_WARNING, "WARNING", messageStr, nullptr);
 			break;
 		case MSGBOX_ERROR:
-			SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "ERROR", messageStr, NULL);
+			SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "ERROR", messageStr, nullptr);
 			break;
 		case MSGBOX_CRASH:
-			SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "FATAL ERROR", messageStr, NULL);
+			SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "FATAL ERROR", messageStr, nullptr);
 			break;
 	}
 }
@@ -146,7 +146,7 @@ bool Sys_Android_InitCore(int argc, char** argv)
 	std::vector<char> buffer;
 	char filenameBuffer[2048] = { 0 };
 
-	while ((filename = AAssetDir_getNextFileName(assetDir)) != NULL)
+	while ((filename = AAssetDir_getNextFileName(assetDir)) != nullptr)
 	{
 		//search for desired file
 		if (!stricmp(filename, "EQ.CONFIG") ||

@@ -27,7 +27,7 @@ bool CSoundSource_OggCache::Load(const char* filename)
 	cb.seek_func = eqVorbisFile::fseek;
 	cb.tell_func = eqVorbisFile::ftell;
 
-	int ovResult = ov_open_callbacks(pFile, &oggFile, NULL, 0, cb);
+	int ovResult = ov_open_callbacks(pFile, &oggFile, nullptr, 0, cb);
 
 	if(ovResult < 0)
 	{
@@ -66,7 +66,7 @@ void CSoundSource_OggCache::ParseData(OggVorbis_File* file)
 	while (samplePos < m_cacheSize)
 	{
 		char* dest = ((char *)m_dataCache) + samplePos;
-		int readBytes = ov_read(file, dest, m_cacheSize-samplePos, 0, 2, 1, NULL);
+		int readBytes = ov_read(file, dest, m_cacheSize-samplePos, 0, 2, 1, nullptr);
 
 		if (readBytes <= 0)
 			break;

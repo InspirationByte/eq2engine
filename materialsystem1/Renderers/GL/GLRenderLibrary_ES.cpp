@@ -124,7 +124,7 @@ bool CGLRenderLib_ES::InitAPI(const shaderAPIParams_t& params)
 {
 	EGLNativeDisplayType nativeDisplay = EGL_DEFAULT_DISPLAY;
 
-	ASSERT_MSG(params.windowHandle != NULL, "you must specify window handle!");
+	ASSERT_MSG(params.windowHandle != nullptr, "you must specify window handle!");
 #ifdef PLAT_ANDROID
 	m_lostSurface = false;
 	externalWindowDisplayParams_t* winParams = (externalWindowDisplayParams_t*)params.windowHandle;
@@ -224,7 +224,7 @@ bool CGLRenderLib_ES::InitAPI(const shaderAPIParams_t& params)
 #endif
 	
 	// Create a surface for the main window
-	m_eglSurface = eglCreateWindowSurface(m_eglDisplay, m_eglConfig, m_hwnd, NULL);
+	m_eglSurface = eglCreateWindowSurface(m_eglDisplay, m_eglConfig, m_hwnd, nullptr);
 	if (m_eglSurface == EGL_NO_SURFACE)
 	{
 		ErrorMsg("OpenGL ES init error: Could not create EGL surface\n");
@@ -369,11 +369,11 @@ void CGLRenderLib_ES::ExitAPI()
 void CGLRenderLib_ES::BeginFrame()
 {
 #ifdef PLAT_ANDROID
-	if (m_lostSurface && m_glContext != NULL)
+	if (m_lostSurface && m_glContext != nullptr)
 	{
 		MsgInfo("Creating surface...\n");
 		m_eglSurface = EGL_NO_SURFACE;
-		m_eglSurface = eglCreateWindowSurface(m_eglDisplay, m_eglConfig, m_hwnd, NULL);
+		m_eglSurface = eglCreateWindowSurface(m_eglDisplay, m_eglConfig, m_hwnd, nullptr);
 
 		if (m_eglSurface == EGL_NO_SURFACE)
 		{
@@ -504,7 +504,7 @@ IEqSwapChain* CGLRenderLib_ES::CreateSwapChain(void* window, bool windowed)
 	{
 		MsgError("ERROR: Can't create OpenGL swapchain!\n");
 		delete pNewChain;
-		return NULL;
+		return nullptr;
 	}
 #endif
 
@@ -522,7 +522,7 @@ void  CGLRenderLib_ES::DestroySwapChain(IEqSwapChain* swapChain)
 // returns default swap chain
 IEqSwapChain* CGLRenderLib_ES::GetDefaultSwapchain()
 {
-	return NULL;
+	return nullptr;
 }
 
 //----------------------------------------------------------------------------------------

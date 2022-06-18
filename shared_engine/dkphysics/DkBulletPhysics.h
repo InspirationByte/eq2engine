@@ -53,27 +53,27 @@ public:
 	void										InternalTraceLine(	const Vector3D &tracestart, const Vector3D &traceend,
 																	int groupmask,
 																	internaltrace_t* trace, 
-																	IPhysicsObject** pIgnoreList = NULL, int numIgnored = 0
+																	IPhysicsObject** pIgnoreList = nullptr, int numIgnored = 0
 																	);
 
 	void 										InternalTraceBox(const Vector3D &tracestart, const Vector3D &traceend,
 																	const Vector3D& boxSize,int groupmask,
 																	internaltrace_t* trace, 
-																	IPhysicsObject** pIgnoreList = NULL, int numIgnored = 0,
-																	Matrix4x4* transform = NULL
+																	IPhysicsObject** pIgnoreList = nullptr, int numIgnored = 0,
+																	Matrix4x4* transform = nullptr
 																	);
 
 	void 										InternalTraceSphere(const Vector3D &tracestart, const Vector3D &traceend,
 																	float sphereRadius,int groupmask,
 																	internaltrace_t* trace,
-																	IPhysicsObject** pIgnoreList = NULL, int numIgnored = 0
+																	IPhysicsObject** pIgnoreList = nullptr, int numIgnored = 0
 																	);
 
 	void										InternalTraceShape(const Vector3D &tracestart, const Vector3D &traceend,
 																	int shapeId, int groupmask, 
 																	internaltrace_t* trace,
-																	IPhysicsObject** pIgnoreList = NULL, int numIgnored = 0, 
-																	Matrix4x4* transform = NULL
+																	IPhysicsObject** pIgnoreList = nullptr, int numIgnored = 0,
+																	Matrix4x4* transform = nullptr
 																	);
 
 
@@ -92,7 +92,7 @@ public:
 	void										UpdateEvents();
 
 	// special command that enumerates every physics object and calls EACHOBJECTFUNCTION procedure for it (such as explosion, etc.)
-	void										DoForEachObject(EACHOBJECTFUNCTION procedure, void *data = NULL);
+	void										DoForEachObject(EACHOBJECTFUNCTION procedure, void *data = nullptr);
 
 	//****** Creators ******
 	// Any physics object creator

@@ -13,10 +13,10 @@ BEGIN_SHADER_CLASS(BaseUnlit)
 
 	SHADER_INIT_PARAMS()
 	{
-		m_pBaseTexture = NULL;
+		m_pBaseTexture = nullptr;
 
-		SHADER_PASS(Unlit) = NULL;
-		SHADER_FOGPASS(Unlit) = NULL;
+		SHADER_PASS(Unlit) = nullptr;
+		SHADER_FOGPASS(Unlit) = nullptr;
 
 		m_pColorVar = m_pAssignedMaterial->GetMaterialVar("color", "[1 1 1 1]");
 	}
@@ -89,7 +89,7 @@ BEGIN_SHADER_CLASS(BaseUnlit)
 	}
 
 	ITexture*	GetBaseTexture(int stage) const {return m_pBaseTexture;}
-	ITexture*	GetBumpTexture(int stage) const {return NULL;}
+	ITexture*	GetBumpTexture(int stage) const {return nullptr;}
 
 	ITexture*			m_pBaseTexture;
 	IMatVar*			m_pColorVar;

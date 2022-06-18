@@ -13,12 +13,12 @@ BEGIN_SHADER_CLASS(VHBlurFilter)
 
 	SHADER_INIT_PARAMS()
 	{
-		m_pBaseTexture = NULL;
+		m_pBaseTexture = nullptr;
 		m_blurAxes = 0;
 		m_blurModes = 0;
 		m_texSize = vec4_zero;
 
-		SHADER_PASS(Unlit) = NULL;
+		SHADER_PASS(Unlit) = nullptr;
 
 		// set texture setup
 		SetParameterFunctor(SHADERPARAM_BASETEXTURE, &ThisShaderClass::SetupBaseTexture0);
@@ -117,7 +117,7 @@ BEGIN_SHADER_CLASS(VHBlurFilter)
 	}
 
 	ITexture*	GetBaseTexture(int stage) const {return m_pBaseTexture;}
-	ITexture*	GetBumpTexture(int stage) const {return NULL;}
+	ITexture*	GetBumpTexture(int stage) const {return nullptr;}
 
 	ITexture*			m_pBaseTexture;
 	int					m_blurAxes;

@@ -78,7 +78,7 @@ static char* KV_ReadProcessString( const char* pszStr )
 
 	}while(*ptr++);
 
-	// add NULL
+	// add nullptr
 	*ptrTemp++ = 0;
 
 	// copy string
@@ -145,7 +145,7 @@ KVPairValue::~KVPairValue()
 
 void KVPairValue::SetFrom(KVPairValue* from)
 {
-	ASSERT(from != NULL);
+	ASSERT(from != nullptr);
 
 	type = from->type;
 
@@ -175,7 +175,7 @@ void KVPairValue::SetStringValue( const char* pszValue, int len /* = -1*/)
 	if(value)
 	{
 		PPFree(value);
-		value = NULL;
+		value = nullptr;
 	}
 
 	if (len < 0)
@@ -188,12 +188,12 @@ void KVPairValue::SetStringValue( const char* pszValue, int len /* = -1*/)
 
 void KVPairValue::SetFromString( const char* pszValue )
 {
-	ASSERT(pszValue != NULL);
+	ASSERT(pszValue != nullptr);
 
 	SetStringValue( pszValue );
 
 	delete section;
-	section = NULL;
+	section = nullptr;
 
 	if(type == KVPAIR_INT)
 	{
@@ -351,12 +351,12 @@ KVSection* KeyValues::FindSection(const char* pszName, int nFlags)
 // loads from file
 bool KeyValues::LoadFromFile(const char* pszFileName, int nSearchFlags)
 {
-	return KV_LoadFromFile(pszFileName, nSearchFlags, &m_root) != NULL;
+	return KV_LoadFromFile(pszFileName, nSearchFlags, &m_root) != nullptr;
 }
 
 bool KeyValues::LoadFromStream(ubyte* pData)
 {
-	return KV_ParseSection( (const char*)pData, 0, NULL, &m_root, 0 ) != NULL;
+	return KV_ParseSection( (const char*)pData, 0, nullptr, &m_root, 0 ) != nullptr;
 }
 
 bool KeyValues::SaveToFile(const char* pszFileName, int nSearchFlags)
@@ -451,7 +451,7 @@ KVPairValue* KVSection::CreateValue()
 KVSection* KVSection::CreateSectionValue()
 {
 	if(type != KVPAIR_SECTION)
-		return NULL;
+		return nullptr;
 
 	KVPairValue* val = PPNew KVPairValue();
 
@@ -804,7 +804,7 @@ KVSection& KVSection::SetKey(const char* name, KVSection* pair)
 
 KVSection& KVSection::AddKey(const char* name, const char* value)
 {
-	KVSection* pPair = CreateSection(name, NULL, KVPAIR_STRING);
+	KVSection* pPair = CreateSection(name, nullptr, KVPAIR_STRING);
 
 	pPair->AddValue(value);
 
@@ -813,7 +813,7 @@ KVSection& KVSection::AddKey(const char* name, const char* value)
 
 KVSection& KVSection::AddKey(const char* name, int nValue)
 {
-	KVSection* pPair = CreateSection(name, NULL, KVPAIR_INT);
+	KVSection* pPair = CreateSection(name, nullptr, KVPAIR_INT);
 	pPair->AddValue(nValue);
 
 	return *this;
@@ -821,7 +821,7 @@ KVSection& KVSection::AddKey(const char* name, int nValue)
 
 KVSection& KVSection::AddKey(const char* name, float fValue)
 {
-	KVSection* pPair = CreateSection(name, NULL, KVPAIR_FLOAT);
+	KVSection* pPair = CreateSection(name, nullptr, KVPAIR_FLOAT);
 	pPair->AddValue(fValue);
 
 	return *this;
@@ -829,7 +829,7 @@ KVSection& KVSection::AddKey(const char* name, float fValue)
 
 KVSection& KVSection::AddKey(const char* name, bool bValue)
 {
-	KVSection* pPair = CreateSection(name, NULL, KVPAIR_BOOL);
+	KVSection* pPair = CreateSection(name, nullptr, KVPAIR_BOOL);
 	pPair->AddValue(bValue);
 
 	return *this;
@@ -837,7 +837,7 @@ KVSection& KVSection::AddKey(const char* name, bool bValue)
 
 KVSection& KVSection::AddKey(const char* name, const Vector2D& vecValue)
 {
-	KVSection* pPair = CreateSection(name, NULL, KVPAIR_FLOAT);
+	KVSection* pPair = CreateSection(name, nullptr, KVPAIR_FLOAT);
 	pPair->AddValue(vecValue);
 
 	return *this;
@@ -845,7 +845,7 @@ KVSection& KVSection::AddKey(const char* name, const Vector2D& vecValue)
 
 KVSection& KVSection::AddKey(const char* name, const Vector3D& vecValue)
 {
-	KVSection* pPair = CreateSection(name, NULL, KVPAIR_FLOAT);
+	KVSection* pPair = CreateSection(name, nullptr, KVPAIR_FLOAT);
 	pPair->AddValue(vecValue);
 
 	return *this;
@@ -853,7 +853,7 @@ KVSection& KVSection::AddKey(const char* name, const Vector3D& vecValue)
 
 KVSection& KVSection::AddKey(const char* name, const Vector4D& vecValue)
 {
-	KVSection* pPair = CreateSection(name, NULL, KVPAIR_FLOAT);
+	KVSection* pPair = CreateSection(name, nullptr, KVPAIR_FLOAT);
 	pPair->AddValue(vecValue);
 
 	return *this;
@@ -864,7 +864,7 @@ KVSection& KVSection::AddKey(const char* name, KVSection* pair)
 	if(!pair)
 		return *this;
 
-	KVSection* newPair = CreateSection(name, NULL, KVPAIR_STRING);
+	KVSection* newPair = CreateSection(name, nullptr, KVPAIR_STRING);
 	pair->CopyTo(newPair);
 
 	return *this;
@@ -893,7 +893,7 @@ KVSection* KVSection::FindSection(const char* pszName, int nFlags) const
 			return keys[i];
 	}
 
-	return NULL;
+	return nullptr;
 }
 
 // adds new keybase
@@ -905,7 +905,7 @@ KVSection* KVSection::CreateSection( const char* pszName, const char* pszValue, 
 
 	keys.append( pKeyBase );
 
-	if(pszValue != NULL)
+	if(pszValue != nullptr)
 	{
 		pKeyBase->AddValue(pszValue);
 	}
@@ -957,7 +957,7 @@ void KVSection::RemoveSection(KVSection* base)
 
 void KVSection::MergeFrom(const KVSection* base, bool recursive)
 {
-	if(base == NULL)
+	if(base == nullptr)
 		return;
 
 	for(int i = 0; i < base->keys.numElem(); i++)
@@ -1079,7 +1079,7 @@ KVSection* KV_ParseSectionV2(const char* pszBuffer, int bufferSize, const char* 
 	// set the first character of data
 	c = *pData;
 
-	const char *pFirstLetter = NULL;
+	const char *pFirstLetter = nullptr;
 	const char*	pLast = pData;
 
 	int			nSectionLetterLine = 0;
@@ -1096,8 +1096,8 @@ KVSection* KV_ParseSectionV2(const char* pszBuffer, int bufferSize, const char* 
 	if(!pKeyBase)
 		pKeyBase = PPNew KVSection;
 
-	KVSection* pCurrentKeyBase = NULL;
-	KVSection* pPrevKeyBase = NULL;
+	KVSection* pCurrentKeyBase = nullptr;
+	KVSection* pPrevKeyBase = nullptr;
 
 	int bCommentaryMode = NOCOMMENT;
 
@@ -1171,7 +1171,7 @@ KVSection* KV_ParseSectionV2(const char* pszBuffer, int bufferSize, const char* 
 
 				if(pParseTo != pKeyBase)
 					delete pKeyBase;
-				return NULL;
+				return nullptr;
 			}
 
 			// Do skip only if we have in another section
@@ -1213,14 +1213,14 @@ KVSection* KV_ParseSectionV2(const char* pszBuffer, int bufferSize, const char* 
 					if(!pBase)
 					{
 						//delete pKeyBase;
-						return NULL;
+						return nullptr;
 					}
 
 					bInSection = false;
-					pFirstLetter = NULL;
+					pFirstLetter = nullptr;
 
 					// NOTE: we could emit code below to not use KV_BREAK character strictly after section
-					pCurrentKeyBase = NULL;
+					pCurrentKeyBase = nullptr;
 					nValueCounter = 0;
 				}
 			}
@@ -1267,13 +1267,13 @@ KVSection* KV_ParseSectionV2(const char* pszBuffer, int bufferSize, const char* 
 				*endChar = oldChr;
 			}
 
-			pFirstLetter = NULL;
+			pFirstLetter = nullptr;
 			bInQuotes = false;
 
 			if(c == KV_BREAK)
 			{
 				pPrevKeyBase = pCurrentKeyBase;
-				pCurrentKeyBase = NULL;
+				pCurrentKeyBase = nullptr;
 				nValueCounter = 0;
 			}
 
@@ -1283,7 +1283,7 @@ KVSection* KV_ParseSectionV2(const char* pszBuffer, int bufferSize, const char* 
 		// end keybase if we got semicolon
 		if( !bInQuotes && (c == KV_BREAK) )
 		{
-			pCurrentKeyBase = NULL;
+			pCurrentKeyBase = nullptr;
 			nValueCounter = 0;
 			continue;
 		}
@@ -1327,7 +1327,7 @@ KVSection* KV_ParseSectionV2(const char* pszBuffer, int bufferSize, const char* 
 
 		if(pParseTo != pKeyBase)
 			delete pKeyBase;
-		pKeyBase = NULL;
+		pKeyBase = nullptr;
 	}
 
 	if( pCurrentKeyBase )
@@ -1335,7 +1335,7 @@ KVSection* KV_ParseSectionV2(const char* pszBuffer, int bufferSize, const char* 
 		ASSERT_FAIL("'%s' (%d): EOF passed, excepted ';'\n", pszFileName ? pszFileName : "buffer", pCurrentKeyBase->line+1);
 		if(pParseTo != pKeyBase)
 			delete pKeyBase;
-		pKeyBase = NULL;
+		pKeyBase = nullptr;
 	}
 
 	if( bInSection )
@@ -1343,7 +1343,7 @@ KVSection* KV_ParseSectionV2(const char* pszBuffer, int bufferSize, const char* 
 		ASSERT_FAIL("'%s' (%d): EOF passed, excepted '}'\n", pszFileName ? pszFileName : "buffer", nSectionLetterLine+1);
 		if(pParseTo != pKeyBase)
 			delete pKeyBase;
-		pKeyBase = NULL;
+		pKeyBase = nullptr;
 	}
 
 	if( bCommentaryMode == 2 )
@@ -1351,7 +1351,7 @@ KVSection* KV_ParseSectionV2(const char* pszBuffer, int bufferSize, const char* 
 		ASSERT_FAIL("'%s' (%d): EOF passed, excepted '*/', check whole text please\n", pszFileName ? pszFileName : "buffer", nLine+1);
 		if(pParseTo != pKeyBase)
 			delete pKeyBase;
-		pKeyBase = NULL;
+		pKeyBase = nullptr;
 	}
 
 	return pKeyBase;
@@ -1371,7 +1371,7 @@ KVSection* KV_ParseSectionV3( const char* pszBuffer, int bufferSize, const char*
 	const char* pLast = pData;
 	char c = *pData;
 
-	const char* pFirstLetter = NULL;
+	const char* pFirstLetter = nullptr;
 
 	EQuoteMode quoteMode = QM_NONE;		// actual quoting mode
 
@@ -1393,7 +1393,7 @@ KVSection* KV_ParseSectionV3( const char* pszBuffer, int bufferSize, const char*
 	char* key = (char*)stackalloc(KV_MAX_NAME_LENGTH+1);
 	strcpy(key, "unnamed");
 
-	KVSection* curpair = NULL;
+	KVSection* curpair = nullptr;
 
 	do
 	{
@@ -1568,7 +1568,7 @@ KVSection* KV_ParseSectionV3( const char* pszBuffer, int bufferSize, const char*
 					nValCounter = 0;
 
 				quoteMode = QM_NONE;
-				pFirstLetter = NULL;
+				pFirstLetter = nullptr;
 
 				lastParserModeLine = nModeStartLine;
 				lastParserMode = parserMode;
@@ -1588,7 +1588,7 @@ KVSection* KV_ParseSectionV3( const char* pszBuffer, int bufferSize, const char*
 			if( c == KV_SECTION_BEGIN )
 			{
 				//Msg("start section\n");
-				if(curpair == NULL)
+				if(curpair == nullptr)
 				{
 					ASSERT_FAIL("'%s':%d error - unexpected anonymous section\n", pszFileName, nModeStartLine);
 					break;
@@ -1690,13 +1690,13 @@ KVSection* KV_ParseSectionV3( const char* pszBuffer, int bufferSize, const char*
 						curpair->SetName(key + 1);
 						pParseTo->keys.addUnique(curpair);
 
-						curpair = NULL; // i'ts finally done
+						curpair = nullptr; // i'ts finally done
 						*key = 0;
 					}
 					else if( valueArray )
 					{
 						KVSection* newsec = PPNew KVSection();
-						bool success = KV_ParseSectionV3(pFirstLetter, nLen, pszFileName, newsec, nModeStartLine-1) != NULL;
+						bool success = KV_ParseSectionV3(pFirstLetter, nLen, pszFileName, newsec, nModeStartLine-1) != nullptr;
 
 						bool typeIsOk = ((curpair->values.numElem() == 0) || curpair->type == KVPAIR_SECTION);
 
@@ -1722,14 +1722,14 @@ KVSection* KV_ParseSectionV3( const char* pszBuffer, int bufferSize, const char*
 					}
 					else
 					{
-						bool success = KV_ParseSectionV3(pFirstLetter, nLen, pszFileName, curpair, nModeStartLine-1) != NULL;
+						bool success = KV_ParseSectionV3(pFirstLetter, nLen, pszFileName, curpair, nModeStartLine-1) != nullptr;
 
 						if(success)
 						{
 							curpair->SetName(key);
 							pParseTo->keys.addUnique(curpair);
 
-							curpair = NULL; // i'ts finally done
+							curpair = nullptr; // i'ts finally done
 							*key = 0;
 						}
 					}
@@ -1742,7 +1742,7 @@ KVSection* KV_ParseSectionV3( const char* pszBuffer, int bufferSize, const char*
 					lastParserMode = parserMode;
 					parserMode = PM_NONE;
 
-					pFirstLetter = NULL;
+					pFirstLetter = nullptr;
 				} // depth
 			} // KV_SECTION_END
 		} // QM_SECTION
@@ -1782,7 +1782,7 @@ KVSection* KV_ParseSectionV3( const char* pszBuffer, int bufferSize, const char*
 	{
 		if(pParseTo != pKeyBase)
 			delete pKeyBase;
-		return NULL;
+		return nullptr;
 	}
 
 	return pKeyBase;
@@ -1800,7 +1800,7 @@ KVSection* KV_LoadFromFile( const char* pszFileName, int nSearchFlags, KVSection
 	if(!_buffer)
 	{
 		DevMsg(1, "Can't open key-values file '%s'\n", pszFileName);
-		return NULL;
+		return nullptr;
 	}
 
 	ushort byteordermark = *((ushort*)_buffer);
@@ -1819,7 +1819,7 @@ KVSection* KV_LoadFromFile( const char* pszFileName, int nSearchFlags, KVSection
 	{
 		ASSERT(!"Only UTF-8 keyvalues supported!!!");
 		PPFree( pBuffer );
-		return NULL;
+		return nullptr;
 	}
 	else
 	{
@@ -1834,7 +1834,7 @@ KVSection* KV_LoadFromFile( const char* pszFileName, int nSearchFlags, KVSection
 	}
 
 	// load as stream
-	KVSection* pBase = NULL;
+	KVSection* pBase = nullptr;
 	
 	if(isBinary)
 		pBase = KV_ParseBinary(_buffer, lSize, pParseTo);
@@ -1924,7 +1924,7 @@ void KV_ReadBinaryValue(IVirtualStream* stream, KVSection* addTo)
 	}
 	else if(binValue.type == KVPAIR_SECTION)
 	{
-		KVSection* parsed = KV_ReadBinaryBase(stream, NULL);
+		KVSection* parsed = KV_ReadBinaryBase(stream, nullptr);
 
 		if(parsed)
 			addTo->AddValue(parsed);
@@ -1940,7 +1940,7 @@ KVSection* KV_ReadBinaryBase(IVirtualStream* stream, KVSection* pParseTo)
 	if(binBase.ident != KV_IDENT_BINARY)
 	{
 		MsgError("KV_ReadBinaryBase - invalid header\n");
-		return NULL;
+		return nullptr;
 	}
 
 	if(!pParseTo)
@@ -1965,7 +1965,7 @@ KVSection* KV_ReadBinaryBase(IVirtualStream* stream, KVSection* pParseTo)
 	// read nested keybases as well
 	for(int i = 0; i < binBase.keyCount; i++)
 	{
-		KVSection* parsed = KV_ReadBinaryBase(stream, NULL);
+		KVSection* parsed = KV_ReadBinaryBase(stream, nullptr);
 		pParseTo->AddSection(parsed);
 	}
 
@@ -2156,7 +2156,7 @@ static void KV_PreProcessStringValue( char* out, char* pszStr )
 
 	}while(*ptr++);
 
-	// add NULL
+	// add null
 	*temp++ = 0;
 }
 
@@ -2172,7 +2172,7 @@ void KV_WritePairValue(IVirtualStream* out, KVPairValue* val, int depth)
 	// write typed data
 	if(val->type == KVPAIR_STRING)
 	{
-		if(val->value == NULL)
+		if(val->value == nullptr)
 		{
 			out->Print("\"%s\"", "VALUE_MISSING");
 			return;

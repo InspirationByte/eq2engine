@@ -159,7 +159,7 @@ void CLocalize::AddTokensFile(const char* pszFilePrefix)
 
 void CLocalize::AddToken(const char* token, const wchar_t* pszTokenString)
 {
-	if(token == NULL || pszTokenString == NULL)
+	if(token == nullptr || pszTokenString == nullptr)
 		return;
 
 	xstr_loc_convert_special_symbols( (char*)pszTokenString, true );
@@ -170,7 +170,7 @@ void CLocalize::AddToken(const char* token, const wchar_t* pszTokenString)
 
 void CLocalize::AddToken(const char* token, const char* pszTokenString)
 {
-	if(token == NULL || pszTokenString == NULL)
+	if(token == nullptr || pszTokenString == nullptr)
 		return;
 
 	xstr_loc_convert_special_symbols( (char*)pszTokenString, true );

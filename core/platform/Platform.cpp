@@ -23,7 +23,7 @@ IEXPORTS void Platform_Sleep(uint32 nMilliseconds)
 	ts.tv_sec = (time_t) (nMilliseconds / 1000);
 	ts.tv_nsec = (long) (nMilliseconds % 1000) * 1000000;
 
-    while(nanosleep(&ts, NULL)==-1 && errno == EINTR){}
+    while(nanosleep(&ts, nullptr)==-1 && errno == EINTR){}
 #endif //_WIN32
 }
 

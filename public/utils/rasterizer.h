@@ -127,7 +127,7 @@ inline RSpan_t<T>::RSpan_t(const T &color1, int x1, const T &color2, int x2)
 template< class T >
 inline CRasterizer<T>::CRasterizer()
 {
-	m_pImage = NULL;
+	m_pImage = nullptr;
 	m_Width = 0;
 	m_Height = 0;
 	m_bAdditive = false;

@@ -22,7 +22,7 @@ public:
 	void*			GetWindow();
 	int				GetMSAASamples() {return 1;}
 
-	ITexture*		GetBackbuffer() {return NULL;}
+	ITexture*		GetBackbuffer() {return nullptr;}
 
 	// retrieves backbuffer size for this swap chain
 	void			GetBackbufferSize(int& wide, int& tall);

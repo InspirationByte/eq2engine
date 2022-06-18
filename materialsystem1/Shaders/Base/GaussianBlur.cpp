@@ -13,7 +13,7 @@ BEGIN_SHADER_CLASS(GaussianBlur)
 
 	SHADER_INIT_PARAMS()
 	{
-		SHADER_PASS(Unlit) = NULL;
+		SHADER_PASS(Unlit) = nullptr;
 
 		m_blurProps = GetAssignedMaterial()->GetMaterialVar("BlurProps", "[0.6 40 100 100]");
 		m_blurSource = GetAssignedMaterial()->GetMaterialVar("BlurSource", "");
@@ -81,12 +81,12 @@ BEGIN_SHADER_CLASS(GaussianBlur)
 
 	ITexture*	GetBaseTexture(int stage) const
 	{
-		return NULL;
+		return nullptr;
 	}
 
 	ITexture*	GetBumpTexture(int stage) const
 	{
-		return NULL;
+		return nullptr;
 	}
 
 private:

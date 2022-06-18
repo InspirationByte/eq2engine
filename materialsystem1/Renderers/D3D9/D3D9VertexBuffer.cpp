@@ -17,7 +17,7 @@ extern ShaderAPID3DX9 s_shaderApi;
 CVertexBufferD3DX9::CVertexBufferD3DX9()
 {
 	m_nSize = 0;
-	m_pVertexBuffer = NULL;
+	m_pVertexBuffer = nullptr;
 	m_nUsage = 0;
 	m_bIsLocked = false;
 	m_bLockFail = false;
@@ -28,7 +28,7 @@ CVertexBufferD3DX9::CVertexBufferD3DX9()
 
 	m_nInitialSize = 0;
 
-	m_pRestore = NULL;
+	m_pRestore = nullptr;
 }
 
 CVertexBufferD3DX9::~CVertexBufferD3DX9()
@@ -51,7 +51,7 @@ void CVertexBufferD3DX9::ReleaseForRestoration()
 
 		m_pRestore->data = PPAlloc(lock_size);
 
-		void *src = NULL;
+		void *src = nullptr;
 
 		if(m_pVertexBuffer->Lock(0, lock_size, &src, D3DLOCK_READONLY | D3DLOCK_NOSYSLOCK ) == D3D_OK)
 		{
@@ -60,7 +60,7 @@ void CVertexBufferD3DX9::ReleaseForRestoration()
 			m_pVertexBuffer->Unlock();
 			m_pVertexBuffer->Release();
 
-			m_pVertexBuffer = NULL;
+			m_pVertexBuffer = nullptr;
 		}
 		else
 		{
@@ -79,13 +79,13 @@ void CVertexBufferD3DX9::Restore()
 	bool dynamic = (m_nUsage & D3DUSAGE_DYNAMIC) != 0;
 
 	if (s_shaderApi.m_pD3DDevice->CreateVertexBuffer(
-		m_nInitialSize, m_nUsage, 0, dynamic? D3DPOOL_DEFAULT : D3DPOOL_MANAGED, &m_pVertexBuffer, NULL) != D3D_OK)
+		m_nInitialSize, m_nUsage, 0, dynamic? D3DPOOL_DEFAULT : D3DPOOL_MANAGED, &m_pVertexBuffer, nullptr) != D3D_OK)
 	{
 		ErrorMsg("Vertex buffer restoration failed on creation\n");
 		exit(0);
 	}
 
-	void *dest = NULL;
+	void *dest = nullptr;
 
 	if(m_pVertexBuffer->Lock(0, m_nInitialSize, &dest, dynamic? D3DLOCK_DISCARD : 0 ) == D3D_OK)
 	{
@@ -95,7 +95,7 @@ void CVertexBufferD3DX9::Restore()
 
 	PPFree(m_pRestore->data);
 	delete m_pRestore;
-	m_pRestore = NULL;
+	m_pRestore = nullptr;
 }
 
 long CVertexBufferD3DX9::GetSizeInBytes() const
@@ -137,7 +137,7 @@ void CVertexBufferD3DX9::Update(void* data, int size, int offset, bool discard /
 
 	int nLockByteCount = size*m_nStrideSize;
 
-	void* outData = NULL;
+	void* outData = nullptr;
 
 	if(m_pVertexBuffer->Lock(offset*m_nStrideSize, nLockByteCount, &outData, (dynamic ? D3DLOCK_DISCARD : 0) | D3DLOCK_NOSYSLOCK ) == D3D_OK)
 	{

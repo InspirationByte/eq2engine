@@ -183,7 +183,7 @@ struct TAABBox
 				T_2[i] = (maxPoint[i] - rayStart[i]) / rayDir[i];
 
 				if(T_1[i] > T_2[i])
-					swap(T_1, T_2);
+					QuickSwap(T_1, T_2);
 
 				if (T_1[i] > t_near)
 					t_near = T_1[i];

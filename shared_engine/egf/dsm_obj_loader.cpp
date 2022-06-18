@@ -83,11 +83,11 @@ bool LoadMTL(const char* filename, Array<obj_material_t> &material_list)
 		return false;
 	}
 
-	obj_material_t* current = NULL;
+	obj_material_t* current = nullptr;
 
 	char *str;
 
-	while ((str = tok.next()) != NULL)
+	while ((str = tok.next()) != nullptr)
 	{
 		if(str[0] == '#')
 		{
@@ -156,7 +156,7 @@ bool LoadOBJ(dsmmodel_t* model, const char* filename)
 	int nFaces = 0;
 
 	// read counters for fast alloc
-	while ((str = tok.next()) != NULL)
+	while ((str = tok.next()) != nullptr)
 	{
 		if(!stricmp(str, "v"))
 		{
@@ -212,7 +212,7 @@ bool LoadOBJ(dsmmodel_t* model, const char* filename)
 	int tindices[MAX_VERTS_PER_POLYGON];
 	int nindices[MAX_VERTS_PER_POLYGON];
 
-	dsmgroup_t* curgroup = NULL;
+	dsmgroup_t* curgroup = nullptr;
 
 	bool gl_to_eq = true;
 	bool blend_to_eq = false;
@@ -313,7 +313,7 @@ bool LoadOBJ(dsmmodel_t* model, const char* filename)
 
 			strcpy(string, tok.nextLine()+1);
 
-			char* str_idxs[MAX_VERTS_PER_POLYGON] = {NULL};
+			char* str_idxs[MAX_VERTS_PER_POLYGON] = { nullptr };
 
 			xstrsplitws(string, str_idxs);
 
@@ -336,7 +336,7 @@ bool LoadOBJ(dsmmodel_t* model, const char* filename)
 				{
 					// face format handling
 					slashcount = strchcount(pstr, '/');
-					doubleslash = (strstr(pstr,"//") != NULL);
+					doubleslash = (strstr(pstr,"//") != nullptr);
 				}
 
 				// v//vn
@@ -436,20 +436,20 @@ bool LoadOBJ(dsmmodel_t* model, const char* filename)
 		}
 		else if(str[0] == 'g')
 		{
-			curgroup = NULL;
+			curgroup = nullptr;
 			//strcpy(material_name, "no_group_name");
 		}
 		/*
 		else if(str[0] == 's')
 		{
-			curgroup = NULL;
+			curgroup = nullptr;
 			strcpy(material_name, "temp");
 			//strcpy(material_name, tok.nextLine());
 		}
 		*/
 		else if(!stricmp(str, "usemtl"))
 		{
-			curgroup = NULL;
+			curgroup = nullptr;
 			strcpy(material_name, tok.next(isNotNewLine));
 		}
 
