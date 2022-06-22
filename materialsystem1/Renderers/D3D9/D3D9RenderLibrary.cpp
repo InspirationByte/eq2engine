@@ -190,14 +190,12 @@ bool CD3DRenderLib::InitAPI( const shaderAPIParams_t &params )
 		uint result = m_d3dFactory->CreateDeviceEx(r_screen->GetInt(), devtype, hwnd, deviceFlags, &m_d3dpp, &m_d3dMode, &m_rhi);
 #else
 		uint result = m_d3dFactory->CreateDevice(r_screen->GetInt(), devtype, m_hwnd, deviceFlags, &m_d3dpp, &m_rhi);
-
 #endif
 
 		if (result == D3D_OK)
 		{
 			break;
 		}
-
 		
 		if (multiSample > 0)
 		{
@@ -211,6 +209,8 @@ bool CD3DRenderLib::InitAPI( const shaderAPIParams_t &params )
 		}
 	}
 
+	DevMsg(DEVMSG_SHADERAPI, "[DEBUG] D3D9 device created successfully...\n");
+
 	if(multiSamplingMode != multiSample)
 		MsgWarning("MSAA fallback from %d to %d\n", params.multiSamplingMode, multiSample);
 
@@ -222,6 +222,7 @@ bool CD3DRenderLib::InitAPI( const shaderAPIParams_t &params )
 	//-------------------------------------------
 	// init caps
 	//-------------------------------------------
+	DevMsg(DEVMSG_SHADERAPI, "[DEBUG] D3D9 Device capabilities...\n");
 	ShaderAPICaps_t& caps = s_shaderApi.m_caps;
 
 	memset(&caps, 0, sizeof(caps));
@@ -262,6 +263,8 @@ bool CD3DRenderLib::InitAPI( const shaderAPIParams_t &params )
 	{
 		caps.textureFormatsSupported[i] = (m_d3dFactory->CheckDeviceFormat(D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, m_d3dMode.Format, 0, D3DRTYPE_TEXTURE, formats[i]) == D3D_OK);
 		caps.renderTargetFormatsSupported[i] = (m_d3dFactory->CheckDeviceFormat(D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, m_d3dMode.Format, D3DUSAGE_RENDERTARGET, D3DRTYPE_SURFACE, formats[i]) == D3D_OK);
+	
+		DevMsg(DEVMSG_SHADERAPI, "[DEBUG] texture format %d: %s %s\n", i, caps.textureFormatsSupported[i] ? "tex" : "", caps.renderTargetFormatsSupported[i] ? "rt" : "");
 	}
 
 	// Determine if INTZ is supported

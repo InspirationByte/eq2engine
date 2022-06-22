@@ -429,7 +429,7 @@ void ShaderAPID3DX9::ReleaseD3DFrameBufferSurfaces()
 }
 
 // Init + Shurdown
-void ShaderAPID3DX9::Init( shaderAPIParams_t &params )
+void ShaderAPID3DX9::Init( const shaderAPIParams_t &params )
 {
 	m_bDeviceIsLost = false;
 	m_bDeviceAtReset = false;

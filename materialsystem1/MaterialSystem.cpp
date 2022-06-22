@@ -101,6 +101,7 @@ public:
 		}
 			
 		// load this material
+		// BUG: may be null
 		((CMaterial*)nextMaterial)->DoLoadShaderAndTextures();
 
 		{
@@ -306,10 +307,14 @@ bool CMaterialSystem::Init(const matsystem_init_config_t& config)
 		// init new created shader api with this parameters
 		m_shaderAPI->Init(sapiParams);
 
+		DevMsg(DEVMSG_MATSYSTEM, "ShaderAPI initialized\n");
+
         // test to be sure that it was initialized correctly
-		m_renderLibrary->BeginFrame();
-		m_shaderAPI->Clear(true, true, false);
-		m_renderLibrary->EndFrame();
+		//m_renderLibrary->BeginFrame();
+		//m_shaderAPI->Clear(true, true, false);
+		//m_renderLibrary->EndFrame();
+
+		DevMsg(DEVMSG_MATSYSTEM, "Test frame completed\n");
 	}
 	else
 		return false;
@@ -987,7 +992,7 @@ IMaterial* CMaterialSystem::GetBoundMaterial()
 // waits for material loader thread is finished
 void CMaterialSystem::Wait()
 {
-	if (m_config.threadedloader)
+	if (m_config.threadedloader && g_threadedMaterialLoader.IsRunning())
 		g_threadedMaterialLoader.WaitForThread();
 }
 

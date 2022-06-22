@@ -52,7 +52,7 @@ public:
 
 
 	// Init + Shurdown
-	void						Init( shaderAPIParams_t &params );
+	void						Init( const shaderAPIParams_t &params );
 	void						Shutdown();
 
 	void						PrintAPIInfo();
