@@ -708,7 +708,11 @@ struct MColor
 
 	uint pack() const 
 	{
-		return uint(r * 255.0f) | (uint(g * 255.0f) << 8) | (uint(b * 255.0f) << 16) | (uint(a * 255.0f) << 24);
+		uint cr = r * 255.0f;
+		uint cg = g * 255.0f;
+		uint cb = b * 255.0f;
+		uint ca = a * 255.0f;
+		return cr | (cg << 8) | (cb << 16) | (ca << 24);
 	}
 };
 

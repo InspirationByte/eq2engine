@@ -71,7 +71,7 @@ void ImGui_ImplMatSystem_RenderDrawData(ImDrawData* draw_data)
 		for (int i = 0; i < cmd_list->VtxBuffer.Size; i++)
 		{
 			const ImDrawVert& vtx_src = cmd_list->VtxBuffer.Data[i];
-			ColorRGBA color(vtx_src.col);
+			MColor color(vtx_src.col);
 
 			mb.Position2f(vtx_src.pos.x + halfPixelOfs, vtx_src.pos.y + halfPixelOfs);
 			mb.TexCoord2f(vtx_src.uv.x, vtx_src.uv.y);

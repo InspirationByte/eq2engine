@@ -26,10 +26,7 @@ enum EPartRenderFlags
 // particle vertex with color
 struct PFXVertex_t
 {
-	PFXVertex_t()
-	{
-	}
-
+	PFXVertex_t() = default;
 	PFXVertex_t(const Vector3D &p, const Vector2D &t, const ColorRGBA &c)
 	{
 		point = p;

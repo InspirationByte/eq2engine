@@ -676,7 +676,8 @@ inline void CMeshBuilder::CopyVertData(vertdata_t& vert, bool isNormal)
 		}
 		case ATTRIBUTEFORMAT_UBYTE:
 		{
-			TVec4D<ubyte> val((isNormal ? (vert.value * 0.5f + 0.5f) : vert.value) * 255);
+			Vector4D vnorm = (isNormal ? (vert.value * 0.5f + 0.5f) : vert.value);
+			TVec4D<ubyte> val(clamp(vnorm, Vector4D(0.0f), Vector4D(1.0f)) * 255);
 			memcpy(dest, &val, size);
 
 			break;

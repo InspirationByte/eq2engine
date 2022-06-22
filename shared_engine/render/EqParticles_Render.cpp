@@ -442,21 +442,23 @@ void Effects_DrawBillboard(PFXBillboard_t* effect, CViewParams* view, Volume* fr
 	if(effect->tex)
 		texCoords = effect->tex->rect;
 
+	const uint color = effect->vColor.pack();
+
 	verts[0].point = effect->vOrigin + (vUp * effect->fTall) + (effect->fWide * vRight);
 	verts[0].texcoord = Vector2D(texCoords.vrightBottom.x, texCoords.vrightBottom.y);
-	verts[0].color = effect->vColor.pack();
+	verts[0].color = color;
 
 	verts[1].point = effect->vOrigin + (vUp * effect->fTall) - (effect->fWide * vRight);
 	verts[1].texcoord = Vector2D(texCoords.vrightBottom.x, texCoords.vleftTop.y);
-	verts[1].color = effect->vColor.pack();
+	verts[1].color = color;
 
 	verts[2].point = effect->vOrigin - (vUp * effect->fTall) + (effect->fWide * vRight);
 	verts[2].texcoord = Vector2D(texCoords.vleftTop.x, texCoords.vrightBottom.y);
-	verts[2].color = effect->vColor.pack();
+	verts[2].color = color;
 
 	verts[3].point = effect->vOrigin - (vUp * effect->fTall) - (effect->fWide * vRight);
 	verts[3].texcoord = Vector2D(texCoords.vleftTop.x, texCoords.vleftTop.y);
-	verts[3].color = effect->vColor.pack();
+	verts[3].color = color;
 }
 
 void Effects_DrawBillboard(PFXBillboard_t* effect, const Matrix4x4& viewMatrix, Volume* frustum)
@@ -484,19 +486,21 @@ void Effects_DrawBillboard(PFXBillboard_t* effect, const Matrix4x4& viewMatrix, 
 	if(effect->tex)
 		texCoords = effect->tex->rect;
 
+	const uint color = effect->vColor.pack();
+
 	verts[0].point = effect->vOrigin + (vUp * effect->fTall) + (effect->fWide * vRight);
 	verts[0].texcoord = Vector2D(texCoords.vrightBottom.x, texCoords.vrightBottom.y);
-	verts[0].color = effect->vColor.pack();
+	verts[0].color = color;
 
 	verts[1].point = effect->vOrigin + (vUp * effect->fTall) - (effect->fWide * vRight);
 	verts[1].texcoord = Vector2D(texCoords.vrightBottom.x, texCoords.vleftTop.y);
-	verts[1].color = effect->vColor.pack();
+	verts[1].color = color;
 
 	verts[2].point = effect->vOrigin - (vUp * effect->fTall) + (effect->fWide * vRight);
 	verts[2].texcoord = Vector2D(texCoords.vleftTop.x, texCoords.vrightBottom.y);
-	verts[2].color = effect->vColor.pack();
+	verts[2].color = color;
 
 	verts[3].point = effect->vOrigin - (vUp * effect->fTall) - (effect->fWide * vRight);
 	verts[3].texcoord = Vector2D(texCoords.vleftTop.x, texCoords.vleftTop.y);
-	verts[3].color = effect->vColor.pack();
+	verts[3].color = color;
 }
