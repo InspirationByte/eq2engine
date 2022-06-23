@@ -8,6 +8,7 @@
 #pragma once
 
 class IEqFont;
+class ConCommand;
 
 struct VideoMode_t
 {
@@ -88,7 +89,7 @@ public:
 // static
 
 	static void			HostQuitToDesktop();
-	static void 		HostExitCmd(CONCOMMAND_ARGUMENTS);
+	static void 		HostExitCmd(ConCommand* cmd, Array<EqString>& args);
 
 #ifdef PLAT_ANDROID
 	void*				GetEGLSurfaceFromSDL();

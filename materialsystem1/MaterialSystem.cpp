@@ -24,6 +24,7 @@
 #include "MaterialProxy.h"
 #include "Renderers/Shared/IRenderLibrary.h"
 #include "materialsystem1/MeshBuilder.h"
+#include "materialsystem1/IMaterialCallback.h"
 
 using namespace Threading;
 
