@@ -5,8 +5,8 @@
 // Description: a mesh builder designed for dynamic meshes (material system)
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef VERTEXFORMATUTIL_H
-#define VERTEXFORMATUTIL_H
+#pragma once
+#include "materialsystem1/renderers/ShaderAPI_defs.h"
 
 /*
 
@@ -29,6 +29,8 @@ g_pShaderAPI->CreateVertexFormat(genFmt, genFmtElems);
 */
 
 const int VERTEXFORMAT_MAX_ELEMS_PER_STREAM = 64;
+
+typedef VertexFormatDesc_s VertexFormatDesc_t;
 
 class CVertexFormatBuilder
 {
@@ -123,5 +125,3 @@ inline void CVertexFormatBuilder::SetComponentEnabled(int streamIdx, const char*
 	int compIdx = streamIdx * MAX_VERTEXSTREAM + descIdx;
 	m_enabledComponents[compIdx] = enable;
 }
-
-#endif // VERTEXFORMATUTIL_H
