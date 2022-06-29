@@ -1,11 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
+	<Type Name="CRefPtr&lt;*&gt;">
+		<SmartPointer Usage="Minimal">m_ptrObj</SmartPointer>
+		<DisplayString Condition="m_ptrObj == 0">[unallocated]</DisplayString>
+		<DisplayString Condition="m_ptrObj != 0">[ref count: { m_ptrObj->m_numRefs }] { m_ptrObj }</DisplayString>
+		<Expand>
+			<Item Name = "[ptr]">
+				m_ptrObj
+			</Item>
+		</Expand>
+	</Type>
 	<Type Name="Array&lt;*&gt;">
-		<DisplayString Condition="m_pListPtr == 0">unallocated</DisplayString>
+		<DisplayString Condition="m_pListPtr == 0">[unallocated]</DisplayString>
 		<Expand>
 			<Synthetic Name="Items">
-				<DisplayString Condition="m_pListPtr == 0">unallocated</DisplayString>
-				<DisplayString>count: { m_nNumElem }</DisplayString>
+				<DisplayString Condition="m_pListPtr == 0">[unallocated]</DisplayString>
+				<DisplayString>[count: { m_nNumElem }]</DisplayString>
 				<Expand>
 					<ArrayItems>
 						<Size>m_nNumElem</Size>
@@ -23,7 +33,7 @@
 		</Expand>
 	</Type>
 	<Type Name="List&lt;*&gt;">
-		<DisplayString Condition="count == 0">empty</DisplayString>
+		<DisplayString Condition="count == 0">[empty]</DisplayString>
 		<DisplayString>items: { count }</DisplayString>
 		<Expand>
 			<Synthetic Name="Items">
@@ -42,7 +52,7 @@
 		</Expand>
 	</Type>
 	<Type Name="Map&lt;*&gt;">
-		<DisplayString Condition="m_size == 0">empty</DisplayString>
+		<DisplayString Condition="m_size == 0">[empty]</DisplayString>
 		<DisplayString>items: { m_size }</DisplayString>
 		<Expand>
 			<Synthetic Name="Items">
@@ -61,7 +71,7 @@
 	</Type>
 
 	<Type Name="EqString">
-		<DisplayString Condition="m_nLength == 0">String: empty</DisplayString>
+		<DisplayString Condition="m_nLength == 0">String: [empty]</DisplayString>
 		<DisplayString>String: { m_pszString }</DisplayString>
 		<Expand>
 			<Item Name = "Value">
@@ -76,7 +86,7 @@
 		</Expand>
 	</Type>
 	<Type Name="EqWString">
-		<DisplayString Condition="m_nLength == 0">WString: empty</DisplayString>
+		<DisplayString Condition="m_nLength == 0">WString: [empty]</DisplayString>
 		<DisplayString>WString: { m_pszString }</DisplayString>
 		<Expand>
 			<Item Name = "Value">

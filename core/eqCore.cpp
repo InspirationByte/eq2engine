@@ -301,15 +301,12 @@ bool CDkCore::Init(const char* pszApplicationName, const char* pszCommandLine)
 	// Show core message
 	MsgAccept("Equilibrium 2 - %s %s\n", __DATE__, __TIME__);
 
-	// ���������������� CPU
 	CEqCPUCaps* cpuCaps = (CEqCPUCaps*)g_cpuCaps;
 	cpuCaps->Init();
 
-	// ����������� ��������� �������.
 	g_consoleCommands->RegisterCommand(&c_developer);
 	g_consoleCommands->RegisterCommand(&c_echo);
 
-	// ����������� ��������� �������.
 	((CConsoleCommands*)g_consoleCommands)->RegisterCommands();
 
 	c_log_enable = PPNew ConCommand("log_enable",CONCOMMAND_FN(log_enable));
@@ -329,7 +326,6 @@ bool CDkCore::Init(const char* pszApplicationName, const char* pszCommandLine)
 	else
 		MsgError("\nCore: Logging console output to file is disabled.\n");
 
-	// ��������� �������
 	m_bInitialized = true;
 
 	Msg("\n");
@@ -393,7 +389,6 @@ void CDkCore::Shutdown()
 
 	m_interfaces.clear();
 
-    // �������� spew'�
     SetSpewFunction(nullspew);
 
     ((CConsoleCommands*)g_consoleCommands)->DeInit();
