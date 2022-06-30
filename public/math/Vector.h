@@ -752,5 +752,3 @@ static const MColor color_gray		= MColor(0xFF808080, true);
 #ifndef VRAD2DEG
 #	define VRAD2DEG( v )	Vector3D(RAD2DEG(v.x),RAD2DEG(v.y),RAD2DEG(v.z))
 #endif
-
-#include "Vector.inl"

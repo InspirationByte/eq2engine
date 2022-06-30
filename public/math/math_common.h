@@ -188,5 +188,7 @@ inline bool isPowerOf2(const int x)
 #include "Quaternion.h"
 #include "Plane.h"
 #include "Volume.h"
-
 #include "Rectangle.h"
+
+#include "Vector.inl"
+#include "Matrix.inl"

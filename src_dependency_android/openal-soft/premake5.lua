@@ -1,7 +1,7 @@
 project "openal_soft"
 	kind "StaticLib"
 	language "C++"
-	cppdialect "C++17"
+	--cppdialect "C++17"
 
 	includedirs
 	{

@@ -6,7 +6,7 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "core/core_common.h"
-#include "renderers/ShaderAPI_defs.h"
+#include "shaderapigl_def.h"
 #include "GLVertexFormat.h"
 
 CVertexFormatGL::CVertexFormatGL(const char* name, const VertexFormatDesc_t* desc, int numAttribs)

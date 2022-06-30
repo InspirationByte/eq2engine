@@ -113,6 +113,8 @@ inline void CVertexFormatBuilder::SetComponentEnabled(int streamIdx, const char*
 
 	for (int i = 0; i < stream.srcFmtElems; i++)
 	{
+		if (!stream.srcFmt[i].name)
+			continue;
 		if (!stricmp(stream.srcFmt[i].name, name))
 		{
 			descIdx = i;

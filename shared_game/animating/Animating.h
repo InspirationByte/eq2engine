@@ -7,14 +7,15 @@
 
 #pragma once
 #include "BoneSetup.h"
+#include "anim_events.h"
+#include "anim_activity.h"
 
 #define MAX_SEQUENCE_TIMERS			5
 
 //--------------------------------------------------------------------------------------
 
 class IEqModel;
-enum Activity;
-enum AnimationEvent;
+
 
 class CAnimatingEGF
 {

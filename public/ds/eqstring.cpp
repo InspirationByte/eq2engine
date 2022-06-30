@@ -10,8 +10,6 @@
 #include "core/core_common.h"
 #include "eqstring.h"
 
-#define EQSTRING_BASE_BUFFER	32
-
 #ifdef _WIN32
 #define xstricmp stricmp
 #else
@@ -23,6 +21,7 @@
 #endif
 
 #define EXTEND_CHARS	32	// 32 characters for extending
+#define EQSTRING_BASE_BUFFER	32
 
 EqString::EqString()
 {

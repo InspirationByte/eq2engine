@@ -28,6 +28,7 @@
 #include "render/IDebugOverlay.h"
 
 #include "eqPhysics.h"
+#include "eqCollision_Callback.h"
 #include "eqCollision_ObjectGrid.h"
 #include "eqPhysics_Body.h"
 #include "eqPhysics_Contstraint.h"

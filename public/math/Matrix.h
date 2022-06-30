@@ -442,6 +442,3 @@ typedef TMat4<float> float4x4;
 #define identity2() _identity2<float>()
 #define identity3() _identity3<float>()
 #define identity4() _identity4<float>()
-
-// include
-#include "Matrix.inl"

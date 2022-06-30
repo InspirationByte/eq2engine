@@ -7,8 +7,8 @@
 
 #pragma once
 #include "egf/model.h"
+#include "anim_activity.h"
 
-enum Activity;
 typedef struct modelheader_s studiohdr_t;
 typedef struct animframe_s animframe_t;
 typedef struct sequencedesc_s sequencedesc_t;

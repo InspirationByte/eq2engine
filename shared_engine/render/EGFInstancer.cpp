@@ -6,6 +6,7 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "core/core_common.h"
+#include "materialsystem1/IMaterialSystem.h"
 #include "EGFInstancer.h"
 
 // this is the truth about templates and inline...

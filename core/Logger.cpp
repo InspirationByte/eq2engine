@@ -11,6 +11,7 @@
 #include "core/ConVar.h"
 #include "core/ConCommand.h"
 
+#include <sys/stat.h>
 #ifdef PLAT_WIN
 #include <direct.h>
 #endif
