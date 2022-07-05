@@ -15,7 +15,6 @@
 
 #ifndef BT_KRYLOV_SOLVER_H
 #define BT_KRYLOV_SOLVER_H
-#include <iostream>
 #include <cmath>
 #include <limits>
 #include <LinearMath/btAlignedObjectArray.h>

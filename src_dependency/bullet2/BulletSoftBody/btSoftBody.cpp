@@ -24,7 +24,7 @@ subject to the following restrictions:
 #include "BulletDynamics/Featherstone/btMultiBodyConstraint.h"
 #include "BulletCollision/NarrowPhaseCollision/btGjkEpa2.h"
 #include "BulletCollision/CollisionShapes/btTriangleShape.h"
-#include <iostream>
+
 //
 static inline btDbvtNode* buildTreeBottomUp(btAlignedObjectArray<btDbvtNode*>& leafNodes, btAlignedObjectArray<btAlignedObjectArray<int> >& adj)
 {

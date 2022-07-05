@@ -17,7 +17,7 @@ subject to the following restrictions:
 #include "btSoftBodyInternals.h"
 #include <stdio.h>
 #include <string>
-#include <iostream>
+
 #include <sstream>
 #include <string.h>
 #include <algorithm>
