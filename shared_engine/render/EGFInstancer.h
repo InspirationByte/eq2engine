@@ -16,244 +16,74 @@ class IVertexFormat;
 class IVertexBuffer;
 
 //---------------------------------------------------------------------
-
-// for each bodygroup
-template <class IT>
-class CEGFInstancer : public IEqModelInstancer
+class CEGFInstancerBase : public IEqModelInstancer
 {
-friend class IEqModel;
-
 public:
-					CEGFInstancer();
-					~CEGFInstancer();
+	CEGFInstancerBase();
+	~CEGFInstancerBase();
 
-	void			Init( const VertexFormatDesc_t* instVertexFormat, int numAttrib );
-	void			Init( IVertexFormat* instVertexFormat, IVertexBuffer* instBuffer );
+	void			InitEx(const VertexFormatDesc_t* instVertexFormat, int numAttrib, int sizeOfInstance);
+	void			Init(IVertexFormat* instVertexFormat, IVertexBuffer* instBuffer);
 	void			Cleanup();
 
 	void			ValidateAssert();
-
-	IT&				NewInstance( ubyte bodyGroupFlags, int lod );
 	bool			HasInstances() const;
 
-	virtual void	Draw( int renderFlags, IEqModel* model );
+	virtual void	Draw(int renderFlags, IEqModel* model);
 
 protected:
+	IVertexFormat*		m_vertFormat{ nullptr };
+	IVertexBuffer*		m_instanceBuf{ nullptr };
 
-	IVertexFormat*		m_vertFormat;
-	IVertexBuffer*		m_instanceBuf;
-
-	IT*					m_instances[MAX_INSTANCE_BODYGROUPS][MAX_INSTANCE_LODS];
+	void*				m_instances[MAX_INSTANCE_BODYGROUPS][MAX_INSTANCE_LODS];
 	ushort				m_numInstances[MAX_INSTANCE_BODYGROUPS][MAX_INSTANCE_LODS];
 
-	bool				m_hasInstances;
-	bool				m_preallocatedHWBuffer;
+	bool				m_hasInstances{ false };
+	bool				m_preallocatedHWBuffer{ false };
+};
+
+
+// for each bodygroup
+template <class IT>
+class CEGFInstancer : public CEGFInstancerBase
+{
+friend class IEqModel;
+public:
+	void			InitEx(const VertexFormatDesc_t* instVertexFormat, int numAttrib);
+	IT&				NewInstance( ubyte bodyGroupFlags, int lod );
 };
 
 //-------------------------------------------------------
 
 template <class IT>
-inline CEGFInstancer<IT>::CEGFInstancer() :
-	m_vertFormat(NULL),
-	m_instanceBuf(NULL),
-	m_preallocatedHWBuffer(false)
+inline void CEGFInstancer<IT>::InitEx(const VertexFormatDesc_t* instVertexFormat, int numAttrib)
 {
-	for(int i = 0; i < MAX_INSTANCE_BODYGROUPS; i++)
-	{
-		memset(m_numInstances[i], 0, sizeof(m_numInstances[i]));
-		memset(m_instances[i], 0, sizeof(m_instances[i]));
-	}
+	CEGFInstancerBase::InitEx(instVertexFormat, numAttrib, sizeof(IT));
 }
 
 template <class IT>
-inline CEGFInstancer<IT>::~CEGFInstancer()
-{
-	Cleanup();
-}
-
-template <class IT>
-inline void CEGFInstancer<IT>::ValidateAssert()
-{
-	ASSERT_MSG(m_vertFormat != NULL && m_instanceBuf != NULL, "Instancer is not valid - did you forgot to initialize it???");
-}
-
-template <class IT>
-inline void CEGFInstancer<IT>::Init( const VertexFormatDesc_t* instVertexFormat, int numAttrib )
-{
-	Cleanup();
-
-	m_vertFormat = g_pShaderAPI->CreateVertexFormat("instancerFmt", instVertexFormat, numAttrib);
-	m_instanceBuf = g_pShaderAPI->CreateVertexBuffer(BUFFER_DYNAMIC, MAX_EGF_INSTANCES, sizeof(IT));
-	m_instanceBuf->SetFlags( VERTBUFFER_FLAG_INSTANCEDATA );
-
-	for(int i = 0; i < MAX_INSTANCE_BODYGROUPS; i++)
-	{
-		memset(m_numInstances[i], 0, sizeof(m_numInstances[i]));
-		memset(m_instances[i], 0, sizeof(m_instances[i]));
-	}
-
-	m_hasInstances = false;
-}
-
-template <class IT>
-inline void CEGFInstancer<IT>::Init( IVertexFormat* instVertexFormat, IVertexBuffer* instBuffer )
-{
-	Cleanup();
-
-	m_preallocatedHWBuffer = true;
-
-	m_vertFormat = instVertexFormat;
-	m_instanceBuf = instBuffer;
-
-	for(int i = 0; i < MAX_INSTANCE_BODYGROUPS; i++)
-	{
-		memset(m_numInstances[i], 0, sizeof(m_numInstances[i]));
-		memset(m_instances[i], 0, sizeof(m_instances[i]));
-	}
-
-	m_hasInstances = false;
-}
-
-template <class IT>
-inline void CEGFInstancer<IT>::Cleanup()
-{
-	if((m_instanceBuf || m_vertFormat) && !m_preallocatedHWBuffer)
-	{
-		g_pShaderAPI->Reset(STATE_RESET_VBO);
-		g_pShaderAPI->ApplyBuffers();
-
-		if(m_instanceBuf) g_pShaderAPI->DestroyVertexBuffer(m_instanceBuf);
-		if(m_vertFormat) g_pShaderAPI->DestroyVertexFormat(m_vertFormat);
-	}
-
-	m_instanceBuf = NULL;
-	m_vertFormat = NULL;
-
-	for(int i = 0; i < MAX_INSTANCE_BODYGROUPS; i++)
-	{
-		for(int j = 0; j < MAX_INSTANCE_LODS; j++)
-		{
-			delete [] m_instances[i][j];
-			m_instances[i][j] = NULL;
-			m_numInstances[i][j] = 0;
-		}
-	}
-
-	m_hasInstances = false;
-	m_preallocatedHWBuffer = false;
-}
-
-template <class IT>
-inline IT& CEGFInstancer<IT>::NewInstance( ubyte bodyGroup, int lod )
+inline IT& CEGFInstancer<IT>::NewInstance(ubyte bodyGroup, int lod)
 {
 	static IT dummy;
 
-	if(bodyGroup == 0xFF)
+	if (bodyGroup == 0xFF)
 		return dummy;
 
 	int numInst = m_numInstances[bodyGroup][lod];
 
-	if(numInst >= MAX_EGF_INSTANCES)
+	if (numInst >= MAX_EGF_INSTANCES)
 		return dummy; // overflow
 
-	if(!m_instances[bodyGroup][lod])
+	if (!m_instances[bodyGroup][lod])
 		m_instances[bodyGroup][lod] = new IT[MAX_EGF_INSTANCES];
 
 	m_hasInstances = true;
 
 	// assign instance
-	IT& theInst = m_instances[bodyGroup][lod][numInst];
+	IT& theInst = ((IT*)m_instances[bodyGroup][lod])[numInst];
 
 	numInst++;
 	m_numInstances[bodyGroup][lod] = numInst;
 
 	return theInst;
-}
-
-template <class IT>
-inline bool CEGFInstancer<IT>::HasInstances() const
-{
-	return m_hasInstances;
-}
-
-template <class IT>
-inline void CEGFInstancer<IT>::Draw( int renderFlags, IEqModel* model )
-{
-	if(!model)
-		return;
-
-	materials->SetMatrix(MATRIXMODE_WORLD, identity4());
-
-	studiohdr_t* pHdr = model->GetHWData()->studio;
-
-	ASSERT_MSG(pHdr->numBodyGroups <= MAX_INSTANCE_BODYGROUPS, "Model got too many body groups! Tell it to programmer or reduce body group count.");
-
-	// proceed to render
-	materials->SetInstancingEnabled(true);
-
-	IVertexBuffer* instBuffer = m_instanceBuf;
-	g_pShaderAPI->SetVertexFormat(m_vertFormat);
-
-	for(int lod = 0; lod < MAX_INSTANCE_LODS; lod++)
-	{
-		for(int i = 0; i < pHdr->numBodyGroups; i++)
-		{
-			int numInst = m_numInstances[i][lod];
-
-			// don't do empty instances
-			if(numInst == 0)
-				continue;
-
-			m_numInstances[i][lod] = 0;
-
-			int bodyGroupLOD = lod;
-			int nLodModelIdx = pHdr->pBodyGroups(i)->lodModelIndex;
-			studiolodmodel_t* lodModel = pHdr->pLodModel(nLodModelIdx);
-
-			int nModDescId = lodModel->modelsIndexes[ bodyGroupLOD ];
-
-			// get the right LOD model number
-			while(nModDescId == -1 && bodyGroupLOD > 0)
-			{
-				bodyGroupLOD--;
-				nModDescId = lodModel->modelsIndexes[ bodyGroupLOD ];
-			}
-
-			if(nModDescId == -1)
-				continue;
-	
-			studiomodeldesc_t* modDesc = pHdr->pModelDesc(nModDescId);
-
-			// upload instance buffer
-			instBuffer->Update(m_instances[i][lod], numInst, 0, true);
-
-			// render model groups that in this body group
-			for(int j = 0; j < modDesc->numGroups; j++)
-			{
-				int materialIndex = modDesc->pGroup(j)->materialIndex;
-				IMaterial* pMaterial = model->GetMaterial(materialIndex);
-
-				// sadly, instancer won't draw any transparent objects due to problems
-				if(pMaterial->GetFlags() & (MATERIAL_FLAG_TRANSPARENT | MATERIAL_FLAG_ADDITIVE | MATERIAL_FLAG_MODULATE))
-					continue;
-
-				//materials->SetSkinningEnabled(true);
-
-				
-				materials->BindMaterial(pMaterial, 0);
-
-				//m_pModel->PrepareForSkinning( m_boneTransforms );
-				model->SetupVBOStream(0);
-				g_pShaderAPI->SetVertexBuffer(instBuffer, 2);
-
-				model->DrawGroup( nModDescId, j, false );
-
-				//materials->SetSkinningEnabled(false);
-			}
-		}
-	}
-
-	g_pShaderAPI->SetVertexBuffer(NULL, 2);
-	materials->SetInstancingEnabled(false);
-	m_hasInstances = false;
 }
