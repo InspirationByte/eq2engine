@@ -628,7 +628,7 @@ bool CEGFGenerator::LoadMaterialGroups(KVSection* pSection)
 //************************************
 // Checks bone for availablity in list
 //************************************
-bool BoneListCheckForBone(char* pszName, Array<dsmskelbone_t*> &pBones)
+bool BoneListCheckForBone(char* pszName, const Array<dsmskelbone_t*> &pBones)
 {
 	for(int i = 0; i < pBones.numElem(); i++)
 	{
@@ -642,7 +642,7 @@ bool BoneListCheckForBone(char* pszName, Array<dsmskelbone_t*> &pBones)
 //************************************
 // returns bone index for availablity in list
 //************************************
-int BoneListGetBoneIndex(char* pszName, Array<dsmskelbone_t*> &pBones)
+int BoneListGetBoneIndex(char* pszName, const Array<dsmskelbone_t*> &pBones)
 {
 	for(int i = 0; i < pBones.numElem(); i++)
 	{
@@ -657,7 +657,7 @@ int BoneListGetBoneIndex(char* pszName, Array<dsmskelbone_t*> &pBones)
 //************************************
 // Remaps vertex bone indices new_bones
 //************************************
-void BoneRemapDSMGroup(dsmgroup_t* pGroup, Array<dsmskelbone_t*> &old_bones, Array<dsmskelbone_t*> &new_bones)
+void BoneRemapDSMGroup(dsmgroup_t* pGroup, const Array<dsmskelbone_t*> &old_bones, Array<dsmskelbone_t*> &new_bones)
 {
 	for(int i = 0; i < pGroup->verts.numElem(); i++)
 	{
@@ -710,6 +710,8 @@ void CEGFGenerator::MergeBones()
 
 	MsgWarning("\nMerging bones\n");
 
+	// dissolve bones that has 0 vertex refs
+
 	// first, load all bones into the single list, as unique
 	Array<dsmskelbone_t*> allBones{ PP_SL };
 
@@ -737,8 +739,7 @@ void CEGFGenerator::MergeBones()
 	// relink parent bones
 	for(int i = 0; i < allBones.numElem(); i++)
 	{
-		int parentBoneIndex = BoneListGetBoneIndex(allBones[i]->parent_name, allBones);
-		allBones[i]->parent_id = parentBoneIndex;
+		allBones[i]->parent_id = BoneListGetBoneIndex(allBones[i]->parent_name, allBones);
 	}
 
 	// All DSM vertices must be remapped now...

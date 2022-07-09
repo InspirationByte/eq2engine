@@ -82,7 +82,7 @@ void ConvertFBXToDSM(dsmmodel_t* model, ofbx::IScene* scene)
 		{
 			dsmgroup_t* dsmGrp = nullptr;
 
-			const int materialIdx = vertMaterials[triNum];
+			const int materialIdx = vertMaterials ? vertMaterials[triNum] : 0;
 			auto found = materialGroups.find(materialIdx);
 			if (found == materialGroups.end())
 			{

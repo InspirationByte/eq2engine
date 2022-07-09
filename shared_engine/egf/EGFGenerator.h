@@ -25,7 +25,7 @@ struct cbone_t
 	SharedModel::dsmskelbone_t*	referencebone;
 
 	Array<cbone_t*>		childs{ PP_SL };
-	cbone_t*			parent;
+	cbone_t*			parent{ nullptr };
 };
 
 struct ciklink_t
