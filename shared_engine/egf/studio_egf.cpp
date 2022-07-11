@@ -288,7 +288,7 @@ void CEngineStudioEGF::DestroyModel()
 			delete[] m_hwdata->modelrefs;
 			delete[] m_hwdata->joints;
 
-			delete m_hwdata->studio;
+			Studio_FreeModel(m_hwdata->studio);
 		}
 
 		delete m_hwdata;

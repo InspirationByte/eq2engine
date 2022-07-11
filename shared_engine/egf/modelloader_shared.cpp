@@ -400,6 +400,11 @@ bool Studio_LoadPhysModel(const char* pszPath, studioPhysData_t* pModel)
 	return true;
 }
 
+void Studio_FreeModel(studiohdr_t* pModel)
+{
+	PPFree(pModel);
+}
+
 void Studio_FreeMotionData(studioMotionData_t* data, int numBones)
 {
 	for(int i = 0; i < data->numAnimations; i++)
