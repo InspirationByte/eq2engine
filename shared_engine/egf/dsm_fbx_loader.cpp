@@ -15,7 +15,15 @@
 namespace SharedModel
 {
 
-Vector3D FromFBXVector(const ofbx::Vec3& vec, Matrix3x3& orient)
+Vector3D FromFBXRotation(const ofbx::Vec3& vec, const Matrix3x3& orient)
+{
+	Quaternion o(orient);
+	Quaternion q(vec.x, vec.y, vec.z);
+
+	return eulersXYZ(q * o);
+}
+
+Vector3D FromFBXVector(const ofbx::Vec3& vec, const Matrix3x3& orient)
 {
 	Vector3D result(vec.x, vec.y, vec.z);
 
@@ -25,6 +33,21 @@ Vector3D FromFBXVector(const ofbx::Vec3& vec, Matrix3x3& orient)
 Vector2D FromFBXVector(const ofbx::Vec2& vec)
 {
 	return Vector2D(vec.x, 1.0f - vec.y);
+}
+
+Matrix4x4 FromFBXMatrix(const ofbx::Matrix& mat, const Matrix3x3& orient)
+{
+	Matrix4x4 m(mat.m[0], mat.m[1], mat.m[2], mat.m[3],
+				mat.m[4], mat.m[5], mat.m[6], mat.m[7], 
+				mat.m[8], mat.m[9], mat.m[10], mat.m[11], 
+				mat.m[12], mat.m[13], mat.m[14], mat.m[15]);
+
+	m.rows[0] = Vector4D(orient * m.rows[0].xyz(), 0.0f);
+	m.rows[1] = Vector4D(orient * m.rows[1].xyz(), 0.0f);
+	m.rows[2] = Vector4D(orient * m.rows[2].xyz(), 0.0f);
+	m.rows[3] = Vector4D(orient * m.rows[3].xyz(), 1.0f);
+
+	return m;
 }
 
 int DecodeIndex(int idx)
@@ -66,24 +89,84 @@ void ConvertFBXToDSM(dsmmodel_t* model, ofbx::IScene* scene)
 		const ofbx::Mesh& mesh = *scene->getMesh(i);
 		const ofbx::Geometry& geom = *mesh.getGeometry();
 
+		Msg("Mesh '%s'\n", mesh.name);
+
+		const ofbx::Skin* skin = geom.getSkin();
+
+		struct VertexWeightData
+		{
+			int boneId;
+			Map<int, float> indexWeightMap{ PP_SL };
+		};
+		Array<VertexWeightData> weightData{ PP_SL };
+
+		if (skin) 
+		{
+			const int numBones = skin->getClusterCount();
+			Msg("\t has %d bones\n", numBones);
+			for (int j = 0; j < numBones; ++j) 
+			{
+				const ofbx::Cluster& fbxCluster = *skin->getCluster(j);
+
+				const ofbx::Object* fbxBoneLink = fbxCluster.getLink();
+				const ofbx::Object* fbxParentBoneLink = fbxBoneLink->getParent();
+
+				ofbx::Matrix fbxBoneMat = fbxBoneLink->evalLocal(fbxBoneLink->getLocalTranslation(), fbxBoneLink->getLocalRotation());
+				Matrix4x4 boneMatrix = FromFBXMatrix(fbxBoneMat, convertMatrix);
+
+				dsmskelbone_t* pBone = PPNew dsmskelbone_t();
+				strcpy(pBone->name, fbxCluster.name);
+				
+				pBone->position = boneMatrix.getTranslationComponent();
+				pBone->angles = eulersXYZ(boneMatrix.getRotationComponent());
+				pBone->bone_id = i;
+
+				for (int k = 0; k < numBones; ++k)
+				{
+					const ofbx::Cluster& pcheckCluster = *skin->getCluster(k);
+					const ofbx::Object* pcheckLink = fbxCluster.getLink();
+					if (pcheckLink == fbxParentBoneLink)
+					{
+						strcpy(pBone->parent_name, pcheckCluster.name);
+						pBone->parent_id = k;
+						break;
+					}
+				}
+
+				Msg("\t\t%s (parent: %s)\n", pBone->name, pBone->parent_name);
+
+				model->bones.append(pBone);
+
+				VertexWeightData& wd = weightData.append();
+				wd.boneId = j;
+				const int* indices = fbxCluster.getIndices();
+				for (int k = 0; k < fbxCluster.getIndicesCount(); ++k)
+				{
+					wd.indexWeightMap[indices[k]] = fbxCluster.getWeights()[k];
+				}
+			}
+			
+		}
+
 		const int vertex_count = geom.getVertexCount();
-		//const int count = geom.getIndexCount();
-		//const int index_count = geom.getIndexCount();
 
 		const ofbx::Vec3* vertices = geom.getVertices();
 		const ofbx::Vec3* normals = geom.getNormals(); 
 		const ofbx::Vec2* uvs = geom.getUVs();
+
 		// const int* faceIndices = geom.getFaceIndices();
 		const int* vertMaterials = geom.getMaterials();
-#if 1
-		// triangulated
+
+		// NOTE: OpenFBX prefers triangulation without indexation
+		// and it's not possible to validly obtain the indices with messing up the geometry.
 		int triNum = 0;
 		for (int j = 0; j < vertex_count; j += 3, triNum++)
 		{
 			dsmgroup_t* dsmGrp = nullptr;
 
 			const int materialIdx = vertMaterials ? vertMaterials[triNum] : 0;
-			auto found = materialGroups.find(materialIdx);
+			const int materialGroupIdx = i | (materialIdx << 16);
+			auto found = materialGroups.find(materialGroupIdx);
 			if (found == materialGroups.end())
 			{
 				dsmGrp = PPNew dsmgroup_t();
@@ -92,7 +175,7 @@ void ConvertFBXToDSM(dsmmodel_t* model, ofbx::IScene* scene)
 				if (material)
 					strncpy(dsmGrp->texture, material->name, sizeof(dsmGrp->texture));
 
-				materialGroups.insert(materialIdx, dsmGrp);
+				materialGroups.insert(materialGroupIdx, dsmGrp);
 				model->groups.append(dsmGrp);
 			}
 			else
@@ -102,8 +185,8 @@ void ConvertFBXToDSM(dsmmodel_t* model, ofbx::IScene* scene)
 
 			for(int k = 0; k < 3; k++)
 			{
-				int jj = j + (invertFaces ? 2-k : k);
-				dsmvertex_t vert;
+				const int jj = j + (invertFaces ? 2-k : k);
+				dsmvertex_t& vert = dsmGrp->verts.append();
 				vert.position = FromFBXVector(vertices[jj], convertMatrix);
 
 				if (normals)
@@ -112,56 +195,22 @@ void ConvertFBXToDSM(dsmmodel_t* model, ofbx::IScene* scene)
 				if (uvs)
 					vert.texcoord = FromFBXVector(uvs[jj]);
 
-				vert.vertexId = -1;
+				vert.vertexId = jj;
 
-				dsmGrp->verts.append(vert);
-			}
-		}
-#else
-		// TODO: NON-triangulated version
-
-		// convert vertices
-		for (int j = 0; j < vertex_count; j++)
-		{
-			dsmvertex_t vert;
-			vert.position = FromFBXVector(vertices[j], convertMatrix);
-
-			if(normals)
-				vert.normal = FromFBXVector(normals[j], convertMatrix);
-
-			if(uvs)
-				vert.texcoord = FromFBXVector(uvs[j]);
-
-			vert.vertexId = -1;
-
-			dsmGrp->verts.append(vert);
-		}
-
-
-		int numPolyIndices = 0;
-		int polyIndices[24] = { -1 };
-
-		for (int j = 0; j < index_count; j++)
-		{
-			int index = faceIndices[j];
-			polyIndices[numPolyIndices++] = DecodeIndex(index);
-
-			Msg("index %d\n", index);
-
-			if (index < 0) // negative marks end - start over
-			{
-				// triangulate strip
-				for (int k = 0; k < numPolyIndices-2; k++)
+				// Apply bone weights to vertex
+				for (int w = 0; w < weightData.numElem(); ++w)
 				{
-					dsmGrp->indices.append(polyIndices[k]);
-					dsmGrp->indices.append(polyIndices[k+1]);
-					dsmGrp->indices.append(polyIndices[k+2]);
-				}
+					const VertexWeightData& wd = weightData[w];
+					auto it = wd.indexWeightMap.find(jj);
+					if (it == wd.indexWeightMap.end())
+						continue;
 
-				numPolyIndices = 0;
+					dsmweight_t& weight = vert.weights.append();
+					weight.bone = wd.boneId;
+					weight.weight = *it;
+				}
 			}
 		}
-#endif
 	}
 }
 

@@ -12,8 +12,8 @@ namespace SharedModel
 
 struct dsmweight_t
 {
-	int		bone;
-	float	weight;
+	int		bone{ 0 };
+	float	weight{ 0.0f };
 };
 
 struct dsmvertex_t
@@ -31,31 +31,26 @@ struct dsmvertex_t
 
 struct dsmgroup_t
 {
-	dsmgroup_t()
-	{
-		texture[0] = '\0';
-	};
-
-	char					texture[256];
+	char					texture[256]{ 0 };
 	Array<dsmvertex_t>		verts{ PP_SL };
 	Array<int>				indices{ PP_SL };
 };
 
 struct dsmskelbone_t
 {
-	char			name[44];
-	char			parent_name[44];
+	char			name[44]{ 0 };
+	char			parent_name[44]{ 0 };
 
-	int				bone_id;
-	int				parent_id;
+	int				bone_id{ -1 };
+	int				parent_id{ -1 };
 
-	Vector3D		position;
-	Vector3D		angles;
+	Vector3D		position{ 0 };
+	Vector3D		angles{ 0 };
 };
 
 struct dsmmodel_t
 {
-	char					name[64];
+	char					name[64]{ 0 };
 
 	Array<dsmgroup_t*>		groups{ PP_SL };
 	Array<dsmskelbone_t*>	bones{ PP_SL };
