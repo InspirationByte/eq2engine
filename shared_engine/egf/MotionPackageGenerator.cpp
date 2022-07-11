@@ -31,6 +31,7 @@ struct animCaBoneFrames_t
 	int nParentBone;
 };
 
+
 CMotionPackageGenerator::~CMotionPackageGenerator()
 {
 	Cleanup();
@@ -101,7 +102,6 @@ int	CMotionPackageGenerator::GetPoseControllerIndex(const char* name)
 }
 
 /*
-
 //************************************
 // Shifts animation start
 //************************************
@@ -798,6 +798,7 @@ void CMotionPackageGenerator::LoadAnimation(KVSection* section)
 //************************************
 bool CMotionPackageGenerator::ParseAnimations(KVSection* section)
 {
+	Msg("Processing animations\n");
 	for(int i = 0; i < section->keys.numElem(); i++)
 	{
 		if(!stricmp(section->keys[i]->name, "animation"))
@@ -814,6 +815,7 @@ bool CMotionPackageGenerator::ParseAnimations(KVSection* section)
 //************************************
 void CMotionPackageGenerator::ParsePoseparameters(KVSection* section)
 {
+	Msg("Processing pose parameters\n");
 	for(int i = 0; i < section->keys.numElem(); i++)
 	{
 		KVSection* poseParamKey = section->keys[i];
@@ -859,7 +861,7 @@ void CMotionPackageGenerator::LoadSequence(KVSection* section, const char* seq_n
 
 			if(seq_index == -1)
 			{
-				MsgError("No such sequence %s\n", KV_GetValueString(section->keys[i]));
+				MsgError("No such sequence '%s' for making layer in sequence '%s'\n", KV_GetValueString(section->keys[i]), seq_name);
 				return;
 			}
 
@@ -989,12 +991,14 @@ void CMotionPackageGenerator::LoadSequence(KVSection* section, const char* seq_n
 
 	if(desc.numAnimations == 0)
 	{
-		MsgError("No animations for sequence %s\n", desc.name);
+		MsgError("No animations for sequence '%s'\n", desc.name);
 		return;
 	}
 
 	// parse default parameters
 	strcpy(desc.activity, KV_GetValueString(section->FindSection("activity"), 0, "ACT_INVALID"));
+
+	Msg("  Adding sequence '%s' with activity '%s'\n", desc.name, desc.activity);
 
 	// parse loop flag
 	KVSection* pLoopKey = section->FindSection("loop");
@@ -1066,13 +1070,13 @@ void CMotionPackageGenerator::LoadSequence(KVSection* section, const char* seq_n
 //************************************
 void CMotionPackageGenerator::ParseSequences(KVSection* section)
 {
+	Msg("Processing sequences\n");
 	for(int i = 0; i < section->keys.numElem(); i++)
 	{
 		KVSection* seqSec = section->keys[i];
 
 		if(!stricmp(seqSec->GetName(), "sequence"))
 		{
-			Msg("  Adding sequence %s\n", seqSec->GetName());
 			LoadSequence(seqSec, KV_GetValueString(seqSec, 0, "no_name"));
 		}
 	}
@@ -1182,15 +1186,12 @@ bool CMotionPackageGenerator::CompileScript(const char* filename)
 	// begin script compilation
 	MakeDefaultPoseAnimation();
 
-	Msg("Loading animations\n");
 	// parse all animations in this script.
 	ParseAnimations(sec);
 
-	Msg("Loading pose parameters\n");
 	// parse all pose parameters
 	ParsePoseparameters(sec);
 
-	Msg("Loading sequences\n");
 	// parse sequences
 	ParseSequences(sec);
 
