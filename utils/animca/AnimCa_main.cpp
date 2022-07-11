@@ -10,15 +10,13 @@
 #include "core/IFileSystem.h"
 #include "core/ICommandLine.h"
 #include "core/ConVar.h"
-#include "egf/model.h"
+
+#include "egf/MotionPackageGenerator.h"
 
 class IShaderAPI* g_pShaderAPI = nullptr;
 class IMaterialSystem* materials = nullptr;
 
 ConVar cv_cheats("__cheats","1","Enable cheats",CV_INITONLY | CV_INVISIBLE);
-
-extern bool CompileScript(const char* name);
-
 ConVar c_filename("filename","none","script file name", 0);
 
 int main(int argc, char **argv)
@@ -61,7 +59,9 @@ int main(int argc, char **argv)
 	}
 	else
 	{
-		if(CompileScript(c_filename.GetString()))
+		CMotionPackageGenerator generator;
+
+		if(generator.CompileScript(c_filename.GetString()))
 		{
 			MsgAccept("Compilation success\n");
 		}

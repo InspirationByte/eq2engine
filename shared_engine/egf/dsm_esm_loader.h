@@ -11,6 +11,9 @@ class Tokenizer;
 namespace SharedModel
 {
 
+bool isNotWhiteSpace(const char ch);
+float readFloat(Tokenizer& tok);
+
 struct dsmmodel_t;
 
 struct esmshapevertex_t
