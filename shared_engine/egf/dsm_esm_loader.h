@@ -21,21 +21,20 @@ struct esmshapevertex_t
 	Vector3D	position;
 	Vector3D	normal;
 
-	int			vertexId;
+	int			vertexId{ -1 };
 };
 
 struct esmshapekey_t
 {
 	Array<esmshapevertex_t>		verts{ PP_SL };
 	EqString					name;
-	int							time;
+	int							time{ 0 };
 };
 
 struct esmshapedata_t
 {
 	Array<esmshapekey_t*>	shapes{ PP_SL };
 	EqString				reference;
-	int						time;
 };
 
 

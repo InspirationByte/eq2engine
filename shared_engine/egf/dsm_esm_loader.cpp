@@ -365,7 +365,7 @@ int FindShapeKeyIndex( esmshapedata_t* data, const char* shapeKeyName )
 
 	for(int i = 0; i < data->shapes.numElem(); i++)
 	{
-		if(!strcmp(data->shapes[i]->name.ToCString(), shapeKeyName))
+		if(!stricmp(data->shapes[i]->name.ToCString(), shapeKeyName))
 			return i;
 	}
 
@@ -374,6 +374,11 @@ int FindShapeKeyIndex( esmshapedata_t* data, const char* shapeKeyName )
 
 void AssignShapeKeyVertexIndexes(dsmmodel_t* mod, esmshapedata_t* shapeData)
 {
+	if (shapeData->shapes.numElem() <= 1)
+		return;
+
+	Msg("Assigning vertex indiexes to shape keys\n");
+
 	esmshapekey_t* basis = shapeData->shapes[0];
 
 	for(int i = 0; i < mod->groups.numElem(); i++)
@@ -382,12 +387,15 @@ void AssignShapeKeyVertexIndexes(dsmmodel_t* mod, esmshapedata_t* shapeData)
 
 		for(int j = 0; j < grp->verts.numElem(); j++)
 		{
+			dsmvertex_t& grpVert = grp->verts[j];
 			for(int k = 0; k < basis->verts.numElem(); k++)
 			{
-				if(	grp->verts[j].position == basis->verts[k].position &&
-					grp->verts[j].normal == basis->verts[k].normal)
+				const esmshapevertex_t& basisVert = basis->verts[k];
+
+				if(grpVert.position == basisVert.position &&
+					grpVert.normal == basisVert.normal)
 				{
-					grp->verts[j].vertexId = basis->verts[k].vertexId;
+					grpVert.vertexId = basisVert.vertexId;
 				}
 			}
 		}

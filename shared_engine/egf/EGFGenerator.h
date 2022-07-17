@@ -22,7 +22,7 @@ namespace SharedModel
 
 struct cbone_t
 {
-	SharedModel::dsmskelbone_t*	referencebone;
+	SharedModel::dsmskelbone_t*	referencebone{ nullptr };
 
 	Array<cbone_t*>		childs{ PP_SL };
 	cbone_t*			parent{ nullptr };
@@ -40,43 +40,28 @@ struct ciklink_t
 
 struct ikchain_t
 {
-	char name[44];
-
+	char name[44]{ 0 };
 	Array<ciklink_t> link_list{ PP_SL };
 };
 
 struct clodmodel_t
 {
-	SharedModel::dsmmodel_t*	lodmodels[MAX_MODEL_LODS];
+	SharedModel::dsmmodel_t*	lodmodels[MAX_MODEL_LODS]{ nullptr };
 };
 
 struct egfcaModel_t
 {
-	egfcaModel_t()
-	{
-		model = nullptr;
-		shapeData = nullptr;
-		shapeBy = -1;
-		used = 0;
-	}
+	SharedModel::dsmmodel_t*		model{ nullptr };
+	SharedModel::esmshapedata_t*	shapeData{ nullptr };
 
-	SharedModel::dsmmodel_t*		model;
-	SharedModel::esmshapedata_t*	shapeData;
-
-	int								shapeBy;	// shape index
-
-	int								used;
+	int								shapeBy{ -1 };	// shape index
+	int								used{ 0 };
 };
 
 struct egfcaMaterialDesc_t
 {
-	egfcaMaterialDesc_t()
-	{
-		used = 0;
-	}
-
-	char				materialname[32];
-	int					used;
+	char				materialname[32]{ 0 };
+	int					used{ 0 };
 };
 
 struct egfcaMaterialGroup_t

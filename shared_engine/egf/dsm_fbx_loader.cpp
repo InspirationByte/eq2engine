@@ -11,6 +11,8 @@
 #include "core/IFileSystem.h"
 #include "utils/Tokenizer.h"
 #include "dsm_loader.h"
+#include "dsm_esm_loader.h"
+#include "dsm_fbx_loader.h"
 
 namespace SharedModel
 {
@@ -55,18 +57,13 @@ int DecodeIndex(int idx)
 	return (idx < 0) ? (-idx - 1) : idx;
 }
 
-void ConvertFBXToDSM(dsmmodel_t* model, ofbx::IScene* scene)
+void GetFBXConvertMatrix(const ofbx::GlobalSettings& settings, Matrix3x3& convertMatrix, bool& invertFaces)
 {
-	// convert FBX scene into DSM groups
-	int mesh_count = scene->getMeshCount();
-
-	const ofbx::GlobalSettings& settings = *scene->getGlobalSettings();
-
-	bool invertFaces = true;
+	invertFaces = true;
 
 	const float scaleFactor = settings.UnitScaleFactor;
 	// start off with this because Blender and 3DS max has same weird coordinate system
-	Matrix3x3 convertMatrix = scale3(-scaleFactor, scaleFactor, -scaleFactor) * rotateX3(DEG2RAD(-90));
+	convertMatrix = scale3(-scaleFactor, scaleFactor, -scaleFactor) * rotateX3(DEG2RAD(-90));
 
 	if (settings.FrontAxisSign)
 		invertFaces ^= 1;
@@ -81,15 +78,27 @@ void ConvertFBXToDSM(dsmmodel_t* model, ofbx::IScene* scene)
 	axisMatrix = transpose(axisMatrix);
 
 	convertMatrix = axisMatrix * convertMatrix;
+}
 
+
+void ConvertFBXToDSM(dsmmodel_t* model, esmshapedata_t* shapeData, ofbx::IScene* scene)
+{
+	const ofbx::GlobalSettings& settings = *scene->getGlobalSettings();
+
+	Matrix3x3 convertMatrix;
+	bool invertFaces;
+	GetFBXConvertMatrix(settings, convertMatrix, invertFaces);
+
+	// convert FBX scene into DSM groups
 	Map<int, dsmgroup_t*> materialGroups{ PP_SL };
 
+	const int mesh_count = scene->getMeshCount();
 	for (int i = 0; i < mesh_count; ++i)
 	{
 		const ofbx::Mesh& mesh = *scene->getMesh(i);
 		const ofbx::Geometry& geom = *mesh.getGeometry();
 
-		Msg("Mesh '%s'\n", mesh.name);
+		// Msg("Mesh '%s'\n", mesh.name);
 
 		const ofbx::Skin* skin = geom.getSkin();
 
@@ -103,7 +112,8 @@ void ConvertFBXToDSM(dsmmodel_t* model, ofbx::IScene* scene)
 		if (skin) 
 		{
 			const int numBones = skin->getClusterCount();
-			Msg("\t has %d bones\n", numBones);
+			// Msg("\t has %d bones\n", numBones);
+
 			for (int j = 0; j < numBones; ++j) 
 			{
 				const ofbx::Cluster& fbxCluster = *skin->getCluster(j);
@@ -133,7 +143,7 @@ void ConvertFBXToDSM(dsmmodel_t* model, ofbx::IScene* scene)
 					}
 				}
 
-				Msg("\t\t%s (parent: %s)\n", pBone->name, pBone->parent_name);
+				// Msg("\t\t%s (parent: %s)\n", pBone->name, pBone->parent_name);
 
 				model->bones.append(pBone);
 
@@ -154,13 +164,55 @@ void ConvertFBXToDSM(dsmmodel_t* model, ofbx::IScene* scene)
 		const ofbx::Vec3* normals = geom.getNormals(); 
 		const ofbx::Vec2* uvs = geom.getUVs();
 
+		// get blend shapes
+		const ofbx::BlendShape* blendShape = geom.getBlendShape();
+		if (blendShape && shapeData)
+		{
+			const int numBlendShapeChannels = blendShape->getBlendShapeChannelCount();
+			Msg("    has %d blend shape channels\n", numBlendShapeChannels);
+			for (int j = 0; j < numBlendShapeChannels; ++j)
+			{
+				const ofbx::BlendShapeChannel* blendShapeChan = blendShape->getBlendShapeChannel(j);
+				const int numBlendShapes = blendShapeChan->getShapeCount();
+				Msg("\t has %d blend shapes\n", numBlendShapes);
+				for (int k = 0; k < numBlendShapes; ++k)
+				{
+					const ofbx::Shape* shape = blendShapeChan->getShape(k);
+					Msg("\t\t %s\n", shape->name);
+
+					esmshapekey_t* shapeKey = PPNew esmshapekey_t();
+					shapeData->shapes.append(shapeKey);
+
+					shapeKey->name = shape->name;
+
+					const ofbx::Vec3* shapeVertices = shape->getVertices();
+					const ofbx::Vec3* shapeNormals = shape->getNormals();
+
+					const int vertCount = shape->getVertexCount();
+					for (int vertId = 0; vertId < vertCount; vertId += 3)
+					{
+						for (int tVert = 0; tVert < 3; ++tVert)
+						{
+							const int tVertId = vertId + (invertFaces ? 2 - tVert : tVert);
+
+							esmshapevertex_t vert;
+							vert.vertexId = tVertId;
+							vert.position = FromFBXVector(shapeVertices[tVertId], convertMatrix);
+							vert.normal = FromFBXVector(shapeNormals[tVertId], convertMatrix);
+							shapeKey->verts.append(vert);
+						}
+					} // vertId
+				} // k
+			} // j
+		}
+
 		// const int* faceIndices = geom.getFaceIndices();
 		const int* vertMaterials = geom.getMaterials();
 
 		// NOTE: OpenFBX prefers triangulation without indexation
 		// and it's not possible to validly obtain the indices with messing up the geometry.
 		int triNum = 0;
-		for (int j = 0; j < vertex_count; j += 3, triNum++)
+		for (int j = 0; j < vertex_count; j += 3, ++triNum)
 		{
 			dsmgroup_t* dsmGrp = nullptr;
 
@@ -183,7 +235,7 @@ void ConvertFBXToDSM(dsmmodel_t* model, ofbx::IScene* scene)
 				dsmGrp = *found;
 			}
 
-			for(int k = 0; k < 3; k++)
+			for(int k = 0; k < 3; ++k)
 			{
 				const int jj = j + (invertFaces ? 2-k : k);
 				dsmvertex_t& vert = dsmGrp->verts.append();
@@ -236,9 +288,40 @@ bool LoadFBX( dsmmodel_t* model, const char* filename )
 		return false;
 	}
 
-	ConvertFBXToDSM(model, scene);
+	ConvertFBXToDSM(model, nullptr, scene);
 
 	PPFree(fileBuffer);
+	return true;
+}
+
+bool LoadFBXShapes(dsmmodel_t* model, esmshapedata_t* shapeData, const char* filename)
+{
+	ASSERT(model);
+	ASSERT(shapeData);
+
+	long fileSize = 0;
+	char* fileBuffer = g_fileSystem->GetFileBuffer(filename, &fileSize);
+
+	if (!fileBuffer)
+	{
+		MsgError("Couldn't open FBX file '%s'", filename);
+		return false;
+	}
+
+	ofbx::IScene* scene = ofbx::load((ofbx::u8*)fileBuffer, fileSize, (ofbx::u64)ofbx::LoadFlags::TRIANGULATE);
+
+	if (!scene)
+	{
+		MsgError("FBX '%s' error: ", filename, ofbx::getError());
+		PPFree(fileBuffer);
+		return false;
+	}
+
+	shapeData->reference = filename;
+	ConvertFBXToDSM(model, shapeData, scene);
+
+	PPFree(fileBuffer);
+
 	return true;
 }
 

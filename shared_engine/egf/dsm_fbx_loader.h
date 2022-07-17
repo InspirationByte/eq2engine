@@ -10,8 +10,10 @@
 namespace SharedModel
 {
 struct dsmmodel_t;
+struct esmshapedata_t;
 
 // Loads FBX model, as DSM
 bool LoadFBX(dsmmodel_t* model, const char* filename);
+bool LoadFBXShapes(dsmmodel_t* model, esmshapedata_t* data, const char* filename);
 
 } // namespace

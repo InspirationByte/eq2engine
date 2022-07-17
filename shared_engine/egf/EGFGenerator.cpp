@@ -11,6 +11,7 @@
 
 #include "dsm_esm_loader.h"
 #include "dsm_loader.h"
+#include "egf/dsm_fbx_loader.h"
 
 using namespace SharedModel;
 
@@ -149,8 +150,23 @@ egfcaModel_t CEGFGenerator::LoadModel(const char* pszFileName)
 
 	EqString ext(modelPath.Path_Extract_Ext());
 
-	// load shape keys
-	if( !ext.CompareCaseIns("esx") )
+	if (!ext.CompareCaseIns("fbx"))
+	{
+		mod.shapeData = PPNew esmshapedata_t;
+
+		Msg("Loading FBX from '%s'\n", modelPath.ToCString());
+
+		if (!LoadFBXShapes(mod.model, mod.shapeData, modelPath.ToCString()))
+		{
+			delete mod.shapeData;
+			mod.shapeData = nullptr;
+
+			MsgError("Reference model '%s' cannot be loaded!\n", modelPath.ToCString());
+			FreeModel(mod);
+			return mod;
+		}
+	}
+	else if( !ext.CompareCaseIns("esx") )
 	{
 		mod.shapeData = PPNew esmshapedata_t;
 
@@ -166,10 +182,15 @@ egfcaModel_t CEGFGenerator::LoadModel(const char* pszFileName)
 			delete mod.shapeData;
 			mod.shapeData = nullptr;
 		}
-	}
 
-	// load DSM model
-	if(!LoadSharedModel(mod.model, modelPath.ToCString()))
+		if (!LoadSharedModel(mod.model, modelPath.ToCString()))
+		{
+			MsgError("Reference model '%s' cannot be loaded!\n", modelPath.ToCString());
+			FreeModel(mod);
+			return mod;
+		}
+	}
+	else if(!LoadSharedModel(mod.model, modelPath.ToCString()))
 	{
 		MsgError("Reference model '%s' cannot be loaded!\n", modelPath.ToCString());
 		FreeModel(mod);
@@ -188,10 +209,7 @@ egfcaModel_t CEGFGenerator::LoadModel(const char* pszFileName)
 
 	// assign shape indexes
 	if( mod.shapeData )
-	{
-		Msg(" - AssignShapeKeyVertexIndexes -\n");
 		AssignShapeKeyVertexIndexes(mod.model, mod.shapeData);
-	}
 
 	// scale bones
 	for(int i = 0; i < mod.model->bones.numElem(); i++)
@@ -247,6 +265,7 @@ void CEGFGenerator::FreeModel( egfcaModel_t& mod )
 
 	if(mod.shapeData)
 		FreeShapes(mod.shapeData);
+	delete mod.shapeData;
 
 	mod.model = nullptr;
 	mod.shapeData = nullptr;
@@ -265,12 +284,15 @@ dsmmodel_t* CEGFGenerator::ParseAndLoadModels(KVSection* pKeyBase)
 		// DRVSYN: vertex order for damaged model
 		if(pKeyBase->values.numElem() > 3 && !stricmp(KV_GetValueString(pKeyBase, 2), "shapeby"))
 		{
-			const char* shapekeyName = KV_GetValueString(pKeyBase, 3, "");
+			const char* shapekeyName = KV_GetValueString(pKeyBase, 3, nullptr);
 
-			if(shapekeyName)
-				Msg("Model shape key is '%s'\n", shapekeyName );
-
-			shapeByModels.append(shapekeyName);
+			if (shapekeyName)
+			{
+				Msg("Model shape key is '%s'\n", shapekeyName);
+				shapeByModels.append(shapekeyName);
+			}
+			else
+				shapeByModels.append("");
 		}
 		else
 			shapeByModels.append("");

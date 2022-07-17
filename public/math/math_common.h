@@ -174,12 +174,23 @@ inline bool isPowerOf2(const int x)
 	return (x & (x - 1)) == 0;
 }
 
-// Remap a value in the range [A,B] to [C,D].
-#define RemapVal( val, A, B, C, D) \
-	(C + (D - C) * (val - A) / (B - A))
+template <typename T, typename T2>
+inline T clamp(const T v, const T2 c0, const T2 c1)
+{
+	return min((T)max((T)v, (T)c0), (T)c1);
+}
 
-#define RemapValClamp( val, A, B, C, D) \
-	clamp(C + (D - C) * (val - A) / (B - A), C, D)
+// Remap a value in the range [A,B] to [C,D].
+inline float RemapVal(float val, float A, float B, float C, float D)
+{
+	return 	(C + (D - C) * (val - A) / (B - A));
+}
+
+// Remap a value in the range [A,B] to [C,D] and clamp result to [C,D]
+inline float RemapValClamp(float val, float A, float B, float C, float D)
+{
+	return clamp(C + (D - C) * (val - A) / (B - A), C, D);
+}
 
 #include "Vector.h"
 #include "FVector.h"

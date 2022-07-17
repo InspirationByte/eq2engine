@@ -719,12 +719,6 @@ T approachValue(T v, T t, T s)
 }
 
 template <typename T, typename T2>
-inline T clamp(const T v, const T2 c0, const T2 c1)
-{
-	return min((T)max((T)v, (T)c0), (T)c1);
-}
-
-template <typename T, typename T2>
 inline TVec2D<T> clamp(const TVec2D<T> &v, const T2 c0, const T2 c1)
 {
 	return TVec2D<T>(min(max(v.x, c0), c1), min(max(v.y, c0), c1));
