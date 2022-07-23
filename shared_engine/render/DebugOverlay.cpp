@@ -18,6 +18,7 @@
 #define BOXES_DRAW_SUBDIV (64)
 #define LINES_DRAW_SUBDIV (128)
 #define POLYS_DRAW_SUBDIV (64)
+#define GRAPH_MAX_VALUES  400
 
 static CDebugOverlay g_DebugOverlays;
 IDebugOverlay* debugoverlay = (IDebugOverlay*)&g_DebugOverlays;
@@ -619,52 +620,48 @@ void DrawGraph(debugGraphBucket_t* graph, int position, IEqFont* pFont, float fr
 
 	int value_id = 0;
 
-	Vertex2D_t graph_line_verts[200];
+	Vertex2D_t graph_line_verts[GRAPH_MAX_VALUES*2];
 	int num_line_verts = 0;
 
 	float graph_max_value = 1.0f;
 
-	if(graph->points.goToFirst())
+	int length = graph->values.numElem();
+	while(length-- > 0)
 	{
-		do
+		//if(graph->points.getCurrent() > graph->fMaxValue)
+		//	graph->fMaxValue = graph->points.getCurrent();
+
+		const int graphIdx = (graph->cursor + length) % graph->values.numElem();
+		debugGraphBucket_t::graphVal_t& graphVal = graph->values[graphIdx];
+
+		// get a value of it.
+		float value = clamp(graphVal.value, 0.0f, graph->maxValue);
+
+		if(graphVal.value > graph_max_value )
+			graph_max_value = graphVal.value;
+
+		value /= graph->maxValue;
+
+		value *= GRAPH_HEIGHT;
+
+		Vector2D point(x_pos + GRAPH_MAX_VALUES - value_id, y_pos - value);
+
+		if(value_id > 0 && num_line_verts < GRAPH_MAX_VALUES*2)
 		{
-			//if(graph->points.getCurrent() > graph->fMaxValue)
-			//	graph->fMaxValue = graph->points.getCurrent();
+			graph_line_verts[num_line_verts].position = last_point;
+			graph_line_verts[num_line_verts].color = graphVal.color;
 
-			debugGraphBucket_t::graphPoint_t& graphVal = graph->points.getCurrent();
+			num_line_verts++;
 
-			// get a value of it.
-			float value = clamp(graphVal.value, 0.0f, graph->maxValue);
+			graph_line_verts[num_line_verts].position = point;
+			graph_line_verts[num_line_verts].color = graphVal.color;
 
-			if(graphVal.value > graph_max_value )
-				graph_max_value = graphVal.value;
+			num_line_verts++;
+		}
 
-			value /= graph->maxValue;
+		value_id++;
 
-			value *= GRAPH_HEIGHT;
-
-			Vector2D point(x_pos + 400 - (4*value_id), y_pos - value);
-
-			if(value_id > 0)
-			{
-				graph_line_verts[num_line_verts].position = last_point;
-				graph_line_verts[num_line_verts].color = ColorRGBA(graphVal.color, 1);
-
-				num_line_verts++;
-
-				graph_line_verts[num_line_verts].position = point;
-				graph_line_verts[num_line_verts].color = ColorRGBA(graphVal.color, 1);
-
-				num_line_verts++;
-				//g_pShaderAPI->DrawSetColor(graph->color);
-				//g_pShaderAPI->DrawLine2D(point, last_point);
-			}
-
-			value_id++;
-
-			last_point = point;
-
-		}while(graph->points.goToNext());
+		last_point = point;
 	}
 
 	if(graph->dynamic)
@@ -1255,14 +1252,20 @@ void CDebugOverlay::Graph_AddValue(debugGraphBucket_t* bucket, float value)
 
 	if(bucket->remainingTime <= 0)
 	{
-		if (bucket->points.getCount() >= 100)
+		int index;
+		if (bucket->values.numElem() < GRAPH_MAX_VALUES)
 		{
-			if (bucket->points.goToLast())
-				bucket->points.removeCurrent();
+			index = bucket->values.append(debugGraphBucket_t::graphVal_t{ value, MColor(bucket->color).pack() });
 		}
+		else
+		{
+			index = bucket->cursor;
+			bucket->values[index] = debugGraphBucket_t::graphVal_t{ value, MColor(bucket->color).pack() };
+		}
+		index++;
+		bucket->cursor = index % GRAPH_MAX_VALUES;
 
 		bucket->remainingTime = bucket->updateTime;
-		bucket->points.addFirst(debugGraphBucket_t::graphPoint_t{value, bucket->color});
 	}
 }
 

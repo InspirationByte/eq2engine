@@ -25,6 +25,12 @@
 
 using namespace Threading;
 
+extern CEqMutex	g_sapi_TextureMutex;
+extern CEqMutex	g_sapi_ShaderMutex;
+extern CEqMutex	g_sapi_VBMutex;
+extern CEqMutex	g_sapi_IBMutex;
+extern CEqMutex	g_sapi_Mutex;
+
 bool InternalCreateRenderTarget(LPDIRECT3DDEVICE9 dev, CD3D9Texture *tex, int nFlags);
 
 // only needed for unmanaged textures
@@ -146,8 +152,6 @@ bool ShaderAPID3DX9::ResetDevice( D3DPRESENT_PARAMETERS &d3dpp )
 {
 	HRESULT hr;
 
-	CScopedMutex scoped(m_Mutex);
-
 	if(!m_bDeviceAtReset)
 	{
 		m_bDeviceAtReset = true;
@@ -157,24 +161,29 @@ bool ShaderAPID3DX9::ResetDevice( D3DPRESENT_PARAMETERS &d3dpp )
 
 		m_pEventQuery = nullptr;
 
+		
 		Reset();
 		Apply();
 
 		// release back buffer and depth first
 		ReleaseD3DFrameBufferSurfaces();
 
-		for (int i = 0; i < m_VBList.numElem(); i++)
 		{
-			CVertexBufferD3DX9* pVB = (CVertexBufferD3DX9*)m_VBList[i];
-
-			pVB->ReleaseForRestoration();
+			CScopedMutex scoped(g_sapi_VBMutex);
+			for (int i = 0; i < m_VBList.numElem(); i++)
+			{
+				CVertexBufferD3DX9* pVB = (CVertexBufferD3DX9*)m_VBList[i];
+				pVB->ReleaseForRestoration();
+			}
 		}
 
-		for (int i = 0; i < m_IBList.numElem(); i++)
 		{
-			CIndexBufferD3DX9* pIB = (CIndexBufferD3DX9*)m_IBList[i];
-
-			pIB->ReleaseForRestoration();
+			CScopedMutex scoped(g_sapi_IBMutex);
+			for (int i = 0; i < m_IBList.numElem(); i++)
+			{
+				CIndexBufferD3DX9* pIB = (CIndexBufferD3DX9*)m_IBList[i];
+				pIB->ReleaseForRestoration();
+			}
 		}
 
 		for (int i = 0; i < m_OcclusionQueryList.numElem(); i++)
@@ -183,18 +192,21 @@ bool ShaderAPID3DX9::ResetDevice( D3DPRESENT_PARAMETERS &d3dpp )
 			query->Destroy();
 		}
 
-		// relesase texture surfaces
-		for (auto it = m_TextureList.begin(); it != m_TextureList.end(); ++it)
 		{
-			CD3D9Texture* pTex = (CD3D9Texture*)*it;
-
-			bool is_managed = (pTex->GetFlags() & TEXFLAG_MANAGED);
-
-			// release unmanaged textures and rts
-			if (!is_managed)
+			CScopedMutex scoped(g_sapi_TextureMutex);
+			// relesase texture surfaces
+			for (auto it = m_TextureList.begin(); it != m_TextureList.end(); ++it)
 			{
-				DevMsg(DEVMSG_SHADERAPI, "RESET: releasing %s\n", pTex->GetName());
-				pTex->Release();
+				CD3D9Texture* pTex = (CD3D9Texture*)*it;
+
+				bool is_managed = (pTex->GetFlags() & TEXFLAG_MANAGED);
+
+				// release unmanaged textures and rts
+				if (!is_managed)
+				{
+					DevMsg(DEVMSG_SHADERAPI, "RESET: releasing %s\n", pTex->GetName());
+					pTex->Release();
+				}
 			}
 		}
 
@@ -378,7 +390,7 @@ bool ShaderAPID3DX9::CreateD3DFrameBufferSurfaces()
 		m_fbColorTexture->SetFlags(TEXFLAG_RENDERTARGET | TEXFLAG_FOREIGN | TEXFLAG_NOQUALITYLOD);
 		m_fbColorTexture->Ref_Grab();
 
-		CScopedMutex m(m_Mutex);
+		CScopedMutex m(g_sapi_TextureMutex);
 		ASSERT_MSG(m_TextureList.find(m_fbColorTexture->m_nameHash) == m_TextureList.end(), "Texture %s was already added", m_fbColorTexture->GetName());
 		m_TextureList.insert(m_fbColorTexture->m_nameHash, m_fbColorTexture);
 	}
@@ -391,7 +403,7 @@ bool ShaderAPID3DX9::CreateD3DFrameBufferSurfaces()
 		m_fbDepthTexture->SetFlags(TEXFLAG_RENDERDEPTH | TEXFLAG_FOREIGN | TEXFLAG_NOQUALITYLOD);
 		m_fbDepthTexture->Ref_Grab();
 
-		CScopedMutex m(m_Mutex);
+		CScopedMutex m(g_sapi_TextureMutex);
 		ASSERT_MSG(m_TextureList.find(m_fbDepthTexture->m_nameHash) == m_TextureList.end(), "Texture %s was already added", m_fbDepthTexture->GetName());
 		m_TextureList.insert(m_fbDepthTexture->m_nameHash, m_fbDepthTexture);
 	}
@@ -493,23 +505,25 @@ void ShaderAPID3DX9::PrintAPIInfo()
 
 	int allTexturesSize = 0;
 
-	CScopedMutex scoped(m_Mutex);
-	for (auto it = m_TextureList.begin(); it != m_TextureList.end(); ++it)
 	{
-		CD3D9Texture* pTexture = (CD3D9Texture*)*it;
+		CScopedMutex scoped(g_sapi_TextureMutex);
+		for (auto it = m_TextureList.begin(); it != m_TextureList.end(); ++it)
+		{
+			CD3D9Texture* pTexture = (CD3D9Texture*)*it;
 
-		ETextureFormat texFmt = pTexture->GetFormat();
+			ETextureFormat texFmt = pTexture->GetFormat();
 
-		float textureSize = 0;
-		
-		if(IsCompressedFormat(texFmt))
-			textureSize = pTexture->m_texSize;
-		else
-			textureSize = pTexture->GetWidth() * pTexture->GetHeight() * pTexture->GetMipCount() * GetBytesPerPixel(texFmt);
+			float textureSize = 0;
 
-		allTexturesSize += textureSize / 1024;
+			if (IsCompressedFormat(texFmt))
+				textureSize = pTexture->m_texSize;
+			else
+				textureSize = pTexture->GetWidth() * pTexture->GetHeight() * pTexture->GetMipCount() * GetBytesPerPixel(texFmt);
 
-		MsgInfo("     %s (%d) - %dx%d (~%.2f kb)\n", pTexture->GetName(), pTexture->Ref_Count(), pTexture->GetWidth(),pTexture->GetHeight(), (textureSize / 1024.0f));
+			allTexturesSize += textureSize / 1024;
+
+			MsgInfo("     %s (%d) - %dx%d (~%.2f kb)\n", pTexture->GetName(), pTexture->Ref_Count(), pTexture->GetWidth(), pTexture->GetHeight(), (textureSize / 1024.0f));
+		}
 	}
 
 	Msg("Texture memory: %.2f MB\n", ((float)allTexturesSize / 1024.0f));
@@ -1060,9 +1074,10 @@ IOcclusionQuery* ShaderAPID3DX9::CreateOcclusionQuery()
 {
 	CD3D9OcclusionQuery* occQuery = PPNew CD3D9OcclusionQuery(m_pD3DDevice);
 
-	m_Mutex.Lock();
-	m_OcclusionQueryList.append( occQuery );
-	m_Mutex.Unlock();
+	{
+		CScopedMutex m(g_sapi_Mutex);
+		m_OcclusionQueryList.append(occQuery);
+	}
 
 	return occQuery;
 }
@@ -1070,12 +1085,14 @@ IOcclusionQuery* ShaderAPID3DX9::CreateOcclusionQuery()
 // removal of occlusion query object
 void ShaderAPID3DX9::DestroyOcclusionQuery(IOcclusionQuery* pQuery)
 {
-	if(pQuery)
-		delete pQuery;
+	bool canDelete;
+	{
+		canDelete = m_OcclusionQueryList.fastRemove(pQuery);
+		CScopedMutex m(g_sapi_Mutex);
+	}
 
-	m_Mutex.Lock();
-	m_OcclusionQueryList.fastRemove( pQuery );
-	m_Mutex.Unlock();
+	if(canDelete)
+		delete pQuery;
 }
 
 //-------------------------------------------------------------
@@ -1218,7 +1235,7 @@ void ShaderAPID3DX9::DestroyRenderState( IRenderState* pState, bool removeAllRef
 	if(!pState)
 		return;
 
-	CScopedMutex scoped(m_Mutex);
+	CScopedMutex scoped(g_sapi_Mutex);
 
 	if(!pState->Ref_Drop() && !removeAllRefs)
 	{
@@ -1255,7 +1272,7 @@ void ShaderAPID3DX9::FreeTexture(ITexture* pTexture)
 		return;
 
 	{
-		CScopedMutex scoped(m_Mutex);
+		CScopedMutex scoped(g_sapi_TextureMutex);
 
 		auto it = m_TextureList.find(pTex->m_nameHash);
 		if (it == m_TextureList.end())
@@ -1264,15 +1281,14 @@ void ShaderAPID3DX9::FreeTexture(ITexture* pTexture)
 		if (pTex->Ref_Count() == 0)
 			MsgWarning("texture %s refcount==0\n", pTexture->GetName());
 
-		pTex->Ref_Drop();
-		if (pTex->Ref_Count() > 0)
+		if (!pTex->Ref_Drop())
 			return;
 
 		m_TextureList.remove(it);
-
-		DevMsg(DEVMSG_SHADERAPI, "Texture unloaded: %s\n", pTexture->GetName());
-		delete pTex;
 	}
+
+	DevMsg(DEVMSG_SHADERAPI, "Texture unloaded: %s\n", pTexture->GetName());
+	delete pTex;
 }
 
 static LPDIRECT3DSURFACE9* CreateSurfaces(int num)
@@ -1411,7 +1427,7 @@ ITexture* ShaderAPID3DX9::CreateRenderTarget(int width, int height, ETextureForm
 
 	if (InternalCreateRenderTarget(m_pD3DDevice, pTexture, nFlags, m_caps))
 	{
-		CScopedMutex scoped(m_Mutex);
+		CScopedMutex scoped(g_sapi_TextureMutex);
 
 		ASSERT_MSG(m_TextureList.find(pTexture->m_nameHash) == m_TextureList.end(), "Texture %s was already added", pTexture->GetName());
 		m_TextureList.insert(pTexture->m_nameHash, pTexture);
@@ -1443,7 +1459,7 @@ ITexture* ShaderAPID3DX9::CreateNamedRenderTarget(const char* pszName,int width,
 
 	if (InternalCreateRenderTarget(m_pD3DDevice, pTexture, nFlags, m_caps))
 	{
-		CScopedMutex scoped(m_Mutex);
+		CScopedMutex scoped(g_sapi_TextureMutex);
 		ASSERT_MSG(m_TextureList.find(pTexture->m_nameHash) == m_TextureList.end(), "Texture %s was already added", pTexture->GetName());
 		m_TextureList.insert(pTexture->m_nameHash, pTexture);
 		return pTexture;
@@ -1860,7 +1876,7 @@ void ShaderAPID3DX9::DestroyVertexFormat(IVertexFormat* pFormat)
 
 	bool deleted = false;
 	{
-		CScopedMutex m(m_Mutex);
+		CScopedMutex m(g_sapi_VBMutex);
 		deleted = m_VFList.remove(pVF);
 	}
 
@@ -1880,7 +1896,7 @@ void ShaderAPID3DX9::DestroyVertexBuffer(IVertexBuffer* pVertexBuffer)
 
 	bool deleted = false;
 	{
-		CScopedMutex m(m_Mutex);
+		CScopedMutex m(g_sapi_VBMutex);
 		deleted = m_VBList.remove(pVB);
 	}
 
@@ -1902,7 +1918,7 @@ void ShaderAPID3DX9::DestroyIndexBuffer(IIndexBuffer* pIndexBuffer)
 
 	bool deleted = false;
 	{
-		CScopedMutex m(m_Mutex);
+		CScopedMutex m(g_sapi_IBMutex);
 		deleted = m_IBList.remove(pIB);
 	}
 
@@ -1924,7 +1940,7 @@ IShaderProgram* ShaderAPID3DX9::CreateNewShaderProgram(const char* pszName, cons
 	CD3D9ShaderProgram* pNewProgram = PPNew CD3D9ShaderProgram();
 	pNewProgram->SetName((_Es(pszName)+query).GetData());
 
-	CScopedMutex scoped(m_Mutex);
+	CScopedMutex scoped(g_sapi_ShaderMutex);
 
 	ASSERT_MSG(m_ShaderList.find(pNewProgram->m_nameHash) == m_ShaderList.end(), "Shader %s was already added", pNewProgram->GetName());
 	m_ShaderList.insert(pNewProgram->m_nameHash, pNewProgram);
@@ -1941,20 +1957,18 @@ void ShaderAPID3DX9::DestroyShaderProgram(IShaderProgram* pShaderProgram)
 		return;
 
 	{
-		CScopedMutex m(m_Mutex);
+		CScopedMutex m(g_sapi_ShaderMutex);
 		auto it = m_ShaderList.find(pShader->m_nameHash);
 		if (it == m_ShaderList.end())
 			return;
 
-		pShader->Ref_Drop(); // decrease references to this shader
-
 		// remove it if reference is zero
-		if (pShader->Ref_Count() > 0)
+		if (!pShader->Ref_Drop())
 			return;
 
 		m_ShaderList.remove(it);
-		delete pShader;
 	}
+	delete pShader;
 }
 
 ConVar r_skipShaderCache("r_skipShaderCache", "0", "Shader debugging purposes", 0);
@@ -2537,9 +2551,10 @@ IVertexFormat* ShaderAPID3DX9::CreateVertexFormat(const char* name, const Vertex
 		return nullptr;
 	}
 
-	m_Mutex.Lock();
-	m_VFList.append(pFormat);
-	m_Mutex.Unlock();
+	{
+		CScopedMutex m(g_sapi_VBMutex);
+		m_VFList.append(pFormat);
+	}
 
 	return pFormat;
 }
@@ -2580,9 +2595,10 @@ IVertexBuffer* ShaderAPID3DX9::CreateVertexBuffer(ER_BufferAccess nBufAccess, in
 		pBuffer->m_pVertexBuffer->Unlock();
 	}
 
-	m_Mutex.Lock();
-	m_VBList.append(pBuffer);
-	m_Mutex.Unlock();
+	{
+		CScopedMutex m(g_sapi_VBMutex);
+		m_VBList.append(pBuffer);
+	}
 
 	return pBuffer;
 
@@ -2625,9 +2641,10 @@ IIndexBuffer* ShaderAPID3DX9::CreateIndexBuffer(int nIndices, int nIndexSize, ER
 		pBuffer->m_pIndexBuffer->Unlock();
 	} 
 
-	m_Mutex.Lock();
-	m_IBList.append(pBuffer);
-	m_Mutex.Unlock();
+	{
+		CScopedMutex m(g_sapi_IBMutex);
+		m_IBList.append(pBuffer);
+	}
 
 	return pBuffer;
 }
@@ -2822,7 +2839,7 @@ void ShaderAPID3DX9::CreateTextureInternal(ITexture** pTex, const Array<CImage*>
 	// if this is a new texture, add
 	if(!(*pTex))
 	{
-		CScopedMutex m(m_Mutex);
+		CScopedMutex m(g_sapi_TextureMutex);
 		ASSERT_MSG(m_TextureList.find(pTexture->m_nameHash) == m_TextureList.end(), "Texture %s was already added", pTexture->GetName());
 		m_TextureList.insert(pTexture->m_nameHash, pTexture);
 	}

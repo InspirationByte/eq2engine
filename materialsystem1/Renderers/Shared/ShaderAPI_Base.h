@@ -23,9 +23,6 @@ public:
 	virtual void						Init( const shaderAPIParams_t &params );
 	virtual void						Shutdown();
 
-	void								ThreadLock();
-	void								ThreadUnlock();
-
 	virtual void						SetViewport(int x, int y, int w, int h);
 	virtual void						GetViewport(int &x, int &y, int &w, int &h);
 
@@ -307,6 +304,4 @@ protected:
 	int									m_nDrawIndexedPrimitiveCalls;
 
 	ETextureFormat						m_nScreenFormat;
-
-	Threading::CEqMutex					m_Mutex;
 };

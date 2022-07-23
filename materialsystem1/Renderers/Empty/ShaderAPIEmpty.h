@@ -12,6 +12,12 @@
 
 using namespace Threading;
 
+extern CEqMutex	g_sapi_TextureMutex;
+extern CEqMutex	g_sapi_ShaderMutex;
+extern CEqMutex	g_sapi_VBMutex;
+extern CEqMutex	g_sapi_IBMutex;
+extern CEqMutex	g_sapi_Mutex;
+
 class CEmptyVertexBuffer : public IVertexBuffer
 {
 public:
@@ -231,7 +237,7 @@ public:
 
 		if(pTex->Ref_Count() <= 0)
 		{
-			CScopedMutex scoped(m_Mutex);
+			CScopedMutex scoped(g_sapi_TextureMutex);
 			auto it = m_TextureList.find(pTex->m_nameHash);
 			if (it != m_TextureList.end())
 			{
@@ -251,7 +257,7 @@ public:
 		pTexture->SetDimensions(width, height);
 		pTexture->SetFormat(nRTFormat);
 
-		CScopedMutex scoped(m_Mutex);
+		CScopedMutex scoped(g_sapi_TextureMutex);
 		ASSERT_MSG(m_TextureList.find(pTexture->m_nameHash) == m_TextureList.end(), "Texture %s was already added", pTexture->GetName());
 		m_TextureList.insert(pTexture->m_nameHash, pTexture);
 
@@ -264,7 +270,7 @@ public:
 		CEmptyTexture* pTexture = PPNew CEmptyTexture();
 		pTexture->SetName(pszName);
 
-		CScopedMutex scoped(m_Mutex);
+		CScopedMutex scoped(g_sapi_TextureMutex);
 		ASSERT_MSG(m_TextureList.find(pTexture->m_nameHash) == m_TextureList.end(), "Texture %s was already added", pTexture->GetName());
 		m_TextureList.insert(pTexture->m_nameHash, pTexture);
 
@@ -467,7 +473,7 @@ protected:
 
 		// FIXME: hold images?
 
-		CScopedMutex m( m_Mutex );
+		CScopedMutex m(g_sapi_TextureMutex);
 
 		// Bind this sampler state to texture
 		pTexture->SetSamplerState(sampler);

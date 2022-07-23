@@ -31,6 +31,12 @@
 
 using namespace Threading;
 
+extern CEqMutex	g_sapi_TextureMutex;
+extern CEqMutex	g_sapi_ShaderMutex;
+extern CEqMutex	g_sapi_VBMutex;
+extern CEqMutex	g_sapi_IBMutex;
+extern CEqMutex	g_sapi_Mutex;
+
 void PrintGLExtensions()
 {
 	const char* ver = (const char*)glGetString(GL_VERSION);
@@ -190,7 +196,7 @@ void ShaderAPIGL::PrintAPIInfo()
 
 	MsgInfo("------ Loaded textures ------\n");
 
-	CScopedMutex scoped(m_Mutex);
+	CScopedMutex scoped(g_sapi_TextureMutex);
 	for (auto it = m_TextureList.begin(); it != m_TextureList.end(); ++it)
 	{
 		CGLTexture* pTexture = (CGLTexture*)*it;
@@ -675,9 +681,10 @@ IOcclusionQuery* ShaderAPIGL::CreateOcclusionQuery()
 
 	CGLOcclusionQuery* occQuery = PPNew CGLOcclusionQuery();
 
-	m_Mutex.Lock();
-	m_OcclusionQueryList.append( occQuery );
-	m_Mutex.Unlock();
+	{
+		CScopedMutex m(g_sapi_Mutex);
+		m_OcclusionQueryList.append(occQuery);
+	}
 
 	return occQuery;
 }
@@ -704,8 +711,7 @@ void ShaderAPIGL::FreeTexture(ITexture* pTexture)
 		return;
 
 	{
-		CScopedMutex scoped(m_Mutex);
-
+		CScopedMutex scoped(g_sapi_TextureMutex);
 		auto it = m_TextureList.find(pTex->m_nameHash);
 		if (it == m_TextureList.end())
 			return;
@@ -713,18 +719,17 @@ void ShaderAPIGL::FreeTexture(ITexture* pTexture)
 		if (pTex->Ref_Count() == 0)
 			MsgWarning("texture %s refcount==0\n", pTexture->GetName());
 
-		pTex->Ref_Drop();
-		if (pTex->Ref_Count() > 0)
+		if (!pTex->Ref_Drop())
 			return;
 
 		m_TextureList.remove(it);
-
-		DevMsg(DEVMSG_SHADERAPI, "Texture unloaded: %s\n", pTexture->GetName());
-		g_glWorker.WaitForExecute(__FUNCTION__, [pTex]() {
-			delete pTex;
-			return 0;
-		});
 	}
+
+	DevMsg(DEVMSG_SHADERAPI, "Texture unloaded: %s\n", pTexture->GetName());
+	g_glWorker.WaitForExecute(__FUNCTION__, [pTex]() {
+		delete pTex;
+		return 0;
+	});
 }
 
 // It will add new rendertarget
@@ -758,8 +763,6 @@ ITexture* ShaderAPIGL::CreateNamedRenderTarget(	const char* pszName,
 	SamplerStateParam_t texSamplerParams = MakeSamplerState(textureFilterType,textureAddress,textureAddress,textureAddress);
 
 	pTexture->SetSamplerState(texSamplerParams);
-
-	m_Mutex.Lock();
 
 	if (nFlags & TEXFLAG_RENDERDEPTH)
 	{
@@ -797,10 +800,11 @@ ITexture* ShaderAPIGL::CreateNamedRenderTarget(	const char* pszName,
 		pTexture->textures.append(texture);
 	}
 
-	
-	ASSERT_MSG(m_TextureList.find(pTexture->m_nameHash) == m_TextureList.end(), "Texture %s was already added", pTexture->GetName());
-	m_TextureList.insert(pTexture->m_nameHash, pTexture);
-	m_Mutex.Unlock();
+	{
+		CScopedMutex m(g_sapi_TextureMutex);
+		ASSERT_MSG(m_TextureList.find(pTexture->m_nameHash) == m_TextureList.end(), "Texture %s was already added", pTexture->GetName());
+		m_TextureList.insert(pTexture->m_nameHash, pTexture);
+	}
 
 	return pTexture;
 }
@@ -1037,10 +1041,9 @@ void ShaderAPIGL::CreateTextureInternal(ITexture** pTex, const Array<CImage*>& p
 	// if this is a new texture, add
 	if(!(*pTex))
 	{
-		m_Mutex.Lock();
+		CScopedMutex m(g_sapi_TextureMutex);
 		ASSERT_MSG(m_TextureList.find(pTexture->m_nameHash) == m_TextureList.end(), "Texture %s was already added", pTexture->GetName());
 		m_TextureList.insert(pTexture->m_nameHash, pTexture);
-		m_Mutex.Unlock();
 	}
 
 	// set for output
@@ -1624,7 +1627,7 @@ IShaderProgram* ShaderAPIGL::CreateNewShaderProgram(const char* pszName, const c
 	CGLShaderProgram* pNewProgram = PPNew CGLShaderProgram();
 	pNewProgram->SetName((_Es(pszName)+query).GetData());
 
-	CScopedMutex scoped(m_Mutex);
+	CScopedMutex scoped(g_sapi_ShaderMutex);
 
 	ASSERT_MSG(m_ShaderList.find(pNewProgram->m_nameHash) == m_ShaderList.end(), "Shader %s was already added", pNewProgram->GetName());
 	m_ShaderList.insert(pNewProgram->m_nameHash, pNewProgram);
@@ -1641,23 +1644,21 @@ void ShaderAPIGL::DestroyShaderProgram(IShaderProgram* pShaderProgram)
 		return;
 
 	{
-		CScopedMutex m(m_Mutex);
+		CScopedMutex m(g_sapi_ShaderMutex);
 		auto it = m_ShaderList.find(pShader->m_nameHash);
 		if (it == m_ShaderList.end())
 			return;
 
-		pShader->Ref_Drop(); // decrease references to this shader
-
 		// remove it if reference is zero
-		if (pShader->Ref_Count() > 0)
+		if (!pShader->Ref_Drop())
 			return;
-
 		m_ShaderList.remove(it);
-		g_glWorker.WaitForExecute(__FUNCTION__, [pShader]() {
-			delete pShader;
-			return 0;
-		});
 	}
+
+	g_glWorker.WaitForExecute(__FUNCTION__, [pShader]() {
+		delete pShader;
+		return 0;
+	});
 }
 
 #define SHADER_HELPERS_STRING \
@@ -2098,9 +2099,10 @@ IVertexFormat* ShaderAPIGL::CreateVertexFormat(const char* name, const VertexFor
 {
 	CVertexFormatGL *pVertexFormat = PPNew CVertexFormatGL(name, formatDesc, nAttribs);
 
-	m_Mutex.Lock();
-	m_VFList.append(pVertexFormat);
-	m_Mutex.Unlock();
+	{
+		CScopedMutex m(g_sapi_VBMutex);
+		m_VFList.append(pVertexFormat);
+	}
 
 	return pVertexFormat;
 }
@@ -2145,9 +2147,10 @@ IVertexBuffer* ShaderAPIGL::CreateVertexBuffer(ER_BufferAccess nBufAccess, int n
 		return nullptr;
 	}
 
-	m_Mutex.Lock();
-	m_VBList.append( pVB );
-	m_Mutex.Unlock();
+	{
+		CScopedMutex m(g_sapi_VBMutex);
+		m_VBList.append(pVB);
+	}
 
 	return pVB;
 }
@@ -2195,9 +2198,10 @@ IIndexBuffer* ShaderAPIGL::CreateIndexBuffer(int nIndices, int nIndexSize, ER_Bu
 		return nullptr;
 	}
 
-	m_Mutex.Lock();
-	m_IBList.append( pIB );
-	m_Mutex.Unlock();
+	{
+		CScopedMutex m(g_sapi_IBMutex);
+		m_IBList.append(pIB);
+	}
 
 	return pIB;
 }
@@ -2211,7 +2215,7 @@ void ShaderAPIGL::DestroyVertexFormat(IVertexFormat* pFormat)
 
 	bool deleted = false;
 	{
-		CScopedMutex m(m_Mutex);
+		CScopedMutex m(g_sapi_VBMutex);
 		deleted = m_VFList.remove(pVF);
 	}
 
@@ -2231,7 +2235,7 @@ void ShaderAPIGL::DestroyVertexBuffer(IVertexBuffer* pVertexBuffer)
 
 	bool deleted = false;
 	{
-		CScopedMutex m(m_Mutex);
+		CScopedMutex m(g_sapi_VBMutex);
 		deleted = m_VBList.remove(pVB);
 	}
 
@@ -2265,7 +2269,7 @@ void ShaderAPIGL::DestroyIndexBuffer(IIndexBuffer* pIndexBuffer)
 
 	bool deleted = false;
 	{
-		CScopedMutex m(m_Mutex);
+		CScopedMutex m(g_sapi_IBMutex);
 		deleted = m_IBList.remove(pIB);
 	}
 
@@ -2526,12 +2530,12 @@ void ShaderAPIGL::DestroyRenderState( IRenderState* pState, bool removeAllRefs )
 	if(!pState)
 		return;
 
-	CScopedMutex scoped(m_Mutex);
-
 	if(!pState->Ref_Drop() && !removeAllRefs)
 	{
 		return;
 	}
+
+	CScopedMutex scoped(g_sapi_Mutex);
 
 	switch(pState->GetType())
 	{

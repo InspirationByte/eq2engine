@@ -1389,7 +1389,7 @@ void CMaterialSystem::DrawPrimitives2DFFP(	ER_PrimitiveType type, Vertex2D_t *pV
 
 	for(int i = 0; i < nVerts; i++)
 	{
-		meshBuilder.Color4fv(pVerts[i].color * color);
+		meshBuilder.Color4fv(MColor(pVerts[i].color).v * color);
 		meshBuilder.TexCoord2f(pVerts[i].texCoord.x,pVerts[i].texCoord.y);
 		meshBuilder.Position3f(pVerts[i].position.x, pVerts[i].position.y, 0);
 

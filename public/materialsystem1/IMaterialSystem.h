@@ -62,38 +62,52 @@ typedef struct Vertex2D
 	Vertex2D()
 	{
 		texCoord = vec2_zero;
-		color = color_white;
+		color = color_white.pack();
 	}
 
     Vertex2D(const Vector2D& p, const Vector2D& t)
     {
         position = p;
         texCoord = t;
-		color = color_white;
+		color = color_white.pack();
     }
 
 	Vertex2D(const Vector2D& p, const Vector2D& t,const Vector4D& c)
 	{
 		position = p;
 		texCoord = t;
-		color = c;
+		color = MColor(c).pack();
 	}
 
-	void Set(const Vector2D& p, const Vector2D& t,const Vector4D& c)
+	Vertex2D(const Vector2D& p, const Vector2D& t, const MColor& c)
 	{
 		position = p;
 		texCoord = t;
-		color = c;
+		color = c.pack();
+	}
+
+	void Set(const Vector2D& p, const Vector2D& t, const Vector4D& c)
+	{
+		position = p;
+		texCoord = t;
+		color = MColor(c).pack();
+	}
+
+	void Set(const Vector2D& p, const Vector2D& t,const MColor& c)
+	{
+		position = p;
+		texCoord = t;
+		color = c.pack();
 	}
 
 	static Vertex2D Interpolate(const Vertex2D& a, const Vertex2D& b, float fac)
 	{
-		return Vertex2D(lerp(a.position, b.position, fac), lerp(a.texCoord, b.texCoord, fac), lerp(a.color, b.color, fac));
+		return Vertex2D(lerp(a.position, b.position, fac), lerp(a.texCoord, b.texCoord, fac), lerp(MColor(a.color).v, MColor(b.color).v, fac));
 	}
 
     Vector2D		position;
     Vector2D		texCoord;
-	ColorRGBA		color;
+	uint			color;
 }Vertex2D_t;
 
 typedef struct Vertex3D

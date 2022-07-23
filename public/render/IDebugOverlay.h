@@ -27,10 +27,10 @@ struct debugGraphBucket_t
 	{
 	}
 
-	struct graphPoint_t
+	struct graphVal_t
 	{
 		float value;
-		ColorRGB color;
+		uint color;
 	};
 
 	EqString								name;
@@ -42,7 +42,8 @@ struct debugGraphBucket_t
 
 	bool									dynamic{ false };
 
-	FixedList<graphPoint_t, 100>	points;
+	Array<graphVal_t>						values{ PP_SL };
+	uint									cursor{ 0 };
 };
 
 typedef void (*OnDebugDrawFn)( void* );

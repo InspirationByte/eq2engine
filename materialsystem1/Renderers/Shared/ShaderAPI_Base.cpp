@@ -25,6 +25,12 @@
 
 using namespace Threading;
 
+CEqMutex g_sapi_TextureMutex;
+CEqMutex g_sapi_ShaderMutex;
+CEqMutex g_sapi_VBMutex;
+CEqMutex g_sapi_IBMutex;
+CEqMutex g_sapi_Mutex;
+
 static ConVar r_reportTextureLoading("r_reportTextureLoading", "0", "Echo textrue loading");
 static ConVar r_noMip("r_noMip", "0", nullptr, CV_CHEAT);
 static ConVar r_skipTextures("r_skipTextures", "0", nullptr, CV_CHEAT);
@@ -108,16 +114,6 @@ void ShaderAPI_Base::Init( const shaderAPIParams_t &params )
 
 	if(r_debug_showTexture)
 		r_debug_showTexture->SetVariantsCallback(GetConsoleTextureList);
-}
-
-void ShaderAPI_Base::ThreadLock()
-{
-	m_Mutex.Lock();
-}
-
-void ShaderAPI_Base::ThreadUnlock()
-{
-	m_Mutex.Unlock();
 }
 
 ETextureFormat ShaderAPI_Base::GetScreenFormat()
@@ -319,7 +315,7 @@ void ShaderAPI_Base::GetConsoleTextureList(const ConCommandBase* base, Array<EqS
 {
 	ShaderAPI_Base* baseApi = ((ShaderAPI_Base*)g_pShaderAPI);
 
-	CScopedMutex m(baseApi->m_Mutex);
+	CScopedMutex m(g_sapi_TextureMutex);
 
 	Map<int, ITexture*>& texList = ((ShaderAPI_Base*)g_pShaderAPI)->m_TextureList;
 
@@ -360,11 +356,13 @@ ITexture* ShaderAPI_Base::FindTexture(const char* pszName)
 
 	const int nameHash = StringToHash(searchStr.ToCString(), true);
 
-	CScopedMutex m(m_Mutex);
-	auto it = m_TextureList.find(nameHash);
-	if (it != m_TextureList.end())
 	{
-		return *it;
+		CScopedMutex m(g_sapi_TextureMutex);
+		auto it = m_TextureList.find(nameHash);
+		if (it != m_TextureList.end())
+		{
+			return *it;
+		}
 	}
 
 	return nullptr;
@@ -524,8 +522,6 @@ ITexture* ShaderAPI_Base::LoadTexture( const char* pszFileName,
 	ER_TextureFilterMode textureFilterType, ER_TextureAddressMode textureAddress/* = TEXADDRESS_WRAP*/, 
 	int nFlags/* = 0*/ )
 {
-	CScopedMutex m(m_Mutex);
-
 	// first search for existing texture
 	ITexture* pFoundTexture = FindTexture(pszFileName);
 	if (pFoundTexture != nullptr)
@@ -1141,7 +1137,7 @@ bool ShaderAPI_Base::LoadShadersFromFile(IShaderProgram* pShaderOutput, const ch
 // search for existing shader program
 IShaderProgram* ShaderAPI_Base::FindShaderProgram(const char* pszName, const char* query)
 {
-	CScopedMutex m(m_Mutex);
+	CScopedMutex m(g_sapi_ShaderMutex);
 
 	EqString shaderName(pszName);
 	if(query)
