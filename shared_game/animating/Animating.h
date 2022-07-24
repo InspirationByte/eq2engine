@@ -76,7 +76,7 @@ public:
 	void						AdvanceFrame(float fDt);
 	void						UpdateIK(float fDt, const Matrix4x4& worldTransform);
 
-	void						RecalcBoneTransforms(bool storeTransitionFrames = false);
+	void						RecalcBoneTransforms();
 
 	void						DebugRender(const Matrix4x4& worldTransform);
 protected:
