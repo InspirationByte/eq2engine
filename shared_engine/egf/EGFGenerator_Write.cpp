@@ -143,28 +143,27 @@ studiovertexdesc_t MakeStudioVertex(const dsmvertex_t& vert)
 	vertex.binormal = vec3_zero;
 	vertex.tangent = vec3_zero;
 
-	// assign bones and it's weights
-	for(int j = 0; j < 4; j++)
+	// reset
+	for(int j = 0; j < MAX_MODEL_VERTEX_WEIGHTS; j++)
 	{
 		vertex.boneweights.bones[j] = -1;
 		vertex.boneweights.weight[j] = 0.0f;
 	}
 
-	vertex.boneweights.numweights = vert.weights.numElem();
-
-	// debug
-	int nActualWeights = 0;
-
-	for(int j = 0; j < vertex.boneweights.numweights; j++)
+	// assign bones and it's weights
+	int weightCnt = 0;
+	for(int j = 0; j < vert.weights.numElem(); j++)
 	{
-		vertex.boneweights.bones[j] = vert.weights[j].bone;
+		if (vert.weights[j].bone == -1)
+			continue;
 
-		if(vertex.boneweights.bones[j] != -1)
-		{
-			vertex.boneweights.weight[j] = vert.weights[j].weight;
-			nActualWeights++;
-		}
+		vertex.boneweights.bones[weightCnt] = vert.weights[j].bone;
+		vertex.boneweights.weight[weightCnt] = vert.weights[j].weight;
+		weightCnt++;
 	}
+	vertex.boneweights.numweights = weightCnt;
+	ASSERT_MSG(weightCnt <= MAX_MODEL_VERTEX_WEIGHTS, "Too many weights on vertex (%d, max is %d)", vertex.boneweights.numweights, MAX_MODEL_VERTEX_WEIGHTS);
+
 
 	return vertex;
 }

@@ -14,6 +14,7 @@
 #define MAX_MODEL_PATH_LENGTH		256
 #define MAX_MODEL_PART_PATH_LENGTH	128
 #define MAX_MODEL_PART_NAME_LENGTH	44
+#define MAX_MODEL_VERTEX_WEIGHTS	4
 
 // use EGF_VERSION_CHANGE tags for defining changes
 
@@ -106,8 +107,8 @@ ALIGNED_TYPE(studiomaterialdesc_s, 4) studiomaterialdesc_t;
 // bone weight data
 struct boneweight_s
 {
-	float				weight[4];
-	int8				bones[4]; 
+	float				weight[MAX_MODEL_VERTEX_WEIGHTS];
+	int8				bones[MAX_MODEL_VERTEX_WEIGHTS];
 	int8				numweights;
 
 	ubyte				unused; // unused
