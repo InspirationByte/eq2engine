@@ -208,8 +208,20 @@ egfcaModel_t CEGFGenerator::LoadModel(const char* pszFileName)
 	}
 
 	// assign shape indexes
-	if( mod.shapeData )
+	if (mod.shapeData)
+	{
 		AssignShapeKeyVertexIndexes(mod.model, mod.shapeData);
+
+		for (int i = 0; i < mod.shapeData->shapes.numElem(); ++i)
+		{
+			esmshapekey_t* shapeKey = mod.shapeData->shapes[i];
+			for (int j = 0; j < shapeKey->verts.numElem(); ++j)
+			{
+				shapeKey->verts[j].position *= m_modelScale;
+				shapeKey->verts[j].position += m_modelOffset;
+			}
+		}
+	}
 
 	// scale bones
 	for(int i = 0; i < mod.model->bones.numElem(); i++)
