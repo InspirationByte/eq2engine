@@ -502,8 +502,8 @@ void CInputCommandBinder::OnKeyEvent(int keyIdent, bool bPressed)
 	else
 		m_currentButtons.fastRemove(keyIdent);
 
-	Array<in_binding_t*> complexExecuteList{ PP_SL };
-	Array<in_binding_t*> executeList{ PP_SL };
+	Array<in_binding_t*> complexExecuteList(PP_SL);
+	Array<in_binding_t*> executeList(PP_SL);
 
 	for(int i = 0; i < m_bindings.numElem();i++)
 	{
@@ -653,7 +653,7 @@ void CInputCommandBinder::DebugDraw(const Vector2D& screenSize)
 	materials->SetDepthStates(false, false);
 	materials->BindMaterial(materials->GetDefaultMaterial());
 
-	Array<Rectangle_t> rects{ PP_SL };
+	Array<Rectangle_t> rects(PP_SL);
 	rects.resize(m_touchZones.numElem());
 
 	CMeshBuilder meshBuilder(materials->GetDynamicMesh());
@@ -702,7 +702,7 @@ void CInputCommandBinder::ExecuteTouchZone( in_touchzone_t* zone, bool bState )
 template <typename T>
 void CInputCommandBinder::ExecuteBoundCommands(T* zone, bool bState)
 {
-	Array<EqString> args{ PP_SL };
+	Array<EqString> args(PP_SL);
 
 	xstrsplit( zone->argumentString.GetData(), " ", args);
 

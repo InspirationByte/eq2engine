@@ -2034,8 +2034,8 @@ bool ShaderAPID3DX9::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 				PPFree(pShaderMem);
 
 				// read samplers and constants
-				Array<DX9Sampler_t> samplers{ PP_SL };
-				Array<DX9ShaderConstant_t> constants{ PP_SL };
+				Array<DX9Sampler_t> samplers(PP_SL);
+				Array<DX9ShaderConstant_t> constants(PP_SL);
 				samplers.setNum(scHdr.numSamplers);
 				constants.setNum(scHdr.numConstants);
 
@@ -2293,8 +2293,8 @@ bool ShaderAPID3DX9::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 
 	const uint count = vsDesc.Constants + psDesc.Constants;
 
-	Array<DX9Sampler_t> samplers{ PP_SL };
-	Array<DX9ShaderConstant_t> constants{ PP_SL };
+	Array<DX9Sampler_t> samplers(PP_SL);
+	Array<DX9ShaderConstant_t> constants(PP_SL);
 	samplers.resize(count);
 	constants.resize(count);
 

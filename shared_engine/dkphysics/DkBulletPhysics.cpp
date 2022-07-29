@@ -1128,7 +1128,7 @@ IPhysicsObject* DkPhysics::CreateStaticObject(physmodelcreateinfo_t *info, int n
 
 	btCollisionShape* shape = nullptr;
 
-	Array<btTriangleIndexVertexArray*> triangle_mesges{ PP_SL };
+	Array<btTriangleIndexVertexArray*> triangle_mesges(PP_SL);
 
 	shape = InternalGenerateMesh(info, &m_triangleMeshes);
 

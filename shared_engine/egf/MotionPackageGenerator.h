@@ -104,5 +104,6 @@ private:
 	Array<posecontroller_t>		m_posecontrollers{ PP_SL };
 	Array<animationdesc_t>		m_animationdescs{ PP_SL };
 	Array<animframe_t>			m_animframes{ PP_SL };
+
 	EqString					m_animPath{ "./" };
 };

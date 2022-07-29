@@ -507,7 +507,7 @@ bool CreateAtlasImage(const Array<imageDesc_t*>& images_list,
 
 void ProcessNewAtlas(const char* atlasPath, const char* pszOutputName)
 {
-	Array<imageDesc_t*> imageList{ PP_SL };
+	Array<imageDesc_t*> imageList(PP_SL);
 
 	KeyValues kvs;
 	if( kvs.LoadFromFile(atlasPath) )

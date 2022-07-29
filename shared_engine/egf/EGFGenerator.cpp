@@ -166,7 +166,7 @@ egfcaModel_t CEGFGenerator::LoadModel(const char* pszFileName)
 			return mod;
 		}
 	}
-	else if( !ext.CompareCaseIns("esx") )
+	else if( !ext.CompareCaseIns("esx") ) // Legacy now because I want to drop the Blender ESM/ESX plugin support
 	{
 		mod.shapeData = PPNew esmshapedata_t;
 
@@ -288,8 +288,8 @@ void CEGFGenerator::FreeModel( egfcaModel_t& mod )
 //************************************
 dsmmodel_t* CEGFGenerator::ParseAndLoadModels(KVSection* pKeyBase)
 {
-	Array<EqString> modelfilenames{ PP_SL };
-	Array<EqString> shapeByModels{ PP_SL };
+	Array<EqString> modelfilenames(PP_SL);
+	Array<EqString> shapeByModels(PP_SL);
 
 	if(pKeyBase->values.numElem() > 1)
 	{
@@ -323,7 +323,7 @@ dsmmodel_t* CEGFGenerator::ParseAndLoadModels(KVSection* pKeyBase)
 	}
 
 	// load the models
-	Array<egfcaModel_t> models{ PP_SL };
+	Array<egfcaModel_t> models(PP_SL);
 
 	for(int i = 0; i < modelfilenames.numElem(); i++)
 	{
@@ -747,7 +747,7 @@ void CEGFGenerator::MergeBones()
 	// dissolve bones that has 0 vertex refs
 
 	// first, load all bones into the single list, as unique
-	Array<dsmskelbone_t*> allBones{ PP_SL };
+	Array<dsmskelbone_t*> allBones(PP_SL);
 
 	for(int i = 0; i < m_modelrefs.numElem(); i++)
 	{

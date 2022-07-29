@@ -21,7 +21,7 @@ inline void ListLine(const Vector3D &from, const Vector3D &to, Array<Vertex3D_t>
 
 void DrawWorldCenter()
 {
-	Array<Vertex3D_t> grid_vertices{ PP_SL };
+	Array<Vertex3D_t> grid_vertices(PP_SL);
 
 	ListLine(Vector3D(-F_INFINITY,0,0),Vector3D(F_INFINITY,0,0), grid_vertices);
 	ListLine(Vector3D(0,-F_INFINITY,0),Vector3D(0, F_INFINITY,0), grid_vertices);

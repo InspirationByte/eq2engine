@@ -173,7 +173,7 @@ BEGIN_EVENT_TABLE(CMainWindow, wxFrame)
 	*/
 END_EVENT_TABLE()
 
-Array<shaderfactory_t> pShaderRegistrators{ PP_SL };
+Array<shaderfactory_t> pShaderRegistrators(PP_SL);
 
 void InitMatSystem(EQWNDHANDLE window)
 {

@@ -139,8 +139,8 @@ struct TexInfo_t
 	ETexConvStatus		status{ INIT_STATE };
 };
 
-Array<TexInfo_t*> g_textureList{ PP_SL };
-Array<EqString> g_materialList{ PP_SL };
+Array<TexInfo_t*> g_textureList(PP_SL);
+Array<EqString> g_materialList(PP_SL);
 
 //-----------------------------------------------------------------------
 

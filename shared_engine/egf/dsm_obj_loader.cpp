@@ -131,7 +131,7 @@ char* GetMTLTexture(char* pszMaterial, Array<obj_material_t> &material_list)
 
 bool LoadOBJ(dsmmodel_t* model, const char* filename)
 {
-	Array<obj_material_t> material_list{ PP_SL };
+	Array<obj_material_t> material_list(PP_SL);
 
 	Tokenizer tok;
 
@@ -199,9 +199,9 @@ bool LoadOBJ(dsmmodel_t* model, const char* filename)
 	char material_name[1024];
 	strcpy(material_name, "error");
 
-	Array<Vector3D> vertices{ PP_SL };
-	Array<Vector2D> texcoords{ PP_SL };
-	Array<Vector3D> normals{ PP_SL };
+	Array<Vector3D> vertices(PP_SL);
+	Array<Vector2D> texcoords(PP_SL);
+	Array<Vector3D> normals(PP_SL);
 
 	vertices.resize(nVerts);
 	texcoords.resize(nTexCoords);

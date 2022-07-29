@@ -102,7 +102,7 @@ int CRectanglePacker::AddRectangle(float width, float height, void* pUserData)
 bool CRectanglePacker::AssignCoords(float& width, float& height, COMPRECTFUNC compRectFunc)
 {
 	// copy array and sort
-	Array<PackerRectangle*> sortedRects{ PP_SL };
+	Array<PackerRectangle*> sortedRects(PP_SL);
 	sortedRects.append(m_pRectangles);
 
 	sortedRects.sort(compRectFunc);

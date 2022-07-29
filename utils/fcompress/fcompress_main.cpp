@@ -100,7 +100,7 @@ int main(int argc, char **argv)
 		}
 		else if(!stricmp(arg, "-ignorecompressionext"))
 		{
-			Array<EqString> splitArgs{ PP_SL };
+			Array<EqString> splitArgs(PP_SL);
 
 			EqString argsStr = g_cmdLine->GetArgumentsOf(i);
 			xstrsplit(argsStr.ToCString(), " ", splitArgs);

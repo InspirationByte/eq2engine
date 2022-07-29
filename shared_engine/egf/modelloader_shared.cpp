@@ -273,7 +273,7 @@ bool Studio_LoadPhysModel(const char* pszPath, studioPhysData_t* pModel)
 		return false;
 	}
 
-	Array<EqString> objectNames{ PP_SL };
+	Array<EqString> objectNames(PP_SL);
 
 	pData += sizeof(physmodelhdr_t);
 

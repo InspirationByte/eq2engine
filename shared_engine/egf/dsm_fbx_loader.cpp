@@ -90,7 +90,7 @@ void ConvertFBXToDSM(dsmmodel_t* model, esmshapedata_t* shapeData, ofbx::IScene*
 	GetFBXConvertMatrix(settings, convertMatrix, invertFaces);
 
 	// convert FBX scene into DSM groups
-	Map<int, dsmgroup_t*> materialGroups{ PP_SL };
+	Map<int, dsmgroup_t*> materialGroups(PP_SL);
 
 	const int mesh_count = scene->getMeshCount();
 	for (int i = 0; i < mesh_count; ++i)
@@ -107,7 +107,7 @@ void ConvertFBXToDSM(dsmmodel_t* model, esmshapedata_t* shapeData, ofbx::IScene*
 			int boneId;
 			Map<int, float> indexWeightMap{ PP_SL };
 		};
-		Array<VertexWeightData> weightData{ PP_SL };
+		Array<VertexWeightData> weightData(PP_SL);
 
 		if (skin) 
 		{

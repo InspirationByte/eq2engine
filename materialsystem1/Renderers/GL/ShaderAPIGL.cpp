@@ -43,7 +43,7 @@ void PrintGLExtensions()
 	Msg("OpenGL version: %s\n \n", ver);
 	const char* exts = (const char*)glGetString(GL_EXTENSIONS);
 
-	Array<EqString> splExts{ PP_SL };
+	Array<EqString> splExts(PP_SL);
 	xstrsplit(exts, " ", splExts);
 
 	MsgWarning("Supported OpenGL extensions:\n");
@@ -1878,8 +1878,8 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 
 		EGraphicsVendor vendor = m_vendor;
 
-		Array<GLShaderSampler_t> samplers{ PP_SL };
-		Array<GLShaderConstant_t> uniforms{ PP_SL };
+		Array<GLShaderSampler_t> samplers(PP_SL);
+		Array<GLShaderConstant_t> uniforms(PP_SL);
 
 		result = g_glWorker.WaitForExecute(__FUNCTION__, [&cdata, &samplers, &uniforms, &vendor]() {
 			// link program and go

@@ -538,7 +538,7 @@ bool ReadFrames(CMotionPackageGenerator& generator, Tokenizer& tok, dsmmodel_t* 
 
 	int nFrameIndex = 0;
 
-	Array<animCaBoneFrames_t> bones{ PP_SL };
+	Array<animCaBoneFrames_t> bones(PP_SL);
 	bones.setNum( pModel->bones.numElem() );
 
 	// FIXME: do it after ReadBones, not here
@@ -1081,9 +1081,6 @@ void CMotionPackageGenerator::ParseSequences(KVSection* section)
 		}
 	}
 }
-
-Array<animationdesc_t>		m_animationdescs{ PP_SL };
-Array<animframe_t>			m_animframes{ PP_SL };
 
 //************************************
 // Converts animations to writible format

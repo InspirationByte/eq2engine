@@ -396,7 +396,7 @@ void CMaterialSystem::CreateWhiteTexture()
 
 	SamplerStateParam_t texSamplerParams = g_pShaderAPI->MakeSamplerState(TEXFILTER_TRILINEAR_ANISO,TEXADDRESS_CLAMP,TEXADDRESS_CLAMP,TEXADDRESS_CLAMP);
 
-	Array<CImage*> images{ PP_SL };
+	Array<CImage*> images(PP_SL);
 	images.append(img);
 
 	m_whiteTexture = g_pShaderAPI->CreateTexture(images, texSamplerParams, TEXFLAG_NOQUALITYLOD);
@@ -634,7 +634,7 @@ void CMaterialSystem::ReloadAllMaterials()
 	CScopedMutex m(m_Mutex);
 
 	MsgInfo("Reloading all materials...\n");
-	Array<IMaterial*> loadingList{ PP_SL };
+	Array<IMaterial*> loadingList(PP_SL);
 
 	for (auto it = m_loadedMaterials.begin(); it != m_loadedMaterials.end(); ++it)
 	{

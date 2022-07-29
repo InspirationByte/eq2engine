@@ -499,7 +499,7 @@ void ShaderAPI_Base::GetImagesForTextureName(Array<EqString>& textureNames, cons
 		char* animScriptBuffer = g_fileSystem->GetFileBuffer(textureAnimPathExt);
 		if (animScriptBuffer)
 		{
-			Array<EqString> frameFilenames{ PP_SL };
+			Array<EqString> frameFilenames(PP_SL);
 			xstrsplit(animScriptBuffer, "\n", frameFilenames);
 			for (int i = 0; i < frameFilenames.numElem(); i++)
 			{
@@ -540,13 +540,13 @@ ITexture* ShaderAPI_Base::LoadTexture( const char* pszFileName,
 		return pFoundTexture;
 	}
 
-	Array<EqString> textureNames{ PP_SL };
+	Array<EqString> textureNames(PP_SL);
 	GetImagesForTextureName(textureNames, pszFileName);
 
 	EqString texNameStr(pszFileName);
 	texNameStr.Path_FixSlashes();
 
-	Array<CImage*> pImages{ PP_SL };
+	Array<CImage*> pImages(PP_SL);
 	const EqString& textureAuxPath = r_allowSourceTextures->GetBool() ? m_params.textureSRCPath : m_params.texturePath;
 
 	// load frames
@@ -654,7 +654,7 @@ ITexture* ShaderAPI_Base::CreateProceduralTexture(const char* pszName,
 		return nullptr;	// don't generate error
 	}
 
-	Array<CImage*> imgs{ PP_SL };
+	Array<CImage*> imgs(PP_SL);
 	imgs.append(&genTex);
 
 	SamplerStateParam_t sampler = g_pShaderAPI->MakeSamplerState(texFilter,textureAddress,textureAddress,textureAddress);
@@ -665,10 +665,10 @@ bool ShaderAPI_Base::RestoreTextureInternal(ITexture* pTexture)
 {
 	CTexture* texture = static_cast<CTexture*>(pTexture);
 
-	Array<EqString> textureNames{ PP_SL };
+	Array<EqString> textureNames(PP_SL);
 	GetImagesForTextureName(textureNames, texture->GetName());
 
-	Array<CImage*> pImages{ PP_SL };
+	Array<CImage*> pImages(PP_SL);
 
 	const EqString& textureAuxPath = r_allowSourceTextures->GetBool() ? m_params.textureSRCPath : m_params.texturePath;
 
@@ -764,7 +764,7 @@ ITexture* ShaderAPI_Base::GenerateErrorTexture(int nFlags/* = 0*/)
 
 	image.CreateMipMaps();
 
-	Array<CImage*> images{ PP_SL };
+	Array<CImage*> images(PP_SL);
 	images.append(&image);
 
 	ITexture* pOutTexture = CreateTexture(images, texSamplerParams, nFlags);

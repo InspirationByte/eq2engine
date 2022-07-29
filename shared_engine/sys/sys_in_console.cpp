@@ -176,7 +176,7 @@ struct conSpewText_t
 	EqString	text;
 };
 
-static Array<conSpewText_t*> s_spewMessages{ PP_SL };
+static Array<conSpewText_t*> s_spewMessages(PP_SL);
 
 void CEqConsoleInput::SpewFunc(SpewType_t type, const char* pMsg)
 {
@@ -332,7 +332,7 @@ void CEqConsoleInput::BeginFrame()
 		name->SetBool(value); \
 	}
 
-	Array<EqString> noArgs{ PP_SL };
+	Array<EqString> noArgs(PP_SL);
 #define IMGUI_CONCMD(label, name, args) { \
 		HOOK_TO_CMD(name); \
 		if(ImGui::MenuItem(label)) \
@@ -1041,7 +1041,7 @@ void CEqConsoleInput::UpdateVariantsList( const EqString& queryStr )
 	m_variantSelection = -1;
 	m_variantList.clear(false);
 
-	Array<EqString> allAutoCompletion{ PP_SL };
+	Array<EqString> allAutoCompletion(PP_SL);
 
 	for(int i = 0; i < m_customAutocompletion.numElem(); i++)
 	{

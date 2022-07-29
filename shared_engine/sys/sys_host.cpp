@@ -68,7 +68,7 @@ DECLARE_CMD(sys_set_windowed, nullptr, 0)
 
 DECLARE_CMD(sys_vmode_list, nullptr, 0)
 {
-	Array<VideoMode_t> vmodes{ PP_SL };
+	Array<VideoMode_t> vmodes(PP_SL);
 	g_pHost->GetVideoModes(vmodes);
 
 	for(int i = 0; i < vmodes.numElem(); i++)
@@ -153,7 +153,7 @@ void CGameHost::SetWindowTitle(const char* windowTitle)
 void CGameHost::SetFullscreenMode()
 {
 	const char* str = sys_vmode.GetString();
-	Array<EqString> args{ PP_SL };
+	Array<EqString> args(PP_SL);
 	xstrsplit(str, "x", args);
 
 	int nAdjustedWide = atoi(args[0].GetData());
@@ -172,7 +172,7 @@ void CGameHost::SetFullscreenMode()
 void CGameHost::SetWindowedMode()
 {
 	const char* str = sys_vmode.GetString();
-	Array<EqString> args{ PP_SL };
+	Array<EqString> args(PP_SL);
 	xstrsplit(str, "x", args);
 
 	int nAdjustedPosX = SDL_WINDOWPOS_CENTERED;
