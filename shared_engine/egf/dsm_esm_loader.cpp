@@ -20,17 +20,13 @@ bool isNotWhiteSpace(const char ch)
 
 float readFloat(Tokenizer &tok)
 {
-	char *str = tok.next( isNotWhiteSpace );
-	//Msg("readFloat: str=%s\n", str);
-
+	const char *str = tok.next( isNotWhiteSpace );
 	return (float)atof(str);
 }
 
 int readInt(Tokenizer &tok)
 {
-	char *str = tok.next( isNotWhiteSpace );
-	//Msg("readInt: str=%s\n", str);
-
+	const char *str = tok.next( isNotWhiteSpace );
 	return atoi(str);
 }
 

@@ -5,6 +5,9 @@
 // Description:
 //////////////////////////////////////////////////////////////////////////////////
 
+// TODO:	1. rewrite to make it not ESA-centric but still to use shared interface
+//			2. load entire animation set from FBX, validate EGF and FBX
+
 #include <zlib.h>
 
 #include "core/core_common.h"
@@ -23,6 +26,8 @@
 using namespace SharedModel;
 
 #define BONE_NOT_SET 65536
+
+
 
 struct animCaBoneFrames_t
 {

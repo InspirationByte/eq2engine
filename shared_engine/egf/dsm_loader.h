@@ -22,8 +22,6 @@ struct dsmvertex_t
 	Vector3D			normal{ 0.5f };
 
 	Vector2D			texcoord{ 0.0f };
-
-	//int				numWeights; // 0 means no bone connected
 	Array<dsmweight_t>	weights{ PP_SL };
 
 	int					vertexId{ 0 };
