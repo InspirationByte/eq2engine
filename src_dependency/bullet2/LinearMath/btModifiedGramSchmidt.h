@@ -42,7 +42,8 @@ public:
 //            v.print();
         }
     }
-    
+
+#if 0
     void test()
     {
         std::cout << SIMD_EPSILON << std::endl;
@@ -78,6 +79,7 @@ public:
             }
         }
     }
+#endif
 };
 template class btModifiedGramSchmidt<btReducedVector>;
 #endif /* btModifiedGramSchmidt_h */
