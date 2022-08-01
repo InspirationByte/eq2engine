@@ -51,8 +51,9 @@ CMemoryStream::~CMemoryStream()
 size_t CMemoryStream::Read(void *dest, size_t count, size_t size)
 {
 	ASSERT(m_openFlags & VS_OPEN_READ);
-
 	const long curPos = Tell();
+	ASSERT_MSG(curPos + size * count <= m_allocatedSize, "Reading more than CMemoryStream has (expected capacity %d, has %d)", curPos + size * count, m_allocatedSize);
+
 	const size_t readBytes = min(static_cast<size_t>(curPos + size * count), static_cast<size_t>(m_allocatedSize)) - curPos;
 
 	memcpy(dest, m_currentPtr, readBytes);

@@ -94,9 +94,9 @@ public:
 	void					UnbindAll_Joystick();
 
 	// searches for binding
-	in_binding_t*			FindBinding(const char* pszKeyStr);
-	in_binding_t*			FindBindingByCommand(ConCommandBase* cmdBase, const char* argStr = nullptr, in_binding_t* startFrom = nullptr);
-	in_binding_t*			FindBindingByCommandName(const char* name, const char* argStr = nullptr, in_binding_t* startFrom = nullptr);
+	in_binding_t*			FindBinding(const char* pszKeyStr) const;
+	in_binding_t*			FindBindingByCommand(ConCommandBase* cmdBase, const char* argStr = nullptr, in_binding_t* startFrom = nullptr) const;
+	in_binding_t*			FindBindingByCommandName(const char* name, const char* argStr = nullptr, in_binding_t* startFrom = nullptr) const;
 
 	// registers axis action
 	// they will be prefixed as "j_" + name
@@ -135,7 +135,7 @@ protected:
 
 	bool					ResolveCommandBinding(in_binding_t* binding);
 
-	axisAction_t*			FindAxisAction(const char* name);
+	axisAction_t*			FindAxisAction(const char* name) const;
 
 	Array<int>				m_currentButtons{ PP_SL };	// current keyboard buttons
 

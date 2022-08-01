@@ -640,7 +640,7 @@ float CEqRigidBody::ApplyImpulseResponseTo(ContactPair_t& pair, float error_corr
 
 	Vector3D relVelA;
 	Vector3D relVelB;
-	bool bodyADynamic = bodyA->IsDynamic();
+	const bool bodyADynamic = bodyA->IsDynamic();
 	
 	// body B
 	{
@@ -656,8 +656,8 @@ float CEqRigidBody::ApplyImpulseResponseTo(ContactPair_t& pair, float error_corr
 		contactVelocity -= relVelA;
 	}
 
-	bool forceFrozenA = (bodyA->m_flags & BODY_FORCE_FREEZE);
-	bool forceFrozenB = (bodyB->m_flags & BODY_FORCE_FREEZE);
+	const bool forceFrozenA = (bodyA->m_flags & BODY_FORCE_FREEZE);
+	const bool forceFrozenB = (bodyB->m_flags & BODY_FORCE_FREEZE);
 
 	// check velocity from opposite object to add denominator
 	// if object is frozen

@@ -314,19 +314,19 @@ bool CInputCommandBinder::ResolveCommandBinding(in_binding_t* binding)
 	return true;
 }
 
-axisAction_t* CInputCommandBinder::FindAxisAction(const char* name)
+axisAction_t* CInputCommandBinder::FindAxisAction(const char* name) const
 {
 	for(int i = 0; i < m_axisActs.numElem();i++)
 	{
 		if(!m_axisActs[i].name.CompareCaseIns(name))
-			return &m_axisActs[i];
+			return (axisAction_t*)&m_axisActs[i];
 	}
 
 	return nullptr;
 }
 
 // searches for binding
-in_binding_t* CInputCommandBinder::FindBinding(const char* pszKeyStr)
+in_binding_t* CInputCommandBinder::FindBinding(const char* pszKeyStr) const
 {
 	int bindingKeyIndices[3];
 
@@ -346,7 +346,7 @@ in_binding_t* CInputCommandBinder::FindBinding(const char* pszKeyStr)
 	return nullptr;
 }
 
-in_binding_t* CInputCommandBinder::FindBindingByCommand(ConCommandBase* cmdBase, const char* argStr /*= nullptr*/, in_binding_t* startFrom /*= nullptr*/)
+in_binding_t* CInputCommandBinder::FindBindingByCommand(ConCommandBase* cmdBase, const char* argStr /*= nullptr*/, in_binding_t* startFrom /*= nullptr*/) const
 {
 	int startIdx = m_bindings.findIndex(startFrom) + 1;
 
@@ -362,7 +362,7 @@ in_binding_t* CInputCommandBinder::FindBindingByCommand(ConCommandBase* cmdBase,
 	return nullptr;
 }
 
-in_binding_t* CInputCommandBinder::FindBindingByCommandName(const char* name, const char* argStr /*= nullptr*/, in_binding_t* startFrom /*= nullptr*/)
+in_binding_t* CInputCommandBinder::FindBindingByCommandName(const char* name, const char* argStr /*= nullptr*/, in_binding_t* startFrom /*= nullptr*/) const
 {
 	int startIdx = m_bindings.findIndex(startFrom) + 1;
 
