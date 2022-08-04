@@ -1,0 +1,7 @@
+[submodule "game/DriverSyndicate"]
+	path = game/DriverSyndicate
+	url = https://github.com/SoapyMan/DriversGame.git
+
+[submodule "src_dependency/oolua"]
+	path = src_dependency/oolua
+	url = https://github.com/SoapyMan/oolua.git

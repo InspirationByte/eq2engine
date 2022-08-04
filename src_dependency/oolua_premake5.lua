@@ -4,6 +4,7 @@
 project "oolua"
 	kind "StaticLib"
 
+	uses { "lua" }
 	-- TODO: check here if boilerplate headers are generated
 
 	files 
