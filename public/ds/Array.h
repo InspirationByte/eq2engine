@@ -59,6 +59,24 @@ public:
 	// returns a pointer to the list
 	const T *		ptr() const;
 
+	// returns front item
+	T&				front();
+
+	// returns front item
+	const T&		front() const;
+
+	// returns back item
+	T&				back();
+
+	// returns back item
+	const T&		back() const;
+
+	// removes front item from list
+	T				popFront();
+
+	// removes back item from list
+	T				popBack();
+
 	// appends element
 	int				append( const T & obj );
 
@@ -376,6 +394,70 @@ template< typename T >
 inline const T *Array<T>::ptr( void ) const
 {
 	return m_pListPtr;
+}
+
+// -----------------------------------------------------------------
+// Returns front item
+// -----------------------------------------------------------------
+template< typename T >
+inline T& Array<T>::front()
+{
+	ASSERT(m_nNumElem > 0);
+	return *m_pListPtr;
+}
+
+// -----------------------------------------------------------------
+// Returns front item
+// -----------------------------------------------------------------
+template< typename T >
+inline const T& Array<T>::front() const
+{
+	ASSERT(m_nNumElem > 0);
+	return *m_pListPtr;
+}
+
+// -----------------------------------------------------------------
+// Returns back item
+// -----------------------------------------------------------------
+template< typename T >
+inline T& Array<T>::back()
+{
+	ASSERT(m_nNumElem > 0);
+	return m_pListPtr[m_nNumElem - 1];
+}
+
+// -----------------------------------------------------------------
+// Returns back item
+// -----------------------------------------------------------------
+template< typename T >
+inline const T& Array<T>::back() const
+{
+	ASSERT(m_nNumElem > 0);
+	return m_pListPtr[m_nNumElem - 1];
+}
+
+// -----------------------------------------------------------------
+// Removes front item from list
+// -----------------------------------------------------------------
+template< typename T >
+inline T Array<T>::popFront()
+{
+	ASSERT(m_nNumElem > 0);
+	T item = m_pListPtr[0];
+	removeIndex(0);
+	return item;
+}
+
+// -----------------------------------------------------------------
+// Removes back item from list
+// -----------------------------------------------------------------
+template< typename T >
+inline T Array<T>::popBack()
+{
+	ASSERT(m_nNumElem > 0);
+	T item = m_pListPtr[m_nNumElem - 1];
+	m_nNumElem--;
+	return item;
 }
 
 // -----------------------------------------------------------------
