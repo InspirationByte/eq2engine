@@ -5,17 +5,16 @@
 // Description: Callable wrapper
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef FUNCTION_H
-#define FUNCTION_H
-
-
+#pragma once
 #include <memory>
 
-template <typename>
-struct EqFunction;
+static const size_t DEFAULT_FUNCTION_BUFFER_SIZE = 32;
 
-template <typename R, typename ...Args>
-class EqFunction<R(Args...)>
+template <typename, int = DEFAULT_FUNCTION_BUFFER_SIZE>
+class EqFunction;
+
+template <int BUFFER_SIZE, typename R, typename ...Args>
+class EqFunction<R(Args...), BUFFER_SIZE>
 {
 public:
     EqFunction() noexcept : ptr(nullptr), isSmall(false) {};
@@ -46,11 +45,13 @@ public:
 
     template <typename F>
     EqFunction(F f) {
-        if (sizeof(f) <= BUFFER_SIZE && std::is_nothrow_move_constructible<F>::value) {
+        if (sizeof(f) <= BUFFER_SIZE && std::is_nothrow_move_constructible<F>::value) 
+        {
             isSmall = true;
             new (&buffer) Model<F>(std::move(f));
         }
-        else {
+        else 
+        {
             isSmall = false;
             new (&buffer) std::unique_ptr<Concept>(std::make_unique<Model<F>>(f));
         }
@@ -83,18 +84,21 @@ public:
     }
 
     R operator()(Args ... a) const {
-        if (isSmall) {
+        if (isSmall) 
+        {
             auto c = reinterpret_cast<Concept const*>(&buffer);
             return c->Invoke(std::forward<Args>(a)...);
         }
-        else {
+        else 
+        {
             return ptr->Invoke(std::forward<Args>(a)...);
         }
     }
 
 private:
 
-    void Cleanup() {
+    void Cleanup() 
+    {
         if (isSmall) {
             auto c = reinterpret_cast<Concept*>(&buffer);
             c->~Concept();
@@ -106,8 +110,10 @@ private:
         isSmall = false;
     }
 
-    void MoveFunction(EqFunction&& other) {
-        if (other.isSmall) {
+    void MoveFunction(EqFunction&& other) 
+    {
+        if (other.isSmall) 
+        {
             isSmall = true;
             auto c = reinterpret_cast<Concept*>(&other.buffer);
             c->MoveToBuffer(&buffer);
@@ -115,7 +121,8 @@ private:
             other.isSmall = false;
             new (&other.buffer) std::unique_ptr<Concept>(nullptr);
         }
-        else {
+        else 
+        {
             isSmall = false;
             new (&buffer) std::unique_ptr<Concept>(std::move(other.ptr));
         }
@@ -157,8 +164,6 @@ private:
         F f;
     };
 
-    static const size_t BUFFER_SIZE = 128;
-
     union {
         mutable std::aligned_storage_t<BUFFER_SIZE, alignof(size_t)> buffer;
         std::unique_ptr<Concept> ptr;
@@ -167,4 +172,3 @@ private:
     bool isSmall;
 };
 
-#endif
