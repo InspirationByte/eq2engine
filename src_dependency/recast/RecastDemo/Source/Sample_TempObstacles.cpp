@@ -47,7 +47,7 @@
 #include "CrowdTool.h"
 #include "RecastAlloc.h"
 #include "RecastAssert.h"
-#include "fastlz.h"
+#include "lz4.h"
 
 #ifdef WIN32
 #	define snprintf _snprintf
@@ -113,18 +113,18 @@ struct FastLZCompressor : public dtTileCacheCompressor
 	{
 		return (int)(bufferSize* 1.05f);
 	}
-	
+
 	virtual dtStatus compress(const unsigned char* buffer, const int bufferSize,
-							  unsigned char* compressed, const int /*maxCompressedSize*/, int* compressedSize)
+		unsigned char* compressed, const int maxCompressedSize, int* compressedSize)
 	{
-		*compressedSize = fastlz_compress((const void *const)buffer, bufferSize, compressed);
+		*compressedSize = LZ4_compress_fast((const char*)buffer, (char*)compressed, bufferSize, maxCompressedSize, 8192);
 		return DT_SUCCESS;
 	}
-	
+
 	virtual dtStatus decompress(const unsigned char* compressed, const int compressedSize,
-								unsigned char* buffer, const int maxBufferSize, int* bufferSize)
+		unsigned char* buffer, const int maxBufferSize, int* bufferSize)
 	{
-		*bufferSize = fastlz_decompress(compressed, compressedSize, buffer, maxBufferSize);
+		*bufferSize = LZ4_decompress_safe((const char*)compressed, (char*)buffer, compressedSize, maxBufferSize);
 		return *bufferSize < 0 ? DT_FAILURE : DT_SUCCESS;
 	}
 };

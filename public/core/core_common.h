@@ -43,6 +43,7 @@
 #include "platform/eqthread.h"
 
 #include "ds/Array.h"
+#include "ds/BitArray.h"
 #include "ds/Map.h"
 #include "ds/function.h"
 #include "ds/List.h"

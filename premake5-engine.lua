@@ -218,7 +218,7 @@ project "e2Core"
 	
 	defines { "CORE_INTERFACE_EXPORT", "COREDLL_EXPORT" }
 	
-    uses { "zlib", "corelib", "frameworkLib" }
+    uses { "zlib", "lz4", "corelib", "frameworkLib" }
 	
 	filter "system:Windows"
 		linkoptions { "-IGNORE:4217,4286" }	-- disable few linker warnings

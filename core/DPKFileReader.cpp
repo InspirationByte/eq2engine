@@ -5,7 +5,8 @@
 // Description: Data package file (dpk)
 //////////////////////////////////////////////////////////////////////////////////
 
-#include <zlib.h>
+#include <lz4.h>
+
 #include "core/core_common.h"
 #include "FileSystem.h"
 #include "DPKFileReader.h"
@@ -148,17 +149,8 @@ void CDPKFileStream::DecodeBlock(int blockIdx)
 	if (curBlock.flags & DPKFILE_FLAG_COMPRESSED)
 	{
 		// decompress readMem to 'm_blockData'
-		unsigned long destLen = curBlock.size;
-		const int status = uncompress(m_blockData, &destLen, readMem, curBlock.compressedSize);
-
-		if (status != Z_OK)
-		{
-			ASSERT_FAIL("Cannot decompress file block - %d!\n", status);
-		}
-		else
-		{
-			ASSERT(destLen == curBlock.size);
-		}
+		unsigned long destLen = LZ4_decompress_safe((const char*)readMem, (char*)m_blockData, curBlock.compressedSize, DPK_BLOCK_MAXSIZE);
+		ASSERT(destLen == curBlock.size);
 
 		free(readMem);
 	}
@@ -335,11 +327,16 @@ int	CDPKFileReader::FindFileIndex(const char* filename) const
 
 	int mountPathPos = fullFilename.Find(m_mountPath.ToCString());
 
-	if (mountPathPos != 0)
+	if (mountPathPos > 0)
 		return -1;
 
 	// replace
-	EqString pkgFileName = fullFilename.Right(fullFilename.Length() - m_mountPath.Length() - 1);
+	EqString pkgFileName;
+	
+	if (mountPathPos != -1)
+		pkgFileName = fullFilename.Right(fullFilename.Length() - m_mountPath.Length() - 1);
+	else
+		pkgFileName = fullFilename;
 
 	// convert to DPK filename
 	DPK_FixSlashes(pkgFileName);

@@ -5,7 +5,7 @@
 // Description: Data package file (dpk)
 //////////////////////////////////////////////////////////////////////////////////
 
-#include <zlib.h>
+#include <lz4hc.h>
 
 #include "core/core_common.h"
 #include "core/cmd_pacifier.h"
@@ -293,7 +293,7 @@ void CDPKFileWriter::ProcessFile(FILE* output, dpkfilewinfo_t* info)
 {
 	dpkfileinfo_t& fInfo = info->pkinfo;
 
-	bool compressionEnabled = (m_compressionLevel > 0) && !CheckCompressionIgnored(info->fileName.Path_Extract_Ext().ToCString());
+	const bool compressionEnabled = (m_compressionLevel > 0) && !CheckCompressionIgnored(info->fileName.Path_Extract_Ext().ToCString());
 
 	long _fileSize = 0;
 	ubyte* _filedata = LoadFileBuffer(info->fileName.ToCString(), &_fileSize);
@@ -310,8 +310,7 @@ void CDPKFileWriter::ProcessFile(FILE* output, dpkfilewinfo_t* info)
 
 	// compute CRC
 	{
-		uLong crc = crc32(0L, Z_NULL, 0);
-		fInfo.crc = crc32(crc, _filedata, _fileSize);
+		fInfo.crc = CRC32_BlockChecksum(_filedata, _fileSize);
 	}
 
 	// compressed and encrypted files has to be put into blocks
@@ -342,26 +341,16 @@ void CDPKFileWriter::ProcessFile(FILE* output, dpkfilewinfo_t* info)
 			if (blockInfo.size > _fileSize - srcOffset)
 				blockInfo.size = min<uint32>(blockInfo.size, (uint32)(_fileSize - srcOffset));
 
-			int status = Z_DATA_ERROR;
-
 			// compress to tmpBlock
 			if(compressionEnabled)
 			{
 				unsigned long compressedSize = sizeof(tmpBlock);
 				memset(tmpBlock, 0, compressedSize);
-				status = compress2(tmpBlock, &compressedSize, srcBlock, blockInfo.size, m_compressionLevel);
+				
+				compressedSize = LZ4_compress_HC((const char*)srcBlock, (char*)tmpBlock, blockInfo.size, compressedSize, m_compressionLevel);
 
-				if (status == Z_OK)
-				{
-					blockInfo.flags |= DPKFILE_FLAG_COMPRESSED;
-					blockInfo.compressedSize = compressedSize;
-				}
-				else
-				{
-					// failure of compression means that this block still needs to be written to temp
-					// compressedSize remains 0
-					memcpy(tmpBlock, srcBlock, blockInfo.size);
-				}
+				blockInfo.flags |= DPKFILE_FLAG_COMPRESSED;
+				blockInfo.compressedSize = compressedSize;
 			}
 			else
 				memcpy(tmpBlock, srcBlock, blockInfo.size);

@@ -1,4 +1,4 @@
-project "fastlz"
+project "lz4"
 	kind "StaticLib"
 	language "C"
 	includedirs {
@@ -10,8 +10,8 @@ project "fastlz"
 		"**.c"
 	}
 		
-usage "fastlz"
+usage "lz4"
 	includedirs { 
 		"./"
 	}
-	links "fastlz"
+	links "lz4"

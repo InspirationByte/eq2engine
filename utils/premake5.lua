@@ -7,6 +7,7 @@ project "fcompress"
     kind "ConsoleApp"
 	unitybuild "on"
     uses {
+		"lz4",
 		"corelib", "frameworkLib",
 		"e2Core" 
 	}

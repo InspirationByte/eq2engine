@@ -95,11 +95,10 @@ if not IS_ANDROID then
 project "RecastDemo"
 	language "C++"
 	kind "WindowedApp"
-	uses { "SDL2", "SDL2_main", "fastlz" }
+	uses { "SDL2", "SDL2_main", "lz4" }
 	includedirs { 
 		"RecastDemo/Include",
 		"RecastDemo/Contrib",
-		"RecastDemo/Contrib/fastlz",
 		"DebugUtils/Include",
 		"Detour/Include",
 		"DetourCrowd/Include",
@@ -108,9 +107,7 @@ project "RecastDemo"
 	}
 	files { 
 		"RecastDemo/Include/*.h",
-		"RecastDemo/Source/*.cpp",
-		"RecastDemo/Contrib/fastlz/*.h",
-		"RecastDemo/Contrib/fastlz/*.c"
+		"RecastDemo/Source/*.cpp"
 	}
 
 	-- project dependencies
