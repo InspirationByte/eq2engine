@@ -61,6 +61,15 @@ struct DebugSphereNode_t
 	float lifetime;
 };
 
+struct DebugCylinderNode_t
+{
+	Vector3D origin;
+	float radius;
+	float height;
+	ColorRGBA color;
+	float lifetime;
+};
+
 struct DebugLineNode_t
 {
 	Vector3D start;
@@ -101,6 +110,7 @@ public:
 
 	void							Line3D(const Vector3D &start, const Vector3D &end, const ColorRGBA &color1, const ColorRGBA &color2, float fTime = 0.0f);
 	void							Box3D(const Vector3D &mins, const Vector3D &maxs, const ColorRGBA &color1, float fTime = 0.0f);
+	void							Cylinder3D(const Vector3D& position, float radius, float height, const ColorRGBA& color, float fTime = 0.0f);
 	void							OrientedBox3D(const Vector3D &mins, const Vector3D &maxs, const Vector3D& position, const Quaternion& rotation, const ColorRGBA &color, float fTime = 0.0f);
 	void							Sphere3D(const Vector3D& position, float radius, const ColorRGBA &color, float fTime = 0.0f);
 	void							Polygon3D(const Vector3D &v0, const Vector3D &v1,const Vector3D &v2, const Vector4D &color, float fTime = 0.0f);
@@ -112,7 +122,7 @@ public:
 	void							Graph_AddValue( debugGraphBucket_t* pBucket, float value);
 
 	void							SetMatrices( const Matrix4x4 &proj, const Matrix4x4 &view );
-	void							Draw( int winWide, int winTall );
+	void							Draw( int winWide, int winTall, float timescale = 1.0f );
 private:
 	void							CleanOverlays();
 
@@ -123,11 +133,13 @@ private:
 	Array<DebugFadingTextNode_t>	m_RightTextFadeArray;
 
 	Array<DebugBoxNode_t>			m_BoxList;
+	Array<DebugCylinderNode_t>		m_CylinderList;
 	//Array<DebugOriBoxNode_t>		m_OrientedBoxList;
 	Array<DebugSphereNode_t>		m_SphereList;
 	Array<DebugLineNode_t>			m_LineList;
 
 	Array<DebugBoxNode_t>			m_FastBoxList;
+	Array<DebugCylinderNode_t>		m_FastCylinderList;
 	//Array<DebugOriBoxNode_t>		m_FastOrientedBoxList;
 	Array<DebugSphereNode_t>		m_FastSphereList;
 	Array<DebugLineNode_t>			m_FastLineList;

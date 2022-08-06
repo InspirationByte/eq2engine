@@ -46,7 +46,7 @@ ConVar r_showTextureScale("r_debug_textureScale", "1.0", nullptr, CV_ARCHIVE);
 
 #include "math/Rectangle.h"
 
-void GUIDrawWindow(const Rectangle_t &rect, const ColorRGBA &color1)
+static void GUIDrawWindow(const Rectangle_t &rect, const ColorRGBA &color1)
 {
 	ColorRGBA color2(0.2,0.2,0.2,0.8);
 
@@ -102,7 +102,7 @@ void GUIDrawWindow(const Rectangle_t &rect, const ColorRGBA &color1)
 	Vector3D(min.x, min.y, min.z),\
 	Vector3D(min.x, max.y, min.z)
 
-void DrawOrientedBox(const Vector3D& position, const Vector3D& mins, const Vector3D& maxs, const Quaternion& quat, const ColorRGBA& color, float fTime = 0.0f)
+static void DrawOrientedBox(const Vector3D& position, const Vector3D& mins, const Vector3D& maxs, const Quaternion& quat, const ColorRGBA& color, float fTime = 0.0f)
 {
 	Vector3D verts[18] = { BBOX_STRIP_VERTS(mins, maxs) };
 
@@ -146,9 +146,11 @@ CDebugOverlay::CDebugOverlay() :
 	m_Text3DArray(PP_SL, 32),
 	m_RightTextFadeArray(PP_SL, 32),
 	m_BoxList(PP_SL, 32),
+	m_CylinderList(PP_SL, 32),
 	m_LineList(PP_SL, 32),
 	m_SphereList(PP_SL, 32),
 	m_FastBoxList(PP_SL, 128),
+	m_FastCylinderList(PP_SL, 128),
 	m_FastLineList(PP_SL, 128),
 	m_FastSphereList(PP_SL, 32),
 	m_graphbuckets(PP_SL, 4),
@@ -270,16 +272,41 @@ void CDebugOverlay::Box3D(const Vector3D &mins, const Vector3D &maxs, const Colo
 
 	Threading::CScopedMutex m(m_mutex);
 
-	DebugBoxNode_t box;
-	box.mins = mins;
-	box.maxs = maxs;
-	box.color = color;
-	box.lifetime = fTime;
-
+	DebugBoxNode_t* box;
 	if(fTime == 0.0f)
-		m_FastBoxList.append(box);
+		box = &m_FastBoxList.append();
 	else
-		m_BoxList.append(box);
+		box = &m_BoxList.append();
+
+	box->mins = mins;
+	box->maxs = maxs;
+	box->color = color;
+	box->lifetime = fTime;
+}
+
+void CDebugOverlay::Cylinder3D(const Vector3D& position, float radius, float height, const ColorRGBA& color, float fTime)
+{
+	if (!r_debugdrawShapes.GetBool())
+		return;
+
+	Vector3D boxSize(radius, height * 0.5f, radius);
+	if (!m_frustum.IsSphereInside(position, max(radius, height)))
+		return;
+
+	Threading::CScopedMutex m(m_mutex);
+
+	DebugCylinderNode_t* cyl;
+
+	if (fTime == 0.0f)
+		cyl = &m_FastCylinderList.append();
+	else
+		cyl = &m_CylinderList.append();
+
+	cyl->origin = position;
+	cyl->radius = radius;
+	cyl->height = height;
+	cyl->color = color;
+	cyl->lifetime = fTime;
 }
 
 void CDebugOverlay::Line3D(const Vector3D &start, const Vector3D &end, const ColorRGBA &color1, const ColorRGBA &color2, float fTime)
@@ -292,17 +319,17 @@ void CDebugOverlay::Line3D(const Vector3D &start, const Vector3D &end, const Col
 
 	Threading::CScopedMutex m(m_mutex);
 
-	DebugLineNode_t line;
-	line.start = start;
-	line.end = end;
-	line.color1 = color1;
-	line.color2 = color2;
-	line.lifetime = fTime;
+	DebugLineNode_t* line;
 
 	if(fTime == 0.0f)
-		m_FastLineList.append(line);
+		line = &m_FastLineList.append();
 	else
-		m_LineList.append(line);
+		line = &m_LineList.append();
+	line->start = start;
+	line->end = end;
+	line->color1 = color1;
+	line->color2 = color2;
+	line->lifetime = fTime;
 }
 
 void CDebugOverlay::OrientedBox3D(const Vector3D& mins, const Vector3D& maxs, const Vector3D& position, const Quaternion& rotation, const ColorRGBA& color, float fTime)
@@ -341,16 +368,16 @@ void CDebugOverlay::Sphere3D(const Vector3D& position, float radius, const Color
 
 	Threading::CScopedMutex m(m_mutex);
 
-	DebugSphereNode_t sphere;
-	sphere.origin = position;
-	sphere.radius = radius;
-	sphere.color = color;
-	sphere.lifetime = fTime;
+	DebugSphereNode_t* sphere;
 
 	if(fTime <= 0.0f)
-		m_FastSphereList.append(sphere);
+		sphere = &m_FastSphereList.append();
 	else
-		m_SphereList.append(sphere);
+		sphere = &m_SphereList.append();
+	sphere->origin = position;
+	sphere->radius = radius;
+	sphere->color = color;
+	sphere->lifetime = fTime;
 }
 
 void CDebugOverlay::Polygon3D(const Vector3D &v0, const Vector3D &v1,const Vector3D &v2, const Vector4D &color, float fTime)
@@ -360,15 +387,13 @@ void CDebugOverlay::Polygon3D(const Vector3D &v0, const Vector3D &v1,const Vecto
 
 	Threading::CScopedMutex m(m_mutex);
 
-	DebugPolyNode_t poly;
+	DebugPolyNode_t& poly = m_polygons.append();
 	poly.v0 = v0;
 	poly.v1 = v1;
 	poly.v2 = v2;
 
 	poly.color = color;
 	poly.lifetime = fTime;
-
-	m_polygons.append(poly);
 }
 
 void CDebugOverlay::Draw2DFunc(OnDebugDrawFn func, void* args)
@@ -387,7 +412,7 @@ void CDebugOverlay::Draw3DFunc( OnDebugDrawFn func, void* args )
 	m_draw3DFuncs.append(fn);
 }
 
-void DrawLineArray(Array<DebugLineNode_t>& lines, float frametime)
+static void DrawLineArray(Array<DebugLineNode_t>& lines, float frametime)
 {
 	if(!lines.numElem())
 		return;
@@ -426,7 +451,7 @@ void DrawLineArray(Array<DebugLineNode_t>& lines, float frametime)
 	meshBuilder.End();
 }
 
-void DrawOrientedBoxArray(Array<DebugOriBoxNode_t>& boxes, float frametime)
+static void DrawOrientedBoxArray(Array<DebugOriBoxNode_t>& boxes, float frametime)
 {
 	if (!boxes.numElem())
 		return;
@@ -499,7 +524,7 @@ void DrawOrientedBoxArray(Array<DebugOriBoxNode_t>& boxes, float frametime)
 	meshBuilder.End();
 }
 
-void DrawBoxArray(Array<DebugBoxNode_t>& boxes, float frametime)
+static void DrawBoxArray(Array<DebugBoxNode_t>& boxes, float frametime)
 {
 	if(!boxes.numElem())
 		return;
@@ -572,7 +597,85 @@ void DrawBoxArray(Array<DebugBoxNode_t>& boxes, float frametime)
 	meshBuilder.End();
 }
 
-void DrawGraph(debugGraphBucket_t* graph, int position, IEqFont* pFont, float frame_time)
+static void DrawCylinder(CMeshBuilder& meshBuilder, DebugCylinderNode_t& cylinder, float frametime)
+{
+	static const int NUM_SEG = 8;
+	static float dir[NUM_SEG * 2];
+	static bool init = false;
+	if (!init)
+	{
+		init = true;
+		for (int i = 0; i < NUM_SEG; ++i)
+		{
+			const float a = (float)i / (float)NUM_SEG * M_PI_F * 2;
+			dir[i * 2] = cosf(a);
+			dir[i * 2 + 1] = sinf(a);
+		}
+	}
+
+	Vector3D min, max;
+	min = cylinder.origin + Vector3D(-cylinder.radius, -cylinder.height * 0.5f, -cylinder.radius);
+	max = cylinder.origin + Vector3D(cylinder.radius, cylinder.height * 0.5f, cylinder.radius);
+
+	const float cx = (max.x + min.x) / 2;
+	const float cz = (max.z + min.z) / 2;
+	const float rx = (max.x - min.x) / 2;
+	const float rz = (max.z - min.z) / 2;
+
+	meshBuilder.Color4fv(cylinder.color);
+
+	for (int i = 0, j = NUM_SEG - 1; i < NUM_SEG; j = i++)
+	{
+		meshBuilder.Line3fv(
+			Vector3D(cx + dir[j * 2 + 0] * rx, min.y, cz + dir[j * 2 + 1] * rz), 
+			Vector3D(cx + dir[i * 2 + 0] * rx, min.y, cz + dir[i * 2 + 1] * rz));
+
+		meshBuilder.Line3fv(
+			Vector3D(cx + dir[j * 2 + 0] * rx, max.y, cz + dir[j * 2 + 1] * rz),
+			Vector3D(cx + dir[i * 2 + 0] * rx, max.y, cz + dir[i * 2 + 1] * rz));
+	}
+
+	for (int i = 0; i < NUM_SEG; i += NUM_SEG / 4)
+	{
+		meshBuilder.Line3fv(
+			Vector3D(cx + dir[i * 2 + 0] * rx, min.y, cz + dir[i * 2 + 1] * rz),
+			Vector3D(cx + dir[i * 2 + 0] * rx, max.y, cz + dir[i * 2 + 1] * rz));
+	}
+
+	cylinder.lifetime -= frametime;
+}
+
+static void DrawCylinderArray(Array<DebugCylinderNode_t>& cylArray, float frametime)
+{
+	g_pShaderAPI->SetTexture(nullptr, nullptr, 0);
+
+	materials->SetBlendingStates(BLENDFACTOR_SRC_ALPHA, BLENDFACTOR_ONE_MINUS_SRC_ALPHA, BLENDFUNC_ADD);
+	materials->SetRasterizerStates(CULL_NONE, FILL_SOLID);
+	materials->SetDepthStates(true, false);
+
+	materials->Apply();
+
+	// bind the default material as we're emulating an FFP
+	materials->BindMaterial(materials->GetDefaultMaterial());
+
+	CMeshBuilder meshBuilder(materials->GetDynamicMesh());
+	meshBuilder.Begin(PRIM_LINES);
+
+	for (int i = 0; i < cylArray.numElem(); ++i)
+	{
+		DrawCylinder(meshBuilder, cylArray[i], frametime);
+
+		if ((i % BOXES_DRAW_SUBDIV) == 0)
+		{
+			meshBuilder.End();
+			meshBuilder.Begin(PRIM_LINES);
+		}
+	}
+
+	meshBuilder.End();
+}
+
+static void DrawGraph(debugGraphBucket_t* graph, int position, IEqFont* pFont, float frame_time)
 {
 	const float GRAPH_HEIGHT = 100;
 	const float GRAPH_Y_OFFSET = 50;
@@ -676,7 +779,7 @@ void DrawGraph(debugGraphBucket_t* graph, int position, IEqFont* pFont, float fr
 
 }
 
-void DrawPolygons(Array<DebugPolyNode_t>& polygons, float frameTime)
+static void DrawPolygons(Array<DebugPolyNode_t>& polygons, float frameTime)
 {
 	if(!polygons.numElem())
 		return;
@@ -749,7 +852,7 @@ void DrawPolygons(Array<DebugPolyNode_t>& polygons, float frameTime)
 	meshBuilder.End();
 }
 
-Vector3D v3sphere(float theta, float phi)
+static Vector3D v3sphere(float theta, float phi)
 {
 	return Vector3D(
 		cos(theta) * cos(phi),
@@ -758,7 +861,7 @@ Vector3D v3sphere(float theta, float phi)
 }
 
 // use PRIM_LINES
-void DrawSphereWireframe(CMeshBuilder& meshBuilder, DebugSphereNode_t& sphere, int sides)
+static void DrawSphereWireframe(CMeshBuilder& meshBuilder, DebugSphereNode_t& sphere, int sides)
 {
 	if (sphere.radius <= 0)
 		return;
@@ -819,7 +922,7 @@ void DrawSphereWireframe(CMeshBuilder& meshBuilder, DebugSphereNode_t& sphere, i
 }
 
 // use PRIM_TRIANGLES
-void DrawSphereFilled(CMeshBuilder& meshBuilder, DebugSphereNode_t& sphere, int sides)
+static void DrawSphereFilled(CMeshBuilder& meshBuilder, DebugSphereNode_t& sphere, int sides)
 {
 	if (sphere.radius <= 0)
 		return;
@@ -901,7 +1004,7 @@ void DrawSphereFilled(CMeshBuilder& meshBuilder, DebugSphereNode_t& sphere, int 
 	}
 }
 
-void DrawSphereArray(Array<DebugSphereNode_t>& spheres, float frameTime)
+static void DrawSphereArray(Array<DebugSphereNode_t>& spheres, float frameTime)
 {
 	if(!spheres.numElem())
 		return;
@@ -938,9 +1041,9 @@ void CDebugOverlay::SetMatrices( const Matrix4x4 &proj, const Matrix4x4 &view )
 	m_frustum.LoadAsFrustum(viewProj);
 }
 
-void CDebugOverlay::Draw(int winWide, int winTall)
+void CDebugOverlay::Draw(int winWide, int winTall, float timescale)
 {
-	m_frameTime = m_timer.GetTime(true);
+	m_frameTime = m_timer.GetTime(true) * timescale;
 
 	materials->SetMatrix(MATRIXMODE_PROJECTION, m_projMat);
 	materials->SetMatrix(MATRIXMODE_VIEW, m_viewMat);
@@ -963,6 +1066,12 @@ void CDebugOverlay::Draw(int winWide, int winTall)
 		Threading::CScopedMutex m(m_mutex);
 		DrawBoxArray(m_BoxList, m_frameTime);
 		DrawBoxArray(m_FastBoxList, m_frameTime);
+	}
+
+	{
+		Threading::CScopedMutex m(m_mutex);
+		DrawCylinderArray(m_CylinderList, m_frameTime);
+		DrawCylinderArray(m_FastCylinderList, m_frameTime);
 	}
 
 	/* {
@@ -1162,8 +1271,6 @@ void CDebugOverlay::CleanOverlays()
 {
 	Threading::CScopedMutex m(m_mutex);
 
-	m_TextArray.clear();	
-
 	for (int i = 0; i < m_Text3DArray.numElem();i++)
 	{
 		if(m_Text3DArray[i].lifetime <= 0)
@@ -1200,6 +1307,15 @@ void CDebugOverlay::CleanOverlays()
 		}
 	}
 
+	for (int i = 0; i < m_CylinderList.numElem(); i++)
+	{
+		if (m_CylinderList[i].lifetime <= 0)
+		{
+			m_CylinderList.fastRemoveIndex(i);
+			i--;
+		}
+	}
+
 	/*for (int i = 0; i < m_OrientedBoxList.numElem(); i++)
 	{
 		if (m_OrientedBoxList[i].lifetime <= 0)
@@ -1229,8 +1345,10 @@ void CDebugOverlay::CleanOverlays()
 
 	m_FastSphereList.clear();
 	m_FastBoxList.clear();
+	m_FastCylinderList.clear();
 	//m_FastOrientedBoxList.clear();
 	m_FastLineList.clear();
+	m_TextArray.clear();
 }
 
 void CDebugOverlay::Graph_DrawBucket(debugGraphBucket_t* pBucket)

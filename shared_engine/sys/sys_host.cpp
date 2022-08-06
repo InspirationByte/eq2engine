@@ -697,7 +697,7 @@ bool CGameHost::Frame()
 	debugoverlay->Text(Vector4D(1), "DPS/DIPS: %i/%i", g_pShaderAPI->GetDrawCallsCount(), g_pShaderAPI->GetDrawIndexedPrimitiveCallsCount());
 	debugoverlay->Text(Vector4D(1), "primitives: %i", g_pShaderAPI->GetTrianglesCount());
 	
-	debugoverlay->Draw(m_winSize.x, m_winSize.y);
+	debugoverlay->Draw(m_winSize.x, m_winSize.y, timescale * sys_timescale.GetFloat());
 
 	materials->Setup2D(m_winSize.x, m_winSize.y);
 

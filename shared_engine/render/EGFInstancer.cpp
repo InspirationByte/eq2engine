@@ -80,7 +80,7 @@ void CEGFInstancerBase::Cleanup()
 	{
 		for(int j = 0; j < MAX_INSTANCE_LODS; j++)
 		{
-			delete [] m_instances[i][j];
+			PPFree(m_instances[i][j]);
 			m_instances[i][j] = nullptr;
 			m_numInstances[i][j] = 0;
 		}

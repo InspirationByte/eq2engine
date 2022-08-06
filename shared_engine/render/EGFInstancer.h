@@ -75,7 +75,7 @@ inline IT& CEGFInstancer<IT>::NewInstance(ubyte bodyGroup, int lod)
 		return dummy; // overflow
 
 	if (!m_instances[bodyGroup][lod])
-		m_instances[bodyGroup][lod] = new IT[MAX_EGF_INSTANCES];
+		m_instances[bodyGroup][lod] = PPAllocStructArray(IT, MAX_EGF_INSTANCES);
 
 	m_hasInstances = true;
 

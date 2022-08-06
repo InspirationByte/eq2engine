@@ -63,6 +63,7 @@ public:
 
 	virtual void				Line3D(const Vector3D &start, const Vector3D &end, const ColorRGBA &color1, const ColorRGBA &color2, float fTime = 0.0f) = 0;
 	virtual void				Box3D(const Vector3D &mins, const Vector3D &maxs, const ColorRGBA &color, float fTime = 0.0f) = 0;
+	virtual void				Cylinder3D(const Vector3D& position, float radius, float height, const ColorRGBA& color, float fTime = 0.0f) = 0;
 	virtual void				OrientedBox3D(const Vector3D& mins, const Vector3D& maxs, const Vector3D& position, const Quaternion& rotation, const ColorRGBA& color, float fTime = 0.0f) = 0;
 	virtual void				Sphere3D(const Vector3D& position, float radius, const ColorRGBA &color, float fTime = 0.0f) = 0;
 	virtual void				Polygon3D(const Vector3D &v0, const Vector3D &v1,const Vector3D &v2, const Vector4D &color, float fTime = 0.0f) = 0;
@@ -77,7 +78,7 @@ public:
 	virtual void				Graph_AddValue( debugGraphBucket_t* pBucket, float value) = 0;
 
 	virtual void				SetMatrices( const Matrix4x4 &proj, const Matrix4x4 &view ) = 0;
-	virtual void				Draw(int winWide, int winTall) = 0;	// draws debug overlay.
+	virtual void				Draw(int winWide, int winTall, float timeScale = 1.0f) = 0;	// draws debug overlay.
 
 	void						Draw(const Matrix4x4 &proj, const Matrix4x4 &view, int winWide, int winTall) { SetMatrices(proj, view); Draw(winWide, winTall); }
 };
