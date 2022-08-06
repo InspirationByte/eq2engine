@@ -733,6 +733,8 @@ IMaterial* CEngineStudioEGF::GetMaterial(int materialIdx, int materialGroupIdx)
 	if (materialIdx == -1)
 		return materials->GetDefaultMaterial();
 
+	materialGroupIdx = clamp(materialGroupIdx, 0, m_hwdata->numMaterialGroups - 1);
+
 	return m_materials[m_hwdata->numUsedMaterials * materialGroupIdx + materialIdx];
 }
 
