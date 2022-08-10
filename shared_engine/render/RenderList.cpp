@@ -62,20 +62,9 @@ void CRenderList::Clear()
 	m_ObjectList.clear(false);
 }
 
-// compares floats (for array sort)
-inline int DistComparator(float f1, float f2)
-{
-	if (f1 < f2)
-		return -1;
-	else if (f1 > f2)
-		return 1;
-
-	return 0;
-}
-
 int CRenderList::DistanceCompare(CBaseRenderableObject* const & a, CBaseRenderableObject* const& b)
 {
-	return DistComparator(a->m_fViewDistance, b->m_fViewDistance);
+	return b->m_fViewDistance - a->m_fViewDistance;
 }
 
 void CRenderList::SortByDistanceFrom(const Vector3D& origin)

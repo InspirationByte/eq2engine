@@ -1580,13 +1580,14 @@ void ShaderAPID3DX9::CopyRendertargetToTexture(ITexture* srcTarget, ITexture* de
 			return;
 		}
 
+
 		ASSERT(destSurface);
 
 		hr = m_pD3DDevice->StretchRect( srcSurface, srcRect ? &dxSrcRect : nullptr, destSurface, destRect ? &dxDestRect : nullptr, D3DTEXF_NONE );
 		//ASSERT( !FAILED( hr ) );
 
-		//if(FAILED( hr ))
-		//	Msg("CopyRendertargetToTexture error\n");
+		if(FAILED( hr ))
+			MsgError("CopyRendertargetToTexture(%s -> %s) failed (%x)\n", srcTarget->GetName(), destTex->GetName(), hr);
 
 		destSurface->Release();
 	}
