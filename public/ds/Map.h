@@ -664,3 +664,12 @@ using Set = Map<K, _EMPTY_VALUE>;
 
 //template<typename K, typename V>
 //using MultiMap = Map<K, V, true>;
+
+
+// nesting Source-line constructor helper
+template<typename K, typename V>
+struct PPSLValueCtor<Map<K, V>>
+{
+	Map<K,V> x;
+	PPSLValueCtor<Map<K,V>>(const PPSourceLine& sl) : x(sl) {}
+};
