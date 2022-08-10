@@ -8,23 +8,17 @@
 #include "core/core_common.h"
 #include "core/IEqParallelJobs.h"
 #include "core/ConVar.h"
-#include "utils/global_mutex.h"
 #include "utils/TextureAtlas.h"
 #include "EffectRender.h"
 
 #include "render/IDebugOverlay.h"
 
-ConVar r_sorteffects("r_sorteffects", "1", "Sorts effects. If you disable it, effects will not be sorted.", CV_ARCHIVE);
+using namespace Threading;
+static CEqMutex s_effectRenderMutex;
 
-int _SortParticles(IEffect* const &elem0, IEffect* const &elem1)
+static int _SortParticles(IEffect* const &effect0, IEffect* const &effect1)
 {
-	if(!elem0 || !elem1)
-		return 0;
-
-	IEffect* pEffect0 = elem0;
-	IEffect* pEffect1 = elem1;
-
-	return pEffect1->GetDistanceToCamera() > pEffect0->GetDistanceToCamera();
+	return effect0->GetDistanceToCamera() - effect1->GetDistanceToCamera();
 }
 
 IEffect::IEffect() :	m_vOrigin(0.0f),
@@ -45,18 +39,17 @@ void IEffect::SetSortOrigin(const Vector3D &origin)
 
 CEffectRenderer::CEffectRenderer()
 {
-	m_numEffects.SetValue(0);
+	m_numEffects = 0;
 	memset(m_pEffectList, 0, sizeof(m_pEffectList));
 }
 
-void CEffectRenderer::RegisterEffectForRender(IEffect* pEffect)
+void CEffectRenderer::AddEffect(IEffect* pEffect)
 {
-	Threading::CEqMutex& mutex = GetGlobalMutex(MUTEXPURPOSE_PARTICLES);
-	Threading::CScopedMutex m(mutex);
+	CScopedMutex m(s_effectRenderMutex);
 
 	ASSERT_MSG(pEffect != nullptr, "RegisterEffectForRender - inserting NULL effect");
 
-	if(m_numEffects.GetValue() >= MAX_VISIBLE_EFFECTS)
+	if(m_numEffects >= MAX_VISIBLE_EFFECTS)
 	{
 		DevMsg(DEVMSG_CORE, "Effect list overflow!\n");
 
@@ -66,20 +59,17 @@ void CEffectRenderer::RegisterEffectForRender(IEffect* pEffect)
 		return;
 	}
 
-	m_pEffectList[m_numEffects.GetValue()] = pEffect;
-	m_numEffects.Increment();
+	m_pEffectList[m_numEffects++] = pEffect;
 }
 
 void CEffectRenderer::DrawEffects(float dt)
 {
-	Threading::CEqMutex& mutex = GetGlobalMutex(MUTEXPURPOSE_PARTICLES);
-	Threading::CScopedMutex m(mutex);
+	CScopedMutex m(s_effectRenderMutex);
 
 	// sort particles
-	if(r_sorteffects.GetBool())
-		shellSort<IEffect*>(m_pEffectList, m_numEffects.GetValue(), _SortParticles);
+	quickSort<IEffect*>(m_pEffectList, _SortParticles, 0, m_numEffects-1);
 
-	for(int i = 0; i < m_numEffects.GetValue(); i++)
+	for(int i = 0; i < m_numEffects; i++)
 	{
         if(!m_pEffectList[i])
         {
@@ -98,35 +88,33 @@ void CEffectRenderer::DrawEffects(float dt)
 
 void CEffectRenderer::RemoveAllEffects()
 {
-	Threading::CEqMutex& mutex = GetGlobalMutex(MUTEXPURPOSE_PARTICLES);
-	Threading::CScopedMutex m(mutex);
+	CScopedMutex m(s_effectRenderMutex);
 
-	for(int i = 0; i < m_numEffects.GetValue(); i++)
+	for(int i = 0; i < m_numEffects; i++)
 	{
 		m_pEffectList[i]->DestroyEffect();
 		delete m_pEffectList[i];
 	}
 
-	m_numEffects.SetValue(0);
+	m_numEffects = 0;
 	memset(m_pEffectList, 0, sizeof(m_pEffectList));
 }
 
 void CEffectRenderer::RemoveEffect(int index)
 {
-	if ( index >= m_numEffects.GetValue() || index < 0 )
+	if ( index >= m_numEffects || index < 0 )
 		return;
 
-    Threading::CEqMutex& mutex = GetGlobalMutex(MUTEXPURPOSE_PARTICLES);
-	Threading::CScopedMutex m(mutex);
+	CScopedMutex m(s_effectRenderMutex);
 
 	IEffect* effect = m_pEffectList[index];
 
-	m_numEffects.Decrement();
+	--m_numEffects;
 
-	if ( m_numEffects.GetValue() > 0 && index != m_numEffects.GetValue() )
+	if ( m_numEffects > 0 && index != m_numEffects )
 	{
-		m_pEffectList[index] = m_pEffectList[m_numEffects.GetValue()];
-		m_pEffectList[m_numEffects.GetValue()] = nullptr;
+		m_pEffectList[index] = m_pEffectList[m_numEffects];
+		m_pEffectList[m_numEffects] = nullptr;
 	}
 
 	if(effect)
@@ -140,7 +128,6 @@ void CEffectRenderer::SetViewSortPosition(const Vector3D& origin)
 {
 	m_viewPos = origin;
 }
-
 
 Vector3D CEffectRenderer::GetViewSortPosition() const
 {

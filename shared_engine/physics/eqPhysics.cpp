@@ -23,7 +23,6 @@
 #include "core/ConVar.h"
 #include "core/IEqParallelJobs.h"
 #include "utils/KeyValues.h"
-#include "utils/global_mutex.h"
 
 #include "render/IDebugOverlay.h"
 
@@ -46,6 +45,7 @@
 
 using namespace EqBulletUtils;
 using namespace Threading;
+static CEqMutex s_eqPhysMutex;
 
 #define PHYSGRID_WORLD_SIZE			24	// compromised betwen memory usage and performance
 #define PHYSICS_WORLD_MAX_UNITS		65535.0f
@@ -284,7 +284,7 @@ struct CEqManifoldResult : public btManifoldResult
 
 //------------------------------------------------------------------------------------------------------------
 
-CEqPhysics::CEqPhysics() : m_mutex(GetGlobalMutex(MUTEXPURPOSE_PHYSICS))
+CEqPhysics::CEqPhysics()
 {
 	m_debugRaycast = false;
 }
@@ -455,7 +455,7 @@ void CEqPhysics::AddToMoveableList( CEqRigidBody* body )
 	if (body->m_flags & BODY_MOVEABLE)
 		return;
 
-	//Threading::CScopedMutex m(m_mutex);
+	//CScopedMutex m(s_eqPhysMutex);
 
 	body->m_flags |= BODY_MOVEABLE;
 
@@ -468,7 +468,7 @@ void CEqPhysics::AddToWorld( CEqRigidBody* body, bool moveable )
 	if(!body)
 		return;
 
-	//Threading::CScopedMutex m(m_mutex);
+	//CScopedMutex m(s_eqPhysMutex);
 
 	CHECK_ALREADY_IN_LIST(m_dynObjects, body);
 
@@ -487,13 +487,11 @@ bool CEqPhysics::RemoveFromWorld( CEqRigidBody* body )
 	if(!body)
 		return false;
 
-	//Threading::CScopedMutex m(m_mutex);
-
 	collgridcell_t* cell = body->GetCell();
 
 	if (cell)
 	{
-		Threading::CScopedMutex m(m_mutex);
+		CScopedMutex m(s_eqPhysMutex);
 		cell->m_dynamicObjs.fastRemove(body);
 	}
 
@@ -523,7 +521,7 @@ void CEqPhysics::AddGhostObject( CEqCollisionObject* object )
 	if(!object)
 		return;
 
-	//Threading::CScopedMutex m(m_mutex);
+	//CScopedMutex m(s_eqPhysMutex);
 
 	// add extra flags to objects
 	object->m_flags = COLLOBJ_ISGHOST | COLLOBJ_DISABLE_RESPONSE | COLLOBJ_NO_RAYCAST;
@@ -549,7 +547,7 @@ void CEqPhysics::DestroyGhostObject( CEqCollisionObject* object )
 	if(!object)
 		return;
 
-	//Threading::CScopedMutex m(m_mutex);
+	//CScopedMutex m(s_eqPhysMutex);
 
 	if(m_grid)
 	{
@@ -563,7 +561,7 @@ void CEqPhysics::DestroyGhostObject( CEqCollisionObject* object )
 
 			if (cell)
 			{
-				Threading::CScopedMutex m(m_mutex);
+				CScopedMutex m(s_eqPhysMutex);
 				cell->m_dynamicObjs.fastRemove(object);
 			}
 		}
@@ -578,7 +576,7 @@ void CEqPhysics::AddStaticObject( CEqCollisionObject* object )
 	if(!object)
 		return;
 
-	//Threading::CScopedMutex m(m_mutex);
+	//CScopedMutex m(s_eqPhysMutex);
 
 	m_staticObjects.append(object);
 
@@ -605,7 +603,7 @@ void CEqPhysics::DestroyStaticObject( CEqCollisionObject* object )
 	if(!object)
 		return;
 
-	//Threading::CScopedMutex m(m_mutex);
+	//CScopedMutex m(s_eqPhysMutex);
 
 	if (m_staticObjects.fastRemove(object))
 	{
@@ -639,7 +637,7 @@ void CEqPhysics::AddConstraint( IEqPhysicsConstraint* constraint )
 	if(!constraint)
 		return;
 
-	//Threading::CScopedMutex m(m_mutex);
+	//CScopedMutex m(s_eqPhysMutex);
 	m_constraints.append( constraint );
 }
 
@@ -648,7 +646,7 @@ void CEqPhysics::RemoveConstraint( IEqPhysicsConstraint* constraint )
 	if(!constraint)
 		return;
 
-	//Threading::CScopedMutex m(m_mutex);
+	//CScopedMutex m(s_eqPhysMutex);
 	m_constraints.fastRemove( constraint );
 }
 
@@ -657,7 +655,7 @@ void CEqPhysics::AddController( IEqPhysicsController* controller )
 	if(!controller)
 		return;
 
-	//Threading::CScopedMutex m(m_mutex);
+	//CScopedMutex m(s_eqPhysMutex);
 	m_controllers.append( controller );
 
 	controller->AddedToWorld( this );
@@ -668,7 +666,7 @@ void CEqPhysics::RemoveController( IEqPhysicsController* controller )
 	if(!controller)
 		return;
 
-	//Threading::CScopedMutex m(m_mutex);
+	//CScopedMutex m(s_eqPhysMutex);
 	m_controllers.fastRemove( controller );
 
 	controller->RemovedFromWorld( this );
@@ -679,7 +677,7 @@ void CEqPhysics::DestroyController( IEqPhysicsController* controller )
 	if(!controller)
 		return;
 
-	//Threading::CScopedMutex m(m_mutex);
+	//CScopedMutex m(s_eqPhysMutex);
 
 	if(m_controllers.fastRemove(controller))
 	{
@@ -1037,7 +1035,7 @@ void CEqPhysics::SetupBodyOnCell( CEqCollisionObject* body )
 	// move object in grid
 	if (newCell != oldCell)
 	{
-		Threading::CScopedMutex m(m_mutex);
+		CScopedMutex m(s_eqPhysMutex);
 		if (oldCell)
 			oldCell->m_dynamicObjs.fastRemove(body);
 
@@ -1070,7 +1068,7 @@ void CEqPhysics::IntegrateSingle(CEqRigidBody* body)
 		// move object in grid if it's a really new cell
 		if (newCell != oldCell)
 		{
-			Threading::CScopedMutex m(m_mutex);
+			CScopedMutex m(s_eqPhysMutex);
 			if (oldCell)
 				oldCell->m_dynamicObjs.fastRemove(body);
 
@@ -1517,7 +1515,7 @@ bool CEqPhysics::TestLineCollisionOnCell(int y, int x,
 	// static objects are not checked if line is not in Y bound
 	if(staticInBoundTest && (objectTypeTesting & 0x1))
 	{
-		Threading::CScopedMutex m(m_mutex);
+		CScopedMutex m(s_eqPhysMutex);
 		for (int i = 0; i < gridObjects.numElem(); i++)
 		{
 			CollisionData_t tempColl;
@@ -1534,7 +1532,7 @@ bool CEqPhysics::TestLineCollisionOnCell(int y, int x,
 
 	if(objectTypeTesting & 0x2)
 	{
-		Threading::CScopedMutex m(m_mutex);
+		CScopedMutex m(s_eqPhysMutex);
 		// test dynamic objects within cell
 		for (int i = 0; i < dynamicObjects.numElem(); i++)
 		{
@@ -1575,7 +1573,7 @@ bool CEqPhysics::TestLineCollision(	const FVector3D& start,
 
 	IVector2D startCell, endCell;
 
-	//Threading::CScopedMutex m(m_mutex);
+	//CScopedMutex m(s_eqPhysMutex);
 	m_grid->GetPointAt(start, startCell.x, startCell.y);
 	m_grid->GetPointAt(end, endCell.x, endCell.y);
 
@@ -1620,7 +1618,7 @@ bool CEqPhysics::TestConvexSweepCollision(	btCollisionShape* shape,
 	if (!m_grid) {
 		return false;
 	}
-	//Threading::CScopedMutex m(m_mutex);
+	//CScopedMutex m(s_eqPhysMutex);
 
 	coll.position = end;
 	coll.fract = 32768.0f;

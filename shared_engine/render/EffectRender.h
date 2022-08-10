@@ -70,7 +70,7 @@ class CEffectRenderer
 public:
 				CEffectRenderer();
 
-	void		RegisterEffectForRender(IEffect* pEffect);
+	void		AddEffect(IEffect* pEffect);
 	void		DrawEffects(float dt);
 
 	void		RemoveAllEffects();
@@ -83,7 +83,7 @@ protected:
 
 private:
 	IEffect*							m_pEffectList[MAX_VISIBLE_EFFECTS];
-	Threading::CEqInterlockedInteger	m_numEffects;
+	volatile int						m_numEffects;
 
 	Vector3D							m_viewPos;
 };

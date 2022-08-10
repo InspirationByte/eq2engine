@@ -15,7 +15,6 @@
 #include "core/ConVar.h"
 #include "core/ConCommand.h"
 #include "utils/KeyValues.h"
-#include "utils/global_mutex.h"
 
 #include "render/IDebugOverlay.h"
 
@@ -32,6 +31,8 @@
 #include "imgui_backend/imgui_impl_matsystem.h"
 #include "imgui_backend/imgui_impl_sys.h"
 
+using namespace Threading;
+static CEqMutex s_conInputMutex;
 
 #ifdef _DEBUG
 #define CONSOLE_ENGINEVERSION_STR EqString::Format(ENGINE_NAME " Engine " ENGINE_VERSION " DEBUG build %d (" COMPILE_DATE ")", BUILD_NUMBER_ENGINE).ToCString()
@@ -211,7 +212,7 @@ void CEqConsoleInput::SpewFunc(SpewType_t type, const char* pMsg)
 				debugoverlay->TextFadeOut(0, s_spewColors[type], CON_MINICON_TIME, currentSpewLine->text.ToCString());
 
 			{
-				Threading::CScopedMutex m(GetGlobalMutex(MUTEXPURPOSE_LOG));
+				CScopedMutex m(s_conInputMutex);
 				s_spewMessages.append(currentSpewLine);
 			}
 		}
@@ -226,7 +227,7 @@ void CEqConsoleInput::SpewFunc(SpewType_t type, const char* pMsg)
 
 void CEqConsoleInput::SpewClear()
 {
-	Threading::CScopedMutex m(GetGlobalMutex(MUTEXPURPOSE_LOG));
+	CScopedMutex m(s_conInputMutex);
 
 	for(int i = 0; i < s_spewMessages.numElem(); i++)
 		delete s_spewMessages[i];
@@ -1085,7 +1086,7 @@ void CEqConsoleInput::DrawAutoCompletion(float x, float y, float w)
 
 void CEqConsoleInput::SetLastLine()
 {
-	Threading::CScopedMutex m(GetGlobalMutex(MUTEXPURPOSE_LOG));
+	CScopedMutex m(s_conInputMutex);
 	int totalLines = s_spewMessages.numElem();
 
 	m_logScrollPosition = totalLines - m_maxLines;
@@ -1094,7 +1095,7 @@ void CEqConsoleInput::SetLastLine()
 
 void CEqConsoleInput::AddToLinePos(int num)
 {
-	Threading::CScopedMutex m(GetGlobalMutex(MUTEXPURPOSE_LOG));
+	CScopedMutex m(s_conInputMutex);
 	int totalLines = s_spewMessages.numElem();
 	m_logScrollPosition += num;
 	m_logScrollPosition = min(totalLines,m_logScrollPosition);
@@ -1111,7 +1112,7 @@ void CEqConsoleInput::SetText( const char* text, bool quiet /*= false*/ )
 
 void CEqConsoleInput::DrawSelf(int width,int height, float frameTime)
 {
-	Threading::CScopedMutex m(GetGlobalMutex(MUTEXPURPOSE_LOG));
+	CScopedMutex m(s_conInputMutex);
 
 	m_cursorTime -= frameTime;
 

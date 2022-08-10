@@ -219,8 +219,6 @@ protected:
 	btCollisionConfiguration*		m_collConfig{ nullptr };
 	btCollisionDispatcher*			m_collDispatcher{ nullptr };
 
-	Threading::CEqMutex&			m_mutex;
-
 	int								m_numRayQueries;
 
 	float							m_fDt;

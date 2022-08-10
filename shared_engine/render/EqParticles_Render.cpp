@@ -8,7 +8,6 @@
 #include "core/core_common.h"
 #include "core/IConsoleCommands.h"
 #include "core/ConVar.h"
-#include "utils/global_mutex.h"
 #include "utils/TextureAtlas.h"
 #include "EqParticles.h"
 #include "ViewParams.h"
@@ -23,6 +22,7 @@ static VertexFormatDesc_t g_PFXVertexFormatDesc[] = {
 };
 
 using namespace Threading;
+static CEqMutex s_particleRenderMutex;
 
 static CParticleLowLevelRenderer s_pfxRenderer;
 CParticleLowLevelRenderer* g_pPFXRenderer = &s_pfxRenderer;
@@ -80,7 +80,7 @@ int CParticleRenderGroup::AllocateGeom( int nVertices, int nIndices, PFXVertex_t
 	if(!g_pPFXRenderer->IsInitialized())
 		return -1;
 
-	Threading::CScopedMutex m(g_pPFXRenderer->m_mutex);
+	Threading::CScopedMutex m(s_particleRenderMutex);
 
 	return _AllocateGeom(nVertices, nIndices, verts, indices, preSetIndices);
 }
@@ -90,7 +90,7 @@ void CParticleRenderGroup::AddParticleStrip(PFXVertex_t* verts, int nVertices)
 	if(!g_pPFXRenderer->IsInitialized())
 		return;
 
-	Threading::CScopedMutex m(g_pPFXRenderer->m_mutex);
+	Threading::CScopedMutex m(s_particleRenderMutex);
 
 	_AddParticleStrip(verts, nVertices);
 }
@@ -247,7 +247,7 @@ int CPFXAtlasGroup::GetEntryCount() const
 
 //----------------------------------------------------------------------------------------------------------
 
-CParticleLowLevelRenderer::CParticleLowLevelRenderer() : m_mutex(GetGlobalMutex(MUTEXPURPOSE_PARTICLES))
+CParticleLowLevelRenderer::CParticleLowLevelRenderer()
 {
 	m_vertexBuffer = nullptr;
 	m_indexBuffer = nullptr;

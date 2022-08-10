@@ -14,11 +14,13 @@
 #include "core/ConVar.h"
 #include "core/IDkCore.h"
 #include "utils/KeyValues.h"
-#include "utils/global_mutex.h"
 
 #include "eqAudioSystemAL.h"
 #include "source/snd_al_source.h"
 
+
+using namespace Threading;
+static CEqMutex s_audioSysMutex;
 
 static CEqAudioSystemAL s_audioSystemAL;
 IEqAudioSystem* g_audioSystem = &s_audioSystemAL;
@@ -329,7 +331,7 @@ void CEqAudioSystemAL::Shutdown()
 
 IEqAudioSource* CEqAudioSystemAL::CreateSource()
 {
-	Threading::CScopedMutex m(GetGlobalMutex(MUTEXPURPOSE_AUDIO));
+	CScopedMutex m(s_audioSysMutex);
 
 	int index = m_sources.append(new CEqAudioSourceAL());
 	return m_sources[index];
@@ -419,7 +421,7 @@ ISoundSource* CEqAudioSystemAL::LoadSample(const char* filename)
 		}
 
 		{
-			Threading::CScopedMutex m(GetGlobalMutex(MUTEXPURPOSE_AUDIO));
+			CScopedMutex m(s_audioSysMutex);
 			m_samples.append(sampleSource);
 		}
 		
@@ -435,7 +437,7 @@ void CEqAudioSystemAL::FreeSample(ISoundSource* sampleSource)
 
 	// free
 	ISoundSource::DestroySound(sampleSource);
-	Threading::CScopedMutex m(GetGlobalMutex(MUTEXPURPOSE_AUDIO));
+	CScopedMutex m(s_audioSysMutex);
 	m_samples.fastRemove(sampleSource);
 }
 
@@ -490,7 +492,7 @@ void CEqAudioSystemAL::Update()
 		{
 			if (src->m_releaseOnStop)
 			{
-				Threading::CScopedMutex m(GetGlobalMutex(MUTEXPURPOSE_AUDIO));
+				CScopedMutex m(s_audioSysMutex);
 				m_sources.fastRemoveIndex(i);
 				i--;
 			}
