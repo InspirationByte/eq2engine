@@ -23,8 +23,8 @@ protected:
 #define DECLARE_COMPONENT(name) \
 	static constexpr const char Name[] = name; \
 	static constexpr int NameHash{ StringToHashConst(name) }; \
-	const char* GetName() const override { return name; }\
-	int GetNameHash() const override { return NameHash; }
+	virtual const char* GetName() const override { return name; }\
+	virtual int GetNameHash() const override { return NameHash; }
 
 // hard-linked component instantiator
 #define	ADD_COMPONENT_GETTER(type)	Type* Get<Type>() const { return &m_inst##Type; }
@@ -45,13 +45,13 @@ namespace ComponentHostImpl
 	}
 
 	template<typename TComponentBase>
-	void AddComponent(COMPONENT_MAP<TComponentBase>& components, int hash, TComponentBase* component)
+	inline void AddComponent(COMPONENT_MAP<TComponentBase>& components, int hash, TComponentBase* component)
 	{
 		components[hash] = component;
 	}
 
 	template<typename TComponentBase>
-	TComponentBase* GetComponent(const COMPONENT_MAP<TComponentBase>& components, const char* name)
+	inline TComponentBase* GetComponent(const COMPONENT_MAP<TComponentBase>& components, const char* name)
 	{
 		const int hash = StringToHashConst(name);
 		return GetComponent(components, hash);
@@ -63,6 +63,23 @@ namespace ComponentHostImpl
 		ASSERT(componentWalkFn);
 		for (auto it = components.begin(); it != components.end(); ++it)
 			componentWalkFn(*it);
+	}
+
+	template<typename TComponentBase>
+	inline void RemoveComponent(COMPONENT_MAP<TComponentBase>& components, int hash)
+	{
+		auto it = components.find(hash);
+		if (it == components.end())
+			return;
+		delete* it;
+		components.remove(it);
+	}
+
+	template<typename TComponentBase>
+	inline void RemoveComponent(COMPONENT_MAP<TComponentBase>& components, const char* name)
+	{
+		const int hash = StringToHashConst(name);
+		RemoveComponent(components, hash);
 	}
 
 	template<typename TComponentBase>
@@ -84,6 +101,8 @@ public: \
 	inline componentBase*					GetComponent(int hash) const { return ComponentHostImpl::GetComponent(m_components, hash); } \
 	inline void								AddComponent(int hash, componentBase* component) { return ComponentHostImpl::AddComponent(m_components, hash, component); } \
 	inline componentBase*					Get(const char* name) const { return ComponentHostImpl::GetComponent(m_components, name); } \
+	template<class CType> void				Remove() { ComponentHostImpl::RemoveComponent<componentBase>(m_components, CType::NameHash); } \
+	inline void								Remove(const char* name) { return ComponentHostImpl::RemoveComponent(m_components, name); } \
 	template<class CType> CType*			Get() const { return static_cast<CType*>(ComponentHostImpl::GetComponent<componentBase>(m_components, CType::NameHash)); } \
 	inline void								RemoveAllComponents() { ComponentHostImpl::RemoveAll(m_components); } \
 	template<class CType> CType*			Add() { \
