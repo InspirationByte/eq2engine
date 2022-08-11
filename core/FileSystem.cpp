@@ -707,11 +707,9 @@ IFile* CFileSystem::GetFileHandle(const char* filename, const char* options, int
         FILE *tmpFile = fopen(tmp_path,options);
         if (tmpFile)
         {
+			CScopedMutex m(m_FSMutex);
 			CFile* pFileHandle = PPNew CFile(tmpFile);
-			m_FSMutex.Lock();
 			m_openFiles.append(pFileHandle);
-			m_FSMutex.Unlock();
-
 			return pFileHandle;
         }
 
@@ -758,6 +756,7 @@ IFile* CFileSystem::GetFileHandle(const char* filename, const char* options, int
         FILE *tmpFile = fopen(tmp_path,options);
 		if (tmpFile)
 		{
+			CScopedMutex m(m_FSMutex);
 			CFile* pFileHandle = PPNew CFile(tmpFile);
 			m_openFiles.append(pFileHandle);
 
