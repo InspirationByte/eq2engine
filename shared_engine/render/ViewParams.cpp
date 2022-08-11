@@ -29,13 +29,20 @@ void CViewParams::SetOrigin(const Vector3D &origin)
 {
 	m_vecOrigin = origin;
 }
+
 void CViewParams::SetAngles(const Vector3D &angles)
 {
 	m_vecAngles = angles;
 }
+
 void CViewParams::SetFOV(float fFov)
 {
 	m_fFOV = fFov;
+}
+
+void CViewParams::SetZNear(float fNear)
+{
+	m_fZNear = fNear;
 }
 
 const Vector3D& CViewParams::GetOrigin() const
@@ -51,6 +58,11 @@ const Vector3D& CViewParams::GetAngles() const
 float CViewParams::GetFOV() const
 {
 	return m_fFOV;
+}
+
+float CViewParams::GetZNear() const
+{
+	return m_fZNear;
 }
 
 float CViewParams::GetLODScaledDistFrom( const Vector3D& position ) const

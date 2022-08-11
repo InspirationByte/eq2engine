@@ -7,23 +7,27 @@
 
 #pragma once
 
+static constexpr const float CAMERA_DEFAULT_ZNEAR = 0.1f;
+static constexpr const float CAMERA_DEFAULT_FOV = 72.0f;
+
 class CViewParams
 {
 public:
-					CViewParams();
+	CViewParams();
 
-					//Initializes the CViewParams. Angles and FOV in degrees
-					CViewParams(const Vector3D &origin,const Vector3D &angles,float fFov);
+	//Initializes the CViewParams. Angles and FOV in degrees
+	CViewParams(const Vector3D &origin,const Vector3D &angles,float fFov);
 
-public:
 	const Vector3D&	GetOrigin() const;
 	const Vector3D&	GetAngles() const;
 	float			GetFOV() const;
+	float			GetZNear() const;
 
 	void			SetOrigin( const Vector3D &origin );
 	void			SetAngles( const Vector3D &angles );
 
-	void			SetFOV( float fov );
+	void			SetFOV( float fFov );
+	void			SetZNear( float fNear );
 
 	float			GetLODScaledDistFrom(const Vector3D& position ) const;
 
@@ -32,7 +36,8 @@ public:
 
 protected:
 
-	Vector3D		m_vecOrigin;
-	Vector3D		m_vecAngles;
-	float			m_fFOV;
+	Vector3D		m_vecOrigin{ 0 };
+	Vector3D		m_vecAngles{ 0 };
+	float			m_fFOV{ CAMERA_DEFAULT_FOV };
+	float			m_fZNear{ CAMERA_DEFAULT_ZNEAR };
 };

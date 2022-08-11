@@ -63,16 +63,15 @@ static void SunDefaults(suninfo_t* p)
 // Scene info
 struct sceneinfo_t
 {
-	float		m_fZNear;
-	float		m_fZFar;
+	ColorRGB	m_cAmbientColor{ 0.45f };
+	ColorRGB	m_cFogColor{ 0.5f };
 
-	ColorRGB	m_cAmbientColor;
+	float		m_fZNear{ 0.1f };
+	float		m_fZFar{ 1000.0f };
 
-	bool		m_bFogEnable;
-	float		m_fFogRange;
-	float		m_fFogNear;
-
-	ColorRGB	m_cFogColor;
+	float		m_fFogRange{ 1000.0f };
+	float		m_fFogNear{ 150.0f };
+	bool		m_bFogEnable{ false };
 };
 
 //-------------------------------------------

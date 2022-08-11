@@ -512,7 +512,7 @@ void CEqAudioSystemAL::SetListener(const Vector3D& position,
 	const Vector3D& upVec)
 {
 	// setup orientation parameters
-	float orient[] = { forwardVec.x, forwardVec.y, forwardVec.z, -upVec.x, -upVec.y, -upVec.z };
+	float orient[] = { -forwardVec.x, -forwardVec.y, -forwardVec.z, -upVec.x, -upVec.y, -upVec.z };
 
 	alListenerfv(AL_POSITION, position);
 	alListenerfv(AL_ORIENTATION, orient);
