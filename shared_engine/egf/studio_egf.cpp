@@ -660,41 +660,46 @@ void CEngineStudioEGF::LoadMaterials()
 
 			for (int j = 0; j < pHdr->numMaterialSearchPaths; j++)
 			{
-				if (!m_materials[i])
-				{
-					EqString spath(pHdr->pMaterialSearchPath(j)->searchPath);
-					spath.Path_FixSlashes();
+				if (m_materials[i])
+					continue;
 
-					if (spath.ToCString()[spath.Length() - 1] == CORRECT_PATH_SEPARATOR)
-						spath = spath.Left(spath.Length() - 1);
+				EqString spath(pHdr->pMaterialSearchPath(j)->searchPath);
+				spath.Path_FixSlashes();
 
-					EqString extend_path;
-					CombinePath(extend_path, 2, spath.ToCString(), fpath.ToCString());
+				if (spath.ToCString()[spath.Length() - 1] == CORRECT_PATH_SEPARATOR)
+					spath = spath.Left(spath.Length() - 1);
 
-					if (materials->IsMaterialExist(extend_path))
-					{
-						m_materials[i] = materials->GetMaterial(extend_path.GetData());
-						m_materials[i]->Ref_Grab();
+				EqString extend_path;
+				CombinePath(extend_path, 2, spath.ToCString(), fpath.ToCString());
 
-						materials->PutMaterialToLoadingQueue(m_materials[i]);
+				if (!materials->IsMaterialExist(extend_path))
+					continue;
 
-						if (!m_materials[i]->IsError() && !(m_materials[i]->GetFlags() & MATERIAL_FLAG_SKINNED))
-							MsgWarning("Warning! Material '%s' shader '%s' for model '%s' is invalid\n", m_materials[i]->GetName(), m_materials[i]->GetShaderName(), m_szPath.ToCString());
-					}
-				}
+				IMaterial* material = materials->GetMaterial(extend_path.GetData());
+				material->Ref_Grab();
+
+				materials->PutMaterialToLoadingQueue(material);
+
+				if (!material->IsError() && !(material->GetFlags() & MATERIAL_FLAG_SKINNED))
+					MsgWarning("Warning! Material '%s' shader '%s' for model '%s' is invalid\n", material->GetName(), material->GetShaderName(), m_szPath.ToCString());
+
+				m_materials[i] = material;
 			}
 		}
 
 		// false-initialization of non-loaded materials
 		for (int i = 0; i < m_numMaterials; i++)
 		{
-			if (!m_materials[i])
-			{
-				MsgError("Couldn't load model material '%s'\n", pHdr->pMaterial(i)->materialname, m_szPath.ToCString());
-				bError = true;
+			if (m_materials[i])
+				continue;
 
-				m_materials[i] = materials->GetMaterial("error");
-			}
+			MsgError("Couldn't load model material '%s'\n", pHdr->pMaterial(i)->materialname, m_szPath.ToCString());
+			bError = true;
+
+			IMaterial* material = materials->GetMaterial("error");
+			material->Ref_Grab();
+
+			m_materials[i] = material;
 		}
 	}
 
