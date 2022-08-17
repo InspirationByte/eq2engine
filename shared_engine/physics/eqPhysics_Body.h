@@ -93,6 +93,8 @@ public:
 	/// Simply applies impulse response to single body
 	static float		ApplyImpulseResponseTo(ContactPair_t& pair, float error_correction_factor);
 
+	static void			CopyValues(CEqRigidBody* dest, const CEqRigidBody* src);
+
 	//---------------------------------------------------------------
 
 							CEqRigidBody();

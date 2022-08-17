@@ -624,6 +624,40 @@ float ComputeImpulseDenominatorWrap(CEqCollisionObject* obj, const FVector3D& re
 	return ((CEqRigidBody*)obj)->ComputeImpulseDenominator(relativePos, normal);
 }
 
+
+void CEqRigidBody::CopyValues(CEqRigidBody* dest, const CEqRigidBody* src)
+{
+	dest->m_cachedTransform = src->m_cachedTransform;
+	dest->m_orientation = src->m_orientation;
+	dest->m_center = src->m_center;
+	dest->m_position = src->m_position;
+	dest->m_flags = src->m_flags;
+	dest->m_erp = src->m_erp;
+
+	dest->m_invInertiaTensor = src->m_invInertiaTensor;
+	dest->m_linearVelocity = src->m_linearVelocity;
+	dest->m_angularVelocity = src->m_angularVelocity;
+	dest->m_linearFactor = src->m_linearFactor;
+	dest->m_angularFactor = src->m_angularFactor;
+	dest->m_totalTorque = src->m_totalTorque;
+	dest->m_totalForce = src->m_totalForce;
+	dest->m_inertia = src->m_inertia;
+	dest->m_invInertia = src->m_invInertia;
+	dest->m_centerOfMass = src->m_centerOfMass;
+	dest->m_freezeTime = src->m_freezeTime;
+	dest->m_minFrameTime = src->m_minFrameTime;
+	dest->m_frameTimeAccumulator = src->m_frameTimeAccumulator;
+	dest->m_lastFrameTime = src->m_lastFrameTime;
+	dest->m_minFrameTimeIgnoreMotion = src->m_minFrameTimeIgnoreMotion;
+	dest->m_centerOfMassTrans = src->m_centerOfMassTrans;
+	dest->m_prevOrientation = src->m_prevOrientation;
+	dest->m_prevPosition = src->m_prevPosition;
+	dest->m_gravity = src->m_gravity;
+	dest->m_mass = src->m_mass;
+	dest->m_invMass = src->m_invMass;
+}
+
+
 float CEqRigidBody::ApplyImpulseResponseTo(ContactPair_t& pair, float error_correction_factor)
 {
 	FVector3D contactPoint = pair.position;
