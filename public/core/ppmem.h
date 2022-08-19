@@ -17,30 +17,6 @@ IEXPORTS void*	PPDReAlloc( void* ptr, size_t size, const PPSourceLine& sl );
 
 IEXPORTS void	PPFree( void* ptr );
 
-// source-line contailer
-struct PPSourceLine
-{
-	uint64 data{ 0 };
-
-	static PPSourceLine Empty();
-	static PPSourceLine Make(const char* filename, int line);
-
-	const char* GetFileName() const;
-	int			GetLine() const;
-};
-
-// Source-line value constructor helper
-template<typename T>
-struct PPSLValueCtor
-{
-	T x;
-	PPSLValueCtor<T>(const PPSourceLine& sl) : x() {}
-};
-
-#define PP_SL			PPSourceLine::Make(__FILE__, __LINE__)
-#define	PPNew			new(PP_SL)
-#define	PPNewSL(sl)		new(sl)
-
 #define	PPAlloc(size)									PPDAlloc(size, PP_SL)
 #define	PPAllocStructArray(type, count)					(type*)	PPDAlloc(count*sizeof(type), PP_SL)
 #define	PPReAlloc(ptr, size)							PPDReAlloc(ptr, size, PP_SL)

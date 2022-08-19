@@ -28,6 +28,7 @@
 
 #include "InterfaceManager.h"
 #include "Logger.h"
+#include "profiler.h"
 #include "ppmem.h"
 #include "cmdlib.h"
 
