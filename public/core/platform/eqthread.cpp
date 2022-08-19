@@ -15,14 +15,64 @@ namespace Threading
 
 #define MS_VC_EXCEPTION 0x406D1388
 
+#pragma pack(push, 8)
 typedef struct tagTHREADNAME_INFO {
 	DWORD dwType;		// Must be 0x1000.
 	LPCSTR szName;		// Pointer to name (in user addr space).
 	DWORD dwThreadID;	// Thread ID (-1=caller thread).
 	DWORD dwFlags;		// Reserved for future use, must be zero.
 } THREADNAME_INFO;
+#pragma pack(pop)
 
-void SetThreadName( DWORD threadID, const char * name )
+
+typedef HRESULT(__cdecl* SetThreadDescriptionPROC)(HANDLE, PCWSTR);
+typedef HRESULT(__cdecl* GetThreadDescriptionPROC)(HANDLE, PWSTR*);
+static bool	s_loadedThreadProc = false;
+static SetThreadDescriptionPROC s_SetThreadDescription = nullptr;
+static GetThreadDescriptionPROC s_GetThreadDescription = nullptr;
+
+void InitThreadNameAPI()
+{
+	if (s_loadedThreadProc)
+		return;
+
+	HINSTANCE hinstLib;
+	hinstLib = LoadLibrary(TEXT("KernelBase.lib"));
+	if (hinstLib != NULL)
+	{
+		s_SetThreadDescription = (SetThreadDescriptionPROC)GetProcAddress(hinstLib, "SetThreadDescription");
+		s_GetThreadDescription = (GetThreadDescriptionPROC)GetProcAddress(hinstLib, "GetThreadDescription");
+	}
+	s_loadedThreadProc = true;
+}
+
+void GetThreadName(uintptr_t threadID, char* name, int maxLength)
+{
+	InitThreadNameAPI();
+
+	EqString threadName;
+	if (s_GetThreadDescription)
+	{
+		HANDLE threadHandle = OpenThread(THREAD_QUERY_INFORMATION, false, threadID);
+		if (threadHandle != nullptr)
+		{
+			PWSTR wName;
+			if (!FAILED(s_GetThreadDescription(threadHandle, &wName)))
+			{
+				threadName = wName;
+				LocalFree(wName);
+			}
+			CloseHandle(threadHandle);
+		}
+	}
+
+	if (!threadName.Length())
+		threadName = EqString::Format("Thread %d", threadID);
+
+	strcpy_s(name, maxLength, threadName);
+}
+
+void SetThreadNameOLD(uintptr_t threadID, const char* name)
 {
 	THREADNAME_INFO info;
 
@@ -32,12 +82,32 @@ void SetThreadName( DWORD threadID, const char * name )
 	info.dwFlags = 0;
 
 	__try {
-		RaiseException( MS_VC_EXCEPTION, 0, sizeof(info)/sizeof(DWORD), (const ULONG_PTR *)&info );
+		RaiseException(MS_VC_EXCEPTION, 0, sizeof(info) / sizeof(DWORD), (const ULONG_PTR*)&info);
 	}
 	// this much is just to keep /analyze quiet
-	__except( GetExceptionCode() == MS_VC_EXCEPTION ? EXCEPTION_EXECUTE_HANDLER : EXCEPTION_CONTINUE_SEARCH ) {
+	__except (GetExceptionCode() == MS_VC_EXCEPTION ? EXCEPTION_EXECUTE_HANDLER : EXCEPTION_CONTINUE_SEARCH) {
 		info.dwFlags = 0;
 	}
+}
+
+void SetThreadName(uintptr_t threadID, const char * name )
+{
+	// Load up SetThreadDescription and see if it is available
+	InitThreadNameAPI();
+
+	if (s_SetThreadDescription)
+	{
+		EqWString wThreadName(name);
+
+		HANDLE threadHandle = OpenThread(THREAD_SET_INFORMATION, false, threadID);
+		if (threadHandle != nullptr)
+		{
+			s_SetThreadDescription(threadHandle, wThreadName);
+			CloseHandle(threadHandle);
+		}
+		return;
+	}
+	SetThreadNameOLD(threadID, name);
 }
 
 uintptr_t ThreadCreate( threadfunc_t fnThread, void* pThreadParams, ThreadPriority_e nPriority,
@@ -116,11 +186,6 @@ void ThreadDestroy( uintptr_t threadHandle )
 
 	WaitForSingleObject( (HANDLE)threadHandle, INFINITE );
 	CloseHandle( (HANDLE)threadHandle );
-}
-
-void SetCurrentThreadName( const char *name )
-{
-	SetThreadName(GetCurrentThreadId(), name);
 }
 
 void Yield()
@@ -226,6 +291,18 @@ int CompareExchangeInterlocked(int& value, int comparand, int exchange )
 // TODO:
 #endif
 
+void GetThreadName(uintptr_t threadID, char* name, int maxLength)
+{
+	// TODO !!!
+	EqString threadName = EqString::Format("Thread %d", threadID);
+	strcpy(name, threadName);
+}
+
+void SetThreadName(uintptr_t threadID, const char* name)
+{
+	// TODO !!!
+}
+
 typedef void* ( *pthread_function_t )( void* );
 
 uintptr_t ThreadCreate( threadfunc_t fnThread, void* pThreadParams, ThreadPriority_e nPriority,
@@ -287,13 +364,6 @@ void ThreadDestroy( uintptr_t threadHandle )
 	{
 		ASSERT_MSG( "ERROR: pthread_join %s failed\n", name );
 	}
-}
-
-
-void SetCurrentThreadName( const char *name )
-{
-	//SetThreadName(GetCurrentThreadId(), name);
-
 }
 
 void Yield()

@@ -63,11 +63,12 @@ uintptr_t ThreadCreate( threadfunc_t fnThread, void* pThreadParams, ThreadPriori
 
 void ThreadDestroy( uintptr_t threadHandle );
 void ThreadWait( uintptr_t threadHandle );
-void SetCurrentThreadName( const char *name );
 void Yield();
 				   
 uintptr_t GetCurrentThreadID();
 uintptr_t ThreadGetID(uintptr_t handle);
+void SetThreadName(uintptr_t threadId, const char* name);
+void GetThreadName(uintptr_t threadId, char* name, int maxLength);
 
 //
 // Signal creation/destroying and usage
