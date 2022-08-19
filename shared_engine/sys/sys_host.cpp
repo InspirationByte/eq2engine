@@ -594,6 +594,8 @@ ConVar r_showFPSGraph("r_showFPSGraph", "0", "Show the framerate graph", CV_ARCH
 
 bool CGameHost::Frame()
 {
+	PROF_EVENT("Host Frame");
+
 	double elapsedTime = m_timer.GetTime(true);
 
 	// Engine frames status
@@ -641,7 +643,6 @@ bool CGameHost::Frame()
 #else
 	g_pShaderAPI->Clear(r_clear.GetBool(), true, false, ColorRGBA(0.1f,0.1f,0.1f,1.0f));
 #endif
-
 
 	double timescale = (EqStateMgr::GetCurrentState() ? EqStateMgr::GetCurrentState()->GetTimescale() : 1.0f);
 

@@ -6,7 +6,6 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "core/core_common.h"
-#include "core/platform/eqthread.h"
 
 namespace Threading
 {
@@ -31,13 +30,14 @@ static bool	s_loadedThreadProc = false;
 static SetThreadDescriptionPROC s_SetThreadDescription = nullptr;
 static GetThreadDescriptionPROC s_GetThreadDescription = nullptr;
 
+
 void InitThreadNameAPI()
 {
 	if (s_loadedThreadProc)
 		return;
 
 	HINSTANCE hinstLib;
-	hinstLib = LoadLibrary(TEXT("KernelBase.lib"));
+	hinstLib = LoadLibrary(TEXT("Kernel32.dll"));
 	if (hinstLib != NULL)
 	{
 		s_SetThreadDescription = (SetThreadDescriptionPROC)GetProcAddress(hinstLib, "SetThreadDescription");
@@ -50,7 +50,7 @@ void GetThreadName(uintptr_t threadID, char* name, int maxLength)
 {
 	InitThreadNameAPI();
 
-	EqString threadName;
+	EqWString threadName;
 	if (s_GetThreadDescription)
 	{
 		HANDLE threadHandle = OpenThread(THREAD_QUERY_INFORMATION, false, threadID);
@@ -67,9 +67,9 @@ void GetThreadName(uintptr_t threadID, char* name, int maxLength)
 	}
 
 	if (!threadName.Length())
-		threadName = EqString::Format("Thread %d", threadID);
+		threadName = EqWString::Format(L"Thread %d", threadID);
 
-	strcpy_s(name, maxLength, threadName);
+	strcpy_s(name, maxLength, EqString(threadName));
 }
 
 void SetThreadNameOLD(uintptr_t threadID, const char* name)
@@ -741,6 +741,8 @@ int CEqThread::ThreadProc( CEqThread* thread )
 	}
 
 	thread->m_bIsRunning = false;
+
+	PROF_RELEASE_THREAD_MARKERS();
 
 	return retVal;
 }

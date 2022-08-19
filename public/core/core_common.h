@@ -24,6 +24,19 @@
 #error Please remove minmax from includes
 #endif
 
+//---------------
+// config vars
+
+#if defined(_RETAIL) || defined(__ANDROID__)
+#define PPMEM_DISABLE
+#endif
+
+#if !defined(_RETAIL) && !defined(__ANDROID__)
+#define PROFILE_ENABLE
+#endif
+
+//---------------
+
 #include "common_types.h"
 
 #include "InterfaceManager.h"

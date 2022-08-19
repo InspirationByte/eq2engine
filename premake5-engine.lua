@@ -155,8 +155,9 @@ group "Core"
 -- eqCore essentials
 project "corelib"
     kind "StaticLib"
+	uses "concurrency_vis"
 	
-	unitybuild "on"
+	--unitybuild "on"
     files {
 		Folders.public.. "/core/**.cpp",
 		Folders.public.. "/core/**.h"

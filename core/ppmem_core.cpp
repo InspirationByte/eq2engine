@@ -23,11 +23,6 @@
 #include "core/ConCommand.h"
 #include "core/IConsoleCommands.h"
 
-//#define PPMEM_DISABLE
-
-#if defined(_RETAIL) || defined(PLAT_ANDROID)
-#define PPMEM_DISABLE
-#endif
 
 #if defined(CRT_DEBUG_ENABLED) && defined(_WIN32)
 #define pp_internal_malloc(s)	_malloc_dbg(s, _NORMAL_BLOCK, pszFileName, nLine)

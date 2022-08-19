@@ -94,6 +94,8 @@ void ScheduleNextStateType( int stateType )
 // updates and manages the states
 bool UpdateStates( float fDt )
 {
+	PROF_EVENT("Host Update States");
+
 	// perform state transition
 	if(g_nextState)
 	{

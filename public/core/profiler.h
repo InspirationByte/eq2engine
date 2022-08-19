@@ -30,3 +30,33 @@ struct PPSLValueCtor
 #define PP_SL			PPSourceLine::Make(__FILE__, __LINE__)
 #define	PPNew			new(PP_SL)
 #define	PPNewSL(sl)		new(sl)
+
+//-----------------------------------------------
+
+#ifdef PROFILE_ENABLE
+
+#define PROF_EVENT(name)				ProfEventWrp _profEvt(name)
+#define PROF_MARKER(name)				ProfAddMarker(name)
+#define PROF_RELEASE_THREAD_MARKERS()	ProfReleaseCurrentThreadMarkers()
+
+#else
+
+#define PROF_EVENT(name)
+#define PROF_MARKER(name)
+#define PROF_RELEASE_THREAD_MARKERS()
+
+#endif // PROFILE_ENABLE
+
+void	ProfAddMarker(const char* text);
+int		ProfBeginMarker(const char* text);
+void	ProfEndMarker(int eventId);
+void	ProfReleaseCurrentThreadMarkers();
+
+struct ProfEventWrp
+{
+public:
+	ProfEventWrp(const char* name) { eventId = ProfBeginMarker(name); }
+	~ProfEventWrp() { ProfEndMarker(eventId); }
+private:
+	int eventId{ -1 };
+};

@@ -239,6 +239,8 @@ bool CUIManager::IsWindowsVisible() const
 
 void CUIManager::Render()
 {
+	PROF_EVENT("EqUI render");
+
 	if(!m_rootPanel)
 		return;
 
