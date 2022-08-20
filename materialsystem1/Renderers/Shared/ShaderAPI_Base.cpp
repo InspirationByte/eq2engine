@@ -522,6 +522,8 @@ ITexture* ShaderAPI_Base::LoadTexture( const char* pszFileName,
 	ER_TextureFilterMode textureFilterType, ER_TextureAddressMode textureAddress/* = TEXADDRESS_WRAP*/, 
 	int nFlags/* = 0*/ )
 {
+	PROF_EVENT("ShaderAPI Load Texture from file");
+
 	// first search for existing texture
 	ITexture* pFoundTexture = FindTexture(pszFileName);
 	if (pFoundTexture != nullptr)
@@ -1054,6 +1056,8 @@ bool ShaderAPI_Base::LoadShadersFromFile(IShaderProgram* pShaderOutput, const ch
 {
 	if(pShaderOutput == nullptr)
 		return false;
+
+	PROF_EVENT("ShaderAPI Load-Build Shaders");
 
 	bool bResult = true;
 

@@ -64,6 +64,8 @@ void CEffectRenderer::AddEffect(IEffect* pEffect)
 
 void CEffectRenderer::DrawEffects(float dt)
 {
+	PROF_EVENT("Effect Renderer Draw");
+
 	CScopedMutex m(s_effectRenderMutex);
 
 	// sort particles

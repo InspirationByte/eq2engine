@@ -20,7 +20,7 @@ public:
 	friend class			CEqMatSystemThreadedLoader;
 
 							// constructor, destructor
-							CMaterial(Threading::CEqMutex& mutex);
+							CMaterial();
 							~CMaterial();
 
 	const char*				GetName() const {return m_szMaterialName.GetData();}
@@ -73,7 +73,6 @@ protected:
 	Array<IMaterialProxy*>	m_proxies{ PP_SL };
 
 	CTextureAtlas*			m_atlas;
-	Threading::CEqMutex&	m_Mutex;
 
 	IMaterialSystemShader*	m_shader;
 	int						m_state;	// FIXME: may be interlocked?

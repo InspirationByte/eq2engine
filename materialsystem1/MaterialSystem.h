@@ -341,7 +341,6 @@ private:
 
 	dlight_t*						m_currentLight;
 
-	Threading::CEqMutex				m_ProxyMutex[4];
 	Threading::CEqMutex				m_Mutex;
 
 	CEqTimer						m_proxyTimer;

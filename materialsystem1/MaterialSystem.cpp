@@ -545,20 +545,22 @@ IMaterial* CMaterialSystem::CreateMaterial(const char* szMaterialName, KVSection
 // creates new material with defined parameters
 IMaterial* CMaterialSystem::CreateMaterialInternal(const char* szMaterialName, int nameHash, KVSection* params)
 {
+	PROF_EVENT("MatSystem Load Material");
+
 	CScopedMutex m(m_Mutex);
 
 	// create new material
-	CMaterial* pMaterial = PPNew CMaterial(m_ProxyMutex[m_loadedMaterials.size() % 4]);
+	CMaterial* pMaterial = PPNew CMaterial();
+
+	// if no params, we can load it a usual way
+	if (params)
+		pMaterial->Init(szMaterialName, params);
+	else
+		pMaterial->Init(szMaterialName);
 
 	// add to list
 	ASSERT_MSG(m_loadedMaterials.find(nameHash) == m_loadedMaterials.end(), "Material %s was already created under that name", szMaterialName);
 	m_loadedMaterials.insert(nameHash, pMaterial);
-
-	// if no params, we can load it a usual way
-	if(params)
-		pMaterial->Init(szMaterialName, params);
-	else
-		pMaterial->Init(szMaterialName);
 
 	return pMaterial;
 }

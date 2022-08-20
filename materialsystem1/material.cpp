@@ -22,13 +22,12 @@ ConVar r_allowSourceTextures("r_allowSourceTextures", "0", "enable materials and
 #define MATERIAL_FILE_EXTENSION		".mat"
 #define ATLAS_FILE_EXTENSION		".atlas"
 
-CMaterial::CMaterial(Threading::CEqMutex& mutex) 
+CMaterial::CMaterial() 
 	: m_state(MATERIAL_LOAD_ERROR),
 	m_shader(nullptr), 
 	m_loadFromDisk(true),
 	m_frameBound(0),
-	m_atlas(nullptr), 
-	m_Mutex(mutex),
+	m_atlas(nullptr),
 	m_nameHash(0)
 {
 }
@@ -168,8 +167,6 @@ void CMaterial::InitMaterialProxy(KVSection* proxySec)
 		{
 			// initialize proxy
 			pProxy->InitProxy( this, proxySec->keys[i] );
-
-			// add to list
 			m_proxies.append( pProxy );
 		}
 		else
@@ -205,10 +202,7 @@ void CMaterial::InitMaterialVars(KVSection* kvs)
 			CMatVar* pVar = PPNew CMatVar();
 			pVar->Init(materialVar->GetName(), KV_GetValueString(materialVar));
 
-			{
-				Threading::CScopedMutex m(m_Mutex);
-				m_variables.append(pVar);
-			}
+			m_variables.append(pVar);
 		}
 		else
 		{
@@ -232,27 +226,32 @@ void CMaterial::InitShader()
 		return;
 	}
 
-	IMaterialSystemShader* shader = materials->CreateShaderInstance(m_szShaderName.GetData());
-
-	// if not found - try make Error shader
-	if(!shader)// || (m_shader && !stricmp(m_shader->GetName(), "Error")))
 	{
-		MsgError("Invalid shader '%s' specified for material %s!\n",m_szShaderName.GetData(),m_szMaterialName.GetData());
+		PROF_EVENT("MatSystem Load Material InitShader");
 
-		if(!shader)
-			shader = materials->CreateShaderInstance("Error");
+		IMaterialSystemShader* shader = materials->CreateShaderInstance(m_szShaderName.GetData());
+
+		// if not found - try make Error shader
+		if (!shader)// || (m_shader && !stricmp(m_shader->GetName(), "Error")))
+		{
+			MsgError("Invalid shader '%s' specified for material %s!\n", m_szShaderName.GetData(), m_szMaterialName.GetData());
+
+			if (!shader)
+				shader = materials->CreateShaderInstance("Error");
+		}
+
+		if (shader)
+		{
+			// just init the parameters
+			shader->Init(this);
+			m_state = MATERIAL_LOAD_NEED_LOAD;
+		}
+		else
+			m_state = MATERIAL_LOAD_ERROR;
+
+
+		m_shader = shader;
 	}
-
-	if(shader)
-	{
-		// just init the parameters
-		shader->Init( this );
-		m_state = MATERIAL_LOAD_NEED_LOAD;
-	}
-	else
-		m_state = MATERIAL_LOAD_ERROR;
-
-	m_shader = shader;
 }
 
 //
@@ -317,6 +316,8 @@ bool CMaterial::LoadShaderAndTextures()
 
 bool CMaterial::DoLoadShaderAndTextures()
 {
+	PROF_EVENT("MatSystem Load Material Shader and Textures");
+
 	InitShader();
 
 	IMaterialSystemShader* shader = m_shader;
@@ -324,10 +325,7 @@ bool CMaterial::DoLoadShaderAndTextures()
 	if(!shader)
 		return true;
 
-	{
-		Threading::CScopedMutex m(m_Mutex);
-		m_state = MATERIAL_LOAD_INQUEUE;
-	}
+	Threading::ExchangeInterlocked(m_state, MATERIAL_LOAD_INQUEUE);
 
 	// try init
 	if(!shader->IsInitialized() && !shader->IsError())
@@ -337,9 +335,9 @@ bool CMaterial::DoLoadShaderAndTextures()
 	}
 
 	if(shader->IsInitialized() )
-		m_state = MATERIAL_LOAD_OK;
+		Threading::ExchangeInterlocked(m_state, MATERIAL_LOAD_OK);
 	else if(shader->IsError() )
-		m_state = MATERIAL_LOAD_ERROR;
+		Threading::ExchangeInterlocked(m_state, MATERIAL_LOAD_ERROR);
 	else
 		ASSERT_FAIL("please check shader '%s' (%s) for initialization (not error, not initialized)", m_szShaderName.ToCString(), m_shader->GetName());
 
@@ -363,14 +361,10 @@ IMatVar *CMaterial::FindMaterialVar(const char* pszVarName) const
 {
 	const int nameHash = StringToHash(pszVarName, true);
 
+	for(int i = 0; i < m_variables.numElem(); i++)
 	{
-		Threading::CScopedMutex m(m_Mutex);
-	
-		for(int i = 0; i < m_variables.numElem(); i++)
-		{
-			if(m_variables[i]->m_nameHash == nameHash)
-				return m_variables[i];
-		}
+		if(m_variables[i]->m_nameHash == nameHash)
+			return m_variables[i];
 	}
 
 	return nullptr;
@@ -425,11 +419,7 @@ IMatVar* CMaterial::CreateMaterialVar(const char* pszVarName, const char* defaul
 	{
 		CMatVar *pVar = PPNew CMatVar();
 		pVar->Init(pszVarName, defaultParam);
-
-		{
-			Threading::CScopedMutex m(m_Mutex);
-			m_variables.append(pVar);
-		}
+		m_variables.append(pVar);
 
 		pMatVar = pVar;
 	}
@@ -440,8 +430,6 @@ IMatVar* CMaterial::CreateMaterialVar(const char* pszVarName, const char* defaul
 // remove material var
 void CMaterial::RemoveMaterialVar(IMatVar* pVar)
 {
-	Threading::CScopedMutex m(m_Mutex);
-
 	if (m_variables.fastRemove((CMatVar*)pVar))
 		delete pVar;
 }
@@ -471,20 +459,16 @@ void CMaterial::Cleanup(bool dropVars, bool dropShader)
 	}
 
 	// always drop proxies
-	{
-		Threading::CScopedMutex m(m_Mutex);
-		for (int i = 0; i < m_proxies.numElem(); i++)
-			delete m_proxies[i];
+	for (int i = 0; i < m_proxies.numElem(); i++)
+		delete m_proxies[i];
 
-		m_proxies.clear();
-	}
+	m_proxies.clear();
 
-	m_state = MATERIAL_LOAD_NEED_LOAD;
+	Threading::ExchangeInterlocked(m_state, MATERIAL_LOAD_NEED_LOAD);
 }
 
 void CMaterial::UpdateProxy(float fDt)
 {
-	Threading::CScopedMutex m(m_Mutex);
 	for(int i = 0; i < m_proxies.numElem(); i++)
 		m_proxies[i]->UpdateProxy( fDt );
 }
