@@ -172,6 +172,11 @@ uintptr_t GetCurrentThreadID()
 	return GetCurrentThreadId();
 }
 
+void SetCurrentThreadName(const char* name)
+{
+	SetThreadName(GetCurrentThreadID(), name);
+}
+
 uintptr_t ThreadGetID(uintptr_t handle)
 {
 	return (uintptr_t)GetThreadId((HANDLE)handle);

@@ -184,9 +184,11 @@ bool CDkCore::Init(const char* pszApplicationName, const char* pszCommandLine)
 	InitMessageBoxPlatform();
 #endif // _WIN32
 
+	// Assume the core is always init from first thread
+	Threading::SetCurrentThreadName("Main Thread");
+
 	SetupBinPath();
 
-	// ��������� ������
     if (pszCommandLine && strlen(pszCommandLine) > 0)
         g_cmdLine->Init(pszCommandLine);
 

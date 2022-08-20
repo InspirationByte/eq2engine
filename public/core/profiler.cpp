@@ -49,6 +49,7 @@ struct cvEvents
 {
 	Array<marker_series*> series{ PP_SL };
 	Array<cvSpanHolder> pushedEvents{ PP_SL };
+	EqWString threadName;
 };
 
 thread_local cvEvents* tlsCV_events = nullptr;
@@ -58,8 +59,17 @@ static marker_series* GetTLSMarkerSeries()
 	static constexpr const int maxThreadName = 128;
 	static constexpr const int maxSeriesDepth = 100;
 
+	const uintptr_t threadId = Threading::GetCurrentThreadID();
+
 	if (!tlsCV_events)
+	{
 		tlsCV_events = PPNew cvEvents();
+
+		char threadName[maxThreadName]{ 0 };
+		Threading::GetThreadName(threadId, threadName, maxThreadName);
+
+		tlsCV_events->threadName = threadName;
+	}
 
 	const int depth = tlsCV_events->pushedEvents.numElem();
 	if (depth < tlsCV_events->series.numElem())
@@ -67,16 +77,12 @@ static marker_series* GetTLSMarkerSeries()
 
 	ASSERT(depth < maxSeriesDepth);
 
-	uintptr_t threadId = Threading::GetCurrentThreadID();
 	EqWString wThreadName;
 
-	char threadName[maxThreadName]{ 0 };
-	Threading::GetThreadName(threadId, threadName, maxThreadName);
-
-	if(threadName[0] != 0)
-		wThreadName = (depth > 0) ? EqWString::Format(L"%s - level %d", threadName, depth) : threadName;
+	if(tlsCV_events->threadName.Length() != 0)
+		wThreadName = (depth > 0) ? EqWString::Format(L"%ls - level %d", tlsCV_events->threadName.ToCString(), depth) : tlsCV_events->threadName;
 	else
-		wThreadName = (depth > 0) ? EqWString::Format(L"Thread %d - level %d", threadName, depth) : EqWString::Format(L"Thread %d", threadId);
+		wThreadName = (depth > 0) ? EqWString::Format(L"Thread %% - level %d", threadId, depth) : EqWString::Format(L"Thread %d", threadId);
 
 	marker_series* newSeries = PPNew marker_series(wThreadName.ToCString());
 	tlsCV_events->series.append(newSeries);

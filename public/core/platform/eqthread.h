@@ -66,6 +66,8 @@ void ThreadWait( uintptr_t threadHandle );
 void Yield();
 				   
 uintptr_t GetCurrentThreadID();
+void SetCurrentThreadName(const char* name);
+
 uintptr_t ThreadGetID(uintptr_t handle);
 void SetThreadName(uintptr_t threadId, const char* name);
 void GetThreadName(uintptr_t threadId, char* name, int maxLength);
