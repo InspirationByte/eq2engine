@@ -18,7 +18,7 @@ static CEqMutex s_effectRenderMutex;
 
 static int _SortParticles(IEffect* const &effect0, IEffect* const &effect1)
 {
-	return effect0->GetDistanceToCamera() - effect1->GetDistanceToCamera();
+	return effect1->GetDistanceToCamera() - effect0->GetDistanceToCamera();
 }
 
 IEffect::IEffect() :	m_vOrigin(0.0f),
