@@ -151,6 +151,12 @@ static LONG WINAPI _exceptionCB(EXCEPTION_POINTERS *ExceptionInfo)
 {
     EXCEPTION_RECORD* pRecord = ExceptionInfo->ExceptionRecord;
 
+	//if (pRecord->ExceptionCode == EXCEPTION_BREAKPOINT ||
+	//	pRecord->ExceptionCode == EXCEPTION_SINGLE_STEP)
+	//{
+	//	return EXCEPTION_EXECUTE_HANDLER;
+	//}
+
 	const char *pName, *pDescription;
 	GetExceptionStrings( pRecord->ExceptionCode, &pName, &pDescription );
 
