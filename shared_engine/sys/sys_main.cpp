@@ -25,7 +25,7 @@ int Sys_Main()
 	// init file system
 	if (!g_fileSystem->Init(false))
 	{
-		GetCore()->Shutdown();
+		g_eqCore->Shutdown();
 		return -2;
 	}
 
@@ -37,7 +37,7 @@ int Sys_Main()
 	{
 		// shutdown
 		g_fileSystem->Shutdown();
-		GetCore()->Shutdown();
+		g_eqCore->Shutdown();
 		return -3;
 	}
 
@@ -49,7 +49,7 @@ int Sys_Main()
 
 	// shutdown
 	g_fileSystem->Shutdown();
-	GetCore()->Shutdown();
+	g_eqCore->Shutdown();
 
 	return 0;
 }
@@ -219,7 +219,7 @@ bool Sys_Android_InitCore(int argc, char** argv)
 	g_jni.obbPath = storageObbPath;
 
 	// init core
-	bool result = GetCore()->Init("Game", argc, argv);
+	bool result = g_eqCore->Init("Game", argc, argv);
 
 	Msg("bestStoragePath: %s\n", bestStoragePath);
 	Msg("dataPath: %s\n", dataPath.ToCString());
@@ -240,7 +240,7 @@ void Sys_Android_MountFileSystem()
 	g_fileSystem->MakeDir("cfg", SP_MOD);
 
 	// mount OBB file if available in config
-	KVSection* filesystemKvs = GetCore()->GetConfig()->FindSection("Filesystem");
+	KVSection* filesystemKvs = g_eqCore->GetConfig()->FindSection("Filesystem");
 	KVSection* obbPackageName = filesystemKvs->FindSection("OBBPackage");
 
 	if (obbPackageName)
@@ -280,7 +280,7 @@ int WINAPI WinMain(HINSTANCE hThisInst, HINSTANCE hLastInst, LPSTR lpszCmdLine, 
 	CEqConsoleInput::SpewInit();
 
 	// init core
-	if(!GetCore()->Init("Game", lpszCmdLine))
+	if(!g_eqCore->Init("Game", lpszCmdLine))
 		return -1;
 
 	return Sys_Main();
@@ -303,7 +303,7 @@ int main(int argc, char** argv)
 	Sys_Android_MountFileSystem();
 #else
 	// init core
-	if (!GetCore()->Init("Game", argc, argv))
+	if (!g_eqCore->Init("Game", argc, argv))
 		return -1;
 #endif // PLAT_ANDROID
 

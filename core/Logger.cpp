@@ -18,7 +18,7 @@
 
 #ifdef PLAT_ANDROID
 #include <android/log.h>
-#define EQENGINE_LOG_TAG(v) EqString::Format("%s %s", GetCore()->GetApplicationName(), v).ToCString()
+#define EQENGINE_LOG_TAG(v) EqString::Format("%s %s", g_eqCore->GetApplicationName(), v).ToCString()
 #endif // PLAT_ANDROID
 
 static const char* s_spewTypeStr[] = {
@@ -53,7 +53,7 @@ void Log_Init()
 
 #ifndef NO_CORE
 	char tmp_path[2048];
-	sprintf(tmp_path, "logs/%s.log",GetCore()->GetApplicationName());
+	sprintf(tmp_path, "logs/%s.log", g_eqCore->GetApplicationName());
 
 	Log_WriteBOM( tmp_path );
 

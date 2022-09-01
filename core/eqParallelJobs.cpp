@@ -86,7 +86,7 @@ const eqParallelJob_t* CEqJobThread::GetCurrentJob() const
 CEqParallelJobThreads::CEqParallelJobThreads()
 {
 	// required by mobile port
-	GetCore()->RegisterInterface(PARALLELJOBS_INTERFACE_VERSION, this);
+	g_eqCore->RegisterInterface(PARALLELJOBS_INTERFACE_VERSION, this);
 }
 
 CEqParallelJobThreads::~CEqParallelJobThreads()
@@ -104,8 +104,10 @@ bool CEqParallelJobThreads::Init(int numJobTypes, eqJobThreadDesc_t* jobTypes)
 	{
 		for (int j = 0; j < jobTypes[i].numThreads; j++)
 		{
-			m_jobThreads.append(new CEqJobThread(this, jobTypes[i].jobTypeId));
-			m_jobThreads[i]->StartWorkerThread(EqString::Format("jobThread_%d_%d", jobTypes[i].jobTypeId, j).ToCString());
+			CEqJobThread* pJobThread = PPNew CEqJobThread(this, jobTypes[i].jobTypeId);
+			m_jobThreads.append(pJobThread);
+
+			pJobThread->StartWorkerThread(EqString::Format("jobThread_%d_%d", jobTypes[i].jobTypeId, j).ToCString());
 			numThreadsSpawned++;
 		}
 	}

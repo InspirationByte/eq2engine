@@ -6,6 +6,7 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "core/core_common.h"
+#include "core/IDkCore.h"
 #include "CommandLine.h"
 #include "ConsoleCommands.h"
 
@@ -13,6 +14,7 @@ EXPORTED_INTERFACE(ICommandLine, CCommandLine);
 
 CCommandLine::CCommandLine()
 {
+	g_eqCore->RegisterInterface(CMDLINE_INTERFACE_VERSION, this);
 }
 
 CCommandLine::~CCommandLine()

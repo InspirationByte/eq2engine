@@ -25,8 +25,6 @@ public:
 	bool					Init(const char* pszApplicationName,const char *pszCommandLine);	// Initializes core
 	bool					Init(const char* pszApplicationName,int argc, char **argv);	// Initializes core for tools. This is an console app initializer, and logging will be forced
 
-	void					InitSubInterfaces();
-
 	void					Shutdown();	// Shutdowns core
 
 	char*					GetApplicationName()  const;

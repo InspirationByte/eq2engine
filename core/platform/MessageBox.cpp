@@ -222,7 +222,7 @@ static void AssertLogMsg(SpewType_t _dummy, const char* fmt, ...)
 
 #ifdef _WIN32
 
-IEXPORTS void _InternalAssertMsg(const char *file, int line, const char *fmt, ...)
+IEXPORTS void _InternalAssertMsg(PPSourceLine sl, const char *fmt, ...)
 {
 	static bool debug = true;
 
@@ -233,13 +233,13 @@ IEXPORTS void _InternalAssertMsg(const char *file, int line, const char *fmt, ..
 	va_end(argptr);
 
 #ifndef _DKLAUNCHER_
-	const bool eqCoreInit = GetCore()->IsInitialized();
-	(eqCoreInit ? LogMsg : AssertLogMsg)(SPEW_ERROR, "\n*Assertion failed, file \"%s\", line %d\n*Expression \"%s\"", file, line, formattedStr.ToCString());
+	const bool eqCoreInit = g_eqCore->IsInitialized();
+	(eqCoreInit ? LogMsg : AssertLogMsg)(SPEW_ERROR, "\n*Assertion failed, file \"%s\", line %d\n*Expression \"%s\"", sl.GetFileName(), sl.GetLine(), formattedStr.ToCString());
 #endif //_DKLAUNCHER_
 
 	if (debug)
 	{
-		EqString messageStr = EqString::Format("%s\n\nFile: %s\nLine: %d\n\n", formattedStr.ToCString(), file, line);
+		EqString messageStr = EqString::Format("%s\n\nFile: %s\nLine: %d\n\n", formattedStr.ToCString(), sl.GetFileName(), sl.GetLine());
 
 		if (IsDebuggerPresent())
 		{
@@ -272,7 +272,7 @@ IEXPORTS void _InternalAssertMsg(const char *file, int line, const char *fmt, ..
 
 #include <signal.h>
 
-IEXPORTS void _InternalAssertMsg(const char* file, int line, const char* fmt, ...)
+IEXPORTS void _InternalAssertMsg(PPSourceLine sl, const char* fmt, ...)
 {
 	va_list argptr;
 
@@ -281,15 +281,15 @@ IEXPORTS void _InternalAssertMsg(const char* file, int line, const char* fmt, ..
 	va_end(argptr);
 
 #ifndef _DKLAUNCHER_
-	const bool eqCoreInit = GetCore()->IsInitialized();
-	(eqCoreInit ? LogMsg : AssertLogMsg)(SPEW_ERROR, "\n*Assertion failed, file \"%s\", line %d\n*Expression \"%s\"", file, line, formattedStr.ToCString());
+	const bool eqCoreInit = g_eqCore->IsInitialized();
+	(eqCoreInit ? LogMsg : AssertLogMsg)(SPEW_ERROR, "\n*Assertion failed, file \"%s\", line %d\n*Expression \"%s\"", sl.GetFileName(), sl.GetLine(), formattedStr.ToCString());
 #endif //_DKLAUNCHER_
 
 #ifndef USE_GTK
-	ErrorMsg("\n*Assertion failed, file \"%s\", line %d\n*Expression \"%s\"", file, line, formattedStr.ToCString());
+	ErrorMsg("\n*Assertion failed, file \"%s\", line %d\n*Expression \"%s\"", sl.GetFileName(), sl.GetLine(), formattedStr.ToCString());
 #else
 
-	EqString messageStr = EqString::Format("%s\n\nFile: %s\nLine: %d\n\nDebug?", formattedStr.ToCString(), file, line);
+	EqString messageStr = EqString::Format("%s\n\nFile: %s\nLine: %d\n\nDebug?", formattedStr.ToCString(), sl.GetFileName(), sl.GetLine());
 
     InitMessageBoxPlatform();
 

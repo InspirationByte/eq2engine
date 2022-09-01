@@ -48,9 +48,9 @@ void InitThreadNameAPI()
 
 void GetThreadName(uintptr_t threadID, char* name, int maxLength)
 {
-	InitThreadNameAPI();
-
 	EqWString threadName;
+#ifdef _WIN64
+	InitThreadNameAPI();
 	if (s_GetThreadDescription)
 	{
 		HANDLE threadHandle = OpenThread(THREAD_QUERY_INFORMATION, false, threadID);
@@ -65,7 +65,7 @@ void GetThreadName(uintptr_t threadID, char* name, int maxLength)
 			CloseHandle(threadHandle);
 		}
 	}
-
+#endif
 	if (!threadName.Length())
 		threadName = EqWString::Format(L"Thread %d", threadID);
 
@@ -92,6 +92,7 @@ void SetThreadNameOLD(uintptr_t threadID, const char* name)
 
 void SetThreadName(uintptr_t threadID, const char * name )
 {
+#ifdef _WIN64
 	// Load up SetThreadDescription and see if it is available
 	InitThreadNameAPI();
 
@@ -107,6 +108,7 @@ void SetThreadName(uintptr_t threadID, const char * name )
 		}
 		return;
 	}
+#endif
 	SetThreadNameOLD(threadID, name);
 }
 

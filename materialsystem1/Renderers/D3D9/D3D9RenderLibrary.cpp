@@ -27,12 +27,12 @@ CD3DRenderLib g_library;
 
 CD3DRenderLib::CD3DRenderLib()
 {
-	GetCore()->RegisterInterface(RENDERER_INTERFACE_VERSION, this);
+	g_eqCore->RegisterInterface(RENDERER_INTERFACE_VERSION, this);
 }
 
 CD3DRenderLib::~CD3DRenderLib()
 {
-	GetCore()->UnregisterInterface(RENDERER_INTERFACE_VERSION);
+	g_eqCore->UnregisterInterface(RENDERER_INTERFACE_VERSION);
 }
 
 IShaderAPI* CD3DRenderLib::GetRenderer() const 

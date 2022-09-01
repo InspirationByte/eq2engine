@@ -29,6 +29,9 @@
 #include "ConsoleCommands.h"
 
 
+EXPORTED_INTERFACE(IDkCore, CDkCore)
+
+
 #ifdef PLAT_WIN
 BOOL WINAPI DllMain(HINSTANCE module_handle, DWORD reason_for_call, LPVOID reserved)
 {
@@ -51,26 +54,21 @@ BOOL WINAPI DllMain(HINSTANCE module_handle, DWORD reason_for_call, LPVOID reser
 
 static bool g_bPrintLeaksOnShutdown = false;
 
-EXPORTED_INTERFACE_FUNCTION(IDkCore, CDkCore, GetCore)
-
 IEXPORTS void*	_GetDkCoreInterface(const char* pszName)
 {
-	// GetCore() ������-��� ����� ���� ������� ������
-	IDkCore* core = GetCore();
-
 	// Filesystem is required by mobile port
 	if(!strcmp(pszName, FILESYSTEM_INTERFACE_VERSION))
 	{
-		if (!core->GetInterface(FILESYSTEM_INTERFACE_VERSION))
-			core->RegisterInterface(FILESYSTEM_INTERFACE_VERSION, g_fileSystem);
+		if (!g_eqCore->GetInterface(FILESYSTEM_INTERFACE_VERSION))
+			g_eqCore->RegisterInterface(FILESYSTEM_INTERFACE_VERSION, g_fileSystem);
 	}
 
-	return core->GetInterface(pszName);
+	return g_eqCore->GetInterface(pszName);
 }
 
 void DkCore_onExit( void )
 {
-	GetCore()->Shutdown();
+	g_eqCore->Shutdown();
 }
 
 ConVar *c_SupressAccessorMessages = nullptr;
@@ -179,6 +177,9 @@ static void SetupBinPath()
 // Definition that we can't see or change throught console
 bool CDkCore::Init(const char* pszApplicationName, const char* pszCommandLine)
 {
+	ASSERT_MSG(pszApplicationName != nullptr && strlen(pszApplicationName) > 0, "DkCore init: application name must be not null!");
+	PPMemInit();
+
 #ifdef _WIN32
 	setlocale(LC_ALL,"C");
 	InitMessageBoxPlatform();
@@ -191,10 +192,6 @@ bool CDkCore::Init(const char* pszApplicationName, const char* pszCommandLine)
 
     if (pszCommandLine && strlen(pszCommandLine) > 0)
         g_cmdLine->Init(pszCommandLine);
-
-	InitSubInterfaces();
-
-    ASSERT(strlen(pszApplicationName) > 0);
 
 	const int nWorkdirIndex = g_cmdLine->FindArgument("-workdir");
 	const char* newWorkDir = g_cmdLine->GetArgumentsOf(nWorkdirIndex);
@@ -355,17 +352,6 @@ bool CDkCore::Init(const char* pszApplicationName,int argc, char **argv)
     }
 
     return Init(pszApplicationName, (char*)strCmdLine.GetData());
-}
-
-void CDkCore::InitSubInterfaces()
-{
-	// init memory first
-	PPMemInit();
-
-	// register core interfaces
-	RegisterInterface( CMDLINE_INTERFACE_VERSION, GetCCommandLine());
-	RegisterInterface( LOCALIZER_INTERFACE_VERSION , GetCLocalize());
-	RegisterInterface( CPUSERVICES_INTERFACE_VERSION , GetCEqCPUCaps());
 }
 
 KeyValues* CDkCore::GetConfig() const

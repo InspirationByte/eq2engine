@@ -41,7 +41,7 @@ int main(int argc, char **argv)
 
 	Install_SpewFunction();
 
-	GetCore()->Init("fcompress",argc,argv);
+	g_eqCore->Init("fcompress",argc,argv);
 
 	Msg("Equilibrium package compressor utility\n");
 	Msg(" Version 1.0\n");
@@ -55,7 +55,7 @@ int main(int argc, char **argv)
 	{
 		Usage();
 
-		GetCore()->Shutdown();
+		g_eqCore->Shutdown();
 		return 0;
 	}
 
@@ -114,7 +114,7 @@ int main(int argc, char **argv)
 
 	dpkWriter.BuildAndSave( outFileName.ToCString() );
 
-	GetCore()->Shutdown();
+	g_eqCore->Shutdown();
 
 	return 0;
 }

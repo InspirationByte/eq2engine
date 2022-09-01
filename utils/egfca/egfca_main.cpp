@@ -58,7 +58,7 @@ int main(int argc, char **argv)
 	Install_SpewFunction();
 #endif
 
-	GetCore()->Init("egfCa", argc, argv);
+	g_eqCore->Init("egfCa", argc, argv);
 
 	MsgWarning("EGFCA, a command-line utility to compile  model scripts (esc)\n");
 	MsgWarning("Copyright © Inspiration Byte 2009-2014\n");
@@ -67,7 +67,7 @@ int main(int argc, char **argv)
 	// Filesystem is first!
 	if(!g_fileSystem->Init(false))
 	{
-		GetCore()->Shutdown();
+		g_eqCore->Shutdown();
 		return 0;
 	}
 
@@ -89,6 +89,6 @@ int main(int argc, char **argv)
 		}
 	}
 
-	GetCore()->Shutdown();
+	g_eqCore->Shutdown();
 	return 0;
 }

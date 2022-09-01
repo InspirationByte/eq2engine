@@ -343,6 +343,8 @@ CConsoleCommands::CConsoleCommands()
 
 	m_sameCommandsExecuted = 0;
 	m_commandListDirty = false;
+
+	g_eqCore->RegisterInterface(CONSOLE_INTERFACE_VERSION, this);
 }
 
 void CConsoleCommands::RegisterCommands()
@@ -390,16 +392,8 @@ const ConCommandBase* CConsoleCommands::FindBase(const char* name)
 	return nullptr;
 }
 
-static void _RegisterOrDie()
-{
-	if(GetCore()->GetInterface(CONSOLE_INTERFACE_VERSION) == nullptr)
-		GetCore()->RegisterInterface( CONSOLE_INTERFACE_VERSION, GetCConsoleCommands());
-}
-
 void CConsoleCommands::RegisterCommand(ConCommandBase *pCmd)
 {
-	_RegisterOrDie();
-
 	ASSERT(pCmd != nullptr);
 	ASSERT_MSG(FindBase(pCmd->GetName()) == nullptr, "ConCmd/CVar %s already registered", pCmd->GetName());
 

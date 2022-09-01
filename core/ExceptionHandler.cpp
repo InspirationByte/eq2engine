@@ -113,7 +113,7 @@ void CreateMiniDump( EXCEPTION_POINTERS* pep )
 	// Open the file
 
 	char tmp_path[2048];
-	sprintf(tmp_path, "logs/CrashDump_%s.dmp", GetCore()->GetApplicationName());
+	sprintf(tmp_path, "logs/CrashDump_%s.dmp", g_eqCore->GetApplicationName());
 
 	HANDLE hFile = CreateFileA(tmp_path, GENERIC_READ | GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL );
 
@@ -168,7 +168,7 @@ static LONG WINAPI _exceptionCB(EXCEPTION_POINTERS *ExceptionInfo)
 
 	CrashMsg(fmtStr.ToCString());
 
-	const Array<CoreExceptionCallback>& handlerCallbacks = ((CDkCore*)GetCore())->GetExceptionHandlers();
+	const Array<CoreExceptionCallback>& handlerCallbacks = ((CDkCore*)g_eqCore)->GetExceptionHandlers();
 	for (int i = 0; i < handlerCallbacks.numElem(); i++)
 	{
 		handlerCallbacks[i]();

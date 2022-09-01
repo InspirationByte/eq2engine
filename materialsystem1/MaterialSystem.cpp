@@ -201,14 +201,14 @@ CMaterialSystem::CMaterialSystem()
 	m_proxyTimer.GetTime(true);
 
 	// register when the DLL is connected
-	GetCore()->RegisterInterface(MATSYSTEM_INTERFACE_VERSION, this);
+	g_eqCore->RegisterInterface(MATSYSTEM_INTERFACE_VERSION, this);
 
 }
 
 CMaterialSystem::~CMaterialSystem()
 {
 	// unregister when DLL disconnects
-	GetCore()->UnregisterInterface(MATSYSTEM_INTERFACE_VERSION);
+	g_eqCore->UnregisterInterface(MATSYSTEM_INTERFACE_VERSION);
 }
 
 // Initializes material system
@@ -216,7 +216,7 @@ bool CMaterialSystem::Init(const matsystem_init_config_t& config)
 {
 	Msg(" \n--------- MaterialSystem Init --------- \n");
 
-	KVSection* matSystemSettings = GetCore()->GetConfig()->FindSection("MaterialSystem");
+	KVSection* matSystemSettings = g_eqCore->GetConfig()->FindSection("MaterialSystem");
 
 	ASSERT(g_pShaderAPI == nullptr);
 
@@ -244,7 +244,7 @@ bool CMaterialSystem::Init(const matsystem_init_config_t& config)
 	m_rendermodule = g_fileSystem->LoadModule(rendererName);
 	if(m_rendermodule)
 	{
-		m_renderLibrary = (IRenderLibrary*)GetCore()->GetInterface( RENDERER_INTERFACE_VERSION );
+		m_renderLibrary = (IRenderLibrary*)g_eqCore->GetInterface( RENDERER_INTERFACE_VERSION );
 		if(!m_renderLibrary)
 		{
 			ErrorMsg("MatSystem Error: Failed to initialize rendering library using %s!!!", rendererName.ToCString());

@@ -22,13 +22,13 @@ IShaderAPI* g_pShaderAPI = &s_shaderAPI;
 
 CEmptyRenderLib::CEmptyRenderLib()
 {
-	GetCore()->RegisterInterface(RENDERER_INTERFACE_VERSION, this);
+	g_eqCore->RegisterInterface(RENDERER_INTERFACE_VERSION, this);
 	m_windowed = true;
 }
 
 CEmptyRenderLib::~CEmptyRenderLib()
 {
-	GetCore()->UnregisterInterface(RENDERER_INTERFACE_VERSION);
+	g_eqCore->UnregisterInterface(RENDERER_INTERFACE_VERSION);
 }
 
 bool CEmptyRenderLib::InitCaps()

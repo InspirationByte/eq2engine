@@ -33,7 +33,7 @@ DECLARE_CMD(makeatlas, "Generates atlas from a key-values file list", 0)
 
 int main(int argc, char* argv[])
 {
-	GetCore()->Init("atlasgen", argc, argv);
+	g_eqCore->Init("atlasgen", argc, argv);
 
 	Install_SpewFunction();
 
@@ -49,7 +49,7 @@ int main(int argc, char* argv[])
 
 	g_cmdLine->ExecuteCommandLine();
 
-	GetCore()->Shutdown();
+	g_eqCore->Shutdown();
 
 	return 0;
 }

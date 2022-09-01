@@ -34,7 +34,7 @@ private:
 class CLocalize : public ILocalize
 {
 public:
-	CLocalize() = default;
+	CLocalize();
 
 	void				Init();
 	void				Shutdown();

@@ -177,7 +177,7 @@ Array<shaderfactory_t> pShaderRegistrators(PP_SL);
 
 void InitMatSystem(EQWNDHANDLE window)
 {
-	materials = (IMaterialSystem*)GetCore()->GetInterface( MATSYSTEM_INTERFACE_VERSION );
+	materials = (IMaterialSystem*)g_eqCore->GetInterface( MATSYSTEM_INTERFACE_VERSION );
 
 	if(!materials)
 	{
@@ -740,7 +740,7 @@ void CMainWindow::OnCloseCmd(wxCloseEvent& event)
 	g_fileSystem->FreeModule(g_matsysmodule);
 
 	// shutdown core
-	GetCore()->Shutdown();
+	g_eqCore->Shutdown();
 }
 
 void CMainWindow::OnButtons(wxCommandEvent& event)
@@ -754,7 +754,7 @@ void CMainWindow::OnButtons(wxCommandEvent& event)
 bool InitCore(const char *pCmdLine)
 {
 	// initialize core
-	GetCore()->Init( APPLICATION_NAME, pCmdLine );
+	g_eqCore->Init( APPLICATION_NAME, pCmdLine );
 
 	if(!g_fileSystem->Init(false))
 		return false;

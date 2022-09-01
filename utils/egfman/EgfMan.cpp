@@ -250,7 +250,7 @@ DECLARE_INTERNAL_SHADERS();
 
 void InitMatSystem(HWND window)
 {
-	materials = (IMaterialSystem*)GetCore()->GetInterface( MATSYSTEM_INTERFACE_VERSION );
+	materials = (IMaterialSystem*)g_eqCore->GetInterface( MATSYSTEM_INTERFACE_VERSION );
 
 	if(!materials)
 	{
@@ -1433,12 +1433,12 @@ void CEGFViewFrame::OnButtons(wxCommandEvent& event)
 bool InitCore(char *pCmdLine)
 {
 	// initialize core
-	GetCore()->Init("EGFMan", pCmdLine);
+	g_eqCore->Init("EGFMan", pCmdLine);
 
 	if(!g_fileSystem->Init(false))
 		return false;
 
-	GetCore()->RegisterInterface(SHAPECACHE_INTERFACE_VERSION, &s_shapeCache);
+	g_eqCore->RegisterInterface(SHAPECACHE_INTERFACE_VERSION, &s_shapeCache);
 
 	g_cmdLine->ExecuteCommandLine();
 
@@ -1499,7 +1499,7 @@ int CEGFViewApp::OnExit()
 	g_fileSystem->FreeModule(g_matsysmodule);
 	
 	// shutdown core
-	GetCore()->Shutdown();
+	g_eqCore->Shutdown();
 
     return 0;
 } 

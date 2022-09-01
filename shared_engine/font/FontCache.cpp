@@ -53,12 +53,12 @@ CEqFontCache::CEqFontCache() :
 	m_sdfMaterial(nullptr),
 	m_fontParams(nullptr)
 {
-	GetCore()->RegisterInterface(FONTCACHE_INTERFACE_VERSION, this);
+	g_eqCore->RegisterInterface(FONTCACHE_INTERFACE_VERSION, this);
 }
 
 CEqFontCache::~CEqFontCache()
 {
-	GetCore()->UnregisterInterface(FONTCACHE_INTERFACE_VERSION);
+	g_eqCore->UnregisterInterface(FONTCACHE_INTERFACE_VERSION);
 }
 
 bool CEqFontCache::LoadFontDescriptionFile( const char* filename )

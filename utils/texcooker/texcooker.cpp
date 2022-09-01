@@ -19,7 +19,7 @@ extern void CookMaterialsToTarget(const char* pszTargetName);
 
 int main(int argc, char* argv[])
 {
-	GetCore()->Init("texcooker", argc, argv);
+	g_eqCore->Init("texcooker", argc, argv);
 
 	Install_SpewFunction();
 
@@ -43,7 +43,7 @@ int main(int argc, char* argv[])
 		}
 	}
 
-	GetCore()->Shutdown();
+	g_eqCore->Shutdown();
 
 	return 0;
 }

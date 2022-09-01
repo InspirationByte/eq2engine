@@ -69,7 +69,7 @@ CGLRenderLib_ES g_library;
 
 CGLRenderLib_ES::CGLRenderLib_ES()
 {
-	GetCore()->RegisterInterface(RENDERER_INTERFACE_VERSION, this);
+	g_eqCore->RegisterInterface(RENDERER_INTERFACE_VERSION, this);
 
 	m_glSharedContext = 0;
 	m_windowed = true;
@@ -79,7 +79,7 @@ CGLRenderLib_ES::CGLRenderLib_ES()
 
 CGLRenderLib_ES::~CGLRenderLib_ES()
 {
-	GetCore()->UnregisterInterface(RENDERER_INTERFACE_VERSION);
+	g_eqCore->UnregisterInterface(RENDERER_INTERFACE_VERSION);
 }
 
 IShaderAPI* CGLRenderLib_ES::GetRenderer() const

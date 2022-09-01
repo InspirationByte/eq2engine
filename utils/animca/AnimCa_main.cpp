@@ -36,7 +36,7 @@ int main(int argc, char **argv)
 	Install_SpewFunction();
 #endif
 
-	GetCore()->Init("animCa",argc,argv);
+	g_eqCore->Init("animCa",argc,argv);
 
 	MsgWarning("ANIMCA, a command-line utility to compile motion packages for EGF models\n");
 	MsgWarning("Copyright © Inspiration Byte 2009-2014\n");
@@ -45,7 +45,7 @@ int main(int argc, char **argv)
 	// Filesystem is first!
 	if(!g_fileSystem->Init(false))
 	{
-		GetCore()->Shutdown();
+		g_eqCore->Shutdown();
 		return 0;
 	}
 
@@ -71,6 +71,6 @@ int main(int argc, char **argv)
 		}
 	}
 
-	GetCore()->Shutdown();
+	g_eqCore->Shutdown();
 	return 0;
 }

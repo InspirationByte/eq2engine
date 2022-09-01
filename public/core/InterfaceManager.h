@@ -29,9 +29,6 @@ public:
 #	define CLASS_EXPORTS             DLL_EXPORT
 #	define CLASS_IMPORTS             DLL_IMPORT
 
-#   define IFACE_PRIORITY_EXPORT1
-#   define IFACE_PRIORITY_EXPORT2
-
 #else // __GNUC__
 #   define DLL_EXPORT                __attribute__ ((visibility("default")))
 #   define DLL_IMPORT
@@ -39,9 +36,6 @@ public:
 #   define FUNC_IMPORTS              DLL_IMPORT
 #	define CLASS_EXPORTS
 #	define CLASS_IMPORTS
-
-#   define IFACE_PRIORITY_EXPORT1    __attribute__ ((init_priority(110)))
-#   define IFACE_PRIORITY_EXPORT2    __attribute__ ((init_priority(120)))
 #endif // _MSC_VER
 
 #ifdef CROSSLINK_LIB
@@ -54,78 +48,43 @@ public:
 #	endif
 #endif // CROSSLINK_LIB
 
-#define EXPOSE_SINGLE_INTERFACE(name,classname,interfacename)	\
-	static classname g_##name##;								\
-	interfacename *name = ( interfacename * )&g_##name##;
-
-#define EXPOSE_SINGLE_INTERFACE_EX(name,classname,interfacename)	\
-	static classname g_##name##;								\
-	interfacename *name = ( interfacename * )&g_##name##;		\
-	interfacename *Get##name##( void ) {return name;}
-
-#define EXPOSE_SINGLE_INTERFACE_EXPORTS_EX(name,classname,interfacename)	\
-	static classname g_##name##;								\
-	interfacename *name = ( interfacename * )&g_##name##;		\
-	IEXPORTS interfacename *Get##name##( void ) {return name;}
-
-#define EXPOSE_SINGLE_INTERFACE_NOBASE(name,classname)		\
-	static classname g_##name##;							\
-	classname *name = ( classname * )&g_##name##;
-
-#define EXPOSE_SINGLE_INTERFACE_NOBASE_EX(name,classname)		\
-	static classname g_##name##;							\
-	classname *name = &g_##name##;				\
-	classname *Get##name##( void ) {return name;}
-
-#define EXPOSE_SINGLE_INTERFACE_NOBASE_EXPORTS_EX(name,classname)		\
-	static classname g_##name##;							\
-	classname *name = &g_##name##;				\
-	IEXPORTS classname *Get##name##( void ) {return name;}
-
 //-----------------------------------------------------------------------------------------------------------------
-// new interface export macros with using singletons
+
+
+#define ENTRYPOINT_INTERFACE_SINGLETON( abstractclass, classname, localname ) \
+	IEXPORTS abstractclass* Get##classname();								  \
+	static abstractclass* localname = Get##classname();		// this thing is designed to fool the LLVM/GCC because it's fucking mystery
 
 #ifdef CORE_INTERFACE_EXPORT
 
 // dll export version
-#define INTERFACE_SINGLETON(abstractclass, classname, interfacename, localname)			\
-	IEXPORTS abstractclass* Get##classname();\
+#define INTERFACE_SINGLETON(abstractclass, classname, interfacename, localname)	\
+	IEXPORTS abstractclass* Get##classname();									\
 	static abstractclass* localname = Get##classname();		// this thing is designed to fool the LLVM/GCC because it's fucking mystery
 
-#define EXPORTED_INTERFACE( interfacename, classname)							\
-	static classname s_##classname IFACE_PRIORITY_EXPORT1;						\
-	interfacename* g_p##interfacename = ( interfacename * )&s_##classname;		\
-	IEXPORTS interfacename *Get##classname( void ) {return g_p##interfacename;}
-
-#define EXPORTED_INTERFACE_FUNCTION( interfacename, classname, funcname)		\
-	static classname s_##classname IFACE_PRIORITY_EXPORT1;						\
-	interfacename* g_p##interfacename = ( interfacename * )&s_##classname;		\
-	IEXPORTS interfacename *funcname( void ) {return g_p##interfacename;}
-
-#define _INTERFACE_FUNCTION( interfacename, classname, funcname)		        \
-	static classname s_##classname IFACE_PRIORITY_EXPORT1;				        \
-	interfacename* g_p##interfacename = ( interfacename * )&s_##classname;	    \
-	interfacename *funcname( void ) {return g_p##interfacename;}
+#define EXPORTED_INTERFACE( interfacename, classname )	\
+	IEXPORTS interfacename *Get##classname( void ) {    \
+		static classname s_##classname;					\
+		return ( interfacename * )&s_##classname;		\
+	}
 
 #else
 
 // dll import version
-#	define INTERFACE_SINGLETON(abstractclass, classname, interfacename, localname)			\
-		IEXPORTS void* _GetDkCoreInterface(const char* pszName);							\
-		class _##classname##SingletonInstantiator	\
-		{											\
-		public:										\
-			_##classname##SingletonInstantiator()	{ instance = (abstractclass*)_GetDkCoreInterface(interfacename); }	\
-			abstractclass* instance;				\
-		};											\
-		class CDkCoreInterface_##classname			\
-		{											\
-		public:										\
-			abstractclass*	GetInstancePtr()					{ static _##classname##SingletonInstantiator i; return i.instance; } \
-			abstractclass*	operator->()						{ return GetInstancePtr(); }			\
-			operator		abstractclass*()					{ return GetInstancePtr(); }			\
-		};																								\
-		static CDkCoreInterface_##classname localname IFACE_PRIORITY_EXPORT2;
+#define INTERFACE_SINGLETON(abstractclass, classname, interfacename, localname)	\
+	IEXPORTS void* _GetDkCoreInterface(const char* pszName);						\
+	class _##classname##SingletonInstantiator {	\
+	public:										\
+		_##classname##SingletonInstantiator()	{ instance = (abstractclass*)_GetDkCoreInterface(interfacename); }	\
+		abstractclass* instance;				\
+	};											\
+	class CDkCoreInterface_##classname {		\
+	public:										\
+		abstractclass*	GetInstancePtr()	{ static _##classname##SingletonInstantiator i; return i.instance; } \
+		abstractclass*	operator->()		{ return GetInstancePtr(); }			\
+		operator		abstractclass*()	{ return GetInstancePtr(); }			\
+	};																				\
+	static CDkCoreInterface_##classname localname;
 
 #endif // _DKLAUNCHER_
 

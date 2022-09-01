@@ -9,7 +9,7 @@
 #include "core/IDkCore.h"
 #include "IMaterialSystem.h"
 
-IShaderAPI*			g_pShaderAPI	= (IShaderAPI*)GetCore()->GetInterface(MATSYSTEM_INTERFACE_VERSION);
+IShaderAPI*			g_pShaderAPI	= (IShaderAPI*)g_eqCore->GetInterface(MATSYSTEM_INTERFACE_VERSION);
 IMaterialSystem*	materials		= nullptr;
 
 DECLARE_INTERNAL_SHADERS()

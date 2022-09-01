@@ -5,15 +5,12 @@
 // Description: System messageboxes
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef ASSERT_H
-#define ASSERT_H
-
+#pragma once
 #include "core/InterfaceManager.h"
 
+IEXPORTS void	_InternalAssertMsg(PPSourceLine sl, const char* statement, ...);
 
-IEXPORTS void	_InternalAssertMsg(const char* file, int line, const char* statement, ...);
-
-#define	ASSERT_MSG(x, msgFmt, ...) if (!(x)) _InternalAssertMsg(__FILE__, __LINE__, msgFmt, ##__VA_ARGS__)
+#define	ASSERT_MSG(x, msgFmt, ...) if (!(x)) _InternalAssertMsg(PP_SL, msgFmt, ##__VA_ARGS__)
 #define	ASSERT(x) ASSERT_MSG(x, #x)
 #define ASSERT_FAIL(msgFmt, ...) ASSERT_MSG(false, msgFmt, ##__VA_ARGS__)
 
@@ -59,5 +56,3 @@ assert_sizeof(long, 4);
 assert_sizeof(long long, 8);
 assert_sizeof(float, 4);
 assert_sizeof(double, 8);
-
-#endif // ASSERT_H

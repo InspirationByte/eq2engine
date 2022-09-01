@@ -6,6 +6,7 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "core/core_common.h"
+#include "core/IDkCore.h"
 #include "eqCPUServices.h"
 
 EXPORTED_INTERFACE(IEqCPUCaps, CEqCPUCaps);
@@ -219,6 +220,8 @@ CEqCPUCaps::CEqCPUCaps()
 	m_cpu3DNowExt	= false;
 	m_cpuMMXExt		= false;
 	m_cpuFamily		= 0;
+
+	g_eqCore->RegisterInterface(CPUSERVICES_INTERFACE_VERSION, this);
 }
 
 void CEqCPUCaps::Init()

@@ -41,6 +41,4 @@ public:
 	virtual void					UnregisterInterface(const char* pszName) = 0;							// unregisters interface
 };
 
-#ifndef _DKLAUNCHER_
-IEXPORTS IDkCore*	GetCore();
-#endif
+ENTRYPOINT_INTERFACE_SINGLETON(IDkCore, CDkCore, g_eqCore)

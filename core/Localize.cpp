@@ -76,9 +76,14 @@ CLocToken::CLocToken(const char* tok, const char* text)
 
 //-------------------------------------------------------------------------------------------------
 
+CLocalize::CLocalize()
+{
+	g_eqCore->RegisterInterface(LOCALIZER_INTERFACE_VERSION, this);
+}
+
 void CLocalize::Init()
 {
-	KVSection* pRegional = GetCore()->GetConfig()->FindSection("RegionalSettings", KV_FLAG_SECTION);
+	KVSection* pRegional = g_eqCore->GetConfig()->FindSection("RegionalSettings", KV_FLAG_SECTION);
 
 	if(!pRegional)
 	{

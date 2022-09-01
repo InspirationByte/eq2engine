@@ -171,7 +171,7 @@ bool CFileSystem::Init(bool bEditorMode)
 
 	m_editorMode = bEditorMode;
 
-	KVSection* pFilesystem = GetCore()->GetConfig()->FindSection("FileSystem", KV_FLAG_SECTION);
+	KVSection* pFilesystem = g_eqCore->GetConfig()->FindSection("FileSystem", KV_FLAG_SECTION);
 
 	if (!pFilesystem)
 	{
