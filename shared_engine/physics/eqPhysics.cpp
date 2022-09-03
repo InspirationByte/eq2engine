@@ -34,12 +34,7 @@
 #include "eqPhysics_Controller.h"
 #include "eqBulletIndexedMesh.h"
 
-// #define PROFILE			// this has to be disabled when GamePhysics using worker thread
 #define CONTACT_GROUPING
-
-#ifdef PROFILE
-#include "Shiny.h"
-#endif
 
 #include "../shared_engine/physics/BulletConvert.h"
 
@@ -693,10 +688,6 @@ void CEqPhysics::DestroyController( IEqPhysicsController* controller )
 
 void CEqPhysics::DetectBodyCollisions(CEqRigidBody* bodyA, CEqRigidBody* bodyB, float fDt)
 {
-#ifdef PROFILE
-	PROFILE_FUNC();
-#endif
-
 	// apply filters
 	if(!bodyA->CheckCanCollideWith(bodyB))
 		return;
@@ -729,7 +720,6 @@ void CEqPhysics::DetectBodyCollisions(CEqRigidBody* bodyA, CEqRigidBody* bodyB, 
 	}
 
 	// trasform collision objects and test
-	//PROFILE_BEGIN(shapeOperations);
 
 	// prepare for testing...
 	btCollisionObject* objA = bodyA->m_collObject;
@@ -755,10 +745,6 @@ void CEqPhysics::DetectBodyCollisions(CEqRigidBody* bodyA, CEqRigidBody* bodyB, 
 		objB = &boxObjectB;
 	*/
 
-	//PROFILE_END();
-
-	//PROFILE_BEGIN(matrixOperations);
-
 	// body a
 	Matrix4x4 eqTransA = Matrix4x4( bodyA->GetOrientation() );
 	eqTransA.translate(bodyA->GetShapeCenter());
@@ -779,8 +765,6 @@ void CEqPhysics::DetectBodyCollisions(CEqRigidBody* bodyA, CEqRigidBody* bodyB, 
 
 	//objA->setWorldTransform(transA);
 	//objB->setWorldTransform(transB);
-
-	//PROFILE_END();
 
 	btCollisionObjectWrapper obA(nullptr, bodyA->m_shape, objA, transA, -1, -1);
 	btCollisionObjectWrapper obB(nullptr, bodyB->m_shape, objB, transB, -1, -1);
@@ -859,10 +843,6 @@ void CEqPhysics::DetectBodyCollisions(CEqRigidBody* bodyA, CEqRigidBody* bodyB, 
 
 void CEqPhysics::DetectStaticVsBodyCollision(CEqCollisionObject* staticObj, CEqRigidBody* bodyB, float fDt)
 {
-#ifdef PROFILE
-	PROFILE_FUNC();
-#endif
-
 	if(staticObj == nullptr || bodyB == nullptr)
 		return;
 
@@ -878,8 +858,6 @@ void CEqPhysics::DetectStaticVsBodyCollision(CEqCollisionObject* staticObj, CEqR
 	btCollisionObject* objA = staticObj->m_collObject;
 	btCollisionObject* objB = bodyB->m_collObject;
 
-	//PROFILE_BEGIN(matrixOperations);
-
 	// body a
 	Matrix4x4 eqTransA;
 	{
@@ -892,37 +870,39 @@ void CEqPhysics::DetectStaticVsBodyCollision(CEqCollisionObject* staticObj, CEqR
 
 	// body b
 	Matrix4x4 eqTransB_orig;
-	//Matrix4x4 eqTransB_vel;
+	Matrix4x4 eqTransB_vel;
 
 	{
-		// body a
+		// body B
 		eqTransB_orig = Matrix4x4( bodyB->GetOrientation() );
 		eqTransB_orig.translate(bodyB->GetShapeCenter());
 		eqTransB_orig = transpose(eqTransB_orig);
 		eqTransB_orig.rows[3] += Vector4D(bodyB->GetPosition()+center, 1.0f);
 	}
 
-	/*
 	{
-		FVector3D addVelToPos = normalize(bodyB->GetLinearVelocity()) * fDt * 200.5f;
-
-		bodyB->ConstructRenderMatrix(eqTransB_vel, addVelToPos);
-
+		FVector3D addVelToPos = normalize(bodyB->GetLinearVelocity());
+		eqTransB_vel = Matrix4x4(bodyB->GetOrientation());
 		eqTransB_vel.translate(bodyB->GetShapeCenter());
-
-		eqTransB_vel = transpose(eqTransB_vel);
-		eqTransB_vel.rows[3] += Vector4D(center, 0.0f);
-	}*/
+		eqTransB_vel = transpose(eqTransB_orig);
+		eqTransB_vel.rows[3] += Vector4D(bodyB->GetPosition() + center + addVelToPos, 1.0f);
+	}
 
 	btTransform transA; 
 	btTransform transB;
 
 	ConvertMatrix4ToBullet(transA, eqTransA);
 	ConvertMatrix4ToBullet(transB, eqTransB_orig);
-	//btTransform transB_vel = ConvertMatrix4ToBullet(eqTransB_vel);
+
+	btTransform transB_vel;
+	ConvertMatrix4ToBullet(transB_vel, eqTransB_vel);
 
 	objA->setWorldTransform(transA);
 	objB->setWorldTransform(transB);
+
+	btVector3 velocity;
+	ConvertDKToBulletVectors(velocity, bodyB->GetLinearVelocity());
+	objB->setInterpolationWorldTransform(transB_vel);
 
 	btCollisionObjectWrapper obA(nullptr, staticObj->m_shape, objA, transA, -1, -1);
 	btCollisionObjectWrapper obB(nullptr, bodyB->m_shape, objB, transB, -1, -1);
@@ -930,15 +910,7 @@ void CEqPhysics::DetectStaticVsBodyCollision(CEqCollisionObject* staticObj, CEqR
 	CEqManifoldResult cbResult(&obA, &obB, /*(bodyB->m_flags & BODY_ISCAR)*/true, center);
 
 	{
-#ifdef PROFILE
-		PROFILE_BLOCK(CollisionAlgo);
-#endif
 		//discrete collision detection query
-#ifdef PROFILE
-		PROFILE_BLOCK(ProcessCollision);
-#endif
-
-#if 0
 		btCollisionAlgorithm* algorithm = nullptr;
 
 		const int numShapesB = bodyB->m_numShapes;
@@ -954,11 +926,6 @@ void CEqPhysics::DetectStaticVsBodyCollision(CEqCollisionObject* staticObj, CEqR
 
 			algorithm->processCollision(&obA, &obB, *m_dispatchInfo, &cbResult);
 		}
-#else
-		btCollisionAlgorithm* algorithm = m_collDispatcher->findAlgorithm(&obA, &obB, 0, BT_CONTACT_POINT_ALGORITHMS);
-
-		algorithm->processCollision(&obA, &obB, *m_dispatchInfo, &cbResult);
-#endif
 
 		algorithm->~btCollisionAlgorithm();
 		m_collDispatcher->freeCollisionAlgorithm(algorithm);
@@ -1048,10 +1015,6 @@ void CEqPhysics::SetupBodyOnCell( CEqCollisionObject* body )
 
 void CEqPhysics::IntegrateSingle(CEqRigidBody* body)
 {
-#ifdef PROFILE
-	PROFILE_FUNC();
-#endif
-
 	collgridcell_t* oldCell = body->GetCell();
 
 	// move object
@@ -1082,10 +1045,6 @@ void CEqPhysics::IntegrateSingle(CEqRigidBody* body)
 
 void CEqPhysics::DetectCollisionsSingle(CEqRigidBody* body)
 {
-#ifdef PROFILE
-	PROFILE_FUNC();
-#endif
-
 	// don't refresh frozen object, other will wake up us (or user)
 	if (body->IsFrozen())
 		return;
@@ -1146,10 +1105,6 @@ ConVar ph_carVsCarErp("ph_carVsCarErp", "0.15", "Car versus car erp", CV_CHEAT);
 
 void CEqPhysics::ProcessContactPair(ContactPair_t& pair)
 {
-#ifdef PROFILE
-	PROFILE_FUNC();
-#endif
-
 	CollisionPairData_t collData;
 
 	CEqRigidBody* bodyB = (CEqRigidBody*)pair.bodyB;
@@ -1324,10 +1279,6 @@ void CEqPhysics::SimulateStep(float deltaTime, int iteration, FNSIMULATECALLBACK
 	// save delta
 	m_fDt = deltaTime;
 
-#ifdef PROFILE
-	PROFILE_FUNC();
-#endif
-	
 	// prepare all the constraints
 	{
 		for (int i = 0; i < m_constraints.numElem(); i++)
@@ -1564,9 +1515,6 @@ bool CEqPhysics::TestLineCollision(	const FVector3D& start,
 									CollisionData_t& coll,
 									int rayMask, eqPhysCollisionFilter* filterParams)
 {
-#ifdef PROFILE
-	//PROFILE_FUNC();
-#endif
 	if (!m_grid) {
 		return false;
 	}
@@ -1612,9 +1560,6 @@ bool CEqPhysics::TestConvexSweepCollision(	btCollisionShape* shape,
 											CollisionData_t& coll,
 											int rayMask, eqPhysCollisionFilter* filterParams)
 {
-#ifdef PROFILE
-	//PROFILE_FUNC();
-#endif
 	if (!m_grid) {
 		return false;
 	}
