@@ -32,6 +32,7 @@ enum EModelLoadingState
 	MODEL_LOAD_OK,
 };
 
+#define EGF_LOADING_CRITICAL_SECTION(m)		while(m->GetLoadingState() != MODEL_LOAD_OK) {	g_parallelJobs->CompleteJobCallbacks(); Platform_Sleep(1); }
 #define MOD_STUDIOHWDATA(m) (studioHwData_t*)m->GetHWData()
 #define MOD_WORLDHWDATA(m)	(worldhwdata_t*)m->GetHWData()
 
@@ -109,21 +110,21 @@ public:
 	virtual IEqModelInstancer*	GetInstancer() const = 0;
 
 	// selects lod index
-	virtual int					SelectLod(float fDistance) = 0;
+	virtual int					SelectLod(float fDistance) const = 0;
 
 	// draws single texture group
 	// preSetVBO - if you don't use SetupVBOStream
-	virtual void				DrawGroup(int nModel, int nGroup, bool preSetVBO = true) = 0;
+	virtual void				DrawGroup(int nModel, int nGroup, bool preSetVBO = true) const = 0;
 
 	// sets vertex buffer streams in RHI
-	virtual void				SetupVBOStream( int nStream ) = 0;
+	virtual void				SetupVBOStream( int nStream ) const = 0;
 
 	// prepares model for skinning, return value indicates the hardware skinning flag
 	virtual bool				PrepareForSkinning( Matrix4x4* jointMatrices ) = 0;
 
 	// returns material assigned to the group
 	// materialIndex = <studiohwdata_t>->studio->pModelDesc(nModel)->pGroup(nTexGroup)->materialIndex;
-	virtual IMaterial*			GetMaterial(int materialIdx, int materialGroupIdx = 0) = 0;
+	virtual IMaterial*			GetMaterial(int materialIdx, int materialGroupIdx = 0) const = 0;
 };
 
 

@@ -733,7 +733,7 @@ void CEngineStudioEGF::LoadMaterials()
 	}
 }
 
-IMaterial* CEngineStudioEGF::GetMaterial(int materialIdx, int materialGroupIdx)
+IMaterial* CEngineStudioEGF::GetMaterial(int materialIdx, int materialGroupIdx) const
 {
 	if (materialIdx == -1)
 		return materials->GetDefaultMaterial();
@@ -797,7 +797,7 @@ void CEngineStudioEGF::LoadSetupBones()
 	}
 }
 
-void CEngineStudioEGF::DrawFull()
+void CEngineStudioEGF::DrawFull() const
 {
 	if (m_numMaterials > 0)
 		materials->BindMaterial(m_materials[0]);
@@ -812,7 +812,7 @@ void CEngineStudioEGF::DrawFull()
 	g_pShaderAPI->DrawIndexedPrimitives(PRIM_TRIANGLES, 0, m_numIndices, 0, m_numVertices);
 }
 
-int CEngineStudioEGF::SelectLod(float dist_to_camera)
+int CEngineStudioEGF::SelectLod(float dist_to_camera) const
 {
 	if (r_lodtest.GetInt() != -1)
 		return r_lodtest.GetInt();
@@ -833,7 +833,7 @@ int CEngineStudioEGF::SelectLod(float dist_to_camera)
 	return idealLOD;
 }
 
-void CEngineStudioEGF::SetupVBOStream(int nStream)
+void CEngineStudioEGF::SetupVBOStream(int nStream) const
 {
 	if (m_numVertices == 0)
 		return;
@@ -841,7 +841,7 @@ void CEngineStudioEGF::SetupVBOStream(int nStream)
 	g_pShaderAPI->SetVertexBuffer(m_pVB, nStream);
 }
 
-void CEngineStudioEGF::DrawGroup(int nModel, int nGroup, bool preSetVBO)
+void CEngineStudioEGF::DrawGroup(int nModel, int nGroup, bool preSetVBO) const
 {
 	if (m_numVertices == 0)
 		return;

@@ -57,16 +57,16 @@ public:
 	IEqModelInstancer*	GetInstancer() const;
 
 	// selects a lod. returns index
-	int					SelectLod(float dist_to_camera);
+	int					SelectLod(float dist_to_camera) const;
 
-	void				DrawFull();
-	void				DrawGroup(int nModel, int nGroup, bool preSetVBO = true);
+	void				DrawFull() const;
+	void				DrawGroup(int nModel, int nGroup, bool preSetVBO = true) const;
 
-	void				SetupVBOStream( int nStream );
+	void				SetupVBOStream( int nStream ) const;
 
 	bool				PrepareForSkinning(Matrix4x4* jointMatrices);
 
-	IMaterial*			GetMaterial(int materialIdx, int materialGroupIdx = 0);
+	IMaterial*			GetMaterial(int materialIdx, int materialGroupIdx = 0) const;
 
 private:
 
