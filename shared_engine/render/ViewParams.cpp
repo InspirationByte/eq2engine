@@ -7,6 +7,7 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "math/math_common.h"
+#include "math/Utility.h"
 #include "ViewParams.h"
 
 const float BASE_LOD_FOV	=	(1.0f / 39.0f);		// the good value
@@ -96,4 +97,27 @@ void CViewParams::GetMatricesOrtho(Matrix4x4& proj, Matrix4x4& view, Rectangle_t
 	view = rotateZXY4(-vRadianRotation.x,-vRadianRotation.y,-vRadianRotation.z);
 
 	view.translate(-m_vecOrigin);
+}
+
+void CViewParams::Interpolate(const CViewParams& from, const CViewParams& to, float factor, CViewParams& out)
+{
+	const Vector3D anglesA = from.GetAngles();
+	const Vector3D anglesB = to.GetAngles();
+	const Vector3D vRadianRotationA = VDEG2RAD(anglesA);
+	const Vector3D vRadianRotationB = VDEG2RAD(anglesB);
+
+	Quaternion qA(vRadianRotationA.x, vRadianRotationA.y, vRadianRotationA.z);
+	Quaternion qB(vRadianRotationB.x, vRadianRotationB.y, vRadianRotationB.z);
+	qA.normalize();
+	qB.normalize();
+	Quaternion qR = slerp(qA, qB, factor);
+	qR.normalize();
+
+	Vector3D qRotationEulers;
+	quaternionToEulers(qR, QuatRot_yzx, qRotationEulers);
+	qRotationEulers = Vector3D(qRotationEulers.x, qRotationEulers.z, qRotationEulers.y);
+
+	out.SetOrigin(lerp(from.GetOrigin(), to.GetOrigin(), factor));
+	out.SetAngles(VRAD2DEG(qRotationEulers));
+	out.SetFOV(lerp(from.GetFOV(), to.GetFOV(), factor));
 }

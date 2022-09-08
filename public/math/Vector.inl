@@ -597,6 +597,32 @@ inline T lerp(const T u, const T v, const float x)
 	return u + x * (v - u);
 }
 
+inline float bezierMix(const float a, const float b, float t) {
+	// degree 1
+	return a * (1.0f - t) + b * t;
+}
+
+inline float bezierQuadratic(const float p0, const float p1, const float p2, const float t)
+{
+	// degree 2
+	float p01 = bezierMix(p0, p1, t);
+	float p12 = bezierMix(p1, p2, t);
+	return bezierMix(p01, p12, t);
+}
+
+inline float bezierCubic(const float p0, const float t0, const float t1, const float p1, const float s)
+{
+	float x, xx, ss, xs3, a;
+
+	x = 1.0f - s;
+	xx = x * x;
+	ss = s * s;
+	xs3 = (s - ss) * 3.0f;
+	a = p0 * xx + t0 * xs3;
+
+	return a + s * (t1 * xs3 + p1 * ss - a);
+}
+
 template <typename T>
 inline TVec2D<T> lerp(const TVec2D<T> &u, const TVec2D<T> &v, const float x)
 {
