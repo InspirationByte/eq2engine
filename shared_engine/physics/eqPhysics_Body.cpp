@@ -579,51 +579,26 @@ Vector3D CEqRigidBody::ComputeFrictionVelocity(	const Vector3D& collNormal,
 												float normalImpulse, float denominator,
 												float staticFriction, float dynamicFriction)
 {
-	Vector3D tangent_vel = collPointVelocity - dot(collPointVelocity, collNormal)  * collNormal;
+	const Vector3D tangent_vel = collPointVelocity - dot(collPointVelocity, collNormal)  * collNormal;
 
-	float tangent_speed = length(tangent_vel);
+	const float tangent_speed = length(tangent_vel);
 
 	if (tangent_speed > 0.0f)
 	{
-		Vector3D T = -tangent_vel / tangent_speed;
-
-		float numerator = tangent_speed;
+		const Vector3D tangentVec = -tangent_vel / tangent_speed;
 
 		if(denominator > 0.0f)
 		{
-			float impulseToReverse = numerator / denominator;
+			const float impulseToReverse = tangent_speed / denominator;
+			const float impulseFromNormal = staticFriction * normalImpulse;
 
-			float impulseFromNormal = staticFriction * normalImpulse;
-			float frictionImpulse;
-
-			if (impulseToReverse < impulseFromNormal)
-				frictionImpulse = impulseToReverse;
-			else
-				frictionImpulse = dynamicFriction * normalImpulse;
-
-			return T*frictionImpulse;
+			const float frictionImpulse = (impulseToReverse < impulseFromNormal) ? impulseToReverse : dynamicFriction * normalImpulse;
+			return tangentVec * frictionImpulse;
 		}
 	}
 
 	return vec3_zero;
 }
-
-Vector3D GetVelocityAtLocalPointWrap(CEqCollisionObject* obj, const FVector3D& relativePos)
-{
-	if (!obj->IsDynamic())
-		return vec3_zero;
-
-	return ((CEqRigidBody*)obj)->GetVelocityAtLocalPoint(relativePos);
-}
-
-float ComputeImpulseDenominatorWrap(CEqCollisionObject* obj, const FVector3D& relativePos, const Vector3D& normal)
-{
-	if (!obj->IsDynamic())
-		return 0.0f;
-
-	return ((CEqRigidBody*)obj)->ComputeImpulseDenominator(relativePos, normal);
-}
-
 
 void CEqRigidBody::CopyValues(CEqRigidBody* dest, const CEqRigidBody* src)
 {
@@ -738,7 +713,7 @@ float CEqRigidBody::ApplyImpulseResponseTo(ContactPair_t& pair, float error_corr
 		normalImpulse, 
 		denominator, 
 		combined_friction,
-		combined_friction * 0.5f);
+		combined_friction);
 
 	// apply now
 	if( bodyADynamic && 
