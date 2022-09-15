@@ -7,6 +7,9 @@
 
 #pragma once
 
+float				SnapFloat(float grid_spacing, float val);
+Vector3D			SnapVector(float grid_spacing, const Vector3D& vector);
+
 bool				PointToScreen(const Vector3D& point, Vector2D& screen, const Matrix4x4 &mvp, const Vector2D &screenDims);
 bool				PointToScreen_Z(const Vector3D& point, Vector3D& screen, const Matrix4x4 &mvp, const Vector2D &screenDims);
 void				ScreenToDirection(	const Vector3D& cam_pos, const Vector2D& point, const Vector2D& screensize,

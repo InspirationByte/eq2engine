@@ -8,6 +8,20 @@
 #include "math_common.h"
 #include "Utility.h"
 
+float SnapFloat(float grid_spacing, float val)
+{
+	return round(val / grid_spacing) * grid_spacing;
+}
+
+Vector3D SnapVector(float grid_spacing, const Vector3D& vector)
+{
+	return Vector3D(
+		SnapFloat(grid_spacing, vector.x),
+		SnapFloat(grid_spacing, vector.y),
+		SnapFloat(grid_spacing, vector.z));
+}
+
+
 bool PointToScreen(const Vector3D& point, Vector2D& screen, const Matrix4x4 &mvp, const Vector2D &screenDims)
 {
 	Matrix4x4 worldToScreen = mvp;

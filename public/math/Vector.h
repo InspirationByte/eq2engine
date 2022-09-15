@@ -649,6 +649,10 @@ static const TVec3D<float> vec3_right = TVec3D<float>(1.0f, 0.0f, 0.0f);
 static const TVec3D<float> vec3_up = TVec3D<float>(0.0f, 1.0f, 0.0f);
 static const TVec3D<float> vec3_forward = TVec3D<float>(0.0f, 0.0f, 1.0f);
 
+static const TVec3D<float> vec3_xz = TVec3D<float>(1.0f, 0.0f, 1.0f);
+static const TVec3D<float> vec3_xy = TVec3D<float>(1.0f, 1.0f, 0.0f);
+static const TVec3D<float> vec3_yz = TVec3D<float>(0.0f, 1.0f, 1.0f);
+
 //-------------------------------------------------------------------
 
 // FIXME: remove color vectors?
