@@ -62,7 +62,7 @@
 #include "ds/function.h"
 #include "ds/List.h"
 #include "ds/refcounted.h"
-#include "ds/SmartPtr.h"
+#include "ds/scopedptr.h"
 #include "ds/singleton.h"
 #include "ds/IVirtualStream.h"
 #include "ds/MemoryStream.h"

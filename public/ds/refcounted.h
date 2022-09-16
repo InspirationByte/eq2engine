@@ -5,8 +5,7 @@
 // Description: EqEngine mutex storage
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef REFCOUNTED_H
-#define REFCOUNTED_H
+#pragma once
 
 template< class TYPE >
 class CRefPtr;
@@ -157,6 +156,3 @@ inline void CRefPtr<TYPE>::operator=( const CRefPtr<TYPE>& refptr )
 {
 	Assign( refptr.m_ptrObj );
 }
-
-
-#endif // REFCOUNTED_H
