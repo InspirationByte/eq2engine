@@ -5,7 +5,10 @@
 // Description: Provides base console interface
 //////////////////////////////////////////////////////////////////////////////////
 
+#ifdef IMGUI_ENABLED
 #include <imgui.h>
+#endif // IMGUI_ENABLED
+
 #include <SDL_clipboard.h>
 #include <SDL_keyboard.h>
 
@@ -28,8 +31,10 @@
 #include "sys_version.h"
 #include "sys_in_console.h"
 
+#ifdef IMGUI_ENABLED
 #include "imgui_backend/imgui_impl_matsystem.h"
 #include "imgui_backend/imgui_impl_sys.h"
+#endif // IMGUI_ENABLED
 
 using namespace Threading;
 static CEqMutex s_conInputMutex;
@@ -285,6 +290,7 @@ CEqConsoleInput::CEqConsoleInput()
 
 void CEqConsoleInput::Initialize(EQWNDHANDLE window)
 {
+#ifdef IMGUI_ENABLED
 	// ImGui
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
@@ -298,6 +304,7 @@ void CEqConsoleInput::Initialize(EQWNDHANDLE window)
 	// Setup Platform/Renderer backends
 	ImGui_ImplEq_InitForSDL(window);
 	ImGui_ImplMatSystem_Init();
+#endif // IMGUI_ENABLED
 
 	// TODO: ImGui networked console port (for Android)
 	KVSection* consoleSettings = g_eqCore->GetConfig()->FindSection("Console");
@@ -311,9 +318,11 @@ void CEqConsoleInput::Initialize(EQWNDHANDLE window)
 
 void CEqConsoleInput::Shutdown()
 {
+#ifdef IMGUI_ENABLED
 	ImGui_ImplMatSystem_Shutdown();
 	ImGui_ImplEq_Shutdown();
 	ImGui::DestroyContext();
+#endif // IMGUI_ENABLED
 }
 
 void CEqConsoleInput::BeginFrame()
@@ -321,6 +330,7 @@ void CEqConsoleInput::BeginFrame()
 	if (!m_visible)
 		return;
 
+#ifdef IMGUI_ENABLED
 	// Start the Dear ImGui frame
 	ImGui_ImplMatSystem_NewFrame();
 	ImGui_ImplEq_NewFrame();
@@ -349,23 +359,28 @@ void CEqConsoleInput::BeginFrame()
 		}
 		if (ImGui::BeginMenu("ENGINE"))
 		{
-			ImGui::EndMenu();
-		}
-		if (ImGui::BeginMenu("EQUI"))
-		{
-			IMGUI_CONVAR_BOOL("DEBUG FRAMES", equi_debug);
-			ImGui::EndMenu();
-		}
-		if (ImGui::BeginMenu("SOUND"))
-		{
-			ImGui::EndMenu();
-		}
-		if (ImGui::BeginMenu("MATSYSTEM"))
-		{
-			IMGUI_CONVAR_BOOL("OVERDRAW MODE", r_overdraw);
-			IMGUI_CONVAR_BOOL("WIREFRAME MODE", r_wireframe);
+			IMGUI_CONVAR_BOOL("SHOW FPS", r_showFPS);
+			IMGUI_CONVAR_BOOL("SHOW FPS GRAPH", r_showFPSGraph);
 			ImGui::Separator();
-			IMGUI_CONCMD("RELOAD MATERIALS", mat_reload, noArgs);
+			if (ImGui::BeginMenu("EQUI"))
+			{
+				IMGUI_CONVAR_BOOL("UI DEBUG RENDER", equi_debug);
+				ImGui::EndMenu();
+			}
+			if (ImGui::BeginMenu("SOUND"))
+			{
+				IMGUI_CONVAR_BOOL("SYSTEM DEBUG INFO", snd_debug);
+				IMGUI_CONVAR_BOOL("SCRIPTED SOUNDS DEBUG", scriptsound_debug);
+				ImGui::EndMenu();
+			}
+			if (ImGui::BeginMenu("MATSYSTEM"))
+			{
+				IMGUI_CONVAR_BOOL("OVERDRAW MODE", r_overdraw);
+				IMGUI_CONVAR_BOOL("WIREFRAME MODE", r_wireframe);
+				ImGui::Separator();
+				IMGUI_CONCMD("RELOAD MATERIALS", mat_reload, noArgs);
+				ImGui::EndMenu();
+			}
 			ImGui::EndMenu();
 		}
 		if (ImGui::BeginMenu("DEBUG OVERLAYS"))
@@ -377,10 +392,18 @@ void CEqConsoleInput::BeginFrame()
 
 			ImGui::EndMenu();
 		}
+
+		for (auto it = m_menuHandlers.begin(); it != m_menuHandlers.end(); ++it)
+		{
+			const EqImGui_Handler& handler = it.value();
+			handler.handlerFunc(handler.name.ToCString());
+		}
+
 		ImGui::EndMainMenuBar();
 	}
 
 #undef IMGUI_CONVAR_BOOL
+#endif // IMGUI_ENABLED
 }
 
 void CEqConsoleInput::EndFrame(int width, int height, float frameTime)
@@ -391,6 +414,7 @@ void CEqConsoleInput::EndFrame(int width, int height, float frameTime)
 	if(m_showConsole)
 		DrawSelf(width, height, frameTime);
 
+#ifdef IMGUI_ENABLED
 	ImGuiIO& io = ImGui::GetIO(); (void)io;
 	io.DisplaySize = ImVec2((float)width, (float)height);
 
@@ -402,7 +426,7 @@ void CEqConsoleInput::EndFrame(int width, int height, float frameTime)
 
 	ImGui::Render();
 	ImGui_ImplMatSystem_RenderDrawData(ImGui::GetDrawData());
-
+#endif // IMGUI_ENABLED
 	eqFontStyleParam_t versionTextStl;
 	versionTextStl.styleFlag = TEXT_STYLE_SHADOW | TEXT_STYLE_FROM_CAP;
 	versionTextStl.align = TEXT_ALIGN_HCENTER;
@@ -425,6 +449,23 @@ void CEqConsoleInput::AddAutoCompletion(ConAutoCompletion_t* newItem)
 
 	m_customAutocompletion.append(newItem);
 }
+
+#ifdef IMGUI_ENABLED
+
+void CEqConsoleInput::AddImGuiMenuHandler(const char* name, CONSOLE_IMGUI_HANDLER func)
+{
+	const int nameHash = StringToHash(name);
+	EqImGui_Handler& handler = m_menuHandlers[nameHash];
+	handler.name = name;
+	handler.handlerFunc = func;
+}
+
+void CEqConsoleInput::RemoveImGuiMenuHandler(const char* name)
+{
+	const int nameHash = StringToHash(name);
+	m_menuHandlers.remove(nameHash);
+}
+#endif // IMGUI_ENABLED
 
 void CEqConsoleInput::consoleRemTextInRange(int start,int len)
 {
@@ -1260,7 +1301,9 @@ bool CEqConsoleInput::KeyChar(const char* utfChar)
 	if(!m_visible)
 		return false;
 
+#ifdef IMGUI_ENABLED
 	ImGui_ImplEq_InputText(utfChar);
+#endif
 
 	if (!m_showConsole)
 		return true;
@@ -1296,7 +1339,9 @@ bool CEqConsoleInput::MouseEvent(const Vector2D &pos, int Button,bool pressed)
 	if(!m_visible)
 		return false;
 
+#ifdef IMGUI_ENABLED
 	ImGui_ImplEq_InputMousePress(Button, pressed);
+#endif
 
 	if (!m_showConsole)
 		return true;
@@ -1317,7 +1362,9 @@ bool CEqConsoleInput::MouseWheel(int hscroll, int vscroll)
 	if (!m_visible)
 		return false;
 
+#ifdef IMGUI_ENABLED
 	ImGui_ImplEq_InputMouseWheel(hscroll, vscroll);
+#endif
 
 	return true;
 }
@@ -1368,7 +1415,9 @@ bool CEqConsoleInput::KeyPress(int key, bool pressed)
 	if(!m_visible)
 		return false;
 
+#ifdef IMGUI_ENABLED
 	ImGui_ImplEq_InputKeyPress(key, pressed);
+#endif
 
 	if (!m_showConsole)
 		return true;

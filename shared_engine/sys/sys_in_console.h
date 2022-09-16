@@ -7,6 +7,10 @@
 
 #pragma once
 
+#if !defined(_RETAIL) || defined(DEBUG)
+#define IMGUI_ENABLED
+#endif
+
 class IEqFont;
 class ConCommandBase;
 
@@ -17,6 +21,10 @@ struct ConAutoCompletion_t
 };
 
 typedef bool (*CONSOLE_ALTERNATE_HANDLER)(const char* commandText);
+
+#ifdef IMGUI_ENABLED
+using CONSOLE_IMGUI_HANDLER = EqFunction<void(const char* name)>;
+#endif // IMGUI_ENABLED
 
 class CEqConsoleInput
 {
@@ -60,6 +68,11 @@ public:
 	void			MousePos(const Vector2D &pos);
 
 	void			AddAutoCompletion(ConAutoCompletion_t* item);
+
+#ifdef IMGUI_ENABLED
+	void			AddImGuiMenuHandler(const char* name, CONSOLE_IMGUI_HANDLER func);
+	void			RemoveImGuiMenuHandler(const char* name);
+#endif // IMGUI_ENABLED
 
 protected:
 
@@ -134,6 +147,15 @@ private:
 	Array<EqString>					m_variantList{ PP_SL };
 	int								m_variantSelection;
 
+#ifdef IMGUI_ENABLED
+	struct EqImGui_Handler
+	{
+		EqString name;
+		CONSOLE_IMGUI_HANDLER handlerFunc;
+	};
+
+	Map<int, EqImGui_Handler>		m_menuHandlers{ PP_SL };
+#endif // IMGUI_ENABLED
 	CONSOLE_ALTERNATE_HANDLER		m_alternateHandler;
 
 	// Current input text
