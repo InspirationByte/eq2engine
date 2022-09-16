@@ -5,10 +5,6 @@
 // Description: Provides base console interface
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifdef IMGUI_ENABLED
-#include <imgui.h>
-#endif // IMGUI_ENABLED
-
 #include <SDL_clipboard.h>
 #include <SDL_keyboard.h>
 
@@ -32,6 +28,7 @@
 #include "sys_in_console.h"
 
 #ifdef IMGUI_ENABLED
+#include <imgui.h>
 #include "imgui_backend/imgui_impl_matsystem.h"
 #include "imgui_backend/imgui_impl_sys.h"
 #endif // IMGUI_ENABLED
@@ -427,6 +424,7 @@ void CEqConsoleInput::EndFrame(int width, int height, float frameTime)
 	ImGui::Render();
 	ImGui_ImplMatSystem_RenderDrawData(ImGui::GetDrawData());
 #endif // IMGUI_ENABLED
+
 	eqFontStyleParam_t versionTextStl;
 	versionTextStl.styleFlag = TEXT_STYLE_SHADOW | TEXT_STYLE_FROM_CAP;
 	versionTextStl.align = TEXT_ALIGN_HCENTER;

@@ -109,8 +109,8 @@ private:
 
 	Vector2D						m_mousePosition;
 	bool							m_visible;
-	bool							m_logVisible;
 
+	bool							m_logVisible;
 	bool							m_showConsole;
 
 	bool							m_cursorVisible;
