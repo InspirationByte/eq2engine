@@ -405,9 +405,17 @@ void Studio_FreeModel(studiohdr_t* pModel)
 	PPFree(pModel);
 }
 
+void Studio_FreeAnimationData(studioAnimation_t* anim, int numBones)
+{
+	for (int i = 0; i < numBones; i++)
+		PPFree(anim->bones[i].keyFrames);
+	PPFree(anim->bones);
+}
+
 void Studio_FreeMotionData(studioMotionData_t* data, int numBones)
 {
-	for(int i = 0; i < data->numAnimations; i++)
+	// NOTE: no need to delete bone keyFrames since they are mapped from data->frames.
+	for (int i = 0; i < data->numAnimations; i++)
 		PPFree(data->animations[i].bones);
 
 	PPFree(data->frames);

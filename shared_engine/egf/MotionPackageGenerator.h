@@ -56,10 +56,10 @@ private:
 	void InterpolateBoneAnimationFrames(studioBoneFrame_t* bone);
 
 	// Crops animated bones
-	void CropAnimationBoneFrames(studioBoneFrame_t* pBone, int newStart, int newFrames);
+	void CropAnimationBoneFrames(studioBoneFrame_t* pBone, int newStart, int newEnd);
 
 	// Crops animation
-	void CropAnimationDimensions(studioAnimation_t* pAnim, int newStart, int newFrames);
+	void CropAnimationDimensions(studioAnimation_t* pAnim, int newStart, int newEnd);
 
 	// Reverse animated bones
 	void ReverseAnimationBoneFrames(studioBoneFrame_t* pBone);
@@ -72,6 +72,9 @@ private:
 
 	// Scales animation length
 	void RemapAnimationLength(studioAnimation_t* pAnim, int newLength);
+
+	// Loads all animations from FBX
+	void LoadFBXAnimations(const char* filename);
 
 	// Loads animation from file
 	int LoadAnimationFromESA(const char* filename);

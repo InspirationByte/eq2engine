@@ -20,14 +20,13 @@
 
 #include "egf/dsm_loader.h"
 #include "egf/dsm_esm_loader.h"
+#include "egf/dsm_fbx_loader.h"
 #include "egf/model.h"
 #include "egf/modelloader_shared.h"
 
 using namespace SharedModel;
 
 #define BONE_NOT_SET 65536
-
-
 
 struct animCaBoneFrames_t
 {
@@ -273,43 +272,45 @@ inline void InterpolateFrameTransform(animframe_t &frame1, animframe_t &frame2, 
 //************************************
 // Crops animated bones
 //************************************
-void CMotionPackageGenerator::CropAnimationBoneFrames(studioBoneFrame_t* pBone, int newStart, int newFrames)
+void CMotionPackageGenerator::CropAnimationBoneFrames(studioBoneFrame_t* pBone, int newStart, int newEnd)
 {
+	const int newLength = newEnd - newStart + 1;
+
 	if(newStart >= pBone->numFrames)
 	{
-		MsgError("Error in crop: min frame value is bigger than number of frames of animation\n");
+		MsgError("Crop error: newStart (%d) >= numFrames (%d)\n", newStart, pBone->numFrames);
 		return;
 	}
 
-	if(newFrames == -1)
-		newFrames = pBone->numFrames - newStart;
+	// crop start
+	if (newEnd == -1)
+		newEnd = pBone->numFrames - 1;
 
-	if(newFrames > (pBone->numFrames - newStart))
+	if (newEnd >= pBone->numFrames)
 	{
-		MsgError("Error in crop: max frame value is bigger than number of frames of animation, it must be ident\n");
+		MsgError("Crop error: newEnd (%d) >= numFrames (%d)\n", newStart, pBone->numFrames);
 		return;
 	}
 
-	animframe_t* new_frames = PPNew animframe_t[newFrames];
+	animframe_t* new_frames = PPNew animframe_t[newLength];
 
-	for(int i = 0; i < newFrames; i++)
+	for(int i = 0; i < newLength; i++)
 	{
 		new_frames[i] = pBone->keyFrames[i + newStart];
 	}
 
 	delete [] pBone->keyFrames;
 	pBone->keyFrames = new_frames;
-
-	pBone->numFrames = newFrames;
+	pBone->numFrames = newLength;
 }
 
 //************************************
 // Crops animation
 //************************************
-void CMotionPackageGenerator::CropAnimationDimensions(studioAnimation_t* pAnim, int newStart, int newFrames)
+void CMotionPackageGenerator::CropAnimationDimensions(studioAnimation_t* pAnim, int newStart, int newEnd)
 {
 	for(int i = 0; i < m_model->numBones; i++)
-		CropAnimationBoneFrames(&pAnim->bones[i], newStart, newFrames);
+		CropAnimationBoneFrames(&pAnim->bones[i], newStart, newEnd);
 }
 
 //************************************
@@ -514,17 +515,6 @@ static bool ReadFramesForBone(Tokenizer& tok, Array<animCaBoneFrames_t>& bones)
 			frame.angBoneAngles.y = readFloat(tok);
 			frame.angBoneAngles.z = readFloat(tok);
 
-			/*
-			// convert from absolute local positioning
-			Matrix4x4 boneMatrix = identity4();
-			boneMatrix.setRotation(frame.angBoneAngles);
-			boneMatrix.setTranslation(frame.vecBonePosition);
-
-			boneMatrix = boneMatrix*!bones[nBone].bonematrix;
-
-			frame.vecBonePosition = boneMatrix.rows[3].xyz();
-			frame.angBoneAngles = EulerMatrixXYZ(boneMatrix.getRotationComponent());
-			*/
 			bones[nBone].frames.append( frame );
 			// next bone
 		}
@@ -594,6 +584,20 @@ bool ReadFrames(CMotionPackageGenerator& generator, Tokenizer& tok, dsmmodel_t* 
 	}
 
 	return true;
+}
+
+
+void CMotionPackageGenerator::LoadFBXAnimations(const char* filename)
+{
+	EqString finalFileName = filename;
+
+	// load from exporter-supported path
+	if (g_fileSystem->FileExist((m_animPath + "/anims/" + filename).GetData()))
+		finalFileName = m_animPath + "/anims/" + filename;
+	else
+		finalFileName = m_animPath + "/" + filename;
+
+	SharedModel::LoadFBXAnimations(m_animations, finalFileName);
 }
 
 //************************************
@@ -671,22 +675,22 @@ int CMotionPackageGenerator::LoadAnimationFromESA(const char* filename)
 //************************************
 void CMotionPackageGenerator::LoadAnimation(KVSection* section)
 {
-	KVSection* pNameKey = section->FindSection("name");
+	KVSection* pPathKey = section->FindSection("path");
 
-	if(!pNameKey)
+	if(!pPathKey)
 	{
-		MsgError("Animation script error! Not found parameter 'name' in section 'animation'\n");
+		MsgError("Animation script error! Parameter 'path' in section 'animation' is missing\n");
 		return;
 	}
 
-	EqString filename(KV_GetValueString(pNameKey));
+	EqString filename(KV_GetValueString(pPathKey));
 
 	KVSection* externalpath = section->FindSection("externalfile");
 
 	if(externalpath)
 		filename = KV_GetValueString(externalpath);
 
-	Msg(" loading animation '%s' as '%s'\n", filename.GetData(), pNameKey->values[0]);
+	Msg(" loading animation '%s' as '%s'\n", filename.GetData(), KV_GetValueString(section));
 
 	Vector3D anim_offset(0);
 	Vector3D anim_movevelocity(0);
@@ -707,9 +711,7 @@ void CMotionPackageGenerator::LoadAnimation(KVSection* section)
 	}
 
 	KVSection* cust_length_key = section->FindSection("customlength");
-	int custom_length = -1;
-
-	custom_length = KV_GetValueInt(cust_length_key, 0, 1);
+	int custom_length = KV_GetValueInt(cust_length_key, 0, -1);
 
 	bool enable_cutting = false;
 	bool reverse = false;
@@ -778,8 +780,11 @@ void CMotionPackageGenerator::LoadAnimation(KVSection* section)
 
 	if(enable_cutting)
 	{
-		Msg("Cropping from %d to %d\n", cut_start, cut_end);
+		Msg("  Cropping from [0 %d] to [%d %d]\n", pAnim->bones[0].numFrames, cut_start, cut_end);
 		CropAnimationDimensions( pAnim, cut_start, cut_end );
+
+		if(cut_start == cut_end)
+			RemapAnimationLength(pAnim, 2);
 	}
 
 	if(custom_length != -1)
@@ -795,7 +800,7 @@ void CMotionPackageGenerator::LoadAnimation(KVSection* section)
 	}
 
 	// make final name
-	strcpy(pAnim->name, KV_GetValueString(pNameKey));
+	strcpy(pAnim->name, KV_GetValueString(section));
 }
 
 //************************************
@@ -1104,11 +1109,12 @@ void CMotionPackageGenerator::ConvertAnimationsToWrite()
 		// convert bones.
 		for(int j = 0; j < m_model->numBones; j++)
 		{
-			anim.numFrames += m_animations[i].bones[j].numFrames;
+			studioBoneFrame_t& boneFrame = m_animations[i].bones[j];
 
-			for(int k = 0; k < m_animations[i].bones[j].numFrames; k++)
+			anim.numFrames += boneFrame.numFrames;
+			for(int k = 0; k < boneFrame.numFrames; k++)
 			{
-				m_animframes.append(m_animations[i].bones[j].keyFrames[k]);
+				m_animframes.append(boneFrame.keyFrames[k]);
 			}
 		}
 
@@ -1133,10 +1139,11 @@ void CMotionPackageGenerator::MakeDefaultPoseAnimation()
 	modelAnim.bones = PPNew studioBoneFrame_t[m_model->numBones];
 	for(int i = 0; i < m_model->numBones; i++)
 	{
-		modelAnim.bones[i].numFrames = 1;
-		modelAnim.bones[i].keyFrames = PPNew animframe_t[1];
-		modelAnim.bones[i].keyFrames[0].angBoneAngles = vec3_zero;
-		modelAnim.bones[i].keyFrames[0].vecBonePosition = vec3_zero;
+		studioBoneFrame_t& boneFrame = modelAnim.bones[i];
+		boneFrame.numFrames = 1;
+		boneFrame.keyFrames = PPNew animframe_t[1];
+		boneFrame.keyFrames[0].angBoneAngles = vec3_zero;
+		boneFrame.keyFrames[0].vecBonePosition = vec3_zero;
 	}
 
 	m_animations.append(modelAnim);
@@ -1181,10 +1188,14 @@ bool CMotionPackageGenerator::CompileScript(const char* filename)
 		return false;
 	}
 
-	
-
 	m_animPath = _Es(filename).Path_Strip_Name();
 
+	KVSection* animSourceKey = sec->FindSection("AnimationSource");
+	if (animSourceKey)
+	{
+		LoadFBXAnimations(KV_GetValueString(animSourceKey));
+	}
+	
 	// begin script compilation
 	MakeDefaultPoseAnimation();
 
@@ -1215,8 +1226,6 @@ void CopyLumpToFile(IVirtualStream* data, int lump_type, ubyte* toCopy, int toCo
 	data->Write(&lumpdata, 1, sizeof(lumpdata));
 	data->Write(toCopy, toCopySize, 1);
 }
-
-#pragma warning(disable : 4307) // integral constant overflow
 
 #define MAX_MOTIONPACKAGE_SIZE 16*1024*1024
 

@@ -9,6 +9,7 @@
 #include "utils/Tokenizer.h"
 #include "dsm_esm_loader.h"
 #include "dsm_loader.h"
+#include "egf/studiomodel.h"
 
 namespace SharedModel
 {
@@ -162,13 +163,13 @@ bool ReadFaces(Tokenizer& tok, dsmmodel_t* pModel)
 
 				if(numWeights)
 				{
-					float* tempWeights = PPNew float[numWeights];
-					int* tempWeightBones = PPNew int[numWeights];
-					
+					Array<float> tempWeights(PP_SL);
+					Array<int> tempWeightBones(PP_SL);
+
 					for(int i = 0; i < numWeights; i++)
 					{
-						tempWeightBones[i] = readInt(tok);
-						tempWeights[i] = readFloat(tok);
+						tempWeightBones.append(readInt(tok));
+						tempWeights.append(readFloat(tok));
 					}
 
 					// HACK: ugly format
@@ -179,23 +180,16 @@ bool ReadFaces(Tokenizer& tok, dsmmodel_t* pModel)
 					else
 					{
 						// sort em all and clip.
-						int nNewWeights = SortAndBalanceBones(numWeights, 4, tempWeightBones, tempWeights);
-
-						numWeights = nNewWeights;
+						numWeights = SortAndBalanceBones(numWeights, MAX_MODEL_VERTEX_WEIGHTS, tempWeightBones.ptr(), tempWeights.ptr());
 					}
 
 					// copy weights
 					for(int i = 0; i < numWeights; i++)
 					{
-						dsmweight_t w;
-						w.bone = tempWeightBones[i];
-						w.weight = tempWeights[i];
-
-						newvertex.weights.append(w);
+						dsmweight_t& weight = newvertex.weights.append();
+						weight.bone = tempWeightBones[i];
+						weight.weight = tempWeights[i];
 					}
-
-					delete [] tempWeights;
-					delete [] tempWeightBones;
 				}
 
 				newvertex.vertexId = -1;

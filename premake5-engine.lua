@@ -6,6 +6,7 @@ require ".premake_modules/unitybuild"
 require ".premake_modules/asan"
 
 IS_ANDROID = (_ACTION == "androidndk")
+WORKSPACE_NAME = (WORKSPACE_NAME or "Equilibrium2")
 
 -- you can redefine dependencies
 DependencyPath = {
@@ -44,7 +45,7 @@ Folders = {
 }
 
 -- Main workspace
-workspace "Equilibrium2"
+workspace(WORKSPACE_NAME)
     language "C++"
 	cppdialect "C++17"	-- required for sol2
     configurations { "Debug", "Release" }
