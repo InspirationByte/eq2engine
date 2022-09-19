@@ -470,7 +470,7 @@ void GetFBXCurveAsInterpKeyFrames(const ofbx::AnimationCurveNode* curveNode, Arr
 		}
 	}
 
-	ZoomArray(intermediateKeyFrames, keyFrames, animationDuration);
+	ZoomArray(intermediateKeyFrames, keyFrames, max(animationDuration, 2));
 }
 
 void ConvertFBXToESA(Array<studioAnimation_t>& animations, ofbx::IScene* scene)

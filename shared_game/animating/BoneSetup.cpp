@@ -51,8 +51,6 @@ void sequencetimer_t::SetTime(float time)
 	const sequencedesc_t* seqDesc = seq->s;
 
 	const int numAnimationFrames = seq->animations[0]->bones[0].numFrames;
-	const float maxSeqTime = float(numAnimationFrames - 1);
-
 	const bool loop = (seqDesc->flags & SEQFLAG_LOOP);
 
 	if (loop)
@@ -67,9 +65,9 @@ void sequencetimer_t::SetTime(float time)
 	}
 	else
 	{
-		if (time >= maxSeqTime)
+		if (time >= numAnimationFrames)
 		{
-			time = maxSeqTime;
+			time = numAnimationFrames;
 			active = false;
 		}
 		else if (time <= 0.0f)
