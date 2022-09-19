@@ -48,45 +48,41 @@ void sequencetimer_t::SetTime(float time)
 	if(!seq)
 		return;
 
-	sequencedesc_t* seqDesc = seq->s;
+	const sequencedesc_t* seqDesc = seq->s;
 
-	seq_time = time;
+	const int numAnimationFrames = seq->animations[0]->bones[0].numFrames;
+	const float maxSeqTime = float(numAnimationFrames - 1);
 
-	int numAnimationFrames = seq->animations[0]->bones[0].numFrames;
-	float maxSeqTime = float(numAnimationFrames - 1);
-
-	bool loop = (seqDesc->flags & SEQFLAG_LOOP);
+	const bool loop = (seqDesc->flags & SEQFLAG_LOOP);
 
 	if (loop)
 	{
-		if (RollingValue(seq_time, 0.0f, float(numAnimationFrames - 1)))
+		if (RollingValue(time, 0.0f, float(numAnimationFrames - 1)))
 		{
 			eventCounter = 0;
 		}
 
-		currFrame = floor(seq_time);
-		nextFrame = currFrame + 1;
-
-		RollingValue(nextFrame, 0, numAnimationFrames - 1);
+		currFrame = int(floor(time)) % numAnimationFrames;
+		nextFrame = (currFrame + 1) % numAnimationFrames;
 	}
 	else
 	{
-		if (seq_time >= maxSeqTime)
+		if (time >= maxSeqTime)
 		{
-			seq_time = maxSeqTime;
+			time = maxSeqTime;
 			active = false;
 		}
-		else if (seq_time <= 0.0f)
+		else if (time <= 0.0f)
 		{
 			active = false;
-			seq_time = 0.0f;
+			time = 0.0f;
 		}
 
-		currFrame = floor(seq_time);
-		nextFrame = currFrame + 1;
-
-		nextFrame = clamp(nextFrame, 0, numAnimationFrames - 1);
+		currFrame = min(int(floor(time)), numAnimationFrames - 1);
+		nextFrame = min(currFrame + 1, numAnimationFrames - 1);
 	}
+
+	seq_time = time;
 }
 
 void sequencetimer_t::Reset()

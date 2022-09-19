@@ -212,7 +212,7 @@ studioMotionData_t* Studio_LoadMotionData(const char* pszPath, int boneCount)
 
 	pMotion->numAnimations = numAnimDescs;
 
-	pMotion->frames = (animframe_t*)PPAlloc(numAnimFrames * sizeof(animframe_t));
+	pMotion->frames = PPAllocStructArray(animframe_t, numAnimFrames);
 	memcpy(pMotion->frames, animframes, numAnimFrames * sizeof(animframe_t));
 
 	for(int i = 0; i < pMotion->numAnimations; i++)
@@ -407,8 +407,12 @@ void Studio_FreeModel(studiohdr_t* pModel)
 
 void Studio_FreeAnimationData(studioAnimation_t* anim, int numBones)
 {
-	for (int i = 0; i < numBones; i++)
-		PPFree(anim->bones[i].keyFrames);
+	if (anim->bones) 
+	{
+		for (int i = 0; i < numBones; i++)
+			PPFree(anim->bones[i].keyFrames);
+	}
+
 	PPFree(anim->bones);
 }
 

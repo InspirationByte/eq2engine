@@ -47,10 +47,7 @@ void CMotionPackageGenerator::Cleanup()
 	// delete animations
 	for(int i = 0; i < m_animations.numElem(); i++)
 	{
-		for(int j = 0; j < m_model->numBones; j++)
-			delete [] m_animations[i].bones[j].keyFrames;
-
-		delete [] m_animations[i].bones;
+		Studio_FreeAnimationData(&m_animations[i], m_model->numBones);
 	}
 
 	m_animations.clear();
@@ -111,7 +108,7 @@ int	CMotionPackageGenerator::GetPoseControllerIndex(const char* name)
 //************************************
 void CMotionPackageGenerator::ShiftAnimationFrames(studioBoneFrame_t* bone, int new_start_frame)
 {
-	animframe_t* frames_copy  = PPNew animframe_t[bone->numFrames];
+	animframe_t* frames_copy = PPAllocStructArray(animframe_t, bone->numFrames);
 
 	for(int i = 0; i < new_start_frame; i++)
 	{
@@ -124,7 +121,7 @@ void CMotionPackageGenerator::ShiftAnimationFrames(studioBoneFrame_t* bone, int 
 		frames_copy[i] = bone->keyFrames[c++];
 	}
 
-	delete [] bone->keyFrames;
+	PPFree(bone->keyFrames);
 
 	bone->keyFrames = frames_copy;
 }
@@ -292,14 +289,14 @@ void CMotionPackageGenerator::CropAnimationBoneFrames(studioBoneFrame_t* pBone, 
 		return;
 	}
 
-	animframe_t* new_frames = PPNew animframe_t[newLength];
+	animframe_t* new_frames = PPAllocStructArray(animframe_t, newLength);
 
 	for(int i = 0; i < newLength; i++)
 	{
 		new_frames[i] = pBone->keyFrames[i + newStart];
 	}
 
-	delete [] pBone->keyFrames;
+	PPFree(pBone->keyFrames);
 	pBone->keyFrames = new_frames;
 	pBone->numFrames = newLength;
 }
@@ -318,7 +315,7 @@ void CMotionPackageGenerator::CropAnimationDimensions(studioAnimation_t* pAnim, 
 //************************************
 void CMotionPackageGenerator::ReverseAnimationBoneFrames(studioBoneFrame_t* pBone)
 {
-	animframe_t* new_frames = PPNew animframe_t[pBone->numFrames];
+	animframe_t* new_frames = PPAllocStructArray(animframe_t, pBone->numFrames);
 
 	for(int i = 0; i < pBone->numFrames; i++)
 	{
@@ -327,7 +324,7 @@ void CMotionPackageGenerator::ReverseAnimationBoneFrames(studioBoneFrame_t* pBon
 		new_frames[i] = pBone->keyFrames[rev_idx];
 	}
 
-	delete [] pBone->keyFrames;
+	PPFree(pBone->keyFrames);
 	pBone->keyFrames = new_frames;
 }
 
@@ -372,8 +369,8 @@ inline void GetCurrAndNextFrameFromTime(float time, int max, int *curr, int *nex
 //************************************
 void CMotionPackageGenerator::RemapBoneFrames(studioBoneFrame_t* pBone, int newLength)
 {
-	animframe_t*	newFrames = PPNew animframe_t[newLength];
-	bool*			bSetFrames = PPNew bool[newLength];
+	animframe_t* newFrames = PPAllocStructArray(animframe_t, newLength);
+	bool* bSetFrames = PPAllocStructArray(bool, newLength);
 
 	memset(bSetFrames, 0, sizeof(bool) * newLength);
 
@@ -418,8 +415,8 @@ void CMotionPackageGenerator::RemapBoneFrames(studioBoneFrame_t* pBone, int newL
 
 	// finally, replace bones
 
-	delete [] pBone->keyFrames;
-	delete [] bSetFrames;
+	PPFree(pBone->keyFrames);
+	PPFree(bSetFrames);
 
 	pBone->keyFrames = newFrames;
 	pBone->numFrames = newLength;
@@ -571,7 +568,7 @@ bool ReadFrames(CMotionPackageGenerator& generator, Tokenizer& tok, dsmmodel_t* 
 	{
 		int numFrames = bones[i].frames.numElem();
 		pAnim->bones[i].numFrames = numFrames;
-		pAnim->bones[i].keyFrames = PPNew animframe_t[numFrames];
+		pAnim->bones[i].keyFrames = PPAllocStructArray(animframe_t, numFrames);
 
 		// copy frames
 		memcpy(pAnim->bones[i].keyFrames, bones[i].frames.ptr(), numFrames * sizeof(animframe_t));
@@ -644,18 +641,19 @@ int CMotionPackageGenerator::LoadAnimationFromESA(const char* filename)
 		}
 		else if(!stricmp(str, "frames"))
 		{
-			if(m_model->numBones != m_model->numBones)
+			if(m_model->numBones != tempDSM.bones.numElem())
 			{
 				MsgError("Invalid bones! Please re-export model!\n");
-				delete [] modelAnim.bones;
+				Studio_FreeAnimationData(&modelAnim, m_model->numBones);
+				FreeDSM(&tempDSM);
 				return -1;
 			}
 
-			modelAnim.bones = PPNew studioBoneFrame_t[m_model->numBones];
+			modelAnim.bones = PPAllocStructArray(studioBoneFrame_t, m_model->numBones);
 
 			if(!ReadFrames(*this, tok, &tempDSM, &modelAnim))
 			{
-				delete [] modelAnim.bones;
+				Studio_FreeAnimationData(&modelAnim, m_model->numBones);
 				FreeDSM(&tempDSM);
 				return -1;
 			}
@@ -1136,12 +1134,12 @@ void CMotionPackageGenerator::MakeDefaultPoseAnimation()
 
 	strcpy(modelAnim.name, "default"); // set it externally from file name
 
-	modelAnim.bones = PPNew studioBoneFrame_t[m_model->numBones];
+	modelAnim.bones = PPAllocStructArray(studioBoneFrame_t, m_model->numBones);
 	for(int i = 0; i < m_model->numBones; i++)
 	{
 		studioBoneFrame_t& boneFrame = modelAnim.bones[i];
 		boneFrame.numFrames = 1;
-		boneFrame.keyFrames = PPNew animframe_t[1];
+		boneFrame.keyFrames = PPAllocStructArray(animframe_t, 1);
 		boneFrame.keyFrames[0].angBoneAngles = vec3_zero;
 		boneFrame.keyFrames[0].vecBonePosition = vec3_zero;
 	}

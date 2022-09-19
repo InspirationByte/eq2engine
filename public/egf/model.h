@@ -93,60 +93,60 @@ struct studioHwData_t
 		{
 			int	firstindex;
 			int indexcount;
-		} *groupDescs;
+		} *groupDescs{ nullptr };
 	} *modelrefs{ nullptr };
 
 	// joints, for
 	struct joint_t
 	{
-		char				name[44]; // bone name
+		char				name[44]{ 0 };		// bone name
 
-		int					bone_id; // index of this bone
-		int					parentbone; // parent index
+		int					bone_id{ -1 };		// index of this bone
+		int					parentbone{ -1 };	// parent index
 
-		Matrix4x4			absTrans; // base absolute transform
-		Matrix4x4			localTrans; // local transform
+		Matrix4x4			absTrans;			// base absolute transform
+		Matrix4x4			localTrans;			// local transform
 
-		Vector3D			position; // bone initial position
-		Vector3D			rotation; // bone initial rotation
+		Vector3D			position;			// bone initial position
+		Vector3D			rotation;			// bone initial rotation
 
-		Array<int>			childs{ PP_SL }; // child bones
+		Array<int>			childs{ PP_SL };	// child bones
 
-		int					chain_id;
-		int					link_id;
+		int					chain_id{ -1 };
+		int					link_id{ -1 };
 	}*	joints{ nullptr };
 
 	// model motion package loaded and expanded data
 	struct motionData_t
 	{
 		// animations
-		int					numAnimations;
+		int					numAnimations{ 0 };
 
 		struct animation_t
 		{
-			char name[44];
+			char name[44]{ 0 };
 
 			// bones, in count of studiohwdata_t::numJoints
 			struct boneframe_t
 			{
-				int				numFrames;
-				animframe_t*	keyFrames;
-			}*	bones;
-		}*	animations;
+				int				numFrames{ 0 };
+				animframe_t*	keyFrames{ nullptr };
+			}*	bones{ nullptr };
+		}*	animations{ nullptr };
 
 		// sequences
-		int					numsequences;
-		sequencedesc_t*		sequences;
+		int					numsequences{ 0 };
+		sequencedesc_t*		sequences{ nullptr };
 
 		// events
-		int					numEvents;
-		sequenceevent_t*	events;
+		int					numEvents{ 0 };
+		sequenceevent_t*	events{ nullptr };
 
 		// pose controllers
-		int					numPoseControllers;
-		posecontroller_t*	poseControllers;
+		int					numPoseControllers{ 0 };
+		posecontroller_t*	poseControllers{ nullptr };
 
-		animframe_t*		frames;
+		animframe_t*		frames{ nullptr };
 	}*	motiondata[MAX_MOTIONPACKAGES];
 
 	int					numMotionPackages{ 0 };

@@ -19,6 +19,7 @@
 #include <malloc.h>
 #include <new>
 #include <memory>
+#include <type_traits>
 
 #if defined(_INC_MINMAX)
 #error Please remove minmax from includes

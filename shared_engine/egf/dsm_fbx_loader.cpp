@@ -14,7 +14,6 @@
 #include "dsm_esm_loader.h"
 #include "dsm_fbx_loader.h"
 #include "modelloader_shared.h"
-#pragma optimize("", off)
 
 namespace SharedModel
 {
@@ -79,11 +78,6 @@ Matrix4x4 FromFBXMatrix(const ofbx::Matrix& mat)
 	return m;
 }
 
-int DecodeIndex(int idx)
-{
-	return (idx < 0) ? (-idx - 1) : idx;
-}
-
 void GetFBXConvertMatrix(const ofbx::GlobalSettings& settings, Matrix3x3& convertMatrix, bool& invertFaces)
 {
 	const float scaleFactor = settings.UnitScaleFactor;
@@ -100,11 +94,20 @@ struct VertexWeightData
 	Map<int, float> indexWeightMap{ PP_SL };
 };
 
-void GetFBXBonesAsDSM(const ofbx::Skin* skin, const Matrix3x3& convertMatrix, ofbx::UpVector upAxis, Array<dsmskelbone_t*>& bones, Array<VertexWeightData>& weightData)
+void GetFBXBonesAsDSM(const ofbx::Geometry& geom, const Matrix3x3& convertMatrix, ofbx::UpVector upAxis, Array<dsmskelbone_t*>& bones, Array<VertexWeightData>& weightData)
 {
+	const ofbx::Skin* skin = geom.getSkin();
+
+	if (!skin)
+		return;
+
+	// since it's attached to geom, we need it's matrix
+	// to properly convert the BindPose
+	const Matrix4x4 geomTransformInv = !FromFBXMatrix(geom.getGlobalTransform());
+
 	const int numBones = skin->getClusterCount();
 
-	Matrix3x3 boneConvertMatrix = rotateX3(DEG2RAD(-90)) * rotateZ3(DEG2RAD(180));
+	const Matrix3x3 boneConvertMatrix = rotateX3(DEG2RAD(-90)) * rotateZ3(DEG2RAD(180));
 
 	for (int i = 0; i < numBones; ++i)
 	{
@@ -129,14 +132,24 @@ void GetFBXBonesAsDSM(const ofbx::Skin* skin, const Matrix3x3& convertMatrix, of
 			}
 		}
 
-		const ofbx::Matrix fbxBoneMat = fbxBoneLink->getLocalTransform();
-		const Matrix4x4 boneMatrix = (pBone->parent_id == -1) ? FromFBXMatrix(fbxBoneMat, boneConvertMatrix) : FromFBXMatrix(fbxBoneMat);
+		// TransformLinkMatrix is Global, convert to Eq Local
+		{
+			const ofbx::Matrix fbxBoneMat = fbxCluster.getTransformLinkMatrix();
+			Matrix4x4 boneMatrixLocal = FromFBXMatrix(fbxBoneMat) * geomTransformInv;
+			if (pBone->parent_id != -1)
+			{
+				const ofbx::Cluster& fbxCluserParent = *skin->getCluster(pBone->parent_id);
+				boneMatrixLocal = boneMatrixLocal * !(FromFBXMatrix(fbxCluserParent.getTransformLinkMatrix()) * geomTransformInv);
+			}
+			const Matrix4x4 boneMatrix = (pBone->parent_id == -1) ? (boneMatrixLocal * Matrix4x4(boneConvertMatrix)) : boneMatrixLocal;
 
-		pBone->position = boneMatrix.getTranslationComponent();
-		pBone->angles = EulerMatrixXYZ(boneMatrix.getRotationComponent());
+			pBone->position = boneMatrix.getTranslationComponent();
+			pBone->angles = EulerMatrixXYZ(boneMatrix.getRotationComponent());
 
-		pBone->position *= Vector3D(-1, 1, 1);
-		pBone->angles *= Vector3D(1, -1, -1);
+			// Convert RH -> LH
+			pBone->position *= Vector3D(-1, 1, 1);
+			pBone->angles *= Vector3D(1, -1, -1);
+		}
 
 		bones.append(pBone);
 
@@ -170,13 +183,8 @@ void ConvertFBXToDSM(dsmmodel_t* model, esmshapedata_t* shapeData, ofbx::IScene*
 		const ofbx::Geometry& geom = *mesh.getGeometry();
 
 		// Msg("Mesh '%s'\n", mesh.name);
-
-		const ofbx::Skin* skin = geom.getSkin();
-
 		Array<VertexWeightData> weightData(PP_SL);
-		
-		if (skin)
-			GetFBXBonesAsDSM(skin, convertMatrix, settings.UpAxis, model->bones, weightData);
+		GetFBXBonesAsDSM(geom, convertMatrix, settings.UpAxis, model->bones, weightData);
 
 		const int vertex_count = geom.getVertexCount();
 
@@ -358,6 +366,113 @@ bool LoadFBXShapes(dsmmodel_t* model, esmshapedata_t* shapeData, const char* fil
 	return true;
 }
 
+template<class T>
+void ZoomArray(const Array<T>& src, Array<T>& dest, int newLength)
+{
+	auto interp1 = [&src](float x, int n)
+	{
+		if (x <= 0) 
+			return src[0];
+
+		if (x >= n - 1) 
+			return src[n - 1];
+
+		const int j = int(x);
+		return src[j] + (x - j) * (src[j + 1] - src[j]);
+	};
+
+	dest.setNum(newLength);
+	const int oldLength = src.numElem();
+	const float step = float(oldLength - 1) / (newLength - 1);
+
+	for (int j = 0; j < newLength; ++j)
+	{
+		dest[j] = interp1(j * step, oldLength);
+	}
+}
+
+void GetFBXCurveAsInterpKeyFrames(const ofbx::AnimationCurveNode* curveNode, Array<Vector3D>& keyFrames, int animationDuration, float localDuration)
+{
+	const ofbx::AnimationCurve* nodeX = curveNode->getCurve(0);
+	const ofbx::AnimationCurve* nodeY = curveNode->getCurve(1);
+	const ofbx::AnimationCurve* nodeZ = curveNode->getCurve(2);
+
+	Map<ofbx::i64, float> valueX(PP_SL);
+	Map<ofbx::i64, float> valueY(PP_SL);
+	Map<ofbx::i64, float> valueZ(PP_SL);
+
+	Set<ofbx::i64> allTimes(PP_SL);
+
+	auto insertFrames = [&allTimes](const ofbx::AnimationCurve* curve, Map<ofbx::i64, float>& destVal)
+	{
+		const ofbx::i64* times = curve->getKeyTime();
+		const float* values = curve->getKeyValue();
+		const int keyCount = curve->getKeyCount();
+
+		for (int i = 0; i < keyCount; ++i)
+		{
+			destVal[times[i]] = values[i];
+			allTimes.insert(times[i]);
+		}
+	};
+
+	insertFrames(nodeX, valueX);
+	insertFrames(nodeY, valueY);
+	insertFrames(nodeZ, valueZ);
+
+	// convert frames
+	int keyframeCounter = 0;
+	IVector3D lastKeyframes(0);
+
+	const int maxFrameCount = max(max(nodeX->getKeyCount(), nodeY->getKeyCount()), nodeZ->getKeyCount());
+
+	Array<Vector3D> intermediateKeyFrames(PP_SL);
+	intermediateKeyFrames.resize(maxFrameCount);
+
+	auto interpKeyFrames = [&intermediateKeyFrames](int from, int to, int axis) {
+		const float fromValue = intermediateKeyFrames[from][axis];
+		const float toValue = intermediateKeyFrames[to][axis];
+		for (int i = from; i < to; ++i)
+		{
+			const float percentage = RemapVal(i, from, to, 0.0f, 1.0f);
+			intermediateKeyFrames[i][axis] = lerp(fromValue, toValue, percentage);
+		}
+	};
+
+	for (auto it = allTimes.begin(); it != allTimes.end(); ++it, ++keyframeCounter)
+	{
+		Vector3D& vecValue = intermediateKeyFrames.append();
+		vecValue = F_UNDEF;
+		auto fx = valueX.find(it.key());
+		auto fy = valueY.find(it.key());
+		auto fz = valueZ.find(it.key());
+
+		if (fx != valueX.end())
+		{
+			// interpolate previous frames from last keyframe to this new one
+			vecValue.x = *fx;
+			interpKeyFrames(lastKeyframes.x, keyframeCounter, 0);
+			lastKeyframes.x = keyframeCounter;
+		}
+
+		if (fy != valueY.end())
+		{
+			vecValue.y = *fy;
+			interpKeyFrames(lastKeyframes.y, keyframeCounter, 1);
+			lastKeyframes.y = keyframeCounter;
+		}
+
+		if (fz != valueZ.end())
+		{
+			vecValue.z = *fz;
+			interpKeyFrames(lastKeyframes.z, keyframeCounter, 2);
+			lastKeyframes.z = keyframeCounter;
+		}
+	}
+
+	ZoomArray(intermediateKeyFrames, keyFrames, animationDuration);
+}
+
 void ConvertFBXToESA(Array<studioAnimation_t>& animations, ofbx::IScene* scene)
 {
 	const ofbx::GlobalSettings& settings = *scene->getGlobalSettings();
@@ -378,12 +493,7 @@ void ConvertFBXToESA(Array<studioAnimation_t>& animations, ofbx::IScene* scene)
 		const ofbx::Mesh& mesh = *scene->getMesh(i);
 		const ofbx::Geometry& geom = *mesh.getGeometry();
 
-		// Msg("Mesh '%s'\n", mesh.name);
-
-		const ofbx::Skin* skin = geom.getSkin();
-
-		if (skin)
-			GetFBXBonesAsDSM(skin, convertMatrix, settings.UpAxis, bones, weightData);
+		GetFBXBonesAsDSM(geom, convertMatrix, settings.UpAxis, bones, weightData);
 	}
 
 	float frameRate = scene->getSceneFrameRate();
@@ -413,89 +523,54 @@ void ConvertFBXToESA(Array<studioAnimation_t>& animations, ofbx::IScene* scene)
 		strncpy(animation.name, stack->name, sizeof(animation.name));
 		animation.name[sizeof(animation.name) - 1] = 0;
 
-		animation.bones = (studioBoneFrame_t*)PPAlloc(sizeof(studioBoneFrame_t) * boneCount);
+		animation.bones = PPAllocStructArray(studioBoneFrame_t, boneCount);
 
 		for (int j = 0; j < boneCount; ++j)
 		{
-			const ofbx::AnimationCurveNode* translationNode = layer->getCurveNode(*weightData[i].boneObject, "Lcl Translation");
-			const ofbx::AnimationCurveNode* rotationNode = layer->getCurveNode(*weightData[i].boneObject, "Lcl Rotation");
-
-			int rotationFrameCount = 0;
-			int translationFrameCount = 0;
+			const ofbx::AnimationCurveNode* translationNode = layer->getCurveNode(*weightData[j].boneObject, "Lcl Translation");
+			const ofbx::AnimationCurveNode* rotationNode = layer->getCurveNode(*weightData[j].boneObject, "Lcl Rotation");
 
 			Array<Vector3D> rotations(PP_SL);
 			Array<Vector3D> translations(PP_SL);
 
-			// Local bone rotation
-			if (rotationNode)
-			{
-				const ofbx::AnimationCurve* nodeX = rotationNode->getCurve(0);
-				const ofbx::AnimationCurve* nodeY = rotationNode->getCurve(1);
-				const ofbx::AnimationCurve* nodeZ = rotationNode->getCurve(2);
-
-				const ofbx::i64* timesX = nodeX->getKeyTime();
-				const ofbx::i64* timesY = nodeY->getKeyTime();
-				const ofbx::i64* timesZ = nodeZ->getKeyTime();
-
-				const int minAnimFramesCheck = min(min(nodeX->getKeyCount(), nodeY->getKeyCount()), nodeZ->getKeyCount());
-				const int maxAnimFramesCheck = max(max(nodeX->getKeyCount(), nodeY->getKeyCount()), nodeZ->getKeyCount());
-				ASSERT_MSG(minAnimFramesCheck == maxAnimFramesCheck, "Please tell Soapy that his code sucks!!!");
-
-				rotationFrameCount = nodeX->getKeyCount();
-
-				for (int k = 0; k < rotationFrameCount; ++k)
-				{
-					const float boneFrameTime = ofbx::fbxTimeToSeconds(timesX[k]);
-					const Vector3D rotationValue(
-						nodeX->getKeyValue()[k],
-						nodeY->getKeyValue()[k],
-						nodeZ->getKeyValue()[k]
-					);
-					rotations.append(rotationValue);
-				}
-			}
-
-			// Local bone offset
+			// keyframes are going to be interpolated and resampled in order to restore original keyframing
 			if (translationNode)
-			{
-				const ofbx::AnimationCurve* nodeX = translationNode->getCurve(0);
-				const ofbx::AnimationCurve* nodeY = translationNode->getCurve(1);
-				const ofbx::AnimationCurve* nodeZ = translationNode->getCurve(2);
+				GetFBXCurveAsInterpKeyFrames(translationNode, translations, animationDuration, localDuration);
+			if (rotationNode)
+				GetFBXCurveAsInterpKeyFrames(rotationNode, rotations, animationDuration, localDuration);
 
-				const ofbx::i64* timesX = nodeX->getKeyTime();
-				const ofbx::i64* timesY = nodeY->getKeyTime();
-				const ofbx::i64* timesZ = nodeZ->getKeyTime();
+			ASSERT_MSG(translations.numElem() == rotations.numElem(), "Rotations %d translations %d", rotations.numElem(), translations.numElem());
 
-				const int minAnimFramesCheck = min(min(nodeX->getKeyCount(), nodeY->getKeyCount()), nodeZ->getKeyCount());
-				const int maxAnimFramesCheck = max(max(nodeX->getKeyCount(), nodeY->getKeyCount()), nodeZ->getKeyCount());
-				ASSERT_MSG(minAnimFramesCheck == maxAnimFramesCheck, "Please tell Soapy that his code sucks!!!");
+			animation.bones[j].numFrames = translations.numElem();
+			animation.bones[j].keyFrames = PPAllocStructArray(animframe_t, translations.numElem());
 
-				translationFrameCount = nodeX->getKeyCount();
+			const Vector3D boneRestRotation = bones[j]->angles;
+			const Vector3D boneRestPosition = bones[j]->position;
 
-				for (int k = 0; k < translationFrameCount; ++k)
-				{
-					const float boneFrameTime = ofbx::fbxTimeToSeconds(timesX[k]);
-					const Vector3D translationValue(
-						nodeX->getKeyValue()[k],
-						nodeY->getKeyValue()[k],
-						nodeZ->getKeyValue()[k]
-					);
-					translations.append(translationValue);
-				}
-			}
+			const Quaternion boneRestRotationQuat = !Quaternion(boneRestRotation.x, boneRestRotation.y, boneRestRotation.z);
 
-			ASSERT_MSG(translationFrameCount == rotationFrameCount, "Please tell Soapy to de-hardcode FBX converter!!!");
-
-			animation.bones[j].numFrames = translationFrameCount;
-			animation.bones[j].keyFrames = PPNew animframe_t[translationFrameCount];
-			for (int k = 0; k < translationFrameCount; ++k)
+			// perform conversion of each frame to local space
+			for (int k = 0; k < translations.numElem(); ++k)
 			{
 				animframe_t& frame = animation.bones[j].keyFrames[k];
-				frame.vecBonePosition = translations[k];
-				frame.angBoneAngles = rotations[k];
 
-				frame.vecBonePosition *= Vector3D(-1, 1, 1);
-				frame.angBoneAngles *= Vector3D(1, -1, -1);
+				// Convert RH -> LH
+				rotations[k] *= Vector3D(1, -1, -1);
+				translations[k] *= Vector3D(-1, 1, 1);
+
+				const Vector3D rotRad = VDEG2RAD(rotations[k]);
+				Quaternion rotation = Quaternion(rotRad.x, rotRad.y, rotRad.z);
+				Vector3D translation = translations[k];
+
+				if (bones[j]->parent_id == -1)
+				{
+					rotation = rotation * Quaternion(boneConvertMatrix);
+					translation = boneConvertMatrix * translation;
+				}
+
+				// convert to local space and assign
+				frame.vecBonePosition = translation - boneRestPosition;
+				frame.angBoneAngles = eulersXYZ(rotation * boneRestRotationQuat);
 			}
 		}
 
@@ -519,7 +594,8 @@ bool LoadFBXAnimations(Array<studioAnimation_t>& animations, const char* filenam
 		return false;
 	}
 
-	ofbx::IScene* scene = ofbx::load((ofbx::u8*)fileBuffer, fileSize, (ofbx::u64)ofbx::LoadFlags::TRIANGULATE);
+	ofbx::u64 loadFlags = (ofbx::u64)ofbx::LoadFlags::IGNORE_BLEND_SHAPES;
+	ofbx::IScene* scene = ofbx::load((ofbx::u8*)fileBuffer, fileSize, loadFlags);
 
 	if (!scene)
 	{
@@ -531,6 +607,7 @@ bool LoadFBXAnimations(Array<studioAnimation_t>& animations, const char* filenam
 	ConvertFBXToESA(animations, scene);
 
 	PPFree(fileBuffer);
+	return true;
 }
 
 } // namespace
