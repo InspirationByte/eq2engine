@@ -44,6 +44,11 @@ using namespace Threading;
 
 EXPORTED_INTERFACE(IFileSystem, CFileSystem);
 
+static bool UTIL_IsAbsolutePath(const char* dirOrFileName)
+{
+	return (dirOrFileName[0] == CORRECT_PATH_SEPARATOR || isalpha(dirOrFileName[0]) && dirOrFileName[1] == ':');
+}
+
 //------------------------------------------------------------------------------
 // File stream
 //------------------------------------------------------------------------------
@@ -415,6 +420,13 @@ bool CFileSystem::FileExist(const char* filename, int searchFlags) const
     if (flags == -1)
         flags |= SP_MOD | SP_DATA | SP_ROOT;
 
+	const bool isAbsolutePath = UTIL_IsAbsolutePath(filename);
+
+	if (isAbsolutePath)
+	{
+		flags = SP_ROOT;
+	}
+
 	EqString tmp_path;
 
 	EqString basePath = m_basePath;
@@ -485,17 +497,20 @@ bool CFileSystem::FileExist(const char* filename, int searchFlags) const
 		if (access(tmp_path, F_OK ) != -1)
 			return true;
 
-		// base path is not used when dealing with package files
-		tmp_path = filename;
-		tmp_path.Path_FixSlashes();
-
-		// If failed to load directly, load it from package, in backward order
-		for (int j = m_packages.numElem() - 1; j >= 0; j--)
+		if (!isAbsolutePath)
 		{
-			CBasePackageFileReader* pPackageReader = m_packages[j];
+			// base path is not used when dealing with package files
+			tmp_path = filename;
+			tmp_path.Path_FixSlashes();
 
-			if ((flags & pPackageReader->GetSearchPath()) && pPackageReader->FileExists(tmp_path))
-				return true;
+			// If failed to load directly, load it from package, in backward order
+			for (int j = m_packages.numElem() - 1; j >= 0; j--)
+			{
+				CBasePackageFileReader* pPackageReader = m_packages[j];
+
+				if ((flags & pPackageReader->GetSearchPath()) && pPackageReader->FileExists(tmp_path))
+					return true;
+			}
 		}
     }
 
@@ -536,7 +551,7 @@ EqString CFileSystem::GetAbsolutePath(SearchPath_e search, const char* dirOrFile
 {
 	EqString fullPath;
 
-	bool isAbsolutePath = (search == SP_ROOT && (dirOrFileName[0] == CORRECT_PATH_SEPARATOR || isalpha(dirOrFileName[0]) && dirOrFileName[1] == ':'));
+	bool isAbsolutePath = (search == SP_ROOT && UTIL_IsAbsolutePath(dirOrFileName));
 
 	if (!isAbsolutePath)
 		CombinePath(fullPath, 2, GetSearchPath(search).ToCString(), dirOrFileName);
@@ -635,7 +650,14 @@ IFile* CFileSystem::GetFileHandle(const char* filename, const char* options, int
     if (flags == -1)
         flags |= SP_MOD | SP_DATA | SP_ROOT;
 
-	bool isWrite = (strchr(options, 'w') || strchr(options, 'a') || strchr(options, '+'));
+	const bool isAbsolutePath = UTIL_IsAbsolutePath(filename);
+
+	if (isAbsolutePath)
+	{
+		flags = SP_ROOT;
+	}
+
+	const bool isWrite = (strchr(options, 'w') || strchr(options, 'a') || strchr(options, '+'));
 
 	EqString tmp_path;
 
@@ -763,7 +785,7 @@ IFile* CFileSystem::GetFileHandle(const char* filename, const char* options, int
 			return pFileHandle;
 		}
 
-		if (!isWrite)
+		if (!isWrite && !isAbsolutePath)
 		{
 			// base path is not used when dealing with package files
 			tmp_path = filename;
