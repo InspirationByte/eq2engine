@@ -106,15 +106,17 @@ protected:
 	// loader functions
 	egfcaModel_t			LoadModel(const char* pszFileName);
 	void					FreeModel( egfcaModel_t& mod );
+	bool					PostProcessDSM( egfcaModel_t& mod );
 
-	SharedModel::dsmmodel_t*			ParseAndLoadModels(KVSection* pKeyBase);
-	bool					LoadModels(KVSection* pSection);
-	void					ParseLodData(KVSection* pSection, int lodIdx);
-	void					LoadLods(KVSection* pSection);
-	bool					LoadBodyGroups(KVSection* pSection);
-	bool					LoadMaterialGroups(KVSection* pSection);
-	bool					LoadMaterialPaths(KVSection* pSection);
-	bool					LoadMotionPackagePaths(KVSection* pSection);
+	void						LoadModelsFromFBX(KVSection* pKeyBase);
+	SharedModel::dsmmodel_t*	ParseAndLoadModels(KVSection* pKeyBase);
+	bool						LoadModels(KVSection* pSection);
+	void						ParseLodData(KVSection* pSection, int lodIdx);
+	void						LoadLods(KVSection* pSection);
+	bool						LoadBodyGroups(KVSection* pSection);
+	bool						LoadMaterialGroups(KVSection* pSection);
+	bool						LoadMaterialPaths(KVSection* pSection);
+	bool						LoadMotionPackagePaths(KVSection* pSection);
 
 	void					AddModelLodUsageReference(int modelLodIndex);
 

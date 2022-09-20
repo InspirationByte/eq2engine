@@ -92,7 +92,6 @@ bool LoadSharedModel(dsmmodel_t* model, const char* filename)
 	EqString file(filename);
 	EqString ext(file.Path_Extract_Ext());
 
-
 	if (!stricmp(ext.GetData(), "esm"))
 		return LoadESM(model, filename);
 
@@ -100,7 +99,7 @@ bool LoadSharedModel(dsmmodel_t* model, const char* filename)
 		return LoadOBJ(model, filename);
 
 	if (!stricmp(ext.GetData(), "fbx"))
-		return LoadFBX(model, filename);
+		return LoadFBXCompound(model, filename);
 
 	return false;
 }

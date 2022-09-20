@@ -5,6 +5,9 @@
 // Description: Equilibrium Graphics File script compler and generator
 //////////////////////////////////////////////////////////////////////////////////
 
+// TODO:	There is a lot of shit coding happening since 2011 with model refs etc
+//			and it needs to be sanitized ASAP.
+
 #include "core/core_common.h"
 #include "utils/KeyValues.h"
 #include "EGFGenerator.h"
@@ -12,6 +15,8 @@
 #include "dsm_esm_loader.h"
 #include "dsm_loader.h"
 #include "egf/dsm_fbx_loader.h"
+
+#pragma optimize("", off)
 
 using namespace SharedModel;
 
@@ -197,14 +202,22 @@ egfcaModel_t CEGFGenerator::LoadModel(const char* pszFileName)
 		return mod;
 	}
 
-	int nVerts = GetTotalVertsOfDSM( mod.model );
-
-	if((float)nVerts/3.0f != nVerts/3)
-	{
-		MsgError("Reference model '%s' has invalid triangles (tip: vertex count must be divisible by 3 without remainder)\n", modelPath.ToCString());
-		
-		FreeModel(mod);
+	if (!PostProcessDSM(mod))
 		return mod;
+
+	return mod;
+}
+
+bool CEGFGenerator::PostProcessDSM(egfcaModel_t& mod)
+{
+	const int nVerts = GetTotalVertsOfDSM(mod.model);
+
+	if ((float)nVerts / 3.0f != nVerts / 3)
+	{
+		MsgError("Reference model '%s' has invalid triangles (tip: vertex count must be divisible by 3 without remainder)\n", mod.model->name);
+
+		FreeModel(mod);
+		return false;
 	}
 
 	// assign shape indexes
@@ -224,23 +237,23 @@ egfcaModel_t CEGFGenerator::LoadModel(const char* pszFileName)
 	}
 
 	// scale bones
-	for(int i = 0; i < mod.model->bones.numElem(); i++)
+	for (int i = 0; i < mod.model->bones.numElem(); i++)
 	{
 		dsmskelbone_t* bone = mod.model->bones[i];
 
 		bone->position *= m_modelScale;
 
-		if(bone->parent_id == -1)
+		if (bone->parent_id == -1)
 			bone->position += m_modelOffset;
 	}
 
 	// check material list and move/scale verts
-	for(int i = 0; i < mod.model->groups.numElem(); i++)
+	for (int i = 0; i < mod.model->groups.numElem(); i++)
 	{
 		dsmgroup_t* group = mod.model->groups[i];
 
 		// scale vertices
-		for(int j = 0; j < group->verts.numElem(); j++)
+		for (int j = 0; j < group->verts.numElem(); j++)
 		{
 			group->verts[j].position *= m_modelScale;
 			group->verts[j].position += m_modelOffset;
@@ -248,9 +261,9 @@ egfcaModel_t CEGFGenerator::LoadModel(const char* pszFileName)
 
 		// if material is not found, add new one
 		int found = GetMaterialIndex(mod.model->groups[i]->texture);
-		if(found == -1)
+		if (found == -1)
 		{
-			if(m_materials.numElem()-1 == MAX_STUDIOMATERIALS)
+			if (m_materials.numElem() - 1 == MAX_STUDIOMATERIALS)
 			{
 				MsgError("Exceeded used material count (MAX_STUDIOMATERIALS = %d)!", MAX_STUDIOMATERIALS);
 				break;
@@ -263,8 +276,6 @@ egfcaModel_t CEGFGenerator::LoadModel(const char* pszFileName)
 			m_materials.append(desc);
 		}
 	}
-
-	return mod;
 }
 
 //************************************
@@ -281,6 +292,50 @@ void CEGFGenerator::FreeModel( egfcaModel_t& mod )
 
 	mod.model = nullptr;
 	mod.shapeData = nullptr;
+}
+
+void CEGFGenerator::LoadModelsFromFBX(KVSection* pKeyBase)
+{
+	EqString modelPath;
+	CombinePath(modelPath, 2, m_refsPath.ToCString(), KV_GetValueString(pKeyBase));
+
+	Array<dsmmodel_t*> models(PP_SL);
+	Array<esmshapedata_t> shapes(PP_SL);
+
+	if (!LoadFBX(models, shapes, modelPath))
+		return;
+
+	for (int i = 0; i < models.numElem(); ++i)
+	{
+		if (!pKeyBase->FindSection(models[i]->name, KV_FLAG_NOVALUE))
+		{
+			continue;
+		}
+		
+		egfcaModel_t& mod = m_modelrefs.append();
+		mod.model = models[i];
+		//cmodel.shapeData = &shapes[i];
+
+		clodmodel_t& lodModel = m_modellodrefs.append();
+		lodModel.lodmodels[0] = models[i];
+
+		const int nVerts = GetTotalVertsOfDSM(mod.model);
+
+		if ((float)nVerts / 3.0f != nVerts / 3)
+		{
+			MsgError("Reference model '%s' has invalid triangles (tip: vertex count must be divisible by 3 without remainder)\n", mod.model->name);
+			FreeModel(mod);
+			continue;
+		}
+
+		Msg("Adding reference '%s' with %d triangles (in %d groups), %d bones\n",
+			mod.model->name,
+			nVerts / 3,
+			mod.model->groups.numElem(),
+			mod.model->bones.numElem());
+
+		PostProcessDSM(mod);
+	}
 }
 
 //************************************
@@ -342,7 +397,7 @@ dsmmodel_t* CEGFGenerator::ParseAndLoadModels(KVSection* pKeyBase)
 		// set model to as part name
 		strcpy(model.model->name, KV_GetValueString(pKeyBase, 0, "invalid_model_name"));
 
-		int nVerts = GetTotalVertsOfDSM(model.model);
+		const int nVerts = GetTotalVertsOfDSM(model.model);
 
 		if((float)nVerts/3.0f != nVerts/3)
 		{
@@ -433,24 +488,28 @@ bool CEGFGenerator::LoadModels(KVSection* pSection)
 			// try apply global offset
 			m_modelOffset = KV_GetVector3D(keyBase, 0, Vector3D(0.0f));
 		}
+		else if (!stricmp(keyBase->name, "FBXSource"))
+		{
+			LoadModelsFromFBX(keyBase);
+		}
 		else if(!stricmp(keyBase->name, "model"))
 		{
 			// parse and load model
 			dsmmodel_t* model = ParseAndLoadModels( keyBase );
 
-			if(!model)
-				return false;
-			else
+			if (model)
 			{
 				clodmodel_t lod_model;
-
-				memset(lod_model.lodmodels, 0, sizeof(lod_model.lodmodels));
 
 				// set model to lod 0
 				lod_model.lodmodels[0] = model;
 
 				// add a LOD model replacement table
 				m_modellodrefs.append(lod_model);
+			}
+			else
+			{
+				return false;
 			}
 		}
 	}
@@ -478,21 +537,19 @@ void CEGFGenerator::ParseLodData(KVSection* pSection, int lodIdx)
 		{
 			dsmmodel_t* pReplaceModel = ParseAndLoadModels( pSection->keys[i] );
 
-			if(!pReplaceModel)
+			if(pReplaceModel)
 			{
-				return;
+				clodmodel_t* lodgroup = FindModelLodGroupByName(pReplaceModel->name);
+
+				// set lod
+				if (lodgroup)
+					lodgroup->lodmodels[lodIdx] = pReplaceModel;
+				else
+					MsgError("No such reference named %s\n", pReplaceModel->name);
 			}
 			else
 			{
-				clodmodel_t* lodgroup = FindModelLodGroupByName( pReplaceModel->name );
-
-				if(lodgroup)
-				{
-					// set lod
-					lodgroup->lodmodels[lodIdx] = pReplaceModel;
-				}
-				else 
-					MsgError("No such reference named %s\n", pReplaceModel->name);
+				return;
 			}
 		}
 	}
