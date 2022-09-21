@@ -779,25 +779,24 @@ void CAnimatingEGF::DebugRender(const Matrix4x4& worldTransform)
 			debugoverlay->Text3D(pos, 25, color_white, 0.0f, "%s\npos: [%.2f %.2f %.2f]", m_joints[i].name, localPos.x, localPos.y, localPos.z);
 		}
 
+		const Matrix4x4& transform = m_boneTransforms[i];
+		const Vector3D pos = (worldTransform * Vector4D(transform.rows[3].xyz(), 1.0f)).xyz();
+
 		if (m_joints[i].parentbone != -1)
 		{
-			const Matrix4x4& transform = m_boneTransforms[i];
 			const Matrix4x4& parentTransform = m_boneTransforms[m_joints[i].parentbone];
-
-			const Vector3D pos = (worldTransform*Vector4D(transform.rows[3].xyz(), 1.0f)).xyz();
 			const Vector3D parent_pos = (worldTransform*Vector4D(parentTransform.rows[3].xyz(), 1.0f)).xyz();
-
-			const Vector3D dX = worldTransform.getRotationComponent()*transform.rows[0].xyz();
-			const Vector3D dY = worldTransform.getRotationComponent()*transform.rows[1].xyz();
-			const Vector3D dZ = worldTransform.getRotationComponent()*transform.rows[2].xyz();
-
 			debugoverlay->Line3D(pos, parent_pos, color_white, color_white);
-
-			// draw axis
-			debugoverlay->Line3D(pos, pos + dX, ColorRGBA(1, 0, 0, 1), ColorRGBA(1, 0, 0, 1));
-			debugoverlay->Line3D(pos, pos + dY, ColorRGBA(0, 1, 0, 1), ColorRGBA(0, 1, 0, 1));
-			debugoverlay->Line3D(pos, pos + dZ, ColorRGBA(0, 0, 1, 1), ColorRGBA(0, 0, 1, 1));
 		}
+
+		const Vector3D dX = worldTransform.getRotationComponent() * transform.rows[0].xyz();
+		const Vector3D dY = worldTransform.getRotationComponent() * transform.rows[1].xyz();
+		const Vector3D dZ = worldTransform.getRotationComponent() * transform.rows[2].xyz();
+
+		// draw axis
+		debugoverlay->Line3D(pos, pos + dX, ColorRGBA(1, 0, 0, 1), ColorRGBA(1, 0, 0, 1));
+		debugoverlay->Line3D(pos, pos + dY, ColorRGBA(0, 1, 0, 1), ColorRGBA(0, 1, 0, 1));
+		debugoverlay->Line3D(pos, pos + dZ, ColorRGBA(0, 0, 1, 1), ColorRGBA(0, 0, 1, 1));
 	}
 
 	if (r_debugIK.GetBool())

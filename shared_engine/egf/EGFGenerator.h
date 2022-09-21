@@ -20,55 +20,6 @@ namespace SharedModel
 	struct esmshapekey_t;
 };
 
-struct cbone_t
-{
-	SharedModel::dsmskelbone_t*	referencebone{ nullptr };
-
-	Array<cbone_t*>		childs{ PP_SL };
-	cbone_t*			parent{ nullptr };
-};
-
-struct ciklink_t
-{
-	Vector3D			mins;
-	Vector3D			maxs;
-
-	cbone_t*			bone;
-
-	float				damping;
-};
-
-struct ikchain_t
-{
-	char name[44]{ 0 };
-	Array<ciklink_t> link_list{ PP_SL };
-};
-
-struct clodmodel_t
-{
-	SharedModel::dsmmodel_t*	lodmodels[MAX_MODEL_LODS]{ nullptr };
-};
-
-struct egfcaModel_t
-{
-	SharedModel::dsmmodel_t*		model{ nullptr };
-	SharedModel::esmshapedata_t*	shapeData{ nullptr };
-
-	int								shapeBy{ -1 };	// shape index
-	int								used{ 0 };
-};
-
-struct egfcaMaterialDesc_t
-{
-	char				materialname[32]{ 0 };
-	int					used{ 0 };
-};
-
-struct egfcaMaterialGroup_t
-{
-	Array<egfcaMaterialDesc_t> materials{ PP_SL };
-};
-
 class IVirtualStream;
 
 //
@@ -92,39 +43,87 @@ public:
 	bool		GeneratePOD();
 
 protected:
-	egfcaModel_t			GetDummyModel();
+	struct GenBone_t
+	{
+		SharedModel::dsmskelbone_t* refBone{ nullptr };
+
+		Array<GenBone_t*>	childs{ PP_SL };
+		GenBone_t*			parent{ nullptr };
+	};
+
+	struct GenIKLink_t
+	{
+		Vector3D	mins;
+		Vector3D	maxs;
+
+		GenBone_t*	bone;
+
+		float		damping;
+	};
+
+	struct GenIKChain_t
+	{
+		char name[44]{ 0 };
+		Array<GenIKLink_t> link_list{ PP_SL };
+	};
+
+	struct GenModel_t
+	{
+		SharedModel::dsmmodel_t*		model{ nullptr };
+		SharedModel::esmshapedata_t*	shapeData{ nullptr };
+
+		int								shapeBy{ -1 };	// shape index
+		int								used{ 0 };
+	};
+
+	struct GenLODList_t
+	{
+		SharedModel::dsmmodel_t*		lodmodels[MAX_MODEL_LODS]{ nullptr };
+	};
+
+	struct GenMaterialDesc_t
+	{
+		char				materialname[32]{ 0 };
+		int					used{ 0 };
+	};
+
+	struct GenMaterialGroup_t
+	{
+		Array<GenMaterialDesc_t> materials{ PP_SL };
+	};
+
+	GenModel_t				GetDummyModel();
 
 	// helper functions
-	cbone_t*				FindBoneByName(const char* pszName);
-	clodmodel_t*			FindModelLodGroupByName(const char* pszName);
-	egfcaModel_t*			FindModelByName(const char* pszName);
+	GenBone_t*				FindBoneByName(const char* pszName);
+	GenLODList_t*			FindModelLodGroupByName(const char* pszName);
+	GenModel_t*				FindModelByName(const char* pszName);
 
 	int						FindModelLodIdGroupByName(const char* pszName);
 	int						GetMaterialIndex(const char* pszName);
 	int						GetReferenceIndex(SharedModel::dsmmodel_t* pRef);
 
 	// loader functions
-	egfcaModel_t			LoadModel(const char* pszFileName);
-	void					FreeModel( egfcaModel_t& mod );
-	bool					PostProcessDSM( egfcaModel_t& mod );
+	GenModel_t				LoadModel(const char* pszFileName);
+	void					FreeModel(GenModel_t& mod );
+	bool					PostProcessDSM(GenModel_t& mod );
 
 	void						LoadModelsFromFBX(KVSection* pKeyBase);
 	SharedModel::dsmmodel_t*	ParseAndLoadModels(KVSection* pKeyBase);
-	bool						LoadModels(KVSection* pSection);
-	void						ParseLodData(KVSection* pSection, int lodIdx);
-	void						LoadLods(KVSection* pSection);
-	bool						LoadBodyGroups(KVSection* pSection);
-	bool						LoadMaterialGroups(KVSection* pSection);
-	bool						LoadMaterialPaths(KVSection* pSection);
-	bool						LoadMotionPackagePaths(KVSection* pSection);
+
+	bool					ParseModels(KVSection* pSection);
+	void					ParseLodData(KVSection* pSection, int lodIdx);
+	void					ParseLods(KVSection* pSection);
+	bool					ParseBodyGroups(KVSection* pSection);
+	bool					ParseMaterialGroups(KVSection* pSection);
+	bool					ParseMaterialPaths(KVSection* pSection);
+	bool					ParseMotionPackagePaths(KVSection* pSection);
+	void					ParseIKChain(KVSection* pSection);
+	void					ParseIKChains(KVSection* pSection);
+	void					ParseAttachments(KVSection* pSection);
+	void					ParsePhysModels(KVSection* pSection);
 
 	void					AddModelLodUsageReference(int modelLodIndex);
-
-	void					ParseIKChain(KVSection* pSection);
-	void					LoadIKChains(KVSection* pSection);
-	void					LoadAttachments(KVSection* pSection);
-
-	void					LoadPhysModels(KVSection* pSection);
 
 	// preprocessing
 	void					MergeBones();
@@ -146,24 +145,26 @@ protected:
 	void					WriteBones(studiohdr_t* header, IVirtualStream* stream);
 
 	// data
-	Array<egfcaModel_t>				m_modelrefs{ PP_SL };	// all loaded model references
+	Array<GenModel_t>				m_modelrefs{ PP_SL };		// all loaded model references
 
-	Array<clodmodel_t>				m_modellodrefs{ PP_SL };	// all LOD reference models including main LOD
-	Array<studiolodparams_t>		m_lodparams{ PP_SL };	// lod parameters
-	Array<motionpackagedesc_t>		m_motionpacks{ PP_SL };	// motion packages
-	Array<materialpathdesc_t>		m_matpathes{ PP_SL };	// material paths
-	Array<ikchain_t>				m_ikchains{ PP_SL };	// ik chain list
-	Array<cbone_t>					m_bones{ PP_SL };		// bone list
-	Array<studioattachment_t>		m_attachments{ PP_SL };	// attachment list
-	Array<studiobodygroup_t>		m_bodygroups{ PP_SL };	// body group list
+	Array<GenLODList_t>				m_modelLodLists{ PP_SL };	// all LOD reference models including main LOD
+	Array<studiolodparams_t>		m_lodparams{ PP_SL };		// lod parameters
+	Array<motionpackagedesc_t>		m_motionpacks{ PP_SL };		// motion packages
+	Array<materialpathdesc_t>		m_matpathes{ PP_SL };		// material paths
+	Array<GenIKChain_t>				m_ikchains{ PP_SL };		// ik chain list
+	Array<GenBone_t>				m_bones{ PP_SL };			// bone list
+	Array<studioattachment_t>		m_attachments{ PP_SL };		// attachment list
+	Array<studiobodygroup_t>		m_bodygroups{ PP_SL };		// body group list
+	Array<GenMaterialDesc_t>		m_materials{ PP_SL };		// materials that referenced by models
 
-	Array<egfcaMaterialDesc_t>		m_materials{ PP_SL };	// materials that referenced by models
-	Array<egfcaMaterialDesc_t*>		m_usedMaterials{ PP_SL };	// materials that used by models referenced by body groups
-	Array<egfcaMaterialGroup_t*>	m_matGroups{ PP_SL };	// material groups
+	// only participates in write
+	Array<GenMaterialDesc_t*>		m_usedMaterials{ PP_SL };	// materials that used by models referenced by body groups
+	Array<GenMaterialGroup_t*>		m_matGroups{ PP_SL };		// material groups
 
-	Vector3D						m_modelScale;
-	Vector3D						m_modelOffset;
-	bool							m_notextures;
+	// settings
+	Vector3D						m_modelScale{ 1.0f };
+	Vector3D						m_modelOffset{ 0.0f };
+	bool							m_notextures{ false };
 
 	EqString						m_refsPath;
 	EqString						m_outputFilename;

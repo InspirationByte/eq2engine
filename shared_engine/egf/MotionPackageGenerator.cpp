@@ -910,30 +910,27 @@ void CMotionPackageGenerator::LoadSequence(KVSection* section, const char* seq_n
 
 		for(int i = 0; i < anim_list->keys.numElem(); i++)
 		{
-			if(!stricmp(anim_list->keys[i]->name, "animation"))
+			if (stricmp(anim_list->keys[i]->name, "animation"))
+				continue;
+
+			const char* animName = KV_GetValueString(anim_list->keys[i]);
+			int anim_index = GetAnimationIndex(animName);
+
+			if(anim_index == -1) // try to load new one if not found
+				anim_index = LoadAnimationFromESA(animName);
+
+			if(anim_index == -1)
 			{
-				int anim_index = GetAnimationIndex(KV_GetValueString(anim_list->keys[i]));
-
-				if(anim_index == -1)
-				{
-					// try to load new one if not found
-					anim_index = LoadAnimationFromESA(KV_GetValueString(anim_list->keys[i]));
-				}
-
-				if(anim_index == -1)
-				{
-					MsgError("No such animation %s\n", anim_list->keys[i]->values[0]);
-					return;
-				}
-
-				desc.animations[i] = anim_index;
+				MsgError("No such animation '%s'\n", animName);
+				return;
 			}
+
+			desc.animations[i] = anim_index;
 		}
 
 		// check for validness
 		int checkFrameCount = m_animations[desc.animations[0]].bones[0].numFrames;
-
-		int old_frame_count = checkFrameCount;
+		const int oldFrameCount = checkFrameCount;
 
 		if(bAlignAnimationLengths)
 		{
@@ -945,12 +942,12 @@ void CMotionPackageGenerator::LoadSequence(KVSection* section, const char* seq_n
 					checkFrameCount = real_frames;
 			}
 
-			desc.framerate *= (float)checkFrameCount / (float)old_frame_count;
+			desc.framerate *= (float)checkFrameCount / (float)oldFrameCount;
 		}
 
 		for(int i = 0; i < desc.numAnimations; i++)
 		{
-			int real_frames = m_animations[desc.animations[i]].bones[0].numFrames;
+			const int real_frames = m_animations[desc.animations[i]].bones[0].numFrames;
 
 			if(m_animations[desc.animations[i]].bones[0].numFrames != checkFrameCount)
 			{

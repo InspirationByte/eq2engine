@@ -98,9 +98,10 @@ studioMotionData_t* Studio_LoadMotionData(const char* pszPath, int boneCount)
 	ubyte* pStart = pData;
 
 	if(!pData)
-	{
 		return nullptr;
-	}
+
+	if (!boneCount)
+		return nullptr;
 
 	animpackagehdr_t* pHDR = (animpackagehdr_t*)pData;
 

@@ -196,7 +196,7 @@ int CEGFGenerator::UsedMaterialIndex(const char* pszName)
 {
 	int matIdx = GetMaterialIndex(pszName);
 
-	egfcaMaterialDesc_t* material = &m_materials[matIdx];
+	GenMaterialDesc_t* material = &m_materials[matIdx];
 	material->used++;
 
 	return m_usedMaterials.addUnique(material);
@@ -485,7 +485,7 @@ void CEGFGenerator::WriteModels(studiohdr_t* header, IVirtualStream* stream)
 
 	for(int i = 0; i < m_modelrefs.numElem(); i++)
 	{
-		egfcaModel_t& modelRef = m_modelrefs[i];
+		GenModel_t& modelRef = m_modelrefs[i];
 		if(!modelRef.used)
 			continue;
 
@@ -502,7 +502,7 @@ void CEGFGenerator::WriteModels(studiohdr_t* header, IVirtualStream* stream)
 
 	for(int i = 0; i < m_modelrefs.numElem(); i++)
 	{
-		egfcaModel_t& modelRef = m_modelrefs[i];
+		GenModel_t& modelRef = m_modelrefs[i];
 		if(!modelRef.used)
 			continue;
 
@@ -530,13 +530,13 @@ void CEGFGenerator::WriteModels(studiohdr_t* header, IVirtualStream* stream)
 void CEGFGenerator::WriteLods(studiohdr_t* header, IVirtualStream* stream)
 {
 	header->lodsOffset = WRITE_OFS;
-	header->numLods = m_modellodrefs.numElem();
+	header->numLods = m_modelLodLists.numElem();
 
-	for(int i = 0; i < m_modellodrefs.numElem(); i++)
+	for(int i = 0; i < m_modelLodLists.numElem(); i++)
 	{
 		for(int j = 0; j < MAX_MODEL_LODS; j++)
 		{
-			int refId = GetReferenceIndex( m_modellodrefs[i].lodmodels[j] );
+			int refId = GetReferenceIndex( m_modelLodLists[i].lodmodels[j] );
 
 			header->pLodModel(i)->modelsIndexes[j] = refId;
 
@@ -602,7 +602,7 @@ void CEGFGenerator::WriteIkChains(studiohdr_t* header, IVirtualStream* stream)
 
 	for(int i = 0; i < m_ikchains.numElem(); i++)
 	{
-		ikchain_t& srcChain = m_ikchains[i];
+		GenIKChain_t& srcChain = m_ikchains[i];
 		studioikchain_t* chain = header->pIkChain(i);
 
 		chain->numLinks = srcChain.link_list.numElem();
@@ -616,11 +616,11 @@ void CEGFGenerator::WriteIkChains(studiohdr_t* header, IVirtualStream* stream)
 		{
 			int link_id = (srcChain.link_list.numElem() - 1) - j;
 
-			ciklink_t& link = srcChain.link_list[link_id];
+			GenIKLink_t& link = srcChain.link_list[link_id];
 
-			Msg("IK chain bone id: %d\n", link.bone->referencebone->bone_id);
+			Msg("IK chain bone id: %d\n", link.bone->refBone->bone_id);
 
-			chain->pLink(j)->bone = link.bone->referencebone->bone_id;
+			chain->pLink(j)->bone = link.bone->refBone->bone_id;
 			chain->pLink(j)->mins = link.mins;
 			chain->pLink(j)->maxs = link.maxs;
 			chain->pLink(j)->damping = link.damping;
@@ -642,7 +642,7 @@ void CEGFGenerator::WriteMaterialDescs(studiohdr_t* header, IVirtualStream* stre
 	// get used materials
 	for(int i = 0; i < m_usedMaterials.numElem(); i++)
 	{
-		egfcaMaterialDesc_t* mat = m_usedMaterials[i];
+		GenMaterialDesc_t* mat = m_usedMaterials[i];
 
 		header->numMaterials++;
 
@@ -657,20 +657,20 @@ void CEGFGenerator::WriteMaterialDescs(studiohdr_t* header, IVirtualStream* stre
 	// write material groups
 	for (int i = 0; i < m_matGroups.numElem(); i++)
 	{
-		egfcaMaterialGroup_t* grp = m_matGroups[i];
+		GenMaterialGroup_t* grp = m_matGroups[i];
 		int materialGroupStart = header->numMaterials;
 
 		//header->numMaterialGroups++;
 
 		for (int j = 0; j < grp->materials.numElem(); j++)
 		{
-			egfcaMaterialDesc_t& baseMat = m_materials[j];
+			GenMaterialDesc_t& baseMat = m_materials[j];
 
 			if (!baseMat.used)
 				continue;
 
 			int usedMaterialIdx = m_usedMaterials.findIndex(&baseMat);
-			egfcaMaterialDesc_t& mat = grp->materials[usedMaterialIdx];
+			GenMaterialDesc_t& mat = grp->materials[usedMaterialIdx];
 
 			header->numMaterials++;
 
@@ -724,7 +724,7 @@ void CEGFGenerator::WriteBones(studiohdr_t* header, IVirtualStream* stream)
 
 	for(int i = 0; i < m_bones.numElem(); i++)
 	{
-		dsmskelbone_t* srcBone = m_bones[i].referencebone;
+		dsmskelbone_t* srcBone = m_bones[i].refBone;
 		bonedesc_t* destBone = header->pBone(i);
 
 		strcpy(destBone->name, srcBone->name);

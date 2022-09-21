@@ -145,14 +145,14 @@ bool TransformEGFVertex(EGFHwVertex_t& vert, Matrix4x4* pMatrices)
 //------------------------------------------
 bool CEngineStudioEGF::PrepareForSkinning(Matrix4x4* jointMatrices)
 {
+	if (!jointMatrices)
+		return false;
+
 	if (!m_hwdata || (m_hwdata && !m_hwdata->studio))
 		return false;
 
 	if (m_hwdata->studio->numBones == 0)
 		return false; // model is not animatable, skip
-
-	if (!jointMatrices)
-		return false;
 
 	// TODO: SOFTWARE SKINNING FOR BAD SLOWEST FOR SLOW PC's, and we've never fix it, HAHA!
 
