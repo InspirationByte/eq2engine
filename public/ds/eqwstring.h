@@ -98,6 +98,8 @@ public:
 	// searches for substring and replaces it
 	int				ReplaceSubstr(const wchar_t* find, const wchar_t* replaceTo, bool bCaseSensetive = false, int nStart = 0);
 
+	//------------------------------------------------------------------------------------------------
+
 	EqWString& operator = (const EqWString& other)
 	{
 		this->Assign( other );
@@ -132,6 +134,12 @@ public:
 		result.Append(b);
 
 		return result;
+	}
+
+	wchar_t operator[](int idx) const
+	{
+		ASSERT(idx >= 0 && idx < m_nLength);
+		return m_pszString[idx];
 	}
 
 	operator const wchar_t* () 

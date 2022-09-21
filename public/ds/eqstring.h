@@ -146,6 +146,12 @@ public:
 		return *this;
 	}
 
+	char operator[](int idx) const
+	{
+		ASSERT(idx >= 0 && idx < m_nLength);
+		return m_pszString[idx];
+	}
+
 	operator const char* () 
 	{
 		return this->ToCString();
