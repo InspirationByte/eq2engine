@@ -297,11 +297,11 @@ void CEGFGenerator::LoadModelsFromFBX(KVSection* pKeyBase)
 	CombinePath(modelPath, 2, m_refsPath.ToCString(), KV_GetValueString(pKeyBase));
 
 	Array<dsmmodel_t*> models(PP_SL);
-	Array<esmshapedata_t> shapes(PP_SL);
+	Array<esmshapedata_t*> shapeDatas(PP_SL);
 
 	Msg("Using FBX Source '%s'\n", KV_GetValueString(pKeyBase));
 
-	if (!LoadFBX(models, shapes, modelPath))
+	if (!LoadFBX(models, shapeDatas, modelPath))
 		return;
 
 	for (int i = 0; i < models.numElem(); ++i)
@@ -314,7 +314,20 @@ void CEGFGenerator::LoadModelsFromFBX(KVSection* pKeyBase)
 		
 		GenModel_t& mod = m_modelrefs.append();
 		mod.model = models[i];
-		//cmodel.shapeData = &shapes[i];
+		mod.shapeData = shapeDatas[i];
+
+		// DRVSYN: vertex order for damaged model
+		if (modelSec->values.numElem() > 1 && !stricmp(KV_GetValueString(modelSec, 1), "shapeby"))
+		{
+			const char* shapekeyName = KV_GetValueString(modelSec, 2, nullptr);
+
+			// set shapeby
+			if (shapekeyName)
+			{
+				Msg("Model shape key is '%s'\n", shapekeyName);
+				mod.shapeBy = FindShapeKeyIndex(mod.shapeData, shapekeyName);
+			}
+		}
 
 		GenLODList_t& lodModel = m_modelLodLists.append();
 		lodModel.lodmodels[0] = models[i];

@@ -196,9 +196,9 @@ void ConvertFBXMeshToDSM(int meshId, dsmmodel_t* model, esmshapedata_t* shapeDat
 				Msg("\t\t %s\n", shape->name);
 
 				esmshapekey_t* shapeKey = PPNew esmshapekey_t();
-				shapeData->shapes.append(shapeKey);
-
 				shapeKey->name = shape->name;
+
+				shapeData->shapes.append(shapeKey);
 
 				const ofbx::Vec3* shapeVertices = shape->getVertices();
 				const ofbx::Vec3* shapeNormals = shape->getNormals();
@@ -293,7 +293,7 @@ void ConvertFBXMeshToDSM(int meshId, dsmmodel_t* model, esmshapedata_t* shapeDat
 	} // j
 }
 
-bool LoadFBX(Array<dsmmodel_t*>& models, Array<esmshapedata_t>& shapes, const char* filename)
+bool LoadFBX(Array<dsmmodel_t*>& models, Array<esmshapedata_t*>& shapes, const char* filename)
 {
 	long fileSize = 0;
 	char* fileBuffer = g_fileSystem->GetFileBuffer(filename, &fileSize);
@@ -323,20 +323,26 @@ bool LoadFBX(Array<dsmmodel_t*>& models, Array<esmshapedata_t>& shapes, const ch
 		const int mesh_count = scene->getMeshCount();
 		for (int i = 0; i < mesh_count; ++i)
 		{
-			dsmmodel_t* model = new dsmmodel_t();
-			esmshapedata_t shapeData;
+			dsmmodel_t* model = PPNew dsmmodel_t();
+			esmshapedata_t* shapeData = PPNew esmshapedata_t();
 
 			Map<int, dsmgroup_t*> materialGroups(PP_SL);
 			const ofbx::Mesh& mesh = *scene->getMesh(i);
-			ConvertFBXMeshToDSM(i, model, &shapeData, materialGroups, mesh, settings, convertMatrix, invertFaces);
+			ConvertFBXMeshToDSM(i, model, shapeData, materialGroups, mesh, settings, convertMatrix, invertFaces);
 
 			strncpy(model->name, mesh.name, sizeof(model->name)-1);
 			model->name[sizeof(model->name) - 1] = 0;
 
-			shapeData.reference = model->name;
+			if (shapeData->shapes.numElem() > 0)
+			{
+				shapeData->reference = model->name;
+				shapes.append(shapeData);
+			}
+			else
+				shapes.append(nullptr);
 
 			models.append(model);
-			shapes.append(shapeData);
+			
 		}
 	}
 
