@@ -138,7 +138,7 @@ public:
 
 	wchar_t operator[](int idx) const
 	{
-		ASSERT(idx >= 0 && idx < m_nLength);
+		ASSERT(idx >= 0 && idx <= m_nLength);
 		return m_pszString[idx];
 	}
 
