@@ -7,8 +7,8 @@
 
 #pragma once
 
-#define ANIMFILE_IDENT				MCHAR4('A','N','M','C')
-#define ANIMFILE_VERSION			5
+#define ANIMFILE_IDENT				MCHAR4('E','Q','M','P')
+#define ANIMFILE_VERSION			6
 
 // use tag ANIMCA_VERSION change
 
@@ -75,11 +75,14 @@ struct sequencedesc_s
 	char	name[44];
 	char	activity[44];
 
+	int		flags;				// sequence flags
+
 	float	framerate;			// framerate
-	float	transitiontime;	// transition time to this animation, in seconds
+	float	transitiontime;		// transition time to this animation, in seconds
 
 	// used pose controller - one per sequence
 	int8	posecontroller;
+	int8	slot;
 
 	// sequence layers that used for blending.
 	int8	numSequenceBlends;
@@ -90,11 +93,8 @@ struct sequencedesc_s
 	int8	animations[MAX_BLEND_WIDTH];
 
 	// events
-	int		numEvents;
-	int		events[MAX_EVENTS_PER_SEQ];
-
-	// sequence flags
-	int		flags;
+	int8	numEvents;
+	int8	events[MAX_EVENTS_PER_SEQ];
 };
 ALIGNED_TYPE(sequencedesc_s, 4) sequencedesc_t;
 

@@ -39,7 +39,7 @@ public:
 // forward kinematics
 
 	int							FindSequence(const char* name) const;				// finds animation
-	int							FindSequenceByActivity(Activity act) const;
+	int							FindSequenceByActivity(Activity act, int slot = 0) const;
 
 	void						SetActivity(Activity act, int slot = 0);	// sets activity
 	Activity					GetCurrentActivity(int slot = 0);			// returns current activity
@@ -52,12 +52,13 @@ public:
 	void						ResetSequenceTime(int slot = 0);				// resets animation time, and restarts animation
 	void						SetSequenceTime(float newTime, int slot = 0);	// sets new animation time
 
-	float						GetCurrentAnimationDuration() const;			// returns duration time of the current animation
-	float						GetCurrentRemainingAnimationDuration() const;	// returns remaining duration time of the current animation
+	float						GetCurrentAnimationDuration(int slot = 0) const;			// returns duration time of the current animation
+	float						GetCurrentAnimationTime(int slot = 0) const;				// returns elapsed time of the current animation
+	float						GetCurrentRemainingAnimationDuration(int slot = 0) const;	// returns remaining duration time of the current animation
 
 	float						GetAnimationDuration(int animIndex) const;		// returns duration time of the specific animation
 	
-	int							FindPoseController(char *name);								// returns pose controller index
+	int							FindPoseController(const char *name);						// returns pose controller index
 	void						SetPoseControllerValue(int nPoseCtrl, float value);			// sets value of the pose controller
 	float						GetPoseControllerValue(int nPoseCtrl) const;
 

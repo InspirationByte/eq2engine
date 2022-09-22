@@ -1057,14 +1057,18 @@ void CMotionPackageGenerator::LoadSequence(KVSection* section, const char* seq_n
 		}
 	}
 
-	KVSection* pPoseParamKey = section->FindSection("poseparameter");
+	const char* poseParameterName = KV_GetValueString(section->FindSection("poseparameter"), 0, nullptr);
 
-	if(pPoseParamKey)
+	if (poseParameterName)
 	{
-		desc.posecontroller = GetPoseControllerIndex(KV_GetValueString(pPoseParamKey));
+		desc.posecontroller = GetPoseControllerIndex(poseParameterName);
+		if (desc.posecontroller == -1)
+			MsgWarning("Pose parameter '%s' for sequence '%s' not found\n", seq_name);
 	}
 	else
 		desc.posecontroller = -1;
+
+	desc.slot = KV_GetValueInt(section->FindSection("slot"), 0, 0);
 
 	// add sequence
 	m_sequences.append(desc);
@@ -1185,7 +1189,7 @@ bool CMotionPackageGenerator::CompileScript(const char* filename)
 
 	m_animPath = _Es(filename).Path_Strip_Name();
 
-	KVSection* animSourceKey = sec->FindSection("AnimationSource");
+	KVSection* animSourceKey = sec->FindSection("FBXSource");
 	if (animSourceKey)
 	{
 		LoadFBXAnimations(KV_GetValueString(animSourceKey));

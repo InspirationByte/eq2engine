@@ -66,7 +66,7 @@ inline void InterpolateFrameTransform(const qanimframe_t&frame1, const qanimfram
 	out.vecBonePosition = lerp(frame1.vecBonePosition, frame2.vecBonePosition, value);
 }
 
-// adds transform TODO: Quaternion rotation
+// adds transform
 inline void AddFrameTransform(const qanimframe_t&frame1, const qanimframe_t& frame2, qanimframe_t&out)
 {
 	out.angBoneAngles = frame1.angBoneAngles * frame2.angBoneAngles;
@@ -283,11 +283,12 @@ int CAnimatingEGF::FindSequence(const char* name) const
 	return -1;
 }
 
-int CAnimatingEGF::FindSequenceByActivity(Activity act) const
+int CAnimatingEGF::FindSequenceByActivity(Activity act, int slot) const
 {
 	for (int i = 0; i < m_seqList.numElem(); i++)
 	{
-		if (m_seqList[i].activity == act)
+		const gsequence_t& seq = m_seqList[i];
+		if (seq.activity == act && seq.s->slot == slot)
 			return i;
 	}
 
@@ -334,7 +335,7 @@ void CAnimatingEGF::SetActivity(Activity act, int slot)
 	// pick the best activity if available
 	Activity nTranslatedActivity = TranslateActivity(act, slot);
 
-	int seqIdx = FindSequenceByActivity(nTranslatedActivity);
+	const int seqIdx = FindSequenceByActivity(nTranslatedActivity, slot);
 
 	if (seqIdx == -1)
 	{
@@ -418,12 +419,18 @@ const Vector3D& CAnimatingEGF::GetLocalBoneDirection(int nBone) const
 }
 
 // returns duration time of the current animation
-float CAnimatingEGF::GetCurrentAnimationDuration() const
+float CAnimatingEGF::GetCurrentAnimationDuration(int slot) const
 {
 	if (!m_sequenceTimers[0].seq)
 		return 0.0f;
 
-	return (m_sequenceTimers[0].seq->animations[0]->bones[0].numFrames - 1) / m_sequenceTimers[0].seq->s->framerate;
+	return m_sequenceTimers[slot].seq->animations[0]->bones[0].numFrames / m_sequenceTimers[slot].seq->s->framerate;
+}
+
+// returns elapsed time of the current animation
+float CAnimatingEGF::GetCurrentAnimationTime(int slot) const
+{
+	return m_sequenceTimers[slot].seq_time / m_sequenceTimers[slot].seq->s->framerate;
 }
 
 // returns duration time of the specific animation
@@ -432,13 +439,13 @@ float CAnimatingEGF::GetAnimationDuration(int animIndex) const
 	if (animIndex == -1)
 		return 0.0f;
 
-	return (m_seqList[animIndex].animations[0]->bones[0].numFrames - 1) / m_seqList[animIndex].s->framerate;
+	return m_seqList[animIndex].animations[0]->bones[0].numFrames / m_seqList[animIndex].s->framerate;
 }
 
 // returns remaining duration time of the current animation
-float CAnimatingEGF::GetCurrentRemainingAnimationDuration() const
+float CAnimatingEGF::GetCurrentRemainingAnimationDuration(int slot) const
 {
-	return GetCurrentAnimationDuration() - m_sequenceTimers[0].seq_time;
+	return GetCurrentAnimationDuration(slot) - m_sequenceTimers[slot].seq_time;
 }
 
 bool CAnimatingEGF::IsSequencePlaying(int slot) const
@@ -548,7 +555,7 @@ void CAnimatingEGF::SwapSequenceTimers(int index, int swapTo)
 
 
 
-int CAnimatingEGF::FindPoseController(char *name)
+int CAnimatingEGF::FindPoseController(const char *name)
 {
 	for (int i = 0; i < m_poseControllers.numElem(); i++)
 	{

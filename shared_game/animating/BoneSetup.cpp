@@ -39,7 +39,7 @@ void sequencetimer_t::AdvanceFrame(float fDt)
 		return;
 	}
 
-	float frame_time = fDt * playbackSpeedScale * seqDesc->framerate;
+	const float frame_time = fDt * playbackSpeedScale * seqDesc->framerate;
 	SetTime(seq_time + frame_time);
 }
 

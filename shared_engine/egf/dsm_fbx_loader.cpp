@@ -109,10 +109,16 @@ void GetFBXBonesAsDSM(const ofbx::Geometry& geom, const Matrix3x3& convertMatrix
 
 	const Matrix3x3 boneConvertMatrix = rotateX3(DEG2RAD(-90)) * rotateZ3(DEG2RAD(180));
 
+	Set<const ofbx::Object*> boneSet(PP_SL);
+
 	for (int i = 0; i < numBones; ++i)
 	{
 		const ofbx::Cluster& fbxCluster = *skin->getCluster(i);
 		const ofbx::Object* fbxBoneLink = fbxCluster.getLink();
+
+		if (boneSet.find(fbxBoneLink) != boneSet.end())
+			continue;
+		boneSet.insert(fbxBoneLink);
 
 		dsmskelbone_t* pBone = PPNew dsmskelbone_t();
 		strcpy(pBone->name, fbxCluster.name);
@@ -649,13 +655,17 @@ void ConvertFBXToESA(Array<studioAnimation_t>& animations, ofbx::IScene* scene)
 				// convert to local space and assign
 				frame.vecBonePosition = translation - boneRestPosition;
 				frame.angBoneAngles = eulersXYZ(rotation * boneRestRotationQuat);
+
+				// Hmm, WTF?! This needs to be fixed!!!
+				frame.vecBonePosition *= Vector3D(1, 1, -1);
 			}
 		}
 
-		Msg("  Anim: %s, duration: %d, frames: %d\n", stack->name, animationDuration, animation.bones[0].numFrames);
-
 		if (animation.bones[0].numFrames > 0)
+		{
+			Msg("  Anim: %s, duration: %d, frames: %d\n", stack->name, animationDuration, animation.bones[0].numFrames);
 			animations.append(animation);
+		}
 		else
 			Studio_FreeAnimationData(&animation, boneCount);
 	}
