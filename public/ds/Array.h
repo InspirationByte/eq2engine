@@ -111,16 +111,9 @@ public:
 	template< typename PAIRCOMPAREFUNC = PairCompareFunc<T> >
 	int				findIndex( const T & obj, PAIRCOMPAREFUNC comparator) const;
 
-	// finds pointer to the given element
-	T *				find( T const & obj ) const;
-
 	// returns first found element which satisfies to the condition
 	template< typename COMPAREFUNC >
-	T*				findFirst( COMPAREFUNC comparator ) const;
-
-	// returns last found element which satisfies to the condition
-	template< typename COMPAREFUNC >
-	T*				findLast( COMPAREFUNC comparator ) const;
+	int				findIndex( COMPAREFUNC comparator ) const;
 
 	// removes the element at the given index
 	bool			removeIndex( int index );
@@ -680,15 +673,11 @@ inline int Array<T>::addUnique( T const & obj, PAIRCOMPAREFUNC comparator)
 template< typename T >
 inline int Array<T>::findIndex( T const & obj ) const
 {
-	int i;
-
-	for( i = 0; i < m_nNumElem; i++ )
+	for(int i = 0; i < m_nNumElem; i++ )
 	{
 		if ( m_pListPtr[ i ] == obj )
 			return i;
 	}
-
-	// Not found
 	return -1;
 }
 
@@ -701,34 +690,12 @@ template< typename T >
 template< typename PAIRCOMPAREFUNC >
 inline int Array<T>::findIndex( T const & obj, PAIRCOMPAREFUNC comparator ) const
 {
-	int i;
-
-	for( i = 0; i < m_nNumElem; i++ )
+	for(int i = 0; i < m_nNumElem; i++ )
 	{
 		if ( comparator(m_pListPtr[ i ], obj) )
 			return i;
 	}
-
-	// Not found
 	return -1;
-}
-
-// -----------------------------------------------------------------
-// Searches for the specified data in the m_pListPtr and returns it's address.
-// Returns NULL if the data is not found.
-// -----------------------------------------------------------------
-
-template< typename T >
-inline T *Array<T>::find( T const & obj ) const
-{
-	int i;
-
-	i = findIndex( obj );
-
-	if ( i >= 0 )
-		return &m_pListPtr[ i ];
-
-	return nullptr;
 }
 
 // -----------------------------------------------------------------
@@ -737,32 +704,14 @@ inline T *Array<T>::find( T const & obj ) const
 // -----------------------------------------------------------------
 template< typename T >
 template< typename COMPAREFUNC >
-inline T *Array<T>::findFirst( COMPAREFUNC comparator  ) const
+inline int Array<T>::findIndex( COMPAREFUNC comparator  ) const
 {
 	for( int i = 0; i < m_nNumElem; i++ )
 	{
 		if ( comparator(m_pListPtr[i]) )
-			return &m_pListPtr[i];
+			return i;
 	}
-
-	return nullptr;
-}
-
-// -----------------------------------------------------------------
-// returns last element which satisfies to the condition
-// Returns NULL if the data is not found.
-// -----------------------------------------------------------------
-template< typename T >
-template< typename COMPAREFUNC >
-inline T *Array<T>::findLast( COMPAREFUNC comparator ) const
-{
-	for( int i = m_nNumElem-1; i >= 0; i-- )
-	{
-		if ( comparator(m_pListPtr[i]) )
-			return &m_pListPtr[i];
-	}
-
-	return nullptr;
+	return -1;
 }
 
 // -----------------------------------------------------------------
@@ -773,8 +722,6 @@ inline T *Array<T>::findLast( COMPAREFUNC comparator ) const
 template< typename T >
 inline bool Array<T>::removeIndex( int index )
 {
-	int i;
-
 #ifdef DEBUG_CHECK_LIST_BOUNDS
 	ASSERT( m_pListPtr != nullptr);
 	ASSERT( index >= 0 );
@@ -786,7 +733,7 @@ inline bool Array<T>::removeIndex( int index )
 
 	m_nNumElem--;
 
-	for( i = index; i < m_nNumElem; i++ )
+	for( int i = index; i < m_nNumElem; i++ )
 		m_pListPtr[ i ] = m_pListPtr[ i + 1 ];
 
 	return true;
