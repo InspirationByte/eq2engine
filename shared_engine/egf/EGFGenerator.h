@@ -92,7 +92,7 @@ protected:
 		Array<GenMaterialDesc_t> materials{ PP_SL };
 	};
 
-	GenModel_t				GetDummyModel();
+	GenModel_t*				GetDummyModel();
 
 	// helper functions
 	GenBone_t*				FindBoneByName(const char* pszName);

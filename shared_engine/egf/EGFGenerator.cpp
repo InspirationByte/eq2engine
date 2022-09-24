@@ -61,6 +61,9 @@ CEGFGenerator::GenLODList_t* CEGFGenerator::FindModelLodGroupByName(const char* 
 //************************************
 CEGFGenerator::GenModel_t* CEGFGenerator::FindModelByName(const char* pszName)
 {
+	if (!stricmp(pszName, "_dummy"))
+		return GetDummyModel();
+
 	for(int i = 0; i < m_modelrefs.numElem(); i++)
 	{
 		if(!stricmp(m_modelrefs[i].model->name, pszName))
@@ -127,13 +130,12 @@ void CEGFGenerator::AddModelLodUsageReference(int lodModelIndex)
 	}
 }
 
-CEGFGenerator::GenModel_t CEGFGenerator::GetDummyModel()
+CEGFGenerator::GenModel_t* CEGFGenerator::GetDummyModel()
 {
-	GenModel_t mod;
-	mod.model = PPNew dsmmodel_t;
+	static GenModel_t mod{ PPNew dsmmodel_t, nullptr };
 	strcpy(mod.model->name, "_dummy");
 
-	return mod;
+	return &mod;
 }
 
 //************************************
@@ -142,7 +144,7 @@ CEGFGenerator::GenModel_t CEGFGenerator::GetDummyModel()
 CEGFGenerator::GenModel_t CEGFGenerator::LoadModel(const char* pszFileName)
 {
 	if (!stricmp(pszFileName, "_dummy"))
-		return GetDummyModel();
+		return* GetDummyModel();
 
 	GenModel_t mod;
 	mod.model = PPNew dsmmodel_t;
@@ -304,17 +306,22 @@ void CEGFGenerator::LoadModelsFromFBX(KVSection* pKeyBase)
 	if (!LoadFBX(models, shapeDatas, modelPath))
 		return;
 
-	for (int i = 0; i < models.numElem(); ++i)
+	//pKeyBase->FindSection(models[i]->name)
+
+	for (int i = 0; i < pKeyBase->keys.numElem(); ++i)
 	{
-		KVSection* modelSec = pKeyBase->FindSection(models[i]->name);
-		if (!modelSec)
-		{
+		KVSection* modelSec = pKeyBase->keys[i];
+		const char* modelName = modelSec->name;
+		const int foundIdx = models.findIndex([modelName](dsmmodel_t* model) {
+			return !stricmp(model->name, modelName);
+		});
+
+		if (foundIdx == -1)
 			continue;
-		}
-		
+
 		GenModel_t& mod = m_modelrefs.append();
-		mod.model = models[i];
-		mod.shapeData = shapeDatas[i];
+		mod.model = models[foundIdx];
+		mod.shapeData = shapeDatas[foundIdx];
 
 		// DRVSYN: vertex order for damaged model
 		if (modelSec->values.numElem() > 1 && !stricmp(KV_GetValueString(modelSec, 1), "shapeby"))
@@ -330,7 +337,7 @@ void CEGFGenerator::LoadModelsFromFBX(KVSection* pKeyBase)
 		}
 
 		GenLODList_t& lodModel = m_modelLodLists.append();
-		lodModel.lodmodels[0] = models[i];
+		lodModel.lodmodels[0] = mod.model;
 
 		const int nVerts = GetTotalVertsOfDSM(mod.model);
 
@@ -549,22 +556,25 @@ void CEGFGenerator::ParseLodData(KVSection* pSection, int lodIdx)
 		if (stricmp(pSection->keys[i]->name, "replace"))
 			continue;
 
-		GenModel_t* mod = FindModelByName(KV_GetValueString(pSection->keys[i]));
-		dsmmodel_t* replaceBy = mod ? mod->model : nullptr;
+		const char* replaceModelName = KV_GetValueString(pSection->keys[i]);
+		GenLODList_t* lodgroup = FindModelLodGroupByName(replaceModelName);
+		if (!lodgroup)
+		{
+			MsgError("No such reference named %s\n", replaceModelName);
+			continue;
+		}
+
+		GenModel_t* replaceByGen = FindModelByName(KV_GetValueString(pSection->keys[i], 1));
+
+		dsmmodel_t* replaceBy = replaceByGen ? replaceByGen->model : nullptr;
 
 		if (!replaceBy)
 			replaceBy = ParseAndLoadModels(pSection->keys[i]);
 
 		if (!replaceBy)
 			continue;
-		
-		GenLODList_t* lodgroup = FindModelLodGroupByName(replaceBy->name);
 
-		// set lod
-		if (lodgroup)
-			lodgroup->lodmodels[lodIdx] = replaceBy;
-		else
-			MsgError("No such reference named %s\n", replaceBy->name);
+		lodgroup->lodmodels[lodIdx] = replaceBy;
 	}
 }
 

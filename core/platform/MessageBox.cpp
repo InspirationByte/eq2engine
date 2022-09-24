@@ -50,7 +50,7 @@ void DefaultPlatformMessageBoxCallback(const char* messageStr, EMessageBoxType t
 			MessageBoxA(GetDesktopWindow(), messageStr, "ERROR", MB_OK | MB_ICONERROR);
 			break;
 		case MSGBOX_CRASH:
-			MessageBoxA(GetDesktopWindow(), messageStr, "FATAL ERROR", MB_OK | MB_ICONERROR);
+			MessageBoxA(GetDesktopWindow(), messageStr, "OMG IT'S CRASHED", MB_OK | MB_ICONERROR);
 			break;
 	}
 #elif defined(LINUX) && defined(USE_GTK)
