@@ -75,6 +75,17 @@ struct studioPhysData_t
 	int						numIndices{ 0 };
 };
 
+inline int PhysModel_FindObjectId(studioPhysData_t* model, const char* name)
+{
+	for (int i = 0; i < model->numObjects; i++)
+	{
+		if (!stricmp(model->objects[i].name, name))
+			return i;
+	}
+
+	return -1;
+}
+
 // hardware data for the MOD_STUDIO
 struct studioHwData_t
 {
@@ -158,19 +169,6 @@ typedef studioHwData_t::joint_t									studioJoint_t;
 typedef studioHwData_t::motionData_t							studioMotionData_t;
 typedef studioHwData_t::motionData_t::animation_t				studioAnimation_t;
 typedef studioHwData_t::motionData_t::animation_t::boneframe_t	studioBoneFrame_t;
-
-//------------------------------------------------------------------------------
-
-inline int PhysModel_FindObjectId(studioPhysData_t* model, const char* name)
-{
-	for(int i = 0; i < model->numObjects; i++)
-	{
-		if(!stricmp(model->objects[i].name, name))
-			return i;
-	}
-
-	return -1;
-}
 
 //------------------------------------------------------------------------------
 

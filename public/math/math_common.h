@@ -40,6 +40,7 @@ const float M_PI_OVER_TWO_F		= M_PI_F * 0.5f;
 
 #define RAD2DEG( x )			( (float)(x) * (float)(180.f / M_PI_F) )
 #define DEG2RAD( x )			( (float)(x) * (float)(M_PI_F / 180.f) )
+#define M_SQR( x )				( (x) * (x) )
 
 // Math routines done in optimized assembly math package routines
 inline void SinCos( float radians, float *sine, float *cosine )

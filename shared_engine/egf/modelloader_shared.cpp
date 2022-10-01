@@ -27,8 +27,7 @@ void ConvertHeaderToLatestVersion(basemodelheader_t* pHdr)
 // loads all supported EGF model formats
 studiohdr_t* Studio_LoadModel(const char* pszPath)
 {
-	long len = 0;
-
+	
 	IFile* file = g_fileSystem->Open(pszPath, "rb");
 
 	if(!file)
@@ -37,8 +36,7 @@ studiohdr_t* Studio_LoadModel(const char* pszPath)
 		return nullptr;
 	}
 
-	len = file->GetSize();
-
+	const long len = file->GetSize();
 	char* _buffer = (char*)PPAlloc(len+32); // +32 bytes for conversion issues
 
 	file->Read(_buffer, 1, len);
@@ -129,8 +127,8 @@ studioMotionData_t* Studio_LoadMotionData(const char* pszPath, int boneCount)
 	animationdesc_t*	animationdescs = nullptr;
 	animframe_t*		animframes = nullptr;
 
-	bool	anim_frames_decompressed	= false;
-	int		nUncompressedFramesSize		= 0;
+	bool anim_frames_decompressed	= false;
+	int nUncompressedFramesSize		= 0;
 
 	// parse motion package
 	for(int lump = 0; lump < pHDR->numLumps; lump++)
@@ -207,10 +205,7 @@ studioMotionData_t* Studio_LoadMotionData(const char* pszPath, int boneCount)
 	}
 
 	// first processing done, convert animca animations to EGF format.
-	pMotion->animations = (studioAnimation_t*)PPAlloc(sizeof(studioAnimation_t)*numAnimDescs);
-
-	//Msg("Num anim descs: %d\n", numAnimDescs);
-
+	pMotion->animations = PPAllocStructArray(studioAnimation_t, numAnimDescs);
 	pMotion->numAnimations = numAnimDescs;
 
 	pMotion->frames = PPAllocStructArray(animframe_t, numAnimFrames);
@@ -218,19 +213,17 @@ studioMotionData_t* Studio_LoadMotionData(const char* pszPath, int boneCount)
 
 	for(int i = 0; i < pMotion->numAnimations; i++)
 	{
-		memset(&pMotion->animations[i], 0, sizeof(studioAnimation_t));
-
-		strcpy(pMotion->animations[i].name, animationdescs[i].name);
-
-		pMotion->animations[i].bones = (studioBoneFrame_t*)PPAlloc(sizeof(studioBoneFrame_t)*boneCount);
+		studioAnimation_t& anim = pMotion->animations[i];
+		strcpy(anim.name, animationdescs[i].name);
 
 		// determine frame count of animation
-		int numFrames = animationdescs[i].numFrames / boneCount;
+		const int numFrames = animationdescs[i].numFrames / boneCount;
 
+		anim.bones = PPAllocStructArray(studioBoneFrame_t, boneCount);
 		for(int j = 0; j < boneCount; j++)
 		{
-			pMotion->animations[i].bones[j].numFrames = numFrames;
-			pMotion->animations[i].bones[j].keyFrames = pMotion->frames + (animationdescs[i].firstFrame + j*numFrames);
+			anim.bones[j].numFrames = numFrames;
+			anim.bones[j].keyFrames = pMotion->frames + (animationdescs[i].firstFrame + j*numFrames);
 		}
 	}
 
@@ -299,7 +292,7 @@ bool Studio_LoadPhysModel(const char* pszPath, studioPhysData_t* pModel)
 				physgeominfo_t* pGeomInfos = (physgeominfo_t*)pData;
 
 				pModel->numShapes = numGeomInfos;
-				pModel->shapes = (studioPhysShapeCache_t*)PPAlloc(numGeomInfos*sizeof(studioPhysShapeCache_t));
+				pModel->shapes = PPAllocStructArray(studioPhysShapeCache_t, numGeomInfos);
 
 				for(int i = 0; i < numGeomInfos; i++)
 				{
@@ -336,7 +329,7 @@ bool Studio_LoadPhysModel(const char* pszPath, studioPhysData_t* pModel)
 				physobject_t* physObjDataLump = (physobject_t*)pData;
 
 				pModel->numObjects = numObjInfos;
-				pModel->objects = (studioPhysObject_t*)PPAlloc(numObjInfos*sizeof(studioPhysObject_t));
+				pModel->objects = PPAllocStructArray(studioPhysObject_t, numObjInfos);
 
 				for(int i = 0; i < numObjInfos; i++)
 				{

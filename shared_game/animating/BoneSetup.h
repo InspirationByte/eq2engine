@@ -64,22 +64,22 @@ struct gikchain_t
 // pose controller
 struct gposecontroller_t
 {
-	posecontroller_t*	p;
-	float				value;
-	float				interpolatedValue;
+	posecontroller_t*	p{ nullptr };
+	float				value{ 0.0f };
+	float				interpolatedValue{ 0.0f };
 };
 
 // translated game sequence
 struct gsequence_t
 {
-	Activity			activity;
-	gposecontroller_t*	posecontroller;
-	sequencedesc_t*		s;
+	Activity			activity{ ACT_INVALID };
+	gposecontroller_t*	posecontroller{ nullptr };
+	sequencedesc_t*		s{ nullptr };
 
-	sequenceevent_t*	events[MAX_EVENTS_PER_SEQ];
-	gsequence_t*		blends[MAX_SEQUENCE_BLENDS];
+	sequenceevent_t*	events[MAX_EVENTS_PER_SEQ]{ nullptr };
+	gsequence_t*		blends[MAX_SEQUENCE_BLENDS]{ nullptr };
 
-	studioAnimation_t*	animations[MAX_BLEND_WIDTH];
+	studioAnimation_t*	animations[MAX_BLEND_WIDTH]{ nullptr };
 };
 
 // sequence timer with events

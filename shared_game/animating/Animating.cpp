@@ -151,8 +151,7 @@ void CAnimatingEGF::InitAnimating(IEqModel* model)
 	{
 		studioikchain_t* pStudioChain = studio->pIkChain(i);
 
-		int idx = m_ikChains.append(gikchain_t{});
-		gikchain_t& chain = m_ikChains[idx];
+		gikchain_t& chain = m_ikChains.append();
 
 		strcpy(chain.name, pStudioChain->name);
 		chain.numLinks = pStudioChain->numLinks;
@@ -180,7 +179,7 @@ void CAnimatingEGF::InitAnimating(IEqModel* model)
 			link.localTrans.setTranslation(link.position);
 			link.absTrans = identity4();
 
-			int parentLinkId = j - 1;
+			const int parentLinkId = j - 1;
 
 			if (parentLinkId >= 0)
 				link.parent = &chain.links[j - 1];
@@ -226,6 +225,7 @@ int _compareEvents(sequenceevent_t* const &a, sequenceevent_t* const &b)
 void CAnimatingEGF::AddMotions(studioHwData_t::motionData_t* motionData)
 {
 	// create pose controllers
+	// TODO: hash-merge
 	for (int i = 0; i < motionData->numPoseControllers; i++)
 	{
 		gposecontroller_t controller;
@@ -238,17 +238,12 @@ void CAnimatingEGF::AddMotions(studioHwData_t::motionData_t* motionData)
 		m_poseControllers.append(controller);
 	}
 
-	// copy sequences
+	m_seqList.resize(m_seqList.numElem() + motionData->numsequences);
 	for (int i = 0; i < motionData->numsequences; i++)
 	{
 		sequencedesc_t& seq = motionData->sequences[i];
 
-		int seqIdx = m_seqList.numElem();
-		m_seqList.setNum(seqIdx+1);
-
-		gsequence_t& seqData = m_seqList[seqIdx];
-		memset(&seqData, 0, sizeof(seqData));
-
+		gsequence_t& seqData = m_seqList.append();
 		seqData.s = &seq;
 		seqData.activity = GetActivityByName(seq.activity);
 
@@ -481,17 +476,13 @@ void CAnimatingEGF::AdvanceFrame(float frameTime)
 {
 	if (m_sequenceTimers[0].seq)
 	{
-		float div_frametime = (frameTime * 30) / 8;
+		const float div_frametime = (frameTime * 30);
 
 		// interpolate pose parameter values
 		for (int i = 0; i < m_poseControllers.numElem(); i++)
 		{
 			gposecontroller_t& ctrl = m_poseControllers[i];
-
-			for (int j = 0; j < 8; j++)
-			{
-				ctrl.interpolatedValue = lerp(ctrl.interpolatedValue, ctrl.value, div_frametime);
-			}
+			ctrl.interpolatedValue = approachValue(ctrl.interpolatedValue, ctrl.value, div_frametime * (ctrl.value - ctrl.interpolatedValue));
 		}
 
 		if (m_sequenceTimers[0].active)
@@ -884,7 +875,7 @@ bool SolveIKLinks(giklink_t& effector, Vector3D &target, float fDt, int numItera
 		curEnd = effector.absTrans.rows[3].xyz();
 
 		desiredEnd = target;
-		float dist = distance(curEnd, desiredEnd);
+		const float dist = distanceSqr(curEnd, desiredEnd);
 
 		// check distance
 		if (dist > IK_DISTANCE_EPSILON)
@@ -919,7 +910,7 @@ bool SolveIKLinks(giklink_t& effector, Vector3D &target, float fDt, int numItera
 			else
 				link = link->parent;
 		}
-	} while (nIter++ < numIterations && distance(curEnd, desiredEnd) > IK_DISTANCE_EPSILON);
+	} while (nIter++ < numIterations && distanceSqr(curEnd, desiredEnd) > IK_DISTANCE_EPSILON);
 
 	if (nIter >= numIterations)
 		return false;
@@ -978,8 +969,8 @@ void CAnimatingEGF::UpdateIK(float fDt, const Matrix4x4& worldTransform)
 			{
 				giklink_t& link = chain.links[j];
 
-				int bone_id = link.l->bone;
-				studioJoint_t& joint = m_joints[link.l->bone];
+				const int bone_id = link.l->bone;
+				studioJoint_t& joint = m_joints[bone_id];
 
 				link.quat = Quaternion(m_boneTransforms[bone_id].getRotationComponent());
 				link.position = joint.position;

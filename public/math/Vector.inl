@@ -834,19 +834,19 @@ inline TVec4D<T> fastNormalize(const TVec4D<T> &v)
 template <typename T>
 inline T length(const TVec2D<T> &v)
 {
-	return sqrt(v.x * v.x + v.y * v.y);
+	return sqrt(dot(v, v));
 }
 
 template <typename T>
 inline T length(const TVec3D<T> &v)
 {
-	return sqrt(v.x * v.x + v.y * v.y + v.z * v.z);
+	return sqrt(dot(v, v));
 }
 
 template <typename T>
 inline T length(const TVec4D<T> &v)
 {
-	return sqrt(v.x * v.x + v.y * v.y + v.z * v.z + v.w * v.w);
+	return sqrt(dot(v, v));
 }
 
 // computes squared length of vector2
@@ -883,20 +883,41 @@ template <typename T>
 inline T distance(const TVec2D<T> &u, const TVec2D<T> &v)
 {
     TVec2D<T> d = u - v;
-	return dot(d, d);
+	return sqrtf(dot(d, d));
 }
 
 template <typename T>
 inline T distance(const TVec3D<T> &u, const TVec3D<T> &v)
 {
     TVec3D<T> d = u - v;
-	return dot(d, d);
+	return sqrtf(dot(d, d));
 }
 
 template <typename T>
 inline T distance(const TVec4D<T> &u, const TVec4D<T> &v)
 {
     TVec4D<T> d = u - v;
+	return sqrtf(dot(d, d));
+}
+
+template <typename T>
+inline T distanceSqr(const TVec2D<T>& u, const TVec2D<T>& v)
+{
+	TVec2D<T> d = u - v;
+	return dot(d, d);
+}
+
+template <typename T>
+inline T distanceSqr(const TVec3D<T>& u, const TVec3D<T>& v)
+{
+	TVec3D<T> d = u - v;
+	return dot(d, d);
+}
+
+template <typename T>
+inline T distanceSqr(const TVec4D<T>& u, const TVec4D<T>& v)
+{
+	TVec4D<T> d = u - v;
 	return dot(d, d);
 }
 

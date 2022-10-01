@@ -571,6 +571,18 @@ T			distance(const TVec3D<T> &u, const TVec3D<T> &v);
 template <typename T>
 T			distance(const TVec4D<T> &u, const TVec4D<T> &v);
 
+// computes squared distance from u to v vector2
+template <typename T>
+T			distanceSqr(const TVec2D<T>& u, const TVec2D<T>& v);
+
+// computes squared distance from u to v vector3
+template <typename T>
+T			distanceSqr(const TVec3D<T>& u, const TVec3D<T>& v);
+
+// computes squared distance from u to v vector4
+template <typename T>
+T			distanceSqr(const TVec4D<T>& u, const TVec4D<T>& v);
+
 // performs normalized balance vector2
 template <typename T>
 TVec2D<T>	balance(const TVec2D<T> &v);
