@@ -259,7 +259,8 @@ void CEqRigidBody::Integrate(float delta)
 
 	if(ph_debug_body.GetBool())
 	{
-		debugoverlay->Text3D(m_position, 50.0f, ColorRGBA(1,1,1,1), 0.0f,
+		debugoverlay->Text3D(m_position, 50.0f, ColorRGBA(1,1,1,1),
+			EqString::Format(
 			"Position: [%.2f %.2f %.2f]\n"
 			"Lin. vel: [%.2f %.2f %.2f] (%.2f)\n"
 			"Ang. vel: [%.2f %.2f %.2f]\n"
@@ -269,7 +270,7 @@ void CEqRigidBody::Integrate(float delta)
 			(float)m_linearVelocity.x,(float)m_linearVelocity.y,(float)m_linearVelocity.z, (float)length(m_linearVelocity),
 			(float)m_angularVelocity.x,(float)m_angularVelocity.y,(float)m_angularVelocity.z,
 			(float)m_mass,
-			m_cell != nullptr);
+			m_cell != nullptr));
 	}
 }
 

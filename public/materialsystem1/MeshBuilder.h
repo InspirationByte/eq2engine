@@ -41,6 +41,8 @@ public:
 	void		Color3fv( const ColorRGB& rgb );
 	void		Color4f( float r, float g, float b, float a );
 	void		Color4fv( const ColorRGBA& rgba );
+	void		Color3(const MColor& rgb);
+	void		Color4(const MColor& rgba);
 
 	//
 	// complex primitives (also using index buffer)
@@ -297,6 +299,16 @@ inline void CMeshBuilder::Color4f( float r, float g, float b, float a )
 inline void CMeshBuilder::Color4fv( const ColorRGBA& rgba )
 {
 	Color4f(rgba.x, rgba.y, rgba.z, rgba.w);
+}
+
+inline void CMeshBuilder::Color3(const MColor& rgb)
+{
+	Color3f(rgb.r, rgb.g, rgb.b);
+}
+
+inline void CMeshBuilder::Color4(const MColor& rgba)
+{
+	Color4f(rgba.r, rgba.g, rgba.b, rgba.a);
 }
 
 

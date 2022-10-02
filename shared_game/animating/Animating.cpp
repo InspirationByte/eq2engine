@@ -774,7 +774,7 @@ void CAnimatingEGF::DebugRender(const Matrix4x4& worldTransform)
 			const Vector3D& localPos = transform.rows[3].xyz();
 			const Vector3D pos = (worldTransform*Vector4D(localPos, 1.0f)).xyz();
 
-			debugoverlay->Text3D(pos, 25, color_white, 0.0f, "%s\npos: [%.2f %.2f %.2f]", m_joints[i].name, localPos.x, localPos.y, localPos.z);
+			debugoverlay->Text3D(pos, 25, color_white, EqString::Format("%s\npos: [%.2f %.2f %.2f]", m_joints[i].name, localPos.x, localPos.y, localPos.z));
 		}
 
 		const Matrix4x4& transform = m_boneTransforms[i];
@@ -826,7 +826,7 @@ void CAnimatingEGF::DebugRender(const Matrix4x4& worldTransform)
 
 				debugoverlay->Line3D(parent_pos, bone_pos, ColorRGBA(1, 1, 0, 1), ColorRGBA(1, 1, 0, 1));
 				debugoverlay->Box3D(bone_pos + Vector3D(1), bone_pos - Vector3D(1), ColorRGBA(1, 0, 0, 1));
-				debugoverlay->Text3D(bone_pos, 200.0f, color_white, 0.0f, "%s", m_joints[link.l->bone].name);
+				debugoverlay->Text3D(bone_pos, 200.0f, color_white, m_joints[link.l->bone].name);
 
 				// draw axis
 				debugoverlay->Line3D(bone_pos, bone_pos + dX, ColorRGBA(1, 0, 0, 1), ColorRGBA(1, 0, 0, 1));

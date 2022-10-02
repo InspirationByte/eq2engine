@@ -515,7 +515,7 @@ void CAnimatedModel::VisualizeBones()
 		debugoverlay->Line3D(pos, pos+dZ*0.1f, ColorRGBA(0,0,1,1), ColorRGBA(0,0,1,1));
 
 		debugoverlay->Line3D(pos, pos + dX * 0.1f, ColorRGBA(1, 0, 0, 1), ColorRGBA(1, 0, 0, 1));
-		debugoverlay->Text3D(pos, 100.0f, color_white, 0.0f, "%s", m_joints[i].name);
+		debugoverlay->Text3D(pos, 100.0f, color_white, m_joints[i].name);
 	}
 }
 

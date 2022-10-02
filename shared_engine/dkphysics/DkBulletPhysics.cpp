@@ -368,7 +368,7 @@ class DkPhysicsDebugDrawer : public btIDebugDraw
 #ifndef EQLC
 		Vector3D pos;
 		ConvertPositionToEq(pos, position);
-		debugoverlay->Text3D(pos,-1, color_white, 0.0f, "%s", text);
+		debugoverlay->Text3D(pos,-1, color_white, text);
 #endif
 	}
 
