@@ -155,7 +155,8 @@ void CDebugOverlay::Init(bool hidden)
 		r_debugdrawLines.SetBool(true);
 	}
 
-	m_pDebugFont = g_fontCache->GetFont("debug", 0);
+	m_debugFont = g_fontCache->GetFont("debug", 0);
+	m_debugFont2 = g_fontCache->GetFont("default", 0);
 }
 
 void CDebugOverlay::Text(const ColorRGBA &color, char const *fmt,...)
@@ -1112,9 +1113,9 @@ void CDebugOverlay::Draw(int winWide, int winTall, float timescale)
 				textStl.styleFlag = TEXT_STYLE_SHADOW | TEXT_STYLE_FROM_CAP;
 				textStl.textColor = curColor;
 
-				Vector2D textPos = drawFadedTextBoxPosition + Vector2D(0, (idx * m_pDebugFont->GetLineHeight(textStl)));
+				Vector2D textPos = drawFadedTextBoxPosition + Vector2D(0, (idx * m_debugFont->GetLineHeight(textStl)));
 
-				m_pDebugFont->RenderText(current.pszText.GetData(), textPos, textStl);
+				m_debugFont->RenderText(current.pszText.GetData(), textPos, textStl);
 
 				idx++;
 
@@ -1150,7 +1151,7 @@ void CDebugOverlay::Draw(int winWide, int winTall, float timescale)
 				if (!beh && visible)
 				{
 					textStl.textColor = MColor(current.color);
-					m_pDebugFont->RenderText(current.pszText.GetData(), screen.xy(), textStl);
+					m_debugFont2->RenderText(current.pszText.GetData(), screen.xy(), textStl);
 				}
 			}
 		}
@@ -1159,7 +1160,7 @@ void CDebugOverlay::Draw(int winWide, int winTall, float timescale)
 			Threading::CScopedMutex m(s_debugOverlayMutex);
 			if (m_TextArray.numElem())
 			{
-				GUIDrawWindow(Rectangle_t(drawTextBoxPosition.x, drawTextBoxPosition.y, drawTextBoxPosition.x + 380, drawTextBoxPosition.y + (m_TextArray.numElem() * m_pDebugFont->GetLineHeight(textStl))), ColorRGBA(0.5f, 0.5f, 0.5f, 0.5f));
+				GUIDrawWindow(Rectangle_t(drawTextBoxPosition.x, drawTextBoxPosition.y, drawTextBoxPosition.x + 380, drawTextBoxPosition.y + (m_TextArray.numElem() * m_debugFont->GetLineHeight(textStl))), ColorRGBA(0.5f, 0.5f, 0.5f, 0.5f));
 
 				for (int i = 0; i < m_TextArray.numElem(); i++)
 				{
@@ -1167,9 +1168,9 @@ void CDebugOverlay::Draw(int winWide, int winTall, float timescale)
 
 					textStl.textColor = MColor(current.color);
 
-					Vector2D textPos(drawTextBoxPosition.x, drawTextBoxPosition.y + (i * m_pDebugFont->GetLineHeight(textStl)));
+					Vector2D textPos(drawTextBoxPosition.x, drawTextBoxPosition.y + (i * m_debugFont->GetLineHeight(textStl)));
 
-					m_pDebugFont->RenderText(current.pszText.GetData(), textPos, textStl);
+					m_debugFont->RenderText(current.pszText.GetData(), textPos, textStl);
 				}
 			}
 		}
@@ -1193,10 +1194,10 @@ void CDebugOverlay::Draw(int winWide, int winTall, float timescale)
 
 				rTextFadeStyle.textColor = curColor;
 
-				float textLen = m_pDebugFont->GetStringWidth(current.pszText.ToCString(), textStl);
-				Vector2D textPos(winWide - (textLen * m_pDebugFont->GetLineHeight(textStl)), 45 + (i * m_pDebugFont->GetLineHeight(textStl)));
+				float textLen = m_debugFont->GetStringWidth(current.pszText.ToCString(), textStl);
+				Vector2D textPos(winWide - (textLen * m_debugFont->GetLineHeight(textStl)), 45 + (i * m_debugFont->GetLineHeight(textStl)));
 
-				m_pDebugFont->RenderText(current.pszText.GetData(), textPos, rTextFadeStyle);
+				m_debugFont->RenderText(current.pszText.GetData(), textPos, rTextFadeStyle);
 
 				current.lifetime -= m_frameTime;
 			}
@@ -1208,7 +1209,7 @@ void CDebugOverlay::Draw(int winWide, int winTall, float timescale)
 		Threading::CScopedMutex m(s_debugOverlayMutex);
 
 		for(int i = 0; i < m_graphbuckets.numElem(); i++)
-			DrawGraph( m_graphbuckets[i], i, m_pDebugFont, m_frameTime);
+			DrawGraph( m_graphbuckets[i], i, m_debugFont, m_frameTime);
 
 		m_graphbuckets.clear(false);
 	}
@@ -1386,6 +1387,6 @@ void CDebugOverlay::Graph_AddValue(debugGraphBucket_t* bucket, float value)
 
 IEqFont* CDebugOverlay::GetFont()
 {
-	return m_pDebugFont;
+	return m_debugFont;
 }
 

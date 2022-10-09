@@ -138,7 +138,8 @@ private:
 	Map<int, uint>					m_newNames{ PP_SL };
 
 	CEqTimer						m_timer;
-	IEqFont*						m_pDebugFont{ nullptr };
+	IEqFont*						m_debugFont{ nullptr };
+	IEqFont*						m_debugFont2{ nullptr };
 
 	Matrix4x4						m_projMat;
 	Matrix4x4						m_viewMat;
