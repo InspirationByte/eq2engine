@@ -31,7 +31,6 @@ struct PPSLValueCtor
 #define	PPNew			new(PP_SL)
 #define	PPNewSL(sl)		new(sl)
 
-//-----------------------------------------------
 
 #ifdef PROFILE_ENABLE
 
@@ -47,10 +46,10 @@ struct PPSLValueCtor
 
 #endif // PROFILE_ENABLE
 
-void	ProfAddMarker(const char* text);
-int		ProfBeginMarker(const char* text);
-void	ProfEndMarker(int eventId);
-void	ProfReleaseCurrentThreadMarkers();
+IEXPORTS void ProfAddMarker(const char* text);
+IEXPORTS int ProfBeginMarker(const char* text);
+IEXPORTS void ProfEndMarker(int eventId);
+IEXPORTS void ProfReleaseCurrentThreadMarkers();
 
 struct ProfEventWrp
 {

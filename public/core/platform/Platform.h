@@ -25,13 +25,12 @@
 
 // Include some standard files
 #ifdef PLAT_WIN
-
 #   define WIN32_LEAN_AND_MEAN
 #	undef _WIN32_WINNT
 #	undef _WIN32_WINDOWS
-#	define _WIN32_WINDOWS 0x0500
+#	define _WIN32_WINDOWS 0x0600 // _WIN32_WINNT_VISTA
 #  ifndef WINVER
-#     define WINVER 0x0500
+#     define WINVER 0x0600
 #  endif
 #include <Windows.h>
 #ifdef FreeModule

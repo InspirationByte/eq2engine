@@ -145,8 +145,6 @@ uintptr_t ThreadCreate( threadfunc_t fnThread, void* pThreadParams, ThreadPriori
 		return (uintptr_t)0;
 	}
 
-	SetThreadName( threadId, pszThreadName );
-
 	if( nPriority == TP_HIGHEST )
 	{
 		SetThreadPriority( (HANDLE)handle, THREAD_PRIORITY_HIGHEST );		//  we better sleep enough to do this
@@ -163,6 +161,8 @@ uintptr_t ThreadCreate( threadfunc_t fnThread, void* pThreadParams, ThreadPriori
 	{
 		SetThreadPriority( (HANDLE)handle, THREAD_PRIORITY_LOWEST );
 	}
+
+	SetThreadName(threadId, pszThreadName);
 
 	// Under Windows, we don't set the thread affinity and let the OS deal with scheduling
 
