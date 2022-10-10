@@ -45,6 +45,7 @@ public:
 protected:
 	EqString						m_szName;
 	int								m_nameHash{ 0 };
+	uint32							m_cacheChecksum{ 0 };
 
 	IDirect3DVertexShader9*			m_pVertexShader{ nullptr };
 	IDirect3DPixelShader9*			m_pPixelShader{ nullptr };

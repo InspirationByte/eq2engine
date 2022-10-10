@@ -23,6 +23,23 @@
 #include "D3D9OcclusionQuery.h"
 #include "D3D9RenderState.h"
 
+#define SHADERCACHE_IDENT		MCHAR4('S','P','C','1')
+#define SHADERCACHE_FOLDER		"ShaderCache_DX9"
+
+struct shaderCacheHdr_t
+{
+	int	ident;
+	uint32 checksum;		// file crc32
+
+	int	psSize;
+	int	vsSize;
+
+	ushort numConstants;
+	ushort numSamplers;
+
+	int nameLen;
+};
+
 using namespace Threading;
 
 extern CEqMutex	g_sapi_TextureMutex;
@@ -30,6 +47,8 @@ extern CEqMutex	g_sapi_ShaderMutex;
 extern CEqMutex	g_sapi_VBMutex;
 extern CEqMutex	g_sapi_IBMutex;
 extern CEqMutex	g_sapi_Mutex;
+
+ConVar r_skipShaderCache("r_skipShaderCache", "0", "Shader debugging purposes", 0);
 
 bool InternalCreateRenderTarget(LPDIRECT3DDEVICE9 dev, CD3D9Texture *tex, int nFlags);
 
@@ -469,6 +488,9 @@ void ShaderAPID3DX9::Init( const shaderAPIParams_t &params )
 	const char *psprofile = D3DXGetPixelShaderProfile(m_pD3DDevice);
 
 	MsgAccept(" \n*Max pixel shader profile: %s\n*Max vertex shader profile: %s\n",psprofile,vsprofile);
+
+	g_fileSystem->MakeDir(SHADERCACHE_FOLDER, SP_ROOT);
+	PreloadShadersFromCache();
 
 	ShaderAPI_Base::Init(params);
 }
@@ -1972,22 +1994,111 @@ void ShaderAPID3DX9::DestroyShaderProgram(IShaderProgram* pShaderProgram)
 	delete pShader;
 }
 
-ConVar r_skipShaderCache("r_skipShaderCache", "0", "Shader debugging purposes", 0);
-
-struct shaderCacheHdr_t
+void ShaderAPID3DX9::PreloadShadersFromCache()
 {
-	int		ident;
+	int numShaders = 0;
+	CFileSystemFind fsFind(SHADERCACHE_FOLDER "/*.scache", SP_ROOT);
+	while (fsFind.Next())
+	{
+		const EqString filename = EqString::Format(SHADERCACHE_FOLDER "/%s", fsFind.GetPath());
 
-	long	checksum;		// file crc32
+		IFile* pStream = g_fileSystem->Open(filename.ToCString(), "rb", SP_ROOT);
+		if (!pStream)
+			continue;
 
-	int		psSize;
-	int		vsSize;
+		shaderCacheHdr_t scHdr;
+		pStream->Read(&scHdr, 1, sizeof(shaderCacheHdr_t));
 
-	int		numConstants;
-	int		numSamplers;
-};
+		if (scHdr.ident != SHADERCACHE_IDENT)
+			continue;
 
-#define SHADERCACHE_IDENT		MCHAR4('S','P','C','0')
+		char nameStr[2048];
+		ASSERT(scHdr.nameLen < sizeof(nameStr));
+		pStream->Read(nameStr, scHdr.nameLen, 1);
+		nameStr[scHdr.nameLen] = 0;
+
+		pStream->Seek(0, VS_SEEK_SET);
+
+		DevMsg(DEVMSG_SHADERAPI, "Restoring shader '%s'\n", nameStr);
+		
+		CD3D9ShaderProgram* pNewProgram = PPNew CD3D9ShaderProgram();
+		pNewProgram->SetName(nameStr);
+		if (InitShaderFromCache(pNewProgram, pStream))
+		{
+			CScopedMutex scoped(g_sapi_ShaderMutex);
+
+			ASSERT_MSG(m_ShaderList.find(pNewProgram->m_nameHash) == m_ShaderList.end(), "Shader %s was already added", pNewProgram->GetName());
+			m_ShaderList.insert(pNewProgram->m_nameHash, pNewProgram);
+			numShaders++;
+
+			pNewProgram->Ref_Grab();
+		}
+		else
+			delete pNewProgram;
+
+		g_fileSystem->Close(pStream);
+	}
+
+	Msg("Shader cache: %d shaders loaded\n", numShaders);
+}
+
+bool ShaderAPID3DX9::InitShaderFromCache(IShaderProgram* pShaderOutput, IVirtualStream* pStream)
+{
+	CD3D9ShaderProgram* pShader = (CD3D9ShaderProgram*)(pShaderOutput);
+
+	if (!pShader)
+		return false;
+
+	// read pixel shader
+	shaderCacheHdr_t scHdr;
+	pStream->Read(&scHdr, 1, sizeof(shaderCacheHdr_t));
+
+	if (scHdr.ident != SHADERCACHE_IDENT)
+	{
+		g_fileSystem->Close(pStream);
+		MsgWarning("Shader cache for '%s' outdated\n", pShaderOutput->GetName());
+		return false;
+	}
+
+	pStream->Seek(scHdr.nameLen, VS_SEEK_CUR);
+
+	// read vertex shader
+	ubyte* pShaderMem = (ubyte*)PPAlloc(scHdr.vsSize);
+	pStream->Read(pShaderMem, 1, scHdr.vsSize);
+
+	m_pD3DDevice->CreateVertexShader((DWORD*)pShaderMem, &pShader->m_pVertexShader);
+	PPFree(pShaderMem);
+
+	// read pixel shader
+	pShaderMem = (ubyte*)PPAlloc(scHdr.psSize);
+	pStream->Read(pShaderMem, 1, scHdr.psSize);
+
+	m_pD3DDevice->CreatePixelShader((DWORD*)pShaderMem, &pShader->m_pPixelShader);
+	PPFree(pShaderMem);
+
+	// read samplers and constants
+	Array<DX9Sampler_t> samplers(PP_SL);
+	Array<DX9ShaderConstant_t> constants(PP_SL);
+	samplers.setNum(scHdr.numSamplers);
+	constants.setNum(scHdr.numConstants);
+
+	pStream->Read(samplers.ptr(), scHdr.numSamplers, sizeof(DX9Sampler_t));
+	pStream->Read(constants.ptr(), scHdr.numConstants, sizeof(DX9ShaderConstant_t));
+
+	Map<int, DX9Sampler_t>& samplerMap = pShader->m_samplers;
+	Map<int, DX9ShaderConstant_t>& constantMap = pShader->m_constants;
+
+	// assign
+	for (int i = 0; i < samplers.numElem(); ++i)
+		samplerMap.insert(samplers[i].nameHash, samplers[i]);
+
+	for (int i = 0; i < constants.numElem(); ++i)
+		constantMap.insert(constants[i].nameHash, constants[i]);
+
+	pShader->m_cacheChecksum = scHdr.checksum;
+
+	return true;
+}
 
 // Load any shader from stream
 bool ShaderAPID3DX9::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
@@ -1999,90 +2110,28 @@ bool ShaderAPID3DX9::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 	if(!pShader)
 		return false;
 
-	g_fileSystem->MakeDir("ShaderCache_DX9", SP_ROOT);
-
-	EqString cache_file_name(EqString::Format("ShaderCache_DX9/%s.scache", pShaderOutput->GetName()));
-
-	IFile* pStream = nullptr;
-
 	bool needsCompile = true;
+	const bool shaderCacheEnabled = !info.disableCache && !r_skipShaderCache.GetBool();
 
-	if(!(info.disableCache || r_skipShaderCache.GetBool()))
+	const EqString cacheFileName = EqString::Format(SHADERCACHE_FOLDER "/%x.scache", pShader->m_nameHash);
+
+	if(shaderCacheEnabled)
 	{
-		pStream = g_fileSystem->Open(cache_file_name.GetData(), "rb", SP_ROOT);
+		IFile* pStream = g_fileSystem->Open(cacheFileName.ToCString(), "rb", SP_ROOT);
 
-		if(pStream)
+		if (pStream)
 		{
-			// read pixel shader
-			shaderCacheHdr_t scHdr;
-			pStream->Read(&scHdr, 1, sizeof(shaderCacheHdr_t));
-
-			if(	scHdr.ident == SHADERCACHE_IDENT &&
-				scHdr.checksum == info.data.checksum)
-			{
-				// read vertex shader
-				ubyte* pShaderMem = (ubyte*)PPAlloc(scHdr.vsSize);
-				pStream->Read(pShaderMem, 1, scHdr.vsSize);
-		
-				m_pD3DDevice->CreateVertexShader((DWORD *) pShaderMem, &pShader->m_pVertexShader);
-				PPFree(pShaderMem);
-
-				// read pixel shader
-				pShaderMem = (ubyte*)PPAlloc(scHdr.psSize);
-				pStream->Read(pShaderMem, 1, scHdr.psSize);
-		
-				m_pD3DDevice->CreatePixelShader((DWORD *) pShaderMem, &pShader->m_pPixelShader);
-				PPFree(pShaderMem);
-
-				// read samplers and constants
-				Array<DX9Sampler_t> samplers(PP_SL);
-				Array<DX9ShaderConstant_t> constants(PP_SL);
-				samplers.setNum(scHdr.numSamplers);
-				constants.setNum(scHdr.numConstants);
-
-				pStream->Read(samplers.ptr(), scHdr.numSamplers, sizeof(DX9Sampler_t));
-				pStream->Read(constants.ptr(), scHdr.numConstants, sizeof(DX9ShaderConstant_t));
-
-				Map<int, DX9Sampler_t>& samplerMap = pShader->m_samplers;
-				Map<int, DX9ShaderConstant_t>& constantMap = pShader->m_constants;
-
-				// assign
-				for (int i = 0; i < samplers.numElem(); ++i)
-					samplerMap.insert(samplers[i].nameHash, samplers[i]);
-
-				for (int i = 0; i < constants.numElem(); ++i)
-					constantMap.insert(constants[i].nameHash, constants[i]);
-
+			if (InitShaderFromCache(pShader, pStream))
 				needsCompile = false;
-			}
-			else
-			{
-				MsgWarning("Shader cache for '%s' broken and will be recompiled\n", pShaderOutput->GetName());
-			}
-
 			g_fileSystem->Close(pStream);
 		}
 	}
 
-	if(needsCompile && info.data.text != nullptr)
-	{
-		pStream = g_fileSystem->Open( cache_file_name.GetData(), "wb", SP_ROOT);
-
-		if(!pStream)
-			MsgError("ERROR: Cannot create shader cache file for %s\n", pShaderOutput->GetName());
-	}
-	else
-	{
+	if (!needsCompile)
 		return true;
-	}
 
-	shaderCacheHdr_t scHdr;
-	scHdr.ident = SHADERCACHE_IDENT;
-	scHdr.vsSize = 0;
-	scHdr.psSize = 0;
-
-	if(pStream) // write empty header
-		pStream->Write(&scHdr, 1, sizeof(shaderCacheHdr_t));
+	CMemoryStream vsMemStream(nullptr, VS_OPEN_WRITE, 2048);
+	CMemoryStream psMemStream(nullptr, VS_OPEN_WRITE, 2048);
 
 	if (info.data.text != nullptr)
 	{
@@ -2132,10 +2181,8 @@ bool ShaderAPID3DX9::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 		{
 			m_pD3DDevice->CreateVertexShader((DWORD *) shaderBuf->GetBufferPointer(), &pShader->m_pVertexShader);
 
-			scHdr.vsSize = shaderBuf->GetBufferSize();
-
-			if(pStream)
-				pStream->Write(shaderBuf->GetBufferPointer(), 1, scHdr.vsSize);
+			if (shaderCacheEnabled)
+				vsMemStream.Write(shaderBuf->GetBufferPointer(), 1, shaderBuf->GetBufferSize());
 
 			shaderBuf->Release();
 		}
@@ -2162,7 +2209,6 @@ bool ShaderAPID3DX9::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 				MsgError("%s\n", (const char *)errorsBuf->GetBufferPointer());
 				errorsBuf->Release();
 			}
-				
 
 			MsgError("\n Profile: %s\n", profile.ToCString());
 		}
@@ -2217,10 +2263,8 @@ bool ShaderAPID3DX9::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 		{
 			m_pD3DDevice->CreatePixelShader((DWORD *) shaderBuf->GetBufferPointer(), &pShader->m_pPixelShader);
 
-			scHdr.psSize = shaderBuf->GetBufferSize();
-
-			if(pStream)
-				pStream->Write(shaderBuf->GetBufferPointer(), 1, scHdr.psSize);
+			if (shaderCacheEnabled)
+				psMemStream.Write(shaderBuf->GetBufferPointer(), 1, shaderBuf->GetBufferSize());
 
 			shaderBuf->Release();
 		}
@@ -2252,39 +2296,12 @@ bool ShaderAPID3DX9::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 		}
 	}
 
-	if (pShader->m_pPixelShader == nullptr || pShader->m_pVertexShader == nullptr)
-	{
-		if(pStream)
-		{
-			scHdr.checksum = -1;
-			scHdr.psSize = -1;
-			scHdr.vsSize = -1;
-
-			pStream->Seek(0,VS_SEEK_SET);
-			pStream->Write(&scHdr, 1, sizeof(shaderCacheHdr_t));
-			g_fileSystem->Close(pStream);
-		}
-
-		return false; // Don't do anything
-	}
-
 	ID3DXConstantTable* d3dVSConstants = pShader->m_pVSConstants;
 	ID3DXConstantTable* d3dPSConstants = pShader->m_pPSConstants;
 
-	if(d3dVSConstants == nullptr || d3dPSConstants == nullptr)
+	if (pShader->m_pPixelShader == nullptr || pShader->m_pVertexShader == nullptr ||
+		d3dVSConstants == nullptr || d3dPSConstants == nullptr)
 	{
-		// write empty cache file so it won't fuck up
-		if(pStream)
-		{
-			scHdr.checksum = -1;
-			scHdr.psSize = -1;
-			scHdr.vsSize = -1;
-
-			pStream->Seek(0,VS_SEEK_SET); 
-			pStream->Write(&scHdr, 1, sizeof(shaderCacheHdr_t));
-			g_fileSystem->Close(pStream);
-		}
-
 		return false;
 	}
 
@@ -2408,18 +2425,32 @@ bool ShaderAPID3DX9::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 	}
 
 	// store the shader cache data
-	if(pStream)
+	if (shaderCacheEnabled && info.data.text != nullptr)
 	{
-		scHdr.numSamplers = samplers.numElem();
-		scHdr.numConstants = constants.numElem();
-		scHdr.checksum = info.data.checksum;
+		IFile* pStream = g_fileSystem->Open(cacheFileName.ToCString(), "wb", SP_ROOT);
+		if (pStream)
+		{
+			shaderCacheHdr_t scHdr;
+			scHdr.ident = SHADERCACHE_IDENT;
+			scHdr.checksum = info.data.checksum;
+			scHdr.numSamplers = samplers.numElem();
+			scHdr.numConstants = constants.numElem();
+			scHdr.vsSize = vsMemStream.Tell();
+			scHdr.psSize = psMemStream.Tell();
+			scHdr.nameLen = pShader->m_szName.Length();
 
-		pStream->Write(samplers.ptr(), samplers.numElem(), sizeof(DX9Sampler_t));
-		pStream->Write(constants.ptr(), constants.numElem(), sizeof(DX9ShaderConstant_t));
+			pStream->Write(&scHdr, 1, sizeof(shaderCacheHdr_t));
+			pStream->Write(pShader->m_szName.GetData(), scHdr.nameLen, 1);
 
-		pStream->Seek(0,VS_SEEK_SET);
-		pStream->Write(&scHdr, 1, sizeof(shaderCacheHdr_t));
-		g_fileSystem->Close(pStream);
+			vsMemStream.WriteToFileStream(pStream);
+			psMemStream.WriteToFileStream(pStream);
+
+			pStream->Write(samplers.ptr(), samplers.numElem(), sizeof(DX9Sampler_t));
+			pStream->Write(constants.ptr(), constants.numElem(), sizeof(DX9ShaderConstant_t));
+			g_fileSystem->Close(pStream);
+		}
+		else
+			MsgError("ERROR: Cannot create shader cache file for %s\n", pShaderOutput->GetName());
 	}
 
 	return true;
