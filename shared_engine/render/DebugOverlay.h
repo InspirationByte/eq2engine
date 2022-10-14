@@ -126,7 +126,7 @@ private:
 	Array<DebugLineNode_t>			m_LineList{ PP_SL };
 	Array<DebugBoxNode_t>			m_BoxList{ PP_SL };
 	Array<DebugCylinderNode_t>		m_CylinderList{ PP_SL };
-	//Array<DebugOriBoxNode_t>		m_OrientedBoxList{ PP_SL };
+	Array<DebugOriBoxNode_t>		m_OrientedBoxList{ PP_SL };
 	Array<DebugSphereNode_t>		m_SphereList{ PP_SL };
 
 	Array<debugGraphBucket_t*>		m_graphbuckets{ PP_SL };

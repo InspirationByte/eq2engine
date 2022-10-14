@@ -312,22 +312,21 @@ void CDebugOverlay::OrientedBox3D(const Vector3D& mins, const Vector3D& maxs, co
 	if(hashId == 0 && !m_frustum.IsBoxInside(position+mins, position+maxs))
 		return;
 
-	//Threading::CScopedMutex m(s_debugOverlayMutex);
+	Threading::CScopedMutex m(s_debugOverlayMutex);
 
-	//DebugOriBoxNode_t box;
-	//box.mins = mins;
-	//box.maxs = maxs;
-	//box.position = position;
-	//box.rotation = rotation;
-	//box.color = color;
-	//box.lifetime = fTime;
+	DebugOriBoxNode_t& box = m_OrientedBoxList.append();
+	box.mins = mins;
+	box.maxs = maxs;
+	box.position = position;
+	box.rotation = rotation;
+	box.color = MColor(color).pack();
+	box.lifetime = fTime;
 
-	DrawOrientedBox(position, mins, maxs, rotation, color, fTime);
+	box.frameindex = m_frameId;
+	box.nameHash = hashId;
 
-	//if(fTime == 0.0f)
-	//	m_FastOrientedBoxList.append(box);
-	//else
-	//	m_OrientedBoxList.append(box);
+	if (hashId != 0)
+		m_newNames.insert(hashId, m_frameId);
 }
 
 void CDebugOverlay::Sphere3D(const Vector3D& position, float radius, const ColorRGBA &color, float fTime, int hashId)
@@ -455,41 +454,41 @@ static void DrawOrientedBoxArray(Array<DebugOriBoxNode_t>& boxes, float frametim
 
 		meshBuilder.Color4(node.color);
 
-		meshBuilder.Line3fv(Vector3D(node.mins.x, node.maxs.y, node.mins.z),
-			Vector3D(node.mins.x, node.maxs.y, node.maxs.z));
+		meshBuilder.Line3fv(node.position + rotateVector(Vector3D(node.mins.x, node.maxs.y, node.mins.z), node.rotation),
+			node.position + rotateVector(Vector3D(node.mins.x, node.maxs.y, node.maxs.z), node.rotation));
 
-		meshBuilder.Line3fv(Vector3D(node.maxs.x, node.maxs.y, node.maxs.z),
-			Vector3D(node.maxs.x, node.maxs.y, node.mins.z));
+		meshBuilder.Line3fv(node.position + rotateVector(Vector3D(node.maxs.x, node.maxs.y, node.maxs.z), node.rotation),
+			node.position + rotateVector(Vector3D(node.maxs.x, node.maxs.y, node.mins.z), node.rotation));
 
-		meshBuilder.Line3fv(Vector3D(node.maxs.x, node.mins.y, node.mins.z),
-			Vector3D(node.maxs.x, node.mins.y, node.maxs.z));
+		meshBuilder.Line3fv(node.position + rotateVector(Vector3D(node.maxs.x, node.mins.y, node.mins.z), node.rotation),
+			node.position + rotateVector(Vector3D(node.maxs.x, node.mins.y, node.maxs.z), node.rotation));
 
-		meshBuilder.Line3fv(Vector3D(node.mins.x, node.mins.y, node.maxs.z),
-			Vector3D(node.mins.x, node.mins.y, node.mins.z));
+		meshBuilder.Line3fv(node.position + rotateVector(Vector3D(node.mins.x, node.mins.y, node.maxs.z), node.rotation),
+			node.position + rotateVector(Vector3D(node.mins.x, node.mins.y, node.mins.z), node.rotation));
 
-		meshBuilder.Line3fv(Vector3D(node.mins.x, node.mins.y, node.maxs.z),
-			Vector3D(node.mins.x, node.maxs.y, node.maxs.z));
+		meshBuilder.Line3fv(node.position + rotateVector(Vector3D(node.mins.x, node.mins.y, node.maxs.z), node.rotation),
+			node.position + rotateVector(Vector3D(node.mins.x, node.maxs.y, node.maxs.z), node.rotation));
 
-		meshBuilder.Line3fv(Vector3D(node.maxs.x, node.mins.y, node.maxs.z),
-			Vector3D(node.maxs.x, node.maxs.y, node.maxs.z));
+		meshBuilder.Line3fv(node.position + rotateVector(Vector3D(node.maxs.x, node.mins.y, node.maxs.z), node.rotation),
+			node.position + rotateVector(Vector3D(node.maxs.x, node.maxs.y, node.maxs.z), node.rotation));
 
-		meshBuilder.Line3fv(Vector3D(node.mins.x, node.mins.y, node.mins.z),
-			Vector3D(node.mins.x, node.maxs.y, node.mins.z));
+		meshBuilder.Line3fv(node.position + rotateVector(Vector3D(node.mins.x, node.mins.y, node.mins.z), node.rotation),
+			node.position + rotateVector(Vector3D(node.mins.x, node.maxs.y, node.mins.z), node.rotation));
 
-		meshBuilder.Line3fv(Vector3D(node.maxs.x, node.mins.y, node.mins.z),
-			Vector3D(node.maxs.x, node.maxs.y, node.mins.z));
+		meshBuilder.Line3fv(node.position + rotateVector(Vector3D(node.maxs.x, node.mins.y, node.mins.z), node.rotation),
+			node.position + rotateVector(Vector3D(node.maxs.x, node.maxs.y, node.mins.z), node.rotation));
 
-		meshBuilder.Line3fv(Vector3D(node.mins.x, node.maxs.y, node.mins.z),
-			Vector3D(node.maxs.x, node.maxs.y, node.mins.z));
+		meshBuilder.Line3fv(node.position + rotateVector(Vector3D(node.mins.x, node.maxs.y, node.mins.z), node.rotation),
+			node.position + rotateVector(Vector3D(node.maxs.x, node.maxs.y, node.mins.z), node.rotation));
 
-		meshBuilder.Line3fv(Vector3D(node.mins.x, node.maxs.y, node.maxs.z),
-			Vector3D(node.maxs.x, node.maxs.y, node.maxs.z));
+		meshBuilder.Line3fv(node.position + rotateVector(Vector3D(node.mins.x, node.maxs.y, node.maxs.z), node.rotation),
+			node.position + rotateVector(Vector3D(node.maxs.x, node.maxs.y, node.maxs.z), node.rotation));
 
-		meshBuilder.Line3fv(Vector3D(node.mins.x, node.mins.y, node.mins.z),
-			Vector3D(node.maxs.x, node.mins.y, node.mins.z));
+		meshBuilder.Line3fv(node.position + rotateVector(Vector3D(node.mins.x, node.mins.y, node.mins.z), node.rotation),
+			node.position + rotateVector(Vector3D(node.maxs.x, node.mins.y, node.mins.z), node.rotation));
 
-		meshBuilder.Line3fv(Vector3D(node.mins.x, node.mins.y, node.maxs.z),
-			Vector3D(node.maxs.x, node.mins.y, node.maxs.z));
+		meshBuilder.Line3fv(node.position + rotateVector(Vector3D(node.mins.x, node.mins.y, node.maxs.z), node.rotation),
+			node.position + rotateVector(Vector3D(node.maxs.x, node.mins.y, node.maxs.z), node.rotation));
 
 		node.lifetime -= frametime;
 
@@ -1053,11 +1052,10 @@ void CDebugOverlay::Draw(int winWide, int winTall, float timescale)
 		DrawCylinderArray(m_CylinderList, m_frameTime);
 	}
 
-	/* {
+	{
 		Threading::CScopedMutex m(s_debugOverlayMutex);
 		DrawOrientedBoxArray(m_OrientedBoxList, m_frameTime);
-		DrawOrientedBoxArray(m_FastOrientedBoxList, m_frameTime);
-	}*/
+	}
 
 	{
 		Threading::CScopedMutex m(s_debugOverlayMutex);
@@ -1319,14 +1317,14 @@ void CDebugOverlay::CleanOverlays()
 		}
 	}
 
-	/*for (int i = 0; i < m_OrientedBoxList.numElem(); i++)
+	for (int i = 0; i < m_OrientedBoxList.numElem(); i++)
 	{
-		if (m_OrientedBoxList[i].lifetime <= 0 || !CheckNodeName(m_OrientedBoxList[i]))
+		if (!CheckNodeLifetime(m_OrientedBoxList[i]))
 		{
 			m_OrientedBoxList.fastRemoveIndex(i);
 			i--;
 		}
-	}*/
+	}
 
 	for (int i = 0; i < m_SphereList.numElem(); i++)
 	{
