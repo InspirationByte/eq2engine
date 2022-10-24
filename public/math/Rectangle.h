@@ -96,7 +96,7 @@ struct TRectangle
 
     TVec2D<T> GetCenter() const
 	{
-		return (vleftTop + vrightBottom)*0.5f;
+		return (vleftTop + vrightBottom) / static_cast<T>(2);
 	}
 
 	TRectangle<T> GetTopVertical(float sizePercent) const

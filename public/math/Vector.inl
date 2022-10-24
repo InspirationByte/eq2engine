@@ -783,28 +783,28 @@ inline TVec4D<T> clamp(const TVec4D<T> &v, const TVec4D<T> &c0, const TVec4D<T> 
 template <typename T>
 inline T normalize(const T v)
 {
-	T invLen = T(1.0) / sqrt(v * v);
+	T invLen = T(1.0) / sqrtf(v * v);
 	return v * invLen;
 }
 
 template <typename T>
 inline TVec2D<T> normalize(const TVec2D<T> &v)
 {
-	T invLen = T(1.0) / sqrt(v.x * v.x + v.y * v.y);
+	T invLen = T(1.0) / sqrtf(v.x * v.x + v.y * v.y);
 	return v * invLen;
 }
 
 template <typename T>
 inline TVec3D<T> normalize(const TVec3D<T> &v)
 {
-	T invLen = T(1.0) / sqrt(v.x * v.x + v.y * v.y + v.z * v.z);
+	T invLen = T(1.0) / sqrtf(v.x * v.x + v.y * v.y + v.z * v.z);
 	return v * invLen;
 }
 
 template <typename T>
 inline TVec4D<T> normalize(const TVec4D<T> &v)
 {
-	T invLen = T(1.0) / sqrt(v.x * v.x + v.y * v.y + v.z * v.z + v.w * v.w);
+	T invLen = T(1.0) / sqrtf(v.x * v.x + v.y * v.y + v.z * v.z + v.w * v.w);
 	return v * invLen;
 }
 
@@ -834,19 +834,19 @@ inline TVec4D<T> fastNormalize(const TVec4D<T> &v)
 template <typename T>
 inline T length(const TVec2D<T> &v)
 {
-	return sqrt(dot(v, v));
+	return sqrtf(dot(v, v));
 }
 
 template <typename T>
 inline T length(const TVec3D<T> &v)
 {
-	return sqrt(dot(v, v));
+	return sqrtf(dot(v, v));
 }
 
 template <typename T>
 inline T length(const TVec4D<T> &v)
 {
-	return sqrt(dot(v, v));
+	return sqrtf(dot(v, v));
 }
 
 // computes squared length of vector2
@@ -927,7 +927,7 @@ inline TVec2D<T> balance(const TVec2D<T> &v)
 {
 	TVec2D<T> tmp(v);
 
-	T invLen = 1.0f / sqrt(v.x*v.x + v.y*v.y);
+	T invLen = 1.0f / sqrtf(v.x*v.x + v.y*v.y);
 
 	tmp *= invLen;
 
@@ -941,7 +941,7 @@ inline TVec3D<T> balance(const TVec3D<T> &v)
 {
 	TVec3D<T> tmp(v);
 
-	T invLen = 1.0f / sqrt(v.x*v.x + v.y*v.y + v.z*v.z);
+	T invLen = 1.0f / sqrtf(v.x*v.x + v.y*v.y + v.z*v.z);
 
 	tmp *= invLen;
 
@@ -956,7 +956,7 @@ inline TVec4D<T> balance(const TVec4D<T> &v)
 {
 	TVec4D<T> tmp(v);
 
-	T invLen = 1.0f / sqrt(v.x*v.x + v.y*v.y + v.z*v.z + v.w*v.w);
+	T invLen = 1.0f / sqrtf(v.x*v.x + v.y*v.y + v.z*v.z + v.w*v.w);
 
 	tmp *= invLen;
 
