@@ -103,6 +103,9 @@ inline void BitArray::resize(int newSize)
 			m_pListPtr[i] = temp[i];
 		delete[] temp;
 	}
+
+	for (int i = oldTypeSize; i < newTypeSize; ++i)
+		m_pListPtr[i] = 0;
 }
 
 // returns number of bits
