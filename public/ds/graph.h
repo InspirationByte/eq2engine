@@ -23,11 +23,14 @@ public:
 };
 
 template<typename EDGE_ITER, typename NODE_ID>
-class IGraphIterator
+class IGraph
 {
 public:
 	using CheckNodeFunc = EqFunction<bool(NODE_ID node, float distance)>;
-	NODE_ID				Djikstra(NODE_ID* startNodes, int startNodeCount, const CheckNodeFunc& isStopNodeFunc);
+
+	virtual ~IGraph() {}
+
+	NODE_ID				Djikstra(const NODE_ID* startNodes, int startNodeCount, const CheckNodeFunc& isStopNodeFunc);
 
 protected:
 	virtual void		ResetNodeStates() = 0;
@@ -36,20 +39,19 @@ protected:
 	virtual void		Node_MarkProcessed(NODE_ID nodeId) = 0;
 
 	virtual float		Node_GetDistance(NODE_ID nodeId) const = 0;
-	virtual float		Node_SetDistance(NODE_ID nodeId, float newDist) = 0;
+	virtual void		Node_SetDistance(NODE_ID nodeId, float newDist) = 0;
 
 	virtual NODE_ID		Node_GetParent(NODE_ID nodeId) const = 0;
 	virtual void		Node_SetParent(NODE_ID nodeId, NODE_ID newParent) = 0;
 
 	virtual float		Edge_GetLength(NODE_ID nodeId, int edgeId) const = 0;
-	virtual void		Edge_SetLength(NODE_ID nodeId, int edgeId, float length) = 0;
 	virtual NODE_ID		Edge_GetNeighbourNode(NODE_ID nodeId, int edgeId) const = 0;
 };
 
 //--------------------------------------------------------------------
 
 template<typename EDGE_ITER, typename NODE_ID>
-inline NODE_ID IGraphIterator<EDGE_ITER, NODE_ID>::Djikstra(NODE_ID* startNodes, int startNodeCount, const CheckNodeFunc& isStopNodeFunc)
+inline NODE_ID IGraph<EDGE_ITER, NODE_ID>::Djikstra(const NODE_ID* startNodes, int startNodeCount, const CheckNodeFunc& isStopNodeFunc)
 {
 	// this should reset parent nodes ids
 	ResetNodeStates();
@@ -79,18 +81,19 @@ inline NODE_ID IGraphIterator<EDGE_ITER, NODE_ID>::Djikstra(NODE_ID* startNodes,
 			}
 		}
 
-		cheapestNode = bestNode.key();
-		if (cheapestNode == -1)
+		if (bestNode == openSet.end())
 			break;
+
+		cheapestNode = bestNode.key();
 
 		Node_MarkProcessed(cheapestNode);
 		openSet.remove(bestNode);
 
 		// walk through edges and neighbour nodes
-		for (edgeIt.Rewind(cheapestNode); edgeIt.HasMoreNodes(); ++edgeIt)
+		for (edgeIt.Rewind(cheapestNode); edgeIt.HasMoreNodes(); edgeIt++)
 		{
 			const int edgeId = edgeIt.GetEdgeId();
-			const NODE_IT neighbourNode = Edge_GetNeighbourNode(cheapestNode, edgeId);
+			const NODE_ID neighbourNode = Edge_GetNeighbourNode(cheapestNode, edgeId);
 
 			if (Node_IsProcessed(neighbourNode))
 				continue;
