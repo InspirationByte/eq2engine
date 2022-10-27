@@ -136,6 +136,9 @@ public:
 	// swap the contents of the lists - raw
 	void			swap(T*& other, int& otherNumElem);
 
+	// reverses the order of array
+	void			reverse();
+
 	// assure list has given number of elements, but leave them uninitialized
 	void			assureSize( int newSize);
 
@@ -833,6 +836,17 @@ inline void Array<T>::swap(T*& other, int& otherNumElem)
 	QuickSwap(m_pListPtr, other);
 
 	m_nSize = otherNumElem;
+}
+
+// -----------------------------------------------------------------
+// reverses the order of array
+// -----------------------------------------------------------------
+template< typename T >
+inline void Array<T>::reverse()
+{
+	for (int i = 0, j = m_nNumElem - 1; i < j; i++, j--) {
+		QuickSwap(m_pListPtr[i], m_pListPtr[j]);
+	}
 }
 
 // -----------------------------------------------------------------
