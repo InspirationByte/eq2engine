@@ -14,8 +14,9 @@ public:
 	// requires constructor(IGraphIterator<EDGE_ITER, NODE_ID>* );
 	virtual ~IGraphEdgeIterator() {}
 
-	virtual void	Rewind(NODE_ID node) = 0;
 	virtual void	operator++(int) = 0;
+
+	virtual void	Rewind(NODE_ID node) = 0;
 
 	virtual bool	IsEdgeValid() const = 0;
 	virtual bool	IsDone() const = 0;
@@ -74,11 +75,11 @@ inline NODE_ID IGraph<EDGE_ITER, NODE_ID>::Djikstra(const NODE_ID* startNodes, i
 		auto bestNode = openSet.begin();
 		for (auto it = openSet.begin(); it != openSet.end(); ++it)
 		{
-			if (*it < minDist)
-			{
-				bestNode = it;
-				minDist = *it;
-			}
+			if (*it > minDist)
+				continue;
+
+			bestNode = it;
+			minDist = *it;
 		}
 
 		if (bestNode == openSet.end())
