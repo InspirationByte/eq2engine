@@ -274,7 +274,7 @@ struct TAABBox
 		AddVertex(maxs);
 	}
 	
-	void Expand(float value)
+	void Expand(T value)
 	{
 		maxPoint += value;
 		minPoint -= value;

@@ -74,6 +74,12 @@ struct TRectangle
 		AddVertex(rb);
 	}
 
+	void Expand(T value)
+	{
+		vrightBottom += value;
+		vleftTop -= value;
+	}
+
     const TVec2D<T>& GetLeftTop() const
 	{
 		return vleftTop;
