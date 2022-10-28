@@ -18,7 +18,7 @@ public:
 	virtual void	operator++(int) = 0;
 
 	virtual bool	IsEdgeValid() const = 0;
-	virtual bool	HasMoreNodes() const = 0;
+	virtual bool	IsDone() const = 0;
 	virtual int		GetEdgeId() const = 0;
 };
 
@@ -90,7 +90,7 @@ inline NODE_ID IGraph<EDGE_ITER, NODE_ID>::Djikstra(const NODE_ID* startNodes, i
 		openSet.remove(bestNode);
 
 		// walk through edges and neighbour nodes
-		for (edgeIt.Rewind(cheapestNode); edgeIt.HasMoreNodes(); edgeIt++)
+		for (edgeIt.Rewind(cheapestNode); !edgeIt.IsDone(); edgeIt++)
 		{
 			const int edgeId = edgeIt.GetEdgeId();
 			const NODE_ID neighbourNode = Edge_GetNeighbourNode(cheapestNode, edgeId);
