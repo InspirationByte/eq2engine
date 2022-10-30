@@ -116,7 +116,7 @@ public:
 
 	//--------------------
 
-	Array<CollisionPairData_t>	m_collisionList{ PP_SL };
+	FixedArray<CollisionPairData_t, PHYSICS_COLLISION_LIST_MAX>	m_collisionList{ PP_SL };
 
 	BoundingBox					m_aabb;																///< bounding box
 	BoundingBox					m_aabb_transformed;													///< transformed bounding box, does not updated in dynamic objects

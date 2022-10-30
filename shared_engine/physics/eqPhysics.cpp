@@ -272,9 +272,9 @@ struct CEqManifoldResult : public btManifoldResult
 		return true;
 	}
 
-	Array<CollisionData_t>	m_collisions{ PP_SL };
-	Vector3D				m_center;
-	bool					m_singleSided;
+	FixedArray<CollisionData_t, 60>		m_collisions{ PP_SL };
+	Vector3D							m_center;
+	bool								m_singleSided;
 };
 
 //------------------------------------------------------------------------------------------------------------
@@ -709,7 +709,7 @@ void CEqPhysics::DetectBodyCollisions(CEqRigidBody* bodyA, CEqRigidBody* bodyB, 
 	// check the contact pairs of bodyB (because it has been already processed by the order)
 	// if we had any contact pair with bodyA we should discard this collision
 	{
-		Array<ContactPair_t>& pairsB = bodyB->m_contactPairs;
+		ArrayRef<ContactPair_t> pairsB(bodyB->m_contactPairs);
 
 		// don't process collisions again
 		for (int i = 0; i < pairsB.numElem(); i++)
@@ -806,6 +806,9 @@ void CEqPhysics::DetectBodyCollisions(CEqRigidBody* bodyA, CEqRigidBody* bodyB, 
 
 	for(int j = 0; j < numCollResults; j++)
 	{
+		if (bodyA->m_contactPairs.numElem() == bodyA->m_contactPairs.numAllocated())
+			break;
+
 		CollisionData_t& coll = cbResult.m_collisions[j];
 
 		Vector3D	hitNormal = coll.normal;
@@ -937,6 +940,9 @@ void CEqPhysics::DetectStaticVsBodyCollision(CEqCollisionObject* staticObj, CEqR
 
 	for(int j = 0; j < numCollResults; j++)
 	{
+		if (bodyB->m_contactPairs.numElem() == bodyB->m_contactPairs.numAllocated())
+			break;
+
 		CollisionData_t& coll = cbResult.m_collisions[j];
 
 		Vector3D	hitNormal = coll.normal;
@@ -1209,7 +1215,7 @@ void CEqPhysics::ProcessContactPair(ContactPair_t& pair)
 	//-----------------------------------------------
 	// OBJECT A
 	{
-		Array<CollisionPairData_t>& pairs = pair.bodyA->m_collisionList;
+		FixedArray<CollisionPairData_t, PHYSICS_COLLISION_LIST_MAX>& pairs = pair.bodyA->m_collisionList;
 
 		collData.bodyA = pair.bodyA;
 		collData.bodyB = pair.bodyB;
@@ -1236,7 +1242,7 @@ void CEqPhysics::ProcessContactPair(ContactPair_t& pair)
 	//-----------------------------------------------
 	// OBJECT B
 	{
-		Array<CollisionPairData_t>& pairs = pair.bodyB->m_collisionList;
+		FixedArray<CollisionPairData_t, PHYSICS_COLLISION_LIST_MAX>& pairs = pair.bodyB->m_collisionList;
 
 		collData.bodyA = pair.bodyB;
 		collData.bodyB = pair.bodyA;
@@ -1348,7 +1354,7 @@ void CEqPhysics::SimulateStep(float deltaTime, int iteration, FNSIMULATECALLBACK
 	{
 		CEqRigidBody* body = movingMoveables[i];
 
-		Array<ContactPair_t>& pairs = body->m_contactPairs;
+		ArrayRef<ContactPair_t> pairs(body->m_contactPairs);
 		int numContactPairs = pairs.numElem();
 
 		for (int j = 0; j < numContactPairs; j++)

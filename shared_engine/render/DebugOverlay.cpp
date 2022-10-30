@@ -1171,6 +1171,7 @@ void CDebugOverlay::Draw(int winWide, int winTall, float timescale)
 					m_debugFont->RenderText(current.pszText.GetData(), textPos, textStl);
 				}
 			}
+			m_TextArray.clear();
 		}
 
 		eqFontStyleParam_t rTextFadeStyle;
@@ -1344,7 +1345,7 @@ void CDebugOverlay::CleanOverlays()
 		}
 	}
 
-	m_TextArray.clear(false);
+	//m_TextArray.clear(false);
 }
 
 void CDebugOverlay::Graph_DrawBucket(debugGraphBucket_t* pBucket)

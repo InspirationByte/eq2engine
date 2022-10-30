@@ -150,7 +150,7 @@ public:
 
 	void resize(int newSize, int& numOfElements) override
 	{ 
-		ASSERT_MSG(newSize <= SIZE, "Trying to resize FixedArrayStorage");
+		ASSERT_MSG(newSize <= SIZE, "Exceeded FixedArrayStorage size (%d, requires %d)", getSize(), newSize);
 	}
 
 	int getSize() const override
