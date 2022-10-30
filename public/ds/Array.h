@@ -34,6 +34,8 @@ public:
 
 	virtual T*			getData() = 0;
 	virtual const T*	getData() const = 0;
+
+	static void			destructElements(T* dest, int count);
 };
 
 template< typename T >
@@ -47,12 +49,12 @@ public:
 
 	~DynamicArrayStorage()
 	{
-		delete[] m_pListPtr;
+		delete [] reinterpret_cast<ubyte*>(m_pListPtr);
 	}
 
 	void free() override
 	{
-		delete[] m_pListPtr;
+		delete [] reinterpret_cast<ubyte*>(m_pListPtr);
 		m_pListPtr = nullptr;
 		m_nSize = 0;
 	}
@@ -75,19 +77,24 @@ public:
 		T* temp = m_pListPtr;
 		m_nSize = newSize;
 
+		const int oldNumOfElems = numOfElements;
 		if (m_nSize < numOfElements)
 			numOfElements = m_nSize;
 
 		// copy the old m_pListPtr into our new one
-		m_pListPtr = PPNewSL(m_sl) T[m_nSize];
+		m_pListPtr = reinterpret_cast<T*>(PPNewSL(m_sl) ubyte[m_nSize * sizeof(T)]);
 
 		if (temp)
 		{
 			for (int i = 0; i < numOfElements; i++)
-				m_pListPtr[i] = temp[i];
+			{
+				new(&m_pListPtr[i]) T(std::move(temp[i]));
+			}
+
+			//ArrayStorageBase<T>::destructElements(temp, oldNumOfElems);
 
 			// delete the old m_pListPtr if it exists
-			delete[] temp;
+			PPFree(temp);
 		}
 	}
 
@@ -165,31 +172,41 @@ public:
 
 	T* getData()
 	{
-		return m_data;
+		return (T*)(&m_data[0]);
 	}
 
 	const T* getData() const
 	{
-		return m_data;
+		return (T*)(&m_data[0]);
 	}
 
 	void swap(FixedArrayStorage& other)
 	{
 		ASSERT(other.getSize() == SIZE);
 		for (int i = 0; i < SIZE; ++i)
-			QuickSwap(m_data[i], other.m_data[i]);
+			QuickSwap(getData()[i], other.getData()[i]);
 	}
 
 	void swap(T*& other, int& otherNumElem)
 	{
 		ASSERT(otherNumElem == SIZE);
 		for (int i = 0; i < SIZE; ++i)
-			QuickSwap(m_data[i], other[i]);
+			QuickSwap(getData()[i], getData()[i]);
 	}
 protected:
-	T				m_data[SIZE];
+	ubyte			m_data[SIZE * sizeof(T)];
 };
 
+template< typename T>
+void ArrayStorageBase<T>::destructElements(T* dest, int count)
+{
+	ASSERT(count >= 0);
+	while (count--)
+	{
+		dest->~T();
+		++dest;
+	}
+}
 
 template< typename T, typename STORAGE_TYPE >
 class ArrayBase
@@ -256,7 +273,10 @@ public:
 	T				popBack();
 
 	// appends element
-	int				append( const T & obj );
+	int				append( const T& obj );
+
+	// appends element
+	int				append(T&& obj);
 
 	// append a empty element to be filled
 	T&				append();
@@ -334,6 +354,7 @@ public:
 	void			quickSort(SORTPAIRCOMPAREFUNC comparator, int p, int r);
 
 protected:
+
 	STORAGE_TYPE		m_storage;
 	int					m_nNumElem{ 0 };
 };
@@ -355,6 +376,9 @@ inline ArrayBase<T, STORAGE_TYPE>::~ArrayBase()
 template< typename T, typename STORAGE_TYPE >
 inline void ArrayBase<T, STORAGE_TYPE>::clear(bool deallocate)
 {
+	T* listPtr = m_storage.getData();
+	ArrayStorageBase<T>::destructElements(listPtr, m_nNumElem);
+
 	if ( deallocate )
 	{
 		m_storage.free();
@@ -595,7 +619,9 @@ template< typename T, typename STORAGE_TYPE >
 inline T ArrayBase<T, STORAGE_TYPE>::popBack()
 {
 	ASSERT(m_nNumElem > 0);
-	T item = m_storage.getData()[m_nNumElem - 1];
+	T* listPtr = m_storage.getData();
+	T item = listPtr[m_nNumElem - 1];
+	ArrayStorageBase<T>::destructElements(listPtr + m_nNumElem - 1, 1);
 	m_nNumElem--;
 	return item;
 }
@@ -605,7 +631,7 @@ inline T ArrayBase<T, STORAGE_TYPE>::popBack()
 // Returns the index of the new element.
 // -----------------------------------------------------------------
 template< typename T, typename STORAGE_TYPE >
-inline int ArrayBase<T, STORAGE_TYPE>::append( T const & obj )
+inline int ArrayBase<T, STORAGE_TYPE>::append(const T& obj)
 {
 	if ( !m_storage.getData())
 		resize(m_storage.getGranularity());
@@ -622,7 +648,35 @@ inline int ArrayBase<T, STORAGE_TYPE>::append( T const & obj )
 
 	T* listPtr = m_storage.getData();
 
-	listPtr[m_nNumElem] = obj;
+	new(&listPtr[m_nNumElem]) T(obj);
+	m_nNumElem++;
+
+	return m_nNumElem - 1;
+}
+
+// -----------------------------------------------------------------
+// Increases the size of the list by one element and copies the supplied data into it.
+// Returns the index of the new element.
+// -----------------------------------------------------------------
+template< typename T, typename STORAGE_TYPE >
+inline int ArrayBase<T, STORAGE_TYPE>::append(T&& obj)
+{
+	if ( !m_storage.getData())
+		resize(m_storage.getGranularity());
+
+	if ( m_nNumElem == m_storage.getSize())
+	{
+		int newsize;
+
+		ASSERT(m_storage.getGranularity() > 0);
+
+		newsize = m_storage.getSize() + m_storage.getGranularity();
+		resize( newsize - newsize % m_storage.getGranularity());
+	}
+
+	T* listPtr = m_storage.getData();
+
+	new(&listPtr[m_nNumElem]) T(std::move(obj));
 	m_nNumElem++;
 
 	return m_nNumElem - 1;
@@ -647,7 +701,9 @@ inline T& ArrayBase<T, STORAGE_TYPE>::append()
 		resize(newsize - newsize % m_storage.getGranularity());
 	}
 
-	return m_storage.getData()[m_nNumElem++];
+	T& newItem = m_storage.getData()[m_nNumElem++];
+	new(&newItem) T();
+	return newItem;
 }
 
 // -----------------------------------------------------------------
@@ -772,11 +828,13 @@ inline int ArrayBase<T, STORAGE_TYPE>::insert( T const & obj, int index )
 
 	T* listPtr = m_storage.getData();
 
-	for ( int i = m_nNumElem; i > index; --i )
-		listPtr[i] = listPtr[i-1];
+	for (int i = m_nNumElem; i > index; --i)
+	{
+		new(&listPtr[i]) T(listPtr[i - 1]);
+	}
 
 	m_nNumElem++;
-	listPtr[index] = obj;
+	new(&listPtr[index]) T(obj);
 
 	return index;
 }
@@ -888,6 +946,7 @@ inline bool ArrayBase<T, STORAGE_TYPE>::removeIndex( int index )
 	m_nNumElem--;
 
 	T* listPtr = m_storage.getData();
+	ArrayStorageBase<T>::destructElements(listPtr + index, 1);
 
 	for( int i = index; i < m_nNumElem; i++ )
 		listPtr[ i ] = listPtr[ i + 1 ];
@@ -914,9 +973,11 @@ inline bool ArrayBase<T, STORAGE_TYPE>::removeRange(int index, int count)
 	if (!count)
 		return true;
 
+	T* listPtr = m_storage.getData();
+	ArrayStorageBase<T>::destructElements(listPtr + index, count);
+
 	m_nNumElem -= count;
 
-	T* listPtr = m_storage.getData();
 	for (int i = index; i < m_nNumElem; i++)
 		listPtr[i] = listPtr[i + count];
 
@@ -942,6 +1003,8 @@ inline bool ArrayBase<T, STORAGE_TYPE>::fastRemoveIndex( int index )
 	m_nNumElem--;
 
 	T* listPtr = m_storage.getData();
+	ArrayStorageBase<T>::destructElements(listPtr + index, 1);
+
 	if( m_nNumElem > 0 )
 		listPtr[ index ] = listPtr[ m_nNumElem ];
 
@@ -1073,7 +1136,7 @@ inline void ArrayBase<T, STORAGE_TYPE>::assureSize( int newSize, const T &initVa
 
 		T* listPtr = m_storage.getData();
 		for ( int i = m_nNumElem; i < newSize; i++ )
-			listPtr[i] = initValue;
+			new(&listPtr[i]) T(initValue);
 	}
 
 	m_nNumElem = newNum;
