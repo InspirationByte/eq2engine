@@ -80,7 +80,7 @@ public:
 	ITexture*							LoadTexture(const char* pszFileName, ER_TextureFilterMode textureFilterType, ER_TextureAddressMode textureAddress = TEXADDRESS_WRAP, int nFlags = 0);
 
 	// creates texture from image array, used in LoadTexture, common use only
-	ITexture*							CreateTexture(const Array<CImage*>& pImages, const SamplerStateParam_t& sampler, int nFlags = 0);
+	ITexture*							CreateTexture(const ArrayCRef<CImage*>& pImages, const SamplerStateParam_t& sampler, int nFlags = 0);
 
 	// creates procedural (lockable) texture
 	ITexture*							CreateProceduralTexture(const char* pszName,
@@ -185,7 +185,7 @@ protected:
 	
 	bool								RestoreTextureInternal(ITexture* pTexture);
 
-	virtual void						CreateTextureInternal(ITexture** pTex, const Array<CImage*>& pImages, const SamplerStateParam_t& sSamplingParams,int nFlags = 0) = 0;
+	virtual void						CreateTextureInternal(ITexture** pTex, const ArrayCRef<CImage*>& pImages, const SamplerStateParam_t& sSamplingParams,int nFlags = 0) = 0;
 
 //-------------------------------------------------------------
 // Useful data

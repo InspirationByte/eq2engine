@@ -164,7 +164,7 @@ static bool ImGui_ImplMatSystem_CreateFontsTexture()
 	ubyte* pImage = image.Create(FORMAT_RGBA8, width, height, 1, 1);
 	memcpy(pImage, pixels, GetBytesPerPixel(FORMAT_RGBA8) * width * height);
 
-	Array<CImage*> imgs(PP_SL);
+	FixedArray<CImage*, 1> imgs(PP_SL);
 	imgs.append(&image);
 	
 	SamplerStateParam_t params = g_pShaderAPI->MakeSamplerState(TEXFILTER_NEAREST, TEXADDRESS_CLAMP, TEXADDRESS_CLAMP, TEXADDRESS_CLAMP);

@@ -299,7 +299,7 @@ public:
 	// RAW Constant (Used for structure types, etc.)
 	void						SetShaderConstantRaw(const char *pszName, const void *data, int nSize);
 
-	void						CreateTextureInternal(ITexture** pTex, const Array<CImage*>& pImages, const SamplerStateParam_t& sSamplingParams,int nFlags = 0);
+	void						CreateTextureInternal(ITexture** pTex, const ArrayCRef<CImage*>& pImages, const SamplerStateParam_t& sSamplingParams,int nFlags = 0);
 protected:
 
 	void						PreloadShadersFromCache();

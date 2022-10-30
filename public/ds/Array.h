@@ -8,7 +8,10 @@
 #pragma once
 
 #define USE_QSORT
+
+#ifndef _RETAIL
 #define DEBUG_CHECK_LIST_BOUNDS
+#endif
 
 template< typename T >
 using PairCompareFunc = bool (*)(const T& a, const T& b);
@@ -17,35 +20,210 @@ template< typename T >
 using PairSortCompareFunc = int (*)(const T& a, const T& b);
 
 template< typename T >
-class Array
+class ArrayStorageBase
 {
 public:
-	Array(const PPSourceLine& sl, int newgranularity = 16 );
+	virtual				~ArrayStorageBase() {}
 
-	~Array<T>();
+	virtual void		free() = 0;
+	virtual void		resize(int newSize, int& numOfElements) = 0;
 
-	const T &		operator[]( int index ) const;
-	T &				operator[]( int index );
-	Array<T> &		operator=( const Array<T> &other );
+	virtual int			getSize() const = 0;
+	virtual int			getGranularity() const { return 1; }
+	virtual void		setGranularity(int newGranularity) {}
+
+	virtual T*			getData() = 0;
+	virtual const T*	getData() const = 0;
+};
+
+template< typename T >
+class DynamicArrayStorage : public ArrayStorageBase<T>
+{
+public:
+	DynamicArrayStorage(const PPSourceLine& sl, int granularity)
+		: m_sl(sl), m_nGranularity(granularity)
+	{
+	}
+
+	~DynamicArrayStorage()
+	{
+		delete[] m_pListPtr;
+	}
+
+	void free() override
+	{
+		delete[] m_pListPtr;
+		m_pListPtr = nullptr;
+		m_nSize = 0;
+	}
+
+	void resize(int newSize, int& numOfElements) override
+	{
+		ASSERT(newSize >= 0);
+
+		// free up the listPtr if no data is being reserved
+		if (newSize <= 0)
+		{
+			free();
+			return;
+		}
+
+		// not changing the elemCount, so just exit
+		if (newSize == m_nSize)
+			return;
+
+		T* temp = m_pListPtr;
+		m_nSize = newSize;
+
+		if (m_nSize < numOfElements)
+			numOfElements = m_nSize;
+
+		// copy the old m_pListPtr into our new one
+		m_pListPtr = PPNewSL(m_sl) T[m_nSize];
+
+		if (temp)
+		{
+			for (int i = 0; i < numOfElements; i++)
+				m_pListPtr[i] = temp[i];
+
+			// delete the old m_pListPtr if it exists
+			delete[] temp;
+		}
+	}
+
+	int getSize() const override
+	{
+		return m_nSize;
+	}
+
+	int getGranularity() const override
+	{
+		return m_nGranularity;
+	}
+
+	void setGranularity(int newGranularity)
+	{
+		m_nGranularity = newGranularity;
+	}
+
+	T* getData()
+	{
+		return m_pListPtr;
+	}
+
+	const T* getData() const
+	{
+		return m_pListPtr;
+	}
+
+	void swap(DynamicArrayStorage& other)
+	{
+		QuickSwap(m_nSize, other.m_nSize);
+		QuickSwap(m_nGranularity, other.m_nGranularity);
+		QuickSwap(m_pListPtr, other.m_pListPtr);
+	}
+
+	void swap(T*& other, int& otherNumElem)
+	{
+		QuickSwap(m_pListPtr, other);
+		m_nSize = otherNumElem;
+	}
+protected:
+	const PPSourceLine	m_sl;
+	T*					m_pListPtr{ nullptr };
+
+	int					m_nSize{ 0 };
+	int					m_nGranularity{ 16 };
+};
+
+template< typename T, int SIZE >
+class FixedArrayStorage : public ArrayStorageBase<T>
+{
+public:
+	FixedArrayStorage(const PPSourceLine& sl, int granularity)
+	{
+	}
+
+	void free() override
+	{
+	}
+
+	void resize(int newSize, int& numOfElements) override
+	{ 
+		ASSERT_MSG(newSize <= SIZE, "Trying to resize FixedArrayStorage");
+	}
+
+	int getSize() const override
+	{
+		return SIZE;
+	}
+
+	int getGranularity() const override 
+	{
+		return 1; 
+	}
+
+	T* getData()
+	{
+		return m_data;
+	}
+
+	const T* getData() const
+	{
+		return m_data;
+	}
+
+	void swap(FixedArrayStorage& other)
+	{
+		ASSERT(other.getSize() == SIZE);
+		for (int i = 0; i < SIZE; ++i)
+			QuickSwap(m_data[i], other.m_data[i]);
+	}
+
+	void swap(T*& other, int& otherNumElem)
+	{
+		ASSERT(otherNumElem == SIZE);
+		for (int i = 0; i < SIZE; ++i)
+			QuickSwap(m_data[i], other[i]);
+	}
+protected:
+	T				m_data[SIZE];
+};
+
+
+template< typename T, typename STORAGE_TYPE >
+class ArrayBase
+{
+public:
+	ArrayBase(const PPSourceLine& sl, int granularity = 16 );
+
+	~ArrayBase<T, STORAGE_TYPE>();
+
+	const T&					operator[]( int index ) const;
+	T&							operator[]( int index );
+	ArrayBase<T, STORAGE_TYPE>&	operator=( const ArrayBase<T, STORAGE_TYPE>&other );
 
 	// cleans list
 	void			clear( bool deallocate = true );
 
+	// returns true if index is in range
+	bool			inRange(int index) const;
+
 	// returns number of elements in list
-	int				numElem( void ) const;
+	int				numElem() const;
 
 	// returns number elements which satisfies to the condition
 	template< typename COMPAREFUNC >
 	int				numElem( COMPAREFUNC comparator ) const;
 
 	// returns number of elements allocated for
-	int				numAllocated( void ) const;
+	int				numAllocated() const;
 
-	// sets new m_nGranularity
+	// sets new granularity
 	void			setGranularity( int newgranularity );
 
-	// get the current m_nGranularity
-	int				getGranularity( void ) const;
+	// get the current granularity
+	int				getGranularity() const;
 
 	// resizes the list
 	void			resize( int newsize );
@@ -84,15 +262,15 @@ public:
 	T&				append();
 
 	// appends another list
-	int				append( const Array<T> &other );
+	int				append( const ArrayBase<T, STORAGE_TYPE>&other );
 
 	// appends another array
 	int				append( const T *other, int count );
 
 	// appends another list with transformation
 	// return false to not add the element
-	template< typename T2, typename TRANSFORMFUNC >
-	int				append( const Array<T2> &other, TRANSFORMFUNC transform );
+	template< typename T2, typename OTHER_STORAGE_TYPE, typename TRANSFORMFUNC >
+	int				append( const ArrayBase<T2, OTHER_STORAGE_TYPE> &other, TRANSFORMFUNC transform );
 
 	// inserts the element at the given index
 	int				insert( const T & obj, int index = 0 );
@@ -118,6 +296,9 @@ public:
 	// removes the element at the given index
 	bool			removeIndex( int index );
 
+	// removes specified count of elements from specified index
+	bool			removeRange(int index, int count);
+
 	// removes the element at the given index (fast)
 	bool			fastRemoveIndex( int index );
 
@@ -127,11 +308,8 @@ public:
 	// removes the element
 	bool			fastRemove( const T & obj );
 
-	// returns true if index is in range
-	bool			inRange( int index ) const;
-
 	// swap the contents of the lists
-	void			swap( Array<T> &other );
+	void			swap(ArrayBase<T, STORAGE_TYPE>&other );
 
 	// swap the contents of the lists - raw
 	void			swap(T*& other, int& otherNumElem);
@@ -156,36 +334,30 @@ public:
 	void			quickSort(SORTPAIRCOMPAREFUNC comparator, int p, int r);
 
 protected:
-	T*				m_pListPtr{ nullptr };
-	int				m_nNumElem{ 0 };
-	int				m_nSize{ 0 };
-	int				m_nGranularity{ 16 };
-	const PPSourceLine m_sl;
+	STORAGE_TYPE		m_storage;
+	int					m_nNumElem{ 0 };
 };
 
-template< typename T >
-inline Array<T>::Array(const PPSourceLine& sl, int newgranularity ) 
-	: m_sl(sl), m_nGranularity(newgranularity)
+template< typename T, typename STORAGE_TYPE >
+inline ArrayBase<T, STORAGE_TYPE>::ArrayBase(const PPSourceLine& sl, int granularity )
+	: m_storage(sl, granularity)
 {
 }
 
-template< typename T >
-inline Array<T>::~Array()
+template< typename T, typename STORAGE_TYPE >
+inline ArrayBase<T, STORAGE_TYPE>::~ArrayBase()
 {
-	delete [] m_pListPtr;
 }
 
 // -----------------------------------------------------------------
 // Frees up the memory allocated by the list.  Assumes that T automatically handles freeing up memory.
 // -----------------------------------------------------------------
-template< typename T >
-inline void Array<T>::clear(bool deallocate)
+template< typename T, typename STORAGE_TYPE >
+inline void ArrayBase<T, STORAGE_TYPE>::clear(bool deallocate)
 {
 	if ( deallocate )
 	{
-		delete [] m_pListPtr;
-		m_pListPtr	= nullptr;
-		m_nSize		= 0;
+		m_storage.free();
 	}
 
 	m_nNumElem		= 0;
@@ -195,8 +367,8 @@ inline void Array<T>::clear(bool deallocate)
 // Returns the number of elements currently contained in the list.
 // Note that this is NOT an indication of the memory allocated.
 // -----------------------------------------------------------------
-template< typename T >
-inline int Array<T>::numElem( void ) const
+template< typename T, typename STORAGE_TYPE >
+inline int ArrayBase<T, STORAGE_TYPE>::numElem() const
 {
 	return m_nNumElem;
 }
@@ -204,15 +376,16 @@ inline int Array<T>::numElem( void ) const
 // -----------------------------------------------------------------
 // returns number elements which satisfies to the condition
 // -----------------------------------------------------------------
-template< typename T >
+template< typename T, typename STORAGE_TYPE >
 template< typename COMPAREFUNC >
-inline int Array<T>::numElem( COMPAREFUNC comparator ) const
+inline int ArrayBase<T, STORAGE_TYPE>::numElem( COMPAREFUNC comparator ) const
 {
 	int theCount = 0;
+	const T* listPtr = m_storage.getData();
 
 	for(int i = 0; i < m_nNumElem; i++)
 	{
-		if(comparator(m_pListPtr[i]))
+		if(comparator(listPtr[i]))
 			theCount++;
 	}
 
@@ -222,17 +395,17 @@ inline int Array<T>::numElem( COMPAREFUNC comparator ) const
 // -----------------------------------------------------------------
 // Returns the number of elements currently allocated for.
 // -----------------------------------------------------------------
-template< typename T >
-inline int Array<T>::numAllocated( void ) const
+template< typename T, typename STORAGE_TYPE >
+inline int ArrayBase<T, STORAGE_TYPE>::numAllocated() const
 {
-	return m_nSize;
+	return m_storage.getSize();
 }
 
 // -----------------------------------------------------------------
 // Sets the base size of the array and resizes the array to match.
 // -----------------------------------------------------------------
-template< typename T >
-inline void Array<T>::setGranularity( int newgranularity )
+template< typename T, typename STORAGE_TYPE >
+inline void ArrayBase<T, STORAGE_TYPE>::setGranularity( int newgranularity )
 {
 	int newsize;
 
@@ -246,7 +419,7 @@ inline void Array<T>::setGranularity( int newgranularity )
 		newsize = m_nNumElem + m_nGranularity - 1;
 		newsize -= newsize % m_nGranularity;
 
-		if ( newsize != m_nSize )
+		if ( newsize != m_storage.getSize())
 		{
 			resize( newsize );
 		}
@@ -256,8 +429,8 @@ inline void Array<T>::setGranularity( int newgranularity )
 // -----------------------------------------------------------------
 // Returns the current granularity.
 // -----------------------------------------------------------------
-template< typename T >
-inline int Array<T>::getGranularity( void ) const
+template< typename T, typename STORAGE_TYPE >
+inline int ArrayBase<T, STORAGE_TYPE>::getGranularity() const
 {
 	return m_nGranularity;
 }
@@ -266,48 +439,51 @@ inline int Array<T>::getGranularity( void ) const
 // Access operator.  Index must be within range or an assert will be issued in debug builds.
 // Release builds do no range checking.
 // -----------------------------------------------------------------
-template< typename T >
-inline const T &Array<T>::operator[]( int index ) const
+template< typename T, typename STORAGE_TYPE >
+inline const T & ArrayBase<T, STORAGE_TYPE>::operator[]( int index ) const
 {
 #ifdef DEBUG_CHECK_LIST_BOUNDS
 	ASSERT( index >= 0 );
 	ASSERT( index < m_nNumElem );
 #endif // DEBUG_CHECK_LIST_BOUNDS
 
-	return m_pListPtr[ index ];
+	return m_storage.getData()[ index ];
 }
 
 // -----------------------------------------------------------------
 // Access operator.  Index must be within range or an assert will be issued in debug builds.
 // Release builds do no range checking.
 // -----------------------------------------------------------------
-template< typename T >
-inline T &Array<T>::operator[]( int index )
+template< typename T, typename STORAGE_TYPE >
+inline T & ArrayBase<T, STORAGE_TYPE>::operator[]( int index )
 {
 #ifdef DEBUG_CHECK_LIST_BOUNDS
 	ASSERT( index >= 0 );
 	ASSERT( index < m_nNumElem );
 #endif // DEBUG_CHECK_LIST_BOUNDS
 
-	return m_pListPtr[ index ];
+	return m_storage.getData()[ index ];
 }
 
 // -----------------------------------------------------------------
 // Copies the contents and size attributes of another list.
 // -----------------------------------------------------------------
-template< typename T >
-inline Array<T> &Array<T>::operator=( const Array<T> &other )
+template< typename T, typename STORAGE_TYPE >
+inline ArrayBase<T, STORAGE_TYPE>& ArrayBase<T, STORAGE_TYPE>::operator=( const ArrayBase<T, STORAGE_TYPE> &other )
 {
-	m_nGranularity	= other.m_nGranularity;
+	m_storage.setGranularity(other.m_storage.getGranularity());
 
-	assureSize(other.m_nSize);
+	assureSize(other.m_storage.getSize());
 
 	m_nNumElem = other.m_nNumElem;
 
-	if (m_nSize)
+	T* listPtr = m_storage.getData();
+	const T* otherListPtr = other.m_storage.getData();
+
+	if (m_storage.getSize())
 	{
 		for( int i = 0; i < m_nNumElem; i++ )
-			m_pListPtr[i] = other.m_pListPtr[i];
+			listPtr[i] = otherListPtr[i];
 	}
 
 	return *this;
@@ -319,53 +495,21 @@ inline Array<T> &Array<T>::operator=( const Array<T> &other )
 // Allocates memory for the amount of elements requested while keeping the contents intact.
 // Contents are copied using their = operator so that data is correnctly instantiated.
 // -----------------------------------------------------------------
-template< typename T >
-inline void Array<T>::resize( int newsize )
+template< typename T, typename STORAGE_TYPE >
+inline void ArrayBase<T, STORAGE_TYPE>::resize( int newSize )
 {
-	T	*temp;
-	int		i;
-
-	ASSERT( newsize >= 0 );
-
-	// free up the m_pListPtr if no data is being reserved
-	if ( newsize <= 0 )
-	{
-		clear();
-		return;
-	}
-
-	// not changing the elemCount, so just exit
-	if ( newsize == m_nSize )
-		return;
-
-	temp	= m_pListPtr;
-	m_nSize	= newsize;
-
-	if ( m_nSize < m_nNumElem )
-		m_nNumElem = m_nSize;
-
-	// copy the old m_pListPtr into our new one
-	m_pListPtr = PPNewSL(m_sl) T[ m_nSize ];
-
-	if(temp)
-	{
-		for( i = 0; i < m_nNumElem; i++ )
-			m_pListPtr[ i ] = temp[ i ];
-
-		// delete the old m_pListPtr if it exists
-		delete[] temp;
-	}
+	m_storage.resize(newSize, m_nNumElem);
 }
 
 // -----------------------------------------------------------------
 // Resize to the exact size specified irregardless of granularity
 // -----------------------------------------------------------------
-template< typename T >
-inline void Array<T>::setNum( int newnum, bool bResize )
+template< typename T, typename STORAGE_TYPE >
+inline void ArrayBase<T, STORAGE_TYPE>::setNum( int newnum, bool bResize )
 {
 	ASSERT( newnum >= 0 );
 
-	if ( bResize || newnum > m_nSize )
+	if ( bResize || newnum > m_storage.getSize())
 		resize( newnum );
 
 	m_nNumElem = newnum;
@@ -376,70 +520,70 @@ inline void Array<T>::setNum( int newnum, bool bResize )
 // Note: may return NULL if the list is empty.
 // -----------------------------------------------------------------
 
-template< typename T >
-inline T *Array<T>::ptr( void )
+template< typename T, typename STORAGE_TYPE >
+inline T * ArrayBase<T, STORAGE_TYPE>::ptr()
 {
-	return m_pListPtr;
+	return m_storage.getData();
 }
 
 // -----------------------------------------------------------------
 // Returns a pointer to the begining of the array.  Useful for iterating through the list in loops.
 // Note: may return NULL if the list is empty.
 // -----------------------------------------------------------------
-template< typename T >
-inline const T *Array<T>::ptr( void ) const
+template< typename T, typename STORAGE_TYPE >
+inline const T * ArrayBase<T, STORAGE_TYPE>::ptr() const
 {
-	return m_pListPtr;
+	return m_storage.getData();
 }
 
 // -----------------------------------------------------------------
 // Returns front item
 // -----------------------------------------------------------------
-template< typename T >
-inline T& Array<T>::front()
+template< typename T, typename STORAGE_TYPE >
+inline T& ArrayBase<T, STORAGE_TYPE>::front()
 {
 	ASSERT(m_nNumElem > 0);
-	return *m_pListPtr;
+	return *m_storage.getData();
 }
 
 // -----------------------------------------------------------------
 // Returns front item
 // -----------------------------------------------------------------
-template< typename T >
-inline const T& Array<T>::front() const
+template< typename T, typename STORAGE_TYPE >
+inline const T& ArrayBase<T, STORAGE_TYPE>::front() const
 {
 	ASSERT(m_nNumElem > 0);
-	return *m_pListPtr;
+	return *m_storage.getData();
 }
 
 // -----------------------------------------------------------------
 // Returns back item
 // -----------------------------------------------------------------
-template< typename T >
-inline T& Array<T>::back()
+template< typename T, typename STORAGE_TYPE >
+inline T& ArrayBase<T, STORAGE_TYPE>::back()
 {
 	ASSERT(m_nNumElem > 0);
-	return m_pListPtr[m_nNumElem - 1];
+	return m_storage.getData()[m_nNumElem - 1];
 }
 
 // -----------------------------------------------------------------
 // Returns back item
 // -----------------------------------------------------------------
-template< typename T >
-inline const T& Array<T>::back() const
+template< typename T, typename STORAGE_TYPE >
+inline const T& ArrayBase<T, STORAGE_TYPE>::back() const
 {
 	ASSERT(m_nNumElem > 0);
-	return m_pListPtr[m_nNumElem - 1];
+	return m_storage.getData()[m_nNumElem - 1];
 }
 
 // -----------------------------------------------------------------
 // Removes front item from list
 // -----------------------------------------------------------------
-template< typename T >
-inline T Array<T>::popFront()
+template< typename T, typename STORAGE_TYPE >
+inline T ArrayBase<T, STORAGE_TYPE>::popFront()
 {
 	ASSERT(m_nNumElem > 0);
-	T item = m_pListPtr[0];
+	T item = m_storage.getData()[0];
 	removeIndex(0);
 	return item;
 }
@@ -447,11 +591,11 @@ inline T Array<T>::popFront()
 // -----------------------------------------------------------------
 // Removes back item from list
 // -----------------------------------------------------------------
-template< typename T >
-inline T Array<T>::popBack()
+template< typename T, typename STORAGE_TYPE >
+inline T ArrayBase<T, STORAGE_TYPE>::popBack()
 {
 	ASSERT(m_nNumElem > 0);
-	T item = m_pListPtr[m_nNumElem - 1];
+	T item = m_storage.getData()[m_nNumElem - 1];
 	m_nNumElem--;
 	return item;
 }
@@ -460,23 +604,25 @@ inline T Array<T>::popBack()
 // Increases the size of the list by one element and copies the supplied data into it.
 // Returns the index of the new element.
 // -----------------------------------------------------------------
-template< typename T >
-inline int Array<T>::append( T const & obj )
+template< typename T, typename STORAGE_TYPE >
+inline int ArrayBase<T, STORAGE_TYPE>::append( T const & obj )
 {
-	if ( !m_pListPtr )
-		resize(m_nGranularity);
+	if ( !m_storage.getData())
+		resize(m_storage.getGranularity());
 
-	if ( m_nNumElem == m_nSize )
+	if ( m_nNumElem == m_storage.getSize())
 	{
 		int newsize;
 
-		ASSERT(m_nGranularity > 0);
+		ASSERT(m_storage.getGranularity() > 0);
 
-		newsize = m_nSize + m_nGranularity;
-		resize( newsize - newsize % m_nGranularity );
+		newsize = m_storage.getSize() + m_storage.getGranularity();
+		resize( newsize - newsize % m_storage.getGranularity());
 	}
 
-	m_pListPtr[m_nNumElem] = obj;
+	T* listPtr = m_storage.getData();
+
+	listPtr[m_nNumElem] = obj;
 	m_nNumElem++;
 
 	return m_nNumElem - 1;
@@ -485,23 +631,23 @@ inline int Array<T>::append( T const & obj )
 // -----------------------------------------------------------------
 // append a new empty element to be filled
 // -----------------------------------------------------------------
-template< typename T >
-inline T& Array<T>::append()
+template< typename T, typename STORAGE_TYPE >
+inline T& ArrayBase<T, STORAGE_TYPE>::append()
 {
-	if (!m_pListPtr)
-		resize(m_nGranularity);
+	if (!m_storage.getData())
+		resize(m_storage.getGranularity());
 
-	if (m_nNumElem == m_nSize)
+	if (m_nNumElem == m_storage.getSize())
 	{
 		int newsize;
 
-		ASSERT(m_nGranularity > 0);
+		ASSERT(m_storage.getGranularity() > 0);
 
-		newsize = m_nSize + m_nGranularity;
-		resize(newsize - newsize % m_nGranularity);
+		newsize = m_storage.getSize() + m_storage.getGranularity();
+		resize(newsize - newsize % m_storage.getGranularity());
 	}
 
-	return m_pListPtr[m_nNumElem++];
+	return m_storage.getData()[m_nNumElem++];
 }
 
 // -----------------------------------------------------------------
@@ -509,28 +655,28 @@ inline T& Array<T>::append()
 // Returns the size of the new combined list
 // -----------------------------------------------------------------
 
-template< typename T >
-inline int Array<T>::append( const Array<T> &other )
+template< typename T, typename STORAGE_TYPE >
+inline int ArrayBase<T, STORAGE_TYPE>::append( const ArrayBase<T, STORAGE_TYPE>&other )
 {
 	int nOtherElems = other.numElem();
 
-	if ( !m_pListPtr )
+	if ( !m_storage.getData())
 	{
-		ASSERT(m_nGranularity > 0);
+		ASSERT(m_storage.getGranularity() > 0);
 
 		// pre-allocate for a bigger list to do less memory resize access
-		int newSize = nOtherElems+m_nGranularity;
+		int newSize = nOtherElems+ m_storage.getGranularity();
 
-		resize( newSize - (newSize % m_nGranularity) );
+		resize( newSize - (newSize % m_storage.getGranularity()) );
 	}
 	else
 	{
 		// pre-allocate for a bigger list to do less memory resize access
-		if ( m_nNumElem+nOtherElems >= m_nSize )
+		if ( m_nNumElem+nOtherElems >= m_storage.getSize())
 		{
-			int newSize = nOtherElems+m_nNumElem+m_nGranularity;
+			int newSize = nOtherElems + m_nNumElem + m_storage.getGranularity();
 
-			resize( newSize - (newSize % m_nGranularity) );
+			resize( newSize - (newSize % m_storage.getGranularity()) );
 		}
 	}
 
@@ -545,26 +691,26 @@ inline int Array<T>::append( const Array<T> &other )
 // adds the other list to this one
 // Returns the size of the new combined list
 // -----------------------------------------------------------------
-template< typename T >
-inline int Array<T>::append( const T *other, int count )
+template< typename T, typename STORAGE_TYPE >
+inline int ArrayBase<T, STORAGE_TYPE>::append( const T *other, int count )
 {
-	if ( !m_pListPtr )
+	if ( !m_storage.getData() )
 	{
-		ASSERT(m_nGranularity > 0);
+		ASSERT(m_storage.getGranularity() > 0);
 
 		// pre-allocate for a bigger list to do less memory resize access
-		int newSize = count+m_nGranularity;
+		int newSize = count + m_storage.getGranularity();
 
-		resize( newSize - (newSize % m_nGranularity) );
+		resize( newSize - (newSize % m_storage.getGranularity()) );
 	}
 	else
 	{
 		// pre-allocate for a bigger list to do less memory resize access
-		if ( m_nNumElem+count >= m_nSize )
+		if ( m_nNumElem+count >= m_storage.getSize())
 		{
-			int newSize = count+m_nNumElem+m_nGranularity;
+			int newSize = count + m_nNumElem + m_storage.getGranularity();
 
-			resize( newSize - (newSize % m_nGranularity) );
+			resize( newSize - (newSize % m_storage.getGranularity()) );
 		}
 	}
 
@@ -578,9 +724,9 @@ inline int Array<T>::append( const T *other, int count )
 // -----------------------------------------------------------------
 // appends other list with transformation
 // -----------------------------------------------------------------
-template< typename T >
-template< typename T2, typename TRANSFORMFUNC >
-inline int Array<T>::append( const Array<T2> &other, TRANSFORMFUNC transform )
+template< typename T, typename STORAGE_TYPE >
+template< typename T2, typename OTHER_STORAGE_TYPE, typename TRANSFORMFUNC>
+inline int ArrayBase<T, STORAGE_TYPE>::append( const ArrayBase<T2, OTHER_STORAGE_TYPE> &other, TRANSFORMFUNC transform )
 {
 	int nOtherElems = other.numElem();
 
@@ -603,31 +749,34 @@ inline int Array<T>::append( const Array<T2> &other, TRANSFORMFUNC transform )
 // Increases the elemCount of the list by at leat one element if necessary
 // and inserts the supplied data into it.
 // -----------------------------------------------------------------
-template< typename T >
-inline int Array<T>::insert( T const & obj, int index )
+template< typename T, typename STORAGE_TYPE >
+inline int ArrayBase<T, STORAGE_TYPE>::insert( T const & obj, int index )
 {
-	if ( !m_pListPtr )
-		resize( m_nGranularity );
+	if ( !m_storage.getData())
+		resize(m_storage.getGranularity());
 
-	if ( m_nNumElem == m_nSize )
+	if ( m_nNumElem == m_storage.getSize())
 	{
 		int newsize;
 
-		ASSERT(m_nGranularity > 0);
+		ASSERT(m_storage.getGranularity() > 0);
 
-		newsize = m_nSize + m_nGranularity;
-		resize( newsize - newsize % m_nGranularity );
+		newsize = m_storage.getSize() + m_storage.getGranularity();
+		resize( newsize - newsize % m_storage.getGranularity());
 	}
 
 	if ( index < 0 )
 		index = 0;
 	else if ( index > m_nNumElem )
 		index = m_nNumElem;
+
+	T* listPtr = m_storage.getData();
+
 	for ( int i = m_nNumElem; i > index; --i )
-		m_pListPtr[i] = m_pListPtr[i-1];
+		listPtr[i] = listPtr[i-1];
 
 	m_nNumElem++;
-	m_pListPtr[index] = obj;
+	listPtr[index] = obj;
 
 	return index;
 }
@@ -636,8 +785,8 @@ inline int Array<T>::insert( T const & obj, int index )
 // Adds the data to the m_pListPtr if it doesn't already exist.  Returns the index of the data in the m_pListPtr.
 // -----------------------------------------------------------------
 
-template< typename T >
-inline int Array<T>::addUnique( T const & obj )
+template< typename T, typename STORAGE_TYPE >
+inline int ArrayBase<T, STORAGE_TYPE>::addUnique( T const & obj )
 {
 	int index;
 
@@ -654,9 +803,9 @@ inline int Array<T>::addUnique( T const & obj )
 // Adds the data to the m_pListPtr if it doesn't already exist.  Returns the index of the data in the m_pListPtr.
 // -----------------------------------------------------------------
 
-template< typename T >
+template< typename T, typename STORAGE_TYPE >
 template< typename PAIRCOMPAREFUNC >
-inline int Array<T>::addUnique( T const & obj, PAIRCOMPAREFUNC comparator)
+inline int ArrayBase<T, STORAGE_TYPE>::addUnique( T const & obj, PAIRCOMPAREFUNC comparator)
 {
 	int index;
 
@@ -673,12 +822,13 @@ inline int Array<T>::addUnique( T const & obj, PAIRCOMPAREFUNC comparator)
 // Returns -1 if the data is not found.
 // -----------------------------------------------------------------
 
-template< typename T >
-inline int Array<T>::findIndex( T const & obj ) const
+template< typename T, typename STORAGE_TYPE >
+inline int ArrayBase<T, STORAGE_TYPE>::findIndex( T const & obj ) const
 {
+	const T* listPtr = m_storage.getData();
 	for(int i = 0; i < m_nNumElem; i++ )
 	{
-		if ( m_pListPtr[ i ] == obj )
+		if ( listPtr[ i ] == obj )
 			return i;
 	}
 	return -1;
@@ -689,13 +839,14 @@ inline int Array<T>::findIndex( T const & obj ) const
 // Returns -1 if the data is not found.
 // -----------------------------------------------------------------
 
-template< typename T >
+template< typename T, typename STORAGE_TYPE >
 template< typename PAIRCOMPAREFUNC >
-inline int Array<T>::findIndex( T const & obj, PAIRCOMPAREFUNC comparator ) const
+inline int ArrayBase<T, STORAGE_TYPE>::findIndex( T const & obj, PAIRCOMPAREFUNC comparator ) const
 {
+	const T* listPtr = m_storage.getData();
 	for(int i = 0; i < m_nNumElem; i++ )
 	{
-		if ( comparator(m_pListPtr[ i ], obj) )
+		if ( comparator(listPtr[ i ], obj) )
 			return i;
 	}
 	return -1;
@@ -705,13 +856,14 @@ inline int Array<T>::findIndex( T const & obj, PAIRCOMPAREFUNC comparator ) cons
 // returns first element which satisfies to the condition
 // Returns NULL if the data is not found.
 // -----------------------------------------------------------------
-template< typename T >
+template< typename T, typename STORAGE_TYPE >
 template< typename COMPAREFUNC >
-inline int Array<T>::findIndex( COMPAREFUNC comparator  ) const
+inline int ArrayBase<T, STORAGE_TYPE>::findIndex( COMPAREFUNC comparator  ) const
 {
+	const T* listPtr = m_storage.getData();
 	for( int i = 0; i < m_nNumElem; i++ )
 	{
-		if ( comparator(m_pListPtr[i]) )
+		if ( comparator(listPtr[i]) )
 			return i;
 	}
 	return -1;
@@ -722,11 +874,10 @@ inline int Array<T>::findIndex( COMPAREFUNC comparator  ) const
 // The number of elements in the m_pListPtr is reduced by one.  Returns false if the index is outside the bounds of the m_pListPtr.
 // Note that the element is not destroyed, so any memory used by it may not be freed until the destruction of the m_pListPtr.
 // -----------------------------------------------------------------
-template< typename T >
-inline bool Array<T>::removeIndex( int index )
+template< typename T, typename STORAGE_TYPE >
+inline bool ArrayBase<T, STORAGE_TYPE>::removeIndex( int index )
 {
 #ifdef DEBUG_CHECK_LIST_BOUNDS
-	ASSERT( m_pListPtr != nullptr);
 	ASSERT( index >= 0 );
 	ASSERT( index < m_nNumElem );
 #endif // DEBUG_CHECK_LIST_BOUNDS
@@ -736,8 +887,38 @@ inline bool Array<T>::removeIndex( int index )
 
 	m_nNumElem--;
 
+	T* listPtr = m_storage.getData();
+
 	for( int i = index; i < m_nNumElem; i++ )
-		m_pListPtr[ i ] = m_pListPtr[ i + 1 ];
+		listPtr[ i ] = listPtr[ i + 1 ];
+
+	return true;
+}
+
+// -----------------------------------------------------------------
+// Removes specified count of elements from specified index and moves all data following the element down to fill in the gap.
+// The number of elements in the m_pListPtr is reduced by count.  Returns false if the index + count is outside the bounds of the m_pListPtr.
+// Note that the elements are not destroyed, so any memory used by it may not be freed until the destruction of the m_pListPtr.
+// -----------------------------------------------------------------
+template< typename T, typename STORAGE_TYPE >
+inline bool ArrayBase<T, STORAGE_TYPE>::removeRange(int index, int count)
+{
+#ifdef DEBUG_CHECK_LIST_BOUNDS
+	ASSERT(count >= 0);
+	ASSERT(index >= 0);
+#endif // DEBUG_CHECK_LIST_BOUNDS
+
+	if ((index < 0) || (index + count >= m_nNumElem))
+		return false;
+
+	if (!count)
+		return true;
+
+	m_nNumElem -= count;
+
+	T* listPtr = m_storage.getData();
+	for (int i = index; i < m_nNumElem; i++)
+		listPtr[i] = listPtr[i + count];
 
 	return true;
 }
@@ -747,11 +928,10 @@ inline bool Array<T>::removeIndex( int index )
 // The number of elements in the m_pListPtr is reduced by one.  Returns false if the index is outside the bounds of the m_pListPtr.
 // Note that the element is not destroyed, so any memory used by it may not be freed until the destruction of the m_pListPtr.
 // -----------------------------------------------------------------
-template< typename T >
-inline bool Array<T>::fastRemoveIndex( int index )
+template< typename T, typename STORAGE_TYPE >
+inline bool ArrayBase<T, STORAGE_TYPE>::fastRemoveIndex( int index )
 {
 #ifdef DEBUG_CHECK_LIST_BOUNDS
-	ASSERT( m_pListPtr != nullptr);
 	ASSERT( index >= 0 );
 	ASSERT( index < m_nNumElem );
 #endif // DEBUG_CHECK_LIST_BOUNDS
@@ -761,8 +941,9 @@ inline bool Array<T>::fastRemoveIndex( int index )
 
 	m_nNumElem--;
 
+	T* listPtr = m_storage.getData();
 	if( m_nNumElem > 0 )
-		m_pListPtr[ index ] = m_pListPtr[ m_nNumElem ];
+		listPtr[ index ] = listPtr[ m_nNumElem ];
 
 	return true;
 }
@@ -773,8 +954,8 @@ inline bool Array<T>::fastRemoveIndex( int index )
 // The number of elements in the m_pListPtr is reduced by one.  Returns false if the data is not found in the m_pListPtr.  Note that
 // the element is not destroyed, so any memory used by it may not be freed until the destruction of the m_pListPtr.
 // -----------------------------------------------------------------
-template< typename T >
-inline bool Array<T>::remove( T const & obj )
+template< typename T, typename STORAGE_TYPE >
+inline bool ArrayBase<T, STORAGE_TYPE>::remove( T const & obj )
 {
 	int index;
 
@@ -792,8 +973,8 @@ inline bool Array<T>::remove( T const & obj )
 // The number of elements in the m_pListPtr is reduced by one.  Returns false if the data is not found in the m_pListPtr.  Note that
 // the element is not destroyed, so any memory used by it may not be freed until the destruction of the m_pListPtr.
 // -----------------------------------------------------------------
-template< typename T >
-inline bool Array<T>::fastRemove( T const & obj )
+template< typename T, typename STORAGE_TYPE >
+inline bool ArrayBase<T, STORAGE_TYPE>::fastRemove( T const & obj )
 {
 	int index;
 
@@ -808,8 +989,8 @@ inline bool Array<T>::fastRemove( T const & obj )
 // -----------------------------------------------------------------
 // Returns true if index is in array range
 // -----------------------------------------------------------------
-template< typename T >
-inline bool Array<T>::inRange( int index ) const
+template< typename T, typename STORAGE_TYPE >
+inline bool ArrayBase<T, STORAGE_TYPE>::inRange( int index ) const
 {
 	return index >= 0 && index < m_nNumElem;
 }
@@ -817,35 +998,35 @@ inline bool Array<T>::inRange( int index ) const
 // -----------------------------------------------------------------
 // Swaps the contents of two lists
 // -----------------------------------------------------------------
-template< typename T >
-inline void Array<T>::swap( Array<T> &other )
+template< typename T, typename STORAGE_TYPE >
+inline void ArrayBase<T, STORAGE_TYPE>::swap(ArrayBase<T, STORAGE_TYPE>& other )
 {
 	QuickSwap( m_nNumElem, other.m_nNumElem );
-	QuickSwap( m_nSize, other.m_nSize );
-	QuickSwap( m_nGranularity, other.m_nGranularity );
-	QuickSwap( m_pListPtr, other.m_pListPtr );
+
+	m_storage.swap(other.m_storage);
 }
 
 // -----------------------------------------------------------------
 // swap the contents of the lists - raw
 // -----------------------------------------------------------------
-template< typename T >
-inline void Array<T>::swap(T*& other, int& otherNumElem)
+template< typename T, typename STORAGE_TYPE >
+inline void ArrayBase<T, STORAGE_TYPE>::swap(T*& other, int& otherNumElem)
 {
 	QuickSwap(m_nNumElem, otherNumElem);
-	QuickSwap(m_pListPtr, other);
 
-	m_nSize = otherNumElem;
+	m_storage.swap(other, otherNumElem);
 }
 
 // -----------------------------------------------------------------
 // reverses the order of array
 // -----------------------------------------------------------------
-template< typename T >
-inline void Array<T>::reverse()
+template< typename T, typename STORAGE_TYPE >
+inline void ArrayBase<T, STORAGE_TYPE>::reverse()
 {
-	for (int i = 0, j = m_nNumElem - 1; i < j; i++, j--) {
-		QuickSwap(m_pListPtr[i], m_pListPtr[j]);
+	T* listPtr = m_storage.getData();
+	for (int i = 0, j = m_nNumElem - 1; i < j; i++, j--) 
+	{
+		QuickSwap(listPtr[i], listPtr[j]);
 	}
 }
 
@@ -853,17 +1034,17 @@ inline void Array<T>::reverse()
 // Makes sure the list has at least the given number of elements.
 // -----------------------------------------------------------------
 
-template< typename T >
-inline void Array<T>::assureSize( int newSize )
+template< typename T, typename STORAGE_TYPE >
+inline void ArrayBase<T, STORAGE_TYPE>::assureSize( int newSize )
 {
 	int newNum = newSize;
 
-	if ( newSize > m_nSize )
+	if ( newSize > m_storage.getSize())
 	{
-		ASSERT(m_nGranularity > 0);
+		ASSERT(m_storage.getGranularity() > 0);
 
-		newSize += m_nGranularity - 1;
-		newSize -= newSize % m_nGranularity;
+		newSize += m_storage.getGranularity() - 1;
+		newSize -= newSize % m_storage.getGranularity();
 
 		resize( newSize );
 	}
@@ -872,26 +1053,27 @@ inline void Array<T>::assureSize( int newSize )
 }
 
 // -----------------------------------------------------------------
-// Makes sure the m_pListPtr has at least the given number of elements and initialize any elements not yet initialized.
+// Makes sure the listPtr has at least the given number of elements and initialize any elements not yet initialized.
 // -----------------------------------------------------------------
-template< typename T >
-inline void Array<T>::assureSize( int newSize, const T &initValue )
+template< typename T, typename STORAGE_TYPE >
+inline void ArrayBase<T, STORAGE_TYPE>::assureSize( int newSize, const T &initValue )
 {
 	int newNum = newSize;
 
-	if ( newSize > m_nSize )
+	if ( newSize > m_storage.getSize())
 	{
-		ASSERT(m_nGranularity > 0);
+		ASSERT(m_storage.getGranularity() > 0);
 
-		newSize += m_nGranularity - 1;
-		newSize -= newSize % m_nGranularity;
+		newSize += m_storage.getGranularity() - 1;
+		newSize -= newSize % m_storage.getGranularity();
 
-		m_nNumElem = m_nSize;
+		m_nNumElem = m_storage.getSize();
 
 		resize( newSize );
 
+		T* listPtr = m_storage.getData();
 		for ( int i = m_nNumElem; i < newSize; i++ )
-			m_pListPtr[i] = initValue;
+			listPtr[i] = initValue;
 	}
 
 	m_nNumElem = newNum;
@@ -901,9 +1083,9 @@ inline void Array<T>::assureSize( int newSize, const T &initValue )
 // Sorts array of the elements by the comparator
 // -----------------------------------------------------------------
 
-template< typename T >
+template< typename T, typename STORAGE_TYPE >
 template< typename SORTPAIRCOMPAREFUNC >
-inline void Array<T>::sort(SORTPAIRCOMPAREFUNC comparator)
+inline void ArrayBase<T, STORAGE_TYPE>::sort(SORTPAIRCOMPAREFUNC comparator)
 {
 #ifdef USE_QSORT
 	quickSort(comparator, 0, m_nNumElem - 1);
@@ -915,9 +1097,9 @@ inline void Array<T>::sort(SORTPAIRCOMPAREFUNC comparator)
 // -----------------------------------------------------------------
 // Shell sort
 // -----------------------------------------------------------------
-template< typename T >
+template< typename T, typename STORAGE_TYPE >
 template< typename SORTPAIRCOMPAREFUNC >
-inline void Array<T>::shellSort(SORTPAIRCOMPAREFUNC comparator, int i0, int i1)
+inline void ArrayBase<T, STORAGE_TYPE>::shellSort(SORTPAIRCOMPAREFUNC comparator, int i0, int i1)
 {
 	const int SHELLJMP = 3; //2 or 3
 
@@ -927,13 +1109,15 @@ inline void Array<T>::shellSort(SORTPAIRCOMPAREFUNC comparator, int i0, int i1)
 
 	for(gap = 1; gap < n; gap = gap*SHELLJMP+1);
 
+	T* listPtr = m_storage.getData();
+
 	for(gap = int(gap/SHELLJMP); gap > 0; gap = int(gap/SHELLJMP))
 	{
 		for( int i = i0; i < i1-gap; i++)
 		{
-			for( int j = i; (j >= i0) && (comparator)(m_pListPtr[j], m_pListPtr[j + gap]); j -= gap )
+			for( int j = i; (j >= i0) && (comparator)(listPtr[j], listPtr[j + gap]); j -= gap )
 			{
-				QuickSwap(m_pListPtr[j], m_pListPtr[j + gap]);
+				QuickSwap(listPtr[j], listPtr[j + gap]);
 			}
 		}
 	}
@@ -965,13 +1149,14 @@ inline int partition(T* list, SORTPAIRCOMPAREFUNC comparator, int p, int r)
 // -----------------------------------------------------------------
 // Partition exchange sort
 // -----------------------------------------------------------------
-template< typename T >
+template< typename T, typename STORAGE_TYPE >
 template< typename SORTPAIRCOMPAREFUNC >
-inline void Array<T>::quickSort(SORTPAIRCOMPAREFUNC comparator, int p, int r)
+inline void ArrayBase<T, STORAGE_TYPE>::quickSort(SORTPAIRCOMPAREFUNC comparator, int p, int r)
 {
 	if (p < r)
 	{
-		int q = partition(m_pListPtr, comparator, p, r);
+		T* listPtr = m_storage.getData();
+		int q = partition(listPtr, comparator, p, r);
 
 		quickSort(comparator, p, q - 1);
 		quickSort(comparator, q + 1, r);
@@ -1021,6 +1206,89 @@ inline void shellSort(T* list, int numElems, SORTPAIRCOMPAREFUNC comparator)
 
 //-------------------------------------------
 
+template< typename T >
+using Array = ArrayBase<T, DynamicArrayStorage<T >> ;
+
+template< typename T, int SIZE >
+using FixedArray = ArrayBase<T, FixedArrayStorage<T, SIZE>>;
+
+//-------------------------------------------
+
+// non-const array ref
+template< typename T >
+class ArrayRef
+{
+public:
+	ArrayRef(T* elemPtr, int numElem)
+		: m_pListPtr(elemPtr), m_nNumElem(numElem)
+	{
+	}
+
+	template<typename ARRAY_TYPE>
+	ArrayRef(ARRAY_TYPE& otherArray)
+		: m_pListPtr(otherArray.ptr()), m_nNumElem(otherArray.numElem())
+	{
+	}
+
+	T&				operator[](int index)
+	{
+#ifdef DEBUG_CHECK_LIST_BOUNDS
+		ASSERT(index >= 0);
+		ASSERT(index < m_nNumElem);
+#endif // DEBUG_CHECK_LIST_BOUNDS
+
+		return m_pListPtr[index];
+	}
+
+	// returns number of elements in list
+	int				numElem() const { return m_nNumElem; }
+
+	// returns a pointer to the list
+	T*				ptr() { return m_pListPtr; }
+
+protected:
+	T*				m_pListPtr;
+	const int		m_nNumElem;
+};
+
+// const array ref
+template< typename T >
+class ArrayCRef
+{
+public:
+	ArrayCRef(const T* elemPtr, int numElem)
+		: m_pListPtr(elemPtr), m_nNumElem(numElem)
+	{
+	}
+
+	template<typename ARRAY_TYPE>
+	ArrayCRef(ARRAY_TYPE& otherArray)
+		: m_pListPtr(otherArray.ptr()), m_nNumElem(otherArray.numElem())
+	{
+	}
+
+	const T&		operator[](int index) const
+	{
+#ifdef DEBUG_CHECK_LIST_BOUNDS
+		ASSERT(index >= 0);
+		ASSERT(index < m_nNumElem);
+#endif // DEBUG_CHECK_LIST_BOUNDS
+
+		return m_pListPtr[index];
+	}
+
+	// returns number of elements in list
+	int				numElem() const { return m_nNumElem; }
+
+	// returns a pointer to the list
+	T*				ptr() { return m_pListPtr; }
+
+protected:
+	const T*		m_pListPtr;
+	const int		m_nNumElem;
+};
+
+//-------------------------------------------
 // nesting Source-line constructor helper
 template<typename ITEM>
 struct PPSLValueCtor<Array<ITEM>>

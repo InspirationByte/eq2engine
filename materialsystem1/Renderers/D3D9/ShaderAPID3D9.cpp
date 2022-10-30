@@ -2804,7 +2804,7 @@ IDirect3DBaseTexture9* ShaderAPID3DX9::CreateD3DTextureFromImage(CImage* pSrc, i
 	return pTexture;
 }
 
-void ShaderAPID3DX9::CreateTextureInternal(ITexture** pTex, const Array<CImage*>& pImages, const SamplerStateParam_t& sampler,int nFlags)
+void ShaderAPID3DX9::CreateTextureInternal(ITexture** pTex, const ArrayCRef<CImage*>& pImages, const SamplerStateParam_t& sampler,int nFlags)
 {
 	if(!pImages.numElem())
 		return;

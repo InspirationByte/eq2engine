@@ -599,7 +599,7 @@ ITexture* ShaderAPI_Base::LoadTexture( const char* pszFileName,
 	return pFoundTexture;
 }
 
-ITexture* ShaderAPI_Base::CreateTexture(const Array<CImage*>& pImages, const SamplerStateParam_t& sampler, int nFlags)
+ITexture* ShaderAPI_Base::CreateTexture(const ArrayCRef<CImage*>& pImages, const SamplerStateParam_t& sampler, int nFlags)
 {
 	if(!pImages.numElem())
 		return nullptr;
@@ -656,7 +656,7 @@ ITexture* ShaderAPI_Base::CreateProceduralTexture(const char* pszName,
 		return nullptr;	// don't generate error
 	}
 
-	Array<CImage*> imgs(PP_SL);
+	FixedArray<CImage*, 1> imgs(PP_SL);
 	imgs.append(&genTex);
 
 	SamplerStateParam_t sampler = g_pShaderAPI->MakeSamplerState(texFilter,textureAddress,textureAddress,textureAddress);
@@ -766,7 +766,7 @@ ITexture* ShaderAPI_Base::GenerateErrorTexture(int nFlags/* = 0*/)
 
 	image.CreateMipMaps();
 
-	Array<CImage*> images(PP_SL);
+	FixedArray<CImage*, 1> images(PP_SL);
 	images.append(&image);
 
 	ITexture* pOutTexture = CreateTexture(images, texSamplerParams, nFlags);

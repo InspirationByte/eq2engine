@@ -10,7 +10,44 @@
 			</Item>
 		</Expand>
 	</Type>
-	<Type Name="Array&lt;*&gt;">
+	<Type Name="ArrayBase&lt;*, DynamicArrayStorage&lt;*&gt;&gt;">
+		<DisplayString Condition="m_storage.m_pListPtr == 0">[unallocated]</DisplayString>
+		<Expand>
+			<Synthetic Name="Items">
+				<DisplayString Condition="m_storage.m_pListPtr == 0">[unallocated]</DisplayString>
+				<DisplayString>[count: { m_nNumElem }]</DisplayString>
+				<Expand>
+					<ArrayItems>
+						<Size>m_nNumElem</Size>
+						<ValuePointer>m_storage.m_pListPtr</ValuePointer>
+					</ArrayItems>
+				</Expand>
+			</Synthetic>
+
+			<Item Name = "Allocated">
+				m_storage.m_nSize
+			</Item>
+			<Item Name = "Granularity">
+				m_storage.m_nGranularity
+			</Item>
+		</Expand>
+	</Type>
+	<Type Name="ArrayBase&lt;*, FixedArrayStorage&lt;*&gt;&gt;">
+		<DisplayString Condition="m_storage.m_data == 0">[unallocated]</DisplayString>
+		<Expand>
+			<Synthetic Name="Items">
+				<DisplayString Condition="m_storage.m_data == 0">[unallocated]</DisplayString>
+				<DisplayString>[count: { m_nNumElem }]</DisplayString>
+				<Expand>
+					<ArrayItems>
+						<Size>m_nNumElem</Size>
+						<ValuePointer>m_storage.m_data</ValuePointer>
+					</ArrayItems>
+				</Expand>
+			</Synthetic>
+		</Expand>
+	</Type>
+	<Type Name="ArrayRef&lt;*&gt;">
 		<DisplayString Condition="m_pListPtr == 0">[unallocated]</DisplayString>
 		<Expand>
 			<Synthetic Name="Items">
@@ -23,13 +60,21 @@
 					</ArrayItems>
 				</Expand>
 			</Synthetic>
-
-			<Item Name = "Allocated">
-				m_nSize
-			</Item>
-			<Item Name = "Granularity">
-				m_nGranularity
-			</Item>
+		</Expand>
+	</Type>
+	<Type Name="ArrayCRef&lt;*&gt;">
+		<DisplayString Condition="m_pListPtr == 0">[unallocated]</DisplayString>
+		<Expand>
+			<Synthetic Name="Items">
+				<DisplayString Condition="m_pListPtr == 0">[unallocated]</DisplayString>
+				<DisplayString>[count: { m_nNumElem }]</DisplayString>
+				<Expand>
+					<ArrayItems>
+						<Size>m_nNumElem</Size>
+						<ValuePointer>m_pListPtr</ValuePointer>
+					</ArrayItems>
+				</Expand>
+			</Synthetic>
 		</Expand>
 	</Type>
 	<Type Name="List&lt;*&gt;">
