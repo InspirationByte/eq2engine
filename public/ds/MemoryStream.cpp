@@ -177,6 +177,7 @@ void CMemoryStream::ReAllocate(long nNewSize)
 	
 	const long curPos = Tell();
 	m_start = (ubyte*)PPReAlloc(m_start, nNewSize );
+	ASSERT_MSG(m_start, "CMemoryStream reallocate failed!");
 	m_allocatedSize = nNewSize;
 	m_currentPtr = m_start + curPos;
 }

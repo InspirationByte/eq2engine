@@ -273,7 +273,9 @@ void* PPDAlloc(size_t size, const PPSourceLine& sl)
 void* PPDReAlloc( void* ptr, size_t size, const PPSourceLine& sl )
 {
 #ifdef PPMEM_DISABLE
-	return realloc(ptr, size);
+	void* mem = realloc(ptr, size);
+	ASSERT_MSG(mem, "No mem left");
+	return mem;
 #else
 	void* retPtr = nullptr;
 
