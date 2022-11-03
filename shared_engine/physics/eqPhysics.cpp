@@ -272,7 +272,7 @@ struct CEqManifoldResult : public btManifoldResult
 		return true;
 	}
 
-	FixedArray<CollisionData_t, 60>		m_collisions{ PP_SL };
+	FixedArray<CollisionData_t, 60>		m_collisions;
 	Vector3D							m_center;
 	bool								m_singleSided;
 };

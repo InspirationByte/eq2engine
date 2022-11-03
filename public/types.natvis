@@ -41,7 +41,7 @@
 				<Expand>
 					<ArrayItems>
 						<Size>m_nNumElem</Size>
-						<ValuePointer>m_storage.m_data</ValuePointer>
+						<ValuePointer>($T1*)m_storage.m_data</ValuePointer>
 					</ArrayItems>
 				</Expand>
 			</Synthetic>
@@ -77,23 +77,40 @@
 			</Synthetic>
 		</Expand>
 	</Type>
-	<Type Name="List&lt;*&gt;">
-		<DisplayString Condition="count == 0">[empty]</DisplayString>
-		<DisplayString>items: { count }</DisplayString>
+	<Type Name="ListBase&lt;*,FixedListAllocator&lt;*&gt;&gt;">
+		<DisplayString Condition="m_count == 0">[empty]</DisplayString>
+		<DisplayString>items: { m_count }</DisplayString>
 		<Expand>
 			<Synthetic Name="Items">
-				<DisplayString>count: { count }</DisplayString>
+				<DisplayString>count: { m_count }</DisplayString>
 				<Expand>
 					<LinkedListItems>
-						<HeadPointer>first</HeadPointer>
+						<HeadPointer>m_first</HeadPointer>
 						<NextPointer>next</NextPointer>
-						<ValueNode>object</ValueNode>
+						<ValueNode>value</ValueNode>
 					</LinkedListItems>
 				</Expand>
 			</Synthetic>
-			<Item Name="First">first</Item>
-			<Item Name="Last">last</Item>
-			<Item Name="Current">curr</Item>
+			<Item Name="First">m_first</Item>
+			<Item Name="Last">m_last</Item>
+		</Expand>
+	</Type>
+	<Type Name="ListBase&lt;*,DynamicListAllocator&lt;*&gt;&gt;">
+		<DisplayString Condition="m_count == 0">[empty]</DisplayString>
+		<DisplayString>items: { m_count }</DisplayString>
+		<Expand>
+			<Synthetic Name="Items">
+				<DisplayString>count: { m_count }</DisplayString>
+				<Expand>
+					<LinkedListItems>
+						<HeadPointer>m_first</HeadPointer>
+						<NextPointer>next</NextPointer>
+						<ValueNode>value</ValueNode>
+					</LinkedListItems>
+				</Expand>
+			</Synthetic>
+			<Item Name="First">m_first</Item>
+			<Item Name="Last">m_last</Item>
 		</Expand>
 	</Type>
 	<Type Name="Map&lt;*&gt;">

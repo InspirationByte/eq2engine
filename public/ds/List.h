@@ -5,479 +5,329 @@
 // Description: Double Linked list
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef LIST_H
-#define LIST_H
+#pragma once
 
-template <class TYPE>
+template <typename T>
+class ListAbstract;
+
+template <typename T>
 struct ListNode
 {
-	ListNode <TYPE> *prev;
-	ListNode <TYPE> *next;
-	TYPE object;
-};
-
-template <class T>
-class List
-{
 public:
-	template <class> friend class ListIterator;
+	const T&	operator*() const { return value; }
+	T&			operator*() { return value; }
+	const T*	operator->() const { return &value; }
+	T*			operator->() { return &value; }
 
-	List()
-	{
-		count = 0;
-		first = nullptr;
-		last  = nullptr;
-		curr  = nullptr;
-		del   = nullptr;
-	}
-
-	virtual ~List()
-	{
-		clear();
-	}
-
-	int getCount() const { return count; }
-
-	bool addFirst(const T& object)
-	{
-		ListNode <T> *node = new ListNode <T>;
-		node->object = object;
-		insertNodeFirst(node);
-		count++;
-		return true;
-	}
-
-	bool addLast(const T& object)
-	{
-		ListNode <T> *node = new ListNode <T>;
-		node->object = object;
-		insertNodeLast(node);
-		count++;
-		return true;
-	}
-
-	bool insertBeforeCurrent(const T& object)
-	{
-		ListNode <T> *node = new ListNode <T>;
-		node->object = object;
-		insertNodeBefore(curr, node);
-		count++;
-		return true;
-	}
-
-	bool insertAfterCurrent(const T& object)
-	{
-		ListNode <T> *node = new ListNode <T>;
-		node->object = object;
-		insertNodeAfter(curr, node);
-		count++;
-		return true;
-	}
-
-	bool insertSorted(const T& object, int (* comparator )(const T &a, const T &b) )
-	{
-		ListNode <T>* newnode = new ListNode <T>;
-		newnode->object = object;
-
-		ListNode <T>* c = first;
-		while (c != nullptr && (comparator)(c->object, object) <= 0)
-		{
-			c = c->next;
-		}
-
-		if(c)
-			insertNodeBefore(c, newnode);
-		else
-			insertNodeLast(newnode);
-
-		count++;
-		return true;
-	}
-
-	bool removeCurrent()
-	{
-		if (curr != nullptr)
-		{
-			releaseNode(curr);
-
-			if (del)
-				delete del;
-			del = curr;
-			count--;
-		}
-		return (curr != nullptr);
-	}
-
-	ListNode<T>* goToFirst() { return curr = first; }
-	ListNode<T>* goToLast () { return curr = last; }
-	ListNode<T>* goToPrev () { return curr = curr->prev; }
-	ListNode<T>* goToNext () { return curr = curr->next; }
-
-	bool goToObject(const T& object)
-	{
-		curr = first;
-		while (curr != nullptr)
-		{
-			if (object == curr->object) return true;
-			curr = curr->next;
-		}
-		return false;
-	}
-
-	T & getCurrent() const
-	{
-		return curr->object;
-	}
-
-	ListNode<T>* getCurrentNode() const
-	{
-		return curr;
-	}
-
-	void setCurrent(const T& object)
-	{
-		curr->object = object;
-	}
-
-	const T & getPrev() const
-	{
-		return curr->prev->object;
-	}
-
-	const T & getNext() const
-	{
-		return curr->next->object;
-	}
-
-	const T & getPrevWrap() const
-	{
-		return ((curr->prev != nullptr)? curr->prev : last)->object;
-	}
-
-	const T & getNextWrap() const
-	{
-		return ((curr->next != nullptr)? curr->next : first)->object;
-	}
-
-	void clear()
-	{
-		delete del;
-		del = nullptr;
-		while (first)
-		{
-			curr = first;
-			first = first->next;
-			delete curr;
-		}
-		last = curr = nullptr;
-		count = 0;
-	}
-
-	void moveCurrentToTop()
-	{
-		if (curr != nullptr)
-		{
-			releaseNode(curr);
-			insertNodeFirst(curr);
-		}
-	}
+	ListNode*	nextNode() const { return next; }
+	ListNode*	prevNode() const { return prev; }
+	const T&	getValue() const { return value; }
+	T&			getValue() { return value; }
 
 protected:
-	void insertNodeFirst(ListNode <T> *node)
-	{
-		if (first != nullptr)
-			first->prev = node;
-		else
-			last = node;
+	T			value;
+	ListNode*	prev{ nullptr };
+	ListNode*	next{ nullptr };
 
-		node->next = first;
-		node->prev = nullptr;
-
-		first = node;
-	}
-
-	void insertNodeLast(ListNode <T> *node)
-	{
-		if (last != nullptr)
-			last->next = node;
-		else
-			first = node;
-
-		node->prev = last;
-		node->next = nullptr;
-
-		last = node;
-	}
-
-	void insertNodeBefore(ListNode <T> *at, ListNode <T> *node)
-	{
-		ListNode <T> *prev = at->prev;
-		at->prev = node;
-		if (prev)
-			prev->next = node;
-		else
-			first = node;
-
-		node->next = at;
-		node->prev = prev;
-	}
-
-	void insertNodeAfter(ListNode <T> *at, ListNode <T> *node)
-	{
-		ListNode <T> *next = at->next;
-		at->next = node;
-		if (next)
-			next->prev = node;
-		else
-			last = node;
-
-		node->prev = at;
-		node->next = next;
-	}
-
-	void releaseNode(ListNode <T> *node)
-	{
-		if (node->prev == nullptr)
-			first = node->next;
-		else
-			node->prev->next = node->next;
-
-		if (node->next == nullptr)
-			last = node->prev;
-		else
-			node->next->prev = node->prev;
-
-		node->next = nullptr;
-		node->prev = nullptr;
-	}
-
-	ListNode <T> *first, *last, *curr, *del;
-	int count;
+	friend class ListAbstract<T>;
 };
 
-//--------------------------------------------------------------------------------------
-
-template <class T, int MAXSIZE>
-class FixedList
+template <typename T>
+class ListAbstract
 {
 public:
-	FixedList()
-	{
-		count = 0;
-		first = nullptr;
-		last = nullptr;
-		curr = nullptr;
-		del = nullptr;
-	}
+	using Node = ListNode<T>;
 
-	virtual ~FixedList()
-	{
-	}
+	int getCount() const { return m_count; }
 
-	int getCount() const { return count; }
-
-	bool addFirst(const T& object)
+	bool addFirst(const T& value)
 	{
-		ListNode <T> *node = getFreeNode();
-		if(!node)
-			return false;
-		node->object = object;
+		Node* node = allocNode();
+		node->value = value;
 		insertNodeFirst(node);
-		count++;
+		m_count++;
 		return true;
 	}
 
-	bool addLast(const T& object)
+	bool addLast(const T& value)
 	{
-		ListNode <T> *node = getFreeNode();
-		if(!node)
-			return false;
-		node->object = object;
+		Node* node = allocNode();
+		node->value = value;
 		insertNodeLast(node);
-		count++;
+		m_count++;
 		return true;
 	}
 
-	bool insertBeforeCurrent(const T& object)
+	template<typename COMPARATOR>
+	bool insertSorted(const T& value, COMPARATOR compareFunc)
 	{
-		ListNode <T> *node = getFreeNode();
-		if(!node)
-			return false;
-		node->object = object;
-		insertNodeBefore(curr, node);
-		count++;
-		return true;
-	}
+		Node* node = allocNode();
+		node->value = value;
 
-	bool insertAfterCurrent(const T& object)
-	{
-		ListNode <T> *node = getFreeNode();
-		if(!node)
-			return false;
+		Node* c = m_first;
+		while (c != nullptr && compareFunc(c->value, value) <= 0)
+		{
+			c = c->m_next;
+		}
 
-		node->object = object;
-		insertNodeAfter(curr, node);
-		count++;
-		return true;
-	}
-
-	bool insertSorted(const T& object, int (* comparator )(const T &a, const T &b) )
-	{
-		ListNode <T>* newnode = getFreeNode();
-		if(!newnode)
-			return false;
-		newnode->object = object;
-
-		ListNode <T>* c = first;
-		while (c != nullptr && (comparator)(c->object, object) <= 0)
-			c = c->next;
-
-		if(c)
-			insertNodeBefore(c, newnode);
+		if (c)
+			insertNodeBefore(c, node);
 		else
-			insertNodeLast(newnode);
+			insertNodeLast(node);
 
-		count++;
+		m_count++;
 		return true;
 	}
 
-	bool removeCurrent()
+	const Node* front() const { return m_first; }
+	Node* front() { return m_first; }
+
+	const Node* back() const { return m_last; }
+	Node* back() { return m_last; }
+
+	Node* findFront(const T& value) const
 	{
-		if (curr != nullptr)
+		Node* n = m_first;
+		while (n != nullptr)
 		{
-			releaseNode(curr);
-			count--;
+			if (value == n->value)
+				return n;
+			n = n->next;
 		}
-		return (curr != nullptr);
+		return nullptr;
 	}
 
-	ListNode<T>* goToFirst() { return curr = first; }
-	ListNode<T>* goToLast() { return curr = last; }
-	ListNode<T>* goToPrev() { return curr = curr->prev; }
-	ListNode<T>* goToNext() { return curr = curr->next; }
-
-	bool goToObject(const T& object)
+	Node* findBack(const T& value) const
 	{
-		curr = first;
-		while (curr != nullptr)
+		Node* n = m_last;
+		while (n != nullptr)
 		{
-			if (object == curr->object) return true;
-			curr = curr->next;
+			if (value == n->value)
+				return n;
+			n = n->prev;
 		}
-		return false;
-	}
-
-	T& getCurrent() const
-	{
-		return curr->object;
-	}
-
-	ListNode<T>* getCurrentNode() const
-	{
-		return curr;
-	}
-
-	void setCurrent(const T& object)
-	{
-		curr->object = object;
-	}
-
-	const T& getPrev() const
-	{
-		return curr->prev->object;
-	}
-
-	const T& getNext() const
-	{
-		return curr->next->object;
+		return nullptr;
 	}
 
 	const T& getPrevWrap() const
 	{
-		return ((curr->prev != nullptr) ? curr->prev : last)->object;
+		return ((m_curr->prev != nullptr) ? m_curr->prev : m_last)->value;
 	}
 
 	const T& getNextWrap() const
 	{
-		return ((curr->next != nullptr) ? curr->next : first)->object;
+		return ((m_curr->next != nullptr) ? m_curr->next : m_first)->value;
+	}
+
+	T& getFirst() const
+	{
+		return m_first->value;
+	}
+
+	T& getLast() const
+	{
+		return m_last->value;
 	}
 
 	void clear()
 	{
-		del = nullptr;
-		while (first)
+		if (m_del)
+			freeNode(m_del);
+		m_del = nullptr;
+
+		Node* n = m_first;
+		while (n != nullptr)
 		{
-			curr = first;
-			first = first->next;
-			curr->next = nullptr;
-			curr->prev = nullptr;
+			Node* next = n->next;
+			freeNode(n);
+			n = next;
 		}
-		last = curr = nullptr;
-		count = 0;
+
+		m_first = m_last = m_curr = nullptr;
+		m_count = 0;
+	}
+
+	void remove(Node* incidentNode)
+	{
+		if (!incidentNode)
+			return;
+
+		releaseNode(incidentNode);
+
+		if (m_del)
+			freeNode(m_del);
+
+		m_del = incidentNode;
+		m_count--;
+	}
+
+	void moveCurrentToTop()
+	{
+		if (m_curr != nullptr)
+		{
+			releaseNode(m_curr);
+			insertNodeFirst(m_curr);
+		}
+	}
+
+	bool insertBefore(const T& value, Node* incidentNode) 
+	{
+		Node* node = allocNode();
+		node->value = value;
+		insertNodeBefore(incidentNode, node);
+		m_count++;
+		return true;
+	}
+
+	bool insertAfter(const T& value, Node* incidentNode)
+	{
+		Node* node = allocNode();
+		node->value = value;
+		insertNodeAfter(incidentNode, node);
+		m_count++;
+		return true;
+	}
+
+	//------------------------------------------------
+	// DEPRECATED API
+
+	Node* goToFirst() { return m_curr = m_first; } // DEPRECATED
+	Node* goToLast() { return m_curr = m_last; } // DEPRECATED
+	Node* goToPrev() { return m_curr = m_curr->prevNode(); } // DEPRECATED
+	Node* goToNext() { return m_curr = m_curr->nextNode(); } // DEPRECATED
+
+	bool goToValue(const T& value) // DEPRECATED
+	{
+		m_curr = m_first;
+		while (m_curr != nullptr)
+		{
+			if (value == m_curr->value) return true;
+			m_curr = m_curr->next;
+		}
+		return false;
+	}
+
+	T& getCurrent() const // DEPRECATED
+	{
+		return m_curr->value;
+	}
+
+	Node* getCurrentNode() const // DEPRECATED
+	{
+		return m_curr;
+	}
+
+	void setCurrent(const T& value) // DEPRECATED
+	{
+		m_curr->value = value;
+	}
+
+	const T& getPrev() const // DEPRECATED
+	{
+		return m_curr->prev->value;
+	}
+
+	const T& getNext() const // DEPRECATED
+	{
+		return m_curr->next->value;
+	}
+
+	bool insertBeforeCurrent(const T& value) // DEPRECATED
+	{
+		Node* node = allocNode();
+		node->value = value;
+		insertNodeBefore(m_curr, node);
+		m_count++;
+		return true;
+	}
+
+	bool insertAfterCurrent(const T& value) // DEPRECATED
+	{
+		Node* node = allocNode();
+		node->value = value;
+		insertNodeAfter(m_curr, node);
+		m_count++;
+		return true;
+	}
+
+	bool removeCurrent() // DEPRECATED
+	{
+		if (m_curr != nullptr)
+		{
+			releaseNode(m_curr);
+
+			if (m_del)
+				freeNode(m_del);
+
+			m_del = m_curr;
+
+			m_count--;
+		}
+		return (m_curr != nullptr);
 	}
 
 protected:
-	void insertNodeFirst(ListNode <T>* node)
+	void insertNodeFirst(Node* node)
 	{
-		if (first != nullptr)
-			first->prev = node;
+		if (m_first != nullptr)
+			m_first->prev = node;
 		else
-			last = node;
+			m_last = node;
 
-		node->next = first;
+		node->next = m_first;
 		node->prev = nullptr;
 
-		first = node;
+		m_first = node;
 	}
 
-	void insertNodeLast(ListNode <T>* node)
+	void insertNodeLast(Node* node)
 	{
-		if (last != nullptr)
-			last->next = node;
+		if (m_last != nullptr)
+			m_last->next = node;
 		else
-			first = node;
+			m_first = node;
 
-		node->prev = last;
+		node->prev = m_last;
 		node->next = nullptr;
 
-		last = node;
+		m_last = node;
 	}
 
-	void insertNodeBefore(ListNode <T>* at, ListNode <T>* node)
+	void insertNodeBefore(Node* at, Node* node)
 	{
-		ListNode <T>* prev = at->prev;
+		Node* prev = at->prev;
 		at->prev = node;
 		if (prev)
 			prev->next = node;
 		else
-			first = node;
+			m_first = node;
 
 		node->next = at;
 		node->prev = prev;
 	}
 
-	void insertNodeAfter(ListNode <T>* at, ListNode <T>* node)
+	void insertNodeAfter(Node* at, Node* node)
 	{
-		ListNode <T>* next = at->next;
+		Node* next = at->next;
 		at->next = node;
 		if (next)
 			next->prev = node;
 		else
-			last = node;
+			m_last = node;
 
 		node->prev = at;
 		node->next = next;
 	}
 
-	void releaseNode(ListNode <T>* node)
+	void releaseNode(Node* node)
 	{
 		if (node->prev == nullptr)
-			first = node->next;
+			m_first = node->next;
 		else
 			node->prev->next = node->next;
 
 		if (node->next == nullptr)
-			last = node->prev;
+			m_last = node->prev;
 		else
 			node->next->prev = node->prev;
 
@@ -485,66 +335,130 @@ protected:
 		node->prev = nullptr;
 	}
 
-	ListNode<T>* getFreeNode()
-	{
-		for(int i = 0; i < MAXSIZE; i++)
-		{
-			if(m_fixedarr[i].prev || m_fixedarr[i].next || first == &m_fixedarr[i])
-				continue;
+	virtual Node*	allocNode() = 0;
+	virtual void	freeNode(Node* node) = 0;
 
-			return &m_fixedarr[i];
-		}
+	Node*	m_first{ nullptr };
+	Node*	m_last{ nullptr };
+	int		m_count{ 0 };
+
+	Node*	m_curr{ nullptr };	// DEPRECATED
+	Node*	m_del{ nullptr };	// DEPRECATED
+};
+
+//------------------------------------------------------
+
+template <typename NODE>
+struct ListAllocatorBase
+{
+	virtual			~ListAllocatorBase() {}
+
+	virtual NODE*	alloc() = 0;
+	virtual void	free(NODE* node) = 0;
+};
+
+template<typename NODE>
+class DynamicListAllocator : public ListAllocatorBase<NODE>
+{
+public:
+	DynamicListAllocator(const PPSourceLine& _sl)
+		: m_sl(_sl)
+	{
+	}
+
+	NODE* alloc()
+	{
+		return PPNewSL(m_sl) typename NODE;
+	}
+
+	void free(NODE* node)
+	{
+		delete node;
+	}
+
+private:
+	const PPSourceLine m_sl;
+};
+
+
+template<typename NODE, int SIZE>
+class FixedListAllocator : public ListAllocatorBase<NODE>
+{
+public:
+	FixedListAllocator() 
+	{
+		for (int i = 0; i < SIZE; i++)
+			m_nodeAlloc[i] = i;
+	}
+
+	NODE* alloc()
+	{
+		NODE* newNode = getNextNodeFromPool();
+
+		ASSERT_MSG(newNode, "FixedListAllocator - No more free nodes in pool (%d)!", SIZE);
+
+		new(newNode) NODE();
+		return newNode;
+	}
+
+	void free(NODE* node)
+	{
+		const int idx = node - m_nodePool;
+		ASSERT_MSG(idx >= 0 && idx < SIZE, "FixedListAllocator tried to remove Node that doesn't belong it's list!");
+
+		node->~NODE();
+		m_nodeAlloc[--m_nextNode] = idx;
+	}
+
+	NODE* getNextNodeFromPool()
+	{
+		if (m_nextNode < SIZE)
+			return &m_nodePool[m_nodeAlloc[m_nextNode++]];
 
 		return nullptr;
 	}
 
-	ListNode<T> m_fixedarr[MAXSIZE];
-	ListNode<T>* first, * last, * curr, * del;
-	int count;
+	NODE m_nodePool[SIZE];
+	ushort m_nodeAlloc[SIZE];
+	ushort m_nextNode{ 0 };
 };
 
-//--------------------------------------------------------------------------------------
-
-template <class T>
-class ListIterator
+template <typename T, typename ALLOCATOR>
+class ListBase : public ListAbstract<T>
 {
 public:
-	template <class> friend class List;
-
-	ListIterator(List<T> &list)
+	virtual ~ListBase()
 	{
-		first = list.first;
-		last = list.last;
-		curr = list.curr;
+		clear();
 	}
 
-	bool goToFirst() { return (curr = first) != nullptr; }
-	bool goToLast () { return (curr = last ) != nullptr; }
-	bool goToPrev () { return (curr = curr->prev) != nullptr; }
-	bool goToNext () { return (curr = curr->next) != nullptr; }
-
-	bool goToObject(const T& object)
+	ListBase()
 	{
-		curr = first;
-		while (curr != nullptr)
-		{
-			if (object == curr->object) return true;
-			curr = curr->next;
-		}
-		return false;
+		static_assert(!std::is_same_v<ALLOCATOR, DynamicListAllocator<T>>, "PP_SL constructor is required to use");
 	}
 
-	const T & getCurrent() const { return curr->object; }
-
-	const T & getPrev() const { return curr->prev->object; }
-	const T & getNext() const { return curr->next->object; }
-	const T & getPrevWrap() const { return ((curr->prev != nullptr)? curr->prev : last)->object; }
-	const T & getNextWrap() const { return ((curr->next != nullptr)? curr->next : first)->object; }
+	ListBase(const PPSourceLine& sl) 
+		: m_allocator(sl)
+	{
+	}
 
 private:
 
-	ListNode <T> *first, *last, *curr;
-	int count;
+	Node* allocNode()
+	{
+		return m_allocator.alloc();
+	}
+
+	void freeNode(Node* node)
+	{
+		return m_allocator.free(node);
+	}
+
+	ALLOCATOR m_allocator;
 };
 
-#endif // LIST_H
+template<typename T>
+using List = ListBase<T, DynamicListAllocator<ListNode<T>>>;
+
+template<typename T, int SIZE>
+using FixedList = ListBase<T, FixedListAllocator<ListNode<T>, SIZE>>;

@@ -23,8 +23,8 @@
 namespace equi
 {
 
-	IUIControl::IUIControl()
-		: m_visible(true), m_selfVisible(true), m_enabled(true), m_parent(nullptr),
+IUIControl::IUIControl()
+	: m_visible(true), m_selfVisible(true), m_enabled(true), m_parent(nullptr),
 	m_sizeDiff(0), m_sizeDiffPerc(1.0f),
 	m_position(0),m_size(25),
 	m_scaling(UI_SCALING_NONE), m_anchors(0), m_alignment(UI_ALIGN_LEFT | UI_ALIGN_TOP)
@@ -619,16 +619,10 @@ IUIControl* IUIControl::HitTest(const IVector2D& point)
 // returns child control
 IUIControl* IUIControl::FindChild(const char* pszName)
 {
-	ListIterator<IUIControl*> iter(m_childs);
-
-	if(iter.goToFirst())
+	for (auto it = m_childs.front(); it; it = it->nextNode())
 	{
-		do
-		{
-			if(!strcmp(iter.getCurrent()->GetName(), pszName))
-				return iter.getCurrent();
-		}
-		while(iter.goToNext());
+		if (!strcmp(it->getValue()->GetName(), pszName))
+			return it->getValue();
 	}
 
 	return nullptr;
@@ -636,24 +630,17 @@ IUIControl* IUIControl::FindChild(const char* pszName)
 
 IUIControl* IUIControl::FindChildRecursive(const char* pszName)
 {
-	ListIterator<IUIControl*> iter(m_childs);
-
-	if (iter.goToFirst())
+	// find nearest child
+	for (auto it = m_childs.front(); it; it = it->nextNode())
 	{
-		do
-		{
-			// first compare this child
-			IUIControl* nextChild = iter.getCurrent();
+		IUIControl* child = it->getValue();
 
-			if (!strcmp(iter.getCurrent()->GetName(), pszName))
-				return iter.getCurrent();
+		if (!strcmp(child->GetName(), pszName))
+			return child;
 
-			// try find child inside
-			IUIControl* foundChild = nextChild->FindChildRecursive(pszName);
-			if (foundChild)
-				return foundChild;
-		} 
-		while (iter.goToNext());
+		IUIControl* foundChild = child->FindChildRecursive(pszName);
+		if (foundChild)
+			return foundChild;
 	}
 
 	return nullptr;

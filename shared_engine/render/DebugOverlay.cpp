@@ -177,9 +177,6 @@ void CDebugOverlay::Text(const ColorRGBA &color, char const *fmt,...)
 
 void CDebugOverlay::Text3D(const Vector3D &origin, float dist, const ColorRGBA &color, const char* text, float fTime, int hashId)
 {
-	if(!r_drawFrameStats.GetBool())
-		return;
-
 	if(hashId == 0 && !m_frustum.IsSphereInside(origin, 1.0f))
 		return;
 
@@ -1092,7 +1089,7 @@ void CDebugOverlay::Draw(int winWide, int winTall, float timescale)
 		{
 			do
 			{
-				DebugFadingTextNode_t& current = m_LeftTextFadeArray.getCurrentNode()->object;
+				DebugFadingTextNode_t& current = m_LeftTextFadeArray.getCurrentNode()->getValue();
 
 				if (current.lifetime < 0.0f)
 				{
@@ -1123,37 +1120,37 @@ void CDebugOverlay::Draw(int winWide, int winTall, float timescale)
 		}
 	}
 
-	if(r_drawFrameStats.GetBool())
+	eqFontStyleParam_t textStl;
+	textStl.styleFlag = TEXT_STYLE_SHADOW | TEXT_STYLE_FROM_CAP;
+
 	{
-		eqFontStyleParam_t textStl;
-		textStl.styleFlag = TEXT_STYLE_SHADOW | TEXT_STYLE_FROM_CAP;
+		Threading::CScopedMutex m(s_debugOverlayMutex);
 
+		for (int i = 0; i < m_Text3DArray.numElem(); i++)
 		{
-			Threading::CScopedMutex m(s_debugOverlayMutex);
+			DebugText3DNode_t& current = m_Text3DArray[i];
 
-			for (int i = 0; i < m_Text3DArray.numElem(); i++)
+			Vector3D screen(0);
+
+			bool beh = PointToScreen_Z(current.origin, screen, m_projMat * m_viewMat, Vector2D(winWide, winTall));
+
+			bool visible = true;
+
+			if (current.dist > 0)
+				visible = (screen.z < current.dist);
+
+			current.lifetime -= m_frameTime;
+
+			if (!beh && visible)
 			{
-				DebugText3DNode_t& current = m_Text3DArray[i];
-
-				Vector3D screen(0);
-
-				bool beh = PointToScreen_Z(current.origin, screen, m_projMat * m_viewMat, Vector2D(winWide, winTall));
-
-				bool visible = true;
-
-				if (current.dist > 0)
-					visible = (screen.z < current.dist);
-
-				current.lifetime -= m_frameTime;
-
-				if (!beh && visible)
-				{
-					textStl.textColor = MColor(current.color);
-					m_debugFont2->RenderText(current.pszText.GetData(), screen.xy(), textStl);
-				}
+				textStl.textColor = MColor(current.color);
+				m_debugFont2->RenderText(current.pszText.GetData(), screen.xy(), textStl);
 			}
 		}
+	}
 
+	if(r_drawFrameStats.GetBool())
+	{
 		{
 			Threading::CScopedMutex m(s_debugOverlayMutex);
 			if (m_TextArray.numElem())

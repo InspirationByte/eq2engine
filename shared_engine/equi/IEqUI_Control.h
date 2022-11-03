@@ -194,7 +194,7 @@ protected:
 
 	IUIControl*					m_parent{ nullptr };
 
-	List<IUIControl*>			m_childs;		// child panels
+	List<IUIControl*>			m_childs{ PP_SL };		// child panels
 
 	Array<ui_event>				m_eventCallbacks{ PP_SL };
 

@@ -656,7 +656,7 @@ ITexture* ShaderAPI_Base::CreateProceduralTexture(const char* pszName,
 		return nullptr;	// don't generate error
 	}
 
-	FixedArray<CImage*, 1> imgs(PP_SL);
+	FixedArray<CImage*, 1> imgs;
 	imgs.append(&genTex);
 
 	SamplerStateParam_t sampler = g_pShaderAPI->MakeSamplerState(texFilter,textureAddress,textureAddress,textureAddress);
@@ -766,7 +766,7 @@ ITexture* ShaderAPI_Base::GenerateErrorTexture(int nFlags/* = 0*/)
 
 	image.CreateMipMaps();
 
-	FixedArray<CImage*, 1> images(PP_SL);
+	FixedArray<CImage*, 1> images;
 	images.append(&image);
 
 	ITexture* pOutTexture = CreateTexture(images, texSamplerParams, nFlags);

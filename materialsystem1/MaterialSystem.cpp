@@ -396,7 +396,7 @@ void CMaterialSystem::CreateWhiteTexture()
 
 	SamplerStateParam_t texSamplerParams = g_pShaderAPI->MakeSamplerState(TEXFILTER_TRILINEAR_ANISO,TEXADDRESS_CLAMP,TEXADDRESS_CLAMP,TEXADDRESS_CLAMP);
 
-	FixedArray<CImage*, 1> images(PP_SL);
+	FixedArray<CImage*, 1> images;
 	images.append(img);
 
 	m_whiteTexture = g_pShaderAPI->CreateTexture(images, texSamplerParams, TEXFLAG_NOQUALITYLOD);

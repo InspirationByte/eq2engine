@@ -120,7 +120,7 @@ private:
 	Array<DebugTextNode_t>			m_TextArray{ PP_SL };
 	Array<DebugText3DNode_t>		m_Text3DArray{ PP_SL };
 
-	List<DebugFadingTextNode_t>		m_LeftTextFadeArray;
+	List<DebugFadingTextNode_t>		m_LeftTextFadeArray{ PP_SL };
 	Array<DebugFadingTextNode_t>	m_RightTextFadeArray{ PP_SL };
 
 	Array<DebugLineNode_t>			m_LineList{ PP_SL };

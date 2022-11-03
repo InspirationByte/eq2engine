@@ -24,7 +24,7 @@ ConVar ph_margin("ph_margin", "0.0001", nullptr, CV_CHEAT | CV_UNREGISTERED);
 
 #define AABB_GROWVALUE	 (0.15f)
 
-CEqCollisionObject::CEqCollisionObject() : m_collisionList(PP_SL, PHYSICS_COLLISION_LIST_MAX)
+CEqCollisionObject::CEqCollisionObject()
 {
 	m_collObject = nullptr;
 	m_shape = nullptr;
