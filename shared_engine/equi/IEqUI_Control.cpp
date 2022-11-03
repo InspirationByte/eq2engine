@@ -570,16 +570,11 @@ void IUIControl::Render()
 	}
 
 	// render from last
-	if(m_childs.goToLast())
+	for (auto lln = m_childs.end(); lln; lln = lln->prevNode())
 	{
-		do
-		{
-			// load new absolulte transformation
-			materials->SetMatrix(MATRIXMODE_WORLD2, newTransform);
-
-			m_childs.getCurrent()->Render();
-		}
-		while(m_childs.goToPrev());
+		// load new absolulte transformation
+		materials->SetMatrix(MATRIXMODE_WORLD2, newTransform);
+		lln->getValue()->Render();
 	}
 
 	// always reset previous absolute transformation
@@ -598,19 +593,15 @@ IUIControl* IUIControl::HitTest(const IVector2D& point)
 	if(!clientRect.IsInRectangle(point))
 		return nullptr;
 
-	if(m_childs.goToFirst())
+	for (auto lln = m_childs.begin(); lln; lln = lln->nextNode())
 	{
-		do
-		{
-			IUIControl* hit = m_childs.getCurrent()->HitTest(point);
+		IUIControl* hit = lln->getValue()->HitTest(point);
 
-			if(hit)
-			{
-				bestControl = hit;
-				break;
-			}
+		if (hit)
+		{
+			bestControl = hit;
+			break;
 		}
-		while(m_childs.goToNext());
 	}
 
 	return bestControl;
@@ -648,18 +639,14 @@ IUIControl* IUIControl::FindChildRecursive(const char* pszName)
 
 void IUIControl::ClearChilds(bool destroy)
 {
-	if(m_childs.goToFirst())
+	for (auto lln = m_childs.begin(); lln; lln = lln->nextNode())
 	{
-		do
-		{
-			m_childs.getCurrent()->m_parent = nullptr;
+		lln->getValue()->m_parent = nullptr;
 
-			if(destroy)
-				delete m_childs.getCurrent();
+		if (destroy)
+			delete lln->getValue();
 
-			m_childs.setCurrent(nullptr);
-		}
-		while(m_childs.goToNext());
+		lln->getValue() = nullptr;
 	}
 
 	m_childs.clear();
@@ -667,29 +654,22 @@ void IUIControl::ClearChilds(bool destroy)
 
 void IUIControl::AddChild(IUIControl* pControl)
 {
-	m_childs.append(pControl);
+	m_childs.prepend(pControl);
 	pControl->m_parent = this;
 }
 
 void IUIControl::RemoveChild(IUIControl* pControl, bool destroy)
 {
-	if(m_childs.goToFirst())
-	{
-		do
-		{
-			if(m_childs.getCurrent() == pControl)
-			{
-				pControl->m_parent = nullptr;
+	auto found = m_childs.findBack(pControl);
+	if (!found)
+		return;
 
-				if(destroy)
-					delete pControl;
+	found->getValue()->m_parent = nullptr;
 
-				m_childs.removeCurrent();
-				return;
-			}
-		}
-		while(m_childs.goToNext());
-	}
+	if (destroy)
+		delete found->getValue();
+
+	m_childs.remove(found);
 }
 
 bool IUIControl::ProcessMouseEvents(const IVector2D& mousePos, const IVector2D& mouseDelta, int nMouseButtons, int flags)
