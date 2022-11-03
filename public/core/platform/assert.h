@@ -8,9 +8,24 @@
 #pragma once
 #include "core/InterfaceManager.h"
 
-IEXPORTS void	_InternalAssertMsg(PPSourceLine sl, const char* statement, ...);
+#ifndef _WIN32
 
-#define	ASSERT_MSG(x, msgFmt, ...) if (!(x)) _InternalAssertMsg(PP_SL, msgFmt, ##__VA_ARGS__)
+#include <signal.h>
+#define ASSERT_DEBUG_BREAK raise(SIGINT)
+
+#else
+
+#if _MSC_VER >= 1400
+#define ASSERT_DEBUG_BREAK __debugbreak()
+#else
+#define ASSERT_DEBUG_BREAK _asm int 0x03
+#endif
+
+#endif
+
+IEXPORTS bool	_InternalAssertMsg(PPSourceLine sl, const char* statement, ...);
+
+#define	ASSERT_MSG(x, msgFmt, ...) if (!(x) && _InternalAssertMsg(PP_SL, msgFmt, ##__VA_ARGS__)) { ASSERT_DEBUG_BREAK; }
 #define	ASSERT(x) ASSERT_MSG(x, #x)
 #define ASSERT_FAIL(msgFmt, ...) ASSERT_MSG(false, msgFmt, ##__VA_ARGS__)
 

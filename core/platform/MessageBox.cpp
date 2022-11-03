@@ -222,7 +222,7 @@ static void AssertLogMsg(SpewType_t _dummy, const char* fmt, ...)
 
 #ifdef _WIN32
 
-IEXPORTS void _InternalAssertMsg(PPSourceLine sl, const char *fmt, ...)
+IEXPORTS bool _InternalAssertMsg(PPSourceLine sl, const char *fmt, ...)
 {
 	static bool debug = true;
 
@@ -246,11 +246,7 @@ IEXPORTS void _InternalAssertMsg(PPSourceLine sl, const char *fmt, ...)
 			int res = MessageBoxA(nullptr, messageStr + " - Debug?", "Assertion failed", MB_YESNOCANCEL);
 			if (res == IDYES)
 			{
-#if _MSC_VER >= 1400
-				__debugbreak();
-#else
-				_asm int 0x03;
-#endif
+				return true;
 			}
 			else if (res == IDCANCEL)
 			{
@@ -266,13 +262,12 @@ IEXPORTS void _InternalAssertMsg(PPSourceLine sl, const char *fmt, ...)
 			}
 		}
 	}
+	return false;
 }
 
 #else
 
-#include <signal.h>
-
-IEXPORTS void _InternalAssertMsg(PPSourceLine sl, const char* fmt, ...)
+IEXPORTS bool _InternalAssertMsg(PPSourceLine sl, const char* fmt, ...)
 {
 	va_list argptr;
 
@@ -305,9 +300,9 @@ IEXPORTS void _InternalAssertMsg(PPSourceLine sl, const char* fmt, ...)
     if (debug)
 #endif // USE_GTK
     {
-        // make breakpoint
-		raise( SIGINT );
+		return true;
     }
+	return false;
 }
 
 #endif //
