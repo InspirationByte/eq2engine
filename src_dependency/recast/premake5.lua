@@ -90,7 +90,7 @@ usage "Recast"
 	}
 
 
-if not IS_ANDROID then
+if false and not IS_ANDROID then
 
 project "RecastDemo"
 	language "C++"

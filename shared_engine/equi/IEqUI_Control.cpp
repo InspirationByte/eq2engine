@@ -619,7 +619,7 @@ IUIControl* IUIControl::HitTest(const IVector2D& point)
 // returns child control
 IUIControl* IUIControl::FindChild(const char* pszName)
 {
-	for (auto it = m_childs.front(); it; it = it->nextNode())
+	for (auto it = m_childs.begin(); it; it = it->nextNode())
 	{
 		if (!strcmp(it->getValue()->GetName(), pszName))
 			return it->getValue();
@@ -631,7 +631,7 @@ IUIControl* IUIControl::FindChild(const char* pszName)
 IUIControl* IUIControl::FindChildRecursive(const char* pszName)
 {
 	// find nearest child
-	for (auto it = m_childs.front(); it; it = it->nextNode())
+	for (auto it = m_childs.begin(); it; it = it->nextNode())
 	{
 		IUIControl* child = it->getValue();
 
@@ -667,7 +667,7 @@ void IUIControl::ClearChilds(bool destroy)
 
 void IUIControl::AddChild(IUIControl* pControl)
 {
-	m_childs.addFirst(pControl);
+	m_childs.append(pControl);
 	pControl->m_parent = this;
 }
 

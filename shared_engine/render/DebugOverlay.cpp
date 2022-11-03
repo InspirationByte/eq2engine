@@ -219,7 +219,7 @@ void CDebugOverlay::TextFadeOut(int position, const ColorRGBA &color,float fFade
 	va_end (argptr);
 	if(position == 0)
 	{
-		m_LeftTextFadeArray.addLast(textNode);
+		m_LeftTextFadeArray.append(textNode);
 
 		if(m_LeftTextFadeArray.getCount() > MAX_MINICON_MESSAGES && m_LeftTextFadeArray.goToFirst())
 			m_LeftTextFadeArray.removeCurrent();

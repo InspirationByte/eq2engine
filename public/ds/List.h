@@ -40,7 +40,7 @@ public:
 
 	int getCount() const { return m_count; }
 
-	bool addFirst(const T& value)
+	bool prepend(const T& value)
 	{
 		Node* node = allocNode();
 		node->value = value;
@@ -49,7 +49,7 @@ public:
 		return true;
 	}
 
-	bool addLast(const T& value)
+	bool append(const T& value)
 	{
 		Node* node = allocNode();
 		node->value = value;
@@ -79,11 +79,17 @@ public:
 		return true;
 	}
 
-	const Node* front() const { return m_first; }
-	Node* front() { return m_first; }
+	const Node* begin() const { return m_first; }
+	Node* begin() { return m_first; }
 
-	const Node* back() const { return m_last; }
-	Node* back() { return m_last; }
+	const Node* end() const { return m_last; }
+	Node* end() { return m_last; }
+
+	const T& front() const { return m_first->value; }
+	T& front() { return m_first->value; }
+
+	const T& back() const { return m_last->value; }
+	T& back() { return m_last->value; }
 
 	Node* findFront(const T& value) const
 	{
@@ -107,26 +113,6 @@ public:
 			n = n->prev;
 		}
 		return nullptr;
-	}
-
-	const T& getPrevWrap() const
-	{
-		return ((m_curr->prev != nullptr) ? m_curr->prev : m_last)->value;
-	}
-
-	const T& getNextWrap() const
-	{
-		return ((m_curr->next != nullptr) ? m_curr->next : m_first)->value;
-	}
-
-	T& getFirst() const
-	{
-		return m_first->value;
-	}
-
-	T& getLast() const
-	{
-		return m_last->value;
 	}
 
 	void clear()
@@ -161,15 +147,6 @@ public:
 		m_count--;
 	}
 
-	void moveCurrentToTop()
-	{
-		if (m_curr != nullptr)
-		{
-			releaseNode(m_curr);
-			insertNodeFirst(m_curr);
-		}
-	}
-
 	bool insertBefore(const T& value, Node* incidentNode) 
 	{
 		Node* node = allocNode();
@@ -190,6 +167,25 @@ public:
 
 	//------------------------------------------------
 	// DEPRECATED API
+
+	void moveCurrentToTop() // DEPRECATED
+	{
+		if (m_curr != nullptr)
+		{
+			releaseNode(m_curr);
+			insertNodeFirst(m_curr);
+		}
+	}
+
+	const T& getPrevWrap() const  // DEPRECATED
+	{
+		return ((m_curr->prev != nullptr) ? m_curr->prev : m_last)->value;
+	}
+
+	const T& getNextWrap() const  // DEPRECATED
+	{
+		return ((m_curr->next != nullptr) ? m_curr->next : m_first)->value;
+	}
 
 	Node* goToFirst() { return m_curr = m_first; } // DEPRECATED
 	Node* goToLast() { return m_curr = m_last; } // DEPRECATED

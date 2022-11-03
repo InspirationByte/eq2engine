@@ -239,8 +239,8 @@ void CFont::BuildCharVertexBuffer(CMeshBuilder& builder, const CHAR_T* str, cons
 	bool hasNewLine = true;
 	int lineNumber = 0;
 
-	List<eqFontStyleParam_t> states{ PP_SL };
-	states.addLast( params );	// push this param
+	FixedList<eqFontStyleParam_t, 8> states;
+	states.append( params );	// push this param
 
 	int charMode = CHARMODE_NORMAL;
 	int tagType = TEXT_TAG_NONE;
@@ -297,7 +297,7 @@ void CFont::BuildCharVertexBuffer(CMeshBuilder& builder, const CHAR_T* str, cons
 				}
 				else
 				{
-					states.addLast(parsedParams);
+					states.append(parsedParams);
 				}
 
 				tagType = TEXT_TAG_NONE;
@@ -310,7 +310,7 @@ void CFont::BuildCharVertexBuffer(CMeshBuilder& builder, const CHAR_T* str, cons
 
 		if(states.getCount() == 0)
 		{
-			states.addLast( params ); // restore style
+			states.append( params ); // restore style
 			continue;
 		}
 
