@@ -7,10 +7,10 @@
 
 #pragma once
 
-template <typename T>
-class ListAbstract;
+template <typename T, typename ALLOCATOR>
+class ListBase;
 
-template <typename T>
+template <typename T, typename ALLOCATOR>
 struct ListNode
 {
 public:
@@ -29,14 +29,112 @@ protected:
 	ListNode*	prev{ nullptr };
 	ListNode*	next{ nullptr };
 
-	friend class ListAbstract<T>;
+	friend class ListBase<T, ALLOCATOR>;
 };
 
-template <typename T>
-class ListAbstract
+//------------------------------------------------------
+
+template <typename T, typename ALLOCATOR>
+struct ListAllocatorBase
+{
+	using Node = ListNode<T, ALLOCATOR>;
+
+	virtual			~ListAllocatorBase() {}
+
+	virtual Node*	alloc() = 0;
+	virtual void	free(Node* node) = 0;
+};
+
+template<typename T>
+class DynamicListAllocator : public ListAllocatorBase<T, DynamicListAllocator<T>>
 {
 public:
-	using Node = ListNode<T>;
+	using Node = ListNode<T, DynamicListAllocator<T>>;
+
+	DynamicListAllocator(const PPSourceLine& _sl)
+		: m_sl(_sl)
+	{
+	}
+
+	Node* alloc()
+	{
+		return PPNewSL(m_sl) typename Node;
+	}
+
+	void free(Node* node)
+	{
+		delete node;
+	}
+
+private:
+	const PPSourceLine m_sl;
+};
+
+
+template<typename T, int SIZE>
+class FixedListAllocator : public ListAllocatorBase<T, FixedListAllocator<T, SIZE>>
+{
+public:
+	using Node = ListNode<T, FixedListAllocator<T, SIZE>>;
+
+	FixedListAllocator() 
+	{
+		for (int i = 0; i < SIZE; i++)
+			m_nodeAlloc[i] = i;
+	}
+
+	Node* alloc()
+	{
+		Node* newNode = getNextNodeFromPool();
+
+		ASSERT_MSG(newNode, "FixedListAllocator - No more free nodes in pool (%d)!", SIZE);
+
+		new(newNode) Node();
+		return newNode;
+	}
+
+	void free(Node* node)
+	{
+		const int idx = node - m_nodePool;
+		ASSERT_MSG(idx >= 0 && idx < SIZE, "FixedListAllocator tried to remove Node that doesn't belong it's list!");
+
+		node->~Node();
+		m_nodeAlloc[--m_nextNode] = idx;
+	}
+
+	Node* getNextNodeFromPool()
+	{
+		if (m_nextNode < SIZE)
+			return &m_nodePool[m_nodeAlloc[m_nextNode++]];
+
+		return nullptr;
+	}
+
+	Node m_nodePool[SIZE];
+	ushort m_nodeAlloc[SIZE];
+	ushort m_nextNode{ 0 };
+};
+
+template <typename T, typename ALLOCATOR>
+class ListBase
+{
+public:
+	virtual ~ListBase()
+	{
+		clear();
+	}
+
+	ListBase()
+	{
+		static_assert(!std::is_same_v<ALLOCATOR, DynamicListAllocator<T>>, "PP_SL constructor is required to use");
+	}
+
+	ListBase(const PPSourceLine& sl) 
+		: m_allocator(sl)
+	{
+	}
+
+	using Node = ListNode<T, ALLOCATOR>;
 
 	int getCount() const { return m_count; }
 
@@ -262,7 +360,7 @@ public:
 		return (m_curr != nullptr);
 	}
 
-protected:
+private:
 	void insertNodeFirst(Node* node)
 	{
 		if (m_first != nullptr)
@@ -331,114 +429,12 @@ protected:
 		node->prev = nullptr;
 	}
 
-	virtual Node*	allocNode() = 0;
-	virtual void	freeNode(Node* node) = 0;
-
 	Node*	m_first{ nullptr };
 	Node*	m_last{ nullptr };
 	int		m_count{ 0 };
 
 	Node*	m_curr{ nullptr };	// DEPRECATED
 	Node*	m_del{ nullptr };	// DEPRECATED
-};
-
-//------------------------------------------------------
-
-template <typename NODE>
-struct ListAllocatorBase
-{
-	virtual			~ListAllocatorBase() {}
-
-	virtual NODE*	alloc() = 0;
-	virtual void	free(NODE* node) = 0;
-};
-
-template<typename NODE>
-class DynamicListAllocator : public ListAllocatorBase<NODE>
-{
-public:
-	DynamicListAllocator(const PPSourceLine& _sl)
-		: m_sl(_sl)
-	{
-	}
-
-	NODE* alloc()
-	{
-		return PPNewSL(m_sl) typename NODE;
-	}
-
-	void free(NODE* node)
-	{
-		delete node;
-	}
-
-private:
-	const PPSourceLine m_sl;
-};
-
-
-template<typename NODE, int SIZE>
-class FixedListAllocator : public ListAllocatorBase<NODE>
-{
-public:
-	FixedListAllocator() 
-	{
-		for (int i = 0; i < SIZE; i++)
-			m_nodeAlloc[i] = i;
-	}
-
-	NODE* alloc()
-	{
-		NODE* newNode = getNextNodeFromPool();
-
-		ASSERT_MSG(newNode, "FixedListAllocator - No more free nodes in pool (%d)!", SIZE);
-
-		new(newNode) NODE();
-		return newNode;
-	}
-
-	void free(NODE* node)
-	{
-		const int idx = node - m_nodePool;
-		ASSERT_MSG(idx >= 0 && idx < SIZE, "FixedListAllocator tried to remove Node that doesn't belong it's list!");
-
-		node->~NODE();
-		m_nodeAlloc[--m_nextNode] = idx;
-	}
-
-	NODE* getNextNodeFromPool()
-	{
-		if (m_nextNode < SIZE)
-			return &m_nodePool[m_nodeAlloc[m_nextNode++]];
-
-		return nullptr;
-	}
-
-	NODE m_nodePool[SIZE];
-	ushort m_nodeAlloc[SIZE];
-	ushort m_nextNode{ 0 };
-};
-
-template <typename T, typename ALLOCATOR>
-class ListBase : public ListAbstract<T>
-{
-public:
-	virtual ~ListBase()
-	{
-		clear();
-	}
-
-	ListBase()
-	{
-		static_assert(!std::is_same_v<ALLOCATOR, DynamicListAllocator<T>>, "PP_SL constructor is required to use");
-	}
-
-	ListBase(const PPSourceLine& sl) 
-		: m_allocator(sl)
-	{
-	}
-
-private:
 
 	Node* allocNode()
 	{
@@ -454,7 +450,7 @@ private:
 };
 
 template<typename T>
-using List = ListBase<T, DynamicListAllocator<ListNode<T>>>;
+using List = ListBase<T, DynamicListAllocator<T>>;
 
 template<typename T, int SIZE>
-using FixedList = ListBase<T, FixedListAllocator<ListNode<T>, SIZE>>;
+using FixedList = ListBase<T, FixedListAllocator<T, SIZE>>;
