@@ -1389,7 +1389,7 @@ public:
 	int				numElem() const { return m_nNumElem; }
 
 	// returns a pointer to the list
-	T*				ptr() { return m_pListPtr; }
+	const T*		ptr() const { return m_pListPtr; }
 
 protected:
 	const T*		m_pListPtr;
