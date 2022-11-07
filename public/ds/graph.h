@@ -6,6 +6,10 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #pragma once
+#include "ds/SimpleBinaryHeap.h"
+
+// set to 1 if somehow having problems
+#define GRAPH_SLOW_OPENSET		0
 
 template<typename NODE_ID>
 class IGraphEdgeIterator
@@ -51,6 +55,18 @@ protected:
 
 //--------------------------------------------------------------------
 
+template<typename NODE_ID>
+struct GraphNode
+{
+	NODE_ID nodeId;
+	float dist;
+
+	static int Compare(const GraphNode& nodeA, const GraphNode& nodeB)
+	{
+		return nodeA.dist > nodeB.dist;
+	}
+};
+
 template<typename EDGE_ITER, typename NODE_ID>
 inline NODE_ID IGraph<EDGE_ITER, NODE_ID>::Djikstra(const NODE_ID* startNodes, int startNodeCount, const CheckNodeFunc& isStopNodeFunc)
 {
@@ -58,12 +74,21 @@ inline NODE_ID IGraph<EDGE_ITER, NODE_ID>::Djikstra(const NODE_ID* startNodes, i
 	ResetNodeStates();
 
 	// make initial front which consists of node id and total distance
+#if GRAPH_SLOW_OPENSET
 	Map<NODE_ID, float> openSet(PP_SL);
 	for (int i = 0; i < startNodeCount; ++i)
 	{
 		Node_SetDistance(startNodes[i], 0.0f);
 		openSet.insert(startNodes[i], 0.0f);
 	}
+#else
+	SimpleBinaryHeap<GraphNode<NODE_ID>> openSet(PP_SL);
+	for (int i = 0; i < startNodeCount; ++i)
+	{
+		Node_SetDistance(startNodes[i], 0.0f);
+		openSet.Add({ startNodes[i], 0.0f });
+	}
+#endif
 
 	NODE_ID cheapestNode;
 	EDGE_ITER edgeIt(this);
@@ -71,6 +96,7 @@ inline NODE_ID IGraph<EDGE_ITER, NODE_ID>::Djikstra(const NODE_ID* startNodes, i
 	{
 		cheapestNode = -1;
 
+#if GRAPH_SLOW_OPENSET
 		float minDist = F_INFINITY;
 		auto bestNode = openSet.begin();
 		for (auto it = openSet.begin(); it != openSet.end(); ++it)
@@ -89,6 +115,13 @@ inline NODE_ID IGraph<EDGE_ITER, NODE_ID>::Djikstra(const NODE_ID* startNodes, i
 
 		Node_MarkProcessed(cheapestNode);
 		openSet.remove(bestNode);
+#else
+		GraphNode<NODE_ID> bestNode = openSet.PopMin();
+		cheapestNode = bestNode.nodeId;
+		float minDist = bestNode.dist;
+
+		Node_MarkProcessed(cheapestNode);
+#endif // GRAPH_SLOW_OPENSET
 
 		// walk through edges and neighbour nodes
 		for (edgeIt.Rewind(cheapestNode); !edgeIt.IsDone(); edgeIt++)
@@ -105,7 +138,11 @@ inline NODE_ID IGraph<EDGE_ITER, NODE_ID>::Djikstra(const NODE_ID* startNodes, i
 			{
 				Node_SetDistance(neighbourNode, distance);
 				Node_SetParent(neighbourNode, cheapestNode);
+#if GRAPH_SLOW_OPENSET
 				openSet.insert(neighbourNode, distance);
+#else
+				openSet.Add({ neighbourNode, distance });
+#endif
 			}
 		}
 

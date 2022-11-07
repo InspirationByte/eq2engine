@@ -123,10 +123,10 @@ struct TAABBox
                pos.z >= minPoint.z-tolerance && pos.z <= maxPoint.z+tolerance;
     }
 
-	float SquaredDistPointAABB( const TVec3D<T>& p ) const
+	T SquaredDistPointAABB( const TVec3D<T>& p ) const
 	{
 		// Squared distance
-		T sq = 0.0;
+		T sq = static_cast<T>(0);
 
 		sq += dist_check( p.x, minPoint.x, maxPoint.x );
 		sq += dist_check( p.y, minPoint.y, maxPoint.y );
@@ -137,7 +137,7 @@ struct TAABBox
 
 	bool IntersectsSphere( const TVec3D<T>& center, T radius ) const
 	{
-		float squaredDistance = SquaredDistPointAABB( center );
+		T squaredDistance = SquaredDistPointAABB( center );
 
 		return squaredDistance <= (radius * radius);
 	}
@@ -165,12 +165,12 @@ struct TAABBox
 	bool IntersectsRay(const TVec3D<T>& rayStart, const TVec3D<T>& rayDir, T& tnear, T& tfar) const
 	{
 		TVec3D<T> T_1, T_2; // vectors to hold the T-values for every direction
-		T t_near	= (T)-F_INFINITY;
-		T t_far		= (T)F_INFINITY;
+		T t_near	= -static_cast<T>(F_INFINITY);
+		T t_far		= static_cast<T>(F_INFINITY);
 
 		for (int i = 0; i < 3; i++)
 		{
-			if (rayDir[i] == 0)
+			if (rayDir[i] == static_cast<T>(0))
 			{
 				// ray parallel to planes in this direction
 				if ((rayStart[i] < minPoint[i]) || (rayStart[i] > maxPoint[i]))
@@ -178,9 +178,11 @@ struct TAABBox
 			}
 			else
 			{
+				const float oneByRayDir = rayDir[i];
+
 				// ray not parallel to planes in this direction
-				T_1[i] = (minPoint[i] - rayStart[i]) / rayDir[i];
-				T_2[i] = (maxPoint[i] - rayStart[i]) / rayDir[i];
+				T_1[i] = (minPoint[i] - rayStart[i]) * oneByRayDir;
+				T_2[i] = (maxPoint[i] - rayStart[i]) * oneByRayDir;
 
 				if(T_1[i] > T_2[i])
 					QuickSwap(T_1, T_2);
@@ -191,7 +193,7 @@ struct TAABBox
 				if (T_2[i] < t_far)
 					t_far = T_2[i];
 
-				if( (t_near > t_far) || (t_far < 0) )
+				if( (t_near > t_far) || (t_far < static_cast<T>(0)) )
 					return false;
 			}
 		}
@@ -204,8 +206,8 @@ struct TAABBox
 
     void Reset()
     {
-        minPoint = TVec3D<T>((T)F_INFINITY);
-		maxPoint = TVec3D<T>(-(T)F_INFINITY);
+        minPoint = TVec3D<T>(static_cast<T>(F_INFINITY));
+		maxPoint = TVec3D<T>(-static_cast<T>(F_INFINITY));
     }
 
 	const TVec3D<T>& GetMinPoint() const
@@ -227,7 +229,7 @@ struct TAABBox
 
 	TVec3D<T> GetCenter() const
 	{
-		return (minPoint + maxPoint) / (T)2;
+		return (minPoint + maxPoint) / static_cast<T>(2);
 	}
 
 	TVec3D<T> GetSize() const
@@ -265,8 +267,8 @@ struct TAABBox
 	// fixes bounds if they are broken
 	void Fix()
 	{
-		TVec3D<T> mins = minPoint;
-		TVec3D<T> maxs = maxPoint;
+		const TVec3D<T> mins = minPoint;
+		const TVec3D<T> maxs = maxPoint;
 
 		Reset();
 

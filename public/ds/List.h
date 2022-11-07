@@ -415,6 +415,11 @@ private:
 
 	void releaseNode(Node* node)
 	{
+		if (m_first != m_last)
+		{
+			ASSERT_MSG(!(node->next == nullptr && node->prev == nullptr), "releaseNode - already released node")
+		}
+
 		if (node->prev == nullptr)
 			m_first = node->next;
 		else

@@ -190,4 +190,3 @@ struct TRectangle
 
 typedef TRectangle<float>	Rectangle_t;
 typedef TRectangle<int>		IRectangle;
-typedef TRectangle<int>		FRectangle;
