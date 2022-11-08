@@ -10,14 +10,12 @@
 float				SnapFloat(float grid_spacing, float val);
 Vector3D			SnapVector(float grid_spacing, const Vector3D& vector);
 
-bool				PointToScreen(const Vector3D& point, Vector2D& screen, const Matrix4x4 &mvp, const Vector2D &screenDims);
-bool				PointToScreen_Z(const Vector3D& point, Vector3D& screen, const Matrix4x4 &mvp, const Vector2D &screenDims);
+bool				PointToScreen(const Vector3D& point, Vector2D& screen, const Matrix4x4& worldToScreen, const Vector2D &screenDims);
+bool				PointToScreen(const Vector3D& point, Vector3D& screen, const Matrix4x4& worldToScreen, const Vector2D &screenDims);
 void				ScreenToDirection(	const Vector3D& cam_pos, const Vector2D& point, const Vector2D& screensize,
 										Vector3D& start, Vector3D& dir, const Matrix4x4& wwp, bool bIsOrthogonal = false);
 
-bool				IsBoxIntersectingSphere( const Vector3D& boxMin, const Vector3D& boxMax, const Vector3D& center, float radius );
-bool				IsBoxIntersectingBox( const Vector3D& box1Min, const Vector3D& box1Max, const Vector3D& box2Min, const Vector3D& box2Max );
-bool				IsBox1GreaterThanBox2( const Vector3D& box1Min, const Vector3D& box1Max, const Vector3D& box2Min, const Vector3D& box2Max );
+//---------------------------------------------------------------------------------
 
 // uv point from triangle and 3d position
 Vector2D			UVFromPointOnTriangle(  const Vector3D& p1, const Vector3D& p2, const Vector3D& p3,
@@ -35,6 +33,11 @@ bool				IsPointInCone(Vector3D &pt, Vector3D &origin, Vector3D &axis, float cosA
 bool				IsRayIntersectsTriangle(const Vector3D& pt1, const Vector3D& pt2, const Vector3D& pt3, 
 											const Vector3D& linept, const Vector3D& vect, 
 											float& fraction, bool doTwoSided = false);
+
+//---------------------------------------------------------------------------------
+
+bool				LineIntersectsLine2D(const Vector2D& lAB, const Vector2D& lAE, const Vector2D& lBB, const Vector2D& lBE, Vector2D& isectPoint);
+bool				LineSegIntersectsLineSeg2D(const Vector2D& lAB, const Vector2D& lAE, const Vector2D& lBB, const Vector2D& lBE, Vector2D& isectPoint);
 
 //---------------------------------------------------------------------------------
 

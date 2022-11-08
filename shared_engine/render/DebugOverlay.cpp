@@ -1132,7 +1132,7 @@ void CDebugOverlay::Draw(int winWide, int winTall, float timescale)
 
 			Vector3D screen(0);
 
-			bool beh = PointToScreen_Z(current.origin, screen, m_projMat * m_viewMat, Vector2D(winWide, winTall));
+			bool beh = PointToScreen(current.origin, screen, m_projMat * m_viewMat, Vector2D(winWide, winTall));
 
 			bool visible = true;
 

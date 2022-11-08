@@ -204,6 +204,27 @@ struct TAABBox
 		return true;
 	}
 
+	bool IntersectsSphere(const TVec3D<T>& center, T radius) const
+	{
+		T dmin = static_cast<T>(0);
+
+		for (int i = 0; i < 3; ++i)
+		{
+			if (center[i] < minPoint[i])
+			{
+				const T cmin = center[i] - minPoint[i];
+				dmin += M_SQR(cmin);
+			}
+			else if (center[i] > maxPoint[i])
+			{
+				const T cmax = center[i] - maxPoint[i];
+				dmin += M_SQR(cmax);
+			}
+		}
+
+		return dmin <= M_SQR(radius);
+	}
+
     void Reset()
     {
         minPoint = TVec3D<T>(static_cast<T>(F_INFINITY));

@@ -21,67 +21,28 @@ Vector3D SnapVector(float grid_spacing, const Vector3D& vector)
 		SnapFloat(grid_spacing, vector.z));
 }
 
-
-bool PointToScreen(const Vector3D& point, Vector2D& screen, const Matrix4x4 &mvp, const Vector2D &screenDims)
+bool PointToScreen(const Vector3D& point, Vector3D& screen, const Matrix4x4& worldToScreen, const Vector2D& screenDims)
 {
-	Matrix4x4 worldToScreen = mvp;
+	const Vector4D outMat = worldToScreen * Vector4D(point, 1.0f);
 
-	bool behind = false;
+	const bool behind = (outMat.w < 0);
+	const float zDiv = outMat.w == 0.0f ? 1.0f : (1.0f / outMat.w);
 
-	Vector4D outMat;
-	Vector4D transpos(point,1.0f);
-
-	outMat = worldToScreen*transpos;
-
-	if(outMat.w < 0)
-		behind = true;
-
-	float zDiv = outMat.w == 0.0f ? 1.0f :
-		(1.0f / outMat.w);
-
-	//int vW,vH;
-	//g_pShaderAPI->GetViewportDimensions(vW,vH);
-
-	screen.x = ((screenDims.x * outMat.x * zDiv) + screenDims.x) / 2;
-	screen.y = ((screenDims.y - (screenDims.y * (outMat.y * zDiv)))) / 2;
-
-	return behind;
-}
-
-bool PointToScreen_Z(const Vector3D& point, Vector3D& screen, const Matrix4x4 &wwp, const Vector2D &screenDims)
-{
-	Matrix4x4 worldToScreen = wwp;
-	bool behind = false;
-
-	Vector4D outMat;
-	Vector4D transpos(point,1.0f);
-
-	outMat = worldToScreen*transpos;
-
-	if(outMat.w < 0)
-		behind = true;
-
-	float zDiv = outMat.w == 0.0f ? 1.0f :
-		(1.0f / outMat.w);
-
-
-	screen.x = ((screenDims.x * outMat.x * zDiv) + screenDims.x) / 2;
-	screen.y = ((screenDims.y - (screenDims.y * (outMat.y * zDiv)))) / 2;
+	screen.x = (screenDims.x * outMat.x * zDiv + screenDims.x) * 0.5f;
+	screen.y = (screenDims.y - screenDims.y * outMat.y * zDiv) * 0.5f;
 	screen.z = outMat.z;
 
 	return behind;
 }
 
-void ConvertMatrix(const Matrix4x4 &srcMat, double outMat[16])
+bool PointToScreen(const Vector3D& point, Vector2D& screen, const Matrix4x4 & worldToScreen, const Vector2D &screenDims)
 {
-	Matrix4x4 srcTranspose = transpose(srcMat);
+	Vector3D tmpScreen;
+	const bool behind = PointToScreen(point, tmpScreen, worldToScreen, screenDims);
 
-	// Loop and convert to double format
-	const float * srcData = (const float*)srcTranspose.rows;
-	for(int i=0; i< 16; i++)
-	{
-		outMat[i] = srcData[i];
-	}
+	screen = tmpScreen.xz();
+
+	return behind;
 }
 
 void ScreenToDirection(const Vector3D& cam_pos, const Vector2D& point, const Vector2D& screensize, Vector3D& start, Vector3D& dir, const Matrix4x4& wwp, bool bIsOrthogonal)
@@ -89,12 +50,12 @@ void ScreenToDirection(const Vector3D& cam_pos, const Vector2D& point, const Vec
 	Volume frs;
 	frs.LoadAsFrustum(wwp);
 
-	Vector3D farLeftUp = frs.GetFarLeftUp();
-	Vector3D lefttoright = frs.GetFarRightUp() - farLeftUp;
-	Vector3D uptodown = frs.GetFarLeftDown() - farLeftUp;
+	const Vector3D farLeftUp = frs.GetFarLeftUp();
+	const Vector3D lefttoright = frs.GetFarRightUp() - farLeftUp;
+	const Vector3D uptodown = frs.GetFarLeftDown() - farLeftUp;
 
-	float dx = point.x / screensize.x;
-	float dy = point.y / screensize.y;
+	const float dx = point.x / screensize.x;
+	const float dy = point.y / screensize.y;
 
 	if (bIsOrthogonal)
 		start = cam_pos + (lefttoright * (dx-0.5f)) + (uptodown * (dy-0.5f));
@@ -104,95 +65,30 @@ void ScreenToDirection(const Vector3D& cam_pos, const Vector2D& point, const Vec
 	dir = (farLeftUp + (lefttoright * dx) + (uptodown * dy)) - start;
 }
 
-// Returns true if a box intersects with a sphere
-bool IsBoxIntersectingSphere( const Vector3D& boxMin, const Vector3D& boxMax, const Vector3D& center, float radius )
-{
-	float dmin = 0;
-	float sr2 = radius*radius;
-
-	// x axis
-	if(center.x < boxMin.x)
-		dmin += ((center.x-boxMin.x)*(center.x-boxMin.x));
-	else if(center.x > boxMax.x)
-		dmin += (((center.x-boxMax.x))*((center.x-boxMax.x)));
-
-	// y axis
-	if(center.y < boxMin.y)
-		dmin +=((center.y-boxMin.y)*(center.y-boxMin.y));
-	else if(center.y > boxMax.y)
-		dmin +=(((center.y-boxMax.y))*((center.y-boxMax.y)));
-
-	// z axis
-	if(center.z < boxMin.z)
-		dmin += ((center.z-boxMin.z)*(center.z-boxMin.z));
-	else if(center.z>boxMax.z)
-		dmin += (((center.z-boxMax.z))*((center.z-boxMax.z)));
-
-	return (dmin <= sr2);
-}
-
-bool Is2DPointInside2DBox(const Vector2D& point, const Vector2D& boxMin, const Vector2D& boxMax )
-{
-	return point >= boxMin && point <= boxMax;
-}
-
-bool IsBox1GreaterThanBox2( const Vector3D& box1Min, const Vector3D& box1Max, const Vector3D& box2Min, const Vector3D& box2Max )
-{
-	Vector3D box1Center = (box1Min + box1Max) * 0.5f;
-	Vector3D box2Center = (box2Min + box2Max) * 0.5f;
-
-	Vector3D box1Size = (box1Max + box1Center);
-	Vector3D box2Size = (box2Max + box2Center);
-
-	return length(box1Size) > length(box2Size);
-}
-
-bool IsBoxIntersectingBox( const Vector3D& box1Min, const Vector3D& box1Max, const Vector3D& box2Min, const Vector3D& box2Max )
-{
-	bool MinXYIntersectsBoxXY = Is2DPointInside2DBox(box1Min.xy(), box2Min.xy(), box2Max.xy());
-	bool MaxXYIntersectsBoxXY = Is2DPointInside2DBox(box1Max.xy(), box2Min.xy(), box2Max.xy());
-
-	bool MinYZIntersectsBoxYZ = Is2DPointInside2DBox(box1Min.yz(), box2Min.yz(), box2Max.yz());
-	bool MaxYZIntersectsBoxYZ = Is2DPointInside2DBox(box1Max.yz(), box2Min.yz(), box2Max.yz());
-
-	bool MinXZIntersectsBoxXZ = Is2DPointInside2DBox(box1Min.xz(), box2Min.xz(), box2Max.xz());
-	bool MaxXZIntersectsBoxXZ = Is2DPointInside2DBox(box1Max.xz(), box2Min.xz(), box2Max.xz());
-
-	return (MinXYIntersectsBoxXY || MinYZIntersectsBoxYZ || MinXZIntersectsBoxXZ) ||
-		(MaxXYIntersectsBoxXY || MaxYZIntersectsBoxYZ || MaxXZIntersectsBoxXZ);
-}
-
-bool IsBoxInsideBox( const Vector3D& box1Min, const Vector3D& box1Max, const Vector3D& box2Min, const Vector3D& box2Max )
-{
-	return (box1Min.x < box2Max.x) && (box1Max.x > box2Min.x) &&
-	(box1Min.y < box2Max.y) && (box1Max.y > box2Min.y) &&
-	(box1Min.z < box2Max.z) && (box1Max.z > box2Min.z);
-}
-
 Vector2D UVFromPointOnTriangle( const Vector3D& p1, const Vector3D& p2, const Vector3D& p3,
 								const Vector2D &uv1, const Vector2D &uv2, const Vector2D &uv3,
 								const Vector3D &point)
 {
 	// edges
-	Vector3D v0 = p3 - p1;
-	Vector3D v1 = p2 - p1;
-	Vector3D v2 = point - p1;
+	const Vector3D v0 = p3 - p1;
+	const Vector3D v1 = p2 - p1;
+	const Vector3D v2 = point - p1;
 
 	// edge lengths
-    float dot00 = dot(v0, v0);
-    float dot01 = dot(v0, v1);
-    float dot02 = dot(v0, v2);
-    float dot11 = dot(v1, v1);
-    float dot12 = dot(v1, v2);
+    const float dot00 = dot(v0, v0);
+    const float dot01 = dot(v0, v1);
+    const float dot02 = dot(v0, v2);
+    const float dot11 = dot(v1, v1);
+    const float dot12 = dot(v1, v2);
 
     // make barycentric coordinates
-    float invDenom = 1.0f / (dot00 * dot11 - dot01 * dot01);
+    const float invDenom = 1.0f / (dot00 * dot11 - dot01 * dot01);
 
-    float u = (dot11 * dot02 - dot01 * dot12) * invDenom;
-    float v = (dot00 * dot12 - dot01 * dot02) * invDenom;
+    const float u = (dot11 * dot02 - dot01 * dot12) * invDenom;
+    const float v = (dot00 * dot12 - dot01 * dot02) * invDenom;
 
-    Vector2D t2 = uv2-uv1;
-    Vector2D t1 = uv3-uv1;
+    const Vector2D t2 = uv2-uv1;
+    const Vector2D t1 = uv3-uv1;
 
     return uv1 + t1*u + t2*v;
 }
@@ -201,20 +97,19 @@ Vector3D PointFromUVOnTriangle( const Vector3D& v1, const Vector3D& v2, const Ve
 								 const Vector3D& t1, const Vector3D& t2, const Vector3D& t3,
 								 const Vector2D& p)
 {
-	float i = 1 / ((t2.x - t1.x) * (t3.y - t1.y) - (t2.y - t1.y) * (t3.x - t1.x));
-	float s = i * ( (t3.y - t1.y) * (p.x - t1.x) - (t3.x - t1.x) * (p.y - t1.y));
-	float t = i * (-(t2.y - t1.y) * (p.x - t1.x) + (t2.x - t1.x) * (p.y - t1.y));
+	const float i = 1 / ((t2.x - t1.x) * (t3.y - t1.y) - (t2.y - t1.y) * (t3.x - t1.x));
+	const float s = i * ( (t3.y - t1.y) * (p.x - t1.x) - (t3.x - t1.x) * (p.y - t1.y));
+	const float t = i * (-(t2.y - t1.y) * (p.x - t1.x) + (t2.x - t1.x) * (p.y - t1.y));
 
 	return Vector3D(v1 + s*(v2-v1) + t*(v3-v1));
 }
 
 bool IsPointInCone( Vector3D &pt, Vector3D &origin, Vector3D &axis, float cosAngle, float cone_length )
 {
-	Vector3D delta = pt - origin;
+	const Vector3D delta = pt - origin;
 
-	float dist = length(delta);
-
-	float fdot = dot( normalize(delta), axis );
+	const float dist = length(delta);
+	const float fdot = dot( normalize(delta), axis );
 
 	if ( fdot < cosAngle )
 		return false;
@@ -225,26 +120,24 @@ bool IsPointInCone( Vector3D &pt, Vector3D &origin, Vector3D &axis, float cosAng
 	return true;
 }
 
-#define INTERSECTION_EPS 0.0001
-
 // checks rat for triangle intersection
 bool IsRayIntersectsTriangle(const Vector3D& pt1, const Vector3D& pt2, const Vector3D& pt3, const Vector3D& linept, const Vector3D& vect, float& fraction, bool doTwoSided)
 {
-	Vector3D uvCoord;
-
 	// get triangle edges
-	Vector3D edge1 = pt2-pt1;
-	Vector3D edge2 = pt3-pt1;
+	const Vector3D edge1 = pt2-pt1;
+	const Vector3D edge2 = pt3-pt1;
 
 	// find normal
-	Vector3D pvec = cross(vect, edge2);
+	const Vector3D pvec = cross(vect, edge2);
 
-	float det = dot(edge1, pvec);
+	const float det = dot(edge1, pvec);
+
+	Vector3D uvCoord;
 
 	if(!doTwoSided)
 	{
 		// Use culling
-		if(det < INTERSECTION_EPS)
+		if(det < F_EPS)
 			return false;
 
 		Vector3D tvec = linept-pt1;
@@ -266,7 +159,7 @@ bool IsRayIntersectsTriangle(const Vector3D& pt1, const Vector3D& pt2, const Vec
 	else
 	{
 		// No culling
-		if(det > -INTERSECTION_EPS && det < INTERSECTION_EPS)
+		if(det > -F_EPS && det < F_EPS)
 			return false;
 
 		float inv_det = 1.0f / det;
@@ -287,6 +180,49 @@ bool IsRayIntersectsTriangle(const Vector3D& pt1, const Vector3D& pt2, const Vec
 	}
 
 	return true;
+}
+
+bool LineIntersectsLine2D(const Vector2D& lAB, const Vector2D& lAE, const Vector2D& lBB, const Vector2D& lBE, Vector2D& isectPoint)
+{
+	const Vector2D A = lAE - lAB;
+	const Vector2D B = lBE - lBB;
+
+	const float det = A.x * B.y - A.y * B.x;
+
+	if (det < F_EPS && det > -F_EPS)
+		return false;
+
+	const Vector2D D = lBB - lAB;
+
+	const float oneByDet = 1.0f / det;
+	const float s = (A.x * D.y - A.y * D.x) * oneByDet;
+
+	isectPoint.x = lBB.x + s * B.x;
+	isectPoint.y = lBB.y + s * B.y;
+
+	return true;
+}
+
+bool LineSegIntersectsLineSeg2D(const Vector2D& lAB, const Vector2D& lAE, const Vector2D& lBB, const Vector2D& lBE, Vector2D& isectPoint)
+{
+	const Vector2D A = lAE - lAB;
+	const Vector2D B = lBE - lBB;
+
+	const float det = A.x * B.y - A.y * B.x;
+
+	if (det < F_EPS && det > -F_EPS)
+		return false;
+
+	const Vector2D D = lBB - lAB;
+
+	const float oneByDet = 1.0f / det;
+	const float r = (B.y * D.x - B.x * D.y) * oneByDet;
+	const float s = (A.x * D.y - A.y * D.x) * oneByDet;
+
+	isectPoint.x = lBB.x + s * B.x;
+	isectPoint.y = lBB.y + s * B.y;
+
+	return !(r < 0.0f || r > 1.0f || s < 0.0f || s > 1.0f);
 }
 
 // normalizes angles in [-180, 180]
