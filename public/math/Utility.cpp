@@ -5,7 +5,7 @@
 // Description: Math additional utilites
 //////////////////////////////////////////////////////////////////////////////////
 
-#include "math_common.h"
+#include "core/core_common.h"
 #include "Utility.h"
 
 float SnapFloat(float grid_spacing, float val)
@@ -223,6 +223,50 @@ bool LineSegIntersectsLineSeg2D(const Vector2D& lAB, const Vector2D& lAE, const 
 	isectPoint.y = lBB.y + s * B.y;
 
 	return !(r < 0.0f || r > 1.0f || s < 0.0f || s > 1.0f);
+}
+
+static float orient2D(const Vector2D& O, const Vector2D& A, const Vector2D& B)
+{
+	return (A.x - O.x) * (B.y - O.y) - (A.y - O.y) * (B.x - O.x);
+}
+
+static int cmpFloat(float a, float b)
+{
+	return (a > b) - (a < b);
+}
+
+void ConvexHull2D(Array<Vector2D>& points, Array<Vector2D>& hull)
+{
+	const int n = points.numElem();
+	if (n <= 3)
+		return;
+
+	hull.assureSize(2 * n);
+
+	// sort points lexicographically
+	points.sort([](const Vector2D& a, const Vector2D& b) {
+		int cmp = cmpFloat(a.x, b.x);
+		return cmp == 0 ? cmpFloat(a.y, b.y) : cmp;
+	});
+
+	// lower hull
+	int k = 0;
+	for (int i = 0; i < n; ++i)
+	{
+		while (k >= 2 && orient2D(hull[k - 2], hull[k - 1], points[i]) < F_EPS)
+			k--;
+		hull[k++] = points[i];
+	}
+
+	// upper hull
+	for (int i = n - 1, t = k + 1; i > 0; --i)
+	{
+		while (k >= t && orient2D(hull[k - 2], hull[k - 1], points[i - 1]) < F_EPS)
+			k--;
+		hull[k++] = points[i - 1];
+	}
+
+	hull.setNum(k - 1);
 }
 
 // normalizes angles in [-180, 180]

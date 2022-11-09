@@ -41,6 +41,10 @@ bool				LineSegIntersectsLineSeg2D(const Vector2D& lAB, const Vector2D& lAE, con
 
 //---------------------------------------------------------------------------------
 
+void				ConvexHull2D(Array<Vector2D>& points, Array<Vector2D>& out);
+
+//---------------------------------------------------------------------------------
+
 // Compute normal of triangle
 template <typename T>
 void				ComputeTriangleNormal(const TVec3D<T>& v0, const TVec3D<T>& v1, const TVec3D<T>& v2, 

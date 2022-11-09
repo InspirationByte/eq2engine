@@ -12,25 +12,6 @@ struct TAABBox
 {
 	static constexpr const int VertexCount = 9;
 
-	static T dist_check(const T pn, const T bmin, const T bmax)
-	{
-		T out = 0;
-		T v = pn;
-
-		if (v < bmin)
-		{
-			T val = (bmin - v);
-			out += val * val;
-		}
-		if (v > bmax)
-		{
-			T val = (v - bmax);
-			out += val * val;
-		}
-
-		return out;
-	};
-
     TAABBox(const TVec3D<T>& v1, const TVec3D<T>& v2)
     {
         if ( v1.x < v2.x )
@@ -123,35 +104,6 @@ struct TAABBox
                pos.z >= minPoint.z-tolerance && pos.z <= maxPoint.z+tolerance;
     }
 
-	T SquaredDistPointAABB( const TVec3D<T>& p ) const
-	{
-		// Squared distance
-		T sq = static_cast<T>(0);
-
-		sq += dist_check( p.x, minPoint.x, maxPoint.x );
-		sq += dist_check( p.y, minPoint.y, maxPoint.y );
-		sq += dist_check( p.z, minPoint.z, maxPoint.z );
-
-		return sq;
-	}
-
-	bool IntersectsSphere( const TVec3D<T>& center, T radius ) const
-	{
-		T squaredDistance = SquaredDistPointAABB( center );
-
-		return squaredDistance <= (radius * radius);
-	}
-
-	bool Intersects ( const TAABBox<T>& bbox, T tolerance = 0) const
-	{
-		bool overlap = true;
-		overlap = (minPoint.x-tolerance > bbox.maxPoint.x || maxPoint.x+tolerance < bbox.minPoint.x) ? false : overlap;
-		overlap = (minPoint.z-tolerance > bbox.maxPoint.z || maxPoint.z+tolerance < bbox.minPoint.z) ? false : overlap;
-		overlap = (minPoint.y-tolerance > bbox.maxPoint.y || maxPoint.y+tolerance < bbox.minPoint.y) ? false : overlap;
-
-		return overlap;
-	}
-
 	// warning, this is a size-dependent!
 	bool FullyInside ( const TAABBox<T>& box, T tolerance = 0) const
 	{
@@ -160,6 +112,16 @@ struct TAABBox
 			return true;
 
 		return false;
+	}
+
+	bool Intersects(const TAABBox<T>& bbox, T tolerance = 0) const
+	{
+		bool overlap = true;
+		overlap = (minPoint.x - tolerance > bbox.maxPoint.x || maxPoint.x + tolerance < bbox.minPoint.x) ? false : overlap;
+		overlap = (minPoint.z - tolerance > bbox.maxPoint.z || maxPoint.z + tolerance < bbox.minPoint.z) ? false : overlap;
+		overlap = (minPoint.y - tolerance > bbox.maxPoint.y || maxPoint.y + tolerance < bbox.minPoint.y) ? false : overlap;
+
+		return overlap;
 	}
 
 	bool IntersectsRay(const TVec3D<T>& rayStart, const TVec3D<T>& rayDir, T& tnear, T& tfar) const
