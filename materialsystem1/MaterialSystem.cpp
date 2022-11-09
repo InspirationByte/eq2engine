@@ -100,7 +100,10 @@ public:
 				m_newMaterials.remove(it);
 			}
 		}
-			
+
+		if (!nextMaterial)
+			return 0;
+
 		// load this material
 		// BUG: may be null
 		((CMaterial*)nextMaterial)->DoLoadShaderAndTextures();
