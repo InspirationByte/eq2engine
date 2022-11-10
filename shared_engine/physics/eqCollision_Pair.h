@@ -30,22 +30,14 @@ enum ECollPairFlag
 
 struct CollisionData_t
 {
-	CollisionData_t()
-	{
-		fract = 1.0f;
-		hitobject = nullptr;
-		materialIndex = -1;
-		pad = 0;
-	}
+	FVector3D			position{ vec3_undef };		// position in world
+	Vector3D			normal{ vec3_undef };
 
-	FVector3D			position;			// position in world
-	Vector3D			normal;
+	CEqCollisionObject* hitobject{ nullptr };
 
-	CEqCollisionObject* hitobject;
-
-	float				fract;				// collision depth (if RayTest or SweepTest - factor between start[Transform] and end[Transform])
-	int					materialIndex;
-	int					pad;
+	float				fract{ 1.0f };				// collision depth (if RayTest or SweepTest - factor between start[Transform] and end[Transform])
+	int					materialIndex{ -1 };
+	int					pad{ 0 };
 };
 
 struct ContactPair_t
