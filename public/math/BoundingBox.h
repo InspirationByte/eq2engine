@@ -140,7 +140,7 @@ struct TAABBox
 			}
 			else
 			{
-				const float oneByRayDir = rayDir[i];
+				const float oneByRayDir = 1.0f / rayDir[i];
 
 				// ray not parallel to planes in this direction
 				T_1[i] = (minPoint[i] - rayStart[i]) * oneByRayDir;
