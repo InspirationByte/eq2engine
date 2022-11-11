@@ -595,7 +595,7 @@ void CInputCommandBinder::OnTouchEvent( const Vector2D& pos, int finger, bool do
 				tz->finger = -1;
 			}
 		}
-		else if( rect.IsInRectangle(pos) )
+		else if( rect.Containts(pos) )
 		{
 			if (in_touchzones_debug.GetInt() == 2)
 				Msg("found zone %s\n", tz->name.ToCString());

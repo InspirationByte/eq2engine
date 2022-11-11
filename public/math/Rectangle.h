@@ -125,11 +125,6 @@ struct TRectangle
 		return TRectangle<T>(lerp(vrightBottom, vleftTop, TVec2D<T>(sizePercent, 1.0f), vrightBottom));
 	}
 
-	bool IsInRectangle(const TVec2D<T> &point) const
-	{
-		return ((point.x >= vleftTop.x) && (point.x <= vrightBottom.x) && (point.y >= vleftTop.y) && (point.y <= vrightBottom.y));
-	}
-
 	TVec2D<T> ClampPointInRectangle(const Vector2D &point) const
 	{
 		return clamp(point, vleftTop, vrightBottom);
@@ -145,7 +140,23 @@ struct TRectangle
 		return pRect;
 	}
 
-	bool IsIntersectsRectangle(const TRectangle<T> &anotherRect) const
+	bool Containts(const TVec2D<T>& point) const
+	{
+		return point.x >= vleftTop.x && point.x <= vrightBottom.x 
+			&& point.y >= vleftTop.y && point.y <= vrightBottom.y;
+	}
+
+	// warning, this is a size-dependent!
+	bool FullyInside(const TRectangle<T>& box, T tolerance = 0) const
+	{
+		if (box.vleftTop >= vleftTop - tolerance && box.vleftTop <= vrightBottom + tolerance &&
+			box.vrightBottom <= vrightBottom + tolerance && box.vrightBottom >= vleftTop - tolerance)
+			return true;
+
+		return false;
+	}
+
+	bool Intersects(const TRectangle<T> &anotherRect) const
 	{
 		if(( vrightBottom.x < anotherRect.vleftTop.x) || (vleftTop.x > anotherRect.vrightBottom.x ) )
 			return false;
@@ -156,13 +167,67 @@ struct TRectangle
 		return true;
 	}
 
-	bool IsFullyInside(const TRectangle<T> &anotherRect) const
+	bool IntersectsRay(const TVec2D<T>& rayStart, const TVec2D<T>& rayDir, T& tnear, T& tfar) const
 	{
-		if(	anotherRect.vleftTop >= vleftTop && anotherRect.vleftTop <= vrightBottom &&
-			anotherRect.vrightBottom <= vrightBottom && anotherRect.vrightBottom >= vleftTop)
-			return true;
+		TVec2D<T> T_1, T_2; // vectors to hold the T-values for every direction
+		T t_near = -static_cast<T>(F_INFINITY);
+		T t_far = static_cast<T>(F_INFINITY);
 
-		return false;
+		for (int i = 0; i < 2; i++)
+		{
+			if (rayDir[i] == static_cast<T>(0))
+			{
+				// ray parallel to planes in this direction
+				if ((rayStart[i] < vleftTop[i]) || (rayStart[i] > vrightBottom[i]))
+					return false; // parallel AND outside box : no intersection possible
+			}
+			else
+			{
+				const float oneByRayDir = 1.0f / rayDir[i];
+
+				// ray not parallel to planes in this direction
+				T_1[i] = (vleftTop[i] - rayStart[i]) * oneByRayDir;
+				T_2[i] = (vrightBottom[i] - rayStart[i]) * oneByRayDir;
+
+				if (T_1[i] > T_2[i])
+					QuickSwap(T_1, T_2);
+
+				if (T_1[i] > t_near)
+					t_near = T_1[i];
+
+				if (T_2[i] < t_far)
+					t_far = T_2[i];
+
+				if ((t_near > t_far) || (t_far < static_cast<T>(0)))
+					return false;
+			}
+		}
+
+		tnear = t_near;
+		tfar = t_far;
+
+		return true;
+	}
+
+	bool IntersectsSphere(const TVec2D<T>& center, T radius) const
+	{
+		T dmin = static_cast<T>(0);
+
+		for (int i = 0; i < 2; ++i)
+		{
+			if (center[i] < vleftTop[i])
+			{
+				const T cmin = center[i] - vleftTop[i];
+				dmin += M_SQR(cmin);
+			}
+			else if (center[i] > vrightBottom[i])
+			{
+				const T cmax = center[i] - vrightBottom[i];
+				dmin += M_SQR(cmax);
+			}
+		}
+
+		return dmin <= M_SQR(radius);
 	}
 
 	TVec2D<T> GetVertex(int index) const

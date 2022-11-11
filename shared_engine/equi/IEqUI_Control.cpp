@@ -590,7 +590,7 @@ IUIControl* IUIControl::HitTest(const IVector2D& point)
 
 	IRectangle clientRect = GetClientRectangle();
 
-	if(!clientRect.IsInRectangle(point))
+	if(!clientRect.Containts(point))
 		return nullptr;
 
 	for (auto lln = m_childs.begin(); lln; lln = lln->nextNode())
