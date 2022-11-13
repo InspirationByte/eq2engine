@@ -64,8 +64,8 @@ public:
 	virtual void				Sphere3D(const Vector3D& position, float radius, const ColorRGBA &color, float fTime = 0.0f, int hashId = 0) = 0;
 	virtual void				Polygon3D(const Vector3D &v0, const Vector3D &v1,const Vector3D &v2, const Vector4D &color, float fTime = 0.0f, int hashId = 0) = 0;
 
-	virtual void				Draw2DFunc( const OnDebugDrawFn& func, float fTime = 0.0f ) = 0;
-	virtual void				Draw3DFunc( const OnDebugDrawFn& func, float fTime = 0.0f ) = 0;
+	virtual void				Draw2DFunc( const OnDebugDrawFn& func, float fTime = 0.0f, int hashId = 0) = 0;
+	virtual void				Draw3DFunc( const OnDebugDrawFn& func, float fTime = 0.0f, int hashId = 0) = 0;
 
 	//virtual void				Line2D(Vector2D &start, Vector2D &end, ColorRGBA &color1, ColorRGBA &color2, float fTime = 0.0f) = 0;
 	//virtual void				Box2D(Vector2D &mins, Vector2D &maxs, ColorRGBA &color, float fTime = 0.0f) = 0;

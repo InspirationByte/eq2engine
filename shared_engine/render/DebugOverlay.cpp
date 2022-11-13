@@ -371,22 +371,34 @@ void CDebugOverlay::Polygon3D(const Vector3D &v0, const Vector3D &v1,const Vecto
 		m_newNames.insert(hashId, m_frameId);
 }
 
-void CDebugOverlay::Draw2DFunc(const OnDebugDrawFn& func, float fTime)
+void CDebugOverlay::Draw2DFunc(const OnDebugDrawFn& func, float fTime, int hashId)
 {
 	Threading::CScopedMutex m(s_debugOverlayMutex);
 
 	DebugDrawFunc_t& fn = m_draw2DFuncs.append();
 	fn.func = std::move(func);
 	fn.lifetime = fTime;
+
+	fn.frameindex = m_frameId;
+	fn.nameHash = hashId;
+
+	if (hashId != 0)
+		m_newNames.insert(hashId, m_frameId);
 }
 
-void CDebugOverlay::Draw3DFunc(const OnDebugDrawFn& func, float fTime)
+void CDebugOverlay::Draw3DFunc(const OnDebugDrawFn& func, float fTime, int hashId)
 {
 	Threading::CScopedMutex m(s_debugOverlayMutex);
 
 	DebugDrawFunc_t& fn = m_draw3DFuncs.append();
 	fn.func = std::move(func);
 	fn.lifetime = fTime;
+
+	fn.frameindex = m_frameId;
+	fn.nameHash = hashId;
+
+	if (hashId != 0)
+		m_newNames.insert(hashId, m_frameId);
 }
 
 static void DrawLineArray(Array<DebugLineNode_t>& lines, float frametime)
@@ -1026,7 +1038,6 @@ void CDebugOverlay::Draw(int winWide, int winTall, float timescale)
 	materials->SetMatrix(MATRIXMODE_PROJECTION, m_projMat);
 	materials->SetMatrix(MATRIXMODE_VIEW, m_viewMat);
 	materials->SetMatrix(MATRIXMODE_WORLD, identity4());
-
 	materials->SetAmbientColor(1.0f);
 
 	CleanOverlays();
@@ -1041,6 +1052,13 @@ void CDebugOverlay::Draw(int winWide, int winTall, float timescale)
 			m_draw3DFuncs[i].lifetime -= m_frameTime;
 		}
 	}
+
+	// may need a reset again
+	g_pShaderAPI->SetViewport(0, 0, winWide, winTall);
+	materials->SetMatrix(MATRIXMODE_PROJECTION, m_projMat);
+	materials->SetMatrix(MATRIXMODE_VIEW, m_viewMat);
+	materials->SetMatrix(MATRIXMODE_WORLD, identity4());
+	materials->SetAmbientColor(1.0f);
 
 	// draw all of 3d stuff
 	{
@@ -1256,7 +1274,7 @@ bool CDebugOverlay::CheckNodeLifetime(DebugNodeBase& node)
 		return true;
 
 	// expired.
-	if (node.lifetime <= 0.0f)
+	if (node.lifetime < 0.0f)
 		return false;
 
 	if (node.nameHash == 0)
@@ -1277,7 +1295,7 @@ void CDebugOverlay::CleanOverlays()
 
 	for (int i = 0; i < m_draw2DFuncs.numElem(); i++)
 	{
-		if (m_draw2DFuncs[i].lifetime <= 0)
+		if (!CheckNodeLifetime(m_draw2DFuncs[i]))
 		{
 			m_draw2DFuncs.fastRemoveIndex(i);
 			i--;
@@ -1286,7 +1304,7 @@ void CDebugOverlay::CleanOverlays()
 
 	for (int i = 0; i < m_draw3DFuncs.numElem(); i++)
 	{
-		if (m_draw3DFuncs[i].lifetime <= 0)
+		if (!CheckNodeLifetime(m_draw3DFuncs[i]))
 		{
 			m_draw3DFuncs.fastRemoveIndex(i);
 			i--;
