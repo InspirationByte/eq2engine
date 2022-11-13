@@ -30,13 +30,13 @@ enum CubeDir
 #define INTSIGNBITSET(i)		(((const unsigned long)(i)) >> 31)
 #define INTSIGNBITNOTSET(i)		((~((const unsigned long)(i))) >> 31)
 
-constexpr float F_EPS			= 0.00001f;
-constexpr float F_INFINITY		= 1900000.0f;
-constexpr float F_UNDEF			= 888.888f;
+constexpr const float F_EPS			= 0.00001f;
+constexpr const float F_INFINITY	= 1900000.0f;
+constexpr const float F_UNDEF		= 888.888f;
 
-const double M_PI_D				= 3.14159265358979323846264338327950288;
-const float M_PI_F				= float(M_PI_D);
-const float M_PI_OVER_TWO_F		= M_PI_F * 0.5f;
+constexpr const double M_PI_D				= 3.14159265358979323846264338327950288;
+constexpr const float M_PI_F				= float(M_PI_D);
+constexpr const float M_PI_OVER_TWO_F		= M_PI_F * 0.5f;
 
 #define RAD2DEG( x )			( (float)(x) * (float)(180.f / M_PI_F) )
 #define DEG2RAD( x )			( (float)(x) * (float)(M_PI_F / 180.f) )

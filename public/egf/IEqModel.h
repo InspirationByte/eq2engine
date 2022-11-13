@@ -177,3 +177,5 @@ public:
 
 // model cache manager
 extern IStudioModelCache* g_studioModelCache;
+
+#define PrecacheStudioModel(mod) g_studioModelCache->PrecacheModel(mod)
