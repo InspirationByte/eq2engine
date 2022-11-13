@@ -8,7 +8,7 @@
 #pragma once
 #include "imaging/textureformats.h"
 
-class ITexture : public RefCountedObject<ITexture>
+class ITexture : public RefCountedObject<ITexture, RefCountedKeepPolicy>
 {
 public:
 	struct LockData

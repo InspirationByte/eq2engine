@@ -7,7 +7,7 @@
 
 #pragma once
 
-class IShaderProgram : public RefCountedObject<IShaderProgram>
+class IShaderProgram : public RefCountedObject<IShaderProgram, RefCountedKeepPolicy>
 {
 public:
 	// Get shader name

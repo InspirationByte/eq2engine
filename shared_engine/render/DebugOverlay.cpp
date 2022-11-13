@@ -371,20 +371,22 @@ void CDebugOverlay::Polygon3D(const Vector3D &v0, const Vector3D &v1,const Vecto
 		m_newNames.insert(hashId, m_frameId);
 }
 
-void CDebugOverlay::Draw2DFunc(OnDebugDrawFn func, void* args)
+void CDebugOverlay::Draw2DFunc(const OnDebugDrawFn& func, float fTime)
 {
 	Threading::CScopedMutex m(s_debugOverlayMutex);
 
-	DebugDrawFunc_t fn = { func, args };
-	m_draw2DFuncs.append(fn);
+	DebugDrawFunc_t& fn = m_draw2DFuncs.append();
+	fn.func = std::move(func);
+	fn.lifetime = fTime;
 }
 
-void CDebugOverlay::Draw3DFunc( OnDebugDrawFn func, void* args )
+void CDebugOverlay::Draw3DFunc(const OnDebugDrawFn& func, float fTime)
 {
 	Threading::CScopedMutex m(s_debugOverlayMutex);
 
-	DebugDrawFunc_t fn = { func, args };
-	m_draw3DFuncs.append(fn);
+	DebugDrawFunc_t& fn = m_draw3DFuncs.append();
+	fn.func = std::move(func);
+	fn.lifetime = fTime;
 }
 
 static void DrawLineArray(Array<DebugLineNode_t>& lines, float frametime)
@@ -1020,6 +1022,7 @@ void CDebugOverlay::Draw(int winWide, int winTall, float timescale)
 {
 	m_frameTime = m_timer.GetTime(true) * timescale;
 
+	g_pShaderAPI->SetViewport(0, 0, winWide, winTall);
 	materials->SetMatrix(MATRIXMODE_PROJECTION, m_projMat);
 	materials->SetMatrix(MATRIXMODE_VIEW, m_viewMat);
 	materials->SetMatrix(MATRIXMODE_WORLD, identity4());
@@ -1032,10 +1035,11 @@ void CDebugOverlay::Draw(int winWide, int winTall, float timescale)
 	{
 		Threading::CScopedMutex m(s_debugOverlayMutex);
 
-		for(int i = 0; i < m_draw3DFuncs.numElem(); i++)
-			m_draw3DFuncs[i].func(m_draw3DFuncs[i].arg);
-
-		m_draw3DFuncs.clear(false);
+		for (int i = 0; i < m_draw3DFuncs.numElem(); i++)
+		{
+			m_draw3DFuncs[i].func();
+			m_draw3DFuncs[i].lifetime -= m_frameTime;
+		}
 	}
 
 	// draw all of 3d stuff
@@ -1215,9 +1219,10 @@ void CDebugOverlay::Draw(int winWide, int winTall, float timescale)
 		Threading::CScopedMutex m(s_debugOverlayMutex);
 
 		for (int i = 0; i < m_draw2DFuncs.numElem(); i++)
-			m_draw2DFuncs[i].func(m_draw2DFuncs[i].arg);
-
-		m_draw2DFuncs.clear(false);
+		{
+			m_draw2DFuncs[i].func();
+			m_draw2DFuncs[i].lifetime -= m_frameTime;
+		}
 	}
 
 	// more universal thing
@@ -1269,6 +1274,24 @@ bool CDebugOverlay::CheckNodeLifetime(DebugNodeBase& node)
 void CDebugOverlay::CleanOverlays()
 {
 	Threading::CScopedMutex m(s_debugOverlayMutex);
+
+	for (int i = 0; i < m_draw2DFuncs.numElem(); i++)
+	{
+		if (m_draw2DFuncs[i].lifetime <= 0)
+		{
+			m_draw2DFuncs.fastRemoveIndex(i);
+			i--;
+		}
+	}
+
+	for (int i = 0; i < m_draw3DFuncs.numElem(); i++)
+	{
+		if (m_draw3DFuncs[i].lifetime <= 0)
+		{
+			m_draw3DFuncs.fastRemoveIndex(i);
+			i--;
+		}
+	}
 
 	for (int i = 0; i < m_RightTextFadeArray.numElem(); i++)
 	{

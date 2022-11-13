@@ -17,7 +17,7 @@ enum RenderStateType_e
 	RENDERSTATE_COUNT,
 };
 
-class IRenderState : public RefCountedObject<IRenderState>
+class IRenderState : public RefCountedObject<IRenderState, RefCountedKeepPolicy>
 {
 public:
 	// type of render state

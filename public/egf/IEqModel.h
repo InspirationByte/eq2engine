@@ -65,10 +65,7 @@ public:
 class IEqModel
 {
 public:
-
 	virtual ~IEqModel() {}
-						
-	void						Ref_DeleteObject() {}
 
 	// model type
 	virtual EModelType			GetModelType() const = 0;

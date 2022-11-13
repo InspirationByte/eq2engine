@@ -112,7 +112,6 @@ public:
 	bool					IsLooping() const { return m_looping; }
 
 protected:
-	void					Ref_DeleteObject();
 
 	bool					QueueStreamChannel(ALuint buffer);
 	void					SetupSample(ISoundSource* sample);

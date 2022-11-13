@@ -84,7 +84,7 @@ struct DebugPolyNode_t : public DebugNodeBase
 struct DebugDrawFunc_t
 {
 	OnDebugDrawFn func;
-	void* arg;
+	float	lifetime{ 0.0f };
 };
 
 class CDebugOverlay : public IDebugOverlay
@@ -105,8 +105,8 @@ public:
 	void							Sphere3D(const Vector3D& position, float radius, const ColorRGBA &color, float fTime = 0.0f, int hashId = 0);
 	void							Polygon3D(const Vector3D &v0, const Vector3D &v1,const Vector3D &v2, const Vector4D &color, float fTime = 0.0f, int hashId = 0);
 
-	void							Draw2DFunc(OnDebugDrawFn func, void* args);
-	void							Draw3DFunc(OnDebugDrawFn func, void* args );
+	void							Draw2DFunc(const OnDebugDrawFn& func, float fTime = 0.0f);
+	void							Draw3DFunc(const OnDebugDrawFn& func, float fTime = 0.0f);
 
 	void							Graph_DrawBucket(debugGraphBucket_t* pBucket);
 	void							Graph_AddValue( debugGraphBucket_t* pBucket, float value);

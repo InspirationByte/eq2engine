@@ -2,15 +2,23 @@
 // Copyright � Inspiration Byte
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
-// Description: EqEngine mutex storage
+// Description: RefCounted object with policies support
 //////////////////////////////////////////////////////////////////////////////////
 
 #pragma once
 
-template< class TYPE >
+struct RefCountedDeletePolicy {
+	enum { SHOULD_DELETE = 1 };
+};
+
+struct RefCountedKeepPolicy {
+	enum { SHOULD_DELETE = 0 };
+};
+
+template< class TYPE>
 class CRefPtr;
 
-template< class TYPE >
+template< class TYPE, class POLICY = RefCountedDeletePolicy >
 class RefCountedObject
 {
 public:
@@ -25,13 +33,6 @@ public:
 	int		Ref_Count() const { return m_numRefs; }
 
 private:
-	void	Ref_CheckRemove()
-	{
-		// ASSERT(m_numRefs < 0);
-
-		if (m_numRefs <= 0)
-			Ref_DeleteObject();
-	}
 
 	// deletes object when no references
 	// example of usage: 
@@ -46,19 +47,23 @@ private:
 	mutable int	m_numRefs{ 0 };
 };
 
-template< class TYPE >
-inline void	RefCountedObject<TYPE>::Ref_Grab()
+template< class TYPE, class POLICY >
+inline void	RefCountedObject<TYPE, POLICY>::Ref_Grab()
 {
 	Threading::IncrementInterlocked(m_numRefs);
 }
 
-template< class TYPE >
-inline bool	RefCountedObject<TYPE>::Ref_Drop()
+template< class TYPE, class POLICY >
+inline bool	RefCountedObject<TYPE, POLICY>::Ref_Drop()
 {
 	int refCount = Threading::DecrementInterlocked(m_numRefs);
 	if (refCount <= 0)
 	{
 		Ref_DeleteObject();
+
+		if (POLICY::SHOULD_DELETE)
+			delete this;
+
 		return true;
 	}
 
@@ -87,7 +92,8 @@ public:
 
 	operator const		PTR_TYPE() const	{ return m_ptrObj; }
 	operator			PTR_TYPE ()			{ return m_ptrObj; }
-	PTR_TYPE			p() const			{ return m_ptrObj; }
+	PTR_TYPE			ptr() const			{ return m_ptrObj; }
+	TYPE&				ref() const			{ return *m_ptrObj; }
 	PTR_TYPE			operator->() const	{ return m_ptrObj; }
 
 	void				operator=( const PTR_TYPE obj );
@@ -107,7 +113,7 @@ inline CRefPtr<TYPE>::CRefPtr( PTR_TYPE pObject ) : m_ptrObj(pObject)
 }
 
 template< class TYPE >
-inline CRefPtr<TYPE>::CRefPtr( const CRefPtr<TYPE>& refptr ) : m_ptrObj(refptr.p())
+inline CRefPtr<TYPE>::CRefPtr( const CRefPtr<TYPE>& refptr ) : m_ptrObj(refptr.ptr())
 {
 	if (m_ptrObj)
 		m_ptrObj->Ref_Grab();

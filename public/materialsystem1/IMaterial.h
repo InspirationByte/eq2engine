@@ -54,7 +54,7 @@ enum EMaterialLoadingState
 
 //---------------------------------------------------------------------------------
 
-class IMaterial : public RefCountedObject<IMaterial>
+class IMaterial : public RefCountedObject<IMaterial, RefCountedKeepPolicy>
 {
 public:
 	// returns full material path
