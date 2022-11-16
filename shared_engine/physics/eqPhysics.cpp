@@ -818,7 +818,7 @@ void CEqPhysics::DetectBodyCollisions(CEqRigidBody* bodyA, CEqRigidBody* bodyB, 
 		if(hitDepth < 0 && !(bodyA->m_flags & COLLOBJ_ISGHOST))
 			continue;
 
-		ContactPair_t newPair;
+		ContactPair_t& newPair = bodyA->m_contactPairs.append();
 		newPair.normal = hitNormal;
 		newPair.flags = 0;
 		newPair.depth = hitDepth;
@@ -832,8 +832,6 @@ void CEqPhysics::DetectBodyCollisions(CEqRigidBody* bodyA, CEqRigidBody* bodyB, 
 		
 		newPair.restitutionB = bodyB->GetRestitution();
 		newPair.frictionB = bodyB->GetFriction();
-
-		bodyA->m_contactPairs.append(newPair);
 
 		if(ph_showcontacts.GetBool())
 		{
@@ -955,7 +953,8 @@ void CEqPhysics::DetectStaticVsBodyCollision(CEqCollisionObject* staticObj, CEqR
 		if(hitDepth > 1.0f)
 			hitDepth = 1.0f;
 
-		ContactPair_t newPair;
+		ContactPair_t& newPair = bodyB->m_contactPairs.append();
+
 		newPair.normal = hitNormal;
 		newPair.flags = COLLPAIRFLAG_OBJECTA_STATIC;
 		newPair.depth = hitDepth;
@@ -982,8 +981,6 @@ void CEqPhysics::DetectStaticVsBodyCollision(CEqCollisionObject* staticObj, CEqR
 
 		newPair.restitutionB = bodyB->GetRestitution();
 		newPair.frictionB = bodyB->GetFriction();
-
-		bodyB->m_contactPairs.append(newPair);
 
 		if(ph_showcontacts.GetBool())
 		{
@@ -1111,8 +1108,6 @@ ConVar ph_carVsCarErp("ph_carVsCarErp", "0.15", "Car versus car erp", CV_CHEAT);
 
 void CEqPhysics::ProcessContactPair(ContactPair_t& pair)
 {
-	CollisionPairData_t collData;
-
 	CEqRigidBody* bodyB = (CEqRigidBody*)pair.bodyB;
 	int bodyAFlags = pair.bodyA->m_flags;
 	int bodyBFlags = bodyB->m_flags;
@@ -1217,6 +1212,7 @@ void CEqPhysics::ProcessContactPair(ContactPair_t& pair)
 	{
 		FixedArray<CollisionPairData_t, PHYSICS_COLLISION_LIST_MAX>& pairs = pair.bodyA->m_collisionList;
 
+		CollisionPairData_t collData;
 		collData.bodyA = pair.bodyA;
 		collData.bodyB = pair.bodyB;
 		collData.fract = pair.depth;
@@ -1236,7 +1232,7 @@ void CEqPhysics::ProcessContactPair(ContactPair_t& pair)
 			callbacksA->OnCollide(collData);
 
 		if((bodyAFlags & COLLOBJ_COLLISIONLIST) && pairs.numElem() < PHYSICS_COLLISION_LIST_MAX)
-			pairs.append(collData);
+			pairs.append(std::move(collData));
 	}
 
 	//-----------------------------------------------
@@ -1244,6 +1240,7 @@ void CEqPhysics::ProcessContactPair(ContactPair_t& pair)
 	{
 		FixedArray<CollisionPairData_t, PHYSICS_COLLISION_LIST_MAX>& pairs = pair.bodyB->m_collisionList;
 
+		CollisionPairData_t collData;
 		collData.bodyA = pair.bodyB;
 		collData.bodyB = pair.bodyA;
 		collData.fract = pair.depth;
@@ -1266,7 +1263,7 @@ void CEqPhysics::ProcessContactPair(ContactPair_t& pair)
 			callbacksB->OnCollide(collData);
 
 		if((bodyBFlags & COLLOBJ_COLLISIONLIST) && pairs.numElem() < PHYSICS_COLLISION_LIST_MAX)
-			pairs.append(collData);
+			pairs.append(std::move(collData));
 	}
 }
 

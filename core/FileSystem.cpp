@@ -904,7 +904,7 @@ void CFileSystem::AddSearchPath(const char* pathId, const char* pszDir)
 	if(isReadPriorityPath)
 		m_directories.insert(pathInfo, 0);
 	else
-		m_directories.append(pathInfo);
+		m_directories.append(std::move(pathInfo));
 }
 
 void CFileSystem::RemoveSearchPath(const char* pathId)

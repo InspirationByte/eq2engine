@@ -79,17 +79,15 @@ CDPKFileStream::CDPKFileStream(const char* filename, const dpkfileinfo_t& info, 
 		dpkblock_t hdr;
 		fread(&hdr, 1, sizeof(dpkblock_t), m_handle);
 		
-		dpkblock_info_t block;
+		dpkblock_info_t& block = m_blockInfo.append();
 		block.flags = hdr.flags;
 		block.offset = ftell(m_handle);
 		block.compressedSize = hdr.compressedSize;
 		block.size = hdr.size;
 
 		// skip block contents
-		const int readSize = (block.flags & DPKFILE_FLAG_COMPRESSED) ? block.compressedSize : block.size;
+		const int readSize = (block.flags & DPKFILE_FLAG_COMPRESSED) ? hdr.compressedSize : hdr.size;
 		fseek(m_handle, readSize, SEEK_CUR);
-
-		m_blockInfo.append(block);
 	}
 }
 

@@ -179,14 +179,11 @@ struct TPlane
 		if (abs(offset - other.offset) > fDistEps)
 			return false;
 
-		if (abs(normal.x - other.normal.x) > fNormalEps)
-			return false;
-
-		if (abs(normal.y - other.normal.y) > fNormalEps)
-			return false;
-
-		if (abs(normal.z - other.normal.z) > fNormalEps)
-			return false;
+		for (int i = 0; i < 3; ++i)
+		{
+			if (abs(normal[i] - other.normal[i]) > fNormalEps)
+				return false;
+		}
 
 		return true;
 	}

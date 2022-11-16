@@ -219,13 +219,13 @@ void CDebugOverlay::TextFadeOut(int position, const ColorRGBA &color,float fFade
 	va_end (argptr);
 	if(position == 0)
 	{
-		m_LeftTextFadeArray.append(textNode);
+		m_LeftTextFadeArray.append(std::move(textNode));
 
 		if(m_LeftTextFadeArray.getCount() > MAX_MINICON_MESSAGES && m_LeftTextFadeArray.goToFirst())
 			m_LeftTextFadeArray.removeCurrent();
 	}
 	else
-		m_RightTextFadeArray.append(textNode);
+		m_RightTextFadeArray.append(std::move(textNode));
 }
 
 void CDebugOverlay::Box3D(const Vector3D &mins, const Vector3D &maxs, const ColorRGBA &color, float fTime, int hashId)

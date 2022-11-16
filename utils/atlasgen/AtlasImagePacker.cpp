@@ -172,10 +172,8 @@ bool ParseImageDesc(const char* atlasPath, imageDesc_t& dest, KVSection* kv)
 		}
 		else
 		{
-			imgLayer_t layer;
+			imgLayer_t& layer = dest.layers.append();
 			layer.image = pImg;
-
-			dest.layers.append(layer);
 		}
 	}	
 	else
@@ -189,7 +187,7 @@ bool ParseImageDesc(const char* atlasPath, imageDesc_t& dest, KVSection* kv)
 		{
 			KVSection* kb = kv->keys[i];
 
-			imgLayer_t layer;
+			imgLayer_t& layer = dest.layers.append();
 			layer.blendMode = GetBlendmodeByStr( kb->name );
 			layer.image = nullptr;
 
@@ -221,9 +219,7 @@ bool ParseImageDesc(const char* atlasPath, imageDesc_t& dest, KVSection* kv)
 				// since imageName is optional, we're parsing transparency from 1 value
 				layer.transparency = KV_GetValueFloat(kb, 0, 1.0f);
 				layer.color = KV_GetVector3D(kb, 1, Vector3D(1.0f));
-			}
-
-			dest.layers.append(layer);
+			}			
 		}
 	}
 

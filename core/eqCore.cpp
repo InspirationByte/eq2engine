@@ -439,11 +439,9 @@ void CDkCore::RegisterInterface(const char* pszName, IEqCoreModule* ifPtr)
 			ASSERT_FAIL("Core interface module \"%s\" is already registered.", pszName);
 	}
 
-	coreInterface_t iface;
+	coreInterface_t& iface = m_interfaces.append();
 	iface.name = pszName;
 	iface.ptr = ifPtr;
-
-	m_interfaces.append(iface);
 }
 
 void CDkCore::AddExceptionCallback(CoreExceptionCallback callback)

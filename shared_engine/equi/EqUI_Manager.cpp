@@ -107,11 +107,9 @@ void CUIManager::RegisterFactory(const char* name, EQUICONTROLFACTORYFN factory)
 		}
 	}
 
-	ctrlFactory_t fac;
+	ctrlFactory_t& fac = m_controlFactory.append();
 	fac.factory = factory;
-	fac.name = name;
-
-	m_controlFactory.append(fac);
+	fac.name = name;	
 }
 
 // the element loader
