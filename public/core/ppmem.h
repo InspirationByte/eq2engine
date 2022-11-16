@@ -37,8 +37,8 @@ void operator delete(void* ptr) PPNOEXCEPT;
 void operator delete(void* ptr, size_t alignment) PPNOEXCEPT;
 void operator delete[](void* ptr) PPNOEXCEPT;
 
-void* operator new(size_t size, PPSourceLine sl);
-void* operator new[](size_t size, PPSourceLine sl);
+void* operator new(size_t size, PPSourceLine sl) PPNOEXCEPT;
+void* operator new[](size_t size, PPSourceLine sl) PPNOEXCEPT;
 
 void operator delete(void* ptr, PPSourceLine sl) PPNOEXCEPT;
 void operator delete[](void* ptr, PPSourceLine sl) PPNOEXCEPT;

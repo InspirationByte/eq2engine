@@ -11,7 +11,7 @@ template<class T>
 class SimpleBinaryHeap
 {
 public:
-	SimpleBinaryHeap(PPSourceLine& sl)
+	SimpleBinaryHeap(const PPSourceLine& sl)
 		: m_objects(sl)
 	{
 	}

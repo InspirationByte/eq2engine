@@ -106,17 +106,17 @@ public:
 		return m_nGranularity;
 	}
 
-	void setGranularity(int newGranularity)
+	void setGranularity(int newGranularity) override
 	{
 		m_nGranularity = newGranularity;
 	}
 
-	T* getData()
+	T* getData() override
 	{
 		return m_pListPtr;
 	}
 
-	const T* getData() const
+	const T* getData() const override
 	{
 		return m_pListPtr;
 	}
@@ -168,12 +168,12 @@ public:
 		return 1; 
 	}
 
-	T* getData()
+	T* getData() override
 	{
 		return (T*)(&m_data[0]);
 	}
-
-	const T* getData() const
+	
+	const T* getData() const override
 	{
 		return (T*)(&m_data[0]);
 	}
@@ -442,13 +442,13 @@ inline void ArrayBase<T, STORAGE_TYPE>::setGranularity( int newgranularity )
 
 	ASSERT( newgranularity > 0);
 
-	m_nGranularity = newgranularity;
+	m_storage.setGranularity(newgranularity);
 
-	if ( m_pListPtr )
+	if (m_nNumElem)
 	{
 		// resize it to the closest level of granularity
-		newsize = m_nNumElem + m_nGranularity - 1;
-		newsize -= newsize % m_nGranularity;
+		newsize = m_nNumElem + m_storage.getGranularity() - 1;
+		newsize -= newsize % m_storage.getGranularity();
 
 		if ( newsize != m_storage.getSize())
 		{
@@ -463,7 +463,7 @@ inline void ArrayBase<T, STORAGE_TYPE>::setGranularity( int newgranularity )
 template< typename T, typename STORAGE_TYPE >
 inline int ArrayBase<T, STORAGE_TYPE>::getGranularity() const
 {
-	return m_nGranularity;
+	return m_storage.getGranularity();
 }
 
 // -----------------------------------------------------------------

@@ -58,7 +58,7 @@ public:
 
 	Node* alloc()
 	{
-		return PPNewSL(m_sl) typename Node;
+		return PPNewSL(m_sl) Node;
 	}
 
 	void free(Node* node)
