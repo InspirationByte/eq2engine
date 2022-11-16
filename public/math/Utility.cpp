@@ -40,7 +40,7 @@ bool PointToScreen(const Vector3D& point, Vector2D& screen, const Matrix4x4 & wo
 	Vector3D tmpScreen;
 	const bool behind = PointToScreen(point, tmpScreen, worldToScreen, screenDims);
 
-	screen = tmpScreen.xz();
+	screen = tmpScreen.xy();
 
 	return behind;
 }
@@ -267,6 +267,85 @@ void ConvexHull2D(Array<Vector2D>& points, Array<Vector2D>& hull)
 	}
 
 	hull.setNum(k - 1);
+}
+
+struct OrientBox2D
+{
+	Vector2D x;
+	float length[2];
+	float theta;
+	
+	Vector2D axis[2];
+	float dist[2];
+	float limit[2];
+};
+
+bool OrientedBoxIntersection2D(OrientBox2D body[2], float* boxOverlap = nullptr)
+{
+	// calc axes of each box
+	for (int i = 0; i < 2; i++)
+	{
+		const float as = sinf(body[i].theta);
+		const float ac = cosf(body[i].theta);
+
+		body[i].axis[0].x = as;
+		body[i].axis[0].y = ac;
+
+		body[i].axis[1].y = -as;
+		body[i].axis[1].x = ac;
+	}
+
+	const float dtheta = body[1].theta - body[0].theta;
+
+	const float as = sinf(dtheta);
+	const float ac = sinf(dtheta + M_PI_OVER_TWO_F);
+
+	const Vector2D delta = body[0].x - body[1].x;
+
+	int k = 0;
+
+	// do SAT tests for each axis
+	for (int i = 1; i >= 0; --i)
+	{
+		for (int j = 1; j >= 0; --j)
+		{
+			body[i].dist[j] = dot(body[i].axis[j], delta);
+			body[i].limit[j] = body[i].length[j] + (body[k].length[j] * ac + body[k].length[1-j] * as);
+
+			if (body[i].dist[j] < -body[i].limit[j] || body[i].dist[j] > body[i].limit[j])
+				return false;
+		}
+
+		k++;
+	}
+
+	// calc overlap if needed
+	if (boxOverlap)
+	{
+		float xover, zover;
+		float tmp = fabs(dot(body[0].axis[0], body[1].axis[0]));
+
+		if (tmp > F_EPS)
+			xover = fabs(fabs(body[1].dist[0]) - fabs(body[1].limit[0])) / tmp;
+		else
+			xover = 0.0f;
+
+		tmp = fabs(dot(body[0].axis[0], body[1].axis[1]));
+
+		if (tmp > F_EPS)
+			zover = fabs(fabs(body[1].dist[1]) - fabs(body[1].limit[1])) / tmp;
+		else
+			zover = xover;
+
+		if (xover < -F_EPS)
+			*boxOverlap = zover;
+		else if (zover < xover)
+			*boxOverlap = zover;
+		else
+			*boxOverlap = xover;
+	}
+
+	return true;
 }
 
 // normalizes angles in [-180, 180]
