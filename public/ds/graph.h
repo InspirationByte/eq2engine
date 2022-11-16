@@ -92,7 +92,7 @@ inline NODE_ID IGraph<EDGE_ITER, NODE_ID>::Djikstra(const NODE_ID* startNodes, i
 
 	NODE_ID cheapestNode;
 	EDGE_ITER edgeIt(this);
-	while (true)
+	while (openSet.HasItems())
 	{
 		cheapestNode = -1;
 

@@ -22,6 +22,8 @@ public:
 	void	UpHeap(int i);
 	void	DownHeap(int i);
 
+	bool	HasItems() const { return m_count; }
+
 private:
 	Array<T>	m_objects;
 	int			m_count{ 0 };
