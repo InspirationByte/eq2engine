@@ -1281,7 +1281,7 @@ bool CDebugOverlay::CheckNodeLifetime(DebugNodeBase& node)
 		return true;
 
 	// check if it's been replaced
-	auto& found = m_newNames.find(node.nameHash);
+	auto found = m_newNames.find(node.nameHash);
 	if (found == m_newNames.end())
 		return true;
 

@@ -674,7 +674,7 @@ END_IMGUI_FUNC
 // Variadic functions aren't suppported but here it is anyway
 IMGUI_FUNCTION(Text)
 LABEL_ARG(fmt)
-CALL_FUNCTION_NO_RET(Text, fmt)
+CALL_FUNCTION_NO_RET(Text, "%s", fmt)
 END_IMGUI_FUNC
 //    IMGUI_API void          TextV(const char* fmt, va_list args)                            IM_FMTLIST(1);
 // Unsupported arg type  va_list args)                            IM_FMTLIST(1
@@ -683,7 +683,7 @@ END_IMGUI_FUNC
 IMGUI_FUNCTION(TextColored)
 IM_VEC_4_ARG(col)
 LABEL_ARG(fmt)
-CALL_FUNCTION_NO_RET(TextColored, col, fmt)
+CALL_FUNCTION_NO_RET(TextColored, col, "%s", fmt)
 END_IMGUI_FUNC
 //    IMGUI_API void          TextColoredV(const ImVec4& col, const char* fmt, va_list args)  IM_FMTLIST(2);
 // Unsupported arg type  va_list args)  IM_FMTLIST(2
@@ -691,7 +691,7 @@ END_IMGUI_FUNC
 // Variadic functions aren't suppported but here it is anyway
 IMGUI_FUNCTION(TextDisabled)
 LABEL_ARG(fmt)
-CALL_FUNCTION_NO_RET(TextDisabled, fmt)
+CALL_FUNCTION_NO_RET(TextDisabled, "%s", fmt)
 END_IMGUI_FUNC
 //    IMGUI_API void          TextDisabledV(const char* fmt, va_list args)                    IM_FMTLIST(1);
 // Unsupported arg type  va_list args)                    IM_FMTLIST(1
@@ -699,7 +699,7 @@ END_IMGUI_FUNC
 // Variadic functions aren't suppported but here it is anyway
 IMGUI_FUNCTION(TextWrapped)
 LABEL_ARG(fmt)
-CALL_FUNCTION_NO_RET(TextWrapped, fmt)
+CALL_FUNCTION_NO_RET(TextWrapped, "%s", fmt)
 END_IMGUI_FUNC
 //    IMGUI_API void          TextWrappedV(const char* fmt, va_list args)                     IM_FMTLIST(1);
 // Unsupported arg type  va_list args)                     IM_FMTLIST(1
@@ -708,7 +708,7 @@ END_IMGUI_FUNC
 IMGUI_FUNCTION(LabelText)
 LABEL_ARG(label)
 LABEL_ARG(fmt)
-CALL_FUNCTION_NO_RET(LabelText, label, fmt)
+CALL_FUNCTION_NO_RET(LabelText, label, "%s", fmt)
 END_IMGUI_FUNC
 //    IMGUI_API void          LabelTextV(const char* label, const char* fmt, va_list args)    IM_FMTLIST(2);
 // Unsupported arg type  va_list args)    IM_FMTLIST(2
@@ -716,7 +716,7 @@ END_IMGUI_FUNC
 // Variadic functions aren't suppported but here it is anyway
 IMGUI_FUNCTION(BulletText)
 LABEL_ARG(fmt)
-CALL_FUNCTION_NO_RET(BulletText, fmt)
+CALL_FUNCTION_NO_RET(BulletText, "%s", fmt)
 END_IMGUI_FUNC
 //    IMGUI_API void          BulletTextV(const char* fmt, va_list args)                      IM_FMTLIST(1);
 // Unsupported arg type  va_list args)                      IM_FMTLIST(1
@@ -1490,7 +1490,7 @@ END_IMGUI_FUNC
 IMGUI_FUNCTION(TreeNode_3)
 LABEL_ARG(str_id)
 LABEL_ARG(fmt)
-CALL_FUNCTION(TreeNode, bool, str_id, fmt)
+CALL_FUNCTION(TreeNode, bool, str_id, "%s", fmt)
 IF_RET_ADD_END_STACK(6)
 PUSH_BOOL(ret)
 END_IMGUI_FUNC
@@ -1499,7 +1499,7 @@ END_IMGUI_FUNC
 IMGUI_FUNCTION(TreeNode_3_3)
 VOID_ARG(ptr_id)
 LABEL_ARG(fmt)
-CALL_FUNCTION(TreeNode, bool, ptr_id, fmt)
+CALL_FUNCTION(TreeNode, bool, ptr_id, "%s", fmt)
 IF_RET_ADD_END_STACK(6)
 PUSH_BOOL(ret)
 END_IMGUI_FUNC
@@ -1520,7 +1520,7 @@ IMGUI_FUNCTION(TreeNodeEx_4)
 LABEL_ARG(str_id)
 INT_ARG(flags)
 LABEL_ARG(fmt)
-CALL_FUNCTION(TreeNodeEx, bool, str_id, flags, fmt)
+CALL_FUNCTION(TreeNodeEx, bool, str_id, flags, "%s", fmt)
 PUSH_BOOL(ret)
 END_IMGUI_FUNC
 //    IMGUI_API bool          TreeNodeEx(const void* ptr_id, ImGuiTreeNodeFlags flags, const char* fmt, ...) IM_FMTARGS(3);
@@ -1529,7 +1529,7 @@ IMGUI_FUNCTION(TreeNodeEx_4_4)
 VOID_ARG(ptr_id)
 INT_ARG(flags)
 LABEL_ARG(fmt)
-CALL_FUNCTION(TreeNodeEx, bool, ptr_id, flags, fmt)
+CALL_FUNCTION(TreeNodeEx, bool, ptr_id, flags, "%s", fmt)
 PUSH_BOOL(ret)
 END_IMGUI_FUNC
 //    IMGUI_API bool          TreeNodeExV(const char* str_id, ImGuiTreeNodeFlags flags, const char* fmt, va_list args) IM_FMTLIST(3);
@@ -1722,7 +1722,7 @@ END_IMGUI_FUNC
 // Variadic functions aren't suppported but here it is anyway
 IMGUI_FUNCTION(SetTooltip)
 LABEL_ARG(fmt)
-CALL_FUNCTION_NO_RET(SetTooltip, fmt)
+CALL_FUNCTION_NO_RET(SetTooltip, "%s", fmt)
 END_IMGUI_FUNC
 //    IMGUI_API void          SetTooltipV(const char* fmt, va_list args) IM_FMTLIST(1);
 // Unsupported arg type  va_list args) IM_FMTLIST(1
@@ -2013,7 +2013,7 @@ END_IMGUI_FUNC
 // Variadic functions aren't suppported but here it is anyway
 IMGUI_FUNCTION(LogText)
 LABEL_ARG(fmt)
-CALL_FUNCTION_NO_RET(LogText, fmt)
+CALL_FUNCTION_NO_RET(LogText, "%s", fmt)
 END_IMGUI_FUNC
 //    IMGUI_API void          LogTextV(const char* fmt, va_list args) IM_FMTLIST(1);
 // Unsupported arg type  va_list args) IM_FMTLIST(1

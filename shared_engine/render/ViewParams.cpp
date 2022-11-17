@@ -3,10 +3,9 @@
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
 // Description: View parameters.
-// Used by GameDLL and Engine to determine renderable camera position, rotation and FOV
 //////////////////////////////////////////////////////////////////////////////////
 
-#include "math/math_common.h"
+#include "core/core_common.h"
 #include "math/Utility.h"
 #include "ViewParams.h"
 

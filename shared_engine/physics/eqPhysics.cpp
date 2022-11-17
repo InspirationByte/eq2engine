@@ -916,7 +916,7 @@ void CEqPhysics::DetectStaticVsBodyCollision(CEqCollisionObject* staticObj, CEqR
 
 		const int numShapesB = bodyB->m_numShapes;
 		const btCollisionShape* shapeB[] = { bodyB->m_shape };
-		const btCollisionShape** shapesB = numShapesB > 1 ? bodyB->m_shapeList : shapeB;
+		const btCollisionShape* const* shapesB = numShapesB > 1 ? bodyB->m_shapeList : reinterpret_cast<const btCollisionShape* const*>(shapeB);
 
 		for (int i = 0; i < numShapesB; i++)
 		{
