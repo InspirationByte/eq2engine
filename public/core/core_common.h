@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright Â© Inspiration Byte
 // 2009-2014
 //////////////////////////////////////////////////////////////////////////////////
 // Description: Common core definitions
@@ -30,9 +30,9 @@
 
 #if defined(_RETAIL) || defined(__ANDROID__)
 #define PPMEM_DISABLE
-#endif
+#endif // _RETAIL
 
-#if !defined(_RETAIL) && !defined(__ANDROID__)
+#if defined(_WIN32) && !defined(_RETAIL)	// Sorry, only Binbows atm
 #define PROFILE_ENABLE
 #endif
 
@@ -51,14 +51,16 @@
 #include "platform/messagebox.h"
 #include "platform/stackalloc.h"
 
-#include "ds/refcounted.h"
-#include "ds/scopedptr.h"
-#include "ds/singleton.h"
 #include "ds/eqstring.h"
 #include "ds/eqwstring.h"
 
 #include "platform/eqtimer.h"
 #include "platform/eqthread.h"
+
+#include "ds/refcounted.h"
+#include "ds/scopedptr.h"
+#include "ds/singleton.h"
+
 
 #include "ds/Array.h"
 #include "ds/BitArray.h"

@@ -21,13 +21,25 @@ IEXPORTS void	PPFree( void* ptr );
 #define	PPAllocStructArray(type, count)					(type*)	PPDAlloc(count*sizeof(type), PP_SL)
 #define	PPReAlloc(ptr, size)							PPDReAlloc(ptr, size, PP_SL)
 
+#ifdef PPMEM_DISABLE
+
+#define	PPNew			new
+#define	PPNewSL(sl)		new
+
+#else
+
+#define	PPNew			new(PP_SL)
+#define	PPNewSL(sl)		new(sl)
+
+#endif // PPMEM_DISABLE
+
 #ifdef __clang__
 #define PPNOEXCEPT noexcept
 #else
 #define PPNOEXCEPT
 #endif
 
-#ifndef NO_PPMEM_OP
+#if !defined(NO_PPMEM_OP) && !defined(PPMEM_DISABLE)
 
 void* operator new(size_t size);
 void* operator new(size_t size, size_t alignment);
@@ -43,4 +55,4 @@ void* operator new[](size_t size, PPSourceLine sl) PPNOEXCEPT;
 void operator delete(void* ptr, PPSourceLine sl) PPNOEXCEPT;
 void operator delete[](void* ptr, PPSourceLine sl) PPNOEXCEPT;
 
-#endif
+#endif // #if !NO_PPMEM_OP && !PPMEM_DISABLE

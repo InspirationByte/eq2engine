@@ -28,9 +28,6 @@ struct PPSLValueCtor
 };
 
 #define PP_SL			PPSourceLine::Make(__FILE__, __LINE__)
-#define	PPNew			new(PP_SL)
-#define	PPNewSL(sl)		new(sl)
-
 
 #ifdef PROFILE_ENABLE
 

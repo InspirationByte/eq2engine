@@ -9,6 +9,8 @@
 
 #include "core_common.h"
 
+#if !defined(NO_PPMEM_OP) && !defined(PPMEM_DISABLE)
+
 void* operator new(size_t size)
 {
 	return malloc(size);
@@ -58,3 +60,5 @@ void operator delete[](void* ptr, PPSourceLine sl)
 {
 	PPFree(ptr);
 }
+
+#endif // !NO_PPMEM_OP && !PPMEM_DISABLE

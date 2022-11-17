@@ -7,7 +7,7 @@
 
 #pragma once
 
-#if !defined(_RETAIL) || defined(DEBUG)
+#if !defined(_RETAIL)
 #define IMGUI_ENABLED
 #endif
 

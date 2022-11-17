@@ -9,10 +9,6 @@
 
 #define USE_QSORT
 
-#ifndef _RETAIL
-#define DEBUG_CHECK_LIST_BOUNDS
-#endif
-
 template< typename T >
 using PairCompareFunc = bool (*)(const T& a, const T& b);
 
@@ -473,10 +469,8 @@ inline int ArrayBase<T, STORAGE_TYPE>::getGranularity() const
 template< typename T, typename STORAGE_TYPE >
 inline const T & ArrayBase<T, STORAGE_TYPE>::operator[]( int index ) const
 {
-#ifdef DEBUG_CHECK_LIST_BOUNDS
 	ASSERT( index >= 0 );
 	ASSERT( index < m_nNumElem );
-#endif // DEBUG_CHECK_LIST_BOUNDS
 
 	return m_storage.getData()[ index ];
 }
@@ -488,10 +482,8 @@ inline const T & ArrayBase<T, STORAGE_TYPE>::operator[]( int index ) const
 template< typename T, typename STORAGE_TYPE >
 inline T & ArrayBase<T, STORAGE_TYPE>::operator[]( int index )
 {
-#ifdef DEBUG_CHECK_LIST_BOUNDS
 	ASSERT( index >= 0 );
 	ASSERT( index < m_nNumElem );
-#endif // DEBUG_CHECK_LIST_BOUNDS
 
 	return m_storage.getData()[ index ];
 }
@@ -980,10 +972,8 @@ inline int ArrayBase<T, STORAGE_TYPE>::findIndex( COMPAREFUNC comparator  ) cons
 template< typename T, typename STORAGE_TYPE >
 inline bool ArrayBase<T, STORAGE_TYPE>::removeIndex( int index )
 {
-#ifdef DEBUG_CHECK_LIST_BOUNDS
 	ASSERT( index >= 0 );
 	ASSERT( index < m_nNumElem );
-#endif // DEBUG_CHECK_LIST_BOUNDS
 
 	if (( index < 0 ) || ( index >= m_nNumElem ))
 		return false;
@@ -1007,10 +997,8 @@ inline bool ArrayBase<T, STORAGE_TYPE>::removeIndex( int index )
 template< typename T, typename STORAGE_TYPE >
 inline bool ArrayBase<T, STORAGE_TYPE>::removeRange(int index, int count)
 {
-#ifdef DEBUG_CHECK_LIST_BOUNDS
 	ASSERT(count >= 0);
 	ASSERT(index >= 0);
-#endif // DEBUG_CHECK_LIST_BOUNDS
 
 	if ((index < 0) || (index + count >= m_nNumElem))
 		return false;
@@ -1037,10 +1025,8 @@ inline bool ArrayBase<T, STORAGE_TYPE>::removeRange(int index, int count)
 template< typename T, typename STORAGE_TYPE >
 inline bool ArrayBase<T, STORAGE_TYPE>::fastRemoveIndex( int index )
 {
-#ifdef DEBUG_CHECK_LIST_BOUNDS
 	ASSERT( index >= 0 );
 	ASSERT( index < m_nNumElem );
-#endif // DEBUG_CHECK_LIST_BOUNDS
 
 	if (( index < 0 ) || ( index >= m_nNumElem ))
 		return false;
@@ -1340,10 +1326,8 @@ public:
 
 	T&				operator[](int index)
 	{
-#ifdef DEBUG_CHECK_LIST_BOUNDS
 		ASSERT(index >= 0);
 		ASSERT(index < m_nNumElem);
-#endif // DEBUG_CHECK_LIST_BOUNDS
 
 		return m_pListPtr[index];
 	}
@@ -1377,10 +1361,8 @@ public:
 
 	const T&		operator[](int index) const
 	{
-#ifdef DEBUG_CHECK_LIST_BOUNDS
 		ASSERT(index >= 0);
 		ASSERT(index < m_nNumElem);
-#endif // DEBUG_CHECK_LIST_BOUNDS
 
 		return m_pListPtr[index];
 	}
