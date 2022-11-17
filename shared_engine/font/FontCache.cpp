@@ -33,9 +33,9 @@ IEqFontCache* g_fontCache = &s_fontCache;
 			delete lfont;			\
 	}
 
-int compareFontSizes( eqFontStyleInfo_t* const &a, eqFontStyleInfo_t* const &b )
+int compareFontSizes( const eqFontStyleInfo_t &a, const eqFontStyleInfo_t &b )
 {
-	return a->size - b->size;
+	return a.size - b.size;
 }
 
 eqFontStyleInfo_t::~eqFontStyleInfo_t()
@@ -93,10 +93,8 @@ bool CEqFontCache::LoadFontDescriptionFile( const char* filename )
 			continue;
 		}
 
-		char* fontName = fontSec->name;
-
-		eqFontFamily_t* familyEntry = PPNew eqFontFamily_t;
-		familyEntry->name = fontName;
+		eqFontFamily_t& familyEntry = m_fonts.append();
+		familyEntry.name = fontSec->name;
 
 		int styleErrorCounter = 0;
 
@@ -117,7 +115,7 @@ bool CEqFontCache::LoadFontDescriptionFile( const char* filename )
 
 			if( !regFont->LoadFont( KV_GetValueString(regular, 0, "") ) )
 			{
-				MsgError("Failed to load font style '%s' (regular entry) in '%s'\n", KV_GetValueString(regular, 0, ""), fontName);
+				MsgError("Failed to load font style '%s' (regular entry) in '%s'\n", KV_GetValueString(regular, 0, ""), familyEntry.name.ToCString());
 
 				delete regFont;
 				styleErrorCounter++;
@@ -125,41 +123,33 @@ bool CEqFontCache::LoadFontDescriptionFile( const char* filename )
 			}
 
 			// now alloc
-			eqFontStyleInfo_t* fontStyleInfo = PPNew eqFontStyleInfo_t;
-			fontStyleInfo->size = entrySize;
-
+			eqFontStyleInfo_t& fontStyleInfo = familyEntry.sizeTable.append();
+			fontStyleInfo.size = entrySize;
+			fontStyleInfo.regularFont = regFont;
 			
-			fontStyleInfo->regularFont = regFont;
-			
-			FONT_LOADSTYLE(fontStyleInfo->boldFont, KV_GetValueString(bold, 0, nullptr));
-			FONT_LOADSTYLE(fontStyleInfo->italicFont, KV_GetValueString(italic, 0, nullptr));
-			FONT_LOADSTYLE(fontStyleInfo->boldItalicFont, KV_GetValueString(bolditalic, 0, nullptr));
-			
-			// add style/size entry to table
-			familyEntry->sizeTable.append( fontStyleInfo );
+			FONT_LOADSTYLE(fontStyleInfo.boldFont, KV_GetValueString(bold, 0, nullptr));
+			FONT_LOADSTYLE(fontStyleInfo.italicFont, KV_GetValueString(italic, 0, nullptr));
+			FONT_LOADSTYLE(fontStyleInfo.boldItalicFont, KV_GetValueString(bolditalic, 0, nullptr));
 		}
 
-		if( familyEntry->sizeTable.numElem() == 0 )
+		if( familyEntry.sizeTable.numElem() == 0 )
 		{
 			if(styleErrorCounter == 0)
-				MsgWarning("Warning: Font family '%s' has empty size/style table\n", fontName);
+				MsgWarning("Warning: Font family '%s' has empty size/style table\n", familyEntry.name.ToCString());
 			else
-				MsgWarning("Warning: Font family '%s' style/size table is empty and has errors while loading\n", fontName);
+				MsgWarning("Warning: Font family '%s' style/size table is empty and has errors while loading\n", familyEntry.name.ToCString());
 
-			delete familyEntry;
 			continue;
 		}
 		else
 		{
 			// sort the fonts by size
-			familyEntry->sizeTable.sort( compareFontSizes );
+			familyEntry.sizeTable.sort( compareFontSizes );
 		}
 
 		// any font description file may redefine default font
-		if(!strcmp(fontName, "default"))
-			m_defaultFont = familyEntry;
-
-		m_fonts.append(familyEntry);
+		if(!familyEntry.name.CompareCaseIns("default"))
+			m_defaultFont = &familyEntry;
 	}
 
 	return true;	
@@ -189,16 +179,6 @@ bool CEqFontCache::Init()
 
 void CEqFontCache::Shutdown()
 {
-	for(int i = 0; i < m_fonts.numElem(); i++)
-	{
-		eqFontFamily_t* family = m_fonts[i];
-
-		for(int j = 0; j < family->sizeTable.numElem(); j++)
-			delete family->sizeTable[j];
-
-		delete family;
-	}
-
 	m_fonts.clear();
 	m_defaultFont = nullptr;
 
@@ -212,20 +192,20 @@ void CEqFontCache::ReloadFonts()
 	ASSERT_FAIL("Please implement CEqFontCache::ReloadFonts() !!!");
 }
 
-IEqFont* eqFontFamily_t::FindBestSize( int bestSize, int styleFlags )
+IEqFont* eqFontFamily_t::FindBestSize( int bestSize, int styleFlags ) const
 {
-	eqFontStyleInfo_t* bestSizeStyleInfo = nullptr;
+	const eqFontStyleInfo_t* bestSizeStyleInfo = nullptr;
 
 	for(int i = 0; i < sizeTable.numElem(); i++)
 	{
-		eqFontStyleInfo_t* styleInfo = sizeTable[i];
+		const eqFontStyleInfo_t& styleInfo = sizeTable[i];
 
 		if(bestSizeStyleInfo == nullptr)
-			bestSizeStyleInfo = styleInfo;
+			bestSizeStyleInfo = &styleInfo;
 
 		// find the best size-fitting style of the font
-		if(bestSize >= styleInfo->size)
-			bestSizeStyleInfo = styleInfo;
+		if(bestSize >= styleInfo.size)
+			bestSizeStyleInfo = &styleInfo;
 	}
 
 	if(bestSizeStyleInfo == nullptr)
@@ -255,7 +235,7 @@ IEqFont* eqFontFamily_t::FindBestSize( int bestSize, int styleFlags )
 // finds font
 IEqFont* CEqFontCache::GetFont(const char* name, int bestSize, int styleFlags, bool defaultIfNotFound) const
 {
-	eqFontFamily_t* family = GetFamily(name);
+	const eqFontFamily_t* family = GetFamily(name);
 
 	if(!family)
 	{
@@ -272,11 +252,11 @@ eqFontFamily_t* CEqFontCache::GetFamily(const char* name) const
 {
 	for(int i = 0; i < m_fonts.numElem(); i++)
 	{
-		eqFontFamily_t* family = m_fonts[i];
+		const eqFontFamily_t& family = m_fonts[i];
 
-		if( !family->name.Compare(name) )
+		if( !family.name.Compare(name) )
 		{
-			return family;
+			return const_cast<eqFontFamily_t*>(&family);
 		}
 	}
 

@@ -19,16 +19,16 @@ struct eqFontFamily_t;
 class IEqFontCache : public IEqCoreModule
 {
 public:
-	virtual						~IEqFontCache() {}
+	virtual					~IEqFontCache() {}
 
-	virtual bool				Init() = 0;
-	virtual void				Shutdown() = 0;
+	virtual bool			Init() = 0;
+	virtual void			Shutdown() = 0;
 
-	virtual void				ReloadFonts() = 0;
+	virtual void			ReloadFonts() = 0;
 
 	// finds font
-	virtual IEqFont*			GetFont(const char* name, int bestSize, int styleFlags = TEXT_STYLE_REGULAR, bool defaultIfNotFound = true) const = 0;
-	virtual eqFontFamily_t*		GetFamily(const char* name) const = 0;
+	virtual IEqFont*		GetFont(const char* name, int bestSize, int styleFlags = TEXT_STYLE_REGULAR, bool defaultIfNotFound = true) const = 0;
+	virtual eqFontFamily_t*	GetFamily(const char* name) const = 0;
 };
 
 extern IEqFontCache* g_fontCache;
