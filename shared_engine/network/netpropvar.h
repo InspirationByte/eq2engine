@@ -146,7 +146,7 @@ static inline void DispatchNetworkStateChanged(T* pObj, void *pVar)
 			DispatchNetworkStateChanged((NetworkVar_##name##Cntr*)(((uintptr_t)ptr) - offsetOf(NetworkVar_##name##Cntr,name)), (void*)(uintptr_t)offsetOf(NetworkVar_##name##Cntr,name)); \
 		} \
 	}; \
-	base< type, NetworkVar_##name > name;
+	base< type, NetworkVar_##name > name
 
 #define CNetworkVar( type, name )	\
 	NETWORK_VAR_DECL( type, name, CNetworkVarBase )
