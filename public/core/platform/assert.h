@@ -11,29 +11,33 @@
 #ifndef _WIN32
 
 #include <signal.h>
-#define ASSERT_DEBUG_BREAK raise(SIGINT)
+#define _DEBUG_BREAK raise(SIGINT)
 
 #else
 
 #if _MSC_VER >= 1400
-#define ASSERT_DEBUG_BREAK __debugbreak()
+#define _DEBUG_BREAK __debugbreak()
 #else
-#define ASSERT_DEBUG_BREAK _asm int 0x03
+#define _DEBUG_BREAK _asm int 0x03
 #endif
 
 #endif
 
-IEXPORTS bool	_InternalAssertMsg(PPSourceLine sl, const char* statement, ...);
+#if defined(_RETAIL) || defined(_PROFILE)
 
-#define	ASSERT_MSG(x, msgFmt, ...) if (!(x) && _InternalAssertMsg(PP_SL, msgFmt, ##__VA_ARGS__)) { ASSERT_DEBUG_BREAK; }
-#define	ASSERT(x) ASSERT_MSG(x, #x)
-#define ASSERT_FAIL(msgFmt, ...) ASSERT_MSG(false, msgFmt, ##__VA_ARGS__)
+#define	ASSERT_MSG(x, msgFmt, ...)
+#define	ASSERT(x)
+#define ASSERT_FAIL(msgFmt, ...)
 
-IEXPORTS void	AssertValidReadPtr( void* ptr, int count = 1 );
-IEXPORTS void	AssertValidWritePtr( void* ptr, int count = 1 );
-IEXPORTS void	AssertValidStringPtr( const char* ptr, int maxchar = 0xFFFFFF  );
-IEXPORTS void	AssertValidWStringPtr( const wchar_t* ptr, int maxchar = 0xFFFFFF );
-IEXPORTS void	AssertValidReadWritePtr( void* ptr, int count = 1 );
+#else
+
+IEXPORTS bool _InternalAssertMsg(PPSourceLine sl, const char* statement, ...);
+
+#define	ASSERT_MSG(x, msgFmt, ...)	if (!(x) && _InternalAssertMsg(PP_SL, msgFmt, ##__VA_ARGS__)) { _DEBUG_BREAK; }
+#define	ASSERT(x)					ASSERT_MSG(x, #x)
+#define ASSERT_FAIL(msgFmt, ...)	ASSERT_MSG(false, msgFmt, ##__VA_ARGS__)
+
+#endif // _RETAIL || _PROFILE
 
 #if !defined( __TYPEINFOGEN__ ) && !defined( _lint ) && defined(_WIN32)	// pcLint has problems with assert_offsetof()
 

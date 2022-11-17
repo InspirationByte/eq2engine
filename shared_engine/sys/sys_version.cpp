@@ -70,7 +70,7 @@ int GetEngineBuildNumber()
 
 DECLARE_CMD(engineversion,"Print out full engine version",0)
 {
-	MsgInfo("\"%s\" %s v%s build %i\n Compilation date: %s %s\n",ENGINE_NAME,ENGINE_DEVSTATE ,ENGINE_VERSION,BUILD_NUMBER_ENGINE,COMPILE_DATE,COMPILE_TIME);
+	MsgInfo("\"%s\" v%s build %i\n Compilation date: %s %s\n",ENGINE_NAME ,ENGINE_VERSION,BUILD_NUMBER_ENGINE,COMPILE_DATE,COMPILE_TIME);
 }
 
 void EngineMessage()

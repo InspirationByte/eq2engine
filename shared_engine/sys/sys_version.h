@@ -15,10 +15,12 @@
 #define COMPILE_DATE		__DATE__
 #define COMPILE_TIME		__TIME__
 
-#ifdef ENGINE_RELEASEBUILD
-#	define ENGINE_DEVSTATE	"Release"
-#else
-#	define ENGINE_DEVSTATE	"Beta"
+#ifndef COMPILE_CONFIGURATION
+#define COMPILE_CONFIGURATION "NO_CONFIGURATION"
+#endif
+
+#ifndef COMPILE_PLATFORM
+#define COMPILE_PLATFORM "UNK PLATFORM"
 #endif
 
 int GetEngineBuildNumber();

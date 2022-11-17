@@ -10,6 +10,7 @@
 
 char* xstrupr(char* str)
 {
+	ASSERT(str);
     char* it = str;
 
     while (*it != 0) { *it = toupper(*it); ++it; }
@@ -19,6 +20,7 @@ char* xstrupr(char* str)
 
 char* xstrlwr(char* str)
 {
+	ASSERT(str);
     char* it = str;
 
     while (*it != 0) { *it = tolower(*it); ++it; }
@@ -28,6 +30,8 @@ char* xstrlwr(char* str)
 
 wchar_t* xwcslwr(wchar_t* str)
 {
+	ASSERT(str);
+
     wchar_t* it = str;
 
 #ifdef _WIN32
@@ -41,6 +45,8 @@ wchar_t* xwcslwr(wchar_t* str)
 
 wchar_t* xwcsupr(wchar_t* str)
 {
+	ASSERT(str);
+
     wchar_t* it = str;
 
 #ifdef _WIN32
@@ -102,6 +108,7 @@ void CombinePath(EqString& outPath, int num, ...)
 
 void FixSlashes( char* str )
 {
+	ASSERT(str);
     while ( *str )
     {
         if ( *str == INCORRECT_PATH_SEPARATOR )
@@ -114,6 +121,7 @@ void FixSlashes( char* str )
 
 void StripFileName(char* path)
 {
+	ASSERT(path);
 	int	length;
 
 	length = strlen(path) - 1;
@@ -125,6 +133,8 @@ void StripFileName(char* path)
 
 void ExtractFileBase(const char* path, char* dest)
 {
+	ASSERT(path);
+	ASSERT(dest);
 	const char     *src;
 	src = path + strlen(path) - 1;
 
@@ -144,6 +154,7 @@ void ExtractFileBase(const char* path, char* dest)
 //------------------------------------------
 int StringToHash( const char *str, bool caseIns )
 {
+	ASSERT(str);
 	int hash = strlen(str);
 	for (; *str; str++)
 	{
@@ -161,6 +172,7 @@ int StringToHash( const char *str, bool caseIns )
 
 char* xstreatwhite(char* str)
 {
+	ASSERT(str);
 	char c = 0;
 
 // skip whitespace
@@ -210,6 +222,9 @@ skipwhite:
 
 void xstrsplit2( const char* pString, const char* *pSeparators, int nSeparators, Array<EqString> &outStrings )
 {
+	ASSERT(pString);
+	ASSERT(pSeparators);
+
 	outStrings.clear();
 	const char* pCurPos = pString;
 	while ( 1 )
@@ -259,7 +274,7 @@ void xstrsplit( const char* pString, const char* pSeparator, Array<EqString> &ou
 //------------------------------------------
 char* xstrdup(const char*  s)
 {
-	AssertValidStringPtr( s );
+	ASSERT( s );
 
 	char*  t;
 	int len = strlen(s)+1;
@@ -283,14 +298,17 @@ bool xisspace(int c)
 
 char* xstrstr(  const char* s1, const char* search )
 {
-	AssertValidStringPtr( s1 );
-	AssertValidStringPtr( search );
+	ASSERT( s1 );
+	ASSERT( search );
 
 	return strstr( (char* )s1, search );
 }
 
 int xstrfind(char* str, char* search)
 {
+	ASSERT(str);
+	ASSERT(search);
+
 	int len = strlen(str);
 	int len2 = strlen(search); // search len
 
@@ -317,8 +335,8 @@ int xstrfind(char* str, char* search)
 // Finds a string in another string with a case insensitive test
 char const* xstristr( char const* pStr, char const* pSearch )
 {
-	//AssertValidStringPtr(pStr);
-	//AssertValidStringPtr(pSearch);
+	ASSERT(pStr);
+	ASSERT(pSearch);
 
 	if (!pStr || !pSearch)
 		return 0;
@@ -370,8 +388,8 @@ char* xstristr( char* pStr, char const* pSearch )
 // compares two strings
 int xwcscmp( const wchar_t *s1, const wchar_t *s2)
 {
-	AssertValidWStringPtr( s1 );
-	AssertValidWStringPtr( s2 );
+	ASSERT( s1 );
+	ASSERT( s2 );
 
 	while (1)
 	{
@@ -389,8 +407,8 @@ int xwcscmp( const wchar_t *s1, const wchar_t *s2)
 // compares two strings case-insensetive
 int xwcsicmp( const wchar_t* s1, const wchar_t* s2 )
 {
-	AssertValidWStringPtr( s1 );
-	AssertValidWStringPtr( s2 );
+	ASSERT( s1 );
+	ASSERT( s2 );
 
 	while (1)
 	{
@@ -409,8 +427,8 @@ int xwcsicmp( const wchar_t* s1, const wchar_t* s2 )
 // finds substring in string case insensetive
 wchar_t* xwcsistr( wchar_t* pStr, wchar_t const* pSearch )
 {
-	AssertValidWStringPtr( pStr );
-	AssertValidWStringPtr( pSearch );
+	ASSERT( pStr );
+	ASSERT( pSearch );
 
 	return (wchar_t*)xwcsistr( (wchar_t const*)pStr, pSearch );
 }
@@ -418,8 +436,8 @@ wchar_t* xwcsistr( wchar_t* pStr, wchar_t const* pSearch )
 // finds substring in string case insensetive
 wchar_t const* xwcsistr( wchar_t const* pStr, wchar_t const* pSearch )
 {
-	AssertValidWStringPtr(pStr);
-	AssertValidWStringPtr(pSearch);
+	ASSERT(pStr);
+	ASSERT(pSearch);
 
 	if (!pStr || !pSearch)
 		return 0;
@@ -466,6 +484,8 @@ namespace EqStringConv
 {
 	utf8_to_wchar::utf8_to_wchar(EqWString& outStr, const char* val, int len /*= -1*/)
 	{
+		ASSERT(val);
+
 		m_utf8 = (ubyte*)val;
 
 		int length = GetLength();
@@ -488,6 +508,9 @@ namespace EqStringConv
 
 	utf8_to_wchar::utf8_to_wchar(wchar_t* outStr, int maxLength, const char* val, int len /*= -1*/)
 	{
+		ASSERT(outStr);
+		ASSERT(val);
+
 		m_utf8 = (ubyte*)val;
 
 		if (len == -1)
@@ -579,6 +602,8 @@ namespace EqStringConv
 
 	wchar_to_utf8::wchar_to_utf8(EqString& outStr, const wchar_t* val, int len/* = -1*/)
 	{
+		ASSERT(val);
+
 		if (len == -1)
 			len = wcslen(val) * 4;
 		else

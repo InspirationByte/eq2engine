@@ -383,7 +383,7 @@ void CDkCore::Shutdown()
 
     g_cmdLine->DeInit();
 
-#ifndef CORE_FINAL_RELEASE
+#if !defined(_RETAIL)
 
 	if(g_bPrintLeaksOnShutdown)
 		PPMemInfo(false);

@@ -23,7 +23,9 @@
 #include "core/ConCommand.h"
 #include "core/IConsoleCommands.h"
 
-//#define PPMEM_DISABLE
+#ifdef _RETAIL
+#define PPMEM_DISABLED
+#endif
 
 #if defined(CRT_DEBUG_ENABLED) && defined(_WIN32)
 #define pp_internal_malloc(s)	_malloc_dbg(s, _NORMAL_BLOCK, pszFileName, nLine)
@@ -76,8 +78,10 @@ ppmem_state_t& PPGetState()
 	return st;
 }
 
+#ifndef PPMEM_DISABLED
 static ConCommand	ppmem_stats("ppmem_stats",CONCOMMAND_FN(ppmemstats), "Memory info",CV_UNREGISTERED);
 static ConVar		ppmem_break_on_alloc("ppmem_break_on_alloc", "-1", "Helps to catch allocation id at stack trace",CV_UNREGISTERED);
+#endif
 
 #if defined(CRT_DEBUG_ENABLED) && defined(_WIN32)
 
@@ -106,8 +110,10 @@ int EqAllocHook( int allocType, void *userData, size_t size, int blockType, long
 
 void PPMemInit()
 {
+#ifndef PPMEM_DISABLED
 	g_consoleCommands->RegisterCommand(&ppmem_stats);
 	g_consoleCommands->RegisterCommand(&ppmem_break_on_alloc);
+#endif
 
 #if defined(CRT_DEBUG_ENABLED) && defined(_WIN32)
 	g_consoleCommands->RegisterCommand(&cmd_crtdebug_break_alloc);
@@ -120,9 +126,10 @@ void PPMemInit()
 
 void PPMemShutdown()
 {
+#ifndef PPMEM_DISABLED
     g_consoleCommands->UnregisterCommand(&ppmem_stats);
     g_consoleCommands->UnregisterCommand(&ppmem_break_on_alloc);
-
+#endif
 #if defined(CRT_DEBUG_ENABLED) && defined(_WIN32)
 	g_consoleCommands->UnregisterCommand(&cmd_crtdebug_break_alloc);
 #endif // defined(CRT_DEBUG_ENABLED) && defined(_WIN32)

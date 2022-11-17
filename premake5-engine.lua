@@ -48,13 +48,18 @@ Folders = {
 workspace(WORKSPACE_NAME)
     language "C++"
 	cppdialect "C++17"	-- required for sol2
-    configurations { "Debug", "Release" }
+    configurations { "Debug", "Release", "Profile", "Retail" }
 	linkgroups 'On'
 	
 	--characterset "ASCII"
 	objdir "build"
 	targetdir "bin/%{cfg.platform}/%{cfg.buildcfg}"
 	location "project_%{_ACTION}"
+
+	defines {
+		"COMPILE_CONFIGURATION=\"%{cfg.buildcfg}\"",
+		"COMPILE_PLATFORM=\"%{cfg.platform}\""
+	}
 	
 	if not IS_ANDROID then
 		platforms { 
@@ -109,8 +114,6 @@ workspace(WORKSPACE_NAME)
 			architecture "arm64"
 	end
 
-
-
     filter "system:linux"
         buildoptions {
             "-Wno-narrowing",
@@ -139,6 +142,18 @@ workspace(WORKSPACE_NAME)
         }
 		optimize "On"
 		-- enableASAN "On"
+
+	filter "configurations:Profile"
+        defines {
+			"_PROFILE"
+        }
+		optimize "On"
+
+	filter "configurations:Retail"
+        defines {
+			"_RETAIL"
+        }
+		optimize "On"
 
 	filter "system:Windows or system:Linux or system:Android"
 		defines { 

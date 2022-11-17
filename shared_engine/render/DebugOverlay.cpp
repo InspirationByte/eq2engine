@@ -15,6 +15,10 @@
 #include "materialsystem1/IMaterialSystem.h"
 #include "materialsystem1/MeshBuilder.h"
 
+#ifdef _RETAIL
+#define DISABLE_DEBUG_DRAWING
+#endif
+
 #define BOXES_DRAW_SUBDIV (64)
 #define LINES_DRAW_SUBDIV (128)
 #define POLYS_DRAW_SUBDIV (64)
@@ -23,7 +27,7 @@
 static CDebugOverlay g_DebugOverlays;
 IDebugOverlay* debugoverlay = (IDebugOverlay*)&g_DebugOverlays;
 
-
+#ifndef DISABLE_DEBUG_DRAWING
 static Threading::CEqMutex	s_debugOverlayMutex;
 
 static ConVar r_drawFrameStats("r_frameStats", "0", nullptr, CV_ARCHIVE);
@@ -144,9 +148,11 @@ static void DrawOrientedBox(const Vector3D& position, const Vector3D& mins, cons
 	debugoverlay->Polygon3D(verts[14], verts[15], verts[16], polyColor);
 	debugoverlay->Polygon3D(verts[16], verts[15], verts[17], polyColor);
 }
+#endif 
 
 void CDebugOverlay::Init(bool hidden)
 {
+#ifndef DISABLE_DEBUG_DRAWING
 	if (!hidden)
 	{
 		r_drawFrameStats.SetBool(true);
@@ -154,6 +160,7 @@ void CDebugOverlay::Init(bool hidden)
 		r_debugdrawShapes.SetBool(true);
 		r_debugdrawLines.SetBool(true);
 	}
+#endif
 
 	m_debugFont = g_fontCache->GetFont("debug", 0);
 	m_debugFont2 = g_fontCache->GetFont("default", 0);
@@ -161,6 +168,7 @@ void CDebugOverlay::Init(bool hidden)
 
 void CDebugOverlay::Text(const ColorRGBA &color, char const *fmt,...)
 {
+#ifndef DISABLE_DEBUG_DRAWING
 	if(!r_drawFrameStats.GetBool())
 		return;
 
@@ -173,10 +181,12 @@ void CDebugOverlay::Text(const ColorRGBA &color, char const *fmt,...)
 	va_start (argptr,fmt);
 	textNode.pszText = EqString::FormatVa(fmt, argptr);
 	va_end (argptr);
+#endif
 }
 
 void CDebugOverlay::Text3D(const Vector3D &origin, float dist, const ColorRGBA &color, const char* text, float fTime, int hashId)
 {
+#ifndef DISABLE_DEBUG_DRAWING
 	if(hashId == 0 && !m_frustum.IsSphereInside(origin, 1.0f))
 		return;
 
@@ -194,12 +204,14 @@ void CDebugOverlay::Text3D(const Vector3D &origin, float dist, const ColorRGBA &
 
 	if (hashId != 0)
 		m_newNames.insert(hashId, m_frameId);
+#endif
 }
 
 #define MAX_MINICON_MESSAGES 32
 
 void CDebugOverlay::TextFadeOut(int position, const ColorRGBA &color,float fFadeTime, char const *fmt, ...)
 {
+#ifndef DISABLE_DEBUG_DRAWING
 	if(position == 1)
 	{
 		if(!r_drawFrameStats.GetBool())
@@ -226,10 +238,12 @@ void CDebugOverlay::TextFadeOut(int position, const ColorRGBA &color,float fFade
 	}
 	else
 		m_RightTextFadeArray.append(std::move(textNode));
+#endif
 }
 
 void CDebugOverlay::Box3D(const Vector3D &mins, const Vector3D &maxs, const ColorRGBA &color, float fTime, int hashId)
 {
+#ifndef DISABLE_DEBUG_DRAWING
 	if(!r_debugdrawShapes.GetBool())
 		return;
 
@@ -250,10 +264,12 @@ void CDebugOverlay::Box3D(const Vector3D &mins, const Vector3D &maxs, const Colo
 
 	if (hashId != 0)
 		m_newNames.insert(hashId, m_frameId);
+#endif
 }
 
 void CDebugOverlay::Cylinder3D(const Vector3D& position, float radius, float height, const ColorRGBA& color, float fTime, int hashId)
 {
+#ifndef DISABLE_DEBUG_DRAWING
 	if (!r_debugdrawShapes.GetBool())
 		return;
 
@@ -275,10 +291,12 @@ void CDebugOverlay::Cylinder3D(const Vector3D& position, float radius, float hei
 
 	if (hashId != 0)
 		m_newNames.insert(hashId, m_frameId);
+#endif
 }
 
 void CDebugOverlay::Line3D(const Vector3D &start, const Vector3D &end, const ColorRGBA &color1, const ColorRGBA &color2, float fTime, int hashId)
 {
+#ifndef DISABLE_DEBUG_DRAWING
 	if(!r_debugdrawLines.GetBool())
 		return;
 
@@ -299,10 +317,12 @@ void CDebugOverlay::Line3D(const Vector3D &start, const Vector3D &end, const Col
 
 	if (hashId != 0)
 		m_newNames.insert(hashId, m_frameId);
+#endif
 }
 
 void CDebugOverlay::OrientedBox3D(const Vector3D& mins, const Vector3D& maxs, const Vector3D& position, const Quaternion& rotation, const ColorRGBA& color, float fTime, int hashId)
 {
+#ifndef DISABLE_DEBUG_DRAWING
 	if(!r_debugdrawShapes.GetBool())
 		return;
 
@@ -324,10 +344,12 @@ void CDebugOverlay::OrientedBox3D(const Vector3D& mins, const Vector3D& maxs, co
 
 	if (hashId != 0)
 		m_newNames.insert(hashId, m_frameId);
+#endif
 }
 
 void CDebugOverlay::Sphere3D(const Vector3D& position, float radius, const ColorRGBA &color, float fTime, int hashId)
 {
+#ifndef DISABLE_DEBUG_DRAWING
 	if(!r_debugdrawShapes.GetBool())
 		return;
 
@@ -347,10 +369,12 @@ void CDebugOverlay::Sphere3D(const Vector3D& position, float radius, const Color
 
 	if (hashId != 0)
 		m_newNames.insert(hashId, m_frameId);
+#endif
 }
 
 void CDebugOverlay::Polygon3D(const Vector3D &v0, const Vector3D &v1,const Vector3D &v2, const Vector4D &color, float fTime, int hashId)
 {
+#ifndef DISABLE_DEBUG_DRAWING
 	if(hashId == 0 && !m_frustum.IsTriangleInside(v0,v1,v2))
 		return;
 
@@ -369,10 +393,12 @@ void CDebugOverlay::Polygon3D(const Vector3D &v0, const Vector3D &v1,const Vecto
 
 	if (hashId != 0)
 		m_newNames.insert(hashId, m_frameId);
+#endif
 }
 
 void CDebugOverlay::Draw2DFunc(const OnDebugDrawFn& func, float fTime, int hashId)
 {
+#ifndef DISABLE_DEBUG_DRAWING
 	Threading::CScopedMutex m(s_debugOverlayMutex);
 
 	DebugDrawFunc_t& fn = m_draw2DFuncs.append();
@@ -384,10 +410,12 @@ void CDebugOverlay::Draw2DFunc(const OnDebugDrawFn& func, float fTime, int hashI
 
 	if (hashId != 0)
 		m_newNames.insert(hashId, m_frameId);
+#endif
 }
 
 void CDebugOverlay::Draw3DFunc(const OnDebugDrawFn& func, float fTime, int hashId)
 {
+#ifndef DISABLE_DEBUG_DRAWING
 	Threading::CScopedMutex m(s_debugOverlayMutex);
 
 	DebugDrawFunc_t& fn = m_draw3DFuncs.append();
@@ -399,8 +427,10 @@ void CDebugOverlay::Draw3DFunc(const OnDebugDrawFn& func, float fTime, int hashI
 
 	if (hashId != 0)
 		m_newNames.insert(hashId, m_frameId);
+#endif
 }
 
+#ifndef DISABLE_DEBUG_DRAWING
 static void DrawLineArray(Array<DebugLineNode_t>& lines, float frametime)
 {
 	if(!lines.numElem())
@@ -1021,6 +1051,8 @@ static void DrawSphereArray(Array<DebugSphereNode_t>& spheres, float frameTime)
 	meshBuilder.End();
 }
 
+#endif // DISABLE_DEBUG_DRAWING
+
 void CDebugOverlay::SetMatrices( const Matrix4x4 &proj, const Matrix4x4 &view )
 {
 	m_projMat = proj;
@@ -1034,6 +1066,7 @@ void CDebugOverlay::Draw(int winWide, int winTall, float timescale)
 {
 	m_frameTime = m_timer.GetTime(true) * timescale;
 
+#ifndef DISABLE_DEBUG_DRAWING
 	g_pShaderAPI->SetViewport(0, 0, winWide, winTall);
 	materials->SetMatrix(MATRIXMODE_PROJECTION, m_projMat);
 	materials->SetMatrix(MATRIXMODE_VIEW, m_viewMat);
@@ -1265,6 +1298,7 @@ void CDebugOverlay::Draw(int winWide, int winTall, float timescale)
 	}
 
 	++m_frameId;
+#endif
 }
 
 bool CDebugOverlay::CheckNodeLifetime(DebugNodeBase& node)
@@ -1291,6 +1325,7 @@ bool CDebugOverlay::CheckNodeLifetime(DebugNodeBase& node)
 
 void CDebugOverlay::CleanOverlays()
 {
+#ifndef DISABLE_DEBUG_DRAWING
 	Threading::CScopedMutex m(s_debugOverlayMutex);
 
 	for (int i = 0; i < m_draw2DFuncs.numElem(); i++)
@@ -1383,21 +1418,24 @@ void CDebugOverlay::CleanOverlays()
 		}
 	}
 
-	//m_TextArray.clear(false);
+#endif
 }
 
 void CDebugOverlay::Graph_DrawBucket(debugGraphBucket_t* pBucket)
 {
+#ifndef DISABLE_DEBUG_DRAWING
 	if (!r_debugdrawGraphs.GetBool())
 		return;
 
 	Threading::CScopedMutex m(s_debugOverlayMutex);
 
 	m_graphbuckets.addUnique(pBucket);
+#endif
 }
 
 void CDebugOverlay::Graph_AddValue(debugGraphBucket_t* bucket, float value)
 {
+#ifndef DISABLE_DEBUG_DRAWING
 	if(!r_debugdrawGraphs.GetBool())
 		return;
 
@@ -1420,6 +1458,7 @@ void CDebugOverlay::Graph_AddValue(debugGraphBucket_t* bucket, float value)
 
 		bucket->remainingTime = bucket->updateTime;
 	}
+#endif
 }
 
 IEqFont* CDebugOverlay::GetFont()

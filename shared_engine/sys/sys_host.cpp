@@ -25,6 +25,7 @@
 #include "sys_in_console.h"
 #include "sys_in_joystick.h"
 #include "sys_window.h"
+#include "sys_version.h"
 #include "cfgloader.h"
 
 #include "font/IFontCache.h"
@@ -32,6 +33,7 @@
 #include "input/InputCommandBinder.h"
 
 #include "materialsystem1/IMaterialSystem.h"
+
 
 #define DEFAULT_USERCONFIG_PATH		"cfg/user.cfg"
 
@@ -147,7 +149,11 @@ bool CGameHost::LoadModules()
 
 void CGameHost::SetWindowTitle(const char* windowTitle)
 {
+#ifdef _RETAIL
 	SDL_SetWindowTitle(m_pWindow, windowTitle);
+#else
+	SDL_SetWindowTitle(m_pWindow, EqString::Format("%s | " COMPILE_CONFIGURATION " (" COMPILE_PLATFORM ") | build %d (" COMPILE_DATE ")", windowTitle, BUILD_NUMBER_ENGINE).ToCString());
+#endif
 }
 
 void CGameHost::SetFullscreenMode()

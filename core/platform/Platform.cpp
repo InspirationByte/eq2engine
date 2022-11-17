@@ -26,38 +26,3 @@ IEXPORTS void Platform_Sleep(uint32 nMilliseconds)
     while(nanosleep(&ts, nullptr)==-1 && errno == EINTR){}
 #endif //_WIN32
 }
-
-IEXPORTS void AssertValidReadPtr( void* ptr, int count/* = 1*/ )
-{
-#ifdef _WIN32
-    ASSERT(!IsBadReadPtr( ptr, count ));
-#endif
-}
-
-IEXPORTS void AssertValidStringPtr( const char* ptr, int maxchar/* = 0xFFFFFF */ )
-{
-#ifdef _WIN32
-    ASSERT(!IsBadStringPtrA( ptr, maxchar ));
-#endif
-}
-
-IEXPORTS void AssertValidWStringPtr( const wchar_t* ptr, int maxchar/* = 0xFFFFFF */ )
-{
-#ifdef _WIN32
-    ASSERT(!IsBadStringPtrW( ptr, maxchar ));
-#endif
-}
-
-void AssertValidWritePtr( void* ptr, int count/* = 1*/ )
-{
-#ifdef _WIN32
-    ASSERT(!IsBadWritePtr( ptr, count ));
-#endif
-}
-
-IEXPORTS void AssertValidReadWritePtr( void* ptr, int count/* = 1*/ )
-{
-#ifdef _WIN32
-    ASSERT(!( IsBadWritePtr(ptr, count) || IsBadReadPtr(ptr,count)));
-#endif
-}
