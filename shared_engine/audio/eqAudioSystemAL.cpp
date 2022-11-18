@@ -333,7 +333,7 @@ IEqAudioSource* CEqAudioSystemAL::CreateSource()
 {
 	CScopedMutex m(s_audioSysMutex);
 
-	int index = m_sources.append(new CEqAudioSourceAL());
+	int index = m_sources.append(CRefPtr_new(CEqAudioSourceAL));
 	return m_sources[index];
 }
 
