@@ -11,6 +11,8 @@
 #pragma warning(push)
 #pragma warning(disable:4244)
 
+constexpr const double Q_D_EPS = 0.000001;
+
 Quaternion::Quaternion(const float Wx, const float Wy)
 {
 	float cx,sx,cy,sy;
@@ -474,23 +476,23 @@ Vector3D eulersXYZ(const Quaternion &q)
 
 	Vector3D euler;
 
-	if (dsimilar(test, 1.0, 0.000001))
+	if (dsimilar(test, 1.0, Q_D_EPS))
 	{
 		// heading = rotation about z-axis
 		euler.z = (float) (-2.0*atan2(q.x, q.w));
 		// bank = rotation about x-axis
 		euler.x = 0;
 		// attitude = rotation about y-axis
-		euler.y = (float) (M_PI_D/2.0);
+		euler.y = (float) (M_PI_D * 0.5);
 	}
-	else if (dsimilar(test, -1.0, 0.000001))
+	else if (dsimilar(test, -1.0, Q_D_EPS))
 	{
 		// heading = rotation about z-axis
-		euler.z = (float) (2.0*atan2(q.x, q.w));
+		euler.z = (float) (2.0 * atan2(q.x, q.w));
 		// bank = rotation about x-axis
 		euler.x = 0;
 		// attitude = rotation about y-axis
-		euler.y = (float) (M_PI_D/-2.0);
+		euler.y = (float) (M_PI_D * -0.5);
 	}
 	else
 	{

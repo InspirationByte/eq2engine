@@ -61,6 +61,7 @@ inline void SinCos( float radians, float *sine, float *cosine )
 
 	*sine = sinf(radians);
 	*cosine = cosf(radians);
+	
 
 /*
 	register double __cosr, __sinr;

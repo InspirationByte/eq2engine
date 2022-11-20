@@ -15,12 +15,13 @@ Matrix4x4 perspectiveMatrix(const float fov, const float zNear, const float zFar
 	float sinF, cosF;
 	SinCos(0.5f * fov,&sinF,&cosF);
 
-	float s = cosF / sinF;
+	const float s = cosF / sinF;
+	const float zz = 1.0f / (zFar - zNear);
 
 	return Matrix4x4(
 		s, 0, 0, 0,
 		0, s, 0, 0,
-		0, 0, (zFar + zNear) / (zFar - zNear), -(2 * zFar * zNear) / (zFar - zNear),
+		0, 0, (zFar + zNear) * zz, -(2.0f * zFar * zNear) * zz,
 		0, 0, 1, 0);
 }
 
@@ -29,28 +30,30 @@ Matrix4x4 perspectiveMatrixX(const float fov, const int width, const int height,
 	float sinF, cosF;
 	SinCos(0.5f * fov,&sinF,&cosF);
 
-	float w = cosF / sinF;
-	float h = (w * width) / height;
+	const float w = cosF / sinF;
+	const float h = (w * width) / height;
+	const float zz = 1.0f / (zFar - zNear);
 
 	return Matrix4x4(
 		w, 0, 0, 0,
 		0, h, 0, 0,
-		0, 0, (zFar + zNear) / (zFar - zNear), -(2 * zFar * zNear) / (zFar - zNear),
+		0, 0, (zFar + zNear) * zz, -(2.0f * zFar * zNear) * zz,
 		0, 0, 1, 0);
 }
 
 Matrix4x4 perspectiveMatrixY(const float fov, const int width, const int height, const float zNear, const float zFar)
 {
 	float sinF, cosF;
-	SinCos(0.5f * fov,&sinF,&cosF);
+	SinCos(0.5f * fov, &sinF, &cosF);
 
-	float h = cosF / sinF;
-	float w = (h * height) / width;
+	const float h = cosF / sinF;
+	const float w = (h * height) / width;
+	const float zz = 1.0f / (zFar - zNear);
 
 	return Matrix4x4(
 		w, 0, 0, 0,
 		0, h, 0, 0,
-		0, 0, (zFar + zNear) / (zFar - zNear), -(2 * zFar * zNear) / (zFar - zNear),
+		0, 0, (zFar + zNear) * zz, -(2.0f * zFar * zNear) * zz,
 		0, 0, 1, 0);
 }
 
@@ -58,12 +61,14 @@ Matrix4x4 orthoMatrixR(const float left, const float right, const float top, con
 {
 	Matrix4x4 mat = _identity4<float>();
 
+	const float yy = 1.0f / (bottom - top);
+
 	mat.rows[0][0] = 2.0f / (right - left);
-	mat.rows[1][1] = 2.0f / (bottom - top);
+	mat.rows[1][1] = 2.0f * yy;
 	mat.rows[2][2] = 1.0f / (zFar - zNear);
 
 	mat.rows[0][3] = (left + right) / (left - right);
-	mat.rows[1][3] = (top + bottom) / (bottom - top);
+	mat.rows[1][3] = (top + bottom) * yy;
 	mat.rows[2][3] = zNear / (zNear - zFar);
 
 	return mat;
@@ -73,13 +78,16 @@ Matrix4x4 orthoMatrix(const float left, const float right, const float top, cons
 {
 	Matrix4x4 mat = _identity4<float>();
 
+	const float yy = 1.0f / (bottom - top);
+	const float zz = 1.0f / (zFar - zNear);
+
 	mat.rows[0][0] = 2.0f / (right - left);
-	mat.rows[1][1] = 2.0f / (bottom - top);
-	mat.rows[2][2] = 2.0f / (zFar - zNear);
+	mat.rows[1][1] = 2.0f * yy;
+	mat.rows[2][2] = 2.0f * zz;
 
 	mat.rows[0][3] = (right + left) / (left - right);
-	mat.rows[1][3] = (top + bottom) / (bottom - top);
-	mat.rows[2][3] = (zFar + zNear) / (zFar - zNear);
+	mat.rows[1][3] = (top + bottom) * yy;
+	mat.rows[2][3] = (zFar + zNear) * zz;
 
 	return mat;
 }
@@ -92,7 +100,7 @@ Matrix4x4 projection2DScreen(float wide, float tall)
 	ortho_transform.rows[0].x = (2.0f / wide);
 	ortho_transform.rows[1].y = -(2.0f / tall);
 
-	ortho_transform.translate(-Vector3D(wide/2, tall/2,0));
+	ortho_transform.translate(-Vector3D(wide * 0.5f, tall * 0.5f, 0));
 
 	return ortho_transform;
 }
@@ -167,10 +175,11 @@ Matrix4x4 cubeViewMatrix(const unsigned int side)
 
 Matrix4x4 cubeProjectionMatrixGL(const float zNear, const float zFar)
 {
+	const float zz = 1.0f / (zFar - zNear);
 	return Matrix4x4(
 		1,  0, 0, 0,
 		0, -1, 0, 0,
-		0,  0, (zFar + zNear) / (zFar - zNear), -(2 * zFar * zNear) / (zFar - zNear),
+		0,  0, (zFar + zNear) * zz, -(2 * zFar * zNear) * zz,
 		0,  0, 1, 0);
 }
 
@@ -190,17 +199,19 @@ Vector3D EulerMatrixXYZ(const Matrix3x3 &matrix)
 	double ftrx,ftry;
 
 	angle_y = -asin( (double)matrix.rows[0][2]);
-	double C =  cos( (double)angle_y );
+	const double C =  cos( (double)angle_y );
 
-	if ( C*8192.0f > FLT_EPSILON )
+	if ( C * 8192.0f > FLT_EPSILON )
 	{
-		ftrx      =  matrix.rows[2][2] / C;
-		ftry      = -matrix.rows[1][2]  / C;
+		const double onyByC = 1.0f / C;
+
+		ftrx      =  matrix.rows[2][2] * onyByC;
+		ftry      = -matrix.rows[1][2] * onyByC;
 
 		angle_x  = atan2( ftry, ftrx );
 
-		ftrx      =  matrix.rows[0][0] / C;
-		ftry      = -matrix.rows[0][1] / C;
+		ftrx      =  matrix.rows[0][0] * onyByC;
+		ftry      = -matrix.rows[0][1] * onyByC;
 
 		angle_z  = atan2( ftry, ftrx );
 	}
@@ -220,15 +231,17 @@ Vector3D EulerMatrixXYZ(const Matrix3x3 &matrix)
 // converts matrix to euler angles of Z-X-Y order
 Vector3D EulerMatrixZXY(const Matrix3x3 &matrix)
 {
-	float a = asinf(matrix.rows[1][2]);
-	float ca = cosf(a);
+	const float a = asinf(matrix.rows[1][2]);
+	const float ca = cosf(a);
 
 	if (fabs(ca) > 0.0005f) // handle gimbal lock
 	{
+		const double onyByCa = 1.0f / ca;
+
 		return Vector3D(
 			a,
-			atan2f(-matrix.rows[0][2] / ca, matrix.rows[2][2] / ca),
-			atan2f(-matrix.rows[1][0] / ca, matrix.rows[1][1] / ca)
+			atan2f(-matrix.rows[0][2] * onyByCa, matrix.rows[2][2] * onyByCa),
+			atan2f(-matrix.rows[1][0] * onyByCa, matrix.rows[1][1] * onyByCa)
 		);
 	}
 	else // gimbal lock has occurred
