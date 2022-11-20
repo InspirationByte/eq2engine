@@ -64,6 +64,12 @@ float				ComputeTriangleArea(const TVec3D<T>& v0, const TVec3D<T>& v1, const TVe
 
 //---------------------------------------------------------------------------------
 
+// converts angles in [-180, 180] in Radians
+float				ConstrainAnglePI(float x);
+
+// converts angles to [0, 360] in Radians
+float				ConstrainAngle2PI(float x);
+
 // converts angles in [-180, 180]
 float				ConstrainAngle180(float x);
 
@@ -72,6 +78,9 @@ float				ConstrainAngle360(float x);
 
 // computes angle difference (degrees)
 float				AngleDiff(float a, float b);
+
+// computes angle difference (Radians)
+float				AngleDiffRad(float a, float b);
 
 // computes angles difference (degrees)
 Vector3D			AnglesDiff(const Vector3D& a, const Vector3D& b);

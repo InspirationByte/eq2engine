@@ -34,9 +34,10 @@ constexpr const float F_EPS			= 0.00001f;
 constexpr const float F_INFINITY	= 1900000.0f;
 constexpr const float F_UNDEF		= 888.888f;
 
-constexpr const double M_PI_D				= 3.14159265358979323846264338327950288;
-constexpr const float M_PI_F				= float(M_PI_D);
-constexpr const float M_PI_OVER_TWO_F		= M_PI_F * 0.5f;
+constexpr const double M_PI_D		= 3.14159265358979323846264338327950288;
+constexpr const float M_PI_F		= float(M_PI_D);
+constexpr const float M_PI_HALF_F	= M_PI_F * 0.5f;
+constexpr const float M_PI_2_F		= M_PI_F * 2.0f;
 
 #define RAD2DEG( x )			( (float)(x) * (float)(180.f / M_PI_F) )
 #define DEG2RAD( x )			( (float)(x) * (float)(M_PI_F / 180.f) )

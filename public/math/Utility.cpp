@@ -298,7 +298,7 @@ bool OrientedBoxIntersection2D(OrientBox2D body[2], float* boxOverlap = nullptr)
 	const float dtheta = body[1].theta - body[0].theta;
 
 	const float as = sinf(dtheta);
-	const float ac = sinf(dtheta + M_PI_OVER_TWO_F);
+	const float ac = sinf(dtheta + M_PI_HALF_F);
 
 	const Vector2D delta = body[0].x - body[1].x;
 
@@ -348,6 +348,28 @@ bool OrientedBoxIntersection2D(OrientBox2D body[2], float* boxOverlap = nullptr)
 	return true;
 }
 
+// converts angles in [-180, 180] in Radians
+float ConstrainAnglePI(float x)
+{
+	x = fmodf(x + M_PI_F, M_PI_2_F);
+
+	if (x < 0)
+		x += M_PI_2_F;
+
+	return x - M_PI_F;
+}
+
+// converts angles to [0, 360] in Radians
+float ConstrainAngle2PI(float x)
+{
+	x = fmodf(x, M_PI_2_F);
+
+	if (x < 0)
+		x += M_PI_2_F;
+
+	return x;
+}
+
 // normalizes angles in [-180, 180]
 float ConstrainAngle180(float x)
 {
@@ -373,12 +395,18 @@ float ConstrainAngle360(float x)
 // computes angle difference (degrees)
 float AngleDiff(float a, float b)
 {
-    float dif = fmodf(b - a + 180,360);
+	float dif = fmodf(b - a + 180.0f, 360.0f);
 
-    if (dif < 0)
-        dif += 360;
+    if (dif < 0.0f)
+        dif += 360.0f;
 
-    return dif - 180;
+	return dif - 180.0f;
+}
+
+// computes angle difference (Radians)
+float AngleDiffRad(float a, float b)
+{
+	return fmodf(b - a + M_PI_F, M_PI_2_F) - M_PI_F;
 }
 
 // computes angles difference (degrees)
