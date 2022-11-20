@@ -46,7 +46,7 @@ public:
 
 	bool						IsSequencePlaying(int slot = 0) const;
 	void						SetSequence(int seqIdx, int slot = 0);			// sets new sequence
-	void						SetSequenceByName(char* name, int slot = 0);	// sets new sequence by it's name
+	void						SetSequenceByName(const char* name, int slot = 0);	// sets new sequence by it's name
 	void						PlaySequence(int slot = 0);						// plays/resumes animation
 	void						StopSequence(int slot = 0);						// stops/pauses animation
 	void						ResetSequenceTime(int slot = 0);				// resets animation time, and restarts animation
@@ -71,7 +71,7 @@ public:
 
 	void						SetIKChainEnabled(int chain_id, bool enabled);				// enables or disables ik chain.
 	bool						IsIKChainEnabled(int chain_id);								// returns status if ik chain
-	int							FindIKChain(char* pszName);									// searches for ik chain
+	int							FindIKChain(const char* pszName);									// searches for ik chain
 
 	// advances frame (and computes interpolation between all blended animations)
 	void						AdvanceFrame(float fDt);

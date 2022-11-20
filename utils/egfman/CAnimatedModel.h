@@ -58,7 +58,7 @@ protected:
 
 	void						UpdateRagdollBones();
 
-	virtual void				HandleAnimatingEvent(AnimationEvent nEvent, char* options);
+	virtual void				HandleAnimatingEvent(AnimationEvent nEvent, const char* options);
 
 	void						AttachIKChain(int chain, int attach_type);
 

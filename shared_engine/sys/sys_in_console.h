@@ -82,7 +82,7 @@ protected:
 	void			DrawFastFind(float x, float y, float w);
 	void			DrawAutoCompletion(float x, float y, float w);
 
-	void			consoleInsText(char* text,int pos);
+	void			consoleInsText(const char* text,int pos);
 	void			consoleRemTextInRange(int start,int len);
 
 	void			UpdateCommandAutocompletionList(const EqString& queryStr);

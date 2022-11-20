@@ -343,7 +343,7 @@ void CAnimatingEGF::SetActivity(Activity act, int slot)
 	PlaySequence(slot);
 }
 
-void CAnimatingEGF::SetSequenceByName(char* name, int slot)
+void CAnimatingEGF::SetSequenceByName(const char* name, int slot)
 {
 	int seqIdx = FindSequence(name);
 
@@ -1069,7 +1069,7 @@ bool CAnimatingEGF::IsIKChainEnabled(int chain_id)
 	return m_ikChains[chain_id].enable;
 }
 
-int CAnimatingEGF::FindIKChain(char* pszName)
+int CAnimatingEGF::FindIKChain(const char* pszName)
 {
 	for (int i = 0; i < m_ikChains.numElem(); i++)
 	{

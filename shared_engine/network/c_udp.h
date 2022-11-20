@@ -30,7 +30,7 @@ public:
 	void							Close();
 
 	// puts message to send queue, or sends it immediately if flags used
-	int								Send( char* data, int size, const sockaddr_in* to, short& msgId, short flags = 0 );
+	int								Send(const char* data, int size, const sockaddr_in* to, short& msgId, short flags = 0 );
 
 	// this really updates socket
 	void							UpdateRecieve( int dtMs, CDPRecvPipe_fn recvFunc, void* recvObj );

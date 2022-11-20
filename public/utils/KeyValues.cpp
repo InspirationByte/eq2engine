@@ -2101,9 +2101,9 @@ static void KV_WriteSelectQuotedString(IVirtualStream* out, const char* pszStrin
 // counts the special characters
 // used for KV_PreProcessStringValue to detect extra length of buffer
 //
-static int KV_CountSpecialSymbols(char* pszStr)
+static int KV_CountSpecialSymbols(const char* pszStr)
 {
-	char* ptr = pszStr;
+	const char* ptr = pszStr;
 
 	int specials_count = 0;
 
@@ -2129,9 +2129,9 @@ static int KV_CountSpecialSymbols(char* pszStr)
 //
 // converts some symbols to special ones
 //
-static void KV_PreProcessStringValue( char* out, char* pszStr )
+static void KV_PreProcessStringValue( char* out, const char* pszStr )
 {
-	char* ptr = pszStr;
+	const char* ptr = pszStr;
 	char* temp = out;
 
 	do

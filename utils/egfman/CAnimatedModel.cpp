@@ -225,7 +225,7 @@ enum EIKAttachType
 	IK_ATTACH_GROUND,	//= 2,
 };
 
-void CAnimatedModel::HandleAnimatingEvent(AnimationEvent nEvent, char* options)
+void CAnimatedModel::HandleAnimatingEvent(AnimationEvent nEvent, const char* options)
 {
 	// handle some internal events here
 	switch(nEvent)

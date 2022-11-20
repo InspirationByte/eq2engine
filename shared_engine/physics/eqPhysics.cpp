@@ -416,7 +416,7 @@ void CEqPhysics::DestroyGrid()
 	m_grid = nullptr;
 }
 
-eqPhysSurfParam_t* CEqPhysics::FindSurfaceParam(const char* name)
+const eqPhysSurfParam_t* CEqPhysics::FindSurfaceParam(const char* name) const
 {
 	int count = m_physSurfaceParams.numElem();
 	for (int i = 0; i < count; i++)
@@ -428,7 +428,7 @@ eqPhysSurfParam_t* CEqPhysics::FindSurfaceParam(const char* name)
 	return nullptr;
 }
 
-eqPhysSurfParam_t* CEqPhysics::GetSurfaceParamByID(int id)
+const eqPhysSurfParam_t* CEqPhysics::GetSurfaceParamByID(int id) const
 {
 	if (id == -1)
 		return nullptr;
@@ -963,7 +963,7 @@ void CEqPhysics::DetectStaticVsBodyCollision(CEqCollisionObject* staticObj, CEqR
 		newPair.bodyB = bodyB;
 		newPair.dt = iter_delta;
 
-		eqPhysSurfParam_t* sparam = GetSurfaceParamByID(coll.materialIndex);
+		const eqPhysSurfParam_t* sparam = GetSurfaceParamByID(coll.materialIndex);
 
 		if(sparam)
 		{

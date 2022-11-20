@@ -72,7 +72,7 @@ struct cdp_queued_message_t
 	uint32					sendTime{ 0 };
 	short					flags{ 0 };
 
-	bool Write( void* pData, int nSize );
+	bool Write(const void* pData, int nSize );
 	void WriteReset();
 	void ReadReset();
 };
@@ -108,7 +108,7 @@ struct udp_cdp_packetstate_s
 
 ALIGNED_TYPE(udp_cdp_packetstate_s,2) udp_cdp_packetstate_t;
 
-bool cdp_queued_message_t::Write( void* pData, int nSize )
+bool cdp_queued_message_t::Write(const void* pData, int nSize )
 {
 	ASSERT( bytestream->Tell() + nSize < UDP_CDP_MAX_MESSAGEPAYLOAD );
 
@@ -356,7 +356,7 @@ void CEqRDPSocket::SendMessageStatus(  const sockaddr_in* to, short message_id, 
 }
 
 // sends message
-int CEqRDPSocket::Send( char* data, int size, const sockaddr_in* to, short& msgId, short flags/* = 0 */)
+int CEqRDPSocket::Send( const char* data, int size, const sockaddr_in* to, short& msgId, short flags/* = 0 */)
 {
 	// don't write zero-length messages
 	if(size <= 0)

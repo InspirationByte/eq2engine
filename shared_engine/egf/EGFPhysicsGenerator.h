@@ -47,7 +47,7 @@ public:
 protected:
 	void		SetupRagdollJoints(ragdolljoint_t* boneArray);
 
-	int			FindJointIdx(char* name);
+	int			FindJointIdx(const char* name);
 	int			MakeBoneValidParent(int boneId);
 
 	int			AddShape(Array<SharedModel::dsmvertex_t> &vertices, Array<int> &indices, int shapeType = PHYSSHAPE_TYPE_CONVEX, bool assumedAsConvex = false);

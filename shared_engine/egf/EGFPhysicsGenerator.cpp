@@ -258,7 +258,7 @@ int CEGFPhysicsGenerator::AddShape(Array<dsmvertex_t> &vertices, Array<int> &ind
 // Joint valid parenting
 //
 
-int CEGFPhysicsGenerator::FindJointIdx(char* name)
+int CEGFPhysicsGenerator::FindJointIdx(const char* name)
 {
 	for(int i = 0; i < m_joints.numElem(); i++)
 	{

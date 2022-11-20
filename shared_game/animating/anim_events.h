@@ -30,5 +30,5 @@ struct anim_event_t
 
 extern anim_event_t anim_event_register[EV_COUNT];
 
-AnimationEvent	GetEventByName(char* name);
+AnimationEvent	GetEventByName(const char* name);
 const char*		GetEventName(AnimationEvent ev);

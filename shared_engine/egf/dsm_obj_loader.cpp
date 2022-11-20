@@ -116,7 +116,7 @@ bool LoadMTL(const char* filename, Array<obj_material_t> &material_list)
 	return true;
 }
 
-char* GetMTLTexture(char* pszMaterial, Array<obj_material_t> &material_list)
+const char* GetMTLTexture(const char* pszMaterial, Array<obj_material_t> &material_list)
 {
 	//Msg("search for: %s\n", pszMaterial);
 	for(int i = 0; i < material_list.numElem(); i++)

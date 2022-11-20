@@ -56,6 +56,10 @@ public:
 	// to set quad color use Color3*/Color4* operators
 	void		Triangle2(	const Vector2D& v1, const Vector2D& v2, const Vector2D& v3);
 
+	// Makes 3D triangle
+	// to set quad color use Color3*/Color4* operators
+	void		Triangle3(	const Vector3D& v1, const Vector3D& v2, const Vector3D& v3);
+
 	// Makes 2D quad
 	// to set quad color use Color3*/Color4* operators
 	void		Quad2(	const Vector2D& v_tl, const Vector2D& v_tr, const Vector2D& v_bl, const Vector2D& v_br);
@@ -452,6 +456,32 @@ inline void CMeshBuilder::Triangle2( const Vector2D& v1, const Vector2D& v2, con
 	indices[0] = startIndex;
 	indices[1] = startIndex+1;
 	indices[2] = startIndex+2;
+}
+
+// Makes 3D triangle
+// to set quad color use Color3*/Color4* operators
+inline void CMeshBuilder::Triangle3(const Vector3D& v1, const Vector3D& v2, const Vector3D& v3)
+{
+	//ER_PrimitiveType primType = m_mesh->GetPrimitiveType();
+	uint16* indices = nullptr;
+
+	int startIndex = m_mesh->AllocateGeom(3, 3, &m_curVertex, &indices);
+
+	if (startIndex == -1)
+		return;
+
+	Position3fv(v1);
+	AdvanceVertexPtr();
+
+	Position3fv(v2);
+	AdvanceVertexPtr();
+
+	Position3fv(v3);
+	AdvanceVertexPtr();
+
+	indices[0] = startIndex;
+	indices[1] = startIndex + 1;
+	indices[2] = startIndex + 2;
 }
 
 // Makes 2D quad

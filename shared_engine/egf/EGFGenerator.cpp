@@ -734,7 +734,7 @@ bool CEGFGenerator::ParseMaterialGroups(KVSection* pSection)
 //************************************
 // Checks bone for availablity in list
 //************************************
-bool BoneListCheckForBone(char* pszName, const Array<dsmskelbone_t*> &pBones)
+bool BoneListCheckForBone(const char* pszName, const Array<dsmskelbone_t*> &pBones)
 {
 	for(int i = 0; i < pBones.numElem(); i++)
 	{
@@ -748,7 +748,7 @@ bool BoneListCheckForBone(char* pszName, const Array<dsmskelbone_t*> &pBones)
 //************************************
 // returns bone index for availablity in list
 //************************************
-int BoneListGetBoneIndex(char* pszName, const Array<dsmskelbone_t*> &pBones)
+int BoneListGetBoneIndex(const char* pszName, const Array<dsmskelbone_t*> &pBones)
 {
 	for(int i = 0; i < pBones.numElem(); i++)
 	{

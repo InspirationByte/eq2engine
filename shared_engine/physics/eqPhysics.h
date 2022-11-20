@@ -71,8 +71,8 @@ public:
 	void							DestroyWorld();										///< destroys world
 	void							DestroyGrid();											///< destroys broadphase grid
 
-	eqPhysSurfParam_t*				FindSurfaceParam(const char* name);
-	eqPhysSurfParam_t*				GetSurfaceParamByID(int id);
+	const  eqPhysSurfParam_t*		FindSurfaceParam(const char* name) const;
+	const  eqPhysSurfParam_t*		GetSurfaceParamByID(int id) const;
 
 	void							AddToMoveableList( CEqRigidBody* body );			///< adds object to moveable list
 

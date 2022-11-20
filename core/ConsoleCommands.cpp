@@ -437,14 +437,14 @@ void CConsoleCommands::SortCommands()
 	m_commandListDirty = false;
 }
 
-void CConsoleCommands::ForEachSeparated(char* str, char separator, FUNC fn, void* extra)
+void CConsoleCommands::ForEachSeparated(const char* str, char separator, FUNC fn, void* extra)
 {
 	char c = str[0];
 
-	char* iterator = str;
+	const char* iterator = str;
 
-	char* pFirst = str;
-	char* pLast = nullptr;
+	const char* pFirst = str;
+	const char* pLast = nullptr;
 
 	while(c != 0)
 	{
@@ -466,7 +466,7 @@ void CConsoleCommands::ForEachSeparated(char* str, char separator, FUNC fn, void
 	}
 }
 
-void CConsoleCommands::ParseAndAppend(char* str, int len, void* extra)
+void CConsoleCommands::ParseAndAppend(const char* str, int len, void* extra)
 {
 	EqString tmpStr(str, len);
 	int commentIdx = tmpStr.Find("//");
@@ -568,7 +568,7 @@ struct execOptions_t
 	bool quiet;
 };
 
-void CConsoleCommands::SplitOnArgsAndExec(char* str, int len, void* extra)
+void CConsoleCommands::SplitOnArgsAndExec(const char* str, int len, void* extra)
 {
 	execOptions_t* options = (execOptions_t*)extra;
 

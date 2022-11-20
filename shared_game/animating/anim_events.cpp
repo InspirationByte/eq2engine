@@ -20,7 +20,7 @@ anim_event_t anim_event_register[EV_COUNT] =
 	REGISTER_EVENT( EV_IK_DETACH),
 };
 
-AnimationEvent GetEventByName(char* name)
+AnimationEvent GetEventByName(const char* name)
 {
 	for(int i = 0; i < EV_COUNT; i++)
 	{

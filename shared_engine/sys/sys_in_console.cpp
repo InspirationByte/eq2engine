@@ -474,7 +474,7 @@ void CEqConsoleInput::consoleRemTextInRange(int start,int len)
 	OnTextUpdate();
 }
 
-void CEqConsoleInput::consoleInsText(char* text,int pos)
+void CEqConsoleInput::consoleInsText(const char* text,int pos)
 {
 	m_inputText.Insert(text, pos);
 	OnTextUpdate();

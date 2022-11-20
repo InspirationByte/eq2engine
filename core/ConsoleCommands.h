@@ -17,7 +17,7 @@
 #define	MAX_ARGS 80
 
 class CConsoleCommands;
-typedef void (CConsoleCommands::* FUNC)(char* str, int len, void* extra);
+typedef void (CConsoleCommands::* FUNC)(const char* str, int len, void* extra);
 
 class CConsoleCommands : public IConsoleCommands
 {
@@ -71,9 +71,9 @@ public:
 	const char*							GetInterfaceName() const	{return CONSOLE_INTERFACE_VERSION;}
 
 private:
-	void								ForEachSeparated(char* str, char separator, FUNC fn, void* extra);
-	void								ParseAndAppend(char* str, int len, void* extra);
-	void								SplitOnArgsAndExec(char* str, int len, void* extra);
+	void								ForEachSeparated(const char* str, char separator, FUNC fn, void* extra);
+	void								ParseAndAppend(const char* str, int len, void* extra);
+	void								SplitOnArgsAndExec(const char* str, int len, void* extra);
 
 	void								SortCommands();
 

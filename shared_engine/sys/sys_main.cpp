@@ -268,6 +268,7 @@ extern "C"
 int WINAPI WinMain(HINSTANCE hThisInst, HINSTANCE hLastInst, LPSTR lpszCmdLine, int nCmdShow)
 {
 #if defined(CRT_DEBUG_ENABLED)
+
 	int flag = _CrtSetDbgFlag(_CRTDBG_REPORT_FLAG); // Get current flag
 	flag |= _CRTDBG_LEAK_CHECK_DF; // Turn on leak-checking bit
 	//flag |= _CRTDBG_CHECK_ALWAYS_DF; // Turn on CrtCheckMemory
