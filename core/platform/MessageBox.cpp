@@ -222,10 +222,8 @@ static void AssertLogMsg(SpewType_t _dummy, const char* fmt, ...)
 
 #ifdef _WIN32
 
-IEXPORTS bool _InternalAssertMsg(PPSourceLine sl, const char *fmt, ...)
+IEXPORTS int _InternalAssertMsg(PPSourceLine sl, const char *fmt, ...)
 {
-	static bool debug = true;
-
 	va_list argptr;
 
 	va_start(argptr, fmt);
@@ -237,37 +235,39 @@ IEXPORTS bool _InternalAssertMsg(PPSourceLine sl, const char *fmt, ...)
 	(eqCoreInit ? LogMsg : AssertLogMsg)(SPEW_ERROR, "\n*Assertion failed, file \"%s\", line %d\n*Expression \"%s\"", sl.GetFileName(), sl.GetLine(), formattedStr.ToCString());
 #endif //_DKLAUNCHER_
 
-	if (debug)
-	{
-		EqString messageStr = EqString::Format("%s\n\nFile: %s\nLine: %d\n\n", formattedStr.ToCString(), sl.GetFileName(), sl.GetLine());
+	EqString messageStr = EqString::Format("%s\n\nFile: %s\nLine: %d\n\n", formattedStr.ToCString(), sl.GetFileName(), sl.GetLine());
 
-		if (IsDebuggerPresent())
+	if (IsDebuggerPresent())
+	{
+		const int res = MessageBoxA(nullptr, messageStr + "Press 'Retry' to Break the execution", "Assertion failed", MB_ABORTRETRYIGNORE);
+		if (res == IDRETRY)
 		{
-			int res = MessageBoxA(nullptr, messageStr + " - Debug?", "Assertion failed", MB_YESNOCANCEL);
-			if (res == IDYES)
-			{
-				return true;
-			}
-			else if (res == IDCANCEL)
-			{
-				debug = false;
-				exit(0); //Exit if we have an assert and we
-			}
-			}
-		else
+			return _EQASSERT_SKIP;
+		}
+		else if (res == IDIGNORE)
 		{
-			if (MessageBoxA(nullptr, messageStr + " - Display more asserts?", "Assertion failed", MB_YESNO | MB_DEFBUTTON2) != IDYES)
-			{
-				debug = false;
-			}
+			return _EQASSERT_IGNORE_ALWAYS;
+		}
+		else if (res == IDABORT)
+		{
+			return _EQASSERT_BREAK;
 		}
 	}
-	return false;
+	else
+	{
+		const int res = MessageBoxA(nullptr, messageStr + " - Display more asserts?", "Assertion failed", MB_YESNO | MB_DEFBUTTON2);
+		if (res != IDYES)
+		{
+			return _EQASSERT_IGNORE_ALWAYS;
+		}
+	}
+
+	return _EQASSERT_SKIP;
 }
 
 #else
 
-IEXPORTS bool _InternalAssertMsg(PPSourceLine sl, const char* fmt, ...)
+IEXPORTS int _InternalAssertMsg(PPSourceLine sl, const char* fmt, ...)
 {
 	va_list argptr;
 
@@ -291,7 +291,7 @@ IEXPORTS bool _InternalAssertMsg(PPSourceLine sl, const char* fmt, ...)
     GtkWidget *dialog = gtk_message_dialog_new(nullptr, GTK_DIALOG_DESTROY_WITH_PARENT, GTK_MESSAGE_ERROR, GTK_BUTTONS_YES_NO, messageStr.ToCString());
     gint result = gtk_dialog_run(GTK_DIALOG(dialog));
 
-    bool debug = (result == GTK_RESPONSE_YES);
+    const bool debug = (result == GTK_RESPONSE_YES);
 
     gtk_widget_destroy(dialog);
     g_idle_add(idle, nullptr);
@@ -300,9 +300,10 @@ IEXPORTS bool _InternalAssertMsg(PPSourceLine sl, const char* fmt, ...)
     if (debug)
 #endif // USE_GTK
     {
-		return true;
+		return _EQASSERT_BREAK;
     }
-	return false;
+
+	return _EQASSERT_SKIP;
 }
 
 #endif //

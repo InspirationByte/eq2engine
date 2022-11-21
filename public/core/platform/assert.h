@@ -31,9 +31,22 @@
 
 #else
 
-IEXPORTS bool _InternalAssertMsg(PPSourceLine sl, const char* statement, ...);
+#define _EQASSERT_IGNORE_ALWAYS		-1
+#define _EQASSERT_BREAK				1
+#define _EQASSERT_SKIP				0	// only when debugger is not present
 
-#define	ASSERT_MSG(x, msgFmt, ...)	if (!(x) && _InternalAssertMsg(PP_SL, msgFmt, ##__VA_ARGS__)) { _DEBUG_BREAK; }
+IEXPORTS int _InternalAssertMsg(PPSourceLine sl, const char* statement, ...);
+
+#define	ASSERT_MSG(x, msgFmt, ...) \
+{ \
+	static bool ignoreAssert = false; \
+	if (!(x) && !ignoreAssert) { \
+		const int result = _InternalAssertMsg(PP_SL, msgFmt, ##__VA_ARGS__); \
+		if (result == _EQASSERT_BREAK) { _DEBUG_BREAK; } \
+		else if (result == _EQASSERT_IGNORE_ALWAYS) { ignoreAssert = true; }\
+	} \
+}
+
 #define	ASSERT(x)					ASSERT_MSG(x, #x)
 #define ASSERT_FAIL(msgFmt, ...)	ASSERT_MSG(false, msgFmt, ##__VA_ARGS__)
 
