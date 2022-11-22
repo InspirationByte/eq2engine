@@ -1509,7 +1509,7 @@ bool CEqPhysics::TestLineCollisionOnCell(int y, int x,
 
 //----------------------------------------------------------------------------------------------------
 //
-//	TestConvexSweepCollision
+//	TestLineCollision
 //		- Casts line in the physics world
 //
 //----------------------------------------------------------------------------------------------------
@@ -1581,26 +1581,19 @@ bool CEqPhysics::TestConvexSweepCollision(	btCollisionShape* shape,
 	btVector3 shapeMins, shapeMaxs;
 	shape->getAabb(startTrans, shapeMins, shapeMaxs);
 
-	BoundingBox rayBox;
 	BoundingBox shapeBox;
 	ConvertBulletToDKVectors(shapeBox.minPoint, shapeMins);
 	ConvertBulletToDKVectors(shapeBox.maxPoint, shapeMaxs);
 
-	Vector3D sBoxSize = shapeBox.GetSize();
-
+	BoundingBox rayBox;
 	rayBox.AddVertex(start);
 	rayBox.AddVertex(end);
 
+	const Vector3D sBoxSize = shapeBox.GetSize();
 	rayBox.AddVertex(rayBox.minPoint - sBoxSize);
 	rayBox.AddVertex(rayBox.maxPoint + sBoxSize);
 
 	IVector2D startCell, endCell;
-
-	Vector3D lineDir = fastNormalize(Vector3D(end-start));
-
-	//m_grid->GetPointAt(start - sBoxSize*lineDir, startCell.x, startCell.y);
-	//m_grid->GetPointAt(end + sBoxSize*lineDir, endCell.x, endCell.y);
-
 	m_grid->GetPointAt(start, startCell.x, startCell.y);
 	m_grid->GetPointAt(end , endCell.x, endCell.y);
 
@@ -1723,27 +1716,30 @@ bool CEqPhysics::TestLineSingleObject(
 	if(!object->m_aabb_transformed.Intersects(rayBox))
 		return false;
 
-	btMatrix3x3 btident3;
-	btident3.setIdentity();
+	const Quaternion& objQuat = object->m_orientation;
+	const Vector3D& position = object->m_position;
 
-	Matrix4x4 obj_mat; // don't use fixed point, it's damn slow
-	object->ConstructRenderMatrix(obj_mat);
+	btTransform objTransform;
+	objTransform.setRotation(btQuaternion(-objQuat.x, -objQuat.y, -objQuat.z, objQuat.w));
+	objTransform.setOrigin(btVector3(0.0f, 0.0f, 0.0f));
 
-	btTransform transIdent;
-	ConvertMatrix4ToBullet(transIdent, transpose(obj_mat));
+	const FVector3D lineStartLocal = start - position;
+	const FVector3D lineEndLocal = end - position;
 
 	btVector3 strt;
 	btVector3 endt;
-	ConvertPositionToBullet(strt, start);
-	ConvertPositionToBullet(endt, end);
+	ConvertPositionToBullet(strt, lineStartLocal);
+	ConvertPositionToBullet(endt, lineEndLocal);
 
-	btTransform startTrans(btident3, strt);
-	btTransform endTrans(btident3, endt);
+	btMatrix3x3 btident3;
+	btident3.setIdentity();
+	const btTransform startTrans(btident3, strt);
+	const btTransform endTrans(btident3, endt);
 
 #if BT_BULLET_VERSION >= 283 // new bullet
-	btCollisionObjectWrapper objWrap(nullptr, object->m_shape, object->m_collObject, transIdent, 0, 0);
+	btCollisionObjectWrapper objWrap(nullptr, object->m_shape, object->m_collObject, objTransform, 0, 0);
 #else
-    btCollisionObjectWrapper objWrap(nullptr, object->m_shape, object->m_collObject, transIdent);
+    btCollisionObjectWrapper objWrap(nullptr, object->m_shape, object->m_collObject, objTransform);
 #endif
 
 	CEqRayTestCallback rayCallback(strt, endt);
@@ -1754,15 +1750,14 @@ bool CEqPhysics::TestLineSingleObject(
 	// put our result
 	if(rayCallback.hasHit())
 	{
-		Vector3D pos;
-
-		coll.fract = rayCallback.m_closestHitFraction;
-		ConvertBulletToDKVectors(pos, rayCallback.m_hitPointWorld);
-		coll.position = pos;
+		Vector3D hitPoint;
+		ConvertBulletToDKVectors(hitPoint, rayCallback.m_hitPointWorld);
 		ConvertBulletToDKVectors(coll.normal, rayCallback.m_hitNormalWorld);
+
+		coll.position = hitPoint + position;
+		coll.fract = rayCallback.m_closestHitFraction;
 		coll.materialIndex = rayCallback.m_surfMaterialId;
 		coll.hitobject = object;
-
 		return true;
 	}
 
@@ -1842,67 +1837,52 @@ bool CEqPhysics::TestConvexSweepSingleObject(	CEqCollisionObject* object,
 	if(!object->m_aabb_transformed.Intersects(raybox))
 		return false;
 
-	btMatrix3x3 btident3;
-	btident3.setIdentity();
+	const sweptTestParams_t& params = *(sweptTestParams_t*)args;
 
-	sweptTestParams_t* params = (sweptTestParams_t*)args;
+	const Quaternion& objQuat = object->m_orientation;
+	const Vector3D& position = object->m_position;
 
-	Matrix4x4 obj_mat; // don't use fixed point, it's damn slow
-	object->ConstructRenderMatrix(obj_mat);
+	btTransform objTransform;
+	objTransform.setRotation(btQuaternion(-objQuat.x, -objQuat.y, -objQuat.z, objQuat.w));
+	objTransform.setOrigin(btVector3(0.0f, 0.0f, 0.0f));
 
-	obj_mat = transpose(obj_mat);
-
-	// NEW
-	btTransform transIdent;
-	ConvertMatrix4ToBullet(transIdent, obj_mat);
+	const FVector3D lineStartLocal = start - position;
+	const FVector3D lineEndLocal = end - position;
 
 	btVector3 strt;
 	btVector3 endt;
+	ConvertPositionToBullet(strt, lineStartLocal);
+	ConvertPositionToBullet(endt, lineEndLocal);
 
-	ConvertPositionToBullet(strt, start);
-	ConvertPositionToBullet(endt, end);
+	const btQuaternion shapeRotation(-params.rotation.x, -params.rotation.y, -params.rotation.z, params.rotation.w);
+	const btTransform startTrans(shapeRotation, strt);
+	const btTransform endTrans(shapeRotation, endt);
 
-	Matrix4x4 shapeTransform(params->rotation);
-
-	// define start and end trasformations
-	btTransform startTrans;
-	ConvertMatrix4ToBullet(startTrans, shapeTransform);
-	startTrans.setOrigin(strt);
-
-	btTransform endTrans(startTrans.getBasis(), endt);
-
-	CEqConvexTestCallback convexCallback(strt,endt);
-
-	int shapeType = params->shape->getShapeType();
-
+	const int shapeType = params.shape->getShapeType();
 	if(	shapeType > CONCAVE_SHAPES_START_HERE)
 	{
 		ASSERT_FAIL("Only convex shapes are supported as concave shapes!");
 		return false;
 	}
 
-	// only trace first shape
-	btConvexShape* testShape = (btConvexShape*)params->shape;
-
 	// THIS MAY CRASH HERE IF YOU CAST WRONG SHAPE
-	m_collisionWorld->objectQuerySingle(testShape, startTrans, endTrans,
+	CEqConvexTestCallback convexCallback(strt, endt);
+	m_collisionWorld->objectQuerySingle((btConvexShape*)params.shape, startTrans, endTrans,
 				object->m_collObject,
 				object->m_shape,
-				transIdent,
+				objTransform,
 				convexCallback,
 				0.01f);
 
 	// put our result
 	if(convexCallback.hasHit())
 	{
-		Vector3D pos;
-		coll.fract = convexCallback.m_closestHitFraction;
-
-		ConvertBulletToDKVectors(pos, convexCallback.m_hitPointWorld);
-		coll.position = pos;
-
+		Vector3D hitPoint;
+		ConvertBulletToDKVectors(hitPoint, convexCallback.m_hitPointWorld);
 		ConvertBulletToDKVectors(coll.normal, convexCallback.m_hitNormalWorld);
 
+		coll.position = hitPoint + position;
+		coll.fract = convexCallback.m_closestHitFraction;
 		coll.materialIndex = convexCallback.m_surfMaterialId;
 		coll.hitobject = object;
 
