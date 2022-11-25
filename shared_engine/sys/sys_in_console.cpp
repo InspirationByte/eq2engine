@@ -324,14 +324,27 @@ void CEqConsoleInput::Shutdown()
 
 void CEqConsoleInput::BeginFrame()
 {
+#ifdef IMGUI_ENABLED
+	const bool imGuiVisible = m_imguiHandles.size() || m_visible;
+
+	if (imGuiVisible)
+	{
+		// Start the Dear ImGui frame
+		ImGui_ImplMatSystem_NewFrame();
+		ImGui_ImplEq_NewFrame(m_visible);
+		ImGui::NewFrame();
+
+		for (auto it = m_imguiHandles.begin(); it != m_imguiHandles.end(); ++it)
+		{
+			const EqImGui_Handle& handler = it.value();
+			if(handler.handleFunc)
+				handler.handleFunc(handler.name.ToCString(), IMGUI_HANDLE_NONE);
+		}
+		m_imguiDrawStart = true;
+	}
+
 	if (!m_visible)
 		return;
-
-#ifdef IMGUI_ENABLED
-	// Start the Dear ImGui frame
-	ImGui_ImplMatSystem_NewFrame();
-	ImGui_ImplEq_NewFrame();
-	ImGui::NewFrame();
 
 #define IMGUI_CONVAR_BOOL(label, name) { \
 		HOOK_TO_CVAR(name); \
@@ -390,10 +403,11 @@ void CEqConsoleInput::BeginFrame()
 			ImGui::EndMenu();
 		}
 
-		for (auto it = m_menuHandlers.begin(); it != m_menuHandlers.end(); ++it)
+		for (auto it = m_imguiHandles.begin(); it != m_imguiHandles.end(); ++it)
 		{
-			const EqImGui_Handler& handler = it.value();
-			handler.handlerFunc(handler.name.ToCString());
+			const EqImGui_Handle& handler = it.value();
+			if(handler.handleFunc)
+				handler.handleFunc(handler.name.ToCString(), IMGUI_HANDLE_MENU);
 		}
 
 		ImGui::EndMainMenuBar();
@@ -405,33 +419,37 @@ void CEqConsoleInput::BeginFrame()
 
 void CEqConsoleInput::EndFrame(int width, int height, float frameTime)
 {
-	if (!m_visible)
-		return;
+	if (m_visible)
+	{
+		if (m_showConsole)
+			DrawSelf(width, height, frameTime);
 
-	if(m_showConsole)
-		DrawSelf(width, height, frameTime);
+		eqFontStyleParam_t versionTextStl;
+		versionTextStl.styleFlag = TEXT_STYLE_SHADOW | TEXT_STYLE_FROM_CAP;
+		versionTextStl.align = TEXT_ALIGN_HCENTER;
+		versionTextStl.textColor = ColorRGBA(1, 1, 1, 0.5f);
+		versionTextStl.scale = m_fontScale;
+
+		m_font->RenderText(CONSOLE_ENGINEVERSION_STR, Vector2D(width / 2, height - m_fontScale - 25.0f), versionTextStl);
+	}
 
 #ifdef IMGUI_ENABLED
-	ImGuiIO& io = ImGui::GetIO(); (void)io;
-	io.DisplaySize = ImVec2((float)width, (float)height);
+	if (m_imguiDrawStart)
+	{
+		ImGuiIO& io = ImGui::GetIO(); (void)io;
+		io.DisplaySize = ImVec2((float)width, (float)height);
 
-	//static bool show_demo_window = true;
-	//ImGui::ShowDemoWindow(&show_demo_window);
+		//static bool show_demo_window = true;
+		//ImGui::ShowDemoWindow(&show_demo_window);
 
-	// Rendering
-	ImGui::EndFrame();
+		// Rendering
+		ImGui::EndFrame();
 
-	ImGui::Render();
-	ImGui_ImplMatSystem_RenderDrawData(ImGui::GetDrawData());
+		ImGui::Render();
+		ImGui_ImplMatSystem_RenderDrawData(ImGui::GetDrawData());
+		m_imguiDrawStart = false;
+	}
 #endif // IMGUI_ENABLED
-
-	eqFontStyleParam_t versionTextStl;
-	versionTextStl.styleFlag = TEXT_STYLE_SHADOW | TEXT_STYLE_FROM_CAP;
-	versionTextStl.align = TEXT_ALIGN_HCENTER;
-	versionTextStl.textColor = ColorRGBA(1, 1, 1, 0.5f);
-	versionTextStl.scale = m_fontScale;
-
-	m_font->RenderText(CONSOLE_ENGINEVERSION_STR, Vector2D(width / 2, height - m_fontScale - 25.0f), versionTextStl);
 }
 
 void CEqConsoleInput::AddAutoCompletion(ConAutoCompletion_t* newItem)
@@ -450,18 +468,18 @@ void CEqConsoleInput::AddAutoCompletion(ConAutoCompletion_t* newItem)
 
 #ifdef IMGUI_ENABLED
 
-void CEqConsoleInput::AddImGuiMenuHandler(const char* name, CONSOLE_IMGUI_HANDLER func)
+void CEqConsoleInput::AddImGuiHandle(const char* name, CONSOLE_IMGUI_HANDLER func)
 {
 	const int nameHash = StringToHash(name);
-	EqImGui_Handler& handler = m_menuHandlers[nameHash];
+	EqImGui_Handle& handler = m_imguiHandles[nameHash];
 	handler.name = name;
-	handler.handlerFunc = func;
+	handler.handleFunc = func;
 }
 
-void CEqConsoleInput::RemoveImGuiMenuHandler(const char* name)
+void CEqConsoleInput::RemoveImGuiHandle(const char* name)
 {
 	const int nameHash = StringToHash(name);
-	m_menuHandlers.remove(nameHash);
+	m_imguiHandles.remove(nameHash);
 }
 #endif // IMGUI_ENABLED
 

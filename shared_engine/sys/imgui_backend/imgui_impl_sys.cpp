@@ -331,7 +331,7 @@ static void ImGui_ImplEq_UpdateGamepads()
     #undef MAP_ANALOG
 }
 
-void ImGui_ImplEq_NewFrame()
+void ImGui_ImplEq_NewFrame(bool controlsEnabled)
 {
     ImGui_ImplEq_Data* bd = ImGui_ImplEq_GetBackendData();
     IM_ASSERT(bd != nullptr && "Did you call ImGui_ImplEq_Init()?");
@@ -354,8 +354,11 @@ void ImGui_ImplEq_NewFrame()
     io.DeltaTime = bd->Time > 0 ? (float)((double)(current_time - bd->Time) / frequency) : (float)(1.0f / 60.0f);
     bd->Time = current_time;
 
-    ImGui_ImplEq_UpdateMousePosAndButtons();
-    ImGui_ImplEq_UpdateMouseCursor();
+    if (controlsEnabled)
+    {
+        ImGui_ImplEq_UpdateMousePosAndButtons();
+        ImGui_ImplEq_UpdateMouseCursor();
+    }
 
     // Update game controllers (if enabled and available)
     ImGui_ImplEq_UpdateGamepads();
