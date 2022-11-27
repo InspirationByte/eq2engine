@@ -15,7 +15,7 @@ eqPhysCollisionFilter::eqPhysCollisionFilter()
 	numObjects = 0;
 }
 
-eqPhysCollisionFilter::eqPhysCollisionFilter(CEqRigidBody* obj)
+eqPhysCollisionFilter::eqPhysCollisionFilter(const CEqRigidBody* obj)
 {
 	objectPtrs[0] = obj;
 	numObjects = 1;
@@ -24,7 +24,7 @@ eqPhysCollisionFilter::eqPhysCollisionFilter(CEqRigidBody* obj)
 	flags = EQPHYS_FILTER_FLAG_DYNAMICOBJECTS;
 }
 
-eqPhysCollisionFilter::eqPhysCollisionFilter(CEqRigidBody** obj, int cnt)
+eqPhysCollisionFilter::eqPhysCollisionFilter(const CEqRigidBody** obj, int cnt)
 {
 	int cpcnt = sizeof(CEqRigidBody*) * cnt;
 	cpcnt = min(cpcnt, MAX_COLLISION_FILTER_OBJECTS);
@@ -36,13 +36,13 @@ eqPhysCollisionFilter::eqPhysCollisionFilter(CEqRigidBody** obj, int cnt)
 	flags = EQPHYS_FILTER_FLAG_DYNAMICOBJECTS;
 }
 
-void eqPhysCollisionFilter::AddObject(void* ptr)
+void eqPhysCollisionFilter::AddObject(const void* ptr)
 {
 	if (ptr && numObjects < MAX_COLLISION_FILTER_OBJECTS)
 		objectPtrs[numObjects++] = ptr;
 }
 
-bool eqPhysCollisionFilter::HasObject(void* ptr) const
+bool eqPhysCollisionFilter::HasObject(const void* ptr) const
 {
 	for (int i = 0; i < numObjects; i++)
 	{

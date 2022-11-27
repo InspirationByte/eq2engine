@@ -57,8 +57,8 @@ class CEqPhysics
 {
 	struct sweptTestParams_t
 	{
-		Quaternion			rotation;
-		btCollisionShape*	shape;
+		Quaternion rotation;
+		const btCollisionShape*	shape;
 	};
 
 public:
@@ -106,7 +106,7 @@ public:
 														int rayMask = COLLISION_MASK_ALL, eqPhysCollisionFilter* filterParams = nullptr);
 
 	///< Pushes convex in the world for closest collision
-	bool							TestConvexSweepCollision(	btCollisionShape* shape,
+	bool							TestConvexSweepCollision(const btCollisionShape* shape,
 																const Quaternion& rotation,
 																const FVector3D& start,
 																const FVector3D& end,
@@ -114,7 +114,7 @@ public:
 																int rayMask = COLLISION_MASK_ALL, eqPhysCollisionFilter* filterParams = nullptr);
 	///< Performs a line test for a single object.
 	///< start, end are world coordinates
-	bool							TestLineSingleObject(	CEqCollisionObject* object,
+	bool							TestLineSingleObject(CEqCollisionObject* object,
 															const FVector3D& start,
 															const FVector3D& end,
 															const BoundingBox& raybox,
@@ -125,7 +125,7 @@ public:
 
 	// Pushes a convex sweep for closest collision for a single object.
 	///< start, end are world coordinates
-	bool							TestConvexSweepSingleObject(CEqCollisionObject* object,
+	bool							TestConvexSweepSingleObject( CEqCollisionObject* object,
 																const FVector3D& start,
 																const FVector3D& end,
 																const BoundingBox& raybox,
@@ -154,7 +154,7 @@ public:
 	void							ProcessContactPair(ContactPair_t& pair);
 
 	// checks collision (made especially for rays, but could be used in other situations)
-	bool							CheckAllowContactTest(eqPhysCollisionFilter* filterParams,CEqCollisionObject* object);
+	bool							CheckAllowContactTest(eqPhysCollisionFilter* filterParams, const CEqCollisionObject* object);
 
 	void							SetDebugRaycast(bool enable) {m_debugRaycast = enable;}
 

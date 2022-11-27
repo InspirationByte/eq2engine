@@ -34,13 +34,13 @@ static constexpr const int COLLISION_MASK_ALL = 0xFFFFFFFF;
 struct eqPhysCollisionFilter
 {
 	eqPhysCollisionFilter();
-	eqPhysCollisionFilter(CEqRigidBody* obj);
-	eqPhysCollisionFilter(CEqRigidBody** obj, int cnt);
+	eqPhysCollisionFilter(const CEqRigidBody* obj);
+	eqPhysCollisionFilter(const CEqRigidBody** obj, int cnt);
 
-	void AddObject(void* ptr);
-	bool HasObject(void* ptr) const;
+	void AddObject(const void* ptr);
+	bool HasObject(const void* ptr) const;
 
-	void*	objectPtrs[MAX_COLLISION_FILTER_OBJECTS];
+	const void*	objectPtrs[MAX_COLLISION_FILTER_OBJECTS];
 
 	int		type;
 	int		flags;

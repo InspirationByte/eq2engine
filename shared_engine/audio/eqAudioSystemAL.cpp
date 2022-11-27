@@ -353,7 +353,7 @@ void CEqAudioSystemAL::StopAllSounds(int chanType /*= -1*/, void* callbackObject
 	// suspend all sources
 	for (int i = 0; i < m_sources.numElem(); i++)
 	{
-		CEqAudioSourceAL* source = (CEqAudioSourceAL*)m_sources[i].ptr();
+		CEqAudioSourceAL* source = (CEqAudioSourceAL*)m_sources[i].Ptr();
 		if (chanType == -1 || source->m_chanType == chanType && source->m_callbackObject == callbackObject)
 		{
 			source->m_forceStop = true;
@@ -369,7 +369,7 @@ void CEqAudioSystemAL::PauseAllSounds(int chanType /*= -1*/, void* callbackObjec
 	// suspend all sources
 	for (int i = 0; i < m_sources.numElem(); i++)
 	{
-		CEqAudioSourceAL* source = (CEqAudioSourceAL*)m_sources[i].ptr();
+		CEqAudioSourceAL* source = (CEqAudioSourceAL*)m_sources[i].Ptr();
 		if (chanType == -1 || source->m_chanType == chanType && source->m_callbackObject == callbackObject)
 			source->UpdateParams(param, IEqAudioSource::UPDATE_STATE);
 	}
@@ -383,7 +383,7 @@ void CEqAudioSystemAL::ResumeAllSounds(int chanType /*= -1*/, void* callbackObje
 	// suspend all sources
 	for (int i = 0; i < m_sources.numElem(); i++)
 	{
-		CEqAudioSourceAL* source = (CEqAudioSourceAL*)m_sources[i].ptr();
+		CEqAudioSourceAL* source = (CEqAudioSourceAL*)m_sources[i].Ptr();
 		if (chanType == -1 || source->m_chanType == chanType && source->m_callbackObject == callbackObject)
 			source->UpdateParams(param, IEqAudioSource::UPDATE_STATE);
 	}
@@ -466,7 +466,7 @@ void CEqAudioSystemAL::SuspendSourcesWithSample(ISoundSource* sample)
 {
 	for (int i = 0; i < m_sources.numElem(); i++)
 	{
-		CEqAudioSourceAL* src = (CEqAudioSourceAL*)m_sources[i].ptr();
+		CEqAudioSourceAL* src = (CEqAudioSourceAL*)m_sources[i].Ptr();
 
 		if (src->m_sample == sample)
 		{
@@ -480,7 +480,7 @@ void CEqAudioSystemAL::Update()
 {
 	for (int i = 0; i < m_sources.numElem(); i++)
 	{
-		CEqAudioSourceAL* src = (CEqAudioSourceAL*)m_sources[i].ptr();
+		CEqAudioSourceAL* src = (CEqAudioSourceAL*)m_sources[i].Ptr();
 
 		if (src->m_forceStop)
 		{

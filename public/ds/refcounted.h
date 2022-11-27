@@ -94,8 +94,8 @@ public:
 
 	operator const		PTR_TYPE() const	{ return m_ptrObj; }
 	operator			PTR_TYPE ()			{ return m_ptrObj; }
-	PTR_TYPE			ptr() const			{ return m_ptrObj; }
-	TYPE&				ref() const			{ return *m_ptrObj; }
+	PTR_TYPE			Ptr() const			{ return m_ptrObj; }
+	TYPE&				Ref() const			{ return *m_ptrObj; }
 	PTR_TYPE			operator->() const	{ return m_ptrObj; }
 
 	void				operator=( const PTR_TYPE obj );
@@ -115,7 +115,7 @@ inline CRefPtr<TYPE>::CRefPtr( PTR_TYPE pObject ) : m_ptrObj(pObject)
 }
 
 template< class TYPE >
-inline CRefPtr<TYPE>::CRefPtr( const CRefPtr<TYPE>& refptr ) : m_ptrObj(refptr.ptr())
+inline CRefPtr<TYPE>::CRefPtr( const CRefPtr<TYPE>& refptr ) : m_ptrObj(refptr.Ptr())
 {
 	if (m_ptrObj)
 		m_ptrObj->Ref_Grab();

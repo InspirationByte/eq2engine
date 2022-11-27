@@ -1556,7 +1556,7 @@ bool CEqPhysics::TestLineCollision(	const FVector3D& start,
 //		- Casts convex shape in the physics world
 //
 //----------------------------------------------------------------------------------------------------
-bool CEqPhysics::TestConvexSweepCollision(	btCollisionShape* shape,
+bool CEqPhysics::TestConvexSweepCollision(const btCollisionShape* shape,
 											const Quaternion& rotation,
 											const FVector3D& start,
 											const FVector3D& end,
@@ -1655,7 +1655,7 @@ public:
 	int m_surfMaterialId;
 };
 
-bool CEqPhysics::CheckAllowContactTest(eqPhysCollisionFilter* filterParams, CEqCollisionObject* object)
+bool CEqPhysics::CheckAllowContactTest(eqPhysCollisionFilter* filterParams, const CEqCollisionObject* object)
 {
 	if (!filterParams)
 		return true;
@@ -1789,7 +1789,7 @@ public:
 			return 1.0f;
 
 		// check our object is triangle mesh
-		CEqCollisionObject* obj = (CEqCollisionObject*)m_hitCollisionObject->getUserPointer();
+		const CEqCollisionObject* obj = (CEqCollisionObject*)m_hitCollisionObject->getUserPointer();
 
 		if(obj)
 		{
@@ -1811,7 +1811,7 @@ public:
 
 //-------------------------------------------------------------------------------------------------
 
-bool CEqPhysics::TestConvexSweepSingleObject(	CEqCollisionObject* object,
+bool CEqPhysics::TestConvexSweepSingleObject(CEqCollisionObject* object,
 												const FVector3D& start,
 												const FVector3D& end,
 												const BoundingBox& raybox,
