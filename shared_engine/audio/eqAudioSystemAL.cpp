@@ -18,6 +18,7 @@
 #include "eqAudioSystemAL.h"
 #include "source/snd_al_source.h"
 
+#pragma optimize("", off)
 
 using namespace Threading;
 static CEqMutex s_audioSysMutex;
@@ -85,17 +86,13 @@ static ConVar snd_device("snd_device", "0", nullptr, CV_ARCHIVE);
 
 //---------------------------------------------------------
 
-#define BUFFER_SILENCE_SIZE 128
+#define BUFFER_SILENCE_SIZE		128
 static const short _silence[BUFFER_SILENCE_SIZE] = { 0 };
 
 //---------------------------------------------------------
 
-CEqAudioSystemAL::CEqAudioSystemAL() :
-	m_ctx(nullptr),
-	m_dev(nullptr),
-	m_noSound(true)
+CEqAudioSystemAL::CEqAudioSystemAL()
 {
-
 }
 
 CEqAudioSystemAL::~CEqAudioSystemAL()
@@ -105,13 +102,13 @@ CEqAudioSystemAL::~CEqAudioSystemAL()
 // init AL context
 bool CEqAudioSystemAL::InitContext()
 {
-	Msg(" \n--------- EqAudioSystem InitContext --------- \n");
+	Msg(" \n--------- AudioSystem Init --------- \n");
 
 	// Init openAL
-	Array<char*> tempListChars(PP_SL);
+	Array<const char*> tempListChars(PP_SL);
 
 	// check devices list
-	char* devices = (char*)alcGetString(nullptr, ALC_DEVICE_SPECIFIER);
+	const char* devices = (char*)alcGetString(nullptr, ALC_DEVICE_SPECIFIER);
 
 	// go through device list (each device terminated with a single NULL, list terminated with double NULL)
 	while ((*devices) != '\0')
@@ -238,6 +235,7 @@ void CEqAudioSystemAL::InitEffects()
 	for (int i = 0; i < kv.GetRootSection()->keys.numElem(); i++)
 	{
 		KVSection* pEffectSection = kv.GetRootSection()->keys[i];
+		const int nameHash = StringToHash(pEffectSection->name, true);
 
 		sndEffect_t effect;
 		strcpy(effect.name, pEffectSection->name);
@@ -260,7 +258,7 @@ void CEqAudioSystemAL::InitEffects()
 
 		DevMsg(DEVMSG_SOUND, "registering sound effect '%s'\n", effect.name);
 
-		m_effects.append(effect);
+		m_effects.insert(nameHash, effect);
 	}
 }
 
@@ -302,8 +300,8 @@ void CEqAudioSystemAL::DestroyEffects()
 	m_currEffectSlotIdx = 0;
 	m_currEffect = nullptr;
 
-	for (int i = 0; i < m_effects.numElem(); i++)
-		_alDeleteEffects(1, &m_effects[i].nAlEffect);
+	for (auto it = m_effects.begin(); it != m_effects.end(); ++it)
+		_alDeleteEffects(1, &it.value().nAlEffect);
 
 	_alDeleteAuxiliaryEffectSlots(2, m_effectSlots);
 
@@ -320,8 +318,11 @@ void CEqAudioSystemAL::Shutdown()
 	m_sources.clear();
 
 	// delete sample sources
-	while (m_samples.numElem() > 0)
-		FreeSample(m_samples[0]);
+	for (auto it = m_samples.begin(); it != m_samples.end(); ++it)
+	{
+		ISoundSource::DestroySound(*it);
+		m_samples.remove(it);
+	}
 
 	// destroy context
 	DestroyContext();
@@ -333,8 +334,8 @@ IEqAudioSource* CEqAudioSystemAL::CreateSource()
 {
 	CScopedMutex m(s_audioSysMutex);
 
-	int index = m_sources.append(CRefPtr_new(CEqAudioSourceAL));
-	return m_sources[index];
+	const int index = m_sources.append(CRefPtr_new(CEqAudioSourceAL, this));
+	return m_sources[index].Ptr();
 }
 
 void CEqAudioSystemAL::DestroySource(IEqAudioSource* source)
@@ -348,50 +349,71 @@ void CEqAudioSystemAL::DestroySource(IEqAudioSource* source)
 	src->m_forceStop = true;
 }
 
-void CEqAudioSystemAL::StopAllSounds(int chanType /*= -1*/, void* callbackObject /*= nullptr*/)
+void CEqAudioSystemAL::StopAllSounds(int chanId /*= -1*/, void* callbackObject /*= nullptr*/)
 {
 	// suspend all sources
 	for (int i = 0; i < m_sources.numElem(); i++)
 	{
 		CEqAudioSourceAL* source = (CEqAudioSourceAL*)m_sources[i].Ptr();
-		if (chanType == -1 || source->m_chanType == chanType && source->m_callbackObject == callbackObject)
+		if (chanId == -1 || source->m_channel == chanId && source->m_callbackObject == callbackObject)
 		{
 			source->m_forceStop = true;
 		}
 	}
 }
 
-void CEqAudioSystemAL::PauseAllSounds(int chanType /*= -1*/, void* callbackObject /*= nullptr*/)
+void CEqAudioSystemAL::PauseAllSounds(int chanId /*= -1*/, void* callbackObject /*= nullptr*/)
 {
 	IEqAudioSource::Params param;
-	param.state = IEqAudioSource::PAUSED;
+	param.set_state(IEqAudioSource::PAUSED);
 
 	// suspend all sources
 	for (int i = 0; i < m_sources.numElem(); i++)
 	{
-		CEqAudioSourceAL* source = (CEqAudioSourceAL*)m_sources[i].Ptr();
-		if (chanType == -1 || source->m_chanType == chanType && source->m_callbackObject == callbackObject)
-			source->UpdateParams(param, IEqAudioSource::UPDATE_STATE);
+		CEqAudioSourceAL* source = m_sources[i].Ptr();
+		if (chanId == -1 || source->m_channel == chanId && source->m_callbackObject == callbackObject)
+			source->UpdateParams(param);
 	}
 }
 
-void CEqAudioSystemAL::ResumeAllSounds(int chanType /*= -1*/, void* callbackObject /*= nullptr*/)
+void CEqAudioSystemAL::ResumeAllSounds(int chanId /*= -1*/, void* callbackObject /*= nullptr*/)
 {
 	IEqAudioSource::Params param;
-	param.state = IEqAudioSource::PLAYING;
+	param.set_state(IEqAudioSource::PLAYING);
 
 	// suspend all sources
 	for (int i = 0; i < m_sources.numElem(); i++)
 	{
-		CEqAudioSourceAL* source = (CEqAudioSourceAL*)m_sources[i].Ptr();
-		if (chanType == -1 || source->m_chanType == chanType && source->m_callbackObject == callbackObject)
-			source->UpdateParams(param, IEqAudioSource::UPDATE_STATE);
+		CEqAudioSourceAL* source = m_sources[i].Ptr();
+		if (chanId == -1 || source->m_channel == chanId && source->m_callbackObject == callbackObject)
+			source->UpdateParams(param);
 	}
+}
+
+void CEqAudioSystemAL::SetChannelVolume(int chanType, float value)
+{
+	if (!m_mixerChannels.inRange(chanType))
+		return;
+
+	MixerChannel_t& channel = m_mixerChannels[chanType];
+	channel.volume = value;
+	channel.updateFlags |= IEqAudioSource::UPDATE_VOLUME;
+}
+
+void CEqAudioSystemAL::SetChannelPitch(int chanType, float value)
+{
+	if (!m_mixerChannels.inRange(chanType))
+		return;
+
+	MixerChannel_t& channel = m_mixerChannels[chanType];
+	channel.pitch = value;
+	channel.updateFlags |= IEqAudioSource::UPDATE_PITCH;
 }
 
 // loads sample source data
 ISoundSource* CEqAudioSystemAL::LoadSample(const char* filename)
 {
+	const int nameHash = StringToHash(filename, true);
 	ISoundSource* sampleSource = ISoundSource::CreateSound(filename);
 
 	if (sampleSource)
@@ -422,7 +444,7 @@ ISoundSource* CEqAudioSystemAL::LoadSample(const char* filename)
 
 		{
 			CScopedMutex m(s_audioSysMutex);
-			m_samples.append(sampleSource);
+			m_samples.insert(nameHash, sampleSource);
 		}
 		
 	}
@@ -436,19 +458,28 @@ void CEqAudioSystemAL::FreeSample(ISoundSource* sampleSource)
 	SuspendSourcesWithSample(sampleSource);
 
 	// free
-	ISoundSource::DestroySound(sampleSource);
-	CScopedMutex m(s_audioSysMutex);
-	m_samples.fastRemove(sampleSource);
+	{
+		CScopedMutex m(s_audioSysMutex);
+		for (auto it = m_samples.begin(); it != m_samples.end(); ++it)
+		{
+			if (*it != sampleSource)
+				continue;
+
+			ISoundSource::DestroySound(*it);
+			m_samples.remove(it);
+			break;
+		}
+	}
 }
 
 // finds the effect. May return EFFECTID_INVALID
 effectId_t CEqAudioSystemAL::FindEffect(const char* name) const
 {
-	for (int i = 0; i < m_effects.numElem(); i++)
-	{
-		if (!stricmp(m_effects[i].name, name))
-			return m_effects[i].nAlEffect;
-	}
+	const int nameHash = StringToHash(name, true);
+	auto it = m_effects.find(nameHash);
+
+	if (it != m_effects.end())
+		return it.value().nAlEffect;
 
 	return EFFECT_ID_NONE;
 }
@@ -512,7 +543,7 @@ void CEqAudioSystemAL::SetListener(const Vector3D& position,
 	const Vector3D& upVec)
 {
 	// setup orientation parameters
-	float orient[] = { -forwardVec.x, -forwardVec.y, -forwardVec.z, -upVec.x, -upVec.y, -upVec.z };
+	float orient[] = { forwardVec.x, forwardVec.y, forwardVec.z, -upVec.x, -upVec.y, -upVec.z };
 
 	alListenerfv(AL_POSITION, position);
 	alListenerfv(AL_ORIENTATION, orient);
@@ -530,19 +561,9 @@ void CEqAudioSystemAL::GetListener(Vector3D& position, Vector3D& velocity)
 // Sound source
 //----------------------------------------------------------------------------------------------
 
-CEqAudioSourceAL::CEqAudioSourceAL() :
-	m_sample(nullptr),
-	m_callback(nullptr),
-	m_callbackObject(nullptr),
-	m_source(AL_NONE),
-	m_streamPos(0),
-	m_state(STOPPED),
-	m_chanType(-1),
-	m_releaseOnStop(true),
-	m_forceStop(false),
-	m_looping(false)
+CEqAudioSourceAL::CEqAudioSourceAL(CEqAudioSystemAL* owner) 
+	: m_owner(owner)
 {
-	memset(m_buffers, 0, sizeof(m_buffers));
 }
 
 CEqAudioSourceAL::CEqAudioSourceAL(int typeId, ISoundSource* sample, UpdateCallback fnCallback, void* callbackObject)
@@ -556,8 +577,25 @@ CEqAudioSourceAL::~CEqAudioSourceAL()
 }
 
 // Updates channel with user parameters
-void CEqAudioSourceAL::UpdateParams(Params params, int mask)
+void CEqAudioSourceAL::UpdateParams(const Params& params, int mask)
 {
+	mask |= params.updateFlags;
+
+	// apply update flags from mixer
+	if (mask & UPDATE_CHANNEL)
+	{
+		m_channel = params.channel;
+		mask &= ~UPDATE_CHANNEL;
+	}
+
+	CEqAudioSystemAL::MixerChannel_t mixChannel;
+
+	const int channel = m_channel;
+	if (m_owner->m_mixerChannels.inRange(channel))
+		mixChannel = m_owner->m_mixerChannels[channel];
+
+	mask |= mixChannel.updateFlags;
+
 	if (mask == 0)
 		return;
 
@@ -568,11 +606,11 @@ void CEqAudioSourceAL::UpdateParams(Params params, int mask)
 		return;
 
 	ALuint qbuffer;
-	int tempValue;
 	int numQueued;
 	bool isStreaming;
 
 	isStreaming = m_sample ? m_sample->IsStreaming() : false;
+
 
 	if (mask & UPDATE_POSITION)
 		alSourcefv(thisSource, AL_POSITION, params.position);
@@ -581,10 +619,16 @@ void CEqAudioSourceAL::UpdateParams(Params params, int mask)
 		alSourcefv(thisSource, AL_VELOCITY, params.velocity);
 
 	if (mask & UPDATE_VOLUME)
-		alSourcef(thisSource, AL_GAIN, params.volume);
+	{
+		m_volume = params.volume;
+		alSourcef(thisSource, AL_GAIN, params.volume * mixChannel.volume);
+	}
 
 	if (mask & UPDATE_PITCH)
-		alSourcef(thisSource, AL_PITCH, params.pitch);
+	{
+		m_pitch = params.pitch;
+		alSourcef(thisSource, AL_PITCH, params.pitch * mixChannel.pitch);
+	}
 
 	if (mask & UPDATE_REF_DIST)
 		alSourcef(thisSource, AL_REFERENCE_DISTANCE, params.referenceDistance);
@@ -594,15 +638,15 @@ void CEqAudioSourceAL::UpdateParams(Params params, int mask)
 
 	if (mask & UPDATE_EFFECTSLOT)
 	{
-		if(params.effectSlot == -1)
+		if (params.effectSlot == -1)
 			alSource3i(thisSource, AL_AUXILIARY_SEND_FILTER, AL_EFFECTSLOT_NULL, 0, AL_FILTER_NULL);
 		else
-			alSource3i(thisSource, AL_AUXILIARY_SEND_FILTER, s_audioSystemAL.m_effectSlots[params.effectSlot], 0, AL_FILTER_NULL);
+			alSource3i(thisSource, AL_AUXILIARY_SEND_FILTER, m_owner->m_effectSlots[params.effectSlot], 0, AL_FILTER_NULL);
 	}
 
 	if (mask & UPDATE_RELATIVE)
 	{
-		tempValue = params.relative == true ? AL_TRUE : AL_FALSE;
+		const int tempValue = params.relative == true ? AL_TRUE : AL_FALSE;
 		alSourcei(thisSource, AL_SOURCE_RELATIVE, tempValue);
 	}
 
@@ -618,7 +662,7 @@ void CEqAudioSourceAL::UpdateParams(Params params, int mask)
 	{
 		m_streamPos = 0;
 
-		if(!isStreaming)
+		if (!isStreaming)
 			alSourceRewind(thisSource);
 	}
 
@@ -634,6 +678,10 @@ void CEqAudioSourceAL::UpdateParams(Params params, int mask)
 		}
 		else if (params.state == PAUSED)
 		{
+			// HACK: make source armed
+			if (m_state != PLAYING)
+				alSourcePlay(thisSource);
+
 			alSourcePause(thisSource);
 		}
 		else if (params.state == PLAYING)
@@ -650,7 +698,7 @@ void CEqAudioSourceAL::UpdateParams(Params params, int mask)
 				while (numQueued--)
 					alSourceUnqueueBuffers(thisSource, 1, &qbuffer);
 
-				for (int i = 0; i < STREAM_BUFFER_COUNT; i++)
+				for (int i = 0; i < EQSND_STREAM_BUFFER_COUNT; i++)
 				{
 					if (!QueueStreamChannel(m_buffers[i]))
 						break; // too short
@@ -664,7 +712,7 @@ void CEqAudioSourceAL::UpdateParams(Params params, int mask)
 	}
 }
 
-void CEqAudioSourceAL::GetParams(Params& params)
+void CEqAudioSourceAL::GetParams(Params& params) const
 {
 	const ALuint thisSource = m_source;
 
@@ -674,15 +722,15 @@ void CEqAudioSourceAL::GetParams(Params& params)
 	if (thisSource == AL_NONE)
 		return;
 
-	params.id = m_chanType;
+	params.channel = m_channel;
 
 	bool isStreaming = m_sample ? m_sample->IsStreaming() : false;
 
 	// get current state of alSource
 	alGetSourcefv(thisSource, AL_POSITION, params.position);
 	alGetSourcefv(thisSource, AL_VELOCITY, params.velocity);
-	alGetSourcef(thisSource, AL_GAIN, &params.volume);
-	alGetSourcef(thisSource, AL_PITCH, &params.pitch);
+	params.volume = m_volume;
+	params.pitch = m_pitch;
 	alGetSourcef(thisSource, AL_REFERENCE_DISTANCE, &params.referenceDistance);
 	alGetSourcef(thisSource, AL_ROLLOFF_FACTOR, &params.rolloff);
 	alGetSourcef(thisSource, AL_AIR_ABSORPTION_FACTOR, &params.airAbsorption);
@@ -713,16 +761,15 @@ void CEqAudioSourceAL::GetParams(Params& params)
 	params.releaseOnStop = m_releaseOnStop;
 }
 
-void CEqAudioSourceAL::Setup(int typeId, ISoundSource* sample, UpdateCallback fnCallback /*= nullptr*/, void* callbackObject /*= nullptr*/)
+void CEqAudioSourceAL::Setup(int chanId, const ISoundSource* sample, UpdateCallback fnCallback /*= nullptr*/, void* callbackObject /*= nullptr*/)
 {
+	Release();
 	InitSource();
-
-	EmptyBuffers();
 
 	m_callbackObject = callbackObject;
 	m_callback = fnCallback;
 
-	m_chanType = typeId;
+	m_channel = chanId;
 
 	SetupSample(sample);
 }
@@ -742,7 +789,7 @@ void CEqAudioSourceAL::InitSource()
 	m_source = source;
 
 	// initialize buffers
-	alGenBuffers(STREAM_BUFFER_COUNT, m_buffers);
+	alGenBuffers(EQSND_STREAM_BUFFER_COUNT, m_buffers);
 }
 
 void CEqAudioSourceAL::Release()
@@ -752,12 +799,12 @@ void CEqAudioSourceAL::Release()
 
 	EmptyBuffers();
 
-	m_chanType = -1;
+	m_channel = -1;
 	m_callback = nullptr;
 	m_callbackObject = nullptr;
 	m_state = STOPPED;
 
-	alDeleteBuffers(STREAM_BUFFER_COUNT, m_buffers);
+	alDeleteBuffers(EQSND_STREAM_BUFFER_COUNT, m_buffers);
 	alDeleteSources(1, &m_source);
 
 	m_source = AL_NONE;
@@ -772,10 +819,25 @@ bool CEqAudioSourceAL::DoUpdate()
 		Params params;
 		GetParams(params);
 
-		int mask = m_callback(m_callbackObject, params);
+		m_callback(m_callbackObject, params);
 
 		// update channel parameters
-		UpdateParams(params, mask);
+		UpdateParams(params);
+	}
+	else
+	{
+		// monitor mixer state
+		const int channel = m_channel;
+		if (m_owner->m_mixerChannels.inRange(channel))
+		{
+			const CEqAudioSystemAL::MixerChannel_t& mixChannel = m_owner->m_mixerChannels[channel];
+			if (mixChannel.updateFlags)
+			{
+				Params params;
+				GetParams(params);
+				UpdateParams(params);
+			}
+		}
 	}
 
 	if (m_sample == nullptr)
@@ -835,17 +897,14 @@ bool CEqAudioSourceAL::DoUpdate()
 	return true;
 }
 
-void CEqAudioSourceAL::SetupSample(ISoundSource* sample)
+void CEqAudioSourceAL::SetupSample(const ISoundSource* sample)
 {
 	// setup voice defaults
-	m_sample = sample;
+	m_sample = const_cast<ISoundSource*>(sample);
 	m_streamPos = 0;
-	m_releaseOnStop = (m_callback == nullptr);
+	m_releaseOnStop = !m_callback;
 
-	if (sample == nullptr)
-		return;
-
-	if (!sample->IsStreaming())
+	if (sample && !sample->IsStreaming())
 	{
 		CSoundSource_OpenALCache* alSource = (CSoundSource_OpenALCache*)sample;
 
@@ -856,7 +915,7 @@ void CEqAudioSourceAL::SetupSample(ISoundSource* sample)
 
 bool CEqAudioSourceAL::QueueStreamChannel(ALuint buffer)
 {
-	static ubyte pcmBuffer[STREAM_BUFFER_SIZE];
+	static ubyte pcmBuffer[EQSND_STREAM_BUFFER_SIZE];
 
 	ISoundSource* sample = m_sample;
 
@@ -873,7 +932,7 @@ bool CEqAudioSourceAL::QueueStreamChannel(ALuint buffer)
 		alFormat = AL_FORMAT_MONO16;
 
 	// read sample data and update AL buffers
-	int numRead = sample->GetSamples(pcmBuffer, STREAM_BUFFER_SIZE / sampleSize, m_streamPos, m_looping);
+	int numRead = sample->GetSamples(pcmBuffer, EQSND_STREAM_BUFFER_SIZE / sampleSize, m_streamPos, m_looping);
 
 	if (numRead > 0)
 	{
@@ -916,7 +975,7 @@ void CEqAudioSourceAL::EmptyBuffers()
 			alSourceUnqueueBuffers(m_source, 1, &qbuffer);
 
 		// make silent buffer
-		for (int i = 0; i < STREAM_BUFFER_COUNT; i++)
+		for (int i = 0; i < EQSND_STREAM_BUFFER_COUNT; i++)
 			alBufferData(m_buffers[i], AL_FORMAT_MONO16, (short*)_silence, BUFFER_SILENCE_SIZE, 8000);
 	}
 	else

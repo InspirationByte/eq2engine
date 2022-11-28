@@ -10,8 +10,9 @@
 
 //-----------------------------------------------------------------
 
-#define STREAM_BUFFER_COUNT		(4)
-#define STREAM_BUFFER_SIZE		(1024*8) // 8 kb
+#define EQSND_MIXER_CHANNELS			16
+#define EQSND_STREAM_BUFFER_COUNT		4
+#define EQSND_STREAM_BUFFER_SIZE		(1024*8) // 8 kb
 
 //-----------------------------------------------------------------
 
@@ -33,9 +34,12 @@ public:
 
 	void						Update();
 
-	void						StopAllSounds(int chanType = -1, void* callbackObject = nullptr);
-	void						PauseAllSounds(int chanType = -1, void* callbackObject = nullptr);
-	void						ResumeAllSounds(int chanType = -1, void* callbackObject = nullptr);
+	void						StopAllSounds(int chanId = -1, void* callbackObject = nullptr);
+	void						PauseAllSounds(int chanId = -1, void* callbackObject = nullptr);
+	void						ResumeAllSounds(int chanId = -1, void* callbackObject = nullptr);
+
+	void						SetChannelVolume(int chanId, float value);
+	void						SetChannelPitch(int chanId, float value);
 
 	void						SetMasterVolume(float value);
 
@@ -65,6 +69,13 @@ private:
 		ALuint		nAlEffect;
 	};
 
+	struct MixerChannel_t
+	{
+		float		volume{ 1.0f };
+		float		pitch{ 1.0f };
+		int			updateFlags{ 0 }; // IAudioSource::Update enum
+	};
+
 	bool			CreateALEffect(const char* pszName, KVSection* pSection, sndEffect_t& effect);
 	void			SuspendSourcesWithSample(ISoundSource* sample);
 
@@ -74,19 +85,19 @@ private:
 	void			DestroyContext();
 	void			DestroyEffects();
 
-	Array<CRefPtr<IEqAudioSource>>			m_sources{ PP_SL };	// tracked sources
-	Array<ISoundSource*>					m_samples{ PP_SL };
-	Array<sndEffect_t>						m_effects{ PP_SL };
+	FixedArray<MixerChannel_t, EQSND_MIXER_CHANNELS>	m_mixerChannels;
 
-	ALCcontext*								m_ctx;
-	ALCdevice*								m_dev;
+	ALuint									m_effectSlots[SOUND_EFX_SLOTS]{ 0 };
+	Array<CRefPtr<CEqAudioSourceAL>>		m_sources{ PP_SL };	// tracked sources
+	Map<int, ISoundSource*>					m_samples{ PP_SL };
+	Map<int, sndEffect_t>					m_effects{ PP_SL };
 
-	ALuint									m_effectSlots[SOUND_EFX_SLOTS];
-	int										m_currEffectSlotIdx;
+	ALCcontext*								m_ctx{ nullptr };
+	ALCdevice*								m_dev{ nullptr };
+	sndEffect_t*							m_currEffect{ nullptr };
 
-	sndEffect_t*							m_currEffect;
-
-	bool									m_noSound;
+	int										m_currEffectSlotIdx{ 0 };
+	bool									m_noSound{ true };
 };
 
 //-----------------------------------------------------------------
@@ -96,43 +107,47 @@ class CEqAudioSourceAL : public IEqAudioSource
 {
 	friend class CEqAudioSystemAL;
 public:
-	CEqAudioSourceAL();
+	CEqAudioSourceAL(CEqAudioSystemAL* owner);
 	CEqAudioSourceAL(int typeId, ISoundSource* sample, UpdateCallback fnCallback, void* callbackObject);
 	~CEqAudioSourceAL();
 
-	void					Setup(int chanType, ISoundSource* sample, UpdateCallback fnCallback = nullptr, void* callbackObject = nullptr);
+	void					Setup(int chanId, const ISoundSource* sample, UpdateCallback fnCallback = nullptr, void* callbackObject = nullptr);
 	void					Release();
 
 	// full scale
-	void					GetParams(Params& params);
-	void					UpdateParams(Params params, int mask);
+	void					GetParams(Params& params) const;
+	void					UpdateParams(const Params& params, int mask = 0);
 
 	// atomic
-	ESourceState			GetState() const { return m_state; }
+	State					GetState() const { return m_state; }
 	bool					IsLooping() const { return m_looping; }
 
 protected:
-
 	bool					QueueStreamChannel(ALuint buffer);
-	void					SetupSample(ISoundSource* sample);
+	void					SetupSample(const ISoundSource* sample);
 
 	void					InitSource();
 
 	void					EmptyBuffers();
 	bool					DoUpdate();
 
-	ALuint					m_buffers[STREAM_BUFFER_COUNT];
-	ISoundSource*			m_sample;
+	CEqAudioSystemAL*		m_owner{ nullptr };
+
+	ALuint					m_buffers[EQSND_STREAM_BUFFER_COUNT]{ 0 };
+	ISoundSource*			m_sample{ nullptr };
 
 	UpdateCallback			m_callback;
-	void*					m_callbackObject;
+	void*					m_callbackObject{ nullptr };
 
-	ALuint					m_source;
-	int						m_streamPos;
-	ESourceState			m_state;
+	ALuint					m_source{ 0 };
+	int						m_streamPos{ 0 };
+	State					m_state{ State::STOPPED };
 
-	int						m_chanType;
-	bool					m_releaseOnStop;
-	bool					m_forceStop;
-	bool					m_looping;
+	float					m_volume{ 1.0f };	// need them raw and unaffected by mixer params
+	float					m_pitch{ 1.0f };
+
+	int						m_channel{ -1 };			// mixer channel index
+	bool					m_releaseOnStop{ true };
+	bool					m_forceStop{ false };
+	bool					m_looping{ false };
 };

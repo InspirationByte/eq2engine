@@ -14,6 +14,8 @@
 #include "core/IConsoleCommands.h"
 #include "core/IEqParallelJobs.h"
 
+#include "utils/KeyValues.h"
+
 #include "soundsystem_test.h"
 
 #include "font/IFontCache.h"
@@ -25,6 +27,9 @@
 #include "render/IDebugOverlay.h"
 
 #include "audio/IEqAudioSystem.h"
+#include "audio/eqSoundEmitterSystem.h"
+
+#pragma optimize("", off)
 
 
 #define APPLICATION_NAME		"SoundTest"
@@ -66,33 +71,23 @@ float				g_frametime = 0.0f;
 #define SOUND_COUNT_TEST 4
 #define MAX_LOOP_SOUNDS 5
 
-//int g_loopingSound[MAX_LOOP_SOUNDS] = {-1};
-//int g_staticSound = -1;
+static const char* s_loopingSoundNames[] = {
+	"test.streaming_stereo_wav",
+	"test.streaming_stereo_ogg",
+	"test.sine_22",
+	"test.sine_44",
+	"test.silence"
+};
 
-//ISoundEngine* g_soundEngine = nullptr;
-//ISoundChannel* g_musicChan = nullptr;
-
-ISoundSource* g_loopingSound[MAX_LOOP_SOUNDS];
-ISoundSource* g_staticSound;
-
-IEqAudioSource* g_musicChan;
-
-int musicUpdateCb(void* obj, IEqAudioSource::Params& params)
+class CTestRandomObject : public CSoundingObject
 {
-	if (params.state != IEqAudioSource::PLAYING)
-	{
-		params.state = IEqAudioSource::PLAYING;
-		return IEqAudioSource::UPDATE_DO_REWIND | IEqAudioSource::UPDATE_STATE;
-	}
+public:
+	// randomly flying object
 
-	return 0;
-}
+};
 
-int dummyUpdateCb(void* obj, IEqAudioSource::Params& params)
-{
-	debugoverlay->Text(color_white, "chan id=%d", params.id);
-	return 0;
-}
+static CSoundingObject g_musicObject;
+static CTestRandomObject g_testSoundObject;
 
 void InitSoundSystem( EQWNDHANDLE wnd )
 {
@@ -101,25 +96,63 @@ void InitSoundSystem( EQWNDHANDLE wnd )
 	g_consoleCommands->ExecuteCommandBuffer();
 
 	g_audioSystem->Init();
+	g_sounds->Init(120.0f);
 
-	g_loopingSound[0] = g_audioSystem->LoadSample("sounds/SoundTest/StreamingStereo.wav");
-	g_loopingSound[1] = g_audioSystem->LoadSample("sounds/SoundTest/StreamingStereo.ogg");
-	g_loopingSound[2] = g_audioSystem->LoadSample("sounds/SoundTest/Sine22.wav");
-	g_loopingSound[3] = g_audioSystem->LoadSample("sounds/SoundTest/Sine44.wav");
-	g_loopingSound[4] = nullptr;
+	{
+		KVSection soundSec;
+		soundSec.SetName("test.streaming_stereo_wav");
+		soundSec.SetKey("wave", "SoundTest/StreamingStereo.wav");
+		soundSec.SetKey("is2d", true);
+		soundSec.SetKey("loop", true);
+		soundSec.SetKey("channel", "CHAN_STREAM");
+		g_sounds->CreateSoundScript(&soundSec);
+		g_sounds->PrecacheSound(soundSec.GetName());
+	}
 
-	g_staticSound = g_audioSystem->LoadSample("sounds/SoundTest/StaticTest.wav");
+	{
+		KVSection soundSec;
+		soundSec.SetName("test.streaming_stereo_ogg");
+		soundSec.SetKey("wave", "SoundTest/StreamingStereo.ogg");
+		soundSec.SetKey("is2d", true);
+		soundSec.SetKey("loop", true);
+		soundSec.SetKey("channel", "CHAN_STREAM");
+		g_sounds->CreateSoundScript(&soundSec);
+		g_sounds->PrecacheSound(soundSec.GetName());
+	}
 
-	g_musicChan = g_audioSystem->CreateSource();
-	g_musicChan->Setup(0, g_loopingSound[0], musicUpdateCb, nullptr);
+	{
+		KVSection soundSec;
+		soundSec.SetName("test.sine_22");
+		soundSec.SetKey("wave", "SoundTest/Sine22.wav");
+		soundSec.SetKey("is2d", true);
+		soundSec.SetKey("loop", true);
+		soundSec.SetKey("channel", "CHAN_STREAM");
+		g_sounds->CreateSoundScript(&soundSec);
+		g_sounds->PrecacheSound(soundSec.GetName());
+	}
 
-	IEqAudioSource::Params params;
-	params.state = IEqAudioSource::PLAYING;
-	params.looping = false;
-	params.pitch = 4.0;
-	params.relative = true;
+	{
+		KVSection soundSec;
+		soundSec.SetName("test.sine_44");
+		soundSec.SetKey("is2d", true);
+		soundSec.SetKey("loop", true);
+		soundSec.SetKey("wave", "SoundTest/Sine44.wav");
+		soundSec.SetKey("channel", "CHAN_STREAM");
+		g_sounds->CreateSoundScript(&soundSec);
+		g_sounds->PrecacheSound(soundSec.GetName());
+	}
 
-	g_musicChan->UpdateParams(params, IEqAudioSource::UPDATE_STATE | IEqAudioSource::UPDATE_LOOPING | IEqAudioSource::UPDATE_PITCH | IEqAudioSource::UPDATE_RELATIVE);
+	{
+		KVSection soundSec;
+		soundSec.SetName("test.static");
+		soundSec.SetKey("wave", "SoundTest/StaticTest.wav");
+		soundSec.SetKey("channel", "CHAN_STATIC");
+		g_sounds->CreateSoundScript(&soundSec);
+		g_sounds->PrecacheSound(soundSec.GetName());
+	}
+
+	EmitParams ep(s_loopingSoundNames[0]);
+	g_musicObject.EmitSound(&ep);
 }
 
 class CWXTemplateApplication: public wxApp
@@ -360,33 +393,9 @@ void CMainWindow::ProcessAllMenuCommands(wxCommandEvent& event)
 	{
 		int soundId = event.GetId()-Event_LoopSounds_Sound;
 
-		/*
-		if(g_loopingSound[soundId] != -1)
-		{
-			g_musicChan->SetAttenuation(0.0f);
-			g_musicChan->PlayLoop(g_loopingSound[soundId]);
-		}
-		else
-			g_musicChan->StopSound();
-			*/
+		EmitParams ep(s_loopingSoundNames[soundId]);
+		g_musicObject.EmitSound(&ep);
 
-		if (g_loopingSound[soundId] != nullptr)
-		{
-			g_musicChan->Release();
-			g_musicChan->Setup(0, g_loopingSound[soundId], musicUpdateCb, nullptr);
-
-			IEqAudioSource::Params params;
-			params.state = IEqAudioSource::PLAYING;
-			params.looping = true;
-			params.pitch = RandomFloat(0.5f, 2.0f);
-			params.relative = true;
-
-			g_musicChan->UpdateParams(params, IEqAudioSource::UPDATE_STATE | IEqAudioSource::UPDATE_LOOPING | IEqAudioSource::UPDATE_PITCH | IEqAudioSource::UPDATE_RELATIVE);
-		}
-		else
-		{
-			g_musicChan->Release();
-		}
 	}
 }
 
@@ -528,18 +537,10 @@ void CMainWindow::ProcessKeyboardUpEvents(wxKeyEvent& event)
 	{
 		Vector3D randomPos(RandomFloat(-10.0f, 10.0f), RandomFloat(-10.0f, 10.0f), RandomFloat(-10.0f, 10.0f));
 
-		//g_soundEngine->PlaySound(g_staticSound, randomPos, 1.0f, 10.0f);
+		EmitParams ep("test.static");
+		ep.origin = randomPos;
+		g_testSoundObject.EmitSound(&ep);
 
-		IEqAudioSource* newSource = g_audioSystem->CreateSource();
-		newSource->Setup(1, g_staticSound, dummyUpdateCb, nullptr);
-
-		IEqAudioSource::Params params;
-		params.position = randomPos;
-		params.state = IEqAudioSource::PLAYING;
-		params.releaseOnStop = true;
-
-		newSource->UpdateParams(params, IEqAudioSource::UPDATE_POSITION | IEqAudioSource::UPDATE_STATE | IEqAudioSource::UPDATE_RELEASE_ON_STOP);
-		
 		debugoverlay->Box3D(randomPos-1.0f, randomPos+1.0f, ColorRGBA(1,1,0,1), 1.0f);
 	}
 }
@@ -647,6 +648,8 @@ void CMainWindow::ReDraw()
 
 		m_bDoRefresh = false;
 	}
+
+	g_sounds->Update();
 
 	// compute time since last frame
 	g_frametime += g_timer.GetTime(true);
