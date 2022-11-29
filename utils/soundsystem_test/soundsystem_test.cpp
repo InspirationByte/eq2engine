@@ -157,13 +157,13 @@ void InitSoundSystem( EQWNDHANDLE wnd )
 		soundSec.SetKey("is2d", true);
 		soundSec.SetKey("loop", false);
 		soundSec.SetKey("wave", "SoundTest/CueTest.wav");
-		soundSec.SetKey("channel", "CHAN_STREAM");
+		soundSec.SetKey("channel", "CHAN_VOICE");
 		g_sounds->CreateSoundScript(&soundSec);
 		g_sounds->PrecacheSound(soundSec.GetName());
 	}
 
 	EmitParams ep(s_loopingSoundNames[0]);
-	g_musicObject.EmitSound(&ep);
+	g_musicObject.EmitSound(StringToHash("music"), &ep);
 }
 
 class CWXTemplateApplication: public wxApp
@@ -405,7 +405,7 @@ void CMainWindow::ProcessAllMenuCommands(wxCommandEvent& event)
 		int soundId = event.GetId()-Event_LoopSounds_Sound;
 
 		EmitParams ep(s_loopingSoundNames[soundId]);
-		g_musicObject.EmitSound(&ep);
+		g_musicObject.EmitSound(StringToHash("music"), &ep);
 
 	}
 }
@@ -550,7 +550,7 @@ void CMainWindow::ProcessKeyboardUpEvents(wxKeyEvent& event)
 
 		EmitParams ep("test.static");
 		ep.origin = randomPos;
-		g_testSoundObject.EmitSound(&ep);
+		g_testSoundObject.EmitSound(-1, &ep);
 
 		debugoverlay->Box3D(randomPos-1.0f, randomPos+1.0f, ColorRGBA(1,1,0,1), 1.0f);
 	}
@@ -647,7 +647,7 @@ void CMainWindow::ReDraw()
 
 	static float totalTime = 0.0f;
 	totalTime += g_frametime;
-	g_musicObject.SetSoundVolumeScale(sinf(totalTime));
+	g_musicObject.SetSoundVolumeScale(max(sinf(totalTime), 0.25f));
  
 	g_pShaderAPI->SetViewport(0, 0, w,h);
 

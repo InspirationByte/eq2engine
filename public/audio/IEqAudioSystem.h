@@ -80,7 +80,29 @@ public:
 		PROP_SETTER(looping, UPDATE_LOOPING)
 		PROP_SETTER(releaseOnStop, UPDATE_RELEASE_ON_STOP)
 		PROP_SETTER(channel, UPDATE_CHANNEL)
+
+#define PROP_MERGE(var, flag) if(other.updateFlags & flag) {var = other.##var;}
+
+		inline Params& operator |=(const Params& other) {
+			updateFlags |= other.updateFlags;
+			PROP_MERGE(position, UPDATE_POSITION)
+			PROP_MERGE(velocity, UPDATE_VELOCITY)
+			PROP_MERGE(volume, UPDATE_VOLUME)
+			PROP_MERGE(pitch, UPDATE_PITCH)
+			PROP_MERGE(referenceDistance, UPDATE_REF_DIST)
+			PROP_MERGE(rolloff, UPDATE_ROLLOFF)
+			PROP_MERGE(airAbsorption, UPDATE_AIRABSORPTION)
+			PROP_MERGE(state, UPDATE_STATE)
+			PROP_MERGE(effectSlot, UPDATE_EFFECTSLOT)
+			PROP_MERGE(relative, UPDATE_RELATIVE)
+			PROP_MERGE(looping, UPDATE_LOOPING)
+			PROP_MERGE(releaseOnStop, UPDATE_RELEASE_ON_STOP)
+			PROP_MERGE(channel, UPDATE_CHANNEL)
+			return *this;
+		}
+
 #undef PROP_SETTER
+#undef PROP_MERGE
 	};
 
 	using UpdateCallback = EqFunction<int(void* obj, Params& params)>;		// returns EVoiceUpdateFlags
@@ -92,7 +114,7 @@ public:
 
 	// full scale
 	virtual void			GetParams(Params& params) const = 0;
-	virtual void			UpdateParams(const Params& params, int mask) = 0;
+	virtual void			UpdateParams(const Params& params, int mask = 0) = 0;
 
 	// atomic
 	virtual State			GetState() const = 0;

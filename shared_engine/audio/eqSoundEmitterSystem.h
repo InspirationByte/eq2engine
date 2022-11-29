@@ -7,8 +7,6 @@
 
 /*
 	TODO:
-		Virtual emitters in SES instead of in audio system
-		Sound channel specifics for DrvSyn
 		Sound controller interface specifics for DrvSyn
 		Spatial optimizations to query with less distance checks
 */
@@ -24,13 +22,12 @@ class CSoundingObject;
 // flags
 enum EEmitSoundFlags
 {
-	EMITSOUND_FLAG_OCCLUSION		= (1 << 0),		// occludes source by the world geometry
-	EMITSOUND_FLAG_ROOM_OCCLUSION	= (1 << 1),		// uses more expensive occlusion system, use it for ambient sounds
 	EMITSOUND_FLAG_FORCE_CACHED		= (1 << 2),		// forces emitted sound to be loaded if not cached by PrecacheScriptSound (not recommended, debug only)
 	EMITSOUND_FLAG_FORCE_2D			= (1 << 3),		// force 2D sound (music, etc.)
 	EMITSOUND_FLAG_STARTSILENT		= (1 << 4),		// starts silent
 	EMITSOUND_FLAG_START_ON_UPDATE	= (1 << 5),		// start playing sound on emitter system update
 	EMITSOUND_FLAG_RANDOM_PITCH		= (1 << 6),		// apply slightly random pitch (best for static hit sounds)
+
 	EMITSOUND_FLAG_PENDING			= (1 << 7),		// was in pending list
 };
 
@@ -52,12 +49,10 @@ enum ESoundChannelType : int
 
 struct EmitParams
 {
-	// the first and biggest
 	EmitParams() = default;
 
 	EmitParams( const char* pszName ) :
-		name(pszName),
-		flags(EMITSOUND_FLAG_OCCLUSION)
+		name(pszName)
 	{
 	}
 
@@ -69,61 +64,68 @@ struct EmitParams
 
 	EmitParams( const char* pszName, float volume, float pitch ) :
 		name(pszName),
-		volume(volume), pitch(pitch),
-		flags(EMITSOUND_FLAG_OCCLUSION)
+		volume(volume), pitch(pitch)
 	{
 	}
 
 	EmitParams( const char* pszName, const Vector3D& pos ) :
 		name(pszName),
-		origin(pos),
-		flags(EMITSOUND_FLAG_OCCLUSION)
+		origin(pos)
 	{
 	}
 
 	EmitParams( const char* pszName, const Vector3D& pos, float volume, float pitch ) :
 		name(pszName),
 		origin(pos),
-		volume(volume), pitch(pitch),
-		flags(EMITSOUND_FLAG_OCCLUSION)
+		volume(volume), pitch(pitch)
 	{
 	}
 
 	EqString				name;
-	Vector3D				origin{ 0.0f };
+	Vector3D				origin{ vec3_zero };
 	float					volume{ 1.0f };
 	float					pitch{ 1.0f };
 	float					radiusMultiplier{ 1.0f };
-
-	CSoundingObject*		object{ nullptr };
 
 	int						flags{ 0 };
 	int						sampleId{ -1 };
 	ESoundChannelType		channelType{ CHAN_INVALID };
 };
 
-
 // Sound channel entity that controls it's sound sources
 class CSoundingObject
 {
 	friend class CSoundEmitterSystem;
 public:
-	CSoundingObject();
+	CSoundingObject() = default;
 	virtual ~CSoundingObject();
 
-	void		EmitSound(EmitParams* ep);
+	int			EmitSound(int uniqueId, EmitParams* ep);
 
-	int			GetChannelSoundCount(ESoundChannelType chan);
+	void		StopEmitter(int uniqueId);
+	void		PauseEmitter(int uniqueId);
+	void		PlayEmitter(int uniqueId, bool rewind = false);
+
+	void		StopLoop(int uniqueId);
+
+	void		SetPosition(int uniqueId, const Vector3D& position);
+	void		SetVelocity(int uniqueId, const Vector3D& velocity);
+	void		SetPitch(int uniqueId, float pitch);
+	void		SetVolume(int uniqueId, float volume);
+
+	void		SetParams(int uniqueId, IEqAudioSource::Params& params);
+
+	int			GetChannelSoundCount(ESoundChannelType chan) const { return m_numChannelSounds[chan]; }
 
 	void		SetSoundVolumeScale(float fScale)	{ m_volumeScale = fScale; }
 	float		GetSoundVolumeScale() const			{ return m_volumeScale; }
 
 protected:
-	int			FirstEmitterIdxByChannelType(ESoundChannelType chan) const;
-	void		StopFirstEmitter(ESoundChannelType chan);
+	bool		UpdateEmitters(const Vector3D& listenerPos);
+	void		StopFirstEmitterByChannel(ESoundChannelType chan);
 
 	// sounds at channel counter
-	Array<SoundEmitterData*>	m_emitters{ PP_SL };
+	Map<int, SoundEmitterData*>	m_emitters{ PP_SL };
 	uint8						m_numChannelSounds[CHAN_COUNT]{ 0 };
 	float						m_volumeScale{ 1.0f };
 };
@@ -147,25 +149,20 @@ public:
 	void				LoadScriptSoundFile(const char* fileName);
 	void				CreateSoundScript(const KVSection* scriptSection);
 
-	void				SetPaused(bool paused);
-	bool				IsPaused();
-
-	void				PrecacheSound(const char* pszName);							// precaches sound
-
-	// emits new sound. returns channel type
-	int					EmitSound(EmitParams* emit );								// emits sound with specified parameters
+	void				PrecacheSound(const char* pszName);
+	int					EmitSound(EmitParams* emit);
 
 	void				StopAllSounds();
 
 	void				StopAllEmitters();
 
-	void				Update(float pitchScale = 1.0f, bool force = false);													// updates sound emitter system
+	void				Update(float pitchScale = 1.0f, bool force = false);
 
 private:
-	soundScriptDesc_t*	FindSound(const char* soundName) const;						// searches for loaded script sound
-	const ISoundSource*	GetBestSample(const soundScriptDesc_t* script, int sampleId = -1) const;
+	int					EmitSound(EmitParams* emit, CSoundingObject* soundingObj, int objUniqueId);
 
-	void				InvalidateSoundChannelObject(CSoundingObject* pEnt);
+	soundScriptDesc_t*	FindSound(const char* soundName) const;
+	const ISoundSource*	GetBestSample(const soundScriptDesc_t* script, int sampleId = -1) const;
 
 	static int			EmitterUpdateCallback(void* obj, IEqAudioSource::Params& params);
 	static int			LoopSourceUpdateCallback(void* obj, IEqAudioSource::Params& params);
@@ -173,12 +170,10 @@ private:
 	bool				SwitchSourceState(SoundEmitterData* emit, bool isVirtual);
 
 	Map<int, soundScriptDesc_t*>	m_allSounds{ PP_SL };
+	Set<CSoundingObject*>			m_soundingObjects{ PP_SL };
+	Array<EmitParams>				m_pendingStartSounds{ PP_SL };
 
 	float							m_defaultMaxDistance{ 100.0f };
-
-	Set<CSoundingObject*>			m_soundingObjects{ PP_SL };
-
-	Array<EmitParams>				m_pendingStartSounds{ PP_SL };
 
 	bool							m_isInit{ false };
 	bool							m_isPaused{ false };

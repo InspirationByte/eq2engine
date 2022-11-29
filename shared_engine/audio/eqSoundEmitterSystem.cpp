@@ -27,6 +27,23 @@ static CEqMutex s_soundEmitterSystemMutex;
 static CSoundEmitterSystem s_ses;
 CSoundEmitterSystem* g_sounds = &s_ses;
 
+DECLARE_CMD_VARIANTS(snd_test_scriptsound, "Test the scripted sound", CSoundEmitterSystem::cmd_vars_sounds_list, 0)
+{
+	if (CMD_ARGC > 0)
+	{
+		g_sounds->PrecacheSound(CMD_ARGV(0).ToCString());
+
+		EmitParams ep;
+		ep.flags = (EMITSOUND_FLAG_FORCE_CACHED | EMITSOUND_FLAG_FORCE_2D);
+		ep.name = (char*)CMD_ARGV(0).ToCString();
+
+		if (g_sounds->EmitSound(&ep) == CHAN_INVALID)
+			MsgError("Cannot play - not valid sound '%s'\n", CMD_ARGV(0).ToCString());
+	}
+}
+
+ConVar snd_scriptsound_debug("snd_scriptsound_debug", "0", nullptr, CV_CHEAT);
+
 static const char* s_soundChannelNames[CHAN_COUNT] =
 {
 	"CHAN_STATIC",
@@ -85,104 +102,299 @@ struct soundScriptDesc_t
 struct SoundEmitterData
 {
 	EmitParams					emitParams;					// parameters which used to start this sound
-	IEqAudioSource::Params		sourceParams;
+	IEqAudioSource::Params		startParams;
+	IEqAudioSource::Params		virtualParams;
 
 	CRefPtr<IEqAudioSource>		soundSource;				// virtual when NULL
 	const soundScriptDesc_t*	script{ nullptr };			// sound script which used to start this sound
 	CSoundingObject*			soundingObj{ nullptr };
-	
 };
-
-DECLARE_CMD_VARIANTS(snd_test_scriptsound, "Test the scripted sound", CSoundEmitterSystem::cmd_vars_sounds_list, 0)
-{
-	if(CMD_ARGC > 0)
-	{
-		g_sounds->PrecacheSound( CMD_ARGV(0).ToCString() );
-
-		EmitParams ep;
-		ep.flags = (EMITSOUND_FLAG_FORCE_CACHED | EMITSOUND_FLAG_FORCE_2D);
-		ep.pitch = 1.0;
-		ep.radiusMultiplier = 1.0f;
-		ep.volume = 1.0f;
-		ep.origin = Vector3D(0);
-		ep.name = (char*)CMD_ARGV(0).ToCString();
-		ep.object = nullptr;
-
-		if(g_sounds->EmitSound( &ep ) == CHAN_INVALID)
-			MsgError("Cannot play - not valid sound '%s'\n", CMD_ARGV(0).ToCString());
-	}
-}
-
-ConVar emitsound_debug("scriptsound_debug", "0", nullptr, CV_CHEAT);
-
-ConVar snd_effectsvolume("snd_effectsvolume", "1.0", nullptr, CV_UNREGISTERED);
-ConVar snd_musicvolume("snd_musicvolume", "0.5", nullptr, CV_ARCHIVE);
-ConVar snd_voicevolume("snd_voicevolume", "0.5", nullptr, CV_ARCHIVE);
-
-CSoundingObject::CSoundingObject()
-{
-}
 
 CSoundingObject::~CSoundingObject()
 {
-	g_sounds->InvalidateSoundChannelObject(this);
-}
-
-void CSoundingObject::EmitSound(EmitParams* ep)
-{
-	ep->object = this;
-
-	int channelType = g_sounds->EmitSound(ep);
-
-	if(channelType == CHAN_INVALID)
-		return;
-
-	m_numChannelSounds[channelType]++;
-}
-
-int CSoundingObject::GetChannelSoundCount(ESoundChannelType chan)
-{
-	return m_numChannelSounds[chan];
-}
-
-int CSoundingObject::FirstEmitterIdxByChannelType(ESoundChannelType chan) const
-{
-	if (chan == CHAN_INVALID)
-		return -1;
-
-	CScopedMutex m(s_soundEmitterSystemMutex);
-	for (int i = 0; i < m_emitters.numElem(); i++)
+	for (auto it = m_emitters.begin(); it != m_emitters.end(); ++it)
 	{
-		if (m_emitters[i]->emitParams.channelType == chan)
-			return i;
-	}
-
-	return -1;
-}
-
-void CSoundingObject::StopFirstEmitter(ESoundChannelType chan)
-{
-	if (chan == CHAN_INVALID)
-		return;
-
-	// find currently playing sound index
-	const int firstPlayingSound = FirstEmitterIdxByChannelType(chan);
-
-	if (firstPlayingSound != -1)
-	{
-		SoundEmitterData* emitter = m_emitters[firstPlayingSound];
+		SoundEmitterData* emitter = *it;
 		if (emitter->soundSource)
 		{
 			emitter->soundSource->Release();
 			emitter->soundSource = nullptr;
 		}
-		delete emitter;
-		m_emitters.fastRemoveIndex(firstPlayingSound);
 
-		--m_numChannelSounds[chan];
+		delete emitter;
 	}
 }
 
+int CSoundingObject::EmitSound(int uniqueId, EmitParams* ep)
+{
+	if (uniqueId == -1)
+		uniqueId = RandomInt(0, INT_MAX);
+
+	const int channelType = g_sounds->EmitSound(ep, this, uniqueId);
+
+	if(channelType == CHAN_INVALID)
+		return CHAN_INVALID;
+
+	return channelType;
+}
+
+bool CSoundingObject::UpdateEmitters(const Vector3D& listenerPos)
+{
+	// update emitters manually if they are in virtual state
+	for (auto it = m_emitters.begin(); it != m_emitters.end(); ++it)
+	{
+		bool needDelete = false;
+		SoundEmitterData* emitter = *it;
+		if (emitter->soundSource != nullptr)
+		{
+			needDelete = (emitter->soundSource->GetState() == IEqAudioSource::STOPPED);
+		}
+		else
+		{
+			IEqAudioSource::Params& params = emitter->virtualParams;
+			const soundScriptDesc_t* script = emitter->script;
+
+			if (script->loop)
+			{
+				const float distToSound = lengthSqr(params.position - listenerPos);
+				const float maxDistSqr = M_SQR(script->maxDistance);
+
+				// switch emitter between virtual and real here
+				g_sounds->SwitchSourceState(emitter, distToSound > maxDistSqr);
+			}
+			else
+			{
+				needDelete = true;
+			}
+		}
+
+		if(needDelete)
+		{
+			const int chanType = emitter->emitParams.channelType;
+
+			delete emitter;
+			m_emitters.remove(it);
+
+			if (chanType != CHAN_INVALID)
+				--m_numChannelSounds[chanType];
+		}
+	}
+
+	return m_emitters.size() > 0;
+}
+
+void CSoundingObject::StopFirstEmitterByChannel(ESoundChannelType chan)
+{
+	if (chan == CHAN_INVALID)
+		return;
+
+	CScopedMutex m(s_soundEmitterSystemMutex);
+
+	// find first sound with the specific channel and kill it
+	for (auto it = m_emitters.begin(); it != m_emitters.end(); ++it)
+	{
+		SoundEmitterData* emitter = *it;
+		if (emitter->emitParams.channelType == chan)
+		{
+			if (emitter->soundSource)
+			{
+				emitter->soundSource->Release();
+				emitter->soundSource = nullptr;
+			}
+			delete emitter;
+
+			m_emitters.remove(it);
+			--m_numChannelSounds[chan];
+			break;
+		}
+	}
+}
+
+void CSoundingObject::StopEmitter(int uniqueId)
+{
+	auto it = m_emitters.find(uniqueId);
+	if (it == m_emitters.end())
+		return;
+
+	SoundEmitterData* emitter = *it;
+	const int chanType = emitter->emitParams.channelType;
+
+	if (emitter->soundSource)
+	{
+		emitter->soundSource->Release();
+		emitter->soundSource = nullptr;
+	}
+	delete emitter;
+
+	m_emitters.remove(it);
+	--m_numChannelSounds[chanType];
+}
+
+void CSoundingObject::PauseEmitter(int uniqueId)
+{
+	auto it = m_emitters.find(uniqueId);
+	if (it == m_emitters.end())
+		return;
+
+	SoundEmitterData* emitter = *it;
+
+	// update virtual params
+	emitter->virtualParams.set_state(IEqAudioSource::PAUSED);
+
+	// update actual params
+	if (emitter->soundSource)
+	{
+		IEqAudioSource::Params param;
+		param.set_state(IEqAudioSource::PAUSED);
+		emitter->soundSource->UpdateParams(param);
+	}
+}
+
+void CSoundingObject::PlayEmitter(int uniqueId, bool rewind)
+{
+	auto it = m_emitters.find(uniqueId);
+	if (it == m_emitters.end())
+		return;
+
+	SoundEmitterData* emitter = *it;
+
+	// update virtual params
+	emitter->virtualParams.set_state(IEqAudioSource::PLAYING);
+
+	// update actual params
+	if (emitter->soundSource)
+	{
+		IEqAudioSource::Params param;
+		param.set_state(IEqAudioSource::PLAYING);
+
+		if(rewind)
+			param.updateFlags |= IEqAudioSource::UPDATE_DO_REWIND;
+
+		emitter->soundSource->UpdateParams(param);
+	}
+}
+
+void CSoundingObject::StopLoop(int uniqueId)
+{
+	auto it = m_emitters.find(uniqueId);
+	if (it == m_emitters.end())
+		return;
+
+	SoundEmitterData* emitter = *it;
+
+	// update virtual params
+	emitter->virtualParams.set_looping(false);
+
+	// update actual params
+	if (emitter->soundSource)
+	{
+		IEqAudioSource::Params param;
+		param.set_looping(false);
+		param.set_releaseOnStop(true);
+
+		emitter->soundSource->UpdateParams(param);
+	}
+}
+
+void CSoundingObject::SetPosition(int uniqueId, const Vector3D& position)
+{
+	auto it = m_emitters.find(uniqueId);
+	if (it == m_emitters.end())
+		return;
+
+	SoundEmitterData* emitter = *it;
+
+	// update virtual params
+	emitter->virtualParams.set_position(position);
+
+	// update actual params
+	if (emitter->soundSource)
+	{
+		IEqAudioSource::Params param;
+		param.set_position(position);
+
+		emitter->soundSource->UpdateParams(param);
+	}
+}
+
+void CSoundingObject::SetVelocity(int uniqueId, const Vector3D& velocity)
+{
+	auto it = m_emitters.find(uniqueId);
+	if (it == m_emitters.end())
+		return;
+
+	SoundEmitterData* emitter = *it;
+
+	// update virtual params
+	emitter->virtualParams.set_velocity(velocity);
+
+	// update actual params
+	if (emitter->soundSource)
+	{
+		IEqAudioSource::Params param;
+		param.set_velocity(velocity);
+
+		emitter->soundSource->UpdateParams(param);
+	}
+}
+
+void CSoundingObject::SetPitch(int uniqueId, float pitch)
+{
+	auto it = m_emitters.find(uniqueId);
+	if (it == m_emitters.end())
+		return;
+
+	SoundEmitterData* emitter = *it;
+
+	// update virtual params
+	emitter->virtualParams.set_pitch(emitter->startParams.pitch * pitch);
+
+	// update actual params
+	if (emitter->soundSource)
+	{
+		IEqAudioSource::Params param;
+		param.set_pitch(emitter->startParams.pitch * pitch);
+
+		emitter->soundSource->UpdateParams(param);
+	}
+}
+
+void CSoundingObject::SetVolume(int uniqueId, float volume)
+{
+	auto it = m_emitters.find(uniqueId);
+	if (it == m_emitters.end())
+		return;
+
+	SoundEmitterData* emitter = *it;
+
+	// update virtual params
+	emitter->virtualParams.set_volume(emitter->startParams.volume * volume);
+
+	// update actual params
+	if (emitter->soundSource)
+	{
+		IEqAudioSource::Params param;
+		param.set_volume(emitter->startParams.volume * volume);
+
+		emitter->soundSource->UpdateParams(param);
+	}
+}
+
+void CSoundingObject::SetParams(int uniqueId, IEqAudioSource::Params& params)
+{
+	auto it = m_emitters.find(uniqueId);
+	if (it == m_emitters.end())
+		return;
+
+	SoundEmitterData* emitter = *it;
+
+	// update virtual params
+	emitter->virtualParams |= params;
+
+	// update actual params
+	if (emitter->soundSource)
+		emitter->soundSource->UpdateParams(params);
+}
 
 //----------------------------------------------------------------------------
 //
@@ -250,28 +462,6 @@ void CSoundEmitterSystem::Shutdown()
 	m_isInit = false;
 }
 
-void CSoundEmitterSystem::SetPaused(bool paused)
-{
-	m_isPaused = paused;
-}
-
-bool CSoundEmitterSystem::IsPaused()
-{
-	return m_isPaused;
-}
-
-void CSoundEmitterSystem::InvalidateSoundChannelObject(CSoundingObject* pEnt)
-{
-	ASSERT_FAIL("UNIMPLEMENTED");
-#if 0
-	for (int i = 0; i < m_emitters.numElem(); i++)
-	{
-		if (m_emitters[i]->channelObj == pEnt)
-			m_emitters[i]->channelObj = nullptr;
-	}
-#endif
-}
-
 void CSoundEmitterSystem::PrecacheSound(const char* pszName)
 {
 	// find the present sound file
@@ -308,8 +498,13 @@ soundScriptDesc_t* CSoundEmitterSystem::FindSound(const char* soundName) const
 	return *it;
 }
 
-// simple sound emitter
 int CSoundEmitterSystem::EmitSound(EmitParams* ep)
+{
+	return EmitSound(ep, nullptr, -1);
+}
+
+// simple sound emitter
+int CSoundEmitterSystem::EmitSound(EmitParams* ep, CSoundingObject* soundingObj, int objUniqueId)
 {
 	ASSERT(ep);
 
@@ -329,7 +524,7 @@ int CSoundEmitterSystem::EmitSound(EmitParams* ep)
 
 	if (!script)
 	{
-		if (emitsound_debug.GetBool())
+		if (snd_scriptsound_debug.GetBool())
 			MsgError("EmitSound: unknown sound '%s'\n", ep->name.ToCString());
 
 		return CHAN_INVALID;
@@ -360,54 +555,60 @@ int CSoundEmitterSystem::EmitSound(EmitParams* ep)
 	}
 
 	SoundEmitterData tmpEmit;
-
-	CSoundingObject* soundingObj = ep->object;
 	SoundEmitterData* edata = &tmpEmit;
 	if(soundingObj)
 	{
+		// stop the sound if it has been already started
+		soundingObj->StopEmitter(objUniqueId);
+
 		const int usedSounds = soundingObj->GetChannelSoundCount(script->channelType);
 
 		// if entity reached the maximum sound count for self
 		// at specific channel, we stop first sound
 		if(usedSounds >= s_soundChannelMaxEmitters[script->channelType])
-			soundingObj->StopFirstEmitter(script->channelType);
+			soundingObj->StopFirstEmitterByChannel(script->channelType);
 
 		edata = PPNew SoundEmitterData();
 		{
 			CScopedMutex m(s_soundEmitterSystemMutex);
 			m_soundingObjects.insert(soundingObj);
-			soundingObj->m_emitters.append(edata);
+			soundingObj->m_emitters.insert(objUniqueId, edata);
 		}
 	}
 	
 	// fill in start params
 	// TODO: move to separate func as we'll need a reuse
-	IEqAudioSource::Params& startParams = edata->sourceParams;
+	IEqAudioSource::Params& startParams = edata->startParams;
 
-	startParams.set_volume(script->volume * ep->volume);
-
-	if (!script->loop && (ep->flags & EMITSOUND_FLAG_RANDOM_PITCH))
-		startParams.set_pitch(ep->pitch * script->pitch + RandomFloat(-0.05f, 0.05f));
-	else
-		startParams.set_pitch(ep->pitch * script->pitch);
+	startParams.set_volume(script->volume);
+	startParams.set_pitch(script->pitch);
 
 	startParams.set_looping(script->loop);		// TODO: auto loop if repeat marker
+
 	// TODO: startParams.set_stopLooping(script->stopLoop); given by the loop points which are already included
-	// TODO?: startParams.maxDistance = script->maxDistance;
+
 	startParams.set_referenceDistance(script->atten * ep->radiusMultiplier);
 	startParams.set_rolloff(script->rolloff);
 	startParams.set_airAbsorption(script->airAbsorption);
 	startParams.set_relative(script->is2d);
 	startParams.set_position(ep->origin);
 	startParams.set_channel((ep->channelType != CHAN_INVALID) ? ep->channelType : script->channelType);
-	startParams.set_releaseOnStop(true);
 	startParams.set_state(IEqAudioSource::PLAYING);
+	startParams.set_releaseOnStop(true);
 
 	ep->channelType = (ESoundChannelType)startParams.channel;
 
+	const float randPitch = (ep->flags & EMITSOUND_FLAG_RANDOM_PITCH) ? RandomFloat(-0.05f, 0.05f) : 0.0f;
+
+	edata->virtualParams = edata->startParams;
+	edata->virtualParams.set_volume(edata->startParams.volume * ep->volume);
+	edata->virtualParams.set_pitch(edata->startParams.pitch * ep->pitch + randPitch);
 	edata->script = script;
 	edata->soundingObj = soundingObj;
 	edata->emitParams = *ep;
+
+	if (soundingObj && ep->channelType != CHAN_INVALID)
+		++soundingObj->m_numChannelSounds[ep->channelType];
 
 	// try start sound
 	// TODO: EMITSOUND_FLAG_STARTSILENT handling here?
@@ -432,7 +633,7 @@ bool CSoundEmitterSystem::SwitchSourceState(SoundEmitterData* emit, bool isVirtu
 			return false;
 
 		// sound parameters to initialize SoundEmitter
-		const IEqAudioSource::Params& startParams = emit->sourceParams;
+		const IEqAudioSource::Params& virtualParams = emit->virtualParams;
 
 		IEqAudioSource* sndSource;
 
@@ -446,26 +647,26 @@ bool CSoundEmitterSystem::SwitchSourceState(SoundEmitterData* emit, bool isVirtu
 		{
 			// no sounding object
 			// set looping sound to self destruct when outside max distance
-			sndSource->Setup(startParams.channel, bestSample, emit->script->loop ? LoopSourceUpdateCallback : nullptr, const_cast<soundScriptDesc_t*>(emit->script));
+			sndSource->Setup(virtualParams.channel, bestSample, emit->script->loop ? LoopSourceUpdateCallback : nullptr, const_cast<soundScriptDesc_t*>(emit->script));
 		}
 		else
 		{
-			sndSource->Setup(startParams.channel, bestSample, EmitterUpdateCallback, emit);
+			sndSource->Setup(virtualParams.channel, bestSample, EmitterUpdateCallback, emit);
 		}
 
 		// start sound
-		sndSource->UpdateParams(startParams, 0);
+		sndSource->UpdateParams(virtualParams);
 
-		if (emitsound_debug.GetBool())
+		if (snd_scriptsound_debug.GetBool())
 		{
-			const float boxsize = startParams.referenceDistance;
+			const float boxsize = virtualParams.referenceDistance;
 
 			DbgBox()
-				.CenterSize(startParams.position, boxsize)
+				.CenterSize(virtualParams.position, boxsize)
 				.Color(color_white)
 				.Time(1.0f);
 
-			MsgInfo("started sound '%s' ref=%g max=%g\n", emit->script->name.ToCString(), startParams.referenceDistance);
+			MsgInfo("started sound '%s' ref=%g max=%g\n", emit->script->name.ToCString(), virtualParams.referenceDistance);
 		}
 
 		return true;
@@ -504,11 +705,11 @@ void CSoundEmitterSystem::StopAllEmitters()
 int CSoundEmitterSystem::EmitterUpdateCallback(void* obj, IEqAudioSource::Params& params)
 {
 	SoundEmitterData* emitter = (SoundEmitterData*)obj;
-	const IEqAudioSource::Params& startParams = emitter->sourceParams;
+	const IEqAudioSource::Params& virtualParams = emitter->virtualParams;
 	const soundScriptDesc_t* script = emitter->script;
 	const CSoundingObject* soundingObj = emitter->soundingObj;
 
-	params.set_volume(startParams.volume * soundingObj->GetSoundVolumeScale());
+	params.set_volume(virtualParams.volume * soundingObj->GetSoundVolumeScale());
 
 	if (!params.relative)
 	{
@@ -572,39 +773,9 @@ void CSoundEmitterSystem::Update(float pitchScale, bool force)
 		for (auto it = m_soundingObjects.begin(); it != m_soundingObjects.end(); ++it)
 		{
 			CSoundingObject* obj = it.key();
-			if (!obj->m_emitters.numElem())
+
+			if(!obj->UpdateEmitters(listenerPos))
 				m_soundingObjects.remove(it);
-
-			// update emitters manually if they are in virtual state
-			Array<SoundEmitterData*>& emitters = obj->m_emitters;
-			for (int i = 0; i < emitters.numElem(); ++i)
-			{
-				if (emitters[i]->soundSource != nullptr)
-					continue;
-
-				IEqAudioSource::Params& params = emitters[i]->sourceParams;
-				const soundScriptDesc_t* script = emitters[i]->script;
-
-				if (script->loop)
-				{
-					const float distToSound = lengthSqr(params.position - listenerPos);
-					const float maxDistSqr = M_SQR(script->maxDistance);
-
-					// switch emitter between virtual and real here
-					g_sounds->SwitchSourceState(emitters[i], distToSound > maxDistSqr);
-				}
-				else
-				{
-					const int chanType = emitters[i]->emitParams.channelType;
-
-					delete emitters[i];
-					emitters.fastRemoveIndex(i--);
-					
-					if(chanType != CHAN_INVALID)
-						--obj->m_numChannelSounds[chanType];
-				}
-
-			}
 		}
 	}
 
