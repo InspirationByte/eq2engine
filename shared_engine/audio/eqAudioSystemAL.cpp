@@ -354,7 +354,7 @@ void CEqAudioSystemAL::StopAllSounds(int chanId /*= -1*/, void* callbackObject /
 	// suspend all sources
 	for (int i = 0; i < m_sources.numElem(); i++)
 	{
-		CEqAudioSourceAL* source = (CEqAudioSourceAL*)m_sources[i].Ptr();
+		CEqAudioSourceAL* source = m_sources[i].Ptr();
 		if (chanId == -1 || source->m_channel == chanId && source->m_callbackObject == callbackObject)
 		{
 			source->m_forceStop = true;
@@ -497,7 +497,7 @@ void CEqAudioSystemAL::SuspendSourcesWithSample(ISoundSource* sample)
 {
 	for (int i = 0; i < m_sources.numElem(); i++)
 	{
-		CEqAudioSourceAL* src = (CEqAudioSourceAL*)m_sources[i].Ptr();
+		CEqAudioSourceAL* src = m_sources[i].Ptr();
 
 		if (src->m_sample == sample)
 		{
@@ -511,7 +511,7 @@ void CEqAudioSystemAL::Update()
 {
 	for (int i = 0; i < m_sources.numElem(); i++)
 	{
-		CEqAudioSourceAL* src = (CEqAudioSourceAL*)m_sources[i].Ptr();
+		CEqAudioSourceAL* src = m_sources[i].Ptr();
 
 		if (src->m_forceStop)
 		{

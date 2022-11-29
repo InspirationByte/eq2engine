@@ -100,17 +100,6 @@ void InitSoundSystem( EQWNDHANDLE wnd )
 
 	{
 		KVSection soundSec;
-		soundSec.SetName("test.cuetest");
-		soundSec.SetKey("is2d", true);
-		soundSec.SetKey("loop", false);
-		soundSec.SetKey("wave", "SoundTest/CueTest.wav");
-		soundSec.SetKey("channel", "CHAN_STREAM");
-		g_sounds->CreateSoundScript(&soundSec);
-		g_sounds->PrecacheSound(soundSec.GetName());
-	}
-
-	{
-		KVSection soundSec;
 		soundSec.SetName("test.streaming_stereo_wav");
 		soundSec.SetKey("wave", "SoundTest/StreamingStereo.wav");
 		soundSec.SetKey("is2d", true);
@@ -158,6 +147,17 @@ void InitSoundSystem( EQWNDHANDLE wnd )
 		soundSec.SetName("test.static");
 		soundSec.SetKey("wave", "SoundTest/StaticTest.wav");
 		soundSec.SetKey("channel", "CHAN_STATIC");
+		g_sounds->CreateSoundScript(&soundSec);
+		g_sounds->PrecacheSound(soundSec.GetName());
+	}
+
+	{
+		KVSection soundSec;
+		soundSec.SetName("test.cuetest");
+		soundSec.SetKey("is2d", true);
+		soundSec.SetKey("loop", false);
+		soundSec.SetKey("wave", "SoundTest/CueTest.wav");
+		soundSec.SetKey("channel", "CHAN_STREAM");
 		g_sounds->CreateSoundScript(&soundSec);
 		g_sounds->PrecacheSound(soundSec.GetName());
 	}
@@ -581,27 +581,6 @@ void CMainWindow::OnSize(wxSizeEvent& event)
 	m_bDoRefresh = true;
 }
 
-void GR_BuildViewMatrices(int width, int height, int nRenderFlags)
-{
-	Vector3D vRadianRotation = VDEG2RAD(g_pCameraParams.GetAngles());
-
-	// this is negated matrix
-	Matrix4x4 projMatrix;
-
-	g_mProjMat	= perspectiveMatrixY(DEG2RAD(g_pCameraParams.GetFOV()), width, height, 1, 1000);
-
-	g_mViewMat = rotateZXY4(-vRadianRotation.x,-vRadianRotation.y,-vRadianRotation.z);
-	g_mViewMat.translate(-g_pCameraParams.GetOrigin());
-
-	// store the viewprojection matrix for some purposes
-	Matrix4x4 viewProj = g_mProjMat * g_mViewMat;
-
-	materials->SetMatrix(MATRIXMODE_PROJECTION, g_mProjMat);
-	materials->SetMatrix(MATRIXMODE_VIEW, g_mViewMat);
-
-	g_viewFrustum.LoadAsFrustum(viewProj);
-}
-
 void ShowFPS()
 {
 	// FPS status
@@ -653,10 +632,7 @@ void CMainWindow::ReDraw()
 
 	if(m_bDoRefresh)
 	{
-
-
 		materials->SetDeviceBackbufferSize(w,h);
-
 		m_bDoRefresh = false;
 	}
 
@@ -668,6 +644,10 @@ void CMainWindow::ReDraw()
 	// make 120 FPS
 	if (g_frametime < 1.0f / 120.0f)
 		return;
+
+	static float totalTime = 0.0f;
+	totalTime += g_frametime;
+	g_musicObject.SetSoundVolumeScale(sinf(totalTime));
  
 	g_pShaderAPI->SetViewport(0, 0, w,h);
 
@@ -702,8 +682,6 @@ void CMainWindow::ReDraw()
 
 		g_mViewMat = rotateZXY4(DEG2RAD(-g_pCameraParams.GetAngles().x),DEG2RAD(-g_pCameraParams.GetAngles().y),DEG2RAD(-g_pCameraParams.GetAngles().z));
 		g_mViewMat.translate(-g_pCameraParams.GetOrigin());
-
-		//GR_BuildViewMatrices(w,h, nRenderFlags);
 
 		materials->SetMatrix(MATRIXMODE_PROJECTION, g_mProjMat);
 		materials->SetMatrix(MATRIXMODE_VIEW, g_mViewMat);

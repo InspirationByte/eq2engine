@@ -352,7 +352,7 @@ int CSoundEmitterSystem::EmitSound(EmitParams* ep)
 	g_audioSystem->GetListener(listenerPos, listenerVel);
 
 	const float distToSound = length(ep->origin - listenerPos);
-	const bool isAudibleToStart = distToSound < script->maxDistance;
+	const bool isAudibleToStart = script->is2d || (distToSound < script->maxDistance);
 
 	if (!isAudibleToStart && !script->loop)
 	{
@@ -504,16 +504,23 @@ void CSoundEmitterSystem::StopAllEmitters()
 int CSoundEmitterSystem::EmitterUpdateCallback(void* obj, IEqAudioSource::Params& params)
 {
 	SoundEmitterData* emitter = (SoundEmitterData*)obj;
+	const IEqAudioSource::Params& startParams = emitter->sourceParams;
 	const soundScriptDesc_t* script = emitter->script;
+	const CSoundingObject* soundingObj = emitter->soundingObj;
 
-	Vector3D listenerPos, listenerVel;
-	g_audioSystem->GetListener(listenerPos, listenerVel);
+	params.set_volume(startParams.volume * soundingObj->GetSoundVolumeScale());
 
-	const float distToSound = lengthSqr(params.position - listenerPos);
-	const float maxDistSqr = M_SQR(script->maxDistance);
+	if (!params.relative)
+	{
+		Vector3D listenerPos, listenerVel;
+		g_audioSystem->GetListener(listenerPos, listenerVel);
 
-	// switch emitter between virtual and real here
-	g_sounds->SwitchSourceState(emitter, distToSound > maxDistSqr);
+		const float distToSound = lengthSqr(params.position - listenerPos);
+		const float maxDistSqr = M_SQR(script->maxDistance);
+
+		// switch emitter between virtual and real here
+		g_sounds->SwitchSourceState(emitter, distToSound > maxDistSqr);
+	}
 
 	return 0;
 }

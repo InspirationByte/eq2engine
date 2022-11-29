@@ -111,13 +111,12 @@ public:
 	CSoundingObject();
 	virtual ~CSoundingObject();
 
-	// emit sound with parameters
 	void		EmitSound(EmitParams* ep);
 
 	int			GetChannelSoundCount(ESoundChannelType chan);
 
-	void		SetSoundVolumeScale(float fScale) { m_volumeScale = fScale; }
-	float		GetSoundVolumeScale() const { return m_volumeScale; }
+	void		SetSoundVolumeScale(float fScale)	{ m_volumeScale = fScale; }
+	float		GetSoundVolumeScale() const			{ return m_volumeScale; }
 
 protected:
 	int			FirstEmitterIdxByChannelType(ESoundChannelType chan) const;
