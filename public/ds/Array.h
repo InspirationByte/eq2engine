@@ -528,12 +528,17 @@ inline void ArrayBase<T, STORAGE_TYPE>::resize( int newSize )
 // Resize to the exact size specified irregardless of granularity
 // -----------------------------------------------------------------
 template< typename T, typename STORAGE_TYPE >
-inline void ArrayBase<T, STORAGE_TYPE>::setNum( int newnum, bool bResize )
+inline void ArrayBase<T, STORAGE_TYPE>::setNum( int newnum, bool shrinkResize )
 {
 	ASSERT( newnum >= 0 );
 
-	if ( bResize || newnum > m_storage.getSize())
+	if (shrinkResize || newnum > m_storage.getSize())
 		resize( newnum );
+
+	// initialize new elements
+	T* listPtr = m_storage.getData();
+	for (int i = m_nNumElem; i < newnum; ++i)
+		new(&listPtr[i]) T();
 
 	m_nNumElem = newnum;
 }

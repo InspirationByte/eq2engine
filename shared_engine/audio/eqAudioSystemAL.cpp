@@ -184,6 +184,8 @@ void CEqAudioSystemAL::Init()
 	if (!InitContext())
 		return;
 
+	m_mixerChannels.setNum(EQSND_MIXER_CHANNELS);
+
 	InitEffects();
 
 	m_noSound = false;
