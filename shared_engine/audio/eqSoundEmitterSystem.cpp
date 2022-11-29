@@ -232,22 +232,9 @@ void CSoundingObject::StopEmitter(int uniqueId)
 
 void CSoundingObject::PauseEmitter(int uniqueId)
 {
-	auto it = m_emitters.find(uniqueId);
-	if (it == m_emitters.end())
-		return;
-
-	SoundEmitterData* emitter = *it;
-
-	// update virtual params
-	emitter->virtualParams.set_state(IEqAudioSource::PAUSED);
-
-	// update actual params
-	if (emitter->soundSource)
-	{
-		IEqAudioSource::Params param;
-		param.set_state(IEqAudioSource::PAUSED);
-		emitter->soundSource->UpdateParams(param);
-	}
+	IEqAudioSource::Params param;
+	param.set_state(IEqAudioSource::PAUSED);
+	SetParams(uniqueId, param);
 }
 
 void CSoundingObject::PlayEmitter(int uniqueId, bool rewind)
@@ -276,66 +263,23 @@ void CSoundingObject::PlayEmitter(int uniqueId, bool rewind)
 
 void CSoundingObject::StopLoop(int uniqueId)
 {
-	auto it = m_emitters.find(uniqueId);
-	if (it == m_emitters.end())
-		return;
-
-	SoundEmitterData* emitter = *it;
-
-	// update virtual params
-	emitter->virtualParams.set_looping(false);
-
-	// update actual params
-	if (emitter->soundSource)
-	{
-		IEqAudioSource::Params param;
-		param.set_looping(false);
-		param.set_releaseOnStop(true);
-
-		emitter->soundSource->UpdateParams(param);
-	}
+	IEqAudioSource::Params param;
+	param.set_looping(false);
+	SetParams(uniqueId, param);
 }
 
 void CSoundingObject::SetPosition(int uniqueId, const Vector3D& position)
 {
-	auto it = m_emitters.find(uniqueId);
-	if (it == m_emitters.end())
-		return;
-
-	SoundEmitterData* emitter = *it;
-
-	// update virtual params
-	emitter->virtualParams.set_position(position);
-
-	// update actual params
-	if (emitter->soundSource)
-	{
-		IEqAudioSource::Params param;
-		param.set_position(position);
-
-		emitter->soundSource->UpdateParams(param);
-	}
+	IEqAudioSource::Params param;
+	param.set_position(position);
+	SetParams(uniqueId, param);
 }
 
 void CSoundingObject::SetVelocity(int uniqueId, const Vector3D& velocity)
 {
-	auto it = m_emitters.find(uniqueId);
-	if (it == m_emitters.end())
-		return;
-
-	SoundEmitterData* emitter = *it;
-
-	// update virtual params
-	emitter->virtualParams.set_velocity(velocity);
-
-	// update actual params
-	if (emitter->soundSource)
-	{
-		IEqAudioSource::Params param;
-		param.set_velocity(velocity);
-
-		emitter->soundSource->UpdateParams(param);
-	}
+	IEqAudioSource::Params param;
+	param.set_velocity(velocity);
+	SetParams(uniqueId, param);
 }
 
 void CSoundingObject::SetPitch(int uniqueId, float pitch)
