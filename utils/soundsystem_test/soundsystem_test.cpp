@@ -76,7 +76,7 @@ static const char* s_loopingSoundNames[] = {
 	"test.streaming_stereo_ogg",
 	"test.sine_22",
 	"test.sine_44",
-	"test.silence"
+	"test.cuetest"
 };
 
 class CTestRandomObject : public CSoundingObject
@@ -97,6 +97,17 @@ void InitSoundSystem( EQWNDHANDLE wnd )
 
 	g_audioSystem->Init();
 	g_sounds->Init(120.0f);
+
+	{
+		KVSection soundSec;
+		soundSec.SetName("test.cuetest");
+		soundSec.SetKey("is2d", true);
+		soundSec.SetKey("loop", false);
+		soundSec.SetKey("wave", "SoundTest/CueTest.wav");
+		soundSec.SetKey("channel", "CHAN_STREAM");
+		g_sounds->CreateSoundScript(&soundSec);
+		g_sounds->PrecacheSound(soundSec.GetName());
+	}
 
 	{
 		KVSection soundSec;

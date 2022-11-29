@@ -9,10 +9,6 @@
 
 #define RIFF_ID				MCHAR4('R','I','F','F')
 #define WAVE_ID				MCHAR4('W','A','V','E')
-#define CHUNK_FMT			MCHAR4('f','m','t',' ')
-#define CHUNK_CUE			MCHAR4('c','u','e',' ')
-#define CHUNK_DATA			MCHAR4('d','a','t','a')
-#define CHUNK_SAMPLE		MCHAR4('s','m','p','l')
 
 // RIFF WAVE FILE HEADERS
 typedef struct
@@ -27,49 +23,6 @@ typedef struct
 	int		Id;
 	int		Size;
 } RIFFchunk_t;
-
-typedef struct // CHUNK_FMT
-{
-	ushort Format;
-	ushort Channels;
-	uint   SamplesPerSec;
-	uint   BytesPerSec;
-	ushort BlockAlign;
-	ushort BitsPerSample;
-} wavfmthdr_t;
-
-typedef struct // CHUNK_SAMPLE
-{
-	uint   Manufacturer;
-	uint   Product;
-	uint   SamplePeriod;
-	uint   Note;
-	uint   FineTune;
-	uint   SMPTEFormat;
-	uint   SMPTEOffest;
-	uint   Loops;
-	uint   SamplerData;
-
-	struct
-	{
-		uint Identifier;
-		uint Type;
-		uint Start;
-		uint End;
-		uint Fraction;
-		uint Count;
-	}Loop[1];
-}wavsamplehdr_t;
-
-typedef struct // CHUNK_CUE
-{
-	uint Name;
-	uint Position;
-	uint fccChunk;
-	uint ChunkStart;
-	uint BlockStart;
-	uint SampleOffset;
-} wavcuehdr_t;
 
 //-----------------------------------------------------------
 
@@ -87,6 +40,8 @@ public:
 
 	int             GetPos();
 	int             SetPos(int pos);
+
+	int				SkipData(int size);
 
 	int				ReadChunk(void* dest, int maxLen = -1);
 	int				ReadData(void* dest, int len);

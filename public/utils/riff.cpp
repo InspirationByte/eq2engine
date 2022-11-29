@@ -9,6 +9,8 @@
 #include "core/IFileSystem.h"
 #include "riff.h"
 
+#pragma optimize("", off)
+
 CRIFF_Parser::CRIFF_Parser(const char* szFilename)
 {
 	m_file = g_fileSystem->Open(szFilename, "rb");
@@ -101,16 +103,6 @@ int CRIFF_Parser::ReadChunk(void* pOutput, int maxLen)
 		numToRead = maxLen;
 
 	const int readCount = ReadData(pOutput, numToRead);
-	/*
-	numToRead -= readCount;
-
-	if (numToRead < m_curChunk.Size)
-	{
-		m_pos += m_curChunk.Size - numToRead;
-
-		if (m_file)
-			fseek(m_file, m_curChunk.Size - numToRead, SEEK_CUR);
-	}*/
 
 	return readCount;
 }
@@ -120,7 +112,7 @@ int CRIFF_Parser::ReadData(void* dest, int len)
 	if (!m_stream)
 		return 0;
 
-	return m_stream->Read(dest, 1, len);
+	return m_stream->Read(dest, len, 1);
 }
 
 int CRIFF_Parser::ReadInt()
@@ -141,6 +133,14 @@ int CRIFF_Parser::SetPos(int pos)
 		return 0;
 
 	return m_stream->Seek(pos, VS_SEEK_SET);
+}
+
+int CRIFF_Parser::SkipData(int size)
+{
+	if (!m_stream)
+		return 0;
+
+	return m_stream->Seek(size, VS_SEEK_CUR);
 }
 
 uint CRIFF_Parser::GetName()

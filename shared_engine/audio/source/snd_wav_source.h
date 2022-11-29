@@ -12,6 +12,8 @@ class CRIFF_Parser;
 
 //---------------------------------------------------------------------
 
+
+
 class CSoundSource_Wave : public ISoundSource
 {
 public:
@@ -28,6 +30,7 @@ protected:
 	virtual void			ParseFormat(CRIFF_Parser &chunk);
 	virtual void			ParseCue(CRIFF_Parser &chunk);
 	virtual void			ParseSample(CRIFF_Parser &chunk);
+	virtual void			ParseList(CRIFF_Parser& chunk);
 	virtual void			ParseData(CRIFF_Parser &chunk) = 0;
 
 	Format					m_format;
