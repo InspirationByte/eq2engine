@@ -94,10 +94,10 @@ public:
 
 private:
 	bool			ChunkSet();
-	int				m_pos;
+
+	CMemoryStream	m_riffMem;
+	IFile*			m_file{ nullptr };
+	IVirtualStream* m_stream{ nullptr };
 
 	RIFFchunk_t		m_curChunk;
-
-	IVirtualStream*	m_riff;
-	ubyte*			m_riffData;
 };
