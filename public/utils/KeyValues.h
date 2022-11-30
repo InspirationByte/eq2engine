@@ -204,6 +204,9 @@ struct KVSection
 	KVSection*				operator[](const char* pszName);
 	KVPairValue*			operator[](int index);
 
+	const KVSection*		operator[](const char* pszName) const;
+	const KVPairValue*		operator[](int index) const;
+
 
 	//----------------------------------------------
 
@@ -275,35 +278,35 @@ KVSection*		KV_ParseSection(const char* pszBuffer, int bufferSize, const char* p
 KVSection*		KV_ReadBinaryBase(IVirtualStream* stream, KVSection* pParseTo = nullptr);
 KVSection*		KV_ParseBinary(const char* pszBuffer, int bufferSize, KVSection* pParseTo = nullptr);
 
-void			KV_PrintSection(KVSection* base);
+void			KV_PrintSection(const KVSection* base);
 
-void			KV_WriteToStream(IVirtualStream* outStream, KVSection* section, int nTabs = 0, bool pretty = true);
-void			KV_WriteToStreamV3(IVirtualStream* outStream, KVSection* section, int nTabs = 0, bool pretty = true);
+void			KV_WriteToStream(IVirtualStream* outStream, const KVSection* section, int nTabs = 0, bool pretty = true);
+void			KV_WriteToStreamV3(IVirtualStream* outStream, const KVSection* section, int nTabs = 0, bool pretty = true);
 
-void			KV_WriteToStreamBinary(IVirtualStream* outStream, KVSection* base);
+void			KV_WriteToStreamBinary(IVirtualStream* outStream, const KVSection* base);
 
 //-----------------------------------------------------------------------------------------------------
 // KeyValues value helpers
 //-----------------------------------------------------------------------------------------------------
 
-const char*			KV_GetValueString( KVSection* pBase, int nIndex = 0, const char* pszDefault = "" );
-int					KV_GetValueInt( KVSection* pBase, int nIndex = 0, int nDefault = 0 );
-float				KV_GetValueFloat( KVSection* pBase, int nIndex = 0, float fDefault = 0.0f );
-bool				KV_GetValueBool( KVSection* pBase, int nIndex = 0, bool bDefault = false );
-Vector2D			KV_GetVector2D( KVSection* pBase, int nIndex = 0, const Vector2D& vDefault = vec2_zero);
-IVector2D			KV_GetIVector2D( KVSection* pBase, int nIndex = 0, const IVector2D& vDefault = 0);
-Vector3D			KV_GetVector3D( KVSection* pBase, int nIndex = 0, const Vector3D& vDefault = vec3_zero);
-Vector4D			KV_GetVector4D( KVSection* pBase, int nIndex = 0, const Vector4D& vDefault = vec4_zero);
+const char*			KV_GetValueString( const KVSection* pBase, int nIndex = 0, const char* pszDefault = "" );
+int					KV_GetValueInt(const KVSection* pBase, int nIndex = 0, int nDefault = 0 );
+float				KV_GetValueFloat(const KVSection* pBase, int nIndex = 0, float fDefault = 0.0f );
+bool				KV_GetValueBool(const KVSection* pBase, int nIndex = 0, bool bDefault = false );
+Vector2D			KV_GetVector2D(const KVSection* pBase, int nIndex = 0, const Vector2D& vDefault = vec2_zero);
+IVector2D			KV_GetIVector2D(const KVSection* pBase, int nIndex = 0, const IVector2D& vDefault = 0);
+Vector3D			KV_GetVector3D(const KVSection* pBase, int nIndex = 0, const Vector3D& vDefault = vec3_zero);
+Vector4D			KV_GetVector4D(const KVSection* pBase, int nIndex = 0, const Vector4D& vDefault = vec4_zero);
 
 // new
-inline const char*	KV_GetValue( KVSection* pBase, int nIndex = 0, const char* pszDefault = "" )				{return KV_GetValueString(pBase, nIndex, pszDefault);}
-inline int			KV_GetValue( KVSection* pBase, int nIndex = 0, int nDefault = 0 )							{return KV_GetValueInt(pBase, nIndex, nDefault);}
-inline float		KV_GetValue( KVSection* pBase, int nIndex = 0, float fDefault = 0.0f )					{return KV_GetValueFloat(pBase, nIndex, fDefault);}
-inline bool			KV_GetValue( KVSection* pBase, int nIndex = 0, bool bDefault = false )					{return KV_GetValueBool(pBase, nIndex, bDefault);}
-inline Vector2D		KV_GetValue( KVSection* pBase, int nIndex = 0, const Vector2D& vDefault = vec2_zero)		{return KV_GetVector2D(pBase, nIndex, vDefault);}
-inline IVector2D	KV_GetValue( KVSection* pBase, int nIndex = 0, const IVector2D& vDefault = 0)				{return KV_GetIVector2D(pBase, nIndex, vDefault);}
-inline Vector3D		KV_GetValue( KVSection* pBase, int nIndex = 0, const Vector3D& vDefault = vec3_zero)		{return KV_GetVector3D(pBase, nIndex, vDefault);}
-inline Vector4D		KV_GetValue( KVSection* pBase, int nIndex = 0, const Vector4D& vDefault = vec4_zero)		{return KV_GetVector4D(pBase, nIndex, vDefault);}
+inline const char*	KV_GetValue( const KVSection* pBase, int nIndex = 0, const char* pszDefault = "" )				{return KV_GetValueString(pBase, nIndex, pszDefault);}
+inline int			KV_GetValue( const KVSection* pBase, int nIndex = 0, int nDefault = 0 )							{return KV_GetValueInt(pBase, nIndex, nDefault);}
+inline float		KV_GetValue( const KVSection* pBase, int nIndex = 0, float fDefault = 0.0f )					{return KV_GetValueFloat(pBase, nIndex, fDefault);}
+inline bool			KV_GetValue( const KVSection* pBase, int nIndex = 0, bool bDefault = false )					{return KV_GetValueBool(pBase, nIndex, bDefault);}
+inline Vector2D		KV_GetValue( const KVSection* pBase, int nIndex = 0, const Vector2D& vDefault = vec2_zero)		{return KV_GetVector2D(pBase, nIndex, vDefault);}
+inline IVector2D	KV_GetValue( const KVSection* pBase, int nIndex = 0, const IVector2D& vDefault = 0)				{return KV_GetIVector2D(pBase, nIndex, vDefault);}
+inline Vector3D		KV_GetValue( const KVSection* pBase, int nIndex = 0, const Vector3D& vDefault = vec3_zero)		{return KV_GetVector3D(pBase, nIndex, vDefault);}
+inline Vector4D		KV_GetValue( const KVSection* pBase, int nIndex = 0, const Vector4D& vDefault = vec4_zero)		{return KV_GetVector4D(pBase, nIndex, vDefault);}
 
 inline const char*	KVSection::GetValue( int nIndex, const char* pszDefault )					{return KV_GetValueString(this, nIndex, pszDefault);}
 inline int			KVSection::GetValue( int nIndex, int nDefault )							{return KV_GetValueInt(this, nIndex, nDefault);}

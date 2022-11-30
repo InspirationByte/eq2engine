@@ -325,7 +325,15 @@ KVPairValue* KVSection::operator[](int index)
 	return values[index]; 
 }
 
+const KVSection* KVSection::operator[](const char* pszName) const
+{
+	return FindSection(pszName);
+}
 
+const KVPairValue* KVSection::operator[](int index) const
+{
+	return values[index];
+}
 
 //-----------------------------------------------------------------------------------------
 
@@ -1972,10 +1980,10 @@ KVSection* KV_ReadBinaryBase(IVirtualStream* stream, KVSection* pParseTo)
 	return pParseTo;
 }
 
-void KV_WriteToStreamBinary(IVirtualStream* outStream, KVSection* base);
+void KV_WriteToStreamBinary(IVirtualStream* outStream, const KVSection* base);
 
 // writes KV value to the binary stream
-void KV_WriteValueBinary(IVirtualStream* outStream, KVPairValue* value)
+void KV_WriteValueBinary(IVirtualStream* outStream, const KVPairValue* value)
 {
 	kvbinvalue_t binValue;
 	binValue.type = value->type;
@@ -2013,7 +2021,7 @@ void KV_WriteValueBinary(IVirtualStream* outStream, KVPairValue* value)
 }
 
 // writes keybase to the binary stream
-void KV_WriteToStreamBinary(IVirtualStream* outStream, KVSection* base)
+void KV_WriteToStreamBinary(IVirtualStream* outStream, const KVSection* base)
 {
 	kvbinbase_s binBase;
 	memset(&binBase, 0, sizeof(binBase));
@@ -2162,12 +2170,12 @@ static void KV_PreProcessStringValue( char* out, const char* pszStr )
 
 //-----------------------------------------------------------------------------------------------------
 
-void KV_WriteToStreamV3(IVirtualStream* outStream, KVSection* section, int nTabs, bool pretty);
+void KV_WriteToStreamV3(IVirtualStream* outStream, const KVSection* section, int nTabs, bool pretty);
 
 //
 // Writes the pair value
 //
-void KV_WritePairValue(IVirtualStream* out, KVPairValue* val, int depth)
+void KV_WritePairValue(IVirtualStream* out, const KVPairValue* val, int depth)
 {
 	// write typed data
 	if(val->type == KVPAIR_STRING)
@@ -2209,7 +2217,7 @@ void KV_WritePairValue(IVirtualStream* out, KVPairValue* val, int depth)
 //
 // Writes the pairbase recursively to the virtual stream
 //
-void KV_WriteToStream(IVirtualStream* outStream, KVSection* section, int nTabs, bool pretty)
+void KV_WriteToStream(IVirtualStream* outStream, const KVSection* section, int nTabs, bool pretty)
 {
 	char* tabs = (char*)stackalloc(nTabs);
 	memset(tabs, 0, nTabs);
@@ -2279,7 +2287,7 @@ void KV_WriteToStream(IVirtualStream* outStream, KVSection* section, int nTabs, 
 //
 // Writes the pairbase values
 //
-void KV_WriteValueV3( IVirtualStream* outStream, KVSection* key, int nTabs)
+void KV_WriteValueV3( IVirtualStream* outStream, const KVSection* key, int nTabs)
 {
 	int numValues = key->values.numElem();
 	bool isValueArray = numValues > 1;
@@ -2308,7 +2316,7 @@ void KV_WriteValueV3( IVirtualStream* outStream, KVSection* key, int nTabs)
 //
 // Writes the pairbase recursively to the virtual stream
 //
-void KV_WriteToStreamV3(IVirtualStream* outStream, KVSection* section, int nTabs, bool pretty)
+void KV_WriteToStreamV3(IVirtualStream* outStream, const KVSection* section, int nTabs, bool pretty)
 {
 	char* tabs = (char*)stackalloc(nTabs);
 	memset(tabs, 0, nTabs);
@@ -2370,7 +2378,7 @@ void KV_WriteToStreamV3(IVirtualStream* outStream, KVSection* section, int nTabs
 //
 // Prints the pairbase to console
 //
-void KV_PrintSection(KVSection* base)
+void KV_PrintSection(const KVSection* base)
 {
 	CMemoryStream stream(nullptr, VS_OPEN_WRITE, 2048);
 	KV_WriteToStream(&stream, base, 0, true);
@@ -2388,7 +2396,7 @@ void KV_PrintSection(KVSection* base)
 //
 // Returns the string value of pairbase
 //
-const char* KV_GetValueString( KVSection* pBase, int nIndex, const char* pszDefault )
+const char* KV_GetValueString(const KVSection* pBase, int nIndex, const char* pszDefault )
 {
 	if(!pBase || pBase && !pBase->values.inRange(nIndex))
 		return pszDefault;
@@ -2401,7 +2409,7 @@ const char* KV_GetValueString( KVSection* pBase, int nIndex, const char* pszDefa
 // Returns integer value
 // Converts the best precise value if type differs
 //
-int	KV_GetValueInt( KVSection* pBase, int nIndex, int nDefault )
+int	KV_GetValueInt(const KVSection* pBase, int nIndex, int nDefault )
 {
 	if(!pBase || pBase && !pBase->values.inRange(nIndex))
 		return nDefault;
@@ -2413,7 +2421,7 @@ int	KV_GetValueInt( KVSection* pBase, int nIndex, int nDefault )
 // Returns float value
 // Converts the best precise value if type differs
 //
-float KV_GetValueFloat( KVSection* pBase, int nIndex, float fDefault )
+float KV_GetValueFloat(const KVSection* pBase, int nIndex, float fDefault )
 {
 	if(!pBase || pBase && !pBase->values.inRange(nIndex))
 		return fDefault;
@@ -2425,7 +2433,7 @@ float KV_GetValueFloat( KVSection* pBase, int nIndex, float fDefault )
 // Returns boolean value
 // Converts the best precise value if type differs
 //
-bool KV_GetValueBool( KVSection* pBase, int nIndex, bool bDefault)
+bool KV_GetValueBool(const KVSection* pBase, int nIndex, bool bDefault)
 {
 	if(!pBase || pBase && !pBase->values.inRange(nIndex))
 		return bDefault;
@@ -2436,7 +2444,7 @@ bool KV_GetValueBool( KVSection* pBase, int nIndex, bool bDefault)
 //
 // Returns Vector2D value
 //
-Vector2D KV_GetVector2D( KVSection* pBase, int nIndex, const Vector2D& vDefault)
+Vector2D KV_GetVector2D(const KVSection* pBase, int nIndex, const Vector2D& vDefault)
 {
 	Vector2D retVal = vDefault;
 	retVal.x = KV_GetValueFloat(pBase, nIndex, vDefault.x);
@@ -2448,7 +2456,7 @@ Vector2D KV_GetVector2D( KVSection* pBase, int nIndex, const Vector2D& vDefault)
 //
 // Returns IVector2D value
 //
-IVector2D KV_GetIVector2D( KVSection* pBase, int nIndex, const IVector2D& vDefault)
+IVector2D KV_GetIVector2D(const KVSection* pBase, int nIndex, const IVector2D& vDefault)
 {
 	IVector2D retVal = vDefault;
 	retVal.x = KV_GetValueInt(pBase, nIndex, vDefault.x);
@@ -2460,7 +2468,7 @@ IVector2D KV_GetIVector2D( KVSection* pBase, int nIndex, const IVector2D& vDefau
 //
 // Returns Vector3D value
 //
-Vector3D KV_GetVector3D( KVSection* pBase, int nIndex, const Vector3D& vDefault)
+Vector3D KV_GetVector3D(const KVSection* pBase, int nIndex, const Vector3D& vDefault)
 {
 	Vector3D retVal = vDefault;
 	retVal.x = KV_GetValueFloat(pBase, nIndex, vDefault.x);
@@ -2473,7 +2481,7 @@ Vector3D KV_GetVector3D( KVSection* pBase, int nIndex, const Vector3D& vDefault)
 //
 // Returns Vector4D value
 //
-Vector4D KV_GetVector4D( KVSection* pBase, int nIndex, const Vector4D& vDefault)
+Vector4D KV_GetVector4D(const KVSection* pBase, int nIndex, const Vector4D& vDefault)
 {
 	Vector4D retVal = vDefault;
 	retVal.x = KV_GetValueFloat(pBase, nIndex, vDefault.x);

@@ -48,9 +48,6 @@ public:
     template <typename F>
     EqFunction(F f)
     {
-        if (!f)
-            return;
-
         if (sizeof(f) <= BUFFER_SIZE && std::is_nothrow_move_constructible<F>::value) 
         {
             isSmall = true;
