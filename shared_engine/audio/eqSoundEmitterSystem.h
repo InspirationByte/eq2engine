@@ -7,6 +7,7 @@
 
 /*
 	TODO:
+		Sound source direction (for CSoundingObject only)
 		Spatial optimizations to query with less distance checks
 		Basic cue envelope control support for CSoundingObject
 */
@@ -15,7 +16,7 @@
 
 #include "audio/IEqAudioSystem.h"
 
-struct soundScriptDesc_t;
+struct SoundScriptDesc;
 struct SoundEmitterData;
 class CSoundingObject;
 
@@ -126,6 +127,7 @@ protected:
 
 	// sounds at channel counter
 	Map<int, SoundEmitterData*>	m_emitters{ PP_SL };
+
 	uint8						m_numChannelSounds[CHAN_COUNT]{ 0 };
 	float						m_volumeScale{ 1.0f };
 };
@@ -161,22 +163,21 @@ public:
 private:
 	int					EmitSound(EmitParams* emit, CSoundingObject* soundingObj, int objUniqueId);
 
-	soundScriptDesc_t*	FindSound(const char* soundName) const;
-	const ISoundSource*	GetBestSample(const soundScriptDesc_t* script, int sampleId = -1) const;
+	SoundScriptDesc*	FindSound(const char* soundName) const;
+	void				RemoveSoundingObject(CSoundingObject* obj);
 
 	static int			EmitterUpdateCallback(void* obj, IEqAudioSource::Params& params);
 	static int			LoopSourceUpdateCallback(void* obj, IEqAudioSource::Params& params);
 
 	bool				SwitchSourceState(SoundEmitterData* emit, bool isVirtual);
 
-	Map<int, soundScriptDesc_t*>	m_allSounds{ PP_SL };
+	Map<int, SoundScriptDesc*>		m_allSounds{ PP_SL };
 	Set<CSoundingObject*>			m_soundingObjects{ PP_SL };
 	Array<EmitParams>				m_pendingStartSounds{ PP_SL };
 
 	float							m_defaultMaxDistance{ 100.0f };
 
 	bool							m_isInit{ false };
-	bool							m_isPaused{ false };
 };
 
 extern CSoundEmitterSystem* g_sounds;

@@ -29,9 +29,6 @@
 #include "audio/IEqAudioSystem.h"
 #include "audio/eqSoundEmitterSystem.h"
 
-#pragma optimize("", off)
-
-
 #define APPLICATION_NAME		"SoundTest"
 #define LOCALIZED_FILE_PREFIX	"wxAppTest"
 
@@ -79,8 +76,8 @@ static const char* s_loopingSoundNames[] = {
 	"test.cuetest"
 };
 
-static CSoundingObject g_musicObject;
-static CSoundingObject g_testSoundObject;
+static CSoundingObject* g_musicObject = nullptr;
+static CSoundingObject* g_testSoundObject = nullptr;
 
 void InitSoundSystem( EQWNDHANDLE wnd )
 {
@@ -155,8 +152,11 @@ void InitSoundSystem( EQWNDHANDLE wnd )
 		g_sounds->PrecacheSound(soundSec.GetName());
 	}
 
+	g_musicObject = PPNew CSoundingObject();
+	g_testSoundObject = PPNew CSoundingObject();
+
 	EmitParams ep(s_loopingSoundNames[0]);
-	g_musicObject.EmitSound(StringToHash("music"), &ep);
+	g_musicObject->EmitSound(StringToHash("music"), &ep);
 }
 
 class CWXTemplateApplication: public wxApp
@@ -398,7 +398,7 @@ void CMainWindow::ProcessAllMenuCommands(wxCommandEvent& event)
 		int soundId = event.GetId()-Event_LoopSounds_Sound;
 
 		EmitParams ep(s_loopingSoundNames[soundId]);
-		g_musicObject.EmitSound(StringToHash("music"), &ep);
+		g_musicObject->EmitSound(StringToHash("music"), &ep);
 
 	}
 }
@@ -543,7 +543,7 @@ void CMainWindow::ProcessKeyboardUpEvents(wxKeyEvent& event)
 
 		EmitParams ep("test.static");
 		ep.origin = randomPos;
-		g_testSoundObject.EmitSound(-1, &ep);
+		g_testSoundObject->EmitSound(-1, &ep);
 
 		debugoverlay->Box3D(randomPos-1.0f, randomPos+1.0f, ColorRGBA(1,1,0,1), 1.0f);
 	}
@@ -640,7 +640,7 @@ void CMainWindow::ReDraw()
 
 	static float totalTime = 0.0f;
 	totalTime += g_frametime;
-	g_musicObject.SetSoundVolumeScale(max(sinf(totalTime), 0.25f));
+	g_musicObject->SetSoundVolumeScale(max(sinf(totalTime), 0.25f));
 
 	g_audioSystem->SetChannelVolume(CHAN_STREAM, 0.25f);
  
