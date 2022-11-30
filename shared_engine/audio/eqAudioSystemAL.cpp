@@ -18,6 +18,7 @@
 #include "eqAudioSystemAL.h"
 #include "source/snd_al_source.h"
 
+
 using namespace Threading;
 static CEqMutex s_audioSysMutex;
 
@@ -425,7 +426,7 @@ ISoundSource* CEqAudioSystemAL::LoadSample(const char* filename)
 	{
 		ISoundSource::Format* fmt = sampleSource->GetFormat();
 
-		if (fmt->dataFormat != 1 || fmt->bitwidth > 16)	// not PCM or 32 bit
+		if (fmt->dataFormat != ISoundSource::FORMAT_PCM || fmt->bitwidth > 16)	// not PCM or 32 bit
 		{
 			MsgWarning("Sound '%s' has unsupported format!\n", filename);
 			ISoundSource::DestroySound(sampleSource);
@@ -649,6 +650,20 @@ void CEqAudioSourceAL::UpdateParams(const Params& params, int mask)
 			alSource3i(thisSource, AL_AUXILIARY_SEND_FILTER, m_owner->m_effectSlots[params.effectSlot], 0, AL_FILTER_NULL);
 	}
 
+	// TODO: source orientation and cone angles (AL_ORIENTATION, AL_CONE_INNER_ANGLE, AL_CONE_OUTER_ANGLE)
+
+	// TODO: source radius with AL_SOURCE_RADIUS
+
+	// TODO: direct filters with AL_DIRECT_FILTER
+	//		filter is created per source with params like lowPass and highPass, in combination making bandPass
+	//		AL_FILTER_LOWPASS
+	//		AL_FILTER_HIGHPASS
+	//		AL_FILTER_BANDPASS
+	//		
+	//		alGenFilters(1, &filter);
+	//		alFilteri(filter, AL_FILTER_TYPE, AL_FILTER_LOWPASS);
+	//		alFilterf(filter, AL_LOWPASS_GAIN, 0.0f);
+
 	if (mask & UPDATE_RELATIVE)
 	{
 		const int tempValue = params.relative == true ? AL_TRUE : AL_FALSE;
@@ -791,6 +806,10 @@ void CEqAudioSourceAL::InitSource()
 	alSourcei(source, AL_AUXILIARY_SEND_FILTER_GAIN_AUTO, AL_TRUE);
 	alSourcef(source, AL_MAX_GAIN, 0.9f);
 	alSourcef(source, AL_DOPPLER_FACTOR, 1.0f);
+
+	// TODO: enable AL_SOURCE_SPATIALIZE_SOFT for non-relative sources by default
+	// TODO: add support mixing for different sources using AL_SOFT_callback_buffer ext
+
 	m_source = source;
 
 	// initialize buffers

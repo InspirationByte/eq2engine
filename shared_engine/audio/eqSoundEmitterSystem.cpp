@@ -157,7 +157,7 @@ CSoundingObject::~CSoundingObject()
 int CSoundingObject::EmitSound(int uniqueId, EmitParams* ep)
 {
 	if (uniqueId == -1)
-		uniqueId = RandomInt(0, INT_MAX);
+		uniqueId = RandomInt(0, StringHashMask);
 
 	const int channelType = g_sounds->EmitSound(ep, this, uniqueId);
 
