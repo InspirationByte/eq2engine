@@ -221,6 +221,7 @@ public:
 	// returns true if index is in range
 	bool			inRange(int index) const;
 
+
 	// returns number of elements in list
 	int				numElem() const;
 
@@ -1343,6 +1344,21 @@ public:
 	// returns a pointer to the list
 	T*				ptr() { return m_pListPtr; }
 
+	// returns true if index is in range
+	bool			inRange(int index) const { return index >= 0 && index < m_nNumElem; }
+
+	// returns front item
+	T&				front() { ASSERT(m_nNumElem > 0); return *m_pListPtr; }
+
+	// returns front item
+	const T&		front() const { ASSERT(m_nNumElem > 0); return *m_pListPtr; }
+
+	// returns back item
+	T&				back() { ASSERT(m_nNumElem > 0); return *m_pListPtr[m_nNumElem - 1]; }
+
+	// returns back item
+	const T&		back() const { ASSERT(m_nNumElem > 0); return *m_pListPtr[m_nNumElem - 1]; }
+
 protected:
 	T*				m_pListPtr;
 	const int		m_nNumElem;
@@ -1377,6 +1393,15 @@ public:
 
 	// returns a pointer to the list
 	const T*		ptr() const { return m_pListPtr; }
+
+	// returns true if index is in range
+	bool			inRange(int index) const { return index >= 0 && index < m_nNumElem; }
+
+	// returns front item
+	const T&		front() const { ASSERT(m_nNumElem > 0); return *m_pListPtr; }
+
+	// returns back item
+	const T&		back() const { ASSERT(m_nNumElem > 0); return *m_pListPtr[m_nNumElem - 1]; }
 
 protected:
 	const T*		m_pListPtr;
