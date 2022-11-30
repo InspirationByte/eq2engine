@@ -17,6 +17,8 @@
 
 static constexpr const char CORRECT_PATH_SEPARATOR_STR[2] = {CORRECT_PATH_SEPARATOR, '\0'};
 static constexpr const char INCORRECT_PATH_SEPARATOR_STR[2] = {INCORRECT_PATH_SEPARATOR, '\0'};
+static constexpr const int StringHashBits = 24;
+static constexpr const int StringHashMask = ((1 << StringHashBits) - 1);
 
 #ifdef PLAT_POSIX
 
@@ -123,7 +125,7 @@ wchar_t const* xwcsistr( wchar_t const* pStr, wchar_t const* pSearch );
 template<int idx>
 constexpr int _StringToHashConst(const char* str, int hash)
 {
-	return _StringToHashConst<idx-1>(str+1, (((hash << 5) | (hash >> 19)) + int(*str)) & 0xFFFFFF);
+	return _StringToHashConst<idx-1>(str+1, (((hash << 5) | (hash >> 19)) + int(*str)) & StringHashMask);
 }
 
 template<>

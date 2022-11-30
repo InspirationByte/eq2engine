@@ -150,7 +150,7 @@ void ExtractFileBase(const char* path, char* dest)
 }
 
 //------------------------------------------
-// Converts string to 32-bit integer hash
+// Converts string to 24-bit integer hash
 //------------------------------------------
 int StringToHash( const char *str, bool caseIns )
 {
@@ -163,7 +163,7 @@ int StringToHash( const char *str, bool caseIns )
 
 		int chr = caseIns ? tolower(*str) : *str;
 
-		hash = ((v0 | v1) + chr) & 0xFFFFFF;
+		hash = ((v0 | v1) + chr) & StringHashMask;
 	}
 
 	return hash;
