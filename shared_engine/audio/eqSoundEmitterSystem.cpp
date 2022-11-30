@@ -635,13 +635,13 @@ void CSoundEmitterSystem::StopAllSounds()
 
 void CSoundEmitterSystem::StopAllEmitters()
 {
+
+	ASSERT_FAIL("UNIMPLEMENTED");
+
 	CScopedMutex m(s_soundEmitterSystemMutex);
 
 	// remove pending sounds
 	m_pendingStartSounds.clear();
-
-	ASSERT_FAIL("UNIMPLEMENTED");
-
 	m_soundingObjects.clear();
 }
 
@@ -795,15 +795,16 @@ void CSoundEmitterSystem::CreateSoundScript(const KVSection* scriptSection)
 	newSound->extraStreaming = KV_GetValueBool(scriptSection->FindSection("streamed"), 0, false);
 	newSound->is2d = KV_GetValueBool(scriptSection->FindSection("is2d"), 0, false);
 
-	KVSection* pKey = scriptSection->FindSection("channel");
+	KVSection* chanKey = scriptSection->FindSection("channel");
 
-	if (pKey)
+	if (chanKey)
 	{
-		newSound->channelType = ChannelTypeByName(KV_GetValueString(pKey));
+		const char* chanName = KV_GetValueString(chanKey);
+		newSound->channelType = ChannelTypeByName(chanName);
 
 		if (newSound->channelType == CHAN_INVALID)
 		{
-			Msg("Invalid channel '%s' for sound %s\n", KV_GetValueString(pKey), newSound->name.ToCString());
+			Msg("Invalid channel '%s' for sound %s\n", chanName, newSound->name.ToCString());
 			newSound->channelType = CHAN_STATIC;
 		}
 	}
@@ -811,16 +812,16 @@ void CSoundEmitterSystem::CreateSoundScript(const KVSection* scriptSection)
 		newSound->channelType = CHAN_STATIC;
 
 	// pick 'rndwave' or 'wave' sections for lists
-	pKey = scriptSection->FindSection("rndwave", KV_FLAG_SECTION);
+	KVSection* waveKey = scriptSection->FindSection("rndwave", KV_FLAG_SECTION);
 
-	if (!pKey)
-		pKey = scriptSection->FindSection("wave", KV_FLAG_SECTION);
+	if (!waveKey)
+		waveKey = scriptSection->FindSection("wave", KV_FLAG_SECTION);
 
-	if (pKey)
+	if (waveKey)
 	{
-		for (int j = 0; j < pKey->keys.numElem(); j++)
+		for (int j = 0; j < waveKey->keys.numElem(); j++)
 		{
-			KVSection* ent = pKey->keys[j];
+			KVSection* ent = waveKey->keys[j];
 
 			if (stricmp(ent->name, "wave"))
 				continue;
@@ -830,10 +831,10 @@ void CSoundEmitterSystem::CreateSoundScript(const KVSection* scriptSection)
 	}
 	else
 	{
-		pKey = scriptSection->FindSection("wave");
+		waveKey = scriptSection->FindSection("wave");
 
-		if (pKey)
-			newSound->soundFileNames.append(KV_GetValueString(pKey));
+		if (waveKey)
+			newSound->soundFileNames.append(KV_GetValueString(waveKey));
 	}
 
 	if (newSound->soundFileNames.numElem() == 0)

@@ -79,15 +79,8 @@ static const char* s_loopingSoundNames[] = {
 	"test.cuetest"
 };
 
-class CTestRandomObject : public CSoundingObject
-{
-public:
-	// randomly flying object
-
-};
-
 static CSoundingObject g_musicObject;
-static CTestRandomObject g_testSoundObject;
+static CSoundingObject g_testSoundObject;
 
 void InitSoundSystem( EQWNDHANDLE wnd )
 {
@@ -648,6 +641,8 @@ void CMainWindow::ReDraw()
 	static float totalTime = 0.0f;
 	totalTime += g_frametime;
 	g_musicObject.SetSoundVolumeScale(max(sinf(totalTime), 0.25f));
+
+	g_audioSystem->SetChannelVolume(CHAN_STREAM, 0.25f);
  
 	g_pShaderAPI->SetViewport(0, 0, w,h);
 

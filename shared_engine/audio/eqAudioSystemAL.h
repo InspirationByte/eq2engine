@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright � Inspiration Byte
-// 2009-2020
+// Copyright © Inspiration Byte
+// 2009-2022
 //////////////////////////////////////////////////////////////////////////////////
 // Description: Equilibrium Engine Audio system
 //////////////////////////////////////////////////////////////////////////////////
@@ -87,7 +87,7 @@ private:
 
 	FixedArray<MixerChannel_t, EQSND_MIXER_CHANNELS>	m_mixerChannels;
 
-	ALuint									m_effectSlots[SOUND_EFX_SLOTS]{ 0 };
+	FixedArray<ALuint, EQSND_EFFECT_SLOTS>	m_effectSlots;
 	Array<CRefPtr<CEqAudioSourceAL>>		m_sources{ PP_SL };	// tracked sources
 	Map<int, ISoundSource*>					m_samples{ PP_SL };
 	Map<int, sndEffect_t>					m_effects{ PP_SL };

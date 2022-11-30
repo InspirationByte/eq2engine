@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////////////
 // Copyright © Inspiration Byte
-// 2009-2020
+// 2009-2022
 //////////////////////////////////////////////////////////////////////////////////
 // Description: Equilibrium Engine Audio system
 //////////////////////////////////////////////////////////////////////////////////
@@ -12,8 +12,8 @@
 class ISoundSource;
 typedef uint effectId_t;
 
-#define EFFECT_ID_NONE			(0)
-#define SOUND_EFX_SLOTS			(2)
+#define EFFECT_ID_NONE				(0)
+#define EQSND_EFFECT_SLOTS			(6)
 
 //-----------------------------------------------------------------
 // Audio source interface

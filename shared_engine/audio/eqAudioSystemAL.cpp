@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright � Inspiration Byte
-// 2009-2020
+// Copyright © Inspiration Byte
+// 2009-2022
 //////////////////////////////////////////////////////////////////////////////////
 // Description: Equilibrium Engine Audio system
 //////////////////////////////////////////////////////////////////////////////////
@@ -17,8 +17,6 @@
 
 #include "eqAudioSystemAL.h"
 #include "source/snd_al_source.h"
-
-#pragma optimize("", off)
 
 using namespace Threading;
 static CEqMutex s_audioSysMutex;
@@ -141,7 +139,7 @@ bool CEqAudioSystemAL::InitContext()
 	int al_context_params[] =
 	{
 		ALC_FREQUENCY, 44100,
-		ALC_MAX_AUXILIARY_SENDS, 4,
+		ALC_MAX_AUXILIARY_SENDS, EQSND_EFFECT_SLOTS,
 		//ALC_SYNC, ALC_TRUE,
 		//ALC_REFRESH, 120,
 		0
@@ -212,7 +210,12 @@ void CEqAudioSystemAL::InitEffects()
 
 	m_currEffect = nullptr;
 	m_currEffectSlotIdx = 0;
-	_alGenAuxiliaryEffectSlots(SOUND_EFX_SLOTS, m_effectSlots);
+
+	int maxEffectSlots = 0;
+	alcGetIntegerv(m_dev, ALC_MAX_AUXILIARY_SENDS, 1, &maxEffectSlots);
+	m_effectSlots.setNum(maxEffectSlots);
+
+	_alGenAuxiliaryEffectSlots(maxEffectSlots, m_effectSlots.ptr());
 
 	//
 	// Load effect presets from file
@@ -305,8 +308,8 @@ void CEqAudioSystemAL::DestroyEffects()
 	for (auto it = m_effects.begin(); it != m_effects.end(); ++it)
 		_alDeleteEffects(1, &it.value().nAlEffect);
 
-	_alDeleteAuxiliaryEffectSlots(2, m_effectSlots);
-
+	_alDeleteAuxiliaryEffectSlots(m_effectSlots.numElem(), m_effectSlots.ptr());
+	m_effectSlots.clear();
 	m_effects.clear();
 }
 
@@ -640,7 +643,7 @@ void CEqAudioSourceAL::UpdateParams(const Params& params, int mask)
 
 	if (mask & UPDATE_EFFECTSLOT)
 	{
-		if (params.effectSlot == -1)
+		if (params.effectSlot < 0)
 			alSource3i(thisSource, AL_AUXILIARY_SEND_FILTER, AL_EFFECTSLOT_NULL, 0, AL_FILTER_NULL);
 		else
 			alSource3i(thisSource, AL_AUXILIARY_SEND_FILTER, m_owner->m_effectSlots[params.effectSlot], 0, AL_FILTER_NULL);

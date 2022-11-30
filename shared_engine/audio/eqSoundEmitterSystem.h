@@ -7,8 +7,8 @@
 
 /*
 	TODO:
-		Sound controller interface specifics for DrvSyn
 		Spatial optimizations to query with less distance checks
+		Basic cue envelope control support for CSoundingObject
 */
 
 #pragma once
