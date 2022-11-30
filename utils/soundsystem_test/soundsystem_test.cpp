@@ -76,6 +76,7 @@ static const char* s_loopingSoundNames[] = {
 	"test.cuetest"
 };
 
+static constexpr const int s_musicNameId = StringToHashConst("music");
 static CSoundingObject* g_musicObject = nullptr;
 static CSoundingObject* g_testSoundObject = nullptr;
 
@@ -156,7 +157,7 @@ void InitSoundSystem( EQWNDHANDLE wnd )
 	g_testSoundObject = PPNew CSoundingObject();
 
 	EmitParams ep(s_loopingSoundNames[0]);
-	g_musicObject->EmitSound(StringToHash("music"), &ep);
+	g_musicObject->EmitSound(s_musicNameId, &ep);
 }
 
 class CWXTemplateApplication: public wxApp
@@ -398,7 +399,7 @@ void CMainWindow::ProcessAllMenuCommands(wxCommandEvent& event)
 		int soundId = event.GetId()-Event_LoopSounds_Sound;
 
 		EmitParams ep(s_loopingSoundNames[soundId]);
-		g_musicObject->EmitSound(StringToHash("music"), &ep);
+		g_musicObject->EmitSound(s_musicNameId, &ep);
 
 	}
 }
@@ -640,7 +641,7 @@ void CMainWindow::ReDraw()
 
 	static float totalTime = 0.0f;
 	totalTime += g_frametime;
-	g_musicObject->SetSoundVolumeScale(max(sinf(totalTime), 0.25f));
+	g_musicObject->SetPitch(CSoundingObject::EncodeId(s_musicNameId, 0), 0.5f);
 
 	g_audioSystem->SetChannelVolume(CHAN_STREAM, 0.25f);
  

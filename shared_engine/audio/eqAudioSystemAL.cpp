@@ -209,9 +209,6 @@ void CEqAudioSystemAL::InitEffects()
 	_alDeleteAuxiliaryEffectSlots = (LPALDELETEAUXILIARYEFFECTSLOTS)alGetProcAddress("alDeleteAuxiliaryEffectSlots");
 	_alDeleteEffects = (LPALDELETEEFFECTS)alGetProcAddress("alDeleteEffects");
 
-	m_currEffect = nullptr;
-	m_currEffectSlotIdx = 0;
-
 	int maxEffectSlots = 0;
 	alcGetIntegerv(m_dev, ALC_MAX_AUXILIARY_SENDS, 1, &maxEffectSlots);
 	m_effectSlots.setNum(maxEffectSlots);
@@ -270,22 +267,25 @@ void CEqAudioSystemAL::InitEffects()
 
 bool CEqAudioSystemAL::CreateALEffect(const char* pszName, KVSection* pSection, sndEffect_t& effect)
 {
+#define PARAM_VALUE(type, name, str_name)  AL_##type##_##name, clamp(KV_GetValueFloat(pSection->FindSection(str_name), 0, AL_##type##_DEFAULT_##name), AL_##type##_MIN_##name, AL_##type##_MAX_##name)
+
+
 	if (!stricmp(pszName, "reverb"))
 	{
 		_alGenEffects(1, &effect.nAlEffect);
 
 		_alEffecti(effect.nAlEffect, AL_EFFECT_TYPE, AL_EFFECT_REVERB);
 
-		_alEffectf(effect.nAlEffect, AL_REVERB_GAIN, KV_GetValueFloat(pSection->FindSection("gain"), 0, 0.5f));
-		_alEffectf(effect.nAlEffect, AL_REVERB_GAINHF, KV_GetValueFloat(pSection->FindSection("gain_hf"), 0, 0.5f));
+		_alEffectf(effect.nAlEffect, PARAM_VALUE(REVERB, GAIN, "gain"));
+		_alEffectf(effect.nAlEffect, PARAM_VALUE(REVERB, GAINHF, "gain_hf"));
 
-		_alEffectf(effect.nAlEffect, AL_REVERB_DECAY_TIME, KV_GetValueFloat(pSection->FindSection("decay_time"), 0, 10.0f));
-		_alEffectf(effect.nAlEffect, AL_REVERB_DECAY_HFRATIO, KV_GetValueFloat(pSection->FindSection("decay_hf"), 0, 0.5f));
-		_alEffectf(effect.nAlEffect, AL_REVERB_REFLECTIONS_DELAY, KV_GetValueFloat(pSection->FindSection("reflection_delay"), 0, 0.0f));
-		_alEffectf(effect.nAlEffect, AL_REVERB_REFLECTIONS_GAIN, KV_GetValueFloat(pSection->FindSection("reflection_gain"), 0, 0.5f));
-		_alEffectf(effect.nAlEffect, AL_REVERB_DIFFUSION, KV_GetValueFloat(pSection->FindSection("diffusion"), 0, 0.5f));
-		_alEffectf(effect.nAlEffect, AL_REVERB_DENSITY, KV_GetValueFloat(pSection->FindSection("density"), 0, 0.5f));
-		_alEffectf(effect.nAlEffect, AL_REVERB_AIR_ABSORPTION_GAINHF, KV_GetValueFloat(pSection->FindSection("airabsorption_gain"), 0, 0.5f));
+		_alEffectf(effect.nAlEffect, PARAM_VALUE(REVERB, DECAY_TIME, "decay_time"));
+		_alEffectf(effect.nAlEffect, PARAM_VALUE(REVERB, DECAY_HFRATIO, "decay_hf"));
+		_alEffectf(effect.nAlEffect, PARAM_VALUE(REVERB, REFLECTIONS_DELAY, "reflection_delay"));
+		_alEffectf(effect.nAlEffect, PARAM_VALUE(REVERB, REFLECTIONS_GAIN, "reflection_gain"));
+		_alEffectf(effect.nAlEffect, PARAM_VALUE(REVERB, DIFFUSION, "diffusion"));
+		_alEffectf(effect.nAlEffect, PARAM_VALUE(REVERB, DENSITY, "density"));
+		_alEffectf(effect.nAlEffect, PARAM_VALUE(REVERB, AIR_ABSORPTION_GAINHF, "airabsorption_gain"));
 
 		return true;
 	}
@@ -298,14 +298,13 @@ bool CEqAudioSystemAL::CreateALEffect(const char* pszName, KVSection* pSection, 
 		return true;
 	}
 
+#undef PARAM_VALUE
+
 	return false;
 }
 
 void CEqAudioSystemAL::DestroyEffects()
 {
-	m_currEffectSlotIdx = 0;
-	m_currEffect = nullptr;
-
 	for (auto it = m_effects.begin(); it != m_effects.end(); ++it)
 		_alDeleteEffects(1, &it.value().nAlEffect);
 

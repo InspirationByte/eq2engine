@@ -73,6 +73,9 @@ private:
 	{
 		float		volume{ 1.0f };
 		float		pitch{ 1.0f };
+
+		// TODO: set lowPass / highPass there too
+
 		int			updateFlags{ 0 }; // IAudioSource::Update enum
 	};
 
@@ -94,9 +97,6 @@ private:
 
 	ALCcontext*								m_ctx{ nullptr };
 	ALCdevice*								m_dev{ nullptr };
-	sndEffect_t*							m_currEffect{ nullptr };
-
-	int										m_currEffectSlotIdx{ 0 };
 	bool									m_noSound{ true };
 };
 

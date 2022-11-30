@@ -21,6 +21,8 @@
 
 #define SOUND_DEFAULT_PATH		"sounds/"
 
+#pragma optimize("", off)
+
 using namespace Threading;
 static CEqMutex s_soundEmitterSystemMutex;
 
@@ -102,14 +104,24 @@ struct SoundScriptDesc
 
 struct SoundEmitterData
 {
-	IEqAudioSource::Params		startParams;
-	IEqAudioSource::Params		virtualParams;
+	//struct Wave
+	//{
+	//	IEqAudioSource::Params	startParams;
+	//	IEqAudioSource::Params	virtualParams;
+	//	CRefPtr<IEqAudioSource>	soundSource;			// NULL when virtual 
+	//	int						sampleId{ -1 };
+	//};
 
-	CRefPtr<IEqAudioSource>		soundSource;					// NULL when virtual 
-	const SoundScriptDesc*		script{ nullptr };				// sound script which used to start this sound
-	CSoundingObject*			soundingObj{ nullptr };
-	ESoundChannelType			channelType{ CHAN_INVALID };
-	int							sampleId{ -1 };
+	IEqAudioSource::Params	startParams;
+	IEqAudioSource::Params	virtualParams;
+	CRefPtr<IEqAudioSource>	soundSource;			// NULL when virtual 
+	int						sampleId{ -1 };
+
+	const SoundScriptDesc*	script{ nullptr };			// sound script which used to start this sound
+	CSoundingObject*		soundingObj{ nullptr };
+	ESoundChannelType		channelType{ CHAN_INVALID };
+
+	//Array<Wave>			waves{ PP_SL };
 };
 
 //-------------------------------------------
@@ -154,12 +166,12 @@ CSoundingObject::~CSoundingObject()
 	}
 }
 
-int CSoundingObject::EmitSound(int uniqueId, EmitParams* ep)
+int CSoundingObject::EmitSound(int id, EmitParams* ep)
 {
-	if (uniqueId == -1)
-		uniqueId = RandomInt(0, StringHashMask);
+	if (id == -1)
+		id = RandomInt(0, StringHashMask);
 
-	const int channelType = g_sounds->EmitSound(ep, this, uniqueId);
+	const int channelType = g_sounds->EmitSound(ep, this, id & StringHashMask);
 
 	if(channelType == CHAN_INVALID)
 		return CHAN_INVALID;
@@ -239,9 +251,28 @@ void CSoundingObject::StopFirstEmitterByChannel(ESoundChannelType chan)
 	}
 }
 
-void CSoundingObject::StopEmitter(int uniqueId)
+int CSoundingObject::DecodeId(int idWaveId, int& waveId)
 {
-	auto it = m_emitters.find(uniqueId);
+	if (waveId & 0x80000000) // needs a 'SET' flag
+		waveId = idWaveId >> StringHashBits & 127;
+
+	return idWaveId & StringHashMask;
+}
+
+int CSoundingObject::EncodeId(int id, int waveId)
+{
+	if (waveId == -1)
+		return id;
+
+	return (id & StringHashMask) | (waveId << StringHashBits) | 0x80000000;
+}
+
+void CSoundingObject::StopEmitter(int idWaveId)
+{
+	int waveId = -1;
+	const int id = DecodeId(idWaveId, waveId);
+
+	const auto it = m_emitters.find(id);
 	if (it == m_emitters.end())
 		return;
 
@@ -259,16 +290,19 @@ void CSoundingObject::StopEmitter(int uniqueId)
 	--m_numChannelSounds[chanType];
 }
 
-void CSoundingObject::PauseEmitter(int uniqueId)
+void CSoundingObject::PauseEmitter(int idWaveId)
 {
 	IEqAudioSource::Params param;
 	param.set_state(IEqAudioSource::PAUSED);
-	SetParams(uniqueId, param);
+	SetParams(idWaveId, param);
 }
 
-void CSoundingObject::PlayEmitter(int uniqueId, bool rewind)
+void CSoundingObject::PlayEmitter(int idWaveId, bool rewind)
 {
-	auto it = m_emitters.find(uniqueId);
+	int waveId = -1;
+	const int id = DecodeId(idWaveId, waveId);
+
+	const auto it = m_emitters.find(id);
 	if (it == m_emitters.end())
 		return;
 
@@ -290,30 +324,33 @@ void CSoundingObject::PlayEmitter(int uniqueId, bool rewind)
 	}
 }
 
-void CSoundingObject::StopLoop(int uniqueId)
+void CSoundingObject::StopLoop(int idWaveId)
 {
 	IEqAudioSource::Params param;
 	param.set_looping(false);
-	SetParams(uniqueId, param);
+	SetParams(idWaveId, param);
 }
 
-void CSoundingObject::SetPosition(int uniqueId, const Vector3D& position)
+void CSoundingObject::SetPosition(int idWaveId, const Vector3D& position)
 {
 	IEqAudioSource::Params param;
 	param.set_position(position);
-	SetParams(uniqueId, param);
+	SetParams(idWaveId, param);
 }
 
-void CSoundingObject::SetVelocity(int uniqueId, const Vector3D& velocity)
+void CSoundingObject::SetVelocity(int idWaveId, const Vector3D& velocity)
 {
 	IEqAudioSource::Params param;
 	param.set_velocity(velocity);
-	SetParams(uniqueId, param);
+	SetParams(idWaveId, param);
 }
 
-void CSoundingObject::SetPitch(int uniqueId, float pitch)
+void CSoundingObject::SetPitch(int idWaveId, float pitch)
 {
-	auto it = m_emitters.find(uniqueId);
+	int waveId = -1;
+	const int id = DecodeId(idWaveId, waveId);
+
+	const auto it = m_emitters.find(id);
 	if (it == m_emitters.end())
 		return;
 
@@ -332,9 +369,12 @@ void CSoundingObject::SetPitch(int uniqueId, float pitch)
 	}
 }
 
-void CSoundingObject::SetVolume(int uniqueId, float volume)
+void CSoundingObject::SetVolume(int idWaveId, float volume)
 {
-	auto it = m_emitters.find(uniqueId);
+	int waveId = -1;
+	int id = DecodeId(idWaveId, waveId);
+
+	const auto it = m_emitters.find(id);
 	if (it == m_emitters.end())
 		return;
 
@@ -353,9 +393,12 @@ void CSoundingObject::SetVolume(int uniqueId, float volume)
 	}
 }
 
-void CSoundingObject::SetParams(int uniqueId, IEqAudioSource::Params& params)
+void CSoundingObject::SetParams(int idWaveId, IEqAudioSource::Params& params)
 {
-	auto it = m_emitters.find(uniqueId);
+	int waveId = -1;
+	const int id = DecodeId(idWaveId, waveId);
+
+	const auto it = m_emitters.find(id);
 	if (it == m_emitters.end())
 		return;
 
