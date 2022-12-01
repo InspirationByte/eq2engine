@@ -992,7 +992,7 @@ static ALenum GetSoundSourceFormatAsALEnum(const ISoundSource::Format& fmt)
 	ALenum alFormat;
 
 	if (fmt.bitwidth == 8)
-		alFormat = fmt.channels == 2 ? AL_FORMAT_MONO16 : AL_FORMAT_MONO8;
+		alFormat = fmt.channels == 2 ? AL_FORMAT_STEREO8 : AL_FORMAT_MONO8;
 	else if (fmt.bitwidth == 16)
 		alFormat = fmt.channels == 2 ? AL_FORMAT_STEREO16 : AL_FORMAT_MONO16;
 	else
@@ -1014,12 +1014,18 @@ ALsizei CEqAudioSourceAL::GetSampleBuffer(void* data, ALsizei size)
 	const ISoundSource::Format& fmt = sample->GetFormat();
 	const int sampleSize = fmt.bitwidth / 8 * fmt.channels;
 
+	// TODO: implement custom resampler
+	// TODO: perform bit depth conversion
+	// TODO: perform sample rate conversion
+
 	// This also allows us to mix multiple samples at once
 	const int numRead = sample->GetSamples((ubyte*)data, size / sampleSize, m_streamPos, m_looping);
 	m_streamPos += numRead;
 
 	if (m_looping)
 		m_streamPos %= sample->GetSampleCount();
+	else
+		m_streamPos = min(m_streamPos, sample->GetSampleCount());
 
 	return numRead;
 }
@@ -1065,9 +1071,10 @@ bool CEqAudioSourceAL::QueueStreamChannel(ALuint buffer)
 	{
 		m_streamPos += numRead;
 
-		// FIXME: might be invalid
 		if (m_looping)
 			m_streamPos %= sample->GetSampleCount();
+		else
+			m_streamPos = min(m_streamPos, sample->GetSampleCount());
 
 		// upload to specific buffer
 		alBufferData(buffer, alFormat, pcmBuffer, numRead * sampleSize, fmt.frequency);

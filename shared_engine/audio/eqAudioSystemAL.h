@@ -127,7 +127,6 @@ public:
 	ALsizei					GetSampleBuffer(void* data, ALsizei size);
 
 protected:
-
 	bool					QueueStreamChannel(ALuint buffer);
 	void					SetupSample(const ISoundSource* sample);
 
@@ -138,10 +137,11 @@ protected:
 
 	CEqAudioSystemAL*		m_owner{ nullptr };
 
-	ALuint					m_buffers[EQSND_STREAM_BUFFER_COUNT]{ 0 };
 	ISoundSource*			m_sample{ nullptr };
-	ALuint					m_source{ 0 };
 	int						m_streamPos{ 0 };
+
+	ALuint					m_buffers[EQSND_STREAM_BUFFER_COUNT]{ 0 };
+	ALuint					m_source{ 0 };
 
 	UpdateCallback			m_callback;
 	void*					m_callbackObject{ nullptr };
