@@ -13,8 +13,8 @@ class IVirtualStream;
 class CSoundSource_OggStream : public CSoundSource_OggCache
 {
 public:
-	virtual int     GetSamples(ubyte *pOutput, int nSamples, int nOffset, bool bLooping);
-	ubyte*			GetDataPtr(int& dataSize) const { dataSize = 0; return nullptr; }
+	virtual int     GetSamples(void* out, int samplesToRead, int startOffset, bool loop) const;
+	void*			GetDataPtr(int& dataSize) const { dataSize = 0; return nullptr; }
 
 	virtual bool	Load(const char* filename);
 	virtual void	Unload();
@@ -24,7 +24,7 @@ public:
 protected:
 	void			ParseData(OggVorbis_File* file);
 
-	int				ReadData(ubyte *pOutput, int nStart, int nBytes);
+	int				ReadData(void* out, int offset, int count) const;
 
 	IVirtualStream*	m_oggFile;
 	OggVorbis_File	m_oggStream;

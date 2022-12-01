@@ -39,17 +39,18 @@ typedef struct // CHUNK_SAMPLE
 	uint   SMPTEOffest;
 	uint   Loops;
 	uint   SamplerData;
-
-	struct
-	{
-		uint Identifier;
-		uint Type;
-		uint Start;
-		uint End;
-		uint Fraction;
-		uint Count;
-	}Loop[1];
 }wavsamplehdr_t;
+
+// right after CHUNK_SAMPLE
+typedef struct
+{
+	uint Identifier;
+	uint Type;
+	uint Start;
+	uint End;
+	uint Fraction;
+	uint Count;
+} wavloop_t;
 
 typedef struct // CHUNK_CUE
 {
@@ -74,7 +75,7 @@ typedef struct // CHUNK_LTXT
 
 //---------------------------------------------------------------------
 
-CSoundSource_Wave::CSoundSource_Wave() : m_loopStart(0), m_loopEnd(0), m_numSamples(0)
+CSoundSource_Wave::CSoundSource_Wave()
 {
 
 }
@@ -125,9 +126,9 @@ void CSoundSource_Wave::ParseCue(CRIFF_Parser &chunk)
 	for (int i = 0; i < count; i++)
 	{
 		wavcuehdr_t cue;
-
 		chunk.ReadChunk(&cue, sizeof(wavcuehdr_t));
-		m_loopStart = cue.SampleOffset;
+
+		// TODO: use wave CUE for something like subtitles etc
 
 		//printf("CUE %d time: %d ms (%d)\n", i+1, sampleTimeMilliseconds, cue.SampleOffset);
 
@@ -146,11 +147,19 @@ void CSoundSource_Wave::ParseSample(CRIFF_Parser &chunk)
 	wavsamplehdr_t wsx;
 	chunk.ReadChunk(&wsx, sizeof(wavsamplehdr_t));
 
-	if (wsx.Loop[0].Type == 0) // only single loop region supported
+	for (uint i = 0; i < wsx.Loops; ++i)
 	{
-		ASSERT(wsx.Loops > 0);
-		m_loopStart = wsx.Loop[0].Start;
-		m_loopEnd = wsx.Loop[0].End;
+		wavloop_t loop;
+		chunk.ReadChunk(&loop, sizeof(wavloop_t));
+
+		if (loop.Type == 0)
+		{
+			if (m_loopRegions.numElem() >= m_loopRegions.numAllocated())
+				break;
+
+			// only single loop region supported
+			m_loopRegions.append({ loop.Start, loop.End });
+		}
 	}
 }
 
@@ -201,10 +210,22 @@ void CSoundSource_Wave::ParseList(CRIFF_Parser& chunk)
 	}
 }
 
-float CSoundSource_Wave::GetLoopPosition(float flPosition) const
+int	CSoundSource_Wave::GetLoopRegions(int* samplePos) const
 {
-    while ( flPosition > m_numSamples )
-        flPosition -= m_numSamples;
+	for (int i = 0; i < m_loopRegions.numElem(); ++i)
+	{
+		samplePos[i * 2] = m_loopRegions[i].start;
+		samplePos[i * 2 + 1] = m_loopRegions[i].end;
+	}
+	return m_loopRegions.numElem();
+}
 
-    return flPosition;
+int CSoundSource_Wave::GetLoopRegion(int offsetInSamples) const
+{
+	for (int i = 0; i < m_loopRegions.numElem(); ++i)
+	{
+		if (offsetInSamples >= m_loopRegions[i].start) // && offsetInSamples <= m_loopRegions[i].end)
+			return i;
+	}
+	return -1;
 }

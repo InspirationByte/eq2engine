@@ -66,12 +66,3 @@ void CSoundSource_Ogg::ParseFormat(vorbis_info& info)
 	m_format.bitwidth = 16; // Ogg Vorbis is always 16 bit
 }
 
-//---------------------------------------------------------
-
-float CSoundSource_Ogg::GetLoopPosition(float flPosition) const
-{
-    while ( flPosition > m_numSamples )
-        flPosition -= m_numSamples;
-
-    return flPosition;
-}

@@ -42,46 +42,48 @@ void CSoundSource_WaveStream::ParseData(CRIFF_Parser &chunk)
 	m_numSamples = m_dataSize / (m_format.channels * (m_format.bitwidth >> 3));
 }
 
-int CSoundSource_WaveStream::GetSamples(ubyte *pOutput, int nSamples, int nOffset, bool bLooping)
+int CSoundSource_WaveStream::GetSamples(void* out, int samplesToRead, int startOffset, bool loop) const
 {
-	int     nRemaining;
-	int     nBytes, nStart;
+	const int sampleSize = m_format.channels * (m_format.bitwidth >> 3);
 
-	int     nSampleSize = m_format.channels * (m_format.bitwidth >> 3);
+	int minSample = 0;
+	int maxSample = m_numSamples;
 
-	nBytes = nSamples * nSampleSize;
-	nStart = nOffset * nSampleSize;
-
-	nRemaining = nBytes;
-
-	if ( nBytes + nStart > m_dataSize )
-		nBytes = m_dataSize - nStart;
-
-	ReadData( pOutput, nStart, nBytes );
-	nRemaining -= nBytes;
-
-	if ( nRemaining && bLooping )
+	const int loopRegionId = GetLoopRegion(startOffset);
+	if (loopRegionId != -1)
 	{
-		if ( m_loopStart )
-		{
-			int loopBytes = m_loopStart * nSampleSize;
-			ReadData( pOutput+nBytes, loopBytes, nRemaining );
-		}
-		else
-			ReadData( pOutput+nBytes, 0, nRemaining );
-
-		return (nBytes + nRemaining) / nSampleSize;
+		minSample = m_loopRegions[loopRegionId].start;
+		maxSample = m_loopRegions[loopRegionId].end;
 	}
 
-	return nBytes / nSampleSize;
+	int currentOffset = startOffset;
+	int numSamplesRead = 0;
+	int remainingSamples = samplesToRead;
+	while (remainingSamples > 0)
+	{
+		const int numToRead = min(remainingSamples, maxSample - currentOffset);
+		ReadData((ubyte*)out + numSamplesRead * sampleSize, currentOffset * sampleSize, numToRead * sampleSize);
+		numSamplesRead += numToRead;
+
+		if (numToRead < remainingSamples)
+		{
+			if (loop)
+				currentOffset = minSample;
+			else
+				break;
+		}
+		remainingSamples -= numToRead;
+	}
+
+	return numSamplesRead;
 }
 
-int CSoundSource_WaveStream::ReadData(ubyte *pOutput, int nStart, int nBytes)
+int CSoundSource_WaveStream::ReadData(void* out, int offset, int count) const
 {
 	int sample;
 
-	m_reader->SetPos( m_dataOffset + nStart );
-	m_reader->ReadData( pOutput, nBytes );
+	m_reader->SetPos( m_dataOffset + offset);
+	m_reader->ReadData(out, count);
 
 	/*
 	int fin = nBytes / (m_format.bitwidth >> 3);

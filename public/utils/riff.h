@@ -51,7 +51,7 @@ private:
 	bool			ChunkSet();
 
 	CMemoryStream	m_riffMem;
-	IFile*			m_file{ nullptr };
+	IVirtualStream*	m_file{ nullptr };
 	IVirtualStream* m_stream{ nullptr };
 
 	RIFFchunk_t		m_curChunk;

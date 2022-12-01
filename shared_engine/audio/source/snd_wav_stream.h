@@ -11,8 +11,8 @@
 class CSoundSource_WaveStream : public CSoundSource_Wave
 {
 public:
-	int				GetSamples (ubyte *pOutput, int nSamples, int nOffset, bool bLooping);
-	ubyte*			GetDataPtr(int& dataSize) const { dataSize = 0; return nullptr; }
+	int				GetSamples(void* out, int samplesToRead, int startOffset, bool loop) const;
+	void*			GetDataPtr(int& dataSize) const { dataSize = 0; return nullptr; }
 
 	bool			Load(const char *szFilename);
 	void			Unload();
@@ -22,7 +22,7 @@ public:
 private:
 	virtual void    ParseData(CRIFF_Parser &chunk);
 
-	int             ReadData (ubyte *pOutput, int nStart, int nBytes);
+	int             ReadData(void* out, int offset, int count) const;
 
 	int				m_dataOffset;   // data chunk
 	int				m_dataSize;     // in bytes

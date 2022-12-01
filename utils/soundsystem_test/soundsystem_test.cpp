@@ -136,15 +136,6 @@ void InitSoundSystem( EQWNDHANDLE wnd )
 
 	{
 		KVSection soundSec;
-		soundSec.SetName("test.static");
-		soundSec.SetKey("wave", "SoundTest/StaticTest.wav");
-		soundSec.SetKey("channel", "CHAN_STATIC");
-		g_sounds->CreateSoundScript(&soundSec);
-		g_sounds->PrecacheSound(soundSec.GetName());
-	}
-
-	{
-		KVSection soundSec;
 		soundSec.SetName("test.multiSample");
 		KVSection& wave = *soundSec.CreateSection("wave");
 		wave.AddKey("wave", "cars/skid.wav");
@@ -164,6 +155,15 @@ void InitSoundSystem( EQWNDHANDLE wnd )
 		soundSec.SetKey("loop", false);
 		soundSec.SetKey("wave", "SoundTest/CueTest.wav");
 		soundSec.SetKey("channel", "CHAN_VOICE");
+		g_sounds->CreateSoundScript(&soundSec);
+		g_sounds->PrecacheSound(soundSec.GetName());
+	}
+
+	{
+		KVSection soundSec;
+		soundSec.SetName("test.static");
+		soundSec.SetKey("wave", "SoundTest/StaticTest.wav");
+		soundSec.SetKey("channel", "CHAN_STATIC");
 		g_sounds->CreateSoundScript(&soundSec);
 		g_sounds->PrecacheSound(soundSec.GetName());
 	}

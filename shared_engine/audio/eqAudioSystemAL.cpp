@@ -1136,6 +1136,39 @@ static int MixMono16(float volume, const short* in, int numInSamples, short* out
 	return maxSamples;
 }
 
+static int GetLoopRegionIdx(int offsetInSamples, int* points, int regionCount)
+{
+	for (int i = 0; i < regionCount; ++i)
+	{
+		if (offsetInSamples >= points[i*2]) //&& offsetInSamples <= points[i*2+1])
+			return i;
+	}
+	return -1;
+}
+
+static int WrapAroundSampleOffset(int sampleOffset, const ISoundSource* sample, bool looping)
+{
+	const int sampleCount = sample->GetSampleCount();
+
+	if (looping)
+	{
+		int loopPoints[SOUND_SOURCE_MAX_LOOP_REGIONS * 2];
+		const int numLoopRegions = sample->GetLoopRegions(loopPoints);
+
+		const int loopRegionIdx = GetLoopRegionIdx(sampleOffset, loopPoints, numLoopRegions);
+		const int sampleMin = (loopRegionIdx == -1) ? 0 : loopPoints[loopRegionIdx * 2];
+		const int sampleMax = (loopRegionIdx == -1) ? sampleCount : loopPoints[loopRegionIdx * 2 + 1];
+
+		const int sampleRange = sampleMax - sampleMin;
+
+		sampleOffset = sampleMin + ((sampleOffset - sampleMin) % sampleRange);
+	}
+	else
+		sampleOffset = min(sampleOffset, sampleCount);
+
+	return sampleOffset;
+}
+
 ALsizei CEqAudioSourceAL::GetSampleBuffer(void* data, ALsizei size)
 {
 	const bool looping = m_looping;
@@ -1145,20 +1178,17 @@ ALsizei CEqAudioSourceAL::GetSampleBuffer(void* data, ALsizei size)
 		SourceStream& mainStream = GetSourceStream();
 		ISoundSource* sample = mainStream.sample;
 
+		int loopPoints[SOUND_SOURCE_MAX_LOOP_REGIONS * 2];
+		const int numLoopRegions = sample->GetLoopRegions(loopPoints);
+
 		const ISoundSource::Format& fmt = sample->GetFormat();
 		const int sampleUnit = (fmt.bitwidth >> 3);
 		const int sampleSize = sampleUnit * fmt.channels;
-		const int sampleCount = sample->GetSampleCount();
-		
-		int streamPos = mainStream.curPos;
-		const int samplesRead = sample->GetSamples((ubyte*)data, size / sampleSize, streamPos, looping);
 
-		streamPos += samplesRead;
-		if (looping)
-			streamPos %= sampleCount;
-		else
-			streamPos = min(streamPos, sampleCount);
-		mainStream.curPos = streamPos;
+		const int streamPos = mainStream.curPos;
+		const int samplesRead = sample->GetSamples(data, size / sampleSize, streamPos, looping);
+
+		mainStream.curPos = WrapAroundSampleOffset(streamPos + samplesRead, sample, looping);
 
 		// clever, if numRead < size then source will be stopped automatically!
 		return samplesRead * sampleSize;
@@ -1182,18 +1212,13 @@ ALsizei CEqAudioSourceAL::GetSampleBuffer(void* data, ALsizei size)
 		ISoundSource* sample = m_streams[i].sample;
 		const float sampleVolume = min(m_streams[i].volume, 1.0f);
 
+		int loopPoints[SOUND_SOURCE_MAX_LOOP_REGIONS * 2];
+		const int numLoopRegions = sample->GetLoopRegions(loopPoints);
+
 		if (sampleVolume <= 0.0f)
 		{
-			const int sampleCount = sample->GetSampleCount();
-
 			// update playback progress still but don't mix
-			int streamPos = m_streams[i].curPos;
-			streamPos += numSamplesToRead;
-			if (looping)
-				streamPos %= sampleCount;
-			else
-				streamPos = min(streamPos, sampleCount);
-			m_streams[i].curPos = streamPos;
+			m_streams[i].curPos = WrapAroundSampleOffset(m_streams[i].curPos + numSamplesToRead, sample, looping);
 
 			continue;
 		}
@@ -1203,30 +1228,24 @@ ALsizei CEqAudioSourceAL::GetSampleBuffer(void* data, ALsizei size)
 		const int sampleSize = sampleUnit * fmt.channels;
 		const int sampleCount = sample->GetSampleCount();
 
-		int streamPos = m_streams[i].curPos;
+		const int streamPos = m_streams[i].curPos;
 		int samplesRead = 0;
 		if (sampleUnit == sizeof(uint8))
 		{
 			uint8* tmpSamples = (uint8*)stackalloc(numSamplesToRead);
-			samplesRead = sample->GetSamples((ubyte*)tmpSamples, numSamplesToRead, streamPos, looping);
+			samplesRead = sample->GetSamples(tmpSamples, numSamplesToRead, streamPos, looping);
 
 			MixMono8(sampleVolume, tmpSamples, samplesRead, (int16*)data, size);
 		}
 		else if (sampleUnit == sizeof(uint16))
 		{
 			int16* tmpSamples = (int16*)stackalloc(numSamplesToRead * sizeof(int16));
-			samplesRead = sample->GetSamples((ubyte*)tmpSamples, numSamplesToRead, streamPos, looping);
+			samplesRead = sample->GetSamples(tmpSamples, numSamplesToRead, streamPos, looping);
 
 			MixMono16(sampleVolume, tmpSamples, samplesRead, (int16*)data, size);
 		}
 		
-		streamPos += samplesRead;
-		if (looping)
-			streamPos %= sampleCount;
-		else
-			streamPos = min(streamPos, sampleCount);
-		m_streams[i].curPos = streamPos;
-
+		m_streams[i].curPos = WrapAroundSampleOffset(streamPos + samplesRead, sample, looping);
 		numRead = max(numRead, samplesRead);
 	}
 

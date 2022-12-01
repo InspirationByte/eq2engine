@@ -19,14 +19,14 @@ class CSoundSource_OpenALCache : public ISoundSource
 public:
 	CSoundSource_OpenALCache(ISoundSource* source);
 
-	virtual int             GetSamples(ubyte* pOutput, int nSamples, int nOffset, bool bLooping);
-	virtual ubyte*			GetDataPtr(int& dataSize) const;
+	virtual int             GetSamples(void* out, int samplesToRead, int startOffset, bool loop) const;
+	virtual void*			GetDataPtr(int& dataSize) const;
 
 	virtual const Format&	GetFormat() const;
 	virtual const char*		GetFilename() const;
 	virtual int				GetSampleCount() const;
 
-	virtual float           GetLoopPosition(float flPosition) const;
+	int						GetLoopRegions(int* samplePos) const { return 0; }
 
 	virtual bool			IsStreaming() const;
 

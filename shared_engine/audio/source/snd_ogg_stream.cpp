@@ -63,44 +63,43 @@ void CSoundSource_OggStream::ParseData(OggVorbis_File* file)
 	m_dataSize = m_numSamples * m_format.channels * sizeof(short); // Ogg Vorbis is always 16 bit
 }
 
-int CSoundSource_OggStream::GetSamples(ubyte* pOutput, int nSamples, int nOffset, bool bLooping)
+int CSoundSource_OggStream::GetSamples(void* out, int samplesToRead, int startOffset, bool loop) const
 {
-	int     nRemaining;
-	int     nBytes, nStart;
+	int nRemaining;
+	int nBytes, nStart;
 
-	int     nSampleSize = m_format.channels * (m_format.bitwidth >> 3);
+	const int nSampleSize = m_format.channels * (m_format.bitwidth >> 3);
 
-	nBytes = nSamples * nSampleSize;
-	nStart = nOffset * nSampleSize;
+	nBytes = samplesToRead * nSampleSize;
+	nStart = startOffset * nSampleSize;
 
 	nRemaining = nBytes;
 
 	if (nBytes + nStart > m_dataSize)
 		nBytes = m_dataSize - nStart;
 
-	ReadData(pOutput, nOffset, nBytes);
+	ReadData(out, startOffset, nBytes);
 	nRemaining -= nBytes;
 
-	if (nRemaining && bLooping)
+	if (nRemaining && loop)
 	{
-		ReadData(pOutput + nBytes, 0, nRemaining);
-
+		ReadData((ubyte*)out + nBytes, 0, nRemaining);
 		return (nBytes + nRemaining) / nSampleSize;
 	}
 
 	return nBytes / nSampleSize;
 }
 
-int CSoundSource_OggStream::ReadData(ubyte* out, int nStart, int nBytes)
+int CSoundSource_OggStream::ReadData(void* out, int offset, int count) const
 {
-	if(nStart >= 0)
-		ov_pcm_seek(&m_oggStream, nStart);
+	if(offset >= 0)
+		ov_pcm_seek(const_cast<OggVorbis_File*>(&m_oggStream), offset);
 
-	int  samplePos = 0;
-	while(samplePos < nBytes)
+	int samplePos = 0;
+	while(samplePos < offset)
 	{
-		char* dest = ((char *)out) + samplePos;
-		int readBytes = ov_read(&m_oggStream, dest, nBytes - samplePos, 0, 2, 1, nullptr);
+		char* dest = ((char*)out) + samplePos;
+		const int readBytes = ov_read(const_cast<OggVorbis_File*>(&m_oggStream), dest, count - samplePos, 0, 2, 1, nullptr);
 
 		if (readBytes <= 0)
 			break;

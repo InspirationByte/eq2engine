@@ -67,54 +67,38 @@ void CSoundSource_WaveCache::ParseData(CRIFF_Parser &chunk)
 	*/
 }
 
-int CSoundSource_WaveCache::GetSamples(ubyte *pOutput, int nSamples, int nOffset, bool bLooping)
+int CSoundSource_WaveCache::GetSamples(void* out, int samplesToRead, int startOffset, bool loop) const
 {
-	int     nRemaining, nCompleted = 0;
-	int     nBytes, nStart;
+	const int sampleSize = m_format.channels * (m_format.bitwidth >> 3);
 
-	int     nSampleSize = m_format.channels * (m_format.bitwidth >> 3);
+	int minSample = 0;
+	int maxSample = m_numSamples;
 
-	nBytes = nSamples * nSampleSize;
-	nStart = nOffset * nSampleSize;
-
-	nRemaining = nBytes;
-
-	int size = /*bLooping && */m_loopEnd ? m_loopEnd : m_cacheSize;
-
-	if ( nStart + nBytes > size)
-		nBytes = size - nStart;
-
-	memcpy( (void *)pOutput, (void *)(m_dataCache+nStart), nBytes );
-
-	nRemaining -= nBytes;
-	nCompleted += nBytes;
-
-	// if we still have remaining data to fill stream for loop, but stream is at EOF, read it again
-	while ( nRemaining && bLooping )
+	const int loopRegionId = GetLoopRegion(startOffset);
+	if (loopRegionId != -1)
 	{
-		nBytes = nRemaining;
-
-		if ( m_loopStart > 0 )
-		{
-			int loopBytes = m_loopStart * nSampleSize;
-
-			if ( loopBytes + nBytes > size)
-				nBytes = size - loopBytes;
-
-			memcpy( (void *)(pOutput+nCompleted), (void *)(m_dataCache+loopBytes), nBytes );
-			nRemaining -= nBytes;
-			nCompleted += nBytes;
-		}
-		else
-		{
-			if ( nBytes > size)
-				nBytes = size;
-
-			memcpy( (void *)(pOutput+nCompleted), (void *)m_dataCache, nBytes );
-			nRemaining -= nBytes;
-			nCompleted += nBytes;
-		}
+		minSample = m_loopRegions[loopRegionId].start;
+		maxSample = m_loopRegions[loopRegionId].end;
 	}
 
-	return nCompleted / nSampleSize;
+	int currentOffset = startOffset;
+	int numSamplesRead = 0;
+	int remainingSamples = samplesToRead;
+	while (remainingSamples > 0)
+	{
+		const int numToRead = min(remainingSamples, maxSample - currentOffset);
+		memcpy((ubyte*)out + numSamplesRead * sampleSize, m_dataCache + currentOffset * sampleSize, numToRead * sampleSize);
+		numSamplesRead += numToRead;
+
+		if (numToRead < remainingSamples)
+		{
+			if (loop)
+				currentOffset = minSample;
+			else
+				break;
+		}
+		remainingSamples -= numToRead;
+	}
+
+	return numSamplesRead;
 }
