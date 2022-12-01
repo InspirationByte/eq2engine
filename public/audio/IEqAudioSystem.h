@@ -110,11 +110,16 @@ public:
 	virtual ~IEqAudioSource() {}
 
 	virtual void			Setup(int chanId, const ISoundSource* sample, UpdateCallback fnCallback, void* callbackObject = nullptr) = 0;
+	virtual void			Setup(int chanId, ArrayCRef<const ISoundSource*> samples, UpdateCallback fnCallback, void* callbackObject = nullptr) = 0;
 	virtual void			Release() = 0;
 
 	// full scale
 	virtual void			GetParams(Params& params) const = 0;
 	virtual void			UpdateParams(const Params& params, int mask = 0) = 0;
+
+	virtual void			SetSourceVolume(int sourceIdx, float volume) = 0;
+	virtual float			GetSourceVolume(int sourceIdx) = 0;
+	virtual int				GetSourceCount() const = 0;
 
 	// atomic
 	virtual State			GetState() const = 0;

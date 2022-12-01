@@ -12,7 +12,7 @@
 
 #define EQSND_MIXER_CHANNELS			16
 #define EQSND_STREAM_BUFFER_COUNT		4
-#define EQSND_SAMPLE_BUFFER_COUNT		8
+#define EQSND_SAMPLE_COUNT				8
 #define EQSND_STREAM_BUFFER_SIZE		(1024*8) // 8 kb
 
 //-----------------------------------------------------------------
@@ -114,11 +114,16 @@ public:
 	~CEqAudioSourceAL();
 
 	void					Setup(int chanId, const ISoundSource* sample, UpdateCallback fnCallback = nullptr, void* callbackObject = nullptr);
+	void					Setup(int chanId, ArrayCRef<const ISoundSource*> samples, UpdateCallback fnCallback = nullptr, void* callbackObject = nullptr);
 	void					Release();
 
 	// full scale
 	void					GetParams(Params& params) const;
 	void					UpdateParams(const Params& params, int mask = 0);
+
+	void					SetSourceVolume(int sourceIdx, float volume);
+	float					GetSourceVolume(int sourceIdx);
+	int						GetSourceCount() const;
 
 	// atomic
 	State					GetState() const { return m_state; }
@@ -137,6 +142,10 @@ protected:
 
 	bool					QueueStreamChannel(ALuint buffer);
 	void					SetupSample(const ISoundSource* sample);
+	void					SetupSamples(ArrayCRef<const ISoundSource*> samples);
+
+	SourceStream&			GetSourceStream() { return m_streams.front(); }
+	bool					IsStreamed() const;
 
 	void					InitSource();
 
@@ -145,10 +154,13 @@ protected:
 
 	CEqAudioSystemAL*		m_owner{ nullptr };
 
-	ISoundSource*			m_sample{ nullptr };
-	int						m_streamPos{ 0 };
+	FixedArray<SourceStream, EQSND_SAMPLE_COUNT> m_streams;
 
-	ALuint					m_buffers[EQSND_SAMPLE_BUFFER_COUNT]{ 0 };
+
+	// ISoundSource*			m_sample{ nullptr };
+	// int						m_streamPos{ 0 };
+
+	ALuint					m_buffers[EQSND_STREAM_BUFFER_COUNT]{ 0 };
 	ALuint					m_source{ 0 };
 
 	UpdateCallback			m_callback;
