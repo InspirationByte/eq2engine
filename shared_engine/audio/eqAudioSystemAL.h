@@ -121,9 +121,9 @@ public:
 	void					GetParams(Params& params) const;
 	void					UpdateParams(const Params& params, int mask = 0);
 
-	void					SetSourceVolume(int sourceIdx, float volume);
-	float					GetSourceVolume(int sourceIdx);
-	int						GetSourceCount() const;
+	void					SetSampleVolume(int sourceIdx, float volume);
+	float					GetSampleVolume(int sourceIdx);
+	int						GetSampleCount() const;
 
 	// atomic
 	State					GetState() const { return m_state; }

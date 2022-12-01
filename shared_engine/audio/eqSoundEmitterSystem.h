@@ -98,26 +98,24 @@ class CSoundingObject
 {
 	friend class CSoundEmitterSystem;
 public:
-	static int DecodeId(int idWaveId, int& waveId);
-	static int EncodeId(int id, int waveId);
-
 	CSoundingObject() = default;
 	virtual ~CSoundingObject();
 
-	int			EmitSound(int id, EmitParams* ep);
+	int			EmitSound(int uniqueId, EmitParams* ep);
 
-	void		StopEmitter(int idWaveId);
-	void		PauseEmitter(int idWaveId);
-	void		PlayEmitter(int idWaveId, bool rewind = false);
+	void		StopEmitter(int uniqueId);
+	void		PauseEmitter(int uniqueId);
+	void		PlayEmitter(int uniqueId, bool rewind = false);
 
-	void		StopLoop(int idWaveId);
+	void		StopLoop(int uniqueId);
 
-	void		SetPosition(int idWaveId, const Vector3D& position);
-	void		SetVelocity(int idWaveId, const Vector3D& velocity);
-	void		SetPitch(int idWaveId, float pitch);
-	void		SetVolume(int idWaveId, float volume);
+	void		SetPosition(int uniqueId, const Vector3D& position);
+	void		SetVelocity(int uniqueId, const Vector3D& velocity);
+	void		SetPitch(int uniqueId, float pitch);
+	void		SetVolume(int uniqueId, float volume);
+	void		SetSampleVolume(int uniqueId, int waveId, float volume);
 
-	void		SetParams(int idWaveId, IEqAudioSource::Params& params);
+	void		SetParams(int uniqueId, IEqAudioSource::Params& params);
 
 	int			GetChannelSoundCount(ESoundChannelType chan) const { return m_numChannelSounds[chan]; }
 

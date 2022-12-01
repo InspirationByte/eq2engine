@@ -865,17 +865,20 @@ void CEqAudioSourceAL::UpdateParams(const Params& params, int mask)
 	}
 }
 
-void CEqAudioSourceAL::SetSourceVolume(int sourceIdx, float volume)
+void CEqAudioSourceAL::SetSampleVolume(int sourceIdx, float volume)
 {
-	m_streams[sourceIdx].volume = volume;
+	if(m_streams.inRange(sourceIdx))
+		m_streams[sourceIdx].volume = volume;
 }
 
-float CEqAudioSourceAL::GetSourceVolume(int sourceIdx)
+float CEqAudioSourceAL::GetSampleVolume(int sourceIdx)
 {
-	return m_streams[sourceIdx].volume;
+	if (m_streams.inRange(sourceIdx))
+		return m_streams[sourceIdx].volume;
+	return 0.0f;
 }
 
-int	CEqAudioSourceAL::GetSourceCount() const
+int	CEqAudioSourceAL::GetSampleCount() const
 {
 	return m_streams.numElem();
 }
@@ -984,6 +987,7 @@ void CEqAudioSourceAL::InitSource()
 
 void CEqAudioSourceAL::Release()
 {
+	m_streams.clear();
 	if (m_source == AL_NONE)
 		return;
 
@@ -1176,7 +1180,23 @@ ALsizei CEqAudioSourceAL::GetSampleBuffer(void* data, ALsizei size)
 	for(int i = 0; i < m_streams.numElem(); ++i)
 	{
 		ISoundSource* sample = m_streams[i].sample;
-		const float sampleVolume = m_streams[i].volume;
+		const float sampleVolume = min(m_streams[i].volume, 1.0f);
+
+		if (sampleVolume <= 0.0f)
+		{
+			const int sampleCount = sample->GetSampleCount();
+
+			// update playback progress still but don't mix
+			int streamPos = m_streams[i].curPos;
+			streamPos += numSamplesToRead;
+			if (looping)
+				streamPos %= sampleCount;
+			else
+				streamPos = min(streamPos, sampleCount);
+			m_streams[i].curPos = streamPos;
+
+			continue;
+		}
 
 		const ISoundSource::Format& fmt = sample->GetFormat();
 		const int sampleUnit = (fmt.bitwidth >> 3);
@@ -1202,9 +1222,9 @@ ALsizei CEqAudioSourceAL::GetSampleBuffer(void* data, ALsizei size)
 		
 		streamPos += samplesRead;
 		if (looping)
-			streamPos %= sample->GetSampleCount();
+			streamPos %= sampleCount;
 		else
-			streamPos = min(streamPos, sample->GetSampleCount());
+			streamPos = min(streamPos, sampleCount);
 		m_streams[i].curPos = streamPos;
 
 		numRead = max(numRead, samplesRead);
@@ -1215,11 +1235,13 @@ ALsizei CEqAudioSourceAL::GetSampleBuffer(void* data, ALsizei size)
 
 void CEqAudioSourceAL::SetupSample(const ISoundSource* sample)
 {
+	ASSERT_MSG(sample, "SetupSample - No samples");
+
 	// setup voice defaults
 	SourceStream& stream = m_streams.append();
 	stream.sample = const_cast<ISoundSource*>(sample);
 
-	if (sample && !sample->IsStreaming())
+	if (!sample->IsStreaming())
 	{
 #if USE_ALSOFT_BUFFER_CALLBACK
 		if (alBufferCallbackSOFT)
@@ -1243,6 +1265,11 @@ void CEqAudioSourceAL::SetupSample(const ISoundSource* sample)
 
 void CEqAudioSourceAL::SetupSamples(ArrayCRef<const ISoundSource*> samples)
 {
+#if !USE_ALSOFT_BUFFER_CALLBACK
+	ASSERT_MSG(samples.numElem() > 1, "SetupSample - USE_ALSOFT_BUFFER_CALLBACK required to setup more than one samples");
+#endif
+
+	ASSERT_MSG(samples.numElem() > 0, "SetupSample - No samples");
 	ASSERT_MSG(samples.numElem() < EQSND_SAMPLE_COUNT, "SetupSamples - exceeding EQSND_SAMPLE_COUNT (%d), required %d", EQSND_SAMPLE_COUNT, samples.numElem());
 
 	// set the callback on AL buffer
@@ -1257,39 +1284,53 @@ void CEqAudioSourceAL::SetupSamples(ArrayCRef<const ISoundSource*> samples)
 		stream.sample = const_cast<ISoundSource*>(samples[i]);
 	}
 
-	if (samples.numElem() > 1)
+	if (!m_streams.front().sample->IsStreaming())
 	{
-		// validate each sample
-		for (int i = 0; i < m_streams.numElem(); ++i)
+#if USE_ALSOFT_BUFFER_CALLBACK // all this possible because of this
+		if (samples.numElem() > 1)
 		{
-			ISoundSource* sample = m_streams[i].sample;
-			if (sample->GetFormat().channels > 1)
+			// validate each sample
+			for (int i = 0; i < m_streams.numElem(); ++i)
 			{
-				m_streams[i].sample = nullptr;
-				ASSERT_FAIL("Stereo samples yet to be supported");
-				continue;
-			}
-			
-			if (sample->IsStreaming())
-			{
-				m_streams[i].sample = nullptr;
-				ASSERT_FAIL("Streaming is not yet supported with multi-sample feature");
-				continue;
+				ISoundSource* sample = m_streams[i].sample;
+				if (sample->GetFormat().channels > 1)
+				{
+					m_streams[i].sample = nullptr;
+					ASSERT_FAIL("Stereo samples yet to be supported");
+					continue;
+				}
+
+				if (sample->IsStreaming())
+				{
+					m_streams[i].sample = nullptr;
+					ASSERT_FAIL("Streaming is not yet supported with multi-sample feature");
+					continue;
+				}
+
+				// extra validations?
 			}
 
-			// extra validations?
+			// For multi-sample sound we need to specify the best format to work with if they are different
+			// So we're mixing always into 16 bit no matter what
+			if (alFormat == AL_FORMAT_MONO8)
+				alFormat = AL_FORMAT_MONO16;
+			else if (alFormat == AL_FORMAT_STEREO8)
+				alFormat = AL_FORMAT_STEREO16;
 		}
 
-		// For multi-sample sound we need to specify the best format to work with if they are different
-		// So we're mixing always into 16 bit no matter what
-		if (alFormat == AL_FORMAT_MONO8)
-			alFormat = AL_FORMAT_MONO16;
-		else if (alFormat == AL_FORMAT_STEREO8)
-			alFormat = AL_FORMAT_STEREO16;
+		if (alBufferCallbackSOFT)
+		{
+			alBufferCallbackSOFT(m_buffers[0], alFormat, fmt.frequency, SoundSourceSampleDataCallback, this);
+			alSourcei(m_source, AL_BUFFER, m_buffers[0]);
+		}
+		else
+#endif
+		{
+			CSoundSource_OpenALCache* alSource = (CSoundSource_OpenALCache*)samples[0];
+			alSourcei(m_source, AL_BUFFER, alSource->m_alBuffer);
+		}
 	}
 
-	alBufferCallbackSOFT(m_buffers[0], alFormat, fmt.frequency, SoundSourceSampleDataCallback, this);
-	alSourcei(m_source, AL_BUFFER, m_buffers[0]);
 }
 
 bool CEqAudioSourceAL::QueueStreamChannel(ALuint buffer)
@@ -1353,6 +1394,4 @@ void CEqAudioSourceAL::EmptyBuffers()
 	{
 		alSourcei(m_source, AL_BUFFER, 0);
 	}
-
-	m_streams.clear();
 }

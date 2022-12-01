@@ -98,29 +98,20 @@ struct SoundScriptDesc
 
 	bool		loop : 1;
 	bool		is2d : 1;
+	bool		randomSample : 1;
 
 	const ISoundSource* GetBestSample(int sampleId /*= -1*/) const;
 };
 
 struct SoundEmitterData
 {
-	//struct Wave
-	//{
-	//	IEqAudioSource::Params	startParams;
-	//	IEqAudioSource::Params	virtualParams;
-	//	CRefPtr<IEqAudioSource>	soundSource;
-	//	int						sampleId{ -1 };
-	//};
-
 	IEqAudioSource::Params	startParams;
 	IEqAudioSource::Params	virtualParams;
 	CRefPtr<IEqAudioSource>	soundSource;			// NULL when virtual 
-	int						sampleId{ -1 };
-
-	// Array<Wave>				waves{ PP_SL };
-	const SoundScriptDesc*	script{ nullptr };			// sound script which used to start this sound
+	const SoundScriptDesc*	script{ nullptr };		// sound script which used to start this sound
 	CSoundingObject*		soundingObj{ nullptr };
 	ESoundChannelType		channelType{ CHAN_INVALID };
+	int						sampleId{ -1 };			// when randomSample and sampleId == -1, it's random
 };
 
 //-------------------------------------------
@@ -250,6 +241,7 @@ void CSoundingObject::StopFirstEmitterByChannel(ESoundChannelType chan)
 	}
 }
 
+#if 0
 int CSoundingObject::DecodeId(int idWaveId, int& waveId)
 {
 	if (waveId & 0x80000000) // needs a 'SET' flag
@@ -265,13 +257,11 @@ int CSoundingObject::EncodeId(int id, int waveId)
 
 	return (id & StringHashMask) | (waveId << StringHashBits) | 0x80000000;
 }
+#endif
 
-void CSoundingObject::StopEmitter(int idWaveId)
+void CSoundingObject::StopEmitter(int uniqueId)
 {
-	int waveId = -1;
-	const int id = DecodeId(idWaveId, waveId);
-
-	const auto it = m_emitters.find(id);
+	const auto it = m_emitters.find(uniqueId);
 	if (it == m_emitters.end())
 		return;
 
@@ -289,19 +279,16 @@ void CSoundingObject::StopEmitter(int idWaveId)
 	--m_numChannelSounds[chanType];
 }
 
-void CSoundingObject::PauseEmitter(int idWaveId)
+void CSoundingObject::PauseEmitter(int uniqueId)
 {
 	IEqAudioSource::Params param;
 	param.set_state(IEqAudioSource::PAUSED);
-	SetParams(idWaveId, param);
+	SetParams(uniqueId, param);
 }
 
-void CSoundingObject::PlayEmitter(int idWaveId, bool rewind)
+void CSoundingObject::PlayEmitter(int uniqueId, bool rewind)
 {
-	int waveId = -1;
-	const int id = DecodeId(idWaveId, waveId);
-
-	const auto it = m_emitters.find(id);
+	const auto it = m_emitters.find(uniqueId);
 	if (it == m_emitters.end())
 		return;
 
@@ -323,33 +310,30 @@ void CSoundingObject::PlayEmitter(int idWaveId, bool rewind)
 	}
 }
 
-void CSoundingObject::StopLoop(int idWaveId)
+void CSoundingObject::StopLoop(int uniqueId)
 {
 	IEqAudioSource::Params param;
 	param.set_looping(false);
-	SetParams(idWaveId, param);
+	SetParams(uniqueId, param);
 }
 
-void CSoundingObject::SetPosition(int idWaveId, const Vector3D& position)
+void CSoundingObject::SetPosition(int uniqueId, const Vector3D& position)
 {
 	IEqAudioSource::Params param;
 	param.set_position(position);
-	SetParams(idWaveId, param);
+	SetParams(uniqueId, param);
 }
 
-void CSoundingObject::SetVelocity(int idWaveId, const Vector3D& velocity)
+void CSoundingObject::SetVelocity(int uniqueId, const Vector3D& velocity)
 {
 	IEqAudioSource::Params param;
 	param.set_velocity(velocity);
-	SetParams(idWaveId, param);
+	SetParams(uniqueId, param);
 }
 
-void CSoundingObject::SetPitch(int idWaveId, float pitch)
+void CSoundingObject::SetPitch(int uniqueId, float pitch)
 {
-	int waveId = -1;
-	const int id = DecodeId(idWaveId, waveId);
-
-	const auto it = m_emitters.find(id);
+	const auto it = m_emitters.find(uniqueId);
 	if (it == m_emitters.end())
 		return;
 
@@ -368,12 +352,9 @@ void CSoundingObject::SetPitch(int idWaveId, float pitch)
 	}
 }
 
-void CSoundingObject::SetVolume(int idWaveId, float volume)
+void CSoundingObject::SetVolume(int uniqueId, float volume)
 {
-	int waveId = -1;
-	int id = DecodeId(idWaveId, waveId);
-
-	const auto it = m_emitters.find(id);
+	const auto it = m_emitters.find(uniqueId);
 	if (it == m_emitters.end())
 		return;
 
@@ -392,12 +373,27 @@ void CSoundingObject::SetVolume(int idWaveId, float volume)
 	}
 }
 
-void CSoundingObject::SetParams(int idWaveId, IEqAudioSource::Params& params)
+void CSoundingObject::SetSampleVolume(int uniqueId, int waveId, float volume)
 {
-	int waveId = -1;
-	const int id = DecodeId(idWaveId, waveId);
+	const auto it = m_emitters.find(uniqueId);
+	if (it == m_emitters.end())
+		return;
 
-	const auto it = m_emitters.find(id);
+	SoundEmitterData* emitter = *it;
+
+	// TODO: update virtual params
+
+	// update actual params
+	if (emitter->soundSource)
+	{
+		IEqAudioSource* source = emitter->soundSource;
+		source->SetSampleVolume(waveId, volume);
+	}
+}
+
+void CSoundingObject::SetParams(int uniqueId, IEqAudioSource::Params& params)
+{
+	const auto it = m_emitters.find(uniqueId);
 	if (it == m_emitters.end())
 		return;
 
@@ -631,10 +627,21 @@ bool CSoundEmitterSystem::SwitchSourceState(SoundEmitterData* emit, bool isVirtu
 	// start the real sound
 	if (!isVirtual && !emit->soundSource)
 	{
-		const ISoundSource* bestSample = emit->script->GetBestSample(emit->sampleId);
+		const SoundScriptDesc* script = emit->script;
+		FixedArray<const ISoundSource*, 16> samples;
 
-		if (!bestSample)
-			return false;
+		if (script->randomSample )
+		{
+			const ISoundSource* bestSample = script->GetBestSample(emit->sampleId);
+			ASSERT(bestSample);	// shouldn't really happen
+
+			samples.append(bestSample);
+		}
+		else
+		{
+			// put all samples
+			samples.append(script->samples);
+		}
 
 		// sound parameters to initialize SoundEmitter
 		const IEqAudioSource::Params& virtualParams = emit->virtualParams;
@@ -645,11 +652,11 @@ bool CSoundEmitterSystem::SwitchSourceState(SoundEmitterData* emit, bool isVirtu
 		{
 			// no sounding object
 			// set looping sound to self destruct when outside max distance
-			sndSource->Setup(virtualParams.channel, bestSample, emit->script->loop ? LoopSourceUpdateCallback : nullptr, const_cast<SoundScriptDesc*>(emit->script));
+			sndSource->Setup(virtualParams.channel, samples, script->loop ? LoopSourceUpdateCallback : nullptr, const_cast<SoundScriptDesc*>(script));
 		}
 		else
 		{
-			sndSource->Setup(virtualParams.channel, bestSample, EmitterUpdateCallback, emit);
+			sndSource->Setup(virtualParams.channel, samples, EmitterUpdateCallback, emit);
 		}
 
 		// start sound
@@ -665,7 +672,7 @@ bool CSoundEmitterSystem::SwitchSourceState(SoundEmitterData* emit, bool isVirtu
 				.Color(color_white)
 				.Time(1.0f);
 
-			MsgInfo("started sound '%s' ref=%g max=%g\n", emit->script->name.ToCString(), virtualParams.referenceDistance);
+			MsgInfo("started sound '%s' ref=%g max=%g\n", script->name.ToCString(), virtualParams.referenceDistance);
 		}
 
 		return true;
@@ -848,6 +855,7 @@ void CSoundEmitterSystem::CreateSoundScript(const KVSection* scriptSection)
 
 	newSound->loop = KV_GetValueBool(scriptSection->FindSection("loop"), 0, false);
 	newSound->is2d = KV_GetValueBool(scriptSection->FindSection("is2D"), 0, false);
+	newSound->randomSample = false;
 
 	KVSection* chanKey = scriptSection->FindSection("channel");
 
@@ -866,10 +874,13 @@ void CSoundEmitterSystem::CreateSoundScript(const KVSection* scriptSection)
 		newSound->channelType = CHAN_STATIC;
 
 	// pick 'rndwave' or 'wave' sections for lists
-	KVSection* waveKey = scriptSection->FindSection("rndwave", KV_FLAG_SECTION);
+	KVSection* waveKey = waveKey = scriptSection->FindSection("wave", KV_FLAG_SECTION); 
 
 	if (!waveKey)
-		waveKey = scriptSection->FindSection("wave", KV_FLAG_SECTION);
+	{
+		waveKey = scriptSection->FindSection("rndwave", KV_FLAG_SECTION);
+		newSound->randomSample = true;
+	}
 
 	if (waveKey)
 	{

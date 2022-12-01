@@ -66,14 +66,15 @@ CEqTimer			g_timer;
 float				g_frametime = 0.0f;
 
 #define SOUND_COUNT_TEST 4
-#define MAX_LOOP_SOUNDS 5
+#define MAX_LOOP_SOUNDS 6
 
 static const char* s_loopingSoundNames[] = {
 	"test.streaming_stereo_wav",
 	"test.streaming_stereo_ogg",
 	"test.sine_22",
 	"test.sine_44",
-	"test.cuetest"
+	"test.cuetest",
+	"test.multiSample"
 };
 
 static constexpr const int s_musicNameId = StringToHashConst("music");
@@ -137,6 +138,20 @@ void InitSoundSystem( EQWNDHANDLE wnd )
 		KVSection soundSec;
 		soundSec.SetName("test.static");
 		soundSec.SetKey("wave", "SoundTest/StaticTest.wav");
+		soundSec.SetKey("channel", "CHAN_STATIC");
+		g_sounds->CreateSoundScript(&soundSec);
+		g_sounds->PrecacheSound(soundSec.GetName());
+	}
+
+	{
+		KVSection soundSec;
+		soundSec.SetName("test.multiSample");
+		KVSection& wave = *soundSec.CreateSection("wave");
+		wave.AddKey("wave", "cars/skid.wav");
+		wave.AddKey("wave", "cars/skid2.wav");
+		wave.AddKey("wave", "cars/skid3.wav");
+
+		soundSec.SetKey("loop", true);
 		soundSec.SetKey("channel", "CHAN_STATIC");
 		g_sounds->CreateSoundScript(&soundSec);
 		g_sounds->PrecacheSound(soundSec.GetName());
@@ -637,9 +652,12 @@ void CMainWindow::ReDraw()
 
 	static float totalTime = 0.0f;
 	totalTime += g_frametime;
-	g_musicObject->SetVolume(CSoundingObject::EncodeId(s_musicNameId, 0), 0.5f);
+	// g_musicObject->SetVolume(CSoundingObject::EncodeId(s_musicNameId, 0), 0.5f);
+	// g_audioSystem->SetChannelVolume(CHAN_STREAM, 0.25f);
 
-	g_audioSystem->SetChannelVolume(CHAN_STREAM, 0.25f);
+	g_musicObject->SetSampleVolume(s_musicNameId, 0, 1.0f - length(g_vLastMousePosition) / 512.0f);
+	g_musicObject->SetSampleVolume(s_musicNameId, 1, g_vLastMousePosition.x / 512.0f);
+	g_musicObject->SetSampleVolume(s_musicNameId, 2, g_vLastMousePosition.y / 512.0f);
  
 	g_pShaderAPI->SetViewport(0, 0, w,h);
 
