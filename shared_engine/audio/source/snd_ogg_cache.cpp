@@ -77,35 +77,29 @@ void CSoundSource_OggCache::ParseData(OggVorbis_File* file)
 
 int CSoundSource_OggCache::GetSamples(void* out, int samplesToRead, int startOffset, bool loop) const
 {
-	int nRemaining, nCompleted = 0;
-	int nBytes, nStart;
+	const int sampleSize = m_format.channels * (m_format.bitwidth >> 3);
 
-	const int nSampleSize = m_format.channels * (m_format.bitwidth >> 3);
+	const int minSample = 0;
+	const int maxSample = m_numSamples;
 
-	nBytes = samplesToRead * nSampleSize;
-	nStart = startOffset * nSampleSize;
-
-	nRemaining = nBytes;
-
-	if ( nStart + nBytes > m_cacheSize )
-		nBytes = m_cacheSize - nStart;
-
-	memcpy(out, (void *)(m_dataCache+nStart), nBytes );
-
-	nRemaining -= nBytes;
-	nCompleted += nBytes;
-
-	while ( nRemaining && loop)
+	int currentOffset = startOffset;
+	int numSamplesRead = 0;
+	int remainingSamples = samplesToRead;
+	while (remainingSamples > 0)
 	{
-		nBytes = nRemaining;
+		const int numToRead = min(remainingSamples, maxSample - currentOffset);
+		memcpy((ubyte*)out + numSamplesRead * sampleSize, m_dataCache + currentOffset * sampleSize, numToRead * sampleSize);
+		numSamplesRead += numToRead;
 
-		if ( nBytes > m_cacheSize )
-			nBytes = m_cacheSize;
-
-		memcpy( (void *)((ubyte*)out + nCompleted), (void *)m_dataCache, nBytes );
-		nRemaining -= nBytes;
-		nCompleted += nBytes;
+		if (numToRead < remainingSamples)
+		{
+			if (loop)
+				currentOffset = minSample;
+			else
+				break;
+		}
+		remainingSamples -= numToRead;
 	}
 
-	return nCompleted / nSampleSize;
+	return numSamplesRead;
 }

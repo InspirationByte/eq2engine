@@ -65,46 +65,48 @@ void CSoundSource_OggStream::ParseData(OggVorbis_File* file)
 
 int CSoundSource_OggStream::GetSamples(void* out, int samplesToRead, int startOffset, bool loop) const
 {
-	int nRemaining;
-	int nBytes, nStart;
+	const int sampleSize = m_format.channels * (m_format.bitwidth >> 3);
 
-	const int nSampleSize = m_format.channels * (m_format.bitwidth >> 3);
+	const int minSample = 0;
+	const int maxSample = m_numSamples;
 
-	nBytes = samplesToRead * nSampleSize;
-	nStart = startOffset * nSampleSize;
-
-	nRemaining = nBytes;
-
-	if (nBytes + nStart > m_dataSize)
-		nBytes = m_dataSize - nStart;
-
-	ReadData(out, startOffset, nBytes);
-	nRemaining -= nBytes;
-
-	if (nRemaining && loop)
+	int currentOffset = startOffset;
+	int numSamplesRead = 0;
+	int remainingSamples = samplesToRead;
+	while (remainingSamples > 0)
 	{
-		ReadData((ubyte*)out + nBytes, 0, nRemaining);
-		return (nBytes + nRemaining) / nSampleSize;
+		const int numToRead = min(remainingSamples, maxSample - currentOffset);
+		ReadData((ubyte*)out + numSamplesRead * sampleSize, currentOffset * sampleSize, numToRead * sampleSize);
+		numSamplesRead += numToRead;
+
+		if (numToRead < remainingSamples)
+		{
+			if (loop)
+				currentOffset = minSample;
+			else
+				break;
+		}
+		remainingSamples -= numToRead;
 	}
 
-	return nBytes / nSampleSize;
+	return numSamplesRead;
 }
 
 int CSoundSource_OggStream::ReadData(void* out, int offset, int count) const
 {
-	if(offset >= 0)
-		ov_pcm_seek(const_cast<OggVorbis_File*>(&m_oggStream), offset);
+	const int sampleSize = m_format.channels * (m_format.bitwidth >> 3);
+	ov_pcm_seek(const_cast<OggVorbis_File*>(&m_oggStream), offset / sampleSize);
 
-	int samplePos = 0;
-	while(samplePos < offset)
+	int totalBytes = 0;
+	while(totalBytes < count)
 	{
-		char* dest = ((char*)out) + samplePos;
-		const int readBytes = ov_read(const_cast<OggVorbis_File*>(&m_oggStream), dest, count - samplePos, 0, 2, 1, nullptr);
+		char* dest = ((char*)out) + totalBytes;
+		const int readBytes = ov_read(const_cast<OggVorbis_File*>(&m_oggStream), dest, count - totalBytes, 0, 2, 1, nullptr);
 
 		if (readBytes <= 0)
 			break;
 
-		samplePos += readBytes;
+		totalBytes += readBytes;
 	}
 
 	return 0;
