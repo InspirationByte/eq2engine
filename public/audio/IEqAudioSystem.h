@@ -109,7 +109,7 @@ public:
 
 	virtual ~IEqAudioSource() {}
 
-	virtual void			Setup(int typeId, const ISoundSource* sample, UpdateCallback fnCallback, void* callbackObject = nullptr) = 0;
+	virtual void			Setup(int chanId, const ISoundSource* sample, UpdateCallback fnCallback, void* callbackObject = nullptr) = 0;
 	virtual void			Release() = 0;
 
 	// full scale
@@ -137,7 +137,8 @@ public:
 	virtual IEqAudioSource*		CreateSource() = 0;
 	virtual void				DestroySource(IEqAudioSource* source) = 0;
 
-	virtual void				Update() = 0;
+	virtual void				BeginUpdate() = 0;
+	virtual void				EndUpdate() = 0;
 
 	virtual void				StopAllSounds(int chanType = -1, void* callbackObject = nullptr) = 0;
 	virtual void				PauseAllSounds(int chanType = -1, void* callbackObject = nullptr) = 0;

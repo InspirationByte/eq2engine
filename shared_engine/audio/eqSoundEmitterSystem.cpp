@@ -108,7 +108,7 @@ struct SoundEmitterData
 	//{
 	//	IEqAudioSource::Params	startParams;
 	//	IEqAudioSource::Params	virtualParams;
-	//	CRefPtr<IEqAudioSource>	soundSource;			// NULL when virtual 
+	//	CRefPtr<IEqAudioSource>	soundSource;
 	//	int						sampleId{ -1 };
 	//};
 
@@ -117,11 +117,10 @@ struct SoundEmitterData
 	CRefPtr<IEqAudioSource>	soundSource;			// NULL when virtual 
 	int						sampleId{ -1 };
 
+	// Array<Wave>				waves{ PP_SL };
 	const SoundScriptDesc*	script{ nullptr };			// sound script which used to start this sound
 	CSoundingObject*		soundingObj{ nullptr };
 	ESoundChannelType		channelType{ CHAN_INVALID };
-
-	//Array<Wave>			waves{ PP_SL };
 };
 
 //-------------------------------------------
@@ -745,9 +744,13 @@ int CSoundEmitterSystem::LoopSourceUpdateCallback(void* obj, IEqAudioSource::Par
 //
 // Updates all emitters and sound system itself
 //
-void CSoundEmitterSystem::Update(float pitchScale, bool force)
+void CSoundEmitterSystem::Update()
 {
 	PROF_EVENT("Sound Emitter System Update");
+
+	// FIXME: run in job thread?
+
+	g_audioSystem->BeginUpdate();
 
 	// start all pending sounds we accumulated during sound pause
 	if (m_pendingStartSounds.numElem())
@@ -776,7 +779,7 @@ void CSoundEmitterSystem::Update(float pitchScale, bool force)
 		}
 	}
 
-	g_audioSystem->Update();
+	g_audioSystem->EndUpdate();
 }
 
 void CSoundEmitterSystem::RemoveSoundingObject(CSoundingObject* obj)

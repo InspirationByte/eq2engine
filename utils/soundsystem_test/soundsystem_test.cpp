@@ -616,8 +616,6 @@ void CMainWindow::ReDraw()
 	if(!materials)
 		return;
 
-	//	g_sounds->Update();
-
 	if(!IsShown())
 		return;
 
@@ -630,8 +628,6 @@ void CMainWindow::ReDraw()
 		m_bDoRefresh = false;
 	}
 
-	g_sounds->Update();
-
 	// compute time since last frame
 	g_frametime += g_timer.GetTime(true);
 
@@ -641,7 +637,7 @@ void CMainWindow::ReDraw()
 
 	static float totalTime = 0.0f;
 	totalTime += g_frametime;
-	g_musicObject->SetPitch(CSoundingObject::EncodeId(s_musicNameId, 0), 0.5f);
+	g_musicObject->SetVolume(CSoundingObject::EncodeId(s_musicNameId, 0), 0.5f);
 
 	g_audioSystem->SetChannelVolume(CHAN_STREAM, 0.25f);
  
@@ -659,7 +655,7 @@ void CMainWindow::ReDraw()
 
 		//g_soundEngine->SetListener(g_camera_target, forward,right,up);
 		g_audioSystem->SetListener(g_camera_target, vec3_zero, forward, up);
-		g_audioSystem->Update();
+		g_sounds->Update();
 
 		debugoverlay->Box3D(-1.0f, 1.0f, ColorRGBA(1,1,1,1), 1.0f);
 

@@ -70,18 +70,40 @@ const char* getALErrorString(int err)
 	}
 }
 
+bool checkALDeviceForErrors(ALCdevice* dev, const char* stage)
+{
+	ALCenum alErr = alcGetError(dev);
+	if (alErr != AL_NO_ERROR)
+	{
+		MsgError("%s error: %s\n", stage, getALCErrorString(alErr));
+		return false;
+	}
+	return true;
+}
+
 // AL effects prototypes
-LPALGENEFFECTS _alGenEffects = nullptr;
-LPALEFFECTI _alEffecti = nullptr;
-LPALEFFECTF _alEffectf = nullptr;
-LPALGENAUXILIARYEFFECTSLOTS _alGenAuxiliaryEffectSlots = nullptr;
-LPALAUXILIARYEFFECTSLOTI _alAuxiliaryEffectSloti = nullptr;
-LPALDELETEAUXILIARYEFFECTSLOTS _alDeleteAuxiliaryEffectSlots = nullptr;
-LPALDELETEEFFECTS _alDeleteEffects = nullptr;
+static LPALGENEFFECTS alGenEffects = nullptr;
+static LPALEFFECTI alEffecti = nullptr;
+static LPALEFFECTF alEffectf = nullptr;
+static LPALGENAUXILIARYEFFECTSLOTS alGenAuxiliaryEffectSlots = nullptr;
+static LPALAUXILIARYEFFECTSLOTI alAuxiliaryEffectSloti = nullptr;
+static LPALDELETEAUXILIARYEFFECTSLOTS alDeleteAuxiliaryEffectSlots = nullptr;
+static LPALDELETEEFFECTS alDeleteEffects = nullptr;
+
+// AL context prototypes
+static LPALCGETSTRINGISOFT alcGetStringiSOFT = nullptr;
+static LPALCRESETDEVICESOFT alcResetDeviceSOFT = nullptr;
+
+// AL buffer prototypes
+LPALBUFFERCALLBACKSOFT alBufferCallbackSOFT;
+
+#define AL_LOAD_PROC(x, T)		x = (T)alGetProcAddress(#x)
+#define ALC_LOAD_PROC(d, T, x)  x = (T)alcGetProcAddress(d, #x)
 
 //---------------------------------------------------------
 
 static ConVar snd_device("snd_device", "0", nullptr, CV_ARCHIVE);
+static ConVar snd_hrtf("snd_hrtf", "0", nullptr, CV_ARCHIVE);
 
 //---------------------------------------------------------
 
@@ -127,13 +149,34 @@ bool CEqAudioSystemAL::InitContext()
 	Msg("Audio device: %s\n", tempListChars[snd_device.GetInt()]);
 	m_dev = alcOpenDevice((ALCchar*)tempListChars[snd_device.GetInt()]);
 
-	int alErr = AL_NO_ERROR;
-
 	if (!m_dev)
 	{
-		alErr = alcGetError(nullptr);
-		MsgError("alcOpenDevice: NULL DEVICE error: %s\n", getALCErrorString(alErr));
+		checkALDeviceForErrors(nullptr, "alcOpenDevice");
 		return false;
+	}
+
+	int hrtfIndex = -1;
+	if (alcIsExtensionPresent(m_dev, "ALC_SOFT_HRTF"))
+	{
+		ALC_LOAD_PROC(m_dev, LPALCGETSTRINGISOFT, alcGetStringiSOFT);
+		ALC_LOAD_PROC(m_dev, LPALCRESETDEVICESOFT, alcResetDeviceSOFT);
+
+		DevMsg(DEVMSG_SOUND, "Enumerate HRTF modes:\n");
+		ALCint numHrtf;
+		alcGetIntegerv(m_dev, ALC_NUM_HRTF_SPECIFIERS_SOFT, 1, &numHrtf);
+
+		for (int i = 0; i < numHrtf; i++)
+		{
+			const ALCchar* name = alcGetStringiSOFT(m_dev, ALC_HRTF_SPECIFIER_SOFT, i);
+			DevMsg(DEVMSG_SOUND, "    %d: %s\n", i, name);
+
+			if (i == 0)
+				hrtfIndex = i;
+		}
+	}
+	else
+	{
+		MsgInfo("EqAudio: HRTF is NOT supported.\n");
 	}
 
 	// configure context
@@ -141,27 +184,36 @@ bool CEqAudioSystemAL::InitContext()
 	{
 		ALC_FREQUENCY, 44100,
 		ALC_MAX_AUXILIARY_SENDS, EQSND_EFFECT_SLOTS,
+		ALC_HRTF_SOFT, snd_hrtf.GetBool(),
+		ALC_HRTF_ID_SOFT, hrtfIndex,
 		//ALC_SYNC, ALC_TRUE,
 		//ALC_REFRESH, 120,
 		0
 	};
 
 	m_ctx = alcCreateContext(m_dev, al_context_params);
-	alErr = alcGetError(m_dev);
-
-	if (alErr != AL_NO_ERROR)
-	{
-		MsgError("alcCreateContext error: %s\n", getALCErrorString(alErr));
+	if (!checkALDeviceForErrors(m_dev, "alcCreateContext"))
 		return false;
-	}
 
 	alcMakeContextCurrent(m_ctx);
-	alErr = alcGetError(m_dev);
-
-	if (alErr != AL_NO_ERROR)
-	{
-		MsgError("alcMakeContextCurrent error: %s\n", getALCErrorString(alErr));
+	if (!checkALDeviceForErrors(m_dev, "alcMakeContextCurrent"))
 		return false;
+
+	// check HRTF state
+	{
+		ALCint hrtfState;
+		alcGetIntegerv(m_dev, ALC_HRTF_SOFT, 1, &hrtfState);
+		if (hrtfState)
+		{
+			const ALchar* name = alcGetString(m_dev, ALC_HRTF_SPECIFIER_SOFT);
+			MsgInfo("EqAudio: HRTF enabled, using %s\n", name);
+		}
+	}
+
+	// buffer callback is required for multi-source mixing
+	if (alIsExtensionPresent("AL_SOFT_callback_buffer"))
+	{
+		AL_LOAD_PROC(alBufferCallbackSOFT, LPALBUFFERCALLBACKSOFT);
 	}
 
 	return true;
@@ -184,7 +236,6 @@ void CEqAudioSystemAL::Init()
 		return;
 
 	m_mixerChannels.setNum(EQSND_MIXER_CHANNELS);
-
 	InitEffects();
 
 	m_noSound = false;
@@ -201,19 +252,19 @@ void CEqAudioSystemAL::InitEffects()
 		return;
 	}
 
-	_alGenEffects = (LPALGENEFFECTS)alGetProcAddress("alGenEffects");
-	_alEffecti = (LPALEFFECTI)alGetProcAddress("alEffecti");
-	_alEffectf = (LPALEFFECTF)alGetProcAddress("alEffectf");
-	_alGenAuxiliaryEffectSlots = (LPALGENAUXILIARYEFFECTSLOTS)alGetProcAddress("alGenAuxiliaryEffectSlots");
-	_alAuxiliaryEffectSloti = (LPALAUXILIARYEFFECTSLOTI)alGetProcAddress("alAuxiliaryEffectSloti");
-	_alDeleteAuxiliaryEffectSlots = (LPALDELETEAUXILIARYEFFECTSLOTS)alGetProcAddress("alDeleteAuxiliaryEffectSlots");
-	_alDeleteEffects = (LPALDELETEEFFECTS)alGetProcAddress("alDeleteEffects");
+	AL_LOAD_PROC(alGenEffects, LPALGENEFFECTS);
+	AL_LOAD_PROC(alEffecti, LPALEFFECTI);
+	AL_LOAD_PROC(alEffectf, LPALEFFECTF);
+	AL_LOAD_PROC(alGenAuxiliaryEffectSlots, LPALGENAUXILIARYEFFECTSLOTS);
+	AL_LOAD_PROC(alAuxiliaryEffectSloti, LPALAUXILIARYEFFECTSLOTI);
+	AL_LOAD_PROC(alDeleteAuxiliaryEffectSlots, LPALDELETEAUXILIARYEFFECTSLOTS);
+	AL_LOAD_PROC(alDeleteEffects, LPALDELETEEFFECTS);
 
 	int maxEffectSlots = 0;
 	alcGetIntegerv(m_dev, ALC_MAX_AUXILIARY_SENDS, 1, &maxEffectSlots);
 	m_effectSlots.setNum(maxEffectSlots);
 
-	_alGenAuxiliaryEffectSlots(maxEffectSlots, m_effectSlots.ptr());
+	alGenAuxiliaryEffectSlots(maxEffectSlots, m_effectSlots.ptr());
 
 	//
 	// Load effect presets from file
@@ -272,28 +323,28 @@ bool CEqAudioSystemAL::CreateALEffect(const char* pszName, KVSection* pSection, 
 
 	if (!stricmp(pszName, "reverb"))
 	{
-		_alGenEffects(1, &effect.nAlEffect);
+		alGenEffects(1, &effect.nAlEffect);
 
-		_alEffecti(effect.nAlEffect, AL_EFFECT_TYPE, AL_EFFECT_REVERB);
+		alEffecti(effect.nAlEffect, AL_EFFECT_TYPE, AL_EFFECT_REVERB);
 
-		_alEffectf(effect.nAlEffect, PARAM_VALUE(REVERB, GAIN, "gain"));
-		_alEffectf(effect.nAlEffect, PARAM_VALUE(REVERB, GAINHF, "gain_hf"));
+		alEffectf(effect.nAlEffect, PARAM_VALUE(REVERB, GAIN, "gain"));
+		alEffectf(effect.nAlEffect, PARAM_VALUE(REVERB, GAINHF, "gain_hf"));
 
-		_alEffectf(effect.nAlEffect, PARAM_VALUE(REVERB, DECAY_TIME, "decay_time"));
-		_alEffectf(effect.nAlEffect, PARAM_VALUE(REVERB, DECAY_HFRATIO, "decay_hf"));
-		_alEffectf(effect.nAlEffect, PARAM_VALUE(REVERB, REFLECTIONS_DELAY, "reflection_delay"));
-		_alEffectf(effect.nAlEffect, PARAM_VALUE(REVERB, REFLECTIONS_GAIN, "reflection_gain"));
-		_alEffectf(effect.nAlEffect, PARAM_VALUE(REVERB, DIFFUSION, "diffusion"));
-		_alEffectf(effect.nAlEffect, PARAM_VALUE(REVERB, DENSITY, "density"));
-		_alEffectf(effect.nAlEffect, PARAM_VALUE(REVERB, AIR_ABSORPTION_GAINHF, "airabsorption_gain"));
+		alEffectf(effect.nAlEffect, PARAM_VALUE(REVERB, DECAY_TIME, "decay_time"));
+		alEffectf(effect.nAlEffect, PARAM_VALUE(REVERB, DECAY_HFRATIO, "decay_hf"));
+		alEffectf(effect.nAlEffect, PARAM_VALUE(REVERB, REFLECTIONS_DELAY, "reflection_delay"));
+		alEffectf(effect.nAlEffect, PARAM_VALUE(REVERB, REFLECTIONS_GAIN, "reflection_gain"));
+		alEffectf(effect.nAlEffect, PARAM_VALUE(REVERB, DIFFUSION, "diffusion"));
+		alEffectf(effect.nAlEffect, PARAM_VALUE(REVERB, DENSITY, "density"));
+		alEffectf(effect.nAlEffect, PARAM_VALUE(REVERB, AIR_ABSORPTION_GAINHF, "airabsorption_gain"));
 
 		return true;
 	}
 	else if (!stricmp(pszName, "echo"))
 	{
-		_alGenEffects(1, &effect.nAlEffect);
+		alGenEffects(1, &effect.nAlEffect);
 
-		_alEffecti(effect.nAlEffect, AL_EFFECT_TYPE, AL_EFFECT_ECHO);
+		alEffecti(effect.nAlEffect, AL_EFFECT_TYPE, AL_EFFECT_ECHO);
 
 		return true;
 	}
@@ -306,9 +357,9 @@ bool CEqAudioSystemAL::CreateALEffect(const char* pszName, KVSection* pSection, 
 void CEqAudioSystemAL::DestroyEffects()
 {
 	for (auto it = m_effects.begin(); it != m_effects.end(); ++it)
-		_alDeleteEffects(1, &it.value().nAlEffect);
+		alDeleteEffects(1, &it.value().nAlEffect);
 
-	_alDeleteAuxiliaryEffectSlots(m_effectSlots.numElem(), m_effectSlots.ptr());
+	alDeleteAuxiliaryEffectSlots(m_effectSlots.numElem(), m_effectSlots.ptr());
 	m_effectSlots.clear();
 	m_effects.clear();
 }
@@ -493,7 +544,7 @@ effectId_t CEqAudioSystemAL::FindEffect(const char* name) const
 void CEqAudioSystemAL::SetEffect(int slot, effectId_t effect)
 {
 	// used directly
-	_alAuxiliaryEffectSloti(m_effectSlots[slot], AL_EFFECTSLOT_EFFECT, effect);
+	alAuxiliaryEffectSloti(m_effectSlots[slot], AL_EFFECTSLOT_EFFECT, effect);
 }
 
 //-----------------------------------------------
@@ -512,8 +563,17 @@ void CEqAudioSystemAL::SuspendSourcesWithSample(ISoundSource* sample)
 }
 
 // updates all channels
-void CEqAudioSystemAL::Update()
+void CEqAudioSystemAL::BeginUpdate()
 {
+	ASSERT(m_begunUpdate == false);
+	m_begunUpdate = true;
+	alcSuspendContext(m_ctx);
+}
+
+void CEqAudioSystemAL::EndUpdate()
+{
+	ASSERT(m_begunUpdate);
+
 	for (int i = 0; i < m_sources.numElem(); i++)
 	{
 		CEqAudioSourceAL* src = m_sources[i].Ptr();
@@ -534,6 +594,9 @@ void CEqAudioSystemAL::Update()
 			}
 		}
 	}
+
+	alcProcessContext(m_ctx);
+	m_begunUpdate = false;
 }
 
 void CEqAudioSystemAL::SetMasterVolume(float value)
@@ -761,7 +824,7 @@ void CEqAudioSourceAL::GetParams(Params& params) const
 
 	if (isStreaming)
 	{
-		// use channel state
+		// continuous; use channel state
 		params.state = m_state;
 	}
 	else

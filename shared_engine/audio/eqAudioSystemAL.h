@@ -32,7 +32,8 @@ public:
 	IEqAudioSource*				CreateSource();
 	void						DestroySource(IEqAudioSource* source);
 
-	void						Update();
+	void						BeginUpdate();
+	void						EndUpdate();
 
 	void						StopAllSounds(int chanId = -1, void* callbackObject = nullptr);
 	void						PauseAllSounds(int chanId = -1, void* callbackObject = nullptr);
@@ -98,6 +99,7 @@ private:
 	ALCcontext*								m_ctx{ nullptr };
 	ALCdevice*								m_dev{ nullptr };
 	bool									m_noSound{ true };
+	bool									m_begunUpdate{ false };
 };
 
 //-----------------------------------------------------------------
@@ -123,6 +125,11 @@ public:
 	bool					IsLooping() const { return m_looping; }
 
 protected:
+	struct SubSource
+	{
+
+	};
+
 	bool					QueueStreamChannel(ALuint buffer);
 	void					SetupSample(const ISoundSource* sample);
 
@@ -135,15 +142,15 @@ protected:
 
 	ALuint					m_buffers[EQSND_STREAM_BUFFER_COUNT]{ 0 };
 	ISoundSource*			m_sample{ nullptr };
+	ALuint					m_source{ 0 };
+	int						m_streamPos{ 0 };
 
 	UpdateCallback			m_callback;
 	void*					m_callbackObject{ nullptr };
 
-	ALuint					m_source{ 0 };
-	int						m_streamPos{ 0 };
 	State					m_state{ State::STOPPED };
 
-	float					m_volume{ 1.0f };	// need them raw and unaffected by mixer params
+	float					m_volume{ 1.0f };			// need them raw and unaffected by mixer params
 	float					m_pitch{ 1.0f };
 
 	int						m_channel{ -1 };			// mixer channel index

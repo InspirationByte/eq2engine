@@ -161,7 +161,7 @@ public:
 
 	void				StopAllEmitters();
 
-	void				Update(float pitchScale = 1.0f, bool force = false);
+	void				Update();
 
 private:
 	int					EmitSound(EmitParams* emit, CSoundingObject* soundingObj, int objUniqueId);
