@@ -18,12 +18,15 @@
 #include "eqAudioSystemAL.h"
 #include "source/snd_al_source.h"
 
-
 using namespace Threading;
 static CEqMutex s_audioSysMutex;
 
 static CEqAudioSystemAL s_audioSystemAL;
 IEqAudioSystem* g_audioSystem = &s_audioSystemAL;
+
+// this allows us to mix between samples in single source
+// and also eliminates few reallocations to just copy to single AL buffer
+#define USE_ALSOFT_BUFFER_CALLBACK 1
 
 //---------------------------------------------------------
 // AL COMMON
@@ -474,21 +477,22 @@ ISoundSource* CEqAudioSystemAL::LoadSample(const char* filename)
 
 	if (sampleSource)
 	{
-		ISoundSource::Format* fmt = sampleSource->GetFormat();
+		const ISoundSource::Format& fmt = sampleSource->GetFormat();
 
-		if (fmt->dataFormat != ISoundSource::FORMAT_PCM || fmt->bitwidth > 16)	// not PCM or 32 bit
+		if (fmt.dataFormat != ISoundSource::FORMAT_PCM || fmt.bitwidth > 16)	// not PCM or 32 bit
 		{
 			MsgWarning("Sound '%s' has unsupported format!\n", filename);
 			ISoundSource::DestroySound(sampleSource);
 			return nullptr;
 		}
-		else if (fmt->channels > 2)
+		else if (fmt.channels > 2)
 		{
-			MsgWarning("Sound '%s' has unsupported channel count (%d)!\n", filename, fmt->channels);
+			MsgWarning("Sound '%s' has unsupported channel count (%d)!\n", filename, fmt.channels);
 			ISoundSource::DestroySound(sampleSource);
 			return nullptr;
 		}
 
+#if !USE_ALSOFT_BUFFER_CALLBACK
 		if (!sampleSource->IsStreaming())
 		{
 			// Set memory to OpenAL and destroy original source (as it's not needed anymore)
@@ -497,7 +501,7 @@ ISoundSource* CEqAudioSystemAL::LoadSample(const char* filename)
 
 			sampleSource = alCacheSource;
 		}
-
+#endif
 		{
 			CScopedMutex m(s_audioSysMutex);
 			m_samples.insert(nameHash, sampleSource);
@@ -983,6 +987,43 @@ bool CEqAudioSourceAL::DoUpdate()
 	return true;
 }
 
+static ALenum GetSoundSourceFormatAsALEnum(const ISoundSource::Format& fmt)
+{
+	ALenum alFormat;
+
+	if (fmt.bitwidth == 8)
+		alFormat = fmt.channels == 2 ? AL_FORMAT_MONO16 : AL_FORMAT_MONO8;
+	else if (fmt.bitwidth == 16)
+		alFormat = fmt.channels == 2 ? AL_FORMAT_STEREO16 : AL_FORMAT_MONO16;
+	else
+		alFormat = AL_FORMAT_MONO16;
+
+	return alFormat;
+}
+
+static ALsizei AL_APIENTRY SoundSourceSampleDataCallback(void* userPtr, void* data, ALsizei size)
+{
+	CEqAudioSourceAL* audioSrc = reinterpret_cast<CEqAudioSourceAL*>(userPtr);
+	return audioSrc->GetSampleBuffer(data, size);
+}
+
+ALsizei CEqAudioSourceAL::GetSampleBuffer(void* data, ALsizei size)
+{
+	ISoundSource* sample = m_sample;
+
+	const ISoundSource::Format& fmt = sample->GetFormat();
+	const int sampleSize = fmt.bitwidth / 8 * fmt.channels;
+
+	// This also allows us to mix multiple samples at once
+	const int numRead = sample->GetSamples((ubyte*)data, size / sampleSize, m_streamPos, m_looping);
+	m_streamPos += numRead;
+
+	if (m_looping)
+		m_streamPos %= sample->GetSampleCount();
+
+	return numRead;
+}
+
 void CEqAudioSourceAL::SetupSample(const ISoundSource* sample)
 {
 	// setup voice defaults
@@ -992,10 +1033,18 @@ void CEqAudioSourceAL::SetupSample(const ISoundSource* sample)
 
 	if (sample && !sample->IsStreaming())
 	{
-		CSoundSource_OpenALCache* alSource = (CSoundSource_OpenALCache*)sample;
+#if USE_ALSOFT_BUFFER_CALLBACK
+		// set the callback on AL buffer
+		// alBufferData will reset this to NULL for us
+		const ISoundSource::Format& fmt = sample->GetFormat();
+		ALenum alFormat = GetSoundSourceFormatAsALEnum(fmt);
 
-		// set the AL buffer
+		alBufferCallbackSOFT(m_buffers[0], alFormat, fmt.frequency, SoundSourceSampleDataCallback, this);
+		alSourcei(m_source, AL_BUFFER, m_buffers[0]);
+#else
+		CSoundSource_OpenALCache* alSource = (CSoundSource_OpenALCache*)sample;
 		alSourcei(m_source, AL_BUFFER, alSource->m_alBuffer);
+#endif
 	}
 }
 
@@ -1005,20 +1054,12 @@ bool CEqAudioSourceAL::QueueStreamChannel(ALuint buffer)
 
 	ISoundSource* sample = m_sample;
 
-	ISoundSource::Format* formatInfo = sample->GetFormat();
-	ALenum alFormat;
-
-	int sampleSize = formatInfo->bitwidth / 8 * formatInfo->channels;
-
-	if (formatInfo->bitwidth == 8)
-		alFormat = formatInfo->channels == 2 ? AL_FORMAT_STEREO8 : AL_FORMAT_MONO8;
-	else if (formatInfo->bitwidth == 16)
-		alFormat = formatInfo->channels == 2 ? AL_FORMAT_STEREO16 : AL_FORMAT_MONO16;
-	else
-		alFormat = AL_FORMAT_MONO16;
+	const ISoundSource::Format& fmt = sample->GetFormat();
+	ALenum alFormat = GetSoundSourceFormatAsALEnum(fmt);
+	const int sampleSize = fmt.bitwidth / 8 * fmt.channels;
 
 	// read sample data and update AL buffers
-	int numRead = sample->GetSamples(pcmBuffer, EQSND_STREAM_BUFFER_SIZE / sampleSize, m_streamPos, m_looping);
+	const int numRead = sample->GetSamples(pcmBuffer, EQSND_STREAM_BUFFER_SIZE / sampleSize, m_streamPos, m_looping);
 
 	if (numRead > 0)
 	{
@@ -1026,12 +1067,10 @@ bool CEqAudioSourceAL::QueueStreamChannel(ALuint buffer)
 
 		// FIXME: might be invalid
 		if (m_looping)
-		{
 			m_streamPos %= sample->GetSampleCount();
-		}
 
 		// upload to specific buffer
-		alBufferData(buffer, alFormat, pcmBuffer, numRead * sampleSize, formatInfo->frequency);
+		alBufferData(buffer, alFormat, pcmBuffer, numRead * sampleSize, fmt.frequency);
 
 		// queue after uploading
 		alSourceQueueBuffers(m_source, 1, &buffer);

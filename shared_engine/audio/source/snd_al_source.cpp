@@ -35,7 +35,7 @@ void CSoundSource_OpenALCache::InitWav(CSoundSource_WaveCache* wav)
 
 	m_filename = wav->m_filename;
 
-	m_format = *wav->GetFormat();
+	m_format = wav->GetFormat();
 	ALenum alFormat;
 
 	if (m_format.bitwidth == 8)
@@ -67,7 +67,7 @@ void CSoundSource_OpenALCache::InitOgg(CSoundSource_OggCache* ogg)
 
 	m_filename = ogg->m_filename;
 
-	m_format = *ogg->GetFormat();
+	m_format = ogg->GetFormat();
 	ALenum alFormat;
 
 	if (m_format.bitwidth == 8)
@@ -95,9 +95,9 @@ ubyte* CSoundSource_OpenALCache::GetDataPtr(int& dataSize) const
 	return 0; 
 }
 
-ISoundSource::Format* CSoundSource_OpenALCache::GetFormat() const
+const ISoundSource::Format& CSoundSource_OpenALCache::GetFormat() const
 {
-	return (Format*)&m_format;
+	return m_format;
 }
 
 const char* CSoundSource_OpenALCache::GetFilename() const 

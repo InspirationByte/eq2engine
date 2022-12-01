@@ -22,7 +22,7 @@ public:
 	virtual int             GetSamples(ubyte* pOutput, int nSamples, int nOffset, bool bLooping);
 	virtual ubyte*			GetDataPtr(int& dataSize) const;
 
-	virtual Format*	GetFormat() const;
+	virtual const Format&	GetFormat() const;
 	virtual const char*		GetFilename() const;
 	virtual int				GetSampleCount() const;
 

@@ -124,11 +124,9 @@ public:
 	State					GetState() const { return m_state; }
 	bool					IsLooping() const { return m_looping; }
 
-protected:
-	struct SubSource
-	{
+	ALsizei					GetSampleBuffer(void* data, ALsizei size);
 
-	};
+protected:
 
 	bool					QueueStreamChannel(ALuint buffer);
 	void					SetupSample(const ISoundSource* sample);
