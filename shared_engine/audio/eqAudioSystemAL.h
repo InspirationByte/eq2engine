@@ -12,6 +12,7 @@
 
 #define EQSND_MIXER_CHANNELS			16
 #define EQSND_STREAM_BUFFER_COUNT		4
+#define EQSND_SAMPLE_BUFFER_COUNT		8
 #define EQSND_STREAM_BUFFER_SIZE		(1024*8) // 8 kb
 
 //-----------------------------------------------------------------
@@ -110,7 +111,6 @@ class CEqAudioSourceAL : public IEqAudioSource
 	friend class CEqAudioSystemAL;
 public:
 	CEqAudioSourceAL(CEqAudioSystemAL* owner);
-	CEqAudioSourceAL(int typeId, ISoundSource* sample, UpdateCallback fnCallback, void* callbackObject);
 	~CEqAudioSourceAL();
 
 	void					Setup(int chanId, const ISoundSource* sample, UpdateCallback fnCallback = nullptr, void* callbackObject = nullptr);
@@ -127,6 +127,14 @@ public:
 	ALsizei					GetSampleBuffer(void* data, ALsizei size);
 
 protected:
+
+	struct SourceStream
+	{
+		ISoundSource*	sample{ nullptr };
+		int				curPos{ 0 };
+		float			volume{ 1.0f };
+	};
+
 	bool					QueueStreamChannel(ALuint buffer);
 	void					SetupSample(const ISoundSource* sample);
 
@@ -140,7 +148,7 @@ protected:
 	ISoundSource*			m_sample{ nullptr };
 	int						m_streamPos{ 0 };
 
-	ALuint					m_buffers[EQSND_STREAM_BUFFER_COUNT]{ 0 };
+	ALuint					m_buffers[EQSND_SAMPLE_BUFFER_COUNT]{ 0 };
 	ALuint					m_source{ 0 };
 
 	UpdateCallback			m_callback;

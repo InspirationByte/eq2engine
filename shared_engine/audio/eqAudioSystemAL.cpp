@@ -18,6 +18,8 @@
 #include "eqAudioSystemAL.h"
 #include "source/snd_al_source.h"
 
+#pragma optimize("", off)
+
 using namespace Threading;
 static CEqMutex s_audioSysMutex;
 
@@ -84,23 +86,53 @@ bool checkALDeviceForErrors(ALCdevice* dev, const char* stage)
 	return true;
 }
 
-// AL effects prototypes
-static LPALGENEFFECTS alGenEffects = nullptr;
-static LPALEFFECTI alEffecti = nullptr;
-static LPALEFFECTF alEffectf = nullptr;
-static LPALGENAUXILIARYEFFECTSLOTS alGenAuxiliaryEffectSlots = nullptr;
-static LPALAUXILIARYEFFECTSLOTI alAuxiliaryEffectSloti = nullptr;
-static LPALDELETEAUXILIARYEFFECTSLOTS alDeleteAuxiliaryEffectSlots = nullptr;
-static LPALDELETEEFFECTS alDeleteEffects = nullptr;
+// AL filters functions
+static LPALGENFILTERS alGenFilters = nullptr;
+static LPALDELETEFILTERS alDeleteFilters = nullptr;
+static LPALISFILTER alIsFilter = nullptr;
+static LPALFILTERI alFilteri = nullptr;
+static LPALFILTERIV alFilteriv = nullptr;
+static LPALFILTERF alFilterf = nullptr;
+static LPALFILTERFV alFilterfv = nullptr;
+static LPALGETFILTERI alGetFilteri = nullptr;
+static LPALGETFILTERIV alGetFilteriv = nullptr;
+static LPALGETFILTERF alGetFilterf = nullptr;
+static LPALGETFILTERFV alGetFilterfv = nullptr;
 
-// AL context prototypes
+// AL effects functions
+static LPALGENEFFECTS alGenEffects = nullptr;
+static LPALDELETEEFFECTS alDeleteEffects = nullptr;
+static LPALISEFFECT alIsEffect = nullptr;
+static LPALEFFECTI alEffecti = nullptr;
+static LPALEFFECTIV alEffectiv = nullptr;
+static LPALEFFECTF alEffectf = nullptr;
+static LPALEFFECTFV alEffectfv = nullptr;
+static LPALGETEFFECTI alGetEffecti = nullptr;
+static LPALGETEFFECTIV alGetEffectiv = nullptr;
+static LPALGETEFFECTF alGetEffectf = nullptr;
+static LPALGETEFFECTFV alGetEffectfv = nullptr;
+
+// AL auxiliary effect functions
+static LPALGENAUXILIARYEFFECTSLOTS alGenAuxiliaryEffectSlots = nullptr;
+static LPALDELETEAUXILIARYEFFECTSLOTS alDeleteAuxiliaryEffectSlots = nullptr;
+static LPALISAUXILIARYEFFECTSLOT alIsAuxiliaryEffectSlot = nullptr;
+static LPALAUXILIARYEFFECTSLOTI alAuxiliaryEffectSloti = nullptr;
+static LPALAUXILIARYEFFECTSLOTIV alAuxiliaryEffectSlotiv = nullptr;
+static LPALAUXILIARYEFFECTSLOTF alAuxiliaryEffectSlotf = nullptr;
+static LPALAUXILIARYEFFECTSLOTFV alAuxiliaryEffectSlotfv = nullptr;
+static LPALGETAUXILIARYEFFECTSLOTI alGetAuxiliaryEffectSloti = nullptr;
+static LPALGETAUXILIARYEFFECTSLOTIV alGetAuxiliaryEffectSlotiv = nullptr;
+static LPALGETAUXILIARYEFFECTSLOTF alGetAuxiliaryEffectSlotf = nullptr;
+static LPALGETAUXILIARYEFFECTSLOTFV alGetAuxiliaryEffectSlotfv = nullptr;
+
+// AL context functions
 static LPALCGETSTRINGISOFT alcGetStringiSOFT = nullptr;
 static LPALCRESETDEVICESOFT alcResetDeviceSOFT = nullptr;
 
-// AL buffer prototypes
+// AL buffer
 LPALBUFFERCALLBACKSOFT alBufferCallbackSOFT;
 
-#define AL_LOAD_PROC(x, T)		x = (T)alGetProcAddress(#x)
+#define AL_LOAD_PROC(T, x)		x = (T)alGetProcAddress(#x)
 #define ALC_LOAD_PROC(d, T, x)  x = (T)alcGetProcAddress(d, #x)
 
 //---------------------------------------------------------
@@ -214,10 +246,15 @@ bool CEqAudioSystemAL::InitContext()
 	}
 
 	// buffer callback is required for multi-source mixing
+#if USE_ALSOFT_BUFFER_CALLBACK
 	if (alIsExtensionPresent("AL_SOFT_callback_buffer"))
 	{
-		AL_LOAD_PROC(alBufferCallbackSOFT, LPALBUFFERCALLBACKSOFT);
+		AL_LOAD_PROC(LPALBUFFERCALLBACKSOFT, alBufferCallbackSOFT);
 	}
+	else
+		MsgError("AL_SOFT_callback_buffer is not supported, OpenAL-soft needs to be updated\n");
+#endif
+
 
 	return true;
 }
@@ -249,19 +286,47 @@ void CEqAudioSystemAL::Init()
 
 void CEqAudioSystemAL::InitEffects()
 {
+	AL_LOAD_PROC(LPALGENFILTERS, alGenFilters);
+	AL_LOAD_PROC(LPALDELETEFILTERS, alDeleteFilters);
+	AL_LOAD_PROC(LPALISFILTER, alIsFilter);
+	AL_LOAD_PROC(LPALFILTERI, alFilteri);
+	AL_LOAD_PROC(LPALFILTERIV, alFilteriv);
+	AL_LOAD_PROC(LPALFILTERF, alFilterf);
+	AL_LOAD_PROC(LPALFILTERFV, alFilterfv);
+	AL_LOAD_PROC(LPALGETFILTERI, alGetFilteri);
+	AL_LOAD_PROC(LPALGETFILTERIV, alGetFilteriv);
+	AL_LOAD_PROC(LPALGETFILTERF, alGetFilterf);
+	AL_LOAD_PROC(LPALGETFILTERFV, alGetFilterfv);
+
 	if (!alcIsExtensionPresent(m_dev, ALC_EXT_EFX_NAME))
 	{
 		MsgWarning("Sound effects are NOT supported!\n");
 		return;
 	}
 
-	AL_LOAD_PROC(alGenEffects, LPALGENEFFECTS);
-	AL_LOAD_PROC(alEffecti, LPALEFFECTI);
-	AL_LOAD_PROC(alEffectf, LPALEFFECTF);
-	AL_LOAD_PROC(alGenAuxiliaryEffectSlots, LPALGENAUXILIARYEFFECTSLOTS);
-	AL_LOAD_PROC(alAuxiliaryEffectSloti, LPALAUXILIARYEFFECTSLOTI);
-	AL_LOAD_PROC(alDeleteAuxiliaryEffectSlots, LPALDELETEAUXILIARYEFFECTSLOTS);
-	AL_LOAD_PROC(alDeleteEffects, LPALDELETEEFFECTS);
+	AL_LOAD_PROC(LPALGENEFFECTS, alGenEffects);
+	AL_LOAD_PROC(LPALDELETEEFFECTS, alDeleteEffects);
+	AL_LOAD_PROC(LPALISEFFECT, alIsEffect);
+	AL_LOAD_PROC(LPALEFFECTI, alEffecti);
+	AL_LOAD_PROC(LPALEFFECTIV, alEffectiv);
+	AL_LOAD_PROC(LPALEFFECTF, alEffectf);
+	AL_LOAD_PROC(LPALEFFECTFV, alEffectfv);
+	AL_LOAD_PROC(LPALGETEFFECTI, alGetEffecti);
+	AL_LOAD_PROC(LPALGETEFFECTIV, alGetEffectiv);
+	AL_LOAD_PROC(LPALGETEFFECTF, alGetEffectf);
+	AL_LOAD_PROC(LPALGETEFFECTFV, alGetEffectfv);
+
+	AL_LOAD_PROC(LPALGENAUXILIARYEFFECTSLOTS, alGenAuxiliaryEffectSlots);
+	AL_LOAD_PROC(LPALDELETEAUXILIARYEFFECTSLOTS, alDeleteAuxiliaryEffectSlots);
+	AL_LOAD_PROC(LPALISAUXILIARYEFFECTSLOT, alIsAuxiliaryEffectSlot);
+	AL_LOAD_PROC(LPALAUXILIARYEFFECTSLOTI, alAuxiliaryEffectSloti);
+	AL_LOAD_PROC(LPALAUXILIARYEFFECTSLOTIV, alAuxiliaryEffectSlotiv);
+	AL_LOAD_PROC(LPALAUXILIARYEFFECTSLOTF, alAuxiliaryEffectSlotf);
+	AL_LOAD_PROC(LPALAUXILIARYEFFECTSLOTFV, alAuxiliaryEffectSlotfv);
+	AL_LOAD_PROC(LPALGETAUXILIARYEFFECTSLOTI, alGetAuxiliaryEffectSloti);
+	AL_LOAD_PROC(LPALGETAUXILIARYEFFECTSLOTIV, alGetAuxiliaryEffectSlotiv);
+	AL_LOAD_PROC(LPALGETAUXILIARYEFFECTSLOTF, alGetAuxiliaryEffectSlotf);
+	AL_LOAD_PROC(LPALGETAUXILIARYEFFECTSLOTFV, alGetAuxiliaryEffectSlotfv);
 
 	int maxEffectSlots = 0;
 	alcGetIntegerv(m_dev, ALC_MAX_AUXILIARY_SENDS, 1, &maxEffectSlots);
@@ -492,8 +557,7 @@ ISoundSource* CEqAudioSystemAL::LoadSample(const char* filename)
 			return nullptr;
 		}
 
-#if !USE_ALSOFT_BUFFER_CALLBACK
-		if (!sampleSource->IsStreaming())
+		if (!alBufferCallbackSOFT && !sampleSource->IsStreaming())
 		{
 			// Set memory to OpenAL and destroy original source (as it's not needed anymore)
 			CSoundSource_OpenALCache* alCacheSource = PPNew CSoundSource_OpenALCache(sampleSource);
@@ -501,7 +565,7 @@ ISoundSource* CEqAudioSystemAL::LoadSample(const char* filename)
 
 			sampleSource = alCacheSource;
 		}
-#endif
+
 		{
 			CScopedMutex m(s_audioSysMutex);
 			m_samples.insert(nameHash, sampleSource);
@@ -638,11 +702,6 @@ CEqAudioSourceAL::CEqAudioSourceAL(CEqAudioSystemAL* owner)
 {
 }
 
-CEqAudioSourceAL::CEqAudioSourceAL(int typeId, ISoundSource* sample, UpdateCallback fnCallback, void* callbackObject)
-{
-	Setup(typeId, sample, fnCallback, callbackObject);
-}
-
 CEqAudioSourceAL::~CEqAudioSourceAL()
 {
 	Release();
@@ -726,9 +785,13 @@ void CEqAudioSourceAL::UpdateParams(const Params& params, int mask)
 	//		AL_FILTER_HIGHPASS
 	//		AL_FILTER_BANDPASS
 	//		
+	//		ALint filter;
 	//		alGenFilters(1, &filter);
 	//		alFilteri(filter, AL_FILTER_TYPE, AL_FILTER_LOWPASS);
 	//		alFilterf(filter, AL_LOWPASS_GAIN, 0.0f);
+	// 		alFilterf(filter, AL_HIGHPASS_GAIN, 0.0f);
+	//		alFilterf(filter, AL_BANDPASS_GAIN, 0.0f);
+	//		alSourcei(thisSource, AL_DIRECT_FILTER, filter);
 
 	if (mask & UPDATE_RELATIVE)
 	{
@@ -879,7 +942,7 @@ void CEqAudioSourceAL::InitSource()
 	m_source = source;
 
 	// initialize buffers
-	alGenBuffers(EQSND_STREAM_BUFFER_COUNT, m_buffers);
+	alGenBuffers(EQSND_SAMPLE_BUFFER_COUNT, m_buffers);
 }
 
 void CEqAudioSourceAL::Release()
@@ -894,7 +957,7 @@ void CEqAudioSourceAL::Release()
 	m_callbackObject = nullptr;
 	m_state = STOPPED;
 
-	alDeleteBuffers(EQSND_STREAM_BUFFER_COUNT, m_buffers);
+	alDeleteBuffers(EQSND_SAMPLE_BUFFER_COUNT, m_buffers);
 	alDeleteSources(1, &m_source);
 
 	m_source = AL_NONE;
@@ -1007,27 +1070,107 @@ static ALsizei AL_APIENTRY SoundSourceSampleDataCallback(void* userPtr, void* da
 	return audioSrc->GetSampleBuffer(data, size);
 }
 
+// mix 8 bit into 16 bit mono sound
+static int MixMono8(float volume, const uint8* in, int numInSamples, short* out, int numOutSamples)
+{
+	const int maxSamples = min(numInSamples, numOutSamples);
+	for (int i = 0; i < maxSamples; ++i)
+	{
+		const short inVal = (short)in[i] * 256 - SHRT_MAX;
+		out[i] = clamp(out[i] + inVal * volume, SHRT_MIN, SHRT_MAX);
+	}
+
+	return maxSamples;
+}
+
+// mix 16 bit mono into 16 bit mono sound
+static int MixMono16(float volume, const short* in, int numInSamples, short* out, int numOutSamples)
+{
+	const int maxSamples = min(numInSamples, numOutSamples);
+	for (int i = 0; i < maxSamples; ++i)
+		out[i] = clamp(out[i] + in[i] * volume, SHRT_MIN, SHRT_MAX);
+
+	return maxSamples;
+}
+
 ALsizei CEqAudioSourceAL::GetSampleBuffer(void* data, ALsizei size)
 {
-	ISoundSource* sample = m_sample;
+	const bool looping = m_looping;
 
-	const ISoundSource::Format& fmt = sample->GetFormat();
-	const int sampleSize = fmt.bitwidth / 8 * fmt.channels;
+	const int numSamples = 1;
+	if (numSamples == 1)
+	{
+		ISoundSource* sample = m_sample;
 
-	// TODO: implement custom resampler
-	// TODO: perform bit depth conversion
+		const ISoundSource::Format& fmt = sample->GetFormat();
+		const int sampleUnit = (fmt.bitwidth >> 3);
+		const int sampleSize = sampleUnit * fmt.channels;
+		const int sampleCount = sample->GetSampleCount();
+		
+		int streamPos = m_streamPos;
+		const int samplesRead = sample->GetSamples((ubyte*)data, size / sampleSize, streamPos, looping);
+
+		streamPos += samplesRead;
+		if (looping)
+			streamPos %= sampleCount;
+		else
+			streamPos = min(streamPos, sampleCount);
+		m_streamPos = streamPos;
+
+		// clever, if numRead < size then source will be stopped automatically!
+		return samplesRead * sampleSize;
+	}
+
+	// TODO: implement multiple sample mixing
+	// TODO: implement resampler
 	// TODO: perform sample rate conversion
+	// TODO: stereo support
 
-	// This also allows us to mix multiple samples at once
-	const int numRead = sample->GetSamples((ubyte*)data, size / sampleSize, m_streamPos, m_looping);
-	m_streamPos += numRead;
+	// silence before mix
+	memset(data, 0, size);
+	
+	// We are mixing always into 16 bit no matter what
+	const int numSamplesToRead = size / sizeof(short);
+	int numRead = 0;
 
-	if (m_looping)
-		m_streamPos %= sample->GetSampleCount();
-	else
-		m_streamPos = min(m_streamPos, sample->GetSampleCount());
+	// we can mix up to 8 samples simultaneously
+	{
+		ISoundSource* sample = m_sample;
+		const float sampleVolume = 1.0f;
 
-	return numRead;
+		const ISoundSource::Format& fmt = sample->GetFormat();
+		const int sampleUnit = (fmt.bitwidth >> 3);
+		const int sampleSize = sampleUnit * fmt.channels;
+		const int sampleCount = sample->GetSampleCount();
+
+		int streamPos = m_streamPos;
+		int samplesRead = 0;
+		if (sampleUnit == sizeof(uint8))
+		{
+			uint8* tmpSamples = (uint8*)stackalloc(numSamplesToRead);
+			samplesRead = sample->GetSamples((ubyte*)tmpSamples, numSamplesToRead, streamPos, looping);
+
+			MixMono8(sampleVolume, tmpSamples, samplesRead, (int16*)data, size);
+		}
+		else if (sampleUnit == sizeof(uint16))
+		{
+			int16* tmpSamples = (int16*)stackalloc(numSamplesToRead * sizeof(int16));
+			samplesRead = sample->GetSamples((ubyte*)tmpSamples, numSamplesToRead, streamPos, looping);
+
+			MixMono16(sampleVolume, tmpSamples, samplesRead, (int16*)data, size);
+		}
+		
+		streamPos += samplesRead;
+		if (looping)
+			streamPos %= sample->GetSampleCount();
+		else
+			streamPos = min(streamPos, sample->GetSampleCount());
+		m_streamPos = streamPos;
+
+		numRead = max(numRead, samplesRead);
+	}
+
+	return numRead * sizeof(short);
 }
 
 void CEqAudioSourceAL::SetupSample(const ISoundSource* sample)
@@ -1040,17 +1183,33 @@ void CEqAudioSourceAL::SetupSample(const ISoundSource* sample)
 	if (sample && !sample->IsStreaming())
 	{
 #if USE_ALSOFT_BUFFER_CALLBACK
-		// set the callback on AL buffer
-		// alBufferData will reset this to NULL for us
-		const ISoundSource::Format& fmt = sample->GetFormat();
-		ALenum alFormat = GetSoundSourceFormatAsALEnum(fmt);
+		const int numSamples = 1;
+		if (alBufferCallbackSOFT)
+		{
+			// set the callback on AL buffer
+			// alBufferData will reset this to NULL for us
+			const ISoundSource::Format& fmt = sample->GetFormat();
+			ALenum alFormat = GetSoundSourceFormatAsALEnum(fmt);
 
-		alBufferCallbackSOFT(m_buffers[0], alFormat, fmt.frequency, SoundSourceSampleDataCallback, this);
-		alSourcei(m_source, AL_BUFFER, m_buffers[0]);
-#else
-		CSoundSource_OpenALCache* alSource = (CSoundSource_OpenALCache*)sample;
-		alSourcei(m_source, AL_BUFFER, alSource->m_alBuffer);
+			if (numSamples > 1)
+			{
+				// For multi-sample sound we need to specify the best format to work with if they are different
+				// So we're mixing always into 16 bit no matter what
+				if (alFormat == AL_FORMAT_MONO8)
+					alFormat = AL_FORMAT_MONO16;
+				else if (alFormat == AL_FORMAT_STEREO8)
+					alFormat = AL_FORMAT_STEREO16;
+			}
+
+			alBufferCallbackSOFT(m_buffers[0], alFormat, fmt.frequency, SoundSourceSampleDataCallback, this);
+			alSourcei(m_source, AL_BUFFER, m_buffers[0]);
+		}
+		else
 #endif
+		{
+			CSoundSource_OpenALCache* alSource = (CSoundSource_OpenALCache*)sample;
+			alSourcei(m_source, AL_BUFFER, alSource->m_alBuffer);
+		}
 	}
 }
 
@@ -1062,7 +1221,7 @@ bool CEqAudioSourceAL::QueueStreamChannel(ALuint buffer)
 
 	const ISoundSource::Format& fmt = sample->GetFormat();
 	ALenum alFormat = GetSoundSourceFormatAsALEnum(fmt);
-	const int sampleSize = fmt.bitwidth / 8 * fmt.channels;
+	const int sampleSize = (fmt.bitwidth >> 3) * fmt.channels;
 
 	// read sample data and update AL buffers
 	const int numRead = sample->GetSamples(pcmBuffer, EQSND_STREAM_BUFFER_SIZE / sampleSize, m_streamPos, m_looping);

@@ -39,7 +39,7 @@ void CSoundSource_WaveStream::ParseData(CRIFF_Parser &chunk)
 
 	chunk.SkipData(m_dataSize);
 
-	m_numSamples = m_dataSize / (m_format.channels * m_format.bitwidth / 8);
+	m_numSamples = m_dataSize / (m_format.channels * (m_format.bitwidth >> 3));
 }
 
 int CSoundSource_WaveStream::GetSamples(ubyte *pOutput, int nSamples, int nOffset, bool bLooping)
@@ -47,7 +47,7 @@ int CSoundSource_WaveStream::GetSamples(ubyte *pOutput, int nSamples, int nOffse
 	int     nRemaining;
 	int     nBytes, nStart;
 
-	int     nSampleSize = m_format.channels * m_format.bitwidth / 8;
+	int     nSampleSize = m_format.channels * (m_format.bitwidth >> 3);
 
 	nBytes = nSamples * nSampleSize;
 	nStart = nOffset * nSampleSize;
@@ -84,7 +84,7 @@ int CSoundSource_WaveStream::ReadData(ubyte *pOutput, int nStart, int nBytes)
 	m_reader->ReadData( pOutput, nBytes );
 
 	/*
-	int fin = nBytes / (m_format.bitwidth / 8);
+	int fin = nBytes / (m_format.bitwidth >> 3);
 
 	for ( int i = 0; i < fin; i++ )
 	{

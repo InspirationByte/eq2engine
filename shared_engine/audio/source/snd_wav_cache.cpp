@@ -40,7 +40,7 @@ void CSoundSource_WaveCache::ParseData(CRIFF_Parser &chunk)
 	m_dataCache = (ubyte *)PPAlloc( chunk.GetSize( ) );
 	m_cacheSize = chunk.GetSize( );
 
-	m_numSamples = m_cacheSize / (m_format.channels * m_format.bitwidth / 8);
+	m_numSamples = m_cacheSize / (m_format.channels * (m_format.bitwidth >> 3));
 
 	//
 	//  read
@@ -72,7 +72,7 @@ int CSoundSource_WaveCache::GetSamples(ubyte *pOutput, int nSamples, int nOffset
 	int     nRemaining, nCompleted = 0;
 	int     nBytes, nStart;
 
-	int     nSampleSize = m_format.channels * m_format.bitwidth / 8;
+	int     nSampleSize = m_format.channels * (m_format.bitwidth >> 3);
 
 	nBytes = nSamples * nSampleSize;
 	nStart = nOffset * nSampleSize;

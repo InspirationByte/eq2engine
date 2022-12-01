@@ -80,7 +80,7 @@ int CSoundSource_OggCache::GetSamples(ubyte *pOutput, int nSamples, int nOffset,
 	int     nRemaining, nCompleted = 0;
 	int     nBytes, nStart;
 
-	int     nSampleSize = m_format.channels * m_format.bitwidth / 8;
+	int     nSampleSize = m_format.channels * (m_format.bitwidth >> 3);
 
 	nBytes = nSamples * nSampleSize;
 	nStart = nOffset * nSampleSize;

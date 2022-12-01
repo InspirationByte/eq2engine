@@ -68,7 +68,7 @@ int CSoundSource_OggStream::GetSamples(ubyte* pOutput, int nSamples, int nOffset
 	int     nRemaining;
 	int     nBytes, nStart;
 
-	int     nSampleSize = m_format.channels * m_format.bitwidth / 8;
+	int     nSampleSize = m_format.channels * (m_format.bitwidth >> 3);
 
 	nBytes = nSamples * nSampleSize;
 	nStart = nOffset * nSampleSize;
