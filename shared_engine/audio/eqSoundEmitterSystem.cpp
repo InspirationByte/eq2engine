@@ -298,7 +298,7 @@ int CSoundEmitterSystem::EmitSound(EmitParams* ep, CSoundingObject* soundingObj,
 bool CSoundEmitterSystem::SwitchSourceState(SoundEmitterData* emit, bool isVirtual)
 {
 	// start the real sound
-	if (!isVirtual && !emit->soundSource)
+	if (!isVirtual && emit->virtualParams.state != IEqAudioSource::STOPPED && !emit->soundSource)
 	{
 		const SoundScriptDesc* script = emit->script;
 		FixedArray<const ISoundSource*, 16> samples;

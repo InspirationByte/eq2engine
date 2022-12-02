@@ -15,6 +15,8 @@
 #include "core/IDkCore.h"
 #include "utils/KeyValues.h"
 
+#include "render/IDebugOverlay.h"
+
 #include "eqAudioSystemAL.h"
 #include "source/snd_al_source.h"
 
@@ -137,6 +139,7 @@ LPALBUFFERCALLBACKSOFT alBufferCallbackSOFT;
 
 static ConVar snd_device("snd_device", "0", nullptr, CV_ARCHIVE);
 static ConVar snd_hrtf("snd_hrtf", "0", nullptr, CV_ARCHIVE);
+static ConVar snd_debug("snd_debug", "0", nullptr, CV_CHEAT);
 
 //---------------------------------------------------------
 
@@ -677,6 +680,34 @@ void CEqAudioSystemAL::EndUpdate()
 				i--;
 			}
 		}
+	}
+
+	if (snd_debug.GetBool())
+	{
+		uint sampleMem = 0;
+		for (auto it = m_samples.begin(); it != m_samples.end(); ++it)
+		{
+			const ISoundSource* sample = *it;
+			if (sample->IsStreaming())
+				continue;
+
+			const ISoundSource::Format& fmt = sample->GetFormat();
+			const int sampleUnit = (fmt.bitwidth >> 3);
+			const int sampleSize = sampleUnit * fmt.channels;
+
+			sampleMem += sample->GetSampleCount() * sampleSize;
+		}
+
+		uint playing = 0;
+		for (int i = 0; i < m_sources.numElem(); i++)
+		{
+			CEqAudioSourceAL* src = m_sources[i].Ptr();
+			playing += (src->GetState() == IEqAudioSource::PLAYING);
+		}
+
+		debugoverlay->Text(color_white, "-----SOUND STATISTICS-----");
+		debugoverlay->Text(color_white, "  sources: %d, (%d allocated)", playing, m_sources.numElem());
+		debugoverlay->Text(color_white, "  samples: %d, mem: %d kbytes (non-streamed)", m_samples.size(), sampleMem / 1024);
 	}
 
 	alcProcessContext(m_ctx);
