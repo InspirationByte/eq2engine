@@ -393,6 +393,7 @@ int CSoundEmitterSystem::EmitterUpdateCallback(void* obj, IEqAudioSource::Params
 	const CSoundingObject* soundingObj = emitter->soundingObj;
 
 	params.set_volume(virtualParams.volume * soundingObj->GetSoundVolumeScale());
+	emitter->virtualParams.state = params.state;
 
 	if (!params.relative)
 	{
