@@ -90,6 +90,8 @@ public:
 	void				Assign( PTR_TYPE obj);
 	void				Release(bool deref = true);
 
+	operator const		bool() const		{ return m_ptrObj != nullptr; }
+	operator			bool()				{ return m_ptrObj != nullptr; }
 	operator const		PTR_TYPE() const	{ return m_ptrObj; }
 	operator			PTR_TYPE ()			{ return m_ptrObj; }
 	PTR_TYPE			Ptr() const			{ return m_ptrObj; }
