@@ -278,7 +278,8 @@ public:
 	T&				append();
 
 	// appends another list
-	int				append( const ArrayBase<T, STORAGE_TYPE>&other );
+	template< typename CT, typename OTHER_STORAGE_TYPE>
+	int				append( const ArrayBase<CT, OTHER_STORAGE_TYPE>& other );
 
 	// appends another array
 	int				append( const T *other, int count );
@@ -286,7 +287,7 @@ public:
 	// appends another list with transformation
 	// return false to not add the element
 	template< typename T2, typename OTHER_STORAGE_TYPE, typename TRANSFORMFUNC >
-	int				append( const ArrayBase<T2, OTHER_STORAGE_TYPE> &other, TRANSFORMFUNC transform );
+	int				append( const ArrayBase<T2, OTHER_STORAGE_TYPE>& other, TRANSFORMFUNC transform );
 
 	// inserts the element at the given index
 	int				insert( const T & obj, int index = 0 );
@@ -717,7 +718,8 @@ inline T& ArrayBase<T, STORAGE_TYPE>::append()
 // -----------------------------------------------------------------
 
 template< typename T, typename STORAGE_TYPE >
-inline int ArrayBase<T, STORAGE_TYPE>::append( const ArrayBase<T, STORAGE_TYPE>&other )
+template< typename CT, typename OTHER_STORAGE_TYPE >
+inline int ArrayBase<T, STORAGE_TYPE>::append(const ArrayBase<CT, OTHER_STORAGE_TYPE>& other)
 {
 	int nOtherElems = other.numElem();
 

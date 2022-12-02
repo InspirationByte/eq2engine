@@ -149,6 +149,7 @@ public:
 	virtual void				PauseAllSounds(int chanType = -1, void* callbackObject = nullptr) = 0;
 	virtual void				ResumeAllSounds(int chanType = -1, void* callbackObject = nullptr) = 0;
 
+	virtual void				ResetMixer(int chanId) = 0;
 	virtual void				SetChannelVolume(int chanType, float value) = 0;
 	virtual void				SetChannelPitch(int chanType, float value) = 0;
 
@@ -172,6 +173,7 @@ public:
 
 	// sets the new effect
 	virtual void				SetEffect(int slot, effectId_t effect) = 0;
+	virtual int					GetEffectSlotCount() const;
 };
 
 extern IEqAudioSystem* g_audioSystem;

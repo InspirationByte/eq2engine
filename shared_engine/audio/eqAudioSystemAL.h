@@ -40,6 +40,7 @@ public:
 	void						PauseAllSounds(int chanId = -1, void* callbackObject = nullptr);
 	void						ResumeAllSounds(int chanId = -1, void* callbackObject = nullptr);
 
+	void						ResetMixer(int chanId);
 	void						SetChannelVolume(int chanId, float value);
 	void						SetChannelPitch(int chanId, float value);
 
@@ -63,6 +64,7 @@ public:
 
 	// sets the new effect
 	void						SetEffect(int slot, effectId_t effect);
+	int							GetEffectSlotCount() const;
 
 private:
 	struct sndEffect_t

@@ -18,7 +18,9 @@
 
 struct SoundScriptDesc;
 struct SoundEmitterData;
+struct KVSection;
 class CSoundingObject;
+class ConCommandBase;
 
 // flags
 enum EEmitSoundFlags
@@ -164,14 +166,12 @@ public:
 
 	void				PrecacheSound(const char* pszName);
 	int					EmitSound(EmitParams* emit);
-
 	void				StopAllSounds();
-
-	void				StopAllEmitters();
 
 	void				Update();
 
 private:
+
 	int					EmitSound(EmitParams* emit, CSoundingObject* soundingObj, int objUniqueId);
 
 	SoundScriptDesc*	FindSound(const char* soundName) const;

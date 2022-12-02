@@ -514,6 +514,14 @@ void CEqAudioSystemAL::ResumeAllSounds(int chanId /*= -1*/, void* callbackObject
 	}
 }
 
+void CEqAudioSystemAL::ResetMixer(int chanId)
+{
+	if (!m_mixerChannels.inRange(chanId))
+		return;
+
+	m_mixerChannels[chanId] = MixerChannel_t();
+}
+
 void CEqAudioSystemAL::SetChannelVolume(int chanType, float value)
 {
 	if (!m_mixerChannels.inRange(chanType))
@@ -613,6 +621,11 @@ void CEqAudioSystemAL::SetEffect(int slot, effectId_t effect)
 {
 	// used directly
 	alAuxiliaryEffectSloti(m_effectSlots[slot], AL_EFFECTSLOT_EFFECT, effect);
+}
+
+int	CEqAudioSystemAL::GetEffectSlotCount() const
+{
+	return m_effectSlots.numElem();
 }
 
 //-----------------------------------------------

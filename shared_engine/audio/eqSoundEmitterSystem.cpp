@@ -533,7 +533,10 @@ void CSoundEmitterSystem::Init(float defaultMaxDistance, ChannelDef* channelDefs
 	m_defaultMaxDistance = defaultMaxDistance;
 
 	for (int i = 0; i < numChannels; ++i)
+	{
 		m_channelTypes.append(channelDefs[i]);
+		g_audioSystem->ResetMixer(channelDefs[i].id);
+	}
 
 	KVSection* soundSettings = g_eqCore->GetConfig()->FindSection("Sound");
 
@@ -563,8 +566,8 @@ void CSoundEmitterSystem::Shutdown()
 		delete script;
 	}
 	m_allSounds.clear();
-
 	m_isInit = false;
+	m_channelTypes.clear();
 }
 
 void CSoundEmitterSystem::PrecacheSound(const char* pszName)
@@ -791,21 +794,19 @@ bool CSoundEmitterSystem::SwitchSourceState(SoundEmitterData* emit, bool isVirtu
 
 void CSoundEmitterSystem::StopAllSounds()
 {
-	StopAllEmitters();
-}
-
-void CSoundEmitterSystem::StopAllEmitters()
-{
-
-	ASSERT_FAIL("UNIMPLEMENTED");
-
 	CScopedMutex m(s_soundEmitterSystemMutex);
 
 	// remove pending sounds
 	m_pendingStartSounds.clear();
+
+	for (auto it = m_soundingObjects.begin(); it != m_soundingObjects.end(); ++it)
+	{
+		CSoundingObject* obj = it.key();
+		obj->StopEmitter(CSoundingObject::ID_ALL);
+	}
+
 	m_soundingObjects.clear();
 }
-
 
 int CSoundEmitterSystem::EmitterUpdateCallback(void* obj, IEqAudioSource::Params& params)
 {
