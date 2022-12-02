@@ -15,13 +15,14 @@ struct RefCountedKeepPolicy {
 	enum { SHOULD_DELETE = 0 };
 };
 
-template< class TYPE>
+template< typename TYPE>
 class CRefPtr;
 
-template< class TYPE, class POLICY = RefCountedDeletePolicy >
+template< typename TYPE, typename POLICY = RefCountedDeletePolicy >
 class RefCountedObject
 {
 public:
+	using REF_POLICY = POLICY;
 	using PTR_T = CRefPtr<TYPE>;
 
 	RefCountedObject() = default;
@@ -60,10 +61,7 @@ inline bool	RefCountedObject<TYPE, POLICY>::Ref_Drop()
 	if (refCount <= 0)
 	{
 		Ref_DeleteObject();
-
-		if (POLICY::SHOULD_DELETE)
-			delete this;
-
+		if (POLICY::SHOULD_DELETE) { delete this; }
 		return true;
 	}
 
@@ -81,7 +79,7 @@ class CRefPtr
 {
 public:
 	using PTR_TYPE = TYPE*;
-	using REF_TYPE = RefCountedObject<TYPE>;
+	using REF_TYPE = RefCountedObject<TYPE, typename TYPE::REF_POLICY>;
 
 	CRefPtr() = default;
 	CRefPtr( PTR_TYPE pObject );
