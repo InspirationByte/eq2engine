@@ -398,9 +398,10 @@ int CSoundEmitterSystem::EmitterUpdateCallback(void* obj, IEqAudioSource::Params
 
 		const float distToSound = lengthSqr(params.position - listenerPos);
 		const float maxDistSqr = M_SQR(script->maxDistance);
+		const bool isAudible = script->is2d || distToSound < maxDistSqr;
 
 		// switch emitter between virtual and real here
-		g_sounds->SwitchSourceState(emitter, distToSound > maxDistSqr);
+		g_sounds->SwitchSourceState(emitter, !isAudible);
 	}
 
 	return 0;

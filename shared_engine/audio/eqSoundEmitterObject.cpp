@@ -61,9 +61,10 @@ bool CSoundingObject::UpdateEmitters(const Vector3D& listenerPos)
 
 			const float distToSound = lengthSqr(params.position - listenerPos);
 			const float maxDistSqr = M_SQR(script->maxDistance);
+			const bool isAudible = script->is2d || distToSound < maxDistSqr;
 
 			// switch emitter between virtual and real here
-			if (g_sounds->SwitchSourceState(emitter, distToSound > maxDistSqr))
+			if (g_sounds->SwitchSourceState(emitter, !isAudible))
 			{
 				needDelete = params.releaseOnStop && emitter->soundSource == nullptr;
 			}
