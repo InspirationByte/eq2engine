@@ -117,9 +117,9 @@ public:
 	virtual void			GetParams(Params& params) const = 0;
 	virtual void			UpdateParams(const Params& params, int mask = 0) = 0;
 
-	virtual void			SetSourceVolume(int sourceIdx, float volume) = 0;
-	virtual float			GetSourceVolume(int sourceIdx) = 0;
-	virtual int				GetSourceCount() const = 0;
+	virtual void			SetSampleVolume(int sourceIdx, float volume) = 0;
+	virtual float			GetSampleVolume(int sourceIdx) = 0;
+	virtual int				GetSampleCount() const = 0;
 
 	// atomic
 	virtual State			GetState() const = 0;

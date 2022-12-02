@@ -1194,8 +1194,6 @@ ALsizei CEqAudioSourceAL::GetSampleBuffer(void* data, ALsizei size)
 		return samplesRead * sampleSize;
 	}
 
-	// TODO: implement multiple sample mixing
-	// TODO: implement resampler
 	// TODO: perform sample rate conversion
 	// TODO: stereo support
 

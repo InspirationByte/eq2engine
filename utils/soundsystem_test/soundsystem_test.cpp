@@ -330,7 +330,7 @@ CMainWindow::CMainWindow( wxWindow* parent, wxWindowID id, const wxString& title
 
 	for(int i = 0; i < MAX_LOOP_SOUNDS; i++)
 	{
-		m_menu_sound->Append(Event_LoopSounds_Sound+i, wxString::Format("Loop sound %d", i), nullptr);
+		m_menu_sound->Append(Event_LoopSounds_Sound+i, s_loopingSoundNames[i], nullptr);
 	}
 
 	m_menu_view = new wxMenu();
