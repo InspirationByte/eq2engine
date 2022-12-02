@@ -55,4 +55,5 @@ private:
 	IVirtualStream* m_stream{ nullptr };
 
 	RIFFchunk_t		m_curChunk;
+	int				m_chunkRemaining{ 0 };
 };

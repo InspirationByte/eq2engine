@@ -101,6 +101,8 @@ int CRIFF_Parser::ReadChunk(void* pOutput, int maxLen)
 		numToRead = maxLen;
 
 	const int readCount = ReadData(pOutput, numToRead);
+	m_chunkRemaining -= readCount;
+	ASSERT_MSG(m_chunkRemaining >= 0, "CRIFF_Parser - read amount exceeded chunk size");
 
 	return readCount;
 }
@@ -135,7 +137,7 @@ int CRIFF_Parser::SetPos(int pos)
 
 int CRIFF_Parser::SkipData(int size)
 {
-	if (!m_stream)
+	if (!m_stream || size <= 0)
 		return 0;
 
 	return m_stream->Seek(size, VS_SEEK_CUR);
@@ -154,14 +156,13 @@ int CRIFF_Parser::GetSize()
 // goes to the next chunk
 bool CRIFF_Parser::ChunkNext()
 {
-	bool result = ChunkSet();
-
+	const bool result = ChunkSet();
 	if (!result)
 	{
 		m_curChunk.Id = 0;
 		m_curChunk.Size = 0;
 	}
-
+	
 	return result;
 }
 
@@ -169,6 +170,8 @@ bool CRIFF_Parser::ChunkNext()
 
 bool CRIFF_Parser::ChunkSet()
 {
-	int n = ReadData(&m_curChunk, sizeof(m_curChunk));
+	SkipData(m_chunkRemaining);
+	const int n = ReadData(&m_curChunk, sizeof(m_curChunk));
+	m_chunkRemaining = m_curChunk.Size;
 	return n > 0;
 }
