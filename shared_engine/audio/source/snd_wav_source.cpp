@@ -212,6 +212,9 @@ void CSoundSource_Wave::ParseList(CRIFF_Parser& chunk)
 
 int	CSoundSource_Wave::GetLoopRegions(int* samplePos) const
 {
+	if(!samplePos)
+		return m_loopRegions.numElem();
+
 	for (int i = 0; i < m_loopRegions.numElem(); ++i)
 	{
 		samplePos[i * 2] = m_loopRegions[i].start;

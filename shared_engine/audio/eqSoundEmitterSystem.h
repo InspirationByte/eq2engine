@@ -48,7 +48,7 @@ public:
 
 private:
 
-	int					EmitSound(EmitParams* emit, CSoundingObject* soundingObj, int objUniqueId);
+	int					EmitSound(EmitParams* emit, CSoundingObject* soundingObj, int objUniqueId, bool releaseOnStop = true);
 
 	SoundScriptDesc*	FindSound(const char* soundName) const;
 	void				RemoveSoundingObject(CSoundingObject* obj);

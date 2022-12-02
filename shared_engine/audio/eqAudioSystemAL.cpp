@@ -18,6 +18,8 @@
 #include "eqAudioSystemAL.h"
 #include "source/snd_al_source.h"
 
+#pragma optimize("", off)
+
 using namespace Threading;
 static CEqMutex s_audioSysMutex;
 
@@ -723,6 +725,11 @@ CEqAudioSourceAL::~CEqAudioSourceAL()
 	Release();
 }
 
+void CEqAudioSourceAL::Ref_DeleteObject()
+{
+	delete this;
+}
+
 // Updates channel with user parameters
 void CEqAudioSourceAL::UpdateParams(const Params& params, int mask)
 {
@@ -998,21 +1005,21 @@ void CEqAudioSourceAL::InitSource()
 
 void CEqAudioSourceAL::Release()
 {
-	m_streams.clear();
-	if (m_source == AL_NONE)
-		return;
-
-	EmptyBuffers();
-
-	m_channel = -1;
 	m_callback = nullptr;
 	m_callbackObject = nullptr;
+	m_channel = -1;
 	m_state = STOPPED;
 
-	alDeleteBuffers(EQSND_STREAM_BUFFER_COUNT, m_buffers);
-	alDeleteSources(1, &m_source);
+	m_streams.clear();
+	if (m_source != AL_NONE)
+	{
+		EmptyBuffers();
 
-	m_source = AL_NONE;
+		alDeleteBuffers(EQSND_STREAM_BUFFER_COUNT, m_buffers);
+		alDeleteSources(1, &m_source);
+
+		m_source = AL_NONE;
+	}
 }
 
 // updates channel (in cycle)

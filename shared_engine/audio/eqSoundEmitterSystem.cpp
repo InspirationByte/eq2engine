@@ -16,6 +16,7 @@
 #include "utils/KeyValues.h"
 #include "math/Random.h"
 
+#include "source/snd_source.h"
 #include "eqSoundEmitterPrivateTypes.h"
 #include "eqSoundEmitterObject.h"
 #include "eqSoundEmitterSystem.h"
@@ -177,7 +178,7 @@ int CSoundEmitterSystem::EmitSound(EmitParams* ep)
 }
 
 // simple sound emitter
-int CSoundEmitterSystem::EmitSound(EmitParams* ep, CSoundingObject* soundingObj, int objUniqueId)
+int CSoundEmitterSystem::EmitSound(EmitParams* ep, CSoundingObject* soundingObj, int objUniqueId, bool releaseOnStop)
 {
 	ASSERT(ep);
 
@@ -220,26 +221,29 @@ int CSoundEmitterSystem::EmitSound(EmitParams* ep, CSoundingObject* soundingObj,
 	g_audioSystem->GetListener(listenerPos, listenerVel);
 
 	const float distToSound = length(ep->origin - listenerPos);
-	const bool isAudibleToStart = script->is2d || (distToSound < script->maxDistance);
+	const bool startSilent = (ep->flags & EMITSOUND_FLAG_STARTSILENT);
+	const bool isAudibleToStart = !startSilent && (script->is2d || (distToSound < script->maxDistance));
 
-	if (!isAudibleToStart && !script->loop)
+	if (!isAudibleToStart && releaseOnStop)
 	{
 		return CHAN_INVALID;
 	}
+
+	const int channelType = (ep->channelType != CHAN_INVALID) ? ep->channelType : script->channelType;
 
 	SoundEmitterData tmpEmit;
 	SoundEmitterData* edata = &tmpEmit;
 	if(soundingObj)
 	{
 		// stop the sound if it has been already started
-		soundingObj->StopEmitter(objUniqueId);
+		soundingObj->StopEmitter(objUniqueId, true);
 
-		const int usedSounds = soundingObj->GetChannelSoundCount(script->channelType);
+		const int usedSounds = soundingObj->GetChannelSoundCount(channelType);
 
 		// if entity reached the maximum sound count for self
 		// at specific channel, we stop first sound
-		if(usedSounds >= m_channelTypes[script->channelType].limit)
-			soundingObj->StopFirstEmitterByChannel(script->channelType);
+		if(usedSounds >= m_channelTypes[channelType].limit)
+			soundingObj->StopFirstEmitterByChannel(channelType);
 
 		edata = PPNew SoundEmitterData();
 		{
@@ -262,11 +266,11 @@ int CSoundEmitterSystem::EmitSound(EmitParams* ep, CSoundingObject* soundingObj,
 	startParams.set_airAbsorption(script->airAbsorption);
 	startParams.set_relative(script->is2d);
 	startParams.set_position(ep->origin);
-	startParams.set_channel((ep->channelType != CHAN_INVALID) ? ep->channelType : script->channelType);
-	startParams.set_state(IEqAudioSource::PLAYING);
-	startParams.set_releaseOnStop(true);
+	startParams.set_channel(channelType);
+	startParams.set_state(startSilent ? IEqAudioSource::STOPPED : IEqAudioSource::PLAYING);
+	startParams.set_releaseOnStop(releaseOnStop);
 
-	ep->channelType = startParams.channel;
+	ep->channelType = channelType;
 
 	const float randPitch = (ep->flags & EMITSOUND_FLAG_RANDOM_PITCH) ? RandomFloat(-0.05f, 0.05f) : 0.0f;
 
@@ -275,15 +279,15 @@ int CSoundEmitterSystem::EmitSound(EmitParams* ep, CSoundingObject* soundingObj,
 	edata->virtualParams.set_pitch(edata->startParams.pitch * ep->pitch + randPitch);
 	edata->script = script;
 	edata->soundingObj = soundingObj;
-	edata->channelType = ep->channelType;
+	edata->channelType = channelType;
 	edata->sampleId = ep->sampleId;
 
-	if (soundingObj && ep->channelType != CHAN_INVALID)
-		++soundingObj->m_numChannelSounds[ep->channelType];
+	if (soundingObj && channelType != CHAN_INVALID)
+		++soundingObj->m_numChannelSounds[channelType];
 
 	// try start sound
 	// TODO: EMITSOUND_FLAG_STARTSILENT handling here?
-	if (!soundingObj || !(ep->flags & EMITSOUND_FLAG_STARTSILENT))
+	if (!soundingObj)
 	{
 		SwitchSourceState(edata, !isAudibleToStart);
 	}
@@ -299,49 +303,52 @@ bool CSoundEmitterSystem::SwitchSourceState(SoundEmitterData* emit, bool isVirtu
 		const SoundScriptDesc* script = emit->script;
 		FixedArray<const ISoundSource*, 16> samples;
 
-		if (script->randomSample )
+		bool hasLoop = script->loop;
+
+		if (script->randomSample)
 		{
 			const ISoundSource* bestSample = script->GetBestSample(emit->sampleId);
 			ASSERT(bestSample);	// shouldn't really happen
 
 			samples.append(bestSample);
+			hasLoop = hasLoop || bestSample->GetLoopRegions(nullptr) > 0;
 		}
 		else
 		{
 			// put all samples
 			samples.append(script->samples);
+			for(int i = 0; i < samples.numElem(); ++i)
+				hasLoop = hasLoop || samples[i]->GetLoopRegions(nullptr) > 0;
 		}
 
 		// sound parameters to initialize SoundEmitter
-		const IEqAudioSource::Params& virtualParams = emit->virtualParams;
+		IEqAudioSource::Params& virtualParams = emit->virtualParams;
+		virtualParams.set_looping(hasLoop);
 
-		IEqAudioSource* sndSource = g_audioSystem->CreateSource();
+		emit->soundSource = g_audioSystem->CreateSource();
 
 		if (!emit->soundingObj)
 		{
 			// no sounding object
 			// set looping sound to self destruct when outside max distance
-			sndSource->Setup(virtualParams.channel, samples, script->loop ? LoopSourceUpdateCallback : nullptr, const_cast<SoundScriptDesc*>(script));
+			emit->soundSource->Setup(virtualParams.channel, samples, hasLoop ? LoopSourceUpdateCallback : nullptr, const_cast<SoundScriptDesc*>(script));
 		}
 		else
 		{
-			sndSource->Setup(virtualParams.channel, samples, EmitterUpdateCallback, emit);
+			emit->soundSource->Setup(virtualParams.channel, samples, EmitterUpdateCallback, emit);
 		}
 
 		// start sound
-		sndSource->UpdateParams(virtualParams);
-		emit->soundSource = sndSource;
+		emit->soundSource->UpdateParams(virtualParams);
 
 		if (snd_scriptsound_debug.GetBool())
 		{
-			const float boxsize = virtualParams.referenceDistance;
-
 			DbgBox()
-				.CenterSize(virtualParams.position, boxsize)
+				.CenterSize(virtualParams.position, virtualParams.referenceDistance)
 				.Color(color_white)
 				.Time(1.0f);
 
-			MsgInfo("started sound '%s' ref=%g max=%g\n", script->name.ToCString(), virtualParams.referenceDistance);
+			MsgInfo("started emitter %x '%s' ref=%g max=%g\n", emit, script->name.ToCString(), virtualParams.referenceDistance);
 		}
 
 		return true;
@@ -350,7 +357,7 @@ bool CSoundEmitterSystem::SwitchSourceState(SoundEmitterData* emit, bool isVirtu
 	// stop and drop the sound
 	if (isVirtual && emit->soundSource)
 	{
-		emit->soundSource->Release();
+		g_audioSystem->DestroySource(emit->soundSource);
 		emit->soundSource = nullptr;
 
 		return true;
@@ -423,7 +430,6 @@ void CSoundEmitterSystem::Update()
 	PROF_EVENT("Sound Emitter System Update");
 
 	// FIXME: run in job thread?
-
 	g_audioSystem->BeginUpdate();
 
 	// start all pending sounds we accumulated during sound pause

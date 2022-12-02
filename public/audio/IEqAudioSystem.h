@@ -18,7 +18,7 @@ typedef uint effectId_t;
 //-----------------------------------------------------------------
 // Audio source interface
 
-class IEqAudioSource : public RefCountedObject<IEqAudioSource>
+class IEqAudioSource : public RefCountedObject<IEqAudioSource, RefCountedKeepPolicy>
 {
 public:
 	enum ESoundSourceUpdate
@@ -107,7 +107,7 @@ public:
 
 	using UpdateCallback = EqFunction<int(void* obj, Params& params)>;		// returns EVoiceUpdateFlags
 
-	virtual ~IEqAudioSource() {}
+	virtual ~IEqAudioSource() { }
 
 	virtual void			Setup(int chanId, const ISoundSource* sample, UpdateCallback fnCallback, void* callbackObject = nullptr) = 0;
 	virtual void			Setup(int chanId, ArrayCRef<const ISoundSource*> samples, UpdateCallback fnCallback, void* callbackObject = nullptr) = 0;

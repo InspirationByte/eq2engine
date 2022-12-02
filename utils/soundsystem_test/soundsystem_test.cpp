@@ -67,7 +67,7 @@ CEqTimer			g_timer;
 float				g_frametime = 0.0f;
 
 #define SOUND_COUNT_TEST 4
-#define MAX_LOOP_SOUNDS 6
+#define MAX_LOOP_SOUNDS 8
 
 enum ESoundChannelType
 {
@@ -95,7 +95,9 @@ static const char* s_loopingSoundNames[] = {
 	"test.sine_22",
 	"test.sine_44",
 	"test.cuetest",
-	"test.multiSample"
+	"test.multiSample",
+	"test.multiSample2",
+	"test.sample",
 };
 
 static constexpr const int s_musicNameId = StringToHashConst("music");
@@ -110,7 +112,7 @@ void InitSoundSystem( EQWNDHANDLE wnd )
 
 	g_audioSystem->Init();
 	g_sounds->Init(120.0f, s_soundChannels, elementsOf(s_soundChannels));
-
+	
 	{
 		KVSection soundSec;
 		soundSec.SetName("test.streaming_stereo_wav");
@@ -171,10 +173,36 @@ void InitSoundSystem( EQWNDHANDLE wnd )
 
 	{
 		KVSection soundSec;
+		soundSec.SetName("test.multiSample2");
+		KVSection& wave = *soundSec.CreateSection("wave");
+		wave.AddKey("wave", "engines/engine3_high.wav");
+		wave.AddKey("wave", "engines/engine2_high.wav");
+		wave.AddKey("wave", "engines/engine3_low.wav");
+		
+
+		soundSec.SetKey("loop", true);
+		soundSec.SetKey("channel", "CHAN_BODY");
+		g_sounds->CreateSoundScript(&soundSec);
+		g_sounds->PrecacheSound(soundSec.GetName());
+	}
+
+	{
+		KVSection soundSec;
 		soundSec.SetName("test.cuetest");
 		soundSec.SetKey("is2d", true);
 		soundSec.SetKey("loop", false);
 		soundSec.SetKey("wave", "SoundTest/CueTest.wav");
+		soundSec.SetKey("channel", "CHAN_VOICE");
+		g_sounds->CreateSoundScript(&soundSec);
+		g_sounds->PrecacheSound(soundSec.GetName());
+	}
+	
+	{
+		KVSection soundSec;
+		soundSec.SetName("test.sample");
+		soundSec.SetKey("is2d", false);
+		soundSec.SetKey("loop", true);
+		soundSec.SetKey("wave", "cars/cone.wav");
 		soundSec.SetKey("channel", "CHAN_VOICE");
 		g_sounds->CreateSoundScript(&soundSec);
 		g_sounds->PrecacheSound(soundSec.GetName());

@@ -29,7 +29,7 @@ public:
 
 	int			EmitSound(int uniqueId, EmitParams* ep);
 
-	void		StopEmitter(int uniqueId);
+	void		StopEmitter(int uniqueId, bool destroy = false);
 	void		PauseEmitter(int uniqueId);
 	void		PlayEmitter(int uniqueId, bool rewind = false);
 	void		StopLoop(int uniqueId);
@@ -48,9 +48,9 @@ public:
 	float		GetSoundVolumeScale() const			{ return m_volumeScale; }
 
 protected:
-	void		StopEmitter(SoundEmitterData* emitter);
+	void		StopEmitter(SoundEmitterData* emitter, bool destroy);
 	void		PauseEmitter(SoundEmitterData* emitter);
-	void		PlayEmitter(SoundEmitterData* emitter, bool rewind = false);
+	void		PlayEmitter(SoundEmitterData* emitter, bool rewind);
 	void		StopLoop(SoundEmitterData* emitter);
 
 	void		SetPosition(SoundEmitterData* emitter, const Vector3D& position);

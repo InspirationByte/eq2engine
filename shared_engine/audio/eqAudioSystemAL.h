@@ -115,6 +115,8 @@ public:
 	CEqAudioSourceAL(CEqAudioSystemAL* owner);
 	~CEqAudioSourceAL();
 
+	void					Ref_DeleteObject();
+
 	void					Setup(int chanId, const ISoundSource* sample, UpdateCallback fnCallback = nullptr, void* callbackObject = nullptr);
 	void					Setup(int chanId, ArrayCRef<const ISoundSource*> samples, UpdateCallback fnCallback = nullptr, void* callbackObject = nullptr);
 	void					Release();
