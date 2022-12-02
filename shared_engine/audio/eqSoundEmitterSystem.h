@@ -22,12 +22,14 @@ struct SoundEmitterData;
 struct KVSection;
 struct ChannelDef;
 class CSoundingObject;
+class CEmitterObjectSound;
 class ConCommandBase;
 
 // the sound emitter system
 class CSoundEmitterSystem
 {
 	friend class CSoundingObject;
+	friend class CEmitterObjectSound;
 public:
 	static void cmd_vars_sounds_list(const ConCommandBase* base, Array<EqString>& list, const char* query);
 

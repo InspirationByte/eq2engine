@@ -16,10 +16,13 @@ struct EmitParams;
 class CSoundingObject;
 class ConCommandBase;
 
+class CEmitterObjectSound;
+
 // Sound channel entity that controls it's sound sources
 class CSoundingObject
 {
 	friend class CSoundEmitterSystem;
+	friend class CEmitterObjectSound;
 public:
 	CSoundingObject() = default;
 	virtual ~CSoundingObject();
@@ -29,9 +32,18 @@ public:
 
 	int			EmitSound(int uniqueId, EmitParams* ep);
 
+	const IEqAudioSource::State GetEmitterState(int uniqueId) const;
+	void						SetEmitterState(int uniqueId, IEqAudioSource::State state, bool rewindOnPlay = false);
+
+	// returns sample id that was in EmitParams
+	int			GetEmitterSampleId(int uniqueId) const;
+
+	// updates sample id. will Stop and again Play automatically on change
+	void		SetEmitterSampleId(int uniqueId, int sampleId);
+
 	void		StopEmitter(int uniqueId, bool destroy = false);
-	void		PauseEmitter(int uniqueId);
 	void		PlayEmitter(int uniqueId, bool rewind = false);
+	void		PauseEmitter(int uniqueId);
 	void		StopLoop(int uniqueId);
 
 	void		SetPosition(int uniqueId, const Vector3D& position);
@@ -40,7 +52,7 @@ public:
 	void		SetVolume(int uniqueId, float volume);
 
 	void		SetSampleVolume(int uniqueId, int waveId, float volume);
-	void		SetParams(int uniqueId, IEqAudioSource::Params& params);
+	void		SetParams(int uniqueId, const IEqAudioSource::Params& params);
 
 	int			GetChannelSoundCount(int chan) const { return m_numChannelSounds[chan]; }
 
@@ -48,6 +60,8 @@ public:
 	float		GetSoundVolumeScale() const			{ return m_volumeScale; }
 
 protected:
+	void		SetEmitterState(SoundEmitterData* emitter, IEqAudioSource::State state, bool rewindOnPlay);
+
 	void		StopEmitter(SoundEmitterData* emitter, bool destroy);
 	void		PauseEmitter(SoundEmitterData* emitter);
 	void		PlayEmitter(SoundEmitterData* emitter, bool rewind);
@@ -59,7 +73,7 @@ protected:
 	void		SetVolume(SoundEmitterData* emitter, float volume);
 
 	void		SetSampleVolume(SoundEmitterData* emitter, int waveId, float volume);
-	void		SetParams(SoundEmitterData* emitter, IEqAudioSource::Params& params);
+	void		SetParams(SoundEmitterData* emitter, const IEqAudioSource::Params& params);
 
 	bool		UpdateEmitters(const Vector3D& listenerPos);
 	void		StopFirstEmitterByChannel(int chan);
@@ -69,4 +83,35 @@ protected:
 
 	uint8						m_numChannelSounds[CHAN_MAX]{ 0 };
 	float						m_volumeScale{ 1.0f };
+};
+
+class CEmitterObjectSound
+{
+public:
+	CEmitterObjectSound(CSoundingObject& soundingObj, int uniqueId);
+
+	// returns sample id that was in EmitParams
+	int			GetEmitterSampleId() const;
+
+	// updates sample id. will Stop and again Play automatically on change
+	void		SetEmitterSampleId(int sampleId);
+
+	const IEqAudioSource::State GetEmitterState() const;
+	void		SetEmitterState(IEqAudioSource::State state, bool rewindOnPlay = false);
+
+	void		StopEmitter(bool destroy = false);
+	void		PlayEmitter(bool rewind = false);
+	void		PauseEmitter();
+	void		StopLoop();
+
+	void		SetPosition(const Vector3D& position);
+	void		SetVelocity(const Vector3D& velocity);
+	void		SetPitch(float pitch);
+	void		SetVolume(float volume);
+
+	void		SetSampleVolume(int waveId, float volume);
+	void		SetParams(const IEqAudioSource::Params& params);
+private:
+	CSoundingObject& m_soundingObj;
+	SoundEmitterData* m_emitter{ nullptr };
 };

@@ -355,10 +355,13 @@ bool CSoundEmitterSystem::SwitchSourceState(SoundEmitterData* emit, bool isVirtu
 	}
 	
 	// stop and drop the sound
-	if (isVirtual && emit->soundSource)
+	if (emit->soundSource)
 	{
-		g_audioSystem->DestroySource(emit->soundSource);
-		emit->soundSource = nullptr;
+		if (isVirtual || emit->soundSource->GetState() == IEqAudioSource::STOPPED)
+		{
+			g_audioSystem->DestroySource(emit->soundSource);
+			emit->soundSource = nullptr;
+		}
 
 		return true;
 	}

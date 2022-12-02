@@ -18,8 +18,6 @@
 #include "eqAudioSystemAL.h"
 #include "source/snd_al_source.h"
 
-#pragma optimize("", off)
-
 using namespace Threading;
 static CEqMutex s_audioSysMutex;
 

@@ -7,8 +7,6 @@
 
 using namespace Threading;
 
-#pragma optimize("", off)
-
 CSoundingObject::~CSoundingObject()
 {
 	g_sounds->RemoveSoundingObject(this);
@@ -16,15 +14,6 @@ CSoundingObject::~CSoundingObject()
 	for (auto it = m_emitters.begin(); it != m_emitters.end(); ++it)
 	{
 		StopEmitter(*it, true);
-		/*
-		SoundEmitterData* emitter = *it;
-		if (emitter->soundSource)
-		{
-			g_audioSystem->DestroySource(emitter->soundSource);
-			emitter->soundSource = nullptr;
-		}
-		delete emitter;
-		*/
 	}
 }
 
@@ -73,15 +62,6 @@ bool CSoundingObject::UpdateEmitters(const Vector3D& listenerPos)
 		if(needDelete)
 		{
 			StopEmitter(emitter, true);
-			/*
-			g_audioSystem->DestroySource(emitter->soundSource);
-			emitter->soundSource = nullptr;
-
-			if(emitter->channelType != CHAN_INVALID)
-				--m_numChannelSounds[emitter->channelType];
-
-			delete emitter;
-			*/
 			m_emitters.remove(it);
 		}
 	}
@@ -103,40 +83,66 @@ void CSoundingObject::StopFirstEmitterByChannel(int chan)
 		if (emitter->channelType == chan)
 		{
 			StopEmitter(emitter, true);
-			/*
-			if (chan != CHAN_INVALID)
-				--m_numChannelSounds[chan];
-
-			if (emitter->soundSource)
-			{
-				g_audioSystem->DestroySource(emitter->soundSource);
-				emitter->soundSource = nullptr;
-			}
-			delete emitter;
-			*/
 			m_emitters.remove(it);
 			break;
 		}
 	}
 }
 
-#if 0
-int CSoundingObject::DecodeId(int idWaveId, int& waveId)
+int	CSoundingObject::GetEmitterSampleId(int uniqueId) const
 {
-	if (waveId & 0x80000000) // needs a 'SET' flag
-		waveId = idWaveId >> StringHashBits & 127;
+	const auto it = m_emitters.find(uniqueId);
+	if (it == m_emitters.end())
+		return -1;
 
-	return idWaveId & StringHashMask;
+	return it.value()->sampleId;
 }
 
-int CSoundingObject::EncodeId(int id, int waveId)
+void CSoundingObject::SetEmitterSampleId(int uniqueId, int sampleId)
 {
-	if (waveId == -1)
-		return id;
+	const auto it = m_emitters.find(uniqueId);
+	if (it == m_emitters.end())
+		return;
 
-	return (id & StringHashMask) | (waveId << StringHashBits) | 0x80000000;
+	SoundEmitterData* emitter = *it;
+
+	if (emitter->sampleId != sampleId)
+	{
+		emitter->sampleId = sampleId;
+
+		if (emitter->virtualParams.state == IEqAudioSource::PLAYING)
+		{
+			// this will restart emitter safely
+			g_sounds->SwitchSourceState(emitter, true);
+			g_sounds->SwitchSourceState(emitter, false);
+		}
+	}
 }
-#endif
+
+const IEqAudioSource::State CSoundingObject::GetEmitterState(int uniqueId) const
+{
+	const auto it = m_emitters.find(uniqueId);
+	if (it == m_emitters.end())
+		return IEqAudioSource::STOPPED;
+
+	return it.value()->virtualParams.state;
+}
+
+void CSoundingObject::SetEmitterState(int uniqueId, IEqAudioSource::State state, bool rewindOnPlay)
+{
+	if (uniqueId != ID_ALL)
+	{
+		const auto it = m_emitters.find(uniqueId);
+		if (it == m_emitters.end())
+			return;
+
+		SetEmitterState(*it, state, rewindOnPlay);
+		return;
+	}
+
+	for (auto it = m_emitters.begin(); it != m_emitters.end(); ++it)
+		SetEmitterState(*it, state, rewindOnPlay);
+}
 
 void CSoundingObject::StopEmitter(int uniqueId, bool destroy /*= false*/)
 {
@@ -294,7 +300,7 @@ void CSoundingObject::SetSampleVolume(int uniqueId, int waveId, float volume)
 		SetSampleVolume(*it, waveId, volume);
 }
 
-void CSoundingObject::SetParams(int uniqueId, IEqAudioSource::Params& params)
+void CSoundingObject::SetParams(int uniqueId, const IEqAudioSource::Params& params)
 {
 	if (uniqueId != ID_ALL)
 	{
@@ -310,8 +316,32 @@ void CSoundingObject::SetParams(int uniqueId, IEqAudioSource::Params& params)
 		SetParams(*it, params);
 }
 
+void CSoundingObject::SetEmitterState(SoundEmitterData* emitter, IEqAudioSource::State state, bool rewindOnPlay)
+{
+	if (!emitter)
+		return;
+
+	if (emitter->virtualParams.state == state)
+		return;
+
+	IEqAudioSource::Params param;
+	param.set_state(state);
+
+	if (rewindOnPlay && state == IEqAudioSource::PLAYING)
+		param.updateFlags |= IEqAudioSource::UPDATE_DO_REWIND;
+
+	// update virtual params
+	emitter->virtualParams |= param;
+
+	if (emitter->soundSource)
+		emitter->soundSource->UpdateParams(param);
+}
+
 void CSoundingObject::StopEmitter(SoundEmitterData* emitter, bool destroy)
 {
+	if (!emitter)
+		return;
+
 	if (destroy)
 	{
 		if (emitter->channelType != CHAN_INVALID)
@@ -329,6 +359,7 @@ void CSoundingObject::StopEmitter(SoundEmitterData* emitter, bool destroy)
 
 	IEqAudioSource::Params param;
 	param.set_state(IEqAudioSource::STOPPED);
+
 	SetParams(emitter, param);
 }
 
@@ -341,8 +372,10 @@ void CSoundingObject::PauseEmitter(SoundEmitterData* emitter)
 
 void CSoundingObject::PlayEmitter(SoundEmitterData* emitter, bool rewind)
 {
-	// TODO: check if not playing already
+	if (!emitter)
+		return;
 
+	// check if not playing already
 	IEqAudioSource::Params param;
 	if (emitter->virtualParams.state != IEqAudioSource::PLAYING)
 		param.set_state(IEqAudioSource::PLAYING);
@@ -383,6 +416,9 @@ void CSoundingObject::SetVelocity(SoundEmitterData* emitter, const Vector3D& vel
 
 void CSoundingObject::SetPitch(SoundEmitterData* emitter, float pitch)
 {
+	if (!emitter)
+		return;
+
 	const float pitchLevel = emitter->startParams.pitch * pitch;
 
 	// update virtual params
@@ -400,6 +436,9 @@ void CSoundingObject::SetPitch(SoundEmitterData* emitter, float pitch)
 
 void CSoundingObject::SetVolume(SoundEmitterData* emitter, float volume)
 {
+	if (!emitter)
+		return;
+
 	const float volumeLevel = emitter->startParams.volume * volume;
 
 	// update virtual params
@@ -417,6 +456,9 @@ void CSoundingObject::SetVolume(SoundEmitterData* emitter, float volume)
 
 void CSoundingObject::SetSampleVolume(SoundEmitterData* emitter, int waveId, float volume)
 {
+	if (!emitter)
+		return;
+
 	// TODO: update virtual params
 
 	// update actual params
@@ -427,12 +469,109 @@ void CSoundingObject::SetSampleVolume(SoundEmitterData* emitter, int waveId, flo
 	}
 }
 
-void CSoundingObject::SetParams(SoundEmitterData* emitter, IEqAudioSource::Params& params)
+void CSoundingObject::SetParams(SoundEmitterData* emitter, const IEqAudioSource::Params& params)
 {
+	if (!emitter)
+		return;
+
 	// update virtual params
 	emitter->virtualParams |= params;
 
 	// update actual params
 	if (emitter->soundSource)
 		emitter->soundSource->UpdateParams(params);
+}
+
+//----------------------------------------
+
+CEmitterObjectSound::CEmitterObjectSound(CSoundingObject& soundingObj, int uniqueId)
+	: m_soundingObj(soundingObj)
+{
+	auto it = m_soundingObj.m_emitters.find(uniqueId);
+	if (it != m_soundingObj.m_emitters.end())
+		m_emitter = *it;
+}
+
+int CEmitterObjectSound::GetEmitterSampleId() const
+{
+	if (!m_emitter)
+		return -1;
+	return m_emitter->sampleId;
+}
+
+void CEmitterObjectSound::SetEmitterSampleId(int sampleId)
+{
+	if (m_emitter->sampleId == sampleId)
+		return;
+
+	m_emitter->sampleId = sampleId;
+
+	if (m_emitter->virtualParams.state == IEqAudioSource::PLAYING)
+	{
+		// this will restart emitter safely
+		g_sounds->SwitchSourceState(m_emitter, true);
+		g_sounds->SwitchSourceState(m_emitter, false);
+	}
+}
+
+const IEqAudioSource::State CEmitterObjectSound::GetEmitterState() const
+{
+	if (!m_emitter)
+		return IEqAudioSource::STOPPED;
+	return m_emitter->virtualParams.state;
+}
+
+void CEmitterObjectSound::SetEmitterState(IEqAudioSource::State state, bool rewindOnPlay)
+{
+	m_soundingObj.SetEmitterState(m_emitter, state, rewindOnPlay);
+}
+
+void CEmitterObjectSound::StopEmitter(bool destroy)
+{
+	m_soundingObj.StopEmitter(m_emitter, destroy);
+}
+
+void CEmitterObjectSound::PlayEmitter(bool rewind)
+{
+	m_soundingObj.PlayEmitter(m_emitter, rewind);
+}
+
+void CEmitterObjectSound::PauseEmitter()
+{
+	m_soundingObj.PauseEmitter(m_emitter);
+}
+
+void CEmitterObjectSound::StopLoop()
+{
+	m_soundingObj.StopLoop(m_emitter);
+}
+
+void CEmitterObjectSound::SetPosition(const Vector3D& position)
+{
+	m_soundingObj.SetPosition(m_emitter, position);
+}
+
+void CEmitterObjectSound::SetVelocity(const Vector3D& velocity)
+{
+	m_soundingObj.SetVelocity(m_emitter, velocity);
+}
+
+void CEmitterObjectSound::SetPitch(float pitch)
+{
+	m_soundingObj.SetPitch(m_emitter, pitch);
+}
+
+void CEmitterObjectSound::SetVolume(float volume)
+{
+	m_soundingObj.SetVolume(m_emitter, volume);
+}
+
+void CEmitterObjectSound::SetSampleVolume(int waveId, float volume)
+{
+	m_soundingObj.SetSampleVolume(m_emitter, waveId, volume);
+}
+
+void CEmitterObjectSound::SetParams(const IEqAudioSource::Params& params)
+{
+	m_soundingObj.SetParams(m_emitter, params);
 }
