@@ -231,7 +231,8 @@ void CAnimatedModel::HandleAnimatingEvent(AnimationEvent nEvent, const char* opt
 	switch(nEvent)
 	{
 		case EV_SOUND:
-			//EmitSound( options );
+			// TODO: callback!
+			// EmitSound( options );
 			break;
 
 		case EV_MUZZLEFLASH:

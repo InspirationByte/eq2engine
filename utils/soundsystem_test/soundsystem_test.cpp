@@ -28,6 +28,7 @@
 
 #include "audio/IEqAudioSystem.h"
 #include "audio/eqSoundEmitterSystem.h"
+#include "audio/eqSoundEmitterObject.h"
 
 #define APPLICATION_NAME		"SoundTest"
 #define LOCALIZED_FILE_PREFIX	"wxAppTest"
@@ -579,7 +580,7 @@ void CMainWindow::ProcessKeyboardUpEvents(wxKeyEvent& event)
 
 		EmitParams ep("test.static");
 		ep.origin = randomPos;
-		g_testSoundObject->EmitSound(-1, &ep);
+		g_testSoundObject->EmitSound(CSoundingObject::ID_RANDOM, &ep);
 
 		debugoverlay->Box3D(randomPos-1.0f, randomPos+1.0f, ColorRGBA(1,1,0,1), 1.0f);
 	}

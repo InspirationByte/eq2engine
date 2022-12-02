@@ -173,7 +173,7 @@ public:
 
 	// sets the new effect
 	virtual void				SetEffect(int slot, effectId_t effect) = 0;
-	virtual int					GetEffectSlotCount() const;
+	virtual int					GetEffectSlotCount() const = 0;
 };
 
 extern IEqAudioSystem* g_audioSystem;
