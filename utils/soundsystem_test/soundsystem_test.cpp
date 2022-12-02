@@ -68,6 +68,26 @@ float				g_frametime = 0.0f;
 #define SOUND_COUNT_TEST 4
 #define MAX_LOOP_SOUNDS 6
 
+enum ESoundChannelType
+{
+	CHAN_STATIC = 0,
+	CHAN_BODY,
+	CHAN_ENGINE,
+	CHAN_VOICE,
+	CHAN_STREAM,
+
+	CHAN_COUNT
+};
+
+static ChannelDef s_soundChannels[] = {
+	DEFINE_SOUND_CHANNEL(CHAN_STATIC, 16),	// anything that dont fit categories below
+	DEFINE_SOUND_CHANNEL(CHAN_BODY, 16),	// hit sounds
+	DEFINE_SOUND_CHANNEL(CHAN_ENGINE, 3),	// rev, non-rev and idle sounds
+	DEFINE_SOUND_CHANNEL(CHAN_VOICE, 1),
+	DEFINE_SOUND_CHANNEL(CHAN_STREAM, 1)
+};
+static_assert(elementsOf(s_soundChannels) == CHAN_COUNT, "ESoundChannelType needs to be in sync with s_soundChannels");
+
 static const char* s_loopingSoundNames[] = {
 	"test.streaming_stereo_wav",
 	"test.streaming_stereo_ogg",
@@ -88,7 +108,7 @@ void InitSoundSystem( EQWNDHANDLE wnd )
 	g_consoleCommands->ExecuteCommandBuffer();
 
 	g_audioSystem->Init();
-	g_sounds->Init(120.0f);
+	g_sounds->Init(120.0f, s_soundChannels, elementsOf(s_soundChannels));
 
 	{
 		KVSection soundSec;
@@ -143,7 +163,7 @@ void InitSoundSystem( EQWNDHANDLE wnd )
 		wave.AddKey("wave", "cars/skid3.wav");
 
 		soundSec.SetKey("loop", true);
-		soundSec.SetKey("channel", "CHAN_STATIC");
+		soundSec.SetKey("channel", "CHAN_BODY");
 		g_sounds->CreateSoundScript(&soundSec);
 		g_sounds->PrecacheSound(soundSec.GetName());
 	}

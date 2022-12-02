@@ -46,40 +46,6 @@ DECLARE_CMD_VARIANTS(snd_test_scriptsound, "Test the scripted sound", CSoundEmit
 
 ConVar snd_scriptsound_debug("snd_scriptsound_debug", "0", nullptr, CV_CHEAT);
 
-static const char* s_soundChannelNames[CHAN_COUNT] =
-{
-	"CHAN_STATIC",
-	"CHAN_VOICE",
-	"CHAN_ITEM",
-	"CHAN_BODY",
-	"CHAN_WEAPON",
-	"CHAN_SIGNAL",
-	"CHAN_STREAM",
-};
-
-// per-object limit
-static int s_soundChannelMaxEmitters[CHAN_COUNT] =
-{
-	16, // CHAN_STATIC
-	1,	// CHAN_VOICE,
-	3,	// CHAN_ITEM
-	16,	// CHAN_BODY
-	1,	// CHAN_WEAPON
-	1,	// CHAN_SIGNAL
-	1	// CHAN_STREAM
-};
-
-static ESoundChannelType ChannelTypeByName(const char* str)
-{
-	for (int i = 0; i < CHAN_COUNT; i++)
-	{
-		if (!stricmp(str, s_soundChannelNames[i]))
-			return (ESoundChannelType)i;
-	}
-
-	return CHAN_INVALID;
-}
-
 struct SoundScriptDesc
 {
 	EqString				name;
@@ -87,7 +53,7 @@ struct SoundScriptDesc
 	Array<ISoundSource*>	samples{ PP_SL };
 	Array<EqString>			soundFileNames{ PP_SL };
 
-	ESoundChannelType		channelType{ CHAN_INVALID };
+	int						channelType{ CHAN_INVALID };
 
 	float		volume{ 1.0f };
 	float		atten{ 1.0f };
@@ -110,7 +76,7 @@ struct SoundEmitterData
 	CRefPtr<IEqAudioSource>	soundSource;			// NULL when virtual 
 	const SoundScriptDesc*	script{ nullptr };		// sound script which used to start this sound
 	CSoundingObject*		soundingObj{ nullptr };
-	ESoundChannelType		channelType{ CHAN_INVALID };
+	int						channelType{ CHAN_INVALID };
 	int						sampleId{ -1 };			// when randomSample and sampleId == -1, it's random
 };
 
@@ -214,7 +180,7 @@ bool CSoundingObject::UpdateEmitters(const Vector3D& listenerPos)
 	return m_emitters.size() > 0;
 }
 
-void CSoundingObject::StopFirstEmitterByChannel(ESoundChannelType chan)
+void CSoundingObject::StopFirstEmitterByChannel(int chan)
 {
 	if (chan == CHAN_INVALID)
 		return;
@@ -559,12 +525,15 @@ CSoundEmitterSystem::~CSoundEmitterSystem()
 {
 }
 
-void CSoundEmitterSystem::Init(float maxDistance)
+void CSoundEmitterSystem::Init(float defaultMaxDistance, ChannelDef* channelDefs, int numChannels)
 {
 	if(m_isInit)
 		return;
 
-	m_defaultMaxDistance = maxDistance;
+	m_defaultMaxDistance = defaultMaxDistance;
+
+	for (int i = 0; i < numChannels; ++i)
+		m_channelTypes.append(channelDefs[i]);
 
 	KVSection* soundSettings = g_eqCore->GetConfig()->FindSection("Sound");
 
@@ -699,7 +668,7 @@ int CSoundEmitterSystem::EmitSound(EmitParams* ep, CSoundingObject* soundingObj,
 
 		// if entity reached the maximum sound count for self
 		// at specific channel, we stop first sound
-		if(usedSounds >= s_soundChannelMaxEmitters[script->channelType])
+		if(usedSounds >= m_channelTypes[script->channelType].limit)
 			soundingObj->StopFirstEmitterByChannel(script->channelType);
 
 		edata = PPNew SoundEmitterData();
@@ -727,7 +696,7 @@ int CSoundEmitterSystem::EmitSound(EmitParams* ep, CSoundingObject* soundingObj,
 	startParams.set_state(IEqAudioSource::PLAYING);
 	startParams.set_releaseOnStop(true);
 
-	ep->channelType = (ESoundChannelType)startParams.channel;
+	ep->channelType = startParams.channel;
 
 	const float randPitch = (ep->flags & EMITSOUND_FLAG_RANDOM_PITCH) ? RandomFloat(-0.05f, 0.05f) : 0.0f;
 
@@ -997,11 +966,11 @@ void CSoundEmitterSystem::CreateSoundScript(const KVSection* scriptSection)
 		if (newSound->channelType == CHAN_INVALID)
 		{
 			Msg("Invalid channel '%s' for sound %s\n", chanName, newSound->name.ToCString());
-			newSound->channelType = CHAN_STATIC;
+			newSound->channelType = 0;
 		}
 	}
 	else
-		newSound->channelType = CHAN_STATIC;
+		newSound->channelType = 0;
 
 	// pick 'rndwave' or 'wave' sections for lists
 	KVSection* waveKey = waveKey = scriptSection->FindSection("wave", KV_FLAG_SECTION); 
@@ -1036,4 +1005,15 @@ void CSoundEmitterSystem::CreateSoundScript(const KVSection* scriptSection)
 		MsgWarning("empty sound script '%s'!\n", newSound->name.ToCString());
 
 	m_allSounds.insert(namehash, newSound);
+}
+
+int CSoundEmitterSystem::ChannelTypeByName(const char* str) const
+{
+	for (int i = 0; i < m_channelTypes.numElem(); i++)
+	{
+		if (!stricmp(str, m_channelTypes[i].name))
+			return m_channelTypes[i].id;
+	}
+
+	return CHAN_INVALID;
 }

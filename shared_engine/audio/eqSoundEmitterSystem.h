@@ -32,21 +32,17 @@ enum EEmitSoundFlags
 	EMITSOUND_FLAG_PENDING			= (1 << 7),		// was in pending list
 };
 
-// channel type for entity call
-enum ESoundChannelType : int
+static constexpr const int CHAN_INVALID = -1;
+static constexpr const int CHAN_MAX = 16;
+
+struct ChannelDef
 {
-	CHAN_INVALID = -1,
-
-	CHAN_STATIC,
-	CHAN_VOICE,
-	CHAN_ITEM,
-	CHAN_BODY,
-	CHAN_WEAPON,
-	CHAN_SIGNAL,
-	CHAN_STREAM,	// streaming channel
-
-	CHAN_COUNT
+	const char* name;
+	int id;
+	int limit;
 };
+
+#define DEFINE_SOUND_CHANNEL(name, limit) { #name, name, limit }
 
 struct EmitParams
 {
@@ -90,7 +86,7 @@ struct EmitParams
 
 	int						flags{ 0 };
 	int						sampleId{ -1 };
-	ESoundChannelType		channelType{ CHAN_INVALID };
+	int						channelType{ CHAN_INVALID };
 };
 
 // Sound channel entity that controls it's sound sources
@@ -118,7 +114,7 @@ public:
 	void		SetSampleVolume(int uniqueId, int waveId, float volume);
 	void		SetParams(int uniqueId, IEqAudioSource::Params& params);
 
-	int			GetChannelSoundCount(ESoundChannelType chan) const { return m_numChannelSounds[chan]; }
+	int			GetChannelSoundCount(int chan) const { return m_numChannelSounds[chan]; }
 
 	void		SetSoundVolumeScale(float fScale)	{ m_volumeScale = fScale; }
 	float		GetSoundVolumeScale() const			{ return m_volumeScale; }
@@ -138,12 +134,12 @@ protected:
 	void		SetParams(SoundEmitterData* emitter, IEqAudioSource::Params& params);
 
 	bool		UpdateEmitters(const Vector3D& listenerPos);
-	void		StopFirstEmitterByChannel(ESoundChannelType chan);
+	void		StopFirstEmitterByChannel(int chan);
 
 	// sounds at channel counter
 	Map<int, SoundEmitterData*>	m_emitters{ PP_SL };
 
-	uint8						m_numChannelSounds[CHAN_COUNT]{ 0 };
+	uint8						m_numChannelSounds[CHAN_MAX]{ 0 };
 	float						m_volumeScale{ 1.0f };
 };
 
@@ -160,7 +156,7 @@ public:
 	CSoundEmitterSystem();
 	~CSoundEmitterSystem();
 
-	void				Init(float maxDistance);
+	void				Init(float defaultMaxDistance, ChannelDef* channelDefs, int numChannels);
 	void				Shutdown();
 
 	void				LoadScriptSoundFile(const char* fileName);
@@ -186,13 +182,16 @@ private:
 
 	bool				SwitchSourceState(SoundEmitterData* emit, bool isVirtual);
 
-	Map<int, SoundScriptDesc*>		m_allSounds{ PP_SL };
-	Set<CSoundingObject*>			m_soundingObjects{ PP_SL };
-	Array<EmitParams>				m_pendingStartSounds{ PP_SL };
+	int					ChannelTypeByName(const char* str) const;
 
-	float							m_defaultMaxDistance{ 100.0f };
+	FixedArray<ChannelDef, CHAN_MAX>	m_channelTypes;
+	Map<int, SoundScriptDesc*>			m_allSounds{ PP_SL };
+	Set<CSoundingObject*>				m_soundingObjects{ PP_SL };
+	Array<EmitParams>					m_pendingStartSounds{ PP_SL };
+	
+	float								m_defaultMaxDistance{ 100.0f };
 
-	bool							m_isInit{ false };
+	bool								m_isInit{ false };
 };
 
 extern CSoundEmitterSystem* g_sounds;
