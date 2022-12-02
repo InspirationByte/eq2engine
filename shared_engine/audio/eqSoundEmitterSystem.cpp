@@ -21,8 +21,6 @@
 
 #define SOUND_DEFAULT_PATH		"sounds/"
 
-#pragma optimize("", off)
-
 using namespace Threading;
 static CEqMutex s_soundEmitterSystemMutex;
 
@@ -414,6 +412,8 @@ void CSoundingObject::PauseEmitter(SoundEmitterData* emitter)
 
 void CSoundingObject::PlayEmitter(SoundEmitterData* emitter, bool rewind)
 {
+	// TODO: check if not playing already
+
 	// update virtual params
 	emitter->virtualParams.set_state(IEqAudioSource::PLAYING);
 

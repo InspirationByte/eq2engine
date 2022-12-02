@@ -9,8 +9,6 @@
 #include "core/IFileSystem.h"
 #include "riff.h"
 
-#pragma optimize("", off)
-
 CRIFF_Parser::CRIFF_Parser(const char* szFilename)
 {
 	m_file = g_fileSystem->Open(szFilename, "rb");
