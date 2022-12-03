@@ -162,8 +162,8 @@ void InitSoundSystem( EQWNDHANDLE wnd )
 		soundSec.SetName("test.multiSample");
 		KVSection& wave = *soundSec.CreateSection("wave");
 		wave.AddKey("wave", "cars/skid.wav");
-		wave.AddKey("wave", "cars/skid2.wav");
 		wave.AddKey("wave", "cars/skid3.wav");
+		wave.AddKey("wave", "cars/skid_traction.wav");
 
 		soundSec.SetKey("loop", true);
 		soundSec.SetKey("channel", "CHAN_BODY");

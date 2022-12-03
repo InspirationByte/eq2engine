@@ -682,6 +682,9 @@ void CEqAudioSystemAL::EndUpdate()
 		}
 	}
 
+	for (int i = 0; i < m_mixerChannels.numElem(); ++i)
+		m_mixerChannels[i].updateFlags = 0;
+
 	if (snd_debug.GetBool())
 	{
 		uint sampleMem = 0;

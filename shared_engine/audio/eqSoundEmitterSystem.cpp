@@ -414,6 +414,8 @@ int CSoundEmitterSystem::EmitterUpdateCallback(void* obj, IEqAudioSource::Params
 int CSoundEmitterSystem::LoopSourceUpdateCallback(void* obj, IEqAudioSource::Params& params)
 {
 	const SoundScriptDesc* soundScript = (const SoundScriptDesc*)obj;
+	if (soundScript->is2d)
+		return 0;
 
 	Vector3D listenerPos, listenerVel;
 	g_audioSystem->GetListener(listenerPos, listenerVel);
