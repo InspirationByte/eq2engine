@@ -62,6 +62,7 @@ private:
 
 	int					ChannelTypeByName(const char* str) const;
 
+	Threading::CEqSignal				m_updateDone;
 	FixedArray<ChannelDef, CHAN_MAX>	m_channelTypes;
 	Map<int, SoundScriptDesc*>			m_allSounds{ PP_SL };
 	Set<CSoundingObject*>				m_soundingObjects{ PP_SL };

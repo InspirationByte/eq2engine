@@ -98,6 +98,8 @@ void CSoundEmitterSystem::Init(float defaultMaxDistance, ChannelDef* channelDefs
 	if(m_isInit)
 		return;
 
+	m_updateDone.Raise();
+
 	m_defaultMaxDistance = defaultMaxDistance;
 
 	for (int i = 0; i < numChannels; ++i)
@@ -220,10 +222,15 @@ int CSoundEmitterSystem::EmitSound(EmitParams* ep, CSoundingObject* soundingObj,
 	Vector3D listenerPos, listenerVel;
 	g_audioSystem->GetListener(listenerPos, listenerVel);
 
-	const float distToSound = length(ep->origin - listenerPos);
+	const bool is2Dsound = script->is2d || (ep->flags & EMITSOUND_FLAG_FORCE_2D);
 	const bool startSilent = (ep->flags & EMITSOUND_FLAG_STARTSILENT);
-	const bool isAudibleToStart = !startSilent && (script->is2d || (distToSound < script->maxDistance));
-
+	bool isAudibleToStart = !startSilent;
+	if (!is2Dsound)
+	{
+		const float distToSound = length(ep->origin - listenerPos);
+		isAudibleToStart = !startSilent && (distToSound < script->maxDistance);
+	}
+	
 	if (!isAudibleToStart && releaseOnStop)
 	{
 		return CHAN_INVALID;
@@ -264,7 +271,7 @@ int CSoundEmitterSystem::EmitSound(EmitParams* ep, CSoundingObject* soundingObj,
 	startParams.set_referenceDistance(script->atten * ep->radiusMultiplier);
 	startParams.set_rolloff(script->rolloff);
 	startParams.set_airAbsorption(script->airAbsorption);
-	startParams.set_relative(script->is2d);
+	startParams.set_relative(is2Dsound);
 	startParams.set_position(ep->origin);
 	startParams.set_channel(channelType);
 	startParams.set_state(startSilent ? IEqAudioSource::STOPPED : IEqAudioSource::PLAYING);
@@ -388,21 +395,25 @@ void CSoundEmitterSystem::StopAllSounds()
 int CSoundEmitterSystem::EmitterUpdateCallback(void* obj, IEqAudioSource::Params& params)
 {
 	SoundEmitterData* emitter = (SoundEmitterData*)obj;
-	const IEqAudioSource::Params& virtualParams = emitter->virtualParams;
+	IEqAudioSource::Params& virtualParams = emitter->virtualParams;
 	const SoundScriptDesc* script = emitter->script;
 	const CSoundingObject* soundingObj = emitter->soundingObj;
 
 	params.set_volume(virtualParams.volume * soundingObj->GetSoundVolumeScale());
-	emitter->virtualParams.state = params.state;
+	virtualParams.state = params.state;
 
 	if (!params.relative)
 	{
-		Vector3D listenerPos, listenerVel;
-		g_audioSystem->GetListener(listenerPos, listenerVel);
+		bool isAudible = true;
+		if (!virtualParams.relative)
+		{
+			Vector3D listenerPos, listenerVel;
+			g_audioSystem->GetListener(listenerPos, listenerVel);
 
-		const float distToSound = lengthSqr(params.position - listenerPos);
-		const float maxDistSqr = M_SQR(script->maxDistance);
-		const bool isAudible = script->is2d || distToSound < maxDistSqr;
+			const float distToSound = lengthSqr(params.position - listenerPos);
+			const float maxDistSqr = M_SQR(script->maxDistance);
+			isAudible = distToSound < maxDistSqr;
+		}
 
 		// switch emitter between virtual and real here
 		g_sounds->SwitchSourceState(emitter, !isAudible);
@@ -414,7 +425,7 @@ int CSoundEmitterSystem::EmitterUpdateCallback(void* obj, IEqAudioSource::Params
 int CSoundEmitterSystem::LoopSourceUpdateCallback(void* obj, IEqAudioSource::Params& params)
 {
 	const SoundScriptDesc* soundScript = (const SoundScriptDesc*)obj;
-	if (soundScript->is2d)
+	if (params.relative)
 		return 0;
 
 	Vector3D listenerPos, listenerVel;
@@ -435,38 +446,43 @@ int CSoundEmitterSystem::LoopSourceUpdateCallback(void* obj, IEqAudioSource::Par
 void CSoundEmitterSystem::Update()
 {
 	PROF_EVENT("Sound Emitter System Update");
+	m_updateDone.Wait();
 
-	// FIXME: run in job thread?
-	g_audioSystem->BeginUpdate();
+	m_updateDone.Clear();
+	g_parallelJobs->AddJob(JOB_TYPE_AUDIO, [this](void*, int i) {
+		g_audioSystem->BeginUpdate();
 
-	// start all pending sounds we accumulated during sound pause
-	if (m_pendingStartSounds.numElem())
-	{
-		CScopedMutex m(s_soundEmitterSystemMutex);
-
-		// play sounds
-		for (int i = 0; i < m_pendingStartSounds.numElem(); i++)
-			EmitSound(&m_pendingStartSounds[i]);
-
-		// release
-		m_pendingStartSounds.clear();
-	}
-
-	Vector3D listenerPos, listenerVel;
-	g_audioSystem->GetListener(listenerPos, listenerVel);
-
-	{
-		CScopedMutex m(s_soundEmitterSystemMutex);
-		for (auto it = m_soundingObjects.begin(); it != m_soundingObjects.end(); ++it)
+		// start all pending sounds we accumulated during sound pause
+		if (m_pendingStartSounds.numElem())
 		{
-			CSoundingObject* obj = it.key();
+			CScopedMutex m(s_soundEmitterSystemMutex);
 
-			if(!obj->UpdateEmitters(listenerPos))
-				m_soundingObjects.remove(it);
+			// play sounds
+			for (int i = 0; i < m_pendingStartSounds.numElem(); i++)
+				EmitSound(&m_pendingStartSounds[i]);
+
+			// release
+			m_pendingStartSounds.clear();
 		}
-	}
 
-	g_audioSystem->EndUpdate();
+		Vector3D listenerPos, listenerVel;
+		g_audioSystem->GetListener(listenerPos, listenerVel);
+
+		{
+			CScopedMutex m(s_soundEmitterSystemMutex);
+			for (auto it = m_soundingObjects.begin(); it != m_soundingObjects.end(); ++it)
+			{
+				CSoundingObject* obj = it.key();
+
+				if(!obj->UpdateEmitters(listenerPos))
+					m_soundingObjects.remove(it);
+			}
+		}
+
+		g_audioSystem->EndUpdate();
+		m_updateDone.Raise();
+	});
+	g_parallelJobs->Submit();
 }
 
 void CSoundEmitterSystem::RemoveSoundingObject(CSoundingObject* obj)

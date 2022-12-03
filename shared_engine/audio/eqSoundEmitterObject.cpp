@@ -48,9 +48,16 @@ bool CSoundingObject::UpdateEmitters(const Vector3D& listenerPos)
 		{
 			const SoundScriptDesc* script = emitter->script;
 
-			const float distToSound = lengthSqr(params.position - listenerPos);
-			const float maxDistSqr = M_SQR(script->maxDistance);
-			const bool isAudible = script->is2d || distToSound < maxDistSqr;
+			bool isAudible = true;
+			if (!params.relative)
+			{
+				Vector3D listenerPos, listenerVel;
+				g_audioSystem->GetListener(listenerPos, listenerVel);
+
+				const float distToSound = lengthSqr(params.position - listenerPos);
+				const float maxDistSqr = M_SQR(script->maxDistance);
+				isAudible = distToSound < maxDistSqr;
+			}
 
 			// switch emitter between virtual and real here
 			if (g_sounds->SwitchSourceState(emitter, !isAudible))
