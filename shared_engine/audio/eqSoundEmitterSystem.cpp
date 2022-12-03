@@ -488,27 +488,33 @@ void CSoundEmitterSystem::LoadScriptSoundFile(const char* fileName)
 	}
 
 	DevMsg(DEVMSG_SOUND, "Loading sound script file '%s'\n", fileName);
-
-	for(int i = 0; i <  kv.GetRootSection()->keys.numElem(); i++)
+	const KVSection* rootSec = kv.GetRootSection();
+	for(int i = 0; i < rootSec->keys.numElem(); i++)
 	{
-		KVSection* kb = kv.GetRootSection()->keys[i];
+		KVSection* kb = rootSec->keys[i];
 
 		if(!stricmp( kb->GetName(), "include"))
 			LoadScriptSoundFile( KV_GetValueString(kb) );
 	}
 
-	for(int i = 0; i < kv.GetRootSection()->keys.numElem(); i++)
+	KVSection defaultsSec;
+
+	for(int i = 0; i < rootSec->keys.numElem(); i++)
 	{
-		KVSection* curSec = kv.GetRootSection()->keys[i];
+		const KVSection* curSec = rootSec->keys[i];
 
-		if(!stricmp(curSec->name, "include"))
-			continue;
-
-		CreateSoundScript(curSec);
+		if (curSec->IsSection())
+		{
+			CreateSoundScript(curSec, &defaultsSec);
+		}
+		else if(!stricmp("default", curSec->GetName()))
+		{
+			defaultsSec.AddKey(KV_GetValueString(curSec), KV_GetValueString(curSec, 1));
+		}
 	}
 }
 
-void CSoundEmitterSystem::CreateSoundScript(const KVSection* scriptSection)
+void CSoundEmitterSystem::CreateSoundScript(const KVSection* scriptSection, const KVSection* defaultsSec)
 {
 	if (!scriptSection)
 		return;
@@ -525,19 +531,26 @@ void CSoundEmitterSystem::CreateSoundScript(const KVSection* scriptSection)
 	SoundScriptDesc* newSound = PPNew SoundScriptDesc;
 	newSound->name = soundName;
 
-	newSound->volume = KV_GetValueFloat(scriptSection->FindSection("volume"), 0, 1.0f);
-	newSound->pitch = KV_GetValueFloat(scriptSection->FindSection("pitch"), 0, 1.0f);
-	newSound->rolloff = KV_GetValueFloat(scriptSection->FindSection("rollOff"), 0, 1.0f);
-	newSound->airAbsorption = KV_GetValueFloat(scriptSection->FindSection("airAbsorption"), 0, 0.0f);
+	auto sectionGetOrDefault = [scriptSection, defaultsSec](const char* name) {
+		const KVSection* sec = scriptSection->FindSection(name);
+		if (!sec && defaultsSec)
+			sec = defaultsSec->FindSection(name);
+		return sec;
+	};
 
-	newSound->atten = KV_GetValueFloat(scriptSection->FindSection("distance"), 0, m_defaultMaxDistance * 0.35f);
-	newSound->maxDistance = KV_GetValueFloat(scriptSection->FindSection("maxDistance"), 0, m_defaultMaxDistance);
+	newSound->volume = KV_GetValueFloat(sectionGetOrDefault("volume"), 0, 1.0f);
+	newSound->pitch = KV_GetValueFloat(sectionGetOrDefault("pitch"), 0, 1.0f);
+	newSound->rolloff = KV_GetValueFloat(sectionGetOrDefault("rollOff"), 0, 1.0f);
+	newSound->airAbsorption = KV_GetValueFloat(sectionGetOrDefault("airAbsorption"), 0, 0.0f);
 
-	newSound->loop = KV_GetValueBool(scriptSection->FindSection("loop"), 0, false);
-	newSound->is2d = KV_GetValueBool(scriptSection->FindSection("is2D"), 0, false);
+	newSound->atten = KV_GetValueFloat(sectionGetOrDefault("distance"), 0, m_defaultMaxDistance * 0.35f);
+	newSound->maxDistance = KV_GetValueFloat(sectionGetOrDefault("maxDistance"), 0, m_defaultMaxDistance);
+
+	newSound->loop = KV_GetValueBool(sectionGetOrDefault("loop"), 0, false);
+	newSound->is2d = KV_GetValueBool(sectionGetOrDefault("is2D"), 0, false);
 	newSound->randomSample = false;
 
-	KVSection* chanKey = scriptSection->FindSection("channel");
+	const KVSection* chanKey = sectionGetOrDefault("channel");
 
 	if (chanKey)
 	{
