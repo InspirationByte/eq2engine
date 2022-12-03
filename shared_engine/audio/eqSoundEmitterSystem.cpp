@@ -312,7 +312,7 @@ bool CSoundEmitterSystem::SwitchSourceState(SoundEmitterData* emit, bool isVirtu
 
 		bool hasLoop = script->loop;
 
-		if (script->randomSample)
+		if (script->randomSample || emit->sampleId != -1)
 		{
 			const ISoundSource* bestSample = script->GetBestSample(emit->sampleId);
 			ASSERT(bestSample);	// shouldn't really happen

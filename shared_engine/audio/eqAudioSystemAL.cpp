@@ -800,17 +800,17 @@ void CEqAudioSourceAL::UpdateParams(const Params& params, int mask)
 	if (mask & UPDATE_VELOCITY)
 		alSourcefv(thisSource, AL_VELOCITY, params.velocity);
 
-	if (mask & UPDATE_VOLUME)
-	{
+	if(params.updateFlags & UPDATE_VOLUME)
 		m_volume = params.volume;
-		alSourcef(thisSource, AL_GAIN, params.volume * mixChannel.volume);
-	}
+
+	if (params.updateFlags & UPDATE_PITCH)
+		m_pitch = params.pitch;
+
+	if (mask & UPDATE_VOLUME)
+		alSourcef(thisSource, AL_GAIN, m_volume * mixChannel.volume);
 
 	if (mask & UPDATE_PITCH)
-	{
-		m_pitch = params.pitch;
-		alSourcef(thisSource, AL_PITCH, params.pitch * mixChannel.pitch);
-	}
+		alSourcef(thisSource, AL_PITCH, m_pitch * mixChannel.pitch);
 
 	if (mask & UPDATE_REF_DIST)
 		alSourcef(thisSource, AL_REFERENCE_DISTANCE, params.referenceDistance);
