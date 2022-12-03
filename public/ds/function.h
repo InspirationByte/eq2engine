@@ -48,6 +48,13 @@ public:
     template <typename F>
     EqFunction(F f)
     {
+        if constexpr (std::is_pointer_v<F> || std::is_member_function_pointer_v<F>) 
+        {
+            // this will only be compiled if Func is a pointer type
+            if (f == nullptr)
+                return;
+        }
+
         if (sizeof(f) <= BUFFER_SIZE && std::is_nothrow_move_constructible<F>::value) 
         {
             isSmall = true;
@@ -76,6 +83,12 @@ public:
     {
         Cleanup();
         MoveFunction(std::move(other));
+        return *this;
+    }
+
+    EqFunction& operator=(std::nullptr_t) noexcept
+    {
+        Cleanup();
         return *this;
     }
 
@@ -118,6 +131,7 @@ private:
             auto c = reinterpret_cast<std::unique_ptr<Concept>*>(&buffer);
             c->~unique_ptr();
         }
+        std::memset(&buffer, 0, BUFFER_SIZE + alignof(size_t));
         isSmall = false;
     }
 
