@@ -29,7 +29,15 @@ CSoundEmitterSystem* g_sounds = &s_ses;
 
 using namespace Threading;
 
-DECLARE_CMD_VARIANTS(snd_test_scriptsound, "Test the scripted sound", CSoundEmitterSystem::cmd_vars_sounds_list, 0)
+static void cmd_vars_sounds_list(const ConCommandBase* base, Array<EqString>& list, const char* query)
+{
+	Array<SoundScriptDesc*> sndList(PP_SL);
+	g_sounds->GetAllSoundsList(sndList);
+	for (int i = 0; i < sndList.numElem(); ++i)
+		list.append(sndList[i]->name);
+}
+
+DECLARE_CMD_VARIANTS(snd_test_scriptsound, "Test the scripted sound", cmd_vars_sounds_list, 0)
 {
 	if (CMD_ARGC > 0)
 	{
@@ -76,14 +84,6 @@ const ISoundSource* SoundScriptDesc::GetBestSample(int sampleId /*= -1*/) const
 //    SOUND EMITTER SYSTEM
 //
 //----------------------------------------------------------------------------
-
-void CSoundEmitterSystem::cmd_vars_sounds_list(const ConCommandBase* base, Array<EqString>& list, const char* query)
-{
-	for (auto it = s_ses.m_allSounds.begin(); it != s_ses.m_allSounds.end(); ++it)
-	{
-		list.append(it.value()->name);
-	}
-}
 
 CSoundEmitterSystem::CSoundEmitterSystem()
 {
@@ -304,10 +304,24 @@ int CSoundEmitterSystem::EmitSound(EmitParams* ep, CSoundingObject* soundingObj,
 
 bool CSoundEmitterSystem::SwitchSourceState(SoundEmitterData* emit, bool isVirtual)
 {
+	const SoundScriptDesc* script = emit->script;
+
+#ifndef _RETAIL
+	if (m_isolateSound && script != m_isolateSound)
+	{
+		if (emit->soundSource)
+		{
+			g_audioSystem->DestroySource(emit->soundSource);
+			emit->soundSource = nullptr;
+		}
+		return false;
+	}
+#endif
+
 	// start the real sound
 	if (!isVirtual && emit->virtualParams.state != IEqAudioSource::STOPPED && !emit->soundSource)
 	{
-		const SoundScriptDesc* script = emit->script;
+
 		FixedArray<const ISoundSource*, 16> samples;
 
 		bool hasLoop = script->loop;
@@ -626,4 +640,44 @@ int CSoundEmitterSystem::ChannelTypeByName(const char* str) const
 	}
 
 	return CHAN_INVALID;
+}
+
+void CSoundEmitterSystem::GetAllSoundsList(Array<SoundScriptDesc*>& list) const
+{
+	for (auto it = m_allSounds.begin(); it != m_allSounds.end(); ++it)
+	{
+		list.append(it.value());
+	}
+}
+
+void CSoundEmitterSystem::RestartEmittersByScript(SoundScriptDesc* script)
+{
+#ifndef _RETAIL
+	for (auto it = m_soundingObjects.begin(); it != m_soundingObjects.end(); ++it)
+	{
+		CSoundingObject* obj = it.key();
+		for (auto emIt = obj->m_emitters.begin(); emIt != obj->m_emitters.end(); ++emIt)
+		{
+			SoundEmitterData* emitter = emIt.value();
+
+			if (emitter->script != script)
+				continue;
+
+			IEqAudioSource::Params& startParams = emitter->startParams;
+
+			startParams.set_volume(script->volume);
+			startParams.set_pitch(script->pitch);
+			startParams.set_looping(script->loop);
+			startParams.set_referenceDistance(script->atten);
+			startParams.set_rolloff(script->rolloff);
+			startParams.set_airAbsorption(script->airAbsorption);
+
+			emitter->virtualParams |= startParams;
+			if (emitter->soundSource)
+			{
+				emitter->soundSource->UpdateParams(startParams);
+			}
+		}
+	}
+#endif
 }

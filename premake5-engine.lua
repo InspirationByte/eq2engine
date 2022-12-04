@@ -317,7 +317,8 @@ project "soundSystemLib"
 	unitybuild "on"
 	uses { 
 		"corelib", "frameworkLib",
-		"libvorbis", "libogg", "openal-soft"
+		"libvorbis", "libogg", "openal-soft",
+		"imgui"
 	}
     files {
 		Folders.shared_engine.. "audio/**.cpp",

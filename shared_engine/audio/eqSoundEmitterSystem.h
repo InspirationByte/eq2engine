@@ -23,6 +23,7 @@ struct KVSection;
 struct ChannelDef;
 class CSoundingObject;
 class CEmitterObjectSound;
+class CSoundScriptEditor;
 class ConCommandBase;
 
 // the sound emitter system
@@ -30,9 +31,8 @@ class CSoundEmitterSystem
 {
 	friend class CSoundingObject;
 	friend class CEmitterObjectSound;
+	friend class CSoundScriptEditor;
 public:
-	static void cmd_vars_sounds_list(const ConCommandBase* base, Array<EqString>& list, const char* query);
-
 	CSoundEmitterSystem();
 	~CSoundEmitterSystem();
 
@@ -48,6 +48,7 @@ public:
 
 	void				Update();
 
+	void				GetAllSoundsList(Array<SoundScriptDesc*>& list) const;
 private:
 
 	int					EmitSound(EmitParams* emit, CSoundingObject* soundingObj, int objUniqueId, bool releaseOnStop = true);
@@ -62,14 +63,18 @@ private:
 
 	int					ChannelTypeByName(const char* str) const;
 
+	// Editor features
+	void				RestartEmittersByScript(SoundScriptDesc* soundScript);
+
 	Threading::CEqSignal				m_updateDone;
 	FixedArray<ChannelDef, CHAN_MAX>	m_channelTypes;
 	Map<int, SoundScriptDesc*>			m_allSounds{ PP_SL };
 	Set<CSoundingObject*>				m_soundingObjects{ PP_SL };
 	Array<EmitParams>					m_pendingStartSounds{ PP_SL };
+
+	SoundScriptDesc*					m_isolateSound{ nullptr };
 	
 	float								m_defaultMaxDistance{ 100.0f };
-
 	bool								m_isInit{ false };
 };
 

@@ -29,6 +29,7 @@
 
 #ifdef IMGUI_ENABLED
 #include <imgui.h>
+
 #include "imgui_backend/imgui_impl_matsystem.h"
 #include "imgui_backend/imgui_impl_sys.h"
 #endif // IMGUI_ENABLED
@@ -360,6 +361,8 @@ void CEqConsoleInput::BeginFrame()
 			name->DispatchFunc(args); \
 	}
 
+	static bool s_showDemoWindow = false;
+
 	if (ImGui::BeginMainMenuBar())
 	{
 		if (ImGui::BeginMenu("CONSOLE"))
@@ -403,6 +406,12 @@ void CEqConsoleInput::BeginFrame()
 			ImGui::EndMenu();
 		}
 
+		if (ImGui::BeginMenu("IMGUI"))
+		{
+			ImGui::MenuItem("SHOW DEMO", nullptr, &s_showDemoWindow);
+			ImGui::EndMenu();
+		}
+
 		for (auto it = m_imguiHandles.begin(); it != m_imguiHandles.end(); ++it)
 		{
 			const EqImGui_Handle& handler = it.value();
@@ -412,6 +421,9 @@ void CEqConsoleInput::BeginFrame()
 
 		ImGui::EndMainMenuBar();
 	}
+
+	if (s_showDemoWindow)
+		ImGui::ShowDemoWindow(&s_showDemoWindow);
 
 #undef IMGUI_CONVAR_BOOL
 #endif // IMGUI_ENABLED

@@ -17,12 +17,14 @@ class CSoundingObject;
 class ConCommandBase;
 
 class CEmitterObjectSound;
+class CSoundScriptEditor;
 
 // Sound channel entity that controls it's sound sources
 class CSoundingObject
 {
 	friend class CSoundEmitterSystem;
 	friend class CEmitterObjectSound;
+	friend class CSoundScriptEditor;
 public:
 	CSoundingObject() = default;
 	virtual ~CSoundingObject();
