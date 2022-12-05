@@ -660,7 +660,7 @@ static void ParseNodeDescs(SoundScriptDesc& scriptDesc, const KVSection* scriptS
 
 			SoundNodeDesc& funcDesc = nodeDescs.append();
 			funcDesc.type = nodeType;
-			funcDesc.subtype = funcType;
+			funcDesc.func.type = funcType;
 
 			strncpy(funcDesc.name, nodeName, sizeof(funcDesc.name));
 			funcDesc.name[sizeof(funcDesc.name) - 1] = 0;
@@ -720,7 +720,8 @@ static void ParseNodeDescs(SoundScriptDesc& scriptDesc, const KVSection* scriptS
 					int nArg = 0;
 					for (int v = 3; v < valKey.ValueCount(); ++v)
 					{
-						funcDesc.func.values[nArg++] = KV_GetValueFloat(&valKey, v, 0.5f);
+						if(nArg < SoundNodeDesc::MAX_CURVE_POINTS * 2)
+							funcDesc.func.values[nArg++] = KV_GetValueFloat(&valKey, v, 0.5f);
 					}
 					if (nArg & 1)
 					{
@@ -752,7 +753,8 @@ static void ParseNodeDescs(SoundScriptDesc& scriptDesc, const KVSection* scriptS
 					int nArg = 0;
 					for (int v = 4; v < valKey.ValueCount(); ++v)
 					{
-						funcDesc.func.values[nArg++] = KV_GetValueFloat(&valKey, v, 0.5f);
+						if (nArg < SoundNodeDesc::MAX_CURVE_POINTS * 2)
+							funcDesc.func.values[nArg++] = KV_GetValueFloat(&valKey, v, 0.5f);
 					}
 					if (nArg & 1)
 					{
@@ -763,6 +765,9 @@ static void ParseNodeDescs(SoundScriptDesc& scriptDesc, const KVSection* scriptS
 			} // switch funcType
 		} // const, input, mixer
 	} // for
+
+	sizeof(SoundNodeDesc);
+	sizeof(SoundNodeRuntime);
 }
 
 void CSoundEmitterSystem::CreateSoundScript(const KVSection* scriptSection, const KVSection* defaultsSec)

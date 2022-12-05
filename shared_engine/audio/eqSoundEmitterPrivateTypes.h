@@ -90,6 +90,27 @@ static int GetSoundFuncTypeByString(const char* name)
 
 struct SoundNodeDesc
 {
+	static constexpr const int MAX_CURVE_POINTS = 10;
+	static constexpr const int MAX_ARRAY_IDX = 1 << 3;
+
+	char			name[31]{ 0 };
+	uint8			type{ 0 };
+	
+	union {
+		struct {
+			float	values[MAX_CURVE_POINTS * 2];	// for curve
+			uint8	inputIds[MAX_ARRAY_IDX];	// id :5, index: 3
+			uint8	type;
+			uint8	outputCount;
+		} func;
+		struct {
+			float	rMin, rMax;
+		} input;
+		struct {
+			float	value;
+		} c;
+	};
+
 	static void UnpackInputIdArrIdx(uint8 inputId, uint& id, uint& arrayIdx)
 	{
 		id = inputId & 31;
@@ -100,37 +121,12 @@ struct SoundNodeDesc
 	{
 		return id & 31 | ((arrayIdx & 7) << 5);
 	}
-
-	char name[32]{ 0 };
-	short type{ 0 };
-	short subtype{ 0 };
-
-	union {
-		struct {
-			float value;
-		} c;
-		struct {
-			float rMin, rMax;
-		} input;
-		struct {
-			float values[20];	// for curve
-			uint8 inputIds[8];	// id :5, index: 3
-			uint8 outputCount;
-		} func;
-	};
 };
 
 struct SoundNodeRuntime
 {
-	uint8 descIdx{ 0xff };
-	union {
-		struct {
-			float value;
-		} input;
-		struct {
-			float values[8];	// indexed by inputIds 
-		} func;
-	};
+	float		values[SoundNodeDesc::MAX_ARRAY_IDX];	// indexed by inputIds 
+	uint8		descIdx{ 0xff };
 };
 
 struct SoundScriptDesc
