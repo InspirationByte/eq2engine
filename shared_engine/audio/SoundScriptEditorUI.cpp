@@ -5,6 +5,7 @@
 // Description: Sound emitter system script editor
 //////////////////////////////////////////////////////////////////////////////////
 
+#pragma optimize("", off)
 #include <imgui.h>
 #include <imgui_curve_edit.h>
 #include "core/core_common.h"
@@ -154,6 +155,17 @@ void CSoundScriptEditor::DrawScriptEditor(bool& open)
 					"volume",
 					"fade"
 				};
+
+				static ImVec2 mixerCurves[elementsOf(inputNames)][10];
+
+				static bool init = false;
+				if (!init)
+				{
+					// init data so editor knows to take it from here
+					mixerCurves[0][0].x = ImGui::CurveTerminator;
+					mixerCurves[1][0].x = ImGui::CurveTerminator;
+				}
+				init = true;
 
 				if (ImGui::BeginTabItem("Playback"))
 				{
@@ -344,21 +356,17 @@ void CSoundScriptEditor::DrawScriptEditor(bool& open)
 						static int methodIdx = 0;
 						ImGui::Combo("Method", &methodIdx, mixMethods, elementsOf(mixMethods));
 
+						static int selections[elementsOf(inputNames)] = { -1, -1 };
+
 						for (int i = 0; i < elementsOf(inputNames); ++i)
 						{
-							static ImVec2 foo[10];
-
-							static int selection = -1;
-							static bool init = false;
-							if (!init)
-								foo[0].x = -1; // init data so editor knows to take it from here
-							init = true;
 							ImVec2 minRange(0.0f, 0.0f);
-							ImVec2 maxRange(4.0f, 1.0f);
+							ImVec2 maxRange(4.0f, 2.0f);
 
-							if (ImGui::Curve(inputNames[i], ImVec2(600, 80), 10, foo, &selection, minRange, maxRange))
+							if (ImGui::Curve(inputNames[i], ImVec2(600, 80), 10, mixerCurves[i], &selections[i], minRange, maxRange))
 							{
 								// curve changed
+
 							}
 						}
 					}
