@@ -345,7 +345,6 @@ void CSoundScriptEditor::DrawScriptEditor(bool& open)
 					{
 						ImGui::SetNextItemWidth(180);
 						ImGui::InputText("Name", mixerNames[currentMixer], sizeof(mixerNames[currentMixer]));
-						
 
 						const char* mixMethods[] = {
 							"add", "sub", "mul", "div", "min", "max", "average"

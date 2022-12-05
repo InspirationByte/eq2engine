@@ -79,6 +79,50 @@ const ISoundSource* SoundScriptDesc::GetBestSample(int sampleId /*= -1*/) const
 		return samples[sampleId];
 }
 
+uint8 SoundScriptDesc::FindVariableIndex(const char* varName) const
+{
+	char tmpName[32]{ 0 };
+	strncpy(tmpName, varName, sizeof(tmpName));
+
+	uint arrayIdx = 0;
+	// try parse array index
+	char* arrSub = strchr(tmpName, '[');
+	if (arrSub)
+	{
+		*arrSub++ = 0;
+		char* numberStart = arrSub;
+
+		// check for numeric
+		if (!(*numberStart >= '0' && *numberStart <= '9'))
+		{
+			MsgError("sound script '%s' mixer: array index is invalid for %s\n", name.ToCString(), tmpName);
+			return 0xff;
+		}
+
+		// find closing
+		arrSub = strchr(arrSub, ']');
+		if (!arrSub)
+		{
+			MsgError("sound script '%s' mixer: missing ']' for %s\n", name.ToCString(), tmpName);
+			return 0xff;
+		}
+		*arrSub = 0;
+		arrayIdx = atoi(numberStart);
+	}
+
+	const int valIdx = nodeDescs.findIndex([tmpName](const SoundNodeDesc& desc) {
+		return !strcmp(desc.name, tmpName);
+	});
+
+	if (valIdx == -1)
+	{
+		MsgError("sound script '%s': unknown var %s\n", name.ToCString(), tmpName);
+		return 0xff;
+	}
+
+	return SoundNodeDesc::PackInputIdArrIdx((uint)valIdx, arrayIdx);
+}
+
 //----------------------------------------------------------------------------
 //
 //    SOUND EMITTER SYSTEM
@@ -544,6 +588,183 @@ void CSoundEmitterSystem::LoadScriptSoundFile(const char* fileName)
 	}
 }
 
+static void ParseNodeDescs(SoundScriptDesc& scriptDesc, const KVSection* scriptSection)
+{
+	Array<SoundNodeDesc>& nodeDescs = scriptDesc.nodeDescs;
+
+	// parse constants, inputs, mixers
+	for (int i = 0; i < scriptSection->KeyCount(); ++i)
+	{
+		const KVSection& valKey = *scriptSection->keys[i];
+		if (valKey.IsSection())
+			continue;
+
+		int nodeType = -1;
+		if (!stricmp(valKey.name, "const"))
+		{
+			const char* nodeName = KV_GetValueString(&valKey, 0, nullptr);
+
+			if (nodeName == nullptr || !nodeName[0])
+			{
+				MsgError("sound script '%s' const: name is required\n");
+				continue;
+			}
+			const int hashName = StringToHash(nodeName);
+			nodeType = SOUND_NODE_CONST;
+
+			SoundNodeDesc& constDesc = nodeDescs.append();
+			constDesc.type = nodeType;
+			strncpy(constDesc.name, nodeName, sizeof(constDesc.name));
+			constDesc.name[sizeof(constDesc.name) - 1] = 0;
+
+			constDesc.c.value = KV_GetValueFloat(&valKey, 1, 0.0f);
+		}
+		else if (!stricmp(valKey.name, "input"))
+		{
+			const char* nodeName = KV_GetValueString(&valKey, 0, nullptr);
+
+			if (nodeName == nullptr || !nodeName[0])
+			{
+				MsgError("sound script '%s' input: name is required\n");
+				continue;
+			}
+			const int hashName = StringToHash(nodeName);
+			nodeType = SOUND_NODE_INPUT;
+
+			SoundNodeDesc& inputDesc = nodeDescs.append();
+			inputDesc.type = nodeType;
+			strncpy(inputDesc.name, nodeName, sizeof(inputDesc.name));
+			inputDesc.name[sizeof(inputDesc.name) - 1] = 0;
+
+			inputDesc.input.rMin = KV_GetValueFloat(&valKey, 1, 0.0f);
+			inputDesc.input.rMax = KV_GetValueFloat(&valKey, 2, 1.0f);
+		}
+		else if (!stricmp(valKey.name, "mixer"))
+		{
+			const char* nodeName = KV_GetValueString(&valKey, 0, nullptr);
+
+			if (nodeName == nullptr || !nodeName[0])
+			{
+				MsgError("sound script '%s' mixer: name is required\n");
+				continue;
+			}
+			const int hashName = StringToHash(nodeName);
+			nodeType = SOUND_NODE_FUNC;
+			const char* funcTypeName = KV_GetValueString(&valKey, 1, "");
+			int funcType = GetSoundFuncTypeByString(funcTypeName);
+			if (funcType == -1)
+			{
+				MsgError("sound script '%s' mixer: %s unknown\n", funcTypeName);
+				continue;
+			}
+
+			SoundNodeDesc& funcDesc = nodeDescs.append();
+			funcDesc.type = nodeType;
+			funcDesc.subtype = funcType;
+
+			strncpy(funcDesc.name, nodeName, sizeof(funcDesc.name));
+			funcDesc.name[sizeof(funcDesc.name) - 1] = 0;
+
+			// parse format for each type
+			switch ((ESoundFuncType)funcType)
+			{
+				case SOUND_FUNC_ADD:
+				case SOUND_FUNC_SUB:
+				case SOUND_FUNC_MUL:
+				case SOUND_FUNC_DIV:
+				case SOUND_FUNC_MIN:
+				case SOUND_FUNC_MAX:
+				{
+					// 2 args
+					for (int v = 0; v < 2; ++v)
+					{
+						const char* valName = KV_GetValueString(&valKey, v + 2, nullptr);
+						if (!valName)
+						{
+							MsgError("sound script '%s' mixer %s: insufficient args\n", scriptDesc.name.ToCString(), funcDesc.name);
+							continue;
+						}
+
+						funcDesc.func.inputIds[v] = scriptDesc.FindVariableIndex(valName);
+					}
+					funcDesc.func.outputCount = 1;
+					break;
+				}
+				case SOUND_FUNC_AVERAGE:
+				{
+					// N args
+					int nArg = 0;
+					for (int v = 2; v < valKey.ValueCount(); ++v)
+					{
+						const char* valName = KV_GetValueString(&valKey, v, nullptr);
+						ASSERT(valName);
+						funcDesc.func.inputIds[nArg++] = scriptDesc.FindVariableIndex(valName);
+					}
+					funcDesc.func.outputCount = 1;
+					break;
+				}
+				case SOUND_FUNC_CURVE:
+				{
+					// input x0 y0 x1 y1 ... xN yN
+					const char* inputValName = KV_GetValueString(&valKey, 2, nullptr);
+					if (!inputValName)
+					{
+						MsgError("sound script '%s' mixer %s: insufficient args\n", scriptDesc.name.ToCString());
+						continue;
+					}
+
+					funcDesc.func.outputCount = 1;
+					funcDesc.func.inputIds[0] = scriptDesc.FindVariableIndex(inputValName);
+
+					// get 
+					int nArg = 0;
+					for (int v = 3; v < valKey.ValueCount(); ++v)
+					{
+						funcDesc.func.values[nArg++] = KV_GetValueFloat(&valKey, v, 0.5f);
+					}
+					if (nArg & 1)
+					{
+						MsgError("sound script '%s' mixer %s: uneven curve arguments\n", scriptDesc.name.ToCString(), funcDesc.name);
+					}
+					break;
+				}
+				case SOUND_FUNC_FADE:
+				{
+					// outputCount input x0 y0 x1 y1 ... xN yN
+					const int numOutputs = KV_GetValueInt(&valKey, 2, 0);
+					if (!numOutputs)
+					{
+						MsgError("sound script '%s' mixer %s: no outputs for fade\n", scriptDesc.name.ToCString(), funcDesc.name);
+						continue;
+					}
+
+					const char* inputValName = KV_GetValueString(&valKey, 3, nullptr);
+					if (!inputValName)
+					{
+						MsgError("sound script '%s' mixer %s: insufficient args\n", scriptDesc.name.ToCString(), funcDesc.name);
+						continue;
+					}
+
+					funcDesc.func.outputCount = numOutputs;
+					funcDesc.func.inputIds[0] = scriptDesc.FindVariableIndex(inputValName);
+
+					// get 
+					int nArg = 0;
+					for (int v = 4; v < valKey.ValueCount(); ++v)
+					{
+						funcDesc.func.values[nArg++] = KV_GetValueFloat(&valKey, v, 0.5f);
+					}
+					if (nArg & 1)
+					{
+						MsgError("sound script '%s' mixer %s: uneven curve arguments\n", scriptDesc.name.ToCString(), funcDesc.name);
+					}
+					break;
+				}
+			} // switch funcType
+		} // const, input, mixer
+	} // for
+}
+
 void CSoundEmitterSystem::CreateSoundScript(const KVSection* scriptSection, const KVSection* defaultsSec)
 {
 	if (!scriptSection)
@@ -560,6 +781,12 @@ void CSoundEmitterSystem::CreateSoundScript(const KVSection* scriptSection, cons
 
 	SoundScriptDesc* newSound = PPNew SoundScriptDesc;
 	newSound->name = soundName;
+	ParseNodeDescs(*newSound, scriptSection);
+
+	if (newSound->nodeDescs.numElem())
+	{
+		MsgInfo("sound %s with %d node descs\n", soundName.ToCString(), newSound->nodeDescs.numElem());
+	}
 
 	auto sectionGetOrDefault = [scriptSection, defaultsSec](const char* name) {
 		const KVSection* sec = scriptSection->FindSection(name);

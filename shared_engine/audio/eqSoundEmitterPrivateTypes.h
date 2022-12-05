@@ -6,12 +6,140 @@ static Threading::CEqMutex s_soundEmitterSystemMutex;
 
 class CSoundingObject;
 
+/*
+* 
+* ADVANCED SOUND SCRIPT FEATURES
+* 
+	const "test" 1.0;
+
+	// input NAME MIN_RANGE MAX_RANGE
+	input "tractionSlide" 0.0 18.0;
+	input "laterialSlide" 0.0 18.0;
+
+	// mixer are basically functions - "add", "sub", "mul", "div", "min", "max", "average", "curve", "fade", "use"
+	//	"add", "sub", "mul", "div", "min", "max" - basic functions
+	//	"average" - normalized value of sum of N arguments
+	//	"curve" - takes value and passes it through curve interpolation
+	//	"fade" - same as "curve", but instead it's being split into multiple values (array)
+	//	"use" - make a copy of value
+
+	// each "mixer" declares a variable that can be used 
+	// in other mixers as an input value or as output
+
+	mixer avgVal max tractionSlide laterialSlide;
+	mixer volume curve avgVal 0.0 1.0 0.0 1.0 1.0;
+	mixer pitch curve avgVal 0.0 1.0 0.0 1.0 1.0;
+	mixer traction curve avgVal 0.0 1.0 1.0 1.0;
+	mixer tractionSampleFade fade traction 2 0.0 1.0 1.0 1.0;
+	mixer lateralSampleFade fade tractionSampleFade[1] 2 0.0 1.0 1.0 1.0;
+
+	// svolume is individual sample volume (for each "wave")
+	svolume 0 "tractionSampleFade[0]";
+	svolume 1 "lateralSampleFade[0]";
+	svolume 2 "lateralSampleFade[1]";
+
+	// specifying string value makes use of the mixed value or input
+	volume "volume";
+	pitch "pitch";
+*/
+
+enum ESoundNodeType : int
+{
+	SOUND_NODE_CONST = 0,
+	SOUND_NODE_INPUT,
+	SOUND_NODE_FUNC
+};
+
+enum ESoundFuncType : int
+{
+	SOUND_FUNC_ADD,
+	SOUND_FUNC_SUB,
+	SOUND_FUNC_MUL, 
+	SOUND_FUNC_DIV,
+	SOUND_FUNC_MIN,
+	SOUND_FUNC_MAX,
+	SOUND_FUNC_AVERAGE,
+	SOUND_FUNC_CURVE,
+	SOUND_FUNC_FADE,
+
+	SOUND_FUNC_COUNT,
+};
+
+static const char* s_soundFuncTypeNames[SOUND_FUNC_COUNT] = {
+	"ADD",
+	"SUB",
+	"MUL",
+	"DIV",
+	"MIN",
+	"MAX",
+	"AVERAGE",
+	"CURVE",
+	"FADE",
+};
+static_assert(elementsOf(s_soundFuncTypeNames) == SOUND_FUNC_COUNT, "s_soundFuncTypeNames and SOUND_FUNC_COUNT needs to be in sync");
+
+static int GetSoundFuncTypeByString(const char* name)
+{
+	for (int i = 0; i < SOUND_FUNC_COUNT; ++i)
+	{
+		if (!stricmp(name, s_soundFuncTypeNames[i]))
+			return (ESoundFuncType)i;
+	}
+	return -1;
+}
+
+struct SoundNodeDesc
+{
+	static void UnpackInputIdArrIdx(uint8 inputId, uint& id, uint& arrayIdx)
+	{
+		id = inputId & 31;
+		arrayIdx = inputId >> 5 & 7;
+	}
+
+	static uint8 PackInputIdArrIdx(uint id, uint arrayIdx)
+	{
+		return id & 31 | ((arrayIdx & 7) << 5);
+	}
+
+	char name[32]{ 0 };
+	short type{ 0 };
+	short subtype{ 0 };
+
+	union {
+		struct {
+			float value;
+		} c;
+		struct {
+			float rMin, rMax;
+		} input;
+		struct {
+			float values[20];	// for curve
+			uint8 inputIds[8];	// id :5, index: 3
+			uint8 outputCount;
+		} func;
+	};
+};
+
+struct SoundNodeRuntime
+{
+	uint8 descIdx{ 0xff };
+	union {
+		struct {
+			float value;
+		} input;
+		struct {
+			float values[8];	// indexed by inputIds 
+		} func;
+	};
+};
+
 struct SoundScriptDesc
 {
 	EqString				name;
 
 	Array<ISoundSource*>	samples{ PP_SL };
 	Array<EqString>			soundFileNames{ PP_SL };
+	Array<SoundNodeDesc>	nodeDescs{ PP_SL };
 
 	int						channelType{ CHAN_INVALID };
 
@@ -27,12 +155,14 @@ struct SoundScriptDesc
 	bool		randomSample : 1;
 
 	const ISoundSource* GetBestSample(int sampleId /*= -1*/) const;
+	uint8 FindVariableIndex(const char* varName) const;
 };
 
 struct SoundEmitterData
 {
 	IEqAudioSource::Params	startParams;
 	IEqAudioSource::Params	virtualParams;
+	Array<SoundNodeRuntime> nodeData{ PP_SL };
 	CRefPtr<IEqAudioSource>	soundSource;			// NULL when virtual 
 	const SoundScriptDesc*	script{ nullptr };		// sound script which used to start this sound
 	CSoundingObject*		soundingObj{ nullptr };

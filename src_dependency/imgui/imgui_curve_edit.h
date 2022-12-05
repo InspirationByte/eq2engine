@@ -577,10 +577,10 @@ int Curve(const char* label, const ImVec2& size, const int maxpoints, ImVec2* po
         const float p1d = ImSqrt(ImLengthSqr(p1s - hoverPosScreen));
         const float p2d = ImSqrt(ImLengthSqr(p2s - hoverPosScreen));
 
-        if (p1d < pointRadiusInPixels)
+        if (p1d < pointRadiusInPixels * 2.0f)
             hoveredPoint = left;
 
-        if (p2d < pointRadiusInPixels)
+        if (p2d < pointRadiusInPixels * 2.0f)
             hoveredPoint = left + 1;
 
         if (g.IO.MouseDown[0])
