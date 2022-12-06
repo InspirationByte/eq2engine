@@ -83,8 +83,10 @@ uint8 SoundScriptDesc::FindVariableIndex(const char* varName) const
 	return SoundNodeDesc::PackInputIdArrIdx((uint)valIdx, arrayIdx);
 }
 
-void SoundScriptDesc::ParseDesc(SoundScriptDesc& scriptDesc, const KVSection* scriptSection)
+void SoundScriptDesc::ParseDesc(SoundScriptDesc& scriptDesc, const KVSection* scriptSection, const KVSection* defaultsSec)
 {
+	scriptDesc.randomSample = false;
+
 	// pick 'rndwave' or 'wave' sections for lists
 	KVSection* waveKey = waveKey = scriptSection->FindSection("wave", KV_FLAG_SECTION);
 
@@ -202,6 +204,21 @@ void SoundScriptDesc::ParseDesc(SoundScriptDesc& scriptDesc, const KVSection* sc
 			// parse format for each type
 			switch ((ESoundFuncType)funcType)
 			{
+				case SOUND_FUNC_COPY:
+				{
+					// 1 arg
+					const char* valName = KV_GetValueString(&valKey, 2, nullptr);
+					if (!valName)
+					{
+						MsgError("sound script '%s' mixer %s: insufficient args\n", scriptDesc.name.ToCString(), funcDesc.name);
+						continue;
+					}
+
+					funcDesc.func.inputIds[0] = scriptDesc.FindVariableIndex(valName);
+					funcDesc.func.inputCount = 1;
+					funcDesc.func.outputCount = 1;
+					break;
+				}
 				case SOUND_FUNC_ADD:
 				case SOUND_FUNC_SUB:
 				case SOUND_FUNC_MUL:
@@ -317,6 +334,57 @@ void SoundScriptDesc::ParseDesc(SoundScriptDesc& scriptDesc, const KVSection* sc
 			} // switch funcType
 		} // const, input, mixer
 	} // for
+
+	auto sectionGetOrDefault = [scriptSection, defaultsSec](const char* name) {
+		const KVSection* sec = scriptSection->FindSection(name);
+		if (!sec && defaultsSec)
+			sec = defaultsSec->FindSection(name);
+		return sec;
+	};
+
+	// load the parameters (either as constants or mixed values)
+	for (int i = 0; i < SOUND_PARAM_COUNT; ++i)
+	{
+		scriptDesc.paramNodeMap[i] = nodeDescs.numElem();
+
+		// add parameters (const or non-const)
+		char nodeNameWithPrefix[32]{ 0 };
+		strcpy(nodeNameWithPrefix, "out_");
+		strncat(nodeNameWithPrefix, s_soundParamNames[i], sizeof(nodeNameWithPrefix));
+		nodeNameWithPrefix[sizeof(nodeNameWithPrefix) - 1] = 0;
+
+		const char* nodeName = s_soundParamNames[i];
+		const int hashName = StringToHash(nodeNameWithPrefix);
+
+		SoundNodeDesc& nodeDesc = nodeDescs.append();
+		nodeDesc.type = SOUND_NODE_CONST;
+
+		strncpy(nodeDesc.name, nodeNameWithPrefix, sizeof(nodeDesc.name));
+		nodeDesc.name[sizeof(nodeDesc.name) - 1] = 0;
+
+		const KVSection* constSec = sectionGetOrDefault(nodeName);
+		const char* valueStr = KV_GetValueString(constSec, 0, nullptr);
+
+		if (!valueStr)
+		{
+			nodeDesc.c.value = s_soundParamDefaults[i];
+			continue;
+		}
+
+		if (*valueStr >= '0' && *valueStr <= '9')
+		{
+			nodeDesc.c.value = KV_GetValueFloat(constSec);
+		}
+		else
+		{
+			nodeDesc.type = SOUND_NODE_FUNC;
+			nodeDesc.func.type = SOUND_FUNC_COPY;
+
+			nodeDesc.func.inputIds[0] = scriptDesc.FindVariableIndex(valueStr);
+			nodeDesc.func.inputCount = 1;
+			nodeDesc.func.outputCount = 1;
+		}
+	}
 }
 
 void SoundEmitterData::CreateNodeRuntime()
@@ -418,8 +486,15 @@ struct EvalStack
 
 typedef void (*SoundEmitEvalFn)(EvalStack& stack, int argc, int nret);
 
+static void evalCopy(EvalStack& stack, int argc, int nret)
+{
+	// copy need to do nothing as argument was already pushed on stack
+}
+
 static void evalAdd(EvalStack& stack, int argc, int nret)
 {
+	ASSERT(argc == 2);
+	ASSERT(nret == 1);
 	const float operandB = stack.Pop<float>();
 	const float operandA = stack.Pop<float>();
 	stack.Push(operandA + operandB);
@@ -427,6 +502,8 @@ static void evalAdd(EvalStack& stack, int argc, int nret)
 
 static void evalSub(EvalStack& stack, int argc, int nret)
 {
+	ASSERT(argc == 2);
+	ASSERT(nret == 1);
 	const float operandB = stack.Pop<float>();
 	const float operandA = stack.Pop<float>();
 	stack.Push(operandA - operandB);
@@ -434,6 +511,8 @@ static void evalSub(EvalStack& stack, int argc, int nret)
 
 static void evalMul(EvalStack& stack, int argc, int nret)
 {
+	ASSERT(argc == 2);
+	ASSERT(nret == 1);
 	const float operandB = stack.Pop<float>();
 	const float operandA = stack.Pop<float>();
 	stack.Push(operandA * operandB);
@@ -441,6 +520,8 @@ static void evalMul(EvalStack& stack, int argc, int nret)
 
 static void evalDiv(EvalStack& stack, int argc, int nret)
 {
+	ASSERT(argc == 2);
+	ASSERT(nret == 1);
 	const float operandB = stack.Pop<float>();
 	const float operandA = stack.Pop<float>();
 	stack.Push(operandA / operandB);
@@ -448,6 +529,8 @@ static void evalDiv(EvalStack& stack, int argc, int nret)
 
 static void evalMin(EvalStack& stack, int argc, int nret)
 {
+	ASSERT(argc == 2);
+	ASSERT(nret == 1);
 	const float operandB = stack.Pop<float>();
 	const float operandA = stack.Pop<float>();
 	stack.Push(min(operandA, operandB));
@@ -455,6 +538,8 @@ static void evalMin(EvalStack& stack, int argc, int nret)
 
 static void evalMax(EvalStack& stack, int argc, int nret)
 {
+	ASSERT(argc == 2);
+	ASSERT(nret == 1);
 	const float operandB = stack.Pop<float>();
 	const float operandA = stack.Pop<float>();
 	stack.Push(max(operandA, operandB));
@@ -462,6 +547,8 @@ static void evalMax(EvalStack& stack, int argc, int nret)
 
 static void evalAverage(EvalStack& stack, int argc, int nret)
 {
+	ASSERT(nret == 1);
+
 	// order doesn't matter
 	float value = 0.0f;
 	for (int i = 0; i < argc; ++i)
@@ -472,6 +559,9 @@ static void evalAverage(EvalStack& stack, int argc, int nret)
 
 static void evalCurve(EvalStack& stack, int argc, int nret)
 {
+	ASSERT(argc == 1);
+	ASSERT(nret == 1);
+
 	const float input = stack.Pop<float>();
 	const SoundCurveDesc& curveDesc = *stack.Pop<SoundCurveDesc*>();
 
@@ -482,6 +572,8 @@ static void evalCurve(EvalStack& stack, int argc, int nret)
 
 static void evalFaderCurve(EvalStack& stack, int argc, int nret)
 {
+	ASSERT(argc == 1);
+
 	const float input = stack.Pop<float>();
 	const SoundCurveDesc& curveDesc = *stack.Pop<SoundCurveDesc*>();
 
@@ -497,7 +589,8 @@ static void evalFaderCurve(EvalStack& stack, int argc, int nret)
 	}
 }
 
-static SoundEmitEvalFn s_soundFuncTypeEvFn[SOUND_FUNC_COUNT] = {
+static SoundEmitEvalFn s_soundFuncTypeEvFn[] = {
+	evalCopy, // COPY
 	evalAdd, // ADD
 	evalSub, // SUB
 	evalMul, // MUL
@@ -510,7 +603,7 @@ static SoundEmitEvalFn s_soundFuncTypeEvFn[SOUND_FUNC_COUNT] = {
 };
 static_assert(elementsOf(s_soundFuncTypeEvFn) == SOUND_FUNC_COUNT, "s_soundFuncTypeFuncs and SOUND_FUNC_COUNT needs to be in sync");
 
-void SoundEmitterData::UpdateNodes()
+void SoundEmitterData::UpdateNodes(IEqAudioSource::Params& outParams, float* sampleVolume)
 {
 	if (!nodesNeedUpdate)
 		return;
@@ -520,7 +613,7 @@ void SoundEmitterData::UpdateNodes()
 	const Array<SoundCurveDesc>& curveDescs = script->curveDescs;
 
 	EvalStack stack;
-	int nodeValueSp[64];
+	short nodeValueSp[64];
 
 	// evaluate each function node down
 	for (int nodeId = 0; nodeId < nodeDescs.numElem(); ++nodeId)
@@ -569,14 +662,31 @@ void SoundEmitterData::UpdateNodes()
 		}
 	}
 
-	// TODO: output value mapping to sound parameters
-	// possible values:
-	//		svolume N <value>
-	//		volume <value>
-	// 		airAbsorption <value>
-	//		rollOff <value>
-	//		pitch <value>
-	//		atten <value>
-	//		hpf <value>
-	//		lpf <value>
+	// output value mapping to sound parameters
+	const uint8* paramMap = script->paramNodeMap;
+	const float volume = stack.Get<float>(nodeValueSp[paramMap[SOUND_PARAM_VOLUME]]);
+	outParams.set_volume(volume);
+
+	const float pitch = stack.Get<float>(nodeValueSp[paramMap[SOUND_PARAM_PITCH]]);
+	outParams.set_pitch(pitch);
+
+	//const float hpf = stack.Get<float>(nodeValueSp[paramMap[SOUND_PARAM_LPF]]);
+	//outParams.set_hpf(hpf);
+
+	//const float lpf = stack.Get<float>(nodeValueSp[paramMap[SOUND_PARAM_HPF]]);
+	//outParams.set_lpf(lpf);
+
+	const float airAbsorption = stack.Get<float>(nodeValueSp[paramMap[SOUND_PARAM_AIRABSORPTION]]);
+	outParams.set_airAbsorption(airAbsorption);
+
+	const float rollOff = stack.Get<float>(nodeValueSp[paramMap[SOUND_PARAM_ROLLOFF]]);
+	outParams.set_rolloff(rollOff);
+
+	const float attenuation = stack.Get<float>(nodeValueSp[paramMap[SOUND_PARAM_ATTENUATION]]);
+	outParams.set_referenceDistance(attenuation);
+
+	for (int i = SOUND_PARAM_SAMPLE_VOLUME; i <= SOUND_PARAM_SAMPLE_VOLUME_LAST; ++i)
+	{
+		
+	}
 }

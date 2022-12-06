@@ -33,6 +33,9 @@ void spline(const float* key, int num, float t, float* v)
 	while (key[k * size] < t)
 		++k;
 
+	if (!k)
+		++k;
+
 	const float key0 = key[(k - 1) * size];
 	const float key1 = key[k * size];
 

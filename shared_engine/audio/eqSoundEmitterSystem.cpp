@@ -235,36 +235,39 @@ int CSoundEmitterSystem::EmitSound(EmitParams* ep, CSoundingObject* soundingObj,
 		}
 	}
 
+	// fill in start params
+
 	edata->script = script;
 	edata->soundingObj = soundingObj;
 	edata->channelType = channelType;
 	edata->sampleId = ep->sampleId;
+
 	edata->CreateNodeRuntime();
-	
-	// fill in start params
-	// TODO: move to separate func as we'll need a reuse
-	IEqAudioSource::Params& startParams = edata->startParams;
-
-	startParams.set_volume(script->volume);
-	startParams.set_pitch(script->pitch);
-
-	startParams.set_looping(script->loop);		// TODO: auto loop if repeat marker
-	startParams.set_referenceDistance(script->atten * ep->radiusMultiplier);
-	startParams.set_rolloff(script->rolloff);
-	startParams.set_airAbsorption(script->airAbsorption);
-	startParams.set_relative(is2Dsound);
-	startParams.set_position(ep->origin);
-	startParams.set_channel(channelType);
-	startParams.set_state(startSilent ? IEqAudioSource::STOPPED : IEqAudioSource::PLAYING);
-	startParams.set_releaseOnStop(releaseOnStop);
-
-	ep->channelType = channelType;
 
 	const float randPitch = (ep->flags & EMITSOUND_FLAG_RANDOM_PITCH) ? RandomFloat(-0.05f, 0.05f) : 0.0f;
+	edata->epPitch = ep->pitch + randPitch;
+	edata->epVolume = ep->volume;
+	edata->epRadiusMultiplier = ep->radiusMultiplier;
 
-	edata->virtualParams = edata->startParams;
-	edata->virtualParams.set_volume(edata->startParams.volume * ep->volume);
-	edata->virtualParams.set_pitch(edata->startParams.pitch * ep->pitch + randPitch);
+	IEqAudioSource::Params& nodeParams = edata->nodeParams;
+	float sampleVolume[MAX_SOUND_SAMPLES_SCRIPT];
+	edata->UpdateNodes(nodeParams, sampleVolume);
+
+	IEqAudioSource::Params& virtualParams = edata->virtualParams;
+	virtualParams.set_pitch(nodeParams.pitch * edata->epPitch);
+	virtualParams.set_volume(nodeParams.volume * edata->epVolume);
+	virtualParams.set_referenceDistance(nodeParams.referenceDistance * edata->epRadiusMultiplier);
+	virtualParams.set_rolloff(nodeParams.rolloff);
+	virtualParams.set_airAbsorption(nodeParams.airAbsorption);
+
+	virtualParams.set_looping(script->loop);		// TODO: auto loop if repeat marker
+	virtualParams.set_relative(is2Dsound);
+	virtualParams.set_position(ep->origin);
+	virtualParams.set_channel(channelType);
+	virtualParams.set_state(startSilent ? IEqAudioSource::STOPPED : IEqAudioSource::PLAYING);
+	virtualParams.set_releaseOnStop(releaseOnStop);
+
+	ep->channelType = channelType;
 
 	if (soundingObj && channelType != CHAN_INVALID)
 		++soundingObj->m_numChannelSounds[channelType];
@@ -298,7 +301,6 @@ bool CSoundEmitterSystem::SwitchSourceState(SoundEmitterData* emit, bool isVirtu
 	// start the real sound
 	if (!isVirtual && emit->virtualParams.state != IEqAudioSource::STOPPED && !emit->soundSource)
 	{
-
 		FixedArray<const ISoundSource*, 16> samples;
 
 		bool hasLoop = script->loop;
@@ -352,9 +354,10 @@ bool CSoundEmitterSystem::SwitchSourceState(SoundEmitterData* emit, bool isVirtu
 		return true;
 	}
 	
-	// stop and drop the sound
+	
 	if (emit->soundSource)
 	{
+		// stop and drop the sound
 		if (isVirtual || emit->soundSource->GetState() == IEqAudioSource::STOPPED)
 		{
 			g_audioSystem->DestroySource(emit->soundSource);
@@ -386,20 +389,40 @@ void CSoundEmitterSystem::StopAllSounds()
 int CSoundEmitterSystem::EmitterUpdateCallback(void* obj, IEqAudioSource::Params& params)
 {
 	SoundEmitterData* emitter = (SoundEmitterData*)obj;
-	IEqAudioSource::Params& virtualParams = emitter->virtualParams;
-	const SoundScriptDesc* script = emitter->script;
 	const CSoundingObject* soundingObj = emitter->soundingObj;
+
+	IEqAudioSource::Params& virtualParams = emitter->virtualParams;
+	IEqAudioSource::Params& nodeParams = emitter->nodeParams;
+
+	float sampleVolume[MAX_SOUND_SAMPLES_SCRIPT];
+	emitter->UpdateNodes(nodeParams, sampleVolume);
+
+	// update virtual params
+	if(nodeParams.updateFlags & IEqAudioSource::UPDATE_PITCH)
+		virtualParams.set_pitch(nodeParams.pitch * emitter->epPitch);
+
+	if (nodeParams.updateFlags & IEqAudioSource::UPDATE_VOLUME)
+		virtualParams.set_volume(nodeParams.volume * emitter->epVolume);
+
+	if (nodeParams.updateFlags & IEqAudioSource::UPDATE_REF_DIST)
+		virtualParams.set_referenceDistance(nodeParams.referenceDistance * emitter->epRadiusMultiplier);
+
+	if (nodeParams.updateFlags & IEqAudioSource::UPDATE_ROLLOFF)
+		virtualParams.set_rolloff(nodeParams.rolloff);
+
+	if (nodeParams.updateFlags & IEqAudioSource::UPDATE_AIRABSORPTION)
+		virtualParams.set_airAbsorption(nodeParams.airAbsorption);
 
 	params.set_volume(virtualParams.volume * soundingObj->GetSoundVolumeScale());
 	virtualParams.state = params.state;
-
-	emitter->UpdateNodes();
 
 	if (!params.relative)
 	{
 		bool isAudible = true;
 		if (!virtualParams.relative)
 		{
+			const SoundScriptDesc* script = emitter->script;
+
 			Vector3D listenerPos, listenerVel;
 			g_audioSystem->GetListener(listenerPos, listenerVel);
 
@@ -538,7 +561,7 @@ void CSoundEmitterSystem::CreateSoundScript(const KVSection* scriptSection, cons
 	}
 
 	SoundScriptDesc* newSound = PPNew SoundScriptDesc(soundName);
-	SoundScriptDesc::ParseDesc(*newSound, scriptSection);
+	SoundScriptDesc::ParseDesc(*newSound, scriptSection, defaultsSec);
 
 	auto sectionGetOrDefault = [scriptSection, defaultsSec](const char* name) {
 		const KVSection* sec = scriptSection->FindSection(name);
@@ -547,33 +570,26 @@ void CSoundEmitterSystem::CreateSoundScript(const KVSection* scriptSection, cons
 		return sec;
 	};
 
-	newSound->volume = KV_GetValueFloat(sectionGetOrDefault("volume"), 0, 1.0f);
-	newSound->pitch = KV_GetValueFloat(sectionGetOrDefault("pitch"), 0, 1.0f);
-	newSound->rolloff = KV_GetValueFloat(sectionGetOrDefault("rollOff"), 0, 1.0f);
-	newSound->airAbsorption = KV_GetValueFloat(sectionGetOrDefault("airAbsorption"), 0, 0.0f);
-
-	newSound->atten = KV_GetValueFloat(sectionGetOrDefault("distance"), 0, m_defaultMaxDistance * 0.35f);
 	newSound->maxDistance = KV_GetValueFloat(sectionGetOrDefault("maxDistance"), 0, m_defaultMaxDistance);
-
-	newSound->loop = KV_GetValueBool(sectionGetOrDefault("loop"), 0, false);
-	newSound->is2d = KV_GetValueBool(sectionGetOrDefault("is2D"), 0, false);
-	newSound->randomSample = false;
-
-	const KVSection* chanKey = sectionGetOrDefault("channel");
-
-	if (chanKey)
+	newSound->loop = KV_GetValueFloat(sectionGetOrDefault("loop"), 0, false);
+	newSound->is2d = KV_GetValueFloat(sectionGetOrDefault("is2d"), 0, false);
 	{
-		const char* chanName = KV_GetValueString(chanKey);
-		newSound->channelType = ChannelTypeByName(chanName);
+		const KVSection* chanKey = sectionGetOrDefault("channel");
 
-		if (newSound->channelType == CHAN_INVALID)
+		if (chanKey)
 		{
-			Msg("Invalid channel '%s' for sound %s\n", chanName, newSound->name.ToCString());
-			newSound->channelType = 0;
+			const char* chanName = KV_GetValueString(chanKey);
+			newSound->channelType = ChannelTypeByName(chanName);
+
+			if (newSound->channelType == CHAN_INVALID)
+			{
+				Msg("Invalid channel '%s' for sound %s\n", chanName, newSound->name.ToCString());
+				newSound->channelType = 0;
+			}
 		}
+		else
+			newSound->channelType = 0;
 	}
-	else
-		newSound->channelType = 0;
 
 	m_allSounds.insert(namehash, newSound);
 }
@@ -610,20 +626,7 @@ void CSoundEmitterSystem::RestartEmittersByScript(SoundScriptDesc* script)
 			if (emitter->script != script)
 				continue;
 
-			IEqAudioSource::Params& startParams = emitter->startParams;
-
-			startParams.set_volume(script->volume);
-			startParams.set_pitch(script->pitch);
-			startParams.set_looping(script->loop);
-			startParams.set_referenceDistance(script->atten);
-			startParams.set_rolloff(script->rolloff);
-			startParams.set_airAbsorption(script->airAbsorption);
-
-			emitter->virtualParams |= startParams;
-			if (emitter->soundSource)
-			{
-				emitter->soundSource->UpdateParams(startParams);
-			}
+			// TODO: recreate all emitter data
 		}
 	}
 #endif

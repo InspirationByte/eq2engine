@@ -51,6 +51,50 @@ struct KVSection;
 	pitch "pitch";
 */
 
+static constexpr const int MAX_SOUND_SAMPLES_SCRIPT = 8;
+
+enum ESoundParamType : int
+{
+	SOUND_PARAM_VOLUME = 0,
+	SOUND_PARAM_PITCH,
+	SOUND_PARAM_HPF,
+	SOUND_PARAM_LPF,
+	SOUND_PARAM_AIRABSORPTION,
+	SOUND_PARAM_ROLLOFF,
+	SOUND_PARAM_ATTENUATION,
+	SOUND_PARAM_SAMPLE_VOLUME,
+
+	SOUND_PARAM_COUNT,
+
+	SOUND_PARAM_SAMPLE_VOLUME_LAST = SOUND_PARAM_SAMPLE_VOLUME + MAX_SOUND_SAMPLES_SCRIPT,
+
+	SOUND_PARAM_ALL_COUNT
+};
+
+static const char* s_soundParamNames[] = {
+	"volume",
+	"pitch",
+	"hpf",
+	"lpf",
+	"airAbsorption",
+	"rollOff",
+	"distance",
+	"svolume",
+};
+static_assert(elementsOf(s_soundParamNames) == SOUND_PARAM_COUNT, "s_soundParamNames and SOUND_PARAM_COUNT needs to be in sync");
+
+static float s_soundParamDefaults[] = {
+	1.0f,
+	1.0f,
+	0.0f,
+	0.0f,
+	0.0f,
+	1.0f,
+	1.0f,
+	1.0f,
+};
+static_assert(elementsOf(s_soundParamNames) == SOUND_PARAM_COUNT, "s_soundParamNames and SOUND_PARAM_COUNT needs to be in sync");
+
 enum ESoundNodeType : int
 {
 	SOUND_NODE_CONST = 0,
@@ -60,9 +104,10 @@ enum ESoundNodeType : int
 
 enum ESoundFuncType : int
 {
+	SOUND_FUNC_COPY,
 	SOUND_FUNC_ADD,
 	SOUND_FUNC_SUB,
-	SOUND_FUNC_MUL, 
+	SOUND_FUNC_MUL,
 	SOUND_FUNC_DIV,
 	SOUND_FUNC_MIN,
 	SOUND_FUNC_MAX,
@@ -70,19 +115,20 @@ enum ESoundFuncType : int
 	SOUND_FUNC_CURVE,
 	SOUND_FUNC_FADE,
 
-	SOUND_FUNC_COUNT,
+	SOUND_FUNC_COUNT
 };
 
-static const char* s_soundFuncTypeNames[SOUND_FUNC_COUNT] = {
-	"ADD",
-	"SUB",
-	"MUL",
-	"DIV",
-	"MIN",
-	"MAX",
-	"AVERAGE",
-	"CURVE",
-	"FADE",
+static const char* s_soundFuncTypeNames[] = {
+	"copy",
+	"add",
+	"sub",
+	"mul",
+	"div",
+	"min",
+	"max",
+	"average",
+	"curve",
+	"fade",
 };
 static_assert(elementsOf(s_soundFuncTypeNames) == SOUND_FUNC_COUNT, "s_soundFuncTypeNames and SOUND_FUNC_COUNT needs to be in sync");
 
@@ -150,36 +196,31 @@ struct SoundScriptDesc
 	SoundScriptDesc(const char* name);
 
 	EqString				name;
-
 	Array<ISoundSource*>	samples{ PP_SL };
 	Array<EqString>			soundFileNames{ PP_SL };
 
 	Array<SoundNodeDesc>	nodeDescs{ PP_SL };
 	Array<SoundCurveDesc>	curveDescs{ PP_SL };
+	uint8					paramNodeMap[SOUND_PARAM_ALL_COUNT];
 	Map<int, int>			inputNodeMap{ PP_SL };
 
-	int						channelType{ CHAN_INVALID };
-
-	float		volume{ 1.0f };
-	float		atten{ 1.0f };
-	float		rolloff{ 1.0f };
-	float		pitch{ 1.0f };
-	float		airAbsorption{ 0.0f };
+	int			channelType{ CHAN_INVALID };
 	float		maxDistance{ 1.0f };
-
+	
 	bool		loop : 1;
 	bool		is2d : 1;
 	bool		randomSample : 1;
 
 	const ISoundSource* GetBestSample(int sampleId /*= -1*/) const;
 	uint8				FindVariableIndex(const char* varName) const;
-	static void			ParseDesc(SoundScriptDesc& scriptDesc, const KVSection* scriptSection);
+	static void			ParseDesc(SoundScriptDesc& scriptDesc, const KVSection* scriptSection, const KVSection* defaultsSec);
 };
 
 struct SoundEmitterData
 {
-	IEqAudioSource::Params		startParams;
+	IEqAudioSource::Params		nodeParams;
 	IEqAudioSource::Params		virtualParams;
+	float						params[SOUND_PARAM_ALL_COUNT];
 
 	Map<int, SoundNodeInput>	inputs{ PP_SL };
 
@@ -187,7 +228,13 @@ struct SoundEmitterData
 	const SoundScriptDesc*		script{ nullptr };			// sound script which used to start this sound
 	CSoundingObject*			soundingObj{ nullptr };
 	int							channelType{ CHAN_INVALID };
+
+	// emit params data
+	float						epVolume{ 1.0f };
+	float						epPitch{ 1.0f };
+	float						epRadiusMultiplier{ 1.0f };
 	int							sampleId{ -1 };				// when randomSample and sampleId == -1, it's random
+
 	bool						nodesNeedUpdate{ true };	// triggers recalc of entire node set
 
 	void	CreateNodeRuntime();
@@ -198,5 +245,5 @@ struct SoundEmitterData
 	float	GetInputValue(int nodeId, int arrayIdx);
 	float	GetInputValue(uint8 inputId);
 
-	void	UpdateNodes();
+	void	UpdateNodes(IEqAudioSource::Params& outParams, float* sampleVolume);
 };

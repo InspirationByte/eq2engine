@@ -130,14 +130,15 @@ void CSoundScriptEditor::DrawScriptEditor(bool& open)
 						// TODO:
 					}
 
+					/*
 					modified = ImGui::SliderFloat("Volume##script_volume", &script.volume, 0.0f, 1.0f, "%.2f", 1.0f) || modified;
 					modified = ImGui::SliderFloat("Pitch##script_pitch", &script.pitch, 0.01f, 4.0f, "%.2f", 1.0f) || modified;
 					ImGui::Separator();
 					modified = ImGui::SliderFloat("Attenuation##script_atten", &script.atten, 0.01f, 10.0f, "%.2f", 1.0f) || modified;
 					modified = ImGui::SliderFloat("Rolloff##script_rolloff", &script.rolloff, 0.01f, 4.0f, "%.2f", 1.0f) || modified;
-					ImGui::Separator();
+					ImGui::Separator();*/
 					modified = ImGui::SliderFloat("Max Distance##script_maxDistance", &script.maxDistance, 10.0f, 200.0f, "%.2f", 1.0f) || modified;
-
+					
 					if (modified)
 						g_sounds->RestartEmittersByScript(&script);
 

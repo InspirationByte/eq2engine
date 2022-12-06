@@ -426,16 +426,20 @@ void CSoundingObject::SetPitch(SoundEmitterData* emitter, float pitch)
 	if (!emitter)
 		return;
 
-	const float pitchLevel = emitter->startParams.pitch * pitch;
+	emitter->epPitch = pitch;
+
+	IEqAudioSource::Params& nodeParams = emitter->nodeParams;
+	IEqAudioSource::Params&	virtualParams = emitter->virtualParams;
+	const float finalPitch = nodeParams.pitch * pitch;
 
 	// update virtual params
-	emitter->virtualParams.set_pitch(pitchLevel);
+	virtualParams.set_pitch(finalPitch);
 
 	// update actual params
 	if (emitter->soundSource)
 	{
 		IEqAudioSource::Params param;
-		param.set_pitch(pitchLevel);
+		param.set_pitch(finalPitch);
 
 		emitter->soundSource->UpdateParams(param);
 	}
@@ -446,16 +450,20 @@ void CSoundingObject::SetVolume(SoundEmitterData* emitter, float volume)
 	if (!emitter)
 		return;
 
-	const float volumeLevel = emitter->startParams.volume * volume;
+	emitter->epVolume = volume;
+
+	IEqAudioSource::Params& nodeParams = emitter->nodeParams;
+	IEqAudioSource::Params& virtualParams = emitter->virtualParams;
+	const float finalVolume = nodeParams.volume * volume;
 
 	// update virtual params
-	emitter->virtualParams.set_volume(volumeLevel);
+	virtualParams.set_pitch(finalVolume);
 
 	// update actual params
 	if (emitter->soundSource)
 	{
 		IEqAudioSource::Params param;
-		param.set_volume(volumeLevel * GetSoundVolumeScale());
+		param.set_volume(finalVolume * GetSoundVolumeScale());
 
 		emitter->soundSource->UpdateParams(param);
 	}
