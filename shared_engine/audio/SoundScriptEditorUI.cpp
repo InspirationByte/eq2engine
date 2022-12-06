@@ -5,22 +5,78 @@
 // Description: Sound emitter system script editor
 //////////////////////////////////////////////////////////////////////////////////
 
+#if !defined(_RETAIL) && !defined(_PROFILE)
+#define SOUNDSCRIPT_EDITOR
+#endif
+
+#ifdef SOUNDSCRIPT_EDITOR
 #include <imgui.h>
 #include <imgui_curve_edit.h>
+#include <imnodes.h>
+
 #include "core/core_common.h"
 #include "eqSoundEmitterSystem.h"
 #include "eqSoundEmitterObject.h"
 #include "eqSoundEmitterPrivateTypes.h"
 
-#if !defined(_RETAIL) && !defined(_PROFILE)
-#define SOUNDSCRIPT_EDITOR
-#endif
+#pragma optimize("", off)
+
+struct UISoundNodeDesc
+{
+	int				id;
+	char			name[30];
+	uint8			type{ 0 };
+	uint8			flags{ 0 };
+
+	union
+	{
+		struct {
+			int	lhs[SoundNodeDesc::MAX_ARRAY_IDX];
+			int	rhs[SoundNodeDesc::MAX_ARRAY_IDX];
+			int	inputCount;
+			int	outputCount;
+			
+			int	type;
+		} func;
+		struct {
+			int		rhs[SoundNodeDesc::MAX_ARRAY_IDX];
+			int		valueCount;
+
+			float	rMin;
+			float	rMax;
+		} input;
+		struct {
+			int		lhs[SoundNodeDesc::MAX_ARRAY_IDX]; // in case of SOUND_NODE_FLAG_OUTPUT
+			int		inputCount;
+
+			int		rhs;
+			float	value;
+		} c;
+	};
+};
+
+struct UINodeLink
+{
+	short a;
+	short b;
+};
 
 class CSoundScriptEditor
 {
 public:
 	static void DrawScriptEditor(bool& open);
+	static void InitSoundNodesFromScriptDesc(const SoundScriptDesc& script);
+
+	static int InsertConstNode(float value);
+	static bool IsConnected(int link);
+
+	static SoundScriptDesc* s_currentSelection;
+	static Map<int, UISoundNodeDesc> s_uiNodes;
+	static Array<UINodeLink> s_uiNodeLinks;
+	static int s_idGenerator;
 };
+
+#endif
 
 void SoundScriptEditorUIDraw(bool& open)
 {
@@ -36,6 +92,119 @@ bool SoundScriptDescTextGetter(void* data, int idx, const char** outStr)
 	Array<SoundScriptDesc*>& allSounds = *reinterpret_cast<Array<SoundScriptDesc*>*>(data);
 	*outStr = allSounds[idx]->name.ToCString();
 	return true;
+}
+
+SoundScriptDesc* CSoundScriptEditor::s_currentSelection = nullptr;
+Map<int, UISoundNodeDesc> CSoundScriptEditor::s_uiNodes{ PP_SL };
+Array<UINodeLink> CSoundScriptEditor::s_uiNodeLinks{ PP_SL };
+int CSoundScriptEditor::s_idGenerator{ 0 };
+
+int CSoundScriptEditor::InsertConstNode(float value)
+{
+	const int newId = s_idGenerator++;
+	UISoundNodeDesc& uiDesc = s_uiNodes[newId];
+	uiDesc.id = newId;
+	uiDesc.type = SOUND_NODE_CONST;
+	uiDesc.c.value = value;
+
+	return newId;
+}
+
+static int MakeAttribId(int id, int arrayIdx, int side)
+{
+	return (id & 31) | ((arrayIdx & 7) << 5) | ((side & 3) << 8);
+}
+
+bool CSoundScriptEditor::IsConnected(int link)
+{
+	for (int i = 0; i < s_uiNodeLinks.numElem(); ++i)
+	{
+		const UINodeLink& linkVal = s_uiNodeLinks[i];
+
+		if (link == linkVal.a || link == linkVal.b)
+			return true;
+	}
+	return false;
+}
+
+void CSoundScriptEditor::InitSoundNodesFromScriptDesc(const SoundScriptDesc& script)
+{
+	s_idGenerator = 0;
+	s_uiNodes.clear();
+	s_uiNodeLinks.clear();
+
+	for (int nodeId = 0; nodeId < script.nodeDescs.numElem(); ++nodeId)
+	{
+		const SoundNodeDesc& nodeDesc = script.nodeDescs[nodeId];
+
+		const int newId = s_idGenerator++;
+		UISoundNodeDesc& uiDesc = s_uiNodes[newId];
+		uiDesc.id = newId;
+
+		strncpy(uiDesc.name, nodeDesc.name, sizeof(uiDesc.name));
+		uiDesc.name[sizeof(uiDesc.name) - 1] = 0;
+
+		uiDesc.flags = nodeDesc.flags;
+		uiDesc.type = nodeDesc.type;
+
+		if (nodeDesc.type == SOUND_NODE_INPUT)
+		{
+			uiDesc.input.rMin = nodeDesc.input.rMin;
+			uiDesc.input.rMax = nodeDesc.input.rMax;
+			uiDesc.input.valueCount = nodeDesc.input.valueCount;
+
+			for (int i = 0; i < uiDesc.input.valueCount; ++i)
+				uiDesc.input.rhs[i] = MakeAttribId(uiDesc.id, i, 2);
+		}
+		else if (nodeDesc.type == SOUND_NODE_CONST)
+		{
+			uiDesc.c.lhs[0] = MakeAttribId(uiDesc.id, 0, 1);
+			uiDesc.c.inputCount = 1;
+			uiDesc.c.rhs = MakeAttribId(uiDesc.id, 0, 2);
+			uiDesc.c.value = nodeDesc.c.value;
+		}
+		else if (nodeDesc.type == SOUND_NODE_FUNC)
+		{
+			if (nodeDesc.func.type == SOUND_FUNC_COPY)
+			{
+				// convert to output
+				uiDesc.type = SOUND_NODE_CONST;
+				uiDesc.flags |= SOUND_NODE_FLAG_OUTPUT;
+
+				uiDesc.c.rhs = MakeAttribId(uiDesc.id, 0, 2);
+				uiDesc.c.value = 1.0f;
+				uiDesc.c.inputCount = nodeDesc.func.inputCount;
+
+				for (int i = 0; i < nodeDesc.func.inputCount; ++i)
+				{
+					uiDesc.c.lhs[i] = MakeAttribId(uiDesc.id, i, 1);
+
+					uint inNodeId, inArrayIdx;
+					SoundNodeDesc::UnpackInputIdArrIdx(nodeDesc.func.inputIds[i], inNodeId, inArrayIdx);
+					s_uiNodeLinks.append({ (short)MakeAttribId(inNodeId, inArrayIdx, 2), (short)uiDesc.c.lhs[i] });
+				}
+				continue;
+			}
+
+			uiDesc.func.type = nodeDesc.func.type;
+			uiDesc.func.inputCount = nodeDesc.func.inputCount;
+			uiDesc.func.outputCount = nodeDesc.func.outputCount;
+
+			for (int i = 0; i < uiDesc.func.inputCount; ++i)
+			{
+				uiDesc.func.lhs[i] = MakeAttribId(uiDesc.id, i, 1);
+
+				uint inNodeId, inArrayIdx;
+				SoundNodeDesc::UnpackInputIdArrIdx(nodeDesc.func.inputIds[i], inNodeId, inArrayIdx);
+				s_uiNodeLinks.append({ (short)MakeAttribId(inNodeId, inArrayIdx, 2), (short)uiDesc.func.lhs[i] });
+			}
+
+			for (int i = 0; i < uiDesc.func.outputCount; ++i)
+			{
+				uiDesc.func.rhs[i] = MakeAttribId(uiDesc.id, i, 2);
+			}
+		} // if
+	} // for
 }
 
 void CSoundScriptEditor::DrawScriptEditor(bool& open)
@@ -70,6 +239,16 @@ void CSoundScriptEditor::DrawScriptEditor(bool& open)
 		if (allSounds.numElem() > 0 && curSelection != -1)
 		{
 			SoundScriptDesc& script = *allSounds[curSelection];
+
+			static bool justChanged = false;
+
+			if (s_currentSelection != &script)
+			{
+				// TODO: prompt to save unsaved settings!!!
+				s_currentSelection = &script;
+				InitSoundNodesFromScriptDesc(script);
+				justChanged = true;
+			}
 
 			static CSoundingObject soundTest;// TODO: isolate to chose currently playing sounding object from list
 			static bool isolateSound = false;
@@ -252,6 +431,164 @@ void CSoundScriptEditor::DrawScriptEditor(bool& open)
 					}
 					ImGui::EndTabItem();
 				}
+				if (ImGui::BeginTabItem("Automation"))
+				{
+					ImNodes::BeginNodeEditor();
+
+					int posCounter = 0;
+					for (auto it = s_uiNodes.begin(); it != s_uiNodes.end(); ++it)
+					{
+						UISoundNodeDesc& uiNode = *it;
+
+						const float node_width = 100.0f;
+
+						if (uiNode.type == SOUND_NODE_CONST)
+						{
+							// it is a output into the sound source
+							if (uiNode.flags & SOUND_NODE_FLAG_OUTPUT)
+							{
+								ImNodes::PushColorStyle(ImNodesCol_TitleBar, IM_COL32(11, 109, 191, 255));
+								ImNodes::PushColorStyle(ImNodesCol_TitleBarHovered, IM_COL32(45, 126, 194, 255));
+								ImNodes::PushColorStyle(ImNodesCol_TitleBarSelected, IM_COL32(81, 148, 204, 255));
+
+								ImNodes::BeginNode(uiNode.id);
+
+								ImNodes::BeginNodeTitleBar();
+								ImGui::TextUnformatted(uiNode.name);
+								ImNodes::EndNodeTitleBar();
+
+								// draw inputs
+								for (int i = 0; i < uiNode.c.inputCount; ++i)
+								{
+									EqString str = (uiNode.c.inputCount > 1) ? EqString::Format("in[%d]", i) : "in";
+
+									ImNodes::BeginInputAttribute(uiNode.c.lhs[i]);
+									const float label_width = ImGui::CalcTextSize(str).x;
+									ImGui::TextUnformatted(str);
+									if (!IsConnected(uiNode.c.lhs[i]))
+									{
+										ImGui::SameLine();
+										ImGui::PushItemWidth(node_width - label_width);
+										ImGui::DragFloat("##hidelabel", &uiNode.c.value, 0.01f);
+										ImGui::PopItemWidth();
+									}
+									ImNodes::EndInputAttribute();
+								}
+
+								ImNodes::EndNode();
+
+								ImNodes::PopColorStyle();
+								ImNodes::PopColorStyle();
+								ImNodes::PopColorStyle();
+							}
+						}
+						else if (uiNode.type == SOUND_NODE_INPUT)
+						{
+							ImNodes::BeginNode(uiNode.id);
+
+							ImNodes::BeginNodeTitleBar();
+							ImGui::SetNextItemWidth(node_width);
+							ImGui::InputText("##hid", uiNode.name, sizeof(uiNode.name));
+							ImNodes::EndNodeTitleBar();
+
+							for (int i = 0; i < uiNode.input.valueCount; ++i)
+							{
+								EqString str = (uiNode.input.valueCount > 1) ? EqString::Format("out[%d]", i) : "out";
+
+								ImNodes::BeginOutputAttribute(uiNode.input.rhs[i]);
+								const float label_width = ImGui::CalcTextSize(str).x;
+								ImGui::Indent(node_width - label_width);
+
+								ImGui::TextUnformatted(str);
+
+								ImNodes::EndOutputAttribute();
+							}
+
+							ImNodes::EndNode();
+						}
+						else if (uiNode.type == SOUND_NODE_FUNC)
+						{
+							ImNodes::PushColorStyle(ImNodesCol_TitleBar, IM_COL32(255, 109, 72, 255));
+							ImNodes::PushColorStyle(ImNodesCol_TitleBarHovered, IM_COL32(255, 126, 72, 255));
+							ImNodes::PushColorStyle(ImNodesCol_TitleBarSelected, IM_COL32(255, 148, 72, 255));
+
+							ImNodes::BeginNode(uiNode.id);
+
+							ImNodes::BeginNodeTitleBar();
+							ImGui::TextUnformatted(s_soundFuncTypeNames[uiNode.func.type]);
+							ImNodes::EndNodeTitleBar();
+
+							// draw inputs
+							for (int i = 0; i < uiNode.func.inputCount; ++i)
+							{
+								EqString str = (uiNode.func.inputCount > 1) ? EqString::Format("in[%d]", i) : "in";
+
+								ImNodes::BeginInputAttribute(uiNode.func.lhs[i]);
+								const float label_width = ImGui::CalcTextSize(str).x;
+								ImGui::TextUnformatted(str);
+								if (!IsConnected(uiNode.func.lhs[i]))
+								{
+									ImGui::SameLine();
+									ImGui::PushItemWidth(node_width - label_width);
+									ImGui::DragFloat("##hidelabel", &uiNode.c.value, 0.01f);
+									ImGui::PopItemWidth();
+								}
+								ImNodes::EndInputAttribute();
+							}
+
+							// draw outputs
+							for (int i = 0; i < uiNode.func.outputCount; ++i)
+							{
+								EqString str = (uiNode.func.outputCount > 1) ? EqString::Format("out[%d]", i) : "out";
+
+								{
+									ImNodes::BeginOutputAttribute(uiNode.func.rhs[i]);
+									const float label_width = ImGui::CalcTextSize(str).x;
+									ImGui::Indent(node_width - label_width);
+									ImGui::TextUnformatted(str);
+									ImNodes::EndOutputAttribute();
+								}
+							}
+
+							ImNodes::EndNode();
+
+							ImNodes::PopColorStyle();
+							ImNodes::PopColorStyle();
+							ImNodes::PopColorStyle();
+						}
+					}
+
+					// link nodes
+					for (int i = 0; i < s_uiNodeLinks.numElem(); ++i)
+					{
+						const UINodeLink linkVal = s_uiNodeLinks[i];
+						ImNodes::Link(i, linkVal.a, linkVal.b);
+					}
+
+					ImNodes::EndNodeEditor();
+
+					int start_attr, end_attr;
+					if (ImNodes::IsLinkCreated(&start_attr, &end_attr))
+					{
+						//links.push_back(std::make_pair(start_attr, end_attr));
+					}
+
+					if (justChanged)
+					{
+						for (auto it = s_uiNodes.begin(); it != s_uiNodes.end(); ++it)
+						{
+							UISoundNodeDesc& uiNode = *it;
+
+							ImNodes::SetNodeGridSpacePos(uiNode.id, ImVec2(posCounter * 150.0f, 0));
+							++posCounter;
+						}
+
+						justChanged = false;
+					}
+
+					ImGui::EndTabItem();
+				}
+#if 0
 				if (ImGui::BeginTabItem("Automation Inputs"))
 				{
 					if (ImGui::Button("Add##add_input"))
@@ -372,7 +709,7 @@ void CSoundScriptEditor::DrawScriptEditor(bool& open)
 
 					ImGui::EndTabItem();
 				}
-
+#endif
 				ImGui::EndTabBar();
 			}
 		}

@@ -29,6 +29,7 @@
 
 #ifdef IMGUI_ENABLED
 #include <imgui.h>
+#include <imnodes.h>
 
 #include "imgui_backend/imgui_impl_matsystem.h"
 #include "imgui_backend/imgui_impl_sys.h"
@@ -292,6 +293,7 @@ void CEqConsoleInput::Initialize(EQWNDHANDLE window)
 	// ImGui
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
+	ImNodes::CreateContext();
 
 	//io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
 	//io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
@@ -319,6 +321,8 @@ void CEqConsoleInput::Shutdown()
 #ifdef IMGUI_ENABLED
 	ImGui_ImplMatSystem_Shutdown();
 	ImGui_ImplEq_Shutdown();
+
+	ImNodes::DestroyContext();
 	ImGui::DestroyContext();
 #endif // IMGUI_ENABLED
 }
