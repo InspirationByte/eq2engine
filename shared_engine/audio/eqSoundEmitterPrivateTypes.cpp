@@ -167,7 +167,8 @@ void SoundScriptDesc::ParseDesc(SoundScriptDesc& scriptDesc, const KVSection* sc
 			strncpy(inputDesc.name, nodeName, sizeof(inputDesc.name));
 			inputDesc.name[sizeof(inputDesc.name) - 1] = 0;
 
-			// FIXME: support array index?
+			// TODO: support array index
+			inputDesc.input.valueCount = 1;
 			inputDesc.input.rMin = KV_GetValueFloat(&valKey, 1, 0.0f);
 			inputDesc.input.rMax = KV_GetValueFloat(&valKey, 2, 1.0f);
 
@@ -326,56 +327,52 @@ void SoundEmitterData::CreateNodeRuntime()
 	{
 		const SoundNodeDesc& nodeDesc = nodeDescs[i];
 
-		if (nodeDesc.type == SOUND_NODE_CONST)
+		if (nodeDesc.type != SOUND_NODE_INPUT)
 			continue; // no need, we have desc to access
 
-		nodeData.insert(i);
+		inputs.insert(i);
 	}
 }
 
-void SoundEmitterData::SetInputValue(int inputNameHash, float value)
+void SoundEmitterData::SetInputValue(int inputNameHash, int arrayIdx, float value)
 {
 	auto it = script->inputNodeMap.find(inputNameHash);
 	if (it == script->inputNodeMap.end())
 		return;
 
-	SetNodeValue(*it, 0, value);	// FIXME: support array index?
+	SetInputValue(*it, arrayIdx, value);
 	nodesNeedUpdate = true;
 }
 
-void SoundEmitterData::SetNodeValue(int nodeId, int arrayIdx, float value)
+void SoundEmitterData::SetInputValue(uint8 inputId, float value)
 {
-	auto dataIt = nodeData.find(nodeId);
-	if (dataIt == nodeData.end())
+	uint nodeId, arrayIdx;
+	SoundNodeDesc::UnpackInputIdArrIdx(inputId, nodeId, arrayIdx);
+
+	auto dataIt = inputs.find(nodeId);
+	if (dataIt == inputs.end())
 		return;
 
-	SoundNodeRuntime& runtime = *dataIt;
-	runtime.values[arrayIdx] = value;
+	SoundNodeInput& in = *dataIt;
+	in.values[arrayIdx] = value;
 }
 
-float SoundEmitterData::GetNodeValue(int nodeId, int arrayIdx)
+float SoundEmitterData::GetInputValue(int nodeId, int arrayIdx)
 {
 	const Array<SoundNodeDesc>& nodeDescs = script->nodeDescs;
+
 	if(nodeDescs[nodeId].type == SOUND_NODE_CONST)
 		return nodeDescs[nodeId].c.value;
 
-	auto dataIt = nodeData.find(nodeId);
-	if (dataIt == nodeData.end())
-	{
-		// could be a const so retrieve it
-		const Array<SoundNodeDesc>& nodeDescs = script->nodeDescs;
-
-		if (nodeDescs[nodeId].type == SOUND_NODE_CONST)
-			return nodeDescs[nodeId].c.value;
-
+	auto dataIt = inputs.find(nodeId);
+	if (dataIt == inputs.end())
 		return 0.0f;
-	}
 
-	SoundNodeRuntime& runtime = *dataIt;
-	return runtime.values[arrayIdx];
+	SoundNodeInput& in = *dataIt;
+	return in.values[arrayIdx];
 }
 
-float SoundEmitterData::GetNodeValue(uint8 inputId)
+float SoundEmitterData::GetInputValue(uint8 inputId)
 {
 	if (inputId == 0xff)
 		return 0.0f;
@@ -383,8 +380,135 @@ float SoundEmitterData::GetNodeValue(uint8 inputId)
 	uint nodeId, arrayIdx;
 	SoundNodeDesc::UnpackInputIdArrIdx(inputId, nodeId, arrayIdx);
 
-	return GetNodeValue(nodeId, arrayIdx);
+	return GetInputValue(nodeId, arrayIdx);
 }
+
+//---------------------------------------
+// Simple evaluator for sound scripts
+// with it's own runtime memory
+//---------------------------------------
+
+struct EvalStack
+{
+	int	values[128];
+	int	sp{ 0 };
+
+	template<typename T>
+	int Push(T value)
+	{
+		const int oldSP = sp;
+		*(T*)&values[oldSP] = value;
+		sp += sizeof(T) / sizeof(int);
+		return oldSP;
+	}
+
+	template<typename T>
+	T Pop()
+	{
+		sp -= sizeof(T) / sizeof(int);
+		return *(T*)&values[sp];
+	}
+
+	template<typename T>
+	T Get(int pos)
+	{
+		return *(T*)&values[pos];
+	}
+};
+
+typedef void (*SoundEmitEvalFn)(EvalStack& stack, int argc, int nret);
+
+static void evalAdd(EvalStack& stack, int argc, int nret)
+{
+	const float operandB = stack.Pop<float>();
+	const float operandA = stack.Pop<float>();
+	stack.Push(operandA + operandB);
+}
+
+static void evalSub(EvalStack& stack, int argc, int nret)
+{
+	const float operandB = stack.Pop<float>();
+	const float operandA = stack.Pop<float>();
+	stack.Push(operandA - operandB);
+}
+
+static void evalMul(EvalStack& stack, int argc, int nret)
+{
+	const float operandB = stack.Pop<float>();
+	const float operandA = stack.Pop<float>();
+	stack.Push(operandA * operandB);
+}
+
+static void evalDiv(EvalStack& stack, int argc, int nret)
+{
+	const float operandB = stack.Pop<float>();
+	const float operandA = stack.Pop<float>();
+	stack.Push(operandA / operandB);
+}
+
+static void evalMin(EvalStack& stack, int argc, int nret)
+{
+	const float operandB = stack.Pop<float>();
+	const float operandA = stack.Pop<float>();
+	stack.Push(min(operandA, operandB));
+}
+
+static void evalMax(EvalStack& stack, int argc, int nret)
+{
+	const float operandB = stack.Pop<float>();
+	const float operandA = stack.Pop<float>();
+	stack.Push(max(operandA, operandB));
+}
+
+static void evalAverage(EvalStack& stack, int argc, int nret)
+{
+	// order doesn't matter
+	float value = 0.0f;
+	for (int i = 0; i < argc; ++i)
+		value += stack.Pop<float>();
+
+	stack.Push(value / (float)argc);
+}
+
+static void evalCurve(EvalStack& stack, int argc, int nret)
+{
+	const float input = stack.Pop<float>();
+	const SoundCurveDesc& curveDesc = *stack.Pop<SoundCurveDesc*>();
+
+	float output = 0.0f;
+	spline<1>(curveDesc.values, curveDesc.valueCount / 2, input, &output);
+	stack.Push(output);
+}
+
+static void evalFaderCurve(EvalStack& stack, int argc, int nret)
+{
+	const float input = stack.Pop<float>();
+	const SoundCurveDesc& curveDesc = *stack.Pop<SoundCurveDesc*>();
+
+	float output = 0.0f;
+	spline<1>(curveDesc.values, curveDesc.valueCount / 2, input, &output);
+
+	// split one output into the number of outputs
+	for (int i = 0; i < nret; ++i)
+	{
+		const float targetValue = (float)i;
+		const float fadeValue = clamp(1.0f - fabs(output - targetValue), 0.0f, 1.0f);
+		stack.Push(output);
+	}
+}
+
+static SoundEmitEvalFn s_soundFuncTypeEvFn[SOUND_FUNC_COUNT] = {
+	evalAdd, // ADD
+	evalSub, // SUB
+	evalMul, // MUL
+	evalDiv, // DIV
+	evalMin, // MIN
+	evalMax, // MAX
+	evalAverage, // AVERAGE
+	evalCurve, // CURVE
+	evalFaderCurve, // FADE
+};
+static_assert(elementsOf(s_soundFuncTypeEvFn) == SOUND_FUNC_COUNT, "s_soundFuncTypeFuncs and SOUND_FUNC_COUNT needs to be in sync");
 
 void SoundEmitterData::UpdateNodes()
 {
@@ -395,95 +519,53 @@ void SoundEmitterData::UpdateNodes()
 	const Array<SoundNodeDesc>& nodeDescs = script->nodeDescs;
 	const Array<SoundCurveDesc>& curveDescs = script->curveDescs;
 
+	EvalStack stack;
+	int nodeValueSp[64];
+
 	// evaluate each function node down
 	for (int nodeId = 0; nodeId < nodeDescs.numElem(); ++nodeId)
 	{
 		const SoundNodeDesc& nodeDesc = nodeDescs[nodeId];
 
-		if (nodeDesc.type != SOUND_NODE_FUNC)
-			continue;
+		// remember stack pointer of each node for further processing
+		nodeValueSp[nodeId] = stack.sp;
 
-		switch ((ESoundFuncType)nodeDesc.func.type)
+		if (nodeDesc.type == SOUND_NODE_INPUT)
 		{
-			case SOUND_FUNC_ADD:
-			{
-				const float operandA = GetNodeValue(nodeDesc.func.inputIds[0]);
-				const float operandB = GetNodeValue(nodeDesc.func.inputIds[1]);
-				SetNodeValue(nodeId, 0, operandA + operandB);
-				break;
-			}
-			case SOUND_FUNC_SUB:
-			{
-				const float operandA = GetNodeValue(nodeDesc.func.inputIds[0]);
-				const float operandB = GetNodeValue(nodeDesc.func.inputIds[1]);
-				SetNodeValue(nodeId, 0, operandA - operandB);
-				break;
-			}
-			case SOUND_FUNC_MUL:
-			{
-				const float operandA = GetNodeValue(nodeDesc.func.inputIds[0]);
-				const float operandB = GetNodeValue(nodeDesc.func.inputIds[1]);
-				SetNodeValue(nodeId, 0, operandA * operandB);
-				break;
-			}
-			case SOUND_FUNC_DIV:
-			{
-				const float operandA = GetNodeValue(nodeDesc.func.inputIds[0]);
-				const float operandB = GetNodeValue(nodeDesc.func.inputIds[1]);
-				SetNodeValue(nodeId, 0, operandA / operandB);
-				break;
-			}
-			case SOUND_FUNC_MIN:
-			{
-				const float operandA = GetNodeValue(nodeDesc.func.inputIds[0]);
-				const float operandB = GetNodeValue(nodeDesc.func.inputIds[1]);
-				SetNodeValue(nodeId, 0, min(operandA, operandB));
-				break;
-			}
-			case SOUND_FUNC_MAX:
-			{
-				const float operandA = GetNodeValue(nodeDesc.func.inputIds[0]);
-				const float operandB = GetNodeValue(nodeDesc.func.inputIds[1]);
-				SetNodeValue(nodeId, 0, max(operandA, operandB));
-				break;
-			}
-			case SOUND_FUNC_AVERAGE:
-			{
-				float value = 0.0f;
-				for (int i = 0; i < nodeDesc.func.inputCount; ++i)
-					value = GetNodeValue(nodeDesc.func.inputIds[i]);
+			// add input values to stack
+			for (int i = 0; i < nodeDesc.input.valueCount; ++i)
+				stack.Push(GetInputValue(nodeId, i));
 
-				SetNodeValue(nodeId, 0, value / nodeDesc.func.inputCount);
-				break;
-			}
-			case SOUND_FUNC_CURVE:
+			continue;
+		}
+		else if (nodeDesc.type == SOUND_NODE_CONST)
+		{
+			// FIXME: remove const in favor of input only
+			stack.Push(nodeDesc.c.value);
+			continue;
+		}
+		else if (nodeDesc.type == SOUND_NODE_FUNC)
+		{
+			// NOTE: stack would be inverse to read!!!
+			
+			if (nodeDesc.func.type == SOUND_FUNC_CURVE || nodeDesc.func.type == SOUND_FUNC_FADE)
 			{
-				const float input = GetNodeValue(nodeDesc.func.inputIds[0]);
-				const SoundCurveDesc& curveDesc = curveDescs[nodeDesc.func.inputIds[1]];
-
-				float output = 0.0f;
-				spline<1>(curveDesc.values, curveDesc.valueCount / 2, input, &output);
-				SetNodeValue(nodeId, 0, output);
-				break;
+				// push curve ptr to the stack
+				const SoundCurveDesc& curveDesc = script->curveDescs[nodeDesc.func.inputIds[1]];
+				stack.Push(&curveDesc);
 			}
-			case SOUND_FUNC_FADE:
+
+			for (int i = 0; i < nodeDesc.func.inputCount; ++i)
 			{
-				const float input = GetNodeValue(nodeDesc.func.inputIds[0]);
-				const SoundCurveDesc& curveDesc = curveDescs[nodeDesc.func.inputIds[1]];
+				uint inNodeId, inArrayIdx;
+				SoundNodeDesc::UnpackInputIdArrIdx(nodeDesc.func.inputIds[i], inNodeId, inArrayIdx);
 
-				float output = 0.0f;
-				spline<1>(curveDesc.values, curveDesc.valueCount / 2, input, &output);
-
-				// split one output into the number of outputs
-				for (int i = 0; i < nodeDesc.func.outputCount; ++i)
-				{
-					const float targetValue = (float)i;
-					const float fadeValue = clamp(1.0f - fabs(output - targetValue), 0.0f, 1.0f);
-					SetNodeValue(nodeId, i, output);
-				}
-
-				break;
+				// retrieve operands of previous nodes and put them to back of stack
+				const float operand = stack.Get<float>(nodeValueSp[inNodeId] + inArrayIdx);
+				stack.Push(operand);
 			}
+			
+			s_soundFuncTypeEvFn[nodeDesc.func.type](stack, nodeDesc.func.inputCount, nodeDesc.func.outputCount);
 		}
 	}
 

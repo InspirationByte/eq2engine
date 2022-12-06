@@ -86,8 +86,6 @@ static const char* s_soundFuncTypeNames[SOUND_FUNC_COUNT] = {
 };
 static_assert(elementsOf(s_soundFuncTypeNames) == SOUND_FUNC_COUNT, "s_soundFuncTypeNames and SOUND_FUNC_COUNT needs to be in sync");
 
-
-
 static int GetSoundFuncTypeByString(const char* name)
 {
 	for (int i = 0; i < SOUND_FUNC_COUNT; ++i)
@@ -120,7 +118,9 @@ struct SoundNodeDesc
 			uint8	inputCount;
 		} func;
 		struct {
-			float	rMin, rMax;
+			float	rMin;
+			float	rMax;
+			int		valueCount;
 		} input;
 		struct {
 			float	value;
@@ -139,7 +139,7 @@ struct SoundNodeDesc
 	}
 };
 
-struct SoundNodeRuntime
+struct SoundNodeInput
 {
 	float values[SoundNodeDesc::MAX_ARRAY_IDX] = { 0 };	// indexed by inputIds 
 };
@@ -181,7 +181,7 @@ struct SoundEmitterData
 	IEqAudioSource::Params		startParams;
 	IEqAudioSource::Params		virtualParams;
 
-	Map<int, SoundNodeRuntime>	nodeData{ PP_SL };
+	Map<int, SoundNodeInput>	inputs{ PP_SL };
 
 	CRefPtr<IEqAudioSource>		soundSource;				// NULL when virtual 
 	const SoundScriptDesc*		script{ nullptr };			// sound script which used to start this sound
@@ -190,13 +190,13 @@ struct SoundEmitterData
 	int							sampleId{ -1 };				// when randomSample and sampleId == -1, it's random
 	bool						nodesNeedUpdate{ true };	// triggers recalc of entire node set
 
-	// FIXME: support array index?
-	void	SetInputValue(int inputNameHash, float value);
-
 	void	CreateNodeRuntime();
-	void	SetNodeValue(int nodeId, int arrayIdx, float value);
-	float	GetNodeValue(int nodeId, int arrayIdx);
-	float	GetNodeValue(uint8 inputId);
+
+	void	SetInputValue(int inputNameHash, int arrayIdx, float value);
+	void	SetInputValue(uint8 inputId, float value);
+
+	float	GetInputValue(int nodeId, int arrayIdx);
+	float	GetInputValue(uint8 inputId);
 
 	void	UpdateNodes();
 };

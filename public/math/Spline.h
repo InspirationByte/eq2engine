@@ -12,7 +12,7 @@
 // key format (for DIM == 2) is [t0,x0,y0, t1,x1,y1 ...]
 // key format (for DIM == 3) is [t0,x0,y0,z0, t1,x1,y1,z1 ...]
 template<int DIM>
-void spline(ArrayCRef<float> key, float t, float* v)
+void spline(const float* key, int num, float t, float* v)
 {
 	static float coefs[16] = {
 		-1.0f, 2.0f,-1.0f, 0.0f,
@@ -23,13 +23,15 @@ void spline(ArrayCRef<float> key, float t, float* v)
 
 	const int size = DIM + 1;
 
+	const float tmin = key[0];
+	const float tmax = key[(num - 1) * size];
+
+	t = clamp(t, tmin, tmax);
+
 	// find key
 	int k = 0;
 	while (key[k * size] < t)
-		k++;
-
-	ASSERT(k > 0);
-	ASSERT(k < key.numElem());
+		++k;
 
 	const float key0 = key[(k - 1) * size];
 	const float key1 = key[k * size];
@@ -47,7 +49,7 @@ void spline(ArrayCRef<float> key, float t, float* v)
 		const float* co = &coefs[4 * i];
 		const float b = 0.5f * (((co[0] * h + co[1]) * h + co[2]) * h + co[3]);
 
-		const int kn = clamp(k + i - 2, 0, key.numElem() - 1);
+		const int kn = clamp(k + i - 2, 0, num - 1);
 		for (int j = 0; j < DIM; j++)
 			v[j] += b * key[kn * size + j + 1];
 	}
