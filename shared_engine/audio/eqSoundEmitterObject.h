@@ -61,6 +61,8 @@ public:
 	void		SetSoundVolumeScale(float fScale)	{ m_volumeScale = fScale; }
 	float		GetSoundVolumeScale() const			{ return m_volumeScale; }
 
+	// TODO: input values by names
+
 protected:
 	void		SetEmitterState(SoundEmitterData* emitter, IEqAudioSource::State state, bool rewindOnPlay);
 
@@ -113,6 +115,8 @@ public:
 
 	void		SetSampleVolume(int waveId, float volume);
 	void		SetParams(const IEqAudioSource::Params& params);
+
+	// TODO: input values by names
 private:
 	CSoundingObject& m_soundingObj;
 	SoundEmitterData* m_emitter{ nullptr };

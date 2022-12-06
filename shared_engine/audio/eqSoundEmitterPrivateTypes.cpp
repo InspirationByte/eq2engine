@@ -350,6 +350,10 @@ void SoundEmitterData::SetNodeValue(int nodeId, int arrayIdx, float value)
 
 float SoundEmitterData::GetNodeValue(int nodeId, int arrayIdx)
 {
+	const Array<SoundNodeDesc>& nodeDescs = script->nodeDescs;
+	if(nodeDescs[nodeId].type == SOUND_NODE_CONST)
+		return nodeDescs[nodeId].c.value;
+
 	auto dataIt = nodeData.find(nodeId);
 	if (dataIt == nodeData.end())
 	{
@@ -384,9 +388,6 @@ void SoundEmitterData::UpdateNodes()
 	nodesNeedUpdate = false;
 
 	const Array<SoundNodeDesc>& nodeDescs = script->nodeDescs;
-
-	SetInputValue(StringToHash("tractionSlide"), 4.0f);
-	SetInputValue(StringToHash("laterialSlide"), 6.0f);
 
 	// evaluate each function node down
 	for (int nodeId = 0; nodeId < nodeDescs.numElem(); ++nodeId)
@@ -475,4 +476,15 @@ void SoundEmitterData::UpdateNodes()
 			}
 		}
 	}
+
+	// TODO: output value mapping to sound parameters
+	// possible values:
+	//		svolume N <value>
+	//		volume <value>
+	// 		airAbsorption <value>
+	//		rollOff <value>
+	//		pitch <value>
+	//		atten <value>
+	//		hpf <value>
+	//		lpf <value>
 }
