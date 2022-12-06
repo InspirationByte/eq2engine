@@ -5,7 +5,6 @@
 // Description: Sound emitter system script editor
 //////////////////////////////////////////////////////////////////////////////////
 
-#pragma optimize("", off)
 #include <imgui.h>
 #include <imgui_curve_edit.h>
 #include "core/core_common.h"

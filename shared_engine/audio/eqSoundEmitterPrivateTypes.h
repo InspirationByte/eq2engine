@@ -1,3 +1,10 @@
+//////////////////////////////////////////////////////////////////////////////////
+// Copyright © Inspiration Byte
+// 2009-2022
+//////////////////////////////////////////////////////////////////////////////////
+// Description: Sound emitter system
+//////////////////////////////////////////////////////////////////////////////////
+
 #pragma once
 #include "audio/IEqAudioSystem.h"
 #include "eqSoundEmitterCommon.h"
@@ -5,6 +12,7 @@
 static Threading::CEqMutex s_soundEmitterSystemMutex;
 
 class CSoundingObject;
+struct KVSection;
 
 /*
 * 
@@ -99,9 +107,11 @@ struct SoundNodeDesc
 	union {
 		struct {
 			float	values[MAX_CURVE_POINTS * 2];	// for curve
-			uint8	inputIds[MAX_ARRAY_IDX];	// id :5, index: 3
+			uint8	inputIds[MAX_ARRAY_IDX];		// id :5, index: 3
 			uint8	type;
 			uint8	outputCount;
+			uint8	inputCount;
+			uint8	valueCount;
 		} func;
 		struct {
 			float	rMin, rMax;
@@ -125,17 +135,20 @@ struct SoundNodeDesc
 
 struct SoundNodeRuntime
 {
-	float		values[SoundNodeDesc::MAX_ARRAY_IDX];	// indexed by inputIds 
-	uint8		descIdx{ 0xff };
+	float	values[SoundNodeDesc::MAX_ARRAY_IDX] = { 0 };	// indexed by inputIds 
 };
 
 struct SoundScriptDesc
 {
+	SoundScriptDesc() = default;
+	SoundScriptDesc(const char* name);
+
 	EqString				name;
 
 	Array<ISoundSource*>	samples{ PP_SL };
 	Array<EqString>			soundFileNames{ PP_SL };
 	Array<SoundNodeDesc>	nodeDescs{ PP_SL };
+	Map<int, int>			inputNodeMap{ PP_SL };
 
 	int						channelType{ CHAN_INVALID };
 
@@ -151,17 +164,29 @@ struct SoundScriptDesc
 	bool		randomSample : 1;
 
 	const ISoundSource* GetBestSample(int sampleId /*= -1*/) const;
-	uint8 FindVariableIndex(const char* varName) const;
+	uint8				FindVariableIndex(const char* varName) const;
+	static void			ParseDesc(SoundScriptDesc& scriptDesc, const KVSection* scriptSection);
 };
 
 struct SoundEmitterData
 {
-	IEqAudioSource::Params	startParams;
-	IEqAudioSource::Params	virtualParams;
-	Array<SoundNodeRuntime> nodeData{ PP_SL };
-	CRefPtr<IEqAudioSource>	soundSource;			// NULL when virtual 
-	const SoundScriptDesc*	script{ nullptr };		// sound script which used to start this sound
-	CSoundingObject*		soundingObj{ nullptr };
-	int						channelType{ CHAN_INVALID };
-	int						sampleId{ -1 };			// when randomSample and sampleId == -1, it's random
+	IEqAudioSource::Params		startParams;
+	IEqAudioSource::Params		virtualParams;
+	Map<int, SoundNodeRuntime>	nodeData{ PP_SL };
+	CRefPtr<IEqAudioSource>		soundSource;				// NULL when virtual 
+	const SoundScriptDesc*		script{ nullptr };			// sound script which used to start this sound
+	CSoundingObject*			soundingObj{ nullptr };
+	int							channelType{ CHAN_INVALID };
+	int							sampleId{ -1 };				// when randomSample and sampleId == -1, it's random
+	bool						nodesNeedUpdate{ true };	// triggers recalc of entire node set
+
+	// FIXME: support array index?
+	void	SetInputValue(int inputNameHash, float value);
+
+	void	CreateNodeRuntime();
+	void	SetNodeValue(int nodeId, int arrayIdx, float value);
+	float	GetNodeValue(int nodeId, int arrayIdx);
+	float	GetNodeValue(uint8 inputId);
+
+	void	UpdateNodes();
 };
