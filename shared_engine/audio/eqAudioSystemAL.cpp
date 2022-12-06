@@ -1267,7 +1267,7 @@ ALsizei CEqAudioSourceAL::GetSampleBuffer(void* data, ALsizei size)
 		{
 			// update playback progress still but don't mix
 			m_streams[i].curPos = WrapAroundSampleOffset(m_streams[i].curPos + numSamplesToRead, sample, looping);
-
+			numRead = max(numRead, numSamplesToRead);
 			continue;
 		}
 
