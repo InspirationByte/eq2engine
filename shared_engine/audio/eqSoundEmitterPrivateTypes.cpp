@@ -121,6 +121,7 @@ void SoundScriptDesc::ParseDesc(SoundScriptDesc& scriptDesc, const KVSection* sc
 	}
 
 	Array<SoundNodeDesc>& nodeDescs = scriptDesc.nodeDescs;
+	Array<SoundCurveDesc>& curveDescs = scriptDesc.curveDescs;
 
 	// parse constants, inputs, mixers
 	for (int i = 0; i < scriptSection->KeyCount(); ++i)
@@ -250,18 +251,20 @@ void SoundScriptDesc::ParseDesc(SoundScriptDesc& scriptDesc, const KVSection* sc
 					funcDesc.func.outputCount = 1;
 					funcDesc.func.inputCount = 1;
 					funcDesc.func.inputIds[0] = scriptDesc.FindVariableIndex(inputValName);
+					funcDesc.func.inputIds[1] = curveDescs.numElem();
 					
-					// get 
+					SoundCurveDesc& curve = curveDescs.append();
+
 					int nArg = 0;
 					for (int v = 3; v < valKey.ValueCount(); ++v)
 					{
-						if(nArg < SoundNodeDesc::MAX_CURVE_POINTS * 2)
-							funcDesc.func.values[nArg++] = KV_GetValueFloat(&valKey, v, 0.5f);
+						if(nArg < SoundCurveDesc::MAX_CURVE_POINTS * 2)
+							curve.values[nArg++] = KV_GetValueFloat(&valKey, v, 0.5f);
 					}
 
-					if (nArg < SoundNodeDesc::MAX_CURVE_POINTS * 2)
-						funcDesc.func.values[nArg] = -F_INFINITY;
-					funcDesc.func.valueCount = nArg;
+					if (nArg < SoundCurveDesc::MAX_CURVE_POINTS * 2)
+						curve.values[nArg] = -F_INFINITY;
+					curve.valueCount = nArg;
 
 					if (nArg & 1)
 					{
@@ -289,18 +292,20 @@ void SoundScriptDesc::ParseDesc(SoundScriptDesc& scriptDesc, const KVSection* sc
 					funcDesc.func.outputCount = numOutputs;
 					funcDesc.func.inputCount = 1;
 					funcDesc.func.inputIds[0] = scriptDesc.FindVariableIndex(inputValName);
+					funcDesc.func.inputIds[1] = curveDescs.numElem();
 
-					// get 
+					SoundCurveDesc& curve = curveDescs.append();
+
 					int nArg = 0;
 					for (int v = 4; v < valKey.ValueCount(); ++v)
 					{
-						if (nArg < SoundNodeDesc::MAX_CURVE_POINTS * 2)
-							funcDesc.func.values[nArg++] = KV_GetValueFloat(&valKey, v, 0.5f);
+						if (nArg < SoundCurveDesc::MAX_CURVE_POINTS * 2)
+							curve.values[nArg++] = KV_GetValueFloat(&valKey, v, 0.5f);
 					}
 
-					if (nArg < SoundNodeDesc::MAX_CURVE_POINTS * 2)
-						funcDesc.func.values[nArg] = -F_INFINITY;
-					funcDesc.func.valueCount = nArg;
+					if (nArg < SoundCurveDesc::MAX_CURVE_POINTS * 2)
+						curve.values[nArg] = -F_INFINITY;
+					curve.valueCount = nArg;
 
 					if (nArg & 1)
 					{
@@ -388,6 +393,7 @@ void SoundEmitterData::UpdateNodes()
 	nodesNeedUpdate = false;
 
 	const Array<SoundNodeDesc>& nodeDescs = script->nodeDescs;
+	const Array<SoundCurveDesc>& curveDescs = script->curveDescs;
 
 	// evaluate each function node down
 	for (int nodeId = 0; nodeId < nodeDescs.numElem(); ++nodeId)
@@ -453,16 +459,20 @@ void SoundEmitterData::UpdateNodes()
 			case SOUND_FUNC_CURVE:
 			{
 				const float input = GetNodeValue(nodeDesc.func.inputIds[0]);
+				const SoundCurveDesc& curveDesc = curveDescs[nodeDesc.func.inputIds[1]];
+
 				float output = 0.0f;
-				spline<1>((float*)nodeDesc.func.values, nodeDesc.func.valueCount / 2, input, &output);
+				spline<1>(curveDesc.values, curveDesc.valueCount / 2, input, &output);
 				SetNodeValue(nodeId, 0, output);
 				break;
 			}
 			case SOUND_FUNC_FADE:
 			{
 				const float input = GetNodeValue(nodeDesc.func.inputIds[0]);
+				const SoundCurveDesc& curveDesc = curveDescs[nodeDesc.func.inputIds[1]];
+
 				float output = 0.0f;
-				spline<1>((float*)nodeDesc.func.values, nodeDesc.func.valueCount / 2, input, &output);
+				spline<1>(curveDesc.values, curveDesc.valueCount / 2, input, &output);
 
 				// split one output into the number of outputs
 				for (int i = 0; i < nodeDesc.func.outputCount; ++i)

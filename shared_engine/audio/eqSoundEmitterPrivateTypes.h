@@ -86,6 +86,8 @@ static const char* s_soundFuncTypeNames[SOUND_FUNC_COUNT] = {
 };
 static_assert(elementsOf(s_soundFuncTypeNames) == SOUND_FUNC_COUNT, "s_soundFuncTypeNames and SOUND_FUNC_COUNT needs to be in sync");
 
+
+
 static int GetSoundFuncTypeByString(const char* name)
 {
 	for (int i = 0; i < SOUND_FUNC_COUNT; ++i)
@@ -96,9 +98,15 @@ static int GetSoundFuncTypeByString(const char* name)
 	return -1;
 }
 
-struct SoundNodeDesc
+struct SoundCurveDesc
 {
 	static constexpr const int MAX_CURVE_POINTS = 10;
+	float	values[MAX_CURVE_POINTS * 2];	// for curve
+	uint8	valueCount;
+};
+
+struct SoundNodeDesc
+{
 	static constexpr const int MAX_ARRAY_IDX = 1 << 3;
 
 	char			name[31]{ 0 };
@@ -106,12 +114,10 @@ struct SoundNodeDesc
 	
 	union {
 		struct {
-			float	values[MAX_CURVE_POINTS * 2];	// for curve
 			uint8	inputIds[MAX_ARRAY_IDX];		// id :5, index: 3
 			uint8	type;
 			uint8	outputCount;
 			uint8	inputCount;
-			uint8	valueCount;
 		} func;
 		struct {
 			float	rMin, rMax;
@@ -135,7 +141,7 @@ struct SoundNodeDesc
 
 struct SoundNodeRuntime
 {
-	float	values[SoundNodeDesc::MAX_ARRAY_IDX] = { 0 };	// indexed by inputIds 
+	float values[SoundNodeDesc::MAX_ARRAY_IDX] = { 0 };	// indexed by inputIds 
 };
 
 struct SoundScriptDesc
@@ -147,7 +153,9 @@ struct SoundScriptDesc
 
 	Array<ISoundSource*>	samples{ PP_SL };
 	Array<EqString>			soundFileNames{ PP_SL };
+
 	Array<SoundNodeDesc>	nodeDescs{ PP_SL };
+	Array<SoundCurveDesc>	curveDescs{ PP_SL };
 	Map<int, int>			inputNodeMap{ PP_SL };
 
 	int						channelType{ CHAN_INVALID };
@@ -172,7 +180,9 @@ struct SoundEmitterData
 {
 	IEqAudioSource::Params		startParams;
 	IEqAudioSource::Params		virtualParams;
+
 	Map<int, SoundNodeRuntime>	nodeData{ PP_SL };
+
 	CRefPtr<IEqAudioSource>		soundSource;				// NULL when virtual 
 	const SoundScriptDesc*		script{ nullptr };			// sound script which used to start this sound
 	CSoundingObject*			soundingObj{ nullptr };
