@@ -31,6 +31,7 @@ struct UISoundNodeDesc
 	union
 	{
 		struct {
+			SoundCurveDesc curve;
 			int	lhs[SoundNodeDesc::MAX_ARRAY_IDX];
 			int	rhs[SoundNodeDesc::MAX_ARRAY_IDX];
 			int	inputCount;
@@ -65,15 +66,24 @@ class CSoundScriptEditor
 {
 public:
 	static void DrawScriptEditor(bool& open);
-	static void InitSoundNodesFromScriptDesc(const SoundScriptDesc& script);
+
+	static void DrawNodeEditor(bool initializePositions);
+	static void InitNodesFromScriptDesc(const SoundScriptDesc& script);
+	static void SerializeToKeyValues(KVSection& out);
+
+	static void ShowCurveEditor();
 
 	static int InsertConstNode(float value);
 	static bool IsConnected(int link);
 
 	static SoundScriptDesc* s_currentSelection;
 	static Map<int, UISoundNodeDesc> s_uiNodes;
-	static Array<UINodeLink> s_uiNodeLinks;
+
+	static Map<int, UINodeLink> s_uiNodeLinks;
+	static int s_linkIdGenerator;
 	static int s_idGenerator;
+
+	static UISoundNodeDesc* s_currentEditingCurveNode;
 };
 
 #endif
@@ -96,8 +106,11 @@ bool SoundScriptDescTextGetter(void* data, int idx, const char** outStr)
 
 SoundScriptDesc* CSoundScriptEditor::s_currentSelection = nullptr;
 Map<int, UISoundNodeDesc> CSoundScriptEditor::s_uiNodes{ PP_SL };
-Array<UINodeLink> CSoundScriptEditor::s_uiNodeLinks{ PP_SL };
+Map<int, UINodeLink> CSoundScriptEditor::s_uiNodeLinks{ PP_SL };
+int CSoundScriptEditor::s_linkIdGenerator{ 0 };
 int CSoundScriptEditor::s_idGenerator{ 0 };
+
+UISoundNodeDesc* CSoundScriptEditor::s_currentEditingCurveNode = nullptr;
 
 int CSoundScriptEditor::InsertConstNode(float value)
 {
@@ -117,9 +130,9 @@ static int MakeAttribId(int id, int arrayIdx, int side)
 
 bool CSoundScriptEditor::IsConnected(int link)
 {
-	for (int i = 0; i < s_uiNodeLinks.numElem(); ++i)
+	for (auto it = s_uiNodeLinks.begin(); it != s_uiNodeLinks.end(); ++it)
 	{
-		const UINodeLink& linkVal = s_uiNodeLinks[i];
+		const UINodeLink& linkVal = *it;
 
 		if (link == linkVal.a || link == linkVal.b)
 			return true;
@@ -127,19 +140,21 @@ bool CSoundScriptEditor::IsConnected(int link)
 	return false;
 }
 
-void CSoundScriptEditor::InitSoundNodesFromScriptDesc(const SoundScriptDesc& script)
+void CSoundScriptEditor::InitNodesFromScriptDesc(const SoundScriptDesc& script)
 {
-	s_idGenerator = 0;
+	s_linkIdGenerator = 0;
+	s_idGenerator = script.nodeDescs.numElem();
 	s_uiNodes.clear();
 	s_uiNodeLinks.clear();
+
+	// NOTE: node ID when reading existing script is made by script execution order
 
 	for (int nodeId = 0; nodeId < script.nodeDescs.numElem(); ++nodeId)
 	{
 		const SoundNodeDesc& nodeDesc = script.nodeDescs[nodeId];
 
-		const int newId = s_idGenerator++;
-		UISoundNodeDesc& uiDesc = s_uiNodes[newId];
-		uiDesc.id = newId;
+		UISoundNodeDesc& uiDesc = s_uiNodes[nodeId];
+		uiDesc.id = nodeId;
 
 		strncpy(uiDesc.name, nodeDesc.name, sizeof(uiDesc.name));
 		uiDesc.name[sizeof(uiDesc.name) - 1] = 0;
@@ -165,11 +180,10 @@ void CSoundScriptEditor::InitSoundNodesFromScriptDesc(const SoundScriptDesc& scr
 		}
 		else if (nodeDesc.type == SOUND_NODE_FUNC)
 		{
+			// convert to output as it is clearly an output
 			if (nodeDesc.func.type == SOUND_FUNC_COPY)
 			{
-				// convert to output
 				uiDesc.type = SOUND_NODE_CONST;
-				uiDesc.flags |= SOUND_NODE_FLAG_OUTPUT;
 
 				uiDesc.c.rhs = MakeAttribId(uiDesc.id, 0, 2);
 				uiDesc.c.value = 1.0f;
@@ -179,9 +193,10 @@ void CSoundScriptEditor::InitSoundNodesFromScriptDesc(const SoundScriptDesc& scr
 				{
 					uiDesc.c.lhs[i] = MakeAttribId(uiDesc.id, i, 1);
 
+					// also add links
 					uint inNodeId, inArrayIdx;
 					SoundNodeDesc::UnpackInputIdArrIdx(nodeDesc.func.inputIds[i], inNodeId, inArrayIdx);
-					s_uiNodeLinks.append({ (short)MakeAttribId(inNodeId, inArrayIdx, 2), (short)uiDesc.c.lhs[i] });
+					s_uiNodeLinks.insert(s_linkIdGenerator++, { (short)MakeAttribId(inNodeId, inArrayIdx, 2), (short)uiDesc.c.lhs[i] });
 				}
 				continue;
 			}
@@ -194,18 +209,28 @@ void CSoundScriptEditor::InitSoundNodesFromScriptDesc(const SoundScriptDesc& scr
 			{
 				uiDesc.func.lhs[i] = MakeAttribId(uiDesc.id, i, 1);
 
+				// also add links
 				uint inNodeId, inArrayIdx;
 				SoundNodeDesc::UnpackInputIdArrIdx(nodeDesc.func.inputIds[i], inNodeId, inArrayIdx);
-				s_uiNodeLinks.append({ (short)MakeAttribId(inNodeId, inArrayIdx, 2), (short)uiDesc.func.lhs[i] });
+				s_uiNodeLinks.insert(s_linkIdGenerator++, { (short)MakeAttribId(inNodeId, inArrayIdx, 2), (short)uiDesc.func.lhs[i] });
 			}
 
 			for (int i = 0; i < uiDesc.func.outputCount; ++i)
 			{
 				uiDesc.func.rhs[i] = MakeAttribId(uiDesc.id, i, 2);
 			}
+
+			// copy curve properties
+			if (nodeDesc.func.type == SOUND_FUNC_CURVE || nodeDesc.func.type == SOUND_FUNC_FADE)
+			{
+				const int curveIdx = nodeDesc.func.inputIds[1];
+				uiDesc.func.curve = script.curveDescs[curveIdx];
+			}
+
 		} // if
 	} // for
 
+	// remove "out_" prefix from output names
 	for (auto it = s_uiNodes.begin(); it != s_uiNodes.end(); ++it)
 	{
 		UISoundNodeDesc& uiNode = *it;
@@ -215,6 +240,370 @@ void CSoundScriptEditor::InitSoundNodesFromScriptDesc(const SoundScriptDesc& scr
 			memmove(uiNode.name, uiNode.name + outLen, strlen(uiNode.name) - outLen + 1);
 		}
 	}
+}
+
+void CSoundScriptEditor::SerializeToKeyValues(KVSection& out)
+{
+
+}
+
+void CSoundScriptEditor::ShowCurveEditor()
+{
+	if (!s_currentEditingCurveNode)
+		return;
+
+	SoundCurveDesc& curve = s_currentEditingCurveNode->func.curve;
+	static ImVec2 curveRangeMin(F_INFINITY, 0);
+	static ImVec2 curveRangeMax(-F_INFINITY, 0);
+	if(curveRangeMin.x >= F_INFINITY * 0.5f)
+	{
+		// auto-detect range on initialization
+		ImVec2* curvePoints = (ImVec2*)curve.values;
+		Rectangle_t rct;
+		for (int i = 0; i < curve.valueCount / 2; ++i)
+		{
+			rct.AddVertex(Vector2D(curvePoints[i].x, curvePoints[i].y));
+			rct.AddVertex(Vector2D(curvePoints[i].x, curvePoints[i].y));
+		}
+		curveRangeMin = ImVec2(rct.vleftTop.x, rct.vleftTop.y);
+		curveRangeMax = ImVec2(rct.vrightBottom.x, rct.vrightBottom.y);
+	}
+
+	bool open = true;
+	if (ImGui::Begin("Curve Editor", &open))
+	{
+		static int curveSelection = -1;
+
+		
+		ImGui::Text("Range X");
+		ImGui::PushItemWidth(150.0f);
+		ImGui::SameLine();
+		ImGui::InputFloat("##rx_min", &curveRangeMin.x, 0.1f, 0.25f, "%.2f");
+		ImGui::SameLine();
+		ImGui::InputFloat("##rx_max", &curveRangeMax.x, 0.1f, 0.25f, "%.2f");
+		ImGui::PopItemWidth();
+
+		ImGui::Text("Range Y");
+		ImGui::PushItemWidth(150.0f);
+		ImGui::SameLine();
+		ImGui::InputFloat("##ry_min", &curveRangeMin.y, 0.1f, 0.25f, "%.2f");
+		ImGui::SameLine();
+		ImGui::InputFloat("##ry_max", &curveRangeMax.y, 0.1f, 0.25f, "%.2f");
+		ImGui::PopItemWidth();
+
+		if (ImGui::Curve(s_currentEditingCurveNode->name, ImVec2(600, 200), SoundCurveDesc::MAX_CURVE_POINTS, (ImVec2*)curve.values, &curveSelection, curveRangeMin, curveRangeMax))
+		{
+			// Recalc point count
+			int pointCount = 0;
+			while (pointCount < SoundCurveDesc::MAX_CURVE_POINTS && curve.values[pointCount*2] >= curveRangeMin.x)
+				pointCount++;
+
+			curve.valueCount = pointCount * 2;
+		}
+		ImGui::End();
+	}
+
+	if (!open)
+	{
+		s_currentEditingCurveNode = nullptr;
+		curveRangeMin = ImVec2(F_INFINITY, 0);
+		curveRangeMax = ImVec2(-F_INFINITY, 0);
+	}
+}
+
+void CSoundScriptEditor::DrawNodeEditor(bool initializePositions)
+{
+	// adjust node positions
+	if (initializePositions)
+	{
+		int posCounter = 0;
+
+		int countByType[SOUND_NODE_TYPE_COUNT]{ 0 };
+		int countByFunc[SOUND_FUNC_COUNT]{ 0 };
+		for (auto it = s_uiNodes.begin(); it != s_uiNodes.end(); ++it)
+		{
+			UISoundNodeDesc& uiNode = *it;
+
+			if (countByType[uiNode.type] == 0)
+			{
+				++posCounter;
+			}
+			else
+			{
+				if (uiNode.type == SOUND_NODE_FUNC && countByFunc[uiNode.func.type] == 0)
+					++posCounter;
+			}
+
+			ImNodes::SetNodeGridSpacePos(uiNode.id, ImVec2(posCounter * 170.0f, countByType[uiNode.type] * 80.0f));
+
+			if (uiNode.type == SOUND_NODE_FUNC)
+				++countByFunc[uiNode.func.type];
+
+			++countByType[uiNode.type];
+		}
+	}
+
+	// Handle new nodes
+	// These are driven by the user, so we place this code before rendering the nodes
+	{
+		const bool open_popup = ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows) &&
+			ImNodes::IsEditorHovered() &&
+			ImGui::IsMouseClicked(1);
+
+		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(8.f, 8.f));
+		if (!ImGui::IsAnyItemHovered() && open_popup)
+		{
+			ImGui::OpenPopup("NodeContextMenu");
+		}
+
+		if (ImGui::BeginPopup("NodeContextMenu"))
+		{
+			const ImVec2 click_pos = ImGui::GetMousePosOnOpeningCurrentPopup();
+
+			// ImNodes::SetNodeScreenSpacePos(ui_node.id, click_pos);
+
+			if (ImGui::BeginMenu("Add Node"))
+			{
+				if (ImGui::MenuItem("Input"))
+				{
+
+				}
+				if (ImGui::BeginMenu("Function"))
+				{
+					for (int i = SOUND_FUNC_ADD; i < SOUND_FUNC_COUNT; ++i)
+					{
+						if (ImGui::MenuItem(s_soundFuncTypeNames[i]))
+						{
+
+						}
+					}
+					ImGui::EndMenu();
+				}
+				ImGui::EndMenu();
+			}
+
+			ImGui::Separator();
+
+			// handle links
+			{
+				const int numSelected = ImNodes::NumSelectedLinks();
+
+				if (numSelected > 0 && ImGui::MenuItem(EqString::Format("Break %d link(s)", numSelected)))
+				{
+					Array<int> selectedLinks{ PP_SL };
+					selectedLinks.setNum(numSelected);
+					ImNodes::GetSelectedLinks(selectedLinks.ptr());
+
+					for(int i = 0; i < selectedLinks.numElem(); ++i)
+						s_uiNodeLinks.remove(selectedLinks[i]);
+				}
+			}
+
+			// handle nodes
+			{
+				const int numSelected = ImNodes::NumSelectedNodes();
+
+				if (numSelected > 0 && ImGui::MenuItem(EqString::Format("Delete %d node(s)", numSelected)))
+				{
+					Array<int> selectedNodes{ PP_SL };
+					selectedNodes.setNum(numSelected);
+					ImNodes::GetSelectedNodes(selectedNodes.ptr());
+
+					
+					for (int i = 0; i < selectedNodes.numElem(); ++i)
+					{
+						const int nodeId = selectedNodes[i];
+
+						// delete links associated with node we about to delete
+						for (auto linkIt = s_uiNodeLinks.begin(); linkIt != s_uiNodeLinks.end(); ++linkIt)
+						{
+							UINodeLink& nodeLink = *linkIt;
+							if ((nodeLink.a & 31) == nodeId || (nodeLink.b & 31) == nodeId)
+							{
+								s_uiNodeLinks.remove(linkIt);
+							}
+						}
+
+						s_uiNodes.remove(nodeId);
+					}
+				}
+			}
+
+			ImGui::EndPopup();
+		}
+		ImGui::PopStyleVar();
+	}
+
+	for (auto it = s_uiNodes.begin(); it != s_uiNodes.end(); ++it)
+	{
+		UISoundNodeDesc& uiNode = *it;
+
+		const float node_width = 100.0f;
+
+		if (uiNode.type == SOUND_NODE_CONST)
+		{
+			// it is a output into the sound source
+			if (uiNode.flags & SOUND_NODE_FLAG_OUTPUT)
+			{
+				ImNodes::PushColorStyle(ImNodesCol_TitleBar, IM_COL32(11, 109, 191, 255));
+				ImNodes::PushColorStyle(ImNodesCol_TitleBarHovered, IM_COL32(45, 126, 194, 255));
+				ImNodes::PushColorStyle(ImNodesCol_TitleBarSelected, IM_COL32(81, 148, 204, 255));
+
+				ImNodes::BeginNode(uiNode.id);
+
+				ImNodes::BeginNodeTitleBar();
+				ImGui::TextUnformatted(uiNode.name);
+				ImNodes::EndNodeTitleBar();
+
+				// draw inputs
+				for (int i = 0; i < uiNode.c.inputCount; ++i)
+				{
+					EqString str = (uiNode.c.inputCount > 1) ? EqString::Format("in[%d]", i) : "in";
+
+					ImNodes::BeginInputAttribute(uiNode.c.lhs[i]);
+					const float label_width = ImGui::CalcTextSize(str).x;
+					ImGui::TextUnformatted(str);
+					if (!IsConnected(uiNode.c.lhs[i]))
+					{
+						ImGui::SameLine();
+						ImGui::PushItemWidth(node_width - label_width);
+						ImGui::DragFloat("##hidelabel", &uiNode.c.value, 0.01f);
+						ImGui::PopItemWidth();
+					}
+					ImNodes::EndInputAttribute();
+				}
+
+				ImNodes::EndNode();
+
+				ImNodes::PopColorStyle();
+				ImNodes::PopColorStyle();
+				ImNodes::PopColorStyle();
+			}
+		}
+		else if (uiNode.type == SOUND_NODE_INPUT)
+		{
+			ImNodes::BeginNode(uiNode.id);
+
+			ImNodes::BeginNodeTitleBar();
+			ImGui::SetNextItemWidth(node_width);
+			ImGui::InputText("##hid", uiNode.name, sizeof(uiNode.name));
+			ImNodes::EndNodeTitleBar();
+
+			for (int i = 0; i < uiNode.input.valueCount; ++i)
+			{
+				EqString str = (uiNode.input.valueCount > 1) ? EqString::Format("out[%d]", i) : "out";
+
+				ImNodes::BeginOutputAttribute(uiNode.input.rhs[i]);
+				const float label_width = ImGui::CalcTextSize(str).x;
+				ImGui::Indent(node_width - label_width);
+
+				ImGui::TextUnformatted(str);
+
+				ImNodes::EndOutputAttribute();
+			}
+
+			ImNodes::EndNode();
+		}
+		else if (uiNode.type == SOUND_NODE_FUNC)
+		{
+			ImNodes::PushColorStyle(ImNodesCol_TitleBar, IM_COL32(255, 109, 72, 255));
+			ImNodes::PushColorStyle(ImNodesCol_TitleBarHovered, IM_COL32(255, 126, 72, 255));
+			ImNodes::PushColorStyle(ImNodesCol_TitleBarSelected, IM_COL32(255, 148, 72, 255));
+
+			ImNodes::BeginNode(uiNode.id);
+
+			ImNodes::BeginNodeTitleBar();
+			ImGui::TextUnformatted(s_soundFuncTypeNames[uiNode.func.type]);
+			ImNodes::EndNodeTitleBar();
+
+			// draw inputs
+			for (int i = 0; i < uiNode.func.inputCount; ++i)
+			{
+				EqString str = (uiNode.func.inputCount > 1) ? EqString::Format("in[%d]", i) : "in";
+
+				ImNodes::BeginInputAttribute(uiNode.func.lhs[i]);
+				const float label_width = ImGui::CalcTextSize(str).x;
+				ImGui::TextUnformatted(str);
+				if (!IsConnected(uiNode.func.lhs[i]))
+				{
+					ImGui::SameLine();
+					ImGui::PushItemWidth(node_width - label_width);
+					ImGui::DragFloat("##hidelabel", &uiNode.c.value, 0.01f);
+					ImGui::PopItemWidth();
+				}
+				ImNodes::EndInputAttribute();
+			}
+
+			// draw curve if it's curve
+			if (uiNode.func.type == SOUND_FUNC_CURVE || uiNode.func.type == SOUND_FUNC_FADE)
+			{
+				SoundCurveDesc& curve = uiNode.func.curve;
+				ImVec2* curvePoints = (ImVec2*)curve.values;
+				Rectangle_t rct;
+				for (int i = 0; i < curve.valueCount / 2; ++i)
+				{
+					rct.AddVertex(Vector2D(curvePoints[i].x, curvePoints[i].y + 0.25f));
+					rct.AddVertex(Vector2D(curvePoints[i].x, curvePoints[i].y - 0.25f));
+				}
+
+				ImVec2 curveRangeMin(rct.vleftTop.x, rct.vleftTop.y);
+				ImVec2 curveRangeMax(rct.vrightBottom.x, rct.vrightBottom.y);
+				if (ImGui::CurveFrame(uiNode.name, ImVec2(120, 50), 10, curvePoints, curveRangeMin, curveRangeMax))
+				{
+					s_currentEditingCurveNode = &uiNode;
+				}
+			}
+
+			// draw outputs
+			for (int i = 0; i < uiNode.func.outputCount; ++i)
+			{
+				EqString str = (uiNode.func.outputCount > 1) ? EqString::Format("out[%d]", i) : "out";
+
+				{
+					ImNodes::BeginOutputAttribute(uiNode.func.rhs[i]);
+					const float label_width = ImGui::CalcTextSize(str).x;
+					ImGui::Indent(node_width - label_width);
+					ImGui::TextUnformatted(str);
+					ImNodes::EndOutputAttribute();
+				}
+			}
+
+			ImNodes::EndNode();
+
+			ImNodes::PopColorStyle();
+			ImNodes::PopColorStyle();
+			ImNodes::PopColorStyle();
+		}
+	}
+
+	// link nodes
+	for (auto it = s_uiNodeLinks.begin(); it != s_uiNodeLinks.end(); ++it)
+	{
+		const UINodeLink linkVal = *it;
+		ImNodes::Link(it.key(), linkVal.a, linkVal.b);
+	}
+
+	ImNodes::EndNodeEditor();
+
+	// process events
+
+	{
+		int start_attr, end_attr;
+		if (ImNodes::IsLinkCreated(&start_attr, &end_attr))
+		{
+			s_uiNodeLinks.insert(s_linkIdGenerator++, { (short)start_attr, (short)end_attr });
+		}
+	}
+
+	{
+		int link_id;
+		if (ImNodes::IsLinkDestroyed(&link_id))
+		{
+			s_uiNodeLinks.remove(link_id);
+		}
+	}
+
+	ShowCurveEditor();
 }
 
 void CSoundScriptEditor::DrawScriptEditor(bool& open)
@@ -243,24 +632,32 @@ void CSoundScriptEditor::DrawScriptEditor(bool& open)
 
 		static int curSelection = 0;
 		ImGui::SetNextItemWidth(300);
-		ImGui::Combo("Sound script", &curSelection, SoundScriptDescTextGetter, &allSounds, allSounds.numElem());
+		ImGui::Combo("Script", &curSelection, SoundScriptDescTextGetter, &allSounds, allSounds.numElem());
 
 		// show sound script properties
-		if (allSounds.numElem() > 0 && curSelection != -1)
+		if (allSounds.inRange(curSelection))
 		{
-			SoundScriptDesc& script = *allSounds[curSelection];
-
+			SoundScriptDesc* selectedScript = allSounds[curSelection];
 			static bool justChanged = false;
 
-			if (s_currentSelection != &script)
+			if (s_currentSelection != selectedScript)
 			{
 				// TODO: prompt to save unsaved settings!!!
-				s_currentSelection = &script;
-				InitSoundNodesFromScriptDesc(script);
+				s_currentSelection = selectedScript;
+				InitNodesFromScriptDesc(*selectedScript);
 				justChanged = true;
 			}
 
-			static CSoundingObject soundTest;// TODO: isolate to chose currently playing sounding object from list
+			struct EmitPair
+			{
+				int objId;
+				int emitId;
+				CSoundingObject* obj;
+				SoundEmitterData* emitter;
+			};
+
+			static CSoundingObject soundTest;
+			static EmitPair currentEmit{ 0, 0, &soundTest, nullptr };
 			static bool isolateSound = false;
 
 			static float playbackPitch = 1.0f;
@@ -268,44 +665,103 @@ void CSoundScriptEditor::DrawScriptEditor(bool& open)
 
 			// playback controls
 			{
-				ImGui::Checkbox("Isolate", &isolateSound);
-
-				ImGui::SameLine();
+				ImGui::Separator();
 
 				if (ImGui::Button("Play"))
 				{
-					if (soundTest.GetEmitterState(0) == IEqAudioSource::STOPPED)
+					if (currentEmit.obj->GetEmitterState(0) == IEqAudioSource::STOPPED)
 					{
-						EmitParams snd(script.name);
+						EmitParams snd(selectedScript->name);
 						snd.flags |= EMITSOUND_FLAG_FORCE_CACHED | EMITSOUND_FLAG_FORCE_2D;
 
-						soundTest.EmitSound(0, &snd);
+						currentEmit.obj->EmitSound(currentEmit.emitId, &snd);
 					}
 
-					soundTest.PlayEmitter(0);
+					currentEmit.obj->PlayEmitter(currentEmit.emitId);
 				}
 
 				ImGui::SameLine();
 				if (ImGui::Button("Pause"))
-					soundTest.PauseEmitter(0);
+					currentEmit.obj->PauseEmitter(currentEmit.emitId);
 
 				ImGui::SameLine();
 				if (ImGui::Button("Stop"))
-					soundTest.StopEmitter(0, true);
+					currentEmit.obj->StopEmitter(currentEmit.emitId);
+				ImGui::SameLine();
+
+				ImGui::Checkbox("Isolate", &isolateSound);
 
 				ImGui::SameLine();
-				ImGui::Spacing(); ImGui::SameLine();
 
-				ImGui::Separator();
+				// collect instance list
+				// and also validate selection
+				static int currentEmitterIdx = -1;
+				Array<EmitPair> emittersPlaying{ PP_SL };
+				{
+					bool isValidEmitter = false;
+					int objId = 0;
+					for (auto sObjIt = g_sounds->m_soundingObjects.begin(); sObjIt != g_sounds->m_soundingObjects.end(); ++sObjIt, ++objId)
+					{
+						CSoundingObject* sObj = sObjIt.key();
+						for (auto emitterIt = sObj->m_emitters.begin(); emitterIt != sObj->m_emitters.end(); ++emitterIt)
+						{
+							if (selectedScript != (*emitterIt)->script)
+								continue;
+
+							if (currentEmit.emitter && currentEmit.emitter == *emitterIt)
+							{
+								currentEmitterIdx = emittersPlaying.numElem();
+								isValidEmitter = true;
+							}
+
+							emittersPlaying.append({ objId, emitterIt.key(), sObj, *emitterIt });
+						}
+					}
+
+					if (!isValidEmitter)
+					{
+						currentEmit.objId = 0;
+						currentEmit.emitId = 0;
+						currentEmit.obj = &soundTest;
+						currentEmit.emitter = nullptr;
+
+						currentEmitterIdx = -1;
+					}
+				}
+
+				auto GetEmitterFriendlyName = [](EmitPair& emit) {
+					return EqString::Format("[%d-%x] %s", emit.objId, emit.emitId, emit.emitter->script->name.ToCString());
+				};
+				
+				ImGui::SetNextItemWidth(210);
+				if (ImGui::BeginCombo("Display instance", currentEmitterIdx == -1 ? "<debug one>" : GetEmitterFriendlyName(emittersPlaying[currentEmitterIdx])))
+				{
+					ImGui::PushID("ed_inputs");
+					for (int row = 0; row < emittersPlaying.numElem(); ++row)
+					{
+						// Draw our contents
+						static float dummy_f = 0.0f;
+						ImGui::PushID(row);
+						if (ImGui::Selectable(GetEmitterFriendlyName(emittersPlaying[row]), false, 0, ImVec2(180, 0)))
+						{
+							currentEmit = emittersPlaying[row];
+							currentEmitterIdx = row;
+						}
+
+						ImGui::PopID();
+					}
+					ImGui::PopID();
+					ImGui::EndCombo();
+				}
 			}
 
-			g_sounds->m_isolateSound = isolateSound ? &script : nullptr;
+			g_sounds->m_isolateSound = isolateSound ? selectedScript : nullptr;
 
 			ImGui::Separator();
 
 			if (ImGui::BeginTabBar("##tab"))
 			{
-				if (ImGui::BeginTabItem("Script parameters"))
+				if (ImGui::BeginTabItem("Parameters"))
 				{
 					bool modified = false;
 
@@ -319,53 +775,84 @@ void CSoundScriptEditor::DrawScriptEditor(bool& open)
 						// TODO:
 					}
 
-					/*
-					modified = ImGui::SliderFloat("Volume##script_volume", &script.volume, 0.0f, 1.0f, "%.2f", 1.0f) || modified;
-					modified = ImGui::SliderFloat("Pitch##script_pitch", &script.pitch, 0.01f, 4.0f, "%.2f", 1.0f) || modified;
 					ImGui::Separator();
-					modified = ImGui::SliderFloat("Attenuation##script_atten", &script.atten, 0.01f, 10.0f, "%.2f", 1.0f) || modified;
-					modified = ImGui::SliderFloat("Rolloff##script_rolloff", &script.rolloff, 0.01f, 4.0f, "%.2f", 1.0f) || modified;
-					ImGui::Separator();*/
-					modified = ImGui::SliderFloat("Max Distance##script_maxDistance", &script.maxDistance, 10.0f, 200.0f, "%.2f", 1.0f) || modified;
-					
+
+					ImGui::Text("Sound filenames");
+					ImGui::PushID("sound_names");
+					for (int i = 0; i < selectedScript->soundFileNames.numElem(); ++i)
+					{
+						EqString& name = selectedScript->soundFileNames[i];
+						char nameStrBuffer[128];
+						strncpy(nameStrBuffer, name, sizeof(nameStrBuffer));
+						nameStrBuffer[sizeof(nameStrBuffer)-1] = 0;
+
+						ImGui::PushID(i);
+						if (ImGui::InputText("##v", nameStrBuffer, sizeof(nameStrBuffer)))
+							name.Assign(nameStrBuffer);
+						ImGui::SameLine();
+
+						if (ImGui::SmallButton("del"))
+							selectedScript->soundFileNames.removeIndex(i--);
+
+						ImGui::PopID();
+					}
+					ImGui::PopID();
+					if (ImGui::Button("Add Sound"))
+						selectedScript->soundFileNames.append("sound-file-name.wav");
+
+					bool scriptLoop = selectedScript->loop;
+					bool scriptIs2D = selectedScript->is2d;
+					bool scriptRandomSample = selectedScript->randomSample;
+					modified = ImGui::Checkbox("Randomized sample##script_rndWave", &scriptRandomSample) || modified;
+					ImGui::Separator();
+
+					modified = ImGui::Checkbox("Loop##script_loop", &scriptLoop) || modified;
+					ImGui::SameLine();
+					modified = ImGui::Checkbox("Is 2D##script_is2d", &scriptIs2D) || modified;
+
+					ImGui::PushItemWidth(300.0f);
+					modified = ImGui::SliderFloat("Max Distance##script_maxDistance", &selectedScript->maxDistance, 10.0f, 200.0f, "%.2f", 1.0f) || modified;
+
+					ImGui::PushID("paramIds");
+					for (int paramId = 0; paramId < SOUND_PARAM_SAMPLE_VOLUME; ++paramId)
+					{
+						const uint8 nodeId = selectedScript->paramNodeMap[paramId];
+						SoundNodeDesc& desc = selectedScript->nodeDescs[nodeId];
+						if (desc.type != SOUND_NODE_CONST)
+							continue;
+
+						ImGui::PushID(paramId);
+						modified = ImGui::SliderFloat(s_soundParamNames[paramId], &desc.c.value, 0.0f, s_soundParamLimits[paramId], "%.3f", 1.0f) || modified;
+						ImGui::PopID();
+					}
+					ImGui::PopItemWidth();
+					ImGui::PopID();
+
 					if (modified)
-						g_sounds->RestartEmittersByScript(&script);
+					{
+						selectedScript->randomSample = scriptRandomSample;
+						selectedScript->loop = scriptLoop;
+						selectedScript->is2d = scriptIs2D;
+						g_sounds->RestartEmittersByScript(selectedScript);
+					}
 
 					ImGui::EndTabItem();
 				}
 
-				static char inputNames[][64] = {
-					"tractionSlide",
-					"lateralSlide"
-				};
-
-				static char mixerNames[][64] = {
-					"pitch",
-					"volume",
-					"fade"
-				};
-
-				static ImVec2 mixerCurves[elementsOf(inputNames)][10];
-
-				static bool init = false;
-				if (!init)
-				{
-					// init data so editor knows to take it from here
-					mixerCurves[0][0].x = ImGui::CurveTerminator;
-					mixerCurves[1][0].x = ImGui::CurveTerminator;
-				}
-				init = true;
-
 				if (ImGui::BeginTabItem("Playback"))
 				{
-					if (soundTest.GetEmitterState(0) != IEqAudioSource::STOPPED)
+					if (currentEmit.obj->GetEmitterState(currentEmit.emitId) != IEqAudioSource::STOPPED)
 					{
-						SoundEmitterData* emitter = soundTest.m_emitters[0];
+						SoundEmitterData* emitter = currentEmit.obj->m_emitters[currentEmit.emitId];
 
 						IEqAudioSource* src = emitter->soundSource;
 						if (src)
 						{
-							// TODO: inputs here
+							// inputs here
+							{
+								playbackPitch = emitter->epPitch;
+								playbackVolume = emitter->epVolume;
+							}
 
 							bool modified = false;
 							{
@@ -395,16 +882,19 @@ void CSoundScriptEditor::DrawScriptEditor(bool& open)
 								ImGui::SameLine();
 
 								float sampleVolume = src->GetSampleVolume(i);
-								ImGui::VSliderFloat(EqString::Format("%d##smpl%dv", i + 1, i), ImVec2(18, 160), &sampleVolume, 0.0f, 1.0f, "");
+								if (ImGui::VSliderFloat(EqString::Format("%d##smpl%dv", i + 1, i), ImVec2(18, 160), &sampleVolume, 0.0f, 1.0f, ""))
+								{
+									src->SetSampleVolume(i, sampleVolume);
+								}
 								if (ImGui::IsItemActive() || ImGui::IsItemHovered())
 									ImGui::SetTooltip("Sample %d volume %.3f", i + 1, sampleVolume);
-								src->SetSampleVolume(i, sampleVolume);
+								
 							}
 
 							if (modified)
 							{
-								soundTest.SetVolume(emitter, playbackVolume);
-								soundTest.SetPitch(emitter, playbackPitch);
+								currentEmit.obj->SetVolume(emitter, playbackVolume);
+								currentEmit.obj->SetPitch(emitter, playbackPitch);
 							}
 
 							ImGui::SameLine();
@@ -414,23 +904,38 @@ void CSoundScriptEditor::DrawScriptEditor(bool& open)
 								ImGui::TableSetupColumn("name");
 								ImGui::TableSetupColumn("value");
 
-								ImGui::PushID("s_inputs");
-								for (int row = 0; row < elementsOf(inputNames); ++row)
+								ImGui::PushID("inputs");
+								Array<SoundNodeDesc>& nodeDescs = selectedScript->nodeDescs;
+								for (int nodeId = 0; nodeId < nodeDescs.numElem(); ++nodeId)
 								{
-									ImGui::TableNextRow();
+									SoundNodeDesc& desc = selectedScript->nodeDescs[nodeId];
+									if (desc.type != SOUND_NODE_INPUT)
+										continue;
 
-									// Draw our contents
-									static float dummy_f = 0.0f;
-									ImGui::PushID(row);
-									ImGui::TableSetColumnIndex(0);
-									ImGui::Text(inputNames[row]);
-									ImGui::TableSetColumnIndex(1);
+									ImGui::PushID(nodeId);
 
-									ImGui::SliderFloat("##v", &dummy_f, 0.0f, 1.0f);
+									for (int i = 0; i < desc.input.valueCount; ++i)
+									{
+										ImGui::TableNextRow();
+										ImGui::PushID(i);
+
+										ImGui::TableSetColumnIndex(0);
+										ImGui::Text(desc.name);
+										ImGui::TableSetColumnIndex(1);
+
+										float inputVal = emitter->GetInputValue(nodeId, i);
+										if (ImGui::SliderFloat("##v", &inputVal, desc.input.rMin, desc.input.rMax, "%.3f", 1.0f))
+										{
+											uint8 inputId = SoundNodeDesc::PackInputIdArrIdx(nodeId, i);
+											emitter->SetInputValue(inputId, inputVal);
+										}
+										ImGui::PopID();
+									}
 
 									ImGui::PopID();
 								}
 								ImGui::PopID();
+
 								ImGui::EndTable();
 							}
 						}
@@ -445,298 +950,11 @@ void CSoundScriptEditor::DrawScriptEditor(bool& open)
 				{
 					ImNodes::BeginNodeEditor();
 
-					int posCounter = 0;
-					for (auto it = s_uiNodes.begin(); it != s_uiNodes.end(); ++it)
-					{
-						UISoundNodeDesc& uiNode = *it;
-
-						const float node_width = 100.0f;
-
-						if (uiNode.type == SOUND_NODE_CONST)
-						{
-							// it is a output into the sound source
-							if (uiNode.flags & SOUND_NODE_FLAG_OUTPUT)
-							{
-								ImNodes::PushColorStyle(ImNodesCol_TitleBar, IM_COL32(11, 109, 191, 255));
-								ImNodes::PushColorStyle(ImNodesCol_TitleBarHovered, IM_COL32(45, 126, 194, 255));
-								ImNodes::PushColorStyle(ImNodesCol_TitleBarSelected, IM_COL32(81, 148, 204, 255));
-
-								ImNodes::BeginNode(uiNode.id);
-
-								ImNodes::BeginNodeTitleBar();
-								ImGui::TextUnformatted(uiNode.name);
-								ImNodes::EndNodeTitleBar();
-
-								// draw inputs
-								for (int i = 0; i < uiNode.c.inputCount; ++i)
-								{
-									EqString str = (uiNode.c.inputCount > 1) ? EqString::Format("in[%d]", i) : "in";
-
-									ImNodes::BeginInputAttribute(uiNode.c.lhs[i]);
-									const float label_width = ImGui::CalcTextSize(str).x;
-									ImGui::TextUnformatted(str);
-									if (!IsConnected(uiNode.c.lhs[i]))
-									{
-										ImGui::SameLine();
-										ImGui::PushItemWidth(node_width - label_width);
-										ImGui::DragFloat("##hidelabel", &uiNode.c.value, 0.01f);
-										ImGui::PopItemWidth();
-									}
-									ImNodes::EndInputAttribute();
-								}
-
-								ImNodes::EndNode();
-
-								ImNodes::PopColorStyle();
-								ImNodes::PopColorStyle();
-								ImNodes::PopColorStyle();
-							}
-						}
-						else if (uiNode.type == SOUND_NODE_INPUT)
-						{
-							ImNodes::BeginNode(uiNode.id);
-
-							ImNodes::BeginNodeTitleBar();
-							ImGui::SetNextItemWidth(node_width);
-							ImGui::InputText("##hid", uiNode.name, sizeof(uiNode.name));
-							ImNodes::EndNodeTitleBar();
-
-							for (int i = 0; i < uiNode.input.valueCount; ++i)
-							{
-								EqString str = (uiNode.input.valueCount > 1) ? EqString::Format("out[%d]", i) : "out";
-
-								ImNodes::BeginOutputAttribute(uiNode.input.rhs[i]);
-								const float label_width = ImGui::CalcTextSize(str).x;
-								ImGui::Indent(node_width - label_width);
-
-								ImGui::TextUnformatted(str);
-
-								ImNodes::EndOutputAttribute();
-							}
-
-							ImNodes::EndNode();
-						}
-						else if (uiNode.type == SOUND_NODE_FUNC)
-						{
-							ImNodes::PushColorStyle(ImNodesCol_TitleBar, IM_COL32(255, 109, 72, 255));
-							ImNodes::PushColorStyle(ImNodesCol_TitleBarHovered, IM_COL32(255, 126, 72, 255));
-							ImNodes::PushColorStyle(ImNodesCol_TitleBarSelected, IM_COL32(255, 148, 72, 255));
-
-							ImNodes::BeginNode(uiNode.id);
-
-							ImNodes::BeginNodeTitleBar();
-							ImGui::TextUnformatted(s_soundFuncTypeNames[uiNode.func.type]);
-							ImNodes::EndNodeTitleBar();
-
-							// draw inputs
-							for (int i = 0; i < uiNode.func.inputCount; ++i)
-							{
-								EqString str = (uiNode.func.inputCount > 1) ? EqString::Format("in[%d]", i) : "in";
-
-								ImNodes::BeginInputAttribute(uiNode.func.lhs[i]);
-								const float label_width = ImGui::CalcTextSize(str).x;
-								ImGui::TextUnformatted(str);
-								if (!IsConnected(uiNode.func.lhs[i]))
-								{
-									ImGui::SameLine();
-									ImGui::PushItemWidth(node_width - label_width);
-									ImGui::DragFloat("##hidelabel", &uiNode.c.value, 0.01f);
-									ImGui::PopItemWidth();
-								}
-								ImNodes::EndInputAttribute();
-							}
-
-							// draw outputs
-							for (int i = 0; i < uiNode.func.outputCount; ++i)
-							{
-								EqString str = (uiNode.func.outputCount > 1) ? EqString::Format("out[%d]", i) : "out";
-
-								{
-									ImNodes::BeginOutputAttribute(uiNode.func.rhs[i]);
-									const float label_width = ImGui::CalcTextSize(str).x;
-									ImGui::Indent(node_width - label_width);
-									ImGui::TextUnformatted(str);
-									ImNodes::EndOutputAttribute();
-								}
-							}
-
-							ImNodes::EndNode();
-
-							ImNodes::PopColorStyle();
-							ImNodes::PopColorStyle();
-							ImNodes::PopColorStyle();
-						}
-					}
-
-					// link nodes
-					for (int i = 0; i < s_uiNodeLinks.numElem(); ++i)
-					{
-						const UINodeLink linkVal = s_uiNodeLinks[i];
-						ImNodes::Link(i, linkVal.a, linkVal.b);
-					}
-
-					ImNodes::EndNodeEditor();
-
-					int start_attr, end_attr;
-					if (ImNodes::IsLinkCreated(&start_attr, &end_attr))
-					{
-						//links.push_back(std::make_pair(start_attr, end_attr));
-					}
-
-					// adjust node positions
-					if (justChanged)
-					{
-						int countByType[SOUND_NODE_TYPE_COUNT]{ 0 };
-						int countByFunc[SOUND_FUNC_COUNT]{ 0 };
-						for (auto it = s_uiNodes.begin(); it != s_uiNodes.end(); ++it)
-						{
-							UISoundNodeDesc& uiNode = *it;
-
-							if (countByType[uiNode.type] == 0)
-							{
-								++posCounter;
-							}
-							else
-							{
-								if (uiNode.type == SOUND_NODE_FUNC && countByFunc[uiNode.func.type] == 0)
-									++posCounter;
-							}
-
-							ImNodes::SetNodeGridSpacePos(uiNode.id, ImVec2(posCounter * 150.0f, countByType[uiNode.type] * 80.0f));
-
-							if (uiNode.type == SOUND_NODE_FUNC)
-								++countByFunc[uiNode.func.type];
-
-							++countByType[uiNode.type];
-						}
-
-						justChanged = false;
-					}
+					DrawNodeEditor(justChanged);
+					justChanged = false;
 
 					ImGui::EndTabItem();
 				}
-#if 0
-				if (ImGui::BeginTabItem("Automation Inputs"))
-				{
-					if (ImGui::Button("Add##add_input"))
-					{
-
-					}
-					ImGui::SameLine();
-					static int currentInput = -1;
-					ImGui::SetNextItemWidth(210);
-					if (ImGui::BeginCombo("Inputs", currentInput == -1 ? "-" : inputNames[currentInput]))
-					{
-						ImGui::PushID("ed_inputs");
-						for (int row = 0; row < elementsOf(inputNames); ++row)
-						{
-							// Draw our contents
-							static float dummy_f = 0.0f;
-							ImGui::PushID(row);
-							if (ImGui::Selectable(inputNames[row], false, 0, ImVec2(180, 0)))
-							{
-								currentInput = row;
-							}
-							ImGui::SameLine();
-							ImGui::Text("%.2f - %.2f", 0.1f, 2.5f);
-							ImGui::SameLine();
-							if (ImGui::SmallButton("Del"))
-							{
-
-							}
-
-							ImGui::PopID();
-						}
-						ImGui::PopID();
-						ImGui::EndCombo();
-					}
-
-					ImGui::Separator();
-
-					if (currentInput != -1)
-					{
-						ImGui::InputText("Name", inputNames[currentInput], sizeof(inputNames[currentInput]));
-						static float rangeMin = 0.1f;
-						static float rangeMax = 1.1f;
-						ImGui::SetNextItemWidth(180);
-						ImGui::InputFloat("Range Min##range_min", &rangeMin, 0.1f, 1.0f, "%.2f");
-						ImGui::SameLine();
-						ImGui::SetNextItemWidth(180);
-						ImGui::InputFloat("Max##range_max", &rangeMax, 0.1f, 1.0f, "%.2f");
-					}
-					ImGui::EndTabItem();
-				}
-
-				if (ImGui::BeginTabItem("Automation Mixers"))
-				{
-					if (ImGui::Button("Add##add_mixer"))
-					{
-
-					}
-
-					ImGui::SameLine();
-					static int currentMixer = -1;
-					ImGui::SetNextItemWidth(210);
-					if (ImGui::BeginCombo("Mixers", currentMixer == -1 ? "-" : mixerNames[currentMixer]))
-					{
-						ImGui::PushID("ed_mixers");
-						for (int row = 0; row < elementsOf(mixerNames); ++row)
-						{
-							// Draw our contents
-							static float dummy_f = 0.0f;
-							ImGui::PushID(row);
-							if (ImGui::Selectable(mixerNames[row], false, 0, ImVec2(180, 0)))
-							{
-								currentMixer = row;
-							}
-							ImGui::SameLine();
-							ImGui::Text("add");
-							ImGui::SameLine();
-							if (ImGui::SmallButton("Del"))
-							{
-
-							}
-
-							ImGui::PopID();
-						}
-						ImGui::PopID();
-						ImGui::EndCombo();
-					}
-
-					ImGui::Separator();
-
-					if (currentMixer != -1)
-					{
-						ImGui::SetNextItemWidth(180);
-						ImGui::InputText("Name", mixerNames[currentMixer], sizeof(mixerNames[currentMixer]));
-
-						const char* mixMethods[] = {
-							"add", "sub", "mul", "div", "min", "max", "average"
-						};
-
-						ImGui::SameLine();
-						ImGui::SetNextItemWidth(180);
-						static int methodIdx = 0;
-						ImGui::Combo("Method", &methodIdx, mixMethods, elementsOf(mixMethods));
-
-						static int selections[elementsOf(inputNames)] = { -1, -1 };
-
-						for (int i = 0; i < elementsOf(inputNames); ++i)
-						{
-							ImVec2 minRange(0.0f, 0.0f);
-							ImVec2 maxRange(4.0f, 2.0f);
-
-							if (ImGui::Curve(inputNames[i], ImVec2(600, 80), 10, mixerCurves[i], &selections[i], minRange, maxRange))
-							{
-								// curve changed
-
-							}
-						}
-					}
-
-					ImGui::EndTabItem();
-				}
-#endif
 				ImGui::EndTabBar();
 			}
 		}

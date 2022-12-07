@@ -156,7 +156,7 @@ struct SoundCurveDesc
 {
 	static constexpr const int MAX_CURVE_POINTS = 10;
 	float	values[MAX_CURVE_POINTS * 2];	// for curve
-	uint8	valueCount;
+	uint8	valueCount; // divide by two pls
 };
 
 enum ESoundNodeFlags
