@@ -21,7 +21,6 @@
 #include "eqSoundEmitterObject.h"
 #include "eqSoundEmitterSystem.h"
 
-
 #define SOUND_DEFAULT_PATH		"sounds/"
 
 static CSoundEmitterSystem s_ses;
@@ -389,12 +388,13 @@ void CSoundEmitterSystem::StopAllSounds()
 int CSoundEmitterSystem::EmitterUpdateCallback(void* obj, IEqAudioSource::Params& params)
 {
 	SoundEmitterData* emitter = (SoundEmitterData*)obj;
-	const CSoundingObject* soundingObj = emitter->soundingObj;
+	CSoundingObject* soundingObj = emitter->soundingObj;
 
 	IEqAudioSource::Params& virtualParams = emitter->virtualParams;
 	IEqAudioSource::Params& nodeParams = emitter->nodeParams;
 
-	float sampleVolume[MAX_SOUND_SAMPLES_SCRIPT];
+	float sampleVolume[MAX_SOUND_SAMPLES_SCRIPT]{ -1.0f };
+	nodeParams.updateFlags = 0;
 	emitter->UpdateNodes(nodeParams, sampleVolume);
 
 	// update virtual params
@@ -413,7 +413,16 @@ int CSoundEmitterSystem::EmitterUpdateCallback(void* obj, IEqAudioSource::Params
 	if (nodeParams.updateFlags & IEqAudioSource::UPDATE_AIRABSORPTION)
 		virtualParams.set_airAbsorption(nodeParams.airAbsorption);
 
-	params.set_volume(virtualParams.volume * soundingObj->GetSoundVolumeScale());
+	soundingObj->RecalcParameters(emitter, params, nodeParams.updateFlags);
+
+	// update samples volume if they were
+	if (sampleVolume[0] >= 0.0f)
+	{
+		IEqAudioSource* soundSource = emitter->soundSource;
+		for (int i = 0; i < soundSource->GetSampleCount(); ++i)
+			soundSource->SetSampleVolume(i, sampleVolume[i]);
+	}
+
 	virtualParams.state = params.state;
 
 	if (!params.relative)

@@ -78,6 +78,7 @@ protected:
 
 	void		SetSampleVolume(SoundEmitterData* emitter, int waveId, float volume);
 	void		SetParams(SoundEmitterData* emitter, const IEqAudioSource::Params& params);
+	void		RecalcParameters(SoundEmitterData* emitter, IEqAudioSource::Params& outParams, int updateFlags);
 
 	bool		UpdateEmitters(const Vector3D& listenerPos);
 	void		StopFirstEmitterByChannel(int chan);

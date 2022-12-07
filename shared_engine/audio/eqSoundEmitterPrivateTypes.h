@@ -65,10 +65,6 @@ enum ESoundParamType : int
 	SOUND_PARAM_SAMPLE_VOLUME,
 
 	SOUND_PARAM_COUNT,
-
-	SOUND_PARAM_SAMPLE_VOLUME_LAST = SOUND_PARAM_SAMPLE_VOLUME + MAX_SOUND_SAMPLES_SCRIPT,
-
-	SOUND_PARAM_ALL_COUNT
 };
 
 static const char* s_soundParamNames[] = {
@@ -91,6 +87,18 @@ static float s_soundParamDefaults[] = {
 	0.0f,
 	1.0f,
 	1.0f,
+	1.0f,
+};
+static_assert(elementsOf(s_soundParamNames) == SOUND_PARAM_COUNT, "s_soundParamNames and SOUND_PARAM_COUNT needs to be in sync");
+
+static float s_soundParamLimits[] = {
+	1.0f,
+	8.0f,
+	1.0f,
+	1.0f,
+	1.0f,
+	8.0f,
+	10.0f,
 	1.0f,
 };
 static_assert(elementsOf(s_soundParamNames) == SOUND_PARAM_COUNT, "s_soundParamNames and SOUND_PARAM_COUNT needs to be in sync");
@@ -210,7 +218,7 @@ struct SoundScriptDesc
 
 	Array<SoundNodeDesc>	nodeDescs{ PP_SL };
 	Array<SoundCurveDesc>	curveDescs{ PP_SL };
-	uint8					paramNodeMap[SOUND_PARAM_ALL_COUNT];
+	uint8					paramNodeMap[SOUND_PARAM_COUNT];
 	Map<int, int>			inputNodeMap{ PP_SL };
 
 	int			channelType{ CHAN_INVALID };
@@ -229,7 +237,7 @@ struct SoundEmitterData
 {
 	IEqAudioSource::Params		nodeParams;
 	IEqAudioSource::Params		virtualParams;
-	float						params[SOUND_PARAM_ALL_COUNT];
+	float						params[SOUND_PARAM_COUNT];
 
 	Map<int, SoundNodeInput>	inputs{ PP_SL };
 

@@ -528,6 +528,32 @@ void CSoundingObject::SetParams(SoundEmitterData* emitter, const IEqAudioSource:
 		emitter->soundSource->UpdateParams(param);
 }
 
+void CSoundingObject::RecalcParameters(SoundEmitterData* emitter, IEqAudioSource::Params& outParams, int updateFlags)
+{
+	if (!emitter)
+		return;
+
+	IEqAudioSource::Params& nodeParams = emitter->nodeParams;
+	IEqAudioSource::Params& virtualParams = emitter->virtualParams;
+
+	// update pitch and volume individually
+	if (updateFlags & IEqAudioSource::UPDATE_VOLUME)
+	{
+		const float finalVolume = nodeParams.volume * emitter->epVolume;
+		emitter->virtualParams.set_volume(finalVolume);
+
+		outParams.set_volume(finalVolume * GetSoundVolumeScale());
+	}
+
+	if (updateFlags & IEqAudioSource::UPDATE_PITCH)
+	{
+		const float finalPitch = nodeParams.pitch * emitter->epPitch;
+		emitter->virtualParams.set_pitch(finalPitch);
+
+		outParams.set_pitch(finalPitch);
+	}
+}
+
 //----------------------------------------
 
 CEmitterObjectSound::CEmitterObjectSound(CSoundingObject& soundingObj, int uniqueId)
