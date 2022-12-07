@@ -510,10 +510,85 @@ static inline ImVec2 ImRemap(const ImVec2& v, const ImVec2& a, const ImVec2& b, 
     return ImVec2(ImRemap(v.x, a.x, b.x, c.x, d.x), ImRemap(v.y, a.y, b.y, c.y, d.y));
 }
 
+bool CurveFrame(const char* label, const ImVec2& size, const int maxpoints, ImVec2* points, const ImVec2& rangeMin = ImVec2(0, 0), const ImVec2& rangeMax = ImVec2(1, 1))
+{
+    if (maxpoints < 2 || points == nullptr)
+        return false;
+
+    if (points[0].x <= CurveTerminator)
+    {
+        points[0] = rangeMin;
+        points[1] = rangeMax;
+        points[2].x = CurveTerminator;
+    }
+
+    ImGuiWindow* window = GetCurrentWindow();
+    ImGuiContext& g = *GImGui;
+
+    const ImGuiID id = window->GetID(label);
+    if (window->SkipItems)
+        return 0;
+
+    ImRect bb(window->DC.CursorPos, window->DC.CursorPos + size);
+
+    ItemSize(bb);
+    if (!ItemAdd(bb, NULL))
+        return 0;
+
+    PushID(label);
+
+    const bool hovered = ImGui::ItemHoverable(bb, id);
+
+    int pointCount = 0;
+    while (pointCount < maxpoints && points[pointCount].x >= rangeMin.x)
+        pointCount++;
+
+    const ImGuiStyle& style = g.Style;
+    RenderFrame(bb.Min, bb.Max, GetColorU32(ImGuiCol_FrameBg, 1), true, style.FrameRounding);
+
+    const float ht = bb.Max.y - bb.Min.y;
+    const float wd = bb.Max.x - bb.Min.x;
+
+    ImDrawList* drawList = window->DrawList;
+
+    ImRect clipRect(bb);
+    clipRect.ClipWith(window->Rect());
+    drawList->PushClipRect(clipRect.Min, clipRect.Max, true);
+
+    // smooth curve
+    enum
+    {
+        smoothness = 128
+    }; // the higher the smoother
+    for (int i = 0; i <= (smoothness - 1); ++i)
+    {
+        float px = (i + 0) / float(smoothness);
+        float qx = (i + 1) / float(smoothness);
+
+        px = ImRemap(px, 0, 1, rangeMin.x, rangeMax.x);
+        qx = ImRemap(qx, 0, 1, rangeMin.x, rangeMax.x);
+
+        const float py = CurveValueSmooth(px, maxpoints, points);
+        const float qy = CurveValueSmooth(qx, maxpoints, points);
+
+        ImVec2 p = ImRemap(ImVec2(px, py), rangeMin, rangeMax, ImVec2(0,0), ImVec2(1,1));
+        ImVec2 q = ImRemap(ImVec2(qx, qy), rangeMin, rangeMax, ImVec2(0,0), ImVec2(1,1));
+        p.y = 1.0f - p.y;
+        q.y = 1.0f - q.y;
+
+        p = ImRemap(p, ImVec2(0,0), ImVec2(1,1), bb.Min, bb.Max);
+        q = ImRemap(q, ImVec2(0,0), ImVec2(1,1), bb.Min, bb.Max);
+
+        drawList->AddLine(p, q, GetColorU32(ImGuiCol_PlotHistogram));
+    }
+
+    drawList->PopClipRect();
+
+    return hovered && IsMouseDoubleClicked(0);
+}
+
 int Curve(const char* label, const ImVec2& size, const int maxpoints, ImVec2* points, int* selection, const ImVec2& rangeMin = ImVec2(0, 0), const ImVec2& rangeMax = ImVec2(1, 1))
 {
-    int modified = 0;
-    int i;
     if (maxpoints < 2 || points == nullptr)
         return 0;
 
@@ -532,6 +607,7 @@ int Curve(const char* label, const ImVec2& size, const int maxpoints, ImVec2* po
         return 0;
 
     ImRect bb(window->DC.CursorPos, window->DC.CursorPos + size);
+
     ItemSize(bb);
     if (!ItemAdd(bb, NULL))
         return 0;
@@ -555,6 +631,8 @@ int Curve(const char* label, const ImVec2& size, const int maxpoints, ImVec2* po
     int hoveredPoint = -1;
 
     const float pointRadiusInPixels = 5.0f;
+
+    int modified = 0;
 
     // Handle point selection
     if (hovered)
@@ -616,26 +694,29 @@ int Curve(const char* label, const ImVec2& size, const int maxpoints, ImVec2* po
                 currentSelection = left + 1;
 
                 ++pointCount;
-                for (i = pointCount; i > left; --i)
+                for (int i = pointCount; i > left; --i)
                     points[i] = points[i - 1];
 
                 points[left + 1] = pos;
 
                 if (pointCount < maxpoints)
                     points[pointCount].x = CurveTerminator;
+
+                modified = 1;
             }
         }
         else if (action == action_delete_point)
         {
             // delete point
-            if (currentSelection > 0 && currentSelection < maxpoints - 1)
+            if (currentSelection > 0 && currentSelection < pointCount - 1)
             {
-                for (i = currentSelection; i < maxpoints - 1; ++i)
+                for (int i = currentSelection; i < maxpoints - 1; ++i)
                     points[i] = points[i + 1];
 
                 --pointCount;
                 points[pointCount].x = CurveTerminator;
                 currentSelection = -1;
+                modified = 1;
             }
         }
     }
@@ -670,7 +751,7 @@ int Curve(const char* label, const ImVec2& size, const int maxpoints, ImVec2* po
         // snap X first/last to min/max
         if (points[0].x < points[pointCount - 1].x)
         {
-            points[0].x = rangeMin.y;
+            points[0].x = rangeMin.x;
             points[pointCount - 1].x = rangeMax.x;
         }
         else
@@ -697,19 +778,21 @@ int Curve(const char* label, const ImVec2& size, const int maxpoints, ImVec2* po
 
     drawList->AddLine(ImVec2(bb.Min.x, bb.Min.y + ht / 4 * 3), ImVec2(bb.Max.x, bb.Min.y + ht / 4 * 3), gridColor1);
 
-    for (i = 0; i < 9; i++)
+    for (int i = 0; i < 9; i++)
     {
         drawList->AddLine(ImVec2(bb.Min.x + (wd / 10) * (i + 1), bb.Min.y), ImVec2(bb.Min.x + (wd / 10) * (i + 1), bb.Max.y), gridColor2);
     }
 
-    drawList->PushClipRect(bb.Min, bb.Max);
+    ImRect clipRect(bb);
+    clipRect.ClipWith(window->Rect());
+    drawList->PushClipRect(clipRect.Min, clipRect.Max, true);
 
     // smooth curve
     enum
     {
         smoothness = 256
     }; // the higher the smoother
-    for (i = 0; i <= (smoothness - 1); ++i)
+    for (int i = 0; i <= (smoothness - 1); ++i)
     {
         float px = (i + 0) / float(smoothness);
         float qx = (i + 1) / float(smoothness);
@@ -732,7 +815,7 @@ int Curve(const char* label, const ImVec2& size, const int maxpoints, ImVec2* po
     }
 
     // lines
-    for (i = 1; i < pointCount; i++)
+    for (int i = 1; i < pointCount; i++)
     {
         ImVec2 a = ImRemap(points[i - 1], rangeMin, rangeMax, ImVec2(0, 0), ImVec2(1, 1));
         ImVec2 b = ImRemap(points[i], rangeMin, rangeMax, ImVec2(0, 0), ImVec2(1, 1));
@@ -749,7 +832,7 @@ int Curve(const char* label, const ImVec2& size, const int maxpoints, ImVec2* po
     if (hovered || draggingPoint)
     {
         // control points
-        for (i = 0; i < pointCount; i++)
+        for (int i = 0; i < pointCount; i++)
         {
             ImVec2 p = ImRemap(points[i], rangeMin, rangeMax, ImVec2(0, 0), ImVec2(1, 1));
             p.y = 1.0f - p.y;
@@ -812,7 +895,7 @@ int Curve(const char* label, const ImVec2& size, const int maxpoints, ImVec2* po
         }
         if (ImGui::Selectable("Flip"))
         {
-            for (i = 0; i < pointCount; ++i)
+            for (int i = 0; i < pointCount; ++i)
             {
                 const float yVal = 1.0f - ImRemap(points[i].y, rangeMin.y, rangeMax.y, 0, 1);
                 points[i].y = ImRemap(yVal, 0, 1, rangeMin.y, rangeMax.y);
@@ -824,7 +907,7 @@ int Curve(const char* label, const ImVec2& size, const int maxpoints, ImVec2* po
             {
                 ImSwap(points[i], points[j]);
             }
-            for (i = 0; i < pointCount; ++i)
+            for (int i = 0; i < pointCount; ++i)
             {
                 const float xVal = 1.0f - ImRemap(points[i].x, rangeMin.x, rangeMax.x, 0, 1);
                 points[i].x = ImRemap(xVal, 0, 1, rangeMin.x, rangeMax.x);
@@ -838,7 +921,7 @@ int Curve(const char* label, const ImVec2& size, const int maxpoints, ImVec2* po
             {
                 if (ImGui::MenuItem(items[row]))
                 {
-                    for (i = 0; i < maxpoints; ++i)
+                    for (int i = 0; i < maxpoints; ++i)
                     {
                         const float px = i / float(maxpoints - 1);
                         const float py = float(tween::ease(row - 1, px));
