@@ -1195,6 +1195,11 @@ void CEqConsoleInput::DrawSelf(int width,int height, float frameTime)
 		m_cursorTime = CURSOR_BLINK_TIME;
 	}
 
+#ifdef IMGUI_ENABLED
+	if (ImGui::IsAnyItemActive())
+		m_cursorVisible = false;
+#endif
+
 	if (!m_logVisible)
 		ResetLogScroll();
 
@@ -1335,6 +1340,8 @@ bool CEqConsoleInput::KeyChar(const char* utfChar)
 
 #ifdef IMGUI_ENABLED
 	ImGui_ImplEq_InputText(utfChar);
+	if (ImGui::IsAnyItemActive())
+		return true;
 #endif
 
 	if (!m_showConsole)
@@ -1373,6 +1380,8 @@ bool CEqConsoleInput::MouseEvent(const Vector2D &pos, int Button,bool pressed)
 
 #ifdef IMGUI_ENABLED
 	ImGui_ImplEq_InputMousePress(Button, pressed);
+	if (ImGui::IsAnyItemActive())
+		return true;
 #endif
 
 	if (!m_showConsole)
@@ -1396,6 +1405,8 @@ bool CEqConsoleInput::MouseWheel(int hscroll, int vscroll)
 
 #ifdef IMGUI_ENABLED
 	ImGui_ImplEq_InputMouseWheel(hscroll, vscroll);
+	if (ImGui::IsAnyItemActive())
+		return true;
 #endif
 
 	return true;
@@ -1449,6 +1460,8 @@ bool CEqConsoleInput::KeyPress(int key, bool pressed)
 
 #ifdef IMGUI_ENABLED
 	ImGui_ImplEq_InputKeyPress(key, pressed);
+	if (ImGui::IsAnyItemActive())
+		return true;
 #endif
 
 	if (!m_showConsole)
