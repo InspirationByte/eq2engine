@@ -12,6 +12,22 @@
 
 #include "eqSoundEmitterPrivateTypes.h"
 
+void SoundCurveDesc::Reset()
+{
+	values[0] = 0.0f;
+	values[1] = 0.0f;
+	values[2] = 1.0f;
+	values[3] = 1.0f;
+	values[4] = -F_INFINITY;
+	valueCount = 4;
+}
+
+void SoundCurveDesc::Fix()
+{
+	if (valueCount < SoundCurveDesc::MAX_CURVE_POINTS * 2)
+		values[valueCount] = -F_INFINITY;
+}
+
 SoundScriptDesc::SoundScriptDesc(const char* name) 
 	: name(name)
 {
@@ -298,10 +314,8 @@ void SoundScriptDesc::ParseDesc(SoundScriptDesc& scriptDesc, const KVSection* sc
 						if(nArg < SoundCurveDesc::MAX_CURVE_POINTS * 2)
 							curve.values[nArg++] = KV_GetValueFloat(&valKey, v, 0.5f);
 					}
-
-					if (nArg < SoundCurveDesc::MAX_CURVE_POINTS * 2)
-						curve.values[nArg] = -F_INFINITY;
 					curve.valueCount = nArg;
+					curve.Fix();
 
 					if (nArg & 1)
 					{
@@ -406,8 +420,11 @@ void SoundScriptDesc::ParseDesc(SoundScriptDesc& scriptDesc, const KVSection* sc
 	};
 
 	// load the parameters (either as constants or mixed values)
-	for (int paramId = 0; paramId < SOUND_PARAM_SAMPLE_VOLUME; ++paramId)
+	for (int paramId = 0; paramId < SOUND_PARAM_COUNT; ++paramId)
 	{
+		if (scriptDesc.paramNodeMap[paramId] != 0xff)
+			continue;
+
 		scriptDesc.paramNodeMap[paramId] = nodeDescs.numElem();
 
 		// add parameters (const or non-const)
@@ -434,19 +451,22 @@ void SoundScriptDesc::ParseDesc(SoundScriptDesc& scriptDesc, const KVSection* sc
 			continue;
 		}
 
-		if (*valueStr >= '0' && *valueStr <= '9')
+		if (paramId != SOUND_PARAM_SAMPLE_VOLUME)
 		{
-			nodeDesc.c.value = KV_GetValueFloat(constSec);
+			if (*valueStr >= '0' && *valueStr <= '9')
+			{
+				nodeDesc.c.value = KV_GetValueFloat(constSec);
+				continue;
+			}
 		}
-		else
-		{
-			nodeDesc.type = SOUND_NODE_FUNC;
-			nodeDesc.func.type = SOUND_FUNC_COPY;
 
-			nodeDesc.func.inputIds[0] = scriptDesc.FindVariableIndex(valueStr);
-			nodeDesc.func.inputCount = 1;
-			nodeDesc.func.outputCount = 1;
-		}
+		// re-quialify into function
+		nodeDesc.type = SOUND_NODE_FUNC;
+		nodeDesc.func.type = SOUND_FUNC_COPY;
+
+		nodeDesc.func.inputIds[0] = scriptDesc.FindVariableIndex(valueStr);
+		nodeDesc.func.inputCount = 1;
+		nodeDesc.func.outputCount = 1;
 	}
 }
 
@@ -751,7 +771,9 @@ void SoundEmitterData::UpdateNodes(IEqAudioSource::Params& outParams, float* sam
 	if (paramMap[SOUND_PARAM_SAMPLE_VOLUME] != 0xff)
 	{
 		const SoundNodeDesc& svolumeNodeDesc = nodeDescs[paramMap[SOUND_PARAM_SAMPLE_VOLUME]];
-		ASSERT(svolumeNodeDesc.type == SOUND_NODE_FUNC, "Sample params only can be function! Please fix constant generator");
+		if (svolumeNodeDesc.type != SOUND_NODE_FUNC)
+			return;
+
 		const int startSp = nodeValueSp[paramMap[SOUND_PARAM_SAMPLE_VOLUME]];
 
 		for (int i = 0; i < svolumeNodeDesc.func.outputCount; ++i)

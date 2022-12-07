@@ -128,25 +128,37 @@ enum ESoundFuncType : int
 	SOUND_FUNC_COUNT
 };
 
-static const char* s_soundFuncTypeNames[] = {
-	"copy",
-	"add",
-	"sub",
-	"mul",
-	"div",
-	"min",
-	"max",
-	"average",
-	"curve",
-	"fade",
+struct SoundFuncDesc
+{
+	char* name;
+	uint8 argCount;
+	uint8 retCount;
 };
-static_assert(elementsOf(s_soundFuncTypeNames) == SOUND_FUNC_COUNT, "s_soundFuncTypeNames and SOUND_FUNC_COUNT needs to be in sync");
+
+enum ESoundFuncArgCount
+{
+	SOUND_FUNC_ARG_VARIADIC = 0x80
+};
+
+static SoundFuncDesc s_soundFuncTypeDesc[] = {
+	{ "copy", SOUND_FUNC_ARG_VARIADIC, SOUND_FUNC_ARG_VARIADIC },
+	{ "add", 2, 1 },
+	{ "sub", 2, 1 },
+	{ "mul", 2, 1 },
+	{ "div", 2, 1 },
+	{ "min", 2, 1 },
+	{ "max", 2, 1 },
+	{ "average", SOUND_FUNC_ARG_VARIADIC, 1 },
+	{ "curve", 1, 1 },
+	{ "fade", 1, SOUND_FUNC_ARG_VARIADIC },
+};
+static_assert(elementsOf(s_soundFuncTypeDesc) == SOUND_FUNC_COUNT, "s_soundFuncTypeNames and SOUND_FUNC_COUNT needs to be in sync");
 
 static int GetSoundFuncTypeByString(const char* name)
 {
 	for (int i = 0; i < SOUND_FUNC_COUNT; ++i)
 	{
-		if (!stricmp(name, s_soundFuncTypeNames[i]))
+		if (!stricmp(name, s_soundFuncTypeDesc[i].name))
 			return (ESoundFuncType)i;
 	}
 	return -1;
@@ -156,7 +168,10 @@ struct SoundCurveDesc
 {
 	static constexpr const int MAX_CURVE_POINTS = 10;
 	float	values[MAX_CURVE_POINTS * 2];	// for curve
-	uint8	valueCount; // divide by two pls
+	uint8	valueCount{ 0 }; // divide by two pls
+
+	void	Reset();
+	void	Fix();
 };
 
 enum ESoundNodeFlags
