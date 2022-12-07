@@ -99,7 +99,9 @@ enum ESoundNodeType : int
 {
 	SOUND_NODE_CONST = 0,
 	SOUND_NODE_INPUT,
-	SOUND_NODE_FUNC
+	SOUND_NODE_FUNC,
+
+	SOUND_NODE_TYPE_COUNT
 };
 
 enum ESoundFuncType : int

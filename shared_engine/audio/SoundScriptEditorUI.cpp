@@ -205,6 +205,16 @@ void CSoundScriptEditor::InitSoundNodesFromScriptDesc(const SoundScriptDesc& scr
 			}
 		} // if
 	} // for
+
+	for (auto it = s_uiNodes.begin(); it != s_uiNodes.end(); ++it)
+	{
+		UISoundNodeDesc& uiNode = *it;
+		if (uiNode.flags & SOUND_NODE_FLAG_OUTPUT)
+		{
+			const int outLen = strlen("out_");
+			memmove(uiNode.name, uiNode.name + outLen, strlen(uiNode.name) - outLen + 1);
+		}
+	}
 }
 
 void CSoundScriptEditor::DrawScriptEditor(bool& open)
@@ -573,14 +583,31 @@ void CSoundScriptEditor::DrawScriptEditor(bool& open)
 						//links.push_back(std::make_pair(start_attr, end_attr));
 					}
 
+					// adjust node positions
 					if (justChanged)
 					{
+						int countByType[SOUND_NODE_TYPE_COUNT]{ 0 };
+						int countByFunc[SOUND_FUNC_COUNT]{ 0 };
 						for (auto it = s_uiNodes.begin(); it != s_uiNodes.end(); ++it)
 						{
 							UISoundNodeDesc& uiNode = *it;
 
-							ImNodes::SetNodeGridSpacePos(uiNode.id, ImVec2(posCounter * 150.0f, 0));
-							++posCounter;
+							if (countByType[uiNode.type] == 0)
+							{
+								++posCounter;
+							}
+							else
+							{
+								if (uiNode.type == SOUND_NODE_FUNC && countByFunc[uiNode.func.type] == 0)
+									++posCounter;
+							}
+
+							ImNodes::SetNodeGridSpacePos(uiNode.id, ImVec2(posCounter * 150.0f, countByType[uiNode.type] * 80.0f));
+
+							if (uiNode.type == SOUND_NODE_FUNC)
+								++countByFunc[uiNode.func.type];
+
+							++countByType[uiNode.type];
 						}
 
 						justChanged = false;

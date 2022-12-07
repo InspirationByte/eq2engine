@@ -75,10 +75,7 @@ uint8 SoundScriptDesc::FindVariableIndex(const char* varName) const
 	});
 
 	if (valIdx == -1)
-	{
-		MsgError("sound script '%s': unknown var %s\n", name.ToCString(), tmpName);
 		return 0xff;
-	}
 
 	return SoundNodeDesc::PackInputIdArrIdx((uint)valIdx, arrayIdx);
 }
@@ -214,7 +211,12 @@ void SoundScriptDesc::ParseDesc(SoundScriptDesc& scriptDesc, const KVSection* sc
 						continue;
 					}
 
-					funcDesc.func.inputIds[0] = scriptDesc.FindVariableIndex(valName);
+					uint8 varIdx = scriptDesc.FindVariableIndex(valName);
+					if (varIdx == 0xff)
+						MsgError("sound script '%s': unknown var %s\n", scriptDesc.name.ToCString(), valName);
+
+					funcDesc.func.inputIds[0] = varIdx;
+
 					funcDesc.func.inputCount = 1;
 					funcDesc.func.outputCount = 1;
 					break;
@@ -236,7 +238,11 @@ void SoundScriptDesc::ParseDesc(SoundScriptDesc& scriptDesc, const KVSection* sc
 							continue;
 						}
 
-						funcDesc.func.inputIds[v] = scriptDesc.FindVariableIndex(valName);
+						uint8 varIdx = scriptDesc.FindVariableIndex(valName);
+						if (varIdx == 0xff)
+							MsgError("sound script '%s': unknown var %s\n", scriptDesc.name.ToCString(), valName);
+
+						funcDesc.func.inputIds[v] = varIdx;
 					}
 					funcDesc.func.inputCount = 2;
 					funcDesc.func.outputCount = 1;
@@ -250,7 +256,11 @@ void SoundScriptDesc::ParseDesc(SoundScriptDesc& scriptDesc, const KVSection* sc
 					{
 						const char* valName = KV_GetValueString(&valKey, v, nullptr);
 						ASSERT(valName);
-						funcDesc.func.inputIds[nArg++] = scriptDesc.FindVariableIndex(valName);
+
+						uint8 varIdx = scriptDesc.FindVariableIndex(valName);
+						if (varIdx == 0xff)
+							MsgError("sound script '%s': unknown var %s\n", scriptDesc.name.ToCString(), valName);
+						funcDesc.func.inputIds[nArg++] = varIdx;
 					}
 					funcDesc.func.inputCount = nArg;
 					funcDesc.func.outputCount = 1;
@@ -268,7 +278,12 @@ void SoundScriptDesc::ParseDesc(SoundScriptDesc& scriptDesc, const KVSection* sc
 
 					funcDesc.func.outputCount = 1;
 					funcDesc.func.inputCount = 1;
-					funcDesc.func.inputIds[0] = scriptDesc.FindVariableIndex(inputValName);
+
+					uint8 varIdx = scriptDesc.FindVariableIndex(inputValName);
+					if (varIdx == 0xff)
+						MsgError("sound script '%s': unknown var %s\n", scriptDesc.name.ToCString(), varIdx);
+
+					funcDesc.func.inputIds[0] = varIdx;
 					funcDesc.func.inputIds[1] = curveDescs.numElem();
 					
 					SoundCurveDesc& curve = curveDescs.append();
@@ -309,7 +324,12 @@ void SoundScriptDesc::ParseDesc(SoundScriptDesc& scriptDesc, const KVSection* sc
 
 					funcDesc.func.outputCount = numOutputs;
 					funcDesc.func.inputCount = 1;
-					funcDesc.func.inputIds[0] = scriptDesc.FindVariableIndex(inputValName);
+
+					uint8 varIdx = scriptDesc.FindVariableIndex(inputValName);
+					if (varIdx == 0xff)
+						MsgError("sound script '%s': unknown var %s\n", scriptDesc.name.ToCString(), varIdx);
+
+					funcDesc.func.inputIds[0] = varIdx;
 					funcDesc.func.inputIds[1] = curveDescs.numElem();
 
 					SoundCurveDesc& curve = curveDescs.append();
@@ -335,8 +355,6 @@ void SoundScriptDesc::ParseDesc(SoundScriptDesc& scriptDesc, const KVSection* sc
 		} // const, input, mixer
 		else if (!stricmp(valKey.name, s_soundParamNames[SOUND_PARAM_SAMPLE_VOLUME]))
 		{
-			scriptDesc.FindVariableIndex(valKey.name);
-
 			const int sampleIdx = KV_GetValueInt(&valKey);
 			const char* valueStr = KV_GetValueString(&valKey, 1, nullptr);
 
@@ -361,8 +379,8 @@ void SoundScriptDesc::ParseDesc(SoundScriptDesc& scriptDesc, const KVSection* sc
 				nodeDesc.type = SOUND_NODE_FUNC;
 				nodeDesc.func.type = SOUND_FUNC_COPY;
 
-				nodeDesc.func.inputCount = 1;
-				nodeDesc.func.outputCount = 1;
+				nodeDesc.func.inputCount = scriptDesc.soundFileNames.numElem();
+				nodeDesc.func.outputCount = scriptDesc.soundFileNames.numElem();
 
 				nodeDesc.func.inputIds[sampleIdx] = scriptDesc.FindVariableIndex(valueStr);
 			}
@@ -370,11 +388,7 @@ void SoundScriptDesc::ParseDesc(SoundScriptDesc& scriptDesc, const KVSection* sc
 			{
 				SoundNodeDesc& nodeDesc = nodeDescs[nodeIdx];
 				nodeDesc.func.inputIds[sampleIdx] = scriptDesc.FindVariableIndex(valueStr);
-
-				nodeDesc.func.inputCount = max(sampleIdx + 1, nodeDesc.func.inputCount);
-				nodeDesc.func.outputCount = max(sampleIdx + 1, nodeDesc.func.outputCount);
 			}
-			
 		}
 	} // for
 
