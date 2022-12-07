@@ -763,9 +763,9 @@ void CEqAudioSourceAL::Ref_DeleteObject()
 }
 
 // Updates channel with user parameters
-void CEqAudioSourceAL::UpdateParams(const Params& params, int mask)
+void CEqAudioSourceAL::UpdateParams(const Params& params, int overrideUpdateFlags)
 {
-	mask |= params.updateFlags;
+	int mask = overrideUpdateFlags == -1 ? params.updateFlags : overrideUpdateFlags;
 
 	// apply update flags from mixer
 	if (mask & UPDATE_CHANNEL)

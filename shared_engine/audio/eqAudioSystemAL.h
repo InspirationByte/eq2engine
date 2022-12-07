@@ -123,7 +123,7 @@ public:
 
 	// full scale
 	void					GetParams(Params& params) const;
-	void					UpdateParams(const Params& params, int mask = 0);
+	void					UpdateParams(const Params& params, int overrideUpdateFlags = -1);
 
 	void					SetSampleVolume(int sourceIdx, float volume);
 	float					GetSampleVolume(int sourceIdx);

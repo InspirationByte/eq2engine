@@ -84,7 +84,12 @@ public:
 #define PROP_MERGE(var, flag) if(other.updateFlags & flag) {var = other.##var;}
 
 		inline Params& operator |=(const Params& other) {
-			updateFlags |= other.updateFlags;
+			merge(other);
+			return *this;
+		}
+
+		inline void merge(const Params& other, int overrideUpdateFlags = -1) {
+			updateFlags |= overrideUpdateFlags == -1 ? other.updateFlags : overrideUpdateFlags;
 			PROP_MERGE(position, UPDATE_POSITION)
 			PROP_MERGE(velocity, UPDATE_VELOCITY)
 			PROP_MERGE(volume, UPDATE_VOLUME)
@@ -98,7 +103,6 @@ public:
 			PROP_MERGE(looping, UPDATE_LOOPING)
 			PROP_MERGE(releaseOnStop, UPDATE_RELEASE_ON_STOP)
 			PROP_MERGE(channel, UPDATE_CHANNEL)
-			return *this;
 		}
 
 #undef PROP_SETTER
@@ -115,7 +119,7 @@ public:
 
 	// full scale
 	virtual void			GetParams(Params& params) const = 0;
-	virtual void			UpdateParams(const Params& params, int mask = 0) = 0;
+	virtual void			UpdateParams(const Params& params, int overrideUpdateFlags = -1) = 0;
 
 	virtual void			SetSampleVolume(int sourceIdx, float volume) = 0;
 	virtual float			GetSampleVolume(int sourceIdx) = 0;

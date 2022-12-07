@@ -426,6 +426,8 @@ void CSoundingObject::SetPitch(SoundEmitterData* emitter, float pitch)
 	if (!emitter)
 		return;
 
+	// FIXME: replace with internal SetParams call?
+
 	emitter->epPitch = pitch;
 
 	IEqAudioSource::Params& nodeParams = emitter->nodeParams;
@@ -450,6 +452,8 @@ void CSoundingObject::SetVolume(SoundEmitterData* emitter, float volume)
 	if (!emitter)
 		return;
 
+	// FIXME: replace with internal SetParams call?
+
 	emitter->epVolume = volume;
 
 	IEqAudioSource::Params& nodeParams = emitter->nodeParams;
@@ -457,14 +461,14 @@ void CSoundingObject::SetVolume(SoundEmitterData* emitter, float volume)
 	const float finalVolume = nodeParams.volume * volume;
 
 	// update virtual params
-	virtualParams.set_pitch(finalVolume);
+	virtualParams.set_volume(finalVolume);
 
 	// update actual params
 	if (emitter->soundSource)
 	{
 		IEqAudioSource::Params param;
 		param.set_volume(finalVolume * GetSoundVolumeScale());
-
+	
 		emitter->soundSource->UpdateParams(param);
 	}
 }
@@ -489,12 +493,39 @@ void CSoundingObject::SetParams(SoundEmitterData* emitter, const IEqAudioSource:
 	if (!emitter)
 		return;
 
+	IEqAudioSource::Params& nodeParams = emitter->nodeParams;
+	IEqAudioSource::Params& virtualParams = emitter->virtualParams;
+
+	const int updateFlags = params.updateFlags & ~(IEqAudioSource::UPDATE_VOLUME | IEqAudioSource::UPDATE_PITCH);
+
+	IEqAudioSource::Params param;
+	param.merge(params, updateFlags);
+
+	// update pitch and volume individually
+	if (params.updateFlags & IEqAudioSource::UPDATE_VOLUME)
+	{
+		emitter->epVolume = params.volume;
+		const float finalVolume = nodeParams.volume * params.volume;
+		emitter->virtualParams.set_volume(finalVolume);
+
+		param.set_volume(finalVolume * GetSoundVolumeScale());
+	}
+
+	if (params.updateFlags & IEqAudioSource::UPDATE_PITCH)
+	{
+		emitter->epPitch = params.pitch;
+		const float finalPitch = nodeParams.pitch * params.pitch;
+		emitter->virtualParams.set_pitch(finalPitch);
+
+		param.set_pitch(finalPitch);
+	}
+
 	// update virtual params
-	emitter->virtualParams |= params;
+	emitter->virtualParams.merge(params, updateFlags);
 
 	// update actual params
 	if (emitter->soundSource)
-		emitter->soundSource->UpdateParams(params);
+		emitter->soundSource->UpdateParams(param);
 }
 
 //----------------------------------------
