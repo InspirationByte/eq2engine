@@ -35,6 +35,8 @@ struct UISoundNodeDesc
 	uint8			type{ 0 };
 	uint8			flags{ 0 };
 
+	float			lhsValue[SoundNodeDesc::MAX_ARRAY_IDX]{ 0.0f };
+
 	union
 	{
 		struct {
@@ -57,7 +59,6 @@ struct UISoundNodeDesc
 			int		inputCount;
 
 			int		rhs;
-			float	value;
 		} c;
 	};
 
@@ -125,11 +126,13 @@ UISoundNodeDesc* CSoundScriptEditor::s_currentEditingCurveNode = nullptr;
 
 static int MakeAttribId(int id, int arrayIdx, int side)
 {
+	// TODO: make use of constants like MAX_NODES, MAX_ARRAY_IDX
 	return (id & 31) | ((arrayIdx & 7) << 5) | ((side & 3) << 8);
 }
 
 static UISoundNodeDesc::Side GetAttribSide(int attribId)
 {
+	// TODO: make use of constants like MAX_NODES, MAX_ARRAY_IDX
 	return (UISoundNodeDesc::Side)(attribId >> 8 & 3);
 }
 
@@ -195,7 +198,6 @@ void UISoundNodeDesc::SetupNode(ESoundNodeType setupType)
 
 		c.inputCount = 1;
 		c.rhs = MakeAttribId(id, 0, RHS);
-		c.value = 0.0f;
 	}
 	else if (type == SOUND_NODE_FUNC)
 	{
@@ -255,7 +257,7 @@ void CSoundScriptEditor::InitNodesFromScriptDesc(const SoundScriptDesc& script)
 			if (nodeId == script.paramNodeMap[SOUND_PARAM_SAMPLE_VOLUME])
 				uiDesc.c.inputCount = script.soundFileNames.numElem();
 
-			uiDesc.c.value = nodeDesc.c.value;
+			uiDesc.lhsValue[0] = nodeDesc.c.value;
 		}
 		else if (nodeDesc.type == SOUND_NODE_FUNC)
 		{
@@ -267,7 +269,6 @@ void CSoundScriptEditor::InitNodesFromScriptDesc(const SoundScriptDesc& script)
 				uiDesc.type = SOUND_NODE_CONST;
 
 				uiDesc.c.rhs = MakeAttribId(uiDesc.id, 0, UISoundNodeDesc::RHS);
-				uiDesc.c.value = 1.0f;
 				uiDesc.c.inputCount = nodeDesc.func.inputCount;
 
 				if (nodeId == script.paramNodeMap[SOUND_PARAM_SAMPLE_VOLUME])
@@ -533,9 +534,9 @@ void CSoundScriptEditor::DrawNodeEditor(bool initializePositions)
 			// it is a output into the sound source
 			if (uiNode.flags & SOUND_NODE_FLAG_OUTPUT)
 			{
-				ImNodes::PushColorStyle(ImNodesCol_TitleBar, IM_COL32(11, 109, 191, 255));
-				ImNodes::PushColorStyle(ImNodesCol_TitleBarHovered, IM_COL32(45, 126, 194, 255));
-				ImNodes::PushColorStyle(ImNodesCol_TitleBarSelected, IM_COL32(81, 148, 204, 255));
+				ImNodes::PushColorStyle(ImNodesCol_TitleBar, IM_COL32(200, 45, 45, 255));
+				ImNodes::PushColorStyle(ImNodesCol_TitleBarHovered, IM_COL32(220, 65, 65, 255));
+				ImNodes::PushColorStyle(ImNodesCol_TitleBarSelected, IM_COL32(240, 85, 85, 255));
 
 				ImNodes::BeginNode(uiNode.id);
 
@@ -557,7 +558,7 @@ void CSoundScriptEditor::DrawNodeEditor(bool initializePositions)
 						{
 							ImGui::SameLine();
 							ImGui::PushItemWidth(node_width - label_width);
-							ImGui::DragFloat("##hidelabel", &uiNode.c.value, 0.01f);
+							ImGui::DragFloat("##hidelabel", &uiNode.lhsValue[i], 0.01f);
 							ImGui::PopItemWidth();
 						}
 						ImNodes::EndInputAttribute();
@@ -632,7 +633,7 @@ void CSoundScriptEditor::DrawNodeEditor(bool initializePositions)
 					{
 						ImGui::SameLine();
 						ImGui::PushItemWidth(node_width - label_width);
-						ImGui::DragFloat("##hidelabel", &uiNode.c.value, 0.01f);
+						ImGui::DragFloat("##hidelabel", &uiNode.lhsValue[i], 0.01f);
 						ImGui::PopItemWidth();
 					}
 					ImNodes::EndInputAttribute();
