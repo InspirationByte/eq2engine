@@ -39,9 +39,9 @@ using namespace Threading;
 static CEqMutex s_conInputMutex;
 
 #ifdef _DEBUG
-#define CONSOLE_ENGINEVERSION_STR EqString::Format(ENGINE_NAME " Engine " ENGINE_VERSION " DEBUG build %d (" COMPILE_DATE ")", BUILD_NUMBER_ENGINE).ToCString()
+#define CONSOLE_ENGINEVERSION_STR EqString::Format(ENGINE_NAME " DEBUG build %d (" COMPILE_DATE ")", BUILD_NUMBER_ENGINE).ToCString()
 #else
-#define CONSOLE_ENGINEVERSION_STR EqString::Format(ENGINE_NAME " Engine " ENGINE_VERSION " build %d (" COMPILE_DATE ")", BUILD_NUMBER_ENGINE).ToCString()
+#define CONSOLE_ENGINEVERSION_STR EqString::Format(ENGINE_NAME " build %d (" COMPILE_DATE ")", BUILD_NUMBER_ENGINE).ToCString()
 #endif // _DEBUG
 
 #define CONSOLE_INPUT_STARTSTR ("> ")

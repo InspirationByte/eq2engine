@@ -9,7 +9,8 @@
 #include "core/ConCommand.h"
 #include "sys_version.h"
 
-// date i've stated development - "Feb 28 2009"
+// date i've stated development		"Feb 28 2009"
+// Drivers started					"Apr 07 2014"
 
 const char* date = COMPILE_DATE;
 
@@ -34,7 +35,7 @@ protected:
 		int d = 0;
 		int y = 0;
 
-		for (m = 0; m < 11; m++)
+		for (m = 0; m < 12; m++)
 		{
 			// stop on the current month
 
@@ -68,12 +69,7 @@ int GetEngineBuildNumber()
 	return g_build.GetBuildNumber();
 }
 
-DECLARE_CMD(engineversion,"Print out full engine version",0)
-{
-	MsgInfo("\"%s\" v%s build %i\n Compilation date: %s %s\n",ENGINE_NAME ,ENGINE_VERSION,BUILD_NUMBER_ENGINE,COMPILE_DATE,COMPILE_TIME);
-}
-
 void EngineMessage()
 {
-	MsgInfo(" \n\"%s Engine\" build %i\nCompilation date: %s %s\n",ENGINE_NAME,BUILD_NUMBER_ENGINE,COMPILE_DATE,COMPILE_TIME);
+	MsgInfo(" \n\"%s\" build %i\nCompilation date: %s %s\n", ENGINE_NAME, BUILD_NUMBER_ENGINE, COMPILE_DATE, COMPILE_TIME);
 }

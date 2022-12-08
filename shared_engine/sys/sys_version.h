@@ -7,10 +7,9 @@
 
 #pragma once
 
-#define ENGINE_NAME			"Equilibrium"
-#define ENGINE_NAME_SHORT	"E2"
+#define ENGINE_NAME			"E2Engine"
 
-#define ENGINE_VERSION		"1"
+#define ENGINE_VERSION		"2"
 
 #define COMPILE_DATE		__DATE__
 #define COMPILE_TIME		__TIME__
