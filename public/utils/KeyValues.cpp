@@ -2065,10 +2065,22 @@ bool UTIL_StringNeedsQuotes( const char* pszString )
 	// Check the entire string
 	while (*pLetter != 0)
 	{
-		// break on spaces, but allow newline characters
-		// in key/values
-		if(isspace(*pLetter) && *pLetter != '\n')
+		if(IsKVWhitespace(*pLetter))
 			return true;
+
+		switch (*pLetter)
+		{
+			case KV_SECTION_BEGIN:
+			case KV_SECTION_END:
+			case KV_ARRAY_BEGIN:
+			case KV_ARRAY_END:
+			case KV_ARRAY_SEPARATOR:
+			case KV_TYPE_VALUESYMBOL:
+			case KV_BREAK:
+				return true;
+			default:
+				break;
+		}
 
 		length++;
 
@@ -2190,7 +2202,8 @@ void KV_WritePairValue(IVirtualStream* out, const KVPairValue* val, int depth)
 
 		char* outValueString = (char*)PPAlloc(strlen(val->value) + numSpecial + 1);
 		KV_PreProcessStringValue( outValueString, val->value );
-		out->Print("\"%s\"", outValueString);
+		KV_WriteSelectQuotedString( out, outValueString );
+		//out->Print("\"%s\"", outValueString);
 
 		PPFree( outValueString );
 	}
@@ -2392,6 +2405,66 @@ void KV_PrintSection(const KVSection* base)
 //-----------------------------------------------------------------------------------------------------
 // KeyValues value helpers
 //-----------------------------------------------------------------------------------------------------
+
+static char* skip_spaces(const char* str)
+{
+	while (isspace(*str)) {
+		++str;
+	}
+	return (char*)str;
+}
+
+//
+// sscanf-like value getter from pairbase
+//
+int KV_ScanGetValue(const KVSection* pBase, int start, const char* format, ...)
+{
+	int ret = 0;
+
+	va_list args;
+	va_start(args, format);
+	while (format[0] != '\0') 
+	{
+		switch (format[1])
+		{
+			case 'd':
+			case 'i':
+			case 'u':
+			{
+				int* intp = va_arg(args, int*);
+				*intp = KV_GetValueInt(pBase, start + ret, 0);
+				ret++;
+				break;
+			}
+			case 'f':
+			{
+				float* flp = va_arg(args, float*);
+				*flp = KV_GetValueFloat(pBase, start + ret, 0.0f);
+				ret++;
+				break;
+			}
+			case 'b':
+			{
+				bool* boolp = va_arg(args, bool*);
+				*boolp = KV_GetValueBool(pBase, start + ret, false);
+				ret++;
+				break;
+			}
+			case 's':
+			{
+				char* charp = va_arg(args, char*);
+				strcpy(charp, KV_GetValueString(pBase, start + ret, ""));
+				ret++;
+				break;
+			}
+		}
+		++format;
+	}
+
+	va_end(args);
+
+	return ret;
+}
 
 //
 // Returns the string value of pairbase

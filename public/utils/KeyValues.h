@@ -289,7 +289,9 @@ void			KV_WriteToStreamBinary(IVirtualStream* outStream, const KVSection* base);
 // KeyValues value helpers
 //-----------------------------------------------------------------------------------------------------
 
-const char*			KV_GetValueString( const KVSection* pBase, int nIndex = 0, const char* pszDefault = "" );
+int					KV_ScanGetValue(const KVSection* pBase, int start, const char* format, ...);
+
+const char*			KV_GetValueString(const KVSection* pBase, int nIndex = 0, const char* pszDefault = "" );
 int					KV_GetValueInt(const KVSection* pBase, int nIndex = 0, int nDefault = 0 );
 float				KV_GetValueFloat(const KVSection* pBase, int nIndex = 0, float fDefault = 0.0f );
 bool				KV_GetValueBool(const KVSection* pBase, int nIndex = 0, bool bDefault = false );
