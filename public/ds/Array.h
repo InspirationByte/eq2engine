@@ -216,7 +216,7 @@ public:
 	ArrayBase<T, STORAGE_TYPE>&	operator=( const ArrayBase<T, STORAGE_TYPE>&other );
 
 	// cleans list
-	void			clear( bool deallocate = true );
+	void			clear( bool deallocate = false );
 
 	// returns true if index is in range
 	bool			inRange(int index) const;
@@ -373,6 +373,8 @@ inline ArrayBase<T, STORAGE_TYPE>::ArrayBase(const PPSourceLine& sl, int granula
 template< typename T, typename STORAGE_TYPE >
 inline ArrayBase<T, STORAGE_TYPE>::~ArrayBase()
 {
+	T* listPtr = m_storage.getData();
+	ArrayStorageBase<T>::destructElements(listPtr, m_nNumElem);
 }
 
 // -----------------------------------------------------------------

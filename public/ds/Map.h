@@ -101,7 +101,7 @@ public:
 			insert(i->key, *i->value);
 	}
 
-	void clear(bool deallocate = true)
+	void clear(bool deallocate = false)
 	{
 		for (Item* i = m_begin.item, *end = &m_endItem; i != end; i = i->next)
 		{
