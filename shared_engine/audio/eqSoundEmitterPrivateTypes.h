@@ -188,7 +188,8 @@ struct SoundNodeDesc
 	char			name[30]{ 0 };
 	uint8			type{ 0 };
 	uint8			flags{ 0 };
-	
+	float			inputConst[MAX_ARRAY_IDX]{ 0.0f };
+
 	union {
 		struct {
 			uint8	inputIds[MAX_ARRAY_IDX];		// id :5, index: 3

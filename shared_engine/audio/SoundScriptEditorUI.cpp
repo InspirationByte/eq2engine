@@ -387,9 +387,17 @@ void CSoundScriptEditor::InitNodesFromScriptDesc(const SoundScriptDesc& script)
 			// add links
 			for (int i = 0; i < uiDesc.func.inputCount; ++i)
 			{
-				uint inNodeId, inArrayIdx;
-				SoundNodeDesc::UnpackInputIdArrIdx(nodeDesc.func.inputIds[i], inNodeId, inArrayIdx);
-				s_uiNodeLinks.insert(s_linkIdGenerator++, { (short)MakeAttribId(inNodeId, inArrayIdx, 2), (short)uiDesc.func.lhs[i] });
+				const uint8 inputId = nodeDesc.func.inputIds[i];
+				if (inputId != SOUND_VAR_INVALID)
+				{
+					uint inNodeId, inArrayIdx;
+					SoundNodeDesc::UnpackInputIdArrIdx(nodeDesc.func.inputIds[i], inNodeId, inArrayIdx);
+					s_uiNodeLinks.insert(s_linkIdGenerator++, { (short)MakeAttribId(inNodeId, inArrayIdx, 2), (short)uiDesc.func.lhs[i] });
+				}
+				else
+				{
+					uiDesc.lhsValue[i] = nodeDesc.inputConst[i];
+				}
 			}
 
 			// copy curve properties
