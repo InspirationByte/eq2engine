@@ -52,6 +52,7 @@ struct KVSection;
 */
 
 static constexpr const int MAX_SOUND_SAMPLES_SCRIPT = 8;
+static constexpr const uint8 SOUND_VAR_INVALID = 0xff;
 
 enum ESoundParamType : int
 {
@@ -207,12 +208,14 @@ struct SoundNodeDesc
 
 	static void UnpackInputIdArrIdx(uint8 inputId, uint& id, uint& arrayIdx)
 	{
+		// TODO: make use of constants like MAX_NODES, MAX_ARRAY_IDX
 		id = inputId & 31;
 		arrayIdx = inputId >> 5 & 7;
 	}
 
 	static uint8 PackInputIdArrIdx(uint id, uint arrayIdx)
 	{
+		// TODO: make use of constants like MAX_NODES, MAX_ARRAY_IDX
 		return id & 31 | ((arrayIdx & 7) << 5);
 	}
 };

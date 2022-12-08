@@ -72,7 +72,7 @@ uint8 SoundScriptDesc::FindVariableIndex(const char* varName) const
 		if (!(*numberStart >= '0' && *numberStart <= '9'))
 		{
 			MsgError("sound script '%s' mixer: array index is invalid for %s\n", name.ToCString(), tmpName);
-			return 0xff;
+			return SOUND_VAR_INVALID;
 		}
 
 		// find closing
@@ -80,7 +80,7 @@ uint8 SoundScriptDesc::FindVariableIndex(const char* varName) const
 		if (!arrSub)
 		{
 			MsgError("sound script '%s' mixer: missing ']' for %s\n", name.ToCString(), tmpName);
-			return 0xff;
+			return SOUND_VAR_INVALID;
 		}
 		*arrSub = 0;
 		arrayIdx = atoi(numberStart);
@@ -91,7 +91,7 @@ uint8 SoundScriptDesc::FindVariableIndex(const char* varName) const
 	});
 
 	if (valIdx == -1)
-		return 0xff;
+		return SOUND_VAR_INVALID;
 
 	return SoundNodeDesc::PackInputIdArrIdx((uint)valIdx, arrayIdx);
 }
@@ -102,7 +102,7 @@ void SoundScriptDesc::ParseDesc(SoundScriptDesc& scriptDesc, const KVSection* sc
 	scriptDesc.randomSample = false;
 
 	for (int paramId = 0; paramId < SOUND_PARAM_COUNT; ++paramId)
-		scriptDesc.paramNodeMap[paramId] = 0xff;
+		scriptDesc.paramNodeMap[paramId] = SOUND_VAR_INVALID;
 
 	// pick 'rndwave' or 'wave' sections for lists
 	KVSection* waveKey = waveKey = scriptSection->FindSection("wave", KV_FLAG_SECTION);
@@ -232,7 +232,7 @@ void SoundScriptDesc::ParseDesc(SoundScriptDesc& scriptDesc, const KVSection* sc
 					}
 
 					uint8 varIdx = scriptDesc.FindVariableIndex(valName);
-					if (varIdx == 0xff)
+					if (varIdx == SOUND_VAR_INVALID)
 						MsgError("sound script '%s': unknown var %s\n", scriptDesc.name.ToCString(), valName);
 
 					funcDesc.func.inputIds[0] = varIdx;
@@ -259,7 +259,7 @@ void SoundScriptDesc::ParseDesc(SoundScriptDesc& scriptDesc, const KVSection* sc
 						}
 
 						uint8 varIdx = scriptDesc.FindVariableIndex(valName);
-						if (varIdx == 0xff)
+						if (varIdx == SOUND_VAR_INVALID)
 							MsgError("sound script '%s': unknown var %s\n", scriptDesc.name.ToCString(), valName);
 
 						funcDesc.func.inputIds[v] = varIdx;
@@ -278,7 +278,7 @@ void SoundScriptDesc::ParseDesc(SoundScriptDesc& scriptDesc, const KVSection* sc
 						ASSERT(valName);
 
 						uint8 varIdx = scriptDesc.FindVariableIndex(valName);
-						if (varIdx == 0xff)
+						if (varIdx == SOUND_VAR_INVALID)
 							MsgError("sound script '%s': unknown var %s\n", scriptDesc.name.ToCString(), valName);
 						funcDesc.func.inputIds[nArg++] = varIdx;
 					}
@@ -300,7 +300,7 @@ void SoundScriptDesc::ParseDesc(SoundScriptDesc& scriptDesc, const KVSection* sc
 					funcDesc.func.inputCount = 1;
 
 					uint8 varIdx = scriptDesc.FindVariableIndex(inputValName);
-					if (varIdx == 0xff)
+					if (varIdx == SOUND_VAR_INVALID)
 						MsgError("sound script '%s': unknown var %s\n", scriptDesc.name.ToCString(), varIdx);
 
 					funcDesc.func.inputIds[0] = varIdx;
@@ -344,7 +344,7 @@ void SoundScriptDesc::ParseDesc(SoundScriptDesc& scriptDesc, const KVSection* sc
 					funcDesc.func.inputCount = 1;
 
 					uint8 varIdx = scriptDesc.FindVariableIndex(inputValName);
-					if (varIdx == 0xff)
+					if (varIdx == SOUND_VAR_INVALID)
 						MsgError("sound script '%s': unknown var %s\n", scriptDesc.name.ToCString(), varIdx);
 
 					funcDesc.func.inputIds[0] = varIdx;
@@ -385,7 +385,7 @@ void SoundScriptDesc::ParseDesc(SoundScriptDesc& scriptDesc, const KVSection* sc
 			nodeNameWithPrefix[sizeof(nodeNameWithPrefix) - 1] = 0;
 
 			uint8 nodeIdx = scriptDesc.FindVariableIndex(nodeNameWithPrefix);
-			if (nodeIdx == 0xff)
+			if (nodeIdx == SOUND_VAR_INVALID)
 			{
 				scriptDesc.paramNodeMap[SOUND_PARAM_SAMPLE_VOLUME] = nodeDescs.numElem();
 
@@ -422,7 +422,7 @@ void SoundScriptDesc::ParseDesc(SoundScriptDesc& scriptDesc, const KVSection* sc
 	// load the parameters (either as constants or mixed values)
 	for (int paramId = 0; paramId < SOUND_PARAM_COUNT; ++paramId)
 	{
-		if (scriptDesc.paramNodeMap[paramId] != 0xff)
+		if (scriptDesc.paramNodeMap[paramId] != SOUND_VAR_INVALID)
 			continue;
 
 		scriptDesc.paramNodeMap[paramId] = nodeDescs.numElem();
@@ -525,7 +525,7 @@ float SoundEmitterData::GetInputValue(int nodeId, int arrayIdx)
 
 float SoundEmitterData::GetInputValue(uint8 inputId)
 {
-	if (inputId == 0xff)
+	if (inputId == SOUND_VAR_INVALID)
 		return 0.0f;
 
 	uint nodeId, arrayIdx;
@@ -768,7 +768,7 @@ void SoundEmitterData::UpdateNodes(IEqAudioSource::Params& outParams, float* sam
 	const float attenuation = stack.Get<float>(nodeValueSp[paramMap[SOUND_PARAM_ATTENUATION]]);
 	outParams.set_referenceDistance(attenuation);
 
-	if (paramMap[SOUND_PARAM_SAMPLE_VOLUME] != 0xff)
+	if (paramMap[SOUND_PARAM_SAMPLE_VOLUME] != SOUND_VAR_INVALID)
 	{
 		const SoundNodeDesc& svolumeNodeDesc = nodeDescs[paramMap[SOUND_PARAM_SAMPLE_VOLUME]];
 		if (svolumeNodeDesc.type != SOUND_NODE_FUNC)
