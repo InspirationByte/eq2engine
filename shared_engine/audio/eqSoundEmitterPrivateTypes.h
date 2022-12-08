@@ -203,6 +203,7 @@ struct SoundNodeDesc
 		} input;
 		struct {
 			float	value;
+			uint8	paramId;
 		} c;
 	};
 
