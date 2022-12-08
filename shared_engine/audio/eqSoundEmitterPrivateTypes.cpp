@@ -479,6 +479,35 @@ void SoundScriptDesc::ParseDesc(SoundScriptDesc& scriptDesc, const KVSection* sc
 	}
 }
 
+void SoundScriptDesc::ReloadDesc(SoundScriptDesc& scriptDesc, const KVSection* scriptSection)
+{
+	// before clearing out nodeDescs, fill defaults
+	KVSection defaultsSec;
+	for (int paramId = 0; paramId < SOUND_PARAM_SAMPLE_VOLUME; ++paramId)
+	{
+		const SoundNodeDesc& nodeDesc = scriptDesc.nodeDescs[scriptDesc.paramNodeMap[paramId]];
+		if (nodeDesc.type == SOUND_NODE_CONST)
+			defaultsSec.SetKey(s_soundParamNames[paramId], nodeDesc.c.value);
+	}
+
+	for (int i = 0; i < scriptDesc.samples.numElem(); ++i)
+	{
+		// that will stop all sources that playing that sample
+		g_audioSystem->FreeSample(scriptDesc.samples[i]);
+	}
+	scriptDesc.samples.clear();
+	scriptDesc.nodeDescs.clear();
+	scriptDesc.soundFileNames.clear();
+	scriptDesc.curveDescs.clear();
+	scriptDesc.inputNodeMap.clear();
+
+	defaultsSec.SetKey("maxDistance", scriptDesc.maxDistance);
+	defaultsSec.SetKey("loop", scriptDesc.loop);
+	defaultsSec.SetKey("is2d", scriptDesc.is2d);
+
+	ParseDesc(scriptDesc, scriptSection, &defaultsSec);
+}
+
 void SoundEmitterData::CreateNodeRuntime()
 {
 	const Array<SoundNodeDesc>& nodeDescs = script->nodeDescs;

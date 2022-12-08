@@ -2076,6 +2076,7 @@ bool UTIL_StringNeedsQuotes( const char* pszString )
 			case KV_ARRAY_END:
 			case KV_ARRAY_SEPARATOR:
 			case KV_TYPE_VALUESYMBOL:
+			case KV_COMMENT_SYMBOL:
 			case KV_BREAK:
 				return true;
 			default:

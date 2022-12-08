@@ -85,7 +85,7 @@ public:
 	static void InitNodesFromScriptDesc(const SoundScriptDesc& script);
 
 	static void GetUsedNodes(Set<int>& usedNodes);
-	static void SerializeToKeyValues(KVSection& out);
+	static void SerializeScriptParamsToKeyValues(const SoundScriptDesc& script, KVSection& out);
 	static void SerializeNodesToKeyValues(KVSection& out);
 
 	static void ShowCurveEditor();
@@ -480,9 +480,24 @@ void CSoundScriptEditor::GetUsedNodes(Set<int>& usedNodes)
 	}
 }
 
-void CSoundScriptEditor::SerializeToKeyValues(KVSection& out)
+void CSoundScriptEditor::SerializeScriptParamsToKeyValues(const SoundScriptDesc& soundScript, KVSection& out)
 {
-	SerializeNodesToKeyValues(out);
+	// TODO:	don't use soundScript!
+	//			or at least if using, make sure that SoundScriptDesc nodes are getting updated too
+	//			otherwise, the code stays shitty and harder to undertand!
+
+	KVSection* waveSec = out.CreateSection(soundScript.randomSample ? "rndwave" : "wave");
+
+	for (int i = 0; i < soundScript.soundFileNames.numElem(); ++i)
+	{
+		waveSec->AddKey("wave", soundScript.soundFileNames[i].ToCString());
+	}
+	ArrayCRef<ChannelDef> channelTypes(g_sounds->m_channelTypes);
+	out.SetKey("channel", channelTypes[soundScript.channelType].name);
+
+	out.SetKey("maxDistance", soundScript.maxDistance);
+	out.SetKey("loop", soundScript.loop);
+	out.SetKey("is2d", soundScript.is2d);
 }
 
 void CSoundScriptEditor::SerializeNodesToKeyValues(KVSection& out)
@@ -1475,17 +1490,33 @@ void CSoundScriptEditor::DrawScriptEditor(bool& open)
 
 
 			{
-				if (ImGui::Button("Revert"))
+				if (ImGui::Button("Apply"))
 				{
+					KVSection relSec;
+					relSec.SetName(selectedScript->name);
+					SerializeScriptParamsToKeyValues(*selectedScript, relSec);
+					SerializeNodesToKeyValues(relSec);
 
+					SoundScriptDesc::ReloadDesc(*selectedScript, &relSec);
+					g_sounds->PrecacheSound(selectedScript->name);
+					g_sounds->RestartEmittersByScript(selectedScript);
 				}
+
 				ImGui::SameLine();
 				if (ImGui::Button("Copy to clipboard"))
 				{
-					KVSection testSec;
-					SerializeToKeyValues(testSec);
+					KVSection clipboardSec;
+					KVSection* soundSec = clipboardSec.CreateSection(selectedScript->name.ToCString());
+					SerializeScriptParamsToKeyValues(*selectedScript, *soundSec);
+					SerializeNodesToKeyValues(*soundSec);
 
-					KV_PrintSection(&testSec);
+					CMemoryStream stream(nullptr, VS_OPEN_WRITE, 2048);
+					KV_WriteToStream(&stream, &clipboardSec, 0, true);
+
+					const char nullChar = '\0';
+					stream.Write(&nullChar, 1, 1);
+
+					ImGui::SetClipboardText((char*)stream.GetBasePointer());
 
 					// TODO:
 				}

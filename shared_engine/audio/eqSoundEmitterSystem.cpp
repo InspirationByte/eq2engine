@@ -635,7 +635,10 @@ void CSoundEmitterSystem::RestartEmittersByScript(SoundScriptDesc* script)
 			if (emitter->script != script)
 				continue;
 
-			// TODO: recreate all emitter data
+			// this will ensure emitter recreation
+			emitter->nodesNeedUpdate = true;
+			SwitchSourceState(emitter, true);
+			SwitchSourceState(emitter, false);
 		}
 	}
 #endif
