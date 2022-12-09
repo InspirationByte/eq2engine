@@ -56,12 +56,13 @@ public:
 	void		SetSampleVolume(int uniqueId, int waveId, float volume);
 	void		SetParams(int uniqueId, const IEqAudioSource::Params& params);
 
+	void		SetInputValue(int uniqueId, const char* name, float value);
+	void		SetInputValue(int uniqueId, int inputNameHash, float value);
+
 	int			GetChannelSoundCount(int chan) const { return m_numChannelSounds[chan]; }
 
 	void		SetSoundVolumeScale(float fScale)	{ m_volumeScale = fScale; }
 	float		GetSoundVolumeScale() const			{ return m_volumeScale; }
-
-	// TODO: input values by names
 
 protected:
 	void		SetEmitterState(SoundEmitterData* emitter, IEqAudioSource::State state, bool rewindOnPlay);
@@ -78,6 +79,9 @@ protected:
 
 	void		SetSampleVolume(SoundEmitterData* emitter, int waveId, float volume);
 	void		SetParams(SoundEmitterData* emitter, const IEqAudioSource::Params& params);
+
+	void		SetInputValue(SoundEmitterData* emitter, int inputNameHash, float value);
+
 	void		RecalcParameters(SoundEmitterData* emitter, IEqAudioSource::Params& outParams, int updateFlags);
 
 	bool		UpdateEmitters(const Vector3D& listenerPos);
@@ -117,7 +121,8 @@ public:
 	void		SetSampleVolume(int waveId, float volume);
 	void		SetParams(const IEqAudioSource::Params& params);
 
-	// TODO: input values by names
+	void		SetInputValue(const char* name, float value);
+	void		SetInputValue(int inputNameHash, float value);
 private:
 	CSoundingObject& m_soundingObj;
 	SoundEmitterData* m_emitter{ nullptr };

@@ -10,6 +10,7 @@
 #endif
 
 #ifdef SOUNDSCRIPT_EDITOR
+#pragma optimize("", off)
 #include <imgui.h>
 #include <imgui_curve_edit.h>
 #include <imnodes.h>
@@ -19,6 +20,7 @@
 #include "eqSoundEmitterSystem.h"
 #include "eqSoundEmitterObject.h"
 #include "eqSoundEmitterPrivateTypes.h"
+
 
 struct UISoundNodeDesc
 {
@@ -379,8 +381,8 @@ void CSoundScriptEditor::InitNodesFromScriptDesc(const SoundScriptDesc& script)
 			}
 
 			uiDesc.func.type = nodeDesc.func.type;
-			uiDesc.func.inputCount = nodeDesc.func.inputCount;
-			uiDesc.func.outputCount = nodeDesc.func.outputCount;
+			uiDesc.func.inputCount = s_soundFuncTypeDesc[uiDesc.func.type].argCount;
+			uiDesc.func.outputCount = s_soundFuncTypeDesc[uiDesc.func.type].retCount;
 
 			// add links
 			for (int i = 0; i < uiDesc.func.inputCount; ++i)
@@ -1472,7 +1474,7 @@ void CSoundScriptEditor::DrawScriptEditor(bool& open)
 										ImGui::TableSetColumnIndex(1);
 
 										float inputVal = emitter->GetInputValue(nodeId, i);
-										if (ImGui::SliderFloat("##v", &inputVal, desc.input.rMin, desc.input.rMax, "%.3f", 1.0f))
+										if (ImGui::DragFloat("##v", &inputVal, 0.01f))
 										{
 											uint8 inputId = SoundNodeDesc::PackInputIdArrIdx(nodeId, i);
 											emitter->SetInputValue(inputId, inputVal);

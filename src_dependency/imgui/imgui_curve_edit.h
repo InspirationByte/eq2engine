@@ -431,7 +431,7 @@ float CurveValueSmooth(float p, int maxpoints, const ImVec2* points, splineFunc 
 {
     if (maxpoints < 2 || points == 0)
         return 0;
-    if (p < 0)
+    if (p < points[0].x)
         return points[0].y;
 
     return splineFn(p, maxpoints, (float*)points);
@@ -442,7 +442,7 @@ float CurveValue(float t, int maxpoints, const ImVec2* points)
     if (maxpoints < 2 || points == 0)
         return 0;
 
-    if (t < 0)
+    if (t < points[0].x)
         return points[0].y;
 
     int left = 0;

@@ -11,13 +11,13 @@
 #include "utils/KeyValues.h"
 
 #include "eqSoundEmitterPrivateTypes.h"
-
+#pragma optimize("", off)
 
 float SoundSplineDesc::splineInterpLinear(float t, int maxPoints, const float* points)
 {
 	const Vector2D* pts = (const Vector2D*)points;
 
-	if (t < 0.0f)
+	if (t < pts[0].x)
 		return pts[0].y;
 
 	int left = 0;
@@ -560,7 +560,13 @@ void SoundEmitterData::SetInputValue(int inputNameHash, int arrayIdx, float valu
 	if (it == script->inputNodeMap.end())
 		return;
 
-	SetInputValue(*it, arrayIdx, value);
+	auto dataIt = inputs.find(*it);
+	if (dataIt == inputs.end())
+		return;
+
+	SoundNodeInput& in = *dataIt;
+	in.values[arrayIdx] = value;
+	nodesNeedUpdate = true;
 }
 
 void SoundEmitterData::SetInputValue(uint8 inputId, float value)
@@ -734,8 +740,8 @@ static void evalFaderSpline(EvalStack& stack, int argc, int nret)
 	for (int i = 0; i < nret; ++i)
 	{
 		const float targetValue = (float)i;
-		const float fadeValue = clamp(1.0f - fabs(output - targetValue), 0.0f, 1.0f);
-		stack.Push(output);
+		const float fadeValue = clamp(1.0f - fabsf(targetValue - output), 0.0f, 1.0f);
+		stack.Push(fadeValue);
 	}
 }
 

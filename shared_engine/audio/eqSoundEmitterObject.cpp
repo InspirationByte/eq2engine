@@ -323,6 +323,28 @@ void CSoundingObject::SetParams(int uniqueId, const IEqAudioSource::Params& para
 		SetParams(*it, params);
 }
 
+void CSoundingObject::SetInputValue(int uniqueId, const char* name, float value)
+{
+	const int inputNameHash = StringToHash(name);
+	SetInputValue(uniqueId, inputNameHash, value);
+}
+
+void CSoundingObject::SetInputValue(int uniqueId, int inputNameHash, float value)
+{
+	if (uniqueId != ID_ALL)
+	{
+		const auto it = m_emitters.find(uniqueId);
+		if (it == m_emitters.end())
+			return;
+
+		SetInputValue(*it, inputNameHash, value);
+		return;
+	}
+
+	for (auto it = m_emitters.begin(); it != m_emitters.end(); ++it)
+		SetInputValue(*it, inputNameHash, value);
+}
+
 void CSoundingObject::SetEmitterState(SoundEmitterData* emitter, IEqAudioSource::State state, bool rewindOnPlay)
 {
 	if (!emitter)
@@ -528,6 +550,14 @@ void CSoundingObject::SetParams(SoundEmitterData* emitter, const IEqAudioSource:
 		emitter->soundSource->UpdateParams(param);
 }
 
+void CSoundingObject::SetInputValue(SoundEmitterData* emitter, int inputNameHash, float value)
+{
+	if (!emitter)
+		return;
+
+	emitter->SetInputValue(inputNameHash, 0, value);
+}
+
 void CSoundingObject::RecalcParameters(SoundEmitterData* emitter, IEqAudioSource::Params& outParams, int updateFlags)
 {
 	if (!emitter)
@@ -542,13 +572,13 @@ void CSoundingObject::RecalcParameters(SoundEmitterData* emitter, IEqAudioSource
 		const float finalVolume = nodeParams.volume * emitter->epVolume;
 		emitter->virtualParams.set_volume(finalVolume);
 
-		outParams.set_volume(finalVolume * GetSoundVolumeScale());
+		outParams.set_volume(max(finalVolume * GetSoundVolumeScale(), 0.0f));
 	}
 
 	if (updateFlags & IEqAudioSource::UPDATE_PITCH)
 	{
 		const float finalPitch = nodeParams.pitch * emitter->epPitch;
-		emitter->virtualParams.set_pitch(finalPitch);
+		emitter->virtualParams.set_pitch(max(finalPitch, 0.0f));
 
 		outParams.set_pitch(finalPitch);
 	}
@@ -646,4 +676,15 @@ void CEmitterObjectSound::SetSampleVolume(int waveId, float volume)
 void CEmitterObjectSound::SetParams(const IEqAudioSource::Params& params)
 {
 	m_soundingObj.SetParams(m_emitter, params);
+}
+
+void CEmitterObjectSound::SetInputValue(const char* name, float value)
+{
+	const int inputNameHash = StringToHash(name);
+	SetInputValue(inputNameHash, value);
+}
+
+void CEmitterObjectSound::SetInputValue(int inputNameHash, float value)
+{
+	m_soundingObj.SetInputValue(m_emitter, inputNameHash, value);
 }

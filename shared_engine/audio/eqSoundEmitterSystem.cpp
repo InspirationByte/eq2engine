@@ -248,16 +248,19 @@ int CSoundEmitterSystem::EmitSound(EmitParams* ep, CSoundingObject* soundingObj,
 	edata->epVolume = ep->volume;
 	edata->epRadiusMultiplier = ep->radiusMultiplier;
 
-	IEqAudioSource::Params& nodeParams = edata->nodeParams;
-	float sampleVolume[MAX_SOUND_SAMPLES_SCRIPT];
-	edata->UpdateNodes(nodeParams, sampleVolume);
-
 	IEqAudioSource::Params& virtualParams = edata->virtualParams;
-	virtualParams.set_pitch(nodeParams.pitch * edata->epPitch);
-	virtualParams.set_volume(nodeParams.volume * edata->epVolume);
-	virtualParams.set_referenceDistance(nodeParams.referenceDistance * edata->epRadiusMultiplier);
-	virtualParams.set_rolloff(nodeParams.rolloff);
-	virtualParams.set_airAbsorption(nodeParams.airAbsorption);
+	if (isAudibleToStart || soundingObj)
+	{
+		IEqAudioSource::Params& nodeParams = edata->nodeParams;
+		float sampleVolume[MAX_SOUND_SAMPLES_SCRIPT];
+		edata->UpdateNodes(nodeParams, sampleVolume);
+
+		virtualParams.set_pitch(nodeParams.pitch * edata->epPitch);
+		virtualParams.set_volume(nodeParams.volume * edata->epVolume);
+		virtualParams.set_referenceDistance(nodeParams.referenceDistance * edata->epRadiusMultiplier);
+		virtualParams.set_rolloff(nodeParams.rolloff);
+		virtualParams.set_airAbsorption(nodeParams.airAbsorption);
+	}
 
 	virtualParams.set_looping(script->loop);		// TODO: auto loop if repeat marker
 	virtualParams.set_relative(is2Dsound);
