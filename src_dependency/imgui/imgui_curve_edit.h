@@ -42,10 +42,23 @@ namespace ImGui
 
 namespace ImGui
 {
-int Curve(const char* label, const ImVec2& size, const int maxpoints, ImVec2* points, int* selection = nullptr);
-float CurveValue(float p, int maxpoints, const ImVec2* points);
-float CurveValueSmooth(float p, int maxpoints, const ImVec2* points);
+typedef float (*splineFunc)(float t, int maxPoints, const float* points);
+
+bool    CurveFrame(const char* label, const ImVec2& size,
+                const int maxpoints, ImVec2* points, splineFunc splineFn,
+                const ImVec2& rangeMin = ImVec2(0, 0), const ImVec2& rangeMax = ImVec2(1, 1));
+
+int     Curve(const char* label, const ImVec2& size, 
+                const int maxpoints, ImVec2* points, int* selection, 
+                splineFunc splineFn,
+                const ImVec2& rangeMin = ImVec2(0, 0), 
+                const ImVec2& rangeMax = ImVec2(1, 1));
+
+float   CurveValue(float p, int maxpoints, const ImVec2* points);
+float   CurveValueSmooth(float p, int maxpoints, const ImVec2* points, splineFunc splineFn);
 }; // namespace ImGui
+
+#ifndef IMGUI_CURVE_HEADER_ONLY
 
 namespace tween
 {
@@ -414,90 +427,38 @@ namespace ImGui
 {
 static const float CurveTerminator = -10000;
 
-// [src] http://iquilezles.org/www/articles/minispline/minispline.htm
-// key format (for dim == 1) is (t0,x0,t1,x1 ...)
-// key format (for dim == 2) is (t0,x0,y0,t1,x1,y1 ...)
-// key format (for dim == 3) is (t0,x0,y0,z0,t1,x1,y1,z1 ...)
-template<int DIM>
-void spline(const float* key, int num, float t, float* v)
-{
-    static float coefs[16] = {
-        -1.0f, 2.0f,-1.0f, 0.0f,
-         3.0f,-5.0f, 0.0f, 2.0f,
-        -3.0f, 4.0f, 1.0f, 0.0f,
-         1.0f,-1.0f, 0.0f, 0.0f
-    };
-
-    const int size = DIM + 1;
-
-    // find key
-    int k = 0;
-    while (key[k * size] < t)
-        k++;
-
-    const float key0 = key[(k - 1) * size];
-    const float key1 = key[k * size];
-
-    // interpolant
-    const float h = (t - key0) / (key1 - key0);
-
-    // init result
-    for (int i = 0; i < DIM; i++)
-        v[i] = 0.0f;
-
-    // add basis functions
-    for (int i = 0; i < 4; ++i)
-    {
-        const float* co = &coefs[4 * i];
-        const float b = 0.5f * (((co[0] * h + co[1]) * h + co[2]) * h + co[3]);
-
-        const int kn = ImClamp(k + i - 2, 0, num - 1);
-        for (int j = 0; j < DIM; j++)
-            v[j] += b * key[kn * size + j + 1];
-    }
-}
-
-float CurveValueSmooth(float p, int maxpoints, const ImVec2* points)
+float CurveValueSmooth(float p, int maxpoints, const ImVec2* points, splineFunc splineFn)
 {
     if (maxpoints < 2 || points == 0)
         return 0;
     if (p < 0)
         return points[0].y;
 
-    float* input = new float[maxpoints * 2];
-    float output[4];
-
-    for (int i = 0; i < maxpoints; ++i)
-    {
-        input[i * 2 + 0] = points[i].x;
-        input[i * 2 + 1] = points[i].y;
-    }
-
-    spline<1>(input, maxpoints, p, output);
-
-    delete[] input;
-    return output[0];
+    return splineFn(p, maxpoints, (float*)points);
 }
 
-float CurveValue(float p, int maxpoints, const ImVec2* points)
+float CurveValue(float t, int maxpoints, const ImVec2* points)
 {
     if (maxpoints < 2 || points == 0)
         return 0;
-    if (p < 0)
+
+    if (t < 0)
         return points[0].y;
 
     int left = 0;
-    while (left < maxpoints && points[left].x < p && points[left].x != -1)
+    while (left < maxpoints && points[left].x < t && points[left].x != -1)
         left++;
     if (left)
         left--;
 
-    if (left == maxpoints - 1)
+    if (left >= maxpoints - 1)
         return points[maxpoints - 1].y;
 
-    float d = (p - points[left].x) / (points[left + 1].x - points[left].x);
+    const ImVec2 p = points[left];
+    const ImVec2 q = points[left + 1];
 
-    return points[left].y + (points[left + 1].y - points[left].y) * d;
+    const float h = (t - p.x) / (q.x - p.x);
+    return p.y + (q.y - p.y) * h;
 }
 
 static inline float ImRemap(float v, float a, float b, float c, float d)
@@ -510,7 +471,7 @@ static inline ImVec2 ImRemap(const ImVec2& v, const ImVec2& a, const ImVec2& b, 
     return ImVec2(ImRemap(v.x, a.x, b.x, c.x, d.x), ImRemap(v.y, a.y, b.y, c.y, d.y));
 }
 
-bool CurveFrame(const char* label, const ImVec2& size, const int maxpoints, ImVec2* points, const ImVec2& rangeMin = ImVec2(0, 0), const ImVec2& rangeMax = ImVec2(1, 1))
+bool CurveFrame(const char* label, const ImVec2& size, const int maxpoints, ImVec2* points, splineFunc splineFn, const ImVec2& rangeMin, const ImVec2& rangeMax)
 {
     if (maxpoints < 2 || points == nullptr)
         return false;
@@ -568,8 +529,8 @@ bool CurveFrame(const char* label, const ImVec2& size, const int maxpoints, ImVe
         px = ImRemap(px, 0, 1, rangeMin.x, rangeMax.x);
         qx = ImRemap(qx, 0, 1, rangeMin.x, rangeMax.x);
 
-        const float py = CurveValueSmooth(px, maxpoints, points);
-        const float qy = CurveValueSmooth(qx, maxpoints, points);
+        const float py = CurveValueSmooth(px, pointCount, points, splineFn);
+        const float qy = CurveValueSmooth(qx, pointCount, points, splineFn);
 
         ImVec2 p = ImRemap(ImVec2(px, py), rangeMin, rangeMax, ImVec2(0,0), ImVec2(1,1));
         ImVec2 q = ImRemap(ImVec2(qx, qy), rangeMin, rangeMax, ImVec2(0,0), ImVec2(1,1));
@@ -587,7 +548,7 @@ bool CurveFrame(const char* label, const ImVec2& size, const int maxpoints, ImVe
     return hovered && IsMouseDoubleClicked(0);
 }
 
-int Curve(const char* label, const ImVec2& size, const int maxpoints, ImVec2* points, int* selection, const ImVec2& rangeMin = ImVec2(0, 0), const ImVec2& rangeMax = ImVec2(1, 1))
+int Curve(const char* label, const ImVec2& size, const int maxpoints, ImVec2* points, int* selection, splineFunc splineFn, const ImVec2& rangeMin, const ImVec2& rangeMax)
 {
     if (maxpoints < 2 || points == nullptr)
         return 0;
@@ -800,8 +761,8 @@ int Curve(const char* label, const ImVec2& size, const int maxpoints, ImVec2* po
         px = ImRemap(px, 0, 1, rangeMin.x, rangeMax.x);
         qx = ImRemap(qx, 0, 1, rangeMin.x, rangeMax.x);
 
-        const float py = CurveValueSmooth(px, maxpoints, points);
-        const float qy = CurveValueSmooth(qx, maxpoints, points);
+        const float py = CurveValueSmooth(px, pointCount, points, splineFn);
+        const float qy = CurveValueSmooth(qx, pointCount, points, splineFn);
 
         ImVec2 p = ImRemap(ImVec2(px, py), rangeMin, rangeMax, ImVec2(0,0), ImVec2(1,1));
         ImVec2 q = ImRemap(ImVec2(qx, qy), rangeMin, rangeMax, ImVec2(0,0), ImVec2(1,1));
@@ -949,3 +910,5 @@ int Curve(const char* label, const ImVec2& size, const int maxpoints, ImVec2* po
 }
 
 }; // namespace ImGui
+
+#endif // IMGUI_CURVE_HEADER_ONLY

@@ -80,6 +80,12 @@ struct TRectangle
 		vleftTop -= value;
 	}
 
+	void Expand(const TVec2D<T>& value)
+	{
+		vrightBottom += value;
+		vleftTop -= value;
+	}
+
     const TVec2D<T>& GetLeftTop() const
 	{
 		return vleftTop;

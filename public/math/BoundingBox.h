@@ -265,6 +265,12 @@ struct TAABBox
 		minPoint -= value;
 	}
 
+	void Expand(const TVec3D<T>& value)
+	{
+		maxPoint += value;
+		minPoint -= value;
+	}
+
 	TVec3D<T>	minPoint;
 	TVec3D<T>	maxPoint;
 };

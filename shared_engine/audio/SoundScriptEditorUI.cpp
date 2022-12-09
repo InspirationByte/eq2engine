@@ -20,8 +20,6 @@
 #include "eqSoundEmitterObject.h"
 #include "eqSoundEmitterPrivateTypes.h"
 
-#pragma optimize("", off)
-
 struct UISoundNodeDesc
 {
 	enum Side : int
@@ -30,7 +28,7 @@ struct UISoundNodeDesc
 		RHS = 2
 	};
 
-	SoundCurveDesc	curve;
+	SoundSplineDesc	spline;
 	int				id;
 	char			name[30];
 	uint8			type{ 0 };
@@ -88,7 +86,7 @@ public:
 	static void SerializeScriptParamsToKeyValues(const SoundScriptDesc& script, KVSection& out);
 	static void SerializeNodesToKeyValues(KVSection& out);
 
-	static void ShowCurveEditor();
+	static void ShowSplineEditor();
 
 	static int GetConnectionCount(int attribId);
 	static void GetConnections(int attribId, Array<UINodeLink>& links);
@@ -103,7 +101,7 @@ public:
 	static int s_linkIdGenerator;
 	static int s_idGenerator;
 
-	static UISoundNodeDesc* s_currentEditingCurveNode;
+	static UISoundNodeDesc* s_currentEditingSplineNode;
 };
 
 #endif
@@ -130,7 +128,7 @@ Map<int, UINodeLink> CSoundScriptEditor::s_uiNodeLinks{ PP_SL };
 int CSoundScriptEditor::s_linkIdGenerator{ 0 };
 int CSoundScriptEditor::s_idGenerator{ 0 };
 
-UISoundNodeDesc* CSoundScriptEditor::s_currentEditingCurveNode = nullptr;
+UISoundNodeDesc* CSoundScriptEditor::s_currentEditingSplineNode = nullptr;
 
 static int MakeAttribId(int nodeId, int arrayIdx, int side)
 {
@@ -208,7 +206,7 @@ void CSoundScriptEditor::DisconnectLHSAttrib(int attribId)
 
 void UISoundNodeDesc::SetupNode(ESoundNodeType setupType)
 {
-	curve.Reset();
+	spline.Reset();
 	type = setupType;
 	if (type == SOUND_NODE_INPUT)
 	{
@@ -400,11 +398,11 @@ void CSoundScriptEditor::InitNodesFromScriptDesc(const SoundScriptDesc& script)
 				}
 			}
 
-			// copy curve properties
-			if (nodeDesc.func.type == SOUND_FUNC_CURVE || nodeDesc.func.type == SOUND_FUNC_FADE)
+			// copy spline properties
+			if (nodeDesc.func.type == SOUND_FUNC_SPLINE || nodeDesc.func.type == SOUND_FUNC_FADE)
 			{
-				const int curveIdx = nodeDesc.func.inputIds[1];
-				uiDesc.curve = script.curveDescs[curveIdx];
+				const int splineIdx = nodeDesc.func.inputIds[1];
+				uiDesc.spline = script.splineDescs[splineIdx];
 			}
 
 		} // if
@@ -630,7 +628,7 @@ void CSoundScriptEditor::SerializeNodesToKeyValues(KVSection& out)
 					// add number of outputs
 					sec->AddValue(valCount);
 				}
-				case SOUND_FUNC_CURVE:
+				case SOUND_FUNC_SPLINE:
 				{
 					// add input
 					{
@@ -650,9 +648,9 @@ void CSoundScriptEditor::SerializeNodesToKeyValues(KVSection& out)
 							sec->AddValue(EqString::Format("%s", s_uiNodes[nodeId].name, arrayIdx));
 					}
 
-					// add curve values
-					for (int i = 0; i < uiNode.curve.valueCount; ++i)
-						sec->AddValue(uiNode.curve.values[i]);
+					// add spline values
+					for (int i = 0; i < uiNode.spline.valueCount; ++i)
+						sec->AddValue(uiNode.spline.values[i]);
 
 					break;
 				}
@@ -710,67 +708,74 @@ void CSoundScriptEditor::SerializeNodesToKeyValues(KVSection& out)
 
 //------------------------------------------------------------------------
 
-void CSoundScriptEditor::ShowCurveEditor()
+void CSoundScriptEditor::ShowSplineEditor()
 {
-	if (!s_currentEditingCurveNode)
+	if (!s_currentEditingSplineNode)
 		return;
 
-	SoundCurveDesc& curve = s_currentEditingCurveNode->curve;
-	static ImVec2 curveRangeMin(F_INFINITY, 0);
-	static ImVec2 curveRangeMax(-F_INFINITY, 0);
-	if(curveRangeMin.x >= F_INFINITY * 0.5f)
+	SoundSplineDesc& spline = s_currentEditingSplineNode->spline;
+	static ImVec2 splineRangeMin(F_INFINITY, 0.0f);
+	static ImVec2 splineRangeMax(-F_INFINITY, 1.0f);
+	if(splineRangeMin.x >= F_INFINITY * 0.5f)
 	{
 		// auto-detect range on initialization
-		ImVec2* curvePoints = (ImVec2*)curve.values;
+		ImVec2* splinePoints = (ImVec2*)spline.values;
 		Rectangle_t rct;
-		for (int i = 0; i < curve.valueCount / 2; ++i)
+		for (int i = 0; i < spline.valueCount / 2; ++i)
 		{
-			rct.AddVertex(Vector2D(curvePoints[i].x, curvePoints[i].y));
-			rct.AddVertex(Vector2D(curvePoints[i].x, curvePoints[i].y));
+			rct.AddVertex(Vector2D(splinePoints[i].x, splinePoints[i].y));
+			rct.AddVertex(Vector2D(splinePoints[i].x, splinePoints[i].y));
 		}
-		curveRangeMin = ImVec2(rct.vleftTop.x, rct.vleftTop.y);
-		curveRangeMax = ImVec2(rct.vrightBottom.x, rct.vrightBottom.y);
+
+		// correct too small boxes
+		const float yDiff = rct.vrightBottom.y - rct.vleftTop.y;
+		if (yDiff < 1.0f)
+		{
+			rct.Expand(Vector2D(0.0f, 1.0f - yDiff));
+		}
+
+		splineRangeMin = ImVec2(rct.vleftTop.x, rct.vleftTop.y);
+		splineRangeMax = ImVec2(rct.vrightBottom.x, rct.vrightBottom.y);
 	}
 
 	bool open = true;
-	if (ImGui::Begin("Curve Editor", &open))
+	if (ImGui::Begin("Spline Editor", &open))
 	{
-		static int curveSelection = -1;
+		static int splineSelection = -1;
 
-		
 		ImGui::Text("Range X");
 		ImGui::PushItemWidth(150.0f);
 		ImGui::SameLine();
-		ImGui::InputFloat("##rx_min", &curveRangeMin.x, 0.1f, 0.25f, "%.2f");
+		ImGui::InputFloat("##rx_min", &splineRangeMin.x, 0.1f, 0.25f, "%.2f");
 		ImGui::SameLine();
-		ImGui::InputFloat("##rx_max", &curveRangeMax.x, 0.1f, 0.25f, "%.2f");
+		ImGui::InputFloat("##rx_max", &splineRangeMax.x, 0.1f, 0.25f, "%.2f");
 		ImGui::PopItemWidth();
 
 		ImGui::Text("Range Y");
 		ImGui::PushItemWidth(150.0f);
 		ImGui::SameLine();
-		ImGui::InputFloat("##ry_min", &curveRangeMin.y, 0.1f, 0.25f, "%.2f");
+		ImGui::InputFloat("##ry_min", &splineRangeMin.y, 0.1f, 0.25f, "%.2f");
 		ImGui::SameLine();
-		ImGui::InputFloat("##ry_max", &curveRangeMax.y, 0.1f, 0.25f, "%.2f");
+		ImGui::InputFloat("##ry_max", &splineRangeMax.y, 0.1f, 0.25f, "%.2f");
 		ImGui::PopItemWidth();
 
-		if (ImGui::Curve(s_currentEditingCurveNode->name, ImVec2(600, 200), SoundCurveDesc::MAX_CURVE_POINTS, (ImVec2*)curve.values, &curveSelection, curveRangeMin, curveRangeMax))
+		if (ImGui::Curve(s_currentEditingSplineNode->name, ImVec2(600, 200), SoundSplineDesc::MAX_SPLINE_POINTS, (ImVec2*)spline.values, &splineSelection, SoundSplineDesc::splineInterpLinear, splineRangeMin, splineRangeMax))
 		{
 			// Recalc point count
 			int pointCount = 0;
-			while (pointCount < SoundCurveDesc::MAX_CURVE_POINTS && curve.values[pointCount*2] >= curveRangeMin.x)
+			while (pointCount < SoundSplineDesc::MAX_SPLINE_POINTS && spline.values[pointCount*2] >= splineRangeMin.x)
 				pointCount++;
 
-			curve.valueCount = pointCount * 2;
+			spline.valueCount = pointCount * 2;
 		}
 		ImGui::End();
 	}
 
 	if (!open)
 	{
-		s_currentEditingCurveNode = nullptr;
-		curveRangeMin = ImVec2(F_INFINITY, 0);
-		curveRangeMax = ImVec2(-F_INFINITY, 0);
+		s_currentEditingSplineNode = nullptr;
+		splineRangeMin = ImVec2(F_INFINITY, 0);
+		splineRangeMax = ImVec2(-F_INFINITY, 0);
 	}
 }
 
@@ -1025,23 +1030,30 @@ void CSoundScriptEditor::DrawNodeEditor(bool initializePositions)
 				}
 			}
 
-			// draw curve if it's curve
-			if (uiNode.func.type == SOUND_FUNC_CURVE || uiNode.func.type == SOUND_FUNC_FADE)
+			// draw spline
+			if (uiNode.func.type == SOUND_FUNC_SPLINE || uiNode.func.type == SOUND_FUNC_FADE)
 			{
-				SoundCurveDesc& curve = uiNode.curve;
-				ImVec2* curvePoints = (ImVec2*)curve.values;
+				SoundSplineDesc& spline = uiNode.spline;
+				ImVec2* splinePoints = (ImVec2*)spline.values;
 				Rectangle_t rct;
-				for (int i = 0; i < curve.valueCount / 2; ++i)
+				for (int i = 0; i < spline.valueCount / 2; ++i)
 				{
-					rct.AddVertex(Vector2D(curvePoints[i].x, curvePoints[i].y + 0.25f));
-					rct.AddVertex(Vector2D(curvePoints[i].x, curvePoints[i].y - 0.25f));
+					rct.AddVertex(Vector2D(splinePoints[i].x, splinePoints[i].y + 0.25f));
+					rct.AddVertex(Vector2D(splinePoints[i].x, splinePoints[i].y - 0.25f));
 				}
 
-				ImVec2 curveRangeMin(rct.vleftTop.x, rct.vleftTop.y);
-				ImVec2 curveRangeMax(rct.vrightBottom.x, rct.vrightBottom.y);
-				if (ImGui::CurveFrame(uiNode.name, ImVec2(120, 50), 10, curvePoints, curveRangeMin, curveRangeMax))
+				// correct too small boxes
+				const float yDiff = rct.vrightBottom.y - rct.vleftTop.y;
+				if (yDiff < 1.0f)
 				{
-					s_currentEditingCurveNode = &uiNode;
+					rct.Expand(Vector2D(0.0f, 1.0f - yDiff));
+				}
+
+				ImVec2 splineRangeMin(rct.vleftTop.x, rct.vleftTop.y);
+				ImVec2 splineRangeMax(rct.vrightBottom.x, rct.vrightBottom.y);
+				if (ImGui::CurveFrame(uiNode.name, ImVec2(120, 50), 10, splinePoints, SoundSplineDesc::splineInterpLinear, splineRangeMin, splineRangeMax))
+				{
+					s_currentEditingSplineNode = &uiNode;
 				}
 			}
 
@@ -1110,7 +1122,7 @@ void CSoundScriptEditor::DrawNodeEditor(bool initializePositions)
 		}
 	}
 
-	ShowCurveEditor();
+	ShowSplineEditor();
 }
 
 void CSoundScriptEditor::DrawScriptEditor(bool& open)

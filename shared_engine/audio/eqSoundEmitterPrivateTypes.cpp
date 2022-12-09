@@ -12,7 +12,38 @@
 
 #include "eqSoundEmitterPrivateTypes.h"
 
-void SoundCurveDesc::Reset()
+
+float SoundSplineDesc::splineInterpLinear(float t, int maxPoints, const float* points)
+{
+	const Vector2D* pts = (const Vector2D*)points;
+
+	if (t < 0.0f)
+		return pts[0].y;
+
+	int left = 0;
+	while (left < maxPoints && pts[left].x < t && pts[left].x != -1)
+		left++;
+	if (left)
+		left--;
+
+	if (left >= maxPoints - 1)
+		return pts[maxPoints - 1].y;
+
+	const Vector2D p = pts[left];
+	const Vector2D q = pts[left + 1];
+
+	const float h = (t - p.x) / (q.x - p.x);
+	return p.y + (q.y - p.y) * h;
+}
+
+float SoundSplineDesc::splineInterp(float t, int maxPoints, const float* points)
+{
+	float output = 0.0f;
+	spline<1>(points, maxPoints, t, &output);
+	return output;
+}
+
+void SoundSplineDesc::Reset()
 {
 	values[0] = 0.0f;
 	values[1] = 0.0f;
@@ -22,9 +53,9 @@ void SoundCurveDesc::Reset()
 	valueCount = 4;
 }
 
-void SoundCurveDesc::Fix()
+void SoundSplineDesc::Fix()
 {
-	if (valueCount < SoundCurveDesc::MAX_CURVE_POINTS * 2)
+	if (valueCount < MAX_SPLINE_POINTS * 2)
 		values[valueCount] = -F_INFINITY;
 }
 
@@ -146,7 +177,7 @@ void SoundScriptDesc::ParseDesc(SoundScriptDesc& scriptDesc, const KVSection* sc
 	}
 
 	Array<SoundNodeDesc>& nodeDescs = scriptDesc.nodeDescs;
-	Array<SoundCurveDesc>& curveDescs = scriptDesc.curveDescs;
+	Array<SoundSplineDesc>& splineDescs = scriptDesc.splineDescs;
 
 	// parse constants, inputs, mixers
 	for (int i = 0; i < scriptSection->KeyCount(); ++i)
@@ -303,7 +334,7 @@ void SoundScriptDesc::ParseDesc(SoundScriptDesc& scriptDesc, const KVSection* sc
 					funcDesc.func.outputCount = 1;
 					break;
 				}
-				case SOUND_FUNC_CURVE:
+				case SOUND_FUNC_SPLINE:
 				{
 					// input x0 y0 x1 y1 ... xN yN
 					const char* inputValName = KV_GetValueString(&valKey, 2, nullptr);
@@ -317,18 +348,18 @@ void SoundScriptDesc::ParseDesc(SoundScriptDesc& scriptDesc, const KVSection* sc
 					funcDesc.func.inputCount = 1;
 
 					funcDesc.func.inputIds[0] = findInputVarOrMakeConst(funcDesc, i, inputValName);
-					funcDesc.func.inputIds[1] = curveDescs.numElem();
+					funcDesc.func.inputIds[1] = splineDescs.numElem();
 					
-					SoundCurveDesc& curve = curveDescs.append();
+					SoundSplineDesc& spline = splineDescs.append();
 
 					int nArg = 0;
 					for (int v = 3; v < valKey.ValueCount(); ++v)
 					{
-						if(nArg < SoundCurveDesc::MAX_CURVE_POINTS * 2)
-							curve.values[nArg++] = KV_GetValueFloat(&valKey, v, 0.5f);
+						if(nArg < SoundSplineDesc::MAX_SPLINE_POINTS * 2)
+							spline.values[nArg++] = KV_GetValueFloat(&valKey, v, 0.5f);
 					}
-					curve.valueCount = nArg;
-					curve.Fix();
+					spline.valueCount = nArg;
+					spline.Fix();
 
 					if (nArg & 1)
 					{
@@ -357,24 +388,24 @@ void SoundScriptDesc::ParseDesc(SoundScriptDesc& scriptDesc, const KVSection* sc
 					funcDesc.func.inputCount = 1;
 
 					funcDesc.func.inputIds[0] = findInputVarOrMakeConst(funcDesc, i, inputValName);
-					funcDesc.func.inputIds[1] = curveDescs.numElem();
+					funcDesc.func.inputIds[1] = splineDescs.numElem();
 
-					SoundCurveDesc& curve = curveDescs.append();
+					SoundSplineDesc& spline = splineDescs.append();
 
 					int nArg = 0;
 					for (int v = 4; v < valKey.ValueCount(); ++v)
 					{
-						if (nArg < SoundCurveDesc::MAX_CURVE_POINTS * 2)
-							curve.values[nArg++] = KV_GetValueFloat(&valKey, v, 0.5f);
+						if (nArg < SoundSplineDesc::MAX_SPLINE_POINTS * 2)
+							spline.values[nArg++] = KV_GetValueFloat(&valKey, v, 0.5f);
 					}
 
-					if (nArg < SoundCurveDesc::MAX_CURVE_POINTS * 2)
-						curve.values[nArg] = -F_INFINITY;
-					curve.valueCount = nArg;
+					if (nArg < SoundSplineDesc::MAX_SPLINE_POINTS * 2)
+						spline.values[nArg] = -F_INFINITY;
+					spline.valueCount = nArg;
 
 					if (nArg & 1)
 					{
-						MsgError("sound script '%s' mixer %s: uneven curve arguments\n", scriptDesc.name.ToCString(), funcDesc.name);
+						MsgError("sound script '%s' mixer %s: uneven spline arguments\n", scriptDesc.name.ToCString(), funcDesc.name);
 					}
 					break;
 				}
@@ -498,7 +529,7 @@ void SoundScriptDesc::ReloadDesc(SoundScriptDesc& scriptDesc, const KVSection* s
 	scriptDesc.samples.clear();
 	scriptDesc.nodeDescs.clear();
 	scriptDesc.soundFileNames.clear();
-	scriptDesc.curveDescs.clear();
+	scriptDesc.splineDescs.clear();
 	scriptDesc.inputNodeMap.clear();
 
 	defaultsSec.SetKey("maxDistance", scriptDesc.maxDistance);
@@ -678,28 +709,26 @@ static void evalAverage(EvalStack& stack, int argc, int nret)
 	stack.Push(value / (float)argc);
 }
 
-static void evalCurve(EvalStack& stack, int argc, int nret)
+static void evalSpline(EvalStack& stack, int argc, int nret)
 {
 	ASSERT(argc == 1);
 	ASSERT(nret == 1);
 
 	const float input = stack.Pop<float>();
-	const SoundCurveDesc& curveDesc = *stack.Pop<SoundCurveDesc*>();
+	const SoundSplineDesc& splineDesc = *stack.Pop<SoundSplineDesc*>();
 
-	float output = 0.0f;
-	spline<1>(curveDesc.values, curveDesc.valueCount / 2, input, &output);
+	const float output = SoundSplineDesc::splineInterpLinear(input, splineDesc.valueCount / 2, splineDesc.values);
 	stack.Push(output);
 }
 
-static void evalFaderCurve(EvalStack& stack, int argc, int nret)
+static void evalFaderSpline(EvalStack& stack, int argc, int nret)
 {
 	ASSERT(argc == 1);
 
 	const float input = stack.Pop<float>();
-	const SoundCurveDesc& curveDesc = *stack.Pop<SoundCurveDesc*>();
+	const SoundSplineDesc& splineDesc = *stack.Pop<SoundSplineDesc*>();
 
-	float output = 0.0f;
-	spline<1>(curveDesc.values, curveDesc.valueCount / 2, input, &output);
+	const float output = SoundSplineDesc::splineInterpLinear(input, splineDesc.valueCount / 2, splineDesc.values);
 
 	// split one output into the number of outputs
 	for (int i = 0; i < nret; ++i)
@@ -719,8 +748,8 @@ static SoundEmitEvalFn s_soundFuncTypeEvFn[] = {
 	evalMin, // MIN
 	evalMax, // MAX
 	evalAverage, // AVERAGE
-	evalCurve, // CURVE
-	evalFaderCurve, // FADE
+	evalSpline, // SPLINE
+	evalFaderSpline, // FADE
 };
 static_assert(elementsOf(s_soundFuncTypeEvFn) == SOUND_FUNC_COUNT, "s_soundFuncTypeFuncs and SOUND_FUNC_COUNT needs to be in sync");
 
@@ -731,7 +760,7 @@ void SoundEmitterData::UpdateNodes(IEqAudioSource::Params& outParams, float* sam
 	nodesNeedUpdate = false;
 
 	const Array<SoundNodeDesc>& nodeDescs = script->nodeDescs;
-	const Array<SoundCurveDesc>& curveDescs = script->curveDescs;
+	const Array<SoundSplineDesc>& splineDescs = script->splineDescs;
 
 	EvalStack stack;
 	short nodeValueSp[64];
@@ -762,11 +791,11 @@ void SoundEmitterData::UpdateNodes(IEqAudioSource::Params& outParams, float* sam
 		{
 			// NOTE: stack would be inverse to read!!!
 			
-			if (nodeDesc.func.type == SOUND_FUNC_CURVE || nodeDesc.func.type == SOUND_FUNC_FADE)
+			if (nodeDesc.func.type == SOUND_FUNC_SPLINE || nodeDesc.func.type == SOUND_FUNC_FADE)
 			{
-				// push curve ptr to the stack
-				const SoundCurveDesc& curveDesc = script->curveDescs[nodeDesc.func.inputIds[1]];
-				stack.Push(&curveDesc);
+				// push spline ptr to the stack
+				const SoundSplineDesc& splineDesc = script->splineDescs[nodeDesc.func.inputIds[1]];
+				stack.Push(&splineDesc);
 			}
 
 			for (int i = 0; i < nodeDesc.func.inputCount; ++i)

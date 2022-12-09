@@ -24,20 +24,20 @@ struct KVSection;
 	input "tractionSlide" 0.0 18.0;
 	input "laterialSlide" 0.0 18.0;
 
-	// mixer are basically functions - "add", "sub", "mul", "div", "min", "max", "average", "curve", "fade", "use"
+	// mixer are basically functions - "add", "sub", "mul", "div", "min", "max", "average", "spline", "fade", "use"
 	//	"add", "sub", "mul", "div", "min", "max" - basic functions
 	//	"average" - normalized value of sum of N arguments
-	//	"curve" - takes value and passes it through curve interpolation
-	//	"fade" - same as "curve", but instead it's being split into multiple values (array)
+	//	"spline" - takes value and passes it through spline interpolation
+	//	"fade" - same as "spline", but instead it's being split into multiple values (array)
 	//	"use" - make a copy of value
 
 	// each "mixer" declares a variable that can be used 
 	// in other mixers as an input value or as output
 
 	mixer avgVal max tractionSlide laterialSlide;
-	mixer volume curve avgVal 0.0 1.0 0.0 1.0 1.0;
-	mixer pitch curve avgVal 0.0 1.0 0.0 1.0 1.0;
-	mixer traction curve avgVal 0.0 1.0 1.0 1.0;
+	mixer volume spline avgVal 0.0 1.0 0.0 1.0 1.0;
+	mixer pitch spline avgVal 0.0 1.0 0.0 1.0 1.0;
+	mixer traction spline avgVal 0.0 1.0 1.0 1.0;
 	mixer tractionSampleFade fade traction 2 0.0 1.0 1.0 1.0;
 	mixer lateralSampleFade fade tractionSampleFade[1] 2 0.0 1.0 1.0 1.0;
 
@@ -123,7 +123,7 @@ enum ESoundFuncType : int
 	SOUND_FUNC_MIN,
 	SOUND_FUNC_MAX,
 	SOUND_FUNC_AVERAGE,
-	SOUND_FUNC_CURVE,
+	SOUND_FUNC_SPLINE,
 	SOUND_FUNC_FADE,
 
 	SOUND_FUNC_COUNT
@@ -150,7 +150,7 @@ static SoundFuncDesc s_soundFuncTypeDesc[] = {
 	{ "min", 2, 1 },
 	{ "max", 2, 1 },
 	{ "average", SOUND_FUNC_ARG_VARIADIC, 1 },
-	{ "curve", 1, 1 },
+	{ "spline", 1, 1 },
 	{ "fade", 1, SOUND_FUNC_ARG_VARIADIC },
 };
 static_assert(elementsOf(s_soundFuncTypeDesc) == SOUND_FUNC_COUNT, "s_soundFuncTypeNames and SOUND_FUNC_COUNT needs to be in sync");
@@ -165,11 +165,14 @@ static int GetSoundFuncTypeByString(const char* name)
 	return -1;
 }
 
-struct SoundCurveDesc
+struct SoundSplineDesc
 {
-	static constexpr const int MAX_CURVE_POINTS = 10;
-	float	values[MAX_CURVE_POINTS * 2];	// for curve
+	static constexpr const int MAX_SPLINE_POINTS = 10;
+	float	values[MAX_SPLINE_POINTS * 2];
 	uint8	valueCount{ 0 }; // divide by two pls
+
+	static float splineInterpLinear(float t, int maxPoints, const float* points);
+	static float splineInterp(float t, int maxPoints, const float* points);
 
 	void	Reset();
 	void	Fix();
@@ -237,7 +240,7 @@ struct SoundScriptDesc
 	Array<EqString>			soundFileNames{ PP_SL };
 
 	Array<SoundNodeDesc>	nodeDescs{ PP_SL };
-	Array<SoundCurveDesc>	curveDescs{ PP_SL };
+	Array<SoundSplineDesc>	splineDescs{ PP_SL };
 	uint8					paramNodeMap[SOUND_PARAM_COUNT];
 	Map<int, int>			inputNodeMap{ PP_SL };
 
