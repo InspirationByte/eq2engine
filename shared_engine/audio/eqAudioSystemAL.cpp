@@ -1169,8 +1169,9 @@ static int MixMono8(float volume, const uint8* in, int numInSamples, short* out,
 	const int maxSamples = min(numInSamples, numOutSamples);
 	for (int i = 0; i < maxSamples; ++i)
 	{
-		const short inVal = (short)in[i] * 256 - SHRT_MAX;
-		out[i] = clamp(out[i] + inVal * volume, SHRT_MIN, SHRT_MAX);
+		const float src_val = ((short)in[i] * 256 - SHRT_MAX) * volume;
+		const int result = (((SHRT_MAX - out[i]) * src_val) / SHRT_MAX) + out[i];
+		out[i] = clamp(result, SHRT_MIN, SHRT_MAX);
 	}
 
 	return maxSamples;
@@ -1181,7 +1182,11 @@ static int MixMono16(float volume, const short* in, int numInSamples, short* out
 {
 	const int maxSamples = min(numInSamples, numOutSamples);
 	for (int i = 0; i < maxSamples; ++i)
-		out[i] = clamp(out[i] + in[i] * volume, SHRT_MIN, SHRT_MAX);
+	{
+		const float src_val = in[i] * volume;
+		const int result = (((SHRT_MAX - out[i]) * src_val) / SHRT_MAX) + out[i];
+		out[i] = clamp(result, SHRT_MIN, SHRT_MAX);
+	}
 
 	return maxSamples;
 }

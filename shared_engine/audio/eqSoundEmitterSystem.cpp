@@ -640,6 +640,7 @@ void CSoundEmitterSystem::RestartEmittersByScript(SoundScriptDesc* script)
 
 			// this will ensure emitter recreation
 			emitter->nodesNeedUpdate = true;
+			emitter->CreateNodeRuntime();
 			SwitchSourceState(emitter, true);
 			SwitchSourceState(emitter, false);
 		}

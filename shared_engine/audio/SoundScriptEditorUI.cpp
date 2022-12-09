@@ -204,7 +204,6 @@ void CSoundScriptEditor::DisconnectLHSAttrib(int attribId)
 		}
 	}
 }
-#pragma optimize("", off)
 
 void UISoundNodeDesc::GenerateUniqueName()
 {

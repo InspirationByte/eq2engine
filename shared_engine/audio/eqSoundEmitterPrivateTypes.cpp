@@ -534,6 +534,7 @@ void SoundScriptDesc::ReloadDesc(SoundScriptDesc& scriptDesc, const KVSection* s
 
 void SoundEmitterData::CreateNodeRuntime()
 {
+	inputs.clear();
 	const Array<SoundNodeDesc>& nodeDescs = script->nodeDescs;
 
 	for (int i = 0; i < nodeDescs.numElem(); ++i)
