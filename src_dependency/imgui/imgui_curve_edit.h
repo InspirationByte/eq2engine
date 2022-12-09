@@ -446,7 +446,7 @@ float CurveValue(float t, int maxpoints, const ImVec2* points)
         return points[0].y;
 
     int left = 0;
-    while (left < maxpoints && points[left].x < t && points[left].x != -1)
+    while (left < maxpoints && points[left].x < t)
         left++;
     if (left)
         left--;

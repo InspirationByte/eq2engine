@@ -11,7 +11,6 @@
 #include "utils/KeyValues.h"
 
 #include "eqSoundEmitterPrivateTypes.h"
-#pragma optimize("", off)
 
 float SoundSplineDesc::splineInterpLinear(float t, int maxPoints, const float* points)
 {
@@ -21,7 +20,7 @@ float SoundSplineDesc::splineInterpLinear(float t, int maxPoints, const float* p
 		return pts[0].y;
 
 	int left = 0;
-	while (left < maxPoints && pts[left].x < t && pts[left].x != -1)
+	while (left < maxPoints && pts[left].x < t)
 		left++;
 	if (left)
 		left--;
@@ -187,27 +186,8 @@ void SoundScriptDesc::ParseDesc(SoundScriptDesc& scriptDesc, const KVSection* sc
 			continue;
 
 		int nodeType = -1;
-		/*if (!stricmp(valKey.name, "const"))
-		{
-			const char* nodeName = KV_GetValueString(&valKey, 0, nullptr);
-
-			if (nodeName == nullptr || !nodeName[0])
-			{
-				MsgError("sound script '%s' const: name is required\n");
-				continue;
-			}
-			const int hashName = StringToHash(nodeName);
-			nodeType = SOUND_NODE_CONST;
-
-			SoundNodeDesc& constDesc = nodeDescs.append();
-			constDesc.type = nodeType;
-			strncpy(constDesc.name, nodeName, sizeof(constDesc.name));
-			constDesc.name[sizeof(constDesc.name) - 1] = 0;
-
-			constDesc.c.value = KV_GetValueFloat(&valKey, 1, 0.0f);
-			constDesc.c.paramId = SOUND_VAR_INVALID;
-		}
-		else */if (!stricmp(valKey.name, "input"))
+		
+		if (!stricmp(valKey.name, "input"))
 		{
 			const char* nodeName = KV_GetValueString(&valKey, 0, nullptr);
 
@@ -216,7 +196,12 @@ void SoundScriptDesc::ParseDesc(SoundScriptDesc& scriptDesc, const KVSection* sc
 				MsgError("sound script '%s' input: name is required\n");
 				continue;
 			}
+
+			ASSERT_MSG(scriptDesc.FindVariableIndex(nodeName) == 0xff, "Node %s was already declared", nodeName);
+
 			nodeType = SOUND_NODE_INPUT;
+
+			// TODO: SetupNode(SOUND_NODE_INPUT)
 
 			const int nodeIdx = nodeDescs.numElem();
 			SoundNodeDesc& inputDesc = nodeDescs.append();
@@ -240,6 +225,10 @@ void SoundScriptDesc::ParseDesc(SoundScriptDesc& scriptDesc, const KVSection* sc
 				MsgError("sound script '%s' mixer: name is required\n");
 				continue;
 			}
+			ASSERT_MSG(scriptDesc.FindVariableIndex(nodeName) == 0xff, "Node %s was already declared", nodeName);
+
+			// TODO: SetupNode(SOUND_NODE_FUNC)
+
 			nodeType = SOUND_NODE_FUNC;
 			const char* funcTypeName = KV_GetValueString(&valKey, 1, "");
 			int funcType = GetSoundFuncTypeByString(funcTypeName);
@@ -249,12 +238,17 @@ void SoundScriptDesc::ParseDesc(SoundScriptDesc& scriptDesc, const KVSection* sc
 				continue;
 			}
 
+			// TODO: SetupFunc()
+
 			SoundNodeDesc& funcDesc = nodeDescs.append();
 			funcDesc.type = nodeType;
 			funcDesc.func.type = funcType;
 
 			strncpy(funcDesc.name, nodeName, sizeof(funcDesc.name));
 			funcDesc.name[sizeof(funcDesc.name) - 1] = 0;
+
+			for (int v = 0; v < SoundNodeDesc::MAX_ARRAY_IDX; ++v)
+				funcDesc.func.inputIds[v] = SOUND_VAR_INVALID;
 
 			auto findInputVarOrMakeConst = [&scriptDesc](SoundNodeDesc& node, int inputIdx, const char* valName)
 			{
@@ -273,29 +267,28 @@ void SoundScriptDesc::ParseDesc(SoundScriptDesc& scriptDesc, const KVSection* sc
 
 			};
 
+			// TODO: ParseFuncNode()
+
 			// parse format for each type
 			switch ((ESoundFuncType)funcType)
 			{
-				/*case SOUND_FUNC_COPY:
+				case SOUND_FUNC_ABS:
 				{
-					// 1 arg
-					const char* valName = KV_GetValueString(&valKey, 2, nullptr);
-					if (!valName)
+					// N args
+					int nArg = 0;
+					for (int v = 2; v < valKey.ValueCount(); ++v)
 					{
-						MsgError("sound script '%s' mixer %s: insufficient args\n", scriptDesc.name.ToCString(), funcDesc.name);
-						continue;
+						const char* valName = KV_GetValueString(&valKey, v, nullptr);
+						ASSERT(valName);
+
+						funcDesc.func.inputIds[nArg++] = findInputVarOrMakeConst(funcDesc, v, valName);
 					}
+					funcDesc.func.inputCount = nArg;
 
-					uint8 varIdx = scriptDesc.FindVariableIndex(valName);
-					if (varIdx == SOUND_VAR_INVALID)
-						MsgError("sound script '%s': unknown var %s\n", scriptDesc.name.ToCString(), valName);
-
-					funcDesc.func.inputIds[0] = varIdx;
-
-					funcDesc.func.inputCount = 1;
-					funcDesc.func.outputCount = 1;
+					// same number of N returns
+					funcDesc.func.outputCount = nArg;
 					break;
-				}*/
+				}
 				case SOUND_FUNC_ADD:
 				case SOUND_FUNC_SUB:
 				case SOUND_FUNC_MUL:
@@ -715,6 +708,17 @@ static void evalAverage(EvalStack& stack, int argc, int nret)
 	stack.Push(value / (float)argc);
 }
 
+static void evalAbs(EvalStack& stack, int argc, int nret)
+{
+	float value[SoundNodeDesc::MAX_ARRAY_IDX];
+
+	for (int i = 0; i < argc; ++i)
+		value[argc - i - 1] = fabsf(stack.Pop<float>());
+
+	for (int i = 0; i < nret; ++i)
+		stack.Push(value[i]);
+}
+
 static void evalSpline(EvalStack& stack, int argc, int nret)
 {
 	ASSERT(argc == 1);
@@ -753,6 +757,7 @@ static SoundEmitEvalFn s_soundFuncTypeEvFn[] = {
 	evalDiv, // DIV
 	evalMin, // MIN
 	evalMax, // MAX
+	evalAbs, // ABS
 	evalAverage, // AVERAGE
 	evalSpline, // SPLINE
 	evalFaderSpline, // FADE

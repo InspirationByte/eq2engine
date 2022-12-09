@@ -113,6 +113,12 @@ enum ESoundNodeType : int
 	SOUND_NODE_TYPE_COUNT
 };
 
+static const char* s_nodeTypeNameStr[] = {
+	"const",
+	"input",
+	"mixer"
+};
+
 enum ESoundFuncType : int
 {
 	SOUND_FUNC_COPY,
@@ -122,6 +128,7 @@ enum ESoundFuncType : int
 	SOUND_FUNC_DIV,
 	SOUND_FUNC_MIN,
 	SOUND_FUNC_MAX,
+	SOUND_FUNC_ABS,
 	SOUND_FUNC_AVERAGE,
 	SOUND_FUNC_SPLINE,
 	SOUND_FUNC_FADE,
@@ -149,6 +156,7 @@ static SoundFuncDesc s_soundFuncTypeDesc[] = {
 	{ "div", 2, 1 },
 	{ "min", 2, 1 },
 	{ "max", 2, 1 },
+	{ "abs", SOUND_FUNC_ARG_VARIADIC, SOUND_FUNC_ARG_VARIADIC },
 	{ "average", SOUND_FUNC_ARG_VARIADIC, 1 },
 	{ "spline", 1, 1 },
 	{ "fade", 1, SOUND_FUNC_ARG_VARIADIC },
