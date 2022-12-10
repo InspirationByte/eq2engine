@@ -818,6 +818,9 @@ void CEqAudioSourceAL::UpdateParams(const Params& params, int overrideUpdateFlag
 	if (mask & UPDATE_AIRABSORPTION)
 		alSourcef(thisSource, AL_AIR_ABSORPTION_FACTOR, params.airAbsorption);
 
+	if (mask & UPDATE_ROLLOFF)
+		alSourcei(thisSource, AL_ROLLOFF_FACTOR, params.rolloff);
+
 	if (mask & UPDATE_EFFECTSLOT)
 	{
 		if (params.effectSlot < 0)
@@ -843,24 +846,6 @@ void CEqAudioSourceAL::UpdateParams(const Params& params, int overrideUpdateFlag
 
 		alSourcei(thisSource, AL_DIRECT_FILTER, m_filter);
 	}
-
-	// TODO: source orientation and cone angles (AL_ORIENTATION, AL_CONE_INNER_ANGLE, AL_CONE_OUTER_ANGLE)
-
-	// TODO: source radius with AL_SOURCE_RADIUS
-
-	// TODO: direct filters with AL_DIRECT_FILTER
-	//		filter is created per source with params like lowPass and highPass, in combination making bandPass
-	//		AL_FILTER_LOWPASS
-	//		AL_FILTER_HIGHPASS
-	//		AL_FILTER_BANDPASS
-	//		
-	//		ALint filter;
-	//		alGenFilters(1, &filter);
-	//		alFilteri(filter, AL_FILTER_TYPE, AL_FILTER_LOWPASS);
-	//		alFilterf(filter, AL_LOWPASS_GAIN, 0.0f);
-	// 		alFilterf(filter, AL_HIGHPASS_GAIN, 0.0f);
-	//		alFilterf(filter, AL_BANDPASS_GAIN, 0.0f);
-	//		alSourcei(thisSource, AL_DIRECT_FILTER, filter);
 
 	if (mask & UPDATE_RELATIVE)
 	{
@@ -1047,8 +1032,10 @@ void CEqAudioSourceAL::InitSource()
 	alSourcei(source, AL_LOOPING, AL_FALSE);
 	alSourcei(source, AL_SOURCE_RELATIVE, AL_FALSE);
 	alSourcei(source, AL_AUXILIARY_SEND_FILTER_GAIN_AUTO, AL_TRUE);
-	alSourcef(source, AL_MAX_GAIN, 0.9f);
+	alSourcef(source, AL_MIN_GAIN, 0.0f);
+	alSourcef(source, AL_MAX_GAIN, 2.0f);
 	alSourcef(source, AL_DOPPLER_FACTOR, 1.0f);
+	alSourcef(source, AL_MAX_DISTANCE, F_INFINITY);
 
 	// TODO: enable AL_SOURCE_SPATIALIZE_SOFT for non-relative sources by default
 	// TODO: add support mixing for different sources using AL_SOFT_callback_buffer ext

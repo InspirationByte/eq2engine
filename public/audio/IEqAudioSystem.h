@@ -59,7 +59,7 @@ public:
 		float				lpf{ 1.0f };					// low frequency gain
 		float				hpf{ 1.0f };					// high frequency gain
 		float				referenceDistance{ 1.0f };
-		float				rolloff{ 0.0f };
+		float				rolloff{ 1.0f };
 		float				airAbsorption{ 0.0f };
 		State				state{ STOPPED };
 		int					effectSlot{ -1 };
