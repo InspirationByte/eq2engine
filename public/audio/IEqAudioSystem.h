@@ -87,30 +87,32 @@ public:
 		PROP_SETTER(releaseOnStop, UPDATE_RELEASE_ON_STOP)
 		PROP_SETTER(channel, UPDATE_CHANNEL)
 
-#define PROP_MERGE(var, flag) if(other.updateFlags & flag) {var = other.##var;}
-
 		inline Params& operator |=(const Params& other) {
 			merge(other);
 			return *this;
 		}
 
+#define PROP_MERGE(flags, var, flag) if(flags & flag) {var = other.##var;}
+
 		inline void merge(const Params& other, int overrideUpdateFlags = -1) {
-			updateFlags |= overrideUpdateFlags == -1 ? other.updateFlags : overrideUpdateFlags;
-			PROP_MERGE(position, UPDATE_POSITION)
-			PROP_MERGE(velocity, UPDATE_VELOCITY)
-			PROP_MERGE(volume, UPDATE_VOLUME)
-			PROP_MERGE(pitch, UPDATE_PITCH)
-			PROP_MERGE(lpf, UPDATE_LPF)
-			PROP_MERGE(hpf, UPDATE_HPF)
-			PROP_MERGE(referenceDistance, UPDATE_REF_DIST)
-			PROP_MERGE(rolloff, UPDATE_ROLLOFF)
-			PROP_MERGE(airAbsorption, UPDATE_AIRABSORPTION)
-			PROP_MERGE(state, UPDATE_STATE)
-			PROP_MERGE(effectSlot, UPDATE_EFFECTSLOT)
-			PROP_MERGE(relative, UPDATE_RELATIVE)
-			PROP_MERGE(looping, UPDATE_LOOPING)
-			PROP_MERGE(releaseOnStop, UPDATE_RELEASE_ON_STOP)
-			PROP_MERGE(channel, UPDATE_CHANNEL)
+			const int flags = (overrideUpdateFlags == -1) ? other.updateFlags : overrideUpdateFlags;
+			updateFlags |= flags;
+
+			PROP_MERGE(flags, position, UPDATE_POSITION)
+			PROP_MERGE(flags, velocity, UPDATE_VELOCITY)
+			PROP_MERGE(flags, volume, UPDATE_VOLUME)
+			PROP_MERGE(flags, pitch, UPDATE_PITCH)
+			PROP_MERGE(flags, lpf, UPDATE_LPF)
+			PROP_MERGE(flags, hpf, UPDATE_HPF)
+			PROP_MERGE(flags, referenceDistance, UPDATE_REF_DIST)
+			PROP_MERGE(flags, rolloff, UPDATE_ROLLOFF)
+			PROP_MERGE(flags, airAbsorption, UPDATE_AIRABSORPTION)
+			PROP_MERGE(flags, state, UPDATE_STATE)
+			PROP_MERGE(flags, effectSlot, UPDATE_EFFECTSLOT)
+			PROP_MERGE(flags, relative, UPDATE_RELATIVE)
+			PROP_MERGE(flags, looping, UPDATE_LOOPING)
+			PROP_MERGE(flags, releaseOnStop, UPDATE_RELEASE_ON_STOP)
+			PROP_MERGE(flags, channel, UPDATE_CHANNEL)
 		}
 
 #undef PROP_SETTER
