@@ -19,23 +19,24 @@ template< typename T >
 class ArrayStorageBase
 {
 public:
-	virtual				~ArrayStorageBase() {}
+	/*
+		Any array storage class must be implemented with those methods:
 
-	virtual void		free() = 0;
-	virtual void		resize(int newSize, int& numOfElements) = 0;
+	void		free() = 0;
+	void		resize(int newSize, int& numOfElements) = 0;
 
-	virtual int			getSize() const = 0;
-	virtual int			getGranularity() const { return 1; }
-	virtual void		setGranularity(int newGranularity) {}
+	int			getSize() const = 0;
+	int			getGranularity() const { return 1; }
+	void		setGranularity(int newGranularity) {}
 
-	virtual T*			getData() = 0;
-	virtual const T*	getData() const = 0;
-
+	T*			getData() = 0;
+	const T*	getData() const = 0;
+	*/
 	static void			destructElements(T* dest, int count);
 };
 
 template< typename T >
-class DynamicArrayStorage : public ArrayStorageBase<T>
+class DynamicArrayStorage
 {
 public:
 	DynamicArrayStorage(const PPSourceLine& sl, int granularity)
@@ -48,14 +49,14 @@ public:
 		delete [] reinterpret_cast<ubyte*>(m_pListPtr);
 	}
 
-	void free() override
+	void free()
 	{
 		delete [] reinterpret_cast<ubyte*>(m_pListPtr);
 		m_pListPtr = nullptr;
 		m_nSize = 0;
 	}
 
-	void resize(int newSize, int& numOfElements) override
+	void resize(int newSize, int& numOfElements)
 	{
 		ASSERT(newSize >= 0);
 
@@ -92,27 +93,27 @@ public:
 		}
 	}
 
-	int getSize() const override
+	int getSize() const
 	{
 		return m_nSize;
 	}
 
-	int getGranularity() const override
+	int getGranularity() const
 	{
 		return m_nGranularity;
 	}
 
-	void setGranularity(int newGranularity) override
+	void setGranularity(int newGranularity)
 	{
 		m_nGranularity = newGranularity;
 	}
 
-	T* getData() override
+	T* getData()
 	{
 		return m_pListPtr;
 	}
 
-	const T* getData() const override
+	const T* getData() const
 	{
 		return m_pListPtr;
 	}
@@ -138,38 +139,40 @@ protected:
 };
 
 template< typename T, int SIZE >
-class FixedArrayStorage : public ArrayStorageBase<T>
+class FixedArrayStorage
 {
 public:
 	FixedArrayStorage()
 	{
 	}
 
-	void free() override
+	void free()
 	{
 	}
 
-	void resize(int newSize, int& numOfElements) override
+	void resize(int newSize, int& numOfElements)
 	{ 
 		ASSERT_MSG(newSize <= SIZE, "Exceeded FixedArrayStorage size (%d, requires %d)", getSize(), newSize);
 	}
 
-	int getSize() const override
+	int getSize() const
 	{
 		return SIZE;
 	}
 
-	int getGranularity() const override 
+	int getGranularity() const 
 	{
 		return 1; 
 	}
 
-	T* getData() override
+	void setGranularity(int newGranularity) {}
+
+	T* getData()
 	{
 		return (T*)(&m_data[0]);
 	}
 	
-	const T* getData() const override
+	const T* getData() const
 	{
 		return (T*)(&m_data[0]);
 	}
