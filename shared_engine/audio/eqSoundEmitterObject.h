@@ -48,10 +48,13 @@ public:
 	void		PauseEmitter(int uniqueId);
 	void		StopLoop(int uniqueId);
 
-	void		SetPosition(int uniqueId, const Vector3D& position);
-	void		SetVelocity(int uniqueId, const Vector3D& velocity);
+	// WARNING: SetPitch and SetVolume changes only the value that was passed through EmitParams
+
 	void		SetPitch(int uniqueId, float pitch);
 	void		SetVolume(int uniqueId, float volume);
+
+	void		SetPosition(int uniqueId, const Vector3D& position);
+	void		SetVelocity(int uniqueId, const Vector3D& velocity);
 
 	void		SetSampleVolume(int uniqueId, int waveId, float volume);
 	void		SetParams(int uniqueId, const IEqAudioSource::Params& params);
@@ -74,6 +77,7 @@ protected:
 
 	void		SetPosition(SoundEmitterData* emitter, const Vector3D& position);
 	void		SetVelocity(SoundEmitterData* emitter, const Vector3D& velocity);
+
 	void		SetPitch(SoundEmitterData* emitter, float pitch);
 	void		SetVolume(SoundEmitterData* emitter, float volume);
 
@@ -81,8 +85,6 @@ protected:
 	void		SetParams(SoundEmitterData* emitter, const IEqAudioSource::Params& params);
 
 	void		SetInputValue(SoundEmitterData* emitter, int inputNameHash, float value);
-
-	void		RecalcParameters(SoundEmitterData* emitter, IEqAudioSource::Params& outParams, int updateFlags);
 
 	bool		UpdateEmitters(const Vector3D& listenerPos);
 	void		StopFirstEmitterByChannel(int chan);

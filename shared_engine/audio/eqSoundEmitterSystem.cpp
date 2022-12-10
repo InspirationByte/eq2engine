@@ -234,17 +234,17 @@ int CSoundEmitterSystem::EmitSound(EmitParams* ep, CSoundingObject* soundingObj,
 		}
 	}
 
-	// fill in start params
 
+	// fill in start params
 	edata->script = script;
 	edata->soundingObj = soundingObj;
 	edata->channelType = channelType;
-	edata->sampleId = ep->sampleId;
 
 	const float randPitch = (ep->flags & EMITSOUND_FLAG_RANDOM_PITCH) ? RandomFloat(-0.05f, 0.05f) : 0.0f;
 	edata->epPitch = ep->pitch + randPitch;
 	edata->epVolume = ep->volume;
 	edata->epRadiusMultiplier = ep->radiusMultiplier;
+	edata->sampleId = ep->sampleId;
 
 	edata->CreateNodeRuntime();
 
@@ -255,24 +255,11 @@ int CSoundEmitterSystem::EmitSound(EmitParams* ep, CSoundingObject* soundingObj,
 		if (it != edata->inputs.end())
 			(*it).values[0] = ep->inputs[i].value;
 	}
-
-	IEqAudioSource::Params& virtualParams = edata->virtualParams;
-	if (isAudibleToStart || soundingObj)
-	{
-		IEqAudioSource::Params& nodeParams = edata->nodeParams;
+	
+	if (isAudibleToStart)
 		edata->UpdateNodes();
 
-		virtualParams.set_pitch(nodeParams.pitch * edata->epPitch);
-		virtualParams.set_volume(nodeParams.volume * edata->epVolume);
-		virtualParams.set_referenceDistance(nodeParams.referenceDistance * edata->epRadiusMultiplier);
-
-		const int excludeFlags = (IEqAudioSource::UPDATE_PITCH | IEqAudioSource::UPDATE_VOLUME | IEqAudioSource::UPDATE_REF_DIST);
-		virtualParams.merge(nodeParams, nodeParams.updateFlags & ~excludeFlags);
-
-		virtualParams.set_rolloff(nodeParams.rolloff);
-		virtualParams.set_airAbsorption(nodeParams.airAbsorption);
-	}
-
+	IEqAudioSource::Params& virtualParams = edata->virtualParams;
 	virtualParams.set_looping(script->loop);		// TODO: auto loop if repeat marker
 	virtualParams.set_relative(is2Dsound);
 	virtualParams.set_position(ep->origin);
@@ -335,8 +322,8 @@ bool CSoundEmitterSystem::SwitchSourceState(SoundEmitterData* emit, bool isVirtu
 		}
 
 		// sound parameters to initialize SoundEmitter
-		IEqAudioSource::Params& virtualParams = emit->virtualParams;
-		virtualParams.set_looping(hasLoop);
+		emit->virtualParams.set_looping(hasLoop);
+		IEqAudioSource::Params startParams = emit->virtualParams;
 
 		emit->soundSource = g_audioSystem->CreateSource();
 
@@ -344,24 +331,25 @@ bool CSoundEmitterSystem::SwitchSourceState(SoundEmitterData* emit, bool isVirtu
 		{
 			// no sounding object
 			// set looping sound to self destruct when outside max distance
-			emit->soundSource->Setup(virtualParams.channel, samples, hasLoop ? LoopSourceUpdateCallback : nullptr, const_cast<SoundScriptDesc*>(script));
+			emit->soundSource->Setup(startParams.channel, samples, hasLoop ? LoopSourceUpdateCallback : nullptr, const_cast<SoundScriptDesc*>(script));
+			emit->CalcFinalParameters(1.0f, startParams);
 		}
 		else
 		{
-			emit->soundSource->Setup(virtualParams.channel, samples, EmitterUpdateCallback, emit);
+			emit->soundSource->Setup(startParams.channel, samples, EmitterUpdateCallback, emit);
 		}
 
 		// start sound
-		emit->soundSource->UpdateParams(virtualParams);
+		emit->soundSource->UpdateParams(startParams);
 
 		if (snd_scriptsound_debug.GetBool())
 		{
 			DbgBox()
-				.CenterSize(virtualParams.position, virtualParams.referenceDistance)
+				.CenterSize(startParams.position, startParams.referenceDistance)
 				.Color(color_white)
 				.Time(1.0f);
 
-			MsgInfo("started emitter %x '%s' ref=%g max=%g\n", emit, script->name.ToCString(), virtualParams.referenceDistance);
+			MsgInfo("started emitter %x '%s' ref=%g max=%g\n", emit, script->name.ToCString(), startParams.referenceDistance);
 		}
 
 		return true;
@@ -407,28 +395,15 @@ int CSoundEmitterSystem::EmitterUpdateCallback(void* obj, IEqAudioSource::Params
 	IEqAudioSource::Params& virtualParams = emitter->virtualParams;
 	IEqAudioSource::Params& nodeParams = emitter->nodeParams;
 	emitter->UpdateNodes();
-
-	// update virtual params
-	if(nodeParams.updateFlags & IEqAudioSource::UPDATE_PITCH)
-		virtualParams.set_pitch(nodeParams.pitch * emitter->epPitch);
-
-	if (nodeParams.updateFlags & IEqAudioSource::UPDATE_VOLUME)
-		virtualParams.set_volume(nodeParams.volume * emitter->epVolume);
-
-	if (nodeParams.updateFlags & IEqAudioSource::UPDATE_REF_DIST)
-		virtualParams.set_referenceDistance(nodeParams.referenceDistance * emitter->epRadiusMultiplier);
-
-	// merge other params as usual
-	const int excludeFlags = (IEqAudioSource::UPDATE_PITCH | IEqAudioSource::UPDATE_VOLUME | IEqAudioSource::UPDATE_REF_DIST);
-	virtualParams.merge(nodeParams, nodeParams.updateFlags & ~excludeFlags);
-
-	soundingObj->RecalcParameters(emitter, params, nodeParams.updateFlags);
+	emitter->CalcFinalParameters(soundingObj->GetSoundVolumeScale(), params);
 
 	// update samples volume if they were
 	IEqAudioSource* soundSource = emitter->soundSource;
 	for (int i = 0; i < soundSource->GetSampleCount(); ++i)
 		soundSource->SetSampleVolume(i, emitter->sampleVolume[i]);
 
+	// clear out update flags here only since we're applied everything
+	nodeParams.updateFlags = 0;
 	virtualParams.state = params.state;
 
 	if (!params.relative)

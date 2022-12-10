@@ -38,23 +38,23 @@ bool CSoundingObject::UpdateEmitters(const Vector3D& listenerPos)
 	{
 		bool needDelete = false;
 		SoundEmitterData* emitter = *it;
-		IEqAudioSource::Params& params = emitter->virtualParams;
+		IEqAudioSource::Params& virtualParams = emitter->virtualParams;
 
 		if (emitter->soundSource != nullptr)
 		{
-			needDelete = params.releaseOnStop && (emitter->soundSource->GetState() == IEqAudioSource::STOPPED);
+			needDelete = virtualParams.releaseOnStop && (emitter->soundSource->GetState() == IEqAudioSource::STOPPED);
 		}
 		else
 		{
 			const SoundScriptDesc* script = emitter->script;
 
 			bool isAudible = true;
-			if (!params.relative)
+			if (!virtualParams.relative)
 			{
 				Vector3D listenerPos, listenerVel;
 				g_audioSystem->GetListener(listenerPos, listenerVel);
 
-				const float distToSound = lengthSqr(params.position - listenerPos);
+				const float distToSound = lengthSqr(virtualParams.position - listenerPos);
 				const float maxDistSqr = M_SQR(script->maxDistance);
 				isAudible = distToSound < maxDistSqr;
 			}
@@ -62,7 +62,7 @@ bool CSoundingObject::UpdateEmitters(const Vector3D& listenerPos)
 			// switch emitter between virtual and real here
 			if (g_sounds->SwitchSourceState(emitter, !isAudible))
 			{
-				needDelete = params.releaseOnStop && emitter->soundSource == nullptr;
+				needDelete = virtualParams.releaseOnStop && emitter->soundSource == nullptr;
 			}
 		}
 
@@ -431,16 +431,24 @@ void CSoundingObject::StopLoop(SoundEmitterData* emitter)
 
 void CSoundingObject::SetPosition(SoundEmitterData* emitter, const Vector3D& position)
 {
-	IEqAudioSource::Params param;
-	param.set_position(position);
-	SetParams(emitter, param);
+	if (!emitter)
+		return;
+	emitter->virtualParams.set_position(position);
+	emitter->nodeParams.set_position(position);
+	//IEqAudioSource::Params param;
+	//param.set_position(position);
+	//SetParams(emitter, param);
 }
 
 void CSoundingObject::SetVelocity(SoundEmitterData* emitter, const Vector3D& velocity)
 {
-	IEqAudioSource::Params param;
-	param.set_velocity(velocity);
-	SetParams(emitter, param);
+	if (!emitter)
+		return;
+	emitter->virtualParams.set_velocity(velocity);
+	emitter->nodeParams.set_velocity(velocity);
+	//IEqAudioSource::Params param;
+	//param.set_velocity(velocity);
+	//SetParams(emitter, param);
 }
 
 void CSoundingObject::SetPitch(SoundEmitterData* emitter, float pitch)
@@ -448,25 +456,9 @@ void CSoundingObject::SetPitch(SoundEmitterData* emitter, float pitch)
 	if (!emitter)
 		return;
 
-	// FIXME: replace with internal SetParams call?
-
 	emitter->epPitch = pitch;
-
 	IEqAudioSource::Params& nodeParams = emitter->nodeParams;
-	IEqAudioSource::Params&	virtualParams = emitter->virtualParams;
-	const float finalPitch = nodeParams.pitch * pitch;
-
-	// update virtual params
-	virtualParams.set_pitch(finalPitch);
-
-	// update actual params
-	if (emitter->soundSource)
-	{
-		IEqAudioSource::Params param;
-		param.set_pitch(finalPitch);
-
-		emitter->soundSource->UpdateParams(param);
-	}
+	nodeParams.updateFlags |= IEqAudioSource::UPDATE_PITCH;
 }
 
 void CSoundingObject::SetVolume(SoundEmitterData* emitter, float volume)
@@ -474,25 +466,9 @@ void CSoundingObject::SetVolume(SoundEmitterData* emitter, float volume)
 	if (!emitter)
 		return;
 
-	// FIXME: replace with internal SetParams call?
-
 	emitter->epVolume = volume;
-
 	IEqAudioSource::Params& nodeParams = emitter->nodeParams;
-	IEqAudioSource::Params& virtualParams = emitter->virtualParams;
-	const float finalVolume = nodeParams.volume * volume;
-
-	// update virtual params
-	virtualParams.set_volume(finalVolume);
-
-	// update actual params
-	if (emitter->soundSource)
-	{
-		IEqAudioSource::Params param;
-		param.set_volume(finalVolume * GetSoundVolumeScale());
-	
-		emitter->soundSource->UpdateParams(param);
-	}
+	nodeParams.updateFlags |= IEqAudioSource::UPDATE_VOLUME;
 }
 
 void CSoundingObject::SetSampleVolume(SoundEmitterData* emitter, int waveId, float volume)
@@ -500,7 +476,8 @@ void CSoundingObject::SetSampleVolume(SoundEmitterData* emitter, int waveId, flo
 	if (!emitter)
 		return;
 
-	// TODO: update virtual params
+	// update virtual params
+	emitter->sampleVolume[waveId] = volume;
 
 	// update actual params
 	if (emitter->soundSource)
@@ -515,39 +492,10 @@ void CSoundingObject::SetParams(SoundEmitterData* emitter, const IEqAudioSource:
 	if (!emitter)
 		return;
 
-	IEqAudioSource::Params& nodeParams = emitter->nodeParams;
-	IEqAudioSource::Params& virtualParams = emitter->virtualParams;
+	emitter->nodeParams |= params;
 
-	const int updateFlags = params.updateFlags & ~(IEqAudioSource::UPDATE_VOLUME | IEqAudioSource::UPDATE_PITCH);
-
-	IEqAudioSource::Params param;
-	param.merge(params, updateFlags);
-
-	// update pitch and volume individually
-	if (params.updateFlags & IEqAudioSource::UPDATE_VOLUME)
-	{
-		emitter->epVolume = params.volume;
-		const float finalVolume = nodeParams.volume * params.volume;
-		emitter->virtualParams.set_volume(finalVolume);
-
-		param.set_volume(finalVolume * GetSoundVolumeScale());
-	}
-
-	if (params.updateFlags & IEqAudioSource::UPDATE_PITCH)
-	{
-		emitter->epPitch = params.pitch;
-		const float finalPitch = nodeParams.pitch * params.pitch;
-		emitter->virtualParams.set_pitch(finalPitch);
-
-		param.set_pitch(finalPitch);
-	}
-
-	// update virtual params
-	emitter->virtualParams.merge(params, updateFlags);
-
-	// update actual params
-	if (emitter->soundSource)
-		emitter->soundSource->UpdateParams(param);
+	const int excludeFlags = (IEqAudioSource::UPDATE_PITCH | IEqAudioSource::UPDATE_VOLUME | IEqAudioSource::UPDATE_REF_DIST);
+	emitter->virtualParams.merge(params, params.updateFlags & ~excludeFlags);
 }
 
 void CSoundingObject::SetInputValue(SoundEmitterData* emitter, int inputNameHash, float value)
@@ -556,36 +504,6 @@ void CSoundingObject::SetInputValue(SoundEmitterData* emitter, int inputNameHash
 		return;
 
 	emitter->SetInputValue(inputNameHash, 0, value);
-}
-
-void CSoundingObject::RecalcParameters(SoundEmitterData* emitter, IEqAudioSource::Params& outParams, int updateFlags)
-{
-	if (!emitter)
-		return;
-
-	IEqAudioSource::Params& nodeParams = emitter->nodeParams;
-	IEqAudioSource::Params& virtualParams = emitter->virtualParams;
-
-	// update pitch and volume individually
-	if (updateFlags & IEqAudioSource::UPDATE_VOLUME)
-	{
-		const float finalVolume = nodeParams.volume * emitter->epVolume;
-		emitter->virtualParams.set_volume(finalVolume);
-
-		outParams.set_volume(max(finalVolume * GetSoundVolumeScale(), 0.0f));
-	}
-
-	if (updateFlags & IEqAudioSource::UPDATE_PITCH)
-	{
-		const float finalPitch = nodeParams.pitch * emitter->epPitch;
-		emitter->virtualParams.set_pitch(max(finalPitch, 0.0f));
-
-		outParams.set_pitch(finalPitch);
-	}
-
-	// merge other params as usual
-	const int excludeFlags = (IEqAudioSource::UPDATE_PITCH | IEqAudioSource::UPDATE_VOLUME | IEqAudioSource::UPDATE_REF_DIST);
-	outParams.merge(nodeParams, nodeParams.updateFlags & ~excludeFlags);
 }
 
 //----------------------------------------

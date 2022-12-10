@@ -308,4 +308,5 @@ struct SoundEmitterData
 	float	GetInputValue(uint8 inputId);
 
 	void	UpdateNodes();
+	void	CalcFinalParameters(float volumeScale, IEqAudioSource::Params& outParams);
 };

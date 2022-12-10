@@ -767,9 +767,6 @@ static_assert(elementsOf(s_soundFuncTypeEvFn) == SOUND_FUNC_COUNT, "s_soundFuncT
 
 void SoundEmitterData::UpdateNodes()
 {
-	// clear out update flags here only since we're applied everything
-	nodeParams.updateFlags = 0;
-
 	if (!nodesNeedUpdate)
 		return;
 
@@ -841,25 +838,32 @@ void SoundEmitterData::UpdateNodes()
 	// output value mapping to sound parameters
 	const uint8* paramMap = script->paramNodeMap;
 	const float volume = stack.Get<float>(nodeValueSp[paramMap[SOUND_PARAM_VOLUME]]);
-	nodeParams.set_volume(volume);
+	if(memcmp(&nodeParams.volume, &volume, sizeof(float)))
+		nodeParams.set_volume(volume);
 
 	const float pitch = stack.Get<float>(nodeValueSp[paramMap[SOUND_PARAM_PITCH]]);
-	nodeParams.set_pitch(pitch);
+	if (memcmp(&nodeParams.pitch, &pitch, sizeof(float)))
+		nodeParams.set_pitch(pitch);
 
 	const float hpf = stack.Get<float>(nodeValueSp[paramMap[SOUND_PARAM_LPF]]);
-	nodeParams.set_hpf(hpf);
+	if (memcmp(&nodeParams.hpf, &hpf, sizeof(float)))
+		nodeParams.set_hpf(hpf);
 
 	const float lpf = stack.Get<float>(nodeValueSp[paramMap[SOUND_PARAM_HPF]]);
-	nodeParams.set_lpf(lpf);
+	if (memcmp(&nodeParams.lpf, &lpf, sizeof(float)))
+		nodeParams.set_lpf(lpf);
 
 	const float airAbsorption = stack.Get<float>(nodeValueSp[paramMap[SOUND_PARAM_AIRABSORPTION]]);
-	nodeParams.set_airAbsorption(airAbsorption);
+	if (memcmp(&nodeParams.airAbsorption, &airAbsorption, sizeof(float)))
+		nodeParams.set_airAbsorption(airAbsorption);
 
 	const float rollOff = stack.Get<float>(nodeValueSp[paramMap[SOUND_PARAM_ROLLOFF]]);
-	nodeParams.set_rolloff(rollOff);
+	if (memcmp(&nodeParams.rolloff, &rollOff, sizeof(float)))
+		nodeParams.set_rolloff(rollOff);
 
 	const float attenuation = stack.Get<float>(nodeValueSp[paramMap[SOUND_PARAM_ATTENUATION]]);
-	nodeParams.set_referenceDistance(attenuation);
+	if (memcmp(&nodeParams.referenceDistance, &attenuation, sizeof(float)))
+		nodeParams.set_referenceDistance(attenuation);
 
 	if (paramMap[SOUND_PARAM_SAMPLE_VOLUME] != SOUND_VAR_INVALID)
 	{
@@ -874,4 +878,37 @@ void SoundEmitterData::UpdateNodes()
 		for (int i = 0; i < svolumeNodeDesc.func.outputCount; ++i)
 			sampleVolume[i] = stack.Get<float>(startSp+i);
 	}
+}
+
+void SoundEmitterData::CalcFinalParameters(float volumeScale, IEqAudioSource::Params& outParams)
+{
+	// update pitch and volume individually
+	if (nodeParams.updateFlags & IEqAudioSource::UPDATE_VOLUME)
+	{
+		const float finalVolume = max(nodeParams.volume * epVolume, 0.0f);
+		virtualParams.set_volume(finalVolume);
+
+		outParams.set_volume(finalVolume * volumeScale);
+	}
+
+	if (nodeParams.updateFlags & IEqAudioSource::UPDATE_PITCH)
+	{
+		const float finalPitch = max(nodeParams.pitch * epPitch, 0.0f);
+		virtualParams.set_pitch(finalPitch);
+
+		outParams.set_pitch(finalPitch);
+	}
+
+	if (nodeParams.updateFlags & IEqAudioSource::UPDATE_REF_DIST)
+	{
+		const float finalRefDist = max(nodeParams.referenceDistance * epRadiusMultiplier, 0.0f);
+		virtualParams.set_referenceDistance(finalRefDist);
+
+		outParams.set_referenceDistance(finalRefDist);
+	}
+
+	// merge other params as usual
+	const int excludeFlags = (IEqAudioSource::UPDATE_PITCH | IEqAudioSource::UPDATE_VOLUME | IEqAudioSource::UPDATE_REF_DIST);
+	virtualParams.merge(nodeParams, nodeParams.updateFlags & ~excludeFlags);
+	outParams.merge(nodeParams, nodeParams.updateFlags & ~excludeFlags);
 }
