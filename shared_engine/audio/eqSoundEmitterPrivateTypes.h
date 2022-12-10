@@ -59,7 +59,7 @@ enum ESoundParamType : int
 	SOUND_PARAM_VOLUME = 0,
 	SOUND_PARAM_PITCH,
 	SOUND_PARAM_HPF,
-	SOUND_PARAM_LPF,
+	SOUND_PARAM_LPF,		// TODO: merge LPF/HPF
 	SOUND_PARAM_AIRABSORPTION,
 	SOUND_PARAM_ROLLOFF,
 	SOUND_PARAM_ATTENUATION,
@@ -83,8 +83,8 @@ static_assert(elementsOf(s_soundParamNames) == SOUND_PARAM_COUNT, "s_soundParamN
 static float s_soundParamDefaults[] = {
 	1.0f,
 	1.0f,
-	0.0f,
-	0.0f,
+	1.0f,
+	1.0f,
 	0.0f,
 	1.0f,
 	1.0f,
@@ -267,8 +267,21 @@ struct SoundScriptDesc
 
 struct SoundEmitterData
 {
+	// additional enum
+	enum ExtraSourceUpdateFlags
+	{
+		UPDATE_SAMPLE_VOLUME = (1 << 31)
+	};
+
+	SoundEmitterData()
+	{
+		for (int i = 0; i < MAX_SOUND_SAMPLES_SCRIPT; ++i)
+			sampleVolume[i] = 1.0f;
+	}
+
 	IEqAudioSource::Params		nodeParams;
 	IEqAudioSource::Params		virtualParams;
+	float						sampleVolume[MAX_SOUND_SAMPLES_SCRIPT];
 	float						params[SOUND_PARAM_COUNT];
 
 	Map<int, SoundNodeInput>	inputs{ PP_SL };
@@ -294,5 +307,5 @@ struct SoundEmitterData
 	float	GetInputValue(int nodeId, int arrayIdx);
 	float	GetInputValue(uint8 inputId);
 
-	void	UpdateNodes(IEqAudioSource::Params& outParams, float* sampleVolume);
+	void	UpdateNodes();
 };

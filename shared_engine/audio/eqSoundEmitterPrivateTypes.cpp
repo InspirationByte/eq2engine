@@ -765,10 +765,14 @@ static SoundEmitEvalFn s_soundFuncTypeEvFn[] = {
 };
 static_assert(elementsOf(s_soundFuncTypeEvFn) == SOUND_FUNC_COUNT, "s_soundFuncTypeFuncs and SOUND_FUNC_COUNT needs to be in sync");
 
-void SoundEmitterData::UpdateNodes(IEqAudioSource::Params& outParams, float* sampleVolume)
+void SoundEmitterData::UpdateNodes()
 {
+	// clear out update flags here only since we're applied everything
+	nodeParams.updateFlags = 0;
+
 	if (!nodesNeedUpdate)
 		return;
+
 	nodesNeedUpdate = false;
 
 	const Array<SoundNodeDesc>& nodeDescs = script->nodeDescs;
@@ -837,28 +841,30 @@ void SoundEmitterData::UpdateNodes(IEqAudioSource::Params& outParams, float* sam
 	// output value mapping to sound parameters
 	const uint8* paramMap = script->paramNodeMap;
 	const float volume = stack.Get<float>(nodeValueSp[paramMap[SOUND_PARAM_VOLUME]]);
-	outParams.set_volume(volume);
+	nodeParams.set_volume(volume);
 
 	const float pitch = stack.Get<float>(nodeValueSp[paramMap[SOUND_PARAM_PITCH]]);
-	outParams.set_pitch(pitch);
+	nodeParams.set_pitch(pitch);
 
-	//const float hpf = stack.Get<float>(nodeValueSp[paramMap[SOUND_PARAM_LPF]]);
-	//outParams.set_hpf(hpf);
+	const float hpf = stack.Get<float>(nodeValueSp[paramMap[SOUND_PARAM_LPF]]);
+	nodeParams.set_hpf(hpf);
 
-	//const float lpf = stack.Get<float>(nodeValueSp[paramMap[SOUND_PARAM_HPF]]);
-	//outParams.set_lpf(lpf);
+	const float lpf = stack.Get<float>(nodeValueSp[paramMap[SOUND_PARAM_HPF]]);
+	nodeParams.set_lpf(lpf);
 
 	const float airAbsorption = stack.Get<float>(nodeValueSp[paramMap[SOUND_PARAM_AIRABSORPTION]]);
-	outParams.set_airAbsorption(airAbsorption);
+	nodeParams.set_airAbsorption(airAbsorption);
 
 	const float rollOff = stack.Get<float>(nodeValueSp[paramMap[SOUND_PARAM_ROLLOFF]]);
-	outParams.set_rolloff(rollOff);
+	nodeParams.set_rolloff(rollOff);
 
 	const float attenuation = stack.Get<float>(nodeValueSp[paramMap[SOUND_PARAM_ATTENUATION]]);
-	outParams.set_referenceDistance(attenuation);
+	nodeParams.set_referenceDistance(attenuation);
 
 	if (paramMap[SOUND_PARAM_SAMPLE_VOLUME] != SOUND_VAR_INVALID)
 	{
+		nodeParams.updateFlags |= UPDATE_SAMPLE_VOLUME;
+
 		const SoundNodeDesc& svolumeNodeDesc = nodeDescs[paramMap[SOUND_PARAM_SAMPLE_VOLUME]];
 		if (svolumeNodeDesc.type != SOUND_NODE_FUNC)
 			return;

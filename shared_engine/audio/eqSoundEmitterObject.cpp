@@ -582,6 +582,10 @@ void CSoundingObject::RecalcParameters(SoundEmitterData* emitter, IEqAudioSource
 
 		outParams.set_pitch(finalPitch);
 	}
+
+	// merge other params as usual
+	const int excludeFlags = (IEqAudioSource::UPDATE_PITCH | IEqAudioSource::UPDATE_VOLUME | IEqAudioSource::UPDATE_REF_DIST);
+	outParams.merge(nodeParams, nodeParams.updateFlags & ~excludeFlags);
 }
 
 //----------------------------------------

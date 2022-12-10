@@ -60,13 +60,29 @@ struct EmitParams
 	{
 	}
 
-	EqString				name;
-	Vector3D				origin{ vec3_zero };
-	float					volume{ 1.0f };
-	float					pitch{ 1.0f };
-	float					radiusMultiplier{ 1.0f };
+	struct InputValue
+	{
+		InputValue() = default;
 
-	int						flags{ 0 };
-	int						sampleId{ -1 };
-	int						channelType{ CHAN_INVALID };
+		InputValue(const char* name, float value)
+			: nameHash(StringToHash(name)), value(value) {}
+
+		InputValue(int nameHash, float value)
+			: nameHash(nameHash), value(value) {}
+
+		int nameHash{ 0 };
+		float value{ 0.0f };
+	};
+
+	EqString	name;
+	Vector3D	origin{ vec3_zero };
+	float		volume{ 1.0f };
+	float		pitch{ 1.0f };
+	float		radiusMultiplier{ 1.0f };
+
+	int			flags{ 0 };
+	int			sampleId{ -1 };
+	int			channelType{ CHAN_INVALID };
+
+	FixedArray<InputValue, 8>	inputs;
 };

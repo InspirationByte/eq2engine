@@ -826,6 +826,24 @@ void CEqAudioSourceAL::UpdateParams(const Params& params, int overrideUpdateFlag
 			alSource3i(thisSource, AL_AUXILIARY_SEND_FILTER, m_owner->m_effectSlots[params.effectSlot], 0, AL_FILTER_NULL);
 	}
 
+	if (mask & (UPDATE_LPF | UPDATE_HPF))
+	{
+		if (!m_filter)
+		{
+			alGenFilters(1, &m_filter);
+			alFilteri(m_filter, AL_FILTER_TYPE, AL_FILTER_BANDPASS);
+			alFilterf(m_filter, AL_BANDPASS_GAIN, 1.0f);
+		}
+
+		if(mask & UPDATE_LPF)
+			alFilterf(m_filter, AL_BANDPASS_GAINLF, params.lpf);
+
+		if (mask & UPDATE_HPF)
+			alFilterf(m_filter, AL_BANDPASS_GAINHF, params.hpf);
+
+		alSourcei(thisSource, AL_DIRECT_FILTER, m_filter);
+	}
+
 	// TODO: source orientation and cone angles (AL_ORIENTATION, AL_CONE_INNER_ANGLE, AL_CONE_OUTER_ANGLE)
 
 	// TODO: source radius with AL_SOURCE_RADIUS
@@ -961,6 +979,12 @@ void CEqAudioSourceAL::GetParams(Params& params) const
 	alGetSourcei(thisSource, AL_SOURCE_RELATIVE, &tempValue);
 	params.relative = (tempValue == AL_TRUE);
 
+	if (m_filter != AL_NONE)
+	{
+		alGetFilterf(m_filter, AL_BANDPASS_GAINLF, &params.lpf);
+		alGetFilterf(m_filter, AL_BANDPASS_GAINLF, &params.hpf);
+	}
+
 	if (isStreaming)
 	{
 		// continuous; use channel state
@@ -1051,6 +1075,12 @@ void CEqAudioSourceAL::Release()
 		alDeleteSources(1, &m_source);
 
 		m_source = AL_NONE;
+	}
+
+	if (m_filter != AL_NONE)
+	{
+		alDeleteFilters(1, &m_filter);
+		m_filter = AL_NONE;
 	}
 }
 

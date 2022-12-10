@@ -27,18 +27,20 @@ public:
 		UPDATE_VELOCITY			= (1 << 1),
 		UPDATE_VOLUME			= (1 << 2),
 		UPDATE_PITCH			= (1 << 3),
-		UPDATE_REF_DIST			= (1 << 4),
-		UPDATE_ROLLOFF			= (1 << 5),
-		UPDATE_AIRABSORPTION	= (1 << 6),
-		UPDATE_RELATIVE			= (1 << 7),
-		UPDATE_STATE			= (1 << 8),
-		UPDATE_LOOPING			= (1 << 9),
-		UPDATE_EFFECTSLOT		= (1 << 10),
-		UPDATE_RELEASE_ON_STOP	= (1 << 11),
-		UPDATE_CHANNEL			= (1 << 12),
+		UPDATE_LPF				= (1 << 4),
+		UPDATE_HPF				= (1 << 5),
+		UPDATE_REF_DIST			= (1 << 6),
+		UPDATE_ROLLOFF			= (1 << 7),
+		UPDATE_AIRABSORPTION	= (1 << 8),
+		UPDATE_RELATIVE			= (1 << 9),
+		UPDATE_STATE			= (1 << 10),
+		UPDATE_LOOPING			= (1 << 11),
+		UPDATE_EFFECTSLOT		= (1 << 12),
+		UPDATE_RELEASE_ON_STOP	= (1 << 13),
+		UPDATE_CHANNEL			= (1 << 14),
 
 		// command
-		UPDATE_DO_REWIND		= (1 << 13),
+		UPDATE_DO_REWIND		= (1 << 15),
 	};
 
 	enum State : int
@@ -54,6 +56,8 @@ public:
 		Vector3D			velocity{ 0.0f };
 		float				volume{ 1.0f };					// [0.0, 1.0]
 		float				pitch{ 1.0f };					// [0.0, 100.0]
+		float				lpf{ 1.0f };					// low frequency gain
+		float				hpf{ 1.0f };					// high frequency gain
 		float				referenceDistance{ 1.0f };
 		float				rolloff{ 0.0f };
 		float				airAbsorption{ 0.0f };
@@ -71,6 +75,8 @@ public:
 		PROP_SETTER(velocity, UPDATE_VELOCITY)
 		PROP_SETTER(volume, UPDATE_VOLUME)					// [0.0, 1.0]
 		PROP_SETTER(pitch, UPDATE_PITCH)					// [0.0, 100.0]
+		PROP_SETTER(lpf, UPDATE_LPF)
+		PROP_SETTER(hpf, UPDATE_HPF)
 		PROP_SETTER(referenceDistance, UPDATE_REF_DIST)
 		PROP_SETTER(rolloff, UPDATE_ROLLOFF)
 		PROP_SETTER(airAbsorption, UPDATE_AIRABSORPTION)
@@ -94,6 +100,8 @@ public:
 			PROP_MERGE(velocity, UPDATE_VELOCITY)
 			PROP_MERGE(volume, UPDATE_VOLUME)
 			PROP_MERGE(pitch, UPDATE_PITCH)
+			PROP_MERGE(lpf, UPDATE_LPF)
+			PROP_MERGE(hpf, UPDATE_HPF)
 			PROP_MERGE(referenceDistance, UPDATE_REF_DIST)
 			PROP_MERGE(rolloff, UPDATE_ROLLOFF)
 			PROP_MERGE(airAbsorption, UPDATE_AIRABSORPTION)

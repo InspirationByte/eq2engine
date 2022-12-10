@@ -166,6 +166,7 @@ protected:
 
 	ALuint					m_buffers[EQSND_STREAM_BUFFER_COUNT]{ 0 };
 	ALuint					m_source{ 0 };
+	ALuint					m_filter{ 0 };
 
 	UpdateCallback			m_callback;
 	void*					m_callbackObject{ nullptr };

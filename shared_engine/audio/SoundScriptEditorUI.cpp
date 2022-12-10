@@ -1407,6 +1407,16 @@ void CSoundScriptEditor::DrawScriptEditor(bool& open)
 									ImGui::PushID(paramId);
 									modified = ImGui::SliderFloat(s_soundParamNames[paramId], &desc.c.value, 0.0f, s_soundParamLimits[paramId], "%.3f", 1.0f) || modified;
 									ImGui::PopID();
+
+									// sync with node editor
+									for (auto it = s_uiNodes.begin(); it != s_uiNodes.end(); ++it)
+									{
+										UISoundNodeDesc& uiNode = *it;
+										if ((uiNode.flags & SOUND_NODE_FLAG_OUTPUT) && uiNode.c.paramId == paramId)
+										{
+											uiNode.lhsValue[0] = desc.c.value;
+										}
+									}
 								}
 								ImGui::PopItemWidth();
 								ImGui::PopID();

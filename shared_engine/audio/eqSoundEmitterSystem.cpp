@@ -241,23 +241,34 @@ int CSoundEmitterSystem::EmitSound(EmitParams* ep, CSoundingObject* soundingObj,
 	edata->channelType = channelType;
 	edata->sampleId = ep->sampleId;
 
-	edata->CreateNodeRuntime();
-
 	const float randPitch = (ep->flags & EMITSOUND_FLAG_RANDOM_PITCH) ? RandomFloat(-0.05f, 0.05f) : 0.0f;
 	edata->epPitch = ep->pitch + randPitch;
 	edata->epVolume = ep->volume;
 	edata->epRadiusMultiplier = ep->radiusMultiplier;
 
+	edata->CreateNodeRuntime();
+
+	// apply inputs (if any) to emitter data
+	for (int i = 0; i < ep->inputs.numElem(); ++i)
+	{
+		auto it = edata->inputs.find(ep->inputs[i].nameHash);
+		if (it != edata->inputs.end())
+			(*it).values[0] = ep->inputs[i].value;
+	}
+
 	IEqAudioSource::Params& virtualParams = edata->virtualParams;
 	if (isAudibleToStart || soundingObj)
 	{
 		IEqAudioSource::Params& nodeParams = edata->nodeParams;
-		float sampleVolume[MAX_SOUND_SAMPLES_SCRIPT];
-		edata->UpdateNodes(nodeParams, sampleVolume);
+		edata->UpdateNodes();
 
 		virtualParams.set_pitch(nodeParams.pitch * edata->epPitch);
 		virtualParams.set_volume(nodeParams.volume * edata->epVolume);
 		virtualParams.set_referenceDistance(nodeParams.referenceDistance * edata->epRadiusMultiplier);
+
+		const int excludeFlags = (IEqAudioSource::UPDATE_PITCH | IEqAudioSource::UPDATE_VOLUME | IEqAudioSource::UPDATE_REF_DIST);
+		virtualParams.merge(nodeParams, nodeParams.updateFlags & ~excludeFlags);
+
 		virtualParams.set_rolloff(nodeParams.rolloff);
 		virtualParams.set_airAbsorption(nodeParams.airAbsorption);
 	}
@@ -395,10 +406,7 @@ int CSoundEmitterSystem::EmitterUpdateCallback(void* obj, IEqAudioSource::Params
 
 	IEqAudioSource::Params& virtualParams = emitter->virtualParams;
 	IEqAudioSource::Params& nodeParams = emitter->nodeParams;
-
-	float sampleVolume[MAX_SOUND_SAMPLES_SCRIPT]{ -1.0f };
-	nodeParams.updateFlags = 0;
-	emitter->UpdateNodes(nodeParams, sampleVolume);
+	emitter->UpdateNodes();
 
 	// update virtual params
 	if(nodeParams.updateFlags & IEqAudioSource::UPDATE_PITCH)
@@ -410,21 +418,16 @@ int CSoundEmitterSystem::EmitterUpdateCallback(void* obj, IEqAudioSource::Params
 	if (nodeParams.updateFlags & IEqAudioSource::UPDATE_REF_DIST)
 		virtualParams.set_referenceDistance(nodeParams.referenceDistance * emitter->epRadiusMultiplier);
 
-	if (nodeParams.updateFlags & IEqAudioSource::UPDATE_ROLLOFF)
-		virtualParams.set_rolloff(nodeParams.rolloff);
-
-	if (nodeParams.updateFlags & IEqAudioSource::UPDATE_AIRABSORPTION)
-		virtualParams.set_airAbsorption(nodeParams.airAbsorption);
+	// merge other params as usual
+	const int excludeFlags = (IEqAudioSource::UPDATE_PITCH | IEqAudioSource::UPDATE_VOLUME | IEqAudioSource::UPDATE_REF_DIST);
+	virtualParams.merge(nodeParams, nodeParams.updateFlags & ~excludeFlags);
 
 	soundingObj->RecalcParameters(emitter, params, nodeParams.updateFlags);
 
 	// update samples volume if they were
-	if (sampleVolume[0] >= 0.0f)
-	{
-		IEqAudioSource* soundSource = emitter->soundSource;
-		for (int i = 0; i < soundSource->GetSampleCount(); ++i)
-			soundSource->SetSampleVolume(i, sampleVolume[i]);
-	}
+	IEqAudioSource* soundSource = emitter->soundSource;
+	for (int i = 0; i < soundSource->GetSampleCount(); ++i)
+		soundSource->SetSampleVolume(i, emitter->sampleVolume[i]);
 
 	virtualParams.state = params.state;
 
