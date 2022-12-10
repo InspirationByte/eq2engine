@@ -9,6 +9,7 @@ IMGUI_IMPL_API bool     ImGui_ImplEq_InitForSDL(SDL_Window* window);
 IMGUI_IMPL_API void     ImGui_ImplEq_Shutdown();
 IMGUI_IMPL_API void     ImGui_ImplEq_NewFrame(bool controlsEnabled);
 
+IMGUI_IMPL_API bool     ImGui_ImplEq_AnyWindowInFocus();
 IMGUI_IMPL_API void     ImGui_ImplEq_InputKeyPress(int key, bool down);
 IMGUI_IMPL_API void     ImGui_ImplEq_InputText(const char* keyInput);
 IMGUI_IMPL_API void     ImGui_ImplEq_InputMousePress(int Button, bool pressed);

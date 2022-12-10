@@ -1103,6 +1103,7 @@ void CSoundScriptEditor::DrawNodeEditor(bool initializePositions)
 				ImVec2 splineRangeMax(rct.vrightBottom.x, rct.vrightBottom.y);
 				if (ImGui::CurveFrame(uiNode.name, ImVec2(120, 50), 10, splinePoints, SoundSplineDesc::splineInterpLinear, splineRangeMin, splineRangeMax))
 				{
+					ImGui::SetNextWindowFocus();
 					s_currentEditingSplineNode = &uiNode;
 				}
 			}

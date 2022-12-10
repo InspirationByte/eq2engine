@@ -11,6 +11,7 @@
 
 #include "input/in_keys_ident.h"
 
+
 #if SDL_VERSION_ATLEAST(2,0,4) && !defined(__EMSCRIPTEN__) && !defined(__ANDROID__) && !(defined(__APPLE__) && TARGET_OS_IOS)
 #define SDL_HAS_CAPTURE_AND_GLOBAL_MOUSE    1
 #else
@@ -22,14 +23,12 @@
 // SDL Data
 struct ImGui_ImplEq_Data
 {
-    SDL_Window* Window;
-    Uint64      Time;
-    bool        MousePressed[3];
-    SDL_Cursor* MouseCursors[ImGuiMouseCursor_COUNT];
-    char*       ClipboardTextData;
-    bool        MouseCanUseGlobalState;
-
-    ImGui_ImplEq_Data()   { memset(this, 0, sizeof(*this)); }
+    SDL_Window* Window{ nullptr };
+    Uint64      Time{ 0 };
+    bool        MousePressed[3]{ false };
+    SDL_Cursor* MouseCursors[ImGuiMouseCursor_COUNT]{ nullptr };
+    char*       ClipboardTextData{ nullptr };
+    bool        MouseCanUseGlobalState{ false };
 };
 
 // Backend data stored in io.BackendPlatformUserData to allow support for multiple Dear ImGui contexts
@@ -89,10 +88,16 @@ void ImGui_ImplEq_InputMousePress(int Button, bool pressed)
     }
 }
 
+bool ImGui_ImplEq_AnyWindowInFocus()
+{
+    ImGuiIO& io = ImGui::GetIO();
+    return io.WantCaptureMouse || io.WantCaptureKeyboard;
+}
+
 void ImGui_ImplEq_InputMouseWheel(int h, int v)
 {
     ImGuiIO& io = ImGui::GetIO();
-
+    
     if (h > 0) io.MouseWheelH += 1.0f;
     if (h < 0) io.MouseWheelH -= 1.0f;
     if (v > 0) io.MouseWheel += 1.0f;
