@@ -66,6 +66,7 @@ private:
 	// Editor features
 	void				RestartEmittersByScript(SoundScriptDesc* soundScript);
 
+	CEqTimer							m_updateTimer;
 	Threading::CEqSignal				m_updateDone;
 	FixedArray<ChannelDef, CHAN_MAX>	m_channelTypes;
 	Map<int, SoundScriptDesc*>			m_allSounds{ PP_SL };
@@ -75,6 +76,7 @@ private:
 	SoundScriptDesc*					m_isolateSound{ nullptr };
 	
 	float								m_defaultMaxDistance{ 100.0f };
+	float								m_deltaTime{ 0.0f };
 	bool								m_isInit{ false };
 };
 

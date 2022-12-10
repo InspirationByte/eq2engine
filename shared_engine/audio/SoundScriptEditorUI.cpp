@@ -524,6 +524,7 @@ void CSoundScriptEditor::SerializeScriptParamsToKeyValues(const SoundScriptDesc&
 	out.SetKey("channel", channelTypes[soundScript.channelType].name);
 
 	out.SetKey("maxDistance", soundScript.maxDistance);
+	out.SetKey("stopLoopTime", soundScript.stopLoopTime);
 	out.SetKey("loop", soundScript.loop);
 	out.SetKey("is2d", soundScript.is2d);
 }
@@ -1395,6 +1396,7 @@ void CSoundScriptEditor::DrawScriptEditor(bool& open)
 									ImGui::EndCombo();
 								}
 
+								modified = ImGui::SliderFloat("Loop stop time##script_stopLoopTime", &selectedScript->stopLoopTime, 0.0f, 5.0f, "%.2f", 1.0f) || modified;
 								modified = ImGui::SliderFloat("Max Distance##script_maxDistance", &selectedScript->maxDistance, 10.0f, 200.0f, "%.2f", 1.0f) || modified;
 
 								ImGui::PushID("paramIds");

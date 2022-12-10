@@ -211,7 +211,7 @@ void CSoundingObject::PlayEmitter(int uniqueId, bool rewind /*= false*/)
 		PlayEmitter(*it, rewind);
 }
 
-void CSoundingObject::StopLoop(int uniqueId)
+void CSoundingObject::StopLoop(int uniqueId, float fadeOutTime) 
 {
 	if (uniqueId != ID_ALL)
 	{
@@ -219,12 +219,12 @@ void CSoundingObject::StopLoop(int uniqueId)
 		if (it == m_emitters.end())
 			return;
 
-		StopLoop(*it);
+		StopLoop(*it, fadeOutTime);
 		return;
 	}
 
 	for (auto it = m_emitters.begin(); it != m_emitters.end(); ++it)
-		StopLoop(*it);
+		StopLoop(*it, fadeOutTime);
 }
 
 void CSoundingObject::SetPosition(int uniqueId, const Vector3D& position)
@@ -350,6 +350,10 @@ void CSoundingObject::SetEmitterState(SoundEmitterData* emitter, IEqAudioSource:
 	if (!emitter)
 		return;
 
+	emitter->stopLoopRemainingTime = 0.0f;
+	emitter->stopLoopTime = 0.0f;
+	emitter->SetInputValue(s_loopRemainTimeFactorNameHash, 0, 1.0f);
+
 	if (emitter->virtualParams.state == state)
 		return;
 
@@ -404,6 +408,10 @@ void CSoundingObject::PlayEmitter(SoundEmitterData* emitter, bool rewind)
 	if (!emitter)
 		return;
 
+	emitter->stopLoopRemainingTime = 0.0f;
+	emitter->stopLoopTime = 0.0f;
+	emitter->SetInputValue(s_loopRemainTimeFactorNameHash, 0, 1.0f);
+
 	// check if not playing already
 	IEqAudioSource::Params param;
 	if (emitter->virtualParams.state != IEqAudioSource::PLAYING)
@@ -422,11 +430,26 @@ void CSoundingObject::PlayEmitter(SoundEmitterData* emitter, bool rewind)
 	}
 }
 
-void CSoundingObject::StopLoop(SoundEmitterData* emitter)
+void CSoundingObject::StopLoop(SoundEmitterData* emitter, float fadeOutTime)
 {
-	IEqAudioSource::Params param;
-	param.set_looping(false);
-	SetParams(emitter, param);
+	if (fadeOutTime < F_EPS)
+		fadeOutTime = emitter->script->stopLoopTime;
+
+	if (fadeOutTime > F_EPS && emitter->stopLoopTime <= 0.0f)
+	{
+		emitter->stopLoopTime = fadeOutTime;
+		emitter->stopLoopRemainingTime = fadeOutTime;
+	}
+	
+	if(fadeOutTime <= 0.0f)
+	{
+		// set it directly
+		IEqAudioSource::Params param;
+		param.set_looping(false);
+
+		if (emitter->soundSource)
+			emitter->soundSource->UpdateParams(param);
+	}
 }
 
 void CSoundingObject::SetPosition(SoundEmitterData* emitter, const Vector3D& position)
@@ -435,9 +458,6 @@ void CSoundingObject::SetPosition(SoundEmitterData* emitter, const Vector3D& pos
 		return;
 	emitter->virtualParams.set_position(position);
 	emitter->nodeParams.set_position(position);
-	//IEqAudioSource::Params param;
-	//param.set_position(position);
-	//SetParams(emitter, param);
 }
 
 void CSoundingObject::SetVelocity(SoundEmitterData* emitter, const Vector3D& velocity)
@@ -446,9 +466,6 @@ void CSoundingObject::SetVelocity(SoundEmitterData* emitter, const Vector3D& vel
 		return;
 	emitter->virtualParams.set_velocity(velocity);
 	emitter->nodeParams.set_velocity(velocity);
-	//IEqAudioSource::Params param;
-	//param.set_velocity(velocity);
-	//SetParams(emitter, param);
 }
 
 void CSoundingObject::SetPitch(SoundEmitterData* emitter, float pitch)
@@ -565,9 +582,9 @@ void CEmitterObjectSound::PauseEmitter()
 	m_soundingObj.PauseEmitter(m_emitter);
 }
 
-void CEmitterObjectSound::StopLoop()
+void CEmitterObjectSound::StopLoop(float fadeOutTime)
 {
-	m_soundingObj.StopLoop(m_emitter);
+	m_soundingObj.StopLoop(m_emitter, fadeOutTime);
 }
 
 void CEmitterObjectSound::SetPosition(const Vector3D& position)

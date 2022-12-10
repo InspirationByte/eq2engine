@@ -99,7 +99,18 @@ void CSoundEmitterSystem::Init(float defaultMaxDistance, ChannelDef* channelDefs
 
 void CSoundEmitterSystem::Shutdown()
 {
-	StopAllSounds();
+	CScopedMutex m(s_soundEmitterSystemMutex);
+
+	// remove pending sounds
+	m_pendingStartSounds.clear();
+
+	for (auto it = m_soundingObjects.begin(); it != m_soundingObjects.end(); ++it)
+	{
+		CSoundingObject* obj = it.key();
+		obj->StopEmitter(CSoundingObject::ID_ALL, true);
+	}
+
+	m_soundingObjects.clear();
 
 	for (auto it = m_allSounds.begin(); it != m_allSounds.end(); ++it)
 	{
@@ -390,6 +401,25 @@ int CSoundEmitterSystem::EmitterUpdateCallback(void* obj, IEqAudioSource::Params
 
 	IEqAudioSource::Params& virtualParams = emitter->virtualParams;
 	IEqAudioSource::Params& nodeParams = emitter->nodeParams;
+
+	float stopLoopRemainingTime = emitter->stopLoopRemainingTime;
+	if (stopLoopRemainingTime > 0.0f)
+	{
+		stopLoopRemainingTime -= g_sounds->m_deltaTime;
+		const float timeFactor = stopLoopRemainingTime / emitter->stopLoopTime;
+
+		emitter->SetInputValue(s_loopRemainTimeFactorNameHash, 0, timeFactor);
+
+		if (stopLoopRemainingTime <= 0.0f)
+		{
+			// command to stop sound
+			params.set_state(IEqAudioSource::STOPPED);
+			emitter->stopLoopRemainingTime = 0.0f;
+		}
+		else
+			emitter->stopLoopRemainingTime = stopLoopRemainingTime;
+	}
+
 	emitter->UpdateNodes();
 	emitter->CalcFinalParameters(soundingObj->GetSoundVolumeScale(), params);
 
@@ -447,6 +477,8 @@ int CSoundEmitterSystem::LoopSourceUpdateCallback(void* obj, IEqAudioSource::Par
 //
 void CSoundEmitterSystem::Update()
 {
+	m_deltaTime = m_updateTimer.GetTime(true);
+
 	PROF_EVENT("Sound Emitter System Update");
 	m_updateDone.Wait();
 
@@ -557,8 +589,10 @@ void CSoundEmitterSystem::CreateSoundScript(const KVSection* scriptSection, cons
 	};
 
 	newSound->maxDistance = KV_GetValueFloat(sectionGetOrDefault("maxDistance"), 0, m_defaultMaxDistance);
+	newSound->stopLoopTime = KV_GetValueFloat(sectionGetOrDefault("stopLoopTime"), 0, 0.0f);
 	newSound->loop = KV_GetValueFloat(sectionGetOrDefault("loop"), 0, false);
 	newSound->is2d = KV_GetValueFloat(sectionGetOrDefault("is2d"), 0, false);
+
 	{
 		const KVSection* chanKey = sectionGetOrDefault("channel");
 

@@ -254,6 +254,7 @@ struct SoundScriptDesc
 
 	int			channelType{ CHAN_INVALID };
 	float		maxDistance{ 1.0f };
+	float		stopLoopTime{ 0.0f };
 	
 	bool		loop : 1;
 	bool		is2d : 1;
@@ -295,6 +296,8 @@ struct SoundEmitterData
 	float						epVolume{ 1.0f };
 	float						epPitch{ 1.0f };
 	float						epRadiusMultiplier{ 1.0f };
+	float						stopLoopTime{ 0.0f };
+	float						stopLoopRemainingTime{ 0.0f };
 	int							sampleId{ -1 };				// when randomSample and sampleId == -1, it's random
 
 	bool						nodesNeedUpdate{ true };	// triggers recalc of entire node set

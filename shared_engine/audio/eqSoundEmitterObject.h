@@ -19,6 +19,8 @@ class ConCommandBase;
 class CEmitterObjectSound;
 class CSoundScriptEditor;
 
+static constexpr const int s_loopRemainTimeFactorNameHash = StringToHashConst("loopRemainTimeFactor");
+
 // Sound channel entity that controls it's sound sources
 class CSoundingObject
 {
@@ -46,7 +48,7 @@ public:
 	void		StopEmitter(int uniqueId, bool destroy = false);
 	void		PlayEmitter(int uniqueId, bool rewind = false);
 	void		PauseEmitter(int uniqueId);
-	void		StopLoop(int uniqueId);
+	void		StopLoop(int uniqueId, float fadeOutTime = 0.0f);
 
 	// WARNING: SetPitch and SetVolume changes only the value that was passed through EmitParams
 
@@ -73,7 +75,7 @@ protected:
 	void		StopEmitter(SoundEmitterData* emitter, bool destroy);
 	void		PauseEmitter(SoundEmitterData* emitter);
 	void		PlayEmitter(SoundEmitterData* emitter, bool rewind);
-	void		StopLoop(SoundEmitterData* emitter);
+	void		StopLoop(SoundEmitterData* emitter, float fadeOutTime = 0.0f);
 
 	void		SetPosition(SoundEmitterData* emitter, const Vector3D& position);
 	void		SetVelocity(SoundEmitterData* emitter, const Vector3D& velocity);
@@ -113,7 +115,7 @@ public:
 	void		StopEmitter(bool destroy = false);
 	void		PlayEmitter(bool rewind = false);
 	void		PauseEmitter();
-	void		StopLoop();
+	void		StopLoop(float fadeOutTime = 0.0f);
 
 	void		SetPosition(const Vector3D& position);
 	void		SetVelocity(const Vector3D& velocity);
