@@ -247,14 +247,10 @@ int CSoundEmitterSystem::EmitSound(EmitParams* ep, CSoundingObject* soundingObj,
 	edata->sampleId = ep->sampleId;
 
 	edata->CreateNodeRuntime();
-
+	
 	// apply inputs (if any) to emitter data
 	for (int i = 0; i < ep->inputs.numElem(); ++i)
-	{
-		auto it = edata->inputs.find(ep->inputs[i].nameHash);
-		if (it != edata->inputs.end())
-			(*it).values[0] = ep->inputs[i].value;
-	}
+		edata->SetInputValue(ep->inputs[i].nameHash, 0, ep->inputs[i].value);
 	
 	if (isAudibleToStart)
 		edata->UpdateNodes();

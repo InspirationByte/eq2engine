@@ -1235,7 +1235,7 @@ void CSoundScriptEditor::DrawScriptEditor(bool& open)
 
 				if (ImGui::Button("Play"))
 				{
-					if (currentEmit.obj->GetEmitterState(0) == IEqAudioSource::STOPPED)
+					if (!currentEmit.obj->m_emitters.contains(currentEmit.emitId))
 					{
 						EmitParams snd(selectedScript->name);
 						snd.flags |= EMITSOUND_FLAG_FORCE_CACHED | EMITSOUND_FLAG_FORCE_2D;
@@ -1243,7 +1243,7 @@ void CSoundScriptEditor::DrawScriptEditor(bool& open)
 						currentEmit.obj->EmitSound(currentEmit.emitId, &snd);
 					}
 
-					currentEmit.obj->PlayEmitter(currentEmit.emitId);
+					currentEmit.obj->PlayEmitter(currentEmit.emitId, true);
 				}
 
 				ImGui::SameLine();
@@ -1446,45 +1446,46 @@ void CSoundScriptEditor::DrawScriptEditor(bool& open)
 
 					if (ImGui::BeginTabItem("Playback"))
 					{
-						if (currentEmit.obj->GetEmitterState(currentEmit.emitId) != IEqAudioSource::STOPPED)
+						if (currentEmit.obj->m_emitters.contains(currentEmit.emitId))
 						{
 							SoundEmitterData* emitter = currentEmit.obj->m_emitters[currentEmit.emitId];
+
+							static float playbackPitch = 1.0f;
+							static float playbackVolume = 1.0f;
+
+							// inputs here
+							{
+								playbackPitch = emitter->epPitch;
+								playbackVolume = emitter->epVolume;
+							}
+
+							bool modified = false;
+							{
+								ImGui::PushStyleColor(ImGuiCol_FrameBg, (ImVec4)ImColor::HSV(0 / 7.0f, 0.5f, 0.5f));
+								ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, (ImVec4)ImColor::HSV(0 / 7.0f, 0.6f, 0.5f));
+								ImGui::PushStyleColor(ImGuiCol_FrameBgActive, (ImVec4)ImColor::HSV(0 / 7.0f, 0.7f, 0.5f));
+								ImGui::PushStyleColor(ImGuiCol_SliderGrab, (ImVec4)ImColor::HSV(0 / 7.0f, 0.9f, 0.9f));
+								modified = ImGui::VSliderFloat("P##play_pitch", ImVec2(18, 160), &playbackPitch, 0.01f, 4.0f, "") || modified;
+								ImGui::SameLine();
+								if (ImGui::IsItemActive() || ImGui::IsItemHovered())
+									ImGui::SetTooltip("Pitch %.3f", playbackPitch);
+								ImGui::PopStyleColor(4);
+							}
+							{
+								ImGui::PushStyleColor(ImGuiCol_FrameBg, (ImVec4)ImColor::HSV(1 / 7.0f, 0.5f, 0.5f));
+								ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, (ImVec4)ImColor::HSV(1 / 7.0f, 0.6f, 0.5f));
+								ImGui::PushStyleColor(ImGuiCol_FrameBgActive, (ImVec4)ImColor::HSV(1 / 7.0f, 0.7f, 0.5f));
+								ImGui::PushStyleColor(ImGuiCol_SliderGrab, (ImVec4)ImColor::HSV(1 / 7.0f, 0.9f, 0.9f));
+								modified = ImGui::VSliderFloat("M##play_volume", ImVec2(18, 160), &playbackVolume, 0.0f, 1.0f, "") || modified;
+
+								if (ImGui::IsItemActive() || ImGui::IsItemHovered())
+									ImGui::SetTooltip("Volume %.3f", playbackVolume);
+								ImGui::PopStyleColor(4);
+							}
 
 							IEqAudioSource* src = emitter->soundSource;
 							if (src)
 							{
-								static float playbackPitch = 1.0f;
-								static float playbackVolume = 1.0f;
-
-								// inputs here
-								{
-									playbackPitch = emitter->epPitch;
-									playbackVolume = emitter->epVolume;
-								}
-
-								bool modified = false;
-								{
-									ImGui::PushStyleColor(ImGuiCol_FrameBg, (ImVec4)ImColor::HSV(0 / 7.0f, 0.5f, 0.5f));
-									ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, (ImVec4)ImColor::HSV(0 / 7.0f, 0.6f, 0.5f));
-									ImGui::PushStyleColor(ImGuiCol_FrameBgActive, (ImVec4)ImColor::HSV(0 / 7.0f, 0.7f, 0.5f));
-									ImGui::PushStyleColor(ImGuiCol_SliderGrab, (ImVec4)ImColor::HSV(0 / 7.0f, 0.9f, 0.9f));
-									modified = ImGui::VSliderFloat("P##play_pitch", ImVec2(18, 160), &playbackPitch, 0.01f, 4.0f, "") || modified;
-									ImGui::SameLine();
-									if (ImGui::IsItemActive() || ImGui::IsItemHovered())
-										ImGui::SetTooltip("Pitch %.3f", playbackPitch);
-									ImGui::PopStyleColor(4);
-								}
-								{
-									ImGui::PushStyleColor(ImGuiCol_FrameBg, (ImVec4)ImColor::HSV(1 / 7.0f, 0.5f, 0.5f));
-									ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, (ImVec4)ImColor::HSV(1 / 7.0f, 0.6f, 0.5f));
-									ImGui::PushStyleColor(ImGuiCol_FrameBgActive, (ImVec4)ImColor::HSV(1 / 7.0f, 0.7f, 0.5f));
-									ImGui::PushStyleColor(ImGuiCol_SliderGrab, (ImVec4)ImColor::HSV(1 / 7.0f, 0.9f, 0.9f));
-									modified = ImGui::VSliderFloat("M##play_volume", ImVec2(18, 160), &playbackVolume, 0.0f, 1.0f, "") || modified;
-
-									if (ImGui::IsItemActive() || ImGui::IsItemHovered())
-										ImGui::SetTooltip("Volume %.3f", playbackVolume);
-									ImGui::PopStyleColor(4);
-								}
 								for (int i = 0; i < src->GetSampleCount(); ++i)
 								{
 									ImGui::SameLine();
@@ -1496,56 +1497,55 @@ void CSoundScriptEditor::DrawScriptEditor(bool& open)
 									}
 									if (ImGui::IsItemActive() || ImGui::IsItemHovered())
 										ImGui::SetTooltip("Sample %d volume %.3f", i + 1, sampleVolume);
-
 								}
+							}
 
-								if (modified)
+							if (modified)
+							{
+								currentEmit.obj->SetVolume(emitter, playbackVolume);
+								currentEmit.obj->SetPitch(emitter, playbackPitch);
+							}
+
+							ImGui::SameLine();
+
+							if (ImGui::BeginTable("Inputs##playbackInputs", 2, ImGuiTableFlags_Borders))
+							{
+								ImGui::TableSetupColumn("name");
+								ImGui::TableSetupColumn("value");
+
+								ImGui::PushID("inputs");
+								Array<SoundNodeDesc>& nodeDescs = selectedScript->nodeDescs;
+								for (int nodeId = 0; nodeId < nodeDescs.numElem(); ++nodeId)
 								{
-									currentEmit.obj->SetVolume(emitter, playbackVolume);
-									currentEmit.obj->SetPitch(emitter, playbackPitch);
-								}
+									SoundNodeDesc& desc = selectedScript->nodeDescs[nodeId];
+									if (desc.type != SOUND_NODE_INPUT)
+										continue;
 
-								ImGui::SameLine();
+									ImGui::PushID(nodeId);
 
-								if (ImGui::BeginTable("Inputs##playbackInputs", 2, ImGuiTableFlags_Borders))
-								{
-									ImGui::TableSetupColumn("name");
-									ImGui::TableSetupColumn("value");
-
-									ImGui::PushID("inputs");
-									Array<SoundNodeDesc>& nodeDescs = selectedScript->nodeDescs;
-									for (int nodeId = 0; nodeId < nodeDescs.numElem(); ++nodeId)
+									for (int i = 0; i < desc.input.valueCount; ++i)
 									{
-										SoundNodeDesc& desc = selectedScript->nodeDescs[nodeId];
-										if (desc.type != SOUND_NODE_INPUT)
-											continue;
+										ImGui::TableNextRow();
+										ImGui::PushID(i);
 
-										ImGui::PushID(nodeId);
+										ImGui::TableSetColumnIndex(0);
+										ImGui::Text(desc.name);
+										ImGui::TableSetColumnIndex(1);
 
-										for (int i = 0; i < desc.input.valueCount; ++i)
+										float inputVal = emitter->GetInputValue(nodeId, i);
+										if (ImGui::DragFloat("##v", &inputVal, 0.01f))
 										{
-											ImGui::TableNextRow();
-											ImGui::PushID(i);
-
-											ImGui::TableSetColumnIndex(0);
-											ImGui::Text(desc.name);
-											ImGui::TableSetColumnIndex(1);
-
-											float inputVal = emitter->GetInputValue(nodeId, i);
-											if (ImGui::DragFloat("##v", &inputVal, 0.01f))
-											{
-												uint8 inputId = SoundNodeDesc::PackInputIdArrIdx(nodeId, i);
-												emitter->SetInputValue(inputId, inputVal);
-											}
-											ImGui::PopID();
+											uint8 inputId = SoundNodeDesc::PackInputIdArrIdx(nodeId, i);
+											emitter->SetInputValue(inputId, inputVal);
 										}
-
 										ImGui::PopID();
 									}
-									ImGui::PopID();
 
-									ImGui::EndTable();
+									ImGui::PopID();
 								}
+								ImGui::PopID();
+
+								ImGui::EndTable();
 							}
 						}
 						else
