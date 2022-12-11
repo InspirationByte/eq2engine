@@ -30,7 +30,7 @@ public:
 	void						Init();
 	void						Shutdown();
 
-	IEqAudioSource*				CreateSource();
+	CRefPtr<IEqAudioSource>		CreateSource();
 	void						DestroySource(IEqAudioSource* source);
 
 	void						BeginUpdate();
@@ -56,8 +56,8 @@ public:
 	void						GetListener(Vector3D& position, Vector3D& velocity);
 
 	// loads sample source data
-	ISoundSource*				LoadSample(const char* filename);
-	void						FreeSample(ISoundSource* sample);
+	CRefPtr<ISoundSource>		GetSample(const char* filename);
+	void						OnSampleDeleted(ISoundSource* sample);
 
 	// finds the effect. May return EFFECT_ID_NONE
 	effectId_t					FindEffect(const char* name) const;
@@ -161,10 +161,6 @@ protected:
 	CEqAudioSystemAL*		m_owner{ nullptr };
 
 	FixedArray<SourceStream, EQSND_SAMPLE_COUNT> m_streams;
-
-
-	// ISoundSource*			m_sample{ nullptr };
-	// int						m_streamPos{ 0 };
 
 	ALuint					m_buffers[EQSND_STREAM_BUFFER_COUNT]{ 0 };
 	ALuint					m_source{ 0 };

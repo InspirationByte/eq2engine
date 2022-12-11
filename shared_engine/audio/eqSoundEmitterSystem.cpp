@@ -102,7 +102,7 @@ void CSoundEmitterSystem::Shutdown()
 	CScopedMutex m(s_soundEmitterSystemMutex);
 
 	// remove pending sounds
-	m_pendingStartSounds.clear();
+	m_pendingStartSounds.clear(true);
 
 	for (auto it = m_soundingObjects.begin(); it != m_soundingObjects.end(); ++it)
 	{
@@ -110,19 +110,16 @@ void CSoundEmitterSystem::Shutdown()
 		obj->StopEmitter(CSoundingObject::ID_ALL, true);
 	}
 
-	m_soundingObjects.clear();
+	m_soundingObjects.clear(true);
 
 	for (auto it = m_allSounds.begin(); it != m_allSounds.end(); ++it)
 	{
 		SoundScriptDesc* script = *it;
-		for(int j = 0; j < script->samples.numElem(); j++)
-			g_audioSystem->FreeSample(script->samples[j] );
-
 		delete script;
 	}
-	m_allSounds.clear();
+	m_allSounds.clear(true);
+	m_channelTypes.clear(true);
 	m_isInit = false;
-	m_channelTypes.clear();
 }
 
 void CSoundEmitterSystem::PrecacheSound(const char* pszName)
@@ -138,12 +135,12 @@ void CSoundEmitterSystem::PrecacheSound(const char* pszName)
 
 	for(int i = 0; i < pSound->soundFileNames.numElem(); i++)
 	{
-		ISoundSource* pCachedSample = g_audioSystem->LoadSample(SOUND_DEFAULT_PATH + pSound->soundFileNames[i]);
+		CRefPtr<ISoundSource> sample = g_audioSystem->GetSample(SOUND_DEFAULT_PATH + pSound->soundFileNames[i]);
 
-		if (pCachedSample)
+		if (sample)
 		{
 			CScopedMutex m(s_soundEmitterSystemMutex);
-			pSound->samples.append(pCachedSample);
+			pSound->samples.append(sample);
 		}
 	}
 }
@@ -220,6 +217,12 @@ int CSoundEmitterSystem::EmitSound(EmitParams* ep, CSoundingObject* soundingObj,
 	{
 		return CHAN_INVALID;
 	}
+
+	if (!releaseOnStop && !soundingObj)
+	{
+		ASSERT_FAIL("Invalid value for releaseOnStop set\n");
+	}
+	
 
 	const int channelType = (ep->channelType != CHAN_INVALID) ? ep->channelType : script->channelType;
 
@@ -490,7 +493,7 @@ void CSoundEmitterSystem::Update()
 	m_updateDone.Wait();
 
 	m_updateDone.Clear();
-	g_parallelJobs->AddJob(JOB_TYPE_AUDIO, [this](void*, int i) {
+	//g_parallelJobs->AddJob(JOB_TYPE_AUDIO, [this](void*, int i) {
 		g_audioSystem->BeginUpdate();
 
 		// start all pending sounds we accumulated during sound pause
@@ -522,8 +525,8 @@ void CSoundEmitterSystem::Update()
 
 		g_audioSystem->EndUpdate();
 		m_updateDone.Raise();
-	});
-	g_parallelJobs->Submit();
+	//});
+	//g_parallelJobs->Submit();
 }
 
 void CSoundEmitterSystem::RemoveSoundingObject(CSoundingObject* obj)

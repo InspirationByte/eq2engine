@@ -11,64 +11,56 @@
 #include "core/IFileSystem.h"
 #include "snd_source.h"
 
+#include "audio/IEqAudioSystem.h"
+
 #include "snd_wav_cache.h"
 #include "snd_wav_stream.h"
 #include "snd_ogg_cache.h"
 #include "snd_ogg_stream.h"
 
-#define STREAM_THRESHOLD    (1024*1024)     // 1mb
+#define STREAM_THRESHOLD    (1024 * 1024)     // 1mb
 
 //-----------------------------------------------------------------
 
-ISoundSource* ISoundSource::CreateSound( const char* szFilename )
+CRefPtr<ISoundSource> ISoundSource::CreateSound( const char* szFilename )
 {
 	EqString fileExt = _Es(szFilename).Path_Extract_Ext();
 
-	ISoundSource* pSource = nullptr;
+	CRefPtr<ISoundSource> pSource = nullptr;
 
 	if ( !fileExt.CompareCaseIns("wav"))
 	{
-		int filelen = g_fileSystem->GetFileSize( szFilename );
+		const int filelen = g_fileSystem->GetFileSize( szFilename );
 
 		if ( filelen > STREAM_THRESHOLD )
-			pSource = (ISoundSource*)new CSoundSource_WaveStream;
+			pSource = static_cast<CRefPtr<ISoundSource>>(CRefPtr_new(CSoundSource_WaveStream));
 		else
-			pSource = (ISoundSource*)new CSoundSource_WaveCache;
+			pSource = static_cast<CRefPtr<ISoundSource>>(CRefPtr_new(CSoundSource_WaveCache));
 	}
 	else if ( !fileExt.CompareCaseIns("ogg"))
 	{
 		int filelen = g_fileSystem->GetFileSize( szFilename );
 
 		if ( filelen > STREAM_THRESHOLD )
-			pSource = (ISoundSource*)new CSoundSource_OggStream;
+			pSource = static_cast<CRefPtr<ISoundSource>>(CRefPtr_new( CSoundSource_OggStream));
 		else
-			pSource = (ISoundSource*)new CSoundSource_OggCache;
+			pSource = static_cast<CRefPtr<ISoundSource>>(CRefPtr_new(CSoundSource_OggCache));
 	}
 	else
-		MsgError( "Unknown sound format: %s\n", szFilename );
+		MsgError( "Unknown audio format: %s\n", szFilename );
 
-	if ( pSource )
+	if(pSource && !pSource->Load( szFilename ))
 	{
-		if(!pSource->Load( szFilename ))
-		{
-			MsgError( "Cannot load sound '%s'\n", szFilename );
-			delete pSource;
-			pSource = nullptr;
-		}
-
-		return pSource;
+		MsgError( "Cannot load sound '%s'\n", szFilename );
+		return nullptr;
 	}
-	else if ( pSource )
-		delete pSource;
 
-	return nullptr;
+	return pSource;
 }
 
-void ISoundSource::DestroySound(ISoundSource *pSound)
+void ISoundSource::Ref_DeleteObject()
 {
-    if ( pSound )
-    {
-        pSound->Unload( );
-        delete pSound;
-    }
+	g_audioSystem->OnSampleDeleted(this);
+	this->Unload();
+	delete this;
 }

@@ -11,6 +11,7 @@
 #include "utils/KeyValues.h"
 
 #include "eqSoundEmitterPrivateTypes.h"
+#pragma optimize("", off)
 
 float SoundSplineDesc::splineInterpLinear(float t, int maxPoints, const float* points)
 {
@@ -517,8 +518,9 @@ void SoundScriptDesc::ReloadDesc(SoundScriptDesc& scriptDesc, const KVSection* s
 	for (int i = 0; i < scriptDesc.samples.numElem(); ++i)
 	{
 		// that will stop all sources that playing that sample
-		g_audioSystem->FreeSample(scriptDesc.samples[i]);
+		g_audioSystem->OnSampleDeleted(scriptDesc.samples[i]);
 	}
+
 	scriptDesc.samples.clear();
 	scriptDesc.nodeDescs.clear();
 	scriptDesc.soundFileNames.clear();

@@ -42,7 +42,7 @@ private:
 	//		assignedRemover->Free(this);
 	// }
 
-	virtual void Ref_DeleteObject() {}
+	virtual void Ref_DeleteObject() {}	// could be useful with RefCountedKeepPolicy
 
 private:
 	mutable int	m_numRefs{ 0 };
@@ -72,7 +72,7 @@ inline bool	RefCountedObject<TYPE, POLICY>::Ref_Drop()
 //-----------------------------------------------------------------------------
 // smart pointer for ref counted
 
-#define CRefPtr_new(TYPE, ...) PPNew TYPE(__VA_ARGS__)
+#define CRefPtr_new(TYPE, ...) CRefPtr<TYPE>(new(PP_SL) TYPE(__VA_ARGS__))
 
 template< class TYPE >
 class CRefPtr
@@ -82,9 +82,12 @@ public:
 	using REF_TYPE = RefCountedObject<TYPE, typename TYPE::REF_POLICY>;
 
 	CRefPtr() = default;
-	CRefPtr( PTR_TYPE pObject );
-	CRefPtr( const CRefPtr<TYPE>& refptr );
-	virtual ~CRefPtr();
+
+	explicit CRefPtr( PTR_TYPE pObject );
+	CRefPtr(std::nullptr_t);
+	CRefPtr(const CRefPtr<TYPE>& refptr);
+	CRefPtr(CRefPtr<TYPE>&& refptr);
+	~CRefPtr();
 
 	// frees object (before scope, if you econom-guy)
 	void				Assign( PTR_TYPE obj);
@@ -98,37 +101,55 @@ public:
 	TYPE&				Ref() const			{ return *m_ptrObj; }
 	PTR_TYPE			operator->() const	{ return m_ptrObj; }
 
-	void				operator=( const PTR_TYPE obj );
+	void				operator=(std::nullptr_t);
+	void				operator=(CRefPtr<TYPE>&& refptr);
 	void				operator=( const CRefPtr<TYPE>& refptr );
 
-protected:
+private:
 	PTR_TYPE			m_ptrObj{ nullptr };
 };
 
 //------------------------------------------------------------
 
 template< class TYPE >
-inline CRefPtr<TYPE>::CRefPtr( PTR_TYPE pObject ) : m_ptrObj(pObject)
+inline CRefPtr<TYPE>::CRefPtr(std::nullptr_t)
+	: m_ptrObj(nullptr)
 {
-	if (pObject)
-		pObject->Ref_Grab();
 }
 
 template< class TYPE >
-inline CRefPtr<TYPE>::CRefPtr( const CRefPtr<TYPE>& refptr ) : m_ptrObj(refptr.Ptr())
+inline CRefPtr<TYPE>::CRefPtr( PTR_TYPE pObject )
 {
-	if (m_ptrObj)
-		m_ptrObj->Ref_Grab();
+	if (pObject)
+		pObject->Ref_Grab();
+	m_ptrObj = pObject;
+}
+
+template< class TYPE >
+inline CRefPtr<TYPE>::CRefPtr( const CRefPtr<TYPE>& refptr )
+{
+	if (refptr)
+		refptr->Ref_Grab();
+	m_ptrObj = refptr;
+}
+
+template< class TYPE >
+inline CRefPtr<TYPE>::CRefPtr(CRefPtr<TYPE>&& refptr)
+{
+	m_ptrObj = refptr.m_ptrObj;
+	refptr.m_ptrObj = nullptr;
 }
 
 template< class TYPE >
 inline CRefPtr<TYPE>::~CRefPtr()
 {
-	Release();
+	REF_TYPE* oldObj = (REF_TYPE*)m_ptrObj;
+	if (oldObj != nullptr)
+		oldObj->Ref_Drop();
 }
 
 template< class TYPE >
-inline void CRefPtr<TYPE>::Assign( PTR_TYPE obj)
+inline void CRefPtr<TYPE>::Assign(PTR_TYPE obj)
 {
 	if(m_ptrObj == obj)
 		return;
@@ -154,9 +175,16 @@ inline void CRefPtr<TYPE>::Release(bool deref)
 }
 
 template< class TYPE >
-inline void CRefPtr<TYPE>::operator=( const PTR_TYPE obj )
+inline void CRefPtr<TYPE>::operator=(std::nullptr_t)
 {
-	Assign( obj );
+	Release();
+}
+
+template< class TYPE >
+inline void CRefPtr<TYPE>::operator=(CRefPtr<TYPE>&& refptr)
+{
+	m_ptrObj = refptr.m_ptrObj;
+	refptr.m_ptrObj = nullptr;
 }
 
 template< class TYPE >

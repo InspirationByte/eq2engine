@@ -29,7 +29,7 @@ struct SpatialList
 	{
 	}
 
-	void Clear(bool deallocate = true)
+	void Clear(bool deallocate = false)
 	{
 		indexGrid.clear(deallocate);
 		objects.clear(deallocate);

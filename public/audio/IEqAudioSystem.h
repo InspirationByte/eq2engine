@@ -159,8 +159,8 @@ public:
 	virtual void				Init() = 0;
 	virtual void				Shutdown() = 0;
 
-	virtual IEqAudioSource*		CreateSource() = 0;
-	virtual void				DestroySource(IEqAudioSource* source) = 0;
+	virtual CRefPtr<IEqAudioSource>		CreateSource() = 0;
+	virtual void						DestroySource(IEqAudioSource* source) = 0;
 
 	virtual void				BeginUpdate() = 0;
 	virtual void				EndUpdate() = 0;
@@ -182,18 +182,18 @@ public:
 											const Vector3D& upVec) = 0;
 
 	// gets listener properties
-	virtual void				GetListener(Vector3D& position, Vector3D& velocity) = 0;
+	virtual void					GetListener(Vector3D& position, Vector3D& velocity) = 0;
 
 	// loads sample source data
-	virtual ISoundSource*		LoadSample(const char* filename) = 0;
-	virtual void				FreeSample(ISoundSource* sample) = 0;
+	virtual CRefPtr<ISoundSource>	GetSample(const char* filename) = 0;
+	virtual void					OnSampleDeleted(ISoundSource* sample) = 0;
 
 	// finds the effect. May return EFFECT_ID_NONE
-	virtual effectId_t			FindEffect(const char* name) const = 0;
+	virtual effectId_t				FindEffect(const char* name) const = 0;
 
 	// sets the new effect
-	virtual void				SetEffect(int slot, effectId_t effect) = 0;
-	virtual int					GetEffectSlotCount() const = 0;
+	virtual void					SetEffect(int slot, effectId_t effect) = 0;
+	virtual int						GetEffectSlotCount() const = 0;
 };
 
 extern IEqAudioSystem* g_audioSystem;

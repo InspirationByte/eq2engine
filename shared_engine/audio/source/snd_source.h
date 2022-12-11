@@ -9,7 +9,7 @@
 
 constexpr const int SOUND_SOURCE_MAX_LOOP_REGIONS = 2;
 
-class ISoundSource
+class ISoundSource : public RefCountedObject<ISoundSource, RefCountedKeepPolicy>
 {
 public:
 	enum EFormatType
@@ -28,10 +28,11 @@ public:
 
 	virtual ~ISoundSource() {}
 
-	static ISoundSource*	CreateSound(const char *szFilename);
-	static void				DestroySound(ISoundSource *pSound);
+	static CRefPtr<ISoundSource>	CreateSound(const char *szFilename);
 
 //----------------------------------------------------
+
+	void					Ref_DeleteObject();
 
 	virtual int             GetSamples(void* out, int samplesToRead, int startOffset, bool loop) const = 0;
 	virtual void*			GetDataPtr(int& dataSize) const = 0;

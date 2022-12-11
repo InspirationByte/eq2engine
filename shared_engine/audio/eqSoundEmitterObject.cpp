@@ -4,6 +4,7 @@
 #include "eqSoundEmitterObject.h"
 #include "eqSoundEmitterPrivateTypes.h"
 #include "eqSoundEmitterSystem.h"
+#pragma optimize("", off)
 
 using namespace Threading;
 
@@ -13,7 +14,11 @@ CSoundingObject::~CSoundingObject()
 
 	for (auto it = m_emitters.begin(); it != m_emitters.end(); ++it)
 	{
-		StopEmitter(*it, true);
+		SoundEmitterData* emitter = *it;
+		if (emitter->soundSource)
+			g_audioSystem->DestroySource(emitter->soundSource);
+
+		delete emitter;
 	}
 }
 

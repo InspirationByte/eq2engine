@@ -169,6 +169,7 @@ static bool ImGui_ImplMatSystem_CreateFontsTexture()
 	
 	SamplerStateParam_t params = g_pShaderAPI->MakeSamplerState(TEXFILTER_NEAREST, TEXADDRESS_CLAMP, TEXADDRESS_CLAMP, TEXADDRESS_CLAMP);
 	bd->FontTexture = g_pShaderAPI->CreateTexture(imgs, params);
+	bd->FontTexture->Ref_Grab();
 
 	ASSERT(bd->FontTexture);
 	if (!bd->FontTexture)

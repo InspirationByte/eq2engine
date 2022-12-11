@@ -20,6 +20,8 @@
 #include "eqAudioSystemAL.h"
 #include "source/snd_al_source.h"
 
+#pragma optimize("", off)
+
 using namespace Threading;
 static CEqMutex s_audioSysMutex;
 
@@ -462,8 +464,8 @@ void CEqAudioSystemAL::DestroyEffects()
 		alDeleteEffects(1, &it.value().nAlEffect);
 
 	alDeleteAuxiliaryEffectSlots(m_effectSlots.numElem(), m_effectSlots.ptr());
-	m_effectSlots.clear();
-	m_effects.clear();
+	m_effectSlots.clear(true);
+	m_effects.clear(true);
 }
 
 // Destroys context and vocies
@@ -473,14 +475,10 @@ void CEqAudioSystemAL::Shutdown()
 	DestroyEffects();
 
 	// clear voices
-	m_sources.clear();
+	m_sources.clear(true);
 
 	// delete sample sources
-	for (auto it = m_samples.begin(); it != m_samples.end(); ++it)
-	{
-		ISoundSource::DestroySound(*it);
-		m_samples.remove(it);
-	}
+	m_samples.clear(true);
 
 	// destroy context
 	DestroyContext();
@@ -488,12 +486,12 @@ void CEqAudioSystemAL::Shutdown()
 	m_noSound = true;
 }
 
-IEqAudioSource* CEqAudioSystemAL::CreateSource()
+CRefPtr<IEqAudioSource> CEqAudioSystemAL::CreateSource()
 {
 	CScopedMutex m(s_audioSysMutex);
 
 	const int index = m_sources.append(CRefPtr_new(CEqAudioSourceAL, this));
-	return m_sources[index].Ptr();
+	return static_cast<CRefPtr<IEqAudioSource>>(m_sources[index]);
 }
 
 void CEqAudioSystemAL::DestroySource(IEqAudioSource* source)
@@ -577,10 +575,18 @@ void CEqAudioSystemAL::SetChannelPitch(int chanType, float value)
 }
 
 // loads sample source data
-ISoundSource* CEqAudioSystemAL::LoadSample(const char* filename)
+CRefPtr<ISoundSource> CEqAudioSystemAL::GetSample(const char* filename)
 {
 	const int nameHash = StringToHash(filename, true);
-	ISoundSource* sampleSource = ISoundSource::CreateSound(filename);
+
+	{
+		CScopedMutex m(s_audioSysMutex);
+		auto it = m_samples.find(nameHash);
+		if (it != m_samples.end())
+			return CRefPtr(*it);
+	}
+
+	CRefPtr<ISoundSource> sampleSource = ISoundSource::CreateSound(filename);
 
 	if (sampleSource)
 	{
@@ -589,23 +595,18 @@ ISoundSource* CEqAudioSystemAL::LoadSample(const char* filename)
 		if (fmt.dataFormat != ISoundSource::FORMAT_PCM || fmt.bitwidth > 16)	// not PCM or 32 bit
 		{
 			MsgWarning("Sound '%s' has unsupported format!\n", filename);
-			ISoundSource::DestroySound(sampleSource);
 			return nullptr;
 		}
 		else if (fmt.channels > 2)
 		{
 			MsgWarning("Sound '%s' has unsupported channel count (%d)!\n", filename, fmt.channels);
-			ISoundSource::DestroySound(sampleSource);
 			return nullptr;
 		}
 
 		if (!alBufferCallbackSOFT && !sampleSource->IsStreaming())
 		{
 			// Set memory to OpenAL and destroy original source (as it's not needed anymore)
-			CSoundSource_OpenALCache* alCacheSource = PPNew CSoundSource_OpenALCache(sampleSource);
-			ISoundSource::DestroySound(sampleSource);
-
-			sampleSource = alCacheSource;
+			sampleSource = static_cast<CRefPtr<ISoundSource>>(CRefPtr_new(CSoundSource_OpenALCache, sampleSource));
 		}
 
 		{
@@ -618,7 +619,7 @@ ISoundSource* CEqAudioSystemAL::LoadSample(const char* filename)
 	return sampleSource;
 }
 
-void CEqAudioSystemAL::FreeSample(ISoundSource* sampleSource)
+void CEqAudioSystemAL::OnSampleDeleted(ISoundSource* sampleSource)
 {
 	// stop voices using that sample
 	SuspendSourcesWithSample(sampleSource);
@@ -631,7 +632,6 @@ void CEqAudioSystemAL::FreeSample(ISoundSource* sampleSource)
 			if (*it != sampleSource)
 				continue;
 
-			ISoundSource::DestroySound(*it);
 			m_samples.remove(it);
 			break;
 		}

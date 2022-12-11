@@ -9,6 +9,7 @@
 				m_ptrObj
 			</Item>
 		</Expand>
+		
 	</Type>
 	<Type Name="ArrayBase&lt;*, DynamicArrayStorage&lt;*&gt;&gt;">
 		<DisplayString Condition="m_storage.m_pListPtr == 0">[unallocated]</DisplayString>
