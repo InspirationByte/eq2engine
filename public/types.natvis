@@ -113,11 +113,11 @@
 			<Item Name="Last">m_last</Item>
 		</Expand>
 	</Type>
-	<Type Name="Map&lt;*&gt;">
+	<Type Name="Map&lt;*,*&gt;">
 		<DisplayString Condition="m_size == 0">[empty]</DisplayString>
 		<DisplayString>items: { m_size }</DisplayString>
 		<Expand>
-			<Synthetic Name="Items">
+			<Synthetic Condition="strcmp(&quot;$T2&quot;,&quot;_EMPTY_VALUE&quot;)!=0" Name="Items">
 				<DisplayString>count: { m_size }</DisplayString>
 				<Expand>
 					<TreeItems>
@@ -126,6 +126,18 @@
 						<LeftPointer>left</LeftPointer>
 						<RightPointer>right</RightPointer>
 						<ValueNode Name="[{key}]">value</ValueNode>
+					</TreeItems>
+				</Expand>
+			</Synthetic>
+			<Synthetic Condition="strcmp(&quot;$T2&quot;,&quot;_EMPTY_VALUE&quot;)==0" Name="Items">
+				<DisplayString>count: { m_size }</DisplayString>
+				<Expand>
+					<TreeItems>
+						<Size>m_size</Size>
+						<HeadPointer>m_root</HeadPointer>
+						<LeftPointer>left</LeftPointer>
+						<RightPointer>right</RightPointer>
+						<ValueNode>key</ValueNode>
 					</TreeItems>
 				</Expand>
 			</Synthetic>
