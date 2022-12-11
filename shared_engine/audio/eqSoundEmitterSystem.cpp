@@ -390,8 +390,6 @@ void CSoundEmitterSystem::StopAllSounds()
 		CSoundingObject* obj = it.key();
 		obj->StopEmitter(CSoundingObject::ID_ALL);
 	}
-
-	m_soundingObjects.clear();
 }
 
 int CSoundEmitterSystem::EmitterUpdateCallback(void* obj, IEqAudioSource::Params& params)
