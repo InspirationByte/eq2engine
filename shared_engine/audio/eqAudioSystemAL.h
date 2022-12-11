@@ -125,6 +125,8 @@ public:
 	void					GetParams(Params& params) const;
 	void					UpdateParams(const Params& params, int overrideUpdateFlags = -1);
 
+	void					SetSamplePlaybackPosition(int sourceIdx, float seconds);
+	float					GetSamplePlaybackPosition(int sourceIdx);
 	void					SetSampleVolume(int sourceIdx, float volume);
 	float					GetSampleVolume(int sourceIdx);
 	int						GetSampleCount() const;
@@ -173,7 +175,7 @@ protected:
 
 	State					m_state{ State::STOPPED };
 
-	float					m_volume{ 1.0f };			// need them raw and unaffected by mixer params
+	Vector3D				m_volume{ 1.0f };			// need them raw and unaffected by mixer params
 	float					m_pitch{ 1.0f };
 
 	int						m_channel{ -1 };			// mixer channel index

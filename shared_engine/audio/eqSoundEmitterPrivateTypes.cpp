@@ -837,33 +837,47 @@ void SoundEmitterData::UpdateNodes()
 
 	// output value mapping to sound parameters
 	const uint8* paramMap = script->paramNodeMap;
-	const float volume = stack.Get<float>(nodeValueSp[paramMap[SOUND_PARAM_VOLUME]]);
-	if(memcmp(&nodeParams.volume, &volume, sizeof(float)))
-		nodeParams.set_volume(volume);
+	{
+		const float volume = stack.Get<float>(nodeValueSp[paramMap[SOUND_PARAM_VOLUME]]);
+		if (memcmp(&nodeParams.volume.x, &volume, sizeof(float)))
+			nodeParams.set_volume(Vector3D(volume, nodeParams.volume.yz()));
+	}
 
-	const float pitch = stack.Get<float>(nodeValueSp[paramMap[SOUND_PARAM_PITCH]]);
-	if (memcmp(&nodeParams.pitch, &pitch, sizeof(float)))
-		nodeParams.set_pitch(pitch);
+	{
+		const float pitch = stack.Get<float>(nodeValueSp[paramMap[SOUND_PARAM_PITCH]]);
+		if (memcmp(&nodeParams.pitch, &pitch, sizeof(float)))
+			nodeParams.set_pitch(pitch);
+	}
 
-	const float hpf = stack.Get<float>(nodeValueSp[paramMap[SOUND_PARAM_LPF]]);
-	if (memcmp(&nodeParams.hpf, &hpf, sizeof(float)))
-		nodeParams.set_hpf(hpf);
+	{
+		const float hpf = stack.Get<float>(nodeValueSp[paramMap[SOUND_PARAM_HPF]]);
+		if (memcmp(&nodeParams.bandPass.y, &hpf, sizeof(float)))
+			nodeParams.set_bandPass(Vector2D(nodeParams.bandPass.x, hpf));
+	}
 
-	const float lpf = stack.Get<float>(nodeValueSp[paramMap[SOUND_PARAM_HPF]]);
-	if (memcmp(&nodeParams.lpf, &lpf, sizeof(float)))
-		nodeParams.set_lpf(lpf);
+	{
+		const float lpf = stack.Get<float>(nodeValueSp[paramMap[SOUND_PARAM_LPF]]);
+		if (memcmp(&nodeParams.bandPass.x, &lpf, sizeof(float)))
+			nodeParams.set_bandPass(Vector2D(lpf, nodeParams.bandPass.y));
+	}
 
-	const float airAbsorption = stack.Get<float>(nodeValueSp[paramMap[SOUND_PARAM_AIRABSORPTION]]);
-	if (memcmp(&nodeParams.airAbsorption, &airAbsorption, sizeof(float)))
-		nodeParams.set_airAbsorption(airAbsorption);
+	{
+		const float airAbsorption = stack.Get<float>(nodeValueSp[paramMap[SOUND_PARAM_AIRABSORPTION]]);
+		if (memcmp(&nodeParams.airAbsorption, &airAbsorption, sizeof(float)))
+			nodeParams.set_airAbsorption(airAbsorption);
+	}
 
-	const float rollOff = stack.Get<float>(nodeValueSp[paramMap[SOUND_PARAM_ROLLOFF]]);
-	if (memcmp(&nodeParams.rolloff, &rollOff, sizeof(float)))
-		nodeParams.set_rolloff(rollOff);
+	{
+		const float rollOff = stack.Get<float>(nodeValueSp[paramMap[SOUND_PARAM_ROLLOFF]]);
+		if (memcmp(&nodeParams.rolloff, &rollOff, sizeof(float)))
+			nodeParams.set_rolloff(rollOff);
+	}
 
-	const float attenuation = stack.Get<float>(nodeValueSp[paramMap[SOUND_PARAM_ATTENUATION]]);
-	if (memcmp(&nodeParams.referenceDistance, &attenuation, sizeof(float)))
-		nodeParams.set_referenceDistance(attenuation);
+	{
+		const float attenuation = stack.Get<float>(nodeValueSp[paramMap[SOUND_PARAM_ATTENUATION]]);
+		if (memcmp(&nodeParams.referenceDistance, &attenuation, sizeof(float)))
+			nodeParams.set_referenceDistance(attenuation);
+	}
 
 	if (paramMap[SOUND_PARAM_SAMPLE_VOLUME] != SOUND_VAR_INVALID)
 	{
@@ -885,10 +899,10 @@ void SoundEmitterData::CalcFinalParameters(float volumeScale, IEqAudioSource::Pa
 	// update pitch and volume individually
 	if (nodeParams.updateFlags & IEqAudioSource::UPDATE_VOLUME)
 	{
-		const float finalVolume = max(nodeParams.volume * epVolume, 0.0f);
+		const Vector3D finalVolume(max(nodeParams.volume.x * epVolume, 0.0f), nodeParams.volume.yz());
 		virtualParams.set_volume(finalVolume);
 
-		outParams.set_volume(finalVolume * volumeScale);
+		outParams.set_volume(Vector3D(finalVolume.x * volumeScale, finalVolume.yz()));
 	}
 
 	if (nodeParams.updateFlags & IEqAudioSource::UPDATE_PITCH)

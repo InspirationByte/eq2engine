@@ -426,7 +426,16 @@ int CSoundEmitterSystem::EmitterUpdateCallback(void* obj, IEqAudioSource::Params
 	// update samples volume if they were
 	IEqAudioSource* soundSource = emitter->soundSource;
 	for (int i = 0; i < soundSource->GetSampleCount(); ++i)
+	{
+		const float playbackPos = emitter->samplePos[i];
 		soundSource->SetSampleVolume(i, emitter->sampleVolume[i]);
+
+		if (playbackPos >= 0.0f)
+		{
+			soundSource->SetSamplePlaybackPosition(i, playbackPos);
+			emitter->samplePos[i] = -1.0f;
+		}
+	}
 
 	// clear out update flags here only since we're applied everything
 	nodeParams.updateFlags = 0;

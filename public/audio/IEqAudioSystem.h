@@ -25,22 +25,23 @@ public:
 	{
 		UPDATE_POSITION			= (1 << 0),
 		UPDATE_VELOCITY			= (1 << 1),
-		UPDATE_VOLUME			= (1 << 2),
-		UPDATE_PITCH			= (1 << 3),
-		UPDATE_LPF				= (1 << 4),
-		UPDATE_HPF				= (1 << 5),
-		UPDATE_REF_DIST			= (1 << 6),
-		UPDATE_ROLLOFF			= (1 << 7),
-		UPDATE_AIRABSORPTION	= (1 << 8),
-		UPDATE_RELATIVE			= (1 << 9),
-		UPDATE_STATE			= (1 << 10),
-		UPDATE_LOOPING			= (1 << 11),
-		UPDATE_EFFECTSLOT		= (1 << 12),
-		UPDATE_RELEASE_ON_STOP	= (1 << 13),
-		UPDATE_CHANNEL			= (1 << 14),
+		UPDATE_DIRECTION		= (1 << 2),
+		UPDATE_VOLUME			= (1 << 3),
+		UPDATE_CONE_ANGLES		= (1 << 2),
+		UPDATE_BANDPASS			= (1 << 5),
+		UPDATE_PITCH			= (1 << 4),
+		UPDATE_REF_DIST			= (1 << 7),
+		UPDATE_ROLLOFF			= (1 << 8),
+		UPDATE_AIRABSORPTION	= (1 << 9),
+		UPDATE_RELATIVE			= (1 << 10),
+		UPDATE_STATE			= (1 << 11),
+		UPDATE_LOOPING			= (1 << 12),
+		UPDATE_EFFECTSLOT		= (1 << 13),
+		UPDATE_RELEASE_ON_STOP	= (1 << 14),
+		UPDATE_CHANNEL			= (1 << 15),
 
 		// command
-		UPDATE_DO_REWIND		= (1 << 15),
+		UPDATE_DO_REWIND		= (1 << 16),
 	};
 
 	enum State : int
@@ -54,10 +55,11 @@ public:
 	{
 		Vector3D			position{ 0.0f };
 		Vector3D			velocity{ 0.0f };
-		float				volume{ 1.0f };					// [0.0, 1.0]
+		Vector3D			direction{ 0.0f };
+		Vector3D			volume{ 1.0f };					// [0.0, 1.0], x - inner cone volume, y - outer cone volume, z - outer cone high frequency volume
+		Vector2D			coneAngles{ 360.0f, 360.0f };	// [0.0f, 360.0f], inner and outer angles
+		Vector2D			bandPass{ 1.0f };				// low (x) and high (y) frequency gain
 		float				pitch{ 1.0f };					// [0.0, 100.0]
-		float				lpf{ 1.0f };					// low frequency gain
-		float				hpf{ 1.0f };					// high frequency gain
 		float				referenceDistance{ 1.0f };
 		float				rolloff{ 1.0f };
 		float				airAbsorption{ 0.0f };
@@ -71,19 +73,21 @@ public:
 		int					updateFlags{ 0 };
 
 #define PROP_SETTER(var, flag)	template<typename T> inline void set_##var(T value) {var = value; updateFlags |= flag;}
+
 		PROP_SETTER(position, UPDATE_POSITION)
 		PROP_SETTER(velocity, UPDATE_VELOCITY)
-		PROP_SETTER(volume, UPDATE_VOLUME)					// [0.0, 1.0]
-		PROP_SETTER(pitch, UPDATE_PITCH)					// [0.0, 100.0]
-		PROP_SETTER(lpf, UPDATE_LPF)
-		PROP_SETTER(hpf, UPDATE_HPF)
+		PROP_SETTER(direction, UPDATE_DIRECTION)
+		PROP_SETTER(volume, UPDATE_VOLUME)
+		PROP_SETTER(coneAngles, UPDATE_CONE_ANGLES)
+		PROP_SETTER(bandPass, UPDATE_BANDPASS)
+		PROP_SETTER(pitch, UPDATE_PITCH)
 		PROP_SETTER(referenceDistance, UPDATE_REF_DIST)
 		PROP_SETTER(rolloff, UPDATE_ROLLOFF)
 		PROP_SETTER(airAbsorption, UPDATE_AIRABSORPTION)
-		PROP_SETTER(state, UPDATE_STATE)
-		PROP_SETTER(effectSlot, UPDATE_EFFECTSLOT)
 		PROP_SETTER(relative, UPDATE_RELATIVE)
+		PROP_SETTER(state, UPDATE_STATE)
 		PROP_SETTER(looping, UPDATE_LOOPING)
+		PROP_SETTER(effectSlot, UPDATE_EFFECTSLOT)
 		PROP_SETTER(releaseOnStop, UPDATE_RELEASE_ON_STOP)
 		PROP_SETTER(channel, UPDATE_CHANNEL)
 
@@ -97,20 +101,20 @@ public:
 		inline void merge(const Params& other, int overrideUpdateFlags = -1) {
 			const int flags = (overrideUpdateFlags == -1) ? other.updateFlags : overrideUpdateFlags;
 			updateFlags |= flags;
-
 			PROP_MERGE(flags, position, UPDATE_POSITION)
 			PROP_MERGE(flags, velocity, UPDATE_VELOCITY)
+			PROP_MERGE(flags, direction, UPDATE_DIRECTION)
 			PROP_MERGE(flags, volume, UPDATE_VOLUME)
+			PROP_MERGE(flags, coneAngles, UPDATE_CONE_ANGLES)
+			PROP_MERGE(flags, bandPass, UPDATE_BANDPASS)
 			PROP_MERGE(flags, pitch, UPDATE_PITCH)
-			PROP_MERGE(flags, lpf, UPDATE_LPF)
-			PROP_MERGE(flags, hpf, UPDATE_HPF)
 			PROP_MERGE(flags, referenceDistance, UPDATE_REF_DIST)
 			PROP_MERGE(flags, rolloff, UPDATE_ROLLOFF)
 			PROP_MERGE(flags, airAbsorption, UPDATE_AIRABSORPTION)
-			PROP_MERGE(flags, state, UPDATE_STATE)
-			PROP_MERGE(flags, effectSlot, UPDATE_EFFECTSLOT)
 			PROP_MERGE(flags, relative, UPDATE_RELATIVE)
+			PROP_MERGE(flags, state, UPDATE_STATE)
 			PROP_MERGE(flags, looping, UPDATE_LOOPING)
+			PROP_MERGE(flags, effectSlot, UPDATE_EFFECTSLOT)
 			PROP_MERGE(flags, releaseOnStop, UPDATE_RELEASE_ON_STOP)
 			PROP_MERGE(flags, channel, UPDATE_CHANNEL)
 		}
@@ -131,6 +135,8 @@ public:
 	virtual void			GetParams(Params& params) const = 0;
 	virtual void			UpdateParams(const Params& params, int overrideUpdateFlags = -1) = 0;
 
+	virtual void			SetSamplePlaybackPosition(int sourceIdx, float seconds) = 0;
+	virtual float			GetSamplePlaybackPosition(int sourceIdx) = 0;
 	virtual void			SetSampleVolume(int sourceIdx, float volume) = 0;
 	virtual float			GetSampleVolume(int sourceIdx) = 0;
 	virtual int				GetSampleCount() const = 0;

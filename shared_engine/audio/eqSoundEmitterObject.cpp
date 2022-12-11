@@ -259,6 +259,22 @@ void CSoundingObject::SetVelocity(int uniqueId, const Vector3D& velocity)
 		SetVelocity(*it, velocity);
 }
 
+void CSoundingObject::SetConeProperties(int uniqueId, const Vector3D& direction, float innerRadus, float outerRadius, float outerVolume, float outerVolumeHf)
+{
+	if (uniqueId != ID_ALL)
+	{
+		const auto it = m_emitters.find(uniqueId);
+		if (it == m_emitters.end())
+			return;
+
+		SetConeProperties(*it, direction, innerRadus, outerRadius, outerVolume, outerVolumeHf);
+		return;
+	}
+
+	for (auto it = m_emitters.begin(); it != m_emitters.end(); ++it)
+		SetConeProperties(*it, direction, innerRadus, outerRadius, outerVolume, outerVolumeHf);
+}
+
 void CSoundingObject::SetPitch(int uniqueId, float pitch)
 {
 	if (uniqueId != ID_ALL)
@@ -305,6 +321,22 @@ void CSoundingObject::SetSampleVolume(int uniqueId, int waveId, float volume)
 
 	for (auto it = m_emitters.begin(); it != m_emitters.end(); ++it)
 		SetSampleVolume(*it, waveId, volume);
+}
+
+void CSoundingObject::SetSamplePlaybackPosition(int uniqueId, int waveId, float seconds)
+{
+	if (uniqueId != ID_ALL)
+	{
+		const auto it = m_emitters.find(uniqueId);
+		if (it == m_emitters.end())
+			return;
+
+		SetSamplePlaybackPosition(*it, waveId, seconds);
+		return;
+	}
+
+	for (auto it = m_emitters.begin(); it != m_emitters.end(); ++it)
+		SetSamplePlaybackPosition(*it, waveId, seconds);
 }
 
 void CSoundingObject::SetParams(int uniqueId, const IEqAudioSource::Params& params)
@@ -468,6 +500,20 @@ void CSoundingObject::SetVelocity(SoundEmitterData* emitter, const Vector3D& vel
 	emitter->nodeParams.set_velocity(velocity);
 }
 
+void CSoundingObject::SetConeProperties(SoundEmitterData* emitter, const Vector3D& direction, float innerRadus, float outerRadius, float outerVolume, float outerVolumeHf)
+{
+	if (!emitter)
+		return;
+
+	IEqAudioSource::Params& nodeParams = emitter->nodeParams;
+	IEqAudioSource::Params params;
+	params.set_direction(direction);
+	params.set_coneAngles(Vector2D(innerRadus, outerRadius));
+	params.set_volume(Vector3D(nodeParams.volume.x, outerVolume, outerVolumeHf));
+
+	emitter->nodeParams |= params;
+}
+
 void CSoundingObject::SetPitch(SoundEmitterData* emitter, float pitch)
 {
 	if (!emitter)
@@ -488,20 +534,36 @@ void CSoundingObject::SetVolume(SoundEmitterData* emitter, float volume)
 	nodeParams.updateFlags |= IEqAudioSource::UPDATE_VOLUME;
 }
 
+void CSoundingObject::SetSamplePlaybackPosition(SoundEmitterData* emitter, int waveId, float seconds)
+{
+	if (!emitter)
+		return;
+
+	// update virtual params
+	// see CSoundEmitterSystem::EmitterUpdateCallback
+	if (waveId == -1)
+	{
+		for(int i = 0; i < MAX_SOUND_SAMPLES_SCRIPT; ++i)
+			emitter->samplePos[i] = seconds;
+	}
+	else
+		emitter->samplePos[waveId] = seconds;
+}
+
 void CSoundingObject::SetSampleVolume(SoundEmitterData* emitter, int waveId, float volume)
 {
 	if (!emitter)
 		return;
 
 	// update virtual params
-	emitter->sampleVolume[waveId] = volume;
-
-	// update actual params
-	if (emitter->soundSource)
+	// see CSoundEmitterSystem::EmitterUpdateCallback
+	if (waveId == -1)
 	{
-		IEqAudioSource* source = emitter->soundSource;
-		source->SetSampleVolume(waveId, volume);
+		for (int i = 0; i < MAX_SOUND_SAMPLES_SCRIPT; ++i)
+			emitter->sampleVolume[i] = volume;
 	}
+	else
+		emitter->sampleVolume[waveId] = volume;
 }
 
 void CSoundingObject::SetParams(SoundEmitterData* emitter, const IEqAudioSource::Params& params)
@@ -597,6 +659,11 @@ void CEmitterObjectSound::SetVelocity(const Vector3D& velocity)
 	m_soundingObj.SetVelocity(m_emitter, velocity);
 }
 
+void CEmitterObjectSound::SetConeProperties(const Vector3D& direction, float innerRadus, float outerRadius, float outerVolume, float outerVolumeHf)
+{
+	m_soundingObj.SetConeProperties(m_emitter, direction, innerRadus, outerRadius, outerVolume, outerVolumeHf);
+}
+
 void CEmitterObjectSound::SetPitch(float pitch)
 {
 	m_soundingObj.SetPitch(m_emitter, pitch);
@@ -605,6 +672,11 @@ void CEmitterObjectSound::SetPitch(float pitch)
 void CEmitterObjectSound::SetVolume(float volume)
 {
 	m_soundingObj.SetVolume(m_emitter, volume);
+}
+
+void CEmitterObjectSound::SetSamplePlaybackPosition(int waveId, float seconds)
+{
+	m_soundingObj.SetSamplePlaybackPosition(m_emitter, waveId, seconds);
 }
 
 void CEmitterObjectSound::SetSampleVolume(int waveId, float volume)

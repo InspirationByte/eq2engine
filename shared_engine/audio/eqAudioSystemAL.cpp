@@ -30,10 +30,43 @@ IEqAudioSystem* g_audioSystem = &s_audioSystemAL;
 // and also eliminates few reallocations to just copy to single AL buffer
 #define USE_ALSOFT_BUFFER_CALLBACK 1
 
+static int GetLoopRegionIdx(int offsetInSamples, int* points, int regionCount)
+{
+	for (int i = 0; i < regionCount; ++i)
+	{
+		if (offsetInSamples >= points[i * 2]) //&& offsetInSamples <= points[i*2+1])
+			return i;
+	}
+	return -1;
+}
+
+static int WrapAroundSampleOffset(int sampleOffset, const ISoundSource* sample, bool looping)
+{
+	const int sampleCount = sample->GetSampleCount();
+
+	if (looping)
+	{
+		int loopPoints[SOUND_SOURCE_MAX_LOOP_REGIONS * 2];
+		const int numLoopRegions = sample->GetLoopRegions(loopPoints);
+
+		const int loopRegionIdx = GetLoopRegionIdx(sampleOffset, loopPoints, numLoopRegions);
+		const int sampleMin = (loopRegionIdx == -1) ? 0 : loopPoints[loopRegionIdx * 2];
+		const int sampleMax = (loopRegionIdx == -1) ? sampleCount : loopPoints[loopRegionIdx * 2 + 1];
+
+		const int sampleRange = sampleMax - sampleMin;
+
+		sampleOffset = sampleMin + ((sampleOffset - sampleMin) % sampleRange);
+	}
+	else
+		sampleOffset = min(sampleOffset, sampleCount);
+
+	return sampleOffset;
+}
+
 //---------------------------------------------------------
 // AL COMMON
 
-const char* getALCErrorString(int err)
+static const char* getALCErrorString(int err)
 {
 	switch (err)
 	{
@@ -54,7 +87,7 @@ const char* getALCErrorString(int err)
 	}
 }
 
-const char* getALErrorString(int err)
+static const char* getALErrorString(int err)
 {
 	switch (err)
 	{
@@ -75,7 +108,7 @@ const char* getALErrorString(int err)
 	}
 }
 
-bool checkALDeviceForErrors(ALCdevice* dev, const char* stage)
+static bool checkALDeviceForErrors(ALCdevice* dev, const char* stage)
 {
 	ALCenum alErr = alcGetError(dev);
 	if (alErr != AL_NO_ERROR)
@@ -800,6 +833,15 @@ void CEqAudioSourceAL::UpdateParams(const Params& params, int overrideUpdateFlag
 	if (mask & UPDATE_VELOCITY)
 		alSourcefv(thisSource, AL_VELOCITY, params.velocity);
 
+	if (mask & UPDATE_DIRECTION)
+		alSourcefv(thisSource, AL_DIRECTION, params.direction);
+
+	if (mask & UPDATE_CONE_ANGLES)
+	{
+		alSourcef(thisSource, AL_CONE_INNER_ANGLE, params.coneAngles.x);
+		alSourcef(thisSource, AL_CONE_OUTER_ANGLE, params.coneAngles.y);
+	}
+
 	if(params.updateFlags & UPDATE_VOLUME)
 		m_volume = params.volume;
 
@@ -807,7 +849,11 @@ void CEqAudioSourceAL::UpdateParams(const Params& params, int overrideUpdateFlag
 		m_pitch = params.pitch;
 
 	if (mask & UPDATE_VOLUME)
-		alSourcef(thisSource, AL_GAIN, m_volume * mixChannel.volume);
+	{
+		alSourcef(thisSource, AL_GAIN, m_volume.x * mixChannel.volume);
+		alSourcef(thisSource, AL_CONE_OUTER_GAIN, m_volume.y);
+		alSourcef(thisSource, AL_CONE_OUTER_GAINHF, m_volume.z);
+	}
 
 	if (mask & UPDATE_PITCH)
 		alSourcef(thisSource, AL_PITCH, m_pitch * mixChannel.pitch);
@@ -829,7 +875,7 @@ void CEqAudioSourceAL::UpdateParams(const Params& params, int overrideUpdateFlag
 			alSource3i(thisSource, AL_AUXILIARY_SEND_FILTER, m_owner->m_effectSlots[params.effectSlot], 0, AL_FILTER_NULL);
 	}
 
-	if (mask & (UPDATE_LPF | UPDATE_HPF))
+	if (mask & UPDATE_BANDPASS)
 	{
 		if (!m_filter)
 		{
@@ -838,11 +884,8 @@ void CEqAudioSourceAL::UpdateParams(const Params& params, int overrideUpdateFlag
 			alFilterf(m_filter, AL_BANDPASS_GAIN, 1.0f);
 		}
 
-		if(mask & UPDATE_LPF)
-			alFilterf(m_filter, AL_BANDPASS_GAINLF, params.lpf);
-
-		if (mask & UPDATE_HPF)
-			alFilterf(m_filter, AL_BANDPASS_GAINHF, params.hpf);
+		alFilterf(m_filter, AL_BANDPASS_GAINLF, params.bandPass.x);
+		alFilterf(m_filter, AL_BANDPASS_GAINHF, params.bandPass.y);
 
 		alSourcei(thisSource, AL_DIRECT_FILTER, m_filter);
 	}
@@ -918,8 +961,44 @@ void CEqAudioSourceAL::UpdateParams(const Params& params, int overrideUpdateFlag
 	}
 }
 
+void CEqAudioSourceAL::SetSamplePlaybackPosition(int sourceIdx, float seconds)
+{
+	if (sourceIdx == -1)
+	{
+		for (int i = 0; i < m_streams.numElem(); ++i)
+		{
+			const ISoundSource::Format& fmt = m_streams[i].sample->GetFormat();
+			m_streams[i].curPos = WrapAroundSampleOffset(seconds * fmt.frequency, m_streams[i].sample, m_looping);
+		}
+		return;
+	}
+
+	if (!m_streams.inRange(sourceIdx))
+		return;
+	const ISoundSource::Format& fmt = m_streams[sourceIdx].sample->GetFormat();
+	m_streams[sourceIdx].curPos = WrapAroundSampleOffset(seconds * fmt.frequency, m_streams[sourceIdx].sample, m_looping);
+}
+
+float CEqAudioSourceAL::GetSamplePlaybackPosition(int sourceIdx)
+{
+	if (m_streams.inRange(sourceIdx))
+	{
+		const ISoundSource::Format& fmt = m_streams[sourceIdx].sample->GetFormat();
+		return m_streams[sourceIdx].curPos / fmt.frequency;
+	}
+	return 0.0f;
+}
+
 void CEqAudioSourceAL::SetSampleVolume(int sourceIdx, float volume)
 {
+	if (sourceIdx == -1)
+	{
+		for (int i = 0; i < m_streams.numElem(); ++i)
+			m_streams[i].volume = volume;
+
+		return;
+	}
+
 	if(m_streams.inRange(sourceIdx))
 		m_streams[sourceIdx].volume = volume;
 }
@@ -966,8 +1045,8 @@ void CEqAudioSourceAL::GetParams(Params& params) const
 
 	if (m_filter != AL_NONE)
 	{
-		alGetFilterf(m_filter, AL_BANDPASS_GAINLF, &params.lpf);
-		alGetFilterf(m_filter, AL_BANDPASS_GAINLF, &params.hpf);
+		alGetFilterf(m_filter, AL_BANDPASS_GAINLF, &params.bandPass.x);
+		alGetFilterf(m_filter, AL_BANDPASS_GAINLF, &params.bandPass.y);
 	}
 
 	if (isStreaming)
@@ -1206,39 +1285,6 @@ static int MixMono16(float volume, const short* in, int numInSamples, short* out
 	}
 
 	return maxSamples;
-}
-
-static int GetLoopRegionIdx(int offsetInSamples, int* points, int regionCount)
-{
-	for (int i = 0; i < regionCount; ++i)
-	{
-		if (offsetInSamples >= points[i*2]) //&& offsetInSamples <= points[i*2+1])
-			return i;
-	}
-	return -1;
-}
-
-static int WrapAroundSampleOffset(int sampleOffset, const ISoundSource* sample, bool looping)
-{
-	const int sampleCount = sample->GetSampleCount();
-
-	if (looping)
-	{
-		int loopPoints[SOUND_SOURCE_MAX_LOOP_REGIONS * 2];
-		const int numLoopRegions = sample->GetLoopRegions(loopPoints);
-
-		const int loopRegionIdx = GetLoopRegionIdx(sampleOffset, loopPoints, numLoopRegions);
-		const int sampleMin = (loopRegionIdx == -1) ? 0 : loopPoints[loopRegionIdx * 2];
-		const int sampleMax = (loopRegionIdx == -1) ? sampleCount : loopPoints[loopRegionIdx * 2 + 1];
-
-		const int sampleRange = sampleMax - sampleMin;
-
-		sampleOffset = sampleMin + ((sampleOffset - sampleMin) % sampleRange);
-	}
-	else
-		sampleOffset = min(sampleOffset, sampleCount);
-
-	return sampleOffset;
 }
 
 ALsizei CEqAudioSourceAL::GetSampleBuffer(void* data, ALsizei size)

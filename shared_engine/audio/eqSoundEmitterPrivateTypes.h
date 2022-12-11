@@ -277,12 +277,16 @@ struct SoundEmitterData
 	SoundEmitterData()
 	{
 		for (int i = 0; i < MAX_SOUND_SAMPLES_SCRIPT; ++i)
+		{
 			sampleVolume[i] = 1.0f;
+			samplePos[i] = -1.0f;
+		}
 	}
 
 	IEqAudioSource::Params		nodeParams;
 	IEqAudioSource::Params		virtualParams;
 	float						sampleVolume[MAX_SOUND_SAMPLES_SCRIPT];
+	float						samplePos[MAX_SOUND_SAMPLES_SCRIPT];
 	float						params[SOUND_PARAM_COUNT];
 
 	Map<int, SoundNodeInput>	inputs{ PP_SL };

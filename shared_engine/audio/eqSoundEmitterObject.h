@@ -49,7 +49,7 @@ public:
 	void		PlayEmitter(int uniqueId, bool rewind = false);
 	void		PauseEmitter(int uniqueId);
 	void		StopLoop(int uniqueId, float fadeOutTime = 0.0f);
-
+	
 	// WARNING: SetPitch and SetVolume changes only the value that was passed through EmitParams
 
 	void		SetPitch(int uniqueId, float pitch);
@@ -57,7 +57,9 @@ public:
 
 	void		SetPosition(int uniqueId, const Vector3D& position);
 	void		SetVelocity(int uniqueId, const Vector3D& velocity);
+	void		SetConeProperties(int uniqueId, const Vector3D& direction, float innerRadus, float outerRadius, float outerVolume, float outerVolumeHf = 1.0f);
 
+	void		SetSamplePlaybackPosition(int uniqueId, int waveId, float seconds);
 	void		SetSampleVolume(int uniqueId, int waveId, float volume);
 	void		SetParams(int uniqueId, const IEqAudioSource::Params& params);
 
@@ -79,10 +81,12 @@ protected:
 
 	void		SetPosition(SoundEmitterData* emitter, const Vector3D& position);
 	void		SetVelocity(SoundEmitterData* emitter, const Vector3D& velocity);
+	void		SetConeProperties(SoundEmitterData* emitter, const Vector3D& direction, float innerRadus, float outerRadius, float outerVolume, float outerVolumeHf = 1.0f);
 
 	void		SetPitch(SoundEmitterData* emitter, float pitch);
 	void		SetVolume(SoundEmitterData* emitter, float volume);
 
+	void		SetSamplePlaybackPosition(SoundEmitterData* emitter, int waveId, float seconds);
 	void		SetSampleVolume(SoundEmitterData* emitter, int waveId, float volume);
 	void		SetParams(SoundEmitterData* emitter, const IEqAudioSource::Params& params);
 
@@ -119,9 +123,12 @@ public:
 
 	void		SetPosition(const Vector3D& position);
 	void		SetVelocity(const Vector3D& velocity);
+	void		SetConeProperties(const Vector3D& direction, float innerRadus, float outerRadius, float outerVolume, float outerVolumeHf = 1.0f); 
+
 	void		SetPitch(float pitch);
 	void		SetVolume(float volume);
 
+	void		SetSamplePlaybackPosition(int waveId, float seconds);
 	void		SetSampleVolume(int waveId, float volume);
 	void		SetParams(const IEqAudioSource::Params& params);
 
