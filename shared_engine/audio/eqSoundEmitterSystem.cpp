@@ -124,11 +124,17 @@ void CSoundEmitterSystem::Shutdown()
 
 void CSoundEmitterSystem::PrecacheSound(const char* pszName)
 {
+	if (*pszName == 0)
+		return;
+
 	// find the present sound file
 	SoundScriptDesc* pSound = FindSound(pszName);
 
-	if(!pSound)
+	if (!pSound)
+	{
+		MsgWarning("PrecacheSound: No sound found with name '%s'\n", pszName);
 		return;
+	}
 
 	if(pSound->samples.numElem() > 0)
 		return;

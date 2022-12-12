@@ -468,6 +468,9 @@ void CSoundingObject::PlayEmitter(SoundEmitterData* emitter, bool rewind)
 
 void CSoundingObject::StopLoop(SoundEmitterData* emitter, float fadeOutTime)
 {
+	if (!emitter)
+		return;
+
 	if (fadeOutTime < F_EPS)
 		fadeOutTime = emitter->script->stopLoopTime;
 
