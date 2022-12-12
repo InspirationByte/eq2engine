@@ -20,8 +20,6 @@
 #include "eqAudioSystemAL.h"
 #include "source/snd_al_source.h"
 
-#pragma optimize("", off)
-
 using namespace Threading;
 static CEqMutex s_audioSysMutex;
 
@@ -1159,7 +1157,7 @@ bool CEqAudioSourceAL::DoUpdate()
 		Params params;
 		GetParams(params);
 
-		m_callback(m_callbackObject, params);
+		m_callback(this, params, m_callbackObject);
 
 		// update channel parameters
 		UpdateParams(params);
@@ -1474,7 +1472,7 @@ bool CEqAudioSourceAL::QueueStreamChannel(ALuint buffer)
 
 	SourceStream& mainStream = GetSourceStream();
 	ISoundSource* sample = mainStream.sample;
-	int streamPos = mainStream.curPos;
+	const int streamPos = mainStream.curPos;
 
 	const ISoundSource::Format& fmt = sample->GetFormat();
 	ALenum alFormat = GetSoundSourceFormatAsALEnum(fmt);
@@ -1485,13 +1483,7 @@ bool CEqAudioSourceAL::QueueStreamChannel(ALuint buffer)
 
 	if (numRead > 0)
 	{
-		streamPos += numRead;
-
-		if (m_looping)
-			streamPos %= sample->GetSampleCount();
-		else
-			streamPos = min(streamPos, sample->GetSampleCount());
-		mainStream.curPos = streamPos;
+		mainStream.curPos = WrapAroundSampleOffset(streamPos + numRead, sample, m_looping);
 
 		// upload to specific buffer
 		alBufferData(buffer, alFormat, pcmBuffer, numRead * sampleSize, fmt.frequency);

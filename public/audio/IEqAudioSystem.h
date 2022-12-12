@@ -123,7 +123,7 @@ public:
 #undef PROP_MERGE
 	};
 
-	using UpdateCallback = EqFunction<int(void* obj, Params& params)>;		// returns EVoiceUpdateFlags
+	using UpdateCallback = EqFunction<int(IEqAudioSource* source, Params& params, void* obj)>;		// returns EVoiceUpdateFlags
 
 	virtual ~IEqAudioSource() { }
 

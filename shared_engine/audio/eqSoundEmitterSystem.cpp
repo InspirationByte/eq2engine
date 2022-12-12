@@ -395,7 +395,7 @@ void CSoundEmitterSystem::StopAllSounds()
 	}
 }
 
-int CSoundEmitterSystem::EmitterUpdateCallback(void* obj, IEqAudioSource::Params& params)
+int CSoundEmitterSystem::EmitterUpdateCallback(IEqAudioSource* soundSource, IEqAudioSource::Params& params, void* obj)
 {
 	SoundEmitterData* emitter = (SoundEmitterData*)obj;
 	CSoundingObject* soundingObj = emitter->soundingObj;
@@ -425,7 +425,6 @@ int CSoundEmitterSystem::EmitterUpdateCallback(void* obj, IEqAudioSource::Params
 	emitter->CalcFinalParameters(soundingObj->GetSoundVolumeScale(), params);
 
 	// update samples volume if they were
-	IEqAudioSource* soundSource = emitter->soundSource;
 	for (int i = 0; i < soundSource->GetSampleCount(); ++i)
 	{
 		const float playbackPos = emitter->samplePos[i];
@@ -464,7 +463,7 @@ int CSoundEmitterSystem::EmitterUpdateCallback(void* obj, IEqAudioSource::Params
 	return 0;
 }
 
-int CSoundEmitterSystem::LoopSourceUpdateCallback(void* obj, IEqAudioSource::Params& params)
+int CSoundEmitterSystem::LoopSourceUpdateCallback(IEqAudioSource* source, IEqAudioSource::Params& params, void* obj)
 {
 	const SoundScriptDesc* soundScript = (const SoundScriptDesc*)obj;
 	if (params.relative)
@@ -493,7 +492,7 @@ void CSoundEmitterSystem::Update()
 	m_updateDone.Wait();
 
 	m_updateDone.Clear();
-	//g_parallelJobs->AddJob(JOB_TYPE_AUDIO, [this](void*, int i) {
+	g_parallelJobs->AddJob(JOB_TYPE_AUDIO, [this](void*, int i) {
 		g_audioSystem->BeginUpdate();
 
 		// start all pending sounds we accumulated during sound pause
@@ -525,8 +524,8 @@ void CSoundEmitterSystem::Update()
 
 		g_audioSystem->EndUpdate();
 		m_updateDone.Raise();
-	//});
-	//g_parallelJobs->Submit();
+	});
+	g_parallelJobs->Submit();
 }
 
 void CSoundEmitterSystem::RemoveSoundingObject(CSoundingObject* obj)

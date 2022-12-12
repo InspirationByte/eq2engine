@@ -56,8 +56,8 @@ private:
 	SoundScriptDesc*	FindSound(const char* soundName) const;
 	void				RemoveSoundingObject(CSoundingObject* obj);
 
-	static int			EmitterUpdateCallback(void* obj, IEqAudioSource::Params& params);
-	static int			LoopSourceUpdateCallback(void* obj, IEqAudioSource::Params& params);
+	static int			EmitterUpdateCallback(IEqAudioSource* source, IEqAudioSource::Params& params, void* obj);
+	static int			LoopSourceUpdateCallback(IEqAudioSource* source, IEqAudioSource::Params& params, void* obj);
 
 	bool				SwitchSourceState(SoundEmitterData* emit, bool isVirtual);
 

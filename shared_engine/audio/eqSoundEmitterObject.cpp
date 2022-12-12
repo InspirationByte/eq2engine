@@ -4,7 +4,6 @@
 #include "eqSoundEmitterObject.h"
 #include "eqSoundEmitterPrivateTypes.h"
 #include "eqSoundEmitterSystem.h"
-#pragma optimize("", off)
 
 using namespace Threading;
 

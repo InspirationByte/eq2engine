@@ -11,7 +11,6 @@
 #include "utils/KeyValues.h"
 
 #include "eqSoundEmitterPrivateTypes.h"
-#pragma optimize("", off)
 
 float SoundSplineDesc::splineInterpLinear(float t, int maxPoints, const float* points)
 {
