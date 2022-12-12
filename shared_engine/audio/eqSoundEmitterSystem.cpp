@@ -122,10 +122,10 @@ void CSoundEmitterSystem::Shutdown()
 	m_isInit = false;
 }
 
-void CSoundEmitterSystem::PrecacheSound(const char* pszName)
+bool CSoundEmitterSystem::PrecacheSound(const char* pszName)
 {
 	if (*pszName == 0)
-		return;
+		return false;
 
 	// find the present sound file
 	SoundScriptDesc* pSound = FindSound(pszName);
@@ -133,11 +133,11 @@ void CSoundEmitterSystem::PrecacheSound(const char* pszName)
 	if (!pSound)
 	{
 		MsgWarning("PrecacheSound: No sound found with name '%s'\n", pszName);
-		return;
+		return false;
 	}
 
 	if(pSound->samples.numElem() > 0)
-		return;
+		return true;
 
 	for(int i = 0; i < pSound->soundFileNames.numElem(); i++)
 	{
@@ -149,6 +149,8 @@ void CSoundEmitterSystem::PrecacheSound(const char* pszName)
 			pSound->samples.append(sample);
 		}
 	}
+
+	return pSound->samples.numElem() > 0;
 }
 
 SoundScriptDesc* CSoundEmitterSystem::FindSound(const char* soundName) const
