@@ -40,6 +40,9 @@ using namespace Threading;
 
 struct ppallocinfo_t
 {
+	ppallocinfo_t*	next{nullptr};
+	ppallocinfo_t*	prev{nullptr};
+
 	size_t			size;
 
 #ifdef PPMEM_EXTRA_DEBUGINFO
@@ -67,8 +70,13 @@ using source_map = Map<const char*, const char*>;
 struct ppmem_state_t
 {
 	source_map sourceFileNameMap{PPSourceLine::Empty()};
-	pointer_map allocPointerMap{ PPSourceLine::Empty() };
+
+	ppallocinfo_t* first{ nullptr };
+	ppallocinfo_t* last{ nullptr };
+	size_t numAllocs{ 0 };
+
 	uint allocIdCounter = 0;
+	uint64 allocMemCounter = 0;
 	CEqMutex allocMemMutex;
 };
 
@@ -153,10 +161,10 @@ void PPMemInfo(bool fullStats)
 
 	Map<uint64, SLStat_t> allocCounter{ PPSourceLine::Empty() };
 
-	for(auto it = st.allocPointerMap.begin(); it != st.allocPointerMap.end(); ++it)
+	
+	for(ppallocinfo_t* alloc = st.first; alloc != nullptr; alloc = alloc->next)
 	{
-		ppallocinfo_t* alloc = it.value();
-		const void* curPtr = it.key();
+		const void* curPtr = alloc + 1;
 
 		totalUsage += alloc->size;
 	
@@ -199,9 +207,7 @@ void PPMemInfo(bool fullStats)
 	}
 #endif // PPMEM_EXTRA_DEBUGINFO
 
-	uint allocCount = st.allocPointerMap.size();
-
-	MsgInfo("--- of %u allocactions, total usage: %.2f MB\n", allocCount, (totalUsage / 1024.0f) / 1024.0f);
+	MsgInfo("--- of %u allocactions, total usage: %.2f MB\n", st.numAllocs, (totalUsage / 1024.0f) / 1024.0f);
 
 	if(numErrors > 0)
 		MsgWarning("%d allocations has overflow/underflow happened in runtime. Please print full stats to console\n", numErrors);
@@ -213,18 +219,7 @@ IEXPORTS size_t	PPMemGetUsage()
 	return 0;
 #else
 	ppmem_state_t& st = PPGetState();
-	CScopedMutex m(st.allocMemMutex);
-
-	size_t totalUsage = 0;
-
-	Map<uint64, int> allocCounter{ PPSourceLine::Empty() };
-
-	for (auto it = st.allocPointerMap.begin(); it != st.allocPointerMap.end(); ++it)
-	{
-		const ppallocinfo_t* alloc = it.value();
-		totalUsage += alloc->size;
-	}
-	return totalUsage;
+	return st.allocMemCounter;
 #endif
 }
 
@@ -265,9 +260,20 @@ void* PPDAlloc(size_t size, const PPSourceLine& sl)
 	if(!st.sourceFileNameMap.count(sl.GetFileName()))
 		st.sourceFileNameMap[sl.GetFileName()] = strdup(sl.GetFileName());
 
-	st.allocMemMutex.Lock();
-	st.allocPointerMap[actualPtr] = alloc;	// store pointer in global map
-	st.allocMemMutex.Unlock();
+	// insert to linked list tail
+	{
+		CScopedMutex m(st.allocMemMutex);
+		++st.numAllocs;
+		st.allocMemCounter += alloc->size;
+
+		if (st.last != nullptr)
+			st.last->next = alloc;
+		else
+			st.first = alloc;
+
+		alloc->prev = st.last;
+		alloc->next = nullptr;
+	}
 
 	if( ppmem_break_on_alloc.GetInt() != -1)
 		ASSERT_MSG(alloc->id == (uint)ppmem_break_on_alloc.GetInt(), "PPDAlloc: Break on allocation id=%d", alloc->id);
@@ -288,25 +294,49 @@ void* PPDReAlloc( void* ptr, size_t size, const PPSourceLine& sl )
 
 	{
 		ppmem_state_t& st = PPGetState();
-		CScopedMutex m(st.allocMemMutex);
 
-		const auto it = st.allocPointerMap.find(ptr);
-
-		if (it == st.allocPointerMap.end())
+		const ppallocinfo_t* r_alloc = (ppallocinfo_t*)ptr - 1;
+		if (ptr == nullptr || r_alloc->checkMark != PPMEM_CHECKMARK)
 		{
 			return PPDAlloc(size, sl);
 		}
 
-		ppallocinfo_t* alloc = (ppallocinfo_t*)realloc(it.value(), sizeof(ppallocinfo_t) + size + sizeof(uint));
+		// remove from linked list first
+		{
+			CScopedMutex m(st.allocMemMutex);
+			st.allocMemCounter -= r_alloc->size;
+
+			if (r_alloc->prev == nullptr)
+				st.first = r_alloc->next;
+			else
+				r_alloc->prev->next = r_alloc->next;
+
+			if (r_alloc->next == nullptr)
+				st.last = r_alloc->prev;
+			else
+				r_alloc->next->prev = r_alloc->prev;
+		}
+
+		ppallocinfo_t* alloc = (ppallocinfo_t*)realloc((void*)r_alloc, sizeof(ppallocinfo_t) + size + sizeof(uint));
 		ASSERT_MSG(alloc, "realloc: no mem left!");
 
 		// actual pointer address
 		retPtr = ((ubyte*)alloc) + sizeof(ppallocinfo_t);
 		uint* checkMark = (uint*)((ubyte*)retPtr + size);
 
-		st.allocPointerMap[retPtr] = alloc;
-		if(retPtr != ptr)
-			st.allocPointerMap.remove(it);
+		// insert to linked list tail
+		{
+			CScopedMutex m(st.allocMemMutex);
+			st.allocMemCounter += alloc->size;
+
+			if (st.last != nullptr)
+				st.last->next = alloc;
+			else
+				st.first = alloc;
+
+			alloc->prev = st.last;
+			alloc->next = nullptr;
+		}
 
 		{
 			alloc->sl = sl;
@@ -334,17 +364,30 @@ void PPFree(void* ptr)
 
 	{
 		ppmem_state_t& st = PPGetState();
-		CScopedMutex m(st.allocMemMutex);
 
-		const auto it = st.allocPointerMap.find(ptr);
-
-		if (it == st.allocPointerMap.end())
+		const ppallocinfo_t* alloc = (ppallocinfo_t*)ptr - 1;
+		if(alloc->checkMark != PPMEM_CHECKMARK)
 		{
 			free(ptr);
 			return;
 		}
 
-		const ppallocinfo_t* alloc = it.value();
+		// remove from linked list
+		{
+			CScopedMutex m(st.allocMemMutex);
+			--st.numAllocs;
+			st.allocMemCounter -= alloc->size;
+
+			if (alloc->prev == nullptr)
+				st.first = alloc->next;
+			else
+				alloc->prev->next = alloc->next;
+
+			if (alloc->next == nullptr)
+				st.last = alloc->prev;
+			else
+				alloc->next->prev = alloc->prev;
+		}
 
 		// actual pointer address
 		const void* actualPtr = ((ubyte*)alloc) + sizeof(ppallocinfo_t);
@@ -354,7 +397,6 @@ void PPFree(void* ptr)
 		ASSERT_MSG(*checkMark == PPMEM_CHECKMARK, "PPCheck: memory is invalid (was outranged after)");
 
 		free((void*)alloc);
-		st.allocPointerMap.remove(it);
 	}
 #endif // PPMEM_DISABLE
 }
