@@ -273,6 +273,7 @@ void* PPDAlloc(size_t size, const PPSourceLine& sl)
 
 		alloc->prev = st.last;
 		alloc->next = nullptr;
+		st.last = alloc;
 	}
 
 	if( ppmem_break_on_alloc.GetInt() != -1)
@@ -336,6 +337,7 @@ void* PPDReAlloc( void* ptr, size_t size, const PPSourceLine& sl )
 
 			alloc->prev = st.last;
 			alloc->next = nullptr;
+			st.last = alloc;
 		}
 
 		{
