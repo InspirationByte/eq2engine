@@ -1279,6 +1279,8 @@ void CEqPhysics::SimulateStep(float deltaTime, int iteration, FNSIMULATECALLBACK
 	if(!m_grid)
 		return;
 
+	PROF_EVENT("EqPhysics SimulateStep");
+
 	// save delta
 	m_fDt = deltaTime;
 
