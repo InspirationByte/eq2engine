@@ -262,6 +262,8 @@ struct SoundScriptDesc
 
 	const ISoundSource* GetBestSample(int sampleId /*= -1*/) const;
 	uint8				FindVariableIndex(const char* varName) const;
+	int					GetInputNodeId(int nameHash) const;
+
 	static void			ParseDesc(SoundScriptDesc& scriptDesc, const KVSection* scriptSection, const KVSection* defaultsSec);
 	static void			ReloadDesc(SoundScriptDesc& scriptDesc, const KVSection* scriptSection);
 };

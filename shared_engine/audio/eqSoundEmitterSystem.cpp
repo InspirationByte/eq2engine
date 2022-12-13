@@ -21,6 +21,7 @@
 #include "eqSoundEmitterObject.h"
 #include "eqSoundEmitterSystem.h"
 
+
 #define SOUND_DEFAULT_PATH		"sounds/"
 
 static CSoundEmitterSystem s_ses;
@@ -666,6 +667,7 @@ void CSoundEmitterSystem::RestartEmittersByScript(SoundScriptDesc* script)
 			// this will ensure emitter recreation
 			emitter->nodesNeedUpdate = true;
 			emitter->CreateNodeRuntime();
+			emitter->SetInputValue(s_loopRemainTimeFactorNameHash, 0, 1.0f);
 			SwitchSourceState(emitter, true);
 			SwitchSourceState(emitter, false);
 		}

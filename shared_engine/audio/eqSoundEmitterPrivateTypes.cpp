@@ -132,6 +132,14 @@ uint8 SoundScriptDesc::FindVariableIndex(const char* varName) const
 	return SoundNodeDesc::PackInputIdArrIdx((uint)valIdx, arrayIdx);
 }
 
+int	SoundScriptDesc::GetInputNodeId(int nameHash) const
+{
+	auto it = inputNodeMap.find(nameHash);
+	if (it == inputNodeMap.end())
+		return -1;
+	return *it;
+}
+
 void SoundScriptDesc::ParseDesc(SoundScriptDesc& scriptDesc, const KVSection* scriptSection, const KVSection* defaultsSec)
 {
 	// initialize first
@@ -551,11 +559,11 @@ void SoundEmitterData::CreateNodeRuntime()
 
 void SoundEmitterData::SetInputValue(int inputNameHash, int arrayIdx, float value)
 {
-	auto it = script->inputNodeMap.find(inputNameHash);
-	if (it == script->inputNodeMap.end())
+	const int inputNodeId = script->GetInputNodeId(inputNameHash);
+	if (inputNodeId < 0)
 		return;
 
-	auto dataIt = inputs.find(*it);
+	auto dataIt = inputs.find(inputNodeId);
 	if (dataIt == inputs.end())
 		return;
 

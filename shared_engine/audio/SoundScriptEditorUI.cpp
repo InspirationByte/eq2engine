@@ -599,17 +599,23 @@ void CSoundScriptEditor::SerializeNodesToKeyValues(KVSection& out)
 						foundLinks.clear();
 						GetConnections(uiNode.func.lhs[0], foundLinks);
 
-						ASSERT_MSG(foundLinks.numElem() > 0, "message to programmer: consider using usedNodes pls");
-						const int oppositeAttribId = (foundLinks[0].a == uiNode.func.lhs[0]) ? foundLinks[0].b : foundLinks[0].a;
+						if (foundLinks.numElem())
+						{
+							const int oppositeAttribId = (foundLinks[0].a == uiNode.func.lhs[0]) ? foundLinks[0].b : foundLinks[0].a;
 
-						int nodeId, arrayIdx, side;
-						UnpackAttribId(oppositeAttribId, nodeId, arrayIdx, side);
+							int nodeId, arrayIdx, side;
+							UnpackAttribId(oppositeAttribId, nodeId, arrayIdx, side);
 
-						const UISoundNodeDesc& conNode = s_uiNodes[nodeId];
-						if(conNode.GetOutputCount(false) > 1 || arrayIdx > 0)
-							sec->AddValue(EqString::Format("%s[%d]", s_uiNodes[nodeId].name, arrayIdx));
+							const UISoundNodeDesc& conNode = s_uiNodes[nodeId];
+							if (conNode.GetOutputCount(false) > 1 || arrayIdx > 0)
+								sec->AddValue(EqString::Format("%s[%d]", s_uiNodes[nodeId].name, arrayIdx));
+							else
+								sec->AddValue(EqString::Format("%s", s_uiNodes[nodeId].name, arrayIdx));
+						}
 						else
-							sec->AddValue(EqString::Format("%s", s_uiNodes[nodeId].name, arrayIdx));
+						{
+							sec->AddValue(0.0f);
+						}
 					}
 
 					// add spline values
@@ -809,6 +815,8 @@ void CSoundScriptEditor::DrawNodeEditor(bool initializePositions)
 	// adjust node positions
 	if (initializePositions)
 	{
+		// TODO: deserialize and decompress editor data from sound script
+
 		// run first method for unconnected nodes
 		{
 			int posCounter = 0;
@@ -964,9 +972,21 @@ void CSoundScriptEditor::DrawNodeEditor(bool initializePositions)
 		ImGui::PopStyleVar();
 	}
 
+	Set<int> usedNodes{ PP_SL };
+	GetUsedNodes(usedNodes);
+
 	for (auto it = s_uiNodes.begin(); it != s_uiNodes.end(); ++it)
 	{
 		UISoundNodeDesc& uiNode = *it;
+
+		const bool isUsedNode = usedNodes.contains(uiNode.id);
+
+		if (!isUsedNode)
+		{
+			ImNodes::PushColorStyle(ImNodesCol_NodeBackground, IM_COL32(100, 15, 15, 128));
+			ImNodes::PushColorStyle(ImNodesCol_NodeBackgroundHovered, IM_COL32(120, 25, 25, 128));
+			ImNodes::PushColorStyle(ImNodesCol_NodeBackgroundSelected, IM_COL32(130, 45, 45, 128));
+		}
 
 		const float node_width = 100.0f;
 
@@ -1141,6 +1161,13 @@ void CSoundScriptEditor::DrawNodeEditor(bool initializePositions)
 			ImNodes::PopColorStyle();
 			ImNodes::PopColorStyle();
 		}
+
+		if (!isUsedNode)
+		{
+			ImNodes::PopColorStyle();
+			ImNodes::PopColorStyle();
+			ImNodes::PopColorStyle();
+		}
 	}
 
 	// link nodes
@@ -1227,6 +1254,7 @@ void CSoundScriptEditor::DrawScriptEditor(bool& open)
 				SoundEmitterData* emitter;
 			};
 
+			static Map<int, SoundNodeInput> currentInputs{ PP_SL };
 			static CSoundingObject soundTest;
 			static EmitPair currentEmit{ 0, 0, &soundTest, nullptr };
 			static bool isolateSound = false;
@@ -1286,12 +1314,13 @@ void CSoundScriptEditor::DrawScriptEditor(bool& open)
 						}
 					}
 
-					if (!isValidEmitter)
+					if (!isValidEmitter && currentEmitterIdx != -1)
 					{
 						currentEmit.objId = 0;
 						currentEmit.emitId = 0;
 						currentEmit.obj = &soundTest;
 						currentEmit.emitter = nullptr;
+						currentInputs.clear();
 
 						currentEmitterIdx = -1;
 					}
@@ -1312,6 +1341,7 @@ void CSoundScriptEditor::DrawScriptEditor(bool& open)
 						{
 							currentEmit = emittersPlaying[row];
 							currentEmitterIdx = row;
+							currentInputs.clear();
 						}
 
 						ImGui::PopID();
@@ -1452,14 +1482,31 @@ void CSoundScriptEditor::DrawScriptEditor(bool& open)
 						if (currentEmit.obj->m_emitters.contains(currentEmit.emitId))
 						{
 							SoundEmitterData* emitter = currentEmit.obj->m_emitters[currentEmit.emitId];
+							const Array<SoundNodeDesc>& nodeDescs = selectedScript->nodeDescs;
 
 							static float playbackPitch = 1.0f;
 							static float playbackVolume = 1.0f;
 
-							// inputs here
+							// emit values here
 							{
 								playbackPitch = emitter->epPitch;
 								playbackVolume = emitter->epVolume;
+
+								// collect inputs
+								if (!currentInputs.size() || currentEmit.obj != &soundTest)
+								{
+									currentInputs.clear();
+
+									for (int nodeId = 0; nodeId < nodeDescs.numElem(); ++nodeId)
+									{
+										SoundNodeDesc& desc = selectedScript->nodeDescs[nodeId];
+										if (desc.type != SOUND_NODE_INPUT)
+											continue;
+
+										const int nameHash = StringToHash(desc.name);
+										currentInputs[nameHash] = emitter->inputs[nodeId];
+									}
+								}
 							}
 
 							bool modified = false;
@@ -1517,7 +1564,7 @@ void CSoundScriptEditor::DrawScriptEditor(bool& open)
 								ImGui::TableSetupColumn("value");
 
 								ImGui::PushID("inputs");
-								Array<SoundNodeDesc>& nodeDescs = selectedScript->nodeDescs;
+
 								for (int nodeId = 0; nodeId < nodeDescs.numElem(); ++nodeId)
 								{
 									SoundNodeDesc& desc = selectedScript->nodeDescs[nodeId];
@@ -1525,6 +1572,7 @@ void CSoundScriptEditor::DrawScriptEditor(bool& open)
 										continue;
 
 									ImGui::PushID(nodeId);
+									const int nameHash = StringToHash(desc.name);
 
 									for (int i = 0; i < desc.input.valueCount; ++i)
 									{
@@ -1535,11 +1583,13 @@ void CSoundScriptEditor::DrawScriptEditor(bool& open)
 										ImGui::Text(desc.name);
 										ImGui::TableSetColumnIndex(1);
 
-										float inputVal = emitter->GetInputValue(nodeId, i);
+										float inputVal = currentInputs[nameHash].values[i];
 										if (ImGui::DragFloat("##v", &inputVal, 0.01f))
 										{
 											uint8 inputId = SoundNodeDesc::PackInputIdArrIdx(nodeId, i);
 											emitter->SetInputValue(inputId, inputVal);
+
+											currentInputs[nameHash].values[i] = inputVal;
 										}
 										ImGui::PopID();
 									}
@@ -1576,6 +1626,18 @@ void CSoundScriptEditor::DrawScriptEditor(bool& open)
 					SoundScriptDesc::ReloadDesc(*selectedScript, &relSec);
 					g_sounds->PrecacheSound(selectedScript->name);
 					g_sounds->RestartEmittersByScript(selectedScript);
+
+					// re-apply inputs
+					if (currentEmit.obj->m_emitters.contains(currentEmit.emitId))
+					{
+						SoundEmitterData* emitter = currentEmit.obj->m_emitters[currentEmit.emitId];
+
+						for (auto it = currentInputs.begin(); it != currentInputs.end(); ++it)
+						{
+							for(int i = 0; i < SoundNodeDesc::MAX_ARRAY_IDX; ++i)
+								emitter->SetInputValue(it.key(), i, it.value().values[i]);
+						}
+					}
 				}
 
 				ImGui::SameLine();
@@ -1593,8 +1655,6 @@ void CSoundScriptEditor::DrawScriptEditor(bool& open)
 					stream.Write(&nullChar, 1, 1);
 
 					ImGui::SetClipboardText((char*)stream.GetBasePointer());
-
-					// TODO:
 				}
 			}
 		}
