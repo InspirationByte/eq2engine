@@ -52,8 +52,7 @@ public:
 											const Vector3D& forwardVec,
 											const Vector3D& upVec);
 
-	// gets listener properties
-	void						GetListener(Vector3D& position, Vector3D& velocity);
+	const Vector3D&				GetListenerPosition() const;
 
 	// loads sample source data
 	CRefPtr<ISoundSource>		GetSample(const char* filename);
@@ -98,6 +97,8 @@ private:
 	Array<CRefPtr<CEqAudioSourceAL>>		m_sources{ PP_SL };	// tracked sources
 	Map<int, ISoundSource*>					m_samples{ PP_SL };
 	Map<int, sndEffect_t>					m_effects{ PP_SL };
+
+	Vector3D								m_listenerPos{ vec3_zero };
 
 	ALCcontext*								m_ctx{ nullptr };
 	ALCdevice*								m_dev{ nullptr };

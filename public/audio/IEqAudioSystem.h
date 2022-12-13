@@ -182,7 +182,7 @@ public:
 											const Vector3D& upVec) = 0;
 
 	// gets listener properties
-	virtual void					GetListener(Vector3D& position, Vector3D& velocity) = 0;
+	virtual const Vector3D&			GetListenerPosition() const = 0;
 
 	// loads sample source data
 	virtual CRefPtr<ISoundSource>	GetSample(const char* filename) = 0;

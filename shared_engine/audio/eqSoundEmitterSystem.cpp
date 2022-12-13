@@ -210,8 +210,7 @@ int CSoundEmitterSystem::EmitSound(EmitParams* ep, CSoundingObject* soundingObj,
 		return CHAN_INVALID;
 	}
 
-	Vector3D listenerPos, listenerVel;
-	g_audioSystem->GetListener(listenerPos, listenerVel);
+	const Vector3D listenerPos = g_audioSystem->GetListenerPosition();
 
 	const bool is2Dsound = script->is2d || (ep->flags & EMITSOUND_FLAG_FORCE_2D);
 	const bool startSilent = (ep->flags & EMITSOUND_FLAG_STARTSILENT);
@@ -320,6 +319,8 @@ bool CSoundEmitterSystem::SwitchSourceState(SoundEmitterData* emit, bool isVirtu
 	// start the real sound
 	if (!isVirtual && emit->virtualParams.state != IEqAudioSource::STOPPED && !emit->soundSource)
 	{
+		PROF_EVENT("Emitter Switch Source - Create");
+
 		FixedArray<const ISoundSource*, 16> samples;
 
 		bool hasLoop = script->loop;
@@ -377,6 +378,8 @@ bool CSoundEmitterSystem::SwitchSourceState(SoundEmitterData* emit, bool isVirtu
 	
 	if (emit->soundSource)
 	{
+		PROF_EVENT("Emitter Switch Source - Destroy");
+
 		// stop and drop the sound
 		if (isVirtual || emit->soundSource->GetState() == IEqAudioSource::STOPPED)
 		{
@@ -406,11 +409,15 @@ void CSoundEmitterSystem::StopAllSounds()
 
 int CSoundEmitterSystem::EmitterUpdateCallback(IEqAudioSource* soundSource, IEqAudioSource::Params& params, void* obj)
 {
+	PROF_EVENT("Emitter Update Callback");
+
 	SoundEmitterData* emitter = (SoundEmitterData*)obj;
 	CSoundingObject* soundingObj = emitter->soundingObj;
 
 	IEqAudioSource::Params& virtualParams = emitter->virtualParams;
 	IEqAudioSource::Params& nodeParams = emitter->nodeParams;
+
+	// TODO: sound volumes (boxes) to update effect slots!
 
 	float stopLoopRemainingTime = emitter->stopLoopRemainingTime;
 	if (stopLoopRemainingTime > 0.0f)
@@ -434,15 +441,18 @@ int CSoundEmitterSystem::EmitterUpdateCallback(IEqAudioSource* soundSource, IEqA
 	emitter->CalcFinalParameters(soundingObj->GetSoundVolumeScale(), params);
 
 	// update samples volume if they were
-	for (int i = 0; i < soundSource->GetSampleCount(); ++i)
 	{
-		const float playbackPos = emitter->samplePos[i];
-		soundSource->SetSampleVolume(i, emitter->sampleVolume[i]);
-
-		if (playbackPos >= 0.0f)
+		PROF_EVENT("Emitter Update Sample Volume");
+		for (int i = 0; i < soundSource->GetSampleCount(); ++i)
 		{
-			soundSource->SetSamplePlaybackPosition(i, playbackPos);
-			emitter->samplePos[i] = -1.0f;
+			const float playbackPos = emitter->samplePos[i];
+			soundSource->SetSampleVolume(i, emitter->sampleVolume[i]);
+
+			if (playbackPos >= 0.0f)
+			{
+				soundSource->SetSamplePlaybackPosition(i, playbackPos);
+				emitter->samplePos[i] = -1.0f;
+			}
 		}
 	}
 
@@ -452,18 +462,15 @@ int CSoundEmitterSystem::EmitterUpdateCallback(IEqAudioSource* soundSource, IEqA
 
 	if (!params.relative)
 	{
-		bool isAudible = true;
-		if (!virtualParams.relative)
-		{
-			const SoundScriptDesc* script = emitter->script;
+		PROF_EVENT("Emitter Update SwitchSourceState");
 
-			Vector3D listenerPos, listenerVel;
-			g_audioSystem->GetListener(listenerPos, listenerVel);
+		const SoundScriptDesc* script = emitter->script;
 
-			const float distToSound = lengthSqr(params.position - listenerPos);
-			const float maxDistSqr = M_SQR(script->maxDistance);
-			isAudible = distToSound < maxDistSqr;
-		}
+		const Vector3D listenerPos = g_audioSystem->GetListenerPosition();
+
+		const float distToSound = lengthSqr(params.position - listenerPos);
+		const float maxDistSqr = M_SQR(script->maxDistance);
+		const bool isAudible = distToSound < maxDistSqr;
 
 		// switch emitter between virtual and real here
 		g_sounds->SwitchSourceState(emitter, !isAudible);
@@ -478,8 +485,7 @@ int CSoundEmitterSystem::LoopSourceUpdateCallback(IEqAudioSource* source, IEqAud
 	if (params.relative)
 		return 0;
 
-	Vector3D listenerPos, listenerVel;
-	g_audioSystem->GetListener(listenerPos, listenerVel);
+	const Vector3D listenerPos = g_audioSystem->GetListenerPosition();
 
 	const float distToSound = lengthSqr(params.position - listenerPos);
 	const float maxDistSqr = M_SQR(soundScript->maxDistance);
@@ -502,6 +508,9 @@ void CSoundEmitterSystem::Update()
 
 	m_updateDone.Clear();
 	g_parallelJobs->AddJob(JOB_TYPE_AUDIO, [this](void*, int i) {
+
+		PROF_EVENT("SoundEmitterSystem Update Job");
+
 		g_audioSystem->BeginUpdate();
 
 		// start all pending sounds we accumulated during sound pause
@@ -517,8 +526,7 @@ void CSoundEmitterSystem::Update()
 			m_pendingStartSounds.clear();
 		}
 
-		Vector3D listenerPos, listenerVel;
-		g_audioSystem->GetListener(listenerPos, listenerVel);
+		const Vector3D listenerPos = g_audioSystem->GetListenerPosition();
 
 		{
 			CScopedMutex m(s_soundEmitterSystemMutex);

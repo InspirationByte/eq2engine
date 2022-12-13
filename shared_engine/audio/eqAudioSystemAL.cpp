@@ -487,8 +487,8 @@ void CEqAudioSystemAL::Shutdown()
 CRefPtr<IEqAudioSource> CEqAudioSystemAL::CreateSource()
 {
 	CScopedMutex m(s_audioSysMutex);
-
 	const int index = m_sources.append(CRefPtr_new(CEqAudioSourceAL, this));
+
 	return static_cast<CRefPtr<IEqAudioSource>>(m_sources[index]);
 }
 
@@ -690,6 +690,7 @@ void CEqAudioSystemAL::BeginUpdate()
 
 void CEqAudioSystemAL::EndUpdate()
 {
+	PROF_EVENT("AudioSystemAL EndUpdate");
 	ASSERT(m_begunUpdate);
 
 	for (int i = 0; i < m_sources.numElem(); i++)
@@ -759,8 +760,10 @@ void CEqAudioSystemAL::SetListener(const Vector3D& position,
 	const Vector3D& forwardVec,
 	const Vector3D& upVec)
 {
+	m_listenerPos = position;
+
 	// setup orientation parameters
-	float orient[] = { forwardVec.x, forwardVec.y, forwardVec.z, -upVec.x, -upVec.y, -upVec.z };
+	const float orient[] = { forwardVec.x, forwardVec.y, forwardVec.z, -upVec.x, -upVec.y, -upVec.z };
 
 	alListenerfv(AL_POSITION, position);
 	alListenerfv(AL_ORIENTATION, orient);
@@ -768,10 +771,9 @@ void CEqAudioSystemAL::SetListener(const Vector3D& position,
 }
 
 // gets listener properties
-void CEqAudioSystemAL::GetListener(Vector3D& position, Vector3D& velocity)
+const Vector3D& CEqAudioSystemAL::GetListenerPosition() const
 {
-	alGetListener3f(AL_POSITION, &position.x, &position.y, &position.z);
-	alGetListener3f(AL_VELOCITY, &velocity.x, &velocity.y, &velocity.z);
+	return m_listenerPos;
 }
 
 //----------------------------------------------------------------------------------------------

@@ -55,8 +55,7 @@ bool CSoundingObject::UpdateEmitters(const Vector3D& listenerPos)
 			bool isAudible = true;
 			if (!virtualParams.relative)
 			{
-				Vector3D listenerPos, listenerVel;
-				g_audioSystem->GetListener(listenerPos, listenerVel);
+				const Vector3D listenerPos = g_audioSystem->GetListenerPosition();
 
 				const float distToSound = lengthSqr(virtualParams.position - listenerPos);
 				const float maxDistSqr = M_SQR(script->maxDistance);
