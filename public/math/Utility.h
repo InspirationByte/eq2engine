@@ -85,6 +85,9 @@ float				AngleDiffRad(float a, float b);
 // computes angles difference (degrees)
 Vector3D			AnglesDiff(const Vector3D& a, const Vector3D& b);
 
+// computes angles difference between two 2D direction vectors (degrees)
+float				VecAngleDiff(const Vector2D& dirA, const Vector2D& dirB);
+
 // normalizes angles in [0, 360]
 float				NormalizeAngle360(float angle);
 

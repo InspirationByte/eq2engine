@@ -409,6 +409,11 @@ float AngleDiffRad(float a, float b)
 	return fmodf(b - a + M_PI_F, M_PI_2_F) - M_PI_F;
 }
 
+float VecAngleDiff(const Vector2D& dirA, const Vector2D& dirB)
+{
+	return RAD2DEG(atan2f(dirA.x * dirB.y - dirA.y * dirB.x, dirA.x * dirB.x + dirA.y * dirB.y));
+}
+
 // computes angles difference (degrees)
 Vector3D AnglesDiff(const Vector3D& a, const Vector3D& b)
 {
