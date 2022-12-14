@@ -64,12 +64,15 @@ DECLARE_CONCOMMAND_FN(ppmemstats)
 }
 
 // allocation map
-using pointer_map = Map<const void*, ppallocinfo_t*>;
+using source_counter_map = Map<uint64, int64>;
 using source_map = Map<const char*, const char*>;
 
 struct ppmem_state_t
 {
+#ifdef PPMEM_EXTRA_DEBUGINFO
 	source_map sourceFileNameMap{PPSourceLine::Empty()};
+	source_counter_map sourceCounterMap{ PPSourceLine::Empty() };
+#endif
 
 	ppallocinfo_t* first{ nullptr };
 	ppallocinfo_t* last{ nullptr };
@@ -80,7 +83,7 @@ struct ppmem_state_t
 	CEqMutex allocMemMutex;
 };
 
-ppmem_state_t& PPGetState()
+static ppmem_state_t& PPGetState()
 {
 	static ppmem_state_t st;
 	return st;
@@ -161,7 +164,10 @@ void PPMemInfo(bool fullStats)
 
 	Map<uint64, SLStat_t> allocCounter{ PPSourceLine::Empty() };
 
-	
+	if (fullStats)
+		MsgInfo("--- currently allocated memory ---\n");
+
+	// currently allocated items
 	for(ppallocinfo_t* alloc = st.first; alloc != nullptr; alloc = alloc->next)
 	{
 		const void* curPtr = alloc + 1;
@@ -171,7 +177,9 @@ void PPMemInfo(bool fullStats)
 		if(fullStats)
 		{
 #ifdef PPMEM_EXTRA_DEBUGINFO
-			MsgInfo("alloc id=%d, src='%s:%d', ptr=%p, size=%d\n", alloc->id, st.sourceFileNameMap[alloc->sl.GetFileName()], alloc->sl.GetLine(), curPtr, alloc->size);
+			const char* filename = st.sourceFileNameMap[alloc->sl.GetFileName()];
+			const int fileLine = alloc->sl.GetLine();
+			MsgInfo("alloc id=%d, src='%s:%d', ptr=%p, size=%d\n", alloc->id, filename, fileLine, curPtr, alloc->size);
 #else
 			MsgInfo("alloc id=%d, ptr=%p, size=%d\n", alloc->id, curPtr, alloc->size);
 #endif
@@ -200,14 +208,59 @@ void PPMemInfo(bool fullStats)
 	}
 
 #ifdef PPMEM_EXTRA_DEBUGINFO
-	for (auto it = allocCounter.begin(); it != allocCounter.end(); ++it)
+	MsgInfo("--- allocations groupped by file-line ---\n");
+
+	// currently allocated items groupped by file:line
 	{
-		const PPSourceLine sl = *(PPSourceLine*)&it.key();
-		MsgInfo("'%s:%d' count: %d, size: %.2f KB\n", st.sourceFileNameMap[sl.GetFileName()], sl.GetLine(), it.value().numAlloc, (it.value().totalMem / 1024.0f));
+		Array<uint64> sortedList{ PPSourceLine::Empty() };
+		sortedList.resize(allocCounter.size());
+		for (auto it = allocCounter.begin(); it != allocCounter.end(); ++it)
+			sortedList.append(it.key());
+
+		sortedList.sort([&allocCounter](uint64 a, uint64 b) {
+			return (int64)allocCounter[b].numAlloc - (int64)allocCounter[a].numAlloc;
+		});
+
+		for (int i = 0; i < sortedList.numElem(); ++i)
+		{
+			const uint64 key = sortedList[i];
+			const SLStat_t& stat = allocCounter[key];
+			const PPSourceLine sl = *(PPSourceLine*)&key;
+
+			const char* filename = st.sourceFileNameMap[sl.GetFileName()];
+			const int fileLine = sl.GetLine();
+
+			MsgInfo("'%s:%d' count: %d, size: %.2f KB\n", st.sourceFileNameMap[sl.GetFileName()], sl.GetLine(), stat.numAlloc, (stat.totalMem / 1024.0f));
+		}
+	}
+
+	MsgInfo("--- allocation rate statistics ---\n");
+
+	// (re)allocation rate stats
+	{
+		Array<uint64> sortedList{ PPSourceLine::Empty() };
+		sortedList.resize(st.sourceCounterMap.size());
+		for (auto it = st.sourceCounterMap.begin(); it != st.sourceCounterMap.end(); ++it)
+			sortedList.append(it.key());
+
+		sortedList.sort([&st](uint64 a, uint64 b) {
+			return st.sourceCounterMap[b] - st.sourceCounterMap[a];
+		});
+
+		for (int i = 0; i < sortedList.numElem(); ++i)
+		{
+			const uint64 key = sortedList[i];
+			const PPSourceLine sl = *(PPSourceLine*)&key;
+
+			const char* filename = st.sourceFileNameMap[sl.GetFileName()];
+			const int fileLine = sl.GetLine();
+
+			MsgInfo("'%s:%d' counter: %u\n", st.sourceFileNameMap[sl.GetFileName()], sl.GetLine(), st.sourceCounterMap[key]);
+		}
 	}
 #endif // PPMEM_EXTRA_DEBUGINFO
 
-	MsgInfo("--- of %u allocactions, total usage: %.2f MB\n", st.numAllocs, (totalUsage / 1024.0f) / 1024.0f);
+	MsgInfo("Total %u allocactions, mem usage: %.2f MB\n", st.numAllocs, (totalUsage / 1024.0f) / 1024.0f);
 
 	if(numErrors > 0)
 		MsgWarning("%d allocations has overflow/underflow happened in runtime. Please print full stats to console\n", numErrors);
@@ -257,9 +310,6 @@ void* PPDAlloc(size_t size, const PPSourceLine& sl)
 		*checkMark = PPMEM_CHECKMARK;
 	}
 
-	if(!st.sourceFileNameMap.count(sl.GetFileName()))
-		st.sourceFileNameMap[sl.GetFileName()] = strdup(sl.GetFileName());
-
 	// insert to linked list tail
 	{
 		CScopedMutex m(st.allocMemMutex);
@@ -274,6 +324,13 @@ void* PPDAlloc(size_t size, const PPSourceLine& sl)
 		alloc->prev = st.last;
 		alloc->next = nullptr;
 		st.last = alloc;
+
+#ifdef PPMEM_EXTRA_DEBUGINFO
+		if (!st.sourceFileNameMap.count(sl.GetFileName()))
+			st.sourceFileNameMap[sl.GetFileName()] = strdup(sl.GetFileName());
+
+		++st.sourceCounterMap[sl.data];
+#endif
 	}
 
 	if( ppmem_break_on_alloc.GetInt() != -1)

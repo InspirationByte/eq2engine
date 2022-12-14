@@ -447,6 +447,7 @@ const char*	KVSection::GetName() const
 
 KVPairValue* KVSection::CreateValue()
 {
+	// TODO: pool
 	KVPairValue* val = PPNew KVPairValue();
 
 	val->type = type;
@@ -461,6 +462,7 @@ KVSection* KVSection::CreateSectionValue()
 	if(type != KVPAIR_SECTION)
 		return nullptr;
 
+	// TODO: pool
 	KVPairValue* val = PPNew KVPairValue();
 
 	val->type = type;
