@@ -29,18 +29,10 @@ void CRectangleTextLayoutBuilder::OnNewLine(const eqFontStyleParam_t& params,
 		if (xPos + newlineStringWidth < m_rectangle.vrightBottom.x)
 		{
 			if (params.align & TEXT_ALIGN_HCENTER)
-			{
-				xPos = m_rectangle.GetCenter().x;
-				xPos -= newlineStringWidth * 0.5f;
-			}
+				xPos -= m_rectangle.GetCenter().x - newlineStringWidth * 0.5f;
 			else if (params.align & TEXT_ALIGN_RIGHT)
-			{
-				xPos = m_rectangle.vrightBottom.x - 4.0f;
-				xPos -= newlineStringWidth;		// add some little bias
-			}
+				xPos = m_rectangle.vrightBottom.x - newlineStringWidth;
 		}
-
-		xPos = floor(xPos);
 	}
 
 	curTextPos.x = xPos;
@@ -66,16 +58,18 @@ bool CRectangleTextLayoutBuilder::LayoutChar(const eqFontStyleParam_t& params,
 	}
 
 	{
-		float wordSize = cSize.x; // per-char wrapping
-
-		bool wordWrap = m_wordWrapMode && m_newWord;
-
+		const bool wordWrap = m_wordWrapMode && m_newWord;
+		float wordSize;
 		if( wordWrap ) // per-word wrapping
 		{
 			if(isWideChar)
 				wordSize = m_font->GetStringWidth( (wchar_t*)strCurPos, params, -1, ' ' );
 			else
 				wordSize = m_font->GetStringWidth( (char*)strCurPos, params, -1, ' ' );
+		}
+		else
+		{
+			wordSize = m_font->GetStringWidth((char*)strCurPos, params, 1);
 		}
 
 		// if word can't be wrapped, we switch to character wrapping
@@ -86,7 +80,7 @@ bool CRectangleTextLayoutBuilder::LayoutChar(const eqFontStyleParam_t& params,
 		}
 
 		// check character/word right bound is outside the rectangle right bound
-		if( curTextPos.x+wordSize > m_rectangle.vrightBottom.x && !m_newWord)
+		if( curTextPos.x + wordSize > m_rectangle.vrightBottom.x && !m_newWord)
 		{
 			float xPos = m_rectangle.vleftTop.x;
 
@@ -100,21 +94,13 @@ bool CRectangleTextLayoutBuilder::LayoutChar(const eqFontStyleParam_t& params,
 				else
 					newlineStringWidth = m_font->GetStringWidth( (char*)strCurPos, params, -1, '\n' );
 
-				if (xPos + newlineStringWidth < m_rectangle.vrightBottom.x)
+				if (xPos + newlineStringWidth <= m_rectangle.vrightBottom.x)
 				{
 					if (params.align & TEXT_ALIGN_HCENTER)
-					{
-						xPos = m_rectangle.GetCenter().x;
-						xPos -= floor(newlineStringWidth*0.5f);
-					}
+						xPos = m_rectangle.GetCenter().x - newlineStringWidth * 0.5f;
 					else if (params.align & TEXT_ALIGN_RIGHT)
-					{
-						xPos = m_rectangle.vrightBottom.x;
-						xPos -= newlineStringWidth;
-					}
+						xPos = m_rectangle.vrightBottom.x - newlineStringWidth;
 				}
-
-				xPos = floor(xPos);
 			}
 
 			curTextPos.x = cPos.x = xPos;
@@ -141,7 +127,7 @@ bool CRectangleTextLayoutBuilder::LayoutChar(const eqFontStyleParam_t& params,
 	if(params.styleFlag & TEXT_STYLE_MONOSPACE)
 		curTextPos.x += cSize.x;
 	else
-		curTextPos.x += chr.advX;
+		curTextPos.x += m_font->GetStringWidth((char*)strCurPos, params, 1);
 
 	if( isWideChar )
 		m_newWord = iswspace(*((wchar_t*)strCurPos));
