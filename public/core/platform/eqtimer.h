@@ -16,7 +16,11 @@ class CLASS_EXPORTS CEqTimer
 public:
 			CEqTimer();
 
+	// returns time in seconds
 	double	GetTime(bool reset = false);
+
+	// returns milliseconds
+	uint64	GetTimeMS(bool reset = false);
 
 protected:
 #ifdef _WIN32

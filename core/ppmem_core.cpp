@@ -64,7 +64,12 @@ DECLARE_CONCOMMAND_FN(ppmemstats)
 }
 
 // allocation map
-using source_counter_map = Map<uint64, int64>;
+struct ppmem_src_counter_t
+{
+	uint64 count{ 0 };
+	uint64 lastTime{ 0 };
+};
+using source_counter_map = Map<uint64, ppmem_src_counter_t>;
 using source_map = Map<const char*, const char*>;
 
 struct ppmem_state_t
@@ -72,6 +77,7 @@ struct ppmem_state_t
 #ifdef PPMEM_EXTRA_DEBUGINFO
 	source_map sourceFileNameMap{PPSourceLine::Empty()};
 	source_counter_map sourceCounterMap{ PPSourceLine::Empty() };
+	CEqTimer timer;
 #endif
 
 	ppallocinfo_t* first{ nullptr };
@@ -244,7 +250,7 @@ void PPMemInfo(bool fullStats)
 			sortedList.append(it.key());
 
 		sortedList.sort([&st](uint64 a, uint64 b) {
-			return st.sourceCounterMap[b] - st.sourceCounterMap[a];
+			return (int64)st.sourceCounterMap[b].lastTime - (int64)st.sourceCounterMap[a].lastTime;
 		});
 
 		for (int i = 0; i < sortedList.numElem(); ++i)
@@ -255,7 +261,7 @@ void PPMemInfo(bool fullStats)
 			const char* filename = st.sourceFileNameMap[sl.GetFileName()];
 			const int fileLine = sl.GetLine();
 
-			MsgInfo("'%s:%d' counter: %u\n", st.sourceFileNameMap[sl.GetFileName()], sl.GetLine(), st.sourceCounterMap[key]);
+			MsgInfo("'%s:%d' counter: %u\n", st.sourceFileNameMap[sl.GetFileName()], sl.GetLine(), st.sourceCounterMap[key].count);
 		}
 	}
 #endif // PPMEM_EXTRA_DEBUGINFO
@@ -329,7 +335,9 @@ void* PPDAlloc(size_t size, const PPSourceLine& sl)
 		if (!st.sourceFileNameMap.count(sl.GetFileName()))
 			st.sourceFileNameMap[sl.GetFileName()] = strdup(sl.GetFileName());
 
-		++st.sourceCounterMap[sl.data];
+		ppmem_src_counter_t& cnt = st.sourceCounterMap[sl.data];
+		++cnt.count;
+		cnt.lastTime = st.timer.GetTimeMS();
 #endif
 	}
 
