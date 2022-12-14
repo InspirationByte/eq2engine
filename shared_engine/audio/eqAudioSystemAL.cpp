@@ -911,8 +911,14 @@ void CEqAudioSourceAL::UpdateParams(const Params& params, int overrideUpdateFlag
 		for (int i = 0; i < m_streams.numElem(); ++i)
 			m_streams[i].curPos = 0;
 
+#ifdef USE_ALSOFT_BUFFER_CALLBACK
+		if(!alBufferCallbackSOFT && !isStreaming)
+#else
 		if (!isStreaming)
+#endif
+		{
 			alSourceRewind(thisSource);
+		}
 	}
 
 	if (mask & UPDATE_RELEASE_ON_STOP)
