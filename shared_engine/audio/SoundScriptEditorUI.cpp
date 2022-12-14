@@ -1265,7 +1265,17 @@ void CSoundScriptEditor::DrawScriptEditor(bool& open)
 
 				if (ImGui::Button("Play"))
 				{
-					if (!currentEmit.obj->m_emitters.contains(currentEmit.emitId))
+					bool needEmitSound = selectedScript->randomSample;
+					auto currentEmitterIt = currentEmit.obj->m_emitters.find(currentEmit.emitId);
+					if (currentEmitterIt != currentEmit.obj->m_emitters.end())
+					{
+						if (selectedScript != (*currentEmitterIt)->script)
+							needEmitSound = true;
+					}
+					else
+						needEmitSound = true;
+
+					if (needEmitSound)
 					{
 						EmitParams snd(selectedScript->name);
 						snd.flags |= EMITSOUND_FLAG_FORCE_CACHED | EMITSOUND_FLAG_FORCE_2D;
@@ -1293,12 +1303,16 @@ void CSoundScriptEditor::DrawScriptEditor(bool& open)
 				// and also validate selection
 				static int currentEmitterIdx = -1;
 				Array<EmitPair> emittersPlaying{ PP_SL };
+
 				{
 					bool isValidEmitter = false;
 					int objId = 0;
 					for (auto sObjIt = g_sounds->m_soundingObjects.begin(); sObjIt != g_sounds->m_soundingObjects.end(); ++sObjIt, ++objId)
 					{
 						CSoundingObject* sObj = sObjIt.key();
+						if (sObj == &soundTest)
+							continue;
+
 						for (auto emitterIt = sObj->m_emitters.begin(); emitterIt != sObj->m_emitters.end(); ++emitterIt)
 						{
 							if (selectedScript != (*emitterIt)->script)
@@ -1334,6 +1348,18 @@ void CSoundScriptEditor::DrawScriptEditor(bool& open)
 				if (ImGui::BeginCombo("Display instance", currentEmitterIdx == -1 ? "" : GetEmitterFriendlyName(emittersPlaying[currentEmitterIdx])))
 				{
 					ImGui::PushID("ed_inputs");
+
+					if (ImGui::Selectable("<none>", currentEmitterIdx == -1, 0, ImVec2(180, 0)))
+					{
+						currentEmit.objId = 0;
+						currentEmit.emitId = 0;
+						currentEmit.obj = &soundTest;
+						currentEmit.emitter = nullptr;
+						currentInputs.clear();
+
+						currentEmitterIdx = -1;
+					}
+
 					for (int row = 0; row < emittersPlaying.numElem(); ++row)
 					{
 						ImGui::PushID(row);
@@ -1540,10 +1566,10 @@ void CSoundScriptEditor::DrawScriptEditor(bool& open)
 								{
 									ImGui::SameLine();
 
-									float sampleVolume = src->GetSampleVolume(i);
+									float sampleVolume = emitter->sampleVolume[i];
 									if (ImGui::VSliderFloat(EqString::Format("%d##smpl%dv", i + 1, i), ImVec2(18, 160), &sampleVolume, 0.0f, 1.0f, ""))
 									{
-										src->SetSampleVolume(i, sampleVolume);
+										emitter->sampleVolume[i] = sampleVolume;
 									}
 									if (ImGui::IsItemActive() || ImGui::IsItemHovered())
 										ImGui::SetTooltip("Sample %d volume %.3f", i + 1, sampleVolume);
