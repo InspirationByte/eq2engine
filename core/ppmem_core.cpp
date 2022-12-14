@@ -403,6 +403,12 @@ void* PPDReAlloc( void* ptr, size_t size, const PPSourceLine& sl )
 			alloc->prev = st.last;
 			alloc->next = nullptr;
 			st.last = alloc;
+
+#ifdef PPMEM_EXTRA_DEBUGINFO
+			ppmem_src_counter_t& cnt = st.sourceCounterMap[sl.data];
+			++cnt.count;
+			cnt.lastTime = st.timer.GetTimeMS();
+#endif
 		}
 
 		{
