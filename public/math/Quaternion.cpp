@@ -282,7 +282,7 @@ void Quaternion::fastNormalize()
 
 TVec4D<float>& Quaternion::asVector4D() const
 {
-    return (TVec4D<float>&)*this;
+    return *(TVec4D<float>*)this;
 }
 
 Quaternion operator ! (const Quaternion &q)

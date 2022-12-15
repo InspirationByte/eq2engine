@@ -728,13 +728,74 @@ struct MColor
 	operator const ColorRGB&() const { return *(Vector3D*)&r; }
 	operator const ColorRGBA&() const { return v; }
 
-	uint pack() const 
+	inline uint pack() const 
 	{
-		uint cr = r * 255.0f;
-		uint cg = g * 255.0f;
-		uint cb = b * 255.0f;
-		uint ca = a * 255.0f;
+		const uint cr = r * 255.0f;
+		const uint cg = g * 255.0f;
+		const uint cb = b * 255.0f;
+		const uint ca = a * 255.0f;
 		return cr | (cg << 8) | (cb << 16) | (ca << 24);
+	}
+
+	// Convert rgb to hsv ([0-1],[0-1],[0-1]), from Foley & van Dam p592
+	// Optimized http://lolengine.net/blog/2013/01/13/fast-rgb-to-hsv
+	inline Vector3D toHSV() const
+	{
+		const Vector3D vec = rgb();
+		float K = 0.0f;
+		if (vec.y < vec.z)
+		{
+			QuickSwap(vec.y, vec.z);
+			K = -1.0f;
+		}
+		if (vec.x < vec.y)
+		{
+			QuickSwap(vec.x, vec.y);
+			K = -2.0f / 6.0f - K;
+		}
+
+		const float chroma = vec.x - min(vec.y, vec.z);
+
+		Vector3D hsv;
+		hsv.x = fabsf(K + (vec.y - vec.z) / (6.0f * chroma + 1e-20f));
+		hsv.y = chroma / (vec.x + 1e-20f);
+		hsv.z = vec.x;
+		return hsv;
+	}
+
+	inline void setHSV(const Vector3D& hsv)
+	{
+		setHSV(hsv.x, hsv.y, hsv.z);
+	}
+
+	// Convert hsv floats ([0-1],[0-1],[0-1]) to rgb, from Foley & van Dam p593
+	// also http://en.wikipedia.org/wiki/HSL_and_HSV
+	inline void setHSV(float h, float s, float v)
+	{
+		if (s == 0.0f)
+		{
+			// gray
+			r = g = b = v;
+			return;
+		}
+
+		h = fmodf(h, 1.0f) / (60.0f / 360.0f);
+		const int   i = (int)h;
+		const float f = h - (float)i;
+		const float p = v * (1.0f - s);
+		const float q = v * (1.0f - s * f);
+		const float t = v * (1.0f - s * (1.0f - f));
+
+		switch (i)
+		{
+			case 0: r = v; g = t; b = p; break;
+			case 1: r = q; g = v; b = p; break;
+			case 2: r = p; g = v; b = t; break;
+			case 3: r = p; g = q; b = v; break;
+			case 4: r = t; g = p; b = v; break;
+			case 5: 
+			default: r = v; g = p; b = q; break;
+		}
 	}
 };
 
