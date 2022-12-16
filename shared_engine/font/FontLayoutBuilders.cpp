@@ -29,7 +29,7 @@ void CRectangleTextLayoutBuilder::OnNewLine(const eqFontStyleParam_t& params,
 		if (xPos + newlineStringWidth < m_rectangle.vrightBottom.x)
 		{
 			if (params.align & TEXT_ALIGN_HCENTER)
-				xPos -= m_rectangle.GetCenter().x - newlineStringWidth * 0.5f;
+				xPos = m_rectangle.GetCenter().x - newlineStringWidth * 0.5f;
 			else if (params.align & TEXT_ALIGN_RIGHT)
 				xPos = m_rectangle.vrightBottom.x - newlineStringWidth;
 		}
