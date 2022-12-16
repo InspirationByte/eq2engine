@@ -339,7 +339,7 @@ void CEqRigidBody::AccumulateForces(float time)
 	if(!(flags & BODY_DISABLE_DAMPING))
 	{
 		// apply damping to angular velocity
-		float scale = 1.0f - (angVelDamp * time * dampingTimeScale);
+		const float scale = 1.0f - (angVelDamp * time * dampingTimeScale);
 
 		if(scale > 0)
 			angularVelocity *= scale;
@@ -347,11 +347,13 @@ void CEqRigidBody::AccumulateForces(float time)
 			angularVelocity = FVector3D(0);
 	}
 
+	ASSERT_MSG(!IsNaN(angularVelocity.x) && !IsNaN(angularVelocity.y) && !IsNaN(angularVelocity.z), "Rigid body angular velocity is NaN");
+
 	// convert angular velocity to spinning
 	// and accumulate
-	Quaternion angVelSpinning = AngularVelocityToSpin(orientation, angularVelocity*m_angularFactor);
+	Quaternion angVelSpinning = AngularVelocityToSpin(orientation, angularVelocity * m_angularFactor);
 
-	ASSERT(angVelSpinning.isNan() == false);
+	ASSERT_MSG(angVelSpinning.isNan() == false, "Rigid body orientation is NaN");
 
 	orientation += (angVelSpinning * time);
 	orientation.fastNormalize();

@@ -41,7 +41,7 @@ constexpr const float M_PI_2_F		= M_PI_F * 2.0f;
 
 #define RAD2DEG( x )			( (float)(x) * (float)(180.f / M_PI_F) )
 #define DEG2RAD( x )			( (float)(x) * (float)(M_PI_F / 180.f) )
-#define M_SQR( x )				( (x) * (x) )
+#define M_SQR( x )				sqr(x)
 
 // Math routines done in optimized assembly math package routines
 inline void SinCos( float radians, float *sine, float *cosine )
@@ -59,54 +59,17 @@ inline void SinCos( float radians, float *sine, float *cosine )
 		fstp DWORD PTR [eax]
 	}
 #else
-
-	*sine = sinf(radians);
-	*cosine = cosf(radians);
-	
-
-/*
-	register double __cosr, __sinr;
- 	__asm __volatile__
-    		("fsincos"
-     	: "=t" (__cosr), "=u" (__sinr) : "0" (radians));
-
-  	*sine = __sinr;
-  	*cosine = __cosr;
-	*/
+	*sine = sin(radians);
+	*cosine = cos(radians);
 #endif
-
 }
 
 // Math routines done in optimized assembly math package routines
 inline void SinCos( double radians, double *sine, double *cosine )
 {
 	// GCC handles better...
-
 	*sine = sin(radians);
 	*cosine = cos(radians);
-
-	/*
-#ifdef _WIN32
-	_asm
-	{
-		fld		DWORD PTR [radians]
-		fsincos
-
-		mov edx, DWORD PTR [cosine]
-		mov eax, DWORD PTR [sine]
-
-		fstp DWORD PTR [edx]
-		fstp DWORD PTR [eax]
-	}
-#elif LINUX
-	register double __cosr, __sinr;
- 	__asm __volatile__
-    		("fsincos"
-     	: "=t" (__cosr), "=u" (__sinr) : "0" (radians));
-
-  	*sine = __sinr;
-  	*cosine = __cosr;
-#endif*/
 }
 
 // It computes a fast 1 / sqrtf(v) approximation
@@ -117,11 +80,6 @@ inline float rsqrtf( float v )
     i = 0x5f3759df - (i >> 1);
     v = *(float *) &i;
     return v * (1.5f - v_half * v * v);
-}
-
-inline float sqrf( const float x )
-{
-    return x * x;
 }
 
 inline float sincf( const float x )
@@ -193,6 +151,12 @@ inline float RemapVal(float val, float A, float B, float C, float D)
 inline float RemapValClamp(float val, float A, float B, float C, float D)
 {
 	return clamp(C + (D - C) * (val - A) / (B - A), C, D);
+}
+
+template<typename T>
+inline T sqr(const T x)
+{
+	return x * x;
 }
 
 #include "Vector.h"

@@ -741,7 +741,7 @@ struct MColor
 	// Optimized http://lolengine.net/blog/2013/01/13/fast-rgb-to-hsv
 	inline Vector3D toHSV() const
 	{
-		const Vector3D vec = rgb();
+		Vector3D vec = rgb();
 		float K = 0.0f;
 		if (vec.y < vec.z)
 		{
@@ -834,4 +834,12 @@ static const MColor color_gray		= MColor(0xFF808080, true);
 
 #ifndef VRAD2DEG
 #	define VRAD2DEG( v )	Vector3D(RAD2DEG(v.x),RAD2DEG(v.y),RAD2DEG(v.z))
+#endif
+
+#ifndef V3IsNaN
+#define V3IsNaN( v )		(IsNaN(v.x) || IsNaN(v.y) || IsNaN(v.z))
+#endif
+
+#ifndef V4IsNaN
+#define V4IsNaN( v )		(IsNaN(v.x) || IsNaN(v.y) || IsNaN(v.z) || IsNaN(v.w))
 #endif
