@@ -7,11 +7,50 @@
 
 #pragma once
 
-#define _Es						EqString
+#define _Es		EqString
 
-class EqWString;
-
-// TODO: implement safe copy-on-write
+#ifndef STRING_OPERATORS
+#define STRING_OPERATORS(spec, classname)									\
+	spec classname operator+( const classname &a, const classname &b ) {	\
+		classname result(a);												\
+		result.Append(b);													\
+		return result;														\
+	}																		\
+	spec classname operator+( const classname &a, const char *b ) {			\
+		classname result(a);												\
+		result.Append(b);													\
+		return result;														\
+	}																		\
+	spec classname operator+( const char *a, const classname &b ) {			\
+		classname result(a);												\
+		result.Append(b);													\
+		return result;														\
+	}																		\
+	/* (A == B) case-sensitive comparison */													\
+	spec bool operator==(const classname& a, const classname& b) { return !a.Compare(b); }		\
+	/* (A == B) case-sensitive comparison */													\
+	spec bool operator==(const classname& a, const char* b) { return !a.Compare(b); }			\
+	/* (A==B) case-sensitive comparison */														\
+	spec bool operator==(const char* a, const classname& b) { return !b.Compare(a); }			\
+	/* (A == B) case-insensitive comparison */													\
+	spec bool operator^(const classname& a, const classname& b) { return !a.CompareCaseIns(b); }\
+	/* (A==B) case-insensitive comparison */													\
+	spec bool operator^(const classname& a, const char* b) { return !a.CompareCaseIns(b); }		\
+	/* (A == B) case-insensitive comparison */													\
+	spec bool operator^(const char* a, const classname& b) { return !b.CompareCaseIns(a); }		\
+	/* (A != B) case-sensitive comparison */													\
+	spec bool operator!=(const classname& a, const classname& b) { return !(a == b); }			\
+	/* (A != B) case-sensitive comparison */													\
+	spec bool operator!=(const classname& a, const char* b) { return !(a == b); }				\
+	/* (A != B) case-sensitive comparison */													\
+	spec bool operator!=(const char* a, const classname& b) { return !(a == b); }				\
+	/* (A != B) case-insensitive comparison */													\
+	spec bool operator%(const classname& a, const classname& b) { return !(a ^ b); }			\
+	/* (A != B) case-insensitive comparison */													\
+	spec bool operator%(const classname& a, const char* b) { return !(a ^ b); }					\
+	/* (A != B) case-insensitive comparison*/													\
+	spec bool operator%(const char* a, const classname& b) { return !(a ^ b); }
+#endif // STRING_OPERATORS
 
 class EqString
 {
@@ -140,12 +179,6 @@ public:
 		return *this;
 	}
 
-	EqString& operator = (char* pszStr)
-	{
-		this->Assign( pszStr );
-		return *this;
-	}
-
 	char operator[](int idx) const
 	{
 		ASSERT(idx >= 0 && idx <= m_nLength);
@@ -157,63 +190,17 @@ public:
 		return this->ToCString();
 	}
 
-	friend EqString operator+( const EqString &a, const EqString &b )
+	operator const char* () const
 	{
-		EqString result(a);
-		result.Append(b);
-
-		return result;
+		return this->ToCString();
 	}
 
-	friend EqString operator+( const EqString &a, const char *b )
-	{
-		EqString result(a);
-		result.Append(b);
-
-		return result;
-	}
-
-	friend EqString operator+( const char *a, const EqString &b )
-	{
-		EqString result(a);
-		result.Append(b);
-
-		return result;
-	}
-
-	// case sensitive comparators
-	friend bool operator==(const EqString& a, const EqString& b)
-	{
-		return !a.Compare(b);
-	}
-
-	friend bool operator==(const EqString& a, const char* b)
-	{
-		return !a.Compare(b);
-	}
-
-	friend bool operator==(const char* a, const EqString& b)
-	{
-		return !b.Compare(a);
-	}
-
-	friend bool operator!=(const EqString& a, const EqString& b)
-	{
-		return !(a == b);
-	}
-
-	friend bool operator!=(const EqString& a, const char* b)
-	{
-		return !(a == b);
-	}
-
-	friend bool operator!=(const char* a, const EqString& b)
-	{
-		return !(a == b);
-	}
 protected:
 	char*		m_pszString;
 
 	uint16		m_nLength;			// length of string
 	uint16		m_nAllocated;		// allocation size
 };
+
+
+STRING_OPERATORS(static inline, EqString)

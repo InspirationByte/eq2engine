@@ -112,30 +112,6 @@ public:
 		return *this;
 	}
 
-	friend EqWString operator+( const EqWString &a, const EqWString &b )
-	{
-		EqWString result(a);
-		result.Append(b);
-
-		return result;
-	}
-
-	friend EqWString operator+( const EqWString &a, const wchar_t *b )
-	{
-		EqWString result(a);
-		result.Append(b);
-
-		return result;
-	}
-
-	friend EqWString operator+( const wchar_t *a, const EqWString &b )
-	{
-		EqWString result(a);
-		result.Append(b);
-
-		return result;
-	}
-
 	wchar_t operator[](int idx) const
 	{
 		ASSERT(idx >= 0 && idx <= m_nLength);
@@ -147,35 +123,9 @@ public:
 		return this->ToCString();
 	}
 
-	// case sensitive comparators
-	friend bool operator==(const EqWString& a, const EqWString& b)
+	operator const wchar_t* () const
 	{
-		return !a.Compare(b);
-	}
-
-	friend bool operator==(const EqWString& a, const wchar_t* b)
-	{
-		return !a.Compare(b);
-	}
-
-	friend bool operator==(const wchar_t* a, const EqWString& b)
-	{
-		return !b.Compare(a);
-	}
-
-	friend bool operator!=(const EqWString& a, const EqWString& b)
-	{
-		return !(a == b);
-	}
-
-	friend bool operator!=(const EqWString& a, const wchar_t* b)
-	{
-		return !(a == b);
-	}
-
-	friend bool operator!=(const wchar_t* a, const EqWString& b)
-	{
-		return !(a == b);
+		return this->ToCString();
 	}
 
 protected:
@@ -184,3 +134,5 @@ protected:
 	uint16		m_nLength;			// length of string
 	uint16		m_nAllocated;		// allocation size
 };
+
+STRING_OPERATORS(static inline, EqWString)
