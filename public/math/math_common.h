@@ -150,7 +150,9 @@ inline float RemapVal(float val, float A, float B, float C, float D)
 // Remap a value in the range [A,B] to [C,D] and clamp result to [C,D]
 inline float RemapValClamp(float val, float A, float B, float C, float D)
 {
-	return clamp(C + (D - C) * (val - A) / (B - A), C, D);
+	if (val < A) return C;
+	if (val > B) return D;
+	return C + (D - C) * (val - A) / (B - A);
 }
 
 template<typename T>
