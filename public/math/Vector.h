@@ -409,6 +409,9 @@ T			lerp(const T u, const T v, const float x);
 // quadratic bezier interpolation
 float		bezierQuadratic(const float p0, const float p1, const float p2, const float t);
 
+// quadratic bezier interpolation
+Vector3D	bezierQuadratic(const Vector3D& p1, const Vector3D& p2, const Vector3D& p3, float t);
+
 // cubic bezier interpolation
 float		bezierCubic(const float p0, const float t0, const float t1, const float p1, const float s);
 

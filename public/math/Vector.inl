@@ -623,6 +623,20 @@ inline float bezierCubic(const float p0, const float t0, const float t1, const f
 	return a + s * (t1 * xs3 + p1 * ss - a);
 }
 
+inline Vector3D bezierQuadratic(const Vector3D& p1, const Vector3D& p2, const Vector3D& p3, float t)
+{
+	const float mu2 = M_SQR(t);
+	const float mum1 = 1.0f - t;
+	const float mum12 = M_SQR(mum1);
+
+	Vector3D p;
+	p.x = p1.x * mum12 + 2.0f * p2.x * mum1 * t + p3.x * mu2;
+	p.y = p1.y * mum12 + 2.0f * p2.y * mum1 * t + p3.y * mu2;
+	p.z = p1.z * mum12 + 2.0f * p2.z * mum1 * t + p3.z * mu2;
+
+	return p;
+}
+
 template <typename T>
 inline TVec2D<T> lerp(const TVec2D<T> &u, const TVec2D<T> &v, const float x)
 {
