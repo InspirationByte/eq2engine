@@ -98,7 +98,13 @@ private:
 	Map<int, ISoundSource*>					m_samples{ PP_SL };
 	Map<int, sndEffect_t>					m_effects{ PP_SL };
 
-	Vector3D								m_listenerPos{ vec3_zero };
+	struct Listener
+	{
+		Vector3D position{ vec3_zero };
+		Vector3D velocity{ vec3_zero };
+		Vector3D orientF{ vec3_forward };
+		Vector3D orientU{ vec3_up };
+	} m_listener;
 
 	ALCcontext*								m_ctx{ nullptr };
 	ALCdevice*								m_dev{ nullptr };

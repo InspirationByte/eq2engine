@@ -255,8 +255,7 @@ bool CEqAudioSystemAL::InitContext()
 		ALC_MAX_AUXILIARY_SENDS, EQSND_EFFECT_SLOTS,
 		ALC_HRTF_SOFT, snd_hrtf.GetBool(),
 		ALC_HRTF_ID_SOFT, hrtfIndex,
-		//ALC_SYNC, ALC_TRUE,
-		//ALC_REFRESH, 120,
+		// ALC_REFRESH, 120,
 		0
 	};
 
@@ -714,6 +713,15 @@ void CEqAudioSystemAL::EndUpdate()
 		}
 	}
 
+	// setup orientation parameters
+	const float orient[] = { m_listener.orientF.x,  m_listener.orientF.y,  m_listener.orientF.z, -m_listener.orientU.x, -m_listener.orientU.y, -m_listener.orientU.z };
+
+	alListenerfv(AL_POSITION, m_listener.position);
+	alListenerfv(AL_VELOCITY, m_listener.velocity);
+	alListenerfv(AL_ORIENTATION, orient);
+
+	alcProcessContext(m_ctx);
+
 	for (int i = 0; i < m_mixerChannels.numElem(); ++i)
 		m_mixerChannels[i].updateFlags = 0;
 
@@ -745,7 +753,6 @@ void CEqAudioSystemAL::EndUpdate()
 		debugoverlay->Text(color_white, "  samples: %d, mem: %d kbytes (non-streamed)", m_samples.size(), sampleMem / 1024);
 	}
 
-	alcProcessContext(m_ctx);
 	m_begunUpdate = false;
 }
 
@@ -760,20 +767,16 @@ void CEqAudioSystemAL::SetListener(const Vector3D& position,
 	const Vector3D& forwardVec,
 	const Vector3D& upVec)
 {
-	m_listenerPos = position;
-
-	// setup orientation parameters
-	const float orient[] = { forwardVec.x, forwardVec.y, forwardVec.z, -upVec.x, -upVec.y, -upVec.z };
-
-	alListenerfv(AL_POSITION, position);
-	alListenerfv(AL_ORIENTATION, orient);
-	alListenerfv(AL_VELOCITY, velocity);
+	m_listener.position = position;
+	m_listener.velocity = velocity;
+	m_listener.orientF = forwardVec;
+	m_listener.orientU = upVec;
 }
 
 // gets listener properties
 const Vector3D& CEqAudioSystemAL::GetListenerPosition() const
 {
-	return m_listenerPos;
+	return m_listener.position;
 }
 
 //----------------------------------------------------------------------------------------------
