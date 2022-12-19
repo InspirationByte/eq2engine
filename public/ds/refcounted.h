@@ -18,7 +18,7 @@ struct RefCountedKeepPolicy {
 template< typename TYPE>
 class CRefPtr;
 
-template< typename TYPE, typename POLICY = RefCountedDeletePolicy >
+template< typename TYPE, typename POLICY = RefCountedDeletePolicy>
 class RefCountedObject
 {
 public:
@@ -42,7 +42,7 @@ private:
 	//		assignedRemover->Free(this);
 	// }
 
-	virtual void Ref_DeleteObject() {}	// could be useful with RefCountedKeepPolicy
+	virtual void Ref_DeleteObject() {}	// could be useful with RefCountedKeepPolicy and virtual objects
 
 private:
 	mutable int	m_numRefs{ 0 };
@@ -79,7 +79,6 @@ class CRefPtr
 {
 public:
 	using PTR_TYPE = TYPE*;
-	using REF_TYPE = RefCountedObject<TYPE, typename TYPE::REF_POLICY>;
 
 	CRefPtr() = default;
 
@@ -143,6 +142,8 @@ inline CRefPtr<TYPE>::CRefPtr(CRefPtr<TYPE>&& refptr)
 template< class TYPE >
 inline CRefPtr<TYPE>::~CRefPtr()
 {
+	using REF_TYPE = RefCountedObject<TYPE, typename TYPE::REF_POLICY>;
+
 	REF_TYPE* oldObj = (REF_TYPE*)m_ptrObj;
 	if (oldObj != nullptr)
 		oldObj->Ref_Drop();
@@ -151,6 +152,8 @@ inline CRefPtr<TYPE>::~CRefPtr()
 template< class TYPE >
 inline void CRefPtr<TYPE>::Assign(PTR_TYPE obj)
 {
+	using REF_TYPE = RefCountedObject<TYPE, typename TYPE::REF_POLICY>;
+
 	if(m_ptrObj == obj)
 		return;
 
@@ -167,9 +170,12 @@ inline void CRefPtr<TYPE>::Assign(PTR_TYPE obj)
 template< class TYPE >
 inline void CRefPtr<TYPE>::Release(bool deref)
 {
+	using REF_TYPE = RefCountedObject<TYPE, typename TYPE::REF_POLICY>;
+
 	// del old ref
 	REF_TYPE* oldObj = (REF_TYPE*)m_ptrObj;
 	m_ptrObj = nullptr;
+
 	if(oldObj != nullptr && deref)
 		oldObj->Ref_Drop();
 }
