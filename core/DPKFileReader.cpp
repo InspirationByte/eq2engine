@@ -71,6 +71,8 @@ CDPKFileStream::CDPKFileStream(const char* filename, const dpkfileinfo_t& info, 
 
 	m_curBlockIdx = -1;
 
+	bool hasCompressedBlocks = false;
+
 	// read all block headers
 	fseek(m_handle, m_info.offset, SEEK_SET);
 	m_blockInfo.resize(m_info.numBlocks);
@@ -88,12 +90,19 @@ CDPKFileStream::CDPKFileStream(const char* filename, const dpkfileinfo_t& info, 
 		// skip block contents
 		const int readSize = (block.flags & DPKFILE_FLAG_COMPRESSED) ? hdr.compressedSize : hdr.size;
 		fseek(m_handle, readSize, SEEK_CUR);
+
+		hasCompressedBlocks = hasCompressedBlocks || (block.flags & DPKFILE_FLAG_COMPRESSED);
 	}
+
+	m_blockData = malloc(DPK_BLOCK_MAXSIZE);
+	m_tmpDecompressData = hasCompressedBlocks ? malloc(DPK_BLOCK_MAXSIZE + 128) : nullptr;
 }
 
 
 CDPKFileStream::~CDPKFileStream()
 {
+	free(m_blockData);
+	free(m_tmpDecompressData);
 }
 
 CBasePackageFileReader* CDPKFileStream::GetHostPackage() const
@@ -113,9 +122,9 @@ void CDPKFileStream::DecodeBlock(int blockIdx)
 	fseek(m_handle, curBlock.offset, SEEK_SET);
 
 	const int readSize = (curBlock.flags & DPKFILE_FLAG_COMPRESSED) ? curBlock.compressedSize : curBlock.size;
-	ubyte* readMem = (curBlock.flags & DPKFILE_FLAG_COMPRESSED) ? (ubyte*)malloc(DPK_BLOCK_MAXSIZE + 128) : m_blockData;
 
-	//Msg("DecodeBlock %s %d size = %d\n", m_dbgFilename.ToCString(), blockIdx, readSize);
+	// FIXME: rework it so we don't have to malloc all the time as it affects performance
+	ubyte* readMem = (curBlock.flags & DPKFILE_FLAG_COMPRESSED) ? (ubyte*)m_tmpDecompressData : (ubyte*)m_blockData;
 
 	// read block data and decompress/decrypt if needed
 	fread(readMem, 1, readSize, m_handle);
@@ -149,8 +158,6 @@ void CDPKFileStream::DecodeBlock(int blockIdx)
 		// decompress readMem to 'm_blockData'
 		unsigned long destLen = LZ4_decompress_safe((const char*)readMem, (char*)m_blockData, curBlock.compressedSize, DPK_BLOCK_MAXSIZE);
 		ASSERT(destLen == curBlock.size);
-
-		free(readMem);
 	}
 }
 
@@ -187,7 +194,7 @@ size_t CDPKFileStream::Read(void* dest, size_t count, size_t size)
 			//Msg("Block %d: read at %d (%d) - %d of %d\n", curBlockIdx, curPos, blockOffset, blockBytesToRead, m_blockInfo.size);
 
 			// read the data from block
-			memcpy(destBuf, m_blockData+blockOffset, blockBytesToRead);
+			memcpy(destBuf, (ubyte*)m_blockData + blockOffset, blockBytesToRead);
 
 			destBuf += blockBytesToRead;
 			curPos += blockBytesToRead;

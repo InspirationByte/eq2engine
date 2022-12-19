@@ -67,7 +67,8 @@ protected:
 		short flags;
 	};
 
-	ubyte					m_blockData[DPK_BLOCK_MAXSIZE];
+	void*					m_blockData{ nullptr };
+	void*					m_tmpDecompressData{ nullptr };
 	//EqString				m_dbgFilename;
 
 	dpkfileinfo_t			m_info;
