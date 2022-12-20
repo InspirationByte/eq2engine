@@ -621,8 +621,12 @@ void CEqAudioSystemAL::OnSampleDeleted(ISoundSource* sampleSource)
 	if (!sampleSource)
 		return;
 
+	ASSERT(sampleSource->Ref_Count() == 0);
+
 	// stop voices using that sample
 	SuspendSourcesWithSample(sampleSource);
+
+	DevMsg(DEVMSG_SOUND, "freeing sample %s\n", sampleSource->GetFilename());
 
 	// remove from list
 	{

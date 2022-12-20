@@ -63,7 +63,8 @@ CRefPtr<ISoundSource> ISoundSource::CreateSound( const char* szFilename )
 void ISoundSource::Ref_DeleteObject()
 {
 	g_audioSystem->OnSampleDeleted(this);
-	this->Unload();
+	Unload();
+
 	delete this;
 }
 
