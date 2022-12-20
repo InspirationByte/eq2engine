@@ -61,12 +61,12 @@
 #include "ds/scopedptr.h"
 #include "ds/singleton.h"
 
-
 #include "ds/Array.h"
 #include "ds/BitArray.h"
 #include "ds/Map.h"
 #include "ds/List.h"
 #include "ds/function.h"
+#include "ds/future.h"
 
 #include "ds/IVirtualStream.h"
 #include "ds/MemoryStream.h"
