@@ -17,6 +17,8 @@ class CViewParams;
 class Volume;
 struct TexAtlasEntry_t;
 
+using IMaterialPtr = CRefPtr<IMaterial>;
+
 enum EPartRenderFlags
 {
 	EPRFLAG_DONT_FLUSHBUFFERS	= (1 << 24),
@@ -73,7 +75,7 @@ public:
 	IMaterial*			GetMaterial() const {return m_pMaterial;}
 protected:
 
-	IMaterial*			m_pMaterial;
+	IMaterialPtr		m_pMaterial;
 
 	bool				m_useCustomProjMat;
 	Matrix4x4			m_customProjMat;

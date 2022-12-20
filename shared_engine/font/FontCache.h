@@ -12,6 +12,8 @@ class IMatVar;
 class IMaterial;
 class ITexture;
 
+using IMaterialPtr = CRefPtr<IMaterial>;
+
 namespace eqFontsInternal
 {
 struct eqFontStyleInfo_t
@@ -67,8 +69,8 @@ protected:
 	bool					LoadFontDescriptionFile( const char* filename );
 
 	Array<eqFontFamily_t>	m_fonts{ PP_SL };
-	eqFontFamily_t*			m_defaultFont;
+	eqFontFamily_t*			m_defaultFont{ nullptr };
 
-	IMaterial*				m_sdfMaterial;
-	IMatVar*				m_fontParams;
+	IMaterialPtr			m_sdfMaterial;
+	IMatVar*				m_fontParams{ nullptr };
 };

@@ -55,7 +55,6 @@ void CParticleRenderGroup::Init( const char* pszMaterialName, bool bCreateOwnVBO
 	CSpriteBuilder::Init(maxQuads);
 
 	m_pMaterial = materials->GetMaterial(pszMaterialName);
-	m_pMaterial->Ref_Grab();
 }
 
 void CParticleRenderGroup::Shutdown()
@@ -64,8 +63,6 @@ void CParticleRenderGroup::Shutdown()
 		return;
 
 	CSpriteBuilder::Shutdown();
-
-	materials->FreeMaterial(m_pMaterial);
 	m_pMaterial = nullptr;
 }
 

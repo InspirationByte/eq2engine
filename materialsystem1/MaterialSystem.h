@@ -63,7 +63,7 @@ public:
 	//-----------------------------
 
 	// returns the default material capable to use with MatSystem's GetDynamicMesh()
-	IMaterial*						GetDefaultMaterial() const;
+	IMaterialPtr					GetDefaultMaterial() const;
 
 	// returns white texture (used for wireframe of shaders that can't use FFP modes,notexture modes, etc.)
 	ITexture*						GetWhiteTexture() const;
@@ -72,10 +72,10 @@ public:
 	ITexture*						GetLuxelTestTexture() const;
 
 	// creates new material with defined parameters
-	IMaterial*						CreateMaterial(const char* szMaterialName, KVSection* params);
+	IMaterialPtr					CreateMaterial(const char* szMaterialName, KVSection* params);
 
 	// Finds or loads material (if findExisting is false then it will be loaded as new material instance)
-	IMaterial*						GetMaterial(const char* szMaterialName);
+	IMaterialPtr					GetMaterial(const char* szMaterialName);
 
 	// checks material for existence
 	bool							IsMaterialExist(const char* szMaterialName);
@@ -200,11 +200,11 @@ public:
 
 	void							SetProxyDeltaTime(float deltaTime);
 
-	IMaterial*						GetBoundMaterial();
+	IMaterialPtr					GetBoundMaterial();
 
 	void							SetShaderParameterOverriden(int param, bool set = true);
 
-	bool							BindMaterial( IMaterial* pMaterial, int flags = MATERIAL_BIND_PREAPPLY);
+	bool							BindMaterial(IMaterial* pMaterial, int flags = MATERIAL_BIND_PREAPPLY);
 	void							Apply();
 
 	// sets the custom rendering callbacks
@@ -285,7 +285,7 @@ public:
 
 private:
 
-	IMaterial*						CreateMaterialInternal(const char* szMaterialName, int nameHash, KVSection* params);
+	IMaterialPtr					CreateMaterialInternal(const char* szMaterialName, int nameHash, KVSection* params);
 	void							CreateWhiteTexture();
 	void							InitDefaultMaterial();
 
@@ -321,10 +321,10 @@ private:
 
 	Matrix4x4						m_matrices[5];				// matrix modes
 
-	IMaterial*						m_setMaterial;				// currently binded material
+	IMaterialPtr					m_setMaterial;				// currently binded material
 	uint							m_paramOverrideMask;		// parameter setup mask for overrides
 
-	IMaterial*						m_overdrawMaterial;
+	IMaterialPtr					m_overdrawMaterial;
 
 	ITexture*						m_currentEnvmapTexture;
 
@@ -334,7 +334,7 @@ private:
 	ITexture*						m_whiteTexture;
 	ITexture*						m_luxelTestTexture;
 
-	IMaterial*						m_pDefaultMaterial;
+	IMaterialPtr					m_pDefaultMaterial;
 
 	FogInfo_t						m_fogInfo;
 	ColorRGBA						m_ambColor;

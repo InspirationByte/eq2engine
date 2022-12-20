@@ -118,7 +118,7 @@ void CLocalize::Init()
 
 void CLocalize::Shutdown()
 {
-	m_tokens.clear();
+	m_tokens.clear(true);
 }
 
 const char* CLocalize::GetLanguageName()

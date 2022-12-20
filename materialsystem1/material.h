@@ -23,6 +23,8 @@ public:
 							CMaterial();
 							~CMaterial();
 
+	void					Ref_DeleteObject();
+
 	const char*				GetName() const {return m_szMaterialName.GetData();}
 	const char*				GetShaderName() const;
 	CTextureAtlas*			GetAtlas() const;

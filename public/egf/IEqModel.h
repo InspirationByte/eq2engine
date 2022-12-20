@@ -13,6 +13,8 @@ class IMaterialSystem;
 class IVertexFormat;
 class IEqModelInstancer;
 
+using IMaterialPtr = CRefPtr<IMaterial>;
+
 struct decalmakeinfo_t;
 struct tempdecal_t;
 
@@ -124,7 +126,7 @@ public:
 
 	// returns material assigned to the group
 	// materialIndex = <studiohwdata_t>->studio->pModelDesc(nModel)->pGroup(nTexGroup)->materialIndex;
-	virtual IMaterial*			GetMaterial(int materialIdx, int materialGroupIdx = 0) const = 0;
+	virtual IMaterialPtr		GetMaterial(int materialIdx, int materialGroupIdx = 0) const = 0;
 };
 
 

@@ -37,6 +37,14 @@ CMaterial::~CMaterial()
 
 }
 
+void CMaterial::Ref_DeleteObject()
+{
+	materials->FreeMaterial(this);
+	Cleanup();
+
+	delete this;
+}
+
 //
 // Initializes the shader
 //

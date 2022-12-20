@@ -48,10 +48,7 @@ eqFontStyleInfo_t::~eqFontStyleInfo_t()
 
 //---------------------------------------------------------------------
 
-CEqFontCache::CEqFontCache() : 
-	m_defaultFont(nullptr),
-	m_sdfMaterial(nullptr),
-	m_fontParams(nullptr)
+CEqFontCache::CEqFontCache()
 {
 	g_eqCore->RegisterInterface(FONTCACHE_INTERFACE_VERSION, this);
 }
@@ -168,8 +165,6 @@ bool CEqFontCache::Init()
 	sdfFontParams.SetKey("basetexture", "$basetexture");
 
 	m_sdfMaterial = materials->CreateMaterial("_sdfRegular", &sdfFontParams);
-	m_sdfMaterial->Ref_Grab();
-
 	m_fontParams = m_sdfMaterial->GetMaterialVar("FontParams", "[0.94 0.06, 0, 1]");
 
 	m_sdfMaterial->LoadShaderAndTextures();
@@ -182,8 +177,8 @@ void CEqFontCache::Shutdown()
 	m_fonts.clear();
 	m_defaultFont = nullptr;
 
-	materials->FreeMaterial( m_sdfMaterial );
 	m_sdfMaterial = nullptr;
+	m_fontParams = nullptr;
 	m_fontParams = nullptr;
 }
 

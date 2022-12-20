@@ -29,11 +29,11 @@ class CViewParams;
 class IDynamicMesh;
 class IMaterialRenderParamCallbacks;
 
-typedef void					(*RESOURCELOADCALLBACK)( void );
-typedef IMaterialSystemShader*	(*DISPATCH_CREATE_SHADER)( void );
-typedef const char*				(*DISPATCH_OVERRIDE_SHADER)( void );
-typedef bool					(*DEVLICELOSTRESTORE)( void );
-typedef IMaterialProxy*			(*PROXY_DISPATCHER)(void);
+typedef void					(*RESOURCELOADCALLBACK)(void);
+typedef IMaterialSystemShader* (*DISPATCH_CREATE_SHADER)(void);
+typedef const char* (*DISPATCH_OVERRIDE_SHADER)(void);
+typedef bool					(*DEVLICELOSTRESTORE)(void);
+typedef IMaterialProxy* (*PROXY_DISPATCHER)(void);
 
 // Lighting model for material system
 enum EMaterialLightingMode
@@ -53,7 +53,7 @@ enum EMaterialBindFlags
 struct shaderfactory_t
 {
 	DISPATCH_CREATE_SHADER dispatcher;
-	const char *shader_name;
+	const char* shader_name;
 };
 typedef Array<shaderfactory_t> FactoryList;
 
@@ -65,14 +65,14 @@ typedef struct Vertex2D
 		color = color_white.pack();
 	}
 
-    Vertex2D(const Vector2D& p, const Vector2D& t)
-    {
-        position = p;
-        texCoord = t;
+	Vertex2D(const Vector2D& p, const Vector2D& t)
+	{
+		position = p;
+		texCoord = t;
 		color = color_white.pack();
-    }
+	}
 
-	Vertex2D(const Vector2D& p, const Vector2D& t,const Vector4D& c)
+	Vertex2D(const Vector2D& p, const Vector2D& t, const Vector4D& c)
 	{
 		position = p;
 		texCoord = t;
@@ -93,7 +93,7 @@ typedef struct Vertex2D
 		color = MColor(c).pack();
 	}
 
-	void Set(const Vector2D& p, const Vector2D& t,const MColor& c)
+	void Set(const Vector2D& p, const Vector2D& t, const MColor& c)
 	{
 		position = p;
 		texCoord = t;
@@ -105,8 +105,8 @@ typedef struct Vertex2D
 		return Vertex2D(lerp(a.position, b.position, fac), lerp(a.texCoord, b.texCoord, fac), lerp(MColor(a.color).v, MColor(b.color).v, fac));
 	}
 
-    Vector2D		position;
-    Vector2D		texCoord;
+	Vector2D		position;
+	Vector2D		texCoord;
 	uint			color;
 }Vertex2D_t;
 
@@ -119,21 +119,21 @@ typedef struct Vertex3D
 		color = color_white;
 	}
 
-    Vertex3D(const Vector3D& p, const Vector2D& t)
-    {
-        position = p;
-        texCoord = t;
+	Vertex3D(const Vector3D& p, const Vector2D& t)
+	{
+		position = p;
+		texCoord = t;
 		color = color_white;
-    }
+	}
 
-	Vertex3D(const Vector3D& p, const Vector2D& t,const Vector4D& c)
+	Vertex3D(const Vector3D& p, const Vector2D& t, const Vector4D& c)
 	{
 		position = p;
 		texCoord = t;
 		color = c;
 	}
-    Vector3D		position;
-    Vector2D		texCoord;
+	Vector3D		position;
+	Vector2D		texCoord;
 	ColorRGBA		color;
 }Vertex3D_t;
 
@@ -182,7 +182,7 @@ public:
 	// Initialize material system
 	// szShaderAPI - shader API that will be used. On NULL will set to default Shader API (DX9)
 	// config - material system configuration. Must be fully filled
-	virtual bool							Init( const matsystem_init_config_t& config ) = 0;
+	virtual bool							Init(const matsystem_init_config_t& config) = 0;
 
 	// shutdowns material system, unloading all.
 	virtual void							Shutdown() = 0;
@@ -205,7 +205,7 @@ public:
 	//-----------------------------
 
 	// returns the default material capable to use with MatSystem's GetDynamicMesh()
-	virtual IMaterial*						GetDefaultMaterial() const = 0;
+	virtual IMaterialPtr					GetDefaultMaterial() const = 0;
 
 	// returns white texture (used for wireframe of shaders that can't use FFP modes,notexture modes, etc.)
 	virtual	ITexture*						GetWhiteTexture() const = 0;
@@ -214,10 +214,10 @@ public:
 	virtual	ITexture*						GetLuxelTestTexture() const = 0;
 
 	// creates new material with defined parameters
-	virtual IMaterial*						CreateMaterial(const char* szMaterialName, KVSection* params) = 0;
+	virtual IMaterialPtr					CreateMaterial(const char* szMaterialName, KVSection* params) = 0;
 
 	// Finds or loads material (if findExisting is false then it will be loaded as new material instance)
-	virtual IMaterial*						GetMaterial(const char* szMaterialName) = 0;
+	virtual IMaterialPtr					GetMaterial(const char* szMaterialName) = 0;
 
 	// checks material for existence
 	virtual bool							IsMaterialExist(const char* szMaterialName) = 0;
@@ -244,7 +244,7 @@ public:
 	virtual void							ReleaseUnusedMaterials() = 0;
 
 	// Frees materials or decrements it's reference count
-	virtual void							FreeMaterial(IMaterial *pMaterial) = 0;
+	virtual void							FreeMaterial(IMaterial* pMaterial) = 0;
 
 	//-----------------------------
 
@@ -256,16 +256,16 @@ public:
 	//-----------------------------
 
 	// draws primitives
-	virtual void							DrawPrimitivesFFP(	ER_PrimitiveType type, Vertex3D_t *pVerts, int nVerts,
-																ITexture* pTexture = nullptr, const ColorRGBA &color = color_white,
-																BlendStateParam_t* blendParams = nullptr, DepthStencilStateParams_t* depthParams = nullptr,
-																RasterizerStateParams_t* rasterParams = nullptr) = 0;
+	virtual void							DrawPrimitivesFFP(ER_PrimitiveType type, Vertex3D_t* pVerts, int nVerts,
+		ITexture* pTexture = nullptr, const ColorRGBA& color = color_white,
+		BlendStateParam_t* blendParams = nullptr, DepthStencilStateParams_t* depthParams = nullptr,
+		RasterizerStateParams_t* rasterParams = nullptr) = 0;
 
 	// draws primitives for 2D
-	virtual void							DrawPrimitives2DFFP(	ER_PrimitiveType type, Vertex2D_t *pVerts, int nVerts,
-																	ITexture* pTexture = nullptr, const ColorRGBA &color = color_white,
-																	BlendStateParam_t* blendParams = nullptr, DepthStencilStateParams_t* depthParams = nullptr,
-																	RasterizerStateParams_t* rasterParams = nullptr) = 0;
+	virtual void							DrawPrimitives2DFFP(ER_PrimitiveType type, Vertex2D_t* pVerts, int nVerts,
+		ITexture* pTexture = nullptr, const ColorRGBA& color = color_white,
+		BlendStateParam_t* blendParams = nullptr, DepthStencilStateParams_t* depthParams = nullptr,
+		RasterizerStateParams_t* rasterParams = nullptr) = 0;
 
 	//-----------------------------
 	// Shader dynamic states
@@ -274,17 +274,17 @@ public:
 	virtual ER_CullMode						GetCurrentCullMode() = 0;
 	virtual void							SetCullMode(ER_CullMode cullMode) = 0;
 
-	virtual void							SetSkinningEnabled( bool bEnable ) = 0;
+	virtual void							SetSkinningEnabled(bool bEnable) = 0;
 	virtual bool							IsSkinningEnabled() = 0;
 
-	virtual void							SetInstancingEnabled( bool bEnable ) = 0;
+	virtual void							SetInstancingEnabled(bool bEnable) = 0;
 	virtual bool							IsInstancingEnabled() = 0;
 
 
-	virtual void							SetFogInfo(const FogInfo_t &info) = 0;
-	virtual void							GetFogInfo(FogInfo_t &info) = 0;
+	virtual void							SetFogInfo(const FogInfo_t& info) = 0;
+	virtual void							GetFogInfo(FogInfo_t& info) = 0;
 
-	virtual void							SetAmbientColor(const ColorRGBA &color) = 0;
+	virtual void							SetAmbientColor(const ColorRGBA& color) = 0;
 	virtual ColorRGBA						GetAmbientColor() = 0;
 
 	virtual void							SetLight(dlight_t* pLight) = 0;
@@ -296,7 +296,7 @@ public:
 
 	//---------------------------
 	// $env_cubemap texture for use in shaders
-	virtual void							SetEnvironmentMapTexture( ITexture* pEnvMapTexture ) = 0;
+	virtual void							SetEnvironmentMapTexture(ITexture* pEnvMapTexture) = 0;
 	virtual ITexture*						GetEnvironmentMapTexture() = 0;
 
 	//-----------------------------
@@ -314,40 +314,40 @@ public:
 
 
 	// sets blending
-	virtual void							SetBlendingStates(	ER_BlendFactor nSrcFactor,
-																ER_BlendFactor nDestFactor,
-																ER_BlendFunction nBlendingFunc = BLENDFUNC_ADD,
-																int colormask = COLORMASK_ALL
-																) = 0;
+	virtual void							SetBlendingStates(ER_BlendFactor nSrcFactor,
+		ER_BlendFactor nDestFactor,
+		ER_BlendFunction nBlendingFunc = BLENDFUNC_ADD,
+		int colormask = COLORMASK_ALL
+	) = 0;
 
 	// sets depth stencil state
-	virtual void							SetDepthStates(	bool bDoDepthTest,
-															bool bDoDepthWrite,
-															ER_CompareFunc depthCompFunc = COMP_LEQUAL) = 0;
+	virtual void							SetDepthStates(bool bDoDepthTest,
+		bool bDoDepthWrite,
+		ER_CompareFunc depthCompFunc = COMP_LEQUAL) = 0;
 
 	// sets rasterizer extended mode
-	virtual void							SetRasterizerStates(	ER_CullMode nCullMode,
-																	ER_FillMode nFillMode = FILL_SOLID,
-																	bool bMultiSample = true,
-																	bool bScissor = false,
-																	bool bPolyOffset = false
-																	) = 0;
+	virtual void							SetRasterizerStates(ER_CullMode nCullMode,
+		ER_FillMode nFillMode = FILL_SOLID,
+		bool bMultiSample = true,
+		bool bScissor = false,
+		bool bPolyOffset = false
+	) = 0;
 
 	//------------------
 	// Materials or shader static states
 
 	virtual void							SetProxyDeltaTime(float deltaTime) = 0;
 
-	virtual IMaterial*						GetBoundMaterial() = 0;
+	virtual IMaterialPtr					GetBoundMaterial() = 0;
 
 	virtual void							SetShaderParameterOverriden(int /*ShaderDefaultParams_e*/ param, bool set = true) = 0;
 
-	virtual bool							BindMaterial( IMaterial *pMaterial, int flags = MATERIAL_BIND_PREAPPLY ) = 0;
+	virtual bool							BindMaterial(IMaterial* pMaterial, int flags = MATERIAL_BIND_PREAPPLY) = 0;
 	virtual void							Apply() = 0;
 
 	// sets the custom rendering callbacks
 	// useful for proxy updates, setting up constants that shader objects can't access by themselves
-	virtual void							SetMaterialRenderParamCallback( IMaterialRenderParamCallbacks* callback ) = 0;
+	virtual void							SetMaterialRenderParamCallback(IMaterialRenderParamCallbacks* callback) = 0;
 	virtual IMaterialRenderParamCallbacks*	GetMaterialRenderParamCallback() = 0;
 
 	//-----------------------------
@@ -363,13 +363,13 @@ public:
 	virtual void							SetupOrtho(float left, float right, float top, float bottom, float zNear, float zFar) = 0;
 
 	// sets up a matrix, projection, view, and world
-	virtual void							SetMatrix(ER_MatrixMode mode, const Matrix4x4 &matrix) = 0;
+	virtual void							SetMatrix(ER_MatrixMode mode, const Matrix4x4& matrix) = 0;
 
 	// returns a typed matrix
-	virtual void							GetMatrix(ER_MatrixMode mode, Matrix4x4 &matrix) = 0;
+	virtual void							GetMatrix(ER_MatrixMode mode, Matrix4x4& matrix) = 0;
 
 	// retunrs multiplied matrix
-	virtual void							GetWorldViewProjection(Matrix4x4 &matrix) = 0;
+	virtual void							GetWorldViewProjection(Matrix4x4& matrix) = 0;
 
 	//-----------------------------
 	// Swap chains
@@ -394,21 +394,21 @@ public:
 	// window/fullscreen mode changing; returns false if fails
 	virtual bool							SetWindowed(bool enable) = 0;
 	virtual bool							IsWindowed() const = 0;
-	
+
 	// captures screenshot to CImage data
-	virtual bool							CaptureScreenshot( CImage &img ) = 0;
+	virtual bool							CaptureScreenshot(CImage& img) = 0;
 
 	//-----------------------------
 	// Internal operations
 	//-----------------------------
 
 	// returns RHI device interface
-	virtual IShaderAPI*						GetShaderAPI() = 0;
+	virtual IShaderAPI* GetShaderAPI() = 0;
 
 	virtual void							RegisterProxy(PROXY_DISPATCHER dispfunc, const char* pszName) = 0;
-	virtual IMaterialProxy*					CreateProxyByName(const char* pszName) = 0;
+	virtual IMaterialProxy* CreateProxyByName(const char* pszName) = 0;
 
-	virtual void							RegisterShader(const char* pszShaderName,DISPATCH_CREATE_SHADER dispatcher_creation) = 0;
+	virtual void							RegisterShader(const char* pszShaderName, DISPATCH_CREATE_SHADER dispatcher_creation) = 0;
 	virtual void							RegisterShaderOverrideFunction(const char* shaderName, DISPATCH_OVERRIDE_SHADER check_function) = 0;
 
 	// device lost/restore callbacks

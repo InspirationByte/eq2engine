@@ -107,6 +107,7 @@ public:
 		// load this material
 		// BUG: may be null
 		((CMaterial*)nextMaterial)->DoLoadShaderAndTextures();
+		nextMaterial->Ref_Drop();
 
 		{
 			CScopedMutex m(m_Mutex);
@@ -128,6 +129,7 @@ public:
 				return;
 
 			m_newMaterials.insert(pMaterial);
+			pMaterial->Ref_Grab();
 		}
 
 		if (false) // g_parallelJobs->IsInitialized())
@@ -137,6 +139,7 @@ public:
 				{
 					CScopedMutex m(m_Mutex);
 					m_newMaterials.remove(pMaterial);
+					pMaterial->Ref_Drop();
 				}
 			});
 
@@ -349,6 +352,8 @@ void CMaterialSystem::Shutdown()
 
 		// shutdown thread first
 		g_threadedMaterialLoader.StopThread(true);
+
+		m_setMaterial = nullptr;
 		
 		ClearRenderStates();
 		m_dynamicMesh.Destroy();
@@ -455,8 +460,7 @@ void CMaterialSystem::InitDefaultMaterial()
 		defaultParams.SetName("Default"); // set shader 'Default'
 		defaultParams.SetKey("BaseTexture", "$basetexture");
 
-		CMaterial* pMaterial = (CMaterial*)CreateMaterial("_default", &defaultParams);
-		pMaterial->Ref_Grab();
+		IMaterialPtr pMaterial = CreateMaterial("_default", &defaultParams);
 		pMaterial->LoadShaderAndTextures();
 
 		m_pDefaultMaterial = pMaterial;
@@ -471,10 +475,8 @@ void CMaterialSystem::InitDefaultMaterial()
 		overdrawParams.SetKey("Additive", "1");
 		overdrawParams.SetKey("ztest", "0");
 		overdrawParams.SetKey("zwrite", "0");
-		
-
-		CMaterial* pMaterial = (CMaterial*)CreateMaterial("_overdraw", &overdrawParams);
-		pMaterial->Ref_Grab();
+	
+		IMaterialPtr pMaterial = CreateMaterial("_overdraw", &overdrawParams);
 		pMaterial->LoadShaderAndTextures();
 
 		m_overdrawMaterial = pMaterial;
@@ -536,7 +538,7 @@ bool CMaterialSystem::IsMaterialExist(const char* szMaterialName)
 	return g_fileSystem->FileExist(mat_path.GetData());
 }
 
-IMaterial* CMaterialSystem::CreateMaterial(const char* szMaterialName, KVSection* params)
+IMaterialPtr CMaterialSystem::CreateMaterial(const char* szMaterialName, KVSection* params)
 {
 	// must have names
 	ASSERT(strlen(szMaterialName) > 0);
@@ -546,7 +548,7 @@ IMaterial* CMaterialSystem::CreateMaterial(const char* szMaterialName, KVSection
 }
 
 // creates new material with defined parameters
-IMaterial* CMaterialSystem::CreateMaterialInternal(const char* szMaterialName, int nameHash, KVSection* params)
+IMaterialPtr CMaterialSystem::CreateMaterialInternal(const char* szMaterialName, int nameHash, KVSection* params)
 {
 	PROF_EVENT("MatSystem Load Material");
 
@@ -567,10 +569,10 @@ IMaterial* CMaterialSystem::CreateMaterialInternal(const char* szMaterialName, i
 	else
 		pMaterial->Init(szMaterialName);
 
-	return pMaterial;
+	return IMaterialPtr(pMaterial);
 }
 
-IMaterial* CMaterialSystem::GetMaterial(const char* szMaterialName)
+IMaterialPtr CMaterialSystem::GetMaterial(const char* szMaterialName)
 {
 	// Don't load null materials
 	if( strlen(szMaterialName) == 0 )
@@ -590,7 +592,7 @@ IMaterial* CMaterialSystem::GetMaterial(const char* szMaterialName)
 		CScopedMutex m(m_Mutex);
 		auto it = m_loadedMaterials.find(nameHash);
 		if (it != m_loadedMaterials.end())
-			return *it;
+			return IMaterialPtr(*it);
 	}
 
 	return CreateMaterialInternal(materialName.ToCString(), nameHash, nullptr);
@@ -642,7 +644,7 @@ void CMaterialSystem::ReloadAllMaterials()
 	CScopedMutex m(m_Mutex);
 
 	MsgInfo("Reloading all materials...\n");
-	Array<IMaterial*> loadingList(PP_SL);
+	Array<IMaterialPtr> loadingList(PP_SL);
 
 	for (auto it = m_loadedMaterials.begin(); it != m_loadedMaterials.end(); ++it)
 	{
@@ -668,7 +670,7 @@ void CMaterialSystem::ReloadAllMaterials()
 
 		// preload material if it was ever used before
 		if(framesDiff >= -1)
-			loadingList.append(material);
+			loadingList.append(IMaterialPtr(material));
 	}
 
 	// issue loading after all materials were freed
@@ -709,32 +711,18 @@ void CMaterialSystem::ClearRenderStates()
 }
 
 // frees single material
-void CMaterialSystem::FreeMaterial(IMaterial *pMaterial)
+void CMaterialSystem::FreeMaterial(IMaterial* pMaterial)
 {
 	if(pMaterial == nullptr)
 		return;
 
+	ASSERT(pMaterial->Ref_Count() == 0);
+
+	DevMsg(DEVMSG_MATSYSTEM, "freeing material %s\n", pMaterial->GetName());
 	CMaterial* material = (CMaterial*)pMaterial;
-
-	bool deleted = false;
-
 	{
 		CScopedMutex m(m_Mutex);
-		auto it = m_loadedMaterials.find(material->m_nameHash);
-		if (it == m_loadedMaterials.end())
-			return;
-		if (pMaterial->Ref_Drop())
-		{
-			m_loadedMaterials.remove(it);
-			deleted = true;
-		}
-	}
-
-	if (deleted)
-	{
-		DevMsg(DEVMSG_MATSYSTEM, "freeing %s\n", material->GetName());
-		material->Cleanup();
-		delete material;
+		m_loadedMaterials.remove(material->m_nameHash);
 	}
 }
 
@@ -963,7 +951,7 @@ bool CMaterialSystem::BindMaterial(IMaterial* pMaterial, int flags)
 	else
 		success = (*materialstate_callbacks[subRoutineId])(setMaterial, m_paramOverrideMask);
 
-	m_setMaterial = setMaterial;
+	m_setMaterial = IMaterialPtr(setMaterial);
 
 	if (!(flags & MATERIAL_BIND_KEEPOVERRIDE))
 		m_paramOverrideMask = 0xFFFFFFFF; // reset override mask shortly after we bind material
@@ -993,7 +981,7 @@ void CMaterialSystem::Apply()
 }
 
 // returns bound material
-IMaterial* CMaterialSystem::GetBoundMaterial()
+IMaterialPtr CMaterialSystem::GetBoundMaterial()
 {
 	return m_setMaterial;
 }
@@ -1052,7 +1040,7 @@ dlight_t* CMaterialSystem::GetLight()
 	return m_currentLight;
 }
 
-IMaterial* CMaterialSystem::GetDefaultMaterial() const
+IMaterialPtr CMaterialSystem::GetDefaultMaterial() const
 {
 	return m_pDefaultMaterial;
 }

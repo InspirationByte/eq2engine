@@ -9,6 +9,7 @@
 #include "IEqUI_Control.h"
 
 class IMaterial;
+using IMaterialPtr = CRefPtr<IMaterial>;
 
 namespace equi
 {
@@ -44,7 +45,7 @@ public:
 
 public:
 
-	IMaterial*			m_material;
+	IMaterialPtr		m_material;
 	Rectangle_t			m_atlasRegion;
 
 	ColorRGBA			m_color;

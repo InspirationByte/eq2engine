@@ -18,7 +18,7 @@
 namespace equi
 {
 
-Image::Image() : IUIControl(), m_material(nullptr)
+Image::Image() : IUIControl()
 {
 	m_color = color_white;
 	m_imageFlags = 0;
@@ -26,7 +26,6 @@ Image::Image() : IUIControl(), m_material(nullptr)
 
 Image::~Image()
 {
-	materials->FreeMaterial(m_material);
 }
 
 void Image::InitFromKeyValues( KVSection* sec, bool noClear )
@@ -72,11 +71,7 @@ void Image::InitFromKeyValues( KVSection* sec, bool noClear )
 
 void Image::SetMaterial(const char* materialName)
 {
-	materials->FreeMaterial(m_material);
-
 	m_material = materials->GetMaterial(materialName);
-	m_material->Ref_Grab();
-
 	m_material->LoadShaderAndTextures();
 }
 

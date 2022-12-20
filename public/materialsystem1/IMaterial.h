@@ -95,3 +95,5 @@ public:
 	// retrieves the base texture on specified stage
 	virtual ITexture*				GetBaseTexture(int stage = 0) = 0;
 };
+
+using IMaterialPtr = CRefPtr<IMaterial>;

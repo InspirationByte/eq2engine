@@ -59,14 +59,13 @@ public:
 	// selects a lod. returns index
 	int					SelectLod(float dist_to_camera) const;
 
-	void				DrawFull() const;
 	void				DrawGroup(int nModel, int nGroup, bool preSetVBO = true) const;
 
 	void				SetupVBOStream( int nStream ) const;
 
 	bool				PrepareForSkinning(Matrix4x4* jointMatrices);
 
-	IMaterial*			GetMaterial(int materialIdx, int materialGroupIdx = 0) const;
+	IMaterialPtr		GetMaterial(int materialIdx, int materialGroupIdx = 0) const;
 
 private:
 
@@ -89,7 +88,7 @@ private:
 	//-----------------------------------------------
 
 	// array of material index for each group
-	IMaterial*			m_materials[MAX_STUDIOMATERIALS];
+	FixedArray<IMaterialPtr, MAX_STUDIOMATERIALS>	m_materials;
 	Array<EqString>		m_additionalMotionPackages{ PP_SL };
 	BoundingBox			m_aabb;
 	EqString			m_szPath;
@@ -104,8 +103,6 @@ private:
 
 	bool				m_forceSoftwareSkinning;
 	bool				m_skinningDirty;
-
-	int					m_numMaterials;
 
 	int					m_numVertices;
 	int					m_numIndices;

@@ -57,9 +57,6 @@ CEngineStudioEGF::CEngineStudioEGF()
 	m_numVertices = 0;
 	m_numIndices = 0;
 
-	memset(m_materials, 0, sizeof(m_materials));
-	m_numMaterials = 0;
-
 	m_hwdata = nullptr;
 
 	m_cacheIdx = -1;
@@ -247,12 +244,8 @@ void CEngineStudioEGF::DestroyModel()
 	g_pShaderAPI->DestroyVertexBuffer(m_pVB);
 	g_pShaderAPI->DestroyIndexBuffer(m_pIB);
 
-	for (int i = 0; i < m_numMaterials; i++)
-		materials->FreeMaterial(m_materials[i]);
-
-	memset(m_materials, 0, sizeof(m_materials));
-
-	m_numMaterials = 0;
+	for (int i = 0; i < m_materials.numElem(); ++i)
+		m_materials[i] = nullptr;
 
 	if (m_forceSoftwareSkinning)
 	{
@@ -262,7 +255,6 @@ void CEngineStudioEGF::DestroyModel()
 
 	m_numIndices = 0;
 	m_numVertices = 0;
-	m_numMaterials = 0;
 
 	if (m_hwdata)
 	{
@@ -644,13 +636,12 @@ void CEngineStudioEGF::LoadMaterials()
 	bool bError = false;
 	{
 		// init materials
-		m_numMaterials = pHdr->numMaterials;
-
-		memset(m_materials, 0, sizeof(m_materials));
+		const int numMaterials = pHdr->numMaterials;
+		m_materials.setNum(numMaterials);
 
 		// try load materials properly
 		// this is a source engine - like material loading using material paths
-		for (int i = 0; i < m_numMaterials; i++)
+		for (int i = 0; i < numMaterials; i++)
 		{
 			EqString fpath(pHdr->pMaterial(i)->materialname);
 			fpath.Path_FixSlashes();
@@ -675,9 +666,7 @@ void CEngineStudioEGF::LoadMaterials()
 				if (!materials->IsMaterialExist(extend_path))
 					continue;
 
-				IMaterial* material = materials->GetMaterial(extend_path.GetData());
-				material->Ref_Grab();
-
+				IMaterialPtr material = materials->GetMaterial(extend_path.GetData());
 				materials->PutMaterialToLoadingQueue(material);
 
 				if (!material->IsError() && !(material->GetFlags() & MATERIAL_FLAG_SKINNED))
@@ -688,7 +677,7 @@ void CEngineStudioEGF::LoadMaterials()
 		}
 
 		// false-initialization of non-loaded materials
-		for (int i = 0; i < m_numMaterials; i++)
+		for (int i = 0; i < numMaterials; i++)
 		{
 			if (m_materials[i])
 				continue;
@@ -696,10 +685,7 @@ void CEngineStudioEGF::LoadMaterials()
 			MsgError("Couldn't load model material '%s'\n", pHdr->pMaterial(i)->materialname, m_szPath.ToCString());
 			bError = true;
 
-			IMaterial* material = materials->GetMaterial("error");
-			material->Ref_Grab();
-
-			m_materials[i] = material;
+			m_materials[i] = materials->GetMaterial("error");
 		}
 	}
 
@@ -722,7 +708,7 @@ void CEngineStudioEGF::LoadMaterials()
 	const int numUsedMaterials = maxMaterialIdx + 1;
 
 	m_hwdata->numUsedMaterials = numUsedMaterials;
-	m_hwdata->numMaterialGroups = numUsedMaterials ? m_numMaterials / numUsedMaterials : 0;
+	m_hwdata->numMaterialGroups = numUsedMaterials ? m_materials.numElem() / numUsedMaterials : 0;
 
 	if (bError)
 	{
@@ -733,7 +719,7 @@ void CEngineStudioEGF::LoadMaterials()
 	}
 }
 
-IMaterial* CEngineStudioEGF::GetMaterial(int materialIdx, int materialGroupIdx) const
+IMaterialPtr CEngineStudioEGF::GetMaterial(int materialIdx, int materialGroupIdx) const
 {
 	if (materialIdx == -1)
 		return materials->GetDefaultMaterial();
@@ -795,21 +781,6 @@ void CEngineStudioEGF::LoadSetupBones()
 		else
 			bone->absTrans = bone->localTrans;
 	}
-}
-
-void CEngineStudioEGF::DrawFull() const
-{
-	if (m_numMaterials > 0)
-		materials->BindMaterial(m_materials[0]);
-
-	g_pShaderAPI->SetVertexFormat(g_studioModelCache->GetEGFVertexFormat());
-
-	g_pShaderAPI->SetVertexBuffer(m_pVB, 0);
-	g_pShaderAPI->SetIndexBuffer(m_pIB);
-
-	materials->Apply();
-
-	g_pShaderAPI->DrawIndexedPrimitives(PRIM_TRIANGLES, 0, m_numIndices, 0, m_numVertices);
 }
 
 int CEngineStudioEGF::SelectLod(float dist_to_camera) const
