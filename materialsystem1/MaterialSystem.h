@@ -321,10 +321,10 @@ private:
 
 	Matrix4x4						m_matrices[5];				// matrix modes
 
+	IMaterialPtr					m_pDefaultMaterial;
+	IMaterialPtr					m_overdrawMaterial;
 	IMaterialPtr					m_setMaterial;				// currently binded material
 	uint							m_paramOverrideMask;		// parameter setup mask for overrides
-
-	IMaterialPtr					m_overdrawMaterial;
 
 	ITexture*						m_currentEnvmapTexture;
 
@@ -334,7 +334,7 @@ private:
 	ITexture*						m_whiteTexture;
 	ITexture*						m_luxelTestTexture;
 
-	IMaterialPtr					m_pDefaultMaterial;
+	
 
 	FogInfo_t						m_fogInfo;
 	ColorRGBA						m_ambColor;

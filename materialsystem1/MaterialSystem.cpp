@@ -352,19 +352,21 @@ void CMaterialSystem::Shutdown()
 
 		// shutdown thread first
 		g_threadedMaterialLoader.StopThread(true);
-
-		m_setMaterial = nullptr;
 		
 		ClearRenderStates();
 		m_dynamicMesh.Destroy();
 
+		m_setMaterial = nullptr;
+		m_pDefaultMaterial = nullptr;
+		m_overdrawMaterial = nullptr;
+		SetEnvironmentMapTexture(nullptr);
+
+		g_pShaderAPI->FreeTexture(m_whiteTexture);
+		m_whiteTexture = nullptr;
+		g_pShaderAPI->FreeTexture(m_luxelTestTexture);
+		m_luxelTestTexture = nullptr;
+
 		FreeMaterials();
-
-		if(m_whiteTexture)
-			g_pShaderAPI->FreeTexture(m_whiteTexture);
-
-		if(m_luxelTestTexture)
-			g_pShaderAPI->FreeTexture(m_luxelTestTexture);
 
 		m_shaderOverrideList.clear();
 		m_proxyFactoryList.clear();
