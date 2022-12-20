@@ -33,7 +33,7 @@ void CSoundSource_OpenALCache::InitWav(CSoundSource_WaveCache* wav)
 {
 	alGenBuffers(1, &m_alBuffer);
 
-	m_filename = wav->m_filename;
+	SetFilename(wav->GetFilename());
 
 	m_format = wav->GetFormat();
 	ALenum alFormat;
@@ -65,7 +65,7 @@ void CSoundSource_OpenALCache::InitOgg(CSoundSource_OggCache* ogg)
 {
 	alGenBuffers(1, &m_alBuffer);
 
-	m_filename = ogg->m_filename;
+	SetFilename(ogg->GetFilename());
 
 	m_format = ogg->GetFormat();
 	ALenum alFormat;
@@ -100,11 +100,6 @@ const ISoundSource::Format& CSoundSource_OpenALCache::GetFormat() const
 	return m_format;
 }
 
-const char* CSoundSource_OpenALCache::GetFilename() const 
-{
-	return m_filename.ToCString(); 
-}
-
 int CSoundSource_OpenALCache::GetSampleCount() const 
 { 
 	return 0;
@@ -115,7 +110,7 @@ bool CSoundSource_OpenALCache::IsStreaming() const
 	return false;
 }
 
-bool CSoundSource_OpenALCache::Load(const char* szFilename) 
+bool CSoundSource_OpenALCache::Load() 
 {
 	return false; 
 }

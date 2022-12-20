@@ -49,7 +49,9 @@ CRefPtr<ISoundSource> ISoundSource::CreateSound( const char* szFilename )
 	else
 		MsgError( "Unknown audio format: %s\n", szFilename );
 
-	if(pSource && !pSource->Load( szFilename ))
+	pSource->SetFilename(szFilename);
+
+	if(pSource && !pSource->Load())
 	{
 		MsgError( "Cannot load sound '%s'\n", szFilename );
 		return nullptr;
@@ -63,4 +65,15 @@ void ISoundSource::Ref_DeleteObject()
 	g_audioSystem->OnSampleDeleted(this);
 	this->Unload();
 	delete this;
+}
+
+const char* ISoundSource::GetFilename() const
+{
+	return m_fileName;
+}
+
+void ISoundSource::SetFilename(const char* filename)
+{
+	m_fileName = filename;
+	m_nameHash = StringToHash(filename, true);
 }

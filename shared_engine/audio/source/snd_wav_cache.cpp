@@ -9,10 +9,9 @@
 #include "snd_wav_cache.h"
 #include "utils/riff.h"
 
-bool CSoundSource_WaveCache::Load(const char* szFilename)
+bool CSoundSource_WaveCache::Load()
 {
-	m_filename = szFilename;
-	CRIFF_Parser reader( szFilename );
+	CRIFF_Parser reader(GetFilename());
 
 	while ( reader.GetName( ) )
 	{

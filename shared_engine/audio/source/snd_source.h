@@ -34,17 +34,23 @@ public:
 
 	void					Ref_DeleteObject();
 
+	int						GetNameHash() const { return m_nameHash; }
+	const char*				GetFilename() const;
+	void					SetFilename(const char* filename);
+
 	virtual int             GetSamples(void* out, int samplesToRead, int startOffset, bool loop) const = 0;
 	virtual void*			GetDataPtr(int& dataSize) const = 0;
 
 	virtual const Format&	GetFormat() const = 0;
-	virtual const char*		GetFilename() const = 0;
 	virtual int				GetSampleCount() const = 0;
 
 	virtual int				GetLoopRegions(int* samplePos) const = 0;
 
 	virtual bool			IsStreaming() const = 0;
 private:
-	virtual bool			Load(const char *szFilename) = 0;
-	virtual void			Unload () = 0;
+	virtual bool			Load() = 0;
+	virtual void			Unload() = 0;
+
+	EqString				m_fileName;
+	int						m_nameHash{ 0 };
 };

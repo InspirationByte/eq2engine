@@ -22,7 +22,6 @@ class CSoundSource_Ogg : public ISoundSource
 {
 public:
 	virtual const Format&	GetFormat() const					{ return m_format; }
-	virtual const char*		GetFilename() const					{ return m_filename.ToCString(); }
 	int						GetLoopRegions(int* samplePos) const{ return 0; }
 	virtual int				GetSampleCount() const				{ return m_numSamples; }
 
@@ -31,7 +30,5 @@ protected:
 	virtual void			ParseData(OggVorbis_File* file) = 0;
 
 	Format					m_format;
-	EqString				m_filename;
-
 	int						m_numSamples;
 };

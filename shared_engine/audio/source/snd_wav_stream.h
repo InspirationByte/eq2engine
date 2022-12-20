@@ -14,7 +14,7 @@ public:
 	int				GetSamples(void* out, int samplesToRead, int startOffset, bool loop) const;
 	void*			GetDataPtr(int& dataSize) const { dataSize = 0; return nullptr; }
 
-	bool			Load(const char *szFilename);
+	bool			Load();
 	void			Unload();
 
 	bool			IsStreaming() const { return true; }

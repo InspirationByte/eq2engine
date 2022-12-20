@@ -23,7 +23,6 @@ public:
 	virtual void*			GetDataPtr(int& dataSize) const;
 
 	virtual const Format&	GetFormat() const;
-	virtual const char*		GetFilename() const;
 	virtual int				GetSampleCount() const;
 
 	int						GetLoopRegions(int* samplePos) const { return 0; }
@@ -34,10 +33,9 @@ private:
 	void					InitWav(CSoundSource_WaveCache* wav);
 	void					InitOgg(CSoundSource_OggCache* ogg);
 
-	virtual bool			Load(const char* szFilename);
+	virtual bool			Load();
 	virtual void			Unload();
 
 	uint					m_alBuffer;
 	Format					m_format;
-	EqString				m_filename;
 };

@@ -11,10 +11,10 @@
 #include "core/IFileSystem.h"
 #include "snd_ogg_cache.h"
 
-bool CSoundSource_OggCache::Load(const char* filename)
+bool CSoundSource_OggCache::Load()
 {
 	// Open for binary reading
-	IFile* pFile = g_fileSystem->Open(filename, "rb");
+	IFile* pFile = g_fileSystem->Open(GetFilename(), "rb");
 	if(!pFile)
 		return false;
 
@@ -32,7 +32,7 @@ bool CSoundSource_OggCache::Load(const char* filename)
 	if(ovResult < 0)
 	{
 		g_fileSystem->Close(pFile);
-		MsgError("Failed to load sound '%s', because it is not a valid Ogg file (%d)\n", filename, ovResult);
+		MsgError("Failed to load sound '%s', because it is not a valid Ogg file (%d)\n", GetFilename(), ovResult);
 		return false;
 	}
 

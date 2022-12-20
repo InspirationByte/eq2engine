@@ -618,20 +618,16 @@ CRefPtr<ISoundSource> CEqAudioSystemAL::GetSample(const char* filename)
 
 void CEqAudioSystemAL::OnSampleDeleted(ISoundSource* sampleSource)
 {
+	if (!sampleSource)
+		return;
+
 	// stop voices using that sample
 	SuspendSourcesWithSample(sampleSource);
 
-	// free
+	// remove from list
 	{
 		CScopedMutex m(s_audioSysMutex);
-		for (auto it = m_samples.begin(); it != m_samples.end(); ++it)
-		{
-			if (*it != sampleSource)
-				continue;
-
-			m_samples.remove(it);
-			break;
-		}
+		m_samples.remove(sampleSource->GetNameHash());
 	}
 }
 

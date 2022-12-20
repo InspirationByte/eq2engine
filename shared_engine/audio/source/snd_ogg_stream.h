@@ -16,7 +16,7 @@ public:
 	virtual int     GetSamples(void* out, int samplesToRead, int startOffset, bool loop) const;
 	void*			GetDataPtr(int& dataSize) const { dataSize = 0; return nullptr; }
 
-	virtual bool	Load(const char* filename);
+	virtual bool	Load();
 	virtual void	Unload();
 
 	bool			IsStreaming() const { return true; }

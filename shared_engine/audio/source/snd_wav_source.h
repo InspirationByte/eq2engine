@@ -18,7 +18,6 @@ public:
 	CSoundSource_Wave();
 
 	virtual const Format&	GetFormat() const				{ return m_format; }
-	virtual const char*		GetFilename() const				{ return m_filename.ToCString(); }
 	virtual int				GetSampleCount() const			{ return m_numSamples; }
 	int						GetLoopRegions(int* samplePos) const;
 
@@ -39,9 +38,7 @@ protected:
 		uint end;
 	};
 
-	Format					m_format;
-	EqString				m_filename;
-
-	int						m_numSamples{ 0 };
 	FixedArray<LoopRegion, SOUND_SOURCE_MAX_LOOP_REGIONS> m_loopRegions;
+	Format					m_format;
+	int						m_numSamples{ 0 };
 };

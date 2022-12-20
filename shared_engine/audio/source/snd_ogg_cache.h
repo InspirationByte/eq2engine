@@ -15,7 +15,7 @@ public:
 	int				GetSamples(void* out, int samplesToRead, int startOffset, bool loop) const;
 	void*			GetDataPtr(int& dataSize) const { dataSize = m_cacheSize; return m_dataCache; }
 
-	bool			Load(const char* filename);
+	bool			Load();
 	void			Unload();
 
 	bool			IsStreaming() const { return false; }
