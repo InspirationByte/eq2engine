@@ -53,6 +53,9 @@ public:
 
 	virtual void		Draw( int renderFlags, IEqModel* model ) = 0;
 	virtual bool		HasInstances() const = 0;
+
+	virtual void		Upload() = 0;
+	virtual void		Invalidate() = 0;
 };
 
 
