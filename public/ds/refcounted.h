@@ -104,6 +104,10 @@ public:
 	void				operator=(CRefPtr<TYPE>&& refptr);
 	void				operator=( const CRefPtr<TYPE>& refptr );
 
+	friend bool			operator==(const CRefPtr<TYPE>& a, const CRefPtr<TYPE>& b) { return a.Ptr() == b.Ptr(); }
+	friend bool			operator==(const CRefPtr<TYPE>& a, std::nullptr_t) { return a.Ptr() == nullptr; }
+	friend bool			operator==(const CRefPtr<TYPE>& a, PTR_TYPE b) { return a.Ptr() == b; }
+
 private:
 	PTR_TYPE			m_ptrObj{ nullptr };
 };
@@ -159,8 +163,8 @@ inline void CRefPtr<TYPE>::Assign(PTR_TYPE obj)
 
 	// del old ref
 	REF_TYPE* oldObj = (REF_TYPE*)m_ptrObj;
-	
-	if(m_ptrObj = obj)
+	m_ptrObj = obj;
+	if(obj)
 		((REF_TYPE*)obj)->Ref_Grab();
 
 	if(oldObj != nullptr)
@@ -189,8 +193,14 @@ inline void CRefPtr<TYPE>::operator=(std::nullptr_t)
 template< class TYPE >
 inline void CRefPtr<TYPE>::operator=(CRefPtr<TYPE>&& refptr)
 {
+	using REF_TYPE = RefCountedObject<TYPE, typename TYPE::REF_POLICY>;
+	REF_TYPE* oldObj = (REF_TYPE*)m_ptrObj;
+
 	m_ptrObj = refptr.m_ptrObj;
 	refptr.m_ptrObj = nullptr;
+
+	if (oldObj)
+		oldObj->Ref_Drop();
 }
 
 template< class TYPE >
