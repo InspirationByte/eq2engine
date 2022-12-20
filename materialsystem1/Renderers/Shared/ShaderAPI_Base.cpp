@@ -31,9 +31,8 @@ CEqMutex g_sapi_VBMutex;
 CEqMutex g_sapi_IBMutex;
 CEqMutex g_sapi_Mutex;
 
-static ConVar r_reportTextureLoading("r_reportTextureLoading", "0", "Echo textrue loading");
 static ConVar r_noMip("r_noMip", "0", nullptr, CV_CHEAT);
-static ConVar r_skipTextures("r_skipTextures", "0", nullptr, CV_CHEAT);
+
 HOOK_TO_CVAR(r_allowSourceTextures);
 
 DECLARE_CMD(r_info, "Prints renderer info", 0)
@@ -367,243 +366,15 @@ ITexture* ShaderAPI_Base::FindTexture(const char* pszName)
 	return nullptr;
 }
 
-
-SamplerStateParam_t ShaderAPI_Base::MakeSamplerState(ER_TextureFilterMode textureFilterType,ER_TextureAddressMode addressS, ER_TextureAddressMode addressT, ER_TextureAddressMode addressR)
-{
-	/*
-	for(int i = 0; i < m_SamplerStates.numElem();i++)
-	{
-		if( m_SamplerStates[i]->wrapS == addressS &&
-			m_SamplerStates[i]->wrapT == addressT &&
-			m_SamplerStates[i]->wrapR == addressR &&
-			m_SamplerStates[i]->minFilter == textureFilterType)
-			return m_SamplerStates[i];
-	}
-	*/
-
-	// If nothing found, create new one
-	SamplerStateParam_t newParam;
-
-	// Setup filtering mode
-	newParam.minFilter = textureFilterType;
-	newParam.magFilter = (textureFilterType == TEXFILTER_NEAREST)? TEXFILTER_NEAREST : TEXFILTER_LINEAR;
-
-	// Setup clamping
-	newParam.wrapS = addressS;
-	newParam.wrapT = addressT;
-	newParam.wrapR = addressR;
-	newParam.compareFunc = COMP_LESS;
-
-	newParam.lod = 0.0f;
-
-	HOOK_TO_CVAR(r_anisotropic);
-
-	newParam.aniso = (int)clamp(m_caps.maxTextureAnisotropicLevel,0, r_anisotropic->GetInt());
-
-	return newParam;
-}
-
-// Find Rasterizer State with adding new one (if not exist)
-RasterizerStateParams_t ShaderAPI_Base::MakeRasterizerState(ER_CullMode nCullMode, ER_FillMode nFillMode, bool bMultiSample, bool bScissor)
-{
-	/*
-	for(int i = 0; i < m_RasterizerStates.numElem();i++)
-	{
-		if( m_RasterizerStates[i]->cullMode == nCullMode &&
-			m_RasterizerStates[i]->fillMode == nFillMode &&
-			m_RasterizerStates[i]->multiSample == bMultiSample &&
-			m_RasterizerStates[i]->scissor == bScissor)
-			return m_RasterizerStates[i];
-	}
-	*/
-
-	// If nothing found, create new one
-	RasterizerStateParams_t newParam;
-	newParam.cullMode = nCullMode;
-	newParam.fillMode = nFillMode;
-	newParam.multiSample = bMultiSample;
-	newParam.scissor = bScissor;
-	newParam.depthBias = 1.0f;
-	newParam.slopeDepthBias = 0.0f;
-
-	return newParam;
-}
-
-// Find Depth State with adding new one (if not exist)
-DepthStencilStateParams_t ShaderAPI_Base::MakeDepthState(bool bDoDepthTest, bool bDoDepthWrite, ER_CompareFunc depthCompFunc)
-{
-	/*
-	for(int i = 0; i < m_DepthStates.numElem();i++)
-	{
-		if( m_DepthStates[i]->depthFunc == depthCompFunc &&
-			m_DepthStates[i]->depthTest == bDoDepthTest &&
-			m_DepthStates[i]->depthWrite == bDoDepthWrite)
-			return m_DepthStates[i];
-	}
-	*/
-
-	// If nothing found, create new one
-	DepthStencilStateParams_t newParam;
-	newParam.depthFunc = depthCompFunc;
-	newParam.depthTest = bDoDepthTest;
-	newParam.depthWrite = bDoDepthWrite;
-
-	return newParam;
-}
-
-
 //-------------------------------------------------------------
 // Textures
 //-------------------------------------------------------------
-
-void ShaderAPI_Base::GetImagesForTextureName(Array<EqString>& textureNames, const char* pszFileName)
-{
-	EqString texturePath(pszFileName);
-	texturePath.Path_FixSlashes();
-
-	// build valid texture paths
-	EqString texturePathExt = texturePath + EqString(TEXTURE_DEFAULT_EXTENSION);
-	EqString textureAnimPathExt = texturePath + EqString(TEXTURE_ANIMATED_EXTENSION);
-
-	texturePathExt.Path_FixSlashes();
-	textureAnimPathExt.Path_FixSlashes();
-
-	// has pattern for animated texture?
-	int animCountStart = texturePath.Find("[");
-	int animCountEnd = -1;
-
-	if (animCountStart != -1 &&
-		(animCountEnd = texturePath.Find("]", false, animCountStart)) != -1)
-	{
-		// trying to load animated texture
-		EqString textureWildcard = texturePath.Left(animCountStart);
-		EqString textureFrameCount = texturePath.Mid(animCountStart + 1, (animCountEnd - animCountStart) - 1);
-		int numFrames = atoi(textureFrameCount.ToCString());
-
-		if (r_reportTextureLoading.GetBool())
-			Msg("Loading animated %d animated textures (%s)\n", numFrames, textureWildcard.ToCString());
-
-		for (int i = 0; i < numFrames; i++)
-		{
-			EqString textureNameFrame = EqString::Format(textureWildcard.ToCString(), i);
-			textureNames.append(textureNameFrame);
-		}
-	}
-	else
-	{
-		// try loading older Animated Texture Index file
-		EqString textureAnimPathExt = texturePath + EqString(TEXTURE_ANIMATED_EXTENSION);
-		textureAnimPathExt.Path_FixSlashes();
-
-		char* animScriptBuffer = g_fileSystem->GetFileBuffer(textureAnimPathExt);
-		if (animScriptBuffer)
-		{
-			Array<EqString> frameFilenames(PP_SL);
-			xstrsplit(animScriptBuffer, "\n", frameFilenames);
-			for (int i = 0; i < frameFilenames.numElem(); i++)
-			{
-				// delete carriage return character if any
-				EqString animFrameFilename = frameFilenames[i].TrimChar('\r', true, true);
-				textureNames.append(animFrameFilename);
-			}
-
-			PPFree(animScriptBuffer);
-		}
-		else
-		{
-			textureNames.append(texturePath);
-		}
-	}
-}
-
-// Load texture from file (DDS or TGA only)
-ITexture* ShaderAPI_Base::LoadTexture( const char* pszFileName, 
-	ER_TextureFilterMode textureFilterType, ER_TextureAddressMode textureAddress/* = TEXADDRESS_WRAP*/, 
-	int nFlags/* = 0*/ )
-{
-	PROF_EVENT("ShaderAPI Load Texture from file");
-
-	// first search for existing texture
-	ITexture* pFoundTexture = FindTexture(pszFileName);
-	if (pFoundTexture != nullptr)
-		return pFoundTexture;
-
-	// Don't load textures starting with special symbols
-	if (pszFileName[0] == '$')
-		return nullptr;
-
-	if (r_skipTextures.GetBool())
-	{
-		// Generate the error
-		if (!pFoundTexture && !(nFlags & TEXFLAG_NULL_ON_ERROR))
-			pFoundTexture = m_pErrorTexture;
-
-		return pFoundTexture;
-	}
-
-	Array<EqString> textureNames(PP_SL);
-	GetImagesForTextureName(textureNames, pszFileName);
-
-	EqString texNameStr(pszFileName);
-	texNameStr.Path_FixSlashes();
-
-	Array<CImage*> pImages(PP_SL);
-	const EqString& textureAuxPath = r_allowSourceTextures->GetBool() ? m_params.textureSRCPath : m_params.texturePath;
-
-	// load frames
-	for (int i = 0; i < textureNames.numElem(); i++)
-	{
-		CImage* img = PPNew CImage();
-
-		EqString texturePathExt;
-		CombinePath(texturePathExt, 2, m_params.texturePath.ToCString(), textureNames[i].ToCString());
-		bool stateLoad = img->LoadDDS(texturePathExt + TEXTURE_DEFAULT_EXTENSION, 0);
-
-		if (!stateLoad)
-		{
-			CombinePath(texturePathExt, 2, textureAuxPath.ToCString(), textureNames[i].ToCString());
-			stateLoad = img->LoadTGA(texturePathExt + TEXTURE_SECONDARY_EXTENSION);
-		}
-
-		img->SetName(texNameStr.ToCString());
-
-		if (stateLoad)
-		{
-			pImages.append(img);
-
-			if (r_reportTextureLoading.GetBool())
-				MsgInfo("Texture loaded: %s\n", texturePathExt.ToCString());
-		}
-		else
-		{
-			MsgError("Can't open texture \"%s\"\n", texturePathExt.ToCString());
-			delete img;
-		}
-	}
-
-	// create sampler state
-	SamplerStateParam_t texSamplerParams = MakeSamplerState(textureFilterType, textureAddress, textureAddress, textureAddress);
-
-	// Now create the texture
-	pFoundTexture = CreateTexture(pImages, texSamplerParams, nFlags);
-
-	// free images
-	for(int i = 0;i < pImages.numElem();i++)
-		delete pImages[i];
-
-	// Generate the error
-	if(!pFoundTexture && !(nFlags & TEXFLAG_NULL_ON_ERROR))
-		pFoundTexture = m_pErrorTexture;
-
-	return pFoundTexture;
-}
 
 ITexture* ShaderAPI_Base::CreateTexture(const ArrayCRef<CImage*>& pImages, const SamplerStateParam_t& sampler, int nFlags)
 {
 	if(!pImages.numElem())
 		return nullptr;
 
-	
 	if(r_noMip.GetBool())
 	{
 		for(int i = 0; i < pImages.numElem(); i++)
@@ -615,7 +386,6 @@ ITexture* ShaderAPI_Base::CreateTexture(const ArrayCRef<CImage*>& pImages, const
 	CreateTextureInternal(&pTexture, pImages, sampler, nFlags);
 
 	// the created texture is automatically added to list
-
 	return pTexture;
 }
 
@@ -658,59 +428,13 @@ ITexture* ShaderAPI_Base::CreateProceduralTexture(const char* pszName,
 	FixedArray<CImage*, 1> imgs;
 	imgs.append(&genTex);
 
-	SamplerStateParam_t sampler = g_pShaderAPI->MakeSamplerState(texFilter,textureAddress,textureAddress,textureAddress);
+	SamplerStateParam_t sampler;
+	SamplerStateParams_Make(sampler, m_caps, texFilter, textureAddress, textureAddress, textureAddress);
 	return g_pShaderAPI->CreateTexture(imgs, sampler, nFlags);
 }
 
 bool ShaderAPI_Base::RestoreTextureInternal(ITexture* pTexture)
 {
-	CTexture* texture = static_cast<CTexture*>(pTexture);
-
-	Array<EqString> textureNames(PP_SL);
-	GetImagesForTextureName(textureNames, texture->GetName());
-
-	Array<CImage*> pImages(PP_SL);
-
-	const EqString& textureAuxPath = r_allowSourceTextures->GetBool() ? m_params.textureSRCPath : m_params.texturePath;
-
-	// load frames
-	for (int i = 0; i < textureNames.numElem(); i++)
-	{
-		CImage* img = PPNew CImage();
-
-		EqString texturePathExt;
-		CombinePath(texturePathExt, 2, m_params.texturePath.ToCString(), textureNames[i].ToCString());
-		bool stateLoad = img->LoadDDS(texturePathExt + TEXTURE_DEFAULT_EXTENSION, 0);
-
-		if (!stateLoad)
-		{
-			CombinePath(texturePathExt, 2, textureAuxPath.ToCString(), textureNames[i].ToCString());
-			stateLoad = img->LoadTGA(texturePathExt + TEXTURE_SECONDARY_EXTENSION);
-		}
-
-		if (stateLoad)
-		{
-			pImages.append(img);
-
-			if (r_reportTextureLoading.GetBool())
-				MsgInfo("Texture loaded: %s\n", texturePathExt.ToCString());
-		}
-		else
-		{
-			MsgError("Can't open texture \"%s\"\n", texturePathExt.ToCString());
-			delete img;
-		}
-	}
-
-	CreateTextureInternal(&pTexture, pImages, texture->GetSamplerState(), texture->GetFlags());
-
-	for(int i = 0;i < pImages.numElem();i++)
-		delete pImages[i];
-
-	// Generate the error
-	if(!pTexture)
-		return false;
-
 	return true;
 }
 
@@ -720,7 +444,8 @@ ITexture* ShaderAPI_Base::GenerateErrorTexture(int nFlags/* = 0*/)
 	if(nFlags & TEXFLAG_NULL_ON_ERROR)
 		return nullptr;
 
-	SamplerStateParam_t texSamplerParams = MakeSamplerState(TEXFILTER_TRILINEAR_ANISO,TEXADDRESS_WRAP,TEXADDRESS_WRAP,TEXADDRESS_WRAP);
+	SamplerStateParam_t texSamplerParams;
+	SamplerStateParams_Make(texSamplerParams, m_caps, TEXFILTER_TRILINEAR_ANISO, TEXADDRESS_WRAP, TEXADDRESS_WRAP, TEXADDRESS_WRAP);
 
 	Vector4D color;
 	Vector4D color2;

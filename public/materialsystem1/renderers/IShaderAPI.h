@@ -52,6 +52,22 @@ struct shaderAPIParams_t
 	bool			verticalSyncEnabled{ false };		// vertical syncronization
 };
 
+static void SamplerStateParams_Make(SamplerStateParam_t& samplerParams, const ShaderAPICaps_t& caps, ER_TextureFilterMode textureFilterType, ER_TextureAddressMode addressS, ER_TextureAddressMode addressT, ER_TextureAddressMode addressR)
+{
+	// Setup filtering mode
+	samplerParams.minFilter = textureFilterType;
+	samplerParams.magFilter = (textureFilterType == TEXFILTER_NEAREST) ? TEXFILTER_NEAREST : TEXFILTER_LINEAR;
+
+	// Setup clamping
+	samplerParams.wrapS = addressS;
+	samplerParams.wrapT = addressT;
+	samplerParams.wrapR = addressR;
+	samplerParams.compareFunc = COMP_LESS;
+
+	samplerParams.lod = 0.0f;
+	samplerParams.aniso = caps.maxTextureAnisotropicLevel;
+}
+
 class CImage;
 
 //
@@ -64,19 +80,22 @@ public:
 
 	// initializes shader api.
 	// Don't use this, this already called by materials->Init()
-	virtual void				Init( const shaderAPIParams_t &params ) = 0;
+	virtual void						Init( const shaderAPIParams_t &params ) = 0;
 
 	// shutdowns shader api. Don't use this, this already called by materials->Shutdown()
-	virtual void				Shutdown() = 0;
+	virtual void						Shutdown() = 0;
+
+	// returns the parameters
+	virtual const shaderAPIParams_t&	GetParams() const = 0;
 
 	// returns current screen format. Useful for screen render targets, for 16-bit screen
-	virtual ETextureFormat		GetScreenFormat() = 0;
+	virtual ETextureFormat				GetScreenFormat() = 0;
 
 	// prints shader api information to console output
-	virtual void				PrintAPIInfo() = 0;
+	virtual void						PrintAPIInfo() = 0;
 
 	// returns device activation state
-	virtual bool				IsDeviceActive() = 0;
+	virtual bool						IsDeviceActive() = 0;
 
 //-------------------------------------------------------------
 // Rendering's applies
@@ -196,13 +215,6 @@ public:
 
 	// BEGIN CUT HERE
 
-	// loads texture
-	virtual ITexture*			LoadTexture(	const char* pszFileName,
-												ER_TextureFilterMode textureFilterType,
-												ER_TextureAddressMode textureAddress = TEXADDRESS_WRAP,
-												int nFlags = 0
-												) = 0;
-
 	// creates procedural (lockable) texture
 	virtual ITexture*			CreateProceduralTexture(const char* pszName,
 														ETextureFormat nFormat,
@@ -294,9 +306,6 @@ public:
 //-------------------------------------------------------------
 // State manipulation
 //-------------------------------------------------------------
-
-	// Find sampler state with adding new one (if not exist)
-	virtual SamplerStateParam_t	MakeSamplerState(ER_TextureFilterMode textureFilterType,ER_TextureAddressMode addressS, ER_TextureAddressMode addressT, ER_TextureAddressMode addressR) = 0;
 
 	// creates blending state
 	virtual IRenderState*		CreateBlendingState( const BlendStateParam_t &blendDesc ) = 0;
@@ -464,6 +473,7 @@ public:
 	virtual void				DrawNonIndexedPrimitives(ER_PrimitiveType nType, int nFirstVertex, int nVertices) = 0;
 
 };
+
 
 // it always external, declare new one in your app...
 extern IShaderAPI*				g_pShaderAPI;

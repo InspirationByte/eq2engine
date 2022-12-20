@@ -6,7 +6,7 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #pragma once
-#include "renderers/IShaderProgram.h"
+#include "../Shared/ShaderProgram.h"
 
 #define MAX_CONSTANT_NAMELEN 64
 
@@ -31,7 +31,7 @@ struct ID3DXConstantTable;
 struct IDirect3DVertexShader9;
 struct IDirect3DPixelShader9;
 
-class CD3D9ShaderProgram : public IShaderProgram
+class CD3D9ShaderProgram : public CShaderProgram
 {
 public:
 	friend class ShaderAPID3DX9;
@@ -39,14 +39,7 @@ public:
 	CD3D9ShaderProgram() = default;
 	~CD3D9ShaderProgram();
 
-	const char*						GetName() const { return m_szName.ToCString(); }
-	void							SetName(const char* pszName);
-
 protected:
-	EqString						m_szName;
-	int								m_nameHash{ 0 };
-	uint32							m_cacheChecksum{ 0 };
-
 	IDirect3DVertexShader9*			m_pVertexShader{ nullptr };
 	IDirect3DPixelShader9*			m_pPixelShader{ nullptr };
 	ID3DXConstantTable*				m_pVSConstants{ nullptr };

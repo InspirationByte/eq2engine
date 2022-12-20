@@ -23,6 +23,8 @@ public:
 	virtual void						Init( const shaderAPIParams_t &params );
 	virtual void						Shutdown();
 
+	const shaderAPIParams_t&			GetParams() const { return m_params; }
+
 	virtual void						SetViewport(int x, int y, int w, int h);
 	virtual void						GetViewport(int &x, int &y, int &w, int &h);
 
@@ -75,9 +77,6 @@ public:
 //-------------------------------------------------------------
 // Textures
 //-------------------------------------------------------------
-
-	// Load texture from file (DDS or TGA only)
-	ITexture*							LoadTexture(const char* pszFileName, ER_TextureFilterMode textureFilterType, ER_TextureAddressMode textureAddress = TEXADDRESS_WRAP, int nFlags = 0);
 
 	// creates texture from image array, used in LoadTexture, common use only
 	ITexture*							CreateTexture(const ArrayCRef<CImage*>& pImages, const SamplerStateParam_t& sampler, int nFlags = 0);
@@ -166,24 +165,9 @@ public:
 	void								SetShaderConstantArrayVector4D(const char *pszName, const Vector4D *constant, int count);
 	void								SetShaderConstantArrayMatrix4(const char *pszName, const Matrix4x4 *constant, int count);
 
-//-------------------------------------------------------------
-// Other operations (Now it's unused)
-//-------------------------------------------------------------
-
-	// Find sampler state with adding new one (if not exist)
-	SamplerStateParam_t					MakeSamplerState(ER_TextureFilterMode textureFilterType,ER_TextureAddressMode addressS, ER_TextureAddressMode addressT, ER_TextureAddressMode addressR);
-
-	// Find Rasterizer State with adding new one (if not exist)
-	RasterizerStateParams_t				MakeRasterizerState(ER_CullMode nCullMode, ER_FillMode nFillMode = FILL_SOLID, bool bMultiSample = true, bool bScissor = false);
-
-	// Find Depth State with adding new one (if not exist)
-	DepthStencilStateParams_t			MakeDepthState(bool bDoDepthTest, bool bDoDepthWrite, ER_CompareFunc depthCompFunc = COMP_LEQUAL);
-
 protected:
 
-	void								GetImagesForTextureName(Array<EqString>& textureNames, const char* pszFileName);
-	
-	bool								RestoreTextureInternal(ITexture* pTexture);
+	virtual bool						RestoreTextureInternal(ITexture* pTexture);
 
 	virtual void						CreateTextureInternal(ITexture** pTex, const ArrayCRef<CImage*>& pImages, const SamplerStateParam_t& sSamplingParams,int nFlags = 0) = 0;
 

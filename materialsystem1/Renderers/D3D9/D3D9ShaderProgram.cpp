@@ -23,9 +23,3 @@ CD3D9ShaderProgram::~CD3D9ShaderProgram()
 	if(m_pVSConstants)
 		m_pVSConstants->Release();
 }
-
-void CD3D9ShaderProgram::SetName(const char* pszName)
-{
-	m_szName = pszName;
-	m_nameHash = StringToHash(pszName);
-}

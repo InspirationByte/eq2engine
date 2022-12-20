@@ -6,7 +6,7 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #pragma once
-#include "renderers/IShaderProgram.h"
+#include "../Shared/ShaderProgram.h"
 
 #define MAX_CONSTANT_NAMELEN 64
 
@@ -35,7 +35,7 @@ struct GLShaderSampler_t
 	uint			uniformLoc{ 0 };
 };
 
-class CGLShaderProgram : public IShaderProgram
+class CGLShaderProgram : public CShaderProgram
 {
 public:
 	friend class			ShaderAPIGL;
@@ -43,17 +43,10 @@ public:
 							CGLShaderProgram();
 							~CGLShaderProgram();
 
-	const char*				GetName() const;
-	int						GetNameHash() const { return m_nameHash; }
-	void					SetName(const char* pszName);
-
 	int						GetConstantsNum() const;
 	int						GetSamplersNum() const;
 
 protected:
-	EqString				m_szName;
-	int						m_nameHash;
-
 	GLhandleARB				m_program;
 
 	Map<int, GLShaderConstant_t>	m_constants{ PP_SL };

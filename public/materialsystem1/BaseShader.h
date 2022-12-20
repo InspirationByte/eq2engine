@@ -72,76 +72,18 @@ class IShaderProgram;
 	IMatVar *mv_##param = GetAssignedMaterial()->FindMaterialVar(#param); \
 	if(mv_##param) variable |= mv_##param->GetInt() ? flag : 0; else variable |= def ? flag : 0;
 
-#define SHADER_PARAM_STRING(param, variable, def)  _SHADER_PARAM_INIT(param, variable, def, GetString, _SHADER_PARAM_OP_EMPTY)
-#define SHADER_PARAM_BOOL(param, variable, def) _SHADER_PARAM_INIT(param, variable, def, GetInt, _SHADER_PARAM_OP_EMPTY)
-#define SHADER_PARAM_BOOL_NEG(param, variable, def)  _SHADER_PARAM_INIT(param, variable, def, GetInt, _SHADER_PARAM_OP_NOT)
-#define SHADER_PARAM_INT(param, variable, def)  _SHADER_PARAM_INIT(param, variable, def, GetInt, _SHADER_PARAM_OP_EMPTY)
-#define SHADER_PARAM_FLOAT(param, variable, def) _SHADER_PARAM_INIT(param, variable, def, GetFloat, _SHADER_PARAM_OP_EMPTY)
-#define SHADER_PARAM_VECTOR2(param, variable, def) _SHADER_PARAM_INIT(param, variable, def, GetVector2, _SHADER_PARAM_OP_EMPTY)
-#define SHADER_PARAM_VECTOR3(param, variable, def) _SHADER_PARAM_INIT(param, variable, def, GetVector3, _SHADER_PARAM_OP_EMPTY)
-#define SHADER_PARAM_VECTOR4(param, variable, def) _SHADER_PARAM_INIT(param, variable, def, GetVector4, _SHADER_PARAM_OP_EMPTY)
+#define SHADER_PARAM_STRING(param, variable, def)		_SHADER_PARAM_INIT(param, variable, def, GetString, _SHADER_PARAM_OP_EMPTY)
+#define SHADER_PARAM_BOOL(param, variable, def)			_SHADER_PARAM_INIT(param, variable, def, GetInt, _SHADER_PARAM_OP_EMPTY)
+#define SHADER_PARAM_BOOL_NEG(param, variable, def)		_SHADER_PARAM_INIT(param, variable, def, GetInt, _SHADER_PARAM_OP_NOT)
+#define SHADER_PARAM_INT(param, variable, def)			_SHADER_PARAM_INIT(param, variable, def, GetInt, _SHADER_PARAM_OP_EMPTY)
+#define SHADER_PARAM_FLOAT(param, variable, def)		_SHADER_PARAM_INIT(param, variable, def, GetFloat, _SHADER_PARAM_OP_EMPTY)
+#define SHADER_PARAM_VECTOR2(param, variable, def)		_SHADER_PARAM_INIT(param, variable, def, GetVector2, _SHADER_PARAM_OP_EMPTY)
+#define SHADER_PARAM_VECTOR3(param, variable, def)		_SHADER_PARAM_INIT(param, variable, def, GetVector3, _SHADER_PARAM_OP_EMPTY)
+#define SHADER_PARAM_VECTOR4(param, variable, def)		_SHADER_PARAM_INIT(param, variable, def, GetVector4, _SHADER_PARAM_OP_EMPTY)
 
-#define SHADER_PARAM_TEXTURE(param, variable) \
-	{\
-	IMatVar *mv_##param;\
-			\
-	if(materials->GetConfiguration().editormode)		\
-	{		\
-		mv_##param = GetAssignedMaterial()->FindMaterialVar(#param "_editor"); \
-		if(!mv_##param)\
-			mv_##param = GetAssignedMaterial()->FindMaterialVar(#param); \
-	}		\
-	else\
-	{	\
-		mv_##param = GetAssignedMaterial()->FindMaterialVar(#param); \
-	}	\
-	\
-	if(mv_##param) {\
-		variable = g_pShaderAPI->LoadTexture(mv_##param->GetString(),m_nTextureFilter,m_nAddressMode);	\
-		if(variable){\
-			AddManagedTexture(mv_##param, &variable);\
-		}else{\
-			variable = g_pShaderAPI->GetErrorTexture();\
-		}\
-	}\
-	else\
-		variable = g_pShaderAPI->GetErrorTexture();\
-	}
-
-#define SHADER_PARAM_RENDERTARGET_FIND(param, variable) \
-	{	\
-	IMatVar *mv_##param = GetAssignedMaterial()->FindMaterialVar(#param); \
-	if(mv_##param) {\
-		variable = g_pShaderAPI->FindTexture(mv_##param->GetString());	\
-		if(variable){\
-			mv_##param->AssignTexture(variable);\
-		}\
-	}\
-	else\
-		variable = g_pShaderAPI->GetErrorTexture();\
-	}
-
-#define SHADER_PARAM_TEXTURE_NOERROR(param, variable) \
-	{	\
-	IMatVar *mv_##param = nullptr;variable = nullptr;\
-			\
-	if(materials->GetConfiguration().editormode)		\
-	{		\
-		mv_##param = GetAssignedMaterial()->FindMaterialVar(#param "_editor"); \
-		if(!mv_##param)\
-			mv_##param = GetAssignedMaterial()->FindMaterialVar(#param); \
-	}		\
-	else\
-	{	\
-		mv_##param = GetAssignedMaterial()->FindMaterialVar(#param); \
-	}	\
-	\
-	if(mv_##param) {\
-		variable = g_pShaderAPI->LoadTexture(mv_##param->GetString(),m_nTextureFilter,m_nAddressMode, TEXFLAG_NULL_ON_ERROR);	\
-		if(variable){ \
-			AddManagedTexture(mv_##param, &variable);\
-	}}\
-	}
+#define SHADER_PARAM_TEXTURE(param, variable)			{ variable = LoadTextureByVar(GetAssignedMaterial(), #param, true); }
+#define SHADER_PARAM_TEXTURE_NOERROR(param, variable)	{ variable = LoadTextureByVar(GetAssignedMaterial(), #param, false); }
+#define SHADER_PARAM_RENDERTARGET_FIND(param, variable) { variable = FindTextureByVar(GetAssignedMaterial(), #param, false); }
 
 #define SHADERDEFINES_DEFAULTS \
 	SHADER_DECLARE_SIMPLE_DEFINITION(materials->GetConfiguration().lowShaderQuality, "LOWQUALITY");\
@@ -250,6 +192,8 @@ protected:
 
 	virtual bool				_ShaderInitRHI() = 0;
 
+	ITexture*					FindTextureByVar(IMaterial* material, const char* paramName, bool errorTextureIfFailed);
+	ITexture*					LoadTextureByVar(IMaterial* material, const char* paramName, bool errorTextureIfFailed);
 	void						AddManagedShader(IShaderProgram** pShader);
 	void						AddManagedTexture(IMatVar* var, ITexture** tex);
 

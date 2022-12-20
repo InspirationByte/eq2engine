@@ -19,7 +19,7 @@
 #include "IMaterialVar.h"
 #include "IMaterialProxy.h"
 
-#define MATSYSTEM_INTERFACE_VERSION			"MaterialSystem_009"
+#define MATSYSTEM_INTERFACE_VERSION			"E1MaterialSystem_022"
 
 struct FogInfo_t;
 struct dlight_t;
@@ -220,7 +220,7 @@ public:
 	virtual IMaterialPtr					GetMaterial(const char* szMaterialName) = 0;
 
 	// checks material for existence
-	virtual bool							IsMaterialExist(const char* szMaterialName) = 0;
+	virtual bool							IsMaterialExist(const char* szMaterialName) const = 0;
 
 	// Creates material system shader
 	virtual IMaterialSystemShader*			CreateShaderInstance(const char* szShaderName) = 0;

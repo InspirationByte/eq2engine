@@ -477,12 +477,17 @@ void ShaderAPID3DX9::Init( const shaderAPIParams_t &params )
 
 	m_pD3DDevice->CreateQuery(D3DQUERYTYPE_EVENT, &m_pEventQuery);
 
+	HOOK_TO_CVAR(r_anisotropic);
+	const int desiredAnisotropicLevel = min(r_anisotropic->GetInt(), m_caps.maxTextureAnisotropicLevel);
+
 	// set the anisotropic level
-	if (m_caps.maxTextureAnisotropicLevel > 1)
+	if (desiredAnisotropicLevel > 1)
 	{
 		for (int i = 0; i < m_caps.maxTextureUnits; i++)
-			m_pD3DDevice->SetSamplerState(i, D3DSAMP_MAXANISOTROPY, m_caps.maxTextureAnisotropicLevel);
+			m_pD3DDevice->SetSamplerState(i, D3DSAMP_MAXANISOTROPY, desiredAnisotropicLevel);
 	}
+
+	m_caps.maxTextureAnisotropicLevel = desiredAnisotropicLevel;
 
 	const char *vsprofile = D3DXGetVertexShaderProfile(m_pD3DDevice);
 	const char *psprofile = D3DXGetPixelShaderProfile(m_pD3DDevice);
@@ -1440,7 +1445,8 @@ ITexture* ShaderAPID3DX9::CreateRenderTarget(int width, int height, ETextureForm
 	pTexture->SetFlags(nFlags | TEXFLAG_RENDERTARGET);
 	pTexture->SetName(EqString::Format("_sapi_rt_%d", m_TextureList.size()).ToCString());
 
-	SamplerStateParam_t texSamplerParams = MakeSamplerState(textureFilterType,textureAddress,textureAddress,textureAddress);
+	SamplerStateParam_t texSamplerParams;
+	SamplerStateParams_Make(texSamplerParams, g_pShaderAPI->GetCaps(), textureFilterType, textureAddress, textureAddress, textureAddress);
 
 	pTexture->SetSamplerState(texSamplerParams);
 
@@ -1475,7 +1481,8 @@ ITexture* ShaderAPID3DX9::CreateNamedRenderTarget(const char* pszName,int width,
 	pTexture->SetFlags(nFlags | TEXFLAG_RENDERTARGET);
 	pTexture->SetName(pszName);
 
-	SamplerStateParam_t texSamplerParams = MakeSamplerState(textureFilterType,textureAddress,textureAddress,textureAddress);
+	SamplerStateParam_t texSamplerParams;
+	SamplerStateParams_Make(texSamplerParams, g_pShaderAPI->GetCaps(), textureFilterType, textureAddress, textureAddress, textureAddress);
 
 	pTexture->SetSamplerState(texSamplerParams);
 
@@ -2808,9 +2815,6 @@ void ShaderAPID3DX9::CreateTextureInternal(ITexture** pTex, const ArrayCRef<CIma
 {
 	if(!pImages.numElem())
 		return;
-
-	// reserve texture slot
-	const int nameHash = StringToHash(pImages[0]->GetName(), true);
 
 	HOOK_TO_CVAR(r_loadmiplevel);
 

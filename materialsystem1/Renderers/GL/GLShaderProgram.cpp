@@ -28,17 +28,6 @@ CGLShaderProgram::~CGLShaderProgram()
 	}
 }
 
-const char* CGLShaderProgram::GetName() const
-{
-	return m_szName.GetData();
-}
-
-void CGLShaderProgram::SetName(const char* pszName)
-{
-	m_szName = pszName;
-	m_nameHash = StringToHash(pszName);
-}
-
 int	CGLShaderProgram::GetConstantsNum() const
 {
 	return m_constants.size();

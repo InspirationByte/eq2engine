@@ -22,9 +22,11 @@
 #include "imaging/PixWriter.h"
 #include "material.h"
 #include "MaterialProxy.h"
+#include "TextureLoader.h"
 #include "Renderers/Shared/IRenderLibrary.h"
 #include "materialsystem1/MeshBuilder.h"
 #include "materialsystem1/IMaterialCallback.h"
+
 
 using namespace Threading;
 
@@ -164,7 +166,8 @@ protected:
 	CEqMutex			m_Mutex;
 };
 
-CEqMatSystemThreadedLoader g_threadedMaterialLoader;
+static CEqMatSystemThreadedLoader s_threadedMaterialLoader;
+static CTextureLoader s_textureLoader;
 
 //---------------------------------------------------------------------------
 
@@ -208,6 +211,7 @@ CMaterialSystem::CMaterialSystem()
 
 	// register when the DLL is connected
 	g_eqCore->RegisterInterface(MATSYSTEM_INTERFACE_VERSION, this);
+	g_eqCore->RegisterInterface(TEXTURELOADER_INTERFACE_VERSION, &s_textureLoader);
 
 }
 
@@ -215,6 +219,7 @@ CMaterialSystem::~CMaterialSystem()
 {
 	// unregister when DLL disconnects
 	g_eqCore->UnregisterInterface(MATSYSTEM_INTERFACE_VERSION);
+	g_eqCore->UnregisterInterface(TEXTURELOADER_INTERFACE_VERSION);
 }
 
 // Initializes material system
@@ -351,7 +356,7 @@ void CMaterialSystem::Shutdown()
 		Msg("MatSystem shutdown...\n");
 
 		// shutdown thread first
-		g_threadedMaterialLoader.StopThread(true);
+		s_threadedMaterialLoader.StopThread(true);
 		
 		ClearRenderStates();
 		m_dynamicMesh.Destroy();
@@ -404,7 +409,8 @@ void CMaterialSystem::CreateWhiteTexture()
 		}
 	}
 
-	SamplerStateParam_t texSamplerParams = g_pShaderAPI->MakeSamplerState(TEXFILTER_TRILINEAR_ANISO,TEXADDRESS_CLAMP,TEXADDRESS_CLAMP,TEXADDRESS_CLAMP);
+	SamplerStateParam_t texSamplerParams;
+	SamplerStateParams_Make(texSamplerParams, g_pShaderAPI->GetCaps(), TEXFILTER_TRILINEAR_ANISO, TEXADDRESS_CLAMP, TEXADDRESS_CLAMP, TEXADDRESS_CLAMP);
 
 	FixedArray<CImage*, 1> images;
 	images.append(img);
@@ -533,7 +539,7 @@ bool CMaterialSystem::LoadShaderLibrary(const char* libname)
 
 //------------------------------------------------------------------------------------------------
 
-bool CMaterialSystem::IsMaterialExist(const char* szMaterialName)
+bool CMaterialSystem::IsMaterialExist(const char* szMaterialName) const
 {
 	EqString mat_path(m_materialsPath + szMaterialName + _Es(".mat"));
 
@@ -874,7 +880,7 @@ void CMaterialSystem::PutMaterialToLoadingQueue(IMaterial* pMaterial)
 
 	if( m_config.threadedloader )
 	{
-		g_threadedMaterialLoader.AddMaterial(pMaterial);
+		s_threadedMaterialLoader.AddMaterial(pMaterial);
 	}
 	else
 	{
@@ -884,7 +890,7 @@ void CMaterialSystem::PutMaterialToLoadingQueue(IMaterial* pMaterial)
 
 int CMaterialSystem::GetLoadingQueue() const
 {
-	return g_threadedMaterialLoader.GetCount();
+	return s_threadedMaterialLoader.GetCount();
 }
 
 void CMaterialSystem::SetShaderParameterOverriden(int param, bool set)
@@ -991,8 +997,8 @@ IMaterialPtr CMaterialSystem::GetBoundMaterial()
 // waits for material loader thread is finished
 void CMaterialSystem::Wait()
 {
-	if (m_config.threadedloader && g_threadedMaterialLoader.IsRunning())
-		g_threadedMaterialLoader.WaitForThread();
+	if (m_config.threadedloader && s_threadedMaterialLoader.IsRunning())
+		s_threadedMaterialLoader.WaitForThread();
 }
 
 // transform operations
@@ -1079,8 +1085,8 @@ bool CMaterialSystem::BeginFrame()
 		}
 	}
 
-	if(g_threadedMaterialLoader.GetCount())
-		g_threadedMaterialLoader.SignalWork();
+	if(s_threadedMaterialLoader.GetCount())
+		s_threadedMaterialLoader.SignalWork();
 
 	m_renderLibrary->BeginFrame();
 

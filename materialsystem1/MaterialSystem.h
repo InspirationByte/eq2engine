@@ -78,7 +78,7 @@ public:
 	IMaterialPtr					GetMaterial(const char* szMaterialName);
 
 	// checks material for existence
-	bool							IsMaterialExist(const char* szMaterialName);
+	bool							IsMaterialExist(const char* szMaterialName) const;
 
 	// Creates material system shader
 	IMaterialSystemShader*			CreateShaderInstance(const char* szShaderName);

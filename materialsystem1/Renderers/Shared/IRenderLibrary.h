@@ -12,7 +12,7 @@ class IEqSwapChain;
 class IShaderAPI;
 class CImage;
 
-#define RENDERER_INTERFACE_VERSION	"EqRenderer_012"
+#define RENDERER_INTERFACE_VERSION	"E1Renderer_022"
 
 class IRenderLibrary : public IEqCoreModule
 {

@@ -8,6 +8,7 @@
 #include "core/core_common.h"
 #include "IMaterialSystem.h"
 #include "BaseShader.h"
+#include "materialsystem1/ITextureLoader.h"
 
 struct FilterTypeString_s
 {
@@ -230,6 +231,53 @@ void CBaseShader::SetupParameter(uint mask, ShaderDefaultParams_e type)
 	// call it from this
 	if(mask & (1 << (uint)type))
 		(this->*m_param_functors[type]) ();
+}
+
+ITexture* CBaseShader::FindTextureByVar(IMaterial* material, const char* paramName, bool errorTextureIfFailed)
+{
+	ITexture* texture = nullptr;
+	IMatVar* mv = GetAssignedMaterial()->FindMaterialVar(paramName);
+	if(mv) 
+	{
+		texture = g_pShaderAPI->FindTexture(mv->GetString());
+
+		if(texture)
+			mv->AssignTexture(texture);
+	}
+	else if(errorTextureIfFailed)
+		texture = g_pShaderAPI->GetErrorTexture();
+
+	return texture;
+}
+
+ITexture* CBaseShader::LoadTextureByVar(IMaterial* material, const char* paramName, bool errorTextureIfFailed)
+{	
+	IMatVar* mv = nullptr;
+	if(materials->GetConfiguration().editormode)		
+	{		
+		mv = material->FindMaterialVar(EqString::Format("%s_editor", paramName));
+		if(!mv)
+			mv = material->FindMaterialVar(paramName);
+	}		
+	else
+		mv = material->FindMaterialVar(paramName);
+	
+	ITexture* texture = nullptr;
+	if(mv) 
+	{
+		SamplerStateParam_t samplerParams;
+		SamplerStateParams_Make(samplerParams, g_pShaderAPI->GetCaps(), m_nTextureFilter, m_nAddressMode, m_nAddressMode, m_nAddressMode);
+
+		const int flags = errorTextureIfFailed ? 0 : TEXFLAG_NULL_ON_ERROR;
+		texture = g_texLoader->LoadTextureFromFileSync(mv->GetString(), samplerParams, flags);
+		if(texture)
+			AddManagedTexture(mv, &texture);
+	}
+
+	if(!texture && errorTextureIfFailed)
+		texture = g_pShaderAPI->GetErrorTexture();
+
+	return texture;
 }
 
 void CBaseShader::ParamSetup_CurrentAsBaseTexture()

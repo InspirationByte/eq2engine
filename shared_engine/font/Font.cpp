@@ -19,6 +19,7 @@ TODO:
 
 #include "materialsystem1/IMaterialSystem.h"
 #include "materialsystem1/MeshBuilder.h"
+#include "materialsystem1/ITextureLoader.h"
 
 #define FONT_DEFAULT_PATH "resources/fonts/"
 
@@ -616,7 +617,12 @@ bool CFont::LoadFont( const char* filenamePrefix )
 			bool filter_font = KV_GetValueBool( fontSec->FindSection("filter") ) || m_flags.sdf;
 
 			m_spacing = 0.0f;
-			m_fontTexture = g_pShaderAPI->LoadTexture(KV_GetValueString(fontSec->FindSection("texture")), filter_font ? TEXFILTER_LINEAR : TEXFILTER_NEAREST,TEXADDRESS_WRAP, TEXFLAG_NOQUALITYLOD);
+			{
+				SamplerStateParam_t samplerParams;
+				SamplerStateParams_Make(samplerParams, g_pShaderAPI->GetCaps(), filter_font ? TEXFILTER_LINEAR : TEXFILTER_NEAREST, TEXADDRESS_WRAP, TEXADDRESS_WRAP, TEXADDRESS_WRAP);
+
+				m_fontTexture = g_texLoader->LoadTextureFromFileSync(KV_GetValueString(fontSec->FindSection("texture")), samplerParams, TEXFLAG_NOQUALITYLOD);
+			}
 
 			if(m_flags.sdf)
 				m_scale = KV_GetVector2D( fontSec->FindSection("scale") );
@@ -695,7 +701,12 @@ bool CFont::LoadFont( const char* filenamePrefix )
 
 				float interval = KV_GetValueFloat(pFontSizeSection->FindSection("interval"), 0, 0.75);
 
-				m_fontTexture = g_pShaderAPI->LoadTexture(texname.GetData(),filter_font ? TEXFILTER_LINEAR : TEXFILTER_NEAREST,TEXADDRESS_WRAP, TEXFLAG_NOQUALITYLOD);
+				{
+					SamplerStateParam_t samplerParams;
+					SamplerStateParams_Make(samplerParams, g_pShaderAPI->GetCaps(), filter_font ? TEXFILTER_LINEAR : TEXFILTER_NEAREST, TEXADDRESS_WRAP, TEXADDRESS_WRAP, TEXADDRESS_WRAP);
+
+					m_fontTexture = g_texLoader->LoadTextureFromFileSync(texname, samplerParams, TEXFLAG_NOQUALITYLOD);
+				}
 
 				if(m_fontTexture == NULL)
 				{

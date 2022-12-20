@@ -30,6 +30,7 @@ project "renderUtilLib"
 	}
     files {
 		Folders.shared_engine.. "render/**.cpp",
+		Folders.shared_engine.. "render/**.h",
 		Folders.public.. "render/**.h"
 	}
     includedirs {

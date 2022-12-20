@@ -251,6 +251,10 @@ void ShaderAPIGL::Init( const shaderAPIParams_t &params)
 	// init worker thread
 	g_glWorker.Init();
 
+	HOOK_TO_CVAR(r_anisotropic);
+	const int desiredAnisotropicLevel = min(r_anisotropic->GetInt(), m_caps.maxTextureAnisotropicLevel);
+	m_caps.maxTextureAnisotropicLevel = desiredAnisotropicLevel;
+
 	// Init the base shader API
 	ShaderAPI_Base::Init(params);
 
@@ -760,7 +764,8 @@ ITexture* ShaderAPIGL::CreateNamedRenderTarget(	const char* pszName,
 
 	pTexture->glTarget = (nFlags & TEXFLAG_CUBEMAP) ? GL_TEXTURE_CUBE_MAP : GL_TEXTURE_2D;
 
-	SamplerStateParam_t texSamplerParams = MakeSamplerState(textureFilterType,textureAddress,textureAddress,textureAddress);
+	SamplerStateParam_t texSamplerParams;
+	SamplerStateParams_Make(texSamplerParams, g_pShaderAPI->GetCaps(), textureFilterType, textureAddress, textureAddress, textureAddress);
 
 	pTexture->SetSamplerState(texSamplerParams);
 
