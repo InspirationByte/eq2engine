@@ -2,8 +2,10 @@
 // Copyright © Inspiration Byte
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
-// Description: Promise and future concept implementation
+// Description: Thread-safe Promise and Future concept implementation
 //////////////////////////////////////////////////////////////////////////////////
+
+// TODO: add cancellation token when needed
 
 #pragma once
 
@@ -25,11 +27,13 @@ template<typename T>
 class FutureResult
 {
 public:
-	FutureResult(const T& value) : m_value(&value)
+	FutureResult(const T& value) 
+		: m_value(&value)
 	{
 	}
 
-	FutureResult(int errorCode, const char* message) : m_errorCode(errorCode), m_errorMessage(message)
+	FutureResult(int errorCode, const char* message) 
+		: m_errorCode(errorCode), m_errorMessage(message)
 	{
 	}
 
