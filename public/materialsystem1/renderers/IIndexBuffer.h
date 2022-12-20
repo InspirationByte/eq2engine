@@ -6,8 +6,7 @@
 //				Index Buffer interface declaration
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef IINDEXBUFFER_H
-#define IINDEXBUFFER_H
+#pragma once
 
 class IIndexBuffer
 {
@@ -31,5 +30,3 @@ public:
 	// unlocks buffer
 	virtual void			Unlock() = 0;
 };
-
-#endif // IINDEXBUFFER_H

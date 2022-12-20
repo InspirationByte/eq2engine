@@ -313,13 +313,12 @@ ITexture* ShaderAPI_Base::GetErrorTexture()
 
 void ShaderAPI_Base::GetConsoleTextureList(const ConCommandBase* base, Array<EqString>& list, const char* query)
 {
+	const int LIST_LIMIT = 50;
+
 	ShaderAPI_Base* baseApi = ((ShaderAPI_Base*)g_pShaderAPI);
 
 	CScopedMutex m(g_sapi_TextureMutex);
-
 	Map<int, ITexture*>& texList = ((ShaderAPI_Base*)g_pShaderAPI)->m_TextureList;
-
-	const int LIST_LIMIT = 50;
 
 	for (auto it = texList.begin(); it != texList.end(); ++it)
 	{
@@ -1141,18 +1140,19 @@ bool ShaderAPI_Base::LoadShadersFromFile(IShaderProgram* pShaderOutput, const ch
 // search for existing shader program
 IShaderProgram* ShaderAPI_Base::FindShaderProgram(const char* pszName, const char* query)
 {
-	CScopedMutex m(g_sapi_ShaderMutex);
-
 	EqString shaderName(pszName);
-	if(query)
+	if (query)
 		shaderName.Append(query);
 
 	const int nameHash = StringToHash(shaderName.ToCString());
 
-	auto it = m_ShaderList.find(nameHash);
-	if (it != m_ShaderList.end())
 	{
-		return *it;
+		CScopedMutex m(g_sapi_ShaderMutex);
+		auto it = m_ShaderList.find(nameHash);
+		if (it != m_ShaderList.end())
+		{
+			return *it;
+		}
 	}
 
 	return nullptr;

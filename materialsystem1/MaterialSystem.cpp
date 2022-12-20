@@ -550,20 +550,22 @@ IMaterial* CMaterialSystem::CreateMaterialInternal(const char* szMaterialName, i
 {
 	PROF_EVENT("MatSystem Load Material");
 
-	CScopedMutex m(m_Mutex);
-
 	// create new material
 	CMaterial* pMaterial = PPNew CMaterial();
+
+	{
+		CScopedMutex m(m_Mutex);
+
+		// add to list
+		ASSERT_MSG(m_loadedMaterials.find(nameHash) == m_loadedMaterials.end(), "Material %s was already created under that name", szMaterialName);
+		m_loadedMaterials.insert(nameHash, pMaterial);
+	}
 
 	// if no params, we can load it a usual way
 	if (params)
 		pMaterial->Init(szMaterialName, params);
 	else
 		pMaterial->Init(szMaterialName);
-
-	// add to list
-	ASSERT_MSG(m_loadedMaterials.find(nameHash) == m_loadedMaterials.end(), "Material %s was already created under that name", szMaterialName);
-	m_loadedMaterials.insert(nameHash, pMaterial);
 
 	return pMaterial;
 }
@@ -584,11 +586,12 @@ IMaterial* CMaterialSystem::GetMaterial(const char* szMaterialName)
 	const int nameHash = StringToHash(materialName.ToCString(), true);
 
 	// find the material with existing name
-	CScopedMutex m(m_Mutex);
-
-	auto it = m_loadedMaterials.find(nameHash);
-	if (it != m_loadedMaterials.end())
-		return *it;
+	{
+		CScopedMutex m(m_Mutex);
+		auto it = m_loadedMaterials.find(nameHash);
+		if (it != m_loadedMaterials.end())
+			return *it;
+	}
 
 	return CreateMaterialInternal(materialName.ToCString(), nameHash, nullptr);
 }

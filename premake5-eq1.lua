@@ -168,7 +168,8 @@ group "Equilibrium 1/MatSystem/RHI"
 usage "eqRHIBaseLib"
     files {
 		Folders.matsystem1.. "renderers/Shared/**.cpp",
-		Folders.matsystem1.."renderers/Shared/**.h"
+		Folders.matsystem1.."renderers/Shared/**.h",
+		Folders.public.."materialsystem1/renderers/**.h",
 	}
     includedirs {
 		Folders.public.."materialsystem1/",
