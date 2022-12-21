@@ -549,35 +549,38 @@ bool CMaterialSystem::IsMaterialExist(const char* szMaterialName) const
 IMaterialPtr CMaterialSystem::CreateMaterial(const char* szMaterialName, KVSection* params)
 {
 	// must have names
-	ASSERT(strlen(szMaterialName) > 0);
-	const int nameHash = StringToHash(szMaterialName, true);
+	ASSERT_MSG(strlen(szMaterialName) > 0, "CreateMaterial - name is empty!");
 
-	return CreateMaterialInternal(szMaterialName, nameHash, params);
-}
-
-// creates new material with defined parameters
-IMaterialPtr CMaterialSystem::CreateMaterialInternal(const char* szMaterialName, int nameHash, KVSection* params)
-{
-	PROF_EVENT("MatSystem Load Material");
-
-	// create new material
-	CMaterial* pMaterial = PPNew CMaterial();
+	CRefPtr<CMaterial> material = CRefPtr_new(CMaterial, szMaterialName, false);
 
 	{
 		CScopedMutex m(m_Mutex);
 
+		const int nameHash = material->m_nameHash;
+
 		// add to list
 		ASSERT_MSG(m_loadedMaterials.find(nameHash) == m_loadedMaterials.end(), "Material %s was already created under that name", szMaterialName);
-		m_loadedMaterials.insert(nameHash, pMaterial);
+		m_loadedMaterials.insert(nameHash, material);
 	}
+
+	CreateMaterialInternal(material, params);
+
+	return IMaterialPtr(material);
+}
+
+// creates new material with defined parameters
+void CMaterialSystem::CreateMaterialInternal(CRefPtr<CMaterial> material, KVSection* params)
+{
+	PROF_EVENT("MatSystem Load Material");
+
+	// create new material
+	CMaterial* pMaterial = (CMaterial*)material.Ptr();
 
 	// if no params, we can load it a usual way
 	if (params)
-		pMaterial->Init(szMaterialName, params);
+		pMaterial->Init(params);
 	else
-		pMaterial->Init(szMaterialName);
-
-	return IMaterialPtr(pMaterial);
+		pMaterial->Init();
 }
 
 IMaterialPtr CMaterialSystem::GetMaterial(const char* szMaterialName)
@@ -596,14 +599,20 @@ IMaterialPtr CMaterialSystem::GetMaterial(const char* szMaterialName)
 	const int nameHash = StringToHash(materialName.ToCString(), true);
 
 	// find the material with existing name
-	{
-		CScopedMutex m(m_Mutex);
-		auto it = m_loadedMaterials.find(nameHash);
-		if (it != m_loadedMaterials.end())
-			return IMaterialPtr(*it);
-	}
+	// it could be a material that was not been loaded from disk
+	CScopedMutex m(m_Mutex);
 
-	return CreateMaterialInternal(materialName.ToCString(), nameHash, nullptr);
+	auto it = m_loadedMaterials.find(nameHash);
+	if (it != m_loadedMaterials.end())
+		return IMaterialPtr(*it);
+
+	// by default try to load material file from disk
+	CRefPtr<CMaterial> material = CRefPtr_new(CMaterial, materialName, true);
+
+	m_loadedMaterials.insert(nameHash, material);
+	CreateMaterialInternal(material, nullptr);
+
+	return IMaterialPtr(material);
 }
 
 // If we have unliaded material, just load it

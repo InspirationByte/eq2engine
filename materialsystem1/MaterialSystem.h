@@ -285,7 +285,7 @@ public:
 
 private:
 
-	IMaterialPtr					CreateMaterialInternal(const char* szMaterialName, int nameHash, KVSection* params);
+	void							CreateMaterialInternal(CRefPtr<CMaterial> material, KVSection* params);
 	void							CreateWhiteTexture();
 	void							InitDefaultMaterial();
 

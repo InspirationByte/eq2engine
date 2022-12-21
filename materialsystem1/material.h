@@ -20,12 +20,12 @@ public:
 	friend class			CEqMatSystemThreadedLoader;
 
 							// constructor, destructor
-							CMaterial();
+							CMaterial(const char* materialName, bool loadFromDisk);
 							~CMaterial();
 
 	void					Ref_DeleteObject();
 
-	const char*				GetName() const {return m_szMaterialName.GetData();}
+	const char*				GetName() const { return m_szMaterialName.GetData(); }
 	const char*				GetShaderName() const;
 	CTextureAtlas*			GetAtlas() const;
 
@@ -36,10 +36,10 @@ public:
 // init + shutdown
 
 	// initializes material from file
-	void					Init(const char* matFileName);
+	void					Init();
 	
 	// initializes material from keyvalues
-	void					Init(const char* materialName, KVSection* shader_root);
+	void					Init(KVSection* shader_root);
 
 	void					Cleanup(bool dropVars = true, bool dropShader = true);
 
@@ -74,12 +74,12 @@ protected:
 	Array<CMatVar*>			m_variables{ PP_SL };
 	Array<IMaterialProxy*>	m_proxies{ PP_SL };
 
-	CTextureAtlas*			m_atlas;
+	CTextureAtlas*			m_atlas{ nullptr };
 
-	IMaterialSystemShader*	m_shader;
-	int						m_state;	// FIXME: may be interlocked?
-	int						m_nameHash;
+	IMaterialSystemShader*	m_shader{ nullptr };
+	int						m_state{ MATERIAL_LOAD_ERROR };	// FIXME: may be interlocked?
+	int						m_nameHash{ 0 };
 
-	uint					m_frameBound;
-	bool					m_loadFromDisk;
+	uint					m_frameBound{ 0 };
+	bool					m_loadFromDisk{ false };
 };

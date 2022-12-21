@@ -22,14 +22,11 @@ ConVar r_allowSourceTextures("r_allowSourceTextures", "0", "enable materials and
 #define MATERIAL_FILE_EXTENSION		".mat"
 #define ATLAS_FILE_EXTENSION		".atlas"
 
-CMaterial::CMaterial() 
-	: m_state(MATERIAL_LOAD_ERROR),
-	m_shader(nullptr), 
-	m_loadFromDisk(true),
-	m_frameBound(0),
-	m_atlas(nullptr),
-	m_nameHash(0)
+CMaterial::CMaterial(const char* materialName, bool loadFromDisk)
+	: m_loadFromDisk(loadFromDisk)
 {
+	m_szMaterialName = materialName;
+	m_nameHash = StringToHash(m_szMaterialName, true);
 }
 
 CMaterial::~CMaterial()
@@ -48,15 +45,9 @@ void CMaterial::Ref_DeleteObject()
 //
 // Initializes the shader
 //
-void CMaterial::Init(const char* materialPath)
+void CMaterial::Init()
 {
-	if (materialPath)
-	{
-		m_szMaterialName = materialPath;
-		m_nameHash = StringToHash(materialPath, true);
-	}
-
-	m_loadFromDisk = true;
+	ASSERT(m_loadFromDisk == true);
 
 	DevMsg(DEVMSG_MATSYSTEM, "Loading material '%s'\n", m_szMaterialName.ToCString());
 
@@ -142,12 +133,9 @@ void CMaterial::Init(const char* materialPath)
 }
 
 // initializes material from keyvalues
-void CMaterial::Init(const char* materialName, KVSection* shader_root)
+void CMaterial::Init(KVSection* shader_root)
 {
-	m_szMaterialName = materialName;
-	m_nameHash = StringToHash(materialName, true);
-
-	m_loadFromDisk = false;
+	ASSERT(m_loadFromDisk == false);
 
 	// section name is used as shader name
 	m_szShaderName = shader_root->name;
