@@ -388,11 +388,12 @@ static const GLenum glBufferUsages[] = {
 	GL_DYNAMIC_DRAW,
 };
 
-// map to EGLTextureType
+// map to EImageType
 static const GLenum glTexTargetType[] = {
 	GL_TEXTURE_2D,
-	GL_TEXTURE_CUBE_MAP,
+	GL_TEXTURE_2D,
 	GL_TEXTURE_3D,
+	GL_TEXTURE_CUBE_MAP,
 };
 
 #ifdef USE_GLES2
@@ -410,19 +411,10 @@ static const GLenum glTexTargetType[] = {
 
 #endif // USE_GLES2
 
-enum EGLTextureType
-{
-	GLTEX_TYPE_ERROR = -1,
-
-	GLTEX_TYPE_TEXTURE = 0,
-	GLTEX_TYPE_CUBETEXTURE,
-	GLTEX_TYPE_VOLUMETEXTURE,
-};
-
 struct GLTextureRef_t
 {
 	GLuint glTexID;
-	EGLTextureType type;
+	EImageType type;
 };
 
 #define MAX_GL_GENERIC_ATTRIB 16

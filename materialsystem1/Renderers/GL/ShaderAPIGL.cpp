@@ -782,9 +782,9 @@ ITexture* ShaderAPIGL::CreateNamedRenderTarget(	const char* pszName,
 	GLTextureRef_t texture;
 
 	if (nFlags & TEXFLAG_CUBEMAP)
-		texture.type = GLTEX_TYPE_CUBETEXTURE;
+		texture.type = IMAGE_TYPE_CUBE;
 	else
-		texture.type = GLTEX_TYPE_TEXTURE;
+		texture.type = IMAGE_TYPE_2D;
 
 	if(nRTFormat != FORMAT_NONE)
 	{
@@ -892,12 +892,10 @@ ITexture* ShaderAPIGL::CreateTextureResource(const char* pszName)
 	return texture;
 }
 
-
-static ConVar gl_skipTextures("gl_skipTextures", "0", nullptr, CV_CHEAT);
-
+#if 0
 GLTextureRef_t ShaderAPIGL::CreateGLTextureFromImage(const CImage* pSrc, const SamplerStateParam_t& sampler, int& wide, int& tall, int nFlags)
 {
-	GLTextureRef_t noTexture = { 0, GLTEX_TYPE_ERROR };
+	GLTextureRef_t noTexture = { 0, IMAGE_TYPE_INVALID };
 
 	if(!pSrc)
 		return noTexture;
@@ -1056,52 +1054,7 @@ void ShaderAPIGL::CreateTextureInternal(ITexture** pTex, const ArrayCRef<const C
 	// set for output
 	*pTex = pTexture;
 }
-
-void ShaderAPIGL::SetupGLSamplerState(uint texTarget, const SamplerStateParam_t& sampler, int mipMapCount)
-{
-	// Set requested wrapping modes
-	glTexParameteri(texTarget, GL_TEXTURE_WRAP_S, addressModes[sampler.wrapS]);
-	GLCheckError("smp w s");
-
-#ifndef USE_GLES2
-	if (texTarget != GL_TEXTURE_1D)
-#endif // USE_GLES2
-	{
-		glTexParameteri(texTarget, GL_TEXTURE_WRAP_T, addressModes[sampler.wrapT]);
-		GLCheckError("smp w t");
-	}
-
-	if (texTarget == GL_TEXTURE_3D)
-	{
-		glTexParameteri(texTarget, GL_TEXTURE_WRAP_R, addressModes[sampler.wrapR]);
-		GLCheckError("smp w r");
-	}
-
-	// Set requested filter modes
-	glTexParameteri(texTarget, GL_TEXTURE_MAG_FILTER, minFilters[sampler.magFilter]);
-	GLCheckError("smp mag");
-
-	glTexParameteri(texTarget, GL_TEXTURE_MIN_FILTER, minFilters[sampler.minFilter]);
-	GLCheckError("smp min");
-
-	glTexParameteri(texTarget, GL_TEXTURE_MAX_LEVEL, max(mipMapCount-1, 0));
-	GLCheckError("smp mip");
-
-	glTexParameteri(texTarget, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
-	GLCheckError("smp cmpmode");
-
-	glTexParameteri(texTarget, GL_TEXTURE_COMPARE_FUNC, depthConst[sampler.compareFunc]);
-	GLCheckError("smp cmpfunc");
-
-#ifndef USE_GLES2
-	// Setup anisotropic filtering
-	if (sampler.aniso > 1 && GLAD_GL_ARB_texture_filter_anisotropic)
-	{
-		glTexParameteri(texTarget, GL_TEXTURE_MAX_ANISOTROPY, sampler.aniso);
-		GLCheckError("smp aniso");
-	}
-#endif // USE_GLES2
-}
+#endif
 
 //-------------------------------------------------------------
 // Texture operations

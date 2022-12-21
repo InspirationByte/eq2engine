@@ -8,6 +8,8 @@
 #pragma once
 #include "../Shared/CTexture.h"
 
+typedef struct SamplerStateParam_s SamplerStateParam_t;
+
 class CImage;
 
 class CGLTexture : public CTexture
@@ -20,13 +22,6 @@ public:
 
 		// initializes texture from image array of images
 	bool					Init(const SamplerStateParam_t& sampler, const ArrayCRef<CImage*> images, int flags = 0);
-
-	// initializes render target texture
-	bool					InitRenderTarget( const SamplerStateParam_t& sampler,
-											ETextureFormat format,
-											int width, int height,
-											int flags = 0
-											);
 
 	void					Release();
 	void					ReleaseTextures();
@@ -59,4 +54,5 @@ protected:
 	bool					m_lockReadOnly;
 };
 
-bool UpdateGLTextureFromImage(GLTextureRef_t texture, const CImage* image, int startMipLevel);
+void SetupGLSamplerState(uint texTarget, const SamplerStateParam_t& sampler, int mipMapCount = 1);
+bool UpdateGLTextureFromImage(GLTextureRef_t texture, const SamplerStateParam_t& sampler, const CImage* image, int startMipLevel);

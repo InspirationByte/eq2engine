@@ -250,11 +250,12 @@ void CD3D9Texture::ReleaseSurfaces()
 
 	if (m_dummyDepth)
 		m_dummyDepth->Release();
+	m_dummyDepth = nullptr;
 }
 
 LPDIRECT3DBASETEXTURE9 CD3D9Texture::GetCurrentTexture()
 {
-	if(m_nAnimatedTextureFrame > textures.numElem()-1)
+	if (!textures.inRange(m_nAnimatedTextureFrame))
 		return nullptr;
 
 	return textures[m_nAnimatedTextureFrame];
