@@ -685,7 +685,6 @@ struct MColor
 
 	MColor() {}
 
-
 	MColor(uint u)
 		: r(float(u & 255) / 255.0f), g(float((u >> 8) & 255) / 255.0f), b(float((u >> 16) & 255) / 255.0f), a(float((u >> 24) & 255) / 255.0f) {}
 
@@ -697,6 +696,12 @@ struct MColor
 
 	MColor(float r, float g, float b, float a)
 		: r(r), g(g), b(b), a(a) {}
+
+	MColor(int r, int g, int b)
+		: r(float(r & 255) / 255.0f), g(float(g & 255) / 255.0f), b(float(b & 255) / 255.0f) {}
+
+	MColor(int r, int g, int b, int a)
+		: r(float(r & 255) / 255.0f), g(float(g & 255) / 255.0f), b(float(b & 255) / 255.0f), a(float(a & 255) / 255.0f) {}
 
 	MColor(const Vector3D& rgb)
 		: r(rgb.x), g(rgb.y), b(rgb.z), a(1.0f) {}

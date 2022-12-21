@@ -11,29 +11,36 @@
 class PixelWriter
 {
 public:
-	FORCEINLINE void SetPixelMemory( ETextureFormat format, void* pMemory, int stride );
-	FORCEINLINE void Seek( int x, int y );
-	FORCEINLINE void* SkipBytes( int n );
-	FORCEINLINE void SkipPixels( int n );
-	FORCEINLINE void WritePixel( int r, int g, int b, int a = 255 );
-	FORCEINLINE void WritePixelNoAdvance( int r, int g, int b, int a = 255 );
-	unsigned char GetPixelSize() { return m_Size; }
+					PixelWriter( ETextureFormat format, void* pMemory, int stride );
+
+	void			Seek( int x, int y );
+
+	void*			SkipBytes( int n );
+	void			SkipPixels( int n );
+
+
+	void			WritePixel(int r, int g, int b, int a = 255);
+	void			WritePixel(const MColor& color);
+	void			WritePixelNoAdvance(int r, int g, int b, int a = 255); 
+	void			WritePixelNoAdvance(const MColor& color);
+
+	ubyte			GetPixelSize() { return m_Size; }
 private:
-	int m_nWritePos;
-	ubyte* m_pBits;
-	ushort m_BytesPerRow;
-	ubyte m_Size;
-	char m_RShift;
-	char m_GShift;
-	char m_BShift;
-	char m_AShift;
-	ubyte m_RMask;
-	ubyte m_GMask;
-	ubyte m_BMask;
-	ubyte m_AMask;
+	int				m_nWritePos;
+	ubyte*			m_pBits;
+	ushort			m_BytesPerRow;
+	ubyte			m_Size;
+	char			m_RShift;
+	char			m_GShift;
+	char			m_BShift;
+	char			m_AShift;
+	ubyte			m_RMask;
+	ubyte			m_GMask;
+	ubyte			m_BMask;
+	ubyte			m_AMask;
 };
 
-inline void PixelWriter::SetPixelMemory( ETextureFormat format, void* pMemory, int stride )
+inline PixelWriter::PixelWriter( ETextureFormat format, void* pMemory, int stride )
 {
 	m_pBits = (ubyte*)pMemory;
 	m_BytesPerRow = (ubyte)stride;
@@ -92,7 +99,7 @@ inline void PixelWriter::SetPixelMemory( ETextureFormat format, void* pMemory, i
 
 		default:
 		{
-			MsgWarning( "PixelWriter::SetPixelMemory:  Unsupported image format %i\n", format );
+			ASSERT_FAIL( "PixelWriter::SetPixelMemory:  Unsupported image format %i\n", format );
 			m_Size = 0; // set to zero so that we don't stomp memory for formats that we don't understand.
 		}
 		break;
@@ -138,13 +145,18 @@ inline void PixelWriter::WritePixel( int r, int g, int b, int a )
 	m_nWritePos += m_Size;
 }
 
+inline void PixelWriter::WritePixel(const MColor& color)
+{
+	const uint packed = color.pack();
+	WritePixel(packed & 255, packed >> 8 & 255, packed >> 16 & 255, packed >> 24 & 255);
+}
+
 //-------------------------------------------------------
 // Writes a pixel without advancing the index
 //-------------------------------------------------------
 
 inline void PixelWriter::WritePixelNoAdvance( int r, int g, int b, int a )
 {
-
 	int val = (r & m_RMask) << m_RShift;
 	val |=  (g & m_GMask) << m_GShift;
 	val |= (m_BShift > 0) ? ((b & m_BMask) << m_BShift) : ((b & m_BMask) >> -m_BShift);
@@ -162,5 +174,11 @@ inline void PixelWriter::WritePixelNoAdvance( int r, int g, int b, int a )
 				m_pBits[m_nWritePos + 3] = (ubyte)((val >> 24) & 0xff);
 		}
 	}
+}
 
+
+inline void PixelWriter::WritePixelNoAdvance(const MColor& color)
+{
+	const uint packed = color.pack();
+	WritePixelNoAdvance(packed & 255, packed >> 8 & 255, packed >> 16 & 255, packed >> 24 & 255);
 }

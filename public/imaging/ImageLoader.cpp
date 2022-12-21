@@ -331,7 +331,7 @@ int CImage::GetMipMappedSize(const int firstMipMapLevel, int nMipMapLevels, ETex
 	else
 		size *= GetBytesPerPixel(srcFormat);
 
-	return (m_nDepth == 0) ? (6 * size) : size;
+	return (m_nDepth == IMAGE_DEPTH_CUBEMAP) ? (6 * size) : size;
 }
 
 int CImage::GetSliceSize(const int mipMapLevel, ETextureFormat srcFormat) const
@@ -373,7 +373,7 @@ int CImage::GetPixelCount(const int firstMipMapLevel, int nMipMapLevels) const
 		nMipMapLevels--;
 	}
 
-	return (m_nDepth == 0) ? (6 * size) : size;
+	return (m_nDepth == IMAGE_DEPTH_CUBEMAP) ? (6 * size) : size;
 }
 
 int CImage::GetWidth(const int mipMapLevel) const
@@ -448,7 +448,7 @@ bool CImage::LoadDDSfromHandle(IFile *fileHandle, uint flags)
 
 	m_nWidth  = header.dwWidth;
 	m_nHeight = header.dwHeight;
-	m_nDepth  = (header.ddsCaps.dwCaps2 & DDSCAPS2_CUBEMAP)? 0 : (header.dwDepth == 0)? 1 : header.dwDepth;
+	m_nDepth  = (header.ddsCaps.dwCaps2 & DDSCAPS2_CUBEMAP) ? IMAGE_DEPTH_CUBEMAP : (header.dwDepth == 0) ? 1 : header.dwDepth;
 	m_nMipMaps = ((flags & DONT_LOAD_MIPMAPS) || (header.dwMipMapCount == 0))? 1 : header.dwMipMapCount;
 	m_nArraySize = 1;
 
@@ -881,7 +881,7 @@ bool CImage::SaveDDS(const char *fileName)
 	header.dwHeight = m_nHeight;
 	header.dwWidth  = m_nWidth;
 	header.dwPitchOrLinearSize = 0;
-	header.dwDepth = (m_nDepth > 1)? m_nDepth : 0;
+	header.dwDepth = (m_nDepth > 1) ? m_nDepth : 0;
 	header.dwMipMapCount = (m_nMipMaps > 1)? m_nMipMaps : 0;
 
 	int nChannels = GetChannelCount(m_nFormat);
@@ -934,7 +934,7 @@ bool CImage::SaveDDS(const char *fileName)
 			default:
 				header.ddpfPixelFormat.dwFourCC = MCHAR4('D','X','1','0');
 				headerDXT10.arraySize = 1;
-				headerDXT10.miscFlag = (m_nDepth == 0)? D3D10_RESOURCE_MISC_TEXTURECUBE : 0;
+				headerDXT10.miscFlag = (m_nDepth == IMAGE_DEPTH_CUBEMAP) ? D3D10_RESOURCE_MISC_TEXTURECUBE : 0;
 				headerDXT10.resourceDimension = Is1D()? D3D10_RESOURCE_DIMENSION_TEXTURE1D : Is3D()? D3D10_RESOURCE_DIMENSION_TEXTURE3D : D3D10_RESOURCE_DIMENSION_TEXTURE2D;
 				switch (m_nFormat)
 				{
@@ -949,7 +949,7 @@ bool CImage::SaveDDS(const char *fileName)
 	}
 
 	header.ddsCaps.dwCaps1 = DDSCAPS_TEXTURE | (m_nMipMaps > 1? DDSCAPS_MIPMAP | DDSCAPS_COMPLEX : 0) | (m_nDepth != 1? DDSCAPS_COMPLEX : 0);
-	header.ddsCaps.dwCaps2 = (m_nDepth > 1)? DDSCAPS2_VOLUME : (m_nDepth == 0)? DDSCAPS2_CUBEMAP | DDSCAPS2_CUBEMAP_ALL_FACES : 0;
+	header.ddsCaps.dwCaps2 = (m_nDepth > 1)? DDSCAPS2_VOLUME : (m_nDepth == IMAGE_DEPTH_CUBEMAP) ? DDSCAPS2_CUBEMAP | DDSCAPS2_CUBEMAP_ALL_FACES : 0;
 	header.ddsCaps.Reserved[0] = 0;
 	header.ddsCaps.Reserved[1] = 0;
 	header.dwReserved2 = 0;
@@ -1293,7 +1293,7 @@ bool CImage::RemoveMipMaps(const int firstMipMap, int mipMapsToSave)
 	memcpy(newPixels, GetPixels(firstMipMap), size);
 	int newWidth = GetWidth(firstMipMap);
 	int newHeight = GetHeight(firstMipMap);
-	int newDepth = m_nDepth? GetDepth(firstMipMap) : 0;
+	int newDepth = m_nDepth ? GetDepth(firstMipMap) : IMAGE_DEPTH_CUBEMAP;
 
 	delete [] m_pPixels;
 	m_pPixels = newPixels;

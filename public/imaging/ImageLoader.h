@@ -10,14 +10,18 @@
 
 class IVirtualStream;
 
-#define ALL_MIPMAPS 127
-
 #ifdef _WIN32
 #undef LoadImage
 #endif
 
 // Image loading flags
-#define DONT_LOAD_MIPMAPS 0x1
+enum EImageLoadingFlags
+{
+	DONT_LOAD_MIPMAPS =	0x1
+};
+
+#define ALL_MIPMAPS				127
+#define IMAGE_DEPTH_CUBEMAP		0
 
 const char*		GetFormatString(const ETextureFormat format);
 ETextureFormat	GetFormatFromString(const char *string);
@@ -56,7 +60,7 @@ public:
 	bool			Is1D()    const { return (m_nDepth == 1 && m_nHeight == 1); }
 	bool			Is2D()    const { return (m_nDepth == 1 && m_nHeight >  1); }
 	bool			Is3D()    const { return (m_nDepth >  1); }
-	bool			IsCube()  const { return (m_nDepth == 0); }
+	bool			IsCube()  const { return (m_nDepth == IMAGE_DEPTH_CUBEMAP); }
 	bool			IsArray() const { return (m_nArraySize > 1); }
 
 	ETextureFormat	GetFormat() const { return m_nFormat; }

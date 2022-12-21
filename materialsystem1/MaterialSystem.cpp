@@ -674,7 +674,7 @@ void CMaterialSystem::ReloadAllMaterials()
 		// don't drop variables, just reload shader
 		material->Cleanup(false, true);
 
-		// don't load materials which are not from disk
+		// don't reload materials which are not from disk
 		if(!material->m_loadFromDisk)
 		{
 			material->InitShader();

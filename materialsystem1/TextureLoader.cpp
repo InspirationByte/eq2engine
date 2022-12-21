@@ -106,8 +106,7 @@ ITexture* CTextureLoader::LoadTextureFromFileSync(const char* pszFileName, const
 	EqString texNameStr(pszFileName);
 	texNameStr.Path_FixSlashes();
 
-	Array<CImage*> pImages(PP_SL);
-	const EqString& textureAuxPath = r_allowSourceTextures->GetBool() ? shaderApiParams.textureSRCPath : shaderApiParams.texturePath;
+	Array<CImage*> imgList(PP_SL);
 
 	// load frames
 	for (int i = 0; i < textureNames.numElem(); i++)
@@ -118,9 +117,9 @@ ITexture* CTextureLoader::LoadTextureFromFileSync(const char* pszFileName, const
 		CombinePath(texturePathExt, 2, shaderApiParams.texturePath.ToCString(), textureNames[i].ToCString());
 		bool isLoaded = img->LoadDDS(texturePathExt + TEXTURE_DEFAULT_EXTENSION, 0);
 
-		if (!isLoaded)
+		if (!isLoaded && r_allowSourceTextures->GetBool())
 		{
-			CombinePath(texturePathExt, 2, textureAuxPath.ToCString(), textureNames[i].ToCString());
+			CombinePath(texturePathExt, 2, shaderApiParams.textureSRCPath.ToCString(), textureNames[i].ToCString());
 			isLoaded = img->LoadTGA(texturePathExt + TEXTURE_SECONDARY_EXTENSION);
 		}
 
@@ -131,7 +130,7 @@ ITexture* CTextureLoader::LoadTextureFromFileSync(const char* pszFileName, const
 
 		if (isLoaded)
 		{
-			pImages.append(img);
+			imgList.append(img);
 
 			if (r_reportTextureLoading.GetBool())
 				MsgInfo("Texture loaded: %s\n", texturePathExt.ToCString());
@@ -144,11 +143,11 @@ ITexture* CTextureLoader::LoadTextureFromFileSync(const char* pszFileName, const
 	}
 
 	// Now create the texture
-	ITexture* newTexture = g_pShaderAPI->CreateTexture(pImages, samplerParams, nFlags);
+	ITexture* newTexture = g_pShaderAPI->CreateTexture(imgList, samplerParams, nFlags);
 
 	// free images
-	for (int i = 0; i < pImages.numElem(); i++)
-		delete pImages[i];
+	for (int i = 0; i < imgList.numElem(); i++)
+		delete imgList[i];
 
 	// Generate the error
 	if (!newTexture && !(nFlags & TEXFLAG_NULL_ON_ERROR))
