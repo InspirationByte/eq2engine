@@ -152,7 +152,7 @@ ITexture* CTextureLoader::LoadTextureFromFileSync(const char* pszFileName, const
 	}
 
 	// initialize texture
-	if (!texture->Init(samplerParams, imgList, nFlags))
+	if (!imgList.numElem() || !texture->Init(samplerParams, imgList, nFlags))
 	{
 		if (nFlags & TEXFLAG_NULL_ON_ERROR)
 		{

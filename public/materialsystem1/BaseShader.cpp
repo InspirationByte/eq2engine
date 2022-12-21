@@ -233,7 +233,7 @@ void CBaseShader::SetupParameter(uint mask, ShaderDefaultParams_e type)
 		(this->*m_param_functors[type]) ();
 }
 
-ITexture* CBaseShader::FindTextureByVar(IMaterial* material, const char* paramName, bool errorTextureIfFailed)
+ITexture* CBaseShader::FindTextureByVar(IMaterial* material, const char* paramName, bool errorTextureIfNoVar)
 {
 	ITexture* texture = nullptr;
 	IMatVar* mv = GetAssignedMaterial()->FindMaterialVar(paramName);
@@ -244,13 +244,13 @@ ITexture* CBaseShader::FindTextureByVar(IMaterial* material, const char* paramNa
 		if(texture)
 			mv->AssignTexture(texture);
 	}
-	else if(errorTextureIfFailed)
+	else if(errorTextureIfNoVar)
 		texture = g_pShaderAPI->GetErrorTexture();
 
 	return texture;
 }
 
-ITexture* CBaseShader::LoadTextureByVar(IMaterial* material, const char* paramName, bool errorTextureIfFailed)
+ITexture* CBaseShader::LoadTextureByVar(IMaterial* material, const char* paramName, bool errorTextureIfNoVar)
 {	
 	IMatVar* mv = nullptr;
 	if(materials->GetConfiguration().editormode)		
@@ -268,13 +268,12 @@ ITexture* CBaseShader::LoadTextureByVar(IMaterial* material, const char* paramNa
 		SamplerStateParam_t samplerParams;
 		SamplerStateParams_Make(samplerParams, g_pShaderAPI->GetCaps(), m_nTextureFilter, m_nAddressMode, m_nAddressMode, m_nAddressMode);
 
-		const int flags = errorTextureIfFailed ? 0 : TEXFLAG_NULL_ON_ERROR;
-		texture = g_texLoader->LoadTextureFromFileSync(mv->GetString(), samplerParams, flags);
+		texture = g_texLoader->LoadTextureFromFileSync(mv->GetString(), samplerParams);
 		if(texture)
 			AddManagedTexture(mv, &texture);
 	}
 
-	if(!texture && errorTextureIfFailed)
+	if(!texture && errorTextureIfNoVar)
 		texture = g_pShaderAPI->GetErrorTexture();
 
 	return texture;

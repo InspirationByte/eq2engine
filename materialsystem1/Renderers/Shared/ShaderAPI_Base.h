@@ -99,9 +99,6 @@ public:
 	// Searches for existing texture or creates new one. Use this for resource loading
 	ITexture*							FindOrCreateTexture( const char* pszName );
 
-	// Error texture generator
-	ITexture*							GenerateErrorTexture(int nFlags = 0);
-
 //-------------------------------------------------------------
 // Texture operations
 //-------------------------------------------------------------

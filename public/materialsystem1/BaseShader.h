@@ -192,8 +192,8 @@ protected:
 
 	virtual bool				_ShaderInitRHI() = 0;
 
-	ITexture*					FindTextureByVar(IMaterial* material, const char* paramName, bool errorTextureIfFailed);
-	ITexture*					LoadTextureByVar(IMaterial* material, const char* paramName, bool errorTextureIfFailed);
+	ITexture*					FindTextureByVar(IMaterial* material, const char* paramName, bool errorTextureIfNoVar);
+	ITexture*					LoadTextureByVar(IMaterial* material, const char* paramName, bool errorTextureIfNoVar);
 	void						AddManagedShader(IShaderProgram** pShader);
 	void						AddManagedTexture(IMatVar* var, ITexture** tex);
 

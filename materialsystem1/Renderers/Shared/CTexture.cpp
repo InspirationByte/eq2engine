@@ -84,7 +84,7 @@ bool CTexture::GenerateErrorTexture(int flags)
 	SamplerStateParams_Make(texSamplerParams, emptyCaps, TEXFILTER_LINEAR, TEXADDRESS_WRAP, TEXADDRESS_WRAP, TEXADDRESS_WRAP);
 
 	MColor color1(0, 0, 0, 128);
-	MColor color2(255, 64, 255, 0);
+	MColor color2(255, 64, 255, 255);
 
 	const int depth = (flags & TEXFLAG_CUBEMAP) ? 0 : 1;
 

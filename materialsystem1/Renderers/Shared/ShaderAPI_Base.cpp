@@ -102,7 +102,8 @@ void ShaderAPI_Base::Init( const shaderAPIParams_t &params )
 	
 	DevMsg(DEVMSG_SHADERAPI, "[DEBUG] Generate error texture...\n");
 
-	m_pErrorTexture = GenerateErrorTexture();
+	m_pErrorTexture = CreateTextureResource("error");
+	m_pErrorTexture->GenerateErrorTexture();
 	m_pErrorTexture->Ref_Grab();
 
 	ConVar* r_debug_showTexture = (ConVar*)g_consoleCommands->FindCvar("r_debug_showTexture");
@@ -450,62 +451,6 @@ ITexture* ShaderAPI_Base::CreateProceduralTexture(const char* pszName,
 bool ShaderAPI_Base::RestoreTextureInternal(ITexture* pTexture)
 {
 	return true;
-}
-
-// Error texture generator
-ITexture* ShaderAPI_Base::GenerateErrorTexture(int nFlags/* = 0*/)
-{
-	if(nFlags & TEXFLAG_NULL_ON_ERROR)
-		return nullptr;
-
-	SamplerStateParam_t texSamplerParams;
-	SamplerStateParams_Make(texSamplerParams, m_caps, TEXFILTER_TRILINEAR_ANISO, TEXADDRESS_WRAP, TEXADDRESS_WRAP, TEXADDRESS_WRAP);
-
-	Vector4D color;
-	Vector4D color2;
-
-	color.x = color.y = color.z = 0; color.w = 128;
-	color2.x = 255;
-	color2.y = 64;
-	color2.z = 255;
-	color2.w = 0;
-
-	int m_nCheckerSize = 4;
-
-	CImage image;
-	ubyte *dest = image.Create(FORMAT_RGBA8,32,32,1,1);
-
-	image.SetName("error");
-
-	PixelWriter pixelWriter(FORMAT_RGBA8,dest,0);
-
-	int nWidth = image.GetWidth();
-	int nHeight = image.GetHeight();
-
-	for (int y = 0; y < nHeight; ++y)
-	{
-		pixelWriter.Seek( 0, y );
-		for (int x = 0; x < nWidth; ++x)
-		{
-			if ((x & m_nCheckerSize) ^ (y & m_nCheckerSize))
-			{
-				pixelWriter.WritePixel( color.x, color.y, color.z, color.w );
-			}
-			else
-			{
-				pixelWriter.WritePixel( color2.x, color2.y, color2.z, color2.w );
-			}
-		}
-	}
-
-	image.CreateMipMaps();
-
-	FixedArray<CImage*, 1> images;
-	images.append(&image);
-
-	ITexture* pOutTexture = CreateTexture(images, texSamplerParams, nFlags);
-
-	return pOutTexture;
 }
 
 //-------------------------------------------------------------

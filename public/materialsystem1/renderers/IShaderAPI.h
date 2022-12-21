@@ -248,9 +248,6 @@ public:
 															int nFlags = 0
 															) = 0;
 
-	// generates a new error texture
-	virtual ITexture*			GenerateErrorTexture(int nFlags = 0) = 0;
-
 	// END CUT HERE
 
 //-------------------------------------------------------------
