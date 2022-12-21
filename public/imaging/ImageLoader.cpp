@@ -394,6 +394,23 @@ int CImage::GetDepth(const int mipMapLevel) const
 	return (a == 0)? 1 : a;
 }
 
+EImageType CImage::GetImageType() const
+{
+	if (Is1D())
+		return IMAGE_TYPE_1D;
+
+	if (Is2D())
+		return IMAGE_TYPE_2D;
+
+	if (Is3D())
+		return IMAGE_TYPE_3D;
+
+	if (IsCube())
+		return IMAGE_TYPE_CUBE;
+
+	return IMAGE_TYPE_INVALID;
+}
+
 bool CImage::LoadDDS(const char *fileName, uint flags)
 {
 	IFile *file;

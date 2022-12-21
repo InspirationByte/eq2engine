@@ -57,6 +57,8 @@ public:
 	int				GetDepth (const int mipMapLevel) const;
 	int				GetArraySize() const { return m_nArraySize; }
 
+	EImageType		GetImageType() const;
+
 	bool			Is1D()    const { return (m_nDepth == 1 && m_nHeight == 1); }
 	bool			Is2D()    const { return (m_nDepth == 1 && m_nHeight >  1); }
 	bool			Is3D()    const { return (m_nDepth >  1); }

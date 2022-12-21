@@ -13,6 +13,11 @@ class CTexture : public ITexture
 	friend class ShaderAPI_Base;
 
 public:
+	bool						InitProcedural(const SamplerStateParam_t& sampler, ETextureFormat format, int width, int height, int depth = 1, int arraySize = 1, int flags = 0);
+	
+	// generates a new error texture
+	bool						GenerateErrorTexture(int flags = 0);
+
 	void						SetName(const char* pszNewName);
 	const char*					GetName() const { return m_szTexName.ToCString(); }
 	ETextureFormat				GetFormat() const { return m_iFormat; }

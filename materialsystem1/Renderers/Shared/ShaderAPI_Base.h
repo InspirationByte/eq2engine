@@ -79,7 +79,7 @@ public:
 //-------------------------------------------------------------
 
 	// creates texture from image array, used in LoadTexture, common use only
-	ITexture*							CreateTexture(const ArrayCRef<const CImage*>& pImages, const SamplerStateParam_t& sampler, int nFlags = 0);
+	ITexture*							CreateTexture(const ArrayCRef<CImage*>& pImages, const SamplerStateParam_t& sampler, int nFlags = 0);
 
 	// creates procedural (lockable) texture
 	ITexture*							CreateProceduralTexture(const char* pszName,
@@ -95,6 +95,9 @@ public:
 
 	// Finds texture by name
 	ITexture*							FindTexture(const char* pszName);
+
+	// Searches for existing texture or creates new one. Use this for resource loading
+	ITexture*							FindOrCreateTexture( const char* pszName );
 
 	// Error texture generator
 	ITexture*							GenerateErrorTexture(int nFlags = 0);
@@ -169,7 +172,7 @@ protected:
 
 	virtual bool						RestoreTextureInternal(ITexture* pTexture);
 
-	virtual void						CreateTextureInternal(ITexture** pTex, const ArrayCRef<const CImage*>& pImages, const SamplerStateParam_t& sSamplingParams,int nFlags = 0) = 0;
+	virtual ITexture*					CreateTextureResource(const char* pszName) = 0;
 
 //-------------------------------------------------------------
 // Useful data

@@ -84,19 +84,28 @@ ITexture* CTextureLoader::LoadTextureFromFileSync(const char* pszFileName, const
 {
 	HOOK_TO_CVAR(r_allowSourceTextures);
 
-	PROF_EVENT("Load Texture from file");
+	ITexture* texture = g_pShaderAPI->FindOrCreateTexture(pszFileName);
 
-	// first search for existing texture
-	ITexture* foundTexture = g_pShaderAPI->FindTexture(pszFileName);
-	if (foundTexture)
-		return foundTexture;
+	if (!texture)
+		return (nFlags & TEXFLAG_NULL_ON_ERROR) ? nullptr : g_pShaderAPI->GetErrorTexture();
 
-	// Don't load textures starting with special symbols
-	if (pszFileName[0] == '$')
-		return nullptr;
+	if (!(texture->GetFlags() & TEXFLAG_JUST_CREATED))
+		return texture;
 
 	if (r_skipTextureLoading.GetBool())
-		return (nFlags & TEXFLAG_NULL_ON_ERROR) ? nullptr : g_pShaderAPI->GetErrorTexture();
+	{
+		if (nFlags & TEXFLAG_NULL_ON_ERROR)
+		{
+			g_pShaderAPI->FreeTexture(texture);
+			texture = nullptr;
+		}
+		else
+			texture->GenerateErrorTexture(nFlags);
+
+		return texture;
+	}
+
+	PROF_EVENT("Load Texture from file");
 
 	const shaderAPIParams_t& shaderApiParams = g_pShaderAPI->GetParams();
 
@@ -142,18 +151,22 @@ ITexture* CTextureLoader::LoadTextureFromFileSync(const char* pszFileName, const
 		}
 	}
 
-	// Now create the texture
-	ITexture* newTexture = g_pShaderAPI->CreateTexture(imgList, samplerParams, nFlags);
+	// initialize texture
+	if (!texture->Init(samplerParams, imgList, nFlags))
+	{
+		if (nFlags & TEXFLAG_NULL_ON_ERROR)
+		{
+			g_pShaderAPI->FreeTexture(texture);
+			texture = nullptr;
+		}
+		else
+			texture->GenerateErrorTexture(nFlags);
+	}
 
-	// free images
 	for (int i = 0; i < imgList.numElem(); i++)
 		delete imgList[i];
 
-	// Generate the error
-	if (!newTexture && !(nFlags & TEXFLAG_NULL_ON_ERROR))
-		newTexture = g_pShaderAPI->GetErrorTexture();
-
-	return newTexture;
+	return texture;
 }
 
 Future<ITexture*> CTextureLoader::LoadTextureFromFile(const char* pszFileName, const SamplerStateParam_t& samplerParams, int nFlags)

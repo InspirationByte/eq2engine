@@ -1329,11 +1329,11 @@ bool ShaderAPID3DX9::InternalCreateRenderTarget(LPDIRECT3DDEVICE9 dev, CD3D9Text
 	{
 		LPDIRECT3DBASETEXTURE9 pTexture = nullptr;
 
-		tex->usage = D3DUSAGE_DEPTHSTENCIL;
+		tex->m_usage = D3DUSAGE_DEPTHSTENCIL;
 		tex->m_pool = D3DPOOL_DEFAULT;
 
 		DevMsg(DEVMSG_SHADERAPI, "InternalCreateRenderTarget: creating INTZ render target single texture for %s\n", tex->GetName());
-		if (dev->CreateTexture(tex->GetWidth(), tex->GetHeight(), tex->GetMipCount(), tex->usage, formats[tex->GetFormat()], (D3DPOOL)tex->m_pool, (LPDIRECT3DTEXTURE9*)&pTexture, nullptr) != D3D_OK)
+		if (dev->CreateTexture(tex->GetWidth(), tex->GetHeight(), tex->GetMipCount(), tex->m_usage, formats[tex->GetFormat()], (D3DPOOL)tex->m_pool, (LPDIRECT3DTEXTURE9*)&pTexture, nullptr) != D3D_OK)
 		{
 			MsgError("!!! Couldn't create '%s' INTZ render target with size %d %d\n", tex->GetName(), tex->GetWidth(), tex->GetHeight());
 			ASSERT(!"Couldn't create INTZ render target");
@@ -1386,7 +1386,7 @@ bool ShaderAPID3DX9::InternalCreateRenderTarget(LPDIRECT3DDEVICE9 dev, CD3D9Text
 			LPDIRECT3DBASETEXTURE9 pTexture = nullptr;
 
 			DevMsg(DEVMSG_SHADERAPI, "InternalCreateRenderTarget: creating cubemap target for %s\n", tex->GetName());
-			if (dev->CreateCubeTexture(tex->GetWidth(), tex->GetMipCount(), tex->usage, formats[tex->GetFormat()], (D3DPOOL)tex->m_pool, (LPDIRECT3DCUBETEXTURE9 *) &pTexture, nullptr) != D3D_OK)
+			if (dev->CreateCubeTexture(tex->GetWidth(), tex->GetMipCount(), tex->m_usage, formats[tex->GetFormat()], (D3DPOOL)tex->m_pool, (LPDIRECT3DCUBETEXTURE9 *) &pTexture, nullptr) != D3D_OK)
 			{
 				MsgError("!!! Couldn't create '%s' cubemap render target with size %d %d\n", tex->GetName(), tex->GetWidth(), tex->GetHeight());
 				ASSERT(!"Couldn't create cubemap render target");
@@ -1412,7 +1412,7 @@ bool ShaderAPID3DX9::InternalCreateRenderTarget(LPDIRECT3DDEVICE9 dev, CD3D9Text
 			tex->m_pool = D3DPOOL_DEFAULT;
 
 			DevMsg(DEVMSG_SHADERAPI, "InternalCreateRenderTarget: creating render target single texture for %s\n", tex->GetName());
-			if (dev->CreateTexture(tex->GetWidth(), tex->GetHeight(), tex->GetMipCount(), tex->usage, formats[tex->GetFormat()], (D3DPOOL)tex->m_pool, (LPDIRECT3DTEXTURE9 *) &pTexture, nullptr) != D3D_OK)
+			if (dev->CreateTexture(tex->GetWidth(), tex->GetHeight(), tex->GetMipCount(), tex->m_usage, formats[tex->GetFormat()], (D3DPOOL)tex->m_pool, (LPDIRECT3DTEXTURE9 *) &pTexture, nullptr) != D3D_OK)
 			{
 				MsgError("!!! Couldn't create '%s' render target with size %d %d\n", tex->GetName(), tex->GetWidth(), tex->GetHeight());
 				ASSERT(!"Couldn't create render target");
@@ -1440,7 +1440,7 @@ ITexture* ShaderAPID3DX9::CreateRenderTarget(int width, int height, ETextureForm
 	pTexture->SetDimensions(width,height);
 	pTexture->SetFormat(nRTFormat);
 
-	pTexture->usage = D3DUSAGE_RENDERTARGET;
+	pTexture->m_usage = D3DUSAGE_RENDERTARGET;
 
 	pTexture->SetFlags(nFlags | TEXFLAG_RENDERTARGET);
 	pTexture->SetName(EqString::Format("_sapi_rt_%d", m_TextureList.size()).ToCString());
@@ -1476,7 +1476,7 @@ ITexture* ShaderAPID3DX9::CreateNamedRenderTarget(const char* pszName,int width,
 	pTexture->SetDimensions(width,height);
 	pTexture->SetFormat(nRTFormat);
 
-	pTexture->usage = D3DUSAGE_RENDERTARGET;
+	pTexture->m_usage = D3DUSAGE_RENDERTARGET;
 
 	pTexture->SetFlags(nFlags | TEXFLAG_RENDERTARGET);
 	pTexture->SetName(pszName);
@@ -2720,156 +2720,12 @@ void ShaderAPID3DX9::DrawNonIndexedPrimitives(ER_PrimitiveType nType, int nFirst
 // Textures
 //-------------------------------------------------------------------------------------------------------------------------
 
-IDirect3DBaseTexture9* ShaderAPID3DX9::CreateD3DTextureFromImage(const CImage* pSrc, int& wide, int& tall, int nFlags)
+ITexture* ShaderAPID3DX9::CreateTextureResource(const char* pszName)
 {
-	if(!pSrc)
-		return nullptr;
+	CD3D9Texture* texture = PPNew CD3D9Texture();
+	texture->SetName(pszName);
+	texture->SetFlags(TEXFLAG_JUST_CREATED);
 
-	HOOK_TO_CVAR(r_loadmiplevel);
-	const bool bMipMaps = (pSrc->GetMipMapCount() > 1);
-	const int nQuality = ((nFlags & TEXFLAG_NOQUALITYLOD) || !bMipMaps) ? 0 : r_loadmiplevel->GetInt();
-
-	const int numMipmaps = max(pSrc->GetMipMapCount() - nQuality, 0);
-
-	const D3DPOOL			nPool = D3DPOOL_MANAGED;
-	const ETextureFormat	nFormat = pSrc->GetFormat();
-
-	IDirect3DBaseTexture9* pTexture = nullptr;
-
-	if (pSrc->IsCube())
-	{
-		if (m_pD3DDevice->CreateCubeTexture(pSrc->GetWidth(nQuality),
-											numMipmaps,
-											0,
-											formats[nFormat],
-											nPool,
-											(LPDIRECT3DCUBETEXTURE9 *)&pTexture, 
-											nullptr) != D3D_OK)
-		{
-			MsgError("D3D9 ERROR: Couldn't create cubemap texture '%s'\n", pSrc->GetName());
-
-			return nullptr;
-		}
-
-		nFlags |= TEXFLAG_CUBEMAP;
-	} 
-	else if (pSrc->Is3D())
-	{
-		if (m_pD3DDevice->CreateVolumeTexture(	pSrc->GetWidth(nQuality), 
-												pSrc->GetHeight(nQuality), 
-												pSrc->GetDepth(nQuality), 
-												numMipmaps, 
-												0,
-												formats[nFormat],
-												nPool,
-												(LPDIRECT3DVOLUMETEXTURE9 *)&pTexture, 
-												nullptr) != D3D_OK)
-		{
-			MsgError("D3D9 ERROR: Couldn't create volumetric texture '%s'\n", pSrc->GetName());
-
-			return nullptr;
-		}
-	} 
-	else 
-	{
-		if (m_pD3DDevice->CreateTexture(pSrc->GetWidth(nQuality),
-										pSrc->GetHeight(nQuality), 
-										numMipmaps, 
-										0, 
-										formats[nFormat], 
-										nPool, 
-										(LPDIRECT3DTEXTURE9 *)&pTexture, 
-										nullptr)!= D3D_OK)
-		{
-			MsgError("D3D9 ERROR: Couldn't create texture %s\n", pSrc->GetName());
-
-			return nullptr;
-		}
-	}
-	
-	// set our referenced params
-	wide = pSrc->GetWidth(nQuality);
-	tall = pSrc->GetHeight(nQuality);
-
-	// update texture
-	if (!UpdateD3DTextureFromImage(pTexture, pSrc, nQuality, true))
-	{
-		pTexture->Release();
-		return nullptr;
-	}
-
-	return pTexture;
-}
-
-void ShaderAPID3DX9::CreateTextureInternal(ITexture** pTex, const ArrayCRef<const CImage*>& pImages, const SamplerStateParam_t& sampler,int nFlags)
-{
-	if(!pImages.numElem())
-		return;
-
-	HOOK_TO_CVAR(r_loadmiplevel);
-
-	CD3D9Texture* pTexture = nullptr;
-
-	// get or create
-	if(*pTex)
-		pTexture = (CD3D9Texture*)*pTex;
-	else
-		pTexture = PPNew CD3D9Texture();
-
-	int wide = 0, tall = 0;
-	int numMips = 0;
-
-	for(int i = 0; i < pImages.numElem(); i++)
-	{
-		const CImage* img = pImages[i];
-		IDirect3DBaseTexture9* pD3DTex = CreateD3DTextureFromImage(img, wide, tall, nFlags);
-
-		if(pD3DTex)
-		{
-			int nQuality = r_loadmiplevel->GetInt();
-
-			// force quality to best
-			if((nFlags & TEXFLAG_NOQUALITYLOD) || img->GetMipMapCount() == 1)
-				nQuality = 0;
-
-			numMips = max(img->GetMipMapCount() - nQuality, numMips);
-
-			pTexture->m_texSize += img->GetMipMappedSize(nQuality);
-			pTexture->textures.append(pD3DTex);
-		}
-			
-	}
-
-	if(!pTexture->textures.numElem())
-	{
-		if(!(*pTex))
-			delete pTexture;
-		else
-			FreeTexture(pTexture);
-
-		return;
-	}
-
-	pTexture->m_numAnimatedTextureFrames = pTexture->textures.numElem();
-
-	// Bind this sampler state to texture
-	pTexture->SetSamplerState(sampler);
-	pTexture->SetDimensions(wide, tall);
-	pTexture->SetMipCount(numMips);
-	pTexture->SetFormat(pImages[0]->GetFormat());
-	pTexture->SetFlags(nFlags | TEXFLAG_MANAGED);
-	pTexture->SetName( pImages[0]->GetName() );
-
-	pTexture->m_pool = D3DPOOL_MANAGED;
-
-	// if this is a new texture, add
-	if(!(*pTex))
-	{
-		CScopedMutex m(g_sapi_TextureMutex);
-		ASSERT_MSG(m_TextureList.find(pTexture->m_nameHash) == m_TextureList.end(), "Texture %s was already added", pTexture->GetName());
-		m_TextureList.insert(pTexture->m_nameHash, pTexture);
-	}
-
-	// set for output
-	*pTex = pTexture;
+	m_TextureList.insert(texture->m_nameHash, texture);
+	return texture;
 }

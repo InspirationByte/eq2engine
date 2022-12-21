@@ -35,13 +35,15 @@ public:
 	friend class				CD3D9BlendingState;
 	
 								~ShaderAPID3DX9();
-								ShaderAPID3DX9();
+								ShaderAPID3DX9();	
 
 	// Only in D3DX9 Renderer
 #ifdef USE_D3DEX
 	void						SetD3DDevice(LPDIRECT3DDEVICE9EX d3ddev, D3DCAPS9 &d3dcaps);
+	LPDIRECT3DDEVICE9EX			GetD3DDevice() { return m_pD3DDevice; }
 #else
 	void						SetD3DDevice(LPDIRECT3DDEVICE9 d3ddev, D3DCAPS9 &d3dcaps);
+	LPDIRECT3DDEVICE9			GetD3DDevice() { return m_pD3DDevice; }
 #endif
 
 	void						CheckDeviceResetOrLost(HRESULT hr);
@@ -299,13 +301,13 @@ public:
 	// RAW Constant (Used for structure types, etc.)
 	void						SetShaderConstantRaw(const char *pszName, const void *data, int nSize);
 
-	void						CreateTextureInternal(ITexture** pTex, const ArrayCRef<const CImage*>& pImages, const SamplerStateParam_t& sSamplingParams,int nFlags = 0);
+	// Creates empty texture resource.
+	ITexture*					CreateTextureResource(const char* pszName);
+
 protected:
 
 	void						PreloadShadersFromCache();
 	bool						InitShaderFromCache(IShaderProgram* pShaderOutput, IVirtualStream* pStream);
-
-	IDirect3DBaseTexture9*		CreateD3DTextureFromImage(const CImage* pSrc, int& wide, int& tall, int nFlags = 0);
 
 	bool						GetSamplerUnit(CD3D9ShaderProgram* pProgram, const char* pszSamplerName, const DX9Sampler_t** sampler);
 

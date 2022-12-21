@@ -362,21 +362,45 @@ ITexture* ShaderAPI_Base::FindTexture(const char* pszName)
 	return nullptr;
 }
 
+// Searches for existing texture or creates new one. Use this for resource loading
+ITexture* ShaderAPI_Base::FindOrCreateTexture(const char* pszName)
+{
+	EqString searchStr(pszName);
+	searchStr.Path_FixSlashes();
+
+	const int nameHash = StringToHash(searchStr.ToCString(), true);
+
+	CScopedMutex m(g_sapi_TextureMutex);
+	auto it = m_TextureList.find(nameHash);
+	if (it != m_TextureList.end())
+		return *it;
+
+	if (*pszName == '$')
+		return nullptr;
+
+	return CreateTextureResource(pszName);
+}
+
 //-------------------------------------------------------------
 // Textures
 //-------------------------------------------------------------
 
-ITexture* ShaderAPI_Base::CreateTexture(const ArrayCRef<const CImage*>& pImages, const SamplerStateParam_t& sampler, int nFlags)
+ITexture* ShaderAPI_Base::CreateTexture(const ArrayCRef<CImage*>& pImages, const SamplerStateParam_t& sampler, int nFlags)
 {
 	if(!pImages.numElem())
 		return nullptr;
 
 	// create texture
-	ITexture* pTexture = nullptr;
-	CreateTextureInternal(&pTexture, pImages, sampler, nFlags);
+	ITexture* texture = nullptr;
+	{
+		CScopedMutex m(g_sapi_TextureMutex);
+		texture = CreateTextureResource(pImages[0]->GetName());
+	}
+	
+	texture->Init(sampler, pImages, nFlags);
 
 	// the created texture is automatically added to list
-	return pTexture;
+	return texture;
 }
 
 // creates procedural (lockable) texture
@@ -453,8 +477,7 @@ ITexture* ShaderAPI_Base::GenerateErrorTexture(int nFlags/* = 0*/)
 
 	image.SetName("error");
 
-	PixelWriter pixelWriter;
-	pixelWriter.SetPixelMemory(FORMAT_RGBA8,dest,0);
+	PixelWriter pixelWriter(FORMAT_RGBA8,dest,0);
 
 	int nWidth = image.GetWidth();
 	int nHeight = image.GetHeight();
@@ -474,9 +497,6 @@ ITexture* ShaderAPI_Base::GenerateErrorTexture(int nFlags/* = 0*/)
 			}
 		}
 	}
-
-	//if(nFlags & TEXTURE_FLAG_NORMALMAP)
-	//	pImage->toNormalMap(FORMAT_RGBA8);
 
 	image.CreateMipMaps();
 

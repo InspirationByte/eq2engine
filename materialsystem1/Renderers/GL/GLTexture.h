@@ -18,6 +18,16 @@ public:
 	CGLTexture();
 	~CGLTexture();
 
+		// initializes texture from image array of images
+	bool					Init(const SamplerStateParam_t& sampler, const ArrayCRef<CImage*> images, int flags = 0);
+
+	// initializes render target texture
+	bool					InitRenderTarget( const SamplerStateParam_t& sampler,
+											ETextureFormat format,
+											int width, int height,
+											int flags = 0
+											);
+
 	void					Release();
 	void					ReleaseTextures();
 

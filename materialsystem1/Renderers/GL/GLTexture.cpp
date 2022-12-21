@@ -60,6 +60,21 @@ void CGLTexture::ReleaseTextures()
 	}
 }
 
+// initializes texture from image array of images
+bool CGLTexture::Init(const SamplerStateParam_t& sampler, const ArrayCRef<CImage*> images, int flags)
+{
+	return false;
+}
+
+// initializes render target texture
+bool CGLTexture::InitRenderTarget( const SamplerStateParam_t& sampler,
+										ETextureFormat format,
+										int width, int height,
+										int flags)
+{
+	return false;
+}
+
 GLTextureRef_t& CGLTexture::GetCurrentTexture()
 {
 	static GLTextureRef_t nulltex = {0, GLTEX_TYPE_ERROR};

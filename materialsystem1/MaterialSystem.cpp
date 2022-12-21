@@ -397,8 +397,7 @@ void CMaterialSystem::CreateWhiteTexture()
 
 	ubyte* pLightmapData = img->Create(FORMAT_RGBA8, nWidth,nHeight,1,1);
 
-	PixelWriter pixw;
-	pixw.SetPixelMemory(FORMAT_RGBA8, pLightmapData, 0);
+	PixelWriter pixw(FORMAT_RGBA8, pLightmapData, 0);
 
 	for (int y = 0; y < nHeight; ++y)
 	{

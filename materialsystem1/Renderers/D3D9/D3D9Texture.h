@@ -20,10 +20,14 @@ public:
 	CD3D9Texture();
 	~CD3D9Texture();
 
+	// initializes texture from image array of images
+	bool					Init(const SamplerStateParam_t& sampler, const ArrayCRef<CImage*> images, int flags = 0);
+
 	void					Release();
 	void					ReleaseTextures();
 	void					ReleaseSurfaces();
 
+	IDirect3DBaseTexture9*	CreateD3DTexture(EImageType type, ETextureFormat format, int mipCount, int widthMip0, int heightMip0, int depthMip0 = 1) const;
 	IDirect3DBaseTexture9*	GetCurrentTexture();
 
 	// locks texture for modifications, etc
@@ -34,16 +38,16 @@ public:
 
 	Array<IDirect3DBaseTexture9*>	textures{ PP_SL };
 	Array<IDirect3DSurface9*>		surfaces{ PP_SL };
-	IDirect3DSurface9*		m_dummyDepth;
+	IDirect3DSurface9*				m_dummyDepth{ nullptr };
 
-	uint					m_pool;
-	uint					usage;
-	int						m_texSize;
+	uint					m_pool{ 0 };
+	uint					m_usage{ 0 };
+	int						m_texSize{ 0 };
 
-	bool					m_bIsLocked;
-	ushort					m_nLockLevel;
-	ushort					m_nLockCube;
-	IDirect3DSurface9*		m_pLockSurface;
+	bool					m_bIsLocked{ false };
+	ushort					m_nLockLevel{ 0 };
+	ushort					m_nLockCube{ 0 };
+	IDirect3DSurface9*		m_pLockSurface{ nullptr };
 };
 
 bool UpdateD3DTextureFromImage(IDirect3DBaseTexture9* texture, const CImage* image, int startMipLevel, bool convert);

@@ -206,14 +206,16 @@ public:
 	// Searches for texture by name, can be used for shared RT's
 	virtual ITexture*			FindTexture( const char* pszName ) = 0;
 
+	// Searches for existing texture or creates new one. Use this for resource loading
+	virtual ITexture*			FindOrCreateTexture( const char* pszName ) = 0;
+
 	// unloads the texture and frees the memory
 	virtual void				FreeTexture(ITexture* pTexture) = 0;
 
-	// creates texture from image array, used in LoadTexture, common use only
-	virtual	ITexture*			CreateTexture(const ArrayCRef<const CImage*>& pImages, const SamplerStateParam_t& sampler, int nFlags = 0) = 0;
-
-
 	// BEGIN CUT HERE
+
+	// creates texture from image array
+	virtual	ITexture*			CreateTexture(const ArrayCRef<CImage*>& pImages, const SamplerStateParam_t& sampler, int nFlags = 0) = 0;
 
 	// creates procedural (lockable) texture
 	virtual ITexture*			CreateProceduralTexture(const char* pszName,

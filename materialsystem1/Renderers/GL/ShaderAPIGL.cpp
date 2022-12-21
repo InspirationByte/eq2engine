@@ -882,6 +882,17 @@ void ShaderAPIGL::ResizeRenderTarget(ITexture* pRT, int newWide, int newTall)
 	}
 }
 
+ITexture* ShaderAPIGL::CreateTextureResource(const char* pszName)
+{
+	CGLTexture* texture = PPNew CGLTexture();
+	texture->SetName(pszName);
+	texture->SetFlags(TEXFLAG_JUST_CREATED);
+
+	m_TextureList.insert(texture->m_nameHash, texture);
+	return texture;
+}
+
+
 static ConVar gl_skipTextures("gl_skipTextures", "0", nullptr, CV_CHEAT);
 
 GLTextureRef_t ShaderAPIGL::CreateGLTextureFromImage(const CImage* pSrc, const SamplerStateParam_t& sampler, int& wide, int& tall, int nFlags)

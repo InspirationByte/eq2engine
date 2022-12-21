@@ -15,6 +15,22 @@ public:
 
 	CEmptyTexture() : m_lockData(nullptr) {}
 
+	// initializes texture from image array of images
+	bool				Init(const SamplerStateParam_t& sampler, const ArrayCRef<CImage*> images, int flags = 0) 
+	{
+		return true;
+	}
+
+	// initializes render target texture
+	bool				InitRenderTarget( const SamplerStateParam_t& sampler,
+											ETextureFormat format,
+											int width, int height,
+											int flags = 0
+	) 
+	{
+		return true;
+	}
+
 	// dummy class
 	// locks texture for modifications, etc
 	void	Lock(LockData* pLockData, Rectangle_t* pRect = nullptr, bool bDiscard = false, bool bReadOnly = false, int nLevel = 0, int nCubeFaceId = 0)

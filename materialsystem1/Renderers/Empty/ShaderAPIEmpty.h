@@ -458,6 +458,16 @@ public:
 
 protected:
 
+	ITexture*					CreateTextureResource(const char* pszName)
+	{
+		CEmptyTexture* texture = PPNew CEmptyTexture();
+		texture->SetName(pszName);
+		texture->SetFlags(TEXFLAG_JUST_CREATED);
+
+		m_TextureList.insert(texture->m_nameHash, texture);
+		return texture;
+	}
+
 	void						CreateTextureInternal(ITexture** pTex, const ArrayCRef<const CImage*>& pImages, const SamplerStateParam_t& sampler,int nFlags)
 	{
 		if(!pImages.numElem())

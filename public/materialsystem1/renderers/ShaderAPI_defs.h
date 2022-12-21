@@ -261,24 +261,17 @@ enum ER_BlendFunction
 enum ER_TextureFlags
 {
 	// texture creating flags
-	TEXFLAG_CUBEMAP					= (1 << 0),		// should create cubemap
+	TEXFLAG_JUST_CREATED			= (1 << 0),
 
-	TEXFLAG_SAMPLEDEPTH				= (1 << 1),		// depth texture sampling enabled
-	TEXFLAG_SAMPLESLICES			= (1 << 2),		// sample single slices instead of array
-	TEXFLAG_RENDERSLICES			= (1 << 3),		// render single slices instead of array
-
-	TEXFLAG_GENMIPMAPS				= (1 << 4),		// generate mipmaps (could be used on rendertargets)
-	TEXFLAG_NOQUALITYLOD			= (1 << 5),		// not affected by texture quality Cvar, always load all mip levels
-
-	TEXFLAG_USE_SRGB				= (1 << 6),
+	TEXFLAG_NULL_ON_ERROR			= (1 << 1),
+	TEXFLAG_CUBEMAP					= (1 << 2),		// should create cubemap
+	TEXFLAG_NOQUALITYLOD			= (1 << 3),		// not affected by texture quality Cvar, always load all mip levels
 
 	// texture identification flags
-	TEXFLAG_MANAGED					= (1 << 7),		// managed by video driver. Internal.
-	TEXFLAG_RENDERTARGET			= (1 << 8),		// this is a rendertarget texture
-	TEXFLAG_RENDERDEPTH				= (1 << 9),	// rendertarget with depth texture
-	TEXFLAG_FOREIGN					= (1 << 10),	// texture is created not by ShaderAPI
-
-	TEXFLAG_NULL_ON_ERROR			= (1 << 11),
+	TEXFLAG_MANAGED					= (1 << 4),		// managed by video driver. Internal.
+	TEXFLAG_RENDERTARGET			= (1 << 5),		// this is a rendertarget texture
+	TEXFLAG_RENDERDEPTH				= (1 << 6),		// rendertarget with depth texture
+	TEXFLAG_FOREIGN					= (1 << 7),		// texture is created not by ShaderAPI
 };
 
 #define MAX_MRTS				8

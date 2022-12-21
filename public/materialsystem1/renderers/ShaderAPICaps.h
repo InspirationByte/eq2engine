@@ -20,33 +20,33 @@ enum EShaderSupportFlags
 
 struct ShaderAPICaps_t
 {
-	bool				textureFormatsSupported[FORMAT_COUNT];
-	bool				renderTargetFormatsSupported[FORMAT_COUNT];
+	bool				textureFormatsSupported[FORMAT_COUNT]{ false };
+	bool				renderTargetFormatsSupported[FORMAT_COUNT]{ false };
 
-	bool				INTZSupported;		// Direct3D9 INTZ (internal Z buffer) sampling as texture is supported
-	ETextureFormat		INTZFormat;
+	bool				INTZSupported{ false };		// Direct3D9 INTZ (internal Z buffer) sampling as texture is supported
+	ETextureFormat		INTZFormat{ FORMAT_NONE };
 
-	bool				NULLSupported;		// Direct3D9 NULL sampling as texture is supported
-	ETextureFormat		NULLFormat;
+	bool				NULLSupported{ false };		// Direct3D9 NULL sampling as texture is supported
+	ETextureFormat		NULLFormat{ FORMAT_NONE };
 
-	bool				isInstancingSupported;
-	bool				isHardwareOcclusionQuerySupported;
+	bool				isInstancingSupported{ 0 };
+	bool				isHardwareOcclusionQuerySupported{ 0 };
 
-	int					maxTextureSize;
-	int					maxRenderTargets;
+	int					maxTextureSize{ 0 };
+	int					maxRenderTargets{ 0 };
 	
-	int					maxTextureUnits;
-	int					maxVertexTextureUnits;
+	int					maxTextureUnits{ 0 };
+	int					maxVertexTextureUnits{ 0 };
 
-	int					maxTextureAnisotropicLevel;
+	int					maxTextureAnisotropicLevel{ 0 };
 
-	int					maxSamplerStates;
+	int					maxSamplerStates{ 0 };
 
-	int					maxVertexStreams;
-	int					maxVertexGenericAttributes;
-	int					maxVertexTexcoordAttributes;
+	int					maxVertexStreams{ 0 };
+	int					maxVertexGenericAttributes{ 0 };
+	int					maxVertexTexcoordAttributes{ 0 };
 
-	int					shadersSupportedFlags;			// EShaderSupportFlags
+	int					shadersSupportedFlags{ 0 };			// EShaderSupportFlags
 
-	int					shaderVersions[4];
+	int					shaderVersions[4]{ 0 };
 };

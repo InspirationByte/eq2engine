@@ -9,6 +9,15 @@
 
 // TODO: RENAME ENUMS TO TEXTURE_FORMAT_***
 
+enum EImageType
+{
+	IMAGE_TYPE_INVALID = -1,
+	IMAGE_TYPE_1D = 0,
+	IMAGE_TYPE_2D,
+	IMAGE_TYPE_3D,
+	IMAGE_TYPE_CUBE
+};
+
 enum ETextureFormat
 {
 	FORMAT_NONE     	= 0,
