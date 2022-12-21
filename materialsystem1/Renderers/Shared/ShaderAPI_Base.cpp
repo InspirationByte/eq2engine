@@ -31,10 +31,6 @@ CEqMutex g_sapi_VBMutex;
 CEqMutex g_sapi_IBMutex;
 CEqMutex g_sapi_Mutex;
 
-static ConVar r_noMip("r_noMip", "0", nullptr, CV_CHEAT);
-
-HOOK_TO_CVAR(r_allowSourceTextures);
-
 DECLARE_CMD(r_info, "Prints renderer info", 0)
 {
 	g_pShaderAPI->PrintAPIInfo();
@@ -370,16 +366,10 @@ ITexture* ShaderAPI_Base::FindTexture(const char* pszName)
 // Textures
 //-------------------------------------------------------------
 
-ITexture* ShaderAPI_Base::CreateTexture(const ArrayCRef<CImage*>& pImages, const SamplerStateParam_t& sampler, int nFlags)
+ITexture* ShaderAPI_Base::CreateTexture(const ArrayCRef<const CImage*>& pImages, const SamplerStateParam_t& sampler, int nFlags)
 {
 	if(!pImages.numElem())
 		return nullptr;
-
-	if(r_noMip.GetBool())
-	{
-		for(int i = 0; i < pImages.numElem(); i++)
-			pImages[i]->RemoveMipMaps(0,1);
-	}
 
 	// create texture
 	ITexture* pTexture = nullptr;

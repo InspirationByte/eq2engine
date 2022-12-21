@@ -282,8 +282,8 @@ public:
 
 protected:
 
-	void				CreateTextureInternal(ITexture** pTex, const ArrayCRef<CImage*>& pImages, const SamplerStateParam_t& sampler,int nFlags = 0);
-	GLTextureRef_t		CreateGLTextureFromImage(CImage* pSrc, const SamplerStateParam_t& sampler, int& wide, int& tall, int nFlags);
+	void				CreateTextureInternal(ITexture** pTex, const ArrayCRef<const CImage*>& pImages, const SamplerStateParam_t& sampler,int nFlags = 0);
+	GLTextureRef_t		CreateGLTextureFromImage(const CImage* pSrc, const SamplerStateParam_t& sampler, int& wide, int& tall, int nFlags);
 
 private:
 	void					ApplyBuffers();

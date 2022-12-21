@@ -18,6 +18,7 @@
 
 static ConVar r_reportTextureLoading("r_reportTextureLoading", "0", "Echo textrue loading");
 static ConVar r_skipTextureLoading("r_skipTextureLoading", "0", nullptr, CV_CHEAT);
+static ConVar r_noMip("r_noMip", "0", nullptr, CV_CHEAT);
 
 static void AnimGetImagesForTextureName(Array<EqString>& textureNames, const char* pszFileName)
 {
@@ -86,22 +87,16 @@ ITexture* CTextureLoader::LoadTextureFromFileSync(const char* pszFileName, const
 	PROF_EVENT("Load Texture from file");
 
 	// first search for existing texture
-	ITexture* pFoundTexture = g_pShaderAPI->FindTexture(pszFileName);
-	if (pFoundTexture != nullptr)
-		return pFoundTexture;
+	ITexture* foundTexture = g_pShaderAPI->FindTexture(pszFileName);
+	if (foundTexture)
+		return foundTexture;
 
 	// Don't load textures starting with special symbols
 	if (pszFileName[0] == '$')
 		return nullptr;
 
 	if (r_skipTextureLoading.GetBool())
-	{
-		// Generate the error
-		if (!pFoundTexture && !(nFlags & TEXFLAG_NULL_ON_ERROR))
-			pFoundTexture = g_pShaderAPI->GetErrorTexture();
-
-		return pFoundTexture;
-	}
+		return (nFlags & TEXFLAG_NULL_ON_ERROR) ? nullptr : g_pShaderAPI->GetErrorTexture();
 
 	const shaderAPIParams_t& shaderApiParams = g_pShaderAPI->GetParams();
 
@@ -121,17 +116,20 @@ ITexture* CTextureLoader::LoadTextureFromFileSync(const char* pszFileName, const
 
 		EqString texturePathExt;
 		CombinePath(texturePathExt, 2, shaderApiParams.texturePath.ToCString(), textureNames[i].ToCString());
-		bool stateLoad = img->LoadDDS(texturePathExt + TEXTURE_DEFAULT_EXTENSION, 0);
+		bool isLoaded = img->LoadDDS(texturePathExt + TEXTURE_DEFAULT_EXTENSION, 0);
 
-		if (!stateLoad)
+		if (!isLoaded)
 		{
 			CombinePath(texturePathExt, 2, textureAuxPath.ToCString(), textureNames[i].ToCString());
-			stateLoad = img->LoadTGA(texturePathExt + TEXTURE_SECONDARY_EXTENSION);
+			isLoaded = img->LoadTGA(texturePathExt + TEXTURE_SECONDARY_EXTENSION);
 		}
 
 		img->SetName(texNameStr.ToCString());
 
-		if (stateLoad)
+		if (r_noMip.GetBool())
+			img->RemoveMipMaps(0, 1);
+
+		if (isLoaded)
 		{
 			pImages.append(img);
 

@@ -210,7 +210,7 @@ public:
 	virtual void				FreeTexture(ITexture* pTexture) = 0;
 
 	// creates texture from image array, used in LoadTexture, common use only
-	virtual	ITexture*			CreateTexture(const ArrayCRef<CImage*>& pImages, const SamplerStateParam_t& sampler, int nFlags = 0) = 0;
+	virtual	ITexture*			CreateTexture(const ArrayCRef<const CImage*>& pImages, const SamplerStateParam_t& sampler, int nFlags = 0) = 0;
 
 
 	// BEGIN CUT HERE

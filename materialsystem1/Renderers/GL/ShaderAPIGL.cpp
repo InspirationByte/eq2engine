@@ -884,7 +884,7 @@ void ShaderAPIGL::ResizeRenderTarget(ITexture* pRT, int newWide, int newTall)
 
 static ConVar gl_skipTextures("gl_skipTextures", "0", nullptr, CV_CHEAT);
 
-GLTextureRef_t ShaderAPIGL::CreateGLTextureFromImage(CImage* pSrc, const SamplerStateParam_t& sampler, int& wide, int& tall, int nFlags)
+GLTextureRef_t ShaderAPIGL::CreateGLTextureFromImage(const CImage* pSrc, const SamplerStateParam_t& sampler, int& wide, int& tall, int nFlags)
 {
 	GLTextureRef_t noTexture = { 0, GLTEX_TYPE_ERROR };
 
@@ -900,19 +900,11 @@ GLTextureRef_t ShaderAPIGL::CreateGLTextureFromImage(CImage* pSrc, const Sampler
 	}
 
 	HOOK_TO_CVAR(r_loadmiplevel);
-	int nQuality = r_loadmiplevel->GetInt();
 
-	// force quality to best
-	if(nFlags & TEXFLAG_NOQUALITYLOD)
-		nQuality = 0;
+	const bool bMipMaps = (pSrc->GetMipMapCount() > 1);
+	const int nQuality = ((nFlags & TEXFLAG_NOQUALITYLOD) || !bMipMaps) ? 0 : r_loadmiplevel->GetInt();
 
-	bool bMipMaps = (pSrc->GetMipMapCount() > 1);
-
-	if(!bMipMaps)
-		nQuality = 0;
-
-	int numMipmaps = (pSrc->GetMipMapCount() - nQuality);
-	numMipmaps = max(0, numMipmaps);
+	const int numMipmaps = max(pSrc->GetMipMapCount() - nQuality, 0);
 
 	// create texture
 	GLTextureRef_t texture;
@@ -922,7 +914,6 @@ GLTextureRef_t ShaderAPIGL::CreateGLTextureFromImage(CImage* pSrc, const Sampler
 		texture.type = GLTEX_TYPE_CUBETEXTURE;
 	else
 		texture.type = GLTEX_TYPE_TEXTURE;
-
 
 	// set our referenced params
 	wide = pSrc->GetWidth();
@@ -968,7 +959,7 @@ GLTextureRef_t ShaderAPIGL::CreateGLTextureFromImage(CImage* pSrc, const Sampler
 	return texture;
 }
 
-void ShaderAPIGL::CreateTextureInternal(ITexture** pTex, const ArrayCRef<CImage*>& pImages, const SamplerStateParam_t& sampler,int nFlags)
+void ShaderAPIGL::CreateTextureInternal(ITexture** pTex, const ArrayCRef<const CImage*>& pImages, const SamplerStateParam_t& sampler,int nFlags)
 {
 	if(!pImages.numElem())
 		return;
@@ -1014,7 +1005,7 @@ void ShaderAPIGL::CreateTextureInternal(ITexture** pTex, const ArrayCRef<CImage*
 			if((nFlags & TEXFLAG_NOQUALITYLOD) || pImages[i]->GetMipMapCount() == 1)
 				nQuality = 0;
 
-			mipCount += pImages[i]->GetMipMapCount()-nQuality;
+			mipCount = max(pImages[i]->GetMipMapCount()-nQuality, mipCount);
 
 			pTexture->m_texSize += pImages[i]->GetMipMappedSize(nQuality);
 			pTexture->textures.append(textureRef);

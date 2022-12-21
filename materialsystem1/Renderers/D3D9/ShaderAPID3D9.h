@@ -299,13 +299,13 @@ public:
 	// RAW Constant (Used for structure types, etc.)
 	void						SetShaderConstantRaw(const char *pszName, const void *data, int nSize);
 
-	void						CreateTextureInternal(ITexture** pTex, const ArrayCRef<CImage*>& pImages, const SamplerStateParam_t& sSamplingParams,int nFlags = 0);
+	void						CreateTextureInternal(ITexture** pTex, const ArrayCRef<const CImage*>& pImages, const SamplerStateParam_t& sSamplingParams,int nFlags = 0);
 protected:
 
 	void						PreloadShadersFromCache();
 	bool						InitShaderFromCache(IShaderProgram* pShaderOutput, IVirtualStream* pStream);
 
-	IDirect3DBaseTexture9*		CreateD3DTextureFromImage(CImage* pSrc, int& wide, int& tall, int nFlags = 0);
+	IDirect3DBaseTexture9*		CreateD3DTextureFromImage(const CImage* pSrc, int& wide, int& tall, int nFlags = 0);
 
 	bool						GetSamplerUnit(CD3D9ShaderProgram* pProgram, const char* pszSamplerName, const DX9Sampler_t** sampler);
 

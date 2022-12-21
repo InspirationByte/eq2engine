@@ -210,7 +210,7 @@ void CD3D9Texture::Unlock()
 	m_bIsLocked = false;
 }
 
-bool UpdateD3DTextureFromImage(IDirect3DBaseTexture9* texture, CImage* image, int startMipLevel, bool convert)
+bool UpdateD3DTextureFromImage(IDirect3DBaseTexture9* texture, const CImage* image, int startMipLevel, bool convert)
 {
 	bool isAcceptableImageType =
 		(texture->GetType() == D3DRTYPE_VOLUMETEXTURE && image->Is3D()) ||
@@ -226,12 +226,14 @@ bool UpdateD3DTextureFromImage(IDirect3DBaseTexture9* texture, CImage* image, in
 
 	if (convert)
 	{
+		CImage* conv = const_cast<CImage*>(image);
+
 		if (nFormat == FORMAT_RGB8 || nFormat == FORMAT_RGBA8)
-			image->SwapChannels(0, 2); // convert to BGR
+			conv->SwapChannels(0, 2); // convert to BGR
 
 		// Convert if needed and upload datas
 		if (nFormat == FORMAT_RGB8) // as the D3DFMT_X8R8G8B8 used
-			image->Convert(FORMAT_RGBA8);
+			conv->Convert(FORMAT_RGBA8);
 	}
 	
 	int mipMapLevel = startMipLevel;

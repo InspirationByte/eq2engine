@@ -79,7 +79,7 @@ public:
 //-------------------------------------------------------------
 
 	// creates texture from image array, used in LoadTexture, common use only
-	ITexture*							CreateTexture(const ArrayCRef<CImage*>& pImages, const SamplerStateParam_t& sampler, int nFlags = 0);
+	ITexture*							CreateTexture(const ArrayCRef<const CImage*>& pImages, const SamplerStateParam_t& sampler, int nFlags = 0);
 
 	// creates procedural (lockable) texture
 	ITexture*							CreateProceduralTexture(const char* pszName,
@@ -169,7 +169,7 @@ protected:
 
 	virtual bool						RestoreTextureInternal(ITexture* pTexture);
 
-	virtual void						CreateTextureInternal(ITexture** pTex, const ArrayCRef<CImage*>& pImages, const SamplerStateParam_t& sSamplingParams,int nFlags = 0) = 0;
+	virtual void						CreateTextureInternal(ITexture** pTex, const ArrayCRef<const CImage*>& pImages, const SamplerStateParam_t& sSamplingParams,int nFlags = 0) = 0;
 
 //-------------------------------------------------------------
 // Useful data

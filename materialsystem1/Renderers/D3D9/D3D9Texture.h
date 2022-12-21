@@ -46,4 +46,4 @@ public:
 	IDirect3DSurface9*		m_pLockSurface;
 };
 
-bool UpdateD3DTextureFromImage(IDirect3DBaseTexture9* texture, CImage* image, int startMipLevel, bool convert);
+bool UpdateD3DTextureFromImage(IDirect3DBaseTexture9* texture, const CImage* image, int startMipLevel, bool convert);

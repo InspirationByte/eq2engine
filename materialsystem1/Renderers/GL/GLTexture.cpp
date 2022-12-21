@@ -173,7 +173,7 @@ void CGLTexture::Unlock()
 	m_bIsLocked = false;
 }
 
-bool UpdateGLTextureFromImage(GLTextureRef_t texture, CImage* image, int startMipLevel)
+bool UpdateGLTextureFromImage(GLTextureRef_t texture, const CImage* image, int startMipLevel)
 {
 	const GLenum glTarget = glTexTargetType[texture.type];
 	const ETextureFormat format = image->GetFormat();

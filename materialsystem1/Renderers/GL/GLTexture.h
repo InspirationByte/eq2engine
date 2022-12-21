@@ -49,4 +49,4 @@ protected:
 	bool					m_lockReadOnly;
 };
 
-bool UpdateGLTextureFromImage(GLTextureRef_t texture, CImage* image, int startMipLevel);
+bool UpdateGLTextureFromImage(GLTextureRef_t texture, const CImage* image, int startMipLevel);

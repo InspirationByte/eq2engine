@@ -458,7 +458,7 @@ public:
 
 protected:
 
-	void						CreateTextureInternal(ITexture** pTex, const ArrayCRef<CImage*>& pImages, const SamplerStateParam_t& sampler,int nFlags)
+	void						CreateTextureInternal(ITexture** pTex, const ArrayCRef<const CImage*>& pImages, const SamplerStateParam_t& sampler,int nFlags)
 	{
 		if(!pImages.numElem())
 			return;

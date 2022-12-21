@@ -2720,26 +2720,16 @@ void ShaderAPID3DX9::DrawNonIndexedPrimitives(ER_PrimitiveType nType, int nFirst
 // Textures
 //-------------------------------------------------------------------------------------------------------------------------
 
-IDirect3DBaseTexture9* ShaderAPID3DX9::CreateD3DTextureFromImage(CImage* pSrc, int& wide, int& tall, int nFlags)
+IDirect3DBaseTexture9* ShaderAPID3DX9::CreateD3DTextureFromImage(const CImage* pSrc, int& wide, int& tall, int nFlags)
 {
 	if(!pSrc)
 		return nullptr;
 
 	HOOK_TO_CVAR(r_loadmiplevel);
-	int nQuality = r_loadmiplevel->GetInt();
+	const bool bMipMaps = (pSrc->GetMipMapCount() > 1);
+	const int nQuality = ((nFlags & TEXFLAG_NOQUALITYLOD) || !bMipMaps) ? 0 : r_loadmiplevel->GetInt();
 
-	// force quality to best
-	if(nFlags & TEXFLAG_NOQUALITYLOD)
-		nQuality = 0;
-
-	bool bMipMaps = (pSrc->GetMipMapCount() > 1);
-
-	// force zero quality if no mipmaps
-	if(!bMipMaps)
-		nQuality = 0;
-
-	int numMipmaps = (pSrc->GetMipMapCount() - nQuality);
-	numMipmaps = max(0, numMipmaps);
+	const int numMipmaps = max(pSrc->GetMipMapCount() - nQuality, 0);
 
 	const D3DPOOL			nPool = D3DPOOL_MANAGED;
 	const ETextureFormat	nFormat = pSrc->GetFormat();
@@ -2811,7 +2801,7 @@ IDirect3DBaseTexture9* ShaderAPID3DX9::CreateD3DTextureFromImage(CImage* pSrc, i
 	return pTexture;
 }
 
-void ShaderAPID3DX9::CreateTextureInternal(ITexture** pTex, const ArrayCRef<CImage*>& pImages, const SamplerStateParam_t& sampler,int nFlags)
+void ShaderAPID3DX9::CreateTextureInternal(ITexture** pTex, const ArrayCRef<const CImage*>& pImages, const SamplerStateParam_t& sampler,int nFlags)
 {
 	if(!pImages.numElem())
 		return;
@@ -2831,20 +2821,20 @@ void ShaderAPID3DX9::CreateTextureInternal(ITexture** pTex, const ArrayCRef<CIma
 
 	for(int i = 0; i < pImages.numElem(); i++)
 	{
-		IDirect3DBaseTexture9* pD3DTex = CreateD3DTextureFromImage(pImages[i], wide, tall, nFlags);
+		const CImage* img = pImages[i];
+		IDirect3DBaseTexture9* pD3DTex = CreateD3DTextureFromImage(img, wide, tall, nFlags);
 
 		if(pD3DTex)
 		{
 			int nQuality = r_loadmiplevel->GetInt();
 
 			// force quality to best
-			if((nFlags & TEXFLAG_NOQUALITYLOD) || pImages[i]->GetMipMapCount() == 1)
+			if((nFlags & TEXFLAG_NOQUALITYLOD) || img->GetMipMapCount() == 1)
 				nQuality = 0;
 
-			numMips += pImages[i]->GetMipMapCount() - nQuality;
+			numMips = max(img->GetMipMapCount() - nQuality, numMips);
 
-			pTexture->m_texSize += pImages[i]->GetMipMappedSize(nQuality);
-
+			pTexture->m_texSize += img->GetMipMappedSize(nQuality);
 			pTexture->textures.append(pD3DTex);
 		}
 			
