@@ -597,21 +597,24 @@ IMaterialPtr CMaterialSystem::GetMaterial(const char* szMaterialName)
 
 	const int nameHash = StringToHash(materialName.ToCString(), true);
 
+	CRefPtr<CMaterial> newMaterial;
+
 	// find the material with existing name
 	// it could be a material that was not been loaded from disk
-	CScopedMutex m(m_Mutex);
+	{
+		CScopedMutex m(m_Mutex);
 
-	auto it = m_loadedMaterials.find(nameHash);
-	if (it != m_loadedMaterials.end())
-		return IMaterialPtr(*it);
+		auto it = m_loadedMaterials.find(nameHash);
+		if (it != m_loadedMaterials.end())
+			return IMaterialPtr(*it);
 
-	// by default try to load material file from disk
-	CRefPtr<CMaterial> material = CRefPtr_new(CMaterial, materialName, true);
+		// by default try to load material file from disk
+		newMaterial = CRefPtr_new(CMaterial, materialName, true);
+		m_loadedMaterials.insert(nameHash, newMaterial);
+	}
 
-	m_loadedMaterials.insert(nameHash, material);
-	CreateMaterialInternal(material, nullptr);
-
-	return IMaterialPtr(material);
+	CreateMaterialInternal(newMaterial, nullptr);
+	return IMaterialPtr(newMaterial);
 }
 
 // If we have unliaded material, just load it
