@@ -298,6 +298,10 @@ void CEqCollisionBroadphaseGrid::AddStaticObjectToGrid( CEqCollisionObject* coll
 		IVector2D crMin, crMax;
 		FindBoxRange(bbox, crMin, crMax, 0.0f );
 
+		ASSERT_MSG(crMin.x >=0 && crMin.y >= 0 && crMin.x < m_gridWide && crMin.y < m_gridTall, "FindBoxRange: outside of grid bounds, box is [%.2f %.2f %.2f] [%.2f %.2f %.2f]", 
+			bbox.minPoint.x, bbox.minPoint.y, bbox.minPoint.z,
+			bbox.maxPoint.x, bbox.maxPoint.y, bbox.maxPoint.z);
+
 		// in this range do...
 		for(int y = crMin.y; y < crMax.y+1; y++)
 		{
