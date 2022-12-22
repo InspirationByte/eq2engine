@@ -244,6 +244,9 @@ public:
 	// resizes the list
 	void			resize( int newsize );
 
+	// reserve capacity
+	void			reserve(int requiredSize);
+
 	// sets the number of elements in list and resize to exactly this number if necessary
 	void			setNum( int newnum, bool resize = true );
 
@@ -529,6 +532,17 @@ template< typename T, typename STORAGE_TYPE >
 inline void ArrayBase<T, STORAGE_TYPE>::resize( int newSize )
 {
 	m_storage.resize(newSize, m_nNumElem);
+}
+
+
+// -----------------------------------------------------------------
+// Reserves memory for the amount of elements requested
+// -----------------------------------------------------------------
+template< typename T, typename STORAGE_TYPE >
+inline void ArrayBase<T, STORAGE_TYPE>::reserve(int requiredSize)
+{
+	if(requiredSize > m_storage.getSize())
+		m_storage.resize(requiredSize, m_nNumElem);
 }
 
 // -----------------------------------------------------------------
