@@ -63,8 +63,6 @@ void CMaterial::Init()
 	bool success = false;
 	KVSection root;
 
-	int doMaterialPaths = materials->GetConfiguration().editormode;
-
 	const int numSteps = r_allowSourceTextures.GetBool() ? 2 : 1;
 
 	for (int i = 0; i < numSteps && !success; ++i)
@@ -312,12 +310,9 @@ bool CMaterial::LoadShaderAndTextures()
 
 bool CMaterial::DoLoadShaderAndTextures()
 {
-	PROF_EVENT("MatSystem Load Material Shader and Textures");
-
 	InitShader();
 
 	IMaterialSystemShader* shader = m_shader;
-
 	if(!shader)
 		return true;
 
@@ -326,6 +321,7 @@ bool CMaterial::DoLoadShaderAndTextures()
 	// try init
 	if(!shader->IsInitialized() && !shader->IsError())
 	{
+		PROF_EVENT("MatSystem Load Material Shader and Textures");
 		shader->InitTextures();
 		shader->InitShader();
 	}

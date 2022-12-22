@@ -233,24 +233,21 @@ void CBaseShader::SetupParameter(uint mask, ShaderDefaultParams_e type)
 		(this->*m_param_functors[type]) ();
 }
 
-ITexture* CBaseShader::FindTextureByVar(IMaterial* material, const char* paramName, bool errorTextureIfNoVar)
+void CBaseShader::FindTextureByVar(ITexture*& texturePtrRef, IMaterial* material, const char* paramName, bool errorTextureIfNoVar)
 {
-	ITexture* texture = nullptr;
 	IMatVar* mv = GetAssignedMaterial()->FindMaterialVar(paramName);
 	if(mv) 
 	{
-		texture = g_pShaderAPI->FindTexture(mv->GetString());
+		texturePtrRef = g_pShaderAPI->FindTexture(mv->GetString());
 
-		if(texture)
-			mv->AssignTexture(texture);
+		if(texturePtrRef)
+			mv->AssignTexture(texturePtrRef);
 	}
 	else if(errorTextureIfNoVar)
-		texture = g_pShaderAPI->GetErrorTexture();
-
-	return texture;
+		texturePtrRef = g_pShaderAPI->GetErrorTexture();
 }
 
-ITexture* CBaseShader::LoadTextureByVar(IMaterial* material, const char* paramName, bool errorTextureIfNoVar)
+void CBaseShader::LoadTextureByVar(ITexture*& texturePtrRef, IMaterial* material, const char* paramName, bool errorTextureIfNoVar)
 {	
 	IMatVar* mv = nullptr;
 	if(materials->GetConfiguration().editormode)		
@@ -262,21 +259,19 @@ ITexture* CBaseShader::LoadTextureByVar(IMaterial* material, const char* paramNa
 	else
 		mv = material->FindMaterialVar(paramName);
 	
-	ITexture* texture = nullptr;
+	texturePtrRef = nullptr;
 	if(mv) 
 	{
 		SamplerStateParam_t samplerParams;
 		SamplerStateParams_Make(samplerParams, g_pShaderAPI->GetCaps(), m_nTextureFilter, m_nAddressMode, m_nAddressMode, m_nAddressMode);
 
-		texture = g_texLoader->LoadTextureFromFileSync(mv->GetString(), samplerParams);
-		if(texture)
-			AddManagedTexture(mv, &texture);
+		texturePtrRef = g_texLoader->LoadTextureFromFileSync(mv->GetString(), samplerParams);
+		if(texturePtrRef)
+			AddManagedTexture(mv, &texturePtrRef);
 	}
 
-	if(!texture && errorTextureIfNoVar)
-		texture = g_pShaderAPI->GetErrorTexture();
-
-	return texture;
+	if(!texturePtrRef && errorTextureIfNoVar)
+		texturePtrRef = g_pShaderAPI->GetErrorTexture();
 }
 
 void CBaseShader::ParamSetup_CurrentAsBaseTexture()

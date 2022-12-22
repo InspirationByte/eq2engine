@@ -2628,7 +2628,7 @@ IVertexBuffer* ShaderAPID3DX9::CreateVertexBuffer(ER_BufferAccess nBufAccess, in
 
 	// make first transfer operation
 	void *dest;
-	if (pData && pBuffer->m_pVertexBuffer->Lock(0, pBuffer->m_nSize, &dest, dynamic? D3DLOCK_DISCARD : 0) == D3D_OK)
+	if (pData && pBuffer->m_pVertexBuffer->Lock(0, pBuffer->m_nSize, &dest, (dynamic ? D3DLOCK_DISCARD : 0) | D3DLOCK_NOSYSLOCK) == D3D_OK)
 	{
 		memcpy(dest, pData, pBuffer->m_nSize);
 		pBuffer->m_pVertexBuffer->Unlock();
@@ -2674,7 +2674,7 @@ IIndexBuffer* ShaderAPID3DX9::CreateIndexBuffer(int nIndices, int nIndexSize, ER
 
 	// make first transfer operation
 	void *dest;
-	if (pData && pBuffer->m_pIndexBuffer->Lock(0, pBuffer->m_nInitialSize, &dest, dynamic? D3DLOCK_DISCARD : 0) == D3D_OK)
+	if (pData && pBuffer->m_pIndexBuffer->Lock(0, pBuffer->m_nInitialSize, &dest, (dynamic ? D3DLOCK_DISCARD : 0) | D3DLOCK_NOSYSLOCK) == D3D_OK)
 	{
 		memcpy(dest, pData, pBuffer->m_nInitialSize);
 		pBuffer->m_pIndexBuffer->Unlock();

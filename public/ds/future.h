@@ -118,10 +118,12 @@ class Promise
 	using Data = FutureImpl::FutureData<T>;
 public:
 					Promise();
-	Future<T>		CreateFuture();
+					Promise(const Promise& other);
 
-	void			SetResult(T&& value);
-	void			SetError(int code, const char* message);
+	Future<T>		CreateFuture() const;
+
+	void			SetResult(T&& value) const;
+	void			SetError(int code, const char* message) const;
 
 	EFutureStatus	GetStatus() const;
 
@@ -138,6 +140,7 @@ class Future
 	using FutureCb = typename FutureImpl::FutureData<T>::ResultCb;
 	friend class Promise<T>;
 public:
+						Future() = default;
 
 	bool				IsValid() const { return m_data != nullptr; }
 
@@ -150,6 +153,9 @@ public:
 
 	void				Wait(int timeout = Threading::CEqSignal::WAIT_INFINITE);
 	void				AddCallback(FutureCb callback);
+
+	void				operator=(std::nullptr_t) { m_data = nullptr; }
+	operator const		bool() const { return IsValid(); }
 
 	static Future<T>	Succeed(T&& value);
 	static Future<T>	Failure(int code, const char* message);
@@ -169,7 +175,14 @@ inline Promise<T>::Promise()
 }
 
 template<typename T>
-inline Future<T> Promise<T>::CreateFuture()
+inline Promise<T>::Promise(const Promise& other)
+	: m_data(other.m_data)
+{
+
+}
+
+template<typename T>
+inline Future<T> Promise<T>::CreateFuture() const
 {
 	ASSERT(m_data);
 	{
@@ -181,7 +194,7 @@ inline Future<T> Promise<T>::CreateFuture()
 }
 
 template<typename T>
-inline void Promise<T>::SetResult(T&& value)
+inline void Promise<T>::SetResult(T&& value) const
 {
 	ASSERT_MSG(m_data->HasResult() == false, "Promise already has been resolved");
 
@@ -189,7 +202,6 @@ inline void Promise<T>::SetResult(T&& value)
 	m_data->m_status = FUTURE_SUCCESS;
 
 	new(&m_data->m_value.getData()) T(value);
-
 	FutureResult<T> result(m_data->m_value.getData());
 	for (int i = 0; i < m_data->m_resultCb.numElem(); ++i)
 		m_data->m_resultCb[i](result);
@@ -198,7 +210,7 @@ inline void Promise<T>::SetResult(T&& value)
 }
 
 template<typename T>
-inline void Promise<T>::SetError(int code, const char* message)
+inline void Promise<T>::SetError(int code, const char* message) const
 {
 	ASSERT_MSG(m_data->HasResult() == false, "Promise already has been resolved");
 
@@ -211,6 +223,7 @@ inline void Promise<T>::SetError(int code, const char* message)
 	for (int i = 0; i < m_data->m_resultCb.numElem(); ++i)
 		m_data->m_resultCb[i](result);
 
+	m_data->m_resultCb.clear();
 	m_data->m_waitSignal.Raise();
 }
 
@@ -293,22 +306,32 @@ inline void Future<T>::AddCallback(FutureCb callback)
 	ASSERT(m_data);
 
 	Threading::CScopedMutex m(m_data->m_condMutex);
-	if (m_data->HasResult())
+
+	switch (m_data->m_status)
 	{
-		if (m_data->m_status == FUTURE_SUCCESS)
+		case FUTURE_SUCCESS:
 		{
 			FutureResult<T> result(m_data->m_value.getData());
 			callback(result);
+			break;
 		}
-		else
+		case FUTURE_FAILURE:
 		{
 			Data::ErrorInfo& error = m_data->m_errorInfo.getData();
 			FutureResult<T> result(error.code, error.message);
 			callback(result);
+			break;
 		}
-		return;
+		case FUTURE_PENDING:
+		{
+			m_data->m_resultCb.append(callback);
+			break;
+		}
+		default:
+		{
+			ASSERT_FAIL("Invalid Future status");
+		}
 	}
-	m_data->m_resultCb.append(callback);
 }
 
 template<typename T>

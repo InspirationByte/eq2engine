@@ -934,7 +934,7 @@ bool CMaterialSystem::BindMaterial(IMaterial* pMaterial, int flags)
 	pSetupMaterial->m_frameBound = m_frame;
 
 	// it's now a more critical section to the material
-	PutMaterialToLoadingQueue( pMaterial );
+	pSetupMaterial->DoLoadShaderAndTextures();
 
 	// set the current material
 	IMaterial* setMaterial = pMaterial;

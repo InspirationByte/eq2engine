@@ -9,6 +9,8 @@
 #include "eqParallelJobs.h"
 #include "core/IDkCore.h"
 
+using namespace Threading;
+
 EXPORTED_INTERFACE(IEqParallelJobThreads, CEqParallelJobThreads);
 
 CEqJobThread::CEqJobThread(CEqParallelJobThreads* owner, int jobTypeId) 
@@ -137,16 +139,18 @@ eqParallelJob_t* CEqParallelJobThreads::AddJob(int jobTypeId, const EQ_JOB_FUNC&
 	eqParallelJob_t* job = PPNew eqParallelJob_t(jobTypeId, func, args, count, completeFn);
 	job->flags = JOB_FLAG_DELETE;
 
-	AddJob( job );
+	{
+		CScopedMutex m(m_mutex);
+		m_workQueue.append(job);
+	}
 
 	return job;
 }
 
 void CEqParallelJobThreads::AddJob(eqParallelJob_t* job)
 {
-	m_mutex.Lock();
+	CScopedMutex m(m_mutex);
 	m_workQueue.append( job );
-	m_mutex.Unlock();
 }
 
 // this submits jobs to the CEqJobThreads
@@ -154,11 +158,8 @@ void CEqParallelJobThreads::Submit()
 {
 	CompleteJobCallbacks();
 
-	{
-		Threading::CScopedMutex m(m_mutex);
-		if (!m_workQueue.numElem())
-			return;
-	}
+	if (!m_workQueue.numElem())
+		return;
 
 	for (int i = 0; i < m_jobThreads.numElem(); i++)
 		m_jobThreads[i]->SignalWork();
@@ -172,7 +173,7 @@ void CEqParallelJobThreads::CompleteJobCallbacks()
 
 	// execute all job completion callbacks
 	{
-		Threading::CScopedMutex m(m_completeMutex);
+		CScopedMutex m(m_completeMutex);
 
 		for (int i = 0; i < m_completedJobs.numElem(); ++i)
 		{
@@ -216,7 +217,7 @@ void CEqParallelJobThreads::WaitForJob(eqParallelJob_t* job)
 // called by job thread
 bool CEqParallelJobThreads::AssignFreeJob( CEqJobThread* requestBy )
 {
-	Threading::CScopedMutex m(m_mutex);
+	CScopedMutex m(m_mutex);
 
 	for (int i = 0; i < m_workQueue.numElem(); ++i)
 	{
@@ -225,7 +226,6 @@ bool CEqParallelJobThreads::AssignFreeJob( CEqJobThread* requestBy )
 		if (!job)
 			continue;
 
-		// привязать работу
 		if (requestBy->AssignJob(job))
 		{
 			m_workQueue.fastRemoveIndex(i);
@@ -238,13 +238,12 @@ bool CEqParallelJobThreads::AssignFreeJob( CEqJobThread* requestBy )
 
 void CEqParallelJobThreads::AddCompleted(eqParallelJob_t* job)
 {
-	Threading::CScopedMutex m(m_completeMutex);
+	CScopedMutex m(m_completeMutex);
 	m_completedJobs.append(job);
 }
 
 int	CEqParallelJobThreads::GetActiveJobThreadsCount()
 {
-	Threading::CScopedMutex m(m_mutex);
 	int cnt = 0;
 	for (int i = 0; i < m_jobThreads.numElem(); i++)
 		cnt += (m_jobThreads[i]->IsWorkDone() == false) ? 1 : 0;
@@ -259,7 +258,7 @@ int	CEqParallelJobThreads::GetJobThreadsCount()
 
 int	CEqParallelJobThreads::GetActiveJobsCount(int type /*= -1*/)
 {
-	Threading::CScopedMutex m(m_mutex);
+	CScopedMutex m(m_mutex);
 
 	int cnt = 0;
 	for (int i = 0; i < m_workQueue.numElem(); ++i)
@@ -274,7 +273,7 @@ int	CEqParallelJobThreads::GetActiveJobsCount(int type /*= -1*/)
 
 int	CEqParallelJobThreads::GetPendingJobCount(int type /*= -1*/)
 {
-	Threading::CScopedMutex m(m_mutex);
+	CScopedMutex m(m_mutex);
 
 	int cnt = 0;
 	for (int i = 0; i < m_workQueue.numElem(); ++i)
