@@ -170,6 +170,7 @@ protected:
 	FixedArray<SourceStream, EQSND_SAMPLE_COUNT> m_streams;
 
 	ALuint					m_buffers[EQSND_STREAM_BUFFER_COUNT]{ 0 };
+	ALuint					m_bufferChannels{ 0 };
 	ALuint					m_source{ 0 };
 	ALuint					m_filter{ 0 };
 

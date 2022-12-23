@@ -621,8 +621,6 @@ void CEqAudioSystemAL::OnSampleDeleted(ISoundSource* sampleSource)
 	if (!sampleSource)
 		return;
 
-	ASSERT(sampleSource->Ref_Count() == 0);
-
 	// stop voices using that sample
 	SuspendSourcesWithSample(sampleSource);
 
@@ -1282,11 +1280,39 @@ static int MixMono8(float volume, const uint8* in, int numInSamples, short* out,
 	return maxSamples;
 }
 
+// mix 8 bit stereo into 16 bit stereo
+static int MixStereo8(float volume, const uint8* in, int numInSamples, short* out, int numOutSamples)
+{
+	const int maxSamples = min(numInSamples, numOutSamples);
+	for (int i = 0; i < maxSamples * 2; ++i)
+	{
+		const float src_val = ((short)in[i] * 256 - SHRT_MAX) * volume;
+		const int result = (((SHRT_MAX - out[i]) * src_val) / SHRT_MAX) + out[i];
+		out[i] = clamp(result, SHRT_MIN, SHRT_MAX);
+	}
+
+	return maxSamples;
+}
+
 // mix 16 bit mono into 16 bit mono sound
 static int MixMono16(float volume, const short* in, int numInSamples, short* out, int numOutSamples)
 {
 	const int maxSamples = min(numInSamples, numOutSamples);
 	for (int i = 0; i < maxSamples; ++i)
+	{
+		const float src_val = in[i] * volume;
+		const int result = (((SHRT_MAX - out[i]) * src_val) / SHRT_MAX) + out[i];
+		out[i] = clamp(result, SHRT_MIN, SHRT_MAX);
+	}
+
+	return maxSamples;
+}
+
+// mix 16 bit stereo into 16 bit stereo
+static int MixStereo16(float volume, const short* in, int numInSamples, short* out, int numOutSamples)
+{
+	const int maxSamples = min(numInSamples, numOutSamples);
+	for (int i = 0; i < maxSamples * 2; ++i)
 	{
 		const float src_val = in[i] * volume;
 		const int result = (((SHRT_MAX - out[i]) * src_val) / SHRT_MAX) + out[i];
@@ -1328,7 +1354,8 @@ ALsizei CEqAudioSourceAL::GetSampleBuffer(void* data, ALsizei size)
 	memset(data, 0, size);
 	
 	// We are mixing always into 16 bit no matter what
-	const int numSamplesToRead = size / sizeof(short);
+	const int sizeOfChannels = sizeof(short) * m_bufferChannels;
+	const int numSamplesToRead = size / sizeOfChannels;
 	int numRead = 0;
 
 	// we can mix up to 8 samples simultaneously
@@ -1350,31 +1377,37 @@ ALsizei CEqAudioSourceAL::GetSampleBuffer(void* data, ALsizei size)
 
 		const ISoundSource::Format& fmt = sample->GetFormat();
 		const int sampleUnit = (fmt.bitwidth >> 3);
-		const int sampleSize = sampleUnit * fmt.channels;
+		const int sampleSize = sampleUnit;
 		const int sampleCount = sample->GetSampleCount();
 
 		const int streamPos = m_streams[i].curPos;
 		int samplesRead = 0;
 		if (sampleUnit == sizeof(uint8))
 		{
-			uint8* tmpSamples = (uint8*)stackalloc(numSamplesToRead);
+			uint8* tmpSamples = (uint8*)stackalloc(numSamplesToRead * sampleSize * fmt.channels);
 			samplesRead = sample->GetSamples(tmpSamples, numSamplesToRead, streamPos, looping);
 
-			MixMono8(sampleVolume, tmpSamples, samplesRead, (int16*)data, size);
+			if(fmt.channels == 1)
+				MixMono8(sampleVolume, tmpSamples, samplesRead, (int16*)data, size);
+			else if(fmt.channels == 2)
+				MixStereo8(sampleVolume, tmpSamples, samplesRead, (int16*)data, size);
 		}
 		else if (sampleUnit == sizeof(uint16))
 		{
-			int16* tmpSamples = (int16*)stackalloc(numSamplesToRead * sizeof(int16));
+			int16* tmpSamples = (int16*)stackalloc(numSamplesToRead * sampleSize * fmt.channels);
 			samplesRead = sample->GetSamples(tmpSamples, numSamplesToRead, streamPos, looping);
 
-			MixMono16(sampleVolume, tmpSamples, samplesRead, (int16*)data, size);
+			if (fmt.channels == 1)
+				MixMono16(sampleVolume, tmpSamples, samplesRead * fmt.channels, (int16*)data, size);
+			else if (fmt.channels == 2)
+				MixStereo16(sampleVolume, tmpSamples, samplesRead * 2, (int16*)data, size);
 		}
 		
 		m_streams[i].curPos = WrapAroundSampleOffset(streamPos + samplesRead, sample, looping);
 		numRead = max(numRead, samplesRead);
 	}
 
-	return numRead * sizeof(short);
+	return numRead * sizeOfChannels;
 }
 
 void CEqAudioSourceAL::SetupSample(const ISoundSource* sample)
@@ -1428,21 +1461,20 @@ void CEqAudioSourceAL::SetupSamples(ArrayCRef<const ISoundSource*> samples)
 		stream.sample = const_cast<ISoundSource*>(samples[i]);
 	}
 
+	m_bufferChannels = fmt.channels;
+
 	if (!m_streams.front().sample->IsStreaming())
 	{
 #if USE_ALSOFT_BUFFER_CALLBACK // all this possible because of this
 		if (samples.numElem() > 1)
 		{
+			int channels = 1;
+
 			// validate each sample
 			for (int i = 0; i < m_streams.numElem(); ++i)
 			{
 				ISoundSource* sample = m_streams[i].sample;
-				if (sample->GetFormat().channels > 1)
-				{
-					m_streams[i].sample = nullptr;
-					ASSERT_FAIL("Stereo samples yet to be supported");
-					continue;
-				}
+				channels = max(sample->GetFormat().channels, channels);
 
 				if (sample->IsStreaming())
 				{
@@ -1456,10 +1488,12 @@ void CEqAudioSourceAL::SetupSamples(ArrayCRef<const ISoundSource*> samples)
 
 			// For multi-sample sound we need to specify the best format to work with if they are different
 			// So we're mixing always into 16 bit no matter what
-			if (alFormat == AL_FORMAT_MONO8)
+			if (channels == 1)
 				alFormat = AL_FORMAT_MONO16;
-			else if (alFormat == AL_FORMAT_STEREO8)
+			else if (channels == 2)
 				alFormat = AL_FORMAT_STEREO16;
+
+			m_bufferChannels = channels;
 		}
 
 		if (alBufferCallbackSOFT)
