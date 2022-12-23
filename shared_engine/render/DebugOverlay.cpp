@@ -1295,6 +1295,11 @@ void CDebugOverlay::Draw(int winWide, int winTall, float timescale)
 
 		Vertex2D_t light_depth[] = { MAKETEXQUAD(0, 0, w, h, 0) };
 		materials->DrawPrimitives2DFFP(PRIM_TRIANGLE_STRIP, light_depth, elementsOf(light_depth),g_pDebugTexture);
+
+		eqFontStyleParam_t textStl;
+		textStl.styleFlag = TEXT_STYLE_SHADOW | TEXT_STYLE_FROM_CAP;
+
+		m_debugFont2->RenderText(EqString::Format("%dx%d (frame %d)\n%s", g_pDebugTexture->GetWidth(), g_pDebugTexture->GetHeight(), g_pDebugTexture->GetAnimationFrame(), g_pDebugTexture->GetName()), Vector2D(10, 10), textStl);
 	}
 
 	++m_frameId;

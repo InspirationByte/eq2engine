@@ -17,6 +17,7 @@ void CTexture::SetName(const char* pszNewName)
 {
 	ASSERT_MSG(*pszNewName != 0, "Empty texture names are not allowed");
 	m_szTexName = pszNewName;
+	m_szTexName.Path_FixSlashes();
 	m_nameHash = StringToHash(m_szTexName.ToCString(), true);
 }
 
