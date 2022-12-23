@@ -123,38 +123,51 @@ bool UpdateD3DTextureFromImage(IDirect3DBaseTexture9* texture, const CImage* ima
 		const int size = image->GetMipMappedSize(mipMapLevel, 1);
 		const int lockBoxLevel = mipMapLevel - startMipLevel;
 
-		if (texture->GetType() == D3DRTYPE_VOLUMETEXTURE)
+		switch (texture->GetType())
 		{
-			D3DLOCKED_BOX box;
-			if (((IDirect3DVolumeTexture9*)texture)->LockBox(lockBoxLevel, &box, nullptr, lockFlags) == D3D_OK)
+			case D3DRTYPE_VOLUMETEXTURE:
 			{
-				memcpy(box.pBits, src, size);
-				((IDirect3DVolumeTexture9*)texture)->UnlockBox(lockBoxLevel);
-			}
-		}
-		else if (texture->GetType() == D3DRTYPE_CUBETEXTURE)
-		{
-			const int cubeFaceSize = size / 6;
-
-			D3DLOCKED_RECT rect;
-			for (int i = 0; i < 6; i++)
-			{
-				if (((IDirect3DCubeTexture9*)texture)->LockRect((D3DCUBEMAP_FACES)i, lockBoxLevel, &rect, nullptr, lockFlags) == D3D_OK)
+				IDirect3DVolumeTexture9* texture3D = (IDirect3DVolumeTexture9*)texture;
+				D3DLOCKED_BOX box;
+				if (texture3D->LockBox(lockBoxLevel, &box, nullptr, lockFlags) == D3D_OK)
 				{
-					memcpy(rect.pBits, src, cubeFaceSize);
-					((IDirect3DCubeTexture9*)texture)->UnlockRect((D3DCUBEMAP_FACES)i, lockBoxLevel);
+					memcpy(box.pBits, src, size);
+					texture3D->UnlockBox(lockBoxLevel);
 				}
-				src += cubeFaceSize;
+				break;
 			}
-		}
-		else
-		{
-			D3DLOCKED_RECT rect;
-
-			if (((IDirect3DTexture9*)texture)->LockRect(lockBoxLevel, &rect, nullptr, lockFlags) == D3D_OK)
+			case D3DRTYPE_CUBETEXTURE:
 			{
-				memcpy(rect.pBits, src, size);
-				((IDirect3DTexture9*)texture)->UnlockRect(lockBoxLevel);
+				IDirect3DCubeTexture9* cubeTexture = (IDirect3DCubeTexture9*)texture;
+				const int cubeFaceSize = size / 6;
+
+				D3DLOCKED_RECT rect;
+				for (int i = 0; i < 6; i++)
+				{
+					if (cubeTexture->LockRect((D3DCUBEMAP_FACES)i, lockBoxLevel, &rect, nullptr, lockFlags) == D3D_OK)
+					{
+						memcpy(rect.pBits, src, cubeFaceSize);
+						cubeTexture->UnlockRect((D3DCUBEMAP_FACES)i, lockBoxLevel);
+					}
+					src += cubeFaceSize;
+				}
+				break;
+			}
+			case D3DRTYPE_TEXTURE:
+			{
+				IDirect3DTexture9* texture2D = (IDirect3DTexture9*)texture;
+				D3DLOCKED_RECT rect;
+
+				if (texture2D->LockRect(lockBoxLevel, &rect, nullptr, lockFlags) == D3D_OK)
+				{
+					memcpy(rect.pBits, src, size);
+					texture2D->UnlockRect(lockBoxLevel);
+				}
+				break;
+			}
+			default:
+			{
+				ASSERT_FAIL("Invalid resource type passed to UpdateD3DTextureFromImage");
 			}
 		}
 
@@ -216,6 +229,8 @@ bool CD3D9Texture::Init(const SamplerStateParam_t& sampler, const ArrayCRef<CIma
 		}
 
 		UpdateD3DTextureFromImage(d3dTexture, img, mipStart, true);
+
+		d3dTexture->PreLoad();
 
 		// FIXME: check for differences?
 		m_mipCount = max(m_mipCount, mipCount);

@@ -2617,7 +2617,7 @@ IVertexBuffer* ShaderAPID3DX9::CreateVertexBuffer(ER_BufferAccess nBufAccess, in
 		hr = m_pD3DDevice->TestCooperativeLevel();
 	}
 
-	bool dynamic = (pBuffer->m_nUsage & D3DUSAGE_DYNAMIC) != 0;
+	const bool dynamic = (pBuffer->m_nUsage & D3DUSAGE_DYNAMIC) != 0;
 
 	if (m_pD3DDevice->CreateVertexBuffer(pBuffer->m_nInitialSize, pBuffer->m_nUsage, 0, dynamic ? D3DPOOL_DEFAULT : D3DPOOL_MANAGED, &pBuffer->m_pVertexBuffer, nullptr) != D3D_OK)
 	{
@@ -2632,6 +2632,7 @@ IVertexBuffer* ShaderAPID3DX9::CreateVertexBuffer(ER_BufferAccess nBufAccess, in
 	{
 		memcpy(dest, pData, pBuffer->m_nSize);
 		pBuffer->m_pVertexBuffer->Unlock();
+		pBuffer->m_pVertexBuffer->PreLoad();
 	}
 
 	{
@@ -2678,6 +2679,7 @@ IIndexBuffer* ShaderAPID3DX9::CreateIndexBuffer(int nIndices, int nIndexSize, ER
 	{
 		memcpy(dest, pData, pBuffer->m_nInitialSize);
 		pBuffer->m_pIndexBuffer->Unlock();
+		pBuffer->m_pIndexBuffer->PreLoad();
 	} 
 
 	{
