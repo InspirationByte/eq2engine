@@ -53,6 +53,7 @@ DECLARE_CMD_VARIANTS(snd_test_scriptsound, "Test the scripted sound", cmd_vars_s
 }
 
 ConVar snd_scriptsound_debug("snd_scriptsound_debug", "0", nullptr, CV_CHEAT);
+ConVar snd_scriptsound_showWarnings("snd_scriptsound_showWarnings", "0", nullptr, 0);
 
 //----------------------------------------------------------------------------
 //
@@ -133,7 +134,8 @@ bool CSoundEmitterSystem::PrecacheSound(const char* pszName)
 
 	if (!pSound)
 	{
-		MsgWarning("PrecacheSound: No sound found with name '%s'\n", pszName);
+		if(snd_scriptsound_showWarnings.GetBool())
+			MsgWarning("PrecacheSound: No sound found with name '%s'\n", pszName);
 		return false;
 	}
 
@@ -192,7 +194,7 @@ int CSoundEmitterSystem::EmitSound(EmitParams* ep, CSoundingObject* soundingObj,
 
 	if (!script)
 	{
-		if (snd_scriptsound_debug.GetBool())
+		if (snd_scriptsound_showWarnings.GetBool())
 			MsgError("EmitSound: unknown sound '%s'\n", ep->name.ToCString());
 
 		return CHAN_INVALID;
@@ -200,7 +202,8 @@ int CSoundEmitterSystem::EmitSound(EmitParams* ep, CSoundingObject* soundingObj,
 
 	if(script->samples.numElem() == 0 && (ep->flags & EMITSOUND_FLAG_FORCE_CACHED))
 	{
-		MsgWarning("Warning! use of EMITSOUND_FLAG_FORCE_CACHED flag!\n");
+		if(snd_scriptsound_showWarnings.GetBool())
+			MsgWarning("Warning! use of EMITSOUND_FLAG_FORCE_CACHED flag!\n");
 		PrecacheSound(ep->name.ToCString());
 	}
 
