@@ -349,22 +349,23 @@ bool CSoundEmitterSystem::SwitchSourceState(SoundEmitterData* emit, bool isVirtu
 		emit->virtualParams.set_looping(hasLoop);
 		IEqAudioSource::Params startParams = emit->virtualParams;
 
-		emit->soundSource = g_audioSystem->CreateSource();
-
+		CRefPtr<IEqAudioSource> source = g_audioSystem->CreateSource();
 		if (!emit->soundingObj)
 		{
 			// no sounding object
 			// set looping sound to self destruct when outside max distance
-			emit->soundSource->Setup(startParams.channel, samples, hasLoop ? LoopSourceUpdateCallback : nullptr, const_cast<SoundScriptDesc*>(script));
+			source->Setup(startParams.channel, samples, hasLoop ? LoopSourceUpdateCallback : nullptr, const_cast<SoundScriptDesc*>(script));
 			emit->CalcFinalParameters(1.0f, startParams);
 		}
 		else
 		{
-			emit->soundSource->Setup(startParams.channel, samples, EmitterUpdateCallback, emit);
+			source->Setup(startParams.channel, samples, EmitterUpdateCallback, emit);
 		}
 
 		// start sound
-		emit->soundSource->UpdateParams(startParams);
+		source->UpdateParams(startParams);
+
+		emit->soundSource = source;
 
 		if (snd_scriptsound_debug.GetBool())
 		{
