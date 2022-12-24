@@ -72,6 +72,9 @@ public:
 	float		GetSoundVolumeScale() const			{ return m_volumeScale; }
 
 protected:
+	SoundEmitterData*	FindEmitter(int uniqueId) const;
+	void		AddEmitter(int uniqueId, SoundEmitterData* emitter);
+
 	void		SetEmitterState(SoundEmitterData* emitter, IEqAudioSource::State state, bool rewindOnPlay);
 
 	void		StopEmitter(SoundEmitterData* emitter, bool destroy);

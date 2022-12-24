@@ -9,8 +9,6 @@
 #include "audio/IEqAudioSystem.h"
 #include "eqSoundEmitterCommon.h"
 
-static Threading::CEqMutex s_soundEmitterSystemMutex;
-
 class CSoundingObject;
 struct KVSection;
 

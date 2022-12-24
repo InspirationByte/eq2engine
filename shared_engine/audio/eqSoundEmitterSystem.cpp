@@ -28,6 +28,7 @@ static CSoundEmitterSystem s_ses;
 CSoundEmitterSystem* g_sounds = &s_ses;
 
 using namespace Threading;
+static Threading::CEqMutex s_soundEmitterSystemMutex;
 
 static void cmd_vars_sounds_list(const ConCommandBase* base, Array<EqString>& list, const char* query)
 {
@@ -130,33 +131,33 @@ bool CSoundEmitterSystem::PrecacheSound(const char* pszName)
 		return false;
 
 	// find the present sound file
-	SoundScriptDesc* pSound = FindSound(pszName);
+	SoundScriptDesc* script = FindSoundScript(pszName);
 
-	if (!pSound)
+	if (!script)
 	{
 		if(snd_scriptsound_showWarnings.GetBool())
 			MsgWarning("PrecacheSound: No sound found with name '%s'\n", pszName);
 		return false;
 	}
 
-	if(pSound->samples.numElem() > 0)
+	if(script->samples.numElem() > 0)
 		return true;
 
-	for(int i = 0; i < pSound->soundFileNames.numElem(); i++)
+	for(int i = 0; i < script->soundFileNames.numElem(); i++)
 	{
-		CRefPtr<ISoundSource> sample = g_audioSystem->GetSample(SOUND_DEFAULT_PATH + pSound->soundFileNames[i]);
+		CRefPtr<ISoundSource> sample = g_audioSystem->GetSample(SOUND_DEFAULT_PATH + script->soundFileNames[i]);
 
 		if (sample)
 		{
 			CScopedMutex m(s_soundEmitterSystemMutex);
-			pSound->samples.append(sample);
+			script->samples.append(sample);
 		}
 	}
 
-	return pSound->samples.numElem() > 0;
+	return script->samples.numElem() > 0;
 }
 
-SoundScriptDesc* CSoundEmitterSystem::FindSound(const char* soundName) const
+SoundScriptDesc* CSoundEmitterSystem::FindSoundScript(const char* soundName) const
 {
 	const int namehash = StringToHash(soundName, true );
 
@@ -190,7 +191,7 @@ int CSoundEmitterSystem::EmitSound(EmitParams* ep, CSoundingObject* soundingObj,
 		return CHAN_INVALID;
 	}
 
-	const SoundScriptDesc* script = FindSound(ep->name.ToCString());
+	const SoundScriptDesc* script = FindSoundScript(ep->name.ToCString());
 
 	if (!script)
 	{
@@ -255,8 +256,8 @@ int CSoundEmitterSystem::EmitSound(EmitParams* ep, CSoundingObject* soundingObj,
 		{
 			CScopedMutex m(s_soundEmitterSystemMutex);
 			m_soundingObjects.insert(soundingObj);
-			soundingObj->m_emitters.insert(objUniqueId, edata);
 		}
+		soundingObj->AddEmitter(objUniqueId, edata);
 	}
 
 
@@ -548,7 +549,7 @@ void CSoundEmitterSystem::Update()
 	g_parallelJobs->Submit();
 }
 
-void CSoundEmitterSystem::RemoveSoundingObject(CSoundingObject* obj)
+void CSoundEmitterSystem::OnRemoveSoundingObject(CSoundingObject* obj)
 {
 	CScopedMutex m(s_soundEmitterSystemMutex);
 	m_soundingObjects.remove(obj);
