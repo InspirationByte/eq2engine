@@ -178,6 +178,9 @@ int CSoundEmitterSystem::EmitSound(EmitParams* ep, CSoundingObject* soundingObj,
 {
 	ASSERT(ep);
 
+	if (ep->flags & EMITSOUND_FLAG_RELEASE_ON_STOP)
+		releaseOnStop = true;
+
 	if(ep->flags & EMITSOUND_FLAG_START_ON_UPDATE)
 	{
 		EmitParams newEmit = (*ep);

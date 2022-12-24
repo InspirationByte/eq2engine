@@ -47,6 +47,7 @@ bool CSoundingObject::UpdateEmitters(const Vector3D& listenerPos)
 		bool needDelete = false;
 		SoundEmitterData* emitter = *it;
 		IEqAudioSource::Params& virtualParams = emitter->virtualParams;
+		const SoundScriptDesc* script = emitter->script;
 
 		if (emitter->soundSource != nullptr)
 		{
@@ -54,22 +55,23 @@ bool CSoundingObject::UpdateEmitters(const Vector3D& listenerPos)
 		}
 		else
 		{
-			const SoundScriptDesc* script = emitter->script;
-
 			bool isAudible = true;
 			if (!virtualParams.relative)
 			{
-				const Vector3D listenerPos = g_audioSystem->GetListenerPosition();
-
 				const float distToSound = lengthSqr(virtualParams.position - listenerPos);
 				const float maxDistSqr = M_SQR(script->maxDistance);
 				isAudible = distToSound < maxDistSqr;
 			}
 
-			// switch emitter between virtual and real here
-			if (g_sounds->SwitchSourceState(emitter, !isAudible))
+			if (!isAudible && virtualParams.releaseOnStop)
 			{
-				needDelete = virtualParams.releaseOnStop && emitter->soundSource == nullptr;
+				needDelete = true;
+			}
+			else
+			{
+				// switch emitter between virtual and real here
+				if (g_sounds->SwitchSourceState(emitter, !isAudible))
+					needDelete = emitter->soundSource == nullptr;
 			}
 		}
 

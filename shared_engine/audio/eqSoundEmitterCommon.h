@@ -3,13 +3,14 @@
 // flags
 enum EEmitSoundFlags
 {
-	EMITSOUND_FLAG_FORCE_CACHED		= (1 << 2),		// forces emitted sound to be loaded if not cached by PrecacheScriptSound (not recommended, debug only)
-	EMITSOUND_FLAG_FORCE_2D			= (1 << 3),		// force 2D sound (music, etc.)
-	EMITSOUND_FLAG_STARTSILENT		= (1 << 4),		// starts silent
-	EMITSOUND_FLAG_START_ON_UPDATE	= (1 << 5),		// start playing sound on emitter system update
-	EMITSOUND_FLAG_RANDOM_PITCH		= (1 << 6),		// apply slightly random pitch (best for static hit sounds)
+	EMITSOUND_FLAG_RELEASE_ON_STOP	= (1 << 0),		// can be used on temporary distant sounds
+	EMITSOUND_FLAG_FORCE_CACHED		= (1 << 1),		// forces emitted sound to be loaded if not cached by PrecacheScriptSound (not recommended, debug only)
+	EMITSOUND_FLAG_FORCE_2D			= (1 << 2),		// force 2D sound (music, etc.)
+	EMITSOUND_FLAG_STARTSILENT		= (1 << 3),		// starts silent
+	EMITSOUND_FLAG_START_ON_UPDATE	= (1 << 4),		// start playing sound on emitter system update
+	EMITSOUND_FLAG_RANDOM_PITCH		= (1 << 5),		// apply slightly random pitch (best for static hit sounds)
 
-	EMITSOUND_FLAG_PENDING			= (1 << 7),		// was in pending list
+	EMITSOUND_FLAG_PENDING			= (1 << 6),		// was in pending list
 };
 
 static constexpr const int CHAN_INVALID = -1;
