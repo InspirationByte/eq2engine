@@ -420,7 +420,10 @@ int CSoundEmitterSystem::EmitterUpdateCallback(IEqAudioSource* soundSource, IEqA
 	PROF_EVENT("Emitter Update Callback");
 
 	SoundEmitterData* emitter = (SoundEmitterData*)obj;
+	const SoundScriptDesc* script = emitter->script;
 	CSoundingObject* soundingObj = emitter->soundingObj;
+
+	ASSERT(script);
 
 	IEqAudioSource::Params& virtualParams = emitter->virtualParams;
 	IEqAudioSource::Params& nodeParams = emitter->nodeParams;
@@ -471,9 +474,6 @@ int CSoundEmitterSystem::EmitterUpdateCallback(IEqAudioSource* soundSource, IEqA
 	if (!params.relative)
 	{
 		PROF_EVENT("Emitter Update SwitchSourceState");
-
-		const SoundScriptDesc* script = emitter->script;
-
 		const Vector3D listenerPos = g_audioSystem->GetListenerPosition();
 
 		const float distToSound = lengthSqr(params.position - listenerPos);
