@@ -327,7 +327,7 @@ ALIGNED_TYPE(modelheader_s, 4) studiohdr_t;
 //---------------------------------------------------------------
 // Searches for studio bone, returns ID
 //---------------------------------------------------------------
-inline int Studio_FindBoneId(studiohdr_t* pStudioHdr, const char* pszName)
+inline int Studio_FindBoneId(const studiohdr_t* pStudioHdr, const char* pszName)
 {
 	for(int i = 0; i < pStudioHdr->numBones; i++)
 	{
@@ -341,7 +341,7 @@ inline int Studio_FindBoneId(studiohdr_t* pStudioHdr, const char* pszName)
 //---------------------------------------------------------------
 // Searches for studio bone, returns bone
 //---------------------------------------------------------------
-inline bonedesc_t* Studio_FindBone(studiohdr_t* pStudioHdr, const char* pszName)
+inline bonedesc_t* Studio_FindBone(const studiohdr_t* pStudioHdr, const char* pszName)
 {
 	int id = Studio_FindBoneId(pStudioHdr, pszName);
 
@@ -354,7 +354,7 @@ inline bonedesc_t* Studio_FindBone(studiohdr_t* pStudioHdr, const char* pszName)
 //---------------------------------------------------------------
 // Searches for body group
 //---------------------------------------------------------------
-inline int Studio_FindBodyGroupId(studiohdr_t* pStudioHdr, const char* pszName)
+inline int Studio_FindBodyGroupId(const studiohdr_t* pStudioHdr, const char* pszName)
 {
 	for(int i = 0; i < pStudioHdr->numBodyGroups; i++)
 	{
@@ -368,7 +368,7 @@ inline int Studio_FindBodyGroupId(studiohdr_t* pStudioHdr, const char* pszName)
 //---------------------------------------------------------------
 // Searches for body group
 //---------------------------------------------------------------
-inline studiobodygroup_t* Studio_FindBodyGroup(studiohdr_t* pStudioHdr, const char* pszName)
+inline studiobodygroup_t* Studio_FindBodyGroup(const studiohdr_t* pStudioHdr, const char* pszName)
 {
 	int id = Studio_FindBodyGroupId(pStudioHdr, pszName);
 
@@ -381,7 +381,7 @@ inline studiobodygroup_t* Studio_FindBodyGroup(studiohdr_t* pStudioHdr, const ch
 //---------------------------------------------------------------
 // Searches for IK chain
 //---------------------------------------------------------------
-inline studioikchain_t* Studio_FindIkChain(studiohdr_t* pStudioHdr, const char* pszName)
+inline studioikchain_t* Studio_FindIkChain(const studiohdr_t* pStudioHdr, const char* pszName)
 {
 	for(int i = 0; i < pStudioHdr->numIKChains; i++)
 	{
@@ -395,7 +395,7 @@ inline studioikchain_t* Studio_FindIkChain(studiohdr_t* pStudioHdr, const char* 
 //---------------------------------------------------------------
 // Searches for attachment, returns id
 //---------------------------------------------------------------
-inline int Studio_FindAttachmentId(studiohdr_t* pStudioHdr, const char* pszName)
+inline int Studio_FindAttachmentId(const studiohdr_t* pStudioHdr, const char* pszName)
 {
 	for(int i = 0; i < pStudioHdr->numAttachments; i++)
 	{
@@ -409,7 +409,7 @@ inline int Studio_FindAttachmentId(studiohdr_t* pStudioHdr, const char* pszName)
 //---------------------------------------------------------------
 // Searches for attachment
 //---------------------------------------------------------------
-inline studioattachment_t* Studio_FindAttachment(studiohdr_t* pStudioHdr, const char* pszName)
+inline studioattachment_t* Studio_FindAttachment(const studiohdr_t* pStudioHdr, const char* pszName)
 {
 	int id = Studio_FindAttachmentId(pStudioHdr, pszName);
 
