@@ -132,7 +132,7 @@ public:
 	virtual void					SetAngularVelocity(const Vector3D &vAxis,float velocity) = 0;
 
 	// returns mins and maxs of transformed aabb
-	virtual void					GetAABB(Vector3D &mins, Vector3D &maxs) = 0;
+	virtual void					GetBoundingBox(Vector3D &mins, Vector3D &maxs) = 0;
 
 	// Get transformation matrix for renderer purposes
 	virtual Matrix4x4				GetTransformMatrix() = 0;

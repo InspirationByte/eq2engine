@@ -1290,7 +1290,7 @@ ConVar ph_ccdMotionThresholdScale("ph_ccdMotionThresholdScale", "0.15f");
 ConVar ph_CcdSweptSphereRadiusScale("ph_CcdSweptSphereRadiusScale", "0.5f");
 
 // Creates physics object
-IPhysicsObject* DkPhysics::CreateObject( studioPhysData_t* data, int nObject )
+IPhysicsObject* DkPhysics::CreateObject( const studioPhysData_t* data, int nObject )
 {
 	CScopedMutex m(m_Mutex);
 

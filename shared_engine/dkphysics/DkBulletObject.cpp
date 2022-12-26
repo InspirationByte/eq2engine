@@ -379,7 +379,7 @@ void CPhysicsObject::SetAngularVelocity(const Vector3D &vAxis, float velocity)
 	m_pPhyObjectPointer->setAngularVelocity(vel);
 }
 
-void CPhysicsObject::GetAABB(Vector3D &mins, Vector3D &maxs)
+void CPhysicsObject::GetBoundingBox(Vector3D &mins, Vector3D &maxs)
 {
 	btVector3 bmins, bmaxs;
 

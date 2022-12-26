@@ -85,7 +85,7 @@ void SetOptimalCameraDistance()
 {
 	if(g_model.m_pModel)
 	{
-		const BoundingBox& bbox = g_model.m_pModel->GetAABB();
+		const BoundingBox& bbox = g_model.m_pModel->GetBoundingBox();
 		g_fCamDistance = length(bbox.GetSize())*2.0f;
 	}
 }

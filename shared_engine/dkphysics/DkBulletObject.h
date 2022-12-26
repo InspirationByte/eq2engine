@@ -135,7 +135,7 @@ public:
 	void					SetAngularVelocity(const Vector3D &vAxis,float velocity);
 
 
-	void					GetAABB(Vector3D &mins, Vector3D &maxs);
+	void					GetBoundingBox(Vector3D &mins, Vector3D &maxs);
 
 	// Get transformation matrix for renderer purposes
 	Matrix4x4				GetTransformMatrix();

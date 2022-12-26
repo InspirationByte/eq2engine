@@ -35,83 +35,84 @@ class CEqStudioGeom
 	friend class		CStudioCache;
 public:
 
-						CEqStudioGeom();
-						~CEqStudioGeom();
+	CEqStudioGeom();
+	~CEqStudioGeom();
 
-	bool				LoadModel(const char* pszPath, bool useJob = true);
-	void				DestroyModel();
+	const char*				GetName() const;
+	int						GetLoadingState() const;	// EModelLoadingState
 
-	const char*			GetName() const;
-	const BoundingBox&	GetAABB() const;
-	studioHwData_t*		GetHWData() const;
+	// TODO: split studioHWData and remove later
+	const studioHwData_t*	GetHWData() const;
+
+	const studiohdr_t&		GetStudioHdr() const;
+	const studioPhysData_t&	GetPhysData() const;
+	const BoundingBox&		GetBoundingBox() const;
+
+	// loads additional motion package
+	void					LoadMotionPackage(const char* filename);
 
 	// makes dynamic temporary decal
-	tempdecal_t*		MakeTempDecal( const decalmakeinfo_t& info, Matrix4x4* jointMatrices);
-
-	int					GetLoadingState() const;
-
-	// loads materials for studio
-	void				LoadMaterials();
-	void				LoadMotionPackage(const char* filename);
+	tempdecal_t*			MakeTempDecal( const decalmakeinfo_t& info, Matrix4x4* jointMatrices);
 
 	// instancing
-	void				SetInstancer(CBaseEqGeomInstancer* instancer);
+	void					SetInstancer(CBaseEqGeomInstancer* instancer);
 	CBaseEqGeomInstancer*	GetInstancer() const;
 
 	// selects a lod. returns index
-	int					SelectLod(float dist_to_camera) const;
+	int						SelectLod(float dist_to_camera) const;
 
-	void				DrawGroup(int nModel, int nGroup, bool preSetVBO = true) const;
+	void					DrawGroup(int nModel, int nGroup, bool preSetVBO = true) const;
 
-	void				SetupVBOStream( int nStream ) const;
+	void					SetupVBOStream( int nStream ) const;
+	bool					PrepareForSkinning(Matrix4x4* jointMatrices);
 
-	bool				PrepareForSkinning(Matrix4x4* jointMatrices);
-
-	IMaterialPtr		GetMaterial(int materialIdx, int materialGroupIdx = 0) const;
+	IMaterialPtr			GetMaterial(int materialIdx, int materialGroupIdx = 0) const;
 
 private:
 
-	static void			LoadModelJob(void* data, int i);
-	
-	static void			LoadVertsJob(void* data, int i);
-	static void			LoadPhysicsJob(void* data, int i);
-	static void			LoadMotionJob(void* data, int i);
-	
-	static void			OnLoadingJobComplete(struct eqParallelJob_t* job);
-	
-	bool				LoadFromFile();
+	bool					LoadModel(const char* pszPath, bool useJob = true);
+	void					DestroyModel();
 
-	void				LoadPhysicsData(); // loads physics object data
-	bool				LoadGenerateVertexBuffer();
-	void				LoadMotionPackages();
-
-	void				LoadSetupBones();
+	static void				LoadModelJob(void* data, int i);
+	static void				LoadVertsJob(void* data, int i);
+	static void				LoadPhysicsJob(void* data, int i);
+	static void				LoadMotionJob(void* data, int i);
+	
+	static void				OnLoadingJobComplete(struct eqParallelJob_t* job);
+	
+	bool					LoadFromFile();
+	void					LoadMaterials();
+	void					LoadPhysicsData(); // loads physics object data
+	bool					LoadGenerateVertexBuffer();
+	void					LoadMotionPackages();
+	void					LoadSetupBones();
 
 	//-----------------------------------------------
 
 	// array of material index for each group
 	FixedArray<IMaterialPtr, MAX_STUDIOMATERIALS>	m_materials;
-	Array<EqString>		m_additionalMotionPackages{ PP_SL };
-	BoundingBox			m_aabb;
-	EqString			m_szPath;
+	Array<EqString>			m_additionalMotionPackages{ PP_SL };
+	BoundingBox				m_boundingBox;
+	EqString				m_name;
 
 	CBaseEqGeomInstancer*	m_instancer;
-	studioHwData_t*		m_hwdata;
+	studioHwData_t*			m_hwdata;
 
-	IVertexBuffer*		m_pVB;
-	IIndexBuffer*		m_pIB;
+	IVertexBuffer*			m_pVB;
+	IIndexBuffer*			m_pIB;
 
-	EGFHwVertex_t*		m_softwareVerts;
+	EGFHwVertex_t*			m_softwareVerts;
 
-	bool				m_forceSoftwareSkinning;
-	bool				m_skinningDirty;
+	int						m_numVertices;
+	int						m_numIndices;
 
-	int					m_numVertices;
-	int					m_numIndices;
-
-	int					m_cacheIdx;
-
-	volatile short						m_readyState;
+	int						m_cacheIdx;
 	Threading::CEqInterlockedInteger	m_loading;
+	volatile short			m_readyState;
+
+	bool					m_forceSoftwareSkinning;
+	bool					m_skinningDirty;
+
+
 };
 

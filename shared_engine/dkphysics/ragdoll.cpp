@@ -45,9 +45,9 @@ ragdoll_t* CreateRagdoll(CEqStudioGeom* pModel)
 	if(!pModel)
 		return nullptr;
 
-	studioHwData_t* hwdata = pModel->GetHWData();
-	studioPhysData_t& physModel = hwdata->physModel;
-	studiohdr_t* studio = hwdata->studio;
+	const studioHwData_t* hwdata = pModel->GetHWData();
+	const studioPhysData_t& physModel = hwdata->physModel;
+	const studiohdr_t* studio = hwdata->studio;
 
 	int type = physModel.modeltype;
 
@@ -169,7 +169,7 @@ void ragdoll_t::GetBoundingBox(Vector3D &mins, Vector3D &maxs) const
 		Vector3D partAABBMins;
 		Vector3D partAABBMaxs;
 
-		m_pParts[i]->GetAABB(partAABBMins, partAABBMaxs);
+		m_pParts[i]->GetBoundingBox(partAABBMins, partAABBMaxs);
 
 		aabb.AddVertex(partAABBMins);
 		aabb.AddVertex(partAABBMaxs);

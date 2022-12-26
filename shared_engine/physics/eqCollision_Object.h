@@ -54,7 +54,7 @@ public:
 	virtual ~CEqCollisionObject();
 
 	// objects that will be created
-	bool						Initialize(studioPhysData_t* data, int nObject = 0);				///< Convex shape or other
+	bool						Initialize(const studioPhysData_t* data, int objectIdx = 0);		///< Convex shape or other
 	bool						Initialize(CEqBulletIndexedMesh* mesh, bool internalEdges);			///< Triangle mesh shape TODO: different container
 	bool						Initialize(const FVector3D& boxMins, const FVector3D& boxMaxs);		///< bounding box
 	bool						Initialize(float radius);											///< sphere

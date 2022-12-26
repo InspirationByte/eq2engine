@@ -148,7 +148,7 @@ void CAnimatedModel::ResetPhysics()
 	}
 	else if(m_physObj)
 	{
-		m_physObj->SetPosition(Vector3D(0,m_pModel->GetAABB().maxPoint.y,0));
+		m_physObj->SetPosition(Vector3D(0,m_pModel->GetBoundingBox().maxPoint.y,0));
 		m_physObj->SetAngles(vec3_zero);
 		//m_physObj->SetFriction();
 		m_physObj->SetActivationState(PS_ACTIVE);

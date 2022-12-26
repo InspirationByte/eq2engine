@@ -12,6 +12,8 @@
 #include "math/Utility.h"
 
 #include "StudioGeom.h"
+#include "StudioCache.h"
+#include "EGFInstancer.h"
 #include "modelloader_shared.h"
 
 #include "physics/IStudioShapeCache.h"
@@ -230,7 +232,7 @@ bool CEqStudioGeom::PrepareForSkinning(Matrix4x4* jointMatrices)
 
 void CEqStudioGeom::DestroyModel()
 {
-	DevMsg(DEVMSG_CORE, "DestroyModel: '%s'\n", m_szPath.ToCString());
+	DevMsg(DEVMSG_CORE, "DestroyModel: '%s'\n", m_name.ToCString());
 
 	m_readyState = MODEL_LOAD_ERROR;
 
@@ -292,7 +294,7 @@ void CEqStudioGeom::DestroyModel()
 
 void CEqStudioGeom::LoadPhysicsData()
 {
-	EqString podFileName = m_szPath.Path_Strip_Ext();
+	EqString podFileName = m_name.Path_Strip_Ext();
 	podFileName.Append(".pod");
 
 	if (Studio_LoadPhysModel(podFileName, &m_hwdata->physModel))
@@ -409,8 +411,8 @@ void CEqStudioGeom::OnLoadingJobComplete(struct eqParallelJob_t* job)
 
 bool CEqStudioGeom::LoadModel(const char* pszPath, bool useJob)
 {
-	m_szPath = pszPath;
-	m_szPath.Path_FixSlashes();
+	m_name = pszPath;
+	m_name.Path_FixSlashes();
 
 	// first we switch to loading
 	m_readyState = MODEL_LOAD_IN_PROGRESS;
@@ -455,7 +457,7 @@ bool CEqStudioGeom::LoadModel(const char* pszPath, bool useJob)
 
 bool CEqStudioGeom::LoadFromFile()
 {
-	studiohdr_t* pHdr = Studio_LoadModel(m_szPath.ToCString());
+	studiohdr_t* pHdr = Studio_LoadModel(m_name.ToCString());
 
 	if (!pHdr)
 		return false; // get out, nothing to load
@@ -531,7 +533,7 @@ bool CEqStudioGeom::LoadGenerateVertexBuffer()
 				int new_offset = numVertices;
 
 				// copy vertices to new buffer first
-				numVertices += CopyGroupVertexDataToHWList(allVerts, numVertices, pGroup, m_aabb);
+				numVertices += CopyGroupVertexDataToHWList(allVerts, numVertices, pGroup, m_boundingBox);
 
 				// then using new offset copy indices to buffer
 				numIndices += CopyGroupIndexDataToHWList(allIndices, nIndexSize, numIndices, pGroup, new_offset);
@@ -595,7 +597,7 @@ void CEqStudioGeom::LoadMotionPackages()
 	studiohdr_t* pHdr = m_hwdata->studio;
 
 	// Try load default motion file
-	m_hwdata->motiondata[m_hwdata->numMotionPackages] = Studio_LoadMotionData((m_szPath.Path_Strip_Ext() + ".mop").GetData(), pHdr->numBones);
+	m_hwdata->motiondata[m_hwdata->numMotionPackages] = Studio_LoadMotionData((m_name.Path_Strip_Ext() + ".mop").GetData(), pHdr->numBones);
 
 	if (m_hwdata->motiondata[m_hwdata->numMotionPackages])
 		m_hwdata->numMotionPackages++;
@@ -604,7 +606,7 @@ void CEqStudioGeom::LoadMotionPackages()
 	for (int i = 0; i < pHdr->numMotionPackages; i++)
 	{
 		const int nPackages = m_hwdata->numMotionPackages;
-		EqString mopPath(m_szPath.Path_Strip_Name() + pHdr->pPackage(i)->packageName + ".mop");
+		EqString mopPath(m_name.Path_Strip_Name() + pHdr->pPackage(i)->packageName + ".mop");
 
 		DevMsg(DEVMSG_CORE, "Loading motion package for '%s'\n", mopPath.ToCString());
 
@@ -672,7 +674,7 @@ void CEqStudioGeom::LoadMaterials()
 				materials->PutMaterialToLoadingQueue(material);
 
 				if (!material->IsError() && !(material->GetFlags() & MATERIAL_FLAG_SKINNED))
-					MsgWarning("Warning! Material '%s' shader '%s' for model '%s' is invalid\n", material->GetName(), material->GetShaderName(), m_szPath.ToCString());
+					MsgWarning("Warning! Material '%s' shader '%s' for model '%s' is invalid\n", material->GetName(), material->GetShaderName(), m_name.ToCString());
 
 				m_materials[i] = material;
 			}
@@ -684,7 +686,7 @@ void CEqStudioGeom::LoadMaterials()
 			if (m_materials[i])
 				continue;
 
-			MsgError("Couldn't load model material '%s'\n", pHdr->pMaterial(i)->materialname, m_szPath.ToCString());
+			MsgError("Couldn't load model material '%s'\n", pHdr->pMaterial(i)->materialname, m_name.ToCString());
 			bError = true;
 
 			m_materials[i] = materials->GetMaterial("error");
@@ -840,14 +842,14 @@ void CEqStudioGeom::DrawGroup(int nModel, int nGroup, bool preSetVBO) const
 	g_pShaderAPI->DrawIndexedPrimitives((ER_PrimitiveType)nPrimType, nFirstIndex, nIndexCount, 0, m_numVertices);
 }
 
-const BoundingBox& CEqStudioGeom::GetAABB() const
+const BoundingBox& CEqStudioGeom::GetBoundingBox() const
 {
-	return m_aabb;
+	return m_boundingBox;
 }
 
 const char* CEqStudioGeom::GetName() const
 {
-	return m_szPath.ToCString();
+	return m_name.ToCString();
 }
 
 int	CEqStudioGeom::GetLoadingState() const
@@ -856,7 +858,7 @@ int	CEqStudioGeom::GetLoadingState() const
 	return m_readyState;
 }
 
-studioHwData_t* CEqStudioGeom::GetHWData() const
+const studioHwData_t* CEqStudioGeom::GetHWData() const
 {
 	while ((!m_hwdata || m_hwdata && !m_hwdata->studio) && GetLoadingState() == MODEL_LOAD_IN_PROGRESS) // wait for hwdata
 	{
@@ -864,6 +866,16 @@ studioHwData_t* CEqStudioGeom::GetHWData() const
 	}
 
 	return m_hwdata;
+}
+
+const studiohdr_t& CEqStudioGeom::GetStudioHdr() const
+{
+	return *GetHWData()->studio;
+}
+
+const studioPhysData_t& CEqStudioGeom::GetPhysData() const
+{
+	return GetHWData()->physModel;
 }
 
 // instancing

@@ -75,7 +75,7 @@ struct studioPhysData_t
 	int						numIndices{ 0 };
 };
 
-inline int PhysModel_FindObjectId(studioPhysData_t* model, const char* name)
+inline int PhysModel_FindObjectId(const studioPhysData_t* model, const char* name)
 {
 	for (int i = 0; i < model->numObjects; i++)
 	{
