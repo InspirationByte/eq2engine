@@ -156,7 +156,7 @@ void CEGFInstancerBase::Invalidate()
 	m_matGroupBounds[1] = 0;
 }
 
-void CEGFInstancerBase::Draw( int renderFlags, IEqModel* model )
+void CEGFInstancerBase::Draw( int renderFlags, CEqStudioGeom* model )
 {
 	if(!model)
 		return;

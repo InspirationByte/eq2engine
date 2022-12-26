@@ -2,28 +2,65 @@
 // Copyright © Inspiration Byte
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
-// Description: Equilibrium model loader
+// Description: Equilibrium Studio Geometry Form
 //////////////////////////////////////////////////////////////////////////////////
 
 #pragma once
-#include "egf/IEqModel.h"
+#include "egf/model.h"
 
+class IMaterial;
+class IVertexFormat;
 class IVertexBuffer;
 class IIndexBuffer;
 
-// streams in studio models used exclusively in interpolation
-class CEngineStudioEGF : public IEqModel
+using IMaterialPtr = CRefPtr<IMaterial>;
+
+struct decalmakeinfo_t;
+struct tempdecal_t;
+
+//-------------------------------------------------------
+//
+// IEqModelInstancer - model instancer for optimized rendering
+//
+//-------------------------------------------------------
+
+class CEqStudioGeom;
+
+class IEqModelInstancer
 {
-	friend class		CStudioModelCache;
+public:
+	virtual	~IEqModelInstancer() {}
+
+	virtual void		ValidateAssert() = 0;
+
+	virtual void		Draw(int renderFlags, CEqStudioGeom* model) = 0;
+	virtual bool		HasInstances() const = 0;
+
+	virtual void		Upload() = 0;
+	virtual void		Invalidate() = 0;
+};
+
+enum EModelLoadingState
+{
+	MODEL_LOAD_ERROR = -1,
+	MODEL_LOAD_IN_PROGRESS = 0,
+	MODEL_LOAD_OK,
+};
+
+
+#define EGF_LOADING_CRITICAL_SECTION(m)	\
+	while(m->GetLoadingState() != MODEL_LOAD_OK) {	g_parallelJobs->CompleteJobCallbacks(); Platform_Sleep(1); }
+
+// streams in studio models used exclusively in interpolation
+class CEqStudioGeom
+{
+	friend class		CStudioCache;
 public:
 
 //------------------------------------------------------------
 
-						CEngineStudioEGF();
-						~CEngineStudioEGF();
-
-	// model type
-	EModelType			GetModelType() const					{return MODEL_TYPE_STUDIO;}
+						CEqStudioGeom();
+						~CEqStudioGeom();
 
 //------------------------------------------------------------
 // base methods
@@ -113,42 +150,3 @@ private:
 	Threading::CEqInterlockedInteger	m_loading;
 };
 
-//-------------------------------------------------------------------------------------
-// Model cache implementation
-//-------------------------------------------------------------------------------------
-
-class CStudioModelCache : public IStudioModelCache
-{
-	friend class			CEngineStudioEGF;
-
-public:
-							CStudioModelCache();
-
-	// caches model and returns it's index
-	int						PrecacheModel(const char* modelName);
-
-	// returns count of cached models
-	int						GetCachedModelCount() const;
-
-	IEqModel*				GetModel(int index) const;
-	const char* 			GetModelFilename(IEqModel* pModel) const;
-	int						GetModelIndex(const char* modelName) const;
-	int						GetModelIndex(IEqModel* pModel) const;
-
-	void					FreeCachedModel(IEqModel* pModel);
-
-	void					ReleaseCache();
-	void					ReloadModels();
-
-	IVertexFormat*			GetEGFVertexFormat() const;		// returns EGF vertex format
-
-	// prints loaded models to console
-	void					PrintLoadedModels() const;
-
-private:
-	Map<int, int>			m_cacheIndex{ PP_SL };
-	Array<IEqModel*>		m_cachedList{ PP_SL };
-	// TODO: add freeIndex if support egf streaming
-
-	IVertexFormat*			m_egfFormat;	// vertex format for streams
-};

@@ -9,7 +9,7 @@
 
 #define MAX_RAGDOLL_PARTS 32
 
-class IEqModel;
+class CEqStudioGeom;
 class IPhysicsObject;
 class IPhysicsJoint;
 
@@ -66,8 +66,8 @@ struct ragdoll_t
 	int				m_numBones;
 	int				m_numParts;
 
-	IEqModel*	m_pReferenceModel;
+	CEqStudioGeom*	m_pReferenceModel;
 };
 
-ragdoll_t*	CreateRagdoll(IEqModel* pModel);
+ragdoll_t*	CreateRagdoll(CEqStudioGeom* pModel);
 void		DestroyRagdoll(ragdoll_t* ragdoll);

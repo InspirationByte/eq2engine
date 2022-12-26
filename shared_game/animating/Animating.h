@@ -14,7 +14,7 @@
 
 //--------------------------------------------------------------------------------------
 
-class IEqModel;
+class CEqStudioGeom;
 
 
 class CAnimatingEGF
@@ -23,7 +23,7 @@ public:
 	CAnimatingEGF();
 	virtual ~CAnimatingEGF() {}
 
-	virtual void				InitAnimating(IEqModel* model);
+	virtual void				InitAnimating(CEqStudioGeom* model);
 	void						DestroyAnimating();
 
 	virtual int					FindBone(const char* boneName) const;			// finds bone

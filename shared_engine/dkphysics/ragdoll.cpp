@@ -7,7 +7,7 @@
 
 #include "core/core_common.h"
 #include "ragdoll.h"
-#include "egf/IEqModel.h"
+#include "egf/StudioGeom.h"
 
 #include "render/IDebugOverlay.h"
 #include "animating/BoneSetup.h"
@@ -40,7 +40,7 @@ int ragdoll_t::ComputeAndGetFarParentOf(int bone)
 
 #define COLLIDE_RAGDOLL (COLLISION_GROUP_WORLD | COLLISION_GROUP_OBJECTS | COLLISION_GROUP_PROJECTILES)
 
-ragdoll_t* CreateRagdoll(IEqModel* pModel)
+ragdoll_t* CreateRagdoll(CEqStudioGeom* pModel)
 {
 	if(!pModel)
 		return nullptr;

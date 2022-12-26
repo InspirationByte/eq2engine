@@ -6,7 +6,7 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #pragma once
-#include "egf/IEqModel.h"
+#include "egf/StudioGeom.h"
 
 static constexpr const int EGF_INST_BODYGROUP_BITS	= 4;
 static constexpr const int EGF_INST_LOD_BITS		= 4;
@@ -47,7 +47,7 @@ public:
 	void			Upload();
 	void			Invalidate();
 
-	void			Draw(int renderFlags, IEqModel* model);
+	void			Draw(int renderFlags, CEqStudioGeom* model);
 
 	static ushort MakeInstId(int bodyGroup, int lod, int matGroup)
 	{
@@ -72,7 +72,7 @@ protected:
 template <class IT>
 class CEGFInstancer : public CEGFInstancerBase
 {
-friend class IEqModel;
+friend class CEqStudioGeom;
 public:
 	void			Init(IVertexFormat* instVertexFormat);
 	void			InitEx(const VertexFormatDesc_t* instVertexFormat, int numAttrib);

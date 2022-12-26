@@ -11,7 +11,7 @@
 struct gsequence_t;
 struct gposecontroller_t;
 struct ragdoll_t;
-class IEqModel;
+class CEqStudioGeom;
 class IPhysicsObject;
 
 enum ViewerRenderFlags
@@ -38,7 +38,7 @@ public:
 	virtual Vector3D			GetLocalAttachmentDirection(int nAttach);	// gets local attachment direction
 
 	// sets model for this entity
-	void						SetModel(IEqModel* pModel);
+	void						SetModel(CEqStudioGeom* pModel);
 
 	void						TogglePhysicsState();
 	void						ResetPhysics();
@@ -64,7 +64,7 @@ protected:
 
 public:
 
-	IEqModel*					m_pModel;
+	CEqStudioGeom*					m_pModel;
 	IPhysicsObject*				m_physObj;
 	ragdoll_t*					m_pRagdoll;
 	bool						m_bPhysicsEnable;

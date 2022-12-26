@@ -25,7 +25,8 @@
 #include "utils/KeyValues.h"
 
 #include "font/IFontCache.h"
-#include "egf/IEqModel.h"
+#include "egf/StudioCache.h"
+#include "egf/StudioGeom.h"
 
 #include "render/IDebugOverlay.h"
 #include "CAnimatedModel.h"
@@ -811,7 +812,7 @@ void CEGFViewFrame::ProcessAllMenuCommands(wxCommandEvent& event)
 	}
 	else if(event.GetId() == Event_File_ReloadModel)
 	{
-		IEqModel* model = g_model.m_pModel;
+		CEqStudioGeom* model = g_model.m_pModel;
 
 		if(!model)
 			return;

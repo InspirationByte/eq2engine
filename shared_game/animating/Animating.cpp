@@ -9,7 +9,7 @@
 #include "core/ConVar.h"
 #include "render/IDebugOverlay.h"
 #include "Animating.h"
-#include "egf/IEqModel.h"
+#include "egf/StudioGeom.h"
 #include "anim_activity.h"
 #include "anim_events.h"
 
@@ -120,7 +120,7 @@ void CAnimatingEGF::DestroyAnimating()
 	m_numBones = 0;
 }
 
-void CAnimatingEGF::InitAnimating(IEqModel* model)
+void CAnimatingEGF::InitAnimating(CEqStudioGeom* model)
 {
 	if (!model)
 		return;

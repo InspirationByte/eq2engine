@@ -2,14 +2,16 @@
 // Copyright © Inspiration Byte
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
-// Description: Equilibrium Generic
+// Description: Equilibrium Studio Geometry Form
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "core/core_common.h"
 #include "core/IEqParallelJobs.h"
 #include "core/ConVar.h"
+
 #include "math/Utility.h"
-#include "studio_egf.h"
+
+#include "StudioGeom.h"
 #include "modelloader_shared.h"
 
 #include "physics/IStudioShapeCache.h"
@@ -41,7 +43,7 @@ ConVar r_lodstart("r_lodstart", "0", 0, MAX_MODEL_LODS, "Studio LOD start index"
 ConVar r_notempdecals("r_notempdecals", "0", "Disables temp decals", CV_CHEAT);
 //ConVar r_force_softwareskinning("r_force_softwareskinning", "0", "Forces software skinning", CV_ARCHIVE);
 
-CEngineStudioEGF::CEngineStudioEGF()
+CEqStudioGeom::CEqStudioGeom()
 {
 	m_instancer = nullptr;
 	m_readyState = MODEL_LOAD_ERROR;
@@ -62,7 +64,7 @@ CEngineStudioEGF::CEngineStudioEGF()
 	m_cacheIdx = -1;
 }
 
-CEngineStudioEGF::~CEngineStudioEGF()
+CEqStudioGeom::~CEqStudioGeom()
 {
 	DestroyModel();
 }
@@ -140,7 +142,7 @@ bool TransformEGFVertex(EGFHwVertex_t& vert, Matrix4x4* pMatrices)
 //------------------------------------------
 // Software skinning of model. Very slow, but recomputes bounding box for all model
 //------------------------------------------
-bool CEngineStudioEGF::PrepareForSkinning(Matrix4x4* jointMatrices)
+bool CEqStudioGeom::PrepareForSkinning(Matrix4x4* jointMatrices)
 {
 	if (!jointMatrices)
 		return false;
@@ -226,7 +228,7 @@ bool CEngineStudioEGF::PrepareForSkinning(Matrix4x4* jointMatrices)
 	return false;
 }
 
-void CEngineStudioEGF::DestroyModel()
+void CEqStudioGeom::DestroyModel()
 {
 	DevMsg(DEVMSG_CORE, "DestroyModel: '%s'\n", m_szPath.ToCString());
 
@@ -288,7 +290,7 @@ void CEngineStudioEGF::DestroyModel()
 	}
 }
 
-void CEngineStudioEGF::LoadPhysicsData()
+void CEqStudioGeom::LoadPhysicsData()
 {
 	EqString podFileName = m_szPath.Path_Strip_Ext();
 	podFileName.Append(".pod");
@@ -339,9 +341,9 @@ int CopyGroupIndexDataToHWList(void* indexData, int indexSize, int currentIndexC
 	return pGroup->numIndices;
 }
 
-void CEngineStudioEGF::LoadModelJob(void* data, int i)
+void CEqStudioGeom::LoadModelJob(void* data, int i)
 {
-	CEngineStudioEGF* model = (CEngineStudioEGF*)data;
+	CEqStudioGeom* model = (CEqStudioGeom*)data;
 
 	// multi-threaded version
 	if (!model->LoadFromFile())
@@ -360,9 +362,9 @@ void CEngineStudioEGF::LoadModelJob(void* data, int i)
 	g_parallelJobs->Submit();
 }
 
-void CEngineStudioEGF::LoadVertsJob(void* data, int i)
+void CEqStudioGeom::LoadVertsJob(void* data, int i)
 {
-	CEngineStudioEGF* model = (CEngineStudioEGF*)data;
+	CEqStudioGeom* model = (CEqStudioGeom*)data;
 	
 	if (model->m_readyState == MODEL_LOAD_ERROR)
 		return;
@@ -371,9 +373,9 @@ void CEngineStudioEGF::LoadVertsJob(void* data, int i)
 		model->DestroyModel();
 }
 
-void CEngineStudioEGF::LoadPhysicsJob(void* data, int i)
+void CEqStudioGeom::LoadPhysicsJob(void* data, int i)
 {
-	CEngineStudioEGF* model = (CEngineStudioEGF*)data;
+	CEqStudioGeom* model = (CEqStudioGeom*)data;
 
 	if (model->m_readyState == MODEL_LOAD_ERROR)
 		return;
@@ -381,9 +383,9 @@ void CEngineStudioEGF::LoadPhysicsJob(void* data, int i)
 	model->LoadPhysicsData();
 }
 
-void CEngineStudioEGF::LoadMotionJob(void* data, int i)
+void CEqStudioGeom::LoadMotionJob(void* data, int i)
 {
-	CEngineStudioEGF* model = (CEngineStudioEGF*)data;
+	CEqStudioGeom* model = (CEqStudioGeom*)data;
 	if (model->m_readyState == MODEL_LOAD_ERROR)
 		return;
 
@@ -391,9 +393,9 @@ void CEngineStudioEGF::LoadMotionJob(void* data, int i)
 	model->LoadMotionPackages();
 }
 
-void CEngineStudioEGF::OnLoadingJobComplete(struct eqParallelJob_t* job)
+void CEqStudioGeom::OnLoadingJobComplete(struct eqParallelJob_t* job)
 {
-	CEngineStudioEGF* model = (CEngineStudioEGF*)job->arguments;
+	CEqStudioGeom* model = (CEqStudioGeom*)job->arguments;
 
 	if (model->m_readyState == MODEL_LOAD_ERROR)
 		return;
@@ -405,7 +407,7 @@ void CEngineStudioEGF::OnLoadingJobComplete(struct eqParallelJob_t* job)
 	}
 }
 
-bool CEngineStudioEGF::LoadModel(const char* pszPath, bool useJob)
+bool CEqStudioGeom::LoadModel(const char* pszPath, bool useJob)
 {
 	m_szPath = pszPath;
 	m_szPath.Path_FixSlashes();
@@ -451,7 +453,7 @@ bool CEngineStudioEGF::LoadModel(const char* pszPath, bool useJob)
 	return true;
 }
 
-bool CEngineStudioEGF::LoadFromFile()
+bool CEqStudioGeom::LoadFromFile()
 {
 	studiohdr_t* pHdr = Studio_LoadModel(m_szPath.ToCString());
 
@@ -463,7 +465,7 @@ bool CEngineStudioEGF::LoadFromFile()
 	return true;
 }
 
-bool CEngineStudioEGF::LoadGenerateVertexBuffer()
+bool CEqStudioGeom::LoadGenerateVertexBuffer()
 {
 	// detect and set the force software skinning flag
 	m_forceSoftwareSkinning = r_force_softwareskinning.GetBool();
@@ -566,7 +568,7 @@ bool CEngineStudioEGF::LoadGenerateVertexBuffer()
 	return true;
 }
 
-void CEngineStudioEGF::LoadMotionPackage(const char* filename)
+void CEqStudioGeom::LoadMotionPackage(const char* filename)
 {
 	if (m_readyState == MODEL_LOAD_ERROR)
 		return;
@@ -588,7 +590,7 @@ void CEngineStudioEGF::LoadMotionPackage(const char* filename)
 		MsgError("Can't open motion data package '%s'!\n", filename);
 }
 
-void CEngineStudioEGF::LoadMotionPackages()
+void CEqStudioGeom::LoadMotionPackages()
 {
 	studiohdr_t* pHdr = m_hwdata->studio;
 
@@ -629,7 +631,7 @@ void CEngineStudioEGF::LoadMotionPackages()
 }
 
 // loads materials for studio
-void CEngineStudioEGF::LoadMaterials()
+void CEqStudioGeom::LoadMaterials()
 {
 	studiohdr_t* pHdr = m_hwdata->studio;
 
@@ -719,7 +721,7 @@ void CEngineStudioEGF::LoadMaterials()
 	}
 }
 
-IMaterialPtr CEngineStudioEGF::GetMaterial(int materialIdx, int materialGroupIdx) const
+IMaterialPtr CEqStudioGeom::GetMaterial(int materialIdx, int materialGroupIdx) const
 {
 	if (materialIdx == -1)
 		return materials->GetDefaultMaterial();
@@ -729,7 +731,7 @@ IMaterialPtr CEngineStudioEGF::GetMaterial(int materialIdx, int materialGroupIdx
 	return m_materials[m_hwdata->numUsedMaterials * materialGroupIdx + materialIdx];
 }
 
-void CEngineStudioEGF::LoadSetupBones()
+void CEqStudioGeom::LoadSetupBones()
 {
 	studiohdr_t* pHdr = m_hwdata->studio;
 
@@ -783,7 +785,7 @@ void CEngineStudioEGF::LoadSetupBones()
 	}
 }
 
-int CEngineStudioEGF::SelectLod(float dist_to_camera) const
+int CEqStudioGeom::SelectLod(float dist_to_camera) const
 {
 	if (r_lodtest.GetInt() != -1)
 		return r_lodtest.GetInt();
@@ -804,7 +806,7 @@ int CEngineStudioEGF::SelectLod(float dist_to_camera) const
 	return idealLOD;
 }
 
-void CEngineStudioEGF::SetupVBOStream(int nStream) const
+void CEqStudioGeom::SetupVBOStream(int nStream) const
 {
 	if (m_numVertices == 0)
 		return;
@@ -812,7 +814,7 @@ void CEngineStudioEGF::SetupVBOStream(int nStream) const
 	g_pShaderAPI->SetVertexBuffer(m_pVB, nStream);
 }
 
-void CEngineStudioEGF::DrawGroup(int nModel, int nGroup, bool preSetVBO) const
+void CEqStudioGeom::DrawGroup(int nModel, int nGroup, bool preSetVBO) const
 {
 	if (m_numVertices == 0)
 		return;
@@ -838,23 +840,23 @@ void CEngineStudioEGF::DrawGroup(int nModel, int nGroup, bool preSetVBO) const
 	g_pShaderAPI->DrawIndexedPrimitives((ER_PrimitiveType)nPrimType, nFirstIndex, nIndexCount, 0, m_numVertices);
 }
 
-const BoundingBox& CEngineStudioEGF::GetAABB() const
+const BoundingBox& CEqStudioGeom::GetAABB() const
 {
 	return m_aabb;
 }
 
-const char* CEngineStudioEGF::GetName() const
+const char* CEqStudioGeom::GetName() const
 {
 	return m_szPath.ToCString();
 }
 
-int	CEngineStudioEGF::GetLoadingState() const
+int	CEqStudioGeom::GetLoadingState() const
 {
 	g_parallelJobs->CompleteJobCallbacks();
 	return m_readyState;
 }
 
-studioHwData_t* CEngineStudioEGF::GetHWData() const
+studioHwData_t* CEqStudioGeom::GetHWData() const
 {
 	while ((!m_hwdata || m_hwdata && !m_hwdata->studio) && GetLoadingState() == MODEL_LOAD_IN_PROGRESS) // wait for hwdata
 	{
@@ -865,7 +867,7 @@ studioHwData_t* CEngineStudioEGF::GetHWData() const
 }
 
 // instancing
-void CEngineStudioEGF::SetInstancer(IEqModelInstancer* instancer)
+void CEqStudioGeom::SetInstancer(IEqModelInstancer* instancer)
 {
 	m_instancer = instancer;
 
@@ -873,7 +875,7 @@ void CEngineStudioEGF::SetInstancer(IEqModelInstancer* instancer)
 		m_instancer->ValidateAssert();
 }
 
-IEqModelInstancer* CEngineStudioEGF::GetInstancer() const
+IEqModelInstancer* CEqStudioGeom::GetInstancer() const
 {
 	return m_instancer;
 }
@@ -981,7 +983,7 @@ void MakeDecalTexCoord(Array<EGFHwVertex_t>& verts, Array<int>& indices, const d
 }
 
 // makes dynamic temporary decal
-tempdecal_t* CEngineStudioEGF::MakeTempDecal(const decalmakeinfo_t& info, Matrix4x4* jointMatrices)
+tempdecal_t* CEqStudioGeom::MakeTempDecal(const decalmakeinfo_t& info, Matrix4x4* jointMatrices)
 {
 	if (r_notempdecals.GetBool())
 		return nullptr;
@@ -1141,164 +1143,3 @@ tempdecal_t* CEngineStudioEGF::MakeTempDecal(const decalmakeinfo_t& info, Matrix
 	return nullptr;
 }
 
-//-------------------------------------------------------
-//
-// CModelCache - model cache
-//
-//-------------------------------------------------------
-
-static CStudioModelCache s_ModelCache;
-IStudioModelCache* g_studioModelCache = &s_ModelCache;
-
-CStudioModelCache::CStudioModelCache()
-{
-	m_egfFormat = nullptr;
-}
-
-void CStudioModelCache::ReloadModels()
-{
-
-}
-
-ConVar job_modelLoader("job_modelLoader", "0", "Load models in parallel threads", CV_ARCHIVE);
-
-// caches model and returns it's index
-int CStudioModelCache::PrecacheModel(const char* modelName)
-{
-	if (strlen(modelName) <= 0)
-		return CACHE_INVALID_MODEL;
-
-	if (m_egfFormat == nullptr)
-	{
-		const VertexFormatDesc_t* vertFormat;
-		const int numElem = EGFHwVertex_t::GetVertexFormatDesc(&vertFormat);
-		m_egfFormat = g_pShaderAPI->CreateVertexFormat("EGFVertex", vertFormat, numElem);
-	}
-	
-
-	int idx = GetModelIndex(modelName);
-
-	if (idx == CACHE_INVALID_MODEL)
-	{
-		EqString str(modelName);
-		str.Path_FixSlashes();
-		const int nameHash = StringToHash(str, true);
-		
-		DevMsg(DEVMSG_CORE, "Loading model '%s'\n", str.ToCString());
-
-		const int cacheIdx = m_cachedList.numElem();
-
-		CEngineStudioEGF* pModel = PPNew CEngineStudioEGF();
-		if (pModel->LoadModel(str, job_modelLoader.GetBool()))
-		{
-			int newIdx = m_cachedList.append(pModel);
-			ASSERT(newIdx == cacheIdx);
-
-			pModel->m_cacheIdx = cacheIdx;
-			m_cacheIndex.insert(nameHash, cacheIdx);
-		}
-		else
-		{
-			delete pModel;
-			pModel = nullptr;
-		}
-
-		return pModel ? cacheIdx : 0;
-	}
-
-	return idx;
-}
-
-// returns count of cached models
-int	CStudioModelCache::GetCachedModelCount() const
-{
-	return m_cachedList.numElem();
-}
-
-IEqModel* CStudioModelCache::GetModel(int index) const
-{
-	IEqModel* model = nullptr;
-
-	if (index <= CACHE_INVALID_MODEL)
-		model = m_cachedList[0];
-	else
-		model = m_cachedList[index];
-
-	if (model && model->GetLoadingState() != MODEL_LOAD_ERROR)
-		return model;
-	else
-		return m_cachedList[0];
-}
-
-const char* CStudioModelCache::GetModelFilename(IEqModel* pModel) const
-{
-	return pModel->GetName();
-}
-
-int CStudioModelCache::GetModelIndex(const char* modelName) const
-{
-	EqString str(modelName);
-	str.Path_FixSlashes();
-
-	const int hash = StringToHash(str, true);
-	auto found = m_cacheIndex.find(hash);
-	if (found != m_cacheIndex.end())
-	{
-		return *found;
-	}
-
-	return CACHE_INVALID_MODEL;
-}
-
-int CStudioModelCache::GetModelIndex(IEqModel* pModel) const
-{
-	for (int i = 0; i < m_cachedList.numElem(); i++)
-	{
-		if (m_cachedList[i] == pModel)
-			return i;
-	}
-
-	return CACHE_INVALID_MODEL;
-}
-
-// decrements reference count and deletes if it's zero
-void CStudioModelCache::FreeCachedModel(IEqModel* pModel)
-{
-
-}
-
-void CStudioModelCache::ReleaseCache()
-{
-	for (int i = 0; i < m_cachedList.numElem(); i++)
-	{
-		if (m_cachedList[i])
-		{
-			// wait for loading completion
-			m_cachedList[i]->GetHWData();
-			delete m_cachedList[i];
-		}
-	}
-
-	m_cachedList.clear();
-	m_cacheIndex.clear();
-
-	g_pShaderAPI->DestroyVertexFormat(m_egfFormat);
-	m_egfFormat = nullptr;
-}
-
-IVertexFormat* CStudioModelCache::GetEGFVertexFormat() const
-{
-	return m_egfFormat;
-}
-
-// prints loaded models to console
-void CStudioModelCache::PrintLoadedModels() const
-{
-	Msg("---MODELS---\n");
-	for (int i = 0; i < m_cachedList.numElem(); i++)
-	{
-		if (m_cachedList[i])
-			Msg("%s\n", m_cachedList[i]->GetName());
-	}
-	Msg("---END MODELS---\n");
-}

@@ -8,7 +8,7 @@
 #include "core/core_common.h"
 #include "CAnimatedModel.h"
 
-#include "egf/studio_egf.h"
+#include "egf/StudioGeom.h"
 #include "animating/anim_events.h"
 
 #include "dkphysics/ragdoll.h"
@@ -33,7 +33,7 @@ CAnimatedModel::CAnimatedModel()
 }
 
 // sets model for this entity
-void CAnimatedModel::SetModel(IEqModel* pModel)
+void CAnimatedModel::SetModel(CEqStudioGeom* pModel)
 {
 	m_bPhysicsEnable = false;
 
