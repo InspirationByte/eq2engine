@@ -395,6 +395,7 @@ struct KVSection;
 struct shaderProgramText_t
 {
 	char*				text{ nullptr };
+	char*				boilerplate{ nullptr };
 	uint32				checksum{ 0 };
 	Array<EqString>		includes{ PP_SL };
 };

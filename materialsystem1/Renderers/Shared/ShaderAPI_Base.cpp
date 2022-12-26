@@ -21,6 +21,13 @@
 #include "utils/KeyValues.h"
 #include "ShaderAPI_Base.h"
 
+#ifdef EQRHI_GL
+#define STB_INCLUDE_LINE_GLSL
+#endif
+
+#define STB_INCLUDE_IMPLEMENTATION
+#include "dependency/stb_include.h"
+
 #include "CTexture.h"
 
 using namespace Threading;
@@ -603,123 +610,6 @@ IVertexFormat* ShaderAPI_Base::FindVertexFormat(const char* name) const
 	return nullptr;
 }
 
-bool isShaderInc(const char ch)
-{
-	return ((ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || ch == '_' || ch == '/' || ch == '\\' || ch == '.');
-}
-
-bool isShaderIncDef(const char ch)
-{
-	return ((ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || ch == '_' || ch == '$' || ch == '/' || ch == '\\' || ch == '.');
-}
-
-//-------------------------------------------------------------
-// Shaders and it's operations
-//-------------------------------------------------------------
-void LoadShaderFiles(char** buffer, const char* pszFileName, const char* rootPath, shaderProgramText_t& textData, bool bStart, bool bIgnoreIfFailed)
-{
-	EqString shaderFilePath;
-	CombinePath(shaderFilePath, 2, rootPath, pszFileName);
-
-	// try loading file
-	*buffer = g_fileSystem->GetFileBuffer(shaderFilePath.ToCString());
-
-	if (!(*buffer))
-	{
-		if(!bIgnoreIfFailed)
-			MsgError("LoadShaderFiles: cannot open file '%s'!\n", shaderFilePath.ToCString());
-
-		return;
-	}
-
-	// add include filename
-	textData.includes.append(shaderFilePath);
-
-	const bool isOpenGL = g_pShaderAPI->GetShaderAPIClass() == SHADERAPI_OPENGL;
-
-	const int thisIncludeNumber = textData.includes.numElem();
-
-	// set main source filename
-	EqString newSrc;
-	if (isOpenGL)
-		newSrc = EqString::Format("#line 0 %d\r\n", thisIncludeNumber);
-	else
-		newSrc = "#line 0 \"" + _Es(pszFileName) + "\"\r\n";
-
-	bool afterSkipLine = false;
-	int nLine = 0;
-
-	Tokenizer tok, lineParser;
-	tok.setString(*buffer);
-
-	char* str;
-
-	while((str = tok.nextLine()) != nullptr)
-	{
-		lineParser.setString(str);
-
-		bool skipLine = false;
-
-		char* str2;
-		while((str2 = lineParser.next(isShaderIncDef)) != nullptr)
-		{
-			nLine++;
-
-			if(!strcmp("//", str2))
-			{
-				str2 = lineParser.next(isShaderIncDef);
-
-				if(!str2 || strcmp("$INCLUDE", str2))
-					break;
-
-				char* inc_text = lineParser.next(isShaderInc);
-
-				char* psBuffer = nullptr;
-				LoadShaderFiles(&psBuffer, inc_text, rootPath, textData, false, false);
-
-				if(psBuffer)
-				{
-					newSrc = newSrc + _Es("\r\n") + psBuffer + _Es("\r\n");
-					PPFree( psBuffer );
-				}
-
-				skipLine = true;
-
-				break;
-			}
-		}
-
-		// don't parse more than 10 lines
-		if (nLine > 10)
-		{
-			newSrc = newSrc + str;
-			continue;
-		}
-
-		if(skipLine)
-		{
-			afterSkipLine = true;
-			continue;
-		}
-
-		// restore line counter
-		if (afterSkipLine)
-		{
-			if (isOpenGL)
-				newSrc = newSrc + EqString::Format("#line %d %d\r\n", nLine, thisIncludeNumber);
-			else
-				newSrc = newSrc + EqString::Format("#line %d \"", nLine) + _Es(pszFileName) + "\"\r\n";
-
-			afterSkipLine = false;
-		}
-
-		newSrc = newSrc + str;
-	}
-
-	*buffer = (char*)PPReAlloc(*buffer, newSrc.Length()+1);
-	strcpy(*buffer, newSrc.GetData());
-}
-
 struct shaderCompileJob_t
 {
 	eqParallelJob_t base;
@@ -737,8 +627,6 @@ bool ShaderAPI_Base::LoadShadersFromFile(IShaderProgram* pShaderOutput, const ch
 		return false;
 
 	PROF_EVENT("ShaderAPI Load-Build Shaders");
-
-	bool bResult = true;
 
 	shaderProgramCompileInfo_t info;
 	EqString fileNameFX = EqString::Format("%s.fx", pszFilePrefix);
@@ -803,17 +691,61 @@ bool ShaderAPI_Base::LoadShadersFromFile(IShaderProgram* pShaderOutput, const ch
 
 	EqString shaderRootPath = EqString::Format(SHADERS_DEFAULT_PATH "%s", GetRendererName());
 
-	LoadShaderFiles(&info.data.text, fileNameFX.ToCString(), shaderRootPath.ToCString(), info.data, true, !vsRequiried);
+
+	EqString firstFileName;
+	CombinePath(firstFileName, 2, shaderRootPath.ToCString(), fileNameFX.ToCString());
+
+	auto loadShaderFile = [](char* filename, size_t *plen, void* userData) -> char*
+	{
+		shaderProgramCompileInfo_t& compileInfo = *static_cast<shaderProgramCompileInfo_t*>(userData);
+		compileInfo.data.includes.append(filename);
+
+		IFile* file = g_fileSystem->Open(filename, "rb");
+
+		if (!file)
+			return nullptr;
+
+		const long length = file->GetSize();
+		char* buffer = (char*)malloc(length + 1);
+
+		file->Read(buffer, 1, length);
+		buffer[length] = 0;
+
+		g_fileSystem->Close(file);
+
+		if (plen)
+			*plen = length;
+		return buffer;
+	};
+
+	char errorStr[256];
+	info.data.text = stb_include_file(const_cast<char*>(firstFileName.ToCString()), nullptr, const_cast<char*>(shaderRootPath.ToCString()), loadShaderFile, &info, errorStr);
+
+	if (!info.data.text && vsRequiried)
+	{
+		MsgError("LoadShadersFromFile %s\n", errorStr);
+		return false;
+	}
 
 	if(info.data.text)
 		info.data.checksum = CRC32_BlockChecksum(info.data.text, strlen(info.data.text));
 
+	EqString boilerplateFile;
+	CombinePath(boilerplateFile, 2, SHADERS_DEFAULT_PATH, EqString::Format("BoilerPlate_%s.h", GetRendererName()).ToCString());
+	info.data.boilerplate = g_fileSystem->GetFileBuffer(boilerplateFile);
+
+	if (!info.data.boilerplate)
+	{
+		MsgError("Cannot open '%s', expect shader compilation errors\n", boilerplateFile);
+	}
+
 	// compile the shaders
-	bResult = CompileShadersFromStream(pShaderOutput, info, extra);
+	const bool result = CompileShadersFromStream(pShaderOutput, info, extra);
 
-	PPFree(info.data.text);
+	free(info.data.text);
+	PPFree(info.data.boilerplate);
 
-	return bResult;
+	return result;
 }
 
 

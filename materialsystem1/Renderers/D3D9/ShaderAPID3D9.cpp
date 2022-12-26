@@ -48,7 +48,9 @@ extern CEqMutex	g_sapi_VBMutex;
 extern CEqMutex	g_sapi_IBMutex;
 extern CEqMutex	g_sapi_Mutex;
 
-ConVar r_skipShaderCache("r_skipShaderCache", "0", "Shader debugging purposes", 0);
+
+static ConVar r_preloadShaderCache("r_preloadShaderCache", "1", nullptr, 0);
+static ConVar r_skipShaderCache("r_skipShaderCache", "0", "Shader debugging purposes", 0);
 
 bool InternalCreateRenderTarget(LPDIRECT3DDEVICE9 dev, CD3D9Texture *tex, int nFlags);
 
@@ -2003,6 +2005,9 @@ void ShaderAPID3DX9::DestroyShaderProgram(IShaderProgram* pShaderProgram)
 
 void ShaderAPID3DX9::PreloadShadersFromCache()
 {
+	if (!r_preloadShaderCache.GetBool())
+		return;
+
 	int numShaders = 0;
 	CFileSystemFind fsFind(SHADERCACHE_FOLDER "/*.scache", SP_ROOT);
 	while (fsFind.Next())
@@ -2049,7 +2054,7 @@ void ShaderAPID3DX9::PreloadShadersFromCache()
 	Msg("Shader cache: %d shaders loaded\n", numShaders);
 }
 
-bool ShaderAPID3DX9::InitShaderFromCache(IShaderProgram* pShaderOutput, IVirtualStream* pStream)
+bool ShaderAPID3DX9::InitShaderFromCache(IShaderProgram* pShaderOutput, IVirtualStream* pStream, uint32 checksum)
 {
 	CD3D9ShaderProgram* pShader = (CD3D9ShaderProgram*)(pShaderOutput);
 
@@ -2060,7 +2065,7 @@ bool ShaderAPID3DX9::InitShaderFromCache(IShaderProgram* pShaderOutput, IVirtual
 	shaderCacheHdr_t scHdr;
 	pStream->Read(&scHdr, 1, sizeof(shaderCacheHdr_t));
 
-	if (scHdr.ident != SHADERCACHE_IDENT)
+	if (checksum != 0 && checksum != scHdr.checksum || scHdr.ident != SHADERCACHE_IDENT)
 	{
 		g_fileSystem->Close(pStream);
 		MsgWarning("Shader cache for '%s' outdated\n", pShaderOutput->GetName());
@@ -2128,7 +2133,7 @@ bool ShaderAPID3DX9::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 
 		if (pStream)
 		{
-			if (InitShaderFromCache(pShader, pStream))
+			if (InitShaderFromCache(pShader, pStream, info.data.checksum))
 				needsCompile = false;
 			g_fileSystem->Close(pStream);
 		}
@@ -2175,7 +2180,8 @@ bool ShaderAPID3DX9::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 
 		shaderString.Append(EqString::Format("#define COMPILE_VS_%d_0\n", vsVersion));
 
-		//shaderString.Append(EqString::Format("#line %d\n", params.vsLine + 1));
+		shaderString.Append(info.data.boilerplate);
+		shaderString.Append("\r\n");
 		shaderString.Append(info.data.text);
 
 		HRESULT compileResult = D3DXCompileShader(shaderString.GetData(), shaderString.Length(),
@@ -2256,7 +2262,8 @@ bool ShaderAPID3DX9::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 
 		shaderString.Append(EqString::Format("#define COMPILE_PS_%d_0\n", psVersion));
 
-		//shaderString.Append(EqString::Format("#line %d\n", params.psLine + 1));
+		shaderString.Append(info.data.boilerplate);
+		shaderString.Append("\r\n");
 		shaderString.Append(info.data.text);
 
 		HRESULT compileResult = D3DXCompileShader(

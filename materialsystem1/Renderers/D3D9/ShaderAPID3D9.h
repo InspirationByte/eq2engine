@@ -307,7 +307,7 @@ public:
 protected:
 
 	void						PreloadShadersFromCache();
-	bool						InitShaderFromCache(IShaderProgram* pShaderOutput, IVirtualStream* pStream);
+	bool						InitShaderFromCache(IShaderProgram* pShaderOutput, IVirtualStream* pStream, uint32 checksum = 0);
 
 	bool						GetSamplerUnit(CD3D9ShaderProgram* pProgram, const char* pszSamplerName, const DX9Sampler_t** sampler);
 

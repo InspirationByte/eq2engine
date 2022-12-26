@@ -1621,32 +1621,6 @@ void ShaderAPIGL::DestroyShaderProgram(IShaderProgram* pShaderProgram)
 	});
 }
 
-#define SHADER_HELPERS_STRING \
-	"#define saturate(x) clamp(x,0.0,1.0)\r\n"	\
-	"#define lerp mix\r\n"						\
-	"#define mul(a,b) ((a)*(b))\r\n"			\
-	"#define frac fract\r\n"					\
-	"#define float2 vec2\r\n"					\
-	"#define float3 vec3\r\n"					\
-	"#define float4 vec4\r\n"					\
-	"#define float2x2 mat2\r\n"					\
-	"#define float3x3 mat3\r\n"					\
-	"#define float4x4 mat4\r\n"					\
-	"#define tex2D texture\r\n"					\
-	"#define tex3D texture\r\n"					\
-	"#define texCUBE texture\r\n"				\
-	"#define samplerCUBE samplerCube\r\n"
-
-#define SHADER_HELPERS_STRING_VERTEX	\
-	"float clip(float x) {return 1.0;}\r\n" \
-	"#define ddx(x) (x)\r\n"				\
-	"#define ddy(x) (x)\r\n"
-
-#define SHADER_HELPERS_STRING_FRAGMENT	\
-	"#define clip(x) if((x) < 0.0) discard\r\n" \
-	"#define ddx dFdx\r\n"						\
-	"#define ddy dFdy\r\n"
-
 // Load any shader from stream
 bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const shaderProgramCompileInfo_t& info, const char* extra)
 {
@@ -1697,15 +1671,13 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 		shaderString.Append("#version 330\r\n");
 #endif // USE_GLES2
 		shaderString.Append("#define VERTEX\r\n");
-		// append useful HLSL replacements
-		shaderString.Append(SHADER_HELPERS_STRING);
-		shaderString.Append(SHADER_HELPERS_STRING_VERTEX);
 
 		if (extra != nullptr)
 			shaderString.Append(extra);
 
 		const GLchar* sStr[] = { 
-			shaderString.ToCString(),
+			shaderString.ToCString(), "\r\n",
+			info.data.boilerplate, "\r\n",
 			info.data.text
 		};
 
@@ -1774,15 +1746,13 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 		shaderString.Append("#version 330\r\n");
 #endif // USE_GLES2
 		shaderString.Append("#define FRAGMENT\r\n");
-		// append useful HLSL replacements
-		shaderString.Append(SHADER_HELPERS_STRING);
-		shaderString.Append(SHADER_HELPERS_STRING_FRAGMENT);
 
 		if (extra != nullptr)
 			shaderString.Append(extra);
 
 		const GLchar* sStr[] = { 
-			shaderString.ToCString(),
+			shaderString.ToCString(),"\r\n",
+			info.data.boilerplate,"\r\n",
 			info.data.text
 		};
 

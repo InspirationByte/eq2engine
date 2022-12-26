@@ -185,6 +185,9 @@ project "eqNullRHI"
 		"corelib", "frameworkLib", "e2Core",
 		"eqRHIBaseLib"
 	}
+	defines{
+		"EQRHI_NULL",
+	}
     files {
 		Folders.matsystem1.. "renderers/Empty/**.cpp",
 		Folders.matsystem1.."renderers/Empty/**.h"
@@ -200,7 +203,8 @@ project "eqGLESRHI"
 	}
 
 	defines	{
-		"USE_GLES2"
+		"USE_GLES2",
+		"EQRHI_GL"
 	}
 	
     files {
@@ -248,6 +252,10 @@ if not IS_ANDROID then
 			"corelib", "frameworkLib", "e2Core",
 			"eqRHIBaseLib"
 		}
+
+		defines{
+			"EQRHI_GL",
+		}
 		
 		files {
 			Folders.matsystem1.. "renderers/GL/*.cpp",
@@ -290,6 +298,9 @@ if not IS_ANDROID then
 		uses {
 			"corelib", "frameworkLib", "e2Core",
 			"eqRHIBaseLib"
+		}
+		defines{
+			"EQRHI_D3D9",
 		}
         files {
 			Folders.matsystem1.. "renderers/D3D9/**.cpp",
