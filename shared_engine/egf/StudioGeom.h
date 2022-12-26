@@ -12,33 +12,12 @@ class IMaterial;
 class IVertexFormat;
 class IVertexBuffer;
 class IIndexBuffer;
+class CBaseEqGeomInstancer;
 
 using IMaterialPtr = CRefPtr<IMaterial>;
 
 struct decalmakeinfo_t;
 struct tempdecal_t;
-
-//-------------------------------------------------------
-//
-// IEqModelInstancer - model instancer for optimized rendering
-//
-//-------------------------------------------------------
-
-class CEqStudioGeom;
-
-class IEqModelInstancer
-{
-public:
-	virtual	~IEqModelInstancer() {}
-
-	virtual void		ValidateAssert() = 0;
-
-	virtual void		Draw(int renderFlags, CEqStudioGeom* model) = 0;
-	virtual bool		HasInstances() const = 0;
-
-	virtual void		Upload() = 0;
-	virtual void		Invalidate() = 0;
-};
 
 enum EModelLoadingState
 {
@@ -46,7 +25,6 @@ enum EModelLoadingState
 	MODEL_LOAD_IN_PROGRESS = 0,
 	MODEL_LOAD_OK,
 };
-
 
 #define EGF_LOADING_CRITICAL_SECTION(m)	\
 	while(m->GetLoadingState() != MODEL_LOAD_OK) {	g_parallelJobs->CompleteJobCallbacks(); Platform_Sleep(1); }
@@ -57,23 +35,14 @@ class CEqStudioGeom
 	friend class		CStudioCache;
 public:
 
-//------------------------------------------------------------
-
 						CEqStudioGeom();
 						~CEqStudioGeom();
 
-//------------------------------------------------------------
-// base methods
-//------------------------------------------------------------
-	
 	bool				LoadModel(const char* pszPath, bool useJob = true);
-
 	void				DestroyModel();
 
 	const char*			GetName() const;
-
 	const BoundingBox&	GetAABB() const;
-
 	studioHwData_t*		GetHWData() const;
 
 	// makes dynamic temporary decal
@@ -85,13 +54,9 @@ public:
 	void				LoadMaterials();
 	void				LoadMotionPackage(const char* filename);
 
-//------------------------------------
-// Rendering
-//------------------------------------
-
 	// instancing
-	void				SetInstancer(IEqModelInstancer* instancer);
-	IEqModelInstancer*	GetInstancer() const;
+	void				SetInstancer(CBaseEqGeomInstancer* instancer);
+	CBaseEqGeomInstancer*	GetInstancer() const;
 
 	// selects a lod. returns index
 	int					SelectLod(float dist_to_camera) const;
@@ -130,7 +95,7 @@ private:
 	BoundingBox			m_aabb;
 	EqString			m_szPath;
 
-	IEqModelInstancer*	m_instancer;
+	CBaseEqGeomInstancer*	m_instancer;
 	studioHwData_t*		m_hwdata;
 
 	IVertexBuffer*		m_pVB;

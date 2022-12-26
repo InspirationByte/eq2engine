@@ -32,28 +32,28 @@ struct EGFInstBuffer
 	}
 };
 
-CEGFInstancerBase::CEGFInstancerBase()
+CBaseEqGeomInstancer::CBaseEqGeomInstancer()
 {
 }
 
-CEGFInstancerBase::~CEGFInstancerBase()
+CBaseEqGeomInstancer::~CBaseEqGeomInstancer()
 {
 	Cleanup();
 }
 
-void CEGFInstancerBase::ValidateAssert()
+void CBaseEqGeomInstancer::ValidateAssert()
 {
 	ASSERT_MSG(m_vertFormat != nullptr, "Instancer is not valid - did you forgot to initialize it???");
 }
 
-void CEGFInstancerBase::InitEx( const VertexFormatDesc_t* instVertexFormat, int numAttrib, int sizeOfInstance )
+void CBaseEqGeomInstancer::InitEx( const VertexFormatDesc_t* instVertexFormat, int numAttrib, int sizeOfInstance )
 {
 	Cleanup();
 	m_ownsVertexFormat = true;
 	m_vertFormat = g_pShaderAPI->CreateVertexFormat("instancerFmt", instVertexFormat, numAttrib);
 }
 
-void CEGFInstancerBase::Init( IVertexFormat* instVertexFormat, int sizeOfInstance)
+void CBaseEqGeomInstancer::Init( IVertexFormat* instVertexFormat, int sizeOfInstance)
 {
 	Cleanup();
 	m_instanceSize = sizeOfInstance;
@@ -68,7 +68,7 @@ void CEGFInstancerBase::Init( IVertexFormat* instVertexFormat, int sizeOfInstanc
 	m_matGroupBounds[1] = 0;
 }
 
-void CEGFInstancerBase::Cleanup()
+void CBaseEqGeomInstancer::Cleanup()
 {
 	if(m_vertFormat && m_ownsVertexFormat)
 	{
@@ -83,12 +83,12 @@ void CEGFInstancerBase::Cleanup()
 	m_hasInstances = false;
 }
 
-bool CEGFInstancerBase::HasInstances() const
+bool CBaseEqGeomInstancer::HasInstances() const
 {
 	return m_hasInstances;
 }
 
-void* CEGFInstancerBase::AllocInstance(int bodyGroup, int lod, int materialGroup)
+void* CBaseEqGeomInstancer::AllocInstance(int bodyGroup, int lod, int materialGroup)
 {
 	ushort bufId = MakeInstId(bodyGroup, lod, materialGroup);
 
@@ -120,7 +120,7 @@ void* CEGFInstancerBase::AllocInstance(int bodyGroup, int lod, int materialGroup
 	return (ubyte*)buffer.instances + instanceId * m_instanceSize;
 }
 
-void CEGFInstancerBase::Upload()
+void CBaseEqGeomInstancer::Upload()
 {
 	// update all HW instance buffers
 	for (auto it = m_data.begin(); it != m_data.end(); ++it)
@@ -139,7 +139,7 @@ void CEGFInstancerBase::Upload()
 	}
 }
 
-void CEGFInstancerBase::Invalidate()
+void CBaseEqGeomInstancer::Invalidate()
 {
 	for (auto it = m_data.begin(); it != m_data.end(); ++it)
 	{
@@ -156,7 +156,7 @@ void CEGFInstancerBase::Invalidate()
 	m_matGroupBounds[1] = 0;
 }
 
-void CEGFInstancerBase::Draw( int renderFlags, CEqStudioGeom* model )
+void CBaseEqGeomInstancer::Draw( int renderFlags, CEqStudioGeom* model )
 {
 	if(!model)
 		return;

@@ -867,7 +867,7 @@ studioHwData_t* CEqStudioGeom::GetHWData() const
 }
 
 // instancing
-void CEqStudioGeom::SetInstancer(IEqModelInstancer* instancer)
+void CEqStudioGeom::SetInstancer(CBaseEqGeomInstancer* instancer)
 {
 	m_instancer = instancer;
 
@@ -875,7 +875,7 @@ void CEqStudioGeom::SetInstancer(IEqModelInstancer* instancer)
 		m_instancer->ValidateAssert();
 }
 
-IEqModelInstancer* CEqStudioGeom::GetInstancer() const
+CBaseEqGeomInstancer* CEqStudioGeom::GetInstancer() const
 {
 	return m_instancer;
 }

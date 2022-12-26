@@ -30,11 +30,11 @@ class IVertexBuffer;
 struct EGFInstBuffer;
 
 //---------------------------------------------------------------------
-class CEGFInstancerBase : public IEqModelInstancer
+class CBaseEqGeomInstancer
 {
 public:
-	CEGFInstancerBase();
-	~CEGFInstancerBase();
+	CBaseEqGeomInstancer();
+	~CBaseEqGeomInstancer();
 
 	void			InitEx(const VertexFormatDesc_t* instVertexFormat, int numAttrib, int sizeOfInstance);
 	void			Init(IVertexFormat* instVertexFormat, int sizeOfInstance);
@@ -70,9 +70,8 @@ protected:
 
 // for each bodygroup
 template <class IT>
-class CEGFInstancer : public CEGFInstancerBase
+class CEqGeomInstancer : public CBaseEqGeomInstancer
 {
-friend class CEqStudioGeom;
 public:
 	void			Init(IVertexFormat* instVertexFormat);
 	void			InitEx(const VertexFormatDesc_t* instVertexFormat, int numAttrib);
@@ -82,19 +81,19 @@ public:
 //-------------------------------------------------------
 
 template <class IT>
-inline void CEGFInstancer<IT>::Init(IVertexFormat* instVertexFormat)
+inline void CEqGeomInstancer<IT>::Init(IVertexFormat* instVertexFormat)
 {
-	CEGFInstancerBase::Init(instVertexFormat, sizeof(IT));
+	CBaseEqGeomInstancer::Init(instVertexFormat, sizeof(IT));
 }
 
 template <class IT>
-inline void CEGFInstancer<IT>::InitEx(const VertexFormatDesc_t* instVertexFormat, int numAttrib)
+inline void CEqGeomInstancer<IT>::InitEx(const VertexFormatDesc_t* instVertexFormat, int numAttrib)
 {
-	CEGFInstancerBase::InitEx(instVertexFormat, numAttrib, sizeof(IT));
+	CBaseEqGeomInstancer::InitEx(instVertexFormat, numAttrib, sizeof(IT));
 }
 
 template <class IT>
-inline IT& CEGFInstancer<IT>::NewInstance(int bodyGroup, int lod, int materialGroup)
+inline IT& CEqGeomInstancer<IT>::NewInstance(int bodyGroup, int lod, int materialGroup)
 {
 	static IT dummy;
 

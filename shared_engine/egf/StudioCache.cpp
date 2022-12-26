@@ -13,6 +13,8 @@
 #include "StudioCache.h"
 #include "StudioGeom.h"
 
+static ConVar job_modelLoader("job_modelLoader", "0", "Load models in parallel threads", CV_ARCHIVE);
+
 static CStudioCache s_ModelCache;
 CStudioCache* g_studioModelCache = &s_ModelCache;
 
@@ -20,13 +22,6 @@ CStudioCache::CStudioCache()
 {
 	m_egfFormat = nullptr;
 }
-
-void CStudioCache::ReloadModels()
-{
-
-}
-
-static ConVar job_modelLoader("job_modelLoader", "0", "Load models in parallel threads", CV_ARCHIVE);
 
 // caches model and returns it's index
 int CStudioCache::PrecacheModel(const char* modelName)

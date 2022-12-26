@@ -37,7 +37,6 @@ public:
 	void					FreeCachedModel(CEqStudioGeom* pModel);
 
 	void					ReleaseCache();
-	void					ReloadModels();
 
 	IVertexFormat*			GetEGFVertexFormat() const;		// returns EGF vertex format
 
