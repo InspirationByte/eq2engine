@@ -21,8 +21,8 @@ extern bool GLCheckError(const char* op, ...);
 CGLTexture::CGLTexture()
 {
 	m_flLod = 0.0f;
-	glTarget = GL_NONE;
-	glDepthID = GL_NONE;
+	m_glTarget = GL_NONE;
+	m_glDepthID = GL_NONE;
 	m_texSize = 0;
 	m_nLockLevel = 0;
 	m_bIsLocked = false;
@@ -46,9 +46,9 @@ void CGLTexture::Release()
 
 void CGLTexture::ReleaseTextures()
 {
-	if (glTarget == GL_RENDERBUFFER)
+	if (m_glTarget == GL_RENDERBUFFER)
 	{
-		glDeleteRenderbuffers(1, &glDepthID);
+		glDeleteRenderbuffers(1, &m_glDepthID);
 		GLCheckError("del tex renderbuffer");
 	}
 	else
@@ -59,10 +59,11 @@ void CGLTexture::ReleaseTextures()
 			GLCheckError("del tex");
 		}
 
-		if(glDepthID != GL_NONE)
-			glDeleteTextures(1, &glDepthID);
-	
-		GLCheckError("del depth");
+		if (m_glDepthID != GL_NONE)
+		{
+			glDeleteTextures(1, &m_glDepthID);
+			GLCheckError("del depth");
+		}
 	}
 }
 
@@ -120,7 +121,7 @@ bool UpdateGLTextureFromImage(GLTextureRef_t texture, SamplerStateParam_t& sampl
 	const GLenum srcFormat = chanCountTypes[GetChannelCount(format)];
 	const GLenum srcType = chanTypePerFormat[format];
 
-	const GLint internalFormat = PickGLInternalFormat(format);
+	const GLenum internalFormat = PickGLInternalFormat(format);
 
 	glBindTexture(glTarget, texture.glTexID);
 	GLCheckError("bind tex");
@@ -225,6 +226,7 @@ bool CGLTexture::Init(const SamplerStateParam_t& sampler, const ArrayCRef<CImage
 	}
 
 	m_iFlags |= TEXFLAG_MANAGED;
+	m_glTarget = glTexTargetType[images[0]->GetImageType()];
 
 	const int quality = (m_iFlags & TEXFLAG_NOQUALITYLOD) ? 0 : r_loadmiplevel->GetInt();
 
@@ -265,7 +267,7 @@ bool CGLTexture::Init(const SamplerStateParam_t& sampler, const ArrayCRef<CImage
 
 			if (!UpdateGLTextureFromImage(texture, m_samplerState, img, mipStart))
 			{
-				glBindTexture(glTarget, 0);
+				glBindTexture(m_glTarget, 0);
 				GLCheckError("tex unbind");
 
 				glDeleteTextures(1, &texture.glTexID);
@@ -361,18 +363,18 @@ void CGLTexture::Lock(LockData* pLockData, Rectangle_t* pRect, bool bDiscard, bo
 #else
     if(!bDiscard)
     {
-		int targetOrCubeTarget = (glTarget == GL_TEXTURE_CUBE_MAP) ? GL_TEXTURE_CUBE_MAP_POSITIVE_X+m_lockCubeFace : glTarget;
+		int targetOrCubeTarget = (m_glTarget == GL_TEXTURE_CUBE_MAP) ? GL_TEXTURE_CUBE_MAP_POSITIVE_X+m_lockCubeFace : m_glTarget;
 
         GLenum srcFormat = chanCountTypes[GetChannelCount(m_iFormat)];
         GLenum srcType = chanTypePerFormat[m_iFormat];
 
-        glBindTexture(glTarget, textures[0].glTexID);
+        glBindTexture(m_glTarget, textures[0].glTexID);
 
 		glGetTexImage(targetOrCubeTarget, m_nLockLevel, srcFormat, srcType, m_lockPtr);
 
 		GLCheckError("lock get tex image");
 
-        glBindTexture(glTarget, 0);
+        glBindTexture(m_glTarget, 0);
     }
 #endif // USE_GLES2
 }
@@ -386,16 +388,17 @@ void CGLTexture::Unlock()
 		{
 			GLenum srcFormat = chanCountTypes[GetChannelCount(m_iFormat)];
 			GLenum srcType = chanTypePerFormat[m_iFormat];
+			GLenum internalFormat = PickGLInternalFormat(m_iFormat);
 
-			int targetOrCubeTarget = (glTarget == GL_TEXTURE_CUBE_MAP) ? GL_TEXTURE_CUBE_MAP_POSITIVE_X+m_lockCubeFace : glTarget;
+			int targetOrCubeTarget = (m_glTarget == GL_TEXTURE_CUBE_MAP) ? GL_TEXTURE_CUBE_MAP_POSITIVE_X+m_lockCubeFace : m_glTarget;
 
-			glBindTexture(glTarget, textures[0].glTexID);
+			glBindTexture(m_glTarget, textures[0].glTexID);
+			GLCheckError("bind texture");
 
 			glTexSubImage2D(targetOrCubeTarget, m_nLockLevel, 0, 0, m_iWidth, m_iHeight, srcFormat, srcType, m_lockPtr);
-
 			GLCheckError("unlock upload tex image");
 
-			glBindTexture(glTarget, 0);
+			glBindTexture(m_glTarget, 0);
 		}
 
 		PPFree(m_lockPtr);

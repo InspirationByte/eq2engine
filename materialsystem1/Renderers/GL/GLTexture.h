@@ -37,8 +37,8 @@ public:
 	Array<GLTextureRef_t>	textures{ PP_SL };
 
 	float					m_flLod;
-	GLuint					glTarget;
-	GLuint					glDepthID;
+	GLuint					m_glTarget{ GL_NONE };
+	GLuint					m_glDepthID{ GL_NONE };
 
 	int						m_nLockLevel;
 	int						m_lockCubeFace;

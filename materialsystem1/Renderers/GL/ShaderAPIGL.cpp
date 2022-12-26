@@ -69,8 +69,6 @@ bool GLCheckError(const char* op, ...)
 	GLenum lastError = glGetError();
 	if(lastError != GL_NO_ERROR)
 	{
-		ASSERT(!gl_break_on_error.GetBool());
-
         EqString errString = EqString::Format("code %x", lastError);
 
         switch(lastError)
@@ -95,17 +93,15 @@ bool GLCheckError(const char* op, ...)
                 break;
         }
 
+		va_list argptr;
+		va_start(argptr, op);
+		EqString errorMsg = EqString::FormatVa(op, argptr);
+		va_end(argptr);
+
+		ASSERT_MSG(!gl_break_on_error.GetBool(), "OpenGL: %s - %s", errorMsg.ToCString(), errString.ToCString());
+
 		if (gl_report_errors.GetBool())
-		{
-			va_list argptr;
-			va_start(argptr, op);
-
-			EqString str = EqString::FormatVa(op, argptr);
-
-			va_end(argptr);
-
-			MsgError("*OGL* error occured while '%s' (%s)\n", str.ToCString(), errString.ToCString());
-		}
+			MsgError("*OGL* error occured while '%s' (%s)\n", errorMsg.ToCString(), errString.ToCString());
 
 		return gl_bypass_errors.GetBool();
 	}
@@ -290,9 +286,10 @@ void ShaderAPIGL::Shutdown()
 	glDeleteFramebuffers(1, &m_frameBuffer);
 	m_frameBuffer = 0;
 
+	ShaderAPI_Base::Shutdown();
+
 	// shutdown worker and detach context
 	g_glWorker.Shutdown();
-	ShaderAPI_Base::Shutdown();
 }
 
 void ShaderAPIGL::Reset(int nResetType/* = STATE_RESET_ALL*/)
@@ -308,9 +305,11 @@ void ShaderAPIGL::Reset(int nResetType/* = STATE_RESET_ALL*/)
 
 void ShaderAPIGL::ApplyTextures()
 {
-	int i;
+	GLint maxImageUnits;
+	glGetIntegerv(GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS, &maxImageUnits);
+	ASSERT(maxImageUnits > 0);
 
-	for (i = 0; i < m_caps.maxTextureUnits; i++)
+	for (int i = 0; i < m_caps.maxTextureUnits; i++)
 	{
 		CGLTexture* pSelectedTexture = (CGLTexture*)m_pSelectedTextures[i];
 		ITexture* pCurrentTexture = m_pCurrentTextures[i];
@@ -320,6 +319,7 @@ void ShaderAPIGL::ApplyTextures()
 		{
 			// Set the active texture unit and bind the selected texture to target
 			glActiveTexture(GL_TEXTURE0 + i);
+			GLCheckError("active texture %d", i);
 
 			if (pSelectedTexture == nullptr)
 			{
@@ -331,6 +331,7 @@ void ShaderAPIGL::ApplyTextures()
 				currentGLTexture = pSelectedTexture->GetCurrentTexture();
 				glBindTexture(glTexTargetType[currentGLTexture.type], currentGLTexture.glTexID);
 			}
+			GLCheckError("bind texture");
 
 			m_pCurrentTextures[i] = pSelectedTexture;
 			
@@ -588,6 +589,7 @@ void ShaderAPIGL::ApplyConstants()
 			((UNIFORM_MAT_FUNC)s_uniformFuncs[uni.type])(uni.index, uni.nElements, GL_TRUE, (float*)uni.data);
 		else
 			((UNIFORM_FUNC)s_uniformFuncs[uni.type])(uni.index, uni.nElements, (float*)uni.data);
+		GLCheckError("apply uniform %s", uni.name);
 	}
 }
 
@@ -730,10 +732,10 @@ void ShaderAPIGL::FreeTexture(ITexture* pTexture)
 	}
 
 	DevMsg(DEVMSG_SHADERAPI, "Texture unloaded: %s\n", pTexture->GetName());
-	g_glWorker.WaitForExecute(__FUNCTION__, [pTex]() {
+	g_glWorker.AddWork(__FUNCTION__, [pTex]() {
 		delete pTex;
 		return 0;
-	});
+	}, false);
 }
 
 // It will add new rendertarget
@@ -762,7 +764,7 @@ ITexture* ShaderAPIGL::CreateNamedRenderTarget(	const char* pszName,
 	pTexture->SetFlags(nFlags | TEXFLAG_RENDERTARGET);
 	pTexture->SetName(pszName);
 
-	pTexture->glTarget = (nFlags & TEXFLAG_CUBEMAP) ? GL_TEXTURE_CUBE_MAP : GL_TEXTURE_2D;
+	pTexture->m_glTarget = (nFlags & TEXFLAG_CUBEMAP) ? GL_TEXTURE_CUBE_MAP : GL_TEXTURE_2D;
 
 	SamplerStateParam_t texSamplerParams;
 	SamplerStateParams_Make(texSamplerParams, g_pShaderAPI->GetCaps(), textureFilterType, textureAddress, textureAddress, textureAddress);
@@ -771,10 +773,10 @@ ITexture* ShaderAPIGL::CreateNamedRenderTarget(	const char* pszName,
 
 	if (nFlags & TEXFLAG_RENDERDEPTH)
 	{
-		glGenTextures(1, &pTexture->glDepthID);
+		glGenTextures(1, &pTexture->m_glDepthID);
 		GLCheckError("gen depth tex");
 
-		glBindTexture(GL_TEXTURE_2D, pTexture->glDepthID);
+		glBindTexture(GL_TEXTURE_2D, pTexture->m_glDepthID);
 		SetupGLSamplerState(GL_TEXTURE_2D, texSamplerParams);
 	}
 
@@ -791,8 +793,8 @@ ITexture* ShaderAPIGL::CreateNamedRenderTarget(	const char* pszName,
 		glGenTextures(1, &texture.glTexID);
 		GLCheckError("gen tex");
 
-		glBindTexture(pTexture->glTarget, texture.glTexID);
-		SetupGLSamplerState(pTexture->glTarget, texSamplerParams);
+		glBindTexture(pTexture->m_glTarget, texture.glTexID);
+		SetupGLSamplerState(pTexture->m_glTarget, texSamplerParams);
 
 		pTexture->textures.append(texture);
 
@@ -824,10 +826,10 @@ void ShaderAPIGL::ResizeRenderTarget(ITexture* pRT, int newWide, int newTall)
 	if (format == FORMAT_NONE)
 		return;
 
-	if (pTex->glTarget == GL_RENDERBUFFER)
+	if (pTex->m_glTarget == GL_RENDERBUFFER)
 	{
 		// Bind render buffer
-		glBindRenderbuffer(GL_RENDERBUFFER, pTex->glDepthID);
+		glBindRenderbuffer(GL_RENDERBUFFER, pTex->m_glDepthID);
 		glRenderbufferStorage(GL_RENDERBUFFER, internalFormats[format], newWide, newTall);
 		GLCheckError("gen tex renderbuffer storage");
 
@@ -836,7 +838,7 @@ void ShaderAPIGL::ResizeRenderTarget(ITexture* pRT, int newWide, int newTall)
 	}
 	else
 	{
-		if (pTex->glDepthID != GL_NONE)
+		if (pTex->m_glDepthID != GL_NONE)
 		{
 			// make a depth texture first
 			// use glDepthID
@@ -845,7 +847,7 @@ void ShaderAPIGL::ResizeRenderTarget(ITexture* pRT, int newWide, int newTall)
 			GLenum depthSrcFormat = IsStencilFormat(depthFmt) ? GL_DEPTH_STENCIL : GL_DEPTH_COMPONENT;
 			GLenum depthSrcType = chanTypePerFormat[depthFmt];
 
-			glBindTexture(GL_TEXTURE_2D, pTex->glDepthID);
+			glBindTexture(GL_TEXTURE_2D, pTex->m_glDepthID);
 			glTexImage2D(GL_TEXTURE_2D, 0, depthInternalFormat, newWide, newTall, 0, depthSrcFormat, depthSrcType, nullptr);
 			GLCheckError("gen tex image depth");
 			glBindTexture(GL_TEXTURE_2D, 0);
@@ -864,7 +866,7 @@ void ShaderAPIGL::ResizeRenderTarget(ITexture* pRT, int newWide, int newTall)
 		}
 
 		// Allocate all required surfaces.
-		glBindTexture(pTex->glTarget, pTex->textures[0].glTexID);
+		glBindTexture(pTex->m_glTarget, pTex->textures[0].glTexID);
 
 		if (pTex->GetFlags() & TEXFLAG_CUBEMAP)
 		{
@@ -874,11 +876,11 @@ void ShaderAPIGL::ResizeRenderTarget(ITexture* pRT, int newWide, int newTall)
 		}
 		else
 		{
-			glTexImage2D(pTex->glTarget, 0, internalFormat, newWide, newTall, 0, srcFormat, srcType, nullptr);
+			glTexImage2D(pTex->m_glTarget, 0, internalFormat, newWide, newTall, 0, srcFormat, srcType, nullptr);
 			GLCheckError("gen tex image");
 		}
 
-		glBindTexture(pTex->glTarget, 0);
+		glBindTexture(pTex->m_glTarget, 0);
 	}
 }
 
@@ -1253,7 +1255,7 @@ void ShaderAPIGL::ChangeRenderTargets(ITexture** pRenderTargets, int nNumRTs, in
 		m_nCurrentRenderTargets = nNumRTs;
 	}
 
-	GLuint bestDepth = nNumRTs ? ((CGLTexture*)pRenderTargets[0])->glDepthID : GL_NONE;
+	GLuint bestDepth = nNumRTs ? ((CGLTexture*)pRenderTargets[0])->m_glDepthID : GL_NONE;
 	GLuint bestTarget = GL_TEXTURE_2D;
 	ETextureFormat bestFormat = nNumRTs ? FORMAT_D16 : FORMAT_NONE;
 	
@@ -1263,8 +1265,8 @@ void ShaderAPIGL::ChangeRenderTargets(ITexture** pRenderTargets, int nNumRTs, in
 	{
 		if(pDepth)
 		{
-			bestDepth = (pDepth->glTarget == GL_RENDERBUFFER) ? pDepth->glDepthID : pDepth->textures[0].glTexID;
-			bestTarget = pDepth->glTarget == GL_RENDERBUFFER ? GL_RENDERBUFFER : GL_TEXTURE_2D;
+			bestDepth = (pDepth->m_glTarget == GL_RENDERBUFFER) ? pDepth->m_glDepthID : pDepth->textures[0].glTexID;
+			bestTarget = pDepth->m_glTarget == GL_RENDERBUFFER ? GL_RENDERBUFFER : GL_TEXTURE_2D;
 			bestFormat = pDepth->GetFormat();
 		}
 		
@@ -1615,10 +1617,10 @@ void ShaderAPIGL::DestroyShaderProgram(IShaderProgram* pShaderProgram)
 		m_ShaderList.remove(it);
 	}
 
-	g_glWorker.WaitForExecute(__FUNCTION__, [pShader]() {
+	g_glWorker.AddWork(__FUNCTION__, [pShader]() {
 		delete pShader;
 		return 0;
-	});
+	}, false);
 }
 
 // Load any shader from stream
@@ -2177,7 +2179,7 @@ void ShaderAPIGL::DestroyVertexBuffer(IVertexBuffer* pVertexBuffer)
 
 		delete pVB;
 
-		g_glWorker.WaitForExecute(__FUNCTION__, [numBuffers, tempArray]() {
+		g_glWorker.AddWork(__FUNCTION__, [numBuffers, tempArray]() {
 
 			glDeleteBuffers(numBuffers, tempArray);
 			GLCheckError("delete vertex buffer");
@@ -2185,7 +2187,7 @@ void ShaderAPIGL::DestroyVertexBuffer(IVertexBuffer* pVertexBuffer)
 			delete [] tempArray;
 
 			return 0;
-		});
+		}, false);
 	}
 }
 
@@ -2211,7 +2213,7 @@ void ShaderAPIGL::DestroyIndexBuffer(IIndexBuffer* pIndexBuffer)
 
 		delete pIndexBuffer;
 
-		g_glWorker.WaitForExecute(__FUNCTION__, [numBuffers, tempArray]() {
+		g_glWorker.AddWork(__FUNCTION__, [numBuffers, tempArray]() {
 			
 			glDeleteBuffers(numBuffers, tempArray);
 			GLCheckError("delete index buffer");
@@ -2219,7 +2221,7 @@ void ShaderAPIGL::DestroyIndexBuffer(IIndexBuffer* pIndexBuffer)
 			delete [] tempArray;
 
 			return 0;
-		});		
+		}, false);		
 	}
 }
 
