@@ -8,8 +8,6 @@
 #pragma once
 #include "ConCommandBase.h"
 
-// The Microsoft C++ Compiler fixes the typedef problem
-// Buf for linux we needs this:
 class ConVar;
 
 typedef void (*CONVAR_CHANGE_CALLBACK)(ConVar* pVar,char const* pszOldValue);
