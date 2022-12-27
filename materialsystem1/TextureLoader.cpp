@@ -172,5 +172,8 @@ ITexture* CTextureLoader::LoadTextureFromFileSync(const char* pszFileName, const
 Future<ITexture*> CTextureLoader::LoadTextureFromFile(const char* pszFileName, const SamplerStateParam_t& samplerParams, int nFlags)
 {
 	PROF_EVENT("Load Texture from file");
+
+	// TODO: stream lods gradually
+
 	return Future<ITexture*>::Failure(-1, "None");
 }

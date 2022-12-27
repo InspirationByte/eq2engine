@@ -134,6 +134,8 @@ public:
 			pMaterial->Ref_Grab();
 		}
 
+		// FIXME: detect if when no heavy rendering is ocurring so we can load shaders and textures faster
+
 		if (g_parallelJobs->IsInitialized())
 		{
 			g_parallelJobs->AddJob(JOB_TYPE_ANY, [pMaterial, this](void*, int) {

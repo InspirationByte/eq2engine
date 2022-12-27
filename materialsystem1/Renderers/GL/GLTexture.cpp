@@ -126,6 +126,9 @@ bool UpdateGLTextureFromImage(GLTextureRef_t texture, SamplerStateParam_t& sampl
 	glBindTexture(glTarget, texture.glTexID);
 	GLCheckError("bind tex");
 
+	// FIXME:	how I do even fucking organize texture streaming in GL?
+	//			call glTex*Image* with level 0 first?
+
 	// Upload it all
 	ubyte *src;
 	int mipMapLevel = startMipLevel;
@@ -195,6 +198,7 @@ bool UpdateGLTextureFromImage(GLTextureRef_t texture, SamplerStateParam_t& sampl
 				break;
 		}
 
+		// glTexParameteri(glTarget, GL_TEXTURE_BASE_LEVEL, mipMapLevel);
 		mipMapLevel++;
 	}
 

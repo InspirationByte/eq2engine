@@ -71,7 +71,7 @@ IDirect3DBaseTexture9* CD3D9Texture::CreateD3DTexture(EImageType type, ETextureF
 	} 
 	else if(type == IMAGE_TYPE_2D || type == IMAGE_TYPE_1D)
 	{
-		HRESULT status = d3dDevice->CreateTexture(widthMip0, heightMip0, mipCount, 0, 
+		HRESULT status = d3dDevice->CreateTexture(widthMip0, heightMip0, mipCount, 0,
 													formats[format], (D3DPOOL)m_pool, (LPDIRECT3DTEXTURE9*)&d3dTexture, nullptr);
 		if (status != D3D_OK)
 		{
@@ -115,11 +115,13 @@ bool UpdateD3DTextureFromImage(IDirect3DBaseTexture9* texture, const CImage* ima
 
 	const DWORD lockFlags = D3DLOCK_DISCARD | D3DLOCK_NOSYSLOCK;
 
-	int mipMapLevel = startMipLevel;
+	const int numMipMaps = image->GetMipMapCount();
+	int mipMapLevel = numMipMaps-1;
 
-	ubyte* src;
-	while ((src = image->GetPixels(mipMapLevel)) != nullptr)
+	while (mipMapLevel >= startMipLevel)
 	{
+		ubyte* src = image->GetPixels(mipMapLevel);
+		ASSERT(src);
 		const int size = image->GetMipMappedSize(mipMapLevel, 1);
 		const int lockBoxLevel = mipMapLevel - startMipLevel;
 
@@ -171,7 +173,8 @@ bool UpdateD3DTextureFromImage(IDirect3DBaseTexture9* texture, const CImage* ima
 			}
 		}
 
-		mipMapLevel++;
+		texture->SetLOD(lockBoxLevel);
+		--mipMapLevel;
 	}
 	
 	return true;
@@ -224,7 +227,7 @@ bool CD3D9Texture::Init(const SamplerStateParam_t& sampler, const ArrayCRef<CIma
 
 		if (!d3dTexture)
 		{
-			MsgError("D3D9 ERROR: failed to create texture for image %s, mip block\n", img->GetName());
+			MsgError("D3D9 ERROR: failed to create texture for image %s\n", img->GetName());
 			continue;
 		}
 
