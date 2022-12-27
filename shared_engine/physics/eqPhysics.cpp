@@ -231,10 +231,7 @@ struct CEqManifoldResult : public btManifoldResult
 		}
 #endif // CONTACT_GROUPING
 		
-		int numColls = m_collisions.numElem();
-		m_collisions.setNum(numColls + 1);
-
-		CollisionData_t& data = m_collisions[numColls];
+		CollisionData_t& data = m_collisions.append();
 
 		data.fract = distance;
 		ConvertBulletToDKVectors(data.normal, cp.m_normalWorldOnB);
@@ -251,7 +248,7 @@ struct CEqManifoldResult : public btManifoldResult
 		coll.fract = 0;
 		coll.materialIndex = -1;
 
-		int count = m_collisions.numElem();
+		const int count = m_collisions.numElem();
 
 		if (!count)
 			return false;
@@ -272,7 +269,7 @@ struct CEqManifoldResult : public btManifoldResult
 		return true;
 	}
 
-	FixedArray<CollisionData_t, 60>		m_collisions;
+	FixedArray<CollisionData_t, 64>		m_collisions;
 	Vector3D							m_center;
 	bool								m_singleSided;
 };

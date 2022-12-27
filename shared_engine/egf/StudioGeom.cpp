@@ -1099,6 +1099,7 @@ tempdecal_t* CEqStudioGeom::MakeTempDecal(const decalmakeinfo_t& info, Matrix4x4
 
 				if (bbox.Intersects(vbox) && dot(normal, decal_normal) < 0)
 				{
+					// TODO: optimize using Map and HashVector3D
 					g_indices.append(g_verts.addUnique(v0, egf_vertex_comp));
 					g_indices.append(g_verts.addUnique(v1, egf_vertex_comp));
 					g_indices.append(g_verts.addUnique(v2, egf_vertex_comp));

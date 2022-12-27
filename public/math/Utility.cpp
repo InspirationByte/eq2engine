@@ -8,6 +8,18 @@
 #include "core/core_common.h"
 #include "Utility.h"
 
+int HashVector2D(const Vector2D& v, float tolerance)
+{
+	const IVector2D& fixed = v / tolerance;
+	return (fixed.x * 12391) + (fixed.y * 14561);
+}
+
+int HashVector3D(const Vector3D& v, float tolerance)
+{
+	const IVector3D& fixed = v / tolerance;
+	return (fixed.x * 12391) + (fixed.y * 14561) + (fixed.z * 18397);
+}
+
 float SnapFloat(float grid_spacing, float val)
 {
 	return round(val / grid_spacing) * grid_spacing;

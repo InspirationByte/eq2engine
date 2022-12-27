@@ -7,6 +7,9 @@
 
 #pragma once
 
+int					HashVector2D(const Vector3D& v, float tolerance);
+int					HashVector3D(const Vector3D& v, float tolerance);
+
 float				SnapFloat(float grid_spacing, float val);
 Vector3D			SnapVector(float grid_spacing, const Vector3D& vector);
 
