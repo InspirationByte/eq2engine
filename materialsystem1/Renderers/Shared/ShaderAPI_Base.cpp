@@ -338,6 +338,17 @@ void ShaderAPI_Base::GetConsoleTextureList(const ConCommandBase* base, Array<EqS
 	}
 }
 
+// texture uploading frequency
+void ShaderAPI_Base::SetProgressiveTextureFrequency(int frames)
+{
+	m_progressiveTextureFrequency = frames;
+}
+
+int	ShaderAPI_Base::GetProgressiveTextureFrequency() const
+{
+	return m_progressiveTextureFrequency;
+}
+
 void ShaderAPI_Base::SetViewport(int x, int y, int w, int h)
 {
 	m_nViewportWidth = w;
@@ -403,6 +414,19 @@ ITexture* ShaderAPI_Base::CreateTexture(const ArrayCRef<CRefPtr<CImage>>& pImage
 	{
 		CScopedMutex m(g_sapi_TextureMutex);
 		texture = CreateTextureResource(pImages[0]->GetName());
+	}
+
+	for (int i = 0; i < pImages.numElem(); ++i)
+	{
+		if (GetShaderAPIClass() == SHADERAPI_DIRECT3D9)
+		{
+			if (pImages[i]->GetFormat() == FORMAT_RGB8 || pImages[i]->GetFormat() == FORMAT_RGBA8)
+				pImages[i]->SwapChannels(0, 2); // convert to BGR
+
+			// Convert if needed and upload datas
+			if (pImages[i]->GetFormat() == FORMAT_RGB8) // as the D3DFMT_X8R8G8B8 used
+				pImages[i]->Convert(FORMAT_RGBA8);
+		}
 	}
 	
 	texture->Init(sampler, pImages, nFlags);

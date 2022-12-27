@@ -35,6 +35,10 @@ public:
 
 	static void							GetConsoleTextureList(const ConCommandBase* base, Array<EqString>&, const char* query);
 
+	// texture uploading frequency
+	void								SetProgressiveTextureFrequency(int frames);
+	int									GetProgressiveTextureFrequency() const;
+
 //-------------------------------------------------------------
 // Apply/Reset functions
 //-------------------------------------------------------------
@@ -278,6 +282,8 @@ protected:
 	// Viewport
 	int16								m_nViewportWidth;
 	int16								m_nViewportHeight;
+
+	int									m_progressiveTextureFrequency{ 0 };
 
 	// Perfomance counters
 	int									m_nDrawCalls;

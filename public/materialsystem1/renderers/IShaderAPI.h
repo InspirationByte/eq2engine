@@ -185,6 +185,10 @@ public:
 	// finishes
 	virtual void					Finish() = 0;
 
+	// texture LOD uploading frequency
+	virtual void					SetProgressiveTextureFrequency(int frames) = 0;
+	virtual int						GetProgressiveTextureFrequency() const = 0;
+
 //-------------------------------------------------------------
 // Occlusion query
 //-------------------------------------------------------------

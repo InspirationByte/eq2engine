@@ -48,6 +48,8 @@ extern CEqMutex	g_sapi_VBMutex;
 extern CEqMutex	g_sapi_IBMutex;
 extern CEqMutex	g_sapi_Mutex;
 
+extern CEqMutex	g_sapi_ProgressiveTextureMutex;
+
 
 static ConVar r_preloadShaderCache("r_preloadShaderCache", "1", nullptr, 0);
 static ConVar r_skipShaderCache("r_skipShaderCache", "0", "Shader debugging purposes", 0);
@@ -1987,6 +1989,33 @@ void ShaderAPID3DX9::DestroyShaderProgram(IShaderProgram* pShaderProgram)
 		m_ShaderList.remove(it);
 	}
 	delete pShader;
+}
+
+void ShaderAPID3DX9::StepProgressiveLodTextures()
+{
+	int numTransferred = 0;
+
+	auto it = m_progressiveTextures.begin();
+	while (it != m_progressiveTextures.end() && numTransferred < TEXTURE_TRANSFER_MAX_TEXTURES_PER_FRAME)
+	{
+		CD3D9Texture* nextTexture = nullptr;
+		{
+			CScopedMutex m(g_sapi_ProgressiveTextureMutex);
+			nextTexture = it.key();
+			++it;
+		}
+
+		EProgressiveStatus status = nextTexture->StepProgressiveLod();
+		if (status == PROGRESSIVE_STATUS_COMPLETED)
+		{
+			CScopedMutex m(g_sapi_ProgressiveTextureMutex);
+			m_progressiveTextures.remove(nextTexture);
+			++numTransferred;
+		}
+
+		if(status == PROGRESSIVE_STATUS_DID_UPLOAD)
+			++numTransferred;
+	} 
 }
 
 void ShaderAPID3DX9::PreloadShadersFromCache()

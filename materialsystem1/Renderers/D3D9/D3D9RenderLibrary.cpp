@@ -8,6 +8,7 @@
 #include "core/core_common.h"
 #include "core/IDkCore.h"
 #include "core/IConsoleCommands.h"
+#include "core/IEqParallelJobs.h"
 #include "core/ICommandLine.h"
 #include "core/ConVar.h"
 #include "core/ConCommand.h"
@@ -342,6 +343,18 @@ void CD3DRenderLib::CheckResetDevice()
 void CD3DRenderLib::BeginFrame()
 {
 	CheckResetDevice();
+
+	static volatile bool s_textureJobRunning = false;
+
+	if (!s_textureJobRunning)
+	{
+		s_textureJobRunning = true;
+		g_parallelJobs->AddJob(JOB_TYPE_RENDERER, [](void*, int i) {
+			s_shaderApi.StepProgressiveLodTextures();
+			s_textureJobRunning = false;
+		});
+	}
+
 
 	m_rhi->BeginScene();
 }

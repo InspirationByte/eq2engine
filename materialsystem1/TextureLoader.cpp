@@ -105,6 +105,7 @@ ITexture* CTextureLoader::LoadTextureFromFileSync(const char* pszFileName, const
 		return texture;
 	}
 
+	// FIXME: For testing. I think it should be in shader
 	nFlags |= TEXFLAG_PROGRESSIVE_LODS;
 
 	PROF_EVENT("Load Texture from file");
@@ -141,6 +142,16 @@ ITexture* CTextureLoader::LoadTextureFromFileSync(const char* pszFileName, const
 
 		if (isLoaded)
 		{
+			if (g_pShaderAPI->GetShaderAPIClass() == SHADERAPI_DIRECT3D9)
+			{
+				if (img->GetFormat() == FORMAT_RGB8 || img->GetFormat() == FORMAT_RGBA8)
+					img->SwapChannels(0, 2); // convert to BGR
+
+				// Convert if needed and upload datas
+				if (img->GetFormat() == FORMAT_RGB8) // as the D3DFMT_X8R8G8B8 used
+					img->Convert(FORMAT_RGBA8);
+			}
+
 			imgList.append(img);
 
 			if (r_reportTextureLoading.GetBool())

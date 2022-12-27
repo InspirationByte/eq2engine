@@ -8,6 +8,16 @@
 #pragma once
 #include "../Shared/CTexture.h"
 
+static constexpr const int TEXTURE_TRANSFER_RATE_THRESHOLD = 512;
+static constexpr const int TEXTURE_TRANSFER_MAX_TEXTURES_PER_FRAME = 15;
+
+enum EProgressiveStatus : int
+{
+	PROGRESSIVE_STATUS_COMPLETED = 0,
+	PROGRESSIVE_STATUS_WAIT_MORE_FRAMES,
+	PROGRESSIVE_STATUS_DID_UPLOAD,
+};
+
 class CImage;
 struct IDirect3DBaseTexture9;
 struct IDirect3DSurface9;
@@ -33,11 +43,25 @@ public:
 	IDirect3DBaseTexture9*	CreateD3DTexture(EImageType type, ETextureFormat format, int mipCount, int widthMip0, int heightMip0, int depthMip0 = 1) const;
 	IDirect3DBaseTexture9*	GetCurrentTexture();
 
+	EProgressiveStatus		StepProgressiveLod();
+
 	// locks texture for modifications, etc
 	bool					Lock(LockInOutData& data);
 	
 	// unlocks texture for modifications, etc
 	void					Unlock();
+
+	struct LodState
+	{
+		CRefPtr<CImage> image;
+		int8 idx{ 0 };
+		int8 lockBoxLevel{ 0 };
+		int8 mipMapLevel{ 0 };
+		uint8 frameDelay{ 1 };
+	};
+
+	Future<bool>					m_mipLoading;
+	Array<LodState>					m_progressiveState{ PP_SL };
 
 	Array<IDirect3DBaseTexture9*>	textures{ PP_SL };
 	Array<IDirect3DSurface9*>		surfaces{ PP_SL };

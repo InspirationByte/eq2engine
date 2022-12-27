@@ -306,6 +306,8 @@ public:
 
 protected:
 
+	void						StepProgressiveLodTextures();
+
 	void						PreloadShadersFromCache();
 	bool						InitShaderFromCache(IShaderProgram* pShaderOutput, IVirtualStream* pStream, uint32 checksum = 0);
 
@@ -316,6 +318,8 @@ private:
 	
 	CD3D9Texture*				m_fbColorTexture;
 	CD3D9Texture*				m_fbDepthTexture;
+
+	Set<CD3D9Texture*>			m_progressiveTextures{ PP_SL };
 
 	// Sampler states is not binding same as OpenGL
 	SamplerStateParam_t*		m_pSelectedSamplerStates[MAX_SAMPLERSTATE];

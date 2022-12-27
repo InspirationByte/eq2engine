@@ -16,6 +16,8 @@
 #include "ShaderAPID3D9.h"
 
 extern ShaderAPID3DX9 s_shaderApi;
+Threading::CEqMutex g_sapi_ProgressiveTextureMutex;
+
 
 CD3D9Texture::CD3D9Texture() : CTexture()
 {
@@ -81,33 +83,63 @@ IDirect3DBaseTexture9* CD3D9Texture::CreateD3DTexture(EImageType type, ETextureF
 	return d3dTexture;
 }
 
-static bool UpdateD3DTextureFromImage(IDirect3DBaseTexture9* texture, const CImage* image, int startMipLevel, bool convert)
+static void UpdateD3DTextureFromImageMipmap(IDirect3DBaseTexture9* texture, CRefPtr<CImage> image, int sourceMipLevel, int targetMipLevel, DWORD lockFlags)
 {
-	const EImageType imgType = image->GetImageType();
-	const bool isAcceptableImageType =
-		(texture->GetType() == D3DRTYPE_VOLUMETEXTURE && imgType == IMAGE_TYPE_3D) ||
-		(texture->GetType() == D3DRTYPE_CUBETEXTURE && imgType == IMAGE_TYPE_CUBE) ||
-		(texture->GetType() == D3DRTYPE_TEXTURE && (imgType == IMAGE_TYPE_2D || imgType == IMAGE_TYPE_1D));
+	ubyte* src = image->GetPixels(sourceMipLevel);
+	ASSERT(src);
+	const int size = image->GetMipMappedSize(sourceMipLevel, 1);
 
-	ASSERT_MSG(isAcceptableImageType, "UpdateD3DTextureFromImage - image type to texture mismatch");
-
-	if (!isAcceptableImageType)
-		return false;
-
-	const ETextureFormat nFormat = image->GetFormat();
-
-	if (convert)
+	switch (texture->GetType())
 	{
-		CImage* conv = const_cast<CImage*>(image);
+		case D3DRTYPE_VOLUMETEXTURE:
+		{
+			IDirect3DVolumeTexture9* texture3D = (IDirect3DVolumeTexture9*)texture;
+			D3DLOCKED_BOX box;
+			if (texture3D->LockBox(targetMipLevel, &box, nullptr, lockFlags) == D3D_OK)
+			{
+				memcpy(box.pBits, src, size);
+				texture3D->UnlockBox(targetMipLevel);
+			}
+			break;
+		}
+		case D3DRTYPE_CUBETEXTURE:
+		{
+			IDirect3DCubeTexture9* cubeTexture = (IDirect3DCubeTexture9*)texture;
+			const int cubeFaceSize = size / 6;
 
-		if (nFormat == FORMAT_RGB8 || nFormat == FORMAT_RGBA8)
-			conv->SwapChannels(0, 2); // convert to BGR
+			D3DLOCKED_RECT rect;
+			for (int i = 0; i < 6; i++)
+			{
+				if (cubeTexture->LockRect((D3DCUBEMAP_FACES)i, targetMipLevel, &rect, nullptr, lockFlags) == D3D_OK)
+				{
+					memcpy(rect.pBits, src, cubeFaceSize);
+					cubeTexture->UnlockRect((D3DCUBEMAP_FACES)i, targetMipLevel);
+				}
+				src += cubeFaceSize;
+			}
+			break;
+		}
+		case D3DRTYPE_TEXTURE:
+		{
+			IDirect3DTexture9* texture2D = (IDirect3DTexture9*)texture;
+			D3DLOCKED_RECT rect;
 
-		// Convert if needed and upload datas
-		if (nFormat == FORMAT_RGB8) // as the D3DFMT_X8R8G8B8 used
-			conv->Convert(FORMAT_RGBA8);
+			if (texture2D->LockRect(targetMipLevel, &rect, nullptr, lockFlags) == D3D_OK)
+			{
+				memcpy(rect.pBits, src, size);
+				texture2D->UnlockRect(targetMipLevel);
+			}
+			break;
+		}
+		default:
+		{
+			ASSERT_FAIL("Invalid resource type passed to UpdateD3DTextureFromImage");
+		}
 	}
+}
 
+static bool UpdateD3DTextureFromImage(IDirect3DBaseTexture9* texture, CRefPtr<CImage> image, int startMipLevel)
+{
 	const DWORD lockFlags = D3DLOCK_DISCARD | D3DLOCK_NOSYSLOCK;
 
 	const int numMipMaps = image->GetMipMapCount();
@@ -115,58 +147,9 @@ static bool UpdateD3DTextureFromImage(IDirect3DBaseTexture9* texture, const CIma
 
 	while (mipMapLevel >= startMipLevel)
 	{
-		ubyte* src = image->GetPixels(mipMapLevel);
-		ASSERT(src);
-		const int size = image->GetMipMappedSize(mipMapLevel, 1);
 		const int lockBoxLevel = mipMapLevel - startMipLevel;
 
-		switch (texture->GetType())
-		{
-			case D3DRTYPE_VOLUMETEXTURE:
-			{
-				IDirect3DVolumeTexture9* texture3D = (IDirect3DVolumeTexture9*)texture;
-				D3DLOCKED_BOX box;
-				if (texture3D->LockBox(lockBoxLevel, &box, nullptr, lockFlags) == D3D_OK)
-				{
-					memcpy(box.pBits, src, size);
-					texture3D->UnlockBox(lockBoxLevel);
-				}
-				break;
-			}
-			case D3DRTYPE_CUBETEXTURE:
-			{
-				IDirect3DCubeTexture9* cubeTexture = (IDirect3DCubeTexture9*)texture;
-				const int cubeFaceSize = size / 6;
-
-				D3DLOCKED_RECT rect;
-				for (int i = 0; i < 6; i++)
-				{
-					if (cubeTexture->LockRect((D3DCUBEMAP_FACES)i, lockBoxLevel, &rect, nullptr, lockFlags) == D3D_OK)
-					{
-						memcpy(rect.pBits, src, cubeFaceSize);
-						cubeTexture->UnlockRect((D3DCUBEMAP_FACES)i, lockBoxLevel);
-					}
-					src += cubeFaceSize;
-				}
-				break;
-			}
-			case D3DRTYPE_TEXTURE:
-			{
-				IDirect3DTexture9* texture2D = (IDirect3DTexture9*)texture;
-				D3DLOCKED_RECT rect;
-
-				if (texture2D->LockRect(lockBoxLevel, &rect, nullptr, lockFlags) == D3D_OK)
-				{
-					memcpy(rect.pBits, src, size);
-					texture2D->UnlockRect(lockBoxLevel);
-				}
-				break;
-			}
-			default:
-			{
-				ASSERT_FAIL("Invalid resource type passed to UpdateD3DTextureFromImage");
-			}
-		}
+		UpdateD3DTextureFromImageMipmap(texture, image, mipMapLevel, lockBoxLevel, lockFlags);
 
 		texture->SetLOD(lockBoxLevel);
 		--mipMapLevel;
@@ -194,10 +177,12 @@ bool CD3D9Texture::Init(const SamplerStateParam_t& sampler, const ArrayCRef<CRef
 	}
 
 	const int quality = (m_iFlags & TEXFLAG_NOQUALITYLOD) ? 0 : r_loadmiplevel->GetInt();
+	m_progressiveState.reserve(images.numElem());
+	textures.reserve(images.numElem());
 
 	for (int i = 0; i < images.numElem(); i++)
 	{
-		const CImage* img = images[i];
+		CRefPtr<CImage> img = images[i];
 
 		if ((m_iFlags & TEXFLAG_CUBEMAP) && !img->IsCube())
 		{
@@ -224,7 +209,49 @@ bool CD3D9Texture::Init(const SamplerStateParam_t& sampler, const ArrayCRef<CRef
 			continue;
 		}
 
-		UpdateD3DTextureFromImage(d3dTexture, img, mipStart, true);
+		if ((m_iFlags & TEXFLAG_PROGRESSIVE_LODS) && s_shaderApi.m_progressiveTextureFrequency > 0)
+		{
+			// start with uploading only first LOD
+			const DWORD lockFlags = D3DLOCK_DISCARD | D3DLOCK_NOSYSLOCK;
+
+			const int numMipMaps = img->GetMipMapCount();
+			int mipMapLevel = numMipMaps - 1;
+
+			int transferredSize = 0;
+			do
+			{
+				const int size = img->GetMipMappedSize(mipMapLevel, 1);
+				const int lockBoxLevel = mipMapLevel - mipStart;
+
+				UpdateD3DTextureFromImageMipmap(d3dTexture, img, mipMapLevel, lockBoxLevel, lockFlags);
+				d3dTexture->SetLOD(lockBoxLevel);
+				
+				transferredSize += size;
+
+				if (transferredSize > TEXTURE_TRANSFER_RATE_THRESHOLD)
+				{
+					if (lockBoxLevel > 1)
+					{
+						LodState& state = m_progressiveState.append();
+						state.idx = i;
+						state.lockBoxLevel = lockBoxLevel - 1;
+						state.mipMapLevel = mipMapLevel - 1;
+						state.image = img;
+					}
+					break;
+				}
+
+				--mipMapLevel;
+				if (mipMapLevel < 0)
+					break;
+
+			} while (true);
+		}
+		else
+		{
+			// upload all LODs
+			UpdateD3DTextureFromImage(d3dTexture, img, mipStart);
+		}
 
 		d3dTexture->PreLoad();
 
@@ -239,6 +266,12 @@ bool CD3D9Texture::Init(const SamplerStateParam_t& sampler, const ArrayCRef<CRef
 		textures.append(d3dTexture);
 	}
 
+	if(m_progressiveState.numElem())
+	{
+		Threading::CScopedMutex m(g_sapi_ProgressiveTextureMutex);
+		s_shaderApi.m_progressiveTextures.insert(this);
+	}
+
 	m_numAnimatedTextureFrames = textures.numElem();
 
 	return true;
@@ -250,6 +283,13 @@ void CD3D9Texture::ReleaseTextures()
 		textures[i]->Release();
 
 	textures.clear();
+
+	{
+		Threading::CScopedMutex m(g_sapi_ProgressiveTextureMutex);
+		s_shaderApi.m_progressiveTextures.remove(this);
+	}
+
+	m_progressiveState.clear(true);
 	m_texSize = 0;
 }
 
@@ -281,6 +321,45 @@ LPDIRECT3DBASETEXTURE9 CD3D9Texture::GetCurrentTexture()
 		return nullptr;
 
 	return textures[m_nAnimatedTextureFrame];
+}
+
+EProgressiveStatus CD3D9Texture::StepProgressiveLod()
+{
+	EProgressiveStatus status = PROGRESSIVE_STATUS_WAIT_MORE_FRAMES;
+
+	for (int i = 0; i < m_progressiveState.numElem(); ++i)
+	{
+		LodState& state = m_progressiveState[i];
+
+		if (state.frameDelay > 0)
+		{
+			--state.frameDelay;
+			continue;
+		}
+
+		IDirect3DBaseTexture9* texture = textures[state.idx];
+
+		const DWORD lockFlags = D3DLOCK_DISCARD | D3DLOCK_NOSYSLOCK;
+		UpdateD3DTextureFromImageMipmap(texture, state.image, state.mipMapLevel, state.lockBoxLevel, lockFlags);
+
+		texture->SetLOD(state.lockBoxLevel);
+		--state.lockBoxLevel;
+		--state.mipMapLevel;
+		state.frameDelay = min(s_shaderApi.m_progressiveTextureFrequency, 255);
+
+		status = PROGRESSIVE_STATUS_DID_UPLOAD;
+
+		if (state.lockBoxLevel < 0)
+		{
+			m_progressiveState.fastRemoveIndex(i);
+			--i;
+		}
+	}
+
+	if (!m_progressiveState.numElem())
+		return PROGRESSIVE_STATUS_COMPLETED;
+
+	return status;
 }
 
 // locks texture for modifications, etc
