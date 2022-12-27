@@ -13,8 +13,6 @@ class CEmptyTexture : public CTexture
 public:
 	friend class ShaderAPIEmpty;
 
-	CEmptyTexture() : m_lockData(nullptr) {}
-
 	// initializes texture from image array of images
 	bool				Init(const SamplerStateParam_t& sampler, const ArrayCRef<CRefPtr<CImage>> images, int flags = 0)
 	{
@@ -31,16 +29,25 @@ public:
 		return true;
 	}
 
-	// dummy class
 	// locks texture for modifications, etc
-	void	Lock(LockData* pLockData, Rectangle_t* pRect = nullptr, bool bDiscard = false, bool bReadOnly = false, int nLevel = 0, int nCubeFaceId = 0)
+	bool				Lock(LockInOutData& data)
 	{
-		m_lockData = PPAlloc(1024*1024);
-		pLockData->pData = (ubyte*)m_lockData;
+		m_lockData = &data;
+
+		data.lockData = PPAlloc(1024*1024);
+		data.lockData = (ubyte*)m_lockData;
+		return data;
 	}
 	
 	// unlocks texture for modifications, etc
-	void	Unlock() {PPFree(m_lockData); m_lockData = nullptr;}
+	void				Unlock()
+	{
+		if (!m_lockData)
+			return;
 
-	void*	m_lockData;
+		PPFree(m_lockData->lockData); 
+		m_lockData->lockData = nullptr;
+
+		m_lockData = nullptr;
+	}
 };

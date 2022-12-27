@@ -19,11 +19,6 @@ extern ShaderAPID3DX9 s_shaderApi;
 
 CD3D9Texture::CD3D9Texture() : CTexture()
 {
-	m_nLockLevel = 0;
-	m_bIsLocked = false;
-	m_pLockSurface = nullptr;
-	m_texSize = 0;
-	m_dummyDepth = nullptr;
 }
 
 CD3D9Texture::~CD3D9Texture()
@@ -33,7 +28,7 @@ CD3D9Texture::~CD3D9Texture()
 
 void CD3D9Texture::Release()
 {
-	ASSERT_MSG(!m_bIsLocked, "texture was locked");
+	ASSERT_MSG(!m_lockData, "texture was locked");
 
 	ReleaseTextures();
 	ReleaseSurfaces();
@@ -237,6 +232,7 @@ bool CD3D9Texture::Init(const SamplerStateParam_t& sampler, const ArrayCRef<CRef
 		m_mipCount = max(m_mipCount, mipCount);
 		m_iWidth = max(m_iWidth, texWidth);
 		m_iHeight = max(m_iHeight, texHeight);
+		m_iDepth = max(m_iDepth, texDepth);
 		m_iFormat = imgFmt;
 
 		m_texSize += img->GetMipMappedSize(mipStart);
@@ -271,12 +267,12 @@ void CD3D9Texture::ReleaseSurfaces()
 
 void CD3D9Texture::ReleaseForRestoration()
 {
-
+	// TODO
 }
 
 void CD3D9Texture::Restore()
 {
-
+	// TODO
 }
 
 LPDIRECT3DBASETEXTURE9 CD3D9Texture::GetCurrentTexture()
@@ -288,84 +284,86 @@ LPDIRECT3DBASETEXTURE9 CD3D9Texture::GetCurrentTexture()
 }
 
 // locks texture for modifications, etc
-void CD3D9Texture::Lock(LockData* pLockData, Rectangle_t* pRect, bool bDiscard, bool bReadOnly, int nLevel, int nCubeFaceId)
+bool CD3D9Texture::Lock(LockInOutData& data)
 {
-	ASSERT_MSG(!m_bIsLocked, "CD3D9Texture: already locked");
+	ASSERT_MSG(!m_lockData, "CD3D9Texture: already locked");
 	
-	if(m_bIsLocked)
-		return;
+	if (m_lockData)
+		return false;
 
-	if(textures.numElem() > 1)
-		ASSERT(!"Couldn't handle locking of animated texture! Please tell to programmer!");
-
-	ASSERT( !m_bIsLocked );
-
-	m_nLockLevel = nLevel;
-	m_nLockCube = nCubeFaceId;
-	m_bIsLocked = true;
-
-	D3DLOCKED_RECT rect;
-
-	RECT lock_rect;
-	if(pRect)
+	if (textures.numElem() > 1)
 	{
-		lock_rect.top = pRect->vleftTop.y;
-		lock_rect.left = pRect->vleftTop.x;
-		lock_rect.right = pRect->vrightBottom.x;
-		lock_rect.bottom = pRect->vrightBottom.y;
+		ASSERT_FAIL("Couldn't handle locking of animated texture! Please tell to programmer!");
+		return false;
 	}
 
-	if(m_pool != D3DPOOL_DEFAULT)
-		bDiscard = false;
+	if (IsCompressedFormat(m_iFormat))
+	{
+		ASSERT_FAIL("Compressed textures aren't lockable!");
+		return false;
+	}
 
-	DWORD lock_flags = (bDiscard ? D3DLOCK_DISCARD : 0) | (bReadOnly ? D3DLOCK_READONLY : 0);
+	if (m_pool != D3DPOOL_DEFAULT)
+		data.flags &= ~TEXLOCK_DISCARD;
 
-	// FIXME: LOck just like in the CreateD3DTextureFromImage
+	const bool readOnly = (data.flags & TEXLOCK_READONLY);
+	const DWORD lockFlags = ((data.flags & TEXLOCK_DISCARD) ? D3DLOCK_DISCARD : 0)
+						  | (readOnly ? D3DLOCK_READONLY : 0);
 
 	// try lock surface if exist
 	if( surfaces.numElem() )
 	{
-		ASSERT(nCubeFaceId < surfaces.numElem());
+		ASSERT(data.cubeFaceIdx < surfaces.numElem());
+
+		// TODO: 3D surfaces?
 
 		if(m_pool != D3DPOOL_DEFAULT)
 		{
-			HRESULT r = surfaces[nCubeFaceId]->LockRect(&rect, (pRect ? &lock_rect : nullptr), lock_flags);
+			const RECT lockRect = (data.flags & TEXLOCK_REGION_RECT) ? IRectangleToD3DRECT(data.region.rectangle) : RECT {};
 
-			if(r == D3D_OK)
+			D3DLOCKED_RECT rect;
+			HRESULT result = surfaces[data.cubeFaceIdx]->LockRect(&rect, ((data.flags & TEXLOCK_REGION_RECT) ? &lockRect : nullptr), lockFlags);
+
+			if(result == D3D_OK)
 			{
 				// set lock data params
-				pLockData->pData = (ubyte*)rect.pBits;
-				pLockData->nPitch = rect.Pitch;
+				data.lockData = (ubyte*)rect.pBits;
+				data.lockPitch = rect.Pitch;
+				m_lockData = &data;
 			}
 			else
 			{
 				ASSERT(!"Couldn't lock surface for texture!");
 			}
 		}
-		else if(bReadOnly)
+		else if(readOnly)
 		{
 			IDirect3DDevice9* d3dDevice = s_shaderApi.GetD3DDevice();
 
-			if (d3dDevice->CreateOffscreenPlainSurface(m_iWidth, m_iHeight, formats[m_iFormat], D3DPOOL_SYSTEMMEM, &m_pLockSurface, nullptr) == D3D_OK)
+			if (d3dDevice->CreateOffscreenPlainSurface(m_iWidth, m_iHeight, formats[m_iFormat], D3DPOOL_SYSTEMMEM, &m_lockSurface, nullptr) == D3D_OK)
 			{
-				HRESULT r = d3dDevice->GetRenderTargetData(surfaces[nCubeFaceId], m_pLockSurface);
+				HRESULT result = d3dDevice->GetRenderTargetData(surfaces[data.cubeFaceIdx], m_lockSurface);
 
-				if(r != D3D_OK)
-					ASSERT(!"Couldn't lock surface: failed to copy surface to m_pLockSurface!");
+				if(result != D3D_OK)
+					ASSERT(!"Couldn't lock surface: failed to copy surface to m_lockSurface!");
 
-				r = m_pLockSurface->LockRect(&rect, (pRect ? &lock_rect : nullptr), lock_flags);
+				const RECT lockRect = (data.flags & TEXLOCK_REGION_RECT) ? IRectangleToD3DRECT(data.region.rectangle) : RECT{};
 
-				if(r == D3D_OK)
+				D3DLOCKED_RECT rect;
+				result = m_lockSurface->LockRect(&rect, ((data.flags & TEXLOCK_REGION_RECT) ? &lockRect : nullptr), lockFlags);
+
+				if(result == D3D_OK)
 				{
 					// set lock data params
-					pLockData->pData = (ubyte*)rect.pBits;
-					pLockData->nPitch = rect.Pitch;
+					data.lockData = (ubyte*)rect.pBits;
+					data.lockPitch = rect.Pitch;
+					m_lockData = &data;
 				}
 				else
 				{
 					ASSERT(!"Couldn't lock surface for texture!");
-					m_pLockSurface->Release();
-					m_pLockSurface = nullptr;
+					m_lockSurface->Release();
+					m_lockSurface = nullptr;
 				}
 			}
 			else
@@ -376,40 +374,91 @@ void CD3D9Texture::Lock(LockData* pLockData, Rectangle_t* pRect, bool bDiscard, 
 	}
 	else // lock texture data
 	{
-		HRESULT r;
+		IDirect3DBaseTexture9* texture = textures[0];
+		HRESULT result = D3DERR_INVALIDCALL;
 
-		if(m_iFlags & TEXFLAG_CUBEMAP)
+		switch (texture->GetType())
 		{
-			r = ((IDirect3DCubeTexture9*) textures[0])->LockRect((D3DCUBEMAP_FACES)m_nLockCube, 0, &rect, (pRect ? &lock_rect : nullptr), lock_flags);
-		}
-		else
-		{
-			r = ((IDirect3DTexture9*) textures[0])->LockRect(nLevel, &rect, (pRect ? &lock_rect : nullptr), lock_flags);
+			case D3DRTYPE_VOLUMETEXTURE:
+			{
+				IDirect3DVolumeTexture9* texture3D = (IDirect3DVolumeTexture9*)texture;
+
+				const D3DBOX lockBox = (data.flags & TEXLOCK_REGION_BOX) ? IBoundingBoxToD3DBOX(data.region.box) : D3DBOX{};
+
+				D3DLOCKED_BOX box;
+				result = texture3D->LockBox(data.level, &box, ((data.flags & TEXLOCK_REGION_BOX) ? &lockBox : nullptr), lockFlags);
+
+				if (result == D3D_OK)
+				{
+					data.lockData = (ubyte*)box.pBits;
+					data.lockPitch = box.RowPitch;
+					m_lockData = &data;
+				}
+				break;
+			}
+			case D3DRTYPE_CUBETEXTURE:
+			{
+				IDirect3DCubeTexture9* cubeTexture = (IDirect3DCubeTexture9*)texture;
+
+				const RECT lockRect = (data.flags & TEXLOCK_REGION_RECT) ? IRectangleToD3DRECT(data.region.rectangle) : RECT{};
+
+				D3DLOCKED_RECT rect;
+				result = cubeTexture->LockRect((D3DCUBEMAP_FACES)data.cubeFaceIdx, data.level, &rect, ((data.flags & TEXLOCK_REGION_RECT) ? &lockRect : nullptr), lockFlags);
+
+				if (result == D3D_OK)
+				{
+					data.lockData = (ubyte*)rect.pBits;
+					data.lockPitch = rect.Pitch;
+					m_lockData = &data;
+				}
+				break;
+			}
+			case D3DRTYPE_TEXTURE:
+			{
+				IDirect3DTexture9* texture2D = (IDirect3DTexture9*)texture;
+
+				const RECT lockRect = (data.flags & TEXLOCK_REGION_RECT) ? IRectangleToD3DRECT(data.region.rectangle) : RECT{};
+
+				D3DLOCKED_RECT rect;
+				result = texture2D->LockRect(data.level, &rect, ((data.flags & TEXLOCK_REGION_RECT) ? &lockRect : nullptr), lockFlags);
+
+				if (result == D3D_OK)
+				{
+					data.lockData = (ubyte*)rect.pBits;
+					data.lockPitch = rect.Pitch;
+					m_lockData = &data;
+				}
+				break;
+			}
+			default:
+			{
+				ASSERT_FAIL("Invalid resource type");
+			}
 		}
 
-		if(r == D3D_OK)
+		if(result != D3D_OK)
 		{
-			// set lock data params
-			pLockData->pData = (ubyte*)rect.pBits;
-			pLockData->nPitch = rect.Pitch;
-		}
-		else
-		{
-			if(r == D3DERR_WASSTILLDRAWING)
-				ASSERT(!"Please unbind lockable texture!");
-
-			ASSERT(!"Couldn't lock texture!");
+			if (result == D3DERR_WASSTILLDRAWING)
+			{
+				ASSERT_FAIL("Please unbind lockable texture!");
+			}
+			else
+			{
+				ASSERT_FAIL("Couldn't lock texture!");
+			}
 		}
 	}
+
+	return m_lockData && *m_lockData;
 }
 	
 // unlocks texture for modifications, etc
 void CD3D9Texture::Unlock()
 {
-	if(textures.numElem() > 1)
-		ASSERT(!"Couldn't handle locking of animated texture! Please tell to programmer!");
+	if (!m_lockData)
+		return;
 
-	ASSERT( m_bIsLocked );
+	ASSERT(m_lockData->lockData != nullptr);
 
 	if( surfaces.numElem() )
 	{
@@ -419,19 +468,41 @@ void CD3D9Texture::Unlock()
 		}
 		else
 		{
-			m_pLockSurface->UnlockRect();
-			m_pLockSurface->Release();
-			m_pLockSurface = nullptr;
+			m_lockSurface->UnlockRect();
+			m_lockSurface->Release();
+			m_lockSurface = nullptr;
 		}
 	}
 	else
 	{
-		if(m_iFlags & TEXFLAG_CUBEMAP)
-			((IDirect3DCubeTexture9*) textures[0])->UnlockRect( (D3DCUBEMAP_FACES)m_nLockCube, m_nLockLevel );
-		else
-			((IDirect3DTexture9*) textures[0])->UnlockRect( m_nLockLevel );
+		IDirect3DBaseTexture9* texture = textures[0];
+		switch (texture->GetType())
+		{
+			case D3DRTYPE_VOLUMETEXTURE:
+			{
+				IDirect3DVolumeTexture9* texture3D = (IDirect3DVolumeTexture9*)texture;
+				texture3D->UnlockBox(m_lockData->level);
+				break;
+			}
+			case D3DRTYPE_CUBETEXTURE:
+			{
+				IDirect3DCubeTexture9* cubeTexture = (IDirect3DCubeTexture9*)texture;
+				cubeTexture->UnlockRect((D3DCUBEMAP_FACES)m_lockData->cubeFaceIdx, m_lockData->level);
+				break;
+			}
+			case D3DRTYPE_TEXTURE:
+			{
+				IDirect3DTexture9* texture2D = (IDirect3DTexture9*)texture;
+				texture2D->UnlockRect(m_lockData->level);
+				break;
+			}
+			default:
+			{
+				ASSERT_FAIL("Invalid resource type");
+			}
+		}
 	}
-		
 
-	m_bIsLocked = false;
+	m_lockData->lockData = nullptr;
+	m_lockData = nullptr;
 }

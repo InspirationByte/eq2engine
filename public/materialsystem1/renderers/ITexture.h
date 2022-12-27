@@ -10,14 +10,20 @@
 
 class CImage;
 
+enum ETextureLockFlags
+{
+	TEXLOCK_READONLY	= (1 << 0),
+	TEXLOCK_DISCARD		= (1 << 1),
+
+	// don't use manually, use constructor
+	TEXLOCK_REGION_RECT		= (1 << 2),
+	TEXLOCK_REGION_BOX		= (1 << 3),
+};
+
 class ITexture : public RefCountedObject<ITexture, RefCountedKeepPolicy>
 {
 public:
-	struct LockData
-	{
-		ubyte*	pData;
-		int		nPitch;
-	};
+	struct LockInOutData;
 
 	// initializes procedural (lockable) texture
 	virtual bool				InitProcedural(const SamplerStateParam_t& sampler,
@@ -38,8 +44,11 @@ public:
 
 	// The dimensions of texture
 	virtual ETextureFormat		GetFormat() const = 0;
+
 	virtual int					GetWidth() const = 0;
 	virtual int					GetHeight() const = 0;
+	virtual int					GetDepth() const = 0;
+
 	virtual int					GetMipCount() const = 0;
 
 	// Animated texture props (matsystem usage)
@@ -48,6 +57,46 @@ public:
 	virtual void				SetAnimationFrame(int frame) = 0;
 
 	// texture data management
-	virtual void				Lock(LockData* pLockData, Rectangle_t* pRect = nullptr, bool discard = false, bool readOnly = false, int level = 0, int cubeFaceId = 0) = 0;
+	virtual bool				Lock(LockInOutData& data) = 0;
 	virtual void				Unlock() = 0;
+};
+
+
+struct ITexture::LockInOutData
+{
+	LockInOutData(int lockFlags, int level = 0, int cubeFaceIdx = 0)
+		: flags(lockFlags)
+	{
+	}
+
+	LockInOutData(int lockFlags, const IRectangle & rectangle, int level = 0, int cubeFaceIdx = 0)
+		: flags(lockFlags | TEXLOCK_REGION_RECT)
+	{
+		region.rectangle = rectangle;
+	}
+
+	LockInOutData(int lockFlags, const IBoundingBox & box, int level = 0, int cubeFaceIdx = 0)
+		: flags(lockFlags | TEXLOCK_REGION_BOX)
+	{
+		region.box = box;
+	}
+
+	LockInOutData()
+	{
+		ASSERT_MSG(lockData == nullptr, "CRITICAL - Texture was still locked! Unlock() implementation must set lockData to NULL");
+	}
+
+	union LockRegion {
+		IRectangle		rectangle;
+		IBoundingBox	box;
+	} region{};
+
+	operator const bool() const { return lockData != nullptr; }
+
+	void*			lockData{ nullptr };	// the place where you can write the data
+	int				lockPitch{ 0 };
+
+	int				flags{ 0 };
+	int				level{ 0 };
+	int				cubeFaceIdx{ 0 };
 };

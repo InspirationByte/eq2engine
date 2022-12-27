@@ -12,6 +12,42 @@ struct TAABBox
 {
 	static constexpr const int VertexCount = 9;
 
+	TAABBox(T minX, T minY, T minZ, T maxX, T maxY, T maxZ)
+	{
+		if (minX < maxX)
+		{
+			minPoint.x = minX;
+			maxPoint.x = maxX;
+		}
+		else
+		{
+			minPoint.x = maxX;
+			maxPoint.x = minX;
+		}
+
+		if (minY < maxY)
+		{
+			minPoint.y = minY;
+			maxPoint.y = maxY;
+		}
+		else
+		{
+			minPoint.y = maxY;
+			maxPoint.y = minY;
+		}
+
+		if (minZ < maxZ)
+		{
+			minPoint.z = minZ;
+			maxPoint.z = maxZ;
+		}
+		else
+		{
+			minPoint.z = maxZ;
+			maxPoint.z = minZ;
+		}
+	}
+
     TAABBox(const TVec3D<T>& v1, const TVec3D<T>& v2)
     {
         if ( v1.x < v2.x )
@@ -276,3 +312,4 @@ struct TAABBox
 };
 
 typedef TAABBox<float>	BoundingBox;
+typedef TAABBox<int>	IBoundingBox;

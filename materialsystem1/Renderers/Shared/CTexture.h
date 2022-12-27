@@ -24,6 +24,8 @@ public:
 
 	int							GetWidth() const { return m_iWidth; }
 	int							GetHeight() const { return m_iHeight; }
+	int							GetDepth() const { return m_iDepth; }
+
 	int							GetMipCount() const { return m_mipCount; }
 
 	void						SetFlags(int iFlags) { m_iFlags = iFlags; }
@@ -35,7 +37,8 @@ public:
 	int							GetAnimationFrame() const { return m_nAnimatedTextureFrame; }
 	void						SetAnimationFrame(int frame);
 
-	void						SetDimensions(int width,int height) { m_iWidth = width; m_iHeight = height; }
+	void						SetDimensions(int width, int height, int depth = 1) { m_iWidth = width; m_iHeight = height; m_iDepth = depth; }
+
 	void						SetMipCount(int count) { m_mipCount = count; }
 	void						SetFormat(ETextureFormat newformat) { m_iFormat = newformat; }
 	void						SetSamplerState(const SamplerStateParam_t& newSamplerState) { m_samplerState = newSamplerState; }
@@ -44,9 +47,12 @@ protected:
 	EqString				m_szTexName;
 	int						m_nameHash{ 0 };
 
+	LockInOutData*			m_lockData{ nullptr };
+
 	ushort					m_iFlags{ 0 };
 	ushort					m_iWidth{ 0 };
 	ushort					m_iHeight{ 0 };
+	ushort					m_iDepth{ 0 };
 	ushort					m_mipCount{ 1 };
 
 	ushort					m_nAnimatedTextureFrame{ 0 };

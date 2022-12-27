@@ -24,14 +24,8 @@ CGLTexture::CGLTexture()
 	m_glTarget = GL_NONE;
 	m_glDepthID = GL_NONE;
 	m_texSize = 0;
-	m_nLockLevel = 0;
-	m_bIsLocked = false;
-
-	m_lockPtr = 0;
 	m_lockOffs = 0;
 	m_lockSize = 0;
-	m_lockDiscard = false;
-	m_lockReadOnly = false;
 }
 
 CGLTexture::~CGLTexture()
@@ -50,6 +44,7 @@ void CGLTexture::ReleaseTextures()
 	{
 		glDeleteRenderbuffers(1, &m_glDepthID);
 		GLCheckError("del tex renderbuffer");
+		m_glDepthID = GL_NONE;
 	}
 	else
 	{
@@ -58,13 +53,17 @@ void CGLTexture::ReleaseTextures()
 			glDeleteTextures(1, &textures[i].glTexID);
 			GLCheckError("del tex");
 		}
+		textures.clear();
 
 		if (m_glDepthID != GL_NONE)
 		{
 			glDeleteTextures(1, &m_glDepthID);
 			GLCheckError("del depth");
 		}
+		m_glDepthID = GL_NONE;
 	}
+	m_texSize = 0;
+	m_glTarget = GL_NONE;
 }
 
 void SetupGLSamplerState(uint texTarget, const SamplerStateParam_t& sampler, int mipMapCount)
@@ -288,6 +287,7 @@ bool CGLTexture::Init(const SamplerStateParam_t& sampler, const ArrayCRef<CRefPt
 		m_mipCount = max(m_mipCount, mipCount);
 		m_iWidth = max(m_iWidth, texWidth);
 		m_iHeight = max(m_iHeight, texHeight);
+		m_iDepth = max(m_iDepth, texDepth);
 		m_iFormat = imgFmt;
 
 		m_texSize += img->GetMipMappedSize(mipStart);
@@ -310,105 +310,165 @@ GLTextureRef_t& CGLTexture::GetCurrentTexture()
 }
 
 // locks texture for modifications, etc
-void CGLTexture::Lock(LockData* pLockData, Rectangle_t* pRect, bool bDiscard, bool bReadOnly, int nLevel, int nCubeFaceId)
+bool CGLTexture::Lock(LockInOutData& data)
 {
-	if(textures.numElem() > 1)
-		ASSERT(!"Couldn't handle locking of animated texture! Please tell to programmer!");
+	ASSERT_MSG(!m_lockData, "CGLTexture: already locked");
 
-	ASSERT( !m_bIsLocked );
+	if (m_lockData)
+		return false;
 
-	m_nLockLevel = nLevel;
-	m_lockCubeFace = nCubeFaceId;
-	m_bIsLocked = true;
+	if (textures.numElem() > 1)
+	{
+		ASSERT_FAIL("Couldn't handle locking of animated texture! Please tell to programmer!");
+		return false;
+	}
 
 	if( IsCompressedFormat(m_iFormat) )
 	{
-		pLockData->pData = nullptr;
-		pLockData->nPitch = 0;
-		return;
+		ASSERT_FAIL("Compressed textures aren't lockable!");
+		return false;
 	}
 
+	if (data.flags & TEXLOCK_REGION_BOX)
+	{
+		ASSERT_FAIL("CGLTexture - does not support locking 3D texture yet");
+		return false;
+	}
+
+	int sizeToLock = 0;
 	int lockOffset = 0;
-	int sizeToLock = GetWidth()*GetHeight();
-
-	IRectangle lock_rect;
-	if(pRect)
+	int lockPitch = 0;
+	switch (m_glTarget)
 	{
-		lock_rect.vleftTop = pRect->vleftTop;
-		lock_rect.vrightBottom = pRect->vrightBottom;
+		case GL_TEXTURE_3D:
+		{
+			// COULD BE INVALID! I'VE NEVER TESTED THAT
 
-		sizeToLock = lock_rect.GetSize().x*lock_rect.GetSize().y;
-		lockOffset = lock_rect.vleftTop.x*lock_rect.vleftTop.y;
+			IBoundingBox box = (data.flags & TEXLOCK_REGION_BOX) ? data.region.box : IBoundingBox(0, 0, 0, GetWidth(), GetHeight(), GetDepth());
+			const IVector3D size = box.GetSize();
+
+			sizeToLock = size.x * size.y * size.y;
+			lockOffset = box.minPoint.x * box.minPoint.y * box.minPoint.z;
+			lockPitch = size.y;
+
+			break;
+		}
+		case GL_TEXTURE_CUBE_MAP:
+		case GL_TEXTURE_2D:
+		{
+			const IRectangle lockRect = (data.flags & TEXLOCK_REGION_RECT) ? data.region.rectangle : IRectangle(0, 0, GetWidth(), GetHeight());
+			const IVector2D size = lockRect.GetSize();
+			sizeToLock = size.x * size.y;
+			lockOffset = lockRect.vleftTop.x * lockRect.vleftTop.y;
+			lockPitch = lockRect.GetSize().y;
+			break;
+		}
 	}
-	else
-	{
-		lock_rect.vleftTop.x = 0;
-		lock_rect.vleftTop.y = 0;
 
-		lock_rect.vrightBottom.x = GetWidth();
-		lock_rect.vrightBottom.y = GetHeight();
-	}
-
-	int nLockByteCount = GetBytesPerPixel(m_iFormat) * sizeToLock;
+	const int lockByteCount = GetBytesPerPixel(m_iFormat) * sizeToLock;
 
 	// allocate memory for lock data
-	m_lockPtr = (ubyte*)PPAlloc(nLockByteCount);
-
-	pLockData->pData = m_lockPtr;
-	pLockData->nPitch = lock_rect.GetSize().y;
+	data.lockData = (ubyte*)PPAlloc(lockByteCount);
+	data.lockPitch = lockPitch;
 
 	m_lockSize = sizeToLock;
 	m_lockOffs = lockOffset;
-	m_lockReadOnly = bReadOnly;
 
 #ifdef USE_GLES2
 	// Always need to discard data from GLES :(
 #else
-    if(!bDiscard)
+    if(!(data.flags & TEXLOCK_DISCARD))
     {
-		int targetOrCubeTarget = (m_glTarget == GL_TEXTURE_CUBE_MAP) ? GL_TEXTURE_CUBE_MAP_POSITIVE_X+m_lockCubeFace : m_glTarget;
-
-        GLenum srcFormat = chanCountTypes[GetChannelCount(m_iFormat)];
-        GLenum srcType = chanTypePerFormat[m_iFormat];
+        const GLenum srcFormat = chanCountTypes[GetChannelCount(m_iFormat)];
+        const GLenum srcType = chanTypePerFormat[m_iFormat];
 
         glBindTexture(m_glTarget, textures[0].glTexID);
 
-		glGetTexImage(targetOrCubeTarget, m_nLockLevel, srcFormat, srcType, m_lockPtr);
-
-		GLCheckError("lock get tex image");
-
+		switch (m_glTarget)
+		{
+			case GL_TEXTURE_3D:
+			{
+				ASSERT_FAIL("CGLTexture - does not support locking 3D texture yet for reading");
+				break;
+			}
+			case GL_TEXTURE_CUBE_MAP:
+			{
+				const GLenum cubeTarget = GL_TEXTURE_CUBE_MAP_POSITIVE_X + data.cubeFaceIdx;
+				glGetTexImage(cubeTarget, data.level, srcFormat, srcType, data.lockData);
+				GLCheckError("lock read tex image");
+				break;
+			}
+			case GL_TEXTURE_2D:
+			{
+				glGetTexImage(m_glTarget, data.level, srcFormat, srcType, data.lockData);
+				GLCheckError("lock read tex image");
+				break;
+			}
+		}
         glBindTexture(m_glTarget, 0);
     }
 #endif // USE_GLES2
+	m_lockData = &data;
+
+	return m_lockData && *m_lockData;
 }
 
 // unlocks texture for modifications, etc
 void CGLTexture::Unlock()
 {
-	if(m_bIsLocked)
+	if (!m_lockData)
+		return;
+
+	ASSERT(m_lockData->lockData != nullptr);
+
+	LockInOutData& data = *m_lockData;
+
+	if( !(data.flags & TEXLOCK_READONLY) )
 	{
-		if( !m_lockReadOnly )
+		GLenum srcFormat = chanCountTypes[GetChannelCount(m_iFormat)];
+		GLenum srcType = chanTypePerFormat[m_iFormat];
+		GLenum internalFormat = PickGLInternalFormat(m_iFormat);
+
+		const int targetOrCubeTarget = (m_glTarget == GL_TEXTURE_CUBE_MAP) ? GL_TEXTURE_CUBE_MAP_POSITIVE_X + data.cubeFaceIdx : m_glTarget;
+
+		glBindTexture(m_glTarget, textures[0].glTexID);
+		GLCheckError("bind texture");
+
+		switch (m_glTarget)
 		{
-			GLenum srcFormat = chanCountTypes[GetChannelCount(m_iFormat)];
-			GLenum srcType = chanTypePerFormat[m_iFormat];
-			GLenum internalFormat = PickGLInternalFormat(m_iFormat);
+			case GL_TEXTURE_3D:
+			{
+				IBoundingBox box = (data.flags & TEXLOCK_REGION_BOX) ? data.region.box : IBoundingBox(0, 0, 0, GetWidth(), GetHeight(), GetDepth());
+				const IVector3D boxSize = box.GetSize();
+				glTexSubImage3D(m_glTarget, data.level, box.minPoint.x, box.minPoint.y, box.minPoint.z, boxSize.x, boxSize.y, boxSize.z, srcFormat, srcType, data.lockData);
+				GLCheckError("unlock upload tex image");
+				break;
+			}
+			case GL_TEXTURE_CUBE_MAP:
+			{
+				const GLenum cubeTarget = GL_TEXTURE_CUBE_MAP_POSITIVE_X + data.cubeFaceIdx;
+				const IRectangle lockRect = (data.flags & TEXLOCK_REGION_RECT) ? data.region.rectangle : IRectangle(0, 0, GetWidth(), GetHeight());
+				const IVector2D size = lockRect.GetSize();
 
-			int targetOrCubeTarget = (m_glTarget == GL_TEXTURE_CUBE_MAP) ? GL_TEXTURE_CUBE_MAP_POSITIVE_X+m_lockCubeFace : m_glTarget;
+				glTexSubImage2D(cubeTarget, data.level, lockRect.vleftTop.x, lockRect.vleftTop.y, size.x, size.y, srcFormat, srcType, data.lockData);
+				GLCheckError("unlock upload tex image");
+			}
+			case GL_TEXTURE_2D:
+			{
+				const IRectangle lockRect = (data.flags & TEXLOCK_REGION_RECT) ? data.region.rectangle : IRectangle(0, 0, GetWidth(), GetHeight());
+				const IVector2D size = lockRect.GetSize();
 
-			glBindTexture(m_glTarget, textures[0].glTexID);
-			GLCheckError("bind texture");
-
-			glTexSubImage2D(targetOrCubeTarget, m_nLockLevel, 0, 0, m_iWidth, m_iHeight, srcFormat, srcType, m_lockPtr);
-			GLCheckError("unlock upload tex image");
-
-			glBindTexture(m_glTarget, 0);
+				glTexSubImage2D(m_glTarget, data.level, lockRect.vleftTop.x, lockRect.vleftTop.y, size.x, size.y, srcFormat, srcType, data.lockData);
+				GLCheckError("unlock upload tex image");
+				break;
+			}
 		}
 
-		PPFree(m_lockPtr);
-		m_lockPtr = nullptr;
+		glBindTexture(m_glTarget, 0);
 	}
-	else
-		ASSERT(!"Texture is not locked!");
 
-	m_bIsLocked = false;
+	PPFree(data.lockData);
+	data.lockData = nullptr;
+
+	m_lockData = nullptr;
 }

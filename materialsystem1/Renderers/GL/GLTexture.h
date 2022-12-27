@@ -29,29 +29,22 @@ public:
 	GLTextureRef_t&			GetCurrentTexture();
 
 	// locks texture for modifications, etc
-	void					Lock(LockData* pLockData, Rectangle_t* pRect = nullptr, bool bDiscard = false, bool bReadOnly = false, int nLevel = 0, int nCubeFaceId = 0);
+	bool					Lock(LockInOutData& data);
 
 	// unlocks texture for modifications, etc
 	void					Unlock();
 
 	Array<GLTextureRef_t>	textures{ PP_SL };
 
-	float					m_flLod;
+	float					m_flLod{ 0.0f };
 	GLuint					m_glTarget{ GL_NONE };
 	GLuint					m_glDepthID{ GL_NONE };
 
-	int						m_nLockLevel;
-	int						m_lockCubeFace;
-
-	bool					m_bIsLocked;
-	int						m_texSize;
+	int						m_texSize{ 0 };
 
 protected:
-	ubyte*					m_lockPtr;
-	int						m_lockOffs;
-	int						m_lockSize;
-	bool					m_lockDiscard;
-	bool					m_lockReadOnly;
+	int						m_lockOffs{ 0 };
+	int						m_lockSize{ 0 };
 };
 
 void SetupGLSamplerState(uint texTarget, const SamplerStateParam_t& sampler, int mipMapCount = 1);

@@ -228,11 +228,24 @@ const D3DTRANSFORMSTATETYPE d3dmatrixmodes[] = {
 	D3DTS_TEXTURE0
 };
 
-inline bool HasMipmaps(ER_TextureFilterMode filter)
+inline static RECT IRectangleToD3DRECT(const IRectangle& rect)
 {
-    return (filter >= TEXFILTER_BILINEAR);
+	RECT rekt;
+	rekt.top = rect.vleftTop.y;
+	rekt.left = rect.vleftTop.x;
+	rekt.right = rect.vrightBottom.x;
+	rekt.bottom = rect.vrightBottom.y;
+	return rekt;
 }
-inline bool HasAniso(ER_TextureFilterMode filter)
+
+inline static D3DBOX IBoundingBoxToD3DBOX(const IBoundingBox& bbox)
 {
-    return (filter >= TEXFILTER_BILINEAR_ANISO);
+	D3DBOX box;
+	box.Left = bbox.minPoint.x;
+	box.Top = bbox.maxPoint.y;
+	box.Right = bbox.maxPoint.x;
+	box.Bottom = bbox.minPoint.y;
+	box.Front = bbox.maxPoint.z;
+	box.Back = bbox.minPoint.z;
+	return box;
 }

@@ -1577,31 +1577,15 @@ void ShaderAPID3DX9::CopyRendertargetToTexture(ITexture* srcTarget, ITexture* de
 	if(src->surfaces.numElem() <= 0)
 		return;
 
-	int numLevels = src->surfaces.numElem();
-
 	LPDIRECT3DTEXTURE9 destD3DTex = ( LPDIRECT3DTEXTURE9 )dest->textures[0];
 
-	RECT dxSrcRect, dxDestRect;
+	const RECT dxSrcRect = srcRect ? IRectangleToD3DRECT(*srcRect) : RECT{};
+	const RECT dxDestRect = destRect ? IRectangleToD3DRECT(*destRect) : RECT{};
 
-	if(srcRect)
-	{
-		dxSrcRect.left = srcRect->vleftTop.x;
-		dxSrcRect.top = srcRect->vleftTop.y;
-		dxSrcRect.right = srcRect->vrightBottom.x;
-		dxSrcRect.bottom = srcRect->vrightBottom.y;
-	}
+	const bool isCubemap = dest->GetFlags() & TEXFLAG_CUBEMAP;
 
-	if(destRect)
-	{
-		dxDestRect.left = destRect->vleftTop.x;
-		dxDestRect.top = destRect->vleftTop.y;
-		dxDestRect.right = destRect->vrightBottom.x;
-		dxDestRect.bottom = destRect->vrightBottom.y;
-	}
-
-	bool isCubemap = dest->GetFlags() & TEXFLAG_CUBEMAP;
-
-	for(int i = 0; i < numLevels; i++)
+	const int numFaces = src->surfaces.numElem();
+	for(int i = 0; i < numFaces; i++)
 	{
 		LPDIRECT3DSURFACE9 srcSurface = src->surfaces[i];
 
@@ -1618,7 +1602,6 @@ void ShaderAPID3DX9::CopyRendertargetToTexture(ITexture* srcTarget, ITexture* de
 			Msg("CopyRendertargetToTexture failed to GetSurfaceLevel\n");
 			return;
 		}
-
 
 		ASSERT(destSurface);
 
@@ -1816,12 +1799,7 @@ void ShaderAPID3DX9::SetDepthRange(float fZNear,float fZFar)
 // sets scissor rectangle
 void ShaderAPID3DX9::SetScissorRectangle( const IRectangle &rect )
 {
-	RECT scissorRect;
-	scissorRect.left = rect.vleftTop.x;
-	scissorRect.top = rect.vleftTop.y;
-	scissorRect.right = rect.vrightBottom.x;
-	scissorRect.bottom = rect.vrightBottom.y;
-
+	const RECT scissorRect = IRectangleToD3DRECT(rect);
 	m_pD3DDevice->SetScissorRect(&scissorRect);
 }
 
