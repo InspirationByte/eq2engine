@@ -389,15 +389,15 @@ void CMaterialSystem::Shutdown()
 
 void CMaterialSystem::CreateWhiteTexture()
 {
-	// don't worry, it will be removed
-	CImage* img = PPNew CImage();
+	CImage img;
+	img.Ref_Grab();	// by grabbing ref we make sure it won't be deleted
 
-	img->SetName("_matsys_white");
+	img.SetName("_matsys_white");
 
-	int nWidth = 4;
-	int nHeight = 4;
+	const int nWidth = 4;
+	const int nHeight = 4;
 
-	ubyte* pLightmapData = img->Create(FORMAT_RGBA8, nWidth,nHeight,1,1);
+	ubyte* pLightmapData = img.Create(FORMAT_RGBA8, nWidth,nHeight,1,1);
 
 	PixelWriter pixw(FORMAT_RGBA8, pLightmapData, 0);
 
@@ -413,8 +413,8 @@ void CMaterialSystem::CreateWhiteTexture()
 	SamplerStateParam_t texSamplerParams;
 	SamplerStateParams_Make(texSamplerParams, g_pShaderAPI->GetCaps(), TEXFILTER_TRILINEAR_ANISO, TEXADDRESS_CLAMP, TEXADDRESS_CLAMP, TEXADDRESS_CLAMP);
 
-	FixedArray<CImage*, 1> images;
-	images.append(img);
+	FixedArray<CRefPtr<CImage>, 1> images;
+	images.append(CRefPtr(&img));
 
 	m_whiteTexture = g_pShaderAPI->CreateTexture(images, texSamplerParams, TEXFLAG_NOQUALITYLOD);
 

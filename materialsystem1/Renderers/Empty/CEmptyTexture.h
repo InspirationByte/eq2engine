@@ -16,7 +16,7 @@ public:
 	CEmptyTexture() : m_lockData(nullptr) {}
 
 	// initializes texture from image array of images
-	bool				Init(const SamplerStateParam_t& sampler, const ArrayCRef<CImage*> images, int flags = 0) 
+	bool				Init(const SamplerStateParam_t& sampler, const ArrayCRef<CRefPtr<CImage>> images, int flags = 0)
 	{
 		return true;
 	}

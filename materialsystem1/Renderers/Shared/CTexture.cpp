@@ -42,6 +42,8 @@ bool CTexture::InitProcedural(const SamplerStateParam_t& sampler, ETextureFormat
 
 	// make texture
 	CImage genTex;
+	genTex.Ref_Grab(); // by grabbing ref we make sure it won't be deleted
+
 	ubyte* newData = genTex.Create(format, width, height, depth, 1, arraySize);
 
 	if(newData)
@@ -55,8 +57,8 @@ bool CTexture::InitProcedural(const SamplerStateParam_t& sampler, ETextureFormat
 		return false;	// don't generate error
 	}
 
-	FixedArray<CImage*, 1> imgs;
-	imgs.append(&genTex);
+	FixedArray<CRefPtr<CImage>, 1> imgs;
+	imgs.append(CRefPtr(&genTex));
 
 	return Init(sampler, imgs, flags);
 }
@@ -92,6 +94,8 @@ bool CTexture::GenerateErrorTexture(int flags)
 	const int CHECKER_SIZE = 4;
 
 	CImage image;
+	image.Ref_Grab();	// by grabbing ref we make sure it won't be deleted
+
 	ubyte* destPixels = image.Create(FORMAT_RGBA8, 64, 64, depth, 1);
 
 	const int size = image.GetMipMappedSize(0, 1);
@@ -111,8 +115,8 @@ bool CTexture::GenerateErrorTexture(int flags)
 
 	image.CreateMipMaps();
 
-	FixedArray<CImage*, 1> images;
-	images.append(&image);
+	FixedArray<CRefPtr<CImage>, 1> images;
+	images.append(CRefPtr(&image));
 
 	return Init(texSamplerParams, images, flags);
 }

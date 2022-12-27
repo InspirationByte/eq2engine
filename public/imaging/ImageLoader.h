@@ -26,7 +26,7 @@ enum EImageLoadingFlags
 const char*		GetFormatString(const ETextureFormat format);
 ETextureFormat	GetFormatFromString(const char *string);
 
-class CImage
+class CImage : public RefCountedObject<CImage>
 {
 public:
 	CImage();

@@ -215,7 +215,7 @@ public:
 	// BEGIN CUT HERE
 
 	// creates texture from image array
-	virtual	ITexture*			CreateTexture(const ArrayCRef<CImage*>& pImages, const SamplerStateParam_t& sampler, int nFlags = 0) = 0;
+	virtual	ITexture*			CreateTexture(const ArrayCRef<CRefPtr<CImage>>& pImages, const SamplerStateParam_t& sampler, int nFlags = 0) = 0;
 
 	// creates procedural (lockable) texture
 	virtual ITexture*			CreateProceduralTexture(const char* pszName,

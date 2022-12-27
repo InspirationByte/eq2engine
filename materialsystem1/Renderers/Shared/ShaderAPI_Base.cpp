@@ -393,7 +393,7 @@ ITexture* ShaderAPI_Base::FindOrCreateTexture(const char* pszName)
 // Textures
 //-------------------------------------------------------------
 
-ITexture* ShaderAPI_Base::CreateTexture(const ArrayCRef<CImage*>& pImages, const SamplerStateParam_t& sampler, int nFlags)
+ITexture* ShaderAPI_Base::CreateTexture(const ArrayCRef<CRefPtr<CImage>>& pImages, const SamplerStateParam_t& sampler, int nFlags)
 {
 	if(!pImages.numElem())
 		return nullptr;
@@ -423,6 +423,8 @@ ITexture* ShaderAPI_Base::CreateProceduralTexture(const char* pszName,
 													int nDataSize, const unsigned char* pData)
 {
 	CImage genTex;
+	genTex.Ref_Grab();	// by grabbing ref we make sure it won't be deleted
+
 	genTex.SetName(pszName);
 	// make texture
 	ubyte* newData = genTex.Create(nFormat, width, height, depth, 1, arraySize);
@@ -447,8 +449,8 @@ ITexture* ShaderAPI_Base::CreateProceduralTexture(const char* pszName,
 		return nullptr;	// don't generate error
 	}
 
-	FixedArray<CImage*, 1> imgs;
-	imgs.append(&genTex);
+	FixedArray<CRefPtr<CImage>, 1> imgs;
+	imgs.append(CRefPtr(&genTex));
 
 	SamplerStateParam_t sampler;
 	SamplerStateParams_Make(sampler, m_caps, texFilter, textureAddress, textureAddress, textureAddress);

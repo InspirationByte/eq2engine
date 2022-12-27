@@ -114,28 +114,14 @@ EBlendMode GetBlendmodeByStr(const char* mode)
 
 struct imgLayer_t
 {
-	imgLayer_t()
-	{
-		image = nullptr;
-		transparency = 1.0f;
-		color = ColorRGB(1.0f);
-		blendMode = BLEND_ADD;
-	}
-
-	CImage*		image;
-	ColorRGB	color;
-	float		transparency;
-	EBlendMode	blendMode; 
+	CRefPtr<CImage>		image;
+	ColorRGB			color{ color_white };
+	float				transparency{ 1.0f };
+	EBlendMode			blendMode{ BLEND_ADD };
 };
 
 struct imageDesc_t
 {
-	~imageDesc_t()
-	{
-		for(int i = 0; i < layers.numElem(); i++)
-			delete layers[i].image;
-	}
-
 	Array<imgLayer_t> layers{ PP_SL };
 	EqString name;
 };
@@ -161,14 +147,12 @@ bool ParseImageDesc(const char* atlasPath, imageDesc_t& dest, KVSection* kv)
 	{
 		EqString imgName(atlas_dir + image_name);
 
-		CImage* pImg = PPNew CImage();
+		CRefPtr<CImage> pImg = CRefPtr_new(CImage);
 		bool isOk = pImg->LoadImage(imgName.ToCString());
 
 		if(!isOk || pImg->Is1D() || pImg->IsCube())
 		{
 			Msg("Can't open image '%s'\n", imgName.ToCString());
-
-			delete pImg;
 		}
 		else
 		{
@@ -198,13 +182,12 @@ bool ParseImageDesc(const char* atlasPath, imageDesc_t& dest, KVSection* kv)
 			if(hasImagePath)
 			{
 				EqString imgName(atlas_dir + image_path);
-				CImage* pImg = PPNew CImage();
+				CRefPtr<CImage> pImg = CRefPtr_new(CImage);
 				bool isOk = pImg->LoadImage(imgName.ToCString());
 
 				if(!isOk || pImg->Is1D() || pImg->IsCube())
 				{
 					Msg("Can't open image '%s'\n", imgName.ToCString());
-					delete pImg;
 				}
 				else
 				{
@@ -241,7 +224,6 @@ bool ParseImageDesc(const char* atlasPath, imageDesc_t& dest, KVSection* kv)
 		if(!imageIsOk)
 		{
 			MsgError("Failed to convert image '%s'\n", dest.name.ToCString() );
-			delete dest.layers[i].image;
 			dest.layers[i].image = nullptr;
 		}
 
@@ -286,7 +268,7 @@ void BlendPixel(ubyte* destPixels, int destStride, const imgLayer_t& layer, int 
 
 #define ROLLING_VALUE(x, max) ((x < 0) ? max+x : ((x >= max) ? x-max : x ))
 
-void BlendAtlasTo(ubyte* pDst, imageDesc_t* srcImage, int dst_x, int dst_y, int dst_wide, int padding, EPaddingMode padMode)
+void BlendAtlasTo(ubyte* pDst, const imageDesc_t* srcImage, int dst_x, int dst_y, int dst_wide, int padding, EPaddingMode padMode)
 {
 	for(int i = 0; i < srcImage->layers.numElem(); i++)
 	{
@@ -366,7 +348,7 @@ inline int AtlasPackComparison(PackerRectangle *const &elem0, PackerRectangle *c
 	return (elem1->width + elem1->height) - (elem0->width + elem0->height);
 }
 
-bool CreateAtlasImage(const Array<imageDesc_t*>& images_list, 
+bool CreateAtlasImage(const Array<imageDesc_t>& images_list, 
 						const char* pszOutputImageName, 
 						KVSection* pParams)
 {
@@ -393,10 +375,10 @@ bool CreateAtlasImage(const Array<imageDesc_t*>& images_list,
 	// add
 	for(int i = 0; i < images_list.numElem(); i++)
 	{
-		CImage* pImg = images_list[i]->layers[0].image;
+		CRefPtr<CImage> pImg = images_list[i].layers[0].image;
 
-		Msg("Adding image set '%s' (%d %d)\n", images_list[i]->name.ToCString(), pImg->GetWidth(), pImg->GetHeight());
-		packer.AddRectangle( pImg->GetWidth(), pImg->GetHeight(), images_list[i]);
+		Msg("Adding image set '%s' (%d %d)\n", images_list[i].name.ToCString(), pImg->GetWidth(), pImg->GetHeight());
+		packer.AddRectangle( pImg->GetWidth(), pImg->GetHeight(), (void*)&images_list[i]);
 	}
 
 	float	wide = 512,
@@ -466,7 +448,7 @@ bool CreateAtlasImage(const Array<imageDesc_t*>& images_list,
 		Rectangle_t rect;
 
 		packer.GetRectangle(rect, &userData, i);
-		imageDesc_t* imgDesc = (imageDesc_t*)userData;
+		const imageDesc_t* imgDesc = (imageDesc_t*)userData;
 
 		// rgba8 is pretty simple
 		BlendAtlasTo(destData, imgDesc, (int)rect.vleftTop.x, (int)rect.vleftTop.y, (int)wide, padding, padMode);
@@ -481,10 +463,6 @@ bool CreateAtlasImage(const Array<imageDesc_t*>& images_list,
 		rect_kv->AddValue(rect.vrightBottom.x);
 		rect_kv->AddValue(rect.vrightBottom.y);
 	}
-
-	// done with it
-	for(int i = 0; i < images_list.numElem(); i++)
-		delete images_list[i];
 
 	// save image as DDS, or TGA ???
 	if(destImage.SaveImage(pszOutputImageName))
@@ -503,7 +481,7 @@ bool CreateAtlasImage(const Array<imageDesc_t*>& images_list,
 
 void ProcessNewAtlas(const char* atlasPath, const char* pszOutputName)
 {
-	Array<imageDesc_t*> imageList(PP_SL);
+	Array<imageDesc_t> imageList(PP_SL);
 
 	KeyValues kvs;
 	if( kvs.LoadFromFile(atlasPath) )
@@ -515,10 +493,11 @@ void ProcessNewAtlas(const char* atlasPath, const char* pszOutputName)
 			{
 				KVSection* kb = kvs.GetRootSection()->keys[i];
 
-				imageDesc_t* imgDesc = PPNew imageDesc_t();
-
-				if(ParseImageDesc(atlasPath, *imgDesc, kb))
+				imageDesc_t imgDesc;
+				if (ParseImageDesc(atlasPath, imgDesc, kb))
+				{
 					imageList.append(imgDesc);
+				}
 			}
 		}
 

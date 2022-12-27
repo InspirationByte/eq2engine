@@ -181,7 +181,7 @@ static bool UpdateD3DTextureFromImage(IDirect3DBaseTexture9* texture, const CIma
 }
 
 // initializes texture from image array of images
-bool CD3D9Texture::Init(const SamplerStateParam_t& sampler, const ArrayCRef<CImage*> images, int flags)
+bool CD3D9Texture::Init(const SamplerStateParam_t& sampler, const ArrayCRef<CRefPtr<CImage>> images, int flags)
 {
 	// FIXME: only release if pool, flags, format and size is different
 	Release();

@@ -115,12 +115,12 @@ ITexture* CTextureLoader::LoadTextureFromFileSync(const char* pszFileName, const
 	EqString texNameStr(pszFileName);
 	texNameStr.Path_FixSlashes();
 
-	Array<CImage*> imgList(PP_SL);
+	Array<CImage::PTR_T> imgList(PP_SL);
 
 	// load frames
 	for (int i = 0; i < textureNames.numElem(); i++)
 	{
-		CImage* img = PPNew CImage();
+		CImage::PTR_T img = CRefPtr_new(CImage);
 
 		EqString texturePathExt;
 		CombinePath(texturePathExt, 2, shaderApiParams.texturePath.ToCString(), textureNames[i].ToCString());
@@ -147,7 +147,6 @@ ITexture* CTextureLoader::LoadTextureFromFileSync(const char* pszFileName, const
 		else
 		{
 			MsgError("Can't open texture \"%s\"\n", texturePathExt.ToCString());
-			delete img;
 		}
 	}
 
@@ -162,9 +161,6 @@ ITexture* CTextureLoader::LoadTextureFromFileSync(const char* pszFileName, const
 		else
 			texture->GenerateErrorTexture(nFlags);
 	}
-
-	for (int i = 0; i < imgList.numElem(); i++)
-		delete imgList[i];
 
 	return texture;
 }

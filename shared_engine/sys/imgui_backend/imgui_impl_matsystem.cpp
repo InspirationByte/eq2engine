@@ -160,12 +160,14 @@ static bool ImGui_ImplMatSystem_CreateFontsTexture()
 	io.Fonts->GetTexDataAsRGBA32(&pixels, &width, &height, &bytes_per_pixel);
 
 	CImage image;
+	image.Ref_Grab();	// by grabbing ref we make sure it won't be deleted
+
 	image.SetName("_imfont");
 	ubyte* pImage = image.Create(FORMAT_RGBA8, width, height, 1, 1);
 	memcpy(pImage, pixels, GetBytesPerPixel(FORMAT_RGBA8) * width * height);
 
-	FixedArray<CImage*, 1> imgs;
-	imgs.append(&image);
+	FixedArray<CRefPtr<CImage>, 1> imgs;
+	imgs.append(CRefPtr(&image));
 	
 	SamplerStateParam_t params;
 	SamplerStateParams_Make(params, g_pShaderAPI->GetCaps(), TEXFILTER_NEAREST, TEXADDRESS_CLAMP, TEXADDRESS_CLAMP, TEXADDRESS_CLAMP);

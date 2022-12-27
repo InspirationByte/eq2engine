@@ -211,7 +211,7 @@ static bool UpdateGLTextureFromImage(GLTextureRef_t texture, SamplerStateParam_t
 }
 
 // initializes texture from image array of images
-bool CGLTexture::Init(const SamplerStateParam_t& sampler, const ArrayCRef<CImage*> images, int flags)
+bool CGLTexture::Init(const SamplerStateParam_t& sampler, const ArrayCRef<CRefPtr<CImage>> images, int flags)
 {
 	static GLTextureRef_t invalidTexture = { 0, IMAGE_TYPE_INVALID };
 

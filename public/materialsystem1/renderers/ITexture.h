@@ -27,7 +27,7 @@ public:
 											) = 0;
 
 	// initializes texture from image array of images
-	virtual	bool				Init(const SamplerStateParam_t& sampler, const ArrayCRef<CImage*> images, int flags = 0) = 0;
+	virtual	bool				Init(const SamplerStateParam_t& sampler, const ArrayCRef<CRefPtr<CImage>> images, int flags = 0) = 0;
 
 	// generates a new error texture
 	virtual bool				GenerateErrorTexture(int flags = 0) = 0;
