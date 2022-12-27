@@ -198,8 +198,6 @@ bool CD3D9Texture::Init(const SamplerStateParam_t& sampler, const ArrayCRef<CRef
 			m_iFlags |= TEXFLAG_CUBEMAP;
 	}
 
-	m_iFlags |= TEXFLAG_MANAGED;
-
 	const int quality = (m_iFlags & TEXFLAG_NOQUALITYLOD) ? 0 : r_loadmiplevel->GetInt();
 
 	for (int i = 0; i < images.numElem(); i++)
@@ -269,6 +267,16 @@ void CD3D9Texture::ReleaseSurfaces()
 	if (m_dummyDepth)
 		m_dummyDepth->Release();
 	m_dummyDepth = nullptr;
+}
+
+void CD3D9Texture::ReleaseForRestoration()
+{
+
+}
+
+void CD3D9Texture::Restore()
+{
+
 }
 
 LPDIRECT3DBASETEXTURE9 CD3D9Texture::GetCurrentTexture()

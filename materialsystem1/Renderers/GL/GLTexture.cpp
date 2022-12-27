@@ -229,7 +229,6 @@ bool CGLTexture::Init(const SamplerStateParam_t& sampler, const ArrayCRef<CRefPt
 			m_iFlags |= TEXFLAG_CUBEMAP;
 	}
 
-	m_iFlags |= TEXFLAG_MANAGED;
 	m_glTarget = glTexTargetType[images[0]->GetImageType()];
 
 	const int quality = (m_iFlags & TEXFLAG_NOQUALITYLOD) ? 0 : r_loadmiplevel->GetInt();

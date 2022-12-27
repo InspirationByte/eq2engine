@@ -489,7 +489,7 @@ protected:
 		pTexture->SetSamplerState(sampler);
 		pTexture->SetDimensions(pImages[0]->GetWidth(), pImages[0]->GetHeight());
 		pTexture->SetFormat(pImages[0]->GetFormat());
-		pTexture->SetFlags(nFlags | TEXFLAG_MANAGED);
+		pTexture->SetFlags(nFlags);
 		pTexture->SetName( pImages[0]->GetName() );
 
 		// if this is a new texture, add

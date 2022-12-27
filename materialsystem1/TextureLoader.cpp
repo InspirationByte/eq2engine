@@ -105,6 +105,8 @@ ITexture* CTextureLoader::LoadTextureFromFileSync(const char* pszFileName, const
 		return texture;
 	}
 
+	nFlags |= TEXFLAG_PROGRESSIVE_LODS;
+
 	PROF_EVENT("Load Texture from file");
 
 	const shaderAPIParams_t& shaderApiParams = g_pShaderAPI->GetParams();

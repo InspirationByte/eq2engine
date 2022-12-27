@@ -457,11 +457,6 @@ ITexture* ShaderAPI_Base::CreateProceduralTexture(const char* pszName,
 	return g_pShaderAPI->CreateTexture(imgs, sampler, nFlags);
 }
 
-bool ShaderAPI_Base::RestoreTextureInternal(ITexture* pTexture)
-{
-	return true;
-}
-
 //-------------------------------------------------------------
 // Texture operations
 //-------------------------------------------------------------

@@ -167,8 +167,6 @@ public:
 
 protected:
 
-	virtual bool						RestoreTextureInternal(ITexture* pTexture);
-
 	virtual ITexture*					CreateTextureResource(const char* pszName) = 0;
 
 //-------------------------------------------------------------

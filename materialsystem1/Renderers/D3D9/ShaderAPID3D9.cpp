@@ -220,13 +220,19 @@ bool ShaderAPID3DX9::ResetDevice( D3DPRESENT_PARAMETERS &d3dpp )
 			{
 				CD3D9Texture* pTex = (CD3D9Texture*)*it;
 
-				bool is_managed = (pTex->GetFlags() & TEXFLAG_MANAGED);
-
-				// release unmanaged textures and rts
-				if (!is_managed)
+				const bool isManaged = (pTex->m_pool == D3DPOOL_MANAGED);
+				if (!isManaged)
 				{
-					DevMsg(DEVMSG_SHADERAPI, "RESET: releasing %s\n", pTex->GetName());
-					pTex->Release();
+					if (pTex->GetFlags() & TEXFLAG_RENDERTARGET)
+					{
+						// don't care - we'll recreate it
+						pTex->Release();
+					}
+					else
+					{
+						DevMsg(DEVMSG_SHADERAPI, "RESET: releasing %s\n", pTex->GetName());
+						pTex->ReleaseForRestoration();
+					}
 				}
 			}
 		}
@@ -372,19 +378,21 @@ bool ShaderAPID3DX9::ResetDevice( D3DPRESENT_PARAMETERS &d3dpp )
 			if(pTex->GetFlags() & TEXFLAG_FOREIGN)
 				continue;
 
-			bool is_rendertarget = (pTex->GetFlags() & TEXFLAG_RENDERTARGET);
-			bool is_managed = (pTex->GetFlags() & TEXFLAG_MANAGED);
+			const bool isManaged = (pTex->m_pool == D3DPOOL_MANAGED);
 
 			// restore unmanaged texture
-			if (!is_managed && !is_rendertarget)
+			if (!isManaged)
 			{
-				DevMsg(DEVMSG_SHADERAPI, "Restoring texture %s\n", pTex->GetName());
-				RestoreTextureInternal(pTex);
-			}
-			else if (!is_managed && is_rendertarget)
-			{
-				DevMsg(DEVMSG_SHADERAPI, "Restoring rentertarget %s\n", pTex->GetName());
-				InternalCreateRenderTarget(m_pD3DDevice, pTex, pTex->GetFlags(), m_caps);
+				if (pTex->GetFlags() & TEXFLAG_RENDERTARGET)
+				{
+					DevMsg(DEVMSG_SHADERAPI, "Restoring rentertarget %s\n", pTex->GetName());
+					InternalCreateRenderTarget(m_pD3DDevice, pTex, pTex->GetFlags(), m_caps);
+				}
+				else
+				{
+					DevMsg(DEVMSG_SHADERAPI, "Restoring texture %s\n", pTex->GetName());
+					pTex->Restore();
+				}
 			}
 		}
 

@@ -27,6 +27,9 @@ public:
 	void					ReleaseTextures();
 	void					ReleaseSurfaces();
 
+	void					ReleaseForRestoration();
+	void					Restore();
+
 	IDirect3DBaseTexture9*	CreateD3DTexture(EImageType type, ETextureFormat format, int mipCount, int widthMip0, int heightMip0, int depthMip0 = 1) const;
 	IDirect3DBaseTexture9*	GetCurrentTexture();
 
