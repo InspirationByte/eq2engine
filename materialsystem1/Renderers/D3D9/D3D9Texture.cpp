@@ -86,7 +86,7 @@ IDirect3DBaseTexture9* CD3D9Texture::CreateD3DTexture(EImageType type, ETextureF
 	return d3dTexture;
 }
 
-bool UpdateD3DTextureFromImage(IDirect3DBaseTexture9* texture, const CImage* image, int startMipLevel, bool convert)
+static bool UpdateD3DTextureFromImage(IDirect3DBaseTexture9* texture, const CImage* image, int startMipLevel, bool convert)
 {
 	const EImageType imgType = image->GetImageType();
 	const bool isAcceptableImageType =

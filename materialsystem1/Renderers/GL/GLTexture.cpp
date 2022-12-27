@@ -113,7 +113,7 @@ void SetupGLSamplerState(uint texTarget, const SamplerStateParam_t& sampler, int
 #endif // USE_GLES2
 }
 
-bool UpdateGLTextureFromImage(GLTextureRef_t texture, SamplerStateParam_t& sampler, const CImage* image, int startMipLevel)
+static bool UpdateGLTextureFromImage(GLTextureRef_t texture, SamplerStateParam_t& sampler, const CImage* image, int startMipLevel)
 {
 	const GLenum glTarget = glTexTargetType[texture.type];
 	const ETextureFormat format = image->GetFormat();

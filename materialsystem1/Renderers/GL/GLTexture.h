@@ -55,4 +55,3 @@ protected:
 };
 
 void SetupGLSamplerState(uint texTarget, const SamplerStateParam_t& sampler, int mipMapCount = 1);
-bool UpdateGLTextureFromImage(GLTextureRef_t texture, const SamplerStateParam_t& sampler, const CImage* image, int startMipLevel);

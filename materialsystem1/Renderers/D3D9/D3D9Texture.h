@@ -49,5 +49,3 @@ public:
 	ushort					m_nLockCube{ 0 };
 	IDirect3DSurface9*		m_pLockSurface{ nullptr };
 };
-
-bool UpdateD3DTextureFromImage(IDirect3DBaseTexture9* texture, const CImage* image, int startMipLevel, bool convert);
