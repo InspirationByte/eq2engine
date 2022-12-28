@@ -1495,6 +1495,7 @@ int CEGFViewApp::OnExit()
 	//WriteCfgFile("cfg/editor.cfg");
 	
 	// shutdown material system
+	g_fontCache->Shutdown();
 	materials->Shutdown();
 
 	g_fileSystem->FreeModule(g_matsysmodule);

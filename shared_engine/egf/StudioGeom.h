@@ -35,6 +35,8 @@ class CEqStudioGeom
 	friend class		CStudioCache;
 public:
 
+	struct DrawProps;
+
 	CEqStudioGeom();
 	~CEqStudioGeom();
 
@@ -65,10 +67,11 @@ public:
 	// selects a lod. returns index
 	int							SelectLod(float distance) const;
 
+	void						Draw(const DrawProps& drawProperties) const;
 	void						DrawGroup(int modelDescId, int modelGroup, bool preSetVBO = true) const;
 
 	void						SetupVBOStream( int nStream ) const;
-	bool						PrepareForSkinning(Matrix4x4* jointMatrices);
+	bool						PrepareForSkinning(Matrix4x4* jointMatrices) const;
 
 	IMaterialPtr				GetMaterial(int materialIdx, int materialGroupIdx = 0) const;
 
@@ -133,4 +136,25 @@ private:
 	EGFHwVertex_t*			m_softwareVerts{ nullptr };
 	bool					m_forceSoftwareSkinning{ false };
 	bool					m_skinningDirty{ false };
+};
+
+struct CEqStudioGeom::DrawProps
+{
+	using DrawFunc = EqFunction<void(IMaterial* material, int bodyGroup)>;
+
+	Matrix4x4*		boneTransforms{ nullptr };
+	IVertexFormat*	vertexFormat{ nullptr };
+
+	DrawFunc		preSetupFunc;
+	DrawFunc		preDrawFunc;
+
+	int				mainVertexStream{ 0 };
+	int				bodyGroupFlags{ -1 };
+	int				materialGroup{ 0 };
+	int				lod{ 0 };
+
+	int				materialFlags{ -1 };
+	bool			excludeMaterialFlags{ false };
+	bool			instanced{ false };
+	bool			skipMaterials{ false };
 };

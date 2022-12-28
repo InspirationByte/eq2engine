@@ -130,10 +130,29 @@ static bool TransformEGFVertex(EGFHwVertex_t& vert, Matrix4x4* pMatrices)
 	return bAffected;
 }
 
+static int ComputeQuaternionsForSkinning(const CEqStudioGeom* model, bonequaternion_t* bquats, Matrix4x4* btransforms)
+{
+	const studiohdr_t& studio = model->GetStudioHdr();
+	const int numBones = studio.numBones;
+
+	for (int i = 0; i < numBones; i++)
+	{
+		// FIXME: kind of slowness
+		const Matrix4x4 toAbsTransform = (!model->GetJoint(i).absTrans * btransforms[i]);
+
+		// cast matrices to quaternions
+		// note that quaternions uses transposes matrix set.
+		bquats[i].quat = Quaternion(transpose(toAbsTransform).getRotationComponent()).asVector4D();
+		bquats[i].origin = Vector4D(toAbsTransform.rows[3].xyz(), 1);
+	}
+
+	return numBones * 2;
+}
+
 //------------------------------------------
 // Software skinning of model. Very slow, but recomputes bounding box for all model
 //------------------------------------------
-bool CEqStudioGeom::PrepareForSkinning(Matrix4x4* jointMatrices)
+bool CEqStudioGeom::PrepareForSkinning(Matrix4x4* jointMatrices) const
 {
 	const studiohdr_t* studio = m_studio;
 
@@ -146,37 +165,22 @@ bool CEqStudioGeom::PrepareForSkinning(Matrix4x4* jointMatrices)
 	if (studio->numBones == 0)
 		return false; // model is not animatable, skip
 
-	// TODO: SOFTWARE SKINNING FOR BAD SLOWEST FOR SLOW PC's, and we've never fix it, HAHA!
-
-	/*if(g_pShaderAPI->IsSupportsHardwareSkinning() && !r_force_softwareskinning.GetBool())*/
 	if (!r_force_softwareskinning.GetBool())
 	{
+#if 0
 		if (m_skinningDirty)
 		{
-			m_indexBuffer->Update(m_softwareVerts, m_indexBuffer->GetIndicesCount() * sizeof(EGFHwVertex_t), 0);
+			m_vertexBuffer->Update(m_softwareVerts, m_vertexBuffer->GetVertexCount() * sizeof(EGFHwVertex_t), 0);
 			m_skinningDirty = false;
 		}
-
+#endif
 		bonequaternion_t bquats[128];
-
-		const int numBones = studio->numBones;
-
-		for (int i = 0; i < numBones; i++)
-		{
-			// FIXME: kind of slowness
-			Matrix4x4 toAbsTransform = (!m_joints[i].absTrans * jointMatrices[i]);
-
-			// cast matrices to quaternions
-			// note that quaternions uses transposes matrix set.
-			bquats[i].quat = Quaternion(transpose(toAbsTransform).getRotationComponent()).asVector4D();
-			bquats[i].origin = Vector4D(toAbsTransform.rows[3].xyz(), 1);
-		}
-
-		//g_pShaderAPI->SetVertexShaderConstantVector4DArray(100, (Vector4D*)&bquats[0].quat, m_hwdata->studio->numBones*2);
-		g_pShaderAPI->SetShaderConstantArrayVector4D("Bones", (Vector4D*)&bquats[0].quat, numBones * 2);
+		const int numRegs = ComputeQuaternionsForSkinning(this, bquats, jointMatrices);
+		g_pShaderAPI->SetShaderConstantArrayVector4D("Bones", (Vector4D*)&bquats[0].quat, numRegs);
 
 		return true;
 	}
+#if 0
 	else if (m_forceSoftwareSkinning && r_force_softwareskinning.GetBool())
 	{
 		m_skinningDirty = true;
@@ -203,7 +207,7 @@ bool CEqStudioGeom::PrepareForSkinning(Matrix4x4* jointMatrices)
 			return false;
 		}
 	}
-
+#endif
 	return false;
 }
 
@@ -748,6 +752,85 @@ void CEqStudioGeom::SetupVBOStream(int nStream) const
 		return;
 
 	g_pShaderAPI->SetVertexBuffer(m_vertexBuffer, nStream);
+}
+
+void CEqStudioGeom::Draw(const DrawProps& drawProperties) const
+{
+	if (!drawProperties.bodyGroupFlags)
+		return;
+
+	bonequaternion_t bquats[128];
+
+	int numBoneRegisters = 0;
+	if (drawProperties.boneTransforms)
+		 numBoneRegisters = ComputeQuaternionsForSkinning(this, bquats, drawProperties.boneTransforms);
+
+	materials->SetSkinningEnabled(drawProperties.boneTransforms);
+	materials->SetInstancingEnabled(drawProperties.instanced);
+
+	g_pShaderAPI->SetVertexFormat(drawProperties.vertexFormat ? drawProperties.vertexFormat : g_studioModelCache->GetEGFVertexFormat());
+	g_pShaderAPI->SetVertexBuffer(m_vertexBuffer, drawProperties.mainVertexStream);
+	g_pShaderAPI->SetIndexBuffer(m_indexBuffer);
+
+	const studiohdr_t& studio = *m_studio;
+	for (int i = 0; i < studio.numBodyGroups; ++i)
+	{
+		// check bodygroups for rendering
+		if (!(drawProperties.bodyGroupFlags & (1 << i)))
+			continue;
+
+		const int bodyGroupLodIndex = studio.pBodyGroups(i)->lodModelIndex;
+		const studiolodmodel_t* lodModel = studio.pLodModel(bodyGroupLodIndex);
+
+		// get the right LOD model number
+		int bodyGroupLOD = drawProperties.lod;
+		int modelDescId = -1;
+		do
+		{
+			modelDescId = lodModel->modelsIndexes[bodyGroupLOD];
+			bodyGroupLOD--;
+		} while (modelDescId == -1 && bodyGroupLOD >= 0);
+
+		if (modelDescId == -1)
+			continue;
+
+		const studiomodeldesc_t* modDesc = studio.pModelDesc(modelDescId);
+
+		// render model groups that in this body group
+		for (int j = 0; j < modDesc->numGroups; ++j)
+		{
+			const int materialIndex = modDesc->pGroup(j)->materialIndex;
+			IMaterial* material = GetMaterial(materialIndex, drawProperties.materialGroup);
+
+			const int materialFlags = material->GetFlags();
+
+			const int materialMask = materialFlags & drawProperties.materialFlags;
+			if (drawProperties.excludeMaterialFlags && materialMask > 0)
+				continue;
+			else if (materialFlags && !drawProperties.excludeMaterialFlags && !materialMask)
+				continue;
+
+			if (drawProperties.preSetupFunc)
+				drawProperties.preSetupFunc(material, i);
+
+			if (!drawProperties.skipMaterials)
+				materials->BindMaterial(material, 0);
+
+			if (drawProperties.preDrawFunc)
+				drawProperties.preDrawFunc(material, i);
+
+			if (drawProperties.boneTransforms)
+				g_pShaderAPI->SetShaderConstantArrayVector4D("Bones", (Vector4D*)&bquats[0].quat, numBoneRegisters);
+
+			materials->Apply();
+
+			const HWGeomRef::Group& groupDesc = m_hwGeomRefs[modelDescId].groups[j];
+			g_pShaderAPI->DrawIndexedPrimitives((ER_PrimitiveType)groupDesc.primType, groupDesc.firstIndex, groupDesc.indexCount, 0, m_vertexBuffer->GetVertexCount());
+		}
+	}
+
+	materials->SetSkinningEnabled(false);
+	materials->SetInstancingEnabled(false);
 }
 
 void CEqStudioGeom::DrawGroup(int modelDescId, int modelGroup, bool preSetVBO) const

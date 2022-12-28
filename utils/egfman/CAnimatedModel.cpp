@@ -432,50 +432,18 @@ void CAnimatedModel::Render(int nViewRenderFlags, float fDist, int startLod, boo
 
 	materials->SetAmbientColor( color_white );
 
-	int nStartLOD = m_pModel->SelectLod( fDist ); // lod distance check
+	int startLOD = m_pModel->SelectLod( fDist ); // lod distance check
 
 	if(!overrideLod)
-		nStartLOD += startLod;
+		startLOD += startLod;
 	else
-		nStartLOD = startLod;
+		startLOD = startLod;
 
-	for(int i = 0; i < studio.numBodyGroups; i++)
-	{
-		// check bodygroups for rendering
-		if(!(m_bodyGroupFlags & (1 << i)))
-			continue;
-
-		int bodyGroupLOD = nStartLOD;
-		int nLodModelIdx = studio.pBodyGroups(i)->lodModelIndex;
-		const studiolodmodel_t* lodModel = studio.pLodModel(nLodModelIdx);
-
-		int nModDescId = lodModel->modelsIndexes[ bodyGroupLOD ];
-
-		// get the right LOD model number
-		while(nModDescId == -1 && bodyGroupLOD > 0)
-		{
-			bodyGroupLOD--;
-			nModDescId = lodModel->modelsIndexes[ bodyGroupLOD ];
-		}
-
-		if(nModDescId == -1)
-			continue;
-	
-		const studiomodeldesc_t* modDesc = studio.pModelDesc(nModDescId);
-
-		// render model groups that in this body group
-		for(int j = 0; j < modDesc->numGroups; j++)
-		{
-			materials->SetSkinningEnabled(true);
-
-			materials->BindMaterial( m_pModel->GetMaterial( modDesc->pGroup(j)->materialIndex ), 0);
-
-			m_pModel->PrepareForSkinning(m_boneTransforms);
-			m_pModel->DrawGroup( nModDescId, j );
-
-			materials->SetSkinningEnabled(false);
-		}
-	}
+	CEqStudioGeom::DrawProps drawProperties;
+	drawProperties.boneTransforms = m_boneTransforms;
+	drawProperties.lod = startLOD;
+	drawProperties.bodyGroupFlags = m_bodyGroupFlags;
+	m_pModel->Draw(drawProperties);
 
 	if(nViewRenderFlags & RFLAG_PHYSICS)
 		RenderPhysModel();
