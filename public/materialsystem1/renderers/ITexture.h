@@ -81,7 +81,7 @@ struct ITexture::LockInOutData
 		region.box = box;
 	}
 
-	LockInOutData()
+	~LockInOutData()
 	{
 		ASSERT_MSG(lockData == nullptr, "CRITICAL - Texture was still locked! Unlock() implementation must set lockData to NULL");
 	}
