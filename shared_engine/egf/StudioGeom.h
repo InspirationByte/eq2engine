@@ -63,9 +63,9 @@ public:
 	CBaseEqGeomInstancer*		GetInstancer() const;
 
 	// selects a lod. returns index
-	int							SelectLod(float dist_to_camera) const;
+	int							SelectLod(float distance) const;
 
-	void						DrawGroup(int nModel, int nGroup, bool preSetVBO = true) const;
+	void						DrawGroup(int modelDescId, int modelGroup, bool preSetVBO = true) const;
 
 	void						SetupVBOStream( int nStream ) const;
 	bool						PrepareForSkinning(Matrix4x4* jointMatrices);
@@ -79,8 +79,9 @@ private:
 		// offset in hw index buffer to this lod, for each geometry group
 		struct Group
 		{
-			int	firstindex;
-			int indexcount;
+			int		firstIndex;
+			int		indexCount;
+			ushort	primType;
 		} *groups{ nullptr };
 	};
 

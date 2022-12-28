@@ -487,8 +487,9 @@ bool CEqStudioGeom::LoadGenerateVertexBuffer()
 			// add vertices, add indices
 			const modelgroupdesc_t* pGroup = pModelDesc->pGroup(j);
 
-			groups[j].firstindex = numIndices;
-			groups[j].indexcount = pGroup->numIndices;
+			groups[j].firstIndex = numIndices;
+			groups[j].indexCount = pGroup->numIndices;
+			groups[j].primType = pGroup->primitiveType;
 
 			const int new_offset = numVertices;
 
@@ -720,7 +721,7 @@ void CEqStudioGeom::LoadSetupBones()
 	}
 }
 
-int CEqStudioGeom::SelectLod(float dist_to_camera) const
+int CEqStudioGeom::SelectLod(float distance) const
 {
 	if (r_egf_LodTest.GetInt() != -1)
 		return r_egf_LodTest.GetInt();
@@ -734,7 +735,7 @@ int CEqStudioGeom::SelectLod(float dist_to_camera) const
 
 	for (int i = r_egf_LodStart.GetInt(); i < numLods; i++)
 	{
-		if (dist_to_camera > m_studio->pLodParams(i)->distance * r_egf_LodScale.GetFloat())
+		if (distance > m_studio->pLodParams(i)->distance * r_egf_LodScale.GetFloat())
 			idealLOD = i;
 	}
 
@@ -749,7 +750,7 @@ void CEqStudioGeom::SetupVBOStream(int nStream) const
 	g_pShaderAPI->SetVertexBuffer(m_vertexBuffer, nStream);
 }
 
-void CEqStudioGeom::DrawGroup(int nModel, int nGroup, bool preSetVBO) const
+void CEqStudioGeom::DrawGroup(int modelDescId, int modelGroup, bool preSetVBO) const
 {
 	if (!m_vertexBuffer)
 		return;
@@ -764,14 +765,9 @@ void CEqStudioGeom::DrawGroup(int nModel, int nGroup, bool preSetVBO) const
 
 	materials->Apply();
 
-	HWGeomRef::Group& groupDesc = m_hwGeomRefs[nModel].groups[nGroup];
+	const HWGeomRef::Group& groupDesc = m_hwGeomRefs[modelDescId].groups[modelGroup];
 
-	const int firstIndex = groupDesc.firstindex;
-	const int indexCount = groupDesc.indexcount;
-
-	// get primitive type
-	const int8 nPrimType = m_studio->pModelDesc(nModel)->pGroup(nGroup)->primitiveType;
-	g_pShaderAPI->DrawIndexedPrimitives((ER_PrimitiveType)nPrimType, firstIndex, indexCount, 0, m_vertexBuffer->GetVertexCount());
+	g_pShaderAPI->DrawIndexedPrimitives((ER_PrimitiveType)groupDesc.primType, groupDesc.firstIndex, groupDesc.indexCount, 0, m_vertexBuffer->GetVertexCount());
 }
 
 const BoundingBox& CEqStudioGeom::GetBoundingBox() const

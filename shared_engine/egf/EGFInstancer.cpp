@@ -216,7 +216,7 @@ void CBaseEqGeomInstancer::Draw( int renderFlags, CEqStudioGeom* model )
 					const int materialIndex = modDesc->pGroup(i)->materialIndex;
 					IMaterial* pMaterial = model->GetMaterial(materialIndex, mGrp);
 
-					// sadly, instancer won't draw any transparent objects due to problems
+					// sadly, instancer won't draw any transparent objects due to sorting problems
 					if (pMaterial->GetFlags() & (MATERIAL_FLAG_TRANSPARENT | MATERIAL_FLAG_ADDITIVE | MATERIAL_FLAG_MODULATE))
 						continue;
 
