@@ -38,37 +38,51 @@ public:
 	CEqStudioGeom();
 	~CEqStudioGeom();
 
-	const char*				GetName() const;
-	int						GetLoadingState() const;	// EModelLoadingState
-
-	// TODO: split studioHWData and remove later
-	const studioHwData_t*	GetHWData() const;
-
-	const studiohdr_t&		GetStudioHdr() const;
-	const studioPhysData_t&	GetPhysData() const;
-	const BoundingBox&		GetBoundingBox() const;
+	const char*					GetName() const;
+	int							GetLoadingState() const;	// EModelLoadingState
 
 	// loads additional motion package
-	void					LoadMotionPackage(const char* filename);
+	void						LoadMotionPackage(const char* filename);
+
+	// TODO: split studioHWData and remove later
+	const studiohdr_t&			GetStudioHdr() const;
+	const studioPhysData_t&		GetPhysData() const;
+	const studioMotionData_t&	GetMotionData(int index) const;
+	const studioJoint_t&		GetJoint(int index) const;
+
+	int							GetMotionPackageCount() const { return m_motionData.numElem(); }
+	int							GetMaterialCount() const { return m_materialCount; }
+	int							GetMaterialGroupsCount() const { return m_materialGroupsCount; }
 
 	// makes dynamic temporary decal
-	tempdecal_t*			MakeTempDecal( const decalmakeinfo_t& info, Matrix4x4* jointMatrices);
+	tempdecal_t*				MakeTempDecal( const decalmakeinfo_t& info, Matrix4x4* jointMatrices);
+	const BoundingBox&			GetBoundingBox() const;
 
 	// instancing
-	void					SetInstancer(CBaseEqGeomInstancer* instancer);
-	CBaseEqGeomInstancer*	GetInstancer() const;
+	void						SetInstancer(CBaseEqGeomInstancer* instancer);
+	CBaseEqGeomInstancer*		GetInstancer() const;
 
 	// selects a lod. returns index
-	int						SelectLod(float dist_to_camera) const;
+	int							SelectLod(float dist_to_camera) const;
 
-	void					DrawGroup(int nModel, int nGroup, bool preSetVBO = true) const;
+	void						DrawGroup(int nModel, int nGroup, bool preSetVBO = true) const;
 
-	void					SetupVBOStream( int nStream ) const;
-	bool					PrepareForSkinning(Matrix4x4* jointMatrices);
+	void						SetupVBOStream( int nStream ) const;
+	bool						PrepareForSkinning(Matrix4x4* jointMatrices);
 
-	IMaterialPtr			GetMaterial(int materialIdx, int materialGroupIdx = 0) const;
+	IMaterialPtr				GetMaterial(int materialIdx, int materialGroupIdx = 0) const;
 
 private:
+
+	struct HWGeomRef
+	{
+		// offset in hw index buffer to this lod, for each geometry group
+		struct Group
+		{
+			int	firstindex;
+			int indexcount;
+		} *groups{ nullptr };
+	};
 
 	bool					LoadModel(const char* pszPath, bool useJob = true);
 	void					DestroyModel();
@@ -90,29 +104,32 @@ private:
 	//-----------------------------------------------
 
 	// array of material index for each group
-	FixedArray<IMaterialPtr, MAX_STUDIOMATERIALS>	m_materials;
+	FixedArray<IMaterialPtr, MAX_STUDIOMATERIALS>		m_materials;
+	FixedArray<studioMotionData_t*, MAX_MOTIONPACKAGES>	m_motionData;
+
 	Array<EqString>			m_additionalMotionPackages{ PP_SL };
-	BoundingBox				m_boundingBox;
+	BoundingBox				m_boundingBox; // FIXME: bounding boxes for each groups?
 	EqString				m_name;
+	
+	studioJoint_t*			m_joints{ nullptr };
+	HWGeomRef*				m_hwGeomRefs{ nullptr };	// hardware representation of models (indices)
 
-	CBaseEqGeomInstancer*	m_instancer;
-	studioHwData_t*			m_hwdata;
+	CBaseEqGeomInstancer*	m_instancer{ nullptr };
+	studiohdr_t*			m_studio{ nullptr };
+	studioPhysData_t		m_physModel;
 
-	IVertexBuffer*			m_pVB;
-	IIndexBuffer*			m_pIB;
+	IVertexBuffer*			m_vertexBuffer{ nullptr };
+	IIndexBuffer*			m_indexBuffer{ nullptr };
 
-	EGFHwVertex_t*			m_softwareVerts;
+	int						m_materialCount{ 0 };
+	int						m_materialGroupsCount{ 0 };
 
-	int						m_numVertices;
-	int						m_numIndices;
+	int						m_cacheIdx{ -1 };
 
-	int						m_cacheIdx;
-	Threading::CEqInterlockedInteger	m_loading;
-	volatile short			m_readyState;
+	mutable int				m_loading{ MODEL_LOAD_ERROR };
+	mutable int				m_readyState{ 0 };
 
-	bool					m_forceSoftwareSkinning;
-	bool					m_skinningDirty;
-
-
+	EGFHwVertex_t*			m_softwareVerts{ nullptr };
+	bool					m_forceSoftwareSkinning{ false };
+	bool					m_skinningDirty{ false };
 };
-

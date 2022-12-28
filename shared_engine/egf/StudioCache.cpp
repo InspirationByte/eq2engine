@@ -135,7 +135,7 @@ void CStudioCache::ReleaseCache()
 		if (m_cachedList[i])
 		{
 			// wait for loading completion
-			m_cachedList[i]->GetHWData();
+			m_cachedList[i]->GetStudioHdr();
 			delete m_cachedList[i];
 		}
 	}

@@ -55,7 +55,8 @@ void CAnimatedModel::SetModel(CEqStudioGeom* pModel)
 	// initialize that shit to use it in future
 	InitAnimating(m_pModel);
 
-	if(m_pModel->GetHWData()->physModel.modeltype == PHYSMODEL_USAGE_RAGDOLL)
+	const studioPhysData_t& physData = m_pModel->GetPhysData();
+	if(physData.modeltype == PHYSMODEL_USAGE_RAGDOLL)
 	{
 		m_pRagdoll = CreateRagdoll( m_pModel );
 
@@ -74,8 +75,8 @@ void CAnimatedModel::SetModel(CEqStudioGeom* pModel)
 	}
 	else
 	{
-		if(m_pModel->GetHWData()->physModel.numObjects)
-			m_physObj = physics->CreateObject(&m_pModel->GetHWData()->physModel, 0);
+		if(physData.numObjects)
+			m_physObj = physics->CreateObject(&physData, 0);
 	}
 }
 
@@ -174,7 +175,7 @@ void CAnimatedModel::Update(float dt)
 // finds attachment
 int CAnimatedModel::FindAttachment(const char* name)
 {
-	return Studio_FindAttachmentId(m_pModel->GetHWData()->studio, name);
+	return Studio_FindAttachmentId(&m_pModel->GetStudioHdr(), name);
 }
 
 // gets local attachment position
@@ -183,10 +184,12 @@ Vector3D CAnimatedModel::GetLocalAttachmentOrigin(int nAttach)
 	if(nAttach == -1)
 		return vec3_zero;
 
-	if(nAttach >= m_pModel->GetHWData()->studio->numAttachments)
+	const studiohdr_t& studio = m_pModel->GetStudioHdr();
+
+	if(nAttach >= studio.numAttachments)
 		return vec3_zero;
 
-	studioattachment_t* attach = m_pModel->GetHWData()->studio->pAttachment(nAttach);
+	const studioattachment_t* attach = studio.pAttachment(nAttach);
 
 	Matrix4x4 matrix = identity4();
 	matrix.setRotation(Vector3D(DEG2RAD(attach->angles.x),DEG2RAD(attach->angles.y),DEG2RAD(attach->angles.z)));
@@ -204,10 +207,11 @@ Vector3D CAnimatedModel::GetLocalAttachmentDirection(int nAttach)
 	if(nAttach == -1)
 		return vec3_zero;
 
-	if(nAttach >= m_pModel->GetHWData()->studio->numAttachments)
+	const studiohdr_t& studio = m_pModel->GetStudioHdr();
+	if(nAttach >= studio.numAttachments)
 		return vec3_zero;
 
-	studioattachment_t* attach = m_pModel->GetHWData()->studio->pAttachment(nAttach);
+	const studioattachment_t* attach = studio.pAttachment(nAttach);
 
 	Matrix4x4 matrix = identity4();
 	matrix.setRotation(Vector3D(DEG2RAD(attach->angles.x),DEG2RAD(attach->angles.y),DEG2RAD(attach->angles.z)));
@@ -289,15 +293,12 @@ void CAnimatedModel::RenderPhysModel()
 	if(!m_pModel)
 		return;
 
-	if(!m_pModel->GetHWData())
+	const studioPhysData_t& physData = m_pModel->GetPhysData();
+
+	if(physData.numObjects == 0)
 		return;
 
-	const studioPhysData_t& phys_data = m_pModel->GetHWData()->physModel;
-
-	if(phys_data.numObjects == 0)
-		return;
-
-	if(phys_data.numShapes == 0)
+	if(physData.numShapes == 0)
 		return;
 
 	BlendStateParam_t blending;
@@ -317,18 +318,18 @@ void CAnimatedModel::RenderPhysModel()
 
 	materials->BindMaterial(materials->GetDefaultMaterial());
 
-	for(int i = 0; i < phys_data.numObjects; i++)
+	for(int i = 0; i < physData.numObjects; i++)
 	{
-		for(int j = 0; j < phys_data.objects[i].object.numShapes; j++)
+		for(int j = 0; j < physData.objects[i].object.numShapes; j++)
 		{
-			int nShape = phys_data.objects[i].object.shape_indexes[j];
-			if(nShape < 0 || nShape > phys_data.numShapes)
+			int nShape = physData.objects[i].object.shape_indexes[j];
+			if(nShape < 0 || nShape > physData.numShapes)
 			{
 				continue;
 			}
 
-			int startIndex = phys_data.shapes[nShape].shape_info.startIndices;
-			int moveToIndex = startIndex + phys_data.shapes[nShape].shape_info.numIndices;
+			int startIndex = physData.shapes[nShape].shape_info.startIndices;
+			int moveToIndex = startIndex + physData.shapes[nShape].shape_info.numIndices;
 
 			if(m_boneTransforms != nullptr && m_pRagdoll)
 			{
@@ -343,7 +344,7 @@ void CAnimatedModel::RenderPhysModel()
 			for(int k = startIndex; k < moveToIndex; k++)
 			{
 				meshBuilder.Color4f(1,0,1,1);
-				meshBuilder.Position3fv(phys_data.vertices[phys_data.indices[k]]);// + phys_data.objects[i].object.offset);
+				meshBuilder.Position3fv(physData.vertices[physData.indices[k]]);// + physData.objects[i].object.offset);
 
 				meshBuilder.AdvanceVertex();
 			}
@@ -415,7 +416,7 @@ void CAnimatedModel::Render(int nViewRenderFlags, float fDist, int startLod, boo
 
 	materials->SetMatrix(MATRIXMODE_WORLD, posMatrix);
 
-	studiohdr_t* pHdr = m_pModel->GetHWData()->studio;
+	const studiohdr_t& studio = m_pModel->GetStudioHdr();
 
 	/*
 	Vector3D view_vec = g_pViewEntity->GetEyeOrigin() - m_matWorldTransform.getTranslationComponent();
@@ -438,15 +439,15 @@ void CAnimatedModel::Render(int nViewRenderFlags, float fDist, int startLod, boo
 	else
 		nStartLOD = startLod;
 
-	for(int i = 0; i < pHdr->numBodyGroups; i++)
+	for(int i = 0; i < studio.numBodyGroups; i++)
 	{
 		// check bodygroups for rendering
 		if(!(m_bodyGroupFlags & (1 << i)))
 			continue;
 
 		int bodyGroupLOD = nStartLOD;
-		int nLodModelIdx = pHdr->pBodyGroups(i)->lodModelIndex;
-		studiolodmodel_t* lodModel = pHdr->pLodModel(nLodModelIdx);
+		int nLodModelIdx = studio.pBodyGroups(i)->lodModelIndex;
+		const studiolodmodel_t* lodModel = studio.pLodModel(nLodModelIdx);
 
 		int nModDescId = lodModel->modelsIndexes[ bodyGroupLOD ];
 
@@ -460,7 +461,7 @@ void CAnimatedModel::Render(int nViewRenderFlags, float fDist, int startLod, boo
 		if(nModDescId == -1)
 			continue;
 	
-		studiomodeldesc_t* modDesc = pHdr->pModelDesc(nModDescId);
+		const studiomodeldesc_t* modDesc = studio.pModelDesc(nModDescId);
 
 		// render model groups that in this body group
 		for(int j = 0; j < modDesc->numGroups; j++)
@@ -500,9 +501,9 @@ void CAnimatedModel::VisualizeBones()
 	{
 		Vector3D pos = (posMatrix*Vector4D(m_boneTransforms[i].rows[3].xyz(), 1.0f)).xyz();
 
-		if(m_joints[i].parentbone != -1)
+		if(m_joints[i].parent != -1)
 		{
-			Vector3D parent_pos = (posMatrix*Vector4D(m_boneTransforms[m_joints[i].parentbone].rows[3].xyz(), 1.0f)).xyz();
+			Vector3D parent_pos = (posMatrix*Vector4D(m_boneTransforms[m_joints[i].parent].rows[3].xyz(), 1.0f)).xyz();
 			debugoverlay->Line3D(pos,parent_pos, color_white, color_white);
 		}
 
@@ -516,7 +517,7 @@ void CAnimatedModel::VisualizeBones()
 		debugoverlay->Line3D(pos, pos+dZ*0.1f, ColorRGBA(0,0,1,1), ColorRGBA(0,0,1,1));
 
 		debugoverlay->Line3D(pos, pos + dX * 0.1f, ColorRGBA(1, 0, 0, 1), ColorRGBA(1, 0, 0, 1));
-		debugoverlay->Text3D(pos, 100.0f, color_white, m_joints[i].name);
+		debugoverlay->Text3D(pos, 100.0f, color_white, m_joints[i].bone->name);
 	}
 }
 

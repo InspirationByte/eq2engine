@@ -19,7 +19,7 @@
 // finds far parent bone in ragdoll
 int ragdoll_t::ComputeAndGetFarParentOf(int bone)
 {
-	int parentBone = m_pReferenceModel->GetHWData()->joints[bone].parentbone;
+	const int parentBone = m_pReferenceModel->GetJoint(bone).parent;
 
 	if(parentBone != -1)
 	{
@@ -45,11 +45,10 @@ ragdoll_t* CreateRagdoll(CEqStudioGeom* pModel)
 	if(!pModel)
 		return nullptr;
 
-	const studioHwData_t* hwdata = pModel->GetHWData();
-	const studioPhysData_t& physModel = hwdata->physModel;
-	const studiohdr_t* studio = hwdata->studio;
+	const studioPhysData_t& physModel = pModel->GetPhysData();
+	const studiohdr_t& studio = pModel->GetStudioHdr();
 
-	int type = physModel.modeltype;
+	const int type = physModel.modeltype;
 
 	if(type == PHYSMODEL_USAGE_RAGDOLL)
 	{
@@ -67,13 +66,12 @@ ragdoll_t* CreateRagdoll(CEqStudioGeom* pModel)
 		// build joint remap table
 		for(int i = 0; i < numPhysJoints; i++)
 		{
-			for(int j = 0; j < studio->numBones; j++)
+			for(int j = 0; j < studio.numBones; j++)
 			{
-				if(!stricmp(hwdata->joints[j].name, physModel.joints[i].name))
+				if(!stricmp(pModel->GetJoint(j).bone->name, physModel.joints[i].name))
 				{
 					// assign index
 					newRagdoll->m_pBoneToVisualIndices[i] = j;
-
 					newRagdoll->m_pBoneToRagdollIndices[j] = i;
 
 					continue;
@@ -82,18 +80,16 @@ ragdoll_t* CreateRagdoll(CEqStudioGeom* pModel)
 		}
 
 		// build far parental table
-		for(int i = 0; i < studio->numBones; i++)
+		for(int i = 0; i < studio.numBones; i++)
 		{
 			newRagdoll->m_pBoneMerge_far_parents[i] = newRagdoll->ComputeAndGetFarParentOf(i);
 
 			Matrix4x4 transform = identity4();
 
-			int real_parent = newRagdoll->m_pBoneMerge_far_parents[i];
-
-
+			const int real_parent = newRagdoll->m_pBoneMerge_far_parents[i];
 			if(real_parent != -1)
 			{
-				transform = hwdata->joints[i].absTrans * !hwdata->joints[real_parent].absTrans;
+				transform = pModel->GetJoint(i).absTrans * !pModel->GetJoint(real_parent).absTrans;
 			}
 
 			newRagdoll->m_pBoneMerge_Transformations[i] = transform;
@@ -126,10 +122,10 @@ ragdoll_t* CreateRagdoll(CEqStudioGeom* pModel)
 			IPhysicsObject*	partB = newRagdoll->m_pParts[object_partindexB];
 
 			// get a bone transformation
-			Matrix4x4 bone_transform = hwdata->joints[newRagdoll->m_pBoneToVisualIndices[i]].absTrans;
+			const Matrix4x4& bone_transform = pModel->GetJoint(newRagdoll->m_pBoneToVisualIndices[i]).absTrans;
 
-			Vector3D linkA_pos = bone_transform.rows[3].xyz() - newRagdoll->m_pParts[object_partindexA]->GetPosition();
-			Vector3D linkB_pos = bone_transform.rows[3].xyz() - newRagdoll->m_pParts[object_partindexB]->GetPosition();
+			const Vector3D linkA_pos = bone_transform.rows[3].xyz() - newRagdoll->m_pParts[object_partindexA]->GetPosition();
+			const Vector3D linkB_pos = bone_transform.rows[3].xyz() - newRagdoll->m_pParts[object_partindexB]->GetPosition();
 
 			Matrix4x4 local_a = bone_transform;
 			Matrix4x4 local_b = bone_transform;
@@ -194,11 +190,11 @@ void ragdoll_t::GetVisualBonesTransforms(Matrix4x4 *bones) const
 	Matrix4x4 offsetTranslate = identity4();
 	offsetTranslate.setTranslation(-GetPosition());
 
-	studiohdr_t* studio = m_pReferenceModel->GetHWData()->studio;
+	const studiohdr_t& studio = m_pReferenceModel->GetStudioHdr();
 
-	for(int i = 0; i < studio->numBones; i++)
+	for(int i = 0; i < studio.numBones; i++)
 	{
-		int ragdoll_joint_index = m_pBoneToRagdollIndices[i];
+		const int ragdoll_joint_index = m_pBoneToRagdollIndices[i];
 
 		if(ragdoll_joint_index != -1)
 		{
@@ -207,7 +203,7 @@ void ragdoll_t::GetVisualBonesTransforms(Matrix4x4 *bones) const
 		}
 		else
 		{
-			int far_parent = m_pBoneMerge_far_parents[i];
+			const int far_parent = m_pBoneMerge_far_parents[i];
 
 			if(far_parent != -1)
 			{

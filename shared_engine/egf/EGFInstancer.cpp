@@ -174,14 +174,14 @@ void CBaseEqGeomInstancer::Draw( int renderFlags, CEqStudioGeom* model )
 
 	g_pShaderAPI->SetVertexFormat(m_vertFormat);
 
-	const studiohdr_t* pHdr = model->GetHWData()->studio;
+	const studiohdr_t& studio = model->GetStudioHdr();
 	for(int lod = m_lodBounds[0]; lod <= m_lodBounds[1]; lod++)
 	{
 		for(int bodyGrp = m_bodyGroupBounds[0]; bodyGrp <= m_bodyGroupBounds[1]; bodyGrp++)
 		{
 			int bodyGroupLOD = lod;
-			const int nLodModelIdx = pHdr->pBodyGroups(bodyGrp)->lodModelIndex;
-			const studiolodmodel_t* lodModel = pHdr->pLodModel(nLodModelIdx);
+			const int nLodModelIdx = studio.pBodyGroups(bodyGrp)->lodModelIndex;
+			const studiolodmodel_t* lodModel = studio.pLodModel(nLodModelIdx);
 
 			int nModDescId = lodModel->modelsIndexes[ bodyGroupLOD ];
 
@@ -195,7 +195,7 @@ void CBaseEqGeomInstancer::Draw( int renderFlags, CEqStudioGeom* model )
 			if(nModDescId == -1)
 				continue;
 	
-			const studiomodeldesc_t* modDesc = pHdr->pModelDesc(nModDescId);
+			const studiomodeldesc_t* modDesc = studio.pModelDesc(nModDescId);
 
 			for (int mGrp = m_matGroupBounds[0]; mGrp <= m_matGroupBounds[1]; mGrp++)
 			{

@@ -15,7 +15,7 @@
 //--------------------------------------------------------------------------------------
 
 class CEqStudioGeom;
-
+struct studioJoint_t;
 
 class CAnimatingEGF
 {
@@ -87,9 +87,9 @@ protected:
 	
 
 	virtual Activity			TranslateActivity(Activity act, int slotindex = 0) const;			// translates activity
-	virtual void				HandleAnimatingEvent(AnimationEvent nEvent, char* options);
+	virtual void				HandleAnimatingEvent(AnimationEvent nEvent, const char* options);
 
-	virtual void				AddMotions(studioHwData_t::motionData_t* motionData);
+	virtual void				AddMotions(const studioMotionData_t& motionData);
 
 	// transition time from previous
 	float						m_transitionTime;
@@ -101,9 +101,8 @@ protected:
 	Matrix4x4*					m_boneTransforms;
 
 	// local bones/base pose
-	studioHwData_t::joint_t*	m_joints;
-
-	int							m_numBones;
+	const studioJoint_t*		m_joints{ nullptr };
+	int							m_numBones{ 0 };
 
 	// different motion packages has different sequience list
 	Array<gsequence_t>			m_seqList{ PP_SL }; // loaded sequences

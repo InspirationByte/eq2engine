@@ -1315,11 +1315,11 @@ void CEGFViewFrame::RefreshGUI()
 	// populate all lists
 	if(g_model.m_pModel != nullptr)
 	{
-		studiohdr_t* modelHdr = g_model.m_pModel->GetHWData()->studio;
+		const studiohdr_t& studio = g_model.m_pModel->GetStudioHdr();
 
-		for(int i = 0; i < modelHdr->numBodyGroups; i++)
+		for(int i = 0; i < studio.numBodyGroups; i++)
 		{
-			int idx = m_enabledBodyParts->Append( modelHdr->pBodyGroups(i)->name );
+			int idx = m_enabledBodyParts->Append(studio.pBodyGroups(i)->name );
 			m_enabledBodyParts->Check(idx, true);
 		}
 

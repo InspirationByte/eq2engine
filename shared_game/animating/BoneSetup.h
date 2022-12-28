@@ -51,20 +51,17 @@ struct gikchain_t
 	{
 		delete[] links;
 	}
-
-	char				name[64];
-	bool				enable; // if false then it will be updated from FK
-
-	Vector3D			local_target; // local target position
-
-	giklink_t*			links { nullptr };
-	int					numLinks;
+	const studioikchain_t*	c{ nullptr };
+	Vector3D				localTarget{ vec3_zero };
+	giklink_t*				links { nullptr };
+	int						numLinks{ 0 };
+	bool					enable{ false }; // if false then it will be updated from FK
 };
 
 // pose controller
 struct gposecontroller_t
 {
-	posecontroller_t*	p{ nullptr };
+	const posecontroller_t*	p{ nullptr };
 	float				value{ 0.0f };
 	float				interpolatedValue{ 0.0f };
 };
@@ -72,14 +69,13 @@ struct gposecontroller_t
 // translated game sequence
 struct gsequence_t
 {
-	Activity			activity{ ACT_INVALID };
-	gposecontroller_t*	posecontroller{ nullptr };
-	sequencedesc_t*		s{ nullptr };
+	Activity					activity{ ACT_INVALID };
+	gposecontroller_t*			posecontroller{ nullptr };
+	const sequencedesc_t*		s{ nullptr };
 
-	sequenceevent_t*	events[MAX_EVENTS_PER_SEQ]{ nullptr };
-	gsequence_t*		blends[MAX_SEQUENCE_BLENDS]{ nullptr };
-
-	studioAnimation_t*	animations[MAX_BLEND_WIDTH]{ nullptr };
+	gsequence_t*				blends[MAX_SEQUENCE_BLENDS]{ nullptr };
+	const sequenceevent_t*		events[MAX_EVENTS_PER_SEQ]{ nullptr };
+	const studioAnimation_t*	animations[MAX_BLEND_WIDTH]{ nullptr };
 };
 
 // sequence timer with events

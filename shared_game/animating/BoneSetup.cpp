@@ -31,7 +31,7 @@ void sequencetimer_t::AdvanceFrame(float fDt)
 	if(!seq)
 		return;
 
-	sequencedesc_t* seqDesc = seq->s;
+	const sequencedesc_t* seqDesc = seq->s;
 
 	if (!active)
 	{

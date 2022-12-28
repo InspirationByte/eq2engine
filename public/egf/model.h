@@ -86,89 +86,55 @@ inline int PhysModel_FindObjectId(const studioPhysData_t* model, const char* nam
 	return -1;
 }
 
-// hardware data for the MOD_STUDIO
-struct studioHwData_t
+struct studioMotionData_t
 {
-	studiohdr_t*		studio{ nullptr };
+	// animations
+	int					numAnimations{ 0 };
 
-	int					numUsedMaterials{ 0 };
-	int					numMaterialGroups{ 0 };
-
-	studioPhysData_t	physModel;
-
-	// lod models
-	struct modelRef_t
+	struct animation_t
 	{
-		// offset in hw index buffer to this lod, for each geometry group
-		struct groupDesc_t
+		char name[44]{ 0 };
+
+		// bones, in count of studiohwdata_t::numJoints
+		struct boneframe_t
 		{
-			int	firstindex;
-			int indexcount;
-		} *groupDescs{ nullptr };
-	} *modelrefs{ nullptr };
+			int				numFrames{ 0 };
+			animframe_t* keyFrames{ nullptr };
+		}*bones{ nullptr };
+	}*animations{ nullptr };
 
-	// joints, for
-	struct joint_t
-	{
-		char				name[44]{ 0 };		// bone name
+	// sequences
+	int					numsequences{ 0 };
+	sequencedesc_t*		sequences{ nullptr };
 
-		int					bone_id{ -1 };		// index of this bone
-		int					parentbone{ -1 };	// parent index
+	// events
+	int					numEvents{ 0 };
+	sequenceevent_t*	events{ nullptr };
 
-		Matrix4x4			absTrans;			// base absolute transform
-		Matrix4x4			localTrans;			// local transform
+	// pose controllers
+	int					numPoseControllers{ 0 };
+	posecontroller_t*	poseControllers{ nullptr };
 
-		Vector3D			position;			// bone initial position
-		Vector3D			rotation;			// bone initial rotation
-
-		Array<int>			childs{ PP_SL };	// child bones
-
-		int					chain_id{ -1 };
-		int					link_id{ -1 };
-	}*	joints{ nullptr };
-
-	// model motion package loaded and expanded data
-	struct motionData_t
-	{
-		// animations
-		int					numAnimations{ 0 };
-
-		struct animation_t
-		{
-			char name[44]{ 0 };
-
-			// bones, in count of studiohwdata_t::numJoints
-			struct boneframe_t
-			{
-				int				numFrames{ 0 };
-				animframe_t*	keyFrames{ nullptr };
-			}*	bones{ nullptr };
-		}*	animations{ nullptr };
-
-		// sequences
-		int					numsequences{ 0 };
-		sequencedesc_t*		sequences{ nullptr };
-
-		// events
-		int					numEvents{ 0 };
-		sequenceevent_t*	events{ nullptr };
-
-		// pose controllers
-		int					numPoseControllers{ 0 };
-		posecontroller_t*	poseControllers{ nullptr };
-
-		animframe_t*		frames{ nullptr };
-	}*	motiondata[MAX_MOTIONPACKAGES];
-
-	int					numMotionPackages{ 0 };
+	animframe_t*		frames{ nullptr };
 };
 
-typedef studioHwData_t::modelRef_t								studioModelRef_t;
-typedef studioHwData_t::modelRef_t::groupDesc_t					studioModelRefGroupDesc_t;
-typedef studioHwData_t::joint_t									studioJoint_t;
-typedef studioHwData_t::motionData_t							studioMotionData_t;
-typedef studioHwData_t::motionData_t::animation_t				studioAnimation_t;
-typedef studioHwData_t::motionData_t::animation_t::boneframe_t	studioBoneFrame_t;
+struct studioJoint_t
+{
+	Matrix4x4			absTrans;
+	Matrix4x4			localTrans;
+	FixedArray<int, 16>	childs;
+
+	const bonedesc_t* bone{ nullptr };
+
+	int					boneId{ -1 };
+	int					parent{ -1 };
+
+	int					ikChainId{ -1 };
+	int					ikLinkId{ -1 };
+};
+
+typedef studioMotionData_t::animation_t					studioAnimation_t;
+typedef studioMotionData_t::animation_t::boneframe_t	studioBoneFrame_t;
 
 //------------------------------------------------------------------------------
 
