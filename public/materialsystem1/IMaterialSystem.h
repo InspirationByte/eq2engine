@@ -232,7 +232,7 @@ public:
 	virtual void							Wait() = 0;
 
 	// loads material or sends it to loader thread
-	virtual void							PutMaterialToLoadingQueue(IMaterial* pMaterial) = 0;
+	virtual void							PutMaterialToLoadingQueue(IMaterialPtr pMaterial) = 0;
 
 	// returns material count which is currently loading or awaiting for load
 	virtual int								GetLoadingQueue() const = 0;

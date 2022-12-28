@@ -57,8 +57,7 @@ inline void	RefCountedObject<TYPE, POLICY>::Ref_Grab()
 template< class TYPE, class POLICY >
 inline bool	RefCountedObject<TYPE, POLICY>::Ref_Drop()
 {
-	int refCount = Threading::DecrementInterlocked(m_numRefs);
-	if (refCount <= 0)
+	if (Threading::DecrementInterlocked(m_numRefs) <= 0)
 	{
 		Ref_DeleteObject();
 		if (POLICY::SHOULD_DELETE) { delete this; }

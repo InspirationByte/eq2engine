@@ -90,7 +90,7 @@ public:
 	void							Wait();
 
 	// loads material or sends it to loader thread
-	void							PutMaterialToLoadingQueue(IMaterial* pMaterial);
+	void							PutMaterialToLoadingQueue(IMaterialPtr pMaterial);
 
 	// returns material count which is currently loading or awaiting for load
 	int								GetLoadingQueue() const;

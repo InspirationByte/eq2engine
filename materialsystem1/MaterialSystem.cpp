@@ -106,10 +106,15 @@ public:
 		if (!nextMaterial)
 			return 0;
 
+		if (nextMaterial->Ref_Drop())
+		{
+			MsgWarning("Material %x is freed before loading\n", nextMaterial);
+			return 0;
+		}
+
 		// load this material
 		// BUG: may be null
 		((CMaterial*)nextMaterial)->DoLoadShaderAndTextures();
-		nextMaterial->Ref_Drop();
 
 		{
 			CScopedMutex m(m_Mutex);
@@ -120,35 +125,26 @@ public:
 		return 0;
 	}
 
-	void AddMaterial(IMaterial* pMaterial)
+	void AddMaterial(IMaterialPtr pMaterial)
 	{
-		if (!pMaterial)
+		if (g_parallelJobs->IsInitialized() && g_pShaderAPI->GetProgressiveTextureFrequency() == 0)
+		{
+			// Wooohoo Blast Processing!
+			g_parallelJobs->AddJob(JOB_TYPE_ANY, [nextMaterial = pMaterial, this](void*, int) {
+				((CMaterial*)nextMaterial.Ptr())->DoLoadShaderAndTextures();
+			});
+
+			g_parallelJobs->Submit();
 			return;
+		}
 
 		{
 			CScopedMutex m(m_Mutex);
 			if (m_newMaterials.find(pMaterial) != m_newMaterials.end())
 				return;
 
-			m_newMaterials.insert(pMaterial);
 			pMaterial->Ref_Grab();
-		}
-
-		// FIXME: detect if when no heavy rendering is ocurring so we can load shaders and textures faster
-
-		if (g_parallelJobs->IsInitialized())
-		{
-			g_parallelJobs->AddJob(JOB_TYPE_ANY, [pMaterial, this](void*, int) {
-				((CMaterial*)pMaterial)->DoLoadShaderAndTextures();
-				{
-					CScopedMutex m(m_Mutex);
-					m_newMaterials.remove(pMaterial);
-					pMaterial->Ref_Drop();
-				}
-			});
-
-			g_parallelJobs->Submit();
-			return;
+			m_newMaterials.insert(pMaterial);
 		}
 
 		if (!IsRunning())
@@ -630,10 +626,7 @@ void CMaterialSystem::PreloadNewMaterials()
 	
 		for (auto it = m_loadedMaterials.begin(); it != m_loadedMaterials.end(); ++it)
 		{
-			if(it.value()->GetState() != MATERIAL_LOAD_NEED_LOAD)
-				continue;
-
-			PutMaterialToLoadingQueue(it.value());
+			PutMaterialToLoadingQueue(IMaterialPtr(it.value()));
 		}
 	}
 }
@@ -880,15 +873,12 @@ enum EMaterialRenderSubroutine
 };
 
 // loads material or sends it to loader thread
-void CMaterialSystem::PutMaterialToLoadingQueue(IMaterial* pMaterial)
+void CMaterialSystem::PutMaterialToLoadingQueue(IMaterialPtr pMaterial)
 {
-	if(pMaterial->GetState() != MATERIAL_LOAD_NEED_LOAD)
-		return;
-
-	CMaterial* material = (CMaterial*)pMaterial;
+	CMaterial* material = (CMaterial*)pMaterial.Ptr();
+	if(CompareExchangeInterlocked(material->m_state, MATERIAL_LOAD_NEED_LOAD, MATERIAL_LOAD_INQUEUE) != MATERIAL_LOAD_NEED_LOAD)
 	{
-		CScopedMutex m(m_Mutex);
-		material->m_state = MATERIAL_LOAD_INQUEUE;
+		return;
 	}
 
 	if( m_config.threadedloader )
