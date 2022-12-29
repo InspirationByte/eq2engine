@@ -113,10 +113,10 @@ static bool TransformEGFVertex(EGFHwVertex_t& vert, Matrix4x4* pMatrices)
 
 		bAffected = true;
 
-		vPos += transform4(Vector3D(vert.pos.xyz()), pMatrices[index]) * weight;
-		vNormal += transform3(Vector3D(vert.normal), pMatrices[index]) * weight;
-		vTangent += transform3(Vector3D(vert.tangent), pMatrices[index]) * weight;
-		vBinormal += transform3(Vector3D(vert.binormal), pMatrices[index]) * weight;
+		vPos += transformPoint(Vector3D(vert.pos.xyz()), pMatrices[index]) * weight;
+		vNormal += transformVector(Vector3D(vert.normal), pMatrices[index]) * weight;
+		vTangent += transformVector(Vector3D(vert.tangent), pMatrices[index]) * weight;
+		vBinormal += transformVector(Vector3D(vert.binormal), pMatrices[index]) * weight;
 	}
 
 	if (bAffected)

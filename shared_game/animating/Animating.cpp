@@ -755,18 +755,18 @@ void CAnimatingEGF::DebugRender(const Matrix4x4& worldTransform)
 		{
 			const Matrix4x4& transform = m_boneTransforms[i];
 			const Vector3D& localPos = transform.rows[3].xyz();
-			const Vector3D pos = (worldTransform*Vector4D(localPos, 1.0f)).xyz();
+			const Vector3D pos = inverseTransformPoint(localPos, worldTransform);
 
 			debugoverlay->Text3D(pos, 25, color_white, EqString::Format("%s\npos: [%.2f %.2f %.2f]", m_joints[i].bone->name, localPos.x, localPos.y, localPos.z));
 		}
 
 		const Matrix4x4& transform = m_boneTransforms[i];
-		const Vector3D pos = (worldTransform * Vector4D(transform.rows[3].xyz(), 1.0f)).xyz();
+		const Vector3D pos = inverseTransformPoint(transform.rows[3].xyz(), worldTransform );
 
 		if (m_joints[i].parent != -1)
 		{
 			const Matrix4x4& parentTransform = m_boneTransforms[m_joints[i].parent];
-			const Vector3D parent_pos = (worldTransform*Vector4D(parentTransform.rows[3].xyz(), 1.0f)).xyz();
+			const Vector3D parent_pos = inverseTransformPoint(parentTransform.rows[3].xyz(), worldTransform);
 			debugoverlay->Line3D(pos, parent_pos, color_white, color_white);
 		}
 
@@ -789,8 +789,7 @@ void CAnimatingEGF::DebugRender(const Matrix4x4& worldTransform)
 			if (!chain.enable)
 				continue;
 
-			Vector3D target_pos = chain.localTarget;
-			target_pos = (worldTransform*Vector4D(target_pos, 1.0f)).xyz();
+			Vector3D target_pos = inverseTransformPoint(chain.localTarget, worldTransform);
 
 			debugoverlay->Box3D(target_pos - Vector3D(1), target_pos + Vector3D(1), ColorRGBA(0, 1, 0, 1));
 
@@ -799,9 +798,7 @@ void CAnimatingEGF::DebugRender(const Matrix4x4& worldTransform)
 				const giklink_t& link = chain.links[j];
 
 				const Vector3D& bone_pos = link.absTrans.rows[3].xyz();
-				Vector3D parent_pos = link.parent->absTrans.rows[3].xyz();
-
-				parent_pos = (worldTransform*Vector4D(parent_pos, 1.0f)).xyz();
+				Vector3D parent_pos = inverseTransformPoint(link.parent->absTrans.rows[3].xyz(), worldTransform);
 
 				Vector3D dX = worldTransform.getRotationComponent()*link.absTrans.rows[0].xyz();
 				Vector3D dY = worldTransform.getRotationComponent()*link.absTrans.rows[1].xyz();
@@ -938,7 +935,7 @@ void CAnimatingEGF::UpdateIK(float fDt, const Matrix4x4& worldTransform)
 			// display target
 			if (r_debugIK.GetBool())
 			{
-				const Vector3D target_pos = (worldTransform*Vector4D(chain.localTarget, 1.0f)).xyz();
+				const Vector3D target_pos = inverseTransformPoint(chain.localTarget, worldTransform);
 				debugoverlay->Box3D(target_pos - Vector3D(1), target_pos + Vector3D(1), ColorRGBA(0, 1, 0, 1));
 			}
 
@@ -1022,8 +1019,8 @@ void CAnimatingEGF::SetIKWorldTarget(int chain_id, const Vector3D &world_positio
 	Matrix4x4 world_to_model = transpose(worldTransform);
 
 	Vector3D local = world_position;
-	local = inverseTranslateVec(local, world_to_model);
-	local = inverseRotateVec(local, world_to_model);
+	local = inverseTranslateVector(local, world_to_model); // could be invalid since we've changed inverseTranslateVec
+	local = inverseRotateVector(local, world_to_model);
 
 	SetIKLocalTarget(chain_id, local);
 }

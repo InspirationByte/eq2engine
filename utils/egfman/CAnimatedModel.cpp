@@ -467,17 +467,17 @@ void CAnimatedModel::VisualizeBones()
 	// setup each bone's transformation
 	for(int i = 0; i < m_numBones; i++)
 	{
-		Vector3D pos = (posMatrix*Vector4D(m_boneTransforms[i].rows[3].xyz(), 1.0f)).xyz();
+		const Vector3D pos = inverseTransformPoint(m_boneTransforms[i].rows[3].xyz(), posMatrix);
 
 		if(m_joints[i].parent != -1)
 		{
-			Vector3D parent_pos = (posMatrix*Vector4D(m_boneTransforms[m_joints[i].parent].rows[3].xyz(), 1.0f)).xyz();
+			const Vector3D parent_pos = inverseTransformPoint(m_boneTransforms[m_joints[i].parent].rows[3].xyz(), posMatrix);
 			debugoverlay->Line3D(pos,parent_pos, color_white, color_white);
 		}
 
-		Vector3D dX = posMatrix.getRotationComponent() * m_boneTransforms[i].rows[0].xyz();
-		Vector3D dY = posMatrix.getRotationComponent() * m_boneTransforms[i].rows[1].xyz();
-		Vector3D dZ = posMatrix.getRotationComponent() * m_boneTransforms[i].rows[2].xyz();
+		const Vector3D dX = posMatrix.getRotationComponent() * m_boneTransforms[i].rows[0].xyz();
+		const Vector3D dY = posMatrix.getRotationComponent() * m_boneTransforms[i].rows[1].xyz();
+		const Vector3D dZ = posMatrix.getRotationComponent() * m_boneTransforms[i].rows[2].xyz();
 
 		// draw axis
 		debugoverlay->Line3D(pos, pos+dX*0.1f, ColorRGBA(1,0,0,1), ColorRGBA(1,0,0,1));

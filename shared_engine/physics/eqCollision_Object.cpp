@@ -329,7 +329,7 @@ void CEqCollisionObject::UpdateBoundingBoxTransform()
 	BoundingBox aabb;
 
 	for(int i = 0; i < 8; i++)
-		aabb.AddVertex((mat*Vector4D(src_aabb.GetVertex(i), 1.0f)).xyz());
+		aabb.AddVertex(inverseTransformPoint(src_aabb.GetVertex(i), mat));
 
 	aabb.maxPoint += AABB_GROWVALUE;
 	aabb.minPoint -= AABB_GROWVALUE;
