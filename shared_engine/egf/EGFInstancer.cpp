@@ -156,7 +156,7 @@ void CBaseEqGeomInstancer::Invalidate()
 	m_matGroupBounds[1] = 0;
 }
 
-void CBaseEqGeomInstancer::Draw( int renderFlags, CEqStudioGeom* model )
+void CBaseEqGeomInstancer::Draw( CEqStudioGeom* model )
 {
 	if(!model)
 		return;
@@ -168,34 +168,33 @@ void CBaseEqGeomInstancer::Draw( int renderFlags, CEqStudioGeom* model )
 	// proceed to render
 	materials->SetMatrix(MATRIXMODE_WORLD, identity4());
 	materials->SetInstancingEnabled(true);
+	materials->SetSkinningEnabled(false); // skinning not yet supported. But we can support it with textures holding data
 
-	// skinning not yet supported. But we can support it with textures holding data
-	materials->SetSkinningEnabled(false);
-
+	g_pShaderAPI->SetVertexBuffer(model->m_vertexBuffer, 0);
 	g_pShaderAPI->SetVertexFormat(m_vertFormat);
+	g_pShaderAPI->SetIndexBuffer(model->m_indexBuffer);
 
 	const studiohdr_t& studio = model->GetStudioHdr();
 	for(int lod = m_lodBounds[0]; lod <= m_lodBounds[1]; lod++)
 	{
 		for(int bodyGrp = m_bodyGroupBounds[0]; bodyGrp <= m_bodyGroupBounds[1]; bodyGrp++)
 		{
-			int bodyGroupLOD = lod;
-			const int nLodModelIdx = studio.pBodyGroups(bodyGrp)->lodModelIndex;
-			const studiolodmodel_t* lodModel = studio.pLodModel(nLodModelIdx);
-
-			int nModDescId = lodModel->modelsIndexes[ bodyGroupLOD ];
+			const int bodyGroupLodIndex = studio.pBodyGroups(bodyGrp)->lodModelIndex;
+			const studiolodmodel_t* lodModel = studio.pLodModel(bodyGroupLodIndex);
 
 			// get the right LOD model number
-			while(nModDescId == -1 && bodyGroupLOD > 0)
+			int bodyGroupLOD = lod;
+			int modelDescId = -1;
+			do
 			{
+				modelDescId = lodModel->modelsIndexes[bodyGroupLOD];
 				bodyGroupLOD--;
-				nModDescId = lodModel->modelsIndexes[ bodyGroupLOD ];
-			}
+			} while (modelDescId == -1 && bodyGroupLOD >= 0);
 
-			if(nModDescId == -1)
+			if (modelDescId == -1)
 				continue;
 	
-			const studiomodeldesc_t* modDesc = studio.pModelDesc(nModDescId);
+			const studiomodeldesc_t* modDesc = studio.pModelDesc(modelDescId);
 
 			for (int mGrp = m_matGroupBounds[0]; mGrp <= m_matGroupBounds[1]; mGrp++)
 			{
@@ -210,6 +209,8 @@ void CBaseEqGeomInstancer::Draw( int renderFlags, CEqStudioGeom* model )
 				if (buffer.numInstances == 0)
 					continue;
 
+				g_pShaderAPI->SetVertexBuffer(instBuffer, 2);
+
 				// render model groups that in this body group
 				for (int i = 0; i < modDesc->numGroups; i++)
 				{
@@ -223,13 +224,10 @@ void CBaseEqGeomInstancer::Draw( int renderFlags, CEqStudioGeom* model )
 					//materials->SetSkinningEnabled(true);
 					materials->BindMaterial(pMaterial, 0);
 
-					//m_pModel->PrepareForSkinning( m_boneTransforms );
-					model->SetupVBOStream(0);
-					g_pShaderAPI->SetVertexBuffer(instBuffer, 2);
+					materials->Apply();
 
-					model->DrawGroup(nModDescId, i, false);
-
-					//materials->SetSkinningEnabled(false);
+					const CEqStudioGeom::HWGeomRef::Group& groupDesc = model->m_hwGeomRefs[modelDescId].groups[i];
+					g_pShaderAPI->DrawIndexedPrimitives((ER_PrimitiveType)groupDesc.primType, groupDesc.firstIndex, groupDesc.indexCount, 0, model->m_vertexBuffer->GetVertexCount());
 				}
 			} // mGrp
 		} // bodyGrp

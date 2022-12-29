@@ -32,7 +32,8 @@ enum EModelLoadingState
 // streams in studio models used exclusively in interpolation
 class CEqStudioGeom
 {
-	friend class		CStudioCache;
+	friend class CStudioCache;
+	friend class CBaseEqGeomInstancer;
 public:
 
 	struct DrawProps;
@@ -68,10 +69,7 @@ public:
 	int							SelectLod(float distance) const;
 
 	void						Draw(const DrawProps& drawProperties) const;
-	void						DrawGroup(int modelDescId, int modelGroup, bool preSetVBO = true) const;
-
 	void						SetupVBOStream( int nStream ) const;
-	bool						PrepareForSkinning(Matrix4x4* jointMatrices) const;
 
 	IMaterialPtr				GetMaterial(int materialIdx, int materialGroupIdx = 0) const;
 

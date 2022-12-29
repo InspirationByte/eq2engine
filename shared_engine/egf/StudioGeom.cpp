@@ -149,6 +149,7 @@ static int ComputeQuaternionsForSkinning(const CEqStudioGeom* model, bonequatern
 	return numBones * 2;
 }
 
+#if 0
 //------------------------------------------
 // Software skinning of model. Very slow, but recomputes bounding box for all model
 //------------------------------------------
@@ -167,20 +168,19 @@ bool CEqStudioGeom::PrepareForSkinning(Matrix4x4* jointMatrices) const
 
 	if (!r_force_softwareskinning.GetBool())
 	{
-#if 0
+
 		if (m_skinningDirty)
 		{
 			m_vertexBuffer->Update(m_softwareVerts, m_vertexBuffer->GetVertexCount() * sizeof(EGFHwVertex_t), 0);
 			m_skinningDirty = false;
 		}
-#endif
+
 		bonequaternion_t bquats[128];
 		const int numRegs = ComputeQuaternionsForSkinning(this, bquats, jointMatrices);
 		g_pShaderAPI->SetShaderConstantArrayVector4D("Bones", (Vector4D*)&bquats[0].quat, numRegs);
 
 		return true;
 	}
-#if 0
 	else if (m_forceSoftwareSkinning && r_force_softwareskinning.GetBool())
 	{
 		m_skinningDirty = true;
@@ -207,9 +207,10 @@ bool CEqStudioGeom::PrepareForSkinning(Matrix4x4* jointMatrices) const
 			return false;
 		}
 	}
-#endif
+
 	return false;
 }
+#endif
 
 void CEqStudioGeom::DestroyModel()
 {
@@ -831,26 +832,6 @@ void CEqStudioGeom::Draw(const DrawProps& drawProperties) const
 
 	materials->SetSkinningEnabled(false);
 	materials->SetInstancingEnabled(false);
-}
-
-void CEqStudioGeom::DrawGroup(int modelDescId, int modelGroup, bool preSetVBO) const
-{
-	if (!m_vertexBuffer)
-		return;
-
-	if (preSetVBO)
-	{
-		g_pShaderAPI->SetVertexFormat(g_studioModelCache->GetEGFVertexFormat());
-		g_pShaderAPI->SetVertexBuffer(m_vertexBuffer, 0);
-	}
-
-	g_pShaderAPI->SetIndexBuffer(m_indexBuffer);
-
-	materials->Apply();
-
-	const HWGeomRef::Group& groupDesc = m_hwGeomRefs[modelDescId].groups[modelGroup];
-
-	g_pShaderAPI->DrawIndexedPrimitives((ER_PrimitiveType)groupDesc.primType, groupDesc.firstIndex, groupDesc.indexCount, 0, m_vertexBuffer->GetVertexCount());
 }
 
 const BoundingBox& CEqStudioGeom::GetBoundingBox() const

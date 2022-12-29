@@ -47,7 +47,7 @@ public:
 	void			Upload();
 	void			Invalidate();
 
-	void			Draw(int renderFlags, CEqStudioGeom* model);
+	void			Draw(CEqStudioGeom* model);
 
 	static ushort MakeInstId(int bodyGroup, int lod, int matGroup)
 	{
