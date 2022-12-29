@@ -1266,8 +1266,6 @@ void CEGFViewFrame::ReDraw()
 			m_pTimeline->SetValue(g_model.GetCurrentAnimationFrame() );
 		}
 
-		g_pShaderAPI->ResetCounters();
-
 		// Setup render falgs
 		int renderFlags = 0;
 		
@@ -1278,6 +1276,8 @@ void CEGFViewFrame::ReDraw()
 			renderFlags |= RFLAG_BONES;
 
 		materials->GetConfiguration().wireframeMode = m_wireframe->IsChecked();
+
+		g_pShaderAPI->ResetCounters();
 
 		// Now we can draw our model
 		g_model.Render(renderFlags, g_fCamDistance, m_lodSpin->GetValue(), m_lodOverride->GetValue(), g_frametime);

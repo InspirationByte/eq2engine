@@ -18,13 +18,13 @@ struct dsmweight_t
 
 struct dsmvertex_t
 {
-	Vector3D			position{ 0.0f };
-	Vector3D			normal{ 0.5f };
+	Vector3D					position{ 0.0f };
+	Vector3D					normal{ 0.5f };
 
-	Vector2D			texcoord{ 0.0f };
-	Array<dsmweight_t>	weights{ PP_SL };
+	Vector2D					texcoord{ 0.0f };
+	FixedArray<dsmweight_t, 48>	weights;
 
-	int					vertexId{ 0 };
+	int							vertexId{ 0 };
 };
 
 struct dsmgroup_t

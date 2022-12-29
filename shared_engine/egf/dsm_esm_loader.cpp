@@ -172,23 +172,35 @@ bool ReadFaces(Tokenizer& tok, dsmmodel_t* pModel)
 						tempWeights.append(readFloat(tok));
 					}
 
-					// HACK: ugly format
-					if(numWeights == 1 && tempWeightBones[0] == -1)
+					if (numWeights > MAX_MODEL_VERTEX_WEIGHTS)
 					{
-						numWeights = 0;
+						// HACK: ugly format
+						if (numWeights == 1 && tempWeightBones[0] == -1)
+						{
+							numWeights = 0;
+						}
+						else
+						{
+							// sort em all and clip.
+							numWeights = SortAndBalanceBones(numWeights, MAX_MODEL_VERTEX_WEIGHTS, tempWeightBones.ptr(), tempWeights.ptr());
+						}
+
+						for (int i = 0; i < numWeights; i++)
+						{
+							dsmweight_t& weight = newvertex.weights.append();
+							weight.bone = tempWeightBones[i];
+							weight.weight = tempWeights[i];
+						}
 					}
 					else
 					{
-						// sort em all and clip.
-						numWeights = SortAndBalanceBones(numWeights, MAX_MODEL_VERTEX_WEIGHTS, tempWeightBones.ptr(), tempWeights.ptr());
-					}
-
-					// copy weights
-					for(int i = 0; i < numWeights; i++)
-					{
-						dsmweight_t& weight = newvertex.weights.append();
-						weight.bone = tempWeightBones[i];
-						weight.weight = tempWeights[i];
+						// copy weights
+						for (int i = 0; i < numWeights; i++)
+						{
+							dsmweight_t& weight = newvertex.weights.append();
+							weight.bone = tempWeightBones[i];
+							weight.weight = tempWeights[i];
+						}
 					}
 				}
 

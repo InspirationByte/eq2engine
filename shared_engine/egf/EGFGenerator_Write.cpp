@@ -64,65 +64,44 @@ const char* GetACTCErrorString(int result)
 //---------------------------------------------------------------------------------------
 
 // from exporter - compares two verts
-bool CompareVertex(const studiovertexdesc_t &v0, const studiovertexdesc_t &v1)
+static bool CompareVertex(const studiovertexdesc_t &v0, const studiovertexdesc_t &v1)
 {
-	if(	compare_epsilon(v0.point, v1.point, F_EPS) &&
-		compare_epsilon(v0.normal, v1.normal, F_EPS) &&
-		compare_epsilon(v0.texCoord, v1.texCoord, F_EPS) &&
-		v0.boneweights.bones[0] == v1.boneweights.bones[0] &&
-		v0.boneweights.bones[1] == v1.boneweights.bones[1] &&
-		v0.boneweights.bones[2] == v1.boneweights.bones[2] &&
-		v0.boneweights.bones[3] == v1.boneweights.bones[3] &&
-		fsimilar(v0.boneweights.weight[0],v1.boneweights.weight[0], F_EPS) &&
-		fsimilar(v0.boneweights.weight[1],v1.boneweights.weight[1], F_EPS) &&
-		fsimilar(v0.boneweights.weight[2],v1.boneweights.weight[2], F_EPS) &&
-		fsimilar(v0.boneweights.weight[3],v1.boneweights.weight[3], F_EPS)
-		)
-		return true;
+	static constexpr const float VERT_MERGE_EPS = 0.001f;
+	static constexpr const float WEIGHT_MERGE_EPS = 0.01f;
+
+	if (compare_epsilon(v0.point, v1.point, VERT_MERGE_EPS) &&
+		compare_epsilon(v0.normal, v1.normal, VERT_MERGE_EPS) &&
+		compare_epsilon(v0.texCoord, v1.texCoord, VERT_MERGE_EPS))
+	{
+		// check each bone weight
+		int numEqual = 0;
+		for (int i = 0; i < MAX_MODEL_VERTEX_WEIGHTS; ++i)
+		{
+			bool match = false;
+			for (int j = 0; j < MAX_MODEL_VERTEX_WEIGHTS; ++j)
+			{
+				if (v0.boneweights.bones[i] == v1.boneweights.bones[j] && fsimilar(v0.boneweights.weight[i], v1.boneweights.weight[j], WEIGHT_MERGE_EPS))
+				{
+					match = true;
+					break;
+				}
+			}
+			if(match)
+				++numEqual;
+		}
+		if (numEqual == MAX_MODEL_VERTEX_WEIGHTS)
+			return true;
+	}
 
 	return false;
 }
 
 // finds vertex index
-int FindVertexInList(const Array<studiovertexdesc_t>& verts, const studiovertexdesc_t &vertex)
+static int FindVertexInList(const Array<studiovertexdesc_t>& verts, const studiovertexdesc_t &vertex)
 {
 	for( int i = 0; i < verts.numElem(); i++ )
 	{
 		if ( CompareVertex(verts[i],vertex) )
-		{
-			return i;
-		}
-	}
-
-	return -1;
-}
-
-//---------------------------------------------------------------------------------------
-
-// from exporter - compares two verts
-bool CompareVertexNoPosition(const studiovertexdesc_t &v0, const studiovertexdesc_t &v1)
-{
-	if(	compare_epsilon(v0.texCoord, v1.texCoord, F_EPS) &&
-		v0.boneweights.bones[0] == v1.boneweights.bones[0] &&
-		v0.boneweights.bones[1] == v1.boneweights.bones[1] &&
-		v0.boneweights.bones[2] == v1.boneweights.bones[2] &&
-		v0.boneweights.bones[3] == v1.boneweights.bones[3] &&
-		fsimilar(v0.boneweights.weight[0],v1.boneweights.weight[0], F_EPS) &&
-		fsimilar(v0.boneweights.weight[1],v1.boneweights.weight[1], F_EPS) &&
-		fsimilar(v0.boneweights.weight[2],v1.boneweights.weight[2], F_EPS) &&
-		fsimilar(v0.boneweights.weight[3],v1.boneweights.weight[3], F_EPS)
-		)
-		return true;
-
-	return false;
-}
-
-// finds vertex index
-int FindVertexInListNoPosition(const Array<studiovertexdesc_t>& verts, const studiovertexdesc_t &vertex)
-{
-	for( int i = 0; i < verts.numElem(); i++ )
-	{
-		if ( CompareVertexNoPosition(verts[i],vertex) )
 		{
 			return i;
 		}
@@ -214,64 +193,56 @@ void CEGFGenerator::WriteGroup(studiohdr_t* header, IVirtualStream* stream, dsmg
 	dstGroup->numIndices = 0;
 	dstGroup->numVertices = srcGroup->verts.numElem();
 
-	Array<studiovertexdesc_t>	gVertexList(PP_SL);
-	Array<studiovertexdesc_t>	gVertexList2(PP_SL);
+	Array<studiovertexdesc_t> vertexList(PP_SL);
+	Array<studiovertexdesc_t> shapeVertsList(PP_SL);	// shape key verts
+	Array<int32> indexList(PP_SL);
 
-	Array<int32>				gIndexList(PP_SL);
-
-	gVertexList.resize(gVertexList.numElem() + dstGroup->numVertices);
-	gIndexList.resize(gVertexList.numElem() + dstGroup->numVertices);
+	vertexList.reserve(dstGroup->numVertices);
+	shapeVertsList.reserve(dstGroup->numVertices);
+	indexList.reserve(dstGroup->numVertices);
 
 	for(int i = 0; i < dstGroup->numVertices; i++)
 	{
-		studiovertexdesc_t vertex = MakeStudioVertex( srcGroup->verts[i] );
-		studiovertexdesc_t vertex2 = vertex;
+		const studiovertexdesc_t vertex = MakeStudioVertex( srcGroup->verts[i] );
 
 		// add vertex or point to existing vertex if found duplicate
-		int nIndex;
+		const int foundVertex = FindVertexInList(vertexList, vertex );
 
-		int equalVertex = FindVertexInList( gVertexList, vertex );
-
-		if( equalVertex == -1 )
+		if(foundVertex == -1)
 		{
-			nIndex = gVertexList.numElem();
-
-			gVertexList.append(vertex);
+			const int newIndex = vertexList.append(vertex);
+			indexList.append(newIndex);
 
 			// modify vertex by shape key
 			if( modShapeKey )
 			{
-				ApplyShapeKeyOnVertex(modShapeKey, srcGroup->verts[i], vertex2, 1.0f);
-				gVertexList2.append(vertex2);
+				studiovertexdesc_t shapeVert = vertex;
+				ApplyShapeKeyOnVertex(modShapeKey, srcGroup->verts[i], shapeVert, 1.0f);
+				shapeVertsList.append(shapeVert);
 			}
 		}
 		else
-			nIndex = equalVertex;
-
-		gIndexList.append(nIndex);
+			indexList.append(foundVertex);
 	}
 
-	Array<studiovertexdesc_t>& usedVertList = gVertexList;
-
-	if( modShapeKey )
-		usedVertList = gVertexList2;
-
-	if((float)gIndexList.numElem() / (float)3.0f != (int)gIndexList.numElem() / (int)3)
+	if((float)indexList.numElem() / (float)3.0f != (int)indexList.numElem() / (int)3)
 	{
 		MsgError("Model group has invalid triangles!\n");
 		return;
 	}
 
+	Array<studiovertexdesc_t>& usedVertList = modShapeKey ? shapeVertsList : vertexList;
+
 	// calculate rest of tangent space
-	for(int32 i = 0; i < gIndexList.numElem(); i+=3)
+	for(int32 i = 0; i < indexList.numElem(); i+=3)
 	{
 		Vector3D tangent;
 		Vector3D binormal;
 		Vector3D unormal;
 
-		int32 idx0 = gIndexList[i];
-		int32 idx1 = gIndexList[i+1];
-		int32 idx2 = gIndexList[i+2];
+		const int32 idx0 = indexList[i];
+		const int32 idx1 = indexList[i+1];
+		const int32 idx2 = indexList[i+2];
 
 		ComputeTriangleTBN(	usedVertList[idx0].point,usedVertList[idx1].point, usedVertList[idx2].point, 
 							usedVertList[idx0].texCoord,usedVertList[idx1].texCoord, usedVertList[idx2].texCoord,
@@ -305,11 +276,8 @@ void CEGFGenerator::WriteGroup(studiohdr_t* header, IVirtualStream* stream, dsmg
 #ifdef USE_ACTC
 	{
 		// optimize model using ACTC
-		Array<int32>	gOptIndexList(PP_SL);
-
-		ACTCData* tc;
-
-		tc = actcNew();
+		ACTCData* tc = actcNew();
+		actcMakeEmpty(tc);
 		if(tc == nullptr)
 		{
 			Msg("Model optimization disabled\n");
@@ -318,20 +286,17 @@ void CEGFGenerator::WriteGroup(studiohdr_t* header, IVirtualStream* stream, dsmg
 		else
 			MsgInfo("Optimizing group '%s'...\n", srcGroup->texture);
 
-		// optimization code
-		gOptIndexList.resize( gIndexList.numElem() );
-
 		// configure it to make strips
 		actcParami(tc, ACTC_OUT_MIN_FAN_VERTS, INT_MAX);
 		actcParami(tc, ACTC_OUT_HONOR_WINDING, ACTC_FALSE);
 
-		MsgInfo("   phase 1: adding triangles to optimizer (%d indices)\n", gIndexList.numElem());
+		MsgInfo("   phase 1: adding triangles to optimizer (%d tris)\n", indexList.numElem() / 3);
 		actcBeginInput(tc);
 
 		// input all indices
-		for(int i = 0; i < gIndexList.numElem(); i+=3)
+		for(int i = 0; i < indexList.numElem(); i+=3)
 		{
-			int result = actcAddTriangle(tc, gIndexList[i], gIndexList[i+1], gIndexList[i+2]);
+			int result = actcAddTriangle(tc, indexList[i], indexList[i+1], indexList[i+2]);
 
 			if(result < 0)
 			{
@@ -346,16 +311,15 @@ void CEGFGenerator::WriteGroup(studiohdr_t* header, IVirtualStream* stream, dsmg
 
 		MsgInfo("   phase 2: generate strips\n");
 
-		int prim;
-		uint32 v1, v2, v3;
-
-		int nTriangleResults = 0;
-
-		int stripLength = 0;
-		int primCount = 0;
-
 		actcBeginOutput(tc);
 
+		Array<int32> optimizedIndices(PP_SL);
+		optimizedIndices.reserve(indexList.numElem());
+
+		int prim;
+		uint32 v1;
+		uint32 v2;
+		uint32 v3 = -1;
 		while((prim = actcStartNextPrim(tc, &v1, &v2)) != ACTC_DATABASE_EMPTY)
 		{
 			if(prim < 0)
@@ -374,19 +338,23 @@ void CEGFGenerator::WriteGroup(studiohdr_t* header, IVirtualStream* stream, dsmg
 				goto skipOptimize;
 			}
 
-			if(primCount && v1 != v3)
+			if (optimizedIndices.numElem() + (optimizedIndices.numElem() > 2 ? 5 : 3) > indexList.numElem())
 			{
-				// wait, WHAT? 
-				gOptIndexList.append( v3 );
-				gOptIndexList.append( v1 );
+				Msg("   optimization disabled due to no profit\n");
+				actcDelete(tc);
+				goto skipOptimize;
 			}
 
-			// reset
-			stripLength = 2;
+			if(optimizedIndices.numElem() > 2 && v1 != v3)
+			{
+				optimizedIndices.append( v3 );
+				optimizedIndices.append( v1 );
+			}
 
-			gOptIndexList.append( v1 );
-			gOptIndexList.append( v2 );
+			optimizedIndices.append(v1);
+			optimizedIndices.append(v2);
 
+			int stripLength = 2;
 			int result = ACTC_NO_ERROR;
 			// start a primitive of type "prim" with v1 and v2
 			while((result = actcGetNextVert(tc, &v3)) != ACTC_PRIM_COMPLETE)
@@ -399,18 +367,22 @@ void CEGFGenerator::WriteGroup(studiohdr_t* header, IVirtualStream* stream, dsmg
 					goto skipOptimize;
 				}
 
-				gOptIndexList.append( v3 );
+				if (optimizedIndices.numElem() + 1 > indexList.numElem())
+				{
+					Msg("   optimization disabled due to no profit\n");
+					actcDelete(tc);
+					goto skipOptimize;
+				}
+
+				optimizedIndices.append( v3 );
 				stripLength++;
-				nTriangleResults++;
 			}
 
 			if(stripLength & 1)
 			{
-				// add degenerate vertex
-				gOptIndexList.append( v3 );
+				// add degenerate vertex to flip
+				optimizedIndices.append( v3 );
 			}
-			
-			primCount++;
 		}
 
 		actcEndOutput( tc );
@@ -418,10 +390,10 @@ void CEGFGenerator::WriteGroup(studiohdr_t* header, IVirtualStream* stream, dsmg
 		// destroy
 		actcDelete( tc );
 
-		MsgWarning("   group optimization complete\n");
+		MsgWarning("   group optimization complete, generated %d indices\n", optimizedIndices.numElem() - 2);
 
 		// swap with new index list
-		gIndexList.swap( gOptIndexList );
+		indexList.swap(optimizedIndices);
 
 		dstGroup->primitiveType = EGFPRIM_TRI_STRIP;
 	}
@@ -430,7 +402,7 @@ void CEGFGenerator::WriteGroup(studiohdr_t* header, IVirtualStream* stream, dsmg
 skipOptimize:
 
 	// set index count and now that is triangle strip
-	dstGroup->numIndices = gIndexList.numElem();
+	dstGroup->numIndices = indexList.numElem();
 	dstGroup->numVertices = usedVertList.numElem();
 
 	//WRT_TEXT("MODEL GROUP DATA");
@@ -452,7 +424,7 @@ skipOptimize:
 	// now fill studio indexes
 	for(uint32 i = 0; i < dstGroup->numIndices; i++)
 	{
-		*dstGroup->pVertexIdx(i) = gIndexList[i];
+		*dstGroup->pVertexIdx(i) = indexList[i];
 		
 		WTYPE_ADVANCE(uint32);
 	}
@@ -797,6 +769,31 @@ bool CEGFGenerator::GenerateEGF()
 
 	memStream.Seek(header->length, VS_SEEK_SET);
 
+	int totalTris = 0;
+	int totalVerts = 0;
+	for (int i = 0; i < header->numModels; i++)
+	{
+		studiomodeldesc_t* pModelDesc = header->pModelDesc(i);
+
+		for (int j = 0; j < pModelDesc->numGroups; j++)
+		{
+			modelgroupdesc_t* pGroup = pModelDesc->pGroup(j);
+			totalVerts += pGroup->numVertices;
+			switch (pGroup->primitiveType)
+			{
+			case EGFPRIM_TRIANGLES:
+				totalTris += pGroup->numIndices / 3;
+				break;
+			case EGFPRIM_TRIANGLE_FAN:
+			case EGFPRIM_TRI_STRIP:
+				totalTris += pGroup->numIndices - 2;
+				break;
+			}
+		}
+	}
+
+	Msg(" total vertices: %d\n", totalVerts);
+	Msg(" total triangles: %d\n", totalTris);
 	Msg(" models: %d\n", header->numModels);
 	Msg(" body groups: %d\n", header->numBodyGroups);
 	Msg(" bones: %d\n", header->numBones);
