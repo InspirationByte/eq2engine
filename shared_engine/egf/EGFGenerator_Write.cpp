@@ -67,7 +67,7 @@ const char* GetACTCErrorString(int result)
 static bool CompareVertex(const studiovertexdesc_t &v0, const studiovertexdesc_t &v1)
 {
 	static constexpr const float VERT_MERGE_EPS = 0.001f;
-	static constexpr const float WEIGHT_MERGE_EPS = 0.01f;
+	static constexpr const float WEIGHT_MERGE_EPS = 0.001f;
 
 	if (compare_epsilon(v0.point, v1.point, VERT_MERGE_EPS) &&
 		compare_epsilon(v0.normal, v1.normal, VERT_MERGE_EPS) &&

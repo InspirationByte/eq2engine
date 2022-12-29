@@ -627,10 +627,11 @@ void CEqStudioGeom::LoadMaterials()
 			if (m_materials[i])
 				continue;
 
-			MsgError("Couldn't load model material '%s'\n", studio->pMaterial(i)->materialname, m_name.ToCString());
-			bError = true;
+			m_materials[i] = materials->GetMaterial(studio->pMaterial(i)->materialname);
 
-			m_materials[i] = materials->GetMaterial("error");
+			if(m_materials[i]->IsError())
+				MsgError("Couldn't load model material '%s'\n", studio->pMaterial(i)->materialname, m_name.ToCString());
+			bError = true;
 		}
 	}
 
