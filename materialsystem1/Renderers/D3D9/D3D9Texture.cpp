@@ -237,6 +237,7 @@ bool CD3D9Texture::Init(const SamplerStateParam_t& sampler, const ArrayCRef<CRef
 						state.lockBoxLevel = lockBoxLevel - 1;
 						state.mipMapLevel = mipMapLevel - 1;
 						state.image = img;
+						state.frameDelay = s_shaderApi.m_progressiveTextureFrequency;
 					}
 					break;
 				}
