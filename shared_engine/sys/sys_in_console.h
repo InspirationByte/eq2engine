@@ -29,6 +29,21 @@ enum EqImGuiHandleTypes : int
 	IMGUI_HANDLE_MENU = (1 << 0)
 };
 using CONSOLE_IMGUI_HANDLER = EqFunction<void(const char* name, EqImGuiHandleTypes type)>;
+
+#define IMGUI_MENUITEM_CONVAR_BOOL(label, name) { \
+		HOOK_TO_CVAR(name); \
+		bool value = name ? name->GetBool() : false; \
+		ImGui::MenuItem(label, "", &value); \
+		if(name) name->SetBool(value); \
+	}
+
+static Array<EqString> cmd_noArgs(PP_SL);
+#define IMGUI_MENUITEM_CONCMD(label, name, args) { \
+		HOOK_TO_CMD(name); \
+		if(ImGui::MenuItem(label)) \
+			name->DispatchFunc(args); \
+	}
+
 #endif // IMGUI_ENABLED
 
 class CEqConsoleInput

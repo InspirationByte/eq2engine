@@ -358,20 +358,6 @@ void CEqConsoleInput::BeginFrame()
 	if (!m_visible)
 		return;
 
-#define IMGUI_CONVAR_BOOL(label, name) { \
-		HOOK_TO_CVAR(name); \
-		bool value = name->GetBool(); \
-		ImGui::MenuItem(label, "", &value); \
-		name->SetBool(value); \
-	}
-
-	Array<EqString> noArgs(PP_SL);
-#define IMGUI_CONCMD(label, name, args) { \
-		HOOK_TO_CMD(name); \
-		if(ImGui::MenuItem(label)) \
-			name->DispatchFunc(args); \
-	}
-
 	static bool s_showDemoWindow = false;
 
 	if (ImGui::BeginMainMenuBar())
@@ -383,36 +369,30 @@ void CEqConsoleInput::BeginFrame()
 		}
 		if (ImGui::BeginMenu("ENGINE"))
 		{
-			IMGUI_CONVAR_BOOL("SHOW FPS", r_showFPS);
-			IMGUI_CONVAR_BOOL("SHOW FPS GRAPH", r_showFPSGraph);
+			IMGUI_MENUITEM_CONVAR_BOOL("SHOW FPS", r_showFPS);
+			IMGUI_MENUITEM_CONVAR_BOOL("SHOW FPS GRAPH", r_showFPSGraph);
 			ImGui::Separator();
 			if (ImGui::BeginMenu("EQUI"))
 			{
-				IMGUI_CONVAR_BOOL("UI DEBUG RENDER", equi_debug);
-				ImGui::EndMenu();
-			}
-			if (ImGui::BeginMenu("SOUND"))
-			{
-				IMGUI_CONVAR_BOOL("SYSTEM DEBUG INFO", snd_debug);
-				IMGUI_CONVAR_BOOL("SCRIPTED SOUNDS DEBUG", scriptsound_debug);
+				IMGUI_MENUITEM_CONVAR_BOOL("UI DEBUG RENDER", equi_debug);
 				ImGui::EndMenu();
 			}
 			if (ImGui::BeginMenu("MATSYSTEM"))
 			{
-				IMGUI_CONVAR_BOOL("OVERDRAW MODE", r_overdraw);
-				IMGUI_CONVAR_BOOL("WIREFRAME MODE", r_wireframe);
+				IMGUI_MENUITEM_CONVAR_BOOL("OVERDRAW MODE", r_overdraw);
+				IMGUI_MENUITEM_CONVAR_BOOL("WIREFRAME MODE", r_wireframe);
 				ImGui::Separator();
-				IMGUI_CONCMD("RELOAD MATERIALS", mat_reload, noArgs);
+				IMGUI_MENUITEM_CONCMD("RELOAD MATERIALS", mat_reload, cmd_noArgs);
 				ImGui::EndMenu();
 			}
 			ImGui::EndMenu();
 		}
 		if (ImGui::BeginMenu("DEBUG OVERLAYS"))
 		{
-			IMGUI_CONVAR_BOOL("FRAME STATS", r_frameStats);
-			IMGUI_CONVAR_BOOL("GRAPHS", r_debugDrawGraphs);
-			IMGUI_CONVAR_BOOL("SHAPES", r_debugDrawShapes);
-			IMGUI_CONVAR_BOOL("LINES", r_debugDrawLines);
+			IMGUI_MENUITEM_CONVAR_BOOL("FRAME STATS", r_frameStats);
+			IMGUI_MENUITEM_CONVAR_BOOL("GRAPHS", r_debugDrawGraphs);
+			IMGUI_MENUITEM_CONVAR_BOOL("SHAPES", r_debugDrawShapes);
+			IMGUI_MENUITEM_CONVAR_BOOL("LINES", r_debugDrawLines);
 
 			ImGui::EndMenu();
 		}
