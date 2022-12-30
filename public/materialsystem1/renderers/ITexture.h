@@ -20,6 +20,8 @@ enum ETextureLockFlags
 	TEXLOCK_REGION_BOX		= (1 << 3),
 };
 
+typedef struct SamplerStateParam_s SamplerStateParam_t;
+
 class ITexture : public RefCountedObject<ITexture, RefCountedKeepPolicy>
 {
 public:

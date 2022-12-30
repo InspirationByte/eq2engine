@@ -7,8 +7,8 @@
 
 #pragma once
 #include "font/IFontCache.h"
+#include "materialsystem1/IMaterialVar.h"
 
-class IMatVar;
 class IMaterial;
 class ITexture;
 
@@ -72,5 +72,5 @@ protected:
 	eqFontFamily_t*			m_defaultFont{ nullptr };
 
 	IMaterialPtr			m_sdfMaterial;
-	IMatVar*				m_fontParams{ nullptr };
+	MatVarProxy				m_fontParams;
 };

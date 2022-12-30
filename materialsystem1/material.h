@@ -47,10 +47,8 @@ public:
 	void					WaitForLoading() const;
 
 // material var operations
-	IMatVar*				FindMaterialVar(const char* pszVarName) const;
-	IMatVar*				GetMaterialVar(const char* pszVarName, const char* defaultParam);
-	IMatVar*				CreateMaterialVar(const char* pszVarName, const char* defaultParam);
-	void					RemoveMaterialVar(IMatVar* pVar);
+	MatVarProxy				FindMaterialVar(const char* pszVarName) const;
+	MatVarProxy				GetMaterialVar(const char* pszVarName, const char* defaultValue);
 
 // render-time operations
 	void					UpdateProxy(float fDt);					
@@ -60,6 +58,7 @@ public:
 private:
 
 	void					InitVars(KVSection* kvs);
+	MatVarData&				VarAt(int idx) const;
 
 	void					InitShader();
 	void					InitMaterialVars(KVSection* kvs);
@@ -71,12 +70,14 @@ protected:
 	EqString				m_szMaterialName;
 	EqString				m_szShaderName;
 
-	Array<CMatVar*>			m_variables{ PP_SL };
+	Map<int, int>			m_variableMap{ PP_SL };
+	Array<CMatVar>			m_variables{ PP_SL };
+
 	Array<IMaterialProxy*>	m_proxies{ PP_SL };
 
 	CTextureAtlas*			m_atlas{ nullptr };
-
 	IMaterialSystemShader*	m_shader{ nullptr };
+
 	int						m_state{ MATERIAL_LOAD_ERROR };	// FIXME: may be interlocked?
 	int						m_nameHash{ 0 };
 

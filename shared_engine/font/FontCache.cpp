@@ -176,10 +176,7 @@ void CEqFontCache::Shutdown()
 {
 	m_fonts.clear();
 	m_defaultFont = nullptr;
-
 	m_sdfMaterial = nullptr;
-	m_fontParams = nullptr;
-	m_fontParams = nullptr;
 }
 
 void CEqFontCache::ReloadFonts()

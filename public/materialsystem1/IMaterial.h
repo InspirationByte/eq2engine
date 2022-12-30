@@ -1,15 +1,22 @@
-//******************* Copyright (C) Illusion Way, L.L.C 2010 *********************
-//
-// Description: Equilibrium Engine material inteface
-//
-// TODO: rework interface, for better support of new material system, and whithin the renderer (if not initialized)
-//
-//********************************************************************************
+//////////////////////////////////////////////////////////////////////////////////
+// Copyright © Inspiration Byte
+// 2009-2022
+//////////////////////////////////////////////////////////////////////////////////
+// Description: Material System Material
+//////////////////////////////////////////////////////////////////////////////////
 
 #pragma once
-#include "IMaterialVar.h"
 
+class ITexture;
 class CTextureAtlas;
+
+struct MatVarData
+{
+	EqString		pszValue;
+	Vector4D		vector{ 0 };
+	int				intValue{ 0 };
+	ITexture*		texture{ nullptr };
+};
 
 // WARNING: modifying this you must recompile all engine!
 enum MaterialFlags_e
@@ -54,9 +61,11 @@ enum EMaterialLoadingState
 
 //---------------------------------------------------------------------------------
 
-class IMaterial : public RefCountedObject<IMaterial, RefCountedKeepPolicy>
+class IMaterial : public RefCountedObject<IMaterial, RefCountedKeepPolicy>, public WeakRefObject<IMaterial>
 {
 public:
+	friend class MatVarProxy;
+
 	// returns full material path
 	virtual const char*				GetName() const = 0;
 	virtual const char*				GetShaderName() const = 0;
@@ -74,13 +83,10 @@ public:
 	virtual bool					IsError() const = 0;
 
 // material var operations
-	virtual IMatVar*				FindMaterialVar( const char* pszVarName ) const = 0;	// only searches for existing matvar
+	virtual MatVarProxy				FindMaterialVar( const char* pszVarName ) const = 0;	// only searches for existing matvar
 
 	// finds or creates material var
-	virtual IMatVar*				GetMaterialVar( const char* pszVarName, const char* defaultParam ) = 0;
-
-	// removes material var
-	virtual void					RemoveMaterialVar( IMatVar* pVar ) = 0;
+	virtual MatVarProxy				GetMaterialVar( const char* pszVarName, const char* defaultValue) = 0;
 
 // render-time operations
 
@@ -94,6 +100,9 @@ public:
 
 	// retrieves the base texture on specified stage
 	virtual ITexture*				GetBaseTexture(int stage = 0) = 0;
+
+private:
+	virtual MatVarData&				VarAt(int idx) const = 0;
 };
 
 using IMaterialPtr = CRefPtr<IMaterial>;

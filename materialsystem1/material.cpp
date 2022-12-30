@@ -175,32 +175,50 @@ void CMaterial::InitMaterialProxy(KVSection* proxySec)
 //
 void CMaterial::InitMaterialVars(KVSection* kvs)
 {
-	// init material vars
-	for(int i = 0; i < kvs->keys.numElem();i++)
+	int numMaterialVars = 0;
+
+	for (int i = 0; i < kvs->keys.numElem(); i++)
 	{
-		// ignore sections
-		if( kvs->keys[i]->IsSection() )
+		KVSection* materialVarSec = kvs->keys[i];
+
+		if (materialVarSec->IsSection())
 			continue;
 
 		// ignore some preserved vars
-		if( !stricmp(kvs->keys[i]->GetName(), "Shader") )
+		if (!stricmp(materialVarSec->GetName(), "Shader"))
 			continue;
 
-		KVSection* materialVar = kvs->keys[i];
+		++numMaterialVars;
+	}
+
+	m_variables.resize(numMaterialVars);
+
+	// init material vars
+	for(int i = 0; i < kvs->keys.numElem();i++)
+	{
+		KVSection* materialVarSec = kvs->keys[i];
+
+		if(materialVarSec->IsSection() )
+			continue;
+
+		// ignore some preserved vars
+		if( !stricmp(materialVarSec->GetName(), "Shader") )
+			continue;
 
 		// initialize material var by this
-		IMatVar* pMatVar = FindMaterialVar(materialVar->GetName());
+		const int nameHash = StringToHash(materialVarSec->GetName(), true);
 
-		if (!pMatVar)
+		auto it = m_variableMap.find(nameHash);
+		if (it == m_variableMap.end())
 		{
-			CMatVar* pVar = PPNew CMatVar();
-			pVar->Init(materialVar->GetName(), KV_GetValueString(materialVar));
-
-			m_variables.append(pVar);
+			const int varId = m_variables.numElem();
+			CMatVar& newVar = m_variables.append();
+			newVar.Init(materialVarSec->GetName(), KV_GetValueString(materialVarSec));
+			m_variableMap.insert(newVar.m_nameHash, varId);
 		}
 		else
 		{
-			pMatVar->SetString(KV_GetValueString(materialVar));
+			m_variables[*it].SetString(KV_GetValueString(materialVarSec));
 		}
 	}
 }
@@ -300,6 +318,11 @@ void CMaterial::InitVars(KVSection* shader_root)
 	InitMaterialProxy( proxy_sec );
 }
 
+MatVarData& CMaterial::VarAt(int idx) const
+{
+	return const_cast<MatVarData&>(m_variables[idx].m_data);
+}
+
 bool CMaterial::LoadShaderAndTextures()
 {
 	if (m_state != MATERIAL_LOAD_NEED_LOAD)
@@ -344,22 +367,32 @@ void CMaterial::WaitForLoading() const
 	} while(m_state == MATERIAL_LOAD_INQUEUE);
 }
 
-IMatVar *CMaterial::GetMaterialVar(const char* pszVarName, const char* defaultparameter)
-{
-	return CreateMaterialVar(pszVarName, defaultparameter);
-}
-
-IMatVar *CMaterial::FindMaterialVar(const char* pszVarName) const
+MatVarProxy CMaterial::GetMaterialVar(const char* pszVarName, const char* defaultValue)
 {
 	const int nameHash = StringToHash(pszVarName, true);
 
-	for(int i = 0; i < m_variables.numElem(); i++)
-	{
-		if(m_variables[i]->m_nameHash == nameHash)
-			return m_variables[i];
-	}
+	auto it = m_variableMap.find(nameHash);
+	if (it != m_variableMap.end())
+		return MatVarProxy(*it, static_cast<IMaterial*>(this));
 
-	return nullptr;
+	const int varId = m_variables.numElem();
+	CMatVar& newVar = m_variables.append();
+	newVar.Init(pszVarName, defaultValue);
+
+	m_variableMap.insert(newVar.m_nameHash, varId);
+
+	return MatVarProxy(varId, static_cast<IMaterial*>(this));
+}
+
+MatVarProxy CMaterial::FindMaterialVar(const char* pszVarName) const
+{
+	const int nameHash = StringToHash(pszVarName, true);
+
+	auto it = m_variableMap.find(nameHash);
+	if (it == m_variableMap.end())
+		return MatVarProxy();
+
+	return MatVarProxy(*it, const_cast<IMaterial*>(static_cast<const IMaterial*>(this)));
 }
 
 ITexture* CMaterial::GetBaseTexture(int stage)
@@ -402,30 +435,6 @@ CTextureAtlas* CMaterial::GetAtlas() const
 	return m_atlas;
 }
 
-// creates or finds existing material vars
-IMatVar* CMaterial::CreateMaterialVar(const char* pszVarName, const char* defaultParam)
-{
-	IMatVar *pMatVar = FindMaterialVar(pszVarName);
-
-	if(!pMatVar)
-	{
-		CMatVar *pVar = PPNew CMatVar();
-		pVar->Init(pszVarName, defaultParam);
-		m_variables.append(pVar);
-
-		pMatVar = pVar;
-	}
-
-	return pMatVar;
-}
-
-// remove material var
-void CMaterial::RemoveMaterialVar(IMatVar* pVar)
-{
-	if (m_variables.fastRemove((CMatVar*)pVar))
-		delete pVar;
-}
-
 void CMaterial::Cleanup(bool dropVars, bool dropShader)
 {
 	WaitForLoading();
@@ -441,10 +450,8 @@ void CMaterial::Cleanup(bool dropVars, bool dropShader)
 
 	if(dropVars)
 	{
-		for(int i = 0; i < m_variables.numElem();i++)
-			delete m_variables[i];
-
-		m_variables.clear();
+		m_variables.clear(true);
+		m_variableMap.clear(true);
 
 		delete m_atlas;
 		m_atlas = nullptr;
@@ -453,8 +460,7 @@ void CMaterial::Cleanup(bool dropVars, bool dropShader)
 	// always drop proxies
 	for (int i = 0; i < m_proxies.numElem(); i++)
 		delete m_proxies[i];
-
-	m_proxies.clear();
+	m_proxies.clear(true);
 
 	Threading::ExchangeInterlocked(m_state, MATERIAL_LOAD_NEED_LOAD);
 }

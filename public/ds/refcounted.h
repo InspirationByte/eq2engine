@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright � Inspiration Byte
+// Copyright © Inspiration Byte
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
 // Description: RefCounted object with policies support
@@ -67,7 +67,6 @@ inline bool	RefCountedObject<TYPE, POLICY>::Ref_Drop()
 	return false;
 }
 
-
 //-----------------------------------------------------------------------------
 // smart pointer for ref counted
 
@@ -87,7 +86,6 @@ public:
 	CRefPtr(CRefPtr<TYPE>&& refptr);
 	~CRefPtr();
 
-	// frees object (before scope, if you econom-guy)
 	void				Assign( PTR_TYPE obj);
 	void				Release(bool deref = true);
 

@@ -475,7 +475,7 @@ void CFont::DrawTextMeshBuffer(IDynamicMesh* mesh, const eqFontStyleParam_t& par
 
 	IMaterial* fontMaterial = fontCache->m_sdfMaterial;//m_flags.sdf ? fontCache->m_sdfMaterial : materials->GetDefaultMaterial();
 
-	IMatVar* sdfRange = fontCache->m_fontParams;
+	MatVarProxy sdfRange = fontCache->m_fontParams;
 
 	// draw shadow
 	// TODO: shadow color should be separate from text vertices color!!!
@@ -488,10 +488,10 @@ void CFont::DrawTextMeshBuffer(IDynamicMesh* mesh, const eqFontStyleParam_t& par
 		{
 			// shadow width
 			float sdfEndClamped = clamp(r_font_sdf_range.GetFloat() + params.shadowWeight, 0.0f, 1.0f - r_font_sdf_start.GetFloat());
-			sdfRange->SetVector3(Vector3D(r_font_sdf_start.GetFloat() - params.shadowWeight, sdfEndClamped, 0.0f));
+			sdfRange.SetVector3(Vector3D(r_font_sdf_start.GetFloat() - params.shadowWeight, sdfEndClamped, 0.0f));
 		}
 		else
-			sdfRange->SetVector3(Vector3D(0.0f, 1.0f, 0.0f));
+			sdfRange.SetVector3(Vector3D(0.0f, 1.0f, 0.0f));
 
 		materials->BindMaterial(fontMaterial);
 
@@ -501,10 +501,10 @@ void CFont::DrawTextMeshBuffer(IDynamicMesh* mesh, const eqFontStyleParam_t& par
 	if (m_flags.sdf)
 	{
 		float sdfEndClamped = clamp(r_font_sdf_range.GetFloat() + params.textWeight, 0.0f, 1.0f - r_font_sdf_start.GetFloat());
-		sdfRange->SetVector3(Vector3D(r_font_sdf_start.GetFloat() - params.textWeight, sdfEndClamped, 1.0f));
+		sdfRange.SetVector3(Vector3D(r_font_sdf_start.GetFloat() - params.textWeight, sdfEndClamped, 1.0f));
 	}
 	else
-		sdfRange->SetVector3(Vector3D(0.0f, 1.0f, 1.0f));
+		sdfRange.SetVector3(Vector3D(0.0f, 1.0f, 1.0f));
 
 	materials->SetAmbientColor(color_white);
 	materials->SetMatrix(MATRIXMODE_WORLD, identity4());

@@ -45,7 +45,7 @@ public:
 	bool		HasObjects() const {return m_objects.numElem() > 0;}
 
 protected:
-	void		SetupRagdollJoints(ragdolljoint_t* boneArray);
+	void		SetupRagdollJoints(Array<ragdolljoint_t>& boneArray);
 
 	int			FindJointIdx(const char* name);
 	int			MakeBoneValidParent(int boneId);

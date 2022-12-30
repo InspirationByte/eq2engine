@@ -254,10 +254,11 @@ IEXPORTS void LogMsgV(SpewType_t spewtype, char const* pMsgFormat, va_list args)
 
 	if (len >= 2048)
 	{
-		S_NEWA(tempBufferExt, char, len + 1);
+		char* tempBufferExt = (char*)malloc(len + 1);
 		len = vsnprintf(tempBufferExt, len + 1, pMsgFormat, args);
 
 		SpewMessage(spewtype, tempBufferExt);
+		free(tempBufferExt);
 	}
 	else
 	{

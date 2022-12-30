@@ -275,6 +275,8 @@ bool CEGFGenerator::PostProcessDSM(GenModel_t& mod)
 			m_materials.append(desc);
 		}
 	}
+
+	return true;
 }
 
 //************************************

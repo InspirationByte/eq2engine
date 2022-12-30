@@ -1088,27 +1088,27 @@ IPhysicsObject* DkPhysics::CreateStaticObject(physmodelcreateinfo_t *info, int n
 
 	if(info->data && info->data->pMaterial)
 	{
-		IMatVar* mv_nocollide = info->data->pMaterial->FindMaterialVar("nocollide");
+		MatVarProxy mv_nocollide = info->data->pMaterial->FindMaterialVar("nocollide");
 
-		if(mv_nocollide && mv_nocollide->GetInt() > 0)
+		if(mv_nocollide.GetInt() > 0)
 			return nullptr;
 
-		IMatVar* mv_clip = info->data->pMaterial->FindMaterialVar("playerclip");
-		if(mv_clip && mv_clip->GetInt() > 0)
+		MatVarProxy mv_clip = info->data->pMaterial->FindMaterialVar("playerclip");
+		if(mv_clip.GetInt() > 0)
 		{
 			nCollisionGroup = COLLISION_GROUP_PLAYERCLIP;
 			nCollideMask = COLLISION_GROUP_PLAYER;
 		}
 
 		mv_clip = info->data->pMaterial->FindMaterialVar("npcclip");
-		if(mv_clip && mv_clip->GetInt() > 0)
+		if(mv_clip.GetInt() > 0)
 		{
 			nCollisionGroup = COLLISION_GROUP_NPCCLIP;
 			nCollideMask = COLLISION_GROUP_ACTORS;
 		}
 
 		mv_clip = info->data->pMaterial->FindMaterialVar("physclip");
-		if(mv_clip && mv_clip->GetInt() > 0)
+		if(mv_clip.GetInt() > 0)
 		{
 			nCollisionGroup = COLLISION_GROUP_PHYSCLIP;
 			nCollideMask = COLLISION_GROUP_OBJECTS | COLLISION_GROUP_DEBRIS;
@@ -1170,10 +1170,10 @@ IPhysicsObject* DkPhysics::CreateStaticObject(physmodelcreateinfo_t *info, int n
 		}
 		else
 		{
-			IMatVar* pMaterialVar = info->data->pMaterial->FindMaterialVar("surfaceprops");
+			MatVarProxy surfacePropsVar = info->data->pMaterial->FindMaterialVar("surfaceprops");
 
-			if(pMaterialVar)
-				materialName = (char*)pMaterialVar->GetString();
+			if(surfacePropsVar.IsValid())
+				materialName = (char*)surfacePropsVar.GetString();
 		}
 
 		pPhysicsObject->m_pRMaterial = info->data->pMaterial;

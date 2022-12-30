@@ -8,7 +8,6 @@
 #pragma once
 
 class IMaterial;
-class IMatVar;
 class IShaderProgram;
 
 #define BEGIN_SHADER_CLASS(name)								\
@@ -65,12 +64,12 @@ class IShaderProgram;
 #define _SHADER_PARAM_OP_NOT !
 
 #define _SHADER_PARAM_INIT(param, variable, def, getFunc, op) { \
-	IMatVar* mv_##param = GetAssignedMaterial()->FindMaterialVar(#param); \
-	variable = mv_##param ? op mv_##param->getFunc() : op def; }
+	MatVarProxy mv_##param = GetAssignedMaterial()->FindMaterialVar(#param); \
+	variable = mv_##param.IsValid() ? op mv_##param.getFunc() : op def; }
 
 #define SHADER_PARAM_FLAG(param, variable, flag, def) \
-	IMatVar *mv_##param = GetAssignedMaterial()->FindMaterialVar(#param); \
-	if(mv_##param) variable |= mv_##param->GetInt() ? flag : 0; else variable |= def ? flag : 0;
+	MatVarProxy mv_##param = GetAssignedMaterial()->FindMaterialVar(#param); \
+	if(mv_##param.IsValid()) variable |= mv_##param.GetInt() ? flag : 0; else variable |= def ? flag : 0;
 
 #define SHADER_PARAM_STRING(param, variable, def)		_SHADER_PARAM_INIT(param, variable, def, GetString, _SHADER_PARAM_OP_EMPTY)
 #define SHADER_PARAM_BOOL(param, variable, def)			_SHADER_PARAM_INIT(param, variable, def, GetInt, _SHADER_PARAM_OP_EMPTY)
@@ -159,9 +158,9 @@ public:
 
 	int							GetFlags() const;	// get flags
 
-	Vector4D					GetTextureTransform(IMatVar* pTransformVar, IMatVar* pScaleVar) const;	// get texture transformation from vars
+	Vector4D					GetTextureTransform(MatVarProxy transformVar, MatVarProxy scaleVar) const;	// get texture transformation from vars
 
-	void						SetupVertexShaderTextureTransform(IMatVar* pTransformVar, IMatVar* pScaleVar, const char* pszConstName);	// sends texture transformation to shader
+	void						SetupVertexShaderTextureTransform(MatVarProxy transformVar, MatVarProxy scaleVar, const char* pszConstName);	// sends texture transformation to shader
 
 
 	int							GetBaseTextureStageCount()  const	{return 1;}
@@ -170,8 +169,8 @@ public:
 protected:
 	struct mvUseTexture_t
 	{
-		ITexture** texture;
-		IMatVar* var;
+		ITexture**	texture;
+		MatVarProxy	var;
 	};
 
 	void						ParamSetup_CurrentAsBaseTexture();
@@ -197,7 +196,7 @@ protected:
 	void						FindTextureByVar(ITexture*& texturePtrRef, IMaterial* material, const char* paramName, bool errorTextureIfNoVar);
 	void						LoadTextureByVar(ITexture*& texturePtrRef, IMaterial* material, const char* paramName, bool errorTextureIfNoVar);
 	void						AddManagedShader(IShaderProgram** pShader);
-	void						AddManagedTexture(IMatVar* var, ITexture** tex);
+	void						AddManagedTexture(MatVarProxy var, ITexture** tex);
 
 	void						SetupParameter(uint mask, ShaderDefaultParams_e param);
 
@@ -207,9 +206,9 @@ protected:
 	Array<IShaderProgram**>		m_UsedPrograms{ PP_SL };
 	SHADERPARAMFUNC				m_param_functors[SHADERPARAM_COUNT];
 
-	IMatVar*					m_pBaseTextureTransformVar;
-	IMatVar*					m_pBaseTextureScaleVar;
-	IMatVar*					m_pBaseTextureFrame;
+	MatVarProxy					m_baseTextureTransformVar;
+	MatVarProxy					m_baseTextureScaleVar;
+	MatVarProxy					m_baseTextureFrame;
 
 	IMaterial*					m_pAssignedMaterial;
 

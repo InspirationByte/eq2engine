@@ -115,24 +115,24 @@ void CEGFPhysicsGenerator::Cleanup()
 	m_bbox.Reset();
 }
 
-void CEGFPhysicsGenerator::SetupRagdollJoints(ragdolljoint_t* boneArray)
+void CEGFPhysicsGenerator::SetupRagdollJoints(Array<ragdolljoint_t>& boneArray)
 {
 	// setup each bone's transformation
 	for(int i = 0; i < m_srcModel->bones.numElem(); i++)
 	{
-		ragdolljoint_t* joint = &boneArray[i];
+		ragdolljoint_t& joint = boneArray[i];
 		dsmskelbone_t* bone = m_srcModel->bones[i];
 
 		// setup transformation
-		joint->localTrans = identity4();
+		joint.localTrans = identity4();
 
-		joint->localTrans.setRotation(bone->angles);
-		joint->localTrans.setTranslation(bone->position);
+		joint.localTrans.setRotation(bone->angles);
+		joint.localTrans.setTranslation(bone->position);
 
 		if(bone->parent_id != -1)
-			joint->absTrans = joint->localTrans * boneArray[bone->parent_id].absTrans;
+			joint.absTrans = joint.localTrans * boneArray[bone->parent_id].absTrans;
 		else
-			joint->absTrans = joint->localTrans;
+			joint.absTrans = joint.localTrans;
 	}
 }
 
@@ -373,7 +373,8 @@ void CEGFPhysicsGenerator::SubdivideModelParts( Array<dsmvertex_t>& vertices, Ar
 bool CEGFPhysicsGenerator::CreateRagdollObjects( Array<dsmvertex_t>& vertices, Array<int>& indices, Array<indxgroup_t*>& indexGroups )
 {
 	// setup pose bones
-	S_NEWA(ragJoints, ragdolljoint_t, m_srcModel->bones.numElem());
+	Array<ragdolljoint_t> ragJoints(PP_SL);
+	ragJoints.setNum(m_srcModel->bones.numElem());
 	SetupRagdollJoints(ragJoints);
 
 	KVSection* bonesSect = m_physicsParams->FindSection("Bones", KV_FLAG_SECTION);

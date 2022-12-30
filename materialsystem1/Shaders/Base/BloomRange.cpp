@@ -57,12 +57,12 @@ BEGIN_SHADER_CLASS(BloomRange)
 		SetupDefaultParameter(SHADERPARAM_DEPTHSETUP);
 		SetupDefaultParameter(SHADERPARAM_RASTERSETUP);
 
-		g_pShaderAPI->SetShaderConstantVector4D("RangeProps", m_rangeProps->GetVector4());
+		g_pShaderAPI->SetShaderConstantVector4D("RangeProps", m_rangeProps.GetVector4());
 	}
 
 	void SetupBaseTextures()
 	{
-		g_pShaderAPI->SetTexture(m_bloomSource->GetTexture(), "BaseTexture", 0);
+		g_pShaderAPI->SetTexture(m_bloomSource.GetTexture(), "BaseTexture", 0);
 	}
 
 	ITexture*	GetBaseTexture(int stage) const
@@ -79,7 +79,7 @@ private:
 
 	SHADER_DECLARE_PASS(Unlit);
 
-	IMatVar* m_rangeProps;
-	IMatVar* m_bloomSource;
+	MatVarProxy m_rangeProps;
+	MatVarProxy m_bloomSource;
 
 END_SHADER_CLASS

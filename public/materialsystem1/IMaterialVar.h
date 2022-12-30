@@ -1,50 +1,185 @@
-//******************* Copyright (C) Illusion Way, L.L.C 2010 *********************
-//
-// Description: DarkTech materialvar
-//
-//****************************************************************************
+//////////////////////////////////////////////////////////////////////////////////
+// Copyright © Inspiration Byte
+// 2009-2022
+//////////////////////////////////////////////////////////////////////////////////
+// Description: Material Variable
+//////////////////////////////////////////////////////////////////////////////////
 
 #pragma once
 
 class ITexture;
+class IMaterial;
+class CMatVar;
+using IMaterialPtr = CRefPtr<IMaterial>;
 
-class IMatVar
+class MatVarProxy
 {
+	friend class CMaterial;
 public:
-	virtual ~IMatVar() {}
+	MatVarProxy() = default;
 
-	// get material var name
-	virtual const char*		GetName() const	= 0;
+	bool				IsValid() const { return m_material; }
 
-	//set material var name
-	virtual void			SetName(const char* szNewName)	= 0;
+	void				SetInt(int nValue);
+	void				SetFloat(float fValue);
+	void				SetVector2(const Vector2D& vector);
+	void				SetVector3(const Vector3D& vector);
+	void				SetVector4(const Vector4D& vector);
+	void				SetTexture(ITexture* pTexture);
 
-	// get material var string value
-	virtual const char*		GetString()	= 0;
+	const char*			GetString() const;
+	int					GetInt() const;
+	float				GetFloat() const;
+	const Vector2D&		GetVector2() const;
+	const Vector3D&		GetVector3() const;
+	const Vector4D&		GetVector4() const;
+	ITexture*			GetTexture() const;
 
-	// get material var integer value
-	virtual int				GetInt() const	= 0;
+	void				operator=(std::nullptr_t) { m_matVarIdx = -1; m_material = nullptr; }
 
-	// get material var float value
-	virtual float			GetFloat() const	= 0;
+private:
+	MatVarProxy(int varIdx, IMaterial* owner); // only CMatVar can initialize us
 
-	// get vector value
-	virtual const Vector2D&	GetVector2() const	= 0;
-	virtual const Vector3D&	GetVector3() const	= 0;
-	virtual const Vector4D&	GetVector4() const	= 0;
-
-	// texture pointer
-	virtual ITexture*		GetTexture() const = 0;
-
-	// assign texture
-	virtual void			AssignTexture(ITexture* pTexture) = 0;
-
-	// Value setup
-	virtual void			SetString(const char* szValue) = 0;
-	virtual void			SetFloat(float fValue) = 0;
-	virtual void			SetInt(int nValue) = 0;
-	virtual void			SetVector2(const Vector2D& vector)	= 0;
-	virtual void			SetVector3(const Vector3D& vector)	= 0;
-	virtual void			SetVector4(const Vector4D& vector)	= 0;
+	CWeakPtr<IMaterial> m_material;	// used only to track material existance
+	int					m_matVarIdx{ -1 };
 };
 
+// TODO: move somewhere else
+#include "IMaterial.h"
+#include "renderers/ITexture.h"
+#include "renderers/IShaderAPI.h"
+
+inline MatVarProxy::MatVarProxy(int varIdx, IMaterial* owner)
+{
+	ASSERT(varIdx != -1);
+	ASSERT(owner);
+
+	m_matVarIdx = varIdx;
+	m_material = CWeakPtr(owner);
+}
+
+inline int MatVarProxy::GetInt() const
+{
+	if (!m_material)
+		return 0;
+
+	return m_material->VarAt(m_matVarIdx).intValue;
+}
+
+inline float MatVarProxy::GetFloat() const
+{
+	if (!m_material)
+		return 0.0f;
+
+	return m_material->VarAt(m_matVarIdx).vector.x;
+}
+
+// gives string
+inline const char* MatVarProxy::GetString() const
+{
+	if (!m_material)
+		return nullptr;
+
+	return m_material->VarAt(m_matVarIdx).pszValue;
+}
+
+inline void MatVarProxy::SetFloat(float fValue)
+{
+	if (!m_material)
+		return;
+
+	MatVarData& var = m_material->VarAt(m_matVarIdx);
+	var.vector = Vector4D(fValue,0,0,0);
+	var.intValue  = (int)var.vector.x;
+}
+
+inline void MatVarProxy::SetInt(int nValue)
+{
+	if (!m_material)
+		return;
+
+	MatVarData& var = m_material->VarAt(m_matVarIdx);
+	var.intValue = nValue;
+	var.vector = Vector4D(nValue,0,0,0);
+}
+
+inline void MatVarProxy::SetVector2(const Vector2D& vector)
+{
+	if (!m_material)
+		return;
+
+	MatVarData& var = m_material->VarAt(m_matVarIdx);
+	var.vector = Vector4D(vector, 0.0f, 1.0f);
+}
+
+inline void MatVarProxy::SetVector3(const Vector3D& vector)
+{
+	if (!m_material)
+		return;
+
+	MatVarData& var = m_material->VarAt(m_matVarIdx);
+	var.vector = Vector4D(vector, 1.0f);
+}
+
+inline void MatVarProxy::SetVector4(const Vector4D& vector)
+{
+	if (!m_material)
+		return;
+
+	MatVarData& var = m_material->VarAt(m_matVarIdx);
+	var.vector = vector;
+}
+
+inline const Vector2D& MatVarProxy::GetVector2() const
+{
+	if (!m_material)
+		return vec2_zero;
+
+	MatVarData& var = m_material->VarAt(m_matVarIdx);
+	return var.vector.xy();
+}
+
+inline const Vector3D& MatVarProxy::GetVector3() const
+{
+	if (m_material)
+		return vec3_zero;
+
+	MatVarData& var = m_material->VarAt(m_matVarIdx);
+	return var.vector.xyz();
+}
+
+inline const Vector4D& MatVarProxy::GetVector4() const
+{
+	if (!m_material)
+		return vec4_zero;
+
+	MatVarData& var = m_material->VarAt(m_matVarIdx);
+	return var.vector;
+}
+
+// texture pointer
+inline ITexture* MatVarProxy::GetTexture() const
+{
+	if (!m_material)
+		return nullptr;
+
+	MatVarData& var = m_material->VarAt(m_matVarIdx);
+	return var.texture;
+}
+
+// assigns texture
+inline void MatVarProxy::SetTexture(ITexture* pTexture)
+{
+	if (!m_material)
+		return;
+
+	MatVarData& var = m_material->VarAt(m_matVarIdx);
+	if (pTexture == var.texture)
+		return;
+
+	if (pTexture)
+		pTexture->Ref_Grab();
+
+	g_pShaderAPI->FreeTexture(var.texture);
+	var.texture = pTexture;
+}

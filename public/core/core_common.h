@@ -58,7 +58,7 @@
 #include "platform/eqthread.h"
 
 #include "ds/refcounted.h"
-#include "ds/scopedptr.h"
+#include "ds/weakptr.h"
 #include "ds/singleton.h"
 
 #include "ds/Array.h"

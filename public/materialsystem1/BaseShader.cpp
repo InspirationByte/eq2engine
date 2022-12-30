@@ -77,10 +77,6 @@ CBaseShader::CBaseShader()
 
 	m_polyOffset		= false;
 
-	m_pBaseTextureTransformVar = nullptr;
-	m_pBaseTextureScaleVar = nullptr;
-	m_pBaseTextureFrame = nullptr;
-
 	m_nAddressMode = TEXADDRESS_WRAP;
 	m_nTextureFilter = TEXFILTER_TRILINEAR_ANISO;
 
@@ -96,8 +92,8 @@ CBaseShader::CBaseShader()
 
 void CBaseShader::InitParams()
 {
-	IMatVar* addressMode	= m_pAssignedMaterial->FindMaterialVar("Address");
-	IMatVar* texFilter		= m_pAssignedMaterial->FindMaterialVar("Filtering");
+	MatVarProxy addressMode	= m_pAssignedMaterial->FindMaterialVar("Address");
+	MatVarProxy texFilter = m_pAssignedMaterial->FindMaterialVar("Filtering");
 
 	SHADER_PARAM_BOOL(ztest, m_depthtest, true)
 	SHADER_PARAM_BOOL(zwrite, m_depthwrite, true)
@@ -108,13 +104,13 @@ void CBaseShader::InitParams()
 	IMaterial* assignedMaterial = GetAssignedMaterial();
 
 	// required
-	m_pBaseTextureTransformVar	= assignedMaterial->GetMaterialVar("BaseTextureTransform", "[0 0]");
-	m_pBaseTextureScaleVar		= assignedMaterial->GetMaterialVar("BaseTextureScale", "[1 1]");
-	m_pBaseTextureFrame			= assignedMaterial->GetMaterialVar("BaseTextureFrame", "0");
+	m_baseTextureTransformVar	= assignedMaterial->GetMaterialVar("BaseTextureTransform", "[0 0]");
+	m_baseTextureScaleVar		= assignedMaterial->GetMaterialVar("BaseTextureScale", "[1 1]");
+	m_baseTextureFrame			= assignedMaterial->GetMaterialVar("BaseTextureFrame", "0");
 
 	// resolve address type and filtering mode
-	if( addressMode ) m_nAddressMode = ResolveAddressType(addressMode->GetString());
-	if( texFilter ) m_nTextureFilter = ResolveFilterType(texFilter->GetString());
+	if( addressMode.IsValid()) m_nAddressMode = ResolveAddressType(addressMode.GetString());
+	if( texFilter.IsValid()) m_nTextureFilter = ResolveFilterType(texFilter.GetString());
 
 	// setup render & shadowing parameters
 	SHADER_PARAM_FLAG(NoDraw, m_nFlags, MATERIAL_FLAG_INVISIBLE, false)
@@ -221,7 +217,7 @@ void CBaseShader::Unload()
 	{
 		// unassign texture from a material var
 		// will also ref_drop
-		m_UsedTextures[i].var->AssignTexture(nullptr);
+		m_UsedTextures[i].var.SetTexture(nullptr);
 
 		ITexture** texPtr = m_UsedTextures[i].texture;
 		if(texPtr)
@@ -244,13 +240,13 @@ void CBaseShader::SetupParameter(uint mask, ShaderDefaultParams_e type)
 
 void CBaseShader::FindTextureByVar(ITexture*& texturePtrRef, IMaterial* material, const char* paramName, bool errorTextureIfNoVar)
 {
-	IMatVar* mv = GetAssignedMaterial()->FindMaterialVar(paramName);
-	if(mv) 
+	MatVarProxy mv = GetAssignedMaterial()->FindMaterialVar(paramName);
+	if(mv.IsValid()) 
 	{
-		texturePtrRef = g_pShaderAPI->FindTexture(mv->GetString());
+		texturePtrRef = g_pShaderAPI->FindTexture(mv.GetString());
 
 		if(texturePtrRef)
-			mv->AssignTexture(texturePtrRef);
+			mv.SetTexture(texturePtrRef);
 	}
 	else if(errorTextureIfNoVar)
 		texturePtrRef = g_pShaderAPI->GetErrorTexture();
@@ -258,23 +254,23 @@ void CBaseShader::FindTextureByVar(ITexture*& texturePtrRef, IMaterial* material
 
 void CBaseShader::LoadTextureByVar(ITexture*& texturePtrRef, IMaterial* material, const char* paramName, bool errorTextureIfNoVar)
 {	
-	IMatVar* mv = nullptr;
+	MatVarProxy mv;
 	if(materials->GetConfiguration().editormode)		
 	{		
 		mv = material->FindMaterialVar(EqString::Format("%s_editor", paramName));
-		if(!mv)
+		if(!mv.IsValid())
 			mv = material->FindMaterialVar(paramName);
 	}		
 	else
 		mv = material->FindMaterialVar(paramName);
 	
 	texturePtrRef = nullptr;
-	if(mv) 
+	if(mv.IsValid()) 
 	{
 		SamplerStateParam_t samplerParams;
 		SamplerStateParams_Make(samplerParams, g_pShaderAPI->GetCaps(), m_nTextureFilter, m_nAddressMode, m_nAddressMode, m_nAddressMode);
 
-		texturePtrRef = g_texLoader->LoadTextureFromFileSync(mv->GetString(), samplerParams);
+		texturePtrRef = g_texLoader->LoadTextureFromFileSync(mv.GetString(), samplerParams);
 		if(texturePtrRef)
 			AddManagedTexture(mv, &texturePtrRef);
 	}
@@ -374,7 +370,7 @@ void CBaseShader::ParamSetup_Transform()
 	g_pShaderAPI->SetShaderConstantMatrix4("Proj", proj);
 
 	// setup texture transform
-	SetupVertexShaderTextureTransform(m_pBaseTextureTransformVar, m_pBaseTextureScaleVar, "BaseTextureTransform");
+	SetupVertexShaderTextureTransform(m_baseTextureTransformVar, m_baseTextureScaleVar, "BaseTextureTransform");
 }
 
 void CBaseShader::ParamSetup_TextureFrames()
@@ -404,18 +400,18 @@ void CBaseShader::ParamSetup_Fog()
 }
 
 // get texture transformation from vars
-Vector4D CBaseShader::GetTextureTransform(IMatVar* pTransformVar, IMatVar* pScaleVar) const
+Vector4D CBaseShader::GetTextureTransform(MatVarProxy transformVar, MatVarProxy scaleVar) const
 {
-	if(pTransformVar && pScaleVar)
-		return Vector4D(pScaleVar->GetVector2(), pTransformVar->GetVector2());
+	if(transformVar.IsValid() && scaleVar.IsValid())
+		return Vector4D(scaleVar.GetVector2(), transformVar.GetVector2());
 
 	return Vector4D(1,1,0,0);
 }
 
 // sends texture transformation to shader
-void CBaseShader::SetupVertexShaderTextureTransform(IMatVar* pTransformVar, IMatVar* pScaleVar, const char* pszConstName)
+void CBaseShader::SetupVertexShaderTextureTransform(MatVarProxy transformVar, MatVarProxy scaleVar, const char* pszConstName)
 {
-	Vector4D trans = GetTextureTransform(pTransformVar, pScaleVar);
+	Vector4D trans = GetTextureTransform(transformVar, scaleVar);
 
 	g_pShaderAPI->SetShaderConstantVector4D(pszConstName, trans);
 }
@@ -450,14 +446,14 @@ void CBaseShader::AddManagedShader(IShaderProgram** pShader)
 	m_UsedPrograms.append(pShader);
 }
 
-void CBaseShader::AddManagedTexture(IMatVar* var, ITexture** tex)
+void CBaseShader::AddManagedTexture(MatVarProxy var, ITexture** tex)
 {
 	if(!*tex)
 		return;
 
-	var->AssignTexture(*tex);
+	var.SetTexture(*tex);
 
-	// no ref_grab needed because already did in AssignTexture
+	// no ref_grab needed because already did in SetTexture
 	mvUseTexture_t& mvtex = m_UsedTextures.append();
 	mvtex.texture = tex;
 	mvtex.var = var; 

@@ -52,7 +52,7 @@ BEGIN_SHADER_CLASS(SDFFont)
 
 		SetupDefaultParameter(SHADERPARAM_COLOR);
 
-		g_pShaderAPI->SetShaderConstantVector4D("FontParams", m_fontParamsVar->GetVector4());
+		g_pShaderAPI->SetShaderConstantVector4D("FontParams", m_fontParamsVar.GetVector4());
 	}
 
 	void SetColorModulation()
@@ -66,5 +66,5 @@ BEGIN_SHADER_CLASS(SDFFont)
 
 	SHADER_DECLARE_PASS(Unlit);
 
-	IMatVar*	m_fontParamsVar;
+	MatVarProxy	m_fontParamsVar;
 END_SHADER_CLASS

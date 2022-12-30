@@ -18,7 +18,7 @@ BEGIN_SHADER_CLASS(BaseUnlit)
 		SHADER_PASS(Unlit) = nullptr;
 		SHADER_FOGPASS(Unlit) = nullptr;
 
-		m_pColorVar = m_pAssignedMaterial->GetMaterialVar("color", "[1 1 1 1]");
+		m_colorVar = m_pAssignedMaterial->GetMaterialVar("color", "[1 1 1 1]");
 	}
 
 	SHADER_INIT_TEXTURES()
@@ -76,7 +76,7 @@ BEGIN_SHADER_CLASS(BaseUnlit)
 
 	void SetColorModulation()
 	{
-		ColorRGBA setColor = m_pColorVar->GetVector4()*materials->GetAmbientColor();
+		ColorRGBA setColor = m_colorVar.GetVector4() * materials->GetAmbientColor();
 
 		g_pShaderAPI->SetShaderConstantVector4D("AmbientColor", setColor);
 	}
@@ -91,8 +91,8 @@ BEGIN_SHADER_CLASS(BaseUnlit)
 	ITexture*	GetBaseTexture(int stage) const {return m_pBaseTexture;}
 	ITexture*	GetBumpTexture(int stage) const {return nullptr;}
 
-	ITexture*			m_pBaseTexture;
-	IMatVar*			m_pColorVar;
+	ITexture*	m_pBaseTexture;
+	MatVarProxy	m_colorVar;
 
 	SHADER_DECLARE_PASS(Unlit);
 	SHADER_DECLARE_FOGPASS(Unlit);

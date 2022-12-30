@@ -2,62 +2,27 @@
 // Copyright © Inspiration Byte
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
-// Description: Equilibrium materialvar
+// Description: Material Variable
 //////////////////////////////////////////////////////////////////////////////////
 
 #pragma once
-#include "materialsystem1/IMaterialVar.h"
 
-class CMatVar : public IMatVar
+class CMatVar
 {
 	friend class CMaterial;
 
 public:
-					CMatVar();
+					CMatVar() = default;
 					~CMatVar();
 
-	// initializes the material var
 	void			Init(const char* pszName,const char* pszValue);
 
-	// returns name
 	const char*		GetName() const;
 
-	// sets new name
-	void			SetName(const char* szNewName);
-
-	// Value returners
-	const char*		GetString();
-	int				GetInt() const;
-	float			GetFloat() const;
-
-	const Vector2D&	GetVector2() const;
-	const Vector3D&	GetVector3() const;
-	const Vector4D&	GetVector4() const;
-
-	// Value setup
 	void			SetString(const char* szValue);
-	void			SetFloat(float fValue);
-	void			SetInt(int nValue);
-
-	void			SetVector2(const Vector2D& vector);
-	void			SetVector3(const Vector3D& vector);
-	void			SetVector4(const Vector4D& vector);
-
-	// texture pointer
-	ITexture*		GetTexture() const;
-
-	// assigns texture
-	void			AssignTexture(ITexture* pTexture);
-
 private:
 	EqString		m_name;
 	int				m_nameHash{ 0 };
 
-	EqString		m_pszValue;
-	Vector4D		m_vector{ 0 };
-
-	int				m_nValue{ 0 };
-	int				m_isDirtyString{ false };
-
-	ITexture*		m_pAssignedTexture{ nullptr };
+	MatVarData		m_data;
 };
