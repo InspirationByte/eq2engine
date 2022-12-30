@@ -23,6 +23,10 @@
 
 #endif
 
+#define _EQASSERT_IGNORE_ALWAYS		-1
+#define _EQASSERT_BREAK				1
+#define _EQASSERT_SKIP				0	// only when debugger is not present
+
 #if defined(_RETAIL) || defined(_PROFILE)
 
 #define	ASSERT_MSG(x, msgFmt, ...)
@@ -30,10 +34,6 @@
 #define ASSERT_FAIL(msgFmt, ...)
 
 #else
-
-#define _EQASSERT_IGNORE_ALWAYS		-1
-#define _EQASSERT_BREAK				1
-#define _EQASSERT_SKIP				0	// only when debugger is not present
 
 IEXPORTS int _InternalAssertMsg(PPSourceLine sl, const char* statement, ...);
 

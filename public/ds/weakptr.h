@@ -36,6 +36,9 @@ inline bool	WeakRefBlock<TYPE>::Ref_Drop()
 {
 	if (Threading::DecrementInterlocked(numRefs) <= 0)
 	{
+		if(ptr)
+			ptr->m_block = nullptr;
+
 		delete this;
 		return true;
 	}
@@ -55,6 +58,7 @@ template< class TYPE >
 class WeakRefObject
 {
 	friend class CWeakPtr<TYPE>;
+	friend struct WeakPtr::WeakRefBlock<TYPE>;
 public:
 	using Block = WeakPtr::WeakRefBlock<TYPE>;
 	virtual ~WeakRefObject()

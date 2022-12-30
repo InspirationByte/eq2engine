@@ -70,7 +70,7 @@ inline bool	RefCountedObject<TYPE, POLICY>::Ref_Drop()
 //-----------------------------------------------------------------------------
 // smart pointer for ref counted
 
-#define CRefPtr_new(TYPE, ...) CRefPtr<TYPE>(new(PP_SL) TYPE(__VA_ARGS__))
+#define CRefPtr_new(TYPE, ...) CRefPtr<TYPE>(PPNew TYPE(__VA_ARGS__))
 
 template< class TYPE >
 class CRefPtr
