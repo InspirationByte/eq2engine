@@ -176,12 +176,14 @@ protected:
 
 	void						ParamSetup_CurrentAsBaseTexture();
 
-	virtual void				ParamSetup_AlphaModel_Solid();
-	virtual void				ParamSetup_AlphaModel_Alphatest();
-	virtual void				ParamSetup_AlphaModel_Translucent();
-	virtual void				ParamSetup_AlphaModel_Additive();
-	virtual void				ParamSetup_AlphaModel_Additive_Fog();
-	virtual void				ParamSetup_AlphaModel_Modulate();
+	void						ParamSetup_AlphaModel_Solid();
+	void						ParamSetup_AlphaModel_Alphatest();
+	void						ParamSetup_AlphaModel_Translucent();
+	void						ParamSetup_AlphaModel_Additive();
+	void						ParamSetup_AlphaModel_AdditiveLight();
+	void						ParamSetup_AlphaModel_Additive_Fog();
+	void						ParamSetup_AlphaModel_Modulate();
+
 	virtual void				ParamSetup_DepthSetup();
 
 	virtual void				ParamSetup_RasterState();

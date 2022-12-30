@@ -130,6 +130,31 @@ void CBaseShader::InitParams()
 	SHADER_PARAM_FLAG(Additive, m_nFlags, MATERIAL_FLAG_ADDITIVE, false)
 	SHADER_PARAM_FLAG(Modulate, m_nFlags, MATERIAL_FLAG_MODULATE, false)
 
+	bool additiveLight = false;
+	SHADER_PARAM_BOOL(AdditiveLight, additiveLight, false)
+
+	// first set solid alpha mode
+	SetParameterFunctor(SHADERPARAM_ALPHASETUP, &CBaseShader::ParamSetup_AlphaModel_Solid);
+
+	// setup functors for transparency
+	//if(m_nFlags & MATERIAL_FLAG_ALPHATESTED)
+	//	SetParameterFunctor(SHADERPARAM_ALPHASETUP, &CBaseShader::ParamSetup_AlphaModel_Alphatest);
+
+	if(m_nFlags & MATERIAL_FLAG_TRANSPARENT)
+		SetParameterFunctor(SHADERPARAM_ALPHASETUP, &CBaseShader::ParamSetup_AlphaModel_Translucent);
+
+	if(m_nFlags & MATERIAL_FLAG_ADDITIVE)
+		SetParameterFunctor(SHADERPARAM_ALPHASETUP, &CBaseShader::ParamSetup_AlphaModel_Additive);
+
+	if(m_nFlags & MATERIAL_FLAG_MODULATE)
+		SetParameterFunctor(SHADERPARAM_ALPHASETUP, &CBaseShader::ParamSetup_AlphaModel_Modulate);
+
+	if (additiveLight)
+	{
+		SetParameterFunctor(SHADERPARAM_ALPHASETUP, &CBaseShader::ParamSetup_AlphaModel_AdditiveLight);
+		m_nFlags |= MATERIAL_FLAG_ADDITIVE;
+	}
+
 	EqString baseTextureStr;
 	SHADER_PARAM_STRING(BaseTexture, baseTextureStr, "");
 	if (baseTextureStr.ToCString()[0] == '$')
@@ -153,22 +178,6 @@ void CBaseShader::InitParams()
 				m_nFlags |= MATERIAL_FLAG_USE_ENVCUBEMAP;
 		}
 	}
-
-	// first set solid alpha mode
-	SetParameterFunctor(SHADERPARAM_ALPHASETUP, &CBaseShader::ParamSetup_AlphaModel_Solid);
-
-	// setup functors for transparency
-	//if(m_nFlags & MATERIAL_FLAG_ALPHATESTED)
-	//	SetParameterFunctor(SHADERPARAM_ALPHASETUP, &CBaseShader::ParamSetup_AlphaModel_Alphatest);
-
-	if(m_nFlags & MATERIAL_FLAG_TRANSPARENT)
-		SetParameterFunctor(SHADERPARAM_ALPHASETUP, &CBaseShader::ParamSetup_AlphaModel_Translucent);
-
-	if(m_nFlags & MATERIAL_FLAG_ADDITIVE)
-		SetParameterFunctor(SHADERPARAM_ALPHASETUP, &CBaseShader::ParamSetup_AlphaModel_Additive);
-
-	if(m_nFlags & MATERIAL_FLAG_MODULATE)
-		SetParameterFunctor(SHADERPARAM_ALPHASETUP, &CBaseShader::ParamSetup_AlphaModel_Modulate);
 
 	if(m_nFlags & MATERIAL_FLAG_DECAL)
 		m_polyOffset = true;
@@ -306,6 +315,14 @@ void CBaseShader::ParamSetup_AlphaModel_Translucent()
 void CBaseShader::ParamSetup_AlphaModel_Additive()
 {
 	materials->SetBlendingStates(BLENDFACTOR_ONE, BLENDFACTOR_ONE, BLENDFUNC_ADD);
+
+	//m_fogenabled = false;
+	m_depthwrite = false;
+}
+
+void CBaseShader::ParamSetup_AlphaModel_AdditiveLight()
+{
+	materials->SetBlendingStates(BLENDFACTOR_DST_COLOR, BLENDFACTOR_SRC_COLOR, BLENDFUNC_ADD);
 
 	//m_fogenabled = false;
 	m_depthwrite = false;
