@@ -73,9 +73,11 @@ template <class IT>
 class CEqGeomInstancer : public CBaseEqGeomInstancer
 {
 public:
-	void			Init(IVertexFormat* instVertexFormat);
-	void			InitEx(const VertexFormatDesc_t* instVertexFormat, int numAttrib);
-	IT&				NewInstance(int bodyGroup, int lod, int materialGroup = 0 );
+	void							Init(IVertexFormat* instVertexFormat);
+	void							InitEx(const VertexFormatDesc_t* instVertexFormat, int numAttrib);
+	IT&								NewInstance(int bodyGroup, int lod, int materialGroup = 0 );
+
+	static CEqGeomInstancer<IT>*	Get(CEqStudioGeom* model, IVertexFormat* vertexFormatInstanced);
 };
 
 //-------------------------------------------------------
@@ -107,4 +109,19 @@ inline IT& CEqGeomInstancer<IT>::NewInstance(int bodyGroup, int lod, int materia
 		return dummy;
 
 	return *reinterpret_cast<IT*>(newInst);
+}
+
+template <class IT>
+CEqGeomInstancer<IT>* CEqGeomInstancer<IT>::Get(CEqStudioGeom* model, IVertexFormat* vertexFormatInstanced)
+{
+	CEqGeomInstancer<IT>* instancer = reinterpret_cast<CEqGeomInstancer<IT>*>(model->GetInstancer());
+
+	if (!instancer && g_pShaderAPI->GetCaps().isInstancingSupported)
+	{
+		instancer = PPNew CEqGeomInstancer<IT>();
+		instancer->Init(vertexFormatInstanced);
+		model->SetInstancer(instancer);
+	}
+
+	return instancer;
 }
