@@ -341,7 +341,7 @@ bool Studio_LoadPhysModel(const char* pszPath, studioPhysData_t* pModel)
 					// copy shape info
 					memcpy(&objData.object, &physObjDataLump[i], sizeof(physobject_t));
 
-					for(int j = 0; j < MAX_GEOM_PER_OBJECT; j++)
+					for(int j = 0; j < MAX_PHYS_GEOM_PER_OBJECT; j++)
 						objData.shapeCache[j] = nullptr;
 				}
 				break;

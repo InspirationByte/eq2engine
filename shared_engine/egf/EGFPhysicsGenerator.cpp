@@ -649,10 +649,10 @@ bool CEGFPhysicsGenerator::CreateCompoundOrSeparateObjects( Array<dsmvertex_t>& 
 
 		object.numShapes = shape_ids.numElem();
 
-		if(object.numShapes > MAX_GEOM_PER_OBJECT)
+		if(object.numShapes > MAX_PHYS_GEOM_PER_OBJECT)
 		{
 			MsgWarning("Exceeded physics shape count (%d)\n", object.numShapes);
-			object.numShapes = MAX_GEOM_PER_OBJECT;
+			object.numShapes = MAX_PHYS_GEOM_PER_OBJECT;
 		}
 
 		memset(object.shape_indexes, -1, sizeof(object.shape_indexes));

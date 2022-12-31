@@ -20,60 +20,6 @@ using namespace SharedModel;
 
 //------------------------------------------------------------
 
-struct CEGFGenerator::GenBone_t
-{
-	SharedModel::dsmskelbone_t* refBone{ nullptr };
-
-	Array<GenBone_t*>	childs{ PP_SL };
-	GenBone_t* parent{ nullptr };
-};
-
-struct CEGFGenerator::GenIKLink_t
-{
-	Vector3D	mins;
-	Vector3D	maxs;
-
-	CEGFGenerator::GenBone_t* bone;
-
-	float		damping;
-};
-
-struct CEGFGenerator::GenIKChain_t
-{
-	char name[44]{ 0 };
-	Array<GenIKLink_t> link_list{ PP_SL };
-};
-
-struct CEGFGenerator::GenModel_t
-{
-	EqString							name;
-
-	CRefPtr<SharedModel::dsmmodel_t>		model{ nullptr };
-
-	// bake data
-	CRefPtr<SharedModel::esmshapedata_t>	shapeData{ nullptr };
-
-	int								shapeIndex{ -1 };
-	int								used{ 0 };
-};
-
-struct CEGFGenerator::GenLODList_t
-{
-	FixedArray<int, MAX_MODEL_LODS>	lodmodels;
-	EqString						name;
-};
-
-struct CEGFGenerator::GenMaterialDesc_t
-{
-	char				materialname[32]{ 0 };
-	int					used{ 0 };
-};
-
-struct CEGFGenerator::GenMaterialGroup_t
-{
-	Array<GenMaterialDesc_t> materials{ PP_SL };
-};
-
 CEGFGenerator::CEGFGenerator()
 {
 

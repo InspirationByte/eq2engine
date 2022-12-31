@@ -51,7 +51,7 @@ struct studioPhysObject_t
 {
 	char			name[32];
 	physobject_t	object;
-	void*			shapeCache[MAX_GEOM_PER_OBJECT];		// indexes of geomdata
+	void*			shapeCache[MAX_PHYS_GEOM_PER_OBJECT];		// indexes of geomdata
 };
 
 // physics model data from POD

@@ -7,11 +7,15 @@
 
 #pragma once
 
-#define PHYSFILE_VERSION					2
-#define PHYSFILE_ID						MCHAR4('P','O','D','I')
+#define PHYSFILE_VERSION	2
+#define PHYSFILE_ID			MCHAR4('P','O','D','I')
 
-#define MAX_GEOM_PER_OBJECT					32			// maximum shapes allowed to be in one physics object
-#define PHYS_DEFAULT_MASS					(5.0f)
+static constexpr const int MAX_PHYS_NAME_LENGTH			= 64;
+static constexpr const int MAX_PHYS_SURF_NAME_LENGTH	= 64;
+static constexpr const int MAX_PHYS_COMMENT_STRING		= 256;
+
+static constexpr const int MAX_PHYS_GEOM_PER_OBJECT		= 32;			// maximum shapes allowed to be in one physics object
+static constexpr const float PHYS_DEFAULT_MASS			= (5.0f);
 
 enum EPhysModelUsage
 {
@@ -60,7 +64,7 @@ ALIGNED_TYPE(physmodelhdr_s, 4) physmodelhdr_t;
 
 struct physjoint_s
 {
-	char name[64]; // joint name
+	char name[MAX_PHYS_NAME_LENGTH]; // joint name
 
 	int object_indexA; // physobject_t indices
 	int object_indexB;
@@ -75,7 +79,7 @@ ALIGNED_TYPE(physjoint_s, 4) physjoint_t;
 struct physmodelprops_s
 {
 	int		model_usage;
-	char	comment_string[256];
+	char	comment_string[MAX_PHYS_COMMENT_STRING];
 };
 ALIGNED_TYPE(physmodelprops_s, 4) physmodelprops_t;
 
@@ -90,11 +94,11 @@ ALIGNED_TYPE(physgeominfo_s, 4) physgeominfo_t;
 
 struct physobject_s
 {
-	char		surfaceprops[64];	// flesh, brick, etc.
-	float		mass;				// mass of local object
+	char		surfaceprops[MAX_PHYS_SURF_NAME_LENGTH];// flesh, brick, etc.
+	float		mass;									// mass of local object
 
 	int			numShapes;								// shape count
-	int			shape_indexes[MAX_GEOM_PER_OBJECT];		// indexes of geomdata
+	int			shape_indexes[MAX_PHYS_GEOM_PER_OBJECT];// indexes of geomdata
 
 	Vector3D	offset;									// object initial offset
 	Vector3D	mass_center;							// mass center of object

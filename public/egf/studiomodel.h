@@ -10,11 +10,11 @@
 #define EQUILIBRIUM_MODEL_VERSION		13
 #define EQUILIBRIUM_MODEL_SIGNATURE		MCHAR4('E','Q','G','F')
 
-#define MAX_MODEL_LODS				8
-#define MAX_MODEL_PATH_LENGTH		256
-#define MAX_MODEL_PART_PATH_LENGTH	128
-#define MAX_MODEL_PART_NAME_LENGTH	44
-#define MAX_MODEL_VERTEX_WEIGHTS	4
+static constexpr const int MAX_MODEL_LODS				= 8;
+static constexpr const int MAX_MODEL_PATH_LENGTH		= 256;
+static constexpr const int MAX_MODEL_PART_PATH_LENGTH	= 128;
+static constexpr const int MAX_MODEL_PART_NAME_LENGTH	= 44;
+static constexpr const int MAX_MODEL_VERTEX_WEIGHTS		= 4;
 
 // use EGF_VERSION_CHANGE tags for defining changes
 
