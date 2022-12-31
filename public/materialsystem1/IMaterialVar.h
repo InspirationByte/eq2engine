@@ -141,7 +141,7 @@ inline const Vector2D& MatVarProxy::GetVector2() const
 
 inline const Vector3D& MatVarProxy::GetVector3() const
 {
-	if (m_material)
+	if (!m_material)
 		return vec3_zero;
 
 	MatVarData& var = m_material->VarAt(m_matVarIdx);
