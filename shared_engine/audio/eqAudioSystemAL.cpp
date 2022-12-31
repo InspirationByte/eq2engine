@@ -1139,7 +1139,6 @@ void CEqAudioSourceAL::Release()
 	m_channel = -1;
 	m_state = STOPPED;
 
-	m_streams.clear();
 	if (m_source != AL_NONE)
 	{
 		EmptyBuffers();
@@ -1148,6 +1147,7 @@ void CEqAudioSourceAL::Release()
 		alDeleteSources(1, &m_source);
 
 		m_source = AL_NONE;
+		m_streams.clear();
 	}
 
 	if (m_filter != AL_NONE)
