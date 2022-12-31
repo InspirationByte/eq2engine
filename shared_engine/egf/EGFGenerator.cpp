@@ -20,6 +20,60 @@ using namespace SharedModel;
 
 //------------------------------------------------------------
 
+struct CEGFGenerator::GenBone_t
+{
+	SharedModel::dsmskelbone_t* refBone{ nullptr };
+
+	Array<GenBone_t*>	childs{ PP_SL };
+	GenBone_t* parent{ nullptr };
+};
+
+struct CEGFGenerator::GenIKLink_t
+{
+	Vector3D	mins;
+	Vector3D	maxs;
+
+	CEGFGenerator::GenBone_t* bone;
+
+	float		damping;
+};
+
+struct CEGFGenerator::GenIKChain_t
+{
+	char name[44]{ 0 };
+	Array<GenIKLink_t> link_list{ PP_SL };
+};
+
+struct CEGFGenerator::GenModel_t
+{
+	EqString							name;
+
+	CRefPtr<SharedModel::dsmmodel_t>		model{ nullptr };
+
+	// bake data
+	CRefPtr<SharedModel::esmshapedata_t>	shapeData{ nullptr };
+
+	int								shapeIndex{ -1 };
+	int								used{ 0 };
+};
+
+struct CEGFGenerator::GenLODList_t
+{
+	FixedArray<int, MAX_MODEL_LODS>	lodmodels;
+	EqString						name;
+};
+
+struct CEGFGenerator::GenMaterialDesc_t
+{
+	char				materialname[32]{ 0 };
+	int					used{ 0 };
+};
+
+struct CEGFGenerator::GenMaterialGroup_t
+{
+	Array<GenMaterialDesc_t> materials{ PP_SL };
+};
+
 CEGFGenerator::CEGFGenerator()
 {
 
@@ -50,7 +104,7 @@ CEGFGenerator::GenLODList_t* CEGFGenerator::FindModelLodGroupByName(const char* 
 {
 	for(int i = 0; i < m_modelLodLists.numElem(); i++)
 	{
-		if(!stricmp(m_modelLodLists[i].lodmodels[0]->name, pszName))
+		if(!m_modelLodLists[i].name.CompareCaseIns(pszName))
 			return &m_modelLodLists[i];
 	}
 	return nullptr;
@@ -59,17 +113,21 @@ CEGFGenerator::GenLODList_t* CEGFGenerator::FindModelLodGroupByName(const char* 
 //************************************
 // Finds egfCa model
 //************************************
+int CEGFGenerator::FindModelIndexByName(const char* pszName)
+{
+	for (int i = 0; i < m_modelrefs.numElem(); i++)
+	{
+		if (!m_modelrefs[i].name.CompareCaseIns(pszName))
+			return i;
+	}
+	return -1;
+}
+
+
 CEGFGenerator::GenModel_t* CEGFGenerator::FindModelByName(const char* pszName)
 {
-	if (!stricmp(pszName, "_dummy"))
-		return GetDummyModel();
-
-	for(int i = 0; i < m_modelrefs.numElem(); i++)
-	{
-		if(!stricmp(m_modelrefs[i].model->name, pszName))
-			return &m_modelrefs[i];
-	}
-	return nullptr;
+	const int foundIdx = FindModelIndexByName(pszName);
+	return &m_modelrefs[foundIdx];
 }
 
 //************************************
@@ -79,7 +137,7 @@ int CEGFGenerator::FindModelLodIdGroupByName(const char* pszName)
 {
 	for(int i = 0; i < m_modelLodLists.numElem(); i++)
 	{
-		if(!stricmp(m_modelLodLists[i].lodmodels[0]->name, pszName))
+		if(!m_modelLodLists[i].name.CompareCaseIns(pszName))
 			return i;
 	}
 	return -1;
@@ -99,55 +157,28 @@ int CEGFGenerator::GetMaterialIndex(const char* pszName)
 	return -1;
 }
 
-//************************************
-// Returns reference index
-//************************************
-int CEGFGenerator::GetReferenceIndex(dsmmodel_t* pRef)
-{
-	if(pRef == nullptr)
-		return -1;
-
-	for(int i = 0; i < m_modelrefs.numElem(); i++)
-	{
-		if(m_modelrefs[i].model == pRef)
-			return i;
-	}
-
-	return -1;
-}
-
 void CEGFGenerator::AddModelLodUsageReference(int lodModelIndex)
 {
 	GenLODList_t& lod = m_modelLodLists[lodModelIndex];
 
-	for(int i = 0; i < MAX_MODEL_LODS; i++)
+	for (int i = 0; i < lod.lodmodels.numElem(); i++)
 	{
-		const int refIdx = GetReferenceIndex(lod.lodmodels[i]);
-		if(refIdx == -1)
-			continue;
-
-		m_modelrefs[refIdx].used++;
+		const int modelIdx = lod.lodmodels[i];
+		if(modelIdx >= 0) // skip empty
+			++m_modelrefs[modelIdx].used;
 	}
-}
-
-CEGFGenerator::GenModel_t* CEGFGenerator::GetDummyModel()
-{
-	static GenModel_t mod{ PPNew dsmmodel_t, nullptr };
-	strcpy(mod.model->name, "_dummy");
-
-	return &mod;
 }
 
 //************************************
 // Loads a model
 //************************************
-CEGFGenerator::GenModel_t CEGFGenerator::LoadModel(const char* pszFileName)
+int CEGFGenerator::LoadModel(const char* pszFileName)
 {
 	if (!stricmp(pszFileName, "_dummy"))
-		return* GetDummyModel();
+		return -1;
 
 	GenModel_t mod;
-	mod.model = PPNew dsmmodel_t;
+	mod.model = CRefPtr_new(dsmmodel_t);
 
 	EqString modelPath;
 	CombinePath(modelPath, 2, m_refsPath.ToCString(), pszFileName);
@@ -156,7 +187,7 @@ CEGFGenerator::GenModel_t CEGFGenerator::LoadModel(const char* pszFileName)
 
 	if (!ext.CompareCaseIns("fbx"))
 	{
-		mod.shapeData = PPNew esmshapedata_t;
+		mod.shapeData = CRefPtr_new(esmshapedata_t);
 
 		Msg("Loading FBX from '%s'\n", modelPath.ToCString());
 
@@ -167,12 +198,12 @@ CEGFGenerator::GenModel_t CEGFGenerator::LoadModel(const char* pszFileName)
 
 			MsgError("Reference model '%s' cannot be loaded!\n", modelPath.ToCString());
 			FreeModel(mod);
-			return mod;
+			return -1;
 		}
 	}
 	else if( !ext.CompareCaseIns("esx") ) // Legacy now because I want to drop the Blender ESM/ESX plugin support
 	{
-		mod.shapeData = PPNew esmshapedata_t;
+		mod.shapeData = CRefPtr_new(esmshapedata_t);
 
 		Msg("Loading shape file '%s'\n", modelPath.ToCString());
 
@@ -191,20 +222,23 @@ CEGFGenerator::GenModel_t CEGFGenerator::LoadModel(const char* pszFileName)
 		{
 			MsgError("Reference model '%s' cannot be loaded!\n", modelPath.ToCString());
 			FreeModel(mod);
-			return mod;
+			return -1;
 		}
 	}
 	else if(!LoadSharedModel(mod.model, modelPath.ToCString()))
 	{
 		MsgError("Reference model '%s' cannot be loaded!\n", modelPath.ToCString());
 		FreeModel(mod);
-		return mod;
+		return -1;
 	}
 
 	if (!PostProcessDSM(mod))
-		return mod;
+	{
+		FreeModel(mod);
+		return -1;
+	}
 
-	return mod;
+	return m_modelrefs.append(mod);
 }
 
 bool CEGFGenerator::PostProcessDSM(GenModel_t& mod)
@@ -214,8 +248,6 @@ bool CEGFGenerator::PostProcessDSM(GenModel_t& mod)
 	if ((float)nVerts / 3.0f != nVerts / 3)
 	{
 		MsgError("Reference model '%s' has invalid triangles (tip: vertex count must be divisible by 3 without remainder)\n", mod.model->name);
-
-		FreeModel(mod);
 		return false;
 	}
 
@@ -284,13 +316,6 @@ bool CEGFGenerator::PostProcessDSM(GenModel_t& mod)
 //************************************
 void CEGFGenerator::FreeModel(GenModel_t& mod )
 {
-	FreeDSM(mod.model);
-	delete mod.model;
-
-	if(mod.shapeData)
-		FreeShapes(mod.shapeData);
-	delete mod.shapeData;
-
 	mod.model = nullptr;
 	mod.shapeData = nullptr;
 }
@@ -321,9 +346,12 @@ void CEGFGenerator::LoadModelsFromFBX(KVSection* pKeyBase)
 		if (foundIdx == -1)
 			continue;
 
-		GenModel_t& mod = m_modelrefs.append();
-		mod.model = models[foundIdx];
-		mod.shapeData = shapeDatas[foundIdx];
+		const char* refName = KV_GetValueString(modelSec);
+
+		GenModel_t mod;
+		mod.model = CRefPtr(models[foundIdx]);
+		mod.shapeData = CRefPtr(shapeDatas[foundIdx]);
+		mod.name = refName;
 
 		// DRVSYN: vertex order for damaged model
 		if (modelSec->values.numElem() > 1 && !stricmp(KV_GetValueString(modelSec, 1), "shapeby"))
@@ -334,41 +362,35 @@ void CEGFGenerator::LoadModelsFromFBX(KVSection* pKeyBase)
 			if (shapekeyName)
 			{
 				Msg("Model shape key is '%s'\n", shapekeyName);
-				mod.shapeBy = FindShapeKeyIndex(mod.shapeData, shapekeyName);
+				mod.shapeIndex = FindShapeKeyIndex(mod.shapeData, shapekeyName);
 			}
 		}
 
+		if (!PostProcessDSM(mod))
+			return;
+
+		const int newModelIndex = m_modelrefs.append(mod);
+
+		// Start a new LOD. LOD has a name of reference
 		GenLODList_t& lodModel = m_modelLodLists.append();
-		lodModel.lodmodels[0] = mod.model;
+		lodModel.lodmodels.append(newModelIndex);
+		lodModel.name = refName;
 
 		const int nVerts = GetTotalVertsOfDSM(mod.model);
 
-		if ((float)nVerts / 3.0f != nVerts / 3)
-		{
-			MsgError("Reference model '%s' has invalid triangles (tip: vertex count must be divisible by 3 without remainder)\n", mod.model->name);
-			FreeModel(mod);
-			continue;
-		}
-
-		const char* refName = KV_GetValueString(modelSec);
 		Msg("Adding reference %s '%s' with %d triangles (in %d groups), %d bones\n",
 			mod.model->name,
 			refName,
 			nVerts / 3,
 			mod.model->groups.numElem(),
 			mod.model->bones.numElem());
-
-		strncpy(mod.model->name, refName, sizeof(mod.model->name));
-		mod.model->name[sizeof(mod.model->name) - 1] = 0;
-
-		PostProcessDSM(mod);
 	}
 }
 
 //************************************
 // Loads reference
 //************************************
-dsmmodel_t* CEGFGenerator::ParseAndLoadModels(KVSection* pKeyBase)
+int CEGFGenerator::ParseAndLoadModels(KVSection* pKeyBase)
 {
 	Array<EqString> modelfilenames(PP_SL);
 	Array<EqString> shapeByModels(PP_SL);
@@ -410,34 +432,28 @@ dsmmodel_t* CEGFGenerator::ParseAndLoadModels(KVSection* pKeyBase)
 	for(int i = 0; i < modelfilenames.numElem(); i++)
 	{
 		Msg("Loading model '%s'\n", modelfilenames[i].ToCString());
-		GenModel_t model = LoadModel( modelfilenames[i].ToCString() );
+		const int modelIdx = LoadModel( modelfilenames[i].ToCString() );
 
-		if(!model.model)
+		if(modelIdx == -1)
 			continue;
 
-		// set shapeby
-		model.shapeBy = FindShapeKeyIndex(model.shapeData, shapeByModels[i].ToCString());
+		GenModel_t& model = m_modelrefs[modelIdx];
+		model.shapeIndex = FindShapeKeyIndex(model.shapeData, shapeByModels[i].ToCString());;
 
-		if(model.shapeBy != -1)
+		if (model.shapeIndex != -1)
 			Msg("Shape key used: %s\n", shapeByModels[i].ToCString());
 
+		GenLODList_t& lod_model = m_modelLodLists.append();
+		lod_model.lodmodels.append(modelIdx);
+		lod_model.name = model.name;
+
 		// set model to as part name
-		strcpy(model.model->name, KV_GetValueString(pKeyBase, 0, "invalid_model_name"));
+		model.name = KV_GetValueString(pKeyBase, 0, "invalid_model_name");
 
 		const int nVerts = GetTotalVertsOfDSM(model.model);
-
-		if((float)nVerts/3.0f != nVerts/3)
-		{
-			MsgError("Reference model '%s' has invalid triangles (tip: vertex count must be divisible by 3 without remainder)\n", model.model->name);
-
-			FreeModel(model);
-
-			continue;
-		}
-
 		Msg("Adding reference %s '%s' with %d triangles (in %d groups), %d bones\n", 
 				modelfilenames[i].GetData(),
-				model.model->name, 
+				model.name.ToCString(),
 				nVerts/3, 
 				model.model->groups.numElem(), 
 				model.model->bones.numElem());
@@ -471,27 +487,19 @@ dsmmodel_t* CEGFGenerator::ParseAndLoadModels(KVSection* pKeyBase)
 		}
 
 		GenModel_t mref;
-		mref.model = merged;
+		mref.model = CRefPtr(merged);
 		mref.shapeData = nullptr;
+		mref.name = merged->name;
 
-		// add model to list
-		m_modelrefs.append( mref );
-
-		return merged;
+		return m_modelrefs.append(mref);
 	}
 	else if(models.numElem() > 0)
 	{
-		// add model to list
-		m_modelrefs.append( models[0] );
-
-		return models[0].model;
-	}
-	else
-	{
-		MsgError("got model definition '%s', but nothing added\n", KV_GetValueString(pKeyBase));
+		return m_modelrefs.append(models[0]);
 	}
 
-	return nullptr;
+	MsgError("got model definition '%s', but nothing added\n", KV_GetValueString(pKeyBase));
+	return -1;
 }
 
 //************************************
@@ -522,17 +530,7 @@ bool CEGFGenerator::ParseModels(KVSection* pSection)
 		else if(!stricmp(keyBase->name, "model"))
 		{
 			// parse and load model
-			dsmmodel_t* model = ParseAndLoadModels( keyBase );
-
-			if (model)
-			{
-				GenLODList_t& lod_model = m_modelLodLists.append();
-				lod_model.lodmodels[0] = model;
-			}
-			else
-			{
-				return false;
-			}
+			ParseAndLoadModels( keyBase );
 		}
 	}
 
@@ -544,6 +542,11 @@ bool CEGFGenerator::ParseModels(KVSection* pSection)
 	}
 
 	Msg("Added %d model references\n", m_modelrefs.numElem());
+
+	// Add dummy (used for LODs)
+	GenModel_t mod{ "_dummy", CRefPtr_new(dsmmodel_t), nullptr };
+	strcpy(mod.model->name, "_dummy");
+	m_modelrefs.append(mod);
 
 	return true;
 }
@@ -566,17 +569,10 @@ void CEGFGenerator::ParseLodData(KVSection* pSection, int lodIdx)
 			continue;
 		}
 
-		GenModel_t* replaceByGen = FindModelByName(KV_GetValueString(pSection->keys[i], 1));
+		int replaceByExisting = FindModelIndexByName(KV_GetValueString(pSection->keys[i], 1));
+		const int replaceByModel = replaceByExisting != -1 ? replaceByExisting : ParseAndLoadModels(pSection->keys[i]);
 
-		dsmmodel_t* replaceBy = replaceByGen ? replaceByGen->model : nullptr;
-
-		if (!replaceBy)
-			replaceBy = ParseAndLoadModels(pSection->keys[i]);
-
-		if (!replaceBy)
-			continue;
-
-		lodgroup->lodmodels[lodIdx] = replaceBy;
+		lodgroup->lodmodels.append(replaceByModel);
 	}
 }
 
@@ -647,7 +643,6 @@ bool CEGFGenerator::ParseBodyGroups(KVSection* pSection)
 		if(keyBase->values.numElem() > 1)
 		{
 			const char* refName = KV_GetValueString(keyBase, 1);
-
 			const int lodIndex = FindModelLodIdGroupByName(refName);
 
 			if (lodIndex == -1)
@@ -794,7 +789,9 @@ void BoneMergeRemapDSM(dsmmodel_t* pDSM, Array<dsmskelbone_t*> &new_bones)
 	}
 
 	// reset skeleton
-	FreeDSMBones(pDSM);
+	for (int i = 0; i < pDSM->bones.numElem(); ++i)
+		delete pDSM->bones[i];
+	pDSM->bones.clear(true);
 
 	// and copy it
 	for(int i = 0; i < new_bones.numElem(); i++)
@@ -1242,16 +1239,15 @@ void CEGFGenerator::ParsePhysModels(KVSection* mainsection)
 			if(!foundRef)
 			{
 				// scaling already performed here
-				GenModel_t newRef = LoadModel( KV_GetValueString(modelNamePair) );
+				const int newModelIdx = LoadModel( KV_GetValueString(modelNamePair) );
 
-				if(newRef.model == nullptr)
+				if(newModelIdx == -1)
 				{
 					MsgError("*ERROR* Cannot find model reference '%s'\n", KV_GetValueString(modelNamePair));
 					continue;
 				}
 
-				m_modelrefs.append(newRef);
-				physModel = newRef.model;
+				physModel = m_modelrefs[newModelIdx].model;
 			}
 			else
 			{

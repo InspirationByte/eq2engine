@@ -351,13 +351,10 @@ bool LoadESXShapes( esmshapedata_t* data, const char* filename )
 	return true;
 }
 
-void FreeShapes( esmshapedata_t* data )
+esmshapedata_t::~esmshapedata_t()
 {
-	if(!data)
-		return;
-
-	for(int i = 0; i < data->shapes.numElem(); i++)
-		delete data->shapes[i];
+	for(int i = 0; i < shapes.numElem(); i++)
+		delete shapes[i];
 }
 
 int FindShapeKeyIndex( esmshapedata_t* data, const char* shapeKeyName )

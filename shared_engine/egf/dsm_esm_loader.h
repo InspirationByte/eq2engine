@@ -31,8 +31,9 @@ struct esmshapekey_t
 	int							time{ 0 };
 };
 
-struct esmshapedata_t
+struct esmshapedata_t : RefCountedObject<esmshapedata_t>
 {
+	~esmshapedata_t();
 	Array<esmshapekey_t*>	shapes{ PP_SL };
 	EqString				reference;
 };
@@ -40,7 +41,6 @@ struct esmshapedata_t
 
 bool	ReadBones(Tokenizer& tok, dsmmodel_t* pModel);
 
-void	FreeShapes( esmshapedata_t* data );
 int		FindShapeKeyIndex( esmshapedata_t* data, const char* shapeKeyName );
 void	AssignShapeKeyVertexIndexes(dsmmodel_t* mod, esmshapedata_t* shapeData);
 

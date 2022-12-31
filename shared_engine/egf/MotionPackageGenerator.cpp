@@ -645,7 +645,6 @@ int CMotionPackageGenerator::LoadAnimationFromESA(const char* filename)
 			{
 				MsgError("Invalid bones! Please re-export model!\n");
 				Studio_FreeAnimationData(&modelAnim, m_model->numBones);
-				FreeDSM(&tempDSM);
 				return -1;
 			}
 
@@ -654,16 +653,12 @@ int CMotionPackageGenerator::LoadAnimationFromESA(const char* filename)
 			if(!ReadFrames(*this, tok, &tempDSM, &modelAnim))
 			{
 				Studio_FreeAnimationData(&modelAnim, m_model->numBones);
-				FreeDSM(&tempDSM);
 				return -1;
 			}
 		}
 		else
 			tok.goToNextLine();
 	}
-
-	FreeDSM(&tempDSM);
-
 	return m_animations.append(modelAnim);
 }
 

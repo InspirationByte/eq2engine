@@ -46,8 +46,9 @@ struct dsmskelbone_t
 	Vector3D		angles{ 0 };
 };
 
-struct dsmmodel_t
+struct dsmmodel_t : public RefCountedObject<dsmmodel_t>
 {
+	~dsmmodel_t();
 	char					name[64]{ 0 };
 
 	Array<dsmgroup_t*>		groups{ PP_SL };
@@ -63,9 +64,6 @@ int		SortAndBalanceBones(int nCount, int nMaxCount, int* bones, float* weights);
 
 bool	LoadSharedModel(dsmmodel_t* model, const char* filename);
 bool	SaveSharedModel(dsmmodel_t* model, const char* filename);
-
-void	FreeDSM(dsmmodel_t* model);
-void	FreeDSMBones(dsmmodel_t* model);
 
 int		GetTotalVertsOfDSM(dsmmodel_t* model);
 

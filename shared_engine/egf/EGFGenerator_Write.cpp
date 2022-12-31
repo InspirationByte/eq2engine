@@ -472,6 +472,8 @@ void CEGFGenerator::WriteModels(studiohdr_t* header, IVirtualStream* stream)
 
 	//WRT_TEXT("MODEL GROUPS OFFSET");
 
+	// add models used by body groups
+	// FIXME: Body groups will need a remapping once some models are unused
 	for(int i = 0; i < m_modelrefs.numElem(); i++)
 	{
 		GenModel_t& modelRef = m_modelrefs[i];
@@ -486,12 +488,11 @@ void CEGFGenerator::WriteModels(studiohdr_t* header, IVirtualStream* stream)
 			modelgroupdesc_t* groupDesc = header->pModelDesc(i)->pGroup(j);
 
 			// shape key modifier (if available)
-			esmshapekey_t* key = (modelRef.shapeBy != -1) ? modelRef.shapeData->shapes[modelRef.shapeBy] : nullptr;
-
+			esmshapekey_t* key = (modelRef.shapeIndex != -1) ? modelRef.shapeData->shapes[modelRef.shapeIndex] : nullptr;
 			WriteGroup(header, stream, modelRef.model->groups[j], key, groupDesc);
 
 			if(groupDesc->materialIndex != -1)
-				Msg("Group %s:%d material used: %s\n", modelRef.model->name, j, m_usedMaterials[groupDesc->materialIndex]->materialname);
+				Msg("Wrote group %s:%d material used: %s\n", modelRef.name.ToCString(), j, m_usedMaterials[groupDesc->materialIndex]->materialname);
 		}
 	}
 }
@@ -508,12 +509,11 @@ void CEGFGenerator::WriteLods(studiohdr_t* header, IVirtualStream* stream)
 	{
 		for(int j = 0; j < MAX_MODEL_LODS; j++)
 		{
-			int refId = GetReferenceIndex( m_modelLodLists[i].lodmodels[j] );
+			const int modelIdx = (j < m_modelLodLists[i].lodmodels.numElem()) ? max(-1, m_modelLodLists[i].lodmodels[j]) : -1;
 
-			header->pLodModel(i)->modelsIndexes[j] = refId;
-
-			if(refId != -1)
+			if(modelIdx != -1)
 				header->pModelDesc(i)->lodIndex = j;
+			header->pLodModel(i)->modelsIndexes[j] = modelIdx;
 
 			WTYPE_ADVANCE(studiolodmodel_t);
 		}

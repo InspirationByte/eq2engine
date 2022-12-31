@@ -115,6 +115,18 @@ bool SaveSharedModel(dsmmodel_t* model, const char* filename)
 	return false;
 }
 
+dsmmodel_t::~dsmmodel_t()
+{
+	for (int i = 0; i < bones.numElem(); i++)
+		delete bones[i];
+
+	for (int i = 0; i < groups.numElem(); i++)
+		delete groups[i];
+
+	bones.clear(true);
+	groups.clear(true);
+}
+
 dsmgroup_t* dsmmodel_t::FindGroupByName(const char* pszGroupname)
 {
 	for(int i = 0; i < groups.numElem(); i++)
@@ -135,24 +147,6 @@ dsmskelbone_t* dsmmodel_t::FindBone(const char* pszName)
 	}
 
 	return nullptr;
-}
-
-void FreeDSMBones(dsmmodel_t* model)
-{
-	for(int i = 0; i < model->bones.numElem(); i++)
-		delete model->bones[i];
-
-	model->bones.clear();
-}
-
-void FreeDSM(dsmmodel_t* model)
-{
-	FreeDSMBones(model);
-
-	for(int i = 0; i < model->groups.numElem(); i++)
-		delete model->groups[i];
-
-	model->groups.clear();
 }
 
 int GetTotalVertsOfDSM(dsmmodel_t* model)

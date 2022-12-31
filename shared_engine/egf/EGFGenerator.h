@@ -43,73 +43,30 @@ public:
 	bool		GeneratePOD();
 
 protected:
-	struct GenBone_t
-	{
-		SharedModel::dsmskelbone_t* refBone{ nullptr };
-
-		Array<GenBone_t*>	childs{ PP_SL };
-		GenBone_t*			parent{ nullptr };
-	};
-
-	struct GenIKLink_t
-	{
-		Vector3D	mins;
-		Vector3D	maxs;
-
-		GenBone_t*	bone;
-
-		float		damping;
-	};
-
-	struct GenIKChain_t
-	{
-		char name[44]{ 0 };
-		Array<GenIKLink_t> link_list{ PP_SL };
-	};
-
-	struct GenModel_t
-	{
-		SharedModel::dsmmodel_t*		model{ nullptr };
-		SharedModel::esmshapedata_t*	shapeData{ nullptr };
-
-		int								shapeBy{ -1 };	// shape index
-		int								used{ 0 };
-	};
-
-	struct GenLODList_t
-	{
-		SharedModel::dsmmodel_t*		lodmodels[MAX_MODEL_LODS]{ nullptr };
-	};
-
-	struct GenMaterialDesc_t
-	{
-		char				materialname[32]{ 0 };
-		int					used{ 0 };
-	};
-
-	struct GenMaterialGroup_t
-	{
-		Array<GenMaterialDesc_t> materials{ PP_SL };
-	};
-
-	GenModel_t*				GetDummyModel();
+	struct GenLODList_t;
+	struct GenModel_t;
+	struct GenIKChain_t;
+	struct GenIKLink_t;
+	struct GenBone_t;
+	struct GenMaterialDesc_t;
+	struct GenMaterialGroup_t;
 
 	// helper functions
 	GenBone_t*				FindBoneByName(const char* pszName);
 	GenLODList_t*			FindModelLodGroupByName(const char* pszName);
+	int						FindModelIndexByName(const char* pszName);
 	GenModel_t*				FindModelByName(const char* pszName);
 
 	int						FindModelLodIdGroupByName(const char* pszName);
 	int						GetMaterialIndex(const char* pszName);
-	int						GetReferenceIndex(SharedModel::dsmmodel_t* pRef);
 
 	// loader functions
-	GenModel_t				LoadModel(const char* pszFileName);
+	int						LoadModel(const char* pszFileName);
 	void					FreeModel(GenModel_t& mod );
 	bool					PostProcessDSM(GenModel_t& mod );
 
-	void						LoadModelsFromFBX(KVSection* pKeyBase);
-	SharedModel::dsmmodel_t*	ParseAndLoadModels(KVSection* pKeyBase);
+	void					LoadModelsFromFBX(KVSection* pKeyBase);
+	int						ParseAndLoadModels(KVSection* pKeyBase);
 
 	bool					ParseModels(KVSection* pSection);
 	void					ParseLodData(KVSection* pSection, int lodIdx);
