@@ -642,7 +642,7 @@ bool CEGFPhysicsGenerator::CreateCompoundOrSeparateObjects( Array<dsmvertex_t>& 
 
 		KVSection* surfPropsPair = m_physicsParams->FindSection("SurfaceProps");
 				
-		memset(object.surfaceprops, 0, 0);
+		memset(object.surfaceprops, 0, sizeof(object.surfaceprops));
 		strcpy(object.surfaceprops, KV_GetValueString(surfPropsPair, 0, "default"));
 
 		object.mass = KV_GetValueFloat(m_physicsParams->FindSection("Mass"), 0, PHYS_DEFAULT_MASS);

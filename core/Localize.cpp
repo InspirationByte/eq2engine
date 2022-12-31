@@ -111,7 +111,7 @@ void CLocalize::Init()
 	}
 
 	// add the copyright
-	AddToken("INSCOPYRIGHT", L"\xa9 Inspiration Byte 2009-2021");
+	AddToken("INSCOPYRIGHT", L"\xa9 Inspiration Byte 2009-2023");
 
 	AddTokensFile("core");
 }
