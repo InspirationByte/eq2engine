@@ -11,7 +11,6 @@ end
 
 include("cv_sdk/premake5.lua")
 include("wxWidgets/premake5.lua")
-include("shiny/premake5.lua")
 include("imgui/premake5.lua")
 include("imgui_lua/premake5.lua")
 include("lz4/premake5.lua")
