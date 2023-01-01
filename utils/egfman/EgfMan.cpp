@@ -417,7 +417,7 @@ CEGFViewFrame::CEGFViewFrame( wxWindow* parent, wxWindowID id, const wxString& t
 	
 	fgSizer1->Add( new wxStaticText( m_pMotionPanel, wxID_ANY, wxT("Control"), wxDefaultPosition, wxDefaultSize, 0 ), 0, wxALL, 5 );
 	
-	m_pPoseValue = new wxSlider( m_pMotionPanel, Event_PoseCont_ValueChanged, 50, 0, 100, wxDefaultPosition, wxSize( 200,42 ), wxSL_HORIZONTAL );
+	m_pPoseValue = new wxSlider( m_pMotionPanel, Event_PoseCont_ValueChanged, 50000, 0, 100000, wxDefaultPosition, wxSize( 200,42 ), wxSL_HORIZONTAL );
 	fgSizer1->Add( m_pPoseValue, 0, wxALL, 5 );
 	
 	bSizer3->Add( fgSizer1, 0, wxEXPAND, 5 );
@@ -1377,10 +1377,10 @@ void CEGFViewFrame::OnComboboxChanged(wxCommandEvent& event)
 
 		if(nPoseContr != -1)
 		{
-			m_pPoseValue->SetMin(g_model.GetPoseController(nPoseContr).p->blendRange[0]*10 );
-			m_pPoseValue->SetMax(g_model.GetPoseController(nPoseContr).p->blendRange[1]*10 );
+			m_pPoseValue->SetMin(g_model.GetPoseController(nPoseContr).p->blendRange[0]*10000 );
+			m_pPoseValue->SetMax(g_model.GetPoseController(nPoseContr).p->blendRange[1]*10000 );
 
-			m_pPoseValue->SetValue(g_model.GetPoseControllerValue(nPoseContr)*10 );
+			m_pPoseValue->SetValue(g_model.GetPoseControllerValue(nPoseContr)*10000 );
 		}
 	}
 }
@@ -1418,7 +1418,7 @@ void CEGFViewFrame::OnButtons(wxCommandEvent& event)
 		int nPoseContr = m_pPoseController->GetSelection();
 
 		if(nPoseContr != -1)
-			g_model.SetPoseControllerValue(nPoseContr, float(m_pPoseValue->GetValue()) * 0.1f);
+			g_model.SetPoseControllerValue(nPoseContr, float(m_pPoseValue->GetValue()) / 10000.0f);
 	}
 	else if(event.GetId() == Event_Physics_SimulateToggle)
 	{
