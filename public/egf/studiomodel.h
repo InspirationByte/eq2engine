@@ -16,6 +16,8 @@ static constexpr const int MAX_MODEL_PART_PATH_LENGTH	= 128;
 static constexpr const int MAX_MODEL_PART_NAME_LENGTH	= 44;
 static constexpr const int MAX_MODEL_VERTEX_WEIGHTS		= 4;
 
+static constexpr const uint8 EGF_INVALID_IDX = 0xff;
+
 // use EGF_VERSION_CHANGE tags for defining changes
 
 // Base model material search path descriptor
@@ -63,7 +65,7 @@ ALIGNED_TYPE(studioikchain_s, 4) studioikchain_t;
 struct studioattachment_s
 {
 	char name[MAX_MODEL_PART_NAME_LENGTH];
-	int8 bone_id;
+	uint8 bone_id;
 
 	Vector3D position;
 	Vector3D angles;
@@ -83,7 +85,7 @@ ALIGNED_TYPE(studiolodparams_s, 4) studiolodparams_t;
 // lod models
 struct studiolodmodel_s
 {
-	int8				modelsIndexes[MAX_MODEL_LODS]; // lod model indexes, points to studiomodeldesc_t
+	uint8				modelsIndexes[MAX_MODEL_LODS]; // lod model indexes, points to studiomodeldesc_t
 };
 ALIGNED_TYPE(studiolodmodel_s, 4) studiolodmodel_t;
 
@@ -91,9 +93,9 @@ ALIGNED_TYPE(studiolodmodel_s, 4) studiolodmodel_t;
 struct studiobodygroup_s
 {
 	char				name[MAX_MODEL_PART_NAME_LENGTH];		// bodygroup name
-	int					lodModelIndex; // lod model index, points to studiolodmodel_t
+	uint8				lodModelIndex;							// lod model index, points to studiolodmodel_t
 
-	ubyte				unused[2];		// unused
+	ubyte				unused[7];								// unused
 };
 ALIGNED_TYPE(studiobodygroup_s, 4) studiobodygroup_t;
 

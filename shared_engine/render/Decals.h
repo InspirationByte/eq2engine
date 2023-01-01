@@ -7,98 +7,49 @@
 
 #pragma once
 
-enum MakeDecalFlags_e
+enum EDecalMakeFlags
 {
-	MAKEDECAL_FLAG_TEX_NORMAL		= (1 << 0),		// texture coordinates by normal
-	MAKEDECAL_FLAG_CLIPPING			= (1 << 1),
+	DECAL_MAKE_FLAG_TEX_NORMAL	= (1 << 0),		// texture coordinates by normal
+	DECAL_MAKE_FLAG_CLIPPING	= (1 << 1),		// not supported on EGFs
 };
 
 class IMaterial;
-class IPhysicsObject;
+using IMaterialPtr = CRefPtr<IMaterial>;
 
 // decal make info structure
-struct decalmakeinfo_t
+struct DecalMakeInfo
 {
-	decalmakeinfo_t() : material(nullptr), flags(0), texRotation(0.0f), texScale(1.0f)
-	{
-	}
-
-	IMaterial*			material;
-
-	int					flags; // MakeDecalFlags_e
-
 	Vector3D			origin;
 	Vector3D			size;
 	Vector3D			normal;
 
-	Vector2D			texScale;
-	float				texRotation;
+	Vector2D			texScale{ 1.0f };
+	float				texRotation{ 0.0f };
+	int					flags{ 0 };			// EDecalMakeFlags
+
+	IMaterialPtr		material;
 };
 
-enum DecalFlags_e
+enum EDecalDataFlags
 {
-	DECAL_FLAG_VISIBLE			= (1 << 0),
-	DECAL_FLAG_TRANSLUCENTSURF	= (1 << 1),	// engine supports that
-	DECAL_FLAG_STUDIODECAL		= (1 << 2), // this decal is on model
+	DECAL_FLAG_STUDIODECAL = (1 << 0)
 };
 
-//-------------------------------------------------------
-// temporary decal itself
-//-------------------------------------------------------
-struct tempdecal_t
+struct DecalData : public RefCountedObject<DecalData>
 {
-	tempdecal_t() 
-		: verts(nullptr), indices(nullptr), numVerts(0), numIndices(0), material(nullptr)
-	{
-	}
-
-	~tempdecal_t()
+	~DecalData()
 	{
 		PPFree(verts);
 		PPFree(indices);
 	}
 
-	void*				verts;
-	uint16*				indices;
-
-	uint16				numVerts;
-	uint16				numIndices;
-
-	IMaterial*			material;
-
-	int					flags; // DecalFlags_e
-
 	BoundingBox			bbox;
-};
+	IMaterialPtr		material;
+	void*				verts{ nullptr };
+	uint16*				indices{ nullptr };
+	
+	uint16				numVerts{ 0 };
+	uint16				numIndices{ 0 };
 
-struct eqlevelvertex_t;
-
-// static decal, that comes with shared VBO
-struct staticdecal_t
-{
-	~staticdecal_t()
-	{
-		PPFree(pVerts);
-		PPFree(pIndices);
-	}
-
-	BoundingBox			box;
-
-	int					firstVertex;
-	int					firstIndex;
-
-	int					numVerts;
-	int					numIndices;
-
-	eqlevelvertex_t*	pVerts;
-	int*				pIndices;
-
-	IMaterial*			material;
-	/*
-	// the decal attachment to avoid sorting
-	int					room_id[2];
-	int					room_volume;
-	int					surf_id;	// -1 if multiple surfaces
-	*/
-	int					flags; // DecalFlags_e
+	int					flags{ 0 };		// EDecalDataFlags
 };

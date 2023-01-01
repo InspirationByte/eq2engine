@@ -184,14 +184,14 @@ void CBaseEqGeomInstancer::Draw( CEqStudioGeom* model )
 
 			// get the right LOD model number
 			int bodyGroupLOD = lod;
-			int modelDescId = -1;
+			uint8 modelDescId = EGF_INVALID_IDX;
 			do
 			{
 				modelDescId = lodModel->modelsIndexes[bodyGroupLOD];
 				bodyGroupLOD--;
-			} while (modelDescId == -1 && bodyGroupLOD >= 0);
+			} while (modelDescId == EGF_INVALID_IDX && bodyGroupLOD >= 0);
 
-			if (modelDescId == -1)
+			if (modelDescId == EGF_INVALID_IDX)
 				continue;
 	
 			const studiomodeldesc_t* modDesc = studio.pModelDesc(modelDescId);

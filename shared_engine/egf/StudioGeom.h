@@ -16,8 +16,8 @@ class CBaseEqGeomInstancer;
 
 using IMaterialPtr = CRefPtr<IMaterial>;
 
-struct decalmakeinfo_t;
-struct tempdecal_t;
+struct DecalMakeInfo;
+struct DecalData;
 
 enum EModelLoadingState
 {
@@ -43,23 +43,24 @@ public:
 
 	const char*					GetName() const;
 	int							GetLoadingState() const;	// EModelLoadingState
-
-	// loads additional motion package
 	void						LoadMotionPackage(const char* filename);
-
-	// TODO: split studioHWData and remove later
-	const studiohdr_t&			GetStudioHdr() const;
-	const studioPhysData_t&		GetPhysData() const;
-	const studioMotionData_t&	GetMotionData(int index) const;
-	const studioJoint_t&		GetJoint(int index) const;
 
 	int							GetMotionPackageCount() const { return m_motionData.numElem(); }
 	int							GetMaterialCount() const { return m_materialCount; }
 	int							GetMaterialGroupsCount() const { return m_materialGroupsCount; }
 
-	// makes dynamic temporary decal
-	tempdecal_t*				MakeTempDecal( const decalmakeinfo_t& info, Matrix4x4* jointMatrices);
+	const studiohdr_t&			GetStudioHdr() const;
+	const studioPhysData_t&		GetPhysData() const;
+	const studioMotionData_t&	GetMotionData(int index) const;
+	const studioJoint_t&		GetJoint(int index) const;
+
 	const BoundingBox&			GetBoundingBox() const;
+
+	// Makes dynamic temporary decal
+	CRefPtr<DecalData>			MakeDecal(const DecalMakeInfo& info, Matrix4x4* jointMatrices, int bodyGroupFlags, int lod = 0) const;
+
+	// Checks ray-egf intersection. Ray must be in local space
+	float						CheckIntersectionWithRay(const Vector3D& rayStart, const Vector3D& rayDir, int bodyGroupFlags, int lod = 0) const;
 
 	// instancing
 	void						SetInstancer(CBaseEqGeomInstancer* instancer);

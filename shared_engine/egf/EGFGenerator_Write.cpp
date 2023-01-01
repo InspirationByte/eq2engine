@@ -513,7 +513,7 @@ void CEGFGenerator::WriteLods(studiohdr_t* header, IVirtualStream* stream)
 
 			if(modelIdx != -1)
 				header->pModelDesc(i)->lodIndex = j;
-			header->pLodModel(i)->modelsIndexes[j] = modelIdx;
+			header->pLodModel(i)->modelsIndexes[j] = (modelIdx == -1) ? EGF_INVALID_IDX : modelIdx;
 
 			WTYPE_ADVANCE(studiolodmodel_t);
 		}

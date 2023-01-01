@@ -1197,8 +1197,6 @@ void CEGFGenerator::ParsePhysModels(KVSection* mainsection)
 			}
 			else
 			{
-				//physicsmodel = lodMod->modelsIndexes[0];
-
 				physModel = foundRef->model;
 
 				if(!physModel)

@@ -786,14 +786,14 @@ void CEqStudioGeom::Draw(const DrawProps& drawProperties) const
 
 		// get the right LOD model number
 		int bodyGroupLOD = drawProperties.lod;
-		int modelDescId = -1;
+		uint8 modelDescId = EGF_INVALID_IDX;
 		do
 		{
 			modelDescId = lodModel->modelsIndexes[bodyGroupLOD];
 			bodyGroupLOD--;
-		} while (modelDescId == -1 && bodyGroupLOD >= 0);
+		} while (modelDescId == EGF_INVALID_IDX && bodyGroupLOD >= 0);
 
-		if (modelDescId == -1)
+		if (modelDescId == EGF_INVALID_IDX)
 			continue;
 
 		const studiomodeldesc_t* modDesc = studio.pModelDesc(modelDescId);
@@ -894,11 +894,11 @@ CBaseEqGeomInstancer* CEqStudioGeom::GetInstancer() const
 	return m_instancer;
 }
 
-static void MakeDecalTexCoord(Array<EGFHwVertex_t>& verts, Array<int>& indices, const decalmakeinfo_t& info)
+static void MakeDecalTexCoord(Array<EGFHwVertex_t>& verts, Array<int>& indices, const DecalMakeInfo& info)
 {
 	const Vector3D decalSize = info.size * 2.0f;
 
-	if (info.flags & MAKEDECAL_FLAG_TEX_NORMAL)
+	if (info.flags & DECAL_MAKE_FLAG_TEX_NORMAL)
 	{
 		int texSizeW = 1;
 		int texSizeH = 1;
@@ -989,7 +989,7 @@ static void MakeDecalTexCoord(Array<EGFHwVertex_t>& verts, Array<int>& indices, 
 }
 
 // makes dynamic temporary decal
-tempdecal_t* CEqStudioGeom::MakeTempDecal(const decalmakeinfo_t& info, Matrix4x4* jointMatrices)
+CRefPtr<DecalData> CEqStudioGeom::MakeDecal(const DecalMakeInfo& info, Matrix4x4* jointMatrices, int bodyGroupFlags, int lod) const
 {
 	if (r_egf_NoTempDecals.GetBool())
 		return nullptr;
@@ -998,9 +998,6 @@ tempdecal_t* CEqStudioGeom::MakeTempDecal(const decalmakeinfo_t& info, Matrix4x4
 
 	Vector3D decal_origin = info.origin;
 	Vector3D decal_normal = info.normal;
-
-	// pick a geometry
-	int nLod = 0;	// do from LOD 0
 
 	Array<EGFHwVertex_t> verts(PP_SL);
 	Array<int> indices(PP_SL);
@@ -1022,33 +1019,46 @@ tempdecal_t* CEqStudioGeom::MakeTempDecal(const decalmakeinfo_t& info, Matrix4x4
 	// we should transform every vertex and find an intersecting ones
 	for (int i = 0; i < studio->numBodyGroups; i++)
 	{
-		int nLodableModelIndex = studio->pBodyGroups(i)->lodModelIndex;
-		int nModDescId = studio->pLodModel(nLodableModelIndex)->modelsIndexes[nLod];
-
-		while (nLod > 0 && nModDescId != -1)
-		{
-			nLod--;
-			nModDescId = studio->pLodModel(nLodableModelIndex)->modelsIndexes[nLod];
-		}
-
-		if (nModDescId == -1)
+		if (!(bodyGroupFlags & (1 << i)))
 			continue;
 
-		for (int j = 0; j < studio->pModelDesc(nModDescId)->numGroups; j++)
+		const int bodyGroupLodIndex = studio->pBodyGroups(i)->lodModelIndex;
+		const studiolodmodel_t* lodModel = studio->pLodModel(bodyGroupLodIndex);
+
+		// get the right LOD model number
+		int bodyGroupLOD = lod;
+		uint8 modelDescId = EGF_INVALID_IDX;
+		do
 		{
-			modelgroupdesc_t* pGroup = studio->pModelDesc(nModDescId)->pGroup(j);
+			modelDescId = lodModel->modelsIndexes[bodyGroupLOD];
+			bodyGroupLOD--;
+		} while (modelDescId == EGF_INVALID_IDX && bodyGroupLOD >= 0);
 
-			uint32* pIndices = pGroup->pVertexIdx(0);
+		if (modelDescId == EGF_INVALID_IDX)
+			continue;
 
-			Array<EGFHwVertex_t>	g_verts(PP_SL);
-			Array<int>				g_indices(PP_SL);
-			Array<int>				g_orig_indices(PP_SL);
+		const studiomodeldesc_t* modDesc = studio->pModelDesc(modelDescId);
 
-			g_verts.resize(pGroup->numIndices);
-			g_indices.resize(pGroup->numIndices);
+		Array<EGFHwVertex_t> g_verts(PP_SL);
+		Array<int> g_indices(PP_SL);
+		Array<int> g_orig_indices(PP_SL);
 
-			uint numIndices = (pGroup->primitiveType == EGFPRIM_TRI_STRIP) ? pGroup->numIndices - 2 : pGroup->numIndices;
-			uint indexStep = (pGroup->primitiveType == EGFPRIM_TRI_STRIP) ? 1 : 3;
+		for (int j = 0; j < modDesc->numGroups; j++)
+		{
+			const modelgroupdesc_t* pGroup = modDesc->pGroup(j);
+
+			const uint32* pIndices = pGroup->pVertexIdx(0);
+
+			g_verts.clear();
+			g_indices.clear();
+			g_orig_indices.clear();
+
+			g_verts.reserve(pGroup->numIndices);
+			g_indices.reserve(pGroup->numIndices);
+			g_orig_indices.reserve(pGroup->numIndices);
+
+			const int numIndices = (pGroup->primitiveType == EGFPRIM_TRI_STRIP) ? pGroup->numIndices - 2 : pGroup->numIndices;
+			const int indexStep = (pGroup->primitiveType == EGFPRIM_TRI_STRIP) ? 1 : 3;
 
 			for (uint32 k = 0; k < numIndices; k += indexStep)
 			{
@@ -1056,10 +1066,9 @@ tempdecal_t* CEqStudioGeom::MakeTempDecal(const decalmakeinfo_t& info, Matrix4x4
 				if (pIndices[k] == pIndices[k + 1] || pIndices[k] == pIndices[k + 2] || pIndices[k + 1] == pIndices[k + 2])
 					continue;
 
+				const int even = k % 2;	// handle flipped triangles on EGFPRIM_TRI_STRIP
+				
 				int i0, i1, i2;
-
-				int even = k % 2;
-				// handle flipped triangles on EGFPRIM_TRI_STRIP
 				if (even && pGroup->primitiveType == EGFPRIM_TRI_STRIP)
 				{
 					i0 = pIndices[k + 2];
@@ -1077,6 +1086,7 @@ tempdecal_t* CEqStudioGeom::MakeTempDecal(const decalmakeinfo_t& info, Matrix4x4
 				EGFHwVertex_t v1(*pGroup->pVertex(i1));
 				EGFHwVertex_t v2(*pGroup->pVertex(i2));
 
+				// for skinning we transform vertices but we add raw verts to decal later
 				if (jointMatrices)
 				{
 					TransformEGFVertex(v0, tempMatrixArray);
@@ -1090,7 +1100,7 @@ tempdecal_t* CEqStudioGeom::MakeTempDecal(const decalmakeinfo_t& info, Matrix4x4
 				vbox.AddVertex(v2.pos.xyz());
 
 				// make and check surface normal
-				Vector3D normal = (v0.normal + v1.normal + v2.normal) / 3.0f;
+				const Vector3D normal = (v0.normal + v1.normal + v2.normal) / 3.0f;
 
 				auto egf_vertex_comp = [](const EGFHwVertex_t& a, const EGFHwVertex_t& b) -> bool
 				{
@@ -1112,16 +1122,17 @@ tempdecal_t* CEqStudioGeom::MakeTempDecal(const decalmakeinfo_t& info, Matrix4x4
 
 			MakeDecalTexCoord(g_verts, g_indices, info);
 
-			int nStart = verts.numElem();
+			const int start = verts.numElem();
 
 			verts.resize(g_indices.numElem());
 			indices.resize(g_indices.numElem());
 
-			// restore
 			for (int k = 0; k < g_indices.numElem(); k++)
 			{
+				indices.append(start + g_indices[k]);
+
+				// restore vertex position in case of skinning
 				g_verts[g_indices[k]].pos = Vector4D(pGroup->pVertex(g_orig_indices[k])->point, 1.0f);
-				indices.append(nStart + g_indices[k]);
 			}
 
 			verts.append(g_verts);
@@ -1130,27 +1141,100 @@ tempdecal_t* CEqStudioGeom::MakeTempDecal(const decalmakeinfo_t& info, Matrix4x4
 
 	if (verts.numElem() && indices.numElem())
 	{
-		tempdecal_t* pDecal = PPNew tempdecal_t;
+		CRefPtr<DecalData> decal = CRefPtr_new(DecalData);
 
-		pDecal->material = info.material;
-
-		pDecal->flags = DECAL_FLAG_STUDIODECAL;
-
-		pDecal->numVerts = verts.numElem();
-		pDecal->numIndices = indices.numElem();
-
-		pDecal->verts = PPAllocStructArray(EGFHwVertex_t, pDecal->numVerts);
-		pDecal->indices = PPAllocStructArray(uint16, pDecal->numIndices);
+		decal->material = info.material;
+		decal->flags = DECAL_FLAG_STUDIODECAL;
+		decal->numVerts = verts.numElem();
+		decal->numIndices = indices.numElem();
+		decal->verts = PPAllocStructArray(EGFHwVertex_t, decal->numVerts);
+		decal->indices = PPAllocStructArray(uint16, decal->numIndices);
 
 		// copy geometry
-		memcpy(pDecal->verts, verts.ptr(), sizeof(EGFHwVertex_t) * pDecal->numVerts);
+		memcpy(decal->verts, verts.ptr(), sizeof(EGFHwVertex_t) * decal->numVerts);
 
-		for (int i = 0; i < pDecal->numIndices; i++)
-			pDecal->indices[i] = indices[i];
+		for (int i = 0; i < decal->numIndices; i++)
+			decal->indices[i] = indices[i];
 
-		return pDecal;
+		return decal;
 	}
 
 	return nullptr;
 }
 
+
+float CEqStudioGeom::CheckIntersectionWithRay(const Vector3D& rayStart, const Vector3D& rayDir, int bodyGroupFlags, int lod) const
+{
+	float f1, f2;
+	if(!m_boundingBox.IntersectsRay(rayStart, rayDir, f1, f2))
+		return F_INFINITY;
+
+	float best_dist = F_INFINITY;
+
+	const studiohdr_t& studio = *m_studio;
+
+	for(int i = 0; i < studio.numBodyGroups; i++)
+	{
+		if (!(bodyGroupFlags & (1 << i)))
+			continue;
+
+		const int bodyGroupLodIndex = studio.pBodyGroups(i)->lodModelIndex;
+		const studiolodmodel_t* lodModel = studio.pLodModel(bodyGroupLodIndex);
+
+		// get the right LOD model number
+		int bodyGroupLOD = lod;
+		uint8 modelDescId = EGF_INVALID_IDX;
+		do
+		{
+			modelDescId = lodModel->modelsIndexes[bodyGroupLOD];
+			bodyGroupLOD--;
+		} while (modelDescId == EGF_INVALID_IDX && bodyGroupLOD >= 0);
+
+		if (modelDescId == EGF_INVALID_IDX)
+			continue;
+
+		const studiomodeldesc_t* modDesc = studio.pModelDesc(modelDescId);
+
+		for(int j = 0; j < modDesc->numGroups; j++)
+		{
+			const modelgroupdesc_t* pGroup = modDesc->pGroup(j);
+
+			const uint32* pIndices = pGroup->pVertexIdx(0);
+
+			const int numIndices = (pGroup->primitiveType == EGFPRIM_TRI_STRIP) ? pGroup->numIndices - 2 : pGroup->numIndices;
+			const int indexStep = (pGroup->primitiveType == EGFPRIM_TRI_STRIP) ? 1 : 3;
+
+			for (int k = 0; k < numIndices; k += indexStep)
+			{
+				// skip strip degenerates
+				if (pIndices[k] == pIndices[k+1] || pIndices[k] == pIndices[k+2] || pIndices[k+1] == pIndices[k+2])
+					continue;
+
+				const int even = k % 2; // handle flipped triangles on EGFPRIM_TRI_STRIP
+
+				Vector3D v0, v1, v2;
+				if (even && pGroup->primitiveType == EGFPRIM_TRI_STRIP)
+				{
+					v0 = pGroup->pVertex(pIndices[k + 2])->point;
+					v1 = pGroup->pVertex(pIndices[k + 1])->point;
+					v2 = pGroup->pVertex(pIndices[k])->point;
+				}
+				else
+				{
+					v0 = pGroup->pVertex(pIndices[k])->point;
+					v1 = pGroup->pVertex(pIndices[k + 1])->point;
+					v2 = pGroup->pVertex(pIndices[k + 2])->point;
+				}
+
+				float dist = F_INFINITY;
+				if(IsRayIntersectsTriangle(v0,v1,v2, rayStart, rayDir, dist, true))
+				{
+					if(dist < best_dist && dist > 0)
+						best_dist = dist;
+				}
+			}
+		}
+	}
+
+	return best_dist;
+}
