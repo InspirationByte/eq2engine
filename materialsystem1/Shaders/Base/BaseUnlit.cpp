@@ -19,8 +19,6 @@ BEGIN_SHADER_CLASS(BaseUnlit)
 		SHADER_FOGPASS(Unlit) = nullptr;
 
 		m_colorVar = GetAssignedMaterial()->GetMaterialVar("color", "[1 1 1 1]");
-
-		m_nFlags |= MATERIAL_FLAG_SKINNED;
 	}
 
 	SHADER_INIT_TEXTURES()
