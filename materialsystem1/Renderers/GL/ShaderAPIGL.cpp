@@ -2091,29 +2091,38 @@ void ShaderAPIGL::DrawIndexedPrimitives(ER_PrimitiveType nType, int nFirstIndex,
 	if (!m_pCurrentIndexBuffer)
 		return;
 
-	int nTris = g_pGLPrimCounterCallbacks[nType](nIndices);
-
-	uint indexSize = m_pCurrentIndexBuffer->GetIndexSize();
-
 	int numInstances = 0;
-
 	if(m_boundInstanceStream != -1 && m_pCurrentVertexBuffers[m_boundInstanceStream])
 		numInstances = m_pCurrentVertexBuffers[m_boundInstanceStream]->GetVertexCount();
 
 	glBindVertexArray(m_drawVAO);
 	GLCheckError("bind VAO");
 
-	if(numInstances)
-		glDrawElementsInstanced(glPrimitiveType[nType], nIndices, indexSize == 2? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT, BUFFER_OFFSET(indexSize * nFirstIndex), numInstances);
+	const uint indexSize = m_pCurrentIndexBuffer->GetIndexSize();
+
+	if (nBaseVertex > 0)
+	{
+		ASSERT(numInstances == 0, "nBaseVertex is not supported when drawing instanced in OpenGL :(")
+
+		glDrawRangeElements(glPrimitiveType[nType], nBaseVertex, nVertices, nIndices, indexSize == 2 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT, BUFFER_OFFSET(indexSize * nFirstIndex));
+	}
 	else
-		glDrawElements(glPrimitiveType[nType], nIndices, indexSize == 2? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT, BUFFER_OFFSET(indexSize * nFirstIndex));
+	{
+		if (numInstances)
+			glDrawElementsInstanced(glPrimitiveType[nType], nIndices, indexSize == 2 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT, BUFFER_OFFSET(indexSize * nFirstIndex), numInstances);
+		else
+			glDrawElements(glPrimitiveType[nType], nIndices, indexSize == 2 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT, BUFFER_OFFSET(indexSize * nFirstIndex));
+	}
+
 	GLCheckError("draw elements");
 
 	glBindVertexArray(0);
 
+#ifndef _RETAIL
 	m_nDrawIndexedPrimitiveCalls++;
 	m_nDrawCalls++;
-	m_nTrianglesCount += nTris;
+	m_nTrianglesCount += g_pGLPrimCounterCallbacks[nType](nIndices);
+#endif
 }
 
 // Draw elements
@@ -2125,10 +2134,7 @@ void ShaderAPIGL::DrawNonIndexedPrimitives(ER_PrimitiveType nType, int nFirstVer
 	if (nVertices <= 2)
 		return;
 
-	int nTris = g_pGLPrimCounterCallbacks[nType](nVertices);
-
 	int numInstances = 0;
-
 	if(m_boundInstanceStream != -1 && m_pCurrentVertexBuffers[m_boundInstanceStream])
 		numInstances = m_pCurrentVertexBuffers[m_boundInstanceStream]->GetVertexCount();
 
@@ -2143,9 +2149,11 @@ void ShaderAPIGL::DrawNonIndexedPrimitives(ER_PrimitiveType nType, int nFirstVer
 
 	glBindVertexArray(0);
 
+#ifndef _RETAIL
 	m_nDrawIndexedPrimitiveCalls++;
 	m_nDrawCalls++;
-	m_nTrianglesCount += nTris;
+	m_nTrianglesCount += g_pGLPrimCounterCallbacks[nType](nVertices);
+#endif
 }
 
 bool ShaderAPIGL::IsDeviceActive()

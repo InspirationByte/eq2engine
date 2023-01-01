@@ -78,16 +78,28 @@ CBaseShader::CBaseShader()
 		SetParameterFunctor(i, &CBaseShader::EmptyFunctor);
 
 	SetParameterFunctor(SHADERPARAM_CUBEMAP, &CBaseShader::ParamSetup_Cubemap);
+	SetParameterFunctor(SHADERPARAM_ALPHASETUP, &CBaseShader::ParamSetup_AlphaModel_Solid);
+	SetParameterFunctor(SHADERPARAM_TRANSFORM, &CBaseShader::ParamSetup_Transform);
+	SetParameterFunctor(SHADERPARAM_ANIMFRAME, &CBaseShader::ParamSetup_TextureFrames);
+	SetParameterFunctor(SHADERPARAM_RASTERSETUP, &CBaseShader::ParamSetup_RasterState);
+	SetParameterFunctor(SHADERPARAM_DEPTHSETUP, &CBaseShader::ParamSetup_DepthSetup);
+	SetParameterFunctor(SHADERPARAM_FOG, &CBaseShader::ParamSetup_Fog);
 }
 
 //--------------------------------------
 // Init parameters
 //--------------------------------------
 
+void CBaseShader::Init(IMaterial* assignee)
+{
+	m_material = assignee; 
+	InitParams();
+}
+
 void CBaseShader::InitParams()
 {
-	MatVarProxy addressMode	= m_pAssignedMaterial->FindMaterialVar("Address");
-	MatVarProxy texFilter = m_pAssignedMaterial->FindMaterialVar("Filtering");
+	MatVarProxy addressMode	= GetAssignedMaterial()->FindMaterialVar("Address");
+	MatVarProxy texFilter = GetAssignedMaterial()->FindMaterialVar("Filtering");
 
 	SHADER_PARAM_BOOL(ztest, m_depthtest, true)
 	SHADER_PARAM_BOOL(zwrite, m_depthwrite, true)
@@ -123,25 +135,30 @@ void CBaseShader::InitParams()
 	bool additiveLight = false;
 	SHADER_PARAM_BOOL(AdditiveLight, additiveLight, false)
 
-	// first set solid alpha mode
-	SetParameterFunctor(SHADERPARAM_ALPHASETUP, &CBaseShader::ParamSetup_AlphaModel_Solid);
-
 	// setup functors for transparency
-	//if(m_nFlags & MATERIAL_FLAG_ALPHATESTED)
-	//	SetParameterFunctor(SHADERPARAM_ALPHASETUP, &CBaseShader::ParamSetup_AlphaModel_Alphatest);
 
 	if(m_nFlags & MATERIAL_FLAG_TRANSPARENT)
+	{
 		SetParameterFunctor(SHADERPARAM_ALPHASETUP, &CBaseShader::ParamSetup_AlphaModel_Translucent);
+		m_depthwrite = false;
+	}
 
 	if(m_nFlags & MATERIAL_FLAG_ADDITIVE)
+	{
 		SetParameterFunctor(SHADERPARAM_ALPHASETUP, &CBaseShader::ParamSetup_AlphaModel_Additive);
+		m_depthwrite = false;
+	}
 
 	if(m_nFlags & MATERIAL_FLAG_MODULATE)
+	{
 		SetParameterFunctor(SHADERPARAM_ALPHASETUP, &CBaseShader::ParamSetup_AlphaModel_Modulate);
+		m_depthwrite = false;
+	}
 
 	if (additiveLight)
 	{
 		SetParameterFunctor(SHADERPARAM_ALPHASETUP, &CBaseShader::ParamSetup_AlphaModel_AdditiveLight);
+		m_depthwrite = false;
 		m_nFlags |= MATERIAL_FLAG_ADDITIVE;
 	}
 
@@ -172,17 +189,9 @@ void CBaseShader::InitParams()
 	if(m_nFlags & MATERIAL_FLAG_DECAL)
 		m_polyOffset = true;
 
-	// setup functors
-	SetParameterFunctor(SHADERPARAM_TRANSFORM, &CBaseShader::ParamSetup_Transform);
-	SetParameterFunctor(SHADERPARAM_ANIMFRAME, &CBaseShader::ParamSetup_TextureFrames);
-	SetParameterFunctor(SHADERPARAM_RASTERSETUP, &CBaseShader::ParamSetup_RasterState);
-	SetParameterFunctor(SHADERPARAM_DEPTHSETUP, &CBaseShader::ParamSetup_DepthSetup);
-	SetParameterFunctor(SHADERPARAM_FOG, &CBaseShader::ParamSetup_Fog);
-
 	if(!materials->GetConfiguration().enableShadows)
 	{
-		m_nFlags &= ~MATERIAL_FLAG_RECEIVESHADOWS;
-		m_nFlags &= ~MATERIAL_FLAG_CASTSHADOWS;
+		m_nFlags &= ~(MATERIAL_FLAG_RECEIVESHADOWS | MATERIAL_FLAG_CASTSHADOWS);
 	}
 }
 
@@ -290,16 +299,9 @@ void CBaseShader::ParamSetup_AlphaModel_Solid()
 	materials->SetBlendingStates( BLENDFACTOR_ONE, BLENDFACTOR_ZERO, BLENDFUNC_ADD );
 }
 
-void CBaseShader::ParamSetup_AlphaModel_Alphatest()
-{
-	// setup default alphatesting from shaderapi
-	//materials->SetBlendingStates(BLENDFACTOR_SRC_ALPHA, BLENDFACTOR_ONE_MINUS_SRC_ALPHA, BLENDFUNC_ADD, COLORMASK_ALL, true);
-}
-
 void CBaseShader::ParamSetup_AlphaModel_Translucent()
 {
 	materials->SetBlendingStates(BLENDFACTOR_SRC_ALPHA, BLENDFACTOR_ONE_MINUS_SRC_ALPHA, BLENDFUNC_ADD);
-	m_depthwrite = false;
 }
 
 void CBaseShader::ParamSetup_AlphaModel_Additive()
@@ -393,6 +395,12 @@ void CBaseShader::ParamSetup_Fog()
 	g_pShaderAPI->SetShaderConstantVector3D("FogColor", fog.fogColor);
 }
 
+void CBaseShader::ParamSetup_Cubemap()
+{
+	if (m_nFlags & MATERIAL_FLAG_USE_ENVCUBEMAP)
+		g_pShaderAPI->SetTexture(materials->GetEnvironmentMapTexture(), "CubemapTexture", 12);
+}
+
 // get texture transformation from vars
 Vector4D CBaseShader::GetTextureTransform(MatVarProxy transformVar, MatVarProxy scaleVar) const
 {
@@ -412,7 +420,7 @@ void CBaseShader::SetupVertexShaderTextureTransform(MatVarProxy transformVar, Ma
 
 IMaterial* CBaseShader::GetAssignedMaterial() const
 {
-	return m_pAssignedMaterial;
+	return m_material;
 }
 
 bool CBaseShader::IsError() const

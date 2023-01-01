@@ -2720,24 +2720,26 @@ IIndexBuffer* ShaderAPID3DX9::CreateIndexBuffer(int nIndices, int nIndexSize, ER
 void ShaderAPID3DX9::DrawIndexedPrimitives(ER_PrimitiveType nType, int nFirstIndex, int nIndices, int nFirstVertex, int nVertices, int nBaseVertex)
 {
 	ASSERT(nVertices > 0);
-
-	int nTris = s_DX9PrimitiveCounterFunctions[nType](nIndices);
-
-	m_pD3DDevice->DrawIndexedPrimitive( d3dPrim[nType], nBaseVertex, nFirstVertex, nVertices, nFirstIndex, nTris );
+	const int numPrimitives = s_DX9PrimitiveCounterFunctions[nType](nIndices);
+	m_pD3DDevice->DrawIndexedPrimitive( d3dPrim[nType], nBaseVertex, nFirstVertex, nVertices, nFirstIndex, numPrimitives);
 	
+#ifndef _RETAIL
 	m_nDrawIndexedPrimitiveCalls++;
 	m_nDrawCalls++;
-	m_nTrianglesCount += nTris;
+	m_nTrianglesCount += numPrimitives;
+#endif
 }
 
 // Draw elements
 void ShaderAPID3DX9::DrawNonIndexedPrimitives(ER_PrimitiveType nType, int nFirstVertex, int nVertices)
 {
-	int nTris = s_DX9PrimitiveCounterFunctions[nType](nVertices);
-	m_pD3DDevice->DrawPrimitive(d3dPrim[nType], nFirstVertex, nTris);
+	const int numPrimitives = s_DX9PrimitiveCounterFunctions[nType](nVertices);
+	m_pD3DDevice->DrawPrimitive(d3dPrim[nType], nFirstVertex, numPrimitives);
 
+#ifndef _RETAIL
 	m_nDrawCalls++;
-	m_nTrianglesCount += nTris;
+	m_nTrianglesCount += numPrimitives;
+#endif
 }
 
 //-------------------------------------------------------------------------------------------------------------------------

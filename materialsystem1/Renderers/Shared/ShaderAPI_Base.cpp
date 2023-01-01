@@ -230,9 +230,11 @@ int ShaderAPI_Base::GetTrianglesCount() const
 // Resetting the counters
 void ShaderAPI_Base::ResetCounters()
 {
+#ifndef _RETAIL
 	m_nDrawCalls					= 0;
 	m_nTrianglesCount				= 0;
 	m_nDrawIndexedPrimitiveCalls	= 0;
+#endif
 }
 
 void ShaderAPI_Base::Reset(int nResetTypeFlags)

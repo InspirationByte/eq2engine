@@ -142,7 +142,7 @@ public:
 								CBaseShader();
 
 	// Sets parameters
-	void						Init(IMaterial* assignee) {m_pAssignedMaterial = assignee; InitParams();}
+	void						Init(IMaterial* assignee);
 
 	virtual void				InitParams();
 	void						InitShader();
@@ -176,20 +176,19 @@ protected:
 	void						ParamSetup_CurrentAsBaseTexture();
 
 	void						ParamSetup_AlphaModel_Solid();
-	void						ParamSetup_AlphaModel_Alphatest();
 	void						ParamSetup_AlphaModel_Translucent();
 	void						ParamSetup_AlphaModel_Additive();
 	void						ParamSetup_AlphaModel_AdditiveLight();
 	void						ParamSetup_AlphaModel_Additive_Fog();
 	void						ParamSetup_AlphaModel_Modulate();
 
-	virtual void				ParamSetup_DepthSetup();
+	void						ParamSetup_DepthSetup();
+	void						ParamSetup_RasterState();
 
-	virtual void				ParamSetup_RasterState();
-	virtual void				ParamSetup_Transform();
+	void						ParamSetup_Transform();
+	void						ParamSetup_Fog();
 	virtual void				ParamSetup_TextureFrames();
-	virtual void				ParamSetup_Fog();
-	virtual void				ParamSetup_Cubemap() {}
+	virtual void				ParamSetup_Cubemap();
 
 	virtual bool				_ShaderInitRHI() = 0;
 
@@ -210,7 +209,7 @@ protected:
 	MatVarProxy					m_baseTextureScaleVar;
 	MatVarProxy					m_baseTextureFrame;
 
-	IMaterial*					m_pAssignedMaterial;
+	IMaterial*					m_material;
 
 	ER_TextureAddressMode		m_nAddressMode;
 	ER_TextureFilterMode		m_nTextureFilter;
