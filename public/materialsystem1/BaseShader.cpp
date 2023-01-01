@@ -12,43 +12,37 @@
 
 struct FilterTypeString_s
 {
-	const char*		pszFilterName;
-	ER_TextureFilterMode		nFilterType;
+	const char*				name;
+	ER_TextureFilterMode	type;
 };
 
-const FilterTypeString_s pBaseTextureFilterTypes[] = {
-	{ "nearest", TEXFILTER_NEAREST },
-	{ "linear", TEXFILTER_LINEAR },
-	{ "bilinear", TEXFILTER_BILINEAR },
-	{ "trilinear", TEXFILTER_TRILINEAR },
-	{ "aniso", TEXFILTER_TRILINEAR_ANISO },
-};
-
-ER_TextureFilterMode ResolveFilterType(const char* string)
+struct AddressingTypeString_s
 {
-	for(int i = 0; i < 5; i++)
+	const char*				name;
+	ER_TextureAddressMode	mode;
+};
+
+static const FilterTypeString_s s_textureFilterTypes[] = {
+	{ "nearest",	TEXFILTER_NEAREST },
+	{ "linear",		TEXFILTER_LINEAR },
+	{ "bilinear",	TEXFILTER_BILINEAR },
+	{ "trilinear",	TEXFILTER_TRILINEAR },
+	{ "aniso",		TEXFILTER_TRILINEAR_ANISO },
+};
+
+static ER_TextureFilterMode ResolveFilterType(const char* string)
+{
+	for(int i = 0; i < elementsOf(s_textureFilterTypes); i++)
 	{
-		if(!stricmp(string,pBaseTextureFilterTypes[i].pszFilterName))
-			return pBaseTextureFilterTypes[i].nFilterType;
+		if(!stricmp(string, s_textureFilterTypes[i].name))
+			return s_textureFilterTypes[i].type;
 	}
 
 	// by default
 	return TEXFILTER_TRILINEAR_ANISO;
 }
 
-struct AddressingTypeString_s
-{
-	const char*		pszAddressName;
-	ER_TextureAddressMode	nAddress;
-};
-
-const AddressingTypeString_s pBaseTextureAddressTypes[] = {
-	{ "wrap", TEXADDRESS_WRAP },
-	{ "clamp", TEXADDRESS_CLAMP },
-	{ "mirror", TEXADDRESS_MIRROR },
-};
-
-ER_TextureAddressMode ResolveAddressType(const char* string)
+static ER_TextureAddressMode ResolveAddressType(const char* string)
 {
 	if(!stricmp(string,"wrap"))
 		return TEXADDRESS_WRAP;
