@@ -19,6 +19,8 @@ BEGIN_SHADER_CLASS(BaseUnlit)
 		SHADER_FOGPASS(Unlit) = nullptr;
 
 		m_colorVar = GetAssignedMaterial()->GetMaterialVar("color", "[1 1 1 1]");
+
+		m_nFlags |= MATERIAL_FLAG_SKINNED;
 	}
 
 	SHADER_INIT_TEXTURES()
@@ -45,20 +47,47 @@ BEGIN_SHADER_CLASS(BaseUnlit)
 		SHADER_DECLARE_SIMPLE_DEFINITION((m_nFlags & MATERIAL_FLAG_ALPHATESTED), "ALPHATEST");
 
 		// compile without fog
-		SHADER_FIND_OR_COMPILE(Unlit, "BaseUnlit");
+		{
+			SHADER_FIND_OR_COMPILE(Unlit_noskin, "BaseUnlit");
+		}
+		
+		{
+			EqString oldDefines = defines;
+			EqString oldFindQuery = findQuery;
+
+			SHADER_DECLARE_SIMPLE_DEFINITION(true, "SKIN");
+			SHADER_FIND_OR_COMPILE(Unlit, "BaseUnlit");
+
+			defines = oldDefines;
+			findQuery = oldFindQuery;
+		}
 
 		// define fog parameter.
 		SHADER_DECLARE_SIMPLE_DEFINITION(m_fogenabled, "DOFOG");
 
 		// compile with fog
-		SHADER_FIND_OR_COMPILE(Unlit_fog, "BaseUnlit");
+		{
+			SHADER_FIND_OR_COMPILE(Unlit_noskin_fog, "BaseUnlit");
+		}
+
+		{
+			SHADER_DECLARE_SIMPLE_DEFINITION(true, "SKIN");
+			SHADER_FIND_OR_COMPILE(Unlit_fog, "BaseUnlit");
+		}
 
 		return true;
 	}
 
 	SHADER_SETUP_STAGE()
 	{
-		SHADER_BIND_PASS_FOGSELECT(Unlit);
+		if (materials->IsSkinningEnabled())
+		{
+			SHADER_BIND_PASS_FOGSELECT(Unlit)
+		}
+		else
+		{
+			SHADER_BIND_PASS_FOGSELECT(Unlit_noskin)
+		}
 	}
 
 	SHADER_SETUP_CONSTANTS()
@@ -96,5 +125,8 @@ BEGIN_SHADER_CLASS(BaseUnlit)
 
 	SHADER_DECLARE_PASS(Unlit);
 	SHADER_DECLARE_FOGPASS(Unlit);
+
+	SHADER_DECLARE_PASS(Unlit_noskin);
+	SHADER_DECLARE_FOGPASS(Unlit_noskin);
 
 END_SHADER_CLASS

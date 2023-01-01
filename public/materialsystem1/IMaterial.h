@@ -36,7 +36,7 @@ enum MaterialFlags_e
 
 	MATERIAL_FLAG_DECAL				= (1 << 8),		// is decal shader (also enables polygon offset feature)
 
-	MATERIAL_FLAG_SKINNED			= (1 << 9),		// this material is applies on skinned mesh, using vertex shaders
+	MATERIAL_FLAG_SKINNED			= (1 << 9),		// this material can be applied on skinned mesh, using vertex shaders
 	MATERIAL_FLAG_VERTEXBLEND		= (1 << 10),	// this material is uses vertex blending
 
 	MATERIAL_FLAG_CASTSHADOWS		= (1 << 11),	// this material occludes light
