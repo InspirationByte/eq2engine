@@ -217,7 +217,7 @@ inline void Promise<T>::SetError(int code, const char* message) const
 	Threading::CScopedMutex m(m_data->m_condMutex);
 	m_data->m_status = FUTURE_FAILURE;
 
-	new(&m_data->m_errorInfo.getData()) Data::ErrorInfo{ message, code };
+	new(&m_data->m_errorInfo.getData()) typename Data::ErrorInfo{ message, code };
 
 	FutureResult<T> result(m_data->m_errorInfo.getData().code, m_data->m_errorInfo.getData().message);
 	for (int i = 0; i < m_data->m_resultCb.numElem(); ++i)
@@ -317,7 +317,7 @@ inline void Future<T>::AddCallback(FutureCb callback)
 		}
 		case FUTURE_FAILURE:
 		{
-			Data::ErrorInfo& error = m_data->m_errorInfo.getData();
+			typename Data::ErrorInfo& error = m_data->m_errorInfo.getData();
 			FutureResult<T> result(error.code, error.message);
 			callback(result);
 			break;

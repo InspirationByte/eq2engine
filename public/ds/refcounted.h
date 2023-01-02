@@ -143,7 +143,8 @@ inline CRefPtr<TYPE>::CRefPtr(CRefPtr<TYPE>&& refptr)
 template< class TYPE >
 inline CRefPtr<TYPE>::~CRefPtr()
 {
-	using REF_TYPE = RefCountedObject<TYPE, typename TYPE::REF_POLICY>;
+	using REF_POLICY = typename TYPE::REF_POLICY;
+	using REF_TYPE = RefCountedObject<TYPE, REF_POLICY>;
 
 	REF_TYPE* oldObj = (REF_TYPE*)m_ptrObj;
 	if (oldObj != nullptr)
@@ -153,7 +154,8 @@ inline CRefPtr<TYPE>::~CRefPtr()
 template< class TYPE >
 inline void CRefPtr<TYPE>::Assign(PTR_TYPE obj)
 {
-	using REF_TYPE = RefCountedObject<TYPE, typename TYPE::REF_POLICY>;
+	using REF_POLICY = typename TYPE::REF_POLICY;
+	using REF_TYPE = RefCountedObject<TYPE, REF_POLICY>;
 
 	if(m_ptrObj == obj)
 		return;
@@ -171,7 +173,8 @@ inline void CRefPtr<TYPE>::Assign(PTR_TYPE obj)
 template< class TYPE >
 inline void CRefPtr<TYPE>::Release(bool deref)
 {
-	using REF_TYPE = RefCountedObject<TYPE, typename TYPE::REF_POLICY>;
+	using REF_POLICY = typename TYPE::REF_POLICY;
+	using REF_TYPE = RefCountedObject<TYPE, REF_POLICY>;
 
 	// del old ref
 	REF_TYPE* oldObj = (REF_TYPE*)m_ptrObj;
@@ -190,7 +193,8 @@ inline void CRefPtr<TYPE>::operator=(std::nullptr_t)
 template< class TYPE >
 inline void CRefPtr<TYPE>::operator=(CRefPtr<TYPE>&& refptr)
 {
-	using REF_TYPE = RefCountedObject<TYPE, typename TYPE::REF_POLICY>;
+	using REF_POLICY = typename TYPE::REF_POLICY;
+	using REF_TYPE = RefCountedObject<TYPE, REF_POLICY>;
 	REF_TYPE* oldObj = (REF_TYPE*)m_ptrObj;
 
 	m_ptrObj = refptr.m_ptrObj;

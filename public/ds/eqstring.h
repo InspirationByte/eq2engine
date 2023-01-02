@@ -52,6 +52,8 @@
 	spec bool operator%(const char* a, const classname& b) { return !(a ^ b); }
 #endif // STRING_OPERATORS
 
+class EqWString;
+
 class EqString
 {
 	friend class EqWString;

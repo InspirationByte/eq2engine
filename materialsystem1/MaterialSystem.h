@@ -27,6 +27,7 @@ struct shaderoverride_t
 
 class IRenderLibrary;
 class IRenderState;
+class CMaterial;
 struct DKMODULE;
 
 class CMaterialSystem : public IMaterialSystem

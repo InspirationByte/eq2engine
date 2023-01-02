@@ -7,6 +7,7 @@
 
 #pragma once
 #include "egf/StudioGeom.h"
+#include "materialsystem1/renderers/IShaderAPI.h"
 
 static constexpr const int EGF_INST_BODYGROUP_BITS	= 4;
 static constexpr const int EGF_INST_LOD_BITS		= 4;
@@ -27,7 +28,16 @@ static constexpr const int EGF_INST_POOL_MAX_INSTANCES = 256;
 class IVertexFormat;
 class IVertexBuffer;
 
-struct EGFInstBuffer;
+struct EGFInstBuffer
+{
+	IVertexBuffer*	instanceVB{ nullptr };
+	void*			instances{ nullptr };
+	ushort			numInstances{ 0 };
+	ushort			upToDateInstanes{ 0 };
+
+	~EGFInstBuffer();
+	void Init(int sizeOfInstance);
+};
 
 //---------------------------------------------------------------------
 class CBaseEqGeomInstancer

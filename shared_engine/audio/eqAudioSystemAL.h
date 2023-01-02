@@ -18,6 +18,7 @@
 //-----------------------------------------------------------------
 
 struct KVSection;
+class CEqAudioSourceAL;
 
 // Audio system, controls voices
 class CEqAudioSystemAL : public IEqAudioSystem

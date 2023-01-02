@@ -163,7 +163,7 @@ static LPALCGETSTRINGISOFT alcGetStringiSOFT = nullptr;
 static LPALCRESETDEVICESOFT alcResetDeviceSOFT = nullptr;
 
 // AL buffer
-LPALBUFFERCALLBACKSOFT alBufferCallbackSOFT;
+static LPALBUFFERCALLBACKSOFT alBufferCallbackSOFT;
 
 #define AL_LOAD_PROC(T, x)		x = (T)alGetProcAddress(#x)
 #define ALC_LOAD_PROC(d, T, x)  x = (T)alcGetProcAddress(d, #x)

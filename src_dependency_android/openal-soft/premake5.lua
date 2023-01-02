@@ -36,6 +36,14 @@ project "openal_soft"
 		"AL_LIBTYPE_STATIC"
 	}
 
+	-- config does not define HAVE_RTKIT
+	removefiles {
+		"./core/dbus_wrap.h",
+		"./core/dbus_wrap.cpp",
+		"./core/rtkit.h",
+		"./core/rtkit.cpp",
+	}
+
 	filter "architecture:arm or arm64"
   		removefiles {
 			"./core/mixer/mixer_sse.cpp",

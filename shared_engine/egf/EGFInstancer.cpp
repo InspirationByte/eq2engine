@@ -9,28 +9,19 @@
 #include "materialsystem1/IMaterialSystem.h"
 #include "EGFInstancer.h"
 
-
-struct EGFInstBuffer
+EGFInstBuffer::~EGFInstBuffer()
 {
-	IVertexBuffer*	instanceVB{ nullptr };
-	void*			instances{ nullptr };
-	ushort			numInstances{ 0 };
-	ushort			upToDateInstanes{ 0 };
+	PPFree(instances);
+	g_pShaderAPI->DestroyVertexBuffer(instanceVB);
+}
 
-	~EGFInstBuffer()
-	{
-		PPFree(instances);
-		g_pShaderAPI->DestroyVertexBuffer(instanceVB);
-	}
+void EGFInstBuffer::Init(int sizeOfInstance)
+{
+	instanceVB = g_pShaderAPI->CreateVertexBuffer(BUFFER_DYNAMIC, EGF_INST_POOL_MAX_INSTANCES, sizeOfInstance);
+	instanceVB->SetFlags(VERTBUFFER_FLAG_INSTANCEDATA);
 
-	void Init(int sizeOfInstance)
-	{
-		instanceVB = g_pShaderAPI->CreateVertexBuffer(BUFFER_DYNAMIC, EGF_INST_POOL_MAX_INSTANCES, sizeOfInstance);
-		instanceVB->SetFlags(VERTBUFFER_FLAG_INSTANCEDATA);
-
-		instances = PPAlloc(sizeOfInstance * EGF_INST_POOL_MAX_INSTANCES);
-	}
-};
+	instances = PPAlloc(sizeOfInstance * EGF_INST_POOL_MAX_INSTANCES);
+}
 
 CBaseEqGeomInstancer::CBaseEqGeomInstancer()
 {

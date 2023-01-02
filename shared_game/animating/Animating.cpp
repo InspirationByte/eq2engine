@@ -345,7 +345,7 @@ void CAnimatingEGF::SetSequenceByName(const char* name, int slot)
 // returns current activity
 Activity CAnimatingEGF::GetCurrentActivity(int slot)
 {
-	if (m_sequenceTimers && m_sequenceTimers[slot].seq)
+	if (m_sequenceTimers[slot].seq)
 		return m_sequenceTimers[slot].seq->activity;
 
 	return ACT_INVALID;

@@ -76,7 +76,7 @@ workspace(WORKSPACE_NAME)
 		}
 		
 		disablewarnings {
-			-- disable warnings which are emitted by my stupid code
+			-- disable warnings which are emitted by my stupid (and not so) code
 			"c++11-narrowing",
 			"writable-strings",
 			"logical-op-parentheses",
@@ -84,6 +84,7 @@ workspace(WORKSPACE_NAME)
 			"register",
 			"unused-local-typedef",
 			"nonportable-include-path",
+			"format-security"
 		}
 		
 		buildoptions {

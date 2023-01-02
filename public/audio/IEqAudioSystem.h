@@ -96,7 +96,7 @@ public:
 			return *this;
 		}
 
-#define PROP_MERGE(flags, var, flag) if(flags & flag) {var = other.##var;}
+#define PROP_MERGE(flags, var, flag) if(flags & flag) {var = other.var;}
 
 		inline void merge(const Params& other, int overrideUpdateFlags = -1) {
 			const int flags = (overrideUpdateFlags == -1) ? other.updateFlags : overrideUpdateFlags;

@@ -9,6 +9,7 @@
 
 class ITexture;
 class CTextureAtlas;
+class MatVarProxy;
 
 struct MatVarData
 {

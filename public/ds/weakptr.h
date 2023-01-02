@@ -117,7 +117,6 @@ private:
 
 template< class TYPE >
 inline CWeakPtr<TYPE>::CWeakPtr(std::nullptr_t)
-	: m_ptrObj(nullptr)
 {
 }
 

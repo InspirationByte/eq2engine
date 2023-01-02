@@ -2102,7 +2102,7 @@ void ShaderAPIGL::DrawIndexedPrimitives(ER_PrimitiveType nType, int nFirstIndex,
 
 	if (nBaseVertex > 0)
 	{
-		ASSERT(numInstances == 0, "nBaseVertex is not supported when drawing instanced in OpenGL :(")
+		ASSERT_MSG(numInstances == 0, "nBaseVertex is not supported when drawing instanced in OpenGL :(")
 
 		glDrawRangeElements(g_gl_primitiveType[nType], nBaseVertex, nVertices, nIndices, indexSize == 2 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT, BUFFER_OFFSET(indexSize * nFirstIndex));
 	}

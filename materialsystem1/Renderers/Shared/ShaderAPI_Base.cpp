@@ -759,7 +759,7 @@ bool ShaderAPI_Base::LoadShadersFromFile(IShaderProgram* pShaderOutput, const ch
 
 	if (!info.data.boilerplate)
 	{
-		MsgError("Cannot open '%s', expect shader compilation errors\n", boilerplateFile);
+		MsgError("Cannot open '%s', expect shader compilation errors\n", boilerplateFile.ToCString());
 	}
 
 	// compile the shaders

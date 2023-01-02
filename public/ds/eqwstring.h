@@ -9,6 +9,8 @@
 
 #define _EWs EqWString
 
+class EqString;
+
 class EqWString
 {
 	friend class EqString;

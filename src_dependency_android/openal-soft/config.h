@@ -2,6 +2,9 @@
 #define AL_API  __attribute__((visibility("protected")))
 #define ALC_API __attribute__((visibility("protected")))
 
+/* Define if deprecated EAX extensions are enabled */
+#define ALSOFT_EAX
+
 /* Define if HRTF data is embedded in the library */
 #define ALSOFT_EMBED_HRTF_DATA
 
@@ -16,6 +19,9 @@
 
 /* Define if we have the getopt function */
 #define HAVE_GETOPT
+
+/* Define if we have DBus/RTKit */
+/* #undef HAVE_RTKIT */
 
 /* Define if we have SSE CPU extensions */
 /* #undef HAVE_SSE */

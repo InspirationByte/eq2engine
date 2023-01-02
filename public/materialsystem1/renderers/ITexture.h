@@ -9,6 +9,7 @@
 #include "imaging/textureformats.h"
 
 class CImage;
+enum ETextureFormat;
 
 enum ETextureLockFlags
 {
@@ -62,6 +63,8 @@ public:
 	virtual bool				Lock(LockInOutData& data) = 0;
 	virtual void				Unlock() = 0;
 };
+
+using ITexturePtr = CRefPtr<ITexture>;
 
 
 struct ITexture::LockInOutData
