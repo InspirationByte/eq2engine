@@ -363,7 +363,7 @@ bool CDPKFileReader::InitPackage(const char *filename, const char* mountPath /*=
 	m_dpkFiles = nullptr;
 
     m_packageName = filename;
-	m_packagePath = ((CFileSystem*)g_fileSystem)->GetAbsolutePath(SP_ROOT, filename);
+	m_packagePath = ((CFileSystem*)g_fileSystem.GetInstancePtr())->GetAbsolutePath(SP_ROOT, filename);
 
     FILE* dpkFile = fopen(m_packagePath.ToCString(),"rb");
 

@@ -15,9 +15,8 @@
 //
 //////////////////////////////////////////////////////////////////////////////////
 
-#define NO_PPMEM_OP
-
 #include "core/core_common.h"
+
 #include "core/ppmem.h"
 #include "core/ConVar.h"
 #include "core/ConCommand.h"

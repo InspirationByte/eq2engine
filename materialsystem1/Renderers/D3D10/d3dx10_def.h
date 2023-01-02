@@ -166,7 +166,7 @@ static const char *semantics[] = {
 };
 */
 
-static const D3D10_USAGE d3dbufferusages[] = {
+static const D3D10_USAGE g_d3d9_bufferUsages[] = {
 	D3D10_USAGE_DEFAULT,
 	D3D10_USAGE_IMMUTABLE,
 	D3D10_USAGE_DYNAMIC,

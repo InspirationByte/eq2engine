@@ -138,7 +138,7 @@ bool CZipFileReader::InitPackage(const char* filename, const char* mountPath/* =
 
 	m_packageName = filename;
 
-	m_packagePath = ((CFileSystem*)g_fileSystem)->GetAbsolutePath(SP_ROOT, filename);
+	m_packagePath = ((CFileSystem*)g_fileSystem.GetInstancePtr())->GetAbsolutePath(SP_ROOT, filename);
 
 	// perform test
 	unzFile zip = GetNewZipHandle();

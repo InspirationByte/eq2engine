@@ -61,9 +61,9 @@ void CVertexFormatD3DX9::GenVertexElement(D3DVERTEXELEMENT9* elems)
 		{
 			elem.Stream = stream;
 			elem.Offset = m_streamStride[stream];
-			elem.Type = d3ddecltypes[fmtdesc.attribFormat][size - 1];
+			elem.Type = g_d3d9_decltypes[fmtdesc.attribFormat][size - 1];
 			elem.Method = D3DDECLMETHOD_DEFAULT;
-			elem.Usage = d3dvertexusage[fmtdesc.attribType];
+			elem.Usage = g_d3d9_vertexUsage[fmtdesc.attribType];
 			elem.UsageIndex = index[fmtdesc.attribType]++;
 
 			numRealAttribs++;

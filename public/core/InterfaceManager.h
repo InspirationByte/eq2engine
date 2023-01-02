@@ -60,13 +60,20 @@ public:
 // dll export version
 #define INTERFACE_SINGLETON(abstractclass, classname, interfacename, localname)	\
 	IEXPORTS abstractclass* Get##classname();									\
-	static abstractclass* localname = Get##classname();		// this thing is designed to fool the LLVM/GCC because it's fucking mystery
+	class CDkCoreInterface_##classname {		\
+	public:										\
+		abstractclass*	GetInstancePtr()	{ return Get##classname(); } \
+		abstractclass*	operator->()		{ return GetInstancePtr(); }			\
+		operator		abstractclass*()	{ return GetInstancePtr(); }			\
+	};																				\
+	static CDkCoreInterface_##classname localname;
 
 #define EXPORTED_INTERFACE( interfacename, classname )	\
 	IEXPORTS interfacename *Get##classname( void ) {    \
 		static classname s_##classname;					\
 		return ( interfacename * )&s_##classname;		\
-	}
+	}													\
+	interfacename* _inteface##classname = Get##classname();
 
 #else
 

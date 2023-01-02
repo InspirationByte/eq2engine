@@ -9,8 +9,13 @@
 #include "../Shared/CTexture.h"
 
 typedef struct SamplerStateParam_s SamplerStateParam_t;
-
 class CImage;
+
+struct GLTextureRef_t
+{
+	GLuint		glTexID;
+	EImageType	type;
+};
 
 class CGLTexture : public CTexture
 {

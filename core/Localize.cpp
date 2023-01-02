@@ -81,6 +81,11 @@ CLocalize::CLocalize()
 	g_eqCore->RegisterInterface(LOCALIZER_INTERFACE_VERSION, this);
 }
 
+CLocalize::~CLocalize()
+{
+	g_eqCore->UnregisterInterface(LOCALIZER_INTERFACE_VERSION);
+}
+
 void CLocalize::Init()
 {
 	KVSection* pRegional = g_eqCore->GetConfig()->FindSection("RegionalSettings", KV_FLAG_SECTION);

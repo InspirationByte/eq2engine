@@ -56,14 +56,20 @@ static bool g_bPrintLeaksOnShutdown = false;
 
 IEXPORTS void*	_GetDkCoreInterface(const char* pszName)
 {
+#if 0
+	static bool fsRequested = false;
 	// Filesystem is required by mobile port
-	if(!strcmp(pszName, FILESYSTEM_INTERFACE_VERSION))
+	if(!fsRequested && !strcmp(pszName, FILESYSTEM_INTERFACE_VERSION))
 	{
-		if (!g_eqCore->GetInterface(FILESYSTEM_INTERFACE_VERSION))
-			g_eqCore->RegisterInterface(FILESYSTEM_INTERFACE_VERSION, g_fileSystem);
+		GetCFileSystem();
+		fsRequested = true;
 	}
+#endif
+	void* iface = g_eqCore->GetInterface(pszName);
 
-	return g_eqCore->GetInterface(pszName);
+	ASSERT_MSG(iface, "Interface %s is not registered", pszName)
+
+	return iface;
 }
 
 void DkCore_onExit( void )
@@ -300,13 +306,13 @@ bool CDkCore::Init(const char* pszApplicationName, const char* pszCommandLine)
 	// Show core message
 	MsgAccept("Equilibrium 2 - %s %s\n", __DATE__, __TIME__);
 
-	CEqCPUCaps* cpuCaps = (CEqCPUCaps*)g_cpuCaps;
+	CEqCPUCaps* cpuCaps = (CEqCPUCaps*)g_cpuCaps.GetInstancePtr();
 	cpuCaps->Init();
 
 	g_consoleCommands->RegisterCommand(&c_developer);
 	g_consoleCommands->RegisterCommand(&c_echo);
 
-	((CConsoleCommands*)g_consoleCommands)->RegisterCommands();
+	((CConsoleCommands*)g_consoleCommands.GetInstancePtr())->RegisterCommands();
 
 	c_log_enable = PPNew ConCommand("log_enable",CONCOMMAND_FN(log_enable));
 	c_log_disable = PPNew ConCommand("log_disable",CONCOMMAND_FN(log_disable));
@@ -379,7 +385,7 @@ void CDkCore::Shutdown()
 
     SetSpewFunction(nullspew);
 
-    ((CConsoleCommands*)g_consoleCommands)->DeInit();
+    ((CConsoleCommands*)g_consoleCommands.GetInstancePtr())->DeInit();
 
     g_cmdLine->DeInit();
 

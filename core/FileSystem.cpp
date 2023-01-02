@@ -153,11 +153,12 @@ extern bool g_bPrintLeaksOnShutdown;
 CFileSystem::CFileSystem() :
 	m_isInit(false), m_editorMode(false)
 {
+	g_eqCore->RegisterInterface(FILESYSTEM_INTERFACE_VERSION, this);
 }
 
 CFileSystem::~CFileSystem()
 {
-
+	g_eqCore->UnregisterInterface(FILESYSTEM_INTERFACE_VERSION);
 }
 
 SearchPath_e GetSearchPathByName(const char* str)

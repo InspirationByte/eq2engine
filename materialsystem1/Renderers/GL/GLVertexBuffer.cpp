@@ -85,7 +85,7 @@ void CVertexBufferGL::Update(void* data, int size, int offset, bool discard /*= 
 	if (offset > 0) // streaming
 		glBufferSubData(GL_ARRAY_BUFFER, offset*m_strideSize, size*m_strideSize, data);
 	else // orphaning
-		glBufferData(GL_ARRAY_BUFFER, size*m_strideSize, data, glBufferUsages[m_access]);
+		glBufferData(GL_ARRAY_BUFFER, size*m_strideSize, data, g_gl_bufferUsages[m_access]);
 
 	GLCheckError("vertexbuffer update");
 

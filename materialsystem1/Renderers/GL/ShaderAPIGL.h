@@ -7,6 +7,7 @@
 
 #pragma once
 #include "../Shared/ShaderAPI_Base.h"
+#include "GLTexture.h"
 
 enum EGraphicsVendor
 {

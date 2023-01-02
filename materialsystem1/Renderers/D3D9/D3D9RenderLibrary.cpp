@@ -125,7 +125,7 @@ bool CD3DRenderLib::InitAPI( const shaderAPIParams_t &params )
 	int stencilBits = 1;
 
 	// setup backbuffer format
-	m_d3dpp.BackBufferFormat = formats[ params.screenFormat ];
+	m_d3dpp.BackBufferFormat = g_d3d9_imageFormats[ params.screenFormat ];
 
 	// Find a suitable fullscreen format
 	//int fullScreenRefresh = 60;
@@ -262,8 +262,8 @@ bool CD3DRenderLib::InitAPI( const shaderAPIParams_t &params )
 	// get texture caps
 	for(int i = 0; i < FORMAT_COUNT; i++)
 	{
-		caps.textureFormatsSupported[i] = (m_d3dFactory->CheckDeviceFormat(D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, m_d3dMode.Format, 0, D3DRTYPE_TEXTURE, formats[i]) == D3D_OK);
-		caps.renderTargetFormatsSupported[i] = (m_d3dFactory->CheckDeviceFormat(D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, m_d3dMode.Format, D3DUSAGE_RENDERTARGET, D3DRTYPE_SURFACE, formats[i]) == D3D_OK);
+		caps.textureFormatsSupported[i] = (m_d3dFactory->CheckDeviceFormat(D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, m_d3dMode.Format, 0, D3DRTYPE_TEXTURE, g_d3d9_imageFormats[i]) == D3D_OK);
+		caps.renderTargetFormatsSupported[i] = (m_d3dFactory->CheckDeviceFormat(D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, m_d3dMode.Format, D3DUSAGE_RENDERTARGET, D3DRTYPE_SURFACE, g_d3d9_imageFormats[i]) == D3D_OK);
 	
 		DevMsg(DEVMSG_SHADERAPI, "[DEBUG] texture format %d: %s %s\n", i, caps.textureFormatsSupported[i] ? "tex" : "", caps.renderTargetFormatsSupported[i] ? "rt" : "");
 	}
@@ -280,8 +280,8 @@ bool CD3DRenderLib::InitAPI( const shaderAPIParams_t &params )
 	caps.INTZFormat = FORMAT_R32UI;
 	caps.NULLFormat = FORMAT_NONE;		// at actual NONE slot
 
-	formats[caps.INTZFormat] = FOURCC_INTZ;
-	formats[caps.NULLFormat] = FOURCC_NULL;
+	g_d3d9_imageFormats[caps.INTZFormat] = FOURCC_INTZ;
+	g_d3d9_imageFormats[caps.NULLFormat] = FOURCC_NULL;
 
 	return true;
 }
@@ -429,7 +429,7 @@ void CD3DRenderLib::SetupSwapEffect(const shaderAPIParams_t& params)
 	}
 	else
 	{
-		m_d3dpp.BackBufferFormat = formats[params.screenFormat];
+		m_d3dpp.BackBufferFormat = g_d3d9_imageFormats[params.screenFormat];
 		m_d3dpp.SwapEffect = D3DSWAPEFFECT_DISCARD;
 	}
 }

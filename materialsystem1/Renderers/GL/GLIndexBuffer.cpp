@@ -83,7 +83,7 @@ void CIndexBufferGL::Update(void* data, int size, int offset, bool discard /*= t
 	if (offset > 0) // streaming
 		glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, offset*m_nIndexSize, size*m_nIndexSize, data);
 	else // orphaning
-		glBufferData(GL_ELEMENT_ARRAY_BUFFER, size*m_nIndexSize, data, glBufferUsages[m_access]);
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, size*m_nIndexSize, data, g_gl_bufferUsages[m_access]);
 
 	GLCheckError("indexbuffer update");
 

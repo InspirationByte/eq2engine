@@ -6,6 +6,7 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #pragma once
+#include <d3dx9.h>
 #include "../Shared/ShaderProgram.h"
 
 #define MAX_CONSTANT_NAMELEN 64

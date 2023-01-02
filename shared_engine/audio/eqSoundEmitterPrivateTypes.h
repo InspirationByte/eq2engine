@@ -7,6 +7,7 @@
 
 #pragma once
 #include "audio/IEqAudioSystem.h"
+#include "source/snd_source.h"
 #include "eqSoundEmitterCommon.h"
 
 class CSoundingObject;

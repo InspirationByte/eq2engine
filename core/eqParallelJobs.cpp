@@ -93,6 +93,7 @@ CEqParallelJobThreads::CEqParallelJobThreads()
 
 CEqParallelJobThreads::~CEqParallelJobThreads()
 {
+	g_eqCore->UnregisterInterface(PARALLELJOBS_INTERFACE_VERSION);
 }
 
 // creates new job thread

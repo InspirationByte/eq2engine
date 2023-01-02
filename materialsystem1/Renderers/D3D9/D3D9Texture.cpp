@@ -51,7 +51,7 @@ IDirect3DBaseTexture9* CD3D9Texture::CreateD3DTexture(EImageType type, ETextureF
 	if (type == IMAGE_TYPE_CUBE)
 	{
 		HRESULT status = d3dDevice->CreateCubeTexture(widthMip0, mipCount, 0,
-														formats[format], (D3DPOOL)m_pool, (LPDIRECT3DCUBETEXTURE9*)&d3dTexture, nullptr);
+														g_d3d9_imageFormats[format], (D3DPOOL)m_pool, (LPDIRECT3DCUBETEXTURE9*)&d3dTexture, nullptr);
 		if (status != D3D_OK)
 		{
 			return nullptr;
@@ -60,7 +60,7 @@ IDirect3DBaseTexture9* CD3D9Texture::CreateD3DTexture(EImageType type, ETextureF
 	else if (type == IMAGE_TYPE_3D)
 	{
 		HRESULT status = d3dDevice->CreateVolumeTexture(widthMip0, heightMip0, depthMip0, mipCount, 0,
-														formats[format], (D3DPOOL)m_pool, (LPDIRECT3DVOLUMETEXTURE9*)&d3dTexture, nullptr);
+														g_d3d9_imageFormats[format], (D3DPOOL)m_pool, (LPDIRECT3DVOLUMETEXTURE9*)&d3dTexture, nullptr);
 		if (status != D3D_OK)
 		{
 			return nullptr;
@@ -69,7 +69,7 @@ IDirect3DBaseTexture9* CD3D9Texture::CreateD3DTexture(EImageType type, ETextureF
 	else if(type == IMAGE_TYPE_2D || type == IMAGE_TYPE_1D)
 	{
 		HRESULT status = d3dDevice->CreateTexture(widthMip0, heightMip0, mipCount, 0,
-													formats[format], (D3DPOOL)m_pool, (LPDIRECT3DTEXTURE9*)&d3dTexture, nullptr);
+													g_d3d9_imageFormats[format], (D3DPOOL)m_pool, (LPDIRECT3DTEXTURE9*)&d3dTexture, nullptr);
 		if (status != D3D_OK)
 		{
 			return nullptr;
@@ -420,7 +420,7 @@ bool CD3D9Texture::Lock(LockInOutData& data)
 		{
 			IDirect3DDevice9* d3dDevice = s_shaderApi.GetD3DDevice();
 
-			if (d3dDevice->CreateOffscreenPlainSurface(m_iWidth, m_iHeight, formats[m_iFormat], D3DPOOL_SYSTEMMEM, &m_lockSurface, nullptr) == D3D_OK)
+			if (d3dDevice->CreateOffscreenPlainSurface(m_iWidth, m_iHeight, g_d3d9_imageFormats[m_iFormat], D3DPOOL_SYSTEMMEM, &m_lockSurface, nullptr) == D3D_OK)
 			{
 				HRESULT result = d3dDevice->GetRenderTargetData(surfaces[data.cubeFaceIdx], m_lockSurface);
 

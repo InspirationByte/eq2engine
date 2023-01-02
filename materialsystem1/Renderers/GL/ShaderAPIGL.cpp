@@ -324,12 +324,12 @@ void ShaderAPIGL::ApplyTextures()
 			if (pSelectedTexture == nullptr)
 			{
 				//if(pCurrentTexture != nullptr)
-				glBindTexture(glTexTargetType[currentGLTexture.type], 0);
+				glBindTexture(g_gl_texTargetType[currentGLTexture.type], 0);
 			}
 			else
 			{
 				currentGLTexture = pSelectedTexture->GetCurrentTexture();
-				glBindTexture(glTexTargetType[currentGLTexture.type], currentGLTexture.glTexID);
+				glBindTexture(g_gl_texTargetType[currentGLTexture.type], currentGLTexture.glTexID);
 			}
 			GLCheckError("bind texture");
 
@@ -374,12 +374,12 @@ void ShaderAPIGL::ApplyBlendState()
 
 				if (state.srcFactor != m_nCurrentSrcFactor || state.dstFactor != m_nCurrentDstFactor)
 				{
-					glBlendFunc(blendingConsts[m_nCurrentSrcFactor = state.srcFactor],
-								blendingConsts[m_nCurrentDstFactor = state.dstFactor]);
+					glBlendFunc(g_gl_blendingConsts[m_nCurrentSrcFactor = state.srcFactor],
+								g_gl_blendingConsts[m_nCurrentDstFactor = state.dstFactor]);
 				}
 
 				if (state.blendFunc != m_nCurrentBlendFunc)
-					glBlendEquation(blendingModes[m_nCurrentBlendFunc = state.blendFunc]);
+					glBlendEquation(g_gl_blendingModes[m_nCurrentBlendFunc = state.blendFunc]);
 			}
 			else
 			{
@@ -443,7 +443,7 @@ void ShaderAPIGL::ApplyDepthState()
 		}
 
 		if (newState.depthFunc != prevState.depthFunc)
-			glDepthFunc(depthConst[newState.depthFunc]);
+			glDepthFunc(g_gl_depthConst[newState.depthFunc]);
 
 		#pragma todo(GL: stencil tests)
 
@@ -464,12 +464,12 @@ void ShaderAPIGL::ApplyRasterizerState()
 				if (m_nCurrentCullMode == CULL_NONE)
 					glEnable(GL_CULL_FACE);
 
-				glCullFace(cullConst[m_nCurrentCullMode = CULL_BACK]);
+				glCullFace(g_gl_cullConst[m_nCurrentCullMode = CULL_BACK]);
 			}
 
 #ifndef USE_GLES2
 			if (FILL_SOLID != m_nCurrentFillMode)
-				glPolygonMode(GL_FRONT_AND_BACK, fillConst[m_nCurrentFillMode = FILL_SOLID]);
+				glPolygonMode(GL_FRONT_AND_BACK, g_gl_fillConst[m_nCurrentFillMode = FILL_SOLID]);
 
 			if (false != m_bCurrentMultiSampleEnable)
 			{
@@ -503,7 +503,7 @@ void ShaderAPIGL::ApplyRasterizerState()
 					if (m_nCurrentCullMode == CULL_NONE)
 						glEnable(GL_CULL_FACE);
 
-					glCullFace(cullConst[state.cullMode]);
+					glCullFace(g_gl_cullConst[state.cullMode]);
 				}
 				else
 					glDisable(GL_CULL_FACE);
@@ -513,7 +513,7 @@ void ShaderAPIGL::ApplyRasterizerState()
 
 #ifndef USE_GLES2
 			if (state.fillMode != m_nCurrentFillMode)
-				glPolygonMode(GL_FRONT_AND_BACK, fillConst[m_nCurrentFillMode = state.fillMode]);
+				glPolygonMode(GL_FRONT_AND_BACK, g_gl_fillConst[m_nCurrentFillMode = state.fillMode]);
 
 			if (state.multiSample != m_bCurrentMultiSampleEnable)
 			{
@@ -830,7 +830,7 @@ void ShaderAPIGL::ResizeRenderTarget(ITexture* pRT, int newWide, int newTall)
 	{
 		// Bind render buffer
 		glBindRenderbuffer(GL_RENDERBUFFER, pTex->m_glDepthID);
-		glRenderbufferStorage(GL_RENDERBUFFER, internalFormats[format], newWide, newTall);
+		glRenderbufferStorage(GL_RENDERBUFFER, g_gl_internalFormats[format], newWide, newTall);
 		GLCheckError("gen tex renderbuffer storage");
 
 		// Restore renderbuffer
@@ -843,9 +843,9 @@ void ShaderAPIGL::ResizeRenderTarget(ITexture* pRT, int newWide, int newTall)
 			// make a depth texture first
 			// use glDepthID
 			ETextureFormat depthFmt = FORMAT_D16;
-			GLint depthInternalFormat = internalFormats[depthFmt];
+			GLint depthInternalFormat = g_gl_internalFormats[depthFmt];
 			GLenum depthSrcFormat = IsStencilFormat(depthFmt) ? GL_DEPTH_STENCIL : GL_DEPTH_COMPONENT;
-			GLenum depthSrcType = chanTypePerFormat[depthFmt];
+			GLenum depthSrcType = g_gl_chanTypePerFormat[depthFmt];
 
 			glBindTexture(GL_TEXTURE_2D, pTex->m_glDepthID);
 			glTexImage2D(GL_TEXTURE_2D, 0, depthInternalFormat, newWide, newTall, 0, depthSrcFormat, depthSrcType, nullptr);
@@ -853,9 +853,9 @@ void ShaderAPIGL::ResizeRenderTarget(ITexture* pRT, int newWide, int newTall)
 			glBindTexture(GL_TEXTURE_2D, 0);
 		}
 		
-		GLint internalFormat = internalFormats[format];
-		GLenum srcFormat = chanCountTypes[GetChannelCount(format)];
-		GLenum srcType = chanTypePerFormat[format];
+		GLint internalFormat = g_gl_internalFormats[format];
+		GLenum srcFormat = g_gl_chanCountTypes[GetChannelCount(format)];
+		GLenum srcType = g_gl_chanTypePerFormat[format];
 
 		if (IsDepthFormat(format))
 		{
@@ -1899,7 +1899,7 @@ IVertexBuffer* ShaderAPIGL::CreateVertexBuffer(ER_BufferAccess nBufAccess, int n
 			glBindBuffer(GL_ARRAY_BUFFER, pVB->m_nGL_VB_Index[i]);
 			GLCheckError("bind buffer");
 
-			glBufferData(GL_ARRAY_BUFFER, pVB->GetSizeInBytes(), pData, glBufferUsages[nBufAccess]);
+			glBufferData(GL_ARRAY_BUFFER, pVB->GetSizeInBytes(), pData, g_gl_bufferUsages[nBufAccess]);
 			GLCheckError("upload vtx data");
 		}
 
@@ -1950,7 +1950,7 @@ IIndexBuffer* ShaderAPIGL::CreateIndexBuffer(int nIndices, int nIndexSize, ER_Bu
 			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, pIB->m_nGL_IB_Index[i]);
 			GLCheckError("bind buff");
 
-			glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeInBytes, pData, glBufferUsages[nBufAccess]);
+			glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeInBytes, pData, g_gl_bufferUsages[nBufAccess]);
 			GLCheckError("upload idx data");
 		}
 
@@ -2104,14 +2104,14 @@ void ShaderAPIGL::DrawIndexedPrimitives(ER_PrimitiveType nType, int nFirstIndex,
 	{
 		ASSERT(numInstances == 0, "nBaseVertex is not supported when drawing instanced in OpenGL :(")
 
-		glDrawRangeElements(glPrimitiveType[nType], nBaseVertex, nVertices, nIndices, indexSize == 2 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT, BUFFER_OFFSET(indexSize * nFirstIndex));
+		glDrawRangeElements(g_gl_primitiveType[nType], nBaseVertex, nVertices, nIndices, indexSize == 2 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT, BUFFER_OFFSET(indexSize * nFirstIndex));
 	}
 	else
 	{
 		if (numInstances)
-			glDrawElementsInstanced(glPrimitiveType[nType], nIndices, indexSize == 2 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT, BUFFER_OFFSET(indexSize * nFirstIndex), numInstances);
+			glDrawElementsInstanced(g_gl_primitiveType[nType], nIndices, indexSize == 2 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT, BUFFER_OFFSET(indexSize * nFirstIndex), numInstances);
 		else
-			glDrawElements(glPrimitiveType[nType], nIndices, indexSize == 2 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT, BUFFER_OFFSET(indexSize * nFirstIndex));
+			glDrawElements(g_gl_primitiveType[nType], nIndices, indexSize == 2 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT, BUFFER_OFFSET(indexSize * nFirstIndex));
 	}
 
 	GLCheckError("draw elements");
@@ -2142,9 +2142,9 @@ void ShaderAPIGL::DrawNonIndexedPrimitives(ER_PrimitiveType nType, int nFirstVer
 	GLCheckError("bind VAO");
 
 	if(numInstances)
-		glDrawArraysInstanced(glPrimitiveType[nType], nFirstVertex, nVertices, numInstances);
+		glDrawArraysInstanced(g_gl_primitiveType[nType], nFirstVertex, nVertices, numInstances);
 	else
-		glDrawArrays(glPrimitiveType[nType], nFirstVertex, nVertices);
+		glDrawArrays(g_gl_primitiveType[nType], nFirstVertex, nVertices);
 	GLCheckError("draw arrays");
 
 	glBindVertexArray(0);

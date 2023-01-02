@@ -702,17 +702,17 @@ void ShaderAPID3DX9::ApplySamplerState()
 			SamplerStateParam_t &css = m_pCurrentSamplerStates[i];
 
 			if (ss.minFilter != css.minFilter)
-				m_pD3DDevice->SetSamplerState(i, D3DSAMP_MINFILTER, d3dFilterType[css.minFilter = ss.minFilter]);
+				m_pD3DDevice->SetSamplerState(i, D3DSAMP_MINFILTER, g_d3d9_texFilterType[css.minFilter = ss.minFilter]);
 
 			if (ss.magFilter != css.magFilter)
 			{
-				m_pD3DDevice->SetSamplerState(i, D3DSAMP_MAGFILTER, d3dFilterType[css.magFilter = ss.magFilter]);
-				m_pD3DDevice->SetSamplerState(i, D3DSAMP_MIPFILTER, d3dFilterType[ss.magFilter]);	// FIXME: separate selector for MIP?
+				m_pD3DDevice->SetSamplerState(i, D3DSAMP_MAGFILTER, g_d3d9_texFilterType[css.magFilter = ss.magFilter]);
+				m_pD3DDevice->SetSamplerState(i, D3DSAMP_MIPFILTER, g_d3d9_texFilterType[ss.magFilter]);	// FIXME: separate selector for MIP?
 			}
 
-			if (ss.wrapS != css.wrapS) m_pD3DDevice->SetSamplerState(i, D3DSAMP_ADDRESSU, d3dAddressMode[css.wrapS = ss.wrapS]);
-			if (ss.wrapT != css.wrapT) m_pD3DDevice->SetSamplerState(i, D3DSAMP_ADDRESSV, d3dAddressMode[css.wrapT = ss.wrapT]);
-			if (ss.wrapR != css.wrapR) m_pD3DDevice->SetSamplerState(i, D3DSAMP_ADDRESSW, d3dAddressMode[css.wrapR = ss.wrapR]);
+			if (ss.wrapS != css.wrapS) m_pD3DDevice->SetSamplerState(i, D3DSAMP_ADDRESSU, g_d3d9_texAddressMode[css.wrapS = ss.wrapS]);
+			if (ss.wrapT != css.wrapT) m_pD3DDevice->SetSamplerState(i, D3DSAMP_ADDRESSV, g_d3d9_texAddressMode[css.wrapT = ss.wrapT]);
+			if (ss.wrapR != css.wrapR) m_pD3DDevice->SetSamplerState(i, D3DSAMP_ADDRESSW, g_d3d9_texAddressMode[css.wrapR = ss.wrapR]);
 
 			if (ss.aniso != css.aniso) m_pD3DDevice->SetSamplerState(i, D3DSAMP_MAXANISOTROPY, css.aniso = ss.aniso);
 
@@ -732,17 +732,17 @@ void ShaderAPID3DX9::ApplySamplerState()
 			SamplerStateParam_t &css = m_pCurrentVertexSamplerStates[i];
 
 			if (ss.minFilter != css.minFilter)
-				m_pD3DDevice->SetSamplerState(i, D3DSAMP_MINFILTER, d3dFilterType[css.minFilter = ss.minFilter]);
+				m_pD3DDevice->SetSamplerState(i, D3DSAMP_MINFILTER, g_d3d9_texFilterType[css.minFilter = ss.minFilter]);
 
 			if (ss.magFilter != css.magFilter)
 			{
-				m_pD3DDevice->SetSamplerState(i, D3DSAMP_MAGFILTER, d3dFilterType[css.magFilter = ss.magFilter]);
-				m_pD3DDevice->SetSamplerState(i, D3DSAMP_MIPFILTER, d3dFilterType[ss.magFilter]);	// FIXME: separate selector for MIP?
+				m_pD3DDevice->SetSamplerState(i, D3DSAMP_MAGFILTER, g_d3d9_texFilterType[css.magFilter = ss.magFilter]);
+				m_pD3DDevice->SetSamplerState(i, D3DSAMP_MIPFILTER, g_d3d9_texFilterType[ss.magFilter]);	// FIXME: separate selector for MIP?
 			}
 
-			if (ss.wrapS != css.wrapS) m_pD3DDevice->SetSamplerState(i, D3DSAMP_ADDRESSU, d3dAddressMode[css.wrapS = ss.wrapS]);
-			if (ss.wrapT != css.wrapT) m_pD3DDevice->SetSamplerState(i, D3DSAMP_ADDRESSV, d3dAddressMode[css.wrapT = ss.wrapT]);
-			if (ss.wrapR != css.wrapR) m_pD3DDevice->SetSamplerState(i, D3DSAMP_ADDRESSW, d3dAddressMode[css.wrapR = ss.wrapR]);
+			if (ss.wrapS != css.wrapS) m_pD3DDevice->SetSamplerState(i, D3DSAMP_ADDRESSU, g_d3d9_texAddressMode[css.wrapS = ss.wrapS]);
+			if (ss.wrapT != css.wrapT) m_pD3DDevice->SetSamplerState(i, D3DSAMP_ADDRESSV, g_d3d9_texAddressMode[css.wrapT = ss.wrapT]);
+			if (ss.wrapR != css.wrapR) m_pD3DDevice->SetSamplerState(i, D3DSAMP_ADDRESSW, g_d3d9_texAddressMode[css.wrapR = ss.wrapR]);
 
 			if (ss.aniso != css.aniso) m_pD3DDevice->SetSamplerState(i, D3DSAMP_MAXANISOTROPY, css.aniso = ss.aniso);
 
@@ -790,18 +790,18 @@ void ShaderAPID3DX9::ApplyBlendState()
 			if (state.srcFactor != m_nCurrentSrcFactor)
 			{
 				m_nCurrentSrcFactor = state.srcFactor;
-				m_pD3DDevice->SetRenderState(D3DRS_SRCBLEND, blendingConsts[state.srcFactor]);
+				m_pD3DDevice->SetRenderState(D3DRS_SRCBLEND, g_d3d9_blendingConsts[state.srcFactor]);
 			}
 
 			if (state.dstFactor != m_nCurrentDstFactor)
 			{
 				m_nCurrentDstFactor = state.dstFactor;
-				m_pD3DDevice->SetRenderState(D3DRS_DESTBLEND, blendingConsts[state.dstFactor]);
+				m_pD3DDevice->SetRenderState(D3DRS_DESTBLEND, g_d3d9_blendingConsts[state.dstFactor]);
 			}
 			if (state.blendFunc != m_nCurrentBlendMode)
 			{
 				m_nCurrentBlendMode = state.blendFunc;
-				m_pD3DDevice->SetRenderState(D3DRS_BLENDOP, blendingModes[state.blendFunc]);
+				m_pD3DDevice->SetRenderState(D3DRS_BLENDOP, g_d3d9_blendingModes[state.blendFunc]);
 			}
 		}
 
@@ -854,7 +854,7 @@ void ShaderAPID3DX9::ApplyDepthState()
 		}
 
 		if (m_nCurrentDepthFunc != COMP_LESS)
-			m_pD3DDevice->SetRenderState(D3DRS_ZFUNC, depthConst[m_nCurrentDepthFunc = COMP_LESS]);
+			m_pD3DDevice->SetRenderState(D3DRS_ZFUNC, g_d3d9_depthConst[m_nCurrentDepthFunc = COMP_LESS]);
 
 		if (m_bDoStencilTest != false)
 			m_pD3DDevice->SetRenderState(D3DRS_STENCILENABLE, m_bDoStencilTest = false);
@@ -875,7 +875,7 @@ void ShaderAPID3DX9::ApplyDepthState()
 				m_pD3DDevice->SetRenderState(D3DRS_ZWRITEENABLE, (m_bCurrentDepthWriteEnable = state.depthWrite)? TRUE : FALSE);
 
 			if (state.depthFunc != m_nCurrentDepthFunc)
-				m_pD3DDevice->SetRenderState(D3DRS_ZFUNC, depthConst[m_nCurrentDepthFunc = state.depthFunc]);
+				m_pD3DDevice->SetRenderState(D3DRS_ZFUNC, g_d3d9_depthConst[m_nCurrentDepthFunc = state.depthFunc]);
 		
 		} 
 		else 
@@ -902,19 +902,19 @@ void ShaderAPID3DX9::ApplyDepthState()
 					m_pD3DDevice->SetRenderState(D3DRS_STENCILREF, m_nStencilRef = state.nStencilRef);
 
 				if(m_nStencilFunc != state.nStencilFunc)
-					m_pD3DDevice->SetRenderState(D3DRS_STENCILFUNC, stencilConst[m_nStencilFunc = state.nStencilFunc]);
+					m_pD3DDevice->SetRenderState(D3DRS_STENCILFUNC, g_d3d9_stencilConst[m_nStencilFunc = state.nStencilFunc]);
 
 				if(m_nStencilFail != state.nStencilFail)
-					m_pD3DDevice->SetRenderState(D3DRS_STENCILFAIL, stencilConst[m_nStencilFail = state.nStencilFail]);
+					m_pD3DDevice->SetRenderState(D3DRS_STENCILFAIL, g_d3d9_stencilConst[m_nStencilFail = state.nStencilFail]);
 
 				if(m_nStencilFunc != state.nStencilFunc)
-					m_pD3DDevice->SetRenderState(D3DRS_STENCILREF, depthConst[m_nStencilFunc = state.nStencilFunc]);
+					m_pD3DDevice->SetRenderState(D3DRS_STENCILREF, g_d3d9_depthConst[m_nStencilFunc = state.nStencilFunc]);
 
 				if(m_nStencilPass != state.nStencilPass)
-					m_pD3DDevice->SetRenderState(D3DRS_STENCILPASS, stencilConst[m_nStencilPass = state.nStencilPass]);
+					m_pD3DDevice->SetRenderState(D3DRS_STENCILPASS, g_d3d9_stencilConst[m_nStencilPass = state.nStencilPass]);
 
 				if(m_nDepthFail != state.nDepthFail)
-					m_pD3DDevice->SetRenderState(D3DRS_STENCILZFAIL, stencilConst[m_nDepthFail = state.nDepthFail]);
+					m_pD3DDevice->SetRenderState(D3DRS_STENCILZFAIL, g_d3d9_stencilConst[m_nDepthFail = state.nDepthFail]);
 			}
 		}
 	}
@@ -929,10 +929,10 @@ void ShaderAPID3DX9::ApplyRasterizerState()
 	if (pSelectedState == nullptr)
 	{
 		if (m_nCurrentCullMode != CULL_BACK)
-			m_pD3DDevice->SetRenderState(D3DRS_CULLMODE, cullConst[m_nCurrentCullMode = CULL_BACK]);
+			m_pD3DDevice->SetRenderState(D3DRS_CULLMODE, g_d3d9_cullConst[m_nCurrentCullMode = CULL_BACK]);
 
 		if (m_nCurrentFillMode != FILL_SOLID)
-			m_pD3DDevice->SetRenderState(D3DRS_FILLMODE, fillConst[m_nCurrentFillMode = FILL_SOLID]);
+			m_pD3DDevice->SetRenderState(D3DRS_FILLMODE, g_d3d9_fillConst[m_nCurrentFillMode = FILL_SOLID]);
 
 		if (m_bCurrentMultiSampleEnable != true)
 			m_pD3DDevice->SetRenderState(D3DRS_MULTISAMPLEANTIALIAS, m_bCurrentMultiSampleEnable = true);
@@ -958,10 +958,10 @@ void ShaderAPID3DX9::ApplyRasterizerState()
 		RasterizerStateParams_t& state = pSelectedState->m_params;
 
 		if (state.cullMode != m_nCurrentCullMode)
-			m_pD3DDevice->SetRenderState(D3DRS_CULLMODE, cullConst[m_nCurrentCullMode = state.cullMode]);
+			m_pD3DDevice->SetRenderState(D3DRS_CULLMODE, g_d3d9_cullConst[m_nCurrentCullMode = state.cullMode]);
 
 		if (state.fillMode != m_nCurrentFillMode)
-			m_pD3DDevice->SetRenderState(D3DRS_FILLMODE, fillConst[m_nCurrentFillMode = state.fillMode]);
+			m_pD3DDevice->SetRenderState(D3DRS_FILLMODE, g_d3d9_fillConst[m_nCurrentFillMode = state.fillMode]);
 
 		if (state.multiSample != m_bCurrentMultiSampleEnable)
 			m_pD3DDevice->SetRenderState(D3DRS_MULTISAMPLEANTIALIAS, m_bCurrentMultiSampleEnable = state.multiSample);
@@ -1345,7 +1345,7 @@ bool ShaderAPID3DX9::InternalCreateRenderTarget(LPDIRECT3DDEVICE9 dev, CD3D9Text
 		tex->m_pool = D3DPOOL_DEFAULT;
 
 		DevMsg(DEVMSG_SHADERAPI, "InternalCreateRenderTarget: creating INTZ render target single texture for %s\n", tex->GetName());
-		if (dev->CreateTexture(tex->GetWidth(), tex->GetHeight(), tex->GetMipCount(), tex->m_usage, formats[tex->GetFormat()], (D3DPOOL)tex->m_pool, (LPDIRECT3DTEXTURE9*)&pTexture, nullptr) != D3D_OK)
+		if (dev->CreateTexture(tex->GetWidth(), tex->GetHeight(), tex->GetMipCount(), tex->m_usage, g_d3d9_imageFormats[tex->GetFormat()], (D3DPOOL)tex->m_pool, (LPDIRECT3DTEXTURE9*)&pTexture, nullptr) != D3D_OK)
 		{
 			MsgError("!!! Couldn't create '%s' INTZ render target with size %d %d\n", tex->GetName(), tex->GetWidth(), tex->GetHeight());
 			ASSERT(!"Couldn't create INTZ render target");
@@ -1366,9 +1366,10 @@ bool ShaderAPID3DX9::InternalCreateRenderTarget(LPDIRECT3DDEVICE9 dev, CD3D9Text
 
 		LPDIRECT3DSURFACE9 pSurface = nullptr;
 
+		tex->m_usage = D3DUSAGE_RENDERTARGET;
 		tex->m_pool = D3DPOOL_DEFAULT;
 
-		if (dev->CreateDepthStencilSurface( tex->GetWidth(), tex->GetHeight(), formats[tex->GetFormat()], D3DMULTISAMPLE_NONE, 0, FALSE, &pSurface, nullptr) != D3D_OK )
+		if (dev->CreateDepthStencilSurface( tex->GetWidth(), tex->GetHeight(), g_d3d9_imageFormats[tex->GetFormat()], D3DMULTISAMPLE_NONE, 0, FALSE, &pSurface, nullptr) != D3D_OK )
 		{
 			MsgError("!!! Couldn't create create '%s' depth surface with size %d %d\n", tex->GetName(), tex->GetWidth(), tex->GetHeight());
 			ASSERT(!"Couldn't create depth surface");
@@ -1382,8 +1383,7 @@ bool ShaderAPID3DX9::InternalCreateRenderTarget(LPDIRECT3DDEVICE9 dev, CD3D9Text
 		if(nFlags & TEXFLAG_RENDERDEPTH)
 		{
 			DevMsg(DEVMSG_SHADERAPI, "InternalCreateRenderTarget: creating depth for %s\n", tex->GetName());
-			if (dev->CreateDepthStencilSurface(tex->GetWidth(), tex->GetHeight(), D3DFMT_D16,
-				D3DMULTISAMPLE_NONE, 0, TRUE, &tex->m_dummyDepth, nullptr) != D3D_OK)
+			if (dev->CreateDepthStencilSurface(tex->GetWidth(), tex->GetHeight(), D3DFMT_D16, D3DMULTISAMPLE_NONE, 0, TRUE, &tex->m_dummyDepth, nullptr) != D3D_OK)
 			{
 				MsgError("!!! Couldn't create '%s' depth surface for RT with size %d %d\n", tex->GetName(), tex->GetWidth(), tex->GetHeight());
 				ASSERT(!"Couldn't create depth surface for RT");
@@ -1393,12 +1393,13 @@ bool ShaderAPID3DX9::InternalCreateRenderTarget(LPDIRECT3DDEVICE9 dev, CD3D9Text
 		
 		if (nFlags & TEXFLAG_CUBEMAP)
 		{
+			tex->m_usage = D3DUSAGE_RENDERTARGET;
 			tex->m_pool = D3DPOOL_DEFAULT;
 
 			LPDIRECT3DBASETEXTURE9 pTexture = nullptr;
 
 			DevMsg(DEVMSG_SHADERAPI, "InternalCreateRenderTarget: creating cubemap target for %s\n", tex->GetName());
-			if (dev->CreateCubeTexture(tex->GetWidth(), tex->GetMipCount(), tex->m_usage, formats[tex->GetFormat()], (D3DPOOL)tex->m_pool, (LPDIRECT3DCUBETEXTURE9 *) &pTexture, nullptr) != D3D_OK)
+			if (dev->CreateCubeTexture(tex->GetWidth(), tex->GetMipCount(), tex->m_usage, g_d3d9_imageFormats[tex->GetFormat()], (D3DPOOL)tex->m_pool, (LPDIRECT3DCUBETEXTURE9 *) &pTexture, nullptr) != D3D_OK)
 			{
 				MsgError("!!! Couldn't create '%s' cubemap render target with size %d %d\n", tex->GetName(), tex->GetWidth(), tex->GetHeight());
 				ASSERT(!"Couldn't create cubemap render target");
@@ -1421,10 +1422,11 @@ bool ShaderAPID3DX9::InternalCreateRenderTarget(LPDIRECT3DDEVICE9 dev, CD3D9Text
 		{
 			LPDIRECT3DBASETEXTURE9 pTexture = nullptr;
 
+			tex->m_usage = D3DUSAGE_RENDERTARGET;
 			tex->m_pool = D3DPOOL_DEFAULT;
 
 			DevMsg(DEVMSG_SHADERAPI, "InternalCreateRenderTarget: creating render target single texture for %s\n", tex->GetName());
-			if (dev->CreateTexture(tex->GetWidth(), tex->GetHeight(), tex->GetMipCount(), tex->m_usage, formats[tex->GetFormat()], (D3DPOOL)tex->m_pool, (LPDIRECT3DTEXTURE9 *) &pTexture, nullptr) != D3D_OK)
+			if (dev->CreateTexture(tex->GetWidth(), tex->GetHeight(), tex->GetMipCount(), tex->m_usage, g_d3d9_imageFormats[tex->GetFormat()], (D3DPOOL)tex->m_pool, (LPDIRECT3DTEXTURE9 *) &pTexture, nullptr) != D3D_OK)
 			{
 				MsgError("!!! Couldn't create '%s' render target with size %d %d\n", tex->GetName(), tex->GetWidth(), tex->GetHeight());
 				ASSERT(!"Couldn't create render target");
@@ -1487,9 +1489,6 @@ ITexture* ShaderAPID3DX9::CreateNamedRenderTarget(const char* pszName,int width,
 
 	pTexture->SetDimensions(width,height);
 	pTexture->SetFormat(nRTFormat);
-
-	pTexture->m_usage = D3DUSAGE_RENDERTARGET;
-
 	pTexture->SetFlags(nFlags | TEXFLAG_RENDERTARGET);
 	pTexture->SetName(pszName);
 
@@ -1753,7 +1752,7 @@ void ShaderAPID3DX9::GetViewportDimensions(int &wide, int &tall)
 // Matrix mode
 void ShaderAPID3DX9::SetMatrixMode(ER_MatrixMode nMatrixMode)
 {
-	m_nCurrentMatrixMode = d3dmatrixmodes[nMatrixMode];
+	m_nCurrentMatrixMode = g_d3d9_matrixModes[nMatrixMode];
 }
 
 // Will save matrix
@@ -2624,7 +2623,7 @@ IVertexBuffer* ShaderAPID3DX9::CreateVertexBuffer(ER_BufferAccess nBufAccess, in
 {
 	CVertexBufferD3DX9* pBuffer = PPNew CVertexBufferD3DX9();
 	pBuffer->m_nSize = nNumVerts*strideSize;
-	pBuffer->m_nUsage = d3dbufferusages[nBufAccess];
+	pBuffer->m_nUsage = g_d3d9_bufferUsages[nBufAccess];
 	pBuffer->m_nNumVertices = nNumVerts;
 	pBuffer->m_nStrideSize = strideSize;
 	pBuffer->m_nInitialSize = nNumVerts*strideSize;
@@ -2674,7 +2673,7 @@ IIndexBuffer* ShaderAPID3DX9::CreateIndexBuffer(int nIndices, int nIndexSize, ER
 	pBuffer->m_nIndices = nIndices;
 	pBuffer->m_nIndexSize = nIndexSize;
 	pBuffer->m_nInitialSize = nIndices*nIndexSize;
-	pBuffer->m_nUsage = d3dbufferusages[nBufAccess];
+	pBuffer->m_nUsage = g_d3d9_bufferUsages[nBufAccess];
 
 	bool dynamic = (pBuffer->m_nUsage & D3DUSAGE_DYNAMIC) != 0;
 
@@ -2720,8 +2719,8 @@ IIndexBuffer* ShaderAPID3DX9::CreateIndexBuffer(int nIndices, int nIndexSize, ER
 void ShaderAPID3DX9::DrawIndexedPrimitives(ER_PrimitiveType nType, int nFirstIndex, int nIndices, int nFirstVertex, int nVertices, int nBaseVertex)
 {
 	ASSERT(nVertices > 0);
-	const int numPrimitives = s_DX9PrimitiveCounterFunctions[nType](nIndices);
-	m_pD3DDevice->DrawIndexedPrimitive( d3dPrim[nType], nBaseVertex, nFirstVertex, nVertices, nFirstIndex, numPrimitives);
+	const int numPrimitives = g_d3d9_primCountFunc[nType](nIndices);
+	m_pD3DDevice->DrawIndexedPrimitive( g_d3d9_primType[nType], nBaseVertex, nFirstVertex, nVertices, nFirstIndex, numPrimitives);
 	
 #ifndef _RETAIL
 	m_nDrawIndexedPrimitiveCalls++;
@@ -2733,8 +2732,8 @@ void ShaderAPID3DX9::DrawIndexedPrimitives(ER_PrimitiveType nType, int nFirstInd
 // Draw elements
 void ShaderAPID3DX9::DrawNonIndexedPrimitives(ER_PrimitiveType nType, int nFirstVertex, int nVertices)
 {
-	const int numPrimitives = s_DX9PrimitiveCounterFunctions[nType](nVertices);
-	m_pD3DDevice->DrawPrimitive(d3dPrim[nType], nFirstVertex, numPrimitives);
+	const int numPrimitives = g_d3d9_primCountFunc[nType](nVertices);
+	m_pD3DDevice->DrawPrimitive(g_d3d9_primType[nType], nFirstVertex, numPrimitives);
 
 #ifndef _RETAIL
 	m_nDrawCalls++;

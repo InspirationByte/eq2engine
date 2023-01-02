@@ -7,6 +7,8 @@
 
 #pragma once
 
+#include "materialsystem1/IMaterialVar.h"
+
 class CMatVar
 {
 	friend class CMaterial;

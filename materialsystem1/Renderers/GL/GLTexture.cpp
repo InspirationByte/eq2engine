@@ -69,28 +69,28 @@ void CGLTexture::ReleaseTextures()
 void SetupGLSamplerState(uint texTarget, const SamplerStateParam_t& sampler, int mipMapCount)
 {
 	// Set requested wrapping modes
-	glTexParameteri(texTarget, GL_TEXTURE_WRAP_S, addressModes[sampler.wrapS]);
+	glTexParameteri(texTarget, GL_TEXTURE_WRAP_S, g_gl_texAddrModes[sampler.wrapS]);
 	GLCheckError("smp w s");
 
 #ifndef USE_GLES2
 	if (texTarget != GL_TEXTURE_1D)
 #endif // USE_GLES2
 	{
-		glTexParameteri(texTarget, GL_TEXTURE_WRAP_T, addressModes[sampler.wrapT]);
+		glTexParameteri(texTarget, GL_TEXTURE_WRAP_T, g_gl_texAddrModes[sampler.wrapT]);
 		GLCheckError("smp w t");
 	}
 
 	if (texTarget == GL_TEXTURE_3D)
 	{
-		glTexParameteri(texTarget, GL_TEXTURE_WRAP_R, addressModes[sampler.wrapR]);
+		glTexParameteri(texTarget, GL_TEXTURE_WRAP_R, g_gl_texAddrModes[sampler.wrapR]);
 		GLCheckError("smp w r");
 	}
 
 	// Set requested filter modes
-	glTexParameteri(texTarget, GL_TEXTURE_MAG_FILTER, minFilters[sampler.magFilter]);
+	glTexParameteri(texTarget, GL_TEXTURE_MAG_FILTER, g_gl_texMinFilters[sampler.magFilter]);
 	GLCheckError("smp mag");
 
-	glTexParameteri(texTarget, GL_TEXTURE_MIN_FILTER, minFilters[sampler.minFilter]);
+	glTexParameteri(texTarget, GL_TEXTURE_MIN_FILTER, g_gl_texMinFilters[sampler.minFilter]);
 	GLCheckError("smp min");
 
 	glTexParameteri(texTarget, GL_TEXTURE_MAX_LEVEL, max(mipMapCount-1, 0));
@@ -99,7 +99,7 @@ void SetupGLSamplerState(uint texTarget, const SamplerStateParam_t& sampler, int
 	glTexParameteri(texTarget, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
 	GLCheckError("smp cmpmode");
 
-	glTexParameteri(texTarget, GL_TEXTURE_COMPARE_FUNC, depthConst[sampler.compareFunc]);
+	glTexParameteri(texTarget, GL_TEXTURE_COMPARE_FUNC, g_gl_depthConst[sampler.compareFunc]);
 	GLCheckError("smp cmpfunc");
 
 #ifndef USE_GLES2
@@ -114,11 +114,11 @@ void SetupGLSamplerState(uint texTarget, const SamplerStateParam_t& sampler, int
 
 static bool UpdateGLTextureFromImage(GLTextureRef_t texture, SamplerStateParam_t& sampler, const CImage* image, int startMipLevel)
 {
-	const GLenum glTarget = glTexTargetType[texture.type];
+	const GLenum glTarget = g_gl_texTargetType[texture.type];
 	const ETextureFormat format = image->GetFormat();
 
-	const GLenum srcFormat = chanCountTypes[GetChannelCount(format)];
-	const GLenum srcType = chanTypePerFormat[format];
+	const GLenum srcFormat = g_gl_chanCountTypes[GetChannelCount(format)];
+	const GLenum srcType = g_gl_chanTypePerFormat[format];
 
 	const GLenum internalFormat = PickGLInternalFormat(format);
 
@@ -228,7 +228,7 @@ bool CGLTexture::Init(const SamplerStateParam_t& sampler, const ArrayCRef<CRefPt
 			m_iFlags |= TEXFLAG_CUBEMAP;
 	}
 
-	m_glTarget = glTexTargetType[images[0]->GetImageType()];
+	m_glTarget = g_gl_texTargetType[images[0]->GetImageType()];
 
 	const int quality = (m_iFlags & TEXFLAG_NOQUALITYLOD) ? 0 : r_loadmiplevel->GetInt();
 
@@ -379,8 +379,8 @@ bool CGLTexture::Lock(LockInOutData& data)
 #else
     if(!(data.flags & TEXLOCK_DISCARD))
     {
-        const GLenum srcFormat = chanCountTypes[GetChannelCount(m_iFormat)];
-        const GLenum srcType = chanTypePerFormat[m_iFormat];
+        const GLenum srcFormat = g_gl_chanCountTypes[GetChannelCount(m_iFormat)];
+        const GLenum srcType = g_gl_chanTypePerFormat[m_iFormat];
 
         glBindTexture(m_glTarget, textures[0].glTexID);
 
@@ -425,8 +425,8 @@ void CGLTexture::Unlock()
 
 	if( !(data.flags & TEXLOCK_READONLY) )
 	{
-		GLenum srcFormat = chanCountTypes[GetChannelCount(m_iFormat)];
-		GLenum srcType = chanTypePerFormat[m_iFormat];
+		GLenum srcFormat = g_gl_chanCountTypes[GetChannelCount(m_iFormat)];
+		GLenum srcType = g_gl_chanTypePerFormat[m_iFormat];
 		GLenum internalFormat = PickGLInternalFormat(m_iFormat);
 
 		const int targetOrCubeTarget = (m_glTarget == GL_TEXTURE_CUBE_MAP) ? GL_TEXTURE_CUBE_MAP_POSITIVE_X + data.cubeFaceIdx : m_glTarget;
