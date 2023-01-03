@@ -8,10 +8,17 @@
 template<typename SIGNATURE>
 struct EventSubscriptionObject_t
 {
-	EventSubscriptionObject_t*	next{ nullptr };
 	EqFunction<SIGNATURE>		func{ nullptr };
-	bool						unsubscribe{ false };
+	mutable bool				unsubscribe{ false };
+
+	EventSubscriptionObject_t*	next{ nullptr };
 };
+
+template<typename SIGNATURE>
+Event<SIGNATURE>::Sub::~Sub()
+{
+	Unsubscribe(); 
+}
 
 template<typename SIGNATURE>
 void Event<SIGNATURE>::Sub::Unsubscribe()

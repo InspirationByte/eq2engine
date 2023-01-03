@@ -22,9 +22,11 @@ public:
 	{
 		Sub() = default;
 		Sub(const SubscriptionObject* sub) : m_sub(sub) {};
-		~Sub() { Unsubscribe(); }
+		~Sub();
 
 		void		Unsubscribe();
+
+		operator	bool() const { return m_sub; }
 		Sub&		operator=(const SubscriptionObject* sub)
 		{
 			Unsubscribe();
