@@ -163,14 +163,14 @@ bool CEqCollisionObject::Initialize( CEqBulletIndexedMesh* mesh, bool internalEd
 	m_shape = new btBvhTriangleMeshShape(m_mesh, true, true);
 	m_shape->setMargin(ph_margin.GetFloat());
 
+#if 0
 	if (internalEdges)
 	{
 		// WARNING: this is slow!
-
 		m_trimap = new btTriangleInfoMap();
 		btGenerateInternalEdgeInfo((btBvhTriangleMeshShape*)m_shape, m_trimap);
 	}
-
+#endif
 	InitAABB();
 
 	m_collObject = new btCollisionObject();
