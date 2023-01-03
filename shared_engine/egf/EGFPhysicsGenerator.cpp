@@ -28,28 +28,28 @@ struct ragdolljoint_t
 	Matrix4x4 absTrans;
 };
 
-bool triangle_compare(itriangle &tri1, itriangle &tri2)
+bool triangle_compare(const itriangle &tri1, const itriangle &tri2)
 {
 	return (tri1.idxs[0] == tri2.idxs[0]) && (tri1.idxs[1] == tri2.idxs[1]) && (tri1.idxs[2] == tri2.idxs[2]);
 }
 
-int find_triangle(Array<itriangle> *tris, itriangle &tofind)
+int find_triangle(const Array<itriangle>& tris, const itriangle &tofind)
 {
-	for(int i = 0; i < tris->numElem(); i++)
+	for(int i = 0; i < tris.numElem(); i++)
 	{
-		if(triangle_compare(tris->ptr()[i], tofind))
+		if(triangle_compare(tris[i], tofind))
 			return i;
 	}
 
 	return -1;
 }
 
-bool vertex_compare(dsmvertex_t &v1, dsmvertex_t &v2)
+bool vertex_compare(const dsmvertex_t &v1, const dsmvertex_t &v2)
 {
 	return v1.position == v2.position;
 }
 
-int find_vertex(Array<dsmvertex_t> &verts, dsmvertex_t &tofind)
+int find_vertex(const Array<dsmvertex_t> &verts, const dsmvertex_t &tofind)
 {
 	for(int i = 0; i < verts.numElem(); i++)
 	{
@@ -60,17 +60,17 @@ int find_vertex(Array<dsmvertex_t> &verts, dsmvertex_t &tofind)
 	return -1;
 }
 
-void AddTriangleWithAllNeighbours(indxgroup_t *group, mtriangle_t* triangle)
+void AddTriangleWithAllNeighbours(indxgroup_t& group, const Triangle& triangle)
 {
-	itriangle first = {triangle->indices[0], triangle->indices[1], triangle->indices[2]};
+	itriangle first = {triangle.indices[0], triangle.indices[1], triangle.indices[2]};
 
 	bool discard = false;
 
-	for(int i = 0; i < group->numElem(); i++)
+	for(int i = 0; i < group.numElem(); i++)
 	{
-		if( first.idxs[0] == group->ptr()[i].idxs[0] &&
-			first.idxs[1] == group->ptr()[i].idxs[1] &&
-			first.idxs[2] == group->ptr()[i].idxs[2])
+		if( first.idxs[0] == group[i].idxs[0] &&
+			first.idxs[1] == group[i].idxs[1] &&
+			first.idxs[2] == group[i].idxs[2])
 		{
 			discard = true;
 			break;
@@ -79,11 +79,11 @@ void AddTriangleWithAllNeighbours(indxgroup_t *group, mtriangle_t* triangle)
 
 	if(!discard)
 	{
-		group->append(first);
+		group.append(first);
 
-		for(int i = 0; i < triangle->index_connections.numElem(); i++)
+		for(int i = 0; i < triangle.vertexCon.numElem(); i++)
 		{
-			AddTriangleWithAllNeighbours(group, triangle->index_connections[i]); 
+			AddTriangleWithAllNeighbours(group, *triangle.vertexCon[i]);
 		}
 	}
 }
@@ -320,34 +320,34 @@ void CEGFPhysicsGenerator::SubdivideModelParts( Array<dsmvertex_t>& vertices, Ar
 	Msg("Building neighbour triangle table... (%d indices)\n", indices.numElem());
 
 	CAdjacentTriangleGraph triangleGraph;
+	const Array<Triangle>& triangles = triangleGraph.GetTriangles();
 
 	// build neighbours
 	triangleGraph.Build(indices.ptr(),indices.numElem());
 
-	Msg("Num. triangles parsed: %d\n", triangleGraph.GetTriangles()->numElem());
+	Msg("Num. triangles parsed: %d\n", triangles.numElem());
 
-	indxgroup_t* main_group = PPNew indxgroup_t(PP_SL);
-	groups.append(main_group);
+	indxgroup_t* startGroup = PPNew indxgroup_t(PP_SL);
+	groups.append(startGroup);
 
 	Msg("Building groups...\n");
 
 	// add tri with all of it's neighbour's herarchy
-	AddTriangleWithAllNeighbours(main_group, &triangleGraph.GetTriangles()->ptr()[0]);
+	AddTriangleWithAllNeighbours(*startGroup, triangles[0]);
 
-	Msg("Processed group 1, %d tris\n", main_group->numElem());
+	Msg("Processed group 1, %d tris\n", startGroup->numElem());
 
-	for(int i = 1; i < triangleGraph.GetTriangles()->numElem(); i++)
+	for(int i = 1; i < triangles.numElem(); i++)
 	{
-		mtriangle_t* mTriangle = &triangleGraph.GetTriangles()->ptr()[i];
-
-		itriangle triangle = {mTriangle->indices[0],mTriangle->indices[1],mTriangle->indices[2]};
+		const Triangle& tri = triangles[i];
+		itriangle triangle = { tri.indices[0], tri.indices[1], tri.indices[2]};
 
 		bool found = false;
 
 		// find this triangle in all previous groups
 		for(int j = 0; j < groups.numElem(); j++)
 		{
-			if(find_triangle(groups[j], triangle) != -1)
+			if(find_triangle(*groups[j], triangle) != -1)
 			{
 				found = true;
 				break;
@@ -357,13 +357,13 @@ void CEGFPhysicsGenerator::SubdivideModelParts( Array<dsmvertex_t>& vertices, Ar
 		// if not found, create new group and add triangle with all of it's neighbours
 		if(!found)
 		{
-			indxgroup_t *new_group = PPNew indxgroup_t(PP_SL);
-			groups.append(new_group);
+			indxgroup_t* newGrp = PPNew indxgroup_t(PP_SL);
+			groups.append(newGrp);
 
 			// add tri with all of it's neighbour's herarchy
-			AddTriangleWithAllNeighbours(new_group, mTriangle);
+			AddTriangleWithAllNeighbours(*newGrp, tri);
 
-			Msg("Processed group %d, %d tris\n", groups.numElem(), new_group->numElem());
+			Msg("Processed group %d, %d tris\n", groups.numElem(), newGrp->numElem());
 		}
 	}
 

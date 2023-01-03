@@ -11,140 +11,33 @@ namespace AdjacentTriangles
 {
 
 // edge
-struct medge_t
+struct Edge
 {
-	medge_t()
+	int		idx[2]{ -1,-1 };
+
+	Edge	Swap() const;
+	bool	IsConnected(const Edge& other, bool& swap) const;
+
+	friend bool operator==(const Edge& a, const Edge& b)
 	{
-		idx[0] = -1;
-		idx[1] = -1;
-	}
-
-	medge_t(int i0, int i1)
-	{
-		idx[0] = i0;
-		idx[1] = i1;
-	}
-
-	int idx[2];
-
-	void Swap()
-	{
-		int tmp = idx[0];
-		idx[0] = idx[1];
-		idx[1] = tmp;
-	}
-
-	bool CompareWith( const medge_t& other ) const
-	{
-		return (idx[0] == other.idx[0] && idx[1] == other.idx[1]);
-	}
-
-	bool IsConnected(const medge_t& other, bool &swap) const
-	{
-		swap = true;
-
-		bool connected = ((idx[0] == other.idx[0]) || (idx[1] == other.idx[1]));
-		if(connected)
-			return true;
-
-		swap = false;
-
-		medge_t swapped_edge = other;
-		swapped_edge.Swap();
-
-		return ((idx[0] == swapped_edge.idx[0]) || (idx[1] == swapped_edge.idx[1]));
+		return a.idx[0] == b.idx[0] && a.idx[1] == b.idx[1];
 	}
 };
 
-inline bool operator ==(const medge_t& a,const medge_t& b)
-{
-	return (a.idx[0] == b.idx[0] && a.idx[1] == b.idx[1]);
-}
-
 // triangle
-struct mtriangle_t
+struct Triangle
 {
-	int indices[3];
-	int tri_id;
-	
-	void BuildEdge(int i, medge_t& e)
-	{
-		e.idx[0] = indices[i];
+	Array<Triangle*>	vertexCon{ PP_SL };
+	Edge				edges[3];
+	Triangle*			edgeCon[3]{ nullptr };
+	int					indices[3];
 
-		int i2 = i+1;
 
-		if(i2 > 2)
-			i2 -= 3;
+	bool				GetValidEdge(const Edge& edge, int& edge_idx, bool ignoreOrder = true) const;
+	int					GetOppositeVertexIndex(int edge_idx) const;
+	bool				Compare(int v1, int v2, int v3) const;
 
-		e.idx[1] = indices[i2];
-	}
-
-	bool IsOwnEdge(const medge_t& edge, int &edge_idx, bool ignoreOrder = true) const
-	{
-		medge_t swapped_edge = edge;
-		swapped_edge.Swap();
-
-		for(int i = 0; i < 3; i++)
-		{
-			if(edges[i].CompareWith(edge) || (ignoreOrder && edges[i].CompareWith(swapped_edge)) )
-			{
-				edge_idx = i;
-				return true;
-			}
-		}
-
-		edge_idx = -1;
-
-		return false;
-	}
-
-	// quad helper
-	int GetOppositeVertexIndex(int edge_idx) const
-	{
-		ASSERT(edge_idx < 3);
-
-		int eidx = edge_idx + 2;
-
-		if(eidx > 2)
-			eidx -= 3;
-
-		return indices[eidx];
-	}
-
-	// promoted to self-remove, as this totally useless function
-	bool HasDuplicates() const
-	{
-		// look around and try find same edges
-		for(int i = 0; i < index_connections.numElem(); i++)
-		{
-			int nEdgesOwned = 0;
-
-			for(int j = 0; j < 3; j++)
-			{
-				int edge_idx;
-
-				if(IsOwnEdge( index_connections[i]->edges[j], edge_idx ))
-					nEdgesOwned++;
-			}
-
-			if(nEdgesOwned >= 3)
-				return true;
-		}
-
-		return false;
-	}
-
-	bool Compare(int v1, int v2, int v3) const
-	{
-		return	(indices[0] == v1 && indices[1] == v2 && indices[2] == v3 ) ||
-				(indices[1] == v1 && indices[2] == v2 && indices[0] == v3 ) ||
-				(indices[2] == v1 && indices[0] == v2 && indices[1] == v3 );
-	}
-
-	medge_t					edges[3];
-	mtriangle_t*			edge_connections[3]{ nullptr };	// adjacent triangles
-
-	Array<mtriangle_t*>	index_connections{ PP_SL };
+	void				InitEdge(int i, Edge& e);
 };
 
 //-------------------------------------------------------------------------
@@ -158,12 +51,7 @@ public:
 
 							CAdjacentTriangleGraph( const Array<int>& indices );
 							CAdjacentTriangleGraph( const int* indices, int num_indices );
-
-							CAdjacentTriangleGraph(	const ubyte* input_verts,
-													int vert_stride, 
-													int vert_ofs, 
-													const int* indices, 
-													int num_indices);
+							CAdjacentTriangleGraph(	const ubyte* input_verts, int vert_stride, int vert_ofs, const int* indices, int num_indices);
 
 	void					Clear();
 
@@ -177,7 +65,7 @@ public:
 												const int* in_trilistidxs, 
 												int num_indices);
 
-	int						FindTriangleByEdge(	const medge_t &edge,
+	int						FindTriangleByEdge(	const Edge& edge,
 												int& found_edge_idx, 
 												bool ignore_order) const;
 
@@ -186,20 +74,15 @@ public:
 	void					GenOptimizedTriangleList( Array<int>& output );
 	void					GenOptimizedStrips( Array<int>& output, bool usePrimRestart = false );
 
-	Array<mtriangle_t>*	GetTriangles() {return &m_triangleList;}
+	const Array<Triangle>&	GetTriangles() {return m_triangleList;}
 
 protected:
 
 	// builds neigbourhood table for specified triangle, also using a vertex information
-	void					BuildTriangleAdjacencyConnections( mtriangle_t* pTri, int tri_id );
+	void					BuildConnections( Triangle& forTri, int forTriIdx);
+	void					BuildConnectionsUsingVerts(Triangle& forTri, int forTriIdx, const ubyte* input_verts, int vert_stride, int vert_ofs);
 
-	void					BuildTriangleAdjacencyConnectionsByVerts(	mtriangle_t* pTri, 
-																		int tri_id,
-																		const ubyte* input_verts, 
-																		int vert_stride, 
-																		int vert_ofs);
-
-	Array<mtriangle_t>		m_triangleList{ PP_SL };
+	Array<Triangle>			m_triangleList{ PP_SL };
 };
 
 }; // namespace AdjacentTriangles
