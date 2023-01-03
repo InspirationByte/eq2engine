@@ -16,7 +16,7 @@ template<typename SIGNATURE>
 class Event
 {
 public:
-	using SubscriptionObject = typename EventSubscriptionObject_t<SIGNATURE>;
+	using SubscriptionObject = EventSubscriptionObject_t<SIGNATURE>;
 
 	struct Sub
 	{
