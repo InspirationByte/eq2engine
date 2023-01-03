@@ -48,6 +48,9 @@ public:
 	int						m_texSize{ 0 };
 
 protected:
+
+	GLTextureRef_t			CreateGLTexture(EImageType type, ETextureFormat format, int mipCount, int widthMip0, int heightMip0, int depthMip0) const;
+
 	int						m_lockOffs{ 0 };
 	int						m_lockSize{ 0 };
 };

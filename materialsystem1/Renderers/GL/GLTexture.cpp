@@ -18,6 +18,8 @@ static ConVar gl_skipTextures("gl_skipTextures", "0", nullptr, CV_CHEAT);
 
 extern bool GLCheckError(const char* op, ...);
 
+static GLTextureRef_t invalidTexture = { 0, IMAGE_TYPE_INVALID };
+
 CGLTexture::CGLTexture()
 {
 	m_flLod = 0.0f;
@@ -112,6 +114,52 @@ void SetupGLSamplerState(uint texTarget, const SamplerStateParam_t& sampler, int
 #endif // USE_GLES2
 }
 
+GLTextureRef_t CGLTexture::CreateGLTexture(EImageType type, ETextureFormat format, int mipCount, int widthMip0, int heightMip0, int depthMip0) const
+{
+	GLTextureRef_t glTexture;
+	glTexture.type = type;
+
+	glGenTextures(1, &glTexture.glTexID);
+	if (!GLCheckError("gen tex"))
+		return invalidTexture;
+
+#ifdef USE_GLES2
+	const GLenum glTarget = g_gl_texTargetType[type];
+	const GLenum internalFormat = PickGLInternalFormat(format);
+
+	if (IsCompressedFormat(format))
+	{
+		//FIXME: is that even valid?
+		widthMip0 &= ~3;
+		heightMip0 &= ~3;
+	}
+
+	glBindTexture(glTarget, glTexture.glTexID);
+	GLCheckError("bind tex");
+
+	if (type == IMAGE_TYPE_CUBE)
+	{
+		glTexStorage2D(glTarget, mipCount, internalFormat, widthMip0, heightMip0);
+	}
+	else if (type == IMAGE_TYPE_3D)
+	{
+		glTexStorage3D(glTarget, mipCount, internalFormat, widthMip0, heightMip0, depthMip0);
+	}
+	else if (type == IMAGE_TYPE_2D || type == IMAGE_TYPE_1D)
+	{
+		glTexStorage2D(glTarget, mipCount, internalFormat, widthMip0, heightMip0);
+	}
+	else
+	{
+		ASSERT_FAIL("Invalid texture type!");
+	}
+	GLCheckError("create tex storage");
+#endif
+
+	return glTexture;
+}
+
+
 static bool UpdateGLTextureFromImage(GLTextureRef_t texture, SamplerStateParam_t& sampler, const CImage* image, int startMipLevel)
 {
 	const GLenum glTarget = g_gl_texTargetType[texture.type];
@@ -124,9 +172,6 @@ static bool UpdateGLTextureFromImage(GLTextureRef_t texture, SamplerStateParam_t
 
 	glBindTexture(glTarget, texture.glTexID);
 	GLCheckError("bind tex");
-
-	// FIXME:	how I do even fucking organize texture streaming in GL?
-	//			call glTex*Image* with level 0 first?
 
 	// Upload it all
 	ubyte *src;
@@ -145,6 +190,62 @@ static bool UpdateGLTextureFromImage(GLTextureRef_t texture, SamplerStateParam_t
 			height &= ~3;
 		}
 
+#ifdef USE_GLES2
+		if (texture.type == IMAGE_TYPE_3D)
+		{
+			if (IsCompressedFormat(format))
+			{
+				glCompressedTexSubImage3D(glTarget, lockBoxLevel,
+					0, 0, 0,
+					width, height, image->GetDepth(mipMapLevel), internalFormat, size, src);
+			}
+			else
+			{
+				glTexSubImage3D(glTarget, lockBoxLevel, 0, 0, 0,
+					width, height, image->GetDepth(mipMapLevel), srcFormat, srcType, src);
+			}
+			if (!GLCheckError("tex upload 3d (mip %d)", mipMapLevel))
+				break;
+		}
+		else if (texture.type == IMAGE_TYPE_CUBE)
+		{
+			const int cubeFaceSize = size / 6;
+
+			for (uint i = 0; i < 6; i++)
+			{
+				if (IsCompressedFormat(format))
+				{
+					glCompressedTexSubImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, lockBoxLevel, 0, 0,
+						width, height, internalFormat, cubeFaceSize, src + i * cubeFaceSize);
+				}
+				else
+				{
+					glTexSubImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, lockBoxLevel, 0, 0,
+						width, height, srcFormat, srcType, src + i * cubeFaceSize);
+				}
+				if (!GLCheckError("tex upload cube (mip %d)", mipMapLevel))
+					break;
+			}
+		}
+		else if (texture.type == IMAGE_TYPE_1D || IMAGE_TYPE_2D)
+		{
+			if (IsCompressedFormat(format))
+			{
+				glCompressedTexSubImage2D(glTarget, lockBoxLevel, 0, 0,
+					width, height, internalFormat, size, src);
+			}
+			else
+			{
+				glTexSubImage2D(glTarget, lockBoxLevel, 0, 0,
+					width, height, srcFormat, srcType, src);
+			}
+
+			if (!GLCheckError("tex upload 2d (mip %d)", mipMapLevel))
+				break;
+		}
+
+		//glTexParameteri(glTarget, GL_TEXTURE_BASE_LEVEL, mipMapLevel);
+#else
 		if (texture.type == IMAGE_TYPE_3D)
 		{
 			if (IsCompressedFormat(format))
@@ -196,10 +297,10 @@ static bool UpdateGLTextureFromImage(GLTextureRef_t texture, SamplerStateParam_t
 			if (!GLCheckError("tex upload 2d (mip %d)", mipMapLevel))
 				break;
 		}
-
-		// glTexParameteri(glTarget, GL_TEXTURE_BASE_LEVEL, mipMapLevel);
+#endif
 		mipMapLevel++;
 	}
+
 
 	SetupGLSamplerState(glTarget, sampler, mipMapLevel);
 
@@ -212,8 +313,6 @@ static bool UpdateGLTextureFromImage(GLTextureRef_t texture, SamplerStateParam_t
 // initializes texture from image array of images
 bool CGLTexture::Init(const SamplerStateParam_t& sampler, const ArrayCRef<CRefPtr<CImage>> images, int flags)
 {
-	static GLTextureRef_t invalidTexture = { 0, IMAGE_TYPE_INVALID };
-
 	// FIXME: only release if pool, flags, format and size is different
 	Release();
 
@@ -253,18 +352,18 @@ bool CGLTexture::Init(const SamplerStateParam_t& sampler, const ArrayCRef<CRefPt
 		const int texHeight = img->GetHeight(mipStart);
 		const int texDepth = img->GetDepth(mipStart);
 
-		GLTextureRef_t texture;
-		texture.type = imgType;
-
 		if (gl_skipTextures.GetBool())
+		{
 			textures.append(invalidTexture);
+			continue;
+		}
 
-		const int result = g_glWorker.WaitForExecute(__FUNCTION__, [this, &texture, img, mipStart]()
+		const int result = g_glWorker.WaitForExecute(__FUNCTION__, [=]()
 		{
 			// Generate a texture
-			glGenTextures(1, &texture.glTexID);
+			GLTextureRef_t texture = CreateGLTexture(imgType, imgFmt, mipCount, texWidth, texHeight, texDepth);
 
-			if (!GLCheckError("gen tex"))
+			if(texture.glTexID == GL_NONE)
 				return -1;
 
 			if (!UpdateGLTextureFromImage(texture, m_samplerState, img, mipStart))
@@ -277,6 +376,9 @@ bool CGLTexture::Init(const SamplerStateParam_t& sampler, const ArrayCRef<CRefPt
 
 				return -1;
 			}
+
+			textures.append(texture);
+
 			return 0;
 		});
 
@@ -291,7 +393,6 @@ bool CGLTexture::Init(const SamplerStateParam_t& sampler, const ArrayCRef<CRefPt
 		m_iFormat = imgFmt;
 
 		m_texSize += img->GetMipMappedSize(mipStart);
-		textures.append(texture);
 	}
 
 	m_numAnimatedTextureFrames = textures.numElem();
