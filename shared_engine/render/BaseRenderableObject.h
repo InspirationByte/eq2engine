@@ -18,15 +18,6 @@ enum RenderableVisibilityState_e
 	VISIBILITY_INVISIBLE,
 };
 
-enum RenderableFlags_e
-{
-	RF_NO_DRAW				= (1 << 1),		// doesn't draws the object
-
-	RF_DISABLE_SHADOWS		= (1 << 2),		// disables shadow casting, but doesn't disables shadow receiving
-	RF_ONLY_SHADOWS			= (1 << 3),		// only renders this object for shadow
-	RF_SKIPVISIBILITYTEST	= (1 << 4),		// skips visibility test, and means that it's visible.
-};
-
 // renderable object
 class CBaseRenderableObject
 {

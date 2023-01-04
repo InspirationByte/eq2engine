@@ -69,7 +69,7 @@ class IShaderProgram;
 
 #define SHADER_PARAM_FLAG(param, variable, flag, def) \
 	MatVarProxy mv_##param = GetAssignedMaterial()->FindMaterialVar(#param); \
-	if(mv_##param.IsValid()) variable |= mv_##param.GetInt() ? flag : 0; else variable |= def ? flag : 0;
+	if(mv_##param.IsValid()) variable |= (mv_##param.GetInt() ? flag : 0); else if(def) variable |= flag;
 
 #define SHADER_PARAM_STRING(param, variable, def)		_SHADER_PARAM_INIT(param, variable, def, GetString, _SHADER_PARAM_OP_EMPTY)
 #define SHADER_PARAM_BOOL(param, variable, def)			_SHADER_PARAM_INIT(param, variable, def, GetInt, _SHADER_PARAM_OP_EMPTY)
@@ -203,18 +203,18 @@ protected:
 
 	Array<mvUseTexture_t>		m_UsedTextures{ PP_SL };
 	Array<IShaderProgram**>		m_UsedPrograms{ PP_SL };
-	SHADERPARAMFUNC				m_param_functors[SHADERPARAM_COUNT];
+	SHADERPARAMFUNC				m_param_functors[SHADERPARAM_COUNT]{ nullptr };
 
 	MatVarProxy					m_baseTextureTransformVar;
 	MatVarProxy					m_baseTextureScaleVar;
 	MatVarProxy					m_baseTextureFrame;
 
-	IMaterial*					m_material;
+	IMaterial*					m_material{ nullptr };
 
 	ER_TextureAddressMode		m_nAddressMode;
 	ER_TextureFilterMode		m_nTextureFilter;
 
-	int							m_nFlags; // shader flags
+	int							m_nFlags{ 0 }; // shader flags
 
 	bool						m_depthwrite : 1;
 	bool						m_depthtest : 1;

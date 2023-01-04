@@ -58,8 +58,6 @@ static ER_TextureAddressMode ResolveAddressType(const char* string)
 
 CBaseShader::CBaseShader()
 {
-	m_nFlags			= 0;
-
 	m_bIsError			= false;
 	m_bInitialized		= false;
 
@@ -188,11 +186,6 @@ void CBaseShader::InitParams()
 
 	if(m_nFlags & MATERIAL_FLAG_DECAL)
 		m_polyOffset = true;
-
-	if(!materials->GetConfiguration().enableShadows)
-	{
-		m_nFlags &= ~(MATERIAL_FLAG_RECEIVESHADOWS | MATERIAL_FLAG_CASTSHADOWS);
-	}
 }
 
 void CBaseShader::InitShader()
