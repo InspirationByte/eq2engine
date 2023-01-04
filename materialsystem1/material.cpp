@@ -191,7 +191,7 @@ void CMaterial::InitMaterialVars(KVSection* kvs)
 		++numMaterialVars;
 	}
 
-	m_variables.resize(numMaterialVars);
+	m_variables.reserve(numMaterialVars);
 
 	// init material vars
 	for(int i = 0; i < kvs->keys.numElem();i++)
