@@ -106,10 +106,6 @@ public:
 
 	virtual void				ConstructRenderMatrix( Matrix4x4& outMatrix );						///< constructs render matrix
 
-#ifndef FLOAT_AS_FREAL
-	virtual void				ConstructRenderMatrix( FMatrix4x4& outMatrix );						///< constructs render matrix (fixed point)
-#endif // FLOAT_AS_FREAL
-
 	void						DebugDraw();
 
 	void						SetDebugName(const char* name);

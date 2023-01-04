@@ -407,18 +407,6 @@ void CEqCollisionObject::ConstructRenderMatrix( Matrix4x4& outMatrix )
 	outMatrix = m_cachedTransform;
 }
 
-#ifndef FLOAT_AS_FREAL
-void CEqCollisionObject::ConstructRenderMatrix( FMatrix4x4& outMatrix )
-{
-	Quaternion orient = m_orientation;
-
-	if(orient.isNan() )
-		m_orientation = identity();
-
-	outMatrix = FMatrix4x4(orient);
-	outMatrix = translate(m_position) * outMatrix;
-}
-
 void CEqCollisionObject::DebugDraw()
 {
 	if(m_studioShape)
@@ -437,4 +425,3 @@ void CEqCollisionObject::SetDebugName(const char* name)
 #endif // _DEBUG
 }
 
-#endif // FLOAT_AS_FREAL
