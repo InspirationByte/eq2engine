@@ -51,6 +51,18 @@ public:
 	// writes data to virtual stream
 	virtual size_t				Write(const void *src, size_t count, size_t size) = 0;
 
+	template <typename T>
+	size_t						Read(T& obj, size_t count = 1) { return Read(&obj, count, sizeof(T)); }
+
+	template <typename T>
+	size_t						Read(T* obj, size_t count = 1) { return Read(obj, count, sizeof(T)); }
+
+	template <typename T>
+	size_t						Write(const T& obj, size_t count = 1) { return Write(&obj, count, sizeof(T)); }
+
+	template <typename T>
+	size_t						Write(const T* obj, size_t count = 1) { return Write(obj, count, sizeof(T)); }
+
 	// seeks pointer to position
 	virtual int					Seek( long nOffset, VirtStreamSeek_e seekType) = 0;
 
