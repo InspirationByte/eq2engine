@@ -76,18 +76,19 @@ void Event<SIGNATURE>::operator()(Params&&... args)
 	{
 		if (sub->unsubscribe)
 		{
-			if (m_subs == sub)		// quickly migrate to next element
-				m_subs = sub->next;
-
-			if (prevSub)			// link previous with next
+			SubscriptionObject* del = sub;
+			if (prevSub)
+			{
 				prevSub->next = sub->next;
+			}
+			else if (m_subs == sub)
+			{
+				m_subs = sub->next;
+			}
 
-			delete sub;
-			sub = nullptr;
+			delete del;
 
-			if(prevSub)				// goto (del)sub->next
-				sub = prevSub->next;
-
+			sub = sub->next;
 			continue;
 		}
 
