@@ -863,7 +863,7 @@ bool CEGFGenerator::ParseMaterialPaths(KVSection* pSection)
 			const EqString path = KV_GetValueString(keyBase);
 			const int sp_len = path.Length()-1;
 
-			if(path[sp_len] != '/' || path[sp_len] != '\\')
+			if(sp_len >= 0 && (path[sp_len] != '/' || path[sp_len] != '\\'))
 				strcpy(desc.searchPath, EqString::Format("%s/", path.ToCString()).ToCString());
 			else
 				strcpy(desc.searchPath, path.ToCString());

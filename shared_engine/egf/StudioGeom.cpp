@@ -602,7 +602,7 @@ void CEqStudioGeom::LoadMaterials()
 				EqString spath(studio->pMaterialSearchPath(j)->searchPath);
 				spath.Path_FixSlashes();
 
-				if (spath.ToCString()[spath.Length() - 1] == CORRECT_PATH_SEPARATOR)
+				if (spath.Length() && spath.ToCString()[spath.Length() - 1] == CORRECT_PATH_SEPARATOR)
 					spath = spath.Left(spath.Length() - 1);
 
 				EqString extend_path;
