@@ -17,6 +17,9 @@ public:
 
 	virtual const char* GetName() const = 0;
 	virtual int GetNameHash() const = 0;
+
+	virtual void OnAdded() {}
+	virtual void OnRemoved() {}
 protected:
 	HOST*	m_host{ nullptr };
 };
@@ -49,6 +52,7 @@ namespace ComponentHostImpl
 	inline void AddComponent(COMPONENT_MAP<TComponentBase>& components, int hash, TComponentBase* component)
 	{
 		components[hash] = component;
+		component->OnAdded();
 	}
 
 	template<typename TComponentBase>
@@ -72,6 +76,7 @@ namespace ComponentHostImpl
 		auto it = components.find(hash);
 		if (it == components.end())
 			return;
+		(*it)->OnRemoved();
 		delete* it;
 		components.remove(it);
 	}
@@ -87,7 +92,10 @@ namespace ComponentHostImpl
 	inline void RemoveAll(COMPONENT_MAP<TComponentBase>& components)
 	{
 		for (auto it = components.begin(); it != components.end(); ++it)
+		{
+			(*it)->OnRemoved();
 			delete* it;
+		}
 		components.clear();
 	}
 }
