@@ -18,6 +18,7 @@ enum EVolumePlane
 	VOLUME_PLANE_NEAR,   //= 5
 };
 
+// TODO: generic volume with variable plane count
 class Volume
 {
 public:
@@ -37,6 +38,7 @@ public:
 	bool			IsPointInside(const Vector3D &pos) const;
 	bool			IsBoxInside(const float minX, const float maxX, const float minY, const float maxY, const float minZ, const float maxZ, const float eps = 0.0f) const;
 	bool			IsBoxInside(const Vector3D &mins, const Vector3D &maxs, const float eps = 0.0f) const;
+	bool			IsBoxInside(const BoundingBox& box, const float eps = 0.0f) const;
 	bool			IsTriangleInside(const Vector3D& v0, const Vector3D& v1, const Vector3D& v2) const;
 	bool			IsSphereInside(const Vector3D &pos, const float radius) const;
 

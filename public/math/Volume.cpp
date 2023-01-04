@@ -8,6 +8,8 @@
 #include "math_common.h"
 #include "Volume.h"
 
+static constexpr const int VOLUME_PLANE_COUNT = 6;
+
 void Volume::LoadAsFrustum(const Matrix4x4 &mvp)
 {
 	m_planes[VOLUME_PLANE_LEFT  ] = Plane(mvp[12] - mvp[0], mvp[13] - mvp[1], mvp[14] - mvp[2],  mvp[15] - mvp[3]);
@@ -70,7 +72,7 @@ void Volume::SetupPlane(Plane &pl, int n)
 
 bool Volume::IsPointInside(const Vector3D &pos) const
 {
-	for (int i = 0; i < 6; i++)
+	for (int i = 0; i < VOLUME_PLANE_COUNT; i++)
 	{
 		if (m_planes[i].Distance(pos) <= 0) 
 			return false;
@@ -80,7 +82,7 @@ bool Volume::IsPointInside(const Vector3D &pos) const
 
 bool Volume::IsSphereInside(const Vector3D &pos, const float radius) const
 {
-	for (int i = 0; i < 6; i++)
+	for (int i = 0; i < VOLUME_PLANE_COUNT; i++)
 	{
 		if (m_planes[i].Distance(pos) <= -radius) return false;
 	}
@@ -89,7 +91,7 @@ bool Volume::IsSphereInside(const Vector3D &pos, const float radius) const
 
 bool Volume::IsTriangleInside(const Vector3D& v0, const Vector3D& v1, const Vector3D& v2) const
 {
-	for (int i = 0; i < 6; i++)
+	for (int i = 0; i < VOLUME_PLANE_COUNT; i++)
 	{
 		if (m_planes[i].Distance(v0) > 0) continue;
 		if (m_planes[i].Distance(v1) > 0) continue;
@@ -100,6 +102,11 @@ bool Volume::IsTriangleInside(const Vector3D& v0, const Vector3D& v1, const Vect
 	return true;
 }
 
+bool Volume::IsBoxInside(const BoundingBox& box, const float eps) const
+{
+	return IsBoxInside(box.minPoint, box.maxPoint, eps);
+}
+
 bool Volume::IsBoxInside(const Vector3D &mins, const Vector3D &maxs, const float eps) const
 {
 	return IsBoxInside(mins.x, maxs.x,mins.y, maxs.y, mins.z, maxs.z);
@@ -107,7 +114,7 @@ bool Volume::IsBoxInside(const Vector3D &mins, const Vector3D &maxs, const float
 
 bool Volume::IsBoxInside(const float minX, const float maxX, const float minY, const float maxY, const float minZ, const float maxZ, const float eps) const
 {
-    for (int i = 0; i < 6; i++)
+    for (int i = 0; i < VOLUME_PLANE_COUNT; i++)
 	{
 		if (m_planes[i].Distance(Vector3D(minX, minY, minZ)) > -eps) continue;
 		if (m_planes[i].Distance(Vector3D(minX, minY, maxZ)) > -eps) continue;
@@ -123,31 +130,28 @@ bool Volume::IsBoxInside(const float minX, const float maxX, const float minY, c
     return true;
 }
 
-bool Volume::IsIntersectsRay(const Vector3D &start,const Vector3D &dir, Vector3D &intersectionPos, float eps) const
+bool Volume::IsIntersectsRay(const Vector3D &start,const Vector3D &dir, Vector3D& intersectionPos, float eps) const
 {
-	bool isinstersects = false;
+	Vector3D isectPos;
+	float bestDist = F_INFINITY;
 
-	Vector3D outintersection;
-	float best_dist = F_INFINITY;
-
-	for (int i = 0; i < 6; i++)
+	for (int i = 0; i < VOLUME_PLANE_COUNT; i++)
 	{
-		if( m_planes[i].GetIntersectionWithRay( start, dir, outintersection ) )
+		if( m_planes[i].GetIntersectionWithRay( start, dir, isectPos) )
 		{
-			Vector3D v = start - outintersection;
-			float dist = length(start - outintersection);
+			const Vector3D v = start - isectPos;
+			const float dist = lengthSqr(start - isectPos);
 
 			// check sphere because we have epsilon
-			if(dist < best_dist && IsSphereInside( outintersection + dir*0.1f, eps))
+			if(dist < bestDist && IsSphereInside(isectPos + dir * 0.1f, eps))
 			{
-				intersectionPos = outintersection;
-				best_dist = dist;
-				isinstersects = true;
+				intersectionPos = isectPos;
+				bestDist = dist;
 			}
 		}
 	}
 
-	return isinstersects;
+	return bestDist < F_INFINITY * 0.999f;
 }
 
 Vector3D Volume::GetFarLeftUp() const
