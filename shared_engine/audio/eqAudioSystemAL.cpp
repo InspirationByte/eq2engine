@@ -634,7 +634,7 @@ void CEqAudioSystemAL::OnSampleDeleted(ISoundSource* sampleSource)
 }
 
 // finds the effect. May return EFFECTID_INVALID
-effectId_t CEqAudioSystemAL::FindEffect(const char* name) const
+audioEffectId_t CEqAudioSystemAL::FindEffect(const char* name) const
 {
 	const int nameHash = StringToHash(name, true);
 	auto it = m_effects.find(nameHash);
@@ -646,7 +646,7 @@ effectId_t CEqAudioSystemAL::FindEffect(const char* name) const
 }
 
 // sets the new effect
-void CEqAudioSystemAL::SetEffect(int slot, effectId_t effect)
+void CEqAudioSystemAL::SetEffect(int slot, audioEffectId_t effect)
 {
 	// used directly
 	alAuxiliaryEffectSloti(m_effectSlots[slot], AL_EFFECTSLOT_EFFECT, effect);

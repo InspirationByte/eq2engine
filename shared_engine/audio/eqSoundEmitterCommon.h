@@ -81,6 +81,7 @@ struct EmitParams
 	float		pitch{ 1.0f };
 	float		radiusMultiplier{ 1.0f };
 
+	int			effectSlot{ -1 };
 	int			flags{ 0 };
 	int			sampleId{ -1 };
 	int			channelType{ CHAN_INVALID };

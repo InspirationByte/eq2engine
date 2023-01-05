@@ -291,6 +291,7 @@ int CSoundEmitterSystem::EmitSound(EmitParams* ep, CSoundingObject* soundingObj,
 	virtualParams.set_channel(channelType);
 	virtualParams.set_state(startSilent ? IEqAudioSource::STOPPED : IEqAudioSource::PLAYING);
 	virtualParams.set_releaseOnStop(releaseOnStop);
+	virtualParams.set_effectSlot(ep->effectSlot);
 
 	ep->channelType = channelType;
 

@@ -60,10 +60,10 @@ public:
 	void						OnSampleDeleted(ISoundSource* sample);
 
 	// finds the effect. May return EFFECT_ID_NONE
-	effectId_t					FindEffect(const char* name) const;
+	audioEffectId_t					FindEffect(const char* name) const;
 
 	// sets the new effect
-	void						SetEffect(int slot, effectId_t effect);
+	void						SetEffect(int slot, audioEffectId_t effect);
 	int							GetEffectSlotCount() const;
 
 private:
