@@ -837,6 +837,9 @@ void CEqStudioGeom::Draw(const DrawProps& drawProperties) const
 
 const BoundingBox& CEqStudioGeom::GetBoundingBox() const
 {
+	while (!m_studio && GetLoadingState() == MODEL_LOAD_IN_PROGRESS) // wait for hwdata
+		Platform_Sleep(1);
+
 	return m_boundingBox;
 }
 
