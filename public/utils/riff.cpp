@@ -140,6 +140,8 @@ int CRIFF_Parser::SkipData(int size)
 	if (!m_stream || size <= 0)
 		return 0;
 
+	m_chunkRemaining -= size;
+
 	return m_stream->Seek(size, VS_SEEK_CUR);
 }
 
