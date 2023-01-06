@@ -27,8 +27,8 @@ public:
 	void					SetEncryption( int type, const char* key );
 	void					SetMountPath( const char* path );
 
-	bool					AddFile( const char* fileName );
-	void					AddDirectory( const char* directoryname, bool bRecurse );
+	bool					AddFile( const char* fileName, const char* targetFilename);
+	void					AddDirectory(const char* wildcard, const char* targetDir, bool bRecurse );
 
 	void					AddIgnoreCompressionExtension( const char* extension );
 

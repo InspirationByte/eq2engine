@@ -9,22 +9,94 @@
 #include "core/IDkCore.h"
 #include "core/IFileSystem.h"
 #include "core/ICommandLine.h"
+
+#include "utils/KeyValues.h"
+
 #include "DPKFileWriter.h"
 
 #if defined(_WIN32) && defined(_DEBUG)
 #include <crtdbg.h>
 #endif
 
-void Usage()
+static void Usage()
 {
-	Msg("Usage: \n");
-	Msg(" fcompress.exe -d <directory> -file -o <filename.eqpak>\n\n");
-	Msg("-d / -dir <directory> - Adds folder to package\n");
-	Msg("-f / -file <name> - Adds file to package\n");
-	Msg("-o / -out <name> - Output filename\n");
-	Msg("-m / -mount <directory> - Sets the mount path for package\n");
-	Msg("-c / -compression <level> - Sets the compression level of archive\n");
-	Msg("-e / -encryption <key> - Sets encryption of the package\n");
+	MsgWarning("USAGE:\n	fcompress -target <target name>\n");
+}
+
+static void CookPackageTarget(const char* targetName)
+{
+	// load all properties
+	KeyValues kvs;
+	if (!kvs.LoadFromFile("PackageCooker.CONFIG", SP_ROOT))
+	{
+		MsgError("Failed to load 'PackageCooker.CONFIG' file!\n");
+		return;
+	}
+
+	EqString outputFileName(targetName);
+	if (outputFileName.Path_Extract_Ext().Length() == 0)
+		outputFileName.Append(".epk");
+
+	CDPKFileWriter dpkWriter;
+
+	{
+		// load target info
+		KVSection* packages = kvs.FindSection("Packages");
+		if (!packages)
+		{
+			MsgError("Missing 'Packages' section in 'PackageCooker.CONFIG'\n");
+			return;
+		}
+
+		KVSection* currentTarget = packages->FindSection(targetName);
+		if (!currentTarget)
+		{
+			MsgError("Cannot find package section '%s'\n", targetName);
+			return;
+		}
+
+		const int targetCompression = KV_GetValueInt(currentTarget->FindSection("compression"), 0, 0);
+		const char* targetFilename = KV_GetValueString(currentTarget->FindSection("output"), 0, nullptr);
+		const char* mountPath = KV_GetValueString(currentTarget->FindSection("mountPath"), 0, nullptr);
+		const char* encryption = KV_GetValueString(currentTarget->FindSection("encryption"), 0, nullptr);
+
+		if (!mountPath)
+		{
+			MsgError("Package '%s' missing 'mountPath' value\n", targetName);
+			return;
+		}
+
+		if(encryption)
+			dpkWriter.SetEncryption(1, encryption);
+
+		if (targetFilename)
+			outputFileName = targetFilename;
+
+		dpkWriter.SetCompression(targetCompression);
+		dpkWriter.SetMountPath(mountPath);
+
+		for (int i = 0; i < currentTarget->KeyCount(); ++i)
+		{
+			KVSection* kvSec = currentTarget->KeyAt(i);
+			if (!stricmp(kvSec->GetName(), "add"))
+			{
+				const char* wildcard = KV_GetValueString(kvSec);
+				EqString packageDir = KV_GetValueString(kvSec, 1, wildcard);
+
+				int wildcardStart = packageDir.Find("*");
+				if (wildcardStart != -1)
+					packageDir = packageDir.Left(wildcardStart-1);
+
+				dpkWriter.AddDirectory(wildcard, packageDir, true);
+			}
+			else if (!stricmp(kvSec->GetName(), "ignoreCompressionExt"))
+			{
+				dpkWriter.AddIgnoreCompressionExtension(KV_GetValueString(kvSec));
+			}
+		}
+	}
+	
+	dpkWriter.BuildAndSave(outputFileName.ToCString());
 }
 
 int main(int argc, char **argv)
@@ -43,8 +115,8 @@ int main(int argc, char **argv)
 
 	g_eqCore->Init("fcompress",argc,argv);
 
-	Msg("Equilibrium package compressor utility\n");
-	Msg(" Version 1.0\n");
+	Msg("FCompress - Equilibrium PakFile generator\n");
+	Msg(" Version 2.0\n");
 
 	// initialize file system
 	if(!g_fileSystem->Init(false))
@@ -61,58 +133,15 @@ int main(int argc, char **argv)
 
 	EqString outFileName = "";
 
-	CDPKFileWriter dpkWriter;
-
-	for(int i = 0; i < g_cmdLine->GetArgumentCount(); i++)
+	for (int i = 0; i < g_cmdLine->GetArgumentCount(); i++)
 	{
-		const char* arg = g_cmdLine->GetArgumentString( i );
+		EqString argStr = g_cmdLine->GetArgumentString(i);
 
-		if(!stricmp(arg, "-o") || !stricmp(arg, "-out"))
+		if (!argStr.CompareCaseIns("-target"))
 		{
-			outFileName = g_cmdLine->GetArgumentsOf(i);
-			Msg("\t- Output file specified: %s\n", outFileName.ToCString());
-		}
-		else if(!stricmp(arg, "-f") || !stricmp(arg, "-file"))
-		{
-			dpkWriter.AddFile( g_cmdLine->GetArgumentsOf(i) );
-		}
-		else if (!stricmp(arg, "-e") || !stricmp(arg, "-encryption"))
-		{
-			EqString key = g_cmdLine->GetArgumentsOf(i);
-			dpkWriter.SetEncryption(1, key.ToCString());
-			Msg("\t- Encryption is enabled\n");
-		}
-		else if(!stricmp(arg, "-d") || !stricmp(arg, "-dir"))
-		{
-			dpkWriter.AddDirectory( g_cmdLine->GetArgumentsOf(i), true );
-		}
-		else if(!stricmp(arg, "-m") || !stricmp(arg, "-mount"))
-		{
-			EqString path = g_cmdLine->GetArgumentsOf(i);
-			dpkWriter.SetMountPath(path.ToCString());
-			Msg("\t- Mount path set to '%s'\n", path.ToCString());
-		}
-		else if(!stricmp(arg, "-c") || !stricmp(arg, "-compression"))
-		{
-			int level = atoi(g_cmdLine->GetArgumentsOf(i));
-			dpkWriter.SetCompression(level);
-			Msg("\t- Compression level is %d\n", level);
-		}
-		else if(!stricmp(arg, "-ignorecompressionext"))
-		{
-			Array<EqString> splitArgs(PP_SL);
-
-			EqString argsStr = g_cmdLine->GetArgumentsOf(i);
-			xstrsplit(argsStr.ToCString(), " ", splitArgs);
-
-			for(int j = 0; j < splitArgs.numElem(); j++)
-			{
-				dpkWriter.AddIgnoreCompressionExtension( splitArgs[j].ToCString() );
-			}
+			CookPackageTarget(g_cmdLine->GetArgumentsOf(i));
 		}
 	}
-
-	dpkWriter.BuildAndSave( outFileName.ToCString() );
 
 	g_eqCore->Shutdown();
 

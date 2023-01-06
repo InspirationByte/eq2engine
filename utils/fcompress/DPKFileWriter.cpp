@@ -8,13 +8,14 @@
 #include <lz4hc.h>
 
 #include "core/core_common.h"
+#include "core/IFileSystem.h"
 #include "core/cmd_pacifier.h"
 #include "DPKFileWriter.h"
 
 #define DPK_WRITE_BLOCK (8*1024*1024)
 
 // Fixes slashes in the directory name
-void DPK_RebuildFilePath(const char *str, char *newstr)
+static void DPK_RebuildFilePath(const char *str, char *newstr)
 {
 	char* pnewstr = newstr;
 	char cprev = 0;
@@ -34,7 +35,7 @@ void DPK_RebuildFilePath(const char *str, char *newstr)
 	*pnewstr = 0;
 }
 
-void DPK_FixSlashes(EqString& str)
+static void DPK_FixSlashes(EqString& str)
 {
 	char* tempStr = (char*)stackalloc(str.Length() + 1);
 	memset(tempStr, 0, str.Length());
@@ -113,21 +114,25 @@ void CDPKFileWriter::SetEncryption( int type, const char* key )
 		m_ice.set((const unsigned char*)key);
 }
 
-bool CDPKFileWriter::BuildAndSave( const char* fileNamePrefix )
+bool CDPKFileWriter::BuildAndSave( const char* fileName )
 {
+	if (m_files.numElem() == 0)
+	{
+		MsgError("No files added to package '%s'!\n", fileName);
+		return false;
+	}
+
 	m_header.version = DPK_VERSION;
 	m_header.signature = DPK_SIGNATURE;
 	m_header.fileInfoOffset = 0;
 	m_header.compressionLevel = m_compressionLevel;
 	m_header.numFiles = 0;
 
-	EqString fileName = fileNamePrefix;
-
-	FILE* dpkFile = fopen( fileName.ToCString(), "wb" );
+	FILE* dpkFile = fopen(fileName, "wb" );
 
 	if( !dpkFile )
 	{
-		MsgError("Cannot create '%s'!\n", fileName.ToCString());
+		MsgError("Cannot create '%s'!\n", fileName);
 		return false;
 	}
 
@@ -149,38 +154,29 @@ void CDPKFileWriter::SetMountPath( const char* path )
 	xstrlwr( m_mountPath );
 }
 
-bool FileExists( const char* szPath )
+static bool FileExists( const char* szPath )
 {
 #ifdef _WIN32
 	DWORD dwAttrib = GetFileAttributesA(szPath);
-
-	return (dwAttrib != INVALID_FILE_ATTRIBUTES &&
-			!(dwAttrib & FILE_ATTRIBUTE_DIRECTORY));
+	return (dwAttrib != INVALID_FILE_ATTRIBUTES && !(dwAttrib & FILE_ATTRIBUTE_DIRECTORY));
 #endif // _WIN32
 }
 
-bool CDPKFileWriter::AddFile( const char* fileName )
+bool CDPKFileWriter::AddFile( const char* fileName, const char* targetFilename)
 {
 	if( !FileExists(fileName) )
 	{
-		MsgWarning("Cannot add file '%s' because it's don't exists\n", fileName);
+		MsgWarning("File '%s' does not exist, cannot add\n", fileName);
 		return false;
 	}
 
 	dpkfilewinfo_t* newInfo  = PPNew dpkfilewinfo_t;
-	memset(newInfo,0,sizeof(dpkfilewinfo_t));
+	newInfo->fileName = fileName;
+	memset(&newInfo->pkinfo, 0, sizeof(newInfo->pkinfo));
 
-	{
-		// assign the filename and fix path separators
-		newInfo->fileName = _Es(fileName).LowerCase();
-		DPK_FixSlashes(newInfo->fileName);
-
-		//Msg("adding file: '%s'\n", newInfo->fileName.ToCString());
-
-		newInfo->pkinfo.filenameHash = StringToHash(newInfo->fileName.ToCString(), true );
-
-		//Msg("DPK: %s = %u\n", newInfo->fileName.ToCString(), newInfo->pkinfo.filenameHash);
-	}
+	EqString writeableFileName(_Es(targetFilename).LowerCase());
+	DPK_FixSlashes(writeableFileName);
+	newInfo->pkinfo.filenameHash = StringToHash(writeableFileName, true );
 
 	m_files.append(newInfo);
 	m_header.numFiles++;
@@ -188,43 +184,41 @@ bool CDPKFileWriter::AddFile( const char* fileName )
 	return true;
 }
 
-void CDPKFileWriter::AddDirectory(const char* filename_to_add, bool bRecurse)
+void CDPKFileWriter::AddDirectory(const char* wildcard, const char* targetDir, bool recursive)
 {
-	EqString dir_name(filename_to_add);
-	EqString dirname(dir_name + "/*.*");
+	Msg("Adding path '%s' as '%s' to package:\n", wildcard, targetDir);
 
-	Msg("Adding path '%s' to package:\n",filename_to_add);
+	EqString targetDirTrimmed(targetDir);
+	targetDirTrimmed = targetDirTrimmed.TrimChar('/');
+	targetDirTrimmed = targetDirTrimmed.TrimChar('.');
+
+	EqString nonWildcardFolder(wildcard);
+	const int wildcardStart = nonWildcardFolder.Find("*");
+	if (wildcardStart != -1)
+	{
+		nonWildcardFolder = nonWildcardFolder.Left(wildcardStart).TrimChar('/');
+	}
 
 #ifdef _WIN32
 	WIN32_FIND_DATAA wfd;
-	HANDLE hFile;
-
-	hFile = FindFirstFileA(dirname.ToCString(), &wfd);
-	if(hFile != nullptr)
+	HANDLE hFile = FindFirstFileA(wildcard, &wfd);
+	while(hFile && FindNextFileA(hFile, &wfd))
 	{
-		while(1)
+		if(wfd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
 		{
-			if(!FindNextFileA(hFile, &wfd))
-				break;
+			if(!stricmp("..", wfd.cFileName) || !stricmp(".", wfd.cFileName))
+				continue;
 
-			if(wfd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
-			{
-				if(!stricmp("..",wfd.cFileName) || !stricmp(".",wfd.cFileName))
-					continue;
-
-				if(bRecurse)
-					AddDirectory(EqString::Format("%s/%s",dir_name.ToCString(),wfd.cFileName).ToCString(), true );
-			}
-			else
-			{
-				EqString filename(dir_name + "/" + wfd.cFileName);
-
-				AddFile(filename.ToCString());
-			}
+			if(recursive)
+				AddDirectory(EqString::Format("%s/%s/*", nonWildcardFolder.ToCString(), wfd.cFileName), EqString::Format("%s/%s", targetDirTrimmed.ToCString(), wfd.cFileName), true);
 		}
-
-		FindClose(hFile);
+		else
+		{
+			AddFile(EqString::Format("%s/%s", nonWildcardFolder.ToCString(), wfd.cFileName), EqString::Format("%s/%s", targetDirTrimmed.ToCString(), wfd.cFileName));
+		}
 	}
+
+	FindClose(hFile);
 #endif // _WIN32
 }
 
