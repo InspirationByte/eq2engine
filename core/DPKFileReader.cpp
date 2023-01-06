@@ -165,7 +165,7 @@ void CDPKFileStream::DecodeBlock(int blockIdx)
 size_t CDPKFileStream::Read(void* dest, size_t count, size_t size)
 {
 	const size_t fileRemainingBytes = m_info.size - m_curPos;
-	const int bytesToRead = min(count*size, fileRemainingBytes);
+	const int bytesToRead = min(count * size, fileRemainingBytes);
 
 	if (bytesToRead == 0)
 		return 0;
@@ -254,15 +254,18 @@ int	CDPKFileStream::Seek(long nOffset, VirtStreamSeek_e seekType)
 
 
 	if (newOfs < 0)
+	{
+		m_curPos = 0;
 		return -1;
+	}
 
-	ASSERT_MSG(newOfs >= 0 && newOfs <= m_info.size, "CDPKFileStream::Seek - %u illegal seek => %d while file max is %d\n", m_info.filenameHash, newOfs, m_info.size);
+	if (newOfs > m_info.size)
+	{
+		m_curPos = m_info.size;
+		return -1;
+	}
 
-	// set the virtual offset
 	m_curPos = newOfs;
-
-	//Msg("DPK %u seek => %d / %d\n", m_info.filenameHash, newOfs, m_info.size);
-
 	return 0;
 }
 

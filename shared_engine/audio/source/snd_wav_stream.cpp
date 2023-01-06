@@ -36,8 +36,6 @@ void CSoundSource_WaveStream::ParseData(CRIFF_Parser &chunk)
 	m_dataOffset = chunk.GetPos();
 	m_dataSize = chunk.GetSize();
 
-	chunk.SkipData(m_dataSize);
-
 	m_numSamples = m_dataSize / (m_format.channels * (m_format.bitwidth >> 3));
 }
 

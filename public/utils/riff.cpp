@@ -23,7 +23,7 @@ CRIFF_Parser::CRIFF_Parser(const char* szFilename)
 	m_stream = m_file;
 
 	RIFFhdr_t header;
-	ReadData(&header, sizeof(header));
+	m_stream->Read(header);
 
 	if (header.Id != RIFF_ID)
 	{
@@ -61,7 +61,7 @@ CRIFF_Parser::CRIFF_Parser(ubyte* pChunkData, int nChunkSize)
 	m_riffMem.Open(pChunkData, VS_OPEN_READ, nChunkSize);
 
 	RIFFhdr_t header;
-	ReadData(&header, sizeof(header));
+	m_stream->Read(header);
 
 	if (header.Id != RIFF_ID)
 	{
@@ -100,13 +100,13 @@ int CRIFF_Parser::ReadChunk(void* pOutput, int maxLen)
 	if (maxLen != -1)
 		numToRead = maxLen;
 
-	const int readCount = ReadData(pOutput, numToRead);
-	m_chunkRemaining -= readCount;
+	m_chunkRemaining -= numToRead;
 	ASSERT_MSG(m_chunkRemaining >= 0, "CRIFF_Parser - read amount exceeded chunk size");
 
-	return readCount;
+	return m_stream->Read(pOutput, numToRead, 1);
 }
 
+// TODO: needs to be removed
 int CRIFF_Parser::ReadData(void* dest, int len)
 {
 	if (!m_stream)
@@ -115,18 +115,13 @@ int CRIFF_Parser::ReadData(void* dest, int len)
 	return m_stream->Read(dest, len, 1);
 }
 
-int CRIFF_Parser::ReadInt()
-{
-	int i;
-	ReadData(&i, sizeof(i));
-	return i;
-}
-
+// TODO: needs to be removed
 int CRIFF_Parser::GetPos()
 {
 	return m_stream->Tell();
 }
 
+// TODO: needs to be removed
 int CRIFF_Parser::SetPos(int pos)
 {
 	if (!m_stream)
@@ -135,7 +130,7 @@ int CRIFF_Parser::SetPos(int pos)
 	return m_stream->Seek(pos, VS_SEEK_SET);
 }
 
-int CRIFF_Parser::SkipData(int size)
+int CRIFF_Parser::SkipChunkData(int size)
 {
 	if (!m_stream || size <= 0)
 		return 0;
@@ -168,12 +163,11 @@ bool CRIFF_Parser::ChunkNext()
 	return result;
 }
 
-//-----------------------------------------
-
 bool CRIFF_Parser::ChunkSet()
 {
-	SkipData(m_chunkRemaining);
-	const int n = ReadData(&m_curChunk, sizeof(m_curChunk));
+	SkipChunkData(m_chunkRemaining);
+
+	const int n = m_stream->Read(&m_curChunk, sizeof(m_curChunk), 1);
 	m_chunkRemaining = m_curChunk.Size;
-	return n > 0;
+	return n == sizeof(m_curChunk);
 }
