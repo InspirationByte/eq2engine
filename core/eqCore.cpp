@@ -221,7 +221,10 @@ bool CDkCore::Init(const char* pszApplicationName, const char* pszCommandLine)
 	// try different locations of EQ.CONFIG
 	bool found = m_coreConfiguration->LoadFromFile("EQ.CONFIG", SP_ROOT);
 	if (!found)
+	{
 		found = m_coreConfiguration->LoadFromFile("../EQ.CONFIG", SP_ROOT);
+		g_fileSystem->SetBasePath(".."); // little hack
+	}
 
 	if(!found)
 	{
