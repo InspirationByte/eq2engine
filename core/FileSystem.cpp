@@ -837,7 +837,7 @@ bool CFileSystem::AddPackage(const char* packageName, SearchPath_e type, const c
 	CBasePackageFileReader* pPackageReader = nullptr;
 
 	// allow zip files to be loaded
-	if (!fileExt.CompareCaseIns("zip") || !fileExt.CompareCaseIns("obb"))
+	if (!fileExt.CompareCaseIns("zip"))
 		pPackageReader = PPNew CZipFileReader(m_FSMutex);
 	else
 		pPackageReader = PPNew CDPKFileReader(m_FSMutex);
