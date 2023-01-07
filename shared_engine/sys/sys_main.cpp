@@ -29,6 +29,10 @@ int Sys_Main()
 		return -2;
 	}
 
+	// in case of game FS is packed
+	// create configuration directory
+	g_fileSystem->MakeDir("cfg", SP_MOD);
+
 	// add the copyright
 	g_localizer->AddToken("GAME_VERSION", EqWString::Format(L"Build %d %s %s", BUILD_NUMBER_ENGINE, L"" COMPILE_DATE, L"" COMPILE_TIME).ToCString());
 	g_localizer->AddTokensFile("game");
@@ -233,12 +237,6 @@ bool Sys_Android_InitCore(int argc, char** argv)
 
 void Sys_Android_MountFileSystem()
 {
-	// current game directory needs to be created
-	g_fileSystem->MakeDir(g_fileSystem->GetCurrentGameDirectory(), SP_ROOT);
-
-	// as well as configuration file dir
-	g_fileSystem->MakeDir("cfg", SP_MOD);
-
 	// mount OBB file if available in config
 	KVSection* filesystemKvs = g_eqCore->GetConfig()->FindSection("Filesystem");
 	KVSection* obbPackageName = filesystemKvs->FindSection("OBBPackage");
