@@ -13,7 +13,6 @@ struct SoundScriptDesc;
 struct SoundEmitterData;
 
 struct EmitParams;
-class CSoundingObject;
 class ConCommandBase;
 
 class CEmitterObjectSound;
@@ -101,6 +100,7 @@ protected:
 	// sounds at channel counter
 	Map<int, SoundEmitterData*>	m_emitters{ PP_SL };
 
+	Threading::CEqMutex			m_mutex;
 	uint8						m_numChannelSounds[CHAN_MAX]{ 0 };
 	float						m_volumeScale{ 1.0f };
 };

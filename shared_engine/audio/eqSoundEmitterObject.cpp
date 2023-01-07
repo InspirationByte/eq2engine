@@ -6,14 +6,13 @@
 #include "eqSoundEmitterSystem.h"
 
 using namespace Threading;
-static Threading::CEqMutex s_soundingObjectMutex;
 
 CSoundingObject::~CSoundingObject()
 {
 	g_sounds->OnRemoveSoundingObject(this);
 
 	{
-		CScopedMutex m(s_soundingObjectMutex);
+		CScopedMutex m(m_mutex);
 		for (auto it = m_emitters.begin(); it != m_emitters.end(); ++it)
 		{
 			SoundEmitterData* emitter = *it;
@@ -30,6 +29,7 @@ int CSoundingObject::EmitSound(int uniqueId, EmitParams* ep)
 	const bool isRandom = uniqueId == -1;
 	if (isRandom)
 	{
+		CScopedMutex m(m_mutex);
 		// ensure that no collisions happen
 		do {
 			uniqueId = RandomInt(0, StringHashMask);
@@ -41,6 +41,8 @@ int CSoundingObject::EmitSound(int uniqueId, EmitParams* ep)
 
 bool CSoundingObject::UpdateEmitters(const Vector3D& listenerPos)
 {
+	CScopedMutex m(m_mutex);
+
 	// update emitters manually if they are in virtual state
 	for (auto it = m_emitters.begin(); it != m_emitters.end(); ++it)
 	{
@@ -90,7 +92,7 @@ void CSoundingObject::StopFirstEmitterByChannel(int chan)
 	if (chan == CHAN_INVALID)
 		return;
 
-	CScopedMutex m(s_soundingObjectMutex);
+	CScopedMutex m(m_mutex);
 
 	// find first sound with the specific channel and kill it
 	for (auto it = m_emitters.begin(); it != m_emitters.end(); ++it)
@@ -149,8 +151,11 @@ void CSoundingObject::SetEmitterState(int uniqueId, IEqAudioSource::State state,
 		return;
 	}
 
-	for (auto it = m_emitters.begin(); it != m_emitters.end(); ++it)
-		SetEmitterState(*it, state, rewindOnPlay);
+	{
+		CScopedMutex m(m_mutex);
+		for (auto it = m_emitters.begin(); it != m_emitters.end(); ++it)
+			SetEmitterState(*it, state, rewindOnPlay);
+	}
 }
 
 void CSoundingObject::StopEmitter(int uniqueId, bool destroy /*= false*/)
@@ -159,7 +164,7 @@ void CSoundingObject::StopEmitter(int uniqueId, bool destroy /*= false*/)
 	{
 		SoundEmitterData* emitter = nullptr;
 		{
-			CScopedMutex m(s_soundingObjectMutex);
+			CScopedMutex m(m_mutex);
 			const auto it = m_emitters.find(uniqueId);
 			if (it == m_emitters.end())
 				return;
@@ -174,12 +179,15 @@ void CSoundingObject::StopEmitter(int uniqueId, bool destroy /*= false*/)
 		return;
 	}
 
-	for (auto it = m_emitters.begin(); it != m_emitters.end(); ++it)
-		StopEmitter(*it, destroy);
+	{
+		CScopedMutex m(m_mutex);
+		for (auto it = m_emitters.begin(); it != m_emitters.end(); ++it)
+			StopEmitter(*it, destroy);
+	}
 
 	if (destroy)
 	{
-		CScopedMutex m(s_soundingObjectMutex);
+		CScopedMutex m(m_mutex);
 		m_emitters.clear();
 	}
 }
@@ -192,8 +200,11 @@ void CSoundingObject::PauseEmitter(int uniqueId)
 		return;
 	}
 
-	for (auto it = m_emitters.begin(); it != m_emitters.end(); ++it)
-		PauseEmitter(*it);
+	{
+		CScopedMutex m(m_mutex);
+		for (auto it = m_emitters.begin(); it != m_emitters.end(); ++it)
+			PauseEmitter(*it);
+	}
 }
 
 void CSoundingObject::PlayEmitter(int uniqueId, bool rewind /*= false*/)
@@ -204,8 +215,11 @@ void CSoundingObject::PlayEmitter(int uniqueId, bool rewind /*= false*/)
 		return;
 	}
 
-	for (auto it = m_emitters.begin(); it != m_emitters.end(); ++it)
-		PlayEmitter(*it, rewind);
+	{
+		CScopedMutex m(m_mutex);
+		for (auto it = m_emitters.begin(); it != m_emitters.end(); ++it)
+			PlayEmitter(*it, rewind);
+	}
 }
 
 void CSoundingObject::StopLoop(int uniqueId, float fadeOutTime) 
@@ -216,8 +230,11 @@ void CSoundingObject::StopLoop(int uniqueId, float fadeOutTime)
 		return;
 	}
 
-	for (auto it = m_emitters.begin(); it != m_emitters.end(); ++it)
-		StopLoop(*it, fadeOutTime);
+	{
+		CScopedMutex m(m_mutex);
+		for (auto it = m_emitters.begin(); it != m_emitters.end(); ++it)
+			StopLoop(*it, fadeOutTime);
+	}
 }
 
 void CSoundingObject::SetPosition(int uniqueId, const Vector3D& position)
@@ -228,8 +245,11 @@ void CSoundingObject::SetPosition(int uniqueId, const Vector3D& position)
 		return;
 	}
 
-	for (auto it = m_emitters.begin(); it != m_emitters.end(); ++it)
-		SetPosition(*it, position);
+	{
+		CScopedMutex m(m_mutex);
+		for (auto it = m_emitters.begin(); it != m_emitters.end(); ++it)
+			SetPosition(*it, position);
+	}
 }
 
 void CSoundingObject::SetVelocity(int uniqueId, const Vector3D& velocity)
@@ -240,8 +260,11 @@ void CSoundingObject::SetVelocity(int uniqueId, const Vector3D& velocity)
 		return;
 	}
 
-	for (auto it = m_emitters.begin(); it != m_emitters.end(); ++it)
-		SetVelocity(*it, velocity);
+	{
+		CScopedMutex m(m_mutex);
+		for (auto it = m_emitters.begin(); it != m_emitters.end(); ++it)
+			SetVelocity(*it, velocity);
+	}
 }
 
 void CSoundingObject::SetConeProperties(int uniqueId, const Vector3D& direction, float innerRadus, float outerRadius, float outerVolume, float outerVolumeHf)
@@ -252,14 +275,18 @@ void CSoundingObject::SetConeProperties(int uniqueId, const Vector3D& direction,
 		return;
 	}
 
-	for (auto it = m_emitters.begin(); it != m_emitters.end(); ++it)
-		SetConeProperties(*it, direction, innerRadus, outerRadius, outerVolume, outerVolumeHf);
+	{
+		CScopedMutex m(m_mutex);
+		for (auto it = m_emitters.begin(); it != m_emitters.end(); ++it)
+			SetConeProperties(*it, direction, innerRadus, outerRadius, outerVolume, outerVolumeHf);
+	}
 }
 
 void CSoundingObject::SetPitch(int uniqueId, float pitch)
 {
 	if (uniqueId != ID_ALL)
 	{
+		CScopedMutex m(m_mutex);
 		const auto it = m_emitters.find(uniqueId);
 		if (it == m_emitters.end())
 			return;
@@ -268,8 +295,11 @@ void CSoundingObject::SetPitch(int uniqueId, float pitch)
 		return;
 	}
 
-	for (auto it = m_emitters.begin(); it != m_emitters.end(); ++it)
-		SetPitch(*it, pitch);
+	{
+		CScopedMutex m(m_mutex);
+		for (auto it = m_emitters.begin(); it != m_emitters.end(); ++it)
+			SetPitch(*it, pitch);
+	}
 }
 
 void CSoundingObject::SetVolume(int uniqueId, float volume)
@@ -292,8 +322,11 @@ void CSoundingObject::SetSampleVolume(int uniqueId, int waveId, float volume)
 		return;
 	}
 
-	for (auto it = m_emitters.begin(); it != m_emitters.end(); ++it)
-		SetSampleVolume(*it, waveId, volume);
+	{
+		CScopedMutex m(m_mutex);
+		for (auto it = m_emitters.begin(); it != m_emitters.end(); ++it)
+			SetSampleVolume(*it, waveId, volume);
+	}
 }
 
 void CSoundingObject::SetSamplePlaybackPosition(int uniqueId, int waveId, float seconds)
@@ -304,8 +337,11 @@ void CSoundingObject::SetSamplePlaybackPosition(int uniqueId, int waveId, float 
 		return;
 	}
 
-	for (auto it = m_emitters.begin(); it != m_emitters.end(); ++it)
-		SetSamplePlaybackPosition(*it, waveId, seconds);
+	{
+		CScopedMutex m(m_mutex);
+		for (auto it = m_emitters.begin(); it != m_emitters.end(); ++it)
+			SetSamplePlaybackPosition(*it, waveId, seconds);
+	}
 }
 
 void CSoundingObject::SetParams(int uniqueId, const IEqAudioSource::Params& params)
@@ -316,8 +352,11 @@ void CSoundingObject::SetParams(int uniqueId, const IEqAudioSource::Params& para
 		return;
 	}
 
-	for (auto it = m_emitters.begin(); it != m_emitters.end(); ++it)
-		SetParams(*it, params);
+	{
+		CScopedMutex m(m_mutex);
+		for (auto it = m_emitters.begin(); it != m_emitters.end(); ++it)
+			SetParams(*it, params);
+	}
 }
 
 void CSoundingObject::SetInputValue(int uniqueId, const char* name, float value)
@@ -334,15 +373,18 @@ void CSoundingObject::SetInputValue(int uniqueId, int inputNameHash, float value
 		return;
 	}
 
-	for (auto it = m_emitters.begin(); it != m_emitters.end(); ++it)
-		SetInputValue(*it, inputNameHash, value);
+	{
+		CScopedMutex m(m_mutex);
+		for (auto it = m_emitters.begin(); it != m_emitters.end(); ++it)
+			SetInputValue(*it, inputNameHash, value);
+	}
 }
 
 SoundEmitterData* CSoundingObject::FindEmitter(int uniqueId) const
 {
 	SoundEmitterData* emitter = nullptr;
 	{
-		CScopedMutex m(s_soundingObjectMutex);
+		CScopedMutex m(*const_cast<CEqMutex*>(&m_mutex));
 		const auto it = m_emitters.find(uniqueId);
 		if (it != m_emitters.end())
 			return *it;
@@ -352,7 +394,7 @@ SoundEmitterData* CSoundingObject::FindEmitter(int uniqueId) const
 
 void CSoundingObject::AddEmitter(int uniqueId, SoundEmitterData* emitter)
 {
-	CScopedMutex m(s_soundingObjectMutex);
+	CScopedMutex m(m_mutex);
 	m_emitters.insert(uniqueId, emitter);
 }
 
