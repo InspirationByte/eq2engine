@@ -114,8 +114,16 @@ void SetupGLSamplerState(uint texTarget, const SamplerStateParam_t& sampler, int
 #endif // USE_GLES2
 }
 
-GLTextureRef_t CGLTexture::CreateGLTexture(EImageType type, ETextureFormat format, int mipCount, int widthMip0, int heightMip0, int depthMip0) const
+GLTextureRef_t CGLTexture::CreateGLTexture(const CImage* img, const SamplerStateParam_t& sampler, int startMip, int mipCount) const
 {
+	// EImageType type, ETextureFormat format, int mipCount, int widthMip0, int heightMip0, int depthMip0
+
+	const EImageType type = img->GetImageType();
+	const ETextureFormat format = img->GetFormat();
+	int widthMip0 = img->GetWidth(0);
+	int heightMip0 = img->GetHeight(0);
+	int depthMip0 = img->GetDepth(0);
+
 	GLTextureRef_t glTexture;
 	glTexture.type = type;
 
@@ -123,7 +131,6 @@ GLTextureRef_t CGLTexture::CreateGLTexture(EImageType type, ETextureFormat forma
 	if (!GLCheckError("gen tex"))
 		return invalidTexture;
 
-#ifdef USE_GLES2
 	const GLenum glTarget = g_gl_texTargetType[type];
 	const GLenum internalFormat = PickGLInternalFormat(format);
 
@@ -137,6 +144,7 @@ GLTextureRef_t CGLTexture::CreateGLTexture(EImageType type, ETextureFormat forma
 	glBindTexture(glTarget, glTexture.glTexID);
 	GLCheckError("bind tex");
 
+#ifdef USE_GLES2
 	if (type == IMAGE_TYPE_CUBE)
 	{
 		glTexStorage2D(glTarget, mipCount, internalFormat, widthMip0, heightMip0);
@@ -154,13 +162,77 @@ GLTextureRef_t CGLTexture::CreateGLTexture(EImageType type, ETextureFormat forma
 		ASSERT_FAIL("Invalid texture type!");
 	}
 	GLCheckError("create tex storage");
+#else
+	const GLenum srcFormat = g_gl_chanCountTypes[GetChannelCount(format)];
+	const GLenum srcType = g_gl_chanTypePerFormat[format];
+
+	if (type == IMAGE_TYPE_CUBE)
+	{
+		int width = widthMip0;
+		int height = heightMip0;
+		for (int i = 0; i < mipCount; ++i) 
+		{
+			if (IsCompressedFormat(format))
+			{
+				for (int j = 0; j < 6; ++j)
+					glCompressedTexImage2D(glTarget, i, internalFormat, width, height, 0, img->GetMipMappedSize(startMip + i, 1), nullptr);
+			}
+			else
+			{
+				for (int j = 0; j < 6; ++j)
+					glTexImage2D(glTarget, i, internalFormat, width, height, 0, srcFormat, srcType, nullptr);
+			}
+
+			width = max(1, (width / 2));
+			height = max(1, (height / 2));
+		}
+	}
+	else if (type == IMAGE_TYPE_3D)
+	{
+		int width = widthMip0;
+		int height = heightMip0;
+		int depth = depthMip0;
+		for (int i = 0; i < mipCount; ++i)
+		{
+			if (IsCompressedFormat(format))
+				glCompressedTexImage3D(glTarget, i, internalFormat, width, height, depth, 0, img->GetMipMappedSize(startMip + i, 1), nullptr);
+			else
+				glTexImage3D(glTarget, i, internalFormat, width, height, depth, 0, srcFormat, srcType, nullptr);
+
+			width = max(1, (width / 2));
+			height = max(1, (height / 2));
+			depth = max(1, (depth / 2));
+		}
+	}
+	else if (type == IMAGE_TYPE_2D || type == IMAGE_TYPE_1D)
+	{
+		int width = widthMip0;
+		int height = heightMip0;
+		for (int i = 0; i < mipCount; ++i) 
+		{
+			if (IsCompressedFormat(format))
+				glCompressedTexImage2D(glTarget, i, internalFormat, width, height, 0, img->GetMipMappedSize(startMip + i, 1), nullptr);
+			else
+				glTexImage2D(glTarget, i, internalFormat, width, height, 0, srcFormat, srcType, nullptr);
+
+			width = max(1, (width / 2));
+
+			if(type != IMAGE_TYPE_1D)
+				height = max(1, (height / 2));
+		}
+	}
+	else
+	{
+		ASSERT_FAIL("Invalid texture type!");
+	}
 #endif
+
+	SetupGLSamplerState(glTarget, sampler, mipCount);
 
 	return glTexture;
 }
 
-
-static bool UpdateGLTextureFromImage(GLTextureRef_t texture, SamplerStateParam_t& sampler, const CImage* image, int startMipLevel)
+static void UpdateGLTextureFromImageMipmap(GLTextureRef_t texture, CRefPtr<CImage> image, int sourceMipLevel, int targetMipLevel)
 {
 	const GLenum glTarget = g_gl_texTargetType[texture.type];
 	const ETextureFormat format = image->GetFormat();
@@ -174,138 +246,88 @@ static bool UpdateGLTextureFromImage(GLTextureRef_t texture, SamplerStateParam_t
 	GLCheckError("bind tex");
 
 	// Upload it all
-	ubyte *src;
-	int mipMapLevel = startMipLevel;
-	while ((src = image->GetPixels(mipMapLevel)) != nullptr)
+	ubyte* src = image->GetPixels(sourceMipLevel);
+
+	const int size = image->GetMipMappedSize(sourceMipLevel, 1);
+
+	int width = image->GetWidth(sourceMipLevel);
+	int height = image->GetHeight(sourceMipLevel);
+
+	if (IsCompressedFormat(format))
 	{
-		const int size = image->GetMipMappedSize(mipMapLevel, 1);
-		const int lockBoxLevel = mipMapLevel - startMipLevel;
-		int width = image->GetWidth(mipMapLevel);
-		int height = image->GetHeight(mipMapLevel);
-
-		if (IsCompressedFormat(format))
-		{
-			//FIXME: is that even valid?
-			width &= ~3;
-			height &= ~3;
-		}
-
-#ifdef USE_GLES2
-		if (texture.type == IMAGE_TYPE_3D)
-		{
-			if (IsCompressedFormat(format))
-			{
-				glCompressedTexSubImage3D(glTarget, lockBoxLevel,
-					0, 0, 0,
-					width, height, image->GetDepth(mipMapLevel), internalFormat, size, src);
-			}
-			else
-			{
-				glTexSubImage3D(glTarget, lockBoxLevel, 0, 0, 0,
-					width, height, image->GetDepth(mipMapLevel), srcFormat, srcType, src);
-			}
-			if (!GLCheckError("tex upload 3d (mip %d)", mipMapLevel))
-				break;
-		}
-		else if (texture.type == IMAGE_TYPE_CUBE)
-		{
-			const int cubeFaceSize = size / 6;
-
-			for (uint i = 0; i < 6; i++)
-			{
-				if (IsCompressedFormat(format))
-				{
-					glCompressedTexSubImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, lockBoxLevel, 0, 0,
-						width, height, internalFormat, cubeFaceSize, src + i * cubeFaceSize);
-				}
-				else
-				{
-					glTexSubImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, lockBoxLevel, 0, 0,
-						width, height, srcFormat, srcType, src + i * cubeFaceSize);
-				}
-				if (!GLCheckError("tex upload cube (mip %d)", mipMapLevel))
-					break;
-			}
-		}
-		else if (texture.type == IMAGE_TYPE_1D || IMAGE_TYPE_2D)
-		{
-			if (IsCompressedFormat(format))
-			{
-				glCompressedTexSubImage2D(glTarget, lockBoxLevel, 0, 0,
-					width, height, internalFormat, size, src);
-			}
-			else
-			{
-				glTexSubImage2D(glTarget, lockBoxLevel, 0, 0,
-					width, height, srcFormat, srcType, src);
-			}
-
-			if (!GLCheckError("tex upload 2d (mip %d)", mipMapLevel))
-				break;
-		}
-
-		//glTexParameteri(glTarget, GL_TEXTURE_BASE_LEVEL, mipMapLevel);
-#else
-		if (texture.type == IMAGE_TYPE_3D)
-		{
-			if (IsCompressedFormat(format))
-			{
-				glCompressedTexImage3D(glTarget, lockBoxLevel, internalFormat,
-					width, height, image->GetDepth(mipMapLevel), 0, size, src);
-			}
-			else
-			{
-				glTexImage3D(glTarget,lockBoxLevel, internalFormat,
-					width, height, image->GetDepth(mipMapLevel), 0, srcFormat, srcType, src);
-			}
-			if (!GLCheckError("tex upload 3d (mip %d)", mipMapLevel))
-				break;
-		}
-		else if (texture.type == IMAGE_TYPE_CUBE)
-		{
-			const int cubeFaceSize = size / 6;
-
-			for (uint i = 0; i < 6; i++)
-			{
-				if (IsCompressedFormat(format))
-				{
-					glCompressedTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, lockBoxLevel, internalFormat,
-						width, height, 0, cubeFaceSize, src + i * cubeFaceSize);
-				}
-				else
-				{
-					glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, lockBoxLevel, internalFormat,
-						width, height, 0, srcFormat, srcType, src + i * cubeFaceSize);
-				}
-				if (!GLCheckError("tex upload cube (mip %d)", mipMapLevel))
-					break;
-			}
-		}
-		else if (texture.type == IMAGE_TYPE_1D || IMAGE_TYPE_2D)
-		{
-			if (IsCompressedFormat(format))
-			{
-				glCompressedTexImage2D(glTarget, lockBoxLevel, internalFormat,
-					width, height, 0, size, src);
-			}
-			else
-			{
-				glTexImage2D(glTarget, lockBoxLevel, internalFormat,
-					width, height, 0, srcFormat, srcType, src);
-			}
-
-			if (!GLCheckError("tex upload 2d (mip %d)", mipMapLevel))
-				break;
-		}
-#endif
-		mipMapLevel++;
+		//FIXME: is that even valid?
+		width &= ~3;
+		height &= ~3;
 	}
 
+	if (texture.type == IMAGE_TYPE_3D)
+	{
+		if (IsCompressedFormat(format))
+		{
+			glCompressedTexSubImage3D(glTarget, targetMipLevel,
+				0, 0, 0,
+				width, height, image->GetDepth(sourceMipLevel), internalFormat, size, src);
+		}
+		else
+		{
+			glTexSubImage3D(glTarget, targetMipLevel, 0, 0, 0,
+				width, height, image->GetDepth(sourceMipLevel), srcFormat, srcType, src);
+		}
+		GLCheckError("tex upload 3d (mip %d)", sourceMipLevel);
+	}
+	else if (texture.type == IMAGE_TYPE_CUBE)
+	{
+		const int cubeFaceSize = size / 6;
 
-	SetupGLSamplerState(glTarget, sampler, mipMapLevel);
+		for (uint i = 0; i < 6; i++)
+		{
+			if (IsCompressedFormat(format))
+			{
+				glCompressedTexSubImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, targetMipLevel, 0, 0,
+					width, height, internalFormat, cubeFaceSize, src + i * cubeFaceSize);
+			}
+			else
+			{
+				glTexSubImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, targetMipLevel, 0, 0,
+					width, height, srcFormat, srcType, src + i * cubeFaceSize);
+			}
+			GLCheckError("tex upload cube (mip %d)", sourceMipLevel);
+		}
+	}
+	else if (texture.type == IMAGE_TYPE_1D || IMAGE_TYPE_2D)
+	{
+		if (IsCompressedFormat(format))
+		{
+			glCompressedTexSubImage2D(glTarget, targetMipLevel, 0, 0,
+				width, height, internalFormat, size, src);
+		}
+		else
+		{
+			glTexSubImage2D(glTarget, targetMipLevel, 0, 0,
+				width, height, srcFormat, srcType, src);
+		}
+
+		GLCheckError("tex upload 2d (mip %d)", sourceMipLevel);
+	}
+
+	//glTexParameteri(glTarget, GL_TEXTURE_BASE_LEVEL, mipMapLevel);
 
 	glBindTexture(glTarget, 0);
 	GLCheckError("tex unbind");
+}
+
+static bool UpdateGLTextureFromImage(GLTextureRef_t texture, CRefPtr<CImage> image, int startMipLevel)
+{
+	const int numMipMaps = image->GetMipMapCount();
+	int mipMapLevel = numMipMaps - 1;
+
+	while (mipMapLevel >= startMipLevel)
+	{
+		const int lockBoxLevel = mipMapLevel - startMipLevel;
+
+		UpdateGLTextureFromImageMipmap(texture, image, mipMapLevel, lockBoxLevel);
+		--mipMapLevel;
+	}
 
 	return true;
 }
@@ -333,7 +355,7 @@ bool CGLTexture::Init(const SamplerStateParam_t& sampler, const ArrayCRef<CRefPt
 
 	for (int i = 0; i < images.numElem(); i++)
 	{
-		const CImage* img = images[i];
+		const CRefPtr<CImage> img = images[i];
 
 		if ((m_iFlags & TEXFLAG_CUBEMAP) && !img->IsCube())
 		{
@@ -360,13 +382,14 @@ bool CGLTexture::Init(const SamplerStateParam_t& sampler, const ArrayCRef<CRefPt
 
 		const int result = g_glWorker.WaitForExecute(__FUNCTION__, [=]()
 		{
+
 			// Generate a texture
-			GLTextureRef_t texture = CreateGLTexture(imgType, imgFmt, mipCount, texWidth, texHeight, texDepth);
+			GLTextureRef_t texture = CreateGLTexture(img, m_samplerState, mipStart, mipCount);
 
 			if(texture.glTexID == GL_NONE)
 				return -1;
 
-			if (!UpdateGLTextureFromImage(texture, m_samplerState, img, mipStart))
+			if (!UpdateGLTextureFromImage(texture, img, mipStart))
 			{
 				glBindTexture(m_glTarget, 0);
 				GLCheckError("tex unbind");

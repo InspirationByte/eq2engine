@@ -150,8 +150,6 @@ static bool UpdateD3DTextureFromImage(IDirect3DBaseTexture9* texture, CRefPtr<CI
 		const int lockBoxLevel = mipMapLevel - startMipLevel;
 
 		UpdateD3DTextureFromImageMipmap(texture, image, mipMapLevel, lockBoxLevel, lockFlags);
-
-		texture->SetLOD(lockBoxLevel);
 		--mipMapLevel;
 	}
 	

@@ -49,7 +49,7 @@ public:
 
 protected:
 
-	GLTextureRef_t			CreateGLTexture(EImageType type, ETextureFormat format, int mipCount, int widthMip0, int heightMip0, int depthMip0) const;
+	GLTextureRef_t			CreateGLTexture(const CImage* img, const SamplerStateParam_t& sampler, int startMip, int mipCount) const;
 
 	int						m_lockOffs{ 0 };
 	int						m_lockSize{ 0 };
