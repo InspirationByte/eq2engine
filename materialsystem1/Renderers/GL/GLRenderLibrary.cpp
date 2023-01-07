@@ -21,6 +21,7 @@ static_assert(false, "this file should NOT BE included when GLES version is buil
 #include "GLRenderLibrary.h"
 
 #include "GLSwapChain.h"
+#include "GLWorker.h"
 #include "ShaderAPIGL.h"
 
 #include "gl_loader.h"
@@ -39,6 +40,7 @@ static_assert(false, "this file should NOT BE included when GLES version is buil
 #include <X11/Xmd.h>
 #include <X11/extensions/xf86vmode.h>
 #endif
+
 
 extern bool GLCheckError(const char* op, ...);
 
@@ -652,6 +654,11 @@ void CGLRenderLib::BeginFrame()
 	g_shaderApi.m_nViewportHeight = m_height;
 
 	g_shaderApi.SetViewport(0, 0, m_width, m_height);
+
+	g_glWorker.Execute("StepProgressiveTextures", []() {
+		g_shaderApi.StepProgressiveLodTextures();
+		return 0;
+	});
 }
 
 void CGLRenderLib::EndFrame(IEqSwapChain* schain)

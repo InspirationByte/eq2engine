@@ -8,6 +8,16 @@
 #pragma once
 #include "renderers/ITexture.h"
 
+static constexpr const int TEXTURE_TRANSFER_RATE_THRESHOLD = 512;
+static constexpr const int TEXTURE_TRANSFER_MAX_TEXTURES_PER_FRAME = 15;
+
+enum EProgressiveStatus : int
+{
+	PROGRESSIVE_STATUS_COMPLETED = 0,
+	PROGRESSIVE_STATUS_WAIT_MORE_FRAMES,
+	PROGRESSIVE_STATUS_DID_UPLOAD,
+};
+
 class CTexture : public ITexture
 {
 	friend class ShaderAPI_Base;
@@ -46,6 +56,17 @@ public:
 protected:
 	EqString				m_szTexName;
 	int						m_nameHash{ 0 };
+
+	struct LodState
+	{
+		CRefPtr<CImage> image;
+		int8			idx{ 0 };
+		int8			lockBoxLevel{ 0 };
+		int8			mipMapLevel{ 0 };
+		uint8			frameDelay{ 1 };
+	};
+
+	Array<LodState>			m_progressiveState{ PP_SL };
 
 	LockInOutData*			m_lockData{ nullptr };
 

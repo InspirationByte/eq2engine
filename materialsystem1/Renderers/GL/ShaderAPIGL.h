@@ -287,11 +287,15 @@ protected:
 private:
 	void					ApplyBuffers();
 
+	void					StepProgressiveLodTextures();
+
 	void					PreloadShadersFromCache();
 	bool					InitShaderFromCache(IShaderProgram* pShaderOutput, IVirtualStream* pStream, uint32 checksum = 0);
 
 	//OpenGL - Specific
 	void					InternalChangeFrontFace(int nCullFaceMode);
+
+	Set<CGLTexture*>		m_progressiveTextures{ PP_SL };
 
 	GLuint					m_frameBuffer;
 	GLuint					m_depthBuffer;

@@ -39,6 +39,8 @@ public:
 	// unlocks texture for modifications, etc
 	void					Unlock();
 
+	EProgressiveStatus		StepProgressiveLod();
+
 	Array<GLTextureRef_t>	textures{ PP_SL };
 
 	float					m_flLod{ 0.0f };

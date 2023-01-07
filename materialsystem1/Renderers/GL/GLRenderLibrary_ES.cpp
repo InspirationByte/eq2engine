@@ -22,6 +22,7 @@ static_assert(false, "this file should NOT BE included when non-GLES version is 
 #include "GLRenderLibrary_ES.h"
 
 #include "GLSwapChain.h"
+#include "GLWorker.h"
 #include "ShaderAPIGL.h"
 
 #include "gl_loader.h"
@@ -391,6 +392,11 @@ void CGLRenderLib_ES::BeginFrame()
 		m_lostSurface = false;
 	}
 #endif // PLAT_ANDROID
+
+	g_glWorker.Execute("StepProgressiveTextures", []() {
+		g_shaderApi.StepProgressiveLodTextures();
+		return 0;
+	});
 
 	// ShaderAPIGL uses m_nViewportWidth/Height as backbuffer size
 	g_shaderApi.m_nViewportWidth = m_width;

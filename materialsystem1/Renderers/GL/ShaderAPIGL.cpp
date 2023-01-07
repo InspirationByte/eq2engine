@@ -45,6 +45,8 @@ extern CEqMutex	g_sapi_VBMutex;
 extern CEqMutex	g_sapi_IBMutex;
 extern CEqMutex	g_sapi_Mutex;
 
+extern CEqMutex g_sapi_ProgressiveTextureMutex;
+
 void PrintGLExtensions()
 {
 	const char* ver = (const char*)glGetString(GL_VERSION);
@@ -2805,4 +2807,31 @@ void ShaderAPIGL::SetTexture( ITexture* pTexture, const char* pszName, int index
 		return;
 
 	SetTextureOnIndex(pTexture, unitIndex);
+}
+
+void ShaderAPIGL::StepProgressiveLodTextures()
+{
+	int numTransferred = 0;
+
+	auto it = m_progressiveTextures.begin();
+	while (it != m_progressiveTextures.end() && numTransferred < TEXTURE_TRANSFER_MAX_TEXTURES_PER_FRAME)
+	{
+		CGLTexture* nextTexture = nullptr;
+		{
+			CScopedMutex m(g_sapi_ProgressiveTextureMutex);
+			nextTexture = it.key();
+			++it;
+		}
+
+		EProgressiveStatus status = nextTexture->StepProgressiveLod();
+		if (status == PROGRESSIVE_STATUS_COMPLETED)
+		{
+			CScopedMutex m(g_sapi_ProgressiveTextureMutex);
+			m_progressiveTextures.remove(nextTexture);
+			++numTransferred;
+		}
+
+		if (status == PROGRESSIVE_STATUS_DID_UPLOAD)
+			++numTransferred;
+	}
 }

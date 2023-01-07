@@ -12,9 +12,13 @@
 #include "shaderapigl_def.h"
 #include "GLTexture.h"
 #include "GLWorker.h"
+#include "ShaderAPIGL.h"
 #include "imaging/ImageLoader.h"
 
 static ConVar gl_skipTextures("gl_skipTextures", "0", nullptr, CV_CHEAT);
+
+extern ShaderAPIGL g_shaderApi;
+Threading::CEqMutex g_sapi_ProgressiveTextureMutex;
 
 extern bool GLCheckError(const char* op, ...);
 
@@ -232,7 +236,7 @@ GLTextureRef_t CGLTexture::CreateGLTexture(const CImage* img, const SamplerState
 	return glTexture;
 }
 
-static void UpdateGLTextureFromImageMipmap(GLTextureRef_t texture, CRefPtr<CImage> image, int sourceMipLevel, int targetMipLevel)
+static bool UpdateGLTextureFromImageMipmap(GLTextureRef_t texture, CRefPtr<CImage> image, int sourceMipLevel, int targetMipLevel)
 {
 	const GLenum glTarget = g_gl_texTargetType[texture.type];
 	const ETextureFormat format = image->GetFormat();
@@ -258,6 +262,8 @@ static void UpdateGLTextureFromImageMipmap(GLTextureRef_t texture, CRefPtr<CImag
 		//FIXME: is that even valid?
 		width &= ~3;
 		height &= ~3;
+		if (width == 0) width = 4;
+		if (height == 0) height = 4;
 	}
 
 	if (texture.type == IMAGE_TYPE_3D)
@@ -310,10 +316,12 @@ static void UpdateGLTextureFromImageMipmap(GLTextureRef_t texture, CRefPtr<CImag
 		GLCheckError("tex upload 2d (mip %d)", sourceMipLevel);
 	}
 
-	//glTexParameteri(glTarget, GL_TEXTURE_BASE_LEVEL, mipMapLevel);
+	glTexParameteri(glTarget, GL_TEXTURE_BASE_LEVEL, targetMipLevel);
 
 	glBindTexture(glTarget, 0);
 	GLCheckError("tex unbind");
+
+	return true;
 }
 
 static bool UpdateGLTextureFromImage(GLTextureRef_t texture, CRefPtr<CImage> image, int startMipLevel)
@@ -352,6 +360,8 @@ bool CGLTexture::Init(const SamplerStateParam_t& sampler, const ArrayCRef<CRefPt
 	m_glTarget = g_gl_texTargetType[images[0]->GetImageType()];
 
 	const int quality = (m_iFlags & TEXFLAG_NOQUALITYLOD) ? 0 : r_loadmiplevel->GetInt();
+	m_progressiveState.reserve(images.numElem());
+	textures.reserve(images.numElem());
 
 	for (int i = 0; i < images.numElem(); i++)
 	{
@@ -389,15 +399,53 @@ bool CGLTexture::Init(const SamplerStateParam_t& sampler, const ArrayCRef<CRefPt
 			if(texture.glTexID == GL_NONE)
 				return -1;
 
-			if (!UpdateGLTextureFromImage(texture, img, mipStart))
+			if ((m_iFlags & TEXFLAG_PROGRESSIVE_LODS) && g_shaderApi.m_progressiveTextureFrequency > 0)
 			{
-				glBindTexture(m_glTarget, 0);
-				GLCheckError("tex unbind");
+				const int numMipMaps = img->GetMipMapCount();
+				int mipMapLevel = numMipMaps - 1;
 
-				glDeleteTextures(1, &texture.glTexID);
-				GLCheckError("del tex");
+				int transferredSize = 0;
+				do
+				{
+					const int size = img->GetMipMappedSize(mipMapLevel, 1);
+					const int lockBoxLevel = mipMapLevel - mipStart;
 
-				return -1;
+					UpdateGLTextureFromImageMipmap(texture, img, mipMapLevel, lockBoxLevel);
+
+					transferredSize += size;
+
+					if (transferredSize > TEXTURE_TRANSFER_RATE_THRESHOLD)
+					{
+						if (lockBoxLevel > 1)
+						{
+							LodState& state = m_progressiveState.append();
+							state.idx = i;
+							state.lockBoxLevel = lockBoxLevel - 1;
+							state.mipMapLevel = mipMapLevel - 1;
+							state.image = img;
+							state.frameDelay = g_shaderApi.m_progressiveTextureFrequency;
+						}
+						break;
+					}
+
+					--mipMapLevel;
+					if (mipMapLevel < 0)
+						break;
+
+				} while (true);
+			}
+			else
+			{
+				if (!UpdateGLTextureFromImage(texture, img, mipStart))
+				{
+					glBindTexture(m_glTarget, 0);
+					GLCheckError("tex unbind");
+
+					glDeleteTextures(1, &texture.glTexID);
+					GLCheckError("del tex");
+
+					return -1;
+				}
 			}
 
 			textures.append(texture);
@@ -418,6 +466,12 @@ bool CGLTexture::Init(const SamplerStateParam_t& sampler, const ArrayCRef<CRefPt
 		m_texSize += img->GetMipMappedSize(mipStart);
 	}
 
+	if (m_progressiveState.numElem())
+	{
+		Threading::CScopedMutex m(g_sapi_ProgressiveTextureMutex);
+		g_shaderApi.m_progressiveTextures.insert(this);
+	}
+
 	m_numAnimatedTextureFrames = textures.numElem();
 
 	return true;
@@ -431,6 +485,46 @@ GLTextureRef_t& CGLTexture::GetCurrentTexture()
 		return nulltex;
 
 	return textures[m_nAnimatedTextureFrame];
+}
+
+EProgressiveStatus CGLTexture::StepProgressiveLod()
+{
+	EProgressiveStatus status = PROGRESSIVE_STATUS_WAIT_MORE_FRAMES;
+
+	if (!textures.numElem())
+		return PROGRESSIVE_STATUS_COMPLETED;
+
+	for (int i = 0; i < m_progressiveState.numElem(); ++i)
+	{
+		LodState& state = m_progressiveState[i];
+
+		if (state.frameDelay > 0)
+		{
+			--state.frameDelay;
+			continue;
+		}
+
+		GLTextureRef_t& texture = textures[state.idx];
+
+		UpdateGLTextureFromImageMipmap(texture, state.image, state.mipMapLevel, state.lockBoxLevel);
+
+		--state.lockBoxLevel;
+		--state.mipMapLevel;
+		state.frameDelay = min(g_shaderApi.m_progressiveTextureFrequency, 255);
+
+		status = PROGRESSIVE_STATUS_DID_UPLOAD;
+
+		if (state.lockBoxLevel < 0)
+		{
+			m_progressiveState.fastRemoveIndex(i);
+			--i;
+		}
+	}
+
+	if (!m_progressiveState.numElem())
+		return PROGRESSIVE_STATUS_COMPLETED;
+
+	return status;
 }
 
 // locks texture for modifications, etc
