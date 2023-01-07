@@ -8,10 +8,18 @@ else {
 }
 
 def eqEnginePath = file('../../').absolutePath
-def applicationMkPath = eqEnginePath + '/project_androidndk/Equilibrium2.Application.mk'
-def androidMkPath = eqEnginePath + '/project_androidndk/Equilibrium2.wks.Android.mk';
+def applicationMkPath = eqEnginePath + '/project_androidndk/DriverSyndicate.Application.mk'
+def androidMkPath = eqEnginePath + '/project_androidndk/DriverSyndicate.wks.Android.mk';
 
 android {
+    signingConfigs {
+        retail {
+            storeFile file(eqEnginePath + '/../DriverSyndicate/sources/android/android.jks')
+            storePassword 'A1an1sAnarchy'
+            keyAlias 'key0'
+            keyPassword 'A1an1sAnarchy'
+        }
+    }
     ndkVersion '21.4.7075529'
 
     compileSdkVersion 26
@@ -19,7 +27,7 @@ android {
         if (buildAsApplication) {
             applicationId "com.insbyte.driversyndicate"
         }
-        minSdkVersion 16
+        minSdkVersion 30
         externalNativeBuild {
             ndkBuild {
                 arguments 'NDK_APPLICATION_MK:='+applicationMkPath,
@@ -29,8 +37,18 @@ android {
     }
 
     buildTypes {
-        release {
-            debuggable false
+        retail {
+            signingConfig signingConfigs.retail
+            externalNativeBuild {
+                ndkBuild {
+                    // Premake configurations to build for - see the section about configuration and platform selection below.
+                    arguments 'PREMAKE_ANDROIDNDK_CONFIGURATIONS:=Retail'
+                }
+            }
+        }
+
+        release_dbg {
+            debuggable true
             externalNativeBuild {
                 ndkBuild {
                     // Premake configurations to build for - see the section about configuration and platform selection below.

@@ -2,8 +2,8 @@
 
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
       package="com.insbyte.driversyndicate"
-      android:versionCode="202"
-      android:versionName="alpha-2.2"
+      android:versionCode="300"
+      android:versionName="alpha-3.0"
       android:installLocation="preferExternal">
 
     <!-- OpenGL ES 3 -->
