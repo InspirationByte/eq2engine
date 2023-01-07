@@ -1524,8 +1524,6 @@ void ShaderAPIGL::PreloadShadersFromCache()
 	Msg("Shader cache: %d shaders loaded\n", numShaders);
 }
 
-#pragma optimize("", off)
-
 bool ShaderAPIGL::InitShaderFromCache(IShaderProgram* pShaderOutput, IVirtualStream* pStream, uint32 checksum)
 {
 	CGLShaderProgram* pShader = (CGLShaderProgram*)(pShaderOutput);
