@@ -426,8 +426,8 @@ inline void CRasterizer<T>::DrawLine(const T &color1, const Vector2D &p1, const 
 			xmax = p1.x;
 		}
 
-		xmin = clamp(xmin, 0, m_Height);
-		xmax = clamp(xmax, 0, m_Height);
+		xmin = clamp(xmin, 0.0f, (float)m_Height);
+		xmax = clamp(xmax, 0.0f, (float)m_Height);
 
 		// draw line in terms of y slope
 		float slope = ydiff / xdiff;
@@ -455,8 +455,8 @@ inline void CRasterizer<T>::DrawLine(const T &color1, const Vector2D &p1, const 
 			ymax = p1.y;
 		}
 
-		ymin = clamp(ymin, 0, m_Height);
-		ymax = clamp(ymax, 0, m_Height);
+		ymin = clamp(ymin, 0.0f, (float)m_Height);
+		ymax = clamp(ymax, 0.0f, (float)m_Height);
 
 		// draw line in terms of x slope
 		float slope = xdiff / ydiff;
