@@ -1066,7 +1066,7 @@ KVSection* KV_ParseSectionV2(const char* pszBuffer, int bufferSize, const char* 
 	};
 
 	EParserMode mode = MODE_SKIP_WHITESPACE;
-	int curLine = 0;
+	int curLine = 1;
 	int lastModeStartLine = 0;
 
 	char* firstLetter = nullptr;
@@ -1098,13 +1098,13 @@ KVSection* KV_ParseSectionV2(const char* pszBuffer, int bufferSize, const char* 
 			case MODE_SKIP_WHITESPACE:
 			{
 				// check for invalid chars
-				//if (c == KV_ESCAPE_SYMBOL)
-				//{
-				//	MsgError("'%s' (%d): unexpected '%c' while parsing\n", (pszFileName ? pszFileName : "buffer"), curLine, c);
-				//	lastModeStartLine = curLine;
-				//	mode = MODE_PARSE_ERROR_BREAK;
-				//	break;
-				//}
+				if (c == KV_ARRAY_SEPARATOR /* || c == KV_ESCAPE_SYMBOL*/)
+				{
+					MsgError("'%s' (%d): unexpected '%c' while parsing\n", (pszFileName ? pszFileName : "buffer"), curLine, c);
+					lastModeStartLine = curLine;
+					mode = MODE_PARSE_ERROR_BREAK;
+					break;
+				}
 
 				if (c == KV_COMMENT_SYMBOL)
 				{
@@ -1184,9 +1184,9 @@ KVSection* KV_ParseSectionV2(const char* pszBuffer, int bufferSize, const char* 
 			case MODE_OPEN_STRING:
 			{
 				// check for invalid chars
-				if (c == KV_SECTION_END || c == KV_STRING_BEGIN_END /* || c == KV_ESCAPE_SYMBOL*/)
+				if (c == KV_SECTION_END || c == KV_STRING_BEGIN_END || c == KV_ARRAY_SEPARATOR /* || c == KV_ESCAPE_SYMBOL*/)
 				{
-					MsgError("'%s' (%d): unexpected '%c' while parsing non-quoted string\n", (pszFileName ? pszFileName : "buffer"), curLine, c);
+					MsgError("'%s' (%d): unexpected '%c' while parsing unquoted string\n", (pszFileName ? pszFileName : "buffer"), curLine, c);
 					lastModeStartLine = curLine;
 					mode = MODE_PARSE_ERROR_BREAK;
 					break;
