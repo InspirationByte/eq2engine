@@ -44,10 +44,8 @@ IDirect3DBaseTexture9* CD3D9Texture::CreateD3DTexture(EImageType type, ETextureF
 	if (IsCompressedFormat(format))
 	{
 		//FIXME: is that even valid?
-		widthMip0 &= ~3;
-		heightMip0 &= ~3;
-		if (widthMip0 == 0) widthMip0 = 4;
-		if (heightMip0 == 0) heightMip0 = 4;
+		widthMip0 = max(4, widthMip0 & ~3);
+		heightMip0 = max(4, heightMip0 & ~3);
 	}
 
 	if (type == IMAGE_TYPE_CUBE)

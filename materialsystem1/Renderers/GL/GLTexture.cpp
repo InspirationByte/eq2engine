@@ -179,16 +179,25 @@ GLTextureRef_t CGLTexture::CreateGLTexture(const CImage* img, const SamplerState
 			if (IsCompressedFormat(format))
 			{
 				for (int j = 0; j < 6; ++j)
+				{
 					glCompressedTexImage2D(glTarget, i, internalFormat, width, height, 0, img->GetMipMappedSize(startMip + i, 1), nullptr);
+					GLCheckError("create tex2D cube %d compr storage level %d", j, i);
+				}
+			
+				width = max(4, width >> 1 & ~3);
+				height = max(4, height >> 1 & ~3);
 			}
 			else
 			{
 				for (int j = 0; j < 6; ++j)
+				{
 					glTexImage2D(glTarget, i, internalFormat, width, height, 0, srcFormat, srcType, nullptr);
-			}
+					GLCheckError("create tex storage level %d", i);
+				}
 
-			width = max(1, (width / 2));
-			height = max(1, (height / 2));
+				width = max(1, width >> 1);
+				height = max(1, height >> 1);
+			}
 		}
 	}
 	else if (type == IMAGE_TYPE_3D)
@@ -199,13 +208,23 @@ GLTextureRef_t CGLTexture::CreateGLTexture(const CImage* img, const SamplerState
 		for (int i = 0; i < mipCount; ++i)
 		{
 			if (IsCompressedFormat(format))
+			{
 				glCompressedTexImage3D(glTarget, i, internalFormat, width, height, depth, 0, img->GetMipMappedSize(startMip + i, 1), nullptr);
-			else
-				glTexImage3D(glTarget, i, internalFormat, width, height, depth, 0, srcFormat, srcType, nullptr);
+				GLCheckError("create tex3D compr storage level %d", i);
 
-			width = max(1, (width / 2));
-			height = max(1, (height / 2));
-			depth = max(1, (depth / 2));
+				width = max(4, width >> 1 & ~3);
+				height = max(4, height >> 1 & ~3);
+				depth = max(4, depth >> 1 & ~3);
+			}
+			else
+			{
+				glTexImage3D(glTarget, i, internalFormat, width, height, depth, 0, srcFormat, srcType, nullptr); GLCheckError("create tex storage level %d", i);
+				GLCheckError("create tex storage level %d", i);
+
+				width = max(1, width >> 1);
+				height = max(1, height >> 1);
+				depth = max(1, depth >> 1);
+			}
 		}
 	}
 	else if (type == IMAGE_TYPE_2D || type == IMAGE_TYPE_1D)
@@ -215,14 +234,23 @@ GLTextureRef_t CGLTexture::CreateGLTexture(const CImage* img, const SamplerState
 		for (int i = 0; i < mipCount; ++i) 
 		{
 			if (IsCompressedFormat(format))
+			{
 				glCompressedTexImage2D(glTarget, i, internalFormat, width, height, 0, img->GetMipMappedSize(startMip + i, 1), nullptr);
+				GLCheckError("create tex2D compr storage level %d", i);
+
+				width = max(4, width >> 1 & ~3);
+				if (type != IMAGE_TYPE_1D)
+					height = max(4, height >> 1 & ~3);
+			}
 			else
+			{
 				glTexImage2D(glTarget, i, internalFormat, width, height, 0, srcFormat, srcType, nullptr);
-
-			width = max(1, (width / 2));
-
-			if(type != IMAGE_TYPE_1D)
-				height = max(1, (height / 2));
+				GLCheckError("create tex2D storage level %d", i);
+				
+				width = max(1, width >> 1);
+				if (type != IMAGE_TYPE_1D)
+					height = max(1, height >> 1);
+			}
 		}
 	}
 	else
@@ -254,17 +282,8 @@ static bool UpdateGLTextureFromImageMipmap(GLTextureRef_t texture, CRefPtr<CImag
 
 	const int size = image->GetMipMappedSize(sourceMipLevel, 1);
 
-	int width = image->GetWidth(sourceMipLevel);
-	int height = image->GetHeight(sourceMipLevel);
-
-	if (IsCompressedFormat(format))
-	{
-		//FIXME: is that even valid?
-		width &= ~3;
-		height &= ~3;
-		if (width == 0) width = 4;
-		if (height == 0) height = 4;
-	}
+	const int width = image->GetWidth(sourceMipLevel);
+	const int height = image->GetHeight(sourceMipLevel);
 
 	if (texture.type == IMAGE_TYPE_3D)
 	{
