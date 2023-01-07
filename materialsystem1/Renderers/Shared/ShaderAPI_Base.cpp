@@ -712,7 +712,7 @@ bool ShaderAPI_Base::LoadShadersFromFile(IShaderProgram* pShaderOutput, const ch
 		}
 	}
 
-	EqString shaderRootPath = EqString::Format(SHADERS_DEFAULT_PATH "%s", GetRendererName());
+	EqString shaderRootPath = EqString::Format(SHADERS_DEFAULT_PATH "%s", "Uber"); //EqString::Format(SHADERS_DEFAULT_PATH "%s", GetRendererName());
 
 
 	EqString firstFileName;

@@ -287,6 +287,9 @@ protected:
 private:
 	void					ApplyBuffers();
 
+	void					PreloadShadersFromCache();
+	bool					InitShaderFromCache(IShaderProgram* pShaderOutput, IVirtualStream* pStream, uint32 checksum = 0);
+
 	//OpenGL - Specific
 	void					InternalChangeFrontFace(int nCullFaceMode);
 

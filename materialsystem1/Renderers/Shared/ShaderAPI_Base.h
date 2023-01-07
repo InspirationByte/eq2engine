@@ -12,6 +12,27 @@
 #pragma once
 #include "renderers/IShaderAPI.h"
 
+//------------------------------------------------------------
+
+#define SHADERCACHE_IDENT		MCHAR4('C','A','C','H')
+
+struct shaderCacheHdr_t
+{
+	int			ident;
+	uint32		checksum;		// file crc32
+
+	int			psSize;
+	int			vsSize;
+
+	ushort		numConstants;
+	ushort		numSamplers;
+
+	int			nameLen;
+	int			extraLen;
+};
+
+//------------------------------------------------------------
+
 class ConCommandBase;
 
 class ShaderAPI_Base : public IShaderAPI

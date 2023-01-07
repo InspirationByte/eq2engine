@@ -18,7 +18,7 @@ struct GLShaderConstant_t
 	ubyte*			data{ nullptr };
 	uint			size{ 0 };
 	
-	uint			index{ 0 };
+	uint			uniformLoc{ 0 };
 
 	ER_ConstantType	type;
 	int				nElements;

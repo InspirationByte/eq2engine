@@ -5,9 +5,12 @@
 // Description: Equilibrium OpenGL ShaderAPI
 //////////////////////////////////////////////////////////////////////////////////
 
+#include <lz4.h>
+
 #include "core/core_common.h"
 #include "core/ConVar.h"
 #include "core/ConCommand.h"
+#include "core/IFileSystem.h"
 #include "core/IConsoleCommands.h"
 #include "utils/KeyValues.h"
 #include "shaderapigl_def.h"
@@ -24,6 +27,11 @@
 
 #include "imaging/ImageLoader.h"
 
+#ifdef USE_GLES
+#define SHADERCACHE_FOLDER		"ShaderCache/GLES"
+#else
+#define SHADERCACHE_FOLDER		"ShaderCache/GL"
+#endif
 
 #ifdef PLAT_LINUX
 #include "glx_caps.hpp"
@@ -60,9 +68,12 @@ DECLARE_CMD(gl_extensions, "Print supported OpenGL extensions", 0)
 	PrintGLExtensions();
 }
 
-ConVar gl_report_errors("gl_report_errors", "0");
-ConVar gl_break_on_error("gl_break_on_error", "0");
-ConVar gl_bypass_errors("gl_bypass_errors", "0");
+static ConVar gl_report_errors("gl_report_errors", "0");
+static ConVar gl_break_on_error("gl_break_on_error", "0");
+static ConVar gl_bypass_errors("gl_bypass_errors", "0");
+
+static ConVar r_preloadShaderCache("r_preloadShaderCache", "1", nullptr, 0);
+static ConVar r_skipShaderCache("r_skipShaderCache", "0", "Shader debugging purposes", 0);
 
 bool GLCheckError(const char* op, ...)
 {
@@ -250,6 +261,9 @@ void ShaderAPIGL::Init( const shaderAPIParams_t &params)
 	HOOK_TO_CVAR(r_anisotropic);
 	const int desiredAnisotropicLevel = min(r_anisotropic->GetInt(), m_caps.maxTextureAnisotropicLevel);
 	m_caps.maxTextureAnisotropicLevel = desiredAnisotropicLevel;
+
+	g_fileSystem->MakeDir(SHADERCACHE_FOLDER, SP_ROOT);
+	//PreloadShadersFromCache();
 
 	// Init the base shader API
 	ShaderAPI_Base::Init(params);
@@ -586,9 +600,9 @@ void ShaderAPIGL::ApplyConstants()
 		uni.dirty = false;
 
 		if (uni.type >= CONSTANT_MATRIX2x2)
-			((UNIFORM_MAT_FUNC)s_uniformFuncs[uni.type])(uni.index, uni.nElements, GL_TRUE, (float*)uni.data);
+			((UNIFORM_MAT_FUNC)s_uniformFuncs[uni.type])(uni.uniformLoc, uni.nElements, GL_TRUE, (float*)uni.data);
 		else
-			((UNIFORM_FUNC)s_uniformFuncs[uni.type])(uni.index, uni.nElements, (float*)uni.data);
+			((UNIFORM_FUNC)s_uniformFuncs[uni.type])(uni.uniformLoc, uni.nElements, (float*)uni.data);
 		GLCheckError("apply uniform %s", uni.name);
 	}
 }
@@ -1459,6 +1473,280 @@ void ShaderAPIGL::DestroyShaderProgram(IShaderProgram* pShaderProgram)
 	}, false);
 }
 
+void ShaderAPIGL::PreloadShadersFromCache()
+{
+	if (!r_preloadShaderCache.GetBool())
+		return;
+
+	int numShaders = 0;
+	CFileSystemFind fsFind(SHADERCACHE_FOLDER "/*.scache", SP_ROOT);
+	while (fsFind.Next())
+	{
+		const EqString filename = EqString::Format(SHADERCACHE_FOLDER "/%s", fsFind.GetPath());
+
+		IFile* pStream = g_fileSystem->Open(filename.ToCString(), "rb", SP_ROOT);
+		if (!pStream)
+			continue;
+
+		shaderCacheHdr_t scHdr;
+		pStream->Read(&scHdr, 1, sizeof(shaderCacheHdr_t));
+
+		if (scHdr.ident != SHADERCACHE_IDENT)
+			continue;
+
+		char nameStr[2048];
+		ASSERT(scHdr.nameLen < sizeof(nameStr));
+		pStream->Read(nameStr, scHdr.nameLen, 1);
+		nameStr[scHdr.nameLen] = 0;
+
+		pStream->Seek(0, VS_SEEK_SET);
+
+		DevMsg(DEVMSG_SHADERAPI, "Restoring shader '%s'\n", nameStr);
+
+		CGLShaderProgram* pNewProgram = PPNew CGLShaderProgram();
+		pNewProgram->SetName(nameStr);
+		if (InitShaderFromCache(pNewProgram, pStream))
+		{
+			CScopedMutex scoped(g_sapi_ShaderMutex);
+
+			ASSERT_MSG(m_ShaderList.find(pNewProgram->m_nameHash) == m_ShaderList.end(), "Shader %s was already added", pNewProgram->GetName());
+			m_ShaderList.insert(pNewProgram->m_nameHash, pNewProgram);
+			numShaders++;
+
+			pNewProgram->Ref_Grab();
+		}
+		else
+			delete pNewProgram;
+
+		g_fileSystem->Close(pStream);
+	}
+
+	Msg("Shader cache: %d shaders loaded\n", numShaders);
+}
+
+#pragma optimize("", off)
+
+bool ShaderAPIGL::InitShaderFromCache(IShaderProgram* pShaderOutput, IVirtualStream* pStream, uint32 checksum)
+{
+	CGLShaderProgram* pShader = (CGLShaderProgram*)(pShaderOutput);
+
+	if (!pShader)
+		return false;
+
+	// read pixel shader
+	shaderCacheHdr_t scHdr;
+	pStream->Read(&scHdr, 1, sizeof(shaderCacheHdr_t));
+
+	if (checksum != 0 && checksum != scHdr.checksum || scHdr.ident != SHADERCACHE_IDENT)
+	{
+		g_fileSystem->Close(pStream);
+		MsgWarning("Shader cache for '%s' outdated\n", pShaderOutput->GetName());
+		return false;
+	}
+
+	// skip name
+	pStream->Seek(scHdr.nameLen, VS_SEEK_CUR);
+
+	char* extraText = nullptr;
+	if(scHdr.extraLen)
+	{
+		extraText = (char*)PPAlloc(scHdr.extraLen);
+		pStream->Read(extraText, 1, scHdr.extraLen);
+	}
+
+	// read compressed shader text
+	char* compressedData = (char*)PPAlloc(scHdr.psSize);
+	pStream->Read(compressedData, 1, scHdr.psSize);
+
+	char* shaderText = (char*)PPAlloc(scHdr.vsSize);
+	const int dataSize = LZ4_decompress_safe(compressedData, (char*)shaderText, scHdr.psSize, scHdr.vsSize);
+
+	if (dataSize != scHdr.vsSize)
+	{
+		MsgError("Unable to init shader from cache, please delete shader cache and try again\n");
+		PPFree(extraText);
+		return false;
+	}
+
+	shaderText[scHdr.vsSize-1] = 0;
+
+	PPFree(compressedData);
+
+	// read samplers and constants
+	Array<GLShaderSampler_t> samplers(PP_SL);
+	Array<GLShaderConstant_t> uniforms(PP_SL);
+	samplers.setNum(scHdr.numSamplers);
+	uniforms.setNum(scHdr.numConstants);
+
+	pStream->Read(samplers.ptr(), scHdr.numSamplers, sizeof(GLShaderSampler_t));
+	pStream->Read(uniforms.ptr(), scHdr.numConstants, sizeof(GLShaderConstant_t));
+
+	int result = g_glWorker.WaitForExecute(__FUNCTION__, [this, &samplers, &uniforms, shaderText, extraText, pShader]() {
+
+		GLint vsResult, fsResult, linkResult;
+
+		// create GL program
+		pShader->m_program = glCreateProgram();
+		if (!GLCheckError("create program"))
+			return -1;
+
+#ifdef USE_GLES2
+		// TODO: load binary
+#else
+		// vertex
+		{
+			EqString shaderString;
+			shaderString.Append("#version 330\r\n");
+			shaderString.Append("#define VERTEX\r\n");
+
+			if (extraText != nullptr)
+				shaderString.Append(extraText);
+
+			const GLchar* sStr[] = {
+				shaderString.ToCString(), "\r\n",
+				shaderText
+			};
+
+			GLhandleARB	vertexShader = glCreateShader(GL_VERTEX_SHADER);
+			if (!GLCheckError("create vertex shader"))
+				return -1;
+
+			glShaderSource(vertexShader, sizeof(sStr) / sizeof(sStr[0]), (const GLchar**)sStr, nullptr);
+			glCompileShader(vertexShader);
+			GLCheckError("compile vert shader");
+
+			glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &vsResult);
+
+			if (vsResult)
+			{
+				glAttachShader(pShader->m_program, vertexShader);
+				GLCheckError("attach vert shader");
+
+				glDeleteShader(vertexShader);
+				GLCheckError("delete shaders");
+			}
+			else
+			{
+				char infoLog[2048];
+				GLint len;
+
+				glGetShaderInfoLog(vertexShader, sizeof(infoLog), &len, infoLog);
+				MsgError("Vertex shader %s error:\n%s\n", pShader->GetName(), infoLog);
+
+				// don't even report errors
+				return -1;
+			}
+		}
+
+		// fragment
+		{
+			EqString shaderString;
+			shaderString.Append("#version 330\r\n");
+			shaderString.Append("#define FRAGMENT\r\n");
+
+			if (extraText != nullptr)
+				shaderString.Append(extraText);
+
+			const GLchar* sStr[] = {
+				shaderString.ToCString(),"\r\n",
+				shaderText
+			};
+
+			GLhandleARB	fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+			if (!GLCheckError("create fragment shader"))
+				return -1;
+
+			glShaderSource(fragmentShader, sizeof(sStr) / sizeof(sStr[0]), (const GLchar**)sStr, nullptr);
+			glCompileShader(fragmentShader);
+			GLCheckError("compile frag shader");
+
+			glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &fsResult);
+
+			if (fsResult)
+			{
+				glAttachShader(pShader->m_program, fragmentShader);
+				GLCheckError("attach frag shader");
+
+				glDeleteShader(fragmentShader);
+				GLCheckError("delete shaders");
+			}
+			else
+			{
+				char infoLog[2048];
+				GLint len;
+
+				glGetShaderInfoLog(fragmentShader, sizeof(infoLog), &len, infoLog);
+				MsgError("Fragment shader %s error:\n%s\n", pShader->GetName(), infoLog);
+
+				// don't even report errors
+				return -1;
+			}
+		}
+
+		// link
+		{
+			// link program and go
+			glLinkProgram(pShader->m_program);
+			GLCheckError("link program");
+
+			glGetProgramiv(pShader->m_program, GL_LINK_STATUS, &linkResult);
+
+			if (!linkResult)
+			{
+				// don't even report errors
+				return -1;
+			}
+
+			// use freshly generated program to retirieve constants (uniforms) and samplers
+			glUseProgram(pShader->m_program);
+			GLCheckError("test use program");
+
+			// intel buggygl fix
+			if (m_vendor == VENDOR_INTEL)
+			{
+				glUseProgram(0);
+				glUseProgram(pShader->m_program);
+			}
+
+			Map<int, GLShaderSampler_t>& samplerMap = pShader->m_samplers;
+			Map<int, GLShaderConstant_t>& constantMap = pShader->m_constants;
+
+			// assign
+			for (int i = 0; i < samplers.numElem(); ++i)
+			{
+				samplers[i].index = i;
+				glUniform1i(samplers[i].uniformLoc, i);
+				samplerMap.insert(samplers[i].nameHash, samplers[i]);
+			}
+
+			for (int i = 0; i < uniforms.numElem(); ++i)
+			{
+				GLShaderConstant_t& uni = uniforms[i];
+				uni.data = PPNew ubyte[uni.size];
+				memset(uni.data, 0, uni.size);
+
+				constantMap.insert(uniforms[i].nameHash, uni);
+			}
+		}
+#endif
+
+		return 0;
+	});
+
+	PPFree(extraText);
+	PPFree(shaderText);
+
+	if (result == -1)
+	{
+		MsgError("Unable to init shader from cache, please delete shader cache and try again\n");
+		return false;
+	}
+
+	pShader->m_cacheChecksum = scHdr.checksum;
+
+	return true;
+}
+
 // Load any shader from stream
 bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const shaderProgramCompileInfo_t& info, const char* extra)
 {
@@ -1469,6 +1757,28 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 	{
 		MsgError("CompileShadersFromStream - shaders unsupported\n");
 		return false;
+	}
+
+	CGLShaderProgram* pShader = (CGLShaderProgram*)pShaderOutput;
+
+	const bool shaderCacheEnabled = !info.disableCache && !r_skipShaderCache.GetBool();
+	const EqString cacheFileName = EqString::Format(SHADERCACHE_FOLDER "/%x.scache", pShader->m_nameHash);
+	{
+		bool needsCompile = true;
+		if (shaderCacheEnabled)
+		{
+			IFile* pStream = g_fileSystem->Open(cacheFileName.ToCString(), "rb", SP_ROOT);
+			
+			if (pStream)
+			{
+				if (InitShaderFromCache(pShader, pStream, info.data.checksum))
+					needsCompile = false;
+				g_fileSystem->Close(pStream);
+			}
+		}
+
+		if (!needsCompile)
+			return true;
 	}
 
 	if (!info.data.text)
@@ -1492,7 +1802,7 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 		// GLhandleARB hullShader;
 	} cdata;
 
-	cdata.prog = (CGLShaderProgram*)pShaderOutput;
+	cdata.prog = pShader;
 
 	int result;
 
@@ -1516,6 +1826,7 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 		const GLchar* sStr[] = { 
 			shaderString.ToCString(), "\r\n",
 			info.data.boilerplate, "\r\n",
+			"#line 1 0\r\n",
 			info.data.text
 		};
 
@@ -1591,6 +1902,7 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 		const GLchar* sStr[] = { 
 			shaderString.ToCString(),"\r\n",
 			info.data.boilerplate,"\r\n",
+			"#line 1 0\r\n",
 			info.data.text
 		};
 
@@ -1640,14 +1952,14 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 	else
 		cdata.fsResult = GL_TRUE;
 
+	Array<GLShaderSampler_t> samplers(PP_SL);
+	Array<GLShaderConstant_t> uniforms(PP_SL);
+
 	if(cdata.fsResult && cdata.vsResult)
 	{
 		const shaderProgramCompileInfo_t* pInfo = &info;
 
 		EGraphicsVendor vendor = m_vendor;
-
-		Array<GLShaderSampler_t> samplers(PP_SL);
-		Array<GLShaderConstant_t> uniforms(PP_SL);
 
 		result = g_glWorker.WaitForExecute(__FUNCTION__, [&cdata, &samplers, &uniforms, &vendor]() {
 			// link program and go
@@ -1746,7 +2058,7 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 						strncpy(uni.name, tmpName, length);
 						uni.name[length] = 0;
 
-						uni.index = glGetUniformLocation(cdata.prog->m_program, tmpName);
+						uni.uniformLoc = glGetUniformLocation(cdata.prog->m_program, tmpName);
 						uni.type = GetConstantType(type);
 							
 						int totalElements = 1;
@@ -1784,6 +2096,10 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 				}// Sampler types?
 			}
 
+#ifdef USE_GLES2
+			// TODO: utilize glGetProgramBinary and glProgramBinary 
+#endif
+
 			delete [] tmpName;
 
 			return 0;
@@ -1818,6 +2134,62 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 	}
 	else
 		return false;
+
+	// store the shader cache data
+	if (shaderCacheEnabled && info.data.text != nullptr)
+	{
+		IFile* pStream = g_fileSystem->Open(cacheFileName.ToCString(), "wb", SP_ROOT);
+		if (pStream)
+		{
+			shaderCacheHdr_t scHdr;
+			scHdr.ident = SHADERCACHE_IDENT;
+			scHdr.checksum = info.data.checksum;
+			scHdr.numSamplers = samplers.numElem();
+			scHdr.numConstants = uniforms.numElem();
+#ifdef USE_GLES2
+			scHdr.vsSize = vsMemStream.Tell();
+			scHdr.psSize = psMemStream.Tell();
+#else
+			// we really don't have any binary in GL3x
+			// compress and write full text instead
+
+			EqString shaderWithBoilerplate;
+			shaderWithBoilerplate.Append(info.data.boilerplate);
+			shaderWithBoilerplate.Append("\r\n");
+			shaderWithBoilerplate.Append("#line 1 0\r\n");
+			shaderWithBoilerplate.Append(info.data.text);
+
+			const int dataSize = shaderWithBoilerplate.Length() + 1;
+			char* compressedData = (char*)PPAlloc(dataSize + 128);
+			const int compressedSize = LZ4_compress_fast(shaderWithBoilerplate.GetData(), compressedData, dataSize, dataSize + 128, 1);
+
+			scHdr.vsSize = dataSize;
+			scHdr.psSize = compressedSize;
+#endif
+			scHdr.nameLen = pShader->m_szName.Length();
+			scHdr.extraLen = extra ? (strlen(extra) + 1) : 0;
+
+			pStream->Write(&scHdr, 1, sizeof(shaderCacheHdr_t));
+			pStream->Write(pShader->m_szName.GetData(), scHdr.nameLen, 1);
+
+			if(extra)
+				pStream->Write(extra, scHdr.extraLen, 1);
+
+#ifdef USE_GLES2
+			vsMemStream.WriteToFileStream(pStream);
+			psMemStream.WriteToFileStream(pStream);
+#else
+			pStream->Write(compressedData, compressedSize, 1);
+			PPFree(compressedData);
+#endif
+
+			pStream->Write(samplers.ptr(), samplers.numElem(), sizeof(GLShaderSampler_t));
+			pStream->Write(uniforms.ptr(), uniforms.numElem(), sizeof(GLShaderConstant_t));
+			g_fileSystem->Close(pStream);
+		}
+		else
+			MsgError("ERROR: Cannot create shader cache file for %s\n", pShaderOutput->GetName());
+	}
 
 	return true;
 }

@@ -23,22 +23,7 @@
 #include "D3D9OcclusionQuery.h"
 #include "D3D9RenderState.h"
 
-#define SHADERCACHE_IDENT		MCHAR4('S','P','C','1')
-#define SHADERCACHE_FOLDER		"ShaderCache_DX9"
-
-struct shaderCacheHdr_t
-{
-	int	ident;
-	uint32 checksum;		// file crc32
-
-	int	psSize;
-	int	vsSize;
-
-	ushort numConstants;
-	ushort numSamplers;
-
-	int nameLen;
-};
+#define SHADERCACHE_FOLDER		"ShaderCache/D3D9"
 
 using namespace Threading;
 
@@ -2086,7 +2071,11 @@ bool ShaderAPID3DX9::InitShaderFromCache(IShaderProgram* pShaderOutput, IVirtual
 		return false;
 	}
 
+	// skip name
 	pStream->Seek(scHdr.nameLen, VS_SEEK_CUR);
+
+	// skip defines
+	pStream->Seek(scHdr.extraLen, VS_SEEK_CUR);
 
 	// read vertex shader
 	ubyte* pShaderMem = (ubyte*)PPAlloc(scHdr.vsSize);
@@ -2136,25 +2125,25 @@ bool ShaderAPID3DX9::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 	if(!pShader)
 		return false;
 
-	bool needsCompile = true;
 	const bool shaderCacheEnabled = !info.disableCache && !r_skipShaderCache.GetBool();
-
 	const EqString cacheFileName = EqString::Format(SHADERCACHE_FOLDER "/%x.scache", pShader->m_nameHash);
-
-	if(shaderCacheEnabled)
 	{
-		IFile* pStream = g_fileSystem->Open(cacheFileName.ToCString(), "rb", SP_ROOT);
-
-		if (pStream)
+		bool needsCompile = true;
+		if (shaderCacheEnabled)
 		{
-			if (InitShaderFromCache(pShader, pStream, info.data.checksum))
-				needsCompile = false;
-			g_fileSystem->Close(pStream);
-		}
-	}
+			IFile* pStream = g_fileSystem->Open(cacheFileName.ToCString(), "rb", SP_ROOT);
 
-	if (!needsCompile)
-		return true;
+			if (pStream)
+			{
+				if (InitShaderFromCache(pShader, pStream, info.data.checksum))
+					needsCompile = false;
+				g_fileSystem->Close(pStream);
+			}
+		}
+
+		if (!needsCompile)
+			return true;
+	}
 
 	CMemoryStream vsMemStream(nullptr, VS_OPEN_WRITE, 2048);
 	CMemoryStream psMemStream(nullptr, VS_OPEN_WRITE, 2048);
@@ -2193,9 +2182,9 @@ bool ShaderAPID3DX9::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 		// else default to maximum
 
 		shaderString.Append(EqString::Format("#define COMPILE_VS_%d_0\n", vsVersion));
-
+		shaderString.Append("#define VERTEX\n");
 		shaderString.Append(info.data.boilerplate);
-		shaderString.Append("\r\n");
+		shaderString.Append("\r\n#line 1 \"FXFile\"\r\n");
 		shaderString.Append(info.data.text);
 
 		HRESULT compileResult = D3DXCompileShader(shaderString.GetData(), shaderString.Length(),
@@ -2275,9 +2264,9 @@ bool ShaderAPID3DX9::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 		// else default to maximum
 
 		shaderString.Append(EqString::Format("#define COMPILE_PS_%d_0\n", psVersion));
-
+		shaderString.Append("#define PIXEL\n");
 		shaderString.Append(info.data.boilerplate);
-		shaderString.Append("\r\n");
+		shaderString.Append("\r\n#line 1 \"FXFile\"\r\n");
 		shaderString.Append(info.data.text);
 
 		HRESULT compileResult = D3DXCompileShader(
@@ -2466,9 +2455,11 @@ bool ShaderAPID3DX9::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 			scHdr.vsSize = vsMemStream.Tell();
 			scHdr.psSize = psMemStream.Tell();
 			scHdr.nameLen = pShader->m_szName.Length();
+			scHdr.extraLen = strlen(extra);
 
 			pStream->Write(&scHdr, 1, sizeof(shaderCacheHdr_t));
 			pStream->Write(pShader->m_szName.GetData(), scHdr.nameLen, 1);
+			pStream->Write(extra, scHdr.extraLen, 1);
 
 			vsMemStream.WriteToFileStream(pStream);
 			psMemStream.WriteToFileStream(pStream);
