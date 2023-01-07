@@ -27,7 +27,7 @@
 
 #include "imaging/ImageLoader.h"
 
-#ifdef USE_GLES
+#ifdef USE_GLES2
 #define SHADERCACHE_FOLDER		"ShaderCache/GLES"
 #else
 #define SHADERCACHE_FOLDER		"ShaderCache/GL"
@@ -1546,7 +1546,14 @@ bool ShaderAPIGL::InitShaderFromCache(IShaderProgram* pShaderOutput, IVirtualStr
 
 	// skip name
 	pStream->Seek(scHdr.nameLen, VS_SEEK_CUR);
+#ifdef USE_GLES2
+	// skip extra text
+	pStream->Seek(scHdr.extraLen, VS_SEEK_CUR);
 
+	// read program binary
+	char* shaderText = (char*)PPAlloc(scHdr.psSize);
+	pStream->Read(shaderText, 1, scHdr.psSize);
+#else
 	char* extraText = nullptr;
 	if(scHdr.extraLen)
 	{
@@ -1571,6 +1578,7 @@ bool ShaderAPIGL::InitShaderFromCache(IShaderProgram* pShaderOutput, IVirtualStr
 	shaderText[scHdr.vsSize-1] = 0;
 
 	PPFree(compressedData);
+#endif
 
 	// read samplers and constants
 	Array<GLShaderSampler_t> samplers(PP_SL);
@@ -1581,7 +1589,7 @@ bool ShaderAPIGL::InitShaderFromCache(IShaderProgram* pShaderOutput, IVirtualStr
 	pStream->Read(samplers.ptr(), scHdr.numSamplers, sizeof(GLShaderSampler_t));
 	pStream->Read(uniforms.ptr(), scHdr.numConstants, sizeof(GLShaderConstant_t));
 
-	int result = g_glWorker.WaitForExecute(__FUNCTION__, [this, &samplers, &uniforms, shaderText, extraText, pShader]() {
+	int result = g_glWorker.WaitForExecute(__FUNCTION__, [&]() {
 
 		GLint vsResult, fsResult, linkResult;
 
@@ -1591,7 +1599,9 @@ bool ShaderAPIGL::InitShaderFromCache(IShaderProgram* pShaderOutput, IVirtualStr
 			return -1;
 
 #ifdef USE_GLES2
-		// TODO: load binary
+		glProgramBinary(pShader->m_program, scHdr.vsSize, shaderText, scHdr.psSize);
+		if (!GLCheckError("set program binary"))
+			return -1;
 #else
 		// vertex
 		{
@@ -1696,44 +1706,46 @@ bool ShaderAPIGL::InitShaderFromCache(IShaderProgram* pShaderOutput, IVirtualStr
 				// don't even report errors
 				return -1;
 			}
-
-			// use freshly generated program to retirieve constants (uniforms) and samplers
-			glUseProgram(pShader->m_program);
-			GLCheckError("test use program");
-
-			// intel buggygl fix
-			if (m_vendor == VENDOR_INTEL)
-			{
-				glUseProgram(0);
-				glUseProgram(pShader->m_program);
-			}
-
-			Map<int, GLShaderSampler_t>& samplerMap = pShader->m_samplers;
-			Map<int, GLShaderConstant_t>& constantMap = pShader->m_constants;
-
-			// assign
-			for (int i = 0; i < samplers.numElem(); ++i)
-			{
-				samplers[i].index = i;
-				glUniform1i(samplers[i].uniformLoc, i);
-				samplerMap.insert(samplers[i].nameHash, samplers[i]);
-			}
-
-			for (int i = 0; i < uniforms.numElem(); ++i)
-			{
-				GLShaderConstant_t& uni = uniforms[i];
-				uni.data = PPNew ubyte[uni.size];
-				memset(uni.data, 0, uni.size);
-
-				constantMap.insert(uniforms[i].nameHash, uni);
-			}
 		}
 #endif
+
+		// use freshly generated program to retirieve constants (uniforms) and samplers
+		glUseProgram(pShader->m_program);
+		GLCheckError("test use program");
+
+		// intel buggygl fix
+		if (m_vendor == VENDOR_INTEL)
+		{
+			glUseProgram(0);
+			glUseProgram(pShader->m_program);
+		}
+
+		Map<int, GLShaderSampler_t>& samplerMap = pShader->m_samplers;
+		Map<int, GLShaderConstant_t>& constantMap = pShader->m_constants;
+
+		// assign
+		for (int i = 0; i < samplers.numElem(); ++i)
+		{
+			samplers[i].index = i;
+			glUniform1i(samplers[i].uniformLoc, i);
+			samplerMap.insert(samplers[i].nameHash, samplers[i]);
+		}
+
+		for (int i = 0; i < uniforms.numElem(); ++i)
+		{
+			GLShaderConstant_t& uni = uniforms[i];
+			uni.data = PPNew ubyte[uni.size];
+			memset(uni.data, 0, uni.size);
+
+			constantMap.insert(uniforms[i].nameHash, uni);
+		}
 
 		return 0;
 	});
 
+#ifndef USE_GLES2
 	PPFree(extraText);
+#endif
 	PPFree(shaderText);
 
 	if (result == -1)
@@ -1800,6 +1812,10 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 		GLhandleARB	fragmentShader;
 		// GLhandleARB geomShader;
 		// GLhandleARB hullShader;
+
+		int		programSize = 0;
+		char*	programData = nullptr;
+		GLenum	programFormat = GL_NONE;
 	} cdata;
 
 	cdata.prog = pShader;
@@ -1961,7 +1977,7 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 
 		EGraphicsVendor vendor = m_vendor;
 
-		result = g_glWorker.WaitForExecute(__FUNCTION__, [&cdata, &samplers, &uniforms, &vendor]() {
+		result = g_glWorker.WaitForExecute(__FUNCTION__, [&cdata, &samplers, &uniforms, &vendor, shaderCacheEnabled]() {
 			// link program and go
 			glLinkProgram(cdata.prog->m_program);
 			GLCheckError("link program");
@@ -2097,7 +2113,16 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 			}
 
 #ifdef USE_GLES2
-			// TODO: utilize glGetProgramBinary and glProgramBinary 
+			if (shaderCacheEnabled)
+			{
+				glGetProgramiv(cdata.prog->m_program, GL_PROGRAM_BINARY_LENGTH, &cdata.programSize);
+				GLCheckError("get program size");
+
+				cdata.programData = (char*)PPAlloc(cdata.programSize);
+
+				glGetProgramBinary(cdata.prog->m_program, cdata.programSize, &cdata.programSize, &cdata.programFormat, cdata.programData);
+				GLCheckError("get program binary");
+			}
 #endif
 
 			delete [] tmpName;
@@ -2147,12 +2172,11 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 			scHdr.numSamplers = samplers.numElem();
 			scHdr.numConstants = uniforms.numElem();
 #ifdef USE_GLES2
-			scHdr.vsSize = vsMemStream.Tell();
-			scHdr.psSize = psMemStream.Tell();
+			scHdr.vsSize = cdata.programFormat;
+			scHdr.psSize = cdata.programSize;
 #else
 			// we really don't have any binary in GL3x
 			// compress and write full text instead
-
 			EqString shaderWithBoilerplate;
 			shaderWithBoilerplate.Append(info.data.boilerplate);
 			shaderWithBoilerplate.Append("\r\n");
@@ -2176,8 +2200,7 @@ bool ShaderAPIGL::CompileShadersFromStream(	IShaderProgram* pShaderOutput,const 
 				pStream->Write(extra, scHdr.extraLen, 1);
 
 #ifdef USE_GLES2
-			vsMemStream.WriteToFileStream(pStream);
-			psMemStream.WriteToFileStream(pStream);
+			pStream->Write(cdata.programData, cdata.programSize, 1);
 #else
 			pStream->Write(compressedData, compressedSize, 1);
 			PPFree(compressedData);

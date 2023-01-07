@@ -21,8 +21,8 @@ struct shaderCacheHdr_t
 	int			ident;
 	uint32		checksum;		// file crc32
 
-	int			psSize;
-	int			vsSize;
+	uint		psSize;
+	uint		vsSize;
 
 	ushort		numConstants;
 	ushort		numSamplers;
