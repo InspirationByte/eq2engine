@@ -16,10 +16,12 @@
 #include <imnodes.h>
 
 #include "core/core_common.h"
+#include "ds/sort.h"
 #include "utils/KeyValues.h"
 #include "eqSoundEmitterSystem.h"
 #include "eqSoundEmitterObject.h"
 #include "eqSoundEmitterPrivateTypes.h"
+
 
 
 struct UISoundNodeDesc
@@ -1224,7 +1226,7 @@ void CSoundScriptEditor::DrawScriptEditor(bool& open)
 			}
 		}
 
-		allSounds.sort([](SoundScriptDesc* a, SoundScriptDesc* b) {
+		shellSort(allSounds, [](SoundScriptDesc* a, SoundScriptDesc* b) {
 			return a->name.Compare(b->name);
 		});
 

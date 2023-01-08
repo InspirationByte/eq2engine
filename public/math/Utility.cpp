@@ -6,6 +6,7 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "core/core_common.h"
+#include "ds/sort.h"
 #include "Utility.h"
 
 int HashVector2D(const Vector2D& v, float tolerance)
@@ -256,7 +257,7 @@ void ConvexHull2D(Array<Vector2D>& points, Array<Vector2D>& hull)
 	hull.assureSize(2 * n);
 
 	// sort points lexicographically
-	points.sort([](const Vector2D& a, const Vector2D& b) {
+	quickSort(points, [](const Vector2D& a, const Vector2D& b) {
 		int cmp = cmpFloat(a.x, b.x);
 		return cmp == 0 ? cmpFloat(a.y, b.y) : cmp;
 	});

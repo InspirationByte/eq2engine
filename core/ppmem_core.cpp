@@ -22,6 +22,8 @@
 #include "core/ConCommand.h"
 #include "core/IConsoleCommands.h"
 
+#include "ds/sort.h"
+
 #ifdef _RETAIL
 #define PPMEM_DISABLED
 #endif
@@ -222,7 +224,7 @@ void PPMemInfo(bool fullStats)
 		for (auto it = allocCounter.begin(); it != allocCounter.end(); ++it)
 			sortedList.append(it.key());
 
-		sortedList.sort([&allocCounter](uint64 a, uint64 b) {
+		shellSort(sortedList, [&allocCounter](uint64 a, uint64 b) {
 			return (int64)allocCounter[b].numAlloc - (int64)allocCounter[a].numAlloc;
 		});
 
@@ -248,7 +250,7 @@ void PPMemInfo(bool fullStats)
 		for (auto it = st.sourceCounterMap.begin(); it != st.sourceCounterMap.end(); ++it)
 			sortedList.append(it.key());
 
-		sortedList.sort([&st](uint64 a, uint64 b) {
+		shellSort(sortedList, [&st](uint64 a, uint64 b) {
 			return (int64)st.sourceCounterMap[b].lastTime - (int64)st.sourceCounterMap[a].lastTime;
 		});
 

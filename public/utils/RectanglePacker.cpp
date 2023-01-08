@@ -6,6 +6,7 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "core/core_common.h"
+#include "ds/sort.h"
 #include "RectanglePacker.h"
 
 struct PackerNode 
@@ -105,7 +106,7 @@ bool CRectanglePacker::AssignCoords(float& width, float& height, COMPRECTFUNC co
 	Array<PackerRectangle*> sortedRects(PP_SL);
 	sortedRects.append(m_pRectangles);
 
-	sortedRects.sort(compRectFunc);
+	quickSort(sortedRects, compRectFunc);
 
 	PackerNode* top = PPNew PackerNode(0, 0, width, height, nullptr);
 

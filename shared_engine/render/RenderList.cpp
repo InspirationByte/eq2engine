@@ -8,6 +8,7 @@
 #include "core/core_common.h"
 #include "RenderList.h"
 #include "BaseRenderableObject.h"
+#include "ds/sort.h"
 
 #define MIN_OBJECT_RENDERLIST_MEMSIZE 48
 
@@ -85,5 +86,5 @@ void CRenderList::SortByDistanceFrom(const Vector3D& origin)
 			pRenderable->m_fViewDistance = lengthSqr(origin - bbox.GetCenter());
 	}
 
-	m_ObjectList.sort(DistanceCompare);
+	shellSort(m_ObjectList, DistanceCompare);
 }

@@ -7,13 +7,8 @@
 
 #pragma once
 
-#define USE_QSORT
-
 template< typename T >
 using PairCompareFunc = bool (*)(const T& a, const T& b);
-
-template< typename T >
-using PairSortCompareFunc = int (*)(const T& a, const T& b);
 
 template< typename T >
 class ArrayStorageBase
@@ -348,16 +343,6 @@ public:
 
 	// assure list has given number of elements and initialize any new elements
 	void			assureSize( int newSize, const T &initValue );
-
-	// sorts list using quick sort algorithm
-	template< typename SORTPAIRCOMPAREFUNC = PairSortCompareFunc<T> >
-	void			sort(SORTPAIRCOMPAREFUNC comparator);
-
-	template< typename SORTPAIRCOMPAREFUNC = PairSortCompareFunc<T> >
-	void			shellSort(SORTPAIRCOMPAREFUNC comparator, int i0, int i1);
-
-	template< typename SORTPAIRCOMPAREFUNC = PairSortCompareFunc<T> >
-	void			quickSort(SORTPAIRCOMPAREFUNC comparator, int p, int r);
 
 protected:
 	STORAGE_TYPE		m_storage;
@@ -1198,131 +1183,6 @@ inline void ArrayBase<T, STORAGE_TYPE>::assureSize( int newSize, const T &initVa
 	}
 
 	m_nNumElem = newNum;
-}
-
-// -----------------------------------------------------------------
-// Sorts array of the elements by the comparator
-// -----------------------------------------------------------------
-
-template< typename T, typename STORAGE_TYPE >
-template< typename SORTPAIRCOMPAREFUNC >
-inline void ArrayBase<T, STORAGE_TYPE>::sort(SORTPAIRCOMPAREFUNC comparator)
-{
-#ifdef USE_QSORT
-	quickSort(comparator, 0, m_nNumElem - 1);
-#else
-	shellSort(comparator, 0, m_nNumElem - 1);
-#endif
-}
-
-// -----------------------------------------------------------------
-// Shell sort
-// -----------------------------------------------------------------
-template< typename T, typename STORAGE_TYPE >
-template< typename SORTPAIRCOMPAREFUNC >
-inline void ArrayBase<T, STORAGE_TYPE>::shellSort(SORTPAIRCOMPAREFUNC comparator, int i0, int i1)
-{
-	const int SHELLJMP = 3; //2 or 3
-
-	int n = i1-i0;
-
-	int gap;
-
-	for(gap = 1; gap < n; gap = gap*SHELLJMP+1);
-
-	T* listPtr = m_storage.getData();
-
-	for(gap = int(gap/SHELLJMP); gap > 0; gap = int(gap/SHELLJMP))
-	{
-		for( int i = i0; i < i1-gap; i++)
-		{
-			for( int j = i; (j >= i0) && (comparator)(listPtr[j], listPtr[j + gap]); j -= gap )
-			{
-				QuickSwap(listPtr[j], listPtr[j + gap]);
-			}
-		}
-	}
-}
-
-// -----------------------------------------------------------------
-// Partition exchange sort
-// -----------------------------------------------------------------
-template< typename T, typename SORTPAIRCOMPAREFUNC = PairSortCompareFunc<T> >
-inline int partition(T* list, SORTPAIRCOMPAREFUNC comparator, int p, int r)
-{
-	T pivot = list[p];
-	int left = p;
-
-	for (int i = p + 1; i <= r; i++)
-	{
-		if (comparator(list[i], pivot) < 0)
-		{
-			left++;
-
-			QuickSwap(list[i], list[left]);
-		}
-	}
-
-	QuickSwap(list[p], list[left]);
-	return left;
-}
-
-// -----------------------------------------------------------------
-// Partition exchange sort
-// -----------------------------------------------------------------
-template< typename T, typename STORAGE_TYPE >
-template< typename SORTPAIRCOMPAREFUNC >
-inline void ArrayBase<T, STORAGE_TYPE>::quickSort(SORTPAIRCOMPAREFUNC comparator, int p, int r)
-{
-	if (p < r)
-	{
-		T* listPtr = m_storage.getData();
-		int q = partition(listPtr, comparator, p, r);
-
-		quickSort(comparator, p, q - 1);
-		quickSort(comparator, q + 1, r);
-	}
-}
-
-// -----------------------------------------------------------------
-// Partition exchange sort
-// -----------------------------------------------------------------
-template< typename T, typename SORTPAIRCOMPAREFUNC = PairSortCompareFunc<T> >
-inline void quickSort(T* list, SORTPAIRCOMPAREFUNC comparator, int p, int r)
-{
-	if (p < r)
-	{
-		int q = partition(list, comparator, p, r);
-
-		quickSort(list, comparator, p, q - 1);
-		quickSort(list, comparator, q + 1, r);
-	}
-}
-
-template< typename T, typename SORTPAIRCOMPAREFUNC = PairSortCompareFunc<T> >
-inline void shellSort(T* list, int numElems, SORTPAIRCOMPAREFUNC comparator)
-{
-	const int SHELLJMP = 3; //2 or 3
-
-	int i0 = 0;
-	int i1 = numElems-1;
-
-	int n = i1-i0;
-
-	int gap;
-
-	for(gap = 1; gap < n; gap = gap*SHELLJMP+1);
-
-	for(gap = int(gap/SHELLJMP); gap > 0; gap = int(gap/SHELLJMP))
-	{
-		for( int i = i0; i < i1-gap; i++)
-		{
-			for( int j = i; (j >= i0) && (comparator)(list[j], list[j + gap]); j -= gap )
-			{
-				QuickSwap(list[j], list[j + gap]);
-			}
-		}
-	}
 }
 
 //-------------------------------------------

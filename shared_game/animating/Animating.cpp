@@ -7,6 +7,7 @@
 
 #include "core/core_common.h"
 #include "core/ConVar.h"
+#include "ds/sort.h"
 #include "render/IDebugOverlay.h"
 #include "Animating.h"
 #include "egf/StudioGeom.h"

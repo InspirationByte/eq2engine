@@ -7,6 +7,7 @@
 
 #include "core/core_common.h"
 #include "core/IDkCore.h"
+#include "ds/sort.h"
 #include "utils/KeyValues.h"
 
 #include "FontCache.h"
@@ -141,7 +142,7 @@ bool CEqFontCache::LoadFontDescriptionFile( const char* filename )
 		else
 		{
 			// sort the fonts by size
-			familyEntry.sizeTable.sort( compareFontSizes );
+			quickSort(familyEntry.sizeTable, compareFontSizes );
 		}
 
 		// any font description file may redefine default font

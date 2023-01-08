@@ -8,6 +8,7 @@
 #include "core/core_common.h"
 #include "core/IEqParallelJobs.h"
 #include "core/ConVar.h"
+#include "ds/sort.h"
 #include "utils/TextureAtlas.h"
 #include "EffectRender.h"
 
@@ -69,7 +70,7 @@ void CEffectRenderer::DrawEffects(float dt)
 	CScopedMutex m(s_effectRenderMutex);
 
 	// sort particles
-	quickSort<IEffect*>(m_pEffectList, _SortParticles, 0, m_numEffects-1);
+	quickSort(m_pEffectList, _SortParticles, 0, m_numEffects-1);
 
 	for(int i = 0; i < m_numEffects; i++)
 	{
