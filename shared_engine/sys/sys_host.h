@@ -9,6 +9,7 @@
 
 class IEqFont;
 class ConCommand;
+class CGameSystemJob;
 
 struct VideoMode_t
 {

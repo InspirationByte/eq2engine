@@ -482,7 +482,6 @@ bool SignalWait( SignalHandle_t& handle, int nTimeout )
 
 			clock_gettime( CLOCK_REALTIME, &ts );
 
-			// DG: handle timeouts > 1s better
 			ts.tv_nsec += ( nTimeout % 1000 ) * 1000000; // millisec to nanosec
 			ts.tv_sec  += nTimeout / 1000;
 			if( ts.tv_nsec >= 1000000000 ) // nanoseconds are more than one second
@@ -490,7 +489,7 @@ bool SignalWait( SignalHandle_t& handle, int nTimeout )
 				ts.tv_nsec -= 1000000000; // remove one second in nanoseconds
 				ts.tv_sec += 1; // add one second to seconds
 			}
-			// DG end
+
 			status = pthread_cond_timedwait( &handle.cond, &handle.mutex, &ts );
 		}
 		--handle.waiting;

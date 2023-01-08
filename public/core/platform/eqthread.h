@@ -36,8 +36,6 @@ typedef CRITICAL_SECTION	MutexHandle_t;
 #else
 struct SignalHandle_t
 {
-	// DG: all this stuff is needed to emulate Window's Event API
-	//     (CreateEvent(), SetEvent(), WaitForSingleObject(), ...)
 	pthread_cond_t 	cond;
 	pthread_mutex_t mutex;
 	int 	waiting; // number of threads waiting for a signal
@@ -270,10 +268,7 @@ public:
 	bool			IsRunning()				const { return m_bIsRunning; }
 	bool			IsTerminating()			const { return m_bIsTerminating; }
 
-	//------------------------
 	// Thread Start/Stop/Wait
-	//------------------------
-
 	bool			StartThread( const char* name,
 								 ThreadPriority_e priority = TP_NORMAL,
 								 int stackSize = DEFAULT_THREAD_STACK_SIZE );
