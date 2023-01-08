@@ -29,9 +29,9 @@
 
 #if defined(_RETAIL) || defined(_PROFILE)
 
-#define	ASSERT_MSG(x, msgFmt, ...)	{ void; }
-#define	ASSERT(x)					{ void; }
-#define ASSERT_FAIL(msgFmt, ...)	{ void; }
+#define	ASSERT_MSG(x, msgFmt, ...)	{ }
+#define	ASSERT(x)					{ }
+#define ASSERT_FAIL(msgFmt, ...)	{ }
 
 #else
 

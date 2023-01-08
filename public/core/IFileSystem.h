@@ -13,12 +13,12 @@
 // Definitions
 //------------------------------------------------------------------------------
 
-typedef enum
+enum SearchPath_e
 {
     SP_DATA = (1 << 1),
     SP_ROOT = (1 << 2),
     SP_MOD	= (1 << 3),
-}SearchPath_e;
+};
 
 typedef IVirtualStream IFile; // pretty same
 struct DKMODULE; // module structure
@@ -30,6 +30,7 @@ struct DKFINDDATA;
 
 class IFileSystem : public IEqCoreModule
 {
+	friend class CFileSystemFind;
 public:
     // Initialization of filesystem
     virtual bool			Init(bool bEditorMode) = 0;
@@ -88,16 +89,6 @@ public:
 	virtual void			RemovePackage(const char* packageName) = 0;
 
 	//------------------------------------------------------------
-	// Locator
-	//------------------------------------------------------------
-
-	// opens directory for search props
-	virtual const char*		FindFirst(const char* wildcard, DKFINDDATA** findData, int searchPath) = 0;
-	virtual const char*		FindNext(DKFINDDATA* findData) const = 0;
-	virtual void			FindClose(DKFINDDATA* findData) = 0;
-	virtual bool			FindIsDirectory(DKFINDDATA* findData) const = 0;
-
-	//------------------------------------------------------------
 	// Dynamic library stuff
 	//------------------------------------------------------------
 
@@ -109,6 +100,17 @@ public:
 
 	// returns procedure address of the loaded module
 	virtual void*			GetProcedureAddress(DKMODULE* pModule, const char* pszProc) = 0;
+
+protected:
+	//------------------------------------------------------------
+	// Locator
+	//------------------------------------------------------------
+
+	// opens directory for search props
+	virtual const char* FindFirst(const char* wildcard, DKFINDDATA** findData, int searchPath) = 0;
+	virtual const char* FindNext(DKFINDDATA* findData) const = 0;
+	virtual void			FindClose(DKFINDDATA* findData) = 0;
+	virtual bool			FindIsDirectory(DKFINDDATA* findData) const = 0;
 };
 
 INTERFACE_SINGLETON( IFileSystem, CFileSystem, FILESYSTEM_INTERFACE_VERSION, g_fileSystem )

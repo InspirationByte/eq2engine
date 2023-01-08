@@ -84,7 +84,9 @@ workspace(WORKSPACE_NAME)
 			"register",
 			"unused-local-typedef",
 			"nonportable-include-path",
-			"format-security"
+			"format-security",
+			"unused-parameter",
+			"sign-compare",
 		}
 		
 		buildoptions {
@@ -126,6 +128,7 @@ workspace(WORKSPACE_NAME)
 
 	filter "system:Windows"
 		disablewarnings { "4996", "4554", "4244", "4101", "4838", "4309" }
+		enablewarnings { "26433" }
 		defines { 
 			"NOMINMAX", 
 			"_CRT_SECURE_NO_WARNINGS", "_CRT_SECURE_NO_DEPRECATE"

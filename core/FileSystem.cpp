@@ -31,12 +31,7 @@
 #include <unistd.h> // rmdir(), access()
 #include <stdarg.h> // va_*
 #include <dlfcn.h>
-
-#ifdef PLAT_ANDROID
-#include "android_libc/glob.h"		// glob(), globfree()
-#else
-#include <glob.h>					// glob(), globfree()
-#endif
+#include <dirent.h> // opendir, readdir
 
 #endif
 
@@ -135,17 +130,105 @@ struct DKMODULE
 
 struct DKFINDDATA
 {
-	int searchPathId;
-	EqString wildcard;
+	int					searchPathId;
+	EqString			wildcard;
 
-#ifdef _WIN32
+#if defined(PLAT_WIN)
 	WIN32_FIND_DATAA	wfd;
 	HANDLE				fileHandle;
-#else
-	glob_t				gl;
-	int					index;
-	int					pathlen;
-#endif // _WIN32
+#elif defined(PLAT_POSIX)
+	EqString			dirPath;
+	DIR*				dir{ nullptr };
+	struct dirent*		entry{ nullptr };
+	bool				isEntryDir{ false };
+#endif
+
+	~DKFINDDATA()
+	{
+		Release();
+	}
+
+	void Release()
+	{
+#if defined(PLAT_WIN)
+		FindClose(fileHandle);
+#elif defined(PLAT_POSIX)
+		closedir(dir);
+		dir = nullptr;
+		entry = nullptr;
+#endif
+	}
+
+	bool Init(const EqString& searchWildcard)
+	{
+		Release();
+
+#if defined(PLAT_WIN)
+		fileHandle = FindFirstFileA(searchWildcard.ToCString(), &wfd);
+		if (fileHandle != INVALID_HANDLE_VALUE)
+			return true;
+#elif defined(PLAT_POSIX)
+		dirPath = searchWildcard.Path_Extract_Path();
+		dir = opendir(dirPath);
+		if (dir)
+			return GetNext();
+#endif
+		return false;
+	}
+
+	bool GetNext()
+	{
+#if defined(PLAT_WIN)
+
+		return FindNextFileA(fileHandle, &wfd);
+
+#elif defined(PLAT_POSIX)
+		do
+		{
+			entry = readdir(dir);
+
+			if (!entry)
+				break;
+
+			if (*entry->d_name == 0)
+				continue;
+
+			int wildcardFileStart = wildcard.Find("*");
+			if (wildcardFileStart != -1)
+			{
+				const char* wildcardFile = wildcard.ToCString() + wildcardFileStart + 1;
+				if (*wildcardFile == 0)
+					break;
+
+				const char* found = xstristr(entry->d_name, wildcardFile);
+				if (found && strlen(found) == strlen(wildcardFile))
+					break;
+			}
+			else
+				break;
+		} while (true);
+
+		isEntryDir = false;
+
+		if (entry)
+		{
+			struct stat st;
+			if (stat(EqString::Format("%s", dirPath.TrimChar(CORRECT_PATH_SEPARATOR).ToCString(), entry->d_name), &st) == 0)
+				isEntryDir = (st.st_mode & S_IFDIR);
+		}
+
+		return entry;
+#endif
+	}
+
+	const char* GetCurrentPath() const 
+	{
+#if defined(PLAT_WIN)
+		return wfd.cFileName;
+#elif defined(PLAT_POSIX)
+		return entry->d_name;
+#endif
+	}
 };
 
 extern bool g_bPrintLeaksOnShutdown;
@@ -955,10 +1038,6 @@ const char* CFileSystem::FindFirst(const char* wildcard, DKFINDDATA** findData, 
 	newFind->wildcard = wildcard;
 	newFind->wildcard.Path_FixSlashes();
 
-#ifndef _WIN32
-	newFind->wildcard.ReplaceSubstr("*.*", "*");
-#endif
-
 	EqString fsBaseDir = m_basePath.ToCString();
 
 	if(searchPath == SP_DATA)
@@ -976,22 +1055,8 @@ const char* CFileSystem::FindFirst(const char* wildcard, DKFINDDATA** findData, 
 
 	m_findDatas.append(newFind);
 
-#ifdef _WIN32
-	newFind->fileHandle = ::FindFirstFileA(searchWildcard.ToCString(), &newFind->wfd);
-
-	if(newFind->fileHandle != INVALID_HANDLE_VALUE)
-		return newFind->wfd.cFileName;
-
-#else // POSIX
-	newFind->index = -1;
-
-	if (glob(searchWildcard.ToCString(), 0, nullptr, &newFind->gl) == 0 && newFind->gl.gl_pathc > 0)
-	{
-		newFind->pathlen = searchWildcard.Path_Extract_Path().Length();
-		newFind->index = 0;
-		return newFind->gl.gl_pathv[newFind->index] + newFind->pathlen;
-	}
-#endif // _WIN32
+	if (newFind->Init(searchWildcard))
+		return newFind->GetCurrentPath();
 
 	if(newFind->searchPathId != -1)
 	{
@@ -1003,19 +1068,8 @@ const char* CFileSystem::FindFirst(const char* wildcard, DKFINDDATA** findData, 
 			CombinePath(fsBaseDir, 2, m_basePath.ToCString(), m_directories[newFind->searchPathId].path.ToCString());
 			CombinePath(searchWildcard, 2, fsBaseDir.ToCString(), newFind->wildcard.ToCString());
 
-#ifdef _WIN32
-			newFind->fileHandle = ::FindFirstFileA(searchWildcard.ToCString(), &newFind->wfd);
-
-			if(newFind->fileHandle != INVALID_HANDLE_VALUE)
-				return newFind->wfd.cFileName;
-#else // POSIX
-			if (glob(searchWildcard.ToCString(), 0, nullptr, &newFind->gl) == 0)
-			{
-				newFind->pathlen = searchWildcard.Path_Extract_Path().Length();
-				newFind->index = 0;
-				return newFind->gl.gl_pathv[newFind->index] + newFind->pathlen;
-			}
-#endif // _WIN32
+			if (newFind->Init(searchWildcard))
+				return newFind->GetCurrentPath();
 
 			newFind->searchPathId++;
 		}
@@ -1033,62 +1087,30 @@ const char* CFileSystem::FindNext(DKFINDDATA* findData) const
 	if(!findData)
 		return nullptr;
 
-#ifdef _WIN32
-	if(!::FindNextFileA(findData->fileHandle, &findData->wfd))
-#else
-	if (findData->index < 0)
+	if (findData->GetNext())
+		return findData->GetCurrentPath();
+
+	if(findData->searchPathId == -1)
 		return nullptr;
 
-	if (findData->index >= findData->gl.gl_pathc)
-#endif // _WIN32
+	findData->searchPathId++;
+
+	// try reinitialize
+	while(findData->searchPathId < m_directories.numElem())
 	{
-		if(findData->searchPathId == -1)
-			return nullptr;
+		EqString fsBaseDir;
+		EqString searchWildcard;
+			
+		CombinePath(fsBaseDir, 2, m_basePath.ToCString(), m_directories[findData->searchPathId].path.ToCString());		
+		CombinePath(searchWildcard, 2, fsBaseDir.ToCString(), findData->wildcard.ToCString());
+
+		if (findData->Init(searchWildcard.ToCString()))
+			return findData->GetCurrentPath();
 
 		findData->searchPathId++;
-
-		// try reinitialize
-		while(findData->searchPathId < m_directories.numElem())
-		{
-			EqString fsBaseDir;
-			EqString searchWildcard;
-			
-			CombinePath(fsBaseDir, 2, m_basePath.ToCString(), m_directories[findData->searchPathId].path.ToCString());		
-			CombinePath(searchWildcard, 2, fsBaseDir.ToCString(), findData->wildcard.ToCString());
-
-#ifdef _WIN32
-			// close existing find
-			::FindClose(findData->fileHandle);
-
-			// tre init new
-			findData->fileHandle = ::FindFirstFileA(searchWildcard.ToCString(), &findData->wfd);
-
-			if(findData->fileHandle != INVALID_HANDLE_VALUE)
-				return findData->wfd.cFileName;
-#else // POSIX
-			globfree(&findData->gl);
-			findData->index = -1;
-
-			if (glob(searchWildcard.ToCString(), 0, nullptr, &findData->gl) == 0)
-			{
-				findData->pathlen = searchWildcard.Path_Extract_Path().Length();
-				findData->index = 0;
-				return findData->gl.gl_pathv[findData->index] + findData->pathlen;
-			}
-#endif // _WIN32
-
-			findData->searchPathId++;
-		}
-
-		return nullptr;
 	}
 
-#ifdef _WIN32
-	return findData->wfd.cFileName;
-#else
-	findData->index++;
-	return findData->gl.gl_pathv[findData->index] + findData->pathlen;
-#endif // _WIN32
+	return nullptr;
 }
 
 void CFileSystem::FindClose(DKFINDDATA* findData)
@@ -1097,15 +1119,7 @@ void CFileSystem::FindClose(DKFINDDATA* findData)
 		return;
 
 	if(m_findDatas.remove(findData))
-	{
-#ifdef _WIN32
-		::FindClose(findData->fileHandle);
-#else
-		if(findData->index >= 0)
-			globfree(&findData->gl);
-#endif // _WIN32
 		delete findData;
-	}
 }
 
 bool CFileSystem::FindIsDirectory(DKFINDDATA* findData) const
@@ -1116,14 +1130,7 @@ bool CFileSystem::FindIsDirectory(DKFINDDATA* findData) const
 #ifdef _WIN32
 	return (findData->wfd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY);
 #else
-	struct stat st;
-
-	if (stat(findData->gl.gl_pathv[findData->index], &st) == 0)
-	{
-		return (st.st_mode & S_IFDIR);
-	}
-
-	return false;
+	return findData->isEntryDir;
 #endif // _WIN32
 }
 

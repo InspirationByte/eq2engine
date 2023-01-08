@@ -335,29 +335,23 @@ void SearchFolderForMaterialsAndGetTextures(const char* wildcard)
 	EqString searchFolder(wildcard);
 	searchFolder.ReplaceSubstr("*.*", "");
 
-	DKFINDDATA* findData = nullptr;
-	char* fileName = (char*)g_fileSystem->FindFirst(wildcard, &findData, SP_ROOT);
-
-	if (fileName)
+	CFileSystemFind fsFind(wildcard, SP_MOD);
+	while (fsFind.Next())
 	{
-		while (fileName = (char*)g_fileSystem->FindNext(findData))
+		EqString fileName = fsFind.GetPath();
+		if (fsFind.IsDirectory())
 		{
-			if (g_fileSystem->FindIsDirectory(findData) && stricmp(fileName, ".") && stricmp(fileName, ".."))
-			{
-				EqString searchTemplate;
-				CombinePath(searchTemplate, 3, searchFolder.ToCString(), fileName, "*.*");
+			EqString searchTemplate;
+			CombinePath(searchTemplate, 3, searchFolder.ToCString(), fileName, "*.*");
 
-				SearchFolderForMaterialsAndGetTextures(searchTemplate.ToCString());
-			}
-			else if (xstristr(fileName, ".mat"))
-			{
-				EqString fullMaterialPath;
-				CombinePath(fullMaterialPath, 2, searchFolder.ToCString(), fileName);
-				LoadMaterialImages(fullMaterialPath.ToCString());
-			}
+			SearchFolderForMaterialsAndGetTextures(searchTemplate.ToCString());
 		}
-
-		g_fileSystem->FindClose(findData);
+		else if(fileName.Path_Extract_Ext() == "mat")
+		{
+			EqString fullMaterialPath;
+			CombinePath(fullMaterialPath, 2, searchFolder.ToCString(), fileName);
+			LoadMaterialImages(fullMaterialPath.ToCString());
+		}
 	}
 }
 

@@ -625,8 +625,8 @@ void CSoundEmitterSystem::CreateSoundScript(const KVSection* scriptSection, cons
 
 	newSound->maxDistance = KV_GetValueFloat(sectionGetOrDefault("maxDistance"), 0, m_defaultMaxDistance);
 	newSound->stopLoopTime = KV_GetValueFloat(sectionGetOrDefault("stopLoopTime"), 0, 0.0f);
-	newSound->loop = KV_GetValueFloat(sectionGetOrDefault("loop"), 0, false);
-	newSound->is2d = KV_GetValueFloat(sectionGetOrDefault("is2d"), 0, false);
+	newSound->loop = KV_GetValueBool(sectionGetOrDefault("loop"), 0, false);
+	newSound->is2d = KV_GetValueBool(sectionGetOrDefault("is2d"), 0, false);
 
 	{
 		const KVSection* chanKey = sectionGetOrDefault("channel");
