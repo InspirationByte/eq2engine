@@ -2813,12 +2813,18 @@ void ShaderAPIGL::StepProgressiveLodTextures()
 {
 	int numTransferred = 0;
 
+	g_sapi_ProgressiveTextureMutex.Lock();
 	auto it = m_progressiveTextures.begin();
-	while (it != m_progressiveTextures.end() && numTransferred < TEXTURE_TRANSFER_MAX_TEXTURES_PER_FRAME)
+	g_sapi_ProgressiveTextureMutex.Unlock();
+
+	while (numTransferred < TEXTURE_TRANSFER_MAX_TEXTURES_PER_FRAME)
 	{
 		CGLTexture* nextTexture = nullptr;
 		{
 			CScopedMutex m(g_sapi_ProgressiveTextureMutex);
+			if (it == m_progressiveTextures.end())
+				break;
+
 			nextTexture = it.key();
 			++it;
 		}

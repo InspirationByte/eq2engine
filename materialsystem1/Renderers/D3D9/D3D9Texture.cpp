@@ -278,15 +278,15 @@ bool CD3D9Texture::Init(const SamplerStateParam_t& sampler, const ArrayCRef<CRef
 
 void CD3D9Texture::ReleaseTextures()
 {
-	for (int i = 0; i < textures.numElem(); i++)
-		textures[i]->Release();
-
-	textures.clear();
-
 	{
 		Threading::CScopedMutex m(g_sapi_ProgressiveTextureMutex);
 		s_shaderApi.m_progressiveTextures.remove(this);
 	}
+
+	for (int i = 0; i < textures.numElem(); i++)
+		textures[i]->Release();
+
+	textures.clear();
 
 	m_progressiveState.clear(true);
 	m_texSize = 0;

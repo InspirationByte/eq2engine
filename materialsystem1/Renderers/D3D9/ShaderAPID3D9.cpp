@@ -1979,7 +1979,10 @@ void ShaderAPID3DX9::StepProgressiveLodTextures()
 {
 	int numTransferred = 0;
 
+	g_sapi_ProgressiveTextureMutex.Lock();
 	auto it = m_progressiveTextures.begin();
+	g_sapi_ProgressiveTextureMutex.Unlock();
+
 	while (it != m_progressiveTextures.end() && numTransferred < TEXTURE_TRANSFER_MAX_TEXTURES_PER_FRAME)
 	{
 		CD3D9Texture* nextTexture = nullptr;

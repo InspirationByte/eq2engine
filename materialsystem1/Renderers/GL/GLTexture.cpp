@@ -46,6 +46,11 @@ void CGLTexture::Release()
 
 void CGLTexture::ReleaseTextures()
 {
+	{
+		Threading::CScopedMutex m(g_sapi_ProgressiveTextureMutex);
+		g_shaderApi.m_progressiveTextures.remove(this);
+	}
+
 	if (m_glTarget == GL_RENDERBUFFER)
 	{
 		glDeleteRenderbuffers(1, &m_glDepthID);
