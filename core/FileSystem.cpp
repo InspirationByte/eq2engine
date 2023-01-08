@@ -135,7 +135,7 @@ struct DKFINDDATA
 
 #if defined(PLAT_WIN)
 	WIN32_FIND_DATAA	wfd;
-	HANDLE				fileHandle;
+	HANDLE				fileHandle{ INVALID_HANDLE_VALUE };
 #elif defined(PLAT_POSIX)
 	EqString			dirPath;
 	DIR*				dir{ nullptr };
@@ -151,7 +151,9 @@ struct DKFINDDATA
 	void Release()
 	{
 #if defined(PLAT_WIN)
-		FindClose(fileHandle);
+		if(fileHandle != INVALID_HANDLE_VALUE)
+			FindClose(fileHandle);
+		fileHandle = INVALID_HANDLE_VALUE;
 #elif defined(PLAT_POSIX)
 		closedir(dir);
 		dir = nullptr;
