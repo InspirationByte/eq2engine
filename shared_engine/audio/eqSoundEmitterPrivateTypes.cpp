@@ -541,6 +541,15 @@ void SoundScriptDesc::ReloadDesc(SoundScriptDesc& scriptDesc, const KVSection* s
 	ParseDesc(scriptDesc, scriptSection, &defaultsSec);
 }
 
+SoundEmitterData::SoundEmitterData()
+{
+	for (int i = 0; i < MAX_SOUND_SAMPLES_SCRIPT; ++i)
+	{
+		sampleVolume[i] = 1.0f;
+		samplePos[i] = -1.0f;
+	}
+}
+
 void SoundEmitterData::CreateNodeRuntime()
 {
 	inputs.clear();

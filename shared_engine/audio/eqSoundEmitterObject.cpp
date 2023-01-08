@@ -382,7 +382,6 @@ void CSoundingObject::SetInputValue(int uniqueId, int inputNameHash, float value
 
 SoundEmitterData* CSoundingObject::FindEmitter(int uniqueId) const
 {
-	SoundEmitterData* emitter = nullptr;
 	{
 		CScopedMutex m(*const_cast<CEqMutex*>(&m_mutex));
 		const auto it = m_emitters.find(uniqueId);
@@ -614,9 +613,8 @@ void CSoundingObject::SetInputValue(SoundEmitterData* emitter, int inputNameHash
 CEmitterObjectSound::CEmitterObjectSound(CSoundingObject& soundingObj, int uniqueId)
 	: m_soundingObj(soundingObj)
 {
-	auto it = m_soundingObj.m_emitters.find(uniqueId);
-	if (it != m_soundingObj.m_emitters.end())
-		m_emitter = *it;
+	
+	m_emitter = m_soundingObj.FindEmitter(uniqueId);
 }
 
 int CEmitterObjectSound::GetEmitterSampleId() const

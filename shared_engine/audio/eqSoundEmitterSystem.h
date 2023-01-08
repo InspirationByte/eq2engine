@@ -2,15 +2,8 @@
 // Copyright © Inspiration Byte
 // 2009-2022
 //////////////////////////////////////////////////////////////////////////////////
-// Description: Sound emitter system (similar to Valve's Source)
+// Description: Equilibrium Sound Emitter System
 //////////////////////////////////////////////////////////////////////////////////
-
-/*
-	TODO:
-		Sound source direction (for CSoundingObject only)
-		Spatial optimizations to query with less distance checks
-		Basic cue envelope control support for CSoundingObject
-*/
 
 #pragma once
 
