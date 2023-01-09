@@ -224,8 +224,8 @@ int CSoundEmitterSystem::EmitSound(EmitParams* ep, CSoundingObject* soundingObj,
 	bool isAudibleToStart = !startSilent;
 	if (!is2Dsound)
 	{
-		const float distToSound = length(ep->origin - listenerPos);
-		isAudibleToStart = !startSilent && (distToSound < script->maxDistance);
+		const float distToSoundSqr = lengthSqr(ep->origin - listenerPos);
+		isAudibleToStart = !startSilent && (distToSoundSqr < M_SQR(script->maxDistance));
 	}
 	
 	if (!isAudibleToStart && releaseOnStop)
@@ -477,9 +477,9 @@ int CSoundEmitterSystem::EmitterUpdateCallback(IEqAudioSource* soundSource, IEqA
 		PROF_EVENT("Emitter Update SwitchSourceState");
 		const Vector3D listenerPos = g_audioSystem->GetListenerPosition();
 
-		const float distToSound = lengthSqr(params.position - listenerPos);
+		const float distToSoundSqr = lengthSqr(params.position - listenerPos);
 		const float maxDistSqr = M_SQR(script->maxDistance);
-		const bool isAudible = distToSound < maxDistSqr;
+		const bool isAudible = distToSoundSqr < maxDistSqr;
 
 		// switch emitter between virtual and real here
 		g_sounds->SwitchSourceState(emitter, !isAudible);
@@ -496,9 +496,9 @@ int CSoundEmitterSystem::LoopSourceUpdateCallback(IEqAudioSource* source, IEqAud
 
 	const Vector3D listenerPos = g_audioSystem->GetListenerPosition();
 
-	const float distToSound = lengthSqr(params.position - listenerPos);
+	const float distToSoundSqr = lengthSqr(params.position - listenerPos);
 	const float maxDistSqr = M_SQR(soundScript->maxDistance);
-	if (distToSound > maxDistSqr)
+	if (distToSoundSqr > maxDistSqr)
 	{
 		params.set_state(IEqAudioSource::STOPPED);
 	}
