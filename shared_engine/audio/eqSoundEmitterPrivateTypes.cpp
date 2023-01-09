@@ -547,7 +547,11 @@ SoundEmitterData::SoundEmitterData()
 	{
 		sampleVolume[i] = 1.0f;
 		samplePos[i] = -1.0f;
+		
 	}
+
+	for (int i = 0; i < SOUND_PARAM_COUNT; ++i)
+		params[i] = 0.0f;
 }
 
 void SoundEmitterData::CreateNodeRuntime()
@@ -562,7 +566,8 @@ void SoundEmitterData::CreateNodeRuntime()
 		if (nodeDesc.type != SOUND_NODE_INPUT)
 			continue; // no need, we have desc to access
 
-		inputs.insert(i);
+		SoundNodeInput& input = *inputs.insert(i);
+		memset(&input, 0, sizeof(input));
 	}
 }
 

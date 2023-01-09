@@ -234,7 +234,7 @@ struct SoundNodeDesc
 
 struct SoundNodeInput
 {
-	float values[SoundNodeDesc::MAX_ARRAY_IDX] = { 0 };	// indexed by inputIds 
+	float values[SoundNodeDesc::MAX_ARRAY_IDX];	// indexed by inputIds 
 };
 
 struct SoundScriptDesc

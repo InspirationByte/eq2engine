@@ -181,7 +181,7 @@ int CSoundEmitterSystem::EmitSound(EmitParams* ep, CSoundingObject* soundingObj,
 	if (ep->flags & EMITSOUND_FLAG_RELEASE_ON_STOP)
 		releaseOnStop = true;
 
-	if(ep->flags & EMITSOUND_FLAG_START_ON_UPDATE)
+	if(!soundingObj && (ep->flags & EMITSOUND_FLAG_START_ON_UPDATE))
 	{
 		EmitParams newEmit = (*ep);
 		newEmit.flags &= ~EMITSOUND_FLAG_START_ON_UPDATE;
