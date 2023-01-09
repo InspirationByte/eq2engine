@@ -755,7 +755,7 @@ T approachValue(T v, T t, T s)
 	const T diffBefore = v - t;
 	const T diffAfter = newValue - t;
 
-	return diffBefore * diffAfter < 0 ? t : newValue;
+	return abs(diffAfter) > abs(diffBefore) ? t : newValue;
 }
 
 template <typename T, typename T2>
