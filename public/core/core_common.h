@@ -56,6 +56,7 @@
 
 #include "platform/eqtimer.h"
 #include "platform/eqthread.h"
+#include "platform/eqatomic.h"
 
 #include "ds/refcounted.h"
 #include "ds/weakptr.h"

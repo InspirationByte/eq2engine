@@ -876,7 +876,7 @@ enum EMaterialRenderSubroutine
 void CMaterialSystem::PutMaterialToLoadingQueue(IMaterialPtr pMaterial)
 {
 	CMaterial* material = (CMaterial*)pMaterial.Ptr();
-	if(CompareExchangeInterlocked(material->m_state, MATERIAL_LOAD_NEED_LOAD, MATERIAL_LOAD_INQUEUE) != MATERIAL_LOAD_NEED_LOAD)
+	if(Atomic::CompareExchange(material->m_state, MATERIAL_LOAD_NEED_LOAD, MATERIAL_LOAD_INQUEUE) != MATERIAL_LOAD_NEED_LOAD)
 	{
 		return;
 	}

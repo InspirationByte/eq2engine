@@ -151,7 +151,7 @@ public:
 	int					GetErrorCode() const;
 	const EqString&		GetErrorMessage() const;
 
-	void				Wait(int timeout = Threading::CEqSignal::WAIT_INFINITE);
+	void				Wait(int timeout = Threading::WAIT_INFINITE);
 	void				AddCallback(FutureCb callback);
 
 	void				operator=(std::nullptr_t) { m_data = nullptr; }

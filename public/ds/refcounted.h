@@ -51,13 +51,13 @@ private:
 template< class TYPE, class POLICY >
 inline void	RefCountedObject<TYPE, POLICY>::Ref_Grab()
 {
-	Threading::IncrementInterlocked(m_numRefs);
+	Atomic::Increment(m_numRefs);
 }
 
 template< class TYPE, class POLICY >
 inline bool	RefCountedObject<TYPE, POLICY>::Ref_Drop()
 {
-	if (Threading::DecrementInterlocked(m_numRefs) <= 0)
+	if (Atomic::Decrement(m_numRefs) <= 0)
 	{
 		Ref_DeleteObject();
 		if (POLICY::SHOULD_DELETE) { delete this; }

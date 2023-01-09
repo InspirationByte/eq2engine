@@ -216,7 +216,7 @@ void CEqStudioGeom::DestroyModel()
 {
 	DevMsg(DEVMSG_CORE, "DestroyModel: '%s'\n", m_name.ToCString());
 
-	m_readyState = MODEL_LOAD_ERROR;
+	Atomic::Exchange(m_readyState, MODEL_LOAD_ERROR);
 
 	if (m_instancer != nullptr)
 		delete m_instancer;
@@ -381,9 +381,9 @@ void CEqStudioGeom::OnLoadingJobComplete(struct eqParallelJob_t* job)
 	if (model->m_readyState == MODEL_LOAD_ERROR)
 		return;
 	
-	if (DecrementInterlocked(model->m_loading) <= 0)
+	if (Atomic::Decrement(model->m_loading) <= 0)
 	{
-		model->m_readyState = MODEL_LOAD_OK;
+		Atomic::Exchange(model->m_readyState, MODEL_LOAD_OK);
 		//DevMsg(DEVMSG_CORE, "EGF loading completed\n");
 	}
 }
@@ -394,7 +394,7 @@ bool CEqStudioGeom::LoadModel(const char* pszPath, bool useJob)
 	m_name.Path_FixSlashes();
 
 	// first we switch to loading
-	m_readyState = MODEL_LOAD_IN_PROGRESS;
+	Atomic::Exchange(m_readyState, MODEL_LOAD_IN_PROGRESS);
 
 	if (useJob)
 	{
@@ -425,7 +425,7 @@ bool CEqStudioGeom::LoadModel(const char* pszPath, bool useJob)
 	LoadMotionPackages();
 	LoadPhysicsData();
 	
-	m_readyState = MODEL_LOAD_OK;
+	Atomic::Exchange(m_readyState, MODEL_LOAD_OK);
 
 	return true;
 }

@@ -339,7 +339,7 @@ bool CMaterial::DoLoadShaderAndTextures()
 	if(!shader)
 		return true;
 
-	Threading::ExchangeInterlocked(m_state, MATERIAL_LOAD_INQUEUE);
+	Atomic::Exchange(m_state, MATERIAL_LOAD_INQUEUE);
 
 	// try init
 	if(!shader->IsInitialized() && !shader->IsError())
@@ -350,9 +350,9 @@ bool CMaterial::DoLoadShaderAndTextures()
 	}
 
 	if(shader->IsInitialized() )
-		Threading::ExchangeInterlocked(m_state, MATERIAL_LOAD_OK);
+		Atomic::Exchange(m_state, MATERIAL_LOAD_OK);
 	else if(shader->IsError() )
-		Threading::ExchangeInterlocked(m_state, MATERIAL_LOAD_ERROR);
+		Atomic::Exchange(m_state, MATERIAL_LOAD_ERROR);
 	else
 		ASSERT_FAIL("please check shader '%s' (%s) for initialization (not error, not initialized)", m_szShaderName.ToCString(), m_shader->GetName());
 
@@ -462,7 +462,7 @@ void CMaterial::Cleanup(bool dropVars, bool dropShader)
 		delete m_proxies[i];
 	m_proxies.clear(true);
 
-	Threading::ExchangeInterlocked(m_state, MATERIAL_LOAD_NEED_LOAD);
+	Atomic::Exchange(m_state, MATERIAL_LOAD_NEED_LOAD);
 }
 
 void CMaterial::UpdateProxy(float fDt)

@@ -9,6 +9,7 @@
 
 namespace Threading
 {
+typedef unsigned int (*threadfunc_t)(void*);
 
 #ifdef _WIN32
 
@@ -29,7 +30,6 @@ typedef HRESULT(__cdecl* GetThreadDescriptionPROC)(HANDLE, PWSTR*);
 static bool	s_loadedThreadProc = false;
 static SetThreadDescriptionPROC s_SetThreadDescription = nullptr;
 static GetThreadDescriptionPROC s_GetThreadDescription = nullptr;
-
 
 void InitThreadNameAPI()
 {
@@ -115,22 +115,7 @@ void SetThreadName(uintptr_t threadID, const char * name )
 uintptr_t ThreadCreate( threadfunc_t fnThread, void* pThreadParams, ThreadPriority_e nPriority,
 								  const char* pszThreadName, int nStackSize, bool bSuspended )
 {
-	DWORD flags = ( bSuspended ? CREATE_SUSPENDED : 0 );
-	// Without this flag the 'dwStackSize' parameter to CreateThread specifies the "Stack Commit Size"
-	// and the "Stack Reserve Size" is set to the value specified at link-time.
-	// With this flag the 'dwStackSize' parameter to CreateThread specifies the "Stack Reserve Size"
-	// and the �Stack Commit Size� is set to the value specified at link-time.
-	// For various reasons (some of which historic) we reserve a large amount of stack space in the
-	// project settings. By setting this flag and by specifying 64 kB for the "Stack Commit Size" in
-	// the project settings we can create new threads with a much smaller reserved (and committed)
-	// stack space. It is very important that the "Stack Commit Size" is set to a small value in
-	// the project settings. If it is set to a large value we may be both reserving and committing
-	// a lot of memory by setting the STACK_SIZE_PARAM_IS_A_RESERVATION flag. There are some
-	// 50 threads allocated for normal game play. If, for instance, the commit size is set to 16 MB
-	// then by adding this flag we would be reserving and committing 50 x 16 = 800 MB of memory.
-	// On the other hand, if this flag is not set and the "Stack Reserve Size" is set to 16 MB in the
-	// project settings, then we would still be reserving 50 x 16 = 800 MB of virtual address space.
-	flags |= STACK_SIZE_PARAM_IS_A_RESERVATION;
+	const DWORD flags = STACK_SIZE_PARAM_IS_A_RESERVATION | ( bSuspended ? CREATE_SUSPENDED : 0 );
 
 	DWORD threadId;
 	HANDLE handle = CreateThread(nullptr,	// LPSECURITY_ATTRIBUTES lpsa, //-V513
@@ -260,43 +245,8 @@ void MutexUnlock( MutexHandle_t& handle )
 	LeaveCriticalSection( &handle );
 }
 
-int IncrementInterlocked(int& value )
-{
-	return InterlockedIncrementAcquire((LPLONG)&value);
-}
-
-int DecrementInterlocked(int& value )
-{
-	return InterlockedDecrementAcquire((LPLONG)&value);
-}
-
-int AddInterlocked(int& value, int i )
-{
-	return InterlockedExchangeAdd((LPLONG)&value, i) + i;
-}
-
-int SubtractInterlocked(int& value, int i )
-{
-	return InterlockedExchangeAdd((LPLONG)&value, - i) - i;
-}
-
-int ExchangeInterlocked(int& value, int exchange )
-{
-	return InterlockedExchange((LPLONG)&value, exchange);
-}
-
-int CompareExchangeInterlocked(int& value, int comparand, int exchange )
-{
-	return InterlockedCompareExchange((LPLONG)&value, exchange, comparand);
-}
-
-#else
-
-#ifdef PLAT_POSIX
-
-#else // APPLE / BSD / DROID?
-// TODO:
-#endif
+#elif defined(PLAT_POSIX)
+// Any other (POSIX)
 
 void GetThreadName(uintptr_t threadID, char* name, int maxLength)
 {
@@ -320,14 +270,14 @@ uintptr_t ThreadCreate( threadfunc_t fnThread, void* pThreadParams, ThreadPriori
 
 	if( pthread_attr_setdetachstate( &attr, PTHREAD_CREATE_JOINABLE ) != 0 )
 	{
-		ASSERT_MSG( "ERROR: pthread_attr_setdetachstate %s failed\n", pszThreadName );
+		ASSERT_FAIL( "ERROR: pthread_attr_setdetachstate %s failed\n", pszThreadName );
 		return ( uintptr_t )0;
 	}
 
 	pthread_t handle;
 	if( pthread_create( ( pthread_t* )&handle, &attr, ( pthread_function_t )fnThread, pThreadParams ) != 0 )
 	{
-		ASSERT_MSG( "ERROR: pthread_create %s failed\n", pszThreadName );
+		ASSERT_FAIL( "ERROR: pthread_create %s failed\n", pszThreadName );
 		return ( uintptr_t )0;
 	}
 
@@ -354,27 +304,20 @@ uintptr_t ThreadGetID(uintptr_t threadHandle)
 void ThreadDestroy( uintptr_t threadHandle )
 {
 	if( threadHandle == 0 )
-	{
 		return;
-	}
 
-	char	name[128];
-	name[0] = '\0';
-
-#if defined(DEBUG_THREADS)
-	Sys_GetThreadName( ( pthread_t )threadHandle, name, sizeof( name ) );
-#endif
+	char name[128]{ 0 };
 
 #if 0 //!defined(__ANDROID__)
 	if( pthread_cancel( ( pthread_t )threadHandle ) != 0 )
 	{
-		ASSERT_MSG( "ERROR: pthread_cancel %s failed\n", name );
+		ASSERT_FAIL( "ERROR: pthread_cancel %s failed\n", name );
 	}
 #endif
 
 	if( pthread_join( ( pthread_t )threadHandle, nullptr) != 0 )
 	{
-		ASSERT_MSG( "ERROR: pthread_join %s failed\n", name );
+		ASSERT_FAIL( "ERROR: pthread_join %s failed\n", name );
 	}
 }
 
@@ -536,48 +479,13 @@ void MutexUnlock( MutexHandle_t& handle )
 {
 	pthread_mutex_unlock( & handle );
 }
-
-int IncrementInterlocked(int& value )
-{
-	return __sync_add_and_fetch( &value, 1 );
-}
-
-int DecrementInterlocked(int& value )
-{
-	return __sync_sub_and_fetch( &value, 1 );
-}
-
-int AddInterlocked(int& value, int i )
-{
-	return __sync_add_and_fetch( &value, i );
-}
-
-int SubtractInterlocked(int& value, int i )
-{
-	return __sync_sub_and_fetch( &value, - i );
-}
-
-int ExchangeInterlocked(int& value, int exchange )
-{
-	return __sync_val_compare_and_swap( &value, value, exchange );
-}
-
-int CompareExchangeInterlocked(int& value, int comparand, int exchange )
-{
-	return __sync_val_compare_and_swap( &value, comparand, exchange );
-}
-
 #endif // _WIN32
 
 //-------------------------------------------------------------------------------------------------------------------------
 
-CEqThread::CEqThread() : m_SignalWorkerDone(true)
+CEqThread::CEqThread() 
+	: m_SignalWorkerDone(true)
 {
-	m_nThreadHandle = 0;
-	m_bIsWorker = false;
-	m_bIsRunning = false;
-	m_bIsTerminating = false;
-	m_bMoreWorkToDo = false;
 }
 
 CEqThread::~CEqThread()
@@ -585,11 +493,13 @@ CEqThread::~CEqThread()
 	StopThread( true );
 
 	if ( m_nThreadHandle )
-	{
 		ThreadDestroy( m_nThreadHandle );
-	}
 }
 
+uintptr_t CEqThread::GetThreadID() const 
+{
+	return ThreadGetID(m_nThreadHandle);
+}
 
 bool CEqThread::StartThread( const char * name, ThreadPriority_e priority, int stackSize )
 {
@@ -616,7 +526,7 @@ bool CEqThread::StartWorkerThread( const char * name_, ThreadPriority_e priority
 
 	m_bIsWorker = true;
 
-	bool result = StartThread( name_, priority, stackSize );
+	const bool result = StartThread( name_, priority, stackSize );
 
 	m_SignalWorkerDone.Wait();
 
@@ -649,11 +559,11 @@ void CEqThread::StopThread( bool wait )
 		WaitForThread();
 }
 
-void CEqThread::WaitForThread()
+void CEqThread::WaitForThread(int timeout)
 {
 	if ( m_bIsWorker )
 	{
-		m_SignalWorkerDone.Wait();
+		m_SignalWorkerDone.Wait(timeout);
 	}
 	else if ( m_bIsRunning )
 	{
@@ -678,11 +588,6 @@ void CEqThread::SignalWork()
 	}
 }
 
-/*
-========================
-idSysThread::IsWorkDone
-========================
-*/
 bool CEqThread::IsWorkDone()
 {
 	if ( m_bIsWorker )
@@ -695,61 +600,42 @@ bool CEqThread::IsWorkDone()
 	return false;
 }
 
-/*
-========================
-idSysThread::ThreadProc
-========================
-*/
 int CEqThread::ThreadProc( CEqThread* thread )
 {
 	int retVal = 0;
 
-	try
+	if ( thread->m_bIsWorker )
 	{
-		if ( thread->m_bIsWorker )
+		for( ; ; )
 		{
-			for( ; ; )
+			thread->m_SignalMutex.Lock();
+
+			if ( thread->m_bMoreWorkToDo )
 			{
-				thread->m_SignalMutex.Lock();
+				thread->m_bMoreWorkToDo = false;
 
-				if ( thread->m_bMoreWorkToDo )
-				{
-					thread->m_bMoreWorkToDo = false;
+				thread->m_SignalMoreWorkToDo.Clear();
+				thread->m_SignalMutex.Unlock();
+			}
+			else
+			{
+				thread->m_SignalWorkerDone.Raise();
+				thread->m_SignalMutex.Unlock();
 
-					thread->m_SignalMoreWorkToDo.Clear();
-					thread->m_SignalMutex.Unlock();
-				}
-				else
-				{
-					thread->m_SignalWorkerDone.Raise();
-					thread->m_SignalMutex.Unlock();
-
-					thread->m_SignalMoreWorkToDo.Wait();
-					continue;
-				}
-
-				if ( thread->m_bIsTerminating )
-					break;
-
-				retVal = thread->Run();
+				thread->m_SignalMoreWorkToDo.Wait();
+				continue;
 			}
 
-			thread->m_SignalWorkerDone.Raise();
-		}
-		else
-			retVal = thread->Run();
-	}
-	catch ( CEqException& ex )
-	{
-		MsgWarning( "Thread '%s' exception: %s", thread->GetName(), ex.GetErrorString() );
+			if ( thread->m_bIsTerminating )
+				break;
 
-		// We don't handle threads terminating unexpectedly very well, so just terminate the whole process
-#ifdef _WIN32
-		_exit( 0 );
-#else
-		exit( 0 );
-#endif // _WIN32
+			retVal = thread->Run();
+		}
+
+		thread->m_SignalWorkerDone.Raise();
 	}
+	else
+		retVal = thread->Run();
 
 	thread->m_bIsRunning = false;
 
@@ -761,16 +647,57 @@ int CEqThread::ThreadProc( CEqThread* thread )
 int CEqThread::Run()
 {
 	// The Run() is not pure virtual because on destruction of a derived class
-	// the virtual function pointer will be set to NULL before the idSysThread
+	// the virtual function pointer will be set to NULL before the CEqThread
 	// destructor actually stops the thread.
 
 	return 0;
 }
 
-CEqException::CEqException(const char* text /*= ""*/)
+//--------------------------------------------------------
+
+CEqMutex::CEqMutex()
 {
-	strncpy(s_szError, text, ERROR_BUFFER_LENGTH);
-	s_szError[ERROR_BUFFER_LENGTH - 1] = 0;
+	MutexCreate(m_nHandle);
+}
+
+CEqMutex::~CEqMutex()
+{
+	MutexDestroy(m_nHandle);
+}
+
+bool CEqMutex::Lock(bool blocking)
+{
+	return MutexLock(m_nHandle, blocking);
+}
+
+void CEqMutex::Unlock()
+{
+	MutexUnlock(m_nHandle);
+}
+
+CEqSignal::CEqSignal(bool manualReset)
+{
+	SignalCreate(m_nHandle, manualReset); 
+}
+
+CEqSignal::~CEqSignal()
+{
+	SignalDestroy(m_nHandle);
+}
+
+void CEqSignal::Raise()
+{
+	SignalRaise(m_nHandle); 
+}
+
+void CEqSignal::Clear() 
+{
+	SignalClear(m_nHandle); 
+}
+
+bool CEqSignal:: Wait(int timeout)
+{
+	return SignalWait(m_nHandle, timeout); 
 }
 
 };

@@ -28,13 +28,13 @@ struct WeakRefBlock
 template< class TYPE>
 inline void	WeakRefBlock<TYPE>::Ref_Grab()
 {
-	Threading::IncrementInterlocked(numRefs);
+	Atomic::Increment(numRefs);
 }
 
 template< class TYPE>
 inline bool	WeakRefBlock<TYPE>::Ref_Drop()
 {
-	if (Threading::DecrementInterlocked(numRefs) <= 0)
+	if (Atomic::Decrement(numRefs) <= 0)
 	{
 		if(ptr)
 			ptr->m_block = nullptr;

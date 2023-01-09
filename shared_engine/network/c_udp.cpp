@@ -655,7 +655,7 @@ void CEqRDPSocket::UpdateSendQueue( int timeMs, CDPRecvPipe_fn recvFunc, void* r
 		// TODO: tweak
 		if( buffer->sendTimes >= 5 )
 		{
-			AddInterlocked(buffer->removeTimeout, i);
+			Atomic::Add(buffer->removeTimeout, i);
 
 			// Expired message
 			if( buffer->removeTimeout >= m_nUnconfirmedRemoveTimeout )
@@ -683,13 +683,13 @@ void CEqRDPSocket::UpdateSendQueue( int timeMs, CDPRecvPipe_fn recvFunc, void* r
 			}
 		}
 
-		AddInterlocked(buffer->sentTimeout, timeMs);
+		Atomic::Add(buffer->sentTimeout, timeMs);
 
 		int nSendTimeoutQueueMod = m_nSendTimeout;
 
 		if(buffer->sentTimeout >= nSendTimeoutQueueMod)
 		{
-			IncrementInterlocked(buffer->sendTimes);
+			Atomic::Increment(buffer->sendTimes);
 
 			// set the send time
 			buffer->sendTime = m_time;
