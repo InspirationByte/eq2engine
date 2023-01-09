@@ -60,7 +60,7 @@ inline void shellSort(T* list, SORTPAIRCOMPAREFUNC comparator, int i0, int i1)
 	{
 		for (int i = i0; i < i1 - gap; i++)
 		{
-			for (int j = i; (j >= i0) && (comparator)(list[j], list[j + gap]); j -= gap)
+			for (int j = i; (j >= i0) && (comparator)(list[j], list[j + gap]) > 0; j -= gap)
 			{
 				QuickSwap(list[j], list[j + gap]);
 			}
