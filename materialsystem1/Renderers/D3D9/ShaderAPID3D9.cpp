@@ -1641,7 +1641,7 @@ void ShaderAPID3DX9::ChangeRenderTargets(ITexture** pRenderTargets, int nNumRTs,
 	}
 
 	if(!bestDepth)
-		bestDepth = nullptr;
+		bestDepth = m_fbDepthTexture->surfaces[0];
 
 	if (m_pCurrentDepthSurface != bestDepth)
 	{
