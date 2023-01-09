@@ -22,6 +22,9 @@ ConVar r_allowSourceTextures("r_allowSourceTextures", "0", "enable materials and
 #define MATERIAL_FILE_EXTENSION		".mat"
 #define ATLAS_FILE_EXTENSION		".atlas"
 
+using namespace Threading;
+static CEqMutex s_materialVarMutex;
+
 CMaterial::CMaterial(const char* materialName, bool loadFromDisk)
 	: m_loadFromDisk(loadFromDisk)
 {
@@ -208,17 +211,20 @@ void CMaterial::InitMaterialVars(KVSection* kvs)
 		// initialize material var by this
 		const int nameHash = StringToHash(materialVarSec->GetName(), true);
 
-		auto it = m_variableMap.find(nameHash);
-		if (it == m_variableMap.end())
 		{
-			const int varId = m_variables.numElem();
-			CMatVar& newVar = m_variables.append();
-			newVar.Init(materialVarSec->GetName(), KV_GetValueString(materialVarSec));
-			m_variableMap.insert(newVar.m_nameHash, varId);
-		}
-		else
-		{
-			m_variables[*it].SetString(KV_GetValueString(materialVarSec));
+			CScopedMutex m(s_materialVarMutex);
+			auto it = m_variableMap.find(nameHash);
+			if (it == m_variableMap.end())
+			{
+				const int varId = m_variables.numElem();
+				CMatVar& newVar = m_variables.append();
+				newVar.Init(materialVarSec->GetName(), KV_GetValueString(materialVarSec));
+				m_variableMap.insert(newVar.m_nameHash, varId);
+			}
+			else
+			{
+				m_variables[*it].SetString(KV_GetValueString(materialVarSec));
+			}
 		}
 	}
 }
@@ -369,6 +375,8 @@ void CMaterial::WaitForLoading() const
 
 MatVarProxy CMaterial::GetMaterialVar(const char* pszVarName, const char* defaultValue)
 {
+	CScopedMutex m(s_materialVarMutex);
+
 	const int nameHash = StringToHash(pszVarName, true);
 
 	auto it = m_variableMap.find(nameHash);
@@ -388,6 +396,7 @@ MatVarProxy CMaterial::FindMaterialVar(const char* pszVarName) const
 {
 	const int nameHash = StringToHash(pszVarName, true);
 
+	CScopedMutex m(s_materialVarMutex);
 	auto it = m_variableMap.find(nameHash);
 	if (it == m_variableMap.end())
 		return MatVarProxy();
@@ -450,6 +459,8 @@ void CMaterial::Cleanup(bool dropVars, bool dropShader)
 
 	if(dropVars)
 	{
+		CScopedMutex m(s_materialVarMutex);
+
 		m_variables.clear(true);
 		m_variableMap.clear(true);
 
