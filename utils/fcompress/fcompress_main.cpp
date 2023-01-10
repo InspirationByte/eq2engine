@@ -80,22 +80,37 @@ static void CookPackageTarget(const char* targetName)
 			KVSection* kvSec = currentTarget->KeyAt(i);
 			if (!stricmp(kvSec->GetName(), "add"))
 			{
-				const char* wildcard = KV_GetValueString(kvSec);
+				EqString wildcard = KV_GetValueString(kvSec);
 				EqString packageDir = KV_GetValueString(kvSec, 1, wildcard);
 
-				int wildcardStart = packageDir.Find("*");
-				if (wildcardStart != -1)
-					packageDir = packageDir.Left(wildcardStart-1);
-
-				dpkWriter.AddDirectory(wildcard, packageDir, true);
+				const int wildcardStart = wildcard.Find("*");
+				if (wildcardStart == -1 && wildcard.Path_Extract_Name().Length() > 0)
+				{
+					// try adding file directly
+					if(dpkWriter.AddFile(wildcard, packageDir))
+						Msg("Adding file '%s' as '%s' to package\n", wildcard.ToCString(), packageDir.ToCString());
+				}
+				else
+				{
+					const int fileCount = dpkWriter.AddDirectory(wildcard, packageDir, true);
+					Msg("Adding %d files in '%s' as '%s' to package\n", fileCount, wildcard.ToCString(), packageDir.ToCString());
+				}
 			}
 			else if (!stricmp(kvSec->GetName(), "ignoreCompressionExt"))
 			{
-				dpkWriter.AddIgnoreCompressionExtension(KV_GetValueString(kvSec));
+				const char* extName = KV_GetValueString(kvSec);
+				MsgInfo("Ignoring compression for '%s' files\n", extName);
+				dpkWriter.AddIgnoreCompressionExtension(extName);
 			}
 		}
 	}
 	
+	// also make a folder
+	outputFileName.Path_FixSlashes();
+	const EqString packagePath = outputFileName.Path_Extract_Path().TrimChar(CORRECT_PATH_SEPARATOR);
+	if (packagePath.Length() > 0 && packagePath.Path_Extract_Ext().Length() == 0)
+		g_fileSystem->MakeDir(packagePath, SP_ROOT);
+
 	dpkWriter.BuildAndSave(outputFileName.ToCString());
 }
 

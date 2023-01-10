@@ -333,23 +333,23 @@ void LoadMaterialImages(const char* materialFileName)
 void SearchFolderForMaterialsAndGetTextures(const char* wildcard)
 {
 	EqString searchFolder(wildcard);
-	searchFolder.ReplaceSubstr("*.*", "");
+	searchFolder.ReplaceSubstr("*", "");
 
-	CFileSystemFind fsFind(wildcard, SP_MOD);
+	CFileSystemFind fsFind(wildcard, SP_ROOT);
 	while (fsFind.Next())
 	{
 		EqString fileName = fsFind.GetPath();
-		if (fsFind.IsDirectory())
+		if (fsFind.IsDirectory() && fileName != "." && fileName != "..")
 		{
 			EqString searchTemplate;
-			CombinePath(searchTemplate, 3, searchFolder.ToCString(), fileName, "*.*");
+			CombinePath(searchTemplate, 3, searchFolder.ToCString(), fileName.ToCString(), "*");
 
 			SearchFolderForMaterialsAndGetTextures(searchTemplate.ToCString());
 		}
 		else if(fileName.Path_Extract_Ext() == "mat")
 		{
 			EqString fullMaterialPath;
-			CombinePath(fullMaterialPath, 2, searchFolder.ToCString(), fileName);
+			CombinePath(fullMaterialPath, 2, searchFolder.ToCString(), fileName.ToCString());
 			LoadMaterialImages(fullMaterialPath.ToCString());
 		}
 	}
@@ -455,8 +455,14 @@ void ProcessTexture(TexInfo_t* textureInfo)
 
 	EqString cmdLine(EqString::Format("%s %s", g_batchConfig.applicationName.ToCString(), arguments.ToCString()));
 
+	cmdLine.Path_FixSlashes();
+
 	DevMsg(DEVMSG_CORE, "*RUN '%s'\n", cmdLine.GetData());
-	system(cmdLine.GetData());
+	int result = system(cmdLine.GetData());
+	if (result != 0)
+	{
+		MsgError("Error running command\n");
+	}
 }
 
 void CookMaterialsToTarget(const char* pszTargetName)
@@ -530,14 +536,14 @@ void CookMaterialsToTarget(const char* pszTargetName)
 		Msg("Material source path: '%s'\n", g_batchConfig.sourceMaterialPath.ToCString());
 
 		EqString searchTemplate;
-		CombinePath(searchTemplate, 2, g_batchConfig.sourceMaterialPath.ToCString(), "*.*");
+		CombinePath(searchTemplate, 2, g_batchConfig.sourceMaterialPath.ToCString(), "*");
 
 		// walk up material files
 		SearchFolderForMaterialsAndGetTextures( searchTemplate.ToCString() );
 
 		Msg("Got %d textures\n", g_textureList.numElem());
 
-		EqString crcFileName(EqString::Format("cook_%s_crc.txt", g_targetProps.targetCompression.ToCString()));
+		EqString crcFileName(EqString::Format("%s/cook_%s_crc.txt", g_batchConfig.sourceMaterialPath.ToCString(), g_targetProps.targetCompression.ToCString()));
 
 		// load CRC list, check for existing DDS files, and skip if necessary
 		KV_LoadFromFile(crcFileName.ToCString(), SP_ROOT, &g_batchConfig.crcSec);

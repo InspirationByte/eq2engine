@@ -28,7 +28,7 @@ public:
 	void					SetMountPath( const char* path );
 
 	bool					AddFile( const char* fileName, const char* targetFilename);
-	void					AddDirectory(const char* wildcard, const char* targetDir, bool bRecurse );
+	int						AddDirectory(const char* wildcard, const char* targetDir, bool bRecurse );
 
 	void					AddIgnoreCompressionExtension( const char* extension );
 
@@ -36,7 +36,7 @@ public:
 
 protected:
 
-	void					ProcessFile(FILE* output, dpkfilewinfo_t* info);
+	float					ProcessFile(FILE* output, dpkfilewinfo_t* info);
 
 	bool					WriteFiles();
 	bool					SavePackage();

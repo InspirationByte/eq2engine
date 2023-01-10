@@ -524,7 +524,7 @@ EqString EqString::Path_Strip_Name() const
 	// search back
 	for ( int i = m_nLength-1; i >= 0; i-- )
 	{
-		if ( m_pszString[i] == '/' || m_pszString[i] == '\\' )
+		if ( m_pszString[i] == CORRECT_PATH_SEPARATOR || m_pszString[i] == INCORRECT_PATH_SEPARATOR )
 		{
 			return Left(i+1);
 		}
@@ -538,7 +538,7 @@ EqString EqString::Path_Strip_Path() const
 	// search back
 	for ( int i = m_nLength-1; i >= 0; i-- )
 	{
-		if ( m_pszString[i] == '/' || m_pszString[i] == '\\' )
+		if ( m_pszString[i] == CORRECT_PATH_SEPARATOR || m_pszString[i] == INCORRECT_PATH_SEPARATOR)
 		{
 			return Right(m_nLength-1-i);
 		}

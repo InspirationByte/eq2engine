@@ -184,10 +184,8 @@ bool CDPKFileWriter::AddFile( const char* fileName, const char* targetFilename)
 	return true;
 }
 
-void CDPKFileWriter::AddDirectory(const char* wildcard, const char* targetDir, bool recursive)
+int CDPKFileWriter::AddDirectory(const char* wildcard, const char* targetDir, bool recursive)
 {
-	Msg("Adding path '%s' as '%s' to package:\n", wildcard, targetDir);
-
 	EqString targetDirTrimmed(targetDir);
 	targetDirTrimmed = targetDirTrimmed.TrimChar('/');
 	targetDirTrimmed = targetDirTrimmed.TrimChar('.');
@@ -198,6 +196,8 @@ void CDPKFileWriter::AddDirectory(const char* wildcard, const char* targetDir, b
 	{
 		nonWildcardFolder = nonWildcardFolder.Left(wildcardStart).TrimChar('/');
 	}
+
+	int fileCount = 0;
 
 #ifdef _WIN32
 	WIN32_FIND_DATAA wfd;
@@ -210,21 +210,23 @@ void CDPKFileWriter::AddDirectory(const char* wildcard, const char* targetDir, b
 				continue;
 
 			if(recursive)
-				AddDirectory(EqString::Format("%s/%s/*", nonWildcardFolder.ToCString(), wfd.cFileName), EqString::Format("%s/%s", targetDirTrimmed.ToCString(), wfd.cFileName), true);
+				fileCount += AddDirectory(EqString::Format("%s/%s/*", nonWildcardFolder.ToCString(), wfd.cFileName), EqString::Format("%s/%s", targetDirTrimmed.ToCString(), wfd.cFileName), true);
 		}
 		else
 		{
-			AddFile(EqString::Format("%s/%s", nonWildcardFolder.ToCString(), wfd.cFileName), EqString::Format("%s/%s", targetDirTrimmed.ToCString(), wfd.cFileName));
+			if (AddFile(EqString::Format("%s/%s", nonWildcardFolder.ToCString(), wfd.cFileName), EqString::Format("%s/%s", targetDirTrimmed.ToCString(), wfd.cFileName)))
+				++fileCount;
 		}
 	}
 
 	FindClose(hFile);
 #endif // _WIN32
+
+	return fileCount;
 }
 
 void CDPKFileWriter::AddIgnoreCompressionExtension( const char* extension )
 {
-	Msg("Ignoring extension '%s' for compression\n", extension);
 	m_ignoreCompressionExt.append(extension);
 }
 
@@ -283,7 +285,7 @@ bool CDPKFileWriter::WriteFiles()
 	return true;
 }
 
-void CDPKFileWriter::ProcessFile(FILE* output, dpkfilewinfo_t* info)
+float CDPKFileWriter::ProcessFile(FILE* output, dpkfilewinfo_t* info)
 {
 	dpkfileinfo_t& fInfo = info->pkinfo;
 
@@ -295,7 +297,7 @@ void CDPKFileWriter::ProcessFile(FILE* output, dpkfilewinfo_t* info)
 	if (!_filedata)
 	{
 		MsgError("Failed to open file '%s' while adding to archive\n", info->fileName.ToCString());
-		return;
+		return 0.0f;
 	}
 
 	// set the size and offset in the file bigfile
@@ -306,6 +308,8 @@ void CDPKFileWriter::ProcessFile(FILE* output, dpkfilewinfo_t* info)
 	{
 		fInfo.crc = CRC32_BlockChecksum(_filedata, _fileSize);
 	}
+
+	float sizeReduction = 0.0f;
 
 	// compressed and encrypted files has to be put into blocks
 	// uncompressed files are bypassing blocks
@@ -345,9 +349,13 @@ void CDPKFileWriter::ProcessFile(FILE* output, dpkfilewinfo_t* info)
 
 				blockInfo.flags |= DPKFILE_FLAG_COMPRESSED;
 				blockInfo.compressedSize = compressedSize;
+
+				sizeReduction += compressedSize / blockInfo.size;
 			}
 			else
+			{
 				memcpy(tmpBlock, srcBlock, blockInfo.size);
+			}
 
 			int tmpBlockSize = (blockInfo.flags & DPKFILE_FLAG_COMPRESSED) ? blockInfo.compressedSize : blockInfo.size;
 
@@ -392,6 +400,9 @@ void CDPKFileWriter::ProcessFile(FILE* output, dpkfilewinfo_t* info)
 
 		// set the number of blocks
 		fInfo.numBlocks = numBlocks;
+
+		if(numBlocks > 0)
+			sizeReduction /= (float)numBlocks;
 	}
 	else
 	{
@@ -401,6 +412,8 @@ void CDPKFileWriter::ProcessFile(FILE* output, dpkfilewinfo_t* info)
 
 	// we're done with this file
 	PPFree(_filedata);
+
+	return sizeReduction;
 }
 
 bool CDPKFileWriter::SavePackage()
@@ -420,18 +433,24 @@ bool CDPKFileWriter::SavePackage()
 	// write fileinfo to the end of main file
 	m_header.fileInfoOffset = sizeof(dpkheader_t) + DPK_STRING_SIZE;
 
+	float compressionRatio = 0.0f;
+
 	for(int i = 0; i < m_files.numElem();i++)
 	{
 		UpdatePacifier((float)i / (float)m_files.numElem());
 
 		dpkfilewinfo_t* fileInfo = m_files[i];
-		ProcessFile(dpk_temp_data, fileInfo);
+		const float sizeReduction = ProcessFile(dpk_temp_data, fileInfo);
+
+		compressionRatio += sizeReduction;
 	}
+
+	compressionRatio /= (float)m_files.numElem();
 
 	fclose(dpk_temp_data);
 
 	EndPacifier();
-	Msg("OK\n");
+	Msg("Compression is %.2f %%\n", compressionRatio * 100.0f);
 
 	m_header.numFiles = m_files.numElem();
 
