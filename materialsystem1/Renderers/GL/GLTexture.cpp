@@ -129,9 +129,6 @@ GLTextureRef_t CGLTexture::CreateGLTexture(const CImage* img, const SamplerState
 
 	const EImageType type = img->GetImageType();
 	const ETextureFormat format = img->GetFormat();
-	int widthMip0 = img->GetWidth(0);
-	int heightMip0 = img->GetHeight(0);
-	int depthMip0 = img->GetDepth(0);
 
 	GLTextureRef_t glTexture;
 	glTexture.type = type;
@@ -143,17 +140,14 @@ GLTextureRef_t CGLTexture::CreateGLTexture(const CImage* img, const SamplerState
 	const GLenum glTarget = g_gl_texTargetType[type];
 	const GLenum internalFormat = PickGLInternalFormat(format);
 
-	if (IsCompressedFormat(format))
-	{
-		//FIXME: is that even valid?
-		widthMip0 &= ~3;
-		heightMip0 &= ~3;
-	}
-
 	glBindTexture(glTarget, glTexture.glTexID);
 	GLCheckError("bind tex");
 
 #ifdef USE_GLES2
+	int widthMip0 = img->GetWidth(0);
+	int heightMip0 = img->GetHeight(0);
+	int depthMip0 = img->GetDepth(0);
+
 	if (type == IMAGE_TYPE_CUBE)
 	{
 		glTexStorage2D(glTarget, mipCount, internalFormat, widthMip0, heightMip0);
@@ -177,10 +171,11 @@ GLTextureRef_t CGLTexture::CreateGLTexture(const CImage* img, const SamplerState
 
 	if (type == IMAGE_TYPE_CUBE)
 	{
-		int width = widthMip0;
-		int height = heightMip0;
 		for (int i = 0; i < mipCount; ++i) 
 		{
+			const int width = img->GetWidth(startMip + i);
+			const int height = img->GetHeight(startMip + i);
+
 			if (IsCompressedFormat(format))
 			{
 				for (int j = 0; j < 6; ++j)
@@ -188,9 +183,6 @@ GLTextureRef_t CGLTexture::CreateGLTexture(const CImage* img, const SamplerState
 					glCompressedTexImage2D(glTarget, i, internalFormat, width, height, 0, img->GetMipMappedSize(startMip + i, 1), nullptr);
 					GLCheckError("create tex2D cube %d compr storage level %d", j, i);
 				}
-			
-				width = max(4, width >> 1 & ~3);
-				height = max(4, height >> 1 & ~3);
 			}
 			else
 			{
@@ -199,62 +191,45 @@ GLTextureRef_t CGLTexture::CreateGLTexture(const CImage* img, const SamplerState
 					glTexImage2D(glTarget, i, internalFormat, width, height, 0, srcFormat, srcType, nullptr);
 					GLCheckError("create tex storage level %d", i);
 				}
-
-				width = max(1, width >> 1);
-				height = max(1, height >> 1);
 			}
 		}
 	}
 	else if (type == IMAGE_TYPE_3D)
 	{
-		int width = widthMip0;
-		int height = heightMip0;
-		int depth = depthMip0;
 		for (int i = 0; i < mipCount; ++i)
 		{
+			const int width = img->GetWidth(startMip + i);
+			const int height = img->GetHeight(startMip + i);
+			const int depth = img->GetDepth(startMip + i);
+
 			if (IsCompressedFormat(format))
 			{
 				glCompressedTexImage3D(glTarget, i, internalFormat, width, height, depth, 0, img->GetMipMappedSize(startMip + i, 1), nullptr);
 				GLCheckError("create tex3D compr storage level %d", i);
-
-				width = max(4, width >> 1 & ~3);
-				height = max(4, height >> 1 & ~3);
-				depth = max(4, depth >> 1 & ~3);
 			}
 			else
 			{
 				glTexImage3D(glTarget, i, internalFormat, width, height, depth, 0, srcFormat, srcType, nullptr); GLCheckError("create tex storage level %d", i);
 				GLCheckError("create tex storage level %d", i);
-
-				width = max(1, width >> 1);
-				height = max(1, height >> 1);
-				depth = max(1, depth >> 1);
 			}
 		}
 	}
 	else if (type == IMAGE_TYPE_2D || type == IMAGE_TYPE_1D)
 	{
-		int width = widthMip0;
-		int height = heightMip0;
 		for (int i = 0; i < mipCount; ++i) 
 		{
+			const int width = img->GetWidth(startMip + i);
+			const int height = img->GetHeight(startMip + i);
+
 			if (IsCompressedFormat(format))
 			{
 				glCompressedTexImage2D(glTarget, i, internalFormat, width, height, 0, img->GetMipMappedSize(startMip + i, 1), nullptr);
 				GLCheckError("create tex2D compr storage level %d", i);
-
-				width = max(4, width >> 1 & ~3);
-				if (type != IMAGE_TYPE_1D)
-					height = max(4, height >> 1 & ~3);
 			}
 			else
 			{
 				glTexImage2D(glTarget, i, internalFormat, width, height, 0, srcFormat, srcType, nullptr);
 				GLCheckError("create tex2D storage level %d", i);
-				
-				width = max(1, width >> 1);
-				if (type != IMAGE_TYPE_1D)
-					height = max(1, height >> 1);
 			}
 		}
 	}
