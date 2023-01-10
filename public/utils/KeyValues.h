@@ -280,6 +280,7 @@ private:
 			s- <int>	- section depth decrease
 			b			- break
 			t  <string>	- text token
+			u			- unquoted text token character
 */
 
 enum EKVTokenState
@@ -287,6 +288,8 @@ enum EKVTokenState
 	KV_PARSE_ERROR = -1,
 	KV_PARSE_RESUME = 0,
 	KV_PARSE_SKIP,
+
+	KV_PARSE_BREAK_TOKEN,	// for unquoted strings
 };
 
 using KVTokenFunc = EqFunction<EKVTokenState(int line, const char* curPtr, const char* sig, va_list arg)>;
