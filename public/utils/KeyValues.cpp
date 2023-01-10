@@ -1047,11 +1047,11 @@ KVSection* KV_ParseSection(const char* pszBuffer, int bufferSize, const char* ps
 	return result;
 }
 
-bool KV_Parse(const char* buffer, int bufferSize, const char* fileName, const KVTokenFunc& tokenFunc)
+bool KV_Tokenizer(const char* buffer, int bufferSize, const char* fileName, const KVTokenFunc& tokenFunc)
 {
 	enum EParserMode
 	{
-		MODE_SKIP_WHITESPACE = 0,
+		MODE_DEFAULT = 0,
 		MODE_SKIP_COMMENT_SINGLELINE,
 		MODE_SKIP_COMMENT_MULTILINE,
 
@@ -1061,7 +1061,7 @@ bool KV_Parse(const char* buffer, int bufferSize, const char* fileName, const KV
 		MODE_PARSE_ERROR_BREAK
 	};
 
-	EParserMode mode = MODE_SKIP_WHITESPACE;
+	EParserMode mode = MODE_DEFAULT;
 	int curLine = 1;
 	int lastModeStartLine = 0;
 
@@ -1069,15 +1069,16 @@ bool KV_Parse(const char* buffer, int bufferSize, const char* fileName, const KV
 
 	int sectionDepth = 0;
 
+	char* dataPtr = (char*)buffer;
 	auto tokenFuncWrap = [&](const char* a, ...) -> EKVTokenState {
 		va_list args;
 		va_start(args, a);
-		const EKVTokenState result = tokenFunc(curLine, a, args);
+		const EKVTokenState result = tokenFunc(curLine, dataPtr, a, args);
 		va_end(args);
 		return result;
 	};
 
-	for (char* dataPtr = (char*)buffer; (dataPtr - buffer) <= bufferSize; ++dataPtr)
+	for (; (dataPtr - buffer) <= bufferSize; ++dataPtr)
 	{
 		const char c = *dataPtr;
 
@@ -1087,9 +1088,9 @@ bool KV_Parse(const char* buffer, int bufferSize, const char* fileName, const KV
 		// check for beginning of the string
 		switch (mode)
 		{
-			case MODE_SKIP_WHITESPACE:
+			case MODE_DEFAULT:
 			{
-				EKVTokenState state = tokenFuncWrap("c", dataPtr);
+				EKVTokenState state = tokenFuncWrap("c");
 
 				if (state == KV_PARSE_ERROR)
 				{
@@ -1098,6 +1099,10 @@ bool KV_Parse(const char* buffer, int bufferSize, const char* fileName, const KV
 					mode = MODE_PARSE_ERROR_BREAK;
 					break;
 				}
+
+				// while in skip mode we don't parse anything and let parser on top of it work
+				if (state == KV_PARSE_SKIP)
+					continue;
 
 				if (c == KV_COMMENT_SYMBOL)
 				{
@@ -1121,7 +1126,6 @@ bool KV_Parse(const char* buffer, int bufferSize, const char* fileName, const KV
 				{
 					++sectionDepth;
 					tokenFuncWrap("s+", sectionDepth);
-					break;
 				}
 				else if (c == KV_SECTION_END)
 				{
@@ -1135,14 +1139,8 @@ bool KV_Parse(const char* buffer, int bufferSize, const char* fileName, const KV
 					--sectionDepth;
 
 					tokenFuncWrap("s-", sectionDepth);
-					break;
 				}
-
-				// in skip mode we don't parse quoted string
-				if (state == KV_PARSE_SKIP)
-					continue;
-
-				if (c == KV_STRING_BEGIN_END)
+				else if (c == KV_STRING_BEGIN_END)
 				{
 					mode = MODE_QUOTED_STRING;
 					lastModeStartLine = curLine;
@@ -1163,14 +1161,14 @@ bool KV_Parse(const char* buffer, int bufferSize, const char* fileName, const KV
 			case MODE_SKIP_COMMENT_SINGLELINE:
 			{
 				if (c == KV_STRING_NEWLINE)
-					mode = MODE_SKIP_WHITESPACE;
+					mode = MODE_DEFAULT;
 				break;
 			}
 			case MODE_SKIP_COMMENT_MULTILINE:
 			{
 				if (c == KV_RANGECOMMENT_BEGIN_END && *(dataPtr + 1) == KV_COMMENT_SYMBOL)
 				{
-					mode = MODE_SKIP_WHITESPACE;
+					mode = MODE_DEFAULT;
 					++dataPtr; // also skip next char
 				}
 				break;
@@ -1181,7 +1179,7 @@ bool KV_Parse(const char* buffer, int bufferSize, const char* fileName, const KV
 				if (IsKVWhitespace(c) || c == KV_BREAK || c == KV_COMMENT_SYMBOL || c == KV_SECTION_BEGIN)
 				{
 					ASSERT(firstLetter);
-					mode = MODE_SKIP_WHITESPACE;
+					mode = MODE_DEFAULT;
 				}
 
 				if (mode != MODE_OPEN_STRING)
@@ -1204,7 +1202,7 @@ bool KV_Parse(const char* buffer, int bufferSize, const char* fileName, const KV
 				if (c == KV_STRING_BEGIN_END && *(dataPtr - 1) != KV_ESCAPE_SYMBOL)
 				{
 					ASSERT(firstLetter);
-					mode = MODE_SKIP_WHITESPACE;
+					mode = MODE_DEFAULT;
 				}
 
 				if (mode != MODE_QUOTED_STRING)
@@ -1236,7 +1234,7 @@ bool KV_Parse(const char* buffer, int bufferSize, const char* fileName, const KV
 			MsgError("'%s' (%d): EOF unexpected (missing '\"')\n", (fileName ? fileName : "buffer"), lastModeStartLine);
 	}
 
-	return (mode == MODE_SKIP_WHITESPACE);
+	return (mode == MODE_DEFAULT);
 }
 
 //
@@ -1258,8 +1256,7 @@ KVSection* KV_ParseSectionV2(const char* pszBuffer, int bufferSize, const char* 
 
 	KVSection* currentSection = nullptr;
 
-	int lastTokenNum = 0;
-	KV_Parse(pszBuffer, bufferSize, pszFileName, [&](int line, const char* sig, va_list args) {
+	KV_Tokenizer(pszBuffer, bufferSize, pszFileName, [&](int line, const char* dataPtr, const char* sig, va_list args) {
 		switch (*sig)
 		{
 			case 'c':

@@ -275,7 +275,7 @@ private:
 /*
 	KV parse token function callback
 		signature might be:
-			c  <string>	- current character and buffer offset
+			c  <string>	- default mode character parsed
 			s+ <int>	- section depth increase
 			s- <int>	- section depth decrease
 			b			- break
@@ -289,9 +289,9 @@ enum EKVTokenState
 	KV_PARSE_SKIP,
 };
 
-using KVTokenFunc = EqFunction<EKVTokenState(int line, const char* sig, va_list arg)>;
+using KVTokenFunc = EqFunction<EKVTokenState(int line, const char* curPtr, const char* sig, va_list arg)>;
 
-bool			KV_Parse(const char* buffer, int bufferSize, const char* fileName, const KVTokenFunc& tokenFunc);
+bool			KV_Tokenizer(const char* buffer, int bufferSize, const char* fileName, const KVTokenFunc& tokenFunc);
 
 KVSection*		KV_LoadFromFile( const char* pszFileName, int nSearchFlags = -1, KVSection* pParseTo = nullptr);
 
