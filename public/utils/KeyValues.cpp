@@ -41,16 +41,15 @@ static EKVPairType KV_ResolvePairType( const char* string )
 	return KVPAIR_STRING;
 }
 
-static char* KV_ReadProcessString( const char* pszStr, int maxLength = INT_MAX )
+// converts escape symbols to the characters
+// returns new string length
+static int KV_ReadProcessString( const char* pszStr, char* dest, int maxLength = INT_MAX )
 {
-	const char* ptr = pszStr;
 	// convert some symbols to special ones
+	size_t processLen = min(strlen( pszStr ), maxLength);
 
-	size_t sLen = min(strlen( pszStr ), maxLength);
-
-	char* temp = (char*)PPAlloc( sLen+10 ); // FIXME: extra symbols needs to be counted!!!
-	char* ptrTemp = temp;
-
+	const char* ptr = pszStr;
+	char* ptrTemp = dest;
 	do
 	{
 		if(*ptr == '\\')
@@ -76,13 +75,13 @@ static char* KV_ReadProcessString( const char* pszStr, int maxLength = INT_MAX )
 		else
 			*ptrTemp++ = *ptr;
 
-	}while(*ptr++ && (ptr - pszStr) < sLen);
+	}while(*ptr++ && (ptr - pszStr) < processLen);
 
 	// add nullptr
 	*ptrTemp++ = 0;
 
 	// copy string
-	return temp;
+	return ptrTemp - dest;
 }
 
 // section beginning / ending
@@ -1237,20 +1236,23 @@ KVSection* KV_ParseSectionV2(const char* pszBuffer, int bufferSize, const char* 
 				if (mode != MODE_OPEN_STRING_QUOTED)
 				{
 					const int stringLength = (int)(pData - firstLetter);
-					char* processedStr = KV_ReadProcessString(firstLetter, stringLength);
+
+					char* processedStringBuf = (char*)stackalloc(stringLength);
+					if (stringLength > 0)
+						KV_ReadProcessString(firstLetter, processedStringBuf, stringLength);
+					else
+						*processedStringBuf = 0;
 
 					// create section
 					if (!currentSection)
 					{
-						currentSection = sectionStack.back()->CreateSection(processedStr);
+						currentSection = sectionStack.back()->CreateSection(processedStringBuf);
 						currentSection->line = curLine;
 					}
 					else
 					{
-						currentSection->AddValue(processedStr);
+						currentSection->AddValue(processedStringBuf);
 					}
-
-					PPFree(processedStr);
 				}
 				break;
 			}
@@ -1477,24 +1479,22 @@ KVSection* KV_ParseSectionV3( const char* pszBuffer, int bufferSize, const char*
 						*endChar = '\0';
 
 						// pre-process string
-						char* valueString = KV_ReadProcessString(pFirstLetter);
+						char* processedStringBuf = (char*)stackalloc(nLen);
+						KV_ReadProcessString(pFirstLetter, processedStringBuf, nLen);
 						*endChar = oldChr;
 
 						if(valueArray)
 						{
 							// make it parsed if the type is different
 							KVPairValue* value = curpair->CreateValue();
-							value->SetFromString(valueString);
+							value->SetFromString(processedStringBuf);
 						}
 						else
 						{
 							// set or create a single value
 							KVPairValue* value = curpair->values.numElem() ? curpair->values[0] : curpair->CreateValue();
-							value->SetFromString(valueString);
+							value->SetFromString(processedStringBuf);
 						}
-
-						// free processed string
-						PPFree(valueString);
 
 						curpair->SetName(key);
 						pParseTo->keys.addUnique(curpair);
