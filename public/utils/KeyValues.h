@@ -272,6 +272,27 @@ private:
 // KEYVALUES API Functions
 //---------------------------------------------------------------------------------------------------------
 
+/*
+	KV parse token function callback
+		signature might be:
+			c  <string>	- current character and buffer offset
+			s+ <int>	- section depth increase
+			s- <int>	- section depth decrease
+			b			- break
+			t  <string>	- text token
+*/
+
+enum EKVTokenState
+{
+	KV_PARSE_ERROR = -1,
+	KV_PARSE_RESUME = 0,
+	KV_PARSE_SKIP,
+};
+
+using KVTokenFunc = EqFunction<EKVTokenState(int line, const char* sig, va_list arg)>;
+
+bool			KV_Parse(const char* buffer, int bufferSize, const char* fileName, const KVTokenFunc& tokenFunc);
+
 KVSection*		KV_LoadFromFile( const char* pszFileName, int nSearchFlags = -1, KVSection* pParseTo = nullptr);
 
 KVSection*		KV_ParseSection(const char* pszBuffer, int bufferSize, const char* pszFileName = nullptr, KVSection* pParseTo = nullptr, int nStartLine = 0);
