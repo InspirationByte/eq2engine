@@ -1,4 +1,4 @@
-def buildAsLibrary = project.hasProperty('BUILD_AS_LIBRARY');
+def buildAsLibrary = project.hasProperty('BUILD_AS_LIBRARY')
 def buildAsApplication = !buildAsLibrary
 if (buildAsApplication) {
     apply plugin: 'com.android.application'
@@ -9,7 +9,7 @@ else {
 
 def eqEnginePath = file('../../').absolutePath
 def applicationMkPath = eqEnginePath + '/project_androidndk/DriverSyndicate.Application.mk'
-def androidMkPath = eqEnginePath + '/project_androidndk/DriverSyndicate.wks.Android.mk';
+def androidMkPath = eqEnginePath + '/project_androidndk/DriverSyndicate.wks.Android.mk'
 
 android {
     signingConfigs {
@@ -20,14 +20,15 @@ android {
             keyPassword 'A1an1sAnarchy'
         }
     }
-    ndkVersion '21.4.7075529'
+    ndkVersion "21.4.7075529"
 
-    compileSdkVersion 26
+    compileSdkVersion 27
     defaultConfig {
         if (buildAsApplication) {
             applicationId "com.insbyte.driversyndicate"
         }
-        minSdkVersion 30
+        minSdkVersion 27
+        targetSdkVersion 27
         externalNativeBuild {
             ndkBuild {
                 arguments 'NDK_APPLICATION_MK:='+applicationMkPath,
@@ -38,21 +39,10 @@ android {
 
     buildTypes {
         retail {
-            signingConfig signingConfigs.retail
             externalNativeBuild {
                 ndkBuild {
                     // Premake configurations to build for - see the section about configuration and platform selection below.
                     arguments 'PREMAKE_ANDROIDNDK_CONFIGURATIONS:=Retail'
-                }
-            }
-        }
-
-        release_dbg {
-            debuggable true
-            externalNativeBuild {
-                ndkBuild {
-                    // Premake configurations to build for - see the section about configuration and platform selection below.
-                    arguments 'PREMAKE_ANDROIDNDK_CONFIGURATIONS:=Release'
                 }
             }
         }
@@ -62,7 +52,7 @@ android {
             externalNativeBuild {
                 ndkBuild {
                     // Premake configurations to build for - see the section about configuration and platform selection below.
-                    arguments 'PREMAKE_ANDROIDNDK_CONFIGURATIONS:=Debug'
+                    arguments 'PREMAKE_ANDROIDNDK_CONFIGURATIONS:=Release'
                 }
             }
         }
