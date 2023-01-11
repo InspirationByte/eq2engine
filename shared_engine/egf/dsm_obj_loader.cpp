@@ -221,6 +221,8 @@ bool LoadOBJ(dsmmodel_t* model, const char* filename)
 
 	int numComments = 0;
 
+	// NOTE: we always invert X axis on import and export
+
 	while (str = tok.next())
 	{
 		if(str[0] == '#')
@@ -233,7 +235,7 @@ bool LoadOBJ(dsmmodel_t* model, const char* filename)
 				if (check_tok && !stricmp(check_tok, "blender"))
 				{
 					gl_to_eq = true;
-					blend_to_eq = true;
+					//blend_to_eq = true;
 					//reverseNormals = true;
 				}
 				else
@@ -263,7 +265,7 @@ bool LoadOBJ(dsmmodel_t* model, const char* filename)
 				// parse vector3
 				Vector3D n;
 
-				n.x = readFloat(tok);
+				n.x = -readFloat(tok);
 				n.y = readFloat(tok);
 				n.z = readFloat(tok);
 
@@ -277,7 +279,7 @@ bool LoadOBJ(dsmmodel_t* model, const char* filename)
 				// parse vector3
 				Vector3D v;
 
-				v.x = readFloat( tok );
+				v.x = -readFloat( tok );
 				v.y = readFloat( tok );
 				v.z = readFloat( tok );
 
@@ -415,15 +417,21 @@ bool LoadOBJ(dsmmodel_t* model, const char* filename)
 			dsmvertex_t v0,v1,v2;
 			for(int v = 0; v < i-2; v++)
 			{
-				v0 = verts[0];
-				v1 = verts[v+1];
-				v2 = verts[v+2];
-
 				if(reverseNormals)
 				{
-					v0.normal *= -1.0f;
-					v1.normal *= -1.0f;
-					v2.normal *= -1.0f;
+					v2 = verts[0];
+					v1 = verts[v + 1];
+					v0 = verts[v + 2];
+
+					//v0.normal *= -1.0f;
+					//v1.normal *= -1.0f;
+					//v2.normal *= -1.0f;
+				}
+				else 
+				{
+					v0 = verts[0];
+					v1 = verts[v + 1];
+					v2 = verts[v + 2];
 				}
 
 				curgroup->verts.append(v0);
@@ -480,6 +488,8 @@ bool SaveOBJ(dsmmodel_t* model, const char* filename)
 		return false;
 	}
 
+	// NOTE: we always invert X axis on import and export
+
 	pFile->Print("# DSM_OBJ_LOADER.CPP OBJ FILE\n\n");
 
 	for(int i = 0; i < model->groups.numElem(); i++)
@@ -492,20 +502,20 @@ bool SaveOBJ(dsmmodel_t* model, const char* filename)
 		for(int j = 0; j < group->verts.numElem(); j++)
 		{
 			Vector3D v = group->verts[j].position;
-			pFile->Print("v %g %g %g\n", v.x, v.y, v.z);
+			pFile->Print("v %f %f %f\n", -v.x, v.y, v.z);
 		}
 
 		for(int j = 0; j < group->verts.numElem(); j++)
 		{
 			Vector2D t = group->verts[j].texcoord;
 			t.y = 1.0f - t.y;
-			pFile->Print("vt %g %g\n", t.x, t.y);
+			pFile->Print("vt %f %f\n", t.x, t.y);
 		}
 
 		for(int j = 0; j < group->verts.numElem(); j++)
 		{
 			Vector3D n = group->verts[j].normal;
-			pFile->Print("vn %g %g %g\n", n.x, n.y, n.z);
+			pFile->Print("vn %f %f %f\n", -n.x, n.y, n.z);
 		}
 
 		if (group->indices.numElem())
@@ -514,9 +524,9 @@ bool SaveOBJ(dsmmodel_t* model, const char* filename)
 		for(int j = 0; j < group->indices.numElem(); j+=3)
 		{
 			int indices[3];
-			indices[0] = group->indices[j] + 1;
+			indices[0] = group->indices[j+2] + 1;
 			indices[1] = group->indices[j+1] + 1;
-			indices[2] = group->indices[j+2] + 1;
+			indices[2] = group->indices[j] + 1;
 
 			pFile->Print("f %d/%d/%d %d/%d/%d %d/%d/%d\n",	indices[0], indices[0], indices[0],
 															indices[1], indices[1], indices[1],

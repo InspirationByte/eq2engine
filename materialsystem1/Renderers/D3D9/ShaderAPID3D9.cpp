@@ -39,8 +39,6 @@ extern CEqMutex	g_sapi_ProgressiveTextureMutex;
 static ConVar r_preloadShaderCache("r_preloadShaderCache", "1", nullptr, 0);
 static ConVar r_skipShaderCache("r_skipShaderCache", "0", "Shader debugging purposes", 0);
 
-bool InternalCreateRenderTarget(LPDIRECT3DDEVICE9 dev, CD3D9Texture *tex, int nFlags);
-
 // only needed for unmanaged textures
 #define DEVICE_SPIN_WAIT while(m_bDeviceAtReset){if(!m_bDeviceAtReset) break;}
 
