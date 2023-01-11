@@ -10,6 +10,9 @@
 #include "core/core_common.h"
 #include "core/IFileSystem.h"
 #include "core/cmd_pacifier.h"
+
+#include "utils/KeyValues.h"
+
 #include "DPKFileWriter.h"
 
 #define DPK_WRITE_BLOCK (8*1024*1024)
@@ -54,7 +57,47 @@ static void DPK_FixSlashes(EqString& str)
 	str.Assign(tempStr);
 }
 
-#ifndef PLAT_ANDROID
+static bool FileExists(const char* szPath)
+{
+#ifdef _WIN32
+	DWORD dwAttrib = GetFileAttributesA(szPath);
+	return (dwAttrib != INVALID_FILE_ATTRIBUTES && !(dwAttrib & FILE_ATTRIBUTE_DIRECTORY));
+#else
+	struct stat st;
+	if (stat(szPath, &st) == 0)
+		return !(st.st_mode & S_IFDIR);
+
+	return false;
+#endif // _WIN32
+}
+
+
+static ubyte* LoadFileBuffer(const char* filename, long* fileSize)
+{
+	FILE* file = fopen(filename, "rb");
+
+	if (!file)
+	{
+		MsgError("Can't open file '%s'\n", filename);
+		return nullptr;
+	}
+
+	fseek(file, 0, SEEK_END);
+	long filelen = ftell(file);
+	fseek(file, 0, SEEK_SET);
+
+	// allocate file in the hunk
+	ubyte* fileBuf = (ubyte*)PPAlloc(filelen);
+
+	fread(fileBuf, 1, filelen, file);
+	fclose(file);
+
+	*fileSize = filelen;
+
+	return fileBuf;
+}
+
+//---------------------------------------------
 
 CDPKFileWriter::CDPKFileWriter() 
 	: m_ice(0)
@@ -74,31 +117,6 @@ CDPKFileWriter::~CDPKFileWriter()
 		delete m_files[i];
 
 	m_files.clear();
-}
-
-ubyte* LoadFileBuffer(const char* filename, long* fileSize)
-{
-	FILE* file = fopen(filename, "rb");
-
-	if(!file)
-	{
-		MsgError("Can't open file '%s'\n",filename);
-		return nullptr;
-	}
-
-	fseek(file, 0, SEEK_END);
-	long filelen = ftell(file);
-	fseek(file, 0, SEEK_SET);
-
-	// allocate file in the hunk
-	ubyte* fileBuf = (ubyte*)PPAlloc(filelen);
-
-	fread(fileBuf, 1, filelen, file);
-	fclose(file);
-
-	*fileSize = filelen;
-
-	return fileBuf;
 }
 
 void CDPKFileWriter::SetCompression( int compression )
@@ -152,14 +170,6 @@ void CDPKFileWriter::SetMountPath( const char* path )
 
 	FixSlashes(m_mountPath);
 	xstrlwr( m_mountPath );
-}
-
-static bool FileExists( const char* szPath )
-{
-#ifdef _WIN32
-	DWORD dwAttrib = GetFileAttributesA(szPath);
-	return (dwAttrib != INVALID_FILE_ATTRIBUTES && !(dwAttrib & FILE_ATTRIBUTE_DIRECTORY));
-#endif // _WIN32
 }
 
 bool CDPKFileWriter::AddFile( const char* fileName, const char* targetFilename)
@@ -220,6 +230,8 @@ int CDPKFileWriter::AddDirectory(const char* wildcard, const char* targetDir, bo
 	}
 
 	FindClose(hFile);
+#else
+	static_assert("need implementation of CDPKFileWriter::AddDirectory")
 #endif // _WIN32
 
 	return fileCount;
@@ -230,11 +242,27 @@ void CDPKFileWriter::AddIgnoreCompressionExtension( const char* extension )
 	m_ignoreCompressionExt.append(extension);
 }
 
+void CDPKFileWriter::AddKeyValueFileExtension(const char* extension)
+{
+	m_keyValueFileExt.append(extension);
+}
+
 bool CDPKFileWriter::CheckCompressionIgnored(const char* extension) const
 {
 	for(int i = 0; i < m_ignoreCompressionExt.numElem(); i++)
 	{
-		if(!stricmp(m_ignoreCompressionExt[i].ToCString(), extension))
+		if(!stricmp(m_ignoreCompressionExt[i], extension))
+			return true;
+	}
+
+	return false;
+}
+
+bool CDPKFileWriter::CheckIsKeyValueFile(const char* extension) const
+{
+	for (int i = 0; i < m_keyValueFileExt.numElem(); i++)
+	{
+		if (!stricmp(m_keyValueFileExt[i], extension))
 			return true;
 	}
 
@@ -289,15 +317,38 @@ float CDPKFileWriter::ProcessFile(FILE* output, dpkfilewinfo_t* info)
 {
 	dpkfileinfo_t& fInfo = info->pkinfo;
 
-	const bool compressionEnabled = (m_compressionLevel > 0) && !CheckCompressionIgnored(info->fileName.Path_Extract_Ext().ToCString());
+	const EqString fileExt = info->fileName.Path_Extract_Ext();
+	const bool compressionEnabled = (m_compressionLevel > 0) && !CheckCompressionIgnored(fileExt);
 
 	long _fileSize = 0;
-	ubyte* _filedata = LoadFileBuffer(info->fileName.ToCString(), &_fileSize);
+	ubyte* _filedata = LoadFileBuffer(info->fileName, &_fileSize);
 
 	if (!_filedata)
 	{
 		MsgError("Failed to open file '%s' while adding to archive\n", info->fileName.ToCString());
 		return 0.0f;
+	}
+
+	if(CheckIsKeyValueFile(fileExt))
+	{
+		// TODO: convert key-values file and store it (maybe uncompressed)
+		KVSection* sectionFile = KV_ParseSection((char*)_filedata, _fileSize, info->fileName);
+		if (sectionFile)
+		{
+			// replace old file data
+			PPFree(_filedata);
+
+			ubyte* newData = (ubyte*)PPAlloc(_fileSize * 32);
+			CMemoryStream outStream(newData, VS_OPEN_WRITE, _fileSize * 32);
+
+			KV_WriteToStreamBinary(&outStream, sectionFile);
+			_filedata = newData;
+			_fileSize = outStream.Tell();
+
+			delete sectionFile;
+
+			MsgInfo("Converted key-values file to binary: %s\n", info->fileName.ToCString());
+		}
 	}
 
 	// set the size and offset in the file bigfile
@@ -479,5 +530,3 @@ bool CDPKFileWriter::SavePackage()
 
 	return true;
 }
-
-#endif // !PLAT_ANDROID

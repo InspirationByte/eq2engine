@@ -38,6 +38,10 @@ static void CookPackageTarget(const char* targetName)
 		outputFileName.Append(".epk");
 
 	CDPKFileWriter dpkWriter;
+	dpkWriter.AddKeyValueFileExtension("mat");
+	dpkWriter.AddKeyValueFileExtension("res");
+	dpkWriter.AddKeyValueFileExtension("txt");
+	dpkWriter.AddKeyValueFileExtension("def");
 
 	{
 		// load target info

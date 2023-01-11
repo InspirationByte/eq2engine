@@ -31,6 +31,7 @@ public:
 	int						AddDirectory(const char* wildcard, const char* targetDir, bool bRecurse );
 
 	void					AddIgnoreCompressionExtension( const char* extension );
+	void					AddKeyValueFileExtension(const char* extension);
 
 	bool					BuildAndSave( const char* fileNamePrefix );
 
@@ -42,6 +43,7 @@ protected:
 	bool					SavePackage();
 
 	bool					CheckCompressionIgnored(const char* extension) const;
+	bool					CheckIsKeyValueFile(const char* extension) const;
 
 	FILE*					m_file;
 	dpkheader_t				m_header;
@@ -50,6 +52,7 @@ protected:
 
 	Array<dpkfilewinfo_t*>	m_files{ PP_SL };
 	Array<EqString>			m_ignoreCompressionExt{ PP_SL };
+	Array<EqString>			m_keyValueFileExt{ PP_SL };
 
 	int						m_compressionLevel;
 	int						m_encryption;

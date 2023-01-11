@@ -12,7 +12,7 @@
 #include "DPKFileReader.h"
 
 // Fixes slashes in the directory name
-void DPK_RebuildFilePath(const char* str, char* newstr)
+static void DPK_RebuildFilePath(const char* str, char* newstr)
 {
 	char* pnewstr = newstr;
 	char cprev = 0;
