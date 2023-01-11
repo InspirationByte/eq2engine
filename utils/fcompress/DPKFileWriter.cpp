@@ -321,34 +321,39 @@ float CDPKFileWriter::ProcessFile(FILE* output, dpkfilewinfo_t* info)
 	const bool compressionEnabled = (m_compressionLevel > 0) && !CheckCompressionIgnored(fileExt);
 
 	long _fileSize = 0;
-	ubyte* _filedata = LoadFileBuffer(info->fileName, &_fileSize);
+	ubyte* _filedata = nullptr;
+
+	bool loadRawFile = true;
+	CMemoryStream kvTempStream;
+
+	if(CheckIsKeyValueFile(fileExt))
+	{
+		// TODO: convert key-values file and store it (maybe uncompressed)
+		KVSection* sectionFile = KV_LoadFromFile(info->fileName, SP_ROOT);
+		if (sectionFile)
+		{
+			kvTempStream.Open(nullptr, VS_OPEN_WRITE, 16 * 1024);
+
+			KV_WriteToStreamBinary(&kvTempStream, sectionFile);
+			_filedata = kvTempStream.GetBasePointer();
+			_fileSize = kvTempStream.Tell();
+
+			delete sectionFile;
+
+			MsgInfo("Converted key-values file to binary: %s\n", info->fileName.ToCString());
+			loadRawFile = false;
+		}
+	}
+	
+	if(loadRawFile)
+	{
+		_filedata = LoadFileBuffer(info->fileName, &_fileSize);
+	}
 
 	if (!_filedata)
 	{
 		MsgError("Failed to open file '%s' while adding to archive\n", info->fileName.ToCString());
 		return 0.0f;
-	}
-
-	if(CheckIsKeyValueFile(fileExt))
-	{
-		// TODO: convert key-values file and store it (maybe uncompressed)
-		KVSection* sectionFile = KV_ParseSection((char*)_filedata, _fileSize, info->fileName);
-		if (sectionFile)
-		{
-			// replace old file data
-			PPFree(_filedata);
-
-			ubyte* newData = (ubyte*)PPAlloc(_fileSize * 32);
-			CMemoryStream outStream(newData, VS_OPEN_WRITE, _fileSize * 32);
-
-			KV_WriteToStreamBinary(&outStream, sectionFile);
-			_filedata = newData;
-			_fileSize = outStream.Tell();
-
-			delete sectionFile;
-
-			MsgInfo("Converted key-values file to binary: %s\n", info->fileName.ToCString());
-		}
 	}
 
 	// set the size and offset in the file bigfile
@@ -462,7 +467,8 @@ float CDPKFileWriter::ProcessFile(FILE* output, dpkfilewinfo_t* info)
 	}
 
 	// we're done with this file
-	PPFree(_filedata);
+	if(kvTempStream.GetBasePointer() != _filedata)
+		PPFree(_filedata);
 
 	return sizeReduction;
 }
