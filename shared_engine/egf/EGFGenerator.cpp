@@ -73,6 +73,9 @@ int CEGFGenerator::FindModelIndexByName(const char* pszName)
 CEGFGenerator::GenModel_t* CEGFGenerator::FindModelByName(const char* pszName)
 {
 	const int foundIdx = FindModelIndexByName(pszName);
+	if (foundIdx == -1)
+		return nullptr;
+
 	return &m_modelrefs[foundIdx];
 }
 
