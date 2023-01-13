@@ -514,6 +514,8 @@ void CEqPhysics::DestroyBody( CEqRigidBody* body )
 
 	if(RemoveFromWorld(body))
 		delete body;
+	else
+		ASSERT_FAIL("CEqPhysics::DestroyBody - incorrect object passed\n");
 }
 
 void CEqPhysics::AddGhostObject( CEqCollisionObject* object )
@@ -567,8 +569,12 @@ void CEqPhysics::DestroyGhostObject( CEqCollisionObject* object )
 		}
 	}
 
-	m_ghostObjects.fastRemove(object);
-	delete object;
+	if(m_ghostObjects.fastRemove(object))
+	{
+		delete object;
+	}
+	else
+		ASSERT_FAIL("CEqPhysics::DestroyGhostObject - incorrect object passed\n");
 }
 
 void CEqPhysics::AddStaticObject( CEqCollisionObject* object )
@@ -595,7 +601,7 @@ void CEqPhysics::RemoveStaticObject( CEqCollisionObject* object )
 			m_grid->RemoveStaticObjectFromGrid(object);
 	}
 	else
-		MsgError("CEqPhysics::RemoveStaticObject - INVALID\n");
+		ASSERT_FAIL("CEqPhysics::RemoveStaticObject - incorrect object passed\n");
 }
 
 void CEqPhysics::DestroyStaticObject( CEqCollisionObject* object )
@@ -613,7 +619,7 @@ void CEqPhysics::DestroyStaticObject( CEqCollisionObject* object )
 		delete object;
 	}
 	else
-		MsgError("CEqPhysics::DestroyStaticObject - INVALID\n");
+		ASSERT_FAIL("CEqPhysics::DestroyStaticObject - incorrect object passed\n");
 }
 
 bool CEqPhysics::IsValidStaticObject( CEqCollisionObject* obj ) const

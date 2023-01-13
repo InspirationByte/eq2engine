@@ -13,8 +13,7 @@ struct CollisionPairData_t;
 class IEqPhysCallback
 {
 public:
-						IEqPhysCallback(CEqCollisionObject* object);
-	virtual				~IEqPhysCallback();
+	virtual				~IEqPhysCallback() = default;
 
 	virtual void		OnStartMove() = 0;
 	virtual void		OnStopMove() = 0;
@@ -28,6 +27,10 @@ public:
 	// called after collision processed and applied impulses
 	virtual void		OnCollide(const CollisionPairData_t& pair) = 0;
 
-	CEqCollisionObject* m_object;
+protected:
+	void				Attach(CEqCollisionObject* object);
+	void				Detach();
+
+	CEqCollisionObject* m_object{ nullptr };
 };
 

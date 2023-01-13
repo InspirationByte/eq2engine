@@ -9,15 +9,17 @@
 #include "eqCollision_Callback.h"
 #include "eqCollision_Object.h"
 
-IEqPhysCallback::IEqPhysCallback(CEqCollisionObject* object)
-	: m_object(object)
+void IEqPhysCallback::Attach(CEqCollisionObject* object)
 {
-	ASSERT(m_object);
-	m_object->m_callbacks = this;
+	Detach();
+	m_object = object;
+	if(object)
+		object->m_callbacks = this;
 }
 
-IEqPhysCallback::~IEqPhysCallback()
+void IEqPhysCallback::Detach()
 {
 	if (m_object)
 		m_object->m_callbacks = nullptr;
+	m_object = nullptr;
 }
