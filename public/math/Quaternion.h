@@ -39,13 +39,13 @@ struct Quaternion
 	{
 	}
 
-	Quaternion(const TMat3<float> &m);
-	Quaternion(const TVec4D<float> &v);
+	Quaternion(const Matrix3x3& m);
+	Quaternion(const Vector4D& v);
 	Quaternion(const float a, const TVec3D<float>& axis);
 
 	operator float *() const { return (float *) &x; }
 
-	TVec4D<float>& asVector4D() const;
+	Vector4D& asVector4D() const;
 
 	void operator += (const Quaternion &v);
 	void operator -= (const Quaternion &v);
@@ -65,7 +65,7 @@ Quaternion operator * (const Quaternion &u, const Quaternion &v);
 Quaternion operator * (float scalar, const Quaternion &v);
 Quaternion operator * (const Quaternion &v, const float scalar);
 Quaternion operator / (const Quaternion &v, const float dividend);
-Quaternion operator * (const TVec3D<float>& v, const Quaternion &q);
+Quaternion operator * (const TVec3D<float>& v, const Quaternion& q);
 Quaternion operator ! (const Quaternion &q);
 
 // ------------------------------------------------------------------------------
@@ -81,7 +81,7 @@ Quaternion		inverse(const Quaternion& q);
 float			length(const Quaternion &q);
 
 // returns euler angles of quaternion
-TVec3D<float>	eulersXYZ(const Quaternion &q);
+Vector3D		eulersXYZ(const Quaternion &q);
 
 // stores euler angles of quaternion to res
 void			quaternionToEulers(const Quaternion& q, EQuatRotationSequence seq, float res[3]);
@@ -90,13 +90,13 @@ void			quaternionToEulers(const Quaternion& q, EQuatRotationSequence seq, float 
 void			renormalize(Quaternion& q);
 
 // axis angle of quaternion
-void			axisAngle(const Quaternion& q, TVec3D<float> &axis, float &angle);
+void			axisAngle(const Quaternion& q, Vector3D&axis, float &angle);
 
 // compares quaternion with epsilon
 bool			compare_epsilon(const Quaternion &u, const Quaternion &v, const float eps);
 
 // vector rotation
-TVec3D<float>	rotateVector( const TVec3D<float>& p, const Quaternion& q );
+Vector3D		rotateVector( const Vector3D& p, const Quaternion& q );
 
 // quaternion identity
 Quaternion		identity();

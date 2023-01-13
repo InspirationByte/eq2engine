@@ -11,8 +11,6 @@
 #pragma warning(push)
 #pragma warning(disable:4244)
 
-constexpr const double Q_D_EPS = 0.000001;
-
 Quaternion::Quaternion(const float Wx, const float Wy)
 {
 	float cx,sx,cy,sy;
@@ -48,8 +46,6 @@ Quaternion::Quaternion(const float Wx, const float Wy, const float Wz)
 	normalize();
 }
 
-#define TRACE_QZERO_TOLERANCE 0.1f
-
 Quaternion::Quaternion(const Matrix3x3 &matrix)
 {
 
@@ -70,6 +66,8 @@ Quaternion::Quaternion(const Matrix3x3 &matrix)
     }
     else
     {
+		constexpr const float TRACE_QZERO_TOLERANCE = 0.1f;
+
         int biggest;
         enum { A, E, I };
         if (matrix(0,0) > matrix(1,1))
@@ -251,7 +249,7 @@ void Quaternion::operator /= (const float d)
 
 void Quaternion::normalize()
 {
-	float slen = w * w + x * x + y * y + z * z;
+	const float slen = w * w + x * x + y * y + z * z;
 
 	if(slen == 1.0f)
 		return;
@@ -262,7 +260,7 @@ void Quaternion::normalize()
 		return;
 	}
 
-	float invLen = 1.0f / sqrtf(slen);
+	const float invLen = 1.0f / sqrtf(slen);
 
 	x *= invLen;
 	y *= invLen;
@@ -280,9 +278,9 @@ void Quaternion::fastNormalize()
 	w *= invLen;
 }
 
-TVec4D<float>& Quaternion::asVector4D() const
+Vector4D& Quaternion::asVector4D() const
 {
-    return *(TVec4D<float>*)this;
+    return *(Vector4D*)this;
 }
 
 Quaternion operator ! (const Quaternion &q)
@@ -352,28 +350,28 @@ Quaternion slerp(const Quaternion &q0, const Quaternion &q1, const float t)
 
 	if (fabs(1 - cosTheta) < F_EPS)
 	{
-		return q0 * (1 - t) + q1 * t;
+		return q0 * (1.0 - t) + q1 * t;
 	}
 	else
 	{
 		double theta = acos(cosTheta);
-		return (q0 * sin((1 - t) * theta) + q1 * sin(t * theta)) / sin(theta);
+		return (q0 * sin((1.0 - t) * theta) + q1 * sin(t * theta)) / sin(theta);
 	}
 }
 
 
 Quaternion scerp(const Quaternion &q0, const Quaternion &q1, const Quaternion &q2, const Quaternion &q3, const float t)
 {
-	return slerp(slerp(q1, q2, t), slerp(q0, q3, t), 2 * t * (1 - t));
+	return slerp(slerp(q1, q2, t), slerp(q0, q3, t), 2.0 * t * (1.0 - t));
 }
 
 // inverses quaternion
 Quaternion inverse(const Quaternion& q)
 {
-	const float r_len = 1.0f / length(q);
+	const float len = 1.0f / length(q);
 	const Quaternion cq = !q; // find conjugate
 
-	return Quaternion(cq.w / r_len, cq.x / r_len, cq.y / r_len,cq.z / r_len);
+	return Quaternion(cq.w * len, cq.x * len, cq.y * len, cq.z * len);
 }			
 // ------------------------------------------------------------------------------
 
@@ -468,6 +466,8 @@ void quaternionToEulers(const Quaternion& q, EQuatRotationSequence seq, float re
 
 Vector3D eulersXYZ(const Quaternion &q)
 {
+	constexpr const double Q_D_EPS = 0.000001;
+
 	const double sqw = q.w*q.w;
 	const double sqx = q.x*q.x;
 	const double sqy = q.y*q.y;
@@ -519,17 +519,17 @@ bool compare_epsilon(const Quaternion &u, const Quaternion &v, const float eps)
 
 void renormalize(Quaternion& q)
 {
-    float	len = 1 - q.x*q.x - q.y*q.y - q.z*q.z;
+	const float len = 1.0f - q.x*q.x - q.y*q.y - q.z*q.z;
 
-    if ( len < F_EPS )
-        q.w = 0;
-    else
-        q.w = -sqrt ( len );
+	if ( len < F_EPS )
+		q.w = 0;
+	else
+		q.w = -sqrtf( len );
 }
 
-void axisAngle(const Quaternion& q, TVec3D<float> &axis, float &angle)
+void axisAngle(const Quaternion& q, Vector3D &axis, float &angle)
 {
-	float scale = sqrtf(q.x*q.x + q.y*q.y + q.z*q.z);
+	const float scale = sqrtf(q.x*q.x + q.y*q.y + q.z*q.z);
 
 	if (scale == 0.0f || q.w > 1.0f || q.w < -1.0f)
 	{
@@ -540,7 +540,7 @@ void axisAngle(const Quaternion& q, TVec3D<float> &axis, float &angle)
 	}
 	else
 	{
-		float invscale = 1.0f / scale;
+		const float invscale = 1.0f / scale;
 		angle = 2.0f * acosf(q.w);
 		axis.x = q.x * invscale;
 		axis.y = q.y * invscale;
@@ -549,7 +549,7 @@ void axisAngle(const Quaternion& q, TVec3D<float> &axis, float &angle)
 }
 
 // vector rotation
-Vector3D rotateVector( const TVec3D<float>& p, const Quaternion& q )
+Vector3D rotateVector( const Vector3D& p, const Quaternion& q )
 {
     Quaternion temp = q * Quaternion( 0.0f, p.x, p.y, p.z );
     return ( temp * !q ).asVector4D().xyz();
