@@ -16,6 +16,9 @@ public:
 						IEqPhysCallback(CEqCollisionObject* object);
 	virtual				~IEqPhysCallback();
 
+	virtual void		OnStartMove() = 0;
+	virtual void		OnStopMove() = 0;
+
 	virtual void		PreSimulate(float fDt) = 0;
 	virtual void		PostSimulate(float fDt) = 0;
 

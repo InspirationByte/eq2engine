@@ -456,6 +456,9 @@ void CEqPhysics::AddToMoveableList( CEqRigidBody* body )
 
 	CHECK_ALREADY_IN_LIST(m_moveable, body);
 	m_moveable.append( body );
+
+	if(body->m_callbacks)
+		body->m_callbacks->OnStartMove();
 }
 
 void CEqPhysics::AddToWorld( CEqRigidBody* body, bool moveable )
@@ -496,8 +499,10 @@ bool CEqPhysics::RemoveFromWorld( CEqRigidBody* body )
 	{
 		body->m_flags &= ~BODY_MOVEABLE;
 		m_moveable.fastRemove(body);
+
+		if (body->m_callbacks)
+			body->m_callbacks->OnStopMove();
 	}
-		
 
 	return result;
 }

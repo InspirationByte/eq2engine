@@ -9,7 +9,8 @@
 #include "eqCollision_Callback.h"
 #include "eqCollision_Object.h"
 
-IEqPhysCallback::IEqPhysCallback(CEqCollisionObject* object) : m_object(object)
+IEqPhysCallback::IEqPhysCallback(CEqCollisionObject* object)
+	: m_object(object)
 {
 	ASSERT(m_object);
 	m_object->m_callbacks = this;

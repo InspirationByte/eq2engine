@@ -170,13 +170,13 @@ void CEqRigidBody::Freeze()
 	m_flags |= (BODY_FROZEN | BODY_FORCE_FREEZE);
 }
 
-bool CEqRigidBody::IsFrozen()
+bool CEqRigidBody::IsFrozen() const
 {
 	int flags = m_flags;
 	return flags & (BODY_FROZEN | BODY_FORCE_FREEZE);
 }
 
-bool CEqRigidBody::IsCanIntegrate(bool checkIgnore)
+bool CEqRigidBody::IsCanIntegrate(bool checkIgnore) const
 {
 	if(m_frameTimeAccumulator == 0.0f || (checkIgnore == m_minFrameTimeIgnoreMotion))
 		return true;
@@ -193,14 +193,19 @@ void CEqRigidBody::SetMinFrameTime( float time, bool ignoreMotion )
 	m_minFrameTimeIgnoreMotion = ignoreMotion;
 }
 
-float CEqRigidBody::GetMinFrametime()
+float CEqRigidBody::GetMinFrametime() const
 {
 	return m_minFrameTime;
 }
 
-float CEqRigidBody::GetLastFrameTime()
+float CEqRigidBody::GetLastFrameTime() const
 {
 	return m_lastFrameTime;
+}
+
+float CEqRigidBody::GetAccumDeltaTime() const
+{
+	return m_frameTimeAccumulator;
 }
 
 void CEqRigidBody::Integrate(float delta)
@@ -493,6 +498,16 @@ void CEqRigidBody::SetOrientation(const Quaternion& orient)
 	m_flags |= COLLOBJ_TRANSFORM_DIRTY;
 
 	UpdateBoundingBoxTransform();
+}
+
+const FVector3D& CEqRigidBody::GetPrevPosition() const
+{
+	return m_prevPosition;
+}
+
+const Quaternion& CEqRigidBody::GetPrevOrientation() const
+{
+	return m_prevOrientation;
 }
 
 //--------------------

@@ -126,6 +126,9 @@ public:
 	void					SetPosition(const FVector3D& position);										///< sets new position
 	void					SetOrientation(const Quaternion& orient);									///< sets new orientation and updates inertia tensor
 
+	const FVector3D&		GetPrevPosition() const;													///< returns last frame body position
+	const Quaternion&		GetPrevOrientation() const;													///< returns last frame body Quaternion orientation
+
 	void					SetCenterOfMass(const FVector3D& center);									///< sets new center of mass
 	const FVector3D&		GetCenterOfMass() const;													///< returns body center of mass
 
@@ -149,12 +152,13 @@ public:
 	void					TryWake( bool velocityCheck = true );										///< tries to wake the body up
 	void					Wake();																		///< unfreezes the body even if it was forced to freeze
 	void					Freeze();																	///< force freezes body and external powers will not wake it up
-	bool					IsFrozen();																	///< indicates that body has been frozen (forced or timed out)
+	bool					IsFrozen() const;															///< indicates that body has been frozen (forced or timed out)
 
 	void					SetMinFrameTime( float time, bool ignoreMotion = true );					///< sets minimal frame time for collision detections
-	float					GetMinFrametime();
-	float					GetLastFrameTime();															///< returns last frame time (used if min frame time set)
-	bool					IsCanIntegrate( bool checkIgnore = false);
+	float					GetMinFrametime() const;
+	float					GetLastFrameTime() const;													///< returns last frame time (used if min frame time set)
+	float					GetAccumDeltaTime() const;
+	bool					IsCanIntegrate( bool checkIgnore = false) const;
 
 	void					Integrate( float time );													///< integrates velocities on body and stores position
 	void					Update( float time );														///< updates body position
