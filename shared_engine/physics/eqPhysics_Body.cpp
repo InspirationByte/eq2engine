@@ -688,10 +688,10 @@ float CEqRigidBody::ApplyImpulseResponseTo(ContactPair_t& pair, float error_corr
 
 	// check velocity from opposite object to add denominator
 	// if object is frozen
-	if(bodyADynamic && (!forceFrozenA || forceFrozenA && lengthSqr(relVelB) > 3.0f)) // TODO: unfreeze activation variable
+	if(bodyADynamic && (!forceFrozenA /* || forceFrozenA && lengthSqr(relVelB) > 3.0f*/)) // TODO: unfreeze activation variable
 		denominator += ((CEqRigidBody*)bodyA)->ComputeImpulseDenominator(contactRelativePosA, contactNormal);
 
-	if(!forceFrozenB || forceFrozenB && lengthSqr(relVelA) > 3.0f) // TODO: unfreeze activation variable
+	if(!forceFrozenB /* || forceFrozenB && lengthSqr(relVelA) > 3.0f*/) // TODO: unfreeze activation variable
 		denominator += bodyB->ComputeImpulseDenominator(contactRelativePosB, contactNormal);
 
 	if (denominator < 0.0000001)

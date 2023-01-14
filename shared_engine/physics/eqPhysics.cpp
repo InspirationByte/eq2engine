@@ -1034,8 +1034,8 @@ void CEqPhysics::IntegrateSingle(CEqRigidBody* body)
 	// move object
 	body->Integrate( m_fDt );
 
-	bool bodyFrozen = body->IsFrozen();
-	bool forceSetCell = !oldCell && bodyFrozen;
+	const bool bodyFrozen = body->IsFrozen();
+	const bool forceSetCell = !oldCell && bodyFrozen;
 
 	if(!bodyFrozen && body->IsCanIntegrate(true) || forceSetCell)
 	{
@@ -1150,9 +1150,6 @@ void CEqPhysics::ProcessContactPair(ContactPair_t& pair)
 		if (!(pair.flags & COLLPAIRFLAG_OBJECTB_NO_RESPONSE) && !(bodyAFlags & COLLOBJ_DISABLE_RESPONSE) && pair.depth > 0)
 		{
 			impactVelocity = fabs(dot(pair.normal, bodyB->GetVelocityAtWorldPoint(pair.position)));
-
-			if (impactVelocity < 0)
-				impactVelocity = 0.0f;
 
 			// apply response
 			pair.normal *= -1.0f;
