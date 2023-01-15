@@ -42,6 +42,7 @@ enum EBodyFlags
 	//---------------
 	// special flags
 
+	// appears in moveable list
 	BODY_MOVEABLE				= (1 << 30),
 };
 

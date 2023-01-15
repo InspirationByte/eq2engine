@@ -75,6 +75,7 @@ public:
 	const  eqPhysSurfParam_t*		GetSurfaceParamByID(int id) const;
 
 	void							AddToMoveableList( CEqRigidBody* body );			///< adds object to moveable list
+	void							RemoveFromMoveableList( CEqRigidBody* body );
 
 	void							AddToWorld( CEqRigidBody* body, bool moveable = true );	///< adds to processing
 	bool							RemoveFromWorld( CEqRigidBody* body );				///< removes body from world, not deleting

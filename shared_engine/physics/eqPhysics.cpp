@@ -461,6 +461,18 @@ void CEqPhysics::AddToMoveableList( CEqRigidBody* body )
 		body->m_callbacks->OnStartMove();
 }
 
+void CEqPhysics::RemoveFromMoveableList(CEqRigidBody* body)
+{
+	if (!(body->m_flags & BODY_MOVEABLE))
+		return;
+
+	body->m_flags &= ~BODY_MOVEABLE;
+	m_moveable.fastRemove(body);
+
+	if (body->m_callbacks)
+		body->m_callbacks->OnStopMove();
+}
+
 void CEqPhysics::AddToWorld( CEqRigidBody* body, bool moveable )
 {
 	if(!body)
@@ -496,13 +508,7 @@ bool CEqPhysics::RemoveFromWorld( CEqRigidBody* body )
 	bool result = m_dynObjects.fastRemove(body);
 
 	if (result)
-	{
-		body->m_flags &= ~BODY_MOVEABLE;
-		m_moveable.fastRemove(body);
-
-		if (body->m_callbacks)
-			body->m_callbacks->OnStopMove();
-	}
+		RemoveFromMoveableList(body);
 
 	return result;
 }
