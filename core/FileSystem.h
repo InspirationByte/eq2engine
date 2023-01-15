@@ -142,10 +142,10 @@ protected:
 
 	EqString					GetSearchPath(SearchPath_e search, int directoryId = -1) const;
 
-	// This actually opens file
-    IFile*						GetFileHandle(const char* file_name_to_check,const char* options, int searchFlags );
-
 private:
+
+	using SPWalkFunc = EqFunction<bool(const EqString& filePath, SearchPath_e searchPath, int spFlags, bool writePath)>;
+	bool						WalkOverSearchPaths(int searchFlags, const char* fileName, const SPWalkFunc& func) const;
 
 	EqString					m_basePath;			// base prepended path
     EqString					m_dataDir;			// Used to load engine data
@@ -161,14 +161,14 @@ private:
 	Array<SearchPath_t>				m_directories{ PP_SL };		// mod data, for fall back
 
     // Packages currently loaded
-    Array<CBasePackageFileReader*>		m_packages{ PP_SL };
-    Array<IFile*>						m_openFiles{ PP_SL };
-	Array<DKFINDDATA*>					m_findDatas{ PP_SL };
-	Array<DKMODULE*>					m_modules{ PP_SL };
+    Array<CBasePackageFileReader*>	m_packages{ PP_SL };
+    Array<IFile*>					m_openFiles{ PP_SL };
+	Array<DKFINDDATA*>				m_findDatas{ PP_SL };
+	Array<DKMODULE*>				m_modules{ PP_SL };
 
-    bool								m_editorMode;
-	bool								m_isInit;
+    bool							m_editorMode;
+	bool							m_isInit;
 
-	Threading::CEqMutex					m_FSMutex;
+	Threading::CEqMutex				m_FSMutex;
 };
 

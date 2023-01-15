@@ -364,7 +364,52 @@ void CFileSystem::SetBasePath(const char* path)
 
 IFile* CFileSystem::Open(const char* filename,const char* options, int searchFlags/* = -1*/ )
 {
-    return GetFileHandle(filename,options,searchFlags);
+	ASSERT_MSG(filename, "Must specify filename");
+	ASSERT_MSG(options, "Must specify options");
+
+	const bool isWrite = (strchr(options, 'w') || strchr(options, 'a') || strchr(options, '+'));
+
+	IFile* fileHandle = nullptr;
+	auto walkFileFunc = [&](EqString filePath, SearchPath_e searchPath, int spFlags, bool writePath) -> bool
+	{
+		if (isWrite && !writePath)
+			return false;
+
+		FILE* directFile = fopen(filePath, options);
+		if (directFile)
+		{
+			fileHandle = PPNew CFile(directFile);
+			return true;
+		}
+
+		if (!isWrite)
+			return false;
+
+		// If failed to load directly, load it from package, in backward order
+		for (int j = m_packages.numElem() - 1; j >= 0; j--)
+		{
+			CBasePackageFileReader* pPackageReader = m_packages[j];
+
+			if (!(spFlags & pPackageReader->GetSearchPath()))
+				continue;
+
+			fileHandle = pPackageReader->Open(filePath, options);
+			if (fileHandle)
+				return true;
+		}
+
+		return false;
+	};
+
+	WalkOverSearchPaths(searchFlags, filename, walkFileFunc);
+
+	if (fileHandle)
+	{
+		CScopedMutex m(m_FSMutex);
+		m_openFiles.append(fileHandle);
+	}
+
+	return fileHandle;
 }
 
 void CFileSystem::Close( IFile* fp )
@@ -502,105 +547,27 @@ bool CFileSystem::FileCopy(const char* filename, const char* dest_file, bool ove
 
 bool CFileSystem::FileExist(const char* filename, int searchFlags) const
 {
-    int flags = searchFlags;
-    if (flags == -1)
-        flags |= SP_MOD | SP_DATA | SP_ROOT;
-
-	const bool isAbsolutePath = UTIL_IsAbsolutePath(filename);
-
-	if (isAbsolutePath)
+	auto walkFileFunc = [&](EqString filePath, SearchPath_e searchPath, int spFlags, bool writePath) -> bool
 	{
-		flags = SP_ROOT;
-	}
-
-	EqString tmp_path;
-
-	EqString basePath = m_basePath;
-	if(basePath.Length() > 0)
-		basePath.Append( CORRECT_PATH_SEPARATOR );
-
-    //First we checking mod directory
-    if (flags & SP_MOD)
-    {
-		for(int i = 0; i < m_directories.numElem(); i++)
-		{
-			CombinePath(tmp_path, 3, basePath.ToCString(), m_directories[i].path.ToCString(), filename);
-			tmp_path.Path_FixSlashes();
-
-			if (access(tmp_path, F_OK ) != -1)
-				return true;
-
-			// base path is not used when dealing with package files
-			CombinePath(tmp_path, 2, m_directories[i].path.ToCString(), filename);
-			tmp_path.Path_FixSlashes();
-
-			// If failed to load directly, load it from package, in backward order
-			for (int j = m_packages.numElem() - 1; j >= 0; j--)
-			{
-				CBasePackageFileReader* pPackageReader = m_packages[j];
-
-				if ((flags & pPackageReader->GetSearchPath()) && pPackageReader->FileExists(tmp_path))
-					return true;
-			}
-		}
-    }
-
-    //Then we checking data directory
-    if (flags & SP_DATA)
-    {
-		CombinePath(tmp_path, 3, basePath.ToCString(), m_dataDir.ToCString(), filename);
-		tmp_path.Path_FixSlashes();
-
-		if (access(tmp_path, F_OK ) != -1)
+		if (access(filePath, F_OK) != -1)
 			return true;
-
-		// base path is not used when dealing with package files
-		CombinePath(tmp_path, 2, m_dataDir.ToCString(), filename);
-		tmp_path.Path_FixSlashes();
 
 		// If failed to load directly, load it from package, in backward order
 		for (int j = m_packages.numElem() - 1; j >= 0; j--)
 		{
 			CBasePackageFileReader* pPackageReader = m_packages[j];
 
-			if ((flags & pPackageReader->GetSearchPath()) && pPackageReader->FileExists(tmp_path))
+			if (!(spFlags & pPackageReader->GetSearchPath()))
+				continue;
+
+			if (pPackageReader->FileExists(filePath))
 				return true;
 		}
-    }
 
-    // And checking root.
-    // not adding basepath to this
-    if (flags & SP_ROOT)
-    {
-		// check
-		if(filename[0] != CORRECT_PATH_SEPARATOR && !(isalpha(filename[0]) && filename[1] == ':'))
-			CombinePath(tmp_path, 2, basePath.ToCString(), filename);
-		else
-			tmp_path = filename;
+		return false;
+	};
 
-		tmp_path.Path_FixSlashes();
-
-		if (access(tmp_path, F_OK ) != -1)
-			return true;
-
-		if (!isAbsolutePath)
-		{
-			// base path is not used when dealing with package files
-			tmp_path = filename;
-			tmp_path.Path_FixSlashes();
-
-			// If failed to load directly, load it from package, in backward order
-			for (int j = m_packages.numElem() - 1; j >= 0; j--)
-			{
-				CBasePackageFileReader* pPackageReader = m_packages[j];
-
-				if ((flags & pPackageReader->GetSearchPath()) && pPackageReader->FileExists(tmp_path))
-					return true;
-			}
-		}
-    }
-
-	return false;
+	return WalkOverSearchPaths(searchFlags, filename, walkFileFunc);
 }
 
 EqString CFileSystem::GetSearchPath(SearchPath_e search, int directoryId) const
@@ -655,7 +622,7 @@ void CFileSystem::FileRemove(const char* filename, SearchPath_e search ) const
 	remove(fullPath.ToCString());
 }
 
-bool mkdirRecursive(const char* path, bool includeDotPath)
+static bool mkdirRecursive(const char* path, bool includeDotPath)
 {
 	char folder[265];
 	const char* end, * curend;
@@ -729,178 +696,65 @@ void CFileSystem::Rename(const char* oldNameOrPath, const char* newNameOrPath, S
 	rename(oldFullPath.ToCString(), newFullPath.ToCString());
 }
 
-//Filesystem's check and open file
-IFile* CFileSystem::GetFileHandle(const char* filename, const char* options, int searchFlags )
+bool CFileSystem::WalkOverSearchPaths(int searchFlags, const char* fileName, const SPWalkFunc& func) const
 {
-    int flags = searchFlags;
-    if (flags == -1)
-        flags |= SP_MOD | SP_DATA | SP_ROOT;
+	int flags = searchFlags;
+	if (flags == -1)
+		flags |= SP_MOD | SP_DATA | SP_ROOT;
 
-	const bool isAbsolutePath = UTIL_IsAbsolutePath(filename);
+	const bool isAbsolutePath = UTIL_IsAbsolutePath(fileName);
 
 	if (isAbsolutePath)
-	{
 		flags = SP_ROOT;
-	}
-
-	const bool isWrite = (strchr(options, 'w') || strchr(options, 'a') || strchr(options, '+'));
-
-	EqString tmp_path;
 
 	EqString basePath = m_basePath;
-	if(basePath.Length() > 0)
-		basePath.Append( CORRECT_PATH_SEPARATOR );
+	if (basePath.Length() > 0) // FIXME: is that correct?
+		basePath.Append(CORRECT_PATH_SEPARATOR);
 
-    //First we checking mod directory
-    if (flags & SP_MOD)
-    {
-		for(int i = 0; i < m_directories.numElem(); i++)
+	// First we checking mod directory
+	if (flags & SP_MOD)
+	{
+		for (int i = 0; i < m_directories.numElem(); i++)
 		{
-			// don't create files in other write paths
-			if (isWrite && !m_directories[i].mainWritePath)
-				continue;
+			EqString filePath;
+			CombinePath(filePath, 3, basePath.ToCString(), m_directories[i].path.ToCString(), fileName);
+			filePath.Path_FixSlashes();
 
-			CombinePath(tmp_path, 3, basePath.ToCString(), m_directories[i].path.ToCString(), filename);
-			tmp_path.Path_FixSlashes();
-
-			FILE *tmpFile = fopen(tmp_path,options);
-			if (tmpFile)
-			{
-				CFile* pFileHandle = PPNew CFile(tmpFile);
-
-				{
-					CScopedMutex m(m_FSMutex);
-					m_openFiles.append(pFileHandle);
-				}
-
-				return pFileHandle;
-			}
-
-			if (!isWrite)
-			{
-				// base path is not used when dealing with package files
-				CombinePath(tmp_path, 2, m_directories[i].path.ToCString(), filename);
-				tmp_path.Path_FixSlashes();
-
-				// If failed to load directly, load it from package, in backward order
-				for (int j = m_packages.numElem() - 1; j >= 0; j--)
-				{
-					CBasePackageFileReader* pPackageReader = m_packages[j];
-
-					if (!(flags & pPackageReader->GetSearchPath()))
-						continue;
-
-					IFile* pPackedFile = pPackageReader->Open(tmp_path, options);
-
-					if (pPackedFile)
-					{
-						{
-							CScopedMutex m(m_FSMutex);
-							m_openFiles.append(pPackedFile);
-						}
-
-						return pPackedFile;
-					}
-				}
-			}
+			if (func(filePath, SP_MOD, flags, m_directories[i].mainWritePath))
+				return true;
 		}
-    }
+	}
 
-    //Then we checking data directory
-    if (flags & SP_DATA)
-    {
-		CombinePath(tmp_path, 3, basePath.ToCString(), m_dataDir.ToCString(), filename);
-		tmp_path.Path_FixSlashes();
+	//Then we checking data directory
+	if (flags & SP_DATA)
+	{
+		EqString filePath;
+		CombinePath(filePath, 3, basePath.ToCString(), m_dataDir.ToCString(), fileName);
+		filePath.Path_FixSlashes();
 
-        FILE *tmpFile = fopen(tmp_path,options);
-        if (tmpFile)
-        {
-			CScopedMutex m(m_FSMutex);
-			CFile* pFileHandle = PPNew CFile(tmpFile);
-			m_openFiles.append(pFileHandle);
-			return pFileHandle;
-        }
+		if (func(filePath, SP_DATA, flags, false))
+			return true;
+	}
 
-		if (!isWrite)
-		{
-			// base path is not used when dealing with package files
-			CombinePath(tmp_path, 2, m_dataDir.ToCString(), filename);
-			tmp_path.Path_FixSlashes();
+	// And checking root.
+	// not adding basepath to this
+	if (flags & SP_ROOT)
+	{
+		EqString filePath;
 
-			// If failed to load directly, load it from package, in backward order
-			for (int j = m_packages.numElem() - 1; j >= 0; j--)
-			{
-				CBasePackageFileReader* pPackageReader = m_packages[j];
-
-				if (!(flags & pPackageReader->GetSearchPath()))
-					continue;
-
-				IFile* pPackedFile = pPackageReader->Open(tmp_path, options);
-
-				if (pPackedFile)
-				{
-					{
-						CScopedMutex m(m_FSMutex);
-						m_openFiles.append(pPackedFile);
-					}
-
-					return pPackedFile;
-				}
-			}
-		}
-    }
-
-    // And checking root.
-    // not adding basepath to this
-    if (flags & SP_ROOT)
-    {
-		if (filename[0] != CORRECT_PATH_SEPARATOR && !(isalpha(filename[0]) && filename[1] == ':'))
-			CombinePath(tmp_path, 2, basePath.ToCString(), filename);
+		if(isAbsolutePath)
+			filePath = fileName;
 		else
-			tmp_path = filename;
+			CombinePath(filePath, 2, basePath.ToCString(), fileName);
+		filePath.Path_FixSlashes();
 
-		tmp_path.Path_FixSlashes();
+		// TODO: write path detection if it's same as ones from m_directories or m_dataDir
 
-        FILE *tmpFile = fopen(tmp_path,options);
-		if (tmpFile)
-		{
-			CScopedMutex m(m_FSMutex);
-			CFile* pFileHandle = PPNew CFile(tmpFile);
-			m_openFiles.append(pFileHandle);
+		if (func(filePath, SP_ROOT, flags, true))
+			return true;
+	}
 
-			return pFileHandle;
-		}
-
-		if (!isWrite && !isAbsolutePath)
-		{
-			// base path is not used when dealing with package files
-			tmp_path = filename;
-			tmp_path.Path_FixSlashes();
-
-			// If failed to load directly, load it from package, in backward order
-			for (int j = m_packages.numElem() - 1; j >= 0; j--)
-			{
-				CBasePackageFileReader* pPackageReader = m_packages[j];
-
-				if (!(flags & pPackageReader->GetSearchPath()))
-					continue;
-
-				IFile* pPackedFile = pPackageReader->Open(tmp_path, options);
-
-				if (pPackedFile)
-				{
-					{
-						CScopedMutex m(m_FSMutex);
-						m_openFiles.append(pPackedFile);
-					}
-
-					return pPackedFile;
-				}
-			}
-		}
-    }
-
-    return nullptr;
+	return false;
 }
 
 bool CFileSystem::SetAccessKey(const char* accessKey)
@@ -1196,9 +1050,6 @@ DKMODULE* CFileSystem::LoadModule(const char* mod_name)
 void CFileSystem::FreeModule( DKMODULE* pModule )
 {
 	// don't unload any modules if we prining a leaklog
-	//if( g_bPrintLeaksOnShutdown )
-	//	return;
-
 #ifdef _WIN32
 	FreeLibrary(pModule->module);
 #else
