@@ -233,7 +233,63 @@ struct DKFINDDATA
 	}
 };
 
-extern bool g_bPrintLeaksOnShutdown;
+//--------------------------------------------------
+
+static SearchPath_e GetSearchPathByName(const char* str)
+{
+	if (!stricmp(str, "SP_MOD"))
+		return SP_MOD;
+	else if (!stricmp(str, "SP_DATA"))
+		return SP_DATA;
+
+	return SP_ROOT;
+}
+
+static bool mkdirRecursive(const char* path, bool includeDotPath)
+{
+	char folder[265];
+	const char* end, * curend;
+
+	end = path;
+
+	do
+	{
+		int result;
+
+		// skip any separators in the beginning
+		while (*end == CORRECT_PATH_SEPARATOR)
+			end++;
+
+		// get next string part
+		curend = (char*)strchr(end, CORRECT_PATH_SEPARATOR);
+
+		if (curend)
+			end = curend;
+		else
+			end = path + strlen(path);
+
+		strncpy(folder, path, end - path);
+		folder[end - path] = 0;
+
+		// stop on file extension if needed
+		if (!includeDotPath && strchr(folder, '.'))
+			break;
+
+#ifdef _WIN32
+		result = _mkdir(folder);
+#else
+		result = mkdir(folder, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+#endif
+
+		if (result > 0 && result != EEXIST)
+			return false;
+
+	} while (curend);
+
+	return true;
+}
+
+//--------------------------------------------------
 
 CFileSystem::CFileSystem() :
 	m_isInit(false), m_editorMode(false)
@@ -244,16 +300,6 @@ CFileSystem::CFileSystem() :
 CFileSystem::~CFileSystem()
 {
 	g_eqCore->UnregisterInterface(FILESYSTEM_INTERFACE_VERSION);
-}
-
-SearchPath_e GetSearchPathByName(const char* str)
-{
-	if (!stricmp(str, "SP_MOD"))
-		return SP_MOD;
-	else if (!stricmp(str, "SP_DATA"))
-		return SP_DATA;
-
-	return SP_ROOT;
 }
 
 bool CFileSystem::Init(bool bEditorMode)
@@ -604,96 +650,37 @@ EqString CFileSystem::GetAbsolutePath(SearchPath_e search, const char* dirOrFile
 {
 	EqString fullPath;
 
-	bool isAbsolutePath = (search == SP_ROOT && UTIL_IsAbsolutePath(dirOrFileName));
+	const bool isAbsolutePath = (search == SP_ROOT && UTIL_IsAbsolutePath(dirOrFileName));
 
 	if (!isAbsolutePath)
 		CombinePath(fullPath, 2, GetSearchPath(search).ToCString(), dirOrFileName);
 	else
 		fullPath = dirOrFileName;
 
+	fullPath.Path_FixSlashes();
+
 	return fullPath;
 }
 
 void CFileSystem::FileRemove(const char* filename, SearchPath_e search ) const
 {
-	EqString fullPath = GetAbsolutePath(search, filename);
-	fullPath.Path_FixSlashes();
-
-	remove(fullPath.ToCString());
-}
-
-static bool mkdirRecursive(const char* path, bool includeDotPath)
-{
-	char folder[265];
-	const char* end, * curend;
-
-	end = path;
-
-	do
-	{
-		int result;
-
-		// skip any separators in the beginning
-		while (*end == CORRECT_PATH_SEPARATOR)
-			end++;
-
-		// get next string part
-		curend = (char*)strchr(end, CORRECT_PATH_SEPARATOR);
-
-		if (curend)
-			end = curend;
-		else
-			end = path + strlen(path);
-
-		strncpy(folder, path, end - path);
-		folder[end - path] = 0;
-
-		// stop on file extension if needed
-		if (!includeDotPath && strchr(folder, '.'))
-			break;
-
-#ifdef _WIN32
-		result = _mkdir(folder);
-#else
-		result = mkdir(folder, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
-#endif
-
-		if (result > 0 && result != EEXIST)
-			return false;
-
-	} while (curend);
-
-	return true;
+	remove(GetAbsolutePath(search, filename));
 }
 
 //Directory operations
 void CFileSystem::MakeDir(const char* dirname, SearchPath_e search ) const
 {
-	EqString fullPath = GetAbsolutePath(search, dirname);
-	fullPath.Path_FixSlashes();
-
-	mkdirRecursive(fullPath.ToCString(), true);
+	mkdirRecursive(GetAbsolutePath(search, dirname), true);
 }
 
 void CFileSystem::RemoveDir(const char* dirname, SearchPath_e search ) const
 {
-	EqString fullPath = GetAbsolutePath(search, dirname);
-	fullPath.Path_FixSlashes();
-
-	fullPath.Path_FixSlashes();
-
-    rmdir(fullPath.GetData());
+    rmdir(GetAbsolutePath(search, dirname));
 }
 
 void CFileSystem::Rename(const char* oldNameOrPath, const char* newNameOrPath, SearchPath_e search) const
 {
-	EqString oldFullPath = GetAbsolutePath(search, oldNameOrPath);
-	oldFullPath.Path_FixSlashes();
-
-	EqString newFullPath = GetAbsolutePath(search, newNameOrPath);
-	newFullPath.Path_FixSlashes();
-
-	rename(oldFullPath.ToCString(), newFullPath.ToCString());
+	rename(GetAbsolutePath(search, oldNameOrPath), GetAbsolutePath(search, newNameOrPath));
 }
 
 bool CFileSystem::WalkOverSearchPaths(int searchFlags, const char* fileName, const SPWalkFunc& func) const

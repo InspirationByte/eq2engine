@@ -139,10 +139,8 @@ public:
 protected:
 
 	EqString					GetAbsolutePath(SearchPath_e search, const char* dirOrFileName) const;
-
 	EqString					GetSearchPath(SearchPath_e search, int directoryId = -1) const;
 
-private:
 
 	using SPWalkFunc = EqFunction<bool(const EqString& filePath, SearchPath_e searchPath, int spFlags, bool writePath)>;
 	bool						WalkOverSearchPaths(int searchFlags, const char* fileName, const SPWalkFunc& func) const;
