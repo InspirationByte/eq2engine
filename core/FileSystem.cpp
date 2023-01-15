@@ -415,6 +415,10 @@ IFile* CFileSystem::Open(const char* filename,const char* options, int searchFla
 
 	const bool isWrite = (strchr(options, 'w') || strchr(options, 'a') || strchr(options, '+'));
 
+	EqString basePath = m_basePath;
+	if (basePath.Length() > 0) // FIXME: is that correct?
+		basePath.Append(CORRECT_PATH_SEPARATOR);
+
 	IFile* fileHandle = nullptr;
 	auto walkFileFunc = [&](EqString filePath, SearchPath_e searchPath, int spFlags, bool writePath) -> bool
 	{
@@ -428,7 +432,7 @@ IFile* CFileSystem::Open(const char* filename,const char* options, int searchFla
 			return true;
 		}
 
-		if (!isWrite)
+		if (isWrite)
 			return false;
 
 		// If failed to load directly, load it from package, in backward order
@@ -439,7 +443,8 @@ IFile* CFileSystem::Open(const char* filename,const char* options, int searchFla
 			if (!(spFlags & pPackageReader->GetSearchPath()))
 				continue;
 
-			fileHandle = pPackageReader->Open(filePath, options);
+			// package readers do not support base path, get rid of it
+			fileHandle = pPackageReader->Open(filePath.ToCString() + basePath.Length(), options);
 			if (fileHandle)
 				return true;
 		}
@@ -593,6 +598,10 @@ bool CFileSystem::FileCopy(const char* filename, const char* dest_file, bool ove
 
 bool CFileSystem::FileExist(const char* filename, int searchFlags) const
 {
+	EqString basePath = m_basePath;
+	if (basePath.Length() > 0) // FIXME: is that correct?
+		basePath.Append(CORRECT_PATH_SEPARATOR);
+
 	auto walkFileFunc = [&](EqString filePath, SearchPath_e searchPath, int spFlags, bool writePath) -> bool
 	{
 		if (access(filePath, F_OK) != -1)
@@ -606,7 +615,8 @@ bool CFileSystem::FileExist(const char* filename, int searchFlags) const
 			if (!(spFlags & pPackageReader->GetSearchPath()))
 				continue;
 
-			if (pPackageReader->FileExists(filePath))
+			// package readers do not support base path, get rid of it
+			if (pPackageReader->FileExists(filePath.ToCString() + basePath.Length()))
 				return true;
 		}
 
@@ -687,16 +697,16 @@ bool CFileSystem::WalkOverSearchPaths(int searchFlags, const char* fileName, con
 {
 	int flags = searchFlags;
 	if (flags == -1)
-		flags |= SP_MOD | SP_DATA | SP_ROOT;
+		flags = SP_MOD | SP_DATA | SP_ROOT;
 
 	const bool isAbsolutePath = UTIL_IsAbsolutePath(fileName);
 
+	EqString basePath = m_basePath;
+	if (!isAbsolutePath && basePath.Length() > 0) // FIXME: is that correct?
+		basePath.Append(CORRECT_PATH_SEPARATOR);
+
 	if (isAbsolutePath)
 		flags = SP_ROOT;
-
-	EqString basePath = m_basePath;
-	if (basePath.Length() > 0) // FIXME: is that correct?
-		basePath.Append(CORRECT_PATH_SEPARATOR);
 
 	// First we checking mod directory
 	if (flags & SP_MOD)
