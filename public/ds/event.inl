@@ -6,15 +6,6 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 template<typename SIGNATURE>
-struct EventSubscriptionObject_t
-{
-	EqFunction<SIGNATURE>		func{ nullptr };
-	mutable bool				unsubscribe{ false };
-
-	EventSubscriptionObject_t*	next{ nullptr };
-};
-
-template<typename SIGNATURE>
 Event<SIGNATURE>::Sub::~Sub()
 {
 	Unsubscribe(); 
@@ -39,8 +30,6 @@ Event<SIGNATURE>::~Event<SIGNATURE>()
 template<typename SIGNATURE>
 void Event<SIGNATURE>::Clear()
 {
-	Threading::CScopedMutex m(m_mutex);
-
 	SubscriptionObject* sub = m_subs;
 	while (sub)
 	{
@@ -52,43 +41,35 @@ void Event<SIGNATURE>::Clear()
 }
 
 template<typename SIGNATURE>
-const EventSubscriptionObject_t<SIGNATURE>* Event<SIGNATURE>::Subscribe(const EqFunction<SIGNATURE>& func)
+const CWeakPtr<EventSubscriptionObject<SIGNATURE>> Event<SIGNATURE>::Subscribe(const EqFunction<SIGNATURE>& func)
 {
-	Threading::CScopedMutex m(m_mutex);
-
 	SubscriptionObject* sub = PPNew SubscriptionObject();
 	sub->func = func;
-	sub->next = m_subs;
-	m_subs = sub;
+	Atomic::Store(sub->next, Atomic::CompareExchange(m_subs, Atomic::Load(m_subs), sub));
 
-	return sub;
+	return CWeakPtr(sub);
 }
 
 template<typename SIGNATURE>
 template<typename... Params>
 void Event<SIGNATURE>::operator()(Params&&... args)
 {
-	Threading::CScopedMutex m(m_mutex);
-
-	SubscriptionObject* sub = m_subs;
+	SubscriptionObject* sub = Atomic::Load(m_subs);
 	SubscriptionObject* prevSub = nullptr;
 	while (sub)
 	{
 		if (sub->unsubscribe)
 		{
+			// Soapy: Not sure, could be wrong
 			SubscriptionObject* del = sub;
 			if (prevSub)
-			{
-				prevSub->next = sub->next;
-			}
-			else if (m_subs == sub)
-			{
-				m_subs = sub->next;
-			}
+				Atomic::Exchange(prevSub->next, sub->next);
+			else
+				Atomic::CompareExchange(m_subs, sub, Atomic::Load(sub->next));
 
 			delete del;
 
-			sub = sub->next;
+			sub = Atomic::Load(sub->next);
 			continue;
 		}
 
@@ -97,6 +78,6 @@ void Event<SIGNATURE>::operator()(Params&&... args)
 
 		// goto next
 		prevSub = sub;
-		sub = sub->next;
+		sub = Atomic::Load(sub->next);
 	}
 }
