@@ -93,6 +93,9 @@ public:
 	const char*					GetLabel() const;
 	void						SetLabel(const char* pszLabel);
 
+	const wchar_t*				GetLabelText() const;
+	void						SetLabelText(const wchar_t* pszLabel);
+
 	// visibility
 	virtual void				Show()								{m_visible = true;}
 	virtual void				Hide()								{m_visible = false;}

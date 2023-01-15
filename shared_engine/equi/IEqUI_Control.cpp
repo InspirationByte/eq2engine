@@ -51,6 +51,16 @@ void IUIControl::SetLabel(const char* pszLabel)
 	m_label = LocalizedString(pszLabel);
 }
 
+const wchar_t* IUIControl::GetLabelText() const
+{
+	return m_label;
+}
+
+void IUIControl::SetLabelText(const wchar_t* pszLabel)
+{
+	m_label = pszLabel;
+}
+
 void IUIControl::InitFromKeyValues( KVSection* sec, bool noClear )
 {
 	if (!noClear)
