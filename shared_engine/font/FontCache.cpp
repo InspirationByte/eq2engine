@@ -91,7 +91,14 @@ bool CEqFontCache::LoadFontDescriptionFile( const char* filename )
 			continue;
 		}
 
-		eqFontFamily_t& familyEntry = m_fonts.append();
+		const int nameHash = StringToHash(fontSec->name);
+		if (m_fonts.find(nameHash) != m_fonts.end())
+		{
+			MsgWarning("Font %s already loaded, skipping\n", fontSec->name);
+			continue;
+		}
+
+		eqFontFamily_t& familyEntry = m_fonts[nameHash];
 		familyEntry.name = fontSec->name;
 
 		int styleErrorCounter = 0;
@@ -243,15 +250,10 @@ IEqFont* CEqFontCache::GetFont(const char* name, int bestSize, int styleFlags, b
 
 eqFontFamily_t* CEqFontCache::GetFamily(const char* name) const
 {
-	for(int i = 0; i < m_fonts.numElem(); i++)
-	{
-		const eqFontFamily_t& family = m_fonts[i];
+	const int nameHash = StringToHash(name);
+	auto it = m_fonts.find(nameHash);
+	if (it == m_fonts.end())
+		return m_defaultFont;
 
-		if( !family.name.Compare(name) )
-		{
-			return const_cast<eqFontFamily_t*>(&family);
-		}
-	}
-
-	return m_defaultFont;
+	return &(*it);
 }

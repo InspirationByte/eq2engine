@@ -24,6 +24,7 @@ public:
 	virtual bool			Init() = 0;
 	virtual void			Shutdown() = 0;
 
+	virtual bool			LoadFontDescriptionFile(const char* filename) = 0;
 	virtual void			ReloadFonts() = 0;
 
 	// finds font

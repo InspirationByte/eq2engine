@@ -58,6 +58,8 @@ public:
 	bool					Init();
 	void					Shutdown();
 
+	bool					LoadFontDescriptionFile(const char* filename);
+
 	void					ReloadFonts();
 
 	// finds font
@@ -66,11 +68,9 @@ public:
 
 protected:
 
-	bool					LoadFontDescriptionFile( const char* filename );
+	Map<int, eqFontFamily_t>	m_fonts{ PP_SL };
+	eqFontFamily_t*				m_defaultFont{ nullptr };
 
-	Array<eqFontFamily_t>	m_fonts{ PP_SL };
-	eqFontFamily_t*			m_defaultFont{ nullptr };
-
-	IMaterialPtr			m_sdfMaterial;
-	MatVarProxy				m_fontParams;
+	IMaterialPtr				m_sdfMaterial;
+	MatVarProxy					m_fontParams;
 };
