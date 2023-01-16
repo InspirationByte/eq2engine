@@ -206,13 +206,13 @@ bool Panel::ProcessMouseEvents(const IVector2D& mousePos, const IVector2D& mouse
 	return true;
 }
 
-class HudDummyElement : public IUIControl
+class HudElement : public IUIControl
 {
 public:
-	EQUI_CLASS(HudDummyElement, IUIControl)
+	EQUI_CLASS(HudElement, IUIControl)
 
-	HudDummyElement() : IUIControl() {}
-	~HudDummyElement() {}
+	HudElement() : IUIControl() {}
+	~HudElement() {}
 
 	// events
 	bool			ProcessMouseEvents(float x, float y, int nMouseButtons, int flags)	{return true;}
@@ -221,8 +221,25 @@ public:
 	void			DrawSelf( const IRectangle& rect, bool scissorOn) {}
 };
 
+class Container : public IUIControl
+{
+public:
+	EQUI_CLASS(Container, IUIControl)
+
+	Container() : IUIControl() {}
+	~Container() {}
+
+	// events
+	bool			ProcessMouseEvents(float x, float y, int nMouseButtons, int flags) { return true; }
+	bool			ProcessKeyboardEvents(int nKeyButtons, int flags) { return true; }
+
+	void			DrawSelf(const IRectangle& rect, bool scissorOn) {}
+};
+
 };
 
 DECLARE_EQUI_CONTROL(panel, Panel)
-DECLARE_EQUI_CONTROL(HudElement, HudDummyElement)
-DECLARE_EQUI_CONTROL(Container, HudDummyElement)
+
+DECLARE_EQUI_CONTROL(HudElement, HudElement)
+
+DECLARE_EQUI_CONTROL(Container, Container)
