@@ -425,7 +425,7 @@ float CAnimatingEGF::GetAnimationDuration(int animIndex) const
 // returns remaining duration time of the current animation
 float CAnimatingEGF::GetCurrentRemainingAnimationDuration(int slot) const
 {
-	return GetCurrentAnimationDuration(slot) - m_sequenceTimers[slot].seq_time;
+	return GetCurrentAnimationDuration(slot) - m_sequenceTimers[slot].seq_time / m_sequenceTimers[slot].seq->s->framerate;
 }
 
 bool CAnimatingEGF::IsSequencePlaying(int slot) const
