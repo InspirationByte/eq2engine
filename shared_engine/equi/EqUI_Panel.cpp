@@ -170,7 +170,7 @@ void DrawWindowRectangle(const Rectangle_t &rect, const ColorRGBA &color1, const
 	meshBuilder.End();
 }
 
-void Panel::Render()
+void Panel::Render(int depth)
 {
 	// move window controls
 	if(m_closeButton)
@@ -180,7 +180,7 @@ void Panel::Render()
 		m_closeButton->SetPosition(closePos);
 	}
 
-	BaseClass::Render();
+	BaseClass::Render(depth);
 }
 
 void Panel::DrawSelf(const IRectangle& rect, bool scissorOn)

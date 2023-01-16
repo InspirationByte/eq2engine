@@ -47,7 +47,7 @@ DECLARE_CMD(ui_listpanels, nullptr, CV_CHEAT)
 	equi::Manager->DumpPanelsToConsole();
 }
 
-ConVar equi_debug("equi_debug", "0");
+static ConVar equi_debug("equi_debug", "0");
 
 namespace equi
 {
@@ -254,7 +254,7 @@ void CUIManager::Render()
 	// begin from the render panel
 	m_rootPanel->SetRectangle( m_viewFrameRect );
 	m_rootPanel->ResetSizeDiffs();
-	m_rootPanel->Render();
+	m_rootPanel->Render(1);
 }
 
 equi::Panel* CUIManager::GetPanelByElement(IUIControl* control)

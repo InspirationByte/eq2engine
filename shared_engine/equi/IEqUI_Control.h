@@ -172,7 +172,7 @@ public:
 	virtual const char*			GetClassname() const = 0;
 
 	// rendering
-	virtual void				Render();
+	void						Render();
 
 	// Events
 	int							AddEventHandler(const char* pszName, uiEventCallback_t cb);
@@ -183,6 +183,8 @@ public:
 	int							RaiseEventUid(int uid, void* userData);
 
 protected:
+
+	virtual void				Render(int depth);
 	
 	void						ResetSizeDiffs();
 	virtual void				DrawSelf(const IRectangle& rect, bool scissorOn) = 0;
@@ -203,19 +205,19 @@ protected:
 
 	IVector2D					m_position { 0 };
 	IVector2D					m_size { 64 };
+	IVector2D					m_sizeReal { 64 };
 
 	// for anchors
 	Vector2D					m_sizeDiff { 0.0f };
 	Vector2D					m_sizeDiffPerc { 1.0f };
 
-	bool						m_visible { true };
-	bool						m_enabled { true };
-
-	bool						m_selfVisible { true };
-
 	int							m_alignment { UI_ALIGN_LEFT | UI_ALIGN_TOP };
 	int							m_anchors { 0 };
 	int							m_scaling { UI_SCALING_NONE };
+
+	bool						m_visible{ true };
+	bool						m_selfVisible{ true };
+	bool						m_enabled{ true };
 
 	EqString					m_name;
 	EqWString					m_label;

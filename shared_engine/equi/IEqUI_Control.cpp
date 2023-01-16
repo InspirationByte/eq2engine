@@ -77,10 +77,10 @@ void IUIControl::InitFromKeyValues( KVSection* sec, bool noClear )
 
 	m_position = KV_GetIVector2D(sec->FindSection("position"), 0, m_position);
 	m_size = KV_GetIVector2D(sec->FindSection("size"), 0, m_size);
+	m_sizeReal = m_size;
 
 	m_visible = KV_GetValueBool(sec->FindSection("visible"), 0, m_visible);
 	m_selfVisible = KV_GetValueBool(sec->FindSection("selfvisible"), 0, m_selfVisible);
-
 	
 	m_sizeDiff = 0;
 	m_sizeDiffPerc = 1.0f;
@@ -230,16 +230,20 @@ void IUIControl::InitFromKeyValues( KVSection* sec, bool noClear )
 
 		const char* scalingValue = KV_GetValueString(scaling, 0, "none");
 
-		if (!stricmp("width", scalingValue))
-			m_scaling = UI_SCALING_WIDTH;
-		else if (!stricmp("height", scalingValue))
-			m_scaling = UI_SCALING_HEIGHT;
-		else if (!stricmp("aspectw", scalingValue))
+		if (!stricmp("aspectw", scalingValue))
 			m_scaling = UI_SCALING_ASPECT_W;
 		else if (!stricmp("aspecth", scalingValue) || !stricmp("uniform", scalingValue))
 			m_scaling = UI_SCALING_ASPECT_H;
 		else if (!stricmp("inherit", scalingValue))
 			m_scaling = UI_SCALING_INHERIT;
+		else if (!stricmp("inherit_min", scalingValue))
+			m_scaling = UI_SCALING_INHERIT_MIN;
+		else if (!stricmp("inheri_tmax", scalingValue))
+			m_scaling = UI_SCALING_INHERIT_MAX;
+		else if (!stricmp("aspect_min", scalingValue))
+			m_scaling = UI_SCALING_ASPECT_MIN;
+		else if (!stricmp("aspect_max", scalingValue))
+			m_scaling = UI_SCALING_ASPECT_MAX;
 	}
 
 	// walk for childs
@@ -280,11 +284,10 @@ void IUIControl::InitFromKeyValues( KVSection* sec, bool noClear )
 
 void IUIControl::SetSize(const IVector2D &size)
 {
-	IVector2D oldSize = m_size;
 	m_size = size;
 
-	m_sizeDiff += m_size-oldSize;
-	m_sizeDiffPerc *= Vector2D(m_size)/Vector2D(oldSize);
+	m_sizeDiff = m_size - m_sizeReal;
+	m_sizeDiffPerc = Vector2D(m_size) / Vector2D(m_sizeReal);
 }
 
 void IUIControl::SetPosition(const IVector2D &pos)
@@ -355,30 +358,64 @@ const Vector2D& IUIControl::GetSizeDiffPerc() const
 
 Vector2D IUIControl::CalcScaling() const
 {
-	if(!m_parent || m_scaling == UI_SCALING_NONE)
+	if(!m_parent)
 		return Vector2D(1.0f, 1.0f);
 
 	Vector2D scale(m_parent->m_sizeDiffPerc);
 
-	if(m_scaling >= UI_SCALING_INHERIT)
+	if(Manager->GetRootPanel() != m_parent)
 	{
-		if(Manager->GetRootPanel() != m_parent)
-		{
-			if(m_scaling == UI_SCALING_ASPECT_W)
-			{
-				float aspectCorrection = scale.x / scale.y;
-				scale.y *= aspectCorrection;
-			}
-			else if (m_scaling == UI_SCALING_ASPECT_H)
-			{
-				float aspectCorrection = scale.y / scale.x;
-				scale.x *= aspectCorrection;
-			}
+		Vector2D parentScaling = m_parent->CalcScaling();
 
-			return scale * m_parent->CalcScaling();
+		switch (m_scaling)
+		{
+			case UI_SCALING_INHERIT_MIN:
+			{
+				parentScaling = Vector2D(min(parentScaling.x, parentScaling.y));
+				break;
+			}
+			case UI_SCALING_INHERIT_MAX:
+			{
+				parentScaling = Vector2D(max(parentScaling.x, parentScaling.y));
+				break;
+			}
+			case UI_SCALING_ASPECT_W:
+			{
+				const float aspectCorrection = scale.x / scale.y;
+				scale.y *= aspectCorrection;
+				break;
+			}
+			case UI_SCALING_ASPECT_H:
+			{
+				const float aspectCorrection = scale.y / scale.x;
+				scale.x *= aspectCorrection;
+				break;
+			}
+			case UI_SCALING_ASPECT_MIN:
+			{
+				const float aspectCorrectionW = scale.x / scale.y;
+				const float aspectCorrectionH = scale.y / scale.x;
+
+				if (aspectCorrectionW < aspectCorrectionH)
+					scale.x *= aspectCorrectionH;
+				else
+					scale.y *= aspectCorrectionW;
+				break;
+			}
+			case UI_SCALING_ASPECT_MAX:
+			{
+				const float aspectCorrectionW = scale.x / scale.y;
+				const float aspectCorrectionH = scale.y / scale.x;
+
+				if (aspectCorrectionW > aspectCorrectionH)
+					scale.x *= aspectCorrectionH;
+				else
+					scale.y *= aspectCorrectionW;
+				break;
+			}
 		}
-		else
-			return Vector2D(1.0f, 1.0f);
+
+		return scale * parentScaling;
 	}
 
 	return Vector2D(1.0f, 1.0f);
@@ -386,18 +423,35 @@ Vector2D IUIControl::CalcScaling() const
 
 IRectangle IUIControl::GetClientRectangle() const
 {
-	Vector2D scale = CalcScaling();
+	const Vector2D scale = CalcScaling();
 
-	IVector2D scaledSize(m_size*scale);
-	IVector2D scaledPos(m_position*scale);
+	const IVector2D scaledSize(m_size * scale);
+	const IVector2D scaledPos(m_position * scale);
 
 	IRectangle thisRect(scaledPos, scaledPos + scaledSize);
 
 	if(m_parent)
 	{
-		IRectangle parentRect = m_parent->GetClientRectangle();
+		// move by anchor border
+		if (m_anchors > 0)
+		{
+			const IVector2D parentSizeDiff = m_parent->m_sizeDiff;
 
-		// align
+			const IVector2D offsetAnchorsLT((m_anchors & UI_BORDER_LEFT) > 0, (m_anchors & UI_BORDER_TOP) > 0);
+			const IVector2D offsetAnchorsRB((m_anchors & UI_BORDER_RIGHT) > 0, (m_anchors & UI_BORDER_BOTTOM) > 0);
+
+			const Vector2D anchorSizeLT = parentSizeDiff * offsetAnchorsLT;
+			const Vector2D anchorSizeRB = parentSizeDiff * offsetAnchorsRB;
+
+			// apply offset of each bound based on anchors
+			// all anchors enabled will just stretch elements
+			thisRect.vleftTop += anchorSizeRB - anchorSizeLT;
+			thisRect.vrightBottom += anchorSizeRB;
+		}
+
+		const IRectangle parentRect = m_parent->GetClientRectangle();
+
+		// compute alignment to the parent client rectangle
 		if(m_alignment & UI_ALIGN_LEFT)
 		{
 			thisRect.vleftTop.x += parentRect.vleftTop.x;
@@ -405,12 +459,12 @@ IRectangle IUIControl::GetClientRectangle() const
 		} 
 		else if(m_alignment & UI_ALIGN_RIGHT)
 		{
-			thisRect.vleftTop.x += parentRect.vrightBottom.x - scaledSize.x - scaledPos.x*2;
-			thisRect.vrightBottom.x += parentRect.vrightBottom.x - scaledSize.x - scaledPos.x*2;
+			thisRect.vleftTop.x += parentRect.vrightBottom.x - scaledSize.x - scaledPos.x * 2;
+			thisRect.vrightBottom.x += parentRect.vrightBottom.x - scaledSize.x - scaledPos.x * 2;
 		}
 		else if (m_alignment & UI_ALIGN_HCENTER)
 		{
-			IVector2D center = parentRect.GetCenter();
+			const IVector2D center = parentRect.GetCenter();
 			thisRect.vleftTop.x += center.x - scaledSize.x / 2;
 			thisRect.vrightBottom.x += center.x - scaledSize.x / 2;
 		}
@@ -422,25 +476,14 @@ IRectangle IUIControl::GetClientRectangle() const
 		}
 		else if(m_alignment & UI_ALIGN_BOTTOM)
 		{
-			thisRect.vleftTop.y += parentRect.vrightBottom.y - scaledSize.y - scaledPos.y*2;
-			thisRect.vrightBottom.y += parentRect.vrightBottom.y - scaledSize.y - scaledPos.y*2;
+			thisRect.vleftTop.y += parentRect.vrightBottom.y - scaledSize.y - scaledPos.y * 2;
+			thisRect.vrightBottom.y += parentRect.vrightBottom.y - scaledSize.y - scaledPos.y * 2;
 		}
 		else if (m_alignment & UI_ALIGN_VCENTER)
 		{
-			IVector2D center = parentRect.GetCenter();
+			const IVector2D center = parentRect.GetCenter();
 			thisRect.vleftTop.y += center.y - scaledSize.y / 2;
 			thisRect.vrightBottom.y += center.y - scaledSize.y / 2;
-		}
-
-		// move by anchor border
-		if(m_anchors > 0)
-		{
-			IVector2D parentSizeDiff = m_parent->m_sizeDiff;
-			IVector2D offsetAnchors((m_anchors & UI_BORDER_RIGHT) ? 1 : 0, (m_anchors & UI_BORDER_BOTTOM) ? 1 : 0);
-
-			// apply offset
-			thisRect.vleftTop += parentSizeDiff*offsetAnchors;
-			thisRect.vrightBottom += parentSizeDiff*offsetAnchors;
 		}
 	}
 
@@ -512,8 +555,13 @@ inline void DebugDrawRectangle(const Rectangle_t &rect, const ColorRGBA &color1,
 	meshBuilder.End();
 }
 
-// rendering function
 void IUIControl::Render()
+{
+	Render(1);
+}
+
+// rendering function
+void IUIControl::Render(int depth)
 {
 	if(!m_visible)
 		return;
@@ -523,7 +571,7 @@ void IUIControl::Render()
 	rasterState.cullMode = CULL_NONE;
 	rasterState.scissor = true;
 
-	IRectangle clientRectRender = GetClientRectangle();
+	const IRectangle clientRectRender = GetClientRectangle();
 
 	materials->SetAmbientColor(color_white);	// max color mode
 	materials->SetFogInfo(FogInfo_t());			// disable fog
@@ -532,15 +580,15 @@ void IUIControl::Render()
 	Matrix4x4 prevTransform;
 	materials->GetMatrix(MATRIXMODE_WORLD2, prevTransform);
 
-	Vector2D scale = CalcScaling();
+	// we apply scaling to our transform to match the units of the elements
+	const Vector2D scale = CalcScaling();
 
-	Matrix4x4 clientPosMat = translate((float)clientRectRender.GetCenter().x, (float)clientRectRender.GetCenter().y, 0.0f);
+	const Matrix4x4 clientPosMat = translate((float)clientRectRender.GetCenter().x, (float)clientRectRender.GetCenter().y, 0.0f);
 	Matrix4x4 rotationScale = clientPosMat * scale4(m_transform.scale.x, m_transform.scale.y, 1.0f) * rotateZ4(DEG2RAD(m_transform.rotation));
 	rotationScale = rotationScale * !clientPosMat;
 
-	Matrix4x4 localTransform = rotationScale * translate(m_transform.translation.x * scale.x, m_transform.translation.y * scale.y, 0.0f);
-
-	Matrix4x4 newTransform = (prevTransform * localTransform);
+	const Matrix4x4 localTransform = rotationScale * translate(m_transform.translation.x * scale.x, m_transform.translation.y * scale.y, 0.0f);
+	const Matrix4x4 newTransform = (prevTransform * localTransform);
 
 	// load new absolulte transformation
 	materials->SetMatrix(MATRIXMODE_WORLD2, newTransform);
@@ -569,7 +617,7 @@ void IUIControl::Render()
 	}
 
 	HOOK_TO_CVAR(equi_debug)
-	if (equi_debug->GetBool())
+	if (equi_debug->GetInt() > 0 && equi_debug->GetInt() <= depth)
 	{
 		DebugDrawRectangle(clientRectRender, ColorRGBA(1, 1, 0, 0.05), ColorRGBA(1, 0, 1, 0.8));
 
@@ -584,7 +632,7 @@ void IUIControl::Render()
 	{
 		// load new absolulte transformation
 		materials->SetMatrix(MATRIXMODE_WORLD2, newTransform);
-		lln->getValue()->Render();
+		lln->getValue()->Render(depth+1);
 	}
 
 	// always reset previous absolute transformation
