@@ -376,10 +376,10 @@ public:
 	//-----------------------------
 
 	// tells device to begin frame
-	virtual bool							BeginFrame() = 0;
+	virtual bool							BeginFrame(IEqSwapChain* swapChain) = 0;
 
 	// tells device to end and present frame. Also swapchain can be overriden.
-	virtual bool							EndFrame(IEqSwapChain* swapChain) = 0;
+	virtual bool							EndFrame() = 0;
 
 	// resizes device back buffer. Must be called if window resized, etc
 	virtual void							SetDeviceBackbufferSize(int wide, int tall) = 0;

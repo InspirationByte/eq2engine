@@ -1199,7 +1199,7 @@ void CEGFViewFrame::ReDraw()
 
 	g_pShaderAPI->SetViewport(0, 0, w,h);
 
-	if(materials->BeginFrame())
+	if(materials->BeginFrame(nullptr))
 	{
 		g_pShaderAPI->Clear(true,true,false, ColorRGBA(0.5,0.5,0.5, 1));
 
@@ -1298,7 +1298,7 @@ void CEGFViewFrame::ReDraw()
 
 		debugoverlay->Draw(g_mProjMat, g_mViewMat, w,h);
 
-		materials->EndFrame(nullptr);
+		materials->EndFrame();
 		Platform_Sleep(1);
 	}
 

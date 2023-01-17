@@ -21,8 +21,8 @@ public:
 	void			ReleaseSwapChains() {}
 
 	// frame begin/end
-	void			BeginFrame();
-	void			EndFrame(IEqSwapChain* swapChain = nullptr);
+	void			BeginFrame(IEqSwapChain* swapChain = nullptr);
+	void			EndFrame();
 
 	// renderer interface
 	IShaderAPI*		GetRenderer() const;

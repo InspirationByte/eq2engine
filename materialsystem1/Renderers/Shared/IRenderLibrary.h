@@ -12,7 +12,7 @@ class IEqSwapChain;
 class IShaderAPI;
 class CImage;
 
-#define RENDERER_INTERFACE_VERSION	"E1Renderer_022"
+#define RENDERER_INTERFACE_VERSION	"E1Renderer_023"
 
 class IRenderLibrary : public IEqCoreModule
 {
@@ -24,8 +24,8 @@ public:
 	virtual void			ReleaseSwapChains() = 0;
 
 	// frame begin/end
-	virtual void			BeginFrame() = 0;
-	virtual void			EndFrame(IEqSwapChain* swapChain = nullptr) = 0;
+	virtual void			BeginFrame(IEqSwapChain* swapChain = nullptr) = 0;
+	virtual void			EndFrame() = 0;
 
 	// renderer interface
 	virtual IShaderAPI*		GetRenderer() const = 0;

@@ -51,12 +51,12 @@ void CEmptyRenderLib::ExitAPI()
 {
 }
 
-void CEmptyRenderLib::BeginFrame()
+void CEmptyRenderLib::BeginFrame(IEqSwapChain* swapChain)
 {
 
 }
 
-void CEmptyRenderLib::EndFrame(IEqSwapChain* swapChain)
+void CEmptyRenderLib::EndFrame()
 {
 
 }

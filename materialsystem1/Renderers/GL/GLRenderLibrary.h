@@ -47,8 +47,8 @@ public:
 	void					ReleaseSwapChains();
 
 	// frame begin/end
-	void					BeginFrame();
-	void					EndFrame(IEqSwapChain* swapChain = nullptr);
+	void					BeginFrame(IEqSwapChain* swapChain = nullptr);
+	void					EndFrame();
 
 	// renderer interface
 	IShaderAPI*				GetRenderer() const;
@@ -87,6 +87,8 @@ protected:
 	void					DestroySharedContexts();
 
 	Array<IEqSwapChain*>	m_swapChains{ PP_SL };
+	IEqSwapChain*			m_curSwapChain{ nullptr };
+
 	uintptr_t				m_mainThreadId;
 	bool					m_asyncOperationActive;
 
@@ -94,6 +96,8 @@ protected:
 	GL_CONTEXT				m_glSharedContext;
 
 #ifdef PLAT_WIN
+	int						m_bestPixelFormat;
+	PIXELFORMATDESCRIPTOR	m_pfd;
 	DISPLAY_DEVICEA			m_dispDevice;
 	DEVMODEA				m_devMode;
 

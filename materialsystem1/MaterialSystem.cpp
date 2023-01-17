@@ -1071,7 +1071,7 @@ ITexture* CMaterialSystem::GetLuxelTestTexture() const
 //-----------------------------
 
 // tells 3d device to begin frame
-bool CMaterialSystem::BeginFrame()
+bool CMaterialSystem::BeginFrame(IEqSwapChain* swapChain)
 {
 	if(m_config.stubMode || !m_shaderAPI)
 		return false;
@@ -1091,7 +1091,7 @@ bool CMaterialSystem::BeginFrame()
 	if(s_threadedMaterialLoader.GetCount())
 		s_threadedMaterialLoader.SignalWork();
 
-	m_renderLibrary->BeginFrame();
+	m_renderLibrary->BeginFrame(swapChain);
 
 	if(state && state != oldState)
 	{
@@ -1109,10 +1109,10 @@ bool CMaterialSystem::BeginFrame()
 }
 
 // tells 3d device to end and present frame
-bool CMaterialSystem::EndFrame(IEqSwapChain* swapChain)
+bool CMaterialSystem::EndFrame()
 {
 	if(m_renderLibrary)
-		m_renderLibrary->EndFrame(swapChain);
+		m_renderLibrary->EndFrame();
 
 	m_frame++;
 	m_proxyDeltaTime = m_proxyTimer.GetTime(true);

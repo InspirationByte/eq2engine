@@ -779,7 +779,7 @@ void CGameHost::BeginScene()
 	g_pShaderAPI->SetViewport(0,0, m_winSize.x, m_winSize.y);
 
 	// Begin frame from render lib
-	materials->BeginFrame();
+	materials->BeginFrame(nullptr);
 	g_pShaderAPI->Clear(false,true,false);
 
 	HOOK_TO_CVAR(r_wireframe)
@@ -795,7 +795,7 @@ void CGameHost::EndScene()
 	g_pShaderAPI->Flush();
 
 	// End frame from render lib
-	materials->EndFrame(nullptr);
+	materials->EndFrame();
 }
 
 void CGameHost::RequestTextInput()

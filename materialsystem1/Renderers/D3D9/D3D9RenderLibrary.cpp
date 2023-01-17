@@ -340,8 +340,10 @@ void CD3DRenderLib::CheckResetDevice()
 	}
 }
 
-void CD3DRenderLib::BeginFrame()
+void CD3DRenderLib::BeginFrame(IEqSwapChain* swapChain)
 {
+	m_curSwapChain = swapChain;
+
 	CheckResetDevice();
 
 	static volatile bool s_textureJobRunning = false;
@@ -359,7 +361,7 @@ void CD3DRenderLib::BeginFrame()
 	m_rhi->BeginScene();
 }
 
-void CD3DRenderLib::EndFrame(IEqSwapChain* swapChain)
+void CD3DRenderLib::EndFrame()
 {
 	m_rhi->EndScene();
 
@@ -367,8 +369,8 @@ void CD3DRenderLib::EndFrame(IEqSwapChain* swapChain)
 
 	HWND pHWND = m_hwnd;
 
-	if(swapChain != nullptr)
-		pHWND = (HWND)swapChain->GetWindow();
+	if(m_curSwapChain)
+		pHWND = (HWND)m_curSwapChain->GetWindow();
 
 	if(!IsWindowed())
 	{
@@ -381,8 +383,7 @@ void CD3DRenderLib::EndFrame(IEqSwapChain* swapChain)
 	RECT destRect;
 	GetClientRect( pHWND, &destRect );
 
-	int x,y,w,h;
-
+	int x, y, w, h;
 	s_shaderApi.GetViewport(x,y,w,h);
 
 	RECT srcRect;
@@ -392,7 +393,6 @@ void CD3DRenderLib::EndFrame(IEqSwapChain* swapChain)
 	srcRect.bottom = y + h;
 
 	hr = m_rhi->Present(&srcRect, &destRect, pHWND, nullptr);
-
 	s_shaderApi.CheckDeviceResetOrLost(hr);
 }
 

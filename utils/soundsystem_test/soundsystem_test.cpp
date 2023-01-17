@@ -710,7 +710,7 @@ void CMainWindow::ReDraw()
  
 	g_pShaderAPI->SetViewport(0, 0, w,h);
 
-	if(materials->BeginFrame())
+	if(materials->BeginFrame(nullptr))
 	{
 		g_pShaderAPI->Clear(true,true,false, ColorRGBA(0.2,0.2,0.2, 1));
 
@@ -757,7 +757,7 @@ void CMainWindow::ReDraw()
 		debugoverlay->Draw(g_mProjMat, g_mViewMat, w,h);
 
         // TODO: swap chain
-		materials->EndFrame(nullptr);
+		materials->EndFrame();
 		Platform_Sleep(1);
 	}
 

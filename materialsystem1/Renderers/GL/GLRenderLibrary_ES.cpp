@@ -367,7 +367,7 @@ void CGLRenderLib_ES::ExitAPI()
 }
 
 
-void CGLRenderLib_ES::BeginFrame()
+void CGLRenderLib_ES::BeginFrame(IEqSwapChain* swapChain)
 {
 #ifdef PLAT_ANDROID
 	if (m_lostSurface && m_glContext != nullptr)
@@ -405,7 +405,7 @@ void CGLRenderLib_ES::BeginFrame()
 	g_shaderApi.SetViewport(0, 0, m_width, m_height);
 }
 
-void CGLRenderLib_ES::EndFrame(IEqSwapChain* schain)
+void CGLRenderLib_ES::EndFrame()
 {
 #ifdef PLAT_ANDROID
 	eglSwapInterval(m_eglDisplay, g_shaderApi.m_params.verticalSyncEnabled ? 1 : 0);

@@ -28,6 +28,10 @@ static_assert(false, "this file should NOT BE included when GLES version is buil
 
 #ifdef PLAT_WIN
 #	include "wgl_caps.hpp"
+
+typedef void (APIENTRY* PFNGLADDSWAPHINTRECTWINPROC) (GLint x, GLint y, GLsizei width, GLsizei height);
+static PFNGLADDSWAPHINTRECTWINPROC glAddSwapHintRectWIN = nullptr;
+
 #elif defined(PLAT_LINUX)
 #	include "glx_caps.hpp"
 #else
@@ -298,19 +302,17 @@ bool CGLRenderLib::InitAPI(const shaderAPIParams_t& params)
 	SetWindowed(true);
 
 	// choose the best format
-	PIXELFORMATDESCRIPTOR pfd;
-	pfd.nSize = sizeof(PIXELFORMATDESCRIPTOR);
-    pfd.nVersion = 1;
-    pfd.dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;
-    pfd.dwLayerMask = PFD_MAIN_PLANE;
-    pfd.iPixelType = PFD_TYPE_RGBA;
-    pfd.cColorBits = m_devMode.dmBitsPerPel;
-    pfd.cDepthBits = 24;
-    pfd.cAccumBits = 0;
-    pfd.cStencilBits = 0;
+	m_pfd.nSize = sizeof(PIXELFORMATDESCRIPTOR);
+    m_pfd.nVersion = 1;
+    m_pfd.dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;
+    m_pfd.dwLayerMask = PFD_MAIN_PLANE;
+    m_pfd.iPixelType = PFD_TYPE_RGBA;
+    m_pfd.cColorBits = m_devMode.dmBitsPerPel;
+    m_pfd.cDepthBits = 24;
+    m_pfd.cAccumBits = 0;
+    m_pfd.cStencilBits = 0;
 
 	int iPFDAttribs[] = {
-
 		wgl::DRAW_TO_WINDOW_ARB,			GL_TRUE,
 		wgl::ACCELERATION_ARB,				wgl::FULL_ACCELERATION_ARB,
 		wgl::DOUBLE_BUFFER_ARB,				GL_TRUE,
@@ -351,10 +353,11 @@ bool CGLRenderLib::InitAPI(const shaderAPIParams_t& params)
 	}
 	else
 	{
-		pixelFormats[0] = ChoosePixelFormat(m_hdc, &pfd);
+		pixelFormats[0] = ChoosePixelFormat(m_hdc, &m_pfd);
 	}
 
-	SetPixelFormat(m_hdc, pixelFormats[bestFormat], &pfd);
+	m_bestPixelFormat = pixelFormats[bestFormat];
+	SetPixelFormat(m_hdc, m_bestPixelFormat, &m_pfd);
 
 	int iAttribs[] = {
 		wgl::CONTEXT_MAJOR_VERSION_ARB,		3,
@@ -380,6 +383,9 @@ bool CGLRenderLib::InitAPI(const shaderAPIParams_t& params)
 	InitSharedContexts();
 
 	wglMakeCurrent(m_hdc, m_glContext);
+
+	glAddSwapHintRectWIN = (PFNGLADDSWAPHINTRECTWINPROC)wglGetProcAddress("glAddSwapHintRectWIN");
+	ASSERT(glAddSwapHintRectWIN);
 
 #elif defined(PLAT_LINUX)
 
@@ -647,13 +653,30 @@ void CGLRenderLib::ExitAPI()
 }
 
 
-void CGLRenderLib::BeginFrame()
+void CGLRenderLib::BeginFrame(IEqSwapChain* swapChain)
 {
-	// ShaderAPIGL uses m_nViewportWidth/Height as backbuffer size
-	g_shaderApi.m_nViewportWidth = m_width;
-	g_shaderApi.m_nViewportHeight = m_height;
+	m_curSwapChain = swapChain;
 
-	g_shaderApi.SetViewport(0, 0, m_width, m_height);
+	int width = m_width;
+	int height = m_height;
+
+#ifdef PLAT_WIN
+	HDC drawContext = m_hdc;
+	if (swapChain)
+	{
+		CGLSwapChain* glSwapChain = (CGLSwapChain*)swapChain;
+		drawContext = glSwapChain->m_windowDC;
+
+		width = glSwapChain->m_width;
+		height = glSwapChain->m_height;
+	}
+
+	wglMakeCurrent(drawContext, m_glContext);
+#endif
+
+	// ShaderAPIGL uses m_nViewportWidth/Height as backbuffer size
+	g_shaderApi.m_nViewportWidth = width;
+	g_shaderApi.m_nViewportHeight = height;
 
 	g_glWorker.Execute("StepProgressiveTextures", []() {
 		g_shaderApi.StepProgressiveLodTextures();
@@ -661,23 +684,27 @@ void CGLRenderLib::BeginFrame()
 	});
 }
 
-void CGLRenderLib::EndFrame(IEqSwapChain* schain)
+void CGLRenderLib::EndFrame()
 {
 #ifdef PLAT_WIN
+
 	if (wgl::exts::var_EXT_swap_control)
 	{
 		wgl::SwapIntervalEXT(g_shaderApi.m_params.verticalSyncEnabled ? 1 : 0);
 	}
 
 	HDC drawContext = m_hdc;
-
-	if(schain)
+	if (m_curSwapChain)
 	{
-		CGLSwapChain* glSwapChain = (CGLSwapChain*)schain;
+		CGLSwapChain* glSwapChain = (CGLSwapChain*)m_curSwapChain;
 		drawContext = glSwapChain->m_windowDC;
 	}
 
-	//wglMakeCurrent(drawContext, glContext);
+	int x, y, w, h;
+	g_shaderApi.GetViewport(x, y, w, h);
+
+	//glAddSwapHintRectWIN(x, y, w, h);
+
 	SwapBuffers(drawContext);
 
 #elif defined(PLAT_LINUX)
@@ -802,6 +829,8 @@ IEqSwapChain* CGLRenderLib::CreateSwapChain(void* window, bool windowed)
 		delete pNewChain;
 		return nullptr;
 	}
+
+	SetPixelFormat(pNewChain->m_windowDC, m_bestPixelFormat, &m_pfd);
 #endif
 
 	m_swapChains.append(pNewChain);

@@ -239,10 +239,10 @@ public:
 	//-----------------------------
 
 	// tells device to begin frame
-	bool							BeginFrame();
+	bool							BeginFrame(IEqSwapChain* swapChain);
 
 	// tells device to end and present frame. Also swapchain can be overriden.
-	bool							EndFrame(IEqSwapChain* swapChain);
+	bool							EndFrame();
 
 	// resizes device back buffer. Must be called if window resized, etc
 	void							SetDeviceBackbufferSize(int wide, int tall);
