@@ -144,9 +144,9 @@ GLTextureRef_t CGLTexture::CreateGLTexture(const CImage* img, const SamplerState
 	GLCheckError("bind tex");
 
 #ifdef USE_GLES2
-	int widthMip0 = img->GetWidth(0);
-	int heightMip0 = img->GetHeight(0);
-	int depthMip0 = img->GetDepth(0);
+	int widthMip0 = img->GetWidth(startMip);
+	int heightMip0 = img->GetHeight(startMip);
+	int depthMip0 = img->GetDepth(startMip);
 
 	if (type == IMAGE_TYPE_CUBE)
 	{
@@ -377,7 +377,7 @@ bool CGLTexture::Init(const SamplerStateParam_t& sampler, const ArrayCRef<CRefPt
 		const bool imgHasMipMaps = (imgMipCount > 1);
 
 		const int mipStart = imgHasMipMaps ? min(quality, imgMipCount - 1) : 0;
-		const int mipCount = max(imgMipCount - quality, 0);
+		const int mipCount = max(imgMipCount - quality, 1);
 
 		const int texWidth = img->GetWidth(mipStart);
 		const int texHeight = img->GetHeight(mipStart);

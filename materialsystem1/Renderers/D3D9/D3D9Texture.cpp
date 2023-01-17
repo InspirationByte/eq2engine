@@ -193,7 +193,7 @@ bool CD3D9Texture::Init(const SamplerStateParam_t& sampler, const ArrayCRef<CRef
 		const bool imgHasMipMaps = (imgMipCount > 1);
 
 		const int mipStart = imgHasMipMaps ? min(quality, imgMipCount - 1) : 0;
-		const int mipCount = max(imgMipCount - quality, 0);
+		const int mipCount = max(imgMipCount - quality, 1);
 
 		const int texWidth = img->GetWidth(mipStart);
 		const int texHeight = img->GetHeight(mipStart);
