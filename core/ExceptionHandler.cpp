@@ -246,7 +246,7 @@ static LONG WINAPI _exceptionCB(EXCEPTION_POINTERS *ExceptionInfo)
 
 	MsgError("==========================================================\n\n");
 
-	PPMemInfo();
+	PPMemInfo(false);
 
 	CreateMiniDump(ExceptionInfo);
 
