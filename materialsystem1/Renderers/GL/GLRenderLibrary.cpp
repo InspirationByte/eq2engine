@@ -28,10 +28,6 @@ static_assert(false, "this file should NOT BE included when GLES version is buil
 
 #ifdef PLAT_WIN
 #	include "wgl_caps.hpp"
-
-typedef void (APIENTRY* PFNGLADDSWAPHINTRECTWINPROC) (GLint x, GLint y, GLsizei width, GLsizei height);
-static PFNGLADDSWAPHINTRECTWINPROC glAddSwapHintRectWIN = nullptr;
-
 #elif defined(PLAT_LINUX)
 #	include "glx_caps.hpp"
 #else
@@ -384,9 +380,6 @@ bool CGLRenderLib::InitAPI(const shaderAPIParams_t& params)
 
 	wglMakeCurrent(m_hdc, m_glContext);
 
-	glAddSwapHintRectWIN = (PFNGLADDSWAPHINTRECTWINPROC)wglGetProcAddress("glAddSwapHintRectWIN");
-	ASSERT(glAddSwapHintRectWIN);
-
 #elif defined(PLAT_LINUX)
 
     m_display = XOpenDisplay(0);
@@ -699,11 +692,6 @@ void CGLRenderLib::EndFrame()
 		CGLSwapChain* glSwapChain = (CGLSwapChain*)m_curSwapChain;
 		drawContext = glSwapChain->m_windowDC;
 	}
-
-	int x, y, w, h;
-	g_shaderApi.GetViewport(x, y, w, h);
-
-	//glAddSwapHintRectWIN(x, y, w, h);
 
 	SwapBuffers(drawContext);
 
