@@ -29,15 +29,15 @@ CParticleLowLevelRenderer* g_pPFXRenderer = &s_pfxRenderer;
 
 //----------------------------------------------------------------------------------------------------
 
-ConVar r_particleBufferSize("r_particleBufferSize", "16384", "particle buffer size, change requires restart game", CV_ARCHIVE);
-ConVar r_drawParticles("r_drawParticles", "1", "Render particles", CV_CHEAT);
+static ConVar r_particleBufferSize("r_particleBufferSize", "16384", "particle buffer size, change requires restart game", CV_ARCHIVE);
+static ConVar r_drawParticles("r_drawParticles", "1", "Render particles", CV_CHEAT);
 
-CParticleRenderGroup::~CParticleRenderGroup()
+CParticleBatch::~CParticleBatch()
 {
 	Shutdown();
 }
 
-void CParticleRenderGroup::Init( const char* pszMaterialName, bool bCreateOwnVBO, int maxQuads )
+void CParticleBatch::Init( const char* pszMaterialName, bool bCreateOwnVBO, int maxQuads )
 {
 	maxQuads = min(r_particleBufferSize.GetInt(), maxQuads);
 
@@ -47,7 +47,7 @@ void CParticleRenderGroup::Init( const char* pszMaterialName, bool bCreateOwnVBO
 	m_material = materials->GetMaterial(pszMaterialName);
 }
 
-void CParticleRenderGroup::Shutdown()
+void CParticleBatch::Shutdown()
 {
 	if(!m_initialized)
 		return;
@@ -56,13 +56,13 @@ void CParticleRenderGroup::Shutdown()
 	m_material = nullptr;
 }
 
-void CParticleRenderGroup::SetCustomProjectionMatrix(const Matrix4x4& mat)
+void CParticleBatch::SetCustomProjectionMatrix(const Matrix4x4& mat)
 {
 	m_useCustomProjMat = true;
 	m_customProjMat = mat;
 }
 
-int CParticleRenderGroup::AllocateGeom( int nVertices, int nIndices, PFXVertex_t** verts, uint16** indices, bool preSetIndices )
+int CParticleBatch::AllocateGeom( int nVertices, int nIndices, PFXVertex_t** verts, uint16** indices, bool preSetIndices )
 {
 	if(!g_pPFXRenderer->IsInitialized())
 		return -1;
@@ -72,7 +72,7 @@ int CParticleRenderGroup::AllocateGeom( int nVertices, int nIndices, PFXVertex_t
 	return _AllocateGeom(nVertices, nIndices, verts, indices, preSetIndices);
 }
 
-void CParticleRenderGroup::AddParticleStrip(PFXVertex_t* verts, int nVertices)
+void CParticleBatch::AddParticleStrip(PFXVertex_t* verts, int nVertices)
 {
 	if(!g_pPFXRenderer->IsInitialized())
 		return;
@@ -83,7 +83,7 @@ void CParticleRenderGroup::AddParticleStrip(PFXVertex_t* verts, int nVertices)
 }
 
 // prepares render buffers and sends renderables to ViewRenderer
-void CParticleRenderGroup::Render(int nViewRenderFlags)
+void CParticleBatch::Render(int nViewRenderFlags)
 {
 	if(!m_initialized || !r_drawParticles.GetBool())
 	{
@@ -154,7 +154,7 @@ void CParticleRenderGroup::Render(int nViewRenderFlags)
 	}
 }
 
-TexAtlasEntry_t* CParticleRenderGroup::GetEntry(int idx)
+TexAtlasEntry_t* CParticleBatch::GetEntry(int idx)
 {
 	CTextureAtlas* atlas = m_material->GetAtlas();
 	if (!atlas)
@@ -166,7 +166,7 @@ TexAtlasEntry_t* CParticleRenderGroup::GetEntry(int idx)
 	return atlas->GetEntry(idx);
 }
 
-int	CParticleRenderGroup::GetEntryIndex(TexAtlasEntry_t* entry) const
+int	CParticleBatch::GetEntryIndex(TexAtlasEntry_t* entry) const
 {
 	CTextureAtlas* atlas = m_material->GetAtlas();
 	if (!atlas)
@@ -178,7 +178,7 @@ int	CParticleRenderGroup::GetEntryIndex(TexAtlasEntry_t* entry) const
 	return atlas->GetEntryIndex(entry);
 }
 
-TexAtlasEntry_t* CParticleRenderGroup::FindEntry(const char* pszName) const
+TexAtlasEntry_t* CParticleBatch::FindEntry(const char* pszName) const
 {
 	CTextureAtlas* atlas = m_material->GetAtlas();
 	if (!atlas)
@@ -192,7 +192,7 @@ TexAtlasEntry_t* CParticleRenderGroup::FindEntry(const char* pszName) const
 	return atlEntry;
 }
 
-int CParticleRenderGroup::FindEntryIndex(const char* pszName) const
+int CParticleBatch::FindEntryIndex(const char* pszName) const
 {
 	CTextureAtlas* atlas = m_material->GetAtlas();
 	if (!atlas)
@@ -206,7 +206,7 @@ int CParticleRenderGroup::FindEntryIndex(const char* pszName) const
 	return atlEntryIdx;
 }
 
-int CParticleRenderGroup::GetEntryCount() const
+int CParticleBatch::GetEntryCount() const
 {
 	CTextureAtlas* atlas = m_material->GetAtlas();
 	if (!atlas)
@@ -216,15 +216,6 @@ int CParticleRenderGroup::GetEntryCount() const
 }
 
 //----------------------------------------------------------------------------------------------------------
-
-CParticleLowLevelRenderer::CParticleLowLevelRenderer()
-{
-	m_vertexBuffer = nullptr;
-	m_indexBuffer = nullptr;
-	m_vertexFormat = nullptr;
-
-	m_initialized = false;
-}
 
 bool CParticleLowLevelRenderer::MatSysFn_InitParticleBuffers()
 {
@@ -246,6 +237,10 @@ void CParticleLowLevelRenderer::Shutdown()
 {
 	materials->RemoveLostRestoreCallbacks(MatSysFn_ShutdownParticleBuffers, MatSysFn_InitParticleBuffers);
 	ShutdownBuffers();
+
+	for (int i = 0; i < m_batchs.numElem(); i++)
+		delete m_batchs[i];
+	m_batchs.clear(true);
 }
 
 bool CParticleLowLevelRenderer::InitBuffers()
@@ -289,45 +284,51 @@ bool CParticleLowLevelRenderer::ShutdownBuffers()
 	return true;
 }
 
-void CParticleLowLevelRenderer::AddRenderGroup(CParticleRenderGroup* pRenderGroup, CParticleRenderGroup* after/* = nullptr*/)
+CParticleBatch*	CParticleLowLevelRenderer::CreateBatch(const char* materialName, bool createOwnVBO, int maxQuads, CParticleBatch* insertAfter)
 {
-	if (after)
+	ASSERT(FindBatch(materialName) == nullptr);
+
+	CParticleBatch* batch = PPNew CParticleBatch();
+	batch->Init(materialName, createOwnVBO, maxQuads);
+
+	if (insertAfter)
 	{
-		int idx = m_renderGroups.findIndex(after);
-		m_renderGroups.insert(pRenderGroup, idx+1);
+		const int idx = m_batchs.findIndex(insertAfter);
+		m_batchs.insert(batch, idx + 1);
 	}
 	else
-		m_renderGroups.append(pRenderGroup);
+		m_batchs.append(batch);
+
+	return batch;
 }
 
-void CParticleLowLevelRenderer::RemoveRenderGroup(CParticleRenderGroup* pRenderGroup)
+CParticleBatch* CParticleLowLevelRenderer::FindBatch(const char* materialName) const
 {
-	m_renderGroups.remove(pRenderGroup);
+	for (int i = 0; i < m_batchs.numElem(); ++i)
+	{
+		if (!stricmp(m_batchs[i]->m_material->GetName(), materialName))
+			return m_batchs[i];
+	}
+	return nullptr;
 }
 
 void CParticleLowLevelRenderer::PreloadMaterials()
 {
-	for(int i = 0; i < m_renderGroups.numElem(); i++)
-	{
-		materials->PutMaterialToLoadingQueue(m_renderGroups[i]->m_material);
-	}
+	for(int i = 0; i < m_batchs.numElem(); i++)
+		materials->PutMaterialToLoadingQueue(m_batchs[i]->m_material);
 }
 
 // prepares render buffers and sends renderables to ViewRenderer
 void CParticleLowLevelRenderer::Render(int nRenderFlags)
 {
-	for(int i = 0; i < m_renderGroups.numElem(); i++)
-	{
-		m_renderGroups[i]->Render( nRenderFlags );
-	}
+	for(int i = 0; i < m_batchs.numElem(); i++)
+		m_batchs[i]->Render( nRenderFlags );
 }
 
 void CParticleLowLevelRenderer::ClearBuffers()
 {
-	int groups = m_renderGroups.numElem();
-
-	for(int i = 0; i < groups; i++)
-		m_renderGroups[i]->ClearBuffers();
+	for(int i = 0; i < m_batchs.numElem(); i++)
+		m_batchs[i]->ClearBuffers();
 }
 
 bool CParticleLowLevelRenderer::MakeVBOFrom(const CSpriteBuilder<PFXVertex_t>* pGroup)

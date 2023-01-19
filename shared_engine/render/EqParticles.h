@@ -42,19 +42,14 @@ struct PFXVertex_t
 };
 
 //
-// Particle renderer
+// Particle batch for creating primitives
 //
-class CParticleRenderGroup : public CSpriteBuilder<PFXVertex_t>
+class CParticleBatch : public CSpriteBuilder<PFXVertex_t>
 {
 	friend class CParticleLowLevelRenderer;
 
 public:
-	virtual		~CParticleRenderGroup();
-
-	void				Init( const char* pszMaterialName, bool bCreateOwnVBO = false, int maxQuads = 16384 );
-	void				Shutdown();
-
-	//-------------------------------------------------------------------
+	virtual	~CParticleBatch();
 
 	// renders this buffer
 	void				Render(int nViewRenderFlags);
@@ -62,8 +57,6 @@ public:
 
 	// allocates a fixed strip for further use.
 	// returns vertex start index. Returns -1 if failed
-	// terminate with AddStripBreak();
-	// this provides less copy operations
 	int					AllocateGeom( int nVertices, int nIndices, PFXVertex_t** verts, uint16** indices, bool preSetIndices = false );
 	void				AddParticleStrip(PFXVertex_t* verts, int nVertices);
 
@@ -80,6 +73,9 @@ public:
 
 protected:
 
+	void				Init(const char* pszMaterialName, bool bCreateOwnVBO = false, int maxQuads = 16384);
+	void				Shutdown();
+
 	IMaterialPtr		m_material;
 	Matrix4x4			m_customProjMat;
 	bool				m_invertCull{ false };
@@ -90,46 +86,47 @@ protected:
 
 class CParticleLowLevelRenderer
 {
-	friend class CParticleRenderGroup;
+	friend class CParticleBatch;
 	friend class CShadowDecalRenderer;
 
 public:
-	CParticleLowLevelRenderer();
+	void				Init();
+	void				Shutdown();
 
-	void							Init();
-	void							Shutdown();
+	bool				IsInitialized() const { return m_initialized; }
 
-	bool							IsInitialized() const { return m_initialized; }
+	CParticleBatch*		CreateBatch(const char* materialName, bool createOwnVBO = false, int maxQuads = 16384, CParticleBatch* insertAfter = nullptr);
+	CParticleBatch*		FindBatch(const char* materialName) const;
 
-	void							AddRenderGroup(CParticleRenderGroup* pRenderGroup, CParticleRenderGroup* after = nullptr);
-	void							RemoveRenderGroup(CParticleRenderGroup* pRenderGroup);
+	// void				AddRenderGroup(CParticleBatch* pRenderGroup, CParticleBatch* after = nullptr);
+	// void				RemoveRenderGroup(CParticleBatch* pRenderGroup);
 
-	void							PreloadMaterials();
+	void				PreloadMaterials();
 
 	// prepares render buffers and sends renderables to ViewRenderer
-	void							Render(int nRenderFlags);
-	void							ClearBuffers();
+	void				Render(int nRenderFlags);
+	void				ClearBuffers();
 
 	// returns VBO index
-	bool							MakeVBOFrom(const CSpriteBuilder<PFXVertex_t>* pGroup);
+	bool				MakeVBOFrom(const CSpriteBuilder<PFXVertex_t>* pGroup);
 
 protected:
 
-	static bool						MatSysFn_InitParticleBuffers();
-	static bool						MatSysFn_ShutdownParticleBuffers();
+	static bool			MatSysFn_InitParticleBuffers();
+	static bool			MatSysFn_ShutdownParticleBuffers();
 
-	bool							InitBuffers();
-	bool							ShutdownBuffers();
+	bool				InitBuffers();
+	bool				ShutdownBuffers();
 
-	Array<CParticleRenderGroup*>	m_renderGroups{ PP_SL };
+	Array<CParticleBatch*>	m_batchs{ PP_SL };
 
-	IVertexBuffer*					m_vertexBuffer;
-	IIndexBuffer*					m_indexBuffer;
-	IVertexFormat*					m_vertexFormat;
+	IVertexBuffer*		m_vertexBuffer{ nullptr };
+	IIndexBuffer*		m_indexBuffer{ nullptr };
+	IVertexFormat*		m_vertexFormat{ nullptr };
 
-	int								m_vbMaxQuads;
+	int					m_vbMaxQuads{ 0 };
 
-	bool							m_initialized;
+	bool				m_initialized{ false };
 };
 
 //------------------------------------------------------------------------------------
@@ -150,7 +147,7 @@ enum EffectFlags_e
 
 struct PFXBillboard_t
 {
-	CParticleRenderGroup*	group { nullptr };		// atlas
+	CParticleBatch*	group { nullptr };		// atlas
 	TexAtlasEntry_t*		tex {nullptr};			// texture name in atlas
 
 	MColor				vColor;
