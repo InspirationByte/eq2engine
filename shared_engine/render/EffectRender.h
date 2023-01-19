@@ -7,7 +7,7 @@
 
 #pragma once
 
-class CPFXAtlasGroup;
+class CParticleRenderGroup;
 struct TexAtlasEntry_t;
 
 class IEffect
@@ -34,7 +34,7 @@ public:
 
 protected:
 
-	void InternalInit(const Vector3D &origin, float lifetime, CPFXAtlasGroup* group, TexAtlasEntry_t* entry)
+	void InternalInit(const Vector3D &origin, float lifetime, CParticleRenderGroup* group, TexAtlasEntry_t* entry)
 	{
 		m_vOrigin = origin;
 		SetSortOrigin(origin);
@@ -51,7 +51,7 @@ protected:
 	float				m_fStartLifeTime;
 	float				m_fLifeTime;
 
-	CPFXAtlasGroup*		m_atlGroup;
+	CParticleRenderGroup*	m_atlGroup;
 	TexAtlasEntry_t*	m_atlEntry;
 
 	float				m_fDistanceToView;

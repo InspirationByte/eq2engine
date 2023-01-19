@@ -38,7 +38,7 @@ struct PFXVertex_t
 
 	Vector3D		point;
 	TVec2D<half>	texcoord;
-	uint			color;
+	uint			color{ 0xffffffff };
 };
 
 //
@@ -49,17 +49,15 @@ class CParticleRenderGroup : public CSpriteBuilder<PFXVertex_t>
 	friend class CParticleLowLevelRenderer;
 
 public:
-	CParticleRenderGroup();
 	virtual		~CParticleRenderGroup();
 
-	virtual void		Init( const char* pszMaterialName, bool bCreateOwnVBO = false, int maxQuads = 16384 );
-	virtual void		Shutdown();
+	void				Init( const char* pszMaterialName, bool bCreateOwnVBO = false, int maxQuads = 16384 );
+	void				Shutdown();
 
 	//-------------------------------------------------------------------
 
 	// renders this buffer
 	void				Render(int nViewRenderFlags);
-
 	void				SetCustomProjectionMatrix(const Matrix4x4& mat);
 
 	// allocates a fixed strip for further use.
@@ -67,31 +65,10 @@ public:
 	// terminate with AddStripBreak();
 	// this provides less copy operations
 	int					AllocateGeom( int nVertices, int nIndices, PFXVertex_t** verts, uint16** indices, bool preSetIndices = false );
-
 	void				AddParticleStrip(PFXVertex_t* verts, int nVertices);
 
-	void				SetCullInverted(bool invert) {m_invertCull = invert;}
-
-	IMaterial*			GetMaterial() const {return m_pMaterial;}
-protected:
-
-	IMaterialPtr		m_pMaterial;
-
-	bool				m_useCustomProjMat;
-	Matrix4x4			m_customProjMat;
-
-	bool				m_invertCull;
-};
-
-//------------------------------------------------------------------------------------
-
-class CPFXAtlasGroup : public CParticleRenderGroup
-{
-public:
-	CPFXAtlasGroup();
-
-	void				Init( const char* pszMaterialName, bool bCreateOwnVBO, int maxQuads = 16384 );
-	void				Shutdown();
+	void				SetCullInverted(bool invert)	{ m_invertCull = invert; }
+	IMaterialPtr		GetMaterial() const				{ return m_material; }
 
 	TexAtlasEntry_t*	GetEntry(int idx);
 	int					GetEntryIndex(TexAtlasEntry_t* entry) const;
@@ -100,6 +77,13 @@ public:
 	int					FindEntryIndex(const char* pszName) const;
 
 	int					GetEntryCount() const;
+
+protected:
+
+	IMaterialPtr		m_material;
+	Matrix4x4			m_customProjMat;
+	bool				m_invertCull{ false };
+	bool				m_useCustomProjMat{ false };
 };
 
 //------------------------------------------------------------------------------------
@@ -115,10 +99,7 @@ public:
 	void							Init();
 	void							Shutdown();
 
-	bool							IsInitialized() {return m_initialized;}
-
-	void							PreloadCache();
-	void							ClearParticleCache();
+	bool							IsInitialized() const { return m_initialized; }
 
 	void							AddRenderGroup(CParticleRenderGroup* pRenderGroup, CParticleRenderGroup* after = nullptr);
 	void							RemoveRenderGroup(CParticleRenderGroup* pRenderGroup);
@@ -130,12 +111,15 @@ public:
 	void							ClearBuffers();
 
 	// returns VBO index
-	bool							MakeVBOFrom(CSpriteBuilder<PFXVertex_t>* pGroup);
+	bool							MakeVBOFrom(const CSpriteBuilder<PFXVertex_t>* pGroup);
+
+protected:
+
+	static bool						MatSysFn_InitParticleBuffers();
+	static bool						MatSysFn_ShutdownParticleBuffers();
 
 	bool							InitBuffers();
 	bool							ShutdownBuffers();
-
-protected:
 
 	Array<CParticleRenderGroup*>	m_renderGroups{ PP_SL };
 
@@ -152,7 +136,7 @@ protected:
 
 //-----------------------------------
 // Effect elementary
-//-----------------------------------
+//-----------------------------------8
 
 enum EffectFlags_e
 {
@@ -166,8 +150,8 @@ enum EffectFlags_e
 
 struct PFXBillboard_t
 {
-	CPFXAtlasGroup*		group { nullptr };		// atlas
-	TexAtlasEntry_t*	tex {nullptr};			// texture name in atlas
+	CParticleRenderGroup*	group { nullptr };		// atlas
+	TexAtlasEntry_t*		tex {nullptr};			// texture name in atlas
 
 	MColor				vColor;
 	Vector3D			vOrigin;

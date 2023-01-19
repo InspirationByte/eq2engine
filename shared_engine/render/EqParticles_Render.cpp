@@ -32,16 +32,6 @@ CParticleLowLevelRenderer* g_pPFXRenderer = &s_pfxRenderer;
 ConVar r_particleBufferSize("r_particleBufferSize", "16384", "particle buffer size, change requires restart game", CV_ARCHIVE);
 ConVar r_drawParticles("r_drawParticles", "1", "Render particles", CV_CHEAT);
 
-CParticleRenderGroup::CParticleRenderGroup() :
-	m_pMaterial(nullptr),
-	m_useCustomProjMat(false),
-	//m_vertexFormat(nullptr),
-	m_invertCull(false)
-{
-	//memset(m_vertexBuffer, 0, sizeof(m_vertexBuffer));
-	//memset(m_indexBuffer, 0, sizeof(m_indexBuffer));
-}
-
 CParticleRenderGroup::~CParticleRenderGroup()
 {
 	Shutdown();
@@ -54,7 +44,7 @@ void CParticleRenderGroup::Init( const char* pszMaterialName, bool bCreateOwnVBO
 	// init sprite stuff
 	CSpriteBuilder::Init(maxQuads);
 
-	m_pMaterial = materials->GetMaterial(pszMaterialName);
+	m_material = materials->GetMaterial(pszMaterialName);
 }
 
 void CParticleRenderGroup::Shutdown()
@@ -63,7 +53,7 @@ void CParticleRenderGroup::Shutdown()
 		return;
 
 	CSpriteBuilder::Shutdown();
-	m_pMaterial = nullptr;
+	m_material = nullptr;
 }
 
 void CParticleRenderGroup::SetCustomProjectionMatrix(const Matrix4x4& mat)
@@ -126,7 +116,7 @@ void CParticleRenderGroup::Render(int nViewRenderFlags)
 
 	materials->SetMatrix(MATRIXMODE_WORLD, identity4());
 
-	materials->BindMaterial(m_pMaterial);
+	materials->BindMaterial(m_material);
 
 	int primMode = m_triangleListMode ? PRIM_TRIANGLES : PRIM_TRIANGLE_STRIP;
 
@@ -164,78 +154,61 @@ void CParticleRenderGroup::Render(int nViewRenderFlags)
 	}
 }
 
-//----------------------------------------------------------------------------------------------------------
-
-CPFXAtlasGroup::CPFXAtlasGroup() : CParticleRenderGroup()
+TexAtlasEntry_t* CParticleRenderGroup::GetEntry(int idx)
 {
-
-}
-
-void CPFXAtlasGroup::Init( const char* pszMaterialName, bool bCreateOwnVBO, int maxQuads )
-{
-	CParticleRenderGroup::Init( pszMaterialName, bCreateOwnVBO, maxQuads);
-}
-
-void CPFXAtlasGroup::Shutdown()
-{
-	CParticleRenderGroup::Shutdown();
-}
-
-TexAtlasEntry_t* CPFXAtlasGroup::GetEntry(int idx)
-{
-	CTextureAtlas* atlas = m_pMaterial->GetAtlas();
+	CTextureAtlas* atlas = m_material->GetAtlas();
 	if (!atlas)
 	{
-		ASSERT_FAIL("No atlas loaded for material %s", m_pMaterial->GetName());
+		ASSERT_FAIL("No atlas loaded for material %s", m_material->GetName());
 		return nullptr;
 	}
 
 	return atlas->GetEntry(idx);
 }
 
-int	CPFXAtlasGroup::GetEntryIndex(TexAtlasEntry_t* entry) const
+int	CParticleRenderGroup::GetEntryIndex(TexAtlasEntry_t* entry) const
 {
-	CTextureAtlas* atlas = m_pMaterial->GetAtlas();
+	CTextureAtlas* atlas = m_material->GetAtlas();
 	if (!atlas)
 	{
-		ASSERT_FAIL("No atlas loaded for material %s", m_pMaterial->GetName());
+		ASSERT_FAIL("No atlas loaded for material %s", m_material->GetName());
 		return -1;
 	}
 
 	return atlas->GetEntryIndex(entry);
 }
 
-TexAtlasEntry_t* CPFXAtlasGroup::FindEntry(const char* pszName) const
+TexAtlasEntry_t* CParticleRenderGroup::FindEntry(const char* pszName) const
 {
-	CTextureAtlas* atlas = m_pMaterial->GetAtlas();
+	CTextureAtlas* atlas = m_material->GetAtlas();
 	if (!atlas)
 	{
-		ASSERT_FAIL("No atlas loaded for material %s", m_pMaterial->GetName());
+		ASSERT_FAIL("No atlas loaded for material %s", m_material->GetName());
 		return nullptr;
 	}
 
 	TexAtlasEntry_t* atlEntry = atlas->FindEntry(pszName);
-	ASSERT_MSG(atlEntry, "Atlas entry '%s' not found in %s", pszName, m_pMaterial->GetName());
+	ASSERT_MSG(atlEntry, "Atlas entry '%s' not found in %s", pszName, m_material->GetName());
 	return atlEntry;
 }
 
-int CPFXAtlasGroup::FindEntryIndex(const char* pszName) const
+int CParticleRenderGroup::FindEntryIndex(const char* pszName) const
 {
-	CTextureAtlas* atlas = m_pMaterial->GetAtlas();
+	CTextureAtlas* atlas = m_material->GetAtlas();
 	if (!atlas)
 	{
-		ASSERT_FAIL("No atlas loaded for material %s", m_pMaterial->GetName());
+		ASSERT_FAIL("No atlas loaded for material %s", m_material->GetName());
 		return -1;
 	}
 
 	const int atlEntryIdx = atlas->FindEntryIndex(pszName);
-	ASSERT_MSG(atlEntryIdx != -1, "Atlas entry '%s' not found in %s", pszName, m_pMaterial->GetName());
+	ASSERT_MSG(atlEntryIdx != -1, "Atlas entry '%s' not found in %s", pszName, m_material->GetName());
 	return atlEntryIdx;
 }
 
-int CPFXAtlasGroup::GetEntryCount() const
+int CParticleRenderGroup::GetEntryCount() const
 {
-	CTextureAtlas* atlas = m_pMaterial->GetAtlas();
+	CTextureAtlas* atlas = m_material->GetAtlas();
 	if (!atlas)
 		return 0;
 
@@ -253,37 +226,25 @@ CParticleLowLevelRenderer::CParticleLowLevelRenderer()
 	m_initialized = false;
 }
 
-void CParticleLowLevelRenderer::PreloadCache()
+bool CParticleLowLevelRenderer::MatSysFn_InitParticleBuffers()
 {
-
+	return g_pPFXRenderer->InitBuffers();
 }
 
-void CParticleLowLevelRenderer::ClearParticleCache()
+bool CParticleLowLevelRenderer::MatSysFn_ShutdownParticleBuffers()
 {
-	for(int i = 0; i < m_renderGroups.numElem(); i++)
-	{
-		m_renderGroups[i]->Shutdown();
-
-		delete m_renderGroups[i];
-	}
-
-	m_renderGroups.clear();
+	return g_pPFXRenderer->ShutdownBuffers();
 }
-
-bool MatSysFn_InitParticleBuffers();
-bool MatSysFn_ShutdownParticleBuffers();
 
 void CParticleLowLevelRenderer::Init()
 {
 	materials->AddDestroyLostCallbacks(MatSysFn_ShutdownParticleBuffers, MatSysFn_InitParticleBuffers);
-
 	InitBuffers();
 }
 
 void CParticleLowLevelRenderer::Shutdown()
 {
 	materials->RemoveLostRestoreCallbacks(MatSysFn_ShutdownParticleBuffers, MatSysFn_InitParticleBuffers);
-
 	ShutdownBuffers();
 }
 
@@ -348,7 +309,7 @@ void CParticleLowLevelRenderer::PreloadMaterials()
 {
 	for(int i = 0; i < m_renderGroups.numElem(); i++)
 	{
-		materials->PutMaterialToLoadingQueue(m_renderGroups[i]->m_pMaterial);
+		materials->PutMaterialToLoadingQueue(m_renderGroups[i]->m_material);
 	}
 }
 
@@ -369,13 +330,13 @@ void CParticleLowLevelRenderer::ClearBuffers()
 		m_renderGroups[i]->ClearBuffers();
 }
 
-bool CParticleLowLevelRenderer::MakeVBOFrom(CSpriteBuilder<PFXVertex_t>* pGroup)
+bool CParticleLowLevelRenderer::MakeVBOFrom(const CSpriteBuilder<PFXVertex_t>* pGroup)
 {
 	if(!m_initialized)
 		return false;
 
-	uint16 nVerts	= pGroup->m_numVertices;
-	uint16 nIndices	= pGroup->m_numIndices;
+	const uint16 nVerts	= pGroup->m_numVertices;
+	const uint16 nIndices	= pGroup->m_numIndices;
 
 	if(nVerts == 0)
 		return false;
@@ -390,19 +351,6 @@ bool CParticleLowLevelRenderer::MakeVBOFrom(CSpriteBuilder<PFXVertex_t>* pGroup)
 
 	return true;
 }
-
-//----------------------------------------------------------------------------------------------------
-
-bool MatSysFn_InitParticleBuffers()
-{
-	return g_pPFXRenderer->InitBuffers();
-}
-
-bool MatSysFn_ShutdownParticleBuffers()
-{
-	return g_pPFXRenderer->ShutdownBuffers();
-}
-
 //----------------------------------------------------------------------------------------------------
 
 void Effects_DrawBillboard(PFXBillboard_t* effect, CViewParams* view, Volume* frustum)
