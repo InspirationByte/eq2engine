@@ -114,10 +114,10 @@ EBlendMode GetBlendmodeByStr(const char* mode)
 
 struct imgLayer_t
 {
-	CRefPtr<CImage>		image;
-	ColorRGB			color{ color_white };
-	float				transparency{ 1.0f };
-	EBlendMode			blendMode{ BLEND_ADD };
+	CRefPtr<CImage>	image;
+	ColorRGB		color{ color_white };
+	float			transparency{ 1.0f };
+	EBlendMode		blendMode{ BLEND_ADD };
 };
 
 struct imageDesc_t
@@ -493,10 +493,10 @@ void ProcessNewAtlas(const char* atlasPath, const char* pszOutputName)
 			{
 				KVSection* kb = kvs.GetRootSection()->keys[i];
 
-				imageDesc_t imgDesc;
-				if (ParseImageDesc(atlasPath, imgDesc, kb))
+				const int idx = imageList.numElem();
+				if (!ParseImageDesc(atlasPath, imageList.append(), kb))
 				{
-					imageList.append(imgDesc);
+					imageList.fastRemoveIndex(idx);
 				}
 			}
 		}

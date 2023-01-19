@@ -971,12 +971,13 @@ bool CImage::SaveDDS(const char *fileName)
 	header.ddsCaps.Reserved[1] = 0;
 	header.dwReserved2 = 0;
 
-	FILE *file;
-	if ((file = fopen(fileName, "wb")) == nullptr) return false;
+	IFile* file = g_fileSystem->Open(fileName, "wb");
+	if (!file)
+		return false;
 
-	fwrite(&header, sizeof(header), 1, file);
-	if (headerDXT10.dxgiFormat) fwrite(&headerDXT10, sizeof(headerDXT10), 1, file);
-
+	file->Write(&header, sizeof(header), 1);
+	if (headerDXT10.dxgiFormat) 
+		file->Write(&headerDXT10, sizeof(headerDXT10), 1);
 
 	int size = GetMipMappedSize(0, m_nMipMaps);
 
@@ -991,14 +992,14 @@ bool CImage::SaveDDS(const char *fileName)
 			{
 				int faceSize = GetMipMappedSize(mipMapLevel, 1) / 6;
                 ubyte *src = GetPixels(mipMapLevel) + face * faceSize;
-				fwrite(src, 1, faceSize, file);
+				file->Write(src, 1, faceSize);
 			}
 		}
 	}
 	else
-		fwrite(m_pPixels, size, 1, file);
+		file->Write(m_pPixels, size, 1);
 
-	fclose(file);
+	g_fileSystem->Close(file);
 
 	// Restore to RGB
 	if (m_nFormat == FORMAT_RGB8 || m_nFormat == FORMAT_RGBA8)
@@ -1063,8 +1064,9 @@ bool CImage::SaveTGA(const char *fileName)
 	if (m_nFormat != FORMAT_I8 && m_nFormat != FORMAT_RGB8 && m_nFormat != FORMAT_RGBA8)
 		return false;
 
-	FILE *file;
-	if ((file = fopen(fileName, "wb")) == nullptr) return false;
+	IFile* file = g_fileSystem->Open(fileName, "wb");
+	if (!file)
+		return false;
 
 	int nChannels = GetChannelCount(m_nFormat);
 
@@ -1083,7 +1085,7 @@ bool CImage::SaveTGA(const char *fileName)
 		0x00
 	};
 
-	fwrite(&header, sizeof(header), 1, file);
+	file->Write(&header, sizeof(header), 1);
 
 	ubyte *dest, *src, *buffer;
 
@@ -1097,13 +1099,13 @@ bool CImage::SaveTGA(const char *fileName)
 			pal[p++] = i;
 			pal[p++] = i;
 		}
-		fwrite(pal, sizeof(pal), 1, file);
+		file->Write(pal, sizeof(pal), 1);
 
 		src = m_pPixels + m_nWidth * m_nHeight;
 		for (int y = 0; y < m_nHeight; y++)
 		{
 			src -= m_nWidth;
-			fwrite(src, m_nWidth, 1, file);
+			file->Write(src, m_nWidth, 1);
 		}
 
 	}
@@ -1131,11 +1133,11 @@ bool CImage::SaveTGA(const char *fileName)
 			while (--len);
 		}
 
-		fwrite(buffer, m_nHeight * lineLength, 1, file);
+		file->Write(buffer, m_nHeight * lineLength, 1);
 		delete [] buffer;
 	}
 
-	fclose(file);
+	g_fileSystem->Close(file);
 
 	return true;
 }
