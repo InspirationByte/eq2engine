@@ -266,6 +266,7 @@ project "sysLib"
 	unitybuild "on"
 	uses { 
 		"corelib", "frameworkLib",
+		"equiLib",
 		"SDL2", "imgui"
 	}
     files {
@@ -283,7 +284,8 @@ project "equiLib"
 	kind "StaticLib"
 	unitybuild "on"
 	uses { 
-		"corelib", "frameworkLib"
+		"corelib", "frameworkLib",
+		"fontLib",
 	}
     files {
 		Folders.shared_engine.. "equi/**.cpp",
