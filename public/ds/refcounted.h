@@ -87,7 +87,7 @@ public:
 	~CRefPtr();
 
 	void				Assign( PTR_TYPE obj);
-	void				Release(bool deref = true);
+	void				Release();
 
 	operator const		bool() const		{ return m_ptrObj != nullptr; }
 	operator			bool()				{ return m_ptrObj != nullptr; }
@@ -143,10 +143,17 @@ inline CRefPtr<TYPE>::CRefPtr(CRefPtr<TYPE>&& refptr)
 template< class TYPE >
 inline CRefPtr<TYPE>::~CRefPtr()
 {
+	Release();
+}
+
+template< class TYPE >
+inline void CRefPtr<TYPE>::Release()
+{
 	using REF_POLICY = typename TYPE::REF_POLICY;
 	using REF_TYPE = RefCountedObject<TYPE, REF_POLICY>;
 
 	REF_TYPE* oldObj = (REF_TYPE*)m_ptrObj;
+	m_ptrObj = nullptr;
 	if (oldObj != nullptr)
 		oldObj->Ref_Drop();
 }
@@ -167,20 +174,6 @@ inline void CRefPtr<TYPE>::Assign(PTR_TYPE obj)
 		((REF_TYPE*)obj)->Ref_Grab();
 
 	if(oldObj != nullptr)
-		oldObj->Ref_Drop();
-}
-
-template< class TYPE >
-inline void CRefPtr<TYPE>::Release(bool deref)
-{
-	using REF_POLICY = typename TYPE::REF_POLICY;
-	using REF_TYPE = RefCountedObject<TYPE, REF_POLICY>;
-
-	// del old ref
-	REF_TYPE* oldObj = (REF_TYPE*)m_ptrObj;
-	m_ptrObj = nullptr;
-
-	if(oldObj != nullptr && deref)
 		oldObj->Ref_Drop();
 }
 

@@ -18,7 +18,7 @@ struct MatVarData
 	EqString		pszValue;
 	Vector4D		vector{ 0 };
 	int				intValue{ 0 };
-	ITexturePtr		texture{ nullptr };
+	ITexturePtr		texture;
 };
 
 // WARNING: modifying this you must recompile all engine!

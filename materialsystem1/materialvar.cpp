@@ -9,11 +9,6 @@
 #include "materialsystem1/renderers/IShaderAPI.h"
 #include "materialvar.h"
 
-CMatVar::~CMatVar()
-{
-	m_data.texture = nullptr;
-}
-
 void CMatVar::Init(const char* pszName, const char* pszValue)
 {
 	m_name = pszName;

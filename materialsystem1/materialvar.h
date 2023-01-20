@@ -15,7 +15,6 @@ class CMatVar
 
 public:
 					CMatVar() = default;
-					~CMatVar();
 
 	void			Init(const char* pszName,const char* pszValue);
 
