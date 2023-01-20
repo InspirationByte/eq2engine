@@ -1200,6 +1200,8 @@ template< typename T >
 class ArrayRef
 {
 public:
+	ArrayRef(std::nullptr_t) {}
+
 	ArrayRef(T* elemPtr, int numElem)
 		: m_pListPtr(elemPtr), m_nNumElem(numElem)
 	{
@@ -1208,6 +1210,12 @@ public:
 	template<typename ARRAY_TYPE>
 	ArrayRef(ARRAY_TYPE& otherArray)
 		: m_pListPtr(otherArray.ptr()), m_nNumElem(otherArray.numElem())
+	{
+	}
+
+	template<int N>
+	ArrayRef(T(&otherArray)[N])
+		: m_pListPtr(otherArray), m_nNumElem(N)
 	{
 	}
 
@@ -1241,8 +1249,8 @@ public:
 	const T&		back() const { ASSERT(m_nNumElem > 0); return *m_pListPtr[m_nNumElem - 1]; }
 
 protected:
-	T*				m_pListPtr;
-	const int		m_nNumElem;
+	T*				m_pListPtr{ nullptr };
+	const int		m_nNumElem{ 0 };
 };
 
 // const array ref
@@ -1250,6 +1258,8 @@ template< typename T >
 class ArrayCRef
 {
 public:
+	ArrayCRef(std::nullptr_t) {}
+
 	ArrayCRef(const T* elemPtr, int numElem)
 		: m_pListPtr(elemPtr), m_nNumElem(numElem)
 	{
@@ -1258,6 +1268,12 @@ public:
 	template<typename ARRAY_TYPE>
 	ArrayCRef(ARRAY_TYPE& otherArray)
 		: m_pListPtr(otherArray.ptr()), m_nNumElem(otherArray.numElem())
+	{
+	}
+
+	template<int N>
+	ArrayCRef(T(&otherArray)[N])
+		: m_pListPtr(otherArray), m_nNumElem(N)
 	{
 	}
 
@@ -1285,8 +1301,8 @@ public:
 	const T&		back() const { ASSERT(m_nNumElem > 0); return *m_pListPtr[m_nNumElem - 1]; }
 
 protected:
-	const T*		m_pListPtr;
-	const int		m_nNumElem;
+	const T*		m_pListPtr{ nullptr };
+	const int		m_nNumElem{ 0 };
 };
 
 //-------------------------------------------
