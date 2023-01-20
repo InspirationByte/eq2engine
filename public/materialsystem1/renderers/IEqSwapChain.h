@@ -8,6 +8,7 @@
 #pragma once
 
 class ITexture;
+using ITexturePtr = CRefPtr<ITexture>;
 
 class IEqSwapChain
 {
@@ -17,7 +18,7 @@ public:
 	virtual void*			GetWindow() = 0;
 	virtual int				GetMSAASamples() = 0;
 
-	virtual ITexture*		GetBackbuffer() = 0;
+	virtual ITexturePtr		GetBackbuffer() = 0;
 
 	// retrieves backbuffer size for this swap chain
 	virtual void			GetBackbufferSize(int& wide, int& tall) = 0;

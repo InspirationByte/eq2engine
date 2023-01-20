@@ -12,6 +12,6 @@
 class CTextureLoader : public ITextureLoader
 {
 public:
-	ITexture*			LoadTextureFromFileSync(const char* pszFileName, const SamplerStateParam_t& samplerParams, int nFlags = 0);
-	Future<ITexture*>	LoadTextureFromFile(const char* pszFileName, const SamplerStateParam_t& samplerParams, int nFlags = 0);
+	ITexturePtr			LoadTextureFromFileSync(const char* pszFileName, const SamplerStateParam_t& samplerParams, int nFlags = 0);
+	Future<ITexturePtr>	LoadTextureFromFile(const char* pszFileName, const SamplerStateParam_t& samplerParams, int nFlags = 0);
 };

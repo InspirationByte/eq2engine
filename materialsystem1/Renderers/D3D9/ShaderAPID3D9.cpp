@@ -283,9 +283,6 @@ bool ShaderAPID3DX9::ResetDevice( D3DPRESENT_PARAMETERS &d3dpp )
 		m_pSelectedIndexBuffer = nullptr;
 		m_pCurrentIndexBuffer = nullptr;
 
-		memset(m_pSelectedTextures, 0, sizeof(m_pSelectedTextures));
-		memset(m_pCurrentTextures, 0, sizeof(m_pCurrentTextures));
-
 		m_nCurrentSrcFactor = BLENDFACTOR_ONE;
 		m_nCurrentDstFactor = BLENDFACTOR_ZERO;
 		m_nCurrentBlendMode = BLENDFUNC_ADD;
@@ -319,11 +316,13 @@ bool ShaderAPID3DX9::ResetDevice( D3DPRESENT_PARAMETERS &d3dpp )
 		memset(m_pSelectedSamplerStates, 0, sizeof(m_pSelectedSamplerStates));
 		memset(m_pCurrentSamplerStates, 0, sizeof(m_pCurrentSamplerStates));
 
-		memset(m_pSelectedTextures, 0, sizeof(m_pSelectedTextures));
-		memset(m_pCurrentTextures, 0, sizeof(m_pCurrentTextures));
+		for (int i = 0; i < MAX_TEXTUREUNIT; ++i)
+			m_pSelectedTextures[i] = nullptr;
 
-		memset(m_pCurrentColorRenderTargets, 0, sizeof(m_pCurrentColorRenderTargets));
-		memset(m_nCurrentCRTSlice, 0, sizeof(m_nCurrentCRTSlice));
+		for (int i = 0; i < MAX_VERTEXTEXTURES; ++i)
+			m_pSelectedVertexTextures[i] = nullptr;
+
+		ChangeRenderTargetToBackBuffer();
 
 		Reset();
 		Apply();
@@ -590,6 +589,13 @@ bool ShaderAPID3DX9::IsDeviceActive()
 void ShaderAPID3DX9::Shutdown()
 {
 	ReleaseD3DFrameBufferSurfaces();
+
+	if(m_fbColorTexture)
+		m_fbColorTexture->Ref_Drop();
+
+	if(m_fbDepthTexture)
+		m_fbDepthTexture->Ref_Drop();
+
 	ShaderAPI_Base::Shutdown();
 
 	if(m_pEventQuery)
@@ -621,7 +627,7 @@ void ShaderAPID3DX9::ApplyTextures()
 {
 	for(int i = 0; i < MAX_TEXTUREUNIT; i++)
 	{
-		CD3D9Texture* pTexture = (CD3D9Texture*)m_pSelectedTextures[i];
+		CD3D9Texture* pTexture = (CD3D9Texture*)m_pSelectedTextures[i].Ptr();
 		if (pTexture != m_pCurrentTextures[i])
 		{
 			if (pTexture == nullptr)
@@ -645,13 +651,13 @@ void ShaderAPID3DX9::ApplyTextures()
 				m_nCurrentSamplerStateDirty |= (1 << i);
 			}
 
-			m_pCurrentTextures[i] = pTexture;
+			m_pCurrentTextures[i] = ITexturePtr(pTexture);
 		}
 	}
 
 	for(int i = 0; i < m_caps.maxVertexTextureUnits; i++)
 	{
-		CD3D9Texture* pTexture = (CD3D9Texture*)m_pSelectedVertexTextures[i];
+		CD3D9Texture* pTexture = (CD3D9Texture*)m_pSelectedVertexTextures[i].Ptr();
 		if (pTexture != m_pCurrentVertexTextures[i])
 		{
 			if (pTexture == nullptr)
@@ -668,7 +674,7 @@ void ShaderAPID3DX9::ApplyTextures()
 				m_nCurrentVertexSamplerStateDirty |= (1 << i);
 			}
 
-			m_pCurrentVertexTextures[i] = pTexture;
+			m_pCurrentVertexTextures[i] = ITexturePtr(pTexture);
 		}
 	}
 }
@@ -1285,39 +1291,6 @@ void ShaderAPID3DX9::DestroyRenderState( IRenderState* pState, bool removeAllRef
 // Textures
 //-------------------------------------------------------------
 
-// Unload the texture and free the memory
-void ShaderAPID3DX9::FreeTexture(ITexture* pTexture)
-{
-	CD3D9Texture* pTex = (CD3D9Texture*)(pTexture);
-
-	if(pTex == nullptr)
-		return;
-
-	{
-		CScopedMutex scoped(g_sapi_TextureMutex);
-
-		auto it = m_TextureList.find(pTex->m_nameHash);
-		if (it == m_TextureList.end())
-			return;
-
-		if (pTex->Ref_Count() == 0)
-			MsgWarning("texture %s refcount==0\n", pTexture->GetName());
-
-		if (!pTex->Ref_Drop())
-			return;
-
-		m_TextureList.remove(it);
-	}
-
-	DevMsg(DEVMSG_SHADERAPI, "Texture unloaded: %s\n", pTexture->GetName());
-	delete pTex;
-}
-
-static LPDIRECT3DSURFACE9* CreateSurfaces(int num)
-{
-	return PPNew LPDIRECT3DSURFACE9[num];
-}
-
 bool ShaderAPID3DX9::InternalCreateRenderTarget(LPDIRECT3DDEVICE9 dev, CD3D9Texture *tex, int nFlags, const ShaderAPICaps_t& caps)
 {
 	if (caps.INTZSupported && caps.INTZFormat == tex->GetFormat())
@@ -1430,9 +1403,9 @@ bool ShaderAPID3DX9::InternalCreateRenderTarget(LPDIRECT3DDEVICE9 dev, CD3D9Text
 }
 
 // It will add new rendertarget
-ITexture* ShaderAPID3DX9::CreateRenderTarget(int width, int height, ETextureFormat nRTFormat, ER_TextureFilterMode textureFilterType, ER_TextureAddressMode textureAddress, ER_CompareFunc comparison, int nFlags)
+ITexturePtr ShaderAPID3DX9::CreateRenderTarget(int width, int height, ETextureFormat nRTFormat, ER_TextureFilterMode textureFilterType, ER_TextureAddressMode textureAddress, ER_CompareFunc comparison, int nFlags)
 {
-	CD3D9Texture *pTexture = PPNew CD3D9Texture;
+	CRefPtr<CD3D9Texture> pTexture = CRefPtr_new(CD3D9Texture);
 
 	pTexture->SetDimensions(width,height);
 	pTexture->SetFormat(nRTFormat);
@@ -1456,19 +1429,17 @@ ITexture* ShaderAPID3DX9::CreateRenderTarget(int width, int height, ETextureForm
 
 		ASSERT_MSG(m_TextureList.find(pTexture->m_nameHash) == m_TextureList.end(), "Texture %s was already added", pTexture->GetName());
 		m_TextureList.insert(pTexture->m_nameHash, pTexture);
-		return pTexture;
+
+		return ITexturePtr(pTexture);
 	} 
-	else 
-	{
-		delete pTexture;
-		return nullptr;
-	}
+
+	return nullptr;
 }
 
 // It will add new rendertarget
-ITexture* ShaderAPID3DX9::CreateNamedRenderTarget(const char* pszName,int width, int height,ETextureFormat nRTFormat, ER_TextureFilterMode textureFilterType, ER_TextureAddressMode textureAddress, ER_CompareFunc comparison, int nFlags)
+ITexturePtr ShaderAPID3DX9::CreateNamedRenderTarget(const char* pszName,int width, int height,ETextureFormat nRTFormat, ER_TextureFilterMode textureFilterType, ER_TextureAddressMode textureAddress, ER_CompareFunc comparison, int nFlags)
 {
-	CD3D9Texture *pTexture = PPNew CD3D9Texture;
+	CRefPtr<CD3D9Texture> pTexture = CRefPtr_new(CD3D9Texture);
 
 	pTexture->SetDimensions(width,height);
 	pTexture->SetFormat(nRTFormat);
@@ -1485,19 +1456,17 @@ ITexture* ShaderAPID3DX9::CreateNamedRenderTarget(const char* pszName,int width,
 		CScopedMutex scoped(g_sapi_TextureMutex);
 		ASSERT_MSG(m_TextureList.find(pTexture->m_nameHash) == m_TextureList.end(), "Texture %s was already added", pTexture->GetName());
 		m_TextureList.insert(pTexture->m_nameHash, pTexture);
-		return pTexture;
+		return ITexturePtr(pTexture);
 	} 
-	else 
-	{
-		delete pTexture;
-		return nullptr;
-	}
+
+	return nullptr;
 }
 
 //-------------------------------------------------------------
 // Texture operations
 //-------------------------------------------------------------
 
+#if 0
 // saves rendertarget to texture, you can also save screenshots
 void ShaderAPID3DX9::SaveRenderTarget(ITexture* pTargetTexture, const char* pFileName)
 {
@@ -1511,11 +1480,12 @@ void ShaderAPID3DX9::SaveRenderTarget(ITexture* pTargetTexture, const char* pFil
 			D3DXSaveSurfaceToFileA(pFileName, D3DXIFF_DDS, pTexture->surfaces[0], nullptr, nullptr);
 	}
 }
+#endif
 
 // Copy render target to texture
-void ShaderAPID3DX9::CopyFramebufferToTexture(ITexture* pTargetTexture)
+void ShaderAPID3DX9::CopyFramebufferToTexture(const ITexturePtr& pTargetTexture)
 {
-	CD3D9Texture* dest = (CD3D9Texture*)(pTargetTexture);
+	CD3D9Texture* dest = (CD3D9Texture*)pTargetTexture.Ptr();
 	if(!dest)
 		return;
 
@@ -1547,10 +1517,10 @@ void ShaderAPID3DX9::CopyFramebufferToTexture(ITexture* pTargetTexture)
 }
 
 // Copy render target to texture with resizing
-void ShaderAPID3DX9::CopyRendertargetToTexture(ITexture* srcTarget, ITexture* destTex, IRectangle* srcRect, IRectangle* destRect)
+void ShaderAPID3DX9::CopyRendertargetToTexture(const ITexturePtr& srcTarget, const ITexturePtr& destTex, IRectangle* srcRect, IRectangle* destRect)
 {
-	CD3D9Texture* src = (CD3D9Texture*)(srcTarget);
-	CD3D9Texture* dest = (CD3D9Texture*)(destTex);
+	CD3D9Texture* src = (CD3D9Texture*)srcTarget.Ptr();
+	CD3D9Texture* dest = (CD3D9Texture*)destTex.Ptr();
 
 	if(!src || !dest)
 		return;
@@ -1600,24 +1570,26 @@ void ShaderAPID3DX9::CopyRendertargetToTexture(ITexture* srcTarget, ITexture* de
 }
 
 // Changes render target (MRT)
-void ShaderAPID3DX9::ChangeRenderTargets(ITexture** pRenderTargets, int nNumRTs, int* nCubemapFaces, ITexture* pDepthTarget, int nDepthSlice)
+void ShaderAPID3DX9::ChangeRenderTargets(ArrayCRef<ITexturePtr> renderTargets, ArrayCRef<int> rtSlice, const ITexturePtr& depthTarget, int depthSlice)
 {
-	for (int i = 0; i < nNumRTs; i++)
-	{
-		CD3D9Texture* pRenderTarget = (CD3D9Texture*)pRenderTargets[i];
+	ASSERT_MSG(!rtSlice.ptr() || renderTargets.numElem() == rtSlice.numElem(), "ChangeRenderTargets - renderTargets and rtSlice must be equal");
 
-		const int nCubeFace = nCubemapFaces ? nCubemapFaces[i] : 0;
+	for (int i = 0; i < renderTargets.numElem(); i++)
+	{
+		CD3D9Texture* pRenderTarget = (CD3D9Texture*)renderTargets[i].Ptr();
+
+		const int nCubeFace = rtSlice.ptr() ? rtSlice[i] : 0;
 
 		if (pRenderTarget != m_pCurrentColorRenderTargets[i] || nCubeFace != m_nCurrentCRTSlice[i])
 		{
 			m_pD3DDevice->SetRenderTarget(i, pRenderTarget->surfaces[nCubeFace]);
 
-			m_pCurrentColorRenderTargets[i] = pRenderTarget;
+			m_pCurrentColorRenderTargets[i] = renderTargets[i];
 			m_nCurrentCRTSlice[i] = nCubeFace;
 		}
 	}
 
-	for (int i = nNumRTs; i < m_caps.maxRenderTargets; i++)
+	for (int i = renderTargets.numElem(); i < m_caps.maxRenderTargets; i++)
 	{
 		if (m_pCurrentColorRenderTargets[i] != nullptr)
 		{
@@ -1626,16 +1598,16 @@ void ShaderAPID3DX9::ChangeRenderTargets(ITexture** pRenderTargets, int nNumRTs,
 		}
 	}
 
-	LPDIRECT3DSURFACE9 bestDepth = nNumRTs ? ((CD3D9Texture*)pRenderTargets[0])->m_dummyDepth : nullptr;
+	LPDIRECT3DSURFACE9 bestDepth = renderTargets.numElem() ? ((CD3D9Texture*)renderTargets[0].Ptr())->m_dummyDepth : nullptr;
 
-	if (pDepthTarget != m_pCurrentDepthRenderTarget)
+	if (depthTarget.Ptr() != m_pCurrentDepthRenderTarget)
 	{
-		CD3D9Texture* pDepthRenderTarget = (CD3D9Texture*)(pDepthTarget);
+		CD3D9Texture* pDepthRenderTarget = (CD3D9Texture*)depthTarget.Ptr();
 
 		if (pDepthRenderTarget)
 			bestDepth = pDepthRenderTarget->surfaces[0 /*nDepthSlice ??? */];
 
-		m_pCurrentDepthRenderTarget = pDepthRenderTarget;
+		m_pCurrentDepthRenderTarget = depthTarget;
 	}
 
 	if(!bestDepth)
@@ -1676,46 +1648,17 @@ void ShaderAPID3DX9::ChangeRenderTargetToBackBuffer()
 }
 
 // resizes render target
-void ShaderAPID3DX9::ResizeRenderTarget(ITexture* pRT, int newWide, int newTall)
+void ShaderAPID3DX9::ResizeRenderTarget(const ITexturePtr& renderTarget, int newWide, int newTall)
 {
-	if(pRT->GetWidth() == newWide && pRT->GetHeight() == newTall)
+	if(renderTarget->GetWidth() == newWide && renderTarget->GetHeight() == newTall)
 		return;
 
-	CD3D9Texture* pRenderTarget = (CD3D9Texture*)(pRT);
+	CD3D9Texture* pRenderTarget = (CD3D9Texture*)renderTarget.Ptr();
 
 	pRenderTarget->Release();
-
 	pRenderTarget->SetDimensions(newWide, newTall);
 
 	InternalCreateRenderTarget(m_pD3DDevice, pRenderTarget, pRenderTarget->GetFlags(), m_caps);
-}
-
-
-// fills the current rendertarget buffers
-void ShaderAPID3DX9::GetCurrentRenderTargets(ITexture* pRenderTargets[MAX_MRTS], int *numRTs, ITexture** pDepthTarget, int cubeNumbers[MAX_MRTS])
-{
-	int nRts = 0;
-
-	if(pRenderTargets)
-	{
-		for (int i = 0; i < m_caps.maxRenderTargets; i++)
-		{
-			nRts++;
-
-			pRenderTargets[i] = m_pCurrentColorRenderTargets[i];
-
-			if(cubeNumbers)
-				cubeNumbers[i] = m_nCurrentCRTSlice[i];
-
-			if(m_pCurrentColorRenderTargets[i] == nullptr)
-				break;
-		}
-	}
-
-	if(pDepthTarget)
-		*pDepthTarget = m_pCurrentDepthRenderTarget;
-
-	*numRTs = nRts;
 }
 
 // returns current size of backbuffer surface
@@ -2512,7 +2455,7 @@ bool ShaderAPID3DX9::GetSamplerUnit(CD3D9ShaderProgram* pProgram, const char* ps
 	return false;
 }
 
-void ShaderAPID3DX9::SetTexture( ITexture* pTexture, const char* pszName, int index )
+void ShaderAPID3DX9::SetTexture(const ITexturePtr& pTexture, const char* pszName, int index )
 {
 	if (!pszName)
 	{
@@ -2737,12 +2680,12 @@ void ShaderAPID3DX9::DrawNonIndexedPrimitives(ER_PrimitiveType nType, int nFirst
 // Textures
 //-------------------------------------------------------------------------------------------------------------------------
 
-ITexture* ShaderAPID3DX9::CreateTextureResource(const char* pszName)
+ITexturePtr ShaderAPID3DX9::CreateTextureResource(const char* pszName)
 {
-	CD3D9Texture* texture = PPNew CD3D9Texture();
+	CRefPtr<CD3D9Texture> texture = CRefPtr_new(CD3D9Texture);
 	texture->SetName(pszName);
 	texture->SetFlags(TEXFLAG_JUST_CREATED);
 
 	m_TextureList.insert(texture->m_nameHash, texture);
-	return texture;
+	return ITexturePtr(texture);
 }

@@ -18,7 +18,6 @@ BEGIN_SHADER_CLASS(Skybox)
 	SHADER_INIT_PARAMS()
 	{
 		SHADER_PASS(Unlit) = nullptr;
-		m_nBaseTexture = nullptr;
 		m_nFlags |= MATERIAL_FLAG_ISSKY;
 	}
 
@@ -39,8 +38,8 @@ BEGIN_SHADER_CLASS(Skybox)
 		return true;
 	}
 
-	ITexture* GetBaseTexture(int stage) const {return m_nBaseTexture;}
-	ITexture* GetBumpTexture(int stage) const {return nullptr;}
+	ITexturePtr GetBaseTexture(int stage) const {return m_nBaseTexture;}
+	ITexturePtr GetBumpTexture(int stage) const {return nullptr;}
 
 	SHADER_SETUP_STAGE()
 	{
@@ -74,6 +73,6 @@ BEGIN_SHADER_CLASS(Skybox)
 	}
 
 	SHADER_DECLARE_PASS(Unlit);
-	ITexture*		m_nBaseTexture;
+	ITexturePtr		m_nBaseTexture;
 
 END_SHADER_CLASS

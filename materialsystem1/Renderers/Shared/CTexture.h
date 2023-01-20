@@ -7,6 +7,7 @@
 
 #pragma once
 #include "renderers/ITexture.h"
+#include "renderers/ShaderAPI_defs.h"
 
 static constexpr const int TEXTURE_TRANSFER_RATE_THRESHOLD = 512;
 static constexpr const int TEXTURE_TRANSFER_MAX_TEXTURES_PER_FRAME = 15;
@@ -30,6 +31,7 @@ public:
 
 	void						SetName(const char* pszNewName);
 	const char*					GetName() const { return m_szTexName.ToCString(); }
+	int							GetNameHash() const { return m_nameHash; }
 	ETextureFormat				GetFormat() const { return m_iFormat; }
 
 	int							GetWidth() const { return m_iWidth; }

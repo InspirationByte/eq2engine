@@ -90,30 +90,6 @@ public:
 	// Renderer string (ex: OpenGL, D3D9)
 	const char*					GetRendererName() const;
 
-	// Render targetting support
-	bool						IsSupportsRendertargetting() const;
-
-	// Render targetting support for Multiple RTs
-	bool						IsSupportsMRT() const;
-
-	// Supports multitexturing???
-	bool						IsSupportsMultitexturing() const;
-
-	// The driver/hardware is supports Pixel shaders?
-	bool						IsSupportsPixelShaders() const;
-
-	// The driver/hardware is supports Vertex shaders?
-	bool						IsSupportsVertexShaders() const;
-
-	// The driver/hardware is supports Geometry shaders?
-	bool						IsSupportsGeometryShaders() const;
-
-	// The driver/hardware is supports Domain shaders?
-	bool						IsSupportsDomainShaders() const;
-
-	// The driver/hardware is supports Hull (tessellator) shaders?
-	bool						IsSupportsHullShaders() const;
-
 //-------------------------------------------------------------
 // MT Synchronization
 //-------------------------------------------------------------
@@ -137,11 +113,8 @@ public:
 // Textures
 //-------------------------------------------------------------
 
-	// Unload the texture and free the memory
-	void						FreeTexture(ITexture* pTexture);
-
 	// It will add new rendertarget
-	ITexture*					CreateRenderTarget(	int width, int height,
+	ITexturePtr					CreateRenderTarget(	int width, int height,
 													ETextureFormat nRTFormat,
 													ER_TextureFilterMode textureFilterType = TEXFILTER_LINEAR, 
 													ER_TextureAddressMode textureAddress = TEXADDRESS_WRAP, 
@@ -149,7 +122,7 @@ public:
 													int nFlags = 0);
 
 	// It will add new rendertarget
-	ITexture*					CreateNamedRenderTarget(const char* pszName,
+	ITexturePtr					CreateNamedRenderTarget(const char* pszName,
 														int width, int height, 
 														ETextureFormat nRTFormat, ER_TextureFilterMode textureFilterType = TEXFILTER_LINEAR,
 														ER_TextureAddressMode textureAddress = TEXADDRESS_WRAP,
@@ -194,26 +167,23 @@ public:
 // Texture operations
 //-------------------------------------------------------------
 
-	// saves rendertarget to texture, you can also save screenshots
-	void						SaveRenderTarget(ITexture* pTargetTexture, const char* pFileName);
+	// Copy render target to texture
+	void						CopyFramebufferToTexture(const ITexturePtr& renderTarget);
 
 	// Copy render target to texture
-	void						CopyFramebufferToTexture(ITexture* pTargetTexture);
-
-	// Copy render target to texture
-	void						CopyRendertargetToTexture(ITexture* srcTarget, ITexture* destTex, IRectangle* srcRect = nullptr, IRectangle* destRect = nullptr);
+	void						CopyRendertargetToTexture(const ITexturePtr& srcTarget, const ITexturePtr& destTex, IRectangle* srcRect = nullptr, IRectangle* destRect = nullptr);
 
 	// Changes render target (MRT)
-	void						ChangeRenderTargets(ITexture** pRenderTargets, int nNumRTs, int* nCubemapFaces = nullptr, ITexture* pDepthTarget = nullptr, int nDepthSlice = 0);
-
-	// fills the current rendertarget buffers
-	void						GetCurrentRenderTargets(ITexture* pRenderTargets[MAX_MRTS], int *nNumRTs, ITexture** pDepthTarget, int cubeNumbers[MAX_MRTS]);
+	void						ChangeRenderTargets(ArrayCRef<ITexturePtr> renderTargets,
+													ArrayCRef<int> rtSlice = nullptr,
+													const ITexturePtr& depthTarget = nullptr,
+													int depthSlice = 0);
 
 	// Changes back to backbuffer
 	void						ChangeRenderTargetToBackBuffer();
 
 	// resizes render target
-	void						ResizeRenderTarget(ITexture* pRT, int newWide, int newTall);
+	void						ResizeRenderTarget(const ITexturePtr& renderTarget, int newWide, int newTall);
 
 //-------------------------------------------------------------
 // Matrix for rendering
@@ -255,7 +225,7 @@ public:
 
 	// Set the texture. Animation is set from ITexture every frame (no affection on speed) before you do 'ApplyTextures'
 	// Also you need to specify texture name. If you don't, use registers (not fine with DX10, 11)
-	void						SetTexture( ITexture* pTexture, const char* pszName, int index = 0 );
+	void						SetTexture(const ITexturePtr& pTexture, const char* pszName, int index = 0 );
 
 //-------------------------------------------------------------
 // Vertex buffer object handling
@@ -302,7 +272,7 @@ public:
 	void						SetShaderConstantRaw(const char *pszName, const void *data, int nSize);
 
 	// Creates empty texture resource.
-	ITexture*					CreateTextureResource(const char* pszName);
+	ITexturePtr					CreateTextureResource(const char* pszName);
 
 protected:
 
@@ -390,11 +360,7 @@ private:
 	LPDIRECT3DDEVICE9			m_pD3DDevice;
 #endif
 
-	// the main renderer
-	//ITexture*					m_pBackBuffer;
-	//ITexture*					m_pDepthBuffer;
-
-	//int							m_nCurrentSampleMask;
+	//int						m_nCurrentSampleMask;
 	int							m_nSelectedSampleMask;
 
 	//uint8						m_nMRTs;

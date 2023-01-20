@@ -34,14 +34,12 @@ CMaterial::CMaterial(const char* materialName, bool loadFromDisk)
 
 CMaterial::~CMaterial()
 {
-
+	Cleanup();
 }
 
 void CMaterial::Ref_DeleteObject()
 {
 	materials->FreeMaterial(this);
-	Cleanup();
-
 	delete this;
 }
 
@@ -404,7 +402,7 @@ MatVarProxy CMaterial::FindMaterialVar(const char* pszVarName) const
 	return MatVarProxy(*it, const_cast<IMaterial*>(static_cast<const IMaterial*>(this)));
 }
 
-ITexture* CMaterial::GetBaseTexture(int stage)
+ITexturePtr CMaterial::GetBaseTexture(int stage)
 {
 	if(m_shader != nullptr && !IsError())
 	{

@@ -61,8 +61,8 @@ BEGIN_SHADER_CLASS(SDFFont)
 		g_pShaderAPI->SetShaderConstantVector4D("AmbientColor", setColor);
 	}
 
-	ITexture*	GetBaseTexture(int stage) const {return nullptr;}
-	ITexture*	GetBumpTexture(int stage) const {return nullptr;}
+	ITexturePtr	GetBaseTexture(int stage) const {return nullptr;}
+	ITexturePtr	GetBumpTexture(int stage) const {return nullptr;}
 
 	SHADER_DECLARE_PASS(Unlit);
 

@@ -10,7 +10,7 @@
 // DirectX data
 struct ImGui_ImplMatSystem_Data
 {
-	ITexture*					FontTexture;
+	ITexturePtr	FontTexture;
 
 	ImGui_ImplMatSystem_Data() { memset(this, 0, sizeof(*this)); }
 };
@@ -114,7 +114,7 @@ void ImGui_ImplMatSystem_RenderDrawData(ImDrawData* draw_data)
 				ITexture* texture = (ITexture*)pcmd->GetTexID();
 				IRectangle scissor((int)clip_min.x, (int)clip_min.y, (int)clip_max.x, (int)clip_max.y);
 				g_pShaderAPI->SetScissorRectangle(scissor);
-				g_pShaderAPI->SetTexture(texture, nullptr, 0);
+				g_pShaderAPI->SetTexture(ITexturePtr(texture), nullptr, 0);
 
 				materials->BindMaterial(materials->GetDefaultMaterial());
 				g_pShaderAPI->Reset(STATE_RESET_VBO);
@@ -172,7 +172,6 @@ static bool ImGui_ImplMatSystem_CreateFontsTexture()
 	SamplerStateParam_t params;
 	SamplerStateParams_Make(params, g_pShaderAPI->GetCaps(), TEXFILTER_NEAREST, TEXADDRESS_CLAMP, TEXADDRESS_CLAMP, TEXADDRESS_CLAMP);
 	bd->FontTexture = g_pShaderAPI->CreateTexture(imgs, params);
-	bd->FontTexture->Ref_Grab();
 
 	ASSERT(bd->FontTexture);
 	if (!bd->FontTexture)
@@ -199,7 +198,11 @@ void ImGui_ImplMatSystem_InvalidateDeviceObjects()
 	ImGui_ImplMatSystem_Data* bd = ImGui_ImplMatSystem_GetBackendData();
 	if (!bd)
 		return;
-	if (bd->FontTexture) { g_pShaderAPI->FreeTexture(bd->FontTexture); bd->FontTexture = nullptr; ImGui::GetIO().Fonts->SetTexID(nullptr); } // We copied bd->pFontTextureView to io.Fonts->TexID so let's clear that as well.
+	if (bd->FontTexture) 
+	{ 
+		bd->FontTexture = nullptr; 
+		ImGui::GetIO().Fonts->SetTexID(nullptr); 
+	} // We copied bd->pFontTextureView to io.Fonts->TexID so let's clear that as well.
 }
 
 void ImGui_ImplMatSystem_NewFrame()

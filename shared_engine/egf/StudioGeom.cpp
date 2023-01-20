@@ -906,7 +906,7 @@ static void MakeDecalTexCoord(Array<EGFHwVertex_t>& verts, Array<int>& indices, 
 		int texSizeW = 1;
 		int texSizeH = 1;
 
-		ITexture* pTex = info.material->GetBaseTexture();
+		ITexturePtr pTex = info.material->GetBaseTexture();
 
 		if (pTex)
 		{

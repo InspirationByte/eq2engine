@@ -112,18 +112,18 @@ BEGIN_SHADER_CLASS(VHBlurFilter)
 
 	void SetupBaseTexture0()
 	{
-		ITexture* pSetupTexture = materials->GetConfiguration().wireframeMode ? materials->GetWhiteTexture() : m_pBaseTexture;
+		ITexturePtr pSetupTexture = materials->GetConfiguration().wireframeMode ? materials->GetWhiteTexture() : m_pBaseTexture;
 		g_pShaderAPI->SetTexture(pSetupTexture, "BaseTexture", 0);
 	}
 
-	ITexture*	GetBaseTexture(int stage) const {return m_pBaseTexture;}
-	ITexture*	GetBumpTexture(int stage) const {return nullptr;}
+	ITexturePtr		GetBaseTexture(int stage) const {return m_pBaseTexture;}
+	ITexturePtr		GetBumpTexture(int stage) const {return nullptr;}
 
-	ITexture*			m_pBaseTexture;
-	int					m_blurAxes;
-	int					m_blurModes;
+	ITexturePtr		m_pBaseTexture;
+	int				m_blurAxes;
+	int				m_blurModes;
 
-	Vector4D			m_texSize;
+	Vector4D		m_texSize;
 
 	SHADER_DECLARE_PASS(Unlit);
 

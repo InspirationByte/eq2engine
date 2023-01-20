@@ -11,7 +11,6 @@
 
 CMatVar::~CMatVar()
 {
-	g_pShaderAPI->FreeTexture(m_data.texture);
 	m_data.texture = nullptr;
 }
 

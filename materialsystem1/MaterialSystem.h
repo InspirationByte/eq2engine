@@ -50,7 +50,7 @@ public:
 	bool							LoadShaderLibrary(const char* libname);
 
 	// is matsystem in stub mode? (no rendering)
-	bool							IsInStubMode();
+	bool							IsInStubMode() const;
 
 	// returns configuration that can be modified in realtime (shaderapi settings can't be modified)
 	matsystem_render_config_t&		GetConfiguration();
@@ -67,10 +67,10 @@ public:
 	IMaterialPtr					GetDefaultMaterial() const;
 
 	// returns white texture (used for wireframe of shaders that can't use FFP modes,notexture modes, etc.)
-	ITexture*						GetWhiteTexture() const;
+	ITexturePtr						GetWhiteTexture() const;
 
 	// returns luxel test texture (used for lightmap test)
-	ITexture*						GetLuxelTestTexture() const;
+	ITexturePtr						GetLuxelTestTexture() const;
 
 	// creates new material with defined parameters
 	IMaterialPtr					CreateMaterial(const char* szMaterialName, KVSection* params);
@@ -120,13 +120,13 @@ public:
 
 	// draws primitives
 	void							DrawPrimitivesFFP(	ER_PrimitiveType type, Vertex3D_t *pVerts, int nVerts,
-														ITexture* pTexture = nullptr, const ColorRGBA &color = color_white,
+														ITexturePtr pTexture = nullptr, const ColorRGBA &color = color_white,
 														BlendStateParam_t* blendParams = nullptr, DepthStencilStateParams_t* depthParams = nullptr,
 														RasterizerStateParams_t* rasterParams = nullptr);
 
 	// draws primitives for 2D
 	void							DrawPrimitives2DFFP(	ER_PrimitiveType type, Vertex2D_t *pVerts, int nVerts,
-															ITexture* pTexture = nullptr, const ColorRGBA &color = color_white,
+															ITexturePtr pTexture = nullptr, const ColorRGBA &color = color_white,
 															BlendStateParam_t* blendParams = nullptr, DepthStencilStateParams_t* depthParams = nullptr,
 															RasterizerStateParams_t* rasterParams = nullptr);
 
@@ -134,33 +134,33 @@ public:
 	// Shader dynamic states
 	//-----------------------------
 
-	ER_CullMode						GetCurrentCullMode();
+	ER_CullMode						GetCurrentCullMode() const;
 	void							SetCullMode(ER_CullMode cullMode);
 
 	void							SetSkinningEnabled( bool bEnable );
-	bool							IsSkinningEnabled();
+	bool							IsSkinningEnabled() const;
 
 	void							SetInstancingEnabled( bool bEnable );
-	bool							IsInstancingEnabled();
+	bool							IsInstancingEnabled() const;
 
 
 	void							SetFogInfo(const FogInfo_t &info);
-	void							GetFogInfo(FogInfo_t &info);
+	void							GetFogInfo(FogInfo_t &info) const;
 
 	void							SetAmbientColor(const ColorRGBA &color);
-	ColorRGBA						GetAmbientColor();
+	ColorRGBA						GetAmbientColor() const;
 
 	void							SetLight(dlight_t* pLight);
-	dlight_t*						GetLight();
+	dlight_t*						GetLight() const;
 
 	// lighting/shading model selection
 	void							SetCurrentLightingModel(EMaterialLightingMode lightingModel);
-	EMaterialLightingMode			GetCurrentLightingModel();
+	EMaterialLightingMode			GetCurrentLightingModel() const;
 
 	//---------------------------
 	// $env_cubemap texture for use in shaders
-	void							SetEnvironmentMapTexture( ITexture* pEnvMapTexture );
-	ITexture*						GetEnvironmentMapTexture();
+	void							SetEnvironmentMapTexture(const ITexturePtr& pEnvMapTexture);
+	ITexturePtr						GetEnvironmentMapTexture() const;
 
 	//-----------------------------
 	// RHI render states setup
@@ -201,7 +201,7 @@ public:
 
 	void							SetProxyDeltaTime(float deltaTime);
 
-	IMaterialPtr					GetBoundMaterial();
+	IMaterialPtr					GetBoundMaterial() const;
 
 	void							SetShaderParameterOverriden(int param, bool set = true);
 
@@ -211,7 +211,7 @@ public:
 	// sets the custom rendering callbacks
 	// useful for proxy updates, setting up constants that shader objects can't access by themselves
 	void							SetMaterialRenderParamCallback( IMaterialRenderParamCallbacks* callback );
-	IMaterialRenderParamCallbacks*	GetMaterialRenderParamCallback();
+	IMaterialRenderParamCallbacks*	GetMaterialRenderParamCallback() const;
 
 	//-----------------------------
 	// Rendering projection helper operations
@@ -267,7 +267,7 @@ public:
 	//-----------------------------
 
 	// returns RHI device interface
-	IShaderAPI*						GetShaderAPI();
+	IShaderAPI*						GetShaderAPI() const;
 
 	void							RegisterProxy(PROXY_DISPATCHER dispfunc, const char* pszName);
 	IMaterialProxy*					CreateProxyByName(const char* pszName);
@@ -327,15 +327,12 @@ private:
 	IMaterialPtr					m_setMaterial;				// currently binded material
 	uint							m_paramOverrideMask;		// parameter setup mask for overrides
 
-	ITexture*						m_currentEnvmapTexture;
+	ITexturePtr						m_currentEnvmapTexture;
+	ITexturePtr						m_whiteTexture;
+	ITexturePtr						m_luxelTestTexture;
 
 	Array<DEVLICELOSTRESTORE>		m_lostDeviceCb{ PP_SL };
 	Array<DEVLICELOSTRESTORE>		m_restoreDeviceCb{ PP_SL };
-
-	ITexture*						m_whiteTexture;
-	ITexture*						m_luxelTestTexture;
-
-	
 
 	FogInfo_t						m_fogInfo;
 	ColorRGBA						m_ambColor;

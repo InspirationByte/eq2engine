@@ -148,7 +148,7 @@ public:
 	void						InitShader();
 
 	// Unload shaders, textures
-	virtual void				Unload();
+	void						Unload();
 
 	bool						IsError() const;	// Is error shader?
 
@@ -167,12 +167,6 @@ public:
 	int							GetBumpStageCount() const			{return 0;}
 
 protected:
-	struct mvUseTexture_t
-	{
-		ITexture**	texture;
-		MatVarProxy	var;
-	};
-
 	void						ParamSetup_CurrentAsBaseTexture();
 
 	void						ParamSetup_AlphaModel_Solid();
@@ -192,16 +186,16 @@ protected:
 
 	virtual bool				_ShaderInitRHI() = 0;
 
-	void						FindTextureByVar(ITexture*& texturePtrRef, IMaterial* material, const char* paramName, bool errorTextureIfNoVar);
-	void						LoadTextureByVar(ITexture*& texturePtrRef, IMaterial* material, const char* paramName, bool errorTextureIfNoVar);
+	void						FindTextureByVar(ITexturePtr& texturePtrRef, IMaterial* material, const char* paramName, bool errorTextureIfNoVar);
+	void						LoadTextureByVar(ITexturePtr& texturePtrRef, IMaterial* material, const char* paramName, bool errorTextureIfNoVar);
 	void						AddManagedShader(IShaderProgram** pShader);
-	void						AddManagedTexture(MatVarProxy var, ITexture** tex);
+	void						AddManagedTexture(MatVarProxy var, const ITexturePtr& tex);
 
 	void						SetupParameter(uint mask, ShaderDefaultParams_e param);
 
 	void						EmptyFunctor() {}
 
-	Array<mvUseTexture_t>		m_UsedTextures{ PP_SL };
+	Array<MatVarProxy>			m_UsedTextures{ PP_SL }; // TODO: remove it and capture MatVarProxy instead
 	Array<IShaderProgram**>		m_UsedPrograms{ PP_SL };
 	SHADERPARAMFUNC				m_param_functors[SHADERPARAM_COUNT]{ nullptr };
 

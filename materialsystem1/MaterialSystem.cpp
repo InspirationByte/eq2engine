@@ -46,21 +46,21 @@ static VertexFormatDesc_t g_dynMeshVertexFormatDesc[] = {
 	{0, 4, VERTEXATTRIB_COLOR,		ATTRIBUTEFORMAT_UBYTE, "color"},
 };
 
-ConVar	r_showlightmaps("r_showlightmaps", "0", "Disable diffuse textures to show lighting", CV_CHEAT);
-ConVar	r_screen("r_screen", "0", "Screen count", CV_ARCHIVE);
-ConVar	r_loadmiplevel("r_loadmiplevel", "0", 0, 3, "Mipmap level to load, needs texture reloading", CV_ARCHIVE );
-ConVar	r_anisotropic("r_anisotropic", "4", 1, 16, "Mipmap anisotropic filtering quality, needs texture reloading", CV_ARCHIVE );
+static ConVar	r_showlightmaps("r_showlightmaps", "0", "Disable diffuse textures to show lighting", CV_CHEAT);
+static ConVar	r_screen("r_screen", "0", "Screen count", CV_ARCHIVE);
+static ConVar	r_loadmiplevel("r_loadmiplevel", "0", 0, 3, "Mipmap level to load, needs texture reloading", CV_ARCHIVE );
+static ConVar	r_anisotropic("r_anisotropic", "4", 1, 16, "Mipmap anisotropic filtering quality, needs texture reloading", CV_ARCHIVE );
 
-ConVar	r_lightscale("r_lightscale", "1.0f", "Global light scale", CV_ARCHIVE);
-ConVar	r_shaderCompilerShowLogs("r_shaderCompilerShowLogs", "0","Show warnings of shader compilation",CV_ARCHIVE);
+static ConVar	r_lightscale("r_lightscale", "1.0f", "Global light scale", CV_ARCHIVE);
+static ConVar	r_shaderCompilerShowLogs("r_shaderCompilerShowLogs", "0","Show warnings of shader compilation",CV_ARCHIVE);
 
-ConVar	r_overdraw("r_overdraw", "0", "Renders all materials in overdraw shader", CV_CHEAT);
-ConVar	r_wireframe("r_wireframe","0","Enables wireframe rendering", CV_CHEAT);
+static ConVar	r_overdraw("r_overdraw", "0", "Renders all materials in overdraw shader", CV_CHEAT);
+static ConVar	r_wireframe("r_wireframe","0","Enables wireframe rendering", CV_CHEAT);
 
-ConVar	r_noffp("r_noffp","0","No FFP emulated primitives", CV_CHEAT);
+static ConVar	r_noffp("r_noffp","0","No FFP emulated primitives", CV_CHEAT);
 
-ConVar	r_depthBias("r_depthBias", "-0.000001", nullptr, CV_CHEAT);
-ConVar	r_slopeDepthBias("r_slopeDepthBias", "-1.5", nullptr, CV_CHEAT);
+static ConVar	r_depthBias("r_depthBias", "-0.000001", nullptr, CV_CHEAT);
+static ConVar	r_slopeDepthBias("r_slopeDepthBias", "-1.5", nullptr, CV_CHEAT);
 
 DECLARE_CMD(mat_reload, "Reloads all materials",0)
 {
@@ -364,9 +364,7 @@ void CMaterialSystem::Shutdown()
 		m_overdrawMaterial = nullptr;
 		SetEnvironmentMapTexture(nullptr);
 
-		g_pShaderAPI->FreeTexture(m_whiteTexture);
 		m_whiteTexture = nullptr;
-		g_pShaderAPI->FreeTexture(m_luxelTestTexture);
 		m_luxelTestTexture = nullptr;
 
 		FreeMaterials();
@@ -414,9 +412,6 @@ void CMaterialSystem::CreateWhiteTexture()
 
 	m_whiteTexture = g_pShaderAPI->CreateTexture(images, texSamplerParams, TEXFLAG_NOQUALITYLOD);
 
-	if(m_whiteTexture)
-		m_whiteTexture->Ref_Grab();
-
 	images.clear();
 
 	//--------------------------------------------------------------------
@@ -452,8 +447,6 @@ void CMaterialSystem::CreateWhiteTexture()
 
 	m_luxelTestTexture = g_pShaderAPI->CreateTexture(images, texSamplerParams, TEXFLAG_NOQUALITYLOD);
 
-	if(m_luxelTestTexture)
-		m_luxelTestTexture->Ref_Grab();
 	*/
 }
 
@@ -488,7 +481,7 @@ void CMaterialSystem::InitDefaultMaterial()
 	}
 }
 
-bool CMaterialSystem::IsInStubMode()
+bool CMaterialSystem::IsInStubMode() const
 {
 	return m_config.stubMode;
 }
@@ -992,7 +985,7 @@ void CMaterialSystem::Apply()
 }
 
 // returns bound material
-IMaterialPtr CMaterialSystem::GetBoundMaterial()
+IMaterialPtr CMaterialSystem::GetBoundMaterial() const
 {
 	return m_setMaterial;
 }
@@ -1035,7 +1028,7 @@ void CMaterialSystem::SetAmbientColor(const ColorRGBA &color)
 	m_ambColor = color;
 }
 
-ColorRGBA CMaterialSystem::GetAmbientColor()
+ColorRGBA CMaterialSystem::GetAmbientColor() const
 {
 	return m_ambColor;
 }
@@ -1046,7 +1039,7 @@ void CMaterialSystem::SetLight(dlight_t* pLight)
 	m_currentLight = pLight;
 }
 
-dlight_t* CMaterialSystem::GetLight()
+dlight_t* CMaterialSystem::GetLight() const
 {
 	return m_currentLight;
 }
@@ -1056,12 +1049,12 @@ IMaterialPtr CMaterialSystem::GetDefaultMaterial() const
 	return m_pDefaultMaterial;
 }
 
-ITexture* CMaterialSystem::GetWhiteTexture() const
+ITexturePtr CMaterialSystem::GetWhiteTexture() const
 {
 	return m_whiteTexture;
 }
 
-ITexture* CMaterialSystem::GetLuxelTestTexture() const
+ITexturePtr CMaterialSystem::GetLuxelTestTexture() const
 {
 	return m_luxelTestTexture;
 }
@@ -1188,7 +1181,7 @@ bool CMaterialSystem::IsWindowed() const
 }
 
 // returns RHI device interface
-IShaderAPI* CMaterialSystem::GetShaderAPI()
+IShaderAPI* CMaterialSystem::GetShaderAPI() const
 {
 	return m_shaderAPI;
 }
@@ -1203,7 +1196,7 @@ void CMaterialSystem::SetFogInfo(const FogInfo_t &info)
 }
 
 // returns fog info
-void CMaterialSystem::GetFogInfo(FogInfo_t &info)
+void CMaterialSystem::GetFogInfo(FogInfo_t &info) const
 {
 	if( m_config.overdrawMode)
 	{
@@ -1223,7 +1216,7 @@ void CMaterialSystem::SetCurrentLightingModel(EMaterialLightingMode lightingMode
 	m_curentLightingModel = lightingModel;
 }
 
-EMaterialLightingMode CMaterialSystem::GetCurrentLightingModel()
+EMaterialLightingMode CMaterialSystem::GetCurrentLightingModel() const
 {
 	return m_curentLightingModel;
 }
@@ -1235,30 +1228,24 @@ void CMaterialSystem::SetMaterialRenderParamCallback( IMaterialRenderParamCallba
 }
 
 // returns current pre-apply callback
-IMaterialRenderParamCallbacks* CMaterialSystem::GetMaterialRenderParamCallback()
+IMaterialRenderParamCallbacks* CMaterialSystem::GetMaterialRenderParamCallback() const
 {
 	return m_preApplyCallback;
 }
 
 // sets pre-apply callback
-void CMaterialSystem::SetEnvironmentMapTexture( ITexture* pEnvMapTexture )
+void CMaterialSystem::SetEnvironmentMapTexture(const ITexturePtr& pEnvMapTexture)
 {
-	if (m_currentEnvmapTexture)
-		m_currentEnvmapTexture->Ref_Drop();
-
 	m_currentEnvmapTexture = pEnvMapTexture;
-
-	if (m_currentEnvmapTexture)
-		m_currentEnvmapTexture->Ref_Grab();
 }
 
 // returns current pre-apply callback
-ITexture* CMaterialSystem::GetEnvironmentMapTexture()
+ITexturePtr CMaterialSystem::GetEnvironmentMapTexture() const
 {
 	return m_currentEnvmapTexture;
 }
 
-ER_CullMode CMaterialSystem::GetCurrentCullMode()
+ER_CullMode CMaterialSystem::GetCurrentCullMode() const
 {
 	return m_cullMode;
 }
@@ -1274,7 +1261,7 @@ void CMaterialSystem::SetSkinningEnabled( bool bEnable )
 	m_skinningEnabled = bEnable;
 }
 
-bool CMaterialSystem::IsSkinningEnabled()
+bool CMaterialSystem::IsSkinningEnabled() const
 {
 	return m_skinningEnabled;
 }
@@ -1285,7 +1272,7 @@ void CMaterialSystem::SetInstancingEnabled( bool bEnable )
 	m_instancingEnabled = bEnable;
 }
 
-bool CMaterialSystem::IsInstancingEnabled()
+bool CMaterialSystem::IsInstancingEnabled() const
 {
 	return m_instancingEnabled;
 }
@@ -1323,7 +1310,7 @@ IDynamicMesh* CMaterialSystem::GetDynamicMesh() const
 
 // draws 2D primitives
 void CMaterialSystem::DrawPrimitivesFFP(ER_PrimitiveType type, Vertex3D_t *pVerts, int nVerts,
-										ITexture* pTexture, const ColorRGBA &color,
+										ITexturePtr pTexture, const ColorRGBA &color,
 										BlendStateParam_t* blendParams, DepthStencilStateParams_t* depthParams,
 										RasterizerStateParams_t* rasterParams)
 {
@@ -1365,7 +1352,7 @@ void CMaterialSystem::DrawPrimitivesFFP(ER_PrimitiveType type, Vertex3D_t *pVert
 }
 
 void CMaterialSystem::DrawPrimitives2DFFP(	ER_PrimitiveType type, Vertex2D_t *pVerts, int nVerts,
-											ITexture* pTexture, const ColorRGBA &color,
+											ITexturePtr pTexture, const ColorRGBA &color,
 											BlendStateParam_t* blendParams, DepthStencilStateParams_t* depthParams,
 											RasterizerStateParams_t* rasterParams)
 {

@@ -35,17 +35,11 @@ static ConVar r_debugdrawGraphs("r_debugDrawGraphs", "0", nullptr, CV_ARCHIVE);
 static ConVar r_debugdrawShapes("r_debugDrawShapes", "0", nullptr, CV_ARCHIVE);
 static ConVar r_debugdrawLines("r_debugDrawLines", "0", nullptr, CV_ARCHIVE);
 
-ITexture* g_pDebugTexture = nullptr;
+ITexturePtr g_pDebugTexture = nullptr;
 
 void OnShowTextureChanged(ConVar* pVar,char const* pszOldValue)
 {
-	if(g_pDebugTexture)
-		g_pShaderAPI->FreeTexture(g_pDebugTexture);
-
 	g_pDebugTexture = g_pShaderAPI->FindTexture( pVar->GetString() );
-
-	if(g_pDebugTexture)
-		g_pDebugTexture->Ref_Grab();
 }
 
 ConVar r_showTexture("r_debug_showTexture", "", OnShowTextureChanged, "input texture name to show texture. To hide view input anything else.", CV_CHEAT);
@@ -1065,7 +1059,7 @@ void CDebugOverlay::SetMatrices( const Matrix4x4 &proj, const Matrix4x4 &view )
 void CDebugOverlay::Draw(int winWide, int winTall, float timescale)
 {
 	m_frameTime = m_timer.GetTime(true) * timescale;
-
+	return;
 #ifndef DISABLE_DEBUG_DRAWING
 	g_pShaderAPI->SetViewport(0, 0, winWide, winTall);
 	materials->SetMatrix(MATRIXMODE_PROJECTION, m_projMat);

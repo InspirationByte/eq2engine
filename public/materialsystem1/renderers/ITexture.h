@@ -66,7 +66,6 @@ public:
 
 using ITexturePtr = CRefPtr<ITexture>;
 
-
 struct ITexture::LockInOutData
 {
 	LockInOutData(int lockFlags, int level = 0, int cubeFaceIdx = 0)

@@ -82,15 +82,6 @@ ShaderAPI_Base::ShaderAPI_Base()
 	m_pSelectedIndexBuffer		= nullptr;
 	m_pCurrentIndexBuffer		= nullptr;
 
-	memset(m_pSelectedTextures,0,sizeof(m_pSelectedTextures));
-	memset(m_pCurrentTextures,0,sizeof(m_pCurrentTextures));
-
-	memset(m_pSelectedVertexTextures,0,sizeof(m_pSelectedVertexTextures));
-	memset(m_pCurrentVertexTextures,0,sizeof(m_pCurrentVertexTextures));
-
-	memset(m_pCurrentColorRenderTargets,0,sizeof(m_pCurrentColorRenderTargets));
-	memset(m_nCurrentCRTSlice,0,sizeof(m_nCurrentCRTSlice));
-
 	m_pCurrentDepthRenderTarget = nullptr;
 
 	m_nDrawCalls				= 0;
@@ -111,7 +102,6 @@ void ShaderAPI_Base::Init( const shaderAPIParams_t &params )
 
 	m_pErrorTexture = CreateTextureResource("error");
 	m_pErrorTexture->GenerateErrorTexture();
-	m_pErrorTexture->Ref_Grab();
 
 	ConVar* r_debug_showTexture = (ConVar*)g_consoleCommands->FindCvar("r_debug_showTexture");
 
@@ -131,9 +121,11 @@ void ShaderAPI_Base::Shutdown()
 	if(r_debug_showTexture)
 		r_debug_showTexture->SetVariantsCallback(nullptr);
 
-	Reset();
+	ChangeRenderTargetToBackBuffer();
 
-	FreeTexture(m_pErrorTexture);
+	Reset();
+	Apply();
+
 	m_pErrorTexture = nullptr;
 
 	for(auto it = m_TextureList.begin(); it != m_TextureList.end(); ++it)
@@ -267,8 +259,11 @@ void ShaderAPI_Base::Reset(int nResetTypeFlags)
 	// i think is faster
 	if (nResetTypeFlags & STATE_RESET_TEX)
 	{
-		memset(m_pSelectedTextures,0,sizeof(m_pSelectedTextures));
-		memset(m_pSelectedVertexTextures,0,sizeof(m_pSelectedVertexTextures));
+		for (int i = 0; i < MAX_TEXTUREUNIT; ++i)
+			m_pSelectedTextures[i] = nullptr;
+
+		for (int i = 0; i < MAX_VERTEXTEXTURES; ++i)
+			m_pSelectedVertexTextures[i] = nullptr;
 	}
 }
 
@@ -311,7 +306,7 @@ void ShaderAPI_Base::ApplyBuffers()
 }
 
 // default error texture pointer
-ITexture* ShaderAPI_Base::GetErrorTexture()
+ITexturePtr ShaderAPI_Base::GetErrorTexture()
 {
 	return m_pErrorTexture;
 }
@@ -364,7 +359,7 @@ void ShaderAPI_Base::GetViewport(int &x, int &y, int &w, int &h)
 }
 
 // Find texture
-ITexture* ShaderAPI_Base::FindTexture(const char* pszName)
+ITexturePtr ShaderAPI_Base::FindTexture(const char* pszName)
 {
 	EqString searchStr(pszName);
 	searchStr.Path_FixSlashes();
@@ -376,7 +371,7 @@ ITexture* ShaderAPI_Base::FindTexture(const char* pszName)
 		auto it = m_TextureList.find(nameHash);
 		if (it != m_TextureList.end())
 		{
-			return *it;
+			return CRefPtr(*it);
 		}
 	}
 
@@ -384,7 +379,7 @@ ITexture* ShaderAPI_Base::FindTexture(const char* pszName)
 }
 
 // Searches for existing texture or creates new one. Use this for resource loading
-ITexture* ShaderAPI_Base::FindOrCreateTexture(const char* pszName)
+ITexturePtr ShaderAPI_Base::FindOrCreateTexture(const char* pszName)
 {
 	EqString searchStr(pszName);
 	searchStr.Path_FixSlashes();
@@ -394,7 +389,7 @@ ITexture* ShaderAPI_Base::FindOrCreateTexture(const char* pszName)
 	CScopedMutex m(g_sapi_TextureMutex);
 	auto it = m_TextureList.find(nameHash);
 	if (it != m_TextureList.end())
-		return *it;
+		return CRefPtr(*it);
 
 	if (*pszName == '$')
 		return nullptr;
@@ -402,17 +397,31 @@ ITexture* ShaderAPI_Base::FindOrCreateTexture(const char* pszName)
 	return CreateTextureResource(pszName);
 }
 
+// Unload the texture and free the memory
+void ShaderAPI_Base::FreeTexture(ITexture* pTexture)
+{
+	if (pTexture == nullptr)
+		return;
+
+	ASSERT(pTexture->Ref_Count() == 0);
+	DevMsg(DEVMSG_SHADERAPI, "Unloading texture %s\n", pTexture->GetName());
+	{
+		CScopedMutex scoped(g_sapi_TextureMutex);
+		m_TextureList.remove(((CTexture*)pTexture)->GetNameHash());
+	}
+}
+
 //-------------------------------------------------------------
 // Textures
 //-------------------------------------------------------------
 
-ITexture* ShaderAPI_Base::CreateTexture(const ArrayCRef<CRefPtr<CImage>>& pImages, const SamplerStateParam_t& sampler, int nFlags)
+ITexturePtr ShaderAPI_Base::CreateTexture(const ArrayCRef<CRefPtr<CImage>>& pImages, const SamplerStateParam_t& sampler, int nFlags)
 {
 	if(!pImages.numElem())
 		return nullptr;
 
 	// create texture
-	ITexture* texture = nullptr;
+	ITexturePtr texture = nullptr;
 	{
 		CScopedMutex m(g_sapi_TextureMutex);
 		texture = CreateTextureResource(pImages[0]->GetName());
@@ -438,7 +447,7 @@ ITexture* ShaderAPI_Base::CreateTexture(const ArrayCRef<CRefPtr<CImage>>& pImage
 }
 
 // creates procedural (lockable) texture
-ITexture* ShaderAPI_Base::CreateProceduralTexture(const char* pszName,
+ITexturePtr ShaderAPI_Base::CreateProceduralTexture(const char* pszName,
 													ETextureFormat nFormat,
 													int width, int height,
 													int depth,
@@ -488,9 +497,9 @@ ITexture* ShaderAPI_Base::CreateProceduralTexture(const char* pszName,
 //-------------------------------------------------------------
 
 // Changes render target (single RT)
-void ShaderAPI_Base::ChangeRenderTarget(ITexture* pRenderTarget, int nCubemapFace, ITexture* pDepthTarget, int nDepthSlice )
+void ShaderAPI_Base::ChangeRenderTarget(const ITexturePtr& renderTarget, int rtSlice, const ITexturePtr& depthTarget, int depthSlice)
 {
-	ChangeRenderTargets(&pRenderTarget, pRenderTarget ? 1 : 0, &nCubemapFace, pDepthTarget, nDepthSlice);
+	ChangeRenderTargets(ArrayCRef(&renderTarget, renderTarget ? 1 : 0), ArrayCRef(&rtSlice, 1), depthTarget, depthSlice);
 }
 
 //-------------------------------------------------------------
@@ -557,7 +566,7 @@ void ShaderAPI_Base::SetRasterizerState( IRenderState* pState )
 }
 
 // Set Texture for Fixed-Function Pipeline
-void ShaderAPI_Base::SetTextureOnIndex(ITexture* pTexture,int level /* = 0*/)
+void ShaderAPI_Base::SetTextureOnIndex(const ITexturePtr& pTexture, int level /* = 0*/)
 {
 	if(level > 0 && m_caps.maxTextureUnits <= 1)
 		return;
@@ -577,7 +586,7 @@ void ShaderAPI_Base::SetTextureOnIndex(ITexture* pTexture,int level /* = 0*/)
 }
 
 // returns the currently set textre at level
-ITexture* ShaderAPI_Base::GetTextureAt( int level ) const
+ITexturePtr ShaderAPI_Base::GetTextureAt( int level ) const
 {
 	if (level > 0 && m_caps.maxTextureUnits <= 1)
 		return nullptr;

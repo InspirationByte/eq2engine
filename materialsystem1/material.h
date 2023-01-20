@@ -52,7 +52,7 @@ public:
 
 // render-time operations
 	void					UpdateProxy(float fDt);					
-	ITexture*				GetBaseTexture(int stage = 0);
+	ITexturePtr				GetBaseTexture(int stage = 0);
 
 	void					Setup(uint paramMask);
 private:

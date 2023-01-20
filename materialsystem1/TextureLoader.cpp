@@ -80,11 +80,11 @@ static void AnimGetImagesForTextureName(Array<EqString>& textureNames, const cha
 	}
 }
 
-ITexture* CTextureLoader::LoadTextureFromFileSync(const char* pszFileName, const SamplerStateParam_t& samplerParams, int nFlags)
+ITexturePtr CTextureLoader::LoadTextureFromFileSync(const char* pszFileName, const SamplerStateParam_t& samplerParams, int nFlags)
 {
 	HOOK_TO_CVAR(r_allowSourceTextures);
 
-	ITexture* texture = g_pShaderAPI->FindOrCreateTexture(pszFileName);
+	ITexturePtr texture = g_pShaderAPI->FindOrCreateTexture(pszFileName);
 
 	if (!texture)
 		return (nFlags & TEXFLAG_NULL_ON_ERROR) ? nullptr : g_pShaderAPI->GetErrorTexture();
@@ -95,10 +95,7 @@ ITexture* CTextureLoader::LoadTextureFromFileSync(const char* pszFileName, const
 	if (r_skipTextureLoading.GetBool())
 	{
 		if (nFlags & TEXFLAG_NULL_ON_ERROR)
-		{
-			g_pShaderAPI->FreeTexture(texture);
 			texture = nullptr;
-		}
 		else
 			texture->GenerateErrorTexture(nFlags);
 
@@ -167,10 +164,7 @@ ITexture* CTextureLoader::LoadTextureFromFileSync(const char* pszFileName, const
 	if (!imgList.numElem() || !texture->Init(samplerParams, imgList, nFlags))
 	{
 		if (nFlags & TEXFLAG_NULL_ON_ERROR)
-		{
-			g_pShaderAPI->FreeTexture(texture);
 			texture = nullptr;
-		}
 		else
 			texture->GenerateErrorTexture(nFlags);
 	}
@@ -178,11 +172,11 @@ ITexture* CTextureLoader::LoadTextureFromFileSync(const char* pszFileName, const
 	return texture;
 }
 
-Future<ITexture*> CTextureLoader::LoadTextureFromFile(const char* pszFileName, const SamplerStateParam_t& samplerParams, int nFlags)
+Future<ITexturePtr> CTextureLoader::LoadTextureFromFile(const char* pszFileName, const SamplerStateParam_t& samplerParams, int nFlags)
 {
 	PROF_EVENT("Load Texture from file");
 
 	// TODO: stream lods gradually
 
-	return Future<ITexture*>::Failure(-1, "None");
+	return Future<ITexturePtr>::Failure(-1, "None");
 }

@@ -205,13 +205,13 @@ public:
 //-------------------------------------------------------------
 
 	// default error texture pointer
-	virtual ITexture*			GetErrorTexture() = 0;
+	virtual ITexturePtr			GetErrorTexture() = 0;
 
 	// Searches for texture by name, can be used for shared RT's
-	virtual ITexture*			FindTexture( const char* pszName ) = 0;
+	virtual ITexturePtr			FindTexture( const char* pszName ) = 0;
 
 	// Searches for existing texture or creates new one. Use this for resource loading
-	virtual ITexture*			FindOrCreateTexture( const char* pszName ) = 0;
+	virtual ITexturePtr			FindOrCreateTexture( const char* pszName ) = 0;
 
 	// unloads the texture and frees the memory
 	virtual void				FreeTexture(ITexture* pTexture) = 0;
@@ -219,10 +219,10 @@ public:
 	// BEGIN CUT HERE
 
 	// creates texture from image array
-	virtual	ITexture*			CreateTexture(const ArrayCRef<CRefPtr<CImage>>& pImages, const SamplerStateParam_t& sampler, int nFlags = 0) = 0;
+	virtual	ITexturePtr			CreateTexture(const ArrayCRef<CRefPtr<CImage>>& pImages, const SamplerStateParam_t& sampler, int nFlags = 0) = 0;
 
 	// creates procedural (lockable) texture
-	virtual ITexture*			CreateProceduralTexture(const char* pszName,
+	virtual ITexturePtr			CreateProceduralTexture(const char* pszName,
 														ETextureFormat nFormat,
 														int width, int height,
 														int depth = 1,
@@ -234,7 +234,7 @@ public:
 														) = 0;
 
 	// creates render target texture
-	virtual ITexture*			CreateRenderTarget(	int width, int height,
+	virtual ITexturePtr			CreateRenderTarget(	int width, int height,
 													ETextureFormat nRTFormat,
 													ER_TextureFilterMode textureFilterType = TEXFILTER_LINEAR,
 													ER_TextureAddressMode textureAddress = TEXADDRESS_WRAP,
@@ -243,7 +243,7 @@ public:
 													) = 0;
 
 	// creates named render target texture, useful for material system shader texture searching
-	virtual ITexture*			CreateNamedRenderTarget(	const char* pszName,
+	virtual ITexturePtr			CreateNamedRenderTarget(	const char* pszName,
 															int width, int height,
 															ETextureFormat nRTFormat,
 															ER_TextureFilterMode textureFilterType = TEXFILTER_LINEAR,
@@ -255,40 +255,32 @@ public:
 	// END CUT HERE
 
 //-------------------------------------------------------------
-// Texture operations
+// Destination texture (Render target) operations
 //-------------------------------------------------------------
 
-	// saves rendertarget to texture, you can also save screenshots
-	virtual void				SaveRenderTarget(ITexture* pTargetTexture, const char* pFileName) = 0;
-
 	// blits the current framebuffer to texture TODO: need flags such as depth copy, etc
-	virtual void				CopyFramebufferToTexture(ITexture* pTargetTexture) = 0;
+	virtual void				CopyFramebufferToTexture(const ITexturePtr& renderTarget) = 0;
 
 	// Copy render target to texture
-	virtual void				CopyRendertargetToTexture(ITexture* srcTarget, ITexture* destTex, IRectangle* srcRect = nullptr, IRectangle* destRect = nullptr) = 0;
+	virtual void				CopyRendertargetToTexture(const ITexturePtr& srcTarget, const ITexturePtr& destTex, IRectangle* srcRect = nullptr, IRectangle* destRect = nullptr) = 0;
 
 	// changes the rendertarget
-	virtual void				ChangeRenderTarget( ITexture* pRenderTarget, int nCubemapFace = 0, ITexture* pDepthTarget = nullptr, int nDepthSlice = 0 ) = 0;
+	virtual void				ChangeRenderTarget(const ITexturePtr& renderTarget, int rtSlice = 0, const ITexturePtr& depthTarget = nullptr, int depthSlice = 0) = 0;
 
 	// changes render targets (also known as multiple-render-targetting)
-	virtual void				ChangeRenderTargets(	ITexture** pRenderTargets, int nNumRTs,
-														int* nCubemapFaces = nullptr,
-														ITexture* pDepthTarget = nullptr,
-														int nDepthSlice = 0) = 0;
+	virtual void				ChangeRenderTargets(ArrayCRef<ITexturePtr> renderTargets,
+													ArrayCRef<int> rtSlice = nullptr,
+													const ITexturePtr& depthTarget = nullptr,
+													int depthSlice = 0) = 0;
 
 	// changes render target back to backbuffer
 	virtual void				ChangeRenderTargetToBackBuffer() = 0;
 
 	// resizes render target
-	virtual void				ResizeRenderTarget( ITexture* pRT, int newWide, int newTall ) = 0;
-
-	// returns the current set rendertargets
-	virtual void				GetCurrentRenderTargets(	ITexture* pRenderTargets[MAX_MRTS], int *nNumRTs,
-															ITexture** pDepthTarget,
-															int cubeNumbers[MAX_MRTS]) = 0;
+	virtual void				ResizeRenderTarget(const ITexturePtr& renderTarget, int newWide, int newTall ) = 0;
 
 //-------------------------------------------------------------
-// Matrix for rendering - FFP-likeness
+// Matrix for rendering - for legacy FFP stuff
 //-------------------------------------------------------------
 
 	// sets matrix mode
@@ -355,10 +347,10 @@ public:
 
 	// Set the texture. Animation is set from ITexture every frame (no affection on speed) before you do 'ApplyTextures'
 	// Also you need to specify texture name. If you don't, use registers (not fine with DX10, 11)
-	virtual void				SetTexture( ITexture* pTexture, const char* pszName = nullptr, int index = 0) = 0;
+	virtual void				SetTexture(const ITexturePtr& pTexture, const char* pszName = nullptr, int index = 0) = 0;
 
 	// returns the currently set textre at level
-	virtual ITexture*			GetTextureAt( int level ) const = 0;
+	virtual ITexturePtr			GetTextureAt( int level ) const = 0;
 
 //-------------------------------------------------------------
 // Vertex buffer object handling

@@ -52,7 +52,7 @@ public:
 	ETextureFormat						GetScreenFormat();
 
 	// default error texture pointer
-	ITexture*							GetErrorTexture();
+	ITexturePtr							GetErrorTexture();
 
 	static void							GetConsoleTextureList(const ConCommandBase* base, Array<EqString>&, const char* query);
 
@@ -104,10 +104,10 @@ public:
 //-------------------------------------------------------------
 
 	// creates texture from image array, used in LoadTexture, common use only
-	ITexture*							CreateTexture(const ArrayCRef<CRefPtr<CImage>>& pImages, const SamplerStateParam_t& sampler, int nFlags = 0);
+	ITexturePtr							CreateTexture(const ArrayCRef<CRefPtr<CImage>>& pImages, const SamplerStateParam_t& sampler, int nFlags = 0);
 
 	// creates procedural (lockable) texture
-	ITexture*							CreateProceduralTexture(const char* pszName,
+	ITexturePtr							CreateProceduralTexture(const char* pszName,
 																ETextureFormat nFormat,
 																int width, int height,
 																int depth = 1,
@@ -119,17 +119,20 @@ public:
 																);
 
 	// Finds texture by name
-	ITexture*							FindTexture(const char* pszName);
+	ITexturePtr							FindTexture(const char* pszName);
 
 	// Searches for existing texture or creates new one. Use this for resource loading
-	ITexture*							FindOrCreateTexture( const char* pszName );
+	ITexturePtr							FindOrCreateTexture( const char* pszName );
+
+	// Unload the texture and free the memory
+	void								FreeTexture(ITexture* pTexture);
 
 //-------------------------------------------------------------
 // Texture operations
 //-------------------------------------------------------------
 
 	// Changes render target (single RT)
-	void								ChangeRenderTarget(ITexture* pRenderTarget, int nCubemapFace = 0, ITexture* pDepthTarget = nullptr, int nDepthSlice = 0);
+	void								ChangeRenderTarget(const ITexturePtr& renderTarget, int rtSlice = 0, const ITexturePtr& depthTarget = nullptr, int depthSlice = 0);
 
 //-------------------------------------------------------------
 // Various setup functions for drawing
@@ -145,10 +148,10 @@ public:
 	void								SetRasterizerState( IRenderState* pState );
 
 	// internal texture setup
-	void								SetTextureOnIndex( ITexture* pTexture, int level = 0 );
+	void								SetTextureOnIndex( const ITexturePtr& pTexture, int level = 0 );
 
 	// returns the currently set textre at level
-	ITexture*							GetTextureAt( int level ) const;
+	ITexturePtr							GetTextureAt( int level ) const;
 
 //-------------------------------------------------------------
 // Vertex buffer object handling
@@ -192,7 +195,7 @@ public:
 
 protected:
 
-	virtual ITexture*					CreateTextureResource(const char* pszName) = 0;
+	virtual ITexturePtr					CreateTextureResource(const char* pszName) = 0;
 
 //-------------------------------------------------------------
 // Useful data
@@ -238,24 +241,21 @@ protected:
 	IShaderProgram*						m_pSelectedShader;
 
 	// Selected textures
-	ITexture*							m_pSelectedTextures[MAX_TEXTUREUNIT];
+	ITexturePtr							m_pSelectedTextures[MAX_TEXTUREUNIT];
 	// Current textures
-	ITexture*							m_pCurrentTextures[MAX_TEXTUREUNIT];
+	ITexturePtr							m_pCurrentTextures[MAX_TEXTUREUNIT];
 
 	// Selected textures
-	ITexture*							m_pSelectedVertexTextures[MAX_VERTEXTEXTURES];
+	ITexturePtr							m_pSelectedVertexTextures[MAX_VERTEXTEXTURES];
 	// Current textures
-	ITexture*							m_pCurrentVertexTextures[MAX_VERTEXTEXTURES];
-
-	// Selected render targets
-	ITexture*							m_pSelectedRenderTargets[MAX_MRTS];
+	ITexturePtr							m_pCurrentVertexTextures[MAX_VERTEXTEXTURES];
 
 	// Current render targets
-	ITexture*							m_pCurrentColorRenderTargets[MAX_MRTS];
+	ITexturePtr							m_pCurrentColorRenderTargets[MAX_MRTS];
 	int									m_nCurrentCRTSlice[MAX_MRTS];
 
 	// Current render targets
-	ITexture*							m_pCurrentDepthRenderTarget;
+	ITexturePtr							m_pCurrentDepthRenderTarget;
 
 // ----------------Selected-----------------
 
@@ -298,7 +298,7 @@ protected:
 	intptr								m_nCurrentOffsets[MAX_VERTEXSTREAM];
 
 	// special error texture
-	ITexture*							m_pErrorTexture;
+	ITexturePtr							m_pErrorTexture;
 
 	// Viewport
 	int16								m_nViewportWidth;

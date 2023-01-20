@@ -41,6 +41,8 @@ public:
 	// unlocks texture for modifications, etc
 	void					Unlock();
 
+	void					Ref_DeleteObject();
+
 	Array<IDirect3DBaseTexture9*>	textures{ PP_SL };
 	Array<IDirect3DSurface9*>		surfaces{ PP_SL };
 	IDirect3DSurface9*				m_dummyDepth{ nullptr };

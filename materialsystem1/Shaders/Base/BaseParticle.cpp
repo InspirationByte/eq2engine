@@ -99,7 +99,7 @@ BEGIN_SHADER_CLASS(BaseParticle)
 
 	void SetupBaseTexture0()
 	{
-		ITexture* pSetupTexture = materials->GetConfiguration().wireframeMode ? materials->GetWhiteTexture() : m_pBaseTexture;
+		ITexturePtr pSetupTexture = materials->GetConfiguration().wireframeMode ? materials->GetWhiteTexture() : m_pBaseTexture;
 
 		g_pShaderAPI->SetTexture(pSetupTexture, "BaseTextureSampler", 0);
 	}
@@ -116,11 +116,11 @@ BEGIN_SHADER_CLASS(BaseParticle)
 		g_pShaderAPI->SetShaderConstantVector4D("AmbientColor", setColor);
 	}
 
-	ITexture*	GetBaseTexture(int stage) const {return m_pBaseTexture;}
-	ITexture*	GetBumpTexture(int stage) const {return nullptr;}
+	ITexturePtr	GetBaseTexture(int stage) const {return m_pBaseTexture;}
+	ITexturePtr	GetBumpTexture(int stage) const {return nullptr;}
 
 	SHADER_DECLARE_PASS(Particle);
 	SHADER_DECLARE_FOGPASS(Particle);
 
-	ITexture*			m_pBaseTexture;
+	ITexturePtr		m_pBaseTexture;
 END_SHADER_CLASS

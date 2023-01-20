@@ -113,11 +113,6 @@ static CPlainTextLayoutBuilder s_defaultTextLayout;
 //-----------------------------------------------------------------------------------------
 CFont::CFont()
 {
-	m_fontTexture = NULL;
-
-	//m_vertexBuffer = NULL;
-	//m_numVerts = 0;
-
 	m_textColor = color_white;
 	m_spacing = 0.0f;
 	m_scale = 1.0f;
@@ -230,7 +225,7 @@ void CFont::BuildCharVertexBuffer(CMeshBuilder& builder, const CHAR_T* str, cons
 
 	ITextLayoutBuilder* layoutBuilder = &s_defaultTextLayout;
 
-	if(params.layoutBuilder != NULL)
+	if(params.layoutBuilder)
 		layoutBuilder = params.layoutBuilder;
 
 	layoutBuilder->Reset( this );
@@ -384,9 +379,11 @@ void CFont::BuildCharVertexBuffer(CMeshBuilder& builder, const CHAR_T* str, cons
     } //while
 }
 
-ConVar r_font_sdf_start("r_font_sdf_start", "0.94");
-ConVar r_font_sdf_range("r_font_sdf_range", "0.06");
-ConVar r_font_debug("r_font_debug", "0", nullptr, CV_CHEAT);
+// TODO: really a font parameters!!!
+static ConVar r_font_sdf_start("r_font_sdf_start", "0.94");
+static ConVar r_font_sdf_range("r_font_sdf_range", "0.06");
+
+static ConVar r_font_debug("r_font_debug", "0", nullptr, CV_CHEAT);
 
 //
 // Renders new styled tagged text - wide chars only
@@ -632,11 +629,9 @@ bool CFont::LoadFont( const char* filenamePrefix )
 
 			m_invTexSize = 1.0f;
 			
-			if(m_fontTexture != NULL)
+			if(m_fontTexture != nullptr)
 			{
-				m_fontTexture->Ref_Grab();
-
-				m_invTexSize = Vector2D(1.0f/m_fontTexture->GetWidth(), 1.0f/m_fontTexture->GetHeight());
+				m_invTexSize = 1.0f / Vector2D(m_fontTexture->GetWidth(), m_fontTexture->GetHeight());
 			}
 
 			for(int i = 0; i < fontSec->keys.numElem(); i++)
@@ -708,13 +703,12 @@ bool CFont::LoadFont( const char* filenamePrefix )
 					m_fontTexture = g_texLoader->LoadTextureFromFileSync(texname, samplerParams, TEXFLAG_NOQUALITYLOD);
 				}
 
-				if(m_fontTexture == NULL)
+				if(m_fontTexture == nullptr)
 				{
 					MsgError("ERROR: no texture for font '%s'\n",finalFileName.GetData());
 					return false;
 				}
 
-				m_fontTexture->Ref_Grab();
 				m_invTexSize = Vector2D(1.0f/m_fontTexture->GetWidth(), 1.0f/m_fontTexture->GetHeight());
 
 				int line = 0;

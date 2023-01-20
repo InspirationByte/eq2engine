@@ -28,6 +28,12 @@ CD3D9Texture::~CD3D9Texture()
 	Release();
 }
 
+void CD3D9Texture::Ref_DeleteObject()
+{
+	s_shaderApi.FreeTexture(this);
+	delete this;
+}
+
 void CD3D9Texture::Release()
 {
 	ASSERT_MSG(!m_lockData, "texture was locked");

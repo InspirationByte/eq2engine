@@ -39,6 +39,16 @@ CGLTexture::~CGLTexture()
 	Release();
 }
 
+void CGLTexture::Ref_DeleteObject()
+{
+	g_shaderApi.FreeTexture(this);
+
+	g_glWorker.Execute(__FUNCTION__, [this]() {
+		delete this;
+		return 0;
+	});
+}
+
 void CGLTexture::Release()
 {
 	ReleaseTextures();

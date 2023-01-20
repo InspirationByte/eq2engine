@@ -8,7 +8,10 @@
 #pragma once
 
 class IShaderProgram;
+
 class ITexture;
+using ITexturePtr = CRefPtr<ITexture>;
+
 class IMaterial;
 
 enum ShaderDefaultParams_e
@@ -80,13 +83,13 @@ public:
 	virtual int				GetFlags() const = 0;
 
 	// returns base texture from shader
-	virtual ITexture*		GetBaseTexture(int stage = 0) const = 0;
+	virtual ITexturePtr		GetBaseTexture(int stage = 0) const = 0;
 
 	// returns base stage count
 	virtual int				GetBaseTextureStageCount() const = 0;
 
 	// returns bump texture from shader
-	virtual ITexture*		GetBumpTexture(int stage = 0) const = 0;
+	virtual ITexturePtr		GetBumpTexture(int stage = 0) const = 0;
 
 	// returns bump stage count
 	virtual int				GetBumpStageCount() const = 0;

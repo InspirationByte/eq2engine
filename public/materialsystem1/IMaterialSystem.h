@@ -191,7 +191,7 @@ public:
 	virtual bool							LoadShaderLibrary(const char* libname) = 0;
 
 	// is matsystem in stub mode? (no rendering)
-	virtual bool							IsInStubMode() = 0;
+	virtual bool							IsInStubMode() const = 0;
 
 	// returns configuration that can be modified in realtime (shaderapi settings can't be modified)
 	virtual matsystem_render_config_t&		GetConfiguration() = 0;
@@ -208,10 +208,10 @@ public:
 	virtual IMaterialPtr					GetDefaultMaterial() const = 0;
 
 	// returns white texture (used for wireframe of shaders that can't use FFP modes,notexture modes, etc.)
-	virtual	ITexture*						GetWhiteTexture() const = 0;
+	virtual	ITexturePtr						GetWhiteTexture() const = 0;
 
 	// returns luxel test texture (used for lightmap test)
-	virtual	ITexture*						GetLuxelTestTexture() const = 0;
+	virtual	ITexturePtr						GetLuxelTestTexture() const = 0;
 
 	// creates new material with defined parameters
 	virtual IMaterialPtr					CreateMaterial(const char* szMaterialName, KVSection* params) = 0;
@@ -243,7 +243,7 @@ public:
 	// releases non-used materials
 	virtual void							ReleaseUnusedMaterials() = 0;
 
-	// Frees materials or decrements it's reference count
+	// Frees materials
 	virtual void							FreeMaterial(IMaterial* pMaterial) = 0;
 
 	//-----------------------------
@@ -257,13 +257,13 @@ public:
 
 	// draws primitives
 	virtual void							DrawPrimitivesFFP(ER_PrimitiveType type, Vertex3D_t* pVerts, int nVerts,
-		ITexture* pTexture = nullptr, const ColorRGBA& color = color_white,
+		ITexturePtr pTexture = nullptr, const ColorRGBA& color = color_white,
 		BlendStateParam_t* blendParams = nullptr, DepthStencilStateParams_t* depthParams = nullptr,
 		RasterizerStateParams_t* rasterParams = nullptr) = 0;
 
 	// draws primitives for 2D
 	virtual void							DrawPrimitives2DFFP(ER_PrimitiveType type, Vertex2D_t* pVerts, int nVerts,
-		ITexture* pTexture = nullptr, const ColorRGBA& color = color_white,
+		ITexturePtr pTexture = nullptr, const ColorRGBA& color = color_white,
 		BlendStateParam_t* blendParams = nullptr, DepthStencilStateParams_t* depthParams = nullptr,
 		RasterizerStateParams_t* rasterParams = nullptr) = 0;
 
@@ -271,33 +271,33 @@ public:
 	// Shader dynamic states
 	//-----------------------------
 
-	virtual ER_CullMode						GetCurrentCullMode() = 0;
+	virtual ER_CullMode						GetCurrentCullMode() const = 0;
 	virtual void							SetCullMode(ER_CullMode cullMode) = 0;
 
 	virtual void							SetSkinningEnabled(bool bEnable) = 0;
-	virtual bool							IsSkinningEnabled() = 0;
+	virtual bool							IsSkinningEnabled() const = 0;
 
 	virtual void							SetInstancingEnabled(bool bEnable) = 0;
-	virtual bool							IsInstancingEnabled() = 0;
+	virtual bool							IsInstancingEnabled() const = 0;
 
 
 	virtual void							SetFogInfo(const FogInfo_t& info) = 0;
-	virtual void							GetFogInfo(FogInfo_t& info) = 0;
+	virtual void							GetFogInfo(FogInfo_t& info) const = 0;
 
 	virtual void							SetAmbientColor(const ColorRGBA& color) = 0;
-	virtual ColorRGBA						GetAmbientColor() = 0;
+	virtual ColorRGBA						GetAmbientColor() const = 0;
 
 	virtual void							SetLight(dlight_t* pLight) = 0;
-	virtual dlight_t*						GetLight() = 0;
+	virtual dlight_t*						GetLight() const = 0;
 
 	// lighting/shading model selection
 	virtual void							SetCurrentLightingModel(EMaterialLightingMode lightingModel) = 0;
-	virtual EMaterialLightingMode			GetCurrentLightingModel() = 0;
+	virtual EMaterialLightingMode			GetCurrentLightingModel() const = 0;
 
 	//---------------------------
 	// $env_cubemap texture for use in shaders
-	virtual void							SetEnvironmentMapTexture(ITexture* pEnvMapTexture) = 0;
-	virtual ITexture*						GetEnvironmentMapTexture() = 0;
+	virtual void							SetEnvironmentMapTexture(const ITexturePtr& pEnvMapTexture) = 0;
+	virtual ITexturePtr						GetEnvironmentMapTexture() const = 0;
 
 	//-----------------------------
 	// RHI render states setup
@@ -338,7 +338,7 @@ public:
 
 	virtual void							SetProxyDeltaTime(float deltaTime) = 0;
 
-	virtual IMaterialPtr					GetBoundMaterial() = 0;
+	virtual IMaterialPtr					GetBoundMaterial() const = 0;
 
 	virtual void							SetShaderParameterOverriden(int /*ShaderDefaultParams_e*/ param, bool set = true) = 0;
 
@@ -348,7 +348,7 @@ public:
 	// sets the custom rendering callbacks
 	// useful for proxy updates, setting up constants that shader objects can't access by themselves
 	virtual void							SetMaterialRenderParamCallback(IMaterialRenderParamCallbacks* callback) = 0;
-	virtual IMaterialRenderParamCallbacks*	GetMaterialRenderParamCallback() = 0;
+	virtual IMaterialRenderParamCallbacks*	GetMaterialRenderParamCallback() const = 0;
 
 	//-----------------------------
 	// Rendering projection helper operations
@@ -403,10 +403,10 @@ public:
 	//-----------------------------
 
 	// returns RHI device interface
-	virtual IShaderAPI* GetShaderAPI() = 0;
+	virtual IShaderAPI*						GetShaderAPI() const = 0;
 
 	virtual void							RegisterProxy(PROXY_DISPATCHER dispfunc, const char* pszName) = 0;
-	virtual IMaterialProxy* CreateProxyByName(const char* pszName) = 0;
+	virtual IMaterialProxy*					CreateProxyByName(const char* pszName) = 0;
 
 	virtual void							RegisterShader(const char* pszShaderName, DISPATCH_CREATE_SHADER dispatcher_creation) = 0;
 	virtual void							RegisterShaderOverrideFunction(const char* shaderName, DISPATCH_OVERRIDE_SHADER check_function) = 0;

@@ -207,20 +207,8 @@ void CBaseShader::Unload()
 
 		g_pShaderAPI->DestroyShaderProgram(program);
 	}
-	m_UsedPrograms.clear();
-
-	for(int i = 0; i < m_UsedTextures.numElem(); i++)
-	{
-		// unassign texture from a material var
-		// will also ref_drop
-		m_UsedTextures[i].var.SetTexture(nullptr);
-
-		ITexture** texPtr = m_UsedTextures[i].texture;
-		if(texPtr)
- 			*texPtr = g_pShaderAPI->GetErrorTexture();
-	}
-
-	m_UsedTextures.clear();
+	m_UsedPrograms.clear(true);
+	m_UsedTextures.clear(true);
 
 	m_bInitialized = false;
 	m_bIsError = false;
@@ -234,21 +222,21 @@ void CBaseShader::SetupParameter(uint mask, ShaderDefaultParams_e type)
 		(this->*m_param_functors[type]) ();
 }
 
-void CBaseShader::FindTextureByVar(ITexture*& texturePtrRef, IMaterial* material, const char* paramName, bool errorTextureIfNoVar)
+void CBaseShader::FindTextureByVar(ITexturePtr& texturePtrRef, IMaterial* material, const char* paramName, bool errorTextureIfNoVar)
 {
 	MatVarProxy mv = GetAssignedMaterial()->FindMaterialVar(paramName);
 	if(mv.IsValid()) 
 	{
 		texturePtrRef = g_pShaderAPI->FindTexture(mv.GetString());
 
-		if(texturePtrRef)
-			mv.SetTexture(texturePtrRef);
+		if (texturePtrRef)
+			AddManagedTexture(mv, texturePtrRef);
 	}
 	else if(errorTextureIfNoVar)
 		texturePtrRef = g_pShaderAPI->GetErrorTexture();
 }
 
-void CBaseShader::LoadTextureByVar(ITexture*& texturePtrRef, IMaterial* material, const char* paramName, bool errorTextureIfNoVar)
+void CBaseShader::LoadTextureByVar(ITexturePtr& texturePtrRef, IMaterial* material, const char* paramName, bool errorTextureIfNoVar)
 {	
 	MatVarProxy mv;
 	if(materials->GetConfiguration().editormode)		
@@ -268,7 +256,7 @@ void CBaseShader::LoadTextureByVar(ITexture*& texturePtrRef, IMaterial* material
 
 		texturePtrRef = g_texLoader->LoadTextureFromFileSync(mv.GetString(), samplerParams);
 		if(texturePtrRef)
-			AddManagedTexture(mv, &texturePtrRef);
+			AddManagedTexture(mv, texturePtrRef);
 	}
 
 	if(!texturePtrRef && errorTextureIfNoVar)
@@ -277,7 +265,7 @@ void CBaseShader::LoadTextureByVar(ITexture*& texturePtrRef, IMaterial* material
 
 void CBaseShader::ParamSetup_CurrentAsBaseTexture()
 {
-	ITexture* currentTexture = g_pShaderAPI->GetTextureAt(0);
+	ITexturePtr currentTexture = g_pShaderAPI->GetTextureAt(0);
 
 	if(currentTexture == nullptr)
 		currentTexture = materials->GetWhiteTexture();
@@ -441,15 +429,11 @@ void CBaseShader::AddManagedShader(IShaderProgram** pShader)
 	m_UsedPrograms.append(pShader);
 }
 
-void CBaseShader::AddManagedTexture(MatVarProxy var, ITexture** tex)
+void CBaseShader::AddManagedTexture(MatVarProxy var, const ITexturePtr& tex)
 {
-	if(!*tex)
+	if(!tex)
 		return;
 
-	var.SetTexture(*tex);
-
-	// no ref_grab needed because already did in SetTexture
-	mvUseTexture_t& mvtex = m_UsedTextures.append();
-	mvtex.texture = tex;
-	mvtex.var = var; 
+	var.SetTexture(tex);
+	m_UsedTextures.append(var);
 }

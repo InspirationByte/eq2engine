@@ -56,8 +56,6 @@ bool CD3D9SwapChain::CreateOrUpdateBackbuffer()
 		m_backbuffer->SetDimensions(m_width, m_height);
 		m_backbuffer->SetFlags(TEXFLAG_RENDERTARGET | TEXFLAG_FOREIGN | TEXFLAG_NOQUALITYLOD);
 
-		m_backbuffer->Ref_Grab();
-
 		((ShaderAPID3DX10*)g_pShaderAPI)->m_TextureList.append(m_backbuffer);
 	}
 

@@ -38,8 +38,8 @@ BEGIN_SHADER_CLASS(EnvMapTest)
 		return true;
 	}
 
-	ITexture* GetBaseTexture(int stage) const {return nullptr;}
-	ITexture* GetBumpTexture(int stage) const {return nullptr;}
+	ITexturePtr GetBaseTexture(int stage) const {return nullptr;}
+	ITexturePtr GetBumpTexture(int stage) const {return nullptr;}
 
 	SHADER_SETUP_STAGE()
 	{
@@ -63,7 +63,7 @@ BEGIN_SHADER_CLASS(EnvMapTest)
 			g_pShaderAPI->SetTexture(m_pCubemap, "Base", 0);
 	}
 
-	ITexture* m_pCubemap;
+	ITexturePtr m_pCubemap;
 
 	SHADER_DECLARE_PASS(Unlit);
 

@@ -8,6 +8,8 @@
 #pragma once
 
 class ITexture;
+using ITexturePtr = CRefPtr<ITexture>;
+
 class CTextureAtlas;
 class MatVarProxy;
 
@@ -16,7 +18,7 @@ struct MatVarData
 	EqString		pszValue;
 	Vector4D		vector{ 0 };
 	int				intValue{ 0 };
-	ITexture*		texture{ nullptr };
+	ITexturePtr		texture{ nullptr };
 };
 
 // WARNING: modifying this you must recompile all engine!
@@ -100,7 +102,7 @@ public:
 	virtual void					UpdateProxy(float fDt) = 0;
 
 	// retrieves the base texture on specified stage
-	virtual ITexture*				GetBaseTexture(int stage = 0) = 0;
+	virtual ITexturePtr				GetBaseTexture(int stage = 0) = 0;
 
 private:
 	virtual MatVarData&				VarAt(int idx) const = 0;

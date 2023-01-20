@@ -124,11 +124,8 @@ public:
 // Textures
 //-------------------------------------------------------------
 
-	// Unload the texture and free the memory
-	void				FreeTexture(ITexture* pTexture);
-
 	// Create procedural texture such as error texture, etc.
-	ITexture*			CreateProceduralTexture(const char* pszName,
+	ITexturePtr			CreateProceduralTexture(const char* pszName,
 												int width, int height,
 												const unsigned char* data, int nDataSize,
 												ETextureFormat nFormat,
@@ -136,14 +133,14 @@ public:
 												int nFlags = 0);
 
 	// It will add new rendertarget
-	ITexture*			CreateRenderTarget(	int width, int height,
+	ITexturePtr			CreateRenderTarget(	int width, int height,
 											ETextureFormat nRTFormat,
 											ER_TextureFilterMode textureFilterType = TEXFILTER_LINEAR,
 											ER_TextureAddressMode textureAddress = TEXADDRESS_WRAP,
 											ER_CompareFunc comparison = COMP_NEVER,
 											int nFlags = 0);
 	// It will add new rendertarget
-	ITexture*			CreateNamedRenderTarget(const char* pszName,
+	ITexturePtr			CreateNamedRenderTarget(const char* pszName,
 												int width, int height,
 												ETextureFormat nRTFormat, ER_TextureFilterMode textureFilterType = TEXFILTER_LINEAR,
 												ER_TextureAddressMode textureAddress = TEXADDRESS_WRAP,
@@ -154,26 +151,24 @@ public:
 // Texture operations
 //-------------------------------------------------------------
 
-	// saves rendertarget to texture, you can also save screenshots
-	void				SaveRenderTarget(ITexture* pTargetTexture, const char* pFileName);
 
 	// Copy render target to texture
-	void				CopyFramebufferToTexture(ITexture* pTargetTexture);
+	void				CopyFramebufferToTexture(const ITexturePtr& renderTarget);
 
 	// Copy render target to texture
-	void				CopyRendertargetToTexture(ITexture* srcTarget, ITexture* destTex, IRectangle* srcRect = nullptr, IRectangle* destRect = nullptr);
+	void				CopyRendertargetToTexture(const ITexturePtr& srcTarget, const ITexturePtr& destTex, IRectangle* srcRect = nullptr, IRectangle* destRect = nullptr);
 
 	// Changes render target (MRT)
-	void				ChangeRenderTargets(ITexture** pRenderTargets, int nNumRTs, int* nCubemapFaces = nullptr, ITexture* pDepthTarget = nullptr, int nDepthSlice = 0);
-
-	// fills the current rendertarget buffers
-	void				GetCurrentRenderTargets(ITexture* pRenderTargets[MAX_MRTS], int *nNumRTs, ITexture** pDepthTarget, int cubeNumbers[MAX_MRTS]);
+	void				ChangeRenderTargets(ArrayCRef<ITexturePtr> renderTargets,
+											ArrayCRef<int> rtSlice = nullptr,
+											const ITexturePtr& depthTarget = nullptr,
+											int depthSlice = 0);
 
 	// Changes back to backbuffer
 	void				ChangeRenderTargetToBackBuffer();
 
 	// resizes render target
-	void				ResizeRenderTarget(ITexture* pRT, int newWide, int newTall);
+	void				ResizeRenderTarget(const ITexturePtr& renderTarget, int newWide, int newTall);
 
 //-------------------------------------------------------------
 // Matrix for rendering
@@ -215,7 +210,7 @@ public:
 
 	// Set the texture. Animation is set from ITexture every frame (no affection on speed) before you do 'ApplyTextures'
 	// Also you need to specify texture name. If you don't, use registers (not fine with DX10, 11)
-	void				SetTexture( ITexture* pTexture, const char* pszName, int index = 0 );
+	void				SetTexture(const ITexturePtr& pTexture, const char* pszName, int index = 0 );
 
 	int					GetSamplerUnit(CGLShaderProgram* prog, const char* samplerName);
 
@@ -283,7 +278,7 @@ public:
 
 protected:
 
-	ITexture*			CreateTextureResource(const char* pszName);
+	ITexturePtr			CreateTextureResource(const char* pszName);
 private:
 	void					ApplyBuffers();
 

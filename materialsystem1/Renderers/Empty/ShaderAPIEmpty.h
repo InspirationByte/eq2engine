@@ -7,7 +7,7 @@
 
 #pragma once
 #include "ShaderAPI_Base.h"
-#include "CEmptyTexture.h"
+#include "EmptyTexture.h"
 #include "imaging/ImageLoader.h"
 
 using namespace Threading;
@@ -24,13 +24,13 @@ public:
 				CEmptyVertexBuffer(int stride) : m_lockData(nullptr), m_stride(stride) {}
 
 	// returns size in bytes
-	long		GetSizeInBytes() const {return 0;}
+	long		GetSizeInBytes() const { return 0; }
 
 	// returns vertex count
-	int			GetVertexCount() const {return 0;}
+	int			GetVertexCount() const { return 0; }
 
 	// retuns stride size
-	int			GetStrideSize() const {return m_stride;}
+	int			GetStrideSize() const { return m_stride; }
 
 	// updates buffer without map/unmap operations which are slower
 	void		Update(void* data, int size, int offset, bool discard = true)
@@ -129,11 +129,8 @@ class ShaderAPIEmpty : public ShaderAPI_Base
 	friend class CEmptyTexture;
 public:
 
-	
-
 								ShaderAPIEmpty() {}
 								~ShaderAPIEmpty() {}
-								
 
 	// Init + Shurdown
 	void						Init(const shaderAPIParams_t &params) 
@@ -176,33 +173,6 @@ public:
 	// Renderer string (ex: OpenGL, D3D9)
 	const char*					GetRendererName() const {return "Empty";}
 
-	// Render targetting support
-	bool						IsSupportsRendertargetting() const {return false;}
-
-	// Render targetting support for Multiple RTs
-	bool						IsSupportsMRT() const {return false;}
-
-	// Supports multitexturing???
-	bool						IsSupportsMultitexturing() const {return false;}
-
-	// The driver/hardware is supports Pixel shaders?
-	bool						IsSupportsPixelShaders() const {return false;}
-
-	// The driver/hardware is supports Vertex shaders?
-	bool						IsSupportsVertexShaders() const {return false;}
-
-	// The driver/hardware is supports Geometry shaders?
-	bool						IsSupportsGeometryShaders() const {return false;}
-
-	// The driver/hardware is supports Domain shaders?
-	bool						IsSupportsDomainShaders() const {return false;}
-
-	// The driver/hardware is supports Hull (tessellator) shaders?
-	bool						IsSupportsHullShaders() const {return false;}
-
-	// The hardware (for engine) is supports full dynamic lighting
-	//bool						IsSupportsFullLighting() const {return false;}
-
 //-------------------------------------------------------------
 // MT Synchronization
 //-------------------------------------------------------------
@@ -225,33 +195,10 @@ public:
 // Textures
 //-------------------------------------------------------------
 
-	// Unload the texture and free the memory
-	void						FreeTexture(ITexture* pTexture)
-	{
-		CEmptyTexture* pTex = (CEmptyTexture*)(pTexture);
-
-		if(pTex == nullptr)
-			return;
-
-		pTex->Ref_Drop();
-
-		if(pTex->Ref_Count() <= 0)
-		{
-			CScopedMutex scoped(g_sapi_TextureMutex);
-			auto it = m_TextureList.find(pTex->m_nameHash);
-			if (it != m_TextureList.end())
-			{
-				m_TextureList.remove(it);
-				DevMsg(DEVMSG_SHADERAPI, "Texture unloaded: %s\n", pTexture->GetName());
-				delete pTex;
-			}
-		}
-	}
-
 	// It will add new rendertarget
-	ITexture*					CreateRenderTarget(int width, int height,ETextureFormat nRTFormat,ER_TextureFilterMode textureFilterType = TEXFILTER_LINEAR, ER_TextureAddressMode textureAddress = TEXADDRESS_WRAP, ER_CompareFunc comparison = COMP_NEVER, int nFlags = 0)
+	ITexturePtr					CreateRenderTarget(int width, int height,ETextureFormat nRTFormat,ER_TextureFilterMode textureFilterType = TEXFILTER_LINEAR, ER_TextureAddressMode textureAddress = TEXADDRESS_WRAP, ER_CompareFunc comparison = COMP_NEVER, int nFlags = 0)
 	{
-		CEmptyTexture* pTexture = PPNew CEmptyTexture();
+		CRefPtr<CEmptyTexture> pTexture = CRefPtr_new(CEmptyTexture);
 		pTexture->SetName(EqString::Format("_rt_%d", m_TextureList.size()));
 
 		pTexture->SetDimensions(width, height);
@@ -261,13 +208,13 @@ public:
 		ASSERT_MSG(m_TextureList.find(pTexture->m_nameHash) == m_TextureList.end(), "Texture %s was already added", pTexture->GetName());
 		m_TextureList.insert(pTexture->m_nameHash, pTexture);
 
-		return pTexture;
+		return ITexturePtr(pTexture);
 	}
 
 	// It will add new rendertarget
-	ITexture*					CreateNamedRenderTarget(const char* pszName,int width, int height, ETextureFormat nRTFormat, ER_TextureFilterMode textureFilterType = TEXFILTER_LINEAR, ER_TextureAddressMode textureAddress = TEXADDRESS_WRAP, ER_CompareFunc comparison = COMP_NEVER, int nFlags = 0)
+	ITexturePtr					CreateNamedRenderTarget(const char* pszName,int width, int height, ETextureFormat nRTFormat, ER_TextureFilterMode textureFilterType = TEXFILTER_LINEAR, ER_TextureAddressMode textureAddress = TEXADDRESS_WRAP, ER_CompareFunc comparison = COMP_NEVER, int nFlags = 0)
 	{
-		CEmptyTexture* pTexture = PPNew CEmptyTexture();
+		CRefPtr<CEmptyTexture> pTexture = CRefPtr_new(CEmptyTexture);
 		pTexture->SetName(pszName);
 
 		CScopedMutex scoped(g_sapi_TextureMutex);
@@ -277,33 +224,30 @@ public:
 		pTexture->SetDimensions(width, height);
 		pTexture->SetFormat(nRTFormat);
 
-		return pTexture;
+		return ITexturePtr(pTexture);
 	}
 
 //-------------------------------------------------------------
 // Texture operations
 //-------------------------------------------------------------
 
-	// saves rendertarget to texture, you can also save screenshots
-	void						SaveRenderTarget(ITexture* pTargetTexture, const char* pFileName) {}
+	// Copy render target to texture
+	void						CopyFramebufferToTexture(const ITexturePtr& pTargetTexture) {}
 
 	// Copy render target to texture
-	void						CopyFramebufferToTexture(ITexture* pTargetTexture){}
-
-	// Copy render target to texture
-	void						CopyRendertargetToTexture(ITexture* srcTarget, ITexture* destTex, IRectangle* srcRect = nullptr, IRectangle* destRect = nullptr) {}
+	void						CopyRendertargetToTexture(const ITexturePtr& srcTarget, const ITexturePtr& destTex, IRectangle* srcRect = nullptr, IRectangle* destRect = nullptr) {}
 
 	// Changes render target (MRT)
-	void						ChangeRenderTargets(ITexture** pRenderTargets, int nNumRTs, int* nCubemapFaces = nullptr, ITexture* pDepthTarget = nullptr, int nDepthSlice = 0){}
-
-	// fills the current rendertarget buffers
-	void						GetCurrentRenderTargets(ITexture* pRenderTargets[MAX_MRTS], int *nNumRTs, ITexture** pDepthTarget, int cubeNumbers[MAX_MRTS]){}
+	void						ChangeRenderTargets(ArrayCRef<ITexturePtr> renderTargets,
+											ArrayCRef<int> rtSlice = nullptr,
+											const ITexturePtr& depthTarget = nullptr,
+											int depthSlice = 0) {}
 
 	// Changes back to backbuffer
 	void						ChangeRenderTargetToBackBuffer(){}
 
 	// resizes render target
-	void						ResizeRenderTarget(ITexture* pRT, int newWide, int newTall){}
+	void						ResizeRenderTarget(const ITexturePtr& pRT, int newWide, int newTall){}
 
 	// returns current size of backbuffer surface
 	void						GetViewportDimensions(int &wide, int &tall){}
@@ -319,16 +263,16 @@ public:
 	void						SetMatrixMode(ER_MatrixMode nMatrixMode){}
 
 	// Will save matrix
-	void						PushMatrix(){}
+	void						PushMatrix() {}
 
 	// Will reset matrix
-	void						PopMatrix(){}
+	void						PopMatrix() {}
 
 	// Load identity matrix
-	void						LoadIdentityMatrix(){}
+	void						LoadIdentityMatrix() {}
 
 	// Load custom matrix
-	void						LoadMatrix(const Matrix4x4 &matrix){}
+	void						LoadMatrix(const Matrix4x4 &matrix) {}
 
 	// Setup 2D mode
 	void						SetupMatrixFor2DMode(float fLeft, float fRight, float fTop, float fBottom){}
@@ -393,7 +337,7 @@ public:
 	void						SetShader(IShaderProgram* pShader){}
 
 	// Set Texture for shader
-	void						SetTexture(ITexture* pTexture, const char* pszName, int index){}
+	void						SetTexture(const ITexturePtr& pTexture, const char* pszName, int index){}
 
 	// RAW Constant (Used for structure types, etc.)
 	void						SetShaderConstantRaw(const char *pszName, const void *data, int nSize){}
@@ -458,49 +402,14 @@ public:
 
 protected:
 
-	ITexture*					CreateTextureResource(const char* pszName)
+	ITexturePtr					CreateTextureResource(const char* pszName)
 	{
-		CEmptyTexture* texture = PPNew CEmptyTexture();
+		CRefPtr<CEmptyTexture> texture = CRefPtr_new(CEmptyTexture);
 		texture->SetName(pszName);
 		texture->SetFlags(TEXFLAG_JUST_CREATED);
 
 		m_TextureList.insert(texture->m_nameHash, texture);
-		return texture;
-	}
-
-	void						CreateTextureInternal(ITexture** pTex, const ArrayCRef<const CImage*>& pImages, const SamplerStateParam_t& sampler,int nFlags)
-	{
-		if(!pImages.numElem())
-			return;
-
-		CEmptyTexture* pTexture = nullptr;
-
-		// get or create
-		if(*pTex)
-			pTexture = (CEmptyTexture*)*pTex;
-		else
-			pTexture = PPNew CEmptyTexture();
-
-		// FIXME: hold images?
-
-		CScopedMutex m(g_sapi_TextureMutex);
-
-		// Bind this sampler state to texture
-		pTexture->SetSamplerState(sampler);
-		pTexture->SetDimensions(pImages[0]->GetWidth(), pImages[0]->GetHeight());
-		pTexture->SetFormat(pImages[0]->GetFormat());
-		pTexture->SetFlags(nFlags);
-		pTexture->SetName( pImages[0]->GetName() );
-
-		// if this is a new texture, add
-		if (!(*pTex))
-		{
-			ASSERT_MSG(m_TextureList.find(pTexture->m_nameHash) == m_TextureList.end(), "Texture %s was already added", pTexture->GetName());
-			m_TextureList.insert(pTexture->m_nameHash, pTexture);
-		}
-
-		// set for output
-		*pTex = pTexture;
+		return ITexturePtr(texture);
 	}
 
 	int							GetSamplerUnit(IShaderProgram* pProgram,const char* pszSamplerName) {return 0;}

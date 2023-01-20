@@ -12,6 +12,7 @@
 class CMeshBuilder;
 class IDynamicMesh;
 class ITexture;
+using ITexturePtr = CRefPtr<ITexture>;
 
 class CFont : public IEqFont
 {
@@ -77,7 +78,7 @@ protected:
 
 	EqString						m_name;
 
-	ITexture*						m_fontTexture;
+	ITexturePtr						m_fontTexture;
 	Vector2D						m_invTexSize;
 
 	ColorRGBA						m_textColor;

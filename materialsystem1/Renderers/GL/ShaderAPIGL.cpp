@@ -327,7 +327,7 @@ void ShaderAPIGL::ApplyTextures()
 
 	for (int i = 0; i < m_caps.maxTextureUnits; i++)
 	{
-		CGLTexture* pSelectedTexture = (CGLTexture*)m_pSelectedTextures[i];
+		CGLTexture* pSelectedTexture = (CGLTexture*)m_pSelectedTextures[i].Ptr();
 		ITexture* pCurrentTexture = m_pCurrentTextures[i];
 		GLTextureRef_t& currentGLTexture = m_currentGLTextures[i];
 		
@@ -349,7 +349,7 @@ void ShaderAPIGL::ApplyTextures()
 			}
 			GLCheckError("bind texture");
 
-			m_pCurrentTextures[i] = pSelectedTexture;
+			m_pCurrentTextures[i] = ITexturePtr(pSelectedTexture);
 			
 		}
 	}
@@ -724,38 +724,8 @@ void ShaderAPIGL::DestroyOcclusionQuery(IOcclusionQuery* pQuery)
 // Textures
 //-------------------------------------------------------------
 
-// Unload the texture and free the memory
-void ShaderAPIGL::FreeTexture(ITexture* pTexture)
-{
-	CGLTexture* pTex = (CGLTexture*)pTexture;
-
-	if(pTex == nullptr)
-		return;
-
-	{
-		CScopedMutex scoped(g_sapi_TextureMutex);
-		auto it = m_TextureList.find(pTex->m_nameHash);
-		if (it == m_TextureList.end())
-			return;
-
-		if (pTex->Ref_Count() == 0)
-			MsgWarning("texture %s refcount==0\n", pTexture->GetName());
-
-		if (!pTex->Ref_Drop())
-			return;
-
-		m_TextureList.remove(it);
-	}
-
-	DevMsg(DEVMSG_SHADERAPI, "Texture unloaded: %s\n", pTexture->GetName());
-	g_glWorker.AddWork(__FUNCTION__, [pTex]() {
-		delete pTex;
-		return 0;
-	}, false);
-}
-
 // It will add new rendertarget
-ITexture* ShaderAPIGL::CreateRenderTarget(	int width, int height,
+ITexturePtr ShaderAPIGL::CreateRenderTarget(	int width, int height,
 											ETextureFormat nRTFormat,
 											ER_TextureFilterMode textureFilterType,
 											ER_TextureAddressMode textureAddress,
@@ -766,14 +736,14 @@ ITexture* ShaderAPIGL::CreateRenderTarget(	int width, int height,
 }
 
 // It will add new rendertarget
-ITexture* ShaderAPIGL::CreateNamedRenderTarget(	const char* pszName,
+ITexturePtr ShaderAPIGL::CreateNamedRenderTarget(	const char* pszName,
 												int width, int height,
 												ETextureFormat nRTFormat, ER_TextureFilterMode textureFilterType,
 												ER_TextureAddressMode textureAddress,
 												ER_CompareFunc comparison,
 												int nFlags)
 {
-	CGLTexture *pTexture = PPNew CGLTexture;
+	CRefPtr<CGLTexture> pTexture = CRefPtr_new(CGLTexture);
 
 	pTexture->SetDimensions(width,height);
 	pTexture->SetFormat(nRTFormat);
@@ -815,7 +785,7 @@ ITexture* ShaderAPIGL::CreateNamedRenderTarget(	const char* pszName,
 		pTexture->textures.append(texture);
 
 		// this generates the render target
-		ResizeRenderTarget(pTexture, width, height);
+		ResizeRenderTarget(ITexturePtr(pTexture), width, height);
 	}
 	else
 	{
@@ -829,12 +799,12 @@ ITexture* ShaderAPIGL::CreateNamedRenderTarget(	const char* pszName,
 		m_TextureList.insert(pTexture->m_nameHash, pTexture);
 	}
 
-	return pTexture;
+	return ITexturePtr(pTexture);
 }
 
-void ShaderAPIGL::ResizeRenderTarget(ITexture* pRT, int newWide, int newTall)
+void ShaderAPIGL::ResizeRenderTarget(const ITexturePtr& renderTarget, int newWide, int newTall)
 {
-	CGLTexture* pTex = (CGLTexture*)pRT;
+	CGLTexture* pTex = (CGLTexture*)renderTarget.Ptr();
 	ETextureFormat format = pTex->GetFormat();
 
 	pTex->SetDimensions(newWide,newTall);
@@ -900,14 +870,14 @@ void ShaderAPIGL::ResizeRenderTarget(ITexture* pRT, int newWide, int newTall)
 	}
 }
 
-ITexture* ShaderAPIGL::CreateTextureResource(const char* pszName)
+ITexturePtr ShaderAPIGL::CreateTextureResource(const char* pszName)
 {
-	CGLTexture* texture = PPNew CGLTexture();
+	CRefPtr<CGLTexture> texture = CRefPtr_new(CGLTexture);
 	texture->SetName(pszName);
 	texture->SetFlags(TEXFLAG_JUST_CREATED);
 
 	m_TextureList.insert(texture->m_nameHash, texture);
-	return texture;
+	return ITexturePtr(texture);
 }
 
 //-------------------------------------------------------------
@@ -915,18 +885,18 @@ ITexture* ShaderAPIGL::CreateTextureResource(const char* pszName)
 //-------------------------------------------------------------
 
 // Copy render target to texture
-void ShaderAPIGL::CopyFramebufferToTexture(ITexture* pTargetTexture)
+void ShaderAPIGL::CopyFramebufferToTexture(const ITexturePtr& pTargetTexture)
 {
 	// store the current rendertarget states
-	ITexture* currentRenderTarget[MAX_MRTS];
+	ITexturePtr currentRenderTarget[MAX_MRTS];
 	int	currentCRTSlice[MAX_MRTS];
-	ITexture* currentDepthTarget = m_pCurrentDepthRenderTarget;
+	ITexturePtr currentDepthTarget = m_pCurrentDepthRenderTarget;
 	m_pCurrentDepthRenderTarget = nullptr;
 
 	int currentNumRTs = 0;
 	for(; currentNumRTs < MAX_MRTS;)
 	{
-		ITexture* rt = m_pCurrentColorRenderTargets[currentNumRTs];
+		ITexturePtr& rt = m_pCurrentColorRenderTargets[currentNumRTs];
 
 		if(!rt)
 			break;
@@ -957,28 +927,28 @@ void ShaderAPIGL::CopyFramebufferToTexture(ITexture* pTargetTexture)
 	// restore render targets back
 	// or to backbuffer if no RTs were set
 	if(currentNumRTs)
-		ChangeRenderTargets(currentRenderTarget, currentNumRTs, currentCRTSlice, currentDepthTarget);
+		ChangeRenderTargets(ArrayCRef(currentRenderTarget, currentNumRTs), ArrayCRef(currentCRTSlice, currentNumRTs), currentDepthTarget);
 	else
 		ChangeRenderTargetToBackBuffer();
 }
 
 // Copy render target to texture
-void ShaderAPIGL::CopyRendertargetToTexture(ITexture* srcTarget, ITexture* destTex, IRectangle* srcRect, IRectangle* destRect)
+void ShaderAPIGL::CopyRendertargetToTexture(const ITexturePtr& srcTarget, const ITexturePtr& destTex, IRectangle* srcRect, IRectangle* destRect)
 {
 	// BUG BUG:
 	// this process is very bugged as fuck
 	// TODO: double-check main framebuffer attachments from de-attaching
 
 	// store the current rendertarget states
-	ITexture* currentRenderTarget[MAX_MRTS];
+	ITexturePtr currentRenderTarget[MAX_MRTS];
 	int	currentCRTSlice[MAX_MRTS];
-	ITexture* currentDepthTarget = m_pCurrentDepthRenderTarget;
+	ITexturePtr currentDepthTarget = m_pCurrentDepthRenderTarget;
 	m_pCurrentDepthRenderTarget = nullptr;
 
 	int currentNumRTs = 0;
 	for(; currentNumRTs < MAX_MRTS;)
 	{
-		ITexture* rt = m_pCurrentColorRenderTargets[currentNumRTs];
+		ITexturePtr& rt = m_pCurrentColorRenderTargets[currentNumRTs];
 
 		if (!rt)
 			break;
@@ -995,8 +965,8 @@ void ShaderAPIGL::CopyRendertargetToTexture(ITexture* srcTarget, ITexture* destT
 	// 1. preserve old render targets
 	// 2. set shader
 	// 3. render to texture
-	CGLTexture* srcTexture = (CGLTexture*)srcTarget;
-	CGLTexture* destTexture = (CGLTexture*)destTex;
+	CGLTexture* srcTexture = (CGLTexture*)srcTarget.Ptr();
+	CGLTexture* destTexture = (CGLTexture*)destTex.Ptr();
 
 	IRectangle _srcRect(0,0,srcTexture->GetWidth(), srcTexture->GetHeight());
 	IRectangle _destRect(0,0,destTexture->GetWidth(), destTexture->GetHeight());
@@ -1039,14 +1009,16 @@ void ShaderAPIGL::CopyRendertargetToTexture(ITexture* srcTarget, ITexture* destT
 
 	// change render targets back
 	if(currentNumRTs)
-		ChangeRenderTargets(currentRenderTarget, currentNumRTs, currentCRTSlice, currentDepthTarget);
+		ChangeRenderTargets(ArrayCRef(currentRenderTarget, currentNumRTs), ArrayCRef(currentCRTSlice, currentNumRTs), currentDepthTarget);
 	else
 		ChangeRenderTargetToBackBuffer();
 }
 
 // Changes render target (MRT)
-void ShaderAPIGL::ChangeRenderTargets(ITexture** pRenderTargets, int nNumRTs, int* nCubemapFaces, ITexture* pDepthTarget, int nDepthSlice)
+void ShaderAPIGL::ChangeRenderTargets(ArrayCRef<ITexturePtr> renderTargets, ArrayCRef<int> rtSlice, const ITexturePtr& depthTarget, int depthSlice)
 {
+	ASSERT_MSG(!rtSlice.ptr() || renderTargets.numElem() == rtSlice.numElem(), "ChangeRenderTargets - renderTargets and rtSlice must be equal");
+
 	uint glFrameBuffer = m_frameBuffer;
 
 	if (glFrameBuffer == 0)
@@ -1057,11 +1029,11 @@ void ShaderAPIGL::ChangeRenderTargets(ITexture** pRenderTargets, int nNumRTs, in
 
 	glBindFramebuffer(GL_FRAMEBUFFER, glFrameBuffer);
 
-	for (int i = 0; i < nNumRTs; i++)
+	for (int i = 0; i < renderTargets.numElem(); i++)
 	{
-		CGLTexture* colorRT = (CGLTexture*)pRenderTargets[i];
+		CGLTexture* colorRT = (CGLTexture*)renderTargets[i].Ptr();
 
-		const int nCubeFace = nCubemapFaces ? nCubemapFaces[i] : 0;
+		const int nCubeFace = rtSlice.ptr() ? rtSlice[i] : 0;
 
 		if (colorRT->GetFlags() & TEXFLAG_CUBEMAP)
 		{
@@ -1081,37 +1053,37 @@ void ShaderAPIGL::ChangeRenderTargets(ITexture** pRenderTargets, int nNumRTs, in
 			}
 		}
 
-		m_pCurrentColorRenderTargets[i] = colorRT;
+		m_pCurrentColorRenderTargets[i] = renderTargets[i];
 	}
 
-	if (nNumRTs != m_nCurrentRenderTargets)
+	if (renderTargets.numElem() != m_nCurrentRenderTargets)
 	{
-		for (int i = nNumRTs; i < m_nCurrentRenderTargets; i++)
+		for (int i = renderTargets.numElem(); i < m_nCurrentRenderTargets; i++)
 		{
 			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, 0, 0);
 			m_pCurrentColorRenderTargets[i] = nullptr;
 			m_nCurrentCRTSlice[i] = -1;
 		}
 
-		if (nNumRTs == 0)
+		if (renderTargets.numElem() == 0)
 		{
 			glDrawBuffers(0, nullptr);
 			glReadBuffer(GL_NONE);
 		}
 		else
 		{
-			glDrawBuffers(nNumRTs, m_drawBuffers);
+			glDrawBuffers(renderTargets.numElem(), m_drawBuffers);
 			glReadBuffer(GL_COLOR_ATTACHMENT0);
 		}
 
-		m_nCurrentRenderTargets = nNumRTs;
+		m_nCurrentRenderTargets = renderTargets.numElem();
 	}
 
-	GLuint bestDepth = nNumRTs ? ((CGLTexture*)pRenderTargets[0])->m_glDepthID : GL_NONE;
+	GLuint bestDepth = renderTargets.numElem() ? ((CGLTexture*)renderTargets[0].Ptr())->m_glDepthID : GL_NONE;
 	GLuint bestTarget = GL_TEXTURE_2D;
-	ETextureFormat bestFormat = nNumRTs ? FORMAT_D16 : FORMAT_NONE;
+	ETextureFormat bestFormat = renderTargets.numElem() ? FORMAT_D16 : FORMAT_NONE;
 	
-	CGLTexture* pDepth = (CGLTexture*)pDepthTarget;
+	CGLTexture* pDepth = (CGLTexture*)depthTarget.Ptr();
 
 	if (pDepth != m_pCurrentDepthRenderTarget)
 	{
@@ -1122,7 +1094,7 @@ void ShaderAPIGL::ChangeRenderTargets(ITexture** pRenderTargets, int nNumRTs, in
 			bestFormat = pDepth->GetFormat();
 		}
 		
-		m_pCurrentDepthRenderTarget = pDepth;
+		m_pCurrentDepthRenderTarget = depthTarget;
 	}
 
 	if (m_currentGLDepth != bestDepth)
@@ -1152,33 +1124,6 @@ void ShaderAPIGL::ChangeRenderTargets(ITexture** pRenderTargets, int nNumRTs, in
 	{
 		SetViewport(0, 0, m_pCurrentDepthRenderTarget->GetWidth(), m_pCurrentDepthRenderTarget->GetHeight());
 	}
-}
-
-// fills the current rendertarget buffers
-void ShaderAPIGL::GetCurrentRenderTargets(ITexture* pRenderTargets[MAX_MRTS], int *numRTs, ITexture** pDepthTarget, int cubeNumbers[MAX_MRTS])
-{
-	int nRts = 0;
-
-	if(pRenderTargets)
-	{
-		for (int i = 0; i < m_caps.maxRenderTargets; i++)
-		{
-			nRts++;
-
-			pRenderTargets[i] = m_pCurrentColorRenderTargets[i];
-
-			if(cubeNumbers)
-				cubeNumbers[i] = m_nCurrentCRTSlice[i];
-
-			if(!pRenderTargets[i])
-				break;
-		}
-	}
-
-	if(pDepthTarget)
-		*pDepthTarget = m_pCurrentDepthRenderTarget;
-
-	*numRTs = nRts;
 }
 
 void ShaderAPIGL::InternalChangeFrontFace(int nCullFaceMode)
@@ -2556,11 +2501,6 @@ bool ShaderAPIGL::IsDeviceActive()
 	return true;
 }
 
-void ShaderAPIGL::SaveRenderTarget(ITexture* pTargetTexture, const char* pFileName)
-{
-
-}
-
 //-------------------------------------------------------------
 // State manipulation
 //-------------------------------------------------------------
@@ -2793,7 +2733,7 @@ int ShaderAPIGL::GetSamplerUnit(CGLShaderProgram* prog, const char* samplerName)
 
 // Set the texture. Animation is set from ITexture every frame (no affection on speed) before you do 'ApplyTextures'
 // Also you need to specify texture name. If you don't, use registers (not fine with DX10, 11)
-void ShaderAPIGL::SetTexture( ITexture* pTexture, const char* pszName, int index )
+void ShaderAPIGL::SetTexture(const ITexturePtr& pTexture, const char* pszName, int index )
 {
 	if (!pszName)
 	{

@@ -7,9 +7,11 @@
 
 #pragma once
 
-class ITexture;
-class IMaterial;
 class CMatVar;
+class ITexture;
+using ITexturePtr = CRefPtr<ITexture>;
+
+class IMaterial;
 using IMaterialPtr = CRefPtr<IMaterial>;
 
 class MatVarProxy
@@ -25,7 +27,7 @@ public:
 	void				SetVector2(const Vector2D& vector);
 	void				SetVector3(const Vector3D& vector);
 	void				SetVector4(const Vector4D& vector);
-	void				SetTexture(ITexture* pTexture);
+	void				SetTexture(const ITexturePtr& pTexture);
 
 	const char*			GetString() const;
 	int					GetInt() const;
@@ -33,7 +35,7 @@ public:
 	const Vector2D&		GetVector2() const;
 	const Vector3D&		GetVector3() const;
 	const Vector4D&		GetVector4() const;
-	ITexture*			GetTexture() const;
+	ITexturePtr			GetTexture() const;
 
 	void				operator=(std::nullptr_t) { m_matVarIdx = -1; m_material = nullptr; }
 
@@ -158,7 +160,7 @@ inline const Vector4D& MatVarProxy::GetVector4() const
 }
 
 // texture pointer
-inline ITexture* MatVarProxy::GetTexture() const
+inline ITexturePtr MatVarProxy::GetTexture() const
 {
 	if (!m_material)
 		return nullptr;
@@ -168,7 +170,7 @@ inline ITexture* MatVarProxy::GetTexture() const
 }
 
 // assigns texture
-inline void MatVarProxy::SetTexture(ITexture* pTexture)
+inline void MatVarProxy::SetTexture(const ITexturePtr& pTexture)
 {
 	if (!m_material)
 		return;
@@ -177,9 +179,5 @@ inline void MatVarProxy::SetTexture(ITexture* pTexture)
 	if (pTexture == var.texture)
 		return;
 
-	if (pTexture)
-		pTexture->Ref_Grab();
-
-	g_pShaderAPI->FreeTexture(var.texture);
 	var.texture = pTexture;
 }

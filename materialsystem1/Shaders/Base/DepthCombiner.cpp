@@ -69,10 +69,10 @@ BEGIN_SHADER_CLASS(DepthCombiner)
 		g_pShaderAPI->SetTexture(m_pTextures[1], "Texture2", 1);
 	}
 
-	ITexture*	GetBaseTexture(int stage)  const {return m_pTextures[stage & 1];}
-	ITexture*	GetBumpTexture(int stage)  const {return nullptr;}
+	ITexturePtr	GetBaseTexture(int stage)  const {return m_pTextures[stage & 1];}
+	ITexturePtr	GetBumpTexture(int stage)  const {return nullptr;}
 
-	ITexture*	m_pTextures[2];
+	ITexturePtr	m_pTextures[2];
 
 	SHADER_DECLARE_PASS(Unlit);
 

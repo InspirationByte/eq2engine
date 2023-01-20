@@ -25,7 +25,7 @@ public:
 	CGLTexture();
 	~CGLTexture();
 
-		// initializes texture from image array of images
+	// initializes texture from image array of images
 	bool					Init(const SamplerStateParam_t& sampler, const ArrayCRef<CRefPtr<CImage>> images, int flags = 0);
 
 	void					Release();
@@ -50,6 +50,7 @@ public:
 	int						m_texSize{ 0 };
 
 protected:
+	void					Ref_DeleteObject();
 
 	GLTextureRef_t			CreateGLTexture(const CImage* img, const SamplerStateParam_t& sampler, int startMip, int mipCount) const;
 

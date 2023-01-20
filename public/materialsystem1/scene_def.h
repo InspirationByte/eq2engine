@@ -27,6 +27,7 @@ struct FogInfo_t
 };
 
 class ITexture;
+using ITexturePtr = CRefPtr<ITexture>;
 
 // Scene render modes
 typedef enum
@@ -125,7 +126,7 @@ struct dlight_t
 
 	ColorRGB				color;				// light colour
 
-	ITexture*				pMaskTexture;		// if you want
+	ITexturePtr				pMaskTexture;		// if you want
 
 	Vector3D				fovWH;				// x, y are dimensions for spot. z is a FOV
 	float					intensity;			// color multiplier / light intensity
