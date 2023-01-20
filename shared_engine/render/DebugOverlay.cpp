@@ -1059,7 +1059,7 @@ void CDebugOverlay::SetMatrices( const Matrix4x4 &proj, const Matrix4x4 &view )
 void CDebugOverlay::Draw(int winWide, int winTall, float timescale)
 {
 	m_frameTime = m_timer.GetTime(true) * timescale;
-	return;
+
 #ifndef DISABLE_DEBUG_DRAWING
 	g_pShaderAPI->SetViewport(0, 0, winWide, winTall);
 	materials->SetMatrix(MATRIXMODE_PROJECTION, m_projMat);
