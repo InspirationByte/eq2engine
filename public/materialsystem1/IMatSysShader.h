@@ -83,14 +83,14 @@ public:
 	virtual int				GetFlags() const = 0;
 
 	// returns base texture from shader
-	virtual ITexturePtr		GetBaseTexture(int stage = 0) const = 0;
+	virtual const ITexturePtr&	GetBaseTexture(int stage = 0) const = 0;
 
 	// returns base stage count
-	virtual int				GetBaseTextureStageCount() const = 0;
+	virtual int					GetBaseTextureStageCount() const = 0;
 
 	// returns bump texture from shader
-	virtual ITexturePtr		GetBumpTexture(int stage = 0) const = 0;
+	virtual const ITexturePtr& GetBumpTexture(int stage = 0) const = 0;
 
 	// returns bump stage count
-	virtual int				GetBumpStageCount() const = 0;
+	virtual int					GetBumpStageCount() const = 0;
 };

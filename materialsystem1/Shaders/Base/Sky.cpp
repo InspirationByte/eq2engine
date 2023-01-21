@@ -38,8 +38,8 @@ BEGIN_SHADER_CLASS(Skybox)
 		return true;
 	}
 
-	ITexturePtr GetBaseTexture(int stage) const {return m_nBaseTexture;}
-	ITexturePtr GetBumpTexture(int stage) const {return nullptr;}
+	const ITexturePtr& GetBaseTexture(int stage) const {return m_nBaseTexture;}
+	const ITexturePtr& GetBumpTexture(int stage) const {return nullptr;}
 
 	SHADER_SETUP_STAGE()
 	{

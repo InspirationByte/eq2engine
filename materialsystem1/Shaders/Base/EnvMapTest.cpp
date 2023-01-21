@@ -38,8 +38,8 @@ BEGIN_SHADER_CLASS(EnvMapTest)
 		return true;
 	}
 
-	ITexturePtr GetBaseTexture(int stage) const {return nullptr;}
-	ITexturePtr GetBumpTexture(int stage) const {return nullptr;}
+	const ITexturePtr& GetBaseTexture(int stage) const {return nullptr;}
+	const ITexturePtr& GetBumpTexture(int stage) const {return nullptr;}
 
 	SHADER_SETUP_STAGE()
 	{

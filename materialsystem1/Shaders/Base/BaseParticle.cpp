@@ -116,8 +116,8 @@ BEGIN_SHADER_CLASS(BaseParticle)
 		g_pShaderAPI->SetShaderConstantVector4D("AmbientColor", setColor);
 	}
 
-	ITexturePtr	GetBaseTexture(int stage) const {return m_pBaseTexture;}
-	ITexturePtr	GetBumpTexture(int stage) const {return nullptr;}
+	const ITexturePtr& GetBaseTexture(int stage) const {return m_pBaseTexture;}
+	const ITexturePtr& GetBumpTexture(int stage) const {return nullptr;}
 
 	SHADER_DECLARE_PASS(Particle);
 	SHADER_DECLARE_FOGPASS(Particle);

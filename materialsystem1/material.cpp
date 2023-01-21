@@ -402,7 +402,7 @@ MatVarProxy CMaterial::FindMaterialVar(const char* pszVarName) const
 	return MatVarProxy(*it, const_cast<IMaterial*>(static_cast<const IMaterial*>(this)));
 }
 
-ITexturePtr CMaterial::GetBaseTexture(int stage)
+const ITexturePtr& CMaterial::GetBaseTexture(int stage)
 {
 	if(m_shader != nullptr && !IsError())
 	{

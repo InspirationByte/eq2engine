@@ -56,8 +56,8 @@ BEGIN_SHADER_CLASS(Default)
 		g_pShaderAPI->SetShaderConstantVector4D("AmbientColor", setColor);
 	}
 
-	ITexturePtr	GetBaseTexture(int stage) const {return nullptr;}
-	ITexturePtr	GetBumpTexture(int stage) const {return nullptr;}
+	const ITexturePtr& GetBaseTexture(int stage) const {return nullptr;}
+	const ITexturePtr& GetBumpTexture(int stage) const {return nullptr;}
 
 	SHADER_DECLARE_PASS(Unlit);
 

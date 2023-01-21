@@ -101,7 +101,7 @@ public:
 	virtual void					UpdateProxy(float fDt) = 0;
 
 	// retrieves the base texture on specified stage
-	virtual ITexturePtr				GetBaseTexture(int stage = 0) = 0;
+	virtual const ITexturePtr&		GetBaseTexture(int stage = 0) = 0;
 
 private:
 	virtual MatVarData&				VarAt(int idx) const = 0;
