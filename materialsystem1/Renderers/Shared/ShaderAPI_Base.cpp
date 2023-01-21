@@ -306,7 +306,7 @@ void ShaderAPI_Base::ApplyBuffers()
 }
 
 // default error texture pointer
-ITexturePtr ShaderAPI_Base::GetErrorTexture()
+const ITexturePtr& ShaderAPI_Base::GetErrorTexture() const
 {
 	return m_pErrorTexture;
 }
@@ -586,7 +586,7 @@ void ShaderAPI_Base::SetTextureOnIndex(const ITexturePtr& pTexture, int level /*
 }
 
 // returns the currently set textre at level
-ITexturePtr ShaderAPI_Base::GetTextureAt( int level ) const
+const ITexturePtr& ShaderAPI_Base::GetTextureAt( int level ) const
 {
 	if (level > 0 && m_caps.maxTextureUnits <= 1)
 		return nullptr;

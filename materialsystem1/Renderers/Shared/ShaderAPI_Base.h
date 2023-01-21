@@ -52,7 +52,7 @@ public:
 	ETextureFormat						GetScreenFormat();
 
 	// default error texture pointer
-	ITexturePtr							GetErrorTexture();
+	const ITexturePtr&					GetErrorTexture() const;
 
 	static void							GetConsoleTextureList(const ConCommandBase* base, Array<EqString>&, const char* query);
 
@@ -151,7 +151,7 @@ public:
 	void								SetTextureOnIndex( const ITexturePtr& pTexture, int level = 0 );
 
 	// returns the currently set textre at level
-	ITexturePtr							GetTextureAt( int level ) const;
+	const ITexturePtr&					GetTextureAt( int level ) const;
 
 //-------------------------------------------------------------
 // Vertex buffer object handling

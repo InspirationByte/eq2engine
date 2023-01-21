@@ -64,13 +64,13 @@ public:
 	//-----------------------------
 
 	// returns the default material capable to use with MatSystem's GetDynamicMesh()
-	IMaterialPtr					GetDefaultMaterial() const;
+	const IMaterialPtr&				GetDefaultMaterial() const;
 
 	// returns white texture (used for wireframe of shaders that can't use FFP modes,notexture modes, etc.)
-	ITexturePtr						GetWhiteTexture() const;
+	const ITexturePtr&				GetWhiteTexture() const;
 
 	// returns luxel test texture (used for lightmap test)
-	ITexturePtr						GetLuxelTestTexture() const;
+	const ITexturePtr&				GetLuxelTestTexture() const;
 
 	// creates new material with defined parameters
 	IMaterialPtr					CreateMaterial(const char* szMaterialName, KVSection* params);
@@ -91,7 +91,7 @@ public:
 	void							Wait();
 
 	// loads material or sends it to loader thread
-	void							PutMaterialToLoadingQueue(IMaterialPtr pMaterial);
+	void							PutMaterialToLoadingQueue(const IMaterialPtr& pMaterial);
 
 	// returns material count which is currently loading or awaiting for load
 	int								GetLoadingQueue() const;
@@ -120,13 +120,13 @@ public:
 
 	// draws primitives
 	void							DrawPrimitivesFFP(	ER_PrimitiveType type, Vertex3D_t *pVerts, int nVerts,
-														ITexturePtr pTexture = nullptr, const ColorRGBA &color = color_white,
+														const ITexturePtr& pTexture = nullptr, const ColorRGBA &color = color_white,
 														BlendStateParam_t* blendParams = nullptr, DepthStencilStateParams_t* depthParams = nullptr,
 														RasterizerStateParams_t* rasterParams = nullptr);
 
 	// draws primitives for 2D
 	void							DrawPrimitives2DFFP(	ER_PrimitiveType type, Vertex2D_t *pVerts, int nVerts,
-															ITexturePtr pTexture = nullptr, const ColorRGBA &color = color_white,
+															const ITexturePtr& pTexture = nullptr, const ColorRGBA &color = color_white,
 															BlendStateParam_t* blendParams = nullptr, DepthStencilStateParams_t* depthParams = nullptr,
 															RasterizerStateParams_t* rasterParams = nullptr);
 
@@ -160,7 +160,7 @@ public:
 	//---------------------------
 	// $env_cubemap texture for use in shaders
 	void							SetEnvironmentMapTexture(const ITexturePtr& pEnvMapTexture);
-	ITexturePtr						GetEnvironmentMapTexture() const;
+	const ITexturePtr&				GetEnvironmentMapTexture() const;
 
 	//-----------------------------
 	// RHI render states setup

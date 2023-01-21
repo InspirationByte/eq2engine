@@ -160,6 +160,11 @@ void CDebugOverlay::Init(bool hidden)
 	m_debugFont2 = g_fontCache->GetFont("default", 0);
 }
 
+void CDebugOverlay::Shutdown()
+{
+	g_pDebugTexture = nullptr;
+}
+
 void CDebugOverlay::Text(const ColorRGBA &color, char const *fmt,...)
 {
 #ifndef DISABLE_DEBUG_DRAWING

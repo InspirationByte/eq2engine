@@ -57,7 +57,7 @@ BEGIN_SHADER_CLASS(GaussianBlur)
 		SetupDefaultParameter(SHADERPARAM_DEPTHSETUP);
 		SetupDefaultParameter(SHADERPARAM_RASTERSETUP);
 
-		ITexturePtr bloomTex = m_blurSource.GetTexture();
+		const ITexturePtr& bloomTex = m_blurSource.GetTexture();
 
 		Vector4D textureSizeProps;
 

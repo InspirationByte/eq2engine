@@ -99,7 +99,7 @@ BEGIN_SHADER_CLASS(BaseParticle)
 
 	void SetupBaseTexture0()
 	{
-		ITexturePtr pSetupTexture = materials->GetConfiguration().wireframeMode ? materials->GetWhiteTexture() : m_pBaseTexture;
+		const ITexturePtr& pSetupTexture = materials->GetConfiguration().wireframeMode ? materials->GetWhiteTexture() : m_pBaseTexture;
 
 		g_pShaderAPI->SetTexture(pSetupTexture, "BaseTextureSampler", 0);
 	}

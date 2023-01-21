@@ -665,7 +665,7 @@ void CEqStudioGeom::LoadMaterials()
 	}
 }
 
-IMaterialPtr CEqStudioGeom::GetMaterial(int materialIdx, int materialGroupIdx) const
+const IMaterialPtr& CEqStudioGeom::GetMaterial(int materialIdx, int materialGroupIdx) const
 {
 	if (materialIdx == -1)
 		return materials->GetDefaultMaterial();

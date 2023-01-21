@@ -205,7 +205,7 @@ public:
 //-------------------------------------------------------------
 
 	// default error texture pointer
-	virtual ITexturePtr			GetErrorTexture() = 0;
+	virtual const ITexturePtr&	GetErrorTexture() const = 0;
 
 	// Searches for texture by name, can be used for shared RT's
 	virtual ITexturePtr			FindTexture( const char* pszName ) = 0;
@@ -350,7 +350,7 @@ public:
 	virtual void				SetTexture(const ITexturePtr& pTexture, const char* pszName = nullptr, int index = 0) = 0;
 
 	// returns the currently set textre at level
-	virtual ITexturePtr			GetTextureAt( int level ) const = 0;
+	virtual const ITexturePtr&	GetTextureAt( int level ) const = 0;
 
 //-------------------------------------------------------------
 // Vertex buffer object handling

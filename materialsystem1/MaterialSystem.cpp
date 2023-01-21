@@ -866,7 +866,7 @@ enum EMaterialRenderSubroutine
 };
 
 // loads material or sends it to loader thread
-void CMaterialSystem::PutMaterialToLoadingQueue(IMaterialPtr pMaterial)
+void CMaterialSystem::PutMaterialToLoadingQueue(const IMaterialPtr& pMaterial)
 {
 	CMaterial* material = (CMaterial*)pMaterial.Ptr();
 	if(Atomic::CompareExchange(material->m_state, MATERIAL_LOAD_NEED_LOAD, MATERIAL_LOAD_INQUEUE) != MATERIAL_LOAD_NEED_LOAD)
@@ -1044,17 +1044,17 @@ dlight_t* CMaterialSystem::GetLight() const
 	return m_currentLight;
 }
 
-IMaterialPtr CMaterialSystem::GetDefaultMaterial() const
+const IMaterialPtr& CMaterialSystem::GetDefaultMaterial() const
 {
 	return m_pDefaultMaterial;
 }
 
-ITexturePtr CMaterialSystem::GetWhiteTexture() const
+const ITexturePtr& CMaterialSystem::GetWhiteTexture() const
 {
 	return m_whiteTexture;
 }
 
-ITexturePtr CMaterialSystem::GetLuxelTestTexture() const
+const ITexturePtr& CMaterialSystem::GetLuxelTestTexture() const
 {
 	return m_luxelTestTexture;
 }
@@ -1240,7 +1240,7 @@ void CMaterialSystem::SetEnvironmentMapTexture(const ITexturePtr& pEnvMapTexture
 }
 
 // returns current pre-apply callback
-ITexturePtr CMaterialSystem::GetEnvironmentMapTexture() const
+const ITexturePtr& CMaterialSystem::GetEnvironmentMapTexture() const
 {
 	return m_currentEnvmapTexture;
 }
@@ -1310,7 +1310,7 @@ IDynamicMesh* CMaterialSystem::GetDynamicMesh() const
 
 // draws 2D primitives
 void CMaterialSystem::DrawPrimitivesFFP(ER_PrimitiveType type, Vertex3D_t *pVerts, int nVerts,
-										ITexturePtr pTexture, const ColorRGBA &color,
+										const ITexturePtr& pTexture, const ColorRGBA &color,
 										BlendStateParam_t* blendParams, DepthStencilStateParams_t* depthParams,
 										RasterizerStateParams_t* rasterParams)
 {
@@ -1352,7 +1352,7 @@ void CMaterialSystem::DrawPrimitivesFFP(ER_PrimitiveType type, Vertex3D_t *pVert
 }
 
 void CMaterialSystem::DrawPrimitives2DFFP(	ER_PrimitiveType type, Vertex2D_t *pVerts, int nVerts,
-											ITexturePtr pTexture, const ColorRGBA &color,
+											const ITexturePtr& pTexture, const ColorRGBA &color,
 											BlendStateParam_t* blendParams, DepthStencilStateParams_t* depthParams,
 											RasterizerStateParams_t* rasterParams)
 {

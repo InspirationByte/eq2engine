@@ -205,13 +205,13 @@ public:
 	//-----------------------------
 
 	// returns the default material capable to use with MatSystem's GetDynamicMesh()
-	virtual IMaterialPtr					GetDefaultMaterial() const = 0;
+	virtual const IMaterialPtr&				GetDefaultMaterial() const = 0;
 
 	// returns white texture (used for wireframe of shaders that can't use FFP modes,notexture modes, etc.)
-	virtual	ITexturePtr						GetWhiteTexture() const = 0;
+	virtual	const ITexturePtr&				GetWhiteTexture() const = 0;
 
 	// returns luxel test texture (used for lightmap test)
-	virtual	ITexturePtr						GetLuxelTestTexture() const = 0;
+	virtual	const ITexturePtr&				GetLuxelTestTexture() const = 0;
 
 	// creates new material with defined parameters
 	virtual IMaterialPtr					CreateMaterial(const char* szMaterialName, KVSection* params) = 0;
@@ -232,7 +232,7 @@ public:
 	virtual void							Wait() = 0;
 
 	// loads material or sends it to loader thread
-	virtual void							PutMaterialToLoadingQueue(IMaterialPtr pMaterial) = 0;
+	virtual void							PutMaterialToLoadingQueue(const IMaterialPtr& pMaterial) = 0;
 
 	// returns material count which is currently loading or awaiting for load
 	virtual int								GetLoadingQueue() const = 0;
@@ -257,13 +257,13 @@ public:
 
 	// draws primitives
 	virtual void							DrawPrimitivesFFP(ER_PrimitiveType type, Vertex3D_t* pVerts, int nVerts,
-		ITexturePtr pTexture = nullptr, const ColorRGBA& color = color_white,
+		const ITexturePtr& pTexture = nullptr, const ColorRGBA& color = color_white,
 		BlendStateParam_t* blendParams = nullptr, DepthStencilStateParams_t* depthParams = nullptr,
 		RasterizerStateParams_t* rasterParams = nullptr) = 0;
 
 	// draws primitives for 2D
 	virtual void							DrawPrimitives2DFFP(ER_PrimitiveType type, Vertex2D_t* pVerts, int nVerts,
-		ITexturePtr pTexture = nullptr, const ColorRGBA& color = color_white,
+		const ITexturePtr& pTexture = nullptr, const ColorRGBA& color = color_white,
 		BlendStateParam_t* blendParams = nullptr, DepthStencilStateParams_t* depthParams = nullptr,
 		RasterizerStateParams_t* rasterParams = nullptr) = 0;
 
@@ -297,7 +297,7 @@ public:
 	//---------------------------
 	// $env_cubemap texture for use in shaders
 	virtual void							SetEnvironmentMapTexture(const ITexturePtr& pEnvMapTexture) = 0;
-	virtual ITexturePtr						GetEnvironmentMapTexture() const = 0;
+	virtual const ITexturePtr&				GetEnvironmentMapTexture() const = 0;
 
 	//-----------------------------
 	// RHI render states setup

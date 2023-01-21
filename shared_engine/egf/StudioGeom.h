@@ -72,7 +72,7 @@ public:
 	void						Draw(const DrawProps& drawProperties) const;
 	void						SetupVBOStream( int nStream ) const;
 
-	IMaterialPtr				GetMaterial(int materialIdx, int materialGroupIdx = 0) const;
+	const IMaterialPtr&			GetMaterial(int materialIdx, int materialGroupIdx = 0) const;
 
 private:
 

@@ -61,7 +61,7 @@ public:
 	void				AddParticleStrip(PFXVertex_t* verts, int nVertices);
 
 	void				SetCullInverted(bool invert)	{ m_invertCull = invert; }
-	IMaterialPtr		GetMaterial() const				{ return m_material; }
+	const IMaterialPtr&	GetMaterial() const				{ return m_material; }
 
 	TexAtlasEntry_t*	GetEntry(int idx);
 	int					GetEntryIndex(TexAtlasEntry_t* entry) const;
