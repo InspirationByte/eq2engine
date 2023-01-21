@@ -403,7 +403,7 @@ void ShaderAPI_Base::FreeTexture(ITexture* pTexture)
 	if (pTexture == nullptr)
 		return;
 
-	ASSERT(pTexture->Ref_Count() == 0);
+	ASSERT_MSG(pTexture->Ref_Count() == 0, "Material %s refcount = %d", pTexture->GetName(), pTexture->Ref_Count());
 	DevMsg(DEVMSG_SHADERAPI, "Unloading texture %s\n", pTexture->GetName());
 	{
 		CScopedMutex scoped(g_sapi_TextureMutex);

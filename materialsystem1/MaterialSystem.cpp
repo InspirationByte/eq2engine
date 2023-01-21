@@ -723,7 +723,7 @@ void CMaterialSystem::FreeMaterial(IMaterial* pMaterial)
 	if(pMaterial == nullptr)
 		return;
 
-	ASSERT(pMaterial->Ref_Count() == 0);
+	ASSERT_MSG(pMaterial->Ref_Count() == 0, "Material %s refcount = %d", pMaterial->GetName(), pMaterial->Ref_Count());
 
 	DevMsg(DEVMSG_MATSYSTEM, "freeing material %s\n", pMaterial->GetName());
 	CMaterial* material = (CMaterial*)pMaterial;
