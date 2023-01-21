@@ -45,7 +45,10 @@ const CWeakPtr<EventSubscriptionObject<SIGNATURE>> Event<SIGNATURE>::Subscribe(c
 {
 	SubscriptionObject* sub = PPNew SubscriptionObject();
 	sub->func = func;
-	Atomic::Store(sub->next, Atomic::CompareExchange(m_subs, Atomic::Load(m_subs), sub));
+
+	// sub->next = m_subs;
+	// m_subs = sub;
+	Atomic::Store(sub->next, Atomic::Exchange(m_subs, sub));
 
 	return CWeakPtr(sub);
 }
@@ -62,14 +65,15 @@ void Event<SIGNATURE>::operator()(Params&&... args)
 		{
 			// Soapy: Not sure, could be wrong
 			SubscriptionObject* del = sub;
+			
 			if (prevSub)
-				Atomic::Exchange(prevSub->next, sub->next);
+				Atomic::Exchange(prevSub->next, Atomic::Load(sub->next));
 			else
 				Atomic::CompareExchange(m_subs, sub, Atomic::Load(sub->next));
 
-			delete del;
-
 			sub = Atomic::Load(sub->next);
+
+			delete del;
 			continue;
 		}
 
