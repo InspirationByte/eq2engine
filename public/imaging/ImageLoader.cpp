@@ -1009,6 +1009,7 @@ bool CImage::SaveDDS(const char *fileName)
 }
 
 #ifndef NO_JPEG
+
 bool CImage::SaveJPEG(const char *fileName, const int quality)
 {
 	if (m_nFormat != FORMAT_I8 && m_nFormat != FORMAT_RGB8)
@@ -1020,25 +1021,24 @@ bool CImage::SaveJPEG(const char *fileName, const int quality)
 	cinfo.err = jpeg_std_error(&jerr);
 	jpeg_create_compress(&cinfo);
 
-	FILE *file;
-	if ((file = fopen(fileName, "wb")) == nullptr)
-		return false;
-
-	int nChannels = GetChannelCount(m_nFormat);
+	const int nChannels = GetChannelCount(m_nFormat);
 
 	cinfo.in_color_space = (nChannels == 1)? JCS_GRAYSCALE : JCS_RGB;
 	jpeg_set_defaults(&cinfo);
 
 	cinfo.input_components = nChannels;
-	cinfo.num_components   = nChannels;
-	cinfo.image_width  = m_nWidth;
+	cinfo.num_components = nChannels;
+	cinfo.image_width = m_nWidth;
 	cinfo.image_height = m_nHeight;
 	cinfo.data_precision = 8;
 	cinfo.input_gamma = 1.0;
 
 	jpeg_set_quality(&cinfo, quality, FALSE);
 
-	jpeg_stdio_dest(&cinfo, file);
+	ubyte* mem = nullptr;
+	unsigned long memSize = 0;
+	jpeg_mem_dest(&cinfo, &mem, &memSize);
+
 	jpeg_start_compress(&cinfo, TRUE);
 
 	ubyte *curr_scanline = m_pPixels;
@@ -1052,7 +1052,14 @@ bool CImage::SaveJPEG(const char *fileName, const int quality)
 	jpeg_finish_compress(&cinfo);
 	jpeg_destroy_compress(&cinfo);
 
-	fclose(file);
+	IFile* file = g_fileSystem->Open(fileName, "wb");
+	if (file)
+	{
+		file->Write(mem, memSize, 1);
+		g_fileSystem->Close(file);
+	}
+
+	free(mem);
 
 	return true;
 }
