@@ -306,10 +306,7 @@ public:
 		UpdateVar(frameRate, dt);
 		UpdateVar(out, dt);
 
-		if(int(time) >= frameCount)
-			time = 0.0f;
-
-		time += dt * frameRate.value;
+		time = fmodf(time + dt * frameRate.value,  frameCount);
 
 		mvSetValueInt( out, time );
 	}

@@ -2684,7 +2684,6 @@ ITexturePtr ShaderAPID3DX9::CreateTextureResource(const char* pszName)
 {
 	CRefPtr<CD3D9Texture> texture = CRefPtr_new(CD3D9Texture);
 	texture->SetName(pszName);
-	texture->SetFlags(TEXFLAG_JUST_CREATED);
 
 	m_TextureList.insert(texture->m_nameHash, texture);
 	return ITexturePtr(texture);

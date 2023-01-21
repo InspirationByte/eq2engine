@@ -379,7 +379,7 @@ ITexturePtr ShaderAPI_Base::FindTexture(const char* pszName)
 }
 
 // Searches for existing texture or creates new one. Use this for resource loading
-ITexturePtr ShaderAPI_Base::FindOrCreateTexture(const char* pszName)
+ITexturePtr ShaderAPI_Base::FindOrCreateTexture(const char* pszName, bool& justCreated)
 {
 	EqString searchStr(pszName);
 	searchStr.Path_FixSlashes();
@@ -394,6 +394,7 @@ ITexturePtr ShaderAPI_Base::FindOrCreateTexture(const char* pszName)
 	if (*pszName == '$')
 		return nullptr;
 
+	justCreated = true;
 	return CreateTextureResource(pszName);
 }
 

@@ -181,7 +181,9 @@ bool CD3D9Texture::Init(const SamplerStateParam_t& sampler, const ArrayCRef<CRef
 	}
 
 	const int quality = (m_iFlags & TEXFLAG_NOQUALITYLOD) ? 0 : r_loadmiplevel->GetInt();
-	m_progressiveState.reserve(images.numElem());
+
+	if(s_shaderApi.m_progressiveTextureFrequency > 0)
+		m_progressiveState.reserve(images.numElem());
 	textures.reserve(images.numElem());
 
 	for (int i = 0; i < images.numElem(); i++)
@@ -270,6 +272,9 @@ bool CD3D9Texture::Init(const SamplerStateParam_t& sampler, const ArrayCRef<CRef
 		m_texSize += img->GetMipMappedSize(mipStart);
 		textures.append(d3dTexture);
 	}
+
+	// hey you have concurrency errors if this assert hits!
+	ASSERT_MSG(images.numElem() == textures.numElem(), "%s - %d images at input while %d textures created", m_szTexName.ToCString(), images.numElem(), textures.numElem());
 
 	if(m_progressiveState.numElem())
 	{

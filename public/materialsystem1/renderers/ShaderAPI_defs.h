@@ -261,17 +261,15 @@ enum ER_BlendFunction
 enum ER_TextureFlags
 {
 	// texture creating flags
-	TEXFLAG_JUST_CREATED			= (1 << 0),
-
-	TEXFLAG_PROGRESSIVE_LODS		= (1 << 1),		// progressive LOD uploading, used to avoid driver hangs during uploads
-	TEXFLAG_NULL_ON_ERROR			= (1 << 2),
-	TEXFLAG_CUBEMAP					= (1 << 3),		// should create cubemap
-	TEXFLAG_NOQUALITYLOD			= (1 << 4),		// not affected by texture quality Cvar, always load all mip levels
+	TEXFLAG_PROGRESSIVE_LODS		= (1 << 0),		// progressive LOD uploading, used to avoid driver hangs during uploads
+	TEXFLAG_NULL_ON_ERROR			= (1 << 1),
+	TEXFLAG_CUBEMAP					= (1 << 2),		// should create cubemap
+	TEXFLAG_NOQUALITYLOD			= (1 << 3),		// not affected by texture quality Cvar, always load all mip levels
 
 	// texture identification flags
-	TEXFLAG_RENDERTARGET			= (1 << 6),		// this is a rendertarget texture
-	TEXFLAG_RENDERDEPTH				= (1 << 7),		// rendertarget with depth texture
-	TEXFLAG_FOREIGN					= (1 << 8),		// texture is created not by ShaderAPI
+	TEXFLAG_RENDERTARGET			= (1 << 5),		// this is a rendertarget texture
+	TEXFLAG_RENDERDEPTH				= (1 << 6),		// rendertarget with depth texture
+	TEXFLAG_FOREIGN					= (1 << 7),		// texture is created not by ShaderAPI
 };
 
 #define MAX_MRTS				8

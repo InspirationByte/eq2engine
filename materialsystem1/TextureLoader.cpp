@@ -84,12 +84,13 @@ ITexturePtr CTextureLoader::LoadTextureFromFileSync(const char* pszFileName, con
 {
 	HOOK_TO_CVAR(r_allowSourceTextures);
 
-	ITexturePtr texture = g_pShaderAPI->FindOrCreateTexture(pszFileName);
+	bool isJustCreated = false;
+	ITexturePtr texture = g_pShaderAPI->FindOrCreateTexture(pszFileName, isJustCreated);
 
 	if (!texture)
 		return (nFlags & TEXFLAG_NULL_ON_ERROR) ? nullptr : g_pShaderAPI->GetErrorTexture();
 
-	if (!(texture->GetFlags() & TEXFLAG_JUST_CREATED))
+	if (!isJustCreated)
 		return texture;
 
 	if (r_skipTextureLoading.GetBool())
@@ -132,7 +133,7 @@ ITexturePtr CTextureLoader::LoadTextureFromFileSync(const char* pszFileName, con
 			isLoaded = img->LoadTGA(texturePathExt + TEXTURE_SECONDARY_EXTENSION);
 		}
 
-		img->SetName(texNameStr.ToCString());
+		img->SetName(textureNames[i].ToCString());
 
 		if (r_noMip.GetBool())
 			img->RemoveMipMaps(0, 1);

@@ -874,7 +874,6 @@ ITexturePtr ShaderAPIGL::CreateTextureResource(const char* pszName)
 {
 	CRefPtr<CGLTexture> texture = CRefPtr_new(CGLTexture);
 	texture->SetName(pszName);
-	texture->SetFlags(TEXFLAG_JUST_CREATED);
 
 	m_TextureList.insert(texture->m_nameHash, texture);
 	return ITexturePtr(texture);

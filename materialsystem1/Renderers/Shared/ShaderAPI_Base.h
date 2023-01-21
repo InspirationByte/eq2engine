@@ -122,7 +122,7 @@ public:
 	ITexturePtr							FindTexture(const char* pszName);
 
 	// Searches for existing texture or creates new one. Use this for resource loading
-	ITexturePtr							FindOrCreateTexture( const char* pszName );
+	ITexturePtr							FindOrCreateTexture( const char* pszName, bool& justCreated);
 
 	// Unload the texture and free the memory
 	void								FreeTexture(ITexture* pTexture);

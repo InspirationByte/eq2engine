@@ -406,7 +406,6 @@ protected:
 	{
 		CRefPtr<CEmptyTexture> texture = CRefPtr_new(CEmptyTexture);
 		texture->SetName(pszName);
-		texture->SetFlags(TEXFLAG_JUST_CREATED);
 
 		m_TextureList.insert(texture->m_nameHash, texture);
 		return ITexturePtr(texture);

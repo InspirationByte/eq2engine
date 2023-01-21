@@ -211,7 +211,7 @@ public:
 	virtual ITexturePtr			FindTexture( const char* pszName ) = 0;
 
 	// Searches for existing texture or creates new one. Use this for resource loading
-	virtual ITexturePtr			FindOrCreateTexture( const char* pszName ) = 0;
+	virtual ITexturePtr			FindOrCreateTexture( const char* pszName, bool& justCreated ) = 0;
 
 	// unloads the texture and frees the memory
 	virtual void				FreeTexture(ITexture* pTexture) = 0;
