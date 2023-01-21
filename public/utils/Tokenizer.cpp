@@ -6,43 +6,38 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "core/core_common.h"
+#include "core/IFileSystem.h"
 #include "Tokenizer.h"
 
-bool isWhiteSpace(const char ch)
+bool Tokenizer::isWhiteSpace(const char ch)
 {
 	return (ch == ' ' || ch == '\t' || ch == '\r' || ch == '\n');
 }
 
-bool isNumeric(const char ch)
+bool Tokenizer::isNumeric(const char ch)
 {
 	return (ch >= '0' && ch <= '9');
 }
 
-bool isNumericSpecial(const char ch)
+bool Tokenizer::isNumericSpecial(const char ch)
 {
 	return (ch >= '0' && ch <= '9') || ch == '-' || ch == '+' || ch == 'e' || ch == '.';
 }
 
-bool isAlphabetical(const char ch)
+bool Tokenizer::isAlphabetical(const char ch)
 {
 	return ((ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || ch == '_');
 }
 
-bool isNewLine(const char ch)
+bool Tokenizer::isNewLine(const char ch)
 {
 	return (ch == '\r' || ch == '\n');
 }
 
 
-Tokenizer::Tokenizer(unsigned int nBuffers)
+Tokenizer::Tokenizer(int nBuffers)
 {
-	str = nullptr;
-	capacity = 0;
-	currentBuffer = 0;
-	
 	buffers.setNum(nBuffers);
-	memset(buffers.ptr(), 0, nBuffers * sizeof(TokBuffer));
-
 	reset();
 }
 
@@ -50,19 +45,19 @@ Tokenizer::~Tokenizer()
 {
 	for (int i = 0; i < buffers.numElem(); i++)
 	{
-		if (buffers[i].buffer) 
-			delete [] buffers[i].buffer;
-	}	
-	delete [] str;
+		if (buffers[i].buffer)
+			delete[] buffers[i].buffer;
+	}
+	delete[] str;
 }
 
-void Tokenizer::setString(const char *string)
+void Tokenizer::setString(const char* string)
 {
-	length = (unsigned int) strlen(string);
+	length = strlen(string);
 
 	// Increase capacity if necessary
-	if (length >= capacity){
-		delete [] str;
+	if (length >= capacity) {
+		delete[] str;
 
 		capacity = length + 1;
 		str = PPNew char[capacity];
@@ -75,24 +70,22 @@ void Tokenizer::setString(const char *string)
 	reset();
 }
 
-bool Tokenizer::setFile(const char *fileName)
+bool Tokenizer::setFile(const char* fileName)
 {
-	// TODO: eq filesystem bind
-	delete [] str;
+	delete[] str;
+	str = nullptr;
 
-	FILE *file = fopen(fileName, "rb");
-	if (file != nullptr)
+	IFile* file = g_fileSystem->Open(fileName, "rb");
+	if (file)
 	{
-		fseek(file, 0, SEEK_END);
-		length = ftell(file);
-		fseek(file, 0, SEEK_SET);
+		length = file->GetSize();
 
 		str = PPNew char[(length + 1) * sizeof(char)];
-		fread(str, length, 1, file);
+		file->Read(str, length, 1);
 		str[length] = '\0';
 
-		fclose(file);
-		
+		g_fileSystem->Close(file);
+
 		reset();
 		return true;
 	}
@@ -115,14 +108,14 @@ bool Tokenizer::goToNext(BOOLFUNC isAlpha)
 		start++;
 
 	end = start + 1;
-	
+
 	if (start < length)
 	{
 		if (isNumeric(str[start]))
 		{
 			while (isNumericSpecial(str[end]))
 				end++;
-		} 
+		}
 		else if (isAlpha(str[start]))
 		{
 			while (isAlpha(str[end]) || isNumeric(str[end]))
@@ -139,7 +132,7 @@ bool Tokenizer::goToNextLine()
 	{
 		start = end;
 
-		while (end < length-1 && !isNewLine(str[end])) 
+		while (end < length - 1 && !isNewLine(str[end]))
 			end++;
 
 		if (isNewLine(str[end + 1]) && str[end] != str[end + 1])
@@ -154,12 +147,12 @@ bool Tokenizer::goToNextLine()
 }
 
 
-char *Tokenizer::next(BOOLFUNC isAlpha)
+char* Tokenizer::next(BOOLFUNC isAlpha)
 {
 	if (goToNext(isAlpha))
 	{
-		unsigned int size = end - start;
-		char *buffer = getBuffer(size + 1);
+		int size = end - start;
+		char* buffer = getBuffer(size + 1);
 		strncpy(buffer, str + start, size);
 		buffer[size] = '\0';
 		return buffer;
@@ -167,7 +160,7 @@ char *Tokenizer::next(BOOLFUNC isAlpha)
 	return nullptr;
 }
 
-char *Tokenizer::nextAfterToken(const char *token, BOOLFUNC isAlpha)
+char* Tokenizer::nextAfterToken(const char* token, BOOLFUNC isAlpha)
 {
 	while (goToNext(isAlpha))
 	{
@@ -180,12 +173,12 @@ char *Tokenizer::nextAfterToken(const char *token, BOOLFUNC isAlpha)
 	return nullptr;
 }
 
-char *Tokenizer::nextLine()
+char* Tokenizer::nextLine()
 {
 	if (goToNextLine())
 	{
-		unsigned int size = end - start;
-		char *buffer = getBuffer(size + 1);
+		int size = end - start;
+		char* buffer = getBuffer(size + 1);
 		strncpy(buffer, str + start, size);
 		buffer[size] = '\0';
 		return buffer;
@@ -193,7 +186,7 @@ char *Tokenizer::nextLine()
 	return nullptr;
 }
 
-char *Tokenizer::getBuffer(unsigned int size)
+char* Tokenizer::getBuffer(int size)
 {
 	currentBuffer++;
 	if (currentBuffer >= buffers.numElem())
@@ -207,8 +200,3 @@ char *Tokenizer::getBuffer(unsigned int size)
 
 	return buffers[currentBuffer].buffer;
 }
-/*
-uint Tokenizer::getCurLine()
-{
-	return curline;
-}*/

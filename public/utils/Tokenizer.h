@@ -7,45 +7,47 @@
 
 #pragma once
 
-bool isWhiteSpace(const char ch);
-bool isNumeric(const char ch);
-bool isAlphabetical(const char ch);
-bool isNewLine(const char ch);
-
-class Tokenizer 
+class Tokenizer
 {
 public:
+	static bool isWhiteSpace(const char ch);
+	static bool isNumeric(const char ch);
+	static bool isAlphabetical(const char ch);
+	static bool isNewLine(const char ch);
+	static bool isNumericSpecial(const char ch);
+
 	typedef bool (*BOOLFUNC)(const char ch);
 
-	Tokenizer(unsigned int nBuffers = 1);
+	Tokenizer(int nBuffers = 1);
 	~Tokenizer();
 
-	void	setString(const char *string);
-	bool	setFile(const char *fileName);
+	void	setString(const char* string);
+	bool	setFile(const char* fileName);
 	void	reset();
 
 	bool	goToNext(BOOLFUNC isAlpha = isAlphabetical);
 	bool	goToNextLine();
 	char*	next(BOOLFUNC isAlpha = isAlphabetical);
-	char*	nextAfterToken(const char *token, BOOLFUNC isAlpha = isAlphabetical);
+	char*	nextAfterToken(const char* token, BOOLFUNC isAlpha = isAlphabetical);
 	char*	nextLine();
 
 	//uint	getCurLine();
 private:
-	char*	str;
-	uint	length;
-	uint	start, end;
-	uint	capacity;
+	char*	str{ nullptr };
+	int		length{ 0 };
+	int		start{ 0 };
+	int		end{ 0 };
+	int		capacity{ 0 };
 
-	int currentBuffer;
+	int currentBuffer{ 0 };
 
 	struct TokBuffer
 	{
-		char* buffer;
-		unsigned int bufferSize;
+		char* buffer{ nullptr };
+		int bufferSize{ 0 };
 	};
 
 	Array<TokBuffer> buffers{ PP_SL };
 
-	char *getBuffer(unsigned int size);
+	char* getBuffer(int size);
 };
