@@ -7,8 +7,7 @@
 
 #pragma once
 
-class ITexture;
-using ITexturePtr = CRefPtr<ITexture>;
+#include "renderers/ITexture.h"
 
 class CTextureAtlas;
 class MatVarProxy;
