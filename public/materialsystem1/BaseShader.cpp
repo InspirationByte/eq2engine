@@ -78,7 +78,6 @@ CBaseShader::CBaseShader()
 	SetParameterFunctor(SHADERPARAM_CUBEMAP, &CBaseShader::ParamSetup_Cubemap);
 	SetParameterFunctor(SHADERPARAM_ALPHASETUP, &CBaseShader::ParamSetup_AlphaModel_Solid);
 	SetParameterFunctor(SHADERPARAM_TRANSFORM, &CBaseShader::ParamSetup_Transform);
-	SetParameterFunctor(SHADERPARAM_ANIMFRAME, &CBaseShader::ParamSetup_TextureFrames);
 	SetParameterFunctor(SHADERPARAM_RASTERSETUP, &CBaseShader::ParamSetup_RasterState);
 	SetParameterFunctor(SHADERPARAM_DEPTHSETUP, &CBaseShader::ParamSetup_DepthSetup);
 	SetParameterFunctor(SHADERPARAM_FOG, &CBaseShader::ParamSetup_Fog);
@@ -348,11 +347,6 @@ void CBaseShader::ParamSetup_Transform()
 
 	// setup texture transform
 	SetupVertexShaderTextureTransform(m_baseTextureTransformVar, m_baseTextureScaleVar, "BaseTextureTransform");
-}
-
-void CBaseShader::ParamSetup_TextureFrames()
-{
-	// TODO: texture frame parameters
 }
 
 void CBaseShader::ParamSetup_DepthSetup()

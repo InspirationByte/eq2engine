@@ -32,7 +32,6 @@ enum ShaderDefaultParams_e
 
 	SHADERPARAM_FOG,			// fog parameters
 
-	SHADERPARAM_ANIMFRAME,		// animation frame
 	SHADERPARAM_TRANSFORM,		// transformation from matsystem to vertex shader, also an texture transform setup
 
 	// forward-shading specified lighting setup (next three enums must be equal to DynLightType_e)

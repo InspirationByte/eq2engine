@@ -184,7 +184,6 @@ protected:
 
 	void						ParamSetup_Transform();
 	void						ParamSetup_Fog();
-	virtual void				ParamSetup_TextureFrames();
 	virtual void				ParamSetup_Cubemap();
 
 	virtual bool				_ShaderInitRHI() = 0;
