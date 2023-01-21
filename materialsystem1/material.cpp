@@ -127,20 +127,23 @@ void CMaterial::Init()
 
 	// begin initialization
 	InitVars( shader_root );
-
 	InitShader();
 }
 
 // initializes material from keyvalues
 void CMaterial::Init(KVSection* shader_root)
 {
-	ASSERT(m_loadFromDisk == false);
+	if(shader_root)
+		ASSERT(m_loadFromDisk == false);
 
-	// section name is used as shader name
-	m_szShaderName = shader_root->name;
+	if (shader_root)
+	{
+		// section name is used as shader name
+		m_szShaderName = shader_root->name;
 
-	// begin initialization
-	InitVars( shader_root );
+		// begin initialization
+		InitVars(shader_root);
+	}
 
 	InitShader();
 }

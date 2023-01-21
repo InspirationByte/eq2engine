@@ -661,17 +661,14 @@ void CMaterialSystem::ReloadAllMaterials()
 		if(!stricmp(material->GetName(), "Default"))
 			continue;
 
-		// don't drop variables, just reload shader
-		material->Cleanup(false, true);
+		const bool loadedFromDisk = material->m_loadFromDisk;
+		material->Cleanup(loadedFromDisk, true);
 
 		// don't reload materials which are not from disk
-		if(!material->m_loadFromDisk)
-		{
-			material->InitShader();
-			continue;
-		}
-
-		material->Init(nullptr);
+		if(!loadedFromDisk)
+			material->Init(nullptr);
+		else
+			material->Init();
 
 		const int framesDiff = (material->m_frameBound - m_frame);
 
