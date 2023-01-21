@@ -70,7 +70,6 @@ BEGIN_SHADER_CLASS(DepthCombiner)
 	}
 
 	const ITexturePtr& GetBaseTexture(int stage)  const {return m_pTextures[stage & 1];}
-	const ITexturePtr& GetBumpTexture(int stage)  const {return nullptr;}
 
 	ITexturePtr	m_pTextures[2];
 

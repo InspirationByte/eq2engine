@@ -116,7 +116,6 @@ BEGIN_SHADER_CLASS(BaseUnlit)
 	}
 
 	const ITexturePtr& GetBaseTexture(int stage) const {return m_pBaseTexture;}
-	const ITexturePtr& GetBumpTexture(int stage) const {return nullptr;}
 
 	ITexturePtr	m_pBaseTexture;
 	MatVarProxy	m_colorVar;

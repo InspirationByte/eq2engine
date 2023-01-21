@@ -105,6 +105,8 @@ public:
 	friend bool			operator==(const CRefPtr<TYPE>& a, std::nullptr_t) { return a.Ptr() == nullptr; }
 	friend bool			operator==(const CRefPtr<TYPE>& a, PTR_TYPE b) { return a.Ptr() == b; }
 
+	static CRefPtr<TYPE>&	Null() { static CRefPtr<TYPE> _null; return _null; }
+
 private:
 	PTR_TYPE			m_ptrObj{ nullptr };
 };

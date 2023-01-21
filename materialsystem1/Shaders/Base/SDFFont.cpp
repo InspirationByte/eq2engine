@@ -61,9 +61,6 @@ BEGIN_SHADER_CLASS(SDFFont)
 		g_pShaderAPI->SetShaderConstantVector4D("AmbientColor", setColor);
 	}
 
-	const ITexturePtr& GetBaseTexture(int stage) const {return nullptr;}
-	const ITexturePtr& GetBumpTexture(int stage) const {return nullptr;}
-
 	SHADER_DECLARE_PASS(Unlit);
 
 	MatVarProxy	m_fontParamsVar;

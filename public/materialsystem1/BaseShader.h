@@ -162,9 +162,12 @@ public:
 
 	void						SetupVertexShaderTextureTransform(MatVarProxy transformVar, MatVarProxy scaleVar, const char* pszConstName);	// sends texture transformation to shader
 
+	// returns base texture from shader
+	virtual const ITexturePtr&	GetBaseTexture(int stage) const { return ITexturePtr::Null(); };
+	virtual const ITexturePtr&	GetBumpTexture(int stage) const { return ITexturePtr::Null(); };
 
-	int							GetBaseTextureStageCount()  const	{return 1;}
-	int							GetBumpStageCount() const			{return 0;}
+	int							GetBaseTextureStageCount()  const	{ return 1; }
+	int							GetBumpStageCount() const			{ return 0; }
 
 protected:
 	void						ParamSetup_CurrentAsBaseTexture();

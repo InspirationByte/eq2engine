@@ -79,9 +79,6 @@ BEGIN_SHADER_CLASS(GaussianBlur)
 		g_pShaderAPI->SetTexture(m_blurSource.GetTexture(), "BaseTexture", 0);
 	}
 
-	const ITexturePtr& GetBaseTexture(int stage) const { return nullptr; }
-	const ITexturePtr& GetBumpTexture(int stage) const { return nullptr; }
-
 private:
 
 	SHADER_DECLARE_PASS(Unlit);

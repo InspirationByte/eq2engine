@@ -117,7 +117,6 @@ BEGIN_SHADER_CLASS(VHBlurFilter)
 	}
 
 	const ITexturePtr& GetBaseTexture(int stage) const {return m_pBaseTexture;}
-	const ITexturePtr& GetBumpTexture(int stage) const {return nullptr;}
 
 	ITexturePtr		m_pBaseTexture;
 	int				m_blurAxes;

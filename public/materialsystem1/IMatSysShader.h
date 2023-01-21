@@ -89,7 +89,7 @@ public:
 	virtual int					GetBaseTextureStageCount() const = 0;
 
 	// returns bump texture from shader
-	virtual const ITexturePtr& GetBumpTexture(int stage = 0) const = 0;
+	virtual const ITexturePtr&	GetBumpTexture(int stage = 0) const = 0;
 
 	// returns bump stage count
 	virtual int					GetBumpStageCount() const = 0;

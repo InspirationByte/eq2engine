@@ -117,7 +117,6 @@ BEGIN_SHADER_CLASS(BaseParticle)
 	}
 
 	const ITexturePtr& GetBaseTexture(int stage) const {return m_pBaseTexture;}
-	const ITexturePtr& GetBumpTexture(int stage) const {return nullptr;}
 
 	SHADER_DECLARE_PASS(Particle);
 	SHADER_DECLARE_FOGPASS(Particle);

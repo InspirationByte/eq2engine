@@ -65,9 +65,6 @@ BEGIN_SHADER_CLASS(BloomRange)
 		g_pShaderAPI->SetTexture(m_bloomSource.GetTexture(), "BaseTexture", 0);
 	}
 
-	const ITexturePtr& GetBaseTexture(int stage) const{ return nullptr; }
-	const ITexturePtr& GetBumpTexture(int stage) const { return nullptr; }
-
 private:
 
 	SHADER_DECLARE_PASS(Unlit);
