@@ -312,20 +312,19 @@ bool CSoundEmitterSystem::SwitchSourceState(SoundEmitterData* emit, bool isVirtu
 {
 	const SoundScriptDesc* script = emit->script;
 
+	CRefPtr<IEqAudioSource> soundSource = emit->soundSource;
+
 #ifndef _RETAIL
 	if (m_isolateSound && script != m_isolateSound)
 	{
-		if (emit->soundSource)
-		{
-			g_audioSystem->DestroySource(emit->soundSource);
-			emit->soundSource = nullptr;
-		}
+		g_audioSystem->DestroySource(soundSource);
+		emit->soundSource = nullptr;
 		return false;
 	}
 #endif
 
 	// start the real sound
-	if (!isVirtual && emit->virtualParams.state != IEqAudioSource::STOPPED && !emit->soundSource)
+	if (!isVirtual && emit->virtualParams.state != IEqAudioSource::STOPPED && !soundSource)
 	{
 		PROF_EVENT("Emitter Switch Source - Create");
 
@@ -385,14 +384,14 @@ bool CSoundEmitterSystem::SwitchSourceState(SoundEmitterData* emit, bool isVirtu
 	}
 	
 	
-	if (emit->soundSource)
+	if (soundSource)
 	{
 		PROF_EVENT("Emitter Switch Source - Destroy");
 
 		// stop and drop the sound
-		if (isVirtual || emit->soundSource->GetState() == IEqAudioSource::STOPPED)
+		if (isVirtual || soundSource->GetState() == IEqAudioSource::STOPPED)
 		{
-			g_audioSystem->DestroySource(emit->soundSource);
+			g_audioSystem->DestroySource(soundSource);
 			emit->soundSource = nullptr;
 		}
 
