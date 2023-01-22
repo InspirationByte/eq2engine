@@ -121,7 +121,7 @@ bool COSFile::Open(const char* fileName, int modeFlags)
 	else
 		oflags = O_RDONLY; // do not create if not exists, read mode
 
-	m_fp = (void*)(intptr_t)::open(file, oflags | O_CLOEXEC, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+	m_fp = (void*)(intptr_t)::open(fileName, oflags | O_CLOEXEC, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
 
 	if ((int)(intptr_t)m_fp == -1)
 	{
@@ -265,7 +265,7 @@ size_t COSFile::Tell() const
 
 	return li.QuadPart;
 #else
-	return tell64((int)(intptr_t)m_fp);
+	return lseek64((int)(intptr_t)m_fp, 0, SEEK_CUR);
 #endif
 }
 
