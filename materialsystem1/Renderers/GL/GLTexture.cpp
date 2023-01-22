@@ -59,6 +59,7 @@ void CGLTexture::ReleaseTextures()
 	{
 		Threading::CScopedMutex m(g_sapi_ProgressiveTextureMutex);
 		g_shaderApi.m_progressiveTextures.remove(this);
+		m_progressiveState.clear(true);
 	}
 
 	if (m_glTarget == GL_RENDERBUFFER)

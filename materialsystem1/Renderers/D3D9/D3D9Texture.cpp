@@ -292,14 +292,13 @@ void CD3D9Texture::ReleaseTextures()
 	{
 		Threading::CScopedMutex m(g_sapi_ProgressiveTextureMutex);
 		s_shaderApi.m_progressiveTextures.remove(this);
+		m_progressiveState.clear(true);
 	}
 
 	for (int i = 0; i < textures.numElem(); i++)
 		textures[i]->Release();
 
 	textures.clear();
-
-	m_progressiveState.clear(true);
 	m_texSize = 0;
 }
 
