@@ -39,7 +39,7 @@ public:
 	long GetSize();
 
 	// flushes stream from memory
-	int	Flush();
+	bool Flush();
 
 	// returns stream type
 	VirtStreamType_e GetType() const { return VS_TYPE_FILE_PACKAGE; }
@@ -67,7 +67,7 @@ public:
 
 	bool					InitPackage(const char* filename, const char* mountPath = nullptr);
 
-	IVirtualStream*			Open(const char* filename, const char* mode);
+	IVirtualStream*			Open(const char* filename, int modeFlags);
 	void					Close(IVirtualStream* fp);
 	bool					FileExists(const char* filename) const;
 

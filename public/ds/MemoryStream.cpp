@@ -156,10 +156,9 @@ void CMemoryStream::Close()
 }
 
 // flushes stream, doesn't affects on memory stream
-int CMemoryStream::Flush()
+bool CMemoryStream::Flush()
 {
-	// do nothing
-	return 0;
+	return true;
 }
 
 // reallocates memory

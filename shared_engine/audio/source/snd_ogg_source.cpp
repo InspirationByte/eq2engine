@@ -39,7 +39,7 @@ namespace eqVorbisFile
 				return -1;
 		}
 
-		if(returnVal == 0)
+		if(returnVal >= 0)
 			return 0;
 		else
 			return -1; //Could not do a seek. Device not capable of seeking. (Should never encounter this case)

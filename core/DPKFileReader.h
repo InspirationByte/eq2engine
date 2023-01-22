@@ -24,7 +24,7 @@ class CDPKFileStream : public CBasePackageFileStream
 	friend class CDPKFileReader;
 	friend class CFileSystem;
 public:
-	CDPKFileStream(const char* fileName, const dpkfileinfo_t& info, FILE* fp);
+	CDPKFileStream(const char* fileName, const dpkfileinfo_t& info, COSFile&& osFile);
 	~CDPKFileStream();
 
 	// reads data from virtual stream
@@ -46,7 +46,7 @@ public:
 	long GetSize();
 
 	// flushes stream from memory
-	int	Flush();
+	bool Flush();
 
 	// returns stream type
 	VirtStreamType_e GetType() const { return VS_TYPE_FILE_PACKAGE; }
@@ -77,7 +77,7 @@ protected:
 	Array<dpkblock_info_t>	m_blockInfo{ PP_SL };
 	int						m_curBlockIdx;
 
-	FILE*					m_handle;
+	COSFile					m_osFile;
 	int						m_curPos;
 
 	CDPKFileReader*			m_host;
@@ -93,7 +93,7 @@ public:
 
 	bool					InitPackage( const char* filename, const char* mountPath /*= nullptr*/);
 
-	IVirtualStream*			Open( const char* filename, const char* mode );
+	IVirtualStream*			Open( const char* filename, int modeFlags);
 	void					Close(IVirtualStream* fp );
 	bool					FileExists(const char* filename) const;
 

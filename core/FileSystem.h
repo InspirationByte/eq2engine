@@ -7,6 +7,7 @@
 
 #pragma once
 #include "core/IFileSystem.h"
+#include "OSFile.h"
 
 //------------------------------------------------------------------------------
 // File stream
@@ -17,27 +18,23 @@ class CFile : public IFile
 	friend class CFileSystem;
 
 public:
-						CFile(FILE* pFile) : m_pFilePtr(pFile)
-						{
-						}
+	CFile(COSFile&& file);
 
     int					Seek( long pos, VirtStreamSeek_e seekType );
     long				Tell() const;
     size_t				Read( void *dest, size_t count, size_t size);
     size_t				Write( const void *src, size_t count, size_t size);
-    int					Error();
-    int					Flush();
 
-    char*				Gets( char *dest, int destSize );
+    bool				Flush();
 
 	uint32				GetCRC32();
 
 	long				GetSize();
 
-	VirtStreamType_e	GetType() const {return VS_TYPE_FILE;}
+	VirtStreamType_e	GetType() const { return VS_TYPE_FILE; }
 
 protected:
-	FILE*				m_pFilePtr;
+	COSFile				m_osFile;
 };
 
 //------------------------------------------------------------------------------
@@ -87,7 +84,7 @@ public:
 	// File operations
 	//------------------------------------------------------------
 
-    IFile*						Open(const char* filename,const char* options, int searchFlags = -1 );
+    IFile*						Open(const char* filename, const char* mode, int searchFlags = -1 );
     void						Close( IFile *fp );
 
 	bool						FileCopy(const char* filename, const char* dest_file, bool overWrite, SearchPath_e search);

@@ -16,7 +16,7 @@ enum VirtStreamType_e
 };
 
 // fancy check
-#define IsFileType(type) (type >= VS_TYPE_FILE)
+#define IsFileType(type) ((type) >= VS_TYPE_FILE)
 
 enum VirtStreamSeek_e
 {
@@ -25,15 +25,11 @@ enum VirtStreamSeek_e
 	VS_SEEK_END,		// seek to the end
 };
 
-//
 enum VirtStreamOpenFlags_e
 {
 	VS_OPEN_READ	= (1 << 0),
 	VS_OPEN_WRITE	= (1 << 1),
-
-	// file stream only
-	VS_OPEN_TEXT	= (1 << 2),
-	VS_OPEN_REWRITE = (1 << 3), 
+	VS_OPEN_APPEND	= (1 << 2),
 };
 
 //--------------------------
@@ -76,7 +72,7 @@ public:
 	virtual long				GetSize() = 0;
 
 	// flushes stream from memory
-	virtual int					Flush() = 0;
+	virtual bool				Flush() = 0;
 
 	// returns stream type
 	virtual VirtStreamType_e	GetType() const = 0;

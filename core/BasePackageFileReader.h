@@ -25,19 +25,19 @@ public:
 	{
 	}
 
-	virtual ~CBasePackageFileReader() {}
+	virtual ~CBasePackageFileReader() = default;
 
-	virtual bool					InitPackage(const char* filename, const char* mountPath = nullptr) = 0;
+	virtual bool			InitPackage(const char* filename, const char* mountPath = nullptr) = 0;
 
-	virtual IVirtualStream*			Open(const char* filename, const char* mode) = 0;
-	virtual void					Close(IVirtualStream* fp) = 0;
-	virtual bool					FileExists(const char* filename) const = 0;
+	virtual IVirtualStream*	Open(const char* filename, int openFlags) = 0;
+	virtual void			Close(IVirtualStream* fp) = 0;
+	virtual bool			FileExists(const char* filename) const = 0;
 
-	const char*						GetPackageFilename() const { return m_packageName.ToCString(); }
-	int								GetSearchPath() const { return m_searchPath; };
-	virtual void					SetSearchPath(int search) { m_searchPath = search; };
+	const char*				GetPackageFilename() const { return m_packageName.ToCString(); }
+	int						GetSearchPath() const { return m_searchPath; };
+	virtual void			SetSearchPath(int search) { m_searchPath = search; };
 
-	virtual void					SetKey(const char* key) { m_key = key; }
+	virtual void			SetKey(const char* key) { m_key = key; }
 
 protected:
 

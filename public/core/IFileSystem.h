@@ -20,7 +20,7 @@ enum SearchPath_e
     SP_MOD	= (1 << 3),
 };
 
-typedef IVirtualStream IFile; // pretty same
+using IFile = IVirtualStream; // pretty same
 struct DKMODULE; // module structure
 struct DKFINDDATA;
 
@@ -65,7 +65,7 @@ public:
 	// File operations
 	//------------------------------------------------------------
 
-    virtual IFile*			Open( const char* filename, const char* options, int searchFlags = -1 ) = 0;
+    virtual IFile*			Open( const char* filename, const char* mode = "r", int searchFlags = -1) = 0;
     virtual void			Close( IFile* pFile ) = 0;
 
 	// other operations
@@ -75,7 +75,7 @@ public:
 
 	// The next ones are deprecated and will be removed
 
-    virtual char*			GetFileBuffer(const char* filename,long *filesize = 0, int searchFlags = -1) = 0;
+    virtual char*			GetFileBuffer(const char* filename, long *filesize = 0, int searchFlags = -1) = 0;
     virtual long			GetFileSize(const char* filename, int searchFlags = -1) = 0;
 	virtual uint32			GetFileCRC32(const char* filename, int searchFlags = -1) = 0;
 
@@ -109,8 +109,8 @@ protected:
 	// opens directory for search props
 	virtual const char* FindFirst(const char* wildcard, DKFINDDATA** findData, int searchPath) = 0;
 	virtual const char* FindNext(DKFINDDATA* findData) const = 0;
-	virtual void			FindClose(DKFINDDATA* findData) = 0;
-	virtual bool			FindIsDirectory(DKFINDDATA* findData) const = 0;
+	virtual void		FindClose(DKFINDDATA* findData) = 0;
+	virtual bool		FindIsDirectory(DKFINDDATA* findData) const = 0;
 };
 
 INTERFACE_SINGLETON( IFileSystem, CFileSystem, FILESYSTEM_INTERFACE_VERSION, g_fileSystem )

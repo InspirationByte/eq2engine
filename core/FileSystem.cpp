@@ -21,7 +21,7 @@
 #ifdef _WIN32 // Not in linux
 
 #include <direct.h>	// mkdir()
-#include <io.h> // _access()
+#include <io.h>		// _access()
 
 #define access		_access
 #define F_OK		0       // Test for existence.
@@ -34,6 +34,7 @@
 #include <dirent.h> // opendir, readdir
 
 #endif
+
 
 using namespace Threading;
 
@@ -48,39 +49,41 @@ static bool UTIL_IsAbsolutePath(const char* dirOrFileName)
 // File stream
 //------------------------------------------------------------------------------
 
+CFile::CFile(COSFile&& file)
+	: m_osFile(std::move(file))
+{
+}
+
 int	CFile::Seek( long pos, VirtStreamSeek_e seekType )
 {
-	return fseek( m_pFilePtr, pos, seekType );
+	return m_osFile.Seek(pos, static_cast<COSFile::ESeekPos>(seekType) );
 }
 
 long CFile::Tell() const
 {
-	return ftell( m_pFilePtr );
+	return m_osFile.Tell();
 }
 
 size_t CFile::Read( void *dest, size_t count, size_t size)
 {
-	return fread( dest, size, count, m_pFilePtr );
+	size_t numBytes = count * size;
+	if (!numBytes)
+		return 0;
+	return m_osFile.Read(dest, numBytes) / size;
 }
 
 size_t CFile::Write( const void *src, size_t count, size_t size)
 {
-	return fwrite( src, size, count, m_pFilePtr);
+	size_t numBytes = count * size;
+	if (!numBytes)
+		return 0;
+
+	return m_osFile.Write(src, numBytes) / size;
 }
 
-int	CFile::Error()
+bool CFile::Flush()
 {
-	return ferror( m_pFilePtr );
-}
-
-int	CFile::Flush()
-{
-	return fflush( m_pFilePtr );
-}
-
-char* CFile::Gets( char *dest, int destSize )
-{
-	return fgets(dest, destSize, m_pFilePtr );
+	return m_osFile.Flush();
 }
 
 long CFile::GetSize()
@@ -408,12 +411,34 @@ void CFileSystem::SetBasePath(const char* path)
 	m_basePath = path; 
 }
 
-IFile* CFileSystem::Open(const char* filename,const char* options, int searchFlags/* = -1*/ )
+IFile* CFileSystem::Open(const char* filename, const char* mode, int searchFlags/* = -1*/ )
 {
-	ASSERT_MSG(filename, "Must specify filename");
-	ASSERT_MSG(options, "Must specify options");
+	ASSERT_MSG(filename, "Open - Must specify 'filename'");
+	ASSERT_MSG(mode, "Open - Must specify 'mode'");
 
-	const bool isWrite = (strchr(options, 'w') || strchr(options, 'a') || strchr(options, '+'));
+	if (!filename || !mode)
+		return nullptr;
+
+	int modeFlags = 0;
+	while (*mode)
+	{
+		switch (tolower(*mode))
+		{
+		case 'r':
+			modeFlags |= COSFile::READ;
+			break;
+		case 'w':
+			modeFlags |= COSFile::WRITE;
+			break;
+		case 'a':
+		case '+':
+			modeFlags |= COSFile::APPEND;
+			break;
+		}
+		++mode;
+	}
+
+	const bool isWrite = modeFlags & (COSFile::APPEND | COSFile::WRITE);
 
 	EqString basePath = m_basePath;
 	if (basePath.Length() > 0) // FIXME: is that correct?
@@ -425,10 +450,10 @@ IFile* CFileSystem::Open(const char* filename,const char* options, int searchFla
 		if (isWrite && !writePath)
 			return false;
 
-		FILE* directFile = fopen(filePath, options);
-		if (directFile)
+		COSFile osFile;
+		if (osFile.Open(filePath, modeFlags))
 		{
-			fileHandle = PPNew CFile(directFile);
+			fileHandle = PPNew CFile(std::move(osFile));
 			return true;
 		}
 
@@ -444,7 +469,7 @@ IFile* CFileSystem::Open(const char* filename,const char* options, int searchFla
 				continue;
 
 			// package readers do not support base path, get rid of it
-			fileHandle = pPackageReader->Open(filePath.ToCString() + basePath.Length(), options);
+			fileHandle = pPackageReader->Open(filePath.ToCString() + basePath.Length(), modeFlags);
 			if (fileHandle)
 				return true;
 		}
@@ -478,8 +503,6 @@ void CFileSystem::Close( IFile* fp )
 
 	if(vsType == VS_TYPE_FILE)
 	{
-		CFile* pFile = (CFile*)fp;
-		fclose(pFile->m_pFilePtr);
 		delete fp;
 	}
 	else if(vsType == VS_TYPE_FILE_PACKAGE) // DPK or ZIP
@@ -494,7 +517,7 @@ char* CFileSystem::GetFileBuffer(const char* filename,long *filesize/* = 0*/, in
 	if(!FileExist(filename, searchFlags))
 		return nullptr;
 
-	IFile* pFile = Open(filename,"rb",searchFlags);
+	IFile* pFile = Open(filename, "rb", searchFlags);
 
     if (!pFile)
         return nullptr;

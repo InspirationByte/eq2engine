@@ -104,9 +104,9 @@ long CZipFileStream::GetSize()
 }
 
 // flushes stream from memory
-int	CZipFileStream::Flush()
+bool CZipFileStream::Flush()
 {
-	return 0;
+	return false;
 }
 
 // returns CRC32 checksum of stream
@@ -206,12 +206,11 @@ bool CZipFileReader::InitPackage(const char* filename, const char* mountPath/* =
 	return true;
 }
 
-IVirtualStream* CZipFileReader::Open(const char* filename, const char* mode)
+IVirtualStream* CZipFileReader::Open(const char* filename, int modeFlags)
 {
-	// check for write access
-	if (strchr(mode, 'w') || strchr(mode, 'a') || strchr(mode, '+'))
+	if (modeFlags & (COSFile::APPEND | COSFile::WRITE))
 	{
-		MsgError("DPK only can open for reading!\n");
+		ASSERT_FAIL("Archived files only can open for reading!\n");
 		return nullptr;
 	}
 

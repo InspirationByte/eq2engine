@@ -61,11 +61,10 @@ void encryptDecrypt(ubyte* buffer, int size, int hash)
 
 //-----------------------------------------------------------------------------------------------------------------------
 
-CDPKFileStream::CDPKFileStream(const char* filename, const dpkfileinfo_t& info, FILE* fp)
-	: m_ice(0)
+CDPKFileStream::CDPKFileStream(const char* filename, const dpkfileinfo_t& info, COSFile&& osFile)
+	: m_ice(0), m_osFile(std::move(osFile))
 {
 	//m_dbgFilename = filename;
-	m_handle = fp;
 	m_info = info;
 	m_curPos = 0;
 
@@ -74,22 +73,23 @@ CDPKFileStream::CDPKFileStream(const char* filename, const dpkfileinfo_t& info, 
 	bool hasCompressedBlocks = false;
 
 	// read all block headers
-	fseek(m_handle, m_info.offset, SEEK_SET);
+	m_osFile.Seek(m_info.offset, COSFile::ESeekPos::SET);
+
 	m_blockInfo.resize(m_info.numBlocks);
 	for (int i = 0; i < m_info.numBlocks; i++)
 	{
 		dpkblock_t hdr;
-		fread(&hdr, 1, sizeof(dpkblock_t), m_handle);
+		m_osFile.Read(&hdr, sizeof(dpkblock_t));
 		
 		dpkblock_info_t& block = m_blockInfo.append();
 		block.flags = hdr.flags;
-		block.offset = ftell(m_handle);
+		block.offset = m_osFile.Tell();
 		block.compressedSize = hdr.compressedSize;
 		block.size = hdr.size;
 
 		// skip block contents
 		const int readSize = (block.flags & DPKFILE_FLAG_COMPRESSED) ? hdr.compressedSize : hdr.size;
-		fseek(m_handle, readSize, SEEK_CUR);
+		m_osFile.Seek(readSize, COSFile::ESeekPos::CURRENT);
 
 		hasCompressedBlocks = hasCompressedBlocks || (block.flags & DPKFILE_FLAG_COMPRESSED);
 	}
@@ -119,7 +119,7 @@ void CDPKFileStream::DecodeBlock(int blockIdx)
 
 	dpkblock_info_t& curBlock = m_blockInfo[blockIdx];
 			
-	fseek(m_handle, curBlock.offset, SEEK_SET);
+	m_osFile.Seek(curBlock.offset, COSFile::ESeekPos::SET);
 
 	const int readSize = (curBlock.flags & DPKFILE_FLAG_COMPRESSED) ? curBlock.compressedSize : curBlock.size;
 
@@ -127,7 +127,7 @@ void CDPKFileStream::DecodeBlock(int blockIdx)
 	ubyte* readMem = (curBlock.flags & DPKFILE_FLAG_COMPRESSED) ? (ubyte*)m_tmpDecompressData : (ubyte*)m_blockData;
 
 	// read block data and decompress/decrypt if needed
-	fread(readMem, 1, readSize, m_handle);
+	m_osFile.Read(readMem, readSize);
 
 	// decrypt first as it was encrypted last
 	if (curBlock.flags & DPKFILE_FLAG_ENCRYPTED)
@@ -209,10 +209,10 @@ size_t CDPKFileStream::Read(void* dest, size_t count, size_t size)
 	}
 	else
 	{
-		fseek(m_handle, m_info.offset + m_curPos, SEEK_SET);
+		m_osFile.Seek(m_info.offset + m_curPos, COSFile::ESeekPos::SET);
 
 		// read file straight
-		fread(dest, 1, bytesToRead, m_handle);
+		m_osFile.Read(dest, bytesToRead);
 
 		m_curPos += bytesToRead;
 
@@ -288,10 +288,9 @@ long CDPKFileStream::GetSize()
 }
 
 // flushes stream from memory
-int	CDPKFileStream::Flush()
+bool CDPKFileStream::Flush()
 {
-	// do nothing...
-	return 0;
+	return false;
 }
 
 // returns CRC32 checksum of stream
@@ -425,7 +424,7 @@ bool CDPKFileReader::InitPackage(const char *filename, const char* mountPath /*=
     return true;
 }
 
-IVirtualStream* CDPKFileReader::Open(const char* filename, const char* mode)
+IVirtualStream* CDPKFileReader::Open(const char* filename, int modeFlags)
 {
 	//Msg("io::dpktryopen(%s)\n", filename);
 
@@ -435,10 +434,9 @@ IVirtualStream* CDPKFileReader::Open(const char* filename, const char* mode)
 		return nullptr;
 	}
 
-	// check for write access
-	if(strchr(mode, 'w') || strchr(mode, 'a') || strchr(mode, '+'))
+	if (modeFlags & (COSFile::APPEND | COSFile::WRITE))
 	{
-		MsgError("DPK only can open for reading!\n");
+		ASSERT_FAIL("Archived files only can open for reading!\n");
 		return nullptr;
 	}
 
@@ -450,15 +448,14 @@ IVirtualStream* CDPKFileReader::Open(const char* filename, const char* mode)
 
 	dpkfileinfo_t& fileInfo = m_dpkFiles[dpkFileIndex];
 
-	FILE* file = fopen(m_packagePath.ToCString(), mode);
-
-	if (!file)
+	COSFile osFile;
+	if (!osFile.Open(m_packagePath.ToCString(), COSFile::OPEN_EXIST | COSFile::READ))
 	{
 		ASSERT_FAIL("CDPKFileReader::Open FATAL ERROR - failed to open package file");
 		return nullptr;
 	}
 
-	CDPKFileStream* newStream = PPNew CDPKFileStream(filename, fileInfo, file);
+	CDPKFileStream* newStream = PPNew CDPKFileStream(filename, fileInfo, std::move(osFile));
 	newStream->m_host = this;
 	newStream->m_ice.set((unsigned char*)m_key.ToCString());
 
@@ -483,6 +480,5 @@ void CDPKFileReader::Close(IVirtualStream* fp)
 			return;
 	}
 
-	fclose(fsp->m_handle);
 	delete fsp;
 }

@@ -41,7 +41,7 @@ public:
 	long				GetSize();
 
 	// flushes stream, doesn't affects on memory stream
-	int					Flush();
+	bool				Flush();
 
 	char*				Gets( char *dest, int destSize );
 
