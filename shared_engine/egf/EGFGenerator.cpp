@@ -392,12 +392,12 @@ int CEGFGenerator::ParseAndLoadModels(KVSection* pKeyBase)
 		if (model.shapeIndex != -1)
 			Msg("Shape key used: %s\n", shapeByModels[i].ToCString());
 
+		// set model to as part name
+		model.name = KV_GetValueString(pKeyBase, 0, "invalid_model_name");
+
 		GenLODList_t& lod_model = m_modelLodLists.append();
 		lod_model.lodmodels.append(modelIdx);
 		lod_model.name = model.name;
-
-		// set model to as part name
-		model.name = KV_GetValueString(pKeyBase, 0, "invalid_model_name");
 
 		const int nVerts = GetTotalVertsOfDSM(model.model);
 		Msg("Adding reference %s '%s' with %d triangles (in %d groups), %d bones\n", 
