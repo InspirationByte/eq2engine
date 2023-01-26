@@ -86,6 +86,9 @@ static ubyte* LoadFileBuffer(const char* filename, long* fileSize)
 	long filelen = ftell(file);
 	fseek(file, 0, SEEK_SET);
 
+	if (!filelen)
+		return nullptr;
+
 	// allocate file in the hunk
 	ubyte* fileBuf = (ubyte*)PPAlloc(filelen);
 
