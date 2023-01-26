@@ -332,20 +332,16 @@ int	CDPKFileReader::FindFileIndex(const char* filename) const
 	fullFilename = fullFilename.LowerCase();
 	fullFilename.Path_FixSlashes();
 
-	int mountPathPos = fullFilename.Find(m_mountPath.ToCString());
-
-	if (mountPathPos > 0)
+	// check if mount path is not a root path
+	// or it does not exist
+	const int mountPathPos = fullFilename.Find(m_mountPath.ToCString());
+	if (mountPathPos > 0 || mountPathPos == -1)
+	{
 		return -1;
-
-	// replace
-	EqString pkgFileName;
-	
-	if (mountPathPos != -1)
-		pkgFileName = fullFilename.Right(fullFilename.Length() - m_mountPath.Length() - 1);
-	else
-		pkgFileName = fullFilename;
+	}
 
 	// convert to DPK filename
+	EqString pkgFileName = fullFilename.Right(fullFilename.Length() - m_mountPath.Length() - 1);
 	DPK_FixSlashes(pkgFileName);
 
 	const int nameHash = StringToHash(pkgFileName.ToCString(), true);
