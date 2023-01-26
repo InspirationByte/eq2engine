@@ -162,7 +162,9 @@ void CDebugOverlay::Init(bool hidden)
 
 void CDebugOverlay::Shutdown()
 {
+#ifndef DISABLE_DEBUG_DRAWING
 	g_pDebugTexture = nullptr;
+#endif
 }
 
 void CDebugOverlay::Text(const ColorRGBA &color, char const *fmt,...)
