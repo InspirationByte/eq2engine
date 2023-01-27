@@ -113,9 +113,6 @@ inline uint64	Atomic::Exchange(uint64 volatile& var, uint64 val)			{ for (uint64
 template <typename T>
 inline T*		Atomic::Exchange(T* volatile& ptr, T* val)					{ return (T*)_InterlockedExchange((long volatile*)&ptr, (long)val); }
 
-inline int64	Atomic::Add(int64 volatile& var, int64 val)			{ for (int64 oldVal = var;; oldVal = var) if (_InterlockedCompareExchange64(&var, oldVal + val, oldVal) == oldVal) return oldVal; }
-inline uint64	Atomic::Add(uint64 volatile& var, uint64 val)		{ for (uint64 oldVal = var;; oldVal = var) if (_InterlockedCompareExchange64((__int64 volatile*)&var, (__int64)(oldVal + val), oldVal) == oldVal) return oldVal; }
-
 inline int64	Atomic::Load(const volatile int64& var)
 {
 	for (int64 val = var;; val = var) 
