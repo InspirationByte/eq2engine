@@ -175,26 +175,31 @@ void CDPKFileWriter::SetMountPath( const char* path )
 	xstrlwr( m_mountPath );
 }
 
-bool CDPKFileWriter::AddFile( const char* fileName, const char* targetFilename)
+bool CDPKFileWriter::AddFile(const char* fileName, int nameHash)
 {
-	if( !FileExists(fileName) )
+	if (!FileExists(fileName))
 	{
 		MsgWarning("File '%s' does not exist, cannot add\n", fileName);
 		return false;
 	}
 
-	dpkfilewinfo_t* newInfo  = PPNew dpkfilewinfo_t;
+	dpkfilewinfo_t* newInfo = PPNew dpkfilewinfo_t;
 	newInfo->fileName = fileName;
 	memset(&newInfo->pkinfo, 0, sizeof(newInfo->pkinfo));
 
-	EqString writeableFileName(_Es(targetFilename).LowerCase());
-	DPK_FixSlashes(writeableFileName);
-	newInfo->pkinfo.filenameHash = StringToHash(writeableFileName, true );
+	newInfo->pkinfo.filenameHash = nameHash;
 
 	m_files.append(newInfo);
 	m_header.numFiles++;
-
 	return true;
+}
+
+bool CDPKFileWriter::AddFile( const char* fileName, const char* targetFilename)
+{
+	EqString writeableFileName(_Es(targetFilename).LowerCase());
+	DPK_FixSlashes(writeableFileName);
+
+	return AddFile(fileName, StringToHash(writeableFileName, true));
 }
 
 int CDPKFileWriter::AddDirectory(const char* wildcard, const char* targetDir, bool recursive)
@@ -397,6 +402,9 @@ float CDPKFileWriter::ProcessFile(FILE* output, dpkfilewinfo_t* info)
 			// if size is greater than remaining, we know that this is last block
 			if (blockInfo.size > _fileSize - srcOffset)
 				blockInfo.size = min<uint32>(blockInfo.size, (uint32)(_fileSize - srcOffset));
+
+			if (blockInfo.size == 0)
+				break;
 
 			// compress to tmpBlock
 			if(compressionEnabled)

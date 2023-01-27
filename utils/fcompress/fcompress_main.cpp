@@ -5,6 +5,8 @@
 // Description: 
 //////////////////////////////////////////////////////////////////////////////////
 
+#include <zlib.h>
+
 #include "core/core_common.h"
 #include "core/IDkCore.h"
 #include "core/IFileSystem.h"
@@ -14,14 +16,157 @@
 
 #include "DPKFileWriter.h"
 
-#if defined(_WIN32) && defined(_DEBUG)
+#if defined(_WIN32)
+#include <direct.h>
+#if defined(_DEBUG)
 #include <crtdbg.h>
 #endif
+#endif
+
+#define REPACK_SUPPORT 1
 
 static void Usage()
 {
 	MsgWarning("USAGE:\n	fcompress -target <target name>\n");
+#if REPACK_SUPPORT
+	MsgWarning("USAGE:\n	fcompress -repack <EPK v6 filename>\n");
+#endif
 }
+
+#if REPACK_SUPPORT
+#define DPK_VERSION_PREV			6
+
+// data package file info
+struct dpkfile_v6_info_s
+{
+	int		filenameHash;
+
+	uint64	offset;
+	uint32	size;				// The real file size
+
+	short	numBlocks;			// number of blocks
+	short	flags;
+};
+ALIGNED_TYPE(dpkfile_v6_info_s, 2) dpkfile_v6_info_t;
+
+static bool UpdatePackage(const char* targetName)
+{
+	FILE* dpkFile = fopen(targetName, "rb");
+
+	// Now fill the header data and create object table
+	if (!dpkFile)
+	{
+		MsgError("Cannot open package '%s'\n", targetName);
+		return false;
+	}
+
+	dpkheader_t m_header;
+
+	fread(&m_header, sizeof(dpkheader_t), 1, dpkFile);
+
+	if (m_header.signature != DPK_SIGNATURE)
+	{
+		MsgError("'%s' is not a package!!!\n", targetName);
+
+		fclose(dpkFile);
+		return false;
+	}
+
+	if (m_header.version != DPK_VERSION_PREV)
+	{
+		MsgError("package '%s' has wrong version!!!\n", targetName);
+
+		fclose(dpkFile);
+		return false;
+	}
+
+	char dpkMountPath[DPK_STRING_SIZE];
+	fread(dpkMountPath, DPK_STRING_SIZE, 1, dpkFile);
+
+	Msg("Mount path '%s'\n", dpkMountPath);
+
+	// Let set the file info data origin
+	fseek(dpkFile, m_header.fileInfoOffset, SEEK_SET);
+
+	Array<dpkfile_v6_info_t> m_dpkFiles{ PP_SL };
+	m_dpkFiles.setNum(m_header.numFiles);
+	fread(m_dpkFiles.ptr(), sizeof(dpkfile_v6_info_t), m_header.numFiles, dpkFile);
+
+	{
+		Msg("Unpacking %d files\n", m_header.numFiles);
+
+		g_fileSystem->MakeDir("repack_tmp", SP_ROOT);
+
+		// unpack as .epk.blob
+		for (int i = 0; i < m_dpkFiles.numElem(); ++i)
+		{
+			const dpkfile_v6_info_t& finfo = m_dpkFiles[i];
+
+			ASSERT_MSG(!(finfo.flags & DPKFILE_FLAG_ENCRYPTED), "Sorry, encrypted packages are not repackageable atm");
+
+			IFile* file = g_fileSystem->Open(EqString::Format("repack_tmp/%u.epk_blob", finfo.filenameHash), "wb", SP_ROOT);
+			if (!file)
+				continue;
+
+			ubyte* tmpFileData = (ubyte*)PPAlloc(finfo.size);
+
+			ubyte* tmpBlock = (ubyte*)PPAlloc(DPK_BLOCK_MAXSIZE + 128);
+
+			fseek(dpkFile, finfo.offset, SEEK_SET);
+			for (int j = 0; j < finfo.numBlocks; ++j)
+			{
+				dpkblock_t blockHdr;
+				fread(&blockHdr, 1, sizeof(blockHdr), dpkFile);
+
+				// read and decompress block
+				fread(tmpBlock, 1, blockHdr.compressedSize, dpkFile);
+
+				unsigned long destLen = blockHdr.size;
+				int status = uncompress(tmpFileData + DPK_BLOCK_MAXSIZE * j, &destLen, tmpBlock, blockHdr.compressedSize);
+
+				if (status != Z_OK)
+					ASSERT_FAIL(EqString::Format("Cannot decompress file block - %d!\n", status).ToCString());
+
+				ASSERT(destLen == blockHdr.size);
+			}
+			PPFree(tmpBlock);
+
+			file->Write(tmpFileData, finfo.size, 1);
+			PPFree(tmpFileData);
+
+			g_fileSystem->Close(file);
+		}
+
+		fclose(dpkFile);
+	}
+
+	{
+		// rename into BAK file
+		g_fileSystem->Rename(targetName, _Es(targetName) + ".bak", SP_ROOT);
+
+		// now repack the to the latest version
+		CDPKFileWriter dpkWriter;
+
+		// add files
+		for (int i = 0; i < m_dpkFiles.numElem(); ++i)
+		{
+			const dpkfile_v6_info_t& finfo = m_dpkFiles[i];
+			dpkWriter.AddFile(EqString::Format("repack_tmp/%u.epk_blob", finfo.filenameHash), finfo.filenameHash);
+		}
+
+		dpkWriter.SetMountPath(dpkMountPath);
+		dpkWriter.AddIgnoreCompressionExtension("lev");
+		dpkWriter.SetCompression(m_header.compressionLevel);
+		dpkWriter.BuildAndSave(targetName);
+
+		CFileSystemFind find("repack_tmp/*", SP_ROOT);
+		while (find.Next())
+			g_fileSystem->FileRemove(EqString::Format("repack_tmp/%s", find.GetPath()), SP_ROOT);
+		g_fileSystem->RemoveDir("repack_tmp", SP_ROOT);
+	}
+}
+
+#endif // REPACK_SUPPORT
 
 static void CookPackageTarget(const char* targetName)
 {
@@ -160,6 +305,12 @@ int main(int argc, char **argv)
 		{
 			CookPackageTarget(g_cmdLine->GetArgumentsOf(i));
 		}
+#if REPACK_SUPPORT
+		else if (!argStr.CompareCaseIns("-repack"))
+		{
+			UpdatePackage(g_cmdLine->GetArgumentsOf(i));
+		}
+#endif
 	}
 
 	g_eqCore->Shutdown();
