@@ -41,7 +41,7 @@ protected:
 
 	FixedArray<Work, 32>					m_workRingPool;
 	FixedArray<Threading::CEqSignal, 32>	m_completionSignal;
-	int						m_workCounter{ 0 };
+	volatile int							m_workCounter{ 0 };
 };
 
 extern GLWorkerThread g_glWorker;

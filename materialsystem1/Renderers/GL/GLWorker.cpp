@@ -113,13 +113,8 @@ int GLWorkerThread::Run()
 				g_library.BeginAsyncOperation(GetThreadID());
 			begun = true;
 
-			ASSERT(work.func);
-
 			const int result = work.func();
 			Atomic::Exchange(work.result, work.sync ? result : WORK_NOT_STARTED);
-
-			work.func = nullptr;
-
 			m_completionSignal[i].Raise();
 		}		
 	}
