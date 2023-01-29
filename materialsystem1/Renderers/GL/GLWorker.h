@@ -32,14 +32,15 @@ public:
 protected:
 	struct Work
 	{
-		Threading::CEqSignal	completionSignal;
 		FUNC_TYPE				func;
 		int						result{ WORK_NOT_STARTED };
+		bool					sync{ false };
 	};
 
 	int		Run() override;
 
-	FixedArray<Work, 32>	m_workRingPool;
+	FixedArray<Work, 32>					m_workRingPool;
+	FixedArray<Threading::CEqSignal, 32>	m_completionSignal;
 	int						m_workCounter{ 0 };
 };
 

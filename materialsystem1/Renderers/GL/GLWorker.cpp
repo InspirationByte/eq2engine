@@ -31,8 +31,11 @@ void GLWorkerThread::Init()
 	m_workRingPool.setNum(m_workRingPool.numAllocated());
 
 	// by default every work in pool is free (see .Wait call after getting one from ring pool)
-	for (int i = 0; i < m_workRingPool.numElem(); ++i)
-		m_workRingPool[i].completionSignal.Raise();
+	for (int i = 0; i < m_completionSignal.numAllocated(); ++i)
+		m_completionSignal.append(CEqSignal(true));
+
+	for (int i = 0; i < m_completionSignal.numElem(); ++i)
+		m_completionSignal[i].Raise();
 }
 
 void GLWorkerThread::Shutdown()
@@ -54,17 +57,25 @@ int GLWorkerThread::WaitForExecute(const char* name, FUNC_TYPE f)
 
 	// add to work list
 	Work* work = nullptr;
+	CEqSignal* completionSignal = nullptr;
 	{
-		work = &m_workRingPool[Atomic::Increment(m_workCounter) % m_workRingPool.numAllocated()];
-		work->completionSignal.Wait();
+		const int slot = Atomic::Increment(m_workCounter) % m_workRingPool.numAllocated();
 
-		work->completionSignal.Clear();
+		work = &m_workRingPool[slot];
+		completionSignal = &m_completionSignal[slot];
+
+		if(work->result != WORK_NOT_STARTED)
+			completionSignal->Wait();
+
+		completionSignal->Clear();
+
 		work->func = f;
+		work->sync = true;
 		Atomic::Exchange(work->result, WORK_PENDING);
 	}
 
 	SignalWork();
-	work->completionSignal.Wait();
+	completionSignal->Wait();
 
 	const int result = work->result;
 	Atomic::Exchange(work->result, WORK_NOT_STARTED);
@@ -73,13 +84,19 @@ int GLWorkerThread::WaitForExecute(const char* name, FUNC_TYPE f)
 
 void GLWorkerThread::Execute(const char* name, FUNC_TYPE f)
 {
-	Work& work = m_workRingPool[Atomic::Increment(m_workCounter) % m_workRingPool.numAllocated()];
-	work.completionSignal.Wait();
+	const int slot = Atomic::Increment(m_workCounter) % m_workRingPool.numAllocated();
 
-	work.completionSignal.Clear();
+	Work &work = m_workRingPool[slot];
+	CEqSignal& completionSignal = m_completionSignal[slot];
+
+	if (work.result != WORK_NOT_STARTED)
+		completionSignal.Wait();
+	completionSignal.Clear();
+
 	work.func = f;
-	Atomic::Exchange(work.result, WORK_PENDING);
+	work.sync = false;
 
+	Atomic::Exchange(work.result, WORK_PENDING);
 	SignalWork();
 }
 
@@ -96,10 +113,15 @@ int GLWorkerThread::Run()
 				g_library.BeginAsyncOperation(GetThreadID());
 			begun = true;
 
-			work.result = work.func();
+			ASSERT(work.func);
+
+			const int result = work.func();
+			Atomic::Exchange(work.result, work.sync ? result : WORK_NOT_STARTED);
+
 			work.func = nullptr;
-		}
-		work.completionSignal.Raise();
+
+			m_completionSignal[i].Raise();
+		}		
 	}
 
 	if(begun)

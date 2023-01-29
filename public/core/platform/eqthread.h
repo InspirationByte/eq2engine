@@ -104,6 +104,7 @@ private:
 class CEqSignal
 {
 public:
+	CEqSignal(CEqSignal&& other);
 	CEqSignal( bool manualReset = false );
 	~CEqSignal();
 

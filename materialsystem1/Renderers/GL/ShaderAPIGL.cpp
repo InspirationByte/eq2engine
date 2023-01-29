@@ -2218,7 +2218,7 @@ IVertexFormat* ShaderAPIGL::CreateVertexFormat(const char* name, const VertexFor
 	return pVertexFormat;
 }
 
-IVertexBuffer* ShaderAPIGL::CreateVertexBuffer(ER_BufferAccess nBufAccess, int nNumVerts, int strideSize, void *pData )
+IVertexBuffer* ShaderAPIGL::CreateVertexBuffer(ER_BufferAccess nBufAccess, int nNumVerts, int strideSize, void* pData )
 {
 	CVertexBufferGL* pVB = PPNew CVertexBufferGL();
 
@@ -2228,28 +2228,36 @@ IVertexBuffer* ShaderAPIGL::CreateVertexBuffer(ER_BufferAccess nBufAccess, int n
 
 	DevMsg(DEVMSG_SHADERAPI,"Creating VBO with size %i KB\n", pVB->GetSizeInBytes() / 1024);
 
-	int result = g_glWorker.WaitForExecute(__FUNCTION__, [pVB, nBufAccess, pData]() {
-		const int numBuffers = (nBufAccess == BUFFER_DYNAMIC) ? MAX_VB_SWITCHING : 1;
+	const int numBuffers = (nBufAccess == BUFFER_DYNAMIC) ? MAX_VB_SWITCHING : 1;
+
+	int result = g_glWorker.WaitForExecute(__FUNCTION__, [numBuffers, pVB, nBufAccess, pData]() {
+
 		glGenBuffers(numBuffers, pVB->m_nGL_VB_Index);
 
 		if (!GLCheckError("gen vert buffer"))
 			return -1;
 
-		for (int i = 0; i < numBuffers; i++)
+		if (pData)
 		{
-			ASSERT_MSG(pVB->m_nGL_VB_Index[i] != 0, "Vertex buffer %d is not generated, requested count: %d", i, numBuffers);
+			for (int i = 0; i < numBuffers; i++)
+			{
+				glBindBuffer(GL_ARRAY_BUFFER, pVB->m_nGL_VB_Index[i]);
+				GLCheckError("bind buffer");
 
-			glBindBuffer(GL_ARRAY_BUFFER, pVB->m_nGL_VB_Index[i]);
-			GLCheckError("bind buffer");
+				glBufferData(GL_ARRAY_BUFFER, pVB->GetSizeInBytes(), pData, g_gl_bufferUsages[nBufAccess]);
+				GLCheckError("upload vtx data");
+			}
 
-			glBufferData(GL_ARRAY_BUFFER, pVB->GetSizeInBytes(), pData, g_gl_bufferUsages[nBufAccess]);
-			GLCheckError("upload vtx data");
+			glBindBuffer(GL_ARRAY_BUFFER, 0);
 		}
-
-		glBindBuffer(GL_ARRAY_BUFFER, 0);
 
 		return 0;
 	});
+
+	for (int i = 0; i < numBuffers; i++)
+	{
+		ASSERT_MSG(pVB->m_nGL_VB_Index[i] != 0, "Vertex buffer %d is not generated, requested count: %d", i, numBuffers);
+	}
 
 	if (result == -1)
 	{
@@ -2276,31 +2284,36 @@ IIndexBuffer* ShaderAPIGL::CreateIndexBuffer(int nIndices, int nIndexSize, ER_Bu
 
 	DevMsg(DEVMSG_SHADERAPI,"Creating IBO with size %i KB\n", (nIndices*nIndexSize) / 1024);
 
+	const int sizeInBytes = pIB->m_nIndices * pIB->m_nIndexSize;
+	const int numBuffers = (nBufAccess == BUFFER_DYNAMIC) ? MAX_IB_SWITCHING : 1;
 
-	int result = g_glWorker.WaitForExecute(__FUNCTION__, [pIB, nBufAccess, pData]() {
+	int result = g_glWorker.WaitForExecute(__FUNCTION__, [numBuffers, sizeInBytes, pIB, nBufAccess, pData]() {
 
-		const int sizeInBytes = pIB->m_nIndices * pIB->m_nIndexSize;
-		const int numBuffers = (nBufAccess == BUFFER_DYNAMIC) ? MAX_IB_SWITCHING : 1;
 		glGenBuffers(numBuffers, pIB->m_nGL_IB_Index);
-
 		if (!GLCheckError("gen idx buffer"))
 			return -1;
 
-		for (int i = 0; i < numBuffers; i++)
+		if (pData)
 		{
-			ASSERT_MSG(pIB->m_nGL_IB_Index[i] != 0, "Index buffer %d is not generated, requested count: %d", i, numBuffers);
+			for (int i = 0; i < numBuffers; i++)
+			{
+				glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, pIB->m_nGL_IB_Index[i]);
+				GLCheckError("bind buff");
 
-			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, pIB->m_nGL_IB_Index[i]);
-			GLCheckError("bind buff");
+				glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeInBytes, pData, g_gl_bufferUsages[nBufAccess]);
+				GLCheckError("upload idx data");
+			}
 
-			glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeInBytes, pData, g_gl_bufferUsages[nBufAccess]);
-			GLCheckError("upload idx data");
+			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 		}
-
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
 		return 0;
 	});
+
+	for (int i = 0; i < numBuffers; i++)
+	{
+		ASSERT_MSG(pIB->m_nGL_IB_Index[i] != 0, "Index buffer %d is not generated, requested count: %d", i, numBuffers);
+	}
 
 	if (result == -1)
 	{
