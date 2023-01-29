@@ -369,34 +369,7 @@ void CGLRenderLib_ES::ExitAPI()
 
 void CGLRenderLib_ES::BeginFrame(IEqSwapChain* swapChain)
 {
-#ifdef PLAT_ANDROID
-	if (m_lostSurface && m_glContext != nullptr)
-	{
-		MsgInfo("Creating surface...\n");
-		m_eglSurface = EGL_NO_SURFACE;
-		m_eglSurface = eglCreateWindowSurface(m_eglDisplay, m_eglConfig, m_hwnd, nullptr);
-
-		if (m_eglSurface == EGL_NO_SURFACE)
-		{
-			ErrorMsg("Could not create EGL surface\n");
-			return;
-		}
-
-		MsgInfo("Attaching surface...\n");
-		if (!eglMakeCurrent(m_eglDisplay, m_eglSurface, m_eglSurface, m_glContext))
-		{
-			CrashMsg("eglMakeCurrent - error\n");
-			return;
-		}
-
-		m_lostSurface = false;
-	}
-#endif // PLAT_ANDROID
-
-	g_glWorker.Execute("StepProgressiveTextures", []() {
-		g_shaderApi.StepProgressiveLodTextures();
-		return 0;
-	});
+	g_shaderApi.StepProgressiveLodTextures();
 
 	// ShaderAPIGL uses m_nViewportWidth/Height as backbuffer size
 	g_shaderApi.m_nViewportWidth = m_width;
@@ -456,7 +429,35 @@ void CGLRenderLib_ES::SetBackbufferSize(const int w, const int h)
 void CGLRenderLib_ES::SetFocused(bool inFocus)
 {
 	if(!inFocus)
+	{
 		ReleaseSurface();
+	}
+	else
+	{
+#ifdef PLAT_ANDROID
+		if (m_lostSurface && m_glContext != nullptr)
+		{
+			MsgInfo("Creating surface...\n");
+			m_eglSurface = eglCreateWindowSurface(m_eglDisplay, m_eglConfig, m_hwnd, nullptr);
+
+			if (m_eglSurface == EGL_NO_SURFACE)
+			{
+				ErrorMsg("Could not create EGL surface\n");
+				return;
+			}
+
+			MsgInfo("Attaching surface...\n");
+			if (!eglMakeCurrent(m_eglDisplay, m_eglSurface, m_eglSurface, m_glContext))
+			{
+				CrashMsg("eglMakeCurrent - error\n");
+				return;
+			}
+
+			m_lostSurface = false;
+		}
+#endif // PLAT_ANDROID
+
+	}
 }
 
 void CGLRenderLib_ES::ReleaseSurface()

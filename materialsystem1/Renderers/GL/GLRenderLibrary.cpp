@@ -648,7 +648,7 @@ void CGLRenderLib::ExitAPI()
 
 void CGLRenderLib::BeginFrame(IEqSwapChain* swapChain)
 {
-	m_curSwapChain = swapChain;
+	g_shaderApi.StepProgressiveLodTextures();
 
 	int width = m_width;
 	int height = m_height;
@@ -664,17 +664,18 @@ void CGLRenderLib::BeginFrame(IEqSwapChain* swapChain)
 		height = glSwapChain->m_height;
 	}
 
-	wglMakeCurrent(drawContext, m_glContext);
+	if(m_curSwapChain != swapChain)
+	{
+		wglMakeCurrent(nullptr, nullptr);
+		wglMakeCurrent(drawContext, m_glContext);
+	}
 #endif
+
+	m_curSwapChain = swapChain;
 
 	// ShaderAPIGL uses m_nViewportWidth/Height as backbuffer size
 	g_shaderApi.m_nViewportWidth = width;
 	g_shaderApi.m_nViewportHeight = height;
-
-	g_glWorker.Execute("StepProgressiveTextures", []() {
-		g_shaderApi.StepProgressiveLodTextures();
-		return 0;
-	});
 }
 
 void CGLRenderLib::EndFrame()

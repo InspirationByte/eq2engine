@@ -111,7 +111,11 @@ bool GLCheckError(const char* op, ...)
 		EqString errorMsg = EqString::FormatVa(op, argptr);
 		va_end(argptr);
 
-		ASSERT_MSG(!gl_break_on_error.GetBool(), "OpenGL: %s - %s", errorMsg.ToCString(), errString.ToCString());
+		if(gl_break_on_error.GetBool())
+		{
+			_DEBUG_BREAK;
+		}
+		//ASSERT_MSG(!gl_break_on_error.GetBool(), "OpenGL: %s - %s", errorMsg.ToCString(), errString.ToCString());
 
 		if (gl_report_errors.GetBool())
 			MsgError("*OGL* error occured while '%s' (%s)\n", errorMsg.ToCString(), errString.ToCString());
@@ -1413,10 +1417,10 @@ void ShaderAPIGL::DestroyShaderProgram(IShaderProgram* pShaderProgram)
 		m_ShaderList.remove(it);
 	}
 
-	g_glWorker.AddWork(__FUNCTION__, [pShader]() {
+	g_glWorker.Execute(__FUNCTION__, [pShader]() {
 		delete pShader;
 		return 0;
-	}, false);
+	});
 }
 
 void ShaderAPIGL::PreloadShadersFromCache()
@@ -2354,7 +2358,7 @@ void ShaderAPIGL::DestroyVertexBuffer(IVertexBuffer* pVertexBuffer)
 
 		delete pVB;
 
-		g_glWorker.AddWork(__FUNCTION__, [numBuffers, tempArray]() {
+		g_glWorker.Execute(__FUNCTION__, [numBuffers, tempArray]() {
 
 			glDeleteBuffers(numBuffers, tempArray);
 			GLCheckError("delete vertex buffer");
@@ -2362,7 +2366,7 @@ void ShaderAPIGL::DestroyVertexBuffer(IVertexBuffer* pVertexBuffer)
 			delete [] tempArray;
 
 			return 0;
-		}, false);
+		});
 	}
 }
 
@@ -2388,7 +2392,7 @@ void ShaderAPIGL::DestroyIndexBuffer(IIndexBuffer* pIndexBuffer)
 
 		delete pIndexBuffer;
 
-		g_glWorker.AddWork(__FUNCTION__, [numBuffers, tempArray]() {
+		g_glWorker.Execute(__FUNCTION__, [numBuffers, tempArray]() {
 			
 			glDeleteBuffers(numBuffers, tempArray);
 			GLCheckError("delete index buffer");
@@ -2396,7 +2400,7 @@ void ShaderAPIGL::DestroyIndexBuffer(IIndexBuffer* pIndexBuffer)
 			delete [] tempArray;
 
 			return 0;
-		}, false);		
+		});		
 	}
 }
 
@@ -2750,33 +2754,40 @@ void ShaderAPIGL::SetTexture(const ITexturePtr& pTexture, const char* pszName, i
 
 void ShaderAPIGL::StepProgressiveLodTextures()
 {
-	int numTransferred = 0;
+	if (!m_progressiveTextures.size())
+		return;
 
-	g_sapi_ProgressiveTextureMutex.Lock();
-	auto it = m_progressiveTextures.begin();
-	g_sapi_ProgressiveTextureMutex.Unlock();
+	g_glWorker.Execute("StepProgressiveTextures", [this]() {
+		
+		g_sapi_ProgressiveTextureMutex.Lock();
+		auto it = m_progressiveTextures.begin();
+		g_sapi_ProgressiveTextureMutex.Unlock();
 
-	while (numTransferred < TEXTURE_TRANSFER_MAX_TEXTURES_PER_FRAME)
-	{
-		CGLTexture* nextTexture = nullptr;
+		int numTransferred = 0;
+		while (numTransferred < TEXTURE_TRANSFER_MAX_TEXTURES_PER_FRAME)
 		{
-			CScopedMutex m(g_sapi_ProgressiveTextureMutex);
-			if (it == m_progressiveTextures.end())
-				break;
+			CGLTexture* nextTexture = nullptr;
+			{
+				CScopedMutex m(g_sapi_ProgressiveTextureMutex);
+				if (it == m_progressiveTextures.end())
+					break;
 
-			nextTexture = it.key();
-			++it;
+				nextTexture = it.key();
+				++it;
+			}
+
+			EProgressiveStatus status = nextTexture->StepProgressiveLod();
+			if (status == PROGRESSIVE_STATUS_COMPLETED)
+			{
+				CScopedMutex m(g_sapi_ProgressiveTextureMutex);
+				m_progressiveTextures.remove(nextTexture);
+				++numTransferred;
+			}
+
+			if (status == PROGRESSIVE_STATUS_DID_UPLOAD)
+				++numTransferred;
 		}
 
-		EProgressiveStatus status = nextTexture->StepProgressiveLod();
-		if (status == PROGRESSIVE_STATUS_COMPLETED)
-		{
-			CScopedMutex m(g_sapi_ProgressiveTextureMutex);
-			m_progressiveTextures.remove(nextTexture);
-			++numTransferred;
-		}
-
-		if (status == PROGRESSIVE_STATUS_DID_UPLOAD)
-			++numTransferred;
-	}
+		return 0;
+	});
 }

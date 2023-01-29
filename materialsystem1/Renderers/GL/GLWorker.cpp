@@ -24,19 +24,15 @@ extern CGLRenderLib g_library;
 
 GLWorkerThread g_glWorker;
 
-#define WORK_PENDING_MARKER 0x1d1d0001
-
-GLWorkerThread::work_t::work_t(const char* _name, FUNC_TYPE f, uint id, bool block) : func(f)
-{
-	name = _name;
-	result = WORK_PENDING_MARKER;
-	workId = id;
-	blocking = block;
-}
-
 void GLWorkerThread::Init()
 {
 	StartWorkerThread("GLWorker");
+
+	m_workRingPool.setNum(m_workRingPool.numAllocated());
+
+	// by default every work in pool is free (see .Wait call after getting one from ring pool)
+	for (int i = 0; i < m_workRingPool.numElem(); ++i)
+		m_workRingPool[i].completionSignal.Raise();
 }
 
 void GLWorkerThread::Shutdown()
@@ -44,9 +40,7 @@ void GLWorkerThread::Shutdown()
 	SignalWork();
 	StopThread();
 
-	// delete work
-	delete m_pendingWork;
-	m_pendingWork = nullptr;
+	m_workRingPool.clear(true);
 }
 
 int GLWorkerThread::WaitForExecute(const char* name, FUNC_TYPE f)
@@ -54,68 +48,62 @@ int GLWorkerThread::WaitForExecute(const char* name, FUNC_TYPE f)
 	uintptr_t thisThreadId = Threading::GetCurrentThreadID();
 
 	if (g_library.IsMainThread(thisThreadId)) // not required for main thread
+	{
 		return f();
+	}
 
-	return AddWork(name, f, true);
-}
+	// add to work list
+	Work* work = nullptr;
+	{
+		work = &m_workRingPool[Atomic::Increment(m_workCounter) % m_workRingPool.numAllocated()];
+		work->completionSignal.Wait();
 
-int GLWorkerThread::WaitForResult(work_t* work)
-{
-	ASSERT(work);
-	DevMsg(DEVMSG_SHADERAPI, "WaitForResult for %s (workId %d)\n", work->name, work->workId);
+		work->completionSignal.Clear();
+		work->func = f;
+		Atomic::Exchange(work->result, WORK_PENDING);
+	}
 
-	WaitForThread();
-
-	ASSERT(m_pendingWork == work);
-	m_pendingWork = nullptr;
+	SignalWork();
+	work->completionSignal.Wait();
 
 	const int result = work->result;
-
-	delete work;
-
+	Atomic::Exchange(work->result, WORK_NOT_STARTED);
 	return result;
 }
 
-int GLWorkerThread::AddWork(const char* name, FUNC_TYPE f, bool blocking)
+void GLWorkerThread::Execute(const char* name, FUNC_TYPE f)
 {
-	CScopedMutex m(m_mutex);
+	Work& work = m_workRingPool[Atomic::Increment(m_workCounter) % m_workRingPool.numAllocated()];
+	work.completionSignal.Wait();
 
-	// wait before worker gets done
-	WaitForThread();
-
-	m_pendingWork = PPNew work_t(name, f, m_workCounter++, blocking);
+	work.completionSignal.Clear();
+	work.func = f;
+	Atomic::Exchange(work.result, WORK_PENDING);
 
 	SignalWork();
-
-	if (blocking)
-		return WaitForResult(m_pendingWork);
-
-	return 0;
 }
 
 int GLWorkerThread::Run()
 {
-	ASSERT_MSG(m_pendingWork, "worker triggered but no work");
+	bool begun = false;
 
-	g_library.BeginAsyncOperation(GetThreadID());
-
-	FUNC_TYPE func = m_pendingWork->func;
-
-	// run work
-	//DevMsg(DEVMSG_SHADERAPI, "BeginAsyncOperation for %s (workId %d)\n", currentWork->name, currentWork->workId);
-	if (m_pendingWork->blocking)
+	for (int i = 0; i < m_workRingPool.numElem(); ++i)
 	{
-		m_pendingWork->result = func();
-	}
-	else
-	{
-		func();
-		delete m_pendingWork;
-		m_pendingWork = nullptr;
-	}
-	//DevMsg(DEVMSG_SHADERAPI, "EndAsyncOperation for %s (workId %d)\n", currentWork->name, currentWork->workId);
+		Work& work = m_workRingPool[i];
+		if (Atomic::CompareExchange(work.result, WORK_PENDING, WORK_EXECUTING) == WORK_PENDING)
+		{
+			if(!begun)
+				g_library.BeginAsyncOperation(GetThreadID());
+			begun = true;
 
-	g_library.EndAsyncOperation();
+			work.result = work.func();
+			work.func = nullptr;
+		}
+		work.completionSignal.Raise();
+	}
+
+	if(begun)
+		g_library.EndAsyncOperation();
 
 	return 0;
 }

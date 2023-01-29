@@ -6,55 +6,41 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #pragma once
-#include <atomic>
 
-class GLWorkerThread : Threading::CEqThread
+static constexpr const int WORK_NOT_STARTED = -10000;
+static constexpr const int WORK_PENDING		= 10000;
+static constexpr const int WORK_EXECUTING	= 20000;
+
+class GLWorkerThread : public Threading::CEqThread
 {
 	friend class ShaderAPIGL;
 
 public:
 	using FUNC_TYPE = EqFunction<int()>;
 
-	GLWorkerThread()
-	{
-	}
+	GLWorkerThread() = default;
 
-	void Init();
-
-	void Shutdown();
+	void	Init();
+	void	Shutdown();
 
 	// syncronous execution
-	int WaitForExecute(const char* name, FUNC_TYPE f);
+	int		WaitForExecute(const char* name, FUNC_TYPE f);
 
 	// asyncronous execution
-	void Execute(const char* name, FUNC_TYPE f)
-	{
-		AddWork(name, f, false);
-	}
+	void	Execute(const char* name, FUNC_TYPE f);
 
 protected:
-	int Run();
-
-	int AddWork(const char* name, FUNC_TYPE f, bool blocking);
-
-	struct work_t
+	struct Work
 	{
-		work_t(const char* _name, FUNC_TYPE f, uint id, bool block);
+		Threading::CEqSignal	completionSignal;
 		FUNC_TYPE				func;
-
-		const char* name;
-
-		volatile int			result;
-		uint					workId;
-		bool					blocking;
+		int						result{ WORK_NOT_STARTED };
 	};
 
-	int WaitForResult(work_t* work);
+	int		Run() override;
 
-	Threading::CEqMutex		m_mutex;
-	work_t*					m_pendingWork;
-
-	uint					m_workCounter;
+	FixedArray<Work, 32>	m_workRingPool;
+	int						m_workCounter{ 0 };
 };
 
 extern GLWorkerThread g_glWorker;
