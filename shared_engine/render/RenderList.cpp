@@ -48,9 +48,7 @@ void CRenderList::Append(CRenderList* pAnotherList)
 void CRenderList::Render(int nViewRenderFlags, void* userdata)
 {
 	for(int i = 0; i < m_ObjectList.numElem(); i++)
-	{
 		m_ObjectList[i]->Render(nViewRenderFlags, userdata);
-	}
 }
 
 void CRenderList::Remove(int id)

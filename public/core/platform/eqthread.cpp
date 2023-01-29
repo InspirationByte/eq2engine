@@ -678,7 +678,7 @@ void CEqMutex::Unlock()
 CEqSignal::CEqSignal(CEqSignal&& other)
 {
 	m_nHandle = other.m_nHandle;
-	other.m_nHandle = 0;
+	memset(&other.m_nHandle, 0, sizeof(other.m_nHandle));
 }
 
 CEqSignal::CEqSignal(bool manualReset)
