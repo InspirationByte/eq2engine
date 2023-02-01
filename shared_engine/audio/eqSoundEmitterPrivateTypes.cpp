@@ -63,7 +63,7 @@ SoundScriptDesc::SoundScriptDesc(const char* name)
 {
 }
 
-const ISoundSource* SoundScriptDesc::GetBestSample(int sampleId /*= -1*/) const
+const ISoundSource* SoundScriptDesc::GetBestSample(int sampleId /*= -1*/)
 {
 	const int numSamples = samples.numElem();
 
@@ -77,8 +77,17 @@ const ISoundSource* SoundScriptDesc::GetBestSample(int sampleId /*= -1*/) const
 	{
 		if (numSamples == 1)
 			return samples[0];
-		else
-			return samples[RandomInt(0, numSamples - 1)];
+
+		if (numBitsSet(sampleRandomizer) >= numSamples)
+			sampleRandomizer = 0;
+
+		int sampleId;
+		do {
+			sampleId = RandomInt(0, numSamples - 1);
+		} while (((1 << sampleId) & sampleRandomizer) != 0);
+		sampleRandomizer |= (1 << sampleId);
+
+		return samples[sampleId];
 	}
 	else
 		return samples[sampleId];

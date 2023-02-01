@@ -251,6 +251,8 @@ struct SoundScriptDesc
 	uint8					paramNodeMap[SOUND_PARAM_COUNT];
 	Map<int, int>			inputNodeMap{ PP_SL };
 
+	uint		sampleRandomizer{ 0 };
+
 	int			channelType{ CHAN_INVALID };
 	float		maxDistance{ 1.0f };
 	float		stopLoopTime{ 0.0f };
@@ -259,7 +261,7 @@ struct SoundScriptDesc
 	bool		is2d : 1;
 	bool		randomSample : 1;
 
-	const ISoundSource* GetBestSample(int sampleId /*= -1*/) const;
+	const ISoundSource* GetBestSample(int sampleId /*= -1*/);
 	uint8				FindVariableIndex(const char* varName) const;
 	int					GetInputNodeId(int nameHash) const;
 
@@ -286,7 +288,7 @@ struct SoundEmitterData
 	Map<int, SoundNodeInput>	inputs{ PP_SL };
 
 	CRefPtr<IEqAudioSource>		soundSource;				// NULL when virtual 
-	const SoundScriptDesc*		script{ nullptr };			// sound script which used to start this sound
+	SoundScriptDesc*			script{ nullptr };			// sound script which used to start this sound
 	CSoundingObject*			soundingObj{ nullptr };
 	int							channelType{ CHAN_INVALID };
 

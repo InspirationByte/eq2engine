@@ -194,7 +194,7 @@ int CSoundEmitterSystem::EmitSound(EmitParams* ep, CSoundingObject* soundingObj,
 		return CHAN_INVALID;
 	}
 
-	const SoundScriptDesc* script = FindSoundScript(ep->name.ToCString());
+	SoundScriptDesc* script = FindSoundScript(ep->name.ToCString());
 
 	if (!script)
 	{
@@ -310,7 +310,7 @@ int CSoundEmitterSystem::EmitSound(EmitParams* ep, CSoundingObject* soundingObj,
 
 bool CSoundEmitterSystem::SwitchSourceState(SoundEmitterData* emit, bool isVirtual)
 {
-	const SoundScriptDesc* script = emit->script;
+	SoundScriptDesc* script = emit->script;
 
 	CRefPtr<IEqAudioSource> soundSource = emit->soundSource;
 
