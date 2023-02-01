@@ -30,8 +30,6 @@ CGLTexture::CGLTexture()
 	m_glTarget = GL_NONE;
 	m_glDepthID = GL_NONE;
 	m_texSize = 0;
-	m_lockOffs = 0;
-	m_lockSize = 0;
 }
 
 CGLTexture::~CGLTexture()
@@ -581,7 +579,7 @@ bool CGLTexture::Lock(LockInOutData& data)
 
 			sizeToLock = size.x * size.y * size.y;
 			lockOffset = box.minPoint.x * box.minPoint.y * box.minPoint.z;
-			lockPitch = size.y;
+			lockPitch = size.x;
 
 			break;
 		}
@@ -592,7 +590,7 @@ bool CGLTexture::Lock(LockInOutData& data)
 			const IVector2D size = lockRect.GetSize();
 			sizeToLock = size.x * size.y;
 			lockOffset = lockRect.vleftTop.x * lockRect.vleftTop.y;
-			lockPitch = lockRect.GetSize().y;
+			lockPitch = lockRect.GetSize().x;
 			break;
 		}
 	}
@@ -601,10 +599,7 @@ bool CGLTexture::Lock(LockInOutData& data)
 
 	// allocate memory for lock data
 	data.lockData = (ubyte*)PPAlloc(lockByteCount);
-	data.lockPitch = lockPitch;
-
-	m_lockSize = sizeToLock;
-	m_lockOffs = lockOffset;
+	data.lockPitch = lockPitch * GetBytesPerPixel(m_iFormat);
 
 #ifdef USE_GLES2
 	// Always need to discard data from GLES :(

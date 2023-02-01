@@ -54,8 +54,6 @@ protected:
 
 	GLTextureRef_t			CreateGLTexture(const CImage* img, const SamplerStateParam_t& sampler, int startMip, int mipCount) const;
 
-	int						m_lockOffs{ 0 };
-	int						m_lockSize{ 0 };
 };
 
 void SetupGLSamplerState(uint texTarget, const SamplerStateParam_t& sampler, int mipMapCount = 1);
