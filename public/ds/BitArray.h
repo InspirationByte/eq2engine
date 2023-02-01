@@ -13,6 +13,16 @@ constexpr int getIntExp(int _x = 0) { return getIntExp<p / 2>(_x + 1); }
 template <>
 constexpr int getIntExp<0>(int _x) { return _x - 1; }
 
+static constexpr int numBitsSet(uint x)
+{
+	x = x - ((x >> 1) & 0x55555555);
+	x = (x & 0x33333333) + ((x >> 2) & 0x33333333);
+	x = (x + (x >> 4)) & 0x0F0F0F0F;
+	x = x + (x >> 8);
+	x = x + (x >> 16);
+	return x & 0x0000003F;
+}
+
 class BitArray
 {
 	using STORAGE_TYPE = int;
@@ -31,6 +41,12 @@ public:
 
 	// returns total number of bits
 	int						numBits() const;
+
+	// returns total number of bits that are set to true
+	int						numTrue() const;
+
+	// returns total number of bits that are set to false
+	int						numFalse() const;
 
 	// set the bit value
 	void					set(int index, bool value);
@@ -66,7 +82,7 @@ inline BitArray& BitArray::operator=(const BitArray& other)
 	resize(other.m_nSize);
 
 	const int typeSize = m_nSize / sizeof(STORAGE_TYPE);
-	if (m_nSize)
+	if (typeSize)
 	{
 		for (int i = 0; i < typeSize; i++)
 			m_pListPtr[i] = other.m_pListPtr[i];
@@ -112,6 +128,32 @@ inline void BitArray::resize(int newSize)
 inline int BitArray::numBits() const
 {
 	return m_nSize;
+}
+
+// returns total number of bits that are set to true
+inline int BitArray::numTrue() const
+{
+	int count = 0;
+	const int typeSize = m_nSize / sizeof(STORAGE_TYPE);
+	if (typeSize)
+	{
+		for (int i = 0; i < typeSize; i++)
+			count += numBitsSet(static_cast<uint>(m_pListPtr[i]));
+	}
+	return count;
+}
+
+// returns total number of bits that are set to false
+inline int BitArray::numFalse() const
+{
+	int count = 0;
+	const int typeSize = m_nSize / sizeof(STORAGE_TYPE);
+	if (typeSize)
+	{
+		for (int i = 0; i < typeSize; i++)
+			count += numBitsSet(~static_cast<uint>(m_pListPtr[i]));
+	}
+	return count;
 }
 
 // set the bit value
