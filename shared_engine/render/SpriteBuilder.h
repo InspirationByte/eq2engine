@@ -172,8 +172,8 @@ int CSpriteBuilder<VTX_TYPE>::_AllocateGeom( int nVertices, int nIndices, VTX_TY
 
 	AddStripBreak();
 
-	int startVertex = m_numVertices;
-	int startIndex = m_numIndices;
+	const int startVertex = m_numVertices;
+	const int startIndex = m_numIndices;
 
 	// give the pointers
 	*verts = &m_pVerts[startVertex];

@@ -711,7 +711,10 @@ inline T& ArrayBase<T, STORAGE_TYPE>::append()
 		resize(newsize - newsize % m_storage.getGranularity());
 	}
 
-	T& newItem = m_storage.getData()[m_nNumElem++];
+	T* listPtr = m_storage.getData();
+
+	T& newItem = listPtr[m_nNumElem];
+	m_nNumElem++;
 	new(&newItem) T();
 	return newItem;
 }

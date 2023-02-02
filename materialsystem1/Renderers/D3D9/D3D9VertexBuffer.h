@@ -56,7 +56,6 @@ protected:
 	DWORD						m_nUsage;
 
 	bool						m_bIsLocked;
-	bool						m_bLockFail;
 
 	vborestoredata_t*			m_pRestore;
 };

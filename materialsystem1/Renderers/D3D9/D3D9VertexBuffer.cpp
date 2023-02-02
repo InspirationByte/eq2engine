@@ -116,12 +116,14 @@ int CVertexBufferD3DX9::GetStrideSize() const
 // updates buffer without map/unmap operations which are slower
 void CVertexBufferD3DX9::Update(void* data, int size, int offset, bool discard /*= true*/)
 {
-	HRESULT hr = s_shaderApi.m_pD3DDevice->TestCooperativeLevel();
+	{
+		const HRESULT hr = s_shaderApi.m_pD3DDevice->TestCooperativeLevel();
 
-	if (hr == D3DERR_DEVICELOST || hr == D3DERR_DEVICENOTRESET)
-		return;
+		if (hr == D3DERR_DEVICELOST || hr == D3DERR_DEVICENOTRESET)
+			return;
+	}
 
-	bool dynamic = (m_nUsage & D3DUSAGE_DYNAMIC);
+	const bool dynamic = (m_nUsage & D3DUSAGE_DYNAMIC);
 
 	if(m_bIsLocked)
 	{
@@ -135,13 +137,13 @@ void CVertexBufferD3DX9::Update(void* data, int size, int offset, bool discard /
 		return;
 	}
 
-	int nLockByteCount = size*m_nStrideSize;
+	const int lockOffset = offset * m_nStrideSize;
+	const int lockSize = size * m_nStrideSize;
 
 	void* outData = nullptr;
-
-	if(m_pVertexBuffer->Lock(offset*m_nStrideSize, nLockByteCount, &outData, (dynamic ? D3DLOCK_DISCARD : 0) | D3DLOCK_NOSYSLOCK ) == D3D_OK)
+	if(m_pVertexBuffer->Lock(lockOffset, lockSize, &outData, (dynamic ? D3DLOCK_DISCARD : 0) | D3DLOCK_NOSYSLOCK ) == D3D_OK)
 	{
-		memcpy(outData, data, nLockByteCount);
+		memcpy(outData, data, lockSize);
 		m_pVertexBuffer->Unlock();
 
 		if(dynamic && discard && offset == 0)
@@ -152,16 +154,14 @@ void CVertexBufferD3DX9::Update(void* data, int size, int offset, bool discard /
 // locks vertex buffer and gives to programmer buffer data
 bool CVertexBufferD3DX9::Lock(int lockOfs, int vertexCount, void** outdata, bool readOnly)
 {
-	HRESULT hr = s_shaderApi.m_pD3DDevice->TestCooperativeLevel();
-
-	if (hr == D3DERR_DEVICELOST || hr == D3DERR_DEVICENOTRESET)
 	{
-		//m_bLockFail = true;
-		//m_bIsLocked = true;
-		return false;
+		const HRESULT hr = s_shaderApi.m_pD3DDevice->TestCooperativeLevel();
+
+		if (hr == D3DERR_DEVICELOST || hr == D3DERR_DEVICENOTRESET)
+			return false;
 	}
 
-	bool dynamic = (m_nUsage & D3DUSAGE_DYNAMIC) != 0;
+	const bool dynamic = (m_nUsage & D3DUSAGE_DYNAMIC) != 0;
 
 	if(m_bIsLocked)
 	{
@@ -176,9 +176,10 @@ bool CVertexBufferD3DX9::Lock(int lockOfs, int vertexCount, void** outdata, bool
 		return false;
 	}
 
-	int nLockByteCount = m_nStrideSize*vertexCount;
+	const int lockOffset = lockOfs * m_nStrideSize;
+	const int lockSize = vertexCount * m_nStrideSize;
 
-	if(m_pVertexBuffer->Lock(lockOfs*m_nStrideSize, nLockByteCount, outdata, (dynamic ? D3DLOCK_DISCARD : 0) | (readOnly ? D3DLOCK_READONLY : 0) | D3DLOCK_NOSYSLOCK ) == D3D_OK)
+	if(m_pVertexBuffer->Lock(lockOfs*m_nStrideSize, lockSize, outdata, (dynamic ? D3DLOCK_DISCARD : 0) | (readOnly ? D3DLOCK_READONLY : 0) | D3DLOCK_NOSYSLOCK ) == D3D_OK)
 	{
 		m_bIsLocked = true;
 	}
@@ -190,12 +191,9 @@ bool CVertexBufferD3DX9::Lock(int lockOfs, int vertexCount, void** outdata, bool
 
 	if(dynamic)
 	{
-		m_nSize = nLockByteCount;
+		m_nSize = lockSize;
 		m_nNumVertices = vertexCount;
 	}
-
-	
-	//m_nStrideSize = nStrideSize;
 
 	return true;
 }
@@ -204,12 +202,7 @@ bool CVertexBufferD3DX9::Lock(int lockOfs, int vertexCount, void** outdata, bool
 void CVertexBufferD3DX9::Unlock()
 {
 	if(m_bIsLocked)
-	{
-		if(!m_bLockFail)
-			m_pVertexBuffer->Unlock();
-
-		m_bLockFail = false;
-	}
+		m_pVertexBuffer->Unlock();
 	else
 		ASSERT(!"Vertex buffer is not locked!");
 

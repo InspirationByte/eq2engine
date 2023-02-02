@@ -107,18 +107,16 @@ void CParticleBatch::Render(int nViewRenderFlags)
 	if(m_numIndices)
 		g_pShaderAPI->SetIndexBuffer(g_pPFXRenderer->m_indexBuffer);
 
-	bool invertCull = m_invertCull || (nViewRenderFlags & EPRFLAG_INVERT_CULL);
-
+	const bool invertCull = m_invertCull || (nViewRenderFlags & EPRFLAG_INVERT_CULL);
 	materials->SetCullMode(invertCull ? CULL_BACK : CULL_FRONT);
 
 	if(m_useCustomProjMat)
 		materials->SetMatrix(MATRIXMODE_PROJECTION, m_customProjMat);
-
 	materials->SetMatrix(MATRIXMODE_WORLD, identity4());
 
 	materials->BindMaterial(m_material);
 
-	int primMode = m_triangleListMode ? PRIM_TRIANGLES : PRIM_TRIANGLE_STRIP;
+	const int primMode = m_triangleListMode ? PRIM_TRIANGLES : PRIM_TRIANGLE_STRIP;
 
 	// draw
 	if(m_numIndices)
@@ -126,8 +124,8 @@ void CParticleBatch::Render(int nViewRenderFlags)
 	else
 		g_pShaderAPI->DrawNonIndexedPrimitives((ER_PrimitiveType)primMode, 0, m_numVertices);
 
+#if 0
 	HOOK_TO_CVAR(r_wireframe)
-
 	if(r_wireframe->GetBool())
 	{
 		materials->SetRasterizerStates(CULL_FRONT, FILL_WIREFRAME);
@@ -145,7 +143,7 @@ void CParticleBatch::Render(int nViewRenderFlags)
 		else
 			g_pShaderAPI->DrawNonIndexedPrimitives((ER_PrimitiveType)primMode, 0, m_numVertices);
 	}
-
+#endif
 	if(!(nViewRenderFlags & EPRFLAG_DONT_FLUSHBUFFERS))
 	{
 		m_numVertices = 0;
@@ -337,7 +335,7 @@ bool CParticleLowLevelRenderer::MakeVBOFrom(const CSpriteBuilder<PFXVertex_t>* p
 		return false;
 
 	const uint16 nVerts	= pGroup->m_numVertices;
-	const uint16 nIndices	= pGroup->m_numIndices;
+	const uint16 nIndices = pGroup->m_numIndices;
 
 	if(nVerts == 0)
 		return false;
