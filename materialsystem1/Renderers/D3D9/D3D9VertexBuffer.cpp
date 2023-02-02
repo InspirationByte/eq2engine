@@ -20,7 +20,6 @@ CVertexBufferD3DX9::CVertexBufferD3DX9()
 	m_pVertexBuffer = nullptr;
 	m_nUsage = 0;
 	m_bIsLocked = false;
-	m_bLockFail = false;
 	m_nStrideSize = -1;
 	m_nNumVertices = 0;
 

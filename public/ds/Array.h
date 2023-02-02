@@ -41,12 +41,12 @@ public:
 
 	~DynamicArrayStorage()
 	{
-		delete [] reinterpret_cast<ubyte*>(m_pListPtr);
+		delete[] reinterpret_cast<ubyte*>(m_pListPtr);
 	}
 
 	void free()
 	{
-		delete [] reinterpret_cast<ubyte*>(m_pListPtr);
+		delete[] reinterpret_cast<ubyte*>(m_pListPtr);
 		m_pListPtr = nullptr;
 		m_nSize = 0;
 	}
@@ -127,7 +127,7 @@ public:
 	}
 protected:
 	const PPSourceLine	m_sl;
-	T*					m_pListPtr{ nullptr };
+	T* m_pListPtr{ nullptr };
 
 	int					m_nSize{ 0 };
 	int					m_nGranularity{ 16 };
@@ -146,7 +146,7 @@ public:
 	}
 
 	void resize(int newSize, int& numOfElements)
-	{ 
+	{
 		ASSERT_MSG(newSize <= SIZE, "Exceeded FixedArrayStorage size (%d, requires %d)", getSize(), newSize);
 	}
 
@@ -155,9 +155,9 @@ public:
 		return SIZE;
 	}
 
-	int getGranularity() const 
+	int getGranularity() const
 	{
-		return 1; 
+		return 1;
 	}
 
 	void setGranularity(int newGranularity) {}
@@ -166,7 +166,7 @@ public:
 	{
 		return (T*)(&m_data[0]);
 	}
-	
+
 	const T* getData() const
 	{
 		return (T*)(&m_data[0]);
@@ -205,16 +205,16 @@ class ArrayBase
 {
 public:
 	ArrayBase();
-	ArrayBase(const PPSourceLine& sl, int granularity = 16 );
+	ArrayBase(const PPSourceLine& sl, int granularity = 16);
 
 	~ArrayBase<T, STORAGE_TYPE>();
 
-	const T&					operator[]( int index ) const;
-	T&							operator[]( int index );
-	ArrayBase<T, STORAGE_TYPE>&	operator=( const ArrayBase<T, STORAGE_TYPE>&other );
+	const T&		operator[](int index) const;
+	T&				operator[](int index);
+	ArrayBase<T, STORAGE_TYPE>& operator=(const ArrayBase<T, STORAGE_TYPE>& other);
 
 	// cleans list
-	void			clear( bool deallocate = false );
+	void			clear(bool deallocate = false);
 
 	// returns true if index is in range
 	bool			inRange(int index) const;
@@ -225,31 +225,31 @@ public:
 
 	// returns number elements which satisfies to the condition
 	template< typename COMPAREFUNC >
-	int				numElem( COMPAREFUNC comparator ) const;
+	int				numElem(COMPAREFUNC comparator) const;
 
 	// returns number of elements allocated for
 	int				numAllocated() const;
 
 	// sets new granularity
-	void			setGranularity( int newgranularity );
+	void			setGranularity(int newgranularity);
 
 	// get the current granularity
 	int				getGranularity() const;
 
 	// resizes the list
-	void			resize( int newsize );
+	void			resize(int newsize);
 
 	// reserve capacity
 	void			reserve(int requiredSize);
 
 	// sets the number of elements in list and resize to exactly this number if necessary
-	void			setNum( int newnum, bool resize = true );
+	void			setNum(int newnum, bool resize = true);
 
 	// returns a pointer to the list
-	T *				ptr();
+	T*				ptr();
 
 	// returns a pointer to the list
-	const T *		ptr() const;
+	const T*		ptr() const;
 
 	// returns front item
 	T&				front();
@@ -270,7 +270,7 @@ public:
 	T				popBack();
 
 	// appends element
-	int				append( const T& obj );
+	int				append(const T& obj);
 
 	// appends element
 	int				append(T&& obj);
@@ -278,59 +278,59 @@ public:
 	// append a empty element to be filled
 	T&				append();
 
+	// appends another array
+	int				append(const T* other, int count);
+
 	// appends another list
 	template< typename CT, typename OTHER_STORAGE_TYPE>
-	int				append( const ArrayBase<CT, OTHER_STORAGE_TYPE>& other );
-
-	// appends another array
-	int				append( const T *other, int count );
+	int				append(const ArrayBase<CT, OTHER_STORAGE_TYPE>& other);
 
 	// appends another list with transformation
 	// return false to not add the element
 	template< typename T2, typename OTHER_STORAGE_TYPE, typename TRANSFORMFUNC >
-	int				append( const ArrayBase<T2, OTHER_STORAGE_TYPE>& other, TRANSFORMFUNC transform );
+	int				append(const ArrayBase<T2, OTHER_STORAGE_TYPE>& other, TRANSFORMFUNC transform);
 
 	// inserts the element at the given index
-	int				insert( const T & obj, int index = 0 );
+	int				insert(const T& obj, int index = 0);
 
 	// inserts the new element at the given index
 	T&				insert(int index = 0);
 
 	// adds unique element
-	int				addUnique( const T & obj );
+	int				addUnique(const T& obj);
 
 	// adds unique element
 	template< typename PAIRCOMPAREFUNC = PairCompareFunc<T> >
-	int				addUnique( const T & obj, PAIRCOMPAREFUNC comparator);
+	int				addUnique(const T& obj, PAIRCOMPAREFUNC comparator);
 
 	// finds the index for the given element
-	int				findIndex( const T & obj ) const;
+	int				findIndex(const T& obj) const;
 
 	// finds the index for the given element
 	template< typename PAIRCOMPAREFUNC = PairCompareFunc<T> >
-	int				findIndex( const T & obj, PAIRCOMPAREFUNC comparator) const;
+	int				findIndex(const T& obj, PAIRCOMPAREFUNC comparator) const;
 
 	// returns first found element which satisfies to the condition
 	template< typename COMPAREFUNC >
-	int				findIndex( COMPAREFUNC comparator ) const;
+	int				findIndex(COMPAREFUNC comparator) const;
 
 	// removes the element at the given index
-	bool			removeIndex( int index );
+	bool			removeIndex(int index);
 
 	// removes specified count of elements from specified index
 	bool			removeRange(int index, int count);
 
 	// removes the element at the given index (fast)
-	bool			fastRemoveIndex( int index );
+	bool			fastRemoveIndex(int index);
 
 	// removes the element
-	bool			remove( const T & obj );
+	bool			remove(const T& obj);
 
 	// removes the element
-	bool			fastRemove( const T & obj );
+	bool			fastRemove(const T& obj);
 
 	// swap the contents of the lists
-	void			swap(ArrayBase<T, STORAGE_TYPE>&other );
+	void			swap(ArrayBase<T, STORAGE_TYPE>& other);
 
 	// swap the contents of the lists - raw
 	void			swap(T*& other, int& otherNumElem);
@@ -339,12 +339,15 @@ public:
 	void			reverse();
 
 	// assure list has given number of elements, but leave them uninitialized
-	void			assureSize( int newSize);
+	void			assureSize(int newSize);
 
 	// assure list has given number of elements and initialize any new elements
-	void			assureSize( int newSize, const T &initValue );
+	void			assureSize(int newSize, const T& initValue);
 
 protected:
+
+	void			ensureCapacity(int newElements = 0);
+
 	STORAGE_TYPE		m_storage;
 	int					m_nNumElem{ 0 };
 };
@@ -356,7 +359,7 @@ inline ArrayBase<T, STORAGE_TYPE>::ArrayBase()
 }
 
 template< typename T, typename STORAGE_TYPE >
-inline ArrayBase<T, STORAGE_TYPE>::ArrayBase(const PPSourceLine& sl, int granularity )
+inline ArrayBase<T, STORAGE_TYPE>::ArrayBase(const PPSourceLine& sl, int granularity)
 	: m_storage(sl, granularity)
 {
 }
@@ -377,12 +380,12 @@ inline void ArrayBase<T, STORAGE_TYPE>::clear(bool deallocate)
 	T* listPtr = m_storage.getData();
 	ArrayStorageBase<T>::destructElements(listPtr, m_nNumElem);
 
-	if ( deallocate )
+	if (deallocate)
 	{
 		m_storage.free();
 	}
 
-	m_nNumElem		= 0;
+	m_nNumElem = 0;
 }
 
 // -----------------------------------------------------------------
@@ -400,14 +403,14 @@ inline int ArrayBase<T, STORAGE_TYPE>::numElem() const
 // -----------------------------------------------------------------
 template< typename T, typename STORAGE_TYPE >
 template< typename COMPAREFUNC >
-inline int ArrayBase<T, STORAGE_TYPE>::numElem( COMPAREFUNC comparator ) const
+inline int ArrayBase<T, STORAGE_TYPE>::numElem(COMPAREFUNC comparator) const
 {
 	int theCount = 0;
 	const T* listPtr = m_storage.getData();
 
-	for(int i = 0; i < m_nNumElem; i++)
+	for (int i = 0; i < m_nNumElem; i++)
 	{
-		if(comparator(listPtr[i]))
+		if (comparator(listPtr[i]))
 			theCount++;
 	}
 
@@ -427,11 +430,11 @@ inline int ArrayBase<T, STORAGE_TYPE>::numAllocated() const
 // Sets the base size of the array and resizes the array to match.
 // -----------------------------------------------------------------
 template< typename T, typename STORAGE_TYPE >
-inline void ArrayBase<T, STORAGE_TYPE>::setGranularity( int newgranularity )
+inline void ArrayBase<T, STORAGE_TYPE>::setGranularity(int newgranularity)
 {
 	int newsize;
 
-	ASSERT( newgranularity > 0);
+	ASSERT(newgranularity > 0);
 
 	m_storage.setGranularity(newgranularity);
 
@@ -441,9 +444,9 @@ inline void ArrayBase<T, STORAGE_TYPE>::setGranularity( int newgranularity )
 		newsize = m_nNumElem + m_storage.getGranularity() - 1;
 		newsize -= newsize % m_storage.getGranularity();
 
-		if ( newsize != m_storage.getSize())
+		if (newsize != m_storage.getSize())
 		{
-			resize( newsize );
+			resize(newsize);
 		}
 	}
 }
@@ -462,12 +465,12 @@ inline int ArrayBase<T, STORAGE_TYPE>::getGranularity() const
 // Release builds do no range checking.
 // -----------------------------------------------------------------
 template< typename T, typename STORAGE_TYPE >
-inline const T & ArrayBase<T, STORAGE_TYPE>::operator[]( int index ) const
+inline const T& ArrayBase<T, STORAGE_TYPE>::operator[](int index) const
 {
-	ASSERT( index >= 0 );
-	ASSERT( index < m_nNumElem );
+	ASSERT(index >= 0);
+	ASSERT(index < m_nNumElem);
 
-	return m_storage.getData()[ index ];
+	return m_storage.getData()[index];
 }
 
 // -----------------------------------------------------------------
@@ -475,19 +478,19 @@ inline const T & ArrayBase<T, STORAGE_TYPE>::operator[]( int index ) const
 // Release builds do no range checking.
 // -----------------------------------------------------------------
 template< typename T, typename STORAGE_TYPE >
-inline T & ArrayBase<T, STORAGE_TYPE>::operator[]( int index )
+inline T& ArrayBase<T, STORAGE_TYPE>::operator[](int index)
 {
-	ASSERT( index >= 0 );
-	ASSERT( index < m_nNumElem );
+	ASSERT(index >= 0);
+	ASSERT(index < m_nNumElem);
 
-	return m_storage.getData()[ index ];
+	return m_storage.getData()[index];
 }
 
 // -----------------------------------------------------------------
 // Copies the contents and size attributes of another list.
 // -----------------------------------------------------------------
 template< typename T, typename STORAGE_TYPE >
-inline ArrayBase<T, STORAGE_TYPE>& ArrayBase<T, STORAGE_TYPE>::operator=( const ArrayBase<T, STORAGE_TYPE> &other )
+inline ArrayBase<T, STORAGE_TYPE>& ArrayBase<T, STORAGE_TYPE>::operator=(const ArrayBase<T, STORAGE_TYPE>& other)
 {
 	m_storage.setGranularity(other.m_storage.getGranularity());
 
@@ -500,7 +503,7 @@ inline ArrayBase<T, STORAGE_TYPE>& ArrayBase<T, STORAGE_TYPE>::operator=( const 
 
 	if (m_storage.getSize())
 	{
-		for( int i = 0; i < m_nNumElem; i++ )
+		for (int i = 0; i < m_nNumElem; i++)
 			new(&listPtr[i]) T(otherListPtr[i]);
 	}
 
@@ -514,7 +517,7 @@ inline ArrayBase<T, STORAGE_TYPE>& ArrayBase<T, STORAGE_TYPE>::operator=( const 
 // Contents are copied using their = operator so that data is correnctly instantiated.
 // -----------------------------------------------------------------
 template< typename T, typename STORAGE_TYPE >
-inline void ArrayBase<T, STORAGE_TYPE>::resize( int newSize )
+inline void ArrayBase<T, STORAGE_TYPE>::resize(int newSize)
 {
 	m_storage.resize(newSize, m_nNumElem);
 }
@@ -526,7 +529,7 @@ inline void ArrayBase<T, STORAGE_TYPE>::resize( int newSize )
 template< typename T, typename STORAGE_TYPE >
 inline void ArrayBase<T, STORAGE_TYPE>::reserve(int requiredSize)
 {
-	if(requiredSize > m_storage.getSize())
+	if (requiredSize > m_storage.getSize())
 		m_storage.resize(requiredSize, m_nNumElem);
 }
 
@@ -534,12 +537,12 @@ inline void ArrayBase<T, STORAGE_TYPE>::reserve(int requiredSize)
 // Resize to the exact size specified irregardless of granularity
 // -----------------------------------------------------------------
 template< typename T, typename STORAGE_TYPE >
-inline void ArrayBase<T, STORAGE_TYPE>::setNum( int newnum, bool shrinkResize )
+inline void ArrayBase<T, STORAGE_TYPE>::setNum(int newnum, bool shrinkResize)
 {
-	ASSERT( newnum >= 0 );
+	ASSERT(newnum >= 0);
 
 	if (shrinkResize || newnum > m_storage.getSize())
-		resize( newnum );
+		resize(newnum);
 
 	// initialize new elements
 	T* listPtr = m_storage.getData();
@@ -555,7 +558,7 @@ inline void ArrayBase<T, STORAGE_TYPE>::setNum( int newnum, bool shrinkResize )
 // -----------------------------------------------------------------
 
 template< typename T, typename STORAGE_TYPE >
-inline T * ArrayBase<T, STORAGE_TYPE>::ptr()
+inline T* ArrayBase<T, STORAGE_TYPE>::ptr()
 {
 	return m_storage.getData();
 }
@@ -565,7 +568,7 @@ inline T * ArrayBase<T, STORAGE_TYPE>::ptr()
 // Note: may return NULL if the list is empty.
 // -----------------------------------------------------------------
 template< typename T, typename STORAGE_TYPE >
-inline const T * ArrayBase<T, STORAGE_TYPE>::ptr() const
+inline const T* ArrayBase<T, STORAGE_TYPE>::ptr() const
 {
 	return m_storage.getData();
 }
@@ -636,6 +639,25 @@ inline T ArrayBase<T, STORAGE_TYPE>::popBack()
 	return item;
 }
 
+template< typename T, typename STORAGE_TYPE >
+inline void ArrayBase<T, STORAGE_TYPE>::ensureCapacity(int newElements)
+{
+	if (!m_storage.getData())
+	{
+		ASSERT(m_storage.getGranularity() > 0);
+
+		// pre-allocate for a bigger list to do less memory resize access
+		const int newSize = newElements + m_storage.getGranularity();
+		resize(newSize - (newSize % m_storage.getGranularity()));
+	}
+	else if(m_nNumElem + newElements >= m_storage.getSize())
+	{
+		// pre-allocate for a bigger list to do less memory resize access
+		const int newSize = newElements + m_nNumElem + m_storage.getGranularity();
+		resize(newSize - (newSize % m_storage.getGranularity()));
+	}
+}
+
 // -----------------------------------------------------------------
 // Increases the size of the list by one element and copies the supplied data into it.
 // Returns the index of the new element.
@@ -643,18 +665,7 @@ inline T ArrayBase<T, STORAGE_TYPE>::popBack()
 template< typename T, typename STORAGE_TYPE >
 inline int ArrayBase<T, STORAGE_TYPE>::append(const T& obj)
 {
-	if ( !m_storage.getData())
-		resize(m_storage.getGranularity());
-
-	if ( m_nNumElem == m_storage.getSize())
-	{
-		int newsize;
-
-		ASSERT(m_storage.getGranularity() > 0);
-
-		newsize = m_storage.getSize() + m_storage.getGranularity();
-		resize( newsize - newsize % m_storage.getGranularity());
-	}
+	ensureCapacity();
 
 	T* listPtr = m_storage.getData();
 
@@ -671,18 +682,7 @@ inline int ArrayBase<T, STORAGE_TYPE>::append(const T& obj)
 template< typename T, typename STORAGE_TYPE >
 inline int ArrayBase<T, STORAGE_TYPE>::append(T&& obj)
 {
-	if ( !m_storage.getData())
-		resize(m_storage.getGranularity());
-
-	if ( m_nNumElem == m_storage.getSize())
-	{
-		int newsize;
-
-		ASSERT(m_storage.getGranularity() > 0);
-
-		newsize = m_storage.getSize() + m_storage.getGranularity();
-		resize( newsize - newsize % m_storage.getGranularity());
-	}
+	ensureCapacity();
 
 	T* listPtr = m_storage.getData();
 
@@ -698,18 +698,7 @@ inline int ArrayBase<T, STORAGE_TYPE>::append(T&& obj)
 template< typename T, typename STORAGE_TYPE >
 inline T& ArrayBase<T, STORAGE_TYPE>::append()
 {
-	if (!m_storage.getData())
-		resize(m_storage.getGranularity());
-
-	if (m_nNumElem == m_storage.getSize())
-	{
-		int newsize;
-
-		ASSERT(m_storage.getGranularity() > 0);
-
-		newsize = m_storage.getSize() + m_storage.getGranularity();
-		resize(newsize - newsize % m_storage.getGranularity());
-	}
+	ensureCapacity();
 
 	T* listPtr = m_storage.getData();
 
@@ -723,35 +712,16 @@ inline T& ArrayBase<T, STORAGE_TYPE>::append()
 // adds the other list to this one
 // Returns the size of the new combined list
 // -----------------------------------------------------------------
-
 template< typename T, typename STORAGE_TYPE >
-template< typename CT, typename OTHER_STORAGE_TYPE >
-inline int ArrayBase<T, STORAGE_TYPE>::append(const ArrayBase<CT, OTHER_STORAGE_TYPE>& other)
+inline int ArrayBase<T, STORAGE_TYPE>::append(const T* other, int count)
 {
-	int nOtherElems = other.numElem();
+	if(!count)
+		return numElem();
 
-	if ( !m_storage.getData())
-	{
-		ASSERT(m_storage.getGranularity() > 0);
-
-		// pre-allocate for a bigger list to do less memory resize access
-		int newSize = nOtherElems+ m_storage.getGranularity();
-
-		resize( newSize - (newSize % m_storage.getGranularity()) );
-	}
-	else
-	{
-		// pre-allocate for a bigger list to do less memory resize access
-		if ( m_nNumElem+nOtherElems >= m_storage.getSize())
-		{
-			int newSize = nOtherElems + m_nNumElem + m_storage.getGranularity();
-
-			resize( newSize - (newSize % m_storage.getGranularity()) );
-		}
-	}
+	ensureCapacity(count - 1);
 
 	// append the elements
-	for (int i = 0; i < nOtherElems; i++)
+	for (int i = 0; i < count; i++)
 		append(other[i]);
 
 	return numElem();
@@ -761,28 +731,15 @@ inline int ArrayBase<T, STORAGE_TYPE>::append(const ArrayBase<CT, OTHER_STORAGE_
 // adds the other list to this one
 // Returns the size of the new combined list
 // -----------------------------------------------------------------
+
 template< typename T, typename STORAGE_TYPE >
-inline int ArrayBase<T, STORAGE_TYPE>::append( const T *other, int count )
+template< typename CT, typename OTHER_STORAGE_TYPE >
+inline int ArrayBase<T, STORAGE_TYPE>::append(const ArrayBase<CT, OTHER_STORAGE_TYPE>& other)
 {
-	if ( !m_storage.getData() )
-	{
-		ASSERT(m_storage.getGranularity() > 0);
-
-		// pre-allocate for a bigger list to do less memory resize access
-		int newSize = count + m_storage.getGranularity();
-
-		resize( newSize - (newSize % m_storage.getGranularity()) );
-	}
-	else
-	{
-		// pre-allocate for a bigger list to do less memory resize access
-		if ( m_nNumElem+count >= m_storage.getSize())
-		{
-			int newSize = count + m_nNumElem + m_storage.getGranularity();
-
-			resize( newSize - (newSize % m_storage.getGranularity()) );
-		}
-	}
+	const int count = other.numElem();
+	if (!count)
+		return numElem();
+	ensureCapacity(count - 1);
 
 	// append the elements
 	for (int i = 0; i < count; i++)
@@ -796,17 +753,18 @@ inline int ArrayBase<T, STORAGE_TYPE>::append( const T *other, int count )
 // -----------------------------------------------------------------
 template< typename T, typename STORAGE_TYPE >
 template< typename T2, typename OTHER_STORAGE_TYPE, typename TRANSFORMFUNC>
-inline int ArrayBase<T, STORAGE_TYPE>::append( const ArrayBase<T2, OTHER_STORAGE_TYPE> &other, TRANSFORMFUNC transform )
+inline int ArrayBase<T, STORAGE_TYPE>::append(const ArrayBase<T2, OTHER_STORAGE_TYPE>& other, TRANSFORMFUNC transform)
 {
-	int nOtherElems = other.numElem();
-
-	// it can't predict how many elements it will have. So this is slower implementation
+	const int count = other.numElem();
+	if (!count)
+		return numElem();
+	ensureCapacity(count - 1);
 
 	// try transform and append the elements
-	for (int i = 0; i < nOtherElems; i++)
+	for (int i = 0; i < count; i++)
 	{
 		T newObj;
-		if(transform(newObj, other[i]))
+		if (transform(newObj, other[i]))
 			append(other[i]);
 	}
 
@@ -820,24 +778,13 @@ inline int ArrayBase<T, STORAGE_TYPE>::append( const ArrayBase<T2, OTHER_STORAGE
 // and inserts the supplied data into it.
 // -----------------------------------------------------------------
 template< typename T, typename STORAGE_TYPE >
-inline int ArrayBase<T, STORAGE_TYPE>::insert( T const & obj, int index )
+inline int ArrayBase<T, STORAGE_TYPE>::insert(T const& obj, int index)
 {
-	if ( !m_storage.getData())
-		resize(m_storage.getGranularity());
+	ensureCapacity();
 
-	if ( m_nNumElem == m_storage.getSize())
-	{
-		int newsize;
-
-		ASSERT(m_storage.getGranularity() > 0);
-
-		newsize = m_storage.getSize() + m_storage.getGranularity();
-		resize( newsize - newsize % m_storage.getGranularity());
-	}
-
-	if ( index < 0 )
+	if (index < 0)
 		index = 0;
-	else if ( index > m_nNumElem )
+	else if (index > m_nNumElem)
 		index = m_nNumElem;
 
 	T* listPtr = m_storage.getData();
@@ -860,18 +807,7 @@ inline int ArrayBase<T, STORAGE_TYPE>::insert( T const & obj, int index )
 template< typename T, typename STORAGE_TYPE >
 inline T& ArrayBase<T, STORAGE_TYPE>::insert(int index)
 {
-	if (!m_storage.getData())
-		resize(m_storage.getGranularity());
-
-	if (m_nNumElem == m_storage.getSize())
-	{
-		int newsize;
-
-		ASSERT(m_storage.getGranularity() > 0);
-
-		newsize = m_storage.getSize() + m_storage.getGranularity();
-		resize(newsize - newsize % m_storage.getGranularity());
-	}
+	ensureCapacity();
 
 	if (index < 0)
 		index = 0;
@@ -896,14 +832,14 @@ inline T& ArrayBase<T, STORAGE_TYPE>::insert(int index)
 // -----------------------------------------------------------------
 
 template< typename T, typename STORAGE_TYPE >
-inline int ArrayBase<T, STORAGE_TYPE>::addUnique( T const & obj )
+inline int ArrayBase<T, STORAGE_TYPE>::addUnique(T const& obj)
 {
 	int index;
 
-	index = findIndex( obj );
+	index = findIndex(obj);
 
-	if ( index < 0 )
-		index = append( obj );
+	if (index < 0)
+		index = append(obj);
 
 	return index;
 }
@@ -915,14 +851,14 @@ inline int ArrayBase<T, STORAGE_TYPE>::addUnique( T const & obj )
 
 template< typename T, typename STORAGE_TYPE >
 template< typename PAIRCOMPAREFUNC >
-inline int ArrayBase<T, STORAGE_TYPE>::addUnique( T const & obj, PAIRCOMPAREFUNC comparator)
+inline int ArrayBase<T, STORAGE_TYPE>::addUnique(T const& obj, PAIRCOMPAREFUNC comparator)
 {
 	int index;
 
-	index = findIndex( obj, comparator );
+	index = findIndex(obj, comparator);
 
-	if ( index < 0 )
-		index = append( obj );
+	if (index < 0)
+		index = append(obj);
 
 	return index;
 }
@@ -933,12 +869,12 @@ inline int ArrayBase<T, STORAGE_TYPE>::addUnique( T const & obj, PAIRCOMPAREFUNC
 // -----------------------------------------------------------------
 
 template< typename T, typename STORAGE_TYPE >
-inline int ArrayBase<T, STORAGE_TYPE>::findIndex( T const & obj ) const
+inline int ArrayBase<T, STORAGE_TYPE>::findIndex(T const& obj) const
 {
 	const T* listPtr = m_storage.getData();
-	for(int i = 0; i < m_nNumElem; i++ )
+	for (int i = 0; i < m_nNumElem; i++)
 	{
-		if ( listPtr[ i ] == obj )
+		if (listPtr[i] == obj)
 			return i;
 	}
 	return -1;
@@ -951,12 +887,12 @@ inline int ArrayBase<T, STORAGE_TYPE>::findIndex( T const & obj ) const
 
 template< typename T, typename STORAGE_TYPE >
 template< typename PAIRCOMPAREFUNC >
-inline int ArrayBase<T, STORAGE_TYPE>::findIndex( T const & obj, PAIRCOMPAREFUNC comparator ) const
+inline int ArrayBase<T, STORAGE_TYPE>::findIndex(T const& obj, PAIRCOMPAREFUNC comparator) const
 {
 	const T* listPtr = m_storage.getData();
-	for(int i = 0; i < m_nNumElem; i++ )
+	for (int i = 0; i < m_nNumElem; i++)
 	{
-		if ( comparator(listPtr[ i ], obj) )
+		if (comparator(listPtr[i], obj))
 			return i;
 	}
 	return -1;
@@ -968,12 +904,12 @@ inline int ArrayBase<T, STORAGE_TYPE>::findIndex( T const & obj, PAIRCOMPAREFUNC
 // -----------------------------------------------------------------
 template< typename T, typename STORAGE_TYPE >
 template< typename COMPAREFUNC >
-inline int ArrayBase<T, STORAGE_TYPE>::findIndex( COMPAREFUNC comparator  ) const
+inline int ArrayBase<T, STORAGE_TYPE>::findIndex(COMPAREFUNC comparator) const
 {
 	const T* listPtr = m_storage.getData();
-	for( int i = 0; i < m_nNumElem; i++ )
+	for (int i = 0; i < m_nNumElem; i++)
 	{
-		if ( comparator(listPtr[i]) )
+		if (comparator(listPtr[i]))
 			return i;
 	}
 	return -1;
@@ -985,12 +921,12 @@ inline int ArrayBase<T, STORAGE_TYPE>::findIndex( COMPAREFUNC comparator  ) cons
 // Note that the element is not destroyed, so any memory used by it may not be freed until the destruction of the m_pListPtr.
 // -----------------------------------------------------------------
 template< typename T, typename STORAGE_TYPE >
-inline bool ArrayBase<T, STORAGE_TYPE>::removeIndex( int index )
+inline bool ArrayBase<T, STORAGE_TYPE>::removeIndex(int index)
 {
-	ASSERT( index >= 0 );
-	ASSERT( index < m_nNumElem );
+	ASSERT(index >= 0);
+	ASSERT(index < m_nNumElem);
 
-	if (( index < 0 ) || ( index >= m_nNumElem ))
+	if ((index < 0) || (index >= m_nNumElem))
 		return false;
 
 	m_nNumElem--;
@@ -1038,19 +974,19 @@ inline bool ArrayBase<T, STORAGE_TYPE>::removeRange(int index, int count)
 // Note that the element is not destroyed, so any memory used by it may not be freed until the destruction of the m_pListPtr.
 // -----------------------------------------------------------------
 template< typename T, typename STORAGE_TYPE >
-inline bool ArrayBase<T, STORAGE_TYPE>::fastRemoveIndex( int index )
+inline bool ArrayBase<T, STORAGE_TYPE>::fastRemoveIndex(int index)
 {
-	ASSERT( index >= 0 );
-	ASSERT( index < m_nNumElem );
+	ASSERT(index >= 0);
+	ASSERT(index < m_nNumElem);
 
-	if (( index < 0 ) || ( index >= m_nNumElem ))
+	if ((index < 0) || (index >= m_nNumElem))
 		return false;
 
 	m_nNumElem--;
 
 	T* listPtr = m_storage.getData();
 	ArrayStorageBase<T>::destructElements(listPtr + index, 1);
-	
+
 	if (m_nNumElem > 0)
 		new(&listPtr[index]) T(std::move(listPtr[m_nNumElem]));
 
@@ -1064,14 +1000,14 @@ inline bool ArrayBase<T, STORAGE_TYPE>::fastRemoveIndex( int index )
 // the element is not destroyed, so any memory used by it may not be freed until the destruction of the m_pListPtr.
 // -----------------------------------------------------------------
 template< typename T, typename STORAGE_TYPE >
-inline bool ArrayBase<T, STORAGE_TYPE>::remove( T const & obj )
+inline bool ArrayBase<T, STORAGE_TYPE>::remove(T const& obj)
 {
 	int index;
 
-	index = findIndex( obj );
+	index = findIndex(obj);
 
 	if (index >= 0)
-		return removeIndex( index );
+		return removeIndex(index);
 
 	return false;
 }
@@ -1083,14 +1019,14 @@ inline bool ArrayBase<T, STORAGE_TYPE>::remove( T const & obj )
 // the element is not destroyed, so any memory used by it may not be freed until the destruction of the m_pListPtr.
 // -----------------------------------------------------------------
 template< typename T, typename STORAGE_TYPE >
-inline bool ArrayBase<T, STORAGE_TYPE>::fastRemove( T const & obj )
+inline bool ArrayBase<T, STORAGE_TYPE>::fastRemove(T const& obj)
 {
 	int index;
 
-	index = findIndex( obj );
+	index = findIndex(obj);
 
 	if (index >= 0)
-		return fastRemoveIndex( index );
+		return fastRemoveIndex(index);
 
 	return false;
 }
@@ -1099,7 +1035,7 @@ inline bool ArrayBase<T, STORAGE_TYPE>::fastRemove( T const & obj )
 // Returns true if index is in array range
 // -----------------------------------------------------------------
 template< typename T, typename STORAGE_TYPE >
-inline bool ArrayBase<T, STORAGE_TYPE>::inRange( int index ) const
+inline bool ArrayBase<T, STORAGE_TYPE>::inRange(int index) const
 {
 	return index >= 0 && index < m_nNumElem;
 }
@@ -1108,10 +1044,9 @@ inline bool ArrayBase<T, STORAGE_TYPE>::inRange( int index ) const
 // Swaps the contents of two lists
 // -----------------------------------------------------------------
 template< typename T, typename STORAGE_TYPE >
-inline void ArrayBase<T, STORAGE_TYPE>::swap(ArrayBase<T, STORAGE_TYPE>& other )
+inline void ArrayBase<T, STORAGE_TYPE>::swap(ArrayBase<T, STORAGE_TYPE>& other)
 {
-	QuickSwap( m_nNumElem, other.m_nNumElem );
-
+	QuickSwap(m_nNumElem, other.m_nNumElem);
 	m_storage.swap(other.m_storage);
 }
 
@@ -1122,7 +1057,6 @@ template< typename T, typename STORAGE_TYPE >
 inline void ArrayBase<T, STORAGE_TYPE>::swap(T*& other, int& otherNumElem)
 {
 	QuickSwap(m_nNumElem, otherNumElem);
-
 	m_storage.swap(other, otherNumElem);
 }
 
@@ -1133,7 +1067,7 @@ template< typename T, typename STORAGE_TYPE >
 inline void ArrayBase<T, STORAGE_TYPE>::reverse()
 {
 	T* listPtr = m_storage.getData();
-	for (int i = 0, j = m_nNumElem - 1; i < j; i++, j--) 
+	for (int i = 0, j = m_nNumElem - 1; i < j; i++, j--)
 	{
 		QuickSwap(listPtr[i], listPtr[j]);
 	}
@@ -1144,48 +1078,25 @@ inline void ArrayBase<T, STORAGE_TYPE>::reverse()
 // -----------------------------------------------------------------
 
 template< typename T, typename STORAGE_TYPE >
-inline void ArrayBase<T, STORAGE_TYPE>::assureSize( int newSize )
+inline void ArrayBase<T, STORAGE_TYPE>::assureSize(int newSize)
 {
-	int newNum = newSize;
-
-	if ( newSize > m_storage.getSize())
-	{
-		ASSERT(m_storage.getGranularity() > 0);
-
-		newSize += m_storage.getGranularity() - 1;
-		newSize -= newSize % m_storage.getGranularity();
-
-		resize( newSize );
-	}
-
-	m_nNumElem = newNum;
+	m_nNumElem = newSize;
+	ensureCapacity();
 }
 
 // -----------------------------------------------------------------
 // Makes sure the listPtr has at least the given number of elements and initialize any elements not yet initialized.
 // -----------------------------------------------------------------
 template< typename T, typename STORAGE_TYPE >
-inline void ArrayBase<T, STORAGE_TYPE>::assureSize( int newSize, const T &initValue )
+inline void ArrayBase<T, STORAGE_TYPE>::assureSize(int newSize, const T& initValue)
 {
-	int newNum = newSize;
+	const int oldSize = m_nNumElem;
+	m_nNumElem = newSize;
+	ensureCapacity();
 
-	if ( newSize > m_storage.getSize())
-	{
-		ASSERT(m_storage.getGranularity() > 0);
-
-		newSize += m_storage.getGranularity() - 1;
-		newSize -= newSize % m_storage.getGranularity();
-
-		m_nNumElem = m_storage.getSize();
-
-		resize( newSize );
-
-		T* listPtr = m_storage.getData();
-		for ( int i = m_nNumElem; i < newSize; i++ )
-			new(&listPtr[i]) T(initValue);
-	}
-
-	m_nNumElem = newNum;
+	T* listPtr = m_storage.getData();
+	for (int i = oldSize; i < newSize; i++)
+		new(&listPtr[i]) T(initValue);
 }
 
 //-------------------------------------------
@@ -1222,7 +1133,7 @@ public:
 	{
 	}
 
-	T&				operator[](int index)
+	T& operator[](int index)
 	{
 		ASSERT(index >= 0);
 		ASSERT(index < m_nNumElem);
@@ -1234,7 +1145,7 @@ public:
 	int				numElem() const { return m_nNumElem; }
 
 	// returns a pointer to the list
-	T*				ptr() { return m_pListPtr; }
+	T* ptr() { return m_pListPtr; }
 
 	// returns true if index is in range
 	bool			inRange(int index) const { return index >= 0 && index < m_nNumElem; }
@@ -1280,7 +1191,7 @@ public:
 	{
 	}
 
-	const T&		operator[](int index) const
+	const T& operator[](int index) const
 	{
 		ASSERT(index >= 0);
 		ASSERT(index < m_nNumElem);
