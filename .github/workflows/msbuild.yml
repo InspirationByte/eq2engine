@@ -25,6 +25,7 @@ jobs:
     steps:      
     - uses: actions/checkout@v3
       with:
+        token: ${{ secrets.ACTIONSPAT }}
         submodules: recursive
     
     - uses: abel0b/setup-premake@v2.2
