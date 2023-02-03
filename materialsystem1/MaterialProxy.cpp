@@ -23,7 +23,7 @@ public:
 
 		if(pKeyBase->values.numElem() < 3)
 		{
-			MsgError("'add' proxy in '%s' error: invalid argument count\n Usage: add v1 v2 out [options]\n");
+			MsgError("'add' proxy in '%s' error: invalid argument count\n Usage: add v1 v2 out [options]\n", pAssignedMaterial->GetName());
 			return;
 		}
 
@@ -73,7 +73,7 @@ public:
 
 		if(pKeyBase->values.numElem() < 3)
 		{
-			MsgError("'sub' proxy in '%s' error: invalid argument count\n Usage: sub v1 v2 out [options]\n");
+			MsgError("'sub' proxy in '%s' error: invalid argument count\n Usage: sub v1 v2 out [options]\n", pAssignedMaterial->GetName());
 			return;
 		}
 
@@ -123,7 +123,7 @@ public:
 
 		if(pKeyBase->values.numElem() < 3)
 		{
-			MsgError("'mul' proxy in '%s' error: invalid argument count\n Usage: mul v1 v2 out [options]\n");
+			MsgError("'mul' proxy in '%s' error: invalid argument count\n Usage: mul v1 v2 out [options]\n", pAssignedMaterial->GetName());
 			return;
 		}
 
@@ -174,7 +174,7 @@ public:
 
 		if(pKeyBase->values.numElem() < 3)
 		{
-			MsgError("'div' proxy in '%s' error: invalid argument count\n Usage: div v1 v2 out [options]\n");
+			MsgError("'div' proxy in '%s' error: invalid argument count\n Usage: div v1 v2 out [options]\n", pAssignedMaterial->GetName());
 			return;
 		}
 
@@ -223,7 +223,7 @@ public:
 		m_pMaterial = pAssignedMaterial;
 		if(pKeyBase->values.numElem() < 2)
 		{
-			MsgError("'sin' proxy in '%s' error: invalid argument count\n Usage: sin v1 out [options]\n");
+			MsgError("'sin' proxy in '%s' error: invalid argument count\n Usage: sin v1 out [options]\n", pAssignedMaterial->GetName());
 			return;
 		}
 
@@ -256,7 +256,7 @@ public:
 		m_pMaterial = pAssignedMaterial;
 		if(pKeyBase->values.numElem() < 2)
 		{
-			MsgError("'abs' proxy in '%s' error: invalid argument count\n Usage: abs v1 out [options]\n");
+			MsgError("'abs' proxy in '%s' error: invalid argument count\n Usage: abs v1 out [options]\n", pAssignedMaterial->GetName());
 			return;
 		}
 
