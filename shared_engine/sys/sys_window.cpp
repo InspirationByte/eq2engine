@@ -5,8 +5,6 @@
 // Description: Drivers window handler
 //////////////////////////////////////////////////////////////////////////////////
 
-#include <SDL.h>
-
 #include "core/core_common.h"
 #include "core/IFileSystem.h"
 #include "core/IConsoleCommands.h"
@@ -14,6 +12,8 @@
 #include "core/ConVar.h"
 #include "core/ConCommand.h"
 #include "imaging/ImageLoader.h"
+
+#include <SDL.h>
 
 #include "sys_version.h"
 #include "sys_host.h"

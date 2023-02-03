@@ -5,12 +5,13 @@
 // Description: Equilibrium joystick support brought by SDL
 //////////////////////////////////////////////////////////////////////////////////
 
-#include <SDL.h>
-
 #include "core/core_common.h"
 #include "core/IFileSystem.h"
 #include "core/ConVar.h"
 #include "core/ConCommand.h"
+
+#include <SDL.h>
+
 #include "sys_host.h"
 #include "sys_in_joystick.h"
 

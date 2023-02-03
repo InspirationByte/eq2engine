@@ -1,3 +1,7 @@
+
+// dear imgui: Platform Backend for Equilibrium based on SDL2
+#include "core/core_common.h"
+
 // SDL
 #include <SDL.h>
 #include <SDL_syswm.h>
@@ -5,8 +9,6 @@
 #include <TargetConditionals.h>
 #endif
 
-// dear imgui: Platform Backend for Equilibrium based on SDL2
-#include "core/core_common.h"
 #include "imgui_impl_sys.h"
 
 #include "input/in_keys_ident.h"

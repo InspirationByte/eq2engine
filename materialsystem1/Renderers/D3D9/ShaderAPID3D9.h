@@ -118,7 +118,7 @@ public:
 													ETextureFormat nRTFormat,
 													ER_TextureFilterMode textureFilterType = TEXFILTER_LINEAR, 
 													ER_TextureAddressMode textureAddress = TEXADDRESS_WRAP, 
-													ER_CompareFunc comparison = COMP_NEVER, 
+													ER_CompareFunc comparison = COMPFUNC_NEVER, 
 													int nFlags = 0);
 
 	// It will add new rendertarget
@@ -126,7 +126,7 @@ public:
 														int width, int height, 
 														ETextureFormat nRTFormat, ER_TextureFilterMode textureFilterType = TEXFILTER_LINEAR,
 														ER_TextureAddressMode textureAddress = TEXADDRESS_WRAP,
-														ER_CompareFunc comparison = COMP_NEVER,
+														ER_CompareFunc comparison = COMPFUNC_NEVER,
 														int nFlags = 0);
 
 //-------------------------------------------------------------

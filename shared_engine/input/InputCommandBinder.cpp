@@ -5,18 +5,18 @@
 // Description: KeyBinding list
 //////////////////////////////////////////////////////////////////////////////////
 
-#include <SDL.h>
-
 #include "core/core_common.h"
 #include "core/IConsoleCommands.h"
 #include "core/ConVar.h"
 #include "core/ConCommand.h"
 #include "utils/KeyValues.h"
+
+#include <SDL.h>
+
 #include "InputCommandBinder.h"
 #include "materialsystem1/IMaterialSystem.h"
 #include "materialsystem1/MeshBuilder.h"
 #include "font/IFontCache.h"
-
 
 static CInputCommandBinder s_inputCommandBinder;
 CInputCommandBinder* g_inputCommandBinder = &s_inputCommandBinder;

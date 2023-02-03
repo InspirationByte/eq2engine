@@ -12,20 +12,6 @@
 //        HIGH LEVEL CONSTANTS
 //---------------------------------------
 
-// comparison functions
-enum ER_CompareFunc
-{
-	COMP_NEVER			= 0,
-
-	COMP_LESS,			// 1
-	COMP_EQUAL,			// 2
-	COMP_LEQUAL,		// 3
-	COMP_GREATER,		// 4
-	COMP_NOTEQUAL,		// 5
-	COMP_GEQUAL,		// 6
-	COMP_ALWAYS,		// 7
-};
-
 // Reserved, used for shaders only
 enum ER_ConstantType
 {
@@ -195,12 +181,26 @@ typedef struct VertexFormatDesc_s
 
 }VertexFormatDesc_t;
 
+// comparison functions
+enum ER_CompareFunc
+{
+	COMPFUNC_NEVER = 0,
+
+	COMPFUNC_LESS,			// 1
+	COMPFUNC_EQUAL,			// 2
+	COMPFUNC_LEQUAL,		// 3
+	COMPFUNC_GREATER,		// 4
+	COMPFUNC_NOTEQUAL,		// 5
+	COMPFUNC_GEQUAL,		// 6
+	COMPFUNC_ALWAYS,		// 7
+};
+
 typedef struct SamplerStateParam_s
 {
 	ER_TextureFilterMode		minFilter{ TEXFILTER_NEAREST };
 	ER_TextureFilterMode		magFilter{ TEXFILTER_NEAREST };
 
-	ER_CompareFunc				compareFunc{ COMP_LESS };
+	ER_CompareFunc				compareFunc{ COMPFUNC_LESS };
 
 	ER_TextureAddressMode		wrapS{ TEXADDRESS_WRAP };
 	ER_TextureAddressMode		wrapT{ TEXADDRESS_WRAP };
@@ -329,13 +329,13 @@ typedef struct DepthStencilStateParams_s
 {
 	bool					depthTest{ false };
 	bool					depthWrite{ false };
-	ER_CompareFunc			depthFunc{ COMP_LEQUAL };
+	ER_CompareFunc			depthFunc{ COMPFUNC_LEQUAL };
 
 	bool					doStencilTest{ false };
 	uint8					nStencilMask{ 0xFF };
 	uint8					nStencilWriteMask{ 0xFF };
 	uint8					nStencilRef{ 0xFF };
-	ER_CompareFunc			nStencilFunc{ COMP_ALWAYS };
+	ER_CompareFunc			nStencilFunc{ COMPFUNC_ALWAYS };
 	ER_StencilFunction		nStencilFail{ STENCILFUNC_KEEP };
 	ER_StencilFunction		nDepthFail{ STENCILFUNC_KEEP };
 	ER_StencilFunction		nStencilPass{ STENCILFUNC_KEEP };

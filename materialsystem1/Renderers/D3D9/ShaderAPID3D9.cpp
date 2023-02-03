@@ -64,13 +64,13 @@ ShaderAPID3DX9::ShaderAPID3DX9() : ShaderAPI_Base()
 	m_nCurrentDstFactor = BLENDFACTOR_ZERO;
 	m_nCurrentBlendMode = BLENDFUNC_ADD;
 
-	m_nCurrentDepthFunc = COMP_LEQUAL;
+	m_nCurrentDepthFunc = COMPFUNC_LEQUAL;
 	m_bCurrentDepthTestEnable = false;
 	m_bCurrentDepthWriteEnable = false;
 
 	m_bDoStencilTest = false;
 	m_nStencilMask = 0xFF;
-	m_nStencilFunc = COMP_ALWAYS,
+	m_nStencilFunc = COMPFUNC_ALWAYS,
 	m_nStencilFail = STENCILFUNC_KEEP;
 	m_nDepthFail = STENCILFUNC_KEEP;
 	m_nStencilPass = STENCILFUNC_KEEP;
@@ -287,7 +287,7 @@ bool ShaderAPID3DX9::ResetDevice( D3DPRESENT_PARAMETERS &d3dpp )
 		m_nCurrentDstFactor = BLENDFACTOR_ZERO;
 		m_nCurrentBlendMode = BLENDFUNC_ADD;
 
-		m_nCurrentDepthFunc = COMP_LEQUAL;
+		m_nCurrentDepthFunc = COMPFUNC_LEQUAL;
 		m_bCurrentDepthTestEnable = false;
 		m_bCurrentDepthWriteEnable = false;
 
@@ -842,8 +842,8 @@ void ShaderAPID3DX9::ApplyDepthState()
 			m_pD3DDevice->SetRenderState(D3DRS_ZWRITEENABLE, m_bCurrentDepthWriteEnable = true);
 		}
 
-		if (m_nCurrentDepthFunc != COMP_LESS)
-			m_pD3DDevice->SetRenderState(D3DRS_ZFUNC, g_d3d9_depthConst[m_nCurrentDepthFunc = COMP_LESS]);
+		if (m_nCurrentDepthFunc != COMPFUNC_LESS)
+			m_pD3DDevice->SetRenderState(D3DRS_ZFUNC, g_d3d9_depthConst[m_nCurrentDepthFunc = COMPFUNC_LESS]);
 
 		if (m_bDoStencilTest != false)
 			m_pD3DDevice->SetRenderState(D3DRS_STENCILENABLE, m_bDoStencilTest = false);

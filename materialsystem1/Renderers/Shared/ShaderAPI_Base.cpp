@@ -590,14 +590,14 @@ void ShaderAPI_Base::SetTextureOnIndex(const ITexturePtr& pTexture, int level /*
 const ITexturePtr& ShaderAPI_Base::GetTextureAt( int level ) const
 {
 	if (level > 0 && m_caps.maxTextureUnits <= 1)
-		return nullptr;
+		return ITexturePtr::Null();
 
 	// exclusive for D3D api
 	if (level & 0x8000)
 	{
 		level &= ~0x8000;
 		if (level > m_caps.maxVertexTextureUnits)
-			return nullptr;
+			return ITexturePtr::Null();
 		return m_pSelectedVertexTextures[level];
 	}
 

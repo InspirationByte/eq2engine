@@ -5,15 +5,15 @@
 // Description: Provides base console interface
 //////////////////////////////////////////////////////////////////////////////////
 
-#include <SDL_clipboard.h>
-#include <SDL_keyboard.h>
-
 #include "core/core_common.h"
 #include "core/IDkCore.h"
 #include "core/IConsoleCommands.h"
 #include "core/ConVar.h"
 #include "core/ConCommand.h"
 #include "utils/KeyValues.h"
+
+#include <SDL_clipboard.h>
+#include <SDL_keyboard.h>
 
 #include "render/IDebugOverlay.h"
 

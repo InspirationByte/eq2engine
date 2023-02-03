@@ -62,7 +62,7 @@ static void SamplerStateParams_Make(SamplerStateParam_t& samplerParams, const Sh
 	samplerParams.wrapS = addressS;
 	samplerParams.wrapT = addressT;
 	samplerParams.wrapR = addressR;
-	samplerParams.compareFunc = COMP_LESS;
+	samplerParams.compareFunc = COMPFUNC_LESS;
 
 	samplerParams.lod = 0.0f;
 	samplerParams.aniso = caps.maxTextureAnisotropicLevel;
@@ -238,7 +238,7 @@ public:
 													ETextureFormat nRTFormat,
 													ER_TextureFilterMode textureFilterType = TEXFILTER_LINEAR,
 													ER_TextureAddressMode textureAddress = TEXADDRESS_WRAP,
-													ER_CompareFunc comparison = COMP_NEVER,
+													ER_CompareFunc comparison = COMPFUNC_NEVER,
 													int nFlags = 0
 													) = 0;
 
@@ -248,7 +248,7 @@ public:
 															ETextureFormat nRTFormat,
 															ER_TextureFilterMode textureFilterType = TEXFILTER_LINEAR,
 															ER_TextureAddressMode textureAddress = TEXADDRESS_WRAP,
-															ER_CompareFunc comparison = COMP_NEVER,
+															ER_CompareFunc comparison = COMPFUNC_NEVER,
 															int nFlags = 0
 															) = 0;
 

@@ -186,7 +186,7 @@ public:
 	// sets depth stencil state
 	void							SetDepthStates(	bool bDoDepthTest,
 															bool bDoDepthWrite,
-															ER_CompareFunc depthCompFunc = COMP_LEQUAL);
+															ER_CompareFunc depthCompFunc = COMPFUNC_LEQUAL);
 
 	// sets rasterizer extended mode
 	void							SetRasterizerStates(	ER_CullMode nCullMode,

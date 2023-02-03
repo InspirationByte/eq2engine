@@ -31,7 +31,7 @@ void DrawWorldCenter()
 
 	depth.depthTest = false;
 	depth.depthWrite = false;
-	depth.depthFunc = COMP_LEQUAL;
+	depth.depthFunc = COMPFUNC_LEQUAL;
 
 	RasterizerStateParams_t raster;
 
