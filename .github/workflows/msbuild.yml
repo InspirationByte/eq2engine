@@ -24,6 +24,8 @@ jobs:
 
     steps:      
     - uses: actions/checkout@v3
+      with:
+        submodules: recursive
     
     - uses: abel0b/setup-premake@v2.2
       with:
