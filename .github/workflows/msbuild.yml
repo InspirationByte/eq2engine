@@ -25,7 +25,12 @@ jobs:
     steps:      
     - uses: actions/checkout@v3
       with:
+        token: ${{ secrets.ACTIONSPAT }}
         submodules: recursive
+        
+    - name: Run PS commands
+      shell: pwsh
+      run: .\win_install_7zip4powershell.ps1 | windows_dev_prepare.ps1
     
     - uses: abel0b/setup-premake@v2.2
       with:
