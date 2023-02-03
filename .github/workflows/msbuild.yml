@@ -54,3 +54,11 @@ jobs:
       # Add additional options to the MSBuild command line here (like platform or verbosity level).
       # See https://docs.microsoft.com/visualstudio/msbuild/msbuild-command-line-reference
       run: msbuild /m /p:Configuration=${{env.BUILD_CONFIGURATION}} /p:Platform=${{env.BUILD_PLATFORM}} ${{env.SOLUTION_FILE_PATH}}
+      
+    - name: Upload a Build Artifact
+      uses: actions/upload-artifact@v3.1.2
+      with:
+        name: DrvSyn_${{env.BUILD_CONFIGURATION}}_${{env.BUILD_PLATFORM}}
+        path: |
+          bin/x64/Release/*.pdb
+          bin/x64/Release/*.exe
