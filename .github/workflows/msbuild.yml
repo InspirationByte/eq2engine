@@ -14,6 +14,7 @@ env:
   # You can convert this to a build matrix if you need coverage of multiple configuration types.
   # https://docs.github.com/actions/learn-github-actions/managing-complex-workflows#using-a-build-matrix
   BUILD_CONFIGURATION: Release
+  BUILD_PLATFORM: x64
 
 permissions:
   contents: read
@@ -28,9 +29,14 @@ jobs:
         token: ${{ secrets.ACTIONSPAT }}
         submodules: recursive
         
+    - name: PowerShell Module Cache
+      uses: potatoqualitee/psmodulecache@v5.2
+      with:
+        modules-to-cache: 7Zip4PowerShell
+        
     - name: Run PS commands
       shell: pwsh
-      run: .\win_install_7zip4powershell.ps1 | .\windows_dev_prepare.ps1
+      run: .\windows_dev_prepare.ps1
     
     - uses: abel0b/setup-premake@v2.2
       with:
@@ -47,4 +53,12 @@ jobs:
       working-directory: ${{env.GITHUB_WORKSPACE}}
       # Add additional options to the MSBuild command line here (like platform or verbosity level).
       # See https://docs.microsoft.com/visualstudio/msbuild/msbuild-command-line-reference
-      run: msbuild /m /p:Configuration=${{env.BUILD_CONFIGURATION}} ${{env.SOLUTION_FILE_PATH}}
+      run: msbuild /m /p:Configuration=${{env.BUILD_CONFIGURATION}} /p:Platform=${{env.BUILD_PLATFORM}} ${{env.SOLUTION_FILE_PATH}}
+      
+    - name: Upload a Build Artifact
+      uses: actions/upload-artifact@v3.1.2
+      with:
+        name: DrvSyn_${{env.BUILD_CONFIGURATION}}_${{env.BUILD_PLATFORM}}
+        path: |
+          bin/x64/Release/*.pdb
+          bin/x64/Release/*.exe
