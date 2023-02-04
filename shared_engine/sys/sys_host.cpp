@@ -419,11 +419,12 @@ void InputCommands_SDL(SDL_Event* event)
 		}
 		case SDL_MOUSEMOTION:
 		{
-			int x, y;
-			x = event->motion.x;
-			y = event->motion.y;
+			const int x = event->motion.x;
+			const int y = event->motion.y;
+			const int dx = event->motion.xrel;
+			const int dy = event->motion.yrel;
 
-			g_pHost->TrapMouseMove_Event(x, y);
+			g_pHost->TrapMouseMove_Event(x, y, dx, dy);
 
 			lastX = x;
 			lastY = y;
@@ -562,11 +563,18 @@ bool CGameHost::FilterTime( double dTime )
 void CGameHost::UpdateCursorState()
 {
 	bool cursorVisible = false;
+	bool center = false;
+	EqStateMgr::GetStateMouseCursorProperties(cursorVisible, center);
 
-	EqStateMgr::GetStateMouseCursorProperties(cursorVisible, m_cursorCentered);
+	bool previousCenterState = m_cursorCentered;
 
 	cursorVisible = cursorVisible || g_consoleInput->IsVisible() || equi::Manager->IsWindowsVisible();
-	m_cursorCentered = m_cursorCentered && !(g_consoleInput->IsVisible() || equi::Manager->IsWindowsVisible());
+	m_cursorCentered = center && !(g_consoleInput->IsVisible() || equi::Manager->IsWindowsVisible());
+
+	SDL_SetRelativeMouseMode(m_cursorCentered ? SDL_TRUE : SDL_FALSE);
+
+	if (previousCenterState = previousCenterState != m_cursorCentered)
+		SDL_WarpMouseInWindow(m_pWindow, m_winSize.x / 2, m_winSize.y / 2);
 
 	// update cursor visibility state
 	SetCursorShow( cursorVisible );
@@ -575,11 +583,7 @@ void CGameHost::UpdateCursorState()
 void CGameHost::SetCursorPosition(int x, int y)
 {
 	SDL_WarpMouseInWindow(m_pWindow, x, y);
-	//m_skipMouseMove = true;
-
 	m_mousePos = IVector2D(x,y);
-
-	//SDL_GetMouseState(&m_mousePos.x, &m_mousePos.y);
 }
 
 void CGameHost::SetCursorShow(bool bShow)
@@ -862,7 +866,7 @@ void CGameHost::TrapMouse_Event( float x, float y, int buttons, bool down )
 		EqStateMgr::GetCurrentState()->HandleMouseClick( x, y, buttons, down );
 }
 
-void CGameHost::TrapMouseMove_Event( int x, int y )
+void CGameHost::TrapMouseMove_Event(int x, int y, int dx, int dy)
 {
 	if(m_skipMouseMove)
 	{
@@ -877,16 +881,16 @@ void CGameHost::TrapMouseMove_Event( int x, int y )
 	if( equi::Manager->ProcessMouseEvents( x, y, 0, equi::UIEVENT_MOUSE_MOVE) )
 		return;
 
-	Vector2D delta = (Vector2D)m_prevMousePos - (Vector2D)m_mousePos;
+	Vector2D delta(dx, dy);
+
+	// we had it inverted, so...
+	delta *= -1;
 
 	delta.y *= (m_invert.GetBool() ? 1.0f : -1.0f);
 	delta *= 0.05f;
 
 	if(EqStateMgr::GetCurrentState())
 		EqStateMgr::GetCurrentState()->HandleMouseMove(x, y, delta.x, delta.y);
-
-	if(m_cursorCentered)
-		SetCursorPosition(m_winSize.x/2, m_winSize.y/2);
 }
 
 void CGameHost::TrapMouseWheel_Event(int x, int y, int hscroll, int vscroll)

@@ -61,7 +61,7 @@ public:
 	void				ProcessKeyChar( const char* utfChar );
 	void				TrapKey_Event( int key, bool down );
 	void				TrapMouse_Event( float x, float y, int buttons, bool down );
-	void				TrapMouseMove_Event( int x, int y );
+	void				TrapMouseMove_Event( int x, int y, int dx, int dy );
 	void				TrapMouseWheel_Event(int x, int y, int hscroll, int vscroll);
 
 	void				TrapJoyAxis_Event( short axis, short value );
