@@ -1,5 +1,7 @@
 #pragma once
 
+class CSoundingObject;
+
 // flags
 enum EEmitSoundFlags
 {
@@ -75,16 +77,18 @@ struct EmitParams
 		float value{ 0.0f };
 	};
 
-	EqString	name;
-	Vector3D	origin{ vec3_zero };
-	float		volume{ 1.0f };
-	float		pitch{ 1.0f };
-	float		radiusMultiplier{ 1.0f };
+	EqString			name;
+	Vector3D			origin{ vec3_zero };
+	float				volume{ 1.0f };
+	float				pitch{ 1.0f };
+	float				radiusMultiplier{ 1.0f };
 
-	int			effectSlot{ -1 };
-	int			flags{ 0 };
-	int			sampleId{ -1 };
-	int			channelType{ CHAN_INVALID };
+	int					effectSlot{ -1 };
+	int					flags{ 0 };
+	int					sampleId{ -1 };
+	int					channelType{ CHAN_INVALID };
 
+	int							objUniqueId{ -1 };
+	CWeakPtr<CSoundingObject>	soundingObj;
 	FixedArray<InputValue, 8>	inputs;
 };

@@ -35,8 +35,11 @@ int CSoundingObject::EmitSound(int uniqueId, EmitParams* ep)
 			uniqueId = RandomInt(0, StringHashMask);
 		} while (m_emitters.contains(uniqueId));
 	}
+	ep->soundingObj.Assign(this);
+	ep->objUniqueId = uniqueId & StringHashMask;
+	ep->flags |= isRandom ? EMITSOUND_FLAG_RELEASE_ON_STOP : 0;
 
-	return g_sounds->EmitSound(ep, this, uniqueId & StringHashMask, isRandom);
+	return g_sounds->EmitSound(ep);
 }
 
 bool CSoundingObject::UpdateEmitters(const Vector3D& listenerPos)
@@ -613,19 +616,22 @@ void CSoundingObject::SetInputValue(SoundEmitterData* emitter, int inputNameHash
 CEmitterObjectSound::CEmitterObjectSound(CSoundingObject& soundingObj, int uniqueId)
 	: m_soundingObj(soundingObj)
 {
-	
-	m_emitter = m_soundingObj.FindEmitter(uniqueId);
+	m_emitter = CWeakPtr(m_soundingObj.FindEmitter(uniqueId));
 }
 
 int CEmitterObjectSound::GetEmitterSampleId() const
 {
 	if (!m_emitter)
 		return -1;
+
 	return m_emitter->sampleId;
 }
 
 void CEmitterObjectSound::SetEmitterSampleId(int sampleId)
 {
+	if (!m_emitter)
+		return;
+
 	if (m_emitter->sampleId == sampleId)
 		return;
 

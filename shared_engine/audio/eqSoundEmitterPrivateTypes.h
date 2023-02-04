@@ -269,7 +269,7 @@ struct SoundScriptDesc
 	static void			ReloadDesc(SoundScriptDesc& scriptDesc, const KVSection* scriptSection);
 };
 
-struct SoundEmitterData
+struct SoundEmitterData : public WeakRefObject<SoundEmitterData>
 {
 	// additional enum
 	enum ExtraSourceUpdateFlags

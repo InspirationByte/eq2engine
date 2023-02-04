@@ -21,7 +21,7 @@ class CSoundScriptEditor;
 static constexpr const int s_loopRemainTimeFactorNameHash = StringToHashConst("loopRemainTimeFactor");
 
 // Sound channel entity that controls it's sound sources
-class CSoundingObject
+class CSoundingObject : public WeakRefObject<CSoundingObject>
 {
 	friend class CSoundEmitterSystem;
 	friend class CEmitterObjectSound;
@@ -138,6 +138,6 @@ public:
 	void		SetInputValue(const char* name, float value);
 	void		SetInputValue(int inputNameHash, float value);
 private:
-	CSoundingObject& m_soundingObj;
-	SoundEmitterData* m_emitter{ nullptr };
+	CSoundingObject&			m_soundingObj;
+	CWeakPtr<SoundEmitterData>	m_emitter{ nullptr };
 };

@@ -502,20 +502,20 @@ void CEqAudioSystemAL::DestroySource(IEqAudioSource* source)
 	src->m_forceStop = true;
 }
 
-void CEqAudioSystemAL::StopAllSounds(int chanId /*= -1*/, void* callbackObject /*= nullptr*/)
+void CEqAudioSystemAL::StopAllSounds(int chanId /*= -1*/)
 {
 	// suspend all sources
 	for (int i = 0; i < m_sources.numElem(); i++)
 	{
 		CEqAudioSourceAL* source = m_sources[i].Ptr();
-		if (chanId == -1 || source->m_channel == chanId && source->m_callbackObject == callbackObject)
+		if (chanId == -1 || source->m_channel == chanId)
 		{
 			source->m_forceStop = true;
 		}
 	}
 }
 
-void CEqAudioSystemAL::PauseAllSounds(int chanId /*= -1*/, void* callbackObject /*= nullptr*/)
+void CEqAudioSystemAL::PauseAllSounds(int chanId /*= -1*/)
 {
 	IEqAudioSource::Params param;
 	param.set_state(IEqAudioSource::PAUSED);
@@ -524,12 +524,12 @@ void CEqAudioSystemAL::PauseAllSounds(int chanId /*= -1*/, void* callbackObject 
 	for (int i = 0; i < m_sources.numElem(); i++)
 	{
 		CEqAudioSourceAL* source = m_sources[i].Ptr();
-		if (chanId == -1 || source->m_channel == chanId && source->m_callbackObject == callbackObject)
+		if (chanId == -1 || source->m_channel == chanId)
 			source->UpdateParams(param);
 	}
 }
 
-void CEqAudioSystemAL::ResumeAllSounds(int chanId /*= -1*/, void* callbackObject /*= nullptr*/)
+void CEqAudioSystemAL::ResumeAllSounds(int chanId /*= -1*/)
 {
 	IEqAudioSource::Params param;
 	param.set_state(IEqAudioSource::PLAYING);
@@ -538,7 +538,7 @@ void CEqAudioSystemAL::ResumeAllSounds(int chanId /*= -1*/, void* callbackObject
 	for (int i = 0; i < m_sources.numElem(); i++)
 	{
 		CEqAudioSourceAL* source = m_sources[i].Ptr();
-		if (chanId == -1 || source->m_channel == chanId && source->m_callbackObject == callbackObject)
+		if (chanId == -1 || source->m_channel == chanId)
 			source->UpdateParams(param);
 	}
 }
@@ -1077,12 +1077,11 @@ void CEqAudioSourceAL::GetParams(Params& params) const
 	params.releaseOnStop = m_releaseOnStop;
 }
 
-void CEqAudioSourceAL::Setup(int chanId, const ISoundSource* sample, UpdateCallback fnCallback /*= nullptr*/, void* callbackObject /*= nullptr*/)
+void CEqAudioSourceAL::Setup(int chanId, const ISoundSource* sample, UpdateCallback fnCallback /*= nullptr*/)
 {
 	Release();
 	InitSource();
 
-	m_callbackObject = callbackObject;
 	m_callback = fnCallback;
 	m_channel = chanId;
 	m_releaseOnStop = !m_callback;
@@ -1090,12 +1089,11 @@ void CEqAudioSourceAL::Setup(int chanId, const ISoundSource* sample, UpdateCallb
 	SetupSample(sample);
 }
 
-void CEqAudioSourceAL::Setup(int chanId, ArrayCRef<const ISoundSource*> samples, UpdateCallback fnCallback /*= nullptr*/, void* callbackObject /*= nullptr*/)
+void CEqAudioSourceAL::Setup(int chanId, ArrayCRef<const ISoundSource*> samples, UpdateCallback fnCallback /*= nullptr*/)
 {
 	Release();
 	InitSource();
 
-	m_callbackObject = callbackObject;
 	m_callback = fnCallback;
 	m_channel = chanId;
 	m_releaseOnStop = !m_callback;
@@ -1135,7 +1133,6 @@ void CEqAudioSourceAL::InitSource()
 void CEqAudioSourceAL::Release()
 {
 	m_callback = nullptr;
-	m_callbackObject = nullptr;
 	m_channel = -1;
 	m_state = STOPPED;
 
@@ -1166,7 +1163,7 @@ bool CEqAudioSourceAL::DoUpdate()
 		Params params;
 		GetParams(params);
 
-		m_callback(this, params, m_callbackObject);
+		m_callback(this, params);
 
 		// update channel parameters
 		UpdateParams(params);

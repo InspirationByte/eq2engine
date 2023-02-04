@@ -63,6 +63,7 @@ ConVar snd_scriptsound_showWarnings("snd_scriptsound_showWarnings", "0", nullptr
 //----------------------------------------------------------------------------
 
 CSoundEmitterSystem::CSoundEmitterSystem()
+	: m_updateDone(true)
 {
 }
 
@@ -168,20 +169,20 @@ SoundScriptDesc* CSoundEmitterSystem::FindSoundScript(const char* soundName) con
 	return *it;
 }
 
-int CSoundEmitterSystem::EmitSound(EmitParams* ep)
-{
-	return EmitSound(ep, nullptr, -1);
-}
-
 // simple sound emitter
-int CSoundEmitterSystem::EmitSound(EmitParams* ep, CSoundingObject* soundingObj, int objUniqueId, bool releaseOnStop)
+int CSoundEmitterSystem::EmitSound(EmitParams* ep)
 {
 	ASSERT(ep);
 
-	if (ep->flags & EMITSOUND_FLAG_RELEASE_ON_STOP)
-		releaseOnStop = true;
+	CWeakPtr<CSoundingObject> soundingObj = ep->soundingObj;
 
-	if(!soundingObj && (ep->flags & EMITSOUND_FLAG_START_ON_UPDATE))
+	if (soundingObj.IsSet() && !soundingObj)
+		return CHAN_INVALID; // sounding object has died
+
+	const bool releaseOnStop = (ep->flags & EMITSOUND_FLAG_RELEASE_ON_STOP);
+
+	const bool forceStartOnUpdate = !m_updateDone.Wait(0);
+	if((ep->flags & EMITSOUND_FLAG_START_ON_UPDATE) || forceStartOnUpdate && !(ep->flags & EMITSOUND_FLAG_PENDING))
 	{
 		EmitParams newEmit = (*ep);
 		newEmit.flags &= ~EMITSOUND_FLAG_START_ON_UPDATE;
@@ -246,7 +247,7 @@ int CSoundEmitterSystem::EmitSound(EmitParams* ep, CSoundingObject* soundingObj,
 	if(soundingObj)
 	{
 		// stop the sound if it has been already started
-		soundingObj->StopEmitter(objUniqueId, true);
+		soundingObj->StopEmitter(ep->objUniqueId, true);
 
 		const int usedSounds = soundingObj->GetChannelSoundCount(channelType);
 
@@ -260,7 +261,7 @@ int CSoundEmitterSystem::EmitSound(EmitParams* ep, CSoundingObject* soundingObj,
 			CScopedMutex m(s_soundEmitterSystemMutex);
 			m_soundingObjects.insert(soundingObj);
 		}
-		soundingObj->AddEmitter(objUniqueId, edata);
+		soundingObj->AddEmitter(ep->objUniqueId, edata);
 	}
 
 
@@ -357,12 +358,27 @@ bool CSoundEmitterSystem::SwitchSourceState(SoundEmitterData* emit, bool isVirtu
 		{
 			// no sounding object
 			// set looping sound to self destruct when outside max distance
-			source->Setup(startParams.channel, samples, hasLoop ? LoopSourceUpdateCallback : nullptr, const_cast<SoundScriptDesc*>(script));
+
+			auto callbackFunc = [script](IEqAudioSource* source, IEqAudioSource::Params& params) -> int 
+			{
+				return LoopSourceUpdateCallback(source, params, script);
+			};
+
+			if(hasLoop)
+				source->Setup(startParams.channel, samples, callbackFunc);
+			else
+				source->Setup(startParams.channel, samples, nullptr);
+
 			emit->CalcFinalParameters(1.0f, startParams);
 		}
 		else
 		{
-			source->Setup(startParams.channel, samples, EmitterUpdateCallback, emit);
+			auto callbackFunc = [script, emit = CWeakPtr(emit)](IEqAudioSource* source, IEqAudioSource::Params& params) -> int
+			{
+				return EmitterUpdateCallback(source, params, emit);
+			};
+
+			source->Setup(startParams.channel, samples, callbackFunc);
 		}
 
 		// start sound
@@ -415,11 +431,13 @@ void CSoundEmitterSystem::StopAllSounds()
 	}
 }
 
-int CSoundEmitterSystem::EmitterUpdateCallback(IEqAudioSource* soundSource, IEqAudioSource::Params& params, void* obj)
+int CSoundEmitterSystem::EmitterUpdateCallback(IEqAudioSource* soundSource, IEqAudioSource::Params& params, CWeakPtr<SoundEmitterData> emitter)
 {
+	if (!emitter)
+		return 0;
+
 	PROF_EVENT("Emitter Update Callback");
 
-	SoundEmitterData* emitter = (SoundEmitterData*)obj;
 	const SoundScriptDesc* script = emitter->script;
 	CSoundingObject* soundingObj = emitter->soundingObj;
 
@@ -487,16 +505,15 @@ int CSoundEmitterSystem::EmitterUpdateCallback(IEqAudioSource* soundSource, IEqA
 	return 0;
 }
 
-int CSoundEmitterSystem::LoopSourceUpdateCallback(IEqAudioSource* source, IEqAudioSource::Params& params, void* obj)
+int CSoundEmitterSystem::LoopSourceUpdateCallback(IEqAudioSource* source, IEqAudioSource::Params& params, SoundScriptDesc* script)
 {
-	const SoundScriptDesc* soundScript = (const SoundScriptDesc*)obj;
 	if (params.relative)
 		return 0;
 
 	const Vector3D listenerPos = g_audioSystem->GetListenerPosition();
 
 	const float distToSoundSqr = lengthSqr(params.position - listenerPos);
-	const float maxDistSqr = M_SQR(soundScript->maxDistance);
+	const float maxDistSqr = M_SQR(script->maxDistance);
 	if (distToSoundSqr > maxDistSqr)
 	{
 		params.set_state(IEqAudioSource::STOPPED);

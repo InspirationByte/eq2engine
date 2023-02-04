@@ -37,9 +37,9 @@ public:
 	void						BeginUpdate();
 	void						EndUpdate();
 
-	void						StopAllSounds(int chanId = -1, void* callbackObject = nullptr);
-	void						PauseAllSounds(int chanId = -1, void* callbackObject = nullptr);
-	void						ResumeAllSounds(int chanId = -1, void* callbackObject = nullptr);
+	void						StopAllSounds(int chanId = -1);
+	void						PauseAllSounds(int chanId = -1);
+	void						ResumeAllSounds(int chanId = -1);
 
 	void						ResetMixer(int chanId);
 	void						SetChannelVolume(int chanId, float value);
@@ -125,8 +125,8 @@ public:
 
 	void					Ref_DeleteObject();
 
-	void					Setup(int chanId, const ISoundSource* sample, UpdateCallback fnCallback = nullptr, void* callbackObject = nullptr);
-	void					Setup(int chanId, ArrayCRef<const ISoundSource*> samples, UpdateCallback fnCallback = nullptr, void* callbackObject = nullptr);
+	void					Setup(int chanId, const ISoundSource* sample, UpdateCallback fnCallback = nullptr);
+	void					Setup(int chanId, ArrayCRef<const ISoundSource*> samples, UpdateCallback fnCallback = nullptr);
 	void					Release();
 
 	// full scale
@@ -176,7 +176,6 @@ protected:
 	ALuint					m_filter{ 0 };
 
 	UpdateCallback			m_callback;
-	void*					m_callbackObject{ nullptr };
 
 	State					m_state{ State::STOPPED };
 

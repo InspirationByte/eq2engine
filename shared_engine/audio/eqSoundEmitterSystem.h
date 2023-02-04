@@ -44,13 +44,11 @@ public:
 	void				GetAllSoundsList(Array<SoundScriptDesc*>& list) const;
 private:
 
-	int					EmitSound(EmitParams* emit, CSoundingObject* soundingObj, int objUniqueId, bool releaseOnStop = true);
-
 	SoundScriptDesc*	FindSoundScript(const char* soundName) const;
 	void				OnRemoveSoundingObject(CSoundingObject* obj);
 
-	static int			EmitterUpdateCallback(IEqAudioSource* source, IEqAudioSource::Params& params, void* obj);
-	static int			LoopSourceUpdateCallback(IEqAudioSource* source, IEqAudioSource::Params& params, void* obj);
+	static int			EmitterUpdateCallback(IEqAudioSource* source, IEqAudioSource::Params& params, CWeakPtr<SoundEmitterData> emitter);
+	static int			LoopSourceUpdateCallback(IEqAudioSource* source, IEqAudioSource::Params& params, SoundScriptDesc* script);
 
 	bool				SwitchSourceState(SoundEmitterData* emit, bool isVirtual);
 

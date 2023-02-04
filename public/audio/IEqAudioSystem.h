@@ -123,12 +123,12 @@ public:
 #undef PROP_MERGE
 	};
 
-	using UpdateCallback = EqFunction<int(IEqAudioSource* source, Params& params, void* obj)>;		// returns EVoiceUpdateFlags
+	using UpdateCallback = EqFunction<int(IEqAudioSource* source, Params& params)>;		// returns EVoiceUpdateFlags
 
 	virtual ~IEqAudioSource() { }
 
-	virtual void			Setup(int chanId, const ISoundSource* sample, UpdateCallback fnCallback, void* callbackObject = nullptr) = 0;
-	virtual void			Setup(int chanId, ArrayCRef<const ISoundSource*> samples, UpdateCallback fnCallback, void* callbackObject = nullptr) = 0;
+	virtual void			Setup(int chanId, const ISoundSource* sample, UpdateCallback fnCallback) = 0;
+	virtual void			Setup(int chanId, ArrayCRef<const ISoundSource*> samples, UpdateCallback fnCallback) = 0;
 	virtual void			Release() = 0;
 
 	// full scale
@@ -165,9 +165,9 @@ public:
 	virtual void				BeginUpdate() = 0;
 	virtual void				EndUpdate() = 0;
 
-	virtual void				StopAllSounds(int chanType = -1, void* callbackObject = nullptr) = 0;
-	virtual void				PauseAllSounds(int chanType = -1, void* callbackObject = nullptr) = 0;
-	virtual void				ResumeAllSounds(int chanType = -1, void* callbackObject = nullptr) = 0;
+	virtual void				StopAllSounds(int chanType = -1) = 0;
+	virtual void				PauseAllSounds(int chanType = -1) = 0;
+	virtual void				ResumeAllSounds(int chanType = -1) = 0;
 
 	virtual void				ResetMixer(int chanId) = 0;
 	virtual void				SetChannelVolume(int chanType, float value) = 0;

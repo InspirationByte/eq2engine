@@ -92,6 +92,7 @@ public:
 	void				Assign( PTR_TYPE obj);
 	void				Release(bool deref = true);
 
+	bool				IsSet() const		{ return m_weakRefPtr; }
 	operator const		bool() const		{ return m_weakRefPtr && m_weakRefPtr->ptr; }
 	operator			bool()				{ return m_weakRefPtr && m_weakRefPtr->ptr; }
 	operator const		PTR_TYPE() const	{ return m_weakRefPtr ? static_cast<PTR_TYPE>(m_weakRefPtr->ptr) : nullptr; }
@@ -159,7 +160,7 @@ inline CWeakPtr<TYPE>::~CWeakPtr()
 template< class TYPE >
 inline void CWeakPtr<TYPE>::Assign(PTR_TYPE obj)
 {
-	if(m_weakRefPtr == obj->m_block)
+	if(obj->m_block && m_weakRefPtr && m_weakRefPtr == obj->m_block)
 		return;
 
 	// del old ref
