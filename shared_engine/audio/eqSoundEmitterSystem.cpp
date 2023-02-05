@@ -179,8 +179,6 @@ int CSoundEmitterSystem::EmitSound(EmitParams* ep)
 	if (soundingObj.IsSet() && !soundingObj)
 		return CHAN_INVALID; // sounding object has died
 
-	const bool releaseOnStop = (ep->flags & EMITSOUND_FLAG_RELEASE_ON_STOP);
-
 	const bool forceStartOnUpdate = !m_updateDone.Wait(0);
 	if((ep->flags & EMITSOUND_FLAG_START_ON_UPDATE) || forceStartOnUpdate && !(ep->flags & EMITSOUND_FLAG_PENDING))
 	{
@@ -220,6 +218,7 @@ int CSoundEmitterSystem::EmitSound(EmitParams* ep)
 
 	const Vector3D listenerPos = g_audioSystem->GetListenerPosition();
 
+	const bool releaseOnStop = soundingObj == nullptr || (ep->flags & EMITSOUND_FLAG_RELEASE_ON_STOP);
 	const bool is2Dsound = script->is2d || (ep->flags & EMITSOUND_FLAG_FORCE_2D);
 	const bool startSilent = (ep->flags & EMITSOUND_FLAG_STARTSILENT);
 	bool isAudibleToStart = !startSilent;
