@@ -172,24 +172,26 @@ SoundScriptDesc* CSoundEmitterSystem::FindSoundScript(const char* soundName) con
 // simple sound emitter
 int CSoundEmitterSystem::EmitSound(EmitParams* ep)
 {
+	return EmitSoundInternal(ep, -1, nullptr);
+}
+
+int CSoundEmitterSystem::EmitSoundInternal(EmitParams* ep, int objUniqueId, CSoundingObject* soundingObj)
+{
 	ASSERT(ep);
-
-	CWeakPtr<CSoundingObject> soundingObj = ep->soundingObj;
-
-	if (soundingObj.IsSet() && !soundingObj)
-		return CHAN_INVALID; // sounding object has died
 
 	const bool forceStartOnUpdate = !m_updateDone.Wait(0);
 	if((ep->flags & EMITSOUND_FLAG_START_ON_UPDATE) || forceStartOnUpdate && !(ep->flags & EMITSOUND_FLAG_PENDING))
 	{
-		EmitParams newEmit = (*ep);
-		newEmit.flags &= ~EMITSOUND_FLAG_START_ON_UPDATE;
-		newEmit.flags |= EMITSOUND_FLAG_PENDING;
+		CScopedMutex m(s_soundEmitterSystemMutex);
+			
+		PendingSound& pending = m_pendingStartSounds.append();
+		pending.objUniqueId = objUniqueId;
+		pending.soundingObj.Assign(soundingObj);
 
-		{
-			CScopedMutex m(s_soundEmitterSystemMutex);
-			m_pendingStartSounds.append(newEmit);
-		}
+		pending.params = (*ep);
+		pending.params.flags &= ~EMITSOUND_FLAG_START_ON_UPDATE;
+		pending.params.flags |= EMITSOUND_FLAG_PENDING;
+
 		return CHAN_INVALID;
 	}
 
@@ -246,7 +248,7 @@ int CSoundEmitterSystem::EmitSound(EmitParams* ep)
 	if(soundingObj)
 	{
 		// stop the sound if it has been already started
-		soundingObj->StopEmitter(ep->objUniqueId, true);
+		soundingObj->StopEmitter(objUniqueId, true);
 
 		const int usedSounds = soundingObj->GetChannelSoundCount(channelType);
 
@@ -260,7 +262,7 @@ int CSoundEmitterSystem::EmitSound(EmitParams* ep)
 			CScopedMutex m(s_soundEmitterSystemMutex);
 			m_soundingObjects.insert(soundingObj);
 		}
-		soundingObj->AddEmitter(ep->objUniqueId, edata);
+		soundingObj->AddEmitter(objUniqueId, edata);
 	}
 
 
@@ -544,7 +546,12 @@ void CSoundEmitterSystem::Update()
 
 			// play sounds
 			for (int i = 0; i < m_pendingStartSounds.numElem(); i++)
-				EmitSound(&m_pendingStartSounds[i]);
+			{
+				PendingSound& pending = m_pendingStartSounds[i];
+
+				if (pending.soundingObj.IsSet() && pending.soundingObj)
+					EmitSoundInternal(&pending.params, pending.objUniqueId, pending.soundingObj);
+			}
 
 			// release
 			m_pendingStartSounds.clear();

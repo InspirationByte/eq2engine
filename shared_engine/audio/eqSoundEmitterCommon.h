@@ -88,7 +88,5 @@ struct EmitParams
 	int					sampleId{ -1 };
 	int					channelType{ CHAN_INVALID };
 
-	int							objUniqueId{ -1 };
-	CWeakPtr<CSoundingObject>	soundingObj;
 	FixedArray<InputValue, 8>	inputs;
 };

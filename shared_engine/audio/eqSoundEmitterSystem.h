@@ -43,6 +43,7 @@ public:
 
 	void				GetAllSoundsList(Array<SoundScriptDesc*>& list) const;
 private:
+	int					EmitSoundInternal(EmitParams* emit, int objUniqueId, CSoundingObject* soundingObj);
 
 	SoundScriptDesc*	FindSoundScript(const char* soundName) const;
 	void				OnRemoveSoundingObject(CSoundingObject* obj);
@@ -57,12 +58,19 @@ private:
 	// Editor features
 	void				RestartEmittersByScript(SoundScriptDesc* soundScript);
 
+	struct PendingSound
+	{
+		EmitParams					params;
+		int							objUniqueId;
+		CWeakPtr<CSoundingObject>	soundingObj;
+	};
+
 	CEqTimer							m_updateTimer;
 	Threading::CEqSignal				m_updateDone;
 	FixedArray<ChannelDef, CHAN_MAX>	m_channelTypes;
 	Map<int, SoundScriptDesc*>			m_allSounds{ PP_SL };
 	Set<CSoundingObject*>				m_soundingObjects{ PP_SL };
-	Array<EmitParams>					m_pendingStartSounds{ PP_SL };
+	Array<PendingSound>					m_pendingStartSounds{ PP_SL };
 
 	SoundScriptDesc*					m_isolateSound{ nullptr };
 	
