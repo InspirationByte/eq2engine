@@ -34,7 +34,7 @@ inline void	WeakRefBlock<TYPE>::Ref_Grab()
 template< class TYPE>
 inline bool	WeakRefBlock<TYPE>::Ref_Drop()
 {
-	if (Atomic::Decrement(numRefs) <= 0)
+	if (Atomic::Decrement(numRefs) == 0)
 	{
 		if(ptr)
 			ptr->m_block = nullptr;

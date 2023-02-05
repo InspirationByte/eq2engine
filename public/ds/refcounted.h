@@ -57,7 +57,7 @@ inline void	RefCountedObject<TYPE, POLICY>::Ref_Grab()
 template< class TYPE, class POLICY >
 inline bool	RefCountedObject<TYPE, POLICY>::Ref_Drop()
 {
-	if (Atomic::Decrement(m_numRefs) <= 0)
+	if (Atomic::Decrement(m_numRefs) == 0)
 	{
 		Ref_DeleteObject();
 		if (POLICY::SHOULD_DELETE) { delete this; }
