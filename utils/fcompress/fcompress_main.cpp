@@ -6,6 +6,7 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include <zlib.h>
+#include <lz4.h>
 
 #include "core/core_common.h"
 #include "core/IDkCore.h"
@@ -23,13 +24,17 @@
 #endif
 #endif
 
-#define REPACK_SUPPORT 1
+#define REPACK_SUPPORT 0
+#define UNPACK_SUPPORT 0
 
 static void Usage()
 {
 	MsgWarning("USAGE:\n	fcompress -target <target name>\n");
 #if REPACK_SUPPORT
 	MsgWarning("USAGE:\n	fcompress -repack <EPK v6 filename>\n");
+#endif
+#if REPACK_SUPPORT
+	MsgWarning("USAGE:\n	fcompress -devunpack <EPK v7 filename>\n");
 #endif
 }
 
@@ -163,6 +168,98 @@ static bool UpdatePackage(const char* targetName)
 		while (find.Next())
 			g_fileSystem->FileRemove(EqString::Format("repack_tmp/%s", find.GetPath()), SP_ROOT);
 		g_fileSystem->RemoveDir("repack_tmp", SP_ROOT);
+	}
+}
+
+#endif // REPACK_SUPPORT
+
+#if UNPACK_SUPPORT
+
+static bool DevUnpackPackage(const char* targetName)
+{
+	FILE* dpkFile = fopen(targetName, "rb");
+
+	// Now fill the header data and create object table
+	if (!dpkFile)
+	{
+		MsgError("Cannot open package '%s'\n", targetName);
+		return false;
+	}
+
+	dpkheader_t m_header;
+
+	fread(&m_header, sizeof(dpkheader_t), 1, dpkFile);
+
+	if (m_header.signature != DPK_SIGNATURE)
+	{
+		MsgError("'%s' is not a package!!!\n", targetName);
+
+		fclose(dpkFile);
+		return false;
+	}
+
+	if (m_header.version != DPK_VERSION)
+	{
+		MsgError("package '%s' has wrong version!!!\n", targetName);
+
+		fclose(dpkFile);
+		return false;
+	}
+
+	char dpkMountPath[DPK_STRING_SIZE];
+	fread(dpkMountPath, DPK_STRING_SIZE, 1, dpkFile);
+
+	Msg("Mount path '%s'\n", dpkMountPath);
+
+	// Let set the file info data origin
+	fseek(dpkFile, m_header.fileInfoOffset, SEEK_SET);
+
+	Array<dpkfileinfo_t> m_dpkFiles{ PP_SL };
+	m_dpkFiles.setNum(m_header.numFiles);
+	fread(m_dpkFiles.ptr(), sizeof(dpkfileinfo_t), m_header.numFiles, dpkFile);
+
+	{
+		Msg("Unpacking %d files\n", m_header.numFiles);
+
+		g_fileSystem->MakeDir("unpack", SP_ROOT);
+
+		// unpack as .epk.blob
+		for (int i = 0; i < m_dpkFiles.numElem(); ++i)
+		{
+			const dpkfileinfo_t& finfo = m_dpkFiles[i];
+
+			ASSERT_MSG(!(finfo.flags & DPKFILE_FLAG_ENCRYPTED), "Sorry, encrypted packages are not unpackable atm");
+
+			IFile* file = g_fileSystem->Open(EqString::Format("unpack/%u.epk_blob", finfo.filenameHash), "wb", SP_ROOT);
+			if (!file)
+				continue;
+
+			ubyte* tmpFileData = (ubyte*)PPAlloc(finfo.size);
+
+			ubyte* tmpBlock = (ubyte*)PPAlloc(DPK_BLOCK_MAXSIZE + 128);
+
+			fseek(dpkFile, finfo.offset, SEEK_SET);
+			for (int j = 0; j < finfo.numBlocks; ++j)
+			{
+				dpkblock_t blockHdr;
+				fread(&blockHdr, 1, sizeof(blockHdr), dpkFile);
+
+				// read and decompress block
+				fread(tmpBlock, 1, blockHdr.compressedSize, dpkFile);
+
+				const int destLen = LZ4_decompress_safe((char*)tmpBlock, (char*)tmpFileData + DPK_BLOCK_MAXSIZE * j, blockHdr.compressedSize, blockHdr.size);
+
+				ASSERT(destLen == blockHdr.size);
+			}
+			PPFree(tmpBlock);
+
+			file->Write(tmpFileData, finfo.size, 1);
+			PPFree(tmpFileData);
+
+			g_fileSystem->Close(file);
+		}
+
+		fclose(dpkFile);
 	}
 }
 
@@ -309,6 +406,12 @@ int main(int argc, char **argv)
 		else if (!argStr.CompareCaseIns("-repack"))
 		{
 			UpdatePackage(g_cmdLine->GetArgumentsOf(i));
+		}
+#endif
+#if UNPACK_SUPPORT
+		else if (!argStr.CompareCaseIns("-devunpack"))
+		{
+			DevUnpackPackage(g_cmdLine->GetArgumentsOf(i));
 		}
 #endif
 	}
