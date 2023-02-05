@@ -494,7 +494,7 @@ inline ArrayBase<T, STORAGE_TYPE>& ArrayBase<T, STORAGE_TYPE>::operator=(const A
 {
 	m_storage.setGranularity(other.m_storage.getGranularity());
 
-	assureSize(other.m_storage.getSize());
+	reserve(other.m_storage.getSize());
 
 	m_nNumElem = other.m_nNumElem;
 
