@@ -103,7 +103,7 @@ BEGIN_SHADER_CLASS(BaseUnlit)
 
 	void SetColorModulation()
 	{
-		ColorRGBA setColor = m_colorVar.GetVector4() * materials->GetAmbientColor();
+		ColorRGBA setColor = m_colorVar.Get() * materials->GetAmbientColor();
 
 		g_pShaderAPI->SetShaderConstantVector4D("AmbientColor", setColor);
 	}
@@ -117,8 +117,8 @@ BEGIN_SHADER_CLASS(BaseUnlit)
 
 	const ITexturePtr& GetBaseTexture(int stage) const {return m_pBaseTexture;}
 
-	ITexturePtr	m_pBaseTexture;
-	MatVarProxy	m_colorVar;
+	ITexturePtr		m_pBaseTexture;
+	MatVec4Proxy	m_colorVar;
 
 	SHADER_DECLARE_PASS(Unlit);
 	SHADER_DECLARE_FOGPASS(Unlit);

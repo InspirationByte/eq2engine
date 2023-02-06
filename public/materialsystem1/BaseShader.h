@@ -63,22 +63,22 @@ class IShaderProgram;
 #define _SHADER_PARAM_OP_EMPTY
 #define _SHADER_PARAM_OP_NOT !
 
-#define _SHADER_PARAM_INIT(param, variable, def, getFunc, op) { \
-	MatVarProxy mv_##param = GetAssignedMaterial()->FindMaterialVar(#param); \
-	variable = mv_##param.IsValid() ? op mv_##param.getFunc() : op def; }
+#define _SHADER_PARAM_INIT(param, variable, def, type, op) { \
+	Mat##type##Proxy mv_##param = GetAssignedMaterial()->FindMaterialVar(#param); \
+	variable = mv_##param.IsValid() ? op mv_##param.Get() : op def; }
 
 #define SHADER_PARAM_FLAG(param, variable, flag, def) \
-	MatVarProxy mv_##param = GetAssignedMaterial()->FindMaterialVar(#param); \
-	if(mv_##param.IsValid()) variable |= (mv_##param.GetInt() ? flag : 0); else if(def) variable |= flag;
+	MatIntProxy mv_##param = GetAssignedMaterial()->FindMaterialVar(#param); \
+	if(mv_##param.IsValid()) variable |= (mv_##param.Get() ? flag : 0); else if(def) variable |= flag;
 
-#define SHADER_PARAM_STRING(param, variable, def)		_SHADER_PARAM_INIT(param, variable, def, GetString, _SHADER_PARAM_OP_EMPTY)
-#define SHADER_PARAM_BOOL(param, variable, def)			_SHADER_PARAM_INIT(param, variable, def, GetInt, _SHADER_PARAM_OP_EMPTY)
-#define SHADER_PARAM_BOOL_NEG(param, variable, def)		_SHADER_PARAM_INIT(param, variable, def, GetInt, _SHADER_PARAM_OP_NOT)
-#define SHADER_PARAM_INT(param, variable, def)			_SHADER_PARAM_INIT(param, variable, def, GetInt, _SHADER_PARAM_OP_EMPTY)
-#define SHADER_PARAM_FLOAT(param, variable, def)		_SHADER_PARAM_INIT(param, variable, def, GetFloat, _SHADER_PARAM_OP_EMPTY)
-#define SHADER_PARAM_VECTOR2(param, variable, def)		_SHADER_PARAM_INIT(param, variable, def, GetVector2, _SHADER_PARAM_OP_EMPTY)
-#define SHADER_PARAM_VECTOR3(param, variable, def)		_SHADER_PARAM_INIT(param, variable, def, GetVector3, _SHADER_PARAM_OP_EMPTY)
-#define SHADER_PARAM_VECTOR4(param, variable, def)		_SHADER_PARAM_INIT(param, variable, def, GetVector4, _SHADER_PARAM_OP_EMPTY)
+#define SHADER_PARAM_STRING(param, variable, def)		_SHADER_PARAM_INIT(param, variable, def, String, _SHADER_PARAM_OP_EMPTY)
+#define SHADER_PARAM_BOOL(param, variable, def)			_SHADER_PARAM_INIT(param, variable, def, Int, _SHADER_PARAM_OP_EMPTY)
+#define SHADER_PARAM_BOOL_NEG(param, variable, def)		_SHADER_PARAM_INIT(param, variable, def, Int, _SHADER_PARAM_OP_NOT)
+#define SHADER_PARAM_INT(param, variable, def)			_SHADER_PARAM_INIT(param, variable, def, Int, _SHADER_PARAM_OP_EMPTY)
+#define SHADER_PARAM_FLOAT(param, variable, def)		_SHADER_PARAM_INIT(param, variable, def, Float, _SHADER_PARAM_OP_EMPTY)
+#define SHADER_PARAM_VECTOR2(param, variable, def)		_SHADER_PARAM_INIT(param, variable, def, Vec2, _SHADER_PARAM_OP_EMPTY)
+#define SHADER_PARAM_VECTOR3(param, variable, def)		_SHADER_PARAM_INIT(param, variable, def, Vec3, _SHADER_PARAM_OP_EMPTY)
+#define SHADER_PARAM_VECTOR4(param, variable, def)		_SHADER_PARAM_INIT(param, variable, def, Vec4, _SHADER_PARAM_OP_EMPTY)
 
 #define SHADER_PARAM_TEXTURE(param, variable)			{ LoadTextureByVar(variable, GetAssignedMaterial(), #param, true); }
 #define SHADER_PARAM_TEXTURE_NOERROR(param, variable)	{ LoadTextureByVar(variable, GetAssignedMaterial(), #param, false); }
@@ -158,9 +158,9 @@ public:
 
 	int							GetFlags() const;	// get flags
 
-	Vector4D					GetTextureTransform(MatVarProxy transformVar, MatVarProxy scaleVar) const;	// get texture transformation from vars
+	Vector4D					GetTextureTransform(const MatVec2Proxy& transformVar, const MatVec2Proxy& scaleVar) const;	// get texture transformation from vars
 
-	void						SetupVertexShaderTextureTransform(MatVarProxy transformVar, MatVarProxy scaleVar, const char* pszConstName);	// sends texture transformation to shader
+	void						SetupVertexShaderTextureTransform(const MatVec2Proxy& transformVar, const MatVec2Proxy& scaleVar, const char* pszConstName);	// sends texture transformation to shader
 
 	// returns base texture from shader
 	virtual const ITexturePtr&	GetBaseTexture(int stage) const { return ITexturePtr::Null(); };
@@ -191,19 +191,19 @@ protected:
 	void						FindTextureByVar(ITexturePtr& texturePtrRef, IMaterial* material, const char* paramName, bool errorTextureIfNoVar);
 	void						LoadTextureByVar(ITexturePtr& texturePtrRef, IMaterial* material, const char* paramName, bool errorTextureIfNoVar);
 	void						AddManagedShader(IShaderProgram** pShader);
-	void						AddManagedTexture(MatVarProxy var, const ITexturePtr& tex);
+	void						AddManagedTexture(MatTextureProxy& var, const ITexturePtr& tex);
 
 	void						SetupParameter(uint mask, ShaderDefaultParams_e param);
 
 	void						EmptyFunctor() {}
 
-	Array<MatVarProxy>			m_UsedTextures{ PP_SL }; // TODO: remove it and capture MatVarProxy instead
+	Array<MatTextureProxy>		m_UsedTextures{ PP_SL }; // TODO: remove it and capture MatVarProxy instead
 	Array<IShaderProgram**>		m_UsedPrograms{ PP_SL };
 	SHADERPARAMFUNC				m_param_functors[SHADERPARAM_COUNT]{ nullptr };
 
-	MatVarProxy					m_baseTextureTransformVar;
-	MatVarProxy					m_baseTextureScaleVar;
-	MatVarProxy					m_baseTextureFrame;
+	MatVec2Proxy				m_baseTextureTransformVar;
+	MatVec2Proxy				m_baseTextureScaleVar;
+	MatIntProxy					m_baseTextureFrame;
 
 	IMaterial*					m_material{ nullptr };
 

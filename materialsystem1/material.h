@@ -8,7 +8,6 @@
 #pragma once
 #include "materialsystem1/IMaterial.h"
 
-class CMatVar;
 class IMaterialProxy;
 struct KVSection;
 
@@ -47,8 +46,8 @@ public:
 	void					WaitForLoading() const;
 
 // material var operations
-	MatVarProxy				FindMaterialVar(const char* pszVarName) const;
-	MatVarProxy				GetMaterialVar(const char* pszVarName, const char* defaultValue);
+	MatVarProxyUnk			FindMaterialVar(const char* pszVarName) const;
+	MatVarProxyUnk			GetMaterialVar(const char* pszVarName, const char* defaultValue);
 
 // render-time operations
 	void					UpdateProxy(float fDt);					
@@ -70,9 +69,7 @@ protected:
 	EqString				m_szMaterialName;
 	EqString				m_szShaderName;
 
-	Map<int, int>			m_variableMap{ PP_SL };
-	Array<CMatVar>			m_variables{ PP_SL };
-
+	MaterialVarBlock		m_vars;
 	Array<IMaterialProxy*>	m_proxies{ PP_SL };
 
 	CTextureAtlas*			m_atlas{ nullptr };

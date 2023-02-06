@@ -57,7 +57,7 @@ BEGIN_SHADER_CLASS(GaussianBlur)
 		SetupDefaultParameter(SHADERPARAM_DEPTHSETUP);
 		SetupDefaultParameter(SHADERPARAM_RASTERSETUP);
 
-		const ITexturePtr& bloomTex = m_blurSource.GetTexture();
+		const ITexturePtr& bloomTex = m_blurSource.Get();
 
 		Vector4D textureSizeProps;
 
@@ -70,20 +70,20 @@ BEGIN_SHADER_CLASS(GaussianBlur)
 			textureSizeProps.w = 1.0f / textureSizeProps.y;
 		}
 
-		g_pShaderAPI->SetShaderConstantVector4D("BlurProps", m_blurProps.GetVector4());
+		g_pShaderAPI->SetShaderConstantVector4D("BlurProps", m_blurProps.Get());
 		g_pShaderAPI->SetShaderConstantVector4D("TextureSize", textureSizeProps);		
 	}
 
 	void SetupBaseTextures()
 	{
-		g_pShaderAPI->SetTexture(m_blurSource.GetTexture(), "BaseTexture", 0);
+		g_pShaderAPI->SetTexture(m_blurSource.Get(), "BaseTexture", 0);
 	}
 
 private:
 
 	SHADER_DECLARE_PASS(Unlit);
 
-	MatVarProxy m_blurProps;
-	MatVarProxy m_blurSource;
+	MatVec4Proxy	m_blurProps;
+	MatTextureProxy m_blurSource;
 
 END_SHADER_CLASS

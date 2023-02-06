@@ -21,6 +21,7 @@
 #include "imaging/ImageLoader.h"
 #include "imaging/PixWriter.h"
 #include "material.h"
+#include "materialvar.h"
 #include "MaterialProxy.h"
 #include "TextureLoader.h"
 #include "Renderers/Shared/IRenderLibrary.h"
@@ -29,6 +30,7 @@
 
 
 using namespace Threading;
+CEqMutex s_matSystemMutex;
 
 DECLARE_INTERNAL_SHADERS()
 
@@ -94,7 +96,7 @@ public:
 	{
 		IMaterial* nextMaterial = nullptr;
 		{
-			CScopedMutex m(m_Mutex);
+			CScopedMutex m(s_matSystemMutex);
 			auto it = m_newMaterials.begin();
 			if (it != m_newMaterials.end())
 			{
@@ -117,7 +119,7 @@ public:
 		((CMaterial*)nextMaterial)->DoLoadShaderAndTextures();
 
 		{
-			CScopedMutex m(m_Mutex);
+			CScopedMutex m(s_matSystemMutex);
 			if (m_newMaterials.size())
 				SignalWork();
 		}
@@ -139,7 +141,7 @@ public:
 		}
 
 		{
-			CScopedMutex m(m_Mutex);
+			CScopedMutex m(s_matSystemMutex);
 			if (m_newMaterials.find(pMaterial) != m_newMaterials.end())
 				return;
 
@@ -349,36 +351,39 @@ bool CMaterialSystem::Init(const matsystem_init_config_t& config)
 
 void CMaterialSystem::Shutdown()
 {
-	if(m_renderLibrary && m_rendermodule && g_pShaderAPI)
-	{
-		Msg("MatSystem shutdown...\n");
+	if (!m_renderLibrary || !m_rendermodule || !g_pShaderAPI)
+		return;
 
-		// shutdown thread first
-		s_threadedMaterialLoader.StopThread(true);
+	Msg("MatSystem shutdown...\n");
+
+	// shutdown thread first
+	s_threadedMaterialLoader.StopThread(true);
+
+	m_globalMaterialVars.variableMap.clear(true);
+	m_globalMaterialVars.variables.clear(true);
 		
-		ClearRenderStates();
-		m_dynamicMesh.Destroy();
+	ClearRenderStates();
+	m_dynamicMesh.Destroy();
 
-		m_setMaterial = nullptr;
-		m_pDefaultMaterial = nullptr;
-		m_overdrawMaterial = nullptr;
-		SetEnvironmentMapTexture(nullptr);
+	m_setMaterial = nullptr;
+	m_pDefaultMaterial = nullptr;
+	m_overdrawMaterial = nullptr;
+	SetEnvironmentMapTexture(nullptr);
 
-		m_whiteTexture = nullptr;
-		m_luxelTestTexture = nullptr;
+	m_whiteTexture = nullptr;
+	m_luxelTestTexture = nullptr;
 
-		FreeMaterials();
+	FreeMaterials();
 
-		m_shaderOverrideList.clear();
-		m_proxyFactoryList.clear();
+	m_shaderOverrideList.clear();
+	m_proxyFactoryList.clear();
 
-		m_renderLibrary->ReleaseSwapChains();
-		g_pShaderAPI->Shutdown();
-		m_renderLibrary->ExitAPI();
+	m_renderLibrary->ReleaseSwapChains();
+	g_pShaderAPI->Shutdown();
+	m_renderLibrary->ExitAPI();
 
-		// shutdown render libraries, all shaders and other
-		g_fileSystem->FreeModule( m_rendermodule );
-	}
+	// shutdown render libraries, all shaders and other
+	g_fileSystem->FreeModule( m_rendermodule );
 }
 
 void CMaterialSystem::CreateWhiteTexture()
@@ -544,7 +549,7 @@ IMaterialPtr CMaterialSystem::CreateMaterial(const char* szMaterialName, KVSecti
 	CRefPtr<CMaterial> material = CRefPtr_new(CMaterial, szMaterialName, false);
 
 	{
-		CScopedMutex m(m_Mutex);
+		CScopedMutex m(s_matSystemMutex);
 
 		const int nameHash = material->m_nameHash;
 
@@ -593,7 +598,7 @@ IMaterialPtr CMaterialSystem::GetMaterial(const char* szMaterialName)
 	// find the material with existing name
 	// it could be a material that was not been loaded from disk
 	{
-		CScopedMutex m(m_Mutex);
+		CScopedMutex m(s_matSystemMutex);
 
 		auto it = m_loadedMaterials.find(nameHash);
 		if (it != m_loadedMaterials.end())
@@ -615,7 +620,7 @@ void CMaterialSystem::PreloadNewMaterials()
 		return;
 
 	{
-		CScopedMutex m(m_Mutex);
+		CScopedMutex m(s_matSystemMutex);
 	
 		for (auto it = m_loadedMaterials.begin(); it != m_loadedMaterials.end(); ++it)
 		{
@@ -627,7 +632,7 @@ void CMaterialSystem::PreloadNewMaterials()
 // releases non-used materials
 void CMaterialSystem::ReleaseUnusedMaterials()
 {
-	CScopedMutex m(m_Mutex);
+	CScopedMutex m(s_matSystemMutex);
 
 	for (auto it = m_loadedMaterials.begin(); it != m_loadedMaterials.end(); ++it)
 	{
@@ -648,7 +653,7 @@ void CMaterialSystem::ReleaseUnusedMaterials()
 // Reloads materials
 void CMaterialSystem::ReloadAllMaterials()
 {
-	CScopedMutex m(m_Mutex);
+	CScopedMutex m(s_matSystemMutex);
 
 	MsgInfo("Reloading all materials...\n");
 	Array<IMaterialPtr> loadingList(PP_SL);
@@ -686,7 +691,7 @@ void CMaterialSystem::ReloadAllMaterials()
 // frees all materials
 void CMaterialSystem::FreeMaterials()
 {
-	CScopedMutex m(m_Mutex);
+	CScopedMutex m(s_matSystemMutex);
 
 	for (auto it = m_loadedMaterials.begin(); it != m_loadedMaterials.end(); ++it)
 	{
@@ -725,7 +730,7 @@ void CMaterialSystem::FreeMaterial(IMaterial* pMaterial)
 	DevMsg(DEVMSG_MATSYSTEM, "freeing material %s\n", pMaterial->GetName());
 	CMaterial* material = (CMaterial*)pMaterial;
 	{
-		CScopedMutex m(m_Mutex);
+		CScopedMutex m(s_matSystemMutex);
 		m_loadedMaterials.remove(material->m_nameHash);
 	}
 }
@@ -897,6 +902,37 @@ void CMaterialSystem::SetShaderParameterOverriden(int param, bool set)
 void CMaterialSystem::SetProxyDeltaTime(float deltaTime)
 {
 	m_proxyDeltaTime = deltaTime;
+}
+
+MatVarProxyUnk	CMaterialSystem::FindGlobalMaterialVar(const char* pszVarName) const
+{
+	const int nameHash = StringToHash(pszVarName, true);
+
+	CScopedMutex m(s_matSystemMutex);
+	auto it = m_globalMaterialVars.variableMap.find(nameHash);
+	if (it == m_globalMaterialVars.variableMap.end())
+		return MatVarProxyUnk();
+
+	return MatVarProxyUnk(*it, *const_cast<MaterialVarBlock*>(&m_globalMaterialVars));
+}
+
+MatVarProxyUnk	CMaterialSystem::GetGlobalMaterialVar(const char* pszVarName, const char* defaultValue)
+{
+	CScopedMutex m(s_matSystemMutex);
+
+	const int nameHash = StringToHash(pszVarName, true);
+
+	auto it = m_globalMaterialVars.variableMap.find(nameHash);
+	if (it != m_globalMaterialVars.variableMap.end())
+		return MatVarProxyUnk(*it, m_globalMaterialVars);
+
+	const int varId = m_globalMaterialVars.variables.numElem();
+	MatVarData& newVar = m_globalMaterialVars.variables.append();
+	MatVarHelper::Init(newVar, defaultValue);
+
+	m_globalMaterialVars.variableMap.insert(nameHash, varId);
+
+	return MatVarProxyUnk(varId, m_globalMaterialVars);
 }
 
 bool CMaterialSystem::BindMaterial(IMaterial* pMaterial, int flags)
@@ -1563,7 +1599,7 @@ void CMaterialSystem::AddDestroyLostCallbacks(DEVLICELOSTRESTORE destroy, DEVLIC
 // prints loaded materials to console
 void CMaterialSystem::PrintLoadedMaterials()
 {
-	CScopedMutex m(m_Mutex);
+	CScopedMutex m(s_matSystemMutex);
 
 	Msg("*** Material list begin ***\n");
 	for (auto it = m_loadedMaterials.begin(); it != m_loadedMaterials.end(); ++it)

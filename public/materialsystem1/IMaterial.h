@@ -6,19 +6,71 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #pragma once
-
 #include "renderers/ITexture.h"
-
-class CTextureAtlas;
-class MatVarProxy;
 
 struct MatVarData
 {
-	EqString		pszValue;
-	Vector4D		vector{ 0 };
-	int				intValue{ 0 };
+	float			vector[16]{ 0 }; // TODO: think about memory consumption
+	int				intValue;
+	EqString		strValue;
 	ITexturePtr		texture;
 };
+
+struct MaterialVarBlock : public WeakRefObject<MaterialVarBlock>
+{
+	Map<int, int>		variableMap{ PP_SL };
+	Array<MatVarData>	variables{ PP_SL };
+};
+
+struct MV_VOID {};
+
+template<typename T>
+class MatVarProxy;
+
+using MatVarProxyUnk = MatVarProxy<MV_VOID>;
+
+template<typename T>
+class MatVarProxy
+{
+	template<typename U>
+	friend class MatVarProxy;
+
+	friend class CMaterial;
+	friend class CMaterialSystem;
+public:
+	MatVarProxy() = default;
+
+	template<typename U>
+	MatVarProxy(const MatVarProxy<U>& op) { m_matVarIdx = op.m_matVarIdx; m_vars = op.m_vars; }
+
+	template<typename U>
+	MatVarProxy(MatVarProxy<U>&& op) : m_matVarIdx(op.m_matVarIdx), m_vars(std::move(op.m_vars)) { }
+
+	bool				IsValid() const { return m_vars; }
+
+	void				Set(const T& value);
+	const T&			Get() const;
+
+	void				operator=(std::nullptr_t) { m_matVarIdx = -1; m_vars = nullptr; }
+
+protected:
+	MatVarProxy(int varIdx, MaterialVarBlock& owner); // only CMatVar can initialize us
+
+	CWeakPtr<MaterialVarBlock>	m_vars;	// used only to track material existance
+	int							m_matVarIdx{ -1 };
+};
+
+using MatTextureProxy = MatVarProxy<ITexturePtr>;
+using MatStringProxy = MatVarProxy<EqString>;
+using MatIntProxy = MatVarProxy<int>;
+using MatFloatProxy = MatVarProxy<float>;
+using MatVec2Proxy = MatVarProxy<Vector2D>;
+using MatVec3Proxy = MatVarProxy<Vector3D>;
+using MatVec4Proxy = MatVarProxy<Vector4D>;
+using MatM3x3Proxy = MatVarProxy<Matrix3x3>;
+using MatM4x4Proxy = MatVarProxy<Matrix4x4>;
+
+class CTextureAtlas;
 
 // WARNING: modifying this you must recompile all engine!
 enum MaterialFlags_e
@@ -66,8 +118,6 @@ enum EMaterialLoadingState
 class IMaterial : public RefCountedObject<IMaterial, RefCountedKeepPolicy>, public WeakRefObject<IMaterial>
 {
 public:
-	friend class MatVarProxy;
-
 	// returns full material path
 	virtual const char*				GetName() const = 0;
 	virtual const char*				GetShaderName() const = 0;
@@ -85,10 +135,10 @@ public:
 	virtual bool					IsError() const = 0;
 
 // material var operations
-	virtual MatVarProxy				FindMaterialVar( const char* pszVarName ) const = 0;	// only searches for existing matvar
+	virtual MatVarProxyUnk			FindMaterialVar( const char* pszVarName ) const = 0;	// only searches for existing matvar
 
 	// finds or creates material var
-	virtual MatVarProxy				GetMaterialVar( const char* pszVarName, const char* defaultValue) = 0;
+	virtual MatVarProxyUnk			GetMaterialVar( const char* pszVarName, const char* defaultValue) = 0;
 
 // render-time operations
 

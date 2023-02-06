@@ -1088,27 +1088,27 @@ IPhysicsObject* DkPhysics::CreateStaticObject(physmodelcreateinfo_t *info, int n
 
 	if(info->data && info->data->pMaterial)
 	{
-		MatVarProxy mv_nocollide = info->data->pMaterial->FindMaterialVar("nocollide");
+		MatIntProxy mv_nocollide = info->data->pMaterial->FindMaterialVar("nocollide");
 
-		if(mv_nocollide.GetInt() > 0)
+		if(mv_nocollide.Get() > 0)
 			return nullptr;
 
-		MatVarProxy mv_clip = info->data->pMaterial->FindMaterialVar("playerclip");
-		if(mv_clip.GetInt() > 0)
+		MatIntProxy mv_clip = info->data->pMaterial->FindMaterialVar("playerclip");
+		if(mv_clip.Get() > 0)
 		{
 			nCollisionGroup = COLLISION_GROUP_PLAYERCLIP;
 			nCollideMask = COLLISION_GROUP_PLAYER;
 		}
 
 		mv_clip = info->data->pMaterial->FindMaterialVar("npcclip");
-		if(mv_clip.GetInt() > 0)
+		if(mv_clip.Get() > 0)
 		{
 			nCollisionGroup = COLLISION_GROUP_NPCCLIP;
 			nCollideMask = COLLISION_GROUP_ACTORS;
 		}
 
 		mv_clip = info->data->pMaterial->FindMaterialVar("physclip");
-		if(mv_clip.GetInt() > 0)
+		if(mv_clip.Get() > 0)
 		{
 			nCollisionGroup = COLLISION_GROUP_PHYSCLIP;
 			nCollideMask = COLLISION_GROUP_OBJECTS | COLLISION_GROUP_DEBRIS;
@@ -1160,7 +1160,7 @@ IPhysicsObject* DkPhysics::CreateStaticObject(physmodelcreateinfo_t *info, int n
 
 	pPhysicsObject->m_pPhyObjectPointer = (btRigidBody*)LocalCreateRigidBody(info->mass, info->mass_center,startTransform, shape);
 
-	char* materialName = "default";
+	const char* materialName = "default";
 
 	if(info->data)
 	{
@@ -1170,10 +1170,10 @@ IPhysicsObject* DkPhysics::CreateStaticObject(physmodelcreateinfo_t *info, int n
 		}
 		else
 		{
-			MatVarProxy surfacePropsVar = info->data->pMaterial->FindMaterialVar("surfaceprops");
+			MatStringProxy surfacePropsVar = info->data->pMaterial->FindMaterialVar("surfaceprops");
 
 			if(surfacePropsVar.IsValid())
-				materialName = (char*)surfacePropsVar.GetString();
+				materialName = surfacePropsVar.Get();
 		}
 
 		pPhysicsObject->m_pRMaterial = info->data->pMaterial;

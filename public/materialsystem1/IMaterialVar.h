@@ -6,176 +6,192 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #pragma once
-
-class CMatVar;
-class ITexture;
-using ITexturePtr = CRefPtr<ITexture>;
-
-class IMaterial;
-using IMaterialPtr = CRefPtr<IMaterial>;
-
-class MatVarProxy
-{
-	friend class CMaterial;
-public:
-	MatVarProxy() = default;
-
-	bool				IsValid() const { return m_material; }
-
-	void				SetInt(int nValue);
-	void				SetFloat(float fValue);
-	void				SetVector2(const Vector2D& vector);
-	void				SetVector3(const Vector3D& vector);
-	void				SetVector4(const Vector4D& vector);
-	void				SetTexture(const ITexturePtr& pTexture);
-
-	const char*			GetString() const;
-	int					GetInt() const;
-	float				GetFloat() const;
-	const Vector2D&		GetVector2() const;
-	const Vector3D&		GetVector3() const;
-	const Vector4D&		GetVector4() const;
-	ITexturePtr			GetTexture() const;
-
-	void				operator=(std::nullptr_t) { m_matVarIdx = -1; m_material = nullptr; }
-
-private:
-	MatVarProxy(int varIdx, IMaterial* owner); // only CMatVar can initialize us
-
-	CWeakPtr<IMaterial> m_material;	// used only to track material existance
-	int					m_matVarIdx{ -1 };
-};
-
-// TODO: move somewhere else
 #include "IMaterial.h"
 #include "renderers/ITexture.h"
 #include "renderers/IShaderAPI.h"
 
-inline MatVarProxy::MatVarProxy(int varIdx, IMaterial* owner)
+template<typename T>
+inline MatVarProxy<T>::MatVarProxy(int varIdx, MaterialVarBlock& owner)
 {
 	ASSERT(varIdx != -1);
-	ASSERT(owner);
 
 	m_matVarIdx = varIdx;
-	m_material = CWeakPtr(owner);
+	m_vars = CWeakPtr(&owner);
 }
 
-inline int MatVarProxy::GetInt() const
+template<>
+inline void MatVarProxy<float>::Set(const float& fValue)
 {
-	if (!m_material)
-		return 0;
-
-	return m_material->VarAt(m_matVarIdx).intValue;
-}
-
-inline float MatVarProxy::GetFloat() const
-{
-	if (!m_material)
-		return 0.0f;
-
-	return m_material->VarAt(m_matVarIdx).vector.x;
-}
-
-// gives string
-inline const char* MatVarProxy::GetString() const
-{
-	if (!m_material)
-		return nullptr;
-
-	return m_material->VarAt(m_matVarIdx).pszValue;
-}
-
-inline void MatVarProxy::SetFloat(float fValue)
-{
-	if (!m_material)
+	if (!m_vars)
 		return;
 
-	MatVarData& var = m_material->VarAt(m_matVarIdx);
-	var.vector = Vector4D(fValue,0,0,0);
-	var.intValue  = (int)var.vector.x;
+	MatVarData& var = m_vars->variables[m_matVarIdx];
+	var.vector[0] = fValue;
 }
 
-inline void MatVarProxy::SetInt(int nValue)
+template<>
+inline void MatVarProxy<int>::Set(const int& nValue)
 {
-	if (!m_material)
+	if (!m_vars)
 		return;
 
-	MatVarData& var = m_material->VarAt(m_matVarIdx);
+	MatVarData& var = m_vars->variables[m_matVarIdx];
 	var.intValue = nValue;
-	var.vector = Vector4D(nValue,0,0,0);
 }
 
-inline void MatVarProxy::SetVector2(const Vector2D& vector)
+template<>
+inline void MatVarProxy<Vector2D>::Set(const Vector2D& vector)
 {
-	if (!m_material)
+	if (!m_vars)
 		return;
 
-	MatVarData& var = m_material->VarAt(m_matVarIdx);
-	var.vector = Vector4D(vector, 0.0f, 1.0f);
+	MatVarData& var = m_vars->variables[m_matVarIdx];
+	*(Vector2D*)var.vector = vector;
 }
 
-inline void MatVarProxy::SetVector3(const Vector3D& vector)
+template<>
+inline void MatVarProxy<Vector3D>::Set(const Vector3D& vector)
 {
-	if (!m_material)
+	if (!m_vars)
 		return;
 
-	MatVarData& var = m_material->VarAt(m_matVarIdx);
-	var.vector = Vector4D(vector, 1.0f);
+	MatVarData& var = m_vars->variables[m_matVarIdx];
+	*(Vector3D*)var.vector = vector;
 }
 
-inline void MatVarProxy::SetVector4(const Vector4D& vector)
+template<>
+inline void MatVarProxy<Vector4D>::Set(const Vector4D& vector)
 {
-	if (!m_material)
+	if (!m_vars)
 		return;
 
-	MatVarData& var = m_material->VarAt(m_matVarIdx);
-	var.vector = vector;
+	MatVarData& var = m_vars->variables[m_matVarIdx];
+	*(Vector4D*)var.vector = vector;
 }
 
-inline const Vector2D& MatVarProxy::GetVector2() const
+template<>
+inline void MatVarProxy<Matrix3x3>::Set(const Matrix3x3& matrix)
 {
-	if (!m_material)
+	if (!m_vars)
+		return;
+
+	MatVarData& var = m_vars->variables[m_matVarIdx];
+	*(Matrix3x3*)var.vector = matrix;
+}
+
+template<>
+inline void MatVarProxy<Matrix4x4>::Set(const Matrix4x4& matrix)
+{
+	if (!m_vars)
+		return;
+
+	MatVarData& var = m_vars->variables[m_matVarIdx];
+	*(Matrix4x4*)var.vector = matrix;
+}
+
+template<>
+inline const int& MatVarProxy<int>::Get() const
+{
+	if (!m_vars)
+	{
+		static const int _zero = 0;
+		return _zero;
+	}
+
+	const MatVarData& var = m_vars->variables[m_matVarIdx];
+	return var.intValue;
+}
+
+template<>
+inline const float& MatVarProxy<float>::Get() const
+{
+	if (!m_vars)
+	{
+		static const float _zero = 0.0f;
+		return _zero;
+	}
+
+	const MatVarData& var = m_vars->variables[m_matVarIdx];
+	return var.vector[0];
+}
+
+template<>
+inline const EqString& MatVarProxy<EqString>::Get() const
+{
+	if (!m_vars)
+		return EqString::EmptyStr;
+
+	const MatVarData& var = m_vars->variables[m_matVarIdx];
+	return var.strValue;
+}
+
+template<>
+inline const Vector2D& MatVarProxy<Vector2D>::Get() const
+{
+	if (!m_vars)
 		return vec2_zero;
 
-	MatVarData& var = m_material->VarAt(m_matVarIdx);
-	return var.vector.xy();
+	const MatVarData& var = m_vars->variables[m_matVarIdx];
+	return *(Vector2D*)var.vector;
 }
 
-inline const Vector3D& MatVarProxy::GetVector3() const
+template<>
+inline const Vector3D& MatVarProxy<Vector3D>::Get() const
 {
-	if (!m_material)
+	if (!m_vars)
 		return vec3_zero;
 
-	MatVarData& var = m_material->VarAt(m_matVarIdx);
-	return var.vector.xyz();
+	const MatVarData& var = m_vars->variables[m_matVarIdx];
+	return *(Vector3D*)var.vector;
 }
 
-inline const Vector4D& MatVarProxy::GetVector4() const
+template<>
+inline const Vector4D& MatVarProxy<Vector4D>::Get() const
 {
-	if (!m_material)
+	if (!m_vars)
 		return vec4_zero;
 
-	MatVarData& var = m_material->VarAt(m_matVarIdx);
-	return var.vector;
+	const MatVarData& var = m_vars->variables[m_matVarIdx];
+	return *(Vector4D*)var.vector;
 }
 
-// texture pointer
-inline ITexturePtr MatVarProxy::GetTexture() const
+template<>
+inline const Matrix3x3& MatVarProxy<Matrix3x3>::Get() const
 {
-	if (!m_material)
-		return nullptr;
+	if (!m_vars)
+		return identity3();
 
-	MatVarData& var = m_material->VarAt(m_matVarIdx);
+	const MatVarData& var = m_vars->variables[m_matVarIdx];
+	return *(Matrix3x3*)var.vector;
+}
+
+template<>
+inline const Matrix4x4& MatVarProxy<Matrix4x4>::Get() const
+{
+	if (!m_vars)
+		return identity3();
+
+	const MatVarData& var = m_vars->variables[m_matVarIdx];
+	return *(Matrix4x4*)var.vector;
+}
+
+template<>
+inline const ITexturePtr& MatVarProxy<ITexturePtr>::Get() const
+{
+	if (!m_vars)
+		return ITexturePtr::Null();
+
+	const MatVarData& var = m_vars->variables[m_matVarIdx];
 	return var.texture;
 }
 
-// assigns texture
-inline void MatVarProxy::SetTexture(const ITexturePtr& pTexture)
+template<>
+inline void MatVarProxy<ITexturePtr>::Set(const ITexturePtr& pTexture)
 {
-	if (!m_material)
+	if (!m_vars)
 		return;
 
-	MatVarData& var = m_material->VarAt(m_matVarIdx);
+	MatVarData& var = m_vars->variables[m_matVarIdx];
 	if (pTexture == var.texture)
 		return;
 

@@ -19,7 +19,7 @@
 #include "IMaterialVar.h"
 #include "IMaterialProxy.h"
 
-#define MATSYSTEM_INTERFACE_VERSION			"E1MaterialSystem_022"
+#define MATSYSTEM_INTERFACE_VERSION			"E1MaterialSystem_023"
 
 struct FogInfo_t;
 struct dlight_t;
@@ -341,6 +341,10 @@ public:
 	virtual IMaterialPtr					GetBoundMaterial() const = 0;
 
 	virtual void							SetShaderParameterOverriden(int /*ShaderDefaultParams_e*/ param, bool set = true) = 0;
+
+	// global variables
+	virtual MatVarProxyUnk					FindGlobalMaterialVar(const char* pszVarName) const = 0;
+	virtual MatVarProxyUnk					GetGlobalMaterialVar(const char* pszVarName, const char* defaultValue) = 0;
 
 	virtual bool							BindMaterial(IMaterial* pMaterial, int flags = MATERIAL_BIND_PREAPPLY) = 0;
 	virtual void							Apply() = 0;

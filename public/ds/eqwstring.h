@@ -16,6 +16,8 @@ class EqWString
 	friend class EqString;
 
 public:
+	static const EqWString EmptyStr;
+
 	EqWString();
 	~EqWString();
 

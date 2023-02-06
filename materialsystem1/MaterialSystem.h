@@ -205,6 +205,10 @@ public:
 
 	void							SetShaderParameterOverriden(int param, bool set = true);
 
+	// global variables
+	MatVarProxyUnk					FindGlobalMaterialVar(const char* pszVarName) const;
+	MatVarProxyUnk					GetGlobalMaterialVar(const char* pszVarName, const char* defaultValue);
+
 	bool							BindMaterial(IMaterial* pMaterial, int flags = MATERIAL_BIND_PREAPPLY);
 	void							Apply();
 
@@ -299,8 +303,9 @@ private:
 	EqString						m_materialsPath;			// material path
 	EqString						m_materialsSRCPath;			// material sources path
 
-	Array<DKMODULE*>				m_shaderLibs{ PP_SL };				// loaded shader libraries
+	MaterialVarBlock				m_globalMaterialVars;
 
+	Array<DKMODULE*>				m_shaderLibs{ PP_SL };				// loaded shader libraries
 	Array<shaderfactory_t>			m_shaderFactoryList{ PP_SL };		// registered shaders
 	Array<shaderoverride_t>			m_shaderOverrideList{ PP_SL };		// shader override functors
 	Array<proxyfactory_t>			m_proxyFactoryList{ PP_SL };
@@ -338,8 +343,6 @@ private:
 	ColorRGBA						m_ambColor;
 
 	dlight_t*						m_currentLight;
-
-	Threading::CEqMutex				m_Mutex;
 
 	CEqTimer						m_proxyTimer;
 

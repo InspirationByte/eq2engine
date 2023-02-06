@@ -46,11 +46,11 @@ struct proxyvar_t
 		type = PV_CONSTANT;
 	}
 
-	MatVarProxy		mv;
-	float			value{ 0.0f };
+	MatVarProxy<Vector4D>	mv;
+	float					value{ 0.0f };
 
-	int8			vec_idx : 4;
-	int8			type : 4;
+	int8					vec_idx : 4;
+	int8					type : 4;
 };
 
 //--------------------------------------------------------
@@ -132,9 +132,9 @@ inline void CBaseMaterialProxy::ParseVariable(proxyvar_t& var, const char* pszVa
 		}
 
 		if(var.vec_idx == -1)
-			var.value = var.mv.GetFloat();
+			var.value = var.mv.Get().x;
 		else
-			var.value = var.mv.GetVector4()[(int)var.vec_idx];
+			var.value = var.mv.Get()[(int)var.vec_idx];
 
 		var.type = PV_VARIABLE;
 	}
@@ -171,9 +171,9 @@ inline void CBaseMaterialProxy::UpdateVar(proxyvar_t& var, float fDt)
 		case PV_VARIABLE:
 		{
 			if(var.vec_idx == -1)
-				var.value = var.mv.GetFloat();
+				var.value = var.mv.Get().x;
 			else
-				var.value = var.mv.GetVector4()[(int)var.vec_idx];
+				var.value = var.mv.Get()[(int)var.vec_idx];
 
 			break;
 		}
@@ -195,12 +195,12 @@ inline void CBaseMaterialProxy::mvSetValue(proxyvar_t& var, float value)
 
 	if(var.vec_idx >= 0)
 	{
-		Vector4D outval = var.mv.GetVector4();
+		Vector4D outval = var.mv.Get();
 		outval[(int)var.vec_idx] = value;
-		var.mv.SetVector4(outval);
+		var.mv.Set(outval);
 	}
 	else
-		var.mv.SetFloat(value);
+		var.mv.Set(value);
 }
 
 inline void CBaseMaterialProxy::mvSetValueInt(proxyvar_t& var, int value)
@@ -212,12 +212,12 @@ inline void CBaseMaterialProxy::mvSetValueInt(proxyvar_t& var, int value)
 
 	if(var.vec_idx >= 0)
 	{
-		Vector4D outval = var.mv.GetVector4();
+		Vector4D outval = var.mv.Get();
 		outval[(int)var.vec_idx] = value;
-		var.mv.SetVector4(outval);
+		var.mv.Set(outval);
 	}
 	else
-		var.mv.SetInt(value);
+		var.mv.Set(value);
 }
 
 

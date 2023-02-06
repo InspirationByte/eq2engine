@@ -23,6 +23,8 @@
 #define EXTEND_CHARS	32	// 32 characters for extending
 #define EQSTRING_BASE_BUFFER	32
 
+const EqString EqString::EmptyStr;
+
 EqString::EqString()
 {
 	m_nLength = 0;

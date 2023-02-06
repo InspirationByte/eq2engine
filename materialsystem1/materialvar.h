@@ -9,21 +9,9 @@
 
 #include "materialsystem1/IMaterialVar.h"
 
-class CMatVar
+class MatVarHelper
 {
-	friend class CMaterial;
-
 public:
-					CMatVar() = default;
-
-	void			Init(const char* pszName,const char* pszValue);
-
-	const char*		GetName() const;
-
-	void			SetString(const char* szValue);
-private:
-	EqString		m_name;
-	int				m_nameHash{ 0 };
-
-	MatVarData		m_data;
+	static void	Init(MatVarData& data, const char* pszValue);
+	static void	SetString(MatVarData& data, const char* szValue);
 };

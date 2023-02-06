@@ -59,6 +59,8 @@ class EqString
 	friend class EqWString;
 public:
 
+	static const EqString EmptyStr;
+
 	EqString();
 	~EqString();
 
@@ -203,6 +205,5 @@ protected:
 	uint16		m_nLength;			// length of string
 	uint16		m_nAllocated;		// allocation size
 };
-
 
 STRING_OPERATORS(static inline, EqString)

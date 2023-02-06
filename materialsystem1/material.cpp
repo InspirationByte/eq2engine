@@ -195,7 +195,7 @@ void CMaterial::InitMaterialVars(KVSection* kvs)
 		++numMaterialVars;
 	}
 
-	m_variables.reserve(numMaterialVars);
+	m_vars.variables.reserve(numMaterialVars);
 
 	// init material vars
 	for(int i = 0; i < kvs->keys.numElem();i++)
@@ -214,17 +214,17 @@ void CMaterial::InitMaterialVars(KVSection* kvs)
 
 		{
 			CScopedMutex m(s_materialVarMutex);
-			auto it = m_variableMap.find(nameHash);
-			if (it == m_variableMap.end())
+			auto it = m_vars.variableMap.find(nameHash);
+			if (it == m_vars.variableMap.end())
 			{
-				const int varId = m_variables.numElem();
-				CMatVar& newVar = m_variables.append();
-				newVar.Init(materialVarSec->GetName(), KV_GetValueString(materialVarSec));
-				m_variableMap.insert(newVar.m_nameHash, varId);
+				const int varId = m_vars.variables.numElem();
+				MatVarData& newVar = m_vars.variables.append();
+				MatVarHelper::Init(newVar, KV_GetValueString(materialVarSec));
+				m_vars.variableMap.insert(nameHash, varId);
 			}
 			else
 			{
-				m_variables[*it].SetString(KV_GetValueString(materialVarSec));
+				MatVarHelper::SetString(m_vars.variables[*it], KV_GetValueString(materialVarSec));
 			}
 		}
 	}
@@ -327,7 +327,7 @@ void CMaterial::InitVars(KVSection* shader_root)
 
 MatVarData& CMaterial::VarAt(int idx) const
 {
-	return const_cast<MatVarData&>(m_variables[idx].m_data);
+	return const_cast<MatVarData&>(m_vars.variables[idx]);
 }
 
 bool CMaterial::LoadShaderAndTextures()
@@ -374,35 +374,35 @@ void CMaterial::WaitForLoading() const
 	} while(m_state == MATERIAL_LOAD_INQUEUE);
 }
 
-MatVarProxy CMaterial::GetMaterialVar(const char* pszVarName, const char* defaultValue)
+MatVarProxyUnk CMaterial::GetMaterialVar(const char* pszVarName, const char* defaultValue)
 {
 	CScopedMutex m(s_materialVarMutex);
 
 	const int nameHash = StringToHash(pszVarName, true);
 
-	auto it = m_variableMap.find(nameHash);
-	if (it != m_variableMap.end())
-		return MatVarProxy(*it, static_cast<IMaterial*>(this));
+	auto it = m_vars.variableMap.find(nameHash);
+	if (it != m_vars.variableMap.end())
+		return MatVarProxyUnk(*it, m_vars);
 
-	const int varId = m_variables.numElem();
-	CMatVar& newVar = m_variables.append();
-	newVar.Init(pszVarName, defaultValue);
+	const int varId = m_vars.variables.numElem();
+	MatVarData& newVar = m_vars.variables.append();
+	MatVarHelper::Init(newVar, defaultValue);
 
-	m_variableMap.insert(newVar.m_nameHash, varId);
+	m_vars.variableMap.insert(nameHash, varId);
 
-	return MatVarProxy(varId, static_cast<IMaterial*>(this));
+	return MatVarProxyUnk(varId, m_vars);
 }
 
-MatVarProxy CMaterial::FindMaterialVar(const char* pszVarName) const
+MatVarProxyUnk CMaterial::FindMaterialVar(const char* pszVarName) const
 {
 	const int nameHash = StringToHash(pszVarName, true);
 
 	CScopedMutex m(s_materialVarMutex);
-	auto it = m_variableMap.find(nameHash);
-	if (it == m_variableMap.end())
-		return MatVarProxy();
+	auto it = m_vars.variableMap.find(nameHash);
+	if (it == m_vars.variableMap.end())
+		return MatVarProxyUnk();
 
-	return MatVarProxy(*it, const_cast<IMaterial*>(static_cast<const IMaterial*>(this)));
+	return MatVarProxyUnk(*it, *const_cast<MaterialVarBlock*>(&m_vars));
 }
 
 const ITexturePtr& CMaterial::GetBaseTexture(int stage)
@@ -462,8 +462,8 @@ void CMaterial::Cleanup(bool dropVars, bool dropShader)
 	{
 		CScopedMutex m(s_materialVarMutex);
 
-		m_variables.clear(true);
-		m_variableMap.clear(true);
+		m_vars.variables.clear(true);
+		m_vars.variableMap.clear(true);
 
 		delete m_atlas;
 		m_atlas = nullptr;

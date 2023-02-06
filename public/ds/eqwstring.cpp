@@ -17,6 +17,8 @@
 #define EXTEND_CHARS	32	// 32 characters for extending
 #define EQSTRING_BASE_BUFFER	32
 
+const EqWString EqWString::EmptyStr;
+
 EqWString::EqWString()
 {
 	m_nLength = 0;

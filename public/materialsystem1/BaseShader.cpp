@@ -95,8 +95,8 @@ void CBaseShader::Init(IMaterial* assignee)
 
 void CBaseShader::InitParams()
 {
-	MatVarProxy addressMode	= GetAssignedMaterial()->FindMaterialVar("Address");
-	MatVarProxy texFilter = GetAssignedMaterial()->FindMaterialVar("Filtering");
+	MatStringProxy addressMode	= GetAssignedMaterial()->FindMaterialVar("Address");
+	MatStringProxy texFilter = GetAssignedMaterial()->FindMaterialVar("Filtering");
 
 	SHADER_PARAM_BOOL(ztest, m_depthtest, true)
 	SHADER_PARAM_BOOL(zwrite, m_depthwrite, true)
@@ -112,8 +112,8 @@ void CBaseShader::InitParams()
 	m_baseTextureFrame			= assignedMaterial->GetMaterialVar("BaseTextureFrame", "0");
 
 	// resolve address type and filtering mode
-	if( addressMode.IsValid()) m_nAddressMode = ResolveAddressType(addressMode.GetString());
-	if( texFilter.IsValid()) m_nTextureFilter = ResolveFilterType(texFilter.GetString());
+	if( addressMode.IsValid()) m_nAddressMode = ResolveAddressType(addressMode.Get());
+	if( texFilter.IsValid()) m_nTextureFilter = ResolveFilterType(texFilter.Get());
 
 	// setup render & shadowing parameters
 	SHADER_PARAM_FLAG(NoDraw, m_nFlags, MATERIAL_FLAG_INVISIBLE, false)
@@ -223,13 +223,13 @@ void CBaseShader::SetupParameter(uint mask, ShaderDefaultParams_e type)
 
 void CBaseShader::FindTextureByVar(ITexturePtr& texturePtrRef, IMaterial* material, const char* paramName, bool errorTextureIfNoVar)
 {
-	MatVarProxy mv = GetAssignedMaterial()->FindMaterialVar(paramName);
+	MatStringProxy mv = GetAssignedMaterial()->FindMaterialVar(paramName);
 	if(mv.IsValid()) 
 	{
-		texturePtrRef = g_pShaderAPI->FindTexture(mv.GetString());
+		texturePtrRef = g_pShaderAPI->FindTexture(mv.Get());
 
 		if (texturePtrRef)
-			AddManagedTexture(mv, texturePtrRef);
+			AddManagedTexture(MatTextureProxy(mv), texturePtrRef);
 	}
 	else if(errorTextureIfNoVar)
 		texturePtrRef = g_pShaderAPI->GetErrorTexture();
@@ -237,7 +237,7 @@ void CBaseShader::FindTextureByVar(ITexturePtr& texturePtrRef, IMaterial* materi
 
 void CBaseShader::LoadTextureByVar(ITexturePtr& texturePtrRef, IMaterial* material, const char* paramName, bool errorTextureIfNoVar)
 {	
-	MatVarProxy mv;
+	MatVarProxyUnk mv;
 	if(materials->GetConfiguration().editormode)		
 	{		
 		mv = material->FindMaterialVar(EqString::Format("%s_editor", paramName));
@@ -253,9 +253,9 @@ void CBaseShader::LoadTextureByVar(ITexturePtr& texturePtrRef, IMaterial* materi
 		SamplerStateParam_t samplerParams;
 		SamplerStateParams_Make(samplerParams, g_pShaderAPI->GetCaps(), m_nTextureFilter, m_nAddressMode, m_nAddressMode, m_nAddressMode);
 
-		texturePtrRef = g_texLoader->LoadTextureFromFileSync(mv.GetString(), samplerParams);
+		texturePtrRef = g_texLoader->LoadTextureFromFileSync(MatStringProxy(mv).Get(), samplerParams);
 		if(texturePtrRef)
-			AddManagedTexture(mv, texturePtrRef);
+			AddManagedTexture(MatTextureProxy(mv), texturePtrRef);
 	}
 
 	if(!texturePtrRef && errorTextureIfNoVar)
@@ -377,16 +377,16 @@ void CBaseShader::ParamSetup_Cubemap()
 }
 
 // get texture transformation from vars
-Vector4D CBaseShader::GetTextureTransform(MatVarProxy transformVar, MatVarProxy scaleVar) const
+Vector4D CBaseShader::GetTextureTransform(const MatVec2Proxy& transformVar, const MatVec2Proxy& scaleVar) const
 {
 	if(transformVar.IsValid() && scaleVar.IsValid())
-		return Vector4D(scaleVar.GetVector2(), transformVar.GetVector2());
+		return Vector4D(scaleVar.Get(), transformVar.Get());
 
 	return Vector4D(1,1,0,0);
 }
 
 // sends texture transformation to shader
-void CBaseShader::SetupVertexShaderTextureTransform(MatVarProxy transformVar, MatVarProxy scaleVar, const char* pszConstName)
+void CBaseShader::SetupVertexShaderTextureTransform(const MatVec2Proxy& transformVar, const MatVec2Proxy& scaleVar, const char* pszConstName)
 {
 	Vector4D trans = GetTextureTransform(transformVar, scaleVar);
 
@@ -423,11 +423,11 @@ void CBaseShader::AddManagedShader(IShaderProgram** pShader)
 	m_UsedPrograms.append(pShader);
 }
 
-void CBaseShader::AddManagedTexture(MatVarProxy var, const ITexturePtr& tex)
+void CBaseShader::AddManagedTexture(MatTextureProxy& var, const ITexturePtr& tex)
 {
 	if(!tex)
 		return;
 
-	var.SetTexture(tex);
+	var.Set(tex);
 	m_UsedTextures.append(var);
 }
