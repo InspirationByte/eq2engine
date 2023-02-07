@@ -23,8 +23,7 @@ BEGIN_SHADER_CLASS(EnvMapTest)
 	// Initialize textures
 	SHADER_INIT_TEXTURES()
 	{
-		SHADER_PARAM_TEXTURE_NOERROR(Cubemap, m_pCubemap);
-
+		SHADER_PARAM_TEXTURE_NOERROR(Cubemap, m_cubemapTexture);
 	}
 
 	SHADER_INIT_RHI()
@@ -53,14 +52,10 @@ BEGIN_SHADER_CLASS(EnvMapTest)
 		SetupDefaultParameter(SHADERPARAM_COLOR);
 		SetupDefaultParameter(SHADERPARAM_FOG);
 
-		// setup base texture
-		if (m_nFlags & MATERIAL_FLAG_USE_ENVCUBEMAP)
-			g_pShaderAPI->SetTexture(materials->GetEnvironmentMapTexture(), "Base", 0);
-		else
-			g_pShaderAPI->SetTexture(m_pCubemap, "Base", 0);
+		g_pShaderAPI->SetTexture(m_cubemapTexture.Get(), "Base", 0);
 	}
 
-	ITexturePtr m_pCubemap;
+	MatTextureProxy m_cubemapTexture;
 
 	SHADER_DECLARE_PASS(Unlit);
 

@@ -51,6 +51,8 @@ public:
 	void				Set(const T& value);
 	const T&			Get() const;
 
+	void				Purge();
+
 	void				operator=(std::nullptr_t) { m_matVarIdx = -1; m_vars = nullptr; }
 
 protected:
@@ -72,37 +74,24 @@ using MatM4x4Proxy = MatVarProxy<Matrix4x4>;
 
 class CTextureAtlas;
 
-// WARNING: modifying this you must recompile all engine!
-enum MaterialFlags_e
+enum EMaterialFlags
 {
-	MATERIAL_FLAG_BASETEXTURE_CUR	= (1 << 0),		// use the currently set up texture in ShaderAPI as baseTexture
-
-	MATERIAL_FLAG_ISSKY				= (1 << 1),		// used for skybox
+	MATERIAL_FLAG_RECEIVESHADOWS	= (1 << 0),		// this material receives shadows
+	MATERIAL_FLAG_CASTSHADOWS		= (1 << 1),		// this material occludes light
 	MATERIAL_FLAG_INVISIBLE			= (1 << 2),		// invisible in standart scene mode. Shadows can be casted if MATERIAL_FLAG_CASTSHADOWS set
+	MATERIAL_FLAG_NOCULL			= (1 << 3),		// no culling (two sided)
 
-	MATERIAL_FLAG_ALPHATESTED		= (1 << 3),		// has alphatesting along with other transparency modes
+	MATERIAL_FLAG_SKINNED			= (1 << 4),		// this material can be applied on skinned mesh, using vertex shaders
+	MATERIAL_FLAG_VERTEXBLEND		= (1 << 5),		// this material is uses vertex blending
 
-	MATERIAL_FLAG_TRANSPARENT		= (1 << 4),		// has transparency
-	MATERIAL_FLAG_ADDITIVE			= (1 << 5),		// additive transparency
-	MATERIAL_FLAG_MODULATE			= (1 << 6),		// additive transparency
+	MATERIAL_FLAG_ALPHATESTED		= (1 << 6),		// has alphatesting
+	MATERIAL_FLAG_TRANSPARENT		= (1 << 7),		// has transparency
 
-	MATERIAL_FLAG_NOCULL			= (1 << 7),		// no culling (two sided)
+	MATERIAL_FLAG_SKY				= (1 << 8),	// used for skybox
+	MATERIAL_FLAG_DECAL				= (1 << 9),	// is decal shader (also enables polygon offset feature)
+	MATERIAL_FLAG_WATER				= (1 << 10),	// this is water material
 
-	MATERIAL_FLAG_DECAL				= (1 << 8),		// is decal shader (also enables polygon offset feature)
-
-	MATERIAL_FLAG_SKINNED			= (1 << 9),		// this material can be applied on skinned mesh, using vertex shaders
-	MATERIAL_FLAG_VERTEXBLEND		= (1 << 10),	// this material is uses vertex blending
-
-	MATERIAL_FLAG_CASTSHADOWS		= (1 << 11),	// this material occludes light
-	MATERIAL_FLAG_RECEIVESHADOWS	= (1 << 12),	// this material receives shadows
-
-	MATERIAL_FLAG_ISTEXTRANSITION	= (1 << 13),	// transits textures to create painting effect (vertex transition)
-	MATERIAL_FLAG_HASBUMPTEXTURE	= (1 << 14),	// has bumpmap texture
-	MATERIAL_FLAG_HASCUBEMAP		= (1 << 15),	// has cubemap texture
-
-	MATERIAL_FLAG_USE_ENVCUBEMAP	= (1 << 16),	// cubemap is $env_cubemap
-
-	MATERIAL_FLAG_WATER				= (1 << 17),	// this is water material
+	MATERIAL_FLAG_TEXTRANSITION		= (1 << 11),	// transits textures to create painting effect (vertex transition)
 };
 
 enum EMaterialLoadingState
@@ -138,7 +127,7 @@ public:
 	virtual MatVarProxyUnk			FindMaterialVar( const char* pszVarName ) const = 0;	// only searches for existing matvar
 
 	// finds or creates material var
-	virtual MatVarProxyUnk			GetMaterialVar( const char* pszVarName, const char* defaultValue) = 0;
+	virtual MatVarProxyUnk			GetMaterialVar( const char* pszVarName, const char* defaultValue = nullptr) = 0;
 
 // render-time operations
 

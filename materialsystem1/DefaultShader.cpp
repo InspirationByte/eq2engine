@@ -15,12 +15,13 @@ BEGIN_SHADER_CLASS(Default)
 	SHADER_INIT_PARAMS()
 	{
 		SHADER_PASS(Unlit) = nullptr;
+		SetParameterFunctor(SHADERPARAM_BASETEXTURE, &ThisShaderClass::SetupBaseTexture);
 		SetParameterFunctor(SHADERPARAM_COLOR, &ThisShaderClass::SetColorModulation);
 	}
 
 	SHADER_INIT_TEXTURES()
 	{
-
+		SHADER_PARAM_TEXTURE_FIND(BaseTexture, m_baseTexture)
 	}
 
 	SHADER_INIT_RHI()
@@ -50,6 +51,11 @@ BEGIN_SHADER_CLASS(Default)
 		SetupDefaultParameter(SHADERPARAM_COLOR);
 	}
 
+	void SetupBaseTexture()
+	{
+		g_pShaderAPI->SetTexture(m_baseTexture.Get() ? m_baseTexture.Get() : materials->GetWhiteTexture(), "BaseTextureSampler");
+	}
+
 	void SetColorModulation()
 	{
 		ColorRGBA setColor = materials->GetAmbientColor();
@@ -57,5 +63,7 @@ BEGIN_SHADER_CLASS(Default)
 	}
 
 	SHADER_DECLARE_PASS(Unlit);
+
+	MatTextureProxy m_baseTexture;
 
 END_SHADER_CLASS

@@ -904,10 +904,8 @@ void CMaterialSystem::SetProxyDeltaTime(float deltaTime)
 	m_proxyDeltaTime = deltaTime;
 }
 
-MatVarProxyUnk	CMaterialSystem::FindGlobalMaterialVar(const char* pszVarName) const
+MatVarProxyUnk CMaterialSystem::FindGlobalMaterialVar(int nameHash) const
 {
-	const int nameHash = StringToHash(pszVarName, true);
-
 	CScopedMutex m(s_matSystemMutex);
 	auto it = m_globalMaterialVars.variableMap.find(nameHash);
 	if (it == m_globalMaterialVars.variableMap.end())
@@ -916,7 +914,13 @@ MatVarProxyUnk	CMaterialSystem::FindGlobalMaterialVar(const char* pszVarName) co
 	return MatVarProxyUnk(*it, *const_cast<MaterialVarBlock*>(&m_globalMaterialVars));
 }
 
-MatVarProxyUnk	CMaterialSystem::GetGlobalMaterialVar(const char* pszVarName, const char* defaultValue)
+MatVarProxyUnk CMaterialSystem::FindGlobalMaterialVarByName(const char* pszVarName) const
+{
+	const int nameHash = StringToHash(pszVarName, true);
+	return FindGlobalMaterialVar(nameHash);
+}
+
+MatVarProxyUnk	CMaterialSystem::GetGlobalMaterialVarByName(const char* pszVarName, const char* defaultValue)
 {
 	CScopedMutex m(s_matSystemMutex);
 
@@ -1365,7 +1369,7 @@ void CMaterialSystem::DrawPrimitivesFFP(ER_PrimitiveType type, Vertex3D_t *pVert
 	else
 		SetDepthStates(*depthParams);
 
-	g_pShaderAPI->SetTexture(pTexture, nullptr, 0);
+	MatTextureProxy(materials->FindGlobalMaterialVar(StringToHashConst("basetexture"))).Set(pTexture);
 	BindMaterial(GetDefaultMaterial());
 
 	CMeshBuilder meshBuilder(&m_dynamicMesh);
@@ -1407,7 +1411,7 @@ void CMaterialSystem::DrawPrimitives2DFFP(	ER_PrimitiveType type, Vertex2D_t *pV
 	else
 		SetDepthStates(*depthParams);
 
-	g_pShaderAPI->SetTexture(pTexture, nullptr, 0);
+	MatTextureProxy(materials->FindGlobalMaterialVar(StringToHashConst("basetexture"))).Set(pTexture);
 	BindMaterial(GetDefaultMaterial());
 
 	CMeshBuilder meshBuilder(&m_dynamicMesh);

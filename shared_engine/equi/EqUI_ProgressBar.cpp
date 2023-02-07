@@ -39,7 +39,7 @@ void ProgressBar::DrawSelf(const IRectangle& _rect, bool scissorOn)
 	blending.srcFactor = BLENDFACTOR_SRC_ALPHA;
 	blending.dstFactor = BLENDFACTOR_ONE_MINUS_SRC_ALPHA;
 
-	g_pShaderAPI->SetTexture(NULL, 0, 0);
+	MatTextureProxy(materials->FindGlobalMaterialVar(StringToHashConst("basetexture"))).Set(nullptr);
 	materials->SetBlendingStates(blending);
 	materials->SetRasterizerStates(CULL_NONE, FILL_SOLID);
 	materials->SetDepthStates(false, false);

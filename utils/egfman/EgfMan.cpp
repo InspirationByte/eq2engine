@@ -1152,7 +1152,7 @@ void RenderFloor()
 	materials->SetRasterizerStates(CULL_FRONT,FILL_SOLID);
 	materials->SetBlendingStates(blending);
 
-	g_pShaderAPI->SetTexture(nullptr, nullptr, 0);
+	MatTextureProxy(materials->FindGlobalMaterialVar(StringToHashConst("basetexture"))).Set(nullptr);
 
 	materials->BindMaterial(materials->GetDefaultMaterial());
 

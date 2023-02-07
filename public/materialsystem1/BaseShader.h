@@ -10,6 +10,15 @@
 class IMaterial;
 class IShaderProgram;
 
+// valid if MATERIAL_FLAG_TRANSPARENT
+enum ShaderBlendMode : int
+{
+	SHADER_BLEND_NONE = 0,
+	SHADER_BLEND_TRANSLUCENT,		// is transparent
+	SHADER_BLEND_ADDITIVE,			// additive transparency
+	SHADER_BLEND_MODULATE,			// modulate
+};
+
 #define BEGIN_SHADER_CLASS(name)								\
 	namespace C##name##ShaderLocalNamespace						\
 	{															\
@@ -71,7 +80,10 @@ class IShaderProgram;
 	MatIntProxy mv_##param = GetAssignedMaterial()->FindMaterialVar(#param); \
 	if(mv_##param.IsValid()) variable |= (mv_##param.Get() ? flag : 0); else if(def) variable |= flag;
 
-#define SHADER_PARAM_STRING(param, variable, def)		_SHADER_PARAM_INIT(param, variable, def, String, _SHADER_PARAM_OP_EMPTY)
+#define SHADER_PARAM_ENUM(param, variable, enumValue) \
+	MatIntProxy mv_##param = GetAssignedMaterial()->FindMaterialVar(#param); \
+	if(mv_##param.IsValid()) variable = (mv_##param.Get() ? enumValue : 0);
+
 #define SHADER_PARAM_BOOL(param, variable, def)			_SHADER_PARAM_INIT(param, variable, def, Int, _SHADER_PARAM_OP_EMPTY)
 #define SHADER_PARAM_BOOL_NEG(param, variable, def)		_SHADER_PARAM_INIT(param, variable, def, Int, _SHADER_PARAM_OP_NOT)
 #define SHADER_PARAM_INT(param, variable, def)			_SHADER_PARAM_INIT(param, variable, def, Int, _SHADER_PARAM_OP_EMPTY)
@@ -80,9 +92,9 @@ class IShaderProgram;
 #define SHADER_PARAM_VECTOR3(param, variable, def)		_SHADER_PARAM_INIT(param, variable, def, Vec3, _SHADER_PARAM_OP_EMPTY)
 #define SHADER_PARAM_VECTOR4(param, variable, def)		_SHADER_PARAM_INIT(param, variable, def, Vec4, _SHADER_PARAM_OP_EMPTY)
 
-#define SHADER_PARAM_TEXTURE(param, variable)			{ LoadTextureByVar(variable, GetAssignedMaterial(), #param, true); }
-#define SHADER_PARAM_TEXTURE_NOERROR(param, variable)	{ LoadTextureByVar(variable, GetAssignedMaterial(), #param, false); }
-#define SHADER_PARAM_RENDERTARGET_FIND(param, variable) { FindTextureByVar(variable, GetAssignedMaterial(), #param, false); }
+#define SHADER_PARAM_TEXTURE(param, variable)			{ variable = LoadTextureByVar(#param, true); }
+#define SHADER_PARAM_TEXTURE_NOERROR(param, variable)	{ variable = LoadTextureByVar(#param, false); }
+#define SHADER_PARAM_TEXTURE_FIND(param, variable)		{ variable = FindTextureByVar(#param, false); }
 
 #define SHADERDEFINES_DEFAULTS \
 	SHADER_DECLARE_SIMPLE_DEFINITION(materials->GetConfiguration().lowShaderQuality, "LOWQUALITY");\
@@ -170,8 +182,6 @@ public:
 	int							GetBumpStageCount() const			{ return 0; }
 
 protected:
-	void						ParamSetup_CurrentAsBaseTexture();
-
 	void						ParamSetup_AlphaModel_Solid();
 	void						ParamSetup_AlphaModel_Translucent();
 	void						ParamSetup_AlphaModel_Additive();
@@ -181,6 +191,7 @@ protected:
 
 	void						ParamSetup_DepthSetup();
 	void						ParamSetup_RasterState();
+	void						ParamSetup_RasterState_NoCull();
 
 	void						ParamSetup_Transform();
 	void						ParamSetup_Fog();
@@ -188,8 +199,11 @@ protected:
 
 	virtual bool				_ShaderInitRHI() = 0;
 
-	void						FindTextureByVar(ITexturePtr& texturePtrRef, IMaterial* material, const char* paramName, bool errorTextureIfNoVar);
-	void						LoadTextureByVar(ITexturePtr& texturePtrRef, IMaterial* material, const char* paramName, bool errorTextureIfNoVar);
+	MatVarProxyUnk				FindMaterialVar(const char* paramName) const;
+
+	MatTextureProxy				FindTextureByVar(const char* paramName, bool errorTextureIfNoVar);
+	MatTextureProxy				LoadTextureByVar(const char* paramName, bool errorTextureIfNoVar);
+
 	void						AddManagedShader(IShaderProgram** pShader);
 	void						AddManagedTexture(MatTextureProxy& var, const ITexturePtr& tex);
 
@@ -197,20 +211,21 @@ protected:
 
 	void						EmptyFunctor() {}
 
+	SHADERPARAMFUNC				m_param_functors[SHADERPARAM_COUNT]{ nullptr };
 	Array<MatTextureProxy>		m_UsedTextures{ PP_SL }; // TODO: remove it and capture MatVarProxy instead
 	Array<IShaderProgram**>		m_UsedPrograms{ PP_SL };
-	SHADERPARAMFUNC				m_param_functors[SHADERPARAM_COUNT]{ nullptr };
 
 	MatVec2Proxy				m_baseTextureTransformVar;
 	MatVec2Proxy				m_baseTextureScaleVar;
 	MatIntProxy					m_baseTextureFrame;
+	MatTextureProxy				m_cubemapTexture;
 
 	IMaterial*					m_material{ nullptr };
 
-	ER_TextureAddressMode		m_nAddressMode;
-	ER_TextureFilterMode		m_nTextureFilter;
-
-	int							m_nFlags{ 0 }; // shader flags
+	int							m_texAddressMode{ TEXADDRESS_WRAP };
+	int							m_texFilter{ TEXFILTER_TRILINEAR_ANISO };
+	int							m_blendMode{ SHADER_BLEND_NONE };
+	int							m_flags{ 0 }; // shader flags
 
 	bool						m_depthwrite : 1;
 	bool						m_depthtest : 1;
@@ -220,8 +235,6 @@ protected:
 
 	bool						m_bIsError : 1;
 	bool						m_bInitialized : 1;
-
-
 };
 
 #define SetParameterFunctor( type, a) m_param_functors[type] = (static_cast <SHADERPARAMFUNC>(a))

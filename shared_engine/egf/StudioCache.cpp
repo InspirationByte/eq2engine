@@ -7,6 +7,7 @@
 
 #include "core/core_common.h"
 #include "core/ConVar.h"
+#include "core/ConCommand.h"
 
 #include "materialsystem1/IMaterialSystem.h"
 
@@ -17,6 +18,16 @@ static ConVar job_modelLoader("job_modelLoader", "0", "Load models in parallel t
 
 static CStudioCache s_ModelCache;
 CStudioCache* g_studioModelCache = &s_ModelCache;
+
+DECLARE_CMD(egf_info, "Print loaded EGF info", CV_CHEAT)
+{
+	MsgInfo("Models loaded: %d\n", s_ModelCache.GetCachedModelCount());
+	for (int i = 0; i < s_ModelCache.GetCachedModelCount(); ++i)
+	{
+		CEqStudioGeom* geom = s_ModelCache.GetModel(i);
+		Msg("  %d: %s\n", i, geom->GetName());
+	}
+}
 
 CStudioCache::CStudioCache()
 {

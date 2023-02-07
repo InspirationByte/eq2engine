@@ -69,9 +69,6 @@ CBaseShader::CBaseShader()
 
 	m_polyOffset		= false;
 
-	m_nAddressMode = TEXADDRESS_WRAP;
-	m_nTextureFilter = TEXFILTER_TRILINEAR_ANISO;
-
 	for(int i = 0; i < SHADERPARAM_COUNT; i++)
 		SetParameterFunctor(i, &CBaseShader::EmptyFunctor);
 
@@ -112,78 +109,55 @@ void CBaseShader::InitParams()
 	m_baseTextureFrame			= assignedMaterial->GetMaterialVar("BaseTextureFrame", "0");
 
 	// resolve address type and filtering mode
-	if( addressMode.IsValid()) m_nAddressMode = ResolveAddressType(addressMode.Get());
-	if( texFilter.IsValid()) m_nTextureFilter = ResolveFilterType(texFilter.Get());
+	if( addressMode.IsValid()) m_texAddressMode = ResolveAddressType(addressMode.Get());
+	if( texFilter.IsValid()) m_texFilter = ResolveFilterType(texFilter.Get());
 
 	// setup render & shadowing parameters
-	SHADER_PARAM_FLAG(NoDraw, m_nFlags, MATERIAL_FLAG_INVISIBLE, false)
-	SHADER_PARAM_FLAG(ReceiveShadows, m_nFlags, MATERIAL_FLAG_RECEIVESHADOWS, true)
-	SHADER_PARAM_FLAG(CastShadows, m_nFlags, MATERIAL_FLAG_CASTSHADOWS, true)
+	SHADER_PARAM_FLAG(NoDraw,			m_flags, MATERIAL_FLAG_INVISIBLE, false)
+	SHADER_PARAM_FLAG(ReceiveShadows,	m_flags, MATERIAL_FLAG_RECEIVESHADOWS, true)
+	SHADER_PARAM_FLAG(CastShadows,		m_flags, MATERIAL_FLAG_CASTSHADOWS, true)
 
-	SHADER_PARAM_FLAG(Decal, m_nFlags, MATERIAL_FLAG_DECAL, false)
+	SHADER_PARAM_FLAG(Decal,			m_flags, MATERIAL_FLAG_DECAL, false)
+	SHADER_PARAM_FLAG(NoCull,			m_flags, MATERIAL_FLAG_NOCULL, false)
 
-	SHADER_PARAM_FLAG(NoCull, m_nFlags, MATERIAL_FLAG_NOCULL, false)
+	SHADER_PARAM_FLAG(AlphaTest,		m_flags, MATERIAL_FLAG_ALPHATESTED, false)
 
-	SHADER_PARAM_FLAG(AlphaTest, m_nFlags, MATERIAL_FLAG_ALPHATESTED, false)
-	SHADER_PARAM_FLAG(Translucent, m_nFlags, MATERIAL_FLAG_TRANSPARENT, false)
-	SHADER_PARAM_FLAG(Additive, m_nFlags, MATERIAL_FLAG_ADDITIVE, false)
-	SHADER_PARAM_FLAG(Modulate, m_nFlags, MATERIAL_FLAG_MODULATE, false)
+	SHADER_PARAM_ENUM(Translucent,		m_blendMode, SHADER_BLEND_TRANSLUCENT)
+	SHADER_PARAM_ENUM(Additive,			m_blendMode, SHADER_BLEND_ADDITIVE)
+	SHADER_PARAM_ENUM(Modulate,			m_blendMode, SHADER_BLEND_MODULATE)
 
 	bool additiveLight = false;
 	SHADER_PARAM_BOOL(AdditiveLight, additiveLight, false)
 
-	// setup functors for transparency
-
-	if(m_nFlags & MATERIAL_FLAG_TRANSPARENT)
+	if(m_blendMode == SHADER_BLEND_TRANSLUCENT)
 	{
 		SetParameterFunctor(SHADERPARAM_ALPHASETUP, &CBaseShader::ParamSetup_AlphaModel_Translucent);
 		m_depthwrite = false;
 	}
-
-	if(m_nFlags & MATERIAL_FLAG_ADDITIVE)
+	else if(m_blendMode == SHADER_BLEND_ADDITIVE)
 	{
 		SetParameterFunctor(SHADERPARAM_ALPHASETUP, &CBaseShader::ParamSetup_AlphaModel_Additive);
 		m_depthwrite = false;
 	}
-
-	if(m_nFlags & MATERIAL_FLAG_MODULATE)
+	else if(m_blendMode == SHADER_BLEND_MODULATE)
 	{
 		SetParameterFunctor(SHADERPARAM_ALPHASETUP, &CBaseShader::ParamSetup_AlphaModel_Modulate);
 		m_depthwrite = false;
 	}
-
-	if (additiveLight)
+	else if (additiveLight)
 	{
 		SetParameterFunctor(SHADERPARAM_ALPHASETUP, &CBaseShader::ParamSetup_AlphaModel_AdditiveLight);
 		m_depthwrite = false;
-		m_nFlags |= MATERIAL_FLAG_ADDITIVE;
+		m_blendMode = SHADER_BLEND_ADDITIVE;
 	}
 
-	EqString baseTextureStr;
-	SHADER_PARAM_STRING(BaseTexture, baseTextureStr, "");
-	if (baseTextureStr.ToCString()[0] == '$')
-	{
-		if(!baseTextureStr.CompareCaseIns("$basetexture"))
-		{
-			m_nFlags |= MATERIAL_FLAG_BASETEXTURE_CUR;
-			SetParameterFunctor(SHADERPARAM_BASETEXTURE, &CBaseShader::ParamSetup_CurrentAsBaseTexture);
-		}
-	}
+	if (m_blendMode != SHADER_BLEND_NONE)
+		m_flags |= MATERIAL_FLAG_TRANSPARENT;
 
-	if (materials->GetConfiguration().enableSpecular)
-	{
-		EqString cubemapStr;
-		SHADER_PARAM_STRING(Cubemap, cubemapStr, "");
+	if(m_flags & MATERIAL_FLAG_NOCULL)
+		SetParameterFunctor(SHADERPARAM_RASTERSETUP, &CBaseShader::ParamSetup_RasterState_NoCull);
 
-		// detect ENV_CUBEMAP
-		if (cubemapStr.ToCString()[0] == '$')
-		{
-			if (!cubemapStr.CompareCaseIns("$env_cubemap"))
-				m_nFlags |= MATERIAL_FLAG_USE_ENVCUBEMAP;
-		}
-	}
-
-	if(m_nFlags & MATERIAL_FLAG_DECAL)
+	if(m_flags & MATERIAL_FLAG_DECAL)
 		m_polyOffset = true;
 }
 
@@ -199,7 +173,7 @@ void CBaseShader::InitShader()
 // Unload shaders, textures
 void CBaseShader::Unload()
 {
-	for(int i = 0; i < m_UsedPrograms.numElem(); i++)
+	for(int i = 0; i < m_UsedPrograms.numElem(); ++i)
 	{
 		IShaderProgram* program = *m_UsedPrograms[i];
 		*m_UsedPrograms[i] = nullptr;
@@ -207,6 +181,12 @@ void CBaseShader::Unload()
 		g_pShaderAPI->DestroyShaderProgram(program);
 	}
 	m_UsedPrograms.clear(true);
+
+	for (int i = 0; i < m_UsedTextures.numElem(); ++i)
+	{
+		MatTextureProxy& texProxy = m_UsedTextures[i];
+		texProxy.Set(nullptr);
+	}
 	m_UsedTextures.clear(true);
 
 	m_bInitialized = false;
@@ -221,56 +201,55 @@ void CBaseShader::SetupParameter(uint mask, ShaderDefaultParams_e type)
 		(this->*m_param_functors[type]) ();
 }
 
-void CBaseShader::FindTextureByVar(ITexturePtr& texturePtrRef, IMaterial* material, const char* paramName, bool errorTextureIfNoVar)
+MatVarProxyUnk CBaseShader::FindMaterialVar(const char* paramName) const
 {
-	MatStringProxy mv = GetAssignedMaterial()->FindMaterialVar(paramName);
-	if(mv.IsValid()) 
-	{
-		texturePtrRef = g_pShaderAPI->FindTexture(mv.Get());
+	MatStringProxy mv;
 
-		if (texturePtrRef)
-			AddManagedTexture(MatTextureProxy(mv), texturePtrRef);
-	}
-	else if(errorTextureIfNoVar)
-		texturePtrRef = g_pShaderAPI->GetErrorTexture();
+	// editor parameters are separate prefixed ones
+	// this allows to have values of parameters that are represented in the game while alter rendering in editor.
+	if (materials->GetConfiguration().editormode)
+		mv = GetAssignedMaterial()->FindMaterialVar(EqString::Format("editor.%s", paramName));
+
+	if (!mv.IsValid())
+		mv = GetAssignedMaterial()->FindMaterialVar(paramName);
+
+	// check if we want to use material system global var under that name
+	// NOTE: they have to be valid always in order to link proxies
+	if (mv.IsValid() && *mv.Get() == '$')
+		mv = materials->GetGlobalMaterialVarByName(((const char*)mv.Get())+1);
+
+	return mv;
 }
 
-void CBaseShader::LoadTextureByVar(ITexturePtr& texturePtrRef, IMaterial* material, const char* paramName, bool errorTextureIfNoVar)
-{	
-	MatVarProxyUnk mv;
-	if(materials->GetConfiguration().editormode)		
-	{		
-		mv = material->FindMaterialVar(EqString::Format("%s_editor", paramName));
-		if(!mv.IsValid())
-			mv = material->FindMaterialVar(paramName);
-	}		
-	else
-		mv = material->FindMaterialVar(paramName);
-	
-	texturePtrRef = nullptr;
+MatTextureProxy CBaseShader::FindTextureByVar(const char* paramName, bool errorTextureIfNoVar)
+{
+	MatStringProxy mv = FindMaterialVar(paramName);
+	if(mv.IsValid()) 
+	{
+		AddManagedTexture(MatTextureProxy(mv), g_pShaderAPI->FindTexture(mv.Get()));
+	}
+	else if(errorTextureIfNoVar)
+		AddManagedTexture(MatTextureProxy(mv), g_pShaderAPI->GetErrorTexture());
+
+	return mv;
+}
+
+MatTextureProxy CBaseShader::LoadTextureByVar(const char* paramName, bool errorTextureIfNoVar)
+{
+	MatStringProxy mv = FindMaterialVar(paramName);
+
 	if(mv.IsValid()) 
 	{
 		SamplerStateParam_t samplerParams;
-		SamplerStateParams_Make(samplerParams, g_pShaderAPI->GetCaps(), m_nTextureFilter, m_nAddressMode, m_nAddressMode, m_nAddressMode);
+		SamplerStateParams_Make(samplerParams, g_pShaderAPI->GetCaps(), (ER_TextureFilterMode)m_texFilter, (ER_TextureAddressMode)m_texAddressMode, (ER_TextureAddressMode)m_texAddressMode, (ER_TextureAddressMode)m_texAddressMode);
 
-		texturePtrRef = g_texLoader->LoadTextureFromFileSync(MatStringProxy(mv).Get(), samplerParams);
-		if(texturePtrRef)
-			AddManagedTexture(MatTextureProxy(mv), texturePtrRef);
+		if(mv.Get().Length())
+			AddManagedTexture(MatTextureProxy(mv), g_texLoader->LoadTextureFromFileSync(mv.Get(), samplerParams));
 	}
+	else if(errorTextureIfNoVar)
+		AddManagedTexture(MatTextureProxy(mv), g_pShaderAPI->GetErrorTexture());
 
-	if(!texturePtrRef && errorTextureIfNoVar)
-		texturePtrRef = g_pShaderAPI->GetErrorTexture();
-}
-
-void CBaseShader::ParamSetup_CurrentAsBaseTexture()
-{
-	ITexturePtr currentTexture = g_pShaderAPI->GetTextureAt(0);
-
-	if(currentTexture == nullptr)
-		currentTexture = materials->GetWhiteTexture();
-
-	g_pShaderAPI->SetTexture(currentTexture, "BaseTextureSampler", 0);
-
+	return mv;
 }
 
 void CBaseShader::ParamSetup_AlphaModel_Solid()
@@ -320,17 +299,17 @@ void CBaseShader::ParamSetup_RasterState()
 	const matsystem_render_config_t& config = materials->GetConfiguration();
 
 	ER_CullMode cull_mode = materials->GetCurrentCullMode();
-
-	if(m_nFlags & MATERIAL_FLAG_NOCULL)
-		cull_mode = CULL_NONE;
-
-	// force no culling
 	if(config.wireframeMode && config.editormode)
 		cull_mode = CULL_NONE;
 
 	materials->SetRasterizerStates(cull_mode, (ER_FillMode)config.wireframeMode, m_msaaEnabled, false, m_polyOffset);
 }
 
+void CBaseShader::ParamSetup_RasterState_NoCull()
+{
+	const matsystem_render_config_t& config = materials->GetConfiguration();
+	materials->SetRasterizerStates(CULL_NONE, (ER_FillMode)config.wireframeMode, m_msaaEnabled, false, m_polyOffset);
+}
 
 void CBaseShader::ParamSetup_Transform()
 {
@@ -360,20 +339,17 @@ void CBaseShader::ParamSetup_Fog()
 	materials->GetFogInfo(fog);
 
 	// setup shader fog
-	float fogScale = 1.0f / (fog.fogfar - fog.fognear);
-
-	Vector4D VectorFOGParams(fog.fognear,fog.fogfar, fogScale, 1.0f);
+	const float fogScale = 1.0f / (fog.fogfar - fog.fognear);
+	const Vector4D VectorFOGParams(fog.fognear,fog.fogfar, fogScale, 1.0f);
 
 	g_pShaderAPI->SetShaderConstantVector3D("ViewPos", fog.viewPos);
-
 	g_pShaderAPI->SetShaderConstantVector4D("FogParams", VectorFOGParams);
 	g_pShaderAPI->SetShaderConstantVector3D("FogColor", fog.fogColor);
 }
 
 void CBaseShader::ParamSetup_Cubemap()
 {
-	if (m_nFlags & MATERIAL_FLAG_USE_ENVCUBEMAP)
-		g_pShaderAPI->SetTexture(materials->GetEnvironmentMapTexture(), "CubemapTexture", 12);
+	g_pShaderAPI->SetTexture(m_cubemapTexture.Get(), "CubemapTexture", 12);
 }
 
 // get texture transformation from vars
@@ -411,7 +387,7 @@ bool CBaseShader::IsInitialized() const
 // get flags
 int CBaseShader::GetFlags() const
 {
-	return m_nFlags;
+	return m_flags;
 }
 
 void CBaseShader::AddManagedShader(IShaderProgram** pShader)

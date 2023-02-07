@@ -13,7 +13,6 @@ BEGIN_SHADER_CLASS(VHBlurFilter)
 
 	SHADER_INIT_PARAMS()
 	{
-		m_pBaseTexture = nullptr;
 		m_blurAxes = 0;
 		m_blurModes = 0;
 		m_texSize = vec4_zero;
@@ -27,14 +26,13 @@ BEGIN_SHADER_CLASS(VHBlurFilter)
 	SHADER_INIT_TEXTURES()
 	{
 		// parse material variables
-		SHADER_PARAM_RENDERTARGET_FIND(BaseTexture, m_pBaseTexture);
+		SHADER_PARAM_TEXTURE_FIND(BaseTexture, m_baseTexture);
 
-		if(m_pBaseTexture)
+		if(m_baseTexture.Get())
 		{
-			m_texSize = Vector4D(m_pBaseTexture->GetWidth(), 
-								m_pBaseTexture->GetHeight(),
-								1.0f / (float)m_pBaseTexture->GetWidth(), 
-								1.0f / (float)m_pBaseTexture->GetHeight());
+			m_texSize = Vector4D(m_baseTexture.Get()->GetWidth(), m_baseTexture.Get()->GetHeight(),
+								1.0f / (float)m_baseTexture.Get()->GetWidth(),
+								1.0f / (float)m_baseTexture.Get()->GetHeight());
 		}
 
 		bool blurX = false;
@@ -44,7 +42,6 @@ BEGIN_SHADER_CLASS(VHBlurFilter)
 
 		m_blurAxes |= blurX ? 0x1 : 0;
 		m_blurAxes |= blurY ? 0x2 : 0;
-
 
 		bool blurXLow = false;
 		bool blurYLow = false;
@@ -112,13 +109,13 @@ BEGIN_SHADER_CLASS(VHBlurFilter)
 
 	void SetupBaseTexture0()
 	{
-		const ITexturePtr& pSetupTexture = materials->GetConfiguration().wireframeMode ? materials->GetWhiteTexture() : m_pBaseTexture;
+		const ITexturePtr& pSetupTexture = materials->GetConfiguration().wireframeMode ? materials->GetWhiteTexture() : m_baseTexture.Get();
 		g_pShaderAPI->SetTexture(pSetupTexture, "BaseTexture", 0);
 	}
 
-	const ITexturePtr& GetBaseTexture(int stage) const {return m_pBaseTexture;}
+	const ITexturePtr& GetBaseTexture(int stage) const {return m_baseTexture.Get();}
 
-	ITexturePtr		m_pBaseTexture;
+	MatTextureProxy	m_baseTexture;
 	int				m_blurAxes;
 	int				m_blurModes;
 

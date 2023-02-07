@@ -294,11 +294,6 @@ public:
 	virtual void							SetCurrentLightingModel(EMaterialLightingMode lightingModel) = 0;
 	virtual EMaterialLightingMode			GetCurrentLightingModel() const = 0;
 
-	//---------------------------
-	// $env_cubemap texture for use in shaders
-	virtual void							SetEnvironmentMapTexture(const ITexturePtr& pEnvMapTexture) = 0;
-	virtual const ITexturePtr&				GetEnvironmentMapTexture() const = 0;
-
 	//-----------------------------
 	// RHI render states setup
 	//-----------------------------
@@ -343,8 +338,10 @@ public:
 	virtual void							SetShaderParameterOverriden(int /*ShaderDefaultParams_e*/ param, bool set = true) = 0;
 
 	// global variables
-	virtual MatVarProxyUnk					FindGlobalMaterialVar(const char* pszVarName) const = 0;
-	virtual MatVarProxyUnk					GetGlobalMaterialVar(const char* pszVarName, const char* defaultValue) = 0;
+	virtual MatVarProxyUnk					FindGlobalMaterialVarByName(const char* pszVarName) const = 0;
+	virtual MatVarProxyUnk					GetGlobalMaterialVarByName(const char* pszVarName, const char* defaultValue = nullptr) = 0;
+
+	virtual MatVarProxyUnk					FindGlobalMaterialVar(int nameHash) const = 0;
 
 	virtual bool							BindMaterial(IMaterial* pMaterial, int flags = MATERIAL_BIND_PREAPPLY) = 0;
 	virtual void							Apply() = 0;

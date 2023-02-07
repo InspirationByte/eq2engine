@@ -177,7 +177,7 @@ void CMaterial::InitMaterialProxy(KVSection* proxySec)
 //
 // Initializes the material vars from the keyvalues section
 //
-void CMaterial::InitMaterialVars(KVSection* kvs)
+void CMaterial::InitMaterialVars(KVSection* kvs, const char* prefix)
 {
 	int numMaterialVars = 0;
 
@@ -209,8 +209,10 @@ void CMaterial::InitMaterialVars(KVSection* kvs)
 		if( !stricmp(materialVarSec->GetName(), "Shader") )
 			continue;
 
+		const EqString matVarName = prefix ? EqString::Format("%s.%s", prefix, materialVarSec->GetName()) : materialVarSec->GetName();
+
 		// initialize material var by this
-		const int nameHash = StringToHash(materialVarSec->GetName(), true);
+		const int nameHash = StringToHash(matVarName, true);
 
 		{
 			CScopedMutex m(s_materialVarMutex);
@@ -316,7 +318,8 @@ void CMaterial::InitVars(KVSection* shader_root)
 				m_szShaderName = KV_GetValueString(pPair);
 
 			// init material vars from editor overrides if have some
-			InitMaterialVars( editorPrefs );
+			// see BaseShader on how it handles editor prefix
+			InitMaterialVars( editorPrefs, "editor");
 		}
 	}
 
@@ -486,10 +489,7 @@ void CMaterial::UpdateProxy(float fDt)
 void CMaterial::Setup(uint paramMask)
 {
 	// shaders and textures needs to be reset
-	if(GetFlags() & MATERIAL_FLAG_BASETEXTURE_CUR)
-		g_pShaderAPI->Reset( STATE_RESET_SHADER );
-	else
-		g_pShaderAPI->Reset( STATE_RESET_SHADER | STATE_RESET_TEX );
+	g_pShaderAPI->Reset( STATE_RESET_SHADER | STATE_RESET_TEX );
 
 	IMaterialSystemShader* shader = m_shader;
 

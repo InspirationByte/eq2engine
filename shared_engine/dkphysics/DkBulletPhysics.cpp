@@ -1119,7 +1119,7 @@ IPhysicsObject* DkPhysics::CreateStaticObject(physmodelcreateinfo_t *info, int n
 			nCollisionGroup = COLLISION_GROUP_WATER;
 			nCollideMask = COLLISION_GROUP_PROJECTILES;
 		}
-		else if(info->data->pMaterial->GetFlags() & MATERIAL_FLAG_ISSKY)
+		else if(info->data->pMaterial->GetFlags() & MATERIAL_FLAG_SKY)
 		{
 			nCollisionGroup = COLLISION_GROUP_SKYBOX;
 			nCollideMask = 0;

@@ -309,7 +309,7 @@ void CAnimatedModel::RenderPhysModel()
 	materials->SetDepthStates(true,false);
 	materials->SetRasterizerStates(CULL_BACK,FILL_WIREFRAME);
 	materials->SetBlendingStates(blending);
-	g_pShaderAPI->SetTexture(nullptr, nullptr, 0);
+	MatTextureProxy(materials->FindGlobalMaterialVar(StringToHashConst("basetexture"))).Set(nullptr);
 
 	CMeshBuilder meshBuilder(materials->GetDynamicMesh());
 

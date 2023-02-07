@@ -10,31 +10,6 @@
 #include "core/IFileSystem.h"
 #include "TextureAtlas.h"
 
-// parses .atlas file
-CTextureAtlas* TexAtlas_LoadAtlas(const char* pszFileName, bool quiet)
-{
-	KeyValues kvs;
-	if(kvs.LoadFromFile(pszFileName, SP_MOD))
-	{
-		KVSection* pAtlasSec = kvs.GetRootSection()->FindSection("atlasgroup");
-
-		if(!pAtlasSec)
-		{
-			MsgError("Invalid atlas file '%s'\n", pszFileName);
-			return nullptr;
-		}
-
-		// create
-		return PPNew CTextureAtlas(pAtlasSec);
-	}
-	else if(!quiet)
-		MsgError("Couldn't load atlas '%s'\n", pszFileName);
-
-	return nullptr;
-}
-
-//------------------------------------------------
-
 CTextureAtlas::CTextureAtlas()
 {
 	m_entries = nullptr;
@@ -61,21 +36,19 @@ void CTextureAtlas::Cleanup()
 bool CTextureAtlas::Load( const char* pszFileName )
 {
 	KeyValues kvs;
-	if(kvs.LoadFromFile(pszFileName, SP_MOD))
+	if (!kvs.LoadFromFile(pszFileName, SP_MOD))
+		return false;
+
+	KVSection* pAtlasSec = kvs.GetRootSection()->FindSection("atlasgroup");
+
+	if(!pAtlasSec)
 	{
-		KVSection* pAtlasSec = kvs.GetRootSection()->FindSection("atlasgroup");
-
-		if(!pAtlasSec)
-		{
-			MsgError("Invalid atlas file '%s'\n", pszFileName);
-			return false;
-		}
-
-		InitAtlas(pAtlasSec);
-		return true;
+		MsgError("Invalid atlas file '%s'\n", pszFileName);
+		return false;
 	}
 
-	return false;
+	InitAtlas(pAtlasSec);
+	return true;
 }
 
 void CTextureAtlas::InitAtlas( KVSection* kvs )
@@ -101,23 +74,12 @@ void CTextureAtlas::InitAtlas( KVSection* kvs )
 	}
 }
 
-TexAtlasEntry_t* CTextureAtlas::GetEntry(int idx)
+TexAtlasEntry_t* CTextureAtlas::GetEntry(int idx) const
 {
 	if(idx < 0 || idx >= m_num)
 		return nullptr;
 
 	return &m_entries[idx];
-}
-
-int CTextureAtlas::GetEntryIndex(TexAtlasEntry_t* entry) const
-{
-	for(int i = 0; i < m_num; i++)
-	{
-		if(&m_entries[i] == entry)
-			return i;
-	}
-
-	return -1;
 }
 
 TexAtlasEntry_t* CTextureAtlas::FindEntry(const char* pszName) const

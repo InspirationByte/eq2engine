@@ -209,7 +209,7 @@ void CBaseEqGeomInstancer::Draw( CEqStudioGeom* model )
 					IMaterial* pMaterial = model->GetMaterial(materialIndex, mGrp);
 
 					// sadly, instancer won't draw any transparent objects due to sorting problems
-					if (pMaterial->GetFlags() & (MATERIAL_FLAG_TRANSPARENT | MATERIAL_FLAG_ADDITIVE | MATERIAL_FLAG_MODULATE))
+					if (pMaterial->GetFlags() & MATERIAL_FLAG_TRANSPARENT)
 						continue;
 
 					//materials->SetSkinningEnabled(true);

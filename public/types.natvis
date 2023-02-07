@@ -144,7 +144,32 @@
 			</Synthetic>
 		</Expand>
 	</Type>
-
+	<Type Name="CWeakPtr&lt;*&gt;">
+		<SmartPointer Usage="Minimal">($T1*)m_weakRefPtr->ptr</SmartPointer>
+		<DisplayString Condition="m_weakRefPtr == nullptr">[nullptr]</DisplayString>
+		<DisplayString>{ ($T1*)m_weakRefPtr->ptr }</DisplayString>
+		<Expand>
+			<Item Name = "Value">
+				($T1*)m_weakRefPtr->ptr
+			</Item>
+			<Item Name = "Ref Count">
+				m_weakRefPtr->numRefs
+			</Item>
+		</Expand>
+	</Type>
+	<Type Name="CRefPtr&lt;*&gt;">
+		<SmartPointer Usage="Minimal">m_ptrObj</SmartPointer>
+		<DisplayString Condition="m_ptrObj == nullptr">[nullptr]</DisplayString>
+		<DisplayString>{ m_ptrObj }</DisplayString>
+		<Expand>
+			<Item Name = "Value">
+				m_ptrObj
+			</Item>
+			<Item Name = "Ref Count">
+				m_ptrObj->m_numRefs
+			</Item>
+		</Expand>
+	</Type>
 	<Type Name="EqString">
 		<DisplayString Condition="m_nLength == 0">String: [empty]</DisplayString>
 		<DisplayString>String: { m_pszString }</DisplayString>
@@ -205,6 +230,53 @@
 		<DisplayString Condition="type == KVPAIR_FLOAT">{ fValue }</DisplayString>
 		<DisplayString Condition="type == KVPAIR_BOOL">{ bValue }</DisplayString>
 		<DisplayString Condition="type == KVPAIR_SECTION">{ section }</DisplayString>
+	</Type>
+	<Type Name="ITexture">
+		<DisplayString>RHI Texture { ((CTexture*)this)->m_szTexName }</DisplayString>
+	</Type>
+	<Type Name="IMaterial">
+		<DisplayString>Material { ((CMaterial*)this)->m_szMaterialName }</DisplayString>
+	</Type>
+	<Type Name="MatVarProxy&lt;*&gt;">
+		<DisplayString Condition="m_matVarIdx == -1">MatVarProxy [empty]</DisplayString>
+		<DisplayString Condition="strcmp(&quot;$T1&quot;,&quot;EqString&quot;) == 0">{ (*m_vars).variables.m_storage.m_pListPtr[m_matVarIdx].strValue }</DisplayString>
+		<DisplayString Condition="strcmp(&quot;$T1&quot;,&quot;CRefPtr&lt;ITexture&gt;&quot;) == 0">{ (*m_vars).variables.m_storage.m_pListPtr[m_matVarIdx].texture }</DisplayString>
+		<DisplayString Condition="strcmp(&quot;$T1&quot;,&quot;int&quot;) == 0">{ (*m_vars).variables.m_storage.m_pListPtr[m_matVarIdx].intValue }</DisplayString>
+		<DisplayString Condition="strcmp(&quot;$T1&quot;,&quot;float&quot;) == 0">{ (*m_vars).variables.m_storage.m_pListPtr[m_matVarIdx] }</DisplayString>
+		<DisplayString Condition="strcmp(&quot;$T1&quot;,&quot;TVec2D&lt;float&gt;&quot;) == 0">{ (TVec2D&lt;float&gt;*)(*m_vars).variables.m_storage.m_pListPtr[m_matVarIdx].vector }</DisplayString>
+		<DisplayString Condition="strcmp(&quot;$T1&quot;,&quot;TVec3D&lt;float&gt;&quot;) == 0">{ (TVec3D&lt;float&gt;*)(*m_vars).variables.m_storage.m_pListPtr[m_matVarIdx].vector }</DisplayString>
+		<DisplayString Condition="strcmp(&quot;$T1&quot;,&quot;TVec4D&lt;float&gt;&quot;) == 0">{ (TVec4D&lt;float&gt;*)(*m_vars).variables.m_storage.m_pListPtr[m_matVarIdx].vector }</DisplayString>
+		<DisplayString Condition="strcmp(&quot;$T1&quot;,&quot;Matrix3x3;&quot;) == 0">{ (TMat3&lt;float&gt;*)(*m_vars).variables.m_storage.m_pListPtr[m_matVarIdx].vector }</DisplayString>
+		<DisplayString Condition="strcmp(&quot;$T1&quot;,&quot;Matrix4x4;&quot;) == 0">{ (TMat4&lt;float&gt;*)(*m_vars).variables.m_storage.m_pListPtr[m_matVarIdx].vector }</DisplayString>
+		<Expand>
+			<Item Name = "String value">
+				(*m_vars).variables.m_storage.m_pListPtr[m_matVarIdx].strValue
+			</Item>
+			<Item Condition="strcmp(&quot;$T1&quot;,&quot;CRefPtr&lt;ITexture&gt;&quot;) == 0" Name = "Value">
+				(*m_vars).variables.m_storage.m_pListPtr[m_matVarIdx].texture
+			</Item>
+			<Item Condition="strcmp(&quot;$T1&quot;,&quot;int;&quot;) == 0" Name = "Value">
+				(*m_vars).variables.m_storage.m_pListPtr[m_matVarIdx].intValue
+			</Item>
+			<Item Condition="strcmp(&quot;$T1&quot;,&quot;float;&quot;) == 0" Name = "Value">
+				(*m_vars).variables.m_storage.m_pListPtr[m_matVarIdx].vector[0]
+			</Item>
+			<Item Condition="strcmp(&quot;$T1&quot;,&quot;TVec2D&lt;float&gt;&quot;) == 0" Name = "Value">
+				(TVec2D&lt;float&gt;*)(*m_vars).variables.m_storage.m_pListPtr[m_matVarIdx].vector
+			</Item>
+			<Item Condition="strcmp(&quot;$T1&quot;,&quot;TVec3D&lt;float&gt;&quot;) == 0" Name = "Value">
+				(TVec3D&lt;float&gt;*)(*m_vars).variables.m_storage.m_pListPtr[m_matVarIdx].vector
+			</Item>
+			<Item Condition="strcmp(&quot;$T1&quot;,&quot;TVec4D&lt;float&gt;&quot;) == 0" Name = "Value">
+				(TVec4D&lt;float&gt;*)(*m_vars).variables.m_storage.m_pListPtr[m_matVarIdx].vector
+			</Item>
+			<Item Condition="strcmp(&quot;$T1&quot;,&quot;Matrix3x3;&quot;) == 0" Name = "Value">
+				(TMat3&lt;float&gt;*)(*m_vars).variables.m_storage.m_pListPtr[m_matVarIdx].vector
+			</Item>
+			<Item Condition="strcmp(&quot;$T1&quot;,&quot;Matrix4x4;&quot;) == 0" Name = "Value">
+				(TMat4&lt;float&gt;*)(*m_vars).variables.m_storage.m_pListPtr[m_matVarIdx].vector
+			</Item>
+		</Expand>
 	</Type>
 	
 </AutoVisualizer>

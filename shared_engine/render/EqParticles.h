@@ -63,8 +63,7 @@ public:
 	void				SetCullInverted(bool invert)	{ m_invertCull = invert; }
 	const IMaterialPtr&	GetMaterial() const				{ return m_material; }
 
-	TexAtlasEntry_t*	GetEntry(int idx);
-	int					GetEntryIndex(TexAtlasEntry_t* entry) const;
+	TexAtlasEntry_t*	GetEntry(int idx) const;
 
 	TexAtlasEntry_t*	FindEntry(const char* pszName) const;
 	int					FindEntryIndex(const char* pszName) const;

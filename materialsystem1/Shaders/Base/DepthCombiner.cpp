@@ -13,7 +13,6 @@ BEGIN_SHADER_CLASS(DepthCombiner)
 
 	SHADER_INIT_PARAMS()
 	{
-		memset(m_pTextures, 0, sizeof(m_pTextures));
 		SHADER_PASS(Unlit) = nullptr;
 
 		// set texture setup
@@ -23,8 +22,8 @@ BEGIN_SHADER_CLASS(DepthCombiner)
 	SHADER_INIT_TEXTURES()
 	{
 		// parse material variables
-		SHADER_PARAM_RENDERTARGET_FIND(Texture1, m_pTextures[0]);
-		SHADER_PARAM_RENDERTARGET_FIND(Texture2, m_pTextures[1]);
+		SHADER_PARAM_TEXTURE_FIND(Texture1, m_textures[0]);
+		SHADER_PARAM_TEXTURE_FIND(Texture2, m_textures[1]);
 	}
 
 	SHADER_INIT_RHI()
@@ -65,13 +64,13 @@ BEGIN_SHADER_CLASS(DepthCombiner)
 
 	void SetupBaseTexture0()
 	{
-		g_pShaderAPI->SetTexture(m_pTextures[0], "Texture1", 0);
-		g_pShaderAPI->SetTexture(m_pTextures[1], "Texture2", 1);
+		g_pShaderAPI->SetTexture(m_textures[0].Get(), "Texture1", 0);
+		g_pShaderAPI->SetTexture(m_textures[1].Get(), "Texture2", 1);
 	}
 
-	const ITexturePtr& GetBaseTexture(int stage)  const {return m_pTextures[stage & 1];}
+	const ITexturePtr& GetBaseTexture(int stage)  const {return m_textures[stage & 1].Get();}
 
-	ITexturePtr	m_pTextures[2];
+	MatTextureProxy	m_textures[2];
 
 	SHADER_DECLARE_PASS(Unlit);
 

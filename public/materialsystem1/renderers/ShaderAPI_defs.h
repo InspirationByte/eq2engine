@@ -13,7 +13,7 @@
 //---------------------------------------
 
 // Reserved, used for shaders only
-enum ER_ConstantType
+enum ER_ConstantType : int
 {
     CONSTANT_FLOAT,
 	CONSTANT_VECTOR2D,
@@ -53,7 +53,7 @@ static int s_constantTypeSizes[CONSTANT_TYPE_COUNT] = {
 };
 
 // Texture filtering type for SetTextureFilteringMode()
-enum ER_TextureFilterMode
+enum ER_TextureFilterMode : int
 {
 	TEXFILTER_NEAREST	= 0,
 	TEXFILTER_LINEAR,
@@ -64,7 +64,7 @@ enum ER_TextureFilterMode
 };
 
 // for SetMatrixMode()
-enum ER_MatrixMode
+enum ER_MatrixMode : int
 {
 	MATRIXMODE_VIEW	= 0,			// view tranformation matrix
 	MATRIXMODE_PROJECTION,			// projection mode matrix
@@ -76,7 +76,7 @@ enum ER_MatrixMode
 };
 
 // for SetTextureClamp()
-enum ER_TextureAddressMode
+enum ER_TextureAddressMode : int
 {
 	TEXADDRESS_WRAP	= 0,
 	TEXADDRESS_CLAMP,
@@ -84,7 +84,7 @@ enum ER_TextureAddressMode
 };
 
 // for mesh builder and type of drawing the world model
-enum ER_PrimitiveType
+enum ER_PrimitiveType : int
 {
 	PRIM_TRIANGLES      = 0,
 	PRIM_TRIANGLE_FAN,
@@ -134,7 +134,7 @@ static int PrimCount_None( int )
 }
 
 // Vertex type
-enum ER_VertexAttribType
+enum ER_VertexAttribType : int
 {
 	VERTEXATTRIB_UNUSED		= 0,	// or unused
 
@@ -147,7 +147,7 @@ enum ER_VertexAttribType
 };
 
 // Attribute format
-enum ER_AttributeFormat
+enum ER_AttributeFormat : int
 {
 	ATTRIBUTEFORMAT_FLOAT = 0,
 	ATTRIBUTEFORMAT_HALF,
@@ -162,7 +162,7 @@ static int s_attributeSize[] =
 };
 
 // Buffer access type (for VBO)
-enum ER_BufferAccess
+enum ER_BufferAccess : int
 {
 	BUFFER_STREAM		= 0,
 	BUFFER_STATIC,
@@ -182,7 +182,7 @@ typedef struct VertexFormatDesc_s
 }VertexFormatDesc_t;
 
 // comparison functions
-enum ER_CompareFunc
+enum ER_CompareFunc : int
 {
 	COMPFUNC_NEVER = 0,
 
@@ -228,7 +228,7 @@ typedef struct SamplerStateParam_s
 // HOW BLENDING WORKS:
 // (TextureRGBA * SRCBlendingFactor) (Blending Function) (FrameBuffer * DSTBlendingFactor)
 
-enum ER_BlendFactor
+enum ER_BlendFactor : int
 {
 	BLENDFACTOR_ZERO					= 0,
 	BLENDFACTOR_ONE,					//	1
@@ -244,7 +244,7 @@ enum ER_BlendFactor
 };
 
 // Function of blending
-enum ER_BlendFunction
+enum ER_BlendFunction : int
 {
 	// Function of blending
 	BLENDFUNC_ADD				= 0,
@@ -258,7 +258,7 @@ enum ER_BlendFunction
 // Texture flags
 //-----------------------------------------------------------------------------
 
-enum ER_TextureFlags
+enum ER_TextureFlags : int
 {
 	// texture creating flags
 	TEXFLAG_PROGRESSIVE_LODS		= (1 << 0),		// progressive LOD uploading, used to avoid driver hangs during uploads
@@ -282,7 +282,7 @@ enum ER_TextureFlags
 #define MAX_TEXCOORD_ATTRIB		8
 
 // Stencil-test function constants for SetStencilStateEx()
-enum ER_StencilFunction
+enum ER_StencilFunction : int
 {
 	STENCILFUNC_KEEP		= 0,
 	STENCILFUNC_SET_ZERO,	// 1
@@ -296,7 +296,7 @@ enum ER_StencilFunction
 };
 
 // Fillmode constants for SetFillMode()
-enum ER_FillMode
+enum ER_FillMode : int
 {
 	FILL_SOLID		= 0,
 	FILL_WIREFRAME,	// 1
@@ -304,7 +304,7 @@ enum ER_FillMode
 };
 
 // Cull modes
-enum ER_CullMode
+enum ER_CullMode : int
 {
 	CULL_NONE		= 0,
 	CULL_BACK,		// 1
@@ -357,7 +357,7 @@ typedef struct RasterizerStateParams_s
 //---------------------------------------
 
 // shader constant setup flags to set to shader :P
-enum ER_ShaderConstantSetup
+enum ER_ShaderConstantSetup : int
 {
 	SCONST_VERTEX		= (1 << 0),
 	SCONST_PIXEL		= (1 << 1),
@@ -367,7 +367,7 @@ enum ER_ShaderConstantSetup
 };
 
 // API reset type
-enum ER_StateResetFlags
+enum ER_StateResetFlags : int
 {
 	STATE_RESET_SHADER		= (1 << 0),
 	STATE_RESET_VF			= (1 << 1),
@@ -411,7 +411,7 @@ struct shaderProgramCompileInfo_t
 
 // shader API class for shader developers.
 // DON'T USE TYPES IN DYNAMIC SHADER CODE!
-enum ER_ShaderAPIType
+enum ER_ShaderAPIType : int
 {
 	SHADERAPI_EMPTY = 0,
 	SHADERAPI_OPENGL,

@@ -206,8 +206,9 @@ public:
 	void							SetShaderParameterOverriden(int param, bool set = true);
 
 	// global variables
-	MatVarProxyUnk					FindGlobalMaterialVar(const char* pszVarName) const;
-	MatVarProxyUnk					GetGlobalMaterialVar(const char* pszVarName, const char* defaultValue);
+	MatVarProxyUnk					FindGlobalMaterialVar(int nameHash) const;
+	MatVarProxyUnk					FindGlobalMaterialVarByName(const char* pszVarName) const;
+	MatVarProxyUnk					GetGlobalMaterialVarByName(const char* pszVarName, const char* defaultValue);
 
 	bool							BindMaterial(IMaterial* pMaterial, int flags = MATERIAL_BIND_PREAPPLY);
 	void							Apply();

@@ -19,6 +19,17 @@ inline MatVarProxy<T>::MatVarProxy(int varIdx, MaterialVarBlock& owner)
 	m_vars = CWeakPtr(&owner);
 }
 
+template<typename T>
+inline void MatVarProxy<T>::Purge()
+{
+	if (!m_vars)
+		return;
+
+	MatVarData& var = m_vars->variables[m_matVarIdx];
+	var.texture = nullptr;
+	var.strValue.Clear();
+}
+
 template<>
 inline void MatVarProxy<float>::Set(const float& fValue)
 {

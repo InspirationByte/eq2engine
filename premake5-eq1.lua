@@ -1,4 +1,4 @@
-group "Equilibrium 1/Components"
+group "Components"
 
 -- fonts
 project "fontLib"
@@ -116,7 +116,7 @@ usage "dkPhysicsLib"
 ----------------------------------------------
 -- Equilirium Material System 1
 
-group "Equilibrium 1/MatSystem"
+group "MatSystem"
 
 project "eqMatSystem"
     kind "SharedLib"
@@ -163,7 +163,7 @@ project "eqBaseShaders"
 
 ----------------------------------------------
 -- Render hardware interface libraries of Eq1
-group "Equilibrium 1/MatSystem/RHI"
+group "MatSystem/RHI"
 
 -- base library
 usage "eqRHIBaseLib"

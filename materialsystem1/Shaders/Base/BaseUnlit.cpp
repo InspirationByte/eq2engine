@@ -13,8 +13,6 @@ BEGIN_SHADER_CLASS(BaseUnlit)
 
 	SHADER_INIT_PARAMS()
 	{
-		m_pBaseTexture = nullptr;
-
 		SHADER_PASS(Unlit) = nullptr;
 		SHADER_FOGPASS(Unlit) = nullptr;
 
@@ -24,10 +22,10 @@ BEGIN_SHADER_CLASS(BaseUnlit)
 	SHADER_INIT_TEXTURES()
 	{
 		// parse material variables
-		SHADER_PARAM_TEXTURE_NOERROR(BaseTexture, m_pBaseTexture);
+		SHADER_PARAM_TEXTURE_NOERROR(BaseTexture, m_baseTexture);
 
 		// set texture setup
-		if(m_pBaseTexture)
+		if(m_baseTexture.IsValid())
 			SetParameterFunctor(SHADERPARAM_BASETEXTURE, &ThisShaderClass::SetupBaseTexture0);
 
 		SetParameterFunctor(SHADERPARAM_COLOR, &ThisShaderClass::SetColorModulation);
@@ -42,7 +40,7 @@ BEGIN_SHADER_CLASS(BaseUnlit)
 		SHADERDEFINES_BEGIN;
 
 		// alphatesting
-		SHADER_DECLARE_SIMPLE_DEFINITION((m_nFlags & MATERIAL_FLAG_ALPHATESTED), "ALPHATEST");
+		SHADER_DECLARE_SIMPLE_DEFINITION((m_flags & MATERIAL_FLAG_ALPHATESTED), "ALPHATEST");
 
 		// compile without fog
 		{
@@ -110,14 +108,14 @@ BEGIN_SHADER_CLASS(BaseUnlit)
 
 	void SetupBaseTexture0()
 	{
-		ITexturePtr pSetupTexture = materials->GetConfiguration().wireframeMode ? materials->GetWhiteTexture() : m_pBaseTexture;
+		ITexturePtr pSetupTexture = materials->GetConfiguration().wireframeMode ? materials->GetWhiteTexture() : m_baseTexture.Get();
 
 		g_pShaderAPI->SetTexture(pSetupTexture, "BaseTextureSampler", 0);
 	}
 
-	const ITexturePtr& GetBaseTexture(int stage) const {return m_pBaseTexture;}
+	const ITexturePtr& GetBaseTexture(int stage) const {return m_baseTexture.Get();}
 
-	ITexturePtr		m_pBaseTexture;
+	MatTextureProxy	m_baseTexture;
 	MatVec4Proxy	m_colorVar;
 
 	SHADER_DECLARE_PASS(Unlit);

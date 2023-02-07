@@ -18,13 +18,13 @@ BEGIN_SHADER_CLASS(Skybox)
 	SHADER_INIT_PARAMS()
 	{
 		SHADER_PASS(Unlit) = nullptr;
-		m_nFlags |= MATERIAL_FLAG_ISSKY;
+		m_flags |= MATERIAL_FLAG_SKY;
 	}
 
 	// Initialize textures
 	SHADER_INIT_TEXTURES()
 	{
-		SHADER_PARAM_TEXTURE(BaseTexture, m_nBaseTexture);
+		SHADER_PARAM_TEXTURE(BaseTexture, m_baseTexture);
 	}
 
 	SHADER_INIT_RHI()
@@ -38,7 +38,7 @@ BEGIN_SHADER_CLASS(Skybox)
 		return true;
 	}
 
-	const ITexturePtr& GetBaseTexture(int stage) const {return m_nBaseTexture;}
+	const ITexturePtr& GetBaseTexture(int stage) const {return m_baseTexture.Get();}
 
 	SHADER_SETUP_STAGE()
 	{
@@ -68,10 +68,10 @@ BEGIN_SHADER_CLASS(Skybox)
 		g_pShaderAPI->SetShaderConstantVector4D("AmbientColor", materials->GetAmbientColor());
 
 		// setup base texture
-		g_pShaderAPI->SetTexture(m_nBaseTexture, "BaseTextureSampler", 0);
+		g_pShaderAPI->SetTexture(m_baseTexture.Get(), "BaseTextureSampler", 0);
 	}
 
 	SHADER_DECLARE_PASS(Unlit);
-	ITexturePtr		m_nBaseTexture;
+	MatTextureProxy		m_baseTexture;
 
 END_SHADER_CLASS

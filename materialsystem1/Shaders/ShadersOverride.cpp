@@ -38,18 +38,6 @@ const char* OverrideShader_BaseSkinned()
 	return "BaseUnlit";
 }
 
-const char* OverrideShader_BaseParticle()
-{
-	/*
-	switch(materials->GetLightingModel())
-	{
-		case MATERIAL_LIGHT_DEFERRED:
-			return "BaseParticleDS";
-	}
-	*/
-	return "BaseParticle";
-}
-
 const char* OverrideShader_Error()
 {
 	switch(materials->GetConfiguration().lightingModel)
@@ -75,7 +63,6 @@ void InitShaderOverrides()
 {
 	materials->RegisterShaderOverrideFunction("Base", OverrideShader_Base);
 	materials->RegisterShaderOverrideFunction("BaseSkinned", OverrideShader_BaseSkinned);
-	materials->RegisterShaderOverrideFunction("BaseParticle", OverrideShader_BaseParticle);
 	materials->RegisterShaderOverrideFunction("Error", OverrideShader_Error);
 	materials->RegisterShaderOverrideFunction("Sky", OverrideShader_Sky);
 }

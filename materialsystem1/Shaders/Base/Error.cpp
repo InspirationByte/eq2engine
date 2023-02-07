@@ -14,15 +14,11 @@ BEGIN_SHADER_CLASS(Error)
 	SHADER_INIT_PARAMS()
 	{
 		SHADER_PASS(Unlit) = nullptr;
-		m_pBaseTexture = nullptr;
 	}
 
 	SHADER_INIT_TEXTURES()
 	{
-		if(m_pBaseTexture)
-			return;
-
-		SHADER_PARAM_TEXTURE(BaseTexture, m_pBaseTexture)
+		SHADER_PARAM_TEXTURE(BaseTexture, m_baseTexture)
 
 		// set texture setup
 		SetParameterFunctor(SHADERPARAM_BASETEXTURE, &CErrorShader::SetupBaseTexture0);
@@ -64,14 +60,13 @@ BEGIN_SHADER_CLASS(Error)
 
 	void SetupBaseTexture0()
 	{
-		const ITexturePtr& pSetupTexture = materials->GetConfiguration().wireframeMode ? materials->GetWhiteTexture() : m_pBaseTexture;
-
+		const ITexturePtr& pSetupTexture = materials->GetConfiguration().wireframeMode ? materials->GetWhiteTexture() : m_baseTexture.Get();
 		g_pShaderAPI->SetTexture(pSetupTexture, "BaseTextureSampler", 0);
 	}
 
-	const ITexturePtr& GetBaseTexture(int stage)  const {return m_pBaseTexture;}
+	const ITexturePtr& GetBaseTexture(int stage)  const {return m_baseTexture.Get();}
 
-	ITexturePtr	m_pBaseTexture;
+	MatTextureProxy	m_baseTexture;
 
 	SHADER_DECLARE_PASS(Unlit);
 

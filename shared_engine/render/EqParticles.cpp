@@ -152,7 +152,7 @@ void CParticleBatch::Render(int nViewRenderFlags)
 	}
 }
 
-TexAtlasEntry_t* CParticleBatch::GetEntry(int idx)
+TexAtlasEntry_t* CParticleBatch::GetEntry(int idx) const
 {
 	CTextureAtlas* atlas = m_material->GetAtlas();
 	if (!atlas)
@@ -162,18 +162,6 @@ TexAtlasEntry_t* CParticleBatch::GetEntry(int idx)
 	}
 
 	return atlas->GetEntry(idx);
-}
-
-int	CParticleBatch::GetEntryIndex(TexAtlasEntry_t* entry) const
-{
-	CTextureAtlas* atlas = m_material->GetAtlas();
-	if (!atlas)
-	{
-		ASSERT_FAIL("No atlas loaded for material %s", m_material->GetName());
-		return -1;
-	}
-
-	return atlas->GetEntryIndex(entry);
 }
 
 TexAtlasEntry_t* CParticleBatch::FindEntry(const char* pszName) const

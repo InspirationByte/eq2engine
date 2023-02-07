@@ -60,7 +60,7 @@ private:
 	MatVarData&				VarAt(int idx) const;
 
 	void					InitShader();
-	void					InitMaterialVars(KVSection* kvs);
+	void					InitMaterialVars(KVSection* kvs, const char* prefix = nullptr);
 	void					InitMaterialProxy(KVSection* kvs);
 
 protected:

@@ -30,15 +30,13 @@ public:
 
 	bool					Load( const char* pszFileName );
 
-	TexAtlasEntry_t*		GetEntry(int idx);
-	int						GetEntryIndex(TexAtlasEntry_t* entry) const;
+	TexAtlasEntry_t*		GetEntry(int idx) const;
 
 	TexAtlasEntry_t*		FindEntry(const char* pszName) const;
 	int						FindEntryIndex(const char* pszName) const;
 
-	int						GetEntryCount() const		{return m_num;}
-
-	const char*				GetMaterialName() const		{return m_material.ToCString();}
+	int						GetEntryCount() const		{ return m_num; }
+	const char*				GetMaterialName() const		{ return m_material.ToCString(); }
 protected:
 
 	//char					m_name[64];
@@ -47,5 +45,3 @@ protected:
 	int						m_num;
 	TexAtlasEntry_t*		m_entries;
 };
-
-CTextureAtlas*				TexAtlas_LoadAtlas(const char* pszFileName, bool quiet);
