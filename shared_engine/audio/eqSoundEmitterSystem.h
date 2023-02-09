@@ -42,6 +42,7 @@ public:
 	void				Update();
 
 	void				GetAllSoundsList(Array<SoundScriptDesc*>& list) const;
+	static const char*	GetScriptName(SoundScriptDesc* desc);
 private:
 	int					EmitSoundInternal(EmitParams* emit, int objUniqueId, CSoundingObject* soundingObj);
 

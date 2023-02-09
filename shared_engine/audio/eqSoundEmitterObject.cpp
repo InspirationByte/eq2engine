@@ -653,67 +653,67 @@ const IEqAudioSource::State CEmitterObjectSound::GetEmitterState() const
 
 void CEmitterObjectSound::SetEmitterState(IEqAudioSource::State state, bool rewindOnPlay)
 {
-	m_soundingObj.SetEmitterState(m_emitter, state, rewindOnPlay);
+	m_soundingObj.SetEmitterState(m_emitter.Ptr(), state, rewindOnPlay);
 }
 
 void CEmitterObjectSound::StopEmitter(bool destroy)
 {
-	m_soundingObj.StopEmitter(m_emitter, destroy);
+	m_soundingObj.StopEmitter(m_emitter.Ptr(), destroy);
 }
 
 void CEmitterObjectSound::PlayEmitter(bool rewind)
 {
-	m_soundingObj.PlayEmitter(m_emitter, rewind);
+	m_soundingObj.PlayEmitter(m_emitter.Ptr(), rewind);
 }
 
 void CEmitterObjectSound::PauseEmitter()
 {
-	m_soundingObj.PauseEmitter(m_emitter);
+	m_soundingObj.PauseEmitter(m_emitter.Ptr());
 }
 
 void CEmitterObjectSound::StopLoop(float fadeOutTime)
 {
-	m_soundingObj.StopLoop(m_emitter, fadeOutTime);
+	m_soundingObj.StopLoop(m_emitter.Ptr(), fadeOutTime);
 }
 
 void CEmitterObjectSound::SetPosition(const Vector3D& position)
 {
-	m_soundingObj.SetPosition(m_emitter, position);
+	m_soundingObj.SetPosition(m_emitter.Ptr(), position);
 }
 
 void CEmitterObjectSound::SetVelocity(const Vector3D& velocity)
 {
-	m_soundingObj.SetVelocity(m_emitter, velocity);
+	m_soundingObj.SetVelocity(m_emitter.Ptr(), velocity);
 }
 
 void CEmitterObjectSound::SetConeProperties(const Vector3D& direction, float innerRadus, float outerRadius, float outerVolume, float outerVolumeHf)
 {
-	m_soundingObj.SetConeProperties(m_emitter, direction, innerRadus, outerRadius, outerVolume, outerVolumeHf);
+	m_soundingObj.SetConeProperties(m_emitter.Ptr(), direction, innerRadus, outerRadius, outerVolume, outerVolumeHf);
 }
 
 void CEmitterObjectSound::SetPitch(float pitch)
 {
-	m_soundingObj.SetPitch(m_emitter, pitch);
+	m_soundingObj.SetPitch(m_emitter.Ptr(), pitch);
 }
 
 void CEmitterObjectSound::SetVolume(float volume)
 {
-	m_soundingObj.SetVolume(m_emitter, volume);
+	m_soundingObj.SetVolume(m_emitter.Ptr(), volume);
 }
 
 void CEmitterObjectSound::SetSamplePlaybackPosition(int waveId, float seconds)
 {
-	m_soundingObj.SetSamplePlaybackPosition(m_emitter, waveId, seconds);
+	m_soundingObj.SetSamplePlaybackPosition(m_emitter.Ptr(), waveId, seconds);
 }
 
 void CEmitterObjectSound::SetSampleVolume(int waveId, float volume)
 {
-	m_soundingObj.SetSampleVolume(m_emitter, waveId, volume);
+	m_soundingObj.SetSampleVolume(m_emitter.Ptr(), waveId, volume);
 }
 
 void CEmitterObjectSound::SetParams(const IEqAudioSource::Params& params)
 {
-	m_soundingObj.SetParams(m_emitter, params);
+	m_soundingObj.SetParams(m_emitter.Ptr(), params);
 }
 
 void CEmitterObjectSound::SetInputValue(const char* name, float value)
@@ -724,5 +724,5 @@ void CEmitterObjectSound::SetInputValue(const char* name, float value)
 
 void CEmitterObjectSound::SetInputValue(int inputNameHash, float value)
 {
-	m_soundingObj.SetInputValue(m_emitter, inputNameHash, value);
+	m_soundingObj.SetInputValue(m_emitter.Ptr(), inputNameHash, value);
 }

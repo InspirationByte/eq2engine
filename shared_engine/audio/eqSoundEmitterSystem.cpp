@@ -685,9 +685,12 @@ int CSoundEmitterSystem::ChannelTypeByName(const char* str) const
 void CSoundEmitterSystem::GetAllSoundsList(Array<SoundScriptDesc*>& list) const
 {
 	for (auto it = m_allSounds.begin(); it != m_allSounds.end(); ++it)
-	{
 		list.append(it.value());
-	}
+}
+
+const char* CSoundEmitterSystem::GetScriptName(SoundScriptDesc* desc)
+{
+	return desc->name;
 }
 
 void CSoundEmitterSystem::RestartEmittersByScript(SoundScriptDesc* script)
