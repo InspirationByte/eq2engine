@@ -209,7 +209,7 @@ void CMaterial::InitMaterialVars(KVSection* kvs, const char* prefix)
 		if( !stricmp(materialVarSec->GetName(), "Shader") )
 			continue;
 
-		const EqString matVarName = prefix ? EqString::Format("%s.%s", prefix, materialVarSec->GetName()) : materialVarSec->GetName();
+		const EqString matVarName(prefix ? EqString::Format("%s.%s", prefix, materialVarSec->GetName()) : _Es(materialVarSec->GetName()));
 
 		// initialize material var by this
 		const int nameHash = StringToHash(matVarName, true);

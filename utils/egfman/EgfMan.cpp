@@ -1227,7 +1227,7 @@ void CEGFViewFrame::ReDraw()
 		materials->SetMatrix(MATRIXMODE_PROJECTION, g_mProjMat);
 		materials->SetMatrix(MATRIXMODE_VIEW, g_mViewMat);
 
-		materials->SetMatrix(MATRIXMODE_WORLD, identity4());
+		materials->SetMatrix(MATRIXMODE_WORLD, identity4);
 
 		// Update things
 
@@ -1285,7 +1285,7 @@ void CEGFViewFrame::ReDraw()
 		debugoverlay->Text(color_white, "polygon count: %d\n", g_pShaderAPI->GetTrianglesCount());
 
 		// reset some values
-		materials->SetMatrix(MATRIXMODE_WORLD, identity4());
+		materials->SetMatrix(MATRIXMODE_WORLD, identity4);
 
 		// draw floor 1x1 meters
 		if(m_drawFloor->IsChecked())

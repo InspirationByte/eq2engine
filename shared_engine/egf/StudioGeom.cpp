@@ -691,7 +691,7 @@ void CEqStudioGeom::LoadSetupBones()
 		joint.bone = bone;
 
 		// setup transformation
-		joint.localTrans = identity4();
+		joint.localTrans = identity4;
 		joint.localTrans.setRotation(bone->rotation);
 		joint.localTrans.setTranslation(bone->position);
 

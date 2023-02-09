@@ -166,7 +166,7 @@ inline void SetLightDefaults(dlight_t* light)
 	light->curfadetime = -1.0f;
 	light->angles = vec3_zero;
 	light->nFlags = 0;
-	light->lightRotation = identity3();
+	light->lightRotation = identity3;
 	light->extraData = nullptr;
 }
 

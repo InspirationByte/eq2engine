@@ -84,7 +84,7 @@ ragdoll_t* CreateRagdoll(CEqStudioGeom* pModel)
 		{
 			newRagdoll->m_pBoneMerge_far_parents[i] = newRagdoll->ComputeAndGetFarParentOf(i);
 
-			Matrix4x4 transform = identity4();
+			Matrix4x4 transform = identity4;
 
 			const int real_parent = newRagdoll->m_pBoneMerge_far_parents[i];
 			if(real_parent != -1)
@@ -187,7 +187,7 @@ Vector3D ragdoll_t::GetPosition() const
 
 void ragdoll_t::GetVisualBonesTransforms(Matrix4x4 *bones) const
 {
-	Matrix4x4 offsetTranslate = identity4();
+	Matrix4x4 offsetTranslate = identity4;
 	offsetTranslate.setTranslation(-GetPosition());
 
 	const studiohdr_t& studio = m_pReferenceModel->GetStudioHdr();

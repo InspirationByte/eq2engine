@@ -117,7 +117,7 @@ void CAnimatedModel::TogglePhysicsState()
 			
 
 			//UpdateBones();
-			//m_pRagdoll->SetBoneTransform( m_boneTransforms, identity4() );
+			//m_pRagdoll->SetBoneTransform( m_boneTransforms, identity4 );
 		}
 	}
 }
@@ -127,9 +127,9 @@ void CAnimatedModel::ResetPhysics()
 	if(m_pRagdoll)
 	{
 		RecalcBoneTransforms();
-		UpdateIK(0.0f, identity4());
+		UpdateIK(0.0f, identity4);
 
-		m_pRagdoll->SetBoneTransform(m_boneTransforms, identity4() );
+		m_pRagdoll->SetBoneTransform(m_boneTransforms, identity4 );
 
 		for(int i = 0; i< m_pRagdoll->m_numParts; i++)
 		{
@@ -169,7 +169,7 @@ void CAnimatedModel::Update(float dt)
 	AdvanceFrame(dt);
 
 	// update inverse kinematics
-	UpdateIK(dt, identity4());
+	UpdateIK(dt, identity4);
 }
 
 // finds attachment
@@ -191,7 +191,7 @@ Vector3D CAnimatedModel::GetLocalAttachmentOrigin(int nAttach)
 
 	const studioattachment_t* attach = studio.pAttachment(nAttach);
 
-	Matrix4x4 matrix = identity4();
+	Matrix4x4 matrix = identity4;
 	matrix.setRotation(Vector3D(DEG2RAD(attach->angles.x),DEG2RAD(attach->angles.y),DEG2RAD(attach->angles.z)));
 	matrix.setTranslation(attach->position);
 
@@ -213,7 +213,7 @@ Vector3D CAnimatedModel::GetLocalAttachmentDirection(int nAttach)
 
 	const studioattachment_t* attach = studio.pAttachment(nAttach);
 
-	Matrix4x4 matrix = identity4();
+	Matrix4x4 matrix = identity4;
 	matrix.setRotation(Vector3D(DEG2RAD(attach->angles.x),DEG2RAD(attach->angles.y),DEG2RAD(attach->angles.z)));
 	matrix.setTranslation(attach->position);
 
@@ -279,7 +279,7 @@ void CAnimatedModel::UpdateRagdollBones()
 	{
 		if(!m_bPhysicsEnable)
 		{
-			m_pRagdoll->SetBoneTransform( m_boneTransforms, identity4() );
+			m_pRagdoll->SetBoneTransform( m_boneTransforms, identity4 );
 		}
 		else
 		{
@@ -399,12 +399,12 @@ void CAnimatedModel::Render(int nViewRenderFlags, float fDist, int startLod, boo
 	else
 	{
 		RecalcBoneTransforms();
-		UpdateIK(dt, identity4());
+		UpdateIK(dt, identity4);
 	}
 
 	Matrix4x4 wvp;
 
-	Matrix4x4 posMatrix = identity4();
+	Matrix4x4 posMatrix = identity4;
 
 	if(m_bPhysicsEnable)
 	{
@@ -454,7 +454,7 @@ void CAnimatedModel::Render(int nViewRenderFlags, float fDist, int startLod, boo
 
 void CAnimatedModel::VisualizeBones()
 {
-	Matrix4x4 posMatrix = identity4();
+	Matrix4x4 posMatrix = identity4;
 
 	if(m_bPhysicsEnable)
 	{
@@ -501,7 +501,7 @@ void CAnimatedModel::AttachIKChain(int chain, int attach_type)
 	{
 		case IK_ATTACH_WORLD:
 		{
-			SetIKWorldTarget(chain, vec3_zero, identity4());
+			SetIKWorldTarget(chain, vec3_zero, identity4);
 			SetIKChainEnabled(chain, true);
 			break;
 		}

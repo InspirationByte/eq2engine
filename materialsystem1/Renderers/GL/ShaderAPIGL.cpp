@@ -1188,7 +1188,7 @@ void ShaderAPIGL::LoadIdentityMatrix()
 	glLoadIdentity();
 #endif // OpenGL 2.1
 
-	m_matrices[m_nCurrentMatrixMode] = identity4();
+	m_matrices[m_nCurrentMatrixMode] = identity4;
 }
 
 // Load custom matrix

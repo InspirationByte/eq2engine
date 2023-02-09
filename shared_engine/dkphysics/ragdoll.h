@@ -28,7 +28,7 @@ struct ragdoll_t
 
 		for(int i = 0; i < 128; i++)
 		{
-			m_pBoneMerge_Transformations[i] = identity4();
+			m_pBoneMerge_Transformations[i] = identity4;
 		}
 	}
 

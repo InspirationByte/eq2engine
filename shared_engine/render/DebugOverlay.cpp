@@ -1071,7 +1071,7 @@ void CDebugOverlay::Draw(int winWide, int winTall, float timescale)
 	g_pShaderAPI->SetViewport(0, 0, winWide, winTall);
 	materials->SetMatrix(MATRIXMODE_PROJECTION, m_projMat);
 	materials->SetMatrix(MATRIXMODE_VIEW, m_viewMat);
-	materials->SetMatrix(MATRIXMODE_WORLD, identity4());
+	materials->SetMatrix(MATRIXMODE_WORLD, identity4);
 	materials->SetAmbientColor(1.0f);
 
 	CleanOverlays();
@@ -1091,7 +1091,7 @@ void CDebugOverlay::Draw(int winWide, int winTall, float timescale)
 	g_pShaderAPI->SetViewport(0, 0, winWide, winTall);
 	materials->SetMatrix(MATRIXMODE_PROJECTION, m_projMat);
 	materials->SetMatrix(MATRIXMODE_VIEW, m_viewMat);
-	materials->SetMatrix(MATRIXMODE_WORLD, identity4());
+	materials->SetMatrix(MATRIXMODE_WORLD, identity4);
 	materials->SetAmbientColor(1.0f);
 
 	// draw all of 3d stuff

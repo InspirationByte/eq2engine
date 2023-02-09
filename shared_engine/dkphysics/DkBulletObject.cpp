@@ -398,7 +398,7 @@ Matrix4x4 CPhysicsObject::GetTransformMatrix()
 
 Matrix4x4 CPhysicsObject::GetOrientationMatrix()
 {
-	return identity4();
+	return identity4;
 }
 
 // set transformation of object

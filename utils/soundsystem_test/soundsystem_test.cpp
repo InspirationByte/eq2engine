@@ -745,7 +745,7 @@ void CMainWindow::ReDraw()
 		materials->SetMatrix(MATRIXMODE_PROJECTION, g_mProjMat);
 		materials->SetMatrix(MATRIXMODE_VIEW, g_mViewMat);
 
-		materials->SetMatrix(MATRIXMODE_WORLD, identity4());
+		materials->SetMatrix(MATRIXMODE_WORLD, identity4);
 
 		int nRenderFlags = 0;
 

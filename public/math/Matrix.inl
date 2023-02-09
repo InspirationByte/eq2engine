@@ -804,8 +804,8 @@ inline TMat4<T> scale4(const T x, const T y, const T z)
 template <typename T>
 inline TMat2<T> _identity2()
 {
-	return Matrix2x2(1,0,
-					 0,1);
+	return TMat2<T>(1,0,
+					0,1);
 }
 
 template <typename T>

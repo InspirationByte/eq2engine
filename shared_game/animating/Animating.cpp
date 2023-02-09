@@ -174,7 +174,7 @@ void CAnimatingEGF::InitAnimating(CEqStudioGeom* model)
 			// initial transform
 			link.localTrans = Matrix4x4(link.quat);
 			link.localTrans.setTranslation(link.position);
-			link.absTrans = identity4();
+			link.absTrans = identity4;
 
 			const int parentLinkId = j - 1;
 

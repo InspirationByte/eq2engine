@@ -112,7 +112,7 @@ void CParticleBatch::Render(int nViewRenderFlags)
 
 	if(m_useCustomProjMat)
 		materials->SetMatrix(MATRIXMODE_PROJECTION, m_customProjMat);
-	materials->SetMatrix(MATRIXMODE_WORLD, identity4());
+	materials->SetMatrix(MATRIXMODE_WORLD, identity4);
 
 	materials->BindMaterial(m_material);
 

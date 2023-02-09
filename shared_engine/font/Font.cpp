@@ -410,7 +410,7 @@ void CFont::RenderText(const wchar_t* pszText, const Vector2D& start, const eqFo
 		materials->SetRasterizerStates(raster);
 
 		materials->SetAmbientColor(color_white);
-		materials->SetMatrix(MATRIXMODE_WORLD, identity4());
+		materials->SetMatrix(MATRIXMODE_WORLD, identity4);
 
 		MatTextureProxy(materials->FindGlobalMaterialVar(StringToHashConst("basetexture"))).Set(nullptr);
 		materials->BindMaterial(materials->GetDefaultMaterial());
@@ -504,7 +504,7 @@ void CFont::DrawTextMeshBuffer(IDynamicMesh* mesh, const eqFontStyleParam_t& par
 		sdfRange.Set(Vector3D(0.0f, 1.0f, 1.0f));
 
 	materials->SetAmbientColor(color_white);
-	materials->SetMatrix(MATRIXMODE_WORLD, identity4());
+	materials->SetMatrix(MATRIXMODE_WORLD, identity4);
 
 	materials->BindMaterial(fontMaterial);
 

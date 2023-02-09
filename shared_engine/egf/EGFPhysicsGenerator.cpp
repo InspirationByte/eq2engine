@@ -124,7 +124,7 @@ void CEGFPhysicsGenerator::SetupRagdollJoints(Array<ragdolljoint_t>& boneArray)
 		dsmskelbone_t* bone = m_srcModel->bones[i];
 
 		// setup transformation
-		joint.localTrans = identity4();
+		joint.localTrans = identity4;
 
 		joint.localTrans.setRotation(bone->angles);
 		joint.localTrans.setTranslation(bone->position);

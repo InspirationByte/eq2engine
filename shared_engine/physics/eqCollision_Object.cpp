@@ -51,7 +51,7 @@ CEqCollisionObject::CEqCollisionObject()
 	m_flags = COLLOBJ_TRANSFORM_DIRTY;
 	m_studioShape = false;
 
-	m_cachedTransform = identity4();
+	m_cachedTransform = identity4;
 
 	m_numShapes = 0;
 }

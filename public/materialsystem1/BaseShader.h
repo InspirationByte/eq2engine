@@ -205,7 +205,7 @@ protected:
 	MatTextureProxy				LoadTextureByVar(const char* paramName, bool errorTextureIfNoVar);
 
 	void						AddManagedShader(IShaderProgram** pShader);
-	void						AddManagedTexture(MatTextureProxy& var, const ITexturePtr& tex);
+	void						AddManagedTexture(MatTextureProxy var, const ITexturePtr& tex);
 
 	void						SetupParameter(uint mask, ShaderDefaultParams_e param);
 

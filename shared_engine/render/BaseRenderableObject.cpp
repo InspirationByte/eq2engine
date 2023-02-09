@@ -12,7 +12,7 @@
 // returns world transformation of this object
 Matrix4x4 CBaseRenderableObject::GetRenderWorldTransform()
 {
-	return identity4();
+	return identity4;
 }*/
 
 // adds a render flags

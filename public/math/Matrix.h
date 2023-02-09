@@ -451,6 +451,7 @@ typedef TMat3<float> float3x3;
 typedef TMat4<float> float4x4;
 
 // template specialization
-#define identity2() _identity2<float>()
-#define identity3() _identity3<float>()
-#define identity4() _identity4<float>()
+static const Matrix2x2 identity2 = _identity2<float>();
+static const Matrix3x3 identity3 = _identity3<float>();
+static const Matrix4x4 identity4 = _identity4<float>();
+

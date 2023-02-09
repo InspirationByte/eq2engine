@@ -157,7 +157,7 @@ void CBaseEqGeomInstancer::Draw( CEqStudioGeom* model )
 	Upload();
 
 	// proceed to render
-	materials->SetMatrix(MATRIXMODE_WORLD, identity4());
+	materials->SetMatrix(MATRIXMODE_WORLD, identity4);
 	materials->SetInstancingEnabled(true);
 	materials->SetSkinningEnabled(false); // skinning not yet supported. But we can support it with textures holding data
 

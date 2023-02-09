@@ -194,7 +194,7 @@ CMaterialSystem::CMaterialSystem()
 	m_instancingEnabled = false;
 
 	for(int i = 0; i < 4; i++)
-		m_matrices[i] = identity4();
+		m_matrices[i] = identity4;
 
 	m_whiteTexture = nullptr;
 	m_pDefaultMaterial = nullptr;
@@ -1056,7 +1056,7 @@ void CMaterialSystem::GetMatrix(ER_MatrixMode mode, Matrix4x4 &matrix)
 // retunrs multiplied matrix
 void CMaterialSystem::GetWorldViewProjection(Matrix4x4 &matrix)
 {
-	matrix = identity4() * m_matrices[MATRIXMODE_PROJECTION] * (m_matrices[MATRIXMODE_VIEW] * (m_matrices[MATRIXMODE_WORLD2] * m_matrices[MATRIXMODE_WORLD]));
+	matrix = identity4 * m_matrices[MATRIXMODE_PROJECTION] * (m_matrices[MATRIXMODE_VIEW] * (m_matrices[MATRIXMODE_WORLD2] * m_matrices[MATRIXMODE_WORLD]));
 }
 
 // sets an ambient light
@@ -1318,9 +1318,9 @@ bool CMaterialSystem::IsInstancingEnabled() const
 void CMaterialSystem::Setup2D(float wide, float tall)
 {
 	SetMatrix(MATRIXMODE_PROJECTION, projection2DScreen(wide,tall));
-	SetMatrix(MATRIXMODE_VIEW, identity4());
-	SetMatrix(MATRIXMODE_WORLD, identity4());
-	SetMatrix(MATRIXMODE_WORLD2, identity4());
+	SetMatrix(MATRIXMODE_VIEW, identity4);
+	SetMatrix(MATRIXMODE_WORLD, identity4);
+	SetMatrix(MATRIXMODE_WORLD2, identity4);
 }
 
 // sets up 3D mode, projection

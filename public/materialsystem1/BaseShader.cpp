@@ -226,10 +226,10 @@ MatTextureProxy CBaseShader::FindTextureByVar(const char* paramName, bool errorT
 	MatStringProxy mv = FindMaterialVar(paramName);
 	if(mv.IsValid()) 
 	{
-		AddManagedTexture(MatTextureProxy(mv), g_pShaderAPI->FindTexture(mv.Get()));
+		AddManagedTexture(mv, g_pShaderAPI->FindTexture(mv.Get()));
 	}
 	else if(errorTextureIfNoVar)
-		AddManagedTexture(MatTextureProxy(mv), g_pShaderAPI->GetErrorTexture());
+		AddManagedTexture(mv, g_pShaderAPI->GetErrorTexture());
 
 	return mv;
 }
@@ -399,7 +399,7 @@ void CBaseShader::AddManagedShader(IShaderProgram** pShader)
 	m_UsedPrograms.append(pShader);
 }
 
-void CBaseShader::AddManagedTexture(MatTextureProxy& var, const ITexturePtr& tex)
+void CBaseShader::AddManagedTexture(MatTextureProxy var, const ITexturePtr& tex)
 {
 	if(!tex)
 		return;

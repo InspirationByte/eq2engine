@@ -170,7 +170,7 @@ template<>
 inline const Matrix3x3& MatVarProxy<Matrix3x3>::Get() const
 {
 	if (!m_vars)
-		return identity3();
+		return identity3;
 
 	const MatVarData& var = m_vars->variables[m_matVarIdx];
 	return *(Matrix3x3*)var.vector;
@@ -180,7 +180,7 @@ template<>
 inline const Matrix4x4& MatVarProxy<Matrix4x4>::Get() const
 {
 	if (!m_vars)
-		return identity3();
+		return identity4;
 
 	const MatVarData& var = m_vars->variables[m_matVarIdx];
 	return *(Matrix4x4*)var.vector;
