@@ -14,7 +14,7 @@ using PairSortCompareFunc = int (*)(const T& a, const T& b);
 // Partition exchange sort (QuickSort)
 // -----------------------------------------------------------------
 template< typename T, typename SORTPAIRCOMPAREFUNC = PairSortCompareFunc<T> >
-inline int partition(T* list, SORTPAIRCOMPAREFUNC& comparator, int p, int r)
+inline int partition(T* list, SORTPAIRCOMPAREFUNC comparator, int p, int r)
 {
 	const T& pivot = list[p];
 	int left = p;
@@ -33,7 +33,7 @@ inline int partition(T* list, SORTPAIRCOMPAREFUNC& comparator, int p, int r)
 }
 
 template< typename T, typename SORTPAIRCOMPAREFUNC = PairSortCompareFunc<T> >
-inline void quickSort(T* list, SORTPAIRCOMPAREFUNC& comparator, int p, int r)
+inline void quickSort(T* list, SORTPAIRCOMPAREFUNC comparator, int p, int r)
 {
 	if (p >= r)
 		return;
@@ -48,7 +48,7 @@ inline void quickSort(T* list, SORTPAIRCOMPAREFUNC& comparator, int p, int r)
 // Shell sort
 // -----------------------------------------------------------------
 template< typename T, typename SORTPAIRCOMPAREFUNC = PairSortCompareFunc<T> >
-inline void shellSort(T* list, SORTPAIRCOMPAREFUNC& comparator, int i0, int i1)
+inline void shellSort(T* list, SORTPAIRCOMPAREFUNC comparator, int i0, int i1)
 {
 	const int SHELLJMP = 3; //2 or 3
 	const int n = i1 - i0;
@@ -70,14 +70,14 @@ inline void shellSort(T* list, SORTPAIRCOMPAREFUNC& comparator, int i0, int i1)
 
 // array wrapper
 template< typename T, typename STORAGE_TYPE, typename SORTPAIRCOMPAREFUNC = PairSortCompareFunc<T> >
-void shellSort(ArrayBase<T, STORAGE_TYPE>& arr, SORTPAIRCOMPAREFUNC& comparator, int i0 = 0, int i1 = 0)
+void shellSort(ArrayBase<T, STORAGE_TYPE>& arr, SORTPAIRCOMPAREFUNC comparator, int i0 = 0, int i1 = 0)
 {
 	shellSort(arr.ptr(), comparator, i0, i1 == 0 ? arr.numElem()-1 : i1);
 }
 
 // array wrapper
 template< typename T, typename STORAGE_TYPE, typename SORTPAIRCOMPAREFUNC = PairSortCompareFunc<T> >
-void quickSort(ArrayBase<T, STORAGE_TYPE>& arr, SORTPAIRCOMPAREFUNC& comparator, int p = 0, int r = 0)
+void quickSort(ArrayBase<T, STORAGE_TYPE>& arr, SORTPAIRCOMPAREFUNC comparator, int p = 0, int r = 0)
 {
 	quickSort(arr.ptr(), comparator, p, r == 0 ? arr.numElem() - 1 : r);
 }
