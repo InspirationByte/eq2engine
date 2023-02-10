@@ -73,15 +73,15 @@ enum ShaderBlendMode : int
 #define _SHADER_PARAM_OP_NOT !
 
 #define _SHADER_PARAM_INIT(param, variable, def, type, op) { \
-	Mat##type##Proxy mv_##param = GetAssignedMaterial()->FindMaterialVar(#param); \
+	Mat##type##Proxy mv_##param = FindMaterialVar(#param, false); \
 	variable = mv_##param.IsValid() ? op mv_##param.Get() : op def; }
 
 #define SHADER_PARAM_FLAG(param, variable, flag, def) \
-	MatIntProxy mv_##param = GetAssignedMaterial()->FindMaterialVar(#param); \
+	MatIntProxy mv_##param = FindMaterialVar(#param, false); \
 	if(mv_##param.IsValid()) variable |= (mv_##param.Get() ? flag : 0); else if(def) variable |= flag;
 
 #define SHADER_PARAM_ENUM(param, variable, enumValue) \
-	MatIntProxy mv_##param = GetAssignedMaterial()->FindMaterialVar(#param); \
+	MatIntProxy mv_##param = FindMaterialVar(#param, false); \
 	if(mv_##param.IsValid()) variable = (mv_##param.Get() ? enumValue : 0);
 
 #define SHADER_PARAM_BOOL(param, variable, def)			_SHADER_PARAM_INIT(param, variable, def, Int, _SHADER_PARAM_OP_EMPTY)
@@ -199,7 +199,7 @@ protected:
 
 	virtual bool				_ShaderInitRHI() = 0;
 
-	MatVarProxyUnk				FindMaterialVar(const char* paramName) const;
+	MatVarProxyUnk				FindMaterialVar(const char* paramName, bool allowGlobals = true) const;
 
 	MatTextureProxy				FindTextureByVar(const char* paramName, bool errorTextureIfNoVar);
 	MatTextureProxy				LoadTextureByVar(const char* paramName, bool errorTextureIfNoVar);

@@ -201,7 +201,7 @@ void CBaseShader::SetupParameter(uint mask, ShaderDefaultParams_e type)
 		(this->*m_param_functors[type]) ();
 }
 
-MatVarProxyUnk CBaseShader::FindMaterialVar(const char* paramName) const
+MatVarProxyUnk CBaseShader::FindMaterialVar(const char* paramName, bool allowGlobals) const
 {
 	MatStringProxy mv;
 
@@ -215,7 +215,7 @@ MatVarProxyUnk CBaseShader::FindMaterialVar(const char* paramName) const
 
 	// check if we want to use material system global var under that name
 	// NOTE: they have to be valid always in order to link proxies
-	if (mv.IsValid() && *mv.Get() == '$')
+	if (allowGlobals && mv.IsValid() && *mv.Get() == '$')
 		mv = materials->GetGlobalMaterialVarByName(((const char*)mv.Get())+1);
 
 	return mv;
