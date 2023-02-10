@@ -58,7 +58,7 @@ BEGIN_SHADER_CLASS(SDFFont)
 
 	void SetupBaseTexture()
 	{
-		g_pShaderAPI->SetTexture(m_baseTexture.Get(), "BaseTextureSampler");
+		g_pShaderAPI->SetTexture("BaseTextureSampler", m_baseTexture.Get());
 	}
 
 	void SetColorModulation()

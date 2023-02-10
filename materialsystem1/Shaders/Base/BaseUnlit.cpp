@@ -108,9 +108,9 @@ BEGIN_SHADER_CLASS(BaseUnlit)
 
 	void SetupBaseTexture0()
 	{
-		ITexturePtr pSetupTexture = materials->GetConfiguration().wireframeMode ? materials->GetWhiteTexture() : m_baseTexture.Get();
+		ITexturePtr setupTexture = materials->GetConfiguration().wireframeMode ? materials->GetWhiteTexture() : m_baseTexture.Get();
 
-		g_pShaderAPI->SetTexture(pSetupTexture, "BaseTextureSampler", 0);
+		g_pShaderAPI->SetTexture("BaseTextureSampler", setupTexture);
 	}
 
 	const ITexturePtr& GetBaseTexture(int stage) const {return m_baseTexture.Get();}

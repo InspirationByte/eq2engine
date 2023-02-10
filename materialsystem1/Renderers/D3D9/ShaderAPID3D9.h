@@ -225,7 +225,7 @@ public:
 
 	// Set the texture. Animation is set from ITexture every frame (no affection on speed) before you do 'ApplyTextures'
 	// Also you need to specify texture name. If you don't, use registers (not fine with DX10, 11)
-	void						SetTexture(const ITexturePtr& pTexture, const char* pszName, int index = 0 );
+	void						SetTexture(const char* pszName, const ITexturePtr& texture);
 
 //-------------------------------------------------------------
 // Vertex buffer object handling

@@ -567,7 +567,7 @@ void ShaderAPI_Base::SetRasterizerState( IRenderState* pState )
 }
 
 // Set Texture for Fixed-Function Pipeline
-void ShaderAPI_Base::SetTextureOnIndex(const ITexturePtr& pTexture, int level /* = 0*/)
+void ShaderAPI_Base::SetTextureAtIndex(const ITexturePtr& texture, int level)
 {
 	if(level > 0 && m_caps.maxTextureUnits <= 1)
 		return;
@@ -578,12 +578,12 @@ void ShaderAPI_Base::SetTextureOnIndex(const ITexturePtr& pTexture, int level /*
 		level &= ~0x8000;
 		if (level > m_caps.maxVertexTextureUnits)
 			return;
-		m_pSelectedVertexTextures[level] = pTexture;
+		m_pSelectedVertexTextures[level] = texture;
 		return;
 	}
 
 	if(level < m_caps.maxTextureUnits)
-		m_pSelectedTextures[level] = pTexture;
+		m_pSelectedTextures[level] = texture;
 }
 
 // returns the currently set textre at level

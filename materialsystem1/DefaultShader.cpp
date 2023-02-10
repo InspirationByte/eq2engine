@@ -53,7 +53,7 @@ BEGIN_SHADER_CLASS(Default)
 
 	void SetupBaseTexture()
 	{
-		g_pShaderAPI->SetTexture(m_baseTexture.Get() ? m_baseTexture.Get() : materials->GetWhiteTexture(), "BaseTextureSampler");
+		g_pShaderAPI->SetTexture("BaseTextureSampler", m_baseTexture.Get() ? m_baseTexture.Get() : materials->GetWhiteTexture());
 	}
 
 	void SetColorModulation()

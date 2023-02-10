@@ -148,7 +148,7 @@ public:
 	void								SetRasterizerState( IRenderState* pState );
 
 	// internal texture setup
-	void								SetTextureOnIndex( const ITexturePtr& pTexture, int level = 0 );
+	void								SetTextureAtIndex(const ITexturePtr& texture, int level);
 
 	// returns the currently set textre at level
 	const ITexturePtr&					GetTextureAt( int level ) const;

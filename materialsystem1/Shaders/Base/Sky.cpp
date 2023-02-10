@@ -68,7 +68,7 @@ BEGIN_SHADER_CLASS(Skybox)
 		g_pShaderAPI->SetShaderConstantVector4D("AmbientColor", materials->GetAmbientColor());
 
 		// setup base texture
-		g_pShaderAPI->SetTexture(m_baseTexture.Get(), "BaseTextureSampler", 0);
+		g_pShaderAPI->SetTexture("BaseTextureSampler", m_baseTexture.Get());
 	}
 
 	SHADER_DECLARE_PASS(Unlit);

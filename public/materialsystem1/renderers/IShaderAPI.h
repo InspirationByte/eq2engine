@@ -347,7 +347,7 @@ public:
 
 	// Set the texture. Animation is set from ITexture every frame (no affection on speed) before you do 'ApplyTextures'
 	// Also you need to specify texture name. If you don't, use registers (not fine with DX10, 11)
-	virtual void				SetTexture(const ITexturePtr& pTexture, const char* pszName = nullptr, int index = 0) = 0;
+	virtual void				SetTexture(const char* pszName, const ITexturePtr& pTexture) = 0;
 
 	// returns the currently set textre at level
 	virtual const ITexturePtr&	GetTextureAt( int level ) const = 0;

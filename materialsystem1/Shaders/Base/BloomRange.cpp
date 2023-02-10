@@ -62,7 +62,7 @@ BEGIN_SHADER_CLASS(BloomRange)
 
 	void SetupBaseTextures()
 	{
-		g_pShaderAPI->SetTexture(m_bloomSource.Get(), "BaseTexture", 0);
+		g_pShaderAPI->SetTexture("BaseTexture", m_bloomSource.Get());
 	}
 
 private:

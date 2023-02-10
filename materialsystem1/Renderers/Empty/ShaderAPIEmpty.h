@@ -337,7 +337,7 @@ public:
 	void						SetShader(IShaderProgram* pShader){}
 
 	// Set Texture for shader
-	void						SetTexture(const ITexturePtr& pTexture, const char* pszName, int index){}
+	void						SetTexture(const char* pszName, const ITexturePtr& texture) {}
 
 	// RAW Constant (Used for structure types, etc.)
 	void						SetShaderConstantRaw(const char *pszName, const void *data, int nSize){}

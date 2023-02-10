@@ -349,7 +349,7 @@ void CBaseShader::ParamSetup_Fog()
 
 void CBaseShader::ParamSetup_Cubemap()
 {
-	g_pShaderAPI->SetTexture(m_cubemapTexture.Get(), "CubemapTexture", 12);
+	g_pShaderAPI->SetTexture("CubemapTexture", m_cubemapTexture.Get());
 }
 
 // get texture transformation from vars

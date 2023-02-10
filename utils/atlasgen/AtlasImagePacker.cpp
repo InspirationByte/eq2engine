@@ -484,28 +484,27 @@ void ProcessNewAtlas(const char* atlasPath, const char* pszOutputName)
 	Array<imageDesc_t> imageList(PP_SL);
 
 	KeyValues kvs;
-	if( kvs.LoadFromFile(atlasPath) )
-	{
-		// try loading images
-		for(int i = 0; i < kvs.GetRootSection()->keys.numElem(); i++)
-		{
-			if(!stricmp(kvs.GetRootSection()->keys[i]->name, "image"))
-			{
-				KVSection* kb = kvs.GetRootSection()->keys[i];
-
-				const int idx = imageList.numElem();
-				if (!ParseImageDesc(atlasPath, imageList.append(), kb))
-				{
-					imageList.fastRemoveIndex(idx);
-				}
-			}
-		}
-
-		// pack atlas
-		CreateAtlasImage(imageList, pszOutputName, kvs.GetRootSection());
-	}
-	else
+	if( !kvs.LoadFromFile(atlasPath) )
 	{
 		MsgError("Can't open '%s'\n", atlasPath);
+		return;
 	}
+
+	// try loading images
+	for(int i = 0; i < kvs.GetRootSection()->keys.numElem(); i++)
+	{
+		if(!stricmp(kvs.GetRootSection()->keys[i]->name, "image"))
+		{
+			KVSection* kb = kvs.GetRootSection()->keys[i];
+
+			const int idx = imageList.numElem();
+			if (!ParseImageDesc(atlasPath, imageList.append(), kb))
+			{
+				imageList.fastRemoveIndex(idx);
+			}
+		}
+	}
+
+	// pack atlas
+	CreateAtlasImage(imageList, pszOutputName, kvs.GetRootSection());
 }

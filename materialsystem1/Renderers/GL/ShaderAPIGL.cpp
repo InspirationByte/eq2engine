@@ -453,11 +453,10 @@ void ShaderAPIGL::ApplyDepthState()
 				glEnable(GL_DEPTH_TEST);
 			else
 				glDisable(GL_DEPTH_TEST);
-
-			// BUG? for some reason after switching GL_DEPTH_TEST we have update the depth mask again, otherwise it won't work as expected
-			glDepthMask((newState.depthWrite) ? GL_TRUE : GL_FALSE);
 		}
-		else if (newState.depthWrite != prevState.depthWrite)
+		
+		// BUG? for some reason after switching GL_DEPTH_TEST we have update the depth mask again, otherwise it won't work as expected
+		if (newState.depthWrite != prevState.depthWrite || newState.depthTest != prevState.depthTest)
 		{
 			glDepthMask((newState.depthWrite) ? GL_TRUE : GL_FALSE);
 		}
@@ -634,10 +633,14 @@ void ShaderAPIGL::Clear(bool bClearColor,
 		GLCheckError("clr color");
 	}
 
+	int depthMaskOn;
+	glGetIntegerv(GL_DEPTH_WRITEMASK, &depthMaskOn);
+
 	if (bClearDepth)
 	{
 		clearBits |= GL_DEPTH_BUFFER_BIT;
 
+		// make depth buffer writeable
 		glDepthMask(GL_TRUE);
 		GLCheckError("clr depth msk");
 
@@ -662,6 +665,13 @@ void ShaderAPIGL::Clear(bool bClearColor,
 	{
 		glClear(clearBits);
 		GLCheckError("clear");
+
+		// restore depth buffer write flag
+		if (clearBits & GL_DEPTH_BUFFER_BIT)
+		{
+			glDepthMask(depthMaskOn);
+			GLCheckError("rst depth msk");
+		}
 	}
 }
 //-------------------------------------------------------------
@@ -2749,11 +2759,11 @@ int ShaderAPIGL::GetSamplerUnit(CGLShaderProgram* prog, const char* samplerName)
 
 // Set the texture. Animation is set from ITexture every frame (no affection on speed) before you do 'ApplyTextures'
 // Also you need to specify texture name. If you don't, use registers (not fine with DX10, 11)
-void ShaderAPIGL::SetTexture(const ITexturePtr& pTexture, const char* pszName, int index )
+void ShaderAPIGL::SetTexture(const char* pszName, const ITexturePtr& pTexture )
 {
-	if (!pszName)
+	if (!pszName || *pszName == 0)
 	{
-		SetTextureOnIndex(pTexture, index);
+		ASSERT_FAIL("SetTexture requires name");
 		return;
 	}
 
@@ -2762,7 +2772,7 @@ void ShaderAPIGL::SetTexture(const ITexturePtr& pTexture, const char* pszName, i
 	if (unitIndex == -1)
 		return;
 
-	SetTextureOnIndex(pTexture, unitIndex);
+	SetTextureAtIndex(pTexture, unitIndex);
 }
 
 void ShaderAPIGL::StepProgressiveLodTextures()

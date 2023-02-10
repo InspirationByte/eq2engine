@@ -76,7 +76,7 @@ BEGIN_SHADER_CLASS(GaussianBlur)
 
 	void SetupBaseTextures()
 	{
-		g_pShaderAPI->SetTexture(m_blurSource.Get(), "BaseTexture", 0);
+		g_pShaderAPI->SetTexture("BaseTexture", m_blurSource.Get());
 	}
 
 private:

@@ -819,7 +819,7 @@ IMaterialSystemShader* CMaterialSystem::CreateShaderInstance(const char* szShade
 
 typedef bool (*PFNMATERIALBINDCALLBACK)(IMaterial* pMaterial, uint paramMask);
 
-void BindFFPMaterial(IMaterial* pMaterial, int paramMask)
+static void BindFFPMaterial(IMaterial* pMaterial, int paramMask)
 {
 	g_pShaderAPI->SetShader(nullptr);
 
@@ -828,25 +828,25 @@ void BindFFPMaterial(IMaterial* pMaterial, int paramMask)
 	g_pShaderAPI->SetDepthStencilState(nullptr);
 }
 
-bool Callback_BindErrorTextureFFPMaterial(IMaterial* pMaterial, uint paramMask)
+static bool Callback_BindErrorTextureFFPMaterial(IMaterial* pMaterial, uint paramMask)
 {
 	BindFFPMaterial(pMaterial, paramMask);
-	g_pShaderAPI->SetTexture(g_pShaderAPI->GetErrorTexture());
+	g_pShaderAPI->SetTexture("BaseTextureSampler", g_pShaderAPI->GetErrorTexture());
 
 	return false;
 }
 
-bool Callback_BindFFPMaterial(IMaterial* pMaterial, uint paramMask)
+static bool Callback_BindFFPMaterial(IMaterial* pMaterial, uint paramMask)
 {
 	BindFFPMaterial(pMaterial, paramMask);
 
 	// bind same, but with base texture
-	g_pShaderAPI->SetTexture(pMaterial->GetBaseTexture());
+	g_pShaderAPI->SetTexture("BaseTextureSampler", pMaterial->GetBaseTexture());
 
 	return false;
 }
 
-bool Callback_BindNormalMaterial(IMaterial* pMaterial, uint paramMask)
+static bool Callback_BindNormalMaterial(IMaterial* pMaterial, uint paramMask)
 {
 	((CMaterial*)pMaterial)->Setup(paramMask);
 

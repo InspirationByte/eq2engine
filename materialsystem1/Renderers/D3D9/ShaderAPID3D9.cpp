@@ -2455,11 +2455,11 @@ bool ShaderAPID3DX9::GetSamplerUnit(CD3D9ShaderProgram* pProgram, const char* ps
 	return false;
 }
 
-void ShaderAPID3DX9::SetTexture(const ITexturePtr& pTexture, const char* pszName, int index )
+void ShaderAPID3DX9::SetTexture(const char* pszName, const ITexturePtr& pTexture)
 {
-	if (!pszName)
+	if (!pszName || *pszName == 0)
 	{
-		SetTextureOnIndex(pTexture, index);
+		ASSERT_FAIL("SetTexture requires name");
 		return;
 	}
 
@@ -2468,11 +2468,11 @@ void ShaderAPID3DX9::SetTexture(const ITexturePtr& pTexture, const char* pszName
 		return;
 
 	if(sampler->index != -1)
-		SetTextureOnIndex(pTexture, sampler->index);
+		SetTextureAtIndex(pTexture, sampler->index);
 
 	// NOTE: vertex shader index should be passed as negative
 	if(sampler->vsIndex != -1)
-		SetTextureOnIndex(pTexture, sampler->vsIndex | 0x8000);
+		SetTextureAtIndex(pTexture, sampler->vsIndex | 0x8000);
 }
 
 // RAW Constant (Used for structure types, etc.)
