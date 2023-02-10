@@ -273,7 +273,7 @@ if not IS_ANDROID then
 		
 		filter "system:Windows"
 			links {
-				"OpenGL32", "Gdi32"
+				"OpenGL32", "Gdi32", "Dwmapi"
 			}
 			
 			files {

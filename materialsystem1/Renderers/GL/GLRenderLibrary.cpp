@@ -27,6 +27,8 @@ static_assert(false, "this file should NOT BE included when GLES version is buil
 #include "gl_loader.h"
 
 #ifdef PLAT_WIN
+#	include <dwmapi.h>
+#	include <VersionHelpers.h>
 #	include "wgl_caps.hpp"
 #elif defined(PLAT_LINUX)
 #	include "glx_caps.hpp"
@@ -681,11 +683,7 @@ void CGLRenderLib::BeginFrame(IEqSwapChain* swapChain)
 void CGLRenderLib::EndFrame()
 {
 #ifdef PLAT_WIN
-
-	if (wgl::exts::var_EXT_swap_control)
-	{
-		wgl::SwapIntervalEXT(g_shaderApi.m_params.verticalSyncEnabled ? 1 : 0);
-	}
+	int swapInterval = g_shaderApi.m_params.verticalSyncEnabled ? 1 : 0;
 
 	HDC drawContext = m_hdc;
 	if (m_curSwapChain)
@@ -693,6 +691,26 @@ void CGLRenderLib::EndFrame()
 		CGLSwapChain* glSwapChain = (CGLSwapChain*)m_curSwapChain;
 		drawContext = glSwapChain->m_windowDC;
 	}
+
+    // HACK: Use DwmFlush when desktop composition is enabled on Windows Vista and 7
+    if (m_windowed && !IsWindows8OrGreater() && IsWindowsVistaOrGreater())
+    {
+        BOOL enabled = FALSE;
+
+        if (SUCCEEDED(DwmIsCompositionEnabled(&enabled)) && enabled)
+        {
+            int count = swapInterval;
+            while (count--)
+                DwmFlush();
+
+			// HACK: Disable WGL swap interval when desktop composition is enabled on Windows
+			//       Vista and 7 to avoid interfering with DWM vsync
+			swapInterval = 0;
+        }
+    }
+
+	if (wgl::exts::var_EXT_swap_control)
+		wgl::SwapIntervalEXT(swapInterval);
 
 	SwapBuffers(drawContext);
 
@@ -854,9 +872,9 @@ void CGLRenderLib::BeginAsyncOperation(uintptr_t threadId)
 	ASSERT(m_asyncOperationActive == false);
 
 #ifdef PLAT_WIN
-	wglMakeCurrent(m_hdc, m_glSharedContext);
+	while (wglMakeCurrent(m_hdc, m_glSharedContext) == false) {}
 #elif defined(PLAT_LINUX)
-	glXMakeCurrent(m_display, (Window)m_params->windowHandle, m_glSharedContext);
+	while (glXMakeCurrent(m_display, (Window)m_params->windowHandle, m_glSharedContext) == false) {}
 #elif defined(PLAT_OSX)
 	//aglMakeCurrent TODO
 #endif
@@ -872,12 +890,10 @@ void CGLRenderLib::EndAsyncOperation()
 	ASSERT_MSG(IsMainThread(thisThreadId) == false , "EndAsyncOperation() cannot be called from main thread!");
 	ASSERT(m_asyncOperationActive == true);
 
-	//glFinish();
-
 #ifdef PLAT_WIN
-	wglMakeCurrent(nullptr, nullptr);
+	while (wglMakeCurrent(nullptr, nullptr) == false) {}
 #elif defined(PLAT_LINUX)
-	glXMakeCurrent(m_display, None, nullptr);
+	while (glXMakeCurrent(m_display, None, nullptr) == false) {}
 #elif defined(PLAT_OSX)
 	// aglMakeCurrent TODO
 #endif
