@@ -800,7 +800,7 @@ void CEGFViewFrame::ProcessAllMenuCommands(wxCommandEvent& event)
 
 			int cache_index = g_studioModelCache->PrecacheModel( model_path.ToCString() );
 			if(cache_index == CACHE_INVALID_MODEL)
-				wxMessageBox(wxString::Format("Can't open %s\n", model_path.ToCString()), "Error", wxOK | wxCENTRE_ON_SCREEN | wxICON_EXCLAMATION, this);
+				wxMessageBox(wxString::Format("Can't open %s\n", model_path.ToCString()), "Error", wxOK | wxICON_EXCLAMATION, this);
 
 			g_model.SetModel( g_studioModelCache->GetModel(cache_index) );
 		}
@@ -824,7 +824,7 @@ void CEGFViewFrame::ProcessAllMenuCommands(wxCommandEvent& event)
 
 		int cache_index = g_studioModelCache->PrecacheModel( model_path.ToCString() );
 		if(cache_index == CACHE_INVALID_MODEL)
-			wxMessageBox(wxString::Format("Can't open %s\n", model_path.ToCString()), "Error", wxOK | wxCENTRE_ON_SCREEN | wxICON_EXCLAMATION, this);
+			wxMessageBox(wxString::Format("Can't open %s\n", model_path.ToCString()), "Error", wxOK | wxICON_EXCLAMATION, this);
 
 		g_model.SetModel( g_studioModelCache->GetModel(cache_index) );
 	}
@@ -859,7 +859,7 @@ void CEGFViewFrame::ProcessAllMenuCommands(wxCommandEvent& event)
 					Msg("***Starting egfCa: %s\n", cmdLine.ToCString());
 					if (system(cmdLine.ToCString()) != 0)
 					{
-						wxMessageBox(wxString::Format("Failed to run command '%s'", cmdLine.ToCString()), "Error", wxOK | wxCENTRE_ON_SCREEN | wxICON_EXCLAMATION, this);
+						wxMessageBox(wxString::Format("Failed to run command '%s'", cmdLine.ToCString()), "Error", wxOK | wxICON_EXCLAMATION, this);
 					}
 				}
 				else
@@ -880,12 +880,12 @@ void CEGFViewFrame::ProcessAllMenuCommands(wxCommandEvent& event)
 								Msg("***Starting egfCa: '%s'\n", cmdLine.ToCString());
 								if (system(cmdLine.ToCString()) != 0)
 								{
-									wxMessageBox(wxString::Format("Failed to run command %s", cmdLine.ToCString()), "Error", wxOK | wxCENTRE_ON_SCREEN | wxICON_EXCLAMATION, this);
+									wxMessageBox(wxString::Format("Failed to run command %s", cmdLine.ToCString()), "Error", wxOK | wxICON_EXCLAMATION, this);
 								}
 							}
 							else
 							{
-								wxMessageBox("ERROR! 'modelfilename' is not specified in the script!", "Error", wxOK | wxCENTRE_ON_SCREEN | wxICON_EXCLAMATION, this);
+								wxMessageBox("ERROR! 'modelfilename' is not specified in the script!", "Error", wxOK | wxICON_EXCLAMATION, this);
 							}
 						}
 					}
@@ -897,7 +897,7 @@ void CEGFViewFrame::ProcessAllMenuCommands(wxCommandEvent& event)
 
 						int cache_index = g_studioModelCache->PrecacheModel( model_path.ToCString() );
 						if(cache_index == CACHE_INVALID_MODEL)
-							wxMessageBox(wxString::Format("Can't open %s\n", model_path.ToCString()), "Error", wxOK | wxCENTRE_ON_SCREEN | wxICON_EXCLAMATION, this);
+							wxMessageBox(wxString::Format("Can't open %s\n", model_path.ToCString()), "Error", wxOK | wxICON_EXCLAMATION, this);
 
 						g_model.SetModel( g_studioModelCache->GetModel(cache_index) );
 
