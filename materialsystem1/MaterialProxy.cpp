@@ -17,19 +17,17 @@
 class CAddProxy : public CBaseMaterialProxy
 {
 public:
-	void InitProxy(IMaterial* pAssignedMaterial, KVSection* pKeyBase)
+	void InitProxy(IMaterial* material, KVSection* pKeyBase)
 	{
-		m_pMaterial = pAssignedMaterial;
-
 		if(pKeyBase->values.numElem() < 3)
 		{
-			MsgError("'add' proxy in '%s' error: invalid argument count\n Usage: add v1 v2 out [options]\n", pAssignedMaterial->GetName());
+			MsgError("'add' proxy in '%s' error: invalid argument count\n Usage: add v1 v2 out [options]\n", material->GetName());
 			return;
 		}
 
-		ParseVariable(in1, KV_GetValueString(pKeyBase, 0) );
-		ParseVariable(in2, KV_GetValueString(pKeyBase, 1) );
-		ParseVariable(out, KV_GetValueString(pKeyBase, 2) );
+		ParseVariable(material, in1, KV_GetValueString(pKeyBase, 0) );
+		ParseVariable(material, in2, KV_GetValueString(pKeyBase, 1) );
+		ParseVariable(material, out, KV_GetValueString(pKeyBase, 2) );
 
 		useFrameTime = false;
 
@@ -53,7 +51,6 @@ public:
 private:
 	proxyvar_t in1;
 	proxyvar_t in2;
-
 	proxyvar_t out;
 
 	bool useFrameTime;
@@ -67,19 +64,17 @@ DECLARE_PROXY(add, CAddProxy)
 class CSubProxy : public CBaseMaterialProxy
 {
 public:
-	void InitProxy(IMaterial* pAssignedMaterial, KVSection* pKeyBase)
+	void InitProxy(IMaterial* material, KVSection* pKeyBase)
 	{
-		m_pMaterial = pAssignedMaterial;
-
 		if(pKeyBase->values.numElem() < 3)
 		{
-			MsgError("'sub' proxy in '%s' error: invalid argument count\n Usage: sub v1 v2 out [options]\n", pAssignedMaterial->GetName());
+			MsgError("'sub' proxy in '%s' error: invalid argument count\n Usage: sub v1 v2 out [options]\n", material->GetName());
 			return;
 		}
 
-		ParseVariable(in1, KV_GetValueString(pKeyBase, 0) );
-		ParseVariable(in2, KV_GetValueString(pKeyBase, 1) );
-		ParseVariable(out, KV_GetValueString(pKeyBase, 2) );
+		ParseVariable(material, in1, KV_GetValueString(pKeyBase, 0) );
+		ParseVariable(material, in2, KV_GetValueString(pKeyBase, 1) );
+		ParseVariable(material, out, KV_GetValueString(pKeyBase, 2) );
 
 		useFrameTime = false;
 
@@ -103,7 +98,6 @@ public:
 private:
 	proxyvar_t in1;
 	proxyvar_t in2;
-
 	proxyvar_t out;
 
 	bool useFrameTime;
@@ -117,19 +111,17 @@ DECLARE_PROXY(subtract, CSubProxy)
 class CMulProxy : public CBaseMaterialProxy
 {
 public:
-	void InitProxy(IMaterial* pAssignedMaterial, KVSection* pKeyBase)
+	void InitProxy(IMaterial* material, KVSection* pKeyBase)
 	{
-		m_pMaterial = pAssignedMaterial;
-
 		if(pKeyBase->values.numElem() < 3)
 		{
-			MsgError("'mul' proxy in '%s' error: invalid argument count\n Usage: mul v1 v2 out [options]\n", pAssignedMaterial->GetName());
+			MsgError("'mul' proxy in '%s' error: invalid argument count\n Usage: mul v1 v2 out [options]\n", material->GetName());
 			return;
 		}
 
-		ParseVariable(in1, KV_GetValueString(pKeyBase, 0) );
-		ParseVariable(in2, KV_GetValueString(pKeyBase, 1) );
-		ParseVariable(out, KV_GetValueString(pKeyBase, 2) );
+		ParseVariable(material, in1, KV_GetValueString(pKeyBase, 0) );
+		ParseVariable(material, in2, KV_GetValueString(pKeyBase, 1) );
+		ParseVariable(material, out, KV_GetValueString(pKeyBase, 2) );
 
 		useFrameTime = false;
 
@@ -153,7 +145,6 @@ public:
 private:
 	proxyvar_t in1;
 	proxyvar_t in2;
-
 	proxyvar_t out;
 
 	bool useFrameTime;
@@ -168,19 +159,17 @@ DECLARE_PROXY(multiply, CMulProxy)
 class CDivProxy : public CBaseMaterialProxy
 {
 public:
-	void InitProxy(IMaterial* pAssignedMaterial, KVSection* pKeyBase)
+	void InitProxy(IMaterial* material, KVSection* pKeyBase)
 	{
-		m_pMaterial = pAssignedMaterial;
-
 		if(pKeyBase->values.numElem() < 3)
 		{
-			MsgError("'div' proxy in '%s' error: invalid argument count\n Usage: div v1 v2 out [options]\n", pAssignedMaterial->GetName());
+			MsgError("'div' proxy in '%s' error: invalid argument count\n Usage: div v1 v2 out [options]\n", material->GetName());
 			return;
 		}
 
-		ParseVariable(in1, KV_GetValueString(pKeyBase, 0) );
-		ParseVariable(in2, KV_GetValueString(pKeyBase, 1) );
-		ParseVariable(out, KV_GetValueString(pKeyBase, 2) );
+		ParseVariable(material, in1, KV_GetValueString(pKeyBase, 0) );
+		ParseVariable(material, in2, KV_GetValueString(pKeyBase, 1) );
+		ParseVariable(material, out, KV_GetValueString(pKeyBase, 2) );
 
 		useFrameTime = false;
 
@@ -204,7 +193,6 @@ public:
 private:
 	proxyvar_t in1;
 	proxyvar_t in2;
-
 	proxyvar_t out;
 
 	bool useFrameTime;
@@ -218,17 +206,16 @@ DECLARE_PROXY(divide, CDivProxy)
 class CSinProxy : public CBaseMaterialProxy
 {
 public:
-	void InitProxy(IMaterial* pAssignedMaterial, KVSection* pKeyBase)
+	void InitProxy(IMaterial* material, KVSection* pKeyBase)
 	{
-		m_pMaterial = pAssignedMaterial;
 		if(pKeyBase->values.numElem() < 2)
 		{
-			MsgError("'sin' proxy in '%s' error: invalid argument count\n Usage: sin v1 out [options]\n", pAssignedMaterial->GetName());
+			MsgError("'sin' proxy in '%s' error: invalid argument count\n Usage: sin v1 out [options]\n", material->GetName());
 			return;
 		}
 
-		ParseVariable(in, KV_GetValueString(pKeyBase, 0) );
-		ParseVariable(out, KV_GetValueString(pKeyBase, 1) );
+		ParseVariable(material, in, KV_GetValueString(pKeyBase, 0) );
+		ParseVariable(material, out, KV_GetValueString(pKeyBase, 1) );
 	}
 
 	void UpdateProxy(float dt)
@@ -239,7 +226,6 @@ public:
 	}
 private:
 	proxyvar_t in;
-
 	proxyvar_t out;
 };
 
@@ -251,17 +237,16 @@ DECLARE_PROXY(sin, CSinProxy)
 class CAbsProxy : public CBaseMaterialProxy
 {
 public:
-	void InitProxy(IMaterial* pAssignedMaterial, KVSection* pKeyBase)
+	void InitProxy(IMaterial* material, KVSection* pKeyBase)
 	{
-		m_pMaterial = pAssignedMaterial;
 		if(pKeyBase->values.numElem() < 2)
 		{
-			MsgError("'abs' proxy in '%s' error: invalid argument count\n Usage: abs v1 out [options]\n", pAssignedMaterial->GetName());
+			MsgError("'abs' proxy in '%s' error: invalid argument count\n Usage: abs v1 out [options]\n", material->GetName());
 			return;
 		}
 
-		ParseVariable(in, KV_GetValueString(pKeyBase, 0) );
-		ParseVariable(out, KV_GetValueString(pKeyBase, 1) );
+		ParseVariable(material, in, KV_GetValueString(pKeyBase, 0) );
+		ParseVariable(material, out, KV_GetValueString(pKeyBase, 1) );
 	}
 
 	void UpdateProxy(float dt)
@@ -272,7 +257,6 @@ public:
 	}
 private:
 	proxyvar_t in;
-
 	proxyvar_t out;
 };
 
@@ -284,19 +268,18 @@ DECLARE_PROXY(abs, CAbsProxy)
 class CAnimatedTextureProxy : public CBaseMaterialProxy
 {
 public:
-	void InitProxy(IMaterial* pAssignedMaterial, KVSection* pKeyBase)
+	void InitProxy(IMaterial* material, KVSection* pKeyBase)
 	{
-		m_pMaterial = pAssignedMaterial;
 		KVSection* pair = nullptr;
 
 		// frame count is the only static variable, frame rate is dynamic
 		frameCount = KV_GetValueInt(pKeyBase);
 
 		pair = pKeyBase->FindSection("framerate");
-		ParseVariable(frameRate, (char*)KV_GetValueString(pair));
+		ParseVariable(material, frameRate, (char*)KV_GetValueString(pair));
 
 		pair = pKeyBase->FindSection("frameVar");
-		ParseVariable(out,(char*)KV_GetValueString(pair));
+		ParseVariable(material, out,(char*)KV_GetValueString(pair));
 
 		time = 0.0f;
 	}
@@ -314,9 +297,8 @@ private:
 	float		time;
 
 	proxyvar_t	frameRate;
-	int			frameCount;
-
 	proxyvar_t	out;
+	int			frameCount;
 };
 
 DECLARE_PROXY(animatedtexture, CAnimatedTextureProxy)

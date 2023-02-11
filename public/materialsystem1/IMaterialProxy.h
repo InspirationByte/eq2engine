@@ -15,7 +15,7 @@ class IMaterialProxy
 public:
 	virtual ~IMaterialProxy() {}
 
-	virtual void InitProxy(IMaterial* pAssignedMaterial, KVSection* pKeyBase) = 0;
+	virtual void InitProxy(IMaterial* material, KVSection* pKeyBase) = 0;
 	virtual void UpdateProxy(float dt) = 0;
 };
 
@@ -58,29 +58,20 @@ struct proxyvar_t
 class CBaseMaterialProxy : public IMaterialProxy
 {
 public:
-	CBaseMaterialProxy();
+	CBaseMaterialProxy() = default;
 
 protected:
 	void UpdateVar(proxyvar_t& var, float fDt);
 
-	void ParseVariable(proxyvar_t& var, const char* pszVal);
+	void ParseVariable(IMaterial* material, proxyvar_t& var, const char* pszVal);
 
 	void mvSetValue(proxyvar_t& var, float value);
 	void mvSetValueInt(proxyvar_t& var, int value);
-
-protected:
-	IMaterial*	m_pMaterial;
-	bool		m_bIsError;
 };
 
 //---------------------------------------------------------
 
-inline CBaseMaterialProxy::CBaseMaterialProxy()
-{
-	m_pMaterial = nullptr;
-}
-
-inline void CBaseMaterialProxy::ParseVariable(proxyvar_t& var, const char* pszVal)
+inline void CBaseMaterialProxy::ParseVariable(IMaterial* material, proxyvar_t& var, const char* pszVal)
 {
 	var.value = 0.0f;
 	var.vec_idx = -1;
@@ -109,11 +100,11 @@ inline void CBaseMaterialProxy::ParseVariable(proxyvar_t& var, const char* pszVa
 		memcpy(varNameStr, varName, len);
 		varNameStr[len] = '\0';
 
-		var.mv = m_pMaterial->GetMaterialVar(varNameStr, "0");
+		var.mv = material->GetMaterialVar(varNameStr, "0");
 
 		if(!var.mv.IsValid())
 		{
-			MsgWarning("Proxy error: variable '%s' not found in '%s'\n", varNameStr, m_pMaterial->GetName());
+			MsgWarning("Proxy error: variable '%s' not found in '%s'\n", varNameStr, material->GetName());
 			return;
 		}
 
@@ -209,15 +200,7 @@ inline void CBaseMaterialProxy::mvSetValueInt(proxyvar_t& var, int value)
 		return;
 
 	var.value = value;
-
-	if(var.vec_idx >= 0)
-	{
-		Vector4D outval = var.mv.Get();
-		outval[(int)var.vec_idx] = value;
-		var.mv.Set(outval);
-	}
-	else
-		var.mv.Set(value);
+	MatIntProxy(var.mv).Set(value);
 }
 
 
