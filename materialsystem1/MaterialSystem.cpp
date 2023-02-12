@@ -916,7 +916,7 @@ MatVarProxyUnk CMaterialSystem::FindGlobalMaterialVar(int nameHash) const
 
 MatVarProxyUnk CMaterialSystem::FindGlobalMaterialVarByName(const char* pszVarName) const
 {
-	const int nameHash = StringToHash(pszVarName, true);
+	const int nameHash = StringToHash(pszVarName);
 	return FindGlobalMaterialVar(nameHash);
 }
 
@@ -924,7 +924,7 @@ MatVarProxyUnk	CMaterialSystem::GetGlobalMaterialVarByName(const char* pszVarNam
 {
 	CScopedMutex m(s_matSystemMutex);
 
-	const int nameHash = StringToHash(pszVarName, true);
+	const int nameHash = StringToHash(pszVarName);
 
 	auto it = m_globalMaterialVars.variableMap.find(nameHash);
 	if (it != m_globalMaterialVars.variableMap.end())

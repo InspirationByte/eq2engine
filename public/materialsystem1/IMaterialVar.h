@@ -127,6 +127,16 @@ inline const float& MatVarProxy<float>::Get() const
 }
 
 template<>
+inline float* MatVarProxy<float>::GetArray()
+{
+	if (!m_vars)
+		return nullptr;
+
+	MatVarData& var = m_vars->variables[m_matVarIdx];
+	return var.vector;
+}
+
+template<>
 inline const EqString& MatVarProxy<EqString>::Get() const
 {
 	if (!m_vars)

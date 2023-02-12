@@ -51,6 +51,8 @@ public:
 	void				Set(const T& value);
 	const T&			Get() const;
 
+	T*					GetArray();
+
 	void				Purge();
 
 	void				operator=(std::nullptr_t) { m_matVarIdx = -1; m_vars = nullptr; }
