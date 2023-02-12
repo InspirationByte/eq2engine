@@ -509,6 +509,7 @@ void CGameHost::ShutdownSystems()
 
 	g_parallelJobs->Shutdown();
 	
+	debugoverlay->Shutdown();
 	equi::Manager->Shutdown();
 	g_fontCache->Shutdown();
 
