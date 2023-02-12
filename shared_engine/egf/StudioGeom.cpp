@@ -822,7 +822,7 @@ void CEqStudioGeom::Draw(const DrawProps& drawProperties) const
 				drawProperties.preDrawFunc(material, i);
 
 			if (numBoneRegisters)
-				g_pShaderAPI->SetShaderConstantArrayVector4D("Bones", (Vector4D*)&bquats[0].quat, numBoneRegisters);
+				g_pShaderAPI->SetShaderConstantArrayVector4D(StringToHashConst("Bones"), (Vector4D*)&bquats[0].quat, numBoneRegisters);
 
 			materials->Apply();
 

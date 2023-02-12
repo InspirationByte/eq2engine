@@ -2434,49 +2434,33 @@ void ShaderAPID3DX9::SetShader(IShaderProgram* pShader)
 	*/
 }
 
-bool ShaderAPID3DX9::GetSamplerUnit(CD3D9ShaderProgram* pProgram, const char* pszSamplerName, const DX9Sampler_t** outSampler)
+void ShaderAPID3DX9::SetTexture(int nameHash, const ITexturePtr& pTexture)
 {
-	if(!pProgram || !pszSamplerName)
-		return false;
-
-	CD3D9ShaderProgram* pShader = (CD3D9ShaderProgram*)(pProgram);
-
-	const int hash = StringToHash(pszSamplerName);
-
-	const Map<int, DX9Sampler_t>& samplerMap = pShader->m_samplers;
-
-	auto it = samplerMap.find(hash);
-	if (it != samplerMap.end())
-	{
-		*outSampler = &it.value();
-		return true;
-	}
-
-	return false;
-}
-
-void ShaderAPID3DX9::SetTexture(const char* pszName, const ITexturePtr& pTexture)
-{
-	if (!pszName || *pszName == 0)
+	if (nameHash == 0)
 	{
 		ASSERT_FAIL("SetTexture requires name");
 		return;
 	}
 
-	const DX9Sampler_t* sampler;
-	if (!GetSamplerUnit((CD3D9ShaderProgram*)m_pSelectedShader, pszName, &sampler))
+	CD3D9ShaderProgram* pShader = (CD3D9ShaderProgram*)(m_pSelectedShader);
+	const Map<int, DX9Sampler_t>& samplerMap = pShader->m_samplers;
+
+	auto it = samplerMap.find(nameHash);
+	if (it == samplerMap.end())
 		return;
 
-	if(sampler->index != -1)
-		SetTextureAtIndex(pTexture, sampler->index);
+	const DX9Sampler_t& sampler = *it;
+
+	if(sampler.index != -1)
+		SetTextureAtIndex(pTexture, sampler.index);
 
 	// NOTE: vertex shader index should be passed as negative
-	if(sampler->vsIndex != -1)
-		SetTextureAtIndex(pTexture, sampler->vsIndex | 0x8000);
+	if(sampler.vsIndex != -1)
+		SetTextureAtIndex(pTexture, sampler.vsIndex | 0x8000);
 }
 
 // RAW Constant (Used for structure types, etc.)
-void ShaderAPID3DX9::SetShaderConstantRaw(const char *pszName, const void *data, int nSize)
+void ShaderAPID3DX9::SetShaderConstantRaw(int nameHash, const void *data, int nSize)
 {
 	if (data == nullptr || nSize == 0)
 		return;
@@ -2486,10 +2470,8 @@ void ShaderAPID3DX9::SetShaderConstantRaw(const char *pszName, const void *data,
 	if(!pShader)
 		return;
 
-	const int hash = StringToHash(pszName);
-
 	const Map<int, DX9ShaderConstant_t>& constantsMap = pShader->m_constants;
-	auto it = constantsMap.find(hash);
+	auto it = constantsMap.find(nameHash);
 	if (it == constantsMap.end())
 		return;
 

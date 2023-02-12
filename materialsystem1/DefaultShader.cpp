@@ -53,13 +53,13 @@ BEGIN_SHADER_CLASS(Default)
 
 	void SetupBaseTexture()
 	{
-		g_pShaderAPI->SetTexture("BaseTextureSampler", m_baseTexture.Get() ? m_baseTexture.Get() : materials->GetWhiteTexture());
+		g_pShaderAPI->SetTexture(StringToHashConst("BaseTextureSampler"), m_baseTexture.Get() ? m_baseTexture.Get() : materials->GetWhiteTexture());
 	}
 
 	void SetColorModulation()
 	{
 		ColorRGBA setColor = materials->GetAmbientColor();
-		g_pShaderAPI->SetShaderConstantVector4D("AmbientColor", setColor);
+		g_pShaderAPI->SetShaderConstantVector4D(StringToHashConst("AmbientColor"), setColor);
 	}
 
 	SHADER_DECLARE_PASS(Unlit);

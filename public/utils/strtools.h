@@ -131,7 +131,10 @@ constexpr int _StringToHashConst(const char* str, int hash)
 template<>
 constexpr int _StringToHashConst<-1>(const char* str, int hash) { return hash; }	// terminator
 
-#define StringToHashConst(x) (_StringToHashConst<sizeof(x) - 2>(x, sizeof(x) - 1))
+template <auto V>
+static constexpr auto force_consteval = V;
+
+#define StringToHashConst(x) force_consteval<(_StringToHashConst<sizeof(x) - 2>(x, sizeof(x) - 1))>
 
 //------------------------------------------------------
 // string conversion

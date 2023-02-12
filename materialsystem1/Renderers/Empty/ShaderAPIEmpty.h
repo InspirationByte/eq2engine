@@ -337,45 +337,10 @@ public:
 	void						SetShader(IShaderProgram* pShader){}
 
 	// Set Texture for shader
-	void						SetTexture(const char* pszName, const ITexturePtr& texture) {}
+	void						SetTexture(int nameHash, const ITexturePtr& texture) {}
 
 	// RAW Constant (Used for structure types, etc.)
-	void						SetShaderConstantRaw(const char *pszName, const void *data, int nSize){}
-
-
-	//-----------------------------------------------------
-	// Advanced shader programming
-	//-----------------------------------------------------
-
-	// Pixel Shader constants setup (by register number)
-	void						SetPixelShaderConstantInt(int reg, const int constant){}
-	void						SetPixelShaderConstantFloat(int reg, const float constant){}
-	void						SetPixelShaderConstantVector2D(int reg, const Vector2D &constant){}
-	void						SetPixelShaderConstantVector3D(int reg, const Vector3D &constant){}
-	void						SetPixelShaderConstantVector4D(int reg, const Vector4D &constant){}
-	void						SetPixelShaderConstantMatrix4(int reg, const Matrix4x4 &constant){}
-	void						SetPixelShaderConstantFloatArray(int reg, const float *constant, int count){}
-	void						SetPixelShaderConstantVector2DArray(int reg, const Vector2D *constant, int count){}
-	void						SetPixelShaderConstantVector3DArray(int reg, const Vector3D *constant, int count){}
-	void						SetPixelShaderConstantVector4DArray(int reg, const Vector4D *constant, int count){}
-	void						SetPixelShaderConstantMatrix4Array(int reg, const Matrix4x4 *constant, int count){}
-
-	// Vertex Shader constants setup (by register number)
-	void						SetVertexShaderConstantInt(int reg, const int constant){}
-	void						SetVertexShaderConstantFloat(int reg, const float constant){}
-	void						SetVertexShaderConstantVector2D(int reg, const Vector2D &constant){}
-	void						SetVertexShaderConstantVector3D(int reg, const Vector3D &constant){}
-	void						SetVertexShaderConstantVector4D(int reg, const Vector4D &constant){}
-	void						SetVertexShaderConstantMatrix4(int reg, const Matrix4x4 &constant){}
-	void						SetVertexShaderConstantFloatArray(int reg, const float *constant, int count){}
-	void						SetVertexShaderConstantVector2DArray(int reg, const Vector2D *constant, int count){}
-	void						SetVertexShaderConstantVector3DArray(int reg, const Vector3D *constant, int count){}
-	void						SetVertexShaderConstantVector4DArray(int reg, const Vector4D *constant, int count){}
-	void						SetVertexShaderConstantMatrix4Array(int reg, const Matrix4x4 *constant, int count){}
-
-	// RAW Constant
-	void						SetPixelShaderConstantRaw(int reg, const void *data, int nVectors = 1){}
-	void						SetVertexShaderConstantRaw(int reg, const void *data, int nVectors = 1){}
+	void						SetShaderConstantRaw(int nameHash, const void *data, int nSize){}
 
 //-------------------------------------------------------------
 // Vertex buffer objects

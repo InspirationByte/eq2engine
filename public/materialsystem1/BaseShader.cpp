@@ -319,10 +319,10 @@ void CBaseShader::ParamSetup_Transform()
 	materials->GetMatrix(MATRIXMODE_VIEW, view);
 	materials->GetMatrix(MATRIXMODE_PROJECTION, proj);
 
-	g_pShaderAPI->SetShaderConstantMatrix4("WVP", wvp_matrix);
-	g_pShaderAPI->SetShaderConstantMatrix4("World", world);
-	g_pShaderAPI->SetShaderConstantMatrix4("View", view);
-	g_pShaderAPI->SetShaderConstantMatrix4("Proj", proj);
+	g_pShaderAPI->SetShaderConstantMatrix4(StringToHashConst("WVP"), wvp_matrix);
+	g_pShaderAPI->SetShaderConstantMatrix4(StringToHashConst("World"), world);
+	g_pShaderAPI->SetShaderConstantMatrix4(StringToHashConst("View"), view);
+	g_pShaderAPI->SetShaderConstantMatrix4(StringToHashConst("Proj"), proj);
 
 	// setup texture transform
 	SetupVertexShaderTextureTransform(m_baseTextureTransformVar, m_baseTextureScaleVar, "BaseTextureTransform");
@@ -342,14 +342,14 @@ void CBaseShader::ParamSetup_Fog()
 	const float fogScale = 1.0f / (fog.fogfar - fog.fognear);
 	const Vector4D VectorFOGParams(fog.fognear,fog.fogfar, fogScale, 1.0f);
 
-	g_pShaderAPI->SetShaderConstantVector3D("ViewPos", fog.viewPos);
-	g_pShaderAPI->SetShaderConstantVector4D("FogParams", VectorFOGParams);
-	g_pShaderAPI->SetShaderConstantVector3D("FogColor", fog.fogColor);
+	g_pShaderAPI->SetShaderConstantVector3D(StringToHashConst("ViewPos"), fog.viewPos);
+	g_pShaderAPI->SetShaderConstantVector4D(StringToHashConst("FogParams"), VectorFOGParams);
+	g_pShaderAPI->SetShaderConstantVector3D(StringToHashConst("FogColor"), fog.fogColor);
 }
 
 void CBaseShader::ParamSetup_Cubemap()
 {
-	g_pShaderAPI->SetTexture("CubemapTexture", m_cubemapTexture.Get());
+	g_pShaderAPI->SetTexture(StringToHashConst("CubemapTexture"), m_cubemapTexture.Get());
 }
 
 // get texture transformation from vars
@@ -366,7 +366,7 @@ void CBaseShader::SetupVertexShaderTextureTransform(const MatVec2Proxy& transfor
 {
 	Vector4D trans = GetTextureTransform(transformVar, scaleVar);
 
-	g_pShaderAPI->SetShaderConstantVector4D(pszConstName, trans);
+	g_pShaderAPI->SetShaderConstantVector4D(StringToHash(pszConstName), trans);
 }
 
 IMaterial* CBaseShader::GetAssignedMaterial() const

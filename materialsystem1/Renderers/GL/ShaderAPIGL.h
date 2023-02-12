@@ -210,7 +210,7 @@ public:
 
 	// Set the texture. Animation is set from ITexture every frame (no affection on speed) before you do 'ApplyTextures'
 	// Also you need to specify texture name. If you don't, use registers (not fine with DX10, 11)
-	void				SetTexture(const char* pszName, const ITexturePtr& texture);
+	void				SetTexture(int nameHash, const ITexturePtr& texture);
 
 	int					GetSamplerUnit(CGLShaderProgram* prog, const char* samplerName);
 
@@ -256,7 +256,7 @@ public:
 	void				SetShader(IShaderProgram* pShader);
 
 	// RAW Constant (Used for structure types, etc.)
-	void				SetShaderConstantRaw(const char *pszName, const void *data, int nSize);
+	void				SetShaderConstantRaw(int nameHash, const void *data, int nSize);
 
 //-------------------------------------------------------------
 // Vertex buffer objects

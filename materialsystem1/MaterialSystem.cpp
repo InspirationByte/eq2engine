@@ -831,7 +831,7 @@ static void BindFFPMaterial(IMaterial* pMaterial, int paramMask)
 static bool Callback_BindErrorTextureFFPMaterial(IMaterial* pMaterial, uint paramMask)
 {
 	BindFFPMaterial(pMaterial, paramMask);
-	g_pShaderAPI->SetTexture("BaseTextureSampler", g_pShaderAPI->GetErrorTexture());
+	g_pShaderAPI->SetTexture(StringToHashConst("BaseTextureSampler"), g_pShaderAPI->GetErrorTexture());
 
 	return false;
 }
@@ -841,7 +841,7 @@ static bool Callback_BindFFPMaterial(IMaterial* pMaterial, uint paramMask)
 	BindFFPMaterial(pMaterial, paramMask);
 
 	// bind same, but with base texture
-	g_pShaderAPI->SetTexture("BaseTextureSampler", pMaterial->GetBaseTexture());
+	g_pShaderAPI->SetTexture(StringToHashConst("BaseTextureSampler"), pMaterial->GetBaseTexture());
 
 	return false;
 }

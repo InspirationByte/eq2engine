@@ -347,7 +347,7 @@ public:
 
 	// Set the texture. Animation is set from ITexture every frame (no affection on speed) before you do 'ApplyTextures'
 	// Also you need to specify texture name. If you don't, use registers (not fine with DX10, 11)
-	virtual void				SetTexture(const char* pszName, const ITexturePtr& pTexture) = 0;
+	virtual void				SetTexture(int nameHash, const ITexturePtr& pTexture) = 0;
 
 	// returns the currently set textre at level
 	virtual const ITexturePtr&	GetTextureAt( int level ) const = 0;
@@ -408,20 +408,21 @@ public:
 	virtual void				SetShader(IShaderProgram* pShader) = 0;
 
 	// Shader constants setup
-	virtual void				SetShaderConstantInt(const char *pszName, const int constant) = 0;
-	virtual void				SetShaderConstantFloat(const char *pszName, const float constant) = 0;
-	virtual void				SetShaderConstantVector2D(const char *pszName, const Vector2D &constant) = 0;
-	virtual void				SetShaderConstantVector3D(const char *pszName, const Vector3D &constant) = 0;
-	virtual void				SetShaderConstantVector4D(const char *pszName, const Vector4D &constant) = 0;
-	virtual void				SetShaderConstantMatrix4(const char *pszName, const Matrix4x4 &constant) = 0;
-	virtual void				SetShaderConstantArrayFloat(const char *pszName, const float *constant, int count) = 0;
-	virtual void				SetShaderConstantArrayVector2D(const char *pszName, const Vector2D *constant, int count) = 0;
-	virtual void				SetShaderConstantArrayVector3D(const char *pszName, const Vector3D *constant, int count) = 0;
-	virtual void				SetShaderConstantArrayVector4D(const char *pszName, const Vector4D *constant, int count) = 0;
-	virtual void				SetShaderConstantArrayMatrix4(const char *pszName, const Matrix4x4 *constant, int count) = 0;
+	// NOTE: use StringToHashConst
+	virtual void				SetShaderConstantInt(int nameHash, const int constant) = 0;
+	virtual void				SetShaderConstantFloat(int nameHash, const float constant) = 0;
+	virtual void				SetShaderConstantVector2D(int nameHash, const Vector2D &constant) = 0;
+	virtual void				SetShaderConstantVector3D(int nameHash, const Vector3D &constant) = 0;
+	virtual void				SetShaderConstantVector4D(int nameHash, const Vector4D &constant) = 0;
+	virtual void				SetShaderConstantMatrix4(int nameHash, const Matrix4x4 &constant) = 0;
+	virtual void				SetShaderConstantArrayFloat(int nameHash, const float *constant, int count) = 0;
+	virtual void				SetShaderConstantArrayVector2D(int nameHash, const Vector2D *constant, int count) = 0;
+	virtual void				SetShaderConstantArrayVector3D(int nameHash, const Vector3D *constant, int count) = 0;
+	virtual void				SetShaderConstantArrayVector4D(int nameHash, const Vector4D *constant, int count) = 0;
+	virtual void				SetShaderConstantArrayMatrix4(int nameHash, const Matrix4x4 *constant, int count) = 0;
 
 	// Shader constants setup (RAW mode, use for different structures)
-    virtual void				SetShaderConstantRaw(const char *pszName, const void *data, int nSize) = 0;
+    virtual void				SetShaderConstantRaw(int nameHash, const void *data, int nSize) = 0;
 
 
 //-------------------------------------------------------------

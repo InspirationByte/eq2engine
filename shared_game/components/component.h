@@ -58,7 +58,7 @@ namespace ComponentHostImpl
 	template<typename TComponentBase>
 	inline TComponentBase* GetComponent(const COMPONENT_MAP<TComponentBase>& components, const char* name)
 	{
-		const int hash = StringToHashConst(name);
+		const int hash = StringToHash(name);
 		return GetComponent(components, hash);
 	}
 
@@ -84,7 +84,7 @@ namespace ComponentHostImpl
 	template<typename TComponentBase>
 	inline void RemoveComponent(COMPONENT_MAP<TComponentBase>& components, const char* name)
 	{
-		const int hash = StringToHashConst(name);
+		const int hash = StringToHash(name);
 		RemoveComponent(components, hash);
 	}
 

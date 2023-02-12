@@ -63,12 +63,12 @@ BEGIN_SHADER_CLASS(Skybox)
 		Vector3D camPos(wvp.rows[0].w, wvp.rows[1].w, wvp.rows[2].w);
 
 		// camera direction
-		g_pShaderAPI->SetShaderConstantVector3D("camPos", camPos*2.0f);
+		g_pShaderAPI->SetShaderConstantVector3D(StringToHashConst("camPos"), camPos * 2.0f);
 
-		g_pShaderAPI->SetShaderConstantVector4D("AmbientColor", materials->GetAmbientColor());
+		g_pShaderAPI->SetShaderConstantVector4D(StringToHashConst("AmbientColor"), materials->GetAmbientColor());
 
 		// setup base texture
-		g_pShaderAPI->SetTexture("BaseTextureSampler", m_baseTexture.Get());
+		g_pShaderAPI->SetTexture(StringToHashConst("BaseTextureSampler"), m_baseTexture.Get());
 	}
 
 	SHADER_DECLARE_PASS(Unlit);

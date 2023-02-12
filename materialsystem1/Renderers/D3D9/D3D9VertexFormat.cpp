@@ -45,7 +45,7 @@ void CVertexFormatD3DX9::GenVertexElement(D3DVERTEXELEMENT9* elems)
 
 	int numRealAttribs = 0;
 
-	int index[8] = {0};
+	int index[VERTEXATTRIB_COUNT] = {0};
 
 	// Fill the vertex element array
 	for (int i = 0; i < m_vertexDesc.numElem(); i++)
@@ -59,6 +59,8 @@ void CVertexFormatD3DX9::GenVertexElement(D3DVERTEXELEMENT9* elems)
 		// if not unused
 		if(fmtdesc.attribType != VERTEXATTRIB_UNUSED)
 		{
+			ASSERT_MSG(size - 1 < elementsOf(g_d3d9_decltypes[fmtdesc.attribFormat]), "VertexFormat size - incorrectly set up");
+
 			elem.Stream = stream;
 			elem.Offset = m_streamStride[stream];
 			elem.Type = g_d3d9_decltypes[fmtdesc.attribFormat][size - 1];

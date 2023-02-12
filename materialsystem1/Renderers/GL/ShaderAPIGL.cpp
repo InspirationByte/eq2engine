@@ -2182,7 +2182,7 @@ void ShaderAPIGL::SetShader(IShaderProgram* pShader)
 }
 
 // RAW Constant (Used for structure types, etc.)
-void ShaderAPIGL::SetShaderConstantRaw(const char *pszName, const void *data, int nSize)
+void ShaderAPIGL::SetShaderConstantRaw(int nameHash, const void *data, int nSize)
 {
 	if (data == nullptr || nSize == 0)
 		return;
@@ -2192,10 +2192,8 @@ void ShaderAPIGL::SetShaderConstantRaw(const char *pszName, const void *data, in
 	if (!prog)
 		return;
 
-	const int hash = StringToHash(pszName);
-
 	const Map<int, GLShaderConstant_t>& constantsMap = prog->m_constants;
-	auto it = constantsMap.find(hash);
+	auto it = constantsMap.find(nameHash);
 	if (it == constantsMap.end())
 		return;
 
@@ -2741,33 +2739,23 @@ void ShaderAPIGL::SetScissorRectangle( const IRectangle &rect )
 	GLCheckError("set scissor");
 }
 
-int ShaderAPIGL::GetSamplerUnit(CGLShaderProgram* prog, const char* samplerName)
-{
-	if (!prog || !samplerName)
-		return -1;
-
-	const int hash = StringToHash(samplerName);
-
-	const Map<int, GLShaderSampler_t>& samplerMap = prog->m_samplers;
-
-	auto it = samplerMap.find(hash);
-	if (it != samplerMap.end())
-		return it.value().index;
-
-	return -1;
-}
-
 // Set the texture. Animation is set from ITexture every frame (no affection on speed) before you do 'ApplyTextures'
 // Also you need to specify texture name. If you don't, use registers (not fine with DX10, 11)
-void ShaderAPIGL::SetTexture(const char* pszName, const ITexturePtr& pTexture )
+void ShaderAPIGL::SetTexture(int nameHash, const ITexturePtr& pTexture )
 {
-	if (!pszName || *pszName == 0)
+	if (nameHash == 0)
 	{
 		ASSERT_FAIL("SetTexture requires name");
 		return;
 	}
 
-	const int unitIndex = GetSamplerUnit((CGLShaderProgram*)m_pSelectedShader, pszName);
+	const Map<int, GLShaderSampler_t>& samplerMap = ((CGLShaderProgram*)m_pSelectedShader)->m_samplers;
+
+	auto it = samplerMap.find(nameHash);
+	if (it == samplerMap.end())
+		return;
+
+	const int unitIndex = (*it).index;
 
 	if (unitIndex == -1)
 		return;
