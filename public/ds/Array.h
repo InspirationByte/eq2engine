@@ -642,6 +642,7 @@ inline T ArrayBase<T, STORAGE_TYPE>::popBack()
 template< typename T, typename STORAGE_TYPE >
 inline void ArrayBase<T, STORAGE_TYPE>::ensureCapacity(int newElements)
 {
+	// TODO: move to storage
 	if (!m_storage.getData())
 	{
 		ASSERT(m_storage.getGranularity() > 0);

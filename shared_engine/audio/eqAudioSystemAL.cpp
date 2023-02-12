@@ -1280,8 +1280,8 @@ static int MixMono8(float volume, const uint8* in, int numInSamples, short* out,
 // mix 8 bit stereo into 16 bit stereo
 static int MixStereo8(float volume, const uint8* in, int numInSamples, short* out, int numOutSamples)
 {
-	const int maxSamples = min(numInSamples, numOutSamples);
-	for (int i = 0; i < maxSamples * 2; ++i)
+	const int maxSamples = 2 * min(numInSamples, numOutSamples);
+	for (int i = 0; i < maxSamples; ++i)
 	{
 		const float src_val = ((short)in[i] * 256 - SHRT_MAX) * volume;
 		const int result = (((SHRT_MAX - out[i]) * src_val) / SHRT_MAX) + out[i];
@@ -1308,8 +1308,8 @@ static int MixMono16(float volume, const short* in, int numInSamples, short* out
 // mix 16 bit stereo into 16 bit stereo
 static int MixStereo16(float volume, const short* in, int numInSamples, short* out, int numOutSamples)
 {
-	const int maxSamples = min(numInSamples, numOutSamples);
-	for (int i = 0; i < maxSamples * 2; ++i)
+	const int maxSamples = 2 * min(numInSamples, numOutSamples);
+	for (int i = 0; i < maxSamples; ++i)
 	{
 		const float src_val = in[i] * volume;
 		const int result = (((SHRT_MAX - out[i]) * src_val) / SHRT_MAX) + out[i];
@@ -1345,7 +1345,6 @@ ALsizei CEqAudioSourceAL::GetSampleBuffer(void* data, ALsizei size)
 	}
 
 	// TODO: perform sample rate conversion
-	// TODO: stereo support
 
 	// silence before mix
 	memset(data, 0, size);
