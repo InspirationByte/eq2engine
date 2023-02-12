@@ -26,13 +26,10 @@ public:
 
 	void								Render(int nViewRenderFlags, void* userdata);		// draws render list
 
-	void								SortByDistanceFrom(const Vector3D& origin);
+	void								SortByDistanceFrom(const Vector3D& origin, bool reverse);
 
 	void								Remove(int id);
 	void								Clear();										// clear it
 protected:
-
-	static int DistanceCompare(CBaseRenderableObject* const& a, CBaseRenderableObject* const& b);
-
 	Array<CBaseRenderableObject*>		m_ObjectList;
 };

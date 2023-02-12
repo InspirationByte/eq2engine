@@ -26,13 +26,6 @@ public:
 //------------------------------------------------------------
 // basic methods and helpers
 //------------------------------------------------------------
-	CBaseRenderableObject()
-	{
-		m_nRenderFlags = 0;
-		m_fViewDistance = 0.0f;
-		//m_nVisibilityStatus = VISIBILITY_NOT_TESTED;
-	}
-
 	virtual ~CBaseRenderableObject() {}
 
 	virtual void				Render(int nViewRenderFlags, void* userdata) = 0;
@@ -43,8 +36,6 @@ public:
 	virtual int					GetRenderFlags() const;
 
 protected:
-
-	// view distance (for sorting)
-	float					m_fViewDistance;
-	int						m_nRenderFlags;
+	float						m_viewDistance{ 0.0f };
+	int							m_renderFlags{ 0 };
 };

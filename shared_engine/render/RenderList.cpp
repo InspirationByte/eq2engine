@@ -61,28 +61,33 @@ void CRenderList::Clear()
 	m_ObjectList.clear(false);
 }
 
-int CRenderList::DistanceCompare(CBaseRenderableObject* const & a, CBaseRenderableObject* const& b)
+void CRenderList::SortByDistanceFrom(const Vector3D& origin, bool reverse)
 {
-	return b->m_fViewDistance - a->m_fViewDistance;
-}
-
-void CRenderList::SortByDistanceFrom(const Vector3D& origin)
-{
-	// compute object distances
-	int num = m_ObjectList.numElem();
-	for(int i = 0; i < num; i++)
+	// pre-compute object distances
+	for(int i = 0; i < m_ObjectList.numElem(); ++i)
 	{
-		CBaseRenderableObject* pRenderable = m_ObjectList[i];
-
-		// FIXME: cache?
-		const BoundingBox& bbox = pRenderable->GetBoundingBox();
+		CBaseRenderableObject* renderable = m_ObjectList[i];
+		const BoundingBox& bbox = renderable->GetBoundingBox();
 
 		// clamp point in bbox
 		if(!bbox.Contains(origin))
-			pRenderable->m_fViewDistance = lengthSqr(origin - bbox.ClampPoint(origin));
+			renderable->m_viewDistance = lengthSqr(origin - bbox.ClampPoint(origin));
 		else
-			pRenderable->m_fViewDistance = lengthSqr(origin - bbox.GetCenter());
+			renderable->m_viewDistance = lengthSqr(origin - bbox.GetCenter());
 	}
 
-	shellSort(m_ObjectList, DistanceCompare);
+	if (reverse)
+	{
+		// furthest to closest (for transparency)
+		shellSort(m_ObjectList, [](const CBaseRenderableObject* a, const CBaseRenderableObject* b) {
+			return b->m_viewDistance - a->m_viewDistance;
+		});
+	}
+	else
+	{
+		// closest to furthest
+		shellSort(m_ObjectList, [](const CBaseRenderableObject* a, const CBaseRenderableObject* b) {
+			return a->m_viewDistance - b->m_viewDistance;
+		});
+	}
 }
