@@ -68,12 +68,12 @@ void CGLTexture::ReleaseTextures()
 	}
 	else
 	{
-		for(int i = 0; i < textures.numElem(); i++)
+		for(int i = 0; i < m_textures.numElem(); i++)
 		{
-			glDeleteTextures(1, &textures[i].glTexID);
+			glDeleteTextures(1, &m_textures[i].glTexID);
 			GLCheckError("del tex");
 		}
-		textures.clear();
+		m_textures.clear();
 
 		if (m_glDepthID != GL_NONE)
 		{
@@ -370,7 +370,7 @@ bool CGLTexture::Init(const SamplerStateParam_t& sampler, const ArrayCRef<CRefPt
 	const int quality = (m_iFlags & TEXFLAG_NOQUALITYLOD) ? 0 : r_loadmiplevel->GetInt();
 	if (g_shaderApi.m_progressiveTextureFrequency > 0)
 		m_progressiveState.reserve(images.numElem());
-	textures.reserve(images.numElem());
+	m_textures.reserve(images.numElem());
 
 	for (int i = 0; i < images.numElem(); i++)
 	{
@@ -395,7 +395,7 @@ bool CGLTexture::Init(const SamplerStateParam_t& sampler, const ArrayCRef<CRefPt
 
 		if (gl_skipTextures.GetBool())
 		{
-			textures.append(invalidTexture);
+			m_textures.append(invalidTexture);
 			continue;
 		}
 
@@ -457,7 +457,7 @@ bool CGLTexture::Init(const SamplerStateParam_t& sampler, const ArrayCRef<CRefPt
 				}
 			}
 
-			textures.append(texture);
+			m_textures.append(texture);
 
 			return 0;
 		});
@@ -476,7 +476,7 @@ bool CGLTexture::Init(const SamplerStateParam_t& sampler, const ArrayCRef<CRefPt
 	}
 
 	// hey you have concurrency errors if this assert hits!
-	ASSERT_MSG(images.numElem() == textures.numElem(), "%s - %d images at input while %d textures created", m_szTexName.ToCString(), images.numElem(), textures.numElem());
+	ASSERT_MSG(images.numElem() == m_textures.numElem(), "%s - %d images at input while %d textures created", m_szTexName.ToCString(), images.numElem(), m_textures.numElem());
 
 	if (m_progressiveState.numElem())
 	{
@@ -484,7 +484,7 @@ bool CGLTexture::Init(const SamplerStateParam_t& sampler, const ArrayCRef<CRefPt
 		g_shaderApi.m_progressiveTextures.insert(this);
 	}
 
-	m_numAnimatedTextureFrames = textures.numElem();
+	m_numAnimatedTextureFrames = m_textures.numElem();
 
 	return true;
 }
@@ -493,17 +493,17 @@ GLTextureRef_t& CGLTexture::GetCurrentTexture()
 {
 	static GLTextureRef_t nulltex = {0, IMAGE_TYPE_INVALID};
 
-	if(!textures.inRange(m_nAnimatedTextureFrame))
+	if(!m_textures.inRange(m_nAnimatedTextureFrame))
 		return nulltex;
 
-	return textures[m_nAnimatedTextureFrame];
+	return m_textures[m_nAnimatedTextureFrame];
 }
 
 EProgressiveStatus CGLTexture::StepProgressiveLod()
 {
 	EProgressiveStatus status = PROGRESSIVE_STATUS_WAIT_MORE_FRAMES;
 
-	if (!textures.numElem())
+	if (!m_textures.numElem())
 		return PROGRESSIVE_STATUS_COMPLETED;
 
 	for (int i = 0; i < m_progressiveState.numElem(); ++i)
@@ -516,7 +516,7 @@ EProgressiveStatus CGLTexture::StepProgressiveLod()
 			continue;
 		}
 
-		GLTextureRef_t& texture = textures[state.idx];
+		GLTextureRef_t& texture = m_textures[state.idx];
 
 		UpdateGLTextureFromImageMipmap(texture, state.image, state.mipMapLevel, state.lockBoxLevel);
 
@@ -547,7 +547,7 @@ bool CGLTexture::Lock(LockInOutData& data)
 	if (m_lockData)
 		return false;
 
-	if (textures.numElem() > 1)
+	if (m_textures.numElem() > 1)
 	{
 		ASSERT_FAIL("Couldn't handle locking of animated texture! Please tell to programmer!");
 		return false;
@@ -609,7 +609,7 @@ bool CGLTexture::Lock(LockInOutData& data)
         const GLenum srcFormat = g_gl_chanCountTypes[GetChannelCount(m_iFormat)];
         const GLenum srcType = g_gl_chanTypePerFormat[m_iFormat];
 
-        glBindTexture(m_glTarget, textures[0].glTexID);
+        glBindTexture(m_glTarget, m_textures[0].glTexID);
 
 		switch (m_glTarget)
 		{
@@ -658,7 +658,7 @@ void CGLTexture::Unlock()
 
 		const int targetOrCubeTarget = (m_glTarget == GL_TEXTURE_CUBE_MAP) ? GL_TEXTURE_CUBE_MAP_POSITIVE_X + data.cubeFaceIdx : m_glTarget;
 
-		glBindTexture(m_glTarget, textures[0].glTexID);
+		glBindTexture(m_glTarget, m_textures[0].glTexID);
 		GLCheckError("bind texture");
 
 		switch (m_glTarget)

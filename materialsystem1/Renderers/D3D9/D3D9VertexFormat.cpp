@@ -10,7 +10,7 @@
 #include "shaderapid3d9_def.h"
 #include "D3D9VertexFormat.h"
 
-CVertexFormatD3DX9::CVertexFormatD3DX9(const char* name, const VertexFormatDesc_t* desc, int numAttribs)
+CD3D9VertexFormat::CD3D9VertexFormat(const char* name, const VertexFormatDesc_t* desc, int numAttribs)
 {
 	m_name = name;
 	memset(m_streamStride, 0, sizeof(m_streamStride));
@@ -20,18 +20,18 @@ CVertexFormatD3DX9::CVertexFormatD3DX9(const char* name, const VertexFormatDesc_
 		m_vertexDesc[i] = desc[i];
 }
 
-CVertexFormatD3DX9::~CVertexFormatD3DX9()
+CD3D9VertexFormat::~CD3D9VertexFormat()
 {
 	if (m_pVertexDecl)
 		m_pVertexDecl->Release();
 }
 
-int CVertexFormatD3DX9::GetVertexSize(int nStream) const
+int CD3D9VertexFormat::GetVertexSize(int nStream) const
 {
 	return m_streamStride[nStream];
 }
 
-void CVertexFormatD3DX9::GetFormatDesc(const VertexFormatDesc_t** desc, int& numAttribs) const
+void CD3D9VertexFormat::GetFormatDesc(const VertexFormatDesc_t** desc, int& numAttribs) const
 {
 	*desc = m_vertexDesc.ptr();
 	numAttribs = m_vertexDesc.numElem();
@@ -39,7 +39,7 @@ void CVertexFormatD3DX9::GetFormatDesc(const VertexFormatDesc_t** desc, int& num
 
 //----------------------
 
-void CVertexFormatD3DX9::GenVertexElement(D3DVERTEXELEMENT9* elems)
+void CD3D9VertexFormat::GenVertexElement(D3DVERTEXELEMENT9* elems)
 {
 	memset(m_streamStride, 0, sizeof(m_streamStride));
 

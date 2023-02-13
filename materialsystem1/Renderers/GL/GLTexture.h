@@ -41,15 +41,14 @@ public:
 
 	EProgressiveStatus		StepProgressiveLod();
 
-	Array<GLTextureRef_t>	textures{ PP_SL };
+protected:
+	Array<GLTextureRef_t>	m_textures{ PP_SL };
 
 	float					m_flLod{ 0.0f };
 	GLuint					m_glTarget{ GL_NONE };
 	GLuint					m_glDepthID{ GL_NONE };
 
 	int						m_texSize{ 0 };
-
-protected:
 	void					Ref_DeleteObject();
 
 	GLTextureRef_t			CreateGLTexture(const CImage* img, const SamplerStateParam_t& sampler, int startMip, int mipCount) const;

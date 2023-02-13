@@ -93,8 +93,6 @@ void ShaderAPI_Base::Init( const shaderAPIParams_t &params )
 {
 	m_params = params;
 
-	m_nScreenFormat = params.screenFormat;
-
 	// Do master reset for all things
 	Reset();
 	
@@ -107,11 +105,6 @@ void ShaderAPI_Base::Init( const shaderAPIParams_t &params )
 
 	if(r_debug_showTexture)
 		r_debug_showTexture->SetVariantsCallback(GetConsoleTextureList);
-}
-
-ETextureFormat ShaderAPI_Base::GetScreenFormat()
-{
-	return m_nScreenFormat;
 }
 
 void ShaderAPI_Base::Shutdown()

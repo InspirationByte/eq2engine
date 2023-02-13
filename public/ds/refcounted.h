@@ -105,6 +105,10 @@ public:
 	friend bool			operator==(const CRefPtr<TYPE>& a, std::nullptr_t) { return a.Ptr() == nullptr; }
 	friend bool			operator==(const CRefPtr<TYPE>& a, PTR_TYPE b) { return a.Ptr() == b; }
 
+	friend bool			operator!=(const CRefPtr<TYPE>& a, const CRefPtr<TYPE>& b) { return a.Ptr() != b.Ptr(); }
+	friend bool			operator!=(const CRefPtr<TYPE>& a, std::nullptr_t) { return a.Ptr() != nullptr; }
+	friend bool			operator!=(const CRefPtr<TYPE>& a, PTR_TYPE b) { return a.Ptr() != b; }
+
 	static CRefPtr<TYPE>&	Null() { static CRefPtr<TYPE> _null; return _null; }
 
 private:

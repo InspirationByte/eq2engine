@@ -12,9 +12,9 @@
 
 #include "ShaderAPID3D9.h"
 
-extern ShaderAPID3DX9 s_shaderApi;
+extern ShaderAPID3D9 s_shaderApi;
 
-CIndexBufferD3DX9::CIndexBufferD3DX9()
+CD3D9IndexBuffer::CD3D9IndexBuffer()
 {
 	m_nIndices = 0;
 	m_nIndexSize = 0;
@@ -25,35 +25,32 @@ CIndexBufferD3DX9::CIndexBufferD3DX9()
 	m_pIndexBuffer = 0;
 	m_bIsLocked = false;
 	m_bLockFail = false;
-
-	m_pRestore	= nullptr;
 }
 
-CIndexBufferD3DX9::~CIndexBufferD3DX9()
+CD3D9IndexBuffer::~CD3D9IndexBuffer()
 {
 	if (m_pIndexBuffer)
 		m_pIndexBuffer->Release();
 }
 
-void CIndexBufferD3DX9::ReleaseForRestoration()
+void CD3D9IndexBuffer::ReleaseForRestoration()
 {
 	bool dynamic = (m_nUsage & D3DUSAGE_DYNAMIC) != 0;
 
 	// dynamic VBO's uses a D3DPOOL_DEFAULT
 	if(dynamic)
 	{
-		m_pRestore = PPNew iborestoredata_t;
+		m_restore = PPNew IBRestoreData;
 
 		int lock_size = m_nIndices*m_nIndexSize;
-		m_pRestore->size = lock_size;
-
-		m_pRestore->data = PPAlloc(lock_size);
+		m_restore->size = lock_size;
+		m_restore->data = PPAlloc(lock_size);
 
 		void *src = nullptr;
 
 		if(m_pIndexBuffer->Lock(0, lock_size, &src, D3DLOCK_READONLY | D3DLOCK_NOSYSLOCK ) == D3D_OK)
 		{
-			memcpy(m_pRestore->data, src, m_pRestore->size);
+			memcpy(m_restore->data, src, m_restore->size);
 			m_pIndexBuffer->Unlock();
 			m_pIndexBuffer->Release();
 
@@ -68,9 +65,9 @@ void CIndexBufferD3DX9::ReleaseForRestoration()
 	}
 }
 
-void CIndexBufferD3DX9::Restore()
+void CD3D9IndexBuffer::Restore()
 {
-	if(!m_pRestore)
+	if(!m_restore)
 		return; // nothing to restore
 
 	bool dynamic = (m_nUsage & D3DUSAGE_DYNAMIC) != 0;
@@ -88,31 +85,31 @@ void CIndexBufferD3DX9::Restore()
 
 	if(m_pIndexBuffer->Lock(0, m_nInitialSize, &dest, dynamic? D3DLOCK_DISCARD : 0 ) == D3D_OK)
 	{
-		memcpy(dest, m_pRestore->data, m_pRestore->size);
+		memcpy(dest, m_restore->data, m_restore->size);
 		m_pIndexBuffer->Unlock();
 	}
 
-	PPFree(m_pRestore->data);
-	delete m_pRestore;
+	PPFree(m_restore->data);
+	delete m_restore;
 }
 
-long CIndexBufferD3DX9::GetSizeInBytes() const
+int CD3D9IndexBuffer::GetSizeInBytes() const
 {
 	return m_nIndexSize * m_nIndices;
 }
 
-int CIndexBufferD3DX9::GetIndexSize() const
+int CD3D9IndexBuffer::GetIndexSize() const
 {
 	return m_nIndexSize;
 }
 
-int CIndexBufferD3DX9::GetIndicesCount() const
+int CD3D9IndexBuffer::GetIndicesCount() const
 {
 	return m_nIndices;
 }
 
 // updates buffer without map/unmap operations which are slower
-void CIndexBufferD3DX9::Update(void* data, int size, int offset, bool discard /*= true*/)
+void CD3D9IndexBuffer::Update(void* data, int size, int offset, bool discard /*= true*/)
 {
 	HRESULT hr = s_shaderApi.m_pD3DDevice->TestCooperativeLevel();
 
@@ -148,7 +145,7 @@ void CIndexBufferD3DX9::Update(void* data, int size, int offset, bool discard /*
 }
 
 // locks vertex buffer and gives to programmer buffer data
-bool CIndexBufferD3DX9::Lock(int lockOfs, int sizeToLock, void** outdata, bool readOnly)
+bool CD3D9IndexBuffer::Lock(int lockOfs, int sizeToLock, void** outdata, bool readOnly)
 {
 	HRESULT hr = s_shaderApi.m_pD3DDevice->TestCooperativeLevel();
 
@@ -195,7 +192,7 @@ bool CIndexBufferD3DX9::Lock(int lockOfs, int sizeToLock, void** outdata, bool r
 }
 
 // unlocks buffer
-void CIndexBufferD3DX9::Unlock()
+void CD3D9IndexBuffer::Unlock()
 {
 	if(m_bIsLocked)
 	{

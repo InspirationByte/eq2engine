@@ -13,7 +13,7 @@ class IIndexBuffer
 public:
 	virtual ~IIndexBuffer() = default;
 
-	virtual long			GetSizeInBytes() const = 0;
+	virtual int				GetSizeInBytes() const = 0;
 
 	// returns index size
 	virtual int				GetIndexSize() const = 0;

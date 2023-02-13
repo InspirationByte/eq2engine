@@ -22,32 +22,28 @@
 HOOK_TO_CVAR(r_screen);
 
 // make library
-ShaderAPID3DX9 s_shaderApi;
+ShaderAPID3D9 s_shaderApi;
 IShaderAPI* g_pShaderAPI = &s_shaderApi;
-CD3DRenderLib g_library;
+CD3D9RenderLib g_library;
 
-CD3DRenderLib::CD3DRenderLib()
+CD3D9RenderLib::CD3D9RenderLib()
 {
 	g_eqCore->RegisterInterface(RENDERER_INTERFACE_VERSION, this);
 }
 
-CD3DRenderLib::~CD3DRenderLib()
+CD3D9RenderLib::~CD3D9RenderLib()
 {
 	g_eqCore->UnregisterInterface(RENDERER_INTERFACE_VERSION);
 }
 
-IShaderAPI* CD3DRenderLib::GetRenderer() const 
+IShaderAPI* CD3D9RenderLib::GetRenderer() const
 { 
 	return &s_shaderApi;
 }
 
-bool CD3DRenderLib::InitCaps()
+bool CD3D9RenderLib::InitCaps()
 {
-#ifdef USE_D3DEX
-	if (FAILED(Direct3DCreate9Ex(D3D_SDK_VERSION,&d3d)))
-#else
 	if ((m_d3dFactory = Direct3DCreate9(D3D_SDK_VERSION)) == nullptr)
-#endif
 	{
 		const char* driver_upd = "Couldn't initialize Direct3D\nMake sure you have DirectX 9.0c or later version installed.";
 		ErrorMsg(driver_upd);
@@ -82,7 +78,7 @@ DWORD ComputeDeviceFlags( const D3DCAPS9& caps, bool bSoftwareVertexProcessing )
 	return nDeviceCreationFlags;
 }
 
-bool CD3DRenderLib::InitAPI( const shaderAPIParams_t &params )
+bool CD3D9RenderLib::InitAPI( const shaderAPIParams_t &params )
 {
 	int multiSamplingMode = params.multiSamplingMode;
 
@@ -156,15 +152,6 @@ bool CD3DRenderLib::InitAPI( const shaderAPIParams_t &params )
 	m_d3dpp.EnableAutoDepthStencil = TRUE;// (depthBits > 0);
 	m_d3dpp.AutoDepthStencilFormat = (depthBits > 16)? ((stencilBits > 0)? D3DFMT_D24S8 : D3DFMT_D24X8) : D3DFMT_D16;
 
-#ifdef USE_D3DEX
-	mode.Size = sizeof(D3DDISPLAYMODEEX);
-	mode.Width = width;
-	mode.Height = height;
-	mode.RefreshRate = 60;
-	mode.Format = d3dpp.BackBufferFormat;
-	mode.ScanLineOrdering = D3DSCANLINEORDERING_INTERLACED;
-#endif
-
 	D3DDEVTYPE devtype = D3DDEVTYPE_HAL;
 	bool bSoftwareVertexProcessing = false;
 
@@ -186,17 +173,10 @@ bool CD3DRenderLib::InitAPI( const shaderAPIParams_t &params )
 		m_d3dpp.MultiSampleType = (D3DMULTISAMPLE_TYPE) multiSample;
 
 		SetupSwapEffect(params);
-	
-#ifdef USE_D3DEX
-		uint result = m_d3dFactory->CreateDeviceEx(r_screen->GetInt(), devtype, hwnd, deviceFlags, &m_d3dpp, &m_d3dMode, &m_rhi);
-#else
-		uint result = m_d3dFactory->CreateDevice(r_screen->GetInt(), devtype, m_hwnd, deviceFlags, &m_d3dpp, &m_rhi);
-#endif
 
+		HRESULT result = m_d3dFactory->CreateDevice(r_screen->GetInt(), devtype, m_hwnd, deviceFlags, &m_d3dpp, &m_rhi);
 		if (result == D3D_OK)
-		{
 			break;
-		}
 		
 		if (multiSample > 0)
 		{
@@ -286,7 +266,7 @@ bool CD3DRenderLib::InitAPI( const shaderAPIParams_t &params )
 	return true;
 }
 
-void CD3DRenderLib::ExitAPI()
+void CD3D9RenderLib::ExitAPI()
 {
 	if (!IsWindowed())
 	{
@@ -313,12 +293,12 @@ void CD3DRenderLib::ExitAPI()
 	//DestroyWindow(hwnd);
 }
 
-void CD3DRenderLib::CheckResetDevice()
+void CD3D9RenderLib::CheckResetDevice()
 {
 	if (s_shaderApi.IsDeviceActive())
 		return;
 
-	if (!m_bResized)
+	if (!m_resized)
 	{
 		HRESULT hr;
 
@@ -336,11 +316,11 @@ void CD3DRenderLib::CheckResetDevice()
 	else
 	{
 		s_shaderApi.ResetDevice(m_d3dpp);
-		m_bResized = false;
+		m_resized = false;
 	}
 }
 
-void CD3DRenderLib::BeginFrame(IEqSwapChain* swapChain)
+void CD3D9RenderLib::BeginFrame(IEqSwapChain* swapChain)
 {
 	m_curSwapChain = swapChain;
 
@@ -361,7 +341,7 @@ void CD3DRenderLib::BeginFrame(IEqSwapChain* swapChain)
 	m_rhi->BeginScene();
 }
 
-void CD3DRenderLib::EndFrame()
+void CD3D9RenderLib::EndFrame()
 {
 	m_rhi->EndScene();
 
@@ -396,7 +376,7 @@ void CD3DRenderLib::EndFrame()
 	s_shaderApi.CheckDeviceResetOrLost(hr);
 }
 
-void CD3DRenderLib::SetBackbufferSize(const int w, const int h)
+void CD3D9RenderLib::SetBackbufferSize(const int w, const int h)
 {
 	if (m_rhi == nullptr || m_width == w && m_height == h)
 		return;
@@ -410,17 +390,17 @@ void CD3DRenderLib::SetBackbufferSize(const int w, const int h)
 
 	SetupSwapEffect(s_shaderApi.m_params);
 	
-	m_bResized = true;
+	m_resized = true;
 	s_shaderApi.m_bDeviceIsLost = true;
 }
 
 // reports focus state
-void CD3DRenderLib::SetFocused(bool inFocus)
+void CD3D9RenderLib::SetFocused(bool inFocus)
 {
 
 }
 
-void CD3DRenderLib::SetupSwapEffect(const shaderAPIParams_t& params)
+void CD3D9RenderLib::SetupSwapEffect(const shaderAPIParams_t& params)
 {
 	if (m_d3dpp.Windowed)
 	{
@@ -436,7 +416,7 @@ void CD3DRenderLib::SetupSwapEffect(const shaderAPIParams_t& params)
 
 
 // changes fullscreen mode
-bool CD3DRenderLib::SetWindowed(bool enabled)
+bool CD3D9RenderLib::SetWindowed(bool enabled)
 {
 	bool old = m_d3dpp.Windowed;
 
@@ -448,7 +428,7 @@ bool CD3DRenderLib::SetWindowed(bool enabled)
 
 	SetupSwapEffect(s_shaderApi.m_params);
 	
-	m_bResized = false;
+	m_resized = false;
 
 	if (!s_shaderApi.ResetDevice(m_d3dpp))
 	{
@@ -461,20 +441,13 @@ bool CD3DRenderLib::SetWindowed(bool enabled)
 }
 
 // speaks for itself
-bool CD3DRenderLib::IsWindowed() const
+bool CD3D9RenderLib::IsWindowed() const
 {
 	return m_d3dpp.Windowed;
 }
 
-bool CD3DRenderLib::CaptureScreenshot(CImage& img)
+bool CD3D9RenderLib::CaptureScreenshot(CImage& img)
 {
-	/*
-	if(m_Renderer->m_params->windowedMode)
-	{
-		MsgWarning("Go to fullscreen mode to capture screenshots\n");
-		return false;
-	}*/
-
 	POINT topLeft = { 0, 0 };
 	ClientToScreen(m_hwnd, &topLeft);
 
@@ -517,7 +490,7 @@ bool CD3DRenderLib::CaptureScreenshot(CImage& img)
 }
 
 // creates swap chain
-IEqSwapChain* CD3DRenderLib::CreateSwapChain(void* window, bool windowed)
+IEqSwapChain* CD3D9RenderLib::CreateSwapChain(void* window, bool windowed)
 {
 	CD3D9SwapChain* pNewChain = PPNew CD3D9SwapChain();
 	
@@ -533,19 +506,19 @@ IEqSwapChain* CD3DRenderLib::CreateSwapChain(void* window, bool windowed)
 }
 
 // returns default swap chain
-IEqSwapChain* CD3DRenderLib::GetDefaultSwapchain()
+IEqSwapChain* CD3D9RenderLib::GetDefaultSwapchain()
 {
 	return nullptr;
 }
 
 // destroys a swapchain
-void CD3DRenderLib::DestroySwapChain(IEqSwapChain* swapChain)
+void CD3D9RenderLib::DestroySwapChain(IEqSwapChain* swapChain)
 {
 	m_swapChains.remove(swapChain);
 	delete swapChain;
 }
 
-void CD3DRenderLib::ReleaseSwapChains()
+void CD3D9RenderLib::ReleaseSwapChains()
 {
 	for(int i = 0; i < m_swapChains.numElem(); i++)
 	{

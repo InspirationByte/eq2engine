@@ -16,11 +16,6 @@ CGLSwapChain::~CGLSwapChain()
 #endif
 }
 
-CGLSwapChain::CGLSwapChain()
-{
-	//m_backbuffer = NULL;
-}
-
 bool CGLSwapChain::Initialize(void* window, bool vSync, bool windowed)
 {
 	// init basic
@@ -48,7 +43,7 @@ bool CGLSwapChain::Initialize(void* window, bool vSync, bool windowed)
 	return true;
 }
 
-void* CGLSwapChain::GetWindow()
+void* CGLSwapChain::GetWindow() const
 {
 #ifdef PLAT_WIN
 	return m_window;
@@ -58,7 +53,7 @@ void* CGLSwapChain::GetWindow()
 }
 
 // retrieves backbuffer size for this swap chain
-void CGLSwapChain::GetBackbufferSize(int& wide, int& tall)
+void CGLSwapChain::GetBackbufferSize(int& wide, int& tall) const
 {
 	wide = m_width;
 	tall = m_height;

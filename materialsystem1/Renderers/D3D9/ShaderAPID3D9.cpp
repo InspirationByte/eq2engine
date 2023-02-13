@@ -35,7 +35,6 @@ extern CEqMutex	g_sapi_Mutex;
 
 extern CEqMutex	g_sapi_ProgressiveTextureMutex;
 
-
 static ConVar r_preloadShaderCache("r_preloadShaderCache", "1", nullptr, 0);
 static ConVar r_skipShaderCache("r_skipShaderCache", "0", "Shader debugging purposes", 0);
 
@@ -44,12 +43,12 @@ static ConVar r_skipShaderCache("r_skipShaderCache", "0", "Shader debugging purp
 
 #pragma warning(disable:4838)
 
-ShaderAPID3DX9::~ShaderAPID3DX9()
+ShaderAPID3D9::~ShaderAPID3D9()
 {
 	
 }
 
-ShaderAPID3DX9::ShaderAPID3DX9() : ShaderAPI_Base()
+ShaderAPID3D9::ShaderAPID3D9() : ShaderAPI_Base()
 {
 	Msg("Initializing Direct3D9 Shader API...\n");
 
@@ -123,12 +122,7 @@ ShaderAPID3DX9::ShaderAPID3DX9() : ShaderAPI_Base()
 	m_nCurrentVertexSamplerStateDirty = 0xffffffff;
 }
 
-// Only in D3DX9 Renderer
-#ifdef USE_D3DEX
-void ShaderAPID3DX9::SetD3DDevice(LPDIRECT3DDEVICE9EX d3ddev, D3DCAPS9 &d3dcaps)
-#else
-void ShaderAPID3DX9::SetD3DDevice(LPDIRECT3DDEVICE9 d3ddev, D3DCAPS9 &d3dcaps)
-#endif
+void ShaderAPID3D9::SetD3DDevice(LPDIRECT3DDEVICE9 d3ddev, D3DCAPS9 &d3dcaps)
 {
 	m_pD3DDevice = d3ddev;
 	m_hCaps = d3dcaps;
@@ -138,7 +132,7 @@ void ShaderAPID3DX9::SetD3DDevice(LPDIRECT3DDEVICE9 d3ddev, D3DCAPS9 &d3dcaps)
 // Check for device lost
 //-----------------------------------------------------------------------------
 
-void ShaderAPID3DX9::CheckDeviceResetOrLost(HRESULT hr)
+void ShaderAPID3D9::CheckDeviceResetOrLost(HRESULT hr)
 {
 	if (hr == D3DERR_DEVICELOST)
 	{
@@ -154,7 +148,7 @@ void ShaderAPID3DX9::CheckDeviceResetOrLost(HRESULT hr)
 	}
 }
 
-bool ShaderAPID3DX9::ResetDevice( D3DPRESENT_PARAMETERS &d3dpp )
+bool ShaderAPID3D9::ResetDevice( D3DPRESENT_PARAMETERS &d3dpp )
 {
 	HRESULT hr;
 
@@ -178,7 +172,7 @@ bool ShaderAPID3DX9::ResetDevice( D3DPRESENT_PARAMETERS &d3dpp )
 			CScopedMutex scoped(g_sapi_VBMutex);
 			for (int i = 0; i < m_VBList.numElem(); i++)
 			{
-				CVertexBufferD3DX9* pVB = (CVertexBufferD3DX9*)m_VBList[i];
+				CD3D9VertexBuffer* pVB = (CD3D9VertexBuffer*)m_VBList[i];
 				pVB->ReleaseForRestoration();
 			}
 		}
@@ -187,7 +181,7 @@ bool ShaderAPID3DX9::ResetDevice( D3DPRESENT_PARAMETERS &d3dpp )
 			CScopedMutex scoped(g_sapi_IBMutex);
 			for (int i = 0; i < m_IBList.numElem(); i++)
 			{
-				CIndexBufferD3DX9* pIB = (CIndexBufferD3DX9*)m_IBList[i];
+				CD3D9IndexBuffer* pIB = (CD3D9IndexBuffer*)m_IBList[i];
 				pIB->ReleaseForRestoration();
 			}
 		}
@@ -330,7 +324,7 @@ bool ShaderAPID3DX9::ResetDevice( D3DPRESENT_PARAMETERS &d3dpp )
 		DevMsg(DEVMSG_SHADERAPI, "Restoring VBs...\n");
 		for (int i = 0; i < m_VBList.numElem(); i++)
 		{
-			CVertexBufferD3DX9* pVB = (CVertexBufferD3DX9*)m_VBList[i];
+			CD3D9VertexBuffer* pVB = (CD3D9VertexBuffer*)m_VBList[i];
 
 			pVB->Restore();
 		}
@@ -338,7 +332,7 @@ bool ShaderAPID3DX9::ResetDevice( D3DPRESENT_PARAMETERS &d3dpp )
 		DevMsg(DEVMSG_SHADERAPI, "Restoring IBs...\n");
 		for (int i = 0; i < m_IBList.numElem(); i++)
 		{
-			CIndexBufferD3DX9* pIB = (CIndexBufferD3DX9*)m_IBList[i];
+			CD3D9IndexBuffer* pIB = (CD3D9IndexBuffer*)m_IBList[i];
 
 			pIB->Restore();
 		}
@@ -391,7 +385,7 @@ bool ShaderAPID3DX9::ResetDevice( D3DPRESENT_PARAMETERS &d3dpp )
 	return true;
 }
 
-bool ShaderAPID3DX9::CreateD3DFrameBufferSurfaces()
+bool ShaderAPID3D9::CreateD3DFrameBufferSurfaces()
 {
 	m_pCurrentDepthSurface = nullptr;
 
@@ -425,36 +419,36 @@ bool ShaderAPID3DX9::CreateD3DFrameBufferSurfaces()
 	if (m_pD3DDevice->GetRenderTarget(0, &fbColorSurface) != D3D_OK)
 		return false;
 
-	m_fbColorTexture->surfaces.setNum(1);
-	m_fbColorTexture->surfaces[0] = fbColorSurface;
+	m_fbColorTexture->m_surfaces.setNum(1);
+	m_fbColorTexture->m_surfaces[0] = fbColorSurface;
 
 	IDirect3DSurface9* fbDepthSurface;
 	if (m_pD3DDevice->GetDepthStencilSurface(&fbDepthSurface) != D3D_OK)
 		return false;
 
-	m_fbDepthTexture->surfaces.setNum(1);
-	m_fbDepthTexture->surfaces[0] = fbDepthSurface;
+	m_fbDepthTexture->m_surfaces.setNum(1);
+	m_fbDepthTexture->m_surfaces[0] = fbDepthSurface;
 
 	return true;
 }
 
-void ShaderAPID3DX9::ReleaseD3DFrameBufferSurfaces()
+void ShaderAPID3D9::ReleaseD3DFrameBufferSurfaces()
 {
 	if (m_fbColorTexture)
 	{
-		m_fbColorTexture->surfaces[0]->Release();
-		m_fbColorTexture->surfaces.clear();
+		m_fbColorTexture->m_surfaces[0]->Release();
+		m_fbColorTexture->m_surfaces.clear();
 	}
 
 	if (m_fbDepthTexture)
 	{
-		m_fbDepthTexture->surfaces[0]->Release();
-		m_fbDepthTexture->surfaces.clear();
+		m_fbDepthTexture->m_surfaces[0]->Release();
+		m_fbDepthTexture->m_surfaces.clear();
 	}
 }
 
 // Init + Shurdown
-void ShaderAPID3DX9::Init( const shaderAPIParams_t &params )
+void ShaderAPID3D9::Init( const shaderAPIParams_t &params )
 {
 	m_bDeviceIsLost = false;
 	m_bDeviceAtReset = false;
@@ -494,7 +488,7 @@ void ShaderAPID3DX9::Init( const shaderAPIParams_t &params )
 	ShaderAPI_Base::Init(params);
 }
 
-void ShaderAPID3DX9::PrintAPIInfo()
+void ShaderAPID3D9::PrintAPIInfo() const
 {
 	Msg("ShaderAPI: ShaderAPID3DX9\n");
 	Msg("Direct3D 9 SDK version: %d\n \n", D3D_SDK_VERSION);
@@ -524,7 +518,7 @@ void ShaderAPID3DX9::PrintAPIInfo()
 
 	MsgInfo("------ Loaded textures ------");
 
-	int allTexturesSize = 0;
+	uint64 allTexturesSize = 0;
 
 	{
 		CScopedMutex scoped(g_sapi_TextureMutex);
@@ -564,13 +558,13 @@ void ShaderAPID3DX9::PrintAPIInfo()
 	Msg("TOTAL USAGE: %g MB\n", ((float)(allTexturesSize+allBuffersSize) / 1024.0f));
 }
 
-void ShaderAPID3DX9::SetViewport(int x, int y, int w, int h)
+void ShaderAPID3D9::SetViewport(int x, int y, int w, int h)
 {
 	D3DVIEWPORT9 vp = { x, y, w, h, 0.0f, 1.0f };
 	m_pD3DDevice->SetViewport(&vp);
 }
 
-void ShaderAPID3DX9::GetViewport(int &x, int &y, int &w, int &h)
+void ShaderAPID3D9::GetViewport(int &x, int &y, int &w, int &h)
 {
 	D3DVIEWPORT9 vp;
 	m_pD3DDevice->GetViewport(&vp);
@@ -581,12 +575,12 @@ void ShaderAPID3DX9::GetViewport(int &x, int &y, int &w, int &h)
 	h = vp.Height;
 }
 
-bool ShaderAPID3DX9::IsDeviceActive()
+bool ShaderAPID3D9::IsDeviceActive() const
 {
 	return !m_bDeviceIsLost;
 }
 
-void ShaderAPID3DX9::Shutdown()
+void ShaderAPID3D9::Shutdown()
 {
 	ReleaseD3DFrameBufferSurfaces();
 
@@ -607,7 +601,7 @@ void ShaderAPID3DX9::Shutdown()
 //-------------------------------------------------------------
 // Rendering's applies
 //-------------------------------------------------------------
-void ShaderAPID3DX9::Reset(int nResetType)
+void ShaderAPID3D9::Reset(int nResetType)
 {
 	ShaderAPI_Base::Reset(nResetType);
 
@@ -623,7 +617,7 @@ void ShaderAPID3DX9::Reset(int nResetType)
 	}
 }
 
-void ShaderAPID3DX9::ApplyTextures()
+void ShaderAPID3D9::ApplyTextures()
 {
 	for(int i = 0; i < MAX_TEXTUREUNIT; i++)
 	{
@@ -638,7 +632,7 @@ void ShaderAPID3DX9::ApplyTextures()
 			else 
 			{
 #ifdef EQ_DEBUG
-				if (pTexture->textures.numElem() == 0)
+				if (pTexture->m_textures.numElem() == 0)
 				{
 					ASSERT_FAIL("D3D9 renderer error: texture has no surfaces\n");
 				}
@@ -679,7 +673,7 @@ void ShaderAPID3DX9::ApplyTextures()
 	}
 }
 
-void ShaderAPID3DX9::ApplySamplerState()
+void ShaderAPID3D9::ApplySamplerState()
 {
 	for (int i = 0; i < m_caps.maxTextureUnits; i++)
 	{
@@ -741,7 +735,7 @@ void ShaderAPID3DX9::ApplySamplerState()
 	m_nCurrentVertexSamplerStateDirty = 0;
 }
 
-void ShaderAPID3DX9::ApplyBlendState()
+void ShaderAPID3D9::ApplyBlendState()
 {
 	CD3D9BlendingState* pSelectedState = (CD3D9BlendingState*)m_pSelectedBlendstate;
 
@@ -826,7 +820,7 @@ void ShaderAPID3DX9::ApplyBlendState()
 	m_pCurrentBlendstate = pSelectedState;
 }
 
-void ShaderAPID3DX9::ApplyDepthState()
+void ShaderAPID3D9::ApplyDepthState()
 {
 	CD3D9DepthStencilState* pSelectedState = (CD3D9DepthStencilState*)m_pSelectedDepthState;
 
@@ -911,7 +905,7 @@ void ShaderAPID3DX9::ApplyDepthState()
 	m_pCurrentDepthState = pSelectedState;
 }
 
-void ShaderAPID3DX9::ApplyRasterizerState()
+void ShaderAPID3D9::ApplyRasterizerState()
 {
 	CD3D9RasterizerState* pSelectedState = (CD3D9RasterizerState*)m_pSelectedRasterizerState;
 
@@ -988,7 +982,7 @@ void ShaderAPID3DX9::ApplyRasterizerState()
 	m_pCurrentRasterizerState = pSelectedState;
 }
 
-void ShaderAPID3DX9::ApplyShaderProgram()
+void ShaderAPID3D9::ApplyShaderProgram()
 {
 	CD3D9ShaderProgram* pShader = (CD3D9ShaderProgram*)m_pSelectedShader;
 
@@ -1008,7 +1002,7 @@ void ShaderAPID3DX9::ApplyShaderProgram()
 	}
 }
 
-void ShaderAPID3DX9::ApplyConstants()
+void ShaderAPID3D9::ApplyConstants()
 {
 	{
 		const int minVSDirty = m_nMinVSDirty;
@@ -1039,7 +1033,7 @@ void ShaderAPID3DX9::ApplyConstants()
 	}
 }
 
-void ShaderAPID3DX9::Clear(bool bClearColor, bool bClearDepth, bool bClearStencil, const ColorRGBA &fillColor,float fDepth, int nStencil)
+void ShaderAPID3D9::Clear(bool bClearColor, bool bClearDepth, bool bClearStencil, const ColorRGBA &fillColor,float fDepth, int nStencil)
 {
 	// clear the back buffer
 	m_pD3DDevice->Clear(0, nullptr, (bClearColor ? D3DCLEAR_TARGET : 0) | (bClearDepth ? D3DCLEAR_ZBUFFER : 0) | (bClearStencil ? D3DCLEAR_STENCIL : 0),
@@ -1051,13 +1045,13 @@ void ShaderAPID3DX9::Clear(bool bClearColor, bool bClearDepth, bool bClearStenci
 //-------------------------------------------------------------
 
 // Device vendor and version
-const char* ShaderAPID3DX9::GetDeviceNameString() const
+const char* ShaderAPID3D9::GetDeviceNameString() const
 {
 	return "malfunction";
 }
 
 // Renderer string (ex: OpenGL, D3D9)
-const char* ShaderAPID3DX9::GetRendererName() const
+const char* ShaderAPID3D9::GetRendererName() const
 {
 	return "Direct3D9";
 }
@@ -1067,7 +1061,7 @@ const char* ShaderAPID3DX9::GetRendererName() const
 //-------------------------------------------------------------
 
 // Synchronization
-void ShaderAPID3DX9::Flush()
+void ShaderAPID3D9::Flush()
 {
 	LPDIRECT3DQUERY9 query = m_pEventQuery;
 
@@ -1078,7 +1072,7 @@ void ShaderAPID3DX9::Flush()
 	query->GetData(nullptr, 0, D3DGETDATA_FLUSH);
 }
 
-void ShaderAPID3DX9::Finish()
+void ShaderAPID3D9::Finish()
 {
 	LPDIRECT3DQUERY9 query = m_pEventQuery;
 
@@ -1098,7 +1092,7 @@ void ShaderAPID3DX9::Finish()
 //-------------------------------------------------------------
 
 // creates occlusion query object
-IOcclusionQuery* ShaderAPID3DX9::CreateOcclusionQuery()
+IOcclusionQuery* ShaderAPID3D9::CreateOcclusionQuery()
 {
 	CD3D9OcclusionQuery* occQuery = PPNew CD3D9OcclusionQuery(m_pD3DDevice);
 
@@ -1111,7 +1105,7 @@ IOcclusionQuery* ShaderAPID3DX9::CreateOcclusionQuery()
 }
 
 // removal of occlusion query object
-void ShaderAPID3DX9::DestroyOcclusionQuery(IOcclusionQuery* pQuery)
+void ShaderAPID3D9::DestroyOcclusionQuery(IOcclusionQuery* pQuery)
 {
 	bool canDelete;
 	{
@@ -1128,7 +1122,7 @@ void ShaderAPID3DX9::DestroyOcclusionQuery(IOcclusionQuery* pQuery)
 //-------------------------------------------------------------
 
 // creates blending state
-IRenderState* ShaderAPID3DX9::CreateBlendingState( const BlendStateParam_t &blendDesc )
+IRenderState* ShaderAPID3D9::CreateBlendingState( const BlendStateParam_t &blendDesc )
 {
 	CD3D9BlendingState* pState = nullptr;
 
@@ -1181,7 +1175,7 @@ IRenderState* ShaderAPID3DX9::CreateBlendingState( const BlendStateParam_t &blen
 }
 	
 // creates depth/stencil state
-IRenderState* ShaderAPID3DX9::CreateDepthStencilState( const DepthStencilStateParams_t &depthDesc )
+IRenderState* ShaderAPID3D9::CreateDepthStencilState( const DepthStencilStateParams_t &depthDesc )
 {
 	CD3D9DepthStencilState* pState = nullptr;
 	
@@ -1228,7 +1222,7 @@ IRenderState* ShaderAPID3DX9::CreateDepthStencilState( const DepthStencilStatePa
 }
 
 // creates rasterizer state
-IRenderState* ShaderAPID3DX9::CreateRasterizerState( const RasterizerStateParams_t &rasterDesc )
+IRenderState* ShaderAPID3D9::CreateRasterizerState( const RasterizerStateParams_t &rasterDesc )
 {
 	CD3D9RasterizerState* pState = nullptr;
 
@@ -1258,7 +1252,7 @@ IRenderState* ShaderAPID3DX9::CreateRasterizerState( const RasterizerStateParams
 }
 
 // completely destroys shader
-void ShaderAPID3DX9::DestroyRenderState( IRenderState* pState, bool removeAllRefs)
+void ShaderAPID3D9::DestroyRenderState( IRenderState* pState, bool removeAllRefs)
 {
 	if(!pState)
 		return;
@@ -1291,7 +1285,7 @@ void ShaderAPID3DX9::DestroyRenderState( IRenderState* pState, bool removeAllRef
 // Textures
 //-------------------------------------------------------------
 
-bool ShaderAPID3DX9::InternalCreateRenderTarget(LPDIRECT3DDEVICE9 dev, CD3D9Texture *tex, int nFlags, const ShaderAPICaps_t& caps)
+bool ShaderAPID3D9::InternalCreateRenderTarget(LPDIRECT3DDEVICE9 dev, CD3D9Texture *tex, int nFlags, const ShaderAPICaps_t& caps)
 {
 	if (caps.INTZSupported && caps.INTZFormat == tex->GetFormat())
 	{
@@ -1308,13 +1302,13 @@ bool ShaderAPID3DX9::InternalCreateRenderTarget(LPDIRECT3DDEVICE9 dev, CD3D9Text
 			return false;
 		}
 
-		tex->textures.append(pTexture);
+		tex->m_textures.append(pTexture);
 
 		LPDIRECT3DSURFACE9 pSurface = nullptr;
 
-		HRESULT hr = ((LPDIRECT3DTEXTURE9)tex->textures[0])->GetSurfaceLevel(0, &pSurface);
+		HRESULT hr = ((LPDIRECT3DTEXTURE9)tex->m_textures[0])->GetSurfaceLevel(0, &pSurface);
 		if (!FAILED(hr))
-			tex->surfaces.append(pSurface);
+			tex->m_surfaces.append(pSurface);
 	}
 	else if (IsDepthFormat(tex->GetFormat()))
 	{
@@ -1332,7 +1326,7 @@ bool ShaderAPID3DX9::InternalCreateRenderTarget(LPDIRECT3DDEVICE9 dev, CD3D9Text
 			return false;
 		}
 
-		tex->surfaces.append(pSurface);
+		tex->m_surfaces.append(pSurface);
 	}
 	else 
 	{
@@ -1362,16 +1356,16 @@ bool ShaderAPID3DX9::InternalCreateRenderTarget(LPDIRECT3DDEVICE9 dev, CD3D9Text
 				return false;
 			}
 
-			tex->textures.append(pTexture);
+			tex->m_textures.append(pTexture);
 
 			for (uint i = 0; i < 6; i++)
 			{
 				LPDIRECT3DSURFACE9 pSurface = nullptr;
 
-				HRESULT hr = ((LPDIRECT3DCUBETEXTURE9) tex->textures[0])->GetCubeMapSurface((D3DCUBEMAP_FACES) i, 0, &pSurface);
+				HRESULT hr = ((LPDIRECT3DCUBETEXTURE9) tex->m_textures[0])->GetCubeMapSurface((D3DCUBEMAP_FACES) i, 0, &pSurface);
 
 				if(!FAILED(hr))
-					tex->surfaces.append(pSurface);
+					tex->m_surfaces.append(pSurface);
 			}
 		}
 		else 
@@ -1389,13 +1383,13 @@ bool ShaderAPID3DX9::InternalCreateRenderTarget(LPDIRECT3DDEVICE9 dev, CD3D9Text
 				return false;
 			}
 
-			tex->textures.append(pTexture);
+			tex->m_textures.append(pTexture);
 
 			LPDIRECT3DSURFACE9 pSurface = nullptr;
 
-			HRESULT hr = ((LPDIRECT3DTEXTURE9) tex->textures[0])->GetSurfaceLevel(0, &pSurface);
+			HRESULT hr = ((LPDIRECT3DTEXTURE9) tex->m_textures[0])->GetSurfaceLevel(0, &pSurface);
 			if(!FAILED(hr))
-				tex->surfaces.append(pSurface);
+				tex->m_surfaces.append(pSurface);
 		}
 	}
 
@@ -1403,7 +1397,7 @@ bool ShaderAPID3DX9::InternalCreateRenderTarget(LPDIRECT3DDEVICE9 dev, CD3D9Text
 }
 
 // It will add new rendertarget
-ITexturePtr ShaderAPID3DX9::CreateRenderTarget(int width, int height, ETextureFormat nRTFormat, ER_TextureFilterMode textureFilterType, ER_TextureAddressMode textureAddress, ER_CompareFunc comparison, int nFlags)
+ITexturePtr ShaderAPID3D9::CreateRenderTarget(int width, int height, ETextureFormat nRTFormat, ER_TextureFilterMode textureFilterType, ER_TextureAddressMode textureAddress, ER_CompareFunc comparison, int nFlags)
 {
 	CRefPtr<CD3D9Texture> pTexture = CRefPtr_new(CD3D9Texture);
 
@@ -1437,7 +1431,7 @@ ITexturePtr ShaderAPID3DX9::CreateRenderTarget(int width, int height, ETextureFo
 }
 
 // It will add new rendertarget
-ITexturePtr ShaderAPID3DX9::CreateNamedRenderTarget(const char* pszName,int width, int height,ETextureFormat nRTFormat, ER_TextureFilterMode textureFilterType, ER_TextureAddressMode textureAddress, ER_CompareFunc comparison, int nFlags)
+ITexturePtr ShaderAPID3D9::CreateNamedRenderTarget(const char* pszName,int width, int height,ETextureFormat nRTFormat, ER_TextureFilterMode textureFilterType, ER_TextureAddressMode textureAddress, ER_CompareFunc comparison, int nFlags)
 {
 	CRefPtr<CD3D9Texture> pTexture = CRefPtr_new(CD3D9Texture);
 
@@ -1468,28 +1462,28 @@ ITexturePtr ShaderAPID3DX9::CreateNamedRenderTarget(const char* pszName,int widt
 
 #if 0
 // saves rendertarget to texture, you can also save screenshots
-void ShaderAPID3DX9::SaveRenderTarget(ITexture* pTargetTexture, const char* pFileName)
+void ShaderAPID3D9::SaveRenderTarget(ITexture* pTargetTexture, const char* pFileName)
 {
 	if(pTargetTexture && pTargetTexture->GetFlags() & TEXFLAG_RENDERTARGET)
 	{
 		CD3D9Texture* pTexture = (CD3D9Texture*)pTargetTexture;
 
 		if(pTexture->GetFlags() & TEXFLAG_CUBEMAP)
-			D3DXSaveTextureToFileA(pFileName, D3DXIFF_DDS, pTexture->textures[0], nullptr);
+			D3DXSaveTextureToFileA(pFileName, D3DXIFF_DDS, pTexture->m_textures[0], nullptr);
 		else
-			D3DXSaveSurfaceToFileA(pFileName, D3DXIFF_DDS, pTexture->surfaces[0], nullptr, nullptr);
+			D3DXSaveSurfaceToFileA(pFileName, D3DXIFF_DDS, pTexture->m_surfaces[0], nullptr, nullptr);
 	}
 }
 #endif
 
 // Copy render target to texture
-void ShaderAPID3DX9::CopyFramebufferToTexture(const ITexturePtr& pTargetTexture)
+void ShaderAPID3D9::CopyFramebufferToTexture(const ITexturePtr& pTargetTexture)
 {
 	CD3D9Texture* dest = (CD3D9Texture*)pTargetTexture.Ptr();
 	if(!dest)
 		return;
 
-	if(dest->textures.numElem() <= 0)
+	if(dest->m_textures.numElem() <= 0)
 		return;
 
 	LPDIRECT3DSURFACE9 srcSurface;
@@ -1498,7 +1492,7 @@ void ShaderAPID3DX9::CopyFramebufferToTexture(const ITexturePtr& pTargetTexture)
 	if (FAILED(hr))
 		return;
 
-	LPDIRECT3DTEXTURE9 destD3DTex = ( LPDIRECT3DTEXTURE9 )dest->textures[0];
+	LPDIRECT3DTEXTURE9 destD3DTex = ( LPDIRECT3DTEXTURE9 )dest->m_textures[0];
 	ASSERT( destD3DTex );
 
 	// get target surface to copy
@@ -1517,7 +1511,7 @@ void ShaderAPID3DX9::CopyFramebufferToTexture(const ITexturePtr& pTargetTexture)
 }
 
 // Copy render target to texture with resizing
-void ShaderAPID3DX9::CopyRendertargetToTexture(const ITexturePtr& srcTarget, const ITexturePtr& destTex, IRectangle* srcRect, IRectangle* destRect)
+void ShaderAPID3D9::CopyRendertargetToTexture(const ITexturePtr& srcTarget, const ITexturePtr& destTex, IRectangle* srcRect, IRectangle* destRect)
 {
 	CD3D9Texture* src = (CD3D9Texture*)srcTarget.Ptr();
 	CD3D9Texture* dest = (CD3D9Texture*)destTex.Ptr();
@@ -1525,23 +1519,23 @@ void ShaderAPID3DX9::CopyRendertargetToTexture(const ITexturePtr& srcTarget, con
 	if(!src || !dest)
 		return;
 
-	if(dest->textures.numElem() <= 0)
+	if(dest->m_textures.numElem() <= 0)
 		return;
 
-	if(src->surfaces.numElem() <= 0)
+	if(src->m_surfaces.numElem() <= 0)
 		return;
 
-	LPDIRECT3DTEXTURE9 destD3DTex = ( LPDIRECT3DTEXTURE9 )dest->textures[0];
+	LPDIRECT3DTEXTURE9 destD3DTex = ( LPDIRECT3DTEXTURE9 )dest->m_textures[0];
 
 	const RECT dxSrcRect = srcRect ? IRectangleToD3DRECT(*srcRect) : RECT{};
 	const RECT dxDestRect = destRect ? IRectangleToD3DRECT(*destRect) : RECT{};
 
 	const bool isCubemap = dest->GetFlags() & TEXFLAG_CUBEMAP;
 
-	const int numFaces = src->surfaces.numElem();
+	const int numFaces = src->m_surfaces.numElem();
 	for(int i = 0; i < numFaces; i++)
 	{
-		LPDIRECT3DSURFACE9 srcSurface = src->surfaces[i];
+		LPDIRECT3DSURFACE9 srcSurface = src->m_surfaces[i];
 
 		LPDIRECT3DSURFACE9 destSurface;
 		HRESULT hr;
@@ -1570,7 +1564,7 @@ void ShaderAPID3DX9::CopyRendertargetToTexture(const ITexturePtr& srcTarget, con
 }
 
 // Changes render target (MRT)
-void ShaderAPID3DX9::ChangeRenderTargets(ArrayCRef<ITexturePtr> renderTargets, ArrayCRef<int> rtSlice, const ITexturePtr& depthTarget, int depthSlice)
+void ShaderAPID3D9::ChangeRenderTargets(ArrayCRef<ITexturePtr> renderTargets, ArrayCRef<int> rtSlice, const ITexturePtr& depthTarget, int depthSlice)
 {
 	ASSERT_MSG(!rtSlice.ptr() || renderTargets.numElem() == rtSlice.numElem(), "ChangeRenderTargets - renderTargets and rtSlice must be equal");
 
@@ -1578,14 +1572,14 @@ void ShaderAPID3DX9::ChangeRenderTargets(ArrayCRef<ITexturePtr> renderTargets, A
 	{
 		CD3D9Texture* pRenderTarget = (CD3D9Texture*)renderTargets[i].Ptr();
 
-		const int nCubeFace = rtSlice.ptr() ? rtSlice[i] : 0;
+		const int rtSliceIdx = rtSlice.ptr() ? rtSlice[i] : 0;
 
-		if (pRenderTarget != m_pCurrentColorRenderTargets[i] || nCubeFace != m_nCurrentCRTSlice[i])
+		if (pRenderTarget != m_pCurrentColorRenderTargets[i] || rtSliceIdx != m_nCurrentCRTSlice[i])
 		{
-			m_pD3DDevice->SetRenderTarget(i, pRenderTarget->surfaces[nCubeFace]);
+			m_pD3DDevice->SetRenderTarget(i, pRenderTarget->m_surfaces[rtSliceIdx]);
 
 			m_pCurrentColorRenderTargets[i] = renderTargets[i];
-			m_nCurrentCRTSlice[i] = nCubeFace;
+			m_nCurrentCRTSlice[i] = rtSliceIdx;
 		}
 	}
 
@@ -1605,13 +1599,13 @@ void ShaderAPID3DX9::ChangeRenderTargets(ArrayCRef<ITexturePtr> renderTargets, A
 		CD3D9Texture* pDepthRenderTarget = (CD3D9Texture*)depthTarget.Ptr();
 
 		if (pDepthRenderTarget)
-			bestDepth = pDepthRenderTarget->surfaces[0 /*nDepthSlice ??? */];
+			bestDepth = pDepthRenderTarget->m_surfaces[0 /*nDepthSlice ??? */];
 
 		m_pCurrentDepthRenderTarget = depthTarget;
 	}
 
 	if(!bestDepth)
-		bestDepth = m_fbDepthTexture->surfaces[0];
+		bestDepth = m_fbDepthTexture->m_surfaces[0];
 
 	if (m_pCurrentDepthSurface != bestDepth)
 	{
@@ -1621,13 +1615,13 @@ void ShaderAPID3DX9::ChangeRenderTargets(ArrayCRef<ITexturePtr> renderTargets, A
 }
 
 // Changes back to backbuffer
-void ShaderAPID3DX9::ChangeRenderTargetToBackBuffer()
+void ShaderAPID3D9::ChangeRenderTargetToBackBuffer()
 {
 	// we can do it simplier, but there is a lack in depth, so keep an old this method...
 	
 	if (m_pCurrentColorRenderTargets[0] != nullptr)
 	{
-		m_pD3DDevice->SetRenderTarget(0, m_fbColorTexture->surfaces[0]);
+		m_pD3DDevice->SetRenderTarget(0, m_fbColorTexture->m_surfaces[0]);
 		m_pCurrentColorRenderTargets[0] = nullptr;
 	}
 
@@ -1642,13 +1636,13 @@ void ShaderAPID3DX9::ChangeRenderTargetToBackBuffer()
 
 	if (m_pCurrentDepthSurface != nullptr)
 	{
-		m_pD3DDevice->SetDepthStencilSurface(m_fbDepthTexture->surfaces[0]);
+		m_pD3DDevice->SetDepthStencilSurface(m_fbDepthTexture->m_surfaces[0]);
 		m_pCurrentDepthSurface = nullptr;
 	}
 }
 
 // resizes render target
-void ShaderAPID3DX9::ResizeRenderTarget(const ITexturePtr& renderTarget, int newWide, int newTall)
+void ShaderAPID3D9::ResizeRenderTarget(const ITexturePtr& renderTarget, int newWide, int newTall)
 {
 	if(renderTarget->GetWidth() == newWide && renderTarget->GetHeight() == newTall)
 		return;
@@ -1662,7 +1656,7 @@ void ShaderAPID3DX9::ResizeRenderTarget(const ITexturePtr& renderTarget, int new
 }
 
 // returns current size of backbuffer surface
-void ShaderAPID3DX9::GetViewportDimensions(int &wide, int &tall)
+void ShaderAPID3D9::GetViewportDimensions(int &wide, int &tall)
 {
 	D3DVIEWPORT9 vp;
 	m_pD3DDevice->GetViewport(&vp);
@@ -1676,25 +1670,25 @@ void ShaderAPID3DX9::GetViewportDimensions(int &wide, int &tall)
 //-------------------------------------------------------------
 
 // Matrix mode
-void ShaderAPID3DX9::SetMatrixMode(ER_MatrixMode nMatrixMode)
+void ShaderAPID3D9::SetMatrixMode(ER_MatrixMode nMatrixMode)
 {
 	m_nCurrentMatrixMode = g_d3d9_matrixModes[nMatrixMode];
 }
 
 // Will save matrix
-void ShaderAPID3DX9::PushMatrix()
+void ShaderAPID3D9::PushMatrix()
 {
 	// TODO: implement!
 }
 
 // Will reset matrix
-void ShaderAPID3DX9::PopMatrix()
+void ShaderAPID3D9::PopMatrix()
 {
 	// TODO: implement!
 }
 
 // Load identity matrix
-void ShaderAPID3DX9::LoadIdentityMatrix()
+void ShaderAPID3D9::LoadIdentityMatrix()
 {
 	// It's may be invalid
 	D3DXMATRIX Identity;
@@ -1704,7 +1698,7 @@ void ShaderAPID3DX9::LoadIdentityMatrix()
 }
 
 // Load custom matrix
-void ShaderAPID3DX9::LoadMatrix(const Matrix4x4 &matrix)
+void ShaderAPID3D9::LoadMatrix(const Matrix4x4 &matrix)
 {
 	m_pD3DDevice->SetTransform(m_nCurrentMatrixMode,(D3DXMATRIX*)(const float *)transpose(matrix));
 }
@@ -1714,7 +1708,7 @@ void ShaderAPID3DX9::LoadMatrix(const Matrix4x4 &matrix)
 //-------------------------------------------------------------
 
 // Set Depth range for next primitives
-void ShaderAPID3DX9::SetDepthRange(float fZNear,float fZFar)
+void ShaderAPID3D9::SetDepthRange(float fZNear,float fZFar)
 {
 	D3DVIEWPORT9 view;
 	m_pD3DDevice->GetViewport(&view);
@@ -1724,16 +1718,16 @@ void ShaderAPID3DX9::SetDepthRange(float fZNear,float fZFar)
 }
 
 // sets scissor rectangle
-void ShaderAPID3DX9::SetScissorRectangle( const IRectangle &rect )
+void ShaderAPID3D9::SetScissorRectangle( const IRectangle &rect )
 {
 	const RECT scissorRect = IRectangleToD3DRECT(rect);
 	m_pD3DDevice->SetScissorRect(&scissorRect);
 }
 
 // Changes the vertex format
-void ShaderAPID3DX9::ChangeVertexFormat(IVertexFormat* pVertexFormat)
+void ShaderAPID3D9::ChangeVertexFormat(IVertexFormat* pVertexFormat)
 {
-	CVertexFormatD3DX9* pFormat = (CVertexFormatD3DX9*)pVertexFormat;
+	CD3D9VertexFormat* pFormat = (CD3D9VertexFormat*)pVertexFormat;
 
 	if (pFormat != m_pCurrentVertexFormat)
 	{
@@ -1741,7 +1735,7 @@ void ShaderAPID3DX9::ChangeVertexFormat(IVertexFormat* pVertexFormat)
 		{
 			m_pD3DDevice->SetVertexDeclaration(pFormat->m_pVertexDecl);
 
-			CVertexFormatD3DX9* pCurrentFormat = (CVertexFormatD3DX9*)m_pCurrentVertexFormat;
+			CD3D9VertexFormat* pCurrentFormat = (CD3D9VertexFormat*)m_pCurrentVertexFormat;
 			if (pCurrentFormat != nullptr)
 			{
 				for (int i = 0; i < MAX_VERTEXSTREAM; i++)
@@ -1757,12 +1751,12 @@ void ShaderAPID3DX9::ChangeVertexFormat(IVertexFormat* pVertexFormat)
 }
 
 // Changes the vertex buffer
-void ShaderAPID3DX9::ChangeVertexBuffer(IVertexBuffer* pVertexBuffer,int nStream, const intptr offset)
+void ShaderAPID3D9::ChangeVertexBuffer(IVertexBuffer* pVertexBuffer,int nStream, const intptr offset)
 {
 	UINT nStreamParam1 = 1;
 	UINT nStreamParam2 = 1;
 
-	CVertexBufferD3DX9* pVB = (CVertexBufferD3DX9*)(pVertexBuffer);
+	CD3D9VertexBuffer* pVB = (CD3D9VertexBuffer*)(pVertexBuffer);
 
 	if (nStream == 2)	// FIXME: instance stream ID
 	{
@@ -1797,11 +1791,11 @@ void ShaderAPID3DX9::ChangeVertexBuffer(IVertexBuffer* pVertexBuffer,int nStream
 }
 
 // Changes the index buffer
-void ShaderAPID3DX9::ChangeIndexBuffer(IIndexBuffer* pIndexBuffer)
+void ShaderAPID3D9::ChangeIndexBuffer(IIndexBuffer* pIndexBuffer)
 {
 	if (pIndexBuffer != m_pCurrentIndexBuffer)
 	{
-		CIndexBufferD3DX9* pIB = (CIndexBufferD3DX9*)(pIndexBuffer);
+		CD3D9IndexBuffer* pIB = (CD3D9IndexBuffer*)(pIndexBuffer);
 
 		if (pIB == nullptr)
 			m_pD3DDevice->SetIndices(nullptr);
@@ -1813,9 +1807,9 @@ void ShaderAPID3DX9::ChangeIndexBuffer(IIndexBuffer* pIndexBuffer)
 }
 
 // Destroy vertex format
-void ShaderAPID3DX9::DestroyVertexFormat(IVertexFormat* pFormat)
+void ShaderAPID3D9::DestroyVertexFormat(IVertexFormat* pFormat)
 {
-	CVertexFormatD3DX9* pVF = (CVertexFormatD3DX9*)(pFormat);
+	CD3D9VertexFormat* pVF = (CD3D9VertexFormat*)(pFormat);
 	if(!pVF)
 		return;
 
@@ -1833,9 +1827,9 @@ void ShaderAPID3DX9::DestroyVertexFormat(IVertexFormat* pFormat)
 }
 
 // Destroy vertex buffer
-void ShaderAPID3DX9::DestroyVertexBuffer(IVertexBuffer* pVertexBuffer)
+void ShaderAPID3D9::DestroyVertexBuffer(IVertexBuffer* pVertexBuffer)
 {
-	CVertexBufferD3DX9* pVB = (CVertexBufferD3DX9*)(pVertexBuffer);
+	CD3D9VertexBuffer* pVB = (CD3D9VertexBuffer*)(pVertexBuffer);
 	if(!pVB)
 		return;
 
@@ -1854,9 +1848,9 @@ void ShaderAPID3DX9::DestroyVertexBuffer(IVertexBuffer* pVertexBuffer)
 }
 
 // Destroy index buffer
-void ShaderAPID3DX9::DestroyIndexBuffer(IIndexBuffer* pIndexBuffer)
+void ShaderAPID3D9::DestroyIndexBuffer(IIndexBuffer* pIndexBuffer)
 {
-	CIndexBufferD3DX9* pIB = (CIndexBufferD3DX9*)(pIndexBuffer);
+	CD3D9IndexBuffer* pIB = (CD3D9IndexBuffer*)(pIndexBuffer);
 
 	if(!pIB)
 		return;
@@ -1880,7 +1874,7 @@ void ShaderAPID3DX9::DestroyIndexBuffer(IIndexBuffer* pIndexBuffer)
 
 
 // Creates shader class for needed ShaderAPI
-IShaderProgram* ShaderAPID3DX9::CreateNewShaderProgram(const char* pszName, const char* query)
+IShaderProgram* ShaderAPID3D9::CreateNewShaderProgram(const char* pszName, const char* query)
 {
 	CD3D9ShaderProgram* pNewProgram = PPNew CD3D9ShaderProgram();
 	pNewProgram->SetName((_Es(pszName)+query).GetData());
@@ -1894,7 +1888,7 @@ IShaderProgram* ShaderAPID3DX9::CreateNewShaderProgram(const char* pszName, cons
 }
 
 // Destroy all shader
-void ShaderAPID3DX9::DestroyShaderProgram(IShaderProgram* pShaderProgram)
+void ShaderAPID3D9::DestroyShaderProgram(IShaderProgram* pShaderProgram)
 {
 	CD3D9ShaderProgram* pShader = (CD3D9ShaderProgram*)(pShaderProgram);
 
@@ -1916,7 +1910,7 @@ void ShaderAPID3DX9::DestroyShaderProgram(IShaderProgram* pShaderProgram)
 	delete pShader;
 }
 
-void ShaderAPID3DX9::StepProgressiveLodTextures()
+void ShaderAPID3D9::StepProgressiveLodTextures()
 {
 	int numTransferred = 0;
 
@@ -1946,7 +1940,7 @@ void ShaderAPID3DX9::StepProgressiveLodTextures()
 	} 
 }
 
-void ShaderAPID3DX9::PreloadShadersFromCache()
+void ShaderAPID3D9::PreloadShadersFromCache()
 {
 	if (!r_preloadShaderCache.GetBool())
 		return;
@@ -1997,7 +1991,7 @@ void ShaderAPID3DX9::PreloadShadersFromCache()
 	Msg("Shader cache: %d shaders loaded\n", numShaders);
 }
 
-bool ShaderAPID3DX9::InitShaderFromCache(IShaderProgram* pShaderOutput, IVirtualStream* pStream, uint32 checksum)
+bool ShaderAPID3D9::InitShaderFromCache(IShaderProgram* pShaderOutput, IVirtualStream* pStream, uint32 checksum)
 {
 	CD3D9ShaderProgram* pShader = (CD3D9ShaderProgram*)(pShaderOutput);
 
@@ -2060,7 +2054,7 @@ bool ShaderAPID3DX9::InitShaderFromCache(IShaderProgram* pShaderOutput, IVirtual
 }
 
 // Load any shader from stream
-bool ShaderAPID3DX9::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
+bool ShaderAPID3D9::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 												const shaderProgramCompileInfo_t& info,
 												const char* extra)
 {
@@ -2420,7 +2414,7 @@ bool ShaderAPID3DX9::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 }
 
 // Set current shader for rendering
-void ShaderAPID3DX9::SetShader(IShaderProgram* pShader)
+void ShaderAPID3D9::SetShader(IShaderProgram* pShader)
 {
 	m_pSelectedShader = pShader;
 	/*
@@ -2434,7 +2428,7 @@ void ShaderAPID3DX9::SetShader(IShaderProgram* pShader)
 	*/
 }
 
-void ShaderAPID3DX9::SetTexture(int nameHash, const ITexturePtr& pTexture)
+void ShaderAPID3D9::SetTexture(int nameHash, const ITexturePtr& pTexture)
 {
 	if (nameHash == 0)
 	{
@@ -2460,7 +2454,7 @@ void ShaderAPID3DX9::SetTexture(int nameHash, const ITexturePtr& pTexture)
 }
 
 // RAW Constant (Used for structure types, etc.)
-void ShaderAPID3DX9::SetShaderConstantRaw(int nameHash, const void *data, int nSize)
+void ShaderAPID3D9::SetShaderConstantRaw(int nameHash, const void *data, int nSize)
 {
 	if (data == nullptr || nSize == 0)
 		return;
@@ -2510,9 +2504,9 @@ void ShaderAPID3DX9::SetShaderConstantRaw(int nameHash, const void *data, int nS
 // Vertex buffer objects
 //-------------------------------------------------------------
 
-IVertexFormat* ShaderAPID3DX9::CreateVertexFormat(const char* name, const VertexFormatDesc_t* formatDesc, int nAttribs)
+IVertexFormat* ShaderAPID3D9::CreateVertexFormat(const char* name, const VertexFormatDesc_t* formatDesc, int nAttribs)
 {
-	CVertexFormatD3DX9* pFormat = PPNew CVertexFormatD3DX9(name, formatDesc, nAttribs);
+	CD3D9VertexFormat* pFormat = PPNew CD3D9VertexFormat(name, formatDesc, nAttribs);
 
 	D3DVERTEXELEMENT9* vertexElements = PPNew D3DVERTEXELEMENT9[nAttribs + 1];
 	pFormat->GenVertexElement( vertexElements );
@@ -2536,9 +2530,9 @@ IVertexFormat* ShaderAPID3DX9::CreateVertexFormat(const char* name, const Vertex
 	return pFormat;
 }
 
-IVertexBuffer* ShaderAPID3DX9::CreateVertexBuffer(ER_BufferAccess nBufAccess, int nNumVerts, int strideSize, void *pData)
+IVertexBuffer* ShaderAPID3D9::CreateVertexBuffer(ER_BufferAccess nBufAccess, int nNumVerts, int strideSize, void *pData)
 {
-	CVertexBufferD3DX9* pBuffer = PPNew CVertexBufferD3DX9();
+	CD3D9VertexBuffer* pBuffer = PPNew CD3D9VertexBuffer();
 	pBuffer->m_nSize = nNumVerts*strideSize;
 	pBuffer->m_nUsage = g_d3d9_bufferUsages[nBufAccess];
 	pBuffer->m_nNumVertices = nNumVerts;
@@ -2581,12 +2575,12 @@ IVertexBuffer* ShaderAPID3DX9::CreateVertexBuffer(ER_BufferAccess nBufAccess, in
 	return pBuffer;
 
 }
-IIndexBuffer* ShaderAPID3DX9::CreateIndexBuffer(int nIndices, int nIndexSize, ER_BufferAccess nBufAccess, void *pData)
+IIndexBuffer* ShaderAPID3D9::CreateIndexBuffer(int nIndices, int nIndexSize, ER_BufferAccess nBufAccess, void *pData)
 {
 	ASSERT(nIndexSize >= 2);
 	ASSERT(nIndexSize <= 4);
 
-	CIndexBufferD3DX9* pBuffer = PPNew CIndexBufferD3DX9();
+	CD3D9IndexBuffer* pBuffer = PPNew CD3D9IndexBuffer();
 	pBuffer->m_nIndices = nIndices;
 	pBuffer->m_nIndexSize = nIndexSize;
 	pBuffer->m_nInitialSize = nIndices*nIndexSize;
@@ -2633,7 +2627,7 @@ IIndexBuffer* ShaderAPID3DX9::CreateIndexBuffer(int nIndices, int nIndexSize, ER
 //-------------------------------------------------------------
 
 // Indexed primitive drawer
-void ShaderAPID3DX9::DrawIndexedPrimitives(ER_PrimitiveType nType, int nFirstIndex, int nIndices, int nFirstVertex, int nVertices, int nBaseVertex)
+void ShaderAPID3D9::DrawIndexedPrimitives(ER_PrimitiveType nType, int nFirstIndex, int nIndices, int nFirstVertex, int nVertices, int nBaseVertex)
 {
 	ASSERT(nVertices > 0);
 	const int numPrimitives = g_d3d9_primCountFunc[nType](nIndices);
@@ -2647,7 +2641,7 @@ void ShaderAPID3DX9::DrawIndexedPrimitives(ER_PrimitiveType nType, int nFirstInd
 }
 
 // Draw elements
-void ShaderAPID3DX9::DrawNonIndexedPrimitives(ER_PrimitiveType nType, int nFirstVertex, int nVertices)
+void ShaderAPID3D9::DrawNonIndexedPrimitives(ER_PrimitiveType nType, int nFirstVertex, int nVertices)
 {
 	const int numPrimitives = g_d3d9_primCountFunc[nType](nVertices);
 	m_pD3DDevice->DrawPrimitive(g_d3d9_primType[nType], nFirstVertex, numPrimitives);
@@ -2662,7 +2656,7 @@ void ShaderAPID3DX9::DrawNonIndexedPrimitives(ER_PrimitiveType nType, int nFirst
 // Textures
 //-------------------------------------------------------------------------------------------------------------------------
 
-ITexturePtr ShaderAPID3DX9::CreateTextureResource(const char* pszName)
+ITexturePtr ShaderAPID3D9::CreateTextureResource(const char* pszName)
 {
 	CRefPtr<CD3D9Texture> texture = CRefPtr_new(CD3D9Texture);
 	texture->SetName(pszName);

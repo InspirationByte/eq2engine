@@ -49,9 +49,9 @@ public:
 	void				Init( const shaderAPIParams_t &params);
 	void				Shutdown();
 
-	void				PrintAPIInfo();
+	void				PrintAPIInfo() const;
 
-	bool				IsDeviceActive();
+	bool				IsDeviceActive() const;
 
 //-------------------------------------------------------------
 // Rendering's applies
@@ -327,9 +327,6 @@ private:
 	bool					m_bCurrentBlendEnable;
 
 	IRectangle				m_viewPort;
-
-	int						m_nCurrentMatrixMode;
-	Matrix4x4				m_matrices[4];
 	EGraphicsVendor			m_vendor;
 };
 

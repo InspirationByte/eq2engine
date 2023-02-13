@@ -21,6 +21,6 @@ class IRenderState : public RefCountedObject<IRenderState, RefCountedKeepPolicy>
 {
 public:
 	// type of render state
-	virtual RenderStateType_e	GetType() = 0;
-	virtual	void*				GetDescPtr() = 0;
+	virtual RenderStateType_e	GetType() const = 0;
+	virtual	const void*			GetDescPtr() const = 0;
 };

@@ -12,20 +12,17 @@ class CGLSwapChain : public IEqSwapChain
 {
 	friend class CGLRenderLib;
 public:
-	CGLSwapChain();
 	~CGLSwapChain();
 
-	bool			Initialize(	void* window,
-								bool vSync, 
-								bool windowed);
+	bool			Initialize(void* window, bool vSync, bool windowed);
 
-	void*			GetWindow();
-	int				GetMSAASamples() {return 1;}
+	void*			GetWindow() const;
+	int				GetMSAASamples() const { return 1; }
 
-	ITexturePtr		GetBackbuffer() {return nullptr;}
+	ITexturePtr		GetBackbuffer() const { return nullptr; }
 
 	// retrieves backbuffer size for this swap chain
-	void			GetBackbufferSize(int& wide, int& tall);
+	void			GetBackbufferSize(int& wide, int& tall) const;
 
 	// sets backbuffer size for this swap chain
 	bool			SetBackbufferSize(int wide, int tall);

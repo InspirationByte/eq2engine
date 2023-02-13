@@ -10,7 +10,7 @@
 #include "D3D9OcclusionQuery.h"
 
 #include "ShaderAPID3D9.h"
-extern ShaderAPID3DX9 s_shaderApi;
+extern ShaderAPID3D9 s_shaderApi;
 
 CD3D9OcclusionQuery::CD3D9OcclusionQuery(IDirect3DDevice9* dev)
 {

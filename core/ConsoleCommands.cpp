@@ -11,12 +11,13 @@
 #include "core/IFileSystem.h"
 #include "core/IDkCore.h"
 #include "ConsoleCommands.h"
+#include "ds/sort.h"
 
 EXPORTED_INTERFACE(IConsoleCommands, CConsoleCommands);
 
 #define CON_SEPARATOR ';'
 
-bool IsAllowedToExecute(ConCommandBase* base)
+static bool IsAllowedToExecute(ConCommandBase* base)
 {
 	if (base->GetFlags() & CV_INITONLY)
 		return false;
@@ -31,27 +32,24 @@ bool IsAllowedToExecute(ConCommandBase* base)
 	return true;
 }
 
-void PrintConVar(ConVar *pConVar)
+static void PrintConVar(ConVar *pConVar)
 {
 	Msg("%s = \"%s\"\n\n", pConVar->GetName(), pConVar->GetString());
 	MsgError("   \"%s\"\n", pConVar->GetDesc());
 }
 
-void PrintConCommand(ConCommandBase *pConCommand)
+static void PrintConCommand(ConCommandBase *pConCommand)
 {
 	Msg("%s\n", pConCommand->GetName());
 	MsgError("   \"%s\"\n", pConCommand->GetDesc());
 }
 
-int alpha_cmd_comp(const void * a, const void * b)
+static int alpha_cmd_comp(const ConCommandBase* a, const ConCommandBase* b)
 {
-	ConCommandBase* pBase1 = *(ConCommandBase**)a;
-	ConCommandBase* pBase2 = *(ConCommandBase**)b;
-
-	return stricmp(pBase1->GetName(), pBase2->GetName());
+	return stricmp(a->GetName(), b->GetName());
 }
 
-bool isCvarChar(char c)
+static bool isCvarChar(char c)
 {
 	return c == '+' || c == '-' || c == '_' || isalpha(c);
 }
@@ -427,7 +425,7 @@ void CConsoleCommands::SortCommands()
 	if (!m_commandListDirty)
 		return;
 
-	qsort(m_registeredCommands.ptr(), m_registeredCommands.numElem(), sizeof(ConCommandBase*), alpha_cmd_comp);
+	quickSort(m_registeredCommands, alpha_cmd_comp);
 
 	m_commandListDirty = false;
 }

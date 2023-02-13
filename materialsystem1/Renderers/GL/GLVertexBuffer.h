@@ -18,7 +18,7 @@ public:
 					CVertexBufferGL();
 
 	// returns size in bytes
-	long			GetSizeInBytes() const;
+	int				GetSizeInBytes() const;
 
 	// returns vertex count
 	int				GetVertexCount() const;

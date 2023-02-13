@@ -18,33 +18,27 @@ enum EGraphicsVendor
 
 struct DX9Sampler_t;
 
-class ShaderAPID3DX9 : public ShaderAPI_Base
+class ShaderAPID3D9 : public ShaderAPI_Base
 {
 public:
 
-	friend class 				CVertexFormatD3DX9;
-	friend class 				CVertexBufferD3DX9;
-	friend class 				CIndexBufferD3DX9;
+	friend class 				CD3D9VertexFormat;
+	friend class 				CD3D9VertexBuffer;
+	friend class 				CD3D9IndexBuffer;
 	friend class				CD3D9ShaderProgram;
 	friend class				CD3D9Texture;
-	friend class				CD3DRenderLib;
+	friend class				CD3D9RenderLib;
 	friend class				CD3D9OcclusionQuery;
 	
 	friend class				CD3D9DepthStencilState;
 	friend class				CD3D9RasterizerState;
 	friend class				CD3D9BlendingState;
 	
-								~ShaderAPID3DX9();
-								ShaderAPID3DX9();	
+								~ShaderAPID3D9();
+								ShaderAPID3D9();	
 
-	// Only in D3DX9 Renderer
-#ifdef USE_D3DEX
-	void						SetD3DDevice(LPDIRECT3DDEVICE9EX d3ddev, D3DCAPS9 &d3dcaps);
-	LPDIRECT3DDEVICE9EX			GetD3DDevice() { return m_pD3DDevice; }
-#else
 	void						SetD3DDevice(LPDIRECT3DDEVICE9 d3ddev, D3DCAPS9 &d3dcaps);
 	LPDIRECT3DDEVICE9			GetD3DDevice() { return m_pD3DDevice; }
-#endif
 
 	void						CheckDeviceResetOrLost(HRESULT hr);
 	bool						ResetDevice(D3DPRESENT_PARAMETERS &d3dpp);
@@ -57,9 +51,9 @@ public:
 	void						Init( const shaderAPIParams_t &params );
 	void						Shutdown();
 
-	void						PrintAPIInfo();
+	void						PrintAPIInfo() const;
 
-	bool						IsDeviceActive();
+	bool						IsDeviceActive() const;
 
 //-------------------------------------------------------------
 // Rendering's applies
@@ -81,7 +75,6 @@ public:
 //-------------------------------------------------------------
 
 	// shader API class type for shader developers.
-	// DON'T USE TYPES IN DYNAMIC SHADER CODE! USE MATSYSTEM MAT-FILE DEFS!
 	ER_ShaderAPIType			GetShaderAPIClass() const {return SHADERAPI_DIRECT3D9;}
 
 	// Device vendor and version

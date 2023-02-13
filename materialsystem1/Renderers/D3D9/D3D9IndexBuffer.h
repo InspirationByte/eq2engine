@@ -9,22 +9,16 @@
 #pragma once
 #include "renderers/IIndexBuffer.h"
 
-struct iborestoredata_t
-{
-	void*		data;
-	int			size;
-};
-
-class CIndexBufferD3DX9 : public IIndexBuffer
+class CD3D9IndexBuffer : public IIndexBuffer
 {
 public:
 	
-	friend class			ShaderAPID3DX9;
+	friend class			ShaderAPID3D9;
 
-							CIndexBufferD3DX9();
-							~CIndexBufferD3DX9();
+							CD3D9IndexBuffer();
+							~CD3D9IndexBuffer();
 
-	long					GetSizeInBytes() const;
+	int						GetSizeInBytes() const;
 	int						GetIndexSize() const;
 	int						GetIndicesCount() const;
 
@@ -46,12 +40,17 @@ protected:
 	int						m_nIndices;
 	int						m_nIndexSize;
 
-	long					m_nInitialSize;
+	int						m_nInitialSize;
 
 	DWORD					m_nUsage;
 
 	bool					m_bIsLocked;
 	bool					m_bLockFail;
 
-	iborestoredata_t*		m_pRestore;
+	struct IBRestoreData
+	{
+		void*	data;
+		int		size;
+	};
+	IBRestoreData*			m_restore{ nullptr };
 };

@@ -88,14 +88,11 @@ public:
 	// returns the parameters
 	virtual const shaderAPIParams_t&	GetParams() const = 0;
 
-	// returns current screen format. Useful for screen render targets, for 16-bit screen
-	virtual ETextureFormat				GetScreenFormat() = 0;
-
 	// prints shader api information to console output
-	virtual void						PrintAPIInfo() = 0;
+	virtual void						PrintAPIInfo() const = 0;
 
 	// returns device activation state
-	virtual bool						IsDeviceActive() = 0;
+	virtual bool						IsDeviceActive() const = 0;
 
 //-------------------------------------------------------------
 // Rendering's applies

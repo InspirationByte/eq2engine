@@ -49,8 +49,6 @@ public:
 	virtual void						SetViewport(int x, int y, int w, int h);
 	virtual void						GetViewport(int &x, int &y, int &w, int &h);
 
-	ETextureFormat						GetScreenFormat();
-
 	// default error texture pointer
 	const ITexturePtr&					GetErrorTexture() const;
 
@@ -309,8 +307,5 @@ protected:
 	// Perfomance counters
 	int									m_nDrawCalls;
 	int									m_nTrianglesCount;
-
 	int									m_nDrawIndexedPrimitiveCalls;
-
-	ETextureFormat						m_nScreenFormat;
 };

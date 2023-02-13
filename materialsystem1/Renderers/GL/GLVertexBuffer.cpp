@@ -26,7 +26,7 @@ CVertexBufferGL::CVertexBufferGL()
 }
 
 // returns size in bytes
-long CVertexBufferGL::GetSizeInBytes() const
+int CVertexBufferGL::GetSizeInBytes() const
 {
 	return m_strideSize*m_numVerts;
 }

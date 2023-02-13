@@ -9,22 +9,16 @@
 #pragma once
 #include "renderers/IVertexBuffer.h"
 
-struct vborestoredata_t
-{
-	void*		data;
-	int			size;
-};
-
-class CVertexBufferD3DX9 : public IVertexBuffer
+class CD3D9VertexBuffer : public IVertexBuffer
 {
 public:
 	
-	friend class				ShaderAPID3DX9;
+	friend class				ShaderAPID3D9;
 
-								CVertexBufferD3DX9();
-								~CVertexBufferD3DX9();
+								CD3D9VertexBuffer();
+								~CD3D9VertexBuffer();
 
-	long						GetSizeInBytes() const;
+	int							GetSizeInBytes() const;
 	int							GetVertexCount() const;
 	int							GetStrideSize() const;
 
@@ -57,5 +51,10 @@ protected:
 
 	bool						m_bIsLocked;
 
-	vborestoredata_t*			m_pRestore;
+	struct VBRestoreData
+	{
+		void*	data;
+		int		size;
+	};
+	VBRestoreData*				m_restore{ nullptr };
 };

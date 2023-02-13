@@ -188,15 +188,13 @@ ShaderAPIGL::ShaderAPIGL() : ShaderAPI_Base()
 	m_frameBuffer = 0;
 	m_depthBuffer = 0;
 
-	m_nCurrentMatrixMode = MATRIXMODE_VIEW;
-
 	m_boundInstanceStream = -1;
 	memset(m_currentGLVB, 0, sizeof(m_currentGLVB));
 	memset(m_currentGLTextures, 0, sizeof(m_currentGLTextures));
 	m_currentGLIB = 0;
 }
 
-void ShaderAPIGL::PrintAPIInfo()
+void ShaderAPIGL::PrintAPIInfo() const
 {
 	Msg("ShaderAPI: ShaderAPIGL\n");
 
@@ -796,7 +794,7 @@ ITexturePtr ShaderAPIGL::CreateNamedRenderTarget(	const char* pszName,
 		glBindTexture(pTexture->m_glTarget, texture.glTexID);
 		SetupGLSamplerState(pTexture->m_glTarget, texSamplerParams);
 
-		pTexture->textures.append(texture);
+		pTexture->m_textures.append(texture);
 
 		// this generates the render target
 		ResizeRenderTarget(ITexturePtr(pTexture), width, height);
@@ -804,7 +802,7 @@ ITexturePtr ShaderAPIGL::CreateNamedRenderTarget(	const char* pszName,
 	else
 	{
 		texture.glTexID = 0;
-		pTexture->textures.append(texture);
+		pTexture->m_textures.append(texture);
 	}
 
 	{
@@ -866,7 +864,7 @@ void ShaderAPIGL::ResizeRenderTarget(const ITexturePtr& renderTarget, int newWid
 		}
 
 		// Allocate all required surfaces.
-		glBindTexture(pTex->m_glTarget, pTex->textures[0].glTexID);
+		glBindTexture(pTex->m_glTarget, pTex->m_textures[0].glTexID);
 
 		if (pTex->GetFlags() & TEXFLAG_CUBEMAP)
 		{
@@ -997,10 +995,10 @@ void ShaderAPIGL::CopyRendertargetToTexture(const ITexturePtr& srcTarget, const 
 	glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_TEXTURE_2D, GL_NONE);
 
 	// setup read from texture
-	glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, srcTexture->textures[0].glTexID, 0);
+	glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, srcTexture->m_textures[0].glTexID, 0);
 
 	// setup write to texture
-	glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, destTexture->textures[0].glTexID, 0);
+	glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, destTexture->m_textures[0].glTexID, 0);
 
 	// setup GL_COLOR_ATTACHMENT1 as destination
 	GLenum drawBufferSetting[2] = {GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT0};
@@ -1053,7 +1051,7 @@ void ShaderAPIGL::ChangeRenderTargets(ArrayCRef<ITexturePtr> renderTargets, Arra
 			if (colorRT != m_pCurrentColorRenderTargets[i] || m_nCurrentCRTSlice[i] != nCubeFace)
 			{
 				glFramebufferTexture2D(GL_FRAMEBUFFER,
-						GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_CUBE_MAP_POSITIVE_X + nCubeFace, colorRT->textures[0].glTexID, 0);
+						GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_CUBE_MAP_POSITIVE_X + nCubeFace, colorRT->m_textures[0].glTexID, 0);
 
 				m_nCurrentCRTSlice[i] = nCubeFace;
 			}
@@ -1062,7 +1060,7 @@ void ShaderAPIGL::ChangeRenderTargets(ArrayCRef<ITexturePtr> renderTargets, Arra
 		{
 			if (colorRT != m_pCurrentColorRenderTargets[i])
 			{
-				glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, colorRT->textures[0].glTexID, 0);
+				glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, colorRT->m_textures[0].glTexID, 0);
 			}
 		}
 
@@ -1102,7 +1100,7 @@ void ShaderAPIGL::ChangeRenderTargets(ArrayCRef<ITexturePtr> renderTargets, Arra
 	{
 		if(pDepth)
 		{
-			bestDepth = (pDepth->m_glTarget == GL_RENDERBUFFER) ? pDepth->m_glDepthID : pDepth->textures[0].glTexID;
+			bestDepth = (pDepth->m_glTarget == GL_RENDERBUFFER) ? pDepth->m_glDepthID : pDepth->m_textures[0].glTexID;
 			bestTarget = pDepth->m_glTarget == GL_RENDERBUFFER ? GL_RENDERBUFFER : GL_TEXTURE_2D;
 			bestFormat = pDepth->GetFormat();
 		}
@@ -1170,51 +1168,26 @@ void ShaderAPIGL::ChangeRenderTargetToBackBuffer()
 // Matrix mode
 void ShaderAPIGL::SetMatrixMode(ER_MatrixMode nMatrixMode)
 {
-#if 0
-	glMatrixMode( matrixModeConst[nMatrixMode] );
-#endif // OpenGL 2.1
-
-	m_nCurrentMatrixMode = nMatrixMode;
 }
 
 // Will save matrix
 void ShaderAPIGL::PushMatrix()
 {
-	//ThreadMakeCurrent();
-	//glPushMatrix();
 }
 
 // Will reset matrix
 void ShaderAPIGL::PopMatrix()
 {
-	//ThreadMakeCurrent();
-	//glPopMatrix();
 }
 
 // Load identity matrix
 void ShaderAPIGL::LoadIdentityMatrix()
 {
-#if 0
-	glLoadIdentity();
-#endif // OpenGL 2.1
-
-	m_matrices[m_nCurrentMatrixMode] = identity4;
 }
 
 // Load custom matrix
 void ShaderAPIGL::LoadMatrix(const Matrix4x4 &matrix)
 {
-#if 0
-	if(m_nCurrentMatrixMode == MATRIXMODE_WORLD)
-	{
-		glMatrixMode( GL_MODELVIEW );
-		glLoadMatrixf( transpose(m_matrices[MATRIXMODE_VIEW] * matrix) );
-	}
-	else
-		glLoadMatrixf( transpose(matrix) );
-#endif // OpenGL 2.1
-
-	m_matrices[m_nCurrentMatrixMode] = matrix;
 }
 
 //-------------------------------------------------------------
@@ -2520,7 +2493,7 @@ void ShaderAPIGL::DrawNonIndexedPrimitives(ER_PrimitiveType nType, int nFirstVer
 #endif
 }
 
-bool ShaderAPIGL::IsDeviceActive()
+bool ShaderAPIGL::IsDeviceActive() const
 {
 	return true;
 }

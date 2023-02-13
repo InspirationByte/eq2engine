@@ -35,7 +35,7 @@ struct IDirect3DPixelShader9;
 class CD3D9ShaderProgram : public CShaderProgram
 {
 public:
-	friend class ShaderAPID3DX9;
+	friend class ShaderAPID3D9;
 
 	CD3D9ShaderProgram() = default;
 	~CD3D9ShaderProgram();

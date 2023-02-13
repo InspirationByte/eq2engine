@@ -20,7 +20,7 @@ public:
 	virtual ~IVertexBuffer() = default;
 
 	// returns size in bytes
-	virtual long		GetSizeInBytes() const = 0;
+	virtual int			GetSizeInBytes() const = 0;
 
 	// returns vertex count
 	virtual int			GetVertexCount() const = 0;

@@ -9,12 +9,12 @@
 #pragma once
 #include "renderers/IVertexFormat.h"
 
-class CVertexFormatD3DX9 : public IVertexFormat
+class CD3D9VertexFormat : public IVertexFormat
 {
-	friend class		ShaderAPID3DX9;
+	friend class		ShaderAPID3D9;
 public:
-	CVertexFormatD3DX9(const char* name, const VertexFormatDesc_t* desc, int numAttribs);
-	~CVertexFormatD3DX9();
+	CD3D9VertexFormat(const char* name, const VertexFormatDesc_t* desc, int numAttribs);
+	~CD3D9VertexFormat();
 
 	const char*						GetName() const {return m_name.ToCString();}
 	int								GetVertexSize(int stream) const;

@@ -5,21 +5,20 @@
 // Description: D3D Rendering library interface
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef D3DLIBRARY_H
-#define D3DLIBRARY_H
+#pragma once
 
 #include <d3d9.h>
 
 #include "renderers/IShaderAPI.h"
 #include "IRenderLibrary.h"
 
-class CD3DRenderLib : public IRenderLibrary
+class CD3D9RenderLib : public IRenderLibrary
 {
 public:
-	friend class	ShaderAPID3DX9;
+	friend class	ShaderAPID3D9;
 
-	CD3DRenderLib();
-	~CD3DRenderLib();
+	CD3D9RenderLib();
+	~CD3D9RenderLib();
 
 	bool					InitCaps();
 
@@ -72,19 +71,12 @@ protected:
 	D3DCAPS9				m_d3dCaps;
 	D3DPRESENT_PARAMETERS	m_d3dpp;
 
-#ifdef USE_D3DEX
-	D3DDISPLAYMODEEX		m_d3dMode;
-	LPDIRECT3D9EX			m_d3dFactory;
-	LPDIRECT3DDEVICE9EX		m_rhi;
-#else
 	D3DDISPLAYMODE			m_d3dMode;
-	LPDIRECT3D9				m_d3dFactory;
-	LPDIRECT3DDEVICE9		m_rhi;
-#endif // USE_D3DEX
+	LPDIRECT3D9				m_d3dFactory{ nullptr };
+	LPDIRECT3DDEVICE9		m_rhi{ nullptr };
 
-	int						m_width;
-	int						m_height;
+	int						m_width{ 0 };
+	int						m_height{ 0 };
 
-	bool					m_bResized;
+	bool					m_resized{ 0 };
 };
-#endif //D3DLIBRARY_H

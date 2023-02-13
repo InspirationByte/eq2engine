@@ -18,7 +18,7 @@ public:
 
 					CIndexBufferGL();
 
-	long			GetSizeInBytes() const;
+	int				GetSizeInBytes() const;
 
 	// returns index size
 	int				GetIndexSize() const;

@@ -12,9 +12,9 @@
 
 #include "ShaderAPID3D9.h"
 
-extern ShaderAPID3DX9 s_shaderApi;
+extern ShaderAPID3D9 s_shaderApi;
 
-CVertexBufferD3DX9::CVertexBufferD3DX9()
+CD3D9VertexBuffer::CD3D9VertexBuffer()
 {
 	m_nSize = 0;
 	m_pVertexBuffer = nullptr;
@@ -26,35 +26,32 @@ CVertexBufferD3DX9::CVertexBufferD3DX9()
 	m_flags = 0;
 
 	m_nInitialSize = 0;
-
-	m_pRestore = nullptr;
 }
 
-CVertexBufferD3DX9::~CVertexBufferD3DX9()
+CD3D9VertexBuffer::~CD3D9VertexBuffer()
 {
 	if (m_pVertexBuffer)
 		m_pVertexBuffer->Release();
 }
 
-void CVertexBufferD3DX9::ReleaseForRestoration()
+void CD3D9VertexBuffer::ReleaseForRestoration()
 {
 	bool dynamic = (m_nUsage & D3DUSAGE_DYNAMIC) != 0;
 
 	// dynamic VBO's uses a D3DPOOL_DEFAULT
 	if(dynamic)
 	{
-		m_pRestore = PPNew vborestoredata_t;
+		m_restore = PPNew VBRestoreData;
 
 		int lock_size = m_nStrideSize*m_nNumVertices;
-		m_pRestore->size = lock_size;
-
-		m_pRestore->data = PPAlloc(lock_size);
+		m_restore->size = lock_size;
+		m_restore->data = PPAlloc(lock_size);
 
 		void *src = nullptr;
 
 		if(m_pVertexBuffer->Lock(0, lock_size, &src, D3DLOCK_READONLY | D3DLOCK_NOSYSLOCK ) == D3D_OK)
 		{
-			memcpy(m_pRestore->data, src, m_pRestore->size);
+			memcpy(m_restore->data, src, m_restore->size);
 
 			m_pVertexBuffer->Unlock();
 			m_pVertexBuffer->Release();
@@ -70,9 +67,9 @@ void CVertexBufferD3DX9::ReleaseForRestoration()
 	}
 }
 
-void CVertexBufferD3DX9::Restore()
+void CD3D9VertexBuffer::Restore()
 {
-	if(!m_pRestore)
+	if(!m_restore)
 		return; // nothing to restore
 
 	bool dynamic = (m_nUsage & D3DUSAGE_DYNAMIC) != 0;
@@ -88,32 +85,32 @@ void CVertexBufferD3DX9::Restore()
 
 	if(m_pVertexBuffer->Lock(0, m_nInitialSize, &dest, dynamic? D3DLOCK_DISCARD : 0 ) == D3D_OK)
 	{
-		memcpy(dest, m_pRestore->data, m_pRestore->size);
+		memcpy(dest, m_restore->data, m_restore->size);
 		m_pVertexBuffer->Unlock();
 	}
 
-	PPFree(m_pRestore->data);
-	delete m_pRestore;
-	m_pRestore = nullptr;
+	PPFree(m_restore->data);
+	delete m_restore;
+	m_restore = nullptr;
 }
 
-long CVertexBufferD3DX9::GetSizeInBytes() const
+int CD3D9VertexBuffer::GetSizeInBytes() const
 {
 	return m_nSize;
 }
 
-int CVertexBufferD3DX9::GetVertexCount() const
+int CD3D9VertexBuffer::GetVertexCount() const
 {
 	return m_nNumVertices;
 }
 
-int CVertexBufferD3DX9::GetStrideSize() const
+int CD3D9VertexBuffer::GetStrideSize() const
 {
 	return m_nStrideSize;
 }
 
 // updates buffer without map/unmap operations which are slower
-void CVertexBufferD3DX9::Update(void* data, int size, int offset, bool discard /*= true*/)
+void CD3D9VertexBuffer::Update(void* data, int size, int offset, bool discard /*= true*/)
 {
 	{
 		const HRESULT hr = s_shaderApi.m_pD3DDevice->TestCooperativeLevel();
@@ -151,7 +148,7 @@ void CVertexBufferD3DX9::Update(void* data, int size, int offset, bool discard /
 }
 
 // locks vertex buffer and gives to programmer buffer data
-bool CVertexBufferD3DX9::Lock(int lockOfs, int vertexCount, void** outdata, bool readOnly)
+bool CD3D9VertexBuffer::Lock(int lockOfs, int vertexCount, void** outdata, bool readOnly)
 {
 	{
 		const HRESULT hr = s_shaderApi.m_pD3DDevice->TestCooperativeLevel();
@@ -198,7 +195,7 @@ bool CVertexBufferD3DX9::Lock(int lockOfs, int vertexCount, void** outdata, bool
 }
 
 // unlocks buffer
-void CVertexBufferD3DX9::Unlock()
+void CD3D9VertexBuffer::Unlock()
 {
 	if(m_bIsLocked)
 		m_pVertexBuffer->Unlock();

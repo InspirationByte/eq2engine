@@ -24,7 +24,7 @@ public:
 				CEmptyVertexBuffer(int stride) : m_lockData(nullptr), m_stride(stride) {}
 
 	// returns size in bytes
-	long		GetSizeInBytes() const { return 0; }
+	int			GetSizeInBytes() const { return 0; }
 
 	// returns vertex count
 	int			GetVertexCount() const { return 0; }
@@ -60,7 +60,7 @@ class CEmptyIndexBuffer : public IIndexBuffer
 public:
 				CEmptyIndexBuffer(int stride) : m_lockData(nullptr), m_stride(stride) {}
 
-	long		GetSizeInBytes() const { return 0; }
+	int			GetSizeInBytes() const { return 0; }
 
 	// returns index size
 	int			GetIndexSize() const {return m_stride;}
@@ -140,9 +140,9 @@ public:
 	}
 	//void						Shutdown() {}
 
-	void						PrintAPIInfo() {}
+	void						PrintAPIInfo() const {}
 
-	bool						IsDeviceActive() {return true;}
+	bool						IsDeviceActive() const {return true;}
 
 //-------------------------------------------------------------
 // Rendering's applies
@@ -164,7 +164,6 @@ public:
 //-------------------------------------------------------------
 
 	// shader API class type for shader developers.
-	// DON'T USE TYPES IN DYNAMIC SHADER CODE! USE MATSYSTEM MAT-FILE DEFS!
 	ER_ShaderAPIType			GetShaderAPIClass() {return SHADERAPI_EMPTY;}
 
 	// Device vendor and version

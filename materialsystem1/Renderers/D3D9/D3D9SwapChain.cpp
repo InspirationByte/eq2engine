@@ -43,42 +43,8 @@ bool CD3D9SwapChain::Initialize( HWND window, bool vSync, bool windowed)
 	return true;
 }
 
-/*
-bool CD3D9SwapChain::CreateOrUpdateBackbuffer()
-{
-	if(!m_RHIChain)
-		return false;
-
-	if(!m_backbuffer)
-	{
-		m_backbuffer = PPNew CD3D10Texture;
-		m_backbuffer->SetName("_rt_backbuffer");
-		m_backbuffer->SetDimensions(m_width, m_height);
-		m_backbuffer->SetFlags(TEXFLAG_RENDERTARGET | TEXFLAG_FOREIGN | TEXFLAG_NOQUALITYLOD);
-
-		((ShaderAPID3DX10*)g_pShaderAPI)->m_TextureList.append(m_backbuffer);
-	}
-
-	ID3D10Texture2D*		backbufferTex;
-	ID3D10RenderTargetView* backbufferRTV;
-
-	if (FAILED(m_RHIChain->GetBuffer(0, __uuidof(ID3D10Texture2D), (LPVOID *) &backbufferTex))) 
-		return false;
-
-	if (FAILED(m_rhi->CreateRenderTargetView(backbufferTex, nullptr, &backbufferRTV)))
-		return false;
-
-	m_backbuffer->textures.append( backbufferTex );
-	m_backbuffer->rtv.append( backbufferRTV );
-	m_backbuffer->srv.append( ((ShaderAPID3DX10*)g_pShaderAPI)->TexResource_CreateShaderResourceView(backbufferTex) );
-
-	Msg("CreateOrUpdateBackbuffer OK\n");
-
-	return true;
-}
-*/
 // retrieves backbuffer size for this swap chain
-void CD3D9SwapChain::GetBackbufferSize(int& wide, int& tall)
+void CD3D9SwapChain::GetBackbufferSize(int& wide, int& tall) const
 {
 	wide = m_width;
 	tall = m_height;

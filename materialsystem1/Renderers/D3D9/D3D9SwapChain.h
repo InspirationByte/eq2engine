@@ -10,24 +10,21 @@
 
 class CD3D9SwapChain : public IEqSwapChain
 {
-	friend class		CD3DRenderLib;
 public:
 
 
 	CD3D9SwapChain();
 	~CD3D9SwapChain();
 
-	bool			Initialize(	HWND window,
-								bool vSync, 
-								bool windowed);
+	bool			Initialize(	HWND window, bool vSync, bool windowed);
 
-	void*			GetWindow() {return m_window;}
-	int				GetMSAASamples() {return 1;}
+	void*			GetWindow() const { return m_window; }
+	int				GetMSAASamples()  const { return 1; }	// TODO: return real information
 
-	ITexturePtr		GetBackbuffer() {return nullptr;}
+	ITexturePtr		GetBackbuffer() const { return nullptr; }
 
 	// retrieves backbuffer size for this swap chain
-	void			GetBackbufferSize(int& wide, int& tall);
+	void			GetBackbufferSize(int& wide, int& tall)  const;
 
 	// sets backbuffer size for this swap chain
 	bool			SetBackbufferSize(int wide, int tall);
@@ -40,7 +37,6 @@ public:
 protected:
 	HWND			m_window;
 
-	//CD3D9Texture*	m_backbuffer;
 	bool			m_vSyncEnabled;
 	int				m_width;
 	int				m_height;

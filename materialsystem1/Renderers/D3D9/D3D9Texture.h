@@ -6,7 +6,7 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #pragma once
-#include "../Shared/CTexture.h"
+#include "CTexture.h"
 
 class CImage;
 struct IDirect3DBaseTexture9;
@@ -15,7 +15,7 @@ struct IDirect3DSurface9;
 class CD3D9Texture : public CTexture
 {
 public:
-	friend class			ShaderAPID3DX9;
+	friend class			ShaderAPID3D9;
 
 	CD3D9Texture();
 	~CD3D9Texture();
@@ -43,8 +43,9 @@ public:
 
 	void					Ref_DeleteObject();
 
-	Array<IDirect3DBaseTexture9*>	textures{ PP_SL };
-	Array<IDirect3DSurface9*>		surfaces{ PP_SL };
+protected:
+	Array<IDirect3DBaseTexture9*>	m_textures{ PP_SL };
+	Array<IDirect3DSurface9*>		m_surfaces{ PP_SL };
 	IDirect3DSurface9*				m_dummyDepth{ nullptr };
 
 	uint							m_pool{ 0 };

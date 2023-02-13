@@ -15,7 +15,7 @@
 
 #include "ShaderAPID3D9.h"
 
-extern ShaderAPID3DX9 s_shaderApi;
+extern ShaderAPID3D9 s_shaderApi;
 Threading::CEqMutex g_sapi_ProgressiveTextureMutex;
 
 
@@ -184,7 +184,7 @@ bool CD3D9Texture::Init(const SamplerStateParam_t& sampler, const ArrayCRef<CRef
 
 	if(s_shaderApi.m_progressiveTextureFrequency > 0)
 		m_progressiveState.reserve(images.numElem());
-	textures.reserve(images.numElem());
+	m_textures.reserve(images.numElem());
 
 	for (int i = 0; i < images.numElem(); i++)
 	{
@@ -270,11 +270,11 @@ bool CD3D9Texture::Init(const SamplerStateParam_t& sampler, const ArrayCRef<CRef
 		m_iFormat = imgFmt;
 
 		m_texSize += img->GetMipMappedSize(mipStart);
-		textures.append(d3dTexture);
+		m_textures.append(d3dTexture);
 	}
 
 	// hey you have concurrency errors if this assert hits!
-	ASSERT_MSG(images.numElem() == textures.numElem(), "%s - %d images at input while %d textures created", m_szTexName.ToCString(), images.numElem(), textures.numElem());
+	ASSERT_MSG(images.numElem() == m_textures.numElem(), "%s - %d images at input while %d textures created", m_szTexName.ToCString(), images.numElem(), m_textures.numElem());
 
 	if(m_progressiveState.numElem())
 	{
@@ -282,7 +282,7 @@ bool CD3D9Texture::Init(const SamplerStateParam_t& sampler, const ArrayCRef<CRef
 		s_shaderApi.m_progressiveTextures.insert(this);
 	}
 
-	m_numAnimatedTextureFrames = textures.numElem();
+	m_numAnimatedTextureFrames = m_textures.numElem();
 
 	return true;
 }
@@ -295,19 +295,19 @@ void CD3D9Texture::ReleaseTextures()
 		m_progressiveState.clear(true);
 	}
 
-	for (int i = 0; i < textures.numElem(); i++)
-		textures[i]->Release();
+	for (int i = 0; i < m_textures.numElem(); i++)
+		m_textures[i]->Release();
 
-	textures.clear();
+	m_textures.clear();
 	m_texSize = 0;
 }
 
 void CD3D9Texture::ReleaseSurfaces()
 {
-	for (int i = 0; i < surfaces.numElem(); i++)
-		surfaces[i]->Release();
+	for (int i = 0; i < m_surfaces.numElem(); i++)
+		m_surfaces[i]->Release();
 
-	surfaces.clear();
+	m_surfaces.clear();
 
 	if (m_dummyDepth)
 		m_dummyDepth->Release();
@@ -326,17 +326,17 @@ void CD3D9Texture::Restore()
 
 LPDIRECT3DBASETEXTURE9 CD3D9Texture::GetCurrentTexture()
 {
-	if (!textures.inRange(m_nAnimatedTextureFrame))
+	if (!m_textures.inRange(m_nAnimatedTextureFrame))
 		return nullptr;
 
-	return textures[m_nAnimatedTextureFrame];
+	return m_textures[m_nAnimatedTextureFrame];
 }
 
 EProgressiveStatus CD3D9Texture::StepProgressiveLod()
 {
 	EProgressiveStatus status = PROGRESSIVE_STATUS_WAIT_MORE_FRAMES;
 
-	if (!textures.numElem())
+	if (!m_textures.numElem())
 		return PROGRESSIVE_STATUS_COMPLETED;
 
 	for (int i = 0; i < m_progressiveState.numElem(); ++i)
@@ -349,7 +349,7 @@ EProgressiveStatus CD3D9Texture::StepProgressiveLod()
 			continue;
 		}
 
-		IDirect3DBaseTexture9* texture = textures[state.idx];
+		IDirect3DBaseTexture9* texture = m_textures[state.idx];
 
 		const DWORD lockFlags = D3DLOCK_DISCARD | D3DLOCK_NOSYSLOCK;
 		UpdateD3DTextureFromImageMipmap(texture, state.image, state.mipMapLevel, state.lockBoxLevel, lockFlags);
@@ -382,7 +382,7 @@ bool CD3D9Texture::Lock(LockInOutData& data)
 	if (m_lockData)
 		return false;
 
-	if (textures.numElem() > 1)
+	if (m_textures.numElem() > 1)
 	{
 		ASSERT_FAIL("Couldn't handle locking of animated texture! Please tell to programmer!");
 		return false;
@@ -402,9 +402,9 @@ bool CD3D9Texture::Lock(LockInOutData& data)
 						  | (readOnly ? D3DLOCK_READONLY : 0);
 
 	// try lock surface if exist
-	if( surfaces.numElem() )
+	if(m_surfaces.numElem() )
 	{
-		ASSERT(data.cubeFaceIdx < surfaces.numElem());
+		ASSERT(data.cubeFaceIdx < m_surfaces.numElem());
 
 		// TODO: 3D surfaces?
 
@@ -413,7 +413,7 @@ bool CD3D9Texture::Lock(LockInOutData& data)
 			const RECT lockRect = (data.flags & TEXLOCK_REGION_RECT) ? IRectangleToD3DRECT(data.region.rectangle) : RECT {};
 
 			D3DLOCKED_RECT rect;
-			HRESULT result = surfaces[data.cubeFaceIdx]->LockRect(&rect, ((data.flags & TEXLOCK_REGION_RECT) ? &lockRect : nullptr), lockFlags);
+			HRESULT result = m_surfaces[data.cubeFaceIdx]->LockRect(&rect, ((data.flags & TEXLOCK_REGION_RECT) ? &lockRect : nullptr), lockFlags);
 
 			if(result == D3D_OK)
 			{
@@ -433,7 +433,7 @@ bool CD3D9Texture::Lock(LockInOutData& data)
 
 			if (d3dDevice->CreateOffscreenPlainSurface(m_iWidth, m_iHeight, g_d3d9_imageFormats[m_iFormat], D3DPOOL_SYSTEMMEM, &m_lockSurface, nullptr) == D3D_OK)
 			{
-				HRESULT result = d3dDevice->GetRenderTargetData(surfaces[data.cubeFaceIdx], m_lockSurface);
+				HRESULT result = d3dDevice->GetRenderTargetData(m_surfaces[data.cubeFaceIdx], m_lockSurface);
 
 				if(result != D3D_OK)
 					ASSERT(!"Couldn't lock surface: failed to copy surface to m_lockSurface!");
@@ -465,7 +465,7 @@ bool CD3D9Texture::Lock(LockInOutData& data)
 	}
 	else // lock texture data
 	{
-		IDirect3DBaseTexture9* texture = textures[0];
+		IDirect3DBaseTexture9* texture = m_textures[0];
 		HRESULT result = D3DERR_INVALIDCALL;
 
 		switch (texture->GetType())
@@ -551,11 +551,11 @@ void CD3D9Texture::Unlock()
 
 	ASSERT(m_lockData->lockData != nullptr);
 
-	if( surfaces.numElem() )
+	if(m_surfaces.numElem() )
 	{
 		if(m_pool != D3DPOOL_DEFAULT)
 		{
-			surfaces[0]->UnlockRect();
+			m_surfaces[0]->UnlockRect();
 		}
 		else
 		{
@@ -566,7 +566,7 @@ void CD3D9Texture::Unlock()
 	}
 	else
 	{
-		IDirect3DBaseTexture9* texture = textures[0];
+		IDirect3DBaseTexture9* texture = m_textures[0];
 		switch (texture->GetType())
 		{
 			case D3DRTYPE_VOLUMETEXTURE:
