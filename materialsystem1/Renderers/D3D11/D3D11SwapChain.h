@@ -1,27 +1,18 @@
 //////////////////////////////////////////////////////////////////////////////////
 // Copyright © Inspiration Byte
-// 2009-2020
+// 2009-2023
 //////////////////////////////////////////////////////////////////////////////////
-// Description: D3D10 Renderer swapchain for using to draw in multiple windows
+// Description: D3D11 swapchain impl for Eq
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef D3D10SWAPCHAIN_H
-#define D3D10SWAPCHAIN_H
-
-#include "IEqSwapChain.h"
-
-#include <d3d10.h>
-#include <d3dx10.h>
-
-#include "D3D10Texture.h"
+#pragma once
+#include "renderers/IEqSwapChain.h"
+#include "D3D11Texture.h"
 
 class CD3D10SwapChain : public IEqSwapChain
 {
-friend class		CD3DRenderLib;
+	friend class		CD3D11RenderLib;
 public:
-
-
-	CD3D10SwapChain();
 	~CD3D10SwapChain();
 
 	bool			Initialize(	HWND window,
@@ -33,13 +24,13 @@ public:
 								IDXGIFactory* dxFactory,
 								ID3D10Device* rhi);
 
-	void*			GetWindow() {return m_window;}
-	int				GetMSAASamples() {return m_numMSAASamples;}
+	void*			GetWindow() const {return m_window;}
+	int				GetMSAASamples() const {return m_numMSAASamples;}
 
-	ITexture*		GetBackbuffer() {return m_backbuffer;}
+	ITexturePtr		GetBackbuffer() const {return ITexturePtr(m_backbuffer);}
 
 	// retrieves backbuffer size for this swap chain
-	void			GetBackbufferSize(int& wide, int& tall);
+	void			GetBackbufferSize(int& wide, int& tall) const;
 
 	// sets backbuffer size for this swap chain
 	bool			SetBackbufferSize(int wide, int tall);
@@ -50,19 +41,15 @@ public:
 	bool			CreateOrUpdateBackbuffer();
 
 protected:
-	IDXGISwapChain*	m_RHIChain;
-	HWND			m_window;
+	CRefPtr<CD3D10Texture>	m_backbuffer;
 
-	DXGI_FORMAT		m_backBufferFormat;
+	IDXGISwapChain*			m_swapChain{ nullptr };
+	HWND					m_window{ nullptr };
 
-	int				m_numMSAASamples;
+	DXGI_FORMAT				m_backBufferFormat{ DXGI_FORMAT_UNKNOWN };
 
-	CD3D10Texture*	m_backbuffer;
-	bool			m_vSyncEnabled;
-	int				m_width;
-	int				m_height;
-
-	ID3D10Device*	m_rhi;
+	int						m_numMSAASamples{ 0 };
+	int						m_width{ 0 };
+	int						m_height{ 0 };
+	bool					m_vSyncEnabled{ false };
 };
-
-#endif // D3D10SWAPCHAIN_H

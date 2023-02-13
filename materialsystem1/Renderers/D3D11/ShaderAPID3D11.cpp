@@ -5,24 +5,39 @@
 // Description: Equilibrium Direct3D 10 ShaderAPI
 //////////////////////////////////////////////////////////////////////////////////
 
-#include "ShaderAPID3DX10.h"
-#include "utils/strtools.h"
+#include <d3d10.h>
 
-#include "DebugInterface.h"
-#include "IConCommandFactory.h"
-#include "D3D10Texture.h"
+#include "core/core_common.h"
+#include "core/ConVar.h"
+#include "core/IConsoleCommands.h"
+#include "core/IFileSystem.h"
 
-#include "d3dx10_def.h"
+#include "ShaderAPID3D11.h"
 
-#include "VertexFormatD3DX10.h"
-#include "VertexBufferD3DX10.h"
-#include "IndexBufferD3DX10.h"
-#include "D3D10ShaderProgram.h"
-#include "D3D10RenderStates.h"
+#include "d3dx11_def.h"
+#include "D3D11Texture.h"
+#include "D3D11VertexFormat.h"
+#include "D3D11VertexBuffer.h"
+#include "D3D11IndexBuffer.h"
+#include "D3D11ShaderProgram.h"
+#include "D3D11RenderStates.h"
 
-#include "Imaging/ImageLoader.h"
+#include "imaging/ImageLoader.h"
 
-#include "utils/VirtualStream.h"
+#define SHADERCACHE_FOLDER		"ShaderCache/D3D11"
+
+using namespace Threading;
+
+extern CEqMutex	g_sapi_TextureMutex;
+extern CEqMutex	g_sapi_ShaderMutex;
+extern CEqMutex	g_sapi_VBMutex;
+extern CEqMutex	g_sapi_IBMutex;
+extern CEqMutex	g_sapi_Mutex;
+
+extern CEqMutex	g_sapi_ProgressiveTextureMutex;
+
+static ConVar r_preloadShaderCache("r_preloadShaderCache", "1", nullptr, 0);
+static ConVar r_skipShaderCache("r_skipShaderCache", "0", "Shader debugging purposes", 0);
 
 ShaderAPID3DX10::~ShaderAPID3DX10()
 {
@@ -32,9 +47,6 @@ ShaderAPID3DX10::~ShaderAPID3DX10()
 ShaderAPID3DX10::ShaderAPID3DX10() : ShaderAPI_Base()
 {
 	Msg("Initializing Direct3D 10 Shader API...\n");
-
-	m_pEventQuery = NULL;
-	m_pD3DDevice = NULL;
 
 	m_nCurrentSampleMask = ~0;
 	m_nSelectedSampleMask = ~0;
@@ -55,31 +67,7 @@ ShaderAPID3DX10::ShaderAPID3DX10() : ShaderAPI_Base()
 	memset(m_pCurrentTextureSlicesGS,-1,sizeof(m_pCurrentTextureSlicesGS));
 	memset(m_pCurrentTextureSlicesPS,-1,sizeof(m_pCurrentTextureSlicesPS));
 
-	memset(m_pSelectedTexturesVS,0,sizeof(m_pSelectedTexturesVS));
-	memset(m_pSelectedTexturesGS,0,sizeof(m_pSelectedTexturesGS));
-	memset(m_pSelectedTexturesPS,0,sizeof(m_pSelectedTexturesPS));
-
-	memset(m_pCurrentTexturesVS,0,sizeof(m_pCurrentTexturesVS));
-	memset(m_pCurrentTexturesGS,0,sizeof(m_pCurrentTexturesGS));
-	memset(m_pCurrentTexturesPS,0,sizeof(m_pCurrentTexturesPS));
-
-	m_pDepthBufferTexture = NULL;
-	m_pBackBufferTexture = NULL;
-
-	//m_pBackBufferRTV = NULL;
-	m_pDepthBufferDSV = NULL;
-	//m_pBackBuffer = NULL;
-	m_pDepthBuffer = NULL;
-
 	m_pCustomSamplerState = new SamplerStateParam_t;
-
-	m_pMeshBufferTexturedShader = NULL;
-	m_pMeshBufferNoTextureShader = NULL;
-
-	m_nCurrentMatrixMode = MATRIXMODE_VIEW;
-
-	m_pD3DDevice = NULL;
-
 	m_bDeviceIsLost = false;
 }
 
@@ -88,7 +76,6 @@ void ShaderAPID3DX10::SetD3DDevice(ID3D10Device* d3ddev)
 	ASSERT(d3ddev);
 
 	m_pD3DDevice = d3ddev;
-
 	m_pD3DDevice->AddRef();
 }
 
@@ -96,8 +83,6 @@ void ShaderAPID3DX10::SetD3DDevice(ID3D10Device* d3ddev)
 void ShaderAPID3DX10::Init(const shaderAPIParams_t &params)
 {
 	HOOK_TO_CVAR(r_anisotropic);
-
-	memset(&m_caps, 0, sizeof(m_caps));
 
 	m_caps.maxTextureAnisotropicLevel = clamp(r_anisotropic->GetInt(), 1, 16);
 
@@ -114,51 +99,43 @@ void ShaderAPID3DX10::Init(const shaderAPIParams_t &params)
 	m_caps.maxVertexStreams = MAX_VERTEXSTREAM;
 	m_caps.maxVertexTextureUnits = MAX_VERTEXTEXTURES;
 
+	// TODO: m_caps fill in texture formats
+
 	// init base and critical section
 	ShaderAPI_Base::Init( params );
-
-	// all shaders supported, nothing to report
-
-	if(m_pMeshBufferTexturedShader == NULL)
-	{
-		m_pMeshBufferTexturedShader = CreateNewShaderProgram("MeshBuffer_Textured");
-
-		shaderProgramCompileInfo_t info;
-
-		info.ps.text = s_FFPMeshBuilder_Textured_PixelProgram;
-		info.vs.text = s_FFPMeshBuilder_VertexProgram;
-		info.disableCache = true;
-
-		CompileShadersFromStream(m_pMeshBufferTexturedShader, info);
-	}
-
-	if(m_pMeshBufferNoTextureShader == NULL)
-	{
-		m_pMeshBufferNoTextureShader = CreateNewShaderProgram("MeshBuffer_NoTexture");
-
-		shaderProgramCompileInfo_t info;
-
-		info.ps.text = s_FFPMeshBuilder_NoTexture_PixelProgram;
-		info.vs.text = s_FFPMeshBuilder_VertexProgram;
-		info.disableCache = true;
-
-		CompileShadersFromStream(m_pMeshBufferNoTextureShader, info);
-	}
 }
 
-void ShaderAPID3DX10::PrintAPIInfo()
+void ShaderAPID3DX10::PrintAPIInfo() const
 {
-	Msg("ShaderAPI: ShaderAPID3DX10\n");
+	Msg("ShaderAPI: ShaderAPID3D11\n");
 	Msg("Direct3D 10 SDK version: %d\n \n", D3D10_SDK_VERSION);
 
 	MsgInfo("------ Loaded textures ------");
 
-	for(int i = 0; i < m_TextureList.numElem(); i++)
-	{
-		CD3D10Texture* pTexture = (CD3D10Texture*)m_TextureList[i];
+	uint64 allTexturesSize = 0;
 
-		MsgInfo("     %s (%d) - %dx%d\n", pTexture->GetName(), pTexture->Ref_Count(), pTexture->GetWidth(),pTexture->GetHeight());
+	{
+		CScopedMutex scoped(g_sapi_TextureMutex);
+		for (auto it = m_TextureList.begin(); it != m_TextureList.end(); ++it)
+		{
+			CD3D10Texture* pTexture = (CD3D10Texture*)*it;
+
+			ETextureFormat texFmt = pTexture->GetFormat();
+
+			float textureSize = 0;
+
+			if (IsCompressedFormat(texFmt))
+				textureSize = pTexture->m_texSize;
+			else
+				textureSize = pTexture->GetWidth() * pTexture->GetHeight() * pTexture->GetMipCount() * GetBytesPerPixel(texFmt);
+
+			allTexturesSize += textureSize / 1024;
+
+			MsgInfo("     %s (%d) - %dx%d (~%.2f kb)\n", pTexture->GetName(), pTexture->Ref_Count(), pTexture->GetWidth(), pTexture->GetHeight(), (textureSize / 1024.0f));
+		}
 	}
+
+	Msg("Texture memory: %.2f MB\n", ((float)allTexturesSize / 1024.0f));
 }
 
 void ShaderAPID3DX10::Shutdown()
@@ -182,7 +159,7 @@ void ShaderAPID3DX10::Reset(int nResetType)
 	}
 }
 
-bool FillShaderResourceView(ID3D10SamplerState **samplers, ID3D10ShaderResourceView **dest, int &min, int &max, ITexture** selectedTextures, ITexture** currentTextures, const int selectedTextureSlices[], int currentTextureSlices[])
+bool ShaderAPID3DX10::FillShaderResourceView(ID3D10SamplerState **samplers, ID3D10ShaderResourceView **dest, int &min, int &max, ITexturePtr* selectedTextures, ITexturePtr* currentTextures, const int selectedTextureSlices[], int currentTextureSlices[])
 {
 	min = 0;
 	do 
@@ -198,27 +175,27 @@ bool FillShaderResourceView(ID3D10SamplerState **samplers, ID3D10ShaderResourceV
 
 			for (int i = min; i <= max; i++)
 			{
-				CD3D10Texture* pTexture = (CD3D10Texture*)selectedTextures[i];
+				CD3D10Texture* pTexture = (CD3D10Texture*)selectedTextures[i].Ptr();
 
-				if (pTexture != NULL)
+				if (pTexture != nullptr)
 				{
 					if (selectedTextureSlices[i] == -1)
 					{
-						CD3D10SamplerState* pSampler = (CD3D10SamplerState*)pTexture->m_pD3D10SamplerState;
+						CD3D10SamplerState* pSampler = (CD3D10SamplerState*)pTexture->m_samplerState;
 						*samplers++ = pSampler->m_samplerState;
-						*dest++ = pTexture->srv[pTexture->GetCurrentAnimatedTextureFrame()];
+						*dest++ = pTexture->m_srv[pTexture->GetAnimationFrame()];
 					}
 					else 
 					{
-						CD3D10SamplerState* pSampler = (CD3D10SamplerState*)pTexture->m_pD3D10SamplerState;
+						CD3D10SamplerState* pSampler = (CD3D10SamplerState*)pTexture->m_samplerState;
 						*samplers++ = pSampler->m_samplerState;
-						*dest++ = pTexture->srv[selectedTextureSlices[i]];
+						*dest++ = pTexture->m_srv[selectedTextureSlices[i]];
 					}
 				}
 				else 
 				{
-					*samplers++ = NULL;
-					*dest++ = NULL;
+					*samplers++ = nullptr;
+					*dest++ = nullptr;
 				}
 
 				currentTextures[i] = selectedTextures[i];
@@ -230,6 +207,42 @@ bool FillShaderResourceView(ID3D10SamplerState **samplers, ID3D10ShaderResourceV
 		min++;
 	}
 	while (min < MAX_TEXTUREUNIT);
+
+	return false;
+}
+
+bool ShaderAPID3DX10::InternalFillSamplerState(ID3D10SamplerState** dest, int& min, int& max, ITexturePtr* selectedTextures, ITexturePtr* currentTextures)
+{
+	min = 0;
+	do
+	{
+		if (selectedTextures[min] != currentTextures[min])
+		{
+			max = MAX_SAMPLERSTATE;
+			do
+			{
+				max--;
+			} while (currentTextures[max] == selectedTextures[max]);
+
+			for (int i = min; i <= max; i++)
+			{
+				CD3D10Texture* pTexture = (CD3D10Texture*)selectedTextures[i].Ptr();
+
+				if (selectedTextures[i] != nullptr)
+				{
+					CD3D10SamplerState* pSampler = (CD3D10SamplerState*)pTexture->m_samplerState;
+					*dest++ = pSampler->m_samplerState;
+				}
+				else
+					*dest++ = nullptr;
+
+				currentTextures[i] = selectedTextures[i];
+			}
+
+			return true;
+		}
+		min++;
+	} while (min < MAX_SAMPLERSTATE);
 
 	return false;
 }
@@ -255,44 +268,6 @@ void ShaderAPID3DX10::ApplyTextures()
 		m_pD3DDevice->PSSetShaderResources(min, max - min + 1, srViews);
 		m_pD3DDevice->PSSetSamplers(min, max - min + 1, samplers);
 	}
-}
-
-bool InternalFillSamplerState(ID3D10SamplerState **dest, int &min, int &max, ITexture** selectedTextures, ITexture** currentTextures)
-{
-	min = 0;
-	do 
-	{
-		if (selectedTextures[min] != currentTextures[min])
-		{
-			max = MAX_SAMPLERSTATE;
-			do 
-			{
-				max--;
-			} 
-			while (currentTextures[max] == selectedTextures[max]);
-
-			for (int i = min; i <= max; i++)
-			{
-				CD3D10Texture* pTexture = (CD3D10Texture*)selectedTextures[i];
-
-				if (selectedTextures[i] != NULL)
-				{
-					CD3D10SamplerState* pSampler = (CD3D10SamplerState*)pTexture->m_pD3D10SamplerState;
-					*dest++ = pSampler->m_samplerState;
-				}
-				else 
-					*dest++ = NULL;
-
-				currentTextures[i] = selectedTextures[i];
-			}
-
-			return true;
-		}
-		min++;
-	} 
-	while (min < MAX_SAMPLERSTATE);
-
-	return false;
 }
 
 void ShaderAPID3DX10::ApplySamplerState()
@@ -321,7 +296,7 @@ void ShaderAPID3DX10::ApplyBlendState()
 	CD3D10BlendingState* pSelectedState = (CD3D10BlendingState*)m_pSelectedBlendstate;
 
 	if(!pSelectedState)
-		m_pD3DDevice->OMSetBlendState(NULL, Vector4D(1, 1, 1, 1), 0u);
+		m_pD3DDevice->OMSetBlendState(nullptr, Vector4D(1, 1, 1, 1), 0u);
 	else
 		m_pD3DDevice->OMSetBlendState(pSelectedState->m_blendState, Vector4D(1, 1, 1, 1), 0u);
 
@@ -333,7 +308,7 @@ void ShaderAPID3DX10::ApplyDepthState()
 	CD3D10DepthStencilState* pSelectedState = (CD3D10DepthStencilState*)m_pSelectedDepthState;
 
 	if(!pSelectedState)
-		m_pD3DDevice->OMSetDepthStencilState(NULL, 0);
+		m_pD3DDevice->OMSetDepthStencilState(nullptr, 0);
 	else
 		m_pD3DDevice->OMSetDepthStencilState(pSelectedState->m_dsState, 0);
 
@@ -346,14 +321,14 @@ void ShaderAPID3DX10::ApplyRasterizerState()
 
 	if(!pSelectedState)
 	{
-		m_pD3DDevice->RSSetState(NULL);
+		m_pD3DDevice->RSSetState(nullptr);
 	}
 	else
 	{
 		if(m_pSelectedRasterizerState->GetType() != RENDERSTATE_RASTERIZER)
 		{
 			MsgError("Invalid render state type (%d), expected RASTERIZER\n", m_pSelectedRasterizerState->GetType());
-			m_pD3DDevice->RSSetState(NULL);
+			m_pD3DDevice->RSSetState(nullptr);
 			return;
 		}
 
@@ -369,26 +344,26 @@ void ShaderAPID3DX10::ApplyShaderProgram()
 	{
 		CD3D10ShaderProgram* pShader = (CD3D10ShaderProgram*)m_pSelectedShader;
 
-		if (pShader == NULL)
+		if (pShader == nullptr)
 		{
-			m_pD3DDevice->VSSetShader(NULL);
-			m_pD3DDevice->GSSetShader(NULL);
-			m_pD3DDevice->PSSetShader(NULL);
+			m_pD3DDevice->VSSetShader(nullptr);
+			m_pD3DDevice->GSSetShader(nullptr);
+			m_pD3DDevice->PSSetShader(nullptr);
 		} 
 		else 
 		{
-			m_pD3DDevice->VSSetShader(pShader->m_pVertexShader);
-			m_pD3DDevice->GSSetShader(pShader->m_pGeomShader);
-			m_pD3DDevice->PSSetShader(pShader->m_pPixelShader);
+			m_pD3DDevice->VSSetShader(pShader->m_vertexShader);
+			m_pD3DDevice->GSSetShader(pShader->m_geomShader);
+			m_pD3DDevice->PSSetShader(pShader->m_pixelShader);
 
-			if (pShader->m_nGSCBuffers)
-				m_pD3DDevice->GSSetConstantBuffers(0, pShader->m_nGSCBuffers, pShader->m_pgsConstants);
+			if (pShader->m_GSCBuffers)
+				m_pD3DDevice->GSSetConstantBuffers(0, pShader->m_GSCBuffers, pShader->m_gsConstants);
 
-			if (pShader->m_nPSCBuffers)
-				m_pD3DDevice->PSSetConstantBuffers(0, pShader->m_nPSCBuffers, pShader->m_ppsConstants);
+			if (pShader->m_PSCBuffers)
+				m_pD3DDevice->PSSetConstantBuffers(0, pShader->m_PSCBuffers, pShader->m_psConstants);
 
-			if (pShader->m_nVSCBuffers)
-				m_pD3DDevice->VSSetConstantBuffers(0, pShader->m_nVSCBuffers, pShader->m_pvsConstants);
+			if (pShader->m_VSCBuffers)
+				m_pD3DDevice->VSSetConstantBuffers(0, pShader->m_VSCBuffers, pShader->m_vsConstants);
 		}
 		m_pCurrentShader = m_pSelectedShader;
 	}
@@ -401,54 +376,52 @@ void ShaderAPID3DX10::ApplyConstants()
 	if(!pProgram)
 		return;
 
-	for (uint i = 0; i <pProgram->m_nGSCBuffers; i++)
+	for (uint i = 0; i <pProgram->m_GSCBuffers; i++)
 	{
-		if (pProgram->m_pgsDirty[i])
+		if (pProgram->m_gsDirty[i])
 		{
-			m_pD3DDevice->UpdateSubresource(pProgram->m_pgsConstants[i], 0, NULL, pProgram->m_pgsConstMem[i], 0, 0);
-			pProgram->m_pgsDirty[i] = false;
+			m_pD3DDevice->UpdateSubresource(pProgram->m_gsConstants[i], 0, nullptr, pProgram->m_gsConstMem[i], 0, 0);
+			pProgram->m_gsDirty[i] = false;
 		}
 	}
 
-	for (uint i = 0; i < pProgram->m_nPSCBuffers; i++)
+	for (uint i = 0; i < pProgram->m_PSCBuffers; i++)
 	{
-		if (pProgram->m_ppsDirty[i])
+		if (pProgram->m_psDirty[i])
 		{
-			m_pD3DDevice->UpdateSubresource(pProgram->m_ppsConstants[i], 0, NULL, pProgram->m_ppsConstMem[i], 0, 0);
-			pProgram->m_ppsDirty[i] = false;
+			m_pD3DDevice->UpdateSubresource(pProgram->m_psConstants[i], 0, nullptr, pProgram->m_psConstMem[i], 0, 0);
+			pProgram->m_psDirty[i] = false;
 		}
 	}
 
-	for (uint i = 0; i < pProgram->m_nVSCBuffers; i++)
+	for (uint i = 0; i < pProgram->m_VSCBuffers; i++)
 	{
-		if (pProgram->m_pvsDirty[i])
+		if (pProgram->m_vsDirty[i])
 		{
-			m_pD3DDevice->UpdateSubresource(pProgram->m_pvsConstants[i], 0, NULL, pProgram->m_pvsConstMem[i], 0, 0);
-			pProgram->m_pvsDirty[i] = false;
+			m_pD3DDevice->UpdateSubresource(pProgram->m_vsConstants[i], 0, nullptr, pProgram->m_vsConstMem[i], 0, 0);
+			pProgram->m_vsDirty[i] = false;
 		}
 	}
 }
 
 void ShaderAPID3DX10::Clear(bool bClearColor, bool bClearDepth, bool bClearStencil, const ColorRGBA &fillColor,float fDepth, int nStencil)
 {
-
-
 	if (bClearColor)
 	{
-		CD3D10Texture* pBackBuffer = (CD3D10Texture*)m_pBackBufferTexture;
+		CD3D10Texture* pBackBuffer = (CD3D10Texture*)m_pBackBufferTexture.Ptr();
 
-		if (m_pCurrentColorRenderTargets[0] == NULL)
+		if (m_pCurrentColorRenderTargets[0] == nullptr)
 		{
-			m_pD3DDevice->ClearRenderTargetView(pBackBuffer->rtv[0], fillColor);
+			m_pD3DDevice->ClearRenderTargetView(pBackBuffer->m_rtv[0], fillColor);
 		}
 
 		for (int i = 0; i < MAX_MRTS; i++)
 		{
-			if (m_pCurrentColorRenderTargets[i] != NULL)
+			if (m_pCurrentColorRenderTargets[i] != nullptr)
 			{
-				CD3D10Texture* pTargetTexture = (CD3D10Texture*)m_pCurrentColorRenderTargets[i];
+				CD3D10Texture* pTargetTexture = (CD3D10Texture*)m_pCurrentColorRenderTargets[i].Ptr();
 
-				m_pD3DDevice->ClearRenderTargetView(pTargetTexture->rtv[m_nCurrentCRTSlice[i]], fillColor);
+				m_pD3DDevice->ClearRenderTargetView(pTargetTexture->m_rtv[m_nCurrentCRTSlice[i]], fillColor);
 			}
 		}
 	}
@@ -462,19 +435,19 @@ void ShaderAPID3DX10::Clear(bool bClearColor, bool bClearDepth, bool bClearStenc
 		{
 			m_pD3DDevice->ClearDepthStencilView(m_pDepthBufferDSV, clearFlags, fDepth, nStencil);
 		}
-		else if( m_pCurrentDepthRenderTarget == NULL )
+		else if( m_pCurrentDepthRenderTarget == nullptr)
 		{
 			return;
 		}
 		else
 		{
-			CD3D10Texture* pTargetTexture = (CD3D10Texture*)m_pCurrentDepthRenderTarget;
+			CD3D10Texture* pTargetTexture = (CD3D10Texture*)m_pCurrentDepthRenderTarget.Ptr();
 
 			/*
 			if (currentDepthSlice == NO_SLICE)
 			{
 			*/
-				m_pD3DDevice->ClearDepthStencilView(pTargetTexture->dsv[0], clearFlags, fDepth, nStencil);
+				m_pD3DDevice->ClearDepthStencilView(pTargetTexture->m_dsv[0], clearFlags, fDepth, nStencil);
 				/*
 			} 
 			else 
@@ -502,55 +475,6 @@ const char* ShaderAPID3DX10::GetRendererName() const
 	return "Direct3D10";
 }
 
-// Render targetting support
-bool ShaderAPID3DX10::IsSupportsRendertargetting() const
-{
-	return true;
-}
-
-// Render targetting support for Multiple RTs
-bool ShaderAPID3DX10::IsSupportsMRT() const
-{
-	return true;
-}
-
-// Supports multitexturing???
-bool ShaderAPID3DX10::IsSupportsMultitexturing() const
-{
-	return true;
-}
-
-// The driver/hardware is supports Pixel shaders?
-bool ShaderAPID3DX10::IsSupportsPixelShaders() const
-{
-	return true;
-}
-
-// The driver/hardware is supports Vertex shaders?
-bool ShaderAPID3DX10::IsSupportsVertexShaders() const
-{
-	return true;
-}
-
-// The driver/hardware is supports Geometry shaders?
-bool ShaderAPID3DX10::IsSupportsGeometryShaders() const
-{
-	// D3D9 Does not support geometry shaders
-	return true;
-}
-
-// The driver/hardware is supports Domain shaders?
-bool ShaderAPID3DX10::IsSupportsDomainShaders() const
-{
-	return false;
-}
-
-// The driver/hardware is supports Hull (tessellator) shaders?
-bool ShaderAPID3DX10::IsSupportsHullShaders() const
-{
-	return false;
-}
-
 //-------------------------------------------------------------
 // MT Synchronization
 //-------------------------------------------------------------
@@ -563,7 +487,7 @@ void ShaderAPID3DX10::Flush()
 
 void ShaderAPID3DX10::Finish()
 {
-	if (m_pEventQuery == NULL)
+	if (m_pEventQuery == nullptr)
 	{
 		D3D10_QUERY_DESC desc;
 		desc.Query = D3D10_QUERY_EVENT;
@@ -595,41 +519,7 @@ void ShaderAPID3DX10::Finish()
 // Textures
 //-------------------------------------------------------------
 
-// Unload the texture and free the memory
-void ShaderAPID3DX10::FreeTexture(ITexture* pTexture)
-{
-	CD3D10Texture* pTex = (CD3D10Texture*)pTexture;
-
-	if(pTex == NULL)
-		return;
-
-	Finish();
-
-	if(pTex->Ref_Count() == 0)
-		MsgWarning("texture %s refcount==0\n",pTexture->GetName());
-
-	//ASSERT(pTex->numReferences > 0);
-
-	CScopedMutex scoped(m_Mutex);
-
-	pTex->Ref_Drop();
-
-	if(pTex->Ref_Count() <= 0)
-	{
-		DevMsg(DEVMSG_SHADERAPI,"Texture unloaded: %s\n",pTexture->GetName());
-
-		Reset(STATE_RESET_TEX);
-		ApplyTextures();
-
-		if(pTex->m_pD3D10SamplerState)
-			DestroyRenderState(pTex->m_pD3D10SamplerState);
-
-		m_TextureList.remove(pTexture);
-		delete pTex;
-	}
-}
-
-void InternalCreateDepthTarget(CD3D10Texture* pTexture, ID3D10Device* pDevice)
+void ShaderAPID3DX10::InternalCreateDepthTarget(CD3D10Texture* pTexture, ID3D10Device* pDevice)
 {
 	D3D10_TEXTURE2D_DESC desc;
 	desc.Width  = pTexture->GetWidth();
@@ -648,37 +538,37 @@ void InternalCreateDepthTarget(CD3D10Texture* pTexture, ID3D10Device* pDevice)
 	} 
 	else 
 	{
-		desc.ArraySize = pTexture->arraySize;
+		desc.ArraySize = pTexture->m_arraySize;
 		desc.MiscFlags = 0;
 	}
 
 	// check depth sampling flag
 	if (pTexture->GetFlags() & TEXFLAG_SAMPLEDEPTH)
 	{
-		switch (pTexture->dsvFormat)
+		switch (pTexture->m_dsvFormat)
 		{
 			case DXGI_FORMAT_D16_UNORM:
-				pTexture->texFormat = DXGI_FORMAT_R16_TYPELESS;
-				pTexture->srvFormat = DXGI_FORMAT_R16_UNORM;
+				pTexture->m_texFormat = DXGI_FORMAT_R16_TYPELESS;
+				pTexture->m_srvFormat = DXGI_FORMAT_R16_UNORM;
 				break;
 			case DXGI_FORMAT_D24_UNORM_S8_UINT:
-				pTexture->texFormat = DXGI_FORMAT_R24G8_TYPELESS;
-				pTexture->srvFormat = DXGI_FORMAT_R24_UNORM_X8_TYPELESS;
+				pTexture->m_texFormat = DXGI_FORMAT_R24G8_TYPELESS;
+				pTexture->m_srvFormat = DXGI_FORMAT_R24_UNORM_X8_TYPELESS;
 				break;
 			case DXGI_FORMAT_D32_FLOAT:
-				pTexture->texFormat = DXGI_FORMAT_R32_TYPELESS;
-				pTexture->srvFormat = DXGI_FORMAT_R32_FLOAT;
+				pTexture->m_texFormat = DXGI_FORMAT_R32_TYPELESS;
+				pTexture->m_srvFormat = DXGI_FORMAT_R32_FLOAT;
 				break;
 		}
 
 		desc.BindFlags |= D3D10_BIND_SHADER_RESOURCE;
 	}
 
-	desc.Format = pTexture->texFormat;
+	desc.Format = pTexture->m_texFormat;
 
-	pTexture->textures.setNum(1);
+	pTexture->m_textures.setNum(1);
 
-	HRESULT res = pDevice->CreateTexture2D(&desc, NULL, (ID3D10Texture2D **) &pTexture->textures[0]);
+	HRESULT res = pDevice->CreateTexture2D(&desc, nullptr, (ID3D10Texture2D **) &pTexture->m_textures[0]);
 
 	if (FAILED(res))
 	{
@@ -694,17 +584,17 @@ void InternalCreateDepthTarget(CD3D10Texture* pTexture, ID3D10Device* pDevice)
 
 		for (UINT i = 0; i < desc.ArraySize; i++)
 		{
-			ID3D10DepthStencilView* pDSV = ((ShaderAPID3DX10*)g_pShaderAPI)->TexResource_CreateShaderDepthStencilView(pTexture->textures[0], pTexture->dsvFormat, i);
+			ID3D10DepthStencilView* pDSV = ((ShaderAPID3DX10*)g_pShaderAPI)->TexResource_CreateShaderDepthStencilView(pTexture->m_textures[0], pTexture->m_dsvFormat, i);
 
-			pTexture->dsv.append(pDSV);
+			pTexture->m_dsv.append(pDSV);
 		}
 	}
 	else
 	{
 		// make single dsv
-		ID3D10DepthStencilView* pDSV = ((ShaderAPID3DX10*)g_pShaderAPI)->TexResource_CreateShaderDepthStencilView(pTexture->textures[0], pTexture->dsvFormat);
+		ID3D10DepthStencilView* pDSV = ((ShaderAPID3DX10*)g_pShaderAPI)->TexResource_CreateShaderDepthStencilView(pTexture->m_textures[0], pTexture->m_dsvFormat);
 
-		pTexture->dsv.append(pDSV);
+		pTexture->m_dsv.append(pDSV);
 	}
 
 	if (pTexture->GetFlags() & TEXFLAG_SAMPLEDEPTH)
@@ -714,19 +604,19 @@ void InternalCreateDepthTarget(CD3D10Texture* pTexture, ID3D10Device* pDevice)
 		{
 			for (UINT i = 0; i < desc.ArraySize; i++)
 			{
-				ID3D10ShaderResourceView* pSRV = ((ShaderAPID3DX10*)g_pShaderAPI)->TexResource_CreateShaderResourceView(pTexture->textures[0], pTexture->srvFormat, i);
-				pTexture->srv.append(pSRV);
+				ID3D10ShaderResourceView* pSRV = ((ShaderAPID3DX10*)g_pShaderAPI)->TexResource_CreateShaderResourceView(pTexture->m_textures[0], pTexture->m_srvFormat, i);
+				pTexture->m_srv.append(pSRV);
 			}
 		}
 		else
 		{
-			ID3D10ShaderResourceView* pSRV = ((ShaderAPID3DX10*)g_pShaderAPI)->TexResource_CreateShaderResourceView(pTexture->textures[0], pTexture->srvFormat);
-			pTexture->srv.append(pSRV);
+			ID3D10ShaderResourceView* pSRV = ((ShaderAPID3DX10*)g_pShaderAPI)->TexResource_CreateShaderResourceView(pTexture->m_textures[0], pTexture->m_srvFormat);
+			pTexture->m_srv.append(pSRV);
 		}
 	}
 }
 
-void InternalCreateRenderTarget(CD3D10Texture* pTexture, ID3D10Device* pDevice)
+void ShaderAPID3DX10::InternalCreateRenderTarget(CD3D10Texture* pTexture, ID3D10Device* pDevice)
 {
 	int nDepth = 1;
 	int nMipCount = 1;
@@ -739,10 +629,10 @@ void InternalCreateRenderTarget(CD3D10Texture* pTexture, ID3D10Device* pDevice)
 		MsgWarning("Unsupported format (%d) for '%s'\n", pTexture->GetFormat(), pTexture->GetName());
 
 	// setup all formats
-	pTexture->dsvFormat = formats[pTexture->GetFormat()];
-	pTexture->srvFormat = formats[pTexture->GetFormat()];
-	pTexture->rtvFormat = formats[pTexture->GetFormat()];
-	pTexture->texFormat = formats[pTexture->GetFormat()];
+	pTexture->m_dsvFormat = formats[pTexture->GetFormat()];
+	pTexture->m_srvFormat = formats[pTexture->GetFormat()];
+	pTexture->m_rtvFormat = formats[pTexture->GetFormat()];
+	pTexture->m_texFormat = formats[pTexture->GetFormat()];
 
 	if( bShouldCreateDepthRT )
 	{
@@ -753,23 +643,23 @@ void InternalCreateRenderTarget(CD3D10Texture* pTexture, ID3D10Device* pDevice)
 	if (pTexture->GetFlags() & TEXFLAG_USE_SRGB)
 	{
 		// Change to the matching sRGB format
-		switch (pTexture->texFormat)
+		switch (pTexture->m_texFormat)
 		{
-			case DXGI_FORMAT_R8G8B8A8_UNORM: pTexture->texFormat = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB; break;
-			case DXGI_FORMAT_BC1_UNORM: pTexture->texFormat = DXGI_FORMAT_BC1_UNORM_SRGB; break;
-			case DXGI_FORMAT_BC2_UNORM: pTexture->texFormat = DXGI_FORMAT_BC2_UNORM_SRGB; break;
-			case DXGI_FORMAT_BC3_UNORM: pTexture->texFormat = DXGI_FORMAT_BC3_UNORM_SRGB; break;
+			case DXGI_FORMAT_R8G8B8A8_UNORM: pTexture->m_texFormat = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB; break;
+			case DXGI_FORMAT_BC1_UNORM: pTexture->m_texFormat = DXGI_FORMAT_BC1_UNORM_SRGB; break;
+			case DXGI_FORMAT_BC2_UNORM: pTexture->m_texFormat = DXGI_FORMAT_BC2_UNORM_SRGB; break;
+			case DXGI_FORMAT_BC3_UNORM: pTexture->m_texFormat = DXGI_FORMAT_BC3_UNORM_SRGB; break;
 		}
 	}
 	
-	pTexture->textures.setNum(1);
+	pTexture->m_textures.setNum(1);
 
 	if (nDepth == 1)
 	{
 		D3D10_TEXTURE2D_DESC desc;
 		desc.Width  = pTexture->GetWidth();
 		desc.Height = pTexture->GetHeight();
-		desc.Format = pTexture->texFormat;
+		desc.Format = pTexture->m_texFormat;
 		desc.MipLevels = nMipCount;
 		desc.SampleDesc.Count = nMSAASamples;
 		desc.SampleDesc.Quality = 0;
@@ -792,7 +682,7 @@ void InternalCreateRenderTarget(CD3D10Texture* pTexture, ID3D10Device* pDevice)
 		if (pTexture->GetFlags() & TEXFLAG_GENMIPMAPS)
 			desc.MiscFlags |= D3D10_RESOURCE_MISC_GENERATE_MIPS;
 
-		if (FAILED(pDevice->CreateTexture2D(&desc, NULL, (ID3D10Texture2D **) &pTexture->textures[0])))
+		if (FAILED(pDevice->CreateTexture2D(&desc, nullptr, (ID3D10Texture2D **) &pTexture->m_textures[0])))
 		{
 			MsgError("Failed to create 2D rendertarget '%s'\n", pTexture->GetName());
 			return;
@@ -803,7 +693,7 @@ void InternalCreateRenderTarget(CD3D10Texture* pTexture, ID3D10Device* pDevice)
 		D3D10_TEXTURE3D_DESC desc;
 		desc.Width  = pTexture->GetWidth();
 		desc.Height = pTexture->GetHeight();
-		desc.Format = pTexture->texFormat;
+		desc.Format = pTexture->m_texFormat;
 		desc.MipLevels = nMipCount;
 		desc.Depth  = nDepth;
 		desc.Usage = D3D10_USAGE_DEFAULT;
@@ -814,7 +704,7 @@ void InternalCreateRenderTarget(CD3D10Texture* pTexture, ID3D10Device* pDevice)
 		if (pTexture->GetFlags() & TEXFLAG_GENMIPMAPS)
 			desc.MiscFlags |= D3D10_RESOURCE_MISC_GENERATE_MIPS;
 
-		if (FAILED(pDevice->CreateTexture3D(&desc, NULL, (ID3D10Texture3D **) &pTexture->textures[0])))
+		if (FAILED(pDevice->CreateTexture3D(&desc, nullptr, (ID3D10Texture3D **) &pTexture->m_textures[0])))
 		{
 			MsgError("Failed to create volume rendertarget '%s'\n", pTexture->GetName());
 			return;
@@ -829,13 +719,13 @@ void InternalCreateRenderTarget(CD3D10Texture* pTexture, ID3D10Device* pDevice)
 	{
 		for (int i = 0; i < nSliceCount; i++)
 		{
-			ID3D10ShaderResourceView* pSRV = ((ShaderAPID3DX10*)g_pShaderAPI)->TexResource_CreateShaderResourceView(pTexture->textures[0], pTexture->srvFormat, i);
-			pTexture->srv.append( pSRV );
+			ID3D10ShaderResourceView* pSRV = ((ShaderAPID3DX10*)g_pShaderAPI)->TexResource_CreateShaderResourceView(pTexture->m_textures[0], pTexture->m_srvFormat, i);
+			pTexture->m_srv.append( pSRV );
 		}
 	}
 	else
 	{
-		pTexture->srv.append(((ShaderAPID3DX10*)g_pShaderAPI)->TexResource_CreateShaderResourceView(pTexture->textures[0], pTexture->srvFormat));
+		pTexture->m_srv.append(((ShaderAPID3DX10*)g_pShaderAPI)->TexResource_CreateShaderResourceView(pTexture->m_textures[0], pTexture->m_srvFormat));
 	}
 
 	// render texture array?
@@ -843,87 +733,91 @@ void InternalCreateRenderTarget(CD3D10Texture* pTexture, ID3D10Device* pDevice)
 	{
 		for (int i = 0; i < nSliceCount; i++)
 		{
-			ID3D10RenderTargetView* pRTV = ((ShaderAPID3DX10*)g_pShaderAPI)->TexResource_CreateShaderRenderTargetView(pTexture->textures[0], pTexture->rtvFormat, i);
-			pTexture->rtv.append( pRTV );
+			ID3D10RenderTargetView* pRTV = ((ShaderAPID3DX10*)g_pShaderAPI)->TexResource_CreateShaderRenderTargetView(pTexture->m_textures[0], pTexture->m_rtvFormat, i);
+			pTexture->m_rtv.append( pRTV );
 		}
 	}
 	else
-		pTexture->rtv.append(((ShaderAPID3DX10*)g_pShaderAPI)->TexResource_CreateShaderRenderTargetView(pTexture->textures[0], pTexture->rtvFormat));
+		pTexture->m_rtv.append(((ShaderAPID3DX10*)g_pShaderAPI)->TexResource_CreateShaderRenderTargetView(pTexture->m_textures[0], pTexture->m_rtvFormat));
 
 }
 
 // It will add new rendertarget
-ITexture* ShaderAPID3DX10::CreateRenderTarget(int width, int height, ETextureFormat nRTFormat, ER_TextureFilterMode textureFilterType, ER_TextureAddressMode textureAddress, ER_CompareFunc comparison, int nFlags)
+ITexturePtr ShaderAPID3DX10::CreateRenderTarget(int width, int height, ETextureFormat nRTFormat, ER_TextureFilterMode textureFilterType, ER_TextureAddressMode textureAddress, ER_CompareFunc comparison, int nFlags)
 {
-	CD3D10Texture *pTexture = new CD3D10Texture;
+	CRefPtr<CD3D10Texture> pTexture = CRefPtr_new(CD3D10Texture);
 
 	pTexture->SetDimensions(width,height);
-
 	pTexture->SetFormat(nRTFormat);
 	pTexture->SetFlags(nFlags | TEXFLAG_RENDERTARGET);
 	pTexture->SetName("_rt_001");
 
-	SamplerStateParam_t texSamplerParams = MakeSamplerState(textureFilterType,textureAddress,textureAddress,textureAddress);
+	SamplerStateParam_t texSamplerParams;
+	SamplerStateParams_Make(texSamplerParams, m_caps, textureFilterType, textureAddress, textureAddress, textureAddress);
+
 	texSamplerParams.compareFunc = comparison;
 	pTexture->SetSamplerState(texSamplerParams);
-
-	pTexture->m_pD3D10SamplerState = CreateSamplerState(texSamplerParams);
-
-	CScopedMutex scoped(m_Mutex);
+	pTexture->m_samplerState = CreateSamplerState(texSamplerParams);
 
 	InternalCreateRenderTarget( pTexture, m_pD3DDevice );
 
-	if(!pTexture->textures[0])
+	if(!pTexture->m_textures[0])
 	{
-		DestroyRenderState( pTexture->m_pD3D10SamplerState );
+		DestroyRenderState( pTexture->m_samplerState );
 		delete pTexture;
-		return NULL;
+		return nullptr;
 	}
 
-	m_TextureList.append(pTexture);
+	{
+		CScopedMutex scoped(g_sapi_TextureMutex);
+		ASSERT_MSG(m_TextureList.find(pTexture->m_nameHash) == m_TextureList.end(), "Texture %s was already added", pTexture->GetName());
+		m_TextureList.insert(pTexture->m_nameHash, pTexture);
+		return ITexturePtr(pTexture);
+	}
 
-	Finish();
-
-	return pTexture;
+	return nullptr;
 }
 
 // It will add new rendertarget
-ITexture* ShaderAPID3DX10::CreateNamedRenderTarget(const char* pszName,int width, int height,ETextureFormat nRTFormat, ER_TextureFilterMode textureFilterType, ER_TextureAddressMode textureAddress, ER_CompareFunc comparison, int nFlags)
+ITexturePtr ShaderAPID3DX10::CreateNamedRenderTarget(const char* pszName,int width, int height,ETextureFormat nRTFormat, ER_TextureFilterMode textureFilterType, ER_TextureAddressMode textureAddress, ER_CompareFunc comparison, int nFlags)
 {
-	CD3D10Texture *pTexture = new CD3D10Texture;
+	CRefPtr<CD3D10Texture> pTexture = CRefPtr_new(CD3D10Texture);
 
 	pTexture->SetDimensions(width,height);
-
 	pTexture->SetFormat(nRTFormat);
 	pTexture->SetFlags(nFlags | TEXFLAG_RENDERTARGET);
 	pTexture->SetName(pszName);
 	
-	
-	SamplerStateParam_t texSamplerParams = MakeSamplerState(textureFilterType,textureAddress,textureAddress,textureAddress);
+	SamplerStateParam_t texSamplerParams;
+	SamplerStateParams_Make(texSamplerParams, m_caps, textureFilterType, textureAddress, textureAddress, textureAddress);
+
 	texSamplerParams.compareFunc = comparison;
 	pTexture->SetSamplerState(texSamplerParams);
-
-	pTexture->m_pD3D10SamplerState = CreateSamplerState(texSamplerParams);
-
-	CScopedMutex scoped(m_Mutex);
+	pTexture->m_samplerState = CreateSamplerState(texSamplerParams);
 
 	InternalCreateRenderTarget(pTexture, m_pD3DDevice);
 
-	if(!pTexture->textures[0])
+	if(!pTexture->m_textures[0])
 	{
+		DestroyRenderState(pTexture->m_samplerState);
 		delete pTexture;
-		return NULL;
+		return nullptr;
 	}
 
-	m_TextureList.append(pTexture);
+	{
+		CScopedMutex scoped(g_sapi_TextureMutex);
+		ASSERT_MSG(m_TextureList.find(pTexture->m_nameHash) == m_TextureList.end(), "Texture %s was already added", pTexture->GetName());
+		m_TextureList.insert(pTexture->m_nameHash, pTexture);
+		return ITexturePtr(pTexture);
+	}
 
-	return pTexture;
+	return nullptr;
 }
 
 //-------------------------------------------------------------
 // Texture operations
 //-------------------------------------------------------------
-
+/*
 // saves rendertarget to texture, you can also save screenshots
 void ShaderAPID3DX10::SaveRenderTarget(ITexture* pTargetTexture, const char* pFileName)
 {
@@ -933,7 +827,7 @@ void ShaderAPID3DX10::SaveRenderTarget(ITexture* pTargetTexture, const char* pFi
 
 		D3DX10SaveTextureToFile(pTexture->textures[0], D3DX10_IFF_DDS, pFileName);
 	}
-}
+}*/
 
 // Copy render target to texture
 void ShaderAPID3DX10::CopyFramebufferToTexture(ITexture* pTargetTexture)
@@ -942,58 +836,47 @@ void ShaderAPID3DX10::CopyFramebufferToTexture(ITexture* pTargetTexture)
 }
 
 // Changes render target (MRT)
-void ShaderAPID3DX10::ChangeRenderTargets(ITexture** pRenderTargets, int nNumRTs, int* nCubemapFaces, ITexture* pDepthTarget, int nDepthSlice)
+void ShaderAPID3DX10::ChangeRenderTargets(ArrayCRef<ITexturePtr> renderTargets, ArrayCRef<int> rtSlice, const ITexturePtr& depthTarget, int depthSlice)
 {
-	CD3D10Texture* pDepth = (CD3D10Texture*)pDepthTarget;
+	ASSERT_MSG(!rtSlice.ptr() || renderTargets.numElem() == rtSlice.numElem(), "ChangeRenderTargets - renderTargets and rtSlice must be equal");
+
+	CD3D10Texture* pDepth = (CD3D10Texture*)depthTarget.Ptr();
 
 	ID3D10RenderTargetView* rtv[16] = {0};
-	ID3D10DepthStencilView* dsv = NULL;
+	ID3D10DepthStencilView* dsv = nullptr;
 
-	if(pDepth == m_pDepthBufferTexture || pDepth == NULL)
+	if(pDepth == m_pDepthBufferTexture || pDepth == nullptr)
 		dsv = m_pDepthBufferDSV;
 	else
-		dsv = pDepth->dsv[nDepthSlice];
+		dsv = pDepth->m_dsv[depthSlice];
 
-	m_pCurrentDepthRenderTarget = pDepthTarget;
-	m_nCurrentDepthSlice = nDepthSlice;
+	m_pCurrentDepthRenderTarget = depthTarget;
+	m_nCurrentDepthSlice = depthSlice;
 
-	CD3D10Texture* pBackBuffer = (CD3D10Texture*)m_pBackBufferTexture;
+	CD3D10Texture* pBackBuffer = (CD3D10Texture*)m_pBackBufferTexture.Ptr();
 
-	for (uint8 i = 0; i < nNumRTs; i++)
+	for (int i = 0; i < renderTargets.numElem(); i++)
 	{
-		CD3D10Texture* pRt = (CD3D10Texture*)pRenderTargets[i];
+		CD3D10Texture* pRt = (CD3D10Texture*)renderTargets[i].Ptr();
 
-		int nSlice = -1;
+		const int rtSliceIdx = rtSlice.ptr() ? rtSlice[i] : 0;
 
-		if (nCubemapFaces == NULL || nCubemapFaces[i] == -1)
-		{
-			if (pRt == m_pBackBufferTexture || !pRt)
-			{
-				rtv[i] = pBackBuffer->rtv[0];
-			}
-			else
-			{
-				rtv[i] = pRt->rtv[0];
-			}
-		}
+		if (pRt == m_pBackBufferTexture || !pRt)
+			rtv[i] = pBackBuffer->m_rtv[0];
 		else
-		{
-			nSlice = nCubemapFaces[i];
+			rtv[i] = pRt->m_rtv[rtSliceIdx];
 
-			rtv[i] = pRt->rtv[nSlice];
-		}
-
-		m_pCurrentColorRenderTargets[i] = pRt;
-		m_nCurrentCRTSlice[i] = nSlice;
+		m_pCurrentColorRenderTargets[i] = renderTargets[i];
+		m_nCurrentCRTSlice[i] = rtSliceIdx;
 	}
 
-	for (uint8 i = nNumRTs; i < MAX_MRTS; i++)
+	for (int i = renderTargets.numElem(); i < MAX_MRTS; i++)
 	{
-		m_pCurrentColorRenderTargets[i] = NULL;
+		m_pCurrentColorRenderTargets[i] = nullptr;
 		m_nCurrentCRTSlice[i] = 0;
 	}
 
-	m_pD3DDevice->OMSetRenderTargets(nNumRTs, rtv, dsv);
+	m_pD3DDevice->OMSetRenderTargets(renderTargets.numElem(), rtv, dsv);
 
 	D3D10_VIEWPORT vp;
 	vp.TopLeftX = 0;
@@ -1001,9 +884,9 @@ void ShaderAPID3DX10::ChangeRenderTargets(ITexture** pRenderTargets, int nNumRTs
 	vp.MinDepth = 0;
 	vp.MaxDepth = 1;
 
-	if (nNumRTs > 0)
+	if (renderTargets.numElem() > 0)
 	{
-		CD3D10Texture* pRt = (CD3D10Texture*)pRenderTargets[0];
+		CD3D10Texture* pRt = (CD3D10Texture*)renderTargets[0].Ptr();
 
 		if (pRt == m_pBackBufferTexture)
 		{
@@ -1016,10 +899,10 @@ void ShaderAPID3DX10::ChangeRenderTargets(ITexture** pRenderTargets, int nNumRTs
 			vp.Height = pRt->GetHeight();
 		}
 	}
-	else
+	else if(depthTarget)
 	{
-		vp.Width  = pDepthTarget->GetWidth();
-		vp.Height = pDepthTarget->GetHeight();
+		vp.Width  = depthTarget->GetWidth();
+		vp.Height = depthTarget->GetHeight();
 	}
 
 	m_pD3DDevice->RSSetViewports(1, &vp);
@@ -1028,20 +911,14 @@ void ShaderAPID3DX10::ChangeRenderTargets(ITexture** pRenderTargets, int nNumRTs
 // Changes back to backbuffer
 void ShaderAPID3DX10::ChangeRenderTargetToBackBuffer()
 {
-	/*
-	memset(m_pSelectedTextures,0,sizeof(m_pSelectedTextures));
-	memset(m_pSelectedVertexTextures,0,sizeof(m_pSelectedVertexTextures));
-	ApplyTextures();
-	*/
+	CD3D10Texture* pBackBuffer = (CD3D10Texture*)m_pBackBufferTexture.Ptr();
 
-	CD3D10Texture* pBackBuffer = (CD3D10Texture*)m_pBackBufferTexture;
-
-	m_pD3DDevice->OMSetRenderTargets(1, &pBackBuffer->rtv[0], m_pDepthBufferDSV);
+	m_pD3DDevice->OMSetRenderTargets(1, &pBackBuffer->m_rtv[0], m_pDepthBufferDSV);
 	m_pCurrentColorRenderTargets[0] = m_pBackBufferTexture;
 
 	for (int i = 1; i < MAX_MRTS; i++)
 	{
-		m_pCurrentColorRenderTargets[i] = NULL;
+		m_pCurrentColorRenderTargets[i] = nullptr;
 		m_nCurrentCRTSlice[i] = 0;
 	}
 
@@ -1050,7 +927,7 @@ void ShaderAPID3DX10::ChangeRenderTargetToBackBuffer()
 }
 
 // resizes render target
-void ShaderAPID3DX10::ResizeRenderTarget(ITexture* pRT, int newWide, int newTall)
+void ShaderAPID3DX10::ResizeRenderTarget(const ITexturePtr& pRT, int newWide, int newTall)
 {
 	/*
 	if(pRT->GetWidth() == newWide && pRT->GetHeight() == newTall)
@@ -1063,31 +940,6 @@ void ShaderAPID3DX10::ResizeRenderTarget(ITexture* pRT, int newWide, int newTall
 	pRenderTarget->SetDimensions(newWide, newTall);
 
 	InternalCreateRenderTarget(m_pD3DDevice, pRenderTarget, pRenderTarget->GetFlags());
-	*/
-}
-
-// fills the current rendertarget buffers
-void ShaderAPID3DX10::GetCurrentRenderTargets(ITexture* pRenderTargets[MAX_MRTS], int *numRTs, ITexture** pDepthTarget, int cubeNumbers[MAX_MRTS])
-{
-	/*
-	int nRts = 0;
-
-	for (register int i = 0; i < m_nMRTs; i++)
-	{
-		nRts++;
-
-		pRenderTargets[i] = m_pCurrentColorRenderTargets[i];
-
-		if(cubeNumbers != NULL)
-			cubeNumbers[i] = m_nCurrentCRTSlice[i];
-
-		if(m_pCurrentColorRenderTargets[i] == NULL)
-			break;
-	}
-
-	*pDepthTarget = m_pCurrentDepthRenderTarget;
-
-	*numRTs = nRts;
 	*/
 }
 
@@ -1113,31 +965,26 @@ void ShaderAPID3DX10::GetViewportDimensions(int &wide, int &tall)
 // Matrix mode
 void ShaderAPID3DX10::SetMatrixMode(ER_MatrixMode nMatrixMode)
 {
-	m_nCurrentMatrixMode = nMatrixMode;
 }
 
 // Will save matrix
 void ShaderAPID3DX10::PushMatrix()
 {
-	// TODO: implement!
 }
 
 // Will reset matrix
 void ShaderAPID3DX10::PopMatrix()
 {
-	// TODO: implement!
 }
 
 // Load identity matrix
 void ShaderAPID3DX10::LoadIdentityMatrix()
 {
-	m_matrices[m_nCurrentMatrixMode] = identity4();
 }
 
 // Load custom matrix
 void ShaderAPID3DX10::LoadMatrix(const Matrix4x4 &matrix)
 {
-	m_matrices[m_nCurrentMatrixMode] = matrix;
 }
 
 //-------------------------------------------------------------
@@ -1162,28 +1009,29 @@ void ShaderAPID3DX10::SetDepthRange(float fZNear,float fZFar)
 // Changes the vertex format
 void ShaderAPID3DX10::ChangeVertexFormat(IVertexFormat* pVertexFormat)
 {
-	if (pVertexFormat != m_pCurrentVertexFormat)
+	if (pVertexFormat == m_pCurrentVertexFormat)
+		return;
+
+	CVertexFormatD3DX10* pCurrentFormat = (CVertexFormatD3DX10*)m_pCurrentVertexFormat;
+	CVertexFormatD3DX10* pFormat = (CVertexFormatD3DX10*)pVertexFormat;
+
+	m_pCurrentVertexFormat = pVertexFormat;
+
+	if (pFormat == nullptr)
+		return;
+
+		m_pD3DDevice->IASetInputLayout(pFormat->m_vertexDecl);
+
+	if (pCurrentFormat == nullptr)
+		return;
+
+	for (int i = 0; i < MAX_VERTEXSTREAM; i++)
 	{
-		CVertexFormatD3DX10* pFormat = (CVertexFormatD3DX10*)pVertexFormat;
-		if (pFormat != NULL)
+		if (pFormat->m_streamStride[i] != pCurrentFormat->m_streamStride[i])
 		{
-			m_pD3DDevice->IASetInputLayout(pFormat->m_pVertexDecl);
-
-			CVertexFormatD3DX10* pCurrentFormat = (CVertexFormatD3DX10*)m_pCurrentVertexFormat;
-			if (pCurrentFormat != NULL)
-			{
-				for (register uint8 i = 0; i < MAX_VERTEXSTREAM; i++)
-				{
-					if (pFormat->m_nVertexSize[i] != pCurrentFormat->m_nVertexSize[i])
-					{
-						//MsgError("Programming error! the IShaderAPI::ChangeVertexFormat() must be called after Reset(), but not after Apply()\n");
-						m_pCurrentVertexBuffers[i] = NULL;
-					}
-				}
-			}
+			//MsgError("Programming error! the IShaderAPI::ChangeVertexFormat() must be called after Reset(), but not after Apply()\n");
+			m_pCurrentVertexBuffers[i] = nullptr;
 		}
-
-		m_pCurrentVertexFormat = pVertexFormat;
 	}
 }
 
@@ -1198,19 +1046,19 @@ void ShaderAPID3DX10::ChangeVertexBuffer(IVertexBuffer* pVertexBuffer,int nStrea
 		UINT strides[1];
 		UINT offsets[1];
 
-		if (pVB == NULL)
+		if (pVB == nullptr)
 		{
 			strides[0] = 0;
 			offsets[0] = 0;
 
-			ID3D10Buffer *null[] = { NULL };
+			ID3D10Buffer *null[] = { nullptr };
 			m_pD3DDevice->IASetVertexBuffers(nStream, 1, null, strides, offsets);
 		}
 		else
 		{
 			strides[0] = pVertexBuffer->GetStrideSize();//pCurrentFormat->m_nVertexSize[nStream];
 			offsets[0] = (UINT)offset*strides[0];
-			m_pD3DDevice->IASetVertexBuffers(nStream, 1, &pVB->m_pVertexBuffer, strides, offsets);
+			m_pD3DDevice->IASetVertexBuffers(nStream, 1, &pVB->m_buffer, strides, offsets);
 		}
 
 		m_pCurrentVertexBuffers[nStream] = pVertexBuffer;
@@ -1225,14 +1073,14 @@ void ShaderAPID3DX10::ChangeIndexBuffer(IIndexBuffer* pIndexBuffer)
 	{
 		CIndexBufferD3DX10* pIB = (CIndexBufferD3DX10*)pIndexBuffer;
 
-		if (pIB == NULL)
+		if (pIB == nullptr)
 		{
-			m_pD3DDevice->IASetIndexBuffer(NULL, DXGI_FORMAT_UNKNOWN, 0);
+			m_pD3DDevice->IASetIndexBuffer(nullptr, DXGI_FORMAT_UNKNOWN, 0);
 		}
 		else
 		{
-			DXGI_FORMAT format = pIB->m_nIndexSize < 4? DXGI_FORMAT_R16_UINT : DXGI_FORMAT_R32_UINT;
-			m_pD3DDevice->IASetIndexBuffer(pIB->m_pIndexBuffer, format, 0);
+			const DXGI_FORMAT format = (pIB->m_indexSize < sizeof(uint)) ? DXGI_FORMAT_R16_UINT : DXGI_FORMAT_R32_UINT;
+			m_pD3DDevice->IASetIndexBuffer(pIB->m_buffer, format, 0);
 		}
 
 		m_pCurrentIndexBuffer = pIndexBuffer;
@@ -1246,22 +1094,17 @@ void ShaderAPID3DX10::DestroyVertexFormat(IVertexFormat* pFormat)
 	if(!pVF)
 		return;
 
-	CScopedMutex m(m_Mutex);
-
-	// reset if in use
-	if(m_pCurrentVertexFormat == pVF)
+	bool deleted = false;
 	{
-		Reset(STATE_RESET_VF);
-		Apply();
+		CScopedMutex m(g_sapi_VBMutex);
+		deleted = m_VFList.remove(pVF);
 	}
 
-	DevMsg(DEVMSG_SHADERAPI,"Destroying vertex format\n");
-
-	if(pVF->m_pVertexDecl)
-		pVF->m_pVertexDecl->Release();
-
-	m_VFList.remove(pVF);
-	delete pVF;
+	if (deleted)
+	{
+		DevMsg(DEVMSG_SHADERAPI, "Destroying vertex format\n");
+		delete pVF;
+	}
 }
 
 // Destroy vertex buffer
@@ -1271,19 +1114,18 @@ void ShaderAPID3DX10::DestroyVertexBuffer(IVertexBuffer* pVertexBuffer)
 	if(!pVB)
 		return;
 
-	CScopedMutex m(m_Mutex);
+	bool deleted = false;
+	{
+		CScopedMutex m(g_sapi_VBMutex);
+		deleted = m_VBList.remove(pVB);
+	}
 
-	// reset if in use
-	Reset(STATE_RESET_VBO);
-	Apply();
-
-	DevMsg(DEVMSG_SHADERAPI,"Destroying vertex buffer\n");
-
-	if(pVB->m_pVertexBuffer)
-		pVB->m_pVertexBuffer->Release();
-
-	m_VBList.remove(pVB);
-	delete pVB;
+	if (deleted)
+	{
+		// reset if in use
+		DevMsg(DEVMSG_SHADERAPI, "Destroying vertex buffer\n");
+		delete pVB;
+	}
 }
 
 // Destroy index buffer
@@ -1293,71 +1135,36 @@ void ShaderAPID3DX10::DestroyIndexBuffer(IIndexBuffer* pIndexBuffer)
 	if(!pIB)
 		return;
 
-	CScopedMutex m(m_Mutex);
+	if (!pIB)
+		return;
 
-	// reset if in use
-	Reset(STATE_RESET_VBO);
-	Apply();
+	bool deleted = false;
+	{
+		CScopedMutex m(g_sapi_IBMutex);
+		deleted = m_IBList.remove(pIB);
+	}
 
-
-	DevMsg(DEVMSG_SHADERAPI,"Destroying index buffer\n");
-
-	if(pIB->m_pIndexBuffer)
-		pIB->m_pIndexBuffer->Release();
-
-	m_IBList.remove(pIB);
-	delete pIB;
-}
-
-static CD3D10MeshBuilder s_MeshBuilder;
-
-// Creates new mesh builder
-IMeshBuilder* ShaderAPID3DX10::CreateMeshBuilder()
-{
-	return &s_MeshBuilder;//new D3D9MeshBuilder();
-}
-
-void ShaderAPID3DX10::DestroyMeshBuilder(IMeshBuilder* pBuilder)
-{
-	//delete pBuilder;
+	if (deleted)
+	{
+		DevMsg(DEVMSG_SHADERAPI, "Destroying index buffer\n");
+		delete pIB;
+	}
 }
 
 //-------------------------------------------------------------
 // Shaders and it's operations
 //-------------------------------------------------------------
 
-// search for existing shader program
-IShaderProgram* ShaderAPID3DX10::FindShaderProgram(const char* pszName, const char* query)
-{
-	CScopedMutex scoped(m_Mutex);
-
-	for(register int i = 0; i < m_ShaderList.numElem(); i++)
-	{
-		char findtext[1024];
-		findtext[0] = '\0';
-		strcpy(findtext, pszName);
-
-		if(query)
-			strcat(findtext, query);
-
-		if(!stricmp(m_ShaderList[i]->GetName(), findtext))
-		{
-			return m_ShaderList[i];
-		}
-	}
-
-	return NULL;
-}
-
 // Creates shader class for needed ShaderAPI
 IShaderProgram* ShaderAPID3DX10::CreateNewShaderProgram(const char* pszName, const char* query)
 {
-	IShaderProgram* pNewProgram = new CD3D10ShaderProgram;
+	CD3D10ShaderProgram* pNewProgram = PPNew CD3D10ShaderProgram();
 	pNewProgram->SetName((_Es(pszName)+query).GetData());
 
-	CScopedMutex scoped(m_Mutex);
+	CScopedMutex scoped(g_sapi_ShaderMutex);
 
-	m_ShaderList.append(pNewProgram);
+	ASSERT_MSG(m_ShaderList.find(pNewProgram->m_nameHash) == m_ShaderList.end(), "Shader %s was already added", pNewProgram->GetName());
+	m_ShaderList.insert(pNewProgram->m_nameHash, pNewProgram);
 
 	return pNewProgram;
 }
@@ -1365,54 +1172,35 @@ IShaderProgram* ShaderAPID3DX10::CreateNewShaderProgram(const char* pszName, con
 // Destroy all shader
 void ShaderAPID3DX10::DestroyShaderProgram(IShaderProgram* pShaderProgram)
 {
-	CD3D10ShaderProgram* pShader = (CD3D10ShaderProgram*)pShaderProgram;
+	CD3D10ShaderProgram* pShader = (CD3D10ShaderProgram*)(pShaderProgram);
 
-	if(!pShader)
+	if (!pShader)
 		return;
 
-	CScopedMutex scoped(m_Mutex);
-
-	pShader->Ref_Drop(); // decrease references to this shader
-
-	// remove it if reference is zero
-	if(pShader->Ref_Count() <= 0)
 	{
-		// Cancel shader and destroy
-		Reset(STATE_RESET_SHADER);
-		Apply();
+		CScopedMutex m(g_sapi_ShaderMutex);
+		auto it = m_ShaderList.find(pShader->m_nameHash);
+		if (it == m_ShaderList.end())
+			return;
 
-		m_ShaderList.remove(pShader);
+		// remove it if reference is zero
+		if (!pShader->Ref_Drop())
+			return;
 
-		delete pShader;
+		m_ShaderList.remove(it);
 	}
+	delete pShader;
 }
 
-int SamplerComp(const void *s0, const void *s1)
+static int SamplerComp(const void *s0, const void *s1)
 {
-	return strcmp(((Sampler_t *) s0)->name, ((Sampler_t *) s1)->name);
+	return strcmp(((DX10Sampler_t *) s0)->name, ((DX10Sampler_t *) s1)->name);
 }
 
-int ConstantComp(const void *s0, const void *s1)
+static int ConstantComp(const void *s0, const void *s1)
 {
-	return strcmp(((DX10ShaderConstant_t *) s0)->name, ((DX10ShaderConstant_t *) s1)->name);
+	return strcmp(((DX10ShaderConstant *) s0)->name, ((DX10ShaderConstant *) s1)->name);
 }
-
-ConVar r_skipShaderCache("r_skipShaderCache", "0", "Shader debugging purposes", 0);
-
-struct shaderCacheHdr_t
-{
-	int		ident;			// DXXS
-
-	long	psChecksum;	// file crc32
-	long	vsChecksum;	// file crc32
-	long	gsChecksum;	// file crc32
-
-	int		psSize;
-	int		vsSize;
-	int		gsSize;
-};
-
-#define SHADERCACHE_IDENT		MCHAR4('D','X','X','S')
 
 // Load any shader from stream
 bool ShaderAPID3DX10::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
@@ -1427,15 +1215,15 @@ bool ShaderAPID3DX10::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 	// TODO: implement shader cache for D3D10
 	g_fileSystem->MakeDir("ShaderCache_DX10", SP_MOD);
 
-	ID3D10ShaderReflection *vsRefl = NULL;
-	ID3D10ShaderReflection *gsRefl = NULL;
-	ID3D10ShaderReflection *psRefl = NULL;
+	ID3D10ShaderReflection *vsRefl = nullptr;
+	ID3D10ShaderReflection *gsRefl = nullptr;
+	ID3D10ShaderReflection *psRefl = nullptr;
 
 	CScopedMutex m(m_Mutex);
 
 	EqString cache_file_name(varargs("ShaderCache_DX10/%s.scache", pShaderOutput->GetName()));
 
-	IFile* pStream = NULL;
+	IFile* pStream = nullptr;
 
 	bool needsCompile = true;
 
@@ -1445,7 +1233,7 @@ bool ShaderAPID3DX10::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 
 		if(pStream)
 		{
-			ubyte* pShaderMem = NULL;
+			ubyte* pShaderMem = nullptr;
 
 			shaderCacheHdr_t scHdr;
 			pStream->Read(&scHdr, 1, sizeof(shaderCacheHdr_t));
@@ -1461,9 +1249,9 @@ bool ShaderAPID3DX10::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 					pShaderMem = (ubyte*)malloc(scHdr.vsSize);
 					pStream->Read(pShaderMem, 1, scHdr.vsSize);
 		
-					if (SUCCEEDED(m_pD3DDevice->CreateVertexShader(pShaderMem, scHdr.vsSize, &pShader->m_pVertexShader)))
+					if (SUCCEEDED(m_pD3DDevice->CreateVertexShader(pShaderMem, scHdr.vsSize, &pShader->m_vertexShader)))
 					{
-						D3D10GetInputSignatureBlob(pShaderMem, scHdr.vsSize, &pShader->m_pInputSignature);
+						D3D10GetInputSignatureBlob(pShaderMem, scHdr.vsSize, &pShader->m_inputSignature);
 						D3D10ReflectShader(pShaderMem, scHdr.vsSize, &vsRefl);
 					}
 
@@ -1477,7 +1265,7 @@ bool ShaderAPID3DX10::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 					pStream->Read(pShaderMem, 1, scHdr.gsSize);
 
 
-					if (SUCCEEDED(m_pD3DDevice->CreateGeometryShader(pShaderMem, scHdr.gsSize, &pShader->m_pGeomShader)))
+					if (SUCCEEDED(m_pD3DDevice->CreateGeometryShader(pShaderMem, scHdr.gsSize, &pShader->m_geomShader)))
 					{
 						D3D10ReflectShader(pShaderMem, scHdr.gsSize, &gsRefl);
 					}
@@ -1491,7 +1279,7 @@ bool ShaderAPID3DX10::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 					pShaderMem = (ubyte*)malloc(scHdr.psSize);
 					pStream->Read(pShaderMem, 1, scHdr.psSize);
 
-					if (SUCCEEDED(m_pD3DDevice->CreatePixelShader(pShaderMem, scHdr.psSize, &pShader->m_pPixelShader)))
+					if (SUCCEEDED(m_pD3DDevice->CreatePixelShader(pShaderMem, scHdr.psSize, &pShader->m_pixelShader)))
 					{
 						D3D10ReflectShader(pShaderMem, scHdr.psSize, &psRefl);
 					}
@@ -1507,7 +1295,7 @@ bool ShaderAPID3DX10::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 			}
 
 			g_fileSystem->Close(pStream);
-			pStream = NULL;
+			pStream = nullptr;
 		}
 
 	}
@@ -1520,7 +1308,7 @@ bool ShaderAPID3DX10::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 		{
 			MsgError("ERROR: Cannot create shader cache for %s\n",pShaderOutput->GetName());
 
-			pStream = NULL;
+			pStream = nullptr;
 		}
 	}
 	else
@@ -1537,15 +1325,15 @@ bool ShaderAPID3DX10::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 	if(pStream) // write empty header
 		pStream->Write(&scHdr, 1, sizeof(shaderCacheHdr_t));
 
-	ID3D10Blob *shaderBuf = NULL;
-	ID3D10Blob *errorsBuf = NULL;
+	ID3D10Blob *shaderBuf = nullptr;
+	ID3D10Blob *errorsBuf = nullptr;
 
 	UINT compileFlags = D3D10_SHADER_PACK_MATRIX_ROW_MAJOR | D3D10_SHADER_ENABLE_STRICTNESS;// | D3D10_SHADER_DEBUG | D3D10_SHADER_SKIP_OPTIMIZATION;
 
-	if (info.vs.text != NULL)
+	if (info.vs.text != nullptr)
 	{
 		EqString shaderString;
-		if (extra  != NULL)
+		if (extra  != nullptr)
 			shaderString.Append(extra);
 
 		// we're always compiling SM 4.0
@@ -1554,15 +1342,15 @@ bool ShaderAPID3DX10::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 
 #ifdef COMPILE_D3D_10_1
 		// Use D3DX functions so we can compile to SM4.1
-		if (SUCCEEDED(D3DX10CompileFromMemory(shaderString.getData(), shaderString.length(), pShader->GetName(), NULL, NULL, "vs_main", "vs_4_1", compileFlags, 0, NULL, &shaderBuf, &errorsBuf, NULL)))
+		if (SUCCEEDED(D3DX10CompileFromMemory(shaderString.getData(), shaderString.length(), pShader->GetName(), nullptr, nullptr, "vs_main", "vs_4_1", compileFlags, 0, nullptr, &shaderBuf, &errorsBuf, nullptr)))
 		{
 #else
-		if (SUCCEEDED(D3D10CompileShader(shaderString.GetData(), shaderString.Length(), pShader->GetName(), NULL, NULL, "vs_main", "vs_4_0", compileFlags, &shaderBuf, &errorsBuf)))
+		if (SUCCEEDED(D3D10CompileShader(shaderString.GetData(), shaderString.Length(), pShader->GetName(), nullptr, nullptr, "vs_main", "vs_4_0", compileFlags, &shaderBuf, &errorsBuf)))
 		{
 #endif
-			if (SUCCEEDED(m_pD3DDevice->CreateVertexShader(shaderBuf->GetBufferPointer(), shaderBuf->GetBufferSize(), &pShader->m_pVertexShader)))
+			if (SUCCEEDED(m_pD3DDevice->CreateVertexShader(shaderBuf->GetBufferPointer(), shaderBuf->GetBufferSize(), &pShader->m_vertexShader)))
 			{
-				D3D10GetInputSignatureBlob(shaderBuf->GetBufferPointer(), shaderBuf->GetBufferSize(), &pShader->m_pInputSignature);
+				D3D10GetInputSignatureBlob(shaderBuf->GetBufferPointer(), shaderBuf->GetBufferSize(), &pShader->m_inputSignature);
 				D3D10ReflectShader(shaderBuf->GetBufferPointer(), shaderBuf->GetBufferSize(), &vsRefl);
 
 				scHdr.vsSize = shaderBuf->GetBufferSize();
@@ -1572,9 +1360,9 @@ bool ShaderAPID3DX10::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 					pStream->Write(shaderBuf->GetBufferPointer(), 1, scHdr.vsSize);
 
 #ifdef _DEBUG
-				ID3D10Blob *disasm = NULL;
+				ID3D10Blob *disasm = nullptr;
 
-				if (SUCCEEDED(D3D10DisassembleShader(shaderBuf->GetBufferPointer(), shaderBuf->GetBufferSize(), FALSE, NULL, &disasm)))
+				if (SUCCEEDED(D3D10DisassembleShader(shaderBuf->GetBufferPointer(), shaderBuf->GetBufferSize(), FALSE, nullptr, &disasm)))
 					MsgAccept("%s\n", (const char *) disasm->GetBufferPointer());
 
 				SAFE_RELEASE(disasm);
@@ -1599,11 +1387,11 @@ bool ShaderAPID3DX10::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 		SAFE_RELEASE(errorsBuf);
 	}
 
-	if (info.gs.text != NULL)
+	if (info.gs.text != nullptr)
 	{
 		EqString shaderString;
 
-		if (extra  != NULL)
+		if (extra  != nullptr)
 			shaderString.Append(extra);
 
 		// we always compiling SM 4.0
@@ -1612,13 +1400,13 @@ bool ShaderAPID3DX10::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 
 #ifdef COMPILE_D3D_10_1
 		// Use D3DX functions so we can compile to SM4.1
-		if (SUCCEEDED(D3DX10CompileFromMemory(shaderString.getData(), shaderString.length(), pShader->GetName(), NULL, NULL, "gs_main", "gs_4_1", compileFlags, 0, NULL, &shaderBuf, &errorsBuf, NULL)))
+		if (SUCCEEDED(D3DX10CompileFromMemory(shaderString.getData(), shaderString.length(), pShader->GetName(), nullptr, nullptr, "gs_main", "gs_4_1", compileFlags, 0, nullptr, &shaderBuf, &errorsBuf, nullptr)))
 		{
 #else
-		if (SUCCEEDED(D3D10CompileShader(shaderString.GetData(), shaderString.Length(), pShader->GetName(), NULL, NULL, "gs_main", "gs_4_0", compileFlags, &shaderBuf, &errorsBuf)))
+		if (SUCCEEDED(D3D10CompileShader(shaderString.GetData(), shaderString.Length(), pShader->GetName(), nullptr, nullptr, "gs_main", "gs_4_0", compileFlags, &shaderBuf, &errorsBuf)))
 		{
 #endif
-			if (SUCCEEDED(m_pD3DDevice->CreateGeometryShader(shaderBuf->GetBufferPointer(), shaderBuf->GetBufferSize(), &pShader->m_pGeomShader)))
+			if (SUCCEEDED(m_pD3DDevice->CreateGeometryShader(shaderBuf->GetBufferPointer(), shaderBuf->GetBufferSize(), &pShader->m_geomShader)))
 			{
 				D3D10ReflectShader(shaderBuf->GetBufferPointer(), shaderBuf->GetBufferSize(), &gsRefl);
 
@@ -1628,8 +1416,8 @@ bool ShaderAPID3DX10::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 				if(pStream)
 					pStream->Write(shaderBuf->GetBufferPointer(), 1, scHdr.gsSize);
 #ifdef _DEBUG
-				ID3D10Blob *disasm = NULL;
-				if (SUCCEEDED(D3D10DisassembleShader(shaderBuf->GetBufferPointer(), shaderBuf->GetBufferSize(), FALSE, NULL, &disasm)))
+				ID3D10Blob *disasm = nullptr;
+				if (SUCCEEDED(D3D10DisassembleShader(shaderBuf->GetBufferPointer(), shaderBuf->GetBufferSize(), FALSE, nullptr, &disasm)))
 					MsgAccept("%s\n", (const char *) disasm->GetBufferPointer());
 
 				SAFE_RELEASE(disasm);
@@ -1654,10 +1442,10 @@ bool ShaderAPID3DX10::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 		SAFE_RELEASE(errorsBuf);
 	}
 
-	if (info.ps.text != NULL)
+	if (info.ps.text != nullptr)
 	{
 		EqString shaderString;
-		if (extra  != NULL)
+		if (extra  != nullptr)
 			shaderString.Append(extra);
 
 		// we always compiling SM 4.0
@@ -1666,13 +1454,13 @@ bool ShaderAPID3DX10::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 
 #ifdef COMPILE_D3D_10_1
 		// Use D3DX functions so we can compile to SM4.1
-		if (SUCCEEDED(D3DX10CompileFromMemory(shaderString.getData(), shaderString.length(), pShader->GetName(), NULL, NULL, "ps_main", "ps_4_1", compileFlags, 0, NULL, &shaderBuf, &errorsBuf, NULL)))
+		if (SUCCEEDED(D3DX10CompileFromMemory(shaderString.getData(), shaderString.length(), pShader->GetName(), nullptr, nullptr, "ps_main", "ps_4_1", compileFlags, 0, nullptr, &shaderBuf, &errorsBuf, nullptr)))
 		{
 #else
-		if (SUCCEEDED(D3D10CompileShader(shaderString.GetData(), shaderString.Length(), pShader->GetName(), NULL, NULL, "ps_main", "ps_4_0", compileFlags, &shaderBuf, &errorsBuf)))
+		if (SUCCEEDED(D3D10CompileShader(shaderString.GetData(), shaderString.Length(), pShader->GetName(), nullptr, nullptr, "ps_main", "ps_4_0", compileFlags, &shaderBuf, &errorsBuf)))
 		{
 #endif
-			if (SUCCEEDED(m_pD3DDevice->CreatePixelShader(shaderBuf->GetBufferPointer(), shaderBuf->GetBufferSize(), &pShader->m_pPixelShader)))
+			if (SUCCEEDED(m_pD3DDevice->CreatePixelShader(shaderBuf->GetBufferPointer(), shaderBuf->GetBufferSize(), &pShader->m_pixelShader)))
 			{
 				D3D10ReflectShader(shaderBuf->GetBufferPointer(), shaderBuf->GetBufferSize(), &psRefl);
 
@@ -1682,9 +1470,9 @@ bool ShaderAPID3DX10::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 				if(pStream)
 					pStream->Write(shaderBuf->GetBufferPointer(), 1, scHdr.psSize);
 #ifdef _DEBUG
-				ID3D10Blob *disasm = NULL;
+				ID3D10Blob *disasm = nullptr;
 
-				if (SUCCEEDED(D3D10DisassembleShader(shaderBuf->GetBufferPointer(), shaderBuf->GetBufferSize(), FALSE, NULL, &disasm)))
+				if (SUCCEEDED(D3D10DisassembleShader(shaderBuf->GetBufferPointer(), shaderBuf->GetBufferSize(), FALSE, nullptr, &disasm)))
 					MsgAccept("%s\n", (const char *) disasm->GetBufferPointer());
 
 				SAFE_RELEASE(disasm);
@@ -1731,10 +1519,10 @@ create_constant_buffers:
 
 		if (vsDesc.ConstantBuffers)
 		{
-			pShader->m_nVSCBuffers = vsDesc.ConstantBuffers;
-			pShader->m_pvsConstants = new ID3D10Buffer *[pShader->m_nVSCBuffers];
-			pShader->m_pvsConstMem = new ubyte *[pShader->m_nVSCBuffers];
-			pShader->m_pvsDirty = new bool[pShader->m_nVSCBuffers];
+			pShader->m_VSCBuffers = vsDesc.ConstantBuffers;
+			pShader->m_vsConstants = new ID3D10Buffer *[pShader->m_VSCBuffers];
+			pShader->m_vsConstMem = new ubyte *[pShader->m_VSCBuffers];
+			pShader->m_vsDirty = new bool[pShader->m_VSCBuffers];
 		}
 	}
 	if (gsRefl)
@@ -1743,10 +1531,10 @@ create_constant_buffers:
 
 		if (gsDesc.ConstantBuffers)
 		{
-			pShader->m_nGSCBuffers = gsDesc.ConstantBuffers;
-			pShader->m_pgsConstants = new ID3D10Buffer *[pShader->m_nGSCBuffers];
-			pShader->m_pgsConstMem = new ubyte *[pShader->m_nGSCBuffers];
-			pShader->m_pgsDirty = new bool[pShader->m_nGSCBuffers];
+			pShader->m_GSCBuffers = gsDesc.ConstantBuffers;
+			pShader->m_gsConstants = new ID3D10Buffer *[pShader->m_GSCBuffers];
+			pShader->m_gsConstMem = new ubyte *[pShader->m_GSCBuffers];
+			pShader->m_gsDirty = new bool[pShader->m_GSCBuffers];
 		}
 	}
 	if (psRefl)
@@ -1755,10 +1543,10 @@ create_constant_buffers:
 
 		if (psDesc.ConstantBuffers)
 		{
-			pShader->m_nPSCBuffers = psDesc.ConstantBuffers;
-			pShader->m_ppsConstants = new ID3D10Buffer *[pShader->m_nPSCBuffers];
-			pShader->m_ppsConstMem = new ubyte *[pShader->m_nPSCBuffers];
-			pShader->m_ppsDirty = new bool[pShader->m_nPSCBuffers];
+			pShader->m_PSCBuffers = psDesc.ConstantBuffers;
+			pShader->m_psConstants = new ID3D10Buffer *[pShader->m_PSCBuffers];
+			pShader->m_psConstMem = new ubyte *[pShader->m_PSCBuffers];
+			pShader->m_psDirty = new bool[pShader->m_PSCBuffers];
 		}
 	}
 
@@ -1770,28 +1558,28 @@ create_constant_buffers:
 	cbDesc.CPUAccessFlags = 0;//D3D10_CPU_ACCESS_WRITE;
 	cbDesc.MiscFlags = 0;
 
-	DkList <DX10ShaderConstant_t> constants;
+	Array<DX10ShaderConstant> constants(PP_SL);
 
-	for (uint i = 0; i < pShader->m_nVSCBuffers; i++)
+	for (uint i = 0; i < pShader->m_VSCBuffers; i++)
 	{
 		vsRefl->GetConstantBufferByIndex(i)->GetDesc(&sbDesc);
 
 		cbDesc.ByteWidth = sbDesc.Size;
-		m_pD3DDevice->CreateBuffer(&cbDesc, NULL, &pShader->m_pvsConstants[i]);
+		m_pD3DDevice->CreateBuffer(&cbDesc, nullptr, &pShader->m_vsConstants[i]);
 
-		pShader->m_pvsConstMem[i] = new ubyte[sbDesc.Size];
+		pShader->m_vsConstMem[i] = new ubyte[sbDesc.Size];
 		for (uint k = 0; k < sbDesc.Variables; k++)
 		{
 			D3D10_SHADER_VARIABLE_DESC vDesc;
 			vsRefl->GetConstantBufferByIndex(i)->GetVariableByIndex(k)->GetDesc(&vDesc);
 
-			DX10ShaderConstant_t constant;
+			DX10ShaderConstant constant;
 			size_t length = strlen(vDesc.Name);
 			constant.name = new char[length + 1];
 			strcpy(constant.name, vDesc.Name);
-			constant.vsData = pShader->m_pvsConstMem[i] + vDesc.StartOffset;
-			constant.gsData = NULL;
-			constant.psData = NULL;
+			constant.vsData = pShader->m_vsConstMem[i] + vDesc.StartOffset;
+			constant.gsData = nullptr;
+			constant.psData = nullptr;
 			constant.vsBuffer = i;
 			constant.gsBuffer = -1;
 			constant.psBuffer = -1;
@@ -1801,18 +1589,18 @@ create_constant_buffers:
 			constants.append(constant);
 		}
 
-		pShader->m_pvsDirty[i] = false;
+		pShader->m_vsDirty[i] = false;
 	}
 
 	uint maxConst = constants.numElem();
-	for (uint i = 0; i < pShader->m_nGSCBuffers; i++)
+	for (uint i = 0; i < pShader->m_GSCBuffers; i++)
 	{
 		gsRefl->GetConstantBufferByIndex(i)->GetDesc(&sbDesc);
 
 		cbDesc.ByteWidth = sbDesc.Size;
-		m_pD3DDevice->CreateBuffer(&cbDesc, NULL, &pShader->m_pgsConstants[i]);
+		m_pD3DDevice->CreateBuffer(&cbDesc, nullptr, &pShader->m_gsConstants[i]);
 
-		pShader->m_pgsConstMem[i] = new ubyte[sbDesc.Size];
+		pShader->m_gsConstMem[i] = new ubyte[sbDesc.Size];
 		for (uint j = 0; j < sbDesc.Variables; j++)
 		{
 			D3D10_SHADER_VARIABLE_DESC vDesc;
@@ -1830,13 +1618,13 @@ create_constant_buffers:
 
 			if (merge < 0)
 			{
-				DX10ShaderConstant_t constant;
+				DX10ShaderConstant constant;
 				size_t length = strlen(vDesc.Name);
 				constant.name = new char[length + 1];
 				strcpy(constant.name, vDesc.Name);
-				constant.vsData = NULL;
-				constant.gsData = pShader->m_pgsConstMem[i] + vDesc.StartOffset;
-				constant.psData = NULL;
+				constant.vsData = nullptr;
+				constant.gsData = pShader->m_gsConstMem[i] + vDesc.StartOffset;
+				constant.psData = nullptr;
 				constant.vsBuffer = -1;
 				constant.gsBuffer = i;
 				constant.psBuffer = -1;
@@ -1847,24 +1635,24 @@ create_constant_buffers:
 			}
 			else
 			{
-				constants[merge].gsData = pShader->m_pgsConstMem[i] + vDesc.StartOffset;
+				constants[merge].gsData = pShader->m_gsConstMem[i] + vDesc.StartOffset;
 				constants[merge].gsBuffer = i;
 				constants[merge].constFlags |= SCONST_GEOMETRY; // add shader setup flags
 			}
 		}
 
-		pShader->m_pgsDirty[i] = false;
+		pShader->m_gsDirty[i] = false;
 	}
 
 	maxConst = constants.numElem();
-	for (uint i = 0; i < pShader->m_nPSCBuffers; i++)
+	for (uint i = 0; i < pShader->m_PSCBuffers; i++)
 	{
 		psRefl->GetConstantBufferByIndex(i)->GetDesc(&sbDesc);
 
 		cbDesc.ByteWidth = sbDesc.Size;
-		m_pD3DDevice->CreateBuffer(&cbDesc, NULL, &pShader->m_ppsConstants[i]);
+		m_pD3DDevice->CreateBuffer(&cbDesc, nullptr, &pShader->m_psConstants[i]);
 
-		pShader->m_ppsConstMem[i] = new ubyte[sbDesc.Size];
+		pShader->m_psConstMem[i] = new ubyte[sbDesc.Size];
 		for (uint j = 0; j < sbDesc.Variables; j++)
 		{
 			D3D10_SHADER_VARIABLE_DESC vDesc;
@@ -1882,13 +1670,13 @@ create_constant_buffers:
 
 			if (merge < 0)
 			{
-				DX10ShaderConstant_t constant;
+				DX10ShaderConstant constant;
 				size_t length = strlen(vDesc.Name);
 				constant.name = new char[length + 1];
 				strcpy(constant.name, vDesc.Name);
-				constant.vsData = NULL;
-				constant.gsData = NULL;
-				constant.psData = pShader->m_ppsConstMem[i] + vDesc.StartOffset;
+				constant.vsData = nullptr;
+				constant.gsData = nullptr;
+				constant.psData = pShader->m_psConstMem[i] + vDesc.StartOffset;
 				constant.vsBuffer = -1;
 				constant.gsBuffer = -1;
 				constant.psBuffer = i;
@@ -1899,20 +1687,20 @@ create_constant_buffers:
 			}
 			else
 			{
-				constants[merge].psData = pShader->m_ppsConstMem[i] + vDesc.StartOffset;
+				constants[merge].psData = pShader->m_psConstMem[i] + vDesc.StartOffset;
 				constants[merge].psBuffer = i;
 				constants[merge].constFlags |= SCONST_PIXEL; // add shader setup flags
 			}
 		}
 
-		pShader->m_ppsDirty[i] = false;
+		pShader->m_psDirty[i] = false;
 	}
 
 	pShader->m_numConstants = constants.numElem();
-	pShader->m_pConstants = new DX10ShaderConstant_t[pShader->m_numConstants];
+	pShader->m_constants = new DX10ShaderConstant[pShader->m_numConstants];
 
-	memcpy(pShader->m_pConstants, constants.ptr(), pShader->m_numConstants * sizeof(DX10ShaderConstant_t));
-	qsort(pShader->m_pConstants, pShader->m_numConstants, sizeof(DX10ShaderConstant_t), ConstantComp);
+	memcpy(pShader->m_constants, constants.ptr(), pShader->m_numConstants * sizeof(DX10ShaderConstant));
+	qsort(pShader->m_constants, pShader->m_numConstants, sizeof(DX10ShaderConstant), ConstantComp);
 
 	uint nMaxVSRes = vsRefl? vsDesc.BoundResources : 0;
 	uint nMaxGSRes = gsRefl? gsDesc.BoundResources : 0;
@@ -1922,8 +1710,8 @@ create_constant_buffers:
 
 	if (maxResources > 0)
 	{
-		pShader->m_pTextures = (Sampler_t *) malloc(maxResources * sizeof(Sampler_t));
-		pShader->m_pSamplers = (Sampler_t *) malloc(maxResources * sizeof(Sampler_t));
+		pShader->m_textures = (DX10Sampler_t *) malloc(maxResources * sizeof(DX10Sampler_t));
+		pShader->m_samplers = (DX10Sampler_t *) malloc(maxResources * sizeof(DX10Sampler_t));
 		pShader->m_numTextures = 0;
 		pShader->m_numSamplers = 0;
 
@@ -1935,19 +1723,19 @@ create_constant_buffers:
 			if (siDesc.Type == D3D10_SIT_TEXTURE)
 			{
 				//size_t length = strlen(siDesc.Name);
-				strcpy(pShader->m_pTextures[pShader->m_numTextures].name, siDesc.Name);
-				pShader->m_pTextures[pShader->m_numTextures].vsIndex = siDesc.BindPoint;
-				pShader->m_pTextures[pShader->m_numTextures].gsIndex = 0xFFFFFFFF;
-				pShader->m_pTextures[pShader->m_numTextures].index = 0xFFFFFFFF;
+				strcpy(pShader->m_textures[pShader->m_numTextures].name, siDesc.Name);
+				pShader->m_textures[pShader->m_numTextures].vsIndex = siDesc.BindPoint;
+				pShader->m_textures[pShader->m_numTextures].gsIndex = 0xFFFFFFFF;
+				pShader->m_textures[pShader->m_numTextures].index = 0xFFFFFFFF;
 				pShader->m_numTextures++;
 			}
 			else if (siDesc.Type == D3D10_SIT_SAMPLER)
 			{
 				//size_t length = strlen(siDesc.Name);
-				strcpy(pShader->m_pSamplers[pShader->m_numSamplers].name, siDesc.Name);
-				pShader->m_pSamplers[pShader->m_numSamplers].vsIndex = siDesc.BindPoint;
-				pShader->m_pSamplers[pShader->m_numSamplers].gsIndex = 0xFFFFFFFF;
-				pShader->m_pSamplers[pShader->m_numSamplers].index = 0xFFFFFFFF;
+				strcpy(pShader->m_samplers[pShader->m_numSamplers].name, siDesc.Name);
+				pShader->m_samplers[pShader->m_numSamplers].vsIndex = siDesc.BindPoint;
+				pShader->m_samplers[pShader->m_numSamplers].gsIndex = 0xFFFFFFFF;
+				pShader->m_samplers[pShader->m_numSamplers].index = 0xFFFFFFFF;
 				pShader->m_numSamplers++;
 			}
 		}
@@ -1962,7 +1750,7 @@ create_constant_buffers:
 				int merge = -1;
 				for (uint j = 0; j < maxTexture; j++)
 				{
-					if (strcmp(pShader->m_pTextures[j].name, siDesc.Name) == 0)
+					if (strcmp(pShader->m_textures[j].name, siDesc.Name) == 0)
 					{
 						merge = j;
 						break;
@@ -1972,15 +1760,15 @@ create_constant_buffers:
 				if (merge < 0)
 				{
 					//size_t length = strlen(siDesc.Name);
-					strcpy(pShader->m_pTextures[pShader->m_numTextures].name, siDesc.Name);
-					pShader->m_pTextures[pShader->m_numTextures].vsIndex = 0xFFFFFFFF;
-					pShader->m_pTextures[pShader->m_numTextures].gsIndex = siDesc.BindPoint;
-					pShader->m_pTextures[pShader->m_numTextures].index = 0xFFFFFFFF;
+					strcpy(pShader->m_textures[pShader->m_numTextures].name, siDesc.Name);
+					pShader->m_textures[pShader->m_numTextures].vsIndex = 0xFFFFFFFF;
+					pShader->m_textures[pShader->m_numTextures].gsIndex = siDesc.BindPoint;
+					pShader->m_textures[pShader->m_numTextures].index = 0xFFFFFFFF;
 					pShader->m_numTextures++;
 				}
 				else
 				{
-					pShader->m_pTextures[merge].gsIndex = siDesc.BindPoint;
+					pShader->m_textures[merge].gsIndex = siDesc.BindPoint;
 				}
 			}
 			else if (siDesc.Type == D3D10_SIT_SAMPLER)
@@ -1988,7 +1776,7 @@ create_constant_buffers:
 				int merge = -1;
 				for (uint j = 0; j < maxSampler; j++)
 				{
-					if (strcmp(pShader->m_pSamplers[j].name, siDesc.Name) == 0)
+					if (strcmp(pShader->m_samplers[j].name, siDesc.Name) == 0)
 					{
 						merge = j;
 						break;
@@ -1998,15 +1786,15 @@ create_constant_buffers:
 				if (merge < 0)
 				{
 					//size_t length = strlen(siDesc.Name);
-					strcpy(pShader->m_pSamplers[pShader->m_numSamplers].name, siDesc.Name);
-					pShader->m_pSamplers[pShader->m_numSamplers].vsIndex = 0xFFFFFFFF;
-					pShader->m_pSamplers[pShader->m_numSamplers].gsIndex = siDesc.BindPoint;
-					pShader->m_pSamplers[pShader->m_numSamplers].index = 0xFFFFFFFF;
+					strcpy(pShader->m_samplers[pShader->m_numSamplers].name, siDesc.Name);
+					pShader->m_samplers[pShader->m_numSamplers].vsIndex = 0xFFFFFFFF;
+					pShader->m_samplers[pShader->m_numSamplers].gsIndex = siDesc.BindPoint;
+					pShader->m_samplers[pShader->m_numSamplers].index = 0xFFFFFFFF;
 					pShader->m_numSamplers++;
 				}
 				else
 				{
-					pShader->m_pSamplers[merge].gsIndex = siDesc.BindPoint;
+					pShader->m_samplers[merge].gsIndex = siDesc.BindPoint;
 				}
 			}
 		}
@@ -2021,7 +1809,7 @@ create_constant_buffers:
 				int merge = -1;
 				for (uint j = 0; j < maxTexture; j++)
 				{
-					if (strcmp(pShader->m_pTextures[j].name, siDesc.Name) == 0)
+					if (strcmp(pShader->m_textures[j].name, siDesc.Name) == 0)
 					{
 						merge = j;
 						break;
@@ -2031,15 +1819,15 @@ create_constant_buffers:
 				if (merge < 0)
 				{
 					//size_t length = strlen(siDesc.Name);
-					strcpy(pShader->m_pTextures[pShader->m_numTextures].name, siDesc.Name);
-					pShader->m_pTextures[pShader->m_numTextures].vsIndex = 0xFFFFFFFF;
-					pShader->m_pTextures[pShader->m_numTextures].gsIndex = 0xFFFFFFFF;
-					pShader->m_pTextures[pShader->m_numTextures].index = siDesc.BindPoint;
+					strcpy(pShader->m_textures[pShader->m_numTextures].name, siDesc.Name);
+					pShader->m_textures[pShader->m_numTextures].vsIndex = 0xFFFFFFFF;
+					pShader->m_textures[pShader->m_numTextures].gsIndex = 0xFFFFFFFF;
+					pShader->m_textures[pShader->m_numTextures].index = siDesc.BindPoint;
 					pShader->m_numTextures++;
 				}
 				else
 				{
-					pShader->m_pTextures[merge].index = siDesc.BindPoint;
+					pShader->m_textures[merge].index = siDesc.BindPoint;
 				}
 			}
 			else if (siDesc.Type == D3D10_SIT_SAMPLER)
@@ -2047,7 +1835,7 @@ create_constant_buffers:
 				int merge = -1;
 				for (uint j = 0; j < maxSampler; j++)
 				{
-					if (strcmp(pShader->m_pSamplers[j].name, siDesc.Name) == 0)
+					if (strcmp(pShader->m_samplers[j].name, siDesc.Name) == 0)
 					{
 						merge = j;
 						break;
@@ -2057,24 +1845,24 @@ create_constant_buffers:
 				if (merge < 0)
 				{
 					//size_t length = strlen(siDesc.Name);
-					strcpy(pShader->m_pSamplers[pShader->m_numSamplers].name, siDesc.Name);
-					pShader->m_pSamplers[pShader->m_numSamplers].vsIndex = 0xFFFFFFFF;
-					pShader->m_pSamplers[pShader->m_numSamplers].gsIndex = 0xFFFFFFFF;
-					pShader->m_pSamplers[pShader->m_numSamplers].index = siDesc.BindPoint;
+					strcpy(pShader->m_samplers[pShader->m_numSamplers].name, siDesc.Name);
+					pShader->m_samplers[pShader->m_numSamplers].vsIndex = 0xFFFFFFFF;
+					pShader->m_samplers[pShader->m_numSamplers].gsIndex = 0xFFFFFFFF;
+					pShader->m_samplers[pShader->m_numSamplers].index = siDesc.BindPoint;
 					pShader->m_numSamplers++;
 				}
 				else
 				{
-					pShader->m_pSamplers[merge].index = siDesc.BindPoint;
+					pShader->m_samplers[merge].index = siDesc.BindPoint;
 				}
 			}
 		}
 
-		pShader->m_pTextures = (Sampler_t *) realloc(pShader->m_pTextures, pShader->m_numTextures * sizeof(Sampler_t));
-		pShader->m_pSamplers = (Sampler_t *) realloc(pShader->m_pSamplers, pShader->m_numSamplers * sizeof(Sampler_t));
+		pShader->m_textures = (DX10Sampler_t *) realloc(pShader->m_textures, pShader->m_numTextures * sizeof(DX10Sampler_t));
+		pShader->m_samplers = (DX10Sampler_t *) realloc(pShader->m_samplers, pShader->m_numSamplers * sizeof(DX10Sampler_t));
 
-		qsort(pShader->m_pTextures, pShader->m_numTextures, sizeof(Sampler_t), SamplerComp);
-		qsort(pShader->m_pSamplers, pShader->m_numSamplers, sizeof(Sampler_t), SamplerComp);
+		qsort(pShader->m_textures, pShader->m_numTextures, sizeof(DX10Sampler_t), SamplerComp);
+		qsort(pShader->m_samplers, pShader->m_numSamplers, sizeof(DX10Sampler_t), SamplerComp);
 	}
 
 	if (vsRefl)
@@ -2095,430 +1883,18 @@ void ShaderAPID3DX10::SetShader(IShaderProgram* pShader)
 	m_pSelectedShader = pShader;
 }
 
-int	ShaderAPID3DX10::GetSamplerUnit(IShaderProgram* pProgram,const char* pszSamplerName)
-{
-	/*
-	CD3D9ShaderProgram* pShader = dynamic_cast<CD3D9ShaderProgram*>(pProgram);
-	if(!pShader)
-		return -1;
-
-	Sampler_t *samplers = pShader->m_pSamplers;
-	int minSampler = 0;
-	int maxSampler = pShader->m_numSamplers - 1;
-
-	// Do a quick lookup in the sorted table with a binary search
-	while (minSampler <= maxSampler)
-	{
-		int currSampler = (minSampler + maxSampler) >> 1;
-        int res = strcmp(pszSamplerName, samplers[currSampler].name);
-
-		if (res == 0)
-		{
-			return samplers[currSampler].index;
-		} 
-		else if (res > 0)
-		{
-            minSampler = currSampler + 1;
-		} 
-		else 
-		{
-            maxSampler = currSampler - 1;
-		}
-	}
-
-	*/
-	return -1;
-}
-
-// Set Texture for shader
-void ShaderAPID3DX10::SetShaderTexture(const char* pszName, ITexture* pTexture)
-{
-	int unit = GetSamplerUnit(m_pSelectedShader, pszName);
-
-	if (unit >= 0)
-	{
-		m_pSelectedTextures[unit] = pTexture;
-	}
-}
-
-/*
-void ShaderAPID3DX10::SetShaderConstantInt(const char *pszName, const int constant)
-{
-	CD3D9ShaderProgram* pShader = dynamic_cast<CD3D9ShaderProgram*>(m_pSelectedShader);
-
-	if(!pShader)
-	{
-		return;
-	}
-
-	D3DXHANDLE handle;
-	if (pShader->m_pVertexShader != NULL)
-	{
-		if (pShader->m_pVSConstants != NULL)
-		{
-			if (handle = pShader->m_pVSConstants->GetConstantByName(NULL, pszName))
-			{
-				pShader->m_pVSConstants->SetInt(m_pD3DDevice, handle, constant);
-			}
-		}
-	}
-
-	if (pShader->m_pPixelShader != NULL)
-	{
-		if (pShader->m_pPSConstants != NULL)
-		{
-			if (handle = pShader->m_pPSConstants->GetConstantByName(NULL, pszName))
-			{
-				pShader->m_pPSConstants->SetInt(m_pD3DDevice, handle, constant);
-			}
-		}
-	}
-}
-
-void ShaderAPID3DX10::SetShaderConstantFloat(const char *pszName, const float constant)
-{
-	CD3D9ShaderProgram* pShader = dynamic_cast<CD3D9ShaderProgram*>(m_pSelectedShader);
-
-	if(!pShader)
-	{
-		return;
-	}
-
-	D3DXHANDLE handle;
-	if (pShader->m_pVertexShader != NULL)
-	{
-		if (pShader->m_pVSConstants != NULL)
-		{
-			if (handle = pShader->m_pVSConstants->GetConstantByName(NULL, pszName))
-			{
-				pShader->m_pVSConstants->SetFloat(m_pD3DDevice, handle, constant);
-			}
-		}
-	}
-
-	if (pShader->m_pPixelShader != NULL)
-	{
-		if (pShader->m_pPSConstants != NULL)
-		{
-			if (handle = pShader->m_pPSConstants->GetConstantByName(NULL, pszName))
-			{
-				pShader->m_pPSConstants->SetFloat(m_pD3DDevice, handle, constant);
-			}
-		}
-	}
-}
-
-void ShaderAPID3DX10::SetShaderConstantVector2D(const char *pszName, const Vector2D &constant)
-{
-	CD3D9ShaderProgram* pShader = dynamic_cast<CD3D9ShaderProgram*>(m_pSelectedShader);
-
-	if(!pShader)
-	{
-		return;
-	}
-
-	D3DXHANDLE handle;
-	if (pShader->m_pVertexShader != NULL)
-	{
-		if (pShader->m_pVSConstants != NULL)
-		{
-			if (handle = pShader->m_pVSConstants->GetConstantByName(NULL, pszName))
-			{
-				pShader->m_pVSConstants->SetFloatArray(m_pD3DDevice, handle, (FLOAT *) &constant, 2);
-			}
-		}
-	}
-
-	if (pShader->m_pPixelShader != NULL)
-	{
-		if (pShader->m_pPSConstants != NULL)
-		{
-			if (handle = pShader->m_pPSConstants->GetConstantByName(NULL, pszName))
-			{
-				pShader->m_pPSConstants->SetFloatArray(m_pD3DDevice, handle, (FLOAT *) &constant, 2);
-			}
-		}
-	}
-}
-
-void ShaderAPID3DX10::SetShaderConstantVector3D(const char *pszName, const Vector3D &constant)
-{
-	CD3D9ShaderProgram* pShader = dynamic_cast<CD3D9ShaderProgram*>(m_pSelectedShader);
-
-	if(!pShader)
-	{
-		return;
-	}
-
-	D3DXHANDLE handle;
-	if (pShader->m_pVertexShader != NULL)
-	{
-		if (pShader->m_pVSConstants != NULL)
-		{
-			if (handle = pShader->m_pVSConstants->GetConstantByName(NULL, pszName))
-			{
-				pShader->m_pVSConstants->SetFloatArray(m_pD3DDevice, handle, (FLOAT *) &constant, 3);
-			}
-		}
-	}
-
-	if (pShader->m_pPixelShader != NULL)
-	{
-		if (pShader->m_pPSConstants != NULL)
-		{
-			if (handle = pShader->m_pPSConstants->GetConstantByName(NULL, pszName))
-			{
-				pShader->m_pPSConstants->SetFloatArray(m_pD3DDevice, handle, (FLOAT *) &constant, 3);
-			}
-		}
-	}
-}
-
-void ShaderAPID3DX10::SetShaderConstantVector4D(const char *pszName, const Vector4D &constant)
-{
-	CD3D9ShaderProgram* pShader = dynamic_cast<CD3D9ShaderProgram*>(m_pSelectedShader);
-
-	if(!pShader)
-	{
-		return;
-	}
-
-	D3DXHANDLE handle;
-	if (pShader->m_pVertexShader != NULL)
-	{
-		if (pShader->m_pVSConstants != NULL)
-		{
-			if (handle = pShader->m_pVSConstants->GetConstantByName(NULL, pszName))
-			{
-				pShader->m_pVSConstants->SetVector(m_pD3DDevice, handle, (D3DXVECTOR4 *) &constant);
-			}
-		}
-	}
-
-	if (pShader->m_pPixelShader != NULL)
-	{
-		if (pShader->m_pPSConstants != NULL)
-		{
-			if (handle = pShader->m_pPSConstants->GetConstantByName(NULL, pszName))
-			{
-				pShader->m_pPSConstants->SetVector(m_pD3DDevice, handle, (D3DXVECTOR4 *) &constant);
-			}
-		}
-	}
-}
-
-// do quick setup for matrices
-void ShaderAPID3DX10::SetShaderConstantMatrix4(const char *pszName, const Matrix4x4 &constant)
-{
-	CD3D9ShaderProgram* pShader = dynamic_cast<CD3D9ShaderProgram*>(m_pSelectedShader);
-
-	if(!pShader)
-	{
-		return;
-	}
-
-	D3DXHANDLE handle;
-	if (pShader->m_pVertexShader != NULL)
-	{
-		if (pShader->m_pVSConstants != NULL)
-		{
-			if (handle = pShader->m_pVSConstants->GetConstantByName(NULL, pszName))
-			{
-				pShader->m_pVSConstants->SetMatrix(m_pD3DDevice, handle, (D3DXMATRIX *) &constant);
-			}
-		}
-	}
-
-	if (pShader->m_pPixelShader != NULL)
-	{
-		if (pShader->m_pPSConstants != NULL)
-		{
-			if (handle = pShader->m_pPSConstants->GetConstantByName(NULL, pszName))
-			{
-				pShader->m_pPSConstants->SetMatrix(m_pD3DDevice, handle, (D3DXMATRIX *) &constant);
-			}
-		}
-	}
-}
-
-void ShaderAPID3DX10::SetShaderConstantArrayFloat(const char *pszName, const float *constant, int count)
-{
-	CD3D9ShaderProgram* pShader = dynamic_cast<CD3D9ShaderProgram*>(m_pSelectedShader);
-
-	if(!pShader)
-	{
-		return;
-	}
-
-	D3DXHANDLE handle;
-	if (pShader->m_pVertexShader != NULL)
-	{
-		if (pShader->m_pVSConstants != NULL)
-		{
-			if (handle = pShader->m_pVSConstants->GetConstantByName(NULL, pszName))
-			{
-				pShader->m_pVSConstants->SetFloatArray(m_pD3DDevice, handle, (FLOAT *) &constant, count);
-			}
-		}
-	}
-
-	if (pShader->m_pPixelShader != NULL)
-	{
-		if (pShader->m_pPSConstants != NULL)
-		{
-			if (handle = pShader->m_pPSConstants->GetConstantByName(NULL, pszName))
-			{
-				pShader->m_pPSConstants->SetFloatArray(m_pD3DDevice, handle, (FLOAT *) &constant, count);
-			}
-		}
-	}
-}
-
-void ShaderAPID3DX10::SetShaderConstantArrayVector2D(const char *pszName, const Vector2D *constant, int count)
-{
-	CD3D9ShaderProgram* pShader = dynamic_cast<CD3D9ShaderProgram*>(m_pSelectedShader);
-
-	if(!pShader)
-	{
-		return;
-	}
-
-	D3DXHANDLE handle;
-	if (pShader->m_pVertexShader != NULL)
-	{
-		if (pShader->m_pVSConstants != NULL)
-		{
-			if (handle = pShader->m_pVSConstants->GetConstantByName(NULL, pszName))
-			{
-				pShader->m_pVSConstants->SetFloatArray(m_pD3DDevice, handle, (FLOAT *) &constant, count * 2);
-			}
-		}
-	}
-
-	if (pShader->m_pPixelShader != NULL)
-	{
-		if (pShader->m_pPSConstants != NULL)
-		{
-			if (handle = pShader->m_pPSConstants->GetConstantByName(NULL, pszName))
-			{
-				pShader->m_pPSConstants->SetFloatArray(m_pD3DDevice, handle, (FLOAT *) &constant, count * 2);
-			}
-		}
-	}
-}
-
-void ShaderAPID3DX10::SetShaderConstantArrayVector3D(const char *pszName, const Vector3D *constant, int count)
-{
-	CD3D9ShaderProgram* pShader = dynamic_cast<CD3D9ShaderProgram*>(m_pSelectedShader);
-
-	if(!pShader)
-	{
-		return;
-	}
-
-	D3DXHANDLE handle;
-	if (pShader->m_pVertexShader != NULL)
-	{
-		if (pShader->m_pVSConstants != NULL)
-		{
-			if (handle = pShader->m_pVSConstants->GetConstantByName(NULL, pszName))
-			{
-				pShader->m_pVSConstants->SetFloatArray(m_pD3DDevice, handle, (FLOAT *) &constant, count * 3);
-			}
-		}
-	}
-
-	if (pShader->m_pPixelShader != NULL)
-	{
-		if (pShader->m_pPSConstants != NULL)
-		{
-			if (handle = pShader->m_pPSConstants->GetConstantByName(NULL, pszName))
-			{
-				pShader->m_pPSConstants->SetFloatArray(m_pD3DDevice, handle, (FLOAT *) &constant, count * 3);
-			}
-		}
-	}
-}
-
-void ShaderAPID3DX10::SetShaderConstantArrayVector4D(const char *pszName, const Vector4D *constant, int count)
-{
-	CD3D9ShaderProgram* pShader = dynamic_cast<CD3D9ShaderProgram*>(m_pSelectedShader);
-
-	if(!pShader)
-	{
-		return;
-	}
-
-	D3DXHANDLE handle;
-	if (pShader->m_pVertexShader != NULL)
-	{
-		if (pShader->m_pVSConstants != NULL)
-		{
-			if (handle = pShader->m_pVSConstants->GetConstantByName(NULL, pszName))
-			{
-				pShader->m_pVSConstants->SetVectorArray(m_pD3DDevice, handle, (D3DXVECTOR4 *) &constant, count);
-			}
-		}
-	}
-
-	if (pShader->m_pPixelShader != NULL)
-	{
-		if (pShader->m_pPSConstants != NULL)
-		{
-			if (handle = pShader->m_pPSConstants->GetConstantByName(NULL, pszName))
-			{
-				pShader->m_pPSConstants->SetVectorArray(m_pD3DDevice, handle, (D3DXVECTOR4 *) &constant, count);
-			}
-		}
-	}
-}
-
-void ShaderAPID3DX10::SetShaderConstantArrayMatrix4(const char *pszName, const Matrix4x4 *constant, int count)
-{
-	CD3D9ShaderProgram* pShader = dynamic_cast<CD3D9ShaderProgram*>(m_pSelectedShader);
-
-	if(!pShader)
-	{
-		return;
-	}
-
-	D3DXHANDLE handle;
-	if (pShader->m_pVertexShader != NULL)
-	{
-		if (pShader->m_pVSConstants != NULL)
-		{
-			if (handle = pShader->m_pVSConstants->GetConstantByName(NULL, pszName))
-			{
-				pShader->m_pVSConstants->SetMatrixArray(m_pD3DDevice, handle, (D3DXMATRIX *) &constant, count);
-			}
-		}
-	}
-
-	if (pShader->m_pPixelShader != NULL)
-	{
-		if (pShader->m_pPSConstants != NULL)
-		{
-			if (handle = pShader->m_pPSConstants->GetConstantByName(NULL, pszName))
-			{
-				pShader->m_pPSConstants->SetMatrixArray(m_pD3DDevice, handle, (D3DXMATRIX *) &constant, count);
-			}
-		}
-	}
-}
-*/
-
 // RAW Constant (Used for structure types, etc.)
-int ShaderAPID3DX10::SetShaderConstantRaw(const char *pszName, const void *data, int nSize, int nConstID)
+void ShaderAPID3DX10::SetShaderConstantRaw(int nameHash, const void* data, int nSize)
 {
-	if(data == NULL || nSize == NULL)
-		return nConstID;
+	if(!data || !nSize)
+		return;
 
 	CD3D10ShaderProgram* pProgram = (CD3D10ShaderProgram*)m_pSelectedShader;
 
 	if(!pProgram)
-		return -1;
+		return;
 
-	DX10ShaderConstant_t *constants = pProgram->m_pConstants;
+	DX10ShaderConstant *constants = pProgram->m_constants;
 	/*
 	if(nConstID != -1)
 	{
@@ -2564,25 +1940,23 @@ int ShaderAPID3DX10::SetShaderConstantRaw(const char *pszName, const void *data,
 		int res = strcmp(pszName, constants[currConstant].name);
 		if (res == 0)
 		{
-			DX10ShaderConstant_t *c = constants + currConstant;
+			DX10ShaderConstant *c = constants + currConstant;
 
 			if (c->vsData)
 			{
 				memcpy(c->vsData, data, nSize);
-				pProgram->m_pvsDirty[c->vsBuffer] = true;
+				pProgram->m_vsDirty[c->vsBuffer] = true;
 			}
 			if (c->gsData)
 			{
 				memcpy(c->gsData, data, nSize);
-				pProgram->m_pgsDirty[c->gsBuffer] = true;
+				pProgram->m_gsDirty[c->gsBuffer] = true;
 			}
 			if (c->psData)
 			{
 				memcpy(c->psData, data, nSize);
-				pProgram->m_ppsDirty[c->psBuffer] = true;
+				pProgram->m_psDirty[c->psBuffer] = true;
 			}
-
-			return currConstant;
 		}
 		else if (res > 0)
 		{
@@ -2593,153 +1967,8 @@ int ShaderAPID3DX10::SetShaderConstantRaw(const char *pszName, const void *data,
 			maxConstant = currConstant - 1;
 		}
 	}
-
-	return -1;
 }
 
-//-----------------------------------------------------
-// Advanced shader programming
-//-----------------------------------------------------
-/*
-// Pixel Shader constants setup (by register number)
-void ShaderAPID3DX10::SetPixelShaderConstantInt(int reg, const int constant)
-{
-	int val[4];
-
-	val[0] = val[1] = val[2] = val[3] = constant;
-
-//	m_pD3DDevice->SetPixelShaderConstantI(reg, val, 1);
-}
-
-void ShaderAPID3DX10::SetPixelShaderConstantFloat(int reg, const float constant)
-{
-	float val[4];
-
-	val[0] = val[1] = val[2] = val[3] = constant;
-
-	//m_pD3DDevice->SetPixelShaderConstantF(reg, val, 1);
-}
-
-void ShaderAPID3DX10::SetPixelShaderConstantVector2D(int reg, const Vector2D &constant)
-{
-	SetPixelShaderConstantRaw(reg, &constant);
-}
-
-void ShaderAPID3DX10::SetPixelShaderConstantVector3D(int reg, const Vector3D &constant)
-{
-	SetPixelShaderConstantRaw(reg, &constant);
-}
-
-void ShaderAPID3DX10::SetPixelShaderConstantVector4D(int reg, const Vector4D &constant)
-{
-	SetPixelShaderConstantRaw(reg, &constant);
-}
-
-void ShaderAPID3DX10::SetPixelShaderConstantMatrix4(int reg, const Matrix4x4 &constant)
-{
-	SetPixelShaderConstantRaw(reg, &constant, 4);
-}
-
-void ShaderAPID3DX10::SetPixelShaderConstantFloatArray(int reg, const float *constant, int count)
-{
-	SetPixelShaderConstantRaw(reg, constant, count);
-}
-
-void ShaderAPID3DX10::SetPixelShaderConstantVector2DArray(int reg, const Vector2D *constant, int count)
-{
-	SetPixelShaderConstantRaw(reg, constant, count);
-}
-
-void ShaderAPID3DX10::SetPixelShaderConstantVector3DArray(int reg, const Vector3D *constant, int count)
-{
-	SetPixelShaderConstantRaw(reg, constant, count);
-}
-
-void ShaderAPID3DX10::SetPixelShaderConstantVector4DArray(int reg, const Vector4D *constant, int count)
-{
-	SetPixelShaderConstantRaw(reg, constant, count);
-}
-
-void ShaderAPID3DX10::SetPixelShaderConstantMatrix4Array(int reg, const Matrix4x4 *constant, int count)
-{
-	SetPixelShaderConstantRaw(reg, constant, count * 4);
-}
-
-// Vertex Shader constants setup (by register number)
-void ShaderAPID3DX10::SetVertexShaderConstantInt(int reg, const int constant)
-{
-	int val[4];
-
-	val[0] = val[1] = val[2] = val[3] = constant;
-
-//	m_pD3DDevice->SetVertexShaderConstantI(reg, val, 1);
-}
-
-void ShaderAPID3DX10::SetVertexShaderConstantFloat(int reg, const float constant)
-{
-	float val[4];
-
-	val[0] = val[1] = val[2] = val[3] = constant;
-
-	//m_pD3DDevice->SetVertexShaderConstantF(reg, val, 1);
-}
-
-void ShaderAPID3DX10::SetVertexShaderConstantVector2D(int reg, const Vector2D &constant)
-{
-	SetVertexShaderConstantRaw(reg, &constant);
-}
-
-void ShaderAPID3DX10::SetVertexShaderConstantVector3D(int reg, const Vector3D &constant)
-{
-	SetVertexShaderConstantRaw(reg, &constant);
-}
-
-void ShaderAPID3DX10::SetVertexShaderConstantVector4D(int reg, const Vector4D &constant)
-{
-	SetVertexShaderConstantRaw(reg, &constant);
-}
-
-void ShaderAPID3DX10::SetVertexShaderConstantMatrix4(int reg, const Matrix4x4 &constant)
-{
-	SetVertexShaderConstantRaw(reg, &constant, 4);
-}
-
-void ShaderAPID3DX10::SetVertexShaderConstantFloatArray(int reg, const float *constant, int count)
-{
-	SetVertexShaderConstantRaw(reg, constant, count);
-}
-
-void ShaderAPID3DX10::SetVertexShaderConstantVector2DArray(int reg, const Vector2D *constant, int count)
-{
-	SetVertexShaderConstantRaw(reg, constant, count);
-}
-
-void ShaderAPID3DX10::SetVertexShaderConstantVector3DArray(int reg, const Vector3D *constant, int count)
-{
-	SetVertexShaderConstantRaw(reg, constant, count);
-}
-
-void ShaderAPID3DX10::SetVertexShaderConstantVector4DArray(int reg, const Vector4D *constant, int count)
-{
-	SetVertexShaderConstantRaw(reg, constant, count);
-}
-
-void ShaderAPID3DX10::SetVertexShaderConstantMatrix4Array(int reg, const Matrix4x4 *constant, int count)
-{
-	SetVertexShaderConstantRaw(reg, constant, count * 4);
-}
-
-// RAW Constant
-void ShaderAPID3DX10::SetPixelShaderConstantRaw(int reg, const void *data, int nVectors)
-{
-	//m_pD3DDevice->SetPixelShaderConstantF(reg, (float*)data, nVectors);
-}
-
-void ShaderAPID3DX10::SetVertexShaderConstantRaw(int reg, const void *data, int nVectors)
-{
-	//m_pD3DDevice->SetVertexShaderConstantF(reg, (float*)data, nVectors);
-}
-*/
 //-------------------------------------------------------------
 // State manipulation 
 //-------------------------------------------------------------
@@ -2747,7 +1976,7 @@ void ShaderAPID3DX10::SetVertexShaderConstantRaw(int reg, const void *data, int 
 // creates blending state
 IRenderState* ShaderAPID3DX10::CreateBlendingState( const BlendStateParam_t &blendDesc )
 {
-	CD3D10BlendingState* pState = NULL;
+	CD3D10BlendingState* pState = nullptr;
 
 	for(int i = 0; i < m_BlendStates.numElem(); i++)
 	{
@@ -2768,20 +1997,20 @@ IRenderState* ShaderAPID3DX10::CreateBlendingState( const BlendStateParam_t &ble
 					{
 						if(blendDesc.alphaTestRef == pState->m_params.alphaTestRef)
 						{
-							pState->AddReference();
+							pState->Ref_Grab();
 							return pState;
 						}
 					}
 					else
 					{
-						pState->AddReference();
+						pState->Ref_Grab();
 						return pState;
 					}
 				}
 			}
 			else
 			{
-				pState->AddReference();
+				pState->Ref_Grab();
 				return pState;
 			}
 		}
@@ -2810,8 +2039,6 @@ IRenderState* ShaderAPID3DX10::CreateBlendingState( const BlendStateParam_t &ble
 	for(int i = 0; i < 8; i++)
 		desc.RenderTargetWriteMask[i] = blendDesc.mask;
 
-	CScopedMutex scoped(m_Mutex);
-
 	if (FAILED(m_pD3DDevice->CreateBlendState(&desc, &pState->m_blendState)))
 	{
 		MsgError("ERROR: Couldn't create blend state!\n");
@@ -2822,12 +2049,12 @@ IRenderState* ShaderAPID3DX10::CreateBlendingState( const BlendStateParam_t &ble
 		MsgError("mask = %x!\n", blendDesc.mask);
 
 		delete pState;
-		return NULL;
+		return nullptr;
 	}
 
 	m_BlendStates.append(pState);
 
-	pState->AddReference();
+	pState->Ref_Grab();
 
 	return pState;
 }
@@ -2835,11 +2062,9 @@ IRenderState* ShaderAPID3DX10::CreateBlendingState( const BlendStateParam_t &ble
 // creates depth/stencil state
 IRenderState* ShaderAPID3DX10::CreateDepthStencilState( const DepthStencilStateParams_t &depthDesc )
 {
-	CD3D10DepthStencilState* pState = NULL;
+	CD3D10DepthStencilState* pState = nullptr;
 	
 	{
-		CScopedMutex scoped(m_Mutex);
-
 		for(int i = 0; i < m_DepthStates.numElem(); i++)
 		{
 			pState = (CD3D10DepthStencilState*)m_DepthStates[i];
@@ -2860,13 +2085,13 @@ IRenderState* ShaderAPID3DX10::CreateDepthStencilState( const DepthStencilStateP
 						depthDesc.nStencilMask == pState->m_params.nStencilRef && 
 						depthDesc.nStencilPass == pState->m_params.nStencilPass)
 					{
-						pState->AddReference();
+						pState->Ref_Grab();
 						return pState;
 					}
 				}
 				else
 				{
-					pState->AddReference();
+					pState->Ref_Grab();
 					return pState;
 				}
 			}
@@ -2893,18 +2118,16 @@ IRenderState* ShaderAPID3DX10::CreateDepthStencilState( const DepthStencilStateP
 	desc.BackFace. StencilPassOp = stencilConst[depthDesc.nStencilPass];
 	desc.FrontFace.StencilPassOp = stencilConst[depthDesc.nStencilPass];
 
-	CScopedMutex scoped(m_Mutex);
-
 	if (FAILED(m_pD3DDevice->CreateDepthStencilState(&desc, &pState->m_dsState)))
 	{
 		MsgError("ERROR: Couldn't create depth state!\n");
 		delete pState;
-		return NULL;
+		return nullptr;
 	}
 
 	m_DepthStates.append(pState);
 
-	pState->AddReference();
+	pState->Ref_Grab();
 
 	return pState;
 }
@@ -2912,9 +2135,7 @@ IRenderState* ShaderAPID3DX10::CreateDepthStencilState( const DepthStencilStateP
 // creates rasterizer state
 IRenderState* ShaderAPID3DX10::CreateRasterizerState( const RasterizerStateParams_t &rasterDesc )
 {
-	CD3D10RasterizerState* pState = NULL;
-
-	CScopedMutex scoped(m_Mutex);
+	CD3D10RasterizerState* pState = nullptr;
 
 	{
 		for(int i = 0; i < m_RasterizerStates.numElem(); i++)
@@ -2927,7 +2148,7 @@ IRenderState* ShaderAPID3DX10::CreateRasterizerState( const RasterizerStateParam
 				rasterDesc.scissor == pState->m_params.scissor &&
 				rasterDesc.useDepthBias == pState->m_params.useDepthBias)
 			{
-				pState->AddReference();
+				pState->Ref_Grab();
 				return pState;
 			}
 		}
@@ -2955,10 +2176,10 @@ IRenderState* ShaderAPID3DX10::CreateRasterizerState( const RasterizerStateParam
 	{
 		MsgError("ERROR: Couldn't create rasterizer state!\n");
 		delete pState;
-		return NULL;
+		return nullptr;
 	}
 
-	pState->AddReference();
+	pState->Ref_Grab();
 
 	m_RasterizerStates.append(pState);
 
@@ -2968,9 +2189,7 @@ IRenderState* ShaderAPID3DX10::CreateRasterizerState( const RasterizerStateParam
 // creates rasterizer state
 IRenderState* ShaderAPID3DX10::CreateSamplerState( const SamplerStateParam_t &samplerDesc )
 {
-	CD3D10SamplerState* pState = NULL;
-
-	CScopedMutex scoped(m_Mutex);
+	CD3D10SamplerState* pState = nullptr;
 
 	{
 		for(int i = 0; i < m_SamplerStates.numElem(); i++)
@@ -2986,7 +2205,7 @@ IRenderState* ShaderAPID3DX10::CreateSamplerState( const SamplerStateParam_t &sa
 				samplerDesc.lod == pState->m_params.lod &&
 				samplerDesc.compareFunc == pState->m_params.compareFunc)
 			{
-				pState->AddReference();
+				pState->Ref_Grab();
 				return pState;
 			}
 		}
@@ -2998,7 +2217,7 @@ IRenderState* ShaderAPID3DX10::CreateSamplerState( const SamplerStateParam_t &sa
 	D3D10_SAMPLER_DESC desc;
 	desc.Filter = d3dFilterType[samplerDesc.minFilter];
 
-	if (samplerDesc.compareFunc != COMP_NEVER)
+	if (samplerDesc.compareFunc != COMPFUNC_NEVER)
 		desc.Filter = (D3D10_FILTER) (desc.Filter | D3D10_COMPARISON_FILTERING_BIT);
 
 	desc.ComparisonFunc = comparisonConst[samplerDesc.compareFunc];
@@ -3018,12 +2237,15 @@ IRenderState* ShaderAPID3DX10::CreateSamplerState( const SamplerStateParam_t &sa
 	{
 		MsgError("ERROR: Couldn't create sampler state!\n");
 		delete pState;
-		return NULL;
+		return nullptr;
 	}
 
-	pState->AddReference();
+	pState->Ref_Grab();
 
-	m_SamplerStates.append(pState);
+	{
+		CScopedMutex m(g_sapi_TextureMutex);
+		m_SamplerStates.append(pState);
+	}
 
 	return pState;
 }
@@ -3034,11 +2256,9 @@ void ShaderAPID3DX10::DestroyRenderState( IRenderState* pState, bool removeAllRe
 	if(!pState)
 		return;
 
-	CScopedMutex scoped(m_Mutex);
+	CScopedMutex scoped(g_sapi_Mutex);
 
-	pState->RemoveReference();
-
-	if(pState->GetReferenceNum() > 0 && !removeAllRefs)
+	if (!pState->Ref_Drop() && !removeAllRefs)
 	{
 		return;
 	}
@@ -3072,7 +2292,7 @@ void ShaderAPID3DX10::DestroyRenderState( IRenderState* pState, bool removeAllRe
 // Vertex buffer objects
 //-------------------------------------------------------------
 
-IVertexFormat* ShaderAPID3DX10::CreateVertexFormat(VertexFormatDesc_s *formatDesc, int nAttribs)
+IVertexFormat* ShaderAPID3DX10::CreateVertexFormat(const char* name, const VertexFormatDesc_t* formatDesc, int nAttribs)
 {
 	static const DXGI_FORMAT vformats[][4] = {
 		DXGI_FORMAT_R32_FLOAT, DXGI_FORMAT_R32G32_FLOAT, DXGI_FORMAT_R32G32B32_FLOAT, DXGI_FORMAT_R32G32B32A32_FLOAT,
@@ -3088,7 +2308,7 @@ IVertexFormat* ShaderAPID3DX10::CreateVertexFormat(VertexFormatDesc_s *formatDes
 	D3D10_INPUT_ELEMENT_DESC *pDesc = new D3D10_INPUT_ELEMENT_DESC[nAttribs + 1];
 
 	static const char *semantics[] = {
-		NULL,
+		nullptr,
 		"COLOR",
 		"POSITION",
 		"TEXCOORD",
@@ -3121,7 +2341,7 @@ IVertexFormat* ShaderAPID3DX10::CreateVertexFormat(VertexFormatDesc_s *formatDes
 		if(formatDesc[i].attribType != VERTEXATTRIB_UNUSED)
 		{
 			pDesc[numRealAttribs].InputSlot = stream;
-			pDesc[numRealAttribs].AlignedByteOffset = pFormat->m_nVertexSize[stream];
+			pDesc[numRealAttribs].AlignedByteOffset = pFormat->m_streamStride[stream];
 			pDesc[numRealAttribs].SemanticName = semantics[formatDesc[i].attribType];
 			pDesc[numRealAttribs].SemanticIndex = index[formatDesc[i].attribType]++;
 			pDesc[numRealAttribs].Format = vformats[formatDesc[i].attribFormat][size - 1];
@@ -3151,7 +2371,7 @@ IVertexFormat* ShaderAPID3DX10::CreateVertexFormat(VertexFormatDesc_s *formatDes
 			vertexShaderString.Append(str);
 		}
 
-		pFormat->m_nVertexSize[stream] += size * s_attributeSize[formatDesc[i].attribFormat];
+		pFormat->m_streamStride[stream] += size * s_attributeSize[formatDesc[i].attribFormat];
 	}
 
 	vertexShaderString.Append("};\n\n");
@@ -3161,16 +2381,14 @@ IVertexFormat* ShaderAPID3DX10::CreateVertexFormat(VertexFormatDesc_s *formatDes
 
 	//Msg("%s\n", vertexShaderString.getData());
 
-	ID3D10Blob* pGeneratedVertexShader	= NULL;
-	ID3D10Blob*	errorsBuf				= NULL;
-	ID3D10VertexShader*	pShader			= NULL;
-	ID3D10Blob*	pInputSignature			= NULL;
+	ID3D10Blob* pGeneratedVertexShader	= nullptr;
+	ID3D10Blob*	errorsBuf				= nullptr;
+	ID3D10VertexShader*	pShader			= nullptr;
+	ID3D10Blob*	pInputSignature			= nullptr;
 
 	UINT compileFlags = D3D10_SHADER_PACK_MATRIX_ROW_MAJOR | D3D10_SHADER_ENABLE_STRICTNESS;
 
-	CScopedMutex scoped(m_Mutex);
-
-	if (SUCCEEDED(D3D10CompileShader(vertexShaderString.GetData(), vertexShaderString.Length(), "VertexFormatInputSignaturePassShader", NULL, NULL, "main", "vs_4_0", compileFlags, &pGeneratedVertexShader, &errorsBuf)))
+	if (SUCCEEDED(D3D10CompileShader(vertexShaderString.GetData(), vertexShaderString.Length(), "VertexFormatInputSignaturePassShader", nullptr, nullptr, "main", "vs_4_0", compileFlags, &pGeneratedVertexShader, &errorsBuf)))
 	{
 		if (SUCCEEDED(m_pD3DDevice->CreateVertexShader(pGeneratedVertexShader->GetBufferPointer(), pGeneratedVertexShader->GetBufferSize(), &pShader)))
 		{
@@ -3178,7 +2396,7 @@ IVertexFormat* ShaderAPID3DX10::CreateVertexFormat(VertexFormatDesc_s *formatDes
 		}
 	}
 	
-	HRESULT hr = m_pD3DDevice->CreateInputLayout(pDesc, numRealAttribs, pInputSignature->GetBufferPointer(), pInputSignature->GetBufferSize(), &pFormat->m_pVertexDecl);
+	HRESULT hr = m_pD3DDevice->CreateInputLayout(pDesc, numRealAttribs, pInputSignature->GetBufferPointer(), pInputSignature->GetBufferSize(), &pFormat->m_vertexDecl);
 	delete [] pDesc;
 
 	SAFE_RELEASE(pGeneratedVertexShader)
@@ -3193,10 +2411,13 @@ IVertexFormat* ShaderAPID3DX10::CreateVertexFormat(VertexFormatDesc_s *formatDes
 		MsgError("Couldn't create vertex declaration!\n");
 		ErrorMsg("Couldn't create vertex declaration");
 
-		return NULL;
+		return nullptr;
 	}
 
-	m_VFList.append(pFormat);
+	{
+		CScopedMutex m(g_sapi_VBMutex);
+		m_VFList.append(pFormat);
+	}
 
 	return pFormat;
 }
@@ -3206,14 +2427,14 @@ IVertexBuffer* ShaderAPID3DX10::CreateVertexBuffer(ER_BufferAccess nBufAccess, i
 	ASSERT(m_pD3DDevice);
 
 	CVertexBufferD3DX10* pBuffer = new CVertexBufferD3DX10();
-	pBuffer->m_nSize = nNumVerts*strideSize;
-	pBuffer->m_nUsage = d3dbufferusages[nBufAccess];
-	pBuffer->m_nNumVertices = nNumVerts;
-	pBuffer->m_nStrideSize = strideSize;
+	pBuffer->m_size = nNumVerts*strideSize;
+	pBuffer->m_usage = g_d3d9_bufferUsages[nBufAccess];
+	pBuffer->m_numVertices = nNumVerts;
+	pBuffer->m_strideSize = strideSize;
 
 	D3D10_BUFFER_DESC desc;
-	desc.Usage = d3dbufferusages[nBufAccess];
-	desc.ByteWidth = pBuffer->m_nSize;
+	desc.Usage = g_d3d9_bufferUsages[nBufAccess];
+	desc.ByteWidth = pBuffer->m_size;
 	desc.BindFlags = D3D10_BIND_VERTEX_BUFFER;
 	desc.CPUAccessFlags = (nBufAccess == BUFFER_DYNAMIC) ? D3D10_CPU_ACCESS_WRITE : 0;
 	desc.MiscFlags = 0;
@@ -3223,20 +2444,21 @@ IVertexBuffer* ShaderAPID3DX10::CreateVertexBuffer(ER_BufferAccess nBufAccess, i
 	vbData.SysMemPitch = 0;
 	vbData.SysMemSlicePitch = 0;
 
-	DevMsg(DEVMSG_SHADERAPI,"Creating VBO with size %i KB\n", pBuffer->m_nSize / 1024);
+	DevMsg(DEVMSG_SHADERAPI,"Creating VBO with size %i KB\n", pBuffer->m_size / 1024);
 
-	CScopedMutex scoped(m_Mutex);
-
-	if (FAILED(m_pD3DDevice->CreateBuffer(&desc, pData ? (&vbData) : NULL, &pBuffer->m_pVertexBuffer)))
+	if (FAILED(m_pD3DDevice->CreateBuffer(&desc, pData ? (&vbData) : nullptr, &pBuffer->m_buffer)))
 	{
 		MsgError("Couldn't create vertex buffer!\n");
         ErrorMsg("Couldn't create vertex buffer");
-		return NULL;
+		return nullptr;
 	}
 
-	ASSERT(pBuffer->m_pVertexBuffer);
+	ASSERT(pBuffer->m_buffer);
 
-	m_VBList.append(pBuffer);
+	{
+		CScopedMutex m(g_sapi_VBMutex);
+		m_VBList.append(pBuffer);
+	}
 
 	return pBuffer;
 }
@@ -3248,12 +2470,12 @@ IIndexBuffer* ShaderAPID3DX10::CreateIndexBuffer(int nIndices, int nIndexSize, E
 
 	CIndexBufferD3DX10* pBuffer = new CIndexBufferD3DX10();
 
-	pBuffer->m_nIndices = nIndices;
-	pBuffer->m_nIndexSize = nIndexSize;
-	pBuffer->m_nUsage = d3dbufferusages[nBufAccess];
+	pBuffer->m_numIndices = nIndices;
+	pBuffer->m_indexSize = nIndexSize;
+	pBuffer->m_usage = g_d3d9_bufferUsages[nBufAccess];
 
 	D3D10_BUFFER_DESC desc;
-	desc.Usage = d3dbufferusages[nBufAccess];
+	desc.Usage = g_d3d9_bufferUsages[nBufAccess];
 	desc.ByteWidth = nIndices * nIndexSize;
 	desc.BindFlags = D3D10_BIND_INDEX_BUFFER;
 	desc.CPUAccessFlags = (nBufAccess == BUFFER_DYNAMIC)? D3D10_CPU_ACCESS_WRITE : 0;
@@ -3264,16 +2486,17 @@ IIndexBuffer* ShaderAPID3DX10::CreateIndexBuffer(int nIndices, int nIndexSize, E
 	ibData.SysMemPitch = 0;
 	ibData.SysMemSlicePitch = 0;
 
-	CScopedMutex scoped(m_Mutex);
-
-	if (FAILED(m_pD3DDevice->CreateBuffer(&desc, pData ? (&ibData) : NULL, &pBuffer->m_pIndexBuffer)))
+	if (FAILED(m_pD3DDevice->CreateBuffer(&desc, pData ? (&ibData) : nullptr, &pBuffer->m_buffer)))
 	{
 		MsgError("Couldn't create index buffer!\n");
         ErrorMsg("Couldn't create index buffer");
-		return NULL;
+		return nullptr;
 	}
 
-	m_IBList.append(pBuffer);
+	{
+		CScopedMutex m(g_sapi_IBMutex);
+		m_IBList.append(pBuffer);
+	}
 
 	return pBuffer;
 }
@@ -3333,29 +2556,6 @@ void ShaderAPID3DX10::DrawNonIndexedPrimitives(ER_PrimitiveType nType, int nFirs
 
 	m_nDrawCalls++;
 	m_nTrianglesCount += nTris;
-}
-
-// mesh buffer FFP emulation
-void ShaderAPID3DX10::DrawMeshBufferPrimitives(ER_PrimitiveType nType, int nVertices, int nIndices)
-{
-	if(m_pSelectedShader == NULL)
-	{
-		if(m_pCurrentTexturesPS[0] == NULL)
-			SetShader(m_pMeshBufferNoTextureShader);
-		else
-			SetShader(m_pMeshBufferTexturedShader);
-
-		Matrix4x4 matrix = identity4() * m_matrices[MATRIXMODE_PROJECTION] * (m_matrices[MATRIXMODE_VIEW] * m_matrices[MATRIXMODE_WORLD]);
-
-		SetShaderConstantMatrix4("WVP", matrix);
-	}
-
-	Apply();
-
-	if(nIndices > 0)
-		DrawIndexedPrimitives(nType, 0, nIndices, 0, nVertices);
-	else
-		DrawNonIndexedPrimitives(nType, 0, nVertices);	
 }
 
 ID3D10ShaderResourceView* ShaderAPID3DX10::TexResource_CreateShaderResourceView(ID3D10Resource *resource, DXGI_FORMAT format, int firstSlice, int sliceCount)
@@ -3485,7 +2685,7 @@ ID3D10ShaderResourceView* ShaderAPID3DX10::TexResource_CreateShaderResourceView(
 			break;
 		default:
 			ErrorMsg("Unsupported type");
-			return NULL;
+			return nullptr;
 	}
 
 	HRESULT hr;
@@ -3498,7 +2698,7 @@ ID3D10ShaderResourceView* ShaderAPID3DX10::TexResource_CreateShaderResourceView(
 	if (FAILED(hr))
 	{
 		MsgError("ERROR! CreateShaderResourceView failed (0x%p)\n", hr);
-		return NULL;
+		return nullptr;
 	}
 
 	return srv;
@@ -3509,10 +2709,10 @@ ID3D10ShaderResourceView* ShaderAPID3DX10::TexResource_CreateShaderResourceView(
 
 #ifdef COMPILE_D3D_10_1
 	D3D10_SHADER_RESOURCE_VIEW_DESC1 srvDesc;
-	ID3D10ShaderResourceView1 *srv = NULL;
+	ID3D10ShaderResourceView1 *srv = nullptr;
 #else
 	D3D10_SHADER_RESOURCE_VIEW_DESC srvDesc;
-	ID3D10ShaderResourceView *srv = NULL;
+	ID3D10ShaderResourceView *srv = nullptr;
 #endif
 
 	switch (type)
@@ -3629,7 +2829,7 @@ ID3D10ShaderResourceView* ShaderAPID3DX10::TexResource_CreateShaderResourceView(
 			break;
 		default:
 			MsgError("Unsupported texture type!\n");
-			return NULL;
+			return nullptr;
 	}
 
 	HRESULT hr;
@@ -3642,7 +2842,7 @@ ID3D10ShaderResourceView* ShaderAPID3DX10::TexResource_CreateShaderResourceView(
 	if (FAILED(hr))
 	{
 		MsgError("ERROR! CreateShaderResourceView failed (0x%p)\n", hr);
-		return NULL;
+		return nullptr;
 	}
 
 	return srv;
@@ -3655,7 +2855,7 @@ ID3D10RenderTargetView*	ShaderAPID3DX10::TexResource_CreateShaderRenderTargetVie
 	resource->GetType(&type);
 
 	D3D10_RENDER_TARGET_VIEW_DESC rtvDesc;
-	ID3D10RenderTargetView* rtv = NULL;
+	ID3D10RenderTargetView* rtv = nullptr;
 
 	switch (type)
 	{
@@ -3722,7 +2922,7 @@ ID3D10RenderTargetView*	ShaderAPID3DX10::TexResource_CreateShaderRenderTargetVie
 			break;
 		default:
 			MsgError("ERROR: Unsupported texture type!\n");
-			return NULL;
+			return nullptr;
 	}
 
 	HRESULT hr = m_pD3DDevice->CreateRenderTargetView(resource, &rtvDesc, &rtv);
@@ -3730,7 +2930,7 @@ ID3D10RenderTargetView*	ShaderAPID3DX10::TexResource_CreateShaderRenderTargetVie
 	if (FAILED(hr))
 	{
 		MsgError("ERROR! CreateShaderResourceView failed (0x%p)\n", hr);
-		return NULL;
+		return nullptr;
 	}
 
 	return rtv;
@@ -3742,7 +2942,7 @@ ID3D10DepthStencilView* ShaderAPID3DX10::TexResource_CreateShaderDepthStencilVie
 	resource->GetType(&type);
 
 	D3D10_DEPTH_STENCIL_VIEW_DESC dsvDesc;
-	ID3D10DepthStencilView* dsv = NULL;
+	ID3D10DepthStencilView* dsv = nullptr;
 
 	switch (type)
 	{
@@ -3783,7 +2983,7 @@ ID3D10DepthStencilView* ShaderAPID3DX10::TexResource_CreateShaderDepthStencilVie
 			break;
 		default:
 			MsgError("ERROR: Unsupported depth target type\n");
-			return NULL;
+			return nullptr;
 	}
 
 	HRESULT hr = m_pD3DDevice->CreateDepthStencilView(resource, &dsvDesc, &dsv);
@@ -3791,19 +2991,19 @@ ID3D10DepthStencilView* ShaderAPID3DX10::TexResource_CreateShaderDepthStencilVie
 	if (FAILED(hr))
 	{
 		MsgError("ERROR! CreateDepthStencilView failed (0x%p)\n", hr);
-		return NULL;
+		return nullptr;
 	}
 
 	return dsv;
 }
 
 
-void ShaderAPID3DX10::CreateTextureInternal(ITexture** pTex, const DkList<CImage*>& pImages, const SamplerStateParam_t& sampler,int nFlags)
+void ShaderAPID3DX10::CreateTextureInternal(ITexture** pTex, const Array<CImage*>& pImages, const SamplerStateParam_t& sampler,int nFlags)
 {
 	if(!pImages.numElem())
 		return;
 
-	CD3D10Texture* pTexture = NULL;
+	CD3D10Texture* pTexture = nullptr;
 
 	// get or create
 	if(*pTex)
@@ -3820,16 +3020,14 @@ void ShaderAPID3DX10::CreateTextureInternal(ITexture** pTex, const DkList<CImage
 		if(pD3DTex)
 		{
 			// add and make shader resource view for it
-			pTexture->textures.append(pD3DTex);
-
-			pTexture->texFormat = formats[pImages[i]->GetFormat()];
-			pTexture->srvFormat = pTexture->texFormat;
-
-			pTexture->srv.append( TexResource_CreateShaderResourceView(pD3DTex, pTexture->srvFormat) );
+			pTexture->m_textures.append(pD3DTex);
+			pTexture->m_texFormat = formats[pImages[i]->GetFormat()];
+			pTexture->m_srvFormat = pTexture->m_texFormat;
+			pTexture->m_srv.append( TexResource_CreateShaderResourceView(pD3DTex, pTexture->m_srvFormat) );
 		}
 	}
 
-	if(!pTexture->textures.numElem())
+	if(!pTexture->m_textures.numElem())
 	{
 		if(!(*pTex))
 			delete pTexture;
@@ -3839,23 +3037,22 @@ void ShaderAPID3DX10::CreateTextureInternal(ITexture** pTex, const DkList<CImage
 		return;
 	}
 
-	pTexture->m_numAnimatedTextureFrames = pTexture->textures.numElem();
-
-	pTexture->m_pD3D10SamplerState = CreateSamplerState(sampler);
+	pTexture->m_numAnimatedTextureFrames = pTexture->m_textures.numElem();
+	pTexture->m_samplerState = CreateSamplerState(sampler);
 
 	// Bind this sampler state to texture
 	pTexture->SetSamplerState(sampler);
 	pTexture->SetDimensions(wide, tall);
 	pTexture->SetFormat(pImages[0]->GetFormat());
-	pTexture->SetFlags(nFlags | TEXFLAG_MANAGED);
+	pTexture->SetFlags(nFlags);
 	pTexture->SetName( pImages[0]->GetName() );
 
 	// if this is a new texture, add
 	if(!(*pTex))
 	{
-		m_Mutex.Lock();
-		m_TextureList.append(pTexture);
-		m_Mutex.Unlock();
+		CScopedMutex scoped(g_sapi_TextureMutex);
+		ASSERT_MSG(m_TextureList.find(pTexture->m_nameHash) == m_TextureList.end(), "Texture %s was already added", pTexture->GetName());
+		m_TextureList.insert(pTexture->m_nameHash, pTexture);
 	}
 
 	// set for output
@@ -3865,9 +3062,7 @@ void ShaderAPID3DX10::CreateTextureInternal(ITexture** pTex, const DkList<CImage
 ID3D10Resource* ShaderAPID3DX10::CreateD3DTextureFromImage(CImage* pSrc, int& wide, int& tall, int nFlags)
 {
 	if(!pSrc)
-		return NULL;
-
-	CScopedMutex m(m_Mutex);
+		return nullptr;
 
 	HOOK_TO_CVAR(r_loadmiplevel);
 
@@ -3908,7 +3103,7 @@ ID3D10Resource* ShaderAPID3DX10::CreateD3DTextureFromImage(CImage* pSrc, int& wi
 	uint arraySize = pSrc->GetArraySize();
 
 	// the resource
-	ID3D10Resource* pTexture = NULL;
+	ID3D10Resource* pTexture = nullptr;
 
 	// create subresource
 	static D3D10_SUBRESOURCE_DATA texData[1024];
@@ -4004,185 +3199,20 @@ ID3D10Resource* ShaderAPID3DX10::CreateD3DTextureFromImage(CImage* pSrc, int& wi
 	}
 	else
 	{
-		hr = D3DERR_INVALIDCALL;
+		hr = E_FAIL;
 	}
 
 	if(FAILED(hr))
 	{
 		MsgError("Couldn't create texture from '%s'\n", pSrc->GetName());
 
-		return NULL;
+		return nullptr;
 	}
 
 	return pTexture;
 }
 
-/*
-void ShaderAPID3DX10::AddTextureInternal(ITexture** pTex, CImage *texImage, SamplerStateParam_t& sSamplingParams,int nFlags)
-{
-	HOOK_TO_CVAR(r_loadmiplevel);
-
-	int quality = r_loadmiplevel->GetInt();
-
-	if(nFlags & TEXFLAG_NOQUALITYLOD)
-		quality = 0;
-
-	if(!pTex)
-		return;
-
-	CD3D10Texture* pTexture = NULL;
-
-	if(*pTex)
-	{
-		pTexture = (CD3D10Texture*)*pTex;
-	}
-	else
-	{
-		pTexture = new CD3D10Texture;
-	}
-
-
-	if(texImage->GetMipMapCount() <= 1)
-		quality = 0;
-
-	// create array of textures
-	pTexture->textures.setNum(1);
-
-	ETextureFormat format = texImage->GetFormat();
-
-	if (format == FORMAT_RGB8)
-		texImage->Convert(FORMAT_RGBA8);
-
-	//if (format == FORMAT_RGB8 || format == FORMAT_RGBA8)
-	//	texImage->SwapChannels(0, 2);
-
-	format = texImage->GetFormat();
-
-	uint nMipMaps = texImage->GetMipMapCount()-quality;
-	uint nSlices = texImage->IsCube()? 6 : 1;
-	uint arraySize = texImage->GetArraySize();
-
-	// create subresource
-	static D3D10_SUBRESOURCE_DATA texData[1024];
-	D3D10_SUBRESOURCE_DATA *dest = texData;
-	for (uint n = 0; n < arraySize; n++)
-	{
-		for (uint k = 0; k < nSlices; k++)
-		{
-			for (uint i = 0; i < nMipMaps; i++)
-			{
-				int nMip = i+quality;
-
-				uint pitch, slicePitch;
-				if (IsCompressedFormat(format))
-				{
-					pitch = ((texImage->GetWidth(nMip) + 3) >> 2) * GetBytesPerBlock(format);
-					slicePitch = pitch * ((texImage->GetHeight(nMip) + 3) >> 2);
-				}
-				else
-				{
-					pitch = texImage->GetWidth(nMip) * GetBytesPerPixel(format);
-					slicePitch = pitch * texImage->GetHeight(nMip);
-				}
-
-				dest->pSysMem = texImage->GetPixels(nMip, n) + k * slicePitch;
-				dest->SysMemPitch = pitch;
-				dest->SysMemSlicePitch = slicePitch;
-				dest++;
-			}
-		}
-	}
-
-	pTexture->texFormat = formats[format];
-
-	HRESULT hr;
-	if (texImage->Is1D())
-	{
-		D3D10_TEXTURE1D_DESC desc;
-		desc.Width  = texImage->GetWidth(quality);
-		desc.Format = pTexture->texFormat;
-		desc.MipLevels = nMipMaps;
-		desc.Usage = D3D10_USAGE_IMMUTABLE;
-		desc.BindFlags = D3D10_BIND_SHADER_RESOURCE;
-		desc.CPUAccessFlags = 0;
-		desc.ArraySize = 1;
-		desc.MiscFlags = 0;
-
-		hr = m_pD3DDevice->CreateTexture1D(&desc, texData, (ID3D10Texture1D **) &pTexture->textures[0]);
-	}
-	else if (texImage->Is2D() || texImage->IsCube())
-	{
-		D3D10_TEXTURE2D_DESC desc;
-		desc.Width  = texImage->GetWidth(quality);
-		desc.Height = texImage->GetHeight(quality);
-		desc.Format = pTexture->texFormat;
-		desc.MipLevels = nMipMaps;
-		desc.SampleDesc.Count = 1;
-		desc.SampleDesc.Quality = 0;
-		desc.Usage = D3D10_USAGE_IMMUTABLE;
-		desc.BindFlags = D3D10_BIND_SHADER_RESOURCE;
-		desc.CPUAccessFlags = 0;
-
-		if (texImage->IsCube())
-		{
-			desc.ArraySize = 6 * arraySize;
-			desc.MiscFlags = D3D10_RESOURCE_MISC_TEXTURECUBE;
-		}
-		else
-		{
-			desc.ArraySize = 1;
-			desc.MiscFlags = 0;
-		}
-
-		hr = m_pD3DDevice->CreateTexture2D(&desc, texData, (ID3D10Texture2D **) &pTexture->textures[0]);
-	}
-	else if (texImage->Is3D())
-	{
-		D3D10_TEXTURE3D_DESC desc;
-		desc.Width  = texImage->GetWidth(quality);
-		desc.Height = texImage->GetHeight(quality);
-		desc.Depth  = texImage->GetDepth(quality);
-		desc.Format = pTexture->texFormat;
-		desc.MipLevels = nMipMaps;
-		desc.Usage = D3D10_USAGE_IMMUTABLE;
-		desc.BindFlags = D3D10_BIND_SHADER_RESOURCE;
-		desc.CPUAccessFlags = 0;
-		desc.MiscFlags = 0;
-
-		hr = m_pD3DDevice->CreateTexture3D(&desc, texData, (ID3D10Texture3D **) &pTexture->textures[0]);
-	}
-
-	if(FAILED(hr))
-	{
-		MsgError("Couldn't create texture for %s\n", texImage->GetName());
-
-		delete pTexture;
-		*pTex = NULL;
-
-		return;
-	}
-
-	CScopedMutex scoped(m_Mutex);
-
-	pTexture->srvFormat = pTexture->texFormat;
-	pTexture->srv.append(TexResource_CreateShaderResourceView(pTexture->textures[0], pTexture->srvFormat));
-
-	pTexture->m_pD3D10SamplerState = CreateSamplerState(sSamplingParams);
-
-	// Bind this sampler state to texture
-	pTexture->SetSamplerState(sSamplingParams);
-	pTexture->SetDimensions(texImage->GetWidth(quality),texImage->GetHeight(quality));
-	pTexture->SetFormat(texImage->GetFormat());
-	pTexture->SetFlags(nFlags | TEXFLAG_MANAGED);
-	pTexture->SetName(texImage->GetName());
-
-	if(! (*pTex) )
-		m_TextureList.append(pTexture);
-
-	*pTex = pTexture;
-}
-*/
-const Sampler_t *GetSampler(const Sampler_t *samplers, const int count, const char *name)
+static const DX10Sampler_t* GetSampler(const DX10Sampler_t *samplers, const int count, const char *name)
 {
 	int minSampler = 0;
 	int maxSampler = count - 1;
@@ -4201,59 +3231,38 @@ const Sampler_t *GetSampler(const Sampler_t *samplers, const int count, const ch
             maxSampler = currSampler - 1;
 	}
 
-	return NULL;
+	return nullptr;
 }
 
 // sets texture
-void ShaderAPID3DX10::SetTexture( ITexture* pTexture, const char* pszName, int index )
+void ShaderAPID3DX10::SetTexture(int nameHash, const ITexturePtr& pTexture)
 {
 	CD3D10ShaderProgram* pShader = (CD3D10ShaderProgram*)m_pSelectedShader;
 
-	if(!pShader || !pszName)
-	{
-		// NO SHADER? WE HAVE SURPIRSE FOR YOU!
-		m_pSelectedTexturesVS[index] = pTexture;
-		m_pSelectedTextureSlicesVS[index] = -1;
-
-		m_pSelectedTexturesGS[index] = pTexture;
-		m_pSelectedTextureSlicesGS[index] = -1;
-
-		m_pSelectedTexturesPS[index] = pTexture;
-		m_pSelectedTextureSlicesPS[index] = -1;
-
+	if(!pShader)
 		return;
+
+	const DX10Sampler_t* sampler = GetSampler(pShader->m_textures, pShader->m_numTextures, nameHash);
+
+	if (!sampler)
+		return;
+
+	if (sampler->vsIndex >= 0)
+	{
+		m_pSelectedTexturesVS[sampler->vsIndex] = pTexture;
+		m_pSelectedTextureSlicesVS[sampler->vsIndex] = -1;
 	}
 
-	const Sampler_t *s = GetSampler(pShader->m_pTextures, pShader->m_numTextures, pszName);
-
-	if(s)
+	if (sampler->gsIndex >= 0)
 	{
-		if (s->vsIndex >= 0)
-		{
-			m_pSelectedTexturesVS[s->vsIndex] = pTexture;
-			m_pSelectedTextureSlicesVS[s->vsIndex] = -1;
-		}
-		if (s->gsIndex >= 0)
-		{
-			m_pSelectedTexturesGS[s->gsIndex] = pTexture;
-			m_pSelectedTextureSlicesGS[s->gsIndex] = -1;
-		}
-		if (s->index >= 0)
-		{
-			m_pSelectedTexturesPS[s->index] = pTexture;
-			m_pSelectedTextureSlicesPS[s->index] = -1;
-		}
+		m_pSelectedTexturesGS[sampler->gsIndex] = pTexture;
+		m_pSelectedTextureSlicesGS[sampler->gsIndex] = -1;
 	}
-	else
+
+	if (sampler->index >= 0)
 	{
-		m_pSelectedTexturesVS[index] = pTexture;
-		m_pSelectedTextureSlicesVS[index] = -1;
-
-		m_pSelectedTexturesGS[index] = pTexture;
-		m_pSelectedTextureSlicesGS[index] = -1;
-
-		m_pSelectedTexturesPS[index] = pTexture;
-		m_pSelectedTextureSlicesPS[index] = -1;
+		m_pSelectedTexturesPS[sampler->index] = pTexture;
+		m_pSelectedTextureSlicesPS[sampler->index] = -1;
 	}
 }
 
@@ -4301,7 +3310,7 @@ void ShaderAPID3DX10::SetScissorRectangle( const IRectangle &rect )
 	m_pD3DDevice->RSSetScissorRects(1, &scissorRect);
 }
 
-bool ShaderAPID3DX10::IsDeviceActive()
+bool ShaderAPID3DX10::IsDeviceActive() const
 {
 	return !m_bDeviceIsLost;
 }
@@ -4328,7 +3337,7 @@ bool ShaderAPID3DX10::CreateBackbufferDepth(int wide, int tall, DXGI_FORMAT dept
 		descDepth.CPUAccessFlags = 0;
 		descDepth.MiscFlags = 0;
 
-		if (FAILED(m_pD3DDevice->CreateTexture2D(&descDepth, NULL, &m_pDepthBuffer)))
+		if (FAILED(m_pD3DDevice->CreateTexture2D(&descDepth, nullptr, &m_pDepthBuffer)))
 		{
 			MsgError("Failed to create depth buffer texture!!!\n");
 			return false;
@@ -4349,19 +3358,25 @@ bool ShaderAPID3DX10::CreateBackbufferDepth(int wide, int tall, DXGI_FORMAT dept
 
 	if(!m_pDepthBufferTexture)
 	{
-		m_pDepthBufferTexture = new CD3D10Texture;
-		m_pDepthBufferTexture->SetName("_rt_depthbuffer");
-		m_pDepthBufferTexture->SetDimensions(wide, tall);
-		m_pDepthBufferTexture->SetFlags(TEXFLAG_RENDERTARGET | TEXFLAG_FOREIGN | TEXFLAG_NOQUALITYLOD);
-		m_pDepthBufferTexture->Ref_Grab();
+		CRefPtr<CD3D10Texture> depthBufferTex = CRefPtr_new(CD3D10Texture);
+		m_pDepthBufferTexture = ITexturePtr(depthBufferTex);
 
-		m_TextureList.append(m_pDepthBufferTexture);
+		depthBufferTex->SetName("_rt_depthbuffer");
+		depthBufferTex->SetDimensions(wide, tall);
+		depthBufferTex->SetFlags(TEXFLAG_RENDERTARGET | TEXFLAG_FOREIGN | TEXFLAG_NOQUALITYLOD);
+		depthBufferTex->Ref_Grab();
+
+		{
+			CScopedMutex scoped(g_sapi_TextureMutex);
+			ASSERT_MSG(m_TextureList.find(depthBufferTex->m_nameHash) == m_TextureList.end(), "Texture %s was already added", depthBufferTex->GetName());
+			m_TextureList.insert(depthBufferTex->m_nameHash, depthBufferTex);
+		}
 	}
 
-	CD3D10Texture* pDepthBuffer = (CD3D10Texture*)m_pDepthBufferTexture;
+	CD3D10Texture* pDepthBuffer = (CD3D10Texture*)m_pDepthBufferTexture.Ptr();
 
-	pDepthBuffer->textures.append(m_pDepthBuffer);
-	pDepthBuffer->dsv.append(m_pDepthBufferDSV);
+	pDepthBuffer->m_textures.append(m_pDepthBuffer);
+	pDepthBuffer->m_dsv.append(m_pDepthBufferDSV);
 
 	// depth buffer SRV's only available for few formats, yet
 	//pDepthBuffer->srv.append(TexResource_CreateShaderResourceView(pDepthBuffer->textures[0]));
@@ -4383,10 +3398,10 @@ void ShaderAPID3DX10::ReleaseBackbufferDepth()
 {
 	if (m_pD3DDevice)
 	{
-		m_pD3DDevice->OMSetRenderTargets(0, NULL, NULL);
+		m_pD3DDevice->OMSetRenderTargets(0, nullptr, nullptr);
 
-		((CD3D10Texture*)m_pDepthBufferTexture)->Release();
-		//((CD3D10Texture*)m_pBackBufferTexture)->Release();
+		((CD3D10Texture*)m_pDepthBufferTexture.Ptr())->Release();
+		//((CD3D10Texture*)m_pBackBufferTexture.Ptr())->Release();
 
 		SAFE_RELEASE(m_pDepthBuffer);
 		SAFE_RELEASE(m_pDepthBufferDSV);

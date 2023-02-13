@@ -1,31 +1,23 @@
 //////////////////////////////////////////////////////////////////////////////////
 // Copyright © Inspiration Byte
-// 2009-2020
+// 2009-2023
 //////////////////////////////////////////////////////////////////////////////////
-// Description: Equilibrium Direct3D 10 ShaderAPI
+// Description: D3D10 renderer impl for Eq
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef ShaderAPID3DX10_H
-#define ShaderAPID3DX10_H
-
-#include "../Shared/ShaderAPI_Base.h"
-
-#include <d3d10.h>
-#include <d3dx10.h>
-#include "D3D10MeshBuilder.h"
+#pragma once
+#include "ShaderAPI_Base.h"
 
 class ShaderAPID3DX10 : public ShaderAPI_Base
 {
-public:
-
 	friend class 				CVertexFormatD3D10;
 	friend class 				CVertexBufferD3D10;
 	friend class 				CIndexBufferD3D10;
 	friend class				CD3D10ShaderProgram;
-	friend class				CD3DRenderLib;
+	friend class				CD3D11RenderLib;
 	friend class				CD3D10Texture;
 	friend class				CD3D10SwapChain;
-
+public:
 								~ShaderAPID3DX10();
 								ShaderAPID3DX10();
 
@@ -39,9 +31,9 @@ public:
 	void						Init(const shaderAPIParams_t &params);
 	void						Shutdown();
 
-	void						PrintAPIInfo();
+	void						PrintAPIInfo() const;
 
-	bool						IsDeviceActive();
+	bool						IsDeviceActive() const;
 
 //-------------------------------------------------------------
 // Rendering's applies
@@ -63,7 +55,6 @@ public:
 //-------------------------------------------------------------
 
 	// shader API class type for shader developers.
-	// DON'T USE TYPES IN DYNAMIC SHADER CODE! USE MATSYSTEM MAT-FILE DEFS!
 	ER_ShaderAPIType			GetShaderAPIClass() {return SHADERAPI_DIRECT3D10;}
 
 	// Device vendor and version
@@ -71,33 +62,6 @@ public:
 
 	// Renderer string (ex: OpenGL, D3D9)
 	const char*					GetRendererName() const;
-
-	// Render targetting support
-	bool						IsSupportsRendertargetting() const;
-
-	// Render targetting support for Multiple RTs
-	bool						IsSupportsMRT() const;
-
-	// Supports multitexturing???
-	bool						IsSupportsMultitexturing() const;
-
-	// The driver/hardware is supports Pixel shaders?
-	bool						IsSupportsPixelShaders() const;
-
-	// The driver/hardware is supports Vertex shaders?
-	bool						IsSupportsVertexShaders() const;
-
-	// The driver/hardware is supports Geometry shaders?
-	bool						IsSupportsGeometryShaders() const;
-
-	// The driver/hardware is supports Domain shaders?
-	bool						IsSupportsDomainShaders() const;
-
-	// The driver/hardware is supports Hull (tessellator) shaders?
-	bool						IsSupportsHullShaders() const;
-
-	// The hardware (for engine) is supports full dynamic lighting
-	//bool						IsSupportsFullLighting() const;
 
 //-------------------------------------------------------------
 // MT Synchronization
@@ -110,33 +74,24 @@ public:
 //-------------------------------------------------------------
 // Occlusion query
 //-------------------------------------------------------------
-	/*
-	void						OcclusionQuery_Begin();
-	int							OcclusionQuery_Result();
-	*/
+
 
 //-------------------------------------------------------------
 // Textures
 //-------------------------------------------------------------
-
-	// Unload the texture and free the memory
-	void						FreeTexture(ITexture* pTexture);
 	
 	// Create procedural texture such as error texture, etc.
-	ITexture*					CreateProceduralTexture(const char* pszName,int width, int height, const unsigned char* data, int nDataSize, ETextureFormat nFormat, ER_TextureAddressMode textureAddress = TEXADDRESS_WRAP, int nFlags = 0);
+	ITexturePtr					CreateProceduralTexture(const char* pszName,int width, int height, const unsigned char* data, int nDataSize, ETextureFormat nFormat, ER_TextureAddressMode textureAddress = TEXADDRESS_WRAP, int nFlags = 0);
 
 	// It will add new rendertarget
-	ITexture*					CreateRenderTarget(int width, int height,ETextureFormat nRTFormat,ER_TextureFilterMode textureFilterType = TEXFILTER_LINEAR, ER_TextureAddressMode textureAddress = TEXADDRESS_WRAP, ER_CompareFunc comparison = COMPFUNC_NEVER, int nFlags = 0);
+	ITexturePtr					CreateRenderTarget(int width, int height,ETextureFormat nRTFormat,ER_TextureFilterMode textureFilterType = TEXFILTER_LINEAR, ER_TextureAddressMode textureAddress = TEXADDRESS_WRAP, ER_CompareFunc comparison = COMPFUNC_NEVER, int nFlags = 0);
 
 	// It will add new rendertarget
-	ITexture*					CreateNamedRenderTarget(const char* pszName,int width, int height, ETextureFormat nRTFormat, ER_TextureFilterMode textureFilterType = TEXFILTER_LINEAR, ER_TextureAddressMode textureAddress = TEXADDRESS_WRAP, ER_CompareFunc comparison = COMPFUNC_NEVER, int nFlags = 0);
+	ITexturePtr					CreateNamedRenderTarget(const char* pszName,int width, int height, ETextureFormat nRTFormat, ER_TextureFilterMode textureFilterType = TEXFILTER_LINEAR, ER_TextureAddressMode textureAddress = TEXADDRESS_WRAP, ER_CompareFunc comparison = COMPFUNC_NEVER, int nFlags = 0);
 
 //-------------------------------------------------------------
 // Texture operations
 //-------------------------------------------------------------
-
-	// saves rendertarget to texture, you can also save screenshots
-	void						SaveRenderTarget(ITexture* pTargetTexture, const char* pFileName);
 
 	// Copy render target to texture
 	void						CopyFramebufferToTexture(ITexture* pTargetTexture);
@@ -145,16 +100,13 @@ public:
 	//void						CopyFramebufferToTextureEx(ITexture* pTargetTexture,int srcX0 = -1, int srcY0 = -1,int srcX1 = -1, int srcY1 = -1,int destX0 = -1, int destY0 = -1,int destX1 = -1, int destY1 = -1);
 
 	// Changes render target (MRT)
-	void						ChangeRenderTargets(ITexture** pRenderTargets, int nNumRTs, int* nCubemapFaces = nullptr, ITexture* pDepthTarget = nullptr, int nDepthSlice = 0);
-
-	// fills the current rendertarget buffers
-	void						GetCurrentRenderTargets(ITexture* pRenderTargets[MAX_MRTS], int *nNumRTs, ITexture** pDepthTarget, int cubeNumbers[MAX_MRTS]);
+	void						ChangeRenderTargets(ArrayCRef<ITexturePtr> renderTargets, ArrayCRef<int> rtSlice, const ITexturePtr& depthTarget, int depthSlice);
 
 	// Changes back to backbuffer
 	void						ChangeRenderTargetToBackBuffer();
 
 	// resizes render target
-	void						ResizeRenderTarget(ITexture* pRT, int newWide, int newTall);
+	void						ResizeRenderTarget(const ITexturePtr& renderTarget, int newWide, int newTall);
 
 //-------------------------------------------------------------
 // Matrix for rendering
@@ -196,7 +148,7 @@ public:
 
 	// Set the texture. Animation is set from ITexture every frame (no affection on speed) before you do 'ApplyTextures'
 	// Also you need to specify texture name. If you don't, use registers (not fine with DX10, 11)
-	void						SetTexture( ITexture* pTexture, const char* pszName, int index = 0 );
+	void						SetTexture(int nameHash, const ITexturePtr& pTexture);
 
 //-------------------------------------------------------------
 // Vertex and index buffers
@@ -220,17 +172,9 @@ public:
 	// Destroy index buffer
 	void						DestroyIndexBuffer(IIndexBuffer* pIndexBuffer);
 
-	// Creates new mesh builder
-	IMeshBuilder*				CreateMeshBuilder();
-
-	void						DestroyMeshBuilder(IMeshBuilder* pBuilder);
-
 //-------------------------------------------------------------
 // Shaders and it's operations
 //-------------------------------------------------------------
-
-	// search for existing shader program
-	IShaderProgram*				FindShaderProgram(const char* pszName, const char* query = nullptr);
 
 	// Creates shader class for needed ShaderAPI
 	IShaderProgram*				CreateNewShaderProgram(const char* pszName, const char* query = nullptr);
@@ -246,47 +190,9 @@ public:
 	// Set current shader for rendering
 	void						SetShader(IShaderProgram* pShader);
 
-	// Set Texture for shader
-	void						SetShaderTexture(const char* pszName, ITexture* pTexture);
-
 	// RAW Constant (Used for structure types, etc.)
-	void						SetShaderConstantRaw(const char *pszName, const void *data, int nSize);
+	void						SetShaderConstantRaw(int nameHash, const void *data, int nSize);
 
-
-	//-----------------------------------------------------
-	// Advanced shader programming
-	//-----------------------------------------------------
-	/*
-	// Pixel Shader constants setup (by register number)
-	void						SetPixelShaderConstantInt(int reg, const int constant);
-	void						SetPixelShaderConstantFloat(int reg, const float constant);
-	void						SetPixelShaderConstantVector2D(int reg, const Vector2D &constant);
-	void						SetPixelShaderConstantVector3D(int reg, const Vector3D &constant);
-	void						SetPixelShaderConstantVector4D(int reg, const Vector4D &constant);
-	void						SetPixelShaderConstantMatrix4(int reg, const Matrix4x4 &constant);
-	void						SetPixelShaderConstantFloatArray(int reg, const float *constant, int count);
-	void						SetPixelShaderConstantVector2DArray(int reg, const Vector2D *constant, int count);
-	void						SetPixelShaderConstantVector3DArray(int reg, const Vector3D *constant, int count);
-	void						SetPixelShaderConstantVector4DArray(int reg, const Vector4D *constant, int count);
-	void						SetPixelShaderConstantMatrix4Array(int reg, const Matrix4x4 *constant, int count);
-
-	// Vertex Shader constants setup (by register number)
-	void						SetVertexShaderConstantInt(int reg, const int constant);
-	void						SetVertexShaderConstantFloat(int reg, const float constant);
-	void						SetVertexShaderConstantVector2D(int reg, const Vector2D &constant);
-	void						SetVertexShaderConstantVector3D(int reg, const Vector3D &constant);
-	void						SetVertexShaderConstantVector4D(int reg, const Vector4D &constant);
-	void						SetVertexShaderConstantMatrix4(int reg, const Matrix4x4 &constant);
-	void						SetVertexShaderConstantFloatArray(int reg, const float *constant, int count);
-	void						SetVertexShaderConstantVector2DArray(int reg, const Vector2D *constant, int count);
-	void						SetVertexShaderConstantVector3DArray(int reg, const Vector3D *constant, int count);
-	void						SetVertexShaderConstantVector4DArray(int reg, const Vector4D *constant, int count);
-	void						SetVertexShaderConstantMatrix4Array(int reg, const Matrix4x4 *constant, int count);
-	
-	// RAW Constant
-	void						SetPixelShaderConstantRaw(int reg, const void *data, int nVectors = 1);
-	void						SetVertexShaderConstantRaw(int reg, const void *data, int nVectors = 1);
-	*/
 //-------------------------------------------------------------
 // State manipulation 
 //-------------------------------------------------------------
@@ -310,7 +216,7 @@ public:
 // Vertex buffer objects
 //-------------------------------------------------------------
 
-	IVertexFormat*				CreateVertexFormat(VertexFormatDesc_t *formatDesc, int nAttribs);
+	IVertexFormat*				CreateVertexFormat(const char* name, const VertexFormatDesc_t* formatDesc, int nAttribs);
 	IVertexBuffer*				CreateVertexBuffer(ER_BufferAccess nBufAccess, int nNumVerts, int strideSize, void *pData = nullptr);
 	IIndexBuffer*				CreateIndexBuffer(int nIndices, int nIndexSize, ER_BufferAccess nBufAccess, void *pData = nullptr);
 
@@ -324,9 +230,6 @@ public:
 	// Draw elements
 	void						DrawNonIndexedPrimitives(ER_PrimitiveType nType, int nFirstVertex, int nVertices);
 
-	// mesh buffer FFP emulation
-	void						DrawMeshBufferPrimitives(ER_PrimitiveType nType, int nVertices, int nIndices);
-
 //-------------------------------------------------------------
 // Internal
 //-------------------------------------------------------------
@@ -335,37 +238,36 @@ public:
 	ID3D10RenderTargetView*		TexResource_CreateShaderRenderTargetView(ID3D10Resource *resource, DXGI_FORMAT format = DXGI_FORMAT_UNKNOWN, int firstSlice = -1, int sliceCount = -1);
 	ID3D10DepthStencilView*		TexResource_CreateShaderDepthStencilView(ID3D10Resource *resource, DXGI_FORMAT format = DXGI_FORMAT_UNKNOWN, int firstSlice = -1, int sliceCount = -1);
 
-	void						CreateTextureInternal(ITexture** pTex, const Array<CImage*>& pImages, const SamplerStateParam_t& sSamplingParams,int nFlags = 0);
 
 protected:
+	static void					InternalCreateDepthTarget(CD3D10Texture* pTexture, ID3D10Device* pDevice);
+	static void					InternalCreateRenderTarget(CD3D10Texture* pTexture, ID3D10Device* pDevice);
+
+	void						CreateTextureInternal(ITexture** pTex, const Array<CImage*>& pImages, const SamplerStateParam_t& sSamplingParams,int nFlags = 0);
 
 	ID3D10Resource*				CreateD3DTextureFromImage(CImage* pSrc, int& wide, int& tall, int nFlags = 0);
 
-	//void						AddTextureInternal(ITexture** pTex, CImage *texImage,SamplerStateParam_t& sSamplingParams,int nFlags = 0);
-	//void						AddAnimatedTextureInternal(ITexture** pTex, CImage **texImage, int numTextures, SamplerStateParam_t& sSamplingParams,int nFlags = 0);
-
-	int							GetSamplerUnit(IShaderProgram* pProgram,const char* pszSamplerName);
-
 private:
-	//OpenGL - Specific
+	static bool					FillShaderResourceView(ID3D10SamplerState** samplers, ID3D10ShaderResourceView** dest, int& min, int& max, ITexturePtr* selectedTextures, ITexturePtr* currentTextures, const int selectedTextureSlices[], int currentTextureSlices[]);
+	static bool					InternalFillSamplerState(ID3D10SamplerState** dest, int& min, int& max, ITexturePtr* selectedTextures, ITexturePtr* currentTextures);
+
 	//void						InternalSetupSampler(uint texTarget,SamplerStateParam_t *sSamplingParams);
 	//void						InternalChangeFrontFace(int nCullFaceMode);
 
-	//ID3D10RenderTargetView*		m_pBackBufferRTV;
-	ID3D10DepthStencilView*		m_pDepthBufferDSV;
-	//ID3D10Texture2D*			m_pBackBuffer;
-	ID3D10Texture2D*			m_pDepthBuffer;
+	//ID3D10RenderTargetView*		m_pBackBufferRTV{ nullptr };
+	ID3D10DepthStencilView*		m_pDepthBufferDSV{ nullptr };
+	//ID3D10Texture2D*			m_pBackBuffer{ nullptr };
+	ID3D10Texture2D*			m_pDepthBuffer{ nullptr };
 
-	ITexture*					m_pBackBufferTexture;
-	ITexture*					m_pDepthBufferTexture;
+	ITexturePtr					m_pBackBufferTexture;
+	ITexturePtr					m_pDepthBufferTexture;
 
-	ITexture*					m_pCurrentTexturesVS[MAX_TEXTUREUNIT];
-	ITexture*					m_pCurrentTexturesGS[MAX_TEXTUREUNIT];
-	ITexture*					m_pCurrentTexturesPS[MAX_TEXTUREUNIT];
-
-	ITexture*					m_pSelectedTexturesVS[MAX_TEXTUREUNIT];
-	ITexture*					m_pSelectedTexturesGS[MAX_TEXTUREUNIT];
-	ITexture*					m_pSelectedTexturesPS[MAX_TEXTUREUNIT];
+	ITexturePtr					m_pCurrentTexturesVS[MAX_TEXTUREUNIT];
+	ITexturePtr					m_pCurrentTexturesGS[MAX_TEXTUREUNIT];
+	ITexturePtr					m_pCurrentTexturesPS[MAX_TEXTUREUNIT];
+	ITexturePtr					m_pSelectedTexturesVS[MAX_TEXTUREUNIT];
+	ITexturePtr					m_pSelectedTexturesGS[MAX_TEXTUREUNIT];
+	ITexturePtr					m_pSelectedTexturesPS[MAX_TEXTUREUNIT];
 
 	int							m_pCurrentTextureSlicesVS[MAX_TEXTUREUNIT];
 	int							m_pCurrentTextureSlicesGS[MAX_TEXTUREUNIT];
@@ -384,30 +286,16 @@ private:
 	SamplerStateParam_t*		m_pCurrentSamplerStatesGS[MAX_SAMPLERSTATE];
 	SamplerStateParam_t*		m_pCurrentSamplerStatesPS[MAX_SAMPLERSTATE];
 
-	int							m_nCurrentDepthSlice;
+	int							m_nCurrentDepthSlice{ 0 };
 
 	// Custom blend state
-	SamplerStateParam_t*		m_pCustomSamplerState;
-
+	SamplerStateParam_t*		m_pCustomSamplerState{ nullptr };
 	int							m_nCurrentFrontFace;
 
-	IShaderProgram*				m_pMeshBufferNoTextureShader;
-	IShaderProgram*				m_pMeshBufferTexturedShader;
+	ID3D10Device*				m_pD3DDevice{ nullptr };
+	ID3D10Query*				m_pEventQuery{ nullptr };
 
-	ID3D10Device*				m_pD3DDevice;
-	ID3D10Query*				m_pEventQuery;
-
-	Vector4D					m_vScaleBias2D;
-
-	Vector4D					m_vCurColor;
-
-	int							m_nCurrentSampleMask;
-	int							m_nSelectedSampleMask;
-
-	ER_MatrixMode				m_nCurrentMatrixMode;
-	Matrix4x4					m_matrices[4];
-
+	int							m_nCurrentSampleMask{ -1 };
+	int							m_nSelectedSampleMask{ -1 };
 	bool						m_bDeviceIsLost;
 };
-
-#endif // ShaderAPID3DX10_H

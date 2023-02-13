@@ -1,12 +1,13 @@
 //////////////////////////////////////////////////////////////////////////////////
 // Copyright © Inspiration Byte
-// 2009-2020
+// 2009-2023
 //////////////////////////////////////////////////////////////////////////////////
 // Description: Constant types for Equilibrium renderer
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef D3DRENDERER_CONSTANTS_H
-#define D3DRENDERER_CONSTANTS_H
+#pragma once
+
+#define SAFE_RELEASE(p) { if (p) { p->Release(); p = nullptr; } }
 
 static const D3D10_BLEND blendingConsts[] = {
 	D3D10_BLEND_ZERO,
@@ -206,54 +207,3 @@ inline bool HasAniso(ER_TextureFilterMode filter)
 {
     return (filter >= TEXFILTER_BILINEAR_ANISO);
 }
-
-static char s_FFPMeshBuilder_VertexProgram[] = 
-"struct VsIn\
-{\
-	float4 Position : POSITION;\
-	float2 TexCoord : TEXCOORD;\
-	float4 Color	: COLOR;\
-};\
-struct PsIn\
-{\
-	float4 Position : SV_Position;\
-	float2 TexCoord : TEXCOORD;\
-	float4 Color	: COLOR;\
-};\
-float4x4 WVP;\
-PsIn vs_main(VsIn In)\
-{\
-	PsIn Out;\
-	Out.Position = mul(WVP,  In.Position);\
-	Out.TexCoord = In.TexCoord;\
-	Out.Color = In.Color;\
-	return Out;\
-}";
-
-static char s_FFPMeshBuilder_NoTexture_PixelProgram[] = 
-"struct PsIn\
-{\
-	float4 Position : SV_Position;\
-	float2 TexCoord : TEXCOORD;\
-	float4 Color	: COLOR;\
-};\
-float4 ps_main(PsIn In) : SV_Target\
-{\
-	return In.Color;\
-}";
-
-static char s_FFPMeshBuilder_Textured_PixelProgram[] = 
-"struct PsIn\
-{\
-	float4 Position : SV_Position;\
-	float2 TexCoord : TEXCOORD;\
-	float4 Color	: COLOR;\
-};\
-Texture2D BaseTexture: register(t0);\
-SamplerState Filter: register(s0);\
-float4 ps_main(PsIn In) : SV_Target\
-{\
-	return BaseTexture.Sample(Filter,In.TexCoord) * In.Color;\
-}";
-
-#endif //D3DRENDERER_CONSTANTS_H

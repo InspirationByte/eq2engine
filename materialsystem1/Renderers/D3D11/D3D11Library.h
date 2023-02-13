@@ -5,22 +5,17 @@
 // Description: D3D Rendering library interface
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef CGLRENDERLIB_H
-#define CGLRENDERLIB_H
+#pragma once
 
-#include "IShaderAPI.h"
-#include "../Shared/IRenderLibrary.h"
+#include "renderers/IShaderAPI.h"
+#include "IRenderLibrary.h"
 
-#include <d3d10.h>
-#include <d3dx10.h>
-
-class CD3DRenderLib : public IRenderLibrary
+class CD3D11RenderLib : public IRenderLibrary
 {
-public:
 	friend class	ShaderAPID3DX10;
-
-	CD3DRenderLib();
-	~CD3DRenderLib();
+public:
+	CD3D11RenderLib();
+	~CD3D11RenderLib();
 
 	bool			InitCaps();
 
@@ -30,11 +25,20 @@ public:
 	bool			InitAPI(const shaderAPIParams_t &params);
 
 	// frame begin/end
-	void			BeginFrame();
-	void			EndFrame(IEqSwapChain* swapChain = nullptr);
+	void			BeginFrame(IEqSwapChain* swapChain = nullptr);
+	void			EndFrame();
 
 	// renderer interface
-	IShaderAPI*		GetRenderer() {return m_Renderer;}
+	IShaderAPI*		GetRenderer() const;
+
+	// reports focus state
+	void			SetFocused(bool inFocus);
+
+	// changes windowed/fullscreen mode; returns false if failed
+	bool			SetWindowed(bool enabled);
+
+	// speaks for itself
+	bool			IsWindowed() const;
 
 	// sets backbuffer size for default swap chain
 	void			SetBackbufferSize(int w, int h);
@@ -53,32 +57,28 @@ public:
 
 protected:
 
-	IShaderAPI*		m_Renderer;
-
-	HWND			m_hwnd;
-	IDXGIFactory*	m_dxgiFactory;
+	HWND					m_hwnd{ nullptr };
+	IDXGIFactory*			m_dxgiFactory{ nullptr };
 
 #ifdef COMPILE_D3D_10_1
-	ID3D10Device1*	m_rhi;
+	ID3D10Device1*			m_rhi{ nullptr };
 #else
-	ID3D10Device*	m_rhi;
+	ID3D10Device*			m_rhi{ nullptr };
 #endif
 
-	IEqSwapChain*			m_swapChain;
+	IEqSwapChain*			m_defaultSwapChain{ nullptr };
+	IEqSwapChain*			m_currentSwapChain{ nullptr };
 	Array<IEqSwapChain*>	m_swapChains{ PP_SL };
 
-	DXGI_RATIONAL	m_fullScreenRefresh;
+	DXGI_RATIONAL			m_fullScreenRefresh;
 
-	DXGI_FORMAT		m_nBackBufferFormat;
-	DXGI_FORMAT		m_nDepthBufferFormat;
-	int				m_nMsaaSamples;
+	// TODO: struct for those
+	DXGI_FORMAT				m_backBufferFormat{ DXGI_FORMAT_UNKNOWN };
+	DXGI_FORMAT				m_depthBufferFormat{ DXGI_FORMAT_UNKNOWN };
+	int						m_msaaSamples{ 0 };
+	int						m_width{ 0 };
+	int						m_height{ 0 };
+	bool					m_resized{ false };
 
-	int				m_width;
-	int				m_height;
-
-	bool			m_bResized;
-
-	shaderAPIParams_t	savedParams;
+	shaderAPIParams_t		m_savedParams;
 };
-
-#endif //CGLRENDERLIB_H

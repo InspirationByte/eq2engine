@@ -7,55 +7,42 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include <d3d10.h>
-#include <d3dx10.h>
 
-#include "DebugInterface.h"
-#include "IndexBufferD3DX10.h"
+#include "core/core_common.h"
+#include "D3D11IndexBuffer.h"
 
-CIndexBufferD3DX10::CIndexBufferD3DX10()
+CIndexBufferD3DX10::~CIndexBufferD3DX10()
 {
-	m_nIndices = 0;
-	m_nIndexSize = 0;
-	m_pIndexBuffer = 0;
-	m_bIsLocked = false;
-
-	m_nUsage = D3D10_USAGE_DEFAULT;
+	if (m_buffer)
+		m_buffer->Release();
 }
 
-int8 CIndexBufferD3DX10::GetIndexSize()
+// updates buffer without map/unmap operations which are slower
+void CIndexBufferD3DX10::Update(void* data, int size, int offset, bool discard)
 {
-	return m_nIndexSize;
+	ASSERT_FAIL("Unimplemented");
 }
-
-int CIndexBufferD3DX10::GetIndicesCount()
-{
-	return m_nIndices;
-}
-
-extern ID3D10Device* pXDevice;
 
 // locks vertex buffer and gives to programmer buffer data
 bool CIndexBufferD3DX10::Lock(int lockOfs, int sizeToLock, void** outdata, bool readOnly)
 {
-	bool dynamic = (m_nUsage == D3D10_USAGE_DYNAMIC);
-
-	if(m_bIsLocked)
+	const bool dynamic = (m_usage == D3D10_USAGE_DYNAMIC);
+	if(m_isLocked)
 	{
-		ASSERT(!"Vertex buffer already locked! (You must unlock it first!)");
+		ASSERT_FAIL("Vertex buffer already locked");
 		return false;
 	}
 
-	if(sizeToLock > m_nIndices && !dynamic)
+	if(sizeToLock > m_numIndices && !dynamic)
 	{
-		MsgError("Static index buffer is not resizable, must be less or equal %d (%d)\n", m_nIndices, sizeToLock);
-		ASSERT(!"Static index buffer is not resizable. Debug it!\n");
+		MsgError("Static index buffer is not resizable, must be less or equal %d (%d)\n", m_numIndices, sizeToLock);
+		ASSERT_FAIL("Static index buffer is not resizable");
 		return false;
 	}
 
-	int nLockByteCount = m_nIndexSize*sizeToLock;
+	const int nLockByteCount = m_indexSize * sizeToLock;
 
 	D3D10_MAP mapType = D3D10_MAP_WRITE_DISCARD;
-
 	if(!dynamic)
 	{
 		if(readOnly)
@@ -64,12 +51,11 @@ bool CIndexBufferD3DX10::Lock(int lockOfs, int sizeToLock, void** outdata, bool 
 			mapType = D3D10_MAP_WRITE;
 	}
 
-	if(m_pIndexBuffer->Map(mapType, 0, outdata) == S_OK)
+	if(m_buffer->Map(mapType, 0, outdata) == S_OK)
 	{
 		// add the lock offset
-		*((ubyte**)outdata) += m_nIndexSize*lockOfs;
-
-		m_bIsLocked = true;
+		*((ubyte**)outdata) += m_indexSize * lockOfs;
+		m_isLocked = true;
 	}
 	else
 	{
@@ -81,10 +67,7 @@ bool CIndexBufferD3DX10::Lock(int lockOfs, int sizeToLock, void** outdata, bool 
 	}
 
 	if(dynamic)
-	{
-		//elemCount = nLockByteCount;
-		m_nIndices = sizeToLock;
-	}
+		m_numIndices = sizeToLock;
 
 	return true;
 }
@@ -92,10 +75,10 @@ bool CIndexBufferD3DX10::Lock(int lockOfs, int sizeToLock, void** outdata, bool 
 // unlocks buffer
 void CIndexBufferD3DX10::Unlock()
 {
-	if(m_bIsLocked)
-		m_pIndexBuffer->Unmap();
+	if(m_isLocked)
+		m_buffer->Unmap();
 	else
 		ASSERT(!"Index buffer is not locked!");
 
-	m_bIsLocked = false;
+	m_isLocked = false;
 }

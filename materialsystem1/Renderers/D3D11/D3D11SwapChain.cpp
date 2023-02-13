@@ -5,31 +5,26 @@
 // Description: D3D10 Renderer swapchain for using to draw in multiple windows
 //////////////////////////////////////////////////////////////////////////////////
 
-#include "D3D10SwapChain.h"
-#include "ShaderAPID3DX10.h"
-#include "DebugInterface.h"
-#include "d3dx10_def.h"
+#include <d3d10.h>
+#include "core/core_common.h"
+#include "D3D11SwapChain.h"
+#include "ShaderAPID3D11.h"
+
+#include "d3dx11_def.h"
+
+extern ShaderAPID3DX10 s_shaderApi;
 
 CD3D10SwapChain::~CD3D10SwapChain()
 {
 	// back to normal screen
-	if(m_RHIChain)
+	if(m_swapChain)
 	{
-		m_RHIChain->SetFullscreenState(false, NULL);
-		m_RHIChain->Release();
+		m_swapChain->SetFullscreenState(false, NULL);
+		m_swapChain->Release();
 	}
-
-	m_rhi->Release();
 
 	if(m_backbuffer)
 		g_pShaderAPI->FreeTexture(m_backbuffer);
-}
-
-CD3D10SwapChain::CD3D10SwapChain()
-{
-	m_backbuffer = NULL;
-	m_rhi = NULL;
-	m_RHIChain = NULL;
 }
 
 bool CD3D10SwapChain::Initialize(	HWND window, int numMSAASamples, 
@@ -48,9 +43,6 @@ bool CD3D10SwapChain::Initialize(	HWND window, int numMSAASamples,
 
 	m_width = 0;
 	m_height = 0;
-
-	m_rhi = rhi;
-	m_rhi->AddRef();
 
 	// init datas
 
@@ -87,7 +79,7 @@ bool CD3D10SwapChain::Initialize(	HWND window, int numMSAASamples,
 
 	Msg("Creating DXGI swapchain W=%d H=%d\n", m_width, m_height);
 
-	HRESULT res = dxFactory->CreateSwapChain(m_rhi, &sd, &m_RHIChain);
+	HRESULT res = dxFactory->CreateSwapChain(rhi, &sd, &m_swapChain);
 
 	if (FAILED(res))
 	{
@@ -100,33 +92,29 @@ bool CD3D10SwapChain::Initialize(	HWND window, int numMSAASamples,
 
 bool CD3D10SwapChain::CreateOrUpdateBackbuffer()
 {
-	if(!m_RHIChain)
+	if(!m_swapChain)
 		return false;
 
 	if(!m_backbuffer)
 	{
-		m_backbuffer = new CD3D10Texture;
-		m_backbuffer->SetName("_rt_backbuffer");
+		m_backbuffer.Assign((CD3D10Texture*)s_shaderApi.CreateTextureResource("_rt_backbuffer").Ptr());
+
 		m_backbuffer->SetDimensions(m_width, m_height);
 		m_backbuffer->SetFlags(TEXFLAG_RENDERTARGET | TEXFLAG_FOREIGN | TEXFLAG_NOQUALITYLOD);
-
-		m_backbuffer->Ref_Grab();
-
-		((ShaderAPID3DX10*)g_pShaderAPI)->m_TextureList.append(m_backbuffer);
 	}
 
 	ID3D10Texture2D*		backbufferTex;
 	ID3D10RenderTargetView* backbufferRTV;
 
-	if (FAILED(m_RHIChain->GetBuffer(0, __uuidof(ID3D10Texture2D), (LPVOID *) &backbufferTex))) 
+	if (FAILED(m_swapChain->GetBuffer(0, __uuidof(ID3D10Texture2D), (LPVOID *) &backbufferTex))) 
 		return false;
 
-	if (FAILED(m_rhi->CreateRenderTargetView(backbufferTex, NULL, &backbufferRTV)))
+	if (FAILED(s_shaderApi.m_pD3DDevice->CreateRenderTargetView(backbufferTex, NULL, &backbufferRTV)))
 		return false;
 
-	m_backbuffer->textures.append( backbufferTex );
-	m_backbuffer->rtv.append( backbufferRTV );
-	m_backbuffer->srv.append( ((ShaderAPID3DX10*)g_pShaderAPI)->TexResource_CreateShaderResourceView(backbufferTex) );
+	m_backbuffer->m_textures.append( backbufferTex );
+	m_backbuffer->m_rtv.append( backbufferRTV );
+	m_backbuffer->m_srv.append( ((ShaderAPID3DX10*)g_pShaderAPI)->TexResource_CreateShaderResourceView(backbufferTex) );
 
 	Msg("CreateOrUpdateBackbuffer OK\n");
 
@@ -134,7 +122,7 @@ bool CD3D10SwapChain::CreateOrUpdateBackbuffer()
 }
 
 // retrieves backbuffer size for this swap chain
-void CD3D10SwapChain::GetBackbufferSize(int& wide, int& tall)
+void CD3D10SwapChain::GetBackbufferSize(int& wide, int& tall) const
 {
 	wide = m_backbuffer->GetWidth();
 	tall = m_backbuffer->GetHeight();
@@ -146,30 +134,14 @@ bool CD3D10SwapChain::SetBackbufferSize(int wide, int tall)
 	m_width = wide;
 	m_height = tall;
 
-	m_rhi->OMSetRenderTargets(0, NULL, NULL);
+	s_shaderApi.m_pD3DDevice->OMSetRenderTargets(0, NULL, NULL);
 
 	if(m_backbuffer)
-	{
-		// release textures
-		for(int i = 0; i < m_backbuffer->textures.numElem(); i++)
-			m_backbuffer->textures[i]->Release();
-
-		m_backbuffer->textures.clear();
-
-		for(int i = 0; i < m_backbuffer->rtv.numElem(); i++)
-			m_backbuffer->rtv[i]->Release();
-
-		m_backbuffer->rtv.clear();
-
-		for(int i = 0; i < m_backbuffer->srv.numElem(); i++)
-			m_backbuffer->srv[i]->Release();
-
-		m_backbuffer->srv.clear();
-	}
+		m_backbuffer->Release();
 
 	Msg("SetBackbufferSize: %dx%d\n", m_width, m_height);
 
-	HRESULT hr = m_RHIChain->ResizeBuffers(1, m_width, m_height, m_backBufferFormat, /*DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH*/ 0);
+	HRESULT hr = m_swapChain->ResizeBuffers(1, m_width, m_height, m_backBufferFormat, /*DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH*/ 0);
 
 	if (FAILED(hr))
 	{
@@ -185,7 +157,7 @@ bool CD3D10SwapChain::SetBackbufferSize(int wide, int tall)
 // individual swapbuffers call
 bool CD3D10SwapChain::SwapBuffers()
 {
-	if (FAILED(m_RHIChain->Present( (int)m_vSyncEnabled, 0 )))
+	if (FAILED(m_swapChain->Present( (int)m_vSyncEnabled, 0 )))
 		return false;
 
 	return true;
