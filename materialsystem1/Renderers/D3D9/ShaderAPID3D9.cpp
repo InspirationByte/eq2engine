@@ -186,6 +186,7 @@ bool ShaderAPID3D9::RestoreDevice()
 	DevMsg(DEVMSG_SHADERAPI, "Restoring device...\n");
 
 	// reset all the stuff so we could re-apply
+	Reset();
 
 	m_pCurrentBlendstate = nullptr;
 	m_pCurrentDepthState = nullptr;

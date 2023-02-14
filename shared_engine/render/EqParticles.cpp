@@ -203,25 +203,13 @@ int CParticleBatch::GetEntryCount() const
 
 //----------------------------------------------------------------------------------------------------------
 
-bool CParticleLowLevelRenderer::MatSysFn_InitParticleBuffers()
-{
-	return g_pPFXRenderer->InitBuffers();
-}
-
-bool CParticleLowLevelRenderer::MatSysFn_ShutdownParticleBuffers()
-{
-	return g_pPFXRenderer->ShutdownBuffers();
-}
-
 void CParticleLowLevelRenderer::Init()
 {
-	materials->AddDestroyLostCallbacks(MatSysFn_ShutdownParticleBuffers, MatSysFn_InitParticleBuffers);
 	InitBuffers();
 }
 
 void CParticleLowLevelRenderer::Shutdown()
 {
-	materials->RemoveLostRestoreCallbacks(MatSysFn_ShutdownParticleBuffers, MatSysFn_InitParticleBuffers);
 	ShutdownBuffers();
 
 	for (int i = 0; i < m_batchs.numElem(); i++)
