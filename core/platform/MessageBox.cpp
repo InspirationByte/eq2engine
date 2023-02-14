@@ -232,7 +232,7 @@ IEXPORTS int _InternalAssertMsg(PPSourceLine sl, const char *fmt, ...)
 
 #ifndef _DKLAUNCHER_
 	const bool eqCoreInit = g_eqCore->IsInitialized();
-	(eqCoreInit ? LogMsg : AssertLogMsg)(SPEW_ERROR, "\n*Assertion failed, file \"%s\", line %d\n*Expression \"%s\"", sl.GetFileName(), sl.GetLine(), formattedStr.ToCString());
+	(eqCoreInit ? LogMsg : AssertLogMsg)(SPEW_ERROR, "\n*Assertion failed, file \"%s\", line %d\n*Expression \"%s\"\n", sl.GetFileName(), sl.GetLine(), formattedStr.ToCString());
 #endif //_DKLAUNCHER_
 
 	EqString messageStr = EqString::Format("%s\n\nFile: %s\nLine: %d\n\n", formattedStr.ToCString(), sl.GetFileName(), sl.GetLine());
@@ -277,11 +277,11 @@ IEXPORTS int _InternalAssertMsg(PPSourceLine sl, const char* fmt, ...)
 
 #ifndef _DKLAUNCHER_
 	const bool eqCoreInit = g_eqCore->IsInitialized();
-	(eqCoreInit ? LogMsg : AssertLogMsg)(SPEW_ERROR, "\n*Assertion failed, file \"%s\", line %d\n*Expression \"%s\"", sl.GetFileName(), sl.GetLine(), formattedStr.ToCString());
+	(eqCoreInit ? LogMsg : AssertLogMsg)(SPEW_ERROR, "\n*Assertion failed, file \"%s\", line %d\n*Expression \"%s\"\n", sl.GetFileName(), sl.GetLine(), formattedStr.ToCString());
 #endif //_DKLAUNCHER_
 
 #ifndef USE_GTK
-	ErrorMsg("\n*Assertion failed, file \"%s\", line %d\n*Expression \"%s\"", sl.GetFileName(), sl.GetLine(), formattedStr.ToCString());
+	ErrorMsg("\n*Assertion failed, file \"%s\", line %d\n*Expression \"%s\"\n", sl.GetFileName(), sl.GetLine(), formattedStr.ToCString());
 #else
 
 	EqString messageStr = EqString::Format("%s\n\nFile: %s\nLine: %d\n\nDebug?", formattedStr.ToCString(), sl.GetFileName(), sl.GetLine());
