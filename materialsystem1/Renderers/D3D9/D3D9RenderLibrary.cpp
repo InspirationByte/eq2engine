@@ -101,7 +101,7 @@ bool CD3D9RenderLib::InitAPI( const shaderAPIParams_t &params )
 	}
 
 	// clear present parameters
-	memset(&m_d3dpp, 0, sizeof(m_d3dpp));
+	ZeroMemory(&m_d3dpp, sizeof(m_d3dpp));
 
 	// set window
 	m_hwnd = (HWND)params.windowHandle;
@@ -290,42 +290,34 @@ void CD3D9RenderLib::ExitAPI()
 		m_d3dFactory->Release();
 		m_d3dFactory = nullptr;
 	}
-
-	//DestroyWindow(hwnd);
-}
-
-void CD3D9RenderLib::CheckResetDevice()
-{
-	if (s_shaderApi.IsDeviceActive())
-		return;
-
-	if (!m_resized)
-	{
-		HRESULT hr;
-
-		if (FAILED(hr = m_rhi->TestCooperativeLevel()))
-		{
-			if (hr == D3DERR_DEVICELOST)
-				return;
-
-			if (hr == D3DERR_DEVICENOTRESET)
-				s_shaderApi.ResetDevice(m_d3dpp);
-
-			return;
-		}
-	}
-	else
-	{
-		s_shaderApi.ResetDevice(m_d3dpp);
-		m_resized = false;
-	}
 }
 
 void CD3D9RenderLib::BeginFrame(IEqSwapChain* swapChain)
 {
-	m_curSwapChain = swapChain;
+	// check if device has been lost
+	HRESULT hr;
+	if (FAILED(hr = m_rhi->TestCooperativeLevel()))
+	{
+		if (hr == D3DERR_DEVICELOST)
+		{
+			s_shaderApi.OnDeviceLost();
+			hr = m_rhi->TestCooperativeLevel();
+		}
 
-	CheckResetDevice();
+		if (hr == D3DERR_DEVICENOTRESET)
+		{
+			s_shaderApi.OnDeviceLost();
+			s_shaderApi.ResetDevice(m_d3dpp);
+		}
+	}
+
+	if (!s_shaderApi.IsDeviceActive())
+	{
+		// attempt to restore it
+		s_shaderApi.RestoreDevice();
+	}
+
+	m_curSwapChain = swapChain;
 
 	static volatile bool s_textureJobRunning = false;
 
@@ -338,7 +330,6 @@ void CD3D9RenderLib::BeginFrame(IEqSwapChain* swapChain)
 		});
 	}
 
-
 	m_rhi->BeginScene();
 }
 
@@ -348,33 +339,35 @@ void CD3D9RenderLib::EndFrame()
 
 	HRESULT hr;
 
-	HWND pHWND = m_hwnd;
-
-	if(m_curSwapChain)
-		pHWND = (HWND)m_curSwapChain->GetWindow();
+	const HWND pHWND = m_curSwapChain ? (HWND)m_curSwapChain->GetWindow() : m_hwnd;
 
 	if(!IsWindowed())
 	{
 		// fullscreen present
 		hr = m_rhi->Present(nullptr, nullptr, pHWND, nullptr);
-		s_shaderApi.CheckDeviceResetOrLost(hr);
 		return;
 	}
+	else
+	{
+		RECT destRect;
+		GetClientRect(pHWND, &destRect);
 
-	RECT destRect;
-	GetClientRect( pHWND, &destRect );
+		int x, y, w, h;
+		s_shaderApi.GetViewport(x, y, w, h);
 
-	int x, y, w, h;
-	s_shaderApi.GetViewport(x,y,w,h);
+		RECT srcRect;
+		srcRect.left = x;
+		srcRect.right = x + w;
+		srcRect.top = y;
+		srcRect.bottom = y + h;
 
-	RECT srcRect;
-	srcRect.left = x;
-	srcRect.right = x + w;
-	srcRect.top = y;
-	srcRect.bottom = y + h;
+		hr = m_rhi->Present(&srcRect, &destRect, pHWND, nullptr);
+	}
 
-	hr = m_rhi->Present(&srcRect, &destRect, pHWND, nullptr);
-	s_shaderApi.CheckDeviceResetOrLost(hr);
+	if (hr == D3DERR_DEVICELOST)
+		s_shaderApi.OnDeviceLost();
+	else if (FAILED(hr) && hr != D3DERR_INVALIDCALL)
+		MsgWarning("DIRECT3D9 present failed.\n");
 }
 
 void CD3D9RenderLib::SetBackbufferSize(const int w, const int h)
@@ -391,8 +384,9 @@ void CD3D9RenderLib::SetBackbufferSize(const int w, const int h)
 
 	SetupSwapEffect(s_shaderApi.m_params);
 	
-	m_resized = true;
-	s_shaderApi.m_bDeviceIsLost = true;
+	// intentionally reset the device
+	s_shaderApi.OnDeviceLost();
+	s_shaderApi.ResetDevice(m_d3dpp);
 }
 
 // reports focus state
@@ -419,6 +413,9 @@ void CD3D9RenderLib::SetupSwapEffect(const shaderAPIParams_t& params)
 // changes fullscreen mode
 bool CD3D9RenderLib::SetWindowed(bool enabled)
 {
+	if (enabled == m_d3dpp.Windowed)
+		return true;
+
 	bool old = m_d3dpp.Windowed;
 
 	m_d3dpp.BackBufferWidth = m_width;
@@ -428,9 +425,8 @@ bool CD3D9RenderLib::SetWindowed(bool enabled)
 	m_d3dpp.Windowed = enabled;
 
 	SetupSwapEffect(s_shaderApi.m_params);
-	
-	m_resized = false;
 
+	s_shaderApi.OnDeviceLost();
 	if (!s_shaderApi.ResetDevice(m_d3dpp))
 	{
 		MsgError("SetWindowed(%d) - failed to reset device!\n", enabled);

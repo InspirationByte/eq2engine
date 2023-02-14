@@ -170,8 +170,9 @@ void CGameHost::SetFullscreenMode()
 	{
 		Msg("Set %dx%d mode (fullscreen)\n", nAdjustedWide, nAdjustedTall);
 
-		SDL_SetWindowFullscreen(m_pWindow, SDL_WINDOW_FULLSCREEN);
 		SDL_SetWindowSize(m_pWindow, nAdjustedWide, nAdjustedTall);
+		SDL_SetWindowFullscreen(m_pWindow, SDL_WINDOW_FULLSCREEN);
+		
 	}
 }
 

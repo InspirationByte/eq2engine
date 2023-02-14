@@ -77,251 +77,224 @@ void ShaderAPID3D9::SetD3DDevice(LPDIRECT3DDEVICE9 d3ddev, D3DCAPS9 &d3dcaps)
 // Check for device lost
 //-----------------------------------------------------------------------------
 
-void ShaderAPID3D9::CheckDeviceResetOrLost(HRESULT hr)
+void ShaderAPID3D9::OnDeviceLost()
 {
-	if (hr == D3DERR_DEVICELOST)
-	{
-		if(!m_bDeviceIsLost)
-			MsgWarning("DIRECT3D9 device lost.\n");
-
-		m_bDeviceIsLost = true;
-	}
-	else if (FAILED(hr) && hr != D3DERR_INVALIDCALL)
-	{
-		MsgWarning("DIRECT3D9 present failed.\n");
+	if (m_deviceIsLost)
 		return;
-	}
-}
 
-bool ShaderAPID3D9::ResetDevice( D3DPRESENT_PARAMETERS &d3dpp )
-{
-	HRESULT hr;
+	m_deviceIsLost = true;
 
-	if(!m_bDeviceAtReset)
+	if (m_pEventQuery)
+		m_pEventQuery->Release();
+	m_pEventQuery = nullptr;
+
+	// release back buffer and depth first
+	ReleaseD3DFrameBufferSurfaces();
+
 	{
-		m_bDeviceAtReset = true;
-
-		if (m_pEventQuery)
-			m_pEventQuery->Release();
-
-		m_pEventQuery = nullptr;
-
-		
-		Reset();
-		Apply();
-
-		// release back buffer and depth first
-		ReleaseD3DFrameBufferSurfaces();
-
+		CScopedMutex scoped(g_sapi_VBMutex);
+		for (int i = 0; i < m_VBList.numElem(); i++)
 		{
-			CScopedMutex scoped(g_sapi_VBMutex);
-			for (int i = 0; i < m_VBList.numElem(); i++)
-			{
-				CD3D9VertexBuffer* pVB = (CD3D9VertexBuffer*)m_VBList[i];
-				pVB->ReleaseForRestoration();
-			}
+			CD3D9VertexBuffer* pVB = (CD3D9VertexBuffer*)m_VBList[i];
+			pVB->ReleaseForRestoration();
 		}
+	}
 
+	{
+		CScopedMutex scoped(g_sapi_IBMutex);
+		for (int i = 0; i < m_IBList.numElem(); i++)
 		{
-			CScopedMutex scoped(g_sapi_IBMutex);
-			for (int i = 0; i < m_IBList.numElem(); i++)
-			{
-				CD3D9IndexBuffer* pIB = (CD3D9IndexBuffer*)m_IBList[i];
-				pIB->ReleaseForRestoration();
-			}
+			CD3D9IndexBuffer* pIB = (CD3D9IndexBuffer*)m_IBList[i];
+			pIB->ReleaseForRestoration();
 		}
+	}
 
-		for (int i = 0; i < m_OcclusionQueryList.numElem(); i++)
-		{
-			CD3D9OcclusionQuery* query = (CD3D9OcclusionQuery*)m_OcclusionQueryList[i];
-			query->Destroy();
-		}
+	for (int i = 0; i < m_OcclusionQueryList.numElem(); i++)
+	{
+		CD3D9OcclusionQuery* query = (CD3D9OcclusionQuery*)m_OcclusionQueryList[i];
+		query->Destroy();
+	}
 
+	{
+		CScopedMutex scoped(g_sapi_TextureMutex);
+		// relesase texture surfaces
+		for (auto it = m_TextureList.begin(); it != m_TextureList.end(); ++it)
 		{
-			CScopedMutex scoped(g_sapi_TextureMutex);
-			// relesase texture surfaces
-			for (auto it = m_TextureList.begin(); it != m_TextureList.end(); ++it)
+			CD3D9Texture* pTex = (CD3D9Texture*)*it;
+
+			const bool isManaged = (pTex->m_pool == D3DPOOL_MANAGED);
+			if (!isManaged)
 			{
-				CD3D9Texture* pTex = (CD3D9Texture*)*it;
-
-				const bool isManaged = (pTex->m_pool == D3DPOOL_MANAGED);
-				if (!isManaged)
+				if (pTex->GetFlags() & TEXFLAG_RENDERTARGET)
 				{
-					if (pTex->GetFlags() & TEXFLAG_RENDERTARGET)
-					{
-						// don't care - we'll recreate it
-						pTex->Release();
-					}
-					else
-					{
-						DevMsg(DEVMSG_SHADERAPI, "RESET: releasing %s\n", pTex->GetName());
-						pTex->ReleaseForRestoration();
-					}
+					// don't care - we'll recreate it
+					pTex->Release();
+				}
+				else
+				{
+					DevMsg(DEVMSG_SHADERAPI, "RESET: releasing %s\n", pTex->GetName());
+					pTex->ReleaseForRestoration();
 				}
 			}
 		}
-
-		DevMsg(DEVMSG_SHADERAPI, "Device objects releasing done, resetting...\n");
 	}
+
+	DevMsg(DEVMSG_SHADERAPI, "Device objects releasing done\n");
+}
+
+bool ShaderAPID3D9::ResetDevice(D3DPRESENT_PARAMETERS& d3dpp)
+{
+	ASSERT_MSG(m_deviceIsLost, "To gracefully reset device use OnDeviceLost");
+
+	if (m_deviceAtReset)
+		return true;
+	m_deviceAtReset = true;
+
+	HRESULT hr;
 
 	// Reset the device before restoring everything
 	if (FAILED(hr = m_pD3DDevice->Reset(&d3dpp)))
 	{
 		if (hr == D3DERR_DEVICELOST)
 		{
-			m_bDeviceIsLost = true;
-			MsgWarning("Restoring failed due to device lost.\n");
+			m_deviceIsLost = true;
+			m_deviceAtReset = false;
 		}
-		else if(hr == D3DERR_INVALIDCALL)
+		else if (hr == D3DERR_INVALIDCALL)
 		{
-			m_bDeviceIsLost = true;
-			MsgWarning("Restoring failed -  D3DERR_INVALIDCALL\n");
+			MsgError("D3DERR_INVALIDCALL happened while Reset\n");
+			m_deviceIsLost = true;
+			m_deviceAtReset = false;
 		}
 		else
-			MsgWarning("Restoring failed (%d)\n", hr);
+			ASSERT_FAIL("Reset failed (%d)\n", hr);
 
 		return false;
 	}
 
-	if(m_bDeviceAtReset)
+	return true;
+}
+
+bool ShaderAPID3D9::RestoreDevice()
+{
+	if (!m_deviceAtReset)
+		return true;
+
+	m_deviceAtReset = false; 
+	m_deviceIsLost = false;
+
+	DevMsg(DEVMSG_SHADERAPI, "Restoring device...\n");
+
+	// reset all the stuff so we could re-apply
+
+	m_pCurrentBlendstate = nullptr;
+	m_pCurrentDepthState = nullptr;
+	m_pCurrentRasterizerState = nullptr;
+	m_pCurrentShader = nullptr;
+	m_pCurrentVertexFormat = nullptr;
+	m_pCurrentIndexBuffer = nullptr;
+
+	for (int i = 0; i < MAX_TEXTUREUNIT; ++i)
 	{
-		DevMsg(DEVMSG_SHADERAPI, "Restoring states...\n");
+		m_pCurrentTextures[i] = nullptr;
+		m_pCurrentVertexTextures[i] = nullptr;
+	}
 
-		m_bDeviceIsLost = false;
+	memset(m_vsRegs, 0, sizeof(m_vsRegs));
+	memset(m_psRegs, 0, sizeof(m_psRegs));
+	memset(m_pCurrentSamplerStates, 0, sizeof(m_pCurrentSamplerStates));
 
-		m_pCurrentShader = nullptr;
-		m_pCurrentBlendstate = nullptr;
-		m_pCurrentDepthState = nullptr;
-		m_pCurrentRasterizerState = nullptr;
+	m_nCurrentSamplerStateDirty = -1;
+	m_nCurrentVertexSamplerStateDirty = -1;
 
-		m_pCurrentShader = nullptr;
-		m_pSelectedShader = nullptr;
+	for (int i = 0; i < MAX_VERTEXSTREAM; i++)
+		m_nSelectedStreamParam[i] = 1;
 
-		m_pSelectedBlendstate = nullptr;
-		m_pSelectedDepthState = nullptr;
-		m_pSelectedRasterizerState = nullptr;
+	memset(m_pCurrentVertexBuffers, 0, sizeof(m_pCurrentVertexBuffers));
+	memset(m_pActiveVertexFormat, 0, sizeof(m_pActiveVertexFormat));
+	memset(m_nCurrentOffsets, 0, sizeof(m_nCurrentOffsets));
 
-		// VF selectoin
-		m_pSelectedVertexFormat = nullptr;
-		m_pCurrentVertexFormat = nullptr;
+	m_nCurrentSrcFactor = BLENDFACTOR_ONE;
+	m_nCurrentDstFactor = BLENDFACTOR_ZERO;
+	m_nCurrentBlendMode = BLENDFUNC_ADD;
+	m_pCurrentDepthSurface = nullptr;
 
-		// Index buffer
-		m_pSelectedIndexBuffer = nullptr;
-		m_pCurrentIndexBuffer = nullptr;
+	m_nCurrentDepthFunc = COMPFUNC_LEQUAL;
+	m_bCurrentDepthTestEnable = false;
+	m_bCurrentDepthWriteEnable = false;
 
-		// Vertex buffer
-		memset(m_pSelectedVertexBuffers, 0, sizeof(m_pSelectedVertexBuffers));
-		memset(m_pCurrentVertexBuffers, 0, sizeof(m_pCurrentVertexBuffers));
+	m_bCurrentMultiSampleEnable = false;
+	m_bCurrentScissorEnable = false;
+	m_nCurrentCullMode = CULL_BACK;
+	m_nCurrentFillMode = FILL_SOLID;
 
-		memset(m_pActiveVertexFormat, 0, sizeof(m_pActiveVertexFormat));
+	m_nCurrentMask = COLORMASK_ALL;
+	m_bCurrentBlendEnable = false;
 
-		memset(m_nCurrentOffsets, 0, sizeof(m_nCurrentOffsets));
-		memset(m_nSelectedOffsets, 0, sizeof(m_nSelectedOffsets));
+	// Set some of my preferred defaults
+	m_pD3DDevice->SetRenderState(D3DRS_LIGHTING, FALSE);
+	m_pD3DDevice->SetRenderState(D3DRS_CULLMODE, D3DCULL_CCW);
+	m_pD3DDevice->SetTextureStageState(0, D3DTSS_ALPHAOP, D3DTOP_MODULATE);
 
-		// Index buffer
-		m_pSelectedIndexBuffer = nullptr;
-		m_pCurrentIndexBuffer = nullptr;
+	m_pD3DDevice->CreateQuery(D3DQUERYTYPE_EVENT, &m_pEventQuery);
 
-		m_nCurrentSrcFactor = BLENDFACTOR_ONE;
-		m_nCurrentDstFactor = BLENDFACTOR_ZERO;
-		m_nCurrentBlendMode = BLENDFUNC_ADD;
-		m_pCurrentDepthSurface = nullptr;
+	DevMsg(DEVMSG_SHADERAPI, "Restoring VBs...\n");
+	for (int i = 0; i < m_VBList.numElem(); i++)
+	{
+		CD3D9VertexBuffer* pVB = (CD3D9VertexBuffer*)m_VBList[i];
+		pVB->Restore();
+	}
 
-		m_nCurrentDepthFunc = COMPFUNC_LEQUAL;
-		m_bCurrentDepthTestEnable = false;
-		m_bCurrentDepthWriteEnable = false;
+	DevMsg(DEVMSG_SHADERAPI, "Restoring IBs...\n");
+	for (int i = 0; i < m_IBList.numElem(); i++)
+	{
+		CD3D9IndexBuffer* pIB = (CD3D9IndexBuffer*)m_IBList[i];
+		pIB->Restore();
+	}
 
-		m_bCurrentMultiSampleEnable = false;
-		m_bCurrentScissorEnable = false;
-		m_nCurrentCullMode = CULL_BACK;
-		m_nCurrentFillMode = FILL_SOLID;
+	DevMsg(DEVMSG_SHADERAPI, "Restoring query...\n");
+	for (int i = 0; i < m_OcclusionQueryList.numElem(); i++)
+	{
+		CD3D9OcclusionQuery* query = (CD3D9OcclusionQuery*)m_OcclusionQueryList[i];
+		query->Init();
+	}
 
-		m_nCurrentMask = COLORMASK_ALL;
-		m_bCurrentBlendEnable = false;
+	DevMsg(DEVMSG_SHADERAPI, "Restoring RTs...\n");
 
-		// Set some of my preferred defaults
-		m_pD3DDevice->SetRenderState(D3DRS_LIGHTING, FALSE);
-		m_pD3DDevice->SetRenderState(D3DRS_CULLMODE, D3DCULL_CCW);
+	// create texture surfaces
+	for (auto it = m_TextureList.begin(); it != m_TextureList.end(); ++it)
+	{
+		CD3D9Texture* pTex = (CD3D9Texture*)*it;
 
-		m_pD3DDevice->SetTextureStageState(0, D3DTSS_ALPHAOP, D3DTOP_MODULATE);
+		// skip hardcoded
+		if (pTex == m_fbColorTexture || pTex == m_fbDepthTexture)
+			continue;
 
-		memset(m_vsRegs, 0, sizeof(m_vsRegs));
-		memset(m_psRegs, 0, sizeof(m_psRegs));
+		const bool isManaged = (pTex->m_pool == D3DPOOL_MANAGED);
 
-		memset(m_pSelectedSamplerStates, 0, sizeof(m_pSelectedSamplerStates));
-		memset(m_pCurrentSamplerStates, 0, sizeof(m_pCurrentSamplerStates));
-
-		for (int i = 0; i < MAX_TEXTUREUNIT; ++i)
-			m_pSelectedTextures[i] = nullptr;
-
-		for (int i = 0; i < MAX_VERTEXTEXTURES; ++i)
-			m_pSelectedVertexTextures[i] = nullptr;
-
-		ChangeRenderTargetToBackBuffer();
-
-		Reset();
-		Apply();
-
-		DevMsg(DEVMSG_SHADERAPI, "Restoring VBs...\n");
-		for (int i = 0; i < m_VBList.numElem(); i++)
+		// restore unmanaged texture
+		if (!isManaged)
 		{
-			CD3D9VertexBuffer* pVB = (CD3D9VertexBuffer*)m_VBList[i];
-
-			pVB->Restore();
-		}
-
-		DevMsg(DEVMSG_SHADERAPI, "Restoring IBs...\n");
-		for (int i = 0; i < m_IBList.numElem(); i++)
-		{
-			CD3D9IndexBuffer* pIB = (CD3D9IndexBuffer*)m_IBList[i];
-
-			pIB->Restore();
-		}
-
-		DevMsg(DEVMSG_SHADERAPI, "Restoring query...\n");
-		for (int i = 0; i < m_OcclusionQueryList.numElem(); i++)
-		{
-			CD3D9OcclusionQuery* query = (CD3D9OcclusionQuery*)m_OcclusionQueryList[i];
-			query->Init();
-		}
-
-		m_pD3DDevice->CreateQuery(D3DQUERYTYPE_EVENT, &m_pEventQuery);
-
-		DevMsg(DEVMSG_SHADERAPI, "Restoring RTs...\n");
-
-		// create texture surfaces
-		for (auto it = m_TextureList.begin(); it != m_TextureList.end(); ++it)
-		{
-			CD3D9Texture* pTex = (CD3D9Texture*)*it;
-
-			if(pTex->GetFlags() & TEXFLAG_FOREIGN)
-				continue;
-
-			const bool isManaged = (pTex->m_pool == D3DPOOL_MANAGED);
-
-			// restore unmanaged texture
-			if (!isManaged)
+			if (pTex->GetFlags() & TEXFLAG_RENDERTARGET)
 			{
-				if (pTex->GetFlags() & TEXFLAG_RENDERTARGET)
-				{
-					DevMsg(DEVMSG_SHADERAPI, "Restoring rentertarget %s\n", pTex->GetName());
-					InternalCreateRenderTarget(m_pD3DDevice, pTex, pTex->GetFlags(), m_caps);
-				}
-				else
-				{
-					DevMsg(DEVMSG_SHADERAPI, "Restoring texture %s\n", pTex->GetName());
-					pTex->Restore();
-				}
+				DevMsg(DEVMSG_SHADERAPI, "Restoring rentertarget %s\n", pTex->GetName());
+				InternalCreateRenderTarget(m_pD3DDevice, pTex, pTex->GetFlags(), m_caps);
+			}
+			else
+			{
+				DevMsg(DEVMSG_SHADERAPI, "Restoring texture %s\n", pTex->GetName());
+				pTex->Restore();
 			}
 		}
-
-		DevMsg(DEVMSG_SHADERAPI, "Restoring backbuffer...\n");
-
-		// this is a last operation because we
-		CreateD3DFrameBufferSurfaces();
-
-		m_bDeviceAtReset = false;
 	}
+
+	DevMsg(DEVMSG_SHADERAPI, "Restoring backbuffer...\n");
+
+	CreateD3DFrameBufferSurfaces();
+	ChangeRenderTargetToBackBuffer();
+
+	// apply everything back
+	Apply();
 
 	return true;
 }
@@ -333,7 +306,7 @@ bool ShaderAPID3D9::CreateD3DFrameBufferSurfaces()
 		m_fbColorTexture = PPNew CD3D9Texture();
 		m_fbColorTexture->SetName("rhi_fb_color");
 		m_fbColorTexture->SetDimensions(0, 0);
-		m_fbColorTexture->SetFlags(TEXFLAG_RENDERTARGET | TEXFLAG_FOREIGN | TEXFLAG_NOQUALITYLOD);
+		m_fbColorTexture->SetFlags(TEXFLAG_RENDERTARGET | TEXFLAG_NOQUALITYLOD);
 		m_fbColorTexture->Ref_Grab();
 
 		CScopedMutex m(g_sapi_TextureMutex);
@@ -346,7 +319,7 @@ bool ShaderAPID3D9::CreateD3DFrameBufferSurfaces()
 		m_fbDepthTexture = PPNew CD3D9Texture();
 		m_fbDepthTexture->SetName("rhi_fb_depth");
 		m_fbDepthTexture->SetDimensions(0, 0);
-		m_fbDepthTexture->SetFlags(TEXFLAG_RENDERDEPTH | TEXFLAG_FOREIGN | TEXFLAG_NOQUALITYLOD);
+		m_fbDepthTexture->SetFlags(TEXFLAG_RENDERDEPTH | TEXFLAG_NOQUALITYLOD);
 		m_fbDepthTexture->Ref_Grab();
 
 		CScopedMutex m(g_sapi_TextureMutex);
@@ -389,21 +362,6 @@ void ShaderAPID3D9::ReleaseD3DFrameBufferSurfaces()
 // Init + Shurdown
 void ShaderAPID3D9::Init( const shaderAPIParams_t &params )
 {
-	m_bDeviceIsLost = false;
-	m_bDeviceAtReset = false;
-
-	CreateD3DFrameBufferSurfaces();
-
-	m_nCurrentMatrixMode = D3DTS_VIEW;
-
-	// Set some of my preferred defaults
-	m_pD3DDevice->SetRenderState(D3DRS_LIGHTING, FALSE);
-	m_pD3DDevice->SetRenderState(D3DRS_CULLMODE, D3DCULL_CCW);
-
-	m_pD3DDevice->SetTextureStageState(0, D3DTSS_ALPHAOP, D3DTOP_MODULATE);
-
-	m_pD3DDevice->CreateQuery(D3DQUERYTYPE_EVENT, &m_pEventQuery);
-
 	HOOK_TO_CVAR(r_anisotropic);
 	const int desiredAnisotropicLevel = min(r_anisotropic->GetInt(), m_caps.maxTextureAnisotropicLevel);
 
@@ -516,7 +474,7 @@ void ShaderAPID3D9::GetViewport(int &x, int &y, int &w, int &h)
 
 bool ShaderAPID3D9::IsDeviceActive() const
 {
-	return !m_bDeviceIsLost;
+	return !m_deviceAtReset;
 }
 
 void ShaderAPID3D9::Shutdown()
@@ -2461,14 +2419,6 @@ IVertexBuffer* ShaderAPID3D9::CreateVertexBuffer(ER_BufferAccess nBufAccess, int
 
 	DevMsg(DEVMSG_SHADERAPI,"Creating VBO with size %i KB\n", pBuffer->m_nSize / 1024);
 
-	HRESULT hr = m_pD3DDevice->TestCooperativeLevel();
-
-	while (hr == D3DERR_DEVICELOST || hr == D3DERR_DEVICENOTRESET)
-	{
-		// do loops if devise lost or needs reset
-		hr = m_pD3DDevice->TestCooperativeLevel();
-	}
-
 	const bool dynamic = (pBuffer->m_nUsage & D3DUSAGE_DYNAMIC) != 0;
 
 	if (m_pD3DDevice->CreateVertexBuffer(pBuffer->m_nInitialSize, pBuffer->m_nUsage, 0, dynamic ? D3DPOOL_DEFAULT : D3DPOOL_MANAGED, &pBuffer->m_pVertexBuffer, nullptr) != D3D_OK)
@@ -2509,14 +2459,6 @@ IIndexBuffer* ShaderAPID3D9::CreateIndexBuffer(int nIndices, int nIndexSize, ER_
 	bool dynamic = (pBuffer->m_nUsage & D3DUSAGE_DYNAMIC) != 0;
 
 	DevMsg(DEVMSG_SHADERAPI,"Creating IBO with size %i KB\n",(nIndices*nIndexSize) / 1024);
-
-	HRESULT hr = m_pD3DDevice->TestCooperativeLevel();
-
-	while (hr == D3DERR_DEVICELOST || hr == D3DERR_DEVICENOTRESET)
-	{
-		// do loops if devise lost or needs reset
-		hr = m_pD3DDevice->TestCooperativeLevel();
-	}
 
 	if (m_pD3DDevice->CreateIndexBuffer(pBuffer->m_nInitialSize, pBuffer->m_nUsage, nIndexSize == 2? D3DFMT_INDEX16 : D3DFMT_INDEX32, dynamic ? D3DPOOL_DEFAULT : D3DPOOL_MANAGED, &pBuffer->m_pIndexBuffer, nullptr) != D3D_OK)
 	{

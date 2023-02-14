@@ -40,8 +40,9 @@ public:
 	void						SetD3DDevice(LPDIRECT3DDEVICE9 d3ddev, D3DCAPS9 &d3dcaps);
 	LPDIRECT3DDEVICE9			GetD3DDevice() { return m_pD3DDevice; }
 
-	void						CheckDeviceResetOrLost(HRESULT hr);
+	void						OnDeviceLost();
 	bool						ResetDevice(D3DPRESENT_PARAMETERS &d3dpp);
+	bool						RestoreDevice();
 
 	bool						CreateD3DFrameBufferSurfaces();
 	void						ReleaseD3DFrameBufferSurfaces();
@@ -277,10 +278,12 @@ protected:
 private:
 	static bool					InternalCreateRenderTarget(LPDIRECT3DDEVICE9 dev, CD3D9Texture* tex, int nFlags, const ShaderAPICaps_t& caps);
 	
-	CD3D9Texture*				m_fbColorTexture{ nullptr };
-	CD3D9Texture*				m_fbDepthTexture{ nullptr };
+	D3DCAPS9					m_hCaps;
 
 	Set<CD3D9Texture*>			m_progressiveTextures{ PP_SL };
+
+	CD3D9Texture* m_fbColorTexture{ nullptr };
+	CD3D9Texture* m_fbDepthTexture{ nullptr };
 
 	// Sampler states is not binding same as OpenGL
 	SamplerStateParam_t*		m_pSelectedSamplerStates[MAX_SAMPLERSTATE]{ nullptr };
@@ -295,7 +298,6 @@ private:
 	UINT						m_nSelectedStreamParam[MAX_VERTEXSTREAM]{ 0 };
 
 	// Custom blend state
-	
 	SamplerStateParam_t			m_defaultSamplerState;
 
 	int							m_nCurrentSrcFactor{ BLENDFACTOR_ONE };
@@ -338,12 +340,11 @@ private:
 	int							m_nMaxPSDirty{ -1 };
 
 	D3DTRANSFORMSTATETYPE		m_nCurrentMatrixMode{ D3DTS_VIEW };
-	D3DCAPS9					m_hCaps;
 	LPDIRECT3DQUERY9			m_pEventQuery{ nullptr };
 	LPDIRECT3DDEVICE9			m_pD3DDevice{ nullptr };
 
-	bool						m_bDeviceIsLost{ false };
-	bool						m_bDeviceAtReset{ false };
+	bool						m_deviceIsLost{ false };
+	bool						m_deviceAtReset{ false };
 
 	EGraphicsVendor				m_vendor{ VENDOR_OTHER };
 };

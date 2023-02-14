@@ -63,6 +63,16 @@ enum ER_TextureFilterMode : int
 	TEXFILTER_TRILINEAR_ANISO,
 };
 
+inline bool HasMipmaps(ER_TextureFilterMode filter)
+{
+	return (filter >= TEXFILTER_BILINEAR);
+}
+
+inline bool HasAniso(ER_TextureFilterMode filter)
+{
+	return (filter >= TEXFILTER_BILINEAR_ANISO);
+}
+
 // for SetMatrixMode()
 enum ER_MatrixMode : int
 {
@@ -272,7 +282,6 @@ enum ER_TextureFlags : int
 	// texture identification flags
 	TEXFLAG_RENDERTARGET			= (1 << 5),		// this is a rendertarget texture
 	TEXFLAG_RENDERDEPTH				= (1 << 6),		// rendertarget with depth texture
-	TEXFLAG_FOREIGN					= (1 << 7),		// texture is created not by ShaderAPI
 };
 
 // TODO: these limits are

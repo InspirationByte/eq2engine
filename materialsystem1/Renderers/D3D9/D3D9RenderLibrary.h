@@ -60,7 +60,6 @@ public:
 
 protected:
 
-	void					CheckResetDevice();
 	void					SetupSwapEffect(const shaderAPIParams_t& params);
 
 	Array<IEqSwapChain*>	m_swapChains{ PP_SL };
@@ -77,6 +76,4 @@ protected:
 
 	int						m_width{ 0 };
 	int						m_height{ 0 };
-
-	bool					m_resized{ 0 };
 };
