@@ -537,7 +537,7 @@ void ShaderAPID3DX10::InternalCreateDepthTarget(CD3D10Texture* pTexture, ID3D10D
 	}
 
 	// check depth sampling flag
-	if (pTexture->GetFlags() & TEXFLAG_SAMPLEDEPTH)
+	// if (pTexture->GetFlags() & TEXFLAG_SAMPLEDEPTH)
 	{
 		switch (pTexture->m_dsvFormat)
 		{
@@ -571,6 +571,7 @@ void ShaderAPID3DX10::InternalCreateDepthTarget(CD3D10Texture* pTexture, ID3D10D
 	}
 
 	// render depth slices?
+	/*
 	if (pTexture->GetFlags() & TEXFLAG_RENDERSLICES)
 	{
 		if (pTexture->GetFlags() & TEXFLAG_SAMPLEDEPTH)
@@ -583,7 +584,7 @@ void ShaderAPID3DX10::InternalCreateDepthTarget(CD3D10Texture* pTexture, ID3D10D
 			pTexture->m_dsv.append(pDSV);
 		}
 	}
-	else
+	else*/
 	{
 		// make single dsv
 		ID3D10DepthStencilView* pDSV = ((ShaderAPID3DX10*)g_pShaderAPI)->TexResource_CreateShaderDepthStencilView(pTexture->m_textures[0], pTexture->m_dsvFormat);
@@ -591,7 +592,7 @@ void ShaderAPID3DX10::InternalCreateDepthTarget(CD3D10Texture* pTexture, ID3D10D
 		pTexture->m_dsv.append(pDSV);
 	}
 
-	if (pTexture->GetFlags() & TEXFLAG_SAMPLEDEPTH)
+	/*if (pTexture->GetFlags() & TEXFLAG_SAMPLEDEPTH)
 	{
 		// sample slices?
 		if (pTexture->GetFlags() & TEXFLAG_SAMPLESLICES)
@@ -607,7 +608,7 @@ void ShaderAPID3DX10::InternalCreateDepthTarget(CD3D10Texture* pTexture, ID3D10D
 			ID3D10ShaderResourceView* pSRV = ((ShaderAPID3DX10*)g_pShaderAPI)->TexResource_CreateShaderResourceView(pTexture->m_textures[0], pTexture->m_srvFormat);
 			pTexture->m_srv.append(pSRV);
 		}
-	}
+	}*/
 }
 
 void ShaderAPID3DX10::InternalCreateRenderTarget(CD3D10Texture* pTexture, ID3D10Device* pDevice)
@@ -709,7 +710,7 @@ void ShaderAPID3DX10::InternalCreateRenderTarget(CD3D10Texture* pTexture, ID3D10
 	int nSliceCount = (nDepth == 1)? nArraySize : nDepth;
 	
 	// sample texture array?
-	if (pTexture->GetFlags() & TEXFLAG_SAMPLESLICES)
+	/*if (pTexture->GetFlags() & TEXFLAG_SAMPLESLICES)
 	{
 		for (int i = 0; i < nSliceCount; i++)
 		{
@@ -717,13 +718,13 @@ void ShaderAPID3DX10::InternalCreateRenderTarget(CD3D10Texture* pTexture, ID3D10
 			pTexture->m_srv.append( pSRV );
 		}
 	}
-	else
+	else*/
 	{
 		pTexture->m_srv.append(((ShaderAPID3DX10*)g_pShaderAPI)->TexResource_CreateShaderResourceView(pTexture->m_textures[0], pTexture->m_srvFormat));
 	}
 
 	// render texture array?
-	if (pTexture->GetFlags() & TEXFLAG_RENDERSLICES)
+	/*if (pTexture->GetFlags() & TEXFLAG_RENDERSLICES)
 	{
 		for (int i = 0; i < nSliceCount; i++)
 		{
@@ -731,7 +732,7 @@ void ShaderAPID3DX10::InternalCreateRenderTarget(CD3D10Texture* pTexture, ID3D10
 			pTexture->m_rtv.append( pRTV );
 		}
 	}
-	else
+	else*/
 		pTexture->m_rtv.append(((ShaderAPID3DX10*)g_pShaderAPI)->TexResource_CreateShaderRenderTargetView(pTexture->m_textures[0], pTexture->m_rtvFormat));
 
 }
@@ -1217,14 +1218,14 @@ bool ShaderAPID3DX10::CompileShadersFromStream(	IShaderProgram* pShaderOutput,
 	if(!pShader)
 		return false;
 
+	ASSERT_FAIL("Unimplemented");
+#if 0
 	// TODO: implement shader cache for D3D10
 	g_fileSystem->MakeDir("ShaderCache_DX10", SP_MOD);
 
 	ID3D10ShaderReflection *vsRefl = nullptr;
 	ID3D10ShaderReflection *gsRefl = nullptr;
 	ID3D10ShaderReflection *psRefl = nullptr;
-
-	CScopedMutex m(m_Mutex);
 
 	EqString cache_file_name(varargs("ShaderCache_DX10/%s.scache", pShaderOutput->GetName()));
 
@@ -1878,7 +1879,7 @@ create_constant_buffers:
 
 	if (psRefl)
 		psRefl->Release();
-
+#endif
 	return true;
 }
 
@@ -1898,41 +1899,8 @@ void ShaderAPID3DX10::SetShaderConstantRaw(int nameHash, const void* data, int n
 
 	if(!pProgram)
 		return;
-
-	DX10ShaderConstant *constants = pProgram->m_constants;
 	/*
-	if(nConstID != -1)
-	{
-		DX10ShaderConstant_t *c = constants + nConstID;
-
-		if (c->vsData)
-		{
-			if (memcmp(c->vsData, data, nSize))
-			{
-				memcpy(c->vsData, data, nSize);
-				pProgram->m_pvsDirty[c->vsBuffer] = true;
-			}
-		}
-		if (c->gsData)
-		{
-			if (memcmp(c->gsData, data, nSize))
-			{
-				memcpy(c->gsData, data, nSize);
-				pProgram->m_pgsDirty[c->gsBuffer] = true;
-			}
-		}
-		if (c->psData)
-		{
-			if (memcmp(c->psData, data, nSize))
-			{
-				memcpy(c->psData, data, nSize);
-				pProgram->m_ppsDirty[c->psBuffer] = true;
-			}
-		}
-
-		return nConstID;
-	}
-	*/
+	DX10ShaderConstant *constants = pProgram->m_constants;
 
 	int minConstant = 0;
 	int maxConstant = pProgram->m_numConstants - 1;
@@ -1972,6 +1940,7 @@ void ShaderAPID3DX10::SetShaderConstantRaw(int nameHash, const void* data, int n
 			maxConstant = currConstant - 1;
 		}
 	}
+	*/
 }
 
 //-------------------------------------------------------------
@@ -3257,6 +3226,8 @@ void ShaderAPID3DX10::SetTexture(int nameHash, const ITexturePtr& pTexture)
 	if(!pShader)
 		return;
 
+	ASSERT_FAIL("Unimplemented");
+	/*
 	const DX10Sampler_t* sampler = GetSampler(pShader->m_textures, pShader->m_numTextures, nameHash);
 
 	if (!sampler)
@@ -3279,6 +3250,7 @@ void ShaderAPID3DX10::SetTexture(int nameHash, const ITexturePtr& pTexture)
 		m_pSelectedTexturesPS[sampler->index] = pTexture;
 		m_pSelectedTextureSlicesPS[sampler->index] = -1;
 	}
+	*/
 }
 
 void ShaderAPID3DX10::SetViewport(int x, int y, int w, int h)
@@ -3378,7 +3350,7 @@ bool ShaderAPID3DX10::CreateBackbufferDepth(int wide, int tall, DXGI_FORMAT dept
 
 		depthBufferTex->SetName("_rt_depthbuffer");
 		depthBufferTex->SetDimensions(wide, tall);
-		depthBufferTex->SetFlags(TEXFLAG_RENDERTARGET | TEXFLAG_FOREIGN | TEXFLAG_NOQUALITYLOD);
+		depthBufferTex->SetFlags(TEXFLAG_RENDERTARGET | TEXFLAG_NOQUALITYLOD);
 		depthBufferTex->Ref_Grab();
 
 		{

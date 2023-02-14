@@ -149,6 +149,18 @@ static DXGI_FORMAT formats[] = {
 	DXGI_FORMAT_BC3_UNORM,
 	DXGI_FORMAT_BC4_UNORM,
 	DXGI_FORMAT_BC5_UNORM,
+
+	// TODO: more BC
+
+	// mobile compressed formats are unsupported
+	DXGI_FORMAT_UNKNOWN,
+	DXGI_FORMAT_UNKNOWN,
+	DXGI_FORMAT_UNKNOWN,
+	DXGI_FORMAT_UNKNOWN,
+	DXGI_FORMAT_UNKNOWN,
+	DXGI_FORMAT_UNKNOWN,
+	DXGI_FORMAT_UNKNOWN,
+	DXGI_FORMAT_UNKNOWN
 };
 
 static const DXGI_FORMAT d3ddecltypes[][4] = {
@@ -198,12 +210,3 @@ const D3D10_TEXTURE_ADDRESS_MODE d3dAddressMode[] = {
 	D3D10_TEXTURE_ADDRESS_CLAMP,
 	D3D10_TEXTURE_ADDRESS_MIRROR,
 };
-
-inline bool HasMipmaps(ER_TextureFilterMode filter)
-{
-    return (filter >= TEXFILTER_BILINEAR);
-}
-inline bool HasAniso(ER_TextureFilterMode filter)
-{
-    return (filter >= TEXFILTER_BILINEAR_ANISO);
-}

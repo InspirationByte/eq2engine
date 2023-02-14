@@ -100,7 +100,7 @@ bool CD3D10SwapChain::CreateOrUpdateBackbuffer()
 		m_backbuffer.Assign((CD3D10Texture*)s_shaderApi.CreateTextureResource("_rt_backbuffer").Ptr());
 
 		m_backbuffer->SetDimensions(m_width, m_height);
-		m_backbuffer->SetFlags(TEXFLAG_RENDERTARGET | TEXFLAG_FOREIGN | TEXFLAG_NOQUALITYLOD);
+		m_backbuffer->SetFlags(TEXFLAG_RENDERTARGET | TEXFLAG_NOQUALITYLOD);
 	}
 
 	ID3D10Texture2D*		backbufferTex;
