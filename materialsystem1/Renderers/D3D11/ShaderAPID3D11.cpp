@@ -82,24 +82,7 @@ void ShaderAPID3DX10::SetD3DDevice(ID3D10Device* d3ddev)
 // Init + Shurdown
 void ShaderAPID3DX10::Init(const shaderAPIParams_t &params)
 {
-	HOOK_TO_CVAR(r_anisotropic);
-
-	m_caps.maxTextureAnisotropicLevel = clamp(r_anisotropic->GetInt(), 1, 16);
-
-	m_caps.isHardwareOcclusionQuerySupported = true;
-	m_caps.isInstancingSupported = true;
-
-	m_caps.maxTextureSize = 65535;
-	m_caps.maxRenderTargets = MAX_MRTS;
-	m_caps.maxVertexGenericAttributes = MAX_GENERIC_ATTRIB;
-	m_caps.maxVertexTexcoordAttributes = MAX_TEXCOORD_ATTRIB;
-
-	m_caps.shadersSupportedFlags = SHADER_CAPS_VERTEX_SUPPORTED | SHADER_CAPS_PIXEL_SUPPORTED | SHADER_CAPS_GEOMETRY_SUPPORTED;
-	m_caps.maxTextureUnits = MAX_TEXTUREUNIT;
-	m_caps.maxVertexStreams = MAX_VERTEXSTREAM;
-	m_caps.maxVertexTextureUnits = MAX_VERTEXTEXTURES;
-
-	// TODO: m_caps fill in texture formats
+	Msg("Initializing Direct3D9 Shader API...\n");
 
 	// init base and critical section
 	ShaderAPI_Base::Init( params );
@@ -376,7 +359,7 @@ void ShaderAPID3DX10::ApplyConstants()
 	if(!pProgram)
 		return;
 
-	for (uint i = 0; i <pProgram->m_GSCBuffers; i++)
+	for (int i = 0; i < pProgram->m_GSCBuffers; i++)
 	{
 		if (pProgram->m_gsDirty[i])
 		{
@@ -385,7 +368,7 @@ void ShaderAPID3DX10::ApplyConstants()
 		}
 	}
 
-	for (uint i = 0; i < pProgram->m_PSCBuffers; i++)
+	for (int i = 0; i < pProgram->m_PSCBuffers; i++)
 	{
 		if (pProgram->m_psDirty[i])
 		{
@@ -394,7 +377,7 @@ void ShaderAPID3DX10::ApplyConstants()
 		}
 	}
 
-	for (uint i = 0; i < pProgram->m_VSCBuffers; i++)
+	for (int i = 0; i < pProgram->m_VSCBuffers; i++)
 	{
 		if (pProgram->m_vsDirty[i])
 		{
@@ -513,7 +496,18 @@ void ShaderAPID3DX10::Finish()
 // Occlusion query
 //-------------------------------------------------------------
 
+// creates occlusion query object
+IOcclusionQuery* ShaderAPID3DX10::CreateOcclusionQuery()
+{
+	ASSERT_FAIL("Unimplemented");
+	return nullptr;
+}
 
+// removal of occlusion query object
+void ShaderAPID3DX10::DestroyOcclusionQuery(IOcclusionQuery* pQuery)
+{
+	ASSERT_FAIL("Unimplemented");
+}
 
 //-------------------------------------------------------------
 // Textures
@@ -640,7 +634,7 @@ void ShaderAPID3DX10::InternalCreateRenderTarget(CD3D10Texture* pTexture, ID3D10
 		return;
 	}
 
-	if (pTexture->GetFlags() & TEXFLAG_USE_SRGB)
+	if (pTexture->GetFlags() & TEXFLAG_SRGB)
 	{
 		// Change to the matching sRGB format
 		switch (pTexture->m_texFormat)
@@ -679,8 +673,8 @@ void ShaderAPID3DX10::InternalCreateRenderTarget(CD3D10Texture* pTexture, ID3D10
 			desc.MiscFlags = 0;
 		}
 
-		if (pTexture->GetFlags() & TEXFLAG_GENMIPMAPS)
-			desc.MiscFlags |= D3D10_RESOURCE_MISC_GENERATE_MIPS;
+		//if (pTexture->GetFlags() & TEXFLAG_GENMIPMAPS)
+		//	desc.MiscFlags |= D3D10_RESOURCE_MISC_GENERATE_MIPS;
 
 		if (FAILED(pDevice->CreateTexture2D(&desc, nullptr, (ID3D10Texture2D **) &pTexture->m_textures[0])))
 		{
@@ -701,8 +695,8 @@ void ShaderAPID3DX10::InternalCreateRenderTarget(CD3D10Texture* pTexture, ID3D10
 		desc.CPUAccessFlags = 0;
 		desc.MiscFlags = 0;
 
-		if (pTexture->GetFlags() & TEXFLAG_GENMIPMAPS)
-			desc.MiscFlags |= D3D10_RESOURCE_MISC_GENERATE_MIPS;
+		//if (pTexture->GetFlags() & TEXFLAG_GENMIPMAPS)
+		//	desc.MiscFlags |= D3D10_RESOURCE_MISC_GENERATE_MIPS;
 
 		if (FAILED(pDevice->CreateTexture3D(&desc, nullptr, (ID3D10Texture3D **) &pTexture->m_textures[0])))
 		{
@@ -745,6 +739,8 @@ void ShaderAPID3DX10::InternalCreateRenderTarget(CD3D10Texture* pTexture, ID3D10
 // It will add new rendertarget
 ITexturePtr ShaderAPID3DX10::CreateRenderTarget(int width, int height, ETextureFormat nRTFormat, ER_TextureFilterMode textureFilterType, ER_TextureAddressMode textureAddress, ER_CompareFunc comparison, int nFlags)
 {
+	// TODO: use CreateTextureResource
+
 	CRefPtr<CD3D10Texture> pTexture = CRefPtr_new(CD3D10Texture);
 
 	pTexture->SetDimensions(width,height);
@@ -781,6 +777,8 @@ ITexturePtr ShaderAPID3DX10::CreateRenderTarget(int width, int height, ETextureF
 // It will add new rendertarget
 ITexturePtr ShaderAPID3DX10::CreateNamedRenderTarget(const char* pszName,int width, int height,ETextureFormat nRTFormat, ER_TextureFilterMode textureFilterType, ER_TextureAddressMode textureAddress, ER_CompareFunc comparison, int nFlags)
 {
+	// TODO: use CreateTextureResource
+
 	CRefPtr<CD3D10Texture> pTexture = CRefPtr_new(CD3D10Texture);
 
 	pTexture->SetDimensions(width,height);
@@ -830,9 +828,16 @@ void ShaderAPID3DX10::SaveRenderTarget(ITexture* pTargetTexture, const char* pFi
 }*/
 
 // Copy render target to texture
-void ShaderAPID3DX10::CopyFramebufferToTexture(ITexture* pTargetTexture)
+void ShaderAPID3DX10::CopyFramebufferToTexture(const ITexturePtr& renderTarget)
 {
-	//ASSERT(!"Programming error: Copy framebuffer to texture is not available in DX10! Just use _rt_backbuffer to do effects.\n");
+	ASSERT_FAIL("Unimplemented");
+	// should use CopyRendertargetToTexture here
+}
+
+// Copy render target to texture
+void ShaderAPID3DX10::CopyRendertargetToTexture(const ITexturePtr& srcTarget, const ITexturePtr& destTex, IRectangle* srcRect, IRectangle* destRect)
+{
+	ASSERT_FAIL("Unimplemented");
 }
 
 // Changes render target (MRT)
@@ -1560,7 +1565,7 @@ create_constant_buffers:
 
 	Array<DX10ShaderConstant> constants(PP_SL);
 
-	for (uint i = 0; i < pShader->m_VSCBuffers; i++)
+	for (int i = 0; i < pShader->m_VSCBuffers; i++)
 	{
 		vsRefl->GetConstantBufferByIndex(i)->GetDesc(&sbDesc);
 
@@ -1592,8 +1597,8 @@ create_constant_buffers:
 		pShader->m_vsDirty[i] = false;
 	}
 
-	uint maxConst = constants.numElem();
-	for (uint i = 0; i < pShader->m_GSCBuffers; i++)
+	int maxConst = constants.numElem();
+	for (int i = 0; i < pShader->m_GSCBuffers; i++)
 	{
 		gsRefl->GetConstantBufferByIndex(i)->GetDesc(&sbDesc);
 
@@ -1607,7 +1612,7 @@ create_constant_buffers:
 			gsRefl->GetConstantBufferByIndex(i)->GetVariableByIndex(j)->GetDesc(&vDesc);
 
 			int merge = -1;
-			for (uint k = 0; k < maxConst; k++)
+			for (int k = 0; k < maxConst; k++)
 			{
 				if (strcmp(constants[k].name, vDesc.Name) == 0)
 				{
@@ -1645,7 +1650,7 @@ create_constant_buffers:
 	}
 
 	maxConst = constants.numElem();
-	for (uint i = 0; i < pShader->m_PSCBuffers; i++)
+	for (int i = 0; i < pShader->m_PSCBuffers; i++)
 	{
 		psRefl->GetConstantBufferByIndex(i)->GetDesc(&sbDesc);
 
@@ -1659,7 +1664,7 @@ create_constant_buffers:
 			psRefl->GetConstantBufferByIndex(i)->GetVariableByIndex(j)->GetDesc(&vDesc);
 
 			int merge = -1;
-			for (uint k = 0; k < maxConst; k++)
+			for (int k = 0; k < maxConst; k++)
 			{
 				if (strcmp(constants[k].name, vDesc.Name) == 0)
 				{
@@ -1739,8 +1744,8 @@ create_constant_buffers:
 				pShader->m_numSamplers++;
 			}
 		}
-		uint maxTexture = pShader->m_numTextures;
-		uint maxSampler = pShader->m_numSamplers;
+		int maxTexture = pShader->m_numTextures;
+		int maxSampler = pShader->m_numSamplers;
 		for (uint i = 0; i < nMaxGSRes; i++)
 		{
 			gsRefl->GetResourceBindingDesc(i, &siDesc);
@@ -1748,7 +1753,7 @@ create_constant_buffers:
 			if (siDesc.Type == D3D10_SIT_TEXTURE)
 			{
 				int merge = -1;
-				for (uint j = 0; j < maxTexture; j++)
+				for (int j = 0; j < maxTexture; j++)
 				{
 					if (strcmp(pShader->m_textures[j].name, siDesc.Name) == 0)
 					{
@@ -1774,7 +1779,7 @@ create_constant_buffers:
 			else if (siDesc.Type == D3D10_SIT_SAMPLER)
 			{
 				int merge = -1;
-				for (uint j = 0; j < maxSampler; j++)
+				for (int j = 0; j < maxSampler; j++)
 				{
 					if (strcmp(pShader->m_samplers[j].name, siDesc.Name) == 0)
 					{
@@ -1807,7 +1812,7 @@ create_constant_buffers:
 			if (siDesc.Type == D3D10_SIT_TEXTURE)
 			{
 				int merge = -1;
-				for (uint j = 0; j < maxTexture; j++)
+				for (int j = 0; j < maxTexture; j++)
 				{
 					if (strcmp(pShader->m_textures[j].name, siDesc.Name) == 0)
 					{
@@ -1833,7 +1838,7 @@ create_constant_buffers:
 			else if (siDesc.Type == D3D10_SIT_SAMPLER)
 			{
 				int merge = -1;
-				for (uint j = 0; j < maxSampler; j++)
+				for (int j = 0; j < maxSampler; j++)
 				{
 					if (strcmp(pShader->m_samplers[j].name, siDesc.Name) == 0)
 					{
@@ -3210,6 +3215,16 @@ ID3D10Resource* ShaderAPID3DX10::CreateD3DTextureFromImage(CImage* pSrc, int& wi
 	}
 
 	return pTexture;
+}
+
+// Creates empty texture resource.
+ITexturePtr ShaderAPID3DX10::CreateTextureResource(const char* pszName)
+{
+	CRefPtr<CD3D10Texture> texture = CRefPtr_new(CD3D10Texture);
+	texture->SetName(pszName);
+
+	m_TextureList.insert(texture->m_nameHash, texture);
+	return ITexturePtr(texture);
 }
 
 static const DX10Sampler_t* GetSampler(const DX10Sampler_t *samplers, const int count, const char *name)

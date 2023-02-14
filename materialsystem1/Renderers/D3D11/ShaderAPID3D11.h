@@ -75,6 +75,12 @@ public:
 // Occlusion query
 //-------------------------------------------------------------
 
+	// creates occlusion query object
+	IOcclusionQuery*			CreateOcclusionQuery();
+
+	// removal of occlusion query object
+	void						DestroyOcclusionQuery(IOcclusionQuery* pQuery);
+
 
 //-------------------------------------------------------------
 // Textures
@@ -94,10 +100,10 @@ public:
 //-------------------------------------------------------------
 
 	// Copy render target to texture
-	void						CopyFramebufferToTexture(ITexture* pTargetTexture);
+	void						CopyFramebufferToTexture(const ITexturePtr& renderTarget);
 
-	// Copy render target to texture with resizing
-	//void						CopyFramebufferToTextureEx(ITexture* pTargetTexture,int srcX0 = -1, int srcY0 = -1,int srcX1 = -1, int srcY1 = -1,int destX0 = -1, int destY0 = -1,int destX1 = -1, int destY1 = -1);
+	// Copy render target to texture
+	void						CopyRendertargetToTexture(const ITexturePtr& srcTarget, const ITexturePtr& destTex, IRectangle* srcRect = nullptr, IRectangle* destRect = nullptr);
 
 	// Changes render target (MRT)
 	void						ChangeRenderTargets(ArrayCRef<ITexturePtr> renderTargets, ArrayCRef<int> rtSlice, const ITexturePtr& depthTarget, int depthSlice);
@@ -244,10 +250,11 @@ protected:
 	static void					InternalCreateRenderTarget(CD3D10Texture* pTexture, ID3D10Device* pDevice);
 
 	void						CreateTextureInternal(ITexture** pTex, const Array<CImage*>& pImages, const SamplerStateParam_t& sSamplingParams,int nFlags = 0);
-
 	ID3D10Resource*				CreateD3DTextureFromImage(CImage* pSrc, int& wide, int& tall, int nFlags = 0);
+	
+	// Creates empty texture resource.
+	ITexturePtr					CreateTextureResource(const char* pszName);
 
-private:
 	static bool					FillShaderResourceView(ID3D10SamplerState** samplers, ID3D10ShaderResourceView** dest, int& min, int& max, ITexturePtr* selectedTextures, ITexturePtr* currentTextures, const int selectedTextureSlices[], int currentTextureSlices[]);
 	static bool					InternalFillSamplerState(ID3D10SamplerState** dest, int& min, int& max, ITexturePtr* selectedTextures, ITexturePtr* currentTextures);
 

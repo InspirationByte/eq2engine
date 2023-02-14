@@ -35,16 +35,17 @@ protected:
 	Array<ID3D10RenderTargetView*>		m_rtv{ PP_SL };
 	Array<ID3D10DepthStencilView*>		m_dsv{ PP_SL };
 
-	Array<ID3D10Resource*>				m_textures{ PP_SL };
+	Array<ID3D10Resource*>	m_textures{ PP_SL };
 
-	IRenderState*						m_samplerState; // FIXME: do we want it separate or per-texture?
+	IRenderState*	m_samplerState; // FIXME: do we want it separate or per-texture?
 
-	DXGI_FORMAT							m_texFormat{DXGI_FORMAT_UNKNOWN};
-	DXGI_FORMAT							m_srvFormat{DXGI_FORMAT_UNKNOWN};
-	DXGI_FORMAT							m_rtvFormat{DXGI_FORMAT_UNKNOWN};
-	DXGI_FORMAT							m_dsvFormat{DXGI_FORMAT_UNKNOWN};
+	DXGI_FORMAT		m_texFormat{DXGI_FORMAT_UNKNOWN};
+	DXGI_FORMAT		m_srvFormat{DXGI_FORMAT_UNKNOWN};
+	DXGI_FORMAT		m_rtvFormat{DXGI_FORMAT_UNKNOWN};
+	DXGI_FORMAT		m_dsvFormat{DXGI_FORMAT_UNKNOWN};
 
-	int									m_arraySize{ 1 };
-	int									m_depth{ 1 };
+	int				m_arraySize{ 1 };
+	int				m_depth{ 1 };
+	int				m_texSize{ 0 };
 };
 

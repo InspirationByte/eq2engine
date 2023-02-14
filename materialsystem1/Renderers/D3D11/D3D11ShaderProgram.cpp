@@ -23,19 +23,19 @@ CD3D10ShaderProgram::~CD3D10ShaderProgram()
 	if(m_inputSignature)
 		m_inputSignature->Release();
 
-	for(uint i = 0; i < m_VSCBuffers; i++)
+	for(int i = 0; i < m_VSCBuffers; i++)
 		m_vsConstants[i]->Release();
 
 	if(m_vsConstants)
 		delete [] m_vsConstants;
 
-	for(uint i = 0; i < m_GSCBuffers; i++)
+	for(int i = 0; i < m_GSCBuffers; i++)
 		m_gsConstants[i]->Release();
 
 	if(m_gsConstants)
 		delete [] m_gsConstants;
 
-	for(uint i = 0; i < m_PSCBuffers; i++)
+	for(int i = 0; i < m_PSCBuffers; i++)
 		m_psConstants[i]->Release();
 
 	if(m_psConstants)

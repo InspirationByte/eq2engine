@@ -47,7 +47,7 @@ void CD3D10Texture::Release()
 }
 
 // initializes texture from image array of images
-bool CD3D10Texture::Init(const SamplerStateParam_t& sampler, const ArrayCRef<CRefPtr<CImage>> images, int flags = 0)
+bool CD3D10Texture::Init(const SamplerStateParam_t& sampler, const ArrayCRef<CRefPtr<CImage>> images, int flags)
 {
 	ASSERT_FAIL("Unimplemented");
 

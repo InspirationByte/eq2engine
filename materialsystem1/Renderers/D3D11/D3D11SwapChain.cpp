@@ -19,7 +19,7 @@ CD3D10SwapChain::~CD3D10SwapChain()
 	// back to normal screen
 	if(m_swapChain)
 	{
-		m_swapChain->SetFullscreenState(false, NULL);
+		m_swapChain->SetFullscreenState(false, nullptr);
 		m_swapChain->Release();
 	}
 
@@ -109,7 +109,7 @@ bool CD3D10SwapChain::CreateOrUpdateBackbuffer()
 	if (FAILED(m_swapChain->GetBuffer(0, __uuidof(ID3D10Texture2D), (LPVOID *) &backbufferTex))) 
 		return false;
 
-	if (FAILED(s_shaderApi.m_pD3DDevice->CreateRenderTargetView(backbufferTex, NULL, &backbufferRTV)))
+	if (FAILED(s_shaderApi.m_pD3DDevice->CreateRenderTargetView(backbufferTex, nullptr, &backbufferRTV)))
 		return false;
 
 	m_backbuffer->m_textures.append( backbufferTex );
@@ -134,7 +134,7 @@ bool CD3D10SwapChain::SetBackbufferSize(int wide, int tall)
 	m_width = wide;
 	m_height = tall;
 
-	s_shaderApi.m_pD3DDevice->OMSetRenderTargets(0, NULL, NULL);
+	s_shaderApi.m_pD3DDevice->OMSetRenderTargets(0, nullptr, nullptr);
 
 	if(m_backbuffer)
 		m_backbuffer->Release();

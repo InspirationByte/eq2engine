@@ -1318,6 +1318,8 @@ bool ShaderAPID3D9::InternalCreateRenderTarget(LPDIRECT3DDEVICE9 dev, CD3D9Textu
 // It will add new rendertarget
 ITexturePtr ShaderAPID3D9::CreateRenderTarget(int width, int height, ETextureFormat nRTFormat, ER_TextureFilterMode textureFilterType, ER_TextureAddressMode textureAddress, ER_CompareFunc comparison, int nFlags)
 {
+	// TODO: use CreateTextureResource
+
 	CRefPtr<CD3D9Texture> pTexture = CRefPtr_new(CD3D9Texture);
 
 	pTexture->SetDimensions(width,height);
@@ -1349,6 +1351,8 @@ ITexturePtr ShaderAPID3D9::CreateRenderTarget(int width, int height, ETextureFor
 // It will add new rendertarget
 ITexturePtr ShaderAPID3D9::CreateNamedRenderTarget(const char* pszName,int width, int height,ETextureFormat nRTFormat, ER_TextureFilterMode textureFilterType, ER_TextureAddressMode textureAddress, ER_CompareFunc comparison, int nFlags)
 {
+	// TODO: use CreateTextureResource
+
 	CRefPtr<CD3D9Texture> pTexture = CRefPtr_new(CD3D9Texture);
 
 	pTexture->SetDimensions(width,height);

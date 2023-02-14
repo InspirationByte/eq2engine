@@ -167,8 +167,8 @@ static int s_attributeSize[] =
 enum ER_BufferAccess : int
 {
 	BUFFER_STREAM		= 0,
-	BUFFER_STATIC,
-	BUFFER_DYNAMIC,
+	BUFFER_STATIC,		// = 1,
+	BUFFER_DYNAMIC,		// = 2
 };
 
 typedef struct VertexFormatDesc_s
@@ -262,11 +262,12 @@ enum ER_BlendFunction : int
 
 enum ER_TextureFlags : int
 {
-	// texture creating flags
-	TEXFLAG_PROGRESSIVE_LODS		= (1 << 0),		// progressive LOD uploading, used to avoid driver hangs during uploads
+	// texture creation flags
+	TEXFLAG_PROGRESSIVE_LODS		= (1 << 0),		// progressive LOD uploading, might improve performance
 	TEXFLAG_NULL_ON_ERROR			= (1 << 1),
 	TEXFLAG_CUBEMAP					= (1 << 2),		// should create cubemap
 	TEXFLAG_NOQUALITYLOD			= (1 << 3),		// not affected by texture quality Cvar, always load all mip levels
+	TEXFLAG_SRGB					= (1 << 4),		// texture should be sampled as in sRGB color space
 
 	// texture identification flags
 	TEXFLAG_RENDERTARGET			= (1 << 5),		// this is a rendertarget texture
@@ -274,6 +275,7 @@ enum ER_TextureFlags : int
 	TEXFLAG_FOREIGN					= (1 << 7),		// texture is created not by ShaderAPI
 };
 
+// TODO: these limits are
 #define MAX_MRTS				8
 #define MAX_VERTEXSTREAM		8
 #define MAX_TEXTUREUNIT			16
@@ -283,7 +285,7 @@ enum ER_TextureFlags : int
 #define MAX_GENERIC_ATTRIB		8
 #define MAX_TEXCOORD_ATTRIB		8
 
-// Stencil-test function constants for SetStencilStateEx()
+// Stencil-test function
 enum ER_StencilFunction : int
 {
 	STENCILFUNC_KEEP		= 0,
@@ -297,7 +299,7 @@ enum ER_StencilFunction : int
 	STENCILFUNC_ALWAYS,		// 8
 };
 
-// Fillmode constants for SetFillMode()
+// Fillmode constants
 enum ER_FillMode : int
 {
 	FILL_SOLID		= 0,

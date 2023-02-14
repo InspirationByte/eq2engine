@@ -27,13 +27,6 @@ ShaderAPID3DX10 s_shaderApi;
 IShaderAPI* g_pShaderAPI = &s_shaderApi;
 CD3D11RenderLib g_library;
 
-IShaderAPI* g_pShaderAPI = NULL;
-
-DECLARE_CMD(r_info, "Prints renderer info", 0)
-{
-	g_pShaderAPI->PrintAPIInfo();
-}
-
 CD3D11RenderLib::CD3D11RenderLib()
 {
 	g_eqCore->RegisterInterface(RENDERER_INTERFACE_VERSION, this);
@@ -57,7 +50,6 @@ bool CD3D11RenderLib::InitAPI(const shaderAPIParams_t& sparams)
 
 	const int depthBits = m_savedParams.depthBits;
 	//int stencilBits = 0;
-
 
 	// set window
 	m_hwnd = (HWND)m_savedParams.windowHandle;
@@ -128,7 +120,7 @@ bool CD3D11RenderLib::InitAPI(const shaderAPIParams_t& sparams)
 	m_fullScreenRefresh.Denominator = 1;
 
 	uint nModes = 0;
-	dxgiOutput->GetDisplayModeList(m_backBufferFormat, 0, &nModes, NULL);
+	dxgiOutput->GetDisplayModeList(m_backBufferFormat, 0, &nModes, nullptr);
 
 	DXGI_MODE_DESC *modes = new DXGI_MODE_DESC[nModes];
 	dxgiOutput->GetDisplayModeList(m_backBufferFormat, 0, &nModes, modes);
@@ -159,9 +151,9 @@ bool CD3D11RenderLib::InitAPI(const shaderAPIParams_t& sparams)
 	}
 
 #ifdef COMPILE_D3D_10_1
-	if (FAILED(D3D10CreateDevice1(dxgiAdapter, D3D10_DRIVER_TYPE_HARDWARE, NULL, deviceFlags, D3D10_FEATURE_LEVEL_10_1, D3D10_1_SDK_VERSION, &m_rhi)))
+	if (FAILED(D3D10CreateDevice1(dxgiAdapter, D3D10_DRIVER_TYPE_HARDWARE, nullptr, deviceFlags, D3D10_FEATURE_LEVEL_10_1, D3D10_1_SDK_VERSION, &m_rhi)))
 #else
-	if (FAILED(D3D10CreateDevice(dxgiAdapter, D3D10_DRIVER_TYPE_HARDWARE, NULL, deviceFlags, D3D10_SDK_VERSION, &m_rhi)))
+	if (FAILED(D3D10CreateDevice(dxgiAdapter, D3D10_DRIVER_TYPE_HARDWARE, nullptr, deviceFlags, D3D10_SDK_VERSION, &m_rhi)))
 #endif
 	{
 		const char* err_token = "Error";
@@ -205,6 +197,55 @@ bool CD3D11RenderLib::InitAPI(const shaderAPIParams_t& sparams)
 
 	UpdateWindow((HWND)m_savedParams.windowHandle);
 
+	//-------------------------------------------
+	// init caps
+	//-------------------------------------------
+	ShaderAPICaps_t& caps = s_shaderApi.m_caps;
+
+	HOOK_TO_CVAR(r_anisotropic);
+
+	caps.isHardwareOcclusionQuerySupported = true;
+	caps.isInstancingSupported = true;
+
+	caps.maxTextureAnisotropicLevel = clamp(r_anisotropic->GetInt(), 1, 16);
+	caps.maxTextureSize = 65535;
+	caps.maxRenderTargets = MAX_MRTS;
+
+	caps.maxVertexGenericAttributes = MAX_GENERIC_ATTRIB;
+	caps.maxVertexTexcoordAttributes = MAX_TEXCOORD_ATTRIB;
+	caps.maxVertexStreams = MAX_VERTEXSTREAM;
+
+	caps.maxTextureUnits = MAX_TEXTUREUNIT;
+	caps.maxVertexTextureUnits = MAX_VERTEXTEXTURES;
+
+	caps.shadersSupportedFlags = SHADER_CAPS_VERTEX_SUPPORTED | SHADER_CAPS_PIXEL_SUPPORTED | SHADER_CAPS_GEOMETRY_SUPPORTED;
+
+	caps.INTZSupported = true;
+	caps.INTZFormat = FORMAT_D16;
+
+	caps.NULLSupported = true;
+	caps.NULLFormat = FORMAT_NONE;
+
+	for (int i = FORMAT_R8; i <= FORMAT_RGBA16; i++)
+	{
+		caps.textureFormatsSupported[i] = true;
+		caps.renderTargetFormatsSupported[i] = true;
+	}
+
+	for (int i = FORMAT_D16; i <= FORMAT_D24S8; i++)
+	{
+		caps.textureFormatsSupported[i] = true;
+		caps.renderTargetFormatsSupported[i] = true;
+	}
+
+	caps.textureFormatsSupported[FORMAT_D32F] =
+		caps.renderTargetFormatsSupported[FORMAT_D32F] = true;
+
+	for (int i = FORMAT_DXT1; i <= FORMAT_ATI2N; i++)
+		caps.textureFormatsSupported[i] = true;
+
+	caps.textureFormatsSupported[FORMAT_ATI1N] = false;
+
 	return true;
 }
 
@@ -220,7 +261,7 @@ void CD3D11RenderLib::ExitAPI()
 		if (count)
 			Msg("D3D10: Unreleased objects after release: %d\n", count);
 
-		m_rhi = NULL;
+		m_rhi = nullptr;
 	}
 }
 
@@ -280,7 +321,7 @@ void CD3D11RenderLib::SetBackbufferSize(int w, int h)
 	// to pause engine
 	s_shaderApi.m_bDeviceIsLost = true;
 
-	if (m_rhi != NULL && (m_width != w || m_height != h))
+	if (m_rhi != nullptr && (m_width != w || m_height != h))
 	{
 		s_shaderApi.ReleaseBackbufferDepth();
 
@@ -319,17 +360,17 @@ bool CD3D11RenderLib::CaptureScreenshot(CImage &img)
 	bool result = false;
 
 	ID3D10Texture2D *texture;
-	if (SUCCEEDED(m_rhi->CreateTexture2D(&desc, NULL, &texture)))
+	if (SUCCEEDED(m_rhi->CreateTexture2D(&desc, nullptr, &texture)))
 	{
 		ID3D10Resource* backbufferTex = ((CD3D10SwapChain*)m_defaultSwapChain)->m_backbuffer->m_textures[0];
 
 		if (m_savedParams.multiSamplingMode > 1)
 		{
-			ID3D10Texture2D *resolved = NULL;
+			ID3D10Texture2D *resolved = nullptr;
 			desc.Usage = D3D10_USAGE_DEFAULT;
 			desc.CPUAccessFlags = 0;
 
-			if (SUCCEEDED(m_rhi->CreateTexture2D(&desc, NULL, &resolved)))
+			if (SUCCEEDED(m_rhi->CreateTexture2D(&desc, nullptr, &resolved)))
 			{
 				
 
@@ -399,7 +440,7 @@ IEqSwapChain* CD3D11RenderLib::CreateSwapChain(void* window, bool windowed)
 	{
 		MsgError("ERROR: Can't create D3D10 swapchain!\n");
 		delete pNewChain;
-		return NULL;
+		return nullptr;
 	}
 
 	m_swapChains.append(pNewChain);
