@@ -38,9 +38,6 @@ extern CEqMutex	g_sapi_ProgressiveTextureMutex;
 static ConVar r_preloadShaderCache("r_preloadShaderCache", "1", nullptr, 0);
 static ConVar r_skipShaderCache("r_skipShaderCache", "0", "Shader debugging purposes", 0);
 
-// only needed for unmanaged textures
-#define DEVICE_SPIN_WAIT while(m_bDeviceAtReset){if(!m_bDeviceAtReset) break;}
-
 #pragma warning(disable:4838)
 
 ShaderAPID3D9::~ShaderAPID3D9()
@@ -52,57 +49,8 @@ ShaderAPID3D9::ShaderAPID3D9() : ShaderAPI_Base()
 {
 	Msg("Initializing Direct3D9 Shader API...\n");
 
-	m_pEventQuery = nullptr;
-
-	m_pD3DDevice = nullptr;
-
-	m_fbColorTexture = nullptr;
-	m_fbDepthTexture = nullptr;
-
-	m_nCurrentSrcFactor = BLENDFACTOR_ONE;
-	m_nCurrentDstFactor = BLENDFACTOR_ZERO;
-	m_nCurrentBlendMode = BLENDFUNC_ADD;
-
-	m_nCurrentDepthFunc = COMPFUNC_LEQUAL;
-	m_bCurrentDepthTestEnable = false;
-	m_bCurrentDepthWriteEnable = false;
-
-	m_bDoStencilTest = false;
-	m_nStencilMask = 0xFF;
-	m_nStencilFunc = COMPFUNC_ALWAYS,
-	m_nStencilFail = STENCILFUNC_KEEP;
-	m_nDepthFail = STENCILFUNC_KEEP;
-	m_nStencilPass = STENCILFUNC_KEEP;
-
-	m_bCurrentMultiSampleEnable = false;
-	m_bCurrentScissorEnable = false;
-	m_nCurrentCullMode = CULL_BACK;
-	m_nCurrentFillMode = FILL_SOLID;
-
-	m_nCurrentMask = COLORMASK_ALL;
-	m_bCurrentBlendEnable = false;
-	m_bCurrentAlphaTestEnabled = false;
-	m_fCurrentAlphaTestRef = 0.9f;
-
-	//m_nCurrentSampleMask = ~0;
-	m_nSelectedSampleMask = ~0;
-
-	memset(m_vsRegs,0,sizeof(m_vsRegs));
-	memset(m_psRegs,0,sizeof(m_psRegs));
-
-	m_nMinVSDirty = 256;
-	m_nMaxVSDirty = -1;
-	m_nMinPSDirty = 224;
-	m_nMaxPSDirty = -1;
-
-	memset(m_pSelectedSamplerStates,0,sizeof(m_pSelectedSamplerStates));
-	memset(m_pSelectedVertexSamplerStates,0,sizeof(m_pSelectedVertexSamplerStates));
-
 	for(int i = 0; i < MAX_VERTEXSTREAM; i++)
 		m_nSelectedStreamParam[i] = 1;
-
-	m_fCurrentDepthBias = 0.0f;
-	m_fCurrentSlopeDepthBias = 0.0f;
 
 	m_defaultSamplerState.magFilter = TEXFILTER_NEAREST;
 	m_defaultSamplerState.minFilter = TEXFILTER_NEAREST;
@@ -117,9 +65,6 @@ ShaderAPID3D9::ShaderAPID3D9() : ShaderAPI_Base()
 
 	for (int i = 0; i < MAX_SAMPLERSTATE; i++)
 		m_pCurrentVertexSamplerStates[i] = m_defaultSamplerState;
-
-	m_nCurrentSamplerStateDirty = 0xffffffff;
-	m_nCurrentVertexSamplerStateDirty = 0xffffffff;
 }
 
 void ShaderAPID3D9::SetD3DDevice(LPDIRECT3DDEVICE9 d3ddev, D3DCAPS9 &d3dcaps)
@@ -280,6 +225,7 @@ bool ShaderAPID3D9::ResetDevice( D3DPRESENT_PARAMETERS &d3dpp )
 		m_nCurrentSrcFactor = BLENDFACTOR_ONE;
 		m_nCurrentDstFactor = BLENDFACTOR_ZERO;
 		m_nCurrentBlendMode = BLENDFUNC_ADD;
+		m_pCurrentDepthSurface = nullptr;
 
 		m_nCurrentDepthFunc = COMPFUNC_LEQUAL;
 		m_bCurrentDepthTestEnable = false;
@@ -292,11 +238,6 @@ bool ShaderAPID3D9::ResetDevice( D3DPRESENT_PARAMETERS &d3dpp )
 
 		m_nCurrentMask = COLORMASK_ALL;
 		m_bCurrentBlendEnable = false;
-		m_bCurrentAlphaTestEnabled = false;
-		m_fCurrentAlphaTestRef = 0.9f;
-
-		//m_nCurrentSampleMask = ~0;
-		m_nSelectedSampleMask = ~0;
 
 		// Set some of my preferred defaults
 		m_pD3DDevice->SetRenderState(D3DRS_LIGHTING, FALSE);
@@ -387,8 +328,6 @@ bool ShaderAPID3D9::ResetDevice( D3DPRESENT_PARAMETERS &d3dpp )
 
 bool ShaderAPID3D9::CreateD3DFrameBufferSurfaces()
 {
-	m_pCurrentDepthSurface = nullptr;
-
 	if(!m_fbColorTexture)
 	{
 		m_fbColorTexture = PPNew CD3D9Texture();
@@ -753,20 +692,6 @@ void ShaderAPID3D9::ApplyBlendState()
 	{
 		BlendStateParam_t& state = pSelectedState->m_params;
 
-		// enable alphatest
-		if (state.alphaTest != m_bCurrentAlphaTestEnabled)
-		{
-			m_pD3DDevice->SetRenderState(D3DRS_ALPHATESTENABLE, (DWORD)state.alphaTest);
-			m_pD3DDevice->SetRenderState(D3DRS_ALPHAFUNC, D3DCMP_GREATEREQUAL);
-			m_bCurrentAlphaTestEnabled = state.alphaTest;
-		}
-
-		if (state.alphaTestRef != m_fCurrentAlphaTestRef)
-		{
-			m_pD3DDevice->SetRenderState(D3DRS_ALPHAREF, (DWORD)(255.0f*state.alphaTestRef));
-			m_fCurrentAlphaTestRef = state.alphaTestRef;
-		}
-
 		// handle blending params if blending is enabled
 		if (state.blendEnable)
 		{
@@ -789,12 +714,6 @@ void ShaderAPID3D9::ApplyBlendState()
 		}
 
 		mask = state.mask;
-	}
-	else
-	{
-		// disable alpha testing
-		if(m_bCurrentAlphaTestEnabled)
-			m_pD3DDevice->SetRenderState(D3DRS_ALPHATESTENABLE, m_bCurrentAlphaTestEnabled = false);
 	}
 
 	// change the mask
@@ -1413,9 +1332,6 @@ ITexturePtr ShaderAPID3D9::CreateRenderTarget(int width, int height, ETextureFor
 	SamplerStateParams_Make(texSamplerParams, g_pShaderAPI->GetCaps(), textureFilterType, textureAddress, textureAddress, textureAddress);
 
 	pTexture->SetSamplerState(texSamplerParams);
-
-	// do spin wait (if in other thread)
-	DEVICE_SPIN_WAIT
 
 	if (InternalCreateRenderTarget(m_pD3DDevice, pTexture, nFlags, m_caps))
 	{

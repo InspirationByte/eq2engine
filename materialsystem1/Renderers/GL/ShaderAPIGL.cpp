@@ -157,43 +157,6 @@ ER_ConstantType GetConstantType(GLenum type)
 
 void* s_uniformFuncs[CONSTANT_TYPE_COUNT] = {};
 
-ShaderAPIGL::~ShaderAPIGL()
-{
-
-}
-
-ShaderAPIGL::ShaderAPIGL() : ShaderAPI_Base()
-{
-	Msg("Initializing OpenGL Shader API...\n");
-
-	m_nCurrentRenderTargets = 0;
-
-	m_nCurrentFrontFace = 0;
-
-	m_nCurrentSrcFactor = BLENDFACTOR_ONE;
-	m_nCurrentDstFactor = BLENDFACTOR_ZERO;
-	m_nCurrentBlendFunc = BLENDFUNC_ADD;
-
-	m_bCurrentMultiSampleEnable = false;
-	m_bCurrentScissorEnable = false;
-	m_nCurrentCullMode = CULL_BACK;
-	m_nCurrentFillMode = FILL_SOLID;
-
-	m_fCurrentDepthBias = 0.0f;
-	m_fCurrentSlopeDepthBias = 0.0f;
-
-	m_nCurrentMask = COLORMASK_ALL;
-	m_bCurrentBlendEnable = false;
-
-	m_frameBuffer = 0;
-	m_depthBuffer = 0;
-
-	m_boundInstanceStream = -1;
-	memset(m_currentGLVB, 0, sizeof(m_currentGLVB));
-	memset(m_currentGLTextures, 0, sizeof(m_currentGLTextures));
-	m_currentGLIB = 0;
-}
-
 void ShaderAPIGL::PrintAPIInfo() const
 {
 	Msg("ShaderAPI: ShaderAPIGL\n");
@@ -219,6 +182,8 @@ void ShaderAPIGL::PrintAPIInfo() const
 // Init + Shurdown
 void ShaderAPIGL::Init( const shaderAPIParams_t &params)
 {
+	Msg("Initializing OpenGL Shader API...\n");
+
 	const char* vendorStr = (const char *) glGetString(GL_VENDOR);
 
 	if(xstristr(vendorStr, "nvidia"))
@@ -251,13 +216,11 @@ void ShaderAPIGL::Init( const shaderAPIParams_t &params)
 	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 	GLCheckError("def param GL_UNPACK_ALIGNMENT");
 
-	for (int i = 0; i < m_caps.maxRenderTargets; i++)
-		m_drawBuffers[i] = GL_COLOR_ATTACHMENT0 + i;
-
 	glGenVertexArrays(1, &m_drawVAO);
 	GLCheckError("gen VAO");
 
-	m_currentGLDepth = GL_NONE;
+	for (int i = 0; i < m_caps.maxRenderTargets; i++)
+		m_drawBuffers[i] = GL_COLOR_ATTACHMENT0 + i;
 
 	// init worker thread
 	g_glWorker.Init();
@@ -267,7 +230,7 @@ void ShaderAPIGL::Init( const shaderAPIParams_t &params)
 	m_caps.maxTextureAnisotropicLevel = desiredAnisotropicLevel;
 
 	g_fileSystem->MakeDir(SHADERCACHE_FOLDER, SP_ROOT);
-	//PreloadShadersFromCache();
+	PreloadShadersFromCache();
 
 	// Init the base shader API
 	ShaderAPI_Base::Init(params);

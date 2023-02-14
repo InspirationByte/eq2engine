@@ -532,9 +532,6 @@ bool CGLRenderLib::InitAPI(const shaderAPIParams_t& params)
 	// init caps
 	//-------------------------------------------
 	ShaderAPICaps_t& caps = g_shaderApi.m_caps;
-
-	memset(&caps, 0, sizeof(caps));
-
 	caps.maxTextureAnisotropicLevel = 1;
 
 	caps.isHardwareOcclusionQuerySupported = true;
@@ -562,7 +559,7 @@ bool CGLRenderLib::InitAPI(const shaderAPIParams_t& params)
 	// limit by the MAX_GL_GENERIC_ATTRIB defined by ShaderAPI
 	caps.maxVertexGenericAttributes = min(MAX_GL_GENERIC_ATTRIB, caps.maxVertexGenericAttributes);
 
-	caps.shadersSupportedFlags = SHADER_CAPS_VERTEX_SUPPORTED | SHADER_CAPS_PIXEL_SUPPORTED;
+	caps.shadersSupportedFlags = SHADER_CAPS_VERTEX_SUPPORTED | SHADER_CAPS_PIXEL_SUPPORTED | SHADER_CAPS_GEOMETRY_SUPPORTED;
 	glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &caps.maxTextureUnits);
 
 	if(caps.maxTextureUnits > MAX_TEXTUREUNIT)

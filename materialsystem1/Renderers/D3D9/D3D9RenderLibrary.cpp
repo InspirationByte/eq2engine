@@ -214,6 +214,7 @@ bool CD3D9RenderLib::InitAPI( const shaderAPIParams_t &params )
 	caps.maxTextureAnisotropicLevel = m_d3dCaps.MaxAnisotropy;
 	caps.maxTextureSize = min(m_d3dCaps.MaxTextureWidth, m_d3dCaps.MaxTextureHeight);
 	caps.maxRenderTargets = m_d3dCaps.NumSimultaneousRTs;
+
 	caps.maxVertexGenericAttributes = MAX_GENERIC_ATTRIB;
 	caps.maxVertexTexcoordAttributes = MAX_TEXCOORD_ATTRIB;
 	caps.maxVertexStreams = MAX_VERTEXSTREAM;

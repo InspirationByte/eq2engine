@@ -10,10 +10,10 @@
 
 enum EGraphicsVendor
 {
+	VENDOR_OTHER = -1,
 	VENDOR_ATI,
 	VENDOR_NV,
 	VENDOR_INTEL,
-	VENDOR_OTHER,
 };
 
 struct DX9Sampler_t;
@@ -264,10 +264,10 @@ public:
 	// RAW Constant (Used for structure types, etc.)
 	void						SetShaderConstantRaw(int nameHash, const void *data, int nSize);
 
+protected:
+
 	// Creates empty texture resource.
 	ITexturePtr					CreateTextureResource(const char* pszName);
-
-protected:
 
 	void						StepProgressiveLodTextures();
 
@@ -277,87 +277,73 @@ protected:
 private:
 	static bool					InternalCreateRenderTarget(LPDIRECT3DDEVICE9 dev, CD3D9Texture* tex, int nFlags, const ShaderAPICaps_t& caps);
 	
-	CD3D9Texture*				m_fbColorTexture;
-	CD3D9Texture*				m_fbDepthTexture;
+	CD3D9Texture*				m_fbColorTexture{ nullptr };
+	CD3D9Texture*				m_fbDepthTexture{ nullptr };
 
 	Set<CD3D9Texture*>			m_progressiveTextures{ PP_SL };
 
 	// Sampler states is not binding same as OpenGL
-	SamplerStateParam_t*		m_pSelectedSamplerStates[MAX_SAMPLERSTATE];
+	SamplerStateParam_t*		m_pSelectedSamplerStates[MAX_SAMPLERSTATE]{ nullptr };
 	SamplerStateParam_t			m_pCurrentSamplerStates[MAX_SAMPLERSTATE];
-	int							m_nCurrentSamplerStateDirty;
+	int							m_nCurrentSamplerStateDirty{ -1 };
 
 	// Sampler states is not binding same as OpenGL
-	SamplerStateParam_t*		m_pSelectedVertexSamplerStates[MAX_SAMPLERSTATE];
+	SamplerStateParam_t*		m_pSelectedVertexSamplerStates[MAX_SAMPLERSTATE]{ nullptr };
 	SamplerStateParam_t			m_pCurrentVertexSamplerStates[MAX_SAMPLERSTATE];
-	int							m_nCurrentVertexSamplerStateDirty;
+	int							m_nCurrentVertexSamplerStateDirty{ -1 };
 
-	UINT						m_nSelectedStreamParam[MAX_VERTEXSTREAM];
+	UINT						m_nSelectedStreamParam[MAX_VERTEXSTREAM]{ 0 };
 
 	// Custom blend state
 	
 	SamplerStateParam_t			m_defaultSamplerState;
 
-	int							m_nCurrentFrontFace;
+	int							m_nCurrentSrcFactor{ BLENDFACTOR_ONE };
+	int							m_nCurrentDstFactor{ BLENDFACTOR_ZERO };
+	int							m_nCurrentBlendMode{ BLENDFUNC_ADD };
 
-	int							m_nCurrentSrcFactor;
-	int							m_nCurrentDstFactor;
-	int							m_nCurrentBlendMode;
+	int							m_nCurrentDepthFunc{ COMPFUNC_LEQUAL };
+	bool						m_bCurrentDepthTestEnable{ false };
+	bool						m_bCurrentDepthWriteEnable{ false };
+	LPDIRECT3DSURFACE9			m_pCurrentDepthSurface{ nullptr };
 
-	int							m_nCurrentDepthFunc;
-	bool						m_bCurrentDepthTestEnable;
-	bool						m_bCurrentDepthWriteEnable;
-	LPDIRECT3DSURFACE9			m_pCurrentDepthSurface;
+	bool						m_bDoStencilTest{ false };
 
-	bool						m_bDoStencilTest;
+	uint8						m_nStencilMask{ 0xff };
+	uint8						m_nStencilWriteMask{ 0xff };
+	uint8						m_nStencilRef{ 0xff };
+	int							m_nStencilFunc{ COMPFUNC_ALWAYS };
+	int							m_nStencilFail{ STENCILFUNC_KEEP };
+	int							m_nDepthFail{ STENCILFUNC_KEEP };
+	int							m_nStencilPass{ STENCILFUNC_KEEP };
 
-	uint8						m_nStencilMask;
-	uint8						m_nStencilWriteMask;
-	uint8						m_nStencilRef;
-	int							m_nStencilFunc;
-	int							m_nStencilFail;
-	int							m_nDepthFail;
-	int							m_nStencilPass;
+	float						m_fCurrentDepthBias{ 0.0f };
+	float						m_fCurrentSlopeDepthBias{ 0.0f };
 
-	float						m_fCurrentDepthBias;
-	float						m_fCurrentSlopeDepthBias;
+	bool						m_bCurrentMultiSampleEnable{ false };
+	bool						m_bCurrentScissorEnable{ false };
+	int							m_nCurrentCullMode{ CULL_BACK };
+	int							m_nCurrentFillMode{ FILL_SOLID };
 
-	bool						m_bCurrentMultiSampleEnable;
-	bool						m_bCurrentScissorEnable;
-	int							m_nCurrentCullMode;
-	int							m_nCurrentFillMode;
+	int							m_nCurrentMask{ COLORMASK_ALL };
+	bool						m_bCurrentBlendEnable{ false };
 
-	int							m_nCurrentMask;
-	bool						m_bCurrentBlendEnable;
-	bool						m_bCurrentAlphaTestEnabled;
-	float						m_fCurrentAlphaTestRef;
+	Vector4D					m_vsRegs[256]{ 0 };
+	Vector4D					m_psRegs[224]{ 0 };
 
-	Vector4D					m_vsRegs[256];
-	Vector4D					m_psRegs[224];
+	int							m_nMinVSDirty{ 224 };
+	int							m_nMaxVSDirty{ -1 };
 
-	int							m_nMinVSDirty;
-	int							m_nMaxVSDirty;
+	int							m_nMinPSDirty{ 224 };
+	int							m_nMaxPSDirty{ -1 };
 
-	int							m_nMinPSDirty;
-	int							m_nMaxPSDirty;
-
-	D3DTRANSFORMSTATETYPE		m_nCurrentMatrixMode;
+	D3DTRANSFORMSTATETYPE		m_nCurrentMatrixMode{ D3DTS_VIEW };
 	D3DCAPS9					m_hCaps;
-	LPDIRECT3DQUERY9			m_pEventQuery;
+	LPDIRECT3DQUERY9			m_pEventQuery{ nullptr };
+	LPDIRECT3DDEVICE9			m_pD3DDevice{ nullptr };
 
-#ifdef USE_D3DEX
-	LPDIRECT3DDEVICE9EX			m_pD3DDevice;
-#else
-	LPDIRECT3DDEVICE9			m_pD3DDevice;
-#endif
+	bool						m_bDeviceIsLost{ false };
+	bool						m_bDeviceAtReset{ false };
 
-	//int						m_nCurrentSampleMask;
-	int							m_nSelectedSampleMask;
-
-	//uint8						m_nMRTs;
-
-	bool						m_bDeviceIsLost;
-	bool						m_bDeviceAtReset;
-
-	EGraphicsVendor				m_vendor;
+	EGraphicsVendor				m_vendor{ VENDOR_OTHER };
 };

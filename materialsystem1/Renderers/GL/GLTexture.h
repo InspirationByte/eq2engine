@@ -13,8 +13,8 @@ class CImage;
 
 struct GLTextureRef_t
 {
-	GLuint		glTexID;
-	EImageType	type;
+	GLuint		glTexID{ 0 };
+	EImageType	type{ IMAGE_TYPE_INVALID };
 };
 
 class CGLTexture : public CTexture

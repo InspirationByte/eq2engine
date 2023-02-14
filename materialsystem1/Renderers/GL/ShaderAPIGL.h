@@ -11,10 +11,11 @@
 
 enum EGraphicsVendor
 {
+	VENDOR_OTHER = -1,
+
 	VENDOR_ATI,
 	VENDOR_NV,
 	VENDOR_INTEL,
-	VENDOR_OTHER,
 };
 
 class CGLRenderLib;
@@ -41,9 +42,6 @@ public:
 	friend class		CGLShaderProgram;
 	friend class		CGLOcclusionQuery;
 	friend class		GLWorkerThread;
-
-						~ShaderAPIGL();
-						ShaderAPIGL();
 
 	// Init + Shurdown
 	void				Init( const shaderAPIParams_t &params);
@@ -280,54 +278,51 @@ protected:
 
 	ITexturePtr			CreateTextureResource(const char* pszName);
 private:
-	void					ApplyBuffers();
+	void				ApplyBuffers();
 
-	void					StepProgressiveLodTextures();
+	void				StepProgressiveLodTextures();
 
-	void					PreloadShadersFromCache();
-	bool					InitShaderFromCache(IShaderProgram* pShaderOutput, IVirtualStream* pStream, uint32 checksum = 0);
+	void				PreloadShadersFromCache();
+	bool				InitShaderFromCache(IShaderProgram* pShaderOutput, IVirtualStream* pStream, uint32 checksum = 0);
 
 	//OpenGL - Specific
-	void					InternalChangeFrontFace(int nCullFaceMode);
+	void				InternalChangeFrontFace(int nCullFaceMode);
 
-	Set<CGLTexture*>		m_progressiveTextures{ PP_SL };
+	Set<CGLTexture*>	m_progressiveTextures{ PP_SL };
 
-	GLuint					m_frameBuffer;
-	GLuint					m_depthBuffer;
+	GLuint				m_frameBuffer{ 0 };
+	GLuint				m_depthBuffer{ 0 };
 
-	GLuint					m_currentGLDepth;
+	GLenum				m_drawBuffers[MAX_MRTS]{ 0 };
+	GLuint				m_currentGLDepth{ GL_NONE };
+
+	uint				m_currentGLVB[MAX_VERTEXSTREAM];
+	uint				m_currentGLIB{ 0 };
+	GLuint				m_drawVAO{ 0 };
+	int					m_boundInstanceStream{ -1 };
 	
-	GLenum					m_drawBuffers[MAX_MRTS];
+	GLTextureRef_t		m_currentGLTextures[MAX_TEXTUREUNIT];
+	int					m_nCurrentRenderTargets{ 0 };
 
-	GLuint					m_drawVAO;
+	int					m_nCurrentFrontFace{ 0 };
 
-	int						m_boundInstanceStream;
-	uint					m_currentGLVB[MAX_VERTEXSTREAM];
-	uint					m_currentGLIB;
+	int					m_nCurrentSrcFactor{ BLENDFACTOR_ONE };
+	int					m_nCurrentDstFactor{ BLENDFACTOR_ZERO };
+	int					m_nCurrentBlendFunc{ BLENDFUNC_ADD };
 
-	GLTextureRef_t			m_currentGLTextures[MAX_TEXTUREUNIT];
+	float				m_fCurrentDepthBias{ 0.0f };
+	float				m_fCurrentSlopeDepthBias{ 0.0f };
 
-	int						m_nCurrentRenderTargets;
+	bool				m_bCurrentMultiSampleEnable{ false };
+	bool				m_bCurrentScissorEnable{ false };
+	int					m_nCurrentCullMode{ CULL_BACK };
+	int					m_nCurrentFillMode{ FILL_SOLID };
 
-	int						m_nCurrentFrontFace;
+	int					m_nCurrentMask{ COLORMASK_ALL };
+	bool				m_bCurrentBlendEnable{ false };
 
-	int						m_nCurrentSrcFactor;
-	int						m_nCurrentDstFactor;
-	int						m_nCurrentBlendFunc;
-
-	float					m_fCurrentDepthBias;
-	float					m_fCurrentSlopeDepthBias;
-
-	bool					m_bCurrentMultiSampleEnable;
-	bool					m_bCurrentScissorEnable;
-	int						m_nCurrentCullMode;
-	int						m_nCurrentFillMode;
-
-	int						m_nCurrentMask;
-	bool					m_bCurrentBlendEnable;
-
-	IRectangle				m_viewPort;
-	EGraphicsVendor			m_vendor;
+	IRectangle			m_viewPort;
+	EGraphicsVendor		m_vendor{ VENDOR_OTHER };
 };
 
 void PrintGLExtensions();
