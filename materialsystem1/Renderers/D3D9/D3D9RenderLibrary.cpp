@@ -80,8 +80,6 @@ DWORD ComputeDeviceFlags( const D3DCAPS9& caps, bool bSoftwareVertexProcessing )
 
 bool CD3D9RenderLib::InitAPI( const shaderAPIParams_t &params )
 {
-	int multiSamplingMode = params.multiSamplingMode;
-
 	EGraphicsVendor vendor;
 	
 	// get device information
@@ -192,6 +190,7 @@ bool CD3D9RenderLib::InitAPI( const shaderAPIParams_t &params )
 
 	DevMsg(DEVMSG_SHADERAPI, "[DEBUG] D3D9 device created successfully...\n");
 
+	int multiSamplingMode = params.multiSamplingMode;
 	if(multiSamplingMode != multiSample)
 		MsgWarning("MSAA fallback from %d to %d\n", params.multiSamplingMode, multiSample);
 

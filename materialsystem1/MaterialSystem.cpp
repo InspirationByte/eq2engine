@@ -239,12 +239,16 @@ bool CMaterialSystem::Init(const matsystem_init_config_t& config)
 #else
 	EqString rendererName = config.rendererName;
 
+	const int rendererCmdLine = g_cmdLine->FindArgument("-renderer");
+	if (rendererCmdLine != -1)
+		rendererName = g_cmdLine->GetArgumentsOf(rendererCmdLine);
+
 	if (!rendererName.Length())
 	{
 		// try using default from Eq config
 		rendererName = matSystemSettings ? KV_GetValueString(matSystemSettings->FindSection("Renderer"), 0, nullptr) : "eqGLRHI";
 	}
-#endif // _WIN329
+#endif // _WIN32
 
 	if (g_cmdLine->FindArgument("-norender") != -1)
 	{

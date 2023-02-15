@@ -155,22 +155,20 @@ static char* GetBaseDir(const char* pszBuffer)
 
 static void SetupBinPath()
 {
-	const int MAX_BIN_DIR_PATH = 512;
+	const char* curPathEnv = getenv("PATH");
 
-	const char* pPath = getenv("PATH");
-
-	char szBuffer[4096];
-	memset(szBuffer, 0, sizeof(szBuffer));
+#ifdef _WIN32
+	const int MAX_BIN_DIR_PATH = 2048;
 
 	char moduleName[MAX_BIN_DIR_PATH];
-#ifdef _WIN32
 	if (!GetModuleFileNameA(nullptr, moduleName, MAX_BIN_DIR_PATH))
 		return;
 
 	// Get the root directory the .exe is in
-	char* pRootDir = GetBaseDir(moduleName);
-	sprintf(szBuffer, "PATH=%s;%s", pRootDir, pPath);
-	_putenv(szBuffer);
+	char* rootDir = GetBaseDir(moduleName);
+
+	EqString envStr = EqString::Format("PATH=%s;%s", rootDir, curPathEnv);
+	_putenv(envStr);
 #elif defined(__ANDROID__)
 	// do nothing? TODO...
 #else
