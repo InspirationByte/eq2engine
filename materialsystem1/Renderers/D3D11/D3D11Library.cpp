@@ -46,13 +46,9 @@ bool CD3D11RenderLib::InitCaps()
 
 bool CD3D11RenderLib::InitAPI(const shaderAPIParams_t& sparams)
 {
-	m_savedParams = sparams;
-
-	const int depthBits = m_savedParams.depthBits;
-	//int stencilBits = 0;
-
 	// set window
-	m_hwnd = (HWND)m_savedParams.windowHandle;
+	m_hwnd = (HWND)sparams.windowHandle;
+	m_verticalSyncEnabled = sparams.verticalSyncEnabled;
 
 	// get window parameters
 	RECT windowRect;
@@ -61,13 +57,12 @@ bool CD3D11RenderLib::InitAPI(const shaderAPIParams_t& sparams)
 	m_width = windowRect.right;
 	m_height = windowRect.bottom;
 
-	if(m_savedParams.screenFormat == FORMAT_RGB8)
-		m_savedParams.screenFormat = FORMAT_RGBA8;
+	ETextureFormat screenFormat = sparams.screenFormat;
+	if (screenFormat == FORMAT_RGB8)
+		screenFormat = FORMAT_RGBA8;
+	m_backBufferFormat = formats[screenFormat];
 
-	m_backBufferFormat = formats[m_savedParams.screenFormat];
-	m_depthBufferFormat = DXGI_FORMAT_UNKNOWN;
-
-	switch (depthBits)
+	switch (sparams.depthBits)
 	{
 		case 16:
 			m_depthBufferFormat = DXGI_FORMAT_D16_UNORM;
@@ -78,20 +73,21 @@ bool CD3D11RenderLib::InitAPI(const shaderAPIParams_t& sparams)
 		case 32:
 			m_depthBufferFormat = DXGI_FORMAT_D32_FLOAT;
 			break;
+		default:
+			m_depthBufferFormat = DXGI_FORMAT_UNKNOWN;
+			break;
 	}
-
-//	if (screen >= GetSystemMetrics(SM_CMONITORS)) screen = 0;
 
 	if (FAILED(CreateDXGIFactory(__uuidof(IDXGIFactory), (void **) &m_dxgiFactory)))
 	{
-		MsgError("Couldn't create DXGIFactory");
+		CrashMsg("Couldn't create DXGIFactory");
 		return false;
 	}
 
 	IDXGIAdapter* dxgiAdapter;
 	if (m_dxgiFactory->EnumAdapters(0, &dxgiAdapter) == DXGI_ERROR_NOT_FOUND)
 	{
-		MsgError("No adapters found");
+		CrashMsg("No adapters found");
 		return false;
 	}
 
@@ -102,18 +98,17 @@ bool CD3D11RenderLib::InitAPI(const shaderAPIParams_t& sparams)
 	wcstombs(pszAdapterName, adapterDesc.Description, 128);
 	Msg("\n*Detected Video adapter: %s\n", pszAdapterName);
 
-
 	IDXGIOutput *dxgiOutput;
 	if (dxgiAdapter->EnumOutputs(0, &dxgiOutput) == DXGI_ERROR_NOT_FOUND)
 	{
-		MsgError("No outputs found");
+		CrashMsg("No outputs displays found");
 		return false;
 	}
 	
 	DXGI_OUTPUT_DESC oDesc;
 	dxgiOutput->GetDesc(&oDesc);
 
-	int targetHz = m_savedParams.screenRefreshRateHZ;
+	int targetHz = sparams.screenRefreshRateHZ;
 	int fsRefresh = 60;
 
 	m_fullScreenRefresh.Numerator = fsRefresh;
@@ -156,15 +151,11 @@ bool CD3D11RenderLib::InitAPI(const shaderAPIParams_t& sparams)
 	if (FAILED(D3D10CreateDevice(dxgiAdapter, D3D10_DRIVER_TYPE_HARDWARE, nullptr, deviceFlags, D3D10_SDK_VERSION, &m_rhi)))
 #endif
 	{
-		const char* err_token = "Error";
-
-		const char* driver_upd = "Couldn't create Direct3D10 device interface!\n\nCheck your system configuration and/or install latest video drivers!";
-		MessageBoxA(m_hwnd, driver_upd, err_token, MB_OK | MB_ICONWARNING);
-
+		ErrorMsg("Couldn't create Direct3D10 device interface!\n\nCheck your system configuration and/or install latest video drivers!");
 		return false;
 	}
 
-	m_msaaSamples = m_savedParams.multiSamplingMode+1;
+	m_msaaSamples = sparams.multiSamplingMode + 1;
 
 	while (m_msaaSamples > 0)
 	{
@@ -175,12 +166,10 @@ bool CD3D11RenderLib::InitAPI(const shaderAPIParams_t& sparams)
 			m_msaaSamples -= 2;
 	}
 
-	Msg("creating swap chain and renderer\n");
-
 	s_shaderApi.SetD3DDevice(m_rhi);
 
 	// create our swap chain
-	m_defaultSwapChain = CreateSwapChain(m_savedParams.windowHandle, true);
+	m_defaultSwapChain = CreateSwapChain(sparams.windowHandle, true);
 
 	// We'll handle Alt-Enter ourselves thank you very much ...
 	m_dxgiFactory->MakeWindowAssociation(m_hwnd, DXGI_MWA_NO_WINDOW_CHANGES | DXGI_MWA_NO_ALT_ENTER);
@@ -190,12 +179,11 @@ bool CD3D11RenderLib::InitAPI(const shaderAPIParams_t& sparams)
 
 	if(!s_shaderApi.CreateBackbufferDepth(m_width, m_height, m_depthBufferFormat, m_msaaSamples))
 	{
-		ErrorMsg("Cannot create backbuffer surfaces!\n");
-		MsgError("Cannot create backbuffer surfaces!\n");
+		CrashMsg("Cannot create backbuffer surfaces!\n");
 		return false;
 	}
 
-	UpdateWindow((HWND)m_savedParams.windowHandle);
+	UpdateWindow((HWND)sparams.windowHandle);
 
 	//-------------------------------------------
 	// init caps
@@ -279,7 +267,7 @@ void CD3D11RenderLib::BeginFrame(IEqSwapChain* swapChain)
 	if (!s_shaderApi.IsDeviceActive())
 	{
 		// to pause engine
-		s_shaderApi.m_bDeviceIsLost = false;
+		s_shaderApi.m_deviceIsLost = false;
 	}
 }
 
@@ -319,7 +307,7 @@ bool CD3D11RenderLib::IsWindowed() const
 void CD3D11RenderLib::SetBackbufferSize(int w, int h)
 {
 	// to pause engine
-	s_shaderApi.m_bDeviceIsLost = true;
+	s_shaderApi.m_deviceIsLost = true;
 
 	if (m_rhi != nullptr && (m_width != w || m_height != h))
 	{
@@ -364,7 +352,7 @@ bool CD3D11RenderLib::CaptureScreenshot(CImage &img)
 	{
 		ID3D10Resource* backbufferTex = ((CD3D10SwapChain*)m_defaultSwapChain)->m_backbuffer->m_textures[0];
 
-		if (m_savedParams.multiSamplingMode > 1)
+		if (m_msaaSamples > 1)
 		{
 			ID3D10Texture2D *resolved = nullptr;
 			desc.Usage = D3D10_USAGE_DEFAULT;
@@ -372,8 +360,6 @@ bool CD3D11RenderLib::CaptureScreenshot(CImage &img)
 
 			if (SUCCEEDED(m_rhi->CreateTexture2D(&desc, nullptr, &resolved)))
 			{
-				
-
 				m_rhi->ResolveSubresource(resolved, 0, backbufferTex, 0, desc.Format);
 				m_rhi->CopyResource(texture, resolved);
 				resolved->Release();
@@ -436,7 +422,7 @@ IEqSwapChain* CD3D11RenderLib::CreateSwapChain(void* window, bool windowed)
 {
 	CD3D10SwapChain* pNewChain = new CD3D10SwapChain();
 	
-	if(!pNewChain->Initialize((HWND)window, m_msaaSamples, m_backBufferFormat, m_savedParams.verticalSyncEnabled, m_fullScreenRefresh, windowed, m_dxgiFactory, m_rhi ))
+	if(!pNewChain->Initialize((HWND)window, m_msaaSamples, m_backBufferFormat, m_verticalSyncEnabled, m_fullScreenRefresh, windowed, m_dxgiFactory, m_rhi ))
 	{
 		MsgError("ERROR: Can't create D3D10 swapchain!\n");
 		delete pNewChain;

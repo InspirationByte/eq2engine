@@ -304,5 +304,5 @@ protected:
 
 	int							m_nCurrentSampleMask{ -1 };
 	int							m_nSelectedSampleMask{ -1 };
-	bool						m_bDeviceIsLost;
+	bool						m_deviceIsLost{ false };
 };

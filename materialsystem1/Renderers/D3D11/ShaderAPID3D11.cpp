@@ -68,7 +68,6 @@ ShaderAPID3DX10::ShaderAPID3DX10() : ShaderAPI_Base()
 	memset(m_pCurrentTextureSlicesPS,-1,sizeof(m_pCurrentTextureSlicesPS));
 
 	m_pCustomSamplerState = new SamplerStateParam_t;
-	m_bDeviceIsLost = false;
 }
 
 void ShaderAPID3DX10::SetD3DDevice(ID3D10Device* d3ddev)
@@ -82,7 +81,7 @@ void ShaderAPID3DX10::SetD3DDevice(ID3D10Device* d3ddev)
 // Init + Shurdown
 void ShaderAPID3DX10::Init(const shaderAPIParams_t &params)
 {
-	Msg("Initializing Direct3D9 Shader API...\n");
+	Msg("Initializing Direct3D11 Shader API...\n");
 
 	// init base and critical section
 	ShaderAPI_Base::Init( params );
@@ -3299,7 +3298,7 @@ void ShaderAPID3DX10::SetScissorRectangle( const IRectangle &rect )
 
 bool ShaderAPID3DX10::IsDeviceActive() const
 {
-	return !m_bDeviceIsLost;
+	return !m_deviceIsLost;
 }
 
 bool ShaderAPID3DX10::CreateBackbufferDepth(int wide, int tall, DXGI_FORMAT depthFormat, int nMSAASamples)

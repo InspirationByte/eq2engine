@@ -78,7 +78,8 @@ protected:
 	int						m_msaaSamples{ 0 };
 	int						m_width{ 0 };
 	int						m_height{ 0 };
-	bool					m_resized{ false };
 
-	shaderAPIParams_t		m_savedParams;
+	bool					m_verticalSyncEnabled{ false };
+
+	//shaderAPIParams_t		m_savedParams;
 };

@@ -77,8 +77,6 @@ bool CD3D10SwapChain::Initialize(	HWND window, int numMSAASamples,
 	sd.SampleDesc.Count = m_numMSAASamples;
 	sd.SampleDesc.Quality = 0;
 
-	Msg("Creating DXGI swapchain W=%d H=%d\n", m_width, m_height);
-
 	HRESULT res = dxFactory->CreateSwapChain(rhi, &sd, &m_swapChain);
 
 	if (FAILED(res))
@@ -115,8 +113,6 @@ bool CD3D10SwapChain::CreateOrUpdateBackbuffer()
 	m_backbuffer->m_textures.append( backbufferTex );
 	m_backbuffer->m_rtv.append( backbufferRTV );
 	m_backbuffer->m_srv.append( ((ShaderAPID3DX10*)g_pShaderAPI)->TexResource_CreateShaderResourceView(backbufferTex) );
-
-	Msg("CreateOrUpdateBackbuffer OK\n");
 
 	return true;
 }
