@@ -96,14 +96,14 @@ protected:
 	GL_CONTEXT				m_glSharedContext;
 
 #ifdef PLAT_WIN
-	int						m_bestPixelFormat;
+	int						m_bestPixelFormat{ 0 };
 	PIXELFORMATDESCRIPTOR	m_pfd;
 	DISPLAY_DEVICEA			m_dispDevice;
 	DEVMODEA				m_devMode;
 
-	HDC						m_hdc;
+	HDC						m_hdc{ nullptr };
 	
-	HWND					m_hwnd;
+	HWND					m_hwnd{ nullptr };
 
 #elif defined(PLAT_LINUX)
     XF86VidModeModeInfo**	m_dmodes;
@@ -115,9 +115,7 @@ protected:
 	CFDictionaryRef			m_initialMode;
 #endif // _WIN32
 
-	int						m_width;
-	int						m_height;
-
-	bool					m_bResized;
-	bool					m_windowed;
+	int						m_width{ 0 };
+	int						m_height{ 0 };
+	bool					m_windowed{ false };
 };

@@ -2458,7 +2458,7 @@ void ShaderAPIGL::DrawNonIndexedPrimitives(ER_PrimitiveType nType, int nFirstVer
 
 bool ShaderAPIGL::IsDeviceActive() const
 {
-	return true;
+	return !m_deviceLost;
 }
 
 //-------------------------------------------------------------

@@ -323,6 +323,7 @@ private:
 
 	IRectangle			m_viewPort;
 	EGraphicsVendor		m_vendor{ VENDOR_OTHER };
+	bool				m_deviceLost{ false };
 };
 
 void PrintGLExtensions();

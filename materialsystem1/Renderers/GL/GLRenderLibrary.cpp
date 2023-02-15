@@ -647,6 +647,8 @@ void CGLRenderLib::ExitAPI()
 
 void CGLRenderLib::BeginFrame(IEqSwapChain* swapChain)
 {
+	g_shaderApi.m_deviceLost = false;
+
 	g_shaderApi.StepProgressiveLodTextures();
 
 	int width = m_width;
@@ -781,6 +783,7 @@ void CGLRenderLib::SetBackbufferSize(const int w, const int h)
 
 	m_width = w;
 	m_height = h;
+	g_shaderApi.m_deviceLost = true;
 
 	SetWindowed(m_windowed);
 
