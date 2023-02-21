@@ -35,8 +35,8 @@ extern CEqMutex	g_sapi_Mutex;
 
 extern CEqMutex	g_sapi_ProgressiveTextureMutex;
 
-static ConVar r_preloadShaderCache("r_preloadShaderCache", "1", nullptr, 0);
-static ConVar r_skipShaderCache("r_skipShaderCache", "0", "Shader debugging purposes", 0);
+DECLARE_CVAR(r_preloadShaderCache, "1", nullptr, 0);
+DECLARE_CVAR(r_skipShaderCache, "0", "Shader debugging purposes", 0);
 
 #pragma warning(disable:4838)
 
@@ -2314,6 +2314,9 @@ void ShaderAPID3D9::SetTexture(int nameHash, const ITexturePtr& pTexture)
 		ASSERT_FAIL("SetTexture requires name");
 		return;
 	}
+
+	if (!m_pSelectedShader)
+		return;
 
 	CD3D9ShaderProgram* pShader = (CD3D9ShaderProgram*)(m_pSelectedShader);
 	const Map<int, DX9Sampler_t>& samplerMap = pShader->m_samplers;

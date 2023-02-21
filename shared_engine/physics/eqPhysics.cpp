@@ -47,11 +47,10 @@ static CEqMutex s_eqPhysMutex;
 
 extern ConVar ph_margin;
 
-ConVar ph_showcontacts("ph_showcontacts", "0", nullptr, CV_CHEAT);
-ConVar ph_erp("ph_erp", "0.15", "Collision correction", CV_CHEAT);
-
-// cvar value mostly depends on velocity
-ConVar ph_grid_tolerance("ph_grid_tolerance", "0.1", nullptr, CV_CHEAT);
+DECLARE_CVAR(ph_showcontacts, "0", nullptr, CV_CHEAT);
+DECLARE_CVAR(ph_erp, "0.15", "Collision correction", CV_CHEAT);
+DECLARE_CVAR(ph_grid_tolerance, "0.1", nullptr, CV_CHEAT);
+DECLARE_CVAR(ph_carVsCarErp, "0.15", "Car versus car erp", CV_CHEAT);
 
 const float PHYSICS_DEFAULT_FRICTION = 0.5f;
 const float PHYSICS_DEFAULT_RESTITUTION = 0.25f;
@@ -1119,9 +1118,6 @@ void CEqPhysics::DetectCollisionsSingle(CEqRigidBody* body)
 		}
 	}
 }
-
-
-ConVar ph_carVsCarErp("ph_carVsCarErp", "0.15", "Car versus car erp", CV_CHEAT);
 
 void CEqPhysics::ProcessContactPair(ContactPair_t& pair)
 {

@@ -16,8 +16,8 @@
 class IShaderAPI* g_pShaderAPI = nullptr;
 class IMaterialSystem* materials = nullptr;
 
-ConVar cv_cheats("__cheats","1","Enable cheats",CV_INITONLY | CV_INVISIBLE);
-ConVar c_filename("filename","none","script file name", 0);
+DECLARE_CVAR(__cheats,"1","Enable cheats",CV_INITONLY | CV_INVISIBLE);
+DECLARE_CVAR_RENAME(c_filename, "filename", "none", "script file name", 0);
 
 int main(int argc, char **argv)
 {

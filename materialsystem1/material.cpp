@@ -17,7 +17,7 @@
 #include "materialsystem1/IMaterialSystem.h"
 #include "material.h"
 
-ConVar r_allowSourceTextures("r_allowSourceTextures", "0", "enable materials and textures loading from source paths", 0);
+DECLARE_CVAR(r_allowSourceTextures, "0", "enable materials and textures loading from source paths", 0);
 
 #define MATERIAL_FILE_EXTENSION		".mat"
 #define ATLAS_FILE_EXTENSION		".atlas"

@@ -138,7 +138,7 @@ void cvar_list_collect(const ConCommandBase* cmd, Array<EqString>& list, const c
 	}
 }
 
-DECLARE_CONCOMMAND_FN(revertcvar)
+DECLARE_CONCOMMAND_FN(revertvar)
 {
 	if (CMD_ARGC == 0)
 	{
@@ -156,7 +156,7 @@ DECLARE_CONCOMMAND_FN(revertcvar)
 		MsgError("No such cvar '%s'\n", CMD_ARGV(0).ToCString());
 }
 
-DECLARE_CONCOMMAND_FN(togglecvar)
+DECLARE_CONCOMMAND_FN(togglevar)
 {
 	if (CMD_ARGC == 0)
 	{
@@ -224,7 +224,7 @@ DECLARE_CONCOMMAND_FN(seti)
 {
 	if (CMD_ARGC == 0)
 	{
-		MsgError("Usage: seti <convar>\n");
+		MsgError("Usage: seta <convar>\n");
 		return;
 	}
 
@@ -258,15 +258,13 @@ void fncfgfiles_variants(const ConCommandBase* cmd, Array<EqString>& list, const
 	}
 }
 
-ConCommand cvarlist("cvarlist", CONCOMMAND_FN(cvarlist), "Prints out all aviable cvars", CV_UNREGISTERED);
-ConCommand cmdlist("cmdlist", CONCOMMAND_FN(cmdlist), "Prints out all aviable commands", CV_UNREGISTERED);
-
-ConCommand exec("exec", CONCOMMAND_FN(exec), fncfgfiles_variants, "Execute configuration file", CV_UNREGISTERED);
-
-ConCommand toggle("togglevar", CONCOMMAND_FN(togglecvar), cvar_list_collect, "Toggles ConVar value", CV_UNREGISTERED);
-ConCommand set("set", CONCOMMAND_FN(set), cvar_list_collect, "Sets cvar value", CV_UNREGISTERED);
-ConCommand seta("seti", CONCOMMAND_FN(seti), cvar_list_collect, "Sets cvar value including restricted ones", CV_UNREGISTERED | CV_INVISIBLE);
-ConCommand revert("revert", CONCOMMAND_FN(revertcvar), cvar_list_collect, "Reverts cvar to it's default value", CV_UNREGISTERED);
+DECLARE_CMD_F(cvarlist, "Prints out all aviable cvars", CV_UNREGISTERED);
+DECLARE_CMD_F(cmdlist, "Prints out all aviable commands", CV_UNREGISTERED);
+DECLARE_CMD_VARIANTS_F(exec, "Execute configuration file", fncfgfiles_variants, CV_UNREGISTERED);
+DECLARE_CMD_VARIANTS_F(togglevar, "Toggles ConVar value", cvar_list_collect, CV_UNREGISTERED);
+DECLARE_CMD_VARIANTS_F(set, "Sets cvar value", cvar_list_collect, CV_UNREGISTERED);
+DECLARE_CMD_VARIANTS_F(seti, "Sets cvar value including restricted ones", cvar_list_collect, CV_UNREGISTERED | CV_INVISIBLE);
+DECLARE_CMD_VARIANTS_F(revertvar, "Reverts cvar to it's default value", cvar_list_collect, CV_UNREGISTERED);
 
 
 void SplitCommandForValidArguments(const char* command, Array<EqString>& commands)
@@ -346,10 +344,10 @@ void CConsoleCommands::RegisterCommands()
 	RegisterCommand(&cmdlist);
 	RegisterCommand(&exec);
 
-	RegisterCommand(&toggle);
+	RegisterCommand(&togglevar);
 	RegisterCommand(&set);
-	RegisterCommand(&seta);
-	RegisterCommand(&revert);
+	RegisterCommand(&seti);
+	RegisterCommand(&revertvar);
 }
 
 const ConVar* CConsoleCommands::FindCvar(const char* name)

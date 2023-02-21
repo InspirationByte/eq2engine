@@ -17,7 +17,7 @@
 #include "sys_window.h"
 #include "sys_version.h"
 
-DECLARE_CVAR_NONSTATIC(__cheats,1,"Wireframe",CV_INVISIBLE);
+DECLARE_CVAR_G(__cheats, "1", "Wireframe", CV_INVISIBLE);
 
 // engine entry point after Core init
 int Sys_Main()

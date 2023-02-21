@@ -9,37 +9,11 @@
 #include "ConCommandBase.h"
 #include "IConsoleCommands.h"
 
-static const char* defaultDescString = "No description";
-
-// Default constructor
-ConCommandBase::ConCommandBase()
+ConCommandBase::ConCommandBase(char const *name, int flags)
+	: m_szName(name)
+	, m_nFlags(flags)
 {
-	m_fnVariantsList = nullptr;
-	m_bIsRegistered	= false;
-	m_nFlags = 0;
-
-	m_szName	= nullptr;
-	m_szDesc	= nullptr;
-}
-
-void ConCommandBase::Init(char const *name,char const *desc, int flags /*= 0*/,bool bIsConVar /* = false*/ )
-{
-	// Make Command name shared
-	m_szName = name;
-
-	if(desc)
-		m_szDesc = desc;
-	else
-		m_szDesc = defaultDescString;
-
-	m_nFlags = flags;
-
-	if(bIsConVar)
-		m_nFlags |= CMDBASE_CONVAR;
-	else
-		m_nFlags |= CMDBASE_CONCOMMAND;
-
-	if(GetFlags() & CV_UNREGISTERED)
+	if(m_nFlags & CV_UNREGISTERED)
 		return;
 
     Register(this);
@@ -47,7 +21,8 @@ void ConCommandBase::Init(char const *name,char const *desc, int flags /*= 0*/,b
 
 ConCommandBase::~ConCommandBase()
 {
-	if(m_bIsRegistered) Unregister( this );
+	if(m_bIsRegistered)
+		Unregister( this );
 }
 
 //-----------------------------------------------------------

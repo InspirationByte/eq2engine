@@ -15,8 +15,8 @@
 namespace Networking
 {
 
-DECLARE_CVAR(net_compress, 1, "Compress network traffic", CV_ARCHIVE)
-DECLARE_CVAR_CLAMP(net_compress_level, 1, 1, 9, "Compression ratio", CV_ARCHIVE)
+DECLARE_CVAR(net_compress, "1", "Compress network traffic", CV_ARCHIVE)
+DECLARE_CVAR_CLAMP(net_compress_level, "1", 1, 9, "Compression ratio", CV_ARCHIVE)
 
 //-------------------------------------------------------------------------------------------------------
 

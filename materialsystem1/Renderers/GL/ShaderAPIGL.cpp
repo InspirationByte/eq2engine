@@ -70,12 +70,11 @@ DECLARE_CMD(gl_extensions, "Print supported OpenGL extensions", 0)
 	PrintGLExtensions();
 }
 
-static ConVar gl_report_errors("gl_report_errors", "0");
-static ConVar gl_break_on_error("gl_break_on_error", "0");
-static ConVar gl_bypass_errors("gl_bypass_errors", "0");
-
-static ConVar r_preloadShaderCache("r_preloadShaderCache", "1", nullptr, 0);
-static ConVar r_skipShaderCache("r_skipShaderCache", "0", "Shader debugging purposes", 0);
+DECLARE_CVAR(gl_report_errors, "0", nullptr, 0);
+DECLARE_CVAR(gl_break_on_error, "0", nullptr, 0);
+DECLARE_CVAR(gl_bypass_errors, "0", nullptr, 0);
+DECLARE_CVAR(r_preloadShaderCache, "1", nullptr, 0);
+DECLARE_CVAR(r_skipShaderCache, "0", "Shader debugging purposes", 0);
 
 bool GLCheckError(const char* op, ...)
 {
@@ -2684,6 +2683,9 @@ void ShaderAPIGL::SetTexture(int nameHash, const ITexturePtr& pTexture )
 		ASSERT_FAIL("SetTexture requires name");
 		return;
 	}
+
+	if (!m_pSelectedShader)
+		return;
 
 	const Map<int, GLShaderSampler_t>& samplerMap = ((CGLShaderProgram*)m_pSelectedShader)->m_samplers;
 

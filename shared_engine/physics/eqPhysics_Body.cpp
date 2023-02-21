@@ -17,12 +17,12 @@
 #include "physics/BulletConvert.h"
 using namespace EqBulletUtils;
 
-//-----------------------------------------------------------------------------------------
-
-ConVar ph_showcollisionresponses("ph_showcollisionresponses", "0");
 #define COLLRESPONSE_DEBUG_SCALE 0.005f
 
-ConVar ph_debug_body("ph_debug_body", "0", "Print debug body information in screen");
+//-----------------------------------------------------------------------------------------
+
+DECLARE_CVAR(ph_showcollisionresponses, "0", nullptr, CV_CHEAT);
+DECLARE_CVAR(ph_debug_body, "0", "Print debug body information in screen", CV_CHEAT);
 
 const float frictionTimeScale = 10.0f;
 const float dampingTimeScale = 1.0f;

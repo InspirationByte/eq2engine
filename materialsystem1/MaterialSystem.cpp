@@ -48,21 +48,21 @@ static VertexFormatDesc_t g_dynMeshVertexFormatDesc[] = {
 	{0, 4, VERTEXATTRIB_COLOR,		ATTRIBUTEFORMAT_UBYTE, "color"},
 };
 
-static ConVar	r_showlightmaps("r_showlightmaps", "0", "Disable diffuse textures to show lighting", CV_CHEAT);
-static ConVar	r_screen("r_screen", "0", "Screen count", CV_ARCHIVE);
-static ConVar	r_loadmiplevel("r_loadmiplevel", "0", 0, 3, "Mipmap level to load, needs texture reloading", CV_ARCHIVE );
-static ConVar	r_anisotropic("r_anisotropic", "4", 1, 16, "Mipmap anisotropic filtering quality, needs texture reloading", CV_ARCHIVE );
+DECLARE_CVAR(r_showlightmaps, "0", "Disable diffuse textures to show lighting", CV_CHEAT);
+DECLARE_CVAR(r_screen, "0", "Screen count", CV_ARCHIVE);
+DECLARE_CVAR_CLAMP(r_loadmiplevel, "0", 0, 3, "Mipmap level to load, needs texture reloading", CV_ARCHIVE );
+DECLARE_CVAR_CLAMP(r_anisotropic, "4", 1, 16, "Mipmap anisotropic filtering quality, needs texture reloading", CV_ARCHIVE );
 
-static ConVar	r_lightscale("r_lightscale", "1.0f", "Global light scale", CV_ARCHIVE);
-static ConVar	r_shaderCompilerShowLogs("r_shaderCompilerShowLogs", "0","Show warnings of shader compilation",CV_ARCHIVE);
+DECLARE_CVAR(r_lightscale, "1.0f", "Global light scale", CV_ARCHIVE);
+DECLARE_CVAR(r_shaderCompilerShowLogs, "0","Show warnings of shader compilation",CV_ARCHIVE);
 
-static ConVar	r_overdraw("r_overdraw", "0", "Renders all materials in overdraw shader", CV_CHEAT);
-static ConVar	r_wireframe("r_wireframe","0","Enables wireframe rendering", CV_CHEAT);
+DECLARE_CVAR(r_overdraw, "0", "Renders all materials in overdraw shader", CV_CHEAT);
+DECLARE_CVAR(r_wireframe,"0","Enables wireframe rendering", CV_CHEAT);
 
-static ConVar	r_noffp("r_noffp","0","No FFP emulated primitives", CV_CHEAT);
+DECLARE_CVAR(r_noffp,"0","No FFP emulated primitives", CV_CHEAT);
 
-static ConVar	r_depthBias("r_depthBias", "-0.000001", nullptr, CV_CHEAT);
-static ConVar	r_slopeDepthBias("r_slopeDepthBias", "-1.5", nullptr, CV_CHEAT);
+DECLARE_CVAR(r_depthBias, "-0.000001", nullptr, CV_CHEAT);
+DECLARE_CVAR(r_slopeDepthBias, "-1.5", nullptr, CV_CHEAT);
 
 DECLARE_CMD(mat_reload, "Reloads all materials",0)
 {

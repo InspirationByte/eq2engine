@@ -9,27 +9,44 @@
 #include "ConCommandBase.h"
 
 class ConVar;
-
-typedef void (*CONVAR_CHANGE_CALLBACK)(ConVar* pVar,char const* pszOldValue);
+typedef void (*CONVAR_CHANGE_CALLBACK)(ConVar* pVar, char const* pszOldValue);
 
 class ConVar : public ConCommandBase
 {
 public:
-	ConVar();
+	// variadic dynamic initializer for ConVar
+	struct ChangeCallback
+	{
+		ChangeCallback(CONVAR_CHANGE_CALLBACK cb) : cb(cb) {}
+		void operator()(ConVar* cv) { cv->m_fnChangeCallback = cb; }
+
+		CONVAR_CHANGE_CALLBACK cb;
+	};
+
+	struct Clamp
+	{
+		Clamp(float fmin, float fmax) : fmin(fmin), fmax(fmax) {}
+		void operator()(ConVar* cv) { cv->m_fClampMin = fmin; cv->m_fClampMax = fmax; cv->m_bClamp = true; }
+
+		float fmin;
+		float fmax;
+	};
+
 	~ConVar();
-	ConVar(char const *name,char const *pszDefaultValue, char const *desc = 0, int flags = 0);
-	ConVar(char const *name,char const *pszDefaultValue, CONVAR_CHANGE_CALLBACK callback, char const *desc = 0, int flags = 0);
+	ConVar(const char* name, const char* pszDefaultValue, int flags = 0);
 
-	ConVar(char const *name,char const *pszDefaultValue, CMDBASE_VARIANTS_CALLBACK variantsList, char const *desc = 0, int flags = 0);
-	ConVar(char const *name,char const *pszDefaultValue, CONVAR_CHANGE_CALLBACK callback, CMDBASE_VARIANTS_CALLBACK variantsList, char const *desc = 0, int flags = 0);
-
-	ConVar(char const *name,char const *pszDefaultValue, float clampmin,float clampmax, char const *desc = 0, int flags = 0);
-	ConVar(char const *name,char const *pszDefaultValue, float clampmin,float clampmax, CONVAR_CHANGE_CALLBACK callback,char const *desc = 0, int flags = 0);
+	template<typename... Ts>
+	ConVar(char const* name, char const* pszDefaultValue, int flags, Ts... ts)
+		: ConCommandBase(name, flags | CMDBASE_CONVAR)
+	{
+		char _[] = { CmdInit<>(this, ts)... };
+		Init(pszDefaultValue);
+	}
 
 	void			RevertToDefaultValue(); //Reverts to default value
 	const char*		GetDefaultValue() const;
 
-	void			SetValue(char const *newvalue); //Sets string value
+	void			SetValue(const char* newvalue); //Sets string value
 	void			SetFloat(const float newvalue);
 	void			SetInt(const int newvalue);
 	void			SetBool(const bool newvalue);
@@ -50,52 +67,67 @@ public:
 
 private:
 
+	void			Init(const char* defaultValue);
+
 	bool			CheckCommandLine(int startAt = 0 );
 
-	void			Create(char const *pszName,char const *pszDefaultValue,char const *pszHelpString, int nFlags);
-	void			Create(char const *pszName,char const *pszDefaultValue,float fClampMin,float fClampMax,char const *pszHelpString, int nFlags);
-
-	void			InternalSetValue(char const *newvalue);
-	void			InternalSetString(char const *value);
+	void			InternalSetValue(const char* newvalue);
+	void			InternalSetString(const char* value);
 
 	bool			ClampValue(float &value);
 
-private:
-
 	// Static data
-	char const*				m_szDefaultValueString;
-
-	CONVAR_CHANGE_CALLBACK	m_fnChangeCallback;
+	char const*				m_szDefaultValueString{ nullptr };
+	CONVAR_CHANGE_CALLBACK	m_fnChangeCallback{ nullptr };
 
 	// Dynamically allocated value
 	EqString				m_szValueString;
 
 	// Other values
-	float					m_flValue;
-	int						m_nValue;
+	float					m_flValue{ 0.0f };
+	int						m_nValue{ 0 };
 
 	// Is clamped
-	bool					m_bClamp;
-
-	float					m_fClampMin;
-	float					m_fClampMax;
+	float					m_fClampMin{ 0.0f };
+	float					m_fClampMax{ 1.0f };
+	bool					m_bClamp{ false };
 };
 
-#define DECLARE_CVAR(name,value,desc,flags)		\
-	static ConVar name(#name,#value,desc,flags);
+#define DECLARE_CVAR_RENAME_G(name, cvname, value, desc, flags) \
+	ConVar name(cvname, value, flags, ConVar::Desc(desc));
 
-#define DECLARE_CVAR_NONSTATIC(name,value,desc,flags)		\
-	ConVar name(#name,#value,desc,flags);
+#define DECLARE_CVAR_G(name, value, desc, flags) \
+	ConVar name(#name, value, flags, ConVar::Desc(desc));
 
-#define DECLARE_CVAR_CLAMPED(name,value,minclamp,maxclamp,desc,flags)		\
-	static ConVar name(#name,#value,minclamp,maxclamp,desc,flags);
+#define DECLARE_CVAR_CLAMP_G(name, value, minclamp, maxclamp, desc, flags) \
+	ConVar name(#name, value, flags, ConVar::Desc(desc), ConVar::Clamp(minclamp, maxclamp));
 
-#define DECLARE_CVAR_CLAMPED_NONSTATIC(name,value,minclamp,maxclamp,desc,flags)		\
-	ConVar name(#name,#value,minclamp,maxclamp,desc,flags);
+#define DECLARE_CVAR_CHANGE_G(name, value, changecb, desc, flags) \
+	ConVar name(#name, value, flags, ConVar::Desc(desc), ConVar::ChangeCallback(changecb));
 
-// If you has error in your input
-#define DECLARE_CVAR_CLAMP				DECLARE_CVAR_CLAMPED
-#define DECLARE_CVAR_CLAMP_NONSTATIC	DECLARE_CVAR_CLAMPED_NONSTATIC
+#define DECLARE_CVAR_CLAMP_CHANGE_G(name, value, changecb, minclamp, maxclamp, desc, flags) \
+	ConVar name(#name, value, flags, ConVar::Desc(desc), ConVar::Clamp(minclamp, maxclamp), ConVar::ChangeCallback(changecb));
+
+#define DECLARE_CVAR_VARIANTS_G(name, value, variantscb, desc, flags) \
+	ConVar name(#name, value, flags, ConVar::Desc(desc), ConVar::Variants(variantscb));
+
+#define DECLARE_CVAR(name, value, desc, flags) \
+	static DECLARE_CVAR_G(name, value, desc, flags)
+
+#define DECLARE_CVAR_RENAME(name, cvname, value, desc, flags) \
+	static DECLARE_CVAR_RENAME_G(name, cvname, value, desc, flags)
+
+#define DECLARE_CVAR_CLAMP(name, value, minclamp, maxclamp, desc, flags) \
+	static DECLARE_CVAR_CLAMP_G(name, value, minclamp, maxclamp, desc, flags)
+
+#define DECLARE_CVAR_CHANGE(name, value, changecb, desc, flags) \
+	DECLARE_CVAR_CHANGE_G(name, value, changecb, desc, flags)
+
+#define DECLARE_CVAR_CLAMP_CHANGE(name, value, changecb, minclamp, maxclamp, desc, flags) \
+	DECLARE_CVAR_CLAMP_CHANGE_G(name, value, changecb, minclamp, maxclamp, desc, flags)
+
+#define DECLARE_CVAR_VARIANTS(name, value, variantscb, desc, flags) \
+	DECLARE_CVAR_VARIANTS_G(name, value, variantscb, desc, flags)
 
 #define HOOK_TO_CVAR(name)		\
 	static ConVar *name = (ConVar*)g_consoleCommands->FindCvar(#name);

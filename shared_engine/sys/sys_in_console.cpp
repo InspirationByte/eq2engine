@@ -65,8 +65,10 @@ DECLARE_CONCOMMAND_FN(con_toggle)
 		SDL_StopTextInput();
 #endif
 }
-ConCommand con_toggle_p("+con_toggle", CONCOMMAND_FN(con_toggle), nullptr, CV_INVISIBLE);
-ConCommand con_toggle_m("-con_toggle", nullptr, nullptr, CV_INVISIBLE);
+DECLARE_CMD_FN_RENAME(con_toggle_p, "+con_toggle", CONCOMMAND_FN(con_toggle), nullptr, CV_INVISIBLE);
+DECLARE_CMD_RENAME(con_toggle_m, "-con_toggle", nullptr, CV_INVISIBLE) {}
+DECLARE_CVAR(con_suggest, "1", nullptr, CV_ARCHIVE);
+DECLARE_CVAR(con_minicon, "0", nullptr, CV_ARCHIVE);
 
 // shows console
 DECLARE_CMD(con_show, "Show console", 0)
@@ -111,10 +113,6 @@ const float LOG_SCROLL_DELAY_END	= 0.0f;
 
 const float LOG_SCROLL_DELAY_STEP	= 0.01f;
 const float LOG_SCROLL_POWER_INC	= 0.05f;
-
-ConVar con_suggest("con_suggest","1", nullptr,CV_ARCHIVE);
-
-static ConVar con_minicon("con_minicon", "0", nullptr, CV_ARCHIVE);
 
 static CEqConsoleInput s_SysConsole;
 CEqConsoleInput* g_consoleInput = &s_SysConsole;
@@ -602,11 +600,9 @@ void CEqConsoleInput::DrawListBox(const IVector2D& pos, int width, Array<EqStrin
 
 		if (selection == itemIdx)
 		{
-			g_pShaderAPI->Reset(STATE_RESET_TEX);
 			Vertex2D_t selrect[] = { MAKETEXQUAD((float)pos.x, rect.GetLeftTop().y + textYPos, (float)(pos.x + width), rect.GetLeftTop().y + textYPos + 15 , 0) };
 
 			materials->DrawPrimitives2DFFP(PRIM_TRIANGLE_STRIP, selrect, elementsOf(selrect), nullptr, s_conListItemSelectedBackground, &blending);
-			g_pShaderAPI->Apply();
 		}
 
 		m_font->RenderText(item.ToCString(), rect.GetLeftTop() + Vector2D(5, 4 + textYPos), (selection == itemIdx) ? selectedItemStyle : itemStyle);
@@ -726,11 +722,9 @@ void CEqConsoleInput::DrawFastFind(float x, float y, float w)
 
 				if(IsInRectangle(m_mousePosition.x,m_mousePosition.y,x,textYPos+2, rect.vrightBottom.x-rect.vleftTop.x,12) || m_cmdSelection == i)
 				{
-					g_pShaderAPI->Reset(STATE_RESET_TEX);
 					Vertex2D_t selrect[] = { MAKETEXQUAD(x, textYPos, x+max_string_length*CMDLIST_SYMBOL_SIZE, textYPos + 15 , 0) };
 
 					materials->DrawPrimitives2DFFP(PRIM_TRIANGLE_STRIP,selrect,elementsOf(selrect), nullptr, ColorRGBA(1.0f, 1.0f, 1.0f, 0.8f), &blending);
-					g_pShaderAPI->Apply();
 
 					m_cmdSelection = i;
 
@@ -776,9 +770,6 @@ void CEqConsoleInput::DrawFastFind(float x, float y, float w)
 					float lookupStrEnd = lookupStrStart + m_font->GetStringWidth(cmdBase->GetName()+ofs, variantsTextParams, len);
 
 					Vertex2D_t rectVerts[] = { MAKETEXQUAD(x+5 + lookupStrStart, textYPos-2, x+5 + lookupStrEnd, textYPos+12, 0) };
-
-					// Cancel textures
-					g_pShaderAPI->Reset();
 
 					materials->DrawPrimitives2DFFP(PRIM_TRIANGLE_STRIP, rectVerts, elementsOf(rectVerts), nullptr, ColorRGBA(1.0f, 1.0f, 1.0f, 0.3f), &blending);
 				}
@@ -1294,8 +1285,6 @@ void CEqConsoleInput::DrawSelf(int width,int height, float frameTime)
 											inputTextPos.y - 10,
 											inputTextPos.x + cursorPosition,
 											inputTextPos.y + 4, 0) };
-		// Cancel textures
-		g_pShaderAPI->Reset();
 
 		materials->DrawPrimitives2DFFP(PRIM_TRIANGLE_STRIP,rect,elementsOf(rect), nullptr, ColorRGBA(1.0f, 1.0f, 1.0f, 0.3f), &blending);
 	}
@@ -1307,9 +1296,6 @@ void CEqConsoleInput::DrawSelf(int width,int height, float frameTime)
 											inputTextPos.y - 10,
 											inputTextPos.x + cursorPosition + 1,
 											inputTextPos.y + 4, 0) };
-
-		// Cancel textures
-		g_pShaderAPI->Reset();
 
 		materials->DrawPrimitives2DFFP(PRIM_TRIANGLE_STRIP,rect,elementsOf(rect), nullptr, ColorRGBA(1.0f), &blending);
 	}
@@ -1427,7 +1413,7 @@ bool CEqConsoleInput::KeyPress(int key, bool pressed)
 {
 	if (pressed) // catch "DOWN" event
 	{
-		in_binding_t* tgBind = g_inputCommandBinder->FindBindingByCommand(&cmd_toggleconsole);
+		in_binding_t* tgBind = g_inputCommandBinder->FindBindingByCommand(&toggleconsole);
 
 		if (tgBind && s_keyMapList[tgBind->key_index].keynum == key)
 		{

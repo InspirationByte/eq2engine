@@ -79,8 +79,8 @@ void DkCore_onExit( void )
 
 ConVar *c_SupressAccessorMessages = nullptr;
 
-extern ConCommand c_developer;
-extern ConCommand c_echo;
+extern ConCommand developer;
+extern ConCommand echo;
 
 extern void Log_Init();
 extern void Log_Flush();
@@ -310,8 +310,8 @@ bool CDkCore::Init(const char* pszApplicationName, const char* pszCommandLine)
 	CEqCPUCaps* cpuCaps = (CEqCPUCaps*)g_cpuCaps.GetInstancePtr();
 	cpuCaps->Init();
 
-	g_consoleCommands->RegisterCommand(&c_developer);
-	g_consoleCommands->RegisterCommand(&c_echo);
+	g_consoleCommands->RegisterCommand(&developer);
+	g_consoleCommands->RegisterCommand(&echo);
 
 	((CConsoleCommands*)g_consoleCommands.GetInstancePtr())->RegisterCommands();
 
@@ -319,7 +319,7 @@ bool CDkCore::Init(const char* pszApplicationName, const char* pszCommandLine)
 	c_log_disable = PPNew ConCommand("log_disable",CONCOMMAND_FN(log_disable));
 	c_log_flush = PPNew ConCommand("log_flush",CONCOMMAND_FN(log_flush));
 
-	c_SupressAccessorMessages = PPNew ConVar("c_SupressAccessorMessages","1","Supress command/variable accessing. Dispays errors only",CV_ARCHIVE);
+	c_SupressAccessorMessages = PPNew ConVar("c_SupressAccessorMessages", "1", CV_ARCHIVE);
 
 	// Install exception handler
 	if (g_cmdLine->FindArgument("-nocrashdump") == -1)

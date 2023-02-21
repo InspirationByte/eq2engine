@@ -17,13 +17,11 @@
 
 #include "input/in_keys_ident.h"
 
-ConVar in_joy_debug("in_joy_debug", "0", "Joystick debug messages", 0);
-
-ConVar in_joy_repeatDelayInit("in_joy_repeatDelayInit", "1", "Joystick input repeat delay initial", CV_ARCHIVE);
-ConVar in_joy_repeatDelay("in_joy_repeatDelay", "0.2", "Joystick input repeat delay", CV_ARCHIVE);
-ConVar in_joy_rumble("in_joy_rumble", "1", "Rumble", CV_ARCHIVE);
-
-ConVar in_joy_id("in_joy_id", "-1", "Joystick to use. -1 is for all", CV_ARCHIVE);
+DECLARE_CVAR(in_joy_debug, "0", "Joystick debug messages", 0);
+DECLARE_CVAR(in_joy_repeatDelayInit, "1", "Joystick input repeat delay initial", CV_ARCHIVE);
+DECLARE_CVAR(in_joy_repeatDelay, "0.2", "Joystick input repeat delay", CV_ARCHIVE);
+DECLARE_CVAR(in_joy_rumble, "1", "Rumble", CV_ARCHIVE);
+DECLARE_CVAR(in_joy_id, "-1", "Joystick to use. -1 is for all", CV_ARCHIVE);
 
 #define CONTROLLER_DB_FILENAME "cfg/controllers.db"
 

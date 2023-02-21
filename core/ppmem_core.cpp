@@ -54,16 +54,6 @@ struct ppallocinfo_t
 	uint			checkMark;
 };
 
-DECLARE_CONCOMMAND_FN(ppmemstats)
-{
-	bool fullStats = false;
-
-	if(CMD_ARGC > 0 && CMD_ARGV(0) == "full")
-		fullStats = true;
-
-	PPMemInfo( fullStats );
-}
-
 // allocation map
 struct ppmem_src_counter_t
 {
@@ -97,8 +87,16 @@ static ppmem_state_t& PPGetState()
 }
 
 #ifndef PPMEM_DISABLED
-static ConCommand	ppmem_stats("ppmem_stats",CONCOMMAND_FN(ppmemstats), "Memory info",CV_UNREGISTERED);
-static ConVar		ppmem_break_on_alloc("ppmem_break_on_alloc", "-1", "Helps to catch allocation id at stack trace",CV_UNREGISTERED);
+DECLARE_CMD(ppmem_stats, "Memory info", CV_UNREGISTERED)
+{
+	bool fullStats = false;
+
+	if (CMD_ARGC > 0 && CMD_ARGV(0) == "full")
+		fullStats = true;
+
+	PPMemInfo(fullStats);
+}
+DECLARE_CVAR(ppmem_break_on_alloc, "-1", "Helps to catch allocation id at stack trace", CV_UNREGISTERED);
 #endif
 
 #if defined(CRT_DEBUG_ENABLED) && defined(_WIN32)

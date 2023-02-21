@@ -7,7 +7,9 @@
 
 #pragma once
 
-enum CommandBaseFlags_e
+static constexpr const char* cmdDefaultDescString = "No description";
+
+enum ECommandBaseFlags
 {
 	CV_UNREGISTERED		= (1 << 0),	// Do not register this console command\cvar to list. So it can't be changed in console.
 	CV_CHEAT			= (1 << 1), // Cheat. Must be checked from "__cheats" cvar
@@ -29,8 +31,28 @@ class ConCommandBase
 	friend class ConCommand;
 	friend class CConsoleCommands;
 
+protected:
+	template<typename CMD_TYPE, typename T>
+	int CmdInit(CMD_TYPE* cv, T& val) { val(cv); return 0; }
+
 public:
-	ConCommandBase();
+	struct Desc
+	{
+		Desc(const char* descriptionText) : descriptionText(descriptionText ? descriptionText : cmdDefaultDescString) {}
+		void operator()(ConCommandBase* cmd) { cmd->m_szDesc = descriptionText; }
+
+		const char* descriptionText;
+	};
+
+	struct Variants
+	{
+		Variants(CMDBASE_VARIANTS_CALLBACK cb) : cb(cb) {}
+		void operator()(ConCommandBase* cmd) { cmd->m_fnVariantsList = cb; }
+
+		CMDBASE_VARIANTS_CALLBACK cb;
+	};
+
+	ConCommandBase(char const* name, int flags);
 	virtual ~ConCommandBase();
 
 	// Names, descs, flags
@@ -51,15 +73,10 @@ public:
 	void			SetVariantsCallback(CMDBASE_VARIANTS_CALLBACK fnVariants) {m_fnVariantsList = fnVariants;}
 
 protected:
-	void		Init(char const *name,char const *desc, int flags = 0,bool bIsConVar = false);
 
-	bool		m_bIsRegistered;
-
-	int			m_nFlags;
-
-	// Name and description
-	const char*	m_szName;
-	const char*	m_szDesc;
-
-	CMDBASE_VARIANTS_CALLBACK m_fnVariantsList;
+	const char*					m_szName{ nullptr };
+	const char*					m_szDesc{ nullptr };
+	CMDBASE_VARIANTS_CALLBACK	m_fnVariantsList;
+	int							m_nFlags{ 0 };
+	bool						m_bIsRegistered{ false };
 };

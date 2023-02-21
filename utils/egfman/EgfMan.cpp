@@ -58,7 +58,7 @@ static eqJobThreadDesc_t s_jobTypes[] = {
 	{JOB_TYPE_OBJECTS, 1},
 };
 
-ConVar cheats("__cheats", "1");
+DECLARE_CVAR(__cheats, "1", nullptr, 0);
 
 static DkPhysics s_physics;
 IPhysics* physics = &s_physics;

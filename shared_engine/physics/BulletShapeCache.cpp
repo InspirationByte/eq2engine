@@ -18,7 +18,7 @@ using namespace EqBulletUtils;
 using namespace Threading;
 static CEqMutex s_shapeCacheMutex;
 
-ConVar ph_studioShapeMargin("ph_studioShapeMargin", "0.05", "Studio model shape marginal", CV_CHEAT);
+DECLARE_CVAR(ph_studioShapeMargin, "0.05", "Studio model shape marginal", CV_CHEAT);
 
 // makes and caches shape. IsConvex defines that it was convex or not (also for internal use)
 btCollisionShape* InternalGenerateShape(int numVertices, Vector3D* vertices, int *indices, int numIndices, EPhysShapeType type, float margin)

@@ -16,9 +16,9 @@
 #include "materialsystem1/renderers/IShaderAPI.h"
 #include "TextureLoader.h"
 
-static ConVar r_reportTextureLoading("r_reportTextureLoading", "0", "Echo textrue loading");
-static ConVar r_skipTextureLoading("r_skipTextureLoading", "0", nullptr, CV_CHEAT);
-static ConVar r_noMip("r_noMip", "0", nullptr, CV_CHEAT);
+DECLARE_CVAR(r_reportTextureLoading, "0", "Echo textrue loading", 0);
+DECLARE_CVAR(r_skipTextureLoading, "0", nullptr, CV_CHEAT);
+DECLARE_CVAR(r_noMip, "0", nullptr, CV_CHEAT);
 
 static void AnimGetImagesForTextureName(Array<EqString>& textureNames, const char* pszFileName)
 {

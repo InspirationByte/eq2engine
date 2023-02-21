@@ -29,8 +29,8 @@ CParticleLowLevelRenderer* g_pPFXRenderer = &s_pfxRenderer;
 
 //----------------------------------------------------------------------------------------------------
 
-static ConVar r_particleBufferSize("r_particleBufferSize", "16384", "particle buffer size, change requires restart game", CV_ARCHIVE);
-static ConVar r_drawParticles("r_drawParticles", "1", "Render particles", CV_CHEAT);
+DECLARE_CVAR(r_particleBufferSize, "16384", "particle buffer size, change requires restart game", CV_ARCHIVE);
+DECLARE_CVAR(r_drawParticles, "1", "Render particles", CV_CHEAT);
 
 CParticleBatch::~CParticleBatch()
 {

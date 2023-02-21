@@ -118,7 +118,6 @@ void ImGui_ImplMatSystem_RenderDrawData(ImDrawData* draw_data)
 				MatTextureProxy(materials->FindGlobalMaterialVar(StringToHashConst("basetexture"))).Set(ITexturePtr(texture));
 
 				materials->BindMaterial(materials->GetDefaultMaterial());
-				g_pShaderAPI->Reset(STATE_RESET_VBO);
 				pMatsysMesh->Render(pcmd->IdxOffset, pcmd->ElemCount);
 			}
 		}

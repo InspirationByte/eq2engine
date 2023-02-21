@@ -17,7 +17,7 @@
 
 using namespace Threading;
 
-ConVar net_fakelag("net_fakelag", "0", "Simulate lagging packets\n", CV_CHEAT);
+DECLARE_CVAR(net_fakelag, "0", "Simulate lagging packets\n", CV_CHEAT);
 
 namespace Networking
 {

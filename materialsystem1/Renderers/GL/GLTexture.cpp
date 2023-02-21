@@ -15,7 +15,7 @@
 #include "ShaderAPIGL.h"
 #include "imaging/ImageLoader.h"
 
-static ConVar gl_skipTextures("gl_skipTextures", "0", nullptr, CV_CHEAT);
+DECLARE_CVAR(gl_skipTextures, "0", nullptr, CV_CHEAT);
 
 extern ShaderAPIGL g_shaderApi;
 Threading::CEqMutex g_sapi_ProgressiveTextureMutex;

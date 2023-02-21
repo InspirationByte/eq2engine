@@ -25,10 +25,10 @@
 #define DEFAULT_CONFIG_PATH		"cfg/config_default.cfg"
 
 // Renderer
-DECLARE_CVAR(r_bpp, 32, "Screen bits per pixel",CV_ARCHIVE);
-DECLARE_CVAR(sys_sleep, 0, "Sleep time for every frame",CV_ARCHIVE);
+DECLARE_CVAR(r_bpp, "32", "Screen bits per pixel", CV_ARCHIVE);
+DECLARE_CVAR(sys_sleep, "0", "Sleep time for every frame", CV_ARCHIVE);
 
-DECLARE_CVAR(screenshotJpegQuality, 100, "JPEG Quality",CV_ARCHIVE);
+DECLARE_CVAR(screenshotJpegQuality, "100", "JPEG Quality", CV_ARCHIVE);
 
 DECLARE_CMD(screenshot, "Save screenshot", 0)
 {

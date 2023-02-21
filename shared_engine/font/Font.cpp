@@ -380,10 +380,9 @@ void CFont::BuildCharVertexBuffer(CMeshBuilder& builder, const CHAR_T* str, cons
 }
 
 // TODO: really a font parameters!!!
-static ConVar r_font_sdf_start("r_font_sdf_start", "0.94");
-static ConVar r_font_sdf_range("r_font_sdf_range", "0.06");
-
-static ConVar r_font_debug("r_font_debug", "0", nullptr, CV_CHEAT);
+DECLARE_CVAR(r_font_sdf_start, "0.94", nullptr, CV_CHEAT);
+DECLARE_CVAR(r_font_sdf_range, "0.06", nullptr, CV_CHEAT);
+DECLARE_CVAR(r_font_debug, "0", nullptr, CV_CHEAT);
 
 //
 // Renders new styled tagged text - wide chars only

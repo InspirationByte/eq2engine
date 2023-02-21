@@ -30,20 +30,23 @@ IDebugOverlay* debugoverlay = (IDebugOverlay*)&g_DebugOverlays;
 #ifndef DISABLE_DEBUG_DRAWING
 static Threading::CEqMutex	s_debugOverlayMutex;
 
-static ConVar r_drawFrameStats("r_frameStats", "0", nullptr, CV_ARCHIVE);
-static ConVar r_debugdrawGraphs("r_debugDrawGraphs", "0", nullptr, CV_ARCHIVE);
-static ConVar r_debugdrawShapes("r_debugDrawShapes", "0", nullptr, CV_ARCHIVE);
-static ConVar r_debugdrawLines("r_debugDrawLines", "0", nullptr, CV_ARCHIVE);
+DECLARE_CVAR(r_debugDrawFrameStats, "0", nullptr, CV_ARCHIVE);
+DECLARE_CVAR(r_debugDrawGraphs, "0", nullptr, CV_ARCHIVE);
+DECLARE_CVAR(r_debugDrawShapes, "0", nullptr, CV_ARCHIVE);
+DECLARE_CVAR(r_debugDrawLines, "0", nullptr, CV_ARCHIVE);
 
 ITexturePtr g_pDebugTexture = nullptr;
 
-void OnShowTextureChanged(ConVar* pVar,char const* pszOldValue)
+static void OnShowTextureChanged(ConVar* pVar,char const* pszOldValue)
 {
+	if (!g_pShaderAPI)
+		return;
+
 	g_pDebugTexture = g_pShaderAPI->FindTexture( pVar->GetString() );
 }
 
-ConVar r_showTexture("r_debug_showTexture", "", OnShowTextureChanged, "input texture name to show texture. To hide view input anything else.", CV_CHEAT);
-ConVar r_showTextureScale("r_debug_textureScale", "1.0", nullptr, CV_ARCHIVE);
+DECLARE_CVAR_CHANGE(r_debugShowTexture, "", OnShowTextureChanged, "input texture name to show texture. To hide view input anything else.", CV_CHEAT);
+DECLARE_CVAR(r_debugShowTextureScale, "1.0", nullptr, CV_ARCHIVE);
 
 #include "math/Rectangle.h"
 
@@ -149,10 +152,10 @@ void CDebugOverlay::Init(bool hidden)
 #ifndef DISABLE_DEBUG_DRAWING
 	if (!hidden)
 	{
-		r_drawFrameStats.SetBool(true);
-		r_debugdrawGraphs.SetBool(true);
-		r_debugdrawShapes.SetBool(true);
-		r_debugdrawLines.SetBool(true);
+		r_debugDrawFrameStats.SetBool(true);
+		r_debugDrawGraphs.SetBool(true);
+		r_debugDrawShapes.SetBool(true);
+		r_debugDrawLines.SetBool(true);
 	}
 #endif
 
@@ -170,7 +173,7 @@ void CDebugOverlay::Shutdown()
 void CDebugOverlay::Text(const ColorRGBA &color, char const *fmt,...)
 {
 #ifndef DISABLE_DEBUG_DRAWING
-	if(!r_drawFrameStats.GetBool())
+	if(!r_debugDrawFrameStats.GetBool())
 		return;
 
 	Threading::CScopedMutex m(s_debugOverlayMutex);
@@ -215,7 +218,7 @@ void CDebugOverlay::TextFadeOut(int position, const ColorRGBA &color,float fFade
 #ifndef DISABLE_DEBUG_DRAWING
 	if(position == 1)
 	{
-		if(!r_drawFrameStats.GetBool())
+		if(!r_debugDrawFrameStats.GetBool())
 			return;
 	}
 
@@ -245,7 +248,7 @@ void CDebugOverlay::TextFadeOut(int position, const ColorRGBA &color,float fFade
 void CDebugOverlay::Box3D(const Vector3D &mins, const Vector3D &maxs, const ColorRGBA &color, float fTime, int hashId)
 {
 #ifndef DISABLE_DEBUG_DRAWING
-	if(!r_debugdrawShapes.GetBool())
+	if(!r_debugDrawShapes.GetBool())
 		return;
 
 	if(hashId == 0 && !m_frustum.IsBoxInside(mins,maxs))
@@ -271,7 +274,7 @@ void CDebugOverlay::Box3D(const Vector3D &mins, const Vector3D &maxs, const Colo
 void CDebugOverlay::Cylinder3D(const Vector3D& position, float radius, float height, const ColorRGBA& color, float fTime, int hashId)
 {
 #ifndef DISABLE_DEBUG_DRAWING
-	if (!r_debugdrawShapes.GetBool())
+	if (!r_debugDrawShapes.GetBool())
 		return;
 
 	Vector3D boxSize(radius, height * 0.5f, radius);
@@ -298,7 +301,7 @@ void CDebugOverlay::Cylinder3D(const Vector3D& position, float radius, float hei
 void CDebugOverlay::Line3D(const Vector3D &start, const Vector3D &end, const ColorRGBA &color1, const ColorRGBA &color2, float fTime, int hashId)
 {
 #ifndef DISABLE_DEBUG_DRAWING
-	if(!r_debugdrawLines.GetBool())
+	if(!r_debugDrawLines.GetBool())
 		return;
 
 	if(hashId == 0 && !m_frustum.IsBoxInside(start,end))
@@ -324,7 +327,7 @@ void CDebugOverlay::Line3D(const Vector3D &start, const Vector3D &end, const Col
 void CDebugOverlay::OrientedBox3D(const Vector3D& mins, const Vector3D& maxs, const Vector3D& position, const Quaternion& rotation, const ColorRGBA& color, float fTime, int hashId)
 {
 #ifndef DISABLE_DEBUG_DRAWING
-	if(!r_debugdrawShapes.GetBool())
+	if(!r_debugDrawShapes.GetBool())
 		return;
 
 	if(hashId == 0 && !m_frustum.IsBoxInside(position+mins, position+maxs))
@@ -351,7 +354,7 @@ void CDebugOverlay::OrientedBox3D(const Vector3D& mins, const Vector3D& maxs, co
 void CDebugOverlay::Sphere3D(const Vector3D& position, float radius, const ColorRGBA &color, float fTime, int hashId)
 {
 #ifndef DISABLE_DEBUG_DRAWING
-	if(!r_debugdrawShapes.GetBool())
+	if(!r_debugDrawShapes.GetBool())
 		return;
 
 	if(hashId == 0 && !m_frustum.IsSphereInside(position, radius))
@@ -1205,7 +1208,7 @@ void CDebugOverlay::Draw(int winWide, int winTall, float timescale)
 		}
 	}
 
-	if(r_drawFrameStats.GetBool())
+	if(r_debugDrawFrameStats.GetBool())
 	{
 		{
 			Threading::CScopedMutex m(s_debugOverlayMutex);
@@ -1256,7 +1259,7 @@ void CDebugOverlay::Draw(int winWide, int winTall, float timescale)
 		}
 	}
 
-	if(r_debugdrawGraphs.GetBool())
+	if(r_debugDrawGraphs.GetBool())
 	{
 		Threading::CScopedMutex m(s_debugOverlayMutex);
 
@@ -1283,8 +1286,8 @@ void CDebugOverlay::Draw(int winWide, int winTall, float timescale)
 		materials->Setup2D( winWide, winTall );
 
 		float w, h;
-		w = (float)g_pDebugTexture->GetWidth()*r_showTextureScale.GetFloat();
-		h = (float)g_pDebugTexture->GetHeight()*r_showTextureScale.GetFloat();
+		w = (float)g_pDebugTexture->GetWidth()*r_debugShowTextureScale.GetFloat();
+		h = (float)g_pDebugTexture->GetHeight()*r_debugShowTextureScale.GetFloat();
 
 		if(h > winTall)
 		{
@@ -1430,7 +1433,7 @@ void CDebugOverlay::CleanOverlays()
 void CDebugOverlay::Graph_DrawBucket(debugGraphBucket_t* pBucket)
 {
 #ifndef DISABLE_DEBUG_DRAWING
-	if (!r_debugdrawGraphs.GetBool())
+	if (!r_debugDrawGraphs.GetBool())
 		return;
 
 	Threading::CScopedMutex m(s_debugOverlayMutex);
@@ -1442,7 +1445,7 @@ void CDebugOverlay::Graph_DrawBucket(debugGraphBucket_t* pBucket)
 void CDebugOverlay::Graph_AddValue(debugGraphBucket_t* bucket, float value)
 {
 #ifndef DISABLE_DEBUG_DRAWING
-	if(!r_debugdrawGraphs.GetBool())
+	if(!r_debugDrawGraphs.GetBool())
 		return;
 
 	Threading::CScopedMutex m(s_debugOverlayMutex);

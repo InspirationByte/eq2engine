@@ -11,21 +11,11 @@
 #include "ConVar.h"
 #include "IConsoleCommands.h"
 
-ConCommand::ConCommand(char const *name,CON_COMMAND_CALLBACK callback,char const *desc, int flags /*= 0*/) : ConCommandBase()
+ConCommand::ConCommand(const char* name, CON_COMMAND_CALLBACK callback, int flags /*= 0*/)
+	: ConCommandBase(name, flags | CMDBASE_CONCOMMAND)
 {
-	Create(name,callback, nullptr,desc,flags);
-}
-
-ConCommand::ConCommand(char const *name,CON_COMMAND_CALLBACK callback, CMDBASE_VARIANTS_CALLBACK variantsList,char const *desc, int flags)
-{
-	Create(name,callback,variantsList,desc,flags);
-}
-
-void ConCommand::Create(char const *pszName,CON_COMMAND_CALLBACK callback, CMDBASE_VARIANTS_CALLBACK variantsList, char const *pszHelpString, int nFlags)
-{
+	ASSERT_MSG(callback, "Command %s requires a callback", name);
 	m_fnCallback = callback;
-	m_fnVariantsList = variantsList;
-	Init(pszName,pszHelpString,nFlags,false);
 }
 
 void ConCommand::DispatchFunc(Array<EqString>& args)

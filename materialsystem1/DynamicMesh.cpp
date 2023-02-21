@@ -277,8 +277,6 @@ void CDynamicMesh::Render(int firstIndex, int numIndices)
 		m_vboDirty = -1;
 	}
 
-	//g_pShaderAPI->Reset(STATE_RESET_VBO);
-
 	g_pShaderAPI->SetVertexFormat(m_vertexFormat);
 	g_pShaderAPI->SetVertexBuffer(m_vertexBuffer, 0);
 

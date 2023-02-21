@@ -144,7 +144,7 @@ DECLARE_CONCOMMAND_FN(developer)
 	}
 }
 
-ConCommand c_developer("developer",CONCOMMAND_FN(developer),"Sets developer modes",CV_CHEAT | CV_UNREGISTERED);
+DECLARE_CMD_F(developer, "Sets developer modes", CV_CHEAT | CV_UNREGISTERED);
 
 // Default spew
 void DefaultSpewFunc(SpewType_t type,const char* pMsg)
@@ -163,9 +163,9 @@ IEXPORTS void SetSpewFunction(SpewFunc_fn newfunc)
 		g_fnConSpewFunc = newfunc;
 }
 
-DECLARE_CONCOMMAND_FN(echo)
+DECLARE_CMD_G(echo, "Displays the entered args", CV_UNREGISTERED)
 {
-	if(CMD_ARGC == 0)
+	if (CMD_ARGC == 0)
 	{
 		MsgWarning("Example: echo <text> [additional text]\n");
 		return;
@@ -173,17 +173,16 @@ DECLARE_CONCOMMAND_FN(echo)
 
 	EqString outText;
 
-	for(int i = 0; i < CMD_ARGC; i++)
+	for (int i = 0; i < CMD_ARGC; i++)
 	{
 		char tmp_path[2048];
-		sprintf(tmp_path, "%s ",CMD_ARGV(i).ToCString());
+		sprintf(tmp_path, "%s ", CMD_ARGV(i).ToCString());
 
 		outText.Append(tmp_path);
 	}
 
 	Msg("%s\n", outText.GetData());
 }
-ConCommand c_echo("echo",CONCOMMAND_FN(echo),"Displays the entered args",CV_UNREGISTERED);
 
 #ifndef DEBUG_NO_OUTPUT
 

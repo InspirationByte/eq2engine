@@ -14,7 +14,7 @@
 #include "StudioCache.h"
 #include "StudioGeom.h"
 
-static ConVar job_modelLoader("job_modelLoader", "0", "Load models in parallel threads", CV_ARCHIVE);
+DECLARE_CVAR(job_modelLoader, "0", "Load models in parallel threads", CV_ARCHIVE);
 
 static CStudioCache s_ModelCache;
 CStudioCache* g_studioModelCache = &s_ModelCache;

@@ -37,7 +37,7 @@
 
 #define DEFAULT_USERCONFIG_PATH		"cfg/user.cfg"
 
-ConVar user_cfg("user_cfg", DEFAULT_USERCONFIG_PATH, "User configuration file location", CV_INITONLY);
+DECLARE_CVAR_G(user_cfg, DEFAULT_USERCONFIG_PATH, "User configuration file location", CV_INITONLY);
 
 DECLARE_CMD(exec_user_cfg, "Executes user configuration file (from cvar 'cfg_user' value)", 0)
 {
@@ -45,17 +45,23 @@ DECLARE_CMD(exec_user_cfg, "Executes user configuration file (from cvar 'cfg_use
 	g_consoleCommands->ParseFileToCommandBuffer( user_cfg.GetString() );
 }
 
-ConCommand cc_exit("exit",CGameHost::HostExitCmd,"Closes current instance of engine");
-ConCommand cc_quit("quit",CGameHost::HostExitCmd,"Closes current instance of engine");
-ConCommand cc_quti("quti",CGameHost::HostExitCmd,"This made for keyboard writing errors");
+DECLARE_CMD_FN_RENAME(cmd_exit, "exit", CGameHost::HostExitCmd, "Closes current instance of engine", 0);
+DECLARE_CMD_FN_RENAME(cmd_quit, "quit", CGameHost::HostExitCmd, "Closes current instance of engine", 0);
+DECLARE_CMD_FN_RENAME(cmd_quti, "quti", CGameHost::HostExitCmd, "This made for keyboard writing errors", 0);
 
 DECLARE_CVAR(r_clear,0,"Clear the backbuffer",CV_ARCHIVE);
 DECLARE_CVAR(r_vSync,0,"Vertical syncronization",CV_ARCHIVE);
-DECLARE_CVAR(r_antialiasing,0,"Multisample antialiasing",CV_ARCHIVE);
-DECLARE_CVAR(r_fastShaders, 0, "Low shader quality mode", CV_ARCHIVE);
+DECLARE_CVAR(r_antialiasing, "0", "Multisample antialiasing", CV_ARCHIVE);
+DECLARE_CVAR(r_fastShaders, "0", "Low shader quality mode", CV_ARCHIVE);
 
-DECLARE_CVAR(sys_vmode, 1024x768, "Screen Resoulution. Resolution string format: WIDTHxHEIGHT", CV_ARCHIVE);
-DECLARE_CVAR(sys_fullscreen, 0, "Enable fullscreen mode on startup", CV_ARCHIVE);
+DECLARE_CVAR(sys_vmode, "1024x768", "Screen Resoulution. Resolution string format: WIDTHxHEIGHT", CV_ARCHIVE);
+DECLARE_CVAR(sys_fullscreen, "0", "Enable fullscreen mode on startup", CV_ARCHIVE);
+
+DECLARE_CVAR(in_mouse_to_touch, "0", "Convert mouse clicks to touch input", CV_ARCHIVE);
+DECLARE_CVAR(sys_maxfps, "0", "Frame rate limit", CV_CHEAT);
+DECLARE_CVAR(sys_timescale, "1.0f", "Time scale", CV_CHEAT);
+DECLARE_CVAR(r_showFPS, "0", "Show the framerate", CV_ARCHIVE);
+DECLARE_CVAR(r_showFPSGraph, "0", "Show the framerate graph", CV_ARCHIVE);
 
 DECLARE_CMD(sys_set_fullscreen, nullptr, 0)
 {
@@ -386,8 +392,6 @@ bool CGameHost::InitSystems( EQWNDHANDLE pWindow )
 
 //--------------------------------------------------------------------------------------
 
-ConVar in_mouse_to_touch("in_mouse_to_touch", "0", "Convert mouse clicks to touch input", CV_ARCHIVE);
-
 void InputCommands_SDL(SDL_Event* event)
 {
 	static int lastX, lastY;
@@ -526,9 +530,6 @@ void CGameHost::ShutdownSystems()
 	SDL_DestroyWindow(g_pHost->m_pWindow);
 }
 
-ConVar sys_maxfps("sys_maxfps", "0", "Frame rate limit", CV_CHEAT);
-ConVar sys_timescale("sys_timescale", "1.0f", "Time scale", CV_CHEAT);
-
 #define GAME_MAX_FRAMERATE (sys_maxfps.GetFloat()) // 60 fps limit
 
 #define MIN_FPS 0.01
@@ -600,9 +601,6 @@ void CGameHost::SetCursorShow(bool bShow)
 
 	SDL_ShowCursor(bShow);
 }
-
-ConVar r_showFPS("r_showFPS", "0", "Show the framerate", CV_ARCHIVE);
-ConVar r_showFPSGraph("r_showFPSGraph", "0", "Show the framerate graph", CV_ARCHIVE);
 
 bool CGameHost::Frame()
 {

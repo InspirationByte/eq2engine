@@ -170,9 +170,9 @@ static LPALBUFFERCALLBACKSOFT alBufferCallbackSOFT;
 
 //---------------------------------------------------------
 
-static ConVar snd_device("snd_device", "0", nullptr, CV_ARCHIVE);
-static ConVar snd_hrtf("snd_hrtf", "0", nullptr, CV_ARCHIVE);
-static ConVar snd_debug("snd_debug", "0", nullptr, CV_CHEAT);
+DECLARE_CVAR(snd_device, "0", nullptr, CV_ARCHIVE);
+DECLARE_CVAR(snd_hrtf, "0", nullptr, CV_ARCHIVE);
+DECLARE_CVAR(snd_debug, "0", nullptr, CV_CHEAT);
 
 //---------------------------------------------------------
 

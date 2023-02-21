@@ -41,12 +41,11 @@ int EGFHwVertex_t::GetVertexFormatDesc(const VertexFormatDesc_t** desc)
 	return elementsOf(g_EGFHwVertexFormat);
 }
 
-const ConVar r_egf_LodTest("r_egf_lodTest", "-1", -1.0f, MAX_MODEL_LODS, "Studio LOD test", CV_CHEAT);
-const ConVar r_egf_NoTempDecals("r_egf_noTempDecals", "0", "Disables temp decals", CV_CHEAT);
-
-const ConVar r_egf_LodScale("r_egf_lodScale", "1.0", "Studio model LOD scale", CV_ARCHIVE);
-const ConVar r_egf_LodStart("r_egf_lodStart", "0", 0, MAX_MODEL_LODS, "Studio LOD start index", CV_ARCHIVE);
-static ConVar r_force_softwareskinning("r_force_softwareskinning", "0", "Force software skinning", CV_UNREGISTERED);
+DECLARE_CVAR_CLAMP(r_egf_LodTest, "-1", -1.0f, MAX_MODEL_LODS, "Studio LOD test", CV_CHEAT);
+DECLARE_CVAR(r_egf_NoTempDecals, "0", "Disables temp decals", CV_CHEAT);
+DECLARE_CVAR(r_egf_LodScale, "1.0", "Studio model LOD scale", CV_ARCHIVE);
+DECLARE_CVAR_CLAMP(r_egf_LodStart, "0", 0, MAX_MODEL_LODS, "Studio LOD start index", CV_ARCHIVE);
+DECLARE_CVAR(r_force_softwareskinning, "0", "Force software skinning", CV_UNREGISTERED);
 
 CEqStudioGeom::CEqStudioGeom()
 {

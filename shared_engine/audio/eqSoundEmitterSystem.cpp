@@ -53,8 +53,8 @@ DECLARE_CMD_VARIANTS(snd_test_scriptsound, "Test the scripted sound", cmd_vars_s
 	}
 }
 
-ConVar snd_scriptsound_debug("snd_scriptsound_debug", "0", nullptr, CV_CHEAT);
-ConVar snd_scriptsound_showWarnings("snd_scriptsound_showWarnings", "0", nullptr, 0);
+DECLARE_CVAR(snd_scriptsound_debug, "0", nullptr, CV_CHEAT);
+DECLARE_CVAR(snd_scriptsound_showWarnings, "0", nullptr, 0);
 
 //----------------------------------------------------------------------------
 //

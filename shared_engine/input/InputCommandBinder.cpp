@@ -21,8 +21,8 @@
 static CInputCommandBinder s_inputCommandBinder;
 CInputCommandBinder* g_inputCommandBinder = &s_inputCommandBinder;
 
-ConVar in_keys_debug("in_keys_debug", "0", "Debug CInputCommandBinder");
-ConVar in_touchzones_debug("in_touchzones_debug", "0", "Debug touch zones on screen and messages", CV_CHEAT);
+DECLARE_CVAR(in_keys_debug, "0", "Debug CInputCommandBinder", 0);
+DECLARE_CVAR(in_touchzones_debug, "0", "Debug touch zones on screen and messages", CV_CHEAT);
 
 DECLARE_CMD(in_touchzones_reload, "Reload touch zones", 0)
 {

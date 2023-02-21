@@ -36,9 +36,17 @@
 using namespace Threading;
 using namespace EqBulletUtils;
 
-static ConVar ph_gravity("ph_gravity","800","World gravity",CV_CHEAT);
-static ConVar ph_iterations("ph_iterations","10","Physics iterations",CV_CHEAT);
-ConVar ph_framerate_approx("ph_framerate_approx", "200", "Physics framerate approximately",CV_ARCHIVE);
+DECLARE_CVAR(ph_gravity,"800","World gravity",CV_CHEAT);
+DECLARE_CVAR(ph_iterations,"10","Physics iterations",CV_CHEAT);
+DECLARE_CVAR(ph_framerate_approx, "200", "Physics framerate approximately",CV_ARCHIVE);
+DECLARE_CVAR(ph_contact_min_dist, "-0.005f", "Minimum distance/intersection for contact", CV_CHEAT);
+DECLARE_CVAR(ph_erp1, "0.25f", nullptr, 0);
+DECLARE_CVAR(ph_debug_serializeworld, "0", nullptr, 0);
+DECLARE_CVAR(ph_drawdebug, "0", "performs wireframe rendering of convex objects", CV_CHEAT);
+DECLARE_CVAR(ph_worldextramargin, "0.25", "World geometry thickness (change needs unload/reload of level)", CV_ARCHIVE);
+DECLARE_CVAR(ph_shapemarginscale, "1.0f", "Shape geometry thickness", CV_ARCHIVE);
+DECLARE_CVAR(ph_ccdMotionThresholdScale, "0.15f", nullptr, 0);
+DECLARE_CVAR(ph_CcdSweptSphereRadiusScale, "0.5f", nullptr, 0);
 
 static int btInternalGetHash(int partId, int triangleIndex)
 {
@@ -391,8 +399,6 @@ class DkPhysicsDebugDrawer : public btIDebugDraw
 static DkPhysicsDebugDrawer s_PhysicsDebugDrawer;
 
 btDynamicsWorld* g_pPhysicsWorld = nullptr;
-
-ConVar ph_contact_min_dist("ph_contact_min_dist", "-0.005f", "Minimum distance/intersection for contact", CV_CHEAT);
 
 bool EQContactAddedCallback(btManifoldPoint& cp,const btCollisionObjectWrapper* colObj0,int partId0,int index0,const btCollisionObjectWrapper* colObj1,int partId1,int index1)
 {
@@ -766,8 +772,6 @@ phySurfaceMaterial_t* DkPhysics::FindMaterial(const char* pszName)
 	return nullptr;
 }
 
-ConVar ph_drawdebug("ph_drawdebug", "0", "performs wireframe rendering of convex objects", CV_CHEAT);
-
 // updates events
 void DkPhysics::UpdateEvents()
 {
@@ -781,10 +785,6 @@ void DkPhysics::UpdateEvents()
 }
 
 #define PHY_STEPS ph_iterations.GetInt()
-
-ConVar ph_erp1("ph_erp1", "0.25f");
-ConVar ph_debug_serializeworld("ph_debug_serializeworld", "0");
-
 #define DKFIXED_TIMESTEP (1.0f/ph_framerate_approx.GetFloat())
 
 // Update funciton
@@ -1079,8 +1079,6 @@ IPhysicsObject* DkPhysics::CreateCompoundObject(physmodelcreateinfo_t *info, pri
 }
 */
 
-ConVar ph_worldextramargin("ph_worldextramargin", "0.25", "World geometry thickness (change needs unload/reload of level)", CV_ARCHIVE);
-
 // Primitives
 IPhysicsObject* DkPhysics::CreateStaticObject(physmodelcreateinfo_t *info, int nCollisionGroup)
 {
@@ -1277,17 +1275,12 @@ IPhysicsRope* DkPhysics::CreateRope(const Vector3D &pointA, const Vector3D &poin
 	return pRope;
 }
 
-ConVar ph_shapemarginscale("ph_shapemarginscale", "1.0f", "Shape geometry thickness", CV_ARCHIVE);
-
 int DkPhysics::AddPrimitiveShape(pritimiveinfo_t &info)
 {
 	btCollisionShape* primitive = InternalPrimitiveCreate(&info);
 
 	return m_collisionShapes.append(primitive);
 }
-
-ConVar ph_ccdMotionThresholdScale("ph_ccdMotionThresholdScale", "0.15f");
-ConVar ph_CcdSweptSphereRadiusScale("ph_CcdSweptSphereRadiusScale", "0.5f");
 
 // Creates physics object
 IPhysicsObject* DkPhysics::CreateObject( const studioPhysData_t* data, int nObject )

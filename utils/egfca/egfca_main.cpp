@@ -17,7 +17,8 @@
 class IShaderAPI* g_pShaderAPI = nullptr;
 class IMaterialSystem* materials = nullptr;
 
-ConVar cv_cheats("__cheats","1","Enable cheats",CV_INITONLY | CV_INVISIBLE);
+DECLARE_CVAR(__cheats,"1","Enable cheats",CV_INITONLY | CV_INVISIBLE);
+DECLARE_CVAR_RENAME(c_filename, "filename", "none", "script file name", 0);
 
 bool CompileESCScript(const char* filename)
 {
@@ -37,9 +38,6 @@ bool CompileESCScript(const char* filename)
 
 	return true;
 }
-
-ConVar c_filename("filename","none","script file name", 0);
-//ConVar c_convert("convert","0","converts to the latest model version", 0);
 
 int main(int argc, char **argv)
 {

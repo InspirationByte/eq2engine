@@ -47,7 +47,7 @@ DECLARE_CMD(ui_listpanels, nullptr, CV_CHEAT)
 	equi::Manager->DumpPanelsToConsole();
 }
 
-static ConVar equi_debug("equi_debug", "0");
+DECLARE_CVAR(equi_debug, "0", nullptr, 0);
 
 namespace equi
 {

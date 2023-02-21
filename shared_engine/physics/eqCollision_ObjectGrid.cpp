@@ -12,6 +12,9 @@
 
 #include "render/IDebugOverlay.h"
 
+DECLARE_CVAR(ph_grid_debug_display_x, "-1", nullptr, 0);
+DECLARE_CVAR(ph_grid_debug_display_y, "-1", nullptr, 0);
+
 CEqCollisionBroadphaseGrid::CEqCollisionBroadphaseGrid(CEqPhysics* physics, int gridsize, const Vector3D& worldmins, const Vector3D& worldmaxs)
 {
 	m_physics = physics;
@@ -370,9 +373,6 @@ void CEqCollisionBroadphaseGrid::RemoveStaticObjectFromGrid( CEqCollisionObject*
 		}
 	}
 }
-
-ConVar ph_grid_debug_display_x("ph_grid_debug_display_x", "-1");
-ConVar ph_grid_debug_display_y("ph_grid_debug_display_y", "-1");
 
 void CEqCollisionBroadphaseGrid::DebugRender()
 {

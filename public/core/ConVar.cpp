@@ -11,113 +11,20 @@
 
 #pragma warning(disable: 4267)
 
-// Default constructor
-ConVar::ConVar() : ConCommandBase()
-{
-	m_nValue = 0;
-	m_bClamp = false;
-	m_fnChangeCallback = nullptr;
-}
-
 ConVar::~ConVar()
 {
 }
 
-ConVar::ConVar(char const *name,char const *pszDefaultValue,char const *desc, int flags /* = 0 */) : ConCommandBase()
+ConVar::ConVar(const char* name, const char* pszDefaultValue, int flags)
+	: ConCommandBase(name, flags | CMDBASE_CONVAR)
 {
-	m_nValue = 0;
-	m_bClamp = false;
-	m_fnChangeCallback = nullptr;
-
-	Create(name,pszDefaultValue,desc,flags);
+	Init(pszDefaultValue);
 }
 
-ConVar::ConVar(char const *name,char const *pszDefaultValue,CONVAR_CHANGE_CALLBACK callback,char const *desc, int flags/* = 0*/) : ConCommandBase()
+void ConVar::Init(const char* defaultValue)
 {
-	m_nValue = 0;
-	m_bClamp = false;
-	m_fnChangeCallback = nullptr;
-
-	Create(name,pszDefaultValue,desc,flags);
-
-	SetCallback(callback);
-}
-
-ConVar::ConVar(char const *name,char const *pszDefaultValue, CMDBASE_VARIANTS_CALLBACK variantsList, char const *desc, int flags)
-{
-	m_nValue = 0;
-	m_bClamp = false;
-	m_fnChangeCallback = nullptr;
-
-	Create(name,pszDefaultValue,desc,flags);
-
-	SetVariantsCallback(variantsList);
-}
-
-ConVar::ConVar(char const *name,char const *pszDefaultValue, CONVAR_CHANGE_CALLBACK callback, CMDBASE_VARIANTS_CALLBACK variantsList, char const *desc, int flags)
-{
-	m_nValue = 0;
-	m_bClamp = false;
-	m_fnChangeCallback = nullptr;
-
-	Create(name,pszDefaultValue,desc,flags);
-
-	SetCallback(callback);
-	SetVariantsCallback(variantsList);
-}
-
-ConVar::ConVar(char const *name,char const *pszDefaultValue,float clampmin,float clampmax,char const *desc /*= 0*/, int flags /*= 0*/) : ConCommandBase()
-{
-	m_nValue = 0;
-	m_bClamp = false;
-	m_fnChangeCallback = nullptr;
-
-	Create(name,pszDefaultValue,clampmin,clampmax,desc,flags);
-}
-
-ConVar::ConVar(char const *name,char const *pszDefaultValue,float clampmin,float clampmax,CONVAR_CHANGE_CALLBACK callback,char const *desc /*= 0*/, int flags /*= 0*/) : ConCommandBase()
-{
-	m_nValue = 0;
-	m_bClamp = false;
-	m_fnChangeCallback = nullptr;
-
-	Create(name,pszDefaultValue,clampmin,clampmax,desc,flags);
-
-	SetCallback(callback);
-}
-
-void ConVar::Create(char const *pszName,char const *pszDefaultValue,char const *pszHelpString, int nFlags)
-{
-	static const char* empty_string = "";
-
-	// Setup default value first
-	m_szDefaultValueString = pszDefaultValue;
-
-	SetValue( GetDefaultValue() );
-
-	// Not clamped by this initializer
-	m_bClamp = false;
-
-	// Init base class
-
-	//! Don't link for now
-	Init(pszName,pszHelpString,nFlags,true);
-}
-
-void ConVar::Create(char const *pszName,char const *pszDefaultValue,float fClampMin,float fClampMax,char const *pszHelpString, int nFlags)
-{
-	// Setup default value first
-	m_szDefaultValueString = pszDefaultValue;
-
-	SetValue( GetDefaultValue() );
-
-	// Clamped by this initializer
-	m_bClamp = true;
-	m_fClampMin = fClampMin;
-	m_fClampMax = fClampMax;
-
-
-	Init(pszName,pszHelpString,nFlags,true);
+	m_szDefaultValueString = defaultValue;
+	InternalSetValue(GetDefaultValue());
 }
 
 void ConVar::SetClamp(bool bClamp,float fMin,float fMax)
@@ -148,7 +55,7 @@ void ConVar::SetValue(const char* newvalue)
 	InternalSetValue(newvalue);
 }
 
-void ConVar::InternalSetValue(char const *newvalue)
+void ConVar::InternalSetValue(const char* newvalue)
 {
 	if(newvalue == nullptr)
 		return;
@@ -178,13 +85,13 @@ void ConVar::InternalSetValue(char const *newvalue)
 //-----------------------------------------------------------------------------
 bool ConVar::ClampValue( float& value )
 {
-	if ( m_bClamp && ( value < m_fClampMin ) )
+	if (m_bClamp && value < m_fClampMin)
 	{
 		value = m_fClampMin;
 		return true;
 	}
 
-	if ( m_bClamp && ( value > m_fClampMax ) )
+	if (m_bClamp && value > m_fClampMax)
 	{
 		value = m_fClampMax;
 		return true;
@@ -193,7 +100,7 @@ bool ConVar::ClampValue( float& value )
 	return false;
 }
 
-void ConVar::InternalSetString(char const *value)
+void ConVar::InternalSetString(const char* value)
 {
 	int len = strlen(value) + 1;
 	

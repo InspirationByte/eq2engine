@@ -14,10 +14,10 @@
 #include "anim_activity.h"
 #include "anim_events.h"
 
-ConVar r_debugIK("r_debugIK", "0", "Draw debug information about Inverse Kinematics", CV_CHEAT);
-ConVar r_debugSkeleton("r_debugSkeleton", "0", "Draw debug information about bones", CV_CHEAT);
-ConVar r_debugShowBone("r_debugShowBone", "-1", "Shows the bone", CV_CHEAT);
-ConVar r_ikIterations("r_ik_iterations", "100", "IK link iterations per update", CV_ARCHIVE);
+DECLARE_CVAR(r_debugIK, "0", "Draw debug information about Inverse Kinematics", CV_CHEAT);
+DECLARE_CVAR(r_debugSkeleton, "0", "Draw debug information about bones", CV_CHEAT);
+DECLARE_CVAR(r_debugShowBone, "-1", "Shows the bone", CV_CHEAT);
+DECLARE_CVAR(r_ikIterations, "100", "IK link iterations per update", CV_ARCHIVE);
 
 inline Matrix4x4 CalculateLocalBonematrix(const qanimframe_t &frame)
 {
