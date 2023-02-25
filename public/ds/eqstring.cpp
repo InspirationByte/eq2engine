@@ -133,7 +133,7 @@ void EqString::Clear()
 void EqString::Empty()
 {
 	Resize(EQSTRING_BASE_BUFFER, false);
-	m_pszString[0] = 0;
+	*m_pszString = 0;
 	m_nLength = 0;
 }
 
@@ -199,30 +199,25 @@ void EqString::Assign(const char* pszStr, int len)
 	if(pszStr == nullptr)
 	{
 		if(m_pszString)
-			m_pszString[0] = 0;
+			*m_pszString = 0;
 		m_nLength = 0;
 		return;
 	}
 
-	int nLen = strlen( pszStr );
-	ASSERT(len <= nLen);
+	if (len == -1)
+		len = strlen(pszStr);
 
-	if(len != -1)
-		nLen = len;
-
-	// don't copy.
-	if (m_pszString == pszStr && len != m_nLength)
+	if(m_pszString == pszStr && len <= m_nLength)
 	{
-		m_pszString[nLen] = 0;
-		m_nLength = nLen;
-		return;
+		m_nLength = len;
+		m_pszString[len] = 0;
 	}
 
-	if( ExtendAlloc( nLen+1, false ) )
+	if( ExtendAlloc(len + 1, false ) )
 	{
-		strncpy( m_pszString, pszStr, nLen );
-		m_pszString[nLen] = 0;
-		m_nLength = nLen;
+		strncpy( m_pszString, pszStr, len);
+		m_pszString[len] = 0;
+		m_nLength = len;
 	}
 }
 

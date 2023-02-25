@@ -200,26 +200,20 @@ void EqWString::Assign(const wchar_t* pszStr, int len)
 		return;
 	}
 
-	int nLen = wcslen( pszStr );
+	if (len == -1)
+		len = wcslen(pszStr);
 
-	ASSERT(len <= nLen);
-
-	if(len != -1)
-		nLen = len;
-
-	// don't copy.
-	if (m_pszString == pszStr && len != m_nLength)
+	if (m_pszString == pszStr && len <= m_nLength)
 	{
-		m_pszString[nLen] = 0;
-		m_nLength = nLen;
-		return;
+		m_nLength = len;
+		m_pszString[len] = 0;
 	}
 
-	if( ExtendAlloc( nLen ) )
+	if (ExtendAlloc(len + 1))
 	{
-		wcsncpy( m_pszString, pszStr, nLen );
-		m_pszString[nLen] = 0;
-		m_nLength = nLen;
+		wcsncpy(m_pszString, pszStr, len);
+		m_pszString[len] = 0;
+		m_nLength = len;
 	}
 }
 
