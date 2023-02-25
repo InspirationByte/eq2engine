@@ -27,9 +27,6 @@ const EqString EqString::EmptyStr;
 
 EqString::EqString()
 {
-	m_nLength = 0;
-	m_nAllocated = 0;
-	m_pszString = nullptr;
 	Empty();
 }
 
@@ -40,46 +37,26 @@ EqString::~EqString()
 
 EqString::EqString(const char c)
 {
-	m_nLength = 0;
-	m_nAllocated = 0;
-	m_pszString = nullptr;
-
 	Assign( &c, 1 );
 }
 
 EqString::EqString(const char* pszString, int len)
 {
-	m_nLength = 0;
-	m_nAllocated = 0;
-	m_pszString = nullptr;
-
 	Assign( pszString, len );
 }
 
 EqString::EqString(const EqString &str, int nStart, int len)
 {
-	m_nLength = 0;
-	m_nAllocated = 0;
-	m_pszString = nullptr;
-
 	Assign( str, nStart, len );
 }
 
 EqString::EqString(const wchar_t* pszString, int len)
 {
-	m_nLength = 0;
-	m_nAllocated = 0;
-	m_pszString = nullptr;
-
 	Assign( pszString, len );
 }
 
 EqString::EqString(const EqWString &str, int nStart, int len)
 {
-	m_nLength = 0;
-	m_nAllocated = 0;
-	m_pszString = nullptr;
-
 	Assign( str, nStart, len );
 }
 
@@ -126,7 +103,7 @@ const char* EqString::GetData() const
 }
 
 // length of it
-uint EqString::Length() const
+uint16 EqString::Length() const
 {
 	return m_nLength;
 }
@@ -138,7 +115,7 @@ bool EqString::IsValid() const
 }
 
 // string allocated size in bytes
-uint EqString::GetSize() const
+uint16 EqString::GetSize() const
 {
 	return m_nAllocated;
 }
@@ -146,9 +123,7 @@ uint EqString::GetSize() const
 // erases and deallocates data
 void EqString::Clear()
 {
-	delete [] m_pszString;
-
-	m_pszString = nullptr;
+	SAFE_DELETE_ARRAY(m_pszString);
 
 	m_nLength = 0;
 	m_nAllocated = 0;
@@ -163,7 +138,7 @@ void EqString::Empty()
 }
 
 // an internal operation of allocation/extend
-bool EqString::ExtendAlloc(uint nSize, bool bCopy)
+bool EqString::ExtendAlloc(int nSize, bool bCopy)
 {
 	if(nSize > m_nAllocated)
 	{
@@ -177,41 +152,43 @@ bool EqString::ExtendAlloc(uint nSize, bool bCopy)
 }
 
 // just a resize
-bool EqString::Resize(uint nSize, bool bCopy)
+bool EqString::Resize(int nSize, bool bCopy)
 {
-	uint newSize = nSize;
+	const int newSize = max(EQSTRING_BASE_BUFFER, nSize + 1);
 
-	// use base buffer we requesting size less than base buffer
-	if(newSize < EQSTRING_BASE_BUFFER)
-		newSize = EQSTRING_BASE_BUFFER;
+	// make new and copy
+	char* pszNewBuffer = new char[newSize];
 
-	char* pszNewBuffer = new char[newSize]; // make new
+	// allocation error!
+	if (!pszNewBuffer)
+		return false;
+
 	pszNewBuffer[0] = 0;
 
-	if( m_pszString )
+	// copy and remove old if available
+	if (m_pszString)
 	{
-		// copy contents to the new buffer
-		if(bCopy && m_nLength)
+		// if we have to copy
+		if (bCopy && m_nLength)
 		{
-			int minLength = min((uint16)(newSize-1), m_nLength);
+			// if string length if bigger, that the new alloc, cut off
+			// for safety
+			if (m_nLength > newSize)
+				m_pszString[newSize] = 0;
 
-			memcpy( pszNewBuffer, m_pszString, minLength);
-			pszNewBuffer[minLength] = 0;
+			strcpy(pszNewBuffer, m_pszString);
 		}
-		else if(!bCopy)
-			pszNewBuffer[0] = 0;
 
-		delete [] m_pszString;
-		m_pszString = nullptr;
+		// now it's not needed
+		SAFE_DELETE_ARRAY(m_pszString);
 	}
 
 	// assign
 	m_pszString = pszNewBuffer;
 	m_nAllocated = newSize;
 
-	// update length
-	m_nLength = strlen( m_pszString );
-
+	if(nSize < m_nLength)
+		m_nLength = strlen(m_pszString);
 
 	return true;
 }
@@ -373,7 +350,7 @@ void EqString::Insert(const EqString &str, int nInsertPos)
 }
 
 // removes characters
-void EqString::Remove(uint nStart, uint nCount)
+void EqString::Remove(int nStart, int nCount)
 {
 	char* temp = (char*)stackalloc( m_nAllocated );
 	strcpy(temp, m_pszString);
@@ -672,4 +649,30 @@ int	EqString::GetMathingChars(const EqString &str) const
 	while(*s1++ == *s2++) {matching++;}
 
 	return matching;
+}
+
+size_t EqString::ReadString(IVirtualStream* stream, EqString& output)
+{
+	uint16 length = 0;
+	stream->Read(&length, 1, sizeof(length));
+	output.Resize(length, false);
+
+	stream->Read(output.m_pszString, sizeof(char), length);
+	output.m_nLength = length;
+	return 1;
+}
+
+template<>
+static size_t VSRead<EqWString>(IVirtualStream* stream, EqWString& str)
+{
+	return EqWString::ReadString(stream, str);
+}
+
+template<>
+static size_t VSWrite<EqWString>(IVirtualStream* stream, const EqWString& str)
+{
+	const uint16 length = str.Length();
+	stream->Write(&length, 1, sizeof(uint16));
+	stream->Write(str.GetData(), sizeof(wchar_t), length);
+	return 1;
 }

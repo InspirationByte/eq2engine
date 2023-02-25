@@ -21,9 +21,6 @@ const EqWString EqWString::EmptyStr;
 
 EqWString::EqWString()
 {
-	m_nLength = 0;
-	m_nAllocated = 0;
-	m_pszString = nullptr;
 	Empty();
 }
 
@@ -34,47 +31,27 @@ EqWString::~EqWString()
 
 EqWString::EqWString(const wchar_t c)
 {
-	m_nLength = 0;
-	m_nAllocated = 0;
-	m_pszString = nullptr;
-
 	Assign( &c, 1 );
 }
 
 // convert from UTF8 string
 EqWString::EqWString(const char* pszString, int len)
 {
-	m_nLength = 0;
-	m_nAllocated = 0;
-	m_pszString = nullptr;
-
 	Assign( pszString, len );
 }
 
 EqWString::EqWString(const EqString& str, int nStart, int len)
 {
-	m_nLength = 0;
-	m_nAllocated = 0;
-	m_pszString = nullptr;
-
 	Assign( str, nStart, len );
 }
 
 EqWString::EqWString(const wchar_t* pszString, int len)
 {
-	m_nLength = 0;
-	m_nAllocated = 0;
-	m_pszString = nullptr;
-
 	Assign( pszString, len );
 }
 
 EqWString::EqWString(const EqWString &str, int nStart, int len)
 {
-	m_nLength = 0;
-	m_nAllocated = 0;
-	m_pszString = nullptr;
-
 	Assign( str, nStart, len );
 }
 
@@ -121,13 +98,13 @@ const wchar_t* EqWString::GetData() const
 }
 
 // length of it
-uint EqWString::Length() const
+uint16 EqWString::Length() const
 {
 	return m_nLength;
 }
 
 // string allocated size in bytes
-uint EqWString::GetSize() const
+uint16 EqWString::GetSize() const
 {
 	return m_nAllocated;
 }
@@ -135,8 +112,8 @@ uint EqWString::GetSize() const
 // erases and deallocates data
 void EqWString::Clear()
 {
-	delete [] m_pszString;
-	m_pszString = nullptr;
+	SAFE_DELETE_ARRAY(m_pszString);
+
 	m_nLength = 0;
 	m_nAllocated = 0;
 }
@@ -160,9 +137,9 @@ bool EqWString::ExtendAlloc(int nSize)
 }
 
 // just a resize
-bool EqWString::Resize(uint nSize, bool bCopy)
+bool EqWString::Resize(int nSize, bool bCopy)
 {
-	uint newSize = nSize+1;
+	const uint newSize = max(EQSTRING_BASE_BUFFER, nSize + 1);
 
 	// make new and copy
 	wchar_t* pszNewBuffer = new wchar_t[ newSize ];
@@ -184,21 +161,19 @@ bool EqWString::Resize(uint nSize, bool bCopy)
 			if(m_nLength > newSize)
 				m_pszString[newSize] = 0;
 
-			wcscpy( pszNewBuffer, m_pszString );
+			wcscpy(pszNewBuffer, m_pszString);
 		}
 
 		// now it's not needed
-		delete [] m_pszString;
-
-		m_pszString = nullptr;
+		SAFE_DELETE_ARRAY(m_pszString);
 	}
 
 	// assign
 	m_pszString = pszNewBuffer;
 	m_nAllocated = newSize;
 
-	// update length
-	m_nLength = wcslen( m_pszString );
+	if (nSize < m_nLength)
+		m_nLength = wcslen( m_pszString );
 
 	return true;
 }
@@ -361,7 +336,7 @@ void EqWString::Insert(const EqWString &str, int nInsertPos)
 }
 
 // removes characters
-void EqWString::Remove(uint nStart, uint nCount)
+void EqWString::Remove(int nStart, int nCount)
 {
 	wchar_t* temp = (wchar_t*)stackalloc( m_nAllocated*sizeof(wchar_t) );
 	wcscpy(temp, m_pszString);
@@ -546,4 +521,16 @@ int	EqWString::CompareCaseIns(const wchar_t* pszStr) const
 int	EqWString::CompareCaseIns(const EqWString &str) const
 {
 	return xwcsicmp(m_pszString, str.GetData());
+}
+
+size_t EqWString::ReadString(IVirtualStream* stream, EqWString& output)
+{
+	uint16 length = 0;
+	stream->Read(&length, 1, sizeof(length));
+	output.Resize(length, false);
+
+	stream->Read(output.m_pszString, sizeof(wchar_t), length);
+	output.m_nLength = length;
+
+	return 1;
 }

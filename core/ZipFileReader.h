@@ -27,7 +27,7 @@ public:
 	size_t Write(const void *src, size_t count, size_t size);
 
 	// seeks pointer to position
-	int	Seek(long nOffset, VirtStreamSeek_e seekType);
+	int	Seek(long nOffset, EVirtStreamSeek seekType);
 
 	// fprintf analog
 	void Print(const char* fmt, ...);

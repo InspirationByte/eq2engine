@@ -20,7 +20,7 @@ class CFile : public IFile
 public:
 	CFile(COSFile&& file);
 
-    int					Seek( long pos, VirtStreamSeek_e seekType );
+    int					Seek( long pos, EVirtStreamSeek seekType );
     long				Tell() const;
     size_t				Read( void *dest, size_t count, size_t size);
     size_t				Write( const void *src, size_t count, size_t size);

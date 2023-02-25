@@ -135,8 +135,7 @@ void CInputCommandBinder::Shutdown()
 	{
 		if (kn->hrname && *kn->hrname != '#')
 		{
-			delete[] kn->hrname;
-			kn->hrname = nullptr;
+			SAFE_DELETE_ARRAY(kn->hrname);
 		}
 	}
 #endif // PLAT_SDL

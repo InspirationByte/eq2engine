@@ -54,7 +54,7 @@ CFile::CFile(COSFile&& file)
 {
 }
 
-int	CFile::Seek( long pos, VirtStreamSeek_e seekType )
+int	CFile::Seek( long pos, EVirtStreamSeek seekType )
 {
 	return m_osFile.Seek(pos, static_cast<COSFile::ESeekPos>(seekType) );
 }

@@ -75,6 +75,7 @@ public:
 
 	static EqString Format(const char* pszFormat, ...);
 	static EqString FormatVa(const char* pszFormat, va_list argptr);
+	static size_t	ReadString(IVirtualStream* stream, EqString& output);
 
 	// checks the data is non overflowing
 	bool		IsValid() const;
@@ -86,10 +87,10 @@ public:
 	const char*	ToCString() const {return GetData();}
 
 	// length of it
-	uint		Length() const;
+	ushort		Length() const;
 
 	// string allocated size in bytes
-	uint		GetSize() const;
+	ushort		GetSize() const;
 
 	// erases and deallocates data
 	void		Clear();
@@ -98,10 +99,10 @@ public:
 	void		Empty();
 
 	// an internal operation of allocation/extend
-	bool		ExtendAlloc(uint nSize, bool bCopy = true);
+	bool		ExtendAlloc(int nSize, bool bCopy = true);
 
 	// just a resize
-	bool		Resize(uint nSize, bool bCopy = true);
+	bool		Resize(int nSize, bool bCopy = true);
 
 	// string assignment (or setvalue)
 	void		Assign(const char* pszStr, int len = -1);
@@ -121,7 +122,7 @@ public:
 	void		Insert(const EqString &str, int nInsertPos);
 
 	// removes characters
-	void		Remove(uint nStart, uint nCount);
+	void		Remove(int nStart, int nCount);
 
 	// replaces characters
 	void		Replace( char whichChar, char to );
@@ -200,10 +201,25 @@ public:
 	}
 
 protected:
-	char*		m_pszString;
+	char*		m_pszString{ nullptr };
 
-	uint16		m_nLength;			// length of string
-	uint16		m_nAllocated;		// allocation size
+	uint16		m_nLength{ 0 };			// length of string
+	uint16		m_nAllocated{ 0 };		// allocation size
 };
 
 STRING_OPERATORS(static inline, EqString)
+
+template<>
+static size_t VSRead<EqString>(IVirtualStream* stream, EqString& str)
+{
+	return EqString::ReadString(stream, str);
+}
+
+template<>
+static size_t VSWrite<EqString>(IVirtualStream* stream, const EqString& str)
+{
+	const uint16 length = str.Length();
+	stream->Write(&length, 1, sizeof(uint16));
+	stream->Write(str.GetData(), sizeof(char), length);
+	return 1;
+}

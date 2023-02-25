@@ -71,8 +71,7 @@ CEqCollisionBroadphaseGrid::~CEqCollisionBroadphaseGrid()
 		}
 	}
 
-	delete[] m_gridMap;
-	m_gridMap = nullptr;
+	SAFE_DELETE_ARRAY(m_gridMap);
 }
 
 

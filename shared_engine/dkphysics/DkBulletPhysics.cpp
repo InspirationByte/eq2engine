@@ -281,38 +281,23 @@ bool DkPhysics::Init(int nSceneSize)
 
 			KVSection* pPair = pSec->FindSection("footsteps");
 			if(pPair)
-			{
-				delete [] pMaterial->footStepSound;
 				pMaterial->footStepSound = KV_GetValueString(pPair);
-			}
 
 			pPair = pSec->FindSection("bulletimpact");
 			if(pPair)
-			{
-				delete [] pMaterial->bulletImpactSound;
 				pMaterial->bulletImpactSound = KV_GetValueString(pPair);
-			}
 
 			pPair = pSec->FindSection("scrape");
 			if(pPair)
-			{
-				delete [] pMaterial->scrapeSound;
 				pMaterial->scrapeSound = KV_GetValueString(pPair);
-			}
 
 			pPair = pSec->FindSection("impactlight");
 			if(pPair)
-			{
-				delete [] pMaterial->lightImpactSound;
 				pMaterial->lightImpactSound = KV_GetValueString(pPair);
-			}
 
 			pPair = pSec->FindSection("impactheavy");
 			if(pPair)
-			{
-				delete [] pMaterial->heavyImpactSound;
 				pMaterial->heavyImpactSound = KV_GetValueString(pPair);
-			}
 
 			m_physicsMaterialDesc.append(pMaterial);
 		}

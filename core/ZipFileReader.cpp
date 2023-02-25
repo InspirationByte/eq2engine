@@ -39,7 +39,7 @@ size_t CZipFileStream::Write(const void *src, size_t count, size_t size)
 }
 
 // seeks pointer to position
-int	CZipFileStream::Seek(long nOffset, VirtStreamSeek_e seekType)
+int	CZipFileStream::Seek(long nOffset, EVirtStreamSeek seekType)
 {
 	int newOfs = 0;
 	char dummy[32*1024];

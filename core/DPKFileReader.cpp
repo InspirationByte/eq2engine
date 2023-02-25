@@ -229,7 +229,7 @@ size_t CDPKFileStream::Write(const void *src, size_t count, size_t size)
 }
 
 // seeks pointer to position
-int	CDPKFileStream::Seek(long nOffset, VirtStreamSeek_e seekType)
+int	CDPKFileStream::Seek(long nOffset, EVirtStreamSeek seekType)
 {
 	int newOfs = m_curPos;
 
@@ -357,8 +357,7 @@ int	CDPKFileReader::FindFileIndex(const char* filename) const
 
 bool CDPKFileReader::InitPackage(const char *filename, const char* mountPath /*= nullptr*/)
 {
-	delete [] m_dpkFiles;
-	m_dpkFiles = nullptr;
+	SAFE_DELETE_ARRAY(m_dpkFiles);
 
     m_packageName = filename;
 	m_packagePath = ((CFileSystem*)g_fileSystem.GetInstancePtr())->GetAbsolutePath(SP_ROOT, filename);

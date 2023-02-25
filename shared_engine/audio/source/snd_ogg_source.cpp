@@ -33,7 +33,7 @@ namespace eqVorbisFile
 			case SEEK_SET:
 			case SEEK_CUR:
 			case SEEK_END:
-				returnVal = pFile->Seek(offset, (VirtStreamSeek_e)whence);
+				returnVal = pFile->Seek(offset, (EVirtStreamSeek)whence);
 				break;
 			default: //Bad value
 				return -1;

@@ -51,6 +51,8 @@
 #include "platform/messagebox.h"
 #include "platform/stackalloc.h"
 
+#include "ds/IVirtualStream.h"
+
 #include "ds/eqstring.h"
 #include "ds/eqwstring.h"
 
@@ -69,7 +71,7 @@
 #include "ds/function.h"
 #include "ds/future.h"
 
-#include "ds/IVirtualStream.h"
+
 #include "ds/MemoryStream.h"
 
 #include "utils/strtools.h"

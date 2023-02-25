@@ -256,11 +256,8 @@ void CEqStudioGeom::DestroyModel()
 		for (int i = 0; i < m_studio->numModels; i++)
 			delete[] m_hwGeomRefs[i].groups;
 
-		delete[] m_hwGeomRefs;
-		delete[] m_joints;
-
-		m_hwGeomRefs = nullptr;
-		m_joints = nullptr;
+		SAFE_DELETE_ARRAY(m_hwGeomRefs);
+		SAFE_DELETE_ARRAY(m_joints);
 
 		Studio_FreeModel(m_studio);
 	}

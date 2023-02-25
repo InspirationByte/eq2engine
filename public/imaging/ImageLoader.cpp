@@ -248,11 +248,8 @@ ubyte* CImage::Create(const ETextureFormat fmt, const int w, const int h, const 
 
 void CImage::Free()
 {
-	delete [] m_pPixels;
-	m_pPixels = nullptr;
-
-	if(m_pExtraData)
-		delete [] m_pExtraData;
+	SAFE_DELETE_ARRAY(m_pPixels);
+	SAFE_DELETE_ARRAY(m_pExtraData);
 
 	m_pExtraData = nullptr;
 }

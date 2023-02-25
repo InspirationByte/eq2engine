@@ -32,6 +32,7 @@ public:
 
 	static EqWString Format(const wchar_t* pszFormat, ...);
 	static EqWString FormatVa(const wchar_t* pszFormat, va_list args);
+	static size_t	 ReadString(IVirtualStream* stream, EqWString& output);
 
 	// data for printing
 	const wchar_t*	GetData() const;
@@ -40,10 +41,10 @@ public:
 	const wchar_t*	ToCString() const {return GetData();}
 
 	// length of it
-	uint			Length() const;
+	uint16			Length() const;
 
 	// string allocated size in bytes
-	uint			GetSize() const;
+	uint16			GetSize() const;
 
 	// erases and deallocates data
 	void			Clear();
@@ -55,7 +56,7 @@ public:
 	bool			ExtendAlloc(int nSize);
 
 	// just a resize
-	bool			Resize(uint nSize, bool bCopy = true);
+	bool			Resize(int nSize, bool bCopy = true);
 
 	// string assignment with conversion (or setvalue)
 	void			Assign(const char* pszStr, int len = -1);
@@ -75,7 +76,7 @@ public:
 	void			Insert(const EqWString &str, int nInsertPos);
 
 	// removes characters
-	void			Remove(uint nStart, uint nCount);
+	void			Remove(int nStart, int nCount);
 
 	// replaces characters
 	void			Replace( wchar_t whichChar, wchar_t to );
@@ -133,10 +134,10 @@ public:
 	}
 
 protected:
-	wchar_t*	m_pszString;
+	wchar_t*	m_pszString{ nullptr };
 
-	uint16		m_nLength;			// length of string
-	uint16		m_nAllocated;		// allocation size
+	uint16		m_nLength{ 0 };			// length of string
+	uint16		m_nAllocated{ 0 };		// allocation size
 };
 
 STRING_OPERATORS(static inline, EqWString)

@@ -465,8 +465,8 @@ void PPFree(void* ptr)
 		const void* actualPtr = ((ubyte*)alloc) + sizeof(ppallocinfo_t);
 		const uint* checkMark = (uint*)((ubyte*)actualPtr + alloc->size);
 
-		ASSERT_MSG(alloc->checkMark == PPMEM_CHECKMARK, "PPCheck: memory is invalid (was outranged before)");
-		ASSERT_MSG(*checkMark == PPMEM_CHECKMARK, "PPCheck: memory is invalid (was outranged after)");
+		ASSERT_MSG(alloc->checkMark == PPMEM_CHECKMARK, "buffer underrun detected by PPMem");
+		ASSERT_MSG(*checkMark == PPMEM_CHECKMARK, "buffer overrun detected by PPMem");
 
 		free((void*)alloc);
 	}

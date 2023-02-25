@@ -26,20 +26,17 @@ CD3D10ShaderProgram::~CD3D10ShaderProgram()
 	for(int i = 0; i < m_VSCBuffers; i++)
 		m_vsConstants[i]->Release();
 
-	if(m_vsConstants)
-		delete [] m_vsConstants;
+	SAFE_DELETE_ARRAY(m_vsConstants);
 
 	for(int i = 0; i < m_GSCBuffers; i++)
 		m_gsConstants[i]->Release();
 
-	if(m_gsConstants)
-		delete [] m_gsConstants;
+	SAFE_DELETE_ARRAY(m_gsConstants);
 
 	for(int i = 0; i < m_PSCBuffers; i++)
 		m_psConstants[i]->Release();
 
-	if(m_psConstants)
-		delete [] m_psConstants;
+	SAFE_DELETE_ARRAY(m_psConstants);
 		
 	// delete all data carefully
 	for(int i = 0; i < m_numConstants; i++)
@@ -54,10 +51,7 @@ CD3D10ShaderProgram::~CD3D10ShaderProgram()
 	if(m_textures)
 		free(m_textures);
 
-	if(m_psDirty)
-		delete [] m_psDirty;
-	if(m_vsDirty)
-		delete [] m_vsDirty;
-	if(m_gsDirty)
-		delete [] m_gsDirty;
+	SAFE_DELETE_ARRAY(m_psDirty);
+	SAFE_DELETE_ARRAY(m_vsDirty);
+	SAFE_DELETE_ARRAY(m_gsDirty);
 }

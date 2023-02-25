@@ -88,7 +88,7 @@ size_t CMemoryStream::Write(const void *src, size_t count, size_t size)
 }
 
 // seeks pointer to position
-int CMemoryStream::Seek(long nOffset, VirtStreamSeek_e seekType)
+int CMemoryStream::Seek(long nOffset, EVirtStreamSeek seekType)
 {
 	ASSERT(m_openFlags != 0);
 

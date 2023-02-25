@@ -18,14 +18,14 @@ enum VirtStreamType_e
 // fancy check
 #define IsFileType(type) ((type) >= VS_TYPE_FILE)
 
-enum VirtStreamSeek_e
+enum EVirtStreamSeek
 {
 	VS_SEEK_SET = 0,	// set current position
 	VS_SEEK_CUR,		// seek from last position
 	VS_SEEK_END,		// seek to the end
 };
 
-enum VirtStreamOpenFlags_e
+enum EVirtStreamOpenFlags
 {
 	VS_OPEN_READ	= (1 << 0),
 	VS_OPEN_WRITE	= (1 << 1),
@@ -35,6 +35,14 @@ enum VirtStreamOpenFlags_e
 //--------------------------
 // IVirtualStream - Virtual stream interface
 //--------------------------
+
+class IVirtualStream;
+
+template<typename T>
+static size_t VSRead(IVirtualStream* stream, T& obj);
+
+template<typename T>
+static size_t VSWrite(IVirtualStream* stream, const T& obj);
 
 class IVirtualStream
 {
@@ -48,19 +56,19 @@ public:
 	virtual size_t				Write(const void *src, size_t count, size_t size) = 0;
 
 	template <typename T>
-	size_t						Read(T& obj, size_t count = 1) { return Read(&obj, count, sizeof(T)); }
+	size_t						Read(T& obj) { return VSRead(this, obj); }
 
 	template <typename T>
-	size_t						Read(T* obj, size_t count = 1) { return Read(obj, count, sizeof(T)); }
+	size_t						Read(T* obj, size_t count = 1) { size_t readcnt = 0; while (count--) readcnt += VSRead(this, *obj++); return readcnt; }
 
 	template <typename T>
-	size_t						Write(const T& obj, size_t count = 1) { return Write(&obj, count, sizeof(T)); }
+	size_t						Write(const T& obj) { return VSWrite(this, obj); }
 
 	template <typename T>
-	size_t						Write(const T* obj, size_t count = 1) { return Write(obj, count, sizeof(T)); }
+	size_t						Write(const T* obj, size_t count = 1) { size_t written = 0; while (count--) written += VSWrite(this, *obj++); return written; }
 
 	// seeks pointer to position
-	virtual int					Seek( long nOffset, VirtStreamSeek_e seekType) = 0;
+	virtual int					Seek( long nOffset, EVirtStreamSeek seekType) = 0;
 
 	// fprintf analog
 	virtual	void				Print(const char* fmt, ...);
@@ -80,3 +88,17 @@ public:
 	// returns CRC32 checksum of stream
 	virtual uint32				GetCRC32() = 0;
 };
+
+// provide default implementation
+
+template<typename T>
+static size_t VSRead(IVirtualStream* stream, T& obj)
+{
+	return stream->Read(&obj, 1, sizeof(T));
+}
+
+template<typename T>
+static size_t VSWrite(IVirtualStream* stream, const T& obj)
+{
+	return stream->Write(&obj, 1, sizeof(T));
+}
