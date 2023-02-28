@@ -11,6 +11,8 @@
 #include "FileSystem.h"
 #include "DPKFileReader.h"
 
+static Threading::CEqMutex s_dpkMutex;
+
 // Fixes slashes in the directory name
 static void DPK_RebuildFilePath(const char* str, char* newstr)
 {
@@ -105,9 +107,9 @@ CDPKFileStream::~CDPKFileStream()
 	free(m_tmpDecompressData);
 }
 
-CBasePackageFileReader* CDPKFileStream::GetHostPackage() const
+CBasePackageReader* CDPKFileStream::GetHostPackage() const
 { 
-	return (CBasePackageFileReader*)m_host;
+	return (CBasePackageReader*)m_host;
 }
 
 void CDPKFileStream::DecodeBlock(int blockIdx)
@@ -303,7 +305,7 @@ uint32 CDPKFileStream::GetCRC32()
 // DPK host
 //-----------------------------------------------------------------------------------------------------------------------
 
-CDPKFileReader::CDPKFileReader(Threading::CEqMutex& mutex) : CBasePackageFileReader(mutex)
+CDPKFileReader::CDPKFileReader()
 {
     m_searchPath = 0;
 	m_dpkFiles = nullptr;
@@ -455,7 +457,7 @@ IVirtualStream* CDPKFileReader::Open(const char* filename, int modeFlags)
 	newStream->m_ice.set((unsigned char*)m_key.ToCString());
 
 	{
-		Threading::CScopedMutex m(m_FSMutex);
+		Threading::CScopedMutex m(s_dpkMutex);
 		m_openFiles.append(newStream);
 	}
 
@@ -470,7 +472,7 @@ void CDPKFileReader::Close(IVirtualStream* fp)
 	CDPKFileStream* fsp = (CDPKFileStream*)fp;
 
 	{
-		Threading::CScopedMutex m(m_FSMutex);
+		Threading::CScopedMutex m(s_dpkMutex);
 		if(!m_openFiles.fastRemove(fsp))
 			return;
 	}

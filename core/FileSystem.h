@@ -41,7 +41,7 @@ protected:
 // Filesystem base
 //------------------------------------------------------------------------------
 
-class CBasePackageFileReader;
+class CBasePackageReader;
 
 class CFileSystem : public IFileSystem
 {
@@ -84,6 +84,8 @@ public:
 	// File operations
 	//------------------------------------------------------------
 
+
+
     IFile*						Open(const char* filename, const char* mode, int searchFlags = -1 );
     void						Close( IFile *fp );
 
@@ -103,8 +105,13 @@ public:
 
 	bool						SetAccessKey(const char* accessKey);
 
+	// adds package to file system as another layer, acts just like AddSearchPath
 	bool						AddPackage(const char* packageName, SearchPath_e type, const char* mountPath = nullptr);
 	void						RemovePackage(const char* packageName);
+
+	// opens package for further reading. Does not add package as FS layer
+	IFilePackageReader*				OpenPackage(const char* packageName);
+	void						ClosePackage(IFilePackageReader* package);
 
 	//------------------------------------------------------------
 	// Locator
@@ -153,17 +160,19 @@ protected:
 		bool mainWritePath;
 	};
 
-	Array<SearchPath_t>				m_directories{ PP_SL };		// mod data, for fall back
+	Array<SearchPath_t>			m_directories{ PP_SL };		// mod data, for fall back
 
-    // Packages currently loaded
-    Array<CBasePackageFileReader*>	m_packages{ PP_SL };
-    Array<IFile*>					m_openFiles{ PP_SL };
-	Array<DKFINDDATA*>				m_findDatas{ PP_SL };
-	Array<DKMODULE*>				m_modules{ PP_SL };
 
-    bool							m_editorMode;
-	bool							m_isInit;
 
-	Threading::CEqMutex				m_FSMutex;
+    Array<CBasePackageReader*>	m_fsPackages{ PP_SL };		// package serving as FS layers
+
+	Array<IFilePackageReader*>	m_openPackages{ PP_SL };
+    Array<IFile*>				m_openFiles{ PP_SL };
+
+	Array<DKFINDDATA*>			m_findDatas{ PP_SL };
+	Array<DKMODULE*>			m_modules{ PP_SL };
+
+    bool						m_editorMode{ false };
+	bool						m_isInit{ false };
 };
 

@@ -28,33 +28,33 @@ public:
 	~CDPKFileStream();
 
 	// reads data from virtual stream
-	size_t Read(void *dest, size_t count, size_t size);
+	size_t				Read(void *dest, size_t count, size_t size);
 
 	// writes data to virtual stream
-	size_t Write(const void *src, size_t count, size_t size);
+	size_t				Write(const void *src, size_t count, size_t size);
 
 	// seeks pointer to position
-	int	Seek(long nOffset, EVirtStreamSeek seekType);
+	int					Seek(long nOffset, EVirtStreamSeek seekType);
 
 	// fprintf analog
-	void Print(const char* fmt, ...);
+	void				Print(const char* fmt, ...);
 
 	// returns current pointer position
-	long Tell() const;
+	long				Tell() const;
 
 	// returns memory allocated for this stream
-	long GetSize();
+	long				GetSize();
 
 	// flushes stream from memory
-	bool Flush();
+	bool				Flush();
 
 	// returns stream type
-	VirtStreamType_e GetType() const { return VS_TYPE_FILE_PACKAGE; }
+	VirtStreamType_e	GetType() const { return VS_TYPE_FILE_PACKAGE; }
 
 	// returns CRC32 checksum of stream
-	uint32 GetCRC32();
+	uint32				GetCRC32();
 
-	CBasePackageFileReader* GetHostPackage() const;
+	CBasePackageReader* GetHostPackage() const;
 
 protected:
 	void				DecodeBlock(int block);
@@ -85,10 +85,10 @@ protected:
 
 //------------------------------------------------------------------------------------------
 
-class CDPKFileReader : public CBasePackageFileReader
+class CDPKFileReader : public CBasePackageReader
 {
 public:
-	CDPKFileReader(Threading::CEqMutex& fsMutex);
+	CDPKFileReader();
 	~CDPKFileReader();
 
 	bool					InitPackage( const char* filename, const char* mountPath /*= nullptr*/);

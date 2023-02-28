@@ -6,8 +6,9 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #pragma once
+#include "IFilePackageReader.h"
 
-#define FILESYSTEM_INTERFACE_VERSION		"CORE_Filesystem_006"
+#define FILESYSTEM_INTERFACE_VERSION		"CORE_Filesystem_007"
 
 //------------------------------------------------------------------------------
 // Definitions
@@ -83,10 +84,16 @@ public:
 	// Packages
 	//------------------------------------------------------------
 
+	// sets access key for using encrypted packages
 	virtual bool			SetAccessKey(const char* accessKey) = 0;
 
+	// adds package to file system as another layer, acts just like AddSearchPath
 	virtual bool			AddPackage(const char* packageName, SearchPath_e type, const char* mountPath = nullptr) = 0;
 	virtual void			RemovePackage(const char* packageName) = 0;
+
+	// opens package for further reading. Does not add package as FS layer. NOTE: it's not supported to open package inside EPK or ZIP file.
+	virtual IFilePackageReader* OpenPackage(const char* packageName) = 0;
+	virtual void			ClosePackage(IFilePackageReader* package) = 0;
 
 	//------------------------------------------------------------
 	// Dynamic library stuff

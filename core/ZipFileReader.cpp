@@ -9,6 +9,8 @@
 #include "ZipFileReader.h"
 #include "FileSystem.h"
 
+static Threading::CEqMutex s_zipMutex;
+
 extern void DPK_FixSlashes(EqString& str);
 
 CZipFileStream::CZipFileStream(unzFile zip) : m_zipHandle(zip)
@@ -20,9 +22,9 @@ CZipFileStream::~CZipFileStream()
 {
 }
 
-CBasePackageFileReader* CZipFileStream::GetHostPackage() const
+CBasePackageReader* CZipFileStream::GetHostPackage() const
 {
-	return (CBasePackageFileReader*)m_host;
+	return (CBasePackageReader*)m_host;
 }
 
 // reads data from virtual stream
@@ -119,7 +121,7 @@ uint32 CZipFileStream::GetCRC32()
 // ZIP host
 //-----------------------------------------------------------------------------------------------------------------------
 
-CZipFileReader::CZipFileReader(Threading::CEqMutex& fsMutex) : CBasePackageFileReader(fsMutex)
+CZipFileReader::CZipFileReader()
 {
 
 }
@@ -229,7 +231,7 @@ IVirtualStream* CZipFileReader::Open(const char* filename, int modeFlags)
 	newStream->m_host = this;
 
 	{
-		Threading::CScopedMutex m(m_FSMutex);
+		Threading::CScopedMutex m(s_zipMutex);
 		m_openFiles.append(newStream);
 	}
 
@@ -244,7 +246,7 @@ void CZipFileReader::Close(IVirtualStream* fp)
 	CZipFileStream* fsp = (CZipFileStream*)fp;
 
 	{
-		Threading::CScopedMutex m(m_FSMutex);
+		Threading::CScopedMutex m(s_zipMutex);
 		if (!m_openFiles.fastRemove(fsp))
 			return;
 	}

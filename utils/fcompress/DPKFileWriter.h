@@ -9,55 +9,56 @@
 #include "dpk/dpk_defs.h"
 #include "utils/IceKey.h"
 
-struct dpkfilewinfo_t
-{
-	dpkfileinfo_t	pkinfo;
-	EqString		fileName;
-};
-
-ALIGNED_TYPE(dpkfileinfo_s, 2) dpkfileinfo_t;
+// TODO: refactor interface to simply operate IVirtualStream buffers
+// and directly write into pack file
 
 class CDPKFileWriter
 {
 public:
-							CDPKFileWriter();
-							~CDPKFileWriter();
+				CDPKFileWriter();
+				~CDPKFileWriter();
 
-	void					SetCompression( int compression );
-	void					SetEncryption( int type, const char* key );
-	void					SetMountPath( const char* path );
+	void		SetCompression( int compression );
+	void		SetEncryption( int type, const char* key );
+	void		SetMountPath( const char* path );
 
-	bool					AddFile( const char* fileName, int nameHash );
-	bool					AddFile( const char* fileName, const char* targetFilename);
-	int						AddDirectory(const char* wildcard, const char* targetDir, bool bRecurse );
+	bool		AddFile( const char* fileName, int nameHash );
+	bool		AddFile( const char* fileName, const char* targetFilename);
+	int			AddDirectory(const char* wildcard, const char* targetDir, bool bRecurse );
 
-	void					AddIgnoreCompressionExtension( const char* extension );
-	void					AddKeyValueFileExtension(const char* extension);
+	void		AddIgnoreCompressionExtension( const char* extension );
+	void		AddKeyValueFileExtension(const char* extension);
 
-	bool					BuildAndSave( const char* fileNamePrefix );
+	bool		BuildAndSave( const char* fileNamePrefix );
 
 protected:
 
-	float					ProcessFile(FILE* output, dpkfilewinfo_t* info);
+	struct FileInfo
+	{
+		dpkfileinfo_t	pkinfo;
+		EqString		fileName;
+	};
 
-	bool					WriteFiles();
-	bool					SavePackage();
+	float				ProcessFile(FILE* output, FileInfo* info);
 
-	bool					CheckCompressionIgnored(const char* extension) const;
-	bool					CheckIsKeyValueFile(const char* extension) const;
+	bool				WriteFiles();
+	bool				SavePackage();
 
-	FILE*					m_file;
-	dpkheader_t				m_header;
+	bool				CheckCompressionIgnored(const char* extension) const;
+	bool				CheckIsKeyValueFile(const char* extension) const;
 
-	char					m_mountPath[DPK_STRING_SIZE];
+	FILE*				m_file;
+	dpkheader_t			m_header;
 
-	Array<dpkfilewinfo_t*>	m_files{ PP_SL };
-	Array<EqString>			m_ignoreCompressionExt{ PP_SL };
-	Array<EqString>			m_keyValueFileExt{ PP_SL };
+	char				m_mountPath[DPK_STRING_SIZE];
 
-	int						m_compressionLevel;
-	int						m_encryption;
+	Array<FileInfo*>	m_files{ PP_SL };
+	Array<EqString>		m_ignoreCompressionExt{ PP_SL };
+	Array<EqString>		m_keyValueFileExt{ PP_SL };
 
-	IceKey					m_ice;
+	int					m_compressionLevel;
+	int					m_encryption;
+
+	IceKey				m_ice;
 	
 };

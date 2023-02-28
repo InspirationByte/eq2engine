@@ -35,8 +35,8 @@
 
 #endif
 
-
 using namespace Threading;
+static CEqMutex	s_FSMutex;
 
 EXPORTED_INTERFACE(IFileSystem, CFileSystem);
 
@@ -169,7 +169,7 @@ struct DKFINDDATA
 		Release();
 
 #if defined(PLAT_WIN)
-		fileHandle = FindFirstFileA(searchWildcard.ToCString(), &wfd);
+		fileHandle = FindFirstFileA(searchWildcard, &wfd);
 		if (fileHandle != INVALID_HANDLE_VALUE)
 			return true;
 #elif defined(PLAT_POSIX)
@@ -294,8 +294,7 @@ static bool mkdirRecursive(const char* path, bool includeDotPath)
 
 //--------------------------------------------------
 
-CFileSystem::CFileSystem() :
-	m_isInit(false), m_editorMode(false)
+CFileSystem::CFileSystem()
 {
 	g_eqCore->RegisterInterface(FILESYSTEM_INTERFACE_VERSION, this);
 }
@@ -329,7 +328,7 @@ bool CFileSystem::Init(bool bEditorMode)
 #endif // _WIN32
 	}
 
-	m_basePath = KV_GetValueString(pFilesystem->FindSection("BasePath"), 0, m_basePath.ToCString());
+	m_basePath = KV_GetValueString(pFilesystem->FindSection("BasePath"), 0, m_basePath);
 
 	if(m_basePath.Length() > 0)
 		MsgInfo("* FS Init with basePath=%s\n", m_basePath.GetData());
@@ -397,10 +396,10 @@ void CFileSystem::Shutdown()
 	}
 	*/
 
-	for(int i = 0; i < m_packages.numElem(); i++)
-		delete m_packages[i];
+	for(int i = 0; i < m_fsPackages.numElem(); i++)
+		delete m_fsPackages[i];
 
-	m_packages.clear();
+	m_fsPackages.clear();
 	m_directories.clear();
 
 	g_localizer->Shutdown();
@@ -461,9 +460,9 @@ IFile* CFileSystem::Open(const char* filename, const char* mode, int searchFlags
 			return false;
 
 		// If failed to load directly, load it from package, in backward order
-		for (int j = m_packages.numElem() - 1; j >= 0; j--)
+		for (int j = m_fsPackages.numElem() - 1; j >= 0; j--)
 		{
-			CBasePackageFileReader* pPackageReader = m_packages[j];
+			CBasePackageReader* pPackageReader = m_fsPackages[j];
 
 			if (!(spFlags & pPackageReader->GetSearchPath()))
 				continue;
@@ -481,7 +480,7 @@ IFile* CFileSystem::Open(const char* filename, const char* mode, int searchFlags
 
 	if (fileHandle)
 	{
-		CScopedMutex m(m_FSMutex);
+		CScopedMutex m(s_FSMutex);
 		m_openFiles.append(fileHandle);
 	}
 
@@ -494,7 +493,7 @@ void CFileSystem::Close( IFile* fp )
 		return;
 
 	{
-		CScopedMutex m(m_FSMutex);
+		CScopedMutex m(s_FSMutex);
 		if (!m_openFiles.fastRemove(fp))
 			return;
 	}
@@ -631,9 +630,9 @@ bool CFileSystem::FileExist(const char* filename, int searchFlags) const
 			return true;
 
 		// If failed to load directly, load it from package, in backward order
-		for (int j = m_packages.numElem() - 1; j >= 0; j--)
+		for (int j = m_fsPackages.numElem() - 1; j >= 0; j--)
 		{
-			CBasePackageFileReader* pPackageReader = m_packages[j];
+			CBasePackageReader* pPackageReader = m_fsPackages[j];
 
 			if (!(spFlags & pPackageReader->GetSearchPath()))
 				continue;
@@ -785,39 +784,40 @@ bool CFileSystem::SetAccessKey(const char* accessKey)
 
 bool CFileSystem::AddPackage(const char* packageName, SearchPath_e type, const char* mountPath /*= nullptr*/)
 {
-	for(int i = 0; i < m_packages.numElem();i++)
+	for(int i = 0; i < m_fsPackages.numElem();i++)
 	{
-		if(!stricmp(m_packages[i]->GetPackageFilename(), packageName))
+		if(!stricmp(m_fsPackages[i]->GetPackageFilename(), packageName))
+		{
+			ASSERT_FAIL("Package %s was already added to file system", packageName);
 			return false;
+		}
 	}
 
-	EqString fileExt(_Es(packageName).Path_Extract_Ext());
-
-	CBasePackageFileReader* pPackageReader = nullptr;
+	const EqString fileExt(_Es(packageName).Path_Extract_Ext());
+	CBasePackageReader* reader = nullptr;
 
 	// allow zip files to be loaded
 	if (!fileExt.CompareCaseIns("zip"))
-		pPackageReader = PPNew CZipFileReader(m_FSMutex);
+		reader = PPNew CZipFileReader();
 	else
-		pPackageReader = PPNew CDPKFileReader(m_FSMutex);
+		reader = PPNew CDPKFileReader();
 
-    if (pPackageReader->InitPackage( packageName, mountPath))
+    if (reader->InitPackage(packageName, mountPath))
     {
 		if(mountPath)
 			DevMsg(DEVMSG_FS, "Adding package file '%s' force mount at '%s'\n", packageName, mountPath);
 		else
 			DevMsg(DEVMSG_FS, "Adding package file '%s'\n", packageName);
 
-        pPackageReader->SetSearchPath(type);
-		pPackageReader->SetKey(m_accessKey.ToCString());
+        reader->SetSearchPath(type);
+		reader->SetKey(m_accessKey);
 
-        m_packages.append(pPackageReader);
+        m_fsPackages.append(reader);
         return true;
     }
     else
     {
-        delete pPackageReader;
-
+        delete reader;
         return false;
     }
 
@@ -826,17 +826,57 @@ bool CFileSystem::AddPackage(const char* packageName, SearchPath_e type, const c
 
 void CFileSystem::RemovePackage(const char* packageName)
 {
-	for (int i = 0; i < m_packages.numElem(); i++)
+	for (int i = 0; i < m_fsPackages.numElem(); i++)
 	{
-		CBasePackageFileReader* pPackageReader = m_packages[i];
+		CBasePackageReader* reader = m_fsPackages[i];
 
-		if (!stricmp(pPackageReader->GetPackageFilename(), packageName))
+		if (!stricmp(reader->GetPackageFilename(), packageName))
 		{
-			m_packages.fastRemoveIndex(i);
-			delete pPackageReader;
+			m_fsPackages.fastRemoveIndex(i);
+			delete reader;
 			i--;
 		}
 	}
+}
+
+// opens package for further reading. Does not add package as FS layer
+IFilePackageReader* CFileSystem::OpenPackage(const char* packageName)
+{
+	const EqString fileExt(_Es(packageName).Path_Extract_Ext());
+	CBasePackageReader* reader = nullptr;
+
+	// allow zip files to be loaded
+	if (!fileExt.CompareCaseIns("zip"))
+		reader = PPNew CZipFileReader();
+	else
+		reader = PPNew CDPKFileReader();
+
+	if (reader->InitPackage(packageName, nullptr))
+	{
+		reader->SetSearchPath(SP_ROOT);
+		reader->SetKey(m_accessKey);
+
+		{
+			CScopedMutex m(s_FSMutex);
+			m_openPackages.append(reader);
+		}
+
+		return reader;
+	}
+
+	return nullptr;
+}
+
+void CFileSystem::ClosePackage(IFilePackageReader* package)
+{
+	bool removed = false;
+	{
+		CScopedMutex m(s_FSMutex);
+		removed = m_openPackages.fastRemove(package);
+	}
+
+	if (removed)
+		delete package;
 }
 
 // sets fallback directory for mod
@@ -887,7 +927,7 @@ const char* CFileSystem::GetCurrentGameDirectory() const
 	for (int i = 0; i < m_directories.numElem(); i++)
 	{
 		if (m_directories[i].mainWritePath)
-			return m_directories[i].path.ToCString();
+			return m_directories[i].path;
 	}
 
     return m_dataDir.GetData();
@@ -914,7 +954,7 @@ const char* CFileSystem::FindFirst(const char* wildcard, DKFINDDATA** findData, 
 	newFind->wildcard = wildcard;
 	newFind->wildcard.Path_FixSlashes();
 
-	EqString fsBaseDir = m_basePath.ToCString();
+	EqString fsBaseDir = m_basePath;
 
 	if(searchPath == SP_DATA)
 	{
@@ -1021,7 +1061,7 @@ DKMODULE* CFileSystem::LoadModule(const char* mod_name)
 	if(modExt.Length() == 0)
 		moduleFileName = moduleFileName + ".dll";
 
-	HMODULE mod = LoadLibraryA( moduleFileName.ToCString() );
+	HMODULE mod = LoadLibraryA( moduleFileName );
 
 	DWORD lastErr = GetLastError();
 
@@ -1043,7 +1083,7 @@ DKMODULE* CFileSystem::LoadModule(const char* mod_name)
 	if(modExt.Length() == 0)
 		moduleFileName = moduleFileName + ".so";
 
-	HMODULE mod = dlopen( moduleFileName.ToCString(), RTLD_LAZY | RTLD_LOCAL );
+	HMODULE mod = dlopen( moduleFileName, RTLD_LAZY | RTLD_LOCAL );
 
 	const char* err = dlerror();
 	int lastErr = 0;
@@ -1060,7 +1100,7 @@ DKMODULE* CFileSystem::LoadModule(const char* mod_name)
 	}
 
 	DKMODULE* pModule = PPNew DKMODULE;
-	strcpy( pModule->name, moduleFileName.ToCString() );
+	strcpy( pModule->name, moduleFileName );
 	pModule->module = (HMODULE)mod;
 
 	return pModule;

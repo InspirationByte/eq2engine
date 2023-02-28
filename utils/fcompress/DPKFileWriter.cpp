@@ -183,7 +183,7 @@ bool CDPKFileWriter::AddFile(const char* fileName, int nameHash)
 		return false;
 	}
 
-	dpkfilewinfo_t* newInfo = PPNew dpkfilewinfo_t;
+	FileInfo* newInfo = PPNew FileInfo;
 	newInfo->fileName = fileName;
 	memset(&newInfo->pkinfo, 0, sizeof(newInfo->pkinfo));
 
@@ -321,7 +321,7 @@ bool CDPKFileWriter::WriteFiles()
 	return true;
 }
 
-float CDPKFileWriter::ProcessFile(FILE* output, dpkfilewinfo_t* info)
+float CDPKFileWriter::ProcessFile(FILE* output, FileInfo* info)
 {
 	dpkfileinfo_t& fInfo = info->pkinfo;
 
@@ -507,7 +507,7 @@ bool CDPKFileWriter::SavePackage()
 	{
 		UpdatePacifier((float)i / (float)m_files.numElem());
 
-		dpkfilewinfo_t* fileInfo = m_files[i];
+		FileInfo* fileInfo = m_files[i];
 		const float sizeReduction = ProcessFile(dpk_temp_data, fileInfo);
 
 		compressionRatio += sizeReduction;

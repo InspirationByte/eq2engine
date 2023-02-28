@@ -6,47 +6,35 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #pragma once
+#include "core/IFilePackageReader.h"
 
-class CBasePackageFileReader;
+class CBasePackageReader;
 
-class CBasePackageFileStream : public IVirtualStream
+class CBasePackageFileStream : public IFile
 {
 public:
-	virtual CBasePackageFileReader* GetHostPackage() const = 0;
+	virtual CBasePackageReader* GetHostPackage() const = 0;
 };
 
 //--------------------------------------------------
 
-class CBasePackageFileReader
+class CBasePackageReader : public IFilePackageReader
 {
 public:
-	CBasePackageFileReader(Threading::CEqMutex&	mutex) :
-		m_FSMutex(mutex)
-	{
-	}
+	virtual bool	InitPackage(const char* filename, const char* mountPath = nullptr) = 0;
 
-	virtual ~CBasePackageFileReader() = default;
+	const char*		GetPackageFilename() const	{ return m_packageName.ToCString(); }
+	int				GetSearchPath() const		{ return m_searchPath; };
+	virtual void	SetSearchPath(int search)	{ m_searchPath = search; };
 
-	virtual bool			InitPackage(const char* filename, const char* mountPath = nullptr) = 0;
-
-	virtual IVirtualStream*	Open(const char* filename, int openFlags) = 0;
-	virtual void			Close(IVirtualStream* fp) = 0;
-	virtual bool			FileExists(const char* filename) const = 0;
-
-	const char*				GetPackageFilename() const { return m_packageName.ToCString(); }
-	int						GetSearchPath() const { return m_searchPath; };
-	virtual void			SetSearchPath(int search) { m_searchPath = search; };
-
-	virtual void			SetKey(const char* key) { m_key = key; }
+	virtual void	SetKey(const char* key)		{ m_key = key; }
 
 protected:
 
-	EqString				m_packagePath;
-	EqString				m_packageName;
-	EqString				m_mountPath;
-	EqString				m_key;
+	EqString		m_packagePath;
+	EqString		m_packageName;
+	EqString		m_mountPath;
+	EqString		m_key;
 
-	int						m_searchPath;
-
-	Threading::CEqMutex&	m_FSMutex;
+	int				m_searchPath{ -1 };
 };
