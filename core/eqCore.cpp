@@ -5,7 +5,6 @@
 // NOTENOTE: Linux does not showing russian language that was written in VC
 //////////////////////////////////////////////////////////////////////////////////
 
-#include <ctime>
 #ifdef _WIN32
 #include <locale.h>
 #ifdef CRT_DEBUG_ENABLED
@@ -28,9 +27,7 @@
 #include "ExceptionHandler.h"
 #include "ConsoleCommands.h"
 
-
 EXPORTED_INTERFACE(IDkCore, CDkCore)
-
 
 #ifdef PLAT_WIN
 BOOL WINAPI DllMain(HINSTANCE module_handle, DWORD reason_for_call, LPVOID reserved)
@@ -56,28 +53,10 @@ static bool g_bPrintLeaksOnShutdown = false;
 
 IEXPORTS void*	_GetDkCoreInterface(const char* pszName)
 {
-#if 0
-	static bool fsRequested = false;
-	// Filesystem is required by mobile port
-	if(!fsRequested && !strcmp(pszName, FILESYSTEM_INTERFACE_VERSION))
-	{
-		GetCFileSystem();
-		fsRequested = true;
-	}
-#endif
 	void* iface = g_eqCore->GetInterface(pszName);
-
 	ASSERT_MSG(iface, "Interface %s is not registered", pszName)
-
 	return iface;
 }
-
-void DkCore_onExit( void )
-{
-	g_eqCore->Shutdown();
-}
-
-ConVar *c_SupressAccessorMessages = nullptr;
 
 extern ConCommand developer;
 extern ConCommand echo;
@@ -127,27 +106,21 @@ static char* GetBaseDir(const char* pszBuffer)
 
 	static char	basedir[MAX_BASE_DIR_PATH];
 	char szBuffer[MAX_BASE_DIR_PATH];
-	int j;
-	char* pBuffer = NULL;
+	char* pBuffer = nullptr;
 
 	strcpy(szBuffer, pszBuffer);
 
-	pBuffer = strrchr(szBuffer, '\\');
+	pBuffer = strrchr(szBuffer, CORRECT_PATH_SEPARATOR);
 	if (pBuffer)
-	{
 		*(pBuffer + 1) = '\0';
-	}
 
 	strcpy(basedir, szBuffer);
 
-	j = strlen(basedir);
+	int j = strlen(basedir);
 	if (j > 0)
 	{
-		if ((basedir[j - 1] == '\\') ||
-			(basedir[j - 1] == '/'))
-		{
+		if (basedir[j - 1] == CORRECT_PATH_SEPARATOR || basedir[j - 1] == INCORRECT_PATH_SEPARATOR)
 			basedir[j - 1] = 0;
-		}
 	}
 
 	return basedir;
@@ -165,10 +138,9 @@ static void SetupBinPath()
 		return;
 
 	// Get the root directory the .exe is in
-	char* rootDir = GetBaseDir(moduleName);
+	const char* rootDir = GetBaseDir(moduleName);
+	_putenv(EqString::Format("PATH=%s;%s", rootDir, curPathEnv));
 
-	EqString envStr = EqString::Format("PATH=%s;%s", rootDir, curPathEnv);
-	_putenv(envStr);
 #elif defined(__ANDROID__)
 	// do nothing? TODO...
 #else
@@ -217,42 +189,45 @@ bool CDkCore::Init(const char* pszApplicationName, const char* pszCommandLine)
 	KVSection* coreConfigRoot = m_coreConfiguration->GetRootSection();
 
 	// try different locations of EQ.CONFIG
-	bool found = m_coreConfiguration->LoadFromFile("EQ.CONFIG", SP_ROOT);
-	if (!found)
+	bool eqConfigFound = m_coreConfiguration->LoadFromFile("EQ.CONFIG", SP_ROOT);
+	if (!eqConfigFound)
 	{
-		found = m_coreConfiguration->LoadFromFile("../EQ.CONFIG", SP_ROOT);
+		eqConfigFound = m_coreConfiguration->LoadFromFile("../EQ.CONFIG", SP_ROOT);
 		g_fileSystem->SetBasePath(".."); // little hack
 	}
 
-	if(!found)
+	if(!eqConfigFound)
 	{
 		// try create default settings
-		KVSection* appDebug = coreConfigRoot->CreateSection("ApplicationDebug");
-		appDebug->SetKey("ForceLogApplications", pszApplicationName);
+		KVSection& appDebug = *coreConfigRoot->CreateSection("ApplicationDebug");
+		appDebug
+			.SetKey("ForceLogApplications", pszApplicationName);
 
-		KVSection* fsSection = coreConfigRoot->CreateSection("FileSystem");
+		KVSection& fsSection = *coreConfigRoot->CreateSection("FileSystem");
 
-		fsSection->SetKey("EngineDataDir", "EqBase");
-		fsSection->SetKey("DefaultGameDir", "GameData");
+		fsSection
+			.SetKey("EngineDataDir", "EqBase")
+			.SetKey("DefaultGameDir", "GameData");
 
-		KVSection* regionalConfig = coreConfigRoot->CreateSection("RegionalSettings");
-		regionalConfig->SetKey("DefaultLanguage", "English");
+		KVSection& regionalConfig = *coreConfigRoot->CreateSection("RegionalSettings");
+		regionalConfig
+			.SetKey("DefaultLanguage", "English");
 	}
 
 	bool logEnabled = false;
 
-	KVSection* pAppDebug = coreConfigRoot->FindSection("ApplicationDebug", KV_FLAG_SECTION);
-	if(pAppDebug)
+	KVSection* appDebug = coreConfigRoot->FindSection("ApplicationDebug", KV_FLAG_SECTION);
+	if(appDebug)
 	{
-		if(pAppDebug->FindSection("ForceEnableLog", KV_FLAG_NOVALUE))
+		if(appDebug->FindSection("ForceEnableLog", KV_FLAG_NOVALUE))
 			logEnabled = true;
 
-		if(pAppDebug->FindSection("PrintLeaksOnExit", KV_FLAG_NOVALUE))
+		if(appDebug->FindSection("PrintLeaksOnExit", KV_FLAG_NOVALUE))
 			g_bPrintLeaksOnShutdown = true;
 
 		Array<EqString> devModeList(PP_SL);
 
-		KVSection* devModesKv = pAppDebug->FindSection("DeveloperMode");
+		KVSection* devModesKv = appDebug->FindSection("DeveloperMode");
 		if(devModesKv)
 		{
 			for(int i = 0; i < devModesKv->values.numElem();i++)
@@ -262,7 +237,7 @@ bool CDkCore::Init(const char* pszApplicationName, const char* pszCommandLine)
 				CONCOMMAND_FN(developer)( nullptr, devModeList );
 		}
 
-		KVSection* pForceLogged = pAppDebug->FindSection("ForceLogApplications");
+		KVSection* pForceLogged = appDebug->FindSection("ForceLogApplications");
 		if(pForceLogged)
 		{
 			for(int i = 0; i < pForceLogged->values.numElem();i++)
@@ -276,30 +251,21 @@ bool CDkCore::Init(const char* pszApplicationName, const char* pszCommandLine)
 		}
 	}
 
-	int nNoLogIndex = g_cmdLine->FindArgument("-nolog");
-
-	if(nNoLogIndex != -1)
+	if(g_cmdLine->FindArgument("-nolog") != -1)
 		logEnabled = false;
 
-	int nLogIndex = g_cmdLine->FindArgument("-log");
-
-	if(nLogIndex != -1)
+	if(g_cmdLine->FindArgument("-log") != -1)
 		logEnabled = true;
 
-	g_bLoggingInitialized = true;
-
-	if(logEnabled)
 	{
-		Log_Init();
+		remove(EqString::Format("logs/%s.log", m_szApplicationName.ToCString()));
+		remove("logs/Assert.log");
+
+		g_bLoggingInitialized = true;
+
+		if (logEnabled)
+			Log_Init();
 	}
-
-	//Remove log files
-	remove("logs/Assert.log");
-
-	char tmp_path[2048];
-	sprintf(tmp_path, "logs/%s.log", m_szApplicationName.GetData());
-
-	remove(tmp_path);
 
 	// Reset counter of same commands
 	g_consoleCommands->ResetCounter();
@@ -319,13 +285,9 @@ bool CDkCore::Init(const char* pszApplicationName, const char* pszCommandLine)
 	c_log_disable = PPNew ConCommand("log_disable",CONCOMMAND_FN(log_disable));
 	c_log_flush = PPNew ConCommand("log_flush",CONCOMMAND_FN(log_flush));
 
-	c_SupressAccessorMessages = PPNew ConVar("c_SupressAccessorMessages", "1", CV_ARCHIVE);
-
 	// Install exception handler
 	if (g_cmdLine->FindArgument("-nocrashdump") == -1)
-	{
 		InstallExceptionHandler();
-	}
 
 	if(logEnabled)
 		MsgAccept("\nCore: Logging console output to file is enabled.\n");
@@ -333,9 +295,6 @@ bool CDkCore::Init(const char* pszApplicationName, const char* pszCommandLine)
 		MsgError("\nCore: Logging console output to file is disabled.\n");
 
 	m_bInitialized = true;
-
-	Msg("\n");
-
 	return true;
 }
 
@@ -344,21 +303,17 @@ bool CDkCore::Init(const char* pszApplicationName,int argc, char **argv)
 	static EqString strCmdLine;
 	strCmdLine.Empty();
 
-	char tmp_str[2048];
-
     // Append arguments
     for (int i = 0; i < argc; i++)
     {
-		bool hasSpaces = strchr(argv[i], ' ') || strchr(argv[i], '\t');
+		const bool hasSpaces = strchr(argv[i], ' ') || strchr(argv[i], '\t');
 		if (hasSpaces)
-			sprintf(tmp_str, "\"%s\" ", argv[i]);
+			strCmdLine.Append(EqString::Format("\"%s\" ", argv[i]));
 		else
-			sprintf(tmp_str, "%s ", argv[i]);
-
-        strCmdLine.Append(tmp_str);
+			strCmdLine.Append(EqString::Format("%s ", argv[i]));
     }
 
-    return Init(pszApplicationName, (char*)strCmdLine.GetData());
+    return Init(pszApplicationName, strCmdLine);
 }
 
 KeyValues* CDkCore::GetConfig() const
@@ -366,66 +321,32 @@ KeyValues* CDkCore::GetConfig() const
 	return m_coreConfiguration;
 }
 
-void nullspew(SpewType_t type,const char* pMsg) {}
-
 void CDkCore::Shutdown()
 {
     if (!m_bInitialized)
         return;
 
+	m_bInitialized = false;
+
 	g_fileSystem->Shutdown();
 
-	delete m_coreConfiguration;
-	m_coreConfiguration = nullptr;
+	SAFE_DELETE(m_coreConfiguration);
+	m_interfaces.clear(true);
 
-	// drop all modules
-	//for (int i = 0; i < m_interfaces.numElem(); i++)
-	//	delete m_interfaces[i].ptr;
-
-	m_interfaces.clear();
-
-    SetSpewFunction(nullspew);
+    SetSpewFunction(nullptr);
 
     ((CConsoleCommands*)g_consoleCommands.GetInstancePtr())->DeInit();
-
     g_cmdLine->DeInit();
 
 #if !defined(_RETAIL)
-
 	if(g_bPrintLeaksOnShutdown)
 		PPMemInfo(false);
-
 #endif
-
-    m_bInitialized = false;
 
     Msg("\n*Destroying core...\n");
 
-#ifdef _WIN32
-    char date[10];
-    char time[10];
-
-    _strdate_s(date);
-    _strtime_s(time);
-    Msg("===================================\nLog closed: %s %s\n",date,time);
-#else
-    char datetime[80];
-
-    time_t rawtime;
-    struct tm* tminfo;
-    char buffer[80];
-
-    time( &rawtime );
-
-    tminfo = localtime( &rawtime );
-
-    strftime(datetime, 80, "%x %H:%M", tminfo);
-    Msg("===================================\nLog closed: %s\n",datetime);
-#endif
-
 	// shutdown memory
 	PPMemShutdown();
-
 	Log_Close();
 }
 

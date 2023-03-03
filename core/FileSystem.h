@@ -110,7 +110,7 @@ public:
 	void						RemovePackage(const char* packageName);
 
 	// opens package for further reading. Does not add package as FS layer
-	IFilePackageReader*				OpenPackage(const char* packageName);
+	IFilePackageReader*			OpenPackage(const char* packageName);
 	void						ClosePackage(IFilePackageReader* package);
 
 	//------------------------------------------------------------

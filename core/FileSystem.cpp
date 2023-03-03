@@ -782,6 +782,20 @@ bool CFileSystem::SetAccessKey(const char* accessKey)
 	return m_accessKey.Length() > 0;
 }
 
+static CBasePackageReader* GetPackageReader(const char* packageName)
+{
+	const EqString fileExt(_Es(packageName).Path_Extract_Ext());
+	CBasePackageReader* reader = nullptr;
+
+	// allow zip files to be loaded
+	if (!fileExt.CompareCaseIns("zip"))
+		reader = PPNew CZipFileReader();
+	else
+		reader = PPNew CDPKFileReader();
+
+	return reader;
+}
+
 bool CFileSystem::AddPackage(const char* packageName, SearchPath_e type, const char* mountPath /*= nullptr*/)
 {
 	for(int i = 0; i < m_fsPackages.numElem();i++)
@@ -793,35 +807,24 @@ bool CFileSystem::AddPackage(const char* packageName, SearchPath_e type, const c
 		}
 	}
 
-	const EqString fileExt(_Es(packageName).Path_Extract_Ext());
-	CBasePackageReader* reader = nullptr;
+	CBasePackageReader* reader = GetPackageReader(packageName);
 
-	// allow zip files to be loaded
-	if (!fileExt.CompareCaseIns("zip"))
-		reader = PPNew CZipFileReader();
+	if (!reader->InitPackage(packageName, mountPath))
+	{
+		delete reader;
+		return false;
+	}
+
+	if(mountPath)
+		DevMsg(DEVMSG_FS, "Adding package file '%s' force mount at '%s'\n", packageName, mountPath);
 	else
-		reader = PPNew CDPKFileReader();
+		DevMsg(DEVMSG_FS, "Adding package file '%s'\n", packageName);
 
-    if (reader->InitPackage(packageName, mountPath))
-    {
-		if(mountPath)
-			DevMsg(DEVMSG_FS, "Adding package file '%s' force mount at '%s'\n", packageName, mountPath);
-		else
-			DevMsg(DEVMSG_FS, "Adding package file '%s'\n", packageName);
+    reader->SetSearchPath(type);
+	reader->SetKey(m_accessKey);
 
-        reader->SetSearchPath(type);
-		reader->SetKey(m_accessKey);
-
-        m_fsPackages.append(reader);
-        return true;
-    }
-    else
-    {
-        delete reader;
-        return false;
-    }
-
-    return false;
+    m_fsPackages.append(reader);
+    return true;
 }
 
 void CFileSystem::RemovePackage(const char* packageName)
@@ -834,7 +837,7 @@ void CFileSystem::RemovePackage(const char* packageName)
 		{
 			m_fsPackages.fastRemoveIndex(i);
 			delete reader;
-			i--;
+			return;
 		}
 	}
 }
@@ -842,29 +845,23 @@ void CFileSystem::RemovePackage(const char* packageName)
 // opens package for further reading. Does not add package as FS layer
 IFilePackageReader* CFileSystem::OpenPackage(const char* packageName)
 {
-	const EqString fileExt(_Es(packageName).Path_Extract_Ext());
-	CBasePackageReader* reader = nullptr;
+	CBasePackageReader* reader = GetPackageReader(packageName);
 
-	// allow zip files to be loaded
-	if (!fileExt.CompareCaseIns("zip"))
-		reader = PPNew CZipFileReader();
-	else
-		reader = PPNew CDPKFileReader();
-
-	if (reader->InitPackage(packageName, nullptr))
+	if (!reader->InitPackage(packageName, nullptr))
 	{
-		reader->SetSearchPath(SP_ROOT);
-		reader->SetKey(m_accessKey);
-
-		{
-			CScopedMutex m(s_FSMutex);
-			m_openPackages.append(reader);
-		}
-
-		return reader;
+		delete reader;
+		return false;
 	}
 
-	return nullptr;
+	reader->SetSearchPath(SP_ROOT);
+	reader->SetKey(m_accessKey);
+
+	{
+		CScopedMutex m(s_FSMutex);
+		m_openPackages.append(reader);
+	}
+
+	return reader;
 }
 
 void CFileSystem::ClosePackage(IFilePackageReader* package)
@@ -893,8 +890,8 @@ void CFileSystem::AddSearchPath(const char* pathId, const char* pszDir)
 
 	DevMsg(DEVMSG_FS, "Adding search patch '%s' at '%s'\n", pathId, pszDir);
 
-	bool isReadPriorityPath = strstr(pathId, "$MOD$") || strstr(pathId, "$LOCALIZE$");
-	bool isWriteablePath = strstr(pathId, "$WRITE$");
+	const bool isReadPriorityPath = strstr(pathId, "$MOD$") || strstr(pathId, "$LOCALIZE$");
+	const bool isWriteablePath = strstr(pathId, "$WRITE$");
 
 	SearchPath_t pathInfo;
 	pathInfo.id = pathId;

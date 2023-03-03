@@ -5,6 +5,8 @@
 // Description: Core Debug interface
 //////////////////////////////////////////////////////////////////////////////////
 
+#include <ctime>
+
 #include "core/core_common.h"
 #include "core/IDkCore.h"
 #include "core/IFileSystem.h"
@@ -12,6 +14,7 @@
 #include "core/ConCommand.h"
 
 #include <sys/stat.h>
+
 #ifdef PLAT_WIN
 #include <direct.h>
 #endif
@@ -30,12 +33,12 @@ static const char* s_spewTypeStr[] = {
 };
 
 Threading::CEqMutex g_debugOutputMutex;
-bool g_bLoggingInitialized = false;
+
 FILE* g_logFile = nullptr;
-
+bool g_bLoggingInitialized = false;
 bool g_logContinue = false;
-
 bool g_logForceFlush = true;
+static int g_developerMode = 0;
 
 void Log_WriteBOM(const char* fileName);
 
@@ -83,11 +86,35 @@ void Log_Close()
 	if(!g_logFile)
 		return;
 
+#ifdef _WIN32
+	{
+		char date[10];
+		char time[10];
+
+		_strdate_s(date);
+		_strtime_s(time);
+		Msg("===================================\nLog closed: %s %s\n", date, time);
+	}
+#else
+	{
+		char datetime[80];
+
+		time_t rawtime;
+		struct tm* tminfo;
+		char buffer[80];
+
+		time(&rawtime);
+
+		tminfo = localtime(&rawtime);
+
+		strftime(datetime, 80, "%x %H:%M", tminfo);
+		Msg("===================================\nLog closed: %s\n", datetime);
+	}
+#endif
+
 	fclose(g_logFile);
 	g_logFile = nullptr;
 }
-
-int g_developerMode = 0;
 
 DECLARE_CONCOMMAND_FN(developer)
 {

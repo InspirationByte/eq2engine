@@ -108,19 +108,12 @@ void CCommandLine::ExecuteCommandLine(cmdLineFilterFn_t filterFn /*= nullptr*/) 
 
 	for (int i = 0; i < GetArgumentCount(); i++ )
 	{
-		const char* cmdOrCvarStr = m_args[i].ToCString();
+		const char* cmdOrCvarStr = m_args[i];
 
 		if (*cmdOrCvarStr != '+')
 			continue;
 
-		const char* argumentValueStr = GetArgumentsOf(i);
-
-		// fill command buffer
-		EqString cmdStr(cmdOrCvarStr + 1);
-		cmdStr.Append(' ');
-		cmdStr.Append(argumentValueStr);
-
-		g_consoleCommands->SetCommandBuffer(cmdStr.ToCString());
+		g_consoleCommands->SetCommandBuffer(EqString::Format("%s %s", cmdOrCvarStr + 1, GetArgumentsOf(i)));
 		g_consoleCommands->ExecuteCommandBuffer(filterFn);
 	}
 

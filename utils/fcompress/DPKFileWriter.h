@@ -60,5 +60,4 @@ protected:
 	int					m_encryption;
 
 	IceKey				m_ice;
-	
 };
