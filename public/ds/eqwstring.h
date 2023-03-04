@@ -141,3 +141,16 @@ protected:
 };
 
 STRING_OPERATORS(static inline, EqWString)
+
+static size_t VSRead(IVirtualStream* stream, EqWString& str)
+{
+	return EqWString::ReadString(stream, str);
+}
+
+static size_t VSWrite(IVirtualStream* stream, const EqWString& str)
+{
+	const uint16 length = str.Length();
+	stream->Write(&length, 1, sizeof(uint16));
+	stream->Write(str.GetData(), sizeof(wchar_t), length);
+	return 1;
+}

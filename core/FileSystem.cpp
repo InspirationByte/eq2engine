@@ -850,7 +850,7 @@ IFilePackageReader* CFileSystem::OpenPackage(const char* packageName)
 	if (!reader->InitPackage(packageName, nullptr))
 	{
 		delete reader;
-		return false;
+		return nullptr;
 	}
 
 	reader->SetSearchPath(SP_ROOT);

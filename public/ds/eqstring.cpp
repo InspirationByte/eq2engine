@@ -656,18 +656,3 @@ size_t EqString::ReadString(IVirtualStream* stream, EqString& output)
 	output.m_nLength = length;
 	return 1;
 }
-
-template<>
-static size_t VSRead<EqWString>(IVirtualStream* stream, EqWString& str)
-{
-	return EqWString::ReadString(stream, str);
-}
-
-template<>
-static size_t VSWrite<EqWString>(IVirtualStream* stream, const EqWString& str)
-{
-	const uint16 length = str.Length();
-	stream->Write(&length, 1, sizeof(uint16));
-	stream->Write(str.GetData(), sizeof(wchar_t), length);
-	return 1;
-}

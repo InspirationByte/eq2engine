@@ -402,7 +402,7 @@ bool CEGFPhysicsGenerator::CreateRagdollObjects( Array<dsmvertex_t>& vertices, A
 		int bone_index = -1;
 		
 		if(vertices[firsttri_indx0].weights.numElem() > 0)
-			vertices[firsttri_indx0].weights[0].bone;
+			bone_index = vertices[firsttri_indx0].weights[0].bone;
 
 		if(bone_index != -1)
 			Msg("Group %d uses bone %s\n", i+1, m_srcModel->bones[bone_index]->name);

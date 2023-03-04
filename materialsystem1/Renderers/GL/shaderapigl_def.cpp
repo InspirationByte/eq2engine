@@ -5,7 +5,6 @@
 // Description: Equilibrium OpenGL ShaderAPI
 //////////////////////////////////////////////////////////////////////////////////
 
-#pragma once
 #include "core/core_common.h"
 #include "shaderapigl_def.h"
 

@@ -5,7 +5,6 @@
 // Description: Empty texture class
 //////////////////////////////////////////////////////////////////////////////////
 
-#pragma once
 #include "core/core_common.h"
 #include "EmptyTexture.h"
 #include "ShaderAPIEmpty.h"

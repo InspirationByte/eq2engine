@@ -95,7 +95,6 @@ void CEqCollisionObject::InitAABB()
 	btVector3 mins,maxs;
 	m_shape->calculateTemporalAabb(trans, btVector3(0,0,0), btVector3(0,0,0), 0.0f, mins, maxs);
 
-	m_aabb.minPoint;
 	ConvertBulletToDKVectors(m_aabb.minPoint, mins);
 	ConvertBulletToDKVectors(m_aabb.maxPoint, maxs);
 

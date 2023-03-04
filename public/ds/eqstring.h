@@ -209,14 +209,12 @@ protected:
 
 STRING_OPERATORS(static inline, EqString)
 
-template<>
-static size_t VSRead<EqString>(IVirtualStream* stream, EqString& str)
+static size_t VSRead(IVirtualStream* stream, EqString& str)
 {
 	return EqString::ReadString(stream, str);
 }
 
-template<>
-static size_t VSWrite<EqString>(IVirtualStream* stream, const EqString& str)
+static size_t VSWrite(IVirtualStream* stream, const EqString& str)
 {
 	const uint16 length = str.Length();
 	stream->Write(&length, 1, sizeof(uint16));
