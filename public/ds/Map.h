@@ -48,8 +48,10 @@ public:
 	}
 
 	Map(const Map& other)
+		: m_sl(other.m_sl), m_end(&m_endItem), m_begin(&m_endItem)
 	{
-		ASSERT_FAIL("Copy constructor not allowed, use default one and use operator=");
+		for (const Item* i = other.m_begin.item, *end = &other.m_endItem; i != end; i = i->next)
+			insert(i->key, *i->value);
 	}
 
 	~Map()
