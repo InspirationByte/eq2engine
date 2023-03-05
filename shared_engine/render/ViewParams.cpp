@@ -75,7 +75,7 @@ float CViewParams::GetLODScaledDistFrom( const Vector3D& position ) const
 
 void CViewParams::GetMatrices(Matrix4x4& proj, Matrix4x4& view, float width, float height, float zNear, float zFar, bool orthographic) const
 {
-	Vector3D vRadianRotation = VDEG2RAD(m_vecAngles);
+	Vector3D vRadianRotation = DEG2RAD(m_vecAngles);
 
 	if(orthographic)
 		proj = orthoMatrixR(width*-m_fFOV, width*m_fFOV, height*-m_fFOV, height*m_fFOV, zNear, zFar);
@@ -89,7 +89,7 @@ void CViewParams::GetMatrices(Matrix4x4& proj, Matrix4x4& view, float width, flo
 
 void CViewParams::GetMatricesOrtho(Matrix4x4& proj, Matrix4x4& view, Rectangle_t rect, float zNear, float zFar) const
 {
-	Vector3D vRadianRotation = VDEG2RAD(m_vecAngles);
+	Vector3D vRadianRotation = DEG2RAD(m_vecAngles);
 
 	proj = orthoMatrixR(rect.vleftTop.x, rect.vrightBottom.x, rect.vleftTop.y, rect.vrightBottom.y , zNear, zFar);
 
@@ -102,8 +102,8 @@ void CViewParams::Interpolate(const CViewParams& from, const CViewParams& to, fl
 {
 	const Vector3D anglesA = from.GetAngles();
 	const Vector3D anglesB = to.GetAngles();
-	const Vector3D vRadianRotationA = VDEG2RAD(anglesA);
-	const Vector3D vRadianRotationB = VDEG2RAD(anglesB);
+	const Vector3D vRadianRotationA = DEG2RAD(anglesA);
+	const Vector3D vRadianRotationB = DEG2RAD(anglesB);
 
 	Quaternion qA(vRadianRotationA.x, vRadianRotationA.y, vRadianRotationA.z);
 	Quaternion qB(vRadianRotationB.x, vRadianRotationB.y, vRadianRotationB.z);
@@ -117,6 +117,6 @@ void CViewParams::Interpolate(const CViewParams& from, const CViewParams& to, fl
 	qRotationEulers = Vector3D(qRotationEulers.x, qRotationEulers.z, qRotationEulers.y);
 
 	out.SetOrigin(lerp(from.GetOrigin(), to.GetOrigin(), factor));
-	out.SetAngles(VRAD2DEG(qRotationEulers));
+	out.SetAngles(RAD2DEG(qRotationEulers));
 	out.SetFOV(lerp(from.GetFOV(), to.GetFOV(), factor));
 }

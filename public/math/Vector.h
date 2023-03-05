@@ -836,14 +836,6 @@ static const MColor color_cyan		= MColor(0xFF00FFFF, true);
 static const MColor color_brown		= MColor(0xFFA52A2A, true);
 static const MColor color_gray		= MColor(0xFF808080, true);
 
-#ifndef VDEG2RAD
-#	define VDEG2RAD( v )	Vector3D(DEG2RAD(v.x),DEG2RAD(v.y),DEG2RAD(v.z))
-#endif
-
-#ifndef VRAD2DEG
-#	define VRAD2DEG( v )	Vector3D(RAD2DEG(v.x),RAD2DEG(v.y),RAD2DEG(v.z))
-#endif
-
 #ifndef V3IsNaN
 #define V3IsNaN( v )		(IsNaN(v.x) || IsNaN(v.y) || IsNaN(v.z))
 #endif

@@ -19,7 +19,7 @@ DECLARE_CVAR(r_debugSkeleton, "0", "Draw debug information about bones", CV_CHEA
 DECLARE_CVAR(r_debugShowBone, "-1", "Shows the bone", CV_CHEAT);
 DECLARE_CVAR(r_ikIterations, "100", "IK link iterations per update", CV_ARCHIVE);
 
-inline Matrix4x4 CalculateLocalBonematrix(const qanimframe_t &frame)
+inline Matrix4x4 CalculateLocalBonematrix(const qanimframe_t& frame)
 {
 	Matrix4x4 bonetransform(frame.angBoneAngles);
 	bonetransform.setTranslation(frame.vecBonePosition);
@@ -28,17 +28,17 @@ inline Matrix4x4 CalculateLocalBonematrix(const qanimframe_t &frame)
 }
 
 // computes blending animation index and normalized weight
-inline void ComputeAnimationBlend(int numWeights, const float blendrange[2], float blendValue, float &blendWeight, int &blendMainAnimation1, int &blendMainAnimation2)
+inline void ComputeAnimationBlend(int numWeights, const float blendrange[2], float blendValue, float& blendWeight, int& blendMainAnimation1, int& blendMainAnimation2)
 {
 	blendValue = clamp(blendValue, blendrange[0], blendrange[1]);
 
 	// convert to value in range 0..1.
-	float actualBlendValue = (blendValue - blendrange[0]) / (blendrange[1] - blendrange[0]);
+	const float actualBlendValue = (blendValue - blendrange[0]) / (blendrange[1] - blendrange[0]);
 
 	// compute animation index
-	float normalizedBlend = actualBlendValue * (float)(numWeights - 1);
+	const float normalizedBlend = actualBlendValue * (float)(numWeights - 1);
 
-	int blendMainAnimation = (int)normalizedBlend;
+	const int blendMainAnimation = (int)normalizedBlend;
 
 	blendWeight = normalizedBlend - ((int)normalizedBlend);
 
@@ -61,28 +61,22 @@ inline void ComputeAnimationBlend(int numWeights, const float blendrange[2], flo
 }
 
 // interpolates frame transform
-inline void InterpolateFrameTransform(const qanimframe_t&frame1, const qanimframe_t&frame2, float value, qanimframe_t&out)
+inline void InterpolateFrameTransform(const qanimframe_t& frame1, const qanimframe_t& frame2, float value, qanimframe_t& out)
 {
 	out.angBoneAngles = slerp(frame1.angBoneAngles, frame2.angBoneAngles, value);
 	out.vecBonePosition = lerp(frame1.vecBonePosition, frame2.vecBonePosition, value);
 }
 
 // adds transform
-inline void AddFrameTransform(const qanimframe_t&frame1, const qanimframe_t& frame2, qanimframe_t&out)
+inline void AddFrameTransform(const qanimframe_t& frame1, const qanimframe_t& frame2, qanimframe_t& out)
 {
 	out.angBoneAngles = frame1.angBoneAngles * frame2.angBoneAngles;
-	out.vecBonePosition = frame1.vecBonePosition + frame2.vecBonePosition;
-}
-
-// adds and multiplies transform
-inline void AddMultiplyFrameTransform(const qanimframe_t&frame1, const qanimframe_t&frame2, qanimframe_t&out)
-{
-	out.angBoneAngles = frame1.angBoneAngles * frame2.angBoneAngles;
+	out.angBoneAngles.fastNormalize();
 	out.vecBonePosition = frame1.vecBonePosition + frame2.vecBonePosition;
 }
 
 // zero frame
-inline void ZeroFrameTransform(qanimframe_t&frame)
+inline void ZeroFrameTransform(qanimframe_t& frame)
 {
 	frame.angBoneAngles = identity();
 	frame.vecBonePosition = vec3_zero;
@@ -140,7 +134,7 @@ void CAnimatingEGF::InitAnimating(CEqStudioGeom* model)
 		m_boneTransforms[i] = m_joints[i].absTrans;
 
 	m_transitionFrames = PPAllocStructArray(qanimframe_t, m_numBones);
-	memset(m_transitionFrames, 0, sizeof(qanimframe_t)*m_numBones);
+	memset(m_transitionFrames, 0, sizeof(qanimframe_t) * m_numBones);
 
 	//m_velocityFrames = PPAllocStructArray(qanimframe_t, m_numBones);
 	//memset(m_velocityFrames, 0, sizeof(qanimframe_t)*m_numBones);
@@ -182,7 +176,7 @@ void CAnimatingEGF::InitAnimating(CEqStudioGeom* model)
 				link.parent = &chain.links[j - 1];
 			else
 				link.parent = nullptr;
-			
+
 		}
 
 		for (int j = 0; j < chain.numLinks; j++)
@@ -530,7 +524,7 @@ void CAnimatingEGF::SwapSequenceTimers(int index, int swapTo)
 
 
 
-int CAnimatingEGF::FindPoseController(const char *name)
+int CAnimatingEGF::FindPoseController(const char* name)
 {
 	for (int i = 0; i < m_poseControllers.numElem(); i++)
 	{
@@ -557,7 +551,7 @@ void CAnimatingEGF::SetPoseControllerValue(int nPoseCtrl, float value)
 	m_poseControllers[nPoseCtrl].value = value;
 }
 
-void GetInterpolatedBoneFrame(const studioAnimation_t* pAnim, int nBone, int firstframe, int lastframe, float interp, qanimframe_t &out)
+void GetInterpolatedBoneFrame(const studioAnimation_t* pAnim, int nBone, int firstframe, int lastframe, float interp, qanimframe_t& out)
 {
 	studioBoneFrame_t& frame = pAnim->bones[nBone];
 	ASSERT(firstframe >= 0);
@@ -570,7 +564,7 @@ void GetInterpolatedBoneFrame(const studioAnimation_t* pAnim, int nBone, int fir
 void GetInterpolatedBoneFrameBetweenTwoAnimations(
 	const studioAnimation_t* pAnim1,
 	const studioAnimation_t* pAnim2,
-	int nBone, int firstframe, int lastframe, float interp, float animTransition, qanimframe_t &out)
+	int nBone, int firstframe, int lastframe, float interp, float animTransition, qanimframe_t& out)
 {
 	// compute frame 1
 	qanimframe_t anim1transform;
@@ -584,7 +578,7 @@ void GetInterpolatedBoneFrameBetweenTwoAnimations(
 	InterpolateFrameTransform(anim1transform, anim2transform, animTransition, out);
 }
 
-void GetSequenceLayerBoneFrame(gsequence_t* pSequence, int nBone, qanimframe_t &out)
+void GetSequenceLayerBoneFrame(gsequence_t* pSequence, int nBone, qanimframe_t& out)
 {
 	float blendWeight = 0;
 	int blendAnimation1 = 0;
@@ -762,7 +756,7 @@ void CAnimatingEGF::DebugRender(const Matrix4x4& worldTransform)
 		}
 
 		const Matrix4x4& transform = m_boneTransforms[i];
-		const Vector3D pos = inverseTransformPoint(transform.rows[3].xyz(), worldTransform );
+		const Vector3D pos = inverseTransformPoint(transform.rows[3].xyz(), worldTransform);
 
 		if (m_joints[i].parent != -1)
 		{
@@ -771,9 +765,9 @@ void CAnimatingEGF::DebugRender(const Matrix4x4& worldTransform)
 			debugoverlay->Line3D(pos, parent_pos, color_white, color_white);
 		}
 
-		const Vector3D dX = worldTransform.getRotationComponent() * transform.rows[0].xyz();
-		const Vector3D dY = worldTransform.getRotationComponent() * transform.rows[1].xyz();
-		const Vector3D dZ = worldTransform.getRotationComponent() * transform.rows[2].xyz();
+		const Vector3D dX = worldTransform.getRotationComponent() * transform.rows[0].xyz() * 0.25f;
+		const Vector3D dY = worldTransform.getRotationComponent() * transform.rows[1].xyz() * 0.25f;
+		const Vector3D dZ = worldTransform.getRotationComponent() * transform.rows[2].xyz() * 0.25f;
 
 		// draw axis
 		debugoverlay->Line3D(pos, pos + dX, ColorRGBA(1, 0, 0, 1), ColorRGBA(1, 0, 0, 1));
@@ -801,9 +795,9 @@ void CAnimatingEGF::DebugRender(const Matrix4x4& worldTransform)
 				const Vector3D& bone_pos = link.absTrans.rows[3].xyz();
 				Vector3D parent_pos = inverseTransformPoint(link.parent->absTrans.rows[3].xyz(), worldTransform);
 
-				Vector3D dX = worldTransform.getRotationComponent()*link.absTrans.rows[0].xyz();
-				Vector3D dY = worldTransform.getRotationComponent()*link.absTrans.rows[1].xyz();
-				Vector3D dZ = worldTransform.getRotationComponent()*link.absTrans.rows[2].xyz();
+				Vector3D dX = worldTransform.getRotationComponent() * link.absTrans.rows[0].xyz();
+				Vector3D dY = worldTransform.getRotationComponent() * link.absTrans.rows[1].xyz();
+				Vector3D dZ = worldTransform.getRotationComponent() * link.absTrans.rows[2].xyz();
 
 				debugoverlay->Line3D(parent_pos, bone_pos, ColorRGBA(1, 1, 0, 1), ColorRGBA(1, 1, 0, 1));
 				debugoverlay->Box3D(bone_pos + Vector3D(1), bone_pos - Vector3D(1), ColorRGBA(1, 0, 0, 1));
@@ -828,7 +822,7 @@ void IKLimitDOF(giklink_t* link)
 
 	Vector3D euler = eulersXYZ(link->quat);
 
-	euler = VRAD2DEG(euler);
+	euler = RAD2DEG(euler);
 
 	// clamp to this limits
 	euler = clamp(euler, link->l->mins, link->l->maxs);
@@ -836,13 +830,13 @@ void IKLimitDOF(giklink_t* link)
 	//euler = NormalizeAngles180(euler);
 
 	// get all back
-	euler = VDEG2RAD(euler);
+	euler = DEG2RAD(euler);
 
 	link->quat = Quaternion(euler.x, euler.y, euler.z);
 }
 
 // solves Ik chain
-bool SolveIKLinks(giklink_t& effector, Vector3D &target, float fDt, int numIterations = 100)
+bool SolveIKLinks(giklink_t& effector, Vector3D& target, float fDt, int numIterations = 100)
 {
 	Vector3D	rootPos, curEnd, targetVector, desiredEnd, curVector, crossResult;
 
@@ -1012,7 +1006,7 @@ void CAnimatingEGF::UpdateIkChain(gikchain_t* pIkChain, float fDt)
 
 // inverse kinematics
 
-void CAnimatingEGF::SetIKWorldTarget(int chain_id, const Vector3D &world_position, const Matrix4x4& worldTransform)
+void CAnimatingEGF::SetIKWorldTarget(int chain_id, const Vector3D& world_position, const Matrix4x4& worldTransform)
 {
 	if (chain_id == -1)
 		return;
@@ -1026,7 +1020,7 @@ void CAnimatingEGF::SetIKWorldTarget(int chain_id, const Vector3D &world_positio
 	SetIKLocalTarget(chain_id, local);
 }
 
-void CAnimatingEGF::SetIKLocalTarget(int chain_id, const Vector3D &local_position)
+void CAnimatingEGF::SetIKLocalTarget(int chain_id, const Vector3D& local_position)
 {
 	if (chain_id == -1)
 		return;

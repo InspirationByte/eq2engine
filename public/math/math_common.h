@@ -39,8 +39,11 @@ constexpr const float M_PI_F		= float(M_PI_D);
 constexpr const float M_PI_HALF_F	= M_PI_F * 0.5f;
 constexpr const float M_PI_2_F		= M_PI_F * 2.0f;
 
-#define RAD2DEG( x )			( (float)(x) * (float)(180.f / M_PI_F) )
-#define DEG2RAD( x )			( (float)(x) * (float)(M_PI_F / 180.f) )
+constexpr const float M_RAD2DEG		= (180.f / M_PI_F);
+constexpr const float M_DEG2RAD		= (M_PI_F / 180.f);
+
+#define RAD2DEG( x )			( (x) * M_RAD2DEG )
+#define DEG2RAD( x )			( (x) * M_DEG2RAD )
 #define M_SQR( x )				sqr(x)
 
 // Math routines done in optimized assembly math package routines

@@ -416,7 +416,7 @@ Vector3D CPhysicsObject::GetAngles()
 
 	Vector3D vec = EulerMatrixXYZ(transpose(eq_matrix.getRotationComponent()));
 
-	return VRAD2DEG(vec);
+	return RAD2DEG(vec);
 }
 
 Vector3D CPhysicsObject::GetPosition()
