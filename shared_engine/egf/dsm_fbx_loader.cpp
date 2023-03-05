@@ -10,6 +10,7 @@
 #include "core/core_common.h"
 #include "core/IFileSystem.h"
 #include "utils/Tokenizer.h"
+#include "math/Utility.h"
 #include "dsm_loader.h"
 #include "dsm_esm_loader.h"
 #include "dsm_fbx_loader.h"
@@ -474,7 +475,7 @@ void ZoomArray(const Array<T>& src, Array<T>& dest, int newLength)
 	}
 }
 
-void GetFBXCurveAsInterpKeyFrames(const ofbx::AnimationCurveNode* curveNode, Array<Vector3D>& keyFrames, int animationDuration, float localDuration)
+void GetFBXCurveAsInterpKeyFrames(const ofbx::AnimationCurveNode* curveNode, Array<Vector3D>& keyFrames, int animationDuration, float localDuration, bool angles)
 {
 	const ofbx::AnimationCurve* nodeX = curveNode->getCurve(0);
 	const ofbx::AnimationCurve* nodeY = curveNode->getCurve(1);
@@ -530,9 +531,10 @@ void GetFBXCurveAsInterpKeyFrames(const ofbx::AnimationCurveNode* curveNode, Arr
 		auto fy = valueY.find(it.key());
 		auto fz = valueZ.find(it.key());
 
+		// interpolate previous frames from last keyframe to this new one
+
 		if (fx != valueX.end())
 		{
-			// interpolate previous frames from last keyframe to this new one
 			vecValue.x = *fx;
 			interpKeyFrames(lastKeyframes.x, keyframeCounter, 0);
 			lastKeyframes.x = keyframeCounter;
@@ -565,6 +567,7 @@ void ConvertFBXToESA(Array<studioAnimation_t>& animations, ofbx::IScene* scene)
 	GetFBXConvertMatrix(settings, convertMatrix, invertFaces);
 
 	Matrix3x3 boneConvertMatrix = rotateX3(DEG2RAD(-90)) * rotateZ3(DEG2RAD(180));
+	Quaternion boneConvertRotation(boneConvertMatrix);
 
 	// get bones from all meshes
 	Array<dsmskelbone_t*> bones(PP_SL);
@@ -594,11 +597,17 @@ void ConvertFBXToESA(Array<studioAnimation_t>& animations, ofbx::IScene* scene)
 		const ofbx::TakeInfo* takeInfo = scene->getTakeInfo(stack->name);
 
 		if (takeInfo == nullptr)
+		{
+			Msg("No take info for %s\n", stack->name);
 			continue;
+		}
 
 		const float localDuration = takeInfo->local_time_to - takeInfo->local_time_from;
 		if (localDuration <= F_EPS)
+		{
+			Msg("Duration of %s is too short\n", stack->name);
 			continue;
+		}
 
 		const int animationDuration = int(localDuration * frameRate + 0.5f);
 		const int boneCount = weightData.numElem();
@@ -619,9 +628,9 @@ void ConvertFBXToESA(Array<studioAnimation_t>& animations, ofbx::IScene* scene)
 
 			// keyframes are going to be interpolated and resampled in order to restore original keyframing
 			if (translationNode)
-				GetFBXCurveAsInterpKeyFrames(translationNode, translations, animationDuration, localDuration);
+				GetFBXCurveAsInterpKeyFrames(translationNode, translations, animationDuration, localDuration, false);
 			if (rotationNode)
-				GetFBXCurveAsInterpKeyFrames(rotationNode, rotations, animationDuration, localDuration);
+				GetFBXCurveAsInterpKeyFrames(rotationNode, rotations, animationDuration, localDuration, true);
 
 			ASSERT_MSG(translations.numElem() == rotations.numElem(), "Rotations %d translations %d", rotations.numElem(), translations.numElem());
 
@@ -639,22 +648,26 @@ void ConvertFBXToESA(Array<studioAnimation_t>& animations, ofbx::IScene* scene)
 				animframe_t& frame = animation.bones[j].keyFrames[k];
 
 				// Convert RH -> LH
-				rotations[k] *= Vector3D(1, -1, -1);
-				translations[k] *= Vector3D(-1, 1, 1);
+				const Vector3D rotRad = DEG2RAD(rotations[k]) * Vector3D(1, -1, -1);
 
-				const Vector3D rotRad = VDEG2RAD(rotations[k]);
-				Quaternion rotation = Quaternion(rotRad.x, rotRad.y, rotRad.z);
-				Vector3D translation = translations[k];
+				Quaternion rotation = Quaternion(ConstrainAnglePI(rotRad.x), ConstrainAnglePI(rotRad.y), ConstrainAnglePI(rotRad.z));
+				Vector3D translation = translations[k] * Vector3D(-1, 1, 1);
 
 				if (bones[j]->parent_id == -1)
 				{
-					rotation = rotation * Quaternion(boneConvertMatrix);
-					translation = boneConvertMatrix * translation;
+					rotation = rotation * boneConvertRotation;
+					translation = rotateVector(translation, boneConvertRotation);
 				}
 
 				// convert to local space and assign
 				frame.vecBonePosition = translation - boneRestPosition;
 				frame.angBoneAngles = eulersXYZ(rotation * boneRestRotationQuat);
+
+				//if (bones[j]->parent_id == -1)
+				//	Msg("anim %s frame %d root bone angles: %f %f %f\n", stack->name, k, frame.angBoneAngles.x, frame.angBoneAngles.y, frame.angBoneAngles.z);
+
+				//if (bones[j]->parent_id == -1)
+				//	Msg("anim %s frame %d root bone pos: %f %f %f\n", stack->name, k, frame.vecBonePosition.x, frame.vecBonePosition.y, frame.vecBonePosition.z);
 
 				// Hmm, WTF?! This needs to be fixed!!!
 				frame.vecBonePosition *= Vector3D(1, 1, -1);

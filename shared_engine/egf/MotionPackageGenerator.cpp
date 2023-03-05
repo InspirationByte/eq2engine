@@ -611,27 +611,20 @@ int CMotionPackageGenerator::LoadAnimationFromESA(const char* filename)
 		finalFileName = m_animPath + "/" + filename + ".esa";
 
 	Tokenizer tok;
-
 	if (!tok.setFile( finalFileName.GetData() ))
 	{
 		MsgError("Couldn't open ESA file '%s'", finalFileName.GetData());
 		return -1;
 	}
 
-	char *str;
+	// make new model animation
+	const int newAnimIndex = m_animations.numElem();
+	studioAnimation_t& modelAnim = m_animations.append();
+	strcpy(modelAnim.name, filename); // set it externally from file name
 
 	dsmmodel_t tempDSM;
 
-	// make new model animation
-	studioAnimation_t modelAnim;
-
-	memset(&modelAnim, 0, sizeof(studioAnimation_t));
-
-	strcpy(modelAnim.name,filename); // set it externally from file name
-
-	Matrix4x4 matAbsoluteBones[256];
-
-	// find faces section
+	char* str;
 	while ((str = tok.next()) != nullptr)
 	{
 		if(!stricmp(str, "bones"))
@@ -645,6 +638,7 @@ int CMotionPackageGenerator::LoadAnimationFromESA(const char* filename)
 			{
 				MsgError("Invalid bones! Please re-export model!\n");
 				Studio_FreeAnimationData(&modelAnim, m_model->numBones);
+				m_animations.removeIndex(newAnimIndex);
 				return -1;
 			}
 
@@ -653,18 +647,45 @@ int CMotionPackageGenerator::LoadAnimationFromESA(const char* filename)
 			if(!ReadFrames(*this, tok, &tempDSM, &modelAnim))
 			{
 				Studio_FreeAnimationData(&modelAnim, m_model->numBones);
+				m_animations.removeIndex(newAnimIndex);
 				return -1;
 			}
 		}
 		else
 			tok.goToNextLine();
 	}
-	return m_animations.append(modelAnim);
+	return newAnimIndex;
+}
+
+// duplicates the animation for further processing. Returns new index
+int CMotionPackageGenerator::DuplicateAnimationByIndex(int animIndex)
+{
+	ASSERT(animIndex != -1);
+	studioAnimation_t& sourceAnim = m_animations[animIndex];
+
+	const int newAnimIndex = m_animations.numElem();
+	studioAnimation_t& modelAnim = m_animations.append();
+
+	// some data should work as simple as that
+	// but we have to clone keyframe data
+	modelAnim = sourceAnim;
+
+	modelAnim.bones = PPAllocStructArray(studioBoneFrame_t, m_model->numBones);
+	for (int i = 0; i < m_model->numBones; ++i)
+	{
+		const int numFrames = sourceAnim.bones[i].numFrames;
+		modelAnim.bones[i].numFrames = numFrames;
+		modelAnim.bones[i].keyFrames = PPAllocStructArray(animframe_t, numFrames);
+
+		// copy frames
+		memcpy(modelAnim.bones[i].keyFrames, sourceAnim.bones[i].keyFrames, numFrames * sizeof(animframe_t));
+	}
+
+	return newAnimIndex;
 }
 
 //************************************
-// Loads animation from key-values parameters
-// and applies.
+// Loads animation from key-values parameters and applies.
 //************************************
 void CMotionPackageGenerator::LoadAnimation(KVSection* section)
 {
@@ -676,14 +697,14 @@ void CMotionPackageGenerator::LoadAnimation(KVSection* section)
 		return;
 	}
 
-	EqString filename(KV_GetValueString(pPathKey));
+	const char* animName = KV_GetValueString(pPathKey);
 
 	KVSection* externalpath = section->FindSection("externalfile");
 
 	if(externalpath)
-		filename = KV_GetValueString(externalpath);
+		animName = KV_GetValueString(externalpath);
 
-	Msg(" loading animation '%s' as '%s'\n", filename.GetData(), KV_GetValueString(section));
+	Msg(" loading animation '%s' as '%s'\n", animName, KV_GetValueString(section));
 
 	Vector3D anim_offset(0);
 	Vector3D anim_movevelocity(0);
@@ -730,11 +751,17 @@ void CMotionPackageGenerator::LoadAnimation(KVSection* section)
 
 	reverse = KV_GetValueBool(rev_key, 0, false);
 
-	int anim_index = LoadAnimationFromESA( filename.GetData() );
+	int anim_index = GetAnimationIndex(animName);
+
+	if(anim_index != -1)
+		anim_index = DuplicateAnimationByIndex(anim_index);
+
+	if (anim_index == -1) // try to load new one if not found
+		anim_index = LoadAnimationFromESA(animName);
 
 	if(anim_index == -1)
 	{
-		MsgError("ERROR: Cannot open animation file '%s'!\n", filename.GetData());
+		MsgError("ERROR: Cannot open animation file '%s'!\n", animName);
 		return;
 	}
 

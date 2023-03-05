@@ -79,6 +79,9 @@ private:
 	// Loads animation from file
 	int LoadAnimationFromESA(const char* filename);
 
+	// duplicates the animation for further processing. Returns new index
+	int DuplicateAnimationByIndex(int animIndex);
+
 	// Loads animation from key-values parameters and applies.
 	void LoadAnimation(KVSection* section);
 
