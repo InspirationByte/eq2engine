@@ -33,6 +33,13 @@ project "libvorbis"
 			"lib/psytune.c"
 		}
 		
+	filter "system:linux"
+		excludes
+		{
+			"lib/misc.c",
+			"lib/psytune.c"
+		}
+
 	filter "system:windows"
 		systemversion "latest"
 
