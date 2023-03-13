@@ -168,13 +168,13 @@ group "MatSystem/RHI"
 -- base library
 usage "eqRHIBaseLib"
     files {
-		Folders.matsystem1.. "renderers/Shared/**.cpp",
-		Folders.matsystem1.."renderers/Shared/**.h",
+		Folders.matsystem1.. "Renderers/Shared/**.cpp",
+		Folders.matsystem1.."Renderers/Shared/**.h",
 		Folders.public.."materialsystem1/renderers/**.h",
 	}
     includedirs {
 		Folders.public.."materialsystem1/",
-		Folders.matsystem1.."renderers/Shared"
+		Folders.matsystem1.."Renderers/Shared"
 	}
 
 -- empty renderer
@@ -189,8 +189,8 @@ project "eqNullRHI"
 		"EQRHI_NULL",
 	}
     files {
-		Folders.matsystem1.. "renderers/Empty/**.cpp",
-		Folders.matsystem1.."renderers/Empty/**.h"
+		Folders.matsystem1.. "Renderers/Empty/**.cpp",
+		Folders.matsystem1.."Renderers/Empty/**.h"
 	}
 
 -- OpenGL ES renderer
@@ -208,18 +208,18 @@ project "eqGLESRHI"
 	}
 	
     files {
-		Folders.matsystem1.. "renderers/GL/*.cpp",
-		Folders.matsystem1.. "renderers/GL/loaders/gl_loader.cpp",
-		Folders.matsystem1.. "renderers/GL/loaders/glad_es3.c",
-		Folders.matsystem1.."renderers/GL/**.h"
+		Folders.matsystem1.. "Renderers/GL/*.cpp",
+		Folders.matsystem1.. "Renderers/GL/loaders/gl_loader.cpp",
+		Folders.matsystem1.. "Renderers/GL/loaders/glad_es3.c",
+		Folders.matsystem1.."Renderers/GL/**.h"
 	}
 
 	removefiles {
-		Folders.matsystem1.. "renderers/GL/GLRenderLibrary*",
+		Folders.matsystem1.. "Renderers/GL/GLRenderLibrary*",
 	}
 	
     includedirs {
-		Folders.matsystem1.. "renderers/GL/loaders"
+		Folders.matsystem1.. "Renderers/GL/loaders"
 	}
 
 	filter "system:Android"
@@ -233,64 +233,74 @@ project "eqGLESRHI"
 			"GLESv2", "EGL", "android" 
 		}
 		files {
-			Folders.matsystem1.. "renderers/GL/GLRenderLibrary_ES.cpp",
-			--Folders.matsystem1.. "renderers/GL/GLRenderLibrary_SDL.cpp" -- SDL2 doesn't work properly with context switching :C
+			Folders.matsystem1.. "Renderers/GL/GLRenderLibrary_ES.cpp",
+			--Folders.matsystem1.. "Renderers/GL/GLRenderLibrary_SDL.cpp" -- SDL2 doesn't work properly with context switching :C
 		}
 
 	filter "system:Windows"
 		files {
-			Folders.matsystem1.. "renderers/GL/GLRenderLibrary_ES.cpp",
-			Folders.matsystem1.. "renderers/GL/loaders/glad_egl.c",
+			Folders.matsystem1.. "Renderers/GL/GLRenderLibrary_ES.cpp",
+			Folders.matsystem1.. "Renderers/GL/loaders/glad_egl.c",
+		}
+
+	filter "system:Linux"
+		links {
+			"X11", "GLESv2", "EGL" 
+		}
+		files {
+			Folders.matsystem1.. "Renderers/GL/GLRenderLibrary_ES.cpp",
+			Folders.matsystem1.. "Renderers/GL/loaders/glad_egl.c",
 		}
 
 if not IS_ANDROID then
-	-- Windows/Linux version of OpenGL renderer
-	project "eqGLRHI"
-		kind "SharedLib"
-		unitybuild "on"
-		uses {
-			"corelib", "frameworkLib", "e2Core",
-			"eqRHIBaseLib"
-		}
 
-		defines{
-			"EQRHI_GL",
+-- Windows/Linux version of OpenGL renderer
+project "eqGLRHI"
+	kind "SharedLib"
+	unitybuild "on"
+	uses {
+		"corelib", "frameworkLib", "e2Core",
+		"eqRHIBaseLib"
+	}
+
+	defines{
+		"EQRHI_GL",
+	}
+	
+	files {
+		Folders.matsystem1.. "Renderers/GL/*.cpp",
+		Folders.matsystem1.. "Renderers/GL/loaders/gl_loader.cpp",
+		Folders.matsystem1.."Renderers/GL/**.h"
+	}
+
+	removefiles {
+		Folders.matsystem1.. "Renderers/GL/GLRenderLibrary_*",
+	}
+	
+	includedirs {
+		Folders.matsystem1.. "Renderers/GL/loaders"
+	}
+	
+	filter "system:Windows"
+		links {
+			"OpenGL32", "Gdi32", "Dwmapi"
 		}
 		
 		files {
-			Folders.matsystem1.. "renderers/GL/*.cpp",
-			Folders.matsystem1.. "renderers/GL/loaders/gl_loader.cpp",
-			Folders.matsystem1.."renderers/GL/**.h"
+			Folders.matsystem1.. "Renderers/GL/loaders/wgl_caps.cpp",
+			Folders.matsystem1.. "Renderers/GL/loaders/glad.c"
 		}
 
-		removefiles {
-			Folders.matsystem1.. "renderers/GL/GLRenderLibrary_*",
+	filter "system:Linux"
+		files {
+			Folders.matsystem1.. "Renderers/GL/loaders/glx_caps.cpp",
+			Folders.matsystem1.. "Renderers/GL/loaders/glad.c"
 		}
-		
-		includedirs {
-			Folders.matsystem1.. "renderers/GL/loaders"
+		links {
+			"X11", "Xxf86vm", "Xext", "GL", "GLU",
 		}
-		
-		filter "system:Windows"
-			links {
-				"OpenGL32", "Gdi32", "Dwmapi"
-			}
-			
-			files {
-				Folders.matsystem1.. "renderers/GL/loaders/wgl_caps.cpp",
-				Folders.matsystem1.. "renderers/GL/loaders/glad.c"
-			}
 
-		filter "system:Linux"
-			files {
-				Folders.matsystem1.. "renderers/GL/loaders/glx_caps.cpp",
-				Folders.matsystem1.. "renderers/GL/loaders/glad.c"
-			}
-			links {
-				"gl",	-- is that needed?
-			}
-
-
+elseif os.target() ~= "linux" then
     -- Direct3D9 renderer
     project "eqD3D9RHI"
         kind "SharedLib"

@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright ï¿½ Inspiration Byte
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
 // Description: OpenGL Renderer swapchain for using to draw in multiple windows
@@ -7,6 +7,7 @@
 
 #pragma once
 #include "renderers/IEqSwapChain.h"
+#include "renderers/ITexture.h"
 
 class CGLSwapChain : public IEqSwapChain
 {

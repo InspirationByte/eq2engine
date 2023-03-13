@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright ï¿½ Inspiration Byte
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
 // Description: Equilibrium OpenGL ShaderAPI
@@ -9,6 +9,13 @@
 #include "../Shared/IRenderLibrary.h"
 
 class ShaderAPIGL;
+
+#ifdef PLAT_LINUX
+#	include <X11/Xlib.h>
+#	include <X11/Xutil.h>
+#	include <X11/Xmd.h>
+#	include <X11/extensions/xf86vmode.h>
+#endif
 
 #ifdef PLAT_LINUX
 typedef XID GLXContextID;
@@ -100,15 +107,13 @@ protected:
 	PIXELFORMATDESCRIPTOR	m_pfd;
 	DISPLAY_DEVICEA			m_dispDevice;
 	DEVMODEA				m_devMode;
-
 	HDC						m_hdc{ nullptr };
-	
 	HWND					m_hwnd{ nullptr };
-
 #elif defined(PLAT_LINUX)
     XF86VidModeModeInfo**	m_dmodes;
     Display*				m_display;
     XVisualInfo*            m_xvi;
+	Window					m_window;
     int						m_screen;
 #elif defined(PLAT_OSX)
 	CFArrayRef				m_dmodes;

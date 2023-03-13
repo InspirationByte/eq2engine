@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright ï¿½ Inspiration Byte
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
 // Description: Equilibrium physics objects
@@ -14,7 +14,7 @@
 #include "dkphysics/physcoord.h"
 #include "render/IDebugOverlay.h"
 
-#include "dkphysics/IDKPhysics.h"
+#include "dkphysics/IDkPhysics.h"
 
 #include "physics/BulletConvert.h"
 using namespace EqBulletUtils;

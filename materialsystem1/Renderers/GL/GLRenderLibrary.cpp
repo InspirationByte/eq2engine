@@ -15,16 +15,9 @@ static_assert(false, "this file should NOT BE included when GLES version is buil
 #include "core/IDkCore.h"
 #include "core/ConVar.h"
 #include "core/ConCommand.h"
+
 #include "imaging/ImageLoader.h"
 #include "shaderapigl_def.h"
-
-#include "GLRenderLibrary.h"
-
-#include "GLSwapChain.h"
-#include "GLWorker.h"
-#include "ShaderAPIGL.h"
-
-#include "gl_loader.h"
 
 #ifdef PLAT_WIN
 #	include <dwmapi.h>
@@ -36,13 +29,13 @@ static_assert(false, "this file should NOT BE included when GLES version is buil
 #	include "agl_caps.hpp"
 #endif
 
-#ifdef PLAT_LINUX
-#include <X11/Xlib.h>
-#include <X11/Xutil.h>
-#include <X11/Xmd.h>
-#include <X11/extensions/xf86vmode.h>
-#endif
+#include "GLRenderLibrary.h"
 
+#include "GLSwapChain.h"
+#include "GLWorker.h"
+#include "ShaderAPIGL.h"
+
+#include "gl_loader.h"
 
 extern bool GLCheckError(const char* op, ...);
 
@@ -385,7 +378,6 @@ bool CGLRenderLib::InitAPI(const shaderAPIParams_t& params)
 #elif defined(PLAT_LINUX)
 
     m_display = XOpenDisplay(0);
-
 	m_screen = DefaultScreen( m_display );
 
 	int nModes;
@@ -393,7 +385,6 @@ bool CGLRenderLib::InitAPI(const shaderAPIParams_t& params)
 
 	Array<DispRes> modes(PP_SL);
 
-	char str[64];
 	int foundMode = -1;
 	for (int i = 0; i < nModes; i++)
 	{
@@ -407,9 +398,10 @@ bool CGLRenderLib::InitAPI(const shaderAPIParams_t& params)
 	}
 
     Window xwin = (Window)params.windowHandle;
+	m_window = xwin;
 
     XWindowAttributes winAttrib;
-    XGetWindowAttributes(m_display,xwin,&winAttrib);
+    XGetWindowAttributes(m_display, xwin, &winAttrib);
 
 	m_width = winAttrib.width;
 	m_height = winAttrib.height;
@@ -419,54 +411,92 @@ bool CGLRenderLib::InitAPI(const shaderAPIParams_t& params)
     int stencilBits = 0;
 
 	// Figure display format to use
-	if(params.screenFormat == FORMAT_RGBA8)
+	switch(params.screenFormat)
 	{
-		colorBits = 32;
+		case FORMAT_RGBA8:
+			colorBits = 32;
+			break;
+		case FORMAT_RGB8:
+			colorBits = 24;
+			break;
+		case FORMAT_RGB565:
+			colorBits = 16;
+			break;
+		default:
+			ASSERT_FAIL("Incorrect screenFormat");
+			break;
 	}
-	else if(params.screenFormat == FORMAT_RGB8)
-	{
-		colorBits = 24;
-	}
-	else if(params.screenFormat == FORMAT_RGB565)
-	{
-		colorBits = 16;
-	}
-	else
-	{
-		colorBits = 24;
-	}
+
+	int fbCount = 0;
+	GLXFBConfig* fbConfig = nullptr;
 
 	while (true)
 	{
-		int attribs[] = {
-			GLX_RGBA,
-			GLX_DOUBLEBUFFER,
-			GLX_RED_SIZE,      8,
-			GLX_GREEN_SIZE,    8,
-			GLX_BLUE_SIZE,     8,
-			GLX_ALPHA_SIZE,    (colorBits > 24)? 8 : 0,
-			GLX_DEPTH_SIZE,    depthBits,
-			GLX_STENCIL_SIZE,  stencilBits,
-			GLX_SAMPLE_BUFFERS, (multiSamplingMode > 0),
-			GLX_SAMPLES,         multiSamplingMode,
-			GLX_CONTEXT_MAJOR_VERSION_ARB,		3,
-			GLX_CONTEXT_MINOR_VERSION_ARB,		3,
+		static int visual_attribs[] = {
+			GLX_X_RENDERABLE, 		True,
+			GLX_DRAWABLE_TYPE, 		GLX_WINDOW_BIT,
+			GLX_RENDER_TYPE, 		GLX_RGBA_BIT,
+			GLX_X_VISUAL_TYPE, 		GLX_TRUE_COLOR,
+			GLX_DOUBLEBUFFER,  		True,
+			GLX_RED_SIZE,      		8,
+			GLX_GREEN_SIZE,    		8,
+			GLX_BLUE_SIZE,     		8,
+			GLX_ALPHA_SIZE,    		(colorBits > 24) ? 8 : 0,
+			GLX_DEPTH_SIZE,    		depthBits,
+			GLX_STENCIL_SIZE,  		stencilBits,
+			// GLX_SAMPLE_BUFFERS,		(multiSamplingMode > 0),
+			// GLX_SAMPLES,         	multiSamplingMode,
 			None,
 		};
 
-		m_xvi = glXChooseVisual(m_display, m_screen, attribs);
-		if (m_xvi != nullptr) break;
+		fbConfig = glXChooseFBConfig(m_display, m_screen, visual_attribs, &fbCount);
+		if (fbConfig != nullptr)
+			break;
 
 		multiSamplingMode -= 2;
-		if (multiSamplingMode < 0){
-			char str[256];
-			sprintf(str, "No Visual matching colorBits=%d, depthBits=%d and stencilBits=%d", colorBits, depthBits, stencilBits);
-			ErrorMsg(str);
+		if (multiSamplingMode < 0)
+		{
+			ErrorMsg("No Visual matching colorBits=%d, depthBits=%d and stencilBits=%d", colorBits, depthBits, stencilBits);
 			return false;
 		}
 	}
 
-    if (!params.windowedMode)
+	int best_fbc = -1;
+	int worst_fbc = -1;
+	int best_num_samp = -1;
+	int worst_num_samp = 999;
+	for (int i = 0; i < fbCount; ++i)
+	{
+		XVisualInfo* vi = glXGetVisualFromFBConfig( m_display, fbConfig[i] );
+		if ( !vi )
+			continue;
+
+		int samp_buf;
+		int samples;
+		glXGetFBConfigAttrib(m_display, fbConfig[i], GLX_SAMPLE_BUFFERS, &samp_buf );
+		glXGetFBConfigAttrib(m_display, fbConfig[i], GLX_SAMPLES, &samples );
+		
+		if ( best_fbc < 0 || samp_buf && samples > best_num_samp )
+		{
+			best_fbc = i;
+			best_num_samp = samples;
+		}
+
+		if ( worst_fbc < 0 || !samp_buf || samples < worst_num_samp )
+		{
+			worst_fbc = i;
+			worst_num_samp = samples;
+		}
+
+		XFree( vi );
+	}
+
+	GLXFBConfig bestFbc = fbConfig[best_fbc];
+	XFree( fbConfig );
+
+	m_xvi = glXGetVisualFromFBConfig(m_display, bestFbc);
+
+    if (!m_windowed)
     {
 		if (foundMode >= 0 && XF86VidModeSwitchToMode(m_display, m_screen, m_dmodes[foundMode]))
 		{
@@ -475,15 +505,27 @@ bool CGLRenderLib::InitAPI(const shaderAPIParams_t& params)
 		else
 		{
 			MsgError("Couldn't set fullscreen at %dx%d.", m_width, m_height);
-			params.windowedMode = true;
+			m_windowed = true;
 		}
 	}
 
-	m_glContext = glXCreateContext(m_display, m_xvi, None, True);
+	// create context
+	{
+		int context_attribs[] =
+		{
+			GLX_CONTEXT_MAJOR_VERSION_ARB, 	3,
+			GLX_CONTEXT_MINOR_VERSION_ARB, 	3,
+			//GLX_CONTEXT_FLAGS_ARB, 		GLX_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB,
+			None
+		};
+
+		m_glContext = glXCreateContext(m_display, m_xvi, None, True);
+		//m_glContext = glXCreateContextAttribsARB( m_display, bestFbc, 0, True, context_attribs );
+	}
 
 	InitSharedContexts();
 
-	glXMakeCurrent(m_display, (GLXDrawable)params.windowHandle, m_glContext);
+	glXMakeCurrent(m_display, (GLXDrawable)m_window, m_glContext);
 #endif //PLAT_WIN
 
 	Msg("Initializing GL extensions...\n");
@@ -629,7 +671,7 @@ void CGLRenderLib::ExitAPI()
     glXMakeCurrent(m_display, None, nullptr);
     glXDestroyContext(m_display, m_glContext);
 
-	if(!g_shaderApi.m_params->windowedMode)
+	if(!m_windowed)
 	{
 		if (XF86VidModeSwitchToMode(m_display, m_screen, m_dmodes[0]))
 			XF86VidModeSetViewPort(m_display, m_screen, 0, 0);
@@ -717,10 +759,10 @@ void CGLRenderLib::EndFrame()
 
 	if (glX::exts::var_EXT_swap_control)
 	{
-		glX::SwapIntervalEXT(m_display, (Window)g_shaderApi.m_params->windowHandle, g_shaderApi.m_params->verticalSyncEnabled ? 1 : 0);
+		glX::SwapIntervalEXT(m_display, (Window)m_window, g_shaderApi.m_params.verticalSyncEnabled ? 1 : 0);
 	}
 
-	glXSwapBuffers(m_display, (Window)g_shaderApi.m_params->windowHandle);
+	glXSwapBuffers(m_display, (Window)m_window);
 
 #endif // PLAT_WIN
 }
@@ -874,7 +916,7 @@ void CGLRenderLib::BeginAsyncOperation(uintptr_t threadId)
 #ifdef PLAT_WIN
 	while (wglMakeCurrent(m_hdc, m_glSharedContext) == false) {}
 #elif defined(PLAT_LINUX)
-	while (glXMakeCurrent(m_display, (Window)m_params->windowHandle, m_glSharedContext) == false) {}
+	while (glXMakeCurrent(m_display, (Window)m_window, m_glSharedContext) == false) {}
 #elif defined(PLAT_OSX)
 	//aglMakeCurrent TODO
 #endif

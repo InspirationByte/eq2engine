@@ -1090,9 +1090,9 @@ DKMODULE* CFileSystem::LoadModule(const char* mod_name)
 
 	if( !mod )
 	{
-        MsgInfo("Library '%s' loading error '%s', 0x%p\n", moduleFileName.ToCString(), err, lastErr);
+        //MsgInfo("Library '%s' loading error '%s', 0x%p\n", moduleFileName.ToCString(), err, lastErr);
 
-		ErrorMsg("CFileSystem::LoadModule Error: Failed to load %s\n - %s!", moduleFileName.ToCString(), err);
+		ErrorMsg("CFileSystem::LoadModule Error: Failed to load %s\n - %s!\n", moduleFileName.ToCString(), err);
 		return nullptr;
 	}
 

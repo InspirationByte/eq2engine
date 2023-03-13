@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright ï¿½ Inspiration Byte
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
 // Description: 'Drivers' level editor
@@ -8,7 +8,7 @@
 #ifndef EDITORMAIN_H
 #define EDITORMAIN_H
 
-#include "platform/Platform.h"
+#include "platform/platform.h"
 
 #include "wxui_header.h"
 

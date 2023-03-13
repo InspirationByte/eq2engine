@@ -7,7 +7,7 @@
 
 #include "core/core_common.h"
 #include "core/IDkCore.h"
-#include "core/platform/MessageBox.h"
+#include "core/platform/messagebox.h"
 
 #if !defined(_WIN32) && defined(USE_GTK)
 

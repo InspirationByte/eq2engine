@@ -1,7 +1,7 @@
 [submodule "game/DriverSyndicate"]
 	path = game/DriverSyndicate
-	url = https://github.com/InspirationByte/DriverSyndicate.git
+	url = git@github.com:InspirationByte/DriverSyndicate.git
 
 [submodule "src_dependency/oolua"]
 	path = src_dependency/oolua
-	url = https://github.com/SoapyMan/oolua.git
+	url = git@github.com:SoapyMan/oolua.git

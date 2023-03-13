@@ -33,10 +33,6 @@
 #define SHADERCACHE_FOLDER		"ShaderCache/GL"
 #endif
 
-#ifdef PLAT_LINUX
-#include "glx_caps.hpp"
-#endif // PLAT_LINUX
-
 using namespace Threading;
 
 extern CEqMutex	g_sapi_TextureMutex;

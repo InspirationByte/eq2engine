@@ -250,7 +250,7 @@ void CEqCPUCaps::Init()
 	if (m_cpuCount < 1)
 		m_cpuCount = 1;
 
-#ifndef PLAT_ANDROID
+#ifdef _WIN32 // TODO: detect on POSIX systems too
 	uint32 maxi, maxei, a, b, c, d;
 
 	m_cpuVendor[12]   = '\0';

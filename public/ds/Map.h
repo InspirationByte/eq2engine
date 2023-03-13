@@ -7,7 +7,7 @@
 
 #pragma once
 
-template<typename K, typename V, bool MULTIMAP = false>
+template<typename K, typename V>
 class Map
 {
 private:
@@ -185,22 +185,22 @@ public:
 		}
 		else
 		{
-			if (MULTIMAP)
-			{
-				if (key < insertPos->key)
-				{
-					Item* prev = insertPos->prev;
-					if (!prev || key >= prev->key)
-						return insert(&insertPos->left, insertPos, key);
-				}
-				else
-				{
-					Item* next = insertPos->next;
-					if (next == &m_endItem || key <= next->key)
-						return insert(&insertPos->right, insertPos, key);
-				}
-			}
-			else
+			//if (MULTIMAP)
+			//{
+			//	if (key < insertPos->key)
+			//	{
+			//		Item* prev = insertPos->prev;
+			//		if (!prev || key >= prev->key)
+			//			return insert(&insertPos->left, insertPos, key);
+			//	}
+			//	else
+			//	{
+			//		Item* next = insertPos->next;
+			//		if (next == &m_endItem || key <= next->key)
+			//			return insert(&insertPos->right, insertPos, key);
+			//	}
+			//}
+			//else
 			{
 				if (key < insertPos->key)
 				{
@@ -539,7 +539,7 @@ private:
 		}
 		else
 		{
-			if (nextCell<MULTIMAP>(key, position, &cell, &parent))
+			if (nextCell(key, position, &cell, &parent))
 			{
 				return position;
 			}
@@ -547,29 +547,28 @@ private:
 		}
 	}
 
-	template<bool MULTI>
-	bool nextCell(const K& key, Item* position, Item*** cell, Item** parent);
+	//template<bool MULTI>
+	//bool nextCell(const K& key, Item* position, Item*** cell, Item** parent);
 
 	// multi-map
-	template<>
-	bool nextCell<true>(const K& key, Item* position, Item*** cell, Item** parent)
-	{
-		if (key < position->key)
-		{
-			*cell = &position->left;
-			*parent = position;
-		}
-		else
-		{
-			*cell = &position->right;
-			*parent = position;
-		}
-		return false;
-	}
+	//template<>
+	//bool nextCell<true>(const K& key, Item* position, Item*** cell, Item** parent)
+	//{
+	//	if (key < position->key)
+	//	{
+	//		*cell = &position->left;
+	//		*parent = position;
+	//	}
+	//	else
+	//	{
+	//		*cell = &position->right;
+	//		*parent = position;
+	//	}
+	//	return false;
+	//}
 
 	// map
-	template<>
-	bool nextCell<false>(const K& key, Item* position, Item*** cell, Item** parent)
+	bool nextCell(const K& key, Item* position, Item*** cell, Item** parent)
 	{
 		if (key > position->key)
 		{
@@ -665,7 +664,7 @@ template<typename K>
 using Set = Map<K, _EMPTY_VALUE>;
 
 //template<typename K, typename V>
-//using MultiMap = Map<K, V, true>;
+//using MultiMap = Map<K, V>;
 
 
 // nesting Source-line constructor helper

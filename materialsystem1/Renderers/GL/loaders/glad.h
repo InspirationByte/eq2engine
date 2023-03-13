@@ -83,6 +83,7 @@ typedef void* (* GLADloadproc)(const char *name);
 #endif
 
 #include <stdint.h>
+#include <stddef.h>
 
 GLAPI struct gladGLversionStruct GLVersion;
 GLAPI int gladLoadGLLoader(GLADloadproc);

@@ -65,8 +65,12 @@ usage "openal-soft"
 		"include/AL"
 	}
 
-	links "OpenAL32"
-	
+	filter "system:Windows"
+		links "OpenAL32"
+		
+	filter "system:Linux"
+		links "openal"
+
 	filter "platforms:x64"
 		libdirs {
 			"./libs/Win64"

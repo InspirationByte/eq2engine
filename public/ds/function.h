@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright ï¿½ Inspiration Byte
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
 // Description: Callable wrapper
@@ -131,7 +131,7 @@ private:
             auto c = reinterpret_cast<std::unique_ptr<Concept>*>(&buffer);
             c->~unique_ptr();
         }
-        std::memset(&buffer, 0, BUFFER_SIZE + alignof(size_t));
+        memset(&buffer, 0, BUFFER_SIZE + alignof(size_t));
         isSmall = false;
     }
 

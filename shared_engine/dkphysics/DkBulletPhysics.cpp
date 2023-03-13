@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright ï¿½ Inspiration Byte
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
 // Description: Equilibrium physics powered by Bullet
@@ -25,7 +25,7 @@
 #include "physics/IStudioShapeCache.h"
 #include "physics/PhysicsCollisionGroup.h"
 
-#include "DKBulletObject.h"
+#include "DkBulletObject.h"
 #include "DkPhysicsJoint.h"
 #include "DkPhysicsRope.h"
 #include "dkphysics/physcoord.h"

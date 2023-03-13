@@ -145,7 +145,6 @@ static void SetupBinPath()
 	// do nothing? TODO...
 #else
 	// TODO: POSIX implementation
-	static_assert(false);
 #endif
 
 }

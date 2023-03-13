@@ -30,7 +30,7 @@
 
 #ifdef __APPLE__
 #	define PLAT_OSX 1
-#elif LINUX
+#elif __LINUX__
 #	define PLAT_LINUX 1
 #elif __ANDROID__
 #	define PLAT_ANDROID 1

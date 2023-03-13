@@ -124,6 +124,22 @@ workspace(WORKSPACE_NAME)
 			"-fexceptions",
 			"-fpic"
         }
+		disablewarnings {
+			-- disable warnings which are emitted by my stupid (and not so) code
+			"c++11-narrowing",
+			"writable-strings",
+			"logical-op-parentheses",
+			"parentheses",
+			"register",
+			"unused-local-typedef",
+			"nonportable-include-path",
+			"format-security",
+			"unused-parameter",
+			"sign-compare",
+			"ignored-attributes",	-- annyoing, don't re-enable
+			"write-strings",		-- TODO: fix this
+			"subobject-linkage"		-- TODO: fix this
+		}
 		links { "pthread" }
 
 	filter "system:Windows"
@@ -158,6 +174,11 @@ workspace(WORKSPACE_NAME)
 			"_RETAIL"
         }
 		optimize "On"
+
+	filter "system:Linux"
+		defines {
+			"__LINUX__"
+		}
 
 	filter "system:Windows or system:Linux or system:Android"
 		defines { 
@@ -356,6 +377,6 @@ group ""
 include "premake5-eq1.lua"
 
 -- only build tools for big machines
-if (os.target() == "windows" or os.target() == "linux") and not IS_ANDROID then
+if (os.target() == "windows" --[[or os.target() == "linux"]]) and not IS_ANDROID then
     include "utils/premake5.lua"
 end

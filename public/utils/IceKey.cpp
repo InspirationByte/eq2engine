@@ -4,7 +4,7 @@
  * Written by Matthew Kwan - July 1996
  */
 
-#include "IceKey.H"
+#include "IceKey.h"
 
 
 	/* Structure of a single round subkey */

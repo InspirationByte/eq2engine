@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright ï¿½ Inspiration Byte
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
 // Description: Entity data table for use in savegames and restoring from
@@ -9,8 +9,7 @@
 #include "DataTable.h"
 #include "utils/strtools.h"
 
-#include "core/DebugInterface.h"
-#include "core/platform/Platform.h"
+#include "core/platform/platform.h"
 
 #include <malloc.h>
 

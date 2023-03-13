@@ -86,6 +86,10 @@ usage "Recast"
 		"Recast/Source"
 	}
 	links { 
+		"RecastDebugUtils",
+		"RecastDetour",
+		"RecastDetourCrowd",
+		"RecastDetourTileCache",
 		"Recast"
 	}
 

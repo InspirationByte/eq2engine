@@ -80,19 +80,22 @@ typedef unsigned __int64 uint64_t;
 #include <inttypes.h>
 #endif
 #endif
-	typedef struct __GLXFBConfigRec *GLXFBConfig;
-	typedef XID GLXContextID;
-	typedef struct __GLXcontextRec *GLXContext;
-	typedef XID GLXPixmap;
-	typedef XID GLXDrawable;
-	typedef XID GLXPbuffer;
-	typedef void (APIENTRY *__GLXextFuncPtr)(void);
-	typedef XID GLXVideoCaptureDeviceNV;
-	typedef unsigned int GLXVideoDeviceNV;
-	typedef XID GLXVideoSourceSGIX;
-	typedef struct __GLXFBConfigRec *GLXFBConfigSGIX;
-	typedef XID GLXPbufferSGIX;
-	typedef struct {
+
+#if 0
+typedef struct __GLXFBConfigRec *GLXFBConfig;
+typedef XID GLXContextID;
+typedef struct __GLXcontextRec *GLXContext;
+typedef XID GLXPixmap;
+typedef XID GLXDrawable;
+typedef XID GLXPbuffer;
+typedef void (APIENTRY *__GLXextFuncPtr)(void);
+typedef XID GLXVideoCaptureDeviceNV;
+typedef unsigned int GLXVideoDeviceNV;
+typedef XID GLXVideoSourceSGIX;
+typedef struct __GLXFBConfigRec *GLXFBConfigSGIX;
+typedef XID GLXPbufferSGIX;
+
+typedef struct {
     int type;
     unsigned long serial;
     Bool send_event;
@@ -121,7 +124,7 @@ typedef unsigned __int64 uint64_t;
     char pipeName[80]; /* Should be [GLX_HYPERPIPE_PIPE_NAME_LENGTH_SGIX] */
     int XOrigin, YOrigin, maxHeight, maxWidth;
 } GLXPipeRectLimits;
-
+#endif // 0
 namespace glX
 {
 	namespace exts

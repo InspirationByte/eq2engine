@@ -1,5 +1,5 @@
 ///////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright ï¿½ Inspiration Byte
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
 // Description: Data package file (dpk)
@@ -14,6 +14,11 @@
 #include "utils/KeyValues.h"
 
 #include "DPKFileWriter.h"
+
+#ifdef PLAT_LINUX
+#include <sys/stat.h>
+#include <dirent.h> // opendir, readdir
+#endif
 
 #define DPK_WRITE_BLOCK (8*1024*1024)
 
@@ -239,7 +244,64 @@ int CDPKFileWriter::AddDirectory(const char* wildcard, const char* targetDir, bo
 
 	FindClose(hFile);
 #else
-	static_assert("need implementation of CDPKFileWriter::AddDirectory")
+	EqString wildcardStr(wildcard);
+
+	EqString dirPath = wildcardStr.Path_Extract_Path();
+	DIR* dir = opendir(dirPath);
+
+	while(true)
+	{
+		struct dirent* entry = nullptr;
+		do
+		{
+			entry = readdir(dir);
+
+			if (!entry)
+				break;
+
+			if (*entry->d_name == 0)
+				continue;
+
+			int wildcardFileStart = wildcardStr.Find("*");
+			if (wildcardFileStart != -1)
+			{
+				const char* wildcardFile = wildcardStr.ToCString() + wildcardFileStart + 1;
+				if (*wildcardFile == 0)
+					break;
+
+				const char* found = xstristr(entry->d_name, wildcardFile);
+				if (found && strlen(found) == strlen(wildcardFile))
+					break;
+			}
+			else
+				break;
+		} while (true);
+
+		bool isEntryDir = false;
+
+		if (entry)
+		{
+			struct stat st;
+			if (stat(EqString::Format("%s", dirPath.TrimChar(CORRECT_PATH_SEPARATOR).ToCString(), entry->d_name), &st) == 0)
+				isEntryDir = (st.st_mode & S_IFDIR);
+		}
+
+		if(isEntryDir)
+		{
+			if(!stricmp("..", entry->d_name) || !stricmp(".", entry->d_name))
+				continue;
+
+			if(recursive)
+				fileCount += AddDirectory(EqString::Format("%s/%s/*", nonWildcardFolder.ToCString(), entry->d_name), EqString::Format("%s/%s", targetDirTrimmed.ToCString(), entry->d_name), true);
+		}
+		else
+		{
+			if (AddFile(EqString::Format("%s/%s", nonWildcardFolder.ToCString(), entry->d_name), EqString::Format("%s/%s", targetDirTrimmed.ToCString(), entry->d_name)))
+				++fileCount;
+		}
+	}
+
+	closedir(dir);
 #endif // _WIN32
 
 	return fileCount;

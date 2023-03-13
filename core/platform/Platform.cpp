@@ -6,7 +6,7 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "core/core_common.h"
-#include "core/platform/Platform.h"
+#include "core/platform/platform.h"
 
 #ifndef _WIN32
 #include <time.h>

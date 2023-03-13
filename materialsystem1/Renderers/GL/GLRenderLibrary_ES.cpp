@@ -19,6 +19,12 @@ static_assert(false, "this file should NOT BE included when non-GLES version is 
 #include "imaging/ImageLoader.h"
 #include "shaderapigl_def.h"
 
+#ifdef PLAT_LINUX
+#include <X11/Xlib.h>
+#include <X11/Xatom.h>
+#include <X11/Xutil.h>
+#endif // PLAT_LINUX
+
 #include "GLRenderLibrary_ES.h"
 
 #include "GLSwapChain.h"
@@ -130,10 +136,16 @@ bool CGLRenderLib_ES::InitAPI(const shaderAPIParams_t& params)
 	m_lostSurface = false;
 	externalWindowDisplayParams_t* winParams = (externalWindowDisplayParams_t*)params.windowHandle;
 	m_hwnd = (EGLNativeWindowType)winParams->window;
-#else
+#elif defined(PLAT_WIN)
 	// other EGL
 	m_hwnd = (EGLNativeWindowType)params.windowHandle;
 	nativeDisplay = (EGLNativeDisplayType)GetDC((HWND)m_hwnd);
+#elif defined(PLAT_LINUX)
+	// well... fuck... i'll deal with it later!
+	Window xwin = (Window)params.windowHandle;
+	nativeDisplay = eglGetDisplay( (EGLNativeDisplayType) xwin );
+#else
+	static_assert(false, "WTF the platform it is compiling for?");
 #endif // PLAT_ANDROID
 
 	Msg("Initializing EGL context...\n");
