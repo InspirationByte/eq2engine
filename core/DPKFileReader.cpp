@@ -364,36 +364,30 @@ bool CDPKFileReader::InitPackage(const char *filename, const char* mountPath /*=
     m_packageName = filename;
 	m_packagePath = ((CFileSystem*)g_fileSystem.GetInstancePtr())->GetAbsolutePath(SP_ROOT, filename);
 
-    FILE* dpkFile = fopen(m_packagePath.ToCString(),"rb");
-
-    // Now fill the header data and create object table
-    if (!dpkFile)
-    {
+	COSFile osFile;
+	if(!osFile.Open(m_packagePath, COSFile::OPEN_EXIST | COSFile::READ))
+	{
 		MsgError("Cannot open package '%s'\n", m_packagePath.ToCString());
 		return false;
 	}
 
-	fread(&m_header,sizeof(dpkheader_t),1,dpkFile);
+	osFile.Read(&m_header, sizeof(dpkheader_t));
 
     if (m_header.signature != DPK_SIGNATURE)
     {
 		MsgError("'%s' is not a package!!!\n", m_packageName.ToCString());
-
-		fclose(dpkFile);
         return false;
     }
 
     if (m_header.version != DPK_VERSION)
     {
 		MsgError("package '%s' has wrong version!!!\n", m_packageName.ToCString());
-
-		fclose(dpkFile);
         return false;
     }
 
 	// read mount path
 	char dpkMountPath[DPK_STRING_SIZE];
-	fread(dpkMountPath, DPK_STRING_SIZE, 1, dpkFile);
+	osFile.Read(dpkMountPath, DPK_STRING_SIZE);
 
 	// if custom mount path provided, use it
 	if(mountPath)
@@ -405,18 +399,17 @@ bool CDPKFileReader::InitPackage(const char *filename, const char* mountPath /*=
 
 	DevMsg(DEVMSG_FS, "Package '%s' loading OK\n", m_packageName.ToCString());
 
-    // Let set the file info data origin
-    fseek(dpkFile, m_header.fileInfoOffset, SEEK_SET);
+    // skip file data
+    osFile.Seek(m_header.fileInfoOffset, COSFile::ESeekPos::SET);
 
+	// read file table
 	m_dpkFiles = PPNew dpkfileinfo_t[m_header.numFiles];
-	fread( m_dpkFiles, sizeof(dpkfileinfo_t), m_header.numFiles, dpkFile );
+	osFile.Read( m_dpkFiles, sizeof(dpkfileinfo_t) * m_header.numFiles );
 
-	for (int i = 0; i < m_header.numFiles; i++)
-	{
+	for (int i = 0; i < m_header.numFiles; ++i)
 		m_fileIndices.insert(m_dpkFiles[i].filenameHash, i);
-	}
 
-    fclose(dpkFile);
+	// ASSERT_MSG(m_header.numFiles == m_fileIndices.size(), "Programmer warning: hash collisions in %s, %d files out of %d", m_packageName.ToCString(), m_fileIndices.size(), m_header.numFiles);
 
     return true;
 }
