@@ -158,8 +158,7 @@ inline void CRefPtr<TYPE>::Release()
 	using REF_POLICY = typename TYPE::REF_POLICY;
 	using REF_TYPE = RefCountedObject<TYPE, REF_POLICY>;
 
-	REF_TYPE* oldObj = (REF_TYPE*)m_ptrObj;
-	m_ptrObj = nullptr;
+	REF_TYPE* oldObj = (REF_TYPE*)Atomic::Exchange(m_ptrObj, (TYPE*)nullptr);
 	if (oldObj != nullptr)
 		oldObj->Ref_Drop();
 }
