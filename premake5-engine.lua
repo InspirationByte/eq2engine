@@ -161,6 +161,7 @@ workspace(WORKSPACE_NAME)
             "NDEBUG",
         }
 		optimize "On"
+		symbols "On"
 		-- enableASAN "On"
 
 	filter "configurations:Profile"
@@ -168,6 +169,7 @@ workspace(WORKSPACE_NAME)
 			"_PROFILE"
         }
 		optimize "On"
+		symbols "On"
 
 	filter "configurations:Retail"
         defines {
