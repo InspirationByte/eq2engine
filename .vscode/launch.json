@@ -1,0 +1,38 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "cppdbg",
+            "request": "launch",
+            "name": "Launch(gdb)",
+            "program": "${workspaceRoot}/bin/x64/Release/DrvSyn_Release",
+            "cwd": "${workspaceRoot}/../build",
+            "args": [
+                "-renderer", "libeqGLRHI"
+            ],
+            "stopAtEntry": false,
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "miDebuggerPath": "/usr/bin/gdb",
+            "visualizerFile": "${workspaceRoot}/public/types.natvis",
+            "showDisplayString": true,
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ],
+            "environment": [
+                {
+                    "name": "LD_LIBRARY_PATH",
+                    "value": "${LD_LIBRARY_PATH}:${workspaceRoot}/bin/x64/Release/"
+                }
+            ],
+            "preLaunchTask": "Build Release X64"
+        }
+    ]
+}

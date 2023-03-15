@@ -1,0 +1,17 @@
+{
+    "C_Cpp.default.configurationProvider": "ms-vscode.makefile-tools",
+    "makefile.makefilePath": "${workspaceFolder}/project_gmake2/Makefile",
+    "makefile.configurations": [
+        {
+            "name": "release_def",
+            "makeArgs": ["config=release_x64"]
+        }
+    ],
+    "makefile.panel.visibility": {
+        "debug": true,
+        "run": true
+    },
+    "makefile.defaultLaunchConfiguration": {
+        
+    }
+}
