@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright ï¿½ Inspiration Byte
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
 // Description: Equilibrium OpenGL ShaderAPI
@@ -399,9 +399,8 @@ bool CGLTexture::Init(const SamplerStateParam_t& sampler, const ArrayCRef<CRefPt
 			continue;
 		}
 
-		const int result = g_glWorker.WaitForExecute(__FUNCTION__, [=]()
+		const int result = g_glWorker.WaitForExecute(__FUNCTION__, [&]()
 		{
-
 			// Generate a texture
 			GLTextureRef_t texture = CreateGLTexture(img, m_samplerState, mipStart, mipCount);
 
