@@ -16,7 +16,7 @@ Build system used: [Premake](https://premake.github.io/)
 - Debugging overlay for visualizing and console command system for activating various debug systems
 - Vector math library
 - Input system supporting controllers and touch controls
-- Material system renderer with RHI backends Direct3D9, OpenGL 2 / ES 3.1
+- Material system renderer with RHI backends Direct3D9, OpenGL 3.3 / ES 3.1
 - Flexible Particle system
 - Scripted Audio System with use of nodes to enable control over playing sounds
 - Custom Data Structure containers such as Map, Array, List, Callable wrapper, Events, Promise and Future, Strong and Weak ref pointers and fixed arrays and lists
@@ -27,3 +27,26 @@ Build system used: [Premake](https://premake.github.io/)
 
 #### Projects using this framework
 - *The Driver Syndicate* - https://driver-syndicate.com
+
+## Building and Running
+
+#### Windows
+- Install VS2022
+- Run `windows_dev_prepare.ps1` in repo root
+- Run `premake5 vs2022`
+- Open solution, located in `project_vs2022`
+- Build All
+
+#### Linux
+- Install packages: `build-essential SDL2-devel openal-soft-devel libXxf86vm-devel wxBase3-devel wxGTK3-devel`
+- Get premake5, extract to repo root and `chmod +x premake5`
+- Open VS Code folder, install Makefile Tools and C/C++ extensions
+- Run `./premake5 gmake2` in repo root
+- In VS Code, press F5, wait for build to complete and game will run.
+
+#### Android
+- Install Android Studio
+- Run `premake5 androidndk`
+- Launch Android Studio, open `android-project`
+- Build
+
