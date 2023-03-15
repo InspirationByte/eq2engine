@@ -87,7 +87,7 @@ public:
 	CRefPtr(CRefPtr<TYPE>&& refptr);
 	~CRefPtr();
 
-	void				Assign(const PTR_TYPE obj);
+	void				Assign(const TYPE* obj);
 	void				Release();
 
 	operator const		bool() const		{ return m_ptrObj != nullptr; }
@@ -164,7 +164,7 @@ inline void CRefPtr<TYPE>::Release()
 }
 
 template< class TYPE >
-inline void CRefPtr<TYPE>::Assign(const PTR_TYPE obj)
+inline void CRefPtr<TYPE>::Assign(const TYPE* obj)
 {
 	using REF_POLICY = typename TYPE::REF_POLICY;
 	using REF_TYPE = RefCountedObject<TYPE, REF_POLICY>;
