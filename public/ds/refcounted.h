@@ -69,6 +69,7 @@ inline bool	RefCountedObject<TYPE, POLICY>::Ref_Drop()
 
 //-----------------------------------------------------------------------------
 // smart pointer for ref counted
+// NOTE: CRefPtr<const TYPE> is not allowed.
 
 #define CRefPtr_new(TYPE, ...) CRefPtr<TYPE>(PPNew TYPE(__VA_ARGS__))
 
@@ -86,7 +87,7 @@ public:
 	CRefPtr(CRefPtr<TYPE>&& refptr);
 	~CRefPtr();
 
-	void				Assign( PTR_TYPE obj);
+	void				Assign(const PTR_TYPE obj);
 	void				Release();
 
 	operator const		bool() const		{ return m_ptrObj != nullptr; }
@@ -142,8 +143,7 @@ inline CRefPtr<TYPE>::CRefPtr( const CRefPtr<TYPE>& refptr )
 template< class TYPE >
 inline CRefPtr<TYPE>::CRefPtr(CRefPtr<TYPE>&& refptr)
 {
-	m_ptrObj = refptr.m_ptrObj;
-	refptr.m_ptrObj = nullptr;
+	Atomic::Exchange(m_ptrObj, Atomic::Exchange(refptr.m_ptrObj, (PTR_TYPE)nullptr));
 }
 
 template< class TYPE >
@@ -158,13 +158,13 @@ inline void CRefPtr<TYPE>::Release()
 	using REF_POLICY = typename TYPE::REF_POLICY;
 	using REF_TYPE = RefCountedObject<TYPE, REF_POLICY>;
 
-	REF_TYPE* oldObj = (REF_TYPE*)Atomic::Exchange(m_ptrObj, (TYPE*)nullptr);
+	REF_TYPE* oldObj = (REF_TYPE*)Atomic::Exchange(m_ptrObj, (PTR_TYPE)nullptr);
 	if (oldObj != nullptr)
 		oldObj->Ref_Drop();
 }
 
 template< class TYPE >
-inline void CRefPtr<TYPE>::Assign(PTR_TYPE obj)
+inline void CRefPtr<TYPE>::Assign(const PTR_TYPE obj)
 {
 	using REF_POLICY = typename TYPE::REF_POLICY;
 	using REF_TYPE = RefCountedObject<TYPE, REF_POLICY>;
@@ -173,8 +173,7 @@ inline void CRefPtr<TYPE>::Assign(PTR_TYPE obj)
 		return;
 
 	// del old ref
-	REF_TYPE* oldObj = (REF_TYPE*)m_ptrObj;
-	m_ptrObj = obj;
+	REF_TYPE* oldObj = (REF_TYPE*)Atomic::Exchange(m_ptrObj, (PTR_TYPE)obj);
 	if(obj)
 		((REF_TYPE*)obj)->Ref_Grab();
 
@@ -193,10 +192,8 @@ inline void CRefPtr<TYPE>::operator=(CRefPtr<TYPE>&& refptr)
 {
 	using REF_POLICY = typename TYPE::REF_POLICY;
 	using REF_TYPE = RefCountedObject<TYPE, REF_POLICY>;
-	REF_TYPE* oldObj = (REF_TYPE*)m_ptrObj;
 
-	m_ptrObj = refptr.m_ptrObj;
-	refptr.m_ptrObj = nullptr;
+	REF_TYPE* oldObj = (REF_TYPE*)Atomic::Exchange(m_ptrObj, Atomic::Exchange(refptr.m_ptrObj, (PTR_TYPE)nullptr));
 
 	if (oldObj)
 		oldObj->Ref_Drop();
