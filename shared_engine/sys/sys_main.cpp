@@ -34,7 +34,7 @@ int Sys_Main()
 	g_fileSystem->MakeDir("cfg", SP_MOD);
 
 	// add the copyright
-	g_localizer->AddToken("GAME_VERSION", EqWString::Format(L"Build %d %s %s", BUILD_NUMBER_ENGINE, L"" COMPILE_DATE, L"" COMPILE_TIME).ToCString());
+	g_localizer->AddToken("GAME_VERSION", EqWString::Format(L"Build %d %ls %ls", BUILD_NUMBER_ENGINE, L"" COMPILE_DATE, L"" COMPILE_TIME).ToCString());
 	g_localizer->AddTokensFile("game");
 
 	if (!Host_Init())
