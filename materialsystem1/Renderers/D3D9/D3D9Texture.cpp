@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright ï¿½ Inspiration Byte
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
 // Description: Direct3D 9 texture class
@@ -89,7 +89,7 @@ IDirect3DBaseTexture9* CD3D9Texture::CreateD3DTexture(EImageType type, ETextureF
 	return d3dTexture;
 }
 
-static void UpdateD3DTextureFromImageMipmap(IDirect3DBaseTexture9* texture, CRefPtr<CImage> image, int sourceMipLevel, int targetMipLevel, DWORD lockFlags)
+static void UpdateD3DTextureFromImageMipmap(IDirect3DBaseTexture9* texture, CImage* image, int sourceMipLevel, int targetMipLevel, DWORD lockFlags)
 {
 	ubyte* src = image->GetPixels(sourceMipLevel);
 	ASSERT(src);
@@ -144,7 +144,7 @@ static void UpdateD3DTextureFromImageMipmap(IDirect3DBaseTexture9* texture, CRef
 	}
 }
 
-static bool UpdateD3DTextureFromImage(IDirect3DBaseTexture9* texture, CRefPtr<CImage> image, int startMipLevel)
+static bool UpdateD3DTextureFromImage(IDirect3DBaseTexture9* texture, CImage* image, int startMipLevel)
 {
 	const DWORD lockFlags = D3DLOCK_DISCARD | D3DLOCK_NOSYSLOCK;
 
@@ -188,7 +188,7 @@ bool CD3D9Texture::Init(const SamplerStateParam_t& sampler, const ArrayCRef<CRef
 
 	for (int i = 0; i < images.numElem(); i++)
 	{
-		CRefPtr<CImage> img = images[i];
+		CRefPtr<CImage>& img = images[i];
 
 		if ((m_iFlags & TEXFLAG_CUBEMAP) && !img->IsCube())
 		{

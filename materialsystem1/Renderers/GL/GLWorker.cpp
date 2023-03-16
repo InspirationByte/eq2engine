@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright ï¿½ Inspiration Byte
 // 2009-2022
 //////////////////////////////////////////////////////////////////////////////////
 // Description: OpenGL Worker
@@ -56,30 +56,29 @@ int GLWorkerThread::WaitForExecute(const char* name, FUNC_TYPE f)
 	}
 
 	// add to work list
-	Work* work = nullptr;
-	CEqSignal* completionSignal = nullptr;
-	{
-		const int slot = Atomic::Increment(m_workCounter) % m_workRingPool.numAllocated();
+	const int slot = Atomic::Increment(m_workCounter) % m_workRingPool.numAllocated();
 
-		work = &m_workRingPool[slot];
-		completionSignal = &m_completionSignal[slot];
+	Work& work = m_workRingPool[slot];
+	CEqSignal& completionSignal = m_completionSignal[slot];
 
-		if(work->result != WORK_NOT_STARTED)
-			completionSignal->Wait();
+	// wait if we got into busy slot
+	completionSignal.Wait();
 
-		completionSignal->Clear();
-
-		work->func = f;
-		work->sync = true;
-		Atomic::Exchange(work->result, WORK_PENDING);
-	}
+	work.func = f;
+	work.sync = true;
+	Atomic::Exchange(work.result, WORK_PENDING);
+	completionSignal.Clear();
 
 	SignalWork();
-	completionSignal->Wait();
+	completionSignal.Wait();
 
-	const int result = work->result;
-	Atomic::Exchange(work->result, WORK_NOT_STARTED);
-	return result;
+	const int workResult = Atomic::Exchange(work.result, WORK_NOT_STARTED);
+
+	ASSERT_MSG(workResult != WORK_PENDING, "Failed to wait for GL worker task - WORK_PENDING");
+	ASSERT_MSG(workResult != WORK_EXECUTING, "Failed to wait for GL worker task - WORK_EXECUTING");
+	ASSERT_MSG(workResult != WORK_NOT_STARTED, "Empty slot was working on GL task - WORK_NOT_STARTED");
+
+	return workResult;
 }
 
 void GLWorkerThread::Execute(const char* name, FUNC_TYPE f)

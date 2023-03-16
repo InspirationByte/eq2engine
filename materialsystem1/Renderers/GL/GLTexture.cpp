@@ -253,7 +253,7 @@ GLTextureRef_t CGLTexture::CreateGLTexture(const CImage* img, const SamplerState
 	return glTexture;
 }
 
-static bool UpdateGLTextureFromImageMipmap(GLTextureRef_t texture, CRefPtr<CImage> image, int sourceMipLevel, int targetMipLevel)
+static bool UpdateGLTextureFromImageMipmap(GLTextureRef_t texture, CImage* image, int sourceMipLevel, int targetMipLevel)
 {
 	const GLenum glTarget = g_gl_texTargetType[texture.type];
 	const ETextureFormat format = image->GetFormat();
@@ -332,7 +332,7 @@ static bool UpdateGLTextureFromImageMipmap(GLTextureRef_t texture, CRefPtr<CImag
 	return true;
 }
 
-static bool UpdateGLTextureFromImage(GLTextureRef_t texture, CRefPtr<CImage> image, int startMipLevel)
+static bool UpdateGLTextureFromImage(GLTextureRef_t texture, CImage* image, int startMipLevel)
 {
 	const int numMipMaps = image->GetMipMapCount();
 	int mipMapLevel = numMipMaps - 1;
@@ -374,7 +374,7 @@ bool CGLTexture::Init(const SamplerStateParam_t& sampler, const ArrayCRef<CRefPt
 
 	for (int i = 0; i < images.numElem(); i++)
 	{
-		const CRefPtr<CImage> img = images[i];
+		const CRefPtr<CImage>& img = images[i];
 
 		if ((m_iFlags & TEXFLAG_CUBEMAP) && !img->IsCube())
 		{
@@ -399,19 +399,29 @@ bool CGLTexture::Init(const SamplerStateParam_t& sampler, const ArrayCRef<CRefPt
 			continue;
 		}
 
+		enum TexLoadResult
+		{
+			TEXLOAD_ERROR = -1,
+			TEXLOAD_DONE = 0,
+			TEXLOAD_NEED_ADDITIONAL_LEVELS
+		};
+
+		// for progressive levels
+		const int numMipMaps = img->GetMipMapCount();
+		int mipMapLevel = numMipMaps - 1;
+
+		GLTextureRef_t texture;
+
 		const int result = g_glWorker.WaitForExecute(__FUNCTION__, [&]()
 		{
 			// Generate a texture
-			GLTextureRef_t texture = CreateGLTexture(img, m_samplerState, mipStart, mipCount);
+			texture = CreateGLTexture(img, m_samplerState, mipStart, mipCount);
 
 			if(texture.glTexID == GL_NONE)
-				return -1;
+				return TEXLOAD_ERROR;
 
 			if ((m_iFlags & TEXFLAG_PROGRESSIVE_LODS) && g_shaderApi.m_progressiveTextureFrequency > 0)
 			{
-				const int numMipMaps = img->GetMipMapCount();
-				int mipMapLevel = numMipMaps - 1;
-
 				int transferredSize = 0;
 				do
 				{
@@ -419,22 +429,10 @@ bool CGLTexture::Init(const SamplerStateParam_t& sampler, const ArrayCRef<CRefPt
 					const int lockBoxLevel = mipMapLevel - mipStart;
 
 					UpdateGLTextureFromImageMipmap(texture, img, mipMapLevel, lockBoxLevel);
-
 					transferredSize += size;
 
 					if (transferredSize > TEXTURE_TRANSFER_RATE_THRESHOLD)
-					{
-						if (lockBoxLevel > 1)
-						{
-							LodState& state = m_progressiveState.append();
-							state.idx = i;
-							state.lockBoxLevel = lockBoxLevel - 1;
-							state.mipMapLevel = mipMapLevel - 1;
-							state.image = img;
-							state.frameDelay = g_shaderApi.m_progressiveTextureFrequency;
-						}
-						break;
-					}
+						return TEXLOAD_NEED_ADDITIONAL_LEVELS;
 
 					--mipMapLevel;
 					if (mipMapLevel < 0)
@@ -442,27 +440,37 @@ bool CGLTexture::Init(const SamplerStateParam_t& sampler, const ArrayCRef<CRefPt
 
 				} while (true);
 			}
-			else
+			else if (!UpdateGLTextureFromImage(texture, img, mipStart))
 			{
-				if (!UpdateGLTextureFromImage(texture, img, mipStart))
-				{
-					glBindTexture(m_glTarget, 0);
-					GLCheckError("tex unbind");
+				glBindTexture(m_glTarget, 0);
+				GLCheckError("tex unbind");
 
-					glDeleteTextures(1, &texture.glTexID);
-					GLCheckError("del tex");
+				glDeleteTextures(1, &texture.glTexID);
+				GLCheckError("del tex");
 
-					return -1;
-				}
+				return TEXLOAD_ERROR;
 			}
-
-			m_textures.append(texture);
-
-			return 0;
+			return TEXLOAD_DONE;
 		});
 
-		if (result == -1)
+		if (result == TEXLOAD_ERROR)
+		{
+			MsgError("Error - cannot upload texture %s data\n", m_szTexName.ToCString());
 			continue;
+		}
+
+		m_textures.append(texture);
+
+		const int lockBoxLevel = mipMapLevel - mipStart;
+		if(lockBoxLevel > 1 && result == TEXLOAD_NEED_ADDITIONAL_LEVELS)
+		{
+			LodState& state = m_progressiveState.append();
+			state.idx = i;
+			state.lockBoxLevel = lockBoxLevel - 1;
+			state.mipMapLevel = mipMapLevel - 1;
+			state.image = img;
+			state.frameDelay = g_shaderApi.m_progressiveTextureFrequency;
+		}
 
 		// FIXME: check for differences?
 		m_mipCount = max(m_mipCount, mipCount);
