@@ -56,8 +56,8 @@ void CGLTexture::ReleaseTextures()
 {
 	{
 		Threading::CScopedMutex m(g_sapi_ProgressiveTextureMutex);
+		m_progressiveState.clear();
 		g_shaderApi.m_progressiveTextures.remove(this);
-		m_progressiveState.clear(true);
 	}
 
 	if (m_glTarget == GL_RENDERBUFFER)
@@ -469,7 +469,6 @@ bool CGLTexture::Init(const SamplerStateParam_t& sampler, const ArrayCRef<CRefPt
 			state.lockBoxLevel = lockBoxLevel - 1;
 			state.mipMapLevel = mipMapLevel - 1;
 			state.image = img;
-			state.frameDelay = g_shaderApi.m_progressiveTextureFrequency;
 		}
 
 		// FIXME: check for differences?
@@ -487,6 +486,7 @@ bool CGLTexture::Init(const SamplerStateParam_t& sampler, const ArrayCRef<CRefPt
 
 	if (m_progressiveState.numElem())
 	{
+		m_progressiveFrameDelay = min(g_shaderApi.m_progressiveTextureFrequency, 255);
 		Threading::CScopedMutex m(g_sapi_ProgressiveTextureMutex);
 		g_shaderApi.m_progressiveTextures.insert(this);
 	}
@@ -508,42 +508,43 @@ GLTextureRef_t& CGLTexture::GetCurrentTexture()
 
 EProgressiveStatus CGLTexture::StepProgressiveLod()
 {
-	EProgressiveStatus status = PROGRESSIVE_STATUS_WAIT_MORE_FRAMES;
-
 	if (!m_textures.numElem())
 		return PROGRESSIVE_STATUS_COMPLETED;
 
-	for (int i = 0; i < m_progressiveState.numElem(); ++i)
+	if(m_progressiveFrameDelay > 0)
 	{
-		LodState& state = m_progressiveState[i];
+		--m_progressiveFrameDelay;
+		return PROGRESSIVE_STATUS_WAIT_MORE_FRAMES;
+	}
 
-		if (state.frameDelay > 0)
+	{
+		Threading::CScopedMutex m(g_sapi_ProgressiveTextureMutex);
+		for (int i = 0; i < m_progressiveState.numElem(); ++i)
 		{
-			--state.frameDelay;
-			continue;
-		}
+			LodState& state = m_progressiveState[i];
+			GLTextureRef_t& texture = m_textures[state.idx];
 
-		GLTextureRef_t& texture = m_textures[state.idx];
+			g_glWorker.WaitForExecute("StepProgressiveTextures", [&]() {
+				UpdateGLTextureFromImageMipmap(texture, state.image, state.mipMapLevel, state.lockBoxLevel);
 
-		UpdateGLTextureFromImageMipmap(texture, state.image, state.mipMapLevel, state.lockBoxLevel);
+				--state.lockBoxLevel;
+				--state.mipMapLevel;
 
-		--state.lockBoxLevel;
-		--state.mipMapLevel;
-		state.frameDelay = min(g_shaderApi.m_progressiveTextureFrequency, 255);
-
-		status = PROGRESSIVE_STATUS_DID_UPLOAD;
-
-		if (state.lockBoxLevel < 0)
-		{
-			m_progressiveState.fastRemoveIndex(i);
-			--i;
+				if (state.lockBoxLevel < 0)
+				{
+					m_progressiveState.fastRemoveIndex(i);
+					--i;
+				}
+				return 0;
+			});
 		}
 	}
 
 	if (!m_progressiveState.numElem())
 		return PROGRESSIVE_STATUS_COMPLETED;
 
-	return status;
+	m_progressiveFrameDelay = min(g_shaderApi.m_progressiveTextureFrequency, 255);
+	return PROGRESSIVE_STATUS_DID_UPLOAD;
 }
 
 // locks texture for modifications, etc

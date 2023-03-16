@@ -2702,37 +2702,32 @@ void ShaderAPIGL::StepProgressiveLodTextures()
 	if (!m_progressiveTextures.size())
 		return;
 
-	g_glWorker.Execute("StepProgressiveTextures", [this]() {
-		
-		g_sapi_ProgressiveTextureMutex.Lock();
-		auto it = m_progressiveTextures.begin();
-		g_sapi_ProgressiveTextureMutex.Unlock();
+	g_sapi_ProgressiveTextureMutex.Lock();
+	auto it = m_progressiveTextures.begin();
+	g_sapi_ProgressiveTextureMutex.Unlock();
 
-		int numTransferred = 0;
-		while (numTransferred < TEXTURE_TRANSFER_MAX_TEXTURES_PER_FRAME)
+	int numTransferred = 0;
+	while (numTransferred < TEXTURE_TRANSFER_MAX_TEXTURES_PER_FRAME)
+	{
+		CGLTexture* nextTexture = nullptr;
 		{
-			CGLTexture* nextTexture = nullptr;
-			{
-				CScopedMutex m(g_sapi_ProgressiveTextureMutex);
-				if (it == m_progressiveTextures.end())
-					break;
+			CScopedMutex m(g_sapi_ProgressiveTextureMutex);
+			if (it == m_progressiveTextures.end())
+				break;
 
-				nextTexture = it.key();
-				++it;
-			}
-
-			EProgressiveStatus status = nextTexture->StepProgressiveLod();
-			if (status == PROGRESSIVE_STATUS_COMPLETED)
-			{
-				CScopedMutex m(g_sapi_ProgressiveTextureMutex);
-				m_progressiveTextures.remove(nextTexture);
-				++numTransferred;
-			}
-
-			if (status == PROGRESSIVE_STATUS_DID_UPLOAD)
-				++numTransferred;
+			nextTexture = it.key();
+			++it;
 		}
 
-		return 0;
-	});
+		EProgressiveStatus status = nextTexture->StepProgressiveLod();
+		if (status == PROGRESSIVE_STATUS_COMPLETED)
+		{
+			CScopedMutex m(g_sapi_ProgressiveTextureMutex);
+			m_progressiveTextures.remove(nextTexture);
+			++numTransferred;
+		}
+
+		if (status == PROGRESSIVE_STATUS_DID_UPLOAD)
+			++numTransferred;
+	}
 }

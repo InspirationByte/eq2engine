@@ -32,10 +32,11 @@ void GLWorkerThread::Init()
 
 	// by default every work in pool is free (see .Wait call after getting one from ring pool)
 	for (int i = 0; i < m_completionSignal.numAllocated(); ++i)
-		m_completionSignal.append(CEqSignal(true));
-
-	for (int i = 0; i < m_completionSignal.numElem(); ++i)
+	{
+		m_completionSignal.appendEmplace(true);
 		m_completionSignal[i].Raise();
+	}
+
 }
 
 void GLWorkerThread::Shutdown()
@@ -88,12 +89,11 @@ void GLWorkerThread::Execute(const char* name, FUNC_TYPE f)
 	Work &work = m_workRingPool[slot];
 	CEqSignal& completionSignal = m_completionSignal[slot];
 
-	if (work.result != WORK_NOT_STARTED)
-		completionSignal.Wait();
-	completionSignal.Clear();
+	completionSignal.Wait();
 
 	work.func = f;
 	work.sync = false;
+	completionSignal.Clear();
 
 	Atomic::Exchange(work.result, WORK_PENDING);
 	SignalWork();
@@ -113,8 +113,10 @@ int GLWorkerThread::Run()
 			begun = true;
 
 			const int result = work.func();
-			Atomic::Exchange(work.result, work.sync ? result : WORK_NOT_STARTED);
-			m_completionSignal[i].Raise();
+			if(Atomic::Exchange(work.result, work.sync ? result : WORK_NOT_STARTED) == WORK_EXECUTING)
+			{
+				m_completionSignal[i].Raise();
+			}
 		}		
 	}
 

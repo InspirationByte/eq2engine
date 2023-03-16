@@ -1,5 +1,5 @@
 /////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright ï¿½ Inspiration Byte
 // 2009-2022
 //////////////////////////////////////////////////////////////////////////////////
 // Description: Texture loader helper utility
@@ -103,9 +103,6 @@ ITexturePtr CTextureLoader::LoadTextureFromFileSync(const char* pszFileName, con
 		return texture;
 	}
 
-	// FIXME: For testing. I think it should be in shader
-	nFlags |= TEXFLAG_PROGRESSIVE_LODS;
-
 	PROF_EVENT("Load Texture from file");
 
 	const shaderAPIParams_t& shaderApiParams = g_pShaderAPI->GetParams();
@@ -162,7 +159,7 @@ ITexturePtr CTextureLoader::LoadTextureFromFileSync(const char* pszFileName, con
 	}
 
 	// initialize texture
-	if (!imgList.numElem() || !texture->Init(samplerParams, imgList, nFlags))
+	if (!imgList.numElem() || !texture->Init(samplerParams, imgList, nFlags | TEXFLAG_PROGRESSIVE_LODS))
 	{
 		if (nFlags & TEXFLAG_NULL_ON_ERROR)
 			texture = nullptr;

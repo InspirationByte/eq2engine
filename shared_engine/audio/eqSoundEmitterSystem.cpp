@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright ï¿½ Inspiration Byte
 // 2009-2022
 //////////////////////////////////////////////////////////////////////////////////
 // Description: Equilibrium Sound Emitter System
@@ -63,7 +63,6 @@ DECLARE_CVAR(snd_scriptsound_showWarnings, "0", nullptr, 0);
 //----------------------------------------------------------------------------
 
 CSoundEmitterSystem::CSoundEmitterSystem()
-	: m_updateDone(true)
 {
 }
 

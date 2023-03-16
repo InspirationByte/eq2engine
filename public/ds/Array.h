@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright ï¿½ Inspiration Byte
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
 // Description: Dynamic array (vector) of elements
@@ -275,6 +275,10 @@ public:
 	// appends element
 	int				append(T&& obj);
 
+	// emplaces element
+	template<typename... Args>
+	int				appendEmplace(Args&&... args);
+
 	// append a empty element to be filled
 	T&				append();
 
@@ -342,7 +346,8 @@ public:
 	void			assureSize(int newSize);
 
 	// assure list has given number of elements and initialize any new elements
-	void			assureSize(int newSize, const T& initValue);
+	template<typename... Args>
+	void			assureSizeEmplace(int newSize, Args&&... args);
 
 protected:
 
@@ -688,6 +693,24 @@ inline int ArrayBase<T, STORAGE_TYPE>::append(T&& obj)
 	T* listPtr = m_storage.getData();
 
 	new(&listPtr[m_nNumElem]) T(std::move(obj));
+	m_nNumElem++;
+
+	return m_nNumElem - 1;
+}
+
+// -----------------------------------------------------------------
+// Increases the size of the list by one element and copies the supplied data into it.
+// Returns the index of the new element.
+// -----------------------------------------------------------------
+template< typename T, typename STORAGE_TYPE >
+template<typename... Args>
+inline int ArrayBase<T, STORAGE_TYPE>::appendEmplace(Args&&... args)
+{
+	ensureCapacity();
+
+	T* listPtr = m_storage.getData();
+
+	new(&listPtr[m_nNumElem]) T(std::forward<Args>(args)...);
 	m_nNumElem++;
 
 	return m_nNumElem - 1;
@@ -1089,7 +1112,8 @@ inline void ArrayBase<T, STORAGE_TYPE>::assureSize(int newSize)
 // Makes sure the listPtr has at least the given number of elements and initialize any elements not yet initialized.
 // -----------------------------------------------------------------
 template< typename T, typename STORAGE_TYPE >
-inline void ArrayBase<T, STORAGE_TYPE>::assureSize(int newSize, const T& initValue)
+template<typename... Args>
+inline void ArrayBase<T, STORAGE_TYPE>::assureSizeEmplace(int newSize, Args&&... args)
 {
 	const int oldSize = m_nNumElem;
 	m_nNumElem = newSize;
@@ -1097,7 +1121,7 @@ inline void ArrayBase<T, STORAGE_TYPE>::assureSize(int newSize, const T& initVal
 
 	T* listPtr = m_storage.getData();
 	for (int i = oldSize; i < newSize; i++)
-		new(&listPtr[i]) T(initValue);
+		new(&listPtr[i]) T(std::forward<Args>(args)...);
 }
 
 //-------------------------------------------

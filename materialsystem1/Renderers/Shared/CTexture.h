@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright ï¿½ Inspiration Byte
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
 // Description: Base texture class
@@ -65,12 +65,12 @@ protected:
 		int8			idx{ 0 };
 		int8			lockBoxLevel{ 0 };
 		int8			mipMapLevel{ 0 };
-		uint8			frameDelay{ 1 };
 	};
 
 	Array<LodState>			m_progressiveState{ PP_SL };
 
 	LockInOutData*			m_lockData{ nullptr };
+	ushort					m_progressiveFrameDelay{ 1 };
 
 	ushort					m_iFlags{ 0 };
 	ushort					m_iWidth{ 0 };

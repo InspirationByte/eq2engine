@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright ï¿½ Inspiration Byte
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
 // Description: Equilibrium Engine threads
@@ -36,9 +36,9 @@ struct SignalHandle_t
 {
 	pthread_cond_t 	cond;
 	pthread_mutex_t mutex;
-	int 	waiting; // number of threads waiting for a signal
-	bool 	manualReset;
-	bool 	signaled; // is it signaled right now?
+	volatile int 	waiting; 	// number of threads waiting for a signal
+	volatile bool 	manualReset;
+	volatile bool 	signaled; 	// is it signaled right now?
 };
 typedef pthread_mutex_t		MutexHandle_t;
 #endif // _WIN32
@@ -104,7 +104,6 @@ private:
 class CEqSignal
 {
 public:
-	CEqSignal(CEqSignal&& other);
 	CEqSignal( bool manualReset = false );
 	~CEqSignal();
 

@@ -214,6 +214,9 @@ usage "corelib"
 		Folders.public
 	}
 	links {"coreLib"}
+
+	filter "system:Linux"
+		links { "pthread" }
 	
 -- little framework
 project "frameworkLib"

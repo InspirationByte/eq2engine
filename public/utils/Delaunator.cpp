@@ -263,7 +263,7 @@ Delaunator::Delaunator(ArrayCRef<Vector2D> in_coords)
 
 	// initialize a hash table for storing edges of the advancing convex hull
 	m_hash_size = static_cast<int>(llround(ceil(sqrt(n))));
-	m_hash.assureSize(m_hash_size, INVALID_INDEX);
+	m_hash.assureSizeEmplace(m_hash_size, INVALID_INDEX);
 
 	// initialize arrays for tracking the edges of the advancing convex hull
 	m_hull_prev.setNum(n);
