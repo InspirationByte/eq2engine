@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright ï¿½ Inspiration Byte
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
 // Description: Console variable - base class
@@ -76,7 +76,7 @@ protected:
 
 	const char*					m_szName{ nullptr };
 	const char*					m_szDesc{ nullptr };
-	CMDBASE_VARIANTS_CALLBACK	m_fnVariantsList;
+	CMDBASE_VARIANTS_CALLBACK	m_fnVariantsList{ nullptr };
 	int							m_nFlags{ 0 };
 	bool						m_bIsRegistered{ false };
 };

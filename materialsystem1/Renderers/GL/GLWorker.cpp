@@ -56,46 +56,61 @@ int GLWorkerThread::WaitForExecute(const char* name, FUNC_TYPE f)
 		return f();
 	}
 
-	// add to work list
-	const int slot = Atomic::Increment(m_workCounter) % m_workRingPool.numAllocated();
+	// chose free slot
+	Work* work = nullptr;
+	CEqSignal* completionSignal = nullptr;
+	do
+	{
+		for(int slot = 0; slot < m_workRingPool.numElem(); ++slot)
+		{
+			if(m_completionSignal[slot].Wait(0) && Atomic::CompareExchange(m_workRingPool[slot].result, WORK_NOT_STARTED, WORK_TAKEN_SLOT) == WORK_NOT_STARTED)
+			{
+				work = &m_workRingPool[slot];
+				completionSignal = &m_completionSignal[slot];
+				completionSignal->Clear();
+				break;
+			}
+		}
+	}while(!work);
 
-	Work& work = m_workRingPool[slot];
-	CEqSignal& completionSignal = m_completionSignal[slot];
-
-	// wait if we got into busy slot
-	completionSignal.Wait();
-
-	work.func = f;
-	work.sync = true;
-	Atomic::Exchange(work.result, WORK_PENDING);
-	completionSignal.Clear();
-
+	work->func = f;
+	work->sync = true;
+	Atomic::Exchange(work->result, WORK_PENDING);
+	
 	SignalWork();
-	completionSignal.Wait();
+	const bool isSignalled = completionSignal->Wait();
+	const int workResult = Atomic::Exchange(work->result, WORK_NOT_STARTED);
 
-	const int workResult = Atomic::Exchange(work.result, WORK_NOT_STARTED);
-
-	ASSERT_MSG(workResult != WORK_PENDING, "Failed to wait for GL worker task - WORK_PENDING");
-	ASSERT_MSG(workResult != WORK_EXECUTING, "Failed to wait for GL worker task - WORK_EXECUTING");
-	ASSERT_MSG(workResult != WORK_NOT_STARTED, "Empty slot was working on GL task - WORK_NOT_STARTED");
+	ASSERT_MSG(isSignalled && workResult != WORK_PENDING, "Failed to wait for GL worker task - WORK_PENDING");
+	ASSERT_MSG(isSignalled && workResult != WORK_EXECUTING, "Failed to wait for GL worker task - WORK_EXECUTING");
+	ASSERT_MSG(isSignalled && workResult != WORK_NOT_STARTED, "Empty slot was working on GL task - WORK_NOT_STARTED");
 
 	return workResult;
 }
 
 void GLWorkerThread::Execute(const char* name, FUNC_TYPE f)
 {
-	const int slot = Atomic::Increment(m_workCounter) % m_workRingPool.numAllocated();
+	// chose free slot
+	Work* work = nullptr;
+	CEqSignal* completionSignal = nullptr;
+	do
+	{
+		for(int slot = 0; slot < m_workRingPool.numElem(); ++slot)
+		{
+			if(m_completionSignal[slot].Wait(0) && Atomic::CompareExchange(m_workRingPool[slot].result, WORK_NOT_STARTED, WORK_TAKEN_SLOT) == WORK_NOT_STARTED)
+			{
+				work = &m_workRingPool[slot];
+				completionSignal = &m_completionSignal[slot];
+				completionSignal->Clear();
+				break;
+			}
+		}
+	}while(!work);
 
-	Work &work = m_workRingPool[slot];
-	CEqSignal& completionSignal = m_completionSignal[slot];
+	work->func = f;
+	work->sync = false;
+	Atomic::Exchange(work->result, WORK_PENDING);
 
-	completionSignal.Wait();
-
-	work.func = f;
-	work.sync = false;
-	completionSignal.Clear();
-
-	Atomic::Exchange(work.result, WORK_PENDING);
 	SignalWork();
 }
 
@@ -113,10 +128,9 @@ int GLWorkerThread::Run()
 			begun = true;
 
 			const int result = work.func();
-			if(Atomic::Exchange(work.result, work.sync ? result : WORK_NOT_STARTED) == WORK_EXECUTING)
-			{
-				m_completionSignal[i].Raise();
-			}
+			Atomic::Exchange(work.result, work.sync ? result : WORK_NOT_STARTED);
+
+			m_completionSignal[i].Raise();
 		}		
 	}
 

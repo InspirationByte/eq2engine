@@ -7,7 +7,8 @@
 
 #pragma once
 
-static constexpr const int WORK_NOT_STARTED = -10000;
+static constexpr const int WORK_NOT_STARTED = -20000;
+static constexpr const int WORK_TAKEN_SLOT = -10000;
 static constexpr const int WORK_PENDING		= 10000;
 static constexpr const int WORK_EXECUTING	= 20000;
 
@@ -41,7 +42,6 @@ protected:
 
 	FixedArray<Work, 32>					m_workRingPool;
 	FixedArray<Threading::CEqSignal, 32>	m_completionSignal;
-	volatile int							m_workCounter{ 0 };
 };
 
 extern GLWorkerThread g_glWorker;
