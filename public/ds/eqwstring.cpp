@@ -55,6 +55,16 @@ EqWString::EqWString(const EqWString &str, int nStart, int len)
 	Assign( str, nStart, len );
 }
 
+EqWString::EqWString(EqWString&& str)
+{
+	m_nAllocated = str.m_nAllocated;
+	m_nLength = str.m_nLength;
+	m_pszString = str.m_pszString;
+	str.m_nAllocated = 0;
+	str.m_nLength = 0;
+	str.m_pszString = nullptr;
+}
+
 EqWString EqWString::Format(const wchar_t* pszFormat, ...)
 {
 	EqWString newString;

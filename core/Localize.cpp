@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright ï¿½ Inspiration Byte
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
 // Description: Equilibrium localization
@@ -14,7 +14,7 @@
 
 EXPORTED_INTERFACE(ILocalize, CLocalize);
 
-void xstr_loc_convert_special_symbols(char* str, bool doNewline)
+static void LocalizeConvertSymbols(char* str, bool doNewline)
 {
 	char c = *str;
 	char nextchar = *(str+1);
@@ -54,24 +54,24 @@ void xstr_loc_convert_special_symbols(char* str, bool doNewline)
 
 //-------------------------------------------------------------------------------------------------
 
+static void ReplaceStrFmt(EqWString& str)
+{
+	int found = 0;
+	do {
+		found = str.ReplaceSubstr(L"%s", L"%ls", false, found);
+	} while (found != -1);
+}
+
 CLocToken::CLocToken(const char* tok, const wchar_t* text)
 	: m_token(tok), m_text(text)
 {
-	int found = 0;
-	do
-	{
-		found = m_text.ReplaceSubstr(L"%s", L"%ls", false, found);
-	} while (found != -1);
-};
+	ReplaceStrFmt(m_text);
+}
 
 CLocToken::CLocToken(const char* tok, const char* text)
 	: m_token(tok), m_text(text)
 {
-	int found = 0;
-	do
-	{
-		found = m_text.ReplaceSubstr(L"%s", L"%ls", false, found);
-	} while (found != -1);
+	ReplaceStrFmt(m_text);
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -172,7 +172,7 @@ void CLocalize::AddToken(const char* token, const wchar_t* pszTokenString)
 	if(token == nullptr || pszTokenString == nullptr)
 		return;
 
-	xstr_loc_convert_special_symbols( (char*)pszTokenString, true );
+	LocalizeConvertSymbols( (char*)pszTokenString, true );
 
 	const int hash = StringToHash(token, true);
 	m_tokens.insert(hash, CLocToken(token, pszTokenString));
@@ -183,7 +183,7 @@ void CLocalize::AddToken(const char* token, const char* pszTokenString)
 	if(token == nullptr || pszTokenString == nullptr)
 		return;
 
-	xstr_loc_convert_special_symbols( (char*)pszTokenString, true );
+	LocalizeConvertSymbols( (char*)pszTokenString, true );
 
 	const int hash = StringToHash(token, true);
 	new(&m_tokens[hash]) CLocToken(token, pszTokenString);

@@ -50,6 +50,16 @@ EqString::EqString(const EqString &str, int nStart, int len)
 	Assign( str, nStart, len );
 }
 
+EqString::EqString(EqString&& str)
+{
+	m_nAllocated = str.m_nAllocated;
+	m_nLength = str.m_nLength;
+	m_pszString = str.m_pszString;
+	str.m_nAllocated = 0;
+	str.m_nLength = 0;
+	str.m_pszString = nullptr;
+}
+
 EqString::EqString(const wchar_t* pszString, int len)
 {
 	Assign( pszString, len );

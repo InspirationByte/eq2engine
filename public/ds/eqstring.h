@@ -68,6 +68,8 @@ public:
 
 	EqString(const char* pszString, int len = -1);
 	EqString(const EqString &str, int nStart = 0, int len = -1);
+
+	EqString(EqString&& str);
 	
 	// conversion from wide char string
 	EqString(const wchar_t* pszString, int len = -1);

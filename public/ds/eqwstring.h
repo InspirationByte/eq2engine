@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright ï¿½ Inspiration Byte
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
 // Description: Equilibrium Engine wide string base
@@ -29,6 +29,8 @@ public:
 
 	EqWString(const wchar_t* pszString, int len = -1);
 	EqWString(const EqWString &str, int nStart = 0, int len = -1);
+
+	EqWString(EqWString&& str);
 
 	static EqWString Format(const wchar_t* pszFormat, ...);
 	static EqWString FormatVa(const wchar_t* pszFormat, va_list args);
