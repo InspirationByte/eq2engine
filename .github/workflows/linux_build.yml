@@ -23,7 +23,8 @@ jobs:
         version: "5.0.0-beta2"
         
     - name: Install dependencies
-      run: sudo apt-get install -y build-essential SDL2-devel openal-soft-devel libXxf86vm-devel
+      run: sudo apt-get update |
+        sudo apt-get install -y build-essential SDL2-devel openal-soft-devel libXxf86vm-devel
         
     - name: Generate Makefile
       working-directory: ${{env.GITHUB_WORKSPACE}}
