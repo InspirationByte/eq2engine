@@ -72,18 +72,18 @@ EqWString EqWString::FormatVa(const wchar_t* pszFormat, va_list argptr)
 	EqWString newString;
 	newString.Resize(512, false);
 
-	int length = _vsnwprintf(newString.m_pszString, newString.m_nAllocated, pszFormat, argptr);
+	va_list varg;
+	va_copy(varg, argptr);
+	const int reqSize = _vsnwprintf(newString.m_pszString, newString.m_nAllocated+1, pszFormat, varg);
 
-	if (length < newString.m_nAllocated)
+	if (reqSize < newString.m_nAllocated)
 	{
-		newString.m_nLength = length;
+		newString.m_nLength = reqSize;
 		return newString;
 	}
 
-	newString.Resize(length + 1, false);
-
-	_vsnwprintf(newString.m_pszString, newString.m_nAllocated, pszFormat, argptr);
-	newString.m_nLength = length;
+	newString.Resize(reqSize, false);
+	newString.m_nLength = _vsnwprintf(newString.m_pszString, newString.m_nAllocated+1, pszFormat, argptr);
 
 	return newString;
 }
