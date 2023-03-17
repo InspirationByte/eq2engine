@@ -218,7 +218,7 @@ struct DKFINDDATA
 		if (entry)
 		{
 			struct stat st;
-			if (stat(EqString::Format("%s", dirPath.TrimChar(CORRECT_PATH_SEPARATOR).ToCString(), entry->d_name), &st) == 0)
+			if (stat(EqString::Format("%s/%s", dirPath.TrimChar(CORRECT_PATH_SEPARATOR).ToCString(), entry->d_name), &st) == 0)
 				isEntryDir = (st.st_mode & S_IFDIR);
 		}
 
