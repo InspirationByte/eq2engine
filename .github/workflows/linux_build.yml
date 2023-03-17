@@ -1,0 +1,51 @@
+name: Linux Make
+
+on:
+  push:
+    branches: [ "develop" ]
+  pull_request:
+    branches: [ "develop" ]
+env:
+  BUILD_CONFIGURATION: release
+  BUILD_PLATFORM: x64
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        token: ${{ secrets.ACTIONSPAT }}
+        submodules: recursive
+    
+    - uses: abel0b/setup-premake@v2.2
+      with:
+        version: "5.0.0-beta2"
+        
+    - name: Install dependencies
+      run: sudo apt-get install -y |
+          build-essential 
+          SDL2-devel 
+          openal-soft-devel
+          libXxf86vm-devel
+        
+    - name: Generate Makefile
+      working-directory: ${{env.GITHUB_WORKSPACE}}
+      run: premake5 gmake2
+      
+    - name: make
+      working-directory: ${{env.GITHUB_WORKSPACE}}/project_gmake2
+      run: make config=release_x64
+      
+    - name: Upload a Build Artifact
+      uses: actions/upload-artifact@v3.1.2
+      with:
+        name: DrvSyn_linux_${{env.BUILD_CONFIGURATION}}_${{env.BUILD_PLATFORM}}
+        path: |
+          bin/x64/Release/*.so
+          bin/x64/Release/DrvSyn_${{env.BUILD_CONFIGURATION}}
+          bin/x64/Release/fcompress
+          bin/x64/Release/animca
+          bin/x64/Release/egfca
+          bin/x64/Release/atlasgen
+          bin/x64/Release/texcooker
