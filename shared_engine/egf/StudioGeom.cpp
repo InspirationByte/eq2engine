@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright ï¿½ Inspiration Byte
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
 // Description: Equilibrium Studio Geometry Form
@@ -222,8 +222,6 @@ void CEqStudioGeom::DestroyModel()
 	m_instancer = nullptr;
 
 	g_pShaderAPI->Reset(STATE_RESET_VBO);
-	g_pShaderAPI->ApplyBuffers();
-
 	g_pShaderAPI->DestroyVertexBuffer(m_vertexBuffer);
 	g_pShaderAPI->DestroyIndexBuffer(m_indexBuffer);
 	m_vertexBuffer = nullptr;
