@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright ï¿½ Inspiration Byte
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
 // Description: Equilibrium Engine Geometry viewer - new with physics support
@@ -249,7 +249,7 @@ END_EVENT_TABLE()
 
 DECLARE_INTERNAL_SHADERS();
 
-void InitMatSystem(HWND window)
+void InitMatSystem(void* window)
 {
 	materials = (IMaterialSystem*)g_eqCore->GetInterface( MATSYSTEM_INTERFACE_VERSION );
 
@@ -604,7 +604,7 @@ CEGFViewFrame::CEGFViewFrame( wxWindow* parent, wxWindowID id, const wxString& t
 	// create physics scene and add infinite plane
 	InitPhysicsScene();
 
-	InitMatSystem(m_pRenderPanel->GetHWND());
+	InitMatSystem(m_pRenderPanel->GetHandle());
 
 	debugoverlay->Init(false);
 
@@ -1072,13 +1072,13 @@ void CEGFViewFrame::ProcessMouseEvents(wxMouseEvent& event)
 	if(!bAnyMoveButton)
 	{
 		m_bIsMoving = false;
-		while(ShowCursor(TRUE) < 0);
+		SHOW_CURSOR;
 	}
 
 	if(m_bIsMoving)
 	{
-		SetCursorPos(m_vLastClientCursorPos.x, m_vLastClientCursorPos.y);
-		ShowCursor(FALSE);
+		WarpPointer(m_vLastClientCursorPos.x, m_vLastClientCursorPos.y);
+		HIDE_CURSOR;
 	}
 
 	cam_pos = clamp(cam_pos, Vector3D(-F_INFINITY), Vector3D(F_INFINITY));
@@ -1471,7 +1471,11 @@ bool CEGFViewApp::OnInit()
 	setlocale(LC_ALL, "C");
 
 	// first, load matsystem module
-	g_matsysmodule = g_fileSystem->LoadModule("EqMatSystem.dll");
+#ifdef _WIN32
+	g_matsysmodule = g_fileSystem->LoadModule("eqMatSystem.dll");
+#else
+    g_matsysmodule = g_fileSystem->LoadModule("libeqMatSystem.so");
+#endif // _WIN32
 
 	if(!g_matsysmodule)
 	{

@@ -1,4 +1,14 @@
 usage "wxWidgets"
+	filter "system:Linux"
+		wx_config { 
+			Root=WX_DIR, 
+			Debug="no",
+			Static="no",
+			Unicode="no", 
+			Version="3.0", 
+			Libs="core,aui"
+		}
+
 	filter "system:Windows"
         includedirs {
 			"./include",

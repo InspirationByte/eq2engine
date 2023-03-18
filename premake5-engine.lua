@@ -4,8 +4,10 @@ require ".premake_modules/usage"
 require ".premake_modules/androidndk"
 require ".premake_modules/unitybuild"
 require ".premake_modules/asan"
+require ".premake_modules/wxwidgets"
 
 IS_ANDROID = (_ACTION == "androidndk")
+ENABLE_TOOLS = (--[[os.target() == "linux" or]] os.target() == "windows") and not IS_ANDROID
 WORKSPACE_NAME = (WORKSPACE_NAME or "Equilibrium2")
 
 -- you can redefine dependencies
@@ -382,6 +384,6 @@ group ""
 include "premake5-eq1.lua"
 
 -- only build tools for big machines
-if (os.target() == "windows" --[[or os.target() == "linux"]]) and not IS_ANDROID then
+if ENABLE_TOOLS then
     include "utils/premake5.lua"
 end
