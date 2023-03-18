@@ -238,7 +238,7 @@ struct DKFINDDATA
 
 //--------------------------------------------------
 
-static SearchPath_e GetSearchPathByName(const char* str)
+static ESearchPath GetSearchPathByName(const char* str)
 {
 	if (!stricmp(str, "SP_MOD"))
 		return SP_MOD;
@@ -365,7 +365,7 @@ bool CFileSystem::Init(bool bEditorMode)
 	{
 		if(!stricmp(pFilesystem->keys[i]->name, "AddPackage" ))
 		{
-			SearchPath_e packageSearchPathFlag = GetSearchPathByName(KV_GetValueString(pFilesystem->keys[i], 1, "SP_MOD"));
+			ESearchPath packageSearchPathFlag = GetSearchPathByName(KV_GetValueString(pFilesystem->keys[i], 1, "SP_MOD"));
 
 			AddPackage(KV_GetValueString(pFilesystem->keys[i]), packageSearchPathFlag, KV_GetValueString(pFilesystem->keys[i], 2, nullptr));
 		}
@@ -444,7 +444,7 @@ IFile* CFileSystem::Open(const char* filename, const char* mode, int searchFlags
 		basePath.Append(CORRECT_PATH_SEPARATOR);
 
 	IFile* fileHandle = nullptr;
-	auto walkFileFunc = [&](EqString filePath, SearchPath_e searchPath, int spFlags, bool writePath) -> bool
+	auto walkFileFunc = [&](EqString filePath, ESearchPath searchPath, int spFlags, bool writePath) -> bool
 	{
 		if (isWrite && !writePath)
 			return false;
@@ -574,7 +574,7 @@ uint32 CFileSystem::GetFileCRC32(const char* filename, int searchFlags)
 }
 
 
-bool CFileSystem::FileCopy(const char* filename, const char* dest_file, bool overWrite, SearchPath_e search)
+bool CFileSystem::FileCopy(const char* filename, const char* dest_file, bool overWrite, ESearchPath search)
 {
 	char buf[4096];
 
@@ -624,7 +624,7 @@ bool CFileSystem::FileExist(const char* filename, int searchFlags) const
 	if (basePath.Length() > 0) // FIXME: is that correct?
 		basePath.Append(CORRECT_PATH_SEPARATOR);
 
-	auto walkFileFunc = [&](EqString filePath, SearchPath_e searchPath, int spFlags, bool writePath) -> bool
+	auto walkFileFunc = [&](EqString filePath, ESearchPath searchPath, int spFlags, bool writePath) -> bool
 	{
 		if (access(filePath, F_OK) != -1)
 			return true;
@@ -648,7 +648,7 @@ bool CFileSystem::FileExist(const char* filename, int searchFlags) const
 	return WalkOverSearchPaths(searchFlags, filename, walkFileFunc);
 }
 
-EqString CFileSystem::GetSearchPath(SearchPath_e search, int directoryId) const
+EqString CFileSystem::GetSearchPath(ESearchPath search, int directoryId) const
 {
 	EqString searchPath;
 
@@ -678,7 +678,7 @@ EqString CFileSystem::GetSearchPath(SearchPath_e search, int directoryId) const
 	return searchPath;
 }
 
-EqString CFileSystem::GetAbsolutePath(SearchPath_e search, const char* dirOrFileName) const
+EqString CFileSystem::GetAbsolutePath(ESearchPath search, const char* dirOrFileName) const
 {
 	EqString fullPath;
 
@@ -694,23 +694,23 @@ EqString CFileSystem::GetAbsolutePath(SearchPath_e search, const char* dirOrFile
 	return fullPath;
 }
 
-void CFileSystem::FileRemove(const char* filename, SearchPath_e search ) const
+void CFileSystem::FileRemove(const char* filename, ESearchPath search ) const
 {
 	remove(GetAbsolutePath(search, filename));
 }
 
 //Directory operations
-void CFileSystem::MakeDir(const char* dirname, SearchPath_e search ) const
+void CFileSystem::MakeDir(const char* dirname, ESearchPath search ) const
 {
 	mkdirRecursive(GetAbsolutePath(search, dirname), true);
 }
 
-void CFileSystem::RemoveDir(const char* dirname, SearchPath_e search ) const
+void CFileSystem::RemoveDir(const char* dirname, ESearchPath search ) const
 {
     rmdir(GetAbsolutePath(search, dirname));
 }
 
-void CFileSystem::Rename(const char* oldNameOrPath, const char* newNameOrPath, SearchPath_e search) const
+void CFileSystem::Rename(const char* oldNameOrPath, const char* newNameOrPath, ESearchPath search) const
 {
 	rename(GetAbsolutePath(search, oldNameOrPath), GetAbsolutePath(search, newNameOrPath));
 }
@@ -735,11 +735,23 @@ bool CFileSystem::WalkOverSearchPaths(int searchFlags, const char* fileName, con
 	{
 		for (int i = 0; i < m_directories.numElem(); i++)
 		{
+			const SearchPathInfo& spInfo = m_directories[i];
+
 			EqString filePath;
-			CombinePath(filePath, 3, basePath.ToCString(), m_directories[i].path.ToCString(), fileName);
+			CombinePath(filePath, 3, basePath.ToCString(), spInfo.path.ToCString(), fileName);
 			filePath.Path_FixSlashes();
 
-			if (func(filePath, SP_MOD, flags, m_directories[i].mainWritePath))
+#ifdef PLAT_LINUX
+			const int nameHash = StringToHash(filePath.ToCString(), true);
+			const auto it = spInfo.pathToFileMapping.find(nameHash);
+			if(it != spInfo.pathToFileMapping.end())
+			{
+				// apply correct filepath
+				filePath = *it;
+			}
+#endif
+
+			if (func(filePath, SP_MOD, flags, spInfo.mainWritePath))
 				return true;
 		}
 	}
@@ -796,7 +808,7 @@ static CBasePackageReader* GetPackageReader(const char* packageName)
 	return reader;
 }
 
-bool CFileSystem::AddPackage(const char* packageName, SearchPath_e type, const char* mountPath /*= nullptr*/)
+bool CFileSystem::AddPackage(const char* packageName, ESearchPath type, const char* mountPath /*= nullptr*/)
 {
 	for(int i = 0; i < m_fsPackages.numElem();i++)
 	{
@@ -893,15 +905,69 @@ void CFileSystem::AddSearchPath(const char* pathId, const char* pszDir)
 	const bool isReadPriorityPath = strstr(pathId, "$MOD$") || strstr(pathId, "$LOCALIZE$");
 	const bool isWriteablePath = strstr(pathId, "$WRITE$");
 
-	SearchPath_t pathInfo;
+	SearchPathInfo pathInfo;
 	pathInfo.id = pathId;
 	pathInfo.path = pszDir;
 	pathInfo.mainWritePath = !isReadPriorityPath || isWriteablePath;
 
+	int spIdx = 0;
 	if(isReadPriorityPath)
-		m_directories.insert(pathInfo, 0);
+		m_directories.insert(std::move(pathInfo), 0);
 	else
-		m_directories.append(std::move(pathInfo));
+		spIdx = m_directories.append(std::move(pathInfo));
+
+#ifdef PLAT_LINUX
+	if(!pathInfo.mainWritePath)
+	{
+		// scan files and map
+		SearchPathInfo& spInfo = m_directories[spIdx];
+
+		Array<EqString> openSet(PP_SL);
+		openSet.reserve(5000);
+
+		openSet.append(spInfo.path);
+
+		while(openSet.numElem())
+		{
+			EqString path = openSet.popFront();
+
+			DIR* dir = opendir(path);
+			if(!dir)
+				break;
+
+			do
+			{
+				dirent* entry = readdir(dir);
+				if (!entry)
+					break;
+
+				if (*entry->d_name == 0)
+					continue;
+
+				if (*entry->d_name == '.')
+					continue;
+
+				EqString entryName(EqString::Format("%s/%s", path.TrimChar(CORRECT_PATH_SEPARATOR).ToCString(), entry->d_name));
+
+				bool isEntryDir = false;
+				struct stat st;
+				if (stat(entryName, &st) == 0 && (st.st_mode & S_IFDIR))
+				{
+					openSet.append(entryName);
+				}
+				else
+				{
+					// add a mapping
+					const int nameHash = StringToHash(entryName, true);
+					spInfo.pathToFileMapping.insert(nameHash, entryName);
+				}
+			} while (true);
+		}
+
+		if(spInfo.pathToFileMapping.size())
+			DevMsg(DEVMSG_FS, "Mapped %d files for '%s'\n", spInfo.pathToFileMapping.size(), pszDir);
+	}
+#endif
 }
 
 void CFileSystem::RemoveSearchPath(const char* pathId)

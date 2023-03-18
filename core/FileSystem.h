@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright ï¿½ Inspiration Byte
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
 // Description: Equilibrium Filesystem
@@ -74,11 +74,11 @@ public:
 	void						AddSearchPath(const char* pathId, const char* pszDir);
 	void						RemoveSearchPath(const char* pathId);
 
-	void						Rename(const char* oldNameOrPath, const char* newNameOrPath, SearchPath_e search) const;
+	void						Rename(const char* oldNameOrPath, const char* newNameOrPath, ESearchPath search) const;
 
     //Directory operations
-    void						MakeDir(const char* dirname, SearchPath_e search ) const;
-    void						RemoveDir(const char* dirname, SearchPath_e search ) const;
+    void						MakeDir(const char* dirname, ESearchPath search ) const;
+    void						RemoveDir(const char* dirname, ESearchPath search ) const;
 
 	//------------------------------------------------------------
 	// File operations
@@ -89,9 +89,9 @@ public:
     IFile*						Open(const char* filename, const char* mode, int searchFlags = -1 );
     void						Close( IFile *fp );
 
-	bool						FileCopy(const char* filename, const char* dest_file, bool overWrite, SearchPath_e search);
+	bool						FileCopy(const char* filename, const char* dest_file, bool overWrite, ESearchPath search);
 	bool						FileExist(const char* filename, int searchFlags = -1) const;
-	void						FileRemove(const char* filename, SearchPath_e search ) const;
+	void						FileRemove(const char* filename, ESearchPath search ) const;
 
 	// The next ones are deprecated and will be removed
 
@@ -106,7 +106,7 @@ public:
 	bool						SetAccessKey(const char* accessKey);
 
 	// adds package to file system as another layer, acts just like AddSearchPath
-	bool						AddPackage(const char* packageName, SearchPath_e type, const char* mountPath = nullptr);
+	bool						AddPackage(const char* packageName, ESearchPath type, const char* mountPath = nullptr);
 	void						RemovePackage(const char* packageName);
 
 	// opens package for further reading. Does not add package as FS layer
@@ -142,27 +142,29 @@ public:
 
 protected:
 
-	EqString					GetAbsolutePath(SearchPath_e search, const char* dirOrFileName) const;
-	EqString					GetSearchPath(SearchPath_e search, int directoryId = -1) const;
+	EqString					GetAbsolutePath(ESearchPath search, const char* dirOrFileName) const;
+	EqString					GetSearchPath(ESearchPath search, int directoryId = -1) const;
 
 
-	using SPWalkFunc = EqFunction<bool(const EqString& filePath, SearchPath_e searchPath, int spFlags, bool writePath)>;
+	using SPWalkFunc = EqFunction<bool(const EqString& filePath, ESearchPath searchPath, int spFlags, bool writePath)>;
 	bool						WalkOverSearchPaths(int searchFlags, const char* fileName, const SPWalkFunc& func) const;
 
 	EqString					m_basePath;			// base prepended path
     EqString					m_dataDir;			// Used to load engine data
 	EqString					m_accessKey;
 
-	struct SearchPath_t
+	struct SearchPathInfo
 	{
+#ifdef PLAT_LINUX
+		// name hash to file path mapping (case-insensitive support)
+		Map<int, EqString> pathToFileMapping{ PP_SL };
+#endif
 		EqString id;
 		EqString path;
 		bool mainWritePath;
 	};
 
-	Array<SearchPath_t>			m_directories{ PP_SL };		// mod data, for fall back
-
-
+	Array<SearchPathInfo>		m_directories{ PP_SL };		// mod data, for fall back
 
     Array<CBasePackageReader*>	m_fsPackages{ PP_SL };		// package serving as FS layers
 

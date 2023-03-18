@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright ï¿½ Inspiration Byte
 // 2009-2014
 //////////////////////////////////////////////////////////////////////////////////
 // Description: DarkTech Filesystem
@@ -14,7 +14,7 @@
 // Definitions
 //------------------------------------------------------------------------------
 
-enum SearchPath_e
+enum ESearchPath
 {
     SP_DATA = (1 << 1),
     SP_ROOT = (1 << 2),
@@ -56,11 +56,11 @@ public:
 	virtual void			RemoveSearchPath(const char* pathId) = 0;
 
 	// renames file or directory
-	virtual void			Rename(const char* oldNameOrPath, const char* newNameOrPath, SearchPath_e search) const = 0;
+	virtual void			Rename(const char* oldNameOrPath, const char* newNameOrPath, ESearchPath search) const = 0;
 
     // Directory operations
-    virtual void			MakeDir(const char* dirname, SearchPath_e search ) const = 0;
-    virtual void			RemoveDir(const char* dirname, SearchPath_e search ) const = 0;
+    virtual void			MakeDir(const char* dirname, ESearchPath search ) const = 0;
+    virtual void			RemoveDir(const char* dirname, ESearchPath search ) const = 0;
 
 	//------------------------------------------------------------
 	// File operations
@@ -71,8 +71,8 @@ public:
 
 	// other operations
 	virtual bool			FileExist(const char* filename, int searchFlags = -1) const = 0;
-	virtual void			FileRemove(const char* filename, SearchPath_e search ) const = 0;
-	virtual bool			FileCopy(const char* filename, const char* dest_file, bool overWrite, SearchPath_e search) = 0;
+	virtual void			FileRemove(const char* filename, ESearchPath search ) const = 0;
+	virtual bool			FileCopy(const char* filename, const char* dest_file, bool overWrite, ESearchPath search) = 0;
 
 	// The next ones are deprecated and will be removed
 
@@ -88,7 +88,7 @@ public:
 	virtual bool			SetAccessKey(const char* accessKey) = 0;
 
 	// adds package to file system as another layer, acts just like AddSearchPath
-	virtual bool			AddPackage(const char* packageName, SearchPath_e type, const char* mountPath = nullptr) = 0;
+	virtual bool			AddPackage(const char* packageName, ESearchPath type, const char* mountPath = nullptr) = 0;
 	virtual void			RemovePackage(const char* packageName) = 0;
 
 	// opens package for further reading. Does not add package as FS layer. NOTE: it's not supported to open package inside EPK or ZIP file.

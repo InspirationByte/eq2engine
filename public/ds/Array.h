@@ -219,7 +219,6 @@ public:
 	// returns true if index is in range
 	bool			inRange(int index) const;
 
-
 	// returns number of elements in list
 	int				numElem() const;
 
@@ -296,6 +295,9 @@ public:
 
 	// inserts the element at the given index
 	int				insert(const T& obj, int index = 0);
+
+	// inserts the element at the given index
+	int				insert(T&& obj, int index = 0);
 
 	// inserts the new element at the given index
 	T&				insert(int index = 0);
@@ -820,6 +822,33 @@ inline int ArrayBase<T, STORAGE_TYPE>::insert(T const& obj, int index)
 
 	m_nNumElem++;
 	new(&listPtr[index]) T(obj);
+
+	return index;
+}
+
+// -----------------------------------------------------------------
+// Increases the elemCount of the list by at least one element if necessary
+// and inserts the supplied data into it.
+// -----------------------------------------------------------------
+template< typename T, typename STORAGE_TYPE >
+inline int ArrayBase<T, STORAGE_TYPE>::insert(T&& obj, int index)
+{
+	ensureCapacity();
+
+	if (index < 0)
+		index = 0;
+	else if (index > m_nNumElem)
+		index = m_nNumElem;
+
+	T* listPtr = m_storage.getData();
+
+	for (int i = m_nNumElem; i > index; --i)
+	{
+		new(&listPtr[i]) T(listPtr[i - 1]);
+	}
+
+	m_nNumElem++;
+	new(&listPtr[index]) T(std::move(obj));
 
 	return index;
 }
