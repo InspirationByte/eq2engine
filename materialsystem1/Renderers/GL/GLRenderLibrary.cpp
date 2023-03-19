@@ -394,7 +394,7 @@ bool CGLRenderLib::InitAPI(const shaderAPIParams_t& params)
 
 	InitSharedContexts();
 
-	wglMakeCurrent(m_hdc, m_glContext);
+	const bool makeCurrentSuccess = wglMakeCurrent(m_hdc, m_glContext);
 
 #elif defined(PLAT_LINUX)
 
@@ -415,11 +415,10 @@ bool CGLRenderLib::InitAPI(const shaderAPIParams_t& params)
 		}
 	}
 
-    Window xwin = (Window)params.windowHandle;
-	m_window = xwin;
+	m_window = (Window)params.windowHandle;
 
     XWindowAttributes winAttrib;
-    XGetWindowAttributes(m_display, xwin, &winAttrib);
+    XGetWindowAttributes(m_display, m_window, &winAttrib);
 
 	m_width = winAttrib.width;
 	m_height = winAttrib.height;
@@ -539,26 +538,26 @@ bool CGLRenderLib::InitAPI(const shaderAPIParams_t& params)
 
 		m_glContext = glX::CreateContextAttribsARB( m_display, m_bestFbc, 0, True, iAttribs );
 
+		if(!m_glContext)
+		{
+			ErrorMsg("Cannot initialize OpenGL context");
+			return false;
+		}
+
 		MsgInfo("Direct GLX rendering context: %s\n", glXIsDirect(m_display, m_glContext) ? "YES" : "no");
 	}
 
 	InitSharedContexts();
 	XSync(m_display, False);
 
-	glXMakeCurrent(m_display, (GLXDrawable)m_window, m_glContext);
+	const bool makeCurrentSuccess = glXMakeCurrent(m_display, (GLXDrawable)m_window, m_glContext);
 #endif //PLAT_WIN
+
+	ASSERT_MSG(makeCurrentSuccess, "gl context MakeCurrent failed");
 
 	Msg("Initializing GL extensions...\n");
 
-	// load OpenGL extensions using glad
-	if(!gladLoadGLLoader( gladHelperLoaderFunction ))
-	{
-		MsgError("Cannot load OpenGL extensions or several functions!\n");
-		return false;
-	}
-
-	if(g_cmdLine->FindArgument("-glext") != -1)
-		PrintGLExtensions();
+	const bool gladGLIsLoaded = gladLoadGLLoader( gladHelperLoaderFunction );
 
 	{
 		const char* rend = (const char *) glGetString(GL_RENDERER);
@@ -586,6 +585,16 @@ bool CGLRenderLib::InitAPI(const shaderAPIParams_t& params)
 			return false;
 		}
 	}
+
+	// load OpenGL extensions using glad
+	if(!gladGLIsLoaded)
+	{
+		MsgError("Cannot load OpenGL extensions or several functions!\n");
+		return false;
+	}
+
+	if(g_cmdLine->FindArgument("-glext") != -1)
+		PrintGLExtensions();
 
 	if (/*GLAD_GL_ARB_multisample &&*/ multiSamplingMode > 0)
 		glEnable(GL_MULTISAMPLE);
@@ -777,10 +786,10 @@ void CGLRenderLib::EndFrame()
 
 	if (glX::exts::var_EXT_swap_control)
 	{
-		glX::SwapIntervalEXT(m_display, (Window)m_window, g_shaderApi.m_params.verticalSyncEnabled ? 1 : 0);
+		glX::SwapIntervalEXT(m_display, m_window, g_shaderApi.m_params.verticalSyncEnabled ? 1 : 0);
 	}
 
-	glXSwapBuffers(m_display, (Window)m_window);
+	glXSwapBuffers(m_display, m_window);
 
 #endif // PLAT_WIN
 }
@@ -934,7 +943,7 @@ void CGLRenderLib::BeginAsyncOperation(uintptr_t threadId)
 #ifdef PLAT_WIN
 	while (wglMakeCurrent(m_hdc, m_glSharedContext) == false) {}
 #elif defined(PLAT_LINUX)
-	while (glXMakeCurrent(m_display, (Window)m_window, m_glSharedContext) == false) {}
+	while (glXMakeCurrent(m_display, m_window, m_glSharedContext) == false) {}
 #elif defined(PLAT_OSX)
 	//aglMakeCurrent TODO
 #endif

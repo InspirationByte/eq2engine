@@ -50,6 +50,7 @@
 #include "wx/brush.h"
 #include "wx/dcclient.h"
 #include "wx/checklst.h"
+#include "wx/glcanvas.h"
 
 #include "wx/sysopt.h"
 #include "wx/bookctrl.h"

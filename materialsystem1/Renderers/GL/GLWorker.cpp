@@ -90,6 +90,14 @@ int GLWorkerThread::WaitForExecute(const char* name, FUNC_TYPE f)
 
 void GLWorkerThread::Execute(const char* name, FUNC_TYPE f)
 {
+	uintptr_t thisThreadId = Threading::GetCurrentThreadID();
+
+	if (g_library.IsMainThread(thisThreadId)) // not required for main thread
+	{
+		f();
+		return;
+	}
+
 	// chose free slot
 	Work* work = nullptr;
 	CEqSignal* completionSignal = nullptr;

@@ -153,7 +153,7 @@ public:
 	CEGFViewFrame( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("EGFman"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 915,697 ), long style = wxDEFAULT_FRAME_STYLE|wxTAB_TRAVERSAL );
 		
 	void			ReDraw();
-	void			OnPaint(wxPaintEvent& event) {}
+	void			OnPaint(wxPaintEvent& event);
 	void			OnEraseBackground(wxEraseEvent& event) {}
 	void			OnSize(wxSizeEvent& event);
 
@@ -169,6 +169,7 @@ public:
 	void			OnButtons(wxCommandEvent& event);
 	void			OnBodyGroupToggled( wxCommandEvent& event );
 
+	void			InitializeEq();
 	void			RefreshGUI();
 
 	//void			ProcessKeyboardDownEvents(wxKeyEvent& event);
@@ -177,7 +178,11 @@ public:
 	//void			OnFocus(wxFocusEvent& event);
 	
 protected:
+#ifdef PLAT_LINUX
+	wxGLCanvas*		m_pRenderPanel;
+#else
 	wxPanel*		m_pRenderPanel;
+#endif
 	wxNotebook*		m_notebook1;
 	wxPanel*		m_pModelPanel;
 	wxPanel*		m_pMotionPanel;
@@ -249,8 +254,117 @@ END_EVENT_TABLE()
 
 DECLARE_INTERNAL_SHADERS();
 
-void InitMatSystem(void* window)
+#define PHYS_PLANE_SIZE 512
+
+#define PHY_PLANE_W 32
+#define PHY_PLANE_H 32
+
+#define PHY_PLANE_VERTCOUNT (PHY_PLANE_W*PHY_PLANE_H)
+#define PHY_PLANE_IDXCOUNT ((PHY_PLANE_W-1)*(PHY_PLANE_H-1)*6)
+
+Vector3D	g_physPlaneVertices[PHY_PLANE_W*PHY_PLANE_H];
+uint		g_physPlaneIndices[PHY_PLANE_IDXCOUNT];
+
+static void InitPhysicsScene()
 {
+	physics->Init(F_INFINITY);
+
+	// create physics scene and add infinite plane
+	physics->CreateScene();
+	
+	physmodelcreateinfo_t info;
+	SetDefaultPhysModelInfoParams(&info);
+
+	dkCollideData_t collData;
+
+	collData.pMaterial = nullptr; // null groups means default material
+	collData.surfaceprops = "default";
+
+	// create big plane
+
+	// compute vertices
+	for(int c = 0; c < PHY_PLANE_H; c++)
+	{
+		for(int r = 0; r < PHY_PLANE_W; r++)
+		{
+			int vertex_id = r + c* PHY_PLANE_W;
+
+			float tc_x = (float)(r)/(float)(PHY_PLANE_W-1);
+			float tc_y = (float)(c)/(float)(PHY_PLANE_H-1);
+
+			float v_pos_x = (tc_x-0.5f)*2.0f*PHYS_PLANE_SIZE;
+			float v_pos_y = (tc_y-0.5f)*2.0f*PHYS_PLANE_SIZE;
+
+			g_physPlaneVertices[vertex_id] = Vector3D(v_pos_x,0,v_pos_y);
+		}
+	}
+
+	// compute indices
+	// support edge turning - this creates more smoothed terrain, but needs more polygons
+	bool bTurnEdge = false;
+	int nTriangle = 0;
+	for(int c = 0; c < (PHY_PLANE_H-1); c++)
+	{
+		for(int r = 0; r < (PHY_PLANE_W-1); r++)
+		{
+			int index1 = r + c* PHY_PLANE_W;
+			int index2 = r + (c+1)*PHY_PLANE_W;
+			int index3 = (r+1) + c* PHY_PLANE_W;
+			int index4 = (r+1) + (c+1)*PHY_PLANE_W;
+
+			if(!bTurnEdge)
+			{
+				g_physPlaneIndices[nTriangle*3] = index1;
+				g_physPlaneIndices[nTriangle*3+1] = index2;
+				g_physPlaneIndices[nTriangle*3+2] = index3;
+
+				nTriangle++;
+
+				g_physPlaneIndices[nTriangle*3] = index3;
+				g_physPlaneIndices[nTriangle*3+1] = index2;
+				g_physPlaneIndices[nTriangle*3+2] = index4;
+
+				nTriangle++;
+			}
+			else
+			{
+				g_physPlaneIndices[nTriangle*3] = index1;
+				g_physPlaneIndices[nTriangle*3+1] = index2;
+				g_physPlaneIndices[nTriangle*3+2] = index4;
+
+				nTriangle++;
+
+				g_physPlaneIndices[nTriangle*3] = index1;
+				g_physPlaneIndices[nTriangle*3+1] = index4;
+				g_physPlaneIndices[nTriangle*3+2] = index3;
+
+				nTriangle++;
+			}
+
+			bTurnEdge = !bTurnEdge;
+		}
+		//bTurnEdge = !bTurnEdge;
+	}
+	
+	collData.indices = g_physPlaneIndices;
+	collData.numIndices = PHY_PLANE_IDXCOUNT;
+	collData.vertices = g_physPlaneVertices;
+	collData.vertexPosOffset = 0;
+	collData.vertexSize = sizeof(Vector3D);
+	collData.numVertices = PHY_PLANE_VERTCOUNT;
+
+	info.isStatic = true;
+	info.flipXAxis = false;
+	info.mass = 0.0f;
+	info.data = &collData;
+
+	IPhysicsObject* pObj = physics->CreateStaticObject(&info, COLLISION_GROUP_WORLD);
+}
+
+static void InitMatSystem(void* window)
+{
+	ASSERT_MSG(window, "InitMatSystem - NULL window");
+
 	materials = (IMaterialSystem*)g_eqCore->GetInterface( MATSYSTEM_INTERFACE_VERSION );
 
 	if(!materials)
@@ -307,7 +421,7 @@ void InitMatSystem(void* window)
 		g_pShaderAPI = materials->GetShaderAPI();
 	}
 
-	materials->LoadShaderLibrary("eqBaseShaders.dll");
+	materials->LoadShaderLibrary("eqBaseShaders");
 
 	if (!g_parallelJobs->Init(elementsOf(s_jobTypes), s_jobTypes))
 		return;
@@ -326,24 +440,42 @@ void InitMatSystem(void* window)
 	//viewrenderer->InitializeResources();
 }
 
-void InitPhysicsScene();
+void CEGFViewFrame::InitializeEq()
+{
+	// create physics scene and add infinite plane
+	InitPhysicsScene();
+
+#ifdef PLAT_LINUX
+	// NOTE: we use wxGLCanvas instead
+	InitMatSystem(m_pRenderPanel->GetXWindow());
+#else
+	InitMatSystem(m_pRenderPanel->GetHandle());
+#endif
+
+	debugoverlay->Init(false);
+}
 
 CEGFViewFrame::CEGFViewFrame( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& pos, const wxSize& size, long style ) : wxFrame( parent, id, title, pos, size, style )
 {
+#ifdef PLAT_WIN
 	wxIcon ico;
 	if(ico.LoadFile("IDI_MAINICON"))
-	{
 		SetIcon(ico);
-	}
 	else
 		MsgError("Can't load icon!\n");
+#endif
 
 	this->SetSizeHints( wxDefaultSize, wxDefaultSize );
 	
 	wxBoxSizer* bSizer1;
 	bSizer1 = new wxBoxSizer( wxVERTICAL );
 	
+#ifdef PLAT_LINUX
+	// create gl canvas without gl context. We only need it as it would provide us with XWindow
+	m_pRenderPanel = new wxGLCanvas( this, wxID_ANY, nullptr, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL, "GLCanvas", wxNullPalette );
+#else
 	m_pRenderPanel = new wxPanel( this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
+#endif
 	bSizer1->Add( m_pRenderPanel, 1, wxEXPAND, 5 );
 	
 	m_notebook1 = new wxNotebook( this, wxID_ANY, wxDefaultPosition, wxSize( -1,180 ), wxNB_FIXEDWIDTH );
@@ -598,15 +730,7 @@ CEGFViewFrame::CEGFViewFrame( wxWindow* parent, wxWindowID id, const wxString& t
 	m_pMenu->Append( menuView, DKLOC("TOKEN_VIEW", "View") );
 
 	this->SetMenuBar( m_pMenu );
-	
 	this->Centre( wxBOTH );
-
-	// create physics scene and add infinite plane
-	InitPhysicsScene();
-
-	InitMatSystem(m_pRenderPanel->GetHandle());
-
-	debugoverlay->Init(false);
 
 	// Connect Events
 	m_pRenderPanel->Connect(wxEVT_LEFT_DOWN, (wxObjectEventFunction)&CEGFViewFrame::ProcessMouseEvents, nullptr, this);
@@ -639,136 +763,14 @@ CEGFViewFrame::CEGFViewFrame( wxWindow* parent, wxWindowID id, const wxString& t
 	RefreshGUI();
 }
 
-#define PHYS_PLANE_SIZE 512
-
-#define PHY_PLANE_W 32
-#define PHY_PLANE_H 32
-
-#define PHY_PLANE_VERTCOUNT (PHY_PLANE_W*PHY_PLANE_H)
-#define PHY_PLANE_IDXCOUNT ((PHY_PLANE_W-1)*(PHY_PLANE_H-1)*6)
-
-Vector3D	g_physPlaneVertices[PHY_PLANE_W*PHY_PLANE_H];
-uint		g_physPlaneIndices[PHY_PLANE_IDXCOUNT];
-
-void InitPhysicsScene()
-{
-	physics->Init(F_INFINITY);
-
-	// create physics scene and add infinite plane
-	physics->CreateScene();
-	/*
-	pritimiveinfo_t prim;
-	prim.primType = PHYSPRIM_BOX;
-	prim.boxInfo.boxSizeX = PHYS_PLANE_SIZE;
-	prim.boxInfo.boxSizeY = 50;
-	prim.boxInfo.boxSizeZ = PHYS_PLANE_SIZE;
-
-	physobject_t obj;
-	obj.body_part = 0;
-	obj.mass = 0;
-	obj.mass_center = vec3_zero;
-	obj.numShapes = 1;
-	obj.shape_indexes[0] = physics->AddPrimitiveShape( prim );
-	strcpy(obj.surfaceprops, "default");
-
-	IPhysicsObject* pObj = physics->CreateObject( &obj );
-	pObj->SetPosition( Vector3D(0,-25, 0));
-	*/
-	
-	physmodelcreateinfo_t info;
-	SetDefaultPhysModelInfoParams(&info);
-
-	dkCollideData_t collData;
-
-	collData.pMaterial = nullptr; // null groups means default material
-	collData.surfaceprops = "default";
-
-	// create big plane
-
-	// compute vertices
-	for(int c = 0; c < PHY_PLANE_H; c++)
-	{
-		for(int r = 0; r < PHY_PLANE_W; r++)
-		{
-			int vertex_id = r + c* PHY_PLANE_W;
-
-			float tc_x = (float)(r)/(float)(PHY_PLANE_W-1);
-			float tc_y = (float)(c)/(float)(PHY_PLANE_H-1);
-
-			float v_pos_x = (tc_x-0.5f)*2.0f*PHYS_PLANE_SIZE;
-			float v_pos_y = (tc_y-0.5f)*2.0f*PHYS_PLANE_SIZE;
-
-			g_physPlaneVertices[vertex_id] = Vector3D(v_pos_x,0,v_pos_y);
-		}
-	}
-
-	// compute indices
-	// support edge turning - this creates more smoothed terrain, but needs more polygons
-	bool bTurnEdge = false;
-	int nTriangle = 0;
-	for(int c = 0; c < (PHY_PLANE_H-1); c++)
-	{
-		for(int r = 0; r < (PHY_PLANE_W-1); r++)
-		{
-			int index1 = r + c* PHY_PLANE_W;
-			int index2 = r + (c+1)*PHY_PLANE_W;
-			int index3 = (r+1) + c* PHY_PLANE_W;
-			int index4 = (r+1) + (c+1)*PHY_PLANE_W;
-
-			if(!bTurnEdge)
-			{
-				g_physPlaneIndices[nTriangle*3] = index1;
-				g_physPlaneIndices[nTriangle*3+1] = index2;
-				g_physPlaneIndices[nTriangle*3+2] = index3;
-
-				nTriangle++;
-
-				g_physPlaneIndices[nTriangle*3] = index3;
-				g_physPlaneIndices[nTriangle*3+1] = index2;
-				g_physPlaneIndices[nTriangle*3+2] = index4;
-
-				nTriangle++;
-			}
-			else
-			{
-				g_physPlaneIndices[nTriangle*3] = index1;
-				g_physPlaneIndices[nTriangle*3+1] = index2;
-				g_physPlaneIndices[nTriangle*3+2] = index4;
-
-				nTriangle++;
-
-				g_physPlaneIndices[nTriangle*3] = index1;
-				g_physPlaneIndices[nTriangle*3+1] = index4;
-				g_physPlaneIndices[nTriangle*3+2] = index3;
-
-				nTriangle++;
-			}
-
-			bTurnEdge = !bTurnEdge;
-		}
-		//bTurnEdge = !bTurnEdge;
-	}
-	
-	collData.indices = g_physPlaneIndices;
-	collData.numIndices = PHY_PLANE_IDXCOUNT;
-	collData.vertices = g_physPlaneVertices;
-	collData.vertexPosOffset = 0;
-	collData.vertexSize = sizeof(Vector3D);
-	collData.numVertices = PHY_PLANE_VERTCOUNT;
-
-	info.isStatic = true;
-	info.flipXAxis = false;
-	info.mass = 0.0f;
-	info.data = &collData;
-
-	IPhysicsObject* pObj = physics->CreateStaticObject(&info, COLLISION_GROUP_WORLD);
-}
-
 void CEGFViewFrame::OnIdle(wxIdleEvent &event)
 {
 	event.RequestMore(true);
-
 	ReDraw();
+}
+
+void CEGFViewFrame::OnPaint(wxPaintEvent& event)
+{
 }
 
 void CEGFViewFrame::ProcessMouseEnter(wxMouseEvent& event)
@@ -1003,23 +1005,20 @@ void CEGFViewFrame::ProcessMouseEvents(wxMouseEvent& event)
 			//SetCursor(cursor);
 		}
 
-		if(event.ButtonIsDown(wxMOUSE_BTN_MIDDLE))
+		if(event.ButtonIsDown(wxMOUSE_BTN_MIDDLE) && event.Dragging())
 		{
-			if(event.Dragging())
-			{
-				Vector3D right, up;
-				AngleVectors(cam_angles, nullptr, &right, &up);
+			Vector3D right, up;
+			AngleVectors(cam_angles, nullptr, &right, &up);
 
-				camera_move_factor *= -1;
+			camera_move_factor *= -1;
 
-				m_bIsMoving = true;
-				bAnyMoveButton = true;
+			m_bIsMoving = true;
+			bAnyMoveButton = true;
 
-				cam_pos += right*move_delta_x * camera_move_factor * g_fCamDistance * 0.01f;
-				cam_pos -= up*move_delta_y * camera_move_factor * g_fCamDistance * 0.01f;
+			cam_pos += right*move_delta_x * camera_move_factor * g_fCamDistance * 0.01f;
+			cam_pos -= up*move_delta_y * camera_move_factor * g_fCamDistance * 0.01f;
 
-				g_vLastMousePosition = prev_mouse_pos;
-			}
+			g_vLastMousePosition = prev_mouse_pos;
 		}
 	}
 	else
@@ -1077,7 +1076,8 @@ void CEGFViewFrame::ProcessMouseEvents(wxMouseEvent& event)
 
 	if(m_bIsMoving)
 	{
-		WarpPointer(m_vLastClientCursorPos.x, m_vLastClientCursorPos.y);
+		wxPoint pt = ScreenToClient(wxPoint(m_vLastClientCursorPos.x, m_vLastClientCursorPos.y));
+		WarpPointer(pt.x, pt.y);
 		HIDE_CURSOR;
 	}
 
@@ -1091,15 +1091,14 @@ void CEGFViewFrame::OnSize(wxSizeEvent& event)
 {
 	wxFrame::OnSize( event );
 
-	if(materials)
-	{
-		int w, h;
-		m_pRenderPanel->GetSize(&w,&h);
+	if(!materials)
+		return;
 
-		materials->SetDeviceBackbufferSize(w,h);
+	int w, h;
+	m_pRenderPanel->GetSize(&w,&h);
+	materials->SetDeviceBackbufferSize(w,h);
 
-		ReDraw();
-	}
+	ReDraw();
 }
 
 float g_frametime = 0;
@@ -1175,12 +1174,8 @@ void CEGFViewFrame::ReDraw()
 	if(!materials)
 		return;
 
-	//	g_sounds->Update();
-
 	if(!m_bDoRefresh)
-	{
 		return;
-	}
 
 	if(!IsShown())
 		return;
@@ -1198,7 +1193,6 @@ void CEGFViewFrame::ReDraw()
 	m_pRenderPanel->GetSize(&w, &h);
 
 	g_pShaderAPI->SetViewport(0, 0, w,h);
-
 	if(materials->BeginFrame(nullptr))
 	{
 		g_pShaderAPI->Clear(true,true,false, ColorRGBA(0.5,0.5,0.5, 1));
@@ -1471,11 +1465,7 @@ bool CEGFViewApp::OnInit()
 	setlocale(LC_ALL, "C");
 
 	// first, load matsystem module
-#ifdef _WIN32
-	g_matsysmodule = g_fileSystem->LoadModule("eqMatSystem.dll");
-#else
-    g_matsysmodule = g_fileSystem->LoadModule("libeqMatSystem.so");
-#endif // _WIN32
+	g_matsysmodule = g_fileSystem->LoadModule("eqMatSystem");
 
 	if(!g_matsysmodule)
 	{
@@ -1488,9 +1478,10 @@ bool CEGFViewApp::OnInit()
 	g_pMainFrame = new CEGFViewFrame(nullptr, -1, DKLOC("TOKEN_TITLE", "Equilibrium Graphics File viewer 1.0"));
 	g_pMainFrame->Centre();
 	g_pMainFrame->Show(true);
-
 	SetTopWindow(g_pMainFrame);
 
+	g_pMainFrame->InitializeEq();
+	
     return true;
 }
 
