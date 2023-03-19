@@ -70,7 +70,7 @@
 #include "ds/List.h"
 #include "ds/function.h"
 #include "ds/future.h"
-
+#include "ds/defer.h"
 
 #include "ds/MemoryStream.h"
 

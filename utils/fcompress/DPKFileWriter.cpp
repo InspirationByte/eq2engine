@@ -86,6 +86,9 @@ static ubyte* LoadFileBuffer(const char* filename, long* fileSize)
 		MsgError("Can't open file '%s'\n", filename);
 		return nullptr;
 	}
+	defer{
+		fclose(file);
+	};
 
 	fseek(file, 0, SEEK_END);
 	long filelen = ftell(file);
@@ -98,10 +101,7 @@ static ubyte* LoadFileBuffer(const char* filename, long* fileSize)
 	ubyte* fileBuf = (ubyte*)PPAlloc(filelen);
 
 	fread(fileBuf, 1, filelen, file);
-	fclose(file);
-
 	*fileSize = filelen;
-
 	return fileBuf;
 }
 
@@ -348,6 +348,9 @@ bool CDPKFileWriter::WriteFiles()
 		MsgError("Can't open temporary file for read!\n");
 		return false;
 	}
+	defer{
+		fclose(dpkTempDataFile);
+	};
 
 	StartPacifier("Making package file: ");
 
@@ -378,7 +381,6 @@ bool CDPKFileWriter::WriteFiles()
 	Msg("OK\n");
 
 	PPFree(tmpBlockData);
-	fclose(dpkTempDataFile);
 
 	return true;
 }
@@ -549,13 +551,11 @@ float CDPKFileWriter::ProcessFile(FILE* output, FileInfo* info)
 bool CDPKFileWriter::SavePackage()
 {
 	// create temporary file
-	FILE* dpk_temp_data = fopen("fcompress_temp.tmp", "wb");
-	if(!dpk_temp_data)
+	FILE* dpkTempDataFile = fopen("fcompress_temp.tmp", "wb");
+	if(!dpkTempDataFile)
 	{
 		MsgError("Can't create temporary file for write!\n");
-		Msg("Press any key to exit...");
-		getchar();
-		exit(0);
+		return false;
 	}
 
 	StartPacifier("Compressing files, this may take a while: ");
@@ -570,14 +570,14 @@ bool CDPKFileWriter::SavePackage()
 		UpdatePacifier((float)i / (float)m_files.numElem());
 
 		FileInfo* fileInfo = m_files[i];
-		const float sizeReduction = ProcessFile(dpk_temp_data, fileInfo);
+		const float sizeReduction = ProcessFile(dpkTempDataFile, fileInfo);
 
 		compressionRatio += sizeReduction;
 	}
 
 	compressionRatio /= (float)m_files.numElem();
 
-	fclose(dpk_temp_data);
+	fclose(dpkTempDataFile);
 
 	EndPacifier();
 	Msg("Compression is %.2f %%\n", compressionRatio * 100.0f);

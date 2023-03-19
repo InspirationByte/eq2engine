@@ -64,6 +64,9 @@ static bool UpdatePackage(const char* targetName)
 		MsgError("Cannot open package '%s'\n", targetName);
 		return false;
 	}
+	defer{
+		fclose(dpkFile);
+	};
 
 	dpkheader_t m_header;
 
@@ -72,16 +75,12 @@ static bool UpdatePackage(const char* targetName)
 	if (m_header.signature != DPK_SIGNATURE)
 	{
 		MsgError("'%s' is not a package!!!\n", targetName);
-
-		fclose(dpkFile);
 		return false;
 	}
 
 	if (m_header.version != DPK_VERSION_PREV)
 	{
 		MsgError("package '%s' has wrong version!!!\n", targetName);
-
-		fclose(dpkFile);
 		return false;
 	}
 
@@ -143,6 +142,7 @@ static bool UpdatePackage(const char* targetName)
 		}
 
 		fclose(dpkFile);
+		dpkFile = nullptr;
 	}
 
 	{
@@ -185,6 +185,9 @@ static bool DevUnpackPackage(const char* targetName)
 		MsgError("Cannot open package '%s'\n", targetName);
 		return false;
 	}
+	defer{
+		fclose(dpkFile);
+	};
 
 	dpkheader_t m_header;
 
@@ -193,16 +196,12 @@ static bool DevUnpackPackage(const char* targetName)
 	if (m_header.signature != DPK_SIGNATURE)
 	{
 		MsgError("'%s' is not a package!!!\n", targetName);
-
-		fclose(dpkFile);
 		return false;
 	}
 
 	if (m_header.version != DPK_VERSION)
 	{
 		MsgError("package '%s' has wrong version!!!\n", targetName);
-
-		fclose(dpkFile);
 		return false;
 	}
 
@@ -258,8 +257,6 @@ static bool DevUnpackPackage(const char* targetName)
 
 			g_fileSystem->Close(file);
 		}
-
-		fclose(dpkFile);
 	}
 }
 
