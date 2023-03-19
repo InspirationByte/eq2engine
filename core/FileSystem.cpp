@@ -1125,7 +1125,6 @@ DKMODULE* CFileSystem::LoadModule(const char* mod_name)
 		moduleFileName = moduleFileName + ".dll";
 
 	HMODULE mod = LoadLibraryA( moduleFileName );
-
 	DWORD lastErr = GetLastError();
 
 	char err[256] = {'\0'};
@@ -1147,6 +1146,11 @@ DKMODULE* CFileSystem::LoadModule(const char* mod_name)
 		moduleFileName = moduleFileName + ".so";
 
 	HMODULE mod = dlopen( moduleFileName, RTLD_LAZY | RTLD_LOCAL );
+	if( !mod )
+	{
+		moduleFileName = "lib" + moduleFileName;
+		mod = dlopen( moduleFileName, RTLD_LAZY | RTLD_LOCAL );
+	}
 
 	const char* err = dlerror();
 	int lastErr = 0;

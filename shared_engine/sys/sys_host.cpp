@@ -131,11 +131,7 @@ void CGameHost::HostExitCmd(CONCOMMAND_ARGUMENTS)
 bool CGameHost::LoadModules()
 {
 	// first, load matsystem module
-#ifdef _WIN32
-	g_matsysmodule = g_fileSystem->LoadModule("eqMatSystem.dll");
-#else
-    g_matsysmodule = g_fileSystem->LoadModule("libeqMatSystem.so");
-#endif // _WIN32
+	g_matsysmodule = g_fileSystem->LoadModule("eqMatSystem");
 
 	if(!g_matsysmodule)
 	{
@@ -348,11 +344,7 @@ bool CGameHost::InitSystems( EQWNDHANDLE pWindow )
 
 	g_pShaderAPI = materials->GetShaderAPI();
 
-#ifdef _WIN32
 	materials->LoadShaderLibrary("eqBaseShaders");
-#else
-	materials->LoadShaderLibrary("libeqBaseShaders");
-#endif // _WIN32
 
 	// register all shaders
 	REGISTER_INTERNAL_SHADERS();

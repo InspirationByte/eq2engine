@@ -6,7 +6,7 @@ usage "wxWidgets"
 			Static="no",
 			Unicode="no", 
 			Version="3.0", 
-			Libs="core,aui"
+			Libs="core,aui,gl"
 		}
 
 	filter "system:Windows"

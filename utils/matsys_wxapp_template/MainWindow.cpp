@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright ï¿½ Inspiration Byte
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
 // Description: MaterialSystem wxWidgets template application
@@ -673,13 +673,7 @@ bool CWXTemplateApplication::OnInit()
 	setlocale(LC_ALL,"C");
 
 	// first, load matsystem module
-#ifdef _WIN32
-	g_matsysmodule = g_fileSystem->LoadModule("EqMatSystem.dll");
-#elif LINUX
-    g_matsysmodule = g_fileSystem->LoadModule("libeqMatSystem.so");
-#endif
-
-	
+	g_matsysmodule = g_fileSystem->LoadModule("eqMatSystem");
 
 	if(!g_matsysmodule)
 	{
