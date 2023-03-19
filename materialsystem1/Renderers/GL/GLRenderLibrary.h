@@ -115,6 +115,7 @@ protected:
     XVisualInfo*            m_xvi;
 	Window					m_window;
     int						m_screen;
+	GLXFBConfig 			m_bestFbc;
 #elif defined(PLAT_OSX)
 	CFArrayRef				m_dmodes;
 	CFDictionaryRef			m_initialMode;

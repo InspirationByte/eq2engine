@@ -177,7 +177,10 @@ bool CGLRenderLib::InitCaps()
 
 		wgl::exts::LoadTest didLoad = wgl::sys::LoadFunctions(hdc);
 		if(!didLoad)
+		{
 			MsgError("OpenGL load errors: %i\n", didLoad.GetNumMissing());
+			return false;
+		}
 
 		wglMakeCurrent(nullptr, nullptr);
 		wglDeleteContext(hglrc);
@@ -188,6 +191,16 @@ bool CGLRenderLib::InitCaps()
 	else
 	{
 		MsgError("Renderer fault!!!\n");
+		return false;
+	}
+#elif PLAT_LINUX
+	m_display = XOpenDisplay(0);
+	m_screen = DefaultScreen( m_display );
+
+	glX::exts::LoadTest didLoad = glX::sys::LoadFunctions(m_display, m_screen);
+	if(!didLoad)
+	{
+		MsgError("OpenGL load errors: %i\n", didLoad.GetNumMissing());
 		return false;
 	}
 #endif // PLAT_WIN
@@ -207,7 +220,7 @@ void CGLRenderLib::DestroySharedContexts()
 void CGLRenderLib::InitSharedContexts()
 {
 #ifdef PLAT_WIN
-	int iAttribs[] = {
+	const int iAttribs[] = {
 		wgl::CONTEXT_MAJOR_VERSION_ARB,		3,
 		wgl::CONTEXT_MINOR_VERSION_ARB,		3,
 		wgl::CONTEXT_PROFILE_MASK_ARB,		wgl::CONTEXT_FORWARD_COMPATIBLE_BIT_ARB,
@@ -231,7 +244,15 @@ void CGLRenderLib::InitSharedContexts()
 	//	ASSERT_FAIL("wglShareLists - Failed to share (err=%d, ctx=%d)!", GetLastError(), context);
 
 #elif defined(PLAT_LINUX)
-	GLXContext context = glXCreateContext(m_display, m_xvi, m_glContext, True);
+	const int iAttribs[] =
+	{
+		GLX_CONTEXT_MAJOR_VERSION_ARB, 	3,
+		GLX_CONTEXT_MINOR_VERSION_ARB, 	3,
+		GLX_CONTEXT_FLAGS_ARB, 			GLX_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB,
+		None
+	};
+
+	GLXContext context = glX::CreateContextAttribsARB( m_display, m_bestFbc, m_glContext, True, iAttribs );
 #endif // PLAT_WIN || PLAT_LINUX
 
 	m_glSharedContext = context;
@@ -377,9 +398,6 @@ bool CGLRenderLib::InitAPI(const shaderAPIParams_t& params)
 
 #elif defined(PLAT_LINUX)
 
-    m_display = XOpenDisplay(0);
-	m_screen = DefaultScreen( m_display );
-
 	int nModes;
     XF86VidModeGetAllModeLines(m_display, m_screen, &nModes, &m_dmodes);
 
@@ -491,10 +509,10 @@ bool CGLRenderLib::InitAPI(const shaderAPIParams_t& params)
 		XFree( vi );
 	}
 
-	GLXFBConfig bestFbc = fbConfig[best_fbc];
+	m_bestFbc = fbConfig[best_fbc];
 	XFree( fbConfig );
 
-	m_xvi = glXGetVisualFromFBConfig(m_display, bestFbc);
+	m_xvi = glXGetVisualFromFBConfig(m_display, m_bestFbc);
 
     if (!m_windowed)
     {
@@ -511,19 +529,21 @@ bool CGLRenderLib::InitAPI(const shaderAPIParams_t& params)
 
 	// create context
 	{
-		int context_attribs[] =
+		const int iAttribs[] =
 		{
 			GLX_CONTEXT_MAJOR_VERSION_ARB, 	3,
 			GLX_CONTEXT_MINOR_VERSION_ARB, 	3,
-			//GLX_CONTEXT_FLAGS_ARB, 		GLX_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB,
+			GLX_CONTEXT_FLAGS_ARB, 			GLX_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB,
 			None
 		};
 
-		m_glContext = glXCreateContext(m_display, m_xvi, None, True);
-		//m_glContext = glXCreateContextAttribsARB( m_display, bestFbc, 0, True, context_attribs );
+		m_glContext = glX::CreateContextAttribsARB( m_display, m_bestFbc, 0, True, iAttribs );
+
+		MsgInfo("Direct GLX rendering context: %s\n", glXIsDirect(m_display, m_glContext) ? "YES" : "no");
 	}
 
 	InitSharedContexts();
+	XSync(m_display, False);
 
 	glXMakeCurrent(m_display, (GLXDrawable)m_window, m_glContext);
 #endif //PLAT_WIN
@@ -554,9 +574,9 @@ bool CGLRenderLib::InitAPI(const shaderAPIParams_t& params)
 		int verMajor = atoi(majorStr);
 		int verMinor = atoi(minorStr);
 
-		if(verMajor < 2)
+		if(verMajor < 3)
 		{
-			ErrorMsg("OpenGL major version must be at least 2!\n\nPlease update your drivers or hardware.");
+			ErrorMsg("OpenGL major version must be at least 3!\n\nPlease update your drivers or hardware.");
 			return false;
 		}
 
@@ -679,9 +699,7 @@ void CGLRenderLib::ExitAPI()
 
     XFree(m_dmodes);
 	//XFreeCursor(display, blankCursor);
-
 	XSync(m_display, False);
-
     XCloseDisplay(m_display);
 #endif
 }
