@@ -246,8 +246,6 @@ DECLARE_CONCOMMAND_FN(seti)
 
 void fncfgfiles_variants(const ConCommandBase* cmd, Array<EqString>& list, const char* query)
 {
-	DKFINDDATA* findData = nullptr;
-
 	CFileSystemFind fsFind("cfg/*.cfg", SP_MOD);
 	while (fsFind.Next())
 	{

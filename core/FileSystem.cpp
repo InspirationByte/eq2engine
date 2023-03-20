@@ -14,25 +14,20 @@
 #include "core/ILocalize.h"
 #include "utils/KeyValues.h"
 #include "FileSystem.h"
+#include "OSFindData.h"
 
 #include "DPKFileReader.h"
 #include "ZipFileReader.h"
 
-#ifdef _WIN32 // Not in linux
-
+#ifdef _WIN32
 #include <direct.h>	// mkdir()
 #include <io.h>		// _access()
-
 #define access		_access
 #define F_OK		0       // Test for existence.
-
 #else
-
 #include <unistd.h> // rmdir(), access()
-#include <stdarg.h> // va_*
-#include <dlfcn.h>
+#include <dlfcn.h>	// dlopen()
 #include <dirent.h> // opendir, readdir
-
 #endif
 
 using namespace Threading;
@@ -133,107 +128,10 @@ struct DKMODULE
 
 struct DKFINDDATA
 {
-	int					searchPathId;
-	EqString			wildcard;
-
-#if defined(PLAT_WIN)
-	WIN32_FIND_DATAA	wfd;
-	HANDLE				fileHandle{ INVALID_HANDLE_VALUE };
-#elif defined(PLAT_POSIX)
-	EqString			dirPath;
-	DIR*				dir{ nullptr };
-	struct dirent*		entry{ nullptr };
-	bool				isEntryDir{ false };
-#endif
-
-	~DKFINDDATA()
-	{
-		Release();
-	}
-
-	void Release()
-	{
-#if defined(PLAT_WIN)
-		if(fileHandle != INVALID_HANDLE_VALUE)
-			FindClose(fileHandle);
-		fileHandle = INVALID_HANDLE_VALUE;
-#elif defined(PLAT_POSIX)
-		closedir(dir);
-		dir = nullptr;
-		entry = nullptr;
-#endif
-	}
-
-	bool Init(const EqString& searchWildcard)
-	{
-		Release();
-
-#if defined(PLAT_WIN)
-		fileHandle = FindFirstFileA(searchWildcard, &wfd);
-		if (fileHandle != INVALID_HANDLE_VALUE)
-			return true;
-#elif defined(PLAT_POSIX)
-		dirPath = searchWildcard.Path_Extract_Path();
-		dir = opendir(dirPath);
-		if (dir)
-			return GetNext();
-#endif
-		return false;
-	}
-
-	bool GetNext()
-	{
-#if defined(PLAT_WIN)
-
-		return FindNextFileA(fileHandle, &wfd);
-
-#elif defined(PLAT_POSIX)
-		do
-		{
-			entry = readdir(dir);
-
-			if (!entry)
-				break;
-
-			if (*entry->d_name == 0)
-				continue;
-
-			int wildcardFileStart = wildcard.Find("*");
-			if (wildcardFileStart != -1)
-			{
-				const char* wildcardFile = wildcard.ToCString() + wildcardFileStart + 1;
-				if (*wildcardFile == 0)
-					break;
-
-				const char* found = xstristr(entry->d_name, wildcardFile);
-				if (found && strlen(found) == strlen(wildcardFile))
-					break;
-			}
-			else
-				break;
-		} while (true);
-
-		isEntryDir = false;
-
-		if (entry)
-		{
-			struct stat st;
-			if (stat(EqString::Format("%s/%s", dirPath.TrimChar(CORRECT_PATH_SEPARATOR).ToCString(), entry->d_name), &st) == 0)
-				isEntryDir = (st.st_mode & S_IFDIR);
-		}
-
-		return entry;
-#endif
-	}
-
-	const char* GetCurrentPath() const 
-	{
-#if defined(PLAT_WIN)
-		return wfd.cFileName;
-#elif defined(PLAT_POSIX)
-		return entry->d_name;
-#endif
-	}
+	OSFindData	osFind;
+	EqString	wildcard;
+	ESearchPath searchPath{ SP_ROOT };
+	int			searchPathId{ -1 };
 };
 
 //--------------------------------------------------
@@ -1011,53 +909,51 @@ const char* CFileSystem::FindFirst(const char* wildcard, DKFINDDATA** findData, 
 		return nullptr;
 
 	DKFINDDATA* newFind = PPNew DKFINDDATA;
-	*findData = newFind;
 
-	newFind->searchPathId = -1;
+	newFind->searchPath = (ESearchPath)searchPath;
 	newFind->wildcard = wildcard;
 	newFind->wildcard.Path_FixSlashes();
 
-	EqString fsBaseDir = m_basePath;
-
-	if(searchPath == SP_DATA)
+	if (newFind->searchPath != SP_MOD)
 	{
-		CombinePath(fsBaseDir, 2, m_basePath.ToCString(), m_dataDir.ToCString());
-	}
-	else if(searchPath == SP_MOD)
-	{
-		newFind->searchPathId = 0;
-		CombinePath(fsBaseDir, 2, m_basePath.ToCString(), m_directories[0].path.ToCString());
-	}
+		EqString fsBaseDir = GetSearchPath((ESearchPath)searchPath, -1);
 
-	EqString searchWildcard;
-	CombinePath(searchWildcard, 2, fsBaseDir.ToCString(), newFind->wildcard.ToCString());
+		EqString searchWildcard;
+		CombinePath(searchWildcard, 2, fsBaseDir.ToCString(), newFind->wildcard.ToCString());
 
-	m_findDatas.append(newFind);
-
-	if (newFind->Init(searchWildcard))
-		return newFind->GetCurrentPath();
-
-	if(newFind->searchPathId != -1)
-	{
-		newFind->searchPathId++;
-
-		// try reinitialize
-		while(newFind->searchPathId < m_directories.numElem())
+		if (newFind->osFind.Init(searchWildcard))
 		{
-			CombinePath(fsBaseDir, 2, m_basePath.ToCString(), m_directories[newFind->searchPathId].path.ToCString());
-			CombinePath(searchWildcard, 2, fsBaseDir.ToCString(), newFind->wildcard.ToCString());
-
-			if (newFind->Init(searchWildcard))
-				return newFind->GetCurrentPath();
-
-			newFind->searchPathId++;
+			m_findDatas.append(newFind);
+			*findData = newFind;
+			return newFind->osFind.GetCurrentPath();
 		}
+
+		delete newFind;
+		return nullptr;
 	}
 
-	// delete if no luck
-	delete newFind;
-	m_findDatas.remove(newFind);
+	// try initialize in different addon directories
 
+	newFind->searchPathId = (searchPath == SP_MOD) ? 0 : -1;
+
+	EqString fsBaseDir;
+	EqString searchWildcard;
+	while (newFind->searchPathId < m_directories.numElem())
+	{
+		fsBaseDir = GetSearchPath((ESearchPath)searchPath, newFind->searchPathId);
+		CombinePath(searchWildcard, 2, fsBaseDir.ToCString(), newFind->wildcard.ToCString());
+
+		if (newFind->osFind.Init(searchWildcard))
+		{
+			m_findDatas.append(newFind);
+			*findData = newFind;
+			return newFind->osFind.GetCurrentPath();
+		}
+
+		newFind->searchPathId++;
+	}
+
+	delete newFind;
 	return nullptr;
 }
 
@@ -1066,25 +962,26 @@ const char* CFileSystem::FindNext(DKFINDDATA* findData) const
 	if(!findData)
 		return nullptr;
 
-	if (findData->GetNext())
-		return findData->GetCurrentPath();
+	if (findData->osFind.GetNext())
+		return findData->osFind.GetCurrentPath();
 
-	if(findData->searchPathId == -1)
+	if(findData->searchPath != SP_MOD)
 		return nullptr;
 
-	findData->searchPathId++;
-
 	// try reinitialize
+	findData->searchPathId++;
 	while(findData->searchPathId < m_directories.numElem())
 	{
 		EqString fsBaseDir;
 		EqString searchWildcard;
 			
-		CombinePath(fsBaseDir, 2, m_basePath.ToCString(), m_directories[findData->searchPathId].path.ToCString());		
+		fsBaseDir = GetSearchPath(findData->searchPath, findData->searchPathId);
 		CombinePath(searchWildcard, 2, fsBaseDir.ToCString(), findData->wildcard.ToCString());
 
-		if (findData->Init(searchWildcard.ToCString()))
-			return findData->GetCurrentPath();
+		if (findData->osFind.Init(searchWildcard.ToCString()))
+		{
+			return findData->osFind.GetCurrentPath();
+		}
 
 		findData->searchPathId++;
 	}
@@ -1106,11 +1003,7 @@ bool CFileSystem::FindIsDirectory(DKFINDDATA* findData) const
 	if(!findData)
 		return false;
 
-#ifdef _WIN32
-	return (findData->wfd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY);
-#else
-	return findData->isEntryDir;
-#endif // _WIN32
+	return findData->osFind.IsDirectory();
 }
 
 // loads module
@@ -1128,7 +1021,6 @@ DKMODULE* CFileSystem::LoadModule(const char* mod_name)
 	DWORD lastErr = GetLastError();
 
 	char err[256] = {'\0'};
-
 	if(lastErr != 0)
 	{
 		FormatMessageA(	FORMAT_MESSAGE_FROM_SYSTEM,
@@ -1160,8 +1052,6 @@ DKMODULE* CFileSystem::LoadModule(const char* mod_name)
 
 	if( !mod )
 	{
-        //MsgInfo("Library '%s' loading error '%s', 0x%p\n", moduleFileName.ToCString(), err, lastErr);
-
 		ErrorMsg("CFileSystem::LoadModule Error: Failed to load %s\n - %s!\n", moduleFileName.ToCString(), err);
 		return nullptr;
 	}
