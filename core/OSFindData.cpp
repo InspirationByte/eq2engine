@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright ï¿½ Inspiration Byte
 // 2009-2023
 //////////////////////////////////////////////////////////////////////////////////
 // Description: OS file find data
@@ -10,6 +10,7 @@
 #ifndef PLAT_WIN
 #include <unistd.h> // rmdir()
 #include <dirent.h> // opendir, readdir
+#include <sys/stat.h>
 #endif
 
 #include "OSFindData.h"
@@ -35,6 +36,8 @@ void OSFindData::Release()
 
 bool OSFindData::Init(const EqString& searchWildcard)
 {
+	m_wildcard = searchWildcard;
+
 	Release();
 
 #if defined(PLAT_WIN)
@@ -69,7 +72,7 @@ bool OSFindData::GetNext()
 		const int wildcardFileStart = m_wildcard.Find("*");
 		if (wildcardFileStart != -1)
 		{
-			const char* wildcardFile = m_wildcard.ToCString() + m_wildcardFileStart + 1;
+			const char* wildcardFile = m_wildcard.ToCString() + wildcardFileStart + 1;
 			if (*wildcardFile == 0)
 				break;
 
@@ -84,12 +87,12 @@ bool OSFindData::GetNext()
 	m_isEntryDir = false;
 
 	struct stat st;
-	if (m_entry && stat(EqString::Format("%s/%s", m_dirPath.TrimChar(CORRECT_PATH_SEPARATOR).ToCString(), entry->d_name), &st) == 0)
+	if (m_entry && stat(EqString::Format("%s/%s", m_dirPath.TrimChar(CORRECT_PATH_SEPARATOR).ToCString(), m_entry->d_name), &st) == 0)
 	{
 		m_isEntryDir = (st.st_mode & S_IFDIR);
 	}
 
-	return entry;
+	return m_entry;
 #endif
 }
 
