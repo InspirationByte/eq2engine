@@ -30,6 +30,20 @@
 #include <dirent.h> // opendir, readdir
 #endif
 
+#ifdef PLAT_LINUX
+static int FSStringId(const char *str)
+{
+	constexpr int MULTIPLIER = 37;
+
+	ASSERT(str);
+	int hash = 0;
+	for (ubyte* p = (ubyte*)str; *p; p++)
+		hash = MULTIPLIER * hash + tolower(*p);
+
+	return hash;
+}
+#endif
+
 using namespace Threading;
 static CEqMutex	s_FSMutex;
 
@@ -640,7 +654,7 @@ bool CFileSystem::WalkOverSearchPaths(int searchFlags, const char* fileName, con
 			filePath.Path_FixSlashes();
 
 #ifdef PLAT_LINUX
-			const int nameHash = StringToHash(filePath.ToCString(), true);
+			const int nameHash = FSStringId(filePath.ToCString());
 			const auto it = spInfo.pathToFileMapping.find(nameHash);
 			if(it != spInfo.pathToFileMapping.end())
 			{
@@ -856,7 +870,7 @@ void CFileSystem::AddSearchPath(const char* pathId, const char* pszDir)
 				else
 				{
 					// add a mapping
-					const int nameHash = StringToHash(entryName, true);
+					const int nameHash = FSStringId(entryName);
 					spInfo.pathToFileMapping.insert(nameHash, entryName);
 				}
 			} while (true);
