@@ -1,38 +1,358 @@
 {
-    // Use IntelliSense to learn about possible attributes.
-    // Hover to view descriptions of existing attributes.
-    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
-    "version": "0.2.0",
-    "configurations": [
-        {
-            "type": "cppdbg",
-            "request": "launch",
-            "name": "Launch(gdb)",
-            "program": "${workspaceRoot}/bin/x64/Release/DrvSyn_Release",
-            "cwd": "${workspaceRoot}/../build",
-            "args": [
-                "-renderer", "libeqGLRHI"
-            ],
-            "stopAtEntry": false,
-            "externalConsole": false,
-            "MIMode": "gdb",
-            "miDebuggerPath": "/usr/bin/gdb",
-            "visualizerFile": "${workspaceRoot}/public/types.natvis",
-            "showDisplayString": true,
-            "setupCommands": [
-                {
-                    "description": "Enable pretty-printing for gdb",
-                    "text": "-enable-pretty-printing",
-                    "ignoreFailures": true
-                }
-            ],
-            "environment": [
-                {
-                    "name": "LD_LIBRARY_PATH",
-                    "value": "${LD_LIBRARY_PATH}:${workspaceRoot}/bin/x64/Release/"
-                }
-            ],
-            "preLaunchTask": "Build Release X64"
-        }
-    ]
+	"version": "2.0.0",
+	"configurations":
+	[
+		{
+			"name": "Run DriversGame (Debug|x86)",
+			"request": "launch",
+			"type": "cppdbg",
+			"program": "${workspaceRoot}/bin/x86/Debug/DrvSyn_Debug",
+			"linux":
+			{
+				"name": "Run DriversGame (Debug|x86)",
+				"type": "cppdbg",
+				"request": "launch",
+				"program": "${workspaceRoot}/bin/x86/Debug/DrvSyn_Debug",
+				"externalConsole": false,
+				"miDebuggerPath": "/usr/bin/gdb",
+				"MIMode": "gdb",
+				"setupCommands":
+				[
+					{
+						"text": "-enable-pretty-printing",
+						"description": "enable pretty printing",
+						"ignoreFailures": true,
+					},
+				],
+			},
+			"windows":
+			{
+				"name": "Run DriversGame (Debug|x86)",
+				"console": "externalTerminal",
+				"type": "cppvsdbg",
+				"request": "launch",
+				"program": "${workspaceRoot}/bin/x86/Debug/DrvSyn_Debug",
+			},
+			"stopAtEntry": false,
+			"cwd": "${workspaceRoot}/../build",
+			"visualizerFile": "${workspaceRoot}/public/types.natvis",
+			"args":[
+			],
+			"environment":[
+				{
+					"name": "LD_LIBRARY_PATH",
+					"value": "${LD_LIBRARY_PATH}:${workspaceRoot}/bin/x64/Release/"
+				},
+			],
+			"preLaunchTask": "Build DriversGame (Debug|x86)",
+		},
+		{
+			"name": "Run DriversGame (Debug|x64)",
+			"request": "launch",
+			"type": "cppdbg",
+			"program": "${workspaceRoot}/bin/x64/Debug/DrvSyn_Debug",
+			"linux":
+			{
+				"name": "Run DriversGame (Debug|x64)",
+				"type": "cppdbg",
+				"request": "launch",
+				"program": "${workspaceRoot}/bin/x64/Debug/DrvSyn_Debug",
+				"externalConsole": false,
+				"miDebuggerPath": "/usr/bin/gdb",
+				"MIMode": "gdb",
+				"setupCommands":
+				[
+					{
+						"text": "-enable-pretty-printing",
+						"description": "enable pretty printing",
+						"ignoreFailures": true,
+					},
+				],
+			},
+			"windows":
+			{
+				"name": "Run DriversGame (Debug|x64)",
+				"console": "externalTerminal",
+				"type": "cppvsdbg",
+				"request": "launch",
+				"program": "${workspaceRoot}/bin/x64/Debug/DrvSyn_Debug",
+			},
+			"stopAtEntry": false,
+			"cwd": "${workspaceRoot}/../build",
+			"visualizerFile": "${workspaceRoot}/public/types.natvis",
+			"args":[
+			],
+			"environment":[
+				{
+					"name": "LD_LIBRARY_PATH",
+					"value": "${LD_LIBRARY_PATH}:${workspaceRoot}/bin/x64/Release/"
+				},
+			],
+			"preLaunchTask": "Build DriversGame (Debug|x64)",
+		},
+		{
+			"name": "Run DriversGame (Release|x86)",
+			"request": "launch",
+			"type": "cppdbg",
+			"program": "${workspaceRoot}/bin/x86/Release/DrvSyn_Release",
+			"linux":
+			{
+				"name": "Run DriversGame (Release|x86)",
+				"type": "cppdbg",
+				"request": "launch",
+				"program": "${workspaceRoot}/bin/x86/Release/DrvSyn_Release",
+				"externalConsole": false,
+				"miDebuggerPath": "/usr/bin/gdb",
+				"MIMode": "gdb",
+				"setupCommands":
+				[
+					{
+						"text": "-enable-pretty-printing",
+						"description": "enable pretty printing",
+						"ignoreFailures": true,
+					},
+				],
+			},
+			"windows":
+			{
+				"name": "Run DriversGame (Release|x86)",
+				"console": "externalTerminal",
+				"type": "cppvsdbg",
+				"request": "launch",
+				"program": "${workspaceRoot}/bin/x86/Release/DrvSyn_Release",
+			},
+			"stopAtEntry": false,
+			"cwd": "${workspaceRoot}/../build",
+			"visualizerFile": "${workspaceRoot}/public/types.natvis",
+			"args":[
+			],
+			"environment":[
+				{
+					"name": "LD_LIBRARY_PATH",
+					"value": "${LD_LIBRARY_PATH}:${workspaceRoot}/bin/x64/Release/"
+				},
+			],
+			"preLaunchTask": "Build DriversGame (Release|x86)",
+		},
+		{
+			"name": "Run DriversGame (Release|x64)",
+			"request": "launch",
+			"type": "cppdbg",
+			"program": "${workspaceRoot}/bin/x64/Release/DrvSyn_Release",
+			"linux":
+			{
+				"name": "Run DriversGame (Release|x64)",
+				"type": "cppdbg",
+				"request": "launch",
+				"program": "${workspaceRoot}/bin/x64/Release/DrvSyn_Release",
+				"externalConsole": false,
+				"miDebuggerPath": "/usr/bin/gdb",
+				"MIMode": "gdb",
+				"setupCommands":
+				[
+					{
+						"text": "-enable-pretty-printing",
+						"description": "enable pretty printing",
+						"ignoreFailures": true,
+					},
+				],
+			},
+			"windows":
+			{
+				"name": "Run DriversGame (Release|x64)",
+				"console": "externalTerminal",
+				"type": "cppvsdbg",
+				"request": "launch",
+				"program": "${workspaceRoot}/bin/x64/Release/DrvSyn_Release",
+			},
+			"stopAtEntry": false,
+			"cwd": "${workspaceRoot}/../build",
+			"visualizerFile": "${workspaceRoot}/public/types.natvis",
+			"args":[
+			],
+			"environment":[
+				{
+					"name": "LD_LIBRARY_PATH",
+					"value": "${LD_LIBRARY_PATH}:${workspaceRoot}/bin/x64/Release/"
+				},
+			],
+			"preLaunchTask": "Build DriversGame (Release|x64)",
+		},
+		{
+			"name": "Run DriversGame (Profile|x86)",
+			"request": "launch",
+			"type": "cppdbg",
+			"program": "${workspaceRoot}/bin/x86/Profile/DrvSyn_Profile",
+			"linux":
+			{
+				"name": "Run DriversGame (Profile|x86)",
+				"type": "cppdbg",
+				"request": "launch",
+				"program": "${workspaceRoot}/bin/x86/Profile/DrvSyn_Profile",
+				"externalConsole": false,
+				"miDebuggerPath": "/usr/bin/gdb",
+				"MIMode": "gdb",
+				"setupCommands":
+				[
+					{
+						"text": "-enable-pretty-printing",
+						"description": "enable pretty printing",
+						"ignoreFailures": true,
+					},
+				],
+			},
+			"windows":
+			{
+				"name": "Run DriversGame (Profile|x86)",
+				"console": "externalTerminal",
+				"type": "cppvsdbg",
+				"request": "launch",
+				"program": "${workspaceRoot}/bin/x86/Profile/DrvSyn_Profile",
+			},
+			"stopAtEntry": false,
+			"cwd": "${workspaceRoot}/../build",
+			"visualizerFile": "${workspaceRoot}/public/types.natvis",
+			"args":[
+			],
+			"environment":[
+				{
+					"name": "LD_LIBRARY_PATH",
+					"value": "${LD_LIBRARY_PATH}:${workspaceRoot}/bin/x64/Release/"
+				},
+			],
+			"preLaunchTask": "Build DriversGame (Profile|x86)",
+		},
+		{
+			"name": "Run DriversGame (Profile|x64)",
+			"request": "launch",
+			"type": "cppdbg",
+			"program": "${workspaceRoot}/bin/x64/Profile/DrvSyn_Profile",
+			"linux":
+			{
+				"name": "Run DriversGame (Profile|x64)",
+				"type": "cppdbg",
+				"request": "launch",
+				"program": "${workspaceRoot}/bin/x64/Profile/DrvSyn_Profile",
+				"externalConsole": false,
+				"miDebuggerPath": "/usr/bin/gdb",
+				"MIMode": "gdb",
+				"setupCommands":
+				[
+					{
+						"text": "-enable-pretty-printing",
+						"description": "enable pretty printing",
+						"ignoreFailures": true,
+					},
+				],
+			},
+			"windows":
+			{
+				"name": "Run DriversGame (Profile|x64)",
+				"console": "externalTerminal",
+				"type": "cppvsdbg",
+				"request": "launch",
+				"program": "${workspaceRoot}/bin/x64/Profile/DrvSyn_Profile",
+			},
+			"stopAtEntry": false,
+			"cwd": "${workspaceRoot}/../build",
+			"visualizerFile": "${workspaceRoot}/public/types.natvis",
+			"args":[
+			],
+			"environment":[
+				{
+					"name": "LD_LIBRARY_PATH",
+					"value": "${LD_LIBRARY_PATH}:${workspaceRoot}/bin/x64/Release/"
+				},
+			],
+			"preLaunchTask": "Build DriversGame (Profile|x64)",
+		},
+		{
+			"name": "Run DriversGame (Retail|x86)",
+			"request": "launch",
+			"type": "cppdbg",
+			"program": "${workspaceRoot}/bin/x86/Retail/DrvSyn",
+			"linux":
+			{
+				"name": "Run DriversGame (Retail|x86)",
+				"type": "cppdbg",
+				"request": "launch",
+				"program": "${workspaceRoot}/bin/x86/Retail/DrvSyn",
+				"externalConsole": false,
+				"miDebuggerPath": "/usr/bin/gdb",
+				"MIMode": "gdb",
+				"setupCommands":
+				[
+					{
+						"text": "-enable-pretty-printing",
+						"description": "enable pretty printing",
+						"ignoreFailures": true,
+					},
+				],
+			},
+			"windows":
+			{
+				"name": "Run DriversGame (Retail|x86)",
+				"console": "externalTerminal",
+				"type": "cppvsdbg",
+				"request": "launch",
+				"program": "${workspaceRoot}/bin/x86/Retail/DrvSyn",
+			},
+			"stopAtEntry": false,
+			"cwd": "${workspaceRoot}/../build",
+			"visualizerFile": "${workspaceRoot}/public/types.natvis",
+			"args":[
+			],
+			"environment":[
+				{
+					"name": "LD_LIBRARY_PATH",
+					"value": "${LD_LIBRARY_PATH}:${workspaceRoot}/bin/x64/Release/"
+				},
+			],
+			"preLaunchTask": "Build DriversGame (Retail|x86)",
+		},
+		{
+			"name": "Run DriversGame (Retail|x64)",
+			"request": "launch",
+			"type": "cppdbg",
+			"program": "${workspaceRoot}/bin/x64/Retail/DrvSyn",
+			"linux":
+			{
+				"name": "Run DriversGame (Retail|x64)",
+				"type": "cppdbg",
+				"request": "launch",
+				"program": "${workspaceRoot}/bin/x64/Retail/DrvSyn",
+				"externalConsole": false,
+				"miDebuggerPath": "/usr/bin/gdb",
+				"MIMode": "gdb",
+				"setupCommands":
+				[
+					{
+						"text": "-enable-pretty-printing",
+						"description": "enable pretty printing",
+						"ignoreFailures": true,
+					},
+				],
+			},
+			"windows":
+			{
+				"name": "Run DriversGame (Retail|x64)",
+				"console": "externalTerminal",
+				"type": "cppvsdbg",
+				"request": "launch",
+				"program": "${workspaceRoot}/bin/x64/Retail/DrvSyn",
+			},
+			"stopAtEntry": false,
+			"cwd": "${workspaceRoot}/../build",
+			"visualizerFile": "${workspaceRoot}/public/types.natvis",
+			"args":[
+			],
+			"environment":[
+				{
+					"name": "LD_LIBRARY_PATH",
+					"value": "${LD_LIBRARY_PATH}:${workspaceRoot}/bin/x64/Release/"
+				},
+			],
+			"preLaunchTask": "Build DriversGame (Retail|x64)",
+		},
+	]
 }

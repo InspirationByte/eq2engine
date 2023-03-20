@@ -5,6 +5,7 @@ require ".premake_modules/androidndk"
 require ".premake_modules/unitybuild"
 require ".premake_modules/asan"
 require ".premake_modules/wxwidgets"
+require ".premake_modules/vscode"
 
 IS_ANDROID = (_ACTION == "androidndk")
 ENABLE_TOOLS = (--[[os.target() == "linux" or]] os.target() == "windows") and not IS_ANDROID
@@ -56,7 +57,10 @@ workspace(WORKSPACE_NAME)
 	--characterset "ASCII"
 	objdir "build"
 	targetdir "bin/%{cfg.platform}/%{cfg.buildcfg}"
-	location "project_%{_ACTION}"
+
+	if _ACTION ~= "vscode" then
+		location "project_%{_ACTION}"
+	end
 
 	defines {
 		"COMPILE_CONFIGURATION=\"%{cfg.buildcfg}\"",
@@ -120,6 +124,12 @@ workspace(WORKSPACE_NAME)
 	end
 
     filter "system:linux"
+		vscode_makefile "project_gmake2"
+		vscode_launch_cwd "${workspaceRoot}/../build"
+		vscode_launch_environment {
+			LD_LIBRARY_PATH = "${LD_LIBRARY_PATH}:${workspaceRoot}/bin/x64/Release/"
+		}
+		vscode_launch_visualizerFile "${workspaceRoot}/public/types.natvis"
         buildoptions {
             "-Wno-narrowing",
             "-fpermissive",
