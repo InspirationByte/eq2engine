@@ -28,7 +28,9 @@ public:
 	bool					InitAPI(const shaderAPIParams_t &params);
 	void					ExitAPI();
 	void					ReleaseSwapChains();
+
 	void					ReleaseSurface();
+	bool					CreateSurface();
 
 	// frame begin/end
 	void					BeginFrame(IEqSwapChain* swapChain = nullptr);
@@ -79,14 +81,11 @@ protected:
 
     EGLNativeDisplayType	m_hdc;
     EGLNativeWindowType		m_hwnd;
-    EGLDisplay				m_eglDisplay;
-    EGLSurface				m_eglSurface;
-	EGLConfig				m_eglConfig;
+    EGLDisplay				m_eglDisplay{ nullptr };
+    EGLSurface				m_eglSurface{ nullptr };
+	EGLConfig				m_eglConfig{ nullptr };
 
-#ifdef PLAT_ANDROID
-	bool					m_lostSurface;
-#endif // PLAT_ANDROID
-
+	int						m_multiSamplingMode;
 	int						m_width;
 	int						m_height;
 
