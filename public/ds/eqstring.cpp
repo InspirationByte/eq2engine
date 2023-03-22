@@ -89,7 +89,7 @@ EqString EqString::FormatVa(const char* pszFormat, va_list argptr)
 
 	va_list varg;
 	va_copy(varg, argptr);
-	const int reqSize = vsnprintf(newString.m_pszString, newString.m_nAllocated+1, pszFormat, varg);
+	const int reqSize = vsnprintf(newString.m_pszString, newString.m_nAllocated, pszFormat, varg);
 
 	if (reqSize < newString.m_nAllocated)
 	{
@@ -97,8 +97,8 @@ EqString EqString::FormatVa(const char* pszFormat, va_list argptr)
 		return newString;
 	}
 
-	newString.Resize(reqSize, false);
-	newString.m_nLength = vsnprintf(newString.m_pszString, newString.m_nAllocated+1, pszFormat, argptr);
+	newString.Resize(reqSize + 1, false);
+	newString.m_nLength = vsnprintf(newString.m_pszString, newString.m_nAllocated, pszFormat, argptr);
 
 	return newString;
 }

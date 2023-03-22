@@ -1187,6 +1187,21 @@ public:
 	{
 	}
 
+	template<typename ARRAY_TYPE>
+	ArrayRef<T>& operator=(const ARRAY_TYPE& other)
+	{
+		m_pListPtr = other.ptr();
+		m_nNumElem = other.numElem();
+		return *this;
+	}
+
+	ArrayRef<T>& operator=(const ArrayRef<T>& other)
+	{
+		m_pListPtr = other.ptr();
+		m_nNumElem = other.numElem();
+		return *this;
+	}
+
 	T& operator[](int index)
 	{
 		ASSERT(index >= 0);
@@ -1218,7 +1233,7 @@ public:
 
 protected:
 	T*				m_pListPtr{ nullptr };
-	const int		m_nNumElem{ 0 };
+	int				m_nNumElem{ 0 };
 };
 
 // const array ref
@@ -1234,7 +1249,7 @@ public:
 	}
 
 	template<typename ARRAY_TYPE>
-	ArrayCRef(ARRAY_TYPE& otherArray)
+	ArrayCRef(const ARRAY_TYPE& otherArray)
 		: m_pListPtr(otherArray.ptr()), m_nNumElem(otherArray.numElem())
 	{
 	}
@@ -1243,6 +1258,28 @@ public:
 	ArrayCRef(T(&otherArray)[N])
 		: m_pListPtr(otherArray), m_nNumElem(N)
 	{
+	}
+
+	template<typename ARRAY_TYPE>
+	ArrayCRef<T>& operator=(const ARRAY_TYPE& other)
+	{
+		m_pListPtr = other.ptr();
+		m_nNumElem = other.numElem();
+		return *this;
+	}
+
+	ArrayCRef<T>& operator=(const ArrayRef<T>& other)
+	{
+		m_pListPtr = other.ptr();
+		m_nNumElem = other.numElem();
+		return *this;
+	}
+
+	ArrayCRef<T>& operator=(const ArrayCRef<T>& other)
+	{
+		m_pListPtr = other.ptr();
+		m_nNumElem = other.numElem();
+		return *this;
 	}
 
 	const T& operator[](int index) const
@@ -1270,7 +1307,7 @@ public:
 
 protected:
 	const T*		m_pListPtr{ nullptr };
-	const int		m_nNumElem{ 0 };
+	int				m_nNumElem{ 0 };
 };
 
 //-------------------------------------------

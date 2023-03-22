@@ -7,9 +7,12 @@
 
 #pragma once
 
-#if defined(PLAT_POSIX)
+#if defined(PLAT_LINUX)
 struct __dirstream;
 typedef struct __dirstream DIR;
+#elif defined(PLAT_ANDROID)
+struct DIR;
+typedef struct DIR DIR;
 #endif
 
 class OSFindData

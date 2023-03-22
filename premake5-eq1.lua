@@ -299,8 +299,7 @@ project "eqGLRHI"
 		links {
 			"X11", "Xxf86vm", "Xext", "GL", "GLU",
 		}
-
-elseif os.target() ~= "linux" then
+elseif os.target() == "windows" and not IS_ANDROID then
     -- Direct3D9 renderer
     project "eqD3D9RHI"
         kind "SharedLib"
