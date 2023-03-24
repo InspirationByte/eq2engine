@@ -97,7 +97,7 @@ workspace(WORKSPACE_NAME)
 		buildoptions {
 			"-fpermissive",
 			"-fexceptions",
-			"-pthread",
+			"-pthread"
 		}
 		
 		linkoptions {
@@ -135,8 +135,12 @@ workspace(WORKSPACE_NAME)
             "-Wno-narrowing",
             "-fpermissive",
 			"-fexceptions",
-			"-fpic"
+			"-fpic",
+			--"-fsanitize=address"
         }
+		linkoptions {
+			--"-fsanitize=address"
+		}
 		disablewarnings {
 			-- disable warnings which are emitted by my stupid (and not so) code
 			"c++11-narrowing",

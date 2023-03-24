@@ -273,7 +273,7 @@ void PPMemInfo(bool fullStats)
 
 IEXPORTS size_t	PPMemGetUsage()
 {
-#ifdef PPMEM_DISABLE
+#ifdef PPMEM_DISABLED
 	return 0;
 #else
 	ppmem_state_t& st = PPGetState();
@@ -284,7 +284,7 @@ IEXPORTS size_t	PPMemGetUsage()
 // allocated debuggable memory block
 void* PPDAlloc(size_t size, const PPSourceLine& sl)
 {
-#ifdef PPMEM_DISABLE
+#ifdef PPMEM_DISABLED
 	void* mem = pp_internal_malloc(size);
 	ASSERT_MSG(mem, "No mem left");
 	return mem;
@@ -344,13 +344,13 @@ void* PPDAlloc(size_t size, const PPSourceLine& sl)
 		ASSERT_MSG(alloc->id == (uint)ppmem_break_on_alloc.GetInt(), "PPDAlloc: Break on allocation id=%d", alloc->id);
 
 	return actualPtr;
-#endif // PPMEM_DISABLE
+#endif // PPMEM_DISABLED
 }
 
 // reallocates memory block
 void* PPDReAlloc( void* ptr, size_t size, const PPSourceLine& sl )
 {
-#ifdef PPMEM_DISABLE
+#ifdef PPMEM_DISABLED
 	void* mem = realloc(ptr, size);
 	ASSERT_MSG(mem, "No mem left");
 	return mem;
@@ -422,12 +422,12 @@ void* PPDReAlloc( void* ptr, size_t size, const PPSourceLine& sl )
 
 
 	return retPtr;
-#endif // PPMEM_DISABLE
+#endif // PPMEM_DISABLED
 }
 
 void PPFree(void* ptr)
 {
-#ifdef PPMEM_DISABLE
+#ifdef PPMEM_DISABLED
 	free(ptr);
 #else
 
@@ -470,5 +470,5 @@ void PPFree(void* ptr)
 
 		free((void*)alloc);
 	}
-#endif // PPMEM_DISABLE
+#endif // PPMEM_DISABLED
 }

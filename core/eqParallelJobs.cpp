@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright пїЅ Inspiration Byte
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
 // Description: Equilibrium multithreaded parallel jobs
@@ -71,7 +71,7 @@ bool CEqJobThread::AssignJob( eqParallelJob_t* job )
 			return false;
 	}
 
-	// применить работу к потоку
+	// пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
 	job->threadId = GetThreadID();
 	m_curJob = job;
 
@@ -133,11 +133,11 @@ void CEqParallelJobThreads::Shutdown()
 }
 
 // adds the job
-eqParallelJob_t* CEqParallelJobThreads::AddJob(int jobTypeId, const EQ_JOB_FUNC& func, void* args, int count /*= 1*/, const EQ_JOB_COMPLETE_FUNC& completeFn /*= nullptr*/)
+eqParallelJob_t* CEqParallelJobThreads::AddJob(int jobTypeId, EQ_JOB_FUNC func, void* args, int count /*= 1*/, EQ_JOB_COMPLETE_FUNC completeFn /*= nullptr*/)
 {
 	ASSERT(count > 0);
 
-	eqParallelJob_t* job = PPNew eqParallelJob_t(jobTypeId, func, args, count, completeFn);
+	eqParallelJob_t* job = PPNew eqParallelJob_t(jobTypeId, std::move(func), args, count, std::move(completeFn));
 	job->flags = JOB_FLAG_DELETE;
 
 	{

@@ -221,10 +221,11 @@ void EqWString::Assign(const wchar_t* pszStr, int len)
 
 	if (ExtendAlloc(len + 1))
 	{
-		wcsncpy(m_pszString, pszStr, len);
+		if(pszStr != m_pszString)
+			wcsncpy(m_pszString, pszStr, len);
 		m_pszString[len] = 0;
-		m_nLength = len;
 	}
+	m_nLength = len;
 }
 
 void EqWString::Assign(const EqWString &str, int nStart, int len)

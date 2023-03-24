@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright ï¿½ Inspiration Byte
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
 // Description: Recursive Key-Values system for configuration and other files
@@ -292,9 +292,9 @@ enum EKVTokenState
 	KV_PARSE_BREAK_TOKEN,	// for unquoted strings
 };
 
-using KVTokenFunc = EqFunction<EKVTokenState(int line, const char* curPtr, const char* sig, va_list arg)>;
+using KVTokenFunc = EqFunction<EKVTokenState(int line, const char* curPtr, const char* sig, va_list& arg)>;
 
-bool			KV_Tokenizer(const char* buffer, int bufferSize, const char* fileName, const KVTokenFunc& tokenFunc);
+bool			KV_Tokenizer(const char* buffer, int bufferSize, const char* fileName, const KVTokenFunc tokenFunc);
 
 KVSection*		KV_LoadFromFile( const char* pszFileName, int nSearchFlags = -1, KVSection* pParseTo = nullptr);
 

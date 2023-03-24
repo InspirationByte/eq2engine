@@ -223,12 +223,13 @@ void EqString::Assign(const char* pszStr, int len)
 		m_pszString[len] = 0;
 	}
 
-	if( ExtendAlloc(len + 1, false ) )
+	if( ExtendAlloc(len+1, false ) )
 	{
-		strncpy( m_pszString, pszStr, len);
+		if(pszStr != m_pszString)
+			strncpy(m_pszString, pszStr, len);
 		m_pszString[len] = 0;
-		m_nLength = len;
 	}
+	m_nLength = len;
 }
 
 void EqString::Assign(const EqString &str, int nStart, int len)
@@ -608,6 +609,8 @@ EqString EqString::TrimChar(char ch, bool left, bool right) const
 
 void EqString::Path_FixSlashes() const
 {
+	if(!m_pszString)
+		return;
 	FixSlashes( m_pszString );
 }
 

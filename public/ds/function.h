@@ -16,6 +16,8 @@ template <int BUFFER_SIZE, typename R, typename ...Args>
 class EqFunction<R(Args...), BUFFER_SIZE>
 {
 public:
+    ~EqFunction() {}
+
     EqFunction() noexcept {};
 
     EqFunction(std::nullptr_t) noexcept {};
@@ -25,22 +27,27 @@ public:
         if (!other)
             return;
 
+        ASSERT((other.isSmall & 1) == other.isSmall);
+
         if (other.isSmall) 
         {
-            isSmall = true;
+            isSmall = 1;
             auto c = reinterpret_cast<Concept const*>(&other.buffer);
             c->CopyToBuffer(&buffer);
         }
         else 
         {
-            isSmall = false;
+            isSmall = 0;
             new (&buffer) std::unique_ptr<Concept>(other.ptr->Copy());
         }
+        ASSERT((isSmall & 1) == isSmall);
     };
 
-    EqFunction(EqFunction&& other) noexcept {
+    EqFunction(EqFunction&& other) noexcept 
+    {
         if (!other)
             return;
+        ASSERT((other.isSmall & 1) == other.isSmall);
 
         MoveFunction(std::move(other));
     }
@@ -55,21 +62,20 @@ public:
                 return;
         }
 
-        if (sizeof(f) <= BUFFER_SIZE && std::is_nothrow_move_constructible<F>::value) 
+        if constexpr (sizeof(f) <= BUFFER_SIZE && std::is_nothrow_move_constructible<F>::value) 
         {
-            isSmall = true;
+            isSmall = 1;
             new (&buffer) Model<F>(std::move(f));
+
+            ASSERT(isSmall == 1);
         }
         else 
         {
-            isSmall = false;
+            isSmall = 0;
             new (&buffer) std::unique_ptr<Concept>(std::make_unique<Model<F>>(f));
-        }
-    }
 
-    ~EqFunction()
-    {
-        Cleanup();
+            ASSERT(isSmall == 0);
+        }
     }
 
     EqFunction& operator=(const EqFunction& other) 
@@ -94,9 +100,13 @@ public:
 
     void Swap(EqFunction& other) noexcept 
     {
+        ASSERT((other.isSmall & 1) == other.isSmall);
+
         EqFunction tmp(std::move(other));
         other = std::move(*this);
         *this = std::move(tmp);
+
+        ASSERT((isSmall & 1) == isSmall);
     }
 
     explicit operator bool() const noexcept 
@@ -106,6 +116,8 @@ public:
 
     R operator()(Args ... a) const 
     {
+        ASSERT((isSmall & 1) == isSmall);
+
         if (isSmall) 
         {
             auto c = reinterpret_cast<Concept const*>(&buffer);
@@ -132,25 +144,29 @@ private:
             c->~unique_ptr();
         }
         memset(&buffer, 0, BUFFER_SIZE + alignof(size_t));
-        isSmall = false;
+        isSmall = 0;
     }
 
     void MoveFunction(EqFunction&& other) 
     {
+        ASSERT((other.isSmall & 1) == other.isSmall);
+
         if (other.isSmall) 
         {
-            isSmall = true;
+            isSmall = 1;
             auto c = reinterpret_cast<Concept*>(&other.buffer);
             c->MoveToBuffer(&buffer);
             c->~Concept();
-            other.isSmall = false;
+            other.isSmall = 0;
             new (&other.buffer) std::unique_ptr<Concept>(nullptr);
         }
         else 
         {
-            isSmall = false;
+            isSmall = 0;
             new (&buffer) std::unique_ptr<Concept>(std::move(other.ptr));
         }
+
+        ASSERT((isSmall & 1) == isSmall);
     }
 
     struct Concept 
@@ -196,12 +212,12 @@ private:
         F f;
     };
 
+    int64 isSmall{ 0 };
+
     union
     {
         mutable std::aligned_storage_t<BUFFER_SIZE + alignof(size_t), alignof(size_t)> buffer{ 0 };
         std::unique_ptr<Concept> ptr;
     };
-
-    bool isSmall{ false };
 };
 

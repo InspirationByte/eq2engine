@@ -54,6 +54,13 @@ public:
 			insert(i->key, *i->value);
 	}
 
+	Map(Map&& other)
+		: m_sl(other.m_sl), m_end(&m_endItem), m_begin(&m_endItem)
+	{
+		for (const Item* i = other.m_begin.item, *end = &other.m_endItem; i != end; i = i->next)
+			insert(i->key, std::move(*i->value));
+	}
+
 	~Map()
 	{
 		for (Item* i = m_begin.item, *end = &m_endItem; i != end; i = i->next)
@@ -464,14 +471,14 @@ private:
 	};
 
 private:
-	const PPSourceLine m_sl;
-	Iterator m_end;
-	Iterator m_begin;
-	Item m_endItem;
-	Item* m_root{ nullptr };
-	Item* m_freeItem{ nullptr };
-	ItemBlock* m_blocks{ nullptr };
-	int m_size{ 0 };
+	const PPSourceLine 	m_sl;
+	Iterator 			m_end;
+	Iterator 			m_begin;
+	Item 				m_endItem;
+	Item* 				m_root{ nullptr };
+	Item* 				m_freeItem{ nullptr };
+	ItemBlock* 			m_blocks{ nullptr };
+	int 				m_size{ 0 };
 
 private:
 	Iterator insert(Item** cell, Item* parent, const K& key)

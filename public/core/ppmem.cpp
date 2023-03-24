@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright ï¿½ Inspiration Byte
 // 2009-2022
 //////////////////////////////////////////////////////////////////////////////////
 // Description: PPMem (Pee-Pee Memory) -  memory allocation tracker
@@ -8,6 +8,18 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "core_common.h"
+
+// FIXME: ASAN settings are temporarily here
+#if __has_feature(address_sanitizer) || defined(__SANITIZE_ADDRESS__)
+#ifdef __cplusplus
+extern "C"
+#endif
+const char *__asan_default_options() {
+  // Clang reports ODR Violation errors in mbedtls/library/certs.c.
+  // NEED TO REPORT THIS ISSUE
+  return "detect_odr_violation=0:alloc_dealloc_mismatch=0";
+}
+#endif
 
 #if !defined(NO_PPMEM_OP) && !defined(PPMEM_DISABLE)
 

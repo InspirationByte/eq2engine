@@ -1394,9 +1394,9 @@ ALsizei CEqAudioSourceAL::GetSampleBuffer(void* data, ALsizei size)
 			samplesRead = sample->GetSamples(tmpSamples, numSamplesToRead, streamPos, looping);
 
 			if (fmt.channels == 1)
-				MixMono16(sampleVolume, tmpSamples, samplesRead * fmt.channels, (int16*)data, size);
+				MixMono16(sampleVolume, tmpSamples, samplesRead, (int16*)data, size);
 			else if (fmt.channels == 2)
-				MixStereo16(sampleVolume, tmpSamples, samplesRead * 2, (int16*)data, size);
+				MixStereo16(sampleVolume, tmpSamples, samplesRead, (int16*)data, size);
 		}
 		
 		m_streams[i].curPos = WrapAroundSampleOffset(streamPos + samplesRead, sample, looping);

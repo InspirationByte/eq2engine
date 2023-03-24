@@ -28,8 +28,18 @@
 //---------------
 // config vars
 
-#if defined(_RETAIL) || defined(__ANDROID__)
-#define PPMEM_DISABLE
+#ifndef __has_feature
+// GCC does not have __has_feature...
+#define __has_feature(feature) 0
+#endif
+
+#if __has_feature(address_sanitizer) || defined(__SANITIZE_ADDRESS__)
+// must be disiabled when ASAN is on
+#define PPMEM_DISABLED
+#endif
+
+#if (defined(_RETAIL) || defined(__ANDROID__)) && !defined(PPMEM_DISABLED)
+#define PPMEM_DISABLED
 #endif // _RETAIL
 
 #if defined(_WIN32) && !defined(_RETAIL)	// Sorry, only Binbows atm

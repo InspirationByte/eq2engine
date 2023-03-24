@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright ï¿½ Inspiration Byte
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
 // Description: Equilibrium material sub-rendering system
@@ -132,7 +132,7 @@ public:
 		if (g_parallelJobs->IsInitialized() && g_pShaderAPI->GetProgressiveTextureFrequency() == 0)
 		{
 			// Wooohoo Blast Processing!
-			g_parallelJobs->AddJob(JOB_TYPE_ANY, [nextMaterial = pMaterial, this](void*, int) {
+			g_parallelJobs->AddJob(JOB_TYPE_ANY, [nextMaterial = pMaterial](void*, int) {
 				((CMaterial*)nextMaterial.Ptr())->DoLoadShaderAndTextures();
 			});
 

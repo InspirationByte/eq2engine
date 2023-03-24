@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright ï¿½ Inspiration Byte
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
 // Description: Recursive Key-Values system for configuration and other files
@@ -1045,7 +1045,7 @@ KVSection* KV_ParseSection(const char* pszBuffer, int bufferSize, const char* ps
 	return result;
 }
 
-bool KV_Tokenizer(const char* buffer, int bufferSize, const char* fileName, const KVTokenFunc& tokenFunc)
+bool KV_Tokenizer(const char* buffer, int bufferSize, const char* fileName, const KVTokenFunc tokenFunc)
 {
 	enum EParserMode
 	{
@@ -1068,10 +1068,10 @@ bool KV_Tokenizer(const char* buffer, int bufferSize, const char* fileName, cons
 	int sectionDepth = 0;
 
 	char* dataPtr = (char*)buffer;
-	auto tokenFuncWrap = [&](const char* a, ...) -> EKVTokenState {
+	auto tokenFuncWrap = [&](const char* sig, ...) -> EKVTokenState {
 		va_list args;
-		va_start(args, a);
-		const EKVTokenState result = tokenFunc(curLine, dataPtr, a, args);
+		va_start(args, sig);
+		const EKVTokenState result = tokenFunc(curLine, dataPtr, sig, args);
 		va_end(args);
 		return result;
 	};
@@ -1212,7 +1212,7 @@ bool KV_Tokenizer(const char* buffer, int bufferSize, const char* fileName, cons
 				{
 					const int stringLength = (int)(dataPtr - firstLetter);
 
-					char* processedStringBuf = (char*)stackalloc(stringLength);
+					char* processedStringBuf = (char*)stackalloc(stringLength + 1);
 					if (stringLength > 0)
 						KV_ReadProcessString(firstLetter, processedStringBuf, stringLength);
 					else
