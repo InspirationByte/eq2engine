@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright ï¿½ Inspiration Byte
 // 2009-2022
 //////////////////////////////////////////////////////////////////////////////////
 // Description: PPMem (Pee-Pee Memory) -  memory allocation tracker
@@ -21,7 +21,7 @@ IEXPORTS void	PPFree( void* ptr );
 #define	PPAllocStructArray(type, count)					(type*)	PPDAlloc(count*sizeof(type), PP_SL)
 #define	PPReAlloc(ptr, size)							PPDReAlloc(ptr, size, PP_SL)
 
-#ifdef PPMEM_DISABLE
+#ifdef PPMEM_DISABLED
 
 #define	PPNew			new
 #define	PPNewSL(sl)		new
@@ -31,7 +31,7 @@ IEXPORTS void	PPFree( void* ptr );
 #define	PPNew			new(PP_SL)
 #define	PPNewSL(sl)		new(sl)
 
-#endif // PPMEM_DISABLE
+#endif // PPMEM_DISABLED
 
 #ifdef __clang__
 #define PPNOEXCEPT noexcept
@@ -39,7 +39,7 @@ IEXPORTS void	PPFree( void* ptr );
 #define PPNOEXCEPT
 #endif
 
-#if !defined(NO_PPMEM_OP) && !defined(PPMEM_DISABLE)
+#if !defined(NO_PPMEM_OP) && !defined(PPMEM_DISABLED)
 
 void* operator new(size_t size);
 void* operator new(size_t size, size_t alignment);
@@ -55,4 +55,4 @@ void* operator new[](size_t size, PPSourceLine sl) PPNOEXCEPT;
 void operator delete(void* ptr, PPSourceLine sl) PPNOEXCEPT;
 void operator delete[](void* ptr, PPSourceLine sl) PPNOEXCEPT;
 
-#endif // #if !NO_PPMEM_OP && !PPMEM_DISABLE
+#endif // #if !NO_PPMEM_OP && !PPMEM_DISABLED
