@@ -707,7 +707,6 @@ void CGLRenderLib::ExitAPI()
 	}
 
     XFree(m_dmodes);
-	//XFreeCursor(display, blankCursor);
 	XSync(m_display, False);
     XCloseDisplay(m_display);
 #endif
@@ -717,7 +716,6 @@ void CGLRenderLib::ExitAPI()
 void CGLRenderLib::BeginFrame(IEqSwapChain* swapChain)
 {
 	g_shaderApi.m_deviceLost = false;
-
 	g_shaderApi.StepProgressiveLodTextures();
 
 	int width = m_width;
@@ -739,6 +737,8 @@ void CGLRenderLib::BeginFrame(IEqSwapChain* swapChain)
 		wglMakeCurrent(nullptr, nullptr);
 		wglMakeCurrent(drawContext, m_glContext);
 	}
+#elif defined(PLAT_LINUX)
+	// TODO: linux window swapping
 #endif
 
 	m_curSwapChain = swapChain;
