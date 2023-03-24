@@ -11,11 +11,6 @@ project "SDL2"
 		"sign-compare"
 	}
 
-	links {
-		"dl", "GLESv1_CM", "GLESv2", "OpenSLES", "log", "android",
-		"cpufeatures"
-	}
-
 	buildoptions {
 		"-Wall",
 		"-Wextra",
@@ -42,34 +37,24 @@ project "SDL2"
 	{
 		"./src/*.c",
 		"./src/audio/*.c",
-		"./src/audio/android/*.c",
 		"./src/audio/dummy/*.c",
 		"./src/audio/aaudio/*.c",
 		"./src/audio/openslES/*.c",
 		"./src/atomic/*.c",
-		"./src/core/android/*.c",
 		"./src/cpuinfo/*.c",
 		"./src/dynapi/*.c",
 		"./src/events/*.c",
 		"./src/file/*.c",
 		"./src/haptic/*.c",
-		"./src/haptic/android/*.c",
 		"./src/hidapi/*.c",
-		"./src/hidapi/android/*.cpp",
 		"./src/joystick/*.c",
-		"./src/joystick/android/*.c",
 		"./src/joystick/hidapi/*.c",
 		"./src/joystick/virtual/*.c",
 		"./src/loadso/dlopen/*.c",
 		"./src/locale/*.c",
-		"./src/locale/android/*.c",
 		"./src/misc/*.c",
-		"./src/misc/android/*.c",
 		"./src/power/*.c",
-		"./src/power/android/*.c",
-		"./src/filesystem/android/*.c",
 		"./src/sensor/*.c",
-		"./src/sensor/android/*.c",
 		"./src/render/*.c",
 		"./src/render/*/*.c",
 		"./src/stdlib/*.c",
@@ -78,49 +63,31 @@ project "SDL2"
 		"./src/timer/*.c",
 		"./src/timer/unix/*.c",
 		"./src/video/*.c",
-		"./src/video/android/*.c",
 		"./src/video/yuv2rgb/*.c",
 		"./src/test/*.c"
-		--[[
-		"./src/*.c",
-		"./src/audio/*.c",
-		"./src/audio/android/*.c",
-		"./src/audio/dummy/*.c",
-		"./src/audio/openslES/*.c",
-		"./src/atomic/*.c",
-		"./src/core/android/*.c",
-		"./src/cpuinfo/*.c",
-		"./src/dynapi/*.c",
-		"./src/events/*.c",
-		"./src/file/*.c",
-		"./src/haptic/*.c",
-		"./src/haptic/android/*.c",
-		"./src/joystick/*.c",
-		"./src/joystick/android/*.c",
-		"./src/joystick/hidapi/*.c",
-		"./src/hidapi/android/*.cpp",
-		"./src/loadso/dlopen/*.c",
-		"./src/power/*.c",
-		"./src/power/android/*.c",
-		"./src/filesystem/android/*.c",
-		"./src/sensor/*.c",
-		"./src/sensor/android/*.c",
-		"./src/render/*.c",
-		"./src/render/*/*.c",
-		"./src/stdlib/*.c",
-		"./src/thread/*.c",
-		"./src/thread/pthread/*.c",
-		"./src/timer/*.c",
-		"./src/timer/unix/*.c",
-		"./src/video/*.c",
-		"./src/video/android/*.c",
-		"./src/video/yuv2rgb/*.c",
-		"./src/test/*.c",]]
 	}
-	includedirs
-	{
-		"$(NDK_ROOT)/sources/android/cpufeatures"
-	}
+
+	filter "system:android"
+		files {
+			"./src/audio/android/*.c",
+			"./src/core/android/*.c",
+			"./src/haptic/android/*.c",
+			"./src/hidapi/android/*.cpp",
+			"./src/joystick/android/*.c",
+			"./src/locale/android/*.c",
+			"./src/misc/android/*.c",
+			"./src/power/android/*.c",
+			"./src/filesystem/android/*.c",
+			"./src/sensor/android/*.c",
+			"./src/video/android/*.c",
+		}
+		links {
+			"dl", "GLESv1_CM", "GLESv2", "OpenSLES", "log", "android",
+			"cpufeatures"
+		}
+		includedirs {
+			"$(NDK_ROOT)/sources/android/cpufeatures"
+		}
 
 	filter "configurations:Debug"
 		runtime "Debug"
@@ -130,10 +97,10 @@ project "SDL2"
 		runtime "Release"
 		optimize "on"
 		
+-- NOTE: android only
 project "cpufeatures"
 	kind "StaticLib"
-	includedirs
-	{
+	includedirs {
 		"$(NDK_ROOT)/sources/android/cpufeatures",
 	}
 	
@@ -141,10 +108,10 @@ project "cpufeatures"
 		"$(NDK_ROOT)/sources/android/cpufeatures/cpu-features.c" 
 	}
 	
+-- NOTE: android only
 project "SDL2_main"
 	kind "StaticLib"
-	includedirs
-	{
+	includedirs{
 		"./include",
 	}
 	
@@ -154,8 +121,9 @@ project "SDL2_main"
 
 -- SDL2 as a usage
 usage "SDL2"
-	links {
-		"SDL2_main", "SDL2"
+	links 
+	{
+		"SDL2"
 	}
 	
 	filter "system:Linux"
@@ -164,6 +132,9 @@ usage "SDL2"
         }
 		
 	filter "system:Android"
+		links {
+			"SDL2_main"
+		}
 		includedirs {
 			"./include"
 		}

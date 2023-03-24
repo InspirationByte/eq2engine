@@ -66,19 +66,18 @@ workspace(WORKSPACE_NAME)
 		"COMPILE_CONFIGURATION=\"%{cfg.buildcfg}\"",
 		"COMPILE_PLATFORM=\"%{cfg.platform}\""
 	}
-	
-	if not IS_ANDROID then
-		platforms { 
-			"x86", "x64"
-		}
-	end
-	
-	if IS_ANDROID then		
+
+	if IS_ANDROID then
 		system "android"
+	end
+
+	filter "system:android"
 		shortcommands "On"
 		
 		platforms {
-			 "android-arm", "android-arm64"
+			--"android-arm", --TEMPORARILY DISABLED FOR COMPILE TIME SPEED
+			--"android-arm64"
+			"android-x86_64"
 		}
 		
 		disablewarnings {
@@ -121,9 +120,11 @@ workspace(WORKSPACE_NAME)
 
 		filter "platforms:*-arm64"
 			architecture "arm64"
-	end
 
     filter "system:linux"
+		platforms { 
+			"x86", "x64" -- maybe add ARM & ARM64 for RPi?
+		}
 		vscode_makefile "project_gmake2"
 		vscode_launch_cwd "${workspaceRoot}/../build"
 		vscode_launch_environment {
@@ -155,6 +156,9 @@ workspace(WORKSPACE_NAME)
 		links { "pthread" }
 
 	filter "system:Windows"
+		platforms { 
+			"x86", "x64" -- maybe add ARM64?
+		}
 		disablewarnings { "4996", "4554", "4244", "4101", "4838", "4309" }
 		enablewarnings { "26433" }
 		defines { 

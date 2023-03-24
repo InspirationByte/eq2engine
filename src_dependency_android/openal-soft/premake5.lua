@@ -45,6 +45,9 @@ project "openal_soft"
 	}
 
 	filter "architecture:arm or arm64"
+		defines {
+			"HAVE_NEON"
+		}
   		removefiles {
 			"./core/mixer/mixer_sse.cpp",
 			"./core/mixer/mixer_sse2.cpp",
@@ -53,9 +56,24 @@ project "openal_soft"
 		}
 
 	filter "architecture:x86 or x86_64"
-		removefiles {
-			"./core/mixer/mixer_neon.cpp"
+		defines {
+			-- NOTE: this is temporary, we would need to have them
+			-- "HAVE_SSE"
+			-- "HAVE_SSE2"
+			-- "HAVE_SSE3"
+			-- "HAVE_SSE4_1"
 		}
+		removefiles {
+			"./core/mixer/mixer_neon.cpp",
+
+			-- NOTE: this is temporary, we would need to have them
+			"./core/mixer/mixer_sse.cpp",
+			"./core/mixer/mixer_sse2.cpp",
+			"./core/mixer/mixer_sse3.cpp",
+			"./core/mixer/mixer_sse41.cpp"
+		}
+
+	-- TODO: filter "system:windows"
 	
 	filter "system:android"		
 		files {
@@ -64,6 +82,7 @@ project "openal_soft"
 		
 		defines
 		{
+			"HAVE_OPENSL",
 			"ALSOFT_REQUIRE_OPENSL",
 			"RESTRICT=__restrict",
 			"NOMINMAX",

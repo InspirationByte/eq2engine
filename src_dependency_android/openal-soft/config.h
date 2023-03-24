@@ -30,7 +30,7 @@
 /* #undef HAVE_SSE4_1 */
 
 /* Define if we have ARM Neon CPU extensions */
-#define HAVE_NEON
+/* #undef HAVE_NEON */
 
 /* Define if we have the ALSA backend */
 /* #undef HAVE_ALSA */
@@ -66,7 +66,7 @@
 /* #undef HAVE_COREAUDIO */
 
 /* Define if we have the OpenSL backend */
-#define HAVE_OPENSL
+/* #undef HAVE_OPENSL */
 
 /* Define if we have the Oboe backend */
 /* #undef HAVE_OBOE */
