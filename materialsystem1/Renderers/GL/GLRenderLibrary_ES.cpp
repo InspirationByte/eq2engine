@@ -464,6 +464,20 @@ bool CGLRenderLib_ES::CreateSurface()
 		return false;
 	}
 
+#ifdef PLAT_ANDROID
+	// Get the native visual id
+	EGLint nativeVid;
+	if (eglGetConfigAttrib(m_eglDisplay, m_eglConfig, EGL_NATIVE_VISUAL_ID, &nativeVid) == EGL_FALSE)
+	{
+		ErrorMsg("CreateSurface error: Could not get EGL native visual id");
+		return false;
+	}
+
+	// On Android, EGL_NATIVE_VISUAL_ID is an attribute of the EGLConfig that is guaranteed to be accepted by ANativeWindow_setBuffersGeometry
+	MsgInfo("Setting native window geometry\n");
+	ANativeWindow_setBuffersGeometry(m_hwnd, 0, 0, nativeVid);
+#endif
+
 	MsgInfo("Creating EGL surface...\n");
 
 	// Create a surface for the main window
