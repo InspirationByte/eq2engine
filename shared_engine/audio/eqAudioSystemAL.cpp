@@ -54,8 +54,11 @@ static int WrapAroundSampleOffset(int sampleOffset, const ISoundSource* sample, 
 		const int sampleMax = (loopRegionIdx == -1) ? sampleCount : loopPoints[loopRegionIdx * 2 + 1];
 
 		const int sampleRange = sampleMax - sampleMin;
-
-		sampleOffset = sampleMin + ((sampleOffset - sampleMin) % sampleRange);
+		
+		if(sampleRange > 0)
+			sampleOffset = sampleMin + ((sampleOffset - sampleMin) % sampleRange);
+		else
+			sampleOffset = sampleMin;
 	}
 	else
 		sampleOffset = min(sampleOffset, sampleCount);
