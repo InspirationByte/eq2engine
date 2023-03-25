@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright ï¿½ Inspiration Byte
 // 2009-2022
 //////////////////////////////////////////////////////////////////////////////////
 // Description: Equilibrium OpenGL ES ShaderAPI
@@ -7,7 +7,7 @@
 
 #pragma once
 #include "../Shared/IRenderLibrary.h"
-
+#include "renderers/IShaderAPI.h"
 
 class ShaderAPIGL;
 
@@ -72,6 +72,8 @@ protected:
 	void					InitSharedContexts();
 	void					DestroySharedContexts();
 
+	shaderAPIWindowFuncTable_t m_winFunc;
+
 	Array<IEqSwapChain*>	m_swapChains{ PP_SL };
 	uintptr_t				m_mainThreadId;
 	bool					m_asyncOperationActive;
@@ -79,8 +81,8 @@ protected:
 	GL_CONTEXT				m_glContext;
 	GL_CONTEXT				m_glSharedContext;
 
-    EGLNativeDisplayType	m_hdc;
-    EGLNativeWindowType		m_hwnd;
+    EGLNativeDisplayType	m_hdc{ 0 };
+    EGLNativeWindowType		m_hwnd{ 0 };
     EGLDisplay				m_eglDisplay{ nullptr };
     EGLSurface				m_eglSurface{ nullptr };
 	EGLConfig				m_eglConfig{ nullptr };

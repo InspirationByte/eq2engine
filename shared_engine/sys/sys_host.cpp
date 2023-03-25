@@ -231,7 +231,7 @@ void CGameHost::GetVideoModes(Array<VideoMode_t>& displayModes)
 }
 
 #ifdef PLAT_ANDROID
-void* CGameHost::GetEGLSurfaceFromSDL()
+void* CGameHost::GetEGLSurfaceFromSDL() const
 {
     // set window info
     SDL_SysWMinfo winfo;
@@ -244,10 +244,35 @@ void* CGameHost::GetEGLSurfaceFromSDL()
         return nullptr;
     }
 
+	Msg("Surface ptr: %x\n", winfo.info.android.surface);
+
     return (void*)winfo.info.android.surface;
 }
 
-void* Helper_GetEGLSurfaceFromSDL()
+void* CGameHost::GetAndroidNativeWindowFromSDL() const
+{
+    // set window info
+    SDL_SysWMinfo winfo;
+    SDL_VERSION(&winfo.version); // initialize info structure with SDL version info
+
+    if( !SDL_GetWindowWMInfo(m_pWindow, &winfo) )
+    {
+        MsgError("SDL_GetWindowWMInfo failed %s\n\tWindow handle: %p", SDL_GetError(), m_pWindow);
+        ErrorMsg("Can't get SDL window WM info!\n");
+        return nullptr;
+    }
+
+	Msg("Window ptr: %x\n", winfo.info.android.window);
+
+    return (void*)winfo.info.android.window;
+}
+
+static void* Helper_GetAndroidNativeWindow()
+{
+	return g_pHost->GetAndroidNativeWindowFromSDL();
+}
+
+static void* Helper_GetEGLSurfaceFromSDL()
 {
 	return g_pHost->GetEGLSurfaceFromSDL();
 }
@@ -311,27 +336,29 @@ bool CGameHost::InitSystems( EQWNDHANDLE pWindow )
 
 	// Set default cursor
 	SDL_SetCursor(s_defaultCursor[dc_arrow]);
-
+	
 #ifdef PLAT_WIN
 	materials_config.shaderApiParams.windowHandle = winfo.info.win.window;
+	materials_config.shaderApiParams.windowHandleType = RHI_WINDOW_HANDLE_NATIVE;
 #elif PLAT_LINUX
 	materials_config.shaderApiParams.windowHandle = (void*)winfo.info.x11.window;
+	materials_config.shaderApiParams.windowHandleType = RHI_WINDOW_HANDLE_NATIVE;
 #elif APPLE
 	materials_config.shaderApiParams.windowHandle = (void*)winfo.info.cocoa.window;
+	materials_config.shaderApiParams.windowHandleType = RHI_WINDOW_HANDLE_NATIVE;
 #elif PLAT_ANDROID
 
-#if 0
+#ifdef USE_SDL_WINDOW
 	materials_config.shaderApiParams.windowHandle = m_pWindow;	// passing SDL window
+	materials_config.shaderApiParams.windowHandleType = RHI_WINDOW_HANDLE_SDL;
 #else
-    externalWindowDisplayParams_t winParams;
-    winParams.window = (void*)winfo.info.android.window;
+    shaderAPIWindowFuncTable_t winFunc;
+	winFunc.GetWindow = Helper_GetAndroidNativeWindow;
+	winFunc.GetSurface = Helper_GetEGLSurfaceFromSDL;
 
-    //void* paramArray[] = { (void*)Helper_GetEGLSurfaceFromSDL };
-	//
-	//winParams.paramArray = paramArray;
-	//winParams.numParams = 1;
+	materials_config.shaderApiParams.windowHandle = &winFunc;
+	materials_config.shaderApiParams.windowHandleType = RHI_WINDOW_HANDLE_VTABLE;
 
-	materials_config.shaderApiParams.windowHandle = &winParams;
 	format = FORMAT_RGB565;
 #endif
 #endif

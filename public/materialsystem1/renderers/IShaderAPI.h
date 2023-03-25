@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright ï¿½ Inspiration Byte
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
 // Description: Equilibrium Middle-Level rendering API (ShaderAPI)
@@ -24,12 +24,20 @@
 
 struct KVSection;
 
-// designed to be sent as windowHandle param
-struct externalWindowDisplayParams_t
+enum ERHIWindowType : int
 {
-	void*			window{ nullptr };
-	void**			paramArray{ nullptr };
-	int				numParams{ 0 };
+	RHI_WINDOW_HANDLE_NATIVE, 	// windows HWND, X11's Window, Android's ANativeWindow etc
+	RHI_WINDOW_HANDLE_SDL,		// SDL Window
+	RHI_WINDOW_HANDLE_VTABLE	// VTable to get window handle (see below), and possibly more features.
+};
+
+// designed to be sent as windowHandle param
+struct shaderAPIWindowFuncTable_t
+{
+	using GetterFunc = void*(*)();
+
+	GetterFunc 		GetWindow { nullptr };
+	GetterFunc 		GetSurface { nullptr };
 };
 
 // shader api initializer
@@ -40,7 +48,8 @@ struct shaderAPIParams_t
 
 	// basic parameters for shader API initialization
 
-	void*			windowHandle{ nullptr };			// OS window handle or externalWindowDisplayParams_t
+	void*			windowHandle{ nullptr };			// window handle
+	ERHIWindowType	windowHandleType{ RHI_WINDOW_HANDLE_NATIVE };
 	ETextureFormat	screenFormat{ FORMAT_RGB8 };		// screen back buffer format
 
 	int				screenRefreshRateHZ{ 60 };			// refresh rate in HZ

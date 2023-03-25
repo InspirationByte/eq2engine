@@ -97,7 +97,8 @@ public:
 	static void 		HostExitCmd(ConCommand* cmd, Array<EqString>& args);
 
 #ifdef PLAT_ANDROID
-	void*				GetEGLSurfaceFromSDL();
+	void*				GetAndroidNativeWindowFromSDL() const;
+	void*				GetEGLSurfaceFromSDL() const;
 #endif // PLAT_ANDROID
 
 protected:

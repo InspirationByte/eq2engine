@@ -92,8 +92,7 @@ EQWNDHANDLE Sys_CreateWindow()
 		nAdjustedTall = displayRect.h;
 	}
 
-	sdlFlags |= SDL_WINDOW_FULLSCREEN | SDL_WINDOW_VULKAN;
-
+	sdlFlags |= SDL_WINDOW_FULLSCREEN;
 #endif // PLAT_ANDROID
 	
 	handle = SDL_CreateWindow(DEFAULT_WINDOW_TITLE, nAdjustedPosX, nAdjustedPosY, nAdjustedWide, nAdjustedTall, sdlFlags);

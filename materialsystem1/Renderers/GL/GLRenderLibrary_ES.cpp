@@ -133,14 +133,20 @@ bool CGLRenderLib_ES::InitAPI(const shaderAPIParams_t& params)
 
 	ASSERT_MSG(params.windowHandle != nullptr, "you must specify window handle!");
 #ifdef PLAT_ANDROID
-	externalWindowDisplayParams_t* winParams = (externalWindowDisplayParams_t*)params.windowHandle;
-	m_hwnd = (EGLNativeWindowType)winParams->window;
+	ASSERT(params.windowHandleType == RHI_WINDOW_HANDLE_VTABLE);
+
+	m_winFunc = *(shaderAPIWindowFuncTable_t*)params.windowHandle;
+
 	eglBindAPI(EGL_OPENGL_ES_API);
 #elif defined(PLAT_WIN)
+	ASSERT(params.windowHandleType == RHI_WINDOW_HANDLE_NATIVE);
+
 	// other EGL
 	m_hwnd = (EGLNativeWindowType)params.windowHandle;
 	nativeDisplay = (EGLNativeDisplayType)GetDC((HWND)m_hwnd);
 #elif defined(PLAT_LINUX)
+	ASSERT(params.windowHandleType == RHI_WINDOW_HANDLE_NATIVE);
+
 	// well... fuck... i'll deal with it later!
 	Window xwin = (Window)params.windowHandle;
 	nativeDisplay = eglGetDisplay( (EGLNativeDisplayType) xwin );
@@ -405,10 +411,11 @@ void CGLRenderLib_ES::ReleaseSurface()
 	if (!eglMakeCurrent(m_eglDisplay, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT))
 		MsgError("eglMakeCurrent - error 2\n");
 
+#ifndef PLAT_ANDROID
 	MsgInfo("Destroying EGL surface...\n");
 	if (!eglDestroySurface(m_eglDisplay, m_eglSurface))
 		MsgError("Can't destroy EGL surface\n");
-
+#endif
 	m_eglSurface = EGL_NO_SURFACE;
 }
 
@@ -420,8 +427,16 @@ bool CGLRenderLib_ES::CreateSurface()
 #ifdef PLAT_ANDROID
 	// make sure API is bound
 	eglBindAPI(EGL_OPENGL_ES_API);
-#endif
 
+	m_eglSurface = (EGLSurface)m_winFunc.GetSurface();
+	m_hwnd = (EGLNativeWindowType)m_winFunc.GetWindow();
+
+	if (m_eglSurface == EGL_NO_SURFACE)
+		return false;
+
+	if (m_glContext && !eglMakeCurrent(m_eglDisplay, m_eglSurface, m_eglSurface, m_glContext))
+		MsgError("eglMakeCurrent - error\n");
+#else
 	// Obtain the first configuration with a depth buffer
 	const EGLint attrs[] = {
 		EGL_RED_SIZE,       5,
@@ -449,20 +464,6 @@ bool CGLRenderLib_ES::CreateSurface()
 		return false;
 	}
 
-#ifdef PLAT_ANDROID
-	// Get the native visual id
-	EGLint nativeVid;
-	if (eglGetConfigAttrib(m_eglDisplay, m_eglConfig, EGL_NATIVE_VISUAL_ID, &nativeVid) == EGL_FALSE)
-	{
-		ErrorMsg("CreateSurface error: Could not get EGL native visual id");
-		return false;
-	}
-
-	// On Android, EGL_NATIVE_VISUAL_ID is an attribute of the EGLConfig that is guaranteed to be accepted by ANativeWindow_setBuffersGeometry
-	MsgInfo("Setting native window geometry\n");
-	ANativeWindow_setBuffersGeometry(m_hwnd, 0, 0, nativeVid);
-#endif
-
 	MsgInfo("Creating EGL surface...\n");
 
 	// Create a surface for the main window
@@ -476,7 +477,7 @@ bool CGLRenderLib_ES::CreateSurface()
 		if (!eglMakeCurrent(m_eglDisplay, m_eglSurface, m_eglSurface, m_glContext))
 			MsgError("eglMakeCurrent - error\n");
 	}
-
+#endif
 	return true;
 }
 
