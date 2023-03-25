@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright ï¿½ Inspiration Byte
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
 // Description: Equilibrium Middle-Level rendering API (ShaderAPI)
@@ -195,6 +195,9 @@ protected:
 
 	virtual ITexturePtr					CreateTextureResource(const char* pszName) = 0;
 
+	// NOTE: not thread-safe, used for error checks
+	ITexture*							FindTexturePtr(int nameHash) const;
+
 //-------------------------------------------------------------
 // Useful data
 //-------------------------------------------------------------
@@ -309,3 +312,16 @@ protected:
 	int									m_nTrianglesCount;
 	int									m_nDrawIndexedPrimitiveCalls;
 };
+
+#ifdef _RETAIL
+
+#define CHECK_TEXTURE_ALREADY_ADDED(texture) 
+
+#else
+
+#define CHECK_TEXTURE_ALREADY_ADDED(texture) { \
+		ITexture* dupTex = FindTexturePtr(texture->m_nameHash); \
+		if(dupTex) ASSERT_FAIL("Texture %s was already added, refcount %d", dupTex->GetName(), dupTex->Ref_Count()); \
+	}
+
+#endif // _RETAIL

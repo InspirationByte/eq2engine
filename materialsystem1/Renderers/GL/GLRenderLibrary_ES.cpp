@@ -548,6 +548,8 @@ void CGLRenderLib_ES::BeginAsyncOperation(uintptr_t threadId)
 		return;
 
 	ASSERT(m_asyncOperationActive == false);
+
+	// NOTE: Android emulator does not handle this properly, and so ANGLE.
 	eglMakeCurrent(m_eglDisplay, EGL_NO_SURFACE, EGL_NO_SURFACE, m_glSharedContext);
 
 	m_asyncOperationActive = true;

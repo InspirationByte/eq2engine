@@ -765,7 +765,7 @@ ITexturePtr ShaderAPIGL::CreateNamedRenderTarget(	const char* pszName,
 
 	{
 		CScopedMutex m(g_sapi_TextureMutex);
-		ASSERT_MSG(m_TextureList.find(pTexture->m_nameHash) == m_TextureList.end(), "Texture %s was already added", pTexture->GetName());
+		CHECK_TEXTURE_ALREADY_ADDED(pTexture);
 		m_TextureList.insert(pTexture->m_nameHash, pTexture);
 	}
 

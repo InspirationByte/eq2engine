@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright ï¿½ Inspiration Byte
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
 // Description: Equilibrium Direct3D 9 ShaderAPI
@@ -311,7 +311,7 @@ bool ShaderAPID3D9::CreateD3DFrameBufferSurfaces()
 		m_fbColorTexture->Ref_Grab();
 
 		CScopedMutex m(g_sapi_TextureMutex);
-		ASSERT_MSG(m_TextureList.find(m_fbColorTexture->m_nameHash) == m_TextureList.end(), "Texture %s was already added", m_fbColorTexture->GetName());
+		CHECK_TEXTURE_ALREADY_ADDED(m_fbColorTexture);
 		m_TextureList.insert(m_fbColorTexture->m_nameHash, m_fbColorTexture);
 	}
 
@@ -324,7 +324,7 @@ bool ShaderAPID3D9::CreateD3DFrameBufferSurfaces()
 		m_fbDepthTexture->Ref_Grab();
 
 		CScopedMutex m(g_sapi_TextureMutex);
-		ASSERT_MSG(m_TextureList.find(m_fbDepthTexture->m_nameHash) == m_TextureList.end(), "Texture %s was already added", m_fbDepthTexture->GetName());
+		CHECK_TEXTURE_ALREADY_ADDED(m_fbDepthTexture);
 		m_TextureList.insert(m_fbDepthTexture->m_nameHash, m_fbDepthTexture);
 	}
 
@@ -1297,8 +1297,7 @@ ITexturePtr ShaderAPID3D9::CreateRenderTarget(int width, int height, ETextureFor
 	if (InternalCreateRenderTarget(m_pD3DDevice, pTexture, nFlags, m_caps))
 	{
 		CScopedMutex scoped(g_sapi_TextureMutex);
-
-		ASSERT_MSG(m_TextureList.find(pTexture->m_nameHash) == m_TextureList.end(), "Texture %s was already added", pTexture->GetName());
+		CHECK_TEXTURE_ALREADY_ADDED(pTexture);
 		m_TextureList.insert(pTexture->m_nameHash, pTexture);
 
 		return ITexturePtr(pTexture);
@@ -1327,7 +1326,7 @@ ITexturePtr ShaderAPID3D9::CreateNamedRenderTarget(const char* pszName,int width
 	if (InternalCreateRenderTarget(m_pD3DDevice, pTexture, nFlags, m_caps))
 	{
 		CScopedMutex scoped(g_sapi_TextureMutex);
-		ASSERT_MSG(m_TextureList.find(pTexture->m_nameHash) == m_TextureList.end(), "Texture %s was already added", pTexture->GetName());
+		CHECK_TEXTURE_ALREADY_ADDED(pTexture);
 		m_TextureList.insert(pTexture->m_nameHash, pTexture);
 		return ITexturePtr(pTexture);
 	} 

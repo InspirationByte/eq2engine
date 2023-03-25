@@ -371,6 +371,14 @@ ITexturePtr ShaderAPI_Base::FindTexture(const char* pszName)
 	return nullptr;
 }
 
+ITexture* ShaderAPI_Base::FindTexturePtr(int nameHash) const
+{
+	auto it = m_TextureList.find(nameHash);
+	if (it != m_TextureList.end())
+		return *it;
+	return nullptr;
+}
+
 // Searches for existing texture or creates new one. Use this for resource loading
 ITexturePtr ShaderAPI_Base::FindOrCreateTexture(const char* pszName, bool& justCreated)
 {

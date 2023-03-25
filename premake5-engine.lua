@@ -3,7 +3,6 @@
 require ".premake_modules/usage"
 require ".premake_modules/androidndk"
 require ".premake_modules/unitybuild"
-require ".premake_modules/asan"
 require ".premake_modules/wxwidgets"
 require ".premake_modules/vscode"
 
@@ -75,9 +74,9 @@ workspace(WORKSPACE_NAME)
 		shortcommands "On"
 		
 		platforms {
-			--"android-arm", --TEMPORARILY DISABLED FOR COMPILE TIME SPEED
-			--"android-arm64"
-			"android-x86_64"
+			"android-arm", --TEMPORARILY DISABLED FOR COMPILE TIME SPEED
+			"android-arm64"
+			--"android-x86_64"
 		}
 		
 		disablewarnings {
@@ -136,11 +135,7 @@ workspace(WORKSPACE_NAME)
             "-fpermissive",
 			"-fexceptions",
 			"-fpic",
-			--"-fsanitize=address"
         }
-		linkoptions {
-			--"-fsanitize=address"
-		}
 		disablewarnings {
 			-- disable warnings which are emitted by my stupid (and not so) code
 			"c++11-narrowing",
@@ -182,7 +177,7 @@ workspace(WORKSPACE_NAME)
         }
 		optimize "On"
 		symbols "On"
-		-- enableASAN "On"
+		--sanitize "address"
 
 	filter "configurations:Profile"
         defines {

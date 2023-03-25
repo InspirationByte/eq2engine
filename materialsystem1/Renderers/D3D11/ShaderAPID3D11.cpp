@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright ï¿½ Inspiration Byte
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
 // Description: Equilibrium Direct3D 10 ShaderAPI
@@ -766,7 +766,7 @@ ITexturePtr ShaderAPID3DX10::CreateRenderTarget(int width, int height, ETextureF
 
 	{
 		CScopedMutex scoped(g_sapi_TextureMutex);
-		ASSERT_MSG(m_TextureList.find(pTexture->m_nameHash) == m_TextureList.end(), "Texture %s was already added", pTexture->GetName());
+		CHECK_TEXTURE_ALREADY_ADDED(pTexture);
 		m_TextureList.insert(pTexture->m_nameHash, pTexture);
 		return ITexturePtr(pTexture);
 	}
@@ -804,7 +804,7 @@ ITexturePtr ShaderAPID3DX10::CreateNamedRenderTarget(const char* pszName,int wid
 
 	{
 		CScopedMutex scoped(g_sapi_TextureMutex);
-		ASSERT_MSG(m_TextureList.find(pTexture->m_nameHash) == m_TextureList.end(), "Texture %s was already added", pTexture->GetName());
+		CHECK_TEXTURE_ALREADY_ADDED(pTexture);
 		m_TextureList.insert(pTexture->m_nameHash, pTexture);
 		return ITexturePtr(pTexture);
 	}
@@ -3024,7 +3024,7 @@ void ShaderAPID3DX10::CreateTextureInternal(ITexture** pTex, const Array<CImage*
 	if(!(*pTex))
 	{
 		CScopedMutex scoped(g_sapi_TextureMutex);
-		ASSERT_MSG(m_TextureList.find(pTexture->m_nameHash) == m_TextureList.end(), "Texture %s was already added", pTexture->GetName());
+		CHECK_TEXTURE_ALREADY_ADDED(pTexture);
 		m_TextureList.insert(pTexture->m_nameHash, pTexture);
 	}
 
@@ -3354,7 +3354,7 @@ bool ShaderAPID3DX10::CreateBackbufferDepth(int wide, int tall, DXGI_FORMAT dept
 
 		{
 			CScopedMutex scoped(g_sapi_TextureMutex);
-			ASSERT_MSG(m_TextureList.find(depthBufferTex->m_nameHash) == m_TextureList.end(), "Texture %s was already added", depthBufferTex->GetName());
+			CHECK_TEXTURE_ALREADY_ADDED(depthBufferTex);
 			m_TextureList.insert(depthBufferTex->m_nameHash, depthBufferTex);
 		}
 	}

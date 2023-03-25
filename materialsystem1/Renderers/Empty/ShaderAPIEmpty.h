@@ -204,7 +204,7 @@ public:
 		pTexture->SetFormat(nRTFormat);
 
 		CScopedMutex scoped(g_sapi_TextureMutex);
-		ASSERT_MSG(m_TextureList.find(pTexture->m_nameHash) == m_TextureList.end(), "Texture %s was already added", pTexture->GetName());
+		CHECK_TEXTURE_ALREADY_ADDED(pTexture);
 		m_TextureList.insert(pTexture->m_nameHash, pTexture);
 
 		return ITexturePtr(pTexture);
@@ -217,7 +217,7 @@ public:
 		pTexture->SetName(pszName);
 
 		CScopedMutex scoped(g_sapi_TextureMutex);
-		ASSERT_MSG(m_TextureList.find(pTexture->m_nameHash) == m_TextureList.end(), "Texture %s was already added", pTexture->GetName());
+		CHECK_TEXTURE_ALREADY_ADDED(pTexture);
 		m_TextureList.insert(pTexture->m_nameHash, pTexture);
 
 		pTexture->SetDimensions(width, height);
