@@ -33,6 +33,8 @@ static_assert(false, "this file should NOT BE included when non-GLES version is 
 
 #include "gl_loader.h"
 
+#define EGL_USE_SDL_SURFACE 0 // defined(PLAT_ANDROID)
+
 #	ifndef EGL_OPENGL_ES3_BIT
 #		define EGL_OPENGL_ES3_BIT 0x00000040
 #	endif // EGL_OPENGL_ES3_BIT
@@ -411,7 +413,7 @@ void CGLRenderLib_ES::ReleaseSurface()
 	if (!eglMakeCurrent(m_eglDisplay, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT))
 		MsgError("eglMakeCurrent - error 2\n");
 
-#ifndef PLAT_ANDROID
+#if !EGL_USE_SDL_SURFACE
 	MsgInfo("Destroying EGL surface...\n");
 	if (!eglDestroySurface(m_eglDisplay, m_eglSurface))
 		MsgError("Can't destroy EGL surface\n");
@@ -427,15 +429,11 @@ bool CGLRenderLib_ES::CreateSurface()
 #ifdef PLAT_ANDROID
 	// make sure API is bound
 	eglBindAPI(EGL_OPENGL_ES_API);
+#endif
 
+#if EGL_USE_SDL_SURFACE
 	m_eglSurface = (EGLSurface)m_winFunc.GetSurface();
 	m_hwnd = (EGLNativeWindowType)m_winFunc.GetWindow();
-
-	if (m_eglSurface == EGL_NO_SURFACE)
-		return false;
-
-	if (m_glContext && !eglMakeCurrent(m_eglDisplay, m_eglSurface, m_eglSurface, m_glContext))
-		MsgError("eglMakeCurrent - error\n");
 #else
 	// Obtain the first configuration with a depth buffer
 	const EGLint attrs[] = {
@@ -475,6 +473,7 @@ bool CGLRenderLib_ES::CreateSurface()
 
 	// On Android, EGL_NATIVE_VISUAL_ID is an attribute of the EGLConfig that is guaranteed to be accepted by ANativeWindow_setBuffersGeometry
 	MsgInfo("Setting native window geometry\n");
+	m_hwnd = (EGLNativeWindowType)m_winFunc.GetWindow();
 	ANativeWindow_setBuffersGeometry(m_hwnd, 0, 0, nativeVid);
 #endif
 
@@ -482,16 +481,13 @@ bool CGLRenderLib_ES::CreateSurface()
 
 	// Create a surface for the main window
 	m_eglSurface = eglCreateWindowSurface(m_eglDisplay, m_eglConfig, m_hwnd, nullptr);
-
+#endif
 	if (m_eglSurface == EGL_NO_SURFACE)
 		return false;
 
-	if (m_glContext)
-	{
-		if (!eglMakeCurrent(m_eglDisplay, m_eglSurface, m_eglSurface, m_glContext))
-			MsgError("eglMakeCurrent - error\n");
-	}
-#endif
+	if (m_glContext && !eglMakeCurrent(m_eglDisplay, m_eglSurface, m_eglSurface, m_glContext))
+		MsgError("eglMakeCurrent - error\n");
+
 	return true;
 }
 
