@@ -39,7 +39,7 @@ struct eqParallelJob_t
 	{}
 
 	eqParallelJob_t(int jobTypeId, EQ_JOB_FUNC fn, void* args = nullptr, int count = 1, EQ_JOB_COMPLETE_FUNC completeFn = nullptr)
-		: flags(0), typeId(jobTypeId), func(std::move(fn)), arguments(args), numIter(count), threadId(0), onComplete(completeFn)
+		: flags(0), typeId(jobTypeId), func(std::move(fn)), arguments(args), numIter(count), threadId(0), onComplete(std::move(completeFn))
 	{
 	}
 
