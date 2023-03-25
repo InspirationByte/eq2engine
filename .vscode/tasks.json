@@ -7086,7 +7086,7 @@
 			"type": "shell",
 			"linux":
 			{
-				"command": "clear && time make config=release_x64 DriversGame -j12",
+				"command": "clear && time make config=release_x64 -j12",
 				"problemMatcher": "$gcc",
 			},
 			"windows":

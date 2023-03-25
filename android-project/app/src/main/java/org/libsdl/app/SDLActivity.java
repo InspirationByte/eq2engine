@@ -15,7 +15,6 @@ import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.graphics.Bitmap;
 import android.graphics.Color;
-import android.graphics.PixelFormat;
 import android.graphics.PorterDuff;
 import android.graphics.drawable.Drawable;
 import android.hardware.Sensor;
@@ -1798,6 +1797,7 @@ class SDLMain implements Runnable {
             SDLActivity.mSingleton.finish();
         }  // else: Activity is already being destroyed
 
+        System.exit(0);
     }
 }
 
