@@ -16,7 +16,19 @@ template <int BUFFER_SIZE, typename R, typename ...Args>
 class EqFunction<R(Args...), BUFFER_SIZE>
 {
 public:
-    ~EqFunction() {}
+    ~EqFunction()
+    {
+        if (isSmall)
+        {
+            auto c = reinterpret_cast<Concept*>(&buffer);
+            c->~Concept();
+        }
+        else
+        {
+            auto c = reinterpret_cast<std::unique_ptr<Concept>*>(&buffer);
+            c->~unique_ptr();
+        }
+    }
 
     EqFunction() noexcept {};
 
