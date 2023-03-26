@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright ï¿½ Inspiration Byte
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
 // Description: Crash report library connection
@@ -9,17 +9,26 @@
 #include "ExceptionHandler.h"
 #include "eqCore.h"
 
-#ifdef _WIN32
+static void DoCoreExceptionCallbacks()
+{
+	const Array<CoreExceptionCallback>& handlerCallbacks = ((CDkCore*)g_eqCore)->GetExceptionHandlers();
+	for (int i = 0; i < handlerCallbacks.numElem(); i++)
+	{
+		handlerCallbacks[i]();
+	}
+}
 
+#ifdef PLAT_WIN
 #include <DbgHelp.h>
 
-typedef struct _MODULEINFO {  LPVOID lpBaseOfDll;  DWORD SizeOfImage;  LPVOID EntryPoint;
+typedef struct _MODULEINFO {
+	LPVOID lpBaseOfDll;  
+	DWORD SizeOfImage; 
+	LPVOID EntryPoint;
 } MODULEINFO, *LPMODULEINFO;
 
 typedef BOOL (APIENTRY *ENUMPROCESSMODULESFUNC)(HANDLE hProcess, HMODULE* lphModule, DWORD cb, LPDWORD lpcbNeeded);
 typedef BOOL (APIENTRY *GETMODULEINFORMATIONPROC)(HANDLE hProcess, HMODULE hModule, LPMODULEINFO lpmodinfo, DWORD cb);
-
-
 
 typedef struct exception_codes_s {
 	DWORD		exCode;
@@ -27,7 +36,7 @@ typedef struct exception_codes_s {
 	const char*	exDescription;
 } exception_codes;
 
-exception_codes except_info[] = {
+static exception_codes except_info[] = {
 	{EXCEPTION_ACCESS_VIOLATION,		"ACCESS VIOLATION",
 	"The thread tried to read from or write to a virtual address for which it does not have the appropriate access."},
 
@@ -89,8 +98,7 @@ exception_codes except_info[] = {
 	"The thread used up its stack. "}
 };
 
-
-void GetExceptionStrings( DWORD code, const char* *pName, const char* *pDescription )
+static void GetExceptionStrings( DWORD code, const char* *pName, const char* *pDescription )
 {
 	int i;
 	int count = sizeof(except_info) / sizeof(exception_codes);
@@ -108,7 +116,7 @@ void GetExceptionStrings( DWORD code, const char* *pName, const char* *pDescript
 	*pDescription = "n/a";
 }
 
-void CreateMiniDump( EXCEPTION_POINTERS* pep )
+static void CreateMiniDump( EXCEPTION_POINTERS* pep )
 {
 	// Open the file
 
@@ -167,12 +175,7 @@ static LONG WINAPI _exceptionCB(EXCEPTION_POINTERS *ExceptionInfo)
 		"See application log for details.", pName, pRecord->ExceptionCode, pRecord->ExceptionAddress);
 
 	CrashMsg(fmtStr.ToCString());
-
-	const Array<CoreExceptionCallback>& handlerCallbacks = ((CDkCore*)g_eqCore)->GetExceptionHandlers();
-	for (int i = 0; i < handlerCallbacks.numElem(); i++)
-	{
-		handlerCallbacks[i]();
-	}
+	DoCoreExceptionCallbacks();
 
 	if (pRecord->ExceptionCode == EXCEPTION_ACCESS_VIOLATION)
 	{
@@ -259,7 +262,7 @@ static int handler_installed = 0;
 
 static _purecall_handler oldPureCall = nullptr;
 
-void eqPureCallhandler(void)
+static void eqPureCallhandler(void)
 {
 	ASSERT_FAIL("Pure virtual function call");
 }
@@ -286,12 +289,110 @@ void UnInstallExceptionHandler()
 	}
 }
 
-#else
+#elif defined(PLAT_POSIX)
 
-#pragma todo("crash handler for Linux/Mac")
+#include <stdio.h>
+#include <execinfo.h>
+#include <signal.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <stdio.h>
+#include <string.h>
+
+static void SignalBasic(int sig) 
+{
+	void* btarray[64];
+	size_t btsize = backtrace(btarray, 64);
+	fprintf(stderr, "Error: caught signal %d:\n", sig);
+	backtrace_symbols_fd(btarray, btsize, 2);
+	abort();
+}
+
+static void PrintStackTrace()
+{
+	void* btarray[64];
+	size_t btsize = backtrace(btarray, 64);
+	MsgError("\nStack trace:\n");
+
+	char** symbols = backtrace_symbols(btarray, btsize);
+	for(unsigned int i = 0; i < btsize; ++i)
+		MsgError(" %s\n", symbols[i]);
+}
+
+static void SignalExtended(int signum, siginfo_t* info, void* arg)
+{
+	signal(SIGSEGV, SignalBasic);
+
+	// Trace
+	MsgError("\nCaught Segfault at %p\n", info->si_addr);
+	DoCoreExceptionCallbacks();
+
+	PrintStackTrace();
+
+	Msg("---------------------\n");
+
+	PPMemInfo(false);
+
+	abort();
+}
+
+static void OnSTDExceptionThrown()
+{
+	static bool firstThrow = true;
+	const char* exceptionText = nullptr;
+
+	//Find the exception to try
+	try 
+	{
+		if(!firstThrow) 
+		{
+			exceptionText = "empty exception";
+		}
+		else 
+		{
+			firstThrow = false;
+			throw; //Haaax
+		}
+	}
+	catch(const char* text) 
+	{
+		exceptionText = text;
+	}
+	catch(std::exception const& exc)
+	{
+		exceptionText = exc.what();
+	}
+	catch(...)
+	{
+		exceptionText = "unknown exception";
+	}
+
+	// Print exception text
+	MsgError("\nUnexpected Exception: %s\n", exceptionText);
+
+	// Trace
+	DoCoreExceptionCallbacks();
+
+	PrintStackTrace();
+
+	Msg("---------------------\n");
+
+	PPMemInfo(false);
+
+	abort();
+}
 
 void InstallExceptionHandler()
 {
+	struct sigaction act;
+	memset(&act, 0, sizeof(struct sigaction));
+
+	sigemptyset(&act.sa_mask);
+	act.sa_sigaction = &SignalExtended;
+	act.sa_flags = SA_SIGINFO;
+	sigaction(SIGSEGV, &act, nullptr);
+
+	std::set_terminate(OnSTDExceptionThrown);
 }
 
 #endif //_WIN32

@@ -53,20 +53,11 @@ void DPK_FixSlashes(EqString& str)
 	str.Assign(tempStr);
 }
 
-void encryptDecrypt(ubyte* buffer, int size, int hash)
-{
-	char* key = (char*)&hash;
-
-	while (size--)
-		buffer[size] = buffer[size] ^ key[size % 4];
-}
-
 //-----------------------------------------------------------------------------------------------------------------------
 
-CDPKFileStream::CDPKFileStream(const char* filename, const dpkfileinfo_t& info, COSFile&& osFile)
+CDPKFileStream::CDPKFileStream(const dpkfileinfo_t& info, COSFile&& osFile)
 	: m_ice(0), m_osFile(std::move(osFile))
 {
-	//m_dbgFilename = filename;
 	m_info = info;
 	m_curPos = 0;
 
@@ -125,7 +116,6 @@ void CDPKFileStream::DecodeBlock(int blockIdx)
 
 	const int readSize = (curBlock.flags & DPKFILE_FLAG_COMPRESSED) ? curBlock.compressedSize : curBlock.size;
 
-	// FIXME: rework it so we don't have to malloc all the time as it affects performance
 	ubyte* readMem = (curBlock.flags & DPKFILE_FLAG_COMPRESSED) ? (ubyte*)m_tmpDecompressData : (ubyte*)m_blockData;
 
 	// read block data and decompress/decrypt if needed
@@ -175,8 +165,6 @@ size_t CDPKFileStream::Read(void* dest, size_t count, size_t size)
 	// read blocks if any
 	if (m_info.numBlocks)
 	{
-		//Msg("READ for %u from blocks: %d of %d\n", m_info.filenameHash, bytesToRead, m_info.size);
-
 		int bytesToReadCnt = bytesToRead;
 		ubyte* destBuf = (ubyte*)dest;
 
@@ -192,8 +180,6 @@ size_t CDPKFileStream::Read(void* dest, size_t count, size_t size)
 
 			const int blockRemainingBytes = m_blockInfo[curBlockIdx].size - blockOffset;
 			const int blockBytesToRead = min(bytesToReadCnt, blockRemainingBytes);
-
-			//Msg("Block %d: read at %d (%d) - %d of %d\n", curBlockIdx, curPos, blockOffset, blockBytesToRead, m_blockInfo.size);
 
 			// read the data from block
 			memcpy(destBuf, (ubyte*)m_blockData + blockOffset, blockBytesToRead);
@@ -416,8 +402,6 @@ bool CDPKFileReader::InitPackage(const char *filename, const char* mountPath /*=
 
 IVirtualStream* CDPKFileReader::Open(const char* filename, int modeFlags)
 {
-	//Msg("io::dpktryopen(%s)\n", filename);
-
 	if( m_header.numFiles == 0 )
 	{
 		MsgError("Package is not open!\n");
@@ -445,7 +429,7 @@ IVirtualStream* CDPKFileReader::Open(const char* filename, int modeFlags)
 		return nullptr;
 	}
 
-	CDPKFileStream* newStream = PPNew CDPKFileStream(filename, fileInfo, std::move(osFile));
+	CDPKFileStream* newStream = PPNew CDPKFileStream(fileInfo, std::move(osFile));
 	newStream->m_host = this;
 	newStream->m_ice.set((unsigned char*)m_key.ToCString());
 

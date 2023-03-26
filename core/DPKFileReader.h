@@ -1,5 +1,5 @@
 ///////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright ï¿½ Inspiration Byte
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
 // Description: Data package file (dpk)
@@ -24,7 +24,7 @@ class CDPKFileStream : public CBasePackageFileStream
 	friend class CDPKFileReader;
 	friend class CFileSystem;
 public:
-	CDPKFileStream(const char* fileName, const dpkfileinfo_t& info, COSFile&& osFile);
+	CDPKFileStream(const dpkfileinfo_t& info, COSFile&& osFile);
 	~CDPKFileStream();
 
 	// reads data from virtual stream
@@ -69,7 +69,6 @@ protected:
 
 	void*					m_blockData{ nullptr };
 	void*					m_tmpDecompressData{ nullptr };
-	//EqString				m_dbgFilename;
 
 	dpkfileinfo_t			m_info;
 	IceKey					m_ice;
