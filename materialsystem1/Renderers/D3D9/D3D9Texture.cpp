@@ -188,7 +188,7 @@ bool CD3D9Texture::Init(const SamplerStateParam_t& sampler, const ArrayCRef<CRef
 
 	for (int i = 0; i < images.numElem(); i++)
 	{
-		CRefPtr<CImage>& img = images[i];
+		const CRefPtr<CImage>& img = images[i];
 
 		if ((m_iFlags & TEXFLAG_CUBEMAP) && !img->IsCube())
 		{
@@ -277,7 +277,7 @@ bool CD3D9Texture::Init(const SamplerStateParam_t& sampler, const ArrayCRef<CRef
 
 	if(m_progressiveState.numElem())
 	{
-		m_progressiveFrameDelay = min(g_shaderApi.m_progressiveTextureFrequency, 255);
+		m_progressiveFrameDelay = min(s_shaderApi.m_progressiveTextureFrequency, 255);
 		
 		Threading::CScopedMutex m(g_sapi_ProgressiveTextureMutex);
 		s_shaderApi.m_progressiveTextures.insert(this);
@@ -358,8 +358,6 @@ EProgressiveStatus CD3D9Texture::StepProgressiveLod()
 			--state.lockBoxLevel;
 			--state.mipMapLevel;
 
-			status = PROGRESSIVE_STATUS_DID_UPLOAD;
-
 			if (state.lockBoxLevel < 0)
 			{
 				m_progressiveState.fastRemoveIndex(i);
@@ -371,7 +369,7 @@ EProgressiveStatus CD3D9Texture::StepProgressiveLod()
 	if (!m_progressiveState.numElem())
 		return PROGRESSIVE_STATUS_COMPLETED;
 
-	m_progressiveFrameDelay = min(g_shaderApi.m_progressiveTextureFrequency, 255);
+	m_progressiveFrameDelay = min(s_shaderApi.m_progressiveTextureFrequency, 255);
 
 	return PROGRESSIVE_STATUS_WAIT_MORE_FRAMES;
 }

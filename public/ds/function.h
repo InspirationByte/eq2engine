@@ -59,7 +59,6 @@ public:
     {
         if (!other)
             return;
-        ASSERT((other.isSmall & 1) == other.isSmall);
 
         MoveFunction(std::move(other));
     }

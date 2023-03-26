@@ -299,55 +299,57 @@ project "eqGLRHI"
 		links {
 			"X11", "Xxf86vm", "Xext", "GL", "GLU",
 		}
-elseif os.target() == "windows" and not IS_ANDROID then
-    -- Direct3D9 renderer
-    project "eqD3D9RHI"
-        kind "SharedLib"
-		unitybuild "on"
-		uses {
-			"corelib", "frameworkLib", "e2Core",
-			"eqRHIBaseLib"
-		}
-		defines{
-			"EQRHI_D3D9",
-		}
-        files {
-			Folders.matsystem1.. "renderers/D3D9/**.cpp",
-			Folders.matsystem1.."renderers/D3D9/**.h"
-		}
-        includedirs {
-			Folders.dependency.."minidx9/include"
-		}
-        libdirs {
-			Folders.dependency.."minidx9/lib/%{cfg.platform}"
-		}
-        links {
-			"d3d9", "d3dx9"
-		}
-		
-	-- Direct3D11 renderer
-	project "eqD3D11RHI"
-        kind "SharedLib"
-		unitybuild "on"
-		uses {
-			"corelib", "frameworkLib", "e2Core",
-			"eqRHIBaseLib"
-		}
-		defines{
-			"EQRHI_D3D11",
-		}
-        files {
-			Folders.matsystem1.. "renderers/D3D11/**.cpp",
-			Folders.matsystem1.."renderers/D3D11/**.h"
-		}
-        --includedirs {
-		--	Folders.dependency.."minidx9/include"
-		--}
-        --libdirs {
-		--	Folders.dependency.."minidx9/lib/%{cfg.platform}"
-		--}
-        links {
-			"d3d10", "dxgi"
-		}
+
+	if os.target() == "windows" then
+		-- Direct3D9 renderer
+		project "eqD3D9RHI"
+			kind "SharedLib"
+			unitybuild "on"
+			uses {
+				"corelib", "frameworkLib", "e2Core",
+				"eqRHIBaseLib"
+			}
+			defines{
+				"EQRHI_D3D9",
+			}
+			files {
+				Folders.matsystem1.. "renderers/D3D9/**.cpp",
+				Folders.matsystem1.."renderers/D3D9/**.h"
+			}
+			includedirs {
+				Folders.dependency.."minidx9/include"
+			}
+			libdirs {
+				Folders.dependency.."minidx9/lib/%{cfg.platform}"
+			}
+			links {
+				"d3d9", "d3dx9"
+			}
+			
+		-- Direct3D11 renderer
+		project "eqD3D11RHI"
+			kind "SharedLib"
+			unitybuild "on"
+			uses {
+				"corelib", "frameworkLib", "e2Core",
+				"eqRHIBaseLib"
+			}
+			defines{
+				"EQRHI_D3D11",
+			}
+			files {
+				Folders.matsystem1.. "renderers/D3D11/**.cpp",
+				Folders.matsystem1.."renderers/D3D11/**.h"
+			}
+			--includedirs {
+			--	Folders.dependency.."minidx9/include"
+			--}
+			--libdirs {
+			--	Folders.dependency.."minidx9/lib/%{cfg.platform}"
+			--}
+			links {
+				"d3d10", "dxgi"
+			}
+	end
 end
 
