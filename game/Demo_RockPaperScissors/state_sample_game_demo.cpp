@@ -12,13 +12,9 @@
 #include "materialsystem1/IMaterialSystem.h"
 
 #include "render/EqParticles.h"
-
-
 #include "input/in_keys_ident.h"
 
-
-
-static ConVar g_maxObjects("g_maxObjects", "200", nullptr, CV_ARCHIVE);
+DECLARE_CVAR(g_maxObjects, "200", nullptr, CV_ARCHIVE);
 
 #define PrecacheScriptSound(snd) g_sounds->PrecacheSound(snd)
 
