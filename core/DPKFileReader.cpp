@@ -415,12 +415,12 @@ IVirtualStream* CDPKFileReader::Open(const char* filename, int modeFlags)
 	}
 
 	// find file in DPK filename list
-	int dpkFileIndex = FindFileIndex(filename);
+	const int dpkFileIndex = FindFileIndex(filename);
 
 	if (dpkFileIndex == -1)
 		return nullptr;
 
-	dpkfileinfo_t& fileInfo = m_dpkFiles[dpkFileIndex];
+	const dpkfileinfo_t& fileInfo = m_dpkFiles[dpkFileIndex];
 
 	COSFile osFile;
 	if (!osFile.Open(m_packagePath.ToCString(), COSFile::OPEN_EXIST | COSFile::READ))

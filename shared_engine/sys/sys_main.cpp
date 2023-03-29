@@ -17,11 +17,38 @@
 #include "sys_window.h"
 #include "sys_version.h"
 
+#include <SDL_messagebox.h>
+#include <SDL_system.h>
+
+// To not use GTK or java messages, we just using SDL for it. Neat. Noice.
+static void EQSDLMessageBoxCallback(const char* messageStr, EMessageBoxType type )
+{
+	switch(type)
+	{
+		case MSGBOX_INFO:
+			SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION, "INFO", messageStr, nullptr);
+			break;
+		case MSGBOX_WARNING:
+			SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_WARNING, "WARNING", messageStr, nullptr);
+			break;
+		case MSGBOX_ERROR:
+			SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "ERROR", messageStr, nullptr);
+			break;
+		case MSGBOX_CRASH:
+			SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "FATAL ERROR", messageStr, nullptr);
+			break;
+	}
+}
+
 DECLARE_CVAR_G(__cheats, "1", "Wireframe", CV_INVISIBLE);
 
 // engine entry point after Core init
 int Sys_Main()
 {
+#ifdef PLAT_LINUX
+	SetMessageBoxCallback(EQSDLMessageBoxCallback);
+#endif
+
 	// init file system
 	if (!g_fileSystem->Init(false))
 	{
@@ -31,9 +58,7 @@ int Sys_Main()
 
 	// in case of game FS is packed
 	// create configuration directory
-	g_fileSystem->MakeDir("cfg", SP_MOD);
-
-	// add the copyright
+	g_fileSystem->MakeDir("cfg", SP_MOD);SetMessageBoxCallback(EQSDLMessageBoxCallback);
 	g_localizer->AddToken("GAME_VERSION", EqWString::Format(L"Build %d %ls %ls", BUILD_NUMBER_ENGINE, L"" COMPILE_DATE, L"" COMPILE_TIME).ToCString());
 	g_localizer->AddTokensFile("game");
 
@@ -62,29 +87,6 @@ int Sys_Main()
 #include <android/asset_manager.h>
 #include <android/asset_manager_jni.h>
 #include <vector>
-
-#include "SDL_messagebox.h"
-#include "SDL_system.h"
-
-
-void EQSDLMessageBoxCallback(const char* messageStr, EMessageBoxType type )
-{
-	switch(type)
-	{
-		case MSGBOX_INFO:
-			SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION, "INFO", messageStr, nullptr);
-			break;
-		case MSGBOX_WARNING:
-			SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_WARNING, "WARNING", messageStr, nullptr);
-			break;
-		case MSGBOX_ERROR:
-			SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "ERROR", messageStr, nullptr);
-			break;
-		case MSGBOX_CRASH:
-			SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "FATAL ERROR", messageStr, nullptr);
-			break;
-	}
-}
 
 struct JNI_t
 {
