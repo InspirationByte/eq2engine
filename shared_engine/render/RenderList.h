@@ -31,5 +31,6 @@ public:
 	void								Remove(int id);
 	void								Clear();										// clear it
 protected:
-	Array<CBaseRenderableObject*>		m_ObjectList;
+	Array<CBaseRenderableObject*>		m_objectList;
+	Array<float>						m_viewDistance;
 };
