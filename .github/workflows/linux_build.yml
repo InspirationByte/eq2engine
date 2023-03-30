@@ -7,6 +7,7 @@ on:
     branches: [ "develop" ]
 env:
   BUILD_CONFIGURATION: release
+  BUILD_CONFIGURATION_U: Release
   BUILD_PLATFORM: x64
 jobs:
   build:
@@ -39,7 +40,7 @@ jobs:
         name: DrvSyn_linux_${{env.BUILD_CONFIGURATION}}_${{env.BUILD_PLATFORM}}
         path: |
           bin/x64/Release/*.so
-          bin/x64/Release/DrvSyn_${{env.BUILD_CONFIGURATION}}
+          bin/x64/Release/DrvSyn_${{env.BUILD_CONFIGURATION_U}}
           bin/x64/Release/fcompress
           bin/x64/Release/animca
           bin/x64/Release/egfca
