@@ -23,8 +23,7 @@ jobs:
         version: "5.0.0-beta2"
         
     - name: Install dependencies
-      run: sudo apt-get update |
-        sudo apt-get install -y build-essential libsdl2-dev libopenal-dev libxxf86vm-dev
+      run: sudo add-apt-repository universe && sudo apt-get update && sudo apt-get install -y build-essential libsdl2-dev libopenal-dev libxxf86vm-dev
         
     - name: Generate Makefile
       working-directory: ${{env.GITHUB_WORKSPACE}}
