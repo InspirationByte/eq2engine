@@ -31,7 +31,7 @@ jobs:
       
     - name: make
       working-directory: ./project_gmake2
-      run: make config=release_x64
+      run: make config=${{env.BUILD_CONFIGURATION}}_${{env.BUILD_PLATFORM}} -j10
       
     - name: Upload a Build Artifact
       uses: actions/upload-artifact@v3.1.2
