@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright ï¿½ Inspiration Byte
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
 // Description: DakrTech scene renderer renderable
@@ -12,7 +12,9 @@
 
 #define MIN_OBJECT_RENDERLIST_MEMSIZE 48
 
-CRenderList::CRenderList() : m_ObjectList(PP_SL, MIN_OBJECT_RENDERLIST_MEMSIZE)
+CRenderList::CRenderList()
+	: m_objectList(PP_SL, MIN_OBJECT_RENDERLIST_MEMSIZE)
+	, m_viewDistance(PP_SL, MIN_OBJECT_RENDERLIST_MEMSIZE)
 {
 
 }
@@ -24,17 +26,18 @@ CRenderList::~CRenderList()
 
 void CRenderList::AddRenderable(CBaseRenderableObject* pObject)
 {
-	m_ObjectList.append(pObject);
+	m_objectList.append(pObject);
+	m_viewDistance.reserve(m_objectList.numElem());
 }
 
 int CRenderList::GetRenderableCount()
 {
-	return m_ObjectList.numElem();
+	return m_objectList.numElem();
 }
 
 CBaseRenderableObject* CRenderList::GetRenderable(int id)
 {
-	return m_ObjectList[id];
+	return m_objectList[id];
 }
 
 void CRenderList::Append(CRenderList* pAnotherList)
@@ -42,52 +45,56 @@ void CRenderList::Append(CRenderList* pAnotherList)
 	int num = pAnotherList->GetRenderableCount();
 
 	for(int i = 0; i < num; i++)
-		m_ObjectList.append(pAnotherList->GetRenderable(i));
+		m_objectList.append(pAnotherList->GetRenderable(i));
+	
+	m_viewDistance.reserve(m_objectList.numElem());
 }
 
 void CRenderList::Render(int nViewRenderFlags, void* userdata)
 {
-	for(int i = 0; i < m_ObjectList.numElem(); i++)
-		m_ObjectList[i]->Render(nViewRenderFlags, userdata);
+	for(int i = 0; i < m_objectList.numElem(); i++)
+		m_objectList[i]->Render(nViewRenderFlags, userdata);
 }
 
 void CRenderList::Remove(int id)
 {
-	m_ObjectList.removeIndex(id);
+	m_objectList.removeIndex(id);
 }
 
 void CRenderList::Clear()
 {
-	m_ObjectList.clear(false);
+	m_objectList.clear(false);
 }
 
 void CRenderList::SortByDistanceFrom(const Vector3D& origin, bool reverse)
 {
+	m_viewDistance.setNum(m_objectList.numElem(), false);
+
 	// pre-compute object distances
-	for(int i = 0; i < m_ObjectList.numElem(); ++i)
+	for(int i = 0; i < m_objectList.numElem(); ++i)
 	{
-		CBaseRenderableObject* renderable = m_ObjectList[i];
+		CBaseRenderableObject* renderable = m_objectList[i];
 		const BoundingBox& bbox = renderable->GetBoundingBox();
 
 		// clamp point in bbox
 		if(!bbox.Contains(origin))
-			renderable->m_viewDistance = lengthSqr(origin - bbox.ClampPoint(origin));
+			m_viewDistance[i] = lengthSqr(origin - bbox.ClampPoint(origin));
 		else
-			renderable->m_viewDistance = lengthSqr(origin - bbox.GetCenter());
+			m_viewDistance[i] = lengthSqr(origin - bbox.GetCenter());
 	}
 
 	if (reverse)
 	{
 		// furthest to closest (for transparency)
-		shellSort(m_ObjectList, [](const CBaseRenderableObject* a, const CBaseRenderableObject* b) {
-			return b->m_viewDistance - a->m_viewDistance;
+		shellSortIdx(m_objectList, [this](int a, int b) {
+			return m_viewDistance[b] - m_viewDistance[a];
 		});
 	}
 	else
 	{
 		// closest to furthest
-		shellSort(m_ObjectList, [](const CBaseRenderableObject* a, const CBaseRenderableObject* b) {
-			return a->m_viewDistance - b->m_viewDistance;
+		shellSortIdx(m_objectList, [this](int a, int b) {
+			return m_viewDistance[a] - m_viewDistance[b];
 		});
 	}
 }

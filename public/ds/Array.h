@@ -51,23 +51,23 @@ public:
 		m_nSize = 0;
 	}
 
-	void resize(int newSize, int& numOfElements)
+	void resize(int newCapacity, int& numOfElements)
 	{
-		ASSERT(newSize >= 0);
+		ASSERT(newCapacity >= 0);
 
 		// free up the listPtr if no data is being reserved
-		if (newSize <= 0)
+		if (newCapacity <= 0)
 		{
 			free();
 			return;
 		}
 
 		// not changing the elemCount, so just exit
-		if (newSize == m_nSize)
+		if (newCapacity <= m_nSize)
 			return;
 
 		T* temp = m_pListPtr;
-		m_nSize = newSize;
+		m_nSize = (newCapacity + m_nGranularity - 1) / m_nGranularity * m_nGranularity;
 
 		const int oldNumOfElems = numOfElements;
 		if (m_nSize < numOfElements)
@@ -80,8 +80,6 @@ public:
 		{
 			for (int i = 0; i < numOfElements; i++)
 				new(&m_pListPtr[i]) T(std::move(temp[i]));
-
-			//ArrayStorageBase<T>::destructElements(temp, oldNumOfElems);
 
 			// delete the old m_pListPtr if it exists
 			PPFree(temp);
@@ -127,7 +125,7 @@ public:
 	}
 protected:
 	const PPSourceLine	m_sl;
-	T* m_pListPtr{ nullptr };
+	T* 					m_pListPtr{ nullptr };
 
 	int					m_nSize{ 0 };
 	int					m_nGranularity{ 16 };
@@ -353,10 +351,10 @@ public:
 
 protected:
 
-	void			ensureCapacity(int newElements = 0);
+	void			ensureCapacity(int newElement);
 
-	STORAGE_TYPE		m_storage;
-	int					m_nNumElem{ 0 };
+	STORAGE_TYPE	m_storage;
+	int				m_nNumElem{ 0 };
 };
 
 template< typename T, typename STORAGE_TYPE >
@@ -445,17 +443,7 @@ inline void ArrayBase<T, STORAGE_TYPE>::setGranularity(int newgranularity)
 
 	m_storage.setGranularity(newgranularity);
 
-	if (m_nNumElem)
-	{
-		// resize it to the closest level of granularity
-		newsize = m_nNumElem + m_storage.getGranularity() - 1;
-		newsize -= newsize % m_storage.getGranularity();
-
-		if (newsize != m_storage.getSize())
-		{
-			resize(newsize);
-		}
-	}
+	resize(m_storage.getSize());
 }
 
 // -----------------------------------------------------------------
@@ -649,21 +637,7 @@ inline T ArrayBase<T, STORAGE_TYPE>::popBack()
 template< typename T, typename STORAGE_TYPE >
 inline void ArrayBase<T, STORAGE_TYPE>::ensureCapacity(int newElements)
 {
-	// TODO: move to storage
-	if (!m_storage.getData())
-	{
-		ASSERT(m_storage.getGranularity() > 0);
-
-		// pre-allocate for a bigger list to do less memory resize access
-		const int newSize = newElements + m_storage.getGranularity();
-		resize(newSize - (newSize % m_storage.getGranularity()));
-	}
-	else if(m_nNumElem + newElements >= m_storage.getSize())
-	{
-		// pre-allocate for a bigger list to do less memory resize access
-		const int newSize = newElements + m_nNumElem + m_storage.getGranularity();
-		resize(newSize - (newSize % m_storage.getGranularity()));
-	}
+	resize(m_nNumElem + newElements);
 }
 
 // -----------------------------------------------------------------
@@ -673,7 +647,7 @@ inline void ArrayBase<T, STORAGE_TYPE>::ensureCapacity(int newElements)
 template< typename T, typename STORAGE_TYPE >
 inline int ArrayBase<T, STORAGE_TYPE>::append(const T& obj)
 {
-	ensureCapacity();
+	ensureCapacity(1);
 
 	T* listPtr = m_storage.getData();
 
@@ -690,7 +664,7 @@ inline int ArrayBase<T, STORAGE_TYPE>::append(const T& obj)
 template< typename T, typename STORAGE_TYPE >
 inline int ArrayBase<T, STORAGE_TYPE>::append(T&& obj)
 {
-	ensureCapacity();
+	ensureCapacity(1);
 
 	T* listPtr = m_storage.getData();
 
@@ -708,7 +682,7 @@ template< typename T, typename STORAGE_TYPE >
 template<typename... Args>
 inline int ArrayBase<T, STORAGE_TYPE>::appendEmplace(Args&&... args)
 {
-	ensureCapacity();
+	ensureCapacity(1);
 
 	T* listPtr = m_storage.getData();
 
@@ -724,7 +698,7 @@ inline int ArrayBase<T, STORAGE_TYPE>::appendEmplace(Args&&... args)
 template< typename T, typename STORAGE_TYPE >
 inline T& ArrayBase<T, STORAGE_TYPE>::append()
 {
-	ensureCapacity();
+	ensureCapacity(1);
 
 	T* listPtr = m_storage.getData();
 
@@ -744,7 +718,7 @@ inline int ArrayBase<T, STORAGE_TYPE>::append(const T* other, int count)
 	if(!count)
 		return numElem();
 
-	ensureCapacity(count - 1);
+	ensureCapacity(count);
 
 	// append the elements
 	for (int i = 0; i < count; i++)
@@ -765,7 +739,8 @@ inline int ArrayBase<T, STORAGE_TYPE>::append(const ArrayBase<CT, OTHER_STORAGE_
 	const int count = other.numElem();
 	if (!count)
 		return numElem();
-	ensureCapacity(count - 1);
+
+	ensureCapacity(count);
 
 	// append the elements
 	for (int i = 0; i < count; i++)
@@ -784,7 +759,8 @@ inline int ArrayBase<T, STORAGE_TYPE>::append(const ArrayBase<T2, OTHER_STORAGE_
 	const int count = other.numElem();
 	if (!count)
 		return numElem();
-	ensureCapacity(count - 1);
+
+	ensureCapacity(count);
 
 	// try transform and append the elements
 	for (int i = 0; i < count; i++)
@@ -806,7 +782,7 @@ inline int ArrayBase<T, STORAGE_TYPE>::append(const ArrayBase<T2, OTHER_STORAGE_
 template< typename T, typename STORAGE_TYPE >
 inline int ArrayBase<T, STORAGE_TYPE>::insert(T const& obj, int index)
 {
-	ensureCapacity();
+	ensureCapacity(1);
 
 	if (index < 0)
 		index = 0;
@@ -833,7 +809,7 @@ inline int ArrayBase<T, STORAGE_TYPE>::insert(T const& obj, int index)
 template< typename T, typename STORAGE_TYPE >
 inline int ArrayBase<T, STORAGE_TYPE>::insert(T&& obj, int index)
 {
-	ensureCapacity();
+	ensureCapacity(1);
 
 	if (index < 0)
 		index = 0;
@@ -860,7 +836,7 @@ inline int ArrayBase<T, STORAGE_TYPE>::insert(T&& obj, int index)
 template< typename T, typename STORAGE_TYPE >
 inline T& ArrayBase<T, STORAGE_TYPE>::insert(int index)
 {
-	ensureCapacity();
+	ensureCapacity(1);
 
 	if (index < 0)
 		index = 0;
@@ -1134,7 +1110,7 @@ template< typename T, typename STORAGE_TYPE >
 inline void ArrayBase<T, STORAGE_TYPE>::assureSize(int newSize)
 {
 	m_nNumElem = newSize;
-	ensureCapacity();
+	ensureCapacity(0);
 }
 
 // -----------------------------------------------------------------
@@ -1146,7 +1122,8 @@ inline void ArrayBase<T, STORAGE_TYPE>::assureSizeEmplace(int newSize, Args&&...
 {
 	const int oldSize = m_nNumElem;
 	m_nNumElem = newSize;
-	ensureCapacity();
+
+	ensureCapacity(0);
 
 	T* listPtr = m_storage.getData();
 	for (int i = oldSize; i < newSize; i++)

@@ -64,6 +64,11 @@ static int KV_ReadProcessString( const char* pszStr, char* dest, int maxLength =
 				*ptrTemp++ = '\n';
 				ptr++;
 			}
+			else if(*(ptr+1) == 'r')
+			{
+				*ptrTemp++ = '\r';
+				ptr++;
+			}
 			else if(*(ptr+1) == 't')
 			{
 				*ptrTemp++ = '\t';

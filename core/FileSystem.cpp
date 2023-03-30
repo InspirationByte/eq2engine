@@ -300,19 +300,20 @@ void CFileSystem::Shutdown()
 		i--;
 	}
 
-	/*
-	for(int i = 0; i < m_pOpenFiles.numElem(); i++)
+	ASSERT_MSG(m_openFiles.numElem() == 0, "FileSystem has open files!");
+
+	for(int i = 0; i < m_openFiles.numElem(); i++)
 	{
-		Close( m_pOpenFiles[i] );
+		Close( m_openFiles[i] );
 		i--;
 	}
-	*/
 
 	for(int i = 0; i < m_fsPackages.numElem(); i++)
 		delete m_fsPackages[i];
 
-	m_fsPackages.clear();
-	m_directories.clear();
+	m_openFiles.clear(true);
+	m_fsPackages.clear(true);
+	m_directories.clear(true);
 
 	g_localizer->Shutdown();
 }

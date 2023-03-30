@@ -13,7 +13,7 @@ EXPORTED_INTERFACE(IEqCPUCaps, CEqCPUCaps);
 
 //----------------------------------------------------------------------------------------------------------
 
-#if defined(_WIN32)
+#ifdef _WIN32
 #define CPUID __asm _emit 0x0F __asm _emit 0xA2
 #define RDTSC __asm _emit 0x0F __asm _emit 0x31
 
@@ -45,7 +45,7 @@ void cpuidAsm(uint32 op, uint32 reg[4]);
 
 #define cpuid(func, a, b, c, d) { uint32 res[4]; cpuidAsm(func, res); a = res[0]; b = res[1]; c = res[2]; d = res[3]; }
 
-#elif defined(LINUX) || defined(PLAT_ANDROID)
+#elif defined(PLAT_LINUX) || defined(PLAT_ANDROID)
 
 #if defined(__arm__)
 
@@ -250,12 +250,12 @@ void CEqCPUCaps::Init()
 	if (m_cpuCount < 1)
 		m_cpuCount = 1;
 
-#ifdef _WIN32 // TODO: detect on POSIX systems too
 	uint32 maxi, maxei, a, b, c, d;
 
 	m_cpuVendor[12]   = '\0';
 	m_cpuBrandName[0] = '\0';
 
+#ifndef PLAT_ANDROID
 	cpuid(0, maxi, ((uint32 *) m_cpuVendor)[0], ((uint32 *) m_cpuVendor)[2], ((uint32 *) m_cpuVendor)[1]);
 
 	if (maxi >= 1)
