@@ -16,24 +16,27 @@ public:
 	class Iterator
 	{
 	public:
-		Iterator() : item(nullptr) {}
-		const K& key() const { return item->key; }
-		const V& value() const { return *item->value; }
-		const V& operator*() const { return *item->value; }
-		V& operator*() { return *item->value; }
-		const V* operator->() const { return item->value; }
-		V* operator->() { return item->value; }
-		const Iterator& operator++() { item = item->next; return *this; }
-		const Iterator& operator--() { item = item->prev; return *this; }
-		Iterator operator++() const { return item->next; }
-		Iterator operator--() const { return item->prev; }
-		bool operator==(const Iterator& other) const { return item == other.item; }
-		bool operator!=(const Iterator& other) const { return item != other.item; }
+		Iterator()
+			: item(nullptr) {}
+
+		const K&		key() const { return item->key; }
+		const V&		value() const { return *item->value; }
+		const V&		operator*() const { return *item->value; }
+		V&				operator*() { return *item->value; }
+		const V*		operator->() const { return item->value; }
+		V*				operator->() { return item->value; }
+		const Iterator&	operator++() { item = item->next; return *this; }
+		const Iterator&	operator--() { item = item->prev; return *this; }
+		Iterator		operator++() const { return item->next; }
+		Iterator		operator--() const { return item->prev; }
+		bool			operator==(const Iterator& other) const { return item == other.item; }
+		bool			operator!=(const Iterator& other) const { return item != other.item; }
 
 	private:
-		Item* item;
+		Item*			item;
 
-		Iterator(Item* item) : item(item) {}
+		Iterator(Item* item)
+			:	item(item) {}
 
 		friend class Map;
 	};
@@ -120,17 +123,43 @@ public:
 
 	void swap(Map& other)
 	{
-		Map tmp{PPSourceLine::Empty()};
-		for (const Item* i = other.m_begin.item, *end = &other.m_endItem; i != end; i = i->next)
-			tmp.insert(i->key, *i->value);
+		QuickSwap(m_sl, other.m_sl);
+		QuickSwap(m_root, other.m_root);
+		QuickSwap(m_freeItem, other.m_freeItem);
+		QuickSwap(m_blocks, other.m_blocks);
+		QuickSwap(m_size, other.m_size);
+		QuickSwap(m_begin, other.m_begin);
+		QuickSwap(m_end, other.m_end);
+		QuickSwap(m_endItem, other.m_endItem);
 
-		other.clear();
-		for (const Item* i = m_begin.item, *end = &m_endItem; i != end; i = i->next)
-			other.insert(i->key, *i->value);
+		// Fix up references to m_endItem
+		for (Item* i = m_begin.item, *end = &m_endItem; i != end; i = i->next)
+		{
+			if (i->parent == &other.m_endItem)
+				i->parent = &m_endItem;
+			if (i->left == &other.m_endItem)
+				i->left = &m_endItem;
+			if (i->right == &other.m_endItem)
+				i->right = &m_endItem;
+			if (i->next == &other.m_endItem)
+				i->next = &m_endItem;
+			if (i->prev == &other.m_endItem)
+				i->prev = &m_endItem;
+		}
 
-		clear();
-		for (const Item* i = tmp.m_begin.item, *end = &tmp.m_endItem; i != end; i = i->next)
-			insert(i->key, *i->value);
+		for (Item* i = other.m_begin.item, *end = &other.m_endItem; i != end; i = i->next)
+		{
+			if (i->parent == &m_endItem)
+				i->parent = &other.m_endItem;
+			if (i->left == &m_endItem)
+				i->left = &other.m_endItem;
+			if (i->right == &m_endItem)
+				i->right = &other.m_endItem;
+			if (i->next == &m_endItem)
+				i->next = &other.m_endItem;
+			if (i->prev == &m_endItem)
+				i->prev = &other.m_endItem;
+		}
 	}
 
 	void clear(bool deallocate = false)

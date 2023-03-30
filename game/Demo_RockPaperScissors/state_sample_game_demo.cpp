@@ -103,6 +103,15 @@ int	CState_SampleGameDemo::CheckWhoDefeats(const RPSObject& a, const RPSObject& 
 	if (a.type == b.type)
 		return 0;
 
+	// GPT3 helped to optimize commented code below!
+	const int diff = (static_cast<int>(a.type) - static_cast<int>(b.type) + 3) % 3;
+	if (diff == 1) {
+		return 1; // a wins
+	} else {
+		return 2; // b wins
+	}
+
+	/*
 	// rock break scissors
 	if (a.type == RPSType::ROCK && b.type == RPSType::SCISSORS)
 		return 1;
@@ -122,6 +131,7 @@ int	CState_SampleGameDemo::CheckWhoDefeats(const RPSObject& a, const RPSObject& 
 		return 2;
 
 	return 0; // WTF?
+	*/
 }
 
 // when 'false' returned the next state goes on

@@ -151,8 +151,8 @@ void CStudioCache::ReleaseCache()
 		}
 	}
 
-	m_cachedList.clear();
-	m_cacheIndex.clear();
+	m_cachedList.clear(true);
+	m_cacheIndex.clear(true);
 
 	g_pShaderAPI->DestroyVertexFormat(m_egfFormat);
 	m_egfFormat = nullptr;
