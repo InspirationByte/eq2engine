@@ -30,7 +30,7 @@ jobs:
       run: premake5 gmake2
       
     - name: make
-      working-directory: ${{env.GITHUB_WORKSPACE}}/project_gmake2
+      working-directory: ./project_gmake2
       run: make config=release_x64
       
     - name: Upload a Build Artifact
