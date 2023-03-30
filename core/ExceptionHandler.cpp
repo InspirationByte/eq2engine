@@ -291,8 +291,18 @@ void UnInstallExceptionHandler()
 
 #elif defined(PLAT_POSIX)
 
-#include <stdio.h>
+#if defined(PLAT_ANDROID)
+
+// we need to fake it sadly.
+int backtrace(void **array, int size) { return 0; }
+char **backtrace_symbols(void *const *array, int size) { return 0; }
+void backtrace_symbols_fd (void *const *array, int size, int fd) {}
+
+#else
 #include <execinfo.h>
+#endif
+
+#include <stdio.h>
 #include <signal.h>
 #include <stdlib.h>
 #include <unistd.h>
