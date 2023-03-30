@@ -28,8 +28,8 @@ Expand-7Zip -ArchiveFileName WX_LIBS.7z -TargetPath ($dependency_folder + '\\wxW
 $windows_openal_dir = ('.\\src_dependency\\openal-soft-' + $openal_ver + '-bin')
 $windows_sdl2_dir = ('.\\src_dependency\\SDL2-' + $sdl2_ver)
 
-Copy-Item -Path ($windows_openal_dir + '\\*') -Destination ($dependency_folder + '\\openal-soft') -Recurse
-Copy-Item -Path ($windows_sdl2_dir + '\\*') -Destination ($dependency_folder + '\\SDL2') -Recurse
+Copy-Item -Path ($windows_openal_dir + '\\*') -Destination ($dependency_folder + '\\openal-soft') -Recurse -Force
+Copy-Item -Path ($windows_sdl2_dir + '\\*') -Destination ($dependency_folder + '\\SDL2') -Recurse -Force
 Remove-Item $windows_openal_dir -Recurse
 Remove-Item $windows_sdl2_dir -Recurse
 
