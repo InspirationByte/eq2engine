@@ -313,6 +313,8 @@ void CFileSystem::Shutdown()
 
 	m_openFiles.clear(true);
 	m_fsPackages.clear(true);
+	m_findDatas.clear(true);
+
 	m_directories.clear(true);
 
 	g_localizer->Shutdown();

@@ -85,8 +85,6 @@ public:
 	// File operations
 	//------------------------------------------------------------
 
-
-
     IFile*						Open(const char* filename, const char* mode, int searchFlags = -1 );
     void						Close( IFile *fp );
 
@@ -160,9 +158,9 @@ protected:
 		// name hash to file path mapping (case-insensitive support)
 		Map<int, EqString> pathToFileMapping{ PP_SL };
 #endif
-		EqString id;
-		EqString path;
-		bool mainWritePath;
+		EqString	id;
+		EqString	path;
+		bool		mainWritePath;
 	};
 
 	Array<SearchPathInfo>		m_directories{ PP_SL };		// mod data, for fall back

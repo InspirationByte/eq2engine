@@ -54,11 +54,34 @@ public:
 			insert(i->key, *i->value);
 	}
 
-	Map(Map&& other)
+	Map(Map&& other) noexcept
 		: m_sl(other.m_sl), m_end(&m_endItem), m_begin(&m_endItem)
+		, m_endItem(std::move(other.m_endItem))
+		, m_root(other.m_root)
+		, m_freeItem(other.m_freeItem)
+		, m_blocks(other.m_blocks)
+		, m_size(other.m_size)
 	{
-		for (const Item* i = other.m_begin.item, *end = &other.m_endItem; i != end; i = i->next)
-			insert(i->key, std::move(*i->value));
+		if(other.m_begin.item != &other.m_endItem)
+			m_begin = Iterator(other.m_begin.item);
+
+		// fix up references
+		for (Item* i = m_begin.item, *end = &m_endItem; i != end; i = i->next)
+		{
+			if(&other.m_endItem == i->parent)
+				i->parent = &m_endItem;
+
+			if(&other.m_endItem == i->right)
+				i->right = &m_endItem;
+
+			if(&other.m_endItem == i->next)
+				i->next = &m_endItem;
+		}
+
+		other.m_root = nullptr;
+		other.m_freeItem = nullptr;
+		other.m_blocks = nullptr;
+		other.m_size = 0;
 	}
 
 	~Map()
@@ -433,15 +456,15 @@ public:
 private:
 	struct Item
 	{
-		K key;
-		V* value{ nullptr };
-		Item* parent;
-		Item* left{ nullptr };
-		Item* right{ nullptr };
-		Item* next{ nullptr };
-		Item* prev{ nullptr };
-		int height{ 1 };
-		int slope{ 0 };
+		K		key;
+		V*		value{ nullptr };
+		Item*	parent{ nullptr };
+		Item*	left{ nullptr };
+		Item*	right{ nullptr };
+		Item*	next{ nullptr };
+		Item*	prev{ nullptr };
+		int		height{ 1 };
+		int		slope{ 0 };
 
 		Item()
 			: key()
@@ -459,8 +482,8 @@ private:
 		void updateHeightAndSlope()
 		{
 			ASSERT(!parent || this == parent->left || this == parent->right);
-			int leftHeight = left ? left->height : 0;
-			int rightHeight = right ? right->height : 0;
+			const int leftHeight = left ? left->height : 0;
+			const int rightHeight = right ? right->height : 0;
 			slope = leftHeight - rightHeight;
 			height = (leftHeight > rightHeight ? leftHeight : rightHeight) + 1;
 		}
@@ -500,18 +523,19 @@ private:
 					i->prev = item;
 					item = i;
 				}
-				m_freeItem = item;
 			}
 			m_freeItem = item->prev;
-			PPSLValueCtor<V>* value = (PPSLValueCtor<V>*)(item + 1);
-			new (value) PPSLValueCtor<V>(m_sl);
+
 			new (item) Item(parent, key);
 
-			// FIXME: multi-map is bugged, first item becomes unreachable
+			PPSLValueCtor<V>* value = (PPSLValueCtor<V>*)(item + 1);
+			new (value) PPSLValueCtor<V>(m_sl);
+
 			*cell = item;
 			++m_size;
 			if (!parent)
-			{ // first item
+			{
+				// first item
 				ASSERT(m_begin.item == &m_endItem);
 				item->prev = nullptr;
 				item->next = m_begin.item;
@@ -523,6 +547,7 @@ private:
 				Item* insertPos = cell == &parent->right ?
 					parent->next : // insert after parent
 					parent; // insert before parent
+
 				if ((item->prev = insertPos->prev))
 					insertPos->prev->next = item;
 				else

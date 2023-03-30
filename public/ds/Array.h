@@ -793,7 +793,7 @@ inline int ArrayBase<T, STORAGE_TYPE>::insert(T const& obj, int index)
 
 	for (int i = m_nNumElem; i > index; --i)
 	{
-		new(&listPtr[i]) T(listPtr[i - 1]);
+		new(&listPtr[i]) T(std::move(listPtr[i - 1]));
 	}
 
 	m_nNumElem++;
@@ -820,7 +820,7 @@ inline int ArrayBase<T, STORAGE_TYPE>::insert(T&& obj, int index)
 
 	for (int i = m_nNumElem; i > index; --i)
 	{
-		new(&listPtr[i]) T(listPtr[i - 1]);
+		new(&listPtr[i]) T(std::move(listPtr[i - 1]));
 	}
 
 	m_nNumElem++;
@@ -847,7 +847,7 @@ inline T& ArrayBase<T, STORAGE_TYPE>::insert(int index)
 
 	for (int i = m_nNumElem; i > index; --i)
 	{
-		new(&listPtr[i]) T(listPtr[i - 1]);
+		new(&listPtr[i]) T(std::move(listPtr[i - 1]));
 	}
 
 	m_nNumElem++;
