@@ -27,7 +27,7 @@ CRenderList::~CRenderList()
 void CRenderList::AddRenderable(CBaseRenderableObject* pObject)
 {
 	m_objectList.append(pObject);
-	m_viewDistance.reserve(m_objectList.numElem());
+	m_viewDistance.append(0.0f);
 }
 
 int CRenderList::GetRenderableCount()
@@ -86,14 +86,14 @@ void CRenderList::SortByDistanceFrom(const Vector3D& origin, bool reverse)
 	if (reverse)
 	{
 		// furthest to closest (for transparency)
-		shellSortIdx(m_objectList, [this](int a, int b) {
+		quickSortIdx(m_objectList, [this](int a, int b) {
 			return m_viewDistance[b] - m_viewDistance[a];
 		});
 	}
 	else
 	{
 		// closest to furthest
-		shellSortIdx(m_objectList, [this](int a, int b) {
+		quickSortIdx(m_objectList, [this](int a, int b) {
 			return m_viewDistance[a] - m_viewDistance[b];
 		});
 	}
