@@ -125,69 +125,69 @@ void ShaderAPI_Base::Shutdown()
 	{
 		FreeTexture(*it);
 	}
-	m_TextureList.clear();
+	m_TextureList.clear(true);
 
 	for (auto it = m_ShaderList.begin(); it != m_ShaderList.end(); ++it)
 	{
 		DestroyShaderProgram(*it);
 	}
-	m_ShaderList.clear();
+	m_ShaderList.clear(true);
 
 	for(int i = 0; i < m_VFList.numElem();i++)
 	{
 		DestroyVertexFormat(m_VFList[i]);
 		i--;
 	}
-	m_VFList.clear();
+	m_VFList.clear(true);
 
 	for(int i = 0; i < m_VBList.numElem();i++)
 	{
 		DestroyVertexBuffer(m_VBList[i]);
 		i--;
 	}
-	m_VBList.clear();
+	m_VBList.clear(true);
 
 	for(int i = 0; i < m_IBList.numElem();i++)
 	{
 		DestroyIndexBuffer(m_IBList[i]);
 		i--;
 	}
-	m_IBList.clear();
+	m_IBList.clear(true);
 
 	for(int i = 0; i < m_SamplerStates.numElem();i++)
 	{
 		DestroyRenderState(m_SamplerStates[i]);
 		i--;
 	}
-	m_SamplerStates.clear();
+	m_SamplerStates.clear(true);
 
 	for(int i = 0; i < m_BlendStates.numElem();i++)
 	{
 		DestroyRenderState(m_BlendStates[i]);
 		i--;
 	}
-	m_BlendStates.clear();
+	m_BlendStates.clear(true);
 
 	for(int i = 0; i < m_DepthStates.numElem();i++)
 	{
 		DestroyRenderState(m_DepthStates[i]);
 		i--;
 	}
-	m_DepthStates.clear();
+	m_DepthStates.clear(true);
 
 	for(int i = 0; i < m_RasterizerStates.numElem();i++)
 	{
 		DestroyRenderState(m_RasterizerStates[i]);
 		i--;
 	}
-	m_RasterizerStates.clear();
+	m_RasterizerStates.clear(true);
 
 	for(int i = 0; i < m_OcclusionQueryList.numElem(); i++)
 	{
 		DestroyOcclusionQuery(m_OcclusionQueryList[i]);
 		i--;
 	}
-	m_OcclusionQueryList.clear();
+	m_OcclusionQueryList.clear(true);
 }
 
 //-------------------------------------------------------------
