@@ -308,9 +308,25 @@ bool CGLRenderLib_ES::InitAPI(const shaderAPIParams_t& params)
 			caps.renderTargetFormatsSupported[i] = true;
 		}
 
-		// all mobile compressed formats should be supported... except few specific that not included here
-		for (int i = FORMAT_ETC1; i <= FORMAT_PVRTC_A_4BPP; i++)
-			caps.textureFormatsSupported[i] = true;
+		if(GLAD_GL_IMG_texture_compression_pvrtc)
+		{
+			for (int i = FORMAT_PVRTC_2BPP; i <= FORMAT_PVRTC_A_4BPP; i++)
+				caps.textureFormatsSupported[i] = true;
+		}
+
+		if(GLAD_GL_OES_compressed_ETC1_RGB8_texture)
+		{
+			for (int i = FORMAT_ETC1; i <= FORMAT_ETC2A8; i++)
+				caps.textureFormatsSupported[i] = true;
+		}
+
+		if (GLAD_GL_EXT_texture_compression_s3tc)
+		{
+			for (int i = FORMAT_DXT1; i <= FORMAT_ATI2N; i++)
+				caps.textureFormatsSupported[i] = true;
+
+			caps.textureFormatsSupported[FORMAT_ATI1N] = false;
+		}
 	}
 
 	GLCheckError("caps check");

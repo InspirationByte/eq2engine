@@ -137,6 +137,14 @@ ITexturePtr CTextureLoader::LoadTextureFromFileSync(const char* pszFileName, con
 
 		if (isLoaded)
 		{
+			const ShaderAPICaps_t& caps = g_pShaderAPI->GetCaps();
+
+			if(!caps.textureFormatsSupported[img->GetFormat()])
+			{
+				MsgWarning("Texture has unsupported format: %s\n", texturePathExt.ToCString());
+				continue;
+			}
+
 			if (g_pShaderAPI->GetShaderAPIClass() == SHADERAPI_DIRECT3D9)
 			{
 				if (img->GetFormat() == FORMAT_RGB8 || img->GetFormat() == FORMAT_RGBA8)
