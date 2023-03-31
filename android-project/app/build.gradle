@@ -32,7 +32,8 @@ android {
         externalNativeBuild {
             ndkBuild {
                 arguments 'NDK_APPLICATION_MK:='+applicationMkPath,
-                    "APP_STL := c++_static"
+                    "APP_STL := c++_static",
+                    "-j10"
             }
         }
     }
