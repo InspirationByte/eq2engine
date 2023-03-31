@@ -91,6 +91,7 @@ GLAPI struct gladGLversionStruct GLVersion;
 GLAPI int gladLoadGLES2Loader(GLADloadproc);
 
 #include <stddef.h>
+#include <stdint.h>
 #include <KHR/khrplatform.h>
 
 typedef unsigned int GLenum;
