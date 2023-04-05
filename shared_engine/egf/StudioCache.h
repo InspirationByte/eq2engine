@@ -21,12 +21,10 @@ class CStudioCache
 	friend class			CEqStudioGeom;
 
 public:
-	CStudioCache();
+	CStudioCache() = default;
 
 	// caches model and returns it's index
 	int						PrecacheModel(const char* modelName);
-
-	// returns count of cached models
 	int						GetCachedModelCount() const;
 
 	CEqStudioGeom*			GetModel(int index) const;
@@ -38,17 +36,15 @@ public:
 
 	void					ReleaseCache();
 
-	IVertexFormat*			GetEGFVertexFormat() const;		// returns EGF vertex format
+	IVertexFormat*			GetEGFVertexFormat() const;
 
-	// prints loaded models to console
 	void					PrintLoadedModels() const;
 
 private:
 	Map<int, int>			m_cacheIndex{ PP_SL };
 	Array<CEqStudioGeom*>	m_cachedList{ PP_SL };
-	// TODO: add freeIndex if support egf streaming
 
-	IVertexFormat* m_egfFormat;	// vertex format for streams
+	IVertexFormat*			m_egfFormat{ nullptr };
 };
 
 // model cache manager

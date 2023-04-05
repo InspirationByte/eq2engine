@@ -165,7 +165,7 @@ struct studiomodeldesc_s
 {
 	uint8				numGroups;
 	int					groupsOffset;		// Groups data index
-	uint8				lodIndex;
+	uint8				unused;
 
 	inline modelgroupdesc_t *pGroup( int i ) const 
 	{

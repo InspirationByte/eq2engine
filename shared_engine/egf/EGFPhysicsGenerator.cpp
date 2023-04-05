@@ -168,7 +168,7 @@ int CEGFPhysicsGenerator::AddShape(Array<dsmvertex_t> &vertices, Array<int> &ind
 
 			geom_info.numIndices = indices.numElem();
 
-			Msg("Adding convex shape (if you sure that it is), %d verts %d indices\n", vertices.numElem(), geom_info.numIndices);
+			Msg("Adding convex shape, %d verts %d indices\n", vertices.numElem(), geom_info.numIndices);
 		}
 		else
 		{
@@ -216,7 +216,7 @@ int CEGFPhysicsGenerator::AddShape(Array<dsmvertex_t> &vertices, Array<int> &ind
 
 			geom_info.numIndices = shape_hull.numIndices();
 
-			Msg("Adding convex shape, %d verts %d indices\n", shape_hull.numVertices(), shape_hull.numIndices());
+			Msg("Adding generated convex shape, %d verts %d indices\n", shape_hull.numVertices(), shape_hull.numIndices());
 		}
 	}
 	else
@@ -243,7 +243,7 @@ int CEGFPhysicsGenerator::AddShape(Array<dsmvertex_t> &vertices, Array<int> &ind
 
 		geom_info.numIndices = m_indices.numElem() - geom_info.startIndices;
 
-		Msg("Adding shape, %d verts\n", indices.numElem());
+		Msg("Adding trimesh shape, %d verts\n", indices.numElem());
 
 		for(int i = 0; i < shapeVerts.numElem(); i++)
 		{

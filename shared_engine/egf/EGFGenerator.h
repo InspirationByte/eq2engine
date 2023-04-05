@@ -101,6 +101,8 @@ protected:
 	void					WriteMotionPackageList(studiohdr_t* header, IVirtualStream* stream);
 	void					WriteBones(studiohdr_t* header, IVirtualStream* stream);
 
+	void					Validate(studiohdr_t* header, const char* stage);
+
 	// data
 	Array<GenModel_t>				m_modelrefs{ PP_SL };		// all loaded model references
 

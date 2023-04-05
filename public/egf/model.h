@@ -146,6 +146,8 @@ struct EGFHwVertex_t
 	EGFHwVertex_t() = default;
 	EGFHwVertex_t(const studiovertexdesc_t& initFrom)
 	{
+		ASSERT(initFrom.boneweights.numweights <= MAX_MODEL_VERTEX_WEIGHTS);
+
 		pos = Vector4D(initFrom.point, 1.0f);
 		texcoord = initFrom.texCoord;
 
@@ -153,12 +155,11 @@ struct EGFHwVertex_t
 		binormal = initFrom.binormal;
 		normal = initFrom.normal;
 
-		for (int i = 0; i < 4; i++)
+		memset(boneWeights, 0, sizeof(boneWeights));
+		for (int i = 0; i < MAX_MODEL_VERTEX_WEIGHTS; i++)
 			boneIndices[i] = -1;
 
-		memset(boneWeights, 0, sizeof(boneWeights));
-
-		for (int i = 0; i < initFrom.boneweights.numweights; i++)
+		for (int i = 0; i < min(initFrom.boneweights.numweights, MAX_MODEL_VERTEX_WEIGHTS); i++)
 		{
 			boneIndices[i] = initFrom.boneweights.bones[i];
 			boneWeights[i] = initFrom.boneweights.weight[i];

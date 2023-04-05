@@ -346,7 +346,10 @@ bool LoadFBX(Array<dsmmodel_t*>& models, Array<esmshapedata_t*>& shapes, const c
 				shapes.append(shapeData);
 			}
 			else
+			{
+				delete shapeData;
 				shapes.append(nullptr);
+			}
 
 			models.append(model);
 			

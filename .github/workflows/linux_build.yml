@@ -2,9 +2,29 @@ name: Linux Make
 
 on:
   push:
+    paths:
+      - '**.c'
+      - '**.cpp'
+      - '**.cxx'
+      - '**.h'
+      - '**.hpp'
+      - '**.hxx'
+      - '**.yml'
+      - '**/premake*.lua'
+      - 'premake*.lua'
     branches: [ "develop" ]
   pull_request:
     branches: [ "develop" ]
+    paths:
+      - '**.c'
+      - '**.cpp'
+      - '**.cxx'
+      - '**.h'
+      - '**.hpp'
+      - '**.hxx'
+      - '**.yml'
+      - '**/premake*.lua'
+      - 'premake*.lua'
 env:
   BUILD_CONFIGURATION: release
   BUILD_CONFIGURATION_U: Release
