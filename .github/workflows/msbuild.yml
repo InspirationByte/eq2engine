@@ -2,9 +2,29 @@ name: MSBuild
 
 on:
   push:
+    paths:
+      - '**.c'
+      - '**.cpp'
+      - '**.cxx'
+      - '**.h'
+      - '**.hpp'
+      - '**.hxx'
+      - '**.yml'
+      - '**/premake*.lua'
+      - 'premake*.lua'
     branches: [ "develop" ]
   pull_request:
     branches: [ "develop" ]
+    paths:
+      - '**.c'
+      - '**.cpp'
+      - '**.cxx'
+      - '**.h'
+      - '**.hpp'
+      - '**.hxx'
+      - '**.yml'
+      - '**/premake*.lua'
+      - 'premake*.lua'
 
 env:
   # Path to the solution file relative to the root of the project.
