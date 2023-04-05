@@ -29,11 +29,6 @@ DECLARE_CMD(egf_info, "Print loaded EGF info", CV_CHEAT)
 	}
 }
 
-CStudioCache::CStudioCache()
-{
-	m_egfFormat = nullptr;
-}
-
 // caches model and returns it's index
 int CStudioCache::PrecacheModel(const char* modelName)
 {
@@ -47,8 +42,7 @@ int CStudioCache::PrecacheModel(const char* modelName)
 		m_egfFormat = g_pShaderAPI->CreateVertexFormat("EGFVertex", vertFormat, numElem);
 	}
 	
-
-	int idx = GetModelIndex(modelName);
+	const int idx = GetModelIndex(modelName);
 
 	if (idx == CACHE_INVALID_MODEL)
 	{
@@ -89,17 +83,16 @@ int	CStudioCache::GetCachedModelCount() const
 
 CEqStudioGeom* CStudioCache::GetModel(int index) const
 {
-	CEqStudioGeom* model = nullptr;
-
 	if (index <= CACHE_INVALID_MODEL)
-		model = m_cachedList[0];
-	else
-		model = m_cachedList[index];
+		return m_cachedList[0];
+
+	CEqStudioGeom* model = m_cachedList[index];
 
 	if (model && model->GetLoadingState() != MODEL_LOAD_ERROR)
 		return model;
-	else
-		return m_cachedList[0];
+
+	// return default error model
+	return m_cachedList[0];
 }
 
 const char* CStudioCache::GetModelFilename(CEqStudioGeom* pModel) const

@@ -334,6 +334,15 @@ void CEGFGenerator::LoadModelsFromFBX(KVSection* pKeyBase)
 			mod.model->groups.numElem(),
 			mod.model->bones.numElem());
 	}
+
+	for (int i = 0; i < models.numElem(); ++i)
+	{
+		if (models[i]->Ref_Count() == 0)
+		{
+			delete models[i];
+			delete shapeDatas[i];
+		}
+	}
 }
 
 //************************************
@@ -804,7 +813,6 @@ void CEGFGenerator::MergeBones()
 	
 	for(int i = 0; i < allBones.numElem(); i++)
 		delete allBones[i];
-
 	allBones.clear();
 }
 
@@ -1116,22 +1124,24 @@ bool CEGFGenerator::GeneratePOD()
 
 void CEGFGenerator::Cleanup()
 {
-	m_attachments.clear();
-	m_bodygroups.clear();
-	m_ikchains.clear();
-	m_lodparams.clear();
+	for (int i = 0; i < m_matGroups.numElem(); ++i)
+		delete m_matGroups[i];
+	m_matGroups.clear();
 
-	m_materials.clear();
-	m_matpathes.clear();
-	m_motionpacks.clear();
-
-	m_bones.clear();
-	
-	for(int i = 0; i < m_modelrefs.numElem(); i++)
+	for (int i = 0; i < m_modelrefs.numElem(); i++)
 		FreeModel(m_modelrefs[i]);
 
-	m_modelrefs.clear();
-	m_modelLodLists.clear();
+	m_modelrefs.clear(true);
+	m_modelLodLists.clear(true);
+	m_lodparams.clear(true);
+	m_motionpacks.clear(true);
+	m_matpathes.clear(true);
+	m_ikchains.clear(true);
+	m_bones.clear(true);
+	m_attachments.clear(true);
+	m_bodygroups.clear(true);
+	m_materials.clear(true);
+	m_usedMaterials.clear(true);
 }
 
 void CEGFGenerator::SetRefsPath(const char* path)

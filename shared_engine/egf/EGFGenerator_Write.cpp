@@ -9,6 +9,7 @@
 #include "core/IFileSystem.h"
 #include "math/Utility.h"
 #include "EGFGenerator.h"
+#include "utils/AdjacentTriangles.h"
 
 #include "dsm_loader.h"
 #include "dsm_esm_loader.h"
@@ -110,7 +111,7 @@ static int FindVertexInList(const Array<studiovertexdesc_t>& verts, const studio
 	return -1;
 }
 
-studiovertexdesc_t MakeStudioVertex(const dsmvertex_t& vert)
+static studiovertexdesc_t MakeStudioVertex(const dsmvertex_t& vert)
 {
 	studiovertexdesc_t vertex;
 
@@ -278,6 +279,7 @@ void CEGFGenerator::WriteGroup(studiohdr_t* header, IVirtualStream* stream, dsmg
 		// optimize model using ACTC
 		ACTCData* tc = actcNew();
 		actcMakeEmpty(tc);
+
 		if(tc == nullptr)
 		{
 			Msg("Model optimization disabled\n");
@@ -302,7 +304,6 @@ void CEGFGenerator::WriteGroup(studiohdr_t* header, IVirtualStream* stream, dsmg
 			{
 				MsgError("   ACTC error: %s (%d)!\n", GetACTCErrorString(result), result);
 				Msg("   optimization disabled\n");
-				actcDelete( tc );
 				goto skipOptimize;
 			}
 		}
@@ -324,9 +325,8 @@ void CEGFGenerator::WriteGroup(studiohdr_t* header, IVirtualStream* stream, dsmg
 		{
 			if(prim < 0)
 			{
-				MsgError("   ACTC error: %s (%d)!\n", GetACTCErrorString(prim), prim);
+				MsgError("   actcStartNextPrim error: %s (%d)!\n", GetACTCErrorString(prim), prim);
 				Msg("   optimization disabled\n");
-				actcDelete( tc );
 				goto skipOptimize;
 			}
 
@@ -334,14 +334,12 @@ void CEGFGenerator::WriteGroup(studiohdr_t* header, IVirtualStream* stream, dsmg
 			{
 				MsgError("   This should not generate triangle fans! Sorry!\n");
 				Msg("   optimization disabled\n");
-				actcDelete( tc );
 				goto skipOptimize;
 			}
 
 			if (optimizedIndices.numElem() + (optimizedIndices.numElem() > 2 ? 5 : 3) > indexList.numElem())
 			{
 				Msg("   optimization disabled due to no profit\n");
-				actcDelete(tc);
 				goto skipOptimize;
 			}
 
@@ -361,16 +359,14 @@ void CEGFGenerator::WriteGroup(studiohdr_t* header, IVirtualStream* stream, dsmg
 			{
 				if(result < 0)
 				{
-					MsgError("   ACTC error: %s (%d)!\n", GetACTCErrorString(result), result);
+					MsgError("   actcGetNextVert error: %s (%d)!\n", GetACTCErrorString(result), result);
 					Msg("   optimization disabled\n");
-					actcDelete( tc );
 					goto skipOptimize;
 				}
 
 				if (optimizedIndices.numElem() + 1 > indexList.numElem())
 				{
 					Msg("   optimization disabled due to no profit\n");
-					actcDelete(tc);
 					goto skipOptimize;
 				}
 
@@ -386,11 +382,9 @@ void CEGFGenerator::WriteGroup(studiohdr_t* header, IVirtualStream* stream, dsmg
 		}
 
 		actcEndOutput( tc );
+		actcDelete(tc);
 
-		// destroy
-		actcDelete( tc );
-
-		MsgWarning("   group optimization complete, generated %d indices\n", optimizedIndices.numElem() - 2);
+		MsgWarning("   group optimization complete\n", optimizedIndices.numElem() - 2);
 
 		// swap with new index list
 		indexList.swap(optimizedIndices);
@@ -428,6 +422,8 @@ skipOptimize:
 		
 		WTYPE_ADVANCE(uint32);
 	}
+
+	MsgWarning("   written %d triangles (strip including degenerates)\n", dstGroup->primitiveType == EGFPRIM_TRI_STRIP ? (dstGroup->numIndices - 2) : (dstGroup->numIndices / 3));
 }
 
 //************************************
@@ -446,18 +442,29 @@ void CEGFGenerator::WriteModels(studiohdr_t* header, IVirtualStream* stream)
 		
 	*/
 
+	Array<GenModel_t*> writeModels{ PP_SL };
+
+	for (int i = 0; i < m_modelrefs.numElem(); i++)
+	{
+		GenModel_t& modelRef = m_modelrefs[i];
+		if (!modelRef.used)
+			continue;
+		writeModels.append(&modelRef);
+	}
+
+
 	// Write models
 	header->modelsOffset = WRITE_OFS;
-	header->numModels = m_modelrefs.numElem();
+	header->numModels = writeModels.numElem();
 
 	// move offset forward, to not overwrite the studiomodeldescs
-	WTYPE_ADVANCE_NUM( studiomodeldesc_t, m_modelrefs.numElem() );
+	WTYPE_ADVANCE_NUM( studiomodeldesc_t, writeModels.numElem() );
 
 	//WRT_TEXT("MODELS OFFSET");
 
-	for(int i = 0; i < m_modelrefs.numElem(); i++)
+	for(int i = 0; i < writeModels.numElem(); i++)
 	{
-		GenModel_t& modelRef = m_modelrefs[i];
+		GenModel_t& modelRef = *writeModels[i];
 		if(!modelRef.used)
 			continue;
 
@@ -474,9 +481,9 @@ void CEGFGenerator::WriteModels(studiohdr_t* header, IVirtualStream* stream)
 
 	// add models used by body groups
 	// FIXME: Body groups will need a remapping once some models are unused
-	for(int i = 0; i < m_modelrefs.numElem(); i++)
+	for(int i = 0; i < writeModels.numElem(); i++)
 	{
-		GenModel_t& modelRef = m_modelrefs[i];
+		GenModel_t& modelRef = *writeModels[i];
 		if(!modelRef.used)
 			continue;
 
