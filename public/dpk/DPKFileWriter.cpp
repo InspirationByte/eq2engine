@@ -14,6 +14,7 @@
 #include "utils/KeyValues.h"
 
 #include "DPKFileWriter.h"
+#include "core/platform/OSFindData.h"
 
 #ifdef PLAT_LINUX
 #include <sys/stat.h>
@@ -21,46 +22,6 @@
 #endif
 
 #define DPK_WRITE_BLOCK (8*1024*1024)
-
-// Fixes slashes in the directory name
-static void DPK_RebuildFilePath(const char *str, char *newstr)
-{
-	char* pnewstr = newstr;
-	char cprev = 0;
-
-	while (*str)
-	{
-		while (cprev == *str && (cprev == CORRECT_PATH_SEPARATOR || cprev == INCORRECT_PATH_SEPARATOR))
-			str++;
-
-		*pnewstr = *str;
-		pnewstr++;
-
-		cprev = *str;
-		str++;
-	}
-
-	*pnewstr = 0;
-}
-
-static void DPK_FixSlashes(EqString& str)
-{
-	char* tempStr = (char*)stackalloc(str.Length() + 1);
-	memset(tempStr, 0, str.Length());
-
-	DPK_RebuildFilePath(str.ToCString(), tempStr);
-
-	char* ptr = tempStr;
-	while (*ptr)
-	{
-		if (*ptr == '\\')
-			*ptr = '/';
-
-		ptr++;
-	}
-
-	str.Assign(tempStr);
-}
 
 static bool FileExists(const char* szPath)
 {
@@ -75,7 +36,6 @@ static bool FileExists(const char* szPath)
 	return false;
 #endif // _WIN32
 }
-
 
 static ubyte* LoadFileBuffer(const char* filename, long* fileSize)
 {
@@ -110,9 +70,8 @@ static ubyte* LoadFileBuffer(const char* filename, long* fileSize)
 CDPKFileWriter::CDPKFileWriter() 
 	: m_ice(0)
 {
-	m_file = nullptr;
 	memset(&m_header, 0, sizeof(m_header));
-	memset( m_mountPath, 0, sizeof(m_mountPath) );
+	memset(m_mountPath, 0, sizeof(m_mountPath));
 
 	m_compressionLevel = 0;
 	m_encryption = 0;
@@ -154,19 +113,15 @@ bool CDPKFileWriter::BuildAndSave( const char* fileName )
 	m_header.compressionLevel = m_compressionLevel;
 	m_header.numFiles = 0;
 
-	FILE* dpkFile = fopen(fileName, "wb" );
-
-	if( !dpkFile )
+	if (!m_outputFile.Open(fileName, COSFile::WRITE))
 	{
 		MsgError("Cannot create '%s'!\n", fileName);
 		return false;
 	}
 
-	m_file = dpkFile;
-
 	SavePackage();
 
-	fclose(m_file);
+	m_outputFile.Close();
 
 	return true;
 }
@@ -216,93 +171,34 @@ int CDPKFileWriter::AddDirectory(const char* wildcard, const char* targetDir, bo
 	EqString nonWildcardFolder(wildcard);
 	const int wildcardStart = nonWildcardFolder.Find("*");
 	if (wildcardStart != -1)
-	{
 		nonWildcardFolder = nonWildcardFolder.Left(wildcardStart).TrimChar('/');
-	}
 
 	int fileCount = 0;
 
-#ifdef _WIN32
-	WIN32_FIND_DATAA wfd;
-	HANDLE hFile = FindFirstFileA(wildcard, &wfd);
-	while(hFile && FindNextFileA(hFile, &wfd))
+	OSFindData find;
+	if (find.Init(wildcard))
 	{
-		if(wfd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
-		{
-			if(!stricmp("..", wfd.cFileName) || !stricmp(".", wfd.cFileName))
-				continue;
-
-			if(recursive)
-				fileCount += AddDirectory(EqString::Format("%s/%s/*", nonWildcardFolder.ToCString(), wfd.cFileName), EqString::Format("%s/%s", targetDirTrimmed.ToCString(), wfd.cFileName), true);
-		}
-		else
-		{
-			if (AddFile(EqString::Format("%s/%s", nonWildcardFolder.ToCString(), wfd.cFileName), EqString::Format("%s/%s", targetDirTrimmed.ToCString(), wfd.cFileName)))
-				++fileCount;
-		}
-	}
-
-	FindClose(hFile);
-#else
-	EqString wildcardStr(wildcard);
-
-	EqString dirPath = wildcardStr.Path_Extract_Path();
-	DIR* dir = opendir(dirPath);
-
-	while(true)
-	{
-		struct dirent* entry = nullptr;
 		do
 		{
-			entry = readdir(dir);
+			const char* name = find.GetCurrentPath();
 
-			if (!entry)
-				break;
+			EqString targetFilename = EqString::Format("%s/%s", targetDirTrimmed.ToCString(), name);
 
-			if (*entry->d_name == 0)
-				continue;
-
-			int wildcardFileStart = wildcardStr.Find("*");
-			if (wildcardFileStart != -1)
+			if (find.IsDirectory())
 			{
-				const char* wildcardFile = wildcardStr.ToCString() + wildcardFileStart + 1;
-				if (*wildcardFile == 0)
-					break;
+				if (!stricmp("..", name) || !stricmp(".", name))
+					continue;
 
-				const char* found = xstristr(entry->d_name, wildcardFile);
-				if (found && strlen(found) == strlen(wildcardFile))
-					break;
+				if (recursive)
+					fileCount += AddDirectory(EqString::Format("%s/%s/*", nonWildcardFolder.ToCString(), name), targetFilename, true);
 			}
 			else
-				break;
-		} while (true);
-
-		bool isEntryDir = false;
-
-		if (entry)
-		{
-			struct stat st;
-			if (stat(EqString::Format("%s", dirPath.TrimChar(CORRECT_PATH_SEPARATOR).ToCString(), entry->d_name), &st) == 0)
-				isEntryDir = (st.st_mode & S_IFDIR);
-		}
-
-		if(isEntryDir)
-		{
-			if(!stricmp("..", entry->d_name) || !stricmp(".", entry->d_name))
-				continue;
-
-			if(recursive)
-				fileCount += AddDirectory(EqString::Format("%s/%s/*", nonWildcardFolder.ToCString(), entry->d_name), EqString::Format("%s/%s", targetDirTrimmed.ToCString(), entry->d_name), true);
-		}
-		else
-		{
-			if (AddFile(EqString::Format("%s/%s", nonWildcardFolder.ToCString(), entry->d_name), EqString::Format("%s/%s", targetDirTrimmed.ToCString(), entry->d_name)))
-				++fileCount;
-		}
+			{
+				if (AddFile(EqString::Format("%s/%s", nonWildcardFolder.ToCString(), name), targetFilename))
+					++fileCount;
+			}
+		} while (find.GetNext());
 	}
-
-	closedir(dir);
-#endif // _WIN32
 
 	return fileCount;
 }
@@ -341,22 +237,18 @@ bool CDPKFileWriter::CheckIsKeyValueFile(const char* extension) const
 
 bool CDPKFileWriter::WriteFiles()
 {
-	FILE* dpkTempDataFile = fopen("fcompress_temp.tmp", "rb");
-
-	if(!dpkTempDataFile)
+	COSFile dpkTempDataFile;
+	if (!dpkTempDataFile.Open("fcompress_temp.tmp", COSFile::READ | COSFile::OPEN_EXIST)) 
 	{
 		MsgError("Can't open temporary file for read!\n");
 		return false;
 	}
-	defer{
-		fclose(dpkTempDataFile);
-	};
 
 	StartPacifier("Making package file: ");
 
-	fseek(dpkTempDataFile, 0, SEEK_END);
-	long filesize = ftell( dpkTempDataFile );
-	fseek(dpkTempDataFile, 0, SEEK_SET);
+	dpkTempDataFile.Seek(0, COSFile::ESeekPos::END);
+	long filesize = dpkTempDataFile.Tell();
+	dpkTempDataFile.Seek(0, COSFile::ESeekPos::SET);
 
 	ubyte* tmpBlockData = (ubyte*)PPAlloc( DPK_WRITE_BLOCK );
 
@@ -370,8 +262,8 @@ bool CDPKFileWriter::WriteFiles()
 		if(cur_pos+bytes_to_read > filesize)
 			bytes_to_read = filesize - cur_pos;
 
-		fread( tmpBlockData, bytes_to_read, 1, dpkTempDataFile );
-		fwrite( tmpBlockData, bytes_to_read, 1, m_file );
+		dpkTempDataFile.Read( tmpBlockData, bytes_to_read );
+		m_outputFile.Write( tmpBlockData, bytes_to_read );
 
 		cur_pos += bytes_to_read;
 	}
@@ -385,7 +277,7 @@ bool CDPKFileWriter::WriteFiles()
 	return true;
 }
 
-float CDPKFileWriter::ProcessFile(FILE* output, FileInfo* info)
+float CDPKFileWriter::ProcessFile(COSFile& output, FileInfo* info)
 {
 	dpkfileinfo_t& fInfo = info->pkinfo;
 
@@ -516,8 +408,8 @@ float CDPKFileWriter::ProcessFile(FILE* output, FileInfo* info)
 			}
 
 			// write header and data
-			fwrite(&blockInfo, sizeof(blockInfo), 1, output);
-			fwrite(tmpBlock, 1, tmpBlockSize, output);
+			output.Write(&blockInfo, sizeof(blockInfo));
+			output.Write(tmpBlock, tmpBlockSize);
 
 			// increment file info offset in the main header
 			m_header.fileInfoOffset += sizeof(blockInfo) + tmpBlockSize;
@@ -537,7 +429,7 @@ float CDPKFileWriter::ProcessFile(FILE* output, FileInfo* info)
 	}
 	else
 	{
-		fwrite(_filedata, _fileSize, 1, output);
+		output.Write(_filedata, _fileSize);
 		m_header.fileInfoOffset += _fileSize;
 	}
 
@@ -551,8 +443,9 @@ float CDPKFileWriter::ProcessFile(FILE* output, FileInfo* info)
 bool CDPKFileWriter::SavePackage()
 {
 	// create temporary file
-	FILE* dpkTempDataFile = fopen("fcompress_temp.tmp", "wb");
-	if(!dpkTempDataFile)
+	COSFile dpkTempDataFile;
+
+	if(!dpkTempDataFile.Open("fcompress_temp.tmp", COSFile::WRITE))
 	{
 		MsgError("Can't create temporary file for write!\n");
 		return false;
@@ -577,7 +470,7 @@ bool CDPKFileWriter::SavePackage()
 
 	compressionRatio /= (float)m_files.numElem();
 
-	fclose(dpkTempDataFile);
+	dpkTempDataFile.Close();
 
 	EndPacifier();
 	Msg("Compression is %.2f %%\n", compressionRatio * 100.0f);
@@ -585,10 +478,10 @@ bool CDPKFileWriter::SavePackage()
 	m_header.numFiles = m_files.numElem();
 
 	// Write header
-	fwrite(&m_header,sizeof(m_header),1,m_file);
+	m_outputFile.Write(&m_header, sizeof(m_header));
 
 	// Write mount path
-	fwrite(m_mountPath, DPK_STRING_SIZE, 1, m_file);
+	m_outputFile.Write(m_mountPath, DPK_STRING_SIZE);
 
 	// Write temp file to main file
 	WriteFiles();
@@ -596,8 +489,9 @@ bool CDPKFileWriter::SavePackage()
 	// Write file infos
 	for(int i = 0; i < m_files.numElem();i++)
 	{
-		fwrite( &m_files[i]->pkinfo, sizeof(dpkfileinfo_t), 1, m_file );
-		fflush(m_file);
+		m_outputFile.Write( &m_files[i]->pkinfo, sizeof(dpkfileinfo_t) );
+		m_outputFile.Flush();
+
 		delete m_files[i];
 	}
 

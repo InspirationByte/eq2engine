@@ -9,6 +9,8 @@
 #include "dpk/dpk_defs.h"
 #include "utils/IceKey.h"
 
+#include "core/platform/OSFile.h"
+
 // TODO: refactor interface to simply operate IVirtualStream buffers
 // and directly write into pack file
 
@@ -39,7 +41,7 @@ protected:
 		EqString		fileName;
 	};
 
-	float				ProcessFile(FILE* output, FileInfo* info);
+	float				ProcessFile(COSFile& output, FileInfo* info);
 
 	bool				WriteFiles();
 	bool				SavePackage();
@@ -47,7 +49,7 @@ protected:
 	bool				CheckCompressionIgnored(const char* extension) const;
 	bool				CheckIsKeyValueFile(const char* extension) const;
 
-	FILE*				m_file;
+	COSFile				m_outputFile;
 	dpkheader_t			m_header;
 
 	char				m_mountPath[DPK_STRING_SIZE];

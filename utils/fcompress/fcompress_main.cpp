@@ -5,17 +5,17 @@
 // Description: 
 //////////////////////////////////////////////////////////////////////////////////
 
-#include <zlib.h>
-#include <lz4.h>
-
 #include "core/core_common.h"
+
 #include "core/IDkCore.h"
 #include "core/IFileSystem.h"
 #include "core/ICommandLine.h"
-
 #include "utils/KeyValues.h"
 
-#include "DPKFileWriter.h"
+#include "dpk/DPKFileWriter.h"
+
+#include <zlib.h>
+#include <lz4.h>
 
 #if defined(_WIN32)
 #include <direct.h>
