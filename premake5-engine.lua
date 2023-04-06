@@ -131,13 +131,13 @@ workspace(WORKSPACE_NAME)
 		}
 		vscode_launch_visualizerFile "${workspaceRoot}/public/types.natvis"
         buildoptions {
-            "-Wno-narrowing",
             "-fpermissive",
 			"-fexceptions",
 			"-fpic",
         }
 		disablewarnings {
 			-- disable warnings which are emitted by my stupid (and not so) code
+			"narrowing",
 			"c++11-narrowing",
 			"writable-strings",
 			"logical-op-parentheses",

@@ -398,6 +398,12 @@ bool CGLRenderLib::InitAPI(const shaderAPIParams_t& params)
 
 #elif defined(PLAT_LINUX)
 
+	if(params.windowHandleType == RHI_WINDOW_HANDLE_NATIVE_WAYLAND)
+	{
+		CrashMsg("Sorry, Wayland window/EGL is not handled yet. Consider running from X11");
+		return false;
+	}
+
 	int nModes;
     XF86VidModeGetAllModeLines(m_display, m_screen, &nModes, &m_dmodes);
 

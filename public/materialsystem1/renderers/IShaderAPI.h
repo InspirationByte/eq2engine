@@ -26,7 +26,10 @@ struct KVSection;
 
 enum ERHIWindowType : int
 {
-	RHI_WINDOW_HANDLE_NATIVE, 	// windows HWND, X11's Window, Android's ANativeWindow etc
+	RHI_WINDOW_HANDLE_NATIVE_WINDOWS,
+	RHI_WINDOW_HANDLE_NATIVE_X11,
+	RHI_WINDOW_HANDLE_NATIVE_WAYLAND,
+	RHI_WINDOW_HANDLE_NATIVE_OSX,
 	RHI_WINDOW_HANDLE_SDL,		// SDL Window
 	RHI_WINDOW_HANDLE_VTABLE	// VTable to get window handle (see below), and possibly more features.
 };
@@ -49,7 +52,7 @@ struct shaderAPIParams_t
 	// basic parameters for shader API initialization
 
 	void*			windowHandle{ nullptr };			// window handle
-	ERHIWindowType	windowHandleType{ RHI_WINDOW_HANDLE_NATIVE };
+	ERHIWindowType	windowHandleType{ RHI_WINDOW_HANDLE_SDL };
 	ETextureFormat	screenFormat{ FORMAT_RGB8 };		// screen back buffer format
 
 	int				screenRefreshRateHZ{ 60 };			// refresh rate in HZ

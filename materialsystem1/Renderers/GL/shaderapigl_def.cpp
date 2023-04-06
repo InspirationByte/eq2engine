@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright ï¿½ Inspiration Byte
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
 // Description: Equilibrium OpenGL ShaderAPI
@@ -11,13 +11,8 @@
 const GLuint g_gl_internalFormats[FORMAT_COUNT] = {
 	0,
 	// Unsigned formats
-#ifdef USE_GLES2
 	GL_R8, //GL_INTENSITY8,
 	GL_RG8, //GL_LUMINANCE8_ALPHA8,
-#else
-	GL_R8,
-	GL_RG8,
-#endif // USE_GLES2
 	GL_RGB8,
 	GL_RGBA8,
 #ifdef USE_GLES2
@@ -42,7 +37,6 @@ const GLuint g_gl_internalFormats[FORMAT_COUNT] = {
 	0,
 	0,
 	0,
-#ifdef USE_GLES2
 	// Float formats
 	GL_R16F, // GL_INTENSITY16F_ARB,
 	GL_RG16F, //GL_LUMINANCE_ALPHA16F_ARB,
@@ -52,17 +46,6 @@ const GLuint g_gl_internalFormats[FORMAT_COUNT] = {
 	GL_RG32F, //GL_LUMINANCE_ALPHA32F_ARB,
 	GL_RGB32F,
 	GL_RGBA32F,
-#else
-	// Float formats
-	GL_R16F,
-	GL_RG16F,
-	GL_RGB16F,
-	GL_RGBA16F,
-	GL_R32F,
-	GL_RG32F,
-	GL_RGB32F,
-	GL_RGBA32F,
-#endif // USE_GLES2
 
 	// Signed integer formats
 	0, // GL_INTENSITY16I_EXT,

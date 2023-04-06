@@ -141,17 +141,32 @@ bool CGLRenderLib_ES::InitAPI(const shaderAPIParams_t& params)
 
 	eglBindAPI(EGL_OPENGL_ES_API);
 #elif defined(PLAT_WIN)
-	ASSERT(params.windowHandleType == RHI_WINDOW_HANDLE_NATIVE);
+	ASSERT(params.windowHandleType == RHI_WINDOW_HANDLE_NATIVE_WINDOWS);
 
 	// other EGL
 	m_hwnd = (EGLNativeWindowType)params.windowHandle;
 	nativeDisplay = (EGLNativeDisplayType)GetDC((HWND)m_hwnd);
 #elif defined(PLAT_LINUX)
-	ASSERT(params.windowHandleType == RHI_WINDOW_HANDLE_NATIVE);
 
-	// well... fuck... i'll deal with it later!
-	Window xwin = (Window)params.windowHandle;
-	nativeDisplay = eglGetDisplay( (EGLNativeDisplayType) xwin );
+	m_hwnd = (EGLNativeWindowType)params.windowHandle;
+	switch(params.windowHandleType)
+	{
+		case RHI_WINDOW_HANDLE_NATIVE_WAYLAND:
+		{
+			//wl_display* display = wl_display_connect(NULL);
+			//nativeDisplay = eglGetDisplay( (EGLNativeDisplayType)display );
+			break;
+		}
+		case RHI_WINDOW_HANDLE_NATIVE_X11:
+		{
+			//Display* display = XOpenDisplay(nullptr);
+			//nativeDisplay = eglGetDisplay( (EGLNativeDisplayType)display );
+			break;
+		}
+		default:
+			CrashMsg("Unsupported window handle");
+			return false;
+	}
 #else
 	static_assert(false, "WTF the platform it is compiling for?");
 #endif // PLAT_ANDROID

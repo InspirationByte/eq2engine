@@ -339,13 +339,25 @@ bool CGameHost::InitSystems( EQWNDHANDLE pWindow )
 	
 #ifdef PLAT_WIN
 	materials_config.shaderApiParams.windowHandle = winfo.info.win.window;
-	materials_config.shaderApiParams.windowHandleType = RHI_WINDOW_HANDLE_NATIVE;
+	materials_config.shaderApiParams.windowHandleType = RHI_WINDOW_HANDLE_NATIVE_WINDOWS;
 #elif PLAT_LINUX
-	materials_config.shaderApiParams.windowHandle = (void*)winfo.info.x11.window;
-	materials_config.shaderApiParams.windowHandleType = RHI_WINDOW_HANDLE_NATIVE;
+	switch(winfo.subsystem)
+	{
+		case SDL_SYSWM_X11:
+			materials_config.shaderApiParams.windowHandle = (void*)winfo.info.x11.window;
+			materials_config.shaderApiParams.windowHandleType = RHI_WINDOW_HANDLE_NATIVE_X11;
+			break;
+		case SDL_SYSWM_WAYLAND:
+			materials_config.shaderApiParams.windowHandle = (void*)winfo.info.wl.egl_window;
+			materials_config.shaderApiParams.windowHandleType = RHI_WINDOW_HANDLE_NATIVE_WAYLAND;
+			break;
+		default:
+			ASSERT_FAIL("Unsupported SDL window type");
+	}
+
 #elif APPLE
 	materials_config.shaderApiParams.windowHandle = (void*)winfo.info.cocoa.window;
-	materials_config.shaderApiParams.windowHandleType = RHI_WINDOW_HANDLE_NATIVE;
+	materials_config.shaderApiParams.windowHandleType = RHI_WINDOW_HANDLE_NATIVE_OSX;
 #elif PLAT_ANDROID
 
 #ifdef USE_SDL_WINDOW
