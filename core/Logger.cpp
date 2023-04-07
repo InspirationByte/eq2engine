@@ -176,7 +176,7 @@ DECLARE_CMD_F(developer, "Sets developer modes", CV_CHEAT | CV_UNREGISTERED);
 // Default spew
 void DefaultSpewFunc(SpewType_t type,const char* pMsg)
 {
-	puts( pMsg );
+	fputs(pMsg, stdout);
 }
 
 //Spew callback
