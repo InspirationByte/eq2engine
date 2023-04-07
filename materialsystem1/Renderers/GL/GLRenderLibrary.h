@@ -11,13 +11,11 @@
 class ShaderAPIGL;
 
 #ifdef PLAT_LINUX
-#	include <X11/Xlib.h>
-#	include <X11/Xutil.h>
-#	include <X11/Xmd.h>
-#	include <X11/extensions/xf86vmode.h>
-#endif
+#include <X11/Xlib.h>
+#include <X11/Xutil.h>
+#include <X11/Xmd.h>
+#include <X11/extensions/xf86vmode.h>
 
-#ifdef PLAT_LINUX
 typedef XID GLXContextID;
 typedef XID GLXPixmap;
 typedef XID GLXDrawable;

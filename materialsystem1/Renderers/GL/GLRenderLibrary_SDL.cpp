@@ -15,14 +15,14 @@
 #include "imaging/ImageLoader.h"
 #include "shaderapigl_def.h"
 
-#include "CGLRenderLibrary_SDL.h"
+#include "GLRenderLibrary_SDL.h"
 
 #include "GLSwapChain.h"
 #include "ShaderAPIGL.h"
 
 #include "gl_loader.h"
 
-extern bool GLCheckError(const char* op);
+extern bool GLCheckError(const char* op, ...);
 
 /*
 
@@ -60,7 +60,7 @@ CGLRenderLib_SDL g_library;
 
 CGLRenderLib_SDL::CGLRenderLib_SDL()
 {
-	GetCore()->RegisterInterface(RENDERER_INTERFACE_VERSION, this);
+	g_eqCore->RegisterInterface(RENDERER_INTERFACE_VERSION, this);
 
 	m_glSharedContext = 0;
 	m_windowed = true;
@@ -70,7 +70,7 @@ CGLRenderLib_SDL::CGLRenderLib_SDL()
 
 CGLRenderLib_SDL::~CGLRenderLib_SDL()
 {
-	GetCore()->UnregisterInterface(RENDERER_INTERFACE_VERSION);
+	g_eqCore->UnregisterInterface(RENDERER_INTERFACE_VERSION);
 }
 
 IShaderAPI* CGLRenderLib_SDL::GetRenderer() const
@@ -80,6 +80,7 @@ IShaderAPI* CGLRenderLib_SDL::GetRenderer() const
 
 bool CGLRenderLib_SDL::InitCaps()
 {
+/*
 #if !defined(PLAT_ANDROID)
 	if (!gladLoaderLoadEGL(EGL_DEFAULT_DISPLAY))
 	{
@@ -87,39 +88,57 @@ bool CGLRenderLib_SDL::InitCaps()
 		return false;
 	}
 #endif // PLAT_ANDROID
+*/
 	return true;
 }
 
 
-bool CGLRenderLib_SDL::InitAPI(shaderAPIParams_t& params)
+bool CGLRenderLib_SDL::InitAPI(const shaderAPIParams_t& params)
 {
-	ASSERTMSG(params.windowHandle != NULL, "you must specify window handle!");
+	ASSERT_MSG(params.windowHandleType == RHI_WINDOW_HANDLE_SDL, "Not SDL window handle");
+
+	ASSERT_MSG(params.windowHandle != NULL, "you must specify window handle!");
 	m_window = (SDL_Window*)params.windowHandle;
 
 	Msg("Initializing SDL GL context...\n");
 
-// #ifdef USE_GLES2
-// 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
-// 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
-// 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
-// #else
-// 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
-// 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
-// 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_COMPATIBILITY);
-// #endif // USE_GLES2
+	SDL_InitSubSystem(SDL_INIT_VIDEO);
 
+	// Use OpenGL render driver.
+    SDL_SetHint(SDL_HINT_RENDER_DRIVER, "opengl");
 
-	m_glSharedContext = SDL_GL_CreateContext(m_window);
-	if (m_glSharedContext == nullptr)
-	{
-		CrashMsg("Could not create SDL GL shared context (attributes missing?)\n");
-		return false;
-	}
+	// Enable depth buffer.
+	SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+	SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
+	
+	// Set color channel depth.
+	SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 8);
+	SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, 8);
+	SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 8);
+	SDL_GL_SetAttribute(SDL_GL_ALPHA_SIZE, 8);
+
+#ifdef USE_GLES2
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
+#else
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_COMPATIBILITY);
+#endif // USE_GLES2
 
 	m_glContext = SDL_GL_CreateContext(m_window);
 	if (m_glContext == nullptr)
 	{
 		CrashMsg("Could not create SDL GL context\n");
+		return false;
+	}
+
+	SDL_GL_SetAttribute(SDL_GL_SHARE_WITH_CURRENT_CONTEXT, 1);
+	m_glSharedContext = SDL_GL_CreateContext(m_window);
+	if (m_glSharedContext == nullptr)
+	{
+		CrashMsg("Could not create SDL GL shared context (attributes missing?)\n");
 		return false;
 	}
 
@@ -261,9 +280,17 @@ bool CGLRenderLib_SDL::InitAPI(shaderAPIParams_t& params)
 #endif // USE_GLES2
 
 #ifdef USE_GLES2
-		for (int i = FORMAT_ETC1; i <= FORMAT_PVRTC_A_4BPP; i++)
-			caps.textureFormatsSupported[i] = true;
-		
+		if(GLAD_GL_IMG_texture_compression_pvrtc)
+		{
+			for (int i = FORMAT_PVRTC_2BPP; i <= FORMAT_PVRTC_A_4BPP; i++)
+				caps.textureFormatsSupported[i] = true;
+		}
+
+		if(GLAD_GL_OES_compressed_ETC1_RGB8_texture)
+		{
+			for (int i = FORMAT_ETC1; i <= FORMAT_ETC2A8; i++)
+				caps.textureFormatsSupported[i] = true;
+		}
 #endif // USE_GLES3
 	}
 
@@ -279,8 +306,10 @@ void CGLRenderLib_SDL::ExitAPI()
 }
 
 
-void CGLRenderLib_SDL::BeginFrame()
+void CGLRenderLib_SDL::BeginFrame(IEqSwapChain* swapChain)
 {
+	m_currentSwapChain = swapChain;
+
 	// ShaderAPIGL uses m_nViewportWidth/Height as backbuffer size
 	g_shaderApi.m_nViewportWidth = m_width;
 	g_shaderApi.m_nViewportHeight = m_height;
@@ -288,9 +317,9 @@ void CGLRenderLib_SDL::BeginFrame()
 	g_shaderApi.SetViewport(0, 0, m_width, m_height);
 }
 
-void CGLRenderLib_SDL::EndFrame(IEqSwapChain* schain)
+void CGLRenderLib_SDL::EndFrame()
 {
-	SDL_GL_SetSwapInterval(g_shaderApi.m_params->verticalSyncEnabled ? 1 : 0);
+	SDL_GL_SetSwapInterval(g_shaderApi.m_params.verticalSyncEnabled ? 1 : 0);
 	SDL_GL_SwapWindow(m_window);
 }
 
@@ -397,12 +426,13 @@ void CGLRenderLib_SDL::BeginAsyncOperation(uintptr_t threadId)
 {
 	uintptr_t thisThreadId = Threading::GetCurrentThreadID();
 
-	ASSERTMSG(IsMainThread(thisThreadId) == false, "BeginAsyncOperation() cannot be called from main thread!");
+	if (thisThreadId == m_mainThreadId) // not required for main thread
+		return;
+
 	ASSERT(m_asyncOperationActive == false);
 
-	Msg("BeginAsyncOperation\n");
-
-	SDL_GL_MakeCurrent(m_window, m_glSharedContext); // could be invalid
+	const int result = SDL_GL_MakeCurrent(m_window, m_glSharedContext);
+	ASSERT_MSG(result == 0, "BeginAsyncOperation - SDL_GL_MakeCurrent failed (%s, code %d)", SDL_GetError(), result);
 
 	m_asyncOperationActive = true;
 }
@@ -412,14 +442,11 @@ void CGLRenderLib_SDL::EndAsyncOperation()
 {
 	uintptr_t thisThreadId = Threading::GetCurrentThreadID();
 
-	ASSERTMSG(IsMainThread(thisThreadId) == false , "EndAsyncOperation() cannot be called from main thread!");
+	ASSERT_MSG(IsMainThread(thisThreadId) == false , "EndAsyncOperation() cannot be called from main thread!");
 	ASSERT(m_asyncOperationActive == true);
 
-	//glFinish();
-
-	Msg("EndAsyncOperation\n");
-
-	SDL_GL_MakeCurrent(m_window, nullptr); // could be invalid
+	const int result = SDL_GL_MakeCurrent(nullptr, nullptr);
+	ASSERT_MSG(result == 0, "EndAsyncOperation - SDL_GL_MakeCurrent failed (%s, code %d)", SDL_GetError(), result);
 
 	m_asyncOperationActive = false;
 }

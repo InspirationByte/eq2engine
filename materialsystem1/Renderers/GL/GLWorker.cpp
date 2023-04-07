@@ -12,6 +12,7 @@
 using namespace Threading;
 
 #ifdef USE_SDL2
+#include <SDL.h>
 #include "GLRenderLibrary_SDL.h"
 extern CGLRenderLib_SDL g_library;
 #elif defined(USE_GLES2)

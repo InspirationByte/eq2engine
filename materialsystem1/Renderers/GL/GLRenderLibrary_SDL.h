@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright ï¿½ Inspiration Byte
 // 2009-2022
 //////////////////////////////////////////////////////////////////////////////////
 // Description: Equilibrium OpenGL ShaderAPI through SDL
@@ -32,8 +32,8 @@ public:
 	void					ReleaseSwapChains();
 
 	// frame begin/end
-	void					BeginFrame();
-	void					EndFrame(IEqSwapChain* swapChain = nullptr);
+	void					BeginFrame(IEqSwapChain* swapChain = nullptr);
+	void					EndFrame();
 
 	// renderer interface
 	IShaderAPI*				GetRenderer() const;
@@ -69,6 +69,7 @@ public:
 protected:
 
 	Array<IEqSwapChain*>	m_swapChains{ PP_SL };
+	IEqSwapChain*			m_currentSwapChain{ nullptr };
 	uintptr_t				m_mainThreadId;
 	bool					m_asyncOperationActive;
 
@@ -82,4 +83,3 @@ protected:
 	bool					m_bResized;
 	bool					m_windowed;
 };
-#endif //CGLRENDERLIB_H
