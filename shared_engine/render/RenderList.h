@@ -28,7 +28,6 @@ public:
 
 	void								SortByDistanceFrom(const Vector3D& origin, bool reverse);
 
-	void								Remove(int id);
 	void								Clear();										// clear it
 protected:
 	Array<CBaseRenderableObject*>		m_objectList;

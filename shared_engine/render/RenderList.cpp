@@ -56,14 +56,10 @@ void CRenderList::Render(int nViewRenderFlags, void* userdata)
 		m_objectList[i]->Render(nViewRenderFlags, userdata);
 }
 
-void CRenderList::Remove(int id)
-{
-	m_objectList.removeIndex(id);
-}
-
 void CRenderList::Clear()
 {
 	m_objectList.clear(false);
+	m_viewDistance.clear(false);
 }
 
 void CRenderList::SortByDistanceFrom(const Vector3D& origin, bool reverse)
