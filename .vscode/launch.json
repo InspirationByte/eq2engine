@@ -3,6 +3,1766 @@
 	"configurations":
 	[
 		{
+			"name": "Run fcompress (Debug|x86)",
+			"request": "launch",
+			"type": "cppdbg",
+			"program": "${workspaceRoot}/bin/x86/Debug/fcompress",
+			"linux":
+			{
+				"name": "Run fcompress (Debug|x86)",
+				"type": "cppdbg",
+				"request": "launch",
+				"program": "${workspaceRoot}/bin/x86/Debug/fcompress",
+				"externalConsole": false,
+				"miDebuggerPath": "/usr/bin/gdb",
+				"MIMode": "gdb",
+				"setupCommands":
+				[
+					{
+						"text": "-enable-pretty-printing",
+						"description": "enable pretty printing",
+						"ignoreFailures": true,
+					},
+				],
+			},
+			"windows":
+			{
+				"name": "Run fcompress (Debug|x86)",
+				"console": "externalTerminal",
+				"type": "cppvsdbg",
+				"request": "launch",
+				"program": "${workspaceRoot}/bin/x86/Debug/fcompress",
+			},
+			"stopAtEntry": false,
+			"cwd": "${workspaceRoot}/../build",
+			"visualizerFile": "${workspaceRoot}/public/types.natvis",
+			"args":[
+			],
+			"environment":[
+				{
+					"name": "LD_LIBRARY_PATH",
+					"value": "${LD_LIBRARY_PATH}:${workspaceRoot}/bin/x64/Release/"
+				},
+			],
+			"preLaunchTask": "Build fcompress (Debug|x86)",
+		},
+		{
+			"name": "Run fcompress (Debug|x64)",
+			"request": "launch",
+			"type": "cppdbg",
+			"program": "${workspaceRoot}/bin/x64/Debug/fcompress",
+			"linux":
+			{
+				"name": "Run fcompress (Debug|x64)",
+				"type": "cppdbg",
+				"request": "launch",
+				"program": "${workspaceRoot}/bin/x64/Debug/fcompress",
+				"externalConsole": false,
+				"miDebuggerPath": "/usr/bin/gdb",
+				"MIMode": "gdb",
+				"setupCommands":
+				[
+					{
+						"text": "-enable-pretty-printing",
+						"description": "enable pretty printing",
+						"ignoreFailures": true,
+					},
+				],
+			},
+			"windows":
+			{
+				"name": "Run fcompress (Debug|x64)",
+				"console": "externalTerminal",
+				"type": "cppvsdbg",
+				"request": "launch",
+				"program": "${workspaceRoot}/bin/x64/Debug/fcompress",
+			},
+			"stopAtEntry": false,
+			"cwd": "${workspaceRoot}/../build",
+			"visualizerFile": "${workspaceRoot}/public/types.natvis",
+			"args":[
+			],
+			"environment":[
+				{
+					"name": "LD_LIBRARY_PATH",
+					"value": "${LD_LIBRARY_PATH}:${workspaceRoot}/bin/x64/Release/"
+				},
+			],
+			"preLaunchTask": "Build fcompress (Debug|x64)",
+		},
+		{
+			"name": "Run fcompress (Release|x86)",
+			"request": "launch",
+			"type": "cppdbg",
+			"program": "${workspaceRoot}/bin/x86/Release/fcompress",
+			"linux":
+			{
+				"name": "Run fcompress (Release|x86)",
+				"type": "cppdbg",
+				"request": "launch",
+				"program": "${workspaceRoot}/bin/x86/Release/fcompress",
+				"externalConsole": false,
+				"miDebuggerPath": "/usr/bin/gdb",
+				"MIMode": "gdb",
+				"setupCommands":
+				[
+					{
+						"text": "-enable-pretty-printing",
+						"description": "enable pretty printing",
+						"ignoreFailures": true,
+					},
+				],
+			},
+			"windows":
+			{
+				"name": "Run fcompress (Release|x86)",
+				"console": "externalTerminal",
+				"type": "cppvsdbg",
+				"request": "launch",
+				"program": "${workspaceRoot}/bin/x86/Release/fcompress",
+			},
+			"stopAtEntry": false,
+			"cwd": "${workspaceRoot}/../build",
+			"visualizerFile": "${workspaceRoot}/public/types.natvis",
+			"args":[
+			],
+			"environment":[
+				{
+					"name": "LD_LIBRARY_PATH",
+					"value": "${LD_LIBRARY_PATH}:${workspaceRoot}/bin/x64/Release/"
+				},
+			],
+			"preLaunchTask": "Build fcompress (Release|x86)",
+		},
+		{
+			"name": "Run fcompress (Release|x64)",
+			"request": "launch",
+			"type": "cppdbg",
+			"program": "${workspaceRoot}/bin/x64/Release/fcompress",
+			"linux":
+			{
+				"name": "Run fcompress (Release|x64)",
+				"type": "cppdbg",
+				"request": "launch",
+				"program": "${workspaceRoot}/bin/x64/Release/fcompress",
+				"externalConsole": false,
+				"miDebuggerPath": "/usr/bin/gdb",
+				"MIMode": "gdb",
+				"setupCommands":
+				[
+					{
+						"text": "-enable-pretty-printing",
+						"description": "enable pretty printing",
+						"ignoreFailures": true,
+					},
+				],
+			},
+			"windows":
+			{
+				"name": "Run fcompress (Release|x64)",
+				"console": "externalTerminal",
+				"type": "cppvsdbg",
+				"request": "launch",
+				"program": "${workspaceRoot}/bin/x64/Release/fcompress",
+			},
+			"stopAtEntry": false,
+			"cwd": "${workspaceRoot}/../build",
+			"visualizerFile": "${workspaceRoot}/public/types.natvis",
+			"args":[
+			],
+			"environment":[
+				{
+					"name": "LD_LIBRARY_PATH",
+					"value": "${LD_LIBRARY_PATH}:${workspaceRoot}/bin/x64/Release/"
+				},
+			],
+			"preLaunchTask": "Build fcompress (Release|x64)",
+		},
+		{
+			"name": "Run fcompress (Profile|x86)",
+			"request": "launch",
+			"type": "cppdbg",
+			"program": "${workspaceRoot}/bin/x86/Profile/fcompress",
+			"linux":
+			{
+				"name": "Run fcompress (Profile|x86)",
+				"type": "cppdbg",
+				"request": "launch",
+				"program": "${workspaceRoot}/bin/x86/Profile/fcompress",
+				"externalConsole": false,
+				"miDebuggerPath": "/usr/bin/gdb",
+				"MIMode": "gdb",
+				"setupCommands":
+				[
+					{
+						"text": "-enable-pretty-printing",
+						"description": "enable pretty printing",
+						"ignoreFailures": true,
+					},
+				],
+			},
+			"windows":
+			{
+				"name": "Run fcompress (Profile|x86)",
+				"console": "externalTerminal",
+				"type": "cppvsdbg",
+				"request": "launch",
+				"program": "${workspaceRoot}/bin/x86/Profile/fcompress",
+			},
+			"stopAtEntry": false,
+			"cwd": "${workspaceRoot}/../build",
+			"visualizerFile": "${workspaceRoot}/public/types.natvis",
+			"args":[
+			],
+			"environment":[
+				{
+					"name": "LD_LIBRARY_PATH",
+					"value": "${LD_LIBRARY_PATH}:${workspaceRoot}/bin/x64/Release/"
+				},
+			],
+			"preLaunchTask": "Build fcompress (Profile|x86)",
+		},
+		{
+			"name": "Run fcompress (Profile|x64)",
+			"request": "launch",
+			"type": "cppdbg",
+			"program": "${workspaceRoot}/bin/x64/Profile/fcompress",
+			"linux":
+			{
+				"name": "Run fcompress (Profile|x64)",
+				"type": "cppdbg",
+				"request": "launch",
+				"program": "${workspaceRoot}/bin/x64/Profile/fcompress",
+				"externalConsole": false,
+				"miDebuggerPath": "/usr/bin/gdb",
+				"MIMode": "gdb",
+				"setupCommands":
+				[
+					{
+						"text": "-enable-pretty-printing",
+						"description": "enable pretty printing",
+						"ignoreFailures": true,
+					},
+				],
+			},
+			"windows":
+			{
+				"name": "Run fcompress (Profile|x64)",
+				"console": "externalTerminal",
+				"type": "cppvsdbg",
+				"request": "launch",
+				"program": "${workspaceRoot}/bin/x64/Profile/fcompress",
+			},
+			"stopAtEntry": false,
+			"cwd": "${workspaceRoot}/../build",
+			"visualizerFile": "${workspaceRoot}/public/types.natvis",
+			"args":[
+			],
+			"environment":[
+				{
+					"name": "LD_LIBRARY_PATH",
+					"value": "${LD_LIBRARY_PATH}:${workspaceRoot}/bin/x64/Release/"
+				},
+			],
+			"preLaunchTask": "Build fcompress (Profile|x64)",
+		},
+		{
+			"name": "Run fcompress (Retail|x86)",
+			"request": "launch",
+			"type": "cppdbg",
+			"program": "${workspaceRoot}/bin/x86/Retail/fcompress",
+			"linux":
+			{
+				"name": "Run fcompress (Retail|x86)",
+				"type": "cppdbg",
+				"request": "launch",
+				"program": "${workspaceRoot}/bin/x86/Retail/fcompress",
+				"externalConsole": false,
+				"miDebuggerPath": "/usr/bin/gdb",
+				"MIMode": "gdb",
+				"setupCommands":
+				[
+					{
+						"text": "-enable-pretty-printing",
+						"description": "enable pretty printing",
+						"ignoreFailures": true,
+					},
+				],
+			},
+			"windows":
+			{
+				"name": "Run fcompress (Retail|x86)",
+				"console": "externalTerminal",
+				"type": "cppvsdbg",
+				"request": "launch",
+				"program": "${workspaceRoot}/bin/x86/Retail/fcompress",
+			},
+			"stopAtEntry": false,
+			"cwd": "${workspaceRoot}/../build",
+			"visualizerFile": "${workspaceRoot}/public/types.natvis",
+			"args":[
+			],
+			"environment":[
+				{
+					"name": "LD_LIBRARY_PATH",
+					"value": "${LD_LIBRARY_PATH}:${workspaceRoot}/bin/x64/Release/"
+				},
+			],
+			"preLaunchTask": "Build fcompress (Retail|x86)",
+		},
+		{
+			"name": "Run fcompress (Retail|x64)",
+			"request": "launch",
+			"type": "cppdbg",
+			"program": "${workspaceRoot}/bin/x64/Retail/fcompress",
+			"linux":
+			{
+				"name": "Run fcompress (Retail|x64)",
+				"type": "cppdbg",
+				"request": "launch",
+				"program": "${workspaceRoot}/bin/x64/Retail/fcompress",
+				"externalConsole": false,
+				"miDebuggerPath": "/usr/bin/gdb",
+				"MIMode": "gdb",
+				"setupCommands":
+				[
+					{
+						"text": "-enable-pretty-printing",
+						"description": "enable pretty printing",
+						"ignoreFailures": true,
+					},
+				],
+			},
+			"windows":
+			{
+				"name": "Run fcompress (Retail|x64)",
+				"console": "externalTerminal",
+				"type": "cppvsdbg",
+				"request": "launch",
+				"program": "${workspaceRoot}/bin/x64/Retail/fcompress",
+			},
+			"stopAtEntry": false,
+			"cwd": "${workspaceRoot}/../build",
+			"visualizerFile": "${workspaceRoot}/public/types.natvis",
+			"args":[
+			],
+			"environment":[
+				{
+					"name": "LD_LIBRARY_PATH",
+					"value": "${LD_LIBRARY_PATH}:${workspaceRoot}/bin/x64/Release/"
+				},
+			],
+			"preLaunchTask": "Build fcompress (Retail|x64)",
+		},
+		{
+			"name": "Run egfca (Debug|x86)",
+			"request": "launch",
+			"type": "cppdbg",
+			"program": "${workspaceRoot}/bin/x86/Debug/egfca",
+			"linux":
+			{
+				"name": "Run egfca (Debug|x86)",
+				"type": "cppdbg",
+				"request": "launch",
+				"program": "${workspaceRoot}/bin/x86/Debug/egfca",
+				"externalConsole": false,
+				"miDebuggerPath": "/usr/bin/gdb",
+				"MIMode": "gdb",
+				"setupCommands":
+				[
+					{
+						"text": "-enable-pretty-printing",
+						"description": "enable pretty printing",
+						"ignoreFailures": true,
+					},
+				],
+			},
+			"windows":
+			{
+				"name": "Run egfca (Debug|x86)",
+				"console": "externalTerminal",
+				"type": "cppvsdbg",
+				"request": "launch",
+				"program": "${workspaceRoot}/bin/x86/Debug/egfca",
+			},
+			"stopAtEntry": false,
+			"cwd": "${workspaceRoot}/../build",
+			"visualizerFile": "${workspaceRoot}/public/types.natvis",
+			"args":[
+			],
+			"environment":[
+				{
+					"name": "LD_LIBRARY_PATH",
+					"value": "${LD_LIBRARY_PATH}:${workspaceRoot}/bin/x64/Release/"
+				},
+			],
+			"preLaunchTask": "Build egfca (Debug|x86)",
+		},
+		{
+			"name": "Run egfca (Debug|x64)",
+			"request": "launch",
+			"type": "cppdbg",
+			"program": "${workspaceRoot}/bin/x64/Debug/egfca",
+			"linux":
+			{
+				"name": "Run egfca (Debug|x64)",
+				"type": "cppdbg",
+				"request": "launch",
+				"program": "${workspaceRoot}/bin/x64/Debug/egfca",
+				"externalConsole": false,
+				"miDebuggerPath": "/usr/bin/gdb",
+				"MIMode": "gdb",
+				"setupCommands":
+				[
+					{
+						"text": "-enable-pretty-printing",
+						"description": "enable pretty printing",
+						"ignoreFailures": true,
+					},
+				],
+			},
+			"windows":
+			{
+				"name": "Run egfca (Debug|x64)",
+				"console": "externalTerminal",
+				"type": "cppvsdbg",
+				"request": "launch",
+				"program": "${workspaceRoot}/bin/x64/Debug/egfca",
+			},
+			"stopAtEntry": false,
+			"cwd": "${workspaceRoot}/../build",
+			"visualizerFile": "${workspaceRoot}/public/types.natvis",
+			"args":[
+			],
+			"environment":[
+				{
+					"name": "LD_LIBRARY_PATH",
+					"value": "${LD_LIBRARY_PATH}:${workspaceRoot}/bin/x64/Release/"
+				},
+			],
+			"preLaunchTask": "Build egfca (Debug|x64)",
+		},
+		{
+			"name": "Run egfca (Release|x86)",
+			"request": "launch",
+			"type": "cppdbg",
+			"program": "${workspaceRoot}/bin/x86/Release/egfca",
+			"linux":
+			{
+				"name": "Run egfca (Release|x86)",
+				"type": "cppdbg",
+				"request": "launch",
+				"program": "${workspaceRoot}/bin/x86/Release/egfca",
+				"externalConsole": false,
+				"miDebuggerPath": "/usr/bin/gdb",
+				"MIMode": "gdb",
+				"setupCommands":
+				[
+					{
+						"text": "-enable-pretty-printing",
+						"description": "enable pretty printing",
+						"ignoreFailures": true,
+					},
+				],
+			},
+			"windows":
+			{
+				"name": "Run egfca (Release|x86)",
+				"console": "externalTerminal",
+				"type": "cppvsdbg",
+				"request": "launch",
+				"program": "${workspaceRoot}/bin/x86/Release/egfca",
+			},
+			"stopAtEntry": false,
+			"cwd": "${workspaceRoot}/../build",
+			"visualizerFile": "${workspaceRoot}/public/types.natvis",
+			"args":[
+			],
+			"environment":[
+				{
+					"name": "LD_LIBRARY_PATH",
+					"value": "${LD_LIBRARY_PATH}:${workspaceRoot}/bin/x64/Release/"
+				},
+			],
+			"preLaunchTask": "Build egfca (Release|x86)",
+		},
+		{
+			"name": "Run egfca (Release|x64)",
+			"request": "launch",
+			"type": "cppdbg",
+			"program": "${workspaceRoot}/bin/x64/Release/egfca",
+			"linux":
+			{
+				"name": "Run egfca (Release|x64)",
+				"type": "cppdbg",
+				"request": "launch",
+				"program": "${workspaceRoot}/bin/x64/Release/egfca",
+				"externalConsole": false,
+				"miDebuggerPath": "/usr/bin/gdb",
+				"MIMode": "gdb",
+				"setupCommands":
+				[
+					{
+						"text": "-enable-pretty-printing",
+						"description": "enable pretty printing",
+						"ignoreFailures": true,
+					},
+				],
+			},
+			"windows":
+			{
+				"name": "Run egfca (Release|x64)",
+				"console": "externalTerminal",
+				"type": "cppvsdbg",
+				"request": "launch",
+				"program": "${workspaceRoot}/bin/x64/Release/egfca",
+			},
+			"stopAtEntry": false,
+			"cwd": "${workspaceRoot}/../build",
+			"visualizerFile": "${workspaceRoot}/public/types.natvis",
+			"args":[
+			],
+			"environment":[
+				{
+					"name": "LD_LIBRARY_PATH",
+					"value": "${LD_LIBRARY_PATH}:${workspaceRoot}/bin/x64/Release/"
+				},
+			],
+			"preLaunchTask": "Build egfca (Release|x64)",
+		},
+		{
+			"name": "Run egfca (Profile|x86)",
+			"request": "launch",
+			"type": "cppdbg",
+			"program": "${workspaceRoot}/bin/x86/Profile/egfca",
+			"linux":
+			{
+				"name": "Run egfca (Profile|x86)",
+				"type": "cppdbg",
+				"request": "launch",
+				"program": "${workspaceRoot}/bin/x86/Profile/egfca",
+				"externalConsole": false,
+				"miDebuggerPath": "/usr/bin/gdb",
+				"MIMode": "gdb",
+				"setupCommands":
+				[
+					{
+						"text": "-enable-pretty-printing",
+						"description": "enable pretty printing",
+						"ignoreFailures": true,
+					},
+				],
+			},
+			"windows":
+			{
+				"name": "Run egfca (Profile|x86)",
+				"console": "externalTerminal",
+				"type": "cppvsdbg",
+				"request": "launch",
+				"program": "${workspaceRoot}/bin/x86/Profile/egfca",
+			},
+			"stopAtEntry": false,
+			"cwd": "${workspaceRoot}/../build",
+			"visualizerFile": "${workspaceRoot}/public/types.natvis",
+			"args":[
+			],
+			"environment":[
+				{
+					"name": "LD_LIBRARY_PATH",
+					"value": "${LD_LIBRARY_PATH}:${workspaceRoot}/bin/x64/Release/"
+				},
+			],
+			"preLaunchTask": "Build egfca (Profile|x86)",
+		},
+		{
+			"name": "Run egfca (Profile|x64)",
+			"request": "launch",
+			"type": "cppdbg",
+			"program": "${workspaceRoot}/bin/x64/Profile/egfca",
+			"linux":
+			{
+				"name": "Run egfca (Profile|x64)",
+				"type": "cppdbg",
+				"request": "launch",
+				"program": "${workspaceRoot}/bin/x64/Profile/egfca",
+				"externalConsole": false,
+				"miDebuggerPath": "/usr/bin/gdb",
+				"MIMode": "gdb",
+				"setupCommands":
+				[
+					{
+						"text": "-enable-pretty-printing",
+						"description": "enable pretty printing",
+						"ignoreFailures": true,
+					},
+				],
+			},
+			"windows":
+			{
+				"name": "Run egfca (Profile|x64)",
+				"console": "externalTerminal",
+				"type": "cppvsdbg",
+				"request": "launch",
+				"program": "${workspaceRoot}/bin/x64/Profile/egfca",
+			},
+			"stopAtEntry": false,
+			"cwd": "${workspaceRoot}/../build",
+			"visualizerFile": "${workspaceRoot}/public/types.natvis",
+			"args":[
+			],
+			"environment":[
+				{
+					"name": "LD_LIBRARY_PATH",
+					"value": "${LD_LIBRARY_PATH}:${workspaceRoot}/bin/x64/Release/"
+				},
+			],
+			"preLaunchTask": "Build egfca (Profile|x64)",
+		},
+		{
+			"name": "Run egfca (Retail|x86)",
+			"request": "launch",
+			"type": "cppdbg",
+			"program": "${workspaceRoot}/bin/x86/Retail/egfca",
+			"linux":
+			{
+				"name": "Run egfca (Retail|x86)",
+				"type": "cppdbg",
+				"request": "launch",
+				"program": "${workspaceRoot}/bin/x86/Retail/egfca",
+				"externalConsole": false,
+				"miDebuggerPath": "/usr/bin/gdb",
+				"MIMode": "gdb",
+				"setupCommands":
+				[
+					{
+						"text": "-enable-pretty-printing",
+						"description": "enable pretty printing",
+						"ignoreFailures": true,
+					},
+				],
+			},
+			"windows":
+			{
+				"name": "Run egfca (Retail|x86)",
+				"console": "externalTerminal",
+				"type": "cppvsdbg",
+				"request": "launch",
+				"program": "${workspaceRoot}/bin/x86/Retail/egfca",
+			},
+			"stopAtEntry": false,
+			"cwd": "${workspaceRoot}/../build",
+			"visualizerFile": "${workspaceRoot}/public/types.natvis",
+			"args":[
+			],
+			"environment":[
+				{
+					"name": "LD_LIBRARY_PATH",
+					"value": "${LD_LIBRARY_PATH}:${workspaceRoot}/bin/x64/Release/"
+				},
+			],
+			"preLaunchTask": "Build egfca (Retail|x86)",
+		},
+		{
+			"name": "Run egfca (Retail|x64)",
+			"request": "launch",
+			"type": "cppdbg",
+			"program": "${workspaceRoot}/bin/x64/Retail/egfca",
+			"linux":
+			{
+				"name": "Run egfca (Retail|x64)",
+				"type": "cppdbg",
+				"request": "launch",
+				"program": "${workspaceRoot}/bin/x64/Retail/egfca",
+				"externalConsole": false,
+				"miDebuggerPath": "/usr/bin/gdb",
+				"MIMode": "gdb",
+				"setupCommands":
+				[
+					{
+						"text": "-enable-pretty-printing",
+						"description": "enable pretty printing",
+						"ignoreFailures": true,
+					},
+				],
+			},
+			"windows":
+			{
+				"name": "Run egfca (Retail|x64)",
+				"console": "externalTerminal",
+				"type": "cppvsdbg",
+				"request": "launch",
+				"program": "${workspaceRoot}/bin/x64/Retail/egfca",
+			},
+			"stopAtEntry": false,
+			"cwd": "${workspaceRoot}/../build",
+			"visualizerFile": "${workspaceRoot}/public/types.natvis",
+			"args":[
+			],
+			"environment":[
+				{
+					"name": "LD_LIBRARY_PATH",
+					"value": "${LD_LIBRARY_PATH}:${workspaceRoot}/bin/x64/Release/"
+				},
+			],
+			"preLaunchTask": "Build egfca (Retail|x64)",
+		},
+		{
+			"name": "Run animca (Debug|x86)",
+			"request": "launch",
+			"type": "cppdbg",
+			"program": "${workspaceRoot}/bin/x86/Debug/animca",
+			"linux":
+			{
+				"name": "Run animca (Debug|x86)",
+				"type": "cppdbg",
+				"request": "launch",
+				"program": "${workspaceRoot}/bin/x86/Debug/animca",
+				"externalConsole": false,
+				"miDebuggerPath": "/usr/bin/gdb",
+				"MIMode": "gdb",
+				"setupCommands":
+				[
+					{
+						"text": "-enable-pretty-printing",
+						"description": "enable pretty printing",
+						"ignoreFailures": true,
+					},
+				],
+			},
+			"windows":
+			{
+				"name": "Run animca (Debug|x86)",
+				"console": "externalTerminal",
+				"type": "cppvsdbg",
+				"request": "launch",
+				"program": "${workspaceRoot}/bin/x86/Debug/animca",
+			},
+			"stopAtEntry": false,
+			"cwd": "${workspaceRoot}/../build",
+			"visualizerFile": "${workspaceRoot}/public/types.natvis",
+			"args":[
+			],
+			"environment":[
+				{
+					"name": "LD_LIBRARY_PATH",
+					"value": "${LD_LIBRARY_PATH}:${workspaceRoot}/bin/x64/Release/"
+				},
+			],
+			"preLaunchTask": "Build animca (Debug|x86)",
+		},
+		{
+			"name": "Run animca (Debug|x64)",
+			"request": "launch",
+			"type": "cppdbg",
+			"program": "${workspaceRoot}/bin/x64/Debug/animca",
+			"linux":
+			{
+				"name": "Run animca (Debug|x64)",
+				"type": "cppdbg",
+				"request": "launch",
+				"program": "${workspaceRoot}/bin/x64/Debug/animca",
+				"externalConsole": false,
+				"miDebuggerPath": "/usr/bin/gdb",
+				"MIMode": "gdb",
+				"setupCommands":
+				[
+					{
+						"text": "-enable-pretty-printing",
+						"description": "enable pretty printing",
+						"ignoreFailures": true,
+					},
+				],
+			},
+			"windows":
+			{
+				"name": "Run animca (Debug|x64)",
+				"console": "externalTerminal",
+				"type": "cppvsdbg",
+				"request": "launch",
+				"program": "${workspaceRoot}/bin/x64/Debug/animca",
+			},
+			"stopAtEntry": false,
+			"cwd": "${workspaceRoot}/../build",
+			"visualizerFile": "${workspaceRoot}/public/types.natvis",
+			"args":[
+			],
+			"environment":[
+				{
+					"name": "LD_LIBRARY_PATH",
+					"value": "${LD_LIBRARY_PATH}:${workspaceRoot}/bin/x64/Release/"
+				},
+			],
+			"preLaunchTask": "Build animca (Debug|x64)",
+		},
+		{
+			"name": "Run animca (Release|x86)",
+			"request": "launch",
+			"type": "cppdbg",
+			"program": "${workspaceRoot}/bin/x86/Release/animca",
+			"linux":
+			{
+				"name": "Run animca (Release|x86)",
+				"type": "cppdbg",
+				"request": "launch",
+				"program": "${workspaceRoot}/bin/x86/Release/animca",
+				"externalConsole": false,
+				"miDebuggerPath": "/usr/bin/gdb",
+				"MIMode": "gdb",
+				"setupCommands":
+				[
+					{
+						"text": "-enable-pretty-printing",
+						"description": "enable pretty printing",
+						"ignoreFailures": true,
+					},
+				],
+			},
+			"windows":
+			{
+				"name": "Run animca (Release|x86)",
+				"console": "externalTerminal",
+				"type": "cppvsdbg",
+				"request": "launch",
+				"program": "${workspaceRoot}/bin/x86/Release/animca",
+			},
+			"stopAtEntry": false,
+			"cwd": "${workspaceRoot}/../build",
+			"visualizerFile": "${workspaceRoot}/public/types.natvis",
+			"args":[
+			],
+			"environment":[
+				{
+					"name": "LD_LIBRARY_PATH",
+					"value": "${LD_LIBRARY_PATH}:${workspaceRoot}/bin/x64/Release/"
+				},
+			],
+			"preLaunchTask": "Build animca (Release|x86)",
+		},
+		{
+			"name": "Run animca (Release|x64)",
+			"request": "launch",
+			"type": "cppdbg",
+			"program": "${workspaceRoot}/bin/x64/Release/animca",
+			"linux":
+			{
+				"name": "Run animca (Release|x64)",
+				"type": "cppdbg",
+				"request": "launch",
+				"program": "${workspaceRoot}/bin/x64/Release/animca",
+				"externalConsole": false,
+				"miDebuggerPath": "/usr/bin/gdb",
+				"MIMode": "gdb",
+				"setupCommands":
+				[
+					{
+						"text": "-enable-pretty-printing",
+						"description": "enable pretty printing",
+						"ignoreFailures": true,
+					},
+				],
+			},
+			"windows":
+			{
+				"name": "Run animca (Release|x64)",
+				"console": "externalTerminal",
+				"type": "cppvsdbg",
+				"request": "launch",
+				"program": "${workspaceRoot}/bin/x64/Release/animca",
+			},
+			"stopAtEntry": false,
+			"cwd": "${workspaceRoot}/../build",
+			"visualizerFile": "${workspaceRoot}/public/types.natvis",
+			"args":[
+			],
+			"environment":[
+				{
+					"name": "LD_LIBRARY_PATH",
+					"value": "${LD_LIBRARY_PATH}:${workspaceRoot}/bin/x64/Release/"
+				},
+			],
+			"preLaunchTask": "Build animca (Release|x64)",
+		},
+		{
+			"name": "Run animca (Profile|x86)",
+			"request": "launch",
+			"type": "cppdbg",
+			"program": "${workspaceRoot}/bin/x86/Profile/animca",
+			"linux":
+			{
+				"name": "Run animca (Profile|x86)",
+				"type": "cppdbg",
+				"request": "launch",
+				"program": "${workspaceRoot}/bin/x86/Profile/animca",
+				"externalConsole": false,
+				"miDebuggerPath": "/usr/bin/gdb",
+				"MIMode": "gdb",
+				"setupCommands":
+				[
+					{
+						"text": "-enable-pretty-printing",
+						"description": "enable pretty printing",
+						"ignoreFailures": true,
+					},
+				],
+			},
+			"windows":
+			{
+				"name": "Run animca (Profile|x86)",
+				"console": "externalTerminal",
+				"type": "cppvsdbg",
+				"request": "launch",
+				"program": "${workspaceRoot}/bin/x86/Profile/animca",
+			},
+			"stopAtEntry": false,
+			"cwd": "${workspaceRoot}/../build",
+			"visualizerFile": "${workspaceRoot}/public/types.natvis",
+			"args":[
+			],
+			"environment":[
+				{
+					"name": "LD_LIBRARY_PATH",
+					"value": "${LD_LIBRARY_PATH}:${workspaceRoot}/bin/x64/Release/"
+				},
+			],
+			"preLaunchTask": "Build animca (Profile|x86)",
+		},
+		{
+			"name": "Run animca (Profile|x64)",
+			"request": "launch",
+			"type": "cppdbg",
+			"program": "${workspaceRoot}/bin/x64/Profile/animca",
+			"linux":
+			{
+				"name": "Run animca (Profile|x64)",
+				"type": "cppdbg",
+				"request": "launch",
+				"program": "${workspaceRoot}/bin/x64/Profile/animca",
+				"externalConsole": false,
+				"miDebuggerPath": "/usr/bin/gdb",
+				"MIMode": "gdb",
+				"setupCommands":
+				[
+					{
+						"text": "-enable-pretty-printing",
+						"description": "enable pretty printing",
+						"ignoreFailures": true,
+					},
+				],
+			},
+			"windows":
+			{
+				"name": "Run animca (Profile|x64)",
+				"console": "externalTerminal",
+				"type": "cppvsdbg",
+				"request": "launch",
+				"program": "${workspaceRoot}/bin/x64/Profile/animca",
+			},
+			"stopAtEntry": false,
+			"cwd": "${workspaceRoot}/../build",
+			"visualizerFile": "${workspaceRoot}/public/types.natvis",
+			"args":[
+			],
+			"environment":[
+				{
+					"name": "LD_LIBRARY_PATH",
+					"value": "${LD_LIBRARY_PATH}:${workspaceRoot}/bin/x64/Release/"
+				},
+			],
+			"preLaunchTask": "Build animca (Profile|x64)",
+		},
+		{
+			"name": "Run animca (Retail|x86)",
+			"request": "launch",
+			"type": "cppdbg",
+			"program": "${workspaceRoot}/bin/x86/Retail/animca",
+			"linux":
+			{
+				"name": "Run animca (Retail|x86)",
+				"type": "cppdbg",
+				"request": "launch",
+				"program": "${workspaceRoot}/bin/x86/Retail/animca",
+				"externalConsole": false,
+				"miDebuggerPath": "/usr/bin/gdb",
+				"MIMode": "gdb",
+				"setupCommands":
+				[
+					{
+						"text": "-enable-pretty-printing",
+						"description": "enable pretty printing",
+						"ignoreFailures": true,
+					},
+				],
+			},
+			"windows":
+			{
+				"name": "Run animca (Retail|x86)",
+				"console": "externalTerminal",
+				"type": "cppvsdbg",
+				"request": "launch",
+				"program": "${workspaceRoot}/bin/x86/Retail/animca",
+			},
+			"stopAtEntry": false,
+			"cwd": "${workspaceRoot}/../build",
+			"visualizerFile": "${workspaceRoot}/public/types.natvis",
+			"args":[
+			],
+			"environment":[
+				{
+					"name": "LD_LIBRARY_PATH",
+					"value": "${LD_LIBRARY_PATH}:${workspaceRoot}/bin/x64/Release/"
+				},
+			],
+			"preLaunchTask": "Build animca (Retail|x86)",
+		},
+		{
+			"name": "Run animca (Retail|x64)",
+			"request": "launch",
+			"type": "cppdbg",
+			"program": "${workspaceRoot}/bin/x64/Retail/animca",
+			"linux":
+			{
+				"name": "Run animca (Retail|x64)",
+				"type": "cppdbg",
+				"request": "launch",
+				"program": "${workspaceRoot}/bin/x64/Retail/animca",
+				"externalConsole": false,
+				"miDebuggerPath": "/usr/bin/gdb",
+				"MIMode": "gdb",
+				"setupCommands":
+				[
+					{
+						"text": "-enable-pretty-printing",
+						"description": "enable pretty printing",
+						"ignoreFailures": true,
+					},
+				],
+			},
+			"windows":
+			{
+				"name": "Run animca (Retail|x64)",
+				"console": "externalTerminal",
+				"type": "cppvsdbg",
+				"request": "launch",
+				"program": "${workspaceRoot}/bin/x64/Retail/animca",
+			},
+			"stopAtEntry": false,
+			"cwd": "${workspaceRoot}/../build",
+			"visualizerFile": "${workspaceRoot}/public/types.natvis",
+			"args":[
+			],
+			"environment":[
+				{
+					"name": "LD_LIBRARY_PATH",
+					"value": "${LD_LIBRARY_PATH}:${workspaceRoot}/bin/x64/Release/"
+				},
+			],
+			"preLaunchTask": "Build animca (Retail|x64)",
+		},
+		{
+			"name": "Run atlasgen (Debug|x86)",
+			"request": "launch",
+			"type": "cppdbg",
+			"program": "${workspaceRoot}/bin/x86/Debug/atlasgen",
+			"linux":
+			{
+				"name": "Run atlasgen (Debug|x86)",
+				"type": "cppdbg",
+				"request": "launch",
+				"program": "${workspaceRoot}/bin/x86/Debug/atlasgen",
+				"externalConsole": false,
+				"miDebuggerPath": "/usr/bin/gdb",
+				"MIMode": "gdb",
+				"setupCommands":
+				[
+					{
+						"text": "-enable-pretty-printing",
+						"description": "enable pretty printing",
+						"ignoreFailures": true,
+					},
+				],
+			},
+			"windows":
+			{
+				"name": "Run atlasgen (Debug|x86)",
+				"console": "externalTerminal",
+				"type": "cppvsdbg",
+				"request": "launch",
+				"program": "${workspaceRoot}/bin/x86/Debug/atlasgen",
+			},
+			"stopAtEntry": false,
+			"cwd": "${workspaceRoot}/../build",
+			"visualizerFile": "${workspaceRoot}/public/types.natvis",
+			"args":[
+			],
+			"environment":[
+				{
+					"name": "LD_LIBRARY_PATH",
+					"value": "${LD_LIBRARY_PATH}:${workspaceRoot}/bin/x64/Release/"
+				},
+			],
+			"preLaunchTask": "Build atlasgen (Debug|x86)",
+		},
+		{
+			"name": "Run atlasgen (Debug|x64)",
+			"request": "launch",
+			"type": "cppdbg",
+			"program": "${workspaceRoot}/bin/x64/Debug/atlasgen",
+			"linux":
+			{
+				"name": "Run atlasgen (Debug|x64)",
+				"type": "cppdbg",
+				"request": "launch",
+				"program": "${workspaceRoot}/bin/x64/Debug/atlasgen",
+				"externalConsole": false,
+				"miDebuggerPath": "/usr/bin/gdb",
+				"MIMode": "gdb",
+				"setupCommands":
+				[
+					{
+						"text": "-enable-pretty-printing",
+						"description": "enable pretty printing",
+						"ignoreFailures": true,
+					},
+				],
+			},
+			"windows":
+			{
+				"name": "Run atlasgen (Debug|x64)",
+				"console": "externalTerminal",
+				"type": "cppvsdbg",
+				"request": "launch",
+				"program": "${workspaceRoot}/bin/x64/Debug/atlasgen",
+			},
+			"stopAtEntry": false,
+			"cwd": "${workspaceRoot}/../build",
+			"visualizerFile": "${workspaceRoot}/public/types.natvis",
+			"args":[
+			],
+			"environment":[
+				{
+					"name": "LD_LIBRARY_PATH",
+					"value": "${LD_LIBRARY_PATH}:${workspaceRoot}/bin/x64/Release/"
+				},
+			],
+			"preLaunchTask": "Build atlasgen (Debug|x64)",
+		},
+		{
+			"name": "Run atlasgen (Release|x86)",
+			"request": "launch",
+			"type": "cppdbg",
+			"program": "${workspaceRoot}/bin/x86/Release/atlasgen",
+			"linux":
+			{
+				"name": "Run atlasgen (Release|x86)",
+				"type": "cppdbg",
+				"request": "launch",
+				"program": "${workspaceRoot}/bin/x86/Release/atlasgen",
+				"externalConsole": false,
+				"miDebuggerPath": "/usr/bin/gdb",
+				"MIMode": "gdb",
+				"setupCommands":
+				[
+					{
+						"text": "-enable-pretty-printing",
+						"description": "enable pretty printing",
+						"ignoreFailures": true,
+					},
+				],
+			},
+			"windows":
+			{
+				"name": "Run atlasgen (Release|x86)",
+				"console": "externalTerminal",
+				"type": "cppvsdbg",
+				"request": "launch",
+				"program": "${workspaceRoot}/bin/x86/Release/atlasgen",
+			},
+			"stopAtEntry": false,
+			"cwd": "${workspaceRoot}/../build",
+			"visualizerFile": "${workspaceRoot}/public/types.natvis",
+			"args":[
+			],
+			"environment":[
+				{
+					"name": "LD_LIBRARY_PATH",
+					"value": "${LD_LIBRARY_PATH}:${workspaceRoot}/bin/x64/Release/"
+				},
+			],
+			"preLaunchTask": "Build atlasgen (Release|x86)",
+		},
+		{
+			"name": "Run atlasgen (Release|x64)",
+			"request": "launch",
+			"type": "cppdbg",
+			"program": "${workspaceRoot}/bin/x64/Release/atlasgen",
+			"linux":
+			{
+				"name": "Run atlasgen (Release|x64)",
+				"type": "cppdbg",
+				"request": "launch",
+				"program": "${workspaceRoot}/bin/x64/Release/atlasgen",
+				"externalConsole": false,
+				"miDebuggerPath": "/usr/bin/gdb",
+				"MIMode": "gdb",
+				"setupCommands":
+				[
+					{
+						"text": "-enable-pretty-printing",
+						"description": "enable pretty printing",
+						"ignoreFailures": true,
+					},
+				],
+			},
+			"windows":
+			{
+				"name": "Run atlasgen (Release|x64)",
+				"console": "externalTerminal",
+				"type": "cppvsdbg",
+				"request": "launch",
+				"program": "${workspaceRoot}/bin/x64/Release/atlasgen",
+			},
+			"stopAtEntry": false,
+			"cwd": "${workspaceRoot}/../build",
+			"visualizerFile": "${workspaceRoot}/public/types.natvis",
+			"args":[
+			],
+			"environment":[
+				{
+					"name": "LD_LIBRARY_PATH",
+					"value": "${LD_LIBRARY_PATH}:${workspaceRoot}/bin/x64/Release/"
+				},
+			],
+			"preLaunchTask": "Build atlasgen (Release|x64)",
+		},
+		{
+			"name": "Run atlasgen (Profile|x86)",
+			"request": "launch",
+			"type": "cppdbg",
+			"program": "${workspaceRoot}/bin/x86/Profile/atlasgen",
+			"linux":
+			{
+				"name": "Run atlasgen (Profile|x86)",
+				"type": "cppdbg",
+				"request": "launch",
+				"program": "${workspaceRoot}/bin/x86/Profile/atlasgen",
+				"externalConsole": false,
+				"miDebuggerPath": "/usr/bin/gdb",
+				"MIMode": "gdb",
+				"setupCommands":
+				[
+					{
+						"text": "-enable-pretty-printing",
+						"description": "enable pretty printing",
+						"ignoreFailures": true,
+					},
+				],
+			},
+			"windows":
+			{
+				"name": "Run atlasgen (Profile|x86)",
+				"console": "externalTerminal",
+				"type": "cppvsdbg",
+				"request": "launch",
+				"program": "${workspaceRoot}/bin/x86/Profile/atlasgen",
+			},
+			"stopAtEntry": false,
+			"cwd": "${workspaceRoot}/../build",
+			"visualizerFile": "${workspaceRoot}/public/types.natvis",
+			"args":[
+			],
+			"environment":[
+				{
+					"name": "LD_LIBRARY_PATH",
+					"value": "${LD_LIBRARY_PATH}:${workspaceRoot}/bin/x64/Release/"
+				},
+			],
+			"preLaunchTask": "Build atlasgen (Profile|x86)",
+		},
+		{
+			"name": "Run atlasgen (Profile|x64)",
+			"request": "launch",
+			"type": "cppdbg",
+			"program": "${workspaceRoot}/bin/x64/Profile/atlasgen",
+			"linux":
+			{
+				"name": "Run atlasgen (Profile|x64)",
+				"type": "cppdbg",
+				"request": "launch",
+				"program": "${workspaceRoot}/bin/x64/Profile/atlasgen",
+				"externalConsole": false,
+				"miDebuggerPath": "/usr/bin/gdb",
+				"MIMode": "gdb",
+				"setupCommands":
+				[
+					{
+						"text": "-enable-pretty-printing",
+						"description": "enable pretty printing",
+						"ignoreFailures": true,
+					},
+				],
+			},
+			"windows":
+			{
+				"name": "Run atlasgen (Profile|x64)",
+				"console": "externalTerminal",
+				"type": "cppvsdbg",
+				"request": "launch",
+				"program": "${workspaceRoot}/bin/x64/Profile/atlasgen",
+			},
+			"stopAtEntry": false,
+			"cwd": "${workspaceRoot}/../build",
+			"visualizerFile": "${workspaceRoot}/public/types.natvis",
+			"args":[
+			],
+			"environment":[
+				{
+					"name": "LD_LIBRARY_PATH",
+					"value": "${LD_LIBRARY_PATH}:${workspaceRoot}/bin/x64/Release/"
+				},
+			],
+			"preLaunchTask": "Build atlasgen (Profile|x64)",
+		},
+		{
+			"name": "Run atlasgen (Retail|x86)",
+			"request": "launch",
+			"type": "cppdbg",
+			"program": "${workspaceRoot}/bin/x86/Retail/atlasgen",
+			"linux":
+			{
+				"name": "Run atlasgen (Retail|x86)",
+				"type": "cppdbg",
+				"request": "launch",
+				"program": "${workspaceRoot}/bin/x86/Retail/atlasgen",
+				"externalConsole": false,
+				"miDebuggerPath": "/usr/bin/gdb",
+				"MIMode": "gdb",
+				"setupCommands":
+				[
+					{
+						"text": "-enable-pretty-printing",
+						"description": "enable pretty printing",
+						"ignoreFailures": true,
+					},
+				],
+			},
+			"windows":
+			{
+				"name": "Run atlasgen (Retail|x86)",
+				"console": "externalTerminal",
+				"type": "cppvsdbg",
+				"request": "launch",
+				"program": "${workspaceRoot}/bin/x86/Retail/atlasgen",
+			},
+			"stopAtEntry": false,
+			"cwd": "${workspaceRoot}/../build",
+			"visualizerFile": "${workspaceRoot}/public/types.natvis",
+			"args":[
+			],
+			"environment":[
+				{
+					"name": "LD_LIBRARY_PATH",
+					"value": "${LD_LIBRARY_PATH}:${workspaceRoot}/bin/x64/Release/"
+				},
+			],
+			"preLaunchTask": "Build atlasgen (Retail|x86)",
+		},
+		{
+			"name": "Run atlasgen (Retail|x64)",
+			"request": "launch",
+			"type": "cppdbg",
+			"program": "${workspaceRoot}/bin/x64/Retail/atlasgen",
+			"linux":
+			{
+				"name": "Run atlasgen (Retail|x64)",
+				"type": "cppdbg",
+				"request": "launch",
+				"program": "${workspaceRoot}/bin/x64/Retail/atlasgen",
+				"externalConsole": false,
+				"miDebuggerPath": "/usr/bin/gdb",
+				"MIMode": "gdb",
+				"setupCommands":
+				[
+					{
+						"text": "-enable-pretty-printing",
+						"description": "enable pretty printing",
+						"ignoreFailures": true,
+					},
+				],
+			},
+			"windows":
+			{
+				"name": "Run atlasgen (Retail|x64)",
+				"console": "externalTerminal",
+				"type": "cppvsdbg",
+				"request": "launch",
+				"program": "${workspaceRoot}/bin/x64/Retail/atlasgen",
+			},
+			"stopAtEntry": false,
+			"cwd": "${workspaceRoot}/../build",
+			"visualizerFile": "${workspaceRoot}/public/types.natvis",
+			"args":[
+			],
+			"environment":[
+				{
+					"name": "LD_LIBRARY_PATH",
+					"value": "${LD_LIBRARY_PATH}:${workspaceRoot}/bin/x64/Release/"
+				},
+			],
+			"preLaunchTask": "Build atlasgen (Retail|x64)",
+		},
+		{
+			"name": "Run texcooker (Debug|x86)",
+			"request": "launch",
+			"type": "cppdbg",
+			"program": "${workspaceRoot}/bin/x86/Debug/texcooker",
+			"linux":
+			{
+				"name": "Run texcooker (Debug|x86)",
+				"type": "cppdbg",
+				"request": "launch",
+				"program": "${workspaceRoot}/bin/x86/Debug/texcooker",
+				"externalConsole": false,
+				"miDebuggerPath": "/usr/bin/gdb",
+				"MIMode": "gdb",
+				"setupCommands":
+				[
+					{
+						"text": "-enable-pretty-printing",
+						"description": "enable pretty printing",
+						"ignoreFailures": true,
+					},
+				],
+			},
+			"windows":
+			{
+				"name": "Run texcooker (Debug|x86)",
+				"console": "externalTerminal",
+				"type": "cppvsdbg",
+				"request": "launch",
+				"program": "${workspaceRoot}/bin/x86/Debug/texcooker",
+			},
+			"stopAtEntry": false,
+			"cwd": "${workspaceRoot}/../build",
+			"visualizerFile": "${workspaceRoot}/public/types.natvis",
+			"args":[
+			],
+			"environment":[
+				{
+					"name": "LD_LIBRARY_PATH",
+					"value": "${LD_LIBRARY_PATH}:${workspaceRoot}/bin/x64/Release/"
+				},
+			],
+			"preLaunchTask": "Build texcooker (Debug|x86)",
+		},
+		{
+			"name": "Run texcooker (Debug|x64)",
+			"request": "launch",
+			"type": "cppdbg",
+			"program": "${workspaceRoot}/bin/x64/Debug/texcooker",
+			"linux":
+			{
+				"name": "Run texcooker (Debug|x64)",
+				"type": "cppdbg",
+				"request": "launch",
+				"program": "${workspaceRoot}/bin/x64/Debug/texcooker",
+				"externalConsole": false,
+				"miDebuggerPath": "/usr/bin/gdb",
+				"MIMode": "gdb",
+				"setupCommands":
+				[
+					{
+						"text": "-enable-pretty-printing",
+						"description": "enable pretty printing",
+						"ignoreFailures": true,
+					},
+				],
+			},
+			"windows":
+			{
+				"name": "Run texcooker (Debug|x64)",
+				"console": "externalTerminal",
+				"type": "cppvsdbg",
+				"request": "launch",
+				"program": "${workspaceRoot}/bin/x64/Debug/texcooker",
+			},
+			"stopAtEntry": false,
+			"cwd": "${workspaceRoot}/../build",
+			"visualizerFile": "${workspaceRoot}/public/types.natvis",
+			"args":[
+			],
+			"environment":[
+				{
+					"name": "LD_LIBRARY_PATH",
+					"value": "${LD_LIBRARY_PATH}:${workspaceRoot}/bin/x64/Release/"
+				},
+			],
+			"preLaunchTask": "Build texcooker (Debug|x64)",
+		},
+		{
+			"name": "Run texcooker (Release|x86)",
+			"request": "launch",
+			"type": "cppdbg",
+			"program": "${workspaceRoot}/bin/x86/Release/texcooker",
+			"linux":
+			{
+				"name": "Run texcooker (Release|x86)",
+				"type": "cppdbg",
+				"request": "launch",
+				"program": "${workspaceRoot}/bin/x86/Release/texcooker",
+				"externalConsole": false,
+				"miDebuggerPath": "/usr/bin/gdb",
+				"MIMode": "gdb",
+				"setupCommands":
+				[
+					{
+						"text": "-enable-pretty-printing",
+						"description": "enable pretty printing",
+						"ignoreFailures": true,
+					},
+				],
+			},
+			"windows":
+			{
+				"name": "Run texcooker (Release|x86)",
+				"console": "externalTerminal",
+				"type": "cppvsdbg",
+				"request": "launch",
+				"program": "${workspaceRoot}/bin/x86/Release/texcooker",
+			},
+			"stopAtEntry": false,
+			"cwd": "${workspaceRoot}/../build",
+			"visualizerFile": "${workspaceRoot}/public/types.natvis",
+			"args":[
+			],
+			"environment":[
+				{
+					"name": "LD_LIBRARY_PATH",
+					"value": "${LD_LIBRARY_PATH}:${workspaceRoot}/bin/x64/Release/"
+				},
+			],
+			"preLaunchTask": "Build texcooker (Release|x86)",
+		},
+		{
+			"name": "Run texcooker (Release|x64)",
+			"request": "launch",
+			"type": "cppdbg",
+			"program": "${workspaceRoot}/bin/x64/Release/texcooker",
+			"linux":
+			{
+				"name": "Run texcooker (Release|x64)",
+				"type": "cppdbg",
+				"request": "launch",
+				"program": "${workspaceRoot}/bin/x64/Release/texcooker",
+				"externalConsole": false,
+				"miDebuggerPath": "/usr/bin/gdb",
+				"MIMode": "gdb",
+				"setupCommands":
+				[
+					{
+						"text": "-enable-pretty-printing",
+						"description": "enable pretty printing",
+						"ignoreFailures": true,
+					},
+				],
+			},
+			"windows":
+			{
+				"name": "Run texcooker (Release|x64)",
+				"console": "externalTerminal",
+				"type": "cppvsdbg",
+				"request": "launch",
+				"program": "${workspaceRoot}/bin/x64/Release/texcooker",
+			},
+			"stopAtEntry": false,
+			"cwd": "${workspaceRoot}/../build",
+			"visualizerFile": "${workspaceRoot}/public/types.natvis",
+			"args":[
+			],
+			"environment":[
+				{
+					"name": "LD_LIBRARY_PATH",
+					"value": "${LD_LIBRARY_PATH}:${workspaceRoot}/bin/x64/Release/"
+				},
+			],
+			"preLaunchTask": "Build texcooker (Release|x64)",
+		},
+		{
+			"name": "Run texcooker (Profile|x86)",
+			"request": "launch",
+			"type": "cppdbg",
+			"program": "${workspaceRoot}/bin/x86/Profile/texcooker",
+			"linux":
+			{
+				"name": "Run texcooker (Profile|x86)",
+				"type": "cppdbg",
+				"request": "launch",
+				"program": "${workspaceRoot}/bin/x86/Profile/texcooker",
+				"externalConsole": false,
+				"miDebuggerPath": "/usr/bin/gdb",
+				"MIMode": "gdb",
+				"setupCommands":
+				[
+					{
+						"text": "-enable-pretty-printing",
+						"description": "enable pretty printing",
+						"ignoreFailures": true,
+					},
+				],
+			},
+			"windows":
+			{
+				"name": "Run texcooker (Profile|x86)",
+				"console": "externalTerminal",
+				"type": "cppvsdbg",
+				"request": "launch",
+				"program": "${workspaceRoot}/bin/x86/Profile/texcooker",
+			},
+			"stopAtEntry": false,
+			"cwd": "${workspaceRoot}/../build",
+			"visualizerFile": "${workspaceRoot}/public/types.natvis",
+			"args":[
+			],
+			"environment":[
+				{
+					"name": "LD_LIBRARY_PATH",
+					"value": "${LD_LIBRARY_PATH}:${workspaceRoot}/bin/x64/Release/"
+				},
+			],
+			"preLaunchTask": "Build texcooker (Profile|x86)",
+		},
+		{
+			"name": "Run texcooker (Profile|x64)",
+			"request": "launch",
+			"type": "cppdbg",
+			"program": "${workspaceRoot}/bin/x64/Profile/texcooker",
+			"linux":
+			{
+				"name": "Run texcooker (Profile|x64)",
+				"type": "cppdbg",
+				"request": "launch",
+				"program": "${workspaceRoot}/bin/x64/Profile/texcooker",
+				"externalConsole": false,
+				"miDebuggerPath": "/usr/bin/gdb",
+				"MIMode": "gdb",
+				"setupCommands":
+				[
+					{
+						"text": "-enable-pretty-printing",
+						"description": "enable pretty printing",
+						"ignoreFailures": true,
+					},
+				],
+			},
+			"windows":
+			{
+				"name": "Run texcooker (Profile|x64)",
+				"console": "externalTerminal",
+				"type": "cppvsdbg",
+				"request": "launch",
+				"program": "${workspaceRoot}/bin/x64/Profile/texcooker",
+			},
+			"stopAtEntry": false,
+			"cwd": "${workspaceRoot}/../build",
+			"visualizerFile": "${workspaceRoot}/public/types.natvis",
+			"args":[
+			],
+			"environment":[
+				{
+					"name": "LD_LIBRARY_PATH",
+					"value": "${LD_LIBRARY_PATH}:${workspaceRoot}/bin/x64/Release/"
+				},
+			],
+			"preLaunchTask": "Build texcooker (Profile|x64)",
+		},
+		{
+			"name": "Run texcooker (Retail|x86)",
+			"request": "launch",
+			"type": "cppdbg",
+			"program": "${workspaceRoot}/bin/x86/Retail/texcooker",
+			"linux":
+			{
+				"name": "Run texcooker (Retail|x86)",
+				"type": "cppdbg",
+				"request": "launch",
+				"program": "${workspaceRoot}/bin/x86/Retail/texcooker",
+				"externalConsole": false,
+				"miDebuggerPath": "/usr/bin/gdb",
+				"MIMode": "gdb",
+				"setupCommands":
+				[
+					{
+						"text": "-enable-pretty-printing",
+						"description": "enable pretty printing",
+						"ignoreFailures": true,
+					},
+				],
+			},
+			"windows":
+			{
+				"name": "Run texcooker (Retail|x86)",
+				"console": "externalTerminal",
+				"type": "cppvsdbg",
+				"request": "launch",
+				"program": "${workspaceRoot}/bin/x86/Retail/texcooker",
+			},
+			"stopAtEntry": false,
+			"cwd": "${workspaceRoot}/../build",
+			"visualizerFile": "${workspaceRoot}/public/types.natvis",
+			"args":[
+			],
+			"environment":[
+				{
+					"name": "LD_LIBRARY_PATH",
+					"value": "${LD_LIBRARY_PATH}:${workspaceRoot}/bin/x64/Release/"
+				},
+			],
+			"preLaunchTask": "Build texcooker (Retail|x86)",
+		},
+		{
+			"name": "Run texcooker (Retail|x64)",
+			"request": "launch",
+			"type": "cppdbg",
+			"program": "${workspaceRoot}/bin/x64/Retail/texcooker",
+			"linux":
+			{
+				"name": "Run texcooker (Retail|x64)",
+				"type": "cppdbg",
+				"request": "launch",
+				"program": "${workspaceRoot}/bin/x64/Retail/texcooker",
+				"externalConsole": false,
+				"miDebuggerPath": "/usr/bin/gdb",
+				"MIMode": "gdb",
+				"setupCommands":
+				[
+					{
+						"text": "-enable-pretty-printing",
+						"description": "enable pretty printing",
+						"ignoreFailures": true,
+					},
+				],
+			},
+			"windows":
+			{
+				"name": "Run texcooker (Retail|x64)",
+				"console": "externalTerminal",
+				"type": "cppvsdbg",
+				"request": "launch",
+				"program": "${workspaceRoot}/bin/x64/Retail/texcooker",
+			},
+			"stopAtEntry": false,
+			"cwd": "${workspaceRoot}/../build",
+			"visualizerFile": "${workspaceRoot}/public/types.natvis",
+			"args":[
+			],
+			"environment":[
+				{
+					"name": "LD_LIBRARY_PATH",
+					"value": "${LD_LIBRARY_PATH}:${workspaceRoot}/bin/x64/Release/"
+				},
+			],
+			"preLaunchTask": "Build texcooker (Retail|x64)",
+		},
+		{
 			"name": "Run DriversGame (Debug|x86)",
 			"request": "launch",
 			"type": "cppdbg",

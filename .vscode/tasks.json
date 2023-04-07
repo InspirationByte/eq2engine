@@ -7007,6 +7007,1006 @@
 			},
 		},
 		{
+			"label": "Build fcompress (Debug|x86)",
+			"type": "shell",
+			"linux":
+			{
+				"command": "clear && time make config=debug_x86 fcompress -j12",
+				"problemMatcher": "$gcc",
+			},
+			"windows":
+			{
+				"command": "cls && msbuild",
+				"args":
+				[
+					"/m:12",
+					"${workspaceRoot}/DriverSyndicate.sln",
+					"/p:Configuration=Debug|x86",
+					"/t:utils",
+				],
+				"problemMatcher": "$msCompile",
+			},
+			"group":
+			{
+				"kind": "build",
+			},
+		},
+		{
+			"label": "Build fcompress (Debug|x64)",
+			"type": "shell",
+			"linux":
+			{
+				"command": "clear && time make config=debug_x64 fcompress -j12",
+				"problemMatcher": "$gcc",
+			},
+			"windows":
+			{
+				"command": "cls && msbuild",
+				"args":
+				[
+					"/m:12",
+					"${workspaceRoot}/DriverSyndicate.sln",
+					"/p:Configuration=Debug|x64",
+					"/t:utils",
+				],
+				"problemMatcher": "$msCompile",
+			},
+			"group":
+			{
+				"kind": "build",
+			},
+		},
+		{
+			"label": "Build fcompress (Release|x86)",
+			"type": "shell",
+			"linux":
+			{
+				"command": "clear && time make config=release_x86 fcompress -j12",
+				"problemMatcher": "$gcc",
+			},
+			"windows":
+			{
+				"command": "cls && msbuild",
+				"args":
+				[
+					"/m:12",
+					"${workspaceRoot}/DriverSyndicate.sln",
+					"/p:Configuration=Release|x86",
+					"/t:utils",
+				],
+				"problemMatcher": "$msCompile",
+			},
+			"group":
+			{
+				"kind": "build",
+			},
+		},
+		{
+			"label": "Build fcompress (Release|x64)",
+			"type": "shell",
+			"linux":
+			{
+				"command": "clear && time make config=release_x64 fcompress -j12",
+				"problemMatcher": "$gcc",
+			},
+			"windows":
+			{
+				"command": "cls && msbuild",
+				"args":
+				[
+					"/m:12",
+					"${workspaceRoot}/DriverSyndicate.sln",
+					"/p:Configuration=Release|x64",
+					"/t:utils",
+				],
+				"problemMatcher": "$msCompile",
+			},
+			"group":
+			{
+				"kind": "build",
+			},
+		},
+		{
+			"label": "Build fcompress (Profile|x86)",
+			"type": "shell",
+			"linux":
+			{
+				"command": "clear && time make config=profile_x86 fcompress -j12",
+				"problemMatcher": "$gcc",
+			},
+			"windows":
+			{
+				"command": "cls && msbuild",
+				"args":
+				[
+					"/m:12",
+					"${workspaceRoot}/DriverSyndicate.sln",
+					"/p:Configuration=Profile|x86",
+					"/t:utils",
+				],
+				"problemMatcher": "$msCompile",
+			},
+			"group":
+			{
+				"kind": "build",
+			},
+		},
+		{
+			"label": "Build fcompress (Profile|x64)",
+			"type": "shell",
+			"linux":
+			{
+				"command": "clear && time make config=profile_x64 fcompress -j12",
+				"problemMatcher": "$gcc",
+			},
+			"windows":
+			{
+				"command": "cls && msbuild",
+				"args":
+				[
+					"/m:12",
+					"${workspaceRoot}/DriverSyndicate.sln",
+					"/p:Configuration=Profile|x64",
+					"/t:utils",
+				],
+				"problemMatcher": "$msCompile",
+			},
+			"group":
+			{
+				"kind": "build",
+			},
+		},
+		{
+			"label": "Build fcompress (Retail|x86)",
+			"type": "shell",
+			"linux":
+			{
+				"command": "clear && time make config=retail_x86 fcompress -j12",
+				"problemMatcher": "$gcc",
+			},
+			"windows":
+			{
+				"command": "cls && msbuild",
+				"args":
+				[
+					"/m:12",
+					"${workspaceRoot}/DriverSyndicate.sln",
+					"/p:Configuration=Retail|x86",
+					"/t:utils",
+				],
+				"problemMatcher": "$msCompile",
+			},
+			"group":
+			{
+				"kind": "build",
+			},
+		},
+		{
+			"label": "Build fcompress (Retail|x64)",
+			"type": "shell",
+			"linux":
+			{
+				"command": "clear && time make config=retail_x64 fcompress -j12",
+				"problemMatcher": "$gcc",
+			},
+			"windows":
+			{
+				"command": "cls && msbuild",
+				"args":
+				[
+					"/m:12",
+					"${workspaceRoot}/DriverSyndicate.sln",
+					"/p:Configuration=Retail|x64",
+					"/t:utils",
+				],
+				"problemMatcher": "$msCompile",
+			},
+			"group":
+			{
+				"kind": "build",
+			},
+		},
+		{
+			"label": "Build egfca (Debug|x86)",
+			"type": "shell",
+			"linux":
+			{
+				"command": "clear && time make config=debug_x86 egfca -j12",
+				"problemMatcher": "$gcc",
+			},
+			"windows":
+			{
+				"command": "cls && msbuild",
+				"args":
+				[
+					"/m:12",
+					"${workspaceRoot}/DriverSyndicate.sln",
+					"/p:Configuration=Debug|x86",
+					"/t:utils",
+				],
+				"problemMatcher": "$msCompile",
+			},
+			"group":
+			{
+				"kind": "build",
+			},
+		},
+		{
+			"label": "Build egfca (Debug|x64)",
+			"type": "shell",
+			"linux":
+			{
+				"command": "clear && time make config=debug_x64 egfca -j12",
+				"problemMatcher": "$gcc",
+			},
+			"windows":
+			{
+				"command": "cls && msbuild",
+				"args":
+				[
+					"/m:12",
+					"${workspaceRoot}/DriverSyndicate.sln",
+					"/p:Configuration=Debug|x64",
+					"/t:utils",
+				],
+				"problemMatcher": "$msCompile",
+			},
+			"group":
+			{
+				"kind": "build",
+			},
+		},
+		{
+			"label": "Build egfca (Release|x86)",
+			"type": "shell",
+			"linux":
+			{
+				"command": "clear && time make config=release_x86 egfca -j12",
+				"problemMatcher": "$gcc",
+			},
+			"windows":
+			{
+				"command": "cls && msbuild",
+				"args":
+				[
+					"/m:12",
+					"${workspaceRoot}/DriverSyndicate.sln",
+					"/p:Configuration=Release|x86",
+					"/t:utils",
+				],
+				"problemMatcher": "$msCompile",
+			},
+			"group":
+			{
+				"kind": "build",
+			},
+		},
+		{
+			"label": "Build egfca (Release|x64)",
+			"type": "shell",
+			"linux":
+			{
+				"command": "clear && time make config=release_x64 egfca -j12",
+				"problemMatcher": "$gcc",
+			},
+			"windows":
+			{
+				"command": "cls && msbuild",
+				"args":
+				[
+					"/m:12",
+					"${workspaceRoot}/DriverSyndicate.sln",
+					"/p:Configuration=Release|x64",
+					"/t:utils",
+				],
+				"problemMatcher": "$msCompile",
+			},
+			"group":
+			{
+				"kind": "build",
+			},
+		},
+		{
+			"label": "Build egfca (Profile|x86)",
+			"type": "shell",
+			"linux":
+			{
+				"command": "clear && time make config=profile_x86 egfca -j12",
+				"problemMatcher": "$gcc",
+			},
+			"windows":
+			{
+				"command": "cls && msbuild",
+				"args":
+				[
+					"/m:12",
+					"${workspaceRoot}/DriverSyndicate.sln",
+					"/p:Configuration=Profile|x86",
+					"/t:utils",
+				],
+				"problemMatcher": "$msCompile",
+			},
+			"group":
+			{
+				"kind": "build",
+			},
+		},
+		{
+			"label": "Build egfca (Profile|x64)",
+			"type": "shell",
+			"linux":
+			{
+				"command": "clear && time make config=profile_x64 egfca -j12",
+				"problemMatcher": "$gcc",
+			},
+			"windows":
+			{
+				"command": "cls && msbuild",
+				"args":
+				[
+					"/m:12",
+					"${workspaceRoot}/DriverSyndicate.sln",
+					"/p:Configuration=Profile|x64",
+					"/t:utils",
+				],
+				"problemMatcher": "$msCompile",
+			},
+			"group":
+			{
+				"kind": "build",
+			},
+		},
+		{
+			"label": "Build egfca (Retail|x86)",
+			"type": "shell",
+			"linux":
+			{
+				"command": "clear && time make config=retail_x86 egfca -j12",
+				"problemMatcher": "$gcc",
+			},
+			"windows":
+			{
+				"command": "cls && msbuild",
+				"args":
+				[
+					"/m:12",
+					"${workspaceRoot}/DriverSyndicate.sln",
+					"/p:Configuration=Retail|x86",
+					"/t:utils",
+				],
+				"problemMatcher": "$msCompile",
+			},
+			"group":
+			{
+				"kind": "build",
+			},
+		},
+		{
+			"label": "Build egfca (Retail|x64)",
+			"type": "shell",
+			"linux":
+			{
+				"command": "clear && time make config=retail_x64 egfca -j12",
+				"problemMatcher": "$gcc",
+			},
+			"windows":
+			{
+				"command": "cls && msbuild",
+				"args":
+				[
+					"/m:12",
+					"${workspaceRoot}/DriverSyndicate.sln",
+					"/p:Configuration=Retail|x64",
+					"/t:utils",
+				],
+				"problemMatcher": "$msCompile",
+			},
+			"group":
+			{
+				"kind": "build",
+			},
+		},
+		{
+			"label": "Build animca (Debug|x86)",
+			"type": "shell",
+			"linux":
+			{
+				"command": "clear && time make config=debug_x86 animca -j12",
+				"problemMatcher": "$gcc",
+			},
+			"windows":
+			{
+				"command": "cls && msbuild",
+				"args":
+				[
+					"/m:12",
+					"${workspaceRoot}/DriverSyndicate.sln",
+					"/p:Configuration=Debug|x86",
+					"/t:utils",
+				],
+				"problemMatcher": "$msCompile",
+			},
+			"group":
+			{
+				"kind": "build",
+			},
+		},
+		{
+			"label": "Build animca (Debug|x64)",
+			"type": "shell",
+			"linux":
+			{
+				"command": "clear && time make config=debug_x64 animca -j12",
+				"problemMatcher": "$gcc",
+			},
+			"windows":
+			{
+				"command": "cls && msbuild",
+				"args":
+				[
+					"/m:12",
+					"${workspaceRoot}/DriverSyndicate.sln",
+					"/p:Configuration=Debug|x64",
+					"/t:utils",
+				],
+				"problemMatcher": "$msCompile",
+			},
+			"group":
+			{
+				"kind": "build",
+			},
+		},
+		{
+			"label": "Build animca (Release|x86)",
+			"type": "shell",
+			"linux":
+			{
+				"command": "clear && time make config=release_x86 animca -j12",
+				"problemMatcher": "$gcc",
+			},
+			"windows":
+			{
+				"command": "cls && msbuild",
+				"args":
+				[
+					"/m:12",
+					"${workspaceRoot}/DriverSyndicate.sln",
+					"/p:Configuration=Release|x86",
+					"/t:utils",
+				],
+				"problemMatcher": "$msCompile",
+			},
+			"group":
+			{
+				"kind": "build",
+			},
+		},
+		{
+			"label": "Build animca (Release|x64)",
+			"type": "shell",
+			"linux":
+			{
+				"command": "clear && time make config=release_x64 animca -j12",
+				"problemMatcher": "$gcc",
+			},
+			"windows":
+			{
+				"command": "cls && msbuild",
+				"args":
+				[
+					"/m:12",
+					"${workspaceRoot}/DriverSyndicate.sln",
+					"/p:Configuration=Release|x64",
+					"/t:utils",
+				],
+				"problemMatcher": "$msCompile",
+			},
+			"group":
+			{
+				"kind": "build",
+			},
+		},
+		{
+			"label": "Build animca (Profile|x86)",
+			"type": "shell",
+			"linux":
+			{
+				"command": "clear && time make config=profile_x86 animca -j12",
+				"problemMatcher": "$gcc",
+			},
+			"windows":
+			{
+				"command": "cls && msbuild",
+				"args":
+				[
+					"/m:12",
+					"${workspaceRoot}/DriverSyndicate.sln",
+					"/p:Configuration=Profile|x86",
+					"/t:utils",
+				],
+				"problemMatcher": "$msCompile",
+			},
+			"group":
+			{
+				"kind": "build",
+			},
+		},
+		{
+			"label": "Build animca (Profile|x64)",
+			"type": "shell",
+			"linux":
+			{
+				"command": "clear && time make config=profile_x64 animca -j12",
+				"problemMatcher": "$gcc",
+			},
+			"windows":
+			{
+				"command": "cls && msbuild",
+				"args":
+				[
+					"/m:12",
+					"${workspaceRoot}/DriverSyndicate.sln",
+					"/p:Configuration=Profile|x64",
+					"/t:utils",
+				],
+				"problemMatcher": "$msCompile",
+			},
+			"group":
+			{
+				"kind": "build",
+			},
+		},
+		{
+			"label": "Build animca (Retail|x86)",
+			"type": "shell",
+			"linux":
+			{
+				"command": "clear && time make config=retail_x86 animca -j12",
+				"problemMatcher": "$gcc",
+			},
+			"windows":
+			{
+				"command": "cls && msbuild",
+				"args":
+				[
+					"/m:12",
+					"${workspaceRoot}/DriverSyndicate.sln",
+					"/p:Configuration=Retail|x86",
+					"/t:utils",
+				],
+				"problemMatcher": "$msCompile",
+			},
+			"group":
+			{
+				"kind": "build",
+			},
+		},
+		{
+			"label": "Build animca (Retail|x64)",
+			"type": "shell",
+			"linux":
+			{
+				"command": "clear && time make config=retail_x64 animca -j12",
+				"problemMatcher": "$gcc",
+			},
+			"windows":
+			{
+				"command": "cls && msbuild",
+				"args":
+				[
+					"/m:12",
+					"${workspaceRoot}/DriverSyndicate.sln",
+					"/p:Configuration=Retail|x64",
+					"/t:utils",
+				],
+				"problemMatcher": "$msCompile",
+			},
+			"group":
+			{
+				"kind": "build",
+			},
+		},
+		{
+			"label": "Build atlasgen (Debug|x86)",
+			"type": "shell",
+			"linux":
+			{
+				"command": "clear && time make config=debug_x86 atlasgen -j12",
+				"problemMatcher": "$gcc",
+			},
+			"windows":
+			{
+				"command": "cls && msbuild",
+				"args":
+				[
+					"/m:12",
+					"${workspaceRoot}/DriverSyndicate.sln",
+					"/p:Configuration=Debug|x86",
+					"/t:utils",
+				],
+				"problemMatcher": "$msCompile",
+			},
+			"group":
+			{
+				"kind": "build",
+			},
+		},
+		{
+			"label": "Build atlasgen (Debug|x64)",
+			"type": "shell",
+			"linux":
+			{
+				"command": "clear && time make config=debug_x64 atlasgen -j12",
+				"problemMatcher": "$gcc",
+			},
+			"windows":
+			{
+				"command": "cls && msbuild",
+				"args":
+				[
+					"/m:12",
+					"${workspaceRoot}/DriverSyndicate.sln",
+					"/p:Configuration=Debug|x64",
+					"/t:utils",
+				],
+				"problemMatcher": "$msCompile",
+			},
+			"group":
+			{
+				"kind": "build",
+			},
+		},
+		{
+			"label": "Build atlasgen (Release|x86)",
+			"type": "shell",
+			"linux":
+			{
+				"command": "clear && time make config=release_x86 atlasgen -j12",
+				"problemMatcher": "$gcc",
+			},
+			"windows":
+			{
+				"command": "cls && msbuild",
+				"args":
+				[
+					"/m:12",
+					"${workspaceRoot}/DriverSyndicate.sln",
+					"/p:Configuration=Release|x86",
+					"/t:utils",
+				],
+				"problemMatcher": "$msCompile",
+			},
+			"group":
+			{
+				"kind": "build",
+			},
+		},
+		{
+			"label": "Build atlasgen (Release|x64)",
+			"type": "shell",
+			"linux":
+			{
+				"command": "clear && time make config=release_x64 atlasgen -j12",
+				"problemMatcher": "$gcc",
+			},
+			"windows":
+			{
+				"command": "cls && msbuild",
+				"args":
+				[
+					"/m:12",
+					"${workspaceRoot}/DriverSyndicate.sln",
+					"/p:Configuration=Release|x64",
+					"/t:utils",
+				],
+				"problemMatcher": "$msCompile",
+			},
+			"group":
+			{
+				"kind": "build",
+			},
+		},
+		{
+			"label": "Build atlasgen (Profile|x86)",
+			"type": "shell",
+			"linux":
+			{
+				"command": "clear && time make config=profile_x86 atlasgen -j12",
+				"problemMatcher": "$gcc",
+			},
+			"windows":
+			{
+				"command": "cls && msbuild",
+				"args":
+				[
+					"/m:12",
+					"${workspaceRoot}/DriverSyndicate.sln",
+					"/p:Configuration=Profile|x86",
+					"/t:utils",
+				],
+				"problemMatcher": "$msCompile",
+			},
+			"group":
+			{
+				"kind": "build",
+			},
+		},
+		{
+			"label": "Build atlasgen (Profile|x64)",
+			"type": "shell",
+			"linux":
+			{
+				"command": "clear && time make config=profile_x64 atlasgen -j12",
+				"problemMatcher": "$gcc",
+			},
+			"windows":
+			{
+				"command": "cls && msbuild",
+				"args":
+				[
+					"/m:12",
+					"${workspaceRoot}/DriverSyndicate.sln",
+					"/p:Configuration=Profile|x64",
+					"/t:utils",
+				],
+				"problemMatcher": "$msCompile",
+			},
+			"group":
+			{
+				"kind": "build",
+			},
+		},
+		{
+			"label": "Build atlasgen (Retail|x86)",
+			"type": "shell",
+			"linux":
+			{
+				"command": "clear && time make config=retail_x86 atlasgen -j12",
+				"problemMatcher": "$gcc",
+			},
+			"windows":
+			{
+				"command": "cls && msbuild",
+				"args":
+				[
+					"/m:12",
+					"${workspaceRoot}/DriverSyndicate.sln",
+					"/p:Configuration=Retail|x86",
+					"/t:utils",
+				],
+				"problemMatcher": "$msCompile",
+			},
+			"group":
+			{
+				"kind": "build",
+			},
+		},
+		{
+			"label": "Build atlasgen (Retail|x64)",
+			"type": "shell",
+			"linux":
+			{
+				"command": "clear && time make config=retail_x64 atlasgen -j12",
+				"problemMatcher": "$gcc",
+			},
+			"windows":
+			{
+				"command": "cls && msbuild",
+				"args":
+				[
+					"/m:12",
+					"${workspaceRoot}/DriverSyndicate.sln",
+					"/p:Configuration=Retail|x64",
+					"/t:utils",
+				],
+				"problemMatcher": "$msCompile",
+			},
+			"group":
+			{
+				"kind": "build",
+			},
+		},
+		{
+			"label": "Build texcooker (Debug|x86)",
+			"type": "shell",
+			"linux":
+			{
+				"command": "clear && time make config=debug_x86 texcooker -j12",
+				"problemMatcher": "$gcc",
+			},
+			"windows":
+			{
+				"command": "cls && msbuild",
+				"args":
+				[
+					"/m:12",
+					"${workspaceRoot}/DriverSyndicate.sln",
+					"/p:Configuration=Debug|x86",
+					"/t:utils",
+				],
+				"problemMatcher": "$msCompile",
+			},
+			"group":
+			{
+				"kind": "build",
+			},
+		},
+		{
+			"label": "Build texcooker (Debug|x64)",
+			"type": "shell",
+			"linux":
+			{
+				"command": "clear && time make config=debug_x64 texcooker -j12",
+				"problemMatcher": "$gcc",
+			},
+			"windows":
+			{
+				"command": "cls && msbuild",
+				"args":
+				[
+					"/m:12",
+					"${workspaceRoot}/DriverSyndicate.sln",
+					"/p:Configuration=Debug|x64",
+					"/t:utils",
+				],
+				"problemMatcher": "$msCompile",
+			},
+			"group":
+			{
+				"kind": "build",
+			},
+		},
+		{
+			"label": "Build texcooker (Release|x86)",
+			"type": "shell",
+			"linux":
+			{
+				"command": "clear && time make config=release_x86 texcooker -j12",
+				"problemMatcher": "$gcc",
+			},
+			"windows":
+			{
+				"command": "cls && msbuild",
+				"args":
+				[
+					"/m:12",
+					"${workspaceRoot}/DriverSyndicate.sln",
+					"/p:Configuration=Release|x86",
+					"/t:utils",
+				],
+				"problemMatcher": "$msCompile",
+			},
+			"group":
+			{
+				"kind": "build",
+			},
+		},
+		{
+			"label": "Build texcooker (Release|x64)",
+			"type": "shell",
+			"linux":
+			{
+				"command": "clear && time make config=release_x64 texcooker -j12",
+				"problemMatcher": "$gcc",
+			},
+			"windows":
+			{
+				"command": "cls && msbuild",
+				"args":
+				[
+					"/m:12",
+					"${workspaceRoot}/DriverSyndicate.sln",
+					"/p:Configuration=Release|x64",
+					"/t:utils",
+				],
+				"problemMatcher": "$msCompile",
+			},
+			"group":
+			{
+				"kind": "build",
+			},
+		},
+		{
+			"label": "Build texcooker (Profile|x86)",
+			"type": "shell",
+			"linux":
+			{
+				"command": "clear && time make config=profile_x86 texcooker -j12",
+				"problemMatcher": "$gcc",
+			},
+			"windows":
+			{
+				"command": "cls && msbuild",
+				"args":
+				[
+					"/m:12",
+					"${workspaceRoot}/DriverSyndicate.sln",
+					"/p:Configuration=Profile|x86",
+					"/t:utils",
+				],
+				"problemMatcher": "$msCompile",
+			},
+			"group":
+			{
+				"kind": "build",
+			},
+		},
+		{
+			"label": "Build texcooker (Profile|x64)",
+			"type": "shell",
+			"linux":
+			{
+				"command": "clear && time make config=profile_x64 texcooker -j12",
+				"problemMatcher": "$gcc",
+			},
+			"windows":
+			{
+				"command": "cls && msbuild",
+				"args":
+				[
+					"/m:12",
+					"${workspaceRoot}/DriverSyndicate.sln",
+					"/p:Configuration=Profile|x64",
+					"/t:utils",
+				],
+				"problemMatcher": "$msCompile",
+			},
+			"group":
+			{
+				"kind": "build",
+			},
+		},
+		{
+			"label": "Build texcooker (Retail|x86)",
+			"type": "shell",
+			"linux":
+			{
+				"command": "clear && time make config=retail_x86 texcooker -j12",
+				"problemMatcher": "$gcc",
+			},
+			"windows":
+			{
+				"command": "cls && msbuild",
+				"args":
+				[
+					"/m:12",
+					"${workspaceRoot}/DriverSyndicate.sln",
+					"/p:Configuration=Retail|x86",
+					"/t:utils",
+				],
+				"problemMatcher": "$msCompile",
+			},
+			"group":
+			{
+				"kind": "build",
+			},
+		},
+		{
+			"label": "Build texcooker (Retail|x64)",
+			"type": "shell",
+			"linux":
+			{
+				"command": "clear && time make config=retail_x64 texcooker -j12",
+				"problemMatcher": "$gcc",
+			},
+			"windows":
+			{
+				"command": "cls && msbuild",
+				"args":
+				[
+					"/m:12",
+					"${workspaceRoot}/DriverSyndicate.sln",
+					"/p:Configuration=Retail|x64",
+					"/t:utils",
+				],
+				"problemMatcher": "$msCompile",
+			},
+			"group":
+			{
+				"kind": "build",
+			},
+		},
+		{
 			"label": "Build DriversGame (Debug|x86)",
 			"type": "shell",
 			"linux":

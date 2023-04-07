@@ -7,7 +7,8 @@ require ".premake_modules/wxwidgets"
 require ".premake_modules/vscode"
 
 IS_ANDROID = (_ACTION == "androidndk")
-ENABLE_TOOLS = (--[[os.target() == "linux" or]] os.target() == "windows") and not IS_ANDROID
+ENABLE_TOOLS = (os.target() == "linux" or os.target() == "windows") and not IS_ANDROID
+ENABLE_GUI_TOOLS = (--[[os.target() == "linux" or]] os.target() == "windows") and not IS_ANDROID
 WORKSPACE_NAME = (WORKSPACE_NAME or "Equilibrium2")
 
 -- you can redefine dependencies

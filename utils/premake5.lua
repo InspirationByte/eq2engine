@@ -79,6 +79,8 @@ project "texcooker"
 		"texcooker/*.h"
 	}
 
+if ENABLE_GUI_TOOLS then
+	
 -- Equilibrium Graphics File manager (EGFMan)
 project "egfman"
     kind "WindowedApp"
@@ -119,3 +121,4 @@ project "soundsystem_test"
 			"/SAFESEH:NO", -- Image Has Safe Exception Handers: No. Because of openal-soft
 		}
 		
+end
