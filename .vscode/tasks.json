@@ -3807,6 +3807,206 @@
 			},
 		},
 		{
+			"label": "Build dpkLib (Debug|x86)",
+			"type": "shell",
+			"linux":
+			{
+				"command": "clear && time make config=debug_x86 dpkLib -j12",
+				"problemMatcher": "$gcc",
+			},
+			"windows":
+			{
+				"command": "cls && msbuild",
+				"args":
+				[
+					"/m:12",
+					"${workspaceRoot}/DriverSyndicate.sln",
+					"/p:Configuration=Debug|x86",
+					"/t:.",
+				],
+				"problemMatcher": "$msCompile",
+			},
+			"group":
+			{
+				"kind": "build",
+			},
+		},
+		{
+			"label": "Build dpkLib (Debug|x64)",
+			"type": "shell",
+			"linux":
+			{
+				"command": "clear && time make config=debug_x64 dpkLib -j12",
+				"problemMatcher": "$gcc",
+			},
+			"windows":
+			{
+				"command": "cls && msbuild",
+				"args":
+				[
+					"/m:12",
+					"${workspaceRoot}/DriverSyndicate.sln",
+					"/p:Configuration=Debug|x64",
+					"/t:.",
+				],
+				"problemMatcher": "$msCompile",
+			},
+			"group":
+			{
+				"kind": "build",
+			},
+		},
+		{
+			"label": "Build dpkLib (Release|x86)",
+			"type": "shell",
+			"linux":
+			{
+				"command": "clear && time make config=release_x86 dpkLib -j12",
+				"problemMatcher": "$gcc",
+			},
+			"windows":
+			{
+				"command": "cls && msbuild",
+				"args":
+				[
+					"/m:12",
+					"${workspaceRoot}/DriverSyndicate.sln",
+					"/p:Configuration=Release|x86",
+					"/t:.",
+				],
+				"problemMatcher": "$msCompile",
+			},
+			"group":
+			{
+				"kind": "build",
+			},
+		},
+		{
+			"label": "Build dpkLib (Release|x64)",
+			"type": "shell",
+			"linux":
+			{
+				"command": "clear && time make config=release_x64 dpkLib -j12",
+				"problemMatcher": "$gcc",
+			},
+			"windows":
+			{
+				"command": "cls && msbuild",
+				"args":
+				[
+					"/m:12",
+					"${workspaceRoot}/DriverSyndicate.sln",
+					"/p:Configuration=Release|x64",
+					"/t:.",
+				],
+				"problemMatcher": "$msCompile",
+			},
+			"group":
+			{
+				"kind": "build",
+			},
+		},
+		{
+			"label": "Build dpkLib (Profile|x86)",
+			"type": "shell",
+			"linux":
+			{
+				"command": "clear && time make config=profile_x86 dpkLib -j12",
+				"problemMatcher": "$gcc",
+			},
+			"windows":
+			{
+				"command": "cls && msbuild",
+				"args":
+				[
+					"/m:12",
+					"${workspaceRoot}/DriverSyndicate.sln",
+					"/p:Configuration=Profile|x86",
+					"/t:.",
+				],
+				"problemMatcher": "$msCompile",
+			},
+			"group":
+			{
+				"kind": "build",
+			},
+		},
+		{
+			"label": "Build dpkLib (Profile|x64)",
+			"type": "shell",
+			"linux":
+			{
+				"command": "clear && time make config=profile_x64 dpkLib -j12",
+				"problemMatcher": "$gcc",
+			},
+			"windows":
+			{
+				"command": "cls && msbuild",
+				"args":
+				[
+					"/m:12",
+					"${workspaceRoot}/DriverSyndicate.sln",
+					"/p:Configuration=Profile|x64",
+					"/t:.",
+				],
+				"problemMatcher": "$msCompile",
+			},
+			"group":
+			{
+				"kind": "build",
+			},
+		},
+		{
+			"label": "Build dpkLib (Retail|x86)",
+			"type": "shell",
+			"linux":
+			{
+				"command": "clear && time make config=retail_x86 dpkLib -j12",
+				"problemMatcher": "$gcc",
+			},
+			"windows":
+			{
+				"command": "cls && msbuild",
+				"args":
+				[
+					"/m:12",
+					"${workspaceRoot}/DriverSyndicate.sln",
+					"/p:Configuration=Retail|x86",
+					"/t:.",
+				],
+				"problemMatcher": "$msCompile",
+			},
+			"group":
+			{
+				"kind": "build",
+			},
+		},
+		{
+			"label": "Build dpkLib (Retail|x64)",
+			"type": "shell",
+			"linux":
+			{
+				"command": "clear && time make config=retail_x64 dpkLib -j12",
+				"problemMatcher": "$gcc",
+			},
+			"windows":
+			{
+				"command": "cls && msbuild",
+				"args":
+				[
+					"/m:12",
+					"${workspaceRoot}/DriverSyndicate.sln",
+					"/p:Configuration=Retail|x64",
+					"/t:.",
+				],
+				"problemMatcher": "$msCompile",
+			},
+			"group":
+			{
+				"kind": "build",
+			},
+		},
+		{
 			"label": "Build sysLib (Debug|x86)",
 			"type": "shell",
 			"linux":
@@ -8061,7 +8261,7 @@
 			"type": "shell",
 			"linux":
 			{
-				"command": "clear && time make config=release_x86 DriversGame -j12",
+				"command": "clear && time make config=release_x86 -j12",
 				"problemMatcher": "$gcc",
 			},
 			"windows":

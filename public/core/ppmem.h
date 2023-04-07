@@ -33,7 +33,7 @@ IEXPORTS void	PPFree( void* ptr );
 
 #endif // PPMEM_DISABLED
 
-#ifdef __clang__
+#if defined(__clang__)
 #define PPNOEXCEPT noexcept
 #else
 #define PPNOEXCEPT

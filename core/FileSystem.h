@@ -7,7 +7,7 @@
 
 #pragma once
 #include "core/IFileSystem.h"
-#include "OSFile.h"
+#include "core/platform/OSFile.h"
 
 //------------------------------------------------------------------------------
 // File stream

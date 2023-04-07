@@ -67,11 +67,12 @@ protected:
 		short flags;
 	};
 
-	void*					m_blockData{ nullptr };
-	void*					m_tmpDecompressData{ nullptr };
-
 	dpkfileinfo_t			m_info;
 	IceKey					m_ice;
+
+	CDPKFileReader*			m_host{ nullptr };
+	void*					m_blockData{ nullptr };
+	void*					m_tmpDecompressData{ nullptr };
 
 	Array<dpkblock_info_t>	m_blockInfo{ PP_SL };
 	int						m_curBlockIdx;
@@ -79,7 +80,7 @@ protected:
 	COSFile					m_osFile;
 	int						m_curPos;
 
-	CDPKFileReader*			m_host;
+
 };
 
 //------------------------------------------------------------------------------------------

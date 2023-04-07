@@ -12,12 +12,13 @@
 #include "core/IDkCore.h"
 #include "core/ICommandLine.h"
 #include "core/ILocalize.h"
+#include "core/platform/OSFindData.h"
+
 #include "utils/KeyValues.h"
 #include "FileSystem.h"
-#include "OSFindData.h"
 
-#include "DPKFileReader.h"
-#include "ZipFileReader.h"
+#include "dpk/DPKFileReader.h"
+#include "dpk/ZipFileReader.h"
 
 #ifdef _WIN32
 #include <direct.h>	// mkdir()

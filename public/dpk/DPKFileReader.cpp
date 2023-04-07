@@ -8,52 +8,11 @@
 #include <lz4.h>
 
 #include "core/core_common.h"
-#include "FileSystem.h"
+#include "core/platform/OSFile.h"
+#include "core/IFileSystem.h"
 #include "DPKFileReader.h"
 
 static Threading::CEqMutex s_dpkMutex;
-
-// Fixes slashes in the directory name
-static void DPK_RebuildFilePath(const char* str, char* newstr)
-{
-	char* pnewstr = newstr;
-	char cprev = 0;
-
-	while (*str)
-	{
-		while (cprev == *str && (cprev == CORRECT_PATH_SEPARATOR || cprev == INCORRECT_PATH_SEPARATOR))
-			str++;
-
-		*pnewstr = *str;
-		pnewstr++;
-
-		cprev = *str;
-		str++;
-	}
-
-	*pnewstr = 0;
-}
-
-void DPK_FixSlashes(EqString& str)
-{
-	char* tempStr = (char*)stackalloc(str.Length() + 1);
-	memset(tempStr, 0, str.Length());
-
-	DPK_RebuildFilePath(str.ToCString(), tempStr);
-
-	char* ptr = tempStr;
-	while (*ptr)
-	{
-		if (*ptr == '\\')
-			*ptr = '/';
-
-		ptr++;
-	}
-
-	str.Assign(tempStr);
-}
-
-//-----------------------------------------------------------------------------------------------------------------------
 
 CDPKFileStream::CDPKFileStream(const dpkfileinfo_t& info, COSFile&& osFile)
 	: m_ice(0), m_osFile(std::move(osFile))
@@ -348,7 +307,7 @@ bool CDPKFileReader::InitPackage(const char *filename, const char* mountPath /*=
 	SAFE_DELETE_ARRAY(m_dpkFiles);
 
     m_packageName = filename;
-	m_packagePath = ((CFileSystem*)g_fileSystem.GetInstancePtr())->GetAbsolutePath(SP_ROOT, filename);
+	m_packagePath = g_fileSystem->GetAbsolutePath(SP_ROOT, filename);
 
 	COSFile osFile;
 	if(!osFile.Open(m_packagePath, COSFile::OPEN_EXIST | COSFile::READ))
