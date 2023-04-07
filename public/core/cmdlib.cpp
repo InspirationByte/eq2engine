@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright ï¿½ Inspiration Byte
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
 // Description: Base debug interface for console programs handler
@@ -106,15 +106,61 @@ void fnConDebugSpew(SpewType_t type,const char* text)
 	LeaveCriticalSection( &g_SpewCS );
 }
 
+
+#else
+
+#include <stdio.h>
+#include <stdbool.h>
+#include <pthread.h>
+
+static const char* g_InitialColor = "\033[0m";
+static const char* g_NormColor = "\033[0;37m";
+static const char* g_WarningColor = "\033[1;33m";
+static const char* g_SuccessColor = "\033[1;32m";
+static const char* g_ErrorColor = "\033[1;31m";
+static const char* g_InfoColor = "\033[1;35m";
+
+pthread_mutex_t g_SpewMutex = PTHREAD_MUTEX_INITIALIZER;
+bool g_bSpewMutexInitted = false;
+
+void GetInitialColors() 
+{
+}
+
+void fnConDebugSpew(SpewType_t type, const char *text)
+{
+    // Hopefully two threads won't call this simultaneously right at the start!
+    if (!g_bSpewMutexInitted) {
+        pthread_mutex_init(&g_SpewMutex, NULL);
+        g_bSpewMutexInitted = true;
+    }
+
+    const char *color;
+    pthread_mutex_lock(&g_SpewMutex);
+    {
+        if (type == SPEW_NORM) {
+            color = g_NormColor;
+        } else if (type == SPEW_WARNING) {
+            color = g_WarningColor;
+        } else if (type == SPEW_SUCCESS) {
+            color = g_SuccessColor;
+        } else if (type == SPEW_ERROR) {
+            color = g_ErrorColor;
+        } else if (type == SPEW_INFO) {
+            color = g_InfoColor;
+        } else {
+            color = g_InitialColor;
+        }
+
+        printf("%s%s%s", color, text, g_InitialColor);
+    }
+    pthread_mutex_unlock(&g_SpewMutex);
+}
+
+#endif
+
 void Install_SpewFunction()
 {
 	SetSpewFunction(fnConDebugSpew);
 	GetInitialColors();
 }
-#else
-
-void Install_SpewFunction()
-{
-}
-
-#endif
