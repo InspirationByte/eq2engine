@@ -60,11 +60,13 @@ public:
 	void						OnSampleDeleted(ISoundSource* sample);
 
 	// finds the effect. May return EFFECT_ID_NONE
-	audioEffectId_t					FindEffect(const char* name) const;
+	audioEffectId_t				FindEffect(const char* name) const;
 
 	// sets the new effect
 	void						SetEffect(int slot, audioEffectId_t effect);
 	int							GetEffectSlotCount() const;
+
+	void						UpdateDeviceHRTF();
 
 private:
 	struct sndEffect_t
@@ -83,8 +85,12 @@ private:
 		int			updateFlags{ 0 }; // IAudioSource::Update enum
 	};
 
+	using ContextParamsList = FixedArray<int, 32>;
+
 	bool			CreateALEffect(const char* pszName, KVSection* pSection, sndEffect_t& effect);
 	void			SuspendSourcesWithSample(ISoundSource* sample);
+
+	void			GetContextParams(ContextParamsList& paramsList) const;
 
 	bool			InitContext();
 	void			InitEffects();

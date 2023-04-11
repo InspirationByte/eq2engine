@@ -173,8 +173,16 @@ static LPALBUFFERCALLBACKSOFT alBufferCallbackSOFT;
 
 //---------------------------------------------------------
 
+void snd_hrtf_changed(ConVar* pVar, char const* pszOldValue)
+{
+	if(!g_audioSystem)
+		return;
+
+	((CEqAudioSystemAL*)g_audioSystem)->UpdateDeviceHRTF();
+}
+
 DECLARE_CVAR(snd_device, "0", nullptr, CV_ARCHIVE);
-DECLARE_CVAR(snd_hrtf, "0", nullptr, CV_ARCHIVE);
+DECLARE_CVAR_CHANGE(snd_hrtf, "0", snd_hrtf_changed, nullptr, CV_ARCHIVE);
 DECLARE_CVAR(snd_debug, "0", nullptr, CV_CHEAT);
 
 //---------------------------------------------------------
@@ -227,23 +235,20 @@ bool CEqAudioSystemAL::InitContext()
 		return false;
 	}
 
-	int hrtfIndex = -1;
 	if (alcIsExtensionPresent(m_dev, "ALC_SOFT_HRTF"))
 	{
 		ALC_LOAD_PROC(m_dev, LPALCGETSTRINGISOFT, alcGetStringiSOFT);
 		ALC_LOAD_PROC(m_dev, LPALCRESETDEVICESOFT, alcResetDeviceSOFT);
 
 		DevMsg(DEVMSG_SOUND, "Enumerate HRTF modes:\n");
+
 		ALCint numHrtf;
 		alcGetIntegerv(m_dev, ALC_NUM_HRTF_SPECIFIERS_SOFT, 1, &numHrtf);
 
 		for (int i = 0; i < numHrtf; i++)
 		{
 			const ALCchar* name = alcGetStringiSOFT(m_dev, ALC_HRTF_SPECIFIER_SOFT, i);
-			DevMsg(DEVMSG_SOUND, "    %d: %s\n", i, name);
-
-			if (i == 0)
-				hrtfIndex = i;
+			DevMsg(DEVMSG_SOUND, "    %d: %s\n", i+1, name);
 		}
 	}
 	else
@@ -252,17 +257,10 @@ bool CEqAudioSystemAL::InitContext()
 	}
 
 	// configure context
-	int al_context_params[] =
-	{
-		ALC_FREQUENCY, 44100,
-		ALC_MAX_AUXILIARY_SENDS, EQSND_EFFECT_SLOTS,
-		ALC_HRTF_SOFT, snd_hrtf.GetBool(),
-		ALC_HRTF_ID_SOFT, hrtfIndex,
-		// ALC_REFRESH, 120,
-		0
-	};
+	ContextParamsList al_context_params;
+	GetContextParams(al_context_params);
 
-	m_ctx = alcCreateContext(m_dev, al_context_params);
+	m_ctx = alcCreateContext(m_dev, al_context_params.ptr());
 	if (!checkALDeviceForErrors(m_dev, "alcCreateContext"))
 		return false;
 
@@ -293,6 +291,35 @@ bool CEqAudioSystemAL::InitContext()
 
 
 	return true;
+}
+
+void CEqAudioSystemAL::GetContextParams(ContextParamsList& paramsList) const
+{
+	const int frequency[] = { ALC_FREQUENCY, 44100 };
+	const int effectSlots[] = { ALC_MAX_AUXILIARY_SENDS, EQSND_EFFECT_SLOTS };
+	const int hrtfOn[] = { 
+		ALC_HRTF_SOFT, snd_hrtf.GetBool(),
+		ALC_HRTF_ID_SOFT, snd_hrtf.GetInt()-1,
+	};
+
+	paramsList.append(frequency, elementsOf(frequency));
+	paramsList.append(effectSlots, elementsOf(effectSlots));
+	paramsList.append(hrtfOn, elementsOf(hrtfOn));
+
+	// must be always last
+	const int terminator[] = {0, 0};
+	paramsList.append(terminator, elementsOf(terminator));
+}
+
+void CEqAudioSystemAL::UpdateDeviceHRTF()
+{
+	if(!m_ctx || !alcResetDeviceSOFT)
+		return;
+
+	ContextParamsList al_context_params;
+	GetContextParams(al_context_params);
+
+	alcResetDeviceSOFT(m_dev, al_context_params.ptr());
 }
 
 // destroy AL context
@@ -898,6 +925,9 @@ void CEqAudioSourceAL::UpdateParams(const Params& params, int overrideUpdateFlag
 	{
 		const int tempValue = params.relative == true ? AL_TRUE : AL_FALSE;
 		alSourcei(thisSource, AL_SOURCE_RELATIVE, tempValue);
+
+		// temporary enable direct channels on relative sources (as spec says it will be only for non-mono sources)
+		alSourcei(thisSource, AL_DIRECT_CHANNELS_SOFT, tempValue);
 	}
 
 	const bool isStreaming = IsStreamed();
