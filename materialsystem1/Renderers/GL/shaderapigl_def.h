@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright ï¿½ Inspiration Byte
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
 // Description: Equilibrium OpenGL ShaderAPI
@@ -12,11 +12,11 @@
 #ifdef USE_GLES2
 #include <glad_es3.h>
 
-#	ifdef PLAT_ANDROID // direct link
-#	include <EGL/egl.h>
-#	else
+#ifdef PLAT_WIN
 #	include <glad_egl.h>
-#	endif // PLAT_ANDROID
+#else
+#	include <EGL/egl.h>
+#endif
 
 #else
 #	include <glad.h>

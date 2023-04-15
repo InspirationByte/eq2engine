@@ -29,7 +29,12 @@
 #include "GLWorker.h"
 #include "ShaderAPIGL.h"
 
-#include "glad_egl.h"
+#ifdef PLAT_WIN
+#	include <glad_egl.h>
+#else
+#	include <EGL/egl.h>
+#endif
+
 #include "gl_loader.h"
 
 #define EGL_USE_SDL_SURFACE 0 // defined(PLAT_ANDROID)
@@ -86,7 +91,7 @@ IShaderAPI* CGLRenderLib_EGL::GetRenderer() const
 
 bool CGLRenderLib_EGL::InitCaps()
 {
-#if !defined(PLAT_ANDROID)
+#ifdef PLAT_WIN
 	if (!gladLoaderLoadEGL(EGL_DEFAULT_DISPLAY))
 	{
 		ErrorMsg("EGL loading failed!");
@@ -122,12 +127,11 @@ bool CGLRenderLib_EGL::InitAPI(const shaderAPIParams_t& params)
 	EGLNativeDisplayType nativeDisplay = EGL_DEFAULT_DISPLAY;
 
 	ASSERT_MSG(params.windowHandle != nullptr, "you must specify window handle!");
+
 #ifdef PLAT_ANDROID
 	ASSERT(params.windowHandleType == RHI_WINDOW_HANDLE_VTABLE);
 
 	m_winFunc = *(shaderAPIWindowFuncTable_t*)params.windowHandle;
-
-	eglBindAPI(EGL_OPENGL_ES_API);
 #elif defined(PLAT_WIN)
 	ASSERT(params.windowHandleType == RHI_WINDOW_HANDLE_NATIVE_WINDOWS);
 
@@ -135,7 +139,6 @@ bool CGLRenderLib_EGL::InitAPI(const shaderAPIParams_t& params)
 	m_hwnd = (EGLNativeWindowType)params.windowHandle;
 	nativeDisplay = (EGLNativeDisplayType)GetDC((HWND)m_hwnd);
 #elif defined(PLAT_LINUX)
-
 	m_hwnd = (EGLNativeWindowType)params.windowHandle;
 	switch(params.windowHandleType)
 	{
@@ -188,6 +191,12 @@ bool CGLRenderLib_EGL::InitAPI(const shaderAPIParams_t& params)
 			return false;
 		}
 	}
+
+#ifdef USE_GLES2
+	eglBindAPI(EGL_OPENGL_ES_API);
+#else
+	eglBindAPI(EGL_OPENGL_API);
+#endif
 
 	if (!CreateSurface())
 	{
@@ -371,11 +380,6 @@ bool CGLRenderLib_EGL::CreateSurface()
 {
 	if (m_eglSurface != EGL_NO_SURFACE)
 		return true;
-
-#ifdef PLAT_ANDROID
-	// make sure API is bound
-	eglBindAPI(EGL_OPENGL_ES_API);
-#endif
 
 #if EGL_USE_SDL_SURFACE
 	m_eglSurface = (EGLSurface)m_winFunc.GetSurface();
