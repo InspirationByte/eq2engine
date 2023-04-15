@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright ï¿½ Inspiration Byte
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
 // Description: Equilibrium engine font cache
@@ -51,12 +51,12 @@ eqFontStyleInfo_t::~eqFontStyleInfo_t()
 
 CEqFontCache::CEqFontCache()
 {
-	g_eqCore->RegisterInterface(FONTCACHE_INTERFACE_VERSION, this);
+	g_eqCore->RegisterInterface(this);
 }
 
 CEqFontCache::~CEqFontCache()
 {
-	g_eqCore->UnregisterInterface(FONTCACHE_INTERFACE_VERSION);
+	g_eqCore->UnregisterInterface<CEqFontCache>();
 }
 
 bool CEqFontCache::LoadFontDescriptionFile( const char* filename )

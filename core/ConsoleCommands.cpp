@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright ï¿½ Inspiration Byte
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
 // Description: Variables factory
@@ -333,7 +333,7 @@ CConsoleCommands::CConsoleCommands()
 	m_sameCommandsExecuted = 0;
 	m_commandListDirty = false;
 
-	g_eqCore->RegisterInterface(CONSOLE_INTERFACE_VERSION, this);
+	g_eqCore->RegisterInterface(this);
 }
 
 void CConsoleCommands::RegisterCommands()

@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright ï¿½ Inspiration Byte
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
 // Description: Equilibrium engine font cache
@@ -7,8 +7,6 @@
 
 #pragma once
 #include "IFont.h"
-
-#define FONTCACHE_INTERFACE_VERSION		"ENGINE_FontCache_002"
 
 struct eqFontFamily_t;
 
@@ -19,6 +17,8 @@ struct eqFontFamily_t;
 class IEqFontCache : public IEqCoreModule
 {
 public:
+	CORE_INTERFACE("E2_FontCache_002")
+
 	virtual					~IEqFontCache() {}
 
 	virtual bool			Init() = 0;

@@ -24,7 +24,7 @@
 #include "materialvar.h"
 #include "MaterialProxy.h"
 #include "TextureLoader.h"
-#include "Renderers/Shared/IRenderLibrary.h"
+#include "Renderers/IRenderLibrary.h"
 #include "materialsystem1/MeshBuilder.h"
 #include "materialsystem1/IMaterialCallback.h"
 
@@ -210,16 +210,16 @@ CMaterialSystem::CMaterialSystem()
 	m_proxyTimer.GetTime(true);
 
 	// register when the DLL is connected
-	g_eqCore->RegisterInterface(MATSYSTEM_INTERFACE_VERSION, this);
-	g_eqCore->RegisterInterface(TEXTURELOADER_INTERFACE_VERSION, &s_textureLoader);
+	g_eqCore->RegisterInterface(this);
+	g_eqCore->RegisterInterface(&s_textureLoader);
 
 }
 
 CMaterialSystem::~CMaterialSystem()
 {
 	// unregister when DLL disconnects
-	g_eqCore->UnregisterInterface(MATSYSTEM_INTERFACE_VERSION);
-	g_eqCore->UnregisterInterface(TEXTURELOADER_INTERFACE_VERSION);
+	g_eqCore->UnregisterInterface<CMaterialSystem>();
+	g_eqCore->UnregisterInterface<CTextureLoader>();
 }
 
 // Initializes material system
@@ -259,17 +259,24 @@ bool CMaterialSystem::Init(const matsystem_init_config_t& config)
 	m_rendermodule = g_fileSystem->LoadModule(rendererName);
 	if(m_rendermodule)
 	{
-		m_renderLibrary = (IRenderLibrary*)g_eqCore->GetInterface( RENDERER_INTERFACE_VERSION );
+		IRenderManager* renderMng = g_eqCore->GetInterface<IRenderManager>();
+		if(!renderMng)
+		{
+			ErrorMsg("MatSystem Error: %s does not provide render manager interface", rendererName.ToCString());
+			g_fileSystem->FreeModule(m_rendermodule);
+		}
+
+		m_renderLibrary = renderMng->CreateRenderer(config.shaderApiParams);
 		if(!m_renderLibrary)
 		{
-			ErrorMsg("MatSystem Error: Failed to initialize rendering library using %s!!!", rendererName.ToCString());
+			ErrorMsg("MatSystem Error: %s failed to create renderer interface", rendererName.ToCString());
 			g_fileSystem->FreeModule(m_rendermodule);
 			return false;
 		}
 	}
 	else
 	{
-		ErrorMsg("MatSystem Error: Cannot load library '%s'!!!", rendererName.ToCString());
+		ErrorMsg("MatSystem Error: Cannot load library '%s'", rendererName.ToCString());
 		return false;
 	}
 

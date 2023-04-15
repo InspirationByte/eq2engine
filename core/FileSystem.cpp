@@ -209,12 +209,12 @@ static bool mkdirRecursive(const char* path, bool includeDotPath)
 
 CFileSystem::CFileSystem()
 {
-	g_eqCore->RegisterInterface(FILESYSTEM_INTERFACE_VERSION, this);
+	g_eqCore->RegisterInterface(this);
 }
 
 CFileSystem::~CFileSystem()
 {
-	g_eqCore->UnregisterInterface(FILESYSTEM_INTERFACE_VERSION);
+	g_eqCore->UnregisterInterface<CFileSystem>();
 }
 
 bool CFileSystem::Init(bool bEditorMode)

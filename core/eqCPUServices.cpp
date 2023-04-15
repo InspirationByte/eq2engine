@@ -221,7 +221,7 @@ CEqCPUCaps::CEqCPUCaps()
 	m_cpuMMXExt		= false;
 	m_cpuFamily		= 0;
 
-	g_eqCore->RegisterInterface(CPUSERVICES_INTERFACE_VERSION, this);
+	g_eqCore->RegisterInterface(this);
 }
 
 void CEqCPUCaps::Init()

@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright ï¿½ Inspiration Byte
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
 // Description: Console variable - base class
@@ -68,7 +68,6 @@ public:
 
 	//-------------------------
 	bool								IsInitialized() const		{return true;}
-	const char*							GetInterfaceName() const	{return CONSOLE_INTERFACE_VERSION;}
 
 private:
 	void								ForEachSeparated(const char* str, char separator, FUNC fn, void* extra);

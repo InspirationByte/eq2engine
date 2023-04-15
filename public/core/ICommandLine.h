@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright ï¿½ Inspiration Byte
 // 2009-2014
 //////////////////////////////////////////////////////////////////////////////////
 // Description: Command line parser
@@ -12,11 +12,11 @@ class ConCommandBase;
 class EqString;
 typedef bool (*cmdLineFilterFn_t)(ConCommandBase* pCmd, Array<EqString>& args);
 
-#define CMDLINE_INTERFACE_VERSION		"CORE_CommandLine_002"
-
 class ICommandLine : public IEqCoreModule
 {
 public:
+	CORE_INTERFACE("CORE_CommandLine_002")
+
 	virtual void			Init(const char* pszCommandLine) = 0;
 	virtual void			DeInit() = 0;
 
@@ -30,4 +30,4 @@ public:
 	virtual int				GetArgumentCount() const = 0;
 };
 
-INTERFACE_SINGLETON(ICommandLine, CCommandLine, CMDLINE_INTERFACE_VERSION, g_cmdLine )
+INTERFACE_SINGLETON(ICommandLine, CCommandLine, g_cmdLine )

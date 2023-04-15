@@ -7,8 +7,6 @@
 
 #pragma once
 
-#define LOCALIZER_INTERFACE_VERSION		"CORE_Localizer_002"
-
 //--------------------------------------------------------------
 // Localize token
 //--------------------------------------------------------------
@@ -27,7 +25,8 @@ public:
 class ILocalize : public IEqCoreModule
 {
 public:
-								~ILocalize() {}
+	CORE_INTERFACE("E2_Localizer_002")
+
 	virtual void				Init() = 0;
 	virtual void				Shutdown() = 0;
 
@@ -44,7 +43,7 @@ public:
 //--------------------------------------------------------------
 
 #ifndef _DKLAUNCHER_
-INTERFACE_SINGLETON( ILocalize, CLocalize, LOCALIZER_INTERFACE_VERSION, g_localizer )
+INTERFACE_SINGLETON( ILocalize, CLocalize, g_localizer )
 
 #define DKLOC_CONCAT(x) L ## x
 #define DKLOC(tok, def) g_localizer->GetTokenString( tok, DKLOC_CONCAT(def) )

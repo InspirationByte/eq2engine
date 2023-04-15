@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright ï¿½ Inspiration Byte
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
 // Description: Equilibrium localization
@@ -50,7 +50,6 @@ public:
 	const ILocToken*	GetToken( const char* pszToken ) const;
 
 	bool				IsInitialized() const {return m_language.Length() > 0;}
-	const char*			GetInterfaceName() const {return LOCALIZER_INTERFACE_VERSION;}
 
 private:
 	const ILocToken*	_FindToken( const char* pszToken ) const;

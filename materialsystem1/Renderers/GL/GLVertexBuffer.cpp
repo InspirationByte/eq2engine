@@ -9,7 +9,7 @@
 #include "shaderapigl_def.h"
 #include "GLVertexBuffer.h"
 
-extern bool GLCheckError(const char* op, ...);
+bool GLCheckError(const char* op, ...);
 
 CVertexBufferGL::CVertexBufferGL()
 {

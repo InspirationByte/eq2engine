@@ -12,6 +12,14 @@ static constexpr const int WORK_TAKEN_SLOT = -10000;
 static constexpr const int WORK_PENDING		= 10000;
 static constexpr const int WORK_EXECUTING	= 20000;
 
+class GLLibraryWorkerHandler
+{
+public:
+	virtual void	BeginAsyncOperation(uintptr_t threadId) = 0;
+	virtual void	EndAsyncOperation() = 0;
+	virtual bool	IsMainThread(uintptr_t threadId) const = 0;
+};
+
 class GLWorkerThread : public Threading::CEqThread
 {
 	friend class ShaderAPIGL;
@@ -21,7 +29,7 @@ public:
 
 	GLWorkerThread() = default;
 
-	void	Init();
+	void	Init(GLLibraryWorkerHandler* workHandler);
 	void	Shutdown();
 
 	// syncronous execution
@@ -42,6 +50,7 @@ protected:
 
 	FixedArray<Work, 32>					m_workRingPool;
 	FixedArray<Threading::CEqSignal, 32>	m_completionSignal;
+	GLLibraryWorkerHandler*					m_workHandler{ nullptr };
 };
 
 extern GLWorkerThread g_glWorker;

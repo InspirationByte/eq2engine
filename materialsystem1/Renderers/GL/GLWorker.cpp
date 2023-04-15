@@ -11,22 +11,11 @@
 
 using namespace Threading;
 
-#ifdef USE_SDL2
-#include <SDL.h>
-#include "GLRenderLibrary_SDL.h"
-extern CGLRenderLib_SDL g_library;
-#elif defined(USE_GLES2)
-#include "GLRenderLibrary_ES.h"
-extern CGLRenderLib_ES g_library;
-#else
-#include "GLRenderLibrary.h"
-extern CGLRenderLib g_library;
-#endif
-
 GLWorkerThread g_glWorker;
 
-void GLWorkerThread::Init()
+void GLWorkerThread::Init(GLLibraryWorkerHandler* workHandler)
 {
+	m_workHandler = workHandler;
 	StartWorkerThread("GLWorker");
 
 	m_workRingPool.setNum(m_workRingPool.numAllocated());
@@ -52,7 +41,7 @@ int GLWorkerThread::WaitForExecute(const char* name, FUNC_TYPE f)
 {
 	uintptr_t thisThreadId = Threading::GetCurrentThreadID();
 
-	if (g_library.IsMainThread(thisThreadId)) // not required for main thread
+	if (m_workHandler->IsMainThread(thisThreadId)) // not required for main thread
 	{
 		return f();
 	}
@@ -93,7 +82,7 @@ void GLWorkerThread::Execute(const char* name, FUNC_TYPE f)
 {
 	uintptr_t thisThreadId = Threading::GetCurrentThreadID();
 
-	if (g_library.IsMainThread(thisThreadId)) // not required for main thread
+	if (m_workHandler->IsMainThread(thisThreadId)) // not required for main thread
 	{
 		f();
 		return;
@@ -133,7 +122,7 @@ int GLWorkerThread::Run()
 		if (Atomic::CompareExchange(work.result, WORK_PENDING, WORK_EXECUTING) == WORK_PENDING)
 		{
 			if(!begun)
-				g_library.BeginAsyncOperation(GetThreadID());
+				m_workHandler->BeginAsyncOperation(GetThreadID());
 			begun = true;
 
 			const int result = work.func();
@@ -144,7 +133,7 @@ int GLWorkerThread::Run()
 	}
 
 	if(begun)
-		g_library.EndAsyncOperation();
+		m_workHandler->EndAsyncOperation();
 
 	return 0;
 }

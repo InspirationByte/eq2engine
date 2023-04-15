@@ -139,7 +139,7 @@ bool CGameHost::LoadModules()
 		return false;
 	}
 
-	materials = (IMaterialSystem*)g_eqCore->GetInterface(MATSYSTEM_INTERFACE_VERSION);
+	materials = g_eqCore->GetInterface<IMaterialSystem>();
 	if(!materials)
 	{
 		ErrorMsg("ERROR! Couldn't get interface of eqMatSystem!");

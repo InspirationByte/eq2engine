@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright ï¿½ Inspiration Byte
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
 // Description: Command line parser
@@ -27,7 +27,6 @@ public:
 
 	//-------------------------
 	bool				IsInitialized() const		{return true;}
-	const char*			GetInterfaceName() const	{return CMDLINE_INTERFACE_VERSION;}
 
 protected:
 	void				Parse(const char* pszCommandLine);

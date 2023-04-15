@@ -1433,7 +1433,7 @@ bool InitCore(char *pCmdLine)
 	if(!g_fileSystem->Init(false))
 		return false;
 
-	g_eqCore->RegisterInterface(SHAPECACHE_INTERFACE_VERSION, &s_shapeCache);
+	g_eqCore->RegisterInterface(&s_shapeCache);
 
 	g_cmdLine->ExecuteCommandLine();
 

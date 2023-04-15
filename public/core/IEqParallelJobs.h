@@ -1,6 +1,5 @@
 #pragma once
 
-#define PARALLELJOBS_INTERFACE_VERSION		"CORE_ParallelJobs_002"
 
 using EQ_JOB_FUNC = EqFunction<void(void*, int i)>;
 using EQ_JOB_COMPLETE_FUNC = EqFunction<void(struct eqParallelJob_t*)>;
@@ -63,6 +62,8 @@ struct eqJobThreadDesc_t
 class IEqParallelJobThreads : public IEqCoreModule
 {
 public:
+	CORE_INTERFACE("E2_ParallelJobs_002")
+
 	// creates new job thread
 	virtual bool							Init(int numJobTypes, eqJobThreadDesc_t* jobTypes) = 0;
 	virtual void							Shutdown() = 0;
@@ -94,4 +95,4 @@ public:
 	virtual int								GetPendingJobCount(int type = -1) = 0;
 };
 
-INTERFACE_SINGLETON(IEqParallelJobThreads, CEqParallelJobThreads, PARALLELJOBS_INTERFACE_VERSION, g_parallelJobs)
+INTERFACE_SINGLETON(IEqParallelJobThreads, CEqParallelJobThreads, g_parallelJobs)

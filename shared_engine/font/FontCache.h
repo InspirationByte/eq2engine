@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright ï¿½ Inspiration Byte
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
 // Description: Equilibrium engine font cache
@@ -53,7 +53,6 @@ public:
 	~CEqFontCache();
 
 	bool					IsInitialized() const {return true;}
-	const char*				GetInterfaceName() const { return FONTCACHE_INTERFACE_VERSION; }
 
 	bool					Init();
 	void					Shutdown();

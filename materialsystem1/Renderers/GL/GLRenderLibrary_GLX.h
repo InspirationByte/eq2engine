@@ -1,36 +1,46 @@
 //////////////////////////////////////////////////////////////////////////////////
 // Copyright � Inspiration Byte
-// 2009-2022
+// 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
-// Description: Equilibrium OpenGL ES ShaderAPI
+// Description: Equilibrium OpenGL ShaderAPI
 //////////////////////////////////////////////////////////////////////////////////
 
 #pragma once
-#include "../Shared/IRenderLibrary.h"
-#include "renderers/IShaderAPI.h"
+#include "../IRenderLibrary.h"
+#include "GLWorker.h"
 
 class ShaderAPIGL;
 
-#define GL_CONTEXT EGLContext
+#include <X11/Xlib.h>
+#include <X11/Xutil.h>
+#include <X11/Xmd.h>
+#include <X11/extensions/xf86vmode.h>
+
+typedef XID GLXContextID;
+typedef XID GLXPixmap;
+typedef XID GLXDrawable;
+typedef XID GLXPbuffer;
+typedef XID GLXWindow;
+typedef XID GLXFBConfigID;
+typedef struct __GLXcontextRec* GLXContext;
+typedef struct __GLXFBConfigRec* GLXFBConfig;
+
 #define MAX_SHARED_CONTEXTS 1 // thank you, OpenGL, REALLY FUCKED ME with having multiple context, works perfect btw it crashes
 
-class CGLRenderLib_ES : public IRenderLibrary
+class CGLRenderLib_GLX : public IRenderLibrary, public GLLibraryWorkerHandler
 {
 	friend class			ShaderAPIGL;
 
 public:
 
-	CGLRenderLib_ES();
-	~CGLRenderLib_ES();
+							CGLRenderLib_GLX();
+							~CGLRenderLib_GLX();
 
 	bool					InitCaps();
 
 	bool					InitAPI(const shaderAPIParams_t &params);
 	void					ExitAPI();
 	void					ReleaseSwapChains();
-
-	void					ReleaseSurface();
-	bool					CreateSurface();
 
 	// frame begin/end
 	void					BeginFrame(IEqSwapChain* swapChain = nullptr);
@@ -72,25 +82,23 @@ protected:
 	void					InitSharedContexts();
 	void					DestroySharedContexts();
 
-	shaderAPIWindowFuncTable_t m_winFunc;
-
 	Array<IEqSwapChain*>	m_swapChains{ PP_SL };
+	IEqSwapChain*			m_curSwapChain{ nullptr };
+
 	uintptr_t				m_mainThreadId;
 	bool					m_asyncOperationActive;
 
-	GL_CONTEXT				m_glContext;
-	GL_CONTEXT				m_glSharedContext;
+	GLXContext				m_glContext;
+	GLXContext				m_glSharedContext;
 
-    EGLNativeDisplayType	m_hdc{ 0 };
-    EGLNativeWindowType		m_hwnd{ 0 };
-    EGLDisplay				m_eglDisplay{ nullptr };
-    EGLSurface				m_eglSurface{ nullptr };
-	EGLConfig				m_eglConfig{ nullptr };
+    XF86VidModeModeInfo**	m_dmodes;
+    Display*				m_display;
+    XVisualInfo*            m_xvi;
+	Window					m_window;
+    int						m_screen;
+	GLXFBConfig 			m_bestFbc;
 
-	int						m_multiSamplingMode;
-	int						m_width;
-	int						m_height;
-
-	bool					m_bResized;
-	bool					m_windowed;
+	int						m_width{ 0 };
+	int						m_height{ 0 };
+	bool					m_windowed{ false };
 };

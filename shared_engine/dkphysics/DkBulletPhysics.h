@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright ï¿½ Inspiration Byte
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
 // Description: Equilibrium physics powered by Bullet
@@ -35,7 +35,6 @@ public:
 												~DkPhysics();
 
 	bool										IsInitialized() const {return true;}
-	const char*									GetInterfaceName() const {return IPHYSICS_INTERFACE_VERSION;};
 
 	// Initialize physics
 	bool										Init(int nSceneSize);

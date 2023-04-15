@@ -5,8 +5,11 @@
 // Description: Provides base interface loading
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef INTERFACEMANAGER_H
-#define INTERFACEMANAGER_H
+#pragma once
+
+#define CORE_INTERFACE(name) 	\
+	static const char* 	CoreInterfaceName() { return name; } \
+	const char*			GetInterfaceName() const { return CoreInterfaceName(); }
 
 //--------------------------------------------------------------
 // The base core interface to be queried
@@ -58,7 +61,7 @@ public:
 #ifdef CORE_INTERFACE_EXPORT
 
 // dll export version
-#define INTERFACE_SINGLETON(abstractclass, classname, interfacename, localname)	\
+#define INTERFACE_SINGLETON(abstractclass, classname, localname)	\
 	IEXPORTS abstractclass* Get##classname();									\
 	class CDkCoreInterface_##classname {		\
 	public:										\
@@ -68,21 +71,21 @@ public:
 	};																				\
 	static CDkCoreInterface_##classname localname;
 
-#define EXPORTED_INTERFACE( interfacename, classname )	\
-	IEXPORTS interfacename *Get##classname( void ) {    \
+#define EXPORTED_INTERFACE( abstractclass, classname )	\
+	IEXPORTS abstractclass *Get##classname( void ) {    \
 		static classname s_##classname;					\
-		return ( interfacename * )&s_##classname;		\
+		return ( abstractclass * )&s_##classname;		\
 	}													\
-	interfacename* _inteface##classname = Get##classname();
+	abstractclass* _inteface##classname = Get##classname();
 
 #else
 
 // dll import version
-#define INTERFACE_SINGLETON(abstractclass, classname, interfacename, localname)	\
+#define INTERFACE_SINGLETON(abstractclass, classname, localname)	\
 	IEXPORTS void* _GetDkCoreInterface(const char* pszName);						\
 	class _##classname##SingletonInstantiator {	\
 	public:										\
-		_##classname##SingletonInstantiator()	{ instance = (abstractclass*)_GetDkCoreInterface(interfacename); }	\
+		_##classname##SingletonInstantiator()	{ instance = (abstractclass*)_GetDkCoreInterface(abstractclass::CoreInterfaceName()); }	\
 		abstractclass* instance;				\
 	};											\
 	class CDkCoreInterface_##classname {		\
@@ -93,6 +96,4 @@ public:
 	};																				\
 	static CDkCoreInterface_##classname localname;
 
-#endif // _DKLAUNCHER_
-
-#endif //INTERFACEMANAGER_H
+#endif // CORE_INTERFACE_EXPORT

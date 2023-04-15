@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright ï¿½ Inspiration Byte
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
 // Description: D3D Rendering library interface
@@ -29,12 +29,10 @@ CD3D11RenderLib g_library;
 
 CD3D11RenderLib::CD3D11RenderLib()
 {
-	g_eqCore->RegisterInterface(RENDERER_INTERFACE_VERSION, this);
 }
 
 CD3D11RenderLib::~CD3D11RenderLib()
 {
-	g_eqCore->UnregisterInterface(RENDERER_INTERFACE_VERSION);
 }
 
 bool CD3D11RenderLib::InitCaps()

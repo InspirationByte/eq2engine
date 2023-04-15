@@ -6,44 +6,21 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #pragma once
-#include "../Shared/IRenderLibrary.h"
+#include "../IRenderLibrary.h"
+#include "GLWorker.h"
 
 class ShaderAPIGL;
 
-#ifdef PLAT_LINUX
-#include <X11/Xlib.h>
-#include <X11/Xutil.h>
-#include <X11/Xmd.h>
-#include <X11/extensions/xf86vmode.h>
-
-typedef XID GLXContextID;
-typedef XID GLXPixmap;
-typedef XID GLXDrawable;
-typedef XID GLXPbuffer;
-typedef XID GLXWindow;
-typedef XID GLXFBConfigID;
-typedef struct __GLXcontextRec* GLXContext;
-typedef struct __GLXFBConfigRec* GLXFBConfig;
-#endif
-
-#ifdef PLAT_WIN
-#define GL_CONTEXT HGLRC
-#elif defined(PLAT_LINUX)
-#define GL_CONTEXT GLXContext
-#elif defined(PLAT_OSX)
-#define GL_CONTEXT GLXContext
-#endif // _WIN32
-
 #define MAX_SHARED_CONTEXTS 1 // thank you, OpenGL, REALLY FUCKED ME with having multiple context, works perfect btw it crashes
 
-class CGLRenderLib : public IRenderLibrary
+class CGLRenderLib_WGL : public IRenderLibrary, public GLLibraryWorkerHandler
 {
 	friend class			ShaderAPIGL;
 
 public:
 
-							CGLRenderLib();
-							~CGLRenderLib();
+							CGLRenderLib_WGL();
+							~CGLRenderLib_WGL();
 
 	bool					InitCaps();
 
@@ -97,27 +74,15 @@ protected:
 	uintptr_t				m_mainThreadId;
 	bool					m_asyncOperationActive;
 
-	GL_CONTEXT				m_glContext;
-	GL_CONTEXT				m_glSharedContext;
+	HGLRC					m_glContext;
+	HGLRC					m_glSharedContext;
 
-#ifdef PLAT_WIN
 	int						m_bestPixelFormat{ 0 };
 	PIXELFORMATDESCRIPTOR	m_pfd;
 	DISPLAY_DEVICEA			m_dispDevice;
 	DEVMODEA				m_devMode;
 	HDC						m_hdc{ nullptr };
 	HWND					m_hwnd{ nullptr };
-#elif defined(PLAT_LINUX)
-    XF86VidModeModeInfo**	m_dmodes;
-    Display*				m_display;
-    XVisualInfo*            m_xvi;
-	Window					m_window;
-    int						m_screen;
-	GLXFBConfig 			m_bestFbc;
-#elif defined(PLAT_OSX)
-	CFArrayRef				m_dmodes;
-	CFDictionaryRef			m_initialMode;
-#endif // _WIN32
 
 	int						m_width{ 0 };
 	int						m_height{ 0 };

@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright ï¿½ Inspiration Byte
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
 // Description: Equilibrium main entry point
@@ -9,7 +9,7 @@
 #include "core/IDkCore.h"
 #include "IMaterialSystem.h"
 
-IShaderAPI*			g_pShaderAPI	= (IShaderAPI*)g_eqCore->GetInterface(MATSYSTEM_INTERFACE_VERSION);
+IShaderAPI*			g_pShaderAPI	= nullptr;
 IMaterialSystem*	materials		= nullptr;
 
 DECLARE_INTERNAL_SHADERS()

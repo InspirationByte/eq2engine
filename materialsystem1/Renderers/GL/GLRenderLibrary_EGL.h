@@ -2,33 +2,37 @@
 // Copyright � Inspiration Byte
 // 2009-2022
 //////////////////////////////////////////////////////////////////////////////////
-// Description: Equilibrium OpenGL ShaderAPI through SDL
+// Description: Equilibrium OpenGL ES ShaderAPI
 //////////////////////////////////////////////////////////////////////////////////
 
 #pragma once
+#include <EGL/egl.h>
 
-#include <SDL_video.h>
 #include "../IRenderLibrary.h"
+#include "renderers/IShaderAPI.h"
 #include "GLWorker.h"
 
 class ShaderAPIGL;
 
 #define MAX_SHARED_CONTEXTS 1 // thank you, OpenGL, REALLY FUCKED ME with having multiple context, works perfect btw it crashes
 
-class CGLRenderLib_SDL : public IRenderLibrary, public GLLibraryWorkerHandler
+class CGLRenderLib_EGL : public IRenderLibrary, public GLLibraryWorkerHandler
 {
 	friend class			ShaderAPIGL;
 
 public:
 
-	CGLRenderLib_SDL();
-	~CGLRenderLib_SDL();
+	CGLRenderLib_EGL();
+	~CGLRenderLib_EGL();
 
 	bool					InitCaps();
 
 	bool					InitAPI(const shaderAPIParams_t &params);
 	void					ExitAPI();
 	void					ReleaseSwapChains();
+
+	void					ReleaseSurface();
+	bool					CreateSurface();
 
 	// frame begin/end
 	void					BeginFrame(IEqSwapChain* swapChain = nullptr);
@@ -67,15 +71,25 @@ public:
 	bool					IsMainThread(uintptr_t threadId) const;
 protected:
 
+	void					InitSharedContexts();
+	void					DestroySharedContexts();
+
+	shaderAPIWindowFuncTable_t m_winFunc;
+
 	Array<IEqSwapChain*>	m_swapChains{ PP_SL };
-	IEqSwapChain*			m_currentSwapChain{ nullptr };
 	uintptr_t				m_mainThreadId;
 	bool					m_asyncOperationActive;
 
-	SDL_GLContext			m_glContext;
-	SDL_GLContext			m_glSharedContext;
-	SDL_Window*				m_window;
+	EGLContext				m_glContext;
+	EGLContext				m_glSharedContext;
 
+    EGLNativeDisplayType	m_hdc{ 0 };
+    EGLNativeWindowType		m_hwnd{ 0 };
+    EGLDisplay				m_eglDisplay{ nullptr };
+    EGLSurface				m_eglSurface{ nullptr };
+	EGLConfig				m_eglConfig{ nullptr };
+
+	int						m_multiSamplingMode;
 	int						m_width;
 	int						m_height;
 

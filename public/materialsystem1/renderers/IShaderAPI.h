@@ -34,6 +34,7 @@ enum ERHIWindowType : int
 	RHI_WINDOW_HANDLE_VTABLE	// VTable to get window handle (see below), and possibly more features.
 };
 
+
 // designed to be sent as windowHandle param
 struct shaderAPIWindowFuncTable_t
 {
@@ -53,6 +54,7 @@ struct shaderAPIParams_t
 
 	void*			windowHandle{ nullptr };			// window handle
 	ERHIWindowType	windowHandleType{ RHI_WINDOW_HANDLE_SDL };
+
 	ETextureFormat	screenFormat{ FORMAT_RGB8 };		// screen back buffer format
 
 	int				screenRefreshRateHZ{ 60 };			// refresh rate in HZ

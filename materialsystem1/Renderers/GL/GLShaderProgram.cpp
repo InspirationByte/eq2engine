@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright ï¿½ Inspiration Byte
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
 // Description: GL Shader program for ShaderAPIGL
@@ -9,7 +9,7 @@
 #include "shaderapigl_def.h"
 #include "GLShaderProgram.h"
 
-extern bool GLCheckError(const char* op, ...);
+bool GLCheckError(const char* op, ...);
 
 CGLShaderProgram::CGLShaderProgram()
 {

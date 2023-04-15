@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright ï¿½ Inspiration Byte
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
 // Description: Equilibrium material sub-rendering system
@@ -287,7 +287,6 @@ public:
 	void							PrintLoadedMaterials();
 
 	bool							IsInitialized() const {return (m_renderLibrary != nullptr);}
-	const char*						GetInterfaceName() const {return MATSYSTEM_INTERFACE_VERSION;}
 
 private:
 

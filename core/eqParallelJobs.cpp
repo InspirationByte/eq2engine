@@ -88,12 +88,12 @@ const eqParallelJob_t* CEqJobThread::GetCurrentJob() const
 CEqParallelJobThreads::CEqParallelJobThreads()
 {
 	// required by mobile port
-	g_eqCore->RegisterInterface(PARALLELJOBS_INTERFACE_VERSION, this);
+	g_eqCore->RegisterInterface(this);
 }
 
 CEqParallelJobThreads::~CEqParallelJobThreads()
 {
-	g_eqCore->UnregisterInterface(PARALLELJOBS_INTERFACE_VERSION);
+	g_eqCore->UnregisterInterface<CEqParallelJobThreads>();
 }
 
 // creates new job thread

@@ -1,20 +1,31 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright ï¿½ Inspiration Byte
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
 // Description: Rendering library base interface
 //////////////////////////////////////////////////////////////////////////////////
 
 #pragma once
+#include "core/InterfaceManager.h"
 
 struct shaderAPIParams_t;
 class IEqSwapChain;
 class IShaderAPI;
 class CImage;
+class IRenderLibrary;
 
-#define RENDERER_INTERFACE_VERSION	"E1Renderer_023"
+class IRenderManager : public IEqCoreModule
+{
+public:
+	CORE_INTERFACE("E1RenderManager_001")
 
-class IRenderLibrary : public IEqCoreModule
+	virtual IRenderLibrary* CreateRenderer(const shaderAPIParams_t &params) const = 0;
+
+	bool					IsInitialized() const { return true; };
+};
+
+
+class IRenderLibrary
 {
 public:
 	virtual bool			InitCaps() = 0;
@@ -53,7 +64,4 @@ public:
 
 	// returns default swap chain
 	virtual IEqSwapChain*	GetDefaultSwapchain() = 0;
-
-	bool					IsInitialized() const {return true;};
-	const char*				GetInterfaceName() const {return RENDERER_INTERFACE_VERSION;}
 };

@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright ï¿½ Inspiration Byte
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
 // Description: D3D Rendering library interface
@@ -22,13 +22,11 @@ IShaderAPI* g_pShaderAPI = &s_shaderAPI;
 
 CEmptyRenderLib::CEmptyRenderLib()
 {
-	g_eqCore->RegisterInterface(RENDERER_INTERFACE_VERSION, this);
 	m_windowed = true;
 }
 
 CEmptyRenderLib::~CEmptyRenderLib()
 {
-	g_eqCore->UnregisterInterface(RENDERER_INTERFACE_VERSION);
 }
 
 bool CEmptyRenderLib::InitCaps()

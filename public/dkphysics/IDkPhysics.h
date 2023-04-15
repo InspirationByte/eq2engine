@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright ï¿½ Inspiration Byte
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
 // Description: Equilibrium physics public header
@@ -12,8 +12,6 @@
 #include "dkphysics/IPhysicsObject.h"
 #include "dkphysics/IPhysicsJoint.h"
 #include "dkphysics/IPhysicsRope.h"
-
-#define IPHYSICS_INTERFACE_VERSION "IPhysics_001"
 
 // 2.2 lbs / kg
 #define POUNDS_PER_KG	(2.2f)
@@ -177,6 +175,8 @@ static void SetDefaultPhysModelInfoParams(physmodelcreateinfo_t* info) // TODO: 
 class IPhysics : public IEqCoreModule
 {
 public:
+	CORE_INTERFACE("LegacyPhysics_001")
+
 	virtual bool 								Init(int nSceneSize) = 0;						// Initialize physics
 	virtual bool 								IsSupportsHardwareAcceleration() = 0;			// Returns true if hardware acceleration is available
 

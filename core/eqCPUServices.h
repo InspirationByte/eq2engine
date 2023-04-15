@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright ï¿½ Inspiration Byte
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
 // Description: CPU macros and detector
@@ -48,7 +48,6 @@ public:
 	bool		IsCPUHasSSE42() const	{return m_cpuSSE42;}
 
 	bool		IsInitialized() const	{return m_cpuCount && m_cpuVendor[0] != '\0';}
-	const char*	GetInterfaceName() const {return CPUSERVICES_INTERFACE_VERSION;}
 
 protected:
 

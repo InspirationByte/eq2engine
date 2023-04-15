@@ -78,12 +78,12 @@ CLocToken::CLocToken(const char* tok, const char* text)
 
 CLocalize::CLocalize()
 {
-	g_eqCore->RegisterInterface(LOCALIZER_INTERFACE_VERSION, this);
+	g_eqCore->RegisterInterface(this);
 }
 
 CLocalize::~CLocalize()
 {
-	g_eqCore->UnregisterInterface(LOCALIZER_INTERFACE_VERSION);
+	g_eqCore->UnregisterInterface<CLocalize>();
 }
 
 void CLocalize::Init()

@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright ï¿½ Inspiration Byte
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
 // Description: Physics model cache for bullet physics
@@ -84,11 +84,6 @@ CBulletStudioShapeCache::CBulletStudioShapeCache()
 bool CBulletStudioShapeCache::IsInitialized() const 
 {
 	return true; 
-}
-
-const char* CBulletStudioShapeCache::GetInterfaceName() const 
-{
-	return SHAPECACHE_INTERFACE_VERSION; 
 }
 
 // checks the shape is initialized for the cache

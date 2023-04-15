@@ -14,7 +14,7 @@ EXPORTED_INTERFACE(ICommandLine, CCommandLine);
 
 CCommandLine::CCommandLine()
 {
-	g_eqCore->RegisterInterface(CMDLINE_INTERFACE_VERSION, this);
+	g_eqCore->RegisterInterface(this);
 }
 
 CCommandLine::~CCommandLine()

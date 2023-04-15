@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright ï¿½ Inspiration Byte
 // 2009-2014
 //////////////////////////////////////////////////////////////////////////////////
 // Description: MuscleCore interface
@@ -39,6 +39,10 @@ public:
 	virtual void					RegisterInterface(const char* pszName, IEqCoreModule* iface) = 0;		// registers interface for faster access
 	virtual IEqCoreModule*			GetInterface(const char* pszName) const = 0;							// returns registered interface
 	virtual void					UnregisterInterface(const char* pszName) = 0;							// unregisters interface
+
+	template<typename T> void		RegisterInterface(T* iface) { RegisterInterface(T::CoreInterfaceName(), iface); }
+	template<typename T> void		UnregisterInterface() 		{ UnregisterInterface(T::CoreInterfaceName()); }
+	template<typename T> T*			GetInterface() const 		{ return GetInterface(T::CoreInterfaceName()); }
 };
 
 ENTRYPOINT_INTERFACE_SINGLETON(IDkCore, CDkCore, g_eqCore)

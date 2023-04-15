@@ -5,11 +5,6 @@
 // Description: Equilibrium OpenGL ES ShaderAPI
 //////////////////////////////////////////////////////////////////////////////////
 
-#ifndef USE_GLES2
-static_assert(false, "this file should NOT BE included when non-GLES version is built")
-#endif // USE_GLES2
-
-#include <EGL/egl.h>
 #include "core/core_common.h"
 #include "core/IConsoleCommands.h"
 #include "core/ICommandLine.h"
@@ -23,27 +18,29 @@ static_assert(false, "this file should NOT BE included when non-GLES version is 
 #include <X11/Xlib.h>
 #include <X11/Xatom.h>
 #include <X11/Xutil.h>
+
+// TODO: wayland stuff
+
 #endif // PLAT_LINUX
 
-#include "GLRenderLibrary_ES.h"
+#include "GLRenderLibrary_EGL.h"
 
 #include "GLSwapChain.h"
 #include "GLWorker.h"
 #include "ShaderAPIGL.h"
 
+#include "glad_egl.h"
 #include "gl_loader.h"
 
 #define EGL_USE_SDL_SURFACE 0 // defined(PLAT_ANDROID)
 
-#	ifndef EGL_OPENGL_ES3_BIT
-#		define EGL_OPENGL_ES3_BIT 0x00000040
-#	endif // EGL_OPENGL_ES3_BIT
+#ifndef EGL_OPENGL_ES3_BIT
+#	define EGL_OPENGL_ES3_BIT 0x00000040
+#endif // EGL_OPENGL_ES3_BIT
 
-#	ifdef PLAT_ANDROID
-#		include <android/native_window.h>
-#	endif // PLAT_ANDROID
-
-extern bool GLCheckError(const char* op, ...);
+#ifdef PLAT_ANDROID
+#	include <android/native_window.h>
+#endif // PLAT_ANDROID
 
 /*
 
@@ -71,32 +68,23 @@ ARB_occlusion_query
 
 */
 
-ShaderAPIGL g_shaderApi;
-IShaderAPI* g_pShaderAPI = &g_shaderApi;
-
-CGLRenderLib_ES g_library;
-
-CGLRenderLib_ES::CGLRenderLib_ES()
+CGLRenderLib_EGL::CGLRenderLib_EGL()
 {
-	g_eqCore->RegisterInterface(RENDERER_INTERFACE_VERSION, this);
-
-	m_glSharedContext = 0;
 	m_windowed = true;
 	m_mainThreadId = Threading::GetCurrentThreadID();
 	m_asyncOperationActive = false;
 }
 
-CGLRenderLib_ES::~CGLRenderLib_ES()
+CGLRenderLib_EGL::~CGLRenderLib_EGL()
 {
-	g_eqCore->UnregisterInterface(RENDERER_INTERFACE_VERSION);
 }
 
-IShaderAPI* CGLRenderLib_ES::GetRenderer() const
+IShaderAPI* CGLRenderLib_EGL::GetRenderer() const
 {
 	return &g_shaderApi;
 }
 
-bool CGLRenderLib_ES::InitCaps()
+bool CGLRenderLib_EGL::InitCaps()
 {
 #if !defined(PLAT_ANDROID)
 	if (!gladLoaderLoadEGL(EGL_DEFAULT_DISPLAY))
@@ -109,13 +97,13 @@ bool CGLRenderLib_ES::InitCaps()
 }
 
 
-void CGLRenderLib_ES::DestroySharedContexts()
+void CGLRenderLib_EGL::DestroySharedContexts()
 {
 	eglDestroyContext(m_eglDisplay, m_glSharedContext);
 }
 
 
-void CGLRenderLib_ES::InitSharedContexts()
+void CGLRenderLib_EGL::InitSharedContexts()
 {
 	const EGLint contextAttr[] = {
 		EGL_CONTEXT_CLIENT_VERSION, 3,
@@ -129,7 +117,7 @@ void CGLRenderLib_ES::InitSharedContexts()
 	m_glSharedContext = context;
 }
 
-bool CGLRenderLib_ES::InitAPI(const shaderAPIParams_t& params)
+bool CGLRenderLib_EGL::InitAPI(const shaderAPIParams_t& params)
 {
 	EGLNativeDisplayType nativeDisplay = EGL_DEFAULT_DISPLAY;
 
@@ -236,12 +224,22 @@ bool CGLRenderLib_ES::InitAPI(const shaderAPIParams_t& params)
 
 	Msg("Initializing GL extensions...\n");
 
+#ifdef USE_GLES2
 	// load GLES2 GL 3.0 extensions using glad
-	if(!gladLoadGLES2Loader( gladHelperLoaderFunction ))
+	if (!gladLoadGLES2Loader(gladHelperLoaderFunction))
 	{
 		ErrorMsg("Cannot load OpenGL ES 2 functionality!\n");
 		return false;
 	}
+#else
+	// load OpenGL extensions using glad
+	if (!gladLoadGLLoader(gladHelperLoaderFunction))
+	{
+		MsgError("Cannot load OpenGL extensions or several functions!\n");
+		return false;
+	}
+#endif // USE_GLES2
+
 
 	if(g_cmdLine->FindArgument("-glext") != -1)
 		PrintGLExtensions();
@@ -260,96 +258,13 @@ bool CGLRenderLib_ES::InitAPI(const shaderAPIParams_t& params)
 		glEnable(GL_MULTISAMPLE);
 #endif // USE_GLES2
 
-	//-------------------------------------------
-	// init caps
-	//-------------------------------------------
-	ShaderAPICaps_t& caps = g_shaderApi.m_caps;
-
-	memset(&caps, 0, sizeof(caps));
-
-	caps.maxTextureAnisotropicLevel = 1;
-
-	caps.isHardwareOcclusionQuerySupported = true;
-	caps.isInstancingSupported = true; // GL ES 3
-
-	glGetIntegerv(GL_MAX_TEXTURE_SIZE, &caps.maxTextureSize);
-
-	caps.maxRenderTargets = MAX_MRTS;
-
-	caps.maxVertexGenericAttributes = MAX_GL_GENERIC_ATTRIB;
-	caps.maxVertexTexcoordAttributes = MAX_TEXCOORD_ATTRIB;
-
-	caps.maxTextureUnits = 1;
-	caps.maxVertexStreams = MAX_VERTEXSTREAM;
-	caps.maxVertexTextureUnits = MAX_VERTEXTEXTURES;
-
-	glGetIntegerv(GL_MAX_VERTEX_TEXTURE_IMAGE_UNITS, &caps.maxVertexTextureUnits);
-	caps.maxVertexTextureUnits = min(caps.maxVertexTextureUnits, MAX_VERTEXTEXTURES);
-
-	glGetIntegerv(GL_MAX_VERTEX_ATTRIBS, &caps.maxVertexGenericAttributes);
-
-	// limit by the MAX_GL_GENERIC_ATTRIB defined by ShaderAPI
-	caps.maxVertexGenericAttributes = min(MAX_GL_GENERIC_ATTRIB, caps.maxVertexGenericAttributes);
-
-	caps.shadersSupportedFlags = SHADER_CAPS_VERTEX_SUPPORTED | SHADER_CAPS_PIXEL_SUPPORTED;
-	glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &caps.maxTextureUnits);
-
-	if(caps.maxTextureUnits > MAX_TEXTUREUNIT)
-		caps.maxTextureUnits = MAX_TEXTUREUNIT;
-
-	caps.maxRenderTargets = 1;
-	glGetIntegerv(GL_MAX_DRAW_BUFFERS, &caps.maxRenderTargets);
-
-	if (caps.maxRenderTargets > MAX_MRTS)
-		caps.maxRenderTargets = MAX_MRTS;
-
-	// get texture capabilities
-	{
-		caps.INTZSupported = true;
-		caps.INTZFormat = FORMAT_D16;
-
-		caps.NULLSupported = true;
-		caps.NULLFormat = FORMAT_NONE;
-
-		for (int i = FORMAT_R8; i <= FORMAT_RGBA16; i++)
-		{
-			caps.textureFormatsSupported[i] = true;
-			caps.renderTargetFormatsSupported[i] = true;
-		}
-		
-		for (int i = FORMAT_D16; i <= FORMAT_D24S8; i++)
-		{
-			caps.textureFormatsSupported[i] = true;
-			caps.renderTargetFormatsSupported[i] = true;
-		}
-
-		if(GLAD_GL_IMG_texture_compression_pvrtc)
-		{
-			for (int i = FORMAT_PVRTC_2BPP; i <= FORMAT_PVRTC_A_4BPP; i++)
-				caps.textureFormatsSupported[i] = true;
-		}
-
-		if(GLAD_GL_OES_compressed_ETC1_RGB8_texture)
-		{
-			for (int i = FORMAT_ETC1; i <= FORMAT_ETC2A8; i++)
-				caps.textureFormatsSupported[i] = true;
-		}
-
-		if (GLAD_GL_EXT_texture_compression_s3tc)
-		{
-			for (int i = FORMAT_DXT1; i <= FORMAT_ATI2N; i++)
-				caps.textureFormatsSupported[i] = true;
-
-			caps.textureFormatsSupported[FORMAT_ATI1N] = false;
-		}
-	}
-
-	GLCheckError("caps check");
+	InitGLHardwareCapabilities(g_shaderApi.m_caps);
+	g_glWorker.Init(this);
 
 	return true;
 }
 
-void CGLRenderLib_ES::ExitAPI()
+void CGLRenderLib_EGL::ExitAPI()
 {
 	eglMakeCurrent(EGL_NO_DISPLAY, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
 	eglDestroyContext(m_eglDisplay, m_glContext);
@@ -358,7 +273,7 @@ void CGLRenderLib_ES::ExitAPI()
 }
 
 
-void CGLRenderLib_ES::BeginFrame(IEqSwapChain* swapChain)
+void CGLRenderLib_EGL::BeginFrame(IEqSwapChain* swapChain)
 {
 	g_shaderApi.StepProgressiveLodTextures();
 
@@ -369,7 +284,7 @@ void CGLRenderLib_ES::BeginFrame(IEqSwapChain* swapChain)
 	g_shaderApi.SetViewport(0, 0, m_width, m_height);
 }
 
-void CGLRenderLib_ES::EndFrame()
+void CGLRenderLib_EGL::EndFrame()
 {
 #ifdef PLAT_ANDROID
 	eglSwapInterval(m_eglDisplay, g_shaderApi.m_params.verticalSyncEnabled ? 1 : 0);
@@ -384,7 +299,7 @@ void CGLRenderLib_ES::EndFrame()
 }
 
 // changes fullscreen mode
-bool CGLRenderLib_ES::SetWindowed(bool enabled)
+bool CGLRenderLib_EGL::SetWindowed(bool enabled)
 {
 	m_windowed = enabled;
 
@@ -394,12 +309,12 @@ bool CGLRenderLib_ES::SetWindowed(bool enabled)
 }
 
 // speaks for itself
-bool CGLRenderLib_ES::IsWindowed() const
+bool CGLRenderLib_EGL::IsWindowed() const
 {
 	return m_windowed;
 }
 
-void CGLRenderLib_ES::SetBackbufferSize(const int w, const int h)
+void CGLRenderLib_EGL::SetBackbufferSize(const int w, const int h)
 {
 #ifdef PLAT_ANDROID
 	CreateSurface();
@@ -421,7 +336,7 @@ void CGLRenderLib_ES::SetBackbufferSize(const int w, const int h)
 }
 
 // reports focus state
-void CGLRenderLib_ES::SetFocused(bool inFocus)
+void CGLRenderLib_EGL::SetFocused(bool inFocus)
 {
 #ifdef PLAT_ANDROID
 	if (!inFocus)
@@ -431,7 +346,7 @@ void CGLRenderLib_ES::SetFocused(bool inFocus)
 #endif // PLAT_ANDROID
 }
 
-void CGLRenderLib_ES::ReleaseSurface()
+void CGLRenderLib_EGL::ReleaseSurface()
 {
 	if (m_eglSurface == EGL_NO_SURFACE)
 		return;
@@ -452,7 +367,7 @@ void CGLRenderLib_ES::ReleaseSurface()
 	m_eglSurface = EGL_NO_SURFACE;
 }
 
-bool CGLRenderLib_ES::CreateSurface()
+bool CGLRenderLib_EGL::CreateSurface()
 {
 	if (m_eglSurface != EGL_NO_SURFACE)
 		return true;
@@ -522,7 +437,7 @@ bool CGLRenderLib_ES::CreateSurface()
 	return true;
 }
 
-bool CGLRenderLib_ES::CaptureScreenshot(CImage &img)
+bool CGLRenderLib_EGL::CaptureScreenshot(CImage &img)
 {
 	glFinish();
 
@@ -538,7 +453,7 @@ bool CGLRenderLib_ES::CaptureScreenshot(CImage &img)
 	return true;
 }
 
-void CGLRenderLib_ES::ReleaseSwapChains()
+void CGLRenderLib_EGL::ReleaseSwapChains()
 {
 	for (int i = 0; i < m_swapChains.numElem(); i++)
 	{
@@ -547,7 +462,7 @@ void CGLRenderLib_ES::ReleaseSwapChains()
 }
 
 // creates swap chain
-IEqSwapChain* CGLRenderLib_ES::CreateSwapChain(void* window, bool windowed)
+IEqSwapChain* CGLRenderLib_EGL::CreateSwapChain(void* window, bool windowed)
 {
 	CGLSwapChain* pNewChain = PPNew CGLSwapChain();
 
@@ -565,14 +480,14 @@ IEqSwapChain* CGLRenderLib_ES::CreateSwapChain(void* window, bool windowed)
 }
 
 // destroys a swapchain
-void  CGLRenderLib_ES::DestroySwapChain(IEqSwapChain* swapChain)
+void  CGLRenderLib_EGL::DestroySwapChain(IEqSwapChain* swapChain)
 {
 	m_swapChains.remove(swapChain);
 	delete swapChain;
 }
 
 // returns default swap chain
-IEqSwapChain* CGLRenderLib_ES::GetDefaultSwapchain()
+IEqSwapChain* CGLRenderLib_EGL::GetDefaultSwapchain()
 {
 	return nullptr;
 }
@@ -582,7 +497,7 @@ IEqSwapChain* CGLRenderLib_ES::GetDefaultSwapchain()
 //----------------------------------------------------------------------------------------
 
 // prepares async operation
-void CGLRenderLib_ES::BeginAsyncOperation(uintptr_t threadId)
+void CGLRenderLib_EGL::BeginAsyncOperation(uintptr_t threadId)
 {
 	uintptr_t thisThreadId = Threading::GetCurrentThreadID();
 
@@ -598,7 +513,7 @@ void CGLRenderLib_ES::BeginAsyncOperation(uintptr_t threadId)
 }
 
 // completes async operation
-void CGLRenderLib_ES::EndAsyncOperation()
+void CGLRenderLib_EGL::EndAsyncOperation()
 {
 	uintptr_t thisThreadId = Threading::GetCurrentThreadID();
 
@@ -611,7 +526,7 @@ void CGLRenderLib_ES::EndAsyncOperation()
 	m_asyncOperationActive = false;
 }
 
-bool CGLRenderLib_ES::IsMainThread(uintptr_t threadId) const
+bool CGLRenderLib_EGL::IsMainThread(uintptr_t threadId) const
 {
 	return threadId == m_mainThreadId;
 }

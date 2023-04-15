@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright ï¿½ Inspiration Byte
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
 // Description: Eq Engine CPU services
@@ -8,15 +8,15 @@
 #pragma once
 #include "cpuInstrDefs.h"
 
-#define CPUSERVICES_INTERFACE_VERSION		"CORE_CPUCaps_001"
-
 //
 // CPU information interface
 //
 class IEqCPUCaps : public IEqCoreModule
 {
 public:
-						~IEqCPUCaps() {}
+	CORE_INTERFACE("E2_CPUCaps_001")
+
+	~IEqCPUCaps() {}
 
 	// CPU frequency in Hz
 	virtual	uint64		GetFrequency() const = 0;
@@ -52,4 +52,4 @@ public:
 	virtual	bool		IsCPUHasSSE42() const = 0;
 };
 
-INTERFACE_SINGLETON( IEqCPUCaps, CEqCPUCaps, CPUSERVICES_INTERFACE_VERSION, g_cpuCaps )
+INTERFACE_SINGLETON( IEqCPUCaps, CEqCPUCaps, g_cpuCaps )

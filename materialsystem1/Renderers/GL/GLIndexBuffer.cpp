@@ -10,10 +10,6 @@
 #include "GLIndexBuffer.h"
 #include "ShaderAPIGL.h"
 
-extern ShaderAPIGL g_shaderApi;
-
-extern bool GLCheckError(const char* op, ...);
-
 CIndexBufferGL::CIndexBufferGL()
 {
 	m_nIndices = 0;

@@ -17,10 +17,7 @@
 
 DECLARE_CVAR(gl_skipTextures, "0", nullptr, CV_CHEAT);
 
-extern ShaderAPIGL g_shaderApi;
 Threading::CEqMutex g_sapi_ProgressiveTextureMutex;
-
-extern bool GLCheckError(const char* op, ...);
 
 static GLTextureRef_t invalidTexture = { 0, IMAGE_TYPE_INVALID };
 

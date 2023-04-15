@@ -8,8 +8,6 @@
 #pragma once
 #include "IFilePackageReader.h"
 
-#define FILESYSTEM_INTERFACE_VERSION		"CORE_Filesystem_007"
-
 //------------------------------------------------------------------------------
 // Definitions
 //------------------------------------------------------------------------------
@@ -33,6 +31,8 @@ class IFileSystem : public IEqCoreModule
 {
 	friend class CFileSystemFind;
 public:
+	CORE_INTERFACE("E2_Filesystem_007")
+
     // Initialization of filesystem
     virtual bool			Init(bool bEditorMode) = 0;
 	virtual void			Shutdown() = 0;
@@ -122,7 +122,7 @@ protected:
 	virtual bool		FindIsDirectory(DKFINDDATA* findData) const = 0;
 };
 
-INTERFACE_SINGLETON( IFileSystem, CFileSystem, FILESYSTEM_INTERFACE_VERSION, g_fileSystem )
+INTERFACE_SINGLETON( IFileSystem, CFileSystem, g_fileSystem )
 
 //-----------------------------------------------------------------------------------------
 // Filesystem find helper class

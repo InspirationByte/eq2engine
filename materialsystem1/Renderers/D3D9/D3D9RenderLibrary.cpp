@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright ï¿½ Inspiration Byte
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
 // Description: D3D Rendering library interface
@@ -28,12 +28,10 @@ CD3D9RenderLib g_library;
 
 CD3D9RenderLib::CD3D9RenderLib()
 {
-	g_eqCore->RegisterInterface(RENDERER_INTERFACE_VERSION, this);
 }
 
 CD3D9RenderLib::~CD3D9RenderLib()
 {
-	g_eqCore->UnregisterInterface(RENDERER_INTERFACE_VERSION);
 }
 
 IShaderAPI* CD3D9RenderLib::GetRenderer() const

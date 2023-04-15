@@ -43,6 +43,9 @@ extern CEqMutex	g_sapi_Mutex;
 
 extern CEqMutex g_sapi_ProgressiveTextureMutex;
 
+ShaderAPIGL g_shaderApi;
+IShaderAPI* g_pShaderAPI = &g_shaderApi;
+
 void PrintGLExtensions()
 {
 	const char* ver = (const char*)glGetString(GL_VERSION);
@@ -119,6 +122,101 @@ bool GLCheckError(const char* op, ...)
 	}
 
 	return true;
+}
+
+void InitGLHardwareCapabilities(ShaderAPICaps_t& caps)
+{
+	memset(&caps, 0, sizeof(caps));
+
+#if GL_ARB_texture_filter_anisotropic
+	if (GLAD_GL_ARB_texture_filter_anisotropic)
+		glGetIntegerv(GL_MAX_TEXTURE_MAX_ANISOTROPY, &caps.maxTextureAnisotropicLevel);
+#else
+	caps.maxTextureAnisotropicLevel = 1;
+#endif
+
+	caps.isHardwareOcclusionQuerySupported = true;
+	caps.isInstancingSupported = true; // GL ES 3
+
+	glGetIntegerv(GL_MAX_TEXTURE_SIZE, &caps.maxTextureSize);
+
+	caps.maxRenderTargets = MAX_MRTS;
+
+	caps.maxVertexGenericAttributes = MAX_GL_GENERIC_ATTRIB;
+	caps.maxVertexTexcoordAttributes = MAX_TEXCOORD_ATTRIB;
+
+	caps.maxTextureUnits = 1;
+	glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &caps.maxTextureUnits);
+	caps.maxTextureUnits = min(MAX_TEXTUREUNIT, caps.maxTextureUnits);
+
+	caps.maxRenderTargets = 1;
+	glGetIntegerv(GL_MAX_DRAW_BUFFERS, &caps.maxRenderTargets);
+	caps.maxRenderTargets = min(MAX_MRTS, caps.maxRenderTargets);
+
+	caps.maxVertexStreams = MAX_VERTEXSTREAM;
+	caps.maxVertexTextureUnits = MAX_VERTEXTEXTURES;
+
+	glGetIntegerv(GL_MAX_VERTEX_TEXTURE_IMAGE_UNITS, &caps.maxVertexTextureUnits);
+	caps.maxVertexTextureUnits = min(caps.maxVertexTextureUnits, MAX_VERTEXTEXTURES);
+
+	glGetIntegerv(GL_MAX_VERTEX_ATTRIBS, &caps.maxVertexGenericAttributes);
+	caps.maxVertexGenericAttributes = min(MAX_GL_GENERIC_ATTRIB, caps.maxVertexGenericAttributes);
+
+	caps.shadersSupportedFlags = SHADER_CAPS_VERTEX_SUPPORTED | SHADER_CAPS_PIXEL_SUPPORTED;
+
+	// get texture capabilities
+	{
+		caps.INTZSupported = true;
+		caps.INTZFormat = FORMAT_D16;
+
+		caps.NULLSupported = true;
+		caps.NULLFormat = FORMAT_NONE;
+
+		for (int i = FORMAT_R8; i <= FORMAT_RGBA16; i++)
+		{
+			caps.textureFormatsSupported[i] = true;
+			caps.renderTargetFormatsSupported[i] = true;
+		}
+		
+		for (int i = FORMAT_D16; i <= FORMAT_D24S8; i++)
+		{
+			caps.textureFormatsSupported[i] = true;
+			caps.renderTargetFormatsSupported[i] = true;
+		}
+
+#if GL_ARB_depth_buffer_float
+		caps.textureFormatsSupported[FORMAT_D32F] = 
+			caps.renderTargetFormatsSupported[FORMAT_D32F] = GLAD_GL_ARB_depth_buffer_float;
+#endif // GL_ARB_depth_buffer_float
+
+#if GL_IMG_texture_compression_pvrtc
+		if(GLAD_GL_IMG_texture_compression_pvrtc)
+		{
+			for (int i = FORMAT_PVRTC_2BPP; i <= FORMAT_PVRTC_A_4BPP; i++)
+				caps.textureFormatsSupported[i] = true;
+		}
+#endif
+
+#if GL_OES_compressed_ETC1_RGB8_texture
+		if(GLAD_GL_OES_compressed_ETC1_RGB8_texture)
+		{
+			for (int i = FORMAT_ETC1; i <= FORMAT_ETC2A8; i++)
+				caps.textureFormatsSupported[i] = true;
+		}
+#endif
+
+#if GL_EXT_texture_compression_s3tc
+		if (GLAD_GL_EXT_texture_compression_s3tc)
+		{
+			for (int i = FORMAT_DXT1; i <= FORMAT_ATI2N; i++)
+				caps.textureFormatsSupported[i] = true;
+
+			caps.textureFormatsSupported[FORMAT_ATI1N] = false;
+		}
+#endif
+	}
+
+	GLCheckError("caps check");
 }
 
 typedef GLvoid (APIENTRY *UNIFORM_FUNC)(GLint location, GLsizei count, const void *value);
@@ -216,9 +314,6 @@ void ShaderAPIGL::Init( const shaderAPIParams_t &params)
 
 	for (int i = 0; i < m_caps.maxRenderTargets; i++)
 		m_drawBuffers[i] = GL_COLOR_ATTACHMENT0 + i;
-
-	// init worker thread
-	g_glWorker.Init();
 
 	HOOK_TO_CVAR(r_anisotropic);
 	const int desiredAnisotropicLevel = min(r_anisotropic->GetInt(), m_caps.maxTextureAnisotropicLevel);

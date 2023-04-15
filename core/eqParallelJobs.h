@@ -59,7 +59,6 @@ public:
 	virtual ~CEqParallelJobThreads();
 
 	bool							IsInitialized() const { return m_jobThreads.numElem() > 0; }
-	const char*						GetInterfaceName() const { return PARALLELJOBS_INTERFACE_VERSION; }
 
 	// creates new job thread
 	bool							Init(int numJobTypes, eqJobThreadDesc_t* jobTypes);

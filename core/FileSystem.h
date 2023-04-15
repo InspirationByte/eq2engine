@@ -137,7 +137,6 @@ public:
 
 	//-------------------------
 	bool						IsInitialized() const		{return m_isInit;}
-	const char*					GetInterfaceName() const	{return FILESYSTEM_INTERFACE_VERSION;}
 
 protected:
 

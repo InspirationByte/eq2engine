@@ -169,7 +169,9 @@ group "MatSystem/RHI"
 usage "eqRHIBaseLib"
     files {
 		Folders.matsystem1.. "Renderers/Shared/**.cpp",
-		Folders.matsystem1.."Renderers/Shared/**.h",
+		Folders.matsystem1.."Renderers/Shared/**.h", 
+		Folders.matsystem1.."Renderers/*.cpp",
+		Folders.matsystem1.."Renderers/*.h",
 		Folders.public.."materialsystem1/renderers/**.h",
 	}
     includedirs {
@@ -187,6 +189,7 @@ project "eqNullRHI"
 	}
 	defines{
 		"EQRHI_NULL",
+		"RENDERER_TYPE=0"
 	}
     files {
 		Folders.matsystem1.. "Renderers/Empty/**.cpp",
@@ -204,7 +207,8 @@ project "eqGLESRHI"
 
 	defines	{
 		"USE_GLES2",
-		"EQRHI_GL"
+		"EQRHI_GL",
+		"RENDERER_TYPE=1"
 	}
 	
     files {
@@ -233,13 +237,12 @@ project "eqGLESRHI"
 			"GLESv2", "EGL", "android" 
 		}
 		files {
-			Folders.matsystem1.. "Renderers/GL/GLRenderLibrary_ES.cpp",
-			--Folders.matsystem1.. "Renderers/GL/GLRenderLibrary_SDL.cpp" -- SDL2 doesn't work properly with context switching :C
+			Folders.matsystem1.. "Renderers/GL/GLRenderLibrary_EGL.cpp",
 		}
 
 	filter "system:Windows"
 		files {
-			Folders.matsystem1.. "Renderers/GL/GLRenderLibrary_ES.cpp",
+			Folders.matsystem1.. "Renderers/GL/GLRenderLibrary_EGL.cpp",
 			Folders.matsystem1.. "Renderers/GL/loaders/glad_egl.c",
 		}
 
@@ -248,7 +251,7 @@ project "eqGLESRHI"
 			"X11", "GLESv2", "EGL" 
 		}
 		files {
-			Folders.matsystem1.. "Renderers/GL/GLRenderLibrary_ES.cpp",
+			Folders.matsystem1.. "Renderers/GL/GLRenderLibrary_EGL.cpp",
 			Folders.matsystem1.. "Renderers/GL/loaders/glad_egl.c",
 		}
 
@@ -265,6 +268,7 @@ project "eqGLRHI"
 
 	defines{
 		"EQRHI_GL",
+		"RENDERER_TYPE=1"
 	}
 	
 	files {
@@ -287,17 +291,21 @@ project "eqGLRHI"
 		}
 		
 		files {
+			Folders.matsystem1.. "Renderers/GL/GLRenderLibrary_WGL.cpp",
 			Folders.matsystem1.. "Renderers/GL/loaders/wgl_caps.cpp",
 			Folders.matsystem1.. "Renderers/GL/loaders/glad.c"
 		}
 
 	filter "system:Linux"
 		files {
+			Folders.matsystem1.. "Renderers/GL/GLRenderLibrary_GLX.cpp",
+			Folders.matsystem1.. "Renderers/GL/GLRenderLibrary_EGL.cpp",
 			Folders.matsystem1.. "Renderers/GL/loaders/glx_caps.cpp",
-			Folders.matsystem1.. "Renderers/GL/loaders/glad.c"
+			Folders.matsystem1.. "Renderers/GL/loaders/glad.c",
+			Folders.matsystem1.. "Renderers/GL/loaders/glad_egl.c",
 		}
 		links {
-			"X11", "Xxf86vm", "Xext", "GL", "GLU",
+			"EGL", "X11", "Xxf86vm", "Xext", "GL", "GLU",
 		}
 
 	if os.target() == "windows" then
@@ -311,6 +319,7 @@ project "eqGLRHI"
 			}
 			defines{
 				"EQRHI_D3D9",
+				"RENDERER_TYPE=2"
 			}
 			files {
 				Folders.matsystem1.. "renderers/D3D9/**.cpp",
@@ -336,6 +345,7 @@ project "eqGLRHI"
 			}
 			defines{
 				"EQRHI_D3D11",
+				"RENDERER_TYPE=3"
 			}
 			files {
 				Folders.matsystem1.. "renderers/D3D11/**.cpp",

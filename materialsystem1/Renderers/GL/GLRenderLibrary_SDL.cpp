@@ -22,8 +22,6 @@
 
 #include "gl_loader.h"
 
-extern bool GLCheckError(const char* op, ...);
-
 /*
 
 OpenGL extensions used to generate gl_caps.hpp/cpp
@@ -53,15 +51,9 @@ ARB_occlusion_query
 
 HOOK_TO_CVAR(r_screen);
 
-ShaderAPIGL g_shaderApi;
-IShaderAPI* g_pShaderAPI = &g_shaderApi;
-
-CGLRenderLib_SDL g_library;
 
 CGLRenderLib_SDL::CGLRenderLib_SDL()
 {
-	g_eqCore->RegisterInterface(RENDERER_INTERFACE_VERSION, this);
-
 	m_glSharedContext = 0;
 	m_windowed = true;
 	m_mainThreadId = Threading::GetCurrentThreadID();
@@ -70,7 +62,6 @@ CGLRenderLib_SDL::CGLRenderLib_SDL()
 
 CGLRenderLib_SDL::~CGLRenderLib_SDL()
 {
-	g_eqCore->UnregisterInterface(RENDERER_INTERFACE_VERSION);
 }
 
 IShaderAPI* CGLRenderLib_SDL::GetRenderer() const
@@ -199,102 +190,8 @@ bool CGLRenderLib_SDL::InitAPI(const shaderAPIParams_t& params)
 		glEnable(GL_MULTISAMPLE);
 #endif // USE_GLES2
 
-	//-------------------------------------------
-	// init caps
-	//-------------------------------------------
-	ShaderAPICaps_t& caps = g_shaderApi.m_caps;
-
-	memset(&caps, 0, sizeof(caps));
-
-	caps.maxTextureAnisotropicLevel = 1;
-
-	caps.isHardwareOcclusionQuerySupported = true;
-	caps.isInstancingSupported = true; // GL ES 3
-
-#ifndef USE_GLES2
-	if (GLAD_GL_ARB_texture_filter_anisotropic)
-		glGetIntegerv(GL_MAX_TEXTURE_MAX_ANISOTROPY, &caps.maxTextureAnisotropicLevel);
-#endif // USE_GLES2
-
-	glGetIntegerv(GL_MAX_TEXTURE_SIZE, &caps.maxTextureSize);
-
-	caps.maxRenderTargets = MAX_MRTS;
-
-	caps.maxVertexGenericAttributes = MAX_GL_GENERIC_ATTRIB;
-	caps.maxVertexTexcoordAttributes = MAX_TEXCOORD_ATTRIB;
-
-	caps.maxTextureUnits = 1;
-	caps.maxVertexStreams = MAX_VERTEXSTREAM;
-	caps.maxVertexTextureUnits = MAX_VERTEXTEXTURES;
-
-	glGetIntegerv(GL_MAX_VERTEX_TEXTURE_IMAGE_UNITS, &caps.maxVertexTextureUnits);
-	caps.maxVertexTextureUnits = min(caps.maxVertexTextureUnits, MAX_VERTEXTEXTURES);
-
-	glGetIntegerv(GL_MAX_VERTEX_ATTRIBS, &caps.maxVertexGenericAttributes);
-
-	// limit by the MAX_GL_GENERIC_ATTRIB defined by ShaderAPI
-	caps.maxVertexGenericAttributes = min(MAX_GL_GENERIC_ATTRIB, caps.maxVertexGenericAttributes);
-
-	caps.shadersSupportedFlags = SHADER_CAPS_VERTEX_SUPPORTED | SHADER_CAPS_PIXEL_SUPPORTED;
-	glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &caps.maxTextureUnits);
-
-	if(caps.maxTextureUnits > MAX_TEXTUREUNIT)
-		caps.maxTextureUnits = MAX_TEXTUREUNIT;
-
-	caps.maxRenderTargets = 1;
-	glGetIntegerv(GL_MAX_DRAW_BUFFERS, &caps.maxRenderTargets);
-
-	if (caps.maxRenderTargets > MAX_MRTS)
-		caps.maxRenderTargets = MAX_MRTS;
-
-	// get texture capabilities
-	{
-		caps.INTZSupported = true;
-		caps.INTZFormat = FORMAT_D16;
-
-		caps.NULLSupported = true;
-		caps.NULLFormat = FORMAT_NONE;
-
-		for (int i = FORMAT_R8; i <= FORMAT_RGBA16; i++)
-		{
-			caps.textureFormatsSupported[i] = true;
-			caps.renderTargetFormatsSupported[i] = true;
-		}
-		
-		for (int i = FORMAT_D16; i <= FORMAT_D24S8; i++)
-		{
-			caps.textureFormatsSupported[i] = true;
-			caps.renderTargetFormatsSupported[i] = true;
-		}
-#ifndef USE_GLES2
-		caps.textureFormatsSupported[FORMAT_D32F] = 
-			caps.renderTargetFormatsSupported[FORMAT_D32F] = GLAD_GL_ARB_depth_buffer_float;
-
-		if (GLAD_GL_EXT_texture_compression_s3tc)
-		{
-			for (int i = FORMAT_DXT1; i <= FORMAT_ATI2N; i++)
-				caps.textureFormatsSupported[i] = true;
-
-			caps.textureFormatsSupported[FORMAT_ATI1N] = false;
-		}
-#endif // USE_GLES2
-
-#ifdef USE_GLES2
-		if(GLAD_GL_IMG_texture_compression_pvrtc)
-		{
-			for (int i = FORMAT_PVRTC_2BPP; i <= FORMAT_PVRTC_A_4BPP; i++)
-				caps.textureFormatsSupported[i] = true;
-		}
-
-		if(GLAD_GL_OES_compressed_ETC1_RGB8_texture)
-		{
-			for (int i = FORMAT_ETC1; i <= FORMAT_ETC2A8; i++)
-				caps.textureFormatsSupported[i] = true;
-		}
-#endif // USE_GLES3
-	}
-
-	GLCheckError("caps check");
+	InitGLHardwareCapabilities(g_shaderApi.m_caps);
+	g_glWorker.Init(this);
 
 	return true;
 }

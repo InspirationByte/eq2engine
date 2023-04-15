@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright ï¿½ Inspiration Byte
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
 // Description: Equilibrium OpenGL ShaderAPI
@@ -19,8 +19,6 @@ enum EGraphicsVendor
 };
 
 class CGLRenderLib;
-class CGLRenderLib_ES;
-class CGLRenderLib_SDL;
 class CVertexFormatGL;
 class CVertexBufferGL;
 class CIndexBufferGL;
@@ -32,9 +30,11 @@ class GLWorkerThread;
 class ShaderAPIGL : public ShaderAPI_Base
 {
 public:
-	friend class		CGLRenderLib;
-	friend class		CGLRenderLib_ES;
+	friend class		CGLRenderLib_WGL;
+	friend class		CGLRenderLib_EGL;
 	friend class		CGLRenderLib_SDL;
+	friend class		CGLRenderLib_GLX;
+
 	friend class 		CVertexFormatGL;
 	friend class 		CVertexBufferGL;
 	friend class 		CIndexBufferGL;
@@ -326,4 +326,8 @@ private:
 	bool				m_deviceLost{ false };
 };
 
+extern ShaderAPIGL g_shaderApi;
+
+bool GLCheckError(const char* op, ...);
 void PrintGLExtensions();
+void InitGLHardwareCapabilities(ShaderAPICaps_t& caps);

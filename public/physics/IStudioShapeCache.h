@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright ï¿½ Inspiration Byte
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
 // Description: Physics model shape cache interface
@@ -8,11 +8,11 @@
 #pragma once
 #include "egf/model.h"
 
-#define SHAPECACHE_INTERFACE_VERSION		"Physics_StudioShapeCache_001"
-
 class IStudioShapeCache : public IEqCoreModule
 {
 public:
+	CORE_INTERFACE("E2_StudioShapeCache_001")
+
 	// checks the shape is initialized for the cache
 	virtual bool	IsShapeCachePresent( studioPhysShapeCache_t* shapeInfo ) = 0;
 
@@ -30,7 +30,6 @@ class CEmptyStudioShapeCache : public IStudioShapeCache
 {
 public:
 	bool			IsInitialized() const { return true; }
-	const char*		GetInterfaceName() const { return SHAPECACHE_INTERFACE_VERSION; }
 
 	bool			IsShapeCachePresent( studioPhysShapeCache_t* shapeInfo ) {return false;}
 
@@ -40,4 +39,4 @@ public:
 	void			Cleanup_Invalidate() {}
 };
 
-INTERFACE_SINGLETON(IStudioShapeCache, StudioShapeCache, SHAPECACHE_INTERFACE_VERSION, g_studioShapeCache)
+INTERFACE_SINGLETON(IStudioShapeCache, StudioShapeCache, g_studioShapeCache)

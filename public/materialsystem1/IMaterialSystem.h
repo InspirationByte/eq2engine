@@ -19,8 +19,6 @@
 #include "IMaterialVar.h"
 #include "IMaterialProxy.h"
 
-#define MATSYSTEM_INTERFACE_VERSION			"E1MaterialSystem_023"
-
 struct FogInfo_t;
 struct dlight_t;
 
@@ -178,6 +176,7 @@ struct matsystem_init_config_t
 class IMaterialSystem : public IEqCoreModule
 {
 public:
+	CORE_INTERFACE("E1_MaterialSystem_023")
 
 	// Initialize material system
 	// szShaderAPI - shader API that will be used. On NULL will set to default Shader API (DX9)

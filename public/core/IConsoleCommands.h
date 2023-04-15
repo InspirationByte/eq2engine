@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright ï¿½ Inspiration Byte
 // 2009-2014
 //////////////////////////////////////////////////////////////////////////////////
 // Description: Console variable factory/registrator
@@ -15,11 +15,11 @@ class ConCommandBase;
 
 typedef bool (*cmdFilterFn_t)(ConCommandBase* pCmd, Array<EqString>& args);
 
-#define CONSOLE_INTERFACE_VERSION		"CORE_ConsoleCommands_004"
-
 class IConsoleCommands : public IEqCoreModule
 {
 public:
+	CORE_INTERFACE("E2_ConsoleCommands_004")
+
     friend class ConCommandBase;
 
     virtual void								RegisterCommand(ConCommandBase *pCmd) = 0;
@@ -53,4 +53,4 @@ public:
 	virtual Array<EqString>&					GetFailedCommands() = 0;	
 };
 
-INTERFACE_SINGLETON( IConsoleCommands, CConsoleCommands, CONSOLE_INTERFACE_VERSION, g_consoleCommands)
+INTERFACE_SINGLETON( IConsoleCommands, CConsoleCommands, g_consoleCommands)
