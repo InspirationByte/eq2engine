@@ -209,7 +209,11 @@ void InitGLHardwareCapabilities(ShaderAPICaps_t& caps)
 #endif
 
 #if GL_EXT_texture_compression_s3tc || GL_EXT_texture_compression_s3tc_srgb
-		if (GLAD_GL_EXT_texture_compression_s3tc || GLAD_GL_EXT_texture_compression_s3tc_srgb)
+		bool s3tcSupported = GLAD_GL_EXT_texture_compression_s3tc;
+#if GL_EXT_texture_compression_s3tc_srgb
+		s3tcSupported = s3tcSupported || GLAD_GL_EXT_texture_compression_s3tc_srgb;
+#endif
+		if (s3tcSupported)
 		{
 			for (int i = FORMAT_DXT1; i <= FORMAT_ATI2N; i++)
 				caps.textureFormatsSupported[i] = true;

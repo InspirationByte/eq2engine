@@ -16,7 +16,7 @@
 #include "DPKFileWriter.h"
 #include "core/platform/OSFindData.h"
 
-#ifdef PLAT_LINUX
+#ifndef PLAT_WIN
 #include <sys/stat.h>
 #include <dirent.h> // opendir, readdir
 #endif

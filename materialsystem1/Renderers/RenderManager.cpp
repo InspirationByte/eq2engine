@@ -15,7 +15,7 @@ static CEmptyRenderLib  s_EmptyRenderLib;
 static CGLRenderLib_SDL s_SDLRenderLib;
 #endif // USE_SDL2
 
-#ifdef PLAT_LINUX
+#if defined(PLAT_LINUX) && !defined(USE_GLES2)
 #include "GL/GLRenderLibrary_GLX.h"
 static CGLRenderLib_GLX s_GLXRenderLib;
 #endif // PLAT_LINUX
@@ -76,8 +76,10 @@ IRenderLibrary* CEqRenderManager::CreateRenderer(const shaderAPIParams_t &params
 #if RENDERER_TYPE == 1
 #ifdef PLAT_LINUX
         case RHI_WINDOW_HANDLE_NATIVE_X11:
+#ifndef USE_GLES2
             s_currentRenderLib = &s_GLXRenderLib;
             break;
+#endif // USE_GLES2
         case RHI_WINDOW_HANDLE_NATIVE_WAYLAND:
 #endif // #ifdef PLAT_LINUX
         case RHI_WINDOW_HANDLE_VTABLE: // Android case

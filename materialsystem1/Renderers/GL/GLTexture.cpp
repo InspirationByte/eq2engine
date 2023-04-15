@@ -119,14 +119,20 @@ void SetupGLSamplerState(uint texTarget, const SamplerStateParam_t& sampler, int
 	glTexParameteri(texTarget, GL_TEXTURE_COMPARE_FUNC, g_gl_depthConst[sampler.compareFunc]);
 	GLCheckError("smp cmpfunc");
 
-#ifndef USE_GLES2
-	// Setup anisotropic filtering
+#if GL_ARB_texture_filter_anisotropic
 	if (sampler.aniso > 1 && GLAD_GL_ARB_texture_filter_anisotropic)
 	{
 		glTexParameteri(texTarget, GL_TEXTURE_MAX_ANISOTROPY, sampler.aniso);
 		GLCheckError("smp aniso");
 	}
-#endif // USE_GLES2
+#elif GL_EXT_texture_filter_anisotropic
+	if (sampler.aniso > 1 && GLAD_GL_EXT_texture_filter_anisotropic)
+	{
+		glTexParameteri(texTarget, GL_TEXTURE_MAX_ANISOTROPY_EXT, sampler.aniso);
+		GLCheckError("smp aniso");
+	}
+#endif
+
 }
 
 GLTextureRef_t CGLTexture::CreateGLTexture(const CImage* img, const SamplerStateParam_t& sampler, int startMip, int mipCount) const
