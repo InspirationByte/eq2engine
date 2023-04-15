@@ -19,8 +19,8 @@ class CGLRenderLib_WGL : public IRenderLibrary, public GLLibraryWorkerHandler
 
 public:
 
-							CGLRenderLib_WGL();
-							~CGLRenderLib_WGL();
+	CGLRenderLib_WGL() = default;
+	~CGLRenderLib_WGL() = default;
 
 	bool					InitCaps();
 
@@ -71,11 +71,11 @@ protected:
 	Array<IEqSwapChain*>	m_swapChains{ PP_SL };
 	IEqSwapChain*			m_curSwapChain{ nullptr };
 
-	uintptr_t				m_mainThreadId;
-	bool					m_asyncOperationActive;
+	uintptr_t				m_mainThreadId{ 0 };
+	bool					m_asyncOperationActive{ false };
 
-	HGLRC					m_glContext;
-	HGLRC					m_glSharedContext;
+	HGLRC					m_glContext{ 0 };
+	HGLRC					m_glSharedContext{ 0 };
 
 	int						m_bestPixelFormat{ 0 };
 	PIXELFORMATDESCRIPTOR	m_pfd;
@@ -86,5 +86,5 @@ protected:
 
 	int						m_width{ 0 };
 	int						m_height{ 0 };
-	bool					m_windowed{ false };
+	bool					m_windowed{ true };
 };

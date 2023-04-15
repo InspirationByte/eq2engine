@@ -33,8 +33,8 @@ class CGLRenderLib_GLX : public IRenderLibrary, public GLLibraryWorkerHandler
 
 public:
 
-							CGLRenderLib_GLX();
-							~CGLRenderLib_GLX();
+	CGLRenderLib_GLX() = default;
+	~CGLRenderLib_GLX() = default;
 
 	bool					InitCaps();
 
@@ -85,20 +85,20 @@ protected:
 	Array<IEqSwapChain*>	m_swapChains{ PP_SL };
 	IEqSwapChain*			m_curSwapChain{ nullptr };
 
-	uintptr_t				m_mainThreadId;
-	bool					m_asyncOperationActive;
+	uintptr_t				m_mainThreadId{ 0 };
+	bool					m_asyncOperationActive{ false };
 
-	GLXContext				m_glContext;
-	GLXContext				m_glSharedContext;
+	GLXContext				m_glContext{ nullptr };
+	GLXContext				m_glSharedContext{ nullptr };
 
-    XF86VidModeModeInfo**	m_dmodes;
-    Display*				m_display;
-    XVisualInfo*            m_xvi;
+    XF86VidModeModeInfo**	m_dmodes{ nullptr };
+    Display*				m_display{ nullptr };
+	XVisualInfo*			m_xvi{ nullptr };
 	Window					m_window;
     int						m_screen;
 	GLXFBConfig 			m_bestFbc;
 
 	int						m_width{ 0 };
 	int						m_height{ 0 };
-	bool					m_windowed{ false };
+	bool					m_windowed{ true };
 };

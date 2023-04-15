@@ -15,10 +15,12 @@ static CEmptyRenderLib  s_EmptyRenderLib;
 static CGLRenderLib_SDL s_SDLRenderLib;
 #endif // USE_SDL2
 
+#ifdef PLAT_LINUX
 #include "GL/GLRenderLibrary_GLX.h"
 static CGLRenderLib_GLX s_GLXRenderLib;
+#endif // PLAT_LINUX
 
-#ifdef PLAT_WIN
+#if defined(PLAT_WIN) && !defined(USE_GLES2)
 #include "GL/GLRenderLibrary_WGL.h"
 static CGLRenderLib_WGL s_WGLRenderLib;
 #endif // PLAT_WIN
@@ -56,7 +58,7 @@ IRenderLibrary* CEqRenderManager::CreateRenderer(const shaderAPIParams_t &params
 
     switch(params.windowHandleType)
     {
-#ifdef PLAT_WIN
+#if defined(PLAT_WIN) && !defined(USE_GLES2)
         case RHI_WINDOW_HANDLE_NATIVE_WINDOWS:
             // Depends on compiled renderer
 #if RENDERER_TYPE == 1
@@ -67,12 +69,17 @@ IRenderLibrary* CEqRenderManager::CreateRenderer(const shaderAPIParams_t &params
             s_currentRenderLib = &s_D3D11RenderLib;
 #endif // RENDERER_TYPE
             break;
+#elif defined(PLAT_WIN) && defined(USE_GLES2)
+        case RHI_WINDOW_HANDLE_NATIVE_WINDOWS:
+            s_currentRenderLib = &s_EGLRenderLib;
 #endif // #ifdef PLAT_WIN
 #if RENDERER_TYPE == 1
+#ifdef PLAT_LINUX
         case RHI_WINDOW_HANDLE_NATIVE_X11:
             s_currentRenderLib = &s_GLXRenderLib;
             break;
         case RHI_WINDOW_HANDLE_NATIVE_WAYLAND:
+#endif // #ifdef PLAT_LINUX
         case RHI_WINDOW_HANDLE_VTABLE: // Android case
             s_currentRenderLib = &s_EGLRenderLib;
             break;

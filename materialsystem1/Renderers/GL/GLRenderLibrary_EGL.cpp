@@ -2,7 +2,7 @@
 // Copyright © Inspiration Byte
 // 2009-2022
 //////////////////////////////////////////////////////////////////////////////////
-// Description: Equilibrium OpenGL ES ShaderAPI
+// Description: Equilibrium OpenGL ShaderAPI
 //////////////////////////////////////////////////////////////////////////////////
 
 #include "core/core_common.h"
@@ -73,16 +73,6 @@ ARB_occlusion_query
 
 */
 
-CGLRenderLib_EGL::CGLRenderLib_EGL()
-{
-	m_windowed = true;
-	m_mainThreadId = Threading::GetCurrentThreadID();
-	m_asyncOperationActive = false;
-}
-
-CGLRenderLib_EGL::~CGLRenderLib_EGL()
-{
-}
 
 IShaderAPI* CGLRenderLib_EGL::GetRenderer() const
 {
@@ -91,6 +81,8 @@ IShaderAPI* CGLRenderLib_EGL::GetRenderer() const
 
 bool CGLRenderLib_EGL::InitCaps()
 {
+	m_mainThreadId = Threading::GetCurrentThreadID();
+
 #ifdef PLAT_WIN
 	if (!gladLoaderLoadEGL(EGL_DEFAULT_DISPLAY))
 	{
@@ -111,7 +103,13 @@ void CGLRenderLib_EGL::DestroySharedContexts()
 void CGLRenderLib_EGL::InitSharedContexts()
 {
 	const EGLint contextAttr[] = {
+#ifdef USE_GLES2
 		EGL_CONTEXT_CLIENT_VERSION, 3,
+#else
+		EGL_CONTEXT_MAJOR_VERSION, 3,
+		EGL_CONTEXT_MINOR_VERSION, 3,
+		EGL_CONTEXT_OPENGL_PROFILE_MASK, EGL_CONTEXT_OPENGL_COMPATIBILITY_PROFILE_BIT,
+#endif
 		EGL_NONE, EGL_NONE
 	};
 
@@ -170,7 +168,7 @@ bool CGLRenderLib_EGL::InitAPI(const shaderAPIParams_t& params)
 
 	if (m_eglDisplay == EGL_NO_DISPLAY)
 	{
-		ErrorMsg("OpenGL ES init error: Could not get EGL display (%d)", m_eglDisplay);
+		ErrorMsg("OpenGL init error: Could not get EGL display (%d)", m_eglDisplay);
 		return false;
 	}
 
@@ -180,17 +178,26 @@ bool CGLRenderLib_EGL::InitAPI(const shaderAPIParams_t& params)
 		EGLint minor = 0;
 		if (eglInitialize(m_eglDisplay, &major, &minor) == EGL_FALSE)
 		{
-			ErrorMsg("OpenGL ES init error: Could not initialize EGL display!");
+			ErrorMsg("OpenGL init error: Could not initialize EGL display!");
 			return false;
 		}
 
 		if (major < 1)
 		{
 			// Does not support EGL 1.0
-			ErrorMsg("OpenGL ES init error: System does not support at least EGL 1.0");
+			ErrorMsg("OpenGL init error: System does not support at least EGL 1.0");
 			return false;
 		}
 	}
+
+	// HACK: call loader again to initialize rest of EGL
+#ifdef PLAT_WIN
+	if (!gladLoaderLoadEGL(m_eglDisplay))
+	{
+		ErrorMsg("EGL loading failed!");
+		return false;
+	}
+#endif // PLAT_ANDROID
 
 #ifdef USE_GLES2
 	eglBindAPI(EGL_OPENGL_ES_API);
@@ -200,20 +207,24 @@ bool CGLRenderLib_EGL::InitAPI(const shaderAPIParams_t& params)
 
 	if (!CreateSurface())
 	{
-		ErrorMsg("OpenGL ES init error: Could not create EGL surface\n");
+		ErrorMsg("OpenGL init error: Could not create EGL surface\n");
 		return false;
 	}
 
 	{
 		// context attribute list
 		const EGLint contextAttr[] = {
+#ifdef USE_GLES2
 			EGL_CONTEXT_CLIENT_VERSION, 3,
-			EGL_NONE,
+#else
+			EGL_CONTEXT_MAJOR_VERSION, 3,
+			EGL_CONTEXT_MINOR_VERSION, 3,
+			EGL_CONTEXT_OPENGL_PROFILE_MASK, EGL_CONTEXT_OPENGL_COMPATIBILITY_PROFILE_BIT,
+#endif
+			EGL_NONE, EGL_NONE
 		};
 
-		MsgInfo("eglCreateContext...\n");
-
-		// Create two OpenGL ES contexts
+		// Create two OpenGL contexts
 		m_glContext = eglCreateContext(m_eglDisplay, m_eglConfig, EGL_NO_CONTEXT, contextAttr);
 		if (m_glContext == EGL_NO_CONTEXT)
 		{
@@ -394,7 +405,12 @@ bool CGLRenderLib_EGL::CreateSurface()
 		EGL_DEPTH_SIZE,     24,
 		EGL_STENCIL_SIZE,   EGL_DONT_CARE,
 		EGL_SAMPLE_BUFFERS, m_multiSamplingMode ? 1 : 0,
+#ifdef USE_GLES2
 		EGL_RENDERABLE_TYPE, EGL_OPENGL_ES3_BIT,
+#else
+		EGL_RENDERABLE_TYPE, EGL_OPENGL_BIT,
+		EGL_SURFACE_TYPE,	 EGL_WINDOW_BIT | EGL_PBUFFER_BIT,
+#endif
 
 		EGL_NONE
 	};
@@ -402,13 +418,13 @@ bool CGLRenderLib_EGL::CreateSurface()
 	EGLint numConfigs = 0;
 	if (eglChooseConfig(m_eglDisplay, attrs, &m_eglConfig, 1, &numConfigs) == EGL_FALSE)
 	{
-		ErrorMsg("OpenGL ES init error: Could not find valid EGL config");
+		ErrorMsg("OpenGL init error: Could not find valid EGL config");
 		return false;
 	}
 
 	if (numConfigs < 1)
 	{
-		ErrorMsg("OpenGL ES init error: no configurations.");
+		ErrorMsg("OpenGL init error: no configurations.");
 		return false;
 	}
 

@@ -22,8 +22,8 @@ class CGLRenderLib_EGL : public IRenderLibrary, public GLLibraryWorkerHandler
 
 public:
 
-	CGLRenderLib_EGL();
-	~CGLRenderLib_EGL();
+	CGLRenderLib_EGL() = default;
+	~CGLRenderLib_EGL() = default;
 
 	bool					InitCaps();
 
@@ -77,11 +77,11 @@ protected:
 	shaderAPIWindowFuncTable_t m_winFunc;
 
 	Array<IEqSwapChain*>	m_swapChains{ PP_SL };
-	uintptr_t				m_mainThreadId;
-	bool					m_asyncOperationActive;
+	uintptr_t				m_mainThreadId{ 0 };
+	bool					m_asyncOperationActive{ false };
 
-	EGLContext				m_glContext;
-	EGLContext				m_glSharedContext;
+	EGLContext				m_glContext{ nullptr };
+	EGLContext				m_glSharedContext{ nullptr };
 
     EGLNativeDisplayType	m_hdc{ 0 };
     EGLNativeWindowType		m_hwnd{ 0 };
@@ -89,10 +89,10 @@ protected:
     EGLSurface				m_eglSurface{ nullptr };
 	EGLConfig				m_eglConfig{ nullptr };
 
-	int						m_multiSamplingMode;
-	int						m_width;
-	int						m_height;
+	int						m_multiSamplingMode{ 0 };
+	int						m_width{ 0 };
+	int						m_height{ 0 };
 
-	bool					m_bResized;
-	bool					m_windowed;
+	bool					m_bResized{ false };
+	bool					m_windowed{ true };
 };

@@ -7,8 +7,10 @@
 
 #pragma once
 
+#include <d3d10.h>
+
 #include "renderers/IShaderAPI.h"
-#include "IRenderLibrary.h"
+#include "../IRenderLibrary.h"
 
 class CD3D11RenderLib : public IRenderLibrary
 {

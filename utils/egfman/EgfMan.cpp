@@ -365,7 +365,7 @@ static void InitMatSystem(void* window)
 {
 	ASSERT_MSG(window, "InitMatSystem - NULL window");
 
-	materials = (IMaterialSystem*)g_eqCore->GetInterface( MATSYSTEM_INTERFACE_VERSION );
+	materials = g_eqCore->GetInterface<IMaterialSystem>();
 
 	if(!materials)
 	{

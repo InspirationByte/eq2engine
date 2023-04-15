@@ -42,7 +42,7 @@ public:
 
 	template<typename T> void		RegisterInterface(T* iface) { RegisterInterface(T::CoreInterfaceName(), iface); }
 	template<typename T> void		UnregisterInterface() 		{ UnregisterInterface(T::CoreInterfaceName()); }
-	template<typename T> T*			GetInterface() const 		{ return GetInterface(T::CoreInterfaceName()); }
+	template<typename T> T*			GetInterface() const 		{ return static_cast<T*>(GetInterface(T::CoreInterfaceName())); }
 };
 
 ENTRYPOINT_INTERFACE_SINGLETON(IDkCore, CDkCore, g_eqCore)

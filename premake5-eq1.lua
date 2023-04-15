@@ -291,9 +291,11 @@ project "eqGLRHI"
 		}
 		
 		files {
+			Folders.matsystem1.. "Renderers/GL/GLRenderLibrary_EGL.cpp",
 			Folders.matsystem1.. "Renderers/GL/GLRenderLibrary_WGL.cpp",
 			Folders.matsystem1.. "Renderers/GL/loaders/wgl_caps.cpp",
-			Folders.matsystem1.. "Renderers/GL/loaders/glad.c"
+			Folders.matsystem1.. "Renderers/GL/loaders/glad.c",
+			Folders.matsystem1.. "Renderers/GL/loaders/glad_egl.c",
 		}
 
 	filter "system:Linux"

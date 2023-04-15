@@ -279,7 +279,7 @@ Array<shaderfactory_t> pShaderRegistrators(PP_SL);
 
 void InitMatSystem(EQWNDHANDLE window)
 {
-	materials = (IMaterialSystem*)g_eqCore->GetInterface( MATSYSTEM_INTERFACE_VERSION );
+	materials = g_eqCore->GetInterface<IMaterialSystem>();
 
 	if(!materials)
 	{

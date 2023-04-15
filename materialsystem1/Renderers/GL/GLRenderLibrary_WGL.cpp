@@ -78,21 +78,6 @@ static LRESULT CALLBACK PFWinProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM
 
 HOOK_TO_CVAR(r_screen);
 
-CGLRenderLib_WGL::CGLRenderLib_WGL()
-{
-	g_eqCore->RegisterInterface(RENDERER_INTERFACE_VERSION, this);
-
-	m_glSharedContext = 0;
-	m_windowed = true;
-	m_mainThreadId = Threading::GetCurrentThreadID();
-	m_asyncOperationActive = false;
-}
-
-CGLRenderLib_WGL::~CGLRenderLib_WGL()
-{
-	g_eqCore->UnregisterInterface(RENDERER_INTERFACE_VERSION);
-}
-
 IShaderAPI* CGLRenderLib_WGL::GetRenderer() const
 {
 	return &g_shaderApi;
@@ -100,6 +85,8 @@ IShaderAPI* CGLRenderLib_WGL::GetRenderer() const
 
 bool CGLRenderLib_WGL::InitCaps()
 {
+	m_mainThreadId = Threading::GetCurrentThreadID();
+
 	HINSTANCE modHandle = GetModuleHandle(nullptr);
 
 	//Unregister PFrmt if

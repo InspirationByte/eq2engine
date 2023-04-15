@@ -73,18 +73,6 @@ static int dComp(const DispRes& d0, const DispRes& d1)
 
 HOOK_TO_CVAR(r_screen);
 
-CGLRenderLib_GLX::CGLRenderLib_GLX()
-{
-	m_glSharedContext = 0;
-	m_windowed = true;
-	m_mainThreadId = Threading::GetCurrentThreadID();
-	m_asyncOperationActive = false;
-}
-
-CGLRenderLib_GLX::~CGLRenderLib_GLX()
-{
-}
-
 IShaderAPI* CGLRenderLib_GLX::GetRenderer() const
 {
 	return &g_shaderApi;
@@ -92,6 +80,8 @@ IShaderAPI* CGLRenderLib_GLX::GetRenderer() const
 
 bool CGLRenderLib_GLX::InitCaps()
 {
+	m_mainThreadId = Threading::GetCurrentThreadID();
+
 	m_display = XOpenDisplay(0);
 	m_screen = DefaultScreen( m_display );
 

@@ -5,8 +5,6 @@
 // Description: D3D Rendering library interface
 //////////////////////////////////////////////////////////////////////////////////
 
-#include <d3d10.h>
-
 #include "core/core_common.h"
 #include "core/ConCommand.h"
 #include "core/ConVar.h"

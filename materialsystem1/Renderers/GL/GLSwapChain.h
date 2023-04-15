@@ -11,7 +11,9 @@
 
 class CGLSwapChain : public IEqSwapChain
 {
-	friend class CGLRenderLib;
+	friend class CGLRenderLib_WGL;
+	friend class CGLRenderLib_GLX;
+	friend class CGLRenderLib_EGL;
 public:
 	~CGLSwapChain();
 

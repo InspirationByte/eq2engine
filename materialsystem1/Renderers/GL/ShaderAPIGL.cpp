@@ -131,6 +131,9 @@ void InitGLHardwareCapabilities(ShaderAPICaps_t& caps)
 #if GL_ARB_texture_filter_anisotropic
 	if (GLAD_GL_ARB_texture_filter_anisotropic)
 		glGetIntegerv(GL_MAX_TEXTURE_MAX_ANISOTROPY, &caps.maxTextureAnisotropicLevel);
+#elif GL_EXT_texture_filter_anisotropic
+	if (GLAD_GL_EXT_texture_filter_anisotropic)
+		glGetIntegerv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &caps.maxTextureAnisotropicLevel);
 #else
 	caps.maxTextureAnisotropicLevel = 1;
 #endif
@@ -205,8 +208,8 @@ void InitGLHardwareCapabilities(ShaderAPICaps_t& caps)
 		}
 #endif
 
-#if GL_EXT_texture_compression_s3tc
-		if (GLAD_GL_EXT_texture_compression_s3tc)
+#if GL_EXT_texture_compression_s3tc || GL_EXT_texture_compression_s3tc_srgb
+		if (GLAD_GL_EXT_texture_compression_s3tc || GLAD_GL_EXT_texture_compression_s3tc_srgb)
 		{
 			for (int i = FORMAT_DXT1; i <= FORMAT_ATI2N; i++)
 				caps.textureFormatsSupported[i] = true;
