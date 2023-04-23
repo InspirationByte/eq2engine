@@ -548,13 +548,13 @@ void ShaderAPIGL::ApplyRasterizerState()
 			if (FILL_SOLID != m_nCurrentFillMode)
 				glPolygonMode(GL_FRONT_AND_BACK, g_gl_fillConst[m_nCurrentFillMode = FILL_SOLID]);
 
-			if (false != m_bCurrentMultiSampleEnable)
+			if (m_bCurrentMultiSampleEnable)
 			{
 				glDisable(GL_MULTISAMPLE);
 				m_bCurrentMultiSampleEnable = false;
 			}
 #endif // USE_GLES2
-			if (false != m_bCurrentScissorEnable)
+			if (m_bCurrentScissorEnable)
 			{
 				glDisable(GL_SCISSOR_TEST);
 				m_bCurrentScissorEnable = false;
@@ -2578,23 +2578,10 @@ IRenderState* ShaderAPIGL::CreateBlendingState( const BlendStateParam_t &blendDe
 				if(blendDesc.srcFactor == pState->m_params.srcFactor &&
 					blendDesc.dstFactor == pState->m_params.dstFactor &&
 					blendDesc.blendFunc == pState->m_params.blendFunc &&
-					blendDesc.mask == pState->m_params.mask &&
-					blendDesc.alphaTest == pState->m_params.alphaTest)
+					blendDesc.mask == pState->m_params.mask)
 				{
-
-					if(blendDesc.alphaTest)
-					{
-						if(blendDesc.alphaTestRef == pState->m_params.alphaTestRef)
-						{
-							pState->Ref_Grab();
-							return pState;
-						}
-					}
-					else
-					{
-						pState->Ref_Grab();
-						return pState;
-					}
+					pState->Ref_Grab();
+					return pState;
 				}
 			}
 			else

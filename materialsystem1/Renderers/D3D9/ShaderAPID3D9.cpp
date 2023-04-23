@@ -1015,23 +1015,10 @@ IRenderState* ShaderAPID3D9::CreateBlendingState( const BlendStateParam_t &blend
 				if(blendDesc.srcFactor == pState->m_params.srcFactor &&
 					blendDesc.dstFactor == pState->m_params.dstFactor &&
 					blendDesc.blendFunc == pState->m_params.blendFunc &&
-					blendDesc.mask == pState->m_params.mask &&
-					blendDesc.alphaTest == pState->m_params.alphaTest)
+					blendDesc.mask == pState->m_params.mask)
 				{
-
-					if(blendDesc.alphaTest)
-					{
-						if(blendDesc.alphaTestRef == pState->m_params.alphaTestRef)
-						{
-							pState->Ref_Grab();
-							return pState;
-						}
-					}
-					else
-					{
-						pState->Ref_Grab();
-						return pState;
-					}
+					pState->Ref_Grab();
+					return pState;
 				}
 			}
 			else

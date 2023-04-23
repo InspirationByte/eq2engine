@@ -333,9 +333,6 @@ typedef struct BlendStateParam_s
 	int mask{ COLORMASK_ALL };
 
 	bool blendEnable { false };
-	bool alphaTest{ false };
-
-	float alphaTestRef{ 0.9f };
 }BlendStateParam_t;
 
 typedef struct DepthStencilStateParams_s
