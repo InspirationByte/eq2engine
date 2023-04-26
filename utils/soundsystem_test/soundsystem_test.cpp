@@ -319,6 +319,8 @@ void InitMatSystem(EQWNDHANDLE window)
 		render_config.threadedloader = true;
 
 		materials_config.shaderApiParams.windowHandle = window;
+		materials_config.shaderApiParams.windowHandleType = RHI_WINDOW_HANDLE_NATIVE_WINDOWS;
+
 		materials_config.shaderApiParams.screenFormat = format;
 
 		if (!materials->Init(materials_config))

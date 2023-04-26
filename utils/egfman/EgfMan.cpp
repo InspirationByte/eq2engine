@@ -404,6 +404,8 @@ static void InitMatSystem(void* window)
 		render_config.lightingModel = MATERIAL_LIGHT_FORWARD;
 
 		materials_config.shaderApiParams.windowHandle = window;
+		materials_config.shaderApiParams.windowHandleType = RHI_WINDOW_HANDLE_NATIVE_WINDOWS;
+
 		materials_config.shaderApiParams.screenFormat = format;
 
 		if (!materials->Init(materials_config))
