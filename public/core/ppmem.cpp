@@ -38,37 +38,37 @@ void* operator new[](size_t size)
 	return malloc(size);
 }
 
-void operator delete(void* ptr)
+void operator delete(void* ptr) PPNOEXCEPT
 {
 	PPFree(ptr);
 }
 
-void operator delete(void* ptr, size_t alignment)
+void operator delete(void* ptr, size_t alignment) PPNOEXCEPT
 {
 	PPFree(ptr);
 }
 
-void operator delete[](void* ptr)
+void operator delete[](void* ptr) PPNOEXCEPT
 {
 	PPFree(ptr);
 }
 
-void* operator new(size_t size, PPSourceLine sl)
+void* operator new(size_t size, PPSourceLine sl) PPNOEXCEPT
 {
 	return PPDAlloc(size, sl);
 }
 
-void* operator new[](size_t size, PPSourceLine sl)
+void* operator new[](size_t size, PPSourceLine sl) PPNOEXCEPT
 {
 	return PPDAlloc(size, sl);
 }
 
-void operator delete(void* ptr, PPSourceLine sl)
+void operator delete(void* ptr, PPSourceLine sl) PPNOEXCEPT
 {
 	PPFree(ptr);
 }
 
-void operator delete[](void* ptr, PPSourceLine sl)
+void operator delete[](void* ptr, PPSourceLine sl) PPNOEXCEPT
 {
 	PPFree(ptr);
 }

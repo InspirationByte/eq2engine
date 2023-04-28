@@ -154,7 +154,8 @@ void CGameHost::SetWindowTitle(const char* windowTitle)
 #ifdef _RETAIL
 	SDL_SetWindowTitle(m_pWindow, windowTitle);
 #else
-	SDL_SetWindowTitle(m_pWindow, EqString::Format("%s | " COMPILE_CONFIGURATION " (" COMPILE_PLATFORM ") | build %d (" COMPILE_DATE ")", windowTitle, BUILD_NUMBER_ENGINE).ToCString());
+	EqString str = EqString::Format("%s | " QUOTE(COMPILE_CONFIGURATION) " (" QUOTE(COMPILE_PLATFORM) ") | build %d (" QUOTE(COMPILE_DATE) ")", windowTitle, BUILD_NUMBER_ENGINE);
+	SDL_SetWindowTitle(m_pWindow, str);
 #endif
 }
 
