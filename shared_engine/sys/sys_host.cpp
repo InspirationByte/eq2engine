@@ -360,11 +360,6 @@ bool CGameHost::InitSystems( EQWNDHANDLE pWindow )
 	materials_config.shaderApiParams.windowHandle = (void*)winfo.info.cocoa.window;
 	materials_config.shaderApiParams.windowHandleType = RHI_WINDOW_HANDLE_NATIVE_OSX;
 #elif PLAT_ANDROID
-
-#ifdef USE_SDL_WINDOW
-	materials_config.shaderApiParams.windowHandle = m_pWindow;	// passing SDL window
-	materials_config.shaderApiParams.windowHandleType = RHI_WINDOW_HANDLE_SDL;
-#else
     shaderAPIWindowFuncTable_t winFunc;
 	winFunc.GetWindow = Helper_GetAndroidNativeWindow;
 	winFunc.GetSurface = Helper_GetEGLSurfaceFromSDL;
@@ -373,7 +368,6 @@ bool CGameHost::InitSystems( EQWNDHANDLE pWindow )
 	materials_config.shaderApiParams.windowHandleType = RHI_WINDOW_HANDLE_VTABLE;
 
 	format = FORMAT_RGB565;
-#endif
 #endif
 
 	materials_config.shaderApiParams.screenFormat = format;

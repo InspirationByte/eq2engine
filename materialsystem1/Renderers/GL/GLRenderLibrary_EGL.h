@@ -89,6 +89,7 @@ protected:
     EGLSurface				m_eglSurface{ nullptr };
 	EGLConfig				m_eglConfig{ nullptr };
 
+	ETextureFormat 			m_backbufferFormat{ FORMAT_NONE };
 	int						m_multiSamplingMode{ 0 };
 	int						m_width{ 0 };
 	int						m_height{ 0 };

@@ -494,7 +494,7 @@ void CGLRenderLib_WGL::SetBackbufferSize(const int w, const int h)
 
 	m_width = w;
 	m_height = h;
-	g_shaderApi.m_deviceLost = true;
+	g_shaderApi.m_deviceLost = true; // needed for triggering matsystem callbacks
 
 	SetWindowed(m_windowed);
 

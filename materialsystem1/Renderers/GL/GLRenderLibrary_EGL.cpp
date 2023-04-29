@@ -15,11 +15,15 @@
 #include "shaderapigl_def.h"
 
 #ifdef PLAT_LINUX
+
 #include <X11/Xlib.h>
 #include <X11/Xatom.h>
 #include <X11/Xutil.h>
 
-// TODO: wayland stuff
+#include <wayland-client.h>
+#include <wayland-server.h>
+#include <wayland-client-protocol.h>
+#include <wayland-egl.h>
 
 #endif // PLAT_LINUX
 
@@ -36,8 +40,6 @@
 #endif
 
 #include "gl_loader.h"
-
-#define EGL_USE_SDL_SURFACE 0 // defined(PLAT_ANDROID)
 
 #ifndef EGL_OPENGL_ES3_BIT
 #	define EGL_OPENGL_ES3_BIT 0x00000040
@@ -122,8 +124,6 @@ void CGLRenderLib_EGL::InitSharedContexts()
 
 bool CGLRenderLib_EGL::InitAPI(const shaderAPIParams_t& params)
 {
-	EGLNativeDisplayType nativeDisplay = EGL_DEFAULT_DISPLAY;
-
 	ASSERT_MSG(params.windowHandle != nullptr, "you must specify window handle!");
 
 #ifdef PLAT_ANDROID
@@ -135,21 +135,27 @@ bool CGLRenderLib_EGL::InitAPI(const shaderAPIParams_t& params)
 
 	// other EGL
 	m_hwnd = (EGLNativeWindowType)params.windowHandle;
-	nativeDisplay = (EGLNativeDisplayType)GetDC((HWND)m_hwnd);
+
+	// NOTE: DrawContext (HDC) is used as display type
+	// not as display itself
+	m_eglDisplay = eglGetDisplay((EGLNativeDisplayType)GetDC((HWND)m_hwnd));
 #elif defined(PLAT_LINUX)
 	m_hwnd = (EGLNativeWindowType)params.windowHandle;
 	switch(params.windowHandleType)
 	{
 		case RHI_WINDOW_HANDLE_NATIVE_WAYLAND:
 		{
-			//wl_display* display = wl_display_connect(NULL);
-			//nativeDisplay = eglGetDisplay( (EGLNativeDisplayType)display );
+			// we need to have wayland display and surface
+			// SDL already has them created for us
+
+			// TODO: handle SDL wayland handle
+			m_eglDisplay = eglGetDisplay( EGL_DEFAULT_DISPLAY );
 			break;
 		}
 		case RHI_WINDOW_HANDLE_NATIVE_X11:
 		{
-			//Display* display = XOpenDisplay(nullptr);
-			//nativeDisplay = eglGetDisplay( (EGLNativeDisplayType)display );
+			// We don't have to open X11 display so just use default EGL display
+			m_eglDisplay = eglGetDisplay( EGL_DEFAULT_DISPLAY );
 			break;
 		}
 		default:
@@ -163,7 +169,6 @@ bool CGLRenderLib_EGL::InitAPI(const shaderAPIParams_t& params)
 	Msg("Initializing EGL context...\n");
 
 	// get egl display handle
-	m_eglDisplay = eglGetDisplay(nativeDisplay);
 	m_multiSamplingMode = params.multiSamplingMode;
 
 	if (m_eglDisplay == EGL_NO_DISPLAY)
@@ -204,7 +209,8 @@ bool CGLRenderLib_EGL::InitAPI(const shaderAPIParams_t& params)
 #else
 	eglBindAPI(EGL_OPENGL_API);
 #endif
-
+	
+	m_backbufferFormat = params.screenFormat;
 	if (!CreateSurface())
 	{
 		ErrorMsg("OpenGL init error: Could not create EGL surface\n");
@@ -295,6 +301,7 @@ void CGLRenderLib_EGL::ExitAPI()
 
 void CGLRenderLib_EGL::BeginFrame(IEqSwapChain* swapChain)
 {
+	g_shaderApi.m_deviceLost = false;
 	g_shaderApi.StepProgressiveLodTextures();
 
 	// ShaderAPIGL uses m_nViewportWidth/Height as backbuffer size
@@ -345,6 +352,7 @@ void CGLRenderLib_EGL::SetBackbufferSize(const int w, const int h)
 
 	m_width = w;
 	m_height = h;
+	g_shaderApi.m_deviceLost = true; // needed for triggering matsystem callbacks
 
 	SetWindowed(m_windowed);
 
@@ -379,11 +387,10 @@ void CGLRenderLib_EGL::ReleaseSurface()
 	if (!eglMakeCurrent(m_eglDisplay, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT))
 		MsgError("eglMakeCurrent - error 2\n");
 
-#if !EGL_USE_SDL_SURFACE
 	MsgInfo("Destroying EGL surface...\n");
 	if (!eglDestroySurface(m_eglDisplay, m_eglSurface))
 		MsgError("Can't destroy EGL surface\n");
-#endif
+
 	m_eglSurface = EGL_NO_SURFACE;
 }
 
@@ -392,15 +399,31 @@ bool CGLRenderLib_EGL::CreateSurface()
 	if (m_eglSurface != EGL_NO_SURFACE)
 		return true;
 
-#if EGL_USE_SDL_SURFACE
-	m_eglSurface = (EGLSurface)m_winFunc.GetSurface();
-	m_hwnd = (EGLNativeWindowType)m_winFunc.GetWindow();
-#else
+	// Figure display format to use
+	ubyte bitsR = 8, bitsG = 8, bitsB = 8;
+	switch(m_backbufferFormat)
+	{
+		case FORMAT_RGBA8:
+		case FORMAT_RGB8:
+			bitsR = 8;
+			bitsG = 8;
+			bitsB = 8;
+			break;
+		case FORMAT_RGB565:
+			bitsR = 5;
+			bitsG = 6;
+			bitsB = 5;
+			break;
+		default:
+			ASSERT_FAIL("Incorrect screenFormat");
+			break;
+	}
+
 	// Obtain the first configuration with a depth buffer
 	const EGLint attrs[] = {
-		EGL_RED_SIZE,       5,
-		EGL_GREEN_SIZE,     6,
-		EGL_BLUE_SIZE,      5,
+		EGL_RED_SIZE,       bitsR,
+		EGL_GREEN_SIZE,     bitsG,
+		EGL_BLUE_SIZE,      bitsB,
 		EGL_ALPHA_SIZE,     EGL_DONT_CARE,
 		EGL_DEPTH_SIZE,     24,
 		EGL_STENCIL_SIZE,   EGL_DONT_CARE,
@@ -447,7 +470,7 @@ bool CGLRenderLib_EGL::CreateSurface()
 
 	// Create a surface for the main window
 	m_eglSurface = eglCreateWindowSurface(m_eglDisplay, m_eglConfig, m_hwnd, nullptr);
-#endif
+
 	if (m_eglSurface == EGL_NO_SURFACE)
 		return false;
 
