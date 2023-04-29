@@ -575,13 +575,13 @@ EqString CFileSystem::GetSearchPath(ESearchPath search, int directoryId) const
 	switch (search)
 	{
 		case SP_DATA:
-			CombinePath(searchPath, 2, basePath.ToCString(), m_dataDir.ToCString());
+			CombinePath(searchPath, basePath.ToCString(), m_dataDir.ToCString());
 			break;
 		case SP_MOD:
 			if(directoryId == -1) // default write path
-				CombinePath(searchPath, 2, basePath.ToCString(), GetCurrentGameDirectory());
+				CombinePath(searchPath, basePath.ToCString(), GetCurrentGameDirectory());
 			else
-				CombinePath(searchPath, 2, basePath.ToCString(), m_directories[directoryId].path.ToCString());
+				CombinePath(searchPath, basePath.ToCString(), m_directories[directoryId].path.ToCString());
 			break;
 		case SP_ROOT:
 			searchPath = basePath.ToCString();
@@ -601,7 +601,7 @@ EqString CFileSystem::GetAbsolutePath(ESearchPath search, const char* dirOrFileN
 	const bool isAbsolutePath = (search == SP_ROOT && UTIL_IsAbsolutePath(dirOrFileName));
 
 	if (!isAbsolutePath)
-		CombinePath(fullPath, 2, GetSearchPath(search).ToCString(), dirOrFileName);
+		CombinePath(fullPath, GetSearchPath(search).ToCString(), dirOrFileName);
 	else
 		fullPath = dirOrFileName;
 
@@ -654,7 +654,7 @@ bool CFileSystem::WalkOverSearchPaths(int searchFlags, const char* fileName, con
 			const SearchPathInfo& spInfo = m_directories[i];
 
 			EqString filePath;
-			CombinePath(filePath, 3, basePath.ToCString(), spInfo.path.ToCString(), fileName);
+			CombinePath(filePath, basePath.ToCString(), spInfo.path.ToCString(), fileName);
 			filePath.Path_FixSlashes();
 
 #ifdef PLAT_LINUX
@@ -676,7 +676,7 @@ bool CFileSystem::WalkOverSearchPaths(int searchFlags, const char* fileName, con
 	if (flags & SP_DATA)
 	{
 		EqString filePath;
-		CombinePath(filePath, 3, basePath.ToCString(), m_dataDir.ToCString(), fileName);
+		CombinePath(filePath, basePath.ToCString(), m_dataDir.ToCString(), fileName);
 		filePath.Path_FixSlashes();
 
 		if (func(filePath, SP_DATA, flags, false))
@@ -692,7 +692,7 @@ bool CFileSystem::WalkOverSearchPaths(int searchFlags, const char* fileName, con
 		if(isAbsolutePath)
 			filePath = fileName;
 		else
-			CombinePath(filePath, 2, basePath.ToCString(), fileName);
+			CombinePath(filePath, basePath.ToCString(), fileName);
 		filePath.Path_FixSlashes();
 
 		// TODO: write path detection if it's same as ones from m_directories or m_dataDir
@@ -937,7 +937,7 @@ const char* CFileSystem::FindFirst(const char* wildcard, DKFINDDATA** findData, 
 		EqString fsBaseDir = GetSearchPath((ESearchPath)searchPath, -1);
 
 		EqString searchWildcard;
-		CombinePath(searchWildcard, 2, fsBaseDir.ToCString(), newFind->wildcard.ToCString());
+		CombinePath(searchWildcard, fsBaseDir.ToCString(), newFind->wildcard.ToCString());
 
 		if (newFind->osFind.Init(searchWildcard))
 		{
@@ -959,7 +959,7 @@ const char* CFileSystem::FindFirst(const char* wildcard, DKFINDDATA** findData, 
 	while (newFind->searchPathId < m_directories.numElem())
 	{
 		fsBaseDir = GetSearchPath((ESearchPath)searchPath, newFind->searchPathId);
-		CombinePath(searchWildcard, 2, fsBaseDir.ToCString(), newFind->wildcard.ToCString());
+		CombinePath(searchWildcard, fsBaseDir.ToCString(), newFind->wildcard.ToCString());
 
 		if (newFind->osFind.Init(searchWildcard))
 		{
@@ -994,7 +994,7 @@ const char* CFileSystem::FindNext(DKFINDDATA* findData) const
 		EqString searchWildcard;
 			
 		fsBaseDir = GetSearchPath(findData->searchPath, findData->searchPathId);
-		CombinePath(searchWildcard, 2, fsBaseDir.ToCString(), findData->wildcard.ToCString());
+		CombinePath(searchWildcard, fsBaseDir.ToCString(), findData->wildcard.ToCString());
 
 		if (findData->osFind.Init(searchWildcard.ToCString()))
 		{

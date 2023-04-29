@@ -130,7 +130,7 @@ int CEGFGenerator::LoadModel(const char* pszFileName)
 	mod.model = CRefPtr_new(dsmmodel_t);
 
 	EqString modelPath;
-	CombinePath(modelPath, 2, m_refsPath.ToCString(), pszFileName);
+	CombinePath(modelPath, m_refsPath.ToCString(), pszFileName);
 
 	EqString ext(modelPath.Path_Extract_Ext());
 
@@ -159,7 +159,7 @@ int CEGFGenerator::LoadModel(const char* pszFileName)
 		if( LoadESXShapes( mod.shapeData, modelPath.ToCString() ))
 		{
 			// use referenced filename by the shape file
-			CombinePath(modelPath, 2, m_refsPath.ToCString(), mod.shapeData->reference.ToCString());
+			CombinePath(modelPath, m_refsPath.ToCString(), mod.shapeData->reference.ToCString());
 		}
 		else
 		{
@@ -272,7 +272,7 @@ void CEGFGenerator::FreeModel(GenModel_t& mod )
 void CEGFGenerator::LoadModelsFromFBX(KVSection* pKeyBase)
 {
 	EqString modelPath;
-	CombinePath(modelPath, 2, m_refsPath.ToCString(), KV_GetValueString(pKeyBase));
+	CombinePath(modelPath, m_refsPath.ToCString(), KV_GetValueString(pKeyBase));
 
 	Array<dsmmodel_t*> models(PP_SL);
 	Array<esmshapedata_t*> shapeDatas(PP_SL);
@@ -1241,7 +1241,7 @@ bool CEGFGenerator::InitFromKeyValues(KVSection* mainsection)
 
 	// set source path if defined by script
 	if(pSourcePath)
-		CombinePath(m_refsPath, 2, m_refsPath.ToCString(), KV_GetValueString(pSourcePath, 0, ""));
+		CombinePath(m_refsPath, m_refsPath.ToCString(), KV_GetValueString(pSourcePath, 0, ""));
 
 	// get new model filename
 	SetOutputFilename(KV_GetValueString(mainsection->FindSection("modelfilename")));

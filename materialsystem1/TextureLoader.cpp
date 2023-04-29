@@ -121,12 +121,12 @@ ITexturePtr CTextureLoader::LoadTextureFromFileSync(const char* pszFileName, con
 		CImage::PTR_T img = CRefPtr_new(CImage);
 
 		EqString texturePathExt;
-		CombinePath(texturePathExt, 2, shaderApiParams.texturePath.ToCString(), textureNames[i].ToCString());
+		CombinePath(texturePathExt, shaderApiParams.texturePath.ToCString(), textureNames[i].ToCString());
 		bool isLoaded = img->LoadDDS(texturePathExt + TEXTURE_DEFAULT_EXTENSION, 0);
 
 		if (!isLoaded && r_allowSourceTextures->GetBool())
 		{
-			CombinePath(texturePathExt, 2, shaderApiParams.textureSRCPath.ToCString(), textureNames[i].ToCString());
+			CombinePath(texturePathExt, shaderApiParams.textureSRCPath.ToCString(), textureNames[i].ToCString());
 			isLoaded = img->LoadTGA(texturePathExt + TEXTURE_SECONDARY_EXTENSION);
 		}
 

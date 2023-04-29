@@ -600,7 +600,7 @@ void CEqStudioGeom::LoadMaterials()
 					spath = spath.Left(spath.Length() - 1);
 
 				EqString extend_path;
-				CombinePath(extend_path, 2, spath.ToCString(), fpath.ToCString());
+				CombinePath(extend_path, spath.ToCString(), fpath.ToCString());
 
 				if (!materials->IsMaterialExist(extend_path))
 					continue;

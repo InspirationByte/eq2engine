@@ -727,7 +727,7 @@ bool ShaderAPI_Base::LoadShadersFromFile(IShaderProgram* pShaderOutput, const ch
 
 
 	EqString firstFileName;
-	CombinePath(firstFileName, 2, shaderRootPath.ToCString(), fileNameFX.ToCString());
+	CombinePath(firstFileName, shaderRootPath.ToCString(), fileNameFX.ToCString());
 
 	auto loadShaderFile = [](char* filename, size_t *plen, void* userData) -> char*
 	{
@@ -765,7 +765,7 @@ bool ShaderAPI_Base::LoadShadersFromFile(IShaderProgram* pShaderOutput, const ch
 		info.data.checksum = CRC32_BlockChecksum(info.data.text, strlen(info.data.text));
 
 	EqString boilerplateFile;
-	CombinePath(boilerplateFile, 2, SHADERS_DEFAULT_PATH, EqString::Format("Boilerplate_%s.h", GetRendererName()).ToCString());
+	CombinePath(boilerplateFile, SHADERS_DEFAULT_PATH, EqString::Format("Boilerplate_%s.h", GetRendererName()).ToCString());
 	info.data.boilerplate = g_fileSystem->GetFileBuffer(boilerplateFile);
 
 	if (!info.data.boilerplate)

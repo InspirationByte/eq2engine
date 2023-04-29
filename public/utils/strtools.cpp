@@ -79,7 +79,7 @@ wchar_t* wcsncpy(wchar_t * __restrict dst, const wchar_t * __restrict src, size_
 }
 #endif // PLAT_DROID
 
-void CombinePath(EqString& outPath, int num, ...)
+void CombinePathN(EqString& outPath, int num, ...)
 {
 	EqString newStr;
 

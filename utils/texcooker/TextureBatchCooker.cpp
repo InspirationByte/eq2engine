@@ -230,7 +230,7 @@ void LoadBatchConfig(KVSection* batchSec)
 bool AddTexture(const EqString& texturePath, const EqString& imageUsage)
 {
 	EqString filename;
-	CombinePath(filename, 2, g_batchConfig.sourceMaterialPath.ToCString(), EqString::Format("%s.%s", texturePath.ToCString(), g_batchConfig.sourceImageExt.ToCString()).ToCString());
+	CombinePath(filename, g_batchConfig.sourceMaterialPath.ToCString(), EqString::Format("%s.%s", texturePath.ToCString(), g_batchConfig.sourceImageExt.ToCString()).ToCString());
 
 	if (!g_fileSystem->FileExist(filename.ToCString()))
 	{
@@ -342,14 +342,14 @@ void SearchFolderForMaterialsAndGetTextures(const char* wildcard)
 		if (fsFind.IsDirectory() && fileName != "." && fileName != "..")
 		{
 			EqString searchTemplate;
-			CombinePath(searchTemplate, 3, searchFolder.ToCString(), fileName.ToCString(), "*");
+			CombinePath(searchTemplate, searchFolder.ToCString(), fileName.ToCString(), "*");
 
 			SearchFolderForMaterialsAndGetTextures(searchTemplate.ToCString());
 		}
 		else if(fileName.Path_Extract_Ext() == "mat")
 		{
 			EqString fullMaterialPath;
-			CombinePath(fullMaterialPath, 2, searchFolder.ToCString(), fileName.ToCString());
+			CombinePath(fullMaterialPath, searchFolder.ToCString(), fileName.ToCString());
 			LoadMaterialImages(fullMaterialPath.ToCString());
 		}
 	}
@@ -373,16 +373,16 @@ void ProcessMaterial(const EqString& materialFileName)
 	const EqString atlasFileName = _Es(materialFileName).Path_Strip_Ext() + ".atlas";
 
 	EqString sourceMaterialFileName;
-	CombinePath(sourceMaterialFileName, 2, g_batchConfig.sourceMaterialPath.ToCString(), materialFileName.ToCString());
+	CombinePath(sourceMaterialFileName, g_batchConfig.sourceMaterialPath.ToCString(), materialFileName.ToCString());
 
 	EqString sourceAtlasFileName;
-	CombinePath(sourceAtlasFileName, 2, g_batchConfig.sourceMaterialPath.ToCString(), atlasFileName.ToCString());
+	CombinePath(sourceAtlasFileName, g_batchConfig.sourceMaterialPath.ToCString(), atlasFileName.ToCString());
 
 	EqString targetMaterialFileName;
-	CombinePath(targetMaterialFileName, 2, g_targetProps.targetFolder.ToCString(), materialFileName.ToCString());
+	CombinePath(targetMaterialFileName, g_targetProps.targetFolder.ToCString(), materialFileName.ToCString());
 
 	EqString targetAtlasFileName;
-	CombinePath(targetAtlasFileName, 2, g_targetProps.targetFolder.ToCString(), atlasFileName.ToCString());
+	CombinePath(targetAtlasFileName, g_targetProps.targetFolder.ToCString(), atlasFileName.ToCString());
 
 	// make target material file path
 	g_fileSystem->MakeDir(targetMaterialFileName.Path_Strip_Name(), SP_ROOT);
@@ -412,10 +412,10 @@ void ProcessTexture(TexInfo_t* textureInfo)
 {
 	// before this, create folders...
 	EqString sourceFilename;
-	CombinePath(sourceFilename, 2, g_batchConfig.sourceMaterialPath.ToCString(), EqString::Format("%s.%s", textureInfo->sourcePath.ToCString(), g_batchConfig.sourceImageExt.ToCString()).ToCString());
+	CombinePath(sourceFilename, g_batchConfig.sourceMaterialPath.ToCString(), EqString::Format("%s.%s", textureInfo->sourcePath.ToCString(), g_batchConfig.sourceImageExt.ToCString()).ToCString());
 	
 	EqString targetFilename;
-	CombinePath(targetFilename, 2, g_targetProps.targetFolder.ToCString(), (textureInfo->sourcePath.Path_Strip_Ext() + ".dds").ToCString());
+	CombinePath(targetFilename, g_targetProps.targetFolder.ToCString(), (textureInfo->sourcePath.Path_Strip_Ext() + ".dds").ToCString());
 	
 	const EqString targetFilePath = targetFilename.Path_Strip_Name().TrimChar(CORRECT_PATH_SEPARATOR);
 
@@ -536,7 +536,7 @@ void CookMaterialsToTarget(const char* pszTargetName)
 		Msg("Material source path: '%s'\n", g_batchConfig.sourceMaterialPath.ToCString());
 
 		EqString searchTemplate;
-		CombinePath(searchTemplate, 2, g_batchConfig.sourceMaterialPath.ToCString(), "*");
+		CombinePath(searchTemplate, g_batchConfig.sourceMaterialPath.ToCString(), "*");
 
 		// walk up material files
 		SearchFolderForMaterialsAndGetTextures( searchTemplate.ToCString() );

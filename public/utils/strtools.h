@@ -65,7 +65,13 @@ typedef va_list				__va_list;
 #endif // ANDROID
 
 // combines paths
-void		CombinePath(EqString& outPath, int num, ...);
+void		CombinePathN(EqString& outPath, int num, ...);
+
+template<typename ...Args> // requires std::same_as<Args, const char*>...
+void		CombinePath(EqString& outPath, const Args&... args)
+{
+	CombinePathN(outPath, sizeof...(Args), args...);
+}
 
 // fixes slashes in the directory name
 void		FixSlashes( char* str );

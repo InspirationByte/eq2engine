@@ -174,8 +174,7 @@ void KVPairValue::SetFromString( const char* pszValue )
 
 	SetStringValue( pszValue );
 
-	delete section;
-	section = nullptr;
+	SAFE_DELETE(section);
 
 	if(type == KVPAIR_INT)
 	{
@@ -1134,7 +1133,15 @@ bool KV_Tokenizer(const char* buffer, int bufferSize, const char* fileName, cons
 				else if (c == KV_SECTION_BEGIN)
 				{
 					++sectionDepth;
-					tokenFuncWrap("s+", sectionDepth);
+					state = tokenFuncWrap("s+", sectionDepth);
+
+					if (state == KV_PARSE_ERROR)
+					{
+						MsgError("'%s' (%d): unexpected '%c' while parsing\n", (fileName ? fileName : "buffer"), curLine, c);
+						lastModeStartLine = curLine;
+						mode = MODE_PARSE_ERROR_BREAK;
+						break;
+					}
 				}
 				else if (c == KV_SECTION_END)
 				{
@@ -1282,6 +1289,9 @@ KVSection* KV_ParseSectionV2(const char* pszBuffer, int bufferSize, const char* 
 				// increase/decrease section depth
 				if (*(sig + 1) == '+')
 				{
+					if (currentSection == nullptr)
+						return KV_PARSE_ERROR;
+
 					sectionStack.append(currentSection);
 					currentSection = nullptr;
 				}
@@ -1304,7 +1314,9 @@ KVSection* KV_ParseSectionV2(const char* pszBuffer, int bufferSize, const char* 
 					currentSection->line = line;
 				}
 				else
+				{
 					currentSection->AddValue(text);
+				}
 
 				break;
 			}

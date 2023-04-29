@@ -51,7 +51,7 @@ DECLARE_CMD(screenshot, "Save screenshot", 0)
 			if(g_fileSystem->FileExist(path.ToCString(), SP_ROOT))
 				continue;
 
-			CombinePath(path, 2, g_fileSystem->GetBasePath(), path.ToCString());
+			CombinePath(path, g_fileSystem->GetBasePath(), path.ToCString());
 
 			MsgInfo("Writing screenshot to '%s'\n", path.ToCString());
 			img.SaveJPEG(path.ToCString(), screenshotJpegQuality.GetInt());
