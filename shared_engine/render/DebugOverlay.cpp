@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright Â© Inspiration Byte
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
 // Description: Debug text drawer system
@@ -8,6 +8,7 @@
 #include "core/core_common.h"
 #include "core/ConVar.h"
 #include "math/Utility.h"
+#include "math/Rectangle.h"
 #include "DebugOverlay.h"
 
 #include "font/IFontCache.h"
@@ -47,8 +48,6 @@ static void OnShowTextureChanged(ConVar* pVar,char const* pszOldValue)
 
 DECLARE_CVAR_CHANGE(r_debugShowTexture, "", OnShowTextureChanged, "input texture name to show texture. To hide view input anything else.", CV_CHEAT);
 DECLARE_CVAR(r_debugShowTextureScale, "1.0", nullptr, CV_ARCHIVE);
-
-#include "math/Rectangle.h"
 
 static void GUIDrawWindow(const Rectangle_t &rect, const ColorRGBA &color1)
 {

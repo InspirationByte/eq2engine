@@ -8,8 +8,6 @@
 #include "NETThread.h"
 
 #include "core/ConVar.h"
-#include "utils/strtools.h"
-#include "utils/global_mutex.h"
 #include "math/Random.h"
 
 ConVar net_fakelatency("net_fakelatency", "0", "Simulate latency (value is in ms). Operating on recieved only\n", CV_CHEAT);
