@@ -377,8 +377,8 @@ bool CEGFPhysicsGenerator::CreateRagdollObjects( Array<dsmvertex_t>& vertices, A
 	ragJoints.setNum(m_srcModel->bones.numElem());
 	SetupRagdollJoints(ragJoints);
 
-	KVSection* bonesSect = m_physicsParams->FindSection("Bones", KV_FLAG_SECTION);
-	KVSection* isDynamicProp = m_physicsParams->FindSection("IsDynamic");
+	const KVSection* bonesSect = m_physicsParams->FindSection("Bones", KV_FLAG_SECTION);
+	const KVSection* isDynamicProp = m_physicsParams->FindSection("IsDynamic");
 
 	if(KV_GetValueBool(isDynamicProp))
 	{
@@ -429,7 +429,7 @@ bool CEGFPhysicsGenerator::CreateRagdollObjects( Array<dsmvertex_t>& vertices, A
 		}
 	}
 
-	KVSection* pDefaultSurfaceProps = m_physicsParams->FindSection("SurfaceProps");
+	const KVSection* pDefaultSurfaceProps = m_physicsParams->FindSection("SurfaceProps");
 
 	for(int i = 0; i < m_srcModel->bones.numElem(); i++)
 	{
@@ -482,7 +482,7 @@ bool CEGFPhysicsGenerator::CreateRagdollObjects( Array<dsmvertex_t>& vertices, A
 
 		memset(object.shape_indexes, -1, sizeof(object.shape_indexes));
 
-		KVSection* thisBoneSec = bonesSect->FindSection(m_srcModel->bones[i]->name, KV_FLAG_SECTION);
+		const KVSection* thisBoneSec = bonesSect->FindSection(m_srcModel->bones[i]->name, KV_FLAG_SECTION);
 
 		object.body_part = 0;
 		object.numShapes = 1;
@@ -498,7 +498,7 @@ bool CEGFPhysicsGenerator::CreateRagdollObjects( Array<dsmvertex_t>& vertices, A
 			object.mass = KV_GetValueFloat( thisBoneSec->FindSection("Mass"), 0, PHYS_DEFAULT_MASS );
 			object.body_part = KV_GetValueInt(thisBoneSec->FindSection("bodypart"), 0, 0);
 
-			KVSection* surfPropsPair = thisBoneSec->FindSection("SurfaceProps");
+			const KVSection* surfPropsPair = thisBoneSec->FindSection("SurfaceProps");
 
 			if(surfPropsPair)
 				strcpy(object.surfaceprops, KV_GetValueString(surfPropsPair));
@@ -552,7 +552,7 @@ bool CEGFPhysicsGenerator::CreateRagdollObjects( Array<dsmvertex_t>& vertices, A
 			{
 				int axis_idx = -1;
 
-				KVSection* pKey = thisBoneSec->keys[i];
+				const KVSection* pKey = thisBoneSec->keys[i];
 
 				if( !stricmp(pKey->name, "x_axis") )
 					axis_idx = 0;
@@ -640,7 +640,7 @@ bool CEGFPhysicsGenerator::CreateCompoundOrSeparateObjects( Array<dsmvertex_t>& 
 		physobject_t object;
 		object.body_part = 0;
 
-		KVSection* surfPropsPair = m_physicsParams->FindSection("SurfaceProps");
+		const KVSection* surfPropsPair = m_physicsParams->FindSection("SurfaceProps");
 				
 		memset(object.surfaceprops, 0, sizeof(object.surfaceprops));
 		strcpy(object.surfaceprops, KV_GetValueString(surfPropsPair, 0, "default"));
@@ -764,7 +764,7 @@ bool CEGFPhysicsGenerator::CreateSingleObject( Array<dsmvertex_t>& vertices, Arr
 	return true;
 }
 
-bool CEGFPhysicsGenerator::GenerateGeometry(dsmmodel_t* srcModel, KVSection* physInfo, bool forceGroupSubdivision)
+bool CEGFPhysicsGenerator::GenerateGeometry(dsmmodel_t* srcModel, const KVSection* physInfo, bool forceGroupSubdivision)
 {
 	m_srcModel = srcModel;
 	m_physicsParams = physInfo;
@@ -782,7 +782,7 @@ bool CEGFPhysicsGenerator::GenerateGeometry(dsmmodel_t* srcModel, KVSection* phy
 
 	m_forceGroupSubdivision = KV_GetValueBool(m_physicsParams->FindSection("groupdivision"), 0, m_forceGroupSubdivision);
 
-	KVSection* compoundkey = m_physicsParams->FindSection("compound");
+	const KVSection* compoundkey = m_physicsParams->FindSection("compound");
 	if(compoundkey)
 	{
 		bCompound = KV_GetValueBool(compoundkey);

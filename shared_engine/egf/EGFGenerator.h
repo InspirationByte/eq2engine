@@ -33,7 +33,7 @@ public:
 	virtual ~CEGFGenerator();
 
 	bool		InitFromKeyValues(const char* filename);
-	bool		InitFromKeyValues(KVSection* kvs);
+	bool		InitFromKeyValues(const KVSection* kvs);
 	void		Cleanup();
 
 	void		SetRefsPath(const char* path);
@@ -52,33 +52,33 @@ protected:
 	struct GenMaterialGroup_t;
 
 	// helper functions
-	GenBone_t*				FindBoneByName(const char* pszName);
-	GenLODList_t*			FindModelLodGroupByName(const char* pszName);
-	int						FindModelIndexByName(const char* pszName);
-	GenModel_t*				FindModelByName(const char* pszName);
+	GenBone_t*				FindBoneByName(const char* pszName) const;
+	GenLODList_t*			FindModelLodGroupByName(const char* pszName) const;
+	int						FindModelIndexByName(const char* pszName) const;
+	GenModel_t*				FindModelByName(const char* pszName) const;
 
-	int						FindModelLodIdGroupByName(const char* pszName);
-	int						GetMaterialIndex(const char* pszName);
+	int						FindModelLodIdGroupByName(const char* pszName) const;
+	int						GetMaterialIndex(const char* pszName) const;
 
 	// loader functions
 	int						LoadModel(const char* pszFileName);
 	void					FreeModel(GenModel_t& mod );
 	bool					PostProcessDSM(GenModel_t& mod );
 
-	void					LoadModelsFromFBX(KVSection* pKeyBase);
-	int						ParseAndLoadModels(KVSection* pKeyBase);
+	void					LoadModelsFromFBX(const KVSection* pKeyBase);
+	int						ParseAndLoadModels(const KVSection* pKeyBase);
 
-	bool					ParseModels(KVSection* pSection);
-	void					ParseLodData(KVSection* pSection, int lodIdx);
-	void					ParseLods(KVSection* pSection);
-	bool					ParseBodyGroups(KVSection* pSection);
-	bool					ParseMaterialGroups(KVSection* pSection);
-	bool					ParseMaterialPaths(KVSection* pSection);
-	bool					ParseMotionPackagePaths(KVSection* pSection);
-	void					ParseIKChain(KVSection* pSection);
-	void					ParseIKChains(KVSection* pSection);
-	void					ParseAttachments(KVSection* pSection);
-	void					ParsePhysModels(KVSection* pSection);
+	bool					ParseModels(const KVSection* pSection);
+	void					ParseLodData(const KVSection* pSection, int lodIdx);
+	void					ParseLods(const KVSection* pSection);
+	bool					ParseBodyGroups(const KVSection* pSection);
+	bool					ParseMaterialGroups(const KVSection* pSection);
+	bool					ParseMaterialPaths(const KVSection* pSection);
+	bool					ParseMotionPackagePaths(const KVSection* pSection);
+	void					ParseIKChain(const KVSection* pSection);
+	void					ParseIKChains(const KVSection* pSection);
+	void					ParseAttachments(const KVSection* pSection);
+	void					ParsePhysModels(const KVSection* pSection);
 
 	void					AddModelLodUsageReference(int modelLodIndex);
 
