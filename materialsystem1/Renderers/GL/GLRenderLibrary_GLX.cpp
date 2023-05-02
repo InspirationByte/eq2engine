@@ -124,21 +124,18 @@ bool CGLRenderLib_GLX::InitAPI(const shaderAPIParams_t& params)
 		return false;
 	}
 
+	// chose display modes
 	int nModes;
     XF86VidModeGetAllModeLines(m_display, m_screen, &nModes, &m_dmodes);
 
-	Array<DispRes> modes(PP_SL);
-
-	int foundMode = -1;
 	for (int i = 0; i < nModes; i++)
 	{
-		if (m_dmodes[i]->hdisplay >= 640 && m_dmodes[i]->vdisplay >= 480)
-		{
-			modes.append(newRes(m_dmodes[i]->hdisplay, m_dmodes[i]->vdisplay, i));
+		XF86VidModeModeInfo* dmode = m_dmodes[i];
+		if (dmode->hdisplay < 640 || dmode->vdisplay < 480)
+			continue;
 
-			if (m_dmodes[i]->hdisplay == m_width && m_dmodes[i]->vdisplay == m_width)
-				foundMode = i;
-		}
+		if (dmode->hdisplay == m_width && dmode->vdisplay == m_width)
+			m_fullScreenMode = dmode;
 	}
 
 	m_window = (Window)params.windowHandle;
@@ -238,19 +235,6 @@ bool CGLRenderLib_GLX::InitAPI(const shaderAPIParams_t& params)
 	XFree( fbConfig );
 
 	m_xvi = glXGetVisualFromFBConfig(m_display, m_bestFbc);
-
-    if (!m_windowed)
-    {
-		if (foundMode >= 0 && XF86VidModeSwitchToMode(m_display, m_screen, m_dmodes[foundMode]))
-		{
-			XF86VidModeSetViewPort(m_display, m_screen, 0, 0);
-		}
-		else
-		{
-			MsgError("Couldn't set fullscreen at %dx%d.", m_width, m_height);
-			m_windowed = true;
-		}
-	}
 
 	// create context
 	{
@@ -395,27 +379,18 @@ void CGLRenderLib_GLX::EndFrame()
 // changes fullscreen mode
 bool CGLRenderLib_GLX::SetWindowed(bool enabled)
 {
-	m_windowed = enabled;
+	XF86VidModeModeInfo* desiredMode = enabled ? m_dmodes[0] : m_fullScreenMode;
 
-	if (!enabled)
+	if(!desiredMode || !XF86VidModeSwitchToMode(m_display, m_screen, desiredMode))
 	{
-		ASSERT_FAIL("CGLRenderLib_GLX::SetWindowed - Not implemented yet");
-		/*
-		if (foundMode >= 0 && XF86VidModeSwitchToMode(display, m_screen, m_dmodes[foundMode]))
-		{
-			XF86VidModeSetViewPort(display, m_screen, 0, 0);
-		}
-		else
-		{
-			MsgError("Couldn't set fullscreen at %dx%d.", m_width, m_height);
-			params.windowedMode = true;
-		}*/
+		MsgError("Couldn't switch to %s mode", enabled ? "windowed" : "fullscreen");
+		enabled = m_windowed;
 	}
-	else
-	{
-		if (XF86VidModeSwitchToMode(m_display, m_screen, m_dmodes[0]))
-			XF86VidModeSetViewPort(m_display, m_screen, 0, 0);
-	}
+
+	if(m_windowed != enabled)
+		XF86VidModeSetViewPort(m_display, m_screen, 0, 0);
+
+	m_windowed = enabled;
 	
 	return true;
 }

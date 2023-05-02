@@ -91,7 +91,8 @@ protected:
 	GLXContext				m_glContext{ nullptr };
 	GLXContext				m_glSharedContext{ nullptr };
 
-    XF86VidModeModeInfo**	m_dmodes{ nullptr };
+    XF86VidModeModeInfo*	m_fullScreenMode{ nullptr };
+	XF86VidModeModeInfo**	m_dmodes{ nullptr };
     Display*				m_display{ nullptr };
 	XVisualInfo*			m_xvi{ nullptr };
 	Window					m_window;

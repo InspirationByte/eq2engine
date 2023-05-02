@@ -125,13 +125,14 @@ void CGLRenderLib_EGL::InitSharedContexts()
 bool CGLRenderLib_EGL::InitAPI(const shaderAPIParams_t& params)
 {
 	ASSERT_MSG(params.windowHandle != nullptr, "you must specify window handle!");
+	m_rhiWindowType = params.windowHandleType;
 
 #ifdef PLAT_ANDROID
-	ASSERT(params.windowHandleType == RHI_WINDOW_HANDLE_VTABLE);
+	ASSERT(m_rhiWindowType == RHI_WINDOW_HANDLE_VTABLE);
 
 	m_winFunc = *(shaderAPIWindowFuncTable_t*)params.windowHandle;
 #elif defined(PLAT_WIN)
-	ASSERT(params.windowHandleType == RHI_WINDOW_HANDLE_NATIVE_WINDOWS);
+	ASSERT(m_rhiWindowType == RHI_WINDOW_HANDLE_NATIVE_WINDOWS);
 
 	// other EGL
 	m_hwnd = (EGLNativeWindowType)params.windowHandle;
@@ -141,7 +142,8 @@ bool CGLRenderLib_EGL::InitAPI(const shaderAPIParams_t& params)
 	m_eglDisplay = eglGetDisplay((EGLNativeDisplayType)GetDC((HWND)m_hwnd));
 #elif defined(PLAT_LINUX)
 	m_hwnd = (EGLNativeWindowType)params.windowHandle;
-	switch(params.windowHandleType)
+
+	switch(m_rhiWindowType)
 	{
 		case RHI_WINDOW_HANDLE_NATIVE_WAYLAND:
 		{
@@ -328,9 +330,21 @@ void CGLRenderLib_EGL::EndFrame()
 // changes fullscreen mode
 bool CGLRenderLib_EGL::SetWindowed(bool enabled)
 {
-	m_windowed = enabled;
+#if 0 // ndef PLAT_ANDROID
+	if (m_rhiWindowType == RHI_WINDOW_HANDLE_NATIVE_WAYLAND)
+	{
 
-	// OpenGL ES has it unimplemented
+		if(enabled)
+			xdg_toplevel_unset_fullscreen(m_xdg_toplevel);
+		else
+			xdg_toplevel_set_fullscreen(m_xdg_toplevel, NULL);
+
+		if(m_windowed != enabled)
+			wl_surface_commit(m_surface);
+
+		m_windowed = enabled;
+	}
+#endif // PLAT_ANDROID
 
 	return true;
 }
@@ -344,6 +358,7 @@ bool CGLRenderLib_EGL::IsWindowed() const
 void CGLRenderLib_EGL::SetBackbufferSize(const int w, const int h)
 {
 #ifdef PLAT_ANDROID
+	// since surface might be lost after unfocus, we create it
 	CreateSurface();
 #endif
 
