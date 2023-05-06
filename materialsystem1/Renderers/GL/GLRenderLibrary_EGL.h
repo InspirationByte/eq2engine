@@ -74,16 +74,20 @@ protected:
 	void					InitSharedContexts();
 	void					DestroySharedContexts();
 
-	shaderAPIWindowFuncTable_t m_winFunc;
-
 	Array<IEqSwapChain*>	m_swapChains{ PP_SL };
+	IEqSwapChain*			m_curSwapChain{ nullptr };
+
 	uintptr_t				m_mainThreadId{ 0 };
 	bool					m_asyncOperationActive{ false };
 
 	EGLContext				m_glContext{ nullptr };
 	EGLContext				m_glSharedContext{ nullptr };
 
-    EGLNativeDisplayType	m_hdc{ 0 };
+	ERHIWindowType			m_rhiWindowType{ RHI_WINDOW_HANDLE_UNKNOWN };
+#ifdef PLAT_ANDROID
+	shaderAPIWindowFuncTable_t m_winFunc;
+#endif
+
     EGLNativeWindowType		m_hwnd{ 0 };
     EGLDisplay				m_eglDisplay{ nullptr };
     EGLSurface				m_eglSurface{ nullptr };
