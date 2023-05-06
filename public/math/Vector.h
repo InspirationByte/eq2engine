@@ -36,7 +36,8 @@ struct TVec2D
 		: x(ix), y(iy)
 	{}
 
-	operator T *() const { return (T *) &x; }
+	operator T* () const { return (T*)&x; }
+	explicit operator const T* () const { return (T*)&x; }
 
 	template <class T2>
 	void operator += (const T2 s);
@@ -147,7 +148,8 @@ struct TVec3D
 		: x(ix), y(iv.x), z(iv.y)
 	{}
 
-	operator T *() const { return (T *) &x; }
+	operator T* () const { return (T*)&x; }
+	explicit operator const T* () const { return (T*)&x; }
 
 	const TVec2D<T>& xy() const { return *(TVec2D<T>*)&x; }
 	const TVec2D<T>& yz() const { return *(TVec2D<T>*)&y; }
@@ -285,7 +287,8 @@ struct TVec4D
 		: x(ix), y(iv.x), z(iv.y), w(iv.z)
 	{}
 
-	operator T *() const { return (T *) &x; }
+	operator T* () const { return (T*)&x; }
+	explicit operator const T* () const { return (T*)&x; }
 
 	// TVec3D<T>& xyz() { return *(TVec3D<T>*)&x; }
 	// TVec3D<T>& yzw() { return *(TVec3D<T>*)&y; }
