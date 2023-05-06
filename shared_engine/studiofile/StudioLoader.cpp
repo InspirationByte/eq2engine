@@ -9,9 +9,9 @@
 
 #include "core/core_common.h"
 #include "core/IFileSystem.h"
-#include "modelloader_shared.h"
+#include "StudioLoader.h"
 
-bool IsValidModelIdentifier(int id)
+static bool IsValidModelIdentifier(int id)
 {
 	if(EQUILIBRIUM_MODEL_SIGNATURE == id)
 		return true;
@@ -19,7 +19,7 @@ bool IsValidModelIdentifier(int id)
 	return false;
 }
 
-void ConvertHeaderToLatestVersion(basemodelheader_t* pHdr)
+static void ConvertHeaderToLatestVersion(basemodelheader_t* pHdr)
 {
 
 }
@@ -27,7 +27,6 @@ void ConvertHeaderToLatestVersion(basemodelheader_t* pHdr)
 // loads all supported EGF model formats
 studiohdr_t* Studio_LoadModel(const char* pszPath)
 {
-	
 	IFile* file = g_fileSystem->Open(pszPath, "rb");
 
 	if(!file)
@@ -70,22 +69,6 @@ studiohdr_t* Studio_LoadModel(const char* pszPath)
 		PPFree(_buffer);
 		return nullptr;
 	}
-
-	/*
-#ifndef EDITOR
-	char* str = (char*)stackalloc(strlen(pszPath+1));
-	strcpy(str, pszPath);
-	FixSlashes(str);
-
-	if(stricmp(str, pHdr->modelName))
-	{
-		MsgError("Model %s is not valid model, didn't you replaced model?\n", pszPath);
-		CacheFree(hunkHiMark);
-		return nullptr;
-	}
-#endif
-	*/
-
 
 	return pHdr;
 }
@@ -397,17 +380,6 @@ bool Studio_LoadPhysModel(const char* pszPath, studioPhysData_t* pModel)
 void Studio_FreeModel(studiohdr_t* pModel)
 {
 	PPFree(pModel);
-}
-
-void Studio_FreeAnimationData(studioAnimation_t* anim, int numBones)
-{
-	if (anim->bones) 
-	{
-		for (int i = 0; i < numBones; i++)
-			PPFree(anim->bones[i].keyFrames);
-	}
-
-	PPFree(anim->bones);
 }
 
 void Studio_FreeMotionData(studioMotionData_t* data, int numBones)

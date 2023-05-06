@@ -10,7 +10,7 @@
 #include "ds/sort.h"
 #include "render/IDebugOverlay.h"
 #include "Animating.h"
-#include "egf/StudioGeom.h"
+#include "studio/StudioGeom.h"
 #include "anim_activity.h"
 #include "anim_events.h"
 

@@ -11,10 +11,10 @@
 
 #include "math/Utility.h"
 
+#include "studiofile/StudioLoader.h"
 #include "StudioGeom.h"
 #include "StudioCache.h"
-#include "EGFInstancer.h"
-#include "modelloader_shared.h"
+#include "StudioGeomInstancer.h"
 
 #include "physics/IStudioShapeCache.h"
 #include "render/Decals.h"

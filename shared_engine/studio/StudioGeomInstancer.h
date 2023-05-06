@@ -6,7 +6,7 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #pragma once
-#include "egf/StudioGeom.h"
+#include "studio/StudioGeom.h"
 #include "materialsystem1/renderers/IShaderAPI.h"
 
 static constexpr const int EGF_INST_BODYGROUP_BITS	= 4;

@@ -7,7 +7,7 @@
 
 #include "core/core_common.h"
 #include "ragdoll.h"
-#include "egf/StudioGeom.h"
+#include "studio/StudioGeom.h"
 
 #include "render/IDebugOverlay.h"
 #include "animating/BoneSetup.h"

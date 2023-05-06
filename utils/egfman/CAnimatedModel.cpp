@@ -8,7 +8,7 @@
 #include "core/core_common.h"
 #include "CAnimatedModel.h"
 
-#include "egf/StudioGeom.h"
+#include "studio/StudioGeom.h"
 #include "animating/anim_events.h"
 
 #include "dkphysics/ragdoll.h"

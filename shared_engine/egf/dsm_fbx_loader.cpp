@@ -14,7 +14,7 @@
 #include "dsm_loader.h"
 #include "dsm_esm_loader.h"
 #include "dsm_fbx_loader.h"
-#include "modelloader_shared.h"
+#include "studiofile/StudioLoader.h"
 
 namespace SharedModel
 {
@@ -637,6 +637,9 @@ void ConvertFBXToESA(Array<studioAnimation_t>& animations, ofbx::IScene* scene)
 
 			ASSERT_MSG(translations.numElem() == rotations.numElem(), "Rotations %d translations %d", rotations.numElem(), translations.numElem());
 
+			if (!translations.numElem() && !rotations.numElem())
+				continue;
+
 			animation.bones[j].numFrames = translations.numElem();
 			animation.bones[j].keyFrames = PPAllocStructArray(animframe_t, translations.numElem());
 
@@ -683,7 +686,11 @@ void ConvertFBXToESA(Array<studioAnimation_t>& animations, ofbx::IScene* scene)
 			animations.append(animation);
 		}
 		else
-			Studio_FreeAnimationData(&animation, boneCount);
+		{
+			for (int i = 0; i < boneCount; i++)
+				PPFree(animation.bones[i].keyFrames);
+			PPFree(animation.bones);
+		}
 	}
 }
 

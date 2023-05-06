@@ -7,7 +7,7 @@
 
 #include "core/core_common.h"
 #include "materialsystem1/IMaterialSystem.h"
-#include "EGFInstancer.h"
+#include "StudioGeomInstancer.h"
 
 EGFInstBuffer::~EGFInstBuffer()
 {

@@ -42,15 +42,38 @@ usage "renderUtilLib"
 	includedirs {
 		Folders.shared_engine
 	}
+	
+-- Studio model lib
+project "studioFileLib"
+    kind "StaticLib"
+	unitybuild "on"
+	uses {
+		"corelib", "frameworkLib", "e2Core",
+		"renderUtilLib", "bullet2", "zlib"
+	}
+    files {
+		Folders.shared_engine.. "studiofile/**.cpp",
+		Folders.shared_engine.. "studiofile/**.h",
+		Folders.public.. "egf/**.h"
+	}
+    includedirs {
+		Folders.shared_engine
+	}
+	
+usage "studioFileLib"
+	links "studioFileLib"
+	includedirs {
+		Folders.shared_engine
+	}
 
--- EGF
+-- EGF generator
 project "egfLib"
     kind "StaticLib"
 	unitybuild "on"
 	uses {
 		"corelib", "frameworkLib", "e2Core",
-		"renderUtilLib", "bullet2", "zlib",
-		"openfbx"
+		"bullet2", "zlib", "openfbx", 
+		"studioFileLib"
 	}
     files {
 		Folders.shared_engine.. "egf/**.cpp",
@@ -67,6 +90,31 @@ usage "egfLib"
 	includedirs {
 		Folders.shared_engine
 	}
+	
+-- Studio model lib
+project "studioLib"
+    kind "StaticLib"
+	unitybuild "on"
+	uses {
+		"corelib", "frameworkLib", "e2Core",
+		"renderUtilLib", "bullet2", "zlib",
+		"studioFileLib"
+	}
+    files {
+		Folders.shared_engine.. "studio/**.cpp",
+		Folders.shared_engine.. "studio/**.c",
+		Folders.shared_engine.. "studio/**.h",
+		Folders.public.. "egf/**.h"
+	}
+    includedirs {
+		Folders.shared_engine
+	}
+	
+usage "studioLib"
+	links "studioLib"
+	includedirs {
+		Folders.shared_engine
+	}
 
 -- Animating game library
 project "animatingLib"
@@ -74,7 +122,7 @@ project "animatingLib"
 	unitybuild "on"
 	uses {
 		"corelib", "frameworkLib", "e2Core",
-		"egfLib", "bullet2"
+		"studioLib", "bullet2"
 	}
     files {
 		Folders.shared_game.. "animating/**.cpp",
@@ -96,7 +144,7 @@ project "dkPhysicsLib"
 	unitybuild "on"
 	uses {
 		"corelib", "frameworkLib", "e2Core",
-		"egfLib", "animatingLib", "bullet2"
+		"studioLib", "animatingLib", "bullet2"
 	}
     files {
 		Folders.shared_engine.. "dkphysics/**.cpp",

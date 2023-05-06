@@ -14,6 +14,5 @@ bool								Studio_LoadPhysModel(const char* pszPath, studioPhysData_t* pModel);
 
 void								Studio_FreeModel(studiohdr_t* pModel);
 
-void								Studio_FreeAnimationData(studioAnimation_t* anim, int numBones);
 void								Studio_FreeMotionData(studioMotionData_t* pData, int numBones);
 void								Studio_FreePhysModel(studioPhysData_t* pModel);

@@ -25,8 +25,8 @@
 #include "utils/KeyValues.h"
 
 #include "font/IFontCache.h"
-#include "egf/StudioCache.h"
-#include "egf/StudioGeom.h"
+#include "studio/StudioCache.h"
+#include "studio/StudioGeom.h"
 
 #include "render/IDebugOverlay.h"
 #include "CAnimatedModel.h"

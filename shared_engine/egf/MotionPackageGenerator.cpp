@@ -22,9 +22,20 @@
 #include "egf/dsm_esm_loader.h"
 #include "egf/dsm_fbx_loader.h"
 #include "egf/model.h"
-#include "egf/modelloader_shared.h"
+#include "studiofile/StudioLoader.h"
 
 using namespace SharedModel;
+
+static void FreeAnimationData(studioAnimation_t* anim, int numBones)
+{
+	if (anim->bones)
+	{
+		for (int i = 0; i < numBones; i++)
+			PPFree(anim->bones[i].keyFrames);
+	}
+
+	PPFree(anim->bones);
+}
 
 #define BONE_NOT_SET 65536
 
@@ -47,7 +58,7 @@ void CMotionPackageGenerator::Cleanup()
 	// delete animations
 	for(int i = 0; i < m_animations.numElem(); i++)
 	{
-		Studio_FreeAnimationData(&m_animations[i], m_model->numBones);
+		FreeAnimationData(&m_animations[i], m_model->numBones);
 	}
 
 	m_animations.clear();
@@ -637,7 +648,7 @@ int CMotionPackageGenerator::LoadAnimationFromESA(const char* filename)
 			if(m_model->numBones != tempDSM.bones.numElem())
 			{
 				MsgError("Invalid bones! Please re-export model!\n");
-				Studio_FreeAnimationData(&modelAnim, m_model->numBones);
+				FreeAnimationData(&modelAnim, m_model->numBones);
 				m_animations.removeIndex(newAnimIndex);
 				return -1;
 			}
@@ -646,7 +657,7 @@ int CMotionPackageGenerator::LoadAnimationFromESA(const char* filename)
 
 			if(!ReadFrames(*this, tok, &tempDSM, &modelAnim))
 			{
-				Studio_FreeAnimationData(&modelAnim, m_model->numBones);
+				FreeAnimationData(&modelAnim, m_model->numBones);
 				m_animations.removeIndex(newAnimIndex);
 				return -1;
 			}

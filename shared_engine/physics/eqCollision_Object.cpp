@@ -45,7 +45,7 @@ CEqCollisionObject::CEqCollisionObject()
 
 	m_cellRange = IVector4D(0,0,0,0);
 
-	m_contents = 0xffffffff;;
+	m_contents = 0xffffffff;
 	m_collMask = 0xffffffff;
 
 	m_flags = COLLOBJ_TRANSFORM_DIRTY;

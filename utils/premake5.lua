@@ -26,7 +26,7 @@ project "egfca"
     uses {
 		"corelib", "frameworkLib",
 		"e2Core",
-		"egflib"
+		"egfLib"
 	}
     files {
 		"egfca/*.cpp",
@@ -41,7 +41,7 @@ project "animca"
 	unitybuild "on"
     uses {
 		"corelib", "frameworkLib",
-		"e2Core", "egflib"
+		"e2Core", "egfLib", "studioLib"
 	}
     files {
 		"animca/*.cpp",
