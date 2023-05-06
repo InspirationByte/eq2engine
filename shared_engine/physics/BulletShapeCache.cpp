@@ -21,19 +21,21 @@ static CEqMutex s_shapeCacheMutex;
 DECLARE_CVAR(ph_studioShapeMargin, "0.05", "Studio model shape marginal", CV_CHEAT);
 
 // makes and caches shape. IsConvex defines that it was convex or not (also for internal use)
-btCollisionShape* InternalGenerateShape(int numVertices, Vector3D* vertices, int *indices, int numIndices, EPhysShapeType type, float margin)
+static btCollisionShape* ShapeCache_GenerateBulletShape(ArrayCRef<Vector3D> vertices, ArrayCRef<int> indices, EPhysShapeType type)
 {
+	const float margin = ph_studioShapeMargin.GetFloat();
+
 	switch(type)
 	{
 		case PHYSSHAPE_TYPE_CONCAVE:
 		case PHYSSHAPE_TYPE_MOVABLECONCAVE:
 		{
 			btTriangleIndexVertexArray* pTriMesh = new btTriangleIndexVertexArray(
-				(int)numIndices/3,
-				(int*)indices,
+				indices.numElem() / 3,
+				(int*)indices.ptr(),
 				sizeof(int)*3,
-				numVertices,
-				(float*)vertices,
+				vertices.numElem(),
+				(float*)vertices.ptr(),
 				sizeof(Vector3D)
 				);
 
@@ -58,7 +60,7 @@ btCollisionShape* InternalGenerateShape(int numVertices, Vector3D* vertices, int
 		{
 			btConvexHullShape* convexShape = new btConvexHullShape;
 
-			for (int i = 0; i < numIndices; i++)
+			for (int i = 0; i < indices.numElem(); i++)
 			{
 				btVector3 vec;
 				ConvertPositionToBullet(vec, vertices[indices[i]]);
@@ -106,19 +108,18 @@ void CBulletStudioShapeCache::InitStudioCache( studioPhysData_t* studioData )
 	// cache shapes using model info.
 	for(int i = 0; i < studioData->numObjects; i++)
 	{
-		for(int j = 0; j < studioData->objects[i].object.numShapes; j++)
+		studioPhysObject_t& obj = studioData->objects[i];
+		for(int j = 0; j < obj.object.numShapes; j++)
 		{
-			int nShape = studioData->objects[i].object.shape_indexes[j];
+			const int nShape = obj.object.shape_indexes[j];
 
-			btCollisionShape* shape = InternalGenerateShape(
-									studioData->numVertices,
-									studioData->vertices,
-									studioData->indices + studioData->shapes[nShape].shape_info.startIndices,
-									studioData->shapes[nShape].shape_info.numIndices,
-									(EPhysShapeType)studioData->shapes[nShape].shape_info.type, ph_studioShapeMargin.GetFloat());
+			btCollisionShape* shape = ShapeCache_GenerateBulletShape(
+									ArrayCRef(studioData->vertices, studioData->numVertices),
+									ArrayCRef(studioData->indices + studioData->shapes[nShape].shape_info.startIndices, studioData->shapes[nShape].shape_info.numIndices),
+									(EPhysShapeType)studioData->shapes[nShape].shape_info.type);
 
 			// cast physics POD index to index in physics engine
-			studioData->objects[i].shapeCache[j] = shape;
+			obj.shapeCache[j] = shape;
 
 			{
 				CScopedMutex m(s_shapeCacheMutex);
@@ -134,12 +135,11 @@ void CBulletStudioShapeCache::DestroyStudioCache( studioPhysData_t* studioData )
 {
 	for(int i = 0; i < studioData->numShapes; i++)
 	{
-		int nShape = m_collisionShapes.findIndex((btCollisionShape*)studioData->shapes[i].cachedata);
+		const int nShape = m_collisionShapes.findIndex((btCollisionShape*)studioData->shapes[i].cachedata);
 
 		if( m_collisionShapes[nShape]->getUserPointer() )
 		{
 			btTriangleIndexVertexArray* mesh = (btTriangleIndexVertexArray*)m_collisionShapes[nShape]->getUserPointer();
-
 			delete mesh;
 		}
 

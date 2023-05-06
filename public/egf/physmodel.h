@@ -27,13 +27,13 @@ enum EPhysModelUsage
 
 enum EPhysLump
 {
-	PHYSFILE_PROPERTIES	= 0,	// shared model property lump
-	PHYSFILE_GEOMETRYINFO,		// geometrical info lump
-	PHYSFILE_JOINTDATA,			// joint data
-	PHYSFILE_OBJECTS,			// objects in this model
-	PHYSFILE_VERTEXDATA,		// vertex data, Vector3D format
-	PHYSFILE_INDEXDATA,			// vertex indices data, uint format
-	PHYSFILE_OBJECTNAMES,		// object names lump
+	PHYSFILE_PROPERTIES		= 0,	// shared model property lump
+	PHYSFILE_GEOMETRYINFO	= 1,	// geometrical info lump
+	PHYSFILE_JOINTDATA		= 2,	// joint data
+	PHYSFILE_OBJECTS		= 3,	// objects in this model
+	PHYSFILE_VERTEXDATA		= 4,	// vertex data, Vector3D format
+	PHYSFILE_INDEXDATA		= 5,	// vertex indices data, int format
+	PHYSFILE_OBJECTNAMES	= 6,	// object names lump
 
 	PHYSFILE_LUMPS,
 };

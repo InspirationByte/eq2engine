@@ -6,8 +6,8 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #pragma once
-#include <egf/model.h>
-#include <egf/motionpackage.h>
+#include "egf/model.h"
+#include "egf/motionpackage.h"
 
 struct KVSection;
 struct animCaBoneFrames_t;
