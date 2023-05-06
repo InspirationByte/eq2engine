@@ -109,7 +109,7 @@ void CMaterial::Init()
 		MsgError("Can't load material '%s'\n", m_szMaterialName.ToCString());
 		m_szShaderName = "Error";
 
-		m_state = MATERIAL_LOAD_NEED_LOAD;
+		Atomic::Exchange(m_state, MATERIAL_LOAD_NEED_LOAD);
 		return;
 	}
 
@@ -118,7 +118,7 @@ void CMaterial::Init()
 	if(!shader_root)
 	{
 		MsgError("Material '%s' does not have a shader root section!\n",m_szMaterialName.ToCString());
-		m_state = MATERIAL_LOAD_ERROR;
+		Atomic::Exchange(m_state, MATERIAL_LOAD_ERROR);
 		return;
 	}
 
@@ -243,7 +243,7 @@ void CMaterial::InitShader()
 	// don't need to do anything if NODRAW
 	if( !m_szShaderName.CompareCaseIns("NODRAW") )
 	{
-		m_state = MATERIAL_LOAD_OK;
+		Atomic::Exchange(m_state, MATERIAL_LOAD_OK);
 		return;
 	}
 
@@ -265,11 +265,10 @@ void CMaterial::InitShader()
 		{
 			// just init the parameters
 			shader->Init(this);
-			m_state = MATERIAL_LOAD_NEED_LOAD;
+			Atomic::Exchange(m_state, MATERIAL_LOAD_NEED_LOAD);
 		}
 		else
-			m_state = MATERIAL_LOAD_ERROR;
-
+			Atomic::Exchange(m_state, MATERIAL_LOAD_ERROR);
 
 		m_shader = shader;
 	}
