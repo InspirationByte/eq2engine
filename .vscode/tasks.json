@@ -5407,6 +5407,206 @@
 			},
 		},
 		{
+			"label": "Build studioFileLib (Debug|x86)",
+			"type": "shell",
+			"linux":
+			{
+				"command": "clear && time make config=debug_x86 studioFileLib -j12",
+				"problemMatcher": "$gcc",
+			},
+			"windows":
+			{
+				"command": "cls && msbuild",
+				"args":
+				[
+					"/m:12",
+					"${workspaceRoot}/DriverSyndicate.sln",
+					"/p:Configuration=Debug|x86",
+					"/t:.",
+				],
+				"problemMatcher": "$msCompile",
+			},
+			"group":
+			{
+				"kind": "build",
+			},
+		},
+		{
+			"label": "Build studioFileLib (Debug|x64)",
+			"type": "shell",
+			"linux":
+			{
+				"command": "clear && time make config=debug_x64 studioFileLib -j12",
+				"problemMatcher": "$gcc",
+			},
+			"windows":
+			{
+				"command": "cls && msbuild",
+				"args":
+				[
+					"/m:12",
+					"${workspaceRoot}/DriverSyndicate.sln",
+					"/p:Configuration=Debug|x64",
+					"/t:.",
+				],
+				"problemMatcher": "$msCompile",
+			},
+			"group":
+			{
+				"kind": "build",
+			},
+		},
+		{
+			"label": "Build studioFileLib (Release|x86)",
+			"type": "shell",
+			"linux":
+			{
+				"command": "clear && time make config=release_x86 studioFileLib -j12",
+				"problemMatcher": "$gcc",
+			},
+			"windows":
+			{
+				"command": "cls && msbuild",
+				"args":
+				[
+					"/m:12",
+					"${workspaceRoot}/DriverSyndicate.sln",
+					"/p:Configuration=Release|x86",
+					"/t:.",
+				],
+				"problemMatcher": "$msCompile",
+			},
+			"group":
+			{
+				"kind": "build",
+			},
+		},
+		{
+			"label": "Build studioFileLib (Release|x64)",
+			"type": "shell",
+			"linux":
+			{
+				"command": "clear && time make config=release_x64 studioFileLib -j12",
+				"problemMatcher": "$gcc",
+			},
+			"windows":
+			{
+				"command": "cls && msbuild",
+				"args":
+				[
+					"/m:12",
+					"${workspaceRoot}/DriverSyndicate.sln",
+					"/p:Configuration=Release|x64",
+					"/t:.",
+				],
+				"problemMatcher": "$msCompile",
+			},
+			"group":
+			{
+				"kind": "build",
+			},
+		},
+		{
+			"label": "Build studioFileLib (Profile|x86)",
+			"type": "shell",
+			"linux":
+			{
+				"command": "clear && time make config=profile_x86 studioFileLib -j12",
+				"problemMatcher": "$gcc",
+			},
+			"windows":
+			{
+				"command": "cls && msbuild",
+				"args":
+				[
+					"/m:12",
+					"${workspaceRoot}/DriverSyndicate.sln",
+					"/p:Configuration=Profile|x86",
+					"/t:.",
+				],
+				"problemMatcher": "$msCompile",
+			},
+			"group":
+			{
+				"kind": "build",
+			},
+		},
+		{
+			"label": "Build studioFileLib (Profile|x64)",
+			"type": "shell",
+			"linux":
+			{
+				"command": "clear && time make config=profile_x64 studioFileLib -j12",
+				"problemMatcher": "$gcc",
+			},
+			"windows":
+			{
+				"command": "cls && msbuild",
+				"args":
+				[
+					"/m:12",
+					"${workspaceRoot}/DriverSyndicate.sln",
+					"/p:Configuration=Profile|x64",
+					"/t:.",
+				],
+				"problemMatcher": "$msCompile",
+			},
+			"group":
+			{
+				"kind": "build",
+			},
+		},
+		{
+			"label": "Build studioFileLib (Retail|x86)",
+			"type": "shell",
+			"linux":
+			{
+				"command": "clear && time make config=retail_x86 studioFileLib -j12",
+				"problemMatcher": "$gcc",
+			},
+			"windows":
+			{
+				"command": "cls && msbuild",
+				"args":
+				[
+					"/m:12",
+					"${workspaceRoot}/DriverSyndicate.sln",
+					"/p:Configuration=Retail|x86",
+					"/t:.",
+				],
+				"problemMatcher": "$msCompile",
+			},
+			"group":
+			{
+				"kind": "build",
+			},
+		},
+		{
+			"label": "Build studioFileLib (Retail|x64)",
+			"type": "shell",
+			"linux":
+			{
+				"command": "clear && time make config=retail_x64 studioFileLib -j12",
+				"problemMatcher": "$gcc",
+			},
+			"windows":
+			{
+				"command": "cls && msbuild",
+				"args":
+				[
+					"/m:12",
+					"${workspaceRoot}/DriverSyndicate.sln",
+					"/p:Configuration=Retail|x64",
+					"/t:.",
+				],
+				"problemMatcher": "$msCompile",
+			},
+			"group":
+			{
+				"kind": "build",
+			},
+		},
+		{
 			"label": "Build egfLib (Debug|x86)",
 			"type": "shell",
 			"linux":
@@ -5587,6 +5787,206 @@
 			"linux":
 			{
 				"command": "clear && time make config=retail_x64 egfLib -j12",
+				"problemMatcher": "$gcc",
+			},
+			"windows":
+			{
+				"command": "cls && msbuild",
+				"args":
+				[
+					"/m:12",
+					"${workspaceRoot}/DriverSyndicate.sln",
+					"/p:Configuration=Retail|x64",
+					"/t:.",
+				],
+				"problemMatcher": "$msCompile",
+			},
+			"group":
+			{
+				"kind": "build",
+			},
+		},
+		{
+			"label": "Build studioLib (Debug|x86)",
+			"type": "shell",
+			"linux":
+			{
+				"command": "clear && time make config=debug_x86 studioLib -j12",
+				"problemMatcher": "$gcc",
+			},
+			"windows":
+			{
+				"command": "cls && msbuild",
+				"args":
+				[
+					"/m:12",
+					"${workspaceRoot}/DriverSyndicate.sln",
+					"/p:Configuration=Debug|x86",
+					"/t:.",
+				],
+				"problemMatcher": "$msCompile",
+			},
+			"group":
+			{
+				"kind": "build",
+			},
+		},
+		{
+			"label": "Build studioLib (Debug|x64)",
+			"type": "shell",
+			"linux":
+			{
+				"command": "clear && time make config=debug_x64 studioLib -j12",
+				"problemMatcher": "$gcc",
+			},
+			"windows":
+			{
+				"command": "cls && msbuild",
+				"args":
+				[
+					"/m:12",
+					"${workspaceRoot}/DriverSyndicate.sln",
+					"/p:Configuration=Debug|x64",
+					"/t:.",
+				],
+				"problemMatcher": "$msCompile",
+			},
+			"group":
+			{
+				"kind": "build",
+			},
+		},
+		{
+			"label": "Build studioLib (Release|x86)",
+			"type": "shell",
+			"linux":
+			{
+				"command": "clear && time make config=release_x86 studioLib -j12",
+				"problemMatcher": "$gcc",
+			},
+			"windows":
+			{
+				"command": "cls && msbuild",
+				"args":
+				[
+					"/m:12",
+					"${workspaceRoot}/DriverSyndicate.sln",
+					"/p:Configuration=Release|x86",
+					"/t:.",
+				],
+				"problemMatcher": "$msCompile",
+			},
+			"group":
+			{
+				"kind": "build",
+			},
+		},
+		{
+			"label": "Build studioLib (Release|x64)",
+			"type": "shell",
+			"linux":
+			{
+				"command": "clear && time make config=release_x64 studioLib -j12",
+				"problemMatcher": "$gcc",
+			},
+			"windows":
+			{
+				"command": "cls && msbuild",
+				"args":
+				[
+					"/m:12",
+					"${workspaceRoot}/DriverSyndicate.sln",
+					"/p:Configuration=Release|x64",
+					"/t:.",
+				],
+				"problemMatcher": "$msCompile",
+			},
+			"group":
+			{
+				"kind": "build",
+			},
+		},
+		{
+			"label": "Build studioLib (Profile|x86)",
+			"type": "shell",
+			"linux":
+			{
+				"command": "clear && time make config=profile_x86 studioLib -j12",
+				"problemMatcher": "$gcc",
+			},
+			"windows":
+			{
+				"command": "cls && msbuild",
+				"args":
+				[
+					"/m:12",
+					"${workspaceRoot}/DriverSyndicate.sln",
+					"/p:Configuration=Profile|x86",
+					"/t:.",
+				],
+				"problemMatcher": "$msCompile",
+			},
+			"group":
+			{
+				"kind": "build",
+			},
+		},
+		{
+			"label": "Build studioLib (Profile|x64)",
+			"type": "shell",
+			"linux":
+			{
+				"command": "clear && time make config=profile_x64 studioLib -j12",
+				"problemMatcher": "$gcc",
+			},
+			"windows":
+			{
+				"command": "cls && msbuild",
+				"args":
+				[
+					"/m:12",
+					"${workspaceRoot}/DriverSyndicate.sln",
+					"/p:Configuration=Profile|x64",
+					"/t:.",
+				],
+				"problemMatcher": "$msCompile",
+			},
+			"group":
+			{
+				"kind": "build",
+			},
+		},
+		{
+			"label": "Build studioLib (Retail|x86)",
+			"type": "shell",
+			"linux":
+			{
+				"command": "clear && time make config=retail_x86 studioLib -j12",
+				"problemMatcher": "$gcc",
+			},
+			"windows":
+			{
+				"command": "cls && msbuild",
+				"args":
+				[
+					"/m:12",
+					"${workspaceRoot}/DriverSyndicate.sln",
+					"/p:Configuration=Retail|x86",
+					"/t:.",
+				],
+				"problemMatcher": "$msCompile",
+			},
+			"group":
+			{
+				"kind": "build",
+			},
+		},
+		{
+			"label": "Build studioLib (Retail|x64)",
+			"type": "shell",
+			"linux":
+			{
+				"command": "clear && time make config=retail_x64 studioLib -j12",
 				"problemMatcher": "$gcc",
 			},
 			"windows":
@@ -8261,7 +8661,7 @@
 			"type": "shell",
 			"linux":
 			{
-				"command": "clear && time make config=release_x86 -j12",
+				"command": "clear && time make config=release_x86 DriversGame -j12",
 				"problemMatcher": "$gcc",
 			},
 			"windows":
@@ -8286,7 +8686,7 @@
 			"type": "shell",
 			"linux":
 			{
-				"command": "clear && time make config=release_x64 -j12",
+				"command": "clear && time make config=release_x64 DriversGame -j12",
 				"problemMatcher": "$gcc",
 			},
 			"windows":

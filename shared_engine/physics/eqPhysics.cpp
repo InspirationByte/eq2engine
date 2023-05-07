@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright ï¿½ Inspiration Byte
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
 // Description: Equilibrium fixed point 3D physics engine
@@ -1403,12 +1403,13 @@ void CEqPhysics::InternalTestLineCollisionCells(int y1, int x1, int y2, int x2,
 	F func,
 	void* args)
 {
-	//if( TestLineCollisionOnCell(y1, x1, start, end, rayBox, coll, rayMask, filterParams, func, args) )
-	//	return;
+    const int dx = abs(x2 - x1);
+	const int dy = -abs(y2 - y1);
 
-    int dx = abs(x2 - x1), sx = x1 < x2 ? 1 : -1;
-    int dy = -abs(y2 - y1), sy = y1 < y2 ? 1 : -1;
-    int err = dx + dy, e2;
+	const int sx = x1 < x2 ? 1 : -1;
+	const int sy = y1 < y2 ? 1 : -1;
+
+    int err = dx + dy;
 
     for (;;)
 	{
@@ -1418,7 +1419,7 @@ void CEqPhysics::InternalTestLineCollisionCells(int y1, int x1, int y2, int x2,
         if (x1 == x2 && y1 == y2)
 			break;
 
-        e2 = 2 * err;
+        const int e2 = 2 * err;
 
         // EITHER horizontal OR vertical step (but not both!)
         if (e2 > dy)
@@ -1454,7 +1455,7 @@ bool CEqPhysics::TestLineCollisionOnCell(int y, int x,
 	if (!cell)
 		return false;
 
-	bool hasClosestCollision = false;
+	bool hasHit = false;
 	float fMaxDist = coll.fract;
 
 	int objectTypeTesting = 0x3;
@@ -1465,7 +1466,7 @@ bool CEqPhysics::TestLineCollisionOnCell(int y, int x,
 	if(filterParams && (filterParams->flags & EQPHYS_FILTER_FLAG_DISALLOW_DYNAMIC))
 		objectTypeTesting &= ~0x2;
 
-	bool staticInBoundTest = (rayBox.minPoint.y <= cell->cellBoundUsed);
+	const bool staticInBoundTest = true; // TEMPORARY ALLOWED. (rayBox.minPoint.y <= cell->cellBoundUsed);
 
 	if(staticInBoundTest && m_debugRaycast)
 	{
@@ -1491,7 +1492,7 @@ bool CEqPhysics::TestLineCollisionOnCell(int y, int x,
 			{
 				fMaxDist = tempColl.fract;
 				coll = tempColl;
-				hasClosestCollision = true;
+				hasHit = true;
 			}
 		}
 	}
@@ -1509,12 +1510,12 @@ bool CEqPhysics::TestLineCollisionOnCell(int y, int x,
 			{
 				fMaxDist = tempColl.fract;
 				coll = tempColl;
-				hasClosestCollision = true;
+				hasHit = true;
 			}
 		}
 	}
 
-	return hasClosestCollision;
+	return hasHit;
 }
 
 //-----------------------------------------------------------------------------------------------------------------------------
