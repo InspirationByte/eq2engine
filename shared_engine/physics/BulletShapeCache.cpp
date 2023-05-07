@@ -111,12 +111,12 @@ void CBulletStudioShapeCache::InitStudioCache( studioPhysData_t* studioData )
 		studioPhysObject_t& obj = studioData->objects[i];
 		for(int j = 0; j < obj.object.numShapes; j++)
 		{
-			const int nShape = obj.object.shape_indexes[j];
+			const int nShape = obj.object.shapeIndex[j];
 
 			btCollisionShape* shape = ShapeCache_GenerateBulletShape(
 									ArrayCRef(studioData->vertices, studioData->numVertices),
-									ArrayCRef(studioData->indices + studioData->shapes[nShape].shape_info.startIndices, studioData->shapes[nShape].shape_info.numIndices),
-									(EPhysShapeType)studioData->shapes[nShape].shape_info.type);
+									ArrayCRef(studioData->indices + studioData->shapes[nShape].shapeInfo.startIndices, studioData->shapes[nShape].shapeInfo.numIndices),
+									(EPhysShapeType)studioData->shapes[nShape].shapeInfo.type);
 
 			// cast physics POD index to index in physics engine
 			obj.shapeCache[j] = shape;

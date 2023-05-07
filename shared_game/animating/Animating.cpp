@@ -553,7 +553,7 @@ void CAnimatingEGF::SetPoseControllerValue(int nPoseCtrl, float value)
 
 void GetInterpolatedBoneFrame(const studioAnimation_t* pAnim, int nBone, int firstframe, int lastframe, float interp, qanimframe_t& out)
 {
-	studioBoneFrame_t& frame = pAnim->bones[nBone];
+	studioBoneAnimation_t& frame = pAnim->bones[nBone];
 	ASSERT(firstframe >= 0);
 	ASSERT(lastframe >= 0);
 	ASSERT(firstframe < frame.numFrames);

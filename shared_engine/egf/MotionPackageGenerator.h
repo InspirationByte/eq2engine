@@ -41,34 +41,34 @@ private:
 
 	// Shifts animation start
 	//void ShiftAnimationFrames(studioBoneFrame_t* bone, int new_start_frame);
-	void TranslateAnimationFrames(studioBoneFrame_t* bone, Vector3D& offset);
+	void TranslateAnimationFrames(studioBoneAnimation_t* bone, Vector3D& offset);
 
 	// Subtracts the animation frames
 	// IT ONLY SUBTRACTS BY FIRST FRAME OF otherbone
-	void SubtractAnimationFrames(studioBoneFrame_t* bone, studioBoneFrame_t* otherbone);
+	void SubtractAnimationFrames(studioBoneAnimation_t* bone, studioBoneAnimation_t* otherbone);
 
 	// Advances every frame position on reversed velocity
 	// Helps with motion capture issues.
-	void VelocityBackTransform(studioBoneFrame_t* bone, Vector3D& velocity);
+	void VelocityBackTransform(studioBoneAnimation_t* bone, Vector3D& velocity);
 
 	// Fills empty frames of animation
 	// and interpolates non-empty to them.
-	void InterpolateBoneAnimationFrames(studioBoneFrame_t* bone);
+	void InterpolateBoneAnimationFrames(studioBoneAnimation_t* bone);
 
 	// Crops animated bones
-	void CropAnimationBoneFrames(studioBoneFrame_t* pBone, int newStart, int newEnd);
+	void CropAnimationBoneFrames(studioBoneAnimation_t* pBone, int newStart, int newEnd);
 
 	// Crops animation
 	void CropAnimationDimensions(studioAnimation_t* pAnim, int newStart, int newEnd);
 
 	// Reverse animated bones
-	void ReverseAnimationBoneFrames(studioBoneFrame_t* pBone);
+	void ReverseAnimationBoneFrames(studioBoneAnimation_t* pBone);
 
 	// Reverse animation
 	void ReverseAnimation(studioAnimation_t* pAnim);
 
 	// Scales bone animation length
-	void RemapBoneFrames(studioBoneFrame_t* pBone, int newLength);
+	void RemapBoneFrames(studioBoneAnimation_t* pBone, int newLength);
 
 	// Scales animation length
 	void RemapAnimationLength(studioAnimation_t* pAnim, int newLength);

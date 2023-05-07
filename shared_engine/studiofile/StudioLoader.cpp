@@ -75,16 +75,16 @@ studiohdr_t* Studio_LoadModel(const char* pszPath)
 
 studioMotionData_t* Studio_LoadMotionData(const char* pszPath, int boneCount)
 {
+	if (!boneCount)
+		return nullptr;
+
 	ubyte* pData = (ubyte*)g_fileSystem->GetFileBuffer(pszPath);
 	ubyte* pStart = pData;
 
 	if(!pData)
 		return nullptr;
 
-	if (!boneCount)
-		return nullptr;
-
-	animpackagehdr_t* pHDR = (animpackagehdr_t*)pData;
+	lumpfilehdr_t* pHDR = (lumpfilehdr_t*)pData;
 
 	if(pHDR->ident != ANIMFILE_IDENT)
 	{
@@ -100,7 +100,7 @@ studioMotionData_t* Studio_LoadMotionData(const char* pszPath, int boneCount)
 		return nullptr;
 	}
 
-	pData += sizeof(animpackagehdr_t);
+	pData += sizeof(lumpfilehdr_t);
 
 	studioMotionData_t* pMotion = (studioMotionData_t*)PPAlloc(sizeof(studioMotionData_t));
 
@@ -110,14 +110,14 @@ studioMotionData_t* Studio_LoadMotionData(const char* pszPath, int boneCount)
 	animationdesc_t*	animationdescs = nullptr;
 	animframe_t*		animframes = nullptr;
 
-	bool anim_frames_decompressed	= false;
+	bool hasCompressedAnimationFrames	= false;
 	int nUncompressedFramesSize		= 0;
 
 	// parse motion package
 	for(int lump = 0; lump < pHDR->numLumps; lump++)
 	{
-		animpackagelump_t* pLump = (animpackagelump_t*)pData;
-		pData += sizeof(animpackagelump_t);
+		lumpfilelump_t* pLump = (lumpfilelump_t*)pData;
+		pData += sizeof(lumpfilelump_t);
 
 		switch(pLump->type)
 		{
@@ -131,7 +131,7 @@ studioMotionData_t* Studio_LoadMotionData(const char* pszPath, int boneCount)
 			{
 				numAnimFrames = pLump->size / sizeof(animframe_t);
 				animframes = (animframe_t*)pData;
-				anim_frames_decompressed = false;
+				hasCompressedAnimationFrames = false;
 
 				break;
 			}
@@ -151,7 +151,7 @@ studioMotionData_t* Studio_LoadMotionData(const char* pszPath, int boneCount)
 				if (status == Z_OK)
 				{
 					numAnimFrames = realSize / sizeof(animframe_t);
-					anim_frames_decompressed = true;
+					hasCompressedAnimationFrames = true;
 				}
 				else
 					MsgError("ERROR! Cannot decompress animation frames from %s (error %d)!\n", pszPath, status);
@@ -202,15 +202,18 @@ studioMotionData_t* Studio_LoadMotionData(const char* pszPath, int boneCount)
 		// determine frame count of animation
 		const int numFrames = animationdescs[i].numFrames / boneCount;
 
-		anim.bones = PPAllocStructArray(studioBoneFrame_t, boneCount);
+		anim.bones = PPAllocStructArray(studioBoneAnimation_t, boneCount);
+		//anim.numFrames = numFrames;
+
+		// since frames are just flat array of each bone, we can simply reference it
 		for(int j = 0; j < boneCount; j++)
 		{
 			anim.bones[j].numFrames = numFrames;
-			anim.bones[j].keyFrames = pMotion->frames + (animationdescs[i].firstFrame + j*numFrames);
+			anim.bones[j].keyFrames = pMotion->frames + (animationdescs[i].firstFrame + j * numFrames);
 		}
 	}
 
-	if(anim_frames_decompressed)
+	if(hasCompressedAnimationFrames)
 	{
 		PPFree(animframes);
 	}
@@ -222,19 +225,13 @@ studioMotionData_t* Studio_LoadMotionData(const char* pszPath, int boneCount)
 
 bool Studio_LoadPhysModel(const char* pszPath, studioPhysData_t* pModel)
 {
-	memset(pModel, 0, sizeof(studioPhysData_t));
-
-	if (!g_fileSystem->FileExist(pszPath))
-		return false;
-
 	ubyte* pData = (ubyte*)g_fileSystem->GetFileBuffer( pszPath );
-
 	ubyte* pStart = pData;
 
 	if(!pData)
 		return false;
 
-	physmodelhdr_t *pHdr = (physmodelhdr_t*)pData;
+	lumpfilehdr_t *pHdr = (lumpfilehdr_t*)pData;
 
 	if(pHdr->ident != PHYSFILE_ID)
 	{
@@ -250,27 +247,26 @@ bool Studio_LoadPhysModel(const char* pszPath, studioPhysData_t* pModel)
 		return false;
 	}
 
-	Array<EqString> objectNames(PP_SL);
+	Array<const char*> objectNames(PP_SL);
+	pData += sizeof(lumpfilehdr_t);
 
-	pData += sizeof(physmodelhdr_t);
-
-	int nLumps = pHdr->num_lumps;
+	int nLumps = pHdr->numLumps;
 	for(int lump = 0; lump < nLumps; lump++)
 	{
-		physmodellump_t* pLump = (physmodellump_t*)pData;
-		pData += sizeof(physmodellump_t);
+		lumpfilelump_t* pLump = (lumpfilelump_t*)pData;
+		pData += sizeof(lumpfilelump_t);
 
 		switch(pLump->type)
 		{
 			case PHYSFILE_PROPERTIES:
 			{
 				physmodelprops_t* props = (physmodelprops_t*)pData;
-				pModel->modeltype = props->model_usage;
+				pModel->usageType = props->usageType;
 				break;
 			}
 			case PHYSFILE_GEOMETRYINFO:
 			{
-				int numGeomInfos = pLump->size / sizeof(physgeominfo_t);
+				const int numGeomInfos = pLump->size / sizeof(physgeominfo_t);
 
 				physgeominfo_t* pGeomInfos = (physgeominfo_t*)pData;
 
@@ -282,33 +278,28 @@ bool Studio_LoadPhysModel(const char* pszPath, studioPhysData_t* pModel)
 					pModel->shapes[i].cachedata = nullptr;
 
 					// copy shape info
-					memcpy(&pModel->shapes[i].shape_info, &pGeomInfos[i], sizeof(physgeominfo_t));
+					memcpy(&pModel->shapes[i].shapeInfo, &pGeomInfos[i], sizeof(physgeominfo_t));
 				}
 				break;
 			}
 			case PHYSFILE_OBJECTNAMES:
 			{
-				char* name = (char*)pData;
+				const char* name = (char*)pData;
 
-				int len = strlen(name);
 				int sz = 0;
-
 				do
 				{
-					char* str = name+sz;
+					const char* str = name + sz;
+					objectNames.append(str);
 
-					len = strlen(str);
-
-					if(len > 0)
-						objectNames.append(str);
-
-					sz += len + 1;
+					sz += strlen(str) + 1;
 				}while(sz < pLump->size);
+
 				break;
 			}
 			case PHYSFILE_OBJECTS:
 			{
-				int numObjInfos = pLump->size / sizeof(physobject_t);
+				const int numObjInfos = pLump->size / sizeof(physobject_t);
 				physobject_t* physObjDataLump = (physobject_t*)pData;
 
 				pModel->numObjects = numObjInfos;
@@ -319,7 +310,7 @@ bool Studio_LoadPhysModel(const char* pszPath, studioPhysData_t* pModel)
 					studioPhysObject_t& objData = pModel->objects[i];
 
 					if(objectNames.numElem() > 0)
-						strcpy(objData.name, objectNames[i].ToCString());
+						strcpy(objData.name, objectNames[i]);
 
 					// copy shape info
 					memcpy(&objData.object, &physObjDataLump[i], sizeof(physobject_t));
@@ -331,7 +322,7 @@ bool Studio_LoadPhysModel(const char* pszPath, studioPhysData_t* pModel)
 			}
 			case PHYSFILE_JOINTDATA:
 			{
-				int numJointInfos = pLump->size / sizeof(physjoint_t);
+				const int numJointInfos = pLump->size / sizeof(physjoint_t);
 				physjoint_t* pJointData = (physjoint_t*)pData;
 
 				pModel->numJoints = numJointInfos;
@@ -345,7 +336,7 @@ bool Studio_LoadPhysModel(const char* pszPath, studioPhysData_t* pModel)
 			}
 			case PHYSFILE_VERTEXDATA:
 			{
-				int numVerts = pLump->size / sizeof(Vector3D);
+				const int numVerts = pLump->size / sizeof(Vector3D);
 				Vector3D* pVertexData = (Vector3D*)pData;
 
 				pModel->numVertices = numVerts;
@@ -355,7 +346,7 @@ bool Studio_LoadPhysModel(const char* pszPath, studioPhysData_t* pModel)
 			}
 			case PHYSFILE_INDEXDATA:
 			{
-				int numIndices = pLump->size / sizeof(int);
+				const int numIndices = pLump->size / sizeof(int);
 				int* pIndexData = (int*)pData;
 
 				pModel->numIndices = numIndices;

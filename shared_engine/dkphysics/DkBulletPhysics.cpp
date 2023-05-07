@@ -867,7 +867,7 @@ void DkPhysics::DrawDebug()
 	m_Mutex.Unlock();
 }
 
-btRigidBody* DkPhysics::LocalCreateRigidBody(float mass, const Vector3D &mass_center, const btTransform& startTransform, btCollisionShape* shape)
+btRigidBody* DkPhysics::LocalCreateRigidBody(float mass, const Vector3D &massCenter, const btTransform& startTransform, btCollisionShape* shape)
 {
 	btAssert((!shape || shape->getShapeType() != INVALID_SHAPE_PROXYTYPE));
 
@@ -879,10 +879,10 @@ btRigidBody* DkPhysics::LocalCreateRigidBody(float mass, const Vector3D &mass_ce
 		shape->calculateLocalInertia(mass, localInertia);
 
 	btTransform mass_center_transform;
-	btVector3 massCenter;
-	ConvertPositionToBullet(massCenter, mass_center);
+	btVector3 btMassCenter;
+	ConvertPositionToBullet(btMassCenter, massCenter);
 	mass_center_transform.setIdentity();
-	mass_center_transform.setOrigin(massCenter);
+	mass_center_transform.setOrigin(btMassCenter);
 	mass_center_transform.inverse();
 
 	//using motionstate is recommended, it provides interpolation capabilities, and only synchronizes 'active' objects
@@ -1141,7 +1141,7 @@ IPhysicsObject* DkPhysics::CreateStaticObject(physmodelcreateinfo_t *info, int n
 
 	m_collisionShapes.append(shape);
 
-	pPhysicsObject->m_pPhyObjectPointer = (btRigidBody*)LocalCreateRigidBody(info->mass, info->mass_center,startTransform, shape);
+	pPhysicsObject->m_pPhyObjectPointer = (btRigidBody*)LocalCreateRigidBody(info->mass, info->massCenter,startTransform, shape);
 
 	const char* materialName = "default";
 
@@ -1307,7 +1307,7 @@ IPhysicsObject* DkPhysics::CreateObject( const studioPhysData_t* data, int nObje
 
 	btVector3 offset, massCenter;
 	ConvertPositionToBullet(offset, data->objects[nObject].object.offset);
-	ConvertPositionToBullet(massCenter, data->objects[nObject].object.mass_center);
+	ConvertPositionToBullet(massCenter, data->objects[nObject].object.massCenter);
 
 	// make object offset
 	btTransform object_start_transform;

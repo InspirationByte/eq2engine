@@ -147,7 +147,7 @@ struct physmodelcreateinfo_t // TODO: remove me
 {
 	dkCollideData_t* data;
 
-	Vector3D mass_center;
+	Vector3D massCenter;
 	float mass;
 	float damping;
 	float rotdamping;
@@ -162,7 +162,7 @@ struct physmodelcreateinfo_t // TODO: remove me
 
 static void SetDefaultPhysModelInfoParams(physmodelcreateinfo_t* info) // TODO: remove me
 {
-	info->mass_center = vec3_zero;
+	info->massCenter = vec3_zero;
 	info->mass = 1.0f;
 	info->isStatic = false;
 	info->damping = 1.0f;

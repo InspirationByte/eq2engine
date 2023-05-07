@@ -12,6 +12,9 @@
 
 typedef struct VertexFormatDesc_s VertexFormatDesc_t;
 
+// those are just runtime limits, they don't affect file data.
+static constexpr const int MAX_MOTIONPACKAGES = 8;		// maximum allowed motion packages to be used in model
+static constexpr const int MAX_STUDIOMATERIALS = 32;	// maximum allowed materials in model
 
 enum EEGFPrimType
 {
@@ -19,13 +22,6 @@ enum EEGFPrimType
 	EGFPRIM_TRIANGLES		= 0,
 	EGFPRIM_TRIANGLE_FAN	= 1,
 	EGFPRIM_TRI_STRIP		= 2,
-};
-
-// LIMITS for all model formats
-enum EEGFLimits
-{
-	MAX_MOTIONPACKAGES	=	8,		// maximum allowed motion packages to be used in model
-	MAX_STUDIOMATERIALS	=	32,		// maximum allowed materials in model
 };
 
 // Base model header
@@ -38,12 +34,28 @@ struct basemodelheader_s
 };
 ALIGNED_TYPE(basemodelheader_s, 4) basemodelheader_t;
 
+// LumpFile header
+struct lumpfilehdr_s
+{
+	int		ident;
+	int		version;
+	int		numLumps;
+};
+ALIGNED_TYPE(lumpfilehdr_s, 4) lumpfilehdr_t;
+
+struct lumpfilelump_s
+{
+	int		type;
+	int		size;
+};
+ALIGNED_TYPE(lumpfilelump_s, 4) lumpfilelump_t;
+
 //----------------------------------------------------------------------------------------------
 
 // shape cache data
 struct studioPhysShapeCache_t
 {
-	physgeominfo_t	shape_info;
+	physgeominfo_t	shapeInfo;
 	void*			cachedata;
 };
 
@@ -57,7 +69,7 @@ struct studioPhysObject_t
 // physics model data from POD
 struct studioPhysData_t
 {
-	int						modeltype{ 0 };
+	int						usageType{ 0 };
 
 	studioPhysObject_t*		objects{ nullptr };
 	int						numObjects{ 0 };
@@ -93,14 +105,15 @@ struct studioMotionData_t
 
 	struct animation_t
 	{
-		char name[44]{ 0 };
+		char	name[44]{ 0 };
+		//int		numFrames{ 0 };
 
 		// bones, in count of studiohwdata_t::numJoints
-		struct boneframe_t
+		struct boneKeyFrames_t
 		{
 			int				numFrames{ 0 };
-			animframe_t* keyFrames{ nullptr };
-		}*bones{ nullptr };
+			animframe_t*	keyFrames{ nullptr };
+		}*		bones{ nullptr };
 	}*animations{ nullptr };
 
 	// sequences
@@ -133,8 +146,8 @@ struct studioJoint_t
 	int					ikLinkId{ -1 };
 };
 
-typedef studioMotionData_t::animation_t					studioAnimation_t;
-typedef studioMotionData_t::animation_t::boneframe_t	studioBoneFrame_t;
+typedef studioMotionData_t::animation_t						studioAnimation_t;
+typedef studioMotionData_t::animation_t::boneKeyFrames_t	studioBoneAnimation_t;
 
 //------------------------------------------------------------------------------
 

@@ -12,22 +12,23 @@
 
 // use tag ANIMCA_VERSION change
 
-#define MAX_BLEND_WIDTH			16	// 16 animations for blending.
-#define MAX_EVENTS_PER_SEQ		16	// 16 events per one sequence
-#define MAX_SEQUENCE_BLENDS		4	// 4 blend layers
+static constexpr const int MAX_BLEND_WIDTH		= 16;	// animations for blending.
+static constexpr const int MAX_EVENTS_PER_SEQ	= 16;	// events per one sequence
+static constexpr const int MAX_SEQUENCE_BLENDS	= 4;	// blend layers
 
 #define SEQ_DEFAULT_TRANSITION_TIME	(0.15f)
 
 enum EAnimLumps
 {
-	ANIMFILE_ANIMATIONS = 0,		// animation headers
-	ANIMFILE_SEQUENCES,				// sequence headers
-	ANIMFILE_EVENTS,				// event datas
-	ANIMFILE_POSECONTROLLERS,		// pose controllers
-	ANIMFILE_ANIMATIONFRAMES,		// uncompressed animation frames
-	ANIMFILE_UNCOMPRESSEDFRAMESIZE,	// compressed frame size info
-	ANIMFILE_COMPRESSEDFRAMES,		// compressed animation frames
-	ANIMFILE_LUMPS,
+	ANIMFILE_ANIMATIONS				= 0,		// animation headers
+	ANIMFILE_SEQUENCES				= 1,		// sequence headers
+	ANIMFILE_EVENTS					= 2,		// event datas
+	ANIMFILE_POSECONTROLLERS		= 3,		// pose controllers
+	ANIMFILE_ANIMATIONFRAMES		= 4,		// uncompressed animation frames
+	ANIMFILE_UNCOMPRESSEDFRAMESIZE	= 5,		// compressed frame size info
+	ANIMFILE_COMPRESSEDFRAMES		= 6,		// compressed animation frames
+
+	ANIMFILE_LUMPS					= 7,
 };
 
 
@@ -41,22 +42,6 @@ enum EAnimSequenceFlags
 	//SEQFLAG_LERPPOSE		= (1 << 5)	// wrap weights
 
 };
-
-// MOP file header
-struct animpackagehdr_s
-{
-	int ident;
-	int version;
-	int numLumps;
-};
-ALIGNED_TYPE(animpackagehdr_s, 4) animpackagehdr_t;
-
-struct animpackagelump_s
-{
-	int				type; // ANIMCA_* type
-	int				size; // size excluding this structure
-};
-ALIGNED_TYPE(animpackagelump_s, 4) animpackagelump_t;
 
 // animation descriptor
 struct animationdesc_s
@@ -101,10 +86,10 @@ ALIGNED_TYPE(sequencedesc_s, 4) sequencedesc_t;
 // sequence events
 struct sequenceevent_s
 {
-	float frame;
+	float	frame;
 
-	char command[44];
-	char parameter[44];
+	char	command[44];
+	char	parameter[44];
 };
 ALIGNED_TYPE(sequenceevent_s, 4) sequenceevent_t;
 

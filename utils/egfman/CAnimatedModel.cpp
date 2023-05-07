@@ -56,7 +56,7 @@ void CAnimatedModel::SetModel(CEqStudioGeom* pModel)
 	InitAnimating(m_pModel);
 
 	const studioPhysData_t& physData = m_pModel->GetPhysData();
-	if(physData.modeltype == PHYSMODEL_USAGE_RAGDOLL)
+	if(physData.usageType == PHYSMODEL_USAGE_RAGDOLL)
 	{
 		m_pRagdoll = CreateRagdoll( m_pModel );
 
@@ -322,14 +322,14 @@ void CAnimatedModel::RenderPhysModel()
 	{
 		for(int j = 0; j < physData.objects[i].object.numShapes; j++)
 		{
-			int nShape = physData.objects[i].object.shape_indexes[j];
+			int nShape = physData.objects[i].object.shapeIndex[j];
 			if(nShape < 0 || nShape > physData.numShapes)
 			{
 				continue;
 			}
 
-			int startIndex = physData.shapes[nShape].shape_info.startIndices;
-			int moveToIndex = startIndex + physData.shapes[nShape].shape_info.numIndices;
+			int startIndex = physData.shapes[nShape].shapeInfo.startIndices;
+			int moveToIndex = startIndex + physData.shapes[nShape].shapeInfo.numIndices;
 
 			if(m_boneTransforms != nullptr && m_pRagdoll)
 			{

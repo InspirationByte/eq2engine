@@ -62,7 +62,7 @@ static void AddTriangleWithAllNeighbours(IdxTriList& group, const Triangle& tria
 
 CEGFPhysicsGenerator::CEGFPhysicsGenerator() : m_srcModel(nullptr), m_physicsParams(nullptr), m_forceGroupSubdivision(false)
 {
-	m_props.model_usage = PHYSMODEL_USAGE_RIGID_COMP;
+	m_props.usageType = PHYSMODEL_USAGE_RIGID_COMP;
 }
 
 CEGFPhysicsGenerator::~CEGFPhysicsGenerator()
@@ -353,12 +353,12 @@ bool CEGFPhysicsGenerator::CreateRagdollObjects( Array<dsmvertex_t>& vertices, A
 
 	if(KV_GetValueBool(isDynamicProp))
 	{
-		m_props.model_usage = PHYSMODEL_USAGE_DYNAMIC;
+		m_props.usageType = PHYSMODEL_USAGE_DYNAMIC;
 		Msg("  Model is dynamic\n");
 	}
 	else
 	{
-		m_props.model_usage = PHYSMODEL_USAGE_RAGDOLL;
+		m_props.usageType = PHYSMODEL_USAGE_RAGDOLL;
 		Msg("  Model is ragdoll\n");
 	}
 
@@ -454,15 +454,15 @@ bool CEGFPhysicsGenerator::CreateRagdollObjects( Array<dsmvertex_t>& vertices, A
 		// build object data
 		physobject_t object;
 
-		memset(object.shape_indexes, -1, sizeof(object.shape_indexes));
+		memset(object.shapeIndex, -1, sizeof(object.shapeIndex));
 
 		const KVSection* thisBoneSec = bonesSect->FindSection(m_srcModel->bones[i]->name, KV_FLAG_SECTION);
 
-		object.body_part = 0;
+		object.bodyPartId = 0;
 		object.numShapes = 1;
-		object.shape_indexes[0] = shapeID;
+		object.shapeIndex[0] = shapeID;
 		object.offset = object_center;
-		object.mass_center = vec3_zero;
+		object.massCenter = vec3_zero;
 		object.mass = PHYS_DEFAULT_MASS;
 
 		strcpy(object.surfaceprops, KV_GetValueString( pDefaultSurfaceProps, 0, "default" ));
@@ -470,7 +470,7 @@ bool CEGFPhysicsGenerator::CreateRagdollObjects( Array<dsmvertex_t>& vertices, A
 		if( thisBoneSec )
 		{
 			object.mass = KV_GetValueFloat( thisBoneSec->FindSection("Mass"), 0, PHYS_DEFAULT_MASS );
-			object.body_part = KV_GetValueInt(thisBoneSec->FindSection("bodypart"), 0, 0);
+			object.bodyPartId = KV_GetValueInt(thisBoneSec->FindSection("bodypart"), 0, 0);
 
 			const KVSection* surfPropsPair = thisBoneSec->FindSection("SurfaceProps");
 
@@ -500,23 +500,23 @@ bool CEGFPhysicsGenerator::CreateRagdollObjects( Array<dsmvertex_t>& vertices, A
 		Vector3D bone_position = ragJoints[i].absTrans.rows[3].xyz();
 		joint.position = bone_position;
 
-		joint.object_indexA = m_objects.numElem() - 1;
+		joint.objA = m_objects.numElem() - 1;
 
 		int parent = m_srcModel->bones[i]->parent_id;
 
 		if(parent == -1)
 		{
 			// join to itself
-			joint.object_indexB = joint.object_indexA;
+			joint.objB = joint.objA;
 		}
 		else
 		{
 			int phys_parent = MakeBoneValidParent(i);
 
 			if(phys_parent == -1)
-				joint.object_indexB = joint.object_indexA;
+				joint.objB = joint.objA;
 			else
-				joint.object_indexB = phys_parent;
+				joint.objB = phys_parent;
 		}
 
 		if(thisBoneSec)
@@ -570,7 +570,7 @@ bool CEGFPhysicsGenerator::CreateRagdollObjects( Array<dsmvertex_t>& vertices, A
 
 bool CEGFPhysicsGenerator::CreateCompoundOrSeparateObjects( Array<dsmvertex_t>& vertices, Array<int>& indices, Array<IdxTriList*>& indexGroups, bool bCompound )
 {
-	m_props.model_usage = PHYSMODEL_USAGE_RIGID_COMP;
+	m_props.usageType = PHYSMODEL_USAGE_RIGID_COMP;
 
 	if(indexGroups.numElem() == 1)
 		Msg("  Model is single\n");
@@ -612,7 +612,7 @@ bool CEGFPhysicsGenerator::CreateCompoundOrSeparateObjects( Array<dsmvertex_t>& 
 		}
 
 		physobject_t object;
-		object.body_part = 0;
+		object.bodyPartId = 0;
 
 		const KVSection* surfPropsPair = m_physicsParams->FindSection("SurfaceProps");
 				
@@ -629,13 +629,13 @@ bool CEGFPhysicsGenerator::CreateCompoundOrSeparateObjects( Array<dsmvertex_t>& 
 			object.numShapes = MAX_PHYS_GEOM_PER_OBJECT;
 		}
 
-		memset(object.shape_indexes, -1, sizeof(object.shape_indexes));
+		memset(object.shapeIndex, -1, sizeof(object.shapeIndex));
 
 		for(int i = 0; i < object.numShapes; i++)
-			object.shape_indexes[i] = shape_ids[i];
+			object.shapeIndex[i] = shape_ids[i];
 
 		object.offset = vec3_zero;
-		object.mass_center = KV_GetVector3D( m_physicsParams->FindSection("MassCenter"), 0, m_bbox.GetCenter() );
+		object.massCenter = KV_GetVector3D( m_physicsParams->FindSection("MassCenter"), 0, m_bbox.GetCenter() );
 
 		PhyNamedObject obj;
 		memset(obj.name, 0, sizeof(obj.name));
@@ -648,7 +648,7 @@ bool CEGFPhysicsGenerator::CreateCompoundOrSeparateObjects( Array<dsmvertex_t>& 
 	else
 	{
 		physobject_t object;
-		object.body_part = 0;
+		object.bodyPartId = 0;
 
 		memset(object.surfaceprops, 0, 0);
 		strcpy(object.surfaceprops, KV_GetValueString(m_physicsParams->FindSection("SurfaceProps"), 0, "default"));
@@ -669,11 +669,11 @@ bool CEGFPhysicsGenerator::CreateCompoundOrSeparateObjects( Array<dsmvertex_t>& 
 			int shapeID = AddShape( vertices, tmpIndices, nShapeType );
 
 			object.numShapes = 1;
-			memset(object.shape_indexes, -1, sizeof(object.shape_indexes));
+			memset(object.shapeIndex, -1, sizeof(object.shapeIndex));
 
-			object.shape_indexes[0] = shapeID;
+			object.shapeIndex[0] = shapeID;
 			object.offset = vec3_zero;
-			object.mass_center = vec3_zero;
+			object.massCenter = vec3_zero;
 
 			PhyNamedObject obj;
 			obj.object = object;
@@ -714,17 +714,17 @@ bool CEGFPhysicsGenerator::CreateSingleObject( Array<dsmvertex_t>& vertices, Arr
 
 	physobject_t object;
 
-	object.body_part = 0;
+	object.bodyPartId = 0;
 
 	memset(object.surfaceprops, 0, sizeof(object.surfaceprops));
 	strcpy(object.surfaceprops, KV_GetValueString(m_physicsParams->FindSection("SurfaceProps"), 0, "default"));
 
 	object.mass = KV_GetValueFloat(m_physicsParams->FindSection("Mass"), 0, PHYS_DEFAULT_MASS);
-	object.mass_center = KV_GetVector3D(m_physicsParams->FindSection("MassCenter"), 0, m_bbox.GetCenter());
+	object.massCenter = KV_GetVector3D(m_physicsParams->FindSection("MassCenter"), 0, m_bbox.GetCenter());
 
 	object.numShapes = 1;
-	memset(object.shape_indexes, -1, sizeof(object.shape_indexes));
-	object.shape_indexes[0] = shapeID;
+	memset(object.shapeIndex, -1, sizeof(object.shapeIndex));
+	object.shapeIndex[0] = shapeID;
 	object.offset = vec3_zero;
 
 	PhyNamedObject obj;
@@ -763,8 +763,8 @@ bool CEGFPhysicsGenerator::GenerateGeometry(dsmmodel_t* srcModel, const KVSectio
 		m_forceGroupSubdivision = bCompound;
 	}
 
-	memset(m_props.comment_string, 0, sizeof(m_props.comment_string));
-	strcpy(m_props.comment_string, KV_GetValueString(m_physicsParams->FindSection("comments"), 0, ""));
+	memset(m_props.commentStr, 0, sizeof(m_props.commentStr));
+	strcpy(m_props.commentStr, KV_GetValueString(m_physicsParams->FindSection("comments"), 0, ""));
 
 	Array<dsmvertex_t>		vertices(PP_SL);
 	Array<int>				indices(PP_SL);
@@ -793,7 +793,7 @@ bool CEGFPhysicsGenerator::GenerateGeometry(dsmmodel_t* srcModel, const KVSectio
 	}
 	else
 	{
-		m_props.model_usage = PHYSMODEL_USAGE_RIGID_COMP;
+		m_props.usageType = PHYSMODEL_USAGE_RIGID_COMP;
 
 		// move all vertices and indices from groups to shared buffer (no multiple shapes)
 		for(int i = 0 ; i < m_srcModel->groups.numElem(); i++)
@@ -828,11 +828,11 @@ ubyte* pStart = nullptr;
 
 void WriteLumpToStream(IVirtualStream* stream, int lump_type, ubyte* data, uint dataSize)
 {
-	physmodellump_t lumpHdr;
-	lumpHdr.type = lump_type;
-	lumpHdr.size = dataSize;
+	lumpfilelump_t lump;
+	lump.type = lump_type;
+	lump.size = dataSize;
 
-	stream->Write(&lumpHdr, 1, sizeof(lumpHdr));
+	stream->Write(&lump, 1, sizeof(lump));
 	stream->Write(data, 1, dataSize);
 }
 
@@ -889,10 +889,10 @@ void CEGFPhysicsGenerator::SaveToFile(const char* filename)
 		return;
 	}
 
-	physmodelhdr_t header;
+	lumpfilehdr_t header;
 	header.ident = PHYSFILE_ID;
 	header.version = PHYSFILE_VERSION;
-	header.num_lumps = PHYSFILE_LUMPS;
+	header.numLumps = PHYSFILE_LUMPS;
 
 	outputFile->Write(&header, 1, sizeof(header));
 	lumpsStream.WriteToFileStream(outputFile);

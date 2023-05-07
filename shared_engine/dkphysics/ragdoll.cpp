@@ -48,7 +48,7 @@ ragdoll_t* CreateRagdoll(CEqStudioGeom* pModel)
 	const studioPhysData_t& physModel = pModel->GetPhysData();
 	const studiohdr_t& studio = pModel->GetStudioHdr();
 
-	const int type = physModel.modeltype;
+	const int type = physModel.usageType;
 
 	if(type == PHYSMODEL_USAGE_RAGDOLL)
 	{
@@ -107,7 +107,7 @@ ragdoll_t* CreateRagdoll(CEqStudioGeom* pModel)
 			newRagdoll->m_pParts[i]->SetDamping(0.01f,0.05f);
 			newRagdoll->m_pParts[i]->SetActivationState(PS_ACTIVE);
 
-			newRagdoll->m_nBodyParts[i] = physModel.objects[i].object.body_part;
+			newRagdoll->m_nBodyParts[i] = physModel.objects[i].object.bodyPartId;
 
 			newRagdoll->m_pParts[i]->SetUserData((void*)newRagdoll->m_nBodyParts[i]);
 		}
@@ -115,8 +115,8 @@ ragdoll_t* CreateRagdoll(CEqStudioGeom* pModel)
 		// create joints
 		for(int i = 0; i < numPhysJoints; i++)
 		{
-			int object_partindexA = physModel.joints[i].object_indexA;
-			int object_partindexB = physModel.joints[i].object_indexB;
+			int object_partindexA = physModel.joints[i].objA;
+			int object_partindexB = physModel.joints[i].objB;
 
 			IPhysicsObject* partA = newRagdoll->m_pParts[object_partindexA];
 			IPhysicsObject*	partB = newRagdoll->m_pParts[object_partindexB];

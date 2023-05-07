@@ -17,14 +17,6 @@ static constexpr const int MAX_PHYS_COMMENT_STRING		= 256;
 static constexpr const int MAX_PHYS_GEOM_PER_OBJECT		= 32;			// maximum shapes allowed to be in one physics object
 static constexpr const float PHYS_DEFAULT_MASS			= (5.0f);
 
-enum EPhysModelUsage
-{
-	PHYSMODEL_USAGE_INVALID	= 0,	// invalid usage
-	PHYSMODEL_USAGE_RIGID_COMP,		// standard rigid body with/without compoudness, static or non-static
-	PHYSMODEL_USAGE_RAGDOLL,		// ragdoll model
-	PHYSMODEL_USAGE_DYNAMIC,		// dynamic model, that use joints, but for animation such as non-standard doors, etc.
-};
-
 enum EPhysLump
 {
 	PHYSFILE_PROPERTIES		= 0,	// shared model property lump
@@ -38,6 +30,15 @@ enum EPhysLump
 	PHYSFILE_LUMPS,
 };
 
+enum EPhysModelUsage
+{
+	PHYSMODEL_USAGE_NONE = 0,
+
+	PHYSMODEL_USAGE_RIGID_COMP,		// standard rigid body with/without compoudness, static or non-static
+	PHYSMODEL_USAGE_RAGDOLL,		// ragdoll model
+	PHYSMODEL_USAGE_DYNAMIC,		// dynamic model, that use joints, but for animation such as non-standard doors, etc.
+};
+
 // NOTE: When you change these constants, change them in engine
 enum EPhysShapeType
 {
@@ -46,40 +47,24 @@ enum EPhysShapeType
 	PHYSSHAPE_TYPE_CONVEX,
 };
 
-struct physmodellump_s
-{
-	int type;	// EPhysLump
-	int	size;	// size excluding this structure
-};
-ALIGNED_TYPE(physmodellump_s, 4) physmodellump_t;
-
-struct physmodelhdr_s
-{
-	int ident;
-	int version;
-
-	int num_lumps;
-};
-ALIGNED_TYPE(physmodelhdr_s, 4) physmodelhdr_t;
-
 struct physjoint_s
 {
-	char name[MAX_PHYS_NAME_LENGTH]; // joint name
+	char		name[MAX_PHYS_NAME_LENGTH]; // joint name
 
-	int object_indexA; // physobject_t indices
-	int object_indexB;
+	int			objA;						// physobject_t indices
+	int			objB;
 
-	Vector3D  position;
+	Vector3D	position;
 
-	Vector3D  minLimit;
-	Vector3D  maxLimit;
+	Vector3D	minLimit;
+	Vector3D	maxLimit;
 };
 ALIGNED_TYPE(physjoint_s, 4) physjoint_t;
 
 struct physmodelprops_s
 {
-	int		model_usage;
-	char	comment_string[MAX_PHYS_COMMENT_STRING];
+	int		usageType;
+	char	commentStr[MAX_PHYS_COMMENT_STRING];
 };
 ALIGNED_TYPE(physmodelprops_s, 4) physmodelprops_t;
 
@@ -98,10 +83,10 @@ struct physobject_s
 	float		mass;									// mass of local object
 
 	int			numShapes;								// shape count
-	int			shape_indexes[MAX_PHYS_GEOM_PER_OBJECT];// indexes of geomdata
+	int			shapeIndex[MAX_PHYS_GEOM_PER_OBJECT];	// indexes of geomdata
 
 	Vector3D	offset;									// object initial offset
-	Vector3D	mass_center;							// mass center of object
-	int			body_part;								// body part index set in script
+	Vector3D	massCenter;								// mass center of object
+	int			bodyPartId;								// body part index set in script
 };
 ALIGNED_TYPE(physobject_s, 4) physobject_t;

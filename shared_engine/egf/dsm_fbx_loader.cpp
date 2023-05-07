@@ -619,7 +619,7 @@ void ConvertFBXToESA(Array<studioAnimation_t>& animations, ofbx::IScene* scene)
 		strncpy(animation.name, stack->name, sizeof(animation.name));
 		animation.name[sizeof(animation.name) - 1] = 0;
 
-		animation.bones = PPAllocStructArray(studioBoneFrame_t, boneCount);
+		animation.bones = PPAllocStructArray(studioBoneAnimation_t, boneCount);
 
 		for (int j = 0; j < boneCount; ++j)
 		{

@@ -138,7 +138,7 @@ void CMotionPackageGenerator::ShiftAnimationFrames(studioBoneFrame_t* bone, int 
 //*******************************************************
 // TODO: use from bonesetup.h
 //*******************************************************
-void CMotionPackageGenerator::TranslateAnimationFrames(studioBoneFrame_t* bone, Vector3D &offset)
+void CMotionPackageGenerator::TranslateAnimationFrames(studioBoneAnimation_t* bone, Vector3D &offset)
 {
 	for(int i = 0; i < bone->numFrames; i++)
 	{
@@ -150,7 +150,7 @@ void CMotionPackageGenerator::TranslateAnimationFrames(studioBoneFrame_t* bone, 
 // Subtracts the animation frames
 // IT ONLY SUBTRACTS BY FIRST FRAME OF otherbone
 //******************************************************
-void CMotionPackageGenerator::SubtractAnimationFrames(studioBoneFrame_t* bone, studioBoneFrame_t* otherbone)
+void CMotionPackageGenerator::SubtractAnimationFrames(studioBoneAnimation_t* bone, studioBoneAnimation_t* otherbone)
 {
 	for(int i = 0; i < bone->numFrames; i++)
 	{
@@ -163,7 +163,7 @@ void CMotionPackageGenerator::SubtractAnimationFrames(studioBoneFrame_t* bone, s
 // Advances every frame position on reversed velocity
 // Helps with motion capture issues.
 //*******************************************************
-void CMotionPackageGenerator::VelocityBackTransform(studioBoneFrame_t* bone, Vector3D &velocity)
+void CMotionPackageGenerator::VelocityBackTransform(studioBoneAnimation_t* bone, Vector3D &velocity)
 {
 	for(int i = 0; i < bone->numFrames; i++)
 	{
@@ -188,7 +188,7 @@ inline bool IsEmptyKeyframe(animframe_t* keyFrame)
 // Fills empty frames of animation
 // and interpolates non-empty to them.
 //*******************************************************
-void CMotionPackageGenerator::InterpolateBoneAnimationFrames(studioBoneFrame_t* bone)
+void CMotionPackageGenerator::InterpolateBoneAnimationFrames(studioBoneAnimation_t* bone)
 {
 	float lastKeyframeTime = 0;
 	float nextKeyframeTime = 0;
@@ -277,7 +277,7 @@ inline void InterpolateFrameTransform(animframe_t &frame1, animframe_t &frame2, 
 //************************************
 // Crops animated bones
 //************************************
-void CMotionPackageGenerator::CropAnimationBoneFrames(studioBoneFrame_t* pBone, int newStart, int newEnd)
+void CMotionPackageGenerator::CropAnimationBoneFrames(studioBoneAnimation_t* pBone, int newStart, int newEnd)
 {
 	const int newLength = newEnd - newStart + 1;
 
@@ -321,7 +321,7 @@ void CMotionPackageGenerator::CropAnimationDimensions(studioAnimation_t* pAnim, 
 //************************************
 // Reverse animated bones
 //************************************
-void CMotionPackageGenerator::ReverseAnimationBoneFrames(studioBoneFrame_t* pBone)
+void CMotionPackageGenerator::ReverseAnimationBoneFrames(studioBoneAnimation_t* pBone)
 {
 	animframe_t* new_frames = PPAllocStructArray(animframe_t, pBone->numFrames);
 
@@ -375,7 +375,7 @@ inline void GetCurrAndNextFrameFromTime(float time, int max, int *curr, int *nex
 //************************************
 // Scales bone animation length
 //************************************
-void CMotionPackageGenerator::RemapBoneFrames(studioBoneFrame_t* pBone, int newLength)
+void CMotionPackageGenerator::RemapBoneFrames(studioBoneAnimation_t* pBone, int newLength)
 {
 	animframe_t* newFrames = PPAllocStructArray(animframe_t, newLength);
 	bool* bSetFrames = PPAllocStructArray(bool, newLength);
@@ -650,7 +650,7 @@ int CMotionPackageGenerator::LoadAnimationFromESA(const char* filename)
 				return -1;
 			}
 
-			modelAnim.bones = PPAllocStructArray(studioBoneFrame_t, m_model->numBones);
+			modelAnim.bones = PPAllocStructArray(studioBoneAnimation_t, m_model->numBones);
 
 			if(!ReadFrames(*this, tok, &tempDSM, &modelAnim))
 			{
@@ -678,7 +678,7 @@ int CMotionPackageGenerator::DuplicateAnimationByIndex(int animIndex)
 	// but we have to clone keyframe data
 	modelAnim = sourceAnim;
 
-	modelAnim.bones = PPAllocStructArray(studioBoneFrame_t, m_model->numBones);
+	modelAnim.bones = PPAllocStructArray(studioBoneAnimation_t, m_model->numBones);
 	for (int i = 0; i < m_model->numBones; ++i)
 	{
 		const int numFrames = sourceAnim.bones[i].numFrames;
@@ -777,17 +777,17 @@ void CMotionPackageGenerator::LoadAnimation(KVSection* section)
 
 	for(int i = 0; i < m_model->numBones; i++)
 	{
-		if(m_model->pBone(i)->parent == -1)
-		{
-			if(length(anim_offset) > 0)
-				Msg("Animation offset: %f %f %f\n", anim_offset.x, anim_offset.y, anim_offset.z);
+		if (m_model->pBone(i)->parent != -1)
+			continue;
 
-			// move bones to user-defined position
-			TranslateAnimationFrames(&pAnim->bones[i], anim_offset);
+		if(length(anim_offset) > 0)
+			Msg("Animation offset: %f %f %f\n", anim_offset.x, anim_offset.y, anim_offset.z);
 
-			// transform model back using linear velocity
-			VelocityBackTransform(&pAnim->bones[i], anim_movevelocity);
-		}
+		// move bones to user-defined position
+		TranslateAnimationFrames(&pAnim->bones[i], anim_offset);
+
+		// transform model back using linear velocity
+		VelocityBackTransform(&pAnim->bones[i], anim_movevelocity);
 	}
 
 	KVSection* subtract_key = section->FindSection("subtract");
@@ -1138,7 +1138,7 @@ void CMotionPackageGenerator::ConvertAnimationsToWrite()
 		// convert bones.
 		for(int j = 0; j < m_model->numBones; j++)
 		{
-			studioBoneFrame_t& boneFrame = m_animations[i].bones[j];
+			studioBoneAnimation_t& boneFrame = m_animations[i].bones[j];
 
 			anim.numFrames += boneFrame.numFrames;
 			for(int k = 0; k < boneFrame.numFrames; k++)
@@ -1165,10 +1165,10 @@ void CMotionPackageGenerator::MakeDefaultPoseAnimation()
 
 	strcpy(modelAnim.name, "default"); // set it externally from file name
 
-	modelAnim.bones = PPAllocStructArray(studioBoneFrame_t, m_model->numBones);
+	modelAnim.bones = PPAllocStructArray(studioBoneAnimation_t, m_model->numBones);
 	for(int i = 0; i < m_model->numBones; i++)
 	{
-		studioBoneFrame_t& boneFrame = modelAnim.bones[i];
+		studioBoneAnimation_t& boneFrame = modelAnim.bones[i];
 		boneFrame.numFrames = 1;
 		boneFrame.keyFrames = PPAllocStructArray(animframe_t, 1);
 		boneFrame.keyFrames[0].angBoneAngles = vec3_zero;
@@ -1249,10 +1249,10 @@ bool CMotionPackageGenerator::CompileScript(const char* filename)
 
 void CopyLumpToFile(IVirtualStream* data, int lump_type, ubyte* toCopy, int toCopySize)
 {
-	animpackagelump_t lumpdata;
-	lumpdata.size = toCopySize;
-	lumpdata.type = lump_type;
-	data->Write(&lumpdata, 1, sizeof(lumpdata));
+	lumpfilelump_t lump;
+	lump.size = toCopySize;
+	lump.type = lump_type;
+	data->Write(&lump, 1, sizeof(lump));
 	data->Write(toCopy, toCopySize, 1);
 }
 
@@ -1262,7 +1262,7 @@ void CMotionPackageGenerator::WriteAnimationPackage(const char* packageOutputFil
 {
 	CMemoryStream lumpDataStream(nullptr, VS_OPEN_WRITE, MAX_MOTIONPACKAGE_SIZE);
 
-	animpackagehdr_t header;
+	lumpfilehdr_t header;
 	header.ident = ANIMFILE_IDENT;
 	header.version = ANIMFILE_VERSION;
 	header.numLumps = 0;

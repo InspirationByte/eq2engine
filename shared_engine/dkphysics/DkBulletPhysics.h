@@ -124,7 +124,7 @@ public:
 
 
 protected:
-	btRigidBody*								LocalCreateRigidBody(float mass, const Vector3D &mass_center, const btTransform& startTransform,btCollisionShape* shape);
+	btRigidBody*								LocalCreateRigidBody(float mass, const Vector3D &massCenter, const btTransform& startTransform,btCollisionShape* shape);
 
 private:
 	btBroadphaseInterface*						m_broadphase;
