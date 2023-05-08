@@ -316,6 +316,9 @@ void CFileSystem::Shutdown()
 	m_fsPackages.clear(true);
 	m_findDatas.clear(true);
 
+	for(int i = 0; i < m_directories.numElem(); i++)
+		delete m_directories[i];
+
 	m_directories.clear(true);
 
 	g_localizer->Shutdown();
@@ -581,7 +584,7 @@ EqString CFileSystem::GetSearchPath(ESearchPath search, int directoryId) const
 			if(directoryId == -1) // default write path
 				CombinePath(searchPath, basePath.ToCString(), GetCurrentGameDirectory());
 			else
-				CombinePath(searchPath, basePath.ToCString(), m_directories[directoryId].path.ToCString());
+				CombinePath(searchPath, basePath.ToCString(), m_directories[directoryId]->path.ToCString());
 			break;
 		case SP_ROOT:
 			searchPath = basePath.ToCString();
@@ -651,7 +654,7 @@ bool CFileSystem::WalkOverSearchPaths(int searchFlags, const char* fileName, con
 	{
 		for (int i = 0; i < m_directories.numElem(); i++)
 		{
-			const SearchPathInfo& spInfo = m_directories[i];
+			const SearchPathInfo& spInfo = *m_directories[i];
 
 			EqString filePath;
 			CombinePath(filePath, basePath.ToCString(), spInfo.path.ToCString(), fileName);
@@ -809,7 +812,7 @@ void CFileSystem::AddSearchPath(const char* pathId, const char* pszDir)
 {
 	for(int i = 0; i < m_directories.numElem(); i++)
 	{
-		if(m_directories[i].id == pathId)
+		if(m_directories[i]->id == pathId)
 		{
 			ErrorMsg("AddSearchPath Error: pathId %s already added", pathId);
 			return;
@@ -821,22 +824,22 @@ void CFileSystem::AddSearchPath(const char* pathId, const char* pszDir)
 	const bool isReadPriorityPath = strstr(pathId, "$MOD$") || strstr(pathId, "$LOCALIZE$");
 	const bool isWriteablePath = strstr(pathId, "$WRITE$");
 
-	SearchPathInfo pathInfo;
-	pathInfo.id = pathId;
-	pathInfo.path = pszDir;
-	pathInfo.mainWritePath = !isReadPriorityPath || isWriteablePath;
+	SearchPathInfo* pathInfo = PPNew SearchPathInfo;
+	pathInfo->id = pathId;
+	pathInfo->path = pszDir;
+	pathInfo->mainWritePath = !isReadPriorityPath || isWriteablePath;
 
 	int spIdx = 0;
 	if(isReadPriorityPath)
-		m_directories.insert(std::move(pathInfo), 0);
+		m_directories.insert(pathInfo, 0);
 	else
-		spIdx = m_directories.append(std::move(pathInfo));
+		spIdx = m_directories.append(pathInfo);
 
 #ifdef PLAT_LINUX
-	if(!pathInfo.mainWritePath)
+	if(!pathInfo->mainWritePath)
 	{
 		// scan files and map
-		SearchPathInfo& spInfo = m_directories[spIdx];
+		SearchPathInfo& spInfo = *m_directories[spIdx];
 
 		Array<EqString> openSet(PP_SL);
 		openSet.reserve(5000);
@@ -890,9 +893,10 @@ void CFileSystem::RemoveSearchPath(const char* pathId)
 {
 	for(int i = 0; i < m_directories.numElem(); i++)
 	{
-		if(m_directories[i].id == pathId)
+		if(m_directories[i]->id == pathId)
 		{
 			DevMsg(DEVMSG_FS, "Removing search patch '%s'\n", pathId);
+			delete m_directories[i];
 			m_directories.removeIndex(i);
 			break;
 		}
@@ -905,8 +909,8 @@ const char* CFileSystem::GetCurrentGameDirectory() const
 	// return first directory with 'mainWritePath' attribute set
 	for (int i = 0; i < m_directories.numElem(); i++)
 	{
-		if (m_directories[i].mainWritePath)
-			return m_directories[i].path;
+		if (m_directories[i]->mainWritePath)
+			return m_directories[i]->path;
 	}
 
     return m_dataDir.GetData();

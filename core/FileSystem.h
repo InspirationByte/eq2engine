@@ -162,7 +162,7 @@ protected:
 		bool		mainWritePath;
 	};
 
-	Array<SearchPathInfo>		m_directories{ PP_SL };		// mod data, for fall back
+	Array<SearchPathInfo*>		m_directories{ PP_SL };		// mod data, for fall back
 
     Array<CBasePackageReader*>	m_fsPackages{ PP_SL };		// package serving as FS layers
 
