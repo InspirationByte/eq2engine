@@ -98,7 +98,6 @@ public:
 
 #ifdef PLAT_ANDROID
 	void*				GetAndroidNativeWindowFromSDL() const;
-	void*				GetEGLSurfaceFromSDL() const;
 #endif // PLAT_ANDROID
 
 protected:

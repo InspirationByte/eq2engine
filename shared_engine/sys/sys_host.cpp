@@ -154,7 +154,7 @@ void CGameHost::SetWindowTitle(const char* windowTitle)
 #ifdef _RETAIL
 	SDL_SetWindowTitle(m_pWindow, windowTitle);
 #else
-	EqString str = EqString::Format("%s | " QUOTE(COMPILE_CONFIGURATION) " (" QUOTE(COMPILE_PLATFORM) ") | build %d (" QUOTE(COMPILE_DATE) ")", windowTitle, BUILD_NUMBER_ENGINE);
+	EqString str = EqString::Format("%s | " COMPILE_CONFIGURATION " (" COMPILE_PLATFORM ") | build %d (" COMPILE_DATE ")", windowTitle, BUILD_NUMBER_ENGINE);
 	SDL_SetWindowTitle(m_pWindow, str);
 #endif
 }
@@ -232,24 +232,6 @@ void CGameHost::GetVideoModes(Array<VideoMode_t>& displayModes)
 }
 
 #ifdef PLAT_ANDROID
-void* CGameHost::GetEGLSurfaceFromSDL() const
-{
-    // set window info
-    SDL_SysWMinfo winfo;
-    SDL_VERSION(&winfo.version); // initialize info structure with SDL version info
-
-    if( !SDL_GetWindowWMInfo(m_pWindow, &winfo) )
-    {
-        MsgError("SDL_GetWindowWMInfo failed %s\n\tWindow handle: %p", SDL_GetError(), m_pWindow);
-        ErrorMsg("Can't get SDL window WM info!\n");
-        return nullptr;
-    }
-
-	Msg("Surface ptr: %x\n", winfo.info.android.surface);
-
-    return (void*)winfo.info.android.surface;
-}
-
 void* CGameHost::GetAndroidNativeWindowFromSDL() const
 {
     // set window info
@@ -263,19 +245,12 @@ void* CGameHost::GetAndroidNativeWindowFromSDL() const
         return nullptr;
     }
 
-	Msg("Window ptr: %x\n", winfo.info.android.window);
-
     return (void*)winfo.info.android.window;
 }
 
 static void* Helper_GetAndroidNativeWindow()
 {
 	return g_pHost->GetAndroidNativeWindowFromSDL();
-}
-
-static void* Helper_GetEGLSurfaceFromSDL()
-{
-	return g_pHost->GetEGLSurfaceFromSDL();
 }
 
 #endif // PLAT_ANDROID
@@ -361,8 +336,7 @@ bool CGameHost::InitSystems( EQWNDHANDLE pWindow )
 	materials_config.shaderApiParams.windowHandleType = RHI_WINDOW_HANDLE_NATIVE_OSX;
 #elif PLAT_ANDROID
     shaderAPIWindowFuncTable_t winFunc;
-	winFunc.GetWindow = Helper_GetAndroidNativeWindow;
-	winFunc.GetSurface = Helper_GetEGLSurfaceFromSDL;
+	winFunc.getWindow = Helper_GetAndroidNativeWindow;
 
 	materials_config.shaderApiParams.windowHandle = &winFunc;
 	materials_config.shaderApiParams.windowHandleType = RHI_WINDOW_HANDLE_VTABLE;

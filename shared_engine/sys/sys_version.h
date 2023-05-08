@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright ï¿½ Inspiration Byte
 // 2009-2014
 //////////////////////////////////////////////////////////////////////////////////
 // Description: Equilibrium Engine version
@@ -14,13 +14,8 @@
 #define COMPILE_DATE		__DATE__
 #define COMPILE_TIME		__TIME__
 
-#ifndef COMPILE_CONFIGURATION
-#define COMPILE_CONFIGURATION "NO_CONFIGURATION"
-#endif
-
-#ifndef COMPILE_PLATFORM
-#define COMPILE_PLATFORM "UNK PLATFORM"
-#endif
+#define COMPILE_CONFIGURATION   QUOTE(PROJECT_COMPILE_CONFIGURATION)
+#define COMPILE_PLATFORM        QUOTE(PROJECT_COMPILE_PLATFORM)
 
 int GetEngineBuildNumber();
 

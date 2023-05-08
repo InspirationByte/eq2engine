@@ -63,8 +63,8 @@ workspace(WORKSPACE_NAME)
 	end
 
 	defines {
-		"COMPILE_CONFIGURATION=\"%{cfg.buildcfg}\"",
-		"COMPILE_PLATFORM=\"%{cfg.platform}\""
+		"PROJECT_COMPILE_CONFIGURATION=%{cfg.buildcfg}",
+		"PROJECT_COMPILE_PLATFORM=%{cfg.platform}"
 	}
 
 	if IS_ANDROID then
