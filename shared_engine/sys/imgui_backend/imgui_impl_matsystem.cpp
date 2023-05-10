@@ -132,7 +132,7 @@ bool ImGui_ImplMatSystem_Init()
 	// Setup backend capabilities flags
 	ImGui_ImplMatSystem_Data* bd = IM_NEW(ImGui_ImplMatSystem_Data)();
 	io.BackendRendererUserData = (void*)bd;
-	io.BackendRendererName = "imgui_impl_matsystem";
+	io.BackendRendererName = "eqMatSystem";
 	//io.BackendFlags |= ImGuiBackendFlags_RendererHasVtxOffset;  // We can honor the ImDrawCmd::VtxOffset field, allowing for large meshes.
 
 	return true;

@@ -432,21 +432,16 @@ void CFileSystem::Close( IFile* fp )
 
 char* CFileSystem::GetFileBuffer(const char* filename,long *filesize/* = 0*/, int searchFlags/* = -1*/)
 {
-	if(!FileExist(filename, searchFlags))
-		return nullptr;
-
 	IFile* pFile = Open(filename, "rb", searchFlags);
 
     if (!pFile)
         return nullptr;
 
-    long length = pFile->GetSize();
-
-    char *buffer = (char*)PPAlloc(length+1);
+    const long length = pFile->GetSize();
+    char *buffer = (char*)PPAlloc(length + 1);
 
     if (!buffer)
     {
-        fprintf(stderr,"Memory error!");
         Close(pFile);
         return nullptr;
     }

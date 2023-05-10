@@ -1,6 +1,7 @@
 
 // dear imgui: Platform Backend for Equilibrium based on SDL2
 #include "core/core_common.h"
+#include "core/IFileSystem.h"
 
 // SDL
 #include <SDL.h>
@@ -10,8 +11,10 @@
 #endif
 
 #include "imgui_impl_sys.h"
-
 #include "input/in_keys_ident.h"
+
+// since we're defining IMGUI_DISABLE_DEFAULT_FILE_FUNCTIONS at build level we must implement
+// file functions
 
 
 #if SDL_VERSION_ATLEAST(2,0,4) && !defined(__EMSCRIPTEN__) && !defined(__ANDROID__) && !(defined(__APPLE__) && TARGET_OS_IOS)
@@ -117,6 +120,21 @@ static bool ImGui_ImplEq_Init(SDL_Window* window)
     ImGuiIO& io = ImGui::GetIO();
     IM_ASSERT(io.BackendPlatformUserData == nullptr && "Already initialized a platform backend!");
 
+    static const char* fontFileName = "resources/imgui/Inter-Regular.ttf";
+
+    IFile* fontFile = g_fileSystem->Open(fontFileName, "rb", SP_DATA);
+
+    if (fontFile)
+    {
+        const long length = fontFile->GetSize();
+        char* buffer = (char*)IM_ALLOC(length);
+        fontFile->Read(buffer, 1, length);
+        g_fileSystem->Close(fontFile);
+
+        ImFontConfig font_cfg;
+        io.Fonts->AddFontFromMemoryTTF(buffer, length, 16.0f, &font_cfg, io.Fonts->GetGlyphRangesCyrillic());
+    }
+
     // Check and store if we are on a SDL backend that supports global mouse position
     // ("wayland" and "rpi" don't support it, but we chose to use a white-list instead of a black-list)
     bool mouse_can_use_global_state = false;
@@ -131,7 +149,7 @@ static bool ImGui_ImplEq_Init(SDL_Window* window)
     // Setup backend capabilities flags
     ImGui_ImplEq_Data* bd = IM_NEW(ImGui_ImplEq_Data)();
     io.BackendPlatformUserData = (void*)bd;
-    io.BackendPlatformName = "imgui_impl_eq";
+    io.BackendPlatformName = "E2Engine_SDL2";
     io.BackendFlags |= ImGuiBackendFlags_HasMouseCursors;       // We can honor GetMouseCursor() values (optional)
     io.BackendFlags |= ImGuiBackendFlags_HasSetMousePos;        // We can honor io.WantSetMousePos requests (optional, rarely used)
 
