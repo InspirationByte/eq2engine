@@ -126,7 +126,7 @@ workspace(WORKSPACE_NAME)
 			"x86", "x64" -- maybe add ARM & ARM64 for RPi?
 		}
 		vscode_makefile "project_gmake2"
-		vscode_launch_cwd "${workspaceRoot}/../build"
+		vscode_launch_cwd ("${workspaceRoot}/../"..WORKSPACE_NAME.."/build")
 		vscode_launch_environment {
 			LD_LIBRARY_PATH = "${LD_LIBRARY_PATH}:${workspaceRoot}/bin/x64/Release/"
 		}

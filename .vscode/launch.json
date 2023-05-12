@@ -34,7 +34,7 @@
 				"program": "${workspaceRoot}/bin/x86/Debug/fcompress",
 			},
 			"stopAtEntry": false,
-			"cwd": "${workspaceRoot}/../build",
+			"cwd": "${workspaceRoot}/../DriverSyndicate/build",
 			"visualizerFile": "${workspaceRoot}/public/types.natvis",
 			"args":[
 			],
@@ -78,7 +78,7 @@
 				"program": "${workspaceRoot}/bin/x64/Debug/fcompress",
 			},
 			"stopAtEntry": false,
-			"cwd": "${workspaceRoot}/../build",
+			"cwd": "${workspaceRoot}/../DriverSyndicate/build",
 			"visualizerFile": "${workspaceRoot}/public/types.natvis",
 			"args":[
 			],
@@ -122,7 +122,7 @@
 				"program": "${workspaceRoot}/bin/x86/Release/fcompress",
 			},
 			"stopAtEntry": false,
-			"cwd": "${workspaceRoot}/../build",
+			"cwd": "${workspaceRoot}/../DriverSyndicate/build",
 			"visualizerFile": "${workspaceRoot}/public/types.natvis",
 			"args":[
 			],
@@ -166,7 +166,7 @@
 				"program": "${workspaceRoot}/bin/x64/Release/fcompress",
 			},
 			"stopAtEntry": false,
-			"cwd": "${workspaceRoot}/../build",
+			"cwd": "${workspaceRoot}/../DriverSyndicate/build",
 			"visualizerFile": "${workspaceRoot}/public/types.natvis",
 			"args":[
 			],
@@ -210,7 +210,7 @@
 				"program": "${workspaceRoot}/bin/x86/Profile/fcompress",
 			},
 			"stopAtEntry": false,
-			"cwd": "${workspaceRoot}/../build",
+			"cwd": "${workspaceRoot}/../DriverSyndicate/build",
 			"visualizerFile": "${workspaceRoot}/public/types.natvis",
 			"args":[
 			],
@@ -254,7 +254,7 @@
 				"program": "${workspaceRoot}/bin/x64/Profile/fcompress",
 			},
 			"stopAtEntry": false,
-			"cwd": "${workspaceRoot}/../build",
+			"cwd": "${workspaceRoot}/../DriverSyndicate/build",
 			"visualizerFile": "${workspaceRoot}/public/types.natvis",
 			"args":[
 			],
@@ -298,7 +298,7 @@
 				"program": "${workspaceRoot}/bin/x86/Retail/fcompress",
 			},
 			"stopAtEntry": false,
-			"cwd": "${workspaceRoot}/../build",
+			"cwd": "${workspaceRoot}/../DriverSyndicate/build",
 			"visualizerFile": "${workspaceRoot}/public/types.natvis",
 			"args":[
 			],
@@ -342,7 +342,7 @@
 				"program": "${workspaceRoot}/bin/x64/Retail/fcompress",
 			},
 			"stopAtEntry": false,
-			"cwd": "${workspaceRoot}/../build",
+			"cwd": "${workspaceRoot}/../DriverSyndicate/build",
 			"visualizerFile": "${workspaceRoot}/public/types.natvis",
 			"args":[
 			],
@@ -386,7 +386,7 @@
 				"program": "${workspaceRoot}/bin/x86/Debug/egfca",
 			},
 			"stopAtEntry": false,
-			"cwd": "${workspaceRoot}/../build",
+			"cwd": "${workspaceRoot}/../DriverSyndicate/build",
 			"visualizerFile": "${workspaceRoot}/public/types.natvis",
 			"args":[
 			],
@@ -430,7 +430,7 @@
 				"program": "${workspaceRoot}/bin/x64/Debug/egfca",
 			},
 			"stopAtEntry": false,
-			"cwd": "${workspaceRoot}/../build",
+			"cwd": "${workspaceRoot}/../DriverSyndicate/build",
 			"visualizerFile": "${workspaceRoot}/public/types.natvis",
 			"args":[
 			],
@@ -474,7 +474,7 @@
 				"program": "${workspaceRoot}/bin/x86/Release/egfca",
 			},
 			"stopAtEntry": false,
-			"cwd": "${workspaceRoot}/../build",
+			"cwd": "${workspaceRoot}/../DriverSyndicate/build",
 			"visualizerFile": "${workspaceRoot}/public/types.natvis",
 			"args":[
 			],
@@ -518,7 +518,7 @@
 				"program": "${workspaceRoot}/bin/x64/Release/egfca",
 			},
 			"stopAtEntry": false,
-			"cwd": "${workspaceRoot}/../build",
+			"cwd": "${workspaceRoot}/../DriverSyndicate/build",
 			"visualizerFile": "${workspaceRoot}/public/types.natvis",
 			"args":[
 			],
@@ -562,7 +562,7 @@
 				"program": "${workspaceRoot}/bin/x86/Profile/egfca",
 			},
 			"stopAtEntry": false,
-			"cwd": "${workspaceRoot}/../build",
+			"cwd": "${workspaceRoot}/../DriverSyndicate/build",
 			"visualizerFile": "${workspaceRoot}/public/types.natvis",
 			"args":[
 			],
@@ -606,7 +606,7 @@
 				"program": "${workspaceRoot}/bin/x64/Profile/egfca",
 			},
 			"stopAtEntry": false,
-			"cwd": "${workspaceRoot}/../build",
+			"cwd": "${workspaceRoot}/../DriverSyndicate/build",
 			"visualizerFile": "${workspaceRoot}/public/types.natvis",
 			"args":[
 			],
@@ -650,7 +650,7 @@
 				"program": "${workspaceRoot}/bin/x86/Retail/egfca",
 			},
 			"stopAtEntry": false,
-			"cwd": "${workspaceRoot}/../build",
+			"cwd": "${workspaceRoot}/../DriverSyndicate/build",
 			"visualizerFile": "${workspaceRoot}/public/types.natvis",
 			"args":[
 			],
@@ -694,7 +694,7 @@
 				"program": "${workspaceRoot}/bin/x64/Retail/egfca",
 			},
 			"stopAtEntry": false,
-			"cwd": "${workspaceRoot}/../build",
+			"cwd": "${workspaceRoot}/../DriverSyndicate/build",
 			"visualizerFile": "${workspaceRoot}/public/types.natvis",
 			"args":[
 			],
@@ -738,7 +738,7 @@
 				"program": "${workspaceRoot}/bin/x86/Debug/animca",
 			},
 			"stopAtEntry": false,
-			"cwd": "${workspaceRoot}/../build",
+			"cwd": "${workspaceRoot}/../DriverSyndicate/build",
 			"visualizerFile": "${workspaceRoot}/public/types.natvis",
 			"args":[
 			],
@@ -782,7 +782,7 @@
 				"program": "${workspaceRoot}/bin/x64/Debug/animca",
 			},
 			"stopAtEntry": false,
-			"cwd": "${workspaceRoot}/../build",
+			"cwd": "${workspaceRoot}/../DriverSyndicate/build",
 			"visualizerFile": "${workspaceRoot}/public/types.natvis",
 			"args":[
 			],
@@ -826,7 +826,7 @@
 				"program": "${workspaceRoot}/bin/x86/Release/animca",
 			},
 			"stopAtEntry": false,
-			"cwd": "${workspaceRoot}/../build",
+			"cwd": "${workspaceRoot}/../DriverSyndicate/build",
 			"visualizerFile": "${workspaceRoot}/public/types.natvis",
 			"args":[
 			],
@@ -870,7 +870,7 @@
 				"program": "${workspaceRoot}/bin/x64/Release/animca",
 			},
 			"stopAtEntry": false,
-			"cwd": "${workspaceRoot}/../build",
+			"cwd": "${workspaceRoot}/../DriverSyndicate/build",
 			"visualizerFile": "${workspaceRoot}/public/types.natvis",
 			"args":[
 			],
@@ -914,7 +914,7 @@
 				"program": "${workspaceRoot}/bin/x86/Profile/animca",
 			},
 			"stopAtEntry": false,
-			"cwd": "${workspaceRoot}/../build",
+			"cwd": "${workspaceRoot}/../DriverSyndicate/build",
 			"visualizerFile": "${workspaceRoot}/public/types.natvis",
 			"args":[
 			],
@@ -958,7 +958,7 @@
 				"program": "${workspaceRoot}/bin/x64/Profile/animca",
 			},
 			"stopAtEntry": false,
-			"cwd": "${workspaceRoot}/../build",
+			"cwd": "${workspaceRoot}/../DriverSyndicate/build",
 			"visualizerFile": "${workspaceRoot}/public/types.natvis",
 			"args":[
 			],
@@ -1002,7 +1002,7 @@
 				"program": "${workspaceRoot}/bin/x86/Retail/animca",
 			},
 			"stopAtEntry": false,
-			"cwd": "${workspaceRoot}/../build",
+			"cwd": "${workspaceRoot}/../DriverSyndicate/build",
 			"visualizerFile": "${workspaceRoot}/public/types.natvis",
 			"args":[
 			],
@@ -1046,7 +1046,7 @@
 				"program": "${workspaceRoot}/bin/x64/Retail/animca",
 			},
 			"stopAtEntry": false,
-			"cwd": "${workspaceRoot}/../build",
+			"cwd": "${workspaceRoot}/../DriverSyndicate/build",
 			"visualizerFile": "${workspaceRoot}/public/types.natvis",
 			"args":[
 			],
@@ -1090,7 +1090,7 @@
 				"program": "${workspaceRoot}/bin/x86/Debug/atlasgen",
 			},
 			"stopAtEntry": false,
-			"cwd": "${workspaceRoot}/../build",
+			"cwd": "${workspaceRoot}/../DriverSyndicate/build",
 			"visualizerFile": "${workspaceRoot}/public/types.natvis",
 			"args":[
 			],
@@ -1134,7 +1134,7 @@
 				"program": "${workspaceRoot}/bin/x64/Debug/atlasgen",
 			},
 			"stopAtEntry": false,
-			"cwd": "${workspaceRoot}/../build",
+			"cwd": "${workspaceRoot}/../DriverSyndicate/build",
 			"visualizerFile": "${workspaceRoot}/public/types.natvis",
 			"args":[
 			],
@@ -1178,7 +1178,7 @@
 				"program": "${workspaceRoot}/bin/x86/Release/atlasgen",
 			},
 			"stopAtEntry": false,
-			"cwd": "${workspaceRoot}/../build",
+			"cwd": "${workspaceRoot}/../DriverSyndicate/build",
 			"visualizerFile": "${workspaceRoot}/public/types.natvis",
 			"args":[
 			],
@@ -1222,7 +1222,7 @@
 				"program": "${workspaceRoot}/bin/x64/Release/atlasgen",
 			},
 			"stopAtEntry": false,
-			"cwd": "${workspaceRoot}/../build",
+			"cwd": "${workspaceRoot}/../DriverSyndicate/build",
 			"visualizerFile": "${workspaceRoot}/public/types.natvis",
 			"args":[
 			],
@@ -1266,7 +1266,7 @@
 				"program": "${workspaceRoot}/bin/x86/Profile/atlasgen",
 			},
 			"stopAtEntry": false,
-			"cwd": "${workspaceRoot}/../build",
+			"cwd": "${workspaceRoot}/../DriverSyndicate/build",
 			"visualizerFile": "${workspaceRoot}/public/types.natvis",
 			"args":[
 			],
@@ -1310,7 +1310,7 @@
 				"program": "${workspaceRoot}/bin/x64/Profile/atlasgen",
 			},
 			"stopAtEntry": false,
-			"cwd": "${workspaceRoot}/../build",
+			"cwd": "${workspaceRoot}/../DriverSyndicate/build",
 			"visualizerFile": "${workspaceRoot}/public/types.natvis",
 			"args":[
 			],
@@ -1354,7 +1354,7 @@
 				"program": "${workspaceRoot}/bin/x86/Retail/atlasgen",
 			},
 			"stopAtEntry": false,
-			"cwd": "${workspaceRoot}/../build",
+			"cwd": "${workspaceRoot}/../DriverSyndicate/build",
 			"visualizerFile": "${workspaceRoot}/public/types.natvis",
 			"args":[
 			],
@@ -1398,7 +1398,7 @@
 				"program": "${workspaceRoot}/bin/x64/Retail/atlasgen",
 			},
 			"stopAtEntry": false,
-			"cwd": "${workspaceRoot}/../build",
+			"cwd": "${workspaceRoot}/../DriverSyndicate/build",
 			"visualizerFile": "${workspaceRoot}/public/types.natvis",
 			"args":[
 			],
@@ -1442,7 +1442,7 @@
 				"program": "${workspaceRoot}/bin/x86/Debug/texcooker",
 			},
 			"stopAtEntry": false,
-			"cwd": "${workspaceRoot}/../build",
+			"cwd": "${workspaceRoot}/../DriverSyndicate/build",
 			"visualizerFile": "${workspaceRoot}/public/types.natvis",
 			"args":[
 			],
@@ -1486,7 +1486,7 @@
 				"program": "${workspaceRoot}/bin/x64/Debug/texcooker",
 			},
 			"stopAtEntry": false,
-			"cwd": "${workspaceRoot}/../build",
+			"cwd": "${workspaceRoot}/../DriverSyndicate/build",
 			"visualizerFile": "${workspaceRoot}/public/types.natvis",
 			"args":[
 			],
@@ -1530,7 +1530,7 @@
 				"program": "${workspaceRoot}/bin/x86/Release/texcooker",
 			},
 			"stopAtEntry": false,
-			"cwd": "${workspaceRoot}/../build",
+			"cwd": "${workspaceRoot}/../DriverSyndicate/build",
 			"visualizerFile": "${workspaceRoot}/public/types.natvis",
 			"args":[
 			],
@@ -1574,7 +1574,7 @@
 				"program": "${workspaceRoot}/bin/x64/Release/texcooker",
 			},
 			"stopAtEntry": false,
-			"cwd": "${workspaceRoot}/../build",
+			"cwd": "${workspaceRoot}/../DriverSyndicate/build",
 			"visualizerFile": "${workspaceRoot}/public/types.natvis",
 			"args":[
 			],
@@ -1618,7 +1618,7 @@
 				"program": "${workspaceRoot}/bin/x86/Profile/texcooker",
 			},
 			"stopAtEntry": false,
-			"cwd": "${workspaceRoot}/../build",
+			"cwd": "${workspaceRoot}/../DriverSyndicate/build",
 			"visualizerFile": "${workspaceRoot}/public/types.natvis",
 			"args":[
 			],
@@ -1662,7 +1662,7 @@
 				"program": "${workspaceRoot}/bin/x64/Profile/texcooker",
 			},
 			"stopAtEntry": false,
-			"cwd": "${workspaceRoot}/../build",
+			"cwd": "${workspaceRoot}/../DriverSyndicate/build",
 			"visualizerFile": "${workspaceRoot}/public/types.natvis",
 			"args":[
 			],
@@ -1706,7 +1706,7 @@
 				"program": "${workspaceRoot}/bin/x86/Retail/texcooker",
 			},
 			"stopAtEntry": false,
-			"cwd": "${workspaceRoot}/../build",
+			"cwd": "${workspaceRoot}/../DriverSyndicate/build",
 			"visualizerFile": "${workspaceRoot}/public/types.natvis",
 			"args":[
 			],
@@ -1750,7 +1750,7 @@
 				"program": "${workspaceRoot}/bin/x64/Retail/texcooker",
 			},
 			"stopAtEntry": false,
-			"cwd": "${workspaceRoot}/../build",
+			"cwd": "${workspaceRoot}/../DriverSyndicate/build",
 			"visualizerFile": "${workspaceRoot}/public/types.natvis",
 			"args":[
 			],
@@ -1794,7 +1794,7 @@
 				"program": "${workspaceRoot}/bin/x86/Debug/DrvSyn_Debug",
 			},
 			"stopAtEntry": false,
-			"cwd": "${workspaceRoot}/../build",
+			"cwd": "${workspaceRoot}/../DriverSyndicate/build",
 			"visualizerFile": "${workspaceRoot}/public/types.natvis",
 			"args":[
 			],
@@ -1838,7 +1838,7 @@
 				"program": "${workspaceRoot}/bin/x64/Debug/DrvSyn_Debug",
 			},
 			"stopAtEntry": false,
-			"cwd": "${workspaceRoot}/../build",
+			"cwd": "${workspaceRoot}/../DriverSyndicate/build",
 			"visualizerFile": "${workspaceRoot}/public/types.natvis",
 			"args":[
 			],
@@ -1882,7 +1882,7 @@
 				"program": "${workspaceRoot}/bin/x86/Release/DrvSyn_Release",
 			},
 			"stopAtEntry": false,
-			"cwd": "${workspaceRoot}/../build",
+			"cwd": "${workspaceRoot}/../DriverSyndicate/build",
 			"visualizerFile": "${workspaceRoot}/public/types.natvis",
 			"args":[
 			],
@@ -1926,7 +1926,7 @@
 				"program": "${workspaceRoot}/bin/x64/Release/DrvSyn_Release",
 			},
 			"stopAtEntry": false,
-			"cwd": "${workspaceRoot}/../build",
+			"cwd": "${workspaceRoot}/../DriverSyndicate/build",
 			"visualizerFile": "${workspaceRoot}/public/types.natvis",
 			"args":[
 			],
@@ -1970,7 +1970,7 @@
 				"program": "${workspaceRoot}/bin/x86/Profile/DrvSyn_Profile",
 			},
 			"stopAtEntry": false,
-			"cwd": "${workspaceRoot}/../build",
+			"cwd": "${workspaceRoot}/../DriverSyndicate/build",
 			"visualizerFile": "${workspaceRoot}/public/types.natvis",
 			"args":[
 			],
@@ -2014,7 +2014,7 @@
 				"program": "${workspaceRoot}/bin/x64/Profile/DrvSyn_Profile",
 			},
 			"stopAtEntry": false,
-			"cwd": "${workspaceRoot}/../build",
+			"cwd": "${workspaceRoot}/../DriverSyndicate/build",
 			"visualizerFile": "${workspaceRoot}/public/types.natvis",
 			"args":[
 			],
@@ -2058,7 +2058,7 @@
 				"program": "${workspaceRoot}/bin/x86/Retail/DrvSyn",
 			},
 			"stopAtEntry": false,
-			"cwd": "${workspaceRoot}/../build",
+			"cwd": "${workspaceRoot}/../DriverSyndicate/build",
 			"visualizerFile": "${workspaceRoot}/public/types.natvis",
 			"args":[
 			],
@@ -2102,7 +2102,7 @@
 				"program": "${workspaceRoot}/bin/x64/Retail/DrvSyn",
 			},
 			"stopAtEntry": false,
-			"cwd": "${workspaceRoot}/../build",
+			"cwd": "${workspaceRoot}/../DriverSyndicate/build",
 			"visualizerFile": "${workspaceRoot}/public/types.natvis",
 			"args":[
 			],
