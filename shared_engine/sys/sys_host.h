@@ -49,9 +49,12 @@ public:
 	void				OnFocusChanged(bool inFocus);
 
 	EQWNDHANDLE			GetWindowHandle() const { return m_pWindow; }
-	void				SetFullscreenMode();
+
+	bool				IsWindowed() const;
+	void				SetFullscreenMode(bool screenSize);
 	void				SetWindowedMode();
 	void				ApplyVideoMode();
+
 	void				GetVideoModes(Array<VideoMode_t>& displayModes);
 
 	//---------------------------------

@@ -65,7 +65,7 @@ DECLARE_CVAR(r_showFPSGraph, "0", "Show the framerate graph", CV_ARCHIVE);
 
 DECLARE_CMD(sys_set_fullscreen, nullptr, 0)
 {
-	g_pHost->SetFullscreenMode();
+	g_pHost->SetFullscreenMode(true);
 }
 
 
@@ -159,23 +159,44 @@ void CGameHost::SetWindowTitle(const char* windowTitle)
 #endif
 }
 
-void CGameHost::SetFullscreenMode()
+bool CGameHost::IsWindowed() const
 {
-	const char* str = sys_vmode.GetString();
-	Array<EqString> args(PP_SL);
-	xstrsplit(str, "x", args);
+	return (SDL_GetWindowFlags(m_pWindow) & SDL_WINDOW_FULLSCREEN) == 0;
+}
 
-	int nAdjustedWide = atoi(args[0].GetData());
-	int nAdjustedTall = atoi(args[1].GetData());
+void CGameHost::SetFullscreenMode(bool screenSize)
+{
+	int nAdjustedWide;
+	int nAdjustedTall;
+
+	if (screenSize)
+	{
+		SDL_SetWindowFullscreen(m_pWindow, SDL_WINDOW_FULLSCREEN | SDL_WINDOW_FULLSCREEN_DESKTOP);
+		SDL_GetWindowSize(m_pWindow, &nAdjustedWide, &nAdjustedTall);
+
+		Msg("Set %dx%d mode (fullscreen)\n", nAdjustedWide, nAdjustedTall);
+	}
+	else
+	{
+		const char *str = sys_vmode.GetString();
+		Array<EqString> args(PP_SL);
+		xstrsplit(str, "x", args);
+
+		nAdjustedWide = atoi(args[0].GetData());
+		nAdjustedTall = atoi(args[1].GetData());
+	}
 
 	OnWindowResize(nAdjustedWide, nAdjustedTall);
-	if (materials->SetWindowed(false))
+
+	if (!screenSize && materials->SetWindowed(false))
 	{
 		Msg("Set %dx%d mode (fullscreen)\n", nAdjustedWide, nAdjustedTall);
 
-		SDL_SetWindowSize(m_pWindow, nAdjustedWide, nAdjustedTall);
-		SDL_SetWindowFullscreen(m_pWindow, SDL_WINDOW_FULLSCREEN);
-		
+		if (!screenSize)
+		{
+			SDL_SetWindowFullscreen(m_pWindow, SDL_WINDOW_FULLSCREEN);
+			SDL_SetWindowSize(m_pWindow, nAdjustedWide, nAdjustedTall);
+		}
 	}
 }
 
@@ -204,7 +225,7 @@ void CGameHost::SetWindowedMode()
 void CGameHost::ApplyVideoMode()
 {
 	if(sys_fullscreen.GetBool())
-		SetFullscreenMode();
+		SetFullscreenMode(false);
 	else
 		SetWindowedMode();
 }
@@ -382,7 +403,7 @@ bool CGameHost::InitSystems( EQWNDHANDLE pWindow )
 
 #ifndef PLAT_ANDROID
 	if (sys_fullscreen.GetBool())
-		SetFullscreenMode();
+		SetFullscreenMode(false);
 	else
 		SetWindowedMode();
 #endif
@@ -403,6 +424,23 @@ void InputCommands_SDL(SDL_Event* event)
 		{
 			int nKey = event->key.keysym.scancode;
 
+			static bool altState = false;
+			if (nKey == SDL_SCANCODE_RALT)
+			{
+				altState = (event->key.type == SDL_KEYDOWN);
+			}
+			else if (nKey == SDL_SCANCODE_RETURN)
+			{
+				if (altState && event->key.type == SDL_KEYDOWN)
+				{
+					if (g_pHost->IsWindowed())
+						g_pHost->SetFullscreenMode(true);
+					else
+						g_pHost->SetWindowedMode();
+					break;
+				}
+			}
+
 			// do translation
 			if (nKey == SDL_SCANCODE_RSHIFT)
 				nKey = SDL_SCANCODE_LSHIFT;
@@ -413,7 +451,7 @@ void InputCommands_SDL(SDL_Event* event)
 			else if (nKey == SDL_SCANCODE_AC_BACK)
 				nKey = SDL_SCANCODE_ESCAPE;
 
-			g_pHost->TrapKey_Event( nKey, (event->type == SDL_KEYUP) ? false : true );
+			g_pHost->TrapKey_Event(nKey, (event->type == SDL_KEYUP) ? false : true);
 			break;
 		}
 		case SDL_TEXTINPUT:
