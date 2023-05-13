@@ -99,10 +99,6 @@ public:
 	static void			HostQuitToDesktop();
 	static void 		HostExitCmd(ConCommand* cmd, Array<EqString>& args);
 
-#ifdef PLAT_ANDROID
-	void*				GetAndroidNativeWindowFromSDL() const;
-#endif // PLAT_ANDROID
-
 protected:
 
 	void				UpdateCursorState();

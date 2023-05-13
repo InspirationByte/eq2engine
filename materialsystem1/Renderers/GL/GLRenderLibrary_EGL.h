@@ -83,12 +83,9 @@ protected:
 	EGLContext				m_glContext{ nullptr };
 	EGLContext				m_glSharedContext{ nullptr };
 
-	ERHIWindowType			m_rhiWindowType{ RHI_WINDOW_HANDLE_UNKNOWN };
-#ifdef PLAT_ANDROID
-	shaderAPIWindowFuncTable_t m_winFunc;
-#endif
+	shaderAPIWindowInfo_t 	m_windowInfo;
 
-    EGLNativeWindowType		m_hwnd{ 0 };
+	EGLNativeWindowType		m_hwnd{ 0 };
     EGLDisplay				m_eglDisplay{ nullptr };
     EGLSurface				m_eglSurface{ nullptr };
 	EGLConfig				m_eglConfig{ nullptr };

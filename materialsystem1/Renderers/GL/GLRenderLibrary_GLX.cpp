@@ -118,12 +118,6 @@ bool CGLRenderLib_GLX::InitAPI(const shaderAPIParams_t& params)
 {
 	int multiSamplingMode = params.multiSamplingMode;
 
-	if(params.windowHandleType == RHI_WINDOW_HANDLE_NATIVE_WAYLAND)
-	{
-		CrashMsg("Sorry, Wayland window/EGL is not handled yet. Consider running from X11");
-		return false;
-	}
-
 	// chose display modes
 	int nModes;
     XF86VidModeGetAllModeLines(m_display, m_screen, &nModes, &m_dmodes);
@@ -138,7 +132,7 @@ bool CGLRenderLib_GLX::InitAPI(const shaderAPIParams_t& params)
 			m_fullScreenMode = dmode;
 	}
 
-	m_window = (Window)params.windowHandle;
+	m_window = (Window)params.windowInfo.get(shaderAPIWindowInfo_t::WINDOW);
 
     XWindowAttributes winAttrib;
     XGetWindowAttributes(m_display, m_window, &winAttrib);
@@ -148,7 +142,7 @@ bool CGLRenderLib_GLX::InitAPI(const shaderAPIParams_t& params)
 
     int colorBits = 16;
     int depthBits = 24;
-    int stencilBits = 0;
+    int stencilBits = 1;
 
 	// Figure display format to use
 	switch(params.screenFormat)

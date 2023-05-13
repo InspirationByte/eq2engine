@@ -275,12 +275,6 @@ project "eqGLESRHI"
 	}
 
 	filter "system:Android"
-		--uses {
-		--	"SDL2"
-		--}
-		--defines {
-		--	"USE_SDL2"
-		--}
 		links {
 			"GLESv2", "EGL", "android" 
 		}
@@ -355,7 +349,7 @@ project "eqGLRHI"
 			Folders.matsystem1.. "Renderers/GL/loaders/glad_egl.c",
 		}
 		links {
-			"EGL", "X11", "Xxf86vm", "Xext", "GL", "GLU",
+			"EGL", "X11", "Xxf86vm", "Xext", "GLU", "wayland-egl"
 		}
 
 	if os.target() == "windows" then

@@ -175,6 +175,8 @@ void CGameHost::SetFullscreenMode(bool screenSize)
 		SDL_GetWindowSize(m_pWindow, &nAdjustedWide, &nAdjustedTall);
 
 		Msg("Set %dx%d mode (fullscreen)\n", nAdjustedWide, nAdjustedTall);
+
+		OnWindowResize(nAdjustedWide, nAdjustedTall);
 	}
 	else
 	{
@@ -184,16 +186,13 @@ void CGameHost::SetFullscreenMode(bool screenSize)
 
 		nAdjustedWide = atoi(args[0].GetData());
 		nAdjustedTall = atoi(args[1].GetData());
-	}
 
-	OnWindowResize(nAdjustedWide, nAdjustedTall);
+		OnWindowResize(nAdjustedWide, nAdjustedTall);
 
-	if (!screenSize && materials->SetWindowed(false))
-	{
-		Msg("Set %dx%d mode (fullscreen)\n", nAdjustedWide, nAdjustedTall);
-
-		if (!screenSize)
+		if (materials->SetWindowed(false))
 		{
+			Msg("Set %dx%d mode (fullscreen)\n", nAdjustedWide, nAdjustedTall);
+
 			SDL_SetWindowFullscreen(m_pWindow, SDL_WINDOW_FULLSCREEN);
 			SDL_SetWindowSize(m_pWindow, nAdjustedWide, nAdjustedTall);
 		}
@@ -252,59 +251,72 @@ void CGameHost::GetVideoModes(Array<VideoMode_t>& displayModes)
 #endif
 }
 
-#ifdef PLAT_ANDROID
-void* CGameHost::GetAndroidNativeWindowFromSDL() const
+static void* Helper_GetWindowInfo(shaderAPIWindowInfo_t::Attribute attrib)
 {
-    // set window info
-    SDL_SysWMinfo winfo;
-    SDL_VERSION(&winfo.version); // initialize info structure with SDL version info
+	// set window info
+	SDL_Window* window = g_pHost->GetWindowHandle();
+	SDL_SysWMinfo winfo;
+	SDL_VERSION(&winfo.version); // initialize info structure with SDL version info
+	if( !SDL_GetWindowWMInfo(window, &winfo) )
+	{
+		MsgError("SDL_GetWindowWMInfo failed %s\n\tWindow handle: %p", SDL_GetError(), window);
+		return nullptr;
+	}
 
-    if( !SDL_GetWindowWMInfo(m_pWindow, &winfo) )
-    {
-        MsgError("SDL_GetWindowWMInfo failed %s\n\tWindow handle: %p", SDL_GetError(), m_pWindow);
-        ErrorMsg("Can't get SDL window WM info!\n");
-        return nullptr;
-    }
-
-    return (void*)winfo.info.android.window;
-}
-
-static void* Helper_GetAndroidNativeWindow()
-{
-	return g_pHost->GetAndroidNativeWindowFromSDL();
-}
-
+	switch(winfo.subsystem)
+	{
+#if PLAT_LINUX
+		case SDL_SYSWM_X11:
+			switch(attrib)
+			{
+				case shaderAPIWindowInfo_t::WINDOW:
+					return (void*)winfo.info.x11.window;
+				case shaderAPIWindowInfo_t::DISPLAY:
+					return (void*)winfo.info.x11.display;
+			}
+		case SDL_SYSWM_WAYLAND:
+			switch(attrib)
+			{
+				case shaderAPIWindowInfo_t::WINDOW:
+					return (void*)winfo.info.wl.egl_window;
+				case shaderAPIWindowInfo_t::DISPLAY:
+					return (void*)winfo.info.wl.display;
+				case shaderAPIWindowInfo_t::SURFACE:
+					return (void*)winfo.info.wl.surface;
+				case shaderAPIWindowInfo_t::TOPLEVEL:
+					return (void*)winfo.info.wl.xdg_toplevel;
+			}
+#endif // PLAT_LINUX
+#if PLAT_ANDROID
+		case SDL_SYSWM_ANDROID:
+			switch(attrib)
+			{
+				case shaderAPIWindowInfo_t::WINDOW:
+					return (void*)winfo.info.android.window;
+			}
 #endif // PLAT_ANDROID
+#if PLAT_WIN
+		case SDL_SYSWM_WINDOWS:
+			switch(attrib)
+			{
+				case shaderAPIWindowInfo_t::WINDOW:
+					return (void*)winfo.info.win.window;
+				case shaderAPIWindowInfo_t::DISPLAY:
+					return (void*)winfo.info.win.hdc;
+			}
+#endif // PLAT_WIN
+		default:
+			ASSERT_FAIL("Not supported window type - %d", winfo.subsystem);
+	}
+}
 
 bool CGameHost::InitSystems( EQWNDHANDLE pWindow )
 {
 	m_pWindow = pWindow;
 
-	int bpp = 32;
-
-	ETextureFormat format = FORMAT_RGB8;
-
-	// Figure display format to use
-	if(bpp == 32)
-	{
-		format = FORMAT_RGB8;
-	}
-	else if(bpp == 24)
-	{
-		format = FORMAT_RGB8;
-	}
-	else if(bpp == 16)
-	{
-		format = FORMAT_RGB565;
-	}
-
 	matsystem_init_config_t materials_config;
 	matsystem_render_config_t& render_config = materials_config.renderConfig;
-
 	render_config.lowShaderQuality = r_fastShaders.GetBool();
-
-	materials_config.shaderApiParams.windowHandle = pWindow;
-	materials_config.shaderApiParams.multiSamplingMode = r_antialiasing.GetInt();
 
 	// set window info
 	SDL_SysWMinfo winfo;
@@ -333,39 +345,47 @@ bool CGameHost::InitSystems( EQWNDHANDLE pWindow )
 
 	// Set default cursor
 	SDL_SetCursor(s_defaultCursor[dc_arrow]);
-	
-#ifdef PLAT_WIN
-	materials_config.shaderApiParams.windowHandle = winfo.info.win.window;
-	materials_config.shaderApiParams.windowHandleType = RHI_WINDOW_HANDLE_NATIVE_WINDOWS;
-#elif PLAT_LINUX
-	switch(winfo.subsystem)
+
+	int renderBPP = 32;
+
 	{
-		case SDL_SYSWM_X11:
-			materials_config.shaderApiParams.windowHandle = (void*)winfo.info.x11.window;
-			materials_config.shaderApiParams.windowHandleType = RHI_WINDOW_HANDLE_NATIVE_X11;
-			break;
-		case SDL_SYSWM_WAYLAND:
-			materials_config.shaderApiParams.windowHandle = (void*)winfo.info.wl.egl_window;
-			materials_config.shaderApiParams.windowHandleType = RHI_WINDOW_HANDLE_NATIVE_WAYLAND;
-			break;
-		default:
-			ASSERT_FAIL("Unsupported SDL window type");
+		shaderAPIWindowInfo_t &winInfo = materials_config.shaderApiParams.windowInfo;
+
+		winInfo.get = Helper_GetWindowInfo;
+		
+		// needed for initialization
+		switch(winfo.subsystem)
+		{
+			case SDL_SYSWM_X11:
+				winInfo.windowType = RHI_WINDOW_HANDLE_NATIVE_X11;
+				break;
+			case SDL_SYSWM_WAYLAND:
+				winInfo.windowType = RHI_WINDOW_HANDLE_NATIVE_WAYLAND;
+				break;
+			case SDL_SYSWM_ANDROID:
+				winInfo.windowType = RHI_WINDOW_HANDLE_NATIVE_ANDROID;
+				renderBPP = 16; // force 16 bit rendering on Android
+				break;
+			case SDL_SYSWM_WINDOWS:
+				winInfo.windowType = RHI_WINDOW_HANDLE_NATIVE_WINDOWS;
+				break;
+			default:
+				ASSERT_FAIL("Not supported window type - %d", winfo.subsystem);
+		}
 	}
 
-#elif APPLE
-	materials_config.shaderApiParams.windowHandle = (void*)winfo.info.cocoa.window;
-	materials_config.shaderApiParams.windowHandleType = RHI_WINDOW_HANDLE_NATIVE_OSX;
-#elif PLAT_ANDROID
-    shaderAPIWindowFuncTable_t winFunc;
-	winFunc.getWindow = Helper_GetAndroidNativeWindow;
+	ETextureFormat screenFormat = FORMAT_RGB8;
 
-	materials_config.shaderApiParams.windowHandle = &winFunc;
-	materials_config.shaderApiParams.windowHandleType = RHI_WINDOW_HANDLE_VTABLE;
+	// Figure display format to use
+	if(renderBPP == 32)
+		screenFormat = FORMAT_RGB8;
+	else if(renderBPP == 24)
+		screenFormat = FORMAT_RGB8;
+	else if(renderBPP == 16)
+		screenFormat = FORMAT_RGB565;
 
-	format = FORMAT_RGB565;
-#endif
-
-	materials_config.shaderApiParams.screenFormat = format;
+	materials_config.shaderApiParams.multiSamplingMode = r_antialiasing.GetInt();
+	materials_config.shaderApiParams.screenFormat = screenFormat;
 	materials_config.shaderApiParams.verticalSyncEnabled = r_vSync.GetBool();
 
 	if(!materials->Init(materials_config))

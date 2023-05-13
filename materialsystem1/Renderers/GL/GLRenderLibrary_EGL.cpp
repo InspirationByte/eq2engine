@@ -14,40 +14,32 @@
 #include "imaging/ImageLoader.h"
 #include "shaderapigl_def.h"
 
-#ifdef PLAT_LINUX
-
-#include <X11/Xlib.h>
-#include <X11/Xatom.h>
-#include <X11/Xutil.h>
-
-#include <wayland-client.h>
-#include <wayland-server.h>
-#include <wayland-client-protocol.h>
-#include <wayland-egl.h>
-
-#endif // PLAT_LINUX
-
-#include "GLRenderLibrary_EGL.h"
-
-#include "GLSwapChain.h"
-#include "GLWorker.h"
-#include "ShaderAPIGL.h"
-
 #ifdef PLAT_WIN
 #	include <glad_egl.h>
 #else
 #	include <EGL/egl.h>
 #endif
 
+#ifdef PLAT_LINUX
+#include <wayland-egl.h>
+#endif // PLAT_LINUX
+
+#ifdef PLAT_ANDROID
+#	include <android/native_window.h>
+#endif // PLAT_ANDROID
+
+#include "GLRenderLibrary_EGL.h"
+
+#include "GLSwapChain.h"
+#include "GLWorker.h"
+#include "ShaderAPIGL.h"
 #include "gl_loader.h"
 
 #ifndef EGL_OPENGL_ES3_BIT
 #	define EGL_OPENGL_ES3_BIT 0x00000040
 #endif // EGL_OPENGL_ES3_BIT
 
-#ifdef PLAT_ANDROID
-#	include <android/native_window.h>
-#endif // PLAT_ANDROID
+
 
 /*
 
@@ -74,6 +66,30 @@ ARB_texture_float
 ARB_occlusion_query
 
 */
+
+static const char* GetEGLErrorString(EGLint errorId)
+{
+#define CASE(x) case x: return #x
+	switch(errorId)
+	{
+		CASE(EGL_SUCCESS);
+		CASE(EGL_NOT_INITIALIZED);
+		CASE(EGL_BAD_ACCESS);
+		CASE(EGL_BAD_ALLOC);
+		CASE(EGL_BAD_ATTRIBUTE);
+		CASE(EGL_BAD_CONTEXT);
+		CASE(EGL_BAD_CONFIG);
+		CASE(EGL_BAD_CURRENT_SURFACE);
+		CASE(EGL_BAD_DISPLAY);
+		CASE(EGL_BAD_SURFACE);
+		CASE(EGL_BAD_MATCH);
+		CASE(EGL_BAD_PARAMETER);
+		CASE(EGL_BAD_NATIVE_PIXMAP);
+		CASE(EGL_BAD_NATIVE_WINDOW);
+		CASE(EGL_CONTEXT_LOST);
+	}
+#undef CASE
+}
 
 
 IShaderAPI* CGLRenderLib_EGL::GetRenderer() const
@@ -124,49 +140,11 @@ void CGLRenderLib_EGL::InitSharedContexts()
 
 bool CGLRenderLib_EGL::InitAPI(const shaderAPIParams_t& params)
 {
-	ASSERT_MSG(params.windowHandle != nullptr, "you must specify window handle!");
-	m_rhiWindowType = params.windowHandleType;
+	ASSERT_MSG(params.windowInfo.get != nullptr, "you must specify window handle!");
 
-#ifdef PLAT_ANDROID
-	ASSERT(m_rhiWindowType == RHI_WINDOW_HANDLE_VTABLE);
-
-	m_winFunc = *(shaderAPIWindowFuncTable_t*)params.windowHandle;
-#elif defined(PLAT_WIN)
-	ASSERT(m_rhiWindowType == RHI_WINDOW_HANDLE_NATIVE_WINDOWS);
-
-	// other EGL
-	m_hwnd = (EGLNativeWindowType)params.windowHandle;
-
-	// NOTE: DrawContext (HDC) is used as display type
-	// not as display itself
-	m_eglDisplay = eglGetDisplay((EGLNativeDisplayType)GetDC((HWND)m_hwnd));
-#elif defined(PLAT_LINUX)
-	m_hwnd = (EGLNativeWindowType)params.windowHandle;
-
-	switch(m_rhiWindowType)
-	{
-		case RHI_WINDOW_HANDLE_NATIVE_WAYLAND:
-		{
-			// we need to have wayland display and surface
-			// SDL already has them created for us
-
-			// TODO: handle SDL wayland handle
-			m_eglDisplay = eglGetDisplay( EGL_DEFAULT_DISPLAY );
-			break;
-		}
-		case RHI_WINDOW_HANDLE_NATIVE_X11:
-		{
-			// We don't have to open X11 display so just use default EGL display
-			m_eglDisplay = eglGetDisplay( EGL_DEFAULT_DISPLAY );
-			break;
-		}
-		default:
-			CrashMsg("Unsupported window handle");
-			return false;
-	}
-#else
-	static_assert(false, "WTF the platform it is compiling for?");
-#endif // PLAT_ANDROID
+	m_windowInfo = params.windowInfo;
+	EGLNativeDisplayType displayType = (EGLNativeDisplayType)m_windowInfo.get(shaderAPIWindowInfo_t::DISPLAY);
+	m_eglDisplay = eglGetDisplay(displayType);
 
 	Msg("Initializing EGL context...\n");
 
@@ -261,7 +239,7 @@ bool CGLRenderLib_EGL::InitAPI(const shaderAPIParams_t& params)
 	}
 #else
 	// load OpenGL extensions using glad
-	if (!gladLoadGLLoader(gladHelperLoaderFunction))
+	if (!gladLoadGLLoader((GLADloadproc)eglGetProcAddress))
 	{
 		MsgError("Cannot load OpenGL extensions or several functions!\n");
 		return false;
@@ -293,11 +271,16 @@ bool CGLRenderLib_EGL::InitAPI(const shaderAPIParams_t& params)
 }
 
 void CGLRenderLib_EGL::ExitAPI()
-{
+{	
 	eglMakeCurrent(EGL_NO_DISPLAY, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
 	eglDestroyContext(m_eglDisplay, m_glContext);
 	eglDestroySurface(m_eglDisplay, m_eglSurface);
 	eglTerminate(m_eglDisplay);
+
+#ifdef PLAT_LINUX
+	if (m_windowInfo.windowType == RHI_WINDOW_HANDLE_NATIVE_WAYLAND)
+		wl_egl_window_destroy((wl_egl_window*)m_hwnd);
+#endif // PLAT_LINUX
 }
 
 
@@ -330,9 +313,11 @@ void CGLRenderLib_EGL::EndFrame()
 // changes fullscreen mode
 bool CGLRenderLib_EGL::SetWindowed(bool enabled)
 {
-#if 0 // ndef PLAT_ANDROID
-	if (m_rhiWindowType == RHI_WINDOW_HANDLE_NATIVE_WAYLAND)
+#ifdef PLAT_LINUX
+	/*if (m_windowInfo.windowType == RHI_WINDOW_HANDLE_NATIVE_WAYLAND)
 	{
+		wl_surface* wlSurface = (wl_surface*)m_windowInfo.get(shaderAPIWindowInfo_t::SURFACE);
+		xdg_top* wlSurface = (wl_surface*)m_windowInfo.get(shaderAPIWindowInfo_t::TOPLEVEL);
 
 		if(enabled)
 			xdg_toplevel_unset_fullscreen(m_xdg_toplevel);
@@ -343,8 +328,8 @@ bool CGLRenderLib_EGL::SetWindowed(bool enabled)
 			wl_surface_commit(m_surface);
 
 		m_windowed = enabled;
-	}
-#endif // PLAT_ANDROID
+	}*/
+#endif // PLAT_LINUX
 
 	return true;
 }
@@ -368,6 +353,12 @@ void CGLRenderLib_EGL::SetBackbufferSize(const int w, const int h)
 	m_width = w;
 	m_height = h;
 	g_shaderApi.m_deviceLost = true; // needed for triggering matsystem callbacks
+
+#ifdef PLAT_LINUX
+	// need for our hacked window
+	if (m_windowInfo.windowType == RHI_WINDOW_HANDLE_NATIVE_WAYLAND)
+		wl_egl_window_resize((wl_egl_window*)m_hwnd, m_width, m_height, 0, 0);
+#endif // PLAT_LINUX
 
 	SetWindowed(m_windowed);
 
@@ -447,7 +438,7 @@ bool CGLRenderLib_EGL::CreateSurface()
 		EGL_RENDERABLE_TYPE, EGL_OPENGL_ES3_BIT,
 #else
 		EGL_RENDERABLE_TYPE, EGL_OPENGL_BIT,
-		EGL_SURFACE_TYPE,	 EGL_WINDOW_BIT | EGL_PBUFFER_BIT,
+		EGL_SURFACE_TYPE,	 EGL_WINDOW_BIT,
 #endif
 
 		EGL_NONE
@@ -466,6 +457,19 @@ bool CGLRenderLib_EGL::CreateSurface()
 		return false;
 	}
 
+#ifdef PLAT_LINUX
+	if (m_windowInfo.windowType == RHI_WINDOW_HANDLE_NATIVE_WAYLAND)
+	{
+		// SDL2 does not maintain the window for Vulkan mode, so we have to create one
+		wl_surface* wlSurface = (wl_surface*)m_windowInfo.get(shaderAPIWindowInfo_t::SURFACE);
+		m_hwnd = (EGLNativeWindowType)wl_egl_window_create(wlSurface, 512, 512);
+	}
+	else
+#endif // PLAT_LINUX
+	{
+		m_hwnd = (EGLNativeWindowType)m_windowInfo.get(shaderAPIWindowInfo_t::WINDOW);
+	}
+
 #ifdef PLAT_ANDROID
 	// Get the native visual id
 	EGLint nativeVid;
@@ -477,7 +481,8 @@ bool CGLRenderLib_EGL::CreateSurface()
 
 	// On Android, EGL_NATIVE_VISUAL_ID is an attribute of the EGLConfig that is guaranteed to be accepted by ANativeWindow_setBuffersGeometry
 	MsgInfo("Setting native window geometry\n");
-	m_hwnd = (EGLNativeWindowType)m_winFunc.GetWindow();
+
+	// NOTE: window must be updated since SDL may destroy old one
 	ANativeWindow_setBuffersGeometry(m_hwnd, 0, 0, nativeVid);
 #endif
 
@@ -487,7 +492,10 @@ bool CGLRenderLib_EGL::CreateSurface()
 	m_eglSurface = eglCreateWindowSurface(m_eglDisplay, m_eglConfig, m_hwnd, nullptr);
 
 	if (m_eglSurface == EGL_NO_SURFACE)
+	{	
+		MsgError("Cannot create EGL window surface - %s\n", GetEGLErrorString(eglGetError()));
 		return false;
+	}
 
 	if (m_glContext && !eglMakeCurrent(m_eglDisplay, m_eglSurface, m_eglSurface, m_glContext))
 		MsgError("eglMakeCurrent - error\n");

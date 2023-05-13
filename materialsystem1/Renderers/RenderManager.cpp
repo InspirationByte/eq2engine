@@ -10,11 +10,6 @@
 static CEmptyRenderLib  s_EmptyRenderLib;
 
 #elif RENDERER_TYPE == 1
-#ifdef USE_SDL2
-#include "GL/GLRenderLibrary_SDL.h"
-static CGLRenderLib_SDL s_SDLRenderLib;
-#endif // USE_SDL2
-
 #if defined(PLAT_LINUX) && !defined(USE_GLES2)
 #include "GL/GLRenderLibrary_GLX.h"
 static CGLRenderLib_GLX s_GLXRenderLib;
@@ -56,7 +51,7 @@ IRenderLibrary* CEqRenderManager::CreateRenderer(const shaderAPIParams_t &params
     return s_currentRenderLib;
 #endif
 
-    switch(params.windowHandleType)
+    switch(params.windowInfo.windowType)
     {
 #if defined(PLAT_WIN) && !defined(USE_GLES2)
         case RHI_WINDOW_HANDLE_NATIVE_WINDOWS:
@@ -74,22 +69,15 @@ IRenderLibrary* CEqRenderManager::CreateRenderer(const shaderAPIParams_t &params
             s_currentRenderLib = &s_EGLRenderLib;
 #endif // #ifdef PLAT_WIN
 #if RENDERER_TYPE == 1
-#ifdef PLAT_LINUX
         case RHI_WINDOW_HANDLE_NATIVE_X11:
 #ifndef USE_GLES2
             s_currentRenderLib = &s_GLXRenderLib;
             break;
 #endif // USE_GLES2
         case RHI_WINDOW_HANDLE_NATIVE_WAYLAND:
-#endif // #ifdef PLAT_LINUX
-        case RHI_WINDOW_HANDLE_VTABLE: // Android case
+        case RHI_WINDOW_HANDLE_NATIVE_ANDROID:
             s_currentRenderLib = &s_EGLRenderLib;
             break;
-#ifdef USE_SDL2
-        case RHI_WINDOW_HANDLE_SDL:
-            s_currentRenderLib = &s_SDLRenderLib;
-            break;
-#endif // USE_SDL2
 #endif // RENDERER_TYPE
         default:
             ASSERT_FAIL("Cannot create renderer library interface");

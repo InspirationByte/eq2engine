@@ -31,31 +31,34 @@ enum ERHIWindowType : int
 	RHI_WINDOW_HANDLE_NATIVE_WINDOWS,
 	RHI_WINDOW_HANDLE_NATIVE_X11,
 	RHI_WINDOW_HANDLE_NATIVE_WAYLAND,
-	RHI_WINDOW_HANDLE_NATIVE_OSX,
-	RHI_WINDOW_HANDLE_SDL,		// SDL Window
-	RHI_WINDOW_HANDLE_VTABLE	// VTable to get window handle (see below), and possibly more features.
+	RHI_WINDOW_HANDLE_NATIVE_COCOA,
+	RHI_WINDOW_HANDLE_NATIVE_ANDROID,
 };
 
 
 // designed to be sent as windowHandle param
-struct shaderAPIWindowFuncTable_t
+struct shaderAPIWindowInfo_t
 {
-	using GetterFunc = void*(*)();
+	enum Attribute
+	{
+		DISPLAY,
+		WINDOW,
+		SURFACE,
+		TOPLEVEL
+	};
+	using GetterFunc = void*(*)(Attribute attrib);
 
-	GetterFunc 		GetWindow { nullptr };
-	GetterFunc 		GetSurface { nullptr };
+	ERHIWindowType	windowType{ RHI_WINDOW_HANDLE_UNKNOWN };
+	GetterFunc 		get{nullptr};
 };
 
 // shader api initializer
 struct shaderAPIParams_t
 {
+	shaderAPIWindowInfo_t windowInfo;
+
 	EqString		texturePath;			// texture path (.DDS only)
 	EqString		textureSRCPath;			// texture sources path (.TGA only)
-
-	// basic parameters for shader API initialization
-
-	void*			windowHandle{ nullptr };			// window handle
-	ERHIWindowType	windowHandleType{ RHI_WINDOW_HANDLE_SDL };
 
 	ETextureFormat	screenFormat{ FORMAT_RGB8 };		// screen back buffer format
 
