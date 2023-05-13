@@ -290,7 +290,7 @@ project "eqGLESRHI"
 
 	filter "system:Linux"
 		links {
-			"X11", "GLESv2", "EGL" 
+			"X11", "GLESv2", "EGL", "wayland-egl"
 		}
 		files {
 			Folders.matsystem1.. "Renderers/GL/GLRenderLibrary_EGL.cpp",
