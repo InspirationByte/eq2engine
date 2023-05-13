@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright ï¿½ Inspiration Byte
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
 // Description: Collision object with shape data
@@ -37,6 +37,9 @@ enum ECollisionObjectFlags
 
 	// is ghost object
 	COLLOBJ_ISGHOST					= (1 << 4),
+
+	// game flag that marks static objects as moveable (by scripts etc)
+	COLLOBJ_MIGHT_MOVE				= (1 << 5),
 
 	//---------------
 	// special flags
