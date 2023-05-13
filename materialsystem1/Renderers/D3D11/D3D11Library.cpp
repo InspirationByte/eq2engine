@@ -40,11 +40,11 @@ bool CD3D11RenderLib::InitCaps()
 	return true;
 }
 
-bool CD3D11RenderLib::InitAPI(const shaderAPIParams_t& sparams)
+bool CD3D11RenderLib::InitAPI(const shaderAPIParams_t& params)
 {
 	// set window
-	m_hwnd = (HWND)sparams.windowHandle;
-	m_verticalSyncEnabled = sparams.verticalSyncEnabled;
+	m_hwnd = (HWND)params.windowInfo.get(shaderAPIWindowInfo_t::WINDOW);
+	m_verticalSyncEnabled = params.verticalSyncEnabled;
 
 	// get window parameters
 	RECT windowRect;
@@ -53,12 +53,12 @@ bool CD3D11RenderLib::InitAPI(const shaderAPIParams_t& sparams)
 	m_width = windowRect.right;
 	m_height = windowRect.bottom;
 
-	ETextureFormat screenFormat = sparams.screenFormat;
+	ETextureFormat screenFormat = params.screenFormat;
 	if (screenFormat == FORMAT_RGB8)
 		screenFormat = FORMAT_RGBA8;
 	m_backBufferFormat = formats[screenFormat];
 
-	switch (sparams.depthBits)
+	switch (params.depthBits)
 	{
 		case 16:
 			m_depthBufferFormat = DXGI_FORMAT_D16_UNORM;
@@ -104,7 +104,7 @@ bool CD3D11RenderLib::InitAPI(const shaderAPIParams_t& sparams)
 	DXGI_OUTPUT_DESC oDesc;
 	dxgiOutput->GetDesc(&oDesc);
 
-	int targetHz = sparams.screenRefreshRateHZ;
+	int targetHz = params.screenRefreshRateHZ;
 	int fsRefresh = 60;
 
 	m_fullScreenRefresh.Numerator = fsRefresh;
@@ -151,7 +151,7 @@ bool CD3D11RenderLib::InitAPI(const shaderAPIParams_t& sparams)
 		return false;
 	}
 
-	m_msaaSamples = sparams.multiSamplingMode + 1;
+	m_msaaSamples = params.multiSamplingMode + 1;
 
 	while (m_msaaSamples > 0)
 	{
@@ -165,7 +165,7 @@ bool CD3D11RenderLib::InitAPI(const shaderAPIParams_t& sparams)
 	s_shaderApi.SetD3DDevice(m_rhi);
 
 	// create our swap chain
-	m_defaultSwapChain = CreateSwapChain(sparams.windowHandle, true);
+	m_defaultSwapChain = CreateSwapChain(m_hwnd, true);
 
 	// We'll handle Alt-Enter ourselves thank you very much ...
 	m_dxgiFactory->MakeWindowAssociation(m_hwnd, DXGI_MWA_NO_WINDOW_CHANGES | DXGI_MWA_NO_ALT_ENTER);
@@ -179,7 +179,7 @@ bool CD3D11RenderLib::InitAPI(const shaderAPIParams_t& sparams)
 		return false;
 	}
 
-	UpdateWindow((HWND)sparams.windowHandle);
+	UpdateWindow(m_hwnd);
 
 	//-------------------------------------------
 	// init caps

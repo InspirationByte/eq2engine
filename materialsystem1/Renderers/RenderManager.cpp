@@ -68,7 +68,7 @@ IRenderLibrary* CEqRenderManager::CreateRenderer(const shaderAPIParams_t &params
         case RHI_WINDOW_HANDLE_NATIVE_WINDOWS:
             s_currentRenderLib = &s_EGLRenderLib;
 #endif // #ifdef PLAT_WIN
-#if RENDERER_TYPE == 1
+#if !defined(PLAT_WIN) && RENDERER_TYPE == 1
         case RHI_WINDOW_HANDLE_NATIVE_X11:
 #ifndef USE_GLES2
             s_currentRenderLib = &s_GLXRenderLib;

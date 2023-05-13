@@ -100,7 +100,7 @@ bool CD3D9RenderLib::InitAPI( const shaderAPIParams_t &params )
 	ZeroMemory(&m_d3dpp, sizeof(m_d3dpp));
 
 	// set window
-	m_hwnd = (HWND)params.windowHandle;
+	m_hwnd = (HWND)params.windowInfo.get(shaderAPIWindowInfo_t::WINDOW);
 
 	// get window parameters
 	RECT windowRect;
@@ -142,7 +142,7 @@ bool CD3D9RenderLib::InitAPI( const shaderAPIParams_t &params )
 		return false;
 	}
 
-	m_d3dpp.hDeviceWindow	= m_hwnd;
+	m_d3dpp.hDeviceWindow = m_hwnd;
 
 	m_d3dpp.MultiSampleQuality = 0;
 	m_d3dpp.EnableAutoDepthStencil = TRUE;// (depthBits > 0);

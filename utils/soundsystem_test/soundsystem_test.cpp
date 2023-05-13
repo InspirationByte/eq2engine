@@ -317,11 +317,22 @@ void InitMatSystem(EQWNDHANDLE window)
 
 		render_config.lightingModel = MATERIAL_LIGHT_FORWARD;
 		render_config.threadedloader = true;
-
-		materials_config.shaderApiParams.windowHandle = window;
-		materials_config.shaderApiParams.windowHandleType = RHI_WINDOW_HANDLE_NATIVE_WINDOWS;
-
 		materials_config.shaderApiParams.screenFormat = format;
+
+		static void* s_engineWindow = window;
+
+		shaderAPIWindowInfo_t& winInfo = materials_config.shaderApiParams.windowInfo;
+		winInfo.windowType = RHI_WINDOW_HANDLE_NATIVE_WINDOWS;
+		winInfo.get = [](shaderAPIWindowInfo_t::Attribute attrib) -> void* {
+			switch (attrib)
+			{
+				case shaderAPIWindowInfo_t::WINDOW:
+					return s_engineWindow;
+				case shaderAPIWindowInfo_t::DISPLAY:
+					return GetDC((HWND)s_engineWindow);
+			}
+			return nullptr;
+		};
 
 		if (!materials->Init(materials_config))
 			exit(0);

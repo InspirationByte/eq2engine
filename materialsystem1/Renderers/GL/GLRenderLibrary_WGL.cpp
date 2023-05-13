@@ -192,8 +192,8 @@ bool CGLRenderLib_WGL::InitAPI(const shaderAPIParams_t& params)
 	if (r_screen->GetInt() >= GetSystemMetrics(SM_CMONITORS))
 		r_screen->SetValue("0");
 
-	m_hwnd = (HWND)params.windowHandle;
-	m_hdc = GetDC(m_hwnd);
+	m_hwnd = (HWND)params.windowInfo.get(shaderAPIWindowInfo_t::WINDOW);
+	m_hdc = (HDC)params.windowInfo.get(shaderAPIWindowInfo_t::DISPLAY);
 
 	// Enumerate display devices
 	int monitorCounter = r_screen->GetInt();
