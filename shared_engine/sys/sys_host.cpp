@@ -293,6 +293,8 @@ static void* Helper_GetWindowInfo(shaderAPIWindowInfo_t::Attribute attrib)
 			{
 				case shaderAPIWindowInfo_t::WINDOW:
 					return (void*)winfo.info.android.window;
+				case shaderAPIWindowInfo_t::DISPLAY:
+					return nullptr; // EGL_DEFAULT_DISPLAY
 			}
 #endif // PLAT_ANDROID
 #if PLAT_WIN
