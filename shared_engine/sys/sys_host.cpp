@@ -131,11 +131,12 @@ void CGameHost::HostExitCmd(CONCOMMAND_ARGUMENTS)
 bool CGameHost::LoadModules()
 {
 	// first, load matsystem module
-	g_matsysmodule = g_fileSystem->LoadModule("eqMatSystem");
+	EqString loadErr;
+	g_matsysmodule = g_fileSystem->LoadModule("eqMatSystem", &loadErr);
 
 	if(!g_matsysmodule)
 	{
-		ErrorMsg("FATAL ERROR! Can't load eqMatSystem!");
+		ErrorMsg("FATAL ERROR! Can't load eqMatSystem - %s", loadErr.ToCString());
 		return false;
 	}
 

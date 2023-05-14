@@ -227,59 +227,14 @@ bool CMaterialSystem::Init(const matsystem_init_config_t& config)
 {
 	Msg(" \n--------- MaterialSystem Init --------- \n");
 
-	KVSection* matSystemSettings = g_eqCore->GetConfig()->FindSection("MaterialSystem");
+	const KVSection* matSystemSettings = g_eqCore->GetConfig()->FindSection("MaterialSystem");
 
 	ASSERT(g_pShaderAPI == nullptr);
 
 	// store the configuration
 	m_config = config.renderConfig;
 
-#ifdef PLAT_ANDROID
-	EqString rendererName = "libeqGLESRHI";
-#else
-	EqString rendererName = config.rendererName;
-
-	const int rendererCmdLine = g_cmdLine->FindArgument("-renderer");
-	if (rendererCmdLine != -1)
-		rendererName = g_cmdLine->GetArgumentsOf(rendererCmdLine);
-
-	if (!rendererName.Length())
-	{
-		// try using default from Eq config
-		rendererName = matSystemSettings ? KV_GetValueString(matSystemSettings->FindSection("Renderer"), 0, nullptr) : "eqGLRHI";
-	}
-#endif // _WIN32
-
-	if (g_cmdLine->FindArgument("-norender") != -1)
-	{
-		rendererName = "eqNullRHI";
-	}
-
-	// Load Shader API from here...
-	m_rendermodule = g_fileSystem->LoadModule(rendererName);
-	if(m_rendermodule)
-	{
-		IRenderManager* renderMng = g_eqCore->GetInterface<IRenderManager>();
-		if(!renderMng)
-		{
-			ErrorMsg("MatSystem Error: %s does not provide render manager interface", rendererName.ToCString());
-			g_fileSystem->FreeModule(m_rendermodule);
-		}
-
-		m_renderLibrary = renderMng->CreateRenderer(config.shaderApiParams);
-		if(!m_renderLibrary)
-		{
-			ErrorMsg("MatSystem Error: %s failed to create renderer interface", rendererName.ToCString());
-			g_fileSystem->FreeModule(m_rendermodule);
-			return false;
-		}
-	}
-	else
-	{
-		ErrorMsg("MatSystem Error: Cannot load library '%s'", rendererName.ToCString());
-		return false;
-	}
-
+	// setup material and texture folders
 	{
 		// regular materials
 		m_materialsPath = config.materialsPath;
@@ -302,20 +257,61 @@ bool CMaterialSystem::Init(const matsystem_init_config_t& config)
 			m_materialsSRCPath.Append(CORRECT_PATH_SEPARATOR);
 	}
 
-	// render library initialization
-	// collect all needed data for use in shaderapi initialization
-
-	if( m_renderLibrary->InitCaps() )
+	auto tryLoadRenderer = [this, &config](const char* rendererName)
 	{
-		if(!m_renderLibrary->InitAPI(config.shaderApiParams))
+		EqString loadErr;
+		DKMODULE* renderModule = g_fileSystem->LoadModule(rendererName, &loadErr);
+		IRenderManager* renderMng = nullptr;
+		IRenderLibrary* renderLib = nullptr;
+		IShaderAPI* shaderAPI = nullptr;
+		
+		defer 
+		{
+			if(shaderAPI)
+			{
+				m_renderLibrary = renderLib;
+				m_rendermodule = renderModule;
+				m_shaderAPI = shaderAPI;
+			}
+			else
+			{
+				g_fileSystem->FreeModule(renderModule);
+			}
+		};
+
+		if(!renderModule)
+		{
+			DevMsg(DEVMSG_MATSYSTEM, "Can't load renderer '%s' - %s", rendererName, loadErr.ToCString());
+			return false;
+		}
+
+		renderMng = g_eqCore->GetInterface<IRenderManager>();
+		if(!renderMng)
+		{
+			ErrorMsg("MatSystem Error: %s does not provide render manager interface", rendererName);
+			return false;
+		}
+
+		renderLib = renderMng->CreateRenderer(config.shaderApiParams);
+		if(!renderLib)
+		{
+			ErrorMsg("MatSystem Error: %s failed to create renderer interface", rendererName);
+			return false;
+		}
+
+		// render library initialization
+		if( !renderLib->InitCaps() )
+			return false;
+
+		if(!renderLib->InitAPI(config.shaderApiParams))
 			return false;
 
 		// we created all we've need
-		m_shaderAPI = m_renderLibrary->GetRenderer();
+		shaderAPI = renderLib->GetRenderer();
 
-		if(!m_shaderAPI)
+		if(!shaderAPI)
 		{
-			ErrorMsg("Fatal error! Couldn't create ShaderAPI interface!\n\nPlease update or reinstall the game\n");
+			ErrorMsg("Fatal error! Couldn't create ShaderAPI interface!\n");
 			return false;
 		}
 
@@ -328,19 +324,51 @@ bool CMaterialSystem::Init(const matsystem_init_config_t& config)
 			sapiParams.textureSRCPath = m_materialsSRCPath.GetData();
 
 		// init new created shader api with this parameters
-		m_shaderAPI->Init(sapiParams);
+		shaderAPI->Init(sapiParams);
 
-		DevMsg(DEVMSG_MATSYSTEM, "ShaderAPI initialized\n");
+		return true;
+	};
 
-        // test to be sure that it was initialized correctly
-		//m_renderLibrary->BeginFrame();
-		//m_shaderAPI->Clear(true, true, false);
-		//m_renderLibrary->EndFrame();
+#ifdef PLAT_ANDROID
+	EqString rendererName = "libeqGLESRHI";
 
-		DevMsg(DEVMSG_MATSYSTEM, "Test frame completed\n");
+	if(!tryLoadRenderer(rendererName))
+		return false;
+#else
+	EqString rendererName = config.rendererName;
+
+	const int rendererCmdLine = g_cmdLine->FindArgument("-renderer");
+	if (rendererCmdLine != -1)
+		rendererName = g_cmdLine->GetArgumentsOf(rendererCmdLine);
+
+	const KVSection* rendererKey = matSystemSettings->FindSection("Renderer");
+	if (g_cmdLine->FindArgument("-norender") != -1)
+	{
+		rendererName = "eqNullRHI";
+		if(!tryLoadRenderer(rendererName))
+			return false;
+	}
+	else if(rendererKey)
+	{
+		for(int i = 0; i < rendererKey->ValueCount(); ++i)
+		{
+			if(tryLoadRenderer(KV_GetValueString(rendererKey, i)))
+			{
+				break;
+			}
+		}
+
+		if(!m_shaderAPI)
+			return false;
 	}
 	else
-		return false;
+	{
+		rendererName = "eqGLRHI";
+
+		if(!tryLoadRenderer(rendererName))
+			return false;
+	}
+#endif // PLAT_ANDROID
 
 	g_pShaderAPI = m_shaderAPI;
 
@@ -521,15 +549,17 @@ const char* CMaterialSystem::GetMaterialSRCPath() const
 // Adds new shader library
 bool CMaterialSystem::LoadShaderLibrary(const char* libname)
 {
+	EqString loadErr;
 	DKMODULE* shaderlib = g_fileSystem->LoadModule( libname );
-
 	if(!shaderlib)
+	{
+		MsgError("LoadShaderLibrary Error: Failed to load %s - %s\n", libname, loadErr.ToCString());
 		return false;
+	}
 
 	typedef int (*InitShaderLibraryFunction)(IMaterialSystem* pMatSystem);
 
 	InitShaderLibraryFunction functionPtr = (InitShaderLibraryFunction)g_fileSystem->GetProcedureAddress(shaderlib, "InitShaderLibrary");
-
 	if(!functionPtr)
 	{
 		MsgError("Invalid shader library '%s' - can't get InitShaderLibrary function!\n",libname);
@@ -537,7 +567,6 @@ bool CMaterialSystem::LoadShaderLibrary(const char* libname)
 	}
 
 	(functionPtr)(this);
-
 	m_shaderLibs.append(shaderlib);
 
 	return true;

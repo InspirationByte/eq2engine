@@ -1024,7 +1024,7 @@ bool CFileSystem::FindIsDirectory(DKFINDDATA* findData) const
 }
 
 // loads module
-DKMODULE* CFileSystem::LoadModule(const char* mod_name, EqString* outError = nullptr)
+DKMODULE* CFileSystem::LoadModule(const char* mod_name, EqString* outError)
 {
 	EqString moduleFileName = mod_name;
 	EqString modExt = moduleFileName.Path_Extract_Ext();

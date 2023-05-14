@@ -851,11 +851,12 @@ bool CWXTemplateApplication::OnInit()
 	setlocale(LC_ALL,"C");
 
 	// first, load matsystem module
-    g_matsysmodule = g_fileSystem->LoadModule("eqMatSystem");
+	EqString loadErr;
+	g_matsysmodule = g_fileSystem->LoadModule("eqMatSystem", &loadErr);
 
 	if(!g_matsysmodule)
 	{
-		ErrorMsg("FATAL ERROR! Can't load EqMatSystem!");
+		ErrorMsg("FATAL ERROR! Can't load eqMatSystem - %s", loadErr.ToCString());
 		return -1;
 	}
 
