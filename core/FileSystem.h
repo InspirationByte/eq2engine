@@ -127,7 +127,7 @@ public:
 	//------------------------------------------------------------
 
 	// loads module
-	DKMODULE*					LoadModule(const char* mod_name);
+	DKMODULE*					LoadModule(const char* mod_name, EqString* outError = nullptr);
 
 	// frees module
 	void						FreeModule( DKMODULE* pModule );

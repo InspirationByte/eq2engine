@@ -1024,7 +1024,7 @@ bool CFileSystem::FindIsDirectory(DKFINDDATA* findData) const
 }
 
 // loads module
-DKMODULE* CFileSystem::LoadModule(const char* mod_name)
+DKMODULE* CFileSystem::LoadModule(const char* mod_name, EqString* outError = nullptr)
 {
 	EqString moduleFileName = mod_name;
 	EqString modExt = moduleFileName.Path_Extract_Ext();
@@ -1065,13 +1065,15 @@ DKMODULE* CFileSystem::LoadModule(const char* mod_name)
 	int lastErr = 0;
 #endif // _WIN32 && MEMDLL
 
-	MsgInfo("Loading module '%s'\n", moduleFileName.ToCString());
-
 	if( !mod )
 	{
-		ErrorMsg("CFileSystem::LoadModule Error: Failed to load %s\n - %s!\n", moduleFileName.ToCString(), err);
+		if(outError)
+			*outError = err;
+
 		return nullptr;
 	}
+
+	MsgInfo("Loaded module '%s'\n", moduleFileName.ToCString());
 
 	DKMODULE* pModule = PPNew DKMODULE;
 	strcpy( pModule->name, moduleFileName );
@@ -1083,6 +1085,9 @@ DKMODULE* CFileSystem::LoadModule(const char* mod_name)
 // frees module
 void CFileSystem::FreeModule( DKMODULE* pModule )
 {
+	if(!pModule)
+		return;
+
 	// don't unload any modules if we prining a leaklog
 #ifdef _WIN32
 	FreeLibrary(pModule->module);

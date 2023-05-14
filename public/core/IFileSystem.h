@@ -102,7 +102,7 @@ public:
 	//------------------------------------------------------------
 
 	// loads module
-	virtual DKMODULE*		LoadModule(const char* mod_name) = 0;
+	virtual DKMODULE*		LoadModule(const char* mod_name, EqString* outError = nullptr) = 0;
 
 	// frees module
 	virtual void			FreeModule( DKMODULE* pModule ) = 0;
