@@ -349,7 +349,7 @@ project "eqGLRHI"
 			Folders.matsystem1.. "Renderers/GL/loaders/glad_egl.c",
 		}
 		links {
-			"EGL", "X11", "Xxf86vm", "Xext", "GLU", "wayland-egl"
+			"EGL", "GL", "GLU", "wayland-egl", "X11", "Xxf86vm", "Xext"
 		}
 
 	if os.target() == "windows" then
