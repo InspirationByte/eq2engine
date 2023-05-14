@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright ï¿½ Inspiration Byte
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
 // Description: Camera settings
@@ -7,7 +7,7 @@
 
 #pragma once
 
-static constexpr const float CAMERA_DEFAULT_ZNEAR = 0.1f;
+static constexpr const float CAMERA_DEFAULT_ZNEAR = 1.0f;
 static constexpr const float CAMERA_DEFAULT_FOV = 72.0f;
 
 class CViewParams
