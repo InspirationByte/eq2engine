@@ -29,8 +29,9 @@ enum ThreadPriority_e
 };
 
 #ifdef _WIN32
-typedef HANDLE				SignalHandle_t;
-typedef CRITICAL_SECTION	MutexHandle_t;
+using SignalHandle_t = HANDLE;
+using MutexHandle_t = CRITICAL_SECTION;
+using ReadWriteLockHandle_t = SRWLOCK;
 #else
 struct SignalHandle_t
 {
@@ -40,7 +41,8 @@ struct SignalHandle_t
 	volatile bool 	manualReset;
 	volatile bool 	signaled; 	// is it signaled right now?
 };
-typedef pthread_mutex_t		MutexHandle_t;
+using MutexHandle_t = pthread_mutex_t;
+using ReadWriteLockHandle_t = pthread_rwlock_t;
 #endif // _WIN32
 
 static constexpr const int WAIT_INFINITE = -1;
@@ -94,6 +96,67 @@ public:
 
 private:
 	CEqMutex& m_mutex;
+};
+
+//----------------------------------------------------------------------------------------
+// Read/Write locker is an object that can be locked both in shared and exclusive ways.
+// It's used to prevent two threads from writing the same piece of data simultaneously,
+// but allows read-only access for all threads when Write lock is not engaged.
+//----------------------------------------------------------------------------------------
+class CEqReadWriteLock
+{
+public:
+	CEqReadWriteLock();
+	~CEqReadWriteLock();
+
+	void					LockRead();
+	void					UnlockRead();
+
+	bool					LockWrite(bool blocking = true);
+	void					UnlockWrite();
+
+private:
+	CEqReadWriteLock(const CEqReadWriteLock& s) = delete;
+	void					operator=(const CEqReadWriteLock& s) = delete;
+
+	ReadWriteLockHandle_t	m_nHandle;
+};
+
+
+class CScopedReadLocker
+{
+public:
+	CScopedReadLocker(CEqReadWriteLock& lock)
+		: m_lock(lock)
+	{
+		m_lock.LockRead();
+	}
+
+	~CScopedReadLocker()
+	{
+		m_lock.UnlockRead();
+	}
+
+private:
+	CEqReadWriteLock& m_lock;
+};
+
+class CScopedWriteLocker
+{
+public:
+	CScopedWriteLocker(CEqReadWriteLock& lock, bool blocking = true)
+		: m_lock(lock)
+	{
+		m_lock.LockWrite(blocking);
+	}
+
+	~CScopedWriteLocker()
+	{
+		m_lock.UnlockWrite();
+	}
+
+private:
+	CEqReadWriteLock& m_lock;
 };
 
 //----------------------------------------------------------------------------------------

@@ -7,9 +7,14 @@
 
 #include "core/core_common.h"
 
+#ifndef _Requires_lock_held_
+// GCC stub
+#define _Requires_lock_held_(lock)
+#endif
+
 namespace Threading
 {
-typedef unsigned int (*threadfunc_t)(void*);
+using threadfunc_t = unsigned int (*)(void*);
 
 #ifdef _WIN32
 
@@ -24,9 +29,9 @@ typedef struct tagTHREADNAME_INFO {
 } THREADNAME_INFO;
 #pragma pack(pop)
 
+using SetThreadDescriptionPROC = HRESULT(__cdecl* )(HANDLE, PCWSTR);
+using GetThreadDescriptionPROC = HRESULT(__cdecl* )(HANDLE, PWSTR*);
 
-typedef HRESULT(__cdecl* SetThreadDescriptionPROC)(HANDLE, PCWSTR);
-typedef HRESULT(__cdecl* GetThreadDescriptionPROC)(HANDLE, PWSTR*);
 static bool	s_loadedThreadProc = false;
 static SetThreadDescriptionPROC s_SetThreadDescription = nullptr;
 static GetThreadDescriptionPROC s_GetThreadDescription = nullptr;
@@ -186,6 +191,9 @@ void Yield()
 	SwitchToThread();
 }
 
+//----------------------------------------------------------
+// Signal
+
 void SignalCreate( SignalHandle_t& handle, bool bManualReset )
 {
 	handle = CreateEvent(nullptr, bManualReset, FALSE, nullptr);
@@ -217,6 +225,9 @@ bool SignalWait( SignalHandle_t& handle, int nTimeout )
 	return ( result == WAIT_OBJECT_0 );
 }
 
+//----------------------------------------------------------
+// Mutual Exclusion
+
 void MutexCreate( MutexHandle_t& handle )
 {
 	InitializeCriticalSection( &handle );
@@ -245,6 +256,48 @@ void MutexUnlock( MutexHandle_t& handle )
 	LeaveCriticalSection( &handle );
 }
 
+//----------------------------------------------------------
+// Read-Write locks
+
+void ReadWriteLockCreate(ReadWriteLockHandle_t& handle)
+{
+	InitializeSRWLock(&handle);
+}
+
+void ReadWriteLockDestroy(ReadWriteLockHandle_t& handle)
+{
+}
+
+void ReadWriteLockRead(ReadWriteLockHandle_t& handle)
+{
+	AcquireSRWLockShared(&handle);
+}
+
+bool ReadWriteLockWrite(ReadWriteLockHandle_t& handle, bool bBlocking)
+{
+	if (bBlocking)
+	{
+		AcquireSRWLockExclusive(&handle);
+	}
+	else
+	{
+		if (!TryAcquireSRWLockExclusive(&handle))
+			return false;
+	}
+
+	return true;
+}
+
+void ReadWriteUnlockRead(ReadWriteLockHandle_t& handle)
+{
+	ReleaseSRWLockShared(&handle);
+}
+
+void ReadWriteUnlockWrite(_Requires_lock_held_(handle) ReadWriteLockHandle_t& handle)
+{
+	ReleaseSRWLockExclusive(&handle);
+}
+
 #elif defined(PLAT_POSIX)
 // Any other (POSIX)
 
@@ -260,7 +313,7 @@ void SetThreadName(uintptr_t threadID, const char* name)
 	// TODO !!!
 }
 
-typedef void* ( *pthread_function_t )( void* );
+using pthread_function_t = void* ( * )( void* );
 
 uintptr_t ThreadCreate( threadfunc_t fnThread, void* pThreadParams, ThreadPriority_e nPriority,
 								  const char* pszThreadName, int nStackSize, bool bSuspended )
@@ -329,6 +382,9 @@ void Yield()
 	pthread_yield();
 #endif
 }
+
+//----------------------------------------------------------
+// Signal
 
 void SignalCreate( SignalHandle_t& handle, bool bManualReset )
 {
@@ -445,6 +501,9 @@ bool SignalWait( SignalHandle_t& handle, int nTimeout )
 	return ( status == 0 );
 }
 
+//----------------------------------------------------------
+// Mutual Exclusion
+
 void MutexCreate( MutexHandle_t& handle )
 {
 	pthread_mutexattr_t attr;
@@ -479,6 +538,50 @@ void MutexUnlock( MutexHandle_t& handle )
 {
 	pthread_mutex_unlock( & handle );
 }
+
+//----------------------------------------------------------
+// Read-Write locks
+
+void ReadWriteLockCreate(ReadWriteLockHandle_t& handle)
+{
+	pthread_rwlock_init(&handle, nullptr);
+}
+
+void ReadWriteLockDestroy(ReadWriteLockHandle_t& handle)
+{
+	pthread_rwlock_destroy(&handle);
+}
+
+void ReadWriteLockRead(ReadWriteLockHandle_t& handle)
+{
+	pthread_rwlock_rdlock(&handle);
+}
+
+bool ReadWriteLockWrite(ReadWriteLockHandle_t& handle, bool bBlocking)
+{
+	if (bBlocking)
+	{
+		pthread_rwlock_wrlock(&handle);
+	}
+	else
+	{
+		if (pthread_rwlock_trywrlock(&handle) != 0)
+			return false;
+	}
+
+	return true;
+}
+
+void ReadWriteUnlockRead(ReadWriteLockHandle_t& handle)
+{
+	pthread_rwlock_unlock(&handle);
+}
+
+void ReadWriteUnlockWrite(_Requires_lock_held_(handle) ReadWriteLockHandle_t& handle)
+{
+	pthread_rwlock_unlock(&handle);
+}
+
 #endif // _WIN32
 
 //-------------------------------------------------------------------------------------------------------------------------
@@ -699,5 +802,38 @@ bool CEqSignal:: Wait(int timeout)
 {
 	return SignalWait(m_nHandle, timeout); 
 }
+
+//--------------------------------------------------------
+
+CEqReadWriteLock::CEqReadWriteLock()
+{
+	ReadWriteLockCreate(m_nHandle);
+}
+
+CEqReadWriteLock::~CEqReadWriteLock()
+{
+	ReadWriteLockDestroy(m_nHandle);
+}
+
+void CEqReadWriteLock::LockRead()
+{
+	ReadWriteLockRead(m_nHandle);
+}
+
+void CEqReadWriteLock::UnlockRead()
+{
+	ReadWriteUnlockRead(m_nHandle);
+}
+
+bool CEqReadWriteLock::LockWrite(bool blocking)
+{
+	return ReadWriteLockWrite(m_nHandle, blocking);
+}
+
+void CEqReadWriteLock::UnlockWrite()
+{
+	ReadWriteUnlockWrite(_Requires_lock_held_(m_nHandle) m_nHandle);
+}
+
 
 };
