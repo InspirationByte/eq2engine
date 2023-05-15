@@ -12,7 +12,7 @@ CSoundingObject::~CSoundingObject()
 	g_sounds->OnRemoveSoundingObject(this);
 
 	{
-		CScopedMutex m(m_mutex);
+		CScopedWriteLocker m(m_rwLock);
 		for (auto it = m_emitters.begin(); it != m_emitters.end(); ++it)
 		{
 			SoundEmitterData* emitter = *it;
@@ -29,7 +29,7 @@ int CSoundingObject::EmitSound(int uniqueId, EmitParams* ep)
 	const bool isRandom = uniqueId == -1;
 	if (isRandom)
 	{
-		CScopedMutex m(m_mutex);
+		CScopedReadLocker m(m_rwLock);
 		// ensure that no collisions happen
 		do {
 			uniqueId = RandomInt(0, StringHashMask);
@@ -43,7 +43,7 @@ int CSoundingObject::EmitSound(int uniqueId, EmitParams* ep)
 
 bool CSoundingObject::UpdateEmitters(const Vector3D& listenerPos)
 {
-	CScopedMutex m(m_mutex);
+	CScopedWriteLocker m(m_rwLock);
 
 	// update emitters manually if they are in virtual state
 	for (auto it = m_emitters.begin(); it != m_emitters.end(); ++it)
@@ -94,7 +94,7 @@ void CSoundingObject::StopFirstEmitterByChannel(int chan)
 	if (chan == CHAN_INVALID)
 		return;
 
-	CScopedMutex m(m_mutex);
+	CScopedWriteLocker m(m_rwLock);
 
 	// find first sound with the specific channel and kill it
 	for (auto it = m_emitters.begin(); it != m_emitters.end(); ++it)
@@ -154,7 +154,7 @@ void CSoundingObject::SetEmitterState(int uniqueId, IEqAudioSource::State state,
 	}
 
 	{
-		CScopedMutex m(m_mutex);
+		CScopedWriteLocker m(m_rwLock);
 		for (auto it = m_emitters.begin(); it != m_emitters.end(); ++it)
 			SetEmitterState(*it, state, rewindOnPlay);
 	}
@@ -166,7 +166,7 @@ void CSoundingObject::StopEmitter(int uniqueId, bool destroy /*= false*/)
 	{
 		SoundEmitterData* emitter = nullptr;
 		{
-			CScopedMutex m(m_mutex);
+			CScopedWriteLocker m(m_rwLock);
 			const auto it = m_emitters.find(uniqueId);
 			if (it == m_emitters.end())
 				return;
@@ -182,14 +182,14 @@ void CSoundingObject::StopEmitter(int uniqueId, bool destroy /*= false*/)
 	}
 
 	{
-		CScopedMutex m(m_mutex);
+		CScopedWriteLocker m(m_rwLock);
 		for (auto it = m_emitters.begin(); it != m_emitters.end(); ++it)
 			StopEmitter(*it, destroy);
 	}
 
 	if (destroy)
 	{
-		CScopedMutex m(m_mutex);
+		CScopedWriteLocker m(m_rwLock);
 		m_emitters.clear();
 	}
 }
@@ -203,7 +203,7 @@ void CSoundingObject::PauseEmitter(int uniqueId)
 	}
 
 	{
-		CScopedMutex m(m_mutex);
+		CScopedWriteLocker m(m_rwLock);
 		for (auto it = m_emitters.begin(); it != m_emitters.end(); ++it)
 			PauseEmitter(*it);
 	}
@@ -218,7 +218,7 @@ void CSoundingObject::PlayEmitter(int uniqueId, bool rewind /*= false*/)
 	}
 
 	{
-		CScopedMutex m(m_mutex);
+		CScopedWriteLocker m(m_rwLock);
 		for (auto it = m_emitters.begin(); it != m_emitters.end(); ++it)
 			PlayEmitter(*it, rewind);
 	}
@@ -233,7 +233,7 @@ void CSoundingObject::StopLoop(int uniqueId, float fadeOutTime)
 	}
 
 	{
-		CScopedMutex m(m_mutex);
+		CScopedWriteLocker m(m_rwLock);
 		for (auto it = m_emitters.begin(); it != m_emitters.end(); ++it)
 			StopLoop(*it, fadeOutTime);
 	}
@@ -248,7 +248,7 @@ void CSoundingObject::SetPosition(int uniqueId, const Vector3D& position)
 	}
 
 	{
-		CScopedMutex m(m_mutex);
+		CScopedWriteLocker m(m_rwLock);
 		for (auto it = m_emitters.begin(); it != m_emitters.end(); ++it)
 			SetPosition(*it, position);
 	}
@@ -263,7 +263,7 @@ void CSoundingObject::SetVelocity(int uniqueId, const Vector3D& velocity)
 	}
 
 	{
-		CScopedMutex m(m_mutex);
+		CScopedWriteLocker m(m_rwLock);
 		for (auto it = m_emitters.begin(); it != m_emitters.end(); ++it)
 			SetVelocity(*it, velocity);
 	}
@@ -278,7 +278,7 @@ void CSoundingObject::SetConeProperties(int uniqueId, const Vector3D& direction,
 	}
 
 	{
-		CScopedMutex m(m_mutex);
+		CScopedWriteLocker m(m_rwLock);
 		for (auto it = m_emitters.begin(); it != m_emitters.end(); ++it)
 			SetConeProperties(*it, direction, innerRadus, outerRadius, outerVolume, outerVolumeHf);
 	}
@@ -288,7 +288,7 @@ void CSoundingObject::SetPitch(int uniqueId, float pitch)
 {
 	if (uniqueId != ID_ALL)
 	{
-		CScopedMutex m(m_mutex);
+		CScopedWriteLocker m(m_rwLock);
 		const auto it = m_emitters.find(uniqueId);
 		if (it == m_emitters.end())
 			return;
@@ -298,7 +298,7 @@ void CSoundingObject::SetPitch(int uniqueId, float pitch)
 	}
 
 	{
-		CScopedMutex m(m_mutex);
+		CScopedWriteLocker m(m_rwLock);
 		for (auto it = m_emitters.begin(); it != m_emitters.end(); ++it)
 			SetPitch(*it, pitch);
 	}
@@ -325,7 +325,7 @@ void CSoundingObject::SetSampleVolume(int uniqueId, int waveId, float volume)
 	}
 
 	{
-		CScopedMutex m(m_mutex);
+		CScopedWriteLocker m(m_rwLock);
 		for (auto it = m_emitters.begin(); it != m_emitters.end(); ++it)
 			SetSampleVolume(*it, waveId, volume);
 	}
@@ -340,7 +340,7 @@ void CSoundingObject::SetSamplePlaybackPosition(int uniqueId, int waveId, float 
 	}
 
 	{
-		CScopedMutex m(m_mutex);
+		CScopedWriteLocker m(m_rwLock);
 		for (auto it = m_emitters.begin(); it != m_emitters.end(); ++it)
 			SetSamplePlaybackPosition(*it, waveId, seconds);
 	}
@@ -355,7 +355,7 @@ void CSoundingObject::SetParams(int uniqueId, const IEqAudioSource::Params& para
 	}
 
 	{
-		CScopedMutex m(m_mutex);
+		CScopedWriteLocker m(m_rwLock);
 		for (auto it = m_emitters.begin(); it != m_emitters.end(); ++it)
 			SetParams(*it, params);
 	}
@@ -376,7 +376,7 @@ void CSoundingObject::SetInputValue(int uniqueId, int inputNameHash, float value
 	}
 
 	{
-		CScopedMutex m(m_mutex);
+		CScopedWriteLocker m(m_rwLock);
 		for (auto it = m_emitters.begin(); it != m_emitters.end(); ++it)
 			SetInputValue(*it, inputNameHash, value);
 	}
@@ -385,7 +385,8 @@ void CSoundingObject::SetInputValue(int uniqueId, int inputNameHash, float value
 SoundEmitterData* CSoundingObject::FindEmitter(int uniqueId) const
 {
 	{
-		CScopedMutex m(*const_cast<CEqMutex*>(&m_mutex));
+		CScopedReadLocker m(*const_cast<CEqReadWriteLock*>(&m_rwLock));
+
 		const auto it = m_emitters.find(uniqueId);
 		if (it != m_emitters.end())
 			return *it;
@@ -395,7 +396,7 @@ SoundEmitterData* CSoundingObject::FindEmitter(int uniqueId) const
 
 void CSoundingObject::AddEmitter(int uniqueId, SoundEmitterData* emitter)
 {
-	CScopedMutex m(m_mutex);
+	CScopedReadLocker m(m_rwLock);
 	m_emitters.insert(uniqueId, emitter);
 }
 

@@ -162,8 +162,6 @@ public:
 
 protected:
 	Set<IMaterial*>		m_newMaterials{ PP_SL };
-
-	CEqMutex			m_Mutex;
 };
 
 static CEqMatSystemThreadedLoader s_threadedMaterialLoader;

@@ -100,7 +100,7 @@ protected:
 	// sounds at channel counter
 	Map<int, SoundEmitterData*>	m_emitters{ PP_SL };
 
-	Threading::CEqMutex			m_mutex;
+	Threading::CEqReadWriteLock	m_rwLock;
 	uint8						m_numChannelSounds[CHAN_MAX]{ 0 };
 	float						m_volumeScale{ 1.0f };
 };
