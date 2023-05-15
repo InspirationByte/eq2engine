@@ -335,39 +335,46 @@ bool CMaterialSystem::Init(const matsystem_init_config_t& config)
 	if(!tryLoadRenderer(rendererName))
 		return false;
 #else
+	// try explicitly set renderer
 	EqString rendererName = config.rendererName;
 
 	const int rendererCmdLine = g_cmdLine->FindArgument("-renderer");
 	if (rendererCmdLine != -1)
 		rendererName = g_cmdLine->GetArgumentsOf(rendererCmdLine);
-
-	const KVSection* rendererKey = matSystemSettings->FindSection("Renderer");
-	if (g_cmdLine->FindArgument("-norender") != -1)
-	{
+	else if(g_cmdLine->FindArgument("-norender") != -1)
 		rendererName = "eqNullRHI";
-		if(!tryLoadRenderer(rendererName))
-			return false;
-	}
-	else if(rendererKey)
-	{
-		for(int i = 0; i < rendererKey->ValueCount(); ++i)
-		{
-			if(tryLoadRenderer(KV_GetValueString(rendererKey, i)))
-			{
-				break;
-			}
-		}
 
-		if(!m_shaderAPI)
+	if (rendererName.Length())
+	{
+		if(!tryLoadRenderer(rendererName))
 			return false;
 	}
 	else
 	{
-		rendererName = "eqGLRHI";
+		// try first working renderer from EQ.CONFIG
+		const KVSection* rendererKey = matSystemSettings->FindSection("Renderer");
+		if(rendererKey)
+		{
+			for(int i = 0; i < rendererKey->ValueCount(); ++i)
+			{
+				if(tryLoadRenderer(KV_GetValueString(rendererKey, i)))
+				{
+					break;
+				}
+			}
 
-		if(!tryLoadRenderer(rendererName))
-			return false;
+			if(!m_shaderAPI)
+				return false;
+		}
+		else
+		{
+			rendererName = "eqGLRHI";
+
+			if(!tryLoadRenderer(rendererName))
+				return false;
+		}
 	}
+
 #endif // PLAT_ANDROID
 
 	g_pShaderAPI = m_shaderAPI;
