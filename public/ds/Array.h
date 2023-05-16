@@ -53,7 +53,7 @@ public:
 
 	void resize(int newCapacity, int& numOfElements)
 	{
-		ASSERT(newCapacity >= 0);
+		ASSERT_MSG(newCapacity >= 0, "DynamicArrayStorage<%s> requested capacity is %d", typeid(T).name(), newCapacity);
 
 		// free up the listPtr if no data is being reserved
 		if (newCapacity <= 0)
@@ -145,7 +145,7 @@ public:
 
 	void resize(int newSize, int& numOfElements)
 	{
-		ASSERT_MSG(newSize <= SIZE, "Exceeded FixedArrayStorage size (%d, requires %d)", getSize(), newSize);
+		ASSERT_MSG(newSize <= SIZE, "FixedArrayStorage<%s> capacity is %d, required %d", typeid(T).name(), getSize(), newSize);
 	}
 
 	int getSize() const
@@ -462,8 +462,7 @@ inline int ArrayBase<T, STORAGE_TYPE>::getGranularity() const
 template< typename T, typename STORAGE_TYPE >
 inline const T& ArrayBase<T, STORAGE_TYPE>::operator[](int index) const
 {
-	ASSERT(index >= 0);
-	ASSERT(index < m_nNumElem);
+	ASSERT_MSG(index >= 0 && index < m_nNumElem, "Array<%s> invalid index %d (numElem = %d)", typeid(T).name(), index, m_nNumElem);
 
 	return m_storage.getData()[index];
 }
@@ -475,8 +474,7 @@ inline const T& ArrayBase<T, STORAGE_TYPE>::operator[](int index) const
 template< typename T, typename STORAGE_TYPE >
 inline T& ArrayBase<T, STORAGE_TYPE>::operator[](int index)
 {
-	ASSERT(index >= 0);
-	ASSERT(index < m_nNumElem);
+	ASSERT_MSG(index >= 0 && index < m_nNumElem, "Array<%s> invalid index %d (numElem = %d)", typeid(T).name(), index, m_nNumElem);
 
 	return m_storage.getData()[index];
 }
