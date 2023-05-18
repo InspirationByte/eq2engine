@@ -519,8 +519,6 @@ void CEqPhysics::DestroyBody( CEqRigidBody* body )
 
 	if(RemoveFromWorld(body))
 		delete body;
-	else
-		ASSERT_FAIL("CEqPhysics::DestroyBody - incorrect object passed\n");
 }
 
 void CEqPhysics::AddGhostObject( CEqCollisionObject* object )
@@ -574,12 +572,10 @@ void CEqPhysics::DestroyGhostObject( CEqCollisionObject* object )
 		}
 	}
 
-	if(m_ghostObjects.fastRemove(object))
-	{
-		delete object;
-	}
-	else
-		ASSERT_FAIL("CEqPhysics::DestroyGhostObject - incorrect object passed\n");
+	if(!m_ghostObjects.fastRemove(object))
+		return;
+
+	delete object;
 }
 
 void CEqPhysics::AddStaticObject( CEqCollisionObject* object )
@@ -600,13 +596,11 @@ void CEqPhysics::RemoveStaticObject( CEqCollisionObject* object )
 	if(!object)
 		return;
 
-	if (m_staticObjects.fastRemove(object))
-	{
-		if (m_grid)
-			m_grid->RemoveStaticObjectFromGrid(object);
-	}
-	else
-		ASSERT_FAIL("CEqPhysics::RemoveStaticObject - incorrect object passed\n");
+	if (!m_staticObjects.fastRemove(object))
+		return;
+
+	if (m_grid)
+		m_grid->RemoveStaticObjectFromGrid(object);
 }
 
 void CEqPhysics::DestroyStaticObject( CEqCollisionObject* object )
@@ -616,15 +610,13 @@ void CEqPhysics::DestroyStaticObject( CEqCollisionObject* object )
 
 	//CScopedMutex m(s_eqPhysMutex);
 
-	if (m_staticObjects.fastRemove(object))
-	{
-		if (m_grid)
-			m_grid->RemoveStaticObjectFromGrid(object);
+	if (!m_staticObjects.fastRemove(object))
+		return;
 
-		delete object;
-	}
-	else
-		ASSERT_FAIL("CEqPhysics::DestroyStaticObject - incorrect object passed\n");
+	if (m_grid)
+		m_grid->RemoveStaticObjectFromGrid(object);
+
+	delete object;
 }
 
 bool CEqPhysics::IsValidStaticObject( CEqCollisionObject* obj ) const
@@ -678,7 +670,8 @@ void CEqPhysics::RemoveController( IEqPhysicsController* controller )
 		return;
 
 	//CScopedMutex m(s_eqPhysMutex);
-	m_controllers.fastRemove( controller );
+	if(!m_controllers.fastRemove( controller ))
+		return;
 
 	controller->RemovedFromWorld( this );
 }
@@ -691,13 +684,10 @@ void CEqPhysics::DestroyController( IEqPhysicsController* controller )
 	//CScopedMutex m(s_eqPhysMutex);
 
 	if(m_controllers.fastRemove(controller))
-	{
-		controller->RemovedFromWorld( this );
-		delete controller;
-	}
-		
-	else
-		MsgError("CEqPhysics::DestroyController - INVALID\n");
+		return;
+
+	controller->RemovedFromWorld( this );
+	delete controller;
 }
 
 //-----------------------------------------------------------------------------------------------
