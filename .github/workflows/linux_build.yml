@@ -38,7 +38,13 @@ jobs:
       with:
         token: ${{ secrets.ACTIONSPAT }}
         submodules: recursive
-    
+        
+    - name: Setup AppImageTool
+      uses: AnimMouse/setup-appimage@v1
+      with:
+        name: appimagetool
+        url: https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage
+
     - uses: abel0b/setup-premake@v2.2
       with:
         version: "5.0.0-beta2"
@@ -54,15 +60,20 @@ jobs:
       working-directory: ./project_gmake2
       run: make config=${{env.BUILD_CONFIGURATION}}_${{env.BUILD_PLATFORM}} -j10
       
+    - name: Create appimage
+      run: .github/make_appimage.sh $PWD/game/DriverSyndicate/DrvSyn.AppDir DrvSyn_${{env.BUILD_CONFIGURATION_U}}
+      
     - name: Upload a Build Artifact
       uses: actions/upload-artifact@v3.1.2
       with:
         name: DrvSyn_linux_${{env.BUILD_CONFIGURATION}}_${{env.BUILD_PLATFORM}}
         path: |
-          bin/x64/Release/*.so
-          bin/x64/Release/DrvSyn_${{env.BUILD_CONFIGURATION_U}}
-          bin/x64/Release/fcompress
-          bin/x64/Release/animca
-          bin/x64/Release/egfca
-          bin/x64/Release/atlasgen
-          bin/x64/Release/texcooker
+          *.AppImage
+
+#          bin/${{env.BUILD_PLATFORM}}/${{env.BUILD_CONFIGURATION_U}}/*.so
+#          bin/${{env.BUILD_PLATFORM}}/${{env.BUILD_CONFIGURATION_U}}/DrvSyn_${{env.BUILD_CONFIGURATION_U}}
+#          bin/${{env.BUILD_PLATFORM}}/${{env.BUILD_CONFIGURATION_U}}/fcompress
+#          bin/${{env.BUILD_PLATFORM}}/${{env.BUILD_CONFIGURATION_U}}/animca
+#          bin/${{env.BUILD_PLATFORM}}/${{env.BUILD_CONFIGURATION_U}}/egfca
+#          bin/${{env.BUILD_PLATFORM}}/${{env.BUILD_CONFIGURATION_U}}/atlasgen
+#          bin/${{env.BUILD_PLATFORM}}/${{env.BUILD_CONFIGURATION_U}}/texcooker
