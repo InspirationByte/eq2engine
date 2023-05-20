@@ -101,18 +101,18 @@ void ShaderAPI_Base::Init( const shaderAPIParams_t &params )
 	m_pErrorTexture = CreateTextureResource("error");
 	m_pErrorTexture->GenerateErrorTexture();
 
-	ConVar* r_debug_showTexture = (ConVar*)g_consoleCommands->FindCvar("r_debug_showTexture");
+	ConVar* r_debugShowTexture = (ConVar*)g_consoleCommands->FindCvar("r_debugShowTexture");
 
-	if(r_debug_showTexture)
-		r_debug_showTexture->SetVariantsCallback(GetConsoleTextureList);
+	if(r_debugShowTexture)
+		r_debugShowTexture->SetVariantsCallback(GetConsoleTextureList);
 }
 
 void ShaderAPI_Base::Shutdown()
 {
-	ConVar* r_debug_showTexture = (ConVar*)g_consoleCommands->FindCvar("r_debug_showTexture");
+	ConVar* r_debugShowTexture = (ConVar*)g_consoleCommands->FindCvar("r_debugShowTexture");
 
-	if(r_debug_showTexture)
-		r_debug_showTexture->SetVariantsCallback(nullptr);
+	if(r_debugShowTexture)
+		r_debugShowTexture->SetVariantsCallback(nullptr);
 
 	ChangeRenderTargetToBackBuffer();
 
