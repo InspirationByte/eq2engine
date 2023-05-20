@@ -296,10 +296,10 @@ private:
 
 	matsystem_render_config_t		m_config;
 
-	IRenderLibrary*					m_renderLibrary;			// render library.
-	DKMODULE*						m_rendermodule;				// render dll.
+	IRenderLibrary*					m_renderLibrary{ nullptr };	// render library.
+	DKMODULE*						m_rendermodule{ nullptr };	// render dll.
 
-	IShaderAPI*						m_shaderAPI;				// the main renderer interface
+	IShaderAPI*						m_shaderAPI{ nullptr };		// the main renderer interface
 	EqString						m_materialsPath;			// material path
 	EqString						m_materialsSRCPath;			// material sources path
 
@@ -311,7 +311,7 @@ private:
 	Array<proxyfactory_t>			m_proxyFactoryList{ PP_SL };
 
 	Map<int, IMaterial*>			m_loadedMaterials{ PP_SL };			// loaded material list
-	ER_CullMode						m_cullMode;					// culling mode. For shaders. TODO: remove, and check matrix handedness.
+	ER_CullMode						m_cullMode{ CULL_BACK };			// culling mode. For shaders. TODO: remove, and check matrix handedness.
 
 	CDynamicMesh					m_dynamicMesh;
 
@@ -321,16 +321,18 @@ private:
 	Map<ushort, IRenderState*>		m_depthStates{ PP_SL };
 	Map<ushort, IRenderState*>		m_rasterStates{ PP_SL };
 
-	IMaterialRenderParamCallbacks*	m_preApplyCallback;
+	IMaterialRenderParamCallbacks*	m_preApplyCallback{ nullptr };
 
-	EMaterialLightingMode			m_curentLightingModel;		// dynamic-changeable lighting model. Used as state
+	EMaterialLightingMode			m_curentLightingModel{ MATERIAL_LIGHT_UNLIT };		// dynamic-changeable lighting model. Used as state
 
-	Matrix4x4						m_matrices[5];				// matrix modes
+	Matrix4x4						m_viewProjMatrix{ identity4 };
+	Matrix4x4						m_wvpMatrix{ identity4 };
+	Matrix4x4						m_matrices[5]{ identity4 };
 
 	IMaterialPtr					m_pDefaultMaterial;
 	IMaterialPtr					m_overdrawMaterial;
-	IMaterialPtr					m_setMaterial;				// currently binded material
-	uint							m_paramOverrideMask;		// parameter setup mask for overrides
+	IMaterialPtr					m_setMaterial;						// currently bound material
+	uint							m_paramOverrideMask{ UINT_MAX };	// parameter setup mask for overrides
 
 	ITexturePtr						m_currentEnvmapTexture;
 	ITexturePtr						m_whiteTexture;
@@ -342,14 +344,15 @@ private:
 	FogInfo_t						m_fogInfo;
 	ColorRGBA						m_ambColor;
 
-	dlight_t*						m_currentLight;
+	dlight_t*						m_currentLight{ nullptr };
 
 	CEqTimer						m_proxyTimer;
 
-	uint							m_frame;
-	float							m_proxyDeltaTime;
+	uint							m_frame{ 0 };
+	float							m_proxyDeltaTime{ 0.0f };
 
-	bool							m_skinningEnabled;
-	bool							m_instancingEnabled;
-	bool							m_deviceActiveState;
+	uint8							m_matrixDirty{ UINT8_MAX };
+	bool							m_skinningEnabled{ false };
+	bool							m_instancingEnabled{ false };
+	bool							m_deviceActiveState{ true };
 };

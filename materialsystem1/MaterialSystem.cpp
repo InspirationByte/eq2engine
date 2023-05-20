@@ -171,40 +171,6 @@ static CTextureLoader s_textureLoader;
 
 CMaterialSystem::CMaterialSystem()
 {
-	m_cullMode = CULL_BACK;
-	m_shaderAPI = nullptr;
-
-	m_setMaterial = nullptr;
-	m_overdrawMaterial = nullptr;
-
-	m_frame = 0;
-	m_paramOverrideMask = 0xFFFFFFFF;
-
-	m_curentLightingModel = MATERIAL_LIGHT_UNLIT;
-
-	m_renderLibrary = nullptr;
-	m_rendermodule = nullptr;
-
-	m_ambColor = color_white;
-	memset(&m_fogInfo,0,sizeof(m_fogInfo));
-
-	m_skinningEnabled = false;
-	m_instancingEnabled = false;
-
-	for(int i = 0; i < 4; i++)
-		m_matrices[i] = identity4;
-
-	m_whiteTexture = nullptr;
-	m_pDefaultMaterial = nullptr;
-	m_currentEnvmapTexture = nullptr;
-
-	m_currentLight = nullptr;
-
-	m_deviceActiveState = true;
-
-	m_preApplyCallback = nullptr;
-
-	m_proxyDeltaTime = 0.0f;
 	m_proxyTimer.GetTime(true);
 
 	// register when the DLL is connected
@@ -1084,6 +1050,7 @@ void CMaterialSystem::Wait()
 void CMaterialSystem::SetMatrix(ER_MatrixMode mode, const Matrix4x4 &matrix)
 {
 	m_matrices[(int)mode] = matrix;
+	m_matrixDirty |= (1 << mode);
 
 	g_pShaderAPI->SetMatrixMode(mode);
 
@@ -1101,7 +1068,19 @@ void CMaterialSystem::GetMatrix(ER_MatrixMode mode, Matrix4x4 &matrix)
 // retunrs multiplied matrix
 void CMaterialSystem::GetWorldViewProjection(Matrix4x4 &matrix)
 {
-	matrix = identity4 * m_matrices[MATRIXMODE_PROJECTION] * (m_matrices[MATRIXMODE_VIEW] * (m_matrices[MATRIXMODE_WORLD2] * m_matrices[MATRIXMODE_WORLD]));
+	Matrix4x4 vproj = m_viewProjMatrix;
+	Matrix4x4 wvpMatrix = m_wvpMatrix;
+
+	// cache view projection
+	if(m_matrixDirty & ((1 << MATRIXMODE_PROJECTION) | (1 << MATRIXMODE_VIEW)))
+		m_viewProjMatrix = vproj = m_matrices[MATRIXMODE_PROJECTION] * m_matrices[MATRIXMODE_VIEW];
+
+	if(m_matrixDirty & ((1 << MATRIXMODE_WORLD) | (1 << MATRIXMODE_WORLD2)))
+		m_wvpMatrix = wvpMatrix = vproj * (m_matrices[MATRIXMODE_WORLD2] * m_matrices[MATRIXMODE_WORLD]);
+
+	m_matrixDirty = 0;
+
+	matrix = wvpMatrix;
 }
 
 // sets an ambient light
