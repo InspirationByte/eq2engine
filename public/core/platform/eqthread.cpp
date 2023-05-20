@@ -53,6 +53,9 @@ void InitThreadNameAPI()
 
 void GetThreadName(uintptr_t threadID, char* name, int maxLength)
 {
+	ASSERT(name);
+	name[0] = 0;
+
 	EqWString threadName;
 #ifdef _WIN64
 	InitThreadNameAPI();
@@ -299,18 +302,32 @@ void ReadWriteUnlockWrite(_Requires_lock_held_(handle) ReadWriteLockHandle_t& ha
 }
 
 #elif defined(PLAT_POSIX)
+#include <fcntl.h>
+
 // Any other (POSIX)
 
 void GetThreadName(uintptr_t threadID, char* name, int maxLength)
 {
-	// TODO !!!
-	EqString threadName = EqString::Format("Thread %d", threadID);
-	strcpy(name, threadName);
+	ASSERT(name);
+
+	name[0] = 0;
+
+    char threadName[64];
+    snprintf(threadName, sizeof(threadName), "/proc/self/task/%d/comm", threadID);
+    
+	const int fd = open(threadName, O_RDONLY);
+	if(fd == -1)
+		return;
+	
+	size_t n = read(fd, name, maxLength-1);
+	if(n > 0) name[n-1] = 0;
+
+	close(fd);
 }
 
 void SetThreadName(uintptr_t threadID, const char* name)
 {
-	// TODO !!!
+	pthread_setname_np(threadID, name);
 }
 
 using pthread_function_t = void* ( * )( void* );
@@ -333,6 +350,8 @@ uintptr_t ThreadCreate( threadfunc_t fnThread, void* pThreadParams, ThreadPriori
 		ASSERT_FAIL( "ERROR: pthread_create %s failed\n", pszThreadName );
 		return ( uintptr_t )0;
 	}
+	
+	pthread_setname_np(handle, pszThreadName);
 
 	pthread_attr_destroy( &attr );
 

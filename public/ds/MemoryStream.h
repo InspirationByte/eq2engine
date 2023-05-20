@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright ï¿½ Inspiration Byte
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
 // Description: Virtual Stream implementation classes
@@ -15,6 +15,7 @@
 class CMemoryStream : public IVirtualStream
 {
 public:
+	// TODO: PP_SL constructor
 						CMemoryStream();
 						CMemoryStream(ubyte* data, int nOpenFlags, int nDataSize);
 
