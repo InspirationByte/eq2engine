@@ -39,6 +39,8 @@ bool EqCVTracerJSON::Start(const char* fileName)
 
 		Atomic::Store(m_captureInProgress, 1);
 	}
+
+	return true;
 }
 
 void EqCVTracerJSON::Stop()

@@ -73,7 +73,8 @@ static marker_series* GetTLSMarkerSeries()
 
 #else
 
-#include <sys/syscall.h>
+//#include <sys/syscall.h>
+#include <unistd.h>
 #include "profiler_json.h"
 
 static thread_local Array<CVTraceEvent>* tlsCV_events = nullptr;
@@ -87,7 +88,7 @@ static uint64 GetPerfClock()
 
 static uintptr_t GetPerfCurrentThreadId()
 {
-	return syscall(SYS_gettid);
+	return gettid(); //syscall(SYS_gettid);
 }
 
 static Threading::CEqMutex s_traceMutex;

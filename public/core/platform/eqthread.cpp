@@ -303,6 +303,7 @@ void ReadWriteUnlockWrite(_Requires_lock_held_(handle) ReadWriteLockHandle_t& ha
 
 #elif defined(PLAT_POSIX)
 #include <fcntl.h>
+#include <unistd.h>
 
 // Any other (POSIX)
 

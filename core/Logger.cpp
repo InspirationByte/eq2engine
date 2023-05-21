@@ -276,12 +276,14 @@ IEXPORTS void LogMsgV(SpewType_t spewtype, char const* pMsgFormat, va_list args)
 {
 	char pTempBuffer[DEBUGMESSAGE_BUFFER_SIZE];
 
-	int len = vsnprintf(pTempBuffer, DEBUGMESSAGE_BUFFER_SIZE, pMsgFormat, args );
+	va_list varg;
+	va_copy(varg, args);
+	int len = vsnprintf(pTempBuffer, DEBUGMESSAGE_BUFFER_SIZE-1, pMsgFormat, varg );
 
-	if (len >= 2048)
+	if (len >= DEBUGMESSAGE_BUFFER_SIZE-1)
 	{
 		char* tempBufferExt = (char*)malloc(len + 1);
-		len = vsnprintf(tempBufferExt, len + 1, pMsgFormat, args);
+		len = vsnprintf(tempBufferExt, len, pMsgFormat, args);
 
 		SpewMessage(spewtype, tempBufferExt);
 		free(tempBufferExt);
