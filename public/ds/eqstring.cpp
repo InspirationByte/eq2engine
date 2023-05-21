@@ -150,10 +150,9 @@ void EqString::Empty()
 // an internal operation of allocation/extend
 bool EqString::ExtendAlloc(int nSize, bool bCopy)
 {
-	if(nSize > m_nAllocated)
+	if(nSize+1u > m_nAllocated || m_pszString == nullptr)
 	{
 		nSize += EXTEND_CHARS;
-
 		if(!Resize( nSize - nSize % EXTEND_CHARS, bCopy ))
 			return false;
 	}

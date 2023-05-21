@@ -444,6 +444,13 @@ void PPFree(void* ptr)
 			return;
 		}
 
+		// actual pointer address
+		const void* actualPtr = ((ubyte*)alloc) + sizeof(ppallocinfo_t);
+		const uint* checkMark = (uint*)((ubyte*)actualPtr + alloc->size);
+
+		ASSERT_MSG(alloc->checkMark == PPMEM_CHECKMARK, "buffer underrun detected by PPMem");
+		ASSERT_MSG(*checkMark == PPMEM_CHECKMARK, "buffer overrun detected by PPMem");
+
 		// remove from linked list
 		{
 			CScopedMutex m(st.allocMemMutex);
@@ -460,13 +467,6 @@ void PPFree(void* ptr)
 			else
 				alloc->next->prev = alloc->prev;
 		}
-
-		// actual pointer address
-		const void* actualPtr = ((ubyte*)alloc) + sizeof(ppallocinfo_t);
-		const uint* checkMark = (uint*)((ubyte*)actualPtr + alloc->size);
-
-		ASSERT_MSG(alloc->checkMark == PPMEM_CHECKMARK, "buffer underrun detected by PPMem");
-		ASSERT_MSG(*checkMark == PPMEM_CHECKMARK, "buffer overrun detected by PPMem");
 
 		free((void*)alloc);
 	}

@@ -184,13 +184,12 @@ int CSoundEmitterSystem::EmitSoundInternal(EmitParams* ep, int objUniqueId, CSou
 		CScopedMutex m(s_soundEmitterSystemMutex);
 			
 		PendingSound& pending = m_pendingStartSounds.append();
-		pending.objUniqueId = objUniqueId;
-		pending.soundingObj.Assign(soundingObj);
-
 		pending.params = (*ep);
 		pending.params.flags &= ~EMITSOUND_FLAG_START_ON_UPDATE;
 		pending.params.flags |= EMITSOUND_FLAG_PENDING;
-
+		pending.objUniqueId = objUniqueId;
+		pending.soundingObj.Assign(soundingObj);
+		
 		return CHAN_INVALID;
 	}
 
@@ -261,7 +260,6 @@ int CSoundEmitterSystem::EmitSoundInternal(EmitParams* ep, int objUniqueId, CSou
 			CScopedMutex m(s_soundEmitterSystemMutex);
 			m_soundingObjects.insert(soundingObj);
 		}
-		soundingObj->AddEmitter(objUniqueId, edata);
 	}
 
 
@@ -301,10 +299,10 @@ int CSoundEmitterSystem::EmitSoundInternal(EmitParams* ep, int objUniqueId, CSou
 
 	// try start sound
 	// TODO: EMITSOUND_FLAG_STARTSILENT handling here?
-	if (!soundingObj)
-	{
+	if(soundingObj)
+		soundingObj->AddEmitter(objUniqueId, edata);
+	else
 		SwitchSourceState(edata, !isAudibleToStart);
-	}
 
 	return ep->channelType;
 }

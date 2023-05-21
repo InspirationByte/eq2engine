@@ -137,9 +137,10 @@ void EqWString::Empty()
 // an internal operation of allocation/extend
 bool EqWString::ExtendAlloc(int nSize)
 {
-	if((uint)nSize+1 > m_nAllocated)
+	if(nSize+1u > m_nAllocated || m_pszString == nullptr)
 	{
-		if(!Resize( nSize + EXTEND_CHARS ))
+		nSize += EXTEND_CHARS;
+		if(!Resize( nSize - nSize % EXTEND_CHARS ))
 			return false;
 	}
 
@@ -149,7 +150,7 @@ bool EqWString::ExtendAlloc(int nSize)
 // just a resize
 bool EqWString::Resize(int nSize, bool bCopy)
 {
-	const uint newSize = max(EQSTRING_BASE_BUFFER, nSize + 1);
+	const int newSize = max(EQSTRING_BASE_BUFFER, nSize + 1);
 
 	// make new and copy
 	wchar_t* pszNewBuffer = new wchar_t[ newSize ];
