@@ -42,7 +42,7 @@
 #define PPMEM_DISABLED
 #endif // _RETAIL
 
-#if defined(_WIN32) && !defined(_RETAIL)	// Sorry, only Binbows atm
+#if !defined(_RETAIL)
 #define PROFILE_ENABLE
 #endif
 

@@ -665,8 +665,6 @@ void CGameHost::SetCursorShow(bool bShow)
 
 bool CGameHost::Frame()
 {
-	PROF_EVENT("Host Frame");
-
 	double elapsedTime = m_timer.GetTime(true);
 
 	// Engine frames status
@@ -688,6 +686,8 @@ bool CGameHost::Frame()
 
 	if (!FilterTime(elapsedTime))
 		return false;
+
+	PROF_EVENT("Host Frame");
 
 	double gameFrameTime = m_accumTime;
 

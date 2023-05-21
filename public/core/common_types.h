@@ -64,6 +64,16 @@ inline TR min(T x, T2 y) { return (TR)((x < y) ? x : y); }
 template <class T, class T2 = T, class TR = T>
 inline TR max(T x, T2 y) { return (TR)((x > y) ? x : y); }
 
+#ifndef PRId64
+#ifdef _MSC_VER
+#define PRId64   "I64d"
+#define PRIu64   "I64u"
+#else
+#define PRId64   "lld"
+#define PRIu64   "llu"
+#endif
+#endif
+
 //------------------------------------------------------------------------------------------------
 
 // Define some useful macros
