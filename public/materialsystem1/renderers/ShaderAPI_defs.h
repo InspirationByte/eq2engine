@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright ï¿½ Inspiration Byte
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
 // Description: Constant types for Equilibrium renderer
@@ -196,8 +196,9 @@ typedef struct VertexFormatDesc_s
 // comparison functions
 enum ER_CompareFunc : int
 {
-	COMPFUNC_NEVER = 0,
+	COMPFUNC_NONE = -1,
 
+	COMPFUNC_NEVER = 0,
 	COMPFUNC_LESS,			// 1
 	COMPFUNC_EQUAL,			// 2
 	COMPFUNC_LEQUAL,		// 3
@@ -212,7 +213,7 @@ typedef struct SamplerStateParam_s
 	ER_TextureFilterMode		minFilter{ TEXFILTER_NEAREST };
 	ER_TextureFilterMode		magFilter{ TEXFILTER_NEAREST };
 
-	ER_CompareFunc				compareFunc{ COMPFUNC_LESS };
+	ER_CompareFunc				compareFunc{ COMPFUNC_NONE };
 
 	ER_TextureAddressMode		wrapS{ TEXADDRESS_WRAP };
 	ER_TextureAddressMode		wrapT{ TEXADDRESS_WRAP };
