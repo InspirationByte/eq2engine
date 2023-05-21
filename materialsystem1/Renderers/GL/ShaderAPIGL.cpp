@@ -410,7 +410,7 @@ void ShaderAPIGL::ApplyTextures()
 			GLTextureRef_t newGLTexture = pSelectedTexture->GetCurrentTexture();
 
 			// unbind texture at old target
-			if(newGLTexture.type != currentGLTexture.type)
+			if(newGLTexture.type != currentGLTexture.type && currentGLTexture.type != IMAGE_TYPE_INVALID)
 				glBindTexture(g_gl_texTargetType[currentGLTexture.type], 0);
 
 			glBindTexture(g_gl_texTargetType[newGLTexture.type], newGLTexture.glTexID);
