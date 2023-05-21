@@ -178,17 +178,20 @@ int CSoundEmitterSystem::EmitSoundInternal(EmitParams* ep, int objUniqueId, CSou
 {
 	ASSERT(ep);
 
-	const bool forceStartOnUpdate = !m_updateDone.Wait(0);
-	if((ep->flags & EMITSOUND_FLAG_START_ON_UPDATE) || forceStartOnUpdate && !(ep->flags & EMITSOUND_FLAG_PENDING))
+	const bool forceStartOnUpdate = (ep->flags & EMITSOUND_FLAG_START_ON_UPDATE) || !m_updateDone.Wait(0);
+	if(forceStartOnUpdate && !(ep->flags & EMITSOUND_FLAG_PENDING))
 	{
-		CScopedMutex m(s_soundEmitterSystemMutex);
-			
-		PendingSound& pending = m_pendingStartSounds.append();
+		PendingSound pending;
 		pending.params = (*ep);
 		pending.params.flags &= ~EMITSOUND_FLAG_START_ON_UPDATE;
 		pending.params.flags |= EMITSOUND_FLAG_PENDING;
 		pending.objUniqueId = objUniqueId;
 		pending.soundingObj.Assign(soundingObj);
+
+		{
+			CScopedMutex m(s_soundEmitterSystemMutex);
+			m_pendingStartSounds.append(pending);
+		}
 		
 		return CHAN_INVALID;
 	}

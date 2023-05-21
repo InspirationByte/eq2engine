@@ -145,16 +145,13 @@ inline CWeakPtr<TYPE>::CWeakPtr( const CWeakPtr<TYPE>& other )
 template< class TYPE >
 inline CWeakPtr<TYPE>::CWeakPtr(CWeakPtr<TYPE>&& other)
 {
-	m_weakRefPtr = other.m_weakRefPtr;
-	other.m_weakRefPtr = nullptr;
+	Atomic::Exchange(m_weakRefPtr, Atomic::Exchange(other.m_weakRefPtr, (Block*)nullptr));
 }
 
 template< class TYPE >
 inline CWeakPtr<TYPE>::~CWeakPtr()
 {
-	Block* block = m_weakRefPtr;
-	if (block)
-		block->Ref_Drop();
+	Release();
 }
 
 template< class TYPE >
@@ -163,10 +160,9 @@ inline void CWeakPtr<TYPE>::Assign(PTR_TYPE obj)
 	if(obj->m_block && m_weakRefPtr && m_weakRefPtr == obj->m_block)
 		return;
 
-	// del old ref
-	Block* oldBlock = m_weakRefPtr;
-	Block* block;
-	m_weakRefPtr = block = obj->GetBlock();
+	Block* block = obj->GetBlock();
+	Block* oldBlock = (Block*)Atomic::Exchange(m_weakRefPtr, (Block*)block);
+
 	if(block)
 		block->Ref_Grab();
 
@@ -177,10 +173,9 @@ inline void CWeakPtr<TYPE>::Assign(PTR_TYPE obj)
 template< class TYPE >
 inline void CWeakPtr<TYPE>::Release()
 {
-	Block* block = m_weakRefPtr;
-	if (block)
+	Block* block = (Block*)Atomic::Exchange(m_weakRefPtr, (Block*)nullptr);
+	if (block != nullptr)
 		block->Ref_Drop();
-	m_weakRefPtr = nullptr;
 }
 
 template< class TYPE >
@@ -192,10 +187,7 @@ inline void CWeakPtr<TYPE>::operator=(std::nullptr_t)
 template< class TYPE >
 inline void CWeakPtr<TYPE>::operator=(CWeakPtr<TYPE>&& other)
 {
-	Block* oldBlock = m_weakRefPtr;
-
-	m_weakRefPtr = other.m_weakRefPtr;
-	other.m_weakRefPtr = nullptr;
+	Block* oldBlock = Atomic::Exchange(m_weakRefPtr, Atomic::Exchange(other.m_weakRefPtr, (Block*)nullptr));
 
 	if (oldBlock)
 		oldBlock->Ref_Drop();
