@@ -152,8 +152,6 @@ static int glad_egl_find_extensions_egl(EGLDisplay display) {
     return 1;
 }
 
-#pragma optimize("", off)
-
 static int glad_egl_find_core_egl(EGLDisplay display) {
     int major, minor;
     const char *version;

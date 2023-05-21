@@ -91,7 +91,6 @@ static uintptr_t GetPerfCurrentThreadId()
 	return gettid(); //syscall(SYS_gettid);
 }
 
-static Threading::CEqMutex s_traceMutex;
 static EqCVTracerJSON s_jsonTracer;
 static bool s_startTrace = false;
 
@@ -134,7 +133,6 @@ IEXPORTS int ProfBeginMarker(const char* text)
 	{
 		if(s_startTrace)
 		{
-			Threading::CScopedMutex m(s_traceMutex);
 			s_jsonTracer.Start(ptrace_file.GetString());
 		}
 		else
@@ -146,7 +144,6 @@ IEXPORTS int ProfBeginMarker(const char* text)
 	}
 	else if(!s_startTrace)
 	{
-		Threading::CScopedMutex m(s_traceMutex);
 		s_jsonTracer.Stop();
 		return eventId;
 	}

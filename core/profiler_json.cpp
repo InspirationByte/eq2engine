@@ -7,10 +7,11 @@
 
 #include "core/core_common.h"
 #include "core/IFileSystem.h"
+#include "core/IEqParallelJobs.h"
 
 #include "profiler_json.h"
 
-Threading::CEqMutex s_jsonTracerMutex;
+static Threading::CEqMutex s_jsonTracerMutex;
 using namespace Threading;
 
 static constexpr const int bufferThreshold = 1000;
@@ -68,19 +69,17 @@ void EqCVTracerJSON::WriteEvent(const CVTraceEvent& evt)
 	if(Atomic::Load(m_captureInProgress) == 0)
 		return;
 
-	CScopedMutex m(s_jsonTracerMutex);
+	{
+		CScopedMutex m(s_jsonTracerMutex);
+		if(m_tmpBuffer.numElem() > bufferThreshold)
+			FlushTempBuffer();
 
-	if(Atomic::Load(m_captureInProgress) == 0)
-		return;
+		m_tmpBuffer.append(evt);
 
-	if(m_tmpBuffer.numElem() > bufferThreshold)
-		FlushTempBuffer();
-
-	m_tmpBuffer.append(evt);
-
-	if(m_threadMaskData.contains(evt.threadId))
-		return;
-	m_threadMaskData.insert(evt.threadId);
+		if(m_threadMaskData.contains(evt.threadId))
+			return;
+		m_threadMaskData.insert(evt.threadId);
+	}
 
 	char threadName[64];
 	Threading::GetThreadName(evt.threadId, threadName, sizeof(threadName));
@@ -88,13 +87,15 @@ void EqCVTracerJSON::WriteEvent(const CVTraceEvent& evt)
 		return;
 
 	// need to put thread name event
-	CVTraceEvent metaDataEvt;
-	metaDataEvt.type = EVT_THREAD_NAME;
-	metaDataEvt.pid = evt.pid;
-	metaDataEvt.threadId = evt.threadId;
-	metaDataEvt.name = threadName;
-
-	m_tmpBuffer.append(metaDataEvt);
+	{
+		CScopedMutex m(s_jsonTracerMutex);
+		CVTraceEvent& metaDataEvt = m_tmpBuffer.append();
+		
+		metaDataEvt.type = EVT_THREAD_NAME;
+		metaDataEvt.pid = evt.pid;
+		metaDataEvt.threadId = evt.threadId;
+		metaDataEvt.name = threadName;
+	}
 }
 
 uint64 EqCVTracerJSON::AllocEventId()
@@ -114,18 +115,30 @@ void EqCVTracerJSON::FlushTempBuffer()
 		m_batchPrefix = ",";
 	}
 
-	for(int i = 0; i < m_tmpBuffer.numElem(); ++i)
-	{
-		if(!initialStart)
-			m_outFile->Write(m_batchPrefix.GetData(), 1, m_batchPrefix.Length());
-		else
-			initialStart = false;
+	Array<CVTraceEvent>* writeBuffer = PPNew Array<CVTraceEvent>(PP_SL);
+	writeBuffer->swap(m_tmpBuffer);
+
+	g_parallelJobs->AddJob(JOB_TYPE_ANY, [_initialStart = initialStart, this, writeBuffer](void*, int) {
+		CScopedMutex m(s_jsonTracerMutex);
+
+		bool initialStart = _initialStart;
 
 		EqString str;
-		EventToString(str, m_tmpBuffer[i]);
-		m_outFile->Write(str.GetData(), 1, str.Length());
-	}
-	m_tmpBuffer.clear();
+		for(int i = 0; i < writeBuffer->numElem(); ++i)
+		{
+			if(!initialStart)
+				m_outFile->Write(m_batchPrefix.GetData(), 1, m_batchPrefix.Length());
+			else
+				initialStart = false;
+
+			EventToString(str, writeBuffer->ptr()[i]);
+			m_outFile->Write(str.GetData(), 1, str.Length());
+		}
+
+		delete writeBuffer;
+	});
+
+	m_tmpBuffer.reserve(bufferThreshold);
 }
 
 void EqCVTracerJSON::EventToString(EqString& out, const CVTraceEvent& evt)
