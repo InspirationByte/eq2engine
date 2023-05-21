@@ -393,27 +393,32 @@ void ShaderAPIGL::ApplyTextures()
 		ITexture* pCurrentTexture = m_pCurrentTextures[i];
 		GLTextureRef_t& currentGLTexture = m_currentGLTextures[i];
 		
-		if(pSelectedTexture != m_pCurrentTextures[i])
+		if(pSelectedTexture == m_pCurrentTextures[i])
+			continue;
+
+		// Set the active texture unit and bind the selected texture to target
+		glActiveTexture(GL_TEXTURE0 + i);
+		GLCheckError("active texture %d", i);
+
+		if (pSelectedTexture == nullptr)
 		{
-			// Set the active texture unit and bind the selected texture to target
-			glActiveTexture(GL_TEXTURE0 + i);
-			GLCheckError("active texture %d", i);
-
-			if (pSelectedTexture == nullptr)
-			{
-				//if(pCurrentTexture != nullptr)
-				glBindTexture(g_gl_texTargetType[currentGLTexture.type], 0);
-			}
-			else
-			{
-				currentGLTexture = pSelectedTexture->GetCurrentTexture();
-				glBindTexture(g_gl_texTargetType[currentGLTexture.type], currentGLTexture.glTexID);
-			}
-			GLCheckError("bind texture");
-
-			m_pCurrentTextures[i] = ITexturePtr(pSelectedTexture);
-			
+			//if(pCurrentTexture != nullptr)
+			glBindTexture(g_gl_texTargetType[currentGLTexture.type], 0);
 		}
+		else
+		{
+			GLTextureRef_t newGLTexture = pSelectedTexture->GetCurrentTexture();
+
+			// unbind texture at old target
+			if(newGLTexture.type != currentGLTexture.type)
+				glBindTexture(g_gl_texTargetType[currentGLTexture.type], 0);
+
+			glBindTexture(g_gl_texTargetType[newGLTexture.type], newGLTexture.glTexID);
+			currentGLTexture = newGLTexture;
+		}
+		GLCheckError("bind texture");
+
+		m_pCurrentTextures[i] = ITexturePtr(pSelectedTexture);
 	}
 }
 
