@@ -277,6 +277,7 @@ int CSoundEmitterSystem::EmitSoundInternal(EmitParams* ep, int objUniqueId, CSou
 	edata->CreateNodeRuntime();
 	
 	// apply inputs (if any) to emitter data
+	edata->SetInputValue(s_loopRemainTimeFactorNameHash, 0, 1.0f);
 	for (int i = 0; i < ep->inputs.numElem(); ++i)
 		edata->SetInputValue(ep->inputs[i].nameHash, 0, ep->inputs[i].value);
 	
@@ -386,12 +387,16 @@ bool CSoundEmitterSystem::SwitchSourceState(SoundEmitterData* emit, bool isVirtu
 
 		if (snd_scriptsound_debug.GetBool())
 		{
-			DbgBox()
-				.CenterSize(startParams.position, startParams.referenceDistance)
-				.Color(color_white)
+			DbgSphere()
+				.Position(startParams.position).Radius(startParams.referenceDistance)
+				.Color(color_yellow)
 				.Time(1.0f);
 
-			MsgInfo("started emitter %x '%s' ref=%g max=%g\n", emit, script->name.ToCString(), startParams.referenceDistance);
+			DbgText3D()
+				.Position(startParams.position)
+				.Distance(50.0f)
+				.Time(1.0f)
+				.Text("start %s v=%.2f p=%.2f", script->name.ToCString(), startParams.volume[0], startParams.pitch);
 		}
 
 		return true;
@@ -466,6 +471,18 @@ int CSoundEmitterSystem::EmitterUpdateCallback(IEqAudioSource* soundSource, IEqA
 
 	emitter->UpdateNodes();
 	emitter->CalcFinalParameters(soundingObj->GetSoundVolumeScale(), params);
+
+	if (snd_scriptsound_debug.GetBool() && !script->is2d)
+	{
+		DbgSphere()
+			.Position(params.position).Radius(params.referenceDistance)
+			.Color(color_white);
+
+		DbgText3D()
+			.Position(params.position)
+			.Distance(50.0f)
+			.Text("%s v=%.2f p=%.2f", script->name.ToCString(), params.volume[0], params.pitch);
+	}
 
 	// update samples volume if they were
 	{

@@ -424,10 +424,10 @@ Matrix4x4 orthoMatrix(const float left, const float right, const float top, cons
 // generates right-handed, screen-oriented 2D matrix
 Matrix4x4 projection2DScreen(float wide, float tall);
 
-// converts projection to Direct3D (FFP-Only)
+// converts projection to Direct3D
 Matrix4x4 toD3DProjection(const Matrix4x4 &m);
 
-// converts projection to OpenGL (FFP-Only)
+// converts projection to OpenGL (NDC depth)
 Matrix4x4 toGLProjection(const Matrix4x4 &m);
 
 // generates cubic modelview matrix

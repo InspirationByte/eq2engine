@@ -300,7 +300,7 @@ struct SoundEmitterData : public WeakRefObject<SoundEmitterData>
 	float						stopLoopRemainingTime{ 0.0f };
 	int							sampleId{ -1 };				// when randomSample and sampleId == -1, it's random
 
-	bool						nodesNeedUpdate{ true };	// triggers recalc of entire node set
+	int							nodesNeedUpdate{ true };	// triggers recalc of entire node set
 
 	void	CreateNodeRuntime();
 

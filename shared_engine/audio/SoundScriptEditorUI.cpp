@@ -22,7 +22,7 @@
 #include "eqSoundEmitterObject.h"
 #include "eqSoundEmitterPrivateTypes.h"
 
-
+#include "render/IDebugOverlay.h"
 
 struct UISoundNodeDesc
 {
@@ -1642,6 +1642,14 @@ void CSoundScriptEditor::DrawScriptEditor(bool& open)
 				ImGui::EndChild();
 			}
 
+			if (currentEmit.emitter)
+			{
+				DbgSphere()
+					.Position(currentEmit.emitter->nodeParams.position)
+					.Radius(currentEmit.emitter->nodeParams.referenceDistance + 0.25f)
+					.Color(color_green)
+					.Time(0.0f);
+			}
 
 			{
 				if (ImGui::Button("Apply"))

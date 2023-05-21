@@ -592,7 +592,7 @@ void SoundEmitterData::SetInputValue(int inputNameHash, int arrayIdx, float valu
 
 	SoundNodeInput& in = *dataIt;
 	in.values[arrayIdx] = value;
-	nodesNeedUpdate = true;
+	Atomic::Store(nodesNeedUpdate, 1);
 }
 
 void SoundEmitterData::SetInputValue(uint8 inputId, float value)
@@ -606,7 +606,7 @@ void SoundEmitterData::SetInputValue(uint8 inputId, float value)
 
 	SoundNodeInput& in = *dataIt;
 	in.values[arrayIdx] = value;
-	nodesNeedUpdate = true;
+	Atomic::Store(nodesNeedUpdate, 1);
 }
 
 float SoundEmitterData::GetInputValue(int nodeId, int arrayIdx)
@@ -799,12 +799,12 @@ static_assert(elementsOf(s_soundFuncTypeEvFn) == SOUND_FUNC_COUNT, "s_soundFuncT
 
 void SoundEmitterData::UpdateNodes()
 {
-	if (!nodesNeedUpdate)
+	if (!Atomic::Load(nodesNeedUpdate))
 		return;
 
 	PROF_EVENT("Emitter Data Nodes Eval");
 
-	nodesNeedUpdate = false;
+	Atomic::Store(nodesNeedUpdate, 0);
 
 	const Array<SoundNodeDesc>& nodeDescs = script->nodeDescs;
 	const Array<SoundSplineDesc>& splineDescs = script->splineDescs;
