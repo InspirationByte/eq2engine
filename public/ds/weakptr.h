@@ -68,7 +68,13 @@ public:
 	}
 
 private:
-	Block*			GetBlock() { return m_block ? m_block : (m_block = PPNew Block(this)); }
+	Block*	GetBlock()
+	{
+		Block* block = Atomic::Load(m_block);
+		if (!block)
+			Atomic::Exchange(m_block, PPNew Block(this));
+		return (Block*)Atomic::Load(m_block);
+	}
 	mutable Block*	m_block{ nullptr };
 };
 
