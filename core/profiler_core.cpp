@@ -119,15 +119,15 @@ IEXPORTS void ProfAddMarker(const char* text)
 
 IEXPORTS int ProfBeginMarker(const char* text)
 {
-	int eventId = 0;
-
 #ifdef _WIN32
 	marker_series* series = GetTLSMarkerSeries();
 
-	eventId = tlsCV_events->pushedEvents.numElem();
+	int eventId = tlsCV_events->pushedEvents.numElem();
 	cvSpanHolder& spanHld = tlsCV_events->pushedEvents.append();
 	EqWString wText(text);
 	new(spanHld.data) span(*series, normal_importance, wText.ToCString());
+
+	return eventId;
 #else
 	if(!s_jsonTracer.IsCapturing())
 	{
@@ -139,17 +139,19 @@ IEXPORTS int ProfBeginMarker(const char* text)
 		{
 			if(tlsCV_events)
 				tlsCV_events->clear(true);
-			return eventId;
+			return -1;
 		}
 	}
 	else if(!s_startTrace)
 	{
 		s_jsonTracer.Stop();
-		return eventId;
+		return -1;
 	}
 
 	if(!tlsCV_events)
 		tlsCV_events = PPNew Array<CVTraceEvent>(PP_SL);
+
+	int eventId = tlsCV_events->numElem();
 
 	CVTraceEvent& evt = tlsCV_events->append();
 	evt.name = text;
@@ -162,9 +164,8 @@ IEXPORTS int ProfBeginMarker(const char* text)
 	if(tlsCV_events->numElem() && tlsCV_events->back().timeStamp >= evt.timeStamp)
 		evt.timeStamp = tlsCV_events->back().timeStamp + 1;
 
-#endif // _WIN32
-
 	return eventId;
+#endif // _WIN32
 }
 
 IEXPORTS void ProfEndMarker(int eventId)
@@ -177,6 +178,7 @@ IEXPORTS void ProfEndMarker(int eventId)
 	tlsCV_events->pushedEvents.back().GetSpan()->~span();
 	tlsCV_events->pushedEvents.popBack();
 #else
+
 	if(!s_jsonTracer.IsCapturing())
 	{
 		if(tlsCV_events)
@@ -184,12 +186,15 @@ IEXPORTS void ProfEndMarker(int eventId)
 		return;
 	}
 
+	ASSERT(tlsCV_events->numElem()-1 == eventId);
+
 	const CVTraceEvent startEvt = tlsCV_events->popBack();
 	ASSERT_MSG(startEvt.type == EVT_DURATION_BEGIN, "profiler begin event type is invalid");
 
-	const int64 duration = max<int64>(static_cast<int64>(GetPerfClock()) - startEvt.timeStamp, 2);
+	const int64 duration = max<int64>(static_cast<int64>(GetPerfClock()) - startEvt.timeStamp, 1);
 
 	CVTraceEvent writeEvt;
+	writeEvt.id = eventId;
 	writeEvt.name = startEvt.name;
 	writeEvt.threadId = startEvt.threadId;
 	writeEvt.pid = startEvt.pid;

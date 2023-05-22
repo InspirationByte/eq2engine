@@ -11,6 +11,7 @@
 
 #include "profiler_json.h"
 
+static Threading::CEqSignal s_jsonTracerWriteCompleted;
 static Threading::CEqMutex s_jsonTracerMutex;
 using namespace Threading;
 
@@ -21,6 +22,8 @@ bool EqCVTracerJSON::Start(const char* fileName)
 	if(Atomic::Load(m_captureInProgress) != 0)
 		return false;
 
+	CScopedMutex m(s_jsonTracerMutex);
+
     IFile* file = g_fileSystem->Open(fileName, "wb", SP_ROOT);
 
 	if(!file)
@@ -30,8 +33,8 @@ bool EqCVTracerJSON::Start(const char* fileName)
 	Msg("output file: %s\n", fileName);
 
 	{
-		CScopedMutex m(s_jsonTracerMutex);
 		file->Print("{\"traceEvents\":[");
+		s_jsonTracerWriteCompleted.Raise();
 
 		m_outFile = file;
 		m_batchPrefix.Empty();
@@ -53,6 +56,7 @@ void EqCVTracerJSON::Stop()
 	CScopedMutex m(s_jsonTracerMutex);
 	FlushTempBuffer();
 
+	s_jsonTracerWriteCompleted.Wait();
 	m_outFile->Print("]}");
 	g_fileSystem->Close(m_outFile);
     m_outFile = nullptr;
@@ -108,6 +112,8 @@ void EqCVTracerJSON::FlushTempBuffer()
 	if(Atomic::Load(m_captureInProgress) == 0)
 		return;
 
+	s_jsonTracerWriteCompleted.Clear();
+
 	bool initialStart = false;
 	if(m_batchPrefix.Length() == 0)
 	{
@@ -117,7 +123,6 @@ void EqCVTracerJSON::FlushTempBuffer()
 
 	Array<CVTraceEvent>* writeBuffer = PPNew Array<CVTraceEvent>(PP_SL);
 	writeBuffer->swap(m_tmpBuffer);
-
 	g_parallelJobs->AddJob(JOB_TYPE_ANY, [_initialStart = initialStart, this, writeBuffer](void*, int) {
 		CScopedMutex m(s_jsonTracerMutex);
 
@@ -135,8 +140,11 @@ void EqCVTracerJSON::FlushTempBuffer()
 			m_outFile->Write(str.GetData(), 1, str.Length());
 		}
 
+		s_jsonTracerWriteCompleted.Raise();
+
 		delete writeBuffer;
 	});
+	g_parallelJobs->Submit();
 
 	m_tmpBuffer.reserve(bufferThreshold);
 }
