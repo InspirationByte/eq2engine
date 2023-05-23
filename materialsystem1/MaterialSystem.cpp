@@ -118,10 +118,9 @@ public:
 		// BUG: may be null
 		((CMaterial*)nextMaterial)->DoLoadShaderAndTextures();
 
+		if(m_newMaterials.size())
 		{
-			CScopedMutex m(s_matSystemMutex);
-			if (m_newMaterials.size())
-				SignalWork();
+			SignalWork();
 		}
 
 		return 0;

@@ -70,8 +70,7 @@ public:
 private:
 	Block*	GetBlock()
 	{
-		Block* block = Atomic::Load(m_block);
-		if (!block)
+		if (!Atomic::Load(m_block))
 			Atomic::Exchange(m_block, PPNew Block(this));
 		return (Block*)Atomic::Load(m_block);
 	}
