@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright ï¿½ Inspiration Byte
 // 2009-2022
 //////////////////////////////////////////////////////////////////////////////////
 // Description: Equilibrium Sound Emitter System
@@ -108,6 +108,9 @@ protected:
 class CEmitterObjectSound
 {
 public:
+	// TODO: support automatically starting the sound
+	//		 by providing EmitParams to constructor
+
 	CEmitterObjectSound(CSoundingObject& soundingObj, int uniqueId);
 
 	// returns sample id that was in EmitParams
@@ -119,7 +122,7 @@ public:
 	const IEqAudioSource::State GetEmitterState() const;
 	void		SetEmitterState(IEqAudioSource::State state, bool rewindOnPlay = false);
 
-	void		StopEmitter(bool destroy = false);
+	void		StopEmitter();
 	void		PlayEmitter(bool rewind = false);
 	void		PauseEmitter();
 	void		StopLoop(float fadeOutTime = 0.0f);

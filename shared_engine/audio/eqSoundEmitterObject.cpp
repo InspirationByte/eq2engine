@@ -16,9 +16,7 @@ CSoundingObject::~CSoundingObject()
 		for (auto it = m_emitters.begin(); it != m_emitters.end(); ++it)
 		{
 			SoundEmitterData* emitter = *it;
-			if (emitter->soundSource)
-				g_audioSystem->DestroySource(emitter->soundSource);
-
+			g_audioSystem->DestroySource(emitter->soundSource);
 			delete emitter;
 		}
 	}
@@ -164,18 +162,15 @@ void CSoundingObject::StopEmitter(int uniqueId, bool destroy /*= false*/)
 {
 	if (uniqueId != ID_ALL)
 	{
-		SoundEmitterData* emitter = nullptr;
-		{
-			CScopedMutex m(m_mutex);
-			const auto it = m_emitters.find(uniqueId);
-			if (it == m_emitters.end())
-				return;
+		CScopedMutex m(m_mutex);
+		const auto it = m_emitters.find(uniqueId);
+		if (it == m_emitters.end())
+			return;
 
-			emitter = *it;
+		SoundEmitterData* emitter = *it;
 
-			if (destroy)
-				m_emitters.remove(it);
-		}
+		if (destroy)
+			m_emitters.remove(it);
 
 		StopEmitter(emitter, destroy);
 		return;
@@ -435,13 +430,8 @@ void CSoundingObject::StopEmitter(SoundEmitterData* emitter, bool destroy)
 		if (emitter->channelType != CHAN_INVALID)
 			--m_numChannelSounds[emitter->channelType];
 
-		if (emitter->soundSource)
-		{
-			g_audioSystem->DestroySource(emitter->soundSource);
-			emitter->soundSource = nullptr;
-		}
+		g_audioSystem->DestroySource(emitter->soundSource);
 		delete emitter;
-
 		return;
 	}
 
@@ -657,9 +647,9 @@ void CEmitterObjectSound::SetEmitterState(IEqAudioSource::State state, bool rewi
 	m_soundingObj.SetEmitterState(m_emitter.Ptr(), state, rewindOnPlay);
 }
 
-void CEmitterObjectSound::StopEmitter(bool destroy)
+void CEmitterObjectSound::StopEmitter()
 {
-	m_soundingObj.StopEmitter(m_emitter.Ptr(), destroy);
+	m_soundingObj.StopEmitter(m_emitter.Ptr(), false);
 }
 
 void CEmitterObjectSound::PlayEmitter(bool rewind)
