@@ -17,7 +17,8 @@
 #ifdef PLAT_WIN
 #	include <glad_egl.h>
 #else
-#	include <EGL/egl.h>
+#	include "loaders/EGL/egl.h"
+#	include "loaders/EGL/eglext.h"
 #endif
 
 #ifdef PLAT_LINUX
@@ -107,7 +108,7 @@ bool CGLRenderLib_EGL::InitCaps()
 		ErrorMsg("EGL loading failed!");
 		return false;
 	}
-#endif // PLAT_ANDROID
+#endif
 	return true;
 }
 
@@ -182,7 +183,7 @@ bool CGLRenderLib_EGL::InitAPI(const shaderAPIParams_t& params)
 		ErrorMsg("EGL loading failed!");
 		return false;
 	}
-#endif // PLAT_ANDROID
+#endif
 
 #ifdef USE_GLES2
 	eglBindAPI(EGL_OPENGL_ES_API);
@@ -298,9 +299,9 @@ void CGLRenderLib_EGL::BeginFrame(IEqSwapChain* swapChain)
 
 void CGLRenderLib_EGL::EndFrame()
 {
-#ifdef PLAT_ANDROID
 	eglSwapInterval(m_eglDisplay, g_shaderApi.m_params.verticalSyncEnabled ? 1 : 0);
 
+#ifdef glInvalidateFramebuffer
 	const GLenum attachments[] = { GL_DEPTH_ATTACHMENT, GL_STENCIL_ATTACHMENT };
 	glInvalidateFramebuffer(GL_FRAMEBUFFER, 2, attachments);
 	GLCheckError("invalidate buffer");
