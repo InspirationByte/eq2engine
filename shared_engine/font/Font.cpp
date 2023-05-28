@@ -98,12 +98,12 @@ bool CPlainTextLayoutBuilder::LayoutChar(	const eqFontStyleParam_t& params,
 											Vector2D& curTextPos,
 											Vector2D& cPos, Vector2D& cSize )
 {
-	CFont* font = (CFont*)m_font;
+	IEqFont* font = m_font;
 
-	if(params.styleFlag & TEXT_STYLE_MONOSPACE)
-		curTextPos.x += cSize.x + font->m_spacing;
+	if (isWideChar)
+		curTextPos.x += font->GetStringWidth((wchar_t*)strCurPos, params, 1);
 	else
-		curTextPos.x += chr.advX + font->m_spacing;
+		curTextPos.x += font->GetStringWidth((char*)strCurPos, params, 1);
 
 	return true;
 }

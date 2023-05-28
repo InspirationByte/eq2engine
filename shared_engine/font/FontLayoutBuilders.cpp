@@ -51,6 +51,8 @@ bool CRectangleTextLayoutBuilder::LayoutChar(const eqFontStyleParam_t& params,
 											Vector2D& curTextPos,
 											Vector2D& cPos, Vector2D& cSize )
 {
+	IEqFont* font = m_font;
+
 	if(m_newWord) // new word always enables the word wrapping again
 	{
 		m_wrappedWord = false;
@@ -63,13 +65,13 @@ bool CRectangleTextLayoutBuilder::LayoutChar(const eqFontStyleParam_t& params,
 		if( wordWrap ) // per-word wrapping
 		{
 			if(isWideChar)
-				wordSize = m_font->GetStringWidth( (wchar_t*)strCurPos, params, -1, ' ' );
+				wordSize = font->GetStringWidth( (wchar_t*)strCurPos, params, -1, ' ' );
 			else
-				wordSize = m_font->GetStringWidth( (char*)strCurPos, params, -1, ' ' );
+				wordSize = font->GetStringWidth( (char*)strCurPos, params, -1, ' ' );
 		}
 		else
 		{
-			wordSize = m_font->GetStringWidth((char*)strCurPos, params, 1);
+			wordSize = font->GetStringWidth((char*)strCurPos, params, 1);
 		}
 
 		// if word can't be wrapped, we switch to character wrapping
@@ -90,9 +92,9 @@ bool CRectangleTextLayoutBuilder::LayoutChar(const eqFontStyleParam_t& params,
 				float newlineStringWidth;
 
 				if(isWideChar) // TODO: must be calculated until next word wrap
-					newlineStringWidth = m_font->GetStringWidth( (wchar_t*)strCurPos, params, -1, '\n' );
+					newlineStringWidth = font->GetStringWidth( (wchar_t*)strCurPos, params, -1, '\n' );
 				else
-					newlineStringWidth = m_font->GetStringWidth( (char*)strCurPos, params, -1, '\n' );
+					newlineStringWidth = font->GetStringWidth( (char*)strCurPos, params, -1, '\n' );
 
 				if (xPos + newlineStringWidth <= m_rectangle.vrightBottom.x)
 				{
@@ -105,8 +107,8 @@ bool CRectangleTextLayoutBuilder::LayoutChar(const eqFontStyleParam_t& params,
 
 			curTextPos.x = cPos.x = xPos;
 
-			curTextPos.y += m_font->GetLineHeight(params);
-			cPos.y += m_font->GetLineHeight(params);
+			curTextPos.y += font->GetLineHeight(params);
+			cPos.y += font->GetLineHeight(params);
 
 			m_linesProduced++;
 
@@ -124,10 +126,10 @@ bool CRectangleTextLayoutBuilder::LayoutChar(const eqFontStyleParam_t& params,
 		}
 	}
 
-	if(params.styleFlag & TEXT_STYLE_MONOSPACE)
-		curTextPos.x += cSize.x;
+	if (isWideChar)
+		curTextPos.x += font->GetStringWidth((wchar_t*)strCurPos, params, 1);
 	else
-		curTextPos.x += m_font->GetStringWidth((char*)strCurPos, params, 1);
+		curTextPos.x += font->GetStringWidth((char*)strCurPos, params, 1);
 
 	if( isWideChar )
 		m_newWord = iswspace(*((wchar_t*)strCurPos));

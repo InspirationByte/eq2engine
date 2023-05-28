@@ -16,9 +16,8 @@ using ITexturePtr = CRefPtr<ITexture>;
 
 class CFont : public IEqFont
 {
-	friend class			CEngineHost;
-	friend class			CEqConsoleInput;
-	friend class			CPlainTextLayoutBuilder;
+	friend class CEngineHost;
+	friend class CEqConsoleInput;
 
 public:
 							CFont();
