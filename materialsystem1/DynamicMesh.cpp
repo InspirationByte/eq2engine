@@ -193,8 +193,12 @@ int CDynamicMesh::AllocateGeom( int nVertices, int nIndices, void** verts, uint1
 	if(addStripBreak)
 		AddStripBreak();
 
-	int startVertex = m_numVertices;
-	int startIndex = m_numIndices;
+	const int startVertex = m_numVertices;
+	const int startIndex = m_numIndices;
+
+	if (startVertex + nVertices > MAX_DYNAMIC_VERTICES ||
+		startIndex + nIndices > MAX_DYNAMIC_INDICES)
+		return -1;
 
 	// apply offsets first
 	m_numVertices += nVertices;
