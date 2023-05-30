@@ -74,6 +74,7 @@
 #include "ds/weakptr.h"
 #include "ds/singleton.h"
 
+#include "ds/range_for.h"
 #include "ds/Array.h"
 #include "ds/BitArray.h"
 #include "ds/Map.h"

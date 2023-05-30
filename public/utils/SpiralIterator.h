@@ -13,7 +13,7 @@ struct SpiralIterator
 
 	SpiralIterator(const IVector2D& cell, int numIter) 
 		: cell(cell), numIter(numIter) {}
-	bool IsDone() const;
+	bool AtEnd() const;
 
 	void operator++();
 	IVector2D operator*() const;
@@ -33,7 +33,7 @@ inline int SpiralIterator::GetIterations(int radius)
 	return n * 8 + 1;
 }
 
-inline bool SpiralIterator::IsDone() const
+inline bool SpiralIterator::AtEnd() const
 {
 	return numIter <= 0;
 }

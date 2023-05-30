@@ -220,7 +220,7 @@ void CEqGameControllerSDL::RepeatEvents(float fDt)
 		if (!jc.m_connected)
 			continue;
 
-		for (auto it = jc.m_pressed.begin(); it != jc.m_pressed.end(); ++it) {
+		for (auto it = jc.m_pressed.begin(); !it.atEnd(); ++it) {
 
 			float val = *it - fDt;
 			val -= fDt;

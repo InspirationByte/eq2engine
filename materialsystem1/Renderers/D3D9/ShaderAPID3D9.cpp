@@ -118,7 +118,7 @@ void ShaderAPID3D9::OnDeviceLost()
 	{
 		CScopedMutex scoped(g_sapi_TextureMutex);
 		// relesase texture surfaces
-		for (auto it = m_TextureList.begin(); it != m_TextureList.end(); ++it)
+		for (auto it = m_TextureList.begin(); !it.atEnd(); ++it)
 		{
 			CD3D9Texture* pTex = (CD3D9Texture*)*it;
 
@@ -263,7 +263,7 @@ bool ShaderAPID3D9::RestoreDevice()
 	DevMsg(DEVMSG_SHADERAPI, "Restoring RTs...\n");
 
 	// create texture surfaces
-	for (auto it = m_TextureList.begin(); it != m_TextureList.end(); ++it)
+	for (auto it = m_TextureList.begin(); !it.atEnd(); ++it)
 	{
 		CD3D9Texture* pTex = (CD3D9Texture*)*it;
 
@@ -420,7 +420,7 @@ void ShaderAPID3D9::PrintAPIInfo() const
 
 	{
 		CScopedMutex scoped(g_sapi_TextureMutex);
-		for (auto it = m_TextureList.begin(); it != m_TextureList.end(); ++it)
+		for (auto it = m_TextureList.begin(); !it.atEnd(); ++it)
 		{
 			CD3D9Texture* pTexture = (CD3D9Texture*)*it;
 
@@ -1774,7 +1774,7 @@ void ShaderAPID3D9::DestroyShaderProgram(IShaderProgram* pShaderProgram)
 	}
 	delete pShader;
 }
-
+#pragma optimize("", off)
 void ShaderAPID3D9::StepProgressiveLodTextures()
 {
 	int numTransferred = 0;
@@ -1783,7 +1783,7 @@ void ShaderAPID3D9::StepProgressiveLodTextures()
 	auto it = m_progressiveTextures.begin();
 	g_sapi_ProgressiveTextureMutex.Unlock();
 
-	while (it != m_progressiveTextures.end() && numTransferred < TEXTURE_TRANSFER_MAX_TEXTURES_PER_FRAME)
+	while (!it.atEnd() && numTransferred < TEXTURE_TRANSFER_MAX_TEXTURES_PER_FRAME)
 	{
 		CD3D9Texture* nextTexture = nullptr;
 		{

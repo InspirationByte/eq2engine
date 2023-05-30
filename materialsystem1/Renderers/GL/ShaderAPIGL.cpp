@@ -271,7 +271,7 @@ void ShaderAPIGL::PrintAPIInfo() const
 	MsgInfo("------ Loaded textures ------\n");
 
 	CScopedMutex scoped(g_sapi_TextureMutex);
-	for (auto it = m_TextureList.begin(); it != m_TextureList.end(); ++it)
+	for (auto it = m_TextureList.begin(); !it.atEnd(); ++it)
 	{
 		CGLTexture* pTexture = (CGLTexture*)*it;
 
@@ -659,7 +659,7 @@ void ShaderAPIGL::ApplyConstants()
 
 	Map<int, GLShaderConstant_t>& constants = currentShader->m_constants;
 
-	for (auto it = constants.begin(); it != constants.end(); ++it)
+	for (auto it = constants.begin(); !it.atEnd(); ++it)
 	{
 		GLShaderConstant_t& uni = *it;
 		if (!uni.dirty)
@@ -2801,14 +2801,11 @@ void ShaderAPIGL::StepProgressiveLodTextures()
 	g_sapi_ProgressiveTextureMutex.Unlock();
 
 	int numTransferred = 0;
-	while (numTransferred < TEXTURE_TRANSFER_MAX_TEXTURES_PER_FRAME)
+	while (!it.atEnd() && numTransferred < TEXTURE_TRANSFER_MAX_TEXTURES_PER_FRAME)
 	{
 		CGLTexture* nextTexture = nullptr;
 		{
 			CScopedMutex m(g_sapi_ProgressiveTextureMutex);
-			if (it == m_progressiveTextures.end())
-				break;
-
 			nextTexture = it.key();
 			++it;
 		}

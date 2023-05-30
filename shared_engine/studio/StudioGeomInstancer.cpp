@@ -114,7 +114,7 @@ void* CBaseEqGeomInstancer::AllocInstance(int bodyGroup, int lod, int materialGr
 void CBaseEqGeomInstancer::Upload()
 {
 	// update all HW instance buffers
-	for (auto it = m_data.begin(); it != m_data.end(); ++it)
+	for (auto it = m_data.begin(); !it.atEnd(); ++it)
 	{
 		EGFInstBuffer& buffer = *it;
 		if (buffer.upToDateInstanes == buffer.numInstances)
@@ -132,7 +132,7 @@ void CBaseEqGeomInstancer::Upload()
 
 void CBaseEqGeomInstancer::Invalidate()
 {
-	for (auto it = m_data.begin(); it != m_data.end(); ++it)
+	for (auto it = m_data.begin(); !it.atEnd(); ++it)
 	{
 		EGFInstBuffer& buffer = *it;
 		buffer.upToDateInstanes = buffer.numInstances = 0;

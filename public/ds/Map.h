@@ -16,27 +16,31 @@ public:
 	class Iterator
 	{
 	public:
-		Iterator()
-			: item(nullptr) {}
+		Iterator() = default;
 
 		const K&		key() const { return item->key; }
 		const V&		value() const { return *item->value; }
+
+		bool			atEnd() const { return !item || !item->value; };
+
 		const V&		operator*() const { return *item->value; }
 		V&				operator*() { return *item->value; }
 		const V*		operator->() const { return item->value; }
 		V*				operator->() { return item->value; }
-		const Iterator&	operator++() { item = item->next; return *this; }
-		const Iterator&	operator--() { item = item->prev; return *this; }
-		Iterator		operator++() const { return item->next; }
-		Iterator		operator--() const { return item->prev; }
 		bool			operator==(const Iterator& other) const { return item == other.item; }
 		bool			operator!=(const Iterator& other) const { return item != other.item; }
 
+		const Iterator& operator++() { item = item->next; return *this; }
+		const Iterator& operator--() { item = item->prev; return *this; }
+		Iterator		operator++() const { return item->next; }
+		Iterator		operator--() const { return item->prev; }
+
 	private:
-		Item*			item;
+		Item*			item{ nullptr };
 
 		Iterator(Item* item)
-			:	item(item) {}
+			: item(item) 
+		{}
 
 		friend class Map;
 	};

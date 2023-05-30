@@ -169,7 +169,7 @@ UISoundNodeDesc& CSoundScriptEditor::SpawnNode()
 int CSoundScriptEditor::GetConnectionCount(int attribId)
 {
 	int numCon = 0;
-	for (auto it = s_uiNodeLinks.begin(); it != s_uiNodeLinks.end(); ++it)
+	for (auto it = s_uiNodeLinks.begin(); !it.atEnd(); ++it)
 	{
 		const UINodeLink& linkVal = *it;
 
@@ -182,7 +182,7 @@ int CSoundScriptEditor::GetConnectionCount(int attribId)
 void CSoundScriptEditor::GetConnections(int attribId, Array<UINodeLink>& links)
 {
 	int numCon = 0;
-	for (auto it = s_uiNodeLinks.begin(); it != s_uiNodeLinks.end(); ++it)
+	for (auto it = s_uiNodeLinks.begin(); !it.atEnd(); ++it)
 	{
 		const UINodeLink& linkVal = *it;
 
@@ -196,7 +196,7 @@ void CSoundScriptEditor::DisconnectLHSAttrib(int attribId)
 	if (GetAttribSide(attribId) != UISoundNodeDesc::LHS)
 		return;
 
-	for (auto it = s_uiNodeLinks.begin(); it != s_uiNodeLinks.end(); ++it)
+	for (auto it = s_uiNodeLinks.begin(); !it.atEnd(); ++it)
 	{
 		const UINodeLink linkVal = *it;
 		if (linkVal.a == attribId || linkVal.b == attribId)
@@ -220,7 +220,7 @@ void UISoundNodeDesc::GenerateUniqueName()
 		snprintf(name, sizeof(name), "%s%d", tmpName, idx);
 		name[sizeof(name) - 1] = 0;
 
-		for (auto it = CSoundScriptEditor::s_uiNodes.begin(); it != CSoundScriptEditor::s_uiNodes.end(); ++it)
+		for (auto it = CSoundScriptEditor::s_uiNodes.begin(); !it.atEnd(); ++it)
 		{
 			if (it.key() == id)
 				continue;
@@ -441,7 +441,7 @@ void CSoundScriptEditor::InitNodesFromScriptDesc(const SoundScriptDesc& script)
 	} // for
 
 	// remove "out_" prefix from output names
-	for (auto it = s_uiNodes.begin(); it != s_uiNodes.end(); ++it)
+	for (auto it = s_uiNodes.begin(); !it.atEnd(); ++it)
 	{
 		UISoundNodeDesc& uiNode = *it;
 		if (uiNode.flags & SOUND_NODE_FLAG_OUTPUT)
@@ -458,7 +458,7 @@ void CSoundScriptEditor::GetUsedNodes(Set<int>& usedNodes)
 	Set<int>& visited = usedNodes;
 
 	// backward iterate from outputs
-	for (auto it = s_uiNodes.begin(); it != s_uiNodes.end(); ++it)
+	for (auto it = s_uiNodes.begin(); !it.atEnd(); ++it)
 	{
 		UISoundNodeDesc& uiNode = *it;
 		if (uiNode.flags & SOUND_NODE_FLAG_OUTPUT)
@@ -633,7 +633,7 @@ void CSoundScriptEditor::SerializeNodesToKeyValues(KVSection& out)
 	Array<int> nodesToAdd{ PP_SL };
 	Set<int> addedNodes{ PP_SL };
 
-	for (auto it = s_uiNodes.begin(); it != s_uiNodes.end(); ++it)
+	for (auto it = s_uiNodes.begin(); !it.atEnd(); ++it)
 		nodesToAdd.append(it.key());
 
 	// stupid but pretty simple approach on putting node declarations
@@ -695,7 +695,7 @@ void CSoundScriptEditor::SerializeNodesToKeyValues(KVSection& out)
 	}
 
 	// last to process are always outputs
-	for (auto it = s_uiNodes.begin(); it != s_uiNodes.end(); ++it)
+	for (auto it = s_uiNodes.begin(); !it.atEnd(); ++it)
 	{
 		const UISoundNodeDesc& uiNode = *it;
 		if (!(uiNode.flags & SOUND_NODE_FLAG_OUTPUT))
@@ -825,7 +825,7 @@ void CSoundScriptEditor::DrawNodeEditor(bool initializePositions)
 
 			int countByType[SOUND_NODE_TYPE_COUNT]{ 0 };
 			int countByFunc[SOUND_FUNC_COUNT]{ 0 };
-			for (auto it = s_uiNodes.begin(); it != s_uiNodes.end(); ++it)
+			for (auto it = s_uiNodes.begin(); !it.atEnd(); ++it)
 			{
 				UISoundNodeDesc& uiNode = *it;
 
@@ -856,7 +856,7 @@ void CSoundScriptEditor::DrawNodeEditor(bool initializePositions)
 			Set<int> visited{ PP_SL };
 			Map<int, int> nodeDistances{ PP_SL };
 
-			for (auto it = s_uiNodes.begin(); it != s_uiNodes.end(); ++it)
+			for (auto it = s_uiNodes.begin(); !it.atEnd(); ++it)
 			{
 				const UISoundNodeDesc& uiNode = *it;
 				if (uiNode.type == SOUND_NODE_INPUT)
@@ -953,7 +953,7 @@ void CSoundScriptEditor::DrawNodeEditor(bool initializePositions)
 							continue;
 
 						// delete links associated with node we about to delete
-						for (auto linkIt = s_uiNodeLinks.begin(); linkIt != s_uiNodeLinks.end(); ++linkIt)
+						for (auto linkIt = s_uiNodeLinks.begin(); !linkIt.atEnd(); ++linkIt)
 						{
 							UINodeLink& nodeLink = *linkIt;
 							if ((nodeLink.a & 31) == nodeId || (nodeLink.b & 31) == nodeId)
@@ -977,7 +977,7 @@ void CSoundScriptEditor::DrawNodeEditor(bool initializePositions)
 	Set<int> usedNodes{ PP_SL };
 	GetUsedNodes(usedNodes);
 
-	for (auto it = s_uiNodes.begin(); it != s_uiNodes.end(); ++it)
+	for (auto it = s_uiNodes.begin(); !it.atEnd(); ++it)
 	{
 		UISoundNodeDesc& uiNode = *it;
 
@@ -1173,7 +1173,7 @@ void CSoundScriptEditor::DrawNodeEditor(bool initializePositions)
 	}
 
 	// link nodes
-	for (auto it = s_uiNodeLinks.begin(); it != s_uiNodeLinks.end(); ++it)
+	for (auto it = s_uiNodeLinks.begin(); !it.atEnd(); ++it)
 	{
 		const UINodeLink linkVal = *it;
 		ImNodes::Link(it.key(), linkVal.a, linkVal.b);
@@ -1309,13 +1309,13 @@ void CSoundScriptEditor::DrawScriptEditor(bool& open)
 				{
 					bool isValidEmitter = false;
 					int objId = 0;
-					for (auto sObjIt = g_sounds->m_soundingObjects.begin(); sObjIt != g_sounds->m_soundingObjects.end(); ++sObjIt, ++objId)
+					for (auto sObjIt = g_sounds->m_soundingObjects.begin(); !sObjIt.atEnd(); ++sObjIt, ++objId)
 					{
 						CSoundingObject* sObj = sObjIt.key();
 						if (sObj == &soundTest)
 							continue;
 
-						for (auto emitterIt = sObj->m_emitters.begin(); emitterIt != sObj->m_emitters.end(); ++emitterIt)
+						for (auto emitterIt = sObj->m_emitters.begin(); !emitterIt.atEnd(); ++emitterIt)
 						{
 							if (selectedScript != (*emitterIt)->script)
 								continue;
@@ -1470,7 +1470,7 @@ void CSoundScriptEditor::DrawScriptEditor(bool& open)
 									ImGui::PopID();
 
 									// sync with node editor
-									for (auto it = s_uiNodes.begin(); it != s_uiNodes.end(); ++it)
+									for (auto it = s_uiNodes.begin(); !it.atEnd(); ++it)
 									{
 										UISoundNodeDesc& uiNode = *it;
 										if ((uiNode.flags & SOUND_NODE_FLAG_OUTPUT) && uiNode.c.paramId == paramId)
@@ -1668,7 +1668,7 @@ void CSoundScriptEditor::DrawScriptEditor(bool& open)
 					{
 						SoundEmitterData* emitter = currentEmit.obj->m_emitters[currentEmit.emitId];
 
-						for (auto it = currentInputs.begin(); it != currentInputs.end(); ++it)
+						for (auto it = currentInputs.begin(); !it.atEnd(); ++it)
 						{
 							for(int i = 0; i < SoundNodeDesc::MAX_ARRAY_IDX; ++i)
 								emitter->SetInputValue(it.key(), i, it.value().values[i]);

@@ -18,7 +18,7 @@ CGLShaderProgram::CGLShaderProgram()
 
 CGLShaderProgram::~CGLShaderProgram()
 {
-	for (auto it = m_constants.begin(); it != m_constants.end(); ++it)
+	for (auto it = m_constants.begin(); !it.atEnd(); ++it)
 		delete [] it.value().data;
 
 	if (m_program)
