@@ -344,7 +344,7 @@ void CEqConsoleInput::BeginFrame()
 		ImGui_ImplEq_NewFrame(m_visible);
 		ImGui::NewFrame();
 
-		for (auto it = m_imguiHandles.begin(); it != m_imguiHandles.end(); ++it)
+		for (auto it = m_imguiHandles.begin(); !it.atEnd(); ++it)
 		{
 			const EqImGui_Handle& handler = it.value();
 			if(handler.handleFunc)
@@ -401,7 +401,7 @@ void CEqConsoleInput::BeginFrame()
 			ImGui::EndMenu();
 		}
 
-		for (auto it = m_imguiHandles.begin(); it != m_imguiHandles.end(); ++it)
+		for (auto it = m_imguiHandles.begin(); !it.atEnd(); ++it)
 		{
 			const EqImGui_Handle& handler = it.value();
 			if(handler.handleFunc)

@@ -199,9 +199,30 @@ void ArrayStorageBase<T>::destructElements(T* dest, int count)
 }
 
 template< typename T, typename STORAGE_TYPE >
+class ArrayBase;
+
+template< typename T, typename STORAGE_TYPE >
 class ArrayBase
 {
+	using SelfType = ArrayBase<T, STORAGE_TYPE>;
 public:
+	struct Iterator
+	{
+		SelfType& array;
+		int index = 0;
+
+		Iterator(SelfType& array, int from)
+			: array(array), index(from)
+		{}
+
+		bool	operator==(Iterator& it) const { return it.index == index; }
+		bool	operator!=(Iterator& it) const { return it.index != index; }
+
+		bool	atEnd() const	{ return index >= array.numElem(); }
+		T&		operator*()		{ return array[index]; }
+		void	operator++()	{ ++index; }
+	};
+
 	ArrayBase();
 	ArrayBase(const PPSourceLine& sl, int granularity = 16);
 
@@ -209,7 +230,10 @@ public:
 
 	const T&		operator[](int index) const;
 	T&				operator[](int index);
-	ArrayBase<T, STORAGE_TYPE>& operator=(const ArrayBase<T, STORAGE_TYPE>& other);
+	SelfType&		operator=(const SelfType& other);
+
+	Iterator		begin() const { return Iterator(*const_cast<SelfType*>(this), 0); }
+	Iterator		end() const { return Iterator(*const_cast<SelfType*>(this), m_nNumElem); }
 
 	// cleans list
 	void			clear(bool deallocate = false);
@@ -318,6 +342,17 @@ public:
 	template< typename COMPAREFUNC >
 	int				findIndex(COMPAREFUNC comparator) const;
 
+	// returns iterator for the given element
+	Iterator		find(const T& obj) const;
+
+	// returns iterator for the given element
+	template< typename PAIRCOMPAREFUNC = PairCompareFunc<T> >
+	Iterator		find(const T& obj, PAIRCOMPAREFUNC comparator) const;
+
+	// returns first found element which satisfies to the condition
+	template< typename COMPAREFUNC >
+	Iterator		find(COMPAREFUNC comparator) const;
+
 	// removes the element at the given index
 	bool			removeIndex(int index);
 
@@ -334,7 +369,7 @@ public:
 	bool			fastRemove(const T& obj);
 
 	// swap the contents of the lists
-	void			swap(ArrayBase<T, STORAGE_TYPE>& other);
+	void			swap(SelfType& other);
 
 	// swap the contents of the lists - raw
 	void			swap(T*& other, int& otherNumElem);
@@ -483,7 +518,7 @@ inline T& ArrayBase<T, STORAGE_TYPE>::operator[](int index)
 // Copies the contents and size attributes of another list.
 // -----------------------------------------------------------------
 template< typename T, typename STORAGE_TYPE >
-inline ArrayBase<T, STORAGE_TYPE>& ArrayBase<T, STORAGE_TYPE>::operator=(const ArrayBase<T, STORAGE_TYPE>& other)
+inline ArrayBase<T, STORAGE_TYPE>& ArrayBase<T, STORAGE_TYPE>::operator=(const SelfType& other)
 {
 	m_storage.setGranularity(other.m_storage.getGranularity());
 
@@ -911,7 +946,6 @@ inline int ArrayBase<T, STORAGE_TYPE>::findIndex(T const& obj) const
 // Searches for the specified data in the m_pListPtr and returns it's index.
 // Returns -1 if the data is not found.
 // -----------------------------------------------------------------
-
 template< typename T, typename STORAGE_TYPE >
 template< typename PAIRCOMPAREFUNC >
 inline int ArrayBase<T, STORAGE_TYPE>::findIndex(T const& obj, PAIRCOMPAREFUNC comparator) const
@@ -940,6 +974,38 @@ inline int ArrayBase<T, STORAGE_TYPE>::findIndex(COMPAREFUNC comparator) const
 			return i;
 	}
 	return -1;
+}
+
+// -----------------------------------------------------------------
+// Searches for the specified data in the m_pListPtr and returns iterator.
+// -----------------------------------------------------------------
+template< typename T, typename STORAGE_TYPE >
+inline typename ArrayBase<T, STORAGE_TYPE>::Iterator ArrayBase<T, STORAGE_TYPE>::find(T const& obj) const
+{
+	const int index = findIndex(obj);
+	return index == -1 ? end() : Iterator(*const_cast<SelfType*>(this), index);
+}
+
+// -----------------------------------------------------------------
+// Searches for the specified data in the m_pListPtr and returns iterator.
+// -----------------------------------------------------------------
+template< typename T, typename STORAGE_TYPE >
+template< typename PAIRCOMPAREFUNC >
+inline typename ArrayBase<T, STORAGE_TYPE>::Iterator ArrayBase<T, STORAGE_TYPE>::find(T const& obj, PAIRCOMPAREFUNC comparator) const
+{
+	const int index = findIndex(obj, comparator);
+	return index == -1 ? end() : Iterator(*const_cast<SelfType*>(this), index);
+}
+
+// -----------------------------------------------------------------
+// Returns first element which satisfies to the condition
+// -----------------------------------------------------------------
+template< typename T, typename STORAGE_TYPE >
+template< typename COMPAREFUNC >
+inline typename ArrayBase<T, STORAGE_TYPE>::Iterator ArrayBase<T, STORAGE_TYPE>::find(COMPAREFUNC comparator) const
+{
+	const int index = findIndex(comparator);
+	return index == -1 ? end() : Iterator(*const_cast<SelfType*>(this), index);
 }
 
 // -----------------------------------------------------------------
@@ -1284,6 +1350,7 @@ protected:
 	const T*		m_pListPtr{ nullptr };
 	int				m_nNumElem{ 0 };
 };
+
 
 //-------------------------------------------
 // nesting Source-line constructor helper

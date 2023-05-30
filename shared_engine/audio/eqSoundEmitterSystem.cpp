@@ -107,7 +107,7 @@ void CSoundEmitterSystem::Shutdown()
 	// remove pending sounds
 	m_pendingStartSounds.clear(true);
 
-	for (auto it = m_soundingObjects.begin(); it != m_soundingObjects.end(); ++it)
+	for (auto it = m_soundingObjects.begin(); !it.atEnd(); ++it)
 	{
 		CSoundingObject* obj = it.key();
 		obj->StopEmitter(CSoundingObject::ID_ALL, true);
@@ -115,7 +115,7 @@ void CSoundEmitterSystem::Shutdown()
 
 	m_soundingObjects.clear(true);
 
-	for (auto it = m_allSounds.begin(); it != m_allSounds.end(); ++it)
+	for (auto it = m_allSounds.begin(); !it.atEnd(); ++it)
 	{
 		SoundScriptDesc* script = *it;
 		delete script;
@@ -430,7 +430,7 @@ void CSoundEmitterSystem::StopAllSounds()
 	// remove pending sounds
 	m_pendingStartSounds.clear();
 
-	for (auto it = m_soundingObjects.begin(); it != m_soundingObjects.end(); ++it)
+	for (auto it = m_soundingObjects.begin(); !it.atEnd(); ++it)
 	{
 		CSoundingObject* obj = it.key();
 		obj->StopEmitter(CSoundingObject::ID_ALL);
@@ -578,7 +578,7 @@ void CSoundEmitterSystem::Update()
 
 		{
 			CScopedMutex m(s_soundEmitterSystemMutex);
-			for (auto it = m_soundingObjects.begin(); it != m_soundingObjects.end(); ++it)
+			for (auto it = m_soundingObjects.begin(); !it.atEnd(); ++it)
 			{
 				CSoundingObject* obj = it.key();
 
@@ -701,7 +701,7 @@ int CSoundEmitterSystem::ChannelTypeByName(const char* str) const
 
 void CSoundEmitterSystem::GetAllSoundsList(Array<SoundScriptDesc*>& list) const
 {
-	for (auto it = m_allSounds.begin(); it != m_allSounds.end(); ++it)
+	for (auto it = m_allSounds.begin(); !it.atEnd(); ++it)
 		list.append(it.value());
 }
 
@@ -713,10 +713,10 @@ const char* CSoundEmitterSystem::GetScriptName(SoundScriptDesc* desc)
 void CSoundEmitterSystem::RestartEmittersByScript(SoundScriptDesc* script)
 {
 #ifndef _RETAIL
-	for (auto it = m_soundingObjects.begin(); it != m_soundingObjects.end(); ++it)
+	for (auto it = m_soundingObjects.begin(); !it.atEnd(); ++it)
 	{
 		CSoundingObject* obj = it.key();
-		for (auto emIt = obj->m_emitters.begin(); emIt != obj->m_emitters.end(); ++emIt)
+		for (auto emIt = obj->m_emitters.begin(); !emIt.atEnd(); ++emIt)
 		{
 			SoundEmitterData* emitter = emIt.value();
 

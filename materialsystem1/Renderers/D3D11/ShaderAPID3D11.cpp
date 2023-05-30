@@ -98,7 +98,7 @@ void ShaderAPID3DX10::PrintAPIInfo() const
 
 	{
 		CScopedMutex scoped(g_sapi_TextureMutex);
-		for (auto it = m_TextureList.begin(); it != m_TextureList.end(); ++it)
+		for (auto it = m_TextureList.begin(); !it.atEnd(); ++it)
 		{
 			CD3D10Texture* pTexture = (CD3D10Texture*)*it;
 

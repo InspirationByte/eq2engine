@@ -219,7 +219,7 @@ void PPMemInfo(bool fullStats)
 	{
 		Array<uint64> sortedList{ PPSourceLine::Empty() };
 		sortedList.resize(allocCounter.size());
-		for (auto it = allocCounter.begin(); it != allocCounter.end(); ++it)
+		for (auto it = allocCounter.begin(); !it.atEnd(); ++it)
 			sortedList.append(it.key());
 
 		shellSort(sortedList, [&allocCounter](uint64 a, uint64 b) {
@@ -245,7 +245,7 @@ void PPMemInfo(bool fullStats)
 	{
 		Array<uint64> sortedList{ PPSourceLine::Empty() };
 		sortedList.resize(st.sourceCounterMap.size());
-		for (auto it = st.sourceCounterMap.begin(); it != st.sourceCounterMap.end(); ++it)
+		for (auto it = st.sourceCounterMap.begin(); !it.atEnd(); ++it)
 			sortedList.append(it.key());
 
 		shellSort(sortedList, [&st](uint64 a, uint64 b) {

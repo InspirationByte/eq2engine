@@ -487,7 +487,7 @@ bool CEqAudioSystemAL::CreateALEffect(const char* pszName, KVSection* pSection, 
 
 void CEqAudioSystemAL::DestroyEffects()
 {
-	for (auto it = m_effects.begin(); it != m_effects.end(); ++it)
+	for (auto it = m_effects.begin(); !it.atEnd(); ++it)
 		alDeleteEffects(1, &it.value().nAlEffect);
 
 	alDeleteAuxiliaryEffectSlots(m_effectSlots.numElem(), m_effectSlots.ptr());
@@ -756,7 +756,7 @@ void CEqAudioSystemAL::EndUpdate()
 	if (snd_debug.GetBool())
 	{
 		uint sampleMem = 0;
-		for (auto it = m_samples.begin(); it != m_samples.end(); ++it)
+		for (auto it = m_samples.begin(); !it.atEnd(); ++it)
 		{
 			const ISoundSource* sample = *it;
 			if (sample->IsStreaming())

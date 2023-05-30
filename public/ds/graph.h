@@ -23,7 +23,7 @@ public:
 	virtual void	Rewind(NODE_ID node) = 0;
 
 	virtual bool	IsEdgeValid() const = 0;
-	virtual bool	IsDone() const = 0;
+	virtual bool	AtEnd() const = 0;
 	virtual int		GetEdgeId() const = 0;
 };
 
@@ -99,7 +99,7 @@ inline NODE_ID IGraph<EDGE_ITER, NODE_ID>::Djikstra(const NODE_ID* startNodes, i
 #if GRAPH_SLOW_OPENSET
 		float minDist = F_INFINITY;
 		auto bestNode = openSet.begin();
-		for (auto it = openSet.begin(); it != openSet.end(); ++it)
+		for (auto it = openSet.begin(); !it.atEnd(); ++it)
 		{
 			if (*it > minDist)
 				continue;
@@ -124,7 +124,7 @@ inline NODE_ID IGraph<EDGE_ITER, NODE_ID>::Djikstra(const NODE_ID* startNodes, i
 #endif // GRAPH_SLOW_OPENSET
 
 		// walk through edges and neighbour nodes
-		for (edgeIt.Rewind(cheapestNode); !edgeIt.IsDone(); edgeIt++)
+		for (edgeIt.Rewind(cheapestNode); !edgeIt.AtEnd(); edgeIt++)
 		{
 			const int edgeId = edgeIt.GetEdgeId();
 			const NODE_ID neighbourNode = Edge_GetNeighbourNode(cheapestNode, edgeId);

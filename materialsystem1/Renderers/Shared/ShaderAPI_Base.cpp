@@ -121,13 +121,13 @@ void ShaderAPI_Base::Shutdown()
 
 	m_pErrorTexture = nullptr;
 
-	for(auto it = m_TextureList.begin(); it != m_TextureList.end(); ++it)
+	for(auto it = m_TextureList.begin(); !it.atEnd(); ++it)
 	{
 		FreeTexture(*it);
 	}
 	m_TextureList.clear(true);
 
-	for (auto it = m_ShaderList.begin(); it != m_ShaderList.end(); ++it)
+	for (auto it = m_ShaderList.begin(); !it.atEnd(); ++it)
 	{
 		DestroyShaderProgram(*it);
 	}
@@ -313,7 +313,7 @@ void ShaderAPI_Base::GetConsoleTextureList(const ConCommandBase* base, Array<EqS
 	CScopedMutex m(g_sapi_TextureMutex);
 	Map<int, ITexture*>& texList = ((ShaderAPI_Base*)g_pShaderAPI)->m_TextureList;
 
-	for (auto it = texList.begin(); it != texList.end(); ++it)
+	for (auto it = texList.begin(); !it.atEnd(); ++it)
 	{
 		ITexture* texture = *it;
 

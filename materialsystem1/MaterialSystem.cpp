@@ -98,7 +98,7 @@ public:
 		{
 			CScopedMutex m(s_matSystemMutex);
 			auto it = m_newMaterials.begin();
-			if (it != m_newMaterials.end())
+			if (!it.atEnd())
 			{
 				nextMaterial = it.key();
 				m_newMaterials.remove(it);
@@ -632,7 +632,7 @@ void CMaterialSystem::PreloadNewMaterials()
 	{
 		CScopedMutex m(s_matSystemMutex);
 	
-		for (auto it = m_loadedMaterials.begin(); it != m_loadedMaterials.end(); ++it)
+		for (auto it = m_loadedMaterials.begin(); !it.atEnd(); ++it)
 		{
 			PutMaterialToLoadingQueue(IMaterialPtr(it.value()));
 		}
@@ -644,7 +644,7 @@ void CMaterialSystem::ReleaseUnusedMaterials()
 {
 	CScopedMutex m(s_matSystemMutex);
 
-	for (auto it = m_loadedMaterials.begin(); it != m_loadedMaterials.end(); ++it)
+	for (auto it = m_loadedMaterials.begin(); !it.atEnd(); ++it)
 	{
 		CMaterial* material = (CMaterial*)*it;
 
@@ -668,7 +668,7 @@ void CMaterialSystem::ReloadAllMaterials()
 	MsgInfo("Reloading all materials...\n");
 	Array<IMaterialPtr> loadingList(PP_SL);
 
-	for (auto it = m_loadedMaterials.begin(); it != m_loadedMaterials.end(); ++it)
+	for (auto it = m_loadedMaterials.begin(); !it.atEnd(); ++it)
 	{
 		CMaterial* material = (CMaterial*)*it;
 
@@ -703,7 +703,7 @@ void CMaterialSystem::FreeMaterials()
 {
 	CScopedMutex m(s_matSystemMutex);
 
-	for (auto it = m_loadedMaterials.begin(); it != m_loadedMaterials.end(); ++it)
+	for (auto it = m_loadedMaterials.begin(); !it.atEnd(); ++it)
 	{
 		CMaterial* pMaterial = (CMaterial*)*it;
 		DevMsg(DEVMSG_MATSYSTEM, "freeing material %s\n", pMaterial->GetName());
@@ -716,15 +716,15 @@ void CMaterialSystem::FreeMaterials()
 
 void CMaterialSystem::ClearRenderStates()
 {
-	for (auto i = m_blendStates.begin(); i != m_blendStates.end(); ++i)
+	for (auto i = m_blendStates.begin(); !i.atEnd(); ++i)
 		g_pShaderAPI->DestroyRenderState(*i);
 	m_blendStates.clear();
 	
-	for (auto i = m_depthStates.begin(); i != m_depthStates.end(); ++i)
+	for (auto i = m_depthStates.begin(); !i.atEnd(); ++i)
 		g_pShaderAPI->DestroyRenderState(*i);
 	m_depthStates.clear();
 	
-	for (auto i = m_rasterStates.begin(); i != m_rasterStates.end(); ++i)
+	for (auto i = m_rasterStates.begin(); !i.atEnd(); ++i)
 		g_pShaderAPI->DestroyRenderState(*i);
 	m_rasterStates.clear();
 }
@@ -1629,7 +1629,7 @@ void CMaterialSystem::PrintLoadedMaterials()
 	CScopedMutex m(s_matSystemMutex);
 
 	Msg("*** Material list begin ***\n");
-	for (auto it = m_loadedMaterials.begin(); it != m_loadedMaterials.end(); ++it)
+	for (auto it = m_loadedMaterials.begin(); !it.atEnd(); ++it)
 	{
 		CMaterial* material = (CMaterial*)*it;
 

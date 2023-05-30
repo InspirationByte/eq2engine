@@ -526,7 +526,7 @@ void GetFBXCurveAsInterpKeyFrames(const ofbx::AnimationCurveNode* curveNode, Arr
 		}
 	};
 
-	for (auto it = allTimes.begin(); it != allTimes.end(); ++it, ++keyframeCounter)
+	for (auto it = allTimes.begin(); !it.atEnd(); ++it, ++keyframeCounter)
 	{
 		Vector3D& vecValue = intermediateKeyFrames.append();
 		vecValue = F_UNDEF;
