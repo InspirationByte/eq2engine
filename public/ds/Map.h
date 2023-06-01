@@ -47,7 +47,7 @@ public:
 
 public:
 	Map(const PPSourceLine& sl)
-		: m_sl(sl), m_end(&m_endItem), m_begin(&m_endItem)
+		: m_pool(sl), m_end(&m_endItem), m_begin(&m_endItem)
 	{
 		m_endItem.parent = nullptr;
 		m_endItem.prev = nullptr;
@@ -55,19 +55,18 @@ public:
 	}
 
 	Map(const Map& other)
-		: m_sl(other.m_sl), m_end(&m_endItem), m_begin(&m_endItem)
+		: m_pool(other.m_pool.getSL()), m_end(&m_endItem), m_begin(&m_endItem)
 	{
 		for (const Item* i = other.m_begin.item, *end = &other.m_endItem; i != end; i = i->next)
 			insert(i->key, *i->value);
 	}
 
 	Map(Map&& other) noexcept
-		: m_sl(other.m_sl), m_end(&m_endItem), m_begin(&m_endItem)
+		: m_pool(std::move(other.m_pool)), m_end(&m_endItem), m_begin(&m_endItem)
 		, m_endItem(std::move(other.m_endItem))
 		, m_root(other.m_root)
-		, m_freeItem(other.m_freeItem)
-		, m_blocks(other.m_blocks)
 		, m_size(other.m_size)
+
 	{
 		if(other.m_begin.item != &other.m_endItem)
 			m_begin = Iterator(other.m_begin.item);
@@ -86,8 +85,6 @@ public:
 		}
 
 		other.m_root = nullptr;
-		other.m_freeItem = nullptr;
-		other.m_blocks = nullptr;
 		other.m_size = 0;
 	}
 
@@ -95,11 +92,6 @@ public:
 	{
 		for (Item* i = m_begin.item, *end = &m_endItem; i != end; i = i->next)
 			i->~Item();
-		for (ItemBlock* i = m_blocks, *next; i; i = next)
-		{
-			next = i->next;
-			PPFree(i);
-		}
 	}
 
 	Map& operator=(const Map& other)
@@ -127,10 +119,8 @@ public:
 
 	void swap(Map& other)
 	{
-		QuickSwap(m_sl, other.m_sl);
 		QuickSwap(m_root, other.m_root);
-		QuickSwap(m_freeItem, other.m_freeItem);
-		QuickSwap(m_blocks, other.m_blocks);
+		QuickSwap(m_pool, other.m_pool);
 		QuickSwap(m_size, other.m_size);
 		QuickSwap(m_begin, other.m_begin);
 		QuickSwap(m_end, other.m_end);
@@ -168,23 +158,16 @@ public:
 
 	void clear(bool deallocate = false)
 	{
-		for (Item* i = m_begin.item, *end = &m_endItem; i != end; i = i->next)
+		for (Item* i = m_begin.item, *end = &m_endItem; i != end;)
 		{
 			i->~Item();
-			i->prev = m_freeItem;
-			m_freeItem = i;
+			Item* next = i->next;
+			m_pool.deallocate((ItemVal*)i);
+			i = next;
 		}
 
 		if (deallocate)
-		{
-			for (ItemBlock* i = m_blocks, *next; i; i = next)
-			{
-				next = i->next;
-				PPFree(i);
-			}
-			m_blocks = nullptr;
-			m_freeItem = nullptr;
-		}
+			m_pool.clear();
 
 		m_begin.item = &m_endItem;
 		m_endItem.prev = nullptr;
@@ -481,9 +464,10 @@ public:
 		--m_size;
 
 		item->~Item();
-		item->prev = m_freeItem;
-		m_freeItem = item;
-		return item->next;
+		Item* next = item->next;
+		m_pool.deallocate((ItemVal*)item);
+
+		return next;
 	}
 
 private:
@@ -521,19 +505,17 @@ private:
 			height = (leftHeight > rightHeight ? leftHeight : rightHeight) + 1;
 		}
 	};
-	struct ItemBlock
-	{
-		ItemBlock* next;
-	};
 
 private:
-	const PPSourceLine 	m_sl;
+	struct ItemVal {
+		Item i;
+		V v;
+	};
+	MemoryPool<ItemVal, 32>	m_pool;
 	Iterator 			m_end;
 	Iterator 			m_begin;
 	Item 				m_endItem;
 	Item* 				m_root{ nullptr };
-	Item* 				m_freeItem{ nullptr };
-	ItemBlock* 			m_blocks{ nullptr };
 	int 				m_size{ 0 };
 
 private:
@@ -544,25 +526,13 @@ private:
 		Item* position = *cell;
 		if (!position)
 		{
-			Item* item = m_freeItem;
-			if (!item)
-			{
-				const int allocatedSize = sizeof(ItemBlock) + sizeof(Item) + sizeof(PPSLValueCtor<V>);
-				ItemBlock* itemBlock = (ItemBlock*)PPDAlloc(allocatedSize, m_sl);
-				itemBlock->next = m_blocks;
-				m_blocks = itemBlock;
-				for (Item* i = (Item*)(itemBlock + 1), *end = i + (allocatedSize - sizeof(ItemBlock) - sizeof(PPSLValueCtor<V>)) / sizeof(Item); i < end; ++i)
-				{
-					i->prev = item;
-					item = i;
-				}
-			}
-			m_freeItem = item->prev;
+			ItemVal* iv = m_pool.allocate();
+			Item* item = &iv->i;
 
 			new (item) Item(parent, key);
 
 			PPSLValueCtor<V>* value = (PPSLValueCtor<V>*)(item + 1);
-			new (value) PPSLValueCtor<V>(m_sl);
+			new (value) PPSLValueCtor<V>(m_pool.getSL());
 
 			*cell = item;
 			++m_size;

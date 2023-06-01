@@ -51,23 +51,26 @@ class DynamicListAllocator : public ListAllocatorBase<T, DynamicListAllocator<T>
 public:
 	using Node = ListNode<T, DynamicListAllocator<T>>;
 
-	DynamicListAllocator(const PPSourceLine& _sl)
-		: m_sl(_sl)
+	DynamicListAllocator(const PPSourceLine& sl)
+		: m_pool(sl)
 	{
 	}
 
 	Node* alloc()
 	{
-		return PPNewSL(m_sl) Node;
+		Node* node = m_pool.allocate();
+		new(node) Node();
+		return node;
 	}
 
 	void free(Node* node)
 	{
-		delete node;
+		node->~Node();
+		m_pool.deallocate(node);
 	}
 
 private:
-	const PPSourceLine m_sl;
+	MemoryPool<Node, 32> m_pool;
 };
 
 

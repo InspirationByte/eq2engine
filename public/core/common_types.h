@@ -59,10 +59,10 @@ inline void QuickSwap( T &a, T &b )
 }
 
 template <class T, class T2 = T, class TR = T>
-inline TR min(T x, T2 y) { return (TR)((x < y) ? x : y); }
+static constexpr TR min(T x, T2 y) { return (TR)((x < y) ? x : y); }
 
 template <class T, class T2 = T, class TR = T>
-inline TR max(T x, T2 y) { return (TR)((x > y) ? x : y); }
+static constexpr TR max(T x, T2 y) { return (TR)((x > y) ? x : y); }
 
 #ifndef PRId64
 #ifdef _MSC_VER
