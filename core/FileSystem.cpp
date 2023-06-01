@@ -658,7 +658,7 @@ bool CFileSystem::WalkOverSearchPaths(int searchFlags, const char* fileName, con
 #ifdef PLAT_LINUX
 			const int nameHash = FSStringId(filePath.ToCString());
 			const auto it = spInfo.pathToFileMapping.find(nameHash);
-			if(it != spInfo.pathToFileMapping.end())
+			if (!it.atEnd())
 			{
 				// apply correct filepath
 				filePath = *it;

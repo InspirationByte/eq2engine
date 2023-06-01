@@ -63,6 +63,7 @@
 
 #include "ds/IVirtualStream.h"
 
+#include "ds/mempool.h"
 #include "ds/eqstring.h"
 #include "ds/eqwstring.h"
 

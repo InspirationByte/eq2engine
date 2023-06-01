@@ -994,7 +994,7 @@ template< typename PAIRCOMPAREFUNC >
 inline typename ArrayBase<T, STORAGE_TYPE>::Iterator ArrayBase<T, STORAGE_TYPE>::find(T const& obj, PAIRCOMPAREFUNC comparator) const
 {
 	const int index = findIndex(obj, comparator);
-	return index == -1 ? end() : AIterator(*const_cast<SelfType*>(this), index);
+	return index == -1 ? end() : Iterator(*const_cast<SelfType*>(this), index);
 }
 
 // -----------------------------------------------------------------

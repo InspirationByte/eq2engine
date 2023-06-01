@@ -1269,7 +1269,7 @@ void CSoundScriptEditor::DrawScriptEditor(bool& open)
 				{
 					bool needEmitSound = selectedScript->randomSample;
 					auto currentEmitterIt = currentEmit.obj->m_emitters.find(currentEmit.emitId);
-					if (currentEmitterIt != currentEmit.obj->m_emitters.end())
+					if (!currentEmitterIt.atEnd())
 					{
 						if (selectedScript != (*currentEmitterIt)->script)
 							needEmitSound = true;

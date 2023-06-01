@@ -162,7 +162,7 @@ SoundScriptDesc* CSoundEmitterSystem::FindSoundScript(const char* soundName) con
 	const int namehash = StringToHash(soundName, true );
 
 	auto it = m_allSounds.find(namehash);
-	if (it == m_allSounds.end())
+	if (it.atEnd())
 		return nullptr;
 
 	return *it;
@@ -646,7 +646,7 @@ void CSoundEmitterSystem::CreateSoundScript(const KVSection* scriptSection, cons
 	EqString soundName(_Es(scriptSection->name).LowerCase());
 
 	const int namehash = StringToHash(soundName, true);
-	if (m_allSounds.find(namehash) != m_allSounds.end())
+	if (m_allSounds.contains(namehash))
 	{
 		ASSERT_FAIL("Sound '%s' is already registered, please change name and references", soundName.ToCString());
 		return;

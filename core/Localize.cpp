@@ -212,7 +212,7 @@ const ILocToken* CLocalize::_FindToken( const char* pszToken ) const
 
 	auto it = m_tokens.find(tokHash);
 
-	if (it != m_tokens.end())
+	if (!it.atEnd())
 		return &it.value();
 
 	return nullptr;

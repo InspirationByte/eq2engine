@@ -163,7 +163,7 @@ void CSoundingObject::StopEmitter(int uniqueId, bool destroy /*= false*/)
 	{
 		CScopedMutex m(m_mutex);
 		const auto it = m_emitters.find(uniqueId);
-		if (it == m_emitters.end())
+		if (it.atEnd())
 			return;
 
 		SoundEmitterData* emitter = *it;
@@ -284,7 +284,7 @@ void CSoundingObject::SetPitch(int uniqueId, float pitch)
 	{
 		CScopedMutex m(m_mutex);
 		const auto it = m_emitters.find(uniqueId);
-		if (it == m_emitters.end())
+		if (it.atEnd())
 			return;
 
 		SetPitch(*it, pitch);
@@ -382,7 +382,7 @@ SoundEmitterData* CSoundingObject::FindEmitter(int uniqueId) const
 		CScopedMutex m(*const_cast<CEqMutex*>(&m_mutex));
 
 		const auto it = m_emitters.find(uniqueId);
-		if (it != m_emitters.end())
+		if (!it.atEnd())
 			return *it;
 	}
 	return nullptr;

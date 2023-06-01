@@ -1185,7 +1185,7 @@ void ShaderAPID3DX10::DestroyShaderProgram(IShaderProgram* pShaderProgram)
 	{
 		CScopedMutex m(g_sapi_ShaderMutex);
 		auto it = m_ShaderList.find(pShader->m_nameHash);
-		if (it == m_ShaderList.end())
+		if (it.atEnd())
 			return;
 
 		// remove it if reference is zero

@@ -295,7 +295,7 @@ unzFile	CZipFileReader::GetZippedFile(const char* filename) const
 	//Msg("Request file '%s' %d\n", pkgFileName.ToCString(), strHash);
 
 	auto it = m_files.find(nameHash);
-	if (it != m_files.end())
+	if (!it.atEnd())
 	{
 		const zfileinfo_t& file = *it;
 		unzFile zipFile = GetNewZipHandle();

@@ -609,7 +609,7 @@ CRefPtr<ISoundSource> CEqAudioSystemAL::GetSample(const char* filename)
 	{
 		CScopedMutex m(s_audioSysMutex);
 		auto it = m_samples.find(nameHash);
-		if (it != m_samples.end())
+		if (!it.atEnd())
 			return CRefPtr(*it);
 	}
 
@@ -669,7 +669,7 @@ audioEffectId_t CEqAudioSystemAL::FindEffect(const char* name) const
 	const int nameHash = StringToHash(name, true);
 	auto it = m_effects.find(nameHash);
 
-	if (it != m_effects.end())
+	if (!it.atEnd())
 		return it.value().nAlEffect;
 
 	return EFFECT_ID_NONE;

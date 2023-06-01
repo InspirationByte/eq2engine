@@ -519,7 +519,7 @@ const eqFontChar_t&	CFont::GetFontCharById( const int chrId ) const
 
 	auto it = m_charMap.find(chrId);
 
-	if(it == m_charMap.end())
+	if(it.atEnd())
 		return null_default;
 	
 	return *it;

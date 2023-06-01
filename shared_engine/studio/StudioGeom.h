@@ -41,6 +41,8 @@ public:
 	CEqStudioGeom();
 	~CEqStudioGeom();
 
+	int							GetCacheIndex() const { return m_cacheIdx; }
+
 	const char*					GetName() const;
 	int							GetLoadingState() const;	// EModelLoadingState
 	void						LoadMotionPackage(const char* filename);
