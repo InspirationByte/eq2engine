@@ -217,7 +217,7 @@ void CMaterial::InitMaterialVars(KVSection* kvs, const char* prefix)
 		{
 			CScopedMutex m(s_materialVarMutex);
 			auto it = m_vars.variableMap.find(nameHash);
-			if (it == m_vars.variableMap.end())
+			if (it.atEnd())
 			{
 				const int varId = m_vars.variables.numElem();
 				MatVarData& newVar = m_vars.variables.append();
@@ -383,7 +383,7 @@ MatVarProxyUnk CMaterial::GetMaterialVar(const char* pszVarName, const char* def
 	const int nameHash = StringToHash(pszVarName, true);
 
 	auto it = m_vars.variableMap.find(nameHash);
-	if (it != m_vars.variableMap.end())
+	if (!it.atEnd())
 		return MatVarProxyUnk(*it, m_vars);
 
 	const int varId = m_vars.variables.numElem();
@@ -401,7 +401,7 @@ MatVarProxyUnk CMaterial::FindMaterialVar(const char* pszVarName) const
 
 	CScopedMutex m(s_materialVarMutex);
 	auto it = m_vars.variableMap.find(nameHash);
-	if (it == m_vars.variableMap.end())
+	if (it.atEnd())
 		return MatVarProxyUnk();
 
 	return MatVarProxyUnk(*it, *const_cast<MaterialVarBlock*>(&m_vars));

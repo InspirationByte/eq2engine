@@ -1456,7 +1456,7 @@ void ShaderAPIGL::DestroyShaderProgram(IShaderProgram* pShaderProgram)
 	{
 		CScopedMutex m(g_sapi_ShaderMutex);
 		auto it = m_ShaderList.find(pShader->m_nameHash);
-		if (it == m_ShaderList.end())
+		if (it.atEnd())
 			return;
 
 		// remove it if reference is zero
@@ -2232,7 +2232,7 @@ void ShaderAPIGL::SetShaderConstantRaw(int nameHash, const void *data, int nSize
 
 	const Map<int, GLShaderConstant_t>& constantsMap = prog->m_constants;
 	auto it = constantsMap.find(nameHash);
-	if (it == constantsMap.end())
+	if (it.atEnd())
 		return;
 
 	GLShaderConstant_t& uni = *it;
@@ -2780,7 +2780,7 @@ void ShaderAPIGL::SetTexture(int nameHash, const ITexturePtr& pTexture )
 	const Map<int, GLShaderSampler_t>& samplerMap = ((CGLShaderProgram*)m_pSelectedShader)->m_samplers;
 
 	auto it = samplerMap.find(nameHash);
-	if (it == samplerMap.end())
+	if (it.atEnd())
 		return;
 
 	const int unitIndex = (*it).index;

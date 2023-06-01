@@ -1763,7 +1763,7 @@ void ShaderAPID3D9::DestroyShaderProgram(IShaderProgram* pShaderProgram)
 	{
 		CScopedMutex m(g_sapi_ShaderMutex);
 		auto it = m_ShaderList.find(pShader->m_nameHash);
-		if (it == m_ShaderList.end())
+		if (it.atEnd())
 			return;
 
 		// remove it if reference is zero
@@ -2308,7 +2308,7 @@ void ShaderAPID3D9::SetTexture(int nameHash, const ITexturePtr& pTexture)
 	const Map<int, DX9Sampler_t>& samplerMap = pShader->m_samplers;
 
 	auto it = samplerMap.find(nameHash);
-	if (it == samplerMap.end())
+	if (it.atEnd())
 		return;
 
 	const DX9Sampler_t& sampler = *it;
@@ -2334,7 +2334,7 @@ void ShaderAPID3D9::SetShaderConstantRaw(int nameHash, const void *data, int nSi
 
 	const Map<int, DX9ShaderConstant_t>& constantsMap = pShader->m_constants;
 	auto it = constantsMap.find(nameHash);
-	if (it == constantsMap.end())
+	if (it.atEnd())
 		return;
 
 	const DX9ShaderConstant_t& constant = *it;

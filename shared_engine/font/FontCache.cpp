@@ -92,7 +92,7 @@ bool CEqFontCache::LoadFontDescriptionFile( const char* filename )
 		}
 
 		const int nameHash = StringToHash(fontSec->name);
-		if (m_fonts.find(nameHash) != m_fonts.end())
+		if (m_fonts.contains(nameHash))
 		{
 			MsgWarning("Font %s already loaded, skipping\n", fontSec->name);
 			continue;
@@ -252,7 +252,7 @@ eqFontFamily_t* CEqFontCache::GetFamily(const char* name) const
 {
 	const int nameHash = StringToHash(name);
 	auto it = m_fonts.find(nameHash);
-	if (it == m_fonts.end())
+	if (it.atEnd())
 		return m_defaultFont;
 
 	return &(*it);

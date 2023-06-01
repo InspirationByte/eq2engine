@@ -117,7 +117,7 @@ void GetFBXBonesAsDSM(const ofbx::Geometry& geom, const Matrix3x3& convertMatrix
 		const ofbx::Cluster& fbxCluster = *skin->getCluster(i);
 		const ofbx::Object* fbxBoneLink = fbxCluster.getLink();
 
-		if (boneSet.find(fbxBoneLink) != boneSet.end())
+		if (boneSet.contains(fbxBoneLink))
 			continue;
 		boneSet.insert(fbxBoneLink);
 
@@ -241,7 +241,7 @@ void ConvertFBXMeshToDSM(int meshId, dsmmodel_t* model, esmshapedata_t* shapeDat
 		const int materialIdx = vertMaterials ? vertMaterials[triNum] : 0;
 		const int materialGroupIdx = meshId | (materialIdx << 16);
 		auto found = materialGroups.find(materialGroupIdx);
-		if (found == materialGroups.end())
+		if (found.atEnd())
 		{
 			dsmGrp = PPNew dsmgroup_t();
 
@@ -280,7 +280,7 @@ void ConvertFBXMeshToDSM(int meshId, dsmmodel_t* model, esmshapedata_t* shapeDat
 			{
 				const VertexWeightData& wd = weightData[w];
 				auto it = wd.indexWeightMap.find(jj);
-				if (it == wd.indexWeightMap.end())
+				if (it.atEnd())
 					continue;
 
 				tempWeights.append(*it);
@@ -536,21 +536,21 @@ void GetFBXCurveAsInterpKeyFrames(const ofbx::AnimationCurveNode* curveNode, Arr
 
 		// interpolate previous frames from last keyframe to this new one
 
-		if (fx != valueX.end())
+		if (!fx.atEnd())
 		{
 			vecValue.x = *fx;
 			interpKeyFrames(lastKeyframes.x, keyframeCounter, 0);
 			lastKeyframes.x = keyframeCounter;
 		}
 
-		if (fy != valueY.end())
+		if (!fy.atEnd())
 		{
 			vecValue.y = *fy;
 			interpKeyFrames(lastKeyframes.y, keyframeCounter, 1);
 			lastKeyframes.y = keyframeCounter;
 		}
 
-		if (fz != valueZ.end())
+		if (!fz.atEnd())
 		{
 			vecValue.z = *fz;
 			interpKeyFrames(lastKeyframes.z, keyframeCounter, 2);

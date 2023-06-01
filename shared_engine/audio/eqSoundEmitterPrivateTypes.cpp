@@ -144,7 +144,7 @@ uint8 SoundScriptDesc::FindVariableIndex(const char* varName) const
 int	SoundScriptDesc::GetInputNodeId(int nameHash) const
 {
 	auto it = inputNodeMap.find(nameHash);
-	if (it == inputNodeMap.end())
+	if (it.atEnd())
 		return -1;
 	return *it;
 }
@@ -587,7 +587,7 @@ void SoundEmitterData::SetInputValue(int inputNameHash, int arrayIdx, float valu
 		return;
 
 	auto dataIt = inputs.find(inputNodeId);
-	if (dataIt == inputs.end())
+	if (dataIt.atEnd())
 		return;
 
 	SoundNodeInput& in = *dataIt;
@@ -601,7 +601,7 @@ void SoundEmitterData::SetInputValue(uint8 inputId, float value)
 	SoundNodeDesc::UnpackInputIdArrIdx(inputId, nodeId, arrayIdx);
 
 	auto dataIt = inputs.find(nodeId);
-	if (dataIt == inputs.end())
+	if (dataIt.atEnd())
 		return;
 
 	SoundNodeInput& in = *dataIt;
@@ -617,7 +617,7 @@ float SoundEmitterData::GetInputValue(int nodeId, int arrayIdx)
 		return nodeDescs[nodeId].c.value;
 
 	auto dataIt = inputs.find(nodeId);
-	if (dataIt == inputs.end())
+	if (dataIt.atEnd())
 		return 0.0f;
 
 	SoundNodeInput& in = *dataIt;

@@ -362,7 +362,7 @@ ITexturePtr ShaderAPI_Base::FindTexture(const char* pszName)
 	{
 		CScopedMutex m(g_sapi_TextureMutex);
 		auto it = m_TextureList.find(nameHash);
-		if (it != m_TextureList.end())
+		if (!it.atEnd())
 		{
 			return CRefPtr(*it);
 		}
@@ -374,7 +374,7 @@ ITexturePtr ShaderAPI_Base::FindTexture(const char* pszName)
 ITexture* ShaderAPI_Base::FindTexturePtr(int nameHash) const
 {
 	auto it = m_TextureList.find(nameHash);
-	if (it != m_TextureList.end())
+	if (!it.atEnd())
 		return *it;
 	return nullptr;
 }
@@ -389,7 +389,7 @@ ITexturePtr ShaderAPI_Base::FindOrCreateTexture(const char* pszName, bool& justC
 
 	CScopedMutex m(g_sapi_TextureMutex);
 	auto it = m_TextureList.find(nameHash);
-	if (it != m_TextureList.end())
+	if (!it.atEnd())
 		return CRefPtr(*it);
 
 	if (*pszName == '$')
@@ -795,7 +795,7 @@ IShaderProgram* ShaderAPI_Base::FindShaderProgram(const char* pszName, const cha
 	{
 		CScopedMutex m(g_sapi_ShaderMutex);
 		auto it = m_ShaderList.find(nameHash);
-		if (it != m_ShaderList.end())
+		if (!it.atEnd())
 		{
 			return *it;
 		}

@@ -108,7 +108,7 @@ inline NODE_ID IGraph<EDGE_ITER, NODE_ID>::Djikstra(const NODE_ID* startNodes, i
 			minDist = *it;
 		}
 
-		if (bestNode == openSet.end())
+		if (bestNode.atEnd())
 			break;
 
 		cheapestNode = bestNode.key();

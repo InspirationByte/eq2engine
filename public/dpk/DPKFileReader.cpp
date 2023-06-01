@@ -294,10 +294,8 @@ int	CDPKFileReader::FindFileIndex(const char* filename) const
 	const int nameHash = StringToHash(pkgFileName.ToCString(), true);
 
 	auto it = m_fileIndices.find(nameHash);
-	if (it != m_fileIndices.end())
-	{
+	if (!it.atEnd())
 		return it.value();
-	}
 
     return -1;
 }

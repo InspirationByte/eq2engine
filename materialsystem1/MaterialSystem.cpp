@@ -141,7 +141,7 @@ public:
 
 		{
 			CScopedMutex m(s_matSystemMutex);
-			if (m_newMaterials.find(pMaterial) != m_newMaterials.end())
+			if (m_newMaterials.contains(pMaterial))
 				return;
 
 			pMaterial->Ref_Grab();
@@ -611,7 +611,7 @@ IMaterialPtr CMaterialSystem::GetMaterial(const char* szMaterialName)
 		CScopedMutex m(s_matSystemMutex);
 
 		auto it = m_loadedMaterials.find(nameHash);
-		if (it != m_loadedMaterials.end())
+		if (!it.atEnd())
 			return IMaterialPtr(*it);
 
 		// by default try to load material file from disk
@@ -918,7 +918,7 @@ MatVarProxyUnk CMaterialSystem::FindGlobalMaterialVar(int nameHash) const
 {
 	CScopedMutex m(s_matSystemMutex);
 	auto it = m_globalMaterialVars.variableMap.find(nameHash);
-	if (it == m_globalMaterialVars.variableMap.end())
+	if (it.atEnd())
 		return MatVarProxyUnk();
 
 	return MatVarProxyUnk(*it, *const_cast<MaterialVarBlock*>(&m_globalMaterialVars));
@@ -937,7 +937,7 @@ MatVarProxyUnk	CMaterialSystem::GetGlobalMaterialVarByName(const char* pszVarNam
 	const int nameHash = StringToHash(pszVarName);
 
 	auto it = m_globalMaterialVars.variableMap.find(nameHash);
-	if (it != m_globalMaterialVars.variableMap.end())
+	if (!it.atEnd())
 		return MatVarProxyUnk(*it, m_globalMaterialVars);
 
 	const int varId = m_globalMaterialVars.variables.numElem();
@@ -1502,7 +1502,7 @@ void CMaterialSystem::SetBlendingStates(ER_BlendFactor nSrcFactor, ER_BlendFacto
 
 	auto blendState = m_blendStates.find(stateIndex);
 
-	if(blendState == m_blendStates.end())
+	if(blendState.atEnd())
 	{
 		BlendStateParam_t desc;
 		// no sense to enable blending when no visual effects...
@@ -1547,7 +1547,7 @@ void CMaterialSystem::SetDepthStates(bool bDoDepthTest, bool bDoDepthWrite, ER_C
 
 	auto depthState = m_depthStates.find(stateIndex);
 
-	if(depthState == m_depthStates.end())
+	if(depthState.atEnd())
 	{
 		DepthStencilStateParams_t desc;
 		desc.depthWrite = bDoDepthWrite;
@@ -1592,7 +1592,7 @@ void CMaterialSystem::SetRasterizerStates(ER_CullMode nCullMode, ER_FillMode nFi
 
 	auto rasterState = m_rasterStates.find(stateIndex);
 
-	if(rasterState == m_rasterStates.end())
+	if(rasterState.atEnd())
 	{
 		RasterizerStateParams_t desc;
 		desc.cullMode = nCullMode;

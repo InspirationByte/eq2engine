@@ -107,7 +107,7 @@ int CStudioCache::GetModelIndex(const char* modelName) const
 
 	const int hash = StringToHash(str, true);
 	auto found = m_cacheIndex.find(hash);
-	if (found != m_cacheIndex.end())
+	if (!found.atEnd())
 	{
 		return *found;
 	}

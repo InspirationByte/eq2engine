@@ -84,7 +84,7 @@ void* CBaseEqGeomInstancer::AllocInstance(int bodyGroup, int lod, int materialGr
 	ushort bufId = MakeInstId(bodyGroup, lod, materialGroup);
 
 	auto it = m_data.find(bufId);
-	if (it == m_data.end())
+	if (it.atEnd())
 	{
 		it = m_data.insert(bufId);
 		EGFInstBuffer& newBuffer = *it;
@@ -191,7 +191,7 @@ void CBaseEqGeomInstancer::Draw( CEqStudioGeom* model )
 			{
 				const ushort dataId = MakeInstId(bodyGrp, lod, mGrp);
 				auto dataIt = m_data.find(dataId);
-				if (dataIt == m_data.end())
+				if (dataIt.atEnd())
 					continue;
 
 				EGFInstBuffer& buffer = *dataIt;

@@ -1324,7 +1324,7 @@ bool CDebugOverlay::CheckNodeLifetime(DebugNodeBase& node)
 
 	// check if it's been replaced
 	auto found = m_newNames.find(node.nameHash);
-	if (found == m_newNames.end())
+	if (found.atEnd())
 		return true;
 
 	// check node time stamp, we allow to put different objects under similar name in one frame
