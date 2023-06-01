@@ -422,7 +422,7 @@ void CAnimatedModel::Render(int nViewRenderFlags, float fDist, int startLod, boo
 	Vector3D view_vec = g_pViewEntity->GetEyeOrigin() - m_matWorldTransform.getTranslationComponent();
 
 	// select the LOD
-	int nLOD = m_pModel->SelectLod( length(view_vec) ); // lod distance check
+	int nLOD = m_pModel->SelectLod( length(view_vec) );
 
 	// add water reflection lods
 	if(nViewRenderFlags & VR_FLAG_WATERREFLECTION)
@@ -432,7 +432,7 @@ void CAnimatedModel::Render(int nViewRenderFlags, float fDist, int startLod, boo
 
 	materials->SetAmbientColor( color_white );
 
-	int startLOD = m_pModel->SelectLod( fDist ); // lod distance check
+	int startLOD = m_pModel->SelectLod( fDist );
 
 	if(!overrideLod)
 		startLOD += startLod;

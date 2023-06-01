@@ -71,12 +71,11 @@ void CBaseEqGeomInstancer::Cleanup()
 	m_vertFormat = nullptr;
 
 	m_ownsVertexFormat = false;
-	m_hasInstances = false;
 }
 
 bool CBaseEqGeomInstancer::HasInstances() const
 {
-	return m_hasInstances;
+	return m_bodyGroupBounds[0] != 255;
 }
 
 void* CBaseEqGeomInstancer::AllocInstance(int bodyGroup, int lod, int materialGroup)
@@ -104,8 +103,6 @@ void* CBaseEqGeomInstancer::AllocInstance(int bodyGroup, int lod, int materialGr
 	m_lodBounds[1] = max(m_lodBounds[1], lod);
 	m_matGroupBounds[0] = min(m_matGroupBounds[0], materialGroup);
 	m_matGroupBounds[1] = max(m_matGroupBounds[1], materialGroup);
-
-	m_hasInstances = true;
 
 	const int instanceId = buffer.numInstances++;
 	return (ubyte*)buffer.instances + instanceId * m_instanceSize;
@@ -137,7 +134,6 @@ void CBaseEqGeomInstancer::Invalidate()
 		EGFInstBuffer& buffer = *it;
 		buffer.upToDateInstanes = buffer.numInstances = 0;
 	}
-	m_hasInstances = false;
 
 	m_bodyGroupBounds[0] = 255;
 	m_bodyGroupBounds[1] = 0;

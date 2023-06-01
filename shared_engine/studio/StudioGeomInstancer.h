@@ -69,11 +69,10 @@ protected:
 	IVertexFormat*				m_vertFormat{ nullptr };
 	int							m_instanceSize{ 0 };
 
-	uint8						m_bodyGroupBounds[2];
-	uint8						m_lodBounds[2];
-	uint8						m_matGroupBounds[2];
+	uint8						m_bodyGroupBounds[2]{ 0 };
+	uint8						m_lodBounds[2]{ 0 };
+	uint8						m_matGroupBounds[2]{ 0 };
 
-	bool						m_hasInstances{ false };
 	bool						m_ownsVertexFormat{ false };
 };
 
