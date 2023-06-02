@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright ï¿½ Inspiration Byte
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
 // Description: Physics object grid
@@ -12,11 +12,11 @@ class CEqPhysics;
 
 struct collgridcell_t
 {
-	short	x,y;
-	float	cellBoundUsed;	// unsigned z of usage by static objects
-
-	Array<CEqCollisionObject*>		m_gridObjects{ PP_SL };
-	Array<CEqCollisionObject*>		m_dynamicObjs{ PP_SL };
+	Array<CEqCollisionObject*> m_gridObjects{ PP_SL };
+	Array<CEqCollisionObject*> m_dynamicObjs{ PP_SL };
+	float cellBoundUsed = 0.0f;	// unsigned z of usage by static objects
+	short x = -1;
+	short y = -1;
 };
 
 class CEqCollisionBroadphaseGrid
@@ -48,7 +48,8 @@ protected:
 	collgridcell_t*		GetAllocCellAt(int x, int y);
 	void				FreeCellAt( int x, int y );
 
-	collgridcell_t**	m_gridMap{ nullptr };
+	//collgridcell_t**	m_gridMap{ nullptr };
+	Map<int, collgridcell_t> m_gridMap{ PP_SL };
 
 	CEqPhysics*			m_physics{ nullptr };
 

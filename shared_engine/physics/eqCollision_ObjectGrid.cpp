@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright ï¿½ Inspiration Byte
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
 // Description: Physics object 2D spatial grid
@@ -27,51 +27,29 @@ CEqCollisionBroadphaseGrid::CEqCollisionBroadphaseGrid(CEqPhysics* physics, int 
 	// compute grid size
 	m_gridWide = ceilf(size.x * m_invGridSize);
 	m_gridTall = ceilf(size.z * m_invGridSize);
-
-	m_gridMap = PPNew collgridcell_t * [m_gridWide * m_gridTall];
-
-	for (int y = 0; y < m_gridWide; y++)
-	{
-		for (int x = 0; x < m_gridTall; x++)
-		{
-			int idx = y * m_gridWide + x;
-
-			m_gridMap[idx] = nullptr;
-		}
-	}
-
-	float grid_size = (float(sizeof(collgridcell_t*) * m_gridWide * m_gridTall) / 1024.0f) / 1024.0f;
-
-	DevMsg(DEVMSG_CORE, "CELL PTR MAP INIT = %d x %d (cellsize = %d). SIZE=%.2f MB\n", m_gridWide, m_gridTall, m_gridSize, grid_size);
 }
 
 CEqCollisionBroadphaseGrid::~CEqCollisionBroadphaseGrid()
 {
-	if (m_gridMap)
+	for (int y = 0; y < m_gridWide; y++)
 	{
-		for (int y = 0; y < m_gridWide; y++)
+		for (int x = 0; x < m_gridTall; x++)
 		{
-			for (int x = 0; x < m_gridTall; x++)
-			{
-				int idx = y * m_gridWide + x;
+			const int idx = y * m_gridWide + x;
+			auto it = m_gridMap.find(idx);
+			if(it.atEnd())
+				continue;
 
-				collgridcell_t* cell = m_gridMap[idx];
+			collgridcell_t& cell = *it;
 
-				if (cell)
-				{
-					for (int i = 0; i < cell->m_dynamicObjs.numElem(); i++)
-						cell->m_dynamicObjs[i]->SetCell(nullptr);
+			for (int i = 0; i < cell.m_dynamicObjs.numElem(); i++)
+				cell.m_dynamicObjs[i]->SetCell(nullptr);
 
-					for (int i = 0; i < m_gridMap[idx]->m_gridObjects.numElem(); i++)
-						cell->m_gridObjects[i]->SetCell(nullptr);
-				}
-
-				delete cell;
-			}
+			for (int i = 0; i < cell.m_gridObjects.numElem(); i++)
+				cell.m_gridObjects[i]->SetCell(nullptr);
 		}
 	}
-
-	SAFE_DELETE_ARRAY(m_gridMap);
+	m_gridMap.clear(true);
 }
 
 
@@ -129,7 +107,9 @@ collgridcell_t* CEqCollisionBroadphaseGrid::GetCellAtPos(const Vector3D& origin)
 	if(xz_pos.y < 0 || xz_pos.y >= gridTall)
 		return nullptr;
 
-	return m_gridMap[xz_pos.y*gridWide + xz_pos.x];
+	auto it = m_gridMap.find(xz_pos.y*gridWide + xz_pos.x);
+
+	return it.atEnd() ? static_cast<collgridcell_t*>(nullptr) : &(*it);
 }
 
 collgridcell_t* CEqCollisionBroadphaseGrid::GetCellAt(int x, int y) const
@@ -143,7 +123,9 @@ collgridcell_t* CEqCollisionBroadphaseGrid::GetCellAt(int x, int y) const
 	if(y < 0 || y >= gridTall)
 		return nullptr;
 
-	return m_gridMap[y*gridWide + x];
+	auto it = m_gridMap.find(y*gridWide + x);
+
+	return it.atEnd() ? static_cast<collgridcell_t*>(nullptr) : &(*it);
 }
 
 bool CEqCollisionBroadphaseGrid::GetCellBounds(int x, int y, Vector3D& mins, Vector3D& maxs) const
@@ -177,23 +159,20 @@ collgridcell_t*	CEqCollisionBroadphaseGrid::GetAllocCellAt(int x, int y)
 	if(y < 0 || y >= gridTall)
 		return nullptr;
 
-	if(!m_gridMap)
-		return nullptr;
+	const int cellIdx = y * gridWide + x;
+	auto it = m_gridMap.find(cellIdx);
 
-	int cellIdx = y * gridWide + x;
-
-	if(!m_gridMap[cellIdx])
+	if(it.atEnd())
 	{
-		collgridcell_t* newCell = PPNew collgridcell_t();
+		it = m_gridMap.insert(cellIdx);
+		collgridcell_t& newCell = *it;
 
-		newCell->x = x;
-		newCell->y = y;
-		newCell->cellBoundUsed = 0;
-
-		m_gridMap[cellIdx] = newCell;
+		newCell.x = x;
+		newCell.y = y;
+		newCell.cellBoundUsed = 0;
 	}
 
-	return m_gridMap[cellIdx];
+	return &(*it);
 }
 
 void CEqCollisionBroadphaseGrid::FreeCellAt( int x, int y )
@@ -207,31 +186,27 @@ void CEqCollisionBroadphaseGrid::FreeCellAt( int x, int y )
 	if(y < 0 || y >= gridTall)
 		return;
 
-	if(m_gridMap == nullptr)
+	const int cellIdx = y * gridWide + x;
+	auto it = m_gridMap.find(cellIdx);
+
+	if(it.atEnd())
 		return;
 
-	int cellIdx = y * gridWide + x;
+	collgridcell_t& cell = *it;
 
-	collgridcell_t* cell = m_gridMap[cellIdx];
+	Array<CEqCollisionObject*>& dynamicObjs = cell.m_dynamicObjs;
+	int count = dynamicObjs.numElem();
 
-	if(cell)
+	for(int i = 0; i < count; i++)
 	{
-		Array<CEqCollisionObject*>& dynamicObjs = cell->m_dynamicObjs;
-		int count = dynamicObjs.numElem();
-
-		for(int i = 0; i < count; i++)
-		{
-			CEqCollisionObject* pObj = dynamicObjs[i];
-			pObj->SetCell(nullptr);
-		}
-
-		if(cell->m_gridObjects.numElem())
-			MsgWarning( "Cell deallocated, but in use (%d)\n", cell->m_gridObjects.numElem());
-
-		delete cell;
-
-		m_gridMap[cellIdx] = nullptr;
+		CEqCollisionObject* pObj = dynamicObjs[i];
+		pObj->SetCell(nullptr);
 	}
+
+	if(cell.m_gridObjects.numElem())
+		MsgWarning( "Cell deallocated, but in use (%d)\n", cell.m_gridObjects.numElem());
+
+	m_gridMap.remove(it);
 }
 
 void CEqCollisionBroadphaseGrid::FindBoxRange(const BoundingBox& bbox, IVector2D& cr_min, IVector2D& cr_max, float extTolerance) const
@@ -272,9 +247,6 @@ void CEqCollisionBroadphaseGrid::FindBoxRange(const BoundingBox& bbox, IVector2D
 
 void CEqCollisionBroadphaseGrid::AddStaticObjectToGrid( CEqCollisionObject* collisionObject )
 {
-	if(m_gridMap == nullptr)
-		return;
-
 	if(collisionObject == nullptr)
 		return;
 
@@ -335,9 +307,6 @@ void CEqCollisionBroadphaseGrid::AddStaticObjectToGrid( CEqCollisionObject* coll
 
 void CEqCollisionBroadphaseGrid::RemoveStaticObjectFromGrid( CEqCollisionObject* collisionObject )
 {
-	if(m_gridMap == nullptr)
-		return;
-
 	if(collisionObject == nullptr)
 		return;
 
