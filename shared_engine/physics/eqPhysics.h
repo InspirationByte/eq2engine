@@ -104,7 +104,8 @@ public:
 	bool							TestLineCollision(	const FVector3D& start,
 														const FVector3D& end,
 														CollisionData_t& coll,
-														int rayMask = COLLISION_MASK_ALL, eqPhysCollisionFilter* filterParams = nullptr);
+														int rayMask = COLLISION_MASK_ALL, 
+														eqPhysCollisionFilter* filterParams = nullptr);
 
 	///< Pushes convex in the world for closest collision
 	bool							TestConvexSweepCollision(const btCollisionShape* shape,
@@ -112,7 +113,8 @@ public:
 																const FVector3D& start,
 																const FVector3D& end,
 																CollisionData_t& coll,
-																int rayMask = COLLISION_MASK_ALL, eqPhysCollisionFilter* filterParams = nullptr);
+																int rayMask = COLLISION_MASK_ALL, 
+																eqPhysCollisionFilter* filterParams = nullptr);
 	///< Performs a line test for a single object.
 	///< start, end are world coordinates
 	bool							TestLineSingleObject(CEqCollisionObject* object,
@@ -120,6 +122,7 @@ public:
 															const FVector3D& end,
 															const BoundingBox& raybox,
 															CollisionData_t& coll,
+															float closestHit,
 															int rayMask,
 															eqPhysCollisionFilter* filterParams,
 															void* args = nullptr);
@@ -131,6 +134,7 @@ public:
 																const FVector3D& end,
 																const BoundingBox& raybox,
 																CollisionData_t& coll,
+																float closestHit,
 																int rayMask,
 																eqPhysCollisionFilter* filterParams,
 																void* args = nullptr);
@@ -171,6 +175,7 @@ protected:
 		const FVector3D& end,
 		const BoundingBox& raybox,
 		CollisionData_t& coll,
+		float closestHit,
 		int rayMask,
 		eqPhysCollisionFilter* filterParams,
 		void* args);
@@ -178,10 +183,10 @@ protected:
 	///< tests line versus some objects
 	template <typename F>
 	bool							TestLineCollisionOnCell(int y, int x,
-															const FVector3D& start,
-															const FVector3D& end,
+															const FVector3D& start, const FVector3D& end,
 															const BoundingBox& rayBox,
 															CollisionData_t& coll,
+															Set<CEqCollisionObject*>& skipObjects,
 															int rayMask,
 															eqPhysCollisionFilter* filterParams,
 															F func,
@@ -189,9 +194,8 @@ protected:
 
 	///< Performs collision tests in broadphase grid
 	template <typename F>
-	void							InternalTestLineCollisionCells(	int y1, int x1, int y2, int x2,
-																	const FVector3D& start,
-																	const FVector3D& end,
+	void							InternalTestLineCollisionCells(	const Vector2D& startCell, const Vector2D& endCell,
+																	const FVector3D& start, const FVector3D& end,
 																	const BoundingBox& rayBox,
 																	CollisionData_t& coll,
 																	int rayMask,

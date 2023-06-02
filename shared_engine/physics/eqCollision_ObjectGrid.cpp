@@ -52,21 +52,30 @@ CEqCollisionBroadphaseGrid::~CEqCollisionBroadphaseGrid()
 	m_gridMap.clear(true);
 }
 
-
-bool CEqCollisionBroadphaseGrid::GetPointAt(const Vector3D& origin, int& x, int& y) const
+bool CEqCollisionBroadphaseGrid::GetPointAt(const Vector3D& origin, IVector2D& xzCell) const
 {
-	float halfGridNeg = m_gridSize*-0.5f;
+	Vector2D cell;
+	const bool ok = GetPointAt(origin, cell);
 
-	Vector2D center(m_gridWide*halfGridNeg, m_gridTall*halfGridNeg);
+	xzCell.x = floor(cell.x);
+	xzCell.y = floor(cell.y);
+
+	return ok;
+}
+
+bool CEqCollisionBroadphaseGrid::GetPointAt(const Vector3D& origin, Vector2D& xzCell) const
+{
+	const float halfGridNeg = m_gridSize * -0.5f;
+
+	Vector2D center(m_gridWide * halfGridNeg, m_gridTall * halfGridNeg);
 	Vector2D xz_pos((origin.xz() - center) * m_invGridSize);
 
-	x = floor(xz_pos.x);
-	y = floor(xz_pos.y);
+	xzCell = xz_pos;
 
-	if(x < 0 || x >= m_gridWide)
+	if (xz_pos.x < 0 || xz_pos.x >= m_gridWide)
 		return false;
 
-	if(y < 0 || y >= m_gridTall)
+	if (xz_pos.y < 0 || xz_pos.y >= m_gridTall)
 		return false;
 
 	return true;
@@ -128,6 +137,18 @@ collgridcell_t* CEqCollisionBroadphaseGrid::GetCellAt(int x, int y) const
 	return it.atEnd() ? static_cast<collgridcell_t*>(nullptr) : &(*it);
 }
 
+void CEqCollisionBroadphaseGrid::GetCellBoundsXZ(int x, int y, Vector2D& mins, Vector2D& maxs) const
+{
+	const int gridWide = m_gridWide;
+	const int gridTall = m_gridTall;
+	const int gridSize = m_gridSize;
+
+	Vector2D center(gridWide * gridSize * -0.5f, gridTall * gridSize * -0.5f);
+
+	mins = Vector2D(x * gridSize, y * gridSize) + center;
+	maxs = Vector2D((x + 1) * gridSize, (y + 1) * gridSize) + center;
+}
+
 bool CEqCollisionBroadphaseGrid::GetCellBounds(int x, int y, Vector3D& mins, Vector3D& maxs) const
 {
 	collgridcell_t* cell = GetCellAt(x,y);
@@ -135,15 +156,12 @@ bool CEqCollisionBroadphaseGrid::GetCellBounds(int x, int y, Vector3D& mins, Vec
 	if(!cell)
 		return false;
 
+	Vector2D min2D, max2D;
+	GetCellBoundsXZ(x, y, min2D, max2D);
+
 	const float cellHeight = cell->cellBoundUsed;
-	const int gridWide = m_gridWide;
-	const int gridTall = m_gridTall;
-	const int gridSize = m_gridSize;
-
-	Vector3D center(gridWide*gridSize*-0.5f, 0, gridTall*gridSize*-0.5f);
-
-	mins = Vector3D(x*gridSize, -cellHeight, y*gridSize) + center;
-	maxs = Vector3D((x+1)*gridSize, cellHeight, (y+1)*gridSize) + center;
+	mins = Vector3D(min2D.x, -cellHeight, min2D.y);
+	maxs = Vector3D(max2D.x, cellHeight, max2D.y);
 
 	return true;
 }
@@ -250,12 +268,12 @@ void CEqCollisionBroadphaseGrid::AddStaticObjectToGrid( CEqCollisionObject* coll
 	if(collisionObject == nullptr)
 		return;
 
-	int cx,cy;
-	if(!GetPointAt(collisionObject->GetPosition(), cx, cy))
+	IVector2D cxz;
+	if(!GetPointAt(collisionObject->GetPosition(), cxz))
 		return;
 
 	// we're adding object to all nodes occupied by bbox
-	collgridcell_t* cell = GetAllocCellAt( cx,cy );
+	collgridcell_t* cell = GetAllocCellAt( cxz.x, cxz.y );
 
 	if(cell)
 	{

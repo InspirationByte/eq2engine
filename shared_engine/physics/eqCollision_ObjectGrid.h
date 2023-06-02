@@ -30,11 +30,13 @@ public:
 	collgridcell_t*		GetCellAtPos(const Vector3D& origin) const;
 	collgridcell_t*		GetCellAt(int x, int y) const;
 
-	bool				GetPointAt(const Vector3D& origin, int& x, int& y) const;
+	bool				GetPointAt(const Vector3D& origin, IVector2D& xzCell) const;
+	bool				GetPointAt(const Vector3D& origin, Vector2D& xzCell) const;
 
 	void				AddStaticObjectToGrid( CEqCollisionObject* m_collisionObject );
 	void				RemoveStaticObjectFromGrid( CEqCollisionObject* m_collisionObject );
 
+	void				GetCellBoundsXZ(int x, int y, Vector2D& mins, Vector2D& maxs) const;
 	bool				GetCellBounds(int x, int y, Vector3D& mins, Vector3D& maxs) const;
 
 	void				FindBoxRange(const BoundingBox& bbox, IVector2D& cr_min, IVector2D& cr_max, float extTolerance) const;

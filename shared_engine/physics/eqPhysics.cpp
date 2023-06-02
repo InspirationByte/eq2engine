@@ -839,12 +839,14 @@ void CEqPhysics::DetectBodyCollisions(CEqRigidBody* bodyA, CEqRigidBody* bodyB, 
 		newPair.restitutionB = bodyB->GetRestitution();
 		newPair.frictionB = bodyB->GetFriction();
 
+#ifndef _RETAIL
 		if(ph_showcontacts.GetBool())
 		{
 			debugoverlay->Box3D(hitPos-0.01f,hitPos+0.01f, ColorRGBA(1,1,0,0.15f), 1.0f);
 			debugoverlay->Line3D(hitPos, hitPos+hitNormal, ColorRGBA(0,0,1,1), ColorRGBA(0,0,1,1), 1.0f);
 			debugoverlay->Text3D(hitPos, 50.0f, ColorRGBA(1,1,0,1), EqString::Format("penetration depth: %f", hitDepth), 1.0f);
 		}
+#endif // _RETAIL
 	}
 }
 
@@ -987,13 +989,14 @@ void CEqPhysics::DetectStaticVsBodyCollision(CEqCollisionObject* staticObj, CEqR
 
 		newPair.restitutionB = bodyB->GetRestitution();
 		newPair.frictionB = bodyB->GetFriction();
-
+#ifndef _RETAIL
 		if(ph_showcontacts.GetBool())
 		{
 			debugoverlay->Box3D(hitPos-0.01f,hitPos+0.01f, ColorRGBA(1,1,0,0.15f), 1.0f);
 			debugoverlay->Line3D(hitPos, hitPos+hitNormal, ColorRGBA(0,0,1,1), ColorRGBA(0,0,1,1), 1.0f);
 			debugoverlay->Text3D(hitPos, 50.0f, ColorRGBA(1,1,0,1), EqString::Format("penetration depth: %f", hitDepth), 1.0f);
 		}
+#endif // _RETAIL
 	}
 }
 
@@ -1383,7 +1386,7 @@ void CEqPhysics::SimulateStep(float deltaTime, int iteration, FNSIMULATECALLBACK
 //
 //----------------------------------------------------------------------------------------------------
 template <typename F>
-void CEqPhysics::InternalTestLineCollisionCells(int y1, int x1, int y2, int x2,
+void CEqPhysics::InternalTestLineCollisionCells(const Vector2D& startCell, const Vector2D& endCell,
 	const FVector3D& start,
 	const FVector3D& end,
 	const BoundingBox& rayBox,
@@ -1393,96 +1396,125 @@ void CEqPhysics::InternalTestLineCollisionCells(int y1, int x1, int y2, int x2,
 	F func,
 	void* args)
 {
-    const int dx = abs(x2 - x1);
-	const int dy = -abs(y2 - y1);
+	static constexpr const int s_maxClosestTestTries = 2;
 
-	const int sx = x1 < x2 ? 1 : -1;
-	const int sy = y1 < y2 ? 1 : -1;
-
-    int err = dx + dy;
-
-    for (;;)
+	Set<CEqCollisionObject*> skipObjects(PP_SL);
 	{
-		if( TestLineCollisionOnCell(y1, x1, start, end, rayBox, coll, rayMask, filterParams, func, args) )
-			return; // if we just found nearest collision, stop.
-
-        if (x1 == x2 && y1 == y2)
-			break;
-
-        const int e2 = 2 * err;
-
-        // EITHER horizontal OR vertical step (but not both!)
-        if (e2 > dy)
+		const IVector2D cell(floor(startCell.x), floor(startCell.y));
+		if (cell == IVector2D(floor(endCell.x), floor(endCell.y)))
 		{
-            err += dy;
-            x1 += sx;
-        }
-		else if (e2 < dx)
+			TestLineCollisionOnCell(cell.y, cell.x, start, end, rayBox, coll, skipObjects, rayMask, filterParams, func, args);
+			return;
+		}
+	}
+
+	const float difX = endCell.x - startCell.x;
+	const float difY = endCell.y - startCell.y;
+	const float dist = fabs(difX) + fabs(difY);
+	const float oneByDist = 1.0f / dist;
+
+	const float dx = difX * oneByDist;
+	const float dy = difY * oneByDist;
+
+	int closestTries = 0;
+	for (int i = 0; i <= ceil(dist) && closestTries < s_maxClosestTestTries; ++i)
+	{
+		const int x = static_cast<int>(floor(startCell.x + dx * float(i)));
+		const int y = static_cast<int>(floor(startCell.y + dy * float(i)));
+
+		// if can't traverse further - stop.
+		if (!TestLineCollisionOnCell(y, x, start, end, rayBox, coll, skipObjects, rayMask, filterParams, func, args))
 		{
-            err += dx;
-            y1 += sy;
-        }
-    }
+			++closestTries;
+		}
+	}
 }
 
 //-----------------------------------------------------------------------------------------------------------------------------
 
 template <typename F>
 bool CEqPhysics::TestLineCollisionOnCell(int y, int x,
-	const FVector3D& start,
-	const FVector3D& end,
+	const FVector3D& start, const FVector3D& end,
 	const BoundingBox& rayBox,
 	CollisionData_t& coll,
+	Set<CEqCollisionObject*>& skipObjects,
 	int rayMask, eqPhysCollisionFilter* filterParams,
 	F func,
 	void* args)
 {
-	if (!m_grid) {
+	if (!m_grid)
 		return false;
-	}
+
 	collgridcell_t* cell = m_grid->GetCellAt(x,y);
 
 	if (!cell)
-		return false;
+		return true;
 
-	bool hasHit = false;
-	float fMaxDist = coll.fract;
+	float closest = coll.fract;
 
-	int objectTypeTesting = 0x3;
+	Vector2D cellMin, cellMax;
+	m_grid->GetCellBoundsXZ(x, y, cellMin, cellMax);
 
-	if(filterParams && (filterParams->flags & EQPHYS_FILTER_FLAG_DISALLOW_STATIC))
-		objectTypeTesting &= ~0x1;
-
-	if(filterParams && (filterParams->flags & EQPHYS_FILTER_FLAG_DISALLOW_DYNAMIC))
-		objectTypeTesting &= ~0x2;
-
-	const bool staticInBoundTest = true; // TEMPORARY ALLOWED. (rayBox.minPoint.y <= cell->cellBoundUsed);
-
-	if(staticInBoundTest && m_debugRaycast)
+	// try to stop propagating ray across grid
 	{
-		Vector3D cellMin, cellMax;
+		const Vector2D rayStart = start.xz();
+		const Vector2D rayDir = Vector2D(end.xz() - start.xz());
 
-		if(m_grid->GetCellBounds(x, y, cellMin, cellMax))
-			debugoverlay->Box3D(cellMin, cellMax, ColorRGBA(1,0,0,0.25f));
+		const Rectangle_t cellRect(cellMin, cellMax);
+
+		float tnear, tfar;
+		if (cellRect.IntersectsRay(rayStart, rayDir, tnear, tfar) && tnear > closest)
+			return false;
 	}
 
-	const Array<CEqCollisionObject*>& gridObjects = cell->m_gridObjects;
-	const Array<CEqCollisionObject*>& dynamicObjects = cell->m_dynamicObjs;
+	int objectTypeTesting = 0x3;
+	if (filterParams)
+	{
+		const int flags = filterParams->flags;
+		if (flags & EQPHYS_FILTER_FLAG_DISALLOW_STATIC)
+			objectTypeTesting &= ~0x1;
+
+		if (flags & EQPHYS_FILTER_FLAG_DISALLOW_DYNAMIC)
+			objectTypeTesting &= ~0x2;
+	}
+
+	// TODO: special flag that ignores bound check
+	const bool staticInBoundTest = true; // (rayBox.minPoint.y <= cell->cellBoundUsed); TEMPORARY ALLOWED because Chicago bridges. 
+
+#ifndef _RETAIL
+	if(staticInBoundTest && m_debugRaycast)
+	{
+		const float cellBound = cell->cellBoundUsed;
+		debugoverlay->Box3D(Vector3D(cellMin.x, -cellBound, cellMin.y), Vector3D(cellMax.x, cellBound, cellMax.y), ColorRGBA(1, 0, 0, 0.25f));
+	}
+#endif
+
+	bool hit = false;
+	bool hitClosest = false;
 	
 	// static objects are not checked if line is not in Y bound
 	if(staticInBoundTest && (objectTypeTesting & 0x1))
 	{
 		CScopedMutex m(s_eqPhysMutex);
-		for (int i = 0; i < gridObjects.numElem(); i++)
-		{
-			CollisionData_t tempColl;
 
-			if ((this->*func)(gridObjects[i], start, end, rayBox, tempColl, rayMask, filterParams, args) &&
-				(tempColl.fract < fMaxDist))
+		for (CEqCollisionObject* object : cell->m_gridObjects)
+		{
+			if (skipObjects.contains(object))
+				continue;
+
+			CollisionData_t tempColl;
+			if (!(this->*func)(object, start, end, rayBox, tempColl, closest, rayMask, filterParams, args))
+				continue;
+
+			hit = true;
+
+			if (tempColl.fract < closest)
 			{
-				fMaxDist = tempColl.fract;
+				skipObjects.insert(object);
+
+				closest = tempColl.fract;
 				coll = tempColl;
-				hasHit = true;
+				hitClosest = true;
 			}
 		}
 	}
@@ -1490,22 +1522,33 @@ bool CEqPhysics::TestLineCollisionOnCell(int y, int x,
 	if(objectTypeTesting & 0x2)
 	{
 		CScopedMutex m(s_eqPhysMutex);
-		// test dynamic objects within cell
-		for (int i = 0; i < dynamicObjects.numElem(); i++)
-		{
-			CollisionData_t tempColl;
 
-			if ((this->*func)(dynamicObjects[i], start, end, rayBox, tempColl, rayMask, filterParams, args) &&
-				(tempColl.fract < fMaxDist))
+		for (CEqCollisionObject* object : cell->m_dynamicObjs)
+		{
+			if (skipObjects.contains(object))
+				continue;
+
+			CollisionData_t tempColl;
+			if (!(this->*func)(object, start, end, rayBox, tempColl, closest, rayMask, filterParams, args))
+				continue;
+
+			hit = true;
+
+			if (tempColl.fract < closest)
 			{
-				fMaxDist = tempColl.fract;
+				skipObjects.insert(object);
+
+				closest = tempColl.fract;
 				coll = tempColl;
-				hasHit = true;
+				hitClosest = true;
 			}
 		}
 	}
 
-	return hasHit;
+	if (hit)
+		return !hitClosest; // continue
+
+	return true;
 }
 
 //-----------------------------------------------------------------------------------------------------------------------------
@@ -1516,8 +1559,7 @@ bool CEqPhysics::TestLineCollisionOnCell(int y, int x,
 //		- Casts line in the physics world
 //
 //----------------------------------------------------------------------------------------------------
-bool CEqPhysics::TestLineCollision(	const FVector3D& start,
-									const FVector3D& end,
+bool CEqPhysics::TestLineCollision(	const FVector3D& start, const FVector3D& end,
 									CollisionData_t& coll,
 									int rayMask, eqPhysCollisionFilter* filterParams)
 {
@@ -1525,21 +1567,20 @@ bool CEqPhysics::TestLineCollision(	const FVector3D& start,
 		return false;
 	}
 
-	IVector2D startCell, endCell;
+	Vector2D startCell, endCell;
 
 	//CScopedMutex m(s_eqPhysMutex);
-	m_grid->GetPointAt(start, startCell.x, startCell.y);
-	m_grid->GetPointAt(end, endCell.x, endCell.y);
+	m_grid->GetPointAt(start, startCell);
+	m_grid->GetPointAt(end, endCell);
 
 	coll.position = end;
-	coll.fract = 32768.0f;
+	coll.fract = 10.0f;
 
 	BoundingBox rayBox;
 	rayBox.AddVertex(start);
 	rayBox.AddVertex(end);
 
-	InternalTestLineCollisionCells(	startCell.y, startCell.x,
-									endCell.y, endCell.x,
+	InternalTestLineCollisionCells(	startCell, endCell,
 									start, end,
 									rayBox,
 									coll,
@@ -1561,10 +1602,10 @@ bool CEqPhysics::TestLineCollision(	const FVector3D& start,
 //----------------------------------------------------------------------------------------------------
 bool CEqPhysics::TestConvexSweepCollision(const btCollisionShape* shape,
 											const Quaternion& rotation,
-											const FVector3D& start,
-											const FVector3D& end,
+											const FVector3D& start, const FVector3D& end,
 											CollisionData_t& coll,
-											int rayMask, eqPhysCollisionFilter* filterParams)
+											int rayMask, 
+											eqPhysCollisionFilter* filterParams)
 {
 	if (!m_grid) {
 		return false;
@@ -1596,12 +1637,11 @@ bool CEqPhysics::TestConvexSweepCollision(const btCollisionShape* shape,
 	rayBox.AddVertex(rayBox.minPoint - sBoxSize);
 	rayBox.AddVertex(rayBox.maxPoint + sBoxSize);
 
-	IVector2D startCell, endCell;
-	m_grid->GetPointAt(start, startCell.x, startCell.y);
-	m_grid->GetPointAt(end , endCell.x, endCell.y);
+	Vector2D startCell, endCell;
+	m_grid->GetPointAt(start, startCell);
+	m_grid->GetPointAt(end , endCell);
 
-	InternalTestLineCollisionCells(	startCell.y, startCell.x,
-									endCell.y, endCell.x,
+	InternalTestLineCollisionCells(	startCell, endCell,
 									start, end,
 									rayBox,
 									coll,
@@ -1688,13 +1728,13 @@ bool CEqPhysics::CheckAllowContactTest(eqPhysCollisionFilter* filterParams, cons
 }
 
 
-
 bool CEqPhysics::TestLineSingleObject(
 	CEqCollisionObject* object,
 	const FVector3D& start,
 	const FVector3D& end,
 	const BoundingBox& rayBox,
 	CollisionData_t& coll,
+	float closestHit,
 	int rayMask,
 	eqPhysCollisionFilter* filterParams,
 	void* args)
@@ -1702,7 +1742,7 @@ bool CEqPhysics::TestLineSingleObject(
 	if(!object)
 		return false;
 
-	bool forceRaycast = (filterParams && (filterParams->flags & EQPHYS_FILTER_FLAG_FORCE_RAYCAST));
+	const bool forceRaycast = (filterParams && (filterParams->flags & EQPHYS_FILTER_FLAG_FORCE_RAYCAST));
 
 	if (!forceRaycast && (object->m_flags & COLLOBJ_NO_RAYCAST))
 		return false;
@@ -1719,12 +1759,31 @@ bool CEqPhysics::TestLineSingleObject(
 	if(!object->m_aabb_transformed.Intersects(rayBox))
 		return false;
 
+#if 0
+	{
+		const Vector3D rayVec = Vector3D(end - start);
+		const float oneByRayDist = 1.0f / length(rayVec);
+		const Vector3D rayDir = rayVec * oneByRayDist;
+	
+		float hitNear, hitFar;
+		if (!object->m_aabb_transformed.IntersectsRay(start, rayDir, hitNear, hitFar))
+			return false;
+	
+		hitNear *= oneByRayDist;
+		hitFar *= oneByRayDist;
+	
+		if (hitNear > 1.0f || hitNear > closestHit) {
+			return false;
+		}
+	}
+#endif
+
 	const Quaternion& objQuat = object->m_orientation;
 	const Vector3D& position = object->m_position;
 
 	btTransform objTransform;
 	objTransform.setRotation(btQuaternion(-objQuat.x, -objQuat.y, -objQuat.z, objQuat.w));
-	objTransform.setOrigin(btVector3(0.0f, 0.0f, 0.0f));
+	objTransform.setOrigin(btVector3(0.0f, 0.0f, 0.0f)); 
 
 	const FVector3D lineStartLocal = start - position;
 	const FVector3D lineEndLocal = end - position;
@@ -1819,6 +1878,7 @@ bool CEqPhysics::TestConvexSweepSingleObject(CEqCollisionObject* object,
 												const FVector3D& end,
 												const BoundingBox& raybox,
 												CollisionData_t& coll,
+												float closestHit,
 												int rayMask,
 												eqPhysCollisionFilter* filterParams,
 												void* args)
@@ -1900,6 +1960,7 @@ bool CEqPhysics::TestConvexSweepSingleObject(CEqCollisionObject* object,
 
 void CEqPhysics::DebugDrawBodies(int mode)
 {
+#ifndef _RETAIL
 	if (mode >= 1 && mode != 4 && mode != 5)
 	{
 		for (int i = 0; i < m_dynObjects.numElem(); i++)
@@ -1947,4 +2008,5 @@ void CEqPhysics::DebugDrawBodies(int mode)
 			debugoverlay->Box3D(body->m_aabb_transformed.minPoint, body->m_aabb_transformed.maxPoint, bodyCol, 0.0f);
 		}
 	}
+#endif // _RETAIL
 }
