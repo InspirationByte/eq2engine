@@ -565,9 +565,7 @@ void CSoundEmitterSystem::Update()
 			for (int i = 0; i < m_pendingStartSounds.numElem(); i++)
 			{
 				PendingSound& pending = m_pendingStartSounds[i];
-
-				if (pending.soundingObj.IsSet() && pending.soundingObj)
-					EmitSoundInternal(&pending.params, pending.objUniqueId, pending.soundingObj);
+				EmitSoundInternal(&pending.params, pending.objUniqueId, pending.soundingObj);
 			}
 
 			// release
