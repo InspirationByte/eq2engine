@@ -102,10 +102,10 @@ public:
 	//------------------------------------------------------------
 
 	// loads module
-	virtual DKMODULE*		LoadModule(const char* mod_name, EqString* outError = nullptr) = 0;
+	virtual DKMODULE*		OpenModule(const char* mod_name, EqString* outError = nullptr) = 0;
 
 	// frees module
-	virtual void			FreeModule( DKMODULE* pModule ) = 0;
+	virtual void			CloseModule( DKMODULE* pModule ) = 0;
 
 	// returns procedure address of the loaded module
 	virtual void*			GetProcedureAddress(DKMODULE* pModule, const char* pszProc) = 0;

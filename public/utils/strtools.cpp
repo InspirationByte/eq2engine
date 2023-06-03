@@ -8,6 +8,10 @@
 #include "core/core_common.h"
 #include "strtools.h"
 
+#ifdef _WIN32
+#include <Windows.h>
+#endif
+
 char* xstrupr(char* str)
 {
 	ASSERT(str);

@@ -19,6 +19,7 @@ static void DoCoreExceptionCallbacks()
 }
 
 #ifdef PLAT_WIN
+#include <Windows.h>
 #include <DbgHelp.h>
 
 typedef struct _MODULEINFO {

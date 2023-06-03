@@ -223,7 +223,7 @@ void Host_GameLoop()
 		{
 			g_pHost->SignalPause();
 			Platform_Sleep( 1 );
-			Threading::Yield();
+			Threading::YieldCurrentThread();
 		}
 
 		// or yield

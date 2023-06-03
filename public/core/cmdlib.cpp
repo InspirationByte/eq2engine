@@ -9,6 +9,7 @@
 #include "cmdlib.h"
 
 #ifdef _WIN32
+#include <Windows.h>
 
 static unsigned short g_InitialColor = 0xFFFF;
 static unsigned short g_LastColor = 0xFFFF;

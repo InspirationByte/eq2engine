@@ -5,6 +5,9 @@
 // Description: Equilibrium Engine threads
 //////////////////////////////////////////////////////////////////////////////////
 
+#ifdef _WIN32
+#include <Windows.h>
+#endif // _WIN32
 #include "core/core_common.h"
 
 #ifndef _Requires_lock_held_
@@ -17,6 +20,9 @@ namespace Threading
 using threadfunc_t = unsigned int (*)(void*);
 
 #ifdef _WIN32
+
+static_assert(sizeof(CRITICAL_SECTION) <= sizeof(EQWIN32_CRITICAL_SECTION), "Fix EQWIN32_CRITICAL_SECTION size!");
+static_assert(sizeof(SRWLOCK) <= sizeof(EQWIN32_SRWLOCK), "Fix EQWIN32_SRWLOCK size!");
 
 #define MS_VC_EXCEPTION 0x406D1388
 
@@ -188,7 +194,7 @@ void ThreadDestroy( uintptr_t threadHandle )
 	CloseHandle( (HANDLE)threadHandle );
 }
 
-void Yield()
+void YieldCurrentThread()
 {
 	// FIXME: Sleep(1)
 	SwitchToThread();
@@ -233,22 +239,22 @@ bool SignalWait( SignalHandle_t& handle, int nTimeout )
 
 void MutexCreate( MutexHandle_t& handle )
 {
-	InitializeCriticalSection( &handle );
+	InitializeCriticalSection( (LPCRITICAL_SECTION)&handle);
 }
 
 void MutexDestroy( MutexHandle_t& handle )
 {
-	DeleteCriticalSection( &handle );
+	DeleteCriticalSection((LPCRITICAL_SECTION)&handle );
 }
 
 bool MutexLock( MutexHandle_t& handle, bool bBlocking )
 {
-	if ( TryEnterCriticalSection( &handle ) == 0 )
+	if ( TryEnterCriticalSection((LPCRITICAL_SECTION)&handle ) == 0 )
 	{
 		if ( !bBlocking )
 			return false;
 
-		EnterCriticalSection( &handle );
+		EnterCriticalSection((LPCRITICAL_SECTION)&handle );
 	}
 
 	return true;
@@ -256,7 +262,7 @@ bool MutexLock( MutexHandle_t& handle, bool bBlocking )
 
 void MutexUnlock( MutexHandle_t& handle )
 {
-	LeaveCriticalSection( &handle );
+	LeaveCriticalSection((LPCRITICAL_SECTION)&handle );
 }
 
 //----------------------------------------------------------
@@ -264,7 +270,7 @@ void MutexUnlock( MutexHandle_t& handle )
 
 void ReadWriteLockCreate(ReadWriteLockHandle_t& handle)
 {
-	InitializeSRWLock(&handle);
+	InitializeSRWLock((PSRWLOCK)&handle);
 }
 
 void ReadWriteLockDestroy(ReadWriteLockHandle_t& handle)
@@ -273,18 +279,18 @@ void ReadWriteLockDestroy(ReadWriteLockHandle_t& handle)
 
 void ReadWriteLockRead(ReadWriteLockHandle_t& handle)
 {
-	AcquireSRWLockShared(&handle);
+	AcquireSRWLockShared((PSRWLOCK)&handle);
 }
 
 bool ReadWriteLockWrite(ReadWriteLockHandle_t& handle, bool bBlocking)
 {
 	if (bBlocking)
 	{
-		AcquireSRWLockExclusive(&handle);
+		AcquireSRWLockExclusive((PSRWLOCK)&handle);
 	}
 	else
 	{
-		if (!TryAcquireSRWLockExclusive(&handle))
+		if (!TryAcquireSRWLockExclusive((PSRWLOCK)&handle))
 			return false;
 	}
 
@@ -293,12 +299,12 @@ bool ReadWriteLockWrite(ReadWriteLockHandle_t& handle, bool bBlocking)
 
 void ReadWriteUnlockRead(ReadWriteLockHandle_t& handle)
 {
-	ReleaseSRWLockShared(&handle);
+	ReleaseSRWLockShared((PSRWLOCK)&handle);
 }
 
 void ReadWriteUnlockWrite(_Requires_lock_held_(handle) ReadWriteLockHandle_t& handle)
 {
-	ReleaseSRWLockExclusive(&handle);
+	ReleaseSRWLockExclusive((PSRWLOCK)&handle);
 }
 
 #elif defined(PLAT_POSIX)
@@ -394,7 +400,7 @@ void ThreadDestroy( uintptr_t threadHandle )
 	}
 }
 
-void Yield()
+void YieldCurrentThread()
 {
 #if defined(__ANDROID__) || defined(__APPLE__)
 	sched_yield();

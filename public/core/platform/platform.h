@@ -32,14 +32,7 @@
 #  ifndef WINVER
 #     define WINVER 0x0600
 #  endif
-#include <Windows.h>
-#ifdef FreeModule
-#undef FreeModule
-#endif
-#ifdef FreeModule
-#undef FreeModule
-#endif
-
+typedef void* HANDLE;
 #elif defined(PLAT_LINUX) || defined(PLAT_ANDROID)
 #  include <stdio.h>
 

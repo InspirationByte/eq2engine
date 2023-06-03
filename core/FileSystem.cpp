@@ -9,6 +9,22 @@
 #include <sys/stat.h>
 
 #include "core/core_common.h"
+
+#ifdef _WIN32
+#include <Windows.h>
+#ifdef CloseModule	// Windows.h
+#undef CloseModule
+#endif
+#include <direct.h>	// mkdir()
+#include <io.h>		// _access()
+#define access		_access
+#define F_OK		0       // Test for existence.
+#else
+#include <unistd.h> // rmdir(), access()
+#include <dlfcn.h>	// dlopen()
+#include <dirent.h> // opendir, readdir
+#endif
+
 #include "core/IDkCore.h"
 #include "core/ICommandLine.h"
 #include "core/ILocalize.h"
@@ -19,17 +35,6 @@
 
 #include "dpk/DPKFileReader.h"
 #include "dpk/ZipFileReader.h"
-
-#ifdef _WIN32
-#include <direct.h>	// mkdir()
-#include <io.h>		// _access()
-#define access		_access
-#define F_OK		0       // Test for existence.
-#else
-#include <unistd.h> // rmdir(), access()
-#include <dlfcn.h>	// dlopen()
-#include <dirent.h> // opendir, readdir
-#endif
 
 #ifdef PLAT_LINUX
 static int FSStringId(const char *str)
@@ -297,7 +302,7 @@ void CFileSystem::Shutdown()
 
 	for(int i = 0; i < m_modules.numElem(); i++)
 	{
-		FreeModule(m_modules[i]);
+		CloseModule(m_modules[i]);
 		i--;
 	}
 
@@ -1024,7 +1029,7 @@ bool CFileSystem::FindIsDirectory(DKFINDDATA* findData) const
 }
 
 // loads module
-DKMODULE* CFileSystem::LoadModule(const char* mod_name, EqString* outError)
+DKMODULE* CFileSystem::OpenModule(const char* mod_name, EqString* outError)
 {
 	EqString moduleFileName = mod_name;
 	EqString modExt = moduleFileName.Path_Extract_Ext();
@@ -1083,7 +1088,7 @@ DKMODULE* CFileSystem::LoadModule(const char* mod_name, EqString* outError)
 }
 
 // frees module
-void CFileSystem::FreeModule( DKMODULE* pModule )
+void CFileSystem::CloseModule( DKMODULE* pModule )
 {
 	if(!pModule)
 		return;

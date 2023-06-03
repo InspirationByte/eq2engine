@@ -8,6 +8,10 @@
 #include "core/core_common.h"
 #include "core/platform/eqtimer.h"
 
+#ifdef _WIN32
+#include <Windows.h>
+#endif
+
 //---------------------------------------------------------------------------
 
 CEqTimer::CEqTimer()
