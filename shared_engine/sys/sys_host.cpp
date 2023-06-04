@@ -132,7 +132,7 @@ bool CGameHost::LoadModules()
 {
 	// first, load matsystem module
 	EqString loadErr;
-	g_matsysmodule = g_fileSystem->LoadModule("eqMatSystem", &loadErr);
+	g_matsysmodule = g_fileSystem->OpenModule("eqMatSystem", &loadErr);
 
 	if(!g_matsysmodule)
 	{
@@ -586,7 +586,7 @@ void CGameHost::ShutdownSystems()
 	g_consoleInput->Shutdown();
 
 	materials->Shutdown();
-	g_fileSystem->FreeModule( g_matsysmodule );
+	g_fileSystem->CloseModule( g_matsysmodule );
 
 	SDL_DestroyWindow(g_pHost->m_pWindow);
 }

@@ -15,7 +15,7 @@ IMaterialSystem*	materials		= nullptr;
 DECLARE_INTERNAL_SHADERS()
 
 #ifdef _WIN32
-
+#include <Windows.h>
 #include <crtdbg.h>
 
 //---------------------------------------------------------------------------

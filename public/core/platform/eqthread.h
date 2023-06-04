@@ -29,9 +29,17 @@ enum ThreadPriority_e
 };
 
 #ifdef _WIN32
+struct EQWIN32_CRITICAL_SECTION
+{
+	int data[10];
+};
+struct EQWIN32_SRWLOCK
+{
+	int data[2];
+};
 using SignalHandle_t = HANDLE;
-using MutexHandle_t = CRITICAL_SECTION;
-using ReadWriteLockHandle_t = SRWLOCK;
+using MutexHandle_t = EQWIN32_CRITICAL_SECTION;
+using ReadWriteLockHandle_t = EQWIN32_SRWLOCK;
 #else
 struct SignalHandle_t
 {
@@ -48,11 +56,7 @@ using ReadWriteLockHandle_t = pthread_rwlock_t;
 static constexpr const int WAIT_INFINITE = -1;
 static constexpr const int DEFAULT_THREAD_STACK_SIZE = 256 * 1024;
 
-#ifdef Yield
-#	undef Yield
-#endif // Yield
-
-void			Yield();
+void			YieldCurrentThread();
 uintptr_t		GetCurrentThreadID();
 void			SetCurrentThreadName(const char* name);
 

@@ -801,7 +801,7 @@ void CMainWindow::OnCloseCmd(wxCloseEvent& event)
 
 	materials = nullptr;
 
-	g_fileSystem->FreeModule(g_matsysmodule);
+	g_fileSystem->CloseModule(g_matsysmodule);
 
 	// shutdown core
 	g_eqCore->Shutdown();
@@ -852,7 +852,7 @@ bool CWXTemplateApplication::OnInit()
 
 	// first, load matsystem module
 	EqString loadErr;
-	g_matsysmodule = g_fileSystem->LoadModule("eqMatSystem", &loadErr);
+	g_matsysmodule = g_fileSystem->OpenModule("eqMatSystem", &loadErr);
 
 	if(!g_matsysmodule)
 	{

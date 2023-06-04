@@ -211,7 +211,7 @@ void CEqParallelJobThreads::WaitForJob(eqParallelJob_t* job)
 	while(!(job->flags & JOB_FLAG_EXECUTED))
 	{
 		CompleteJobCallbacks();
-		Threading::Yield();
+		YieldCurrentThread();
 	}
 }
 

@@ -12,7 +12,9 @@
 #include "ImageLoader.h"
 
 #ifndef NO_JPEG
-
+#ifdef _WIN32
+#include <basetsd.h>
+#endif
 extern "C"
 {
 #include <jpeglib.h>

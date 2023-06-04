@@ -372,7 +372,7 @@ bool CMaterial::DoLoadShaderAndTextures()
 void CMaterial::WaitForLoading() const
 {
 	do{
-		Threading::Yield();
+		Threading::YieldCurrentThread();
 	} while(m_state == MATERIAL_LOAD_INQUEUE);
 }
 

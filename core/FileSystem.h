@@ -127,10 +127,10 @@ public:
 	//------------------------------------------------------------
 
 	// loads module
-	DKMODULE*					LoadModule(const char* mod_name, EqString* outError = nullptr);
+	DKMODULE*					OpenModule(const char* mod_name, EqString* outError = nullptr);
 
 	// frees module
-	void						FreeModule( DKMODULE* pModule );
+	void						CloseModule( DKMODULE* pModule );
 
 	// returns procedure address of the loaded module
 	void*						GetProcedureAddress(DKMODULE* pModule, const char* pszProc);

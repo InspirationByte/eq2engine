@@ -223,7 +223,7 @@ bool CMaterialSystem::Init(const matsystem_init_config_t& config)
 	auto tryLoadRenderer = [this, &config](const char* rendererName)
 	{
 		EqString loadErr;
-		DKMODULE* renderModule = g_fileSystem->LoadModule(rendererName, &loadErr);
+		DKMODULE* renderModule = g_fileSystem->OpenModule(rendererName, &loadErr);
 		IRenderManager* renderMng = nullptr;
 		IRenderLibrary* renderLib = nullptr;
 		IShaderAPI* shaderAPI = nullptr;
@@ -238,7 +238,7 @@ bool CMaterialSystem::Init(const matsystem_init_config_t& config)
 			}
 			else
 			{
-				g_fileSystem->FreeModule(renderModule);
+				g_fileSystem->CloseModule(renderModule);
 			}
 		};
 
@@ -392,7 +392,7 @@ void CMaterialSystem::Shutdown()
 	m_renderLibrary->ExitAPI();
 
 	// shutdown render libraries, all shaders and other
-	g_fileSystem->FreeModule( m_rendermodule );
+	g_fileSystem->CloseModule( m_rendermodule );
 }
 
 void CMaterialSystem::CreateWhiteTexture()
@@ -520,7 +520,7 @@ const char* CMaterialSystem::GetMaterialSRCPath() const
 bool CMaterialSystem::LoadShaderLibrary(const char* libname)
 {
 	EqString loadErr;
-	DKMODULE* shaderlib = g_fileSystem->LoadModule( libname );
+	DKMODULE* shaderlib = g_fileSystem->OpenModule( libname );
 	if(!shaderlib)
 	{
 		MsgError("LoadShaderLibrary Error: Failed to load %s - %s\n", libname, loadErr.ToCString());

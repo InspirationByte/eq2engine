@@ -16,7 +16,9 @@
 #include "DPKFileWriter.h"
 #include "core/platform/OSFindData.h"
 
-#ifndef PLAT_WIN
+#ifdef PLAT_WIN
+#include <Windows.h>
+#else
 #include <sys/stat.h>
 #include <dirent.h> // opendir, readdir
 #endif

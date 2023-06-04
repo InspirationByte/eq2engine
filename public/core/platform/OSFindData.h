@@ -7,7 +7,14 @@
 
 #pragma once
 
-#if defined(PLAT_LINUX)
+#if defined(PLAT_WIN)
+#include <basetsd.h>
+#define INVALID_HANDLE_VALUE ((HANDLE)(LONG_PTR)-1)
+struct EQWIN32_FIND_DATAA
+{
+	int data[80];
+};
+#elif defined(PLAT_LINUX)
 struct __dirstream;
 typedef struct __dirstream DIR;
 #elif defined(PLAT_ANDROID)
@@ -34,7 +41,7 @@ private:
 	int					m_searchPathId{ -1 };
 
 #if defined(PLAT_WIN)
-	WIN32_FIND_DATAA	m_wfd{ 0 };
+	EQWIN32_FIND_DATAA	m_wfd{ 0 };
 	HANDLE				m_fileHandle{ INVALID_HANDLE_VALUE };
 #else // assume POSIX by default
 	EqString			m_dirPath;
