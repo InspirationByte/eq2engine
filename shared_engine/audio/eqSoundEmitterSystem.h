@@ -33,7 +33,7 @@ public:
 	void				Shutdown();
 
 	void				LoadScriptSoundFile(const char* fileName);
-	void				CreateSoundScript(const KVSection* scriptSection, const KVSection* defaultsSec = nullptr);
+	bool				CreateSoundScript(const KVSection* scriptSection, const KVSection* defaultsSec = nullptr);
 
 	bool				PrecacheSound(const char* pszName);
 	int					EmitSound(EmitParams* emit);

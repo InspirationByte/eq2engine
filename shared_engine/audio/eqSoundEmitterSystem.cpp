@@ -627,7 +627,10 @@ void CSoundEmitterSystem::LoadScriptSoundFile(const char* fileName)
 
 		if (curSec->IsSection())
 		{
-			CreateSoundScript(curSec, &defaultsSec);
+			if(!CreateSoundScript(curSec, &defaultsSec))
+			{
+				ASSERT_FAIL("Error processing %s: sound '%s' cannot be added (already registered?)", fileName, curSec->GetName());
+			}
 		}
 		else if(!stricmp("default", curSec->GetName()))
 		{
@@ -636,19 +639,16 @@ void CSoundEmitterSystem::LoadScriptSoundFile(const char* fileName)
 	}
 }
 
-void CSoundEmitterSystem::CreateSoundScript(const KVSection* scriptSection, const KVSection* defaultsSec)
+bool CSoundEmitterSystem::CreateSoundScript(const KVSection* scriptSection, const KVSection* defaultsSec)
 {
 	if (!scriptSection)
-		return;
+		return false;
 
 	EqString soundName(_Es(scriptSection->name).LowerCase());
 
 	const int namehash = StringToHash(soundName, true);
 	if (m_allSounds.contains(namehash))
-	{
-		ASSERT_FAIL("Sound '%s' is already registered, please change name and references", soundName.ToCString());
-		return;
-	}
+		return false;
 
 	SoundScriptDesc* newSound = PPNew SoundScriptDesc(soundName);
 	SoundScriptDesc::ParseDesc(*newSound, scriptSection, defaultsSec);
@@ -684,6 +684,7 @@ void CSoundEmitterSystem::CreateSoundScript(const KVSection* scriptSection, cons
 	}
 
 	m_allSounds.insert(namehash, newSound);
+	return true;
 }
 
 int CSoundEmitterSystem::ChannelTypeByName(const char* str) const
