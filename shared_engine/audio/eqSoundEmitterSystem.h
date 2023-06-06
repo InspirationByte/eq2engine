@@ -39,7 +39,7 @@ public:
 	int					EmitSound(EmitParams* emit);
 	void				StopAllSounds();
 
-	void				Update();
+	void				Update(Threading::CEqSignal* waitFor = nullptr);
 
 	void				GetAllSoundsList(Array<SoundScriptDesc*>& list) const;
 	static const char*	GetScriptName(SoundScriptDesc* desc);

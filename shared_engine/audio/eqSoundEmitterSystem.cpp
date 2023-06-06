@@ -542,7 +542,7 @@ int CSoundEmitterSystem::LoopSourceUpdateCallback(IEqAudioSource* source, IEqAud
 //
 // Updates all emitters and sound system itself
 //
-void CSoundEmitterSystem::Update()
+void CSoundEmitterSystem::Update(Threading::CEqSignal* waitFor)
 {
 	m_deltaTime = m_updateTimer.GetTime(true);
 
@@ -550,7 +550,10 @@ void CSoundEmitterSystem::Update()
 	m_updateDone.Wait();
 
 	m_updateDone.Clear();
-	g_parallelJobs->AddJob(JOB_TYPE_AUDIO, [this](void*, int i) {
+	g_parallelJobs->AddJob(JOB_TYPE_AUDIO, [this, waitFor](void*, int i) {
+
+		if(waitFor)
+			waitFor->Wait();
 
 		PROF_EVENT("SoundEmitterSystem Update Job");
 
