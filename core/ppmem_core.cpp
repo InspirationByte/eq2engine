@@ -37,7 +37,8 @@
 using namespace Threading;
 
 #define PPMEM_EXTRA_DEBUGINFO
-#define PPMEM_CHECKMARK			(0x1df001ed)	// i'd fooled :D
+#define PPMEM_CHECKMARK			(0x1df001ed)	// fooled
+#define PPMEM_CHECKMARK_FREED	(0x1dbeefed)	// beefed
 
 struct ppallocinfo_t
 {
@@ -360,13 +361,14 @@ void* PPDReAlloc( void* ptr, size_t size, const PPSourceLine& sl )
 	{
 		ppmem_state_t& st = PPGetState();
 
-		const ppallocinfo_t* r_alloc = (ppallocinfo_t*)ptr - 1;
+		ppallocinfo_t* r_alloc = (ppallocinfo_t*)ptr - 1;
 		if (ptr == nullptr || r_alloc->checkMark != PPMEM_CHECKMARK)
 		{
 			return PPDAlloc(size, sl);
 		}
 
 		// remove from linked list first
+		// as realloc might change the pointer
 		{
 			CScopedMutex m(st.allocMemMutex);
 			st.allocMemCounter -= r_alloc->size;
@@ -437,7 +439,7 @@ void PPFree(void* ptr)
 	{
 		ppmem_state_t& st = PPGetState();
 
-		const ppallocinfo_t* alloc = (ppallocinfo_t*)ptr - 1;
+		ppallocinfo_t* alloc = (ppallocinfo_t*)ptr - 1;
 		if(alloc->checkMark != PPMEM_CHECKMARK)
 		{
 			free(ptr);
@@ -445,11 +447,15 @@ void PPFree(void* ptr)
 		}
 
 		// actual pointer address
-		const void* actualPtr = ((ubyte*)alloc) + sizeof(ppallocinfo_t);
-		const uint* checkMark = (uint*)((ubyte*)actualPtr + alloc->size);
+		void* actualPtr = ((ubyte*)alloc) + sizeof(ppallocinfo_t);
+		uint* checkMark = (uint*)((ubyte*)actualPtr + alloc->size);
 
 		ASSERT_MSG(alloc->checkMark == PPMEM_CHECKMARK, "buffer underrun detected by PPMem");
 		ASSERT_MSG(*checkMark == PPMEM_CHECKMARK, "buffer overrun detected by PPMem");
+
+		// set check marks to indicate freed mem regions
+		alloc->checkMark = PPMEM_CHECKMARK_FREED;
+		*checkMark = PPMEM_CHECKMARK_FREED;
 
 		// remove from linked list
 		{

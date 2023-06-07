@@ -79,7 +79,7 @@ private:
 		Block*			next{ nullptr };
 	};
 
-	static constexpr const int blockSize = max(sizeof(T), sizeof(Block));
+	static constexpr const size_t blockSize = max(sizeof(T), sizeof(Block));
 
 	struct Buffer
 	{

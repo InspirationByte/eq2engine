@@ -94,29 +94,29 @@ public:
 	CWeakPtr(CWeakPtr<TYPE>&& other);
 	~CWeakPtr();
 
-	void				Assign( PTR_TYPE obj);
-	void				Release();
+	void			Assign( PTR_TYPE obj);
+	void			Release();
 
-	bool				IsSet() const		{ return m_weakRefPtr; }
-	operator const		bool() const		{ return m_weakRefPtr && m_weakRefPtr->ptr; }
-	operator			bool()				{ return m_weakRefPtr && m_weakRefPtr->ptr; }
-	operator const		PTR_TYPE() const	{ return m_weakRefPtr ? static_cast<PTR_TYPE>(m_weakRefPtr->ptr) : nullptr; }
-	operator			PTR_TYPE ()			{ return m_weakRefPtr ? static_cast<PTR_TYPE>(m_weakRefPtr->ptr) : nullptr; }
-	PTR_TYPE			Ptr() const			{ return m_weakRefPtr ? static_cast<PTR_TYPE>(m_weakRefPtr->ptr) : nullptr; }
-	TYPE&				Ref() const			{ return m_weakRefPtr ? *static_cast<PTR_TYPE>(m_weakRefPtr->ptr) : nullptr; }
-	PTR_TYPE			operator->() const	{ return m_weakRefPtr ? static_cast<PTR_TYPE>(m_weakRefPtr->ptr) : nullptr; }
+	bool			IsSet() const		{ return m_weakRefPtr; }
+	operator const	bool() const		{ return Ptr(); }
+	operator		bool()				{ return Ptr(); }
+	operator const	PTR_TYPE() const	{ return m_weakRefPtr ? static_cast<PTR_TYPE>(m_weakRefPtr->ptr) : nullptr; }
+	operator		PTR_TYPE ()			{ return m_weakRefPtr ? static_cast<PTR_TYPE>(m_weakRefPtr->ptr) : nullptr; }
+	PTR_TYPE		Ptr() const			{ return m_weakRefPtr ? static_cast<PTR_TYPE>(m_weakRefPtr->ptr) : nullptr; }
+	TYPE&			Ref() const			{ return m_weakRefPtr ? *static_cast<PTR_TYPE>(m_weakRefPtr->ptr) : nullptr; }
+	PTR_TYPE		operator->() const	{ return m_weakRefPtr ? static_cast<PTR_TYPE>(m_weakRefPtr->ptr) : nullptr; }
 
-	void				operator=(std::nullptr_t);
-	void				operator=(CWeakPtr<TYPE>&& other);
-	void				operator=( const CWeakPtr<TYPE>& other);
+	void			operator=(std::nullptr_t);
+	void			operator=(CWeakPtr<TYPE>&& other);
+	void			operator=( const CWeakPtr<TYPE>& other);
 
-	friend bool			operator==(const CWeakPtr<TYPE>& a, const CWeakPtr<TYPE>& b) { return a.Ptr() == b.Ptr(); }
-	friend bool			operator==(const CWeakPtr<TYPE>& a, std::nullptr_t) { return a.Ptr() == nullptr; }
-	friend bool			operator==(const CWeakPtr<TYPE>& a, PTR_TYPE b) { return a.Ptr() == b; }
+	friend bool		operator==(const CWeakPtr<TYPE>& a, const CWeakPtr<TYPE>& b) { return a.m_weakRefPtr == b.m_weakRefPtr; }
+	friend bool		operator==(const CWeakPtr<TYPE>& a, std::nullptr_t) { return a.Ptr() == nullptr; }
+	friend bool		operator==(const CWeakPtr<TYPE>& a, PTR_TYPE b) { return a.Ptr() == b; }
 
 private:
 	using Block = WeakPtr::WeakRefBlock<TYPE>;
-	Block*				m_weakRefPtr{ nullptr };
+	Block*			m_weakRefPtr{ nullptr };
 };
 
 //---------------------------------------------------------
@@ -162,9 +162,6 @@ inline CWeakPtr<TYPE>::~CWeakPtr()
 template< class TYPE >
 inline void CWeakPtr<TYPE>::Assign(PTR_TYPE obj)
 {
-	if(obj->m_block && m_weakRefPtr && m_weakRefPtr == obj->m_block)
-		return;
-
 	Block* block = obj->GetBlock();
 	Block* oldBlock = (Block*)Atomic::Exchange(m_weakRefPtr, (Block*)block);
 
