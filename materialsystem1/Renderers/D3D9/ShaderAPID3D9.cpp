@@ -2485,11 +2485,9 @@ void ShaderAPID3D9::DrawIndexedPrimitives(ER_PrimitiveType nType, int nFirstInde
 	const int numPrimitives = g_d3d9_primCountFunc[nType](nIndices);
 	m_pD3DDevice->DrawIndexedPrimitive( g_d3d9_primType[nType], nBaseVertex, nFirstVertex, nVertices, nFirstIndex, numPrimitives);
 	
-#ifndef _RETAIL
 	m_nDrawIndexedPrimitiveCalls++;
 	m_nDrawCalls++;
 	m_nTrianglesCount += numPrimitives;
-#endif
 }
 
 // Draw elements
@@ -2498,10 +2496,8 @@ void ShaderAPID3D9::DrawNonIndexedPrimitives(ER_PrimitiveType nType, int nFirstV
 	const int numPrimitives = g_d3d9_primCountFunc[nType](nVertices);
 	m_pD3DDevice->DrawPrimitive(g_d3d9_primType[nType], nFirstVertex, numPrimitives);
 
-#ifndef _RETAIL
 	m_nDrawCalls++;
 	m_nTrianglesCount += numPrimitives;
-#endif
 }
 
 //-------------------------------------------------------------------------------------------------------------------------

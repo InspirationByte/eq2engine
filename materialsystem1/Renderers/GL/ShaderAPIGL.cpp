@@ -2520,11 +2520,9 @@ void ShaderAPIGL::DrawIndexedPrimitives(ER_PrimitiveType nType, int nFirstIndex,
 
 	glBindVertexArray(0);
 
-#ifndef _RETAIL
 	m_nDrawIndexedPrimitiveCalls++;
 	m_nDrawCalls++;
 	m_nTrianglesCount += g_pGLPrimCounterCallbacks[nType](nIndices);
-#endif
 }
 
 // Draw elements
@@ -2551,11 +2549,9 @@ void ShaderAPIGL::DrawNonIndexedPrimitives(ER_PrimitiveType nType, int nFirstVer
 
 	glBindVertexArray(0);
 
-#ifndef _RETAIL
 	m_nDrawIndexedPrimitiveCalls++;
 	m_nDrawCalls++;
 	m_nTrianglesCount += g_pGLPrimCounterCallbacks[nType](nVertices);
-#endif
 }
 
 bool ShaderAPIGL::IsDeviceActive() const

@@ -705,17 +705,16 @@ bool CGameHost::Frame()
 		debugoverlay->Graph_DrawBucket(&s_fpsGraph);
 	}
 
-	//debugoverlay->Graph_DrawBucket(&m_jobThreads);
-
 	// always reset scissor rectangle before we start rendering
 	g_pShaderAPI->SetScissorRectangle( IRectangle(0,0,m_winSize.x, m_winSize.y) );
 #ifdef PLAT_ANDROID
+	// always clear all on Android
 	g_pShaderAPI->Clear(true, true, true);
 #else
 	g_pShaderAPI->Clear(r_clear.GetBool(), true, false, ColorRGBA(0.1f,0.1f,0.1f,1.0f));
 #endif
 
-	double timescale = (EqStateMgr::GetCurrentState() ? EqStateMgr::GetCurrentState()->GetTimescale() : 1.0f);
+	const double timescale = (EqStateMgr::GetCurrentState() ? EqStateMgr::GetCurrentState()->GetTimescale() : 1.0f);
 
 	if(!EqStateMgr::UpdateStates(gameFrameTime * timescale * sys_timescale.GetFloat()))
 	{
