@@ -162,6 +162,10 @@ inline CWeakPtr<TYPE>::~CWeakPtr()
 template< class TYPE >
 inline void CWeakPtr<TYPE>::Assign(PTR_TYPE obj)
 {
+	if (!obj) {
+		Release();
+		return;
+	}
 	Block* block = obj->GetBlock();
 	Block* oldBlock = (Block*)Atomic::Exchange(m_weakRefPtr, (Block*)block);
 
