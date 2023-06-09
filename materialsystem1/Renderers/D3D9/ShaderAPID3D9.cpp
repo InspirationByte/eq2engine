@@ -1774,7 +1774,7 @@ void ShaderAPID3D9::DestroyShaderProgram(IShaderProgram* pShaderProgram)
 	}
 	delete pShader;
 }
-#pragma optimize("", off)
+
 void ShaderAPID3D9::StepProgressiveLodTextures()
 {
 	int numTransferred = 0;
