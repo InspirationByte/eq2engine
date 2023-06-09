@@ -52,11 +52,6 @@ DECLARE_CVAR(ph_erp, "0.15", "Collision correction", CV_CHEAT);
 DECLARE_CVAR(ph_grid_tolerance, "0.1", nullptr, CV_CHEAT);
 DECLARE_CVAR(ph_carVsCarErp, "0.15", "Car versus car erp", CV_CHEAT);
 
-const float PHYSICS_DEFAULT_FRICTION = 0.5f;
-const float PHYSICS_DEFAULT_RESTITUTION = 0.25f;
-const float PHYSICS_DEFAULT_TIRE_FRICTION = 0.2f;
-const float PHYSICS_DEFAULT_TIRE_TRACTION = 1.0f;
-
 CEqCollisionObject* ContactPair_t::GetOppositeTo(CEqCollisionObject* obj) const
 {
 	return (obj == bodyA) ? bodyB : bodyA;
@@ -288,36 +283,6 @@ CEqPhysics::~CEqPhysics()
 
 }
 
-void InitSurfaceParams( Array<eqPhysSurfParam_t*>& list )
-{
-	// parse physics file
-	KeyValues kvs;
-	if (!kvs.LoadFromFile("scripts/SurfaceParams.def"))
-	{
-		MsgError("ERROR! Failed to load 'scripts/SurfaceParams.def'!");
-		return;
-	}
-
-	for (int i = 0; i < kvs.GetRootSection()->keys.numElem(); i++)
-	{
-		KVSection* pSec = kvs.GetRootSection()->keys[i];
-
-		if (!stricmp(pSec->name, "#include"))
-			continue;
-
-		eqPhysSurfParam_t* pMaterial = PPNew eqPhysSurfParam_t;
-		int mat_idx = list.append(pMaterial);
-
-		pMaterial->id = mat_idx;
-		pMaterial->name = pSec->name;
-		pMaterial->friction = KV_GetValueFloat(pSec->FindSection("friction"), 0, PHYSICS_DEFAULT_FRICTION);
-		pMaterial->restitution = KV_GetValueFloat(pSec->FindSection("restitution"), 0, PHYSICS_DEFAULT_RESTITUTION);
-		pMaterial->tirefriction = KV_GetValueFloat(pSec->FindSection("tirefriction"), 0, PHYSICS_DEFAULT_TIRE_FRICTION);
-		pMaterial->tirefriction_traction = KV_GetValueFloat(pSec->FindSection("tirefriction_traction"), 0, PHYSICS_DEFAULT_TIRE_TRACTION);
-		pMaterial->word = KV_GetValueString(pSec->FindSection("surfaceword"), 0, "C")[0];
-	}
-}
-
 void CEqPhysics::InitWorld()
 {
 	// collision configuration contains default setup for memory, collision setup
@@ -336,8 +301,6 @@ void CEqPhysics::InitWorld()
 	//m_dispatchInfo->m_enableSPU = false;
 	//m_dispatchInfo->m_useEpa = false;
 	//m_dispatchInfo->m_useConvexConservativeDistanceUtil = false;
-
-	InitSurfaceParams( m_physSurfaceParams );
 }
 
 void CEqPhysics::InitGrid()
@@ -413,6 +376,25 @@ void CEqPhysics::DestroyGrid()
 {
 	delete m_grid;
 	m_grid = nullptr;
+}
+
+void CEqPhysics::AddSurfaceParamFromKV(const char* name, const KVSection* kvSection)
+{
+	const int foundIdx = m_physSurfaceParams.findIndex([name](const eqPhysSurfParam_t* other) { return !other->name.CompareCaseIns(name); });
+	if (foundIdx != -1)
+	{
+		ASSERT_FAIL("AddSurfaceParam - %s already added\n", name);
+		return;
+	}
+
+	eqPhysSurfParam_t* surfParam = PPNew eqPhysSurfParam_t;
+	surfParam->id = m_physSurfaceParams.append(surfParam);
+	surfParam->name = name;
+	surfParam->friction = KV_GetValueFloat(kvSection->FindSection("friction"), 0, PHYSICS_DEFAULT_FRICTION);
+	surfParam->restitution = KV_GetValueFloat(kvSection->FindSection("restitution"), 0, PHYSICS_DEFAULT_RESTITUTION);
+	surfParam->tirefriction = KV_GetValueFloat(kvSection->FindSection("tirefriction"), 0, PHYSICS_DEFAULT_TIRE_FRICTION);
+	surfParam->tirefriction_traction = KV_GetValueFloat(kvSection->FindSection("tirefriction_traction"), 0, PHYSICS_DEFAULT_TIRE_TRACTION);
+	surfParam->word = KV_GetValueString(kvSection->FindSection("surfaceword"), 0, "C")[0];
 }
 
 const eqPhysSurfParam_t* CEqPhysics::FindSurfaceParam(const char* name) const

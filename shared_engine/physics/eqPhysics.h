@@ -32,7 +32,12 @@ TODO:
 #include "eqPhysics_Defs.h"
 
 // max world size is +/-32768, limited by FReal
-#define EQPHYS_MAX_WORLDSIZE	32767.0f
+static constexpr const float EQPHYS_MAX_WORLDSIZE = 32767.0f;
+
+static constexpr const float PHYSICS_DEFAULT_FRICTION = 0.5f;
+static constexpr const float PHYSICS_DEFAULT_RESTITUTION = 0.25f;
+static constexpr const float PHYSICS_DEFAULT_TIRE_FRICTION = 0.2f;
+static constexpr const float PHYSICS_DEFAULT_TIRE_TRACTION = 1.0f;
 
 struct btDispatcherInfo;
 class btCollisionWorld;
@@ -69,8 +74,9 @@ public:
 	void							InitGrid();											///< initializes broadphase grid
 
 	void							DestroyWorld();										///< destroys world
-	void							DestroyGrid();											///< destroys broadphase grid
+	void							DestroyGrid();										///< destroys broadphase grid
 
+	void							AddSurfaceParamFromKV(const char* name, const KVSection* kvSection);
 	const  eqPhysSurfParam_t*		FindSurfaceParam(const char* name) const;
 	const  eqPhysSurfParam_t*		GetSurfaceParamByID(int id) const;
 
