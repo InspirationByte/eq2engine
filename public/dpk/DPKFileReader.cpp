@@ -46,8 +46,8 @@ CDPKFileStream::CDPKFileStream(const dpkfileinfo_t& info, COSFile&& osFile)
 		hasCompressedBlocks = hasCompressedBlocks || (block.flags & DPKFILE_FLAG_COMPRESSED);
 	}
 
-	m_blockData = malloc(DPK_BLOCK_MAXSIZE);
-	m_tmpDecompressData = hasCompressedBlocks ? malloc(DPK_BLOCK_MAXSIZE + 128) : nullptr;
+	m_blockData = malloc(DPK_BLOCK_MAXSIZE + 512);
+	m_tmpDecompressData = hasCompressedBlocks ? malloc(DPK_BLOCK_MAXSIZE) : nullptr;
 }
 
 
@@ -66,15 +66,12 @@ void CDPKFileStream::DecodeBlock(int blockIdx)
 {
 	if (m_curBlockIdx == blockIdx)
 		return;
-
 	m_curBlockIdx = blockIdx;
 
-	dpkblock_info_t& curBlock = m_blockInfo[blockIdx];
-			
+	const dpkblock_info_t& curBlock = m_blockInfo[blockIdx];
 	m_osFile.Seek(curBlock.offset, COSFile::ESeekPos::SET);
 
 	const int readSize = (curBlock.flags & DPKFILE_FLAG_COMPRESSED) ? curBlock.compressedSize : curBlock.size;
-
 	ubyte* readMem = (curBlock.flags & DPKFILE_FLAG_COMPRESSED) ? (ubyte*)m_tmpDecompressData : (ubyte*)m_blockData;
 
 	// read block data and decompress/decrypt if needed
@@ -107,8 +104,8 @@ void CDPKFileStream::DecodeBlock(int blockIdx)
 	if (curBlock.flags & DPKFILE_FLAG_COMPRESSED)
 	{
 		// decompress readMem to 'm_blockData'
-		unsigned long destLen = LZ4_decompress_safe((const char*)readMem, (char*)m_blockData, curBlock.compressedSize, DPK_BLOCK_MAXSIZE);
-		ASSERT(destLen == curBlock.size);
+		const int decompressedSize = LZ4_decompress_safe((char*)readMem, (char*)m_blockData, curBlock.compressedSize, DPK_BLOCK_MAXSIZE + 512);
+		ASSERT_MSG(decompressedSize == curBlock.size, "unable to decompress DPK block %d of %x (compressedSize: %d, decompressedSize: %d, blockSize: %d)", m_curBlockIdx, m_info.filenameHash, curBlock.compressedSize, decompressedSize, curBlock.size);
 	}
 }
 

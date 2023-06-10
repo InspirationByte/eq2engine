@@ -339,7 +339,7 @@ float CDPKFileWriter::ProcessFile(COSFile& output, FileInfo* info)
 	{
 		// temporary block for both compression and encryption 
 		// twice the size
-		ubyte tmpBlock[DPK_BLOCK_MAXSIZE + 128];
+		ubyte tmpBlockData[DPK_BLOCK_MAXSIZE];
 
 		// allocate block headers
 		dpkblock_t blockInfo;
@@ -352,8 +352,8 @@ float CDPKFileWriter::ProcessFile(COSFile& output, FileInfo* info)
 			memset(&blockInfo, 0, sizeof(dpkblock_t));
 
 			// get block offset
-			const int srcOffset = numBlocks*DPK_BLOCK_MAXSIZE;
-			const ubyte* srcBlock = _filedata+srcOffset;
+			const int srcOffset = numBlocks * DPK_BLOCK_MAXSIZE;
+			const ubyte* srcBlock = _filedata + srcOffset;
 
 			blockInfo.size = DPK_BLOCK_MAXSIZE;
 
@@ -364,14 +364,18 @@ float CDPKFileWriter::ProcessFile(COSFile& output, FileInfo* info)
 			if (blockInfo.size == 0)
 				break;
 
-			// compress to tmpBlock
+			int compressedSize = -1;
+
+			// try compressing
 			if(compressionEnabled)
 			{
-				unsigned long compressedSize = sizeof(tmpBlock);
-				memset(tmpBlock, 0, compressedSize);
-				
-				compressedSize = LZ4_compress_HC((const char*)srcBlock, (char*)tmpBlock, blockInfo.size, compressedSize, m_compressionLevel);
+				memset(tmpBlockData, 0, sizeof(tmpBlockData));
+				compressedSize = LZ4_compress_HC((const char*)srcBlock, (char*)tmpBlockData, blockInfo.size, sizeof(tmpBlockData), m_compressionLevel);
+			}
 
+			// compressedSize could be -1 which means buffer overlow (or uneffective)
+			if(compressedSize > 0)
+			{
 				blockInfo.flags |= DPKFILE_FLAG_COMPRESSED;
 				blockInfo.compressedSize = compressedSize;
 
@@ -379,18 +383,20 @@ float CDPKFileWriter::ProcessFile(COSFile& output, FileInfo* info)
 			}
 			else
 			{
-				memcpy(tmpBlock, srcBlock, blockInfo.size);
+				memcpy(tmpBlockData, srcBlock, blockInfo.size);
 			}
 
-			int tmpBlockSize = (blockInfo.flags & DPKFILE_FLAG_COMPRESSED) ? blockInfo.compressedSize : blockInfo.size;
+			const int tmpBlockSize = (blockInfo.flags & DPKFILE_FLAG_COMPRESSED) ? blockInfo.compressedSize : blockInfo.size;
 
 			// encrypt tmpBlock
 			if(m_encryption > 0)
 			{
-				int iceBlockSize = m_ice.blockSize();
+				blockInfo.flags |= DPKFILE_FLAG_ENCRYPTED;
+
+				const int iceBlockSize = m_ice.blockSize();
 
 				ubyte* iceTempBlock = (ubyte*)stackalloc(iceBlockSize);
-				ubyte* tmpBlockPtr = tmpBlock;
+				ubyte* tmpBlockPtr = tmpBlockData;
 
 				int bytesLeft = tmpBlockSize;
 
@@ -405,13 +411,11 @@ float CDPKFileWriter::ProcessFile(COSFile& output, FileInfo* info)
 					tmpBlockPtr += iceBlockSize;
 					bytesLeft -= iceBlockSize;
 				}
-
-				blockInfo.flags |= DPKFILE_FLAG_ENCRYPTED;
 			}
 
 			// write header and data
 			output.Write(&blockInfo, sizeof(blockInfo));
-			output.Write(tmpBlock, tmpBlockSize);
+			output.Write(tmpBlockData, tmpBlockSize);
 
 			// increment file info offset in the main header
 			m_header.fileInfoOffset += sizeof(blockInfo) + tmpBlockSize;
