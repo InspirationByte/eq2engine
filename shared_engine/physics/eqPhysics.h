@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright ï¿½ Inspiration Byte
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
 // Description: Equilibrium fixed point 3D physics engine
@@ -47,6 +47,7 @@ class btCollisionShape;
 
 struct CollisionData_t;
 struct ContactPair_t;
+struct KVSection;
 class CEqCollisionObject;
 class CEqRigidBody;
 class CEqCollisionBroadphaseGrid;
