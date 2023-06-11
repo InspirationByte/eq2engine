@@ -310,7 +310,10 @@ static void CookPackageTarget(const char* targetName)
 		}
 
 		if(encryption)
+		{
+			MsgInfo("Output package is encrypted with key\n");
 			dpkWriter.SetEncryption(1, encryption);
+		}
 
 		if (targetFilename)
 			outputFileName = targetFilename;

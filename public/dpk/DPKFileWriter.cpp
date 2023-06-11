@@ -115,7 +115,7 @@ bool CDPKFileWriter::BuildAndSave( const char* fileName )
 	m_header.compressionLevel = m_compressionLevel;
 	m_header.numFiles = 0;
 
-	if (!m_outputFile.Open(fileName, COSFile::WRITE))
+	if (!m_outputFile.Open(g_fileSystem->GetAbsolutePath(SP_ROOT, fileName), COSFile::WRITE))
 	{
 		MsgError("Cannot create '%s'!\n", fileName);
 		return false;
