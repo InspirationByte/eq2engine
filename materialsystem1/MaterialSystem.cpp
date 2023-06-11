@@ -1070,11 +1070,14 @@ void CMaterialSystem::GetWorldViewProjection(Matrix4x4 &matrix)
 	Matrix4x4 vproj = m_viewProjMatrix;
 	Matrix4x4 wvpMatrix = m_wvpMatrix;
 
+	const int viewProjBits = (1 << MATRIXMODE_PROJECTION) | (1 << MATRIXMODE_VIEW);
+	const int wvpBits = viewProjBits | (1 << MATRIXMODE_WORLD) | (1 << MATRIXMODE_WORLD2);
+
 	// cache view projection
-	if(m_matrixDirty & ((1 << MATRIXMODE_PROJECTION) | (1 << MATRIXMODE_VIEW)))
+	if(m_matrixDirty & viewProjBits)
 		m_viewProjMatrix = vproj = m_matrices[MATRIXMODE_PROJECTION] * m_matrices[MATRIXMODE_VIEW];
 
-	if(m_matrixDirty & ((1 << MATRIXMODE_WORLD) | (1 << MATRIXMODE_WORLD2)))
+	if(m_matrixDirty & wvpBits)
 		m_wvpMatrix = wvpMatrix = vproj * (m_matrices[MATRIXMODE_WORLD2] * m_matrices[MATRIXMODE_WORLD]);
 
 	m_matrixDirty = 0;
