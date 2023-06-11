@@ -12,6 +12,11 @@
 #include "core/IFileSystem.h"
 #include "DPKFileReader.h"
 
+// HACK: current and previous versions of DPKFileWriter had serious bug that allowed buffer overflow.
+//		 This was fixed but extra 1024 bytes are kept for compatibility with those broken community-made EPK files 
+//		 Consider removing this hack as soon as EPK version changes.
+#define DPK_BLOCK_DECOMPRESS_SIZE (DPK_BLOCK_MAXSIZE + 1024)
+
 static Threading::CEqMutex s_dpkMutex;
 
 CDPKFileStream::CDPKFileStream(const dpkfileinfo_t& info, COSFile&& osFile)
@@ -46,8 +51,8 @@ CDPKFileStream::CDPKFileStream(const dpkfileinfo_t& info, COSFile&& osFile)
 		hasCompressedBlocks = hasCompressedBlocks || (block.flags & DPKFILE_FLAG_COMPRESSED);
 	}
 
-	m_blockData = malloc(DPK_BLOCK_MAXSIZE + 512);
-	m_tmpDecompressData = hasCompressedBlocks ? malloc(DPK_BLOCK_MAXSIZE) : nullptr;
+	m_blockData = malloc(DPK_BLOCK_DECOMPRESS_SIZE);
+	m_tmpDecompressData = hasCompressedBlocks ? malloc(DPK_BLOCK_DECOMPRESS_SIZE) : nullptr;
 }
 
 
@@ -104,7 +109,7 @@ void CDPKFileStream::DecodeBlock(int blockIdx)
 	if (curBlock.flags & DPKFILE_FLAG_COMPRESSED)
 	{
 		// decompress readMem to 'm_blockData'
-		const int decompressedSize = LZ4_decompress_safe((char*)readMem, (char*)m_blockData, curBlock.compressedSize, DPK_BLOCK_MAXSIZE + 512);
+		const int decompressedSize = LZ4_decompress_safe((char*)readMem, (char*)m_blockData, curBlock.compressedSize, DPK_BLOCK_DECOMPRESS_SIZE);
 		ASSERT_MSG(decompressedSize == curBlock.size, "unable to decompress DPK block %d of %x (compressedSize: %d, decompressedSize: %d, blockSize: %d)", m_curBlockIdx, m_info.filenameHash, curBlock.compressedSize, decompressedSize, curBlock.size);
 	}
 }
