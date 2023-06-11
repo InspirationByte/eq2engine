@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright ï¿½ Inspiration Byte
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
 // Description: Ogg Vorbis source base class
@@ -14,6 +14,13 @@ namespace eqVorbisFile
 	int		fseek(void *datasource, ogg_int64_t offset, int whence);
 	long	ftell(void *datasource);
 	int		fclose(void *datasource);
+
+	static ov_callbacks callbacks {
+		eqVorbisFile::fread,
+		eqVorbisFile::fseek,
+		eqVorbisFile::fclose,
+		eqVorbisFile::ftell,
+	};
 };
 
 //---------------------------------------------------------------------

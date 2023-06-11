@@ -1,12 +1,11 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright ï¿½ Inspiration Byte
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
 // Description: Ogg Vorbis source stream
 //////////////////////////////////////////////////////////////////////////////////
 
-#include <vorbis/vorbisfile.h>
-
+#include <minivorbis.h>
 #include "core/core_common.h"
 #include "core/IFileSystem.h"
 #include "snd_ogg_stream.h"
@@ -18,14 +17,7 @@ bool CSoundSource_OggStream::Load()
 	if(!m_oggFile)
 		return false;
 
-	ov_callbacks cb;
-
-	cb.read_func = eqVorbisFile::fread;
-	cb.close_func = eqVorbisFile::fclose;
-	cb.seek_func = eqVorbisFile::fseek;
-	cb.tell_func = eqVorbisFile::ftell;
-
-	int ovResult = ov_open_callbacks(m_oggFile, &m_oggStream, nullptr, 0, cb);
+	int ovResult = ov_open_callbacks(m_oggFile, &m_oggStream, nullptr, 0, eqVorbisFile::callbacks);
 
 	if(ovResult < 0)
 	{

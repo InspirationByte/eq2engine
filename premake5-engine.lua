@@ -14,9 +14,7 @@ WORKSPACE_NAME = (WORKSPACE_NAME or "Equilibrium2")
 -- you can redefine dependencies
 DependencyPath = {
 	["zlib"] = os.getenv("ZLIB_DIR") or "src_dependency/zlib", 
-	["libjpeg"] = os.getenv("JPEG_DIR") or "src_dependency/libjpeg", 
-	["libogg"] = os.getenv("OGG_DIR") or "src_dependency/libogg", 
-	["libvorbis"] = os.getenv("VORBIS_DIR") or "src_dependency/libvorbis", 
+	["libjpeg"] = os.getenv("JPEG_DIR") or "src_dependency/libjpeg",
 	["libsdl"] = os.getenv("SDL2_DIR") or "src_dependency/SDL2",
 	["openal"] = os.getenv("OPENAL_DIR") or "src_dependency/openal-soft",
 	
@@ -384,7 +382,7 @@ project "soundSystemLib"
 	unitybuild "on"
 	uses { 
 		"corelib", "frameworkLib",
-		"libvorbis", "libogg", "openal-soft",
+		"minivorbis", "openal-soft",
 		"imgui"
 	}
     files {

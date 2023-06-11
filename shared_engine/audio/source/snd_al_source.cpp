@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////
-// Copyright © Inspiration Byte
+// Copyright ï¿½ Inspiration Byte
 // 2009-2020
 //////////////////////////////////////////////////////////////////////////////////
 // Description: OpenAL-compatible sound source (alBuffer)
@@ -8,7 +8,7 @@
 
 #include <AL/al.h>
 #include <AL/alext.h>
-#include <vorbis/vorbisfile.h>
+#include <minivorbis.h>
 
 #include "core/core_common.h"
 #include "snd_al_source.h"

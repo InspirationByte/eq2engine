@@ -5,8 +5,7 @@
 // Description: Ogg Vorbis source cache
 //////////////////////////////////////////////////////////////////////////////////
 
-#include <vorbis/vorbisfile.h>
-
+#include <minivorbis.h>
 #include "core/core_common.h"
 #include "core/IFileSystem.h"
 #include "snd_ogg_cache.h"
@@ -20,14 +19,7 @@ bool CSoundSource_OggCache::Load()
 
 	OggVorbis_File oggFile;
 
-	ov_callbacks cb;
-
-	cb.read_func = eqVorbisFile::fread;
-	cb.close_func = eqVorbisFile::fclose;
-	cb.seek_func = eqVorbisFile::fseek;
-	cb.tell_func = eqVorbisFile::ftell;
-
-	int ovResult = ov_open_callbacks(pFile, &oggFile, nullptr, 0, cb);
+	int ovResult = ov_open_callbacks(pFile, &oggFile, nullptr, 0, eqVorbisFile::callbacks);
 
 	if(ovResult < 0)
 	{
