@@ -21,8 +21,8 @@ using namespace EqBulletUtils;
 
 //-----------------------------------------------------------------------------------------
 
-DECLARE_CVAR(ph_showcollisionresponses, "0", nullptr, CV_CHEAT);
-DECLARE_CVAR(ph_debug_body, "0", "Print debug body information in screen", CV_CHEAT);
+DECLARE_CVAR(ph_showCollisionResponses, "0", nullptr, CV_CHEAT);
+DECLARE_CVAR(ph_debugRigidBody, "0", nullptr, CV_CHEAT);
 
 const float frictionTimeScale = 10.0f;
 const float dampingTimeScale = 1.0f;
@@ -262,7 +262,8 @@ void CEqRigidBody::Integrate(float delta)
 	// accumulate with custom delta time
 	AccumulateForces( m_lastFrameTime );
 
-	if(ph_debug_body.GetBool())
+#ifndef _RETAIL
+	if(ph_debugRigidBody.GetBool())
 	{
 		debugoverlay->Text3D(m_position, 50.0f, ColorRGBA(1,1,1,1),
 			EqString::Format(
@@ -277,6 +278,7 @@ void CEqRigidBody::Integrate(float delta)
 			(float)m_mass,
 			m_cell != nullptr));
 	}
+#endif // _RETAIL
 }
 
 void CEqRigidBody::Update(float time)
@@ -717,14 +719,12 @@ float CEqRigidBody::ApplyImpulseResponseTo(ContactPair_t& pair, float error_corr
 	// apply impact based on point velocity
 	Vector3D impulseVector = contactNormal*normalImpulseRest;
 
-	if(ph_showcollisionresponses.GetBool())
+	if(ph_showCollisionResponses.GetBool())
 	{
 		debugoverlay->Line3D(contactPoint, contactPoint+impulseVector*COLLRESPONSE_DEBUG_SCALE, ColorRGBA(1,0,0,1), ColorRGBA(1,1,0,1), 3.0f);
 		debugoverlay->Line3D(contactPoint, contactPoint-impulseVector*COLLRESPONSE_DEBUG_SCALE, ColorRGBA(1,0,0,1), ColorRGBA(1,1,0,1), 3.0f);
-
 		debugoverlay->Box3D(contactPoint-0.01f, contactPoint+0.01f, ColorRGBA(1,1,0,1), 3.0f);
 	}
-
 
 	Vector3D frictionImpulse = ComputeFrictionVelocity(contactNormal, 
 		contactVelocity,

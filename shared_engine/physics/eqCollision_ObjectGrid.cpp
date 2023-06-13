@@ -12,8 +12,8 @@
 
 #include "render/IDebugOverlay.h"
 
-DECLARE_CVAR(ph_grid_debug_display_x, "-1", nullptr, 0);
-DECLARE_CVAR(ph_grid_debug_display_y, "-1", nullptr, 0);
+DECLARE_CVAR(ph_debugGridX, "-1", nullptr, 0);
+DECLARE_CVAR(ph_debugGridY, "-1", nullptr, 0);
 
 CEqCollisionBroadphaseGrid::CEqCollisionBroadphaseGrid(CEqPhysics* physics, int gridsize, const Vector3D& worldmins, const Vector3D& worldmaxs)
 {
@@ -362,6 +362,7 @@ void CEqCollisionBroadphaseGrid::RemoveStaticObjectFromGrid( CEqCollisionObject*
 
 void CEqCollisionBroadphaseGrid::DebugRender()
 {
+#ifndef _RETAIL
 	Vector3D mins, maxs;
 
 	for(int y = 0; y < m_gridWide; y++)
@@ -373,7 +374,7 @@ void CEqCollisionBroadphaseGrid::DebugRender()
 
 			debugoverlay->Box3D(mins, maxs, ColorRGBA(1,0,1,0.25f));
 
-			if (ph_grid_debug_display_x.GetInt() == x && ph_grid_debug_display_y.GetInt() == y)
+			if (ph_debugGridX.GetInt() == x && ph_debugGridY.GetInt() == y)
 			{
 				collgridcell_t* cell = GetCellAt(x, y);
 
@@ -391,6 +392,5 @@ void CEqCollisionBroadphaseGrid::DebugRender()
 			} // debug display
 		}
 	}
-
-
+#endif // _RETAIL
 }

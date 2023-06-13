@@ -33,23 +33,22 @@
 #include "eqPhysics_Contstraint.h"
 #include "eqPhysics_Controller.h"
 #include "eqBulletIndexedMesh.h"
+#include "BulletConvert.h"
 
-#define CONTACT_GROUPING
-
-#include "../shared_engine/physics/BulletConvert.h"
+#define ENABLE_CONTACT_GROUPING
 
 using namespace EqBulletUtils;
 using namespace Threading;
 static CEqMutex s_eqPhysMutex;
 
-#define PHYSGRID_WORLD_SIZE			24	// compromised betwen memory usage and performance
-#define PHYSICS_WORLD_MAX_UNITS		65535.0f
+static constexpr const int PHYSGRID_WORLD_SIZE			= 24;	// compromised betwen memory usage and performance
+static constexpr const float PHYSICS_WORLD_MAX_UNITS	= 65535.0f;
+static constexpr const float PHYSGRID_BOX_TOLERANCE		= 0.1f;
 
 extern ConVar ph_margin;
 
 DECLARE_CVAR(ph_showcontacts, "0", nullptr, CV_CHEAT);
 DECLARE_CVAR(ph_erp, "0.15", "Collision correction", CV_CHEAT);
-DECLARE_CVAR(ph_grid_tolerance, "0.1", nullptr, CV_CHEAT);
 DECLARE_CVAR(ph_carVsCarErp, "0.15", "Car versus car erp", CV_CHEAT);
 
 CEqCollisionObject* ContactPair_t::GetOppositeTo(CEqCollisionObject* obj) const
@@ -201,7 +200,7 @@ struct CEqManifoldResult : public btManifoldResult
 
 		float processingThreshold = m_manifoldPtr->getContactProcessingThreshold();
 
-#ifdef CONTACT_GROUPING		
+#ifdef ENABLE_CONTACT_GROUPING		
 		for(int i = 0; i < m_collisions.numElem(); i++)
 		{
 			CollisionData_t& coll = m_collisions[i];
@@ -223,7 +222,7 @@ struct CEqManifoldResult : public btManifoldResult
 				return;
 			}
 		}
-#endif // CONTACT_GROUPING
+#endif // ENABLE_CONTACT_GROUPING
 
 		if (m_collisions.numElem() >= m_collisions.numAllocated())
 			return;
@@ -1053,7 +1052,7 @@ void CEqPhysics::DetectCollisionsSingle(CEqRigidBody* body)
 
 	// get the grid box range for searching collision objects
 	IVector2D crMin, crMax;
-	m_grid->FindBoxRange(aabb, crMin, crMax, ph_grid_tolerance.GetFloat() );
+	m_grid->FindBoxRange(aabb, crMin, crMax, PHYSGRID_BOX_TOLERANCE);
 
 	// in this range do all collision checks
 	// might be slow
@@ -1939,17 +1938,14 @@ bool CEqPhysics::TestConvexSweepSingleObject(CEqCollisionObject* object,
 
 //--------------------------------------------------------------------------------------------------------------
 
-
 void CEqPhysics::DebugDrawBodies(int mode)
 {
 #ifndef _RETAIL
 	if (mode >= 1 && mode != 4 && mode != 5)
 	{
-		for (int i = 0; i < m_dynObjects.numElem(); i++)
+		for (CEqRigidBody* body: m_dynObjects)
 		{
-			CEqRigidBody* body = m_dynObjects[i];
-
-			ColorRGBA bodyCol = ColorRGBA(0.2, 1, 1, 0.8f);
+			ColorRGBA bodyCol(0.2, 1, 1, 0.8f);
 
 			if (body->IsFrozen())
 				bodyCol = ColorRGBA(0.2, 1, 0.1f, 0.8f);
@@ -1963,10 +1959,8 @@ void CEqPhysics::DebugDrawBodies(int mode)
 
 		if (mode >= 3)
 		{
-			for (int i = 0; i < m_staticObjects.numElem(); i++)
+			for (CEqCollisionObject* obj: m_staticObjects)
 			{
-				CEqCollisionObject* obj = m_staticObjects[i];
-
 				debugoverlay->OrientedBox3D(
 					obj->m_aabb.minPoint, obj->m_aabb.maxPoint, obj->GetPosition(), obj->GetOrientation(), ColorRGBA(1, 1, 0.2, 0.8f));
 			}
@@ -1978,11 +1972,9 @@ void CEqPhysics::DebugDrawBodies(int mode)
 	}
 	else
 	{
-		for (int i = 0; i < m_dynObjects.numElem(); i++)
+		for (CEqRigidBody* body: m_dynObjects)
 		{
-			CEqRigidBody* body = m_dynObjects[i];
-
-			ColorRGBA bodyCol = ColorRGBA(0.2, 1, 1, 1.0f);
+			ColorRGBA bodyCol(0.2, 1, 1, 1.0f);
 
 			if (body->IsFrozen())
 				bodyCol = ColorRGBA(0.2, 1, 0.1f, 1.0f);
