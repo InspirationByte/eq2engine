@@ -1167,7 +1167,6 @@ IPhysicsObject* DkPhysics::CreateStaticObject(physmodelcreateinfo_t *info, int n
 	{
 		MsgError("Invalid physics material '%s'!\n", materialName);
 		materialName = "default";
-
 		material = FindMaterial(materialName);
 	}
 
@@ -1180,7 +1179,8 @@ IPhysicsObject* DkPhysics::CreateStaticObject(physmodelcreateinfo_t *info, int n
 	pPhysicsObject->m_pPhyObjectPointer->setUserPointer(pPhysicsObject);
 	pPhysicsObject->SetContents( nCollisionGroup );
 	pPhysicsObject->SetCollisionMask( nCollideMask );
-	pPhysicsObject->SetFriction(material->friction);
+	if(material)
+		pPhysicsObject->SetFriction(material->friction);
 
 	// don't add events!
 	pPhysicsObject->AddFlags(PO_NO_EVENTS);
